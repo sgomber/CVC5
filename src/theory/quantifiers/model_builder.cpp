@@ -24,6 +24,7 @@
 #include "theory/quantifiers/quantifiers_attributes.h"
 #include "theory/quantifiers/inst_gen.h"
 #include "theory/quantifiers/trigger.h"
+#include "theory/quantifiers/options.h"
 
 using namespace std;
 using namespace CVC4;

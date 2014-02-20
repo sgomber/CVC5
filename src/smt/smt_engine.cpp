@@ -80,8 +80,9 @@
 #include "util/sort_inference.h"
 #include "theory/quantifiers/quant_conflict_find.h"
 #include "theory/quantifiers/macros.h"
-#include "theory/datatypes/options.h"
 #include "theory/quantifiers/first_order_reasoning.h"
+#include "theory/quantifiers/options.h"
+#include "theory/datatypes/options.h"
 #include "theory/strings/theory_strings_preprocess.h"
 
 using namespace std;
@@ -1181,7 +1182,7 @@ void SmtEngine::setLogicInternal() throw() {
     //instantiate only on last call
     if( options::fmfInstEngine() ){
       Trace("smt") << "setting inst when mode to LAST_CALL" << endl;
-      options::instWhenMode.set( INST_WHEN_LAST_CALL );
+      options::instWhenMode.set( quantifiers::INST_WHEN_LAST_CALL );
     }
   }
   if ( options::fmfBoundInt() ){
@@ -1572,13 +1573,13 @@ Node SmtEnginePrivate::expandDefinitions(TNode n, hash_map<Node, Node, NodeHashF
 			argTypes.push_back(NodeManager::currentNM()->stringType());
 			argTypes.push_back(NodeManager::currentNM()->integerType());
 			argTypes.push_back(NodeManager::currentNM()->integerType());
-			d_ufSubstr = NodeManager::currentNM()->mkSkolem("__ufSS", 
+			d_ufSubstr = NodeManager::currentNM()->mkSkolem("__ufSS",
 								NodeManager::currentNM()->mkFunctionType(
 									argTypes, NodeManager::currentNM()->stringType()),
 								"uf substr",
 								NodeManager::SKOLEM_EXACT_NAME);
 		}
-		Node lenxgti = NodeManager::currentNM()->mkNode( kind::GT, 
+		Node lenxgti = NodeManager::currentNM()->mkNode( kind::GT,
 							NodeManager::currentNM()->mkNode( kind::STRING_LENGTH, n[0] ), n[1] );
 		Node zero = NodeManager::currentNM()->mkConst( ::CVC4::Rational(0) );
 		Node t1greq0 = NodeManager::currentNM()->mkNode( kind::GEQ, n[1], zero);
@@ -1595,13 +1596,13 @@ Node SmtEnginePrivate::expandDefinitions(TNode n, hash_map<Node, Node, NodeHashF
 			argTypes.push_back(NodeManager::currentNM()->stringType());
 			argTypes.push_back(NodeManager::currentNM()->integerType());
 			argTypes.push_back(NodeManager::currentNM()->integerType());
-			d_ufSubstr = NodeManager::currentNM()->mkSkolem("__ufSS", 
+			d_ufSubstr = NodeManager::currentNM()->mkSkolem("__ufSS",
 								NodeManager::currentNM()->mkFunctionType(
 									argTypes, NodeManager::currentNM()->stringType()),
 								"uf substr",
 								NodeManager::SKOLEM_EXACT_NAME);
 		}
-		Node lenxgti = NodeManager::currentNM()->mkNode( kind::GEQ, 
+		Node lenxgti = NodeManager::currentNM()->mkNode( kind::GEQ,
 							NodeManager::currentNM()->mkNode( kind::STRING_LENGTH, n[0] ),
 							NodeManager::currentNM()->mkNode( kind::PLUS, n[1], n[2] ) );
 		Node zero = NodeManager::currentNM()->mkConst( ::CVC4::Rational(0) );
@@ -3161,14 +3162,14 @@ void SmtEnginePrivate::processAssertions() {
       //quantifiers macro expansion
       bool success;
       do{
-        QuantifierMacros qm;
+        quantifiers::QuantifierMacros qm;
         success = qm.simplify( d_assertionsToPreprocess, true );
       }while( success );
     }
 
     Trace("fo-rsn-enable") << std::endl;
     if( options::foPropQuant() ){
-      FirstOrderPropagation fop;
+      quantifiers::FirstOrderPropagation fop;
       fop.simplify( d_assertionsToPreprocess );
     }
   }

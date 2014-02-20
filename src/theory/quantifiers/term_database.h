@@ -44,15 +44,6 @@ typedef expr::Attribute<InstLevelAttributeId, uint64_t> InstLevelAttribute;
 struct InstVarNumAttributeId {};
 typedef expr::Attribute<InstVarNumAttributeId, uint64_t> InstVarNumAttribute;
 
-// Attribute that tell if a node have been asserted in this branch
-struct AvailableInTermDbId {};
-/** use the special for boolean flag */
-typedef expr::Attribute<AvailableInTermDbId,
-                        bool,
-                        expr::attr::NullCleanupStrategy,
-                        true  // context dependent
-                        > AvailableInTermDb;
-
 struct ModelBasisAttributeId {};
 typedef expr::Attribute<ModelBasisAttributeId, bool> ModelBasisAttribute;
 //for APPLY_UF terms, 1 : term has direct child with model basis attribute,
@@ -133,9 +124,6 @@ public:
   void reset( Theory::Effort effort );
   /** get operation */
   Node getOperator( Node n );
-private:
-  /** for efficient e-matching */
-  void addTermEfficient( Node n, std::set< Node >& added);
 public:
   /** parent structure (for efficient E-matching):
       n -> op -> index -> L

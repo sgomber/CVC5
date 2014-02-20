@@ -25,13 +25,14 @@
 #include "theory/quantifiers/first_order_model.h"
 #include "theory/quantifiers/term_database.h"
 #include "theory/quantifiers/trigger.h"
-#include "theory/rewriterules/efficient_e_matching.h"
-#include "theory/rewriterules/rr_trigger.h"
+//#include "theory/rewriterules/efficient_e_matching.h"
+//#include "theory/rewriterules/rr_trigger.h"
 #include "theory/quantifiers/bounded_integers.h"
 #include "theory/quantifiers/rewrite_engine.h"
 #include "theory/quantifiers/quant_conflict_find.h"
 #include "theory/quantifiers/relevant_domain.h"
 #include "theory/uf/options.h"
+#include "theory/uf/theory_uf.h"
 
 using namespace std;
 using namespace CVC4;
@@ -46,8 +47,8 @@ d_lemmas_produced_c(u){
   d_eq_query = new EqualityQueryQuantifiersEngine( this );
   d_term_db = new quantifiers::TermDb( this );
   d_tr_trie = new inst::TriggerTrie;
-  d_rr_tr_trie = new rrinst::TriggerTrie;
-  d_eem = new EfficientEMatcher( this );
+  //d_rr_tr_trie = new rrinst::TriggerTrie;
+  //d_eem = new EfficientEMatcher( this );
   d_hasAddedLemma = false;
 
   Trace("quant-engine-debug") << "Initialize model, mbqi : " << options::mbqiMode() << std::endl;
@@ -99,7 +100,7 @@ d_lemmas_produced_c(u){
     d_model_engine = NULL;
     d_bint = NULL;
   }
-  if( options::rewriteRulesAsAxioms() ){
+  if( options::quantRewriteRules() ){
     d_rr_engine = new quantifiers::RewriteEngine( c, this );
     d_modules.push_back(d_rr_engine);
   }else{
@@ -276,9 +277,6 @@ Node QuantifiersEngine::getNextDecisionRequest(){
 void QuantifiersEngine::addTermToDatabase( Node n, bool withinQuant ){
   std::set< Node > added;
   getTermDatabase()->addTerm( n, added, withinQuant );
-  if( options::efficientEMatching() ){
-    d_eem->newTerms( added );
-  }
   //added contains also the Node that just have been asserted in this branch
   if( d_quant_rel ){
     for( std::set< Node >::iterator i=added.begin(), end=added.end(); i!=end; i++ ){
