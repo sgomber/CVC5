@@ -292,19 +292,21 @@ void InstantiationEngine::check( Theory::Effort e ){
 }
 
 void InstantiationEngine::registerQuantifier( Node f ){
-  //Notice() << "do cbqi " << f << " ? " << std::endl;
-  Node ceBody = d_quantEngine->getTermDatabase()->getInstConstantBody( f );
-  if( !doCbqi( f ) ){
-    d_quantEngine->addTermToDatabase( ceBody, true );
-  }
+  if( !f.hasAttribute(QRewriteRuleAttribute()) ){
+    //Notice() << "do cbqi " << f << " ? " << std::endl;
+    Node ceBody = d_quantEngine->getTermDatabase()->getInstConstantBody( f );
+    if( !doCbqi( f ) ){
+      d_quantEngine->addTermToDatabase( ceBody, true );
+    }
 
-  //take into account user patterns
-  if( f.getNumChildren()==3 ){
-    Node subsPat = d_quantEngine->getTermDatabase()->getInstConstantNode( f[2], f );
-    //add patterns
-    for( int i=0; i<(int)subsPat.getNumChildren(); i++ ){
-      //Notice() << "Add pattern " << subsPat[i] << " for " << f << std::endl;
-      addUserPattern( f, subsPat[i] );
+    //take into account user patterns
+    if( f.getNumChildren()==3 ){
+      Node subsPat = d_quantEngine->getTermDatabase()->getInstConstantNode( f[2], f );
+      //add patterns
+      for( int i=0; i<(int)subsPat.getNumChildren(); i++ ){
+        //Notice() << "Add pattern " << subsPat[i] << " for " << f << std::endl;
+        addUserPattern( f, subsPat[i] );
+      }
     }
   }
 }
