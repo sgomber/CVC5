@@ -58,7 +58,7 @@ double RewriteEngine::getPriority( Node f ) {
 }
 
 void RewriteEngine::check( Theory::Effort e ) {
-  if( e>=Theory::EFFORT_FULL ){
+  if( e==Theory::EFFORT_FULL ){
     Trace("rewrite-engine") << "---Rewrite Engine Round, effort = " << e << "---" << std::endl;
     if( e==Theory::EFFORT_LAST_CALL ){
       if( !d_quantEngine->getModel()->isModelSet() ){
@@ -104,13 +104,15 @@ void RewriteEngine::check( Theory::Effort e ) {
 }
 
 int RewriteEngine::checkRewriteRule( Node f, Theory::Effort e ) {
-  Trace("rewrite-engine-inst") << "Check " << f << ", priority = " << getPriority( f ) << ", effort = " << e << "..." << std::endl;
-  Trace("rewrite-engine-inst") << "Rule is " << d_rr[f] << "..." << std::endl;
   int addedLemmas = 0;
   if( e==Theory::EFFORT_FULL ){
+    Trace("rewrite-engine-inst") << "Check " << d_qinfo_n[f] << ", priority = " << getPriority( f ) << ", effort = " << e << "..." << std::endl;
     QuantConflictFind * qcf = d_quantEngine->getConflictFind();
     if( qcf ){
+      //reset QCF module
+      qcf->computeRelevantEqr();
       qcf->setEffort( QuantConflictFind::effort_conflict );
+      //get the proper quantifiers info
       std::map< Node, QuantInfo >::iterator it = d_qinfo.find( f );
       if( it!=d_qinfo.end() ){
         QuantInfo * qi = &it->second;
@@ -119,22 +121,53 @@ int RewriteEngine::checkRewriteRule( Node f, Theory::Effort e ) {
           qi->reset_round( qcf );
           Trace("rewrite-engine-inst-debug") << "   Get matches..." << std::endl;
           while( qi->d_mg->getNextMatch( qcf, qi ) ){
-            Trace("rewrite-engine-inst-debug") << "   Complete the match..." << std::endl;
+            Trace("rewrite-engine-inst-debug") << "   Got match to complete..." << std::endl;
+            qi->debugPrintMatch( "rewrite-engine-inst-debug" );
             std::vector< int > assigned;
-            if( qi->completeMatch( qcf, assigned ) ){
-              Trace("rewrite-engine-inst-debug") << "   Construct match..." << std::endl;
-              std::vector< Node > inst;
-              qi->getMatch( inst );
-              Trace("rewrite-engine-inst-debug") << "   Add instantiation..." << std::endl;
-              if( d_quantEngine->addInstantiation( f, inst ) ){
-                addedLemmas++;
-              }else{
-                Trace("rewrite-engine-inst-debug") << "   - failed." << std::endl;
+            if( !qi->isMatchSpurious( qcf ) ){
+              bool doContinue = false;
+              bool success = true;
+              while( success ){
+                success = qi->completeMatch( qcf, assigned, doContinue );
+                doContinue = true;
+                if( success ){
+                  Trace("rewrite-engine-inst-debug") << "   Construct match..." << std::endl;
+                  std::vector< Node > inst;
+                  qi->getMatch( inst );
+                  Trace("rewrite-engine-inst-debug") << "   Add instantiation..." << std::endl;
+                  for( unsigned i=0; i<f[0].getNumChildren(); i++ ){
+                    Trace("rewrite-engine-inst-debug") << "  " << f[0][i] << " -> ";
+                    if( i<inst.size() ){
+                      Trace("rewrite-engine-inst-debug") << inst[i] << std::endl;
+                    }else{
+                      Trace("rewrite-engine-inst-debug") << "OUT_OF_RANGE" << std::endl;
+                      Assert( false );
+                    }
+                  }
+                  //resize to remove auxiliary variables
+                  if( inst.size()>f[0].getNumChildren() ){
+                    inst.resize( f[0].getNumChildren() );
+                  }
+                  if( d_quantEngine->addInstantiation( f, inst ) ){
+                    addedLemmas++;
+                  }else{
+                    Trace("rewrite-engine-inst-debug") << "   - failed." << std::endl;
+                  }
+                  Trace("rewrite-engine-inst-debug") << "   Get next completion..." << std::endl;
+                }
               }
+              //Trace("rewrite-engine-inst-debug") << "   Reverted assigned variables : ";
+              //for( unsigned a=0; a<assigned.size(); a++ ) {
+              //  Trace("rewrite-engine-inst-debug") << assigned[a] << " ";
+              //}
+              //Trace("rewrite-engine-inst-debug") << std::endl;
               qi->revertMatch( assigned );
+              //Assert( assigned.empty() );
+              Trace("rewrite-engine-inst-debug") << "   - failed to complete." << std::endl;
             }else{
-              Trace("rewrite-engine-inst-debug") << "   - failed." << std::endl;
+              Trace("rewrite-engine-inst-debug") << "   - match is spurious." << std::endl;
             }
+            Trace("rewrite-engine-inst-debug") << "   Get next match..." << std::endl;
           }
         }else{
           Trace("rewrite-engine-inst-debug") << "...Invalid qinfo." << std::endl;
@@ -144,6 +177,7 @@ int RewriteEngine::checkRewriteRule( Node f, Theory::Effort e ) {
       }
     }
   }else if( e==Theory::EFFORT_LAST_CALL ){
+    Trace("rewrite-engine-inst") << "Check " << f << ", priority = " << getPriority( f ) << ", effort = " << e << "..." << std::endl;
     //reset triggers
     Node rr = f.getAttribute(QRewriteRuleAttribute());
     if( d_rr_triggers.find(f)==d_rr_triggers.end() ){
@@ -229,26 +263,33 @@ void RewriteEngine::registerQuantifier( Node f ) {
     QuantConflictFind * qcf = d_quantEngine->getConflictFind();
     if( qcf ){
       std::vector< Node > qcfn_c;
-      qcfn_c.push_back( f[0] );
-      Node head = rr[2][0];
-      std::vector< Node > cc;
-      if( head!=d_true ){
-        Node head_eq = head.getType().isBoolean() ? head.iffNode( head ) : head.eqNode( head );
-        head_eq = head_eq.negate();
-        cc.push_back( head_eq );
-        Trace("rr-register-debug") << "  head eq is " << head_eq << std::endl;
+
+      std::vector< Node > bvl;
+      for( unsigned i=0; i<f[0].getNumChildren(); i++ ){
+        bvl.push_back( f[0][i] );
       }
+
+      std::vector< Node > cc;
+      //Node head = rr[2][0];
+      //if( head!=d_true ){
+        //Node head_eq = head.getType().isBoolean() ? head.iffNode( head ) : head.eqNode( head );
+        //head_eq = head_eq.negate();
+        //cc.push_back( head_eq );
+        //Trace("rr-register-debug") << "  head eq is " << head_eq << std::endl;
+      //}
       //add patterns
       for( unsigned i=0; i<f[2].getNumChildren(); i++ ){
         std::vector< Node > nc;
         for( unsigned j=0; j<f[2][i].getNumChildren(); j++ ){
           Node nn;
+          Node nbv = NodeManager::currentNM()->mkBoundVar( f[2][i][j].getType() );
+          bvl.push_back( nbv );
           if( f[2][i][j].getType().isBoolean() ){
-            nn = f[2][i][j].negate();
+            nn = f[2][i][j].iffNode( nbv );
           }else{
-            nn = f[2][i][j].eqNode( f[2][i][j] ).negate();
+            nn = f[2][i][j].eqNode( nbv );
           }
-          nc.push_back( nn );
+          nc.push_back( nn.negate() );
         }
         if( !nc.empty() ){
           Node n = nc.size()==1 ? nc[0] : NodeManager::currentNM()->mkNode( AND, nc );
@@ -258,14 +299,26 @@ void RewriteEngine::registerQuantifier( Node f ) {
           }
         }
       }
+      qcfn_c.push_back( NodeManager::currentNM()->mkNode( BOUND_VAR_LIST, bvl ) );
 
-      Node conc;
-      conc = cc.size()==1 ? cc[0] : NodeManager::currentNM()->mkNode( OR, cc );
-      if( d_rr[f][1]==d_true ){
-        qcfn_c.push_back( conc );
-      }else{
-        qcfn_c.push_back( NodeManager::currentNM()->mkNode( OR, d_rr[f][1].negate(), conc ) );
+      std::vector< Node > body_c;
+      //add the guards
+      if( d_rr[f][1].getKind()==AND ){
+        for( unsigned j=0; j<d_rr[f][1].getNumChildren(); j++ ){
+          if( MatchGen::isHandled( d_rr[f][1][j] ) ){
+            body_c.push_back( d_rr[f][1][j].negate() );
+          }
+        }
+      }else if( d_rr[f][1]!=d_true ){
+        if( MatchGen::isHandled( d_rr[f][1] ) ){
+          body_c.push_back( d_rr[f][1].negate() );
+        }
       }
+      //add the patterns to the body
+      body_c.push_back( cc.size()==1 ? cc[0] : NodeManager::currentNM()->mkNode( AND, cc ) );
+      //make the body
+      qcfn_c.push_back( body_c.size()==1 ? body_c[0] : NodeManager::currentNM()->mkNode( OR, body_c ) );
+      //make the quantified formula
       d_qinfo_n[f] = NodeManager::currentNM()->mkNode( FORALL, qcfn_c );
       Trace("rr-register") << "  qcf formula is : " << d_qinfo_n[f] << std::endl;
       d_qinfo[f].initialize( d_qinfo_n[f], d_qinfo_n[f][1] );

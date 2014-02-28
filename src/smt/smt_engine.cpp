@@ -3958,18 +3958,11 @@ void SmtEngine::checkModel(bool hardFailure) {
     Debug("boolean-terms") << "++ got " << n << endl;
     Notice() << "SmtEngine::checkModel(): -- substitutes to " << n << endl;
 
-    if(Theory::theoryOf(n) != THEORY_REWRITERULES) {
+    if( n.getKind() != kind::REWRITE_RULE ){
       // In case it's a quantifier (or contains one), look up its value before
       // simplifying, or the quantifier might be irreparably altered.
       n = m->getValue(n);
-    }
-
-    // Simplify the result.
-    n = d_private->simplify(n);
-    Notice() << "SmtEngine::checkModel(): -- simplifies to  " << n << endl;
-
-    TheoryId thy = Theory::theoryOf(n);
-    if(thy == THEORY_REWRITERULES) {
+    } else {
       // Note this "skip" is done here, rather than above.  This is
       // because (1) the quantifier could in principle simplify to false,
       // which should be reported, and (2) checking for the quantifier
@@ -3979,6 +3972,12 @@ void SmtEngine::checkModel(bool hardFailure) {
                << endl;
       continue;
     }
+
+    // Simplify the result.
+    n = d_private->simplify(n);
+    Notice() << "SmtEngine::checkModel(): -- simplifies to  " << n << endl;
+
+    //TheoryId thy = Theory::theoryOf(n);
 
     // As a last-ditch effort, ask model to simplify it.
     // Presently, this is only an issue for quantifiers, which can have a value

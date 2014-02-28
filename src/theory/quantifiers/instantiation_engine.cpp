@@ -294,10 +294,10 @@ void InstantiationEngine::check( Theory::Effort e ){
 void InstantiationEngine::registerQuantifier( Node f ){
   if( !f.hasAttribute(QRewriteRuleAttribute()) ){
     //Notice() << "do cbqi " << f << " ? " << std::endl;
-    Node ceBody = d_quantEngine->getTermDatabase()->getInstConstantBody( f );
-    if( !doCbqi( f ) ){
-      d_quantEngine->addTermToDatabase( ceBody, true );
-    }
+    //Node ceBody = d_quantEngine->getTermDatabase()->getInstConstantBody( f );
+    //if( !doCbqi( f ) ){
+    //  d_quantEngine->addTermToDatabase( ceBody, true );
+    //}
 
     //take into account user patterns
     if( f.getNumChildren()==3 ){
