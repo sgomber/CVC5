@@ -40,7 +40,7 @@ TheoryEngineModelBuilder( qe->getTheoryEngine() ), d_curr_model( c, NULL ), d_qe
 }
 
 bool QModelBuilder::isQuantifierActive( Node f ) {
-  return !f.hasAttribute(QRewriteRuleAttribute());
+  return !TermDb::isRewriteRule( f );
 }
 
 
@@ -382,7 +382,7 @@ QModelBuilderIG::Statistics::~Statistics(){
 }
 
 bool QModelBuilderIG::isQuantifierActive( Node f ){
-  return !f.hasAttribute(QRewriteRuleAttribute()) &&
+  return !TermDb::isRewriteRule( f ) &&
          ( d_considerAxioms || !f.getAttribute(AxiomAttribute()) ) && d_quant_sat.find( f )==d_quant_sat.end();
 }
 

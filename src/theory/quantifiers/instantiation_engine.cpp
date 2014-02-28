@@ -209,7 +209,7 @@ void InstantiationEngine::check( Theory::Effort e ){
     for( int i=0; i<(int)d_quantEngine->getModel()->getNumAssertedQuantifiers(); i++ ){
       Node n = d_quantEngine->getModel()->getAssertedQuantifier( i );
       //it is not active if we have found the skolemized negation is unsat
-      if( n.hasAttribute(QRewriteRuleAttribute()) ){
+      if( TermDb::isRewriteRule( n ) ){
         d_quant_active[n] = false;
       }else if( options::cbqi() && hasAddedCbqiLemma( n ) ){
         Node cel = d_quantEngine->getTermDatabase()->getCounterexampleLiteral( n );
@@ -292,12 +292,14 @@ void InstantiationEngine::check( Theory::Effort e ){
 }
 
 void InstantiationEngine::registerQuantifier( Node f ){
-  if( !f.hasAttribute(QRewriteRuleAttribute()) ){
+  if( !TermDb::isRewriteRule( f ) ){
     //Notice() << "do cbqi " << f << " ? " << std::endl;
-    //Node ceBody = d_quantEngine->getTermDatabase()->getInstConstantBody( f );
-    //if( !doCbqi( f ) ){
-    //  d_quantEngine->addTermToDatabase( ceBody, true );
-    //}
+    if( options::cbqi() ){
+      Node ceBody = d_quantEngine->getTermDatabase()->getInstConstantBody( f );
+      if( !doCbqi( f ) ){
+        d_quantEngine->addTermToDatabase( ceBody, true );
+      }
+    }
 
     //take into account user patterns
     if( f.getNumChildren()==3 ){

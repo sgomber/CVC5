@@ -146,96 +146,6 @@ void QuantifiersRewriter::setNestedQuantifiers2( Node n, Node q, std::vector< No
   }
 }
 
-Node QuantifiersRewriter::rewriteRewriteRule( Node r ) {
-  Kind rrkind = r[2].getKind();
-
-  //guards, pattern, body
-
-  //   Replace variables by Inst_* variable and tag the terms that contain them
-  std::vector<Node> vars;
-  vars.reserve(r[0].getNumChildren());
-  for( Node::const_iterator v = r[0].begin(); v != r[0].end(); ++v ){
-    vars.push_back(*v);
-  };
-
-  // Body/Remove_term/Guards/Triggers
-  Node body = r[2][1];
-  TNode new_terms = r[2][1];
-  std::vector<Node> guards;
-  std::vector<Node> pattern;
-  Node true_node = NodeManager::currentNM()->mkConst(true);
-  // shortcut
-  TNode head = r[2][0];
-  switch(rrkind){
-  case kind::RR_REWRITE:
-    // Equality
-    pattern.push_back( head );
-    if( head.getType().isBoolean() ){
-      body = head.iffNode(body);
-    }else{
-      body = head.eqNode(body);
-    }
-    break;
-  case kind::RR_REDUCTION:
-  case kind::RR_DEDUCTION:
-    // Add head to guards and pattern
-    switch(head.getKind()){
-    case kind::AND:
-      for( unsigned i = 0; i<head.getNumChildren(); i++ ){
-        guards.push_back(head[i]);
-        pattern.push_back(head[i]);
-      }
-      break;
-    default:
-      if( head!=true_node ){
-        guards.push_back(head);
-        pattern.push_back( head );
-      }
-      break;
-    }
-    break;
-  default:
-    Unreachable("RewriteRules can be of only three kinds");
-    break;
-  }
-  // Add the other guards
-  TNode g = r[1];
-  switch(g.getKind()){
-  case kind::AND:
-    for( unsigned i = 0; i<g.getNumChildren(); i++ ){
-      guards.push_back(g[i]);
-    }
-    break;
-  default:
-    if( g != true_node ){
-      guards.push_back( g );
-    }
-    break;
-  }
-  // Add the other triggers
-  if( r[2].getNumChildren() >= 3 ){
-    for( unsigned i=0; i<r[2][2][0].getNumChildren(); i++ ) {
-      pattern.push_back( r[2][2][0][i] );
-    }
-  }
-
-  NodeBuilder<> forallB(kind::FORALL);
-  forallB << r[0];
-  Node gg = guards.size()==0 ? true_node : ( guards.size()==1 ? guards[0] : NodeManager::currentNM()->mkNode( AND, guards ) );
-  gg = NodeManager::currentNM()->mkNode( OR, gg.negate(), body );
-  gg = Rewriter::rewrite( gg );
-  forallB << gg;
-  NodeBuilder<> patternB(kind::INST_PATTERN);
-  patternB.append(pattern);
-  NodeBuilder<> patternListB(kind::INST_PATTERN_LIST);
-  patternListB << static_cast<Node>(patternB);
-  forallB << static_cast<Node>(patternListB);
-  Node rn = (Node) forallB;
-
-  return rn;
-}
-
-
 RewriteResponse QuantifiersRewriter::preRewrite(TNode in) {
   Trace("quantifiers-rewrite-debug") << "pre-rewriting " << in << " " << in.hasAttribute(NestedQuantAttribute()) << std::endl;
   if( in.getKind()==kind::EXISTS || in.getKind()==kind::FORALL ){
@@ -277,68 +187,54 @@ RewriteResponse QuantifiersRewriter::preRewrite(TNode in) {
 
 RewriteResponse QuantifiersRewriter::postRewrite(TNode in) {
   Trace("quantifiers-rewrite-debug") << "post-rewriting " << in << std::endl;
-  Trace("quantifiers-rewrite-debug") << "Attributes : " << in.hasAttribute(NestedQuantAttribute());
-  Trace("quantifiers-rewrite-debug") << " " << in.hasAttribute(QRewriteRuleAttribute()) << std::endl;
-  if( in.getKind()==kind::REWRITE_RULE ){
-    Node n = rewriteRewriteRule( in );
-    if( options::quantRewriteRules() ){
-      QRewriteRuleAttribute qra;
-      n.setAttribute(qra,in);
+  Trace("quantifiers-rewrite-debug") << "Attributes : " << in.hasAttribute(NestedQuantAttribute())  << std::endl;
+  if( !options::quantRewriteRules() || !TermDb::isRewriteRule( in ) ){
+    RewriteStatus status = REWRITE_DONE;
+    Node ret = in;
+    //get the arguments
+    std::vector< Node > args;
+    for( int i=0; i<(int)in[0].getNumChildren(); i++ ){
+      args.push_back( in[0][i] );
     }
-    Trace("quantifiers-rewrite") << "*** rr-rewrite " << in << std::endl;
-    Trace("quantifiers-rewrite") << " to " << std::endl;
-    Trace("quantifiers-rewrite") << n << std::endl;
-    return RewriteResponse(REWRITE_DONE, n);
-  }else if( in.getKind()==kind::EXISTS || in.getKind()==kind::FORALL ){
-    if( !options::quantRewriteRules() || !in.hasAttribute(QRewriteRuleAttribute()) ){
-      RewriteStatus status = REWRITE_DONE;
-      Node ret = in;
-      //get the arguments
-      std::vector< Node > args;
-      for( int i=0; i<(int)in[0].getNumChildren(); i++ ){
-        args.push_back( in[0][i] );
-      }
-      //get the instantiation pattern list
-      Node ipl;
+    //get the instantiation pattern list
+    Node ipl;
+    if( in.getNumChildren()==3 ){
+      ipl = in[2];
+    }
+    //get the body
+    if( in.getKind()==EXISTS ){
+      std::vector< Node > children;
+      children.push_back( in[0] );
+      children.push_back( in[1].negate() );
       if( in.getNumChildren()==3 ){
-        ipl = in[2];
+        children.push_back( in[2] );
       }
-      //get the body
-      if( in.getKind()==EXISTS ){
-        std::vector< Node > children;
-        children.push_back( in[0] );
-        children.push_back( in[1].negate() );
-        if( in.getNumChildren()==3 ){
-          children.push_back( in[2] );
-        }
-        ret = NodeManager::currentNM()->mkNode( FORALL, children );
-        ret = ret.negate();
-        status = REWRITE_AGAIN_FULL;
-      }else{
-        bool isNested = in.hasAttribute(NestedQuantAttribute());
-        for( int op=0; op<COMPUTE_LAST; op++ ){
-          if( doOperation( in, isNested, op ) ){
-            ret = computeOperation( in, op );
-            if( ret!=in ){
-              status = REWRITE_AGAIN_FULL;
-              break;
-            }
+      ret = NodeManager::currentNM()->mkNode( FORALL, children );
+      ret = ret.negate();
+      status = REWRITE_AGAIN_FULL;
+    }else{
+      bool isNested = in.hasAttribute(NestedQuantAttribute());
+      for( int op=0; op<COMPUTE_LAST; op++ ){
+        if( doOperation( in, isNested, op ) ){
+          ret = computeOperation( in, op );
+          if( ret!=in ){
+            status = REWRITE_AGAIN_FULL;
+            break;
           }
         }
       }
-      //print if changed
-      if( in!=ret ){
-        setAttributes( in, ret );
-        Trace("quantifiers-rewrite") << "*** rewrite " << in << std::endl;
-        Trace("quantifiers-rewrite") << " to " << std::endl;
-        Trace("quantifiers-rewrite") << ret << std::endl;
-        Trace("quantifiers-rewrite-debug") << "Attributes : " << ret.hasAttribute(NestedQuantAttribute());
-        Trace("quantifiers-rewrite-debug") << " " << ret.hasAttribute(QRewriteRuleAttribute()) << std::endl;
-
-
-      }
-      return RewriteResponse( status, ret );
     }
+    //print if changed
+    if( in!=ret ){
+      setAttributes( in, ret );
+      Trace("quantifiers-rewrite") << "*** rewrite " << in << std::endl;
+      Trace("quantifiers-rewrite") << " to " << std::endl;
+      Trace("quantifiers-rewrite") << ret << std::endl;
+      Trace("quantifiers-rewrite-debug") << "Attributes : " << ret.hasAttribute(NestedQuantAttribute()) << std::endl;
+
+
+    }
+    return RewriteResponse( status, ret );
   }
   return RewriteResponse(REWRITE_DONE, in);
 }
@@ -527,9 +423,9 @@ void QuantifiersRewriter::setAttributes( Node in, Node n ) {
   if( in.hasAttribute(NestedQuantAttribute()) ){
     setNestedQuantifiers( n, in.getAttribute(NestedQuantAttribute()) );
   }
-  if( in.hasAttribute(QRewriteRuleAttribute()) ){
-    n.setAttribute(QRewriteRuleAttribute(), in.getAttribute(QRewriteRuleAttribute()));
-  }
+  //if( in.hasAttribute(QRewriteRuleAttribute()) ){
+  //  n.setAttribute(QRewriteRuleAttribute(), in.getAttribute(QRewriteRuleAttribute()));
+  //}
 }
 
 Node QuantifiersRewriter::computeCNF( Node n, std::vector< Node >& args, NodeBuilder<>& defs, bool forcePred ){
@@ -1089,5 +985,214 @@ bool QuantifiersRewriter::doOperation( Node f, bool isNested, int computeOption 
     return options::clauseSplit();
   }else{
     return false;
+  }
+}
+
+
+
+
+Node QuantifiersRewriter::rewriteRewriteRule( Node r ) {
+  Kind rrkind = r[2].getKind();
+
+  //guards, pattern, body
+
+  //   Replace variables by Inst_* variable and tag the terms that contain them
+  std::vector<Node> vars;
+  vars.reserve(r[0].getNumChildren());
+  for( Node::const_iterator v = r[0].begin(); v != r[0].end(); ++v ){
+    vars.push_back(*v);
+  };
+
+  // Body/Remove_term/Guards/Triggers
+  Node body = r[2][1];
+  TNode new_terms = r[2][1];
+  std::vector<Node> guards;
+  std::vector<Node> pattern;
+  Node true_node = NodeManager::currentNM()->mkConst(true);
+  // shortcut
+  TNode head = r[2][0];
+  switch(rrkind){
+  case kind::RR_REWRITE:
+    // Equality
+    pattern.push_back( head );
+    if( head.getType().isBoolean() ){
+      body = head.iffNode(body);
+    }else{
+      body = head.eqNode(body);
+    }
+    break;
+  case kind::RR_REDUCTION:
+  case kind::RR_DEDUCTION:
+    // Add head to guards and pattern
+    switch(head.getKind()){
+    case kind::AND:
+      for( unsigned i = 0; i<head.getNumChildren(); i++ ){
+        guards.push_back(head[i]);
+        pattern.push_back(head[i]);
+      }
+      break;
+    default:
+      if( head!=true_node ){
+        guards.push_back(head);
+        pattern.push_back( head );
+      }
+      break;
+    }
+    break;
+  default:
+    Unreachable("RewriteRules can be of only three kinds");
+    break;
+  }
+  // Add the other guards
+  TNode g = r[1];
+  switch(g.getKind()){
+  case kind::AND:
+    for( unsigned i = 0; i<g.getNumChildren(); i++ ){
+      guards.push_back(g[i]);
+    }
+    break;
+  default:
+    if( g != true_node ){
+      guards.push_back( g );
+    }
+    break;
+  }
+  // Add the other triggers
+  if( r[2].getNumChildren() >= 3 ){
+    for( unsigned i=0; i<r[2][2][0].getNumChildren(); i++ ) {
+      pattern.push_back( r[2][2][0][i] );
+    }
+  }
+
+  NodeBuilder<> forallB(kind::FORALL);
+  forallB << r[0];
+  Node gg = guards.size()==0 ? true_node : ( guards.size()==1 ? guards[0] : NodeManager::currentNM()->mkNode( AND, guards ) );
+  gg = NodeManager::currentNM()->mkNode( OR, gg.negate(), body );
+  gg = Rewriter::rewrite( gg );
+  forallB << gg;
+  NodeBuilder<> patternB(kind::INST_PATTERN);
+  patternB.append(pattern);
+  NodeBuilder<> patternListB(kind::INST_PATTERN_LIST);
+  //the entire rewrite rule is the first pattern
+  if( options::quantRewriteRules() ){
+    patternListB << NodeManager::currentNM()->mkNode( INST_PATTERN, r );
+  }
+  patternListB << static_cast<Node>(patternB);
+  forallB << static_cast<Node>(patternListB);
+  Node rn = (Node) forallB;
+
+  return rn;
+}
+
+struct ContainsQuantAttributeId {};
+typedef expr::Attribute<ContainsQuantAttributeId, uint64_t> ContainsQuantAttribute;
+
+// check if the given node contains a universal quantifier
+bool QuantifiersRewriter::containsQuantifiers(Node n) {
+  if( n.hasAttribute(ContainsQuantAttribute()) ){
+    return n.getAttribute(ContainsQuantAttribute())==1;
+  } else if(n.getKind() == kind::FORALL) {
+    return true;
+  } else {
+    bool cq = false;
+    for( unsigned i = 0; i < n.getNumChildren(); ++i ){
+      if( containsQuantifiers(n[i]) ){
+        cq = true;
+        break;
+      }
+    }
+    ContainsQuantAttribute cqa;
+    n.setAttribute(cqa, cq ? 1 : 0);
+    return cq;
+  }
+}
+
+Node QuantifiersRewriter::preSkolemizeQuantifiers( Node n, bool polarity, std::vector< Node >& fvs ){
+  Trace("pre-sk") << "Pre-skolem " << n << " " << polarity << " " << fvs.size() << endl;
+  if( n.getKind()==kind::NOT ){
+    Node nn = preSkolemizeQuantifiers( n[0], !polarity, fvs );
+    return nn.negate();
+  }else if( n.getKind()==kind::FORALL ){
+    if( polarity ){
+      vector< Node > children;
+      children.push_back( n[0] );
+      //add children to current scope
+      vector< Node > fvss;
+      fvss.insert( fvss.begin(), fvs.begin(), fvs.end() );
+      for( int i=0; i<(int)n[0].getNumChildren(); i++ ){
+        fvss.push_back( n[0][i] );
+      }
+      //process body
+      children.push_back( preSkolemizeQuantifiers( n[1], polarity, fvss ) );
+      if( n.getNumChildren()==3 ){
+        children.push_back( n[2] );
+      }
+      //return processed quantifier
+      return NodeManager::currentNM()->mkNode( kind::FORALL, children );
+    }else{
+      //process body
+      Node nn = preSkolemizeQuantifiers( n[1], polarity, fvs );
+      //now, substitute skolems for the variables
+      vector< TypeNode > argTypes;
+      for( int i=0; i<(int)fvs.size(); i++ ){
+        argTypes.push_back( fvs[i].getType() );
+      }
+      //calculate the variables and substitution
+      vector< Node > vars;
+      vector< Node > subs;
+      for( int i=0; i<(int)n[0].getNumChildren(); i++ ){
+        vars.push_back( n[0][i] );
+      }
+      for( int i=0; i<(int)n[0].getNumChildren(); i++ ){
+        //make the new function symbol
+        if( argTypes.empty() ){
+          Node s = NodeManager::currentNM()->mkSkolem( "sk_$$", n[0][i].getType(), "created during pre-skolemization" );
+          subs.push_back( s );
+        }else{
+          TypeNode typ = NodeManager::currentNM()->mkFunctionType( argTypes, n[0][i].getType() );
+          Node op = NodeManager::currentNM()->mkSkolem( "skop_$$", typ, "op created during pre-skolemization" );
+          //DOTHIS: set attribute on op, marking that it should not be selected as trigger
+          vector< Node > funcArgs;
+          funcArgs.push_back( op );
+          funcArgs.insert( funcArgs.end(), fvs.begin(), fvs.end() );
+          subs.push_back( NodeManager::currentNM()->mkNode( kind::APPLY_UF, funcArgs ) );
+        }
+      }
+      //apply substitution
+      nn = nn.substitute( vars.begin(), vars.end(), subs.begin(), subs.end() );
+      return nn;
+    }
+  }else{
+    //check if it contains a quantifier as a subterm
+    //if so, we will write this node
+    if( containsQuantifiers( n ) ){
+      if( n.getType().isBoolean() ){
+        if( n.getKind()==kind::ITE || n.getKind()==kind::IFF || n.getKind()==kind::XOR || n.getKind()==kind::IMPLIES ){
+          Node nn;
+          //must remove structure
+          if( n.getKind()==kind::ITE ){
+            nn = NodeManager::currentNM()->mkNode( kind::AND,
+                   NodeManager::currentNM()->mkNode( kind::OR, n[0].notNode(), n[1] ),
+                   NodeManager::currentNM()->mkNode( kind::OR, n[0], n[2] ) );
+          }else if( n.getKind()==kind::IFF || n.getKind()==kind::XOR ){
+            nn = NodeManager::currentNM()->mkNode( kind::AND,
+                   NodeManager::currentNM()->mkNode( kind::OR, n[0].notNode(), n.getKind()==kind::XOR ? n[1].notNode() : n[1] ),
+                   NodeManager::currentNM()->mkNode( kind::OR, n[0], n.getKind()==kind::XOR ? n[1] : n[1].notNode() ) );
+          }else if( n.getKind()==kind::IMPLIES ){
+            nn = NodeManager::currentNM()->mkNode( kind::OR, n[0].notNode(), n[1] );
+          }
+          return preSkolemizeQuantifiers( nn, polarity, fvs );
+        }else if( n.getKind()==kind::AND || n.getKind()==kind::OR ){
+          vector< Node > children;
+          for( int i=0; i<(int)n.getNumChildren(); i++ ){
+            children.push_back( preSkolemizeQuantifiers( n[i], polarity, fvs ) );
+          }
+          return NodeManager::currentNM()->mkNode( n.getKind(), children );
+        }else{
+          //must pull ite's
+        }
+      }
+    }
+    return n;
   }
 }
