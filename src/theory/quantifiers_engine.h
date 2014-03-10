@@ -188,8 +188,6 @@ private:
   bool addInstantiation( Node f, std::vector< Node >& vars, std::vector< Node >& terms );
   /** set instantiation level attr */
   void setInstantiationLevelAttr( Node n, uint64_t level );
-  /** do substitution */
-  Node doSubstitute( Node n, std::vector< Node >& terms );
 public:
   /** get instantiation */
   Node getInstantiation( Node f, std::vector< Node >& vars, std::vector< Node >& terms );
@@ -197,6 +195,8 @@ public:
   Node getInstantiation( Node f, InstMatch& m );
   /** get instantiation */
   Node getInstantiation( Node f, std::vector< Node >& terms );
+  /** do substitution */
+  Node getSubstitute( Node n, std::vector< Node >& terms );
   /** exist instantiation ? */
   bool existsInstantiation( Node f, InstMatch& m, bool modEq = true, bool modInst = false );
   /** add lemma lem */
