@@ -47,8 +47,6 @@ class RewriteEngine : public QuantifiersModule
   std::map< Node, QuantInfo > d_qinfo;
   double getPriority( Node f );
   bool d_needsSort;
-  std::map< Node, std::map< Node, Node > > d_inst_const_node;
-  Node getInstConstNode( Node n, Node q );
 private:
   int checkRewriteRule( Node f, Theory::Effort e );
 public:

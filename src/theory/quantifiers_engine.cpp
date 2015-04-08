@@ -361,7 +361,7 @@ void QuantifiersEngine::setInstantiationLevelAttr( Node n, uint64_t level ){
   }
 }
 
-Node QuantifiersEngine::getSubstitute( Node n, std::vector< Node >& terms ){
+Node QuantifiersEngine::doSubstitute( Node n, std::vector< Node >& terms ){
   if( n.getKind()==INST_CONSTANT ){
     Debug("check-inst") << "Substitute inst constant : " << n << std::endl;
     return terms[n.getAttribute(InstVarNumAttribute())];
@@ -377,7 +377,7 @@ Node QuantifiersEngine::getSubstitute( Node n, std::vector< Node >& terms ){
     }
     bool changed = false;
     for( unsigned i=0; i<n.getNumChildren(); i++ ){
-      Node c = getSubstitute( n[i], terms );
+      Node c = doSubstitute( n[i], terms );
       cc.push_back( c );
       changed = changed || c!=n[i];
     }
@@ -410,7 +410,7 @@ Node QuantifiersEngine::getInstantiation( Node f, std::vector< Node >& vars, std
   }else{
     //do optimized version
     Node icb = d_term_db->getInstConstantBody( f );
-    body = getSubstitute( icb, terms );
+    body = doSubstitute( icb, terms );
     if( Debug.isOn("check-inst") ){
       Node body2 = f[ 1 ].substitute( vars.begin(), vars.end(), terms.begin(), terms.end() );
       if( body!=body2 ){

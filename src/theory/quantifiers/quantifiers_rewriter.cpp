@@ -1064,14 +1064,6 @@ Node QuantifiersRewriter::rewriteRewriteRule( Node r ) {
     }
   }
 
-  Trace("rr-rewrite") << "Rule is " << r << std::endl;
-  Trace("rr-rewrite") << "Head is " << head << std::endl;
-  Trace("rr-rewrite") << "Patterns are ";
-  for( unsigned i=0; i<pattern.size(); i++ ){
-    Trace("rr-rewrite") << pattern[i] << " ";
-  }
-  Trace("rr-rewrite") << std::endl;
-
   NodeBuilder<> forallB(kind::FORALL);
   forallB << r[0];
   Node gg = guards.size()==0 ? true_node : ( guards.size()==1 ? guards[0] : NodeManager::currentNM()->mkNode( AND, guards ) );
