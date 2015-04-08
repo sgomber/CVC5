@@ -74,7 +74,7 @@ d_lemmas_produced_c(u){
   }
 
   //add quantifiers modules
-  if( options::quantConflictFind() || options::quantRewriteRules() ){
+  if( options::quantConflictFind() ){
     d_qcf = new quantifiers::QuantConflictFind( this, c);
     d_modules.push_back( d_qcf );
   }else{

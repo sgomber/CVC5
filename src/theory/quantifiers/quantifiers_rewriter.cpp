@@ -290,55 +290,53 @@ RewriteResponse QuantifiersRewriter::postRewrite(TNode in) {
     Trace("quantifiers-rewrite") << n << std::endl;
     return RewriteResponse(REWRITE_DONE, n);
   }else if( in.getKind()==kind::EXISTS || in.getKind()==kind::FORALL ){
-    if( !options::quantRewriteRules() || !in.hasAttribute(QRewriteRuleAttribute()) ){
-      RewriteStatus status = REWRITE_DONE;
-      Node ret = in;
-      //get the arguments
-      std::vector< Node > args;
-      for( int i=0; i<(int)in[0].getNumChildren(); i++ ){
-        args.push_back( in[0][i] );
-      }
-      //get the instantiation pattern list
-      Node ipl;
+    RewriteStatus status = REWRITE_DONE;
+    Node ret = in;
+    //get the arguments
+    std::vector< Node > args;
+    for( int i=0; i<(int)in[0].getNumChildren(); i++ ){
+      args.push_back( in[0][i] );
+    }
+    //get the instantiation pattern list
+    Node ipl;
+    if( in.getNumChildren()==3 ){
+      ipl = in[2];
+    }
+    //get the body
+    if( in.getKind()==EXISTS ){
+      std::vector< Node > children;
+      children.push_back( in[0] );
+      children.push_back( in[1].negate() );
       if( in.getNumChildren()==3 ){
-        ipl = in[2];
+        children.push_back( in[2] );
       }
-      //get the body
-      if( in.getKind()==EXISTS ){
-        std::vector< Node > children;
-        children.push_back( in[0] );
-        children.push_back( in[1].negate() );
-        if( in.getNumChildren()==3 ){
-          children.push_back( in[2] );
-        }
-        ret = NodeManager::currentNM()->mkNode( FORALL, children );
-        ret = ret.negate();
-        status = REWRITE_AGAIN_FULL;
-      }else{
-        bool isNested = in.hasAttribute(NestedQuantAttribute());
-        for( int op=0; op<COMPUTE_LAST; op++ ){
-          if( doOperation( in, isNested, op ) ){
-            ret = computeOperation( in, op );
-            if( ret!=in ){
-              status = REWRITE_AGAIN_FULL;
-              break;
-            }
+      ret = NodeManager::currentNM()->mkNode( FORALL, children );
+      ret = ret.negate();
+      status = REWRITE_AGAIN_FULL;
+    }else{
+      bool isNested = in.hasAttribute(NestedQuantAttribute());
+      for( int op=0; op<COMPUTE_LAST; op++ ){
+        if( doOperation( in, isNested, op ) ){
+          ret = computeOperation( in, op );
+          if( ret!=in ){
+            status = REWRITE_AGAIN_FULL;
+            break;
           }
         }
       }
-      //print if changed
-      if( in!=ret ){
-        setAttributes( in, ret );
-        Trace("quantifiers-rewrite") << "*** rewrite " << in << std::endl;
-        Trace("quantifiers-rewrite") << " to " << std::endl;
-        Trace("quantifiers-rewrite") << ret << std::endl;
-        Trace("quantifiers-rewrite-debug") << "Attributes : " << ret.hasAttribute(NestedQuantAttribute());
-        Trace("quantifiers-rewrite-debug") << " " << ret.hasAttribute(QRewriteRuleAttribute()) << std::endl;
-
-
-      }
-      return RewriteResponse( status, ret );
     }
+    //print if changed
+    if( in!=ret ){
+      setAttributes( in, ret );
+      Trace("quantifiers-rewrite") << "*** rewrite " << in << std::endl;
+      Trace("quantifiers-rewrite") << " to " << std::endl;
+      Trace("quantifiers-rewrite") << ret << std::endl;
+      Trace("quantifiers-rewrite-debug") << "Attributes : " << ret.hasAttribute(NestedQuantAttribute());
+      Trace("quantifiers-rewrite-debug") << " " << ret.hasAttribute(QRewriteRuleAttribute()) << std::endl;
+
+
+    }
+    return RewriteResponse( status, ret );
   }
   return RewriteResponse(REWRITE_DONE, in);
 }
