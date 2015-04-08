@@ -18,8 +18,6 @@
 #include "theory/quantifiers/quant_conflict_find.h"
 #include "theory/quantifiers/quant_util.h"
 #include "theory/theory_engine.h"
-#include "theory/quantifiers/term_database.h"
-#include "theory/quantifiers/options.h"
 
 using namespace CVC4;
 using namespace CVC4::kind;

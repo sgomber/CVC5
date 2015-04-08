@@ -16,7 +16,6 @@
 #include "theory/quantifiers/model_engine.h"
 #include "theory/quantifiers/model_builder.h"
 #include "theory/quantifiers/first_order_model.h"
-#include "theory/quantifiers/term_database.h"
 
 //#define CHILD_USE_CONSIDER
 

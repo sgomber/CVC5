@@ -1,6 +1,6 @@
 ;; A new fast tableau-base ... Domenico Cantone et Calogero G.Zarba
 (set-logic AUFLIA)
-(set-info :status unsat)
+(set-info :status sat)
 
 (declare-sort elt1 0)
 (declare-sort elt2 0)

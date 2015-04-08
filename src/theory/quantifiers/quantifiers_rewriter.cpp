@@ -14,7 +14,6 @@
 
 #include "theory/quantifiers/quantifiers_rewriter.h"
 #include "theory/quantifiers/options.h"
-#include "theory/quantifiers/term_database.h"
 
 using namespace std;
 using namespace CVC4;
@@ -136,105 +135,10 @@ void QuantifiersRewriter::setNestedQuantifiers2( Node n, Node q, std::vector< No
   }
 }
 
-Node QuantifiersRewriter::rewriteRewriteRule( Node r ) {
-  Kind rrkind = r[2].getKind();
-
-  //guards, pattern, body
-
-  //   Replace variables by Inst_* variable and tag the terms that contain them
-  std::vector<Node> vars;
-  vars.reserve(r[0].getNumChildren());
-  for( Node::const_iterator v = r[0].begin(); v != r[0].end(); ++v ){
-    vars.push_back(*v);
-  };
-
-  // Body/Remove_term/Guards/Triggers
-  Node body = r[2][1];
-  TNode new_terms = r[2][1];
-  std::vector<Node> guards;
-  std::vector<Node> pattern;
-  Node true_node = NodeManager::currentNM()->mkConst(true);
-  // shortcut
-  TNode head = r[2][0];
-  switch(rrkind){
-  case kind::RR_REWRITE:
-    // Equality
-    pattern.push_back( head );
-    if( head.getType().isBoolean() ){
-      body = head.iffNode(body);
-    }else{
-      body = head.eqNode(body);
-    }
-    break;
-  case kind::RR_REDUCTION:
-  case kind::RR_DEDUCTION:
-    // Add head to guards and pattern
-    switch(head.getKind()){
-    case kind::AND:
-      for( unsigned i = 0; i<head.getNumChildren(); i++ ){
-        guards.push_back(head[i]);
-        pattern.push_back(head[i]);
-      }
-      break;
-    default:
-      if( head!=true_node ){
-        guards.push_back(head);
-        pattern.push_back( head );
-      }
-      break;
-    }
-    break;
-  default:
-    Unreachable("RewriteRules can be of only three kinds");
-    break;
-  }
-  // Add the other guards
-  TNode g = r[1];
-  switch(g.getKind()){
-  case kind::AND:
-    for( unsigned i = 0; i<g.getNumChildren(); i++ ){
-      guards.push_back(g[i]);
-    }
-    break;
-  default:
-    if( g != true_node ){
-      guards.push_back( g );
-    }
-    break;
-  }
-  // Add the other triggers
-  if( r[2].getNumChildren() >= 3 ){
-    for( unsigned i=0; i<r[2][2][0].getNumChildren(); i++ ) {
-      pattern.push_back( r[2][2][0][i] );
-    }
-  }
-
-  NodeBuilder<> forallB(kind::FORALL);
-  forallB << r[0];
-  Node gg = guards.size()==0 ? true_node : ( guards.size()==1 ? guards[0] : NodeManager::currentNM()->mkNode( AND, guards ) );
-  forallB << gg.impNode(body);
-  NodeBuilder<> patternB(kind::INST_PATTERN);
-  patternB.append(pattern);
-  NodeBuilder<> patternListB(kind::INST_PATTERN_LIST);
-  patternListB << static_cast<Node>(patternB);
-  forallB << static_cast<Node>(patternListB);
-  Node rn = (Node) forallB;
-
-  return rn;
-}
-
 
 RewriteResponse QuantifiersRewriter::preRewrite(TNode in) {
   Trace("quantifiers-rewrite-debug") << "pre-rewriting " << in << " " << in.hasAttribute(NestedQuantAttribute()) << std::endl;
-  if( in.getKind()==kind::REWRITE_RULE ){
-    Node n = rewriteRewriteRule( in );
-    //QRewriteRuleAttribute qra;
-    //n.setAttribute(qra,in);
-    Trace("quantifiers-rewrite") << "Rewrite " << in << std::endl;
-    Trace("quantifiers-rewrite") << " to " << std::endl;
-    Trace("quantifiers-rewrite") << n << std::endl;
-    return RewriteResponse(REWRITE_DONE, n);
-  }else if( in.getKind()==kind::EXISTS || in.getKind()==kind::FORALL ){
+  if( in.getKind()==kind::EXISTS || in.getKind()==kind::FORALL ){
     if( !in.hasAttribute(NestedQuantAttribute()) ){
       setNestedQuantifiers( in[ 1 ], in );
     }

@@ -66,8 +66,6 @@
 #include "theory/theory_model.h"
 
 #include "theory/arith/options.h"
-#include "theory/quantifiers/options.h"
-
 
 #include "theory/quantifiers/bounded_integers.h"
 
@@ -1310,7 +1308,7 @@ void TheoryArithPrivate::preRegisterTerm(TNode n) {
       }
       Constraint c = d_constraintDatabase.lookup(n);
       Assert(c != NullConstraint);
-
+  
       Debug("arith::preregister") << "setup constraint" << c << endl;
       Assert(!c->canBePropagated());
       c->setPreregistered();

@@ -47,6 +47,19 @@ bool TermArgTrie::addTerm2( QuantifiersEngine* qe, Node n, int argIndex ){
   }
 }
 
+void TermDb::addTermEfficient( Node n, std::set< Node >& added){
+  static AvailableInTermDb aitdi;
+  if (inst::Trigger::isAtomicTrigger( n ) && !n.getAttribute(aitdi)){
+    //Already processed but new in this branch
+    n.setAttribute(aitdi,true);
+    added.insert( n );
+    for( size_t i=0; i< n.getNumChildren(); i++ ){
+      addTermEfficient(n[i],added);
+    }
+  }
+
+}
+
 
 Node TermDb::getOperator( Node n ) {
   //return n.getOperator();
@@ -84,6 +97,7 @@ void TermDb::addTerm( Node n, std::set< Node >& added, bool withinQuant ){
     ++(d_quantEngine->d_statistics.d_term_in_termdb);
     d_processed.insert(n);
     d_type_map[ n.getType() ].push_back( n );
+    n.setAttribute(AvailableInTermDb(),true);
     //if this is an atomic trigger, consider adding it
     //Call the children?
     if( inst::Trigger::isAtomicTrigger( n ) ){
@@ -96,6 +110,22 @@ void TermDb::addTerm( Node n, std::set< Node >& added, bool withinQuant ){
 
         for( size_t i=0; i<n.getNumChildren(); i++ ){
           addTerm( n[i], added, withinQuant );
+          if( options::efficientEMatching() ){
+            EfficientEMatcher* eem = d_quantEngine->getEfficientEMatcher();
+            if( d_parents[n[i]][op].empty() ){
+              //must add parent to equivalence class info
+              Node nir = d_quantEngine->getEqualityQuery()->getRepresentative( n[i] );
+              EqClassInfo* eci_nir = eem->getEquivalenceClassInfo( nir );
+              if( eci_nir ){
+                eci_nir->d_pfuns[ op ] = true;
+              }
+            }
+            //add to parent structure
+            if( std::find( d_parents[n[i]][op][i].begin(), d_parents[n[i]][op][i].end(), n )==d_parents[n[i]][op][i].end() ){
+              d_parents[n[i]][op][i].push_back( n );
+              Assert(!getParents(n[i],op,i).empty());
+            }
+          }
           if( options::eagerInstQuant() ){
             if( !n.hasAttribute(InstLevelAttribute()) && n.getAttribute(InstLevelAttribute())==0 ){
               int addedLemmas = 0;
@@ -112,6 +142,13 @@ void TermDb::addTerm( Node n, std::set< Node >& added, bool withinQuant ){
       for( int i=0; i<(int)n.getNumChildren(); i++ ){
         addTerm( n[i], added, withinQuant );
       }
+    }
+  }else{
+    if( options::efficientEMatching() && !TermDb::hasInstConstAttr(n)){
+      //Efficient e-matching must be notified
+      //The term in triggers are not important here
+      Debug("term-db") << "New in this branch term " << n << std::endl;
+      addTermEfficient(n,added);
     }
   }
 }

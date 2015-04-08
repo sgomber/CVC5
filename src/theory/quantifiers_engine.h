@@ -20,8 +20,8 @@
 #include "theory/theory.h"
 #include "util/hash.h"
 #include "theory/quantifiers/inst_match.h"
+#include "theory/rewriterules/rr_inst_match.h"
 #include "theory/quantifiers/quant_util.h"
-#include "expr/attribute.h"
 
 #include "util/statistics_registry.h"
 
@@ -75,11 +75,11 @@ namespace inst {
   class TriggerTrie;
 }/* CVC4::theory::inst */
 
-//namespace rrinst {
-  //class TriggerTrie;
-//}/* CVC4::theory::inst */
+namespace rrinst {
+  class TriggerTrie;
+}/* CVC4::theory::inst */
 
-//class EfficientEMatcher;
+class EfficientEMatcher;
 class EqualityQueryQuantifiersEngine;
 
 class QuantifiersEngine {
@@ -102,7 +102,7 @@ private:
   /** phase requirements for each quantifier for each instantiation literal */
   std::map< Node, QuantPhaseReq* > d_phase_reqs;
   /** efficient e-matcher */
-  //EfficientEMatcher* d_eem;
+  EfficientEMatcher* d_eem;
   /** instantiation engine */
   quantifiers::InstantiationEngine* d_inst_engine;
   /** model engine */
@@ -131,7 +131,7 @@ private:
   /** all triggers will be stored in this trie */
   inst::TriggerTrie* d_tr_trie;
   /** all triggers for rewrite rules will be stored in this trie */
-  //rrinst::TriggerTrie* d_rr_tr_trie;
+  rrinst::TriggerTrie* d_rr_tr_trie;
   /** extended model object */
   quantifiers::FirstOrderModel* d_model;
   /** statistics for debugging */
@@ -171,7 +171,7 @@ public:
   /** get phase requirement terms */
   void getPhaseReqTerms( Node f, std::vector< Node >& nodes );
   /** get efficient e-matching utility */
-  //EfficientEMatcher* getEfficientEMatcher() { return d_eem; }
+  EfficientEMatcher* getEfficientEMatcher() { return d_eem; }
   /** get bounded integers utility */
   quantifiers::BoundedIntegers * getBoundedIntegers() { return d_bint; }
   /** Conflict find mechanism for quantifiers */
@@ -238,7 +238,7 @@ public:
   /** get trigger database */
   inst::TriggerTrie* getTriggerDatabase() { return d_tr_trie; }
   /** get rewrite trigger database */
-  //rrinst::TriggerTrie* getRRTriggerDatabase() { return d_rr_tr_trie; }
+  rrinst::TriggerTrie* getRRTriggerDatabase() { return d_rr_tr_trie; }
   /** add term to database */
   void addTermToDatabase( Node n, bool withinQuant = false );
   /** get the master equality engine */

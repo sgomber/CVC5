@@ -50,7 +50,7 @@
 
 #include "theory/uf/equality_engine.h"
 
-//#include "theory/rewriterules/efficient_e_matching.h"
+#include "theory/rewriterules/efficient_e_matching.h"
 
 #include "proof/proof_manager.h"
 
@@ -93,7 +93,7 @@ void TheoryEngine::eqNotifyNewClass(TNode t){
 void TheoryEngine::eqNotifyPreMerge(TNode t1, TNode t2){
   //TODO: add notification to efficient E-matching
   if( d_logicInfo.isQuantified() ){
-    //d_quantEngine->getEfficientEMatcher()->merge( t1, t2 );
+    d_quantEngine->getEfficientEMatcher()->merge( t1, t2 );
     if( options::quantConflictFind() ){
       d_quantEngine->getConflictFind()->merge( t1, t2 );
     }

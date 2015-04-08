@@ -78,8 +78,6 @@ private:
   static bool doMiniscopingNoFreeVar();
   static bool doMiniscopingAnd();
   static bool doOperation( Node f, bool isNested, int computeOption );
-private:
-  static Node rewriteRewriteRule( Node r );
 public:
   //static Node rewriteQuants( Node n, bool isNested = false );
   //static Node rewriteQuant( Node n, bool isNested = false );
