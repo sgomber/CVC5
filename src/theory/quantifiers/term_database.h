@@ -57,8 +57,8 @@ struct HasBoundVarComputedAttributeId {};
 typedef expr::Attribute<HasBoundVarComputedAttributeId, bool> HasBoundVarComputedAttribute;
 
 //for rewrite rules
-//struct QRewriteRuleAttributeId {};
-//typedef expr::Attribute<QRewriteRuleAttributeId, Node> QRewriteRuleAttribute;
+struct QRewriteRuleAttributeId {};
+typedef expr::Attribute<QRewriteRuleAttributeId, Node> QRewriteRuleAttribute;
 
 //for bounded integers
 struct BoundIntLitAttributeId {};
@@ -247,11 +247,6 @@ public:
   int isInstanceOf( Node n1, Node n2 );
   /** filter all nodes that have instances */
   void filterInstances( std::vector< Node >& nodes );
-public:
-  /** is quantifier treated as a rewrite rule? */
-  static bool isRewriteRule( Node q );
-  /** get the rewrite rule associated with the quanfied formula */
-  static Node getRewriteRule( Node q );
 };/* class TermDb */
 
 }/* CVC4::theory::quantifiers namespace */

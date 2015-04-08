@@ -80,10 +80,8 @@ private:
   static bool doMiniscopingNoFreeVar();
   static bool doMiniscopingAnd();
   static bool doOperation( Node f, bool isNested, int computeOption );
-public:
+private:
   static Node rewriteRewriteRule( Node r );
-  static bool containsQuantifiers(Node n);
-  static Node preSkolemizeQuantifiers(Node n, bool polarity, std::vector<Node>& fvs);
 public:
   //static Node rewriteQuants( Node n, bool isNested = false );
   //static Node rewriteQuant( Node n, bool isNested = false );

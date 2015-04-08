@@ -631,15 +631,3 @@ void TermDb::registerTrigger( theory::inst::Trigger* tr, Node op ){
     d_op_triggers[op].push_back( tr );
   }
 }
-
-bool TermDb::isRewriteRule( Node q ) {
-  return !getRewriteRule( q ).isNull();
-}
-
-Node TermDb::getRewriteRule( Node q ) {
-  if( q.getKind()==FORALL && q.getNumChildren()==3 && q[2].getNumChildren()>0 && q[2][0][0].getKind()==REWRITE_RULE ){
-    return q[2][0][0];
-  }else{
-    return Node::null();
-  }
-}

@@ -215,8 +215,8 @@ void QuantifiersEngine::check( Theory::Effort e ){
 
 void QuantifiersEngine::registerQuantifier( Node f ){
   if( std::find( d_quants.begin(), d_quants.end(), f )==d_quants.end() ){
-    Trace("quant") << "QuantifiersEngine : Register quantifier ";
-    if( d_term_db->isRewriteRule( f ) ){
+    Trace("quant") << "Register quantifier";
+    if( f.hasAttribute(QRewriteRuleAttribute()) ){
       Trace("quant") << " (rewrite rule)";
     }
     Trace("quant") << " : " << f << std::endl;

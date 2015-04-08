@@ -42,7 +42,7 @@ RewriteEngine::RewriteEngine( context::Context* c, QuantifiersEngine* qe ) : Qua
 }
 
 double RewriteEngine::getPriority( Node f ) {
-  Node rr = TermDb::getRewriteRule( f );
+  Node rr = f.getAttribute(QRewriteRuleAttribute());
   Node rrr = rr[2];
   Trace("rr-priority") << "Get priority : " << rrr << " " << rrr.getKind() << std::endl;
   bool deterministic = rrr[1].getKind()!=OR;
@@ -179,11 +179,11 @@ int RewriteEngine::checkRewriteRule( Node f, Theory::Effort e ) {
   }else if( e==Theory::EFFORT_LAST_CALL ){
     Trace("rewrite-engine-inst") << "Check " << f << ", priority = " << getPriority( f ) << ", effort = " << e << "..." << std::endl;
     //reset triggers
-    Node rr = TermDb::getRewriteRule( f );
+    Node rr = f.getAttribute(QRewriteRuleAttribute());
     if( d_rr_triggers.find(f)==d_rr_triggers.end() ){
       std::vector< inst::Trigger * > triggers;
       if( f.getNumChildren()==3 ){
-        for(unsigned i=1; i<f[2].getNumChildren(); i++ ){
+        for(unsigned i=0; i<f[2].getNumChildren(); i++ ){
           Node pat = f[2][i];
           std::vector< Node > nodes;
           Trace("rewrite-engine-trigger") << "Trigger is : ";
@@ -215,7 +215,7 @@ int RewriteEngine::checkRewriteRule( Node f, Theory::Effort e ) {
         success = d_rr_triggers[f][i]->getNextMatch( f, m );
         if( success ){
           //see if instantiation is true in the model
-          Node rr = TermDb::getRewriteRule( f );
+          Node rr = f.getAttribute(QRewriteRuleAttribute());
           Node rrg = rr[1];
           std::vector< Node > vars;
           std::vector< Node > terms;
@@ -251,9 +251,9 @@ int RewriteEngine::checkRewriteRule( Node f, Theory::Effort e ) {
 }
 
 void RewriteEngine::registerQuantifier( Node f ) {
-  Node rr = TermDb::getRewriteRule( f );
-  if( !rr.isNull() ){
+  if( f.hasAttribute(QRewriteRuleAttribute()) ){
     Trace("rr-register") << "Register quantifier " << f << std::endl;
+    Node rr = f.getAttribute(QRewriteRuleAttribute());
     Trace("rr-register") << "  rewrite rule is : " << rr << std::endl;
     d_rr_quant.push_back( f );
     d_rr[f] = rr;
@@ -278,7 +278,7 @@ void RewriteEngine::registerQuantifier( Node f ) {
         //Trace("rr-register-debug") << "  head eq is " << head_eq << std::endl;
       //}
       //add patterns
-      for( unsigned i=1; i<f[2].getNumChildren(); i++ ){
+      for( unsigned i=0; i<f[2].getNumChildren(); i++ ){
         std::vector< Node > nc;
         for( unsigned j=0; j<f[2][i].getNumChildren(); j++ ){
           Node nn;

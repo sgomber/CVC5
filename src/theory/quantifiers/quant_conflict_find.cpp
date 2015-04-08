@@ -1559,7 +1559,7 @@ Node QuantConflictFind::mkEqNode( Node a, Node b ) {
 //-------------------------------------------------- registration
 
 void QuantConflictFind::registerQuantifier( Node q ) {
-  if( !TermDb::isRewriteRule( q ) ){
+  if( !q.hasAttribute(QRewriteRuleAttribute()) ){
     d_quants.push_back( q );
     d_quant_id[q] = d_quants.size();
     Trace("qcf-qregister") << "Register ";
@@ -1698,7 +1698,7 @@ bool QuantConflictFind::areMatchDisequal( TNode n1, TNode n2 ) {
 //-------------------------------------------------- handling assertions / eqc
 
 void QuantConflictFind::assertNode( Node q ) {
-  if( !TermDb::isRewriteRule( q ) ){
+  if( !q.hasAttribute(QRewriteRuleAttribute()) ){
     Trace("qcf-proc") << "QCF : assertQuantifier : ";
     debugPrintQuant("qcf-proc", q);
     Trace("qcf-proc") << std::endl;
