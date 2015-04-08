@@ -129,6 +129,10 @@ EqualityQueryQuantifiersEngine* QuantifiersEngine::getEqualityQuery() {
   return d_eq_query;
 }
 
+//Instantiator* QuantifiersEngine::getInstantiator( theory::TheoryId id ){
+//  return d_te->theoryOf( id )->getInstantiator();
+//}
+
 context::Context* QuantifiersEngine::getSatContext(){
   return d_te->theoryOf( THEORY_QUANTIFIERS )->getSatContext();
 }
@@ -172,9 +176,6 @@ void QuantifiersEngine::check( Theory::Effort e ){
     if( d_rel_dom ){
       d_rel_dom->reset();
     }
-    for( int i=0; i<(int)d_modules.size(); i++ ){
-      d_modules[i]->reset_round( e );
-    }
     if( e==Theory::EFFORT_LAST_CALL ){
       //if effort is last call, try to minimize model first
       if( options::finiteModelFind() ){
@@ -215,11 +216,7 @@ void QuantifiersEngine::check( Theory::Effort e ){
 
 void QuantifiersEngine::registerQuantifier( Node f ){
   if( std::find( d_quants.begin(), d_quants.end(), f )==d_quants.end() ){
-    Trace("quant") << "Register quantifier";
-    if( f.hasAttribute(QRewriteRuleAttribute()) ){
-      Trace("quant") << " (rewrite rule)";
-    }
-    Trace("quant") << " : " << f << std::endl;
+    Trace("quant") << "Register quantifier : " << f << std::endl;
     d_quants.push_back( f );
 
     ++(d_statistics.d_num_quant);
@@ -607,7 +604,15 @@ QuantifiersEngine::Statistics::Statistics():
   d_triggers("QuantifiersEngine::Triggers", 0),
   d_simple_triggers("QuantifiersEngine::Triggers_Simple", 0),
   d_multi_triggers("QuantifiersEngine::Triggers_Multi", 0),
-  d_multi_trigger_instantiations("QuantifiersEngine::Multi_Trigger_Instantiations", 0)
+  d_multi_trigger_instantiations("QuantifiersEngine::Multi_Trigger_Instantiations", 0),
+  d_term_in_termdb("QuantifiersEngine::Term_in_TermDb", 0),
+  d_num_mono_candidates("QuantifiersEngine::NumMonoCandidates", 0),
+  d_num_mono_candidates_new_term("QuantifiersEngine::NumMonoCandidatesNewTerm", 0),
+  d_num_multi_candidates("QuantifiersEngine::NumMultiCandidates", 0),
+  d_mono_candidates_cache_hit("QuantifiersEngine::MonoCandidatesCacheHit", 0),
+  d_mono_candidates_cache_miss("QuantifiersEngine::MonoCandidatesCacheMiss", 0),
+  d_multi_candidates_cache_hit("QuantifiersEngine::MultiCandidatesCacheHit", 0),
+  d_multi_candidates_cache_miss("QuantifiersEngine::MultiCandidatesCacheMiss", 0)
 {
   StatisticsRegistry::registerStat(&d_num_quant);
   StatisticsRegistry::registerStat(&d_instantiation_rounds);
@@ -621,6 +626,14 @@ QuantifiersEngine::Statistics::Statistics():
   StatisticsRegistry::registerStat(&d_simple_triggers);
   StatisticsRegistry::registerStat(&d_multi_triggers);
   StatisticsRegistry::registerStat(&d_multi_trigger_instantiations);
+  StatisticsRegistry::registerStat(&d_term_in_termdb);
+  StatisticsRegistry::registerStat(&d_num_mono_candidates);
+  StatisticsRegistry::registerStat(&d_num_mono_candidates_new_term);
+  StatisticsRegistry::registerStat(&d_num_multi_candidates);
+  StatisticsRegistry::registerStat(&d_mono_candidates_cache_hit);
+  StatisticsRegistry::registerStat(&d_mono_candidates_cache_miss);
+  StatisticsRegistry::registerStat(&d_multi_candidates_cache_hit);
+  StatisticsRegistry::registerStat(&d_multi_candidates_cache_miss);
 }
 
 QuantifiersEngine::Statistics::~Statistics(){
@@ -636,6 +649,14 @@ QuantifiersEngine::Statistics::~Statistics(){
   StatisticsRegistry::unregisterStat(&d_simple_triggers);
   StatisticsRegistry::unregisterStat(&d_multi_triggers);
   StatisticsRegistry::unregisterStat(&d_multi_trigger_instantiations);
+  StatisticsRegistry::unregisterStat(&d_term_in_termdb);
+  StatisticsRegistry::unregisterStat(&d_num_mono_candidates);
+  StatisticsRegistry::unregisterStat(&d_num_mono_candidates_new_term);
+  StatisticsRegistry::unregisterStat(&d_num_multi_candidates);
+  StatisticsRegistry::unregisterStat(&d_mono_candidates_cache_hit);
+  StatisticsRegistry::unregisterStat(&d_mono_candidates_cache_miss);
+  StatisticsRegistry::unregisterStat(&d_multi_candidates_cache_hit);
+  StatisticsRegistry::unregisterStat(&d_multi_candidates_cache_miss);
 }
 
 eq::EqualityEngine* QuantifiersEngine::getMasterEqualityEngine(){

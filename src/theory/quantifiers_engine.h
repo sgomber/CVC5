@@ -49,8 +49,6 @@ public:
   virtual void finishInit() {}
   /* whether this module needs to check this round */
   virtual bool needsCheck( Theory::Effort e ) { return e>=Theory::EFFORT_LAST_CALL; }
-  /* reset at a round */
-  virtual void reset_round( Theory::Effort e ){}
   /* Call during quantifier engine's check */
   virtual void check( Theory::Effort e ) = 0;
   /* Called for new quantifiers */
@@ -77,6 +75,10 @@ namespace inst {
   class TriggerTrie;
 }/* CVC4::theory::inst */
 
+//namespace rrinst {
+  //class TriggerTrie;
+//}/* CVC4::theory::inst */
+
 //class EfficientEMatcher;
 class EqualityQueryQuantifiersEngine;
 
@@ -99,6 +101,8 @@ private:
   quantifiers::RelevantDomain* d_rel_dom;
   /** phase requirements for each quantifier for each instantiation literal */
   std::map< Node, QuantPhaseReq* > d_phase_reqs;
+  /** efficient e-matcher */
+  //EfficientEMatcher* d_eem;
   /** instantiation engine */
   quantifiers::InstantiationEngine* d_inst_engine;
   /** model engine */
@@ -126,6 +130,8 @@ private:
   quantifiers::TermDb* d_term_db;
   /** all triggers will be stored in this trie */
   inst::TriggerTrie* d_tr_trie;
+  /** all triggers for rewrite rules will be stored in this trie */
+  //rrinst::TriggerTrie* d_rr_tr_trie;
   /** extended model object */
   quantifiers::FirstOrderModel* d_model;
   /** statistics for debugging */
@@ -137,6 +143,8 @@ private:
 public:
   QuantifiersEngine(context::Context* c, context::UserContext* u, TheoryEngine* te);
   ~QuantifiersEngine();
+  /** get instantiator for id */
+  //Instantiator* getInstantiator( theory::TheoryId id );
   /** get theory engine */
   TheoryEngine* getTheoryEngine() { return d_te; }
   /** get equality query object for the given type. The default is the
@@ -162,6 +170,8 @@ public:
   QuantPhaseReq* getPhaseRequirements( Node f ) { return d_phase_reqs.find( f )==d_phase_reqs.end() ? NULL : d_phase_reqs[f]; }
   /** get phase requirement terms */
   void getPhaseReqTerms( Node f, std::vector< Node >& nodes );
+  /** get efficient e-matching utility */
+  //EfficientEMatcher* getEfficientEMatcher() { return d_eem; }
   /** get bounded integers utility */
   quantifiers::BoundedIntegers * getBoundedIntegers() { return d_bint; }
   /** Conflict find mechanism for quantifiers */
@@ -227,6 +237,8 @@ public:
   quantifiers::TermDb* getTermDatabase() { return d_term_db; }
   /** get trigger database */
   inst::TriggerTrie* getTriggerDatabase() { return d_tr_trie; }
+  /** get rewrite trigger database */
+  //rrinst::TriggerTrie* getRRTriggerDatabase() { return d_rr_tr_trie; }
   /** add term to database */
   void addTermToDatabase( Node n, bool withinQuant = false );
   /** get the master equality engine */
@@ -247,6 +259,14 @@ public:
     IntStat d_simple_triggers;
     IntStat d_multi_triggers;
     IntStat d_multi_trigger_instantiations;
+    IntStat d_term_in_termdb;
+    IntStat d_num_mono_candidates;
+    IntStat d_num_mono_candidates_new_term;
+    IntStat d_num_multi_candidates;
+    IntStat d_mono_candidates_cache_hit;
+    IntStat d_mono_candidates_cache_miss;
+    IntStat d_multi_candidates_cache_hit;
+    IntStat d_multi_candidates_cache_miss;
     Statistics();
     ~Statistics();
   };/* class QuantifiersEngine::Statistics */

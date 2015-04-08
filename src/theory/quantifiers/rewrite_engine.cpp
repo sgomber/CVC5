@@ -38,7 +38,7 @@ struct PrioritySort {
 
 
 RewriteEngine::RewriteEngine( context::Context* c, QuantifiersEngine* qe ) : QuantifiersModule(qe) {
-  d_true = NodeManager::currentNM()->mkConst( true );
+
 }
 
 double RewriteEngine::getPriority( Node f ) {
@@ -58,26 +58,23 @@ double RewriteEngine::getPriority( Node f ) {
 }
 
 void RewriteEngine::check( Theory::Effort e ) {
-  if( e>=Theory::EFFORT_FULL ){
-    Trace("rewrite-engine") << "---Rewrite Engine Round, effort = " << e << "---" << std::endl;
-    if( e==Theory::EFFORT_LAST_CALL ){
-      if( !d_quantEngine->getModel()->isModelSet() ){
-        d_quantEngine->getTheoryEngine()->getModelBuilder()->buildModel( d_quantEngine->getModel(), true );
-      }
+  if( e==Theory::EFFORT_LAST_CALL ){
+    if( !d_quantEngine->getModel()->isModelSet() ){
+      d_quantEngine->getTheoryEngine()->getModelBuilder()->buildModel( d_quantEngine->getModel(), true );
     }
-    if( d_needsSort ){
-      d_priority_order.clear();
-      PrioritySort ps;
-      std::vector< int > indicies;
-      for( int i=0; i<(int)d_rr_quant.size(); i++ ){
-        ps.d_priority.push_back( getPriority( d_rr_quant[i] ) );
-        indicies.push_back( i );
-      }
-      std::sort( indicies.begin(), indicies.end(), ps );
-      for( unsigned i=0; i<indicies.size(); i++ ){
-        d_priority_order.push_back( d_rr_quant[indicies[i]] );
-      }
-      d_needsSort = false;
+    if( d_true.isNull() ){
+      d_true = NodeManager::currentNM()->mkConst( true );
+    }
+    std::vector< Node > priority_order;
+    PrioritySort ps;
+    std::vector< int > indicies;
+    for( int i=0; i<(int)d_rr_quant.size(); i++ ){
+      ps.d_priority.push_back( getPriority( d_rr_quant[i] ) );
+      indicies.push_back( i );
+    }
+    std::sort( indicies.begin(), indicies.end(), ps );
+    for( unsigned i=0; i<indicies.size(); i++ ){
+      priority_order.push_back( d_rr_quant[indicies[i]] );
     }
 
     //apply rewrite rules
@@ -85,17 +82,16 @@ void RewriteEngine::check( Theory::Effort e ) {
     //per priority level
     int index = 0;
     bool success = true;
-    while( success && index<(int)d_priority_order.size() ) {
-      addedLemmas += checkRewriteRule( d_priority_order[index], e );
+    while( success && index<(int)priority_order.size() ) {
+      addedLemmas += checkRewriteRule( priority_order[index] );
       index++;
-      if( index<(int)d_priority_order.size() ){
-        success = addedLemmas==0 || getPriority( d_priority_order[index] )==getPriority( d_priority_order[index-1] );
+      if( index<(int)priority_order.size() ){
+        success = addedLemmas==0 || getPriority( priority_order[index] )==getPriority( priority_order[index-1] );
       }
     }
 
-    Trace("rewrite-engine") << "Finished rewrite engine, added " << addedLemmas << " lemmas." << std::endl;
+    Trace("inst-engine") << "Rewrite engine added " << addedLemmas << " lemmas." << std::endl;
     if (addedLemmas==0) {
-
     }else{
       //otherwise, the search will continue
       d_quantEngine->flushLemmas( &d_quantEngine->getOutputChannel() );
@@ -103,173 +99,85 @@ void RewriteEngine::check( Theory::Effort e ) {
   }
 }
 
-int RewriteEngine::checkRewriteRule( Node f, Theory::Effort e ) {
-  Trace("rewrite-engine-inst") << "Check " << f << ", priority = " << getPriority( f ) << ", effort = " << e << "..." << std::endl;
-  Trace("rewrite-engine-inst") << "Rule is " << d_rr[f] << "..." << std::endl;
+int RewriteEngine::checkRewriteRule( Node f ) {
+  Trace("rewrite-engine-inst") << "Check " << f << ", priority = " << getPriority( f ) << "..." << std::endl;
   int addedLemmas = 0;
-  if( e==Theory::EFFORT_FULL ){
-    QuantConflictFind * qcf = d_quantEngine->getConflictFind();
-    if( qcf ){
-      qcf->setEffort( QuantConflictFind::effort_conflict );
-      std::map< Node, QuantInfo >::iterator it = d_qinfo.find( f );
-      if( it!=d_qinfo.end() ){
-        QuantInfo * qi = &it->second;
-        if( qi->d_mg->isValid() ){
-          Trace("rewrite-engine-inst-debug") << "   Reset round..." << std::endl;
-          qi->reset_round( qcf );
-          Trace("rewrite-engine-inst-debug") << "   Get matches..." << std::endl;
-          while( qi->d_mg->getNextMatch( qcf, qi ) ){
-            Trace("rewrite-engine-inst-debug") << "   Complete the match..." << std::endl;
-            std::vector< int > assigned;
-            if( qi->completeMatch( qcf, assigned ) ){
-              Trace("rewrite-engine-inst-debug") << "   Construct match..." << std::endl;
-              std::vector< Node > inst;
-              qi->getMatch( inst );
-              Trace("rewrite-engine-inst-debug") << "   Add instantiation..." << std::endl;
-              if( d_quantEngine->addInstantiation( f, inst ) ){
-                addedLemmas++;
-              }else{
-                Trace("rewrite-engine-inst-debug") << "   - failed." << std::endl;
-              }
-              qi->revertMatch( assigned );
-            }else{
-              Trace("rewrite-engine-inst-debug") << "   - failed." << std::endl;
-            }
-          }
-        }else{
-          Trace("rewrite-engine-inst-debug") << "...Invalid qinfo." << std::endl;
+  //reset triggers
+  Node rr = f.getAttribute(QRewriteRuleAttribute());
+  if( d_rr_triggers.find(f)==d_rr_triggers.end() ){
+    std::vector< inst::Trigger * > triggers;
+    if( f.getNumChildren()==3 ){
+      for(unsigned i=0; i<f[2].getNumChildren(); i++ ){
+        Node pat = f[2][i];
+        std::vector< Node > nodes;
+        Trace("rewrite-engine-trigger") << "Trigger is : ";
+        for( int j=0; j<(int)pat.getNumChildren(); j++ ){
+          Node p = d_quantEngine->getTermDatabase()->getInstConstantNode( pat[j], f );
+          nodes.push_back( p );
+          Trace("rewrite-engine-trigger") << p << " " << p.getKind() << " ";
         }
-      }else{
-        Trace("rewrite-engine-inst-debug") << "...No qinfo." << std::endl;
+        Trace("rewrite-engine-trigger") << std::endl;
+        Assert( inst::Trigger::isUsableTrigger( nodes, f ) );
+        inst::Trigger * tr = inst::Trigger::mkTrigger( d_quantEngine, f, nodes, 0, true, inst::Trigger::TR_MAKE_NEW, false );
+        tr->getGenerator()->setActiveAdd(false);
+        triggers.push_back( tr );
       }
     }
-  }else if( e==Theory::EFFORT_LAST_CALL ){
-    //reset triggers
-    Node rr = f.getAttribute(QRewriteRuleAttribute());
-    if( d_rr_triggers.find(f)==d_rr_triggers.end() ){
-      std::vector< inst::Trigger * > triggers;
-      if( f.getNumChildren()==3 ){
-        for(unsigned i=0; i<f[2].getNumChildren(); i++ ){
-          Node pat = f[2][i];
-          std::vector< Node > nodes;
-          Trace("rewrite-engine-trigger") << "Trigger is : ";
-          for( int j=0; j<(int)pat.getNumChildren(); j++ ){
-            Node p = d_quantEngine->getTermDatabase()->getInstConstantNode( pat[j], f );
-            if( p.getKind()==NOT ){
-              p = p[0];
-            }
-            nodes.push_back( p );
-            Trace("rewrite-engine-trigger") << p << " " << p.getKind() << " ";
-          }
-          Trace("rewrite-engine-trigger") << std::endl;
-          Assert( inst::Trigger::isUsableTrigger( nodes, f ) );
-          inst::Trigger * tr = inst::Trigger::mkTrigger( d_quantEngine, f, nodes, 0, true, inst::Trigger::TR_MAKE_NEW, false );
-          tr->getGenerator()->setActiveAdd(false);
-          triggers.push_back( tr );
-        }
-      }
-      d_rr_triggers[f].insert( d_rr_triggers[f].end(), triggers.begin(), triggers.end() );
-    }
-    for( unsigned i=0; i<d_rr_triggers[f].size(); i++ ){
-      Trace("rewrite-engine-inst") << "Try trigger " << *d_rr_triggers[f][i] << std::endl;
-      d_rr_triggers[f][i]->resetInstantiationRound();
-      d_rr_triggers[f][i]->reset( Node::null() );
-      bool success;
-      do
-      {
-        InstMatch m( f );
-        success = d_rr_triggers[f][i]->getNextMatch( f, m );
-        if( success ){
-          //see if instantiation is true in the model
-          Node rr = f.getAttribute(QRewriteRuleAttribute());
-          Node rrg = rr[1];
-          std::vector< Node > vars;
-          std::vector< Node > terms;
-          d_quantEngine->computeTermVector( f, m, vars, terms );
-          Trace("rewrite-engine-inst-debug") << "Instantiation : " << m << std::endl;
-          Node inst = d_rr[f][1];
-          inst = inst.substitute( vars.begin(), vars.end(), terms.begin(), terms.end() );
-          Trace("rewrite-engine-inst-debug") << "Try instantiation, guard : " << inst << std::endl;
-          FirstOrderModel * fm = d_quantEngine->getModel();
-          Node v = fm->getValue( inst );
-          Trace("rewrite-engine-inst-debug") << "Evaluated to " << v << std::endl;
-          if( v==d_true ){
-            Trace("rewrite-engine-inst-debug") << "Add instantiation : " << m << std::endl;
-            if( d_quantEngine->addInstantiation( f, m ) ){
-              addedLemmas++;
-              Trace("rewrite-engine-inst-debug") << "success" << std::endl;
-              //set the no-match attribute (the term is rewritten and can be ignored)
-              //Trace("rewrite-engine-inst-debug") << "We matched on : " << m.d_matched << std::endl;
-              //if( !m.d_matched.isNull() ){
-              //  NoMatchAttribute nma;
-              //  m.d_matched.setAttribute(nma,true);
-              //}
-            }else{
-              Trace("rewrite-engine-inst-debug") << "failure." << std::endl;
-            }
-          }
-        }
-      }while(success);
-    }
+    d_rr_triggers[f].insert( d_rr_triggers[f].end(), triggers.begin(), triggers.end() );
   }
-  Trace("rewrite-engine-inst") << "-> Generated " << addedLemmas << " lemmas." << std::endl;
+  for( unsigned i=0; i<d_rr_triggers[f].size(); i++ ){
+    Trace("rewrite-engine-inst") << "Try trigger " << *d_rr_triggers[f][i] << std::endl;
+    d_rr_triggers[f][i]->resetInstantiationRound();
+    d_rr_triggers[f][i]->reset( Node::null() );
+    bool success;
+    do
+    {
+      InstMatch m( f );
+      success = d_rr_triggers[f][i]->getNextMatch( f, m );
+      if( success ){
+        //see if instantiation is true in the model
+        Node rr = f.getAttribute(QRewriteRuleAttribute());
+        Node rrg = rr[1];
+        std::vector< Node > vars;
+        std::vector< Node > terms;
+        d_quantEngine->computeTermVector( f, m, vars, terms );
+        Trace("rewrite-engine-inst-debug") << "Instantiation : " << m << std::endl;
+        Node inst = d_rr_guard[f];
+        inst = inst.substitute( vars.begin(), vars.end(), terms.begin(), terms.end() );
+        Trace("rewrite-engine-inst-debug") << "Try instantiation, guard : " << inst << std::endl;
+        FirstOrderModel * fm = d_quantEngine->getModel();
+        Node v = fm->getValue( inst );
+        Trace("rewrite-engine-inst-debug") << "Evaluated to " << v << std::endl;
+        if( v==d_true ){
+          Trace("rewrite-engine-inst-debug") << "Add instantiation : " << m << std::endl;
+          if( d_quantEngine->addInstantiation( f, m ) ){
+            addedLemmas++;
+            Trace("rewrite-engine-inst-debug") << "success" << std::endl;
+            //set the no-match attribute (the term is rewritten and can be ignored)
+            //Trace("rewrite-engine-inst-debug") << "We matched on : " << m.d_matched << std::endl;
+            //if( !m.d_matched.isNull() ){
+            //  NoMatchAttribute nma;
+            //  m.d_matched.setAttribute(nma,true);
+            //}
+          }else{
+            Trace("rewrite-engine-inst-debug") << "failure." << std::endl;
+          }
+        }
+      }
+    }while(success);
+  }
+  Trace("rewrite-engine-inst") << "Rule " << f << " generated " << addedLemmas << " lemmas." << std::endl;
   return addedLemmas;
 }
 
 void RewriteEngine::registerQuantifier( Node f ) {
   if( f.hasAttribute(QRewriteRuleAttribute()) ){
-    Trace("rr-register") << "Register quantifier " << f << std::endl;
+    Trace("rewrite-engine") << "Register quantifier " << f << std::endl;
     Node rr = f.getAttribute(QRewriteRuleAttribute());
-    Trace("rr-register") << "  rewrite rule is : " << rr << std::endl;
+    Trace("rewrite-engine") << "  rewrite rule is : " << rr << std::endl;
     d_rr_quant.push_back( f );
-    d_rr[f] = rr;
-    d_needsSort = true;
-    Trace("rr-register") << "  guard is : " << d_rr[f][1] << std::endl;
-
-    QuantConflictFind * qcf = d_quantEngine->getConflictFind();
-    if( qcf ){
-      std::vector< Node > qcfn_c;
-      qcfn_c.push_back( f[0] );
-      Node head = rr[2][0];
-      std::vector< Node > cc;
-      if( head!=d_true ){
-        Node head_eq = head.getType().isBoolean() ? head.iffNode( head ) : head.eqNode( head );
-        head_eq = head_eq.negate();
-        cc.push_back( head_eq );
-        Trace("rr-register-debug") << "  head eq is " << head_eq << std::endl;
-      }
-      //add patterns
-      for( unsigned i=0; i<f[2].getNumChildren(); i++ ){
-        std::vector< Node > nc;
-        for( unsigned j=0; j<f[2][i].getNumChildren(); j++ ){
-          Node nn;
-          if( f[2][i][j].getType().isBoolean() ){
-            nn = f[2][i][j].negate();
-          }else{
-            nn = f[2][i][j].eqNode( f[2][i][j] ).negate();
-          }
-          nc.push_back( nn );
-        }
-        if( !nc.empty() ){
-          Node n = nc.size()==1 ? nc[0] : NodeManager::currentNM()->mkNode( AND, nc );
-          Trace("rr-register-debug") << "  pattern is " << n << std::endl;
-          if( std::find( cc.begin(), cc.end(), n )==cc.end() ){
-            cc.push_back( n );
-          }
-        }
-      }
-
-      Node conc;
-      conc = cc.size()==1 ? cc[0] : NodeManager::currentNM()->mkNode( OR, cc );
-      if( d_rr[f][1]==d_true ){
-        qcfn_c.push_back( conc );
-      }else{
-        qcfn_c.push_back( NodeManager::currentNM()->mkNode( OR, d_rr[f][1].negate(), conc ) );
-      }
-      d_qinfo_n[f] = NodeManager::currentNM()->mkNode( FORALL, qcfn_c );
-      Trace("rr-register") << "  qcf formula is : " << d_qinfo_n[f] << std::endl;
-      d_qinfo[f].initialize( d_qinfo_n[f], d_qinfo_n[f][1] );
-    }
+    d_rr_guard[f] = rr[1];
+    Trace("rewrite-engine") << "  guard is : " << d_rr_guard[f] << std::endl;
   }
 }
 

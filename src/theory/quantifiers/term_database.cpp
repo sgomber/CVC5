@@ -81,6 +81,7 @@ void TermDb::addTerm( Node n, std::set< Node >& added, bool withinQuant ){
     return;
   }
   if( d_processed.find( n )==d_processed.end() ){
+    ++(d_quantEngine->d_statistics.d_term_in_termdb);
     d_processed.insert(n);
     d_type_map[ n.getType() ].push_back( n );
     //if this is an atomic trigger, consider adding it

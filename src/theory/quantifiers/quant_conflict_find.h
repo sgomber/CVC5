@@ -140,10 +140,8 @@ public:
   bool setMatch( QuantConflictFind * p, int v, TNode n );
   bool isMatchSpurious( QuantConflictFind * p );
   bool completeMatch( QuantConflictFind * p, std::vector< int >& assigned );
-  void revertMatch( std::vector< int >& assigned );
   void debugPrintMatch( const char * c );
   bool isConstrainedVar( int v );
-  void getMatch( std::vector< Node >& terms );
 //public: //optimization : relevant domain
   //std::map< int, std::map< Node, std::vector< int > > > d_f_parent;
   //void addFuncParent( int v, Node f, int arg );
@@ -217,8 +215,6 @@ public:
     effort_mc,
   };
   short d_effort;
- /** set effort */
-  void setEffort( int e ) { d_effort = e; }
   bool areMatchEqual( TNode n1, TNode n2 );
   bool areMatchDisequal( TNode n1, TNode n2 );
 public:
@@ -234,13 +230,10 @@ public:
   void merge( Node a, Node b );
   /** assert disequal */
   void assertDisequal( Node a, Node b );
-  /** reset round */
-  void reset_round( Theory::Effort level );
   /** check */
   void check( Theory::Effort level );
   /** needs check */
   bool needsCheck( Theory::Effort level );
-
 private:
   void computeRelevantEqr();
 private:

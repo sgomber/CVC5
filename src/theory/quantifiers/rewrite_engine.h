@@ -29,26 +29,19 @@ namespace CVC4 {
 namespace theory {
 namespace quantifiers {
 
-class QuantInfo;
-
 class RewriteEngine : public QuantifiersModule
 {
   typedef context::CDHashMap<Node, bool, NodeHashFunction> NodeBoolMap;
   typedef context::CDHashMap<Node, int, NodeHashFunction> NodeIntMap;
   typedef context::CDHashMap<Node, Node, NodeHashFunction> NodeNodeMap;
   std::vector< Node > d_rr_quant;
-  std::vector< Node > d_priority_order;
-  std::map< Node, Node > d_rr;
+  std::map< Node, Node > d_rr_guard;
   Node d_true;
   /** explicitly provided patterns */
   std::map< Node, std::vector< inst::Trigger* > > d_rr_triggers;
-  /** get the quantifer info object */
-  std::map< Node, Node > d_qinfo_n;
-  std::map< Node, QuantInfo > d_qinfo;
   double getPriority( Node f );
-  bool d_needsSort;
 private:
-  int checkRewriteRule( Node f, Theory::Effort e );
+  int checkRewriteRule( Node f );
 public:
   RewriteEngine( context::Context* c, QuantifiersEngine* qe );
 
