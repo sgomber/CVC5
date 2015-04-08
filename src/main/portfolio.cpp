@@ -5,7 +5,7 @@
  ** Major contributors: Kshitij Bansal
  ** Minor contributors (to current version): none
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -20,6 +20,7 @@
 #include <boost/exception_ptr.hpp>
 
 #include "smt/smt_engine.h"
+#include "util/output.h"
 #include "util/result.h"
 #include "util/statistics_registry.h"
 #include "options/options.h"
@@ -62,6 +63,7 @@ template<typename T, typename S>
 std::pair<int, S> runPortfolio(int numThreads,
                                boost::function<T()> driverFn,
                                boost::function<S()> threadFns[],
+                               size_t stackSize,
                                bool optionWaitToJoin,
                                TimerStat& statWaitTime) {
   boost::thread thread_driver;
@@ -72,9 +74,38 @@ std::pair<int, S> runPortfolio(int numThreads,
   global_winner = -1;
 
   for(int t = 0; t < numThreads; ++t) {
-    threads[t] = 
+
+#if BOOST_HAS_THREAD_ATTR
+    boost::thread::attributes attrs;
+
+    if(stackSize > 0) {
+      attrs.set_stack_size(stackSize);
+    }
+
+    threads[t] =
+      boost::thread(attrs, boost::bind(runThread<S>, t, threadFns[t],
+                                       boost::ref(threads_returnValue[t]) ) );
+#else /* BOOST_HAS_THREAD_ATTR */
+    if(stackSize > 0) {
+      throw OptionException("cannot specify a stack size for worker threads; requires CVC4 to be built with Boost thread library >= 1.50.0");
+    }
+
+    threads[t] =
       boost::thread(boost::bind(runThread<S>, t, threadFns[t],
                                 boost::ref(threads_returnValue[t]) ) );
+
+#endif /* BOOST_HAS_THREAD_ATTR */
+
+#if defined(BOOST_THREAD_PLATFORM_PTHREAD)
+    if(Chat.isOn()) {
+      void *stackaddr;
+      size_t stacksize;
+      pthread_attr_t attr;
+      pthread_getattr_np(threads[t].native_handle(), &attr);
+      pthread_attr_getstack(&attr, &stackaddr, &stacksize);
+      Chat() << "Created worker thread " << t << " with stack size " << stacksize << std::endl;
+    }
+#endif
   }
 
   if(not driverFn.empty())
@@ -112,6 +143,7 @@ std::pair<int, bool>
 runPortfolio<void, bool>(int,
                          boost::function<void()>, 
                          boost::function<bool()>*,
+                         size_t,
                          bool,
                          TimerStat&);
 

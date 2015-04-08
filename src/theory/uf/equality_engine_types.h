@@ -3,9 +3,9 @@
  ** \verbatim
  ** Original author: Dejan Jovanovic
  ** Major contributors: none
- ** Minor contributors (to current version): Morgan Deters
+ ** Minor contributors (to current version): Morgan Deters, Andrew Reynolds
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -70,6 +70,10 @@ enum MergeReasonType {
 
   /** (for proofs only) Equality was merged due to transitivity */
   MERGED_THROUGH_TRANS,
+
+  /** Theory specific proof rules */
+  MERGED_ARRAYS_ROW,
+  MERGED_ARRAYS_ROW1,
 };
 
 inline std::ostream& operator << (std::ostream& out, MergeReasonType reason) {
@@ -91,7 +95,8 @@ inline std::ostream& operator << (std::ostream& out, MergeReasonType reason) {
     out << "transitivity";
     break;
   default:
-    Unreachable();
+    out << "[theory]";
+    break;
   }
   return out;
 }

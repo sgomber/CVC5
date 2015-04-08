@@ -5,7 +5,7 @@
  ** Major contributors: Dejan Jovanovic, Christopher L. Conway
  ** Minor contributors (to current version): Andrew Reynolds, Tim King
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -205,13 +205,13 @@ benchAttribute returns [CVC4::Command* smt_command = NULL]
       { ((CommandSequence*) smt_command)->addCommand(c); }
     )+ RPAREN_TOK
   | EXTRAPREDS_TOK LPAREN_TOK
-    ( { smt_command = new CommandSequence(); }
-      predicateDeclaration[c]
+    { smt_command = new CommandSequence(); }
+    ( predicateDeclaration[c]
       { ((CommandSequence*) smt_command)->addCommand(c); }
     )+ RPAREN_TOK
   | EXTRASORTS_TOK LPAREN_TOK
-    ( { smt_command = new CommandSequence(); }
-      sortDeclaration[c]
+    { smt_command = new CommandSequence(); }
+    ( sortDeclaration[c]
       { ((CommandSequence*) smt_command)->addCommand(c); }
     )+ RPAREN_TOK
   | NOTES_TOK STRING_LITERAL

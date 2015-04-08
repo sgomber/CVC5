@@ -5,7 +5,7 @@
  ** Major contributors: Tim King
  ** Minor contributors (to current version): none
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -102,17 +102,17 @@ private:
   };
   context::CDList<Constraint> d_trail;
 
-  /** Compare by d_minimal. */
-  struct TrailMinimalCoefficientOrder {
-    const context::CDList<Constraint>& d_trail;
-    TrailMinimalCoefficientOrder(const context::CDList<Constraint>& trail):
-      d_trail(trail)
-    {}
+  // /** Compare by d_minimal. */
+  // struct TrailMinimalCoefficientOrder {
+  //   const context::CDList<Constraint>& d_trail;
+  //   TrailMinimalCoefficientOrder(const context::CDList<Constraint>& trail):
+  //     d_trail(trail)
+  //   {}
 
-    bool operator()(TrailIndex i, TrailIndex j){
-      return d_trail[i].d_minimalMonomial.absLessThan(d_trail[j].d_minimalMonomial);
-    }
-  };
+  //   bool operator()(TrailIndex i, TrailIndex j){
+  //     return d_trail[i].d_minimalMonomial.absLessThan(d_trail[j].d_minimalMonomial);
+  //   }
+  // };
 
   /**
    * A substitution is stored as a constraint in the trail together with

@@ -3,9 +3,9 @@
  ** \verbatim
  ** Original author: Christopher L. Conway
  ** Major contributors: Dejan Jovanovic, Morgan Deters
- ** Minor contributors (to current version): Andrew Reynolds
+ ** Minor contributors (to current version): Andrew Reynolds, Kshitij Bansal
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -47,8 +47,10 @@ class BooleanType;
 class IntegerType;
 class RealType;
 class StringType;
+class RoundingModeType;
 class BitVectorType;
 class ArrayType;
+class SetType;
 class DatatypeType;
 class ConstructorType;
 class SelectorType;
@@ -258,10 +260,22 @@ public:
   bool isString() const;
 
   /**
+   * Is this the rounding mode type?
+   * @return true if the type is the rounding mode type
+   */
+  bool isRoundingMode() const;
+
+  /**
    * Is this the bit-vector type?
    * @return true if the type is a bit-vector type
    */
   bool isBitVector() const;
+
+  /**
+   * Is this the floating-point type?
+   * @return true if the type is a floating-point type
+   */
+  bool isFloatingPoint() const;
 
   /**
    * Is this a function type?
@@ -301,6 +315,12 @@ public:
   bool isArray() const;
 
   /**
+   * Is this a Set type?
+   * @return true if the type is a Set type
+   */
+  bool isSet() const;
+
+ /**
    * Is this a datatype type?
    * @return true if the type is a datatype type
    */
@@ -406,6 +426,19 @@ public:
 };/* class StringType */
 
 /**
+ * Singleton class encapsulating the rounding mode type.
+ */
+class CVC4_PUBLIC RoundingModeType : public Type {
+
+public:
+
+  /** Construct from the base type */
+  RoundingModeType(const Type& type = Type()) throw(IllegalArgumentException);
+};/* class RoundingModeType */
+
+
+
+/**
  * Class encapsulating a function type.
  */
 class CVC4_PUBLIC FunctionType : public Type {
@@ -487,6 +520,20 @@ public:
   /** Get the constituent type */
   Type getConstituentType() const;
 };/* class ArrayType */
+
+/**
+ * Class encapsulating an set type.
+ */
+class CVC4_PUBLIC SetType : public Type {
+
+public:
+
+  /** Construct from the base type */
+  SetType(const Type& type = Type()) throw(IllegalArgumentException);
+
+  /** Get the index type */
+  Type getElementType() const;
+};/* class SetType */
 
 /**
  * Class encapsulating a user-defined sort.
@@ -586,6 +633,31 @@ public:
   unsigned getSize() const;
 
 };/* class BitVectorType */
+
+
+/**
+ * Class encapsulating the floating point type.
+ */
+class CVC4_PUBLIC FloatingPointType : public Type {
+
+public:
+
+  /** Construct from the base type */
+  FloatingPointType(const Type& type = Type()) throw(IllegalArgumentException);
+
+  /**
+   * Returns the size of the floating-point exponent type.
+   * @return the width of the floating-point exponent type (> 0)
+   */
+  unsigned getExponentSize() const;
+
+  /**
+   * Returns the size of the floating-point significand type.
+   * @return the width of the floating-point significand type (> 0)
+   */
+  unsigned getSignificandSize() const;
+
+};/* class FloatingPointType */
 
 
 /**

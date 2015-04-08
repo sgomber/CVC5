@@ -5,7 +5,7 @@
  ** Major contributors: Dejan Jovanovic, Morgan Deters
  ** Minor contributors (to current version): Andrew Reynolds
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -176,14 +176,7 @@ public:
   /** Constructs a new instance of TheoryUF w.r.t. the provided context.*/
   TheoryUF(context::Context* c, context::UserContext* u, OutputChannel& out, Valuation valuation, const LogicInfo& logicInfo);
 
-  ~TheoryUF() {
-    // destruct all ppRewrite() callbacks
-    for(RegisterPpRewrites::iterator i = d_registeredPpRewrites.begin();
-        i != d_registeredPpRewrites.end();
-        ++i) {
-      delete i->second;
-    }
-  }
+  ~TheoryUF();
 
   void setMasterEqualityEngine(eq::EqualityEngine* eq);
   void finishInit();

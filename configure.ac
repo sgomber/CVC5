@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 m4_define(_CVC4_MAJOR,          1)       dnl version (major)
-m4_define(_CVC4_MINOR,          4)       dnl version (minor)
+m4_define(_CVC4_MINOR,          5)       dnl version (minor)
 m4_define(_CVC4_RELEASE,        0)       dnl version (alpha)
 m4_define(_CVC4_EXTRAVERSION,   [-prerelease])      dnl version (extra)
 m4_define(_CVC4_RELEASE_STRING, _CVC4_MAJOR[.]_CVC4_MINOR[]m4_if(_CVC4_RELEASE,[0],,[.]_CVC4_RELEASE)_CVC4_EXTRAVERSION) dnl version string
@@ -113,7 +113,7 @@ AC_ARG_WITH([build],
 if test -z "${with_build+set}"; then
   with_build=production
 fi
-if test -z "${enable_optimized+set}" -a -z "${enable_debug_symbols+set}" -a -z "${enable_assertions+set}" -a -z "${enable_tracing+set}" -a -z "${enable_dumping+set}" -a -z "${enable_muzzle+set}" -a -z "${enable_coverage+set}" -a -z "${enable_profiling+set}" -a -z "${enable_statistics+set}" -a -z "${enable_replay+set}" -a -z "${with_gmp+set}" -a -z "${with_cln+set}" -a -z "${with_glpk+set}"; then
+if test -z "${enable_optimized+set}" -a -z "${enable_debug_symbols+set}" -a -z "${enable_assertions+set}" -a -z "${enable_tracing+set}" -a -z "${enable_dumping+set}" -a -z "${enable_muzzle+set}" -a -z "${enable_coverage+set}" -a -z "${enable_profiling+set}" -a -z "${enable_statistics+set}" -a -z "${enable_replay+set}" -a -z "${with_gmp+set}" -a -z "${with_cln+set}" -a -z "${with_glpk+set}" -a -z "${with_abc+set}"; then
   custom_build_profile=no
 else
   custom_build_profile=yes
@@ -125,6 +125,10 @@ if test -n "${enable_optimized+set}"; then
   else
     btargs="$btargs nooptimized"
   fi
+fi
+# --enable-staticbinary is an alias for --enable-static-binary
+if test -n "${enable_staticbinary+set}"; then
+  enable_static_binary="$enable_staticbinary"
 fi
 if test -n "${enable_static_binary+set}"; then
   if test "$enable_static_binary" = yes; then
@@ -206,6 +210,11 @@ fi
 if test -n "${with_glpk+set}"; then
   if test "$with_glpk" = yes; then
     btargs="$btargs glpk"
+  fi
+fi
+if test -n "${with_abc+set}"; then
+  if test "$with_abc" = yes; then
+    btargs="$btargs abc"
   fi
 fi
 AC_MSG_RESULT([$with_build])
@@ -300,7 +309,9 @@ if test $cvc4_use_cln != 0; then
   PKG_CHECK_MODULES([CLN], [cln >= 1.2.2],
     [AC_LANG_PUSH([C++])
      save_LIBS="$LIBS"
+     save_CXXFLAGS="$CXXFLAGS"
      LIBS="$CLN_LIBS $LIBS"
+     CXXFLAGS="$CLN_CFLAGS $CXXFLAGS"
      AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <cln/cln.h>]], [[cln::cl_F pi = "3.1415926";]])], [
        cvc4_use_cln=1
      ], [
@@ -314,6 +325,7 @@ if test $cvc4_use_cln != 0; then
          cvc4_use_gmp=1
        fi
      ])
+     CXXFLAGS="$save_CXXFLAGS"
      LIBS="$save_LIBS"
      AC_LANG_POP([C++])
     ],
@@ -330,8 +342,10 @@ if test $cvc4_use_cln != 0; then
   )
 fi
 if test $cvc4_use_cln = 0; then
-  # try GMPXX, fail if not found
-  AC_CHECK_LIB(gmpxx, __gmpz_init, , [AC_MSG_ERROR([GNU MP C++ library (libgmpxx) not found, see http://gmplib.org/])])
+  # try GMPXX, fail if not found; don't need to link against it, only need its header
+  AC_LANG_PUSH([C++])
+  AC_CHECK_HEADER([gmpxx.h], , [AC_MSG_ERROR([GNU MP C++ library header (gmpxx.h) required but not found, see http://gmplib.org/])])
+  AC_LANG_POP([C++])
   cvc4_cln_or_gmp=gmp
 else
   CVC4CPPFLAGS="${CVC4CPPFLAGS:+$CVC4CPPFLAGS }$CLN_CFLAGS"
@@ -415,12 +429,13 @@ as_me=configure
 
 # Unpack standard build types. Any particular options can be overriden with
 # --enable/disable-X options
+# Tim: This needs to keep CVC4CPPFLAGS, CVC4CXXFLAGS, etc. set by earlier checks
 case "$with_build" in
   production) # highly optimized, no assertions, no tracing, dumping
-    CVC4CPPFLAGS=
-    CVC4CXXFLAGS=
-    CVC4CFLAGS=
-    CVC4LDFLAGS=
+    CVC4CPPFLAGS="${CVC4CPPFLAGS:+$CVC4CPPFLAGS }"
+    CVC4CXXFLAGS="${CVC4CXXFLAGS:+$CVC4CXXFLAGS }"
+    CVC4CFLAGS="${CVC4CFLAGS:+$CVC4CFLAGS }"
+    CVC4LDFLAGS="${CVC4LDFLAGS:+$CVC4LDFLAGS }"
     FLAG_VISIBILITY_HIDDEN='-fvisibility=hidden'
     if test -z "${OPTLEVEL+set}"            ; then OPTLEVEL=3                       ; fi
     if test -z "${enable_optimized+set}"    ; then enable_optimized=yes             ; fi
@@ -434,10 +449,10 @@ case "$with_build" in
     if test -z "${enable_muzzle+set}"       ; then enable_muzzle=no                 ; fi
     ;;
   debug) # unoptimized, debug symbols, assertions, tracing, dumping
-    CVC4CPPFLAGS='-DCVC4_DEBUG'
-    CVC4CXXFLAGS='-fno-inline'
-    CVC4CFLAGS='-fno-inline'
-    CVC4LDFLAGS=
+    CVC4CPPFLAGS="${CVC4CPPFLAGS:+$CVC4CPPFLAGS }-DCVC4_DEBUG"
+    CVC4CXXFLAGS="${CVC4CXXFLAGS:+$CVC4CXXFLAGS }-fno-inline"
+    CVC4CFLAGS="${CVC4CFLAGS:+$CVC4CFLAGS }-fno-inline"
+    CVC4LDFLAGS="${CVC4LDFLAGS:+$CVC4LDFLAGS }"
     FLAG_VISIBILITY_HIDDEN=
     if test -z "${enable_optimized+set}"    ; then enable_optimized=no              ; fi
     if test -z "${enable_debug_symbols+set}"; then enable_debug_symbols=yes         ; fi
@@ -450,10 +465,10 @@ case "$with_build" in
     if test -z "${enable_muzzle+set}"       ; then enable_muzzle=no                 ; fi
     ;;
   default) # moderately optimized, assertions, tracing, dumping
-    CVC4CPPFLAGS=
-    CVC4CXXFLAGS=
-    CVC4CFLAGS=
-    CVC4LDFLAGS=
+    CVC4CPPFLAGS="${CVC4CPPFLAGS:+$CVC4CPPFLAGS }"
+    CVC4CXXFLAGS="${CVC4CXXFLAGS:+$CVC4CXXFLAGS }"
+    CVC4CFLAGS="${CVC4CFLAGS:+$CVC4CFLAGS }"
+    CVC4LDFLAGS="${CVC4LDFLAGS:+$CVC4LDFLAGS }"
     FLAG_VISIBILITY_HIDDEN='-fvisibility=hidden'
     if test -z "${OPTLEVEL+set}"            ; then OPTLEVEL=2                       ; fi
     if test -z "${enable_optimized+set}"    ; then enable_optimized=yes             ; fi
@@ -467,10 +482,10 @@ case "$with_build" in
     if test -z "${enable_muzzle+set}"       ; then enable_muzzle=no                 ; fi
     ;;
   competition) # maximally optimized, no assertions, no tracing, no dumping, muzzled
-    CVC4CPPFLAGS='-DCVC4_COMPETITION_MODE'
-    CVC4CXXFLAGS='-funroll-all-loops -fexpensive-optimizations -fno-enforce-eh-specs'
-    CVC4CFLAGS='-funroll-all-loops -fexpensive-optimizations -fno-enforce-eh-specs'
-    CVC4LDFLAGS=
+    CVC4CPPFLAGS="${CVC4CPPFLAGS:+$CVC4CPPFLAGS }-DCVC4_COMPETITION_MODE"
+    CVC4CXXFLAGS="${CVC4CXXFLAGS:+$CVC4CXXFLAGS }-funroll-all-loops -fexpensive-optimizations -fno-enforce-eh-specs"
+    CVC4CFLAGS="${CVC4CFLAGS:+$CVC4CFLAGS }-funroll-all-loops -fexpensive-optimizations -fno-enforce-eh-specs"
+    CVC4LDFLAGS="${CVC4LDFLAGS:+$CVC4LDFLAGS }"
     FLAG_VISIBILITY_HIDDEN='-fvisibility=hidden'
     if test -z "${OPTLEVEL+set}"            ; then OPTLEVEL=9                       ; fi
     if test -z "${enable_optimized+set}"    ; then enable_optimized=yes             ; fi
@@ -743,7 +758,20 @@ if test $have_libglpk -eq 1; then
   CVC4CPPFLAGS="${CVC4CPPFLAGS:+$CVC4CPPFLAGS }-DCVC4_USE_GLPK"
 fi
 AM_CONDITIONAL([CVC4_USE_GLPK], [test $have_libglpk -eq 1])
+AC_SUBST([GLPK_LDFLAGS])
 AC_SUBST([GLPK_LIBS])
+
+# Build with libabc (defined in config/abc.m4)
+AC_ARG_WITH([abc],
+  [AS_HELP_STRING([--with-abc],
+     [use the ABC AIG library])], [], [with_abc=])
+CVC4_CHECK_FOR_ABC
+if test $have_libabc -eq 1; then
+  CVC4CPPFLAGS="${CVC4CPPFLAGS:+$CVC4CPPFLAGS }-DCVC4_USE_ABC"
+fi
+AM_CONDITIONAL([CVC4_USE_ABC], [test $have_libabc -eq 1])
+AC_SUBST([ABC_LDFLAGS])
+AC_SUBST([ABC_LIBS])
 
 # Check to see if this version/architecture of GNU C++ explicitly
 # instantiates __gnu_cxx::hash<uint64_t> or not.  Some do, some don't.
@@ -776,43 +804,6 @@ void foo(int64_t) {}])],
                   [AC_MSG_RESULT([typedef or similar]); CVC4_NEED_INT64_T_OVERLOADS=0])
 AC_LANG_POP([C++])
 AC_SUBST([CVC4_NEED_INT64_T_OVERLOADS])
-
-AC_MSG_CHECKING([for the pb_ds namespace])
-AC_LANG_PUSH([C++])
-AC_COMPILE_IFELSE([AC_LANG_SOURCE([
-#include <ext/pb_ds/priority_queue.hpp>
-typedef pb_ds::priority_queue<void, void, void> pq;])],
-  [CVC4_PB_DS_NAMESPACE=pb_ds],
-  [AC_COMPILE_IFELSE([AC_LANG_SOURCE([
-    #include <ext/pb_ds/priority_queue.hpp>
-    typedef __gnu_pbds::priority_queue<void, void, void> pq;])],
-      [CVC4_PB_DS_NAMESPACE=__gnu_pbds],
-      [AC_MSG_ERROR([cannot find required priority_queue in either __gnu_pbds or pb_ds namespace.
-
-If you're using a non-GCC compiler (such as clang), you may need to explicitly
-use the GNU standard C++ library by passing:
-    CXXFLAGS='-stdlib=libstdc++' CPPFLAGS='-stdlib=libstdc++'
-as arguments to this configure script.
-This is the case on Mac OS Mavericks, for example.])])])
-AC_LANG_POP([C++])
-AC_MSG_RESULT([$CVC4_PB_DS_NAMESPACE])
-AC_DEFINE_UNQUOTED(CVC4_PB_DS_NAMESPACE, ${CVC4_PB_DS_NAMESPACE}, [The namespace for pb_ds data structures.])
-
-# for information: http://gcc.gnu.org/bugzilla/show_bug.cgi?id=36612
-AC_MSG_CHECKING([whether pb_ds has bug 36612])
-AC_LANG_PUSH([C++])
-AC_COMPILE_IFELSE([AC_LANG_SOURCE([
-#define __throw_container_error inline __throw_container_error
-#define __throw_insert_error inline __throw_insert_error
-#define __throw_join_error inline __throw_join_error
-#define __throw_resize_error inline __throw_resize_error
-#include <ext/pb_ds/exception.hpp>
-])],
-  [CVC4_GCC_HAS_PB_DS_BUG=1; bugverb=is],
-  [CVC4_GCC_HAS_PB_DS_BUG=0; bugverb="is not"])
-AC_LANG_POP([C++])
-AC_MSG_RESULT([bug $bugverb present])
-AC_DEFINE_UNQUOTED(CVC4_GCC_HAS_PB_DS_BUG, ${CVC4_GCC_HAS_PB_DS_BUG}, [Whether libstdc++ has a certain bug; see http://gcc.gnu.org/bugzilla/show_bug.cgi?id=36612])
 
 # Check for ANTLR runantlr script (defined in config/antlr.m4)
 AC_PROG_ANTLR
@@ -854,6 +845,7 @@ if test "$enable_personal_make_rules" = yes; then
   # comes last, so it gets other definitions (in particular top_srcdir).
   zz_cvc4_use_personal_make_rules='yes
 
+all:;
 include $(top_srcdir)/personal.mk
 $(top_srcdir)/personal.mk:; @touch "$@"'
   AC_SUBST([zz_cvc4_use_personal_make_rules])
@@ -913,6 +905,11 @@ if test -z "$CXXTESTGEN"; then
 fi
 if test -z "$CXXTESTGEN"; then
   AC_PATH_PROG(CXXTESTGEN, cxxtestgen, [], [$CXXTEST:$PATH])
+fi
+# The latest version of cxxtest distributed from the git repository places
+# cxxtest under <cxxtest-root>/bin/cxxtest
+if test -z "$CXXTESTGEN"; then
+  AC_PATH_PROG(CXXTESTGEN, cxxtestgen, [], [$CXXTEST/bin:$PATH])
 fi
 if test "$enable_unit_testing" = "no"; then
   AC_MSG_NOTICE([unit tests disabled by user request.])
@@ -1000,7 +997,7 @@ AC_LIB_ANTLR
 CVC4_CHECK_BINDINGS([c java])dnl csharp perl php python ruby tcl ocaml])
 
 # Checks for header files and their contents.
-AC_CHECK_HEADERS([getopt.h unistd.h])
+AC_CHECK_HEADERS([getopt.h unistd.h ext/stdio_filebuf.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 #AC_HEADER_STDBOOL
@@ -1019,6 +1016,9 @@ AC_CHECK_DECLS([optreset], [], [], [#include <getopt.h>])
 
 # check with which standard strerror_r() complies
 AC_FUNC_STRERROR_R
+
+# is is_sorted() in std or __gnu_cxx?
+CHECK_FOR_IS_SORTED
 
 # require boost library
 BOOST_REQUIRE()
@@ -1058,7 +1058,31 @@ fi
 AM_CONDITIONAL([CVC4_BUILD_PCVC4], [test "$with_portfolio" = yes])
 if test "$with_portfolio" = yes; then
   CVC4CPPFLAGS="${CVC4CPPFLAGS:+$CVC4CPPFLAGS }-DCVC4_PORTFOLIO"
+
+  # see if Boost has thread attributes (should be any version >= 1.50.0)
+  # non-fatal error if not, but we won't support --thread-stack option
+  AC_MSG_CHECKING([whether Boost threads support thread attrs])
+  AC_LANG_PUSH([C++])
+  cvc4_save_CPPFLAGS="$CPPFLAGS"
+  cvc4_save_LIBS="$LIBS"
+  cvc4_save_LDFLAGS="$LDFLAGS"
+  CPPFLAGS="$CPPFLAGS $BOOST_CPPFLAGS"
+  LIBS="$LIBS $BOOST_THREAD_LIBS"
+  LDFLAGS="$LDFLAGS $BOOST_THREAD_LDFLAGS"
+  AC_LINK_IFELSE([AC_LANG_PROGRAM([#include <boost/thread.hpp>],
+         [boost::thread::attributes attrs; attrs.set_stack_size(10 * 1024 * 1024);])],
+    [cvc4_boost_has_thread_attr=1;
+     AC_MSG_RESULT([yes])],
+    [cvc4_boost_has_thread_attr=0;
+     AC_MSG_RESULT([no])])
+  CPPFLAGS="$cvc4_save_CPPFLAGS"
+  LIBS="$cvc4_save_LIBS"
+  LDFLAGS="$cvc4_save_LDFLAGS"
+  AC_LANG_POP([C++])
+else
+  cvc4_boost_has_thread_attr=0
 fi
+AC_DEFINE_UNQUOTED([BOOST_HAS_THREAD_ATTR], $cvc4_boost_has_thread_attr, [Define to 1 if Boost threading library has support for thread attributes])
 
 # Check for libreadline (defined in config/readline.m4)
 AC_ARG_WITH([readline], [AS_HELP_STRING([--with-readline], [support the readline library])], [], [with_readline=check])
@@ -1430,6 +1454,7 @@ Portfolio    : $with_portfolio
 
 MP library   : $mplibrary
 GLPK         : $with_glpk
+ABC          : $with_abc
 Readline     : $with_readline
 
 CPPFLAGS     : $CPPFLAGS
@@ -1453,9 +1478,11 @@ EOF
 
 if test -n "$CVC4_UNSUPPORTED_LANGUAGE_BINDINGS"; then
   AC_MSG_WARN([])
-  AC_MSG_WARN([You are electing to build unsupported language binding(s): $CVC4_UNSUPPORTED_LANGUAGE_BINDINGS])
-  AC_MSG_WARN([Please be aware that these bindings may not compile, or work, and the interface to CVC4 via])
-  AC_MSG_WARN([these bindings may change drastically in upcoming releases of CVC4.])
+  AC_MSG_WARN([You are electing to build unsupported language binding(s):])
+  AC_MSG_WARN([    $CVC4_UNSUPPORTED_LANGUAGE_BINDINGS])
+  AC_MSG_WARN([Please be aware that these bindings may not compile, or])
+  AC_MSG_WARN([work, and the interface to CVC4 via these bindings may])
+  AC_MSG_WARN([change drastically in upcoming releases of CVC4.])
   AC_MSG_WARN([])
 fi
 

@@ -5,7 +5,7 @@
  ** Major contributors: Christopher L. Conway
  ** Minor contributors (to current version): Tim King, Tianyi Liang, Dejan Jovanovic, Clark Barrett
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -178,7 +178,11 @@ bool Smt1::logicIsSet() {
 
 void Smt1::setLogic(const std::string& name) {
   d_logicSet = true;
-  d_logic = toLogic(name);
+  if(logicIsForced()) {
+    d_logic = toLogic(getForcedLogic());
+  } else {
+    d_logic = toLogic(name);
+  }
 
   switch(d_logic) {
   case QF_S:

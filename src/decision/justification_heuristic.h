@@ -5,7 +5,7 @@
  ** Major contributors: none
  ** Minor contributors (to current version): Tim King, Morgan Deters
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -127,10 +127,10 @@ private:
   prop::SatLiteral getNextThresh(bool &stopSearch, DecisionWeight threshold);
 
   SatLiteral findSplitter(TNode node, SatValue desiredVal);
-  
-  /** 
-   * Do all the hard work. 
-   */ 
+
+  /**
+   * Do all the hard work.
+   */
   SearchResult findSplitterRec(TNode node, SatValue value);
 
   /* Helper functions */
@@ -153,6 +153,16 @@ private:
 
   /* Get list of all term-ITEs for the atomic formula v */
   JustificationHeuristic::IteList getITEs(TNode n);
+
+
+  /**
+   * For big and/or nodes, a cache to save starting index into children
+   * for efficiently.
+   */
+  typedef context::CDHashMap<TNode, int, TNodeHashFunction> StartIndexCache;
+  StartIndexCache d_startIndexCache;
+  int getStartIndex(TNode node);
+  void saveStartIndex(TNode node, int val);
 
   /* Compute all term-ITEs in a node recursively */
   void computeITEs(TNode n, IteList &l);

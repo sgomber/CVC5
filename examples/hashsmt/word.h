@@ -2,10 +2,10 @@
 /*! \file word.h
  ** \verbatim
  ** Original author: Dejan Jovanovic
- ** Major contributors: Morgan Deters
- ** Minor contributors (to current version): none
+ ** Major contributors: none
+ ** Minor contributors (to current version): Morgan Deters
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -79,6 +79,9 @@ public:
 
   /** Returns the comparison expression */  
   CVC4::Expr operator == (const Word& b) const;
+
+  /** Concatenate the given words */
+  static Word concat(const Word words[], unsigned size);
 };
 
 inline std::ostream& operator << (std::ostream& out, const Word& word) {

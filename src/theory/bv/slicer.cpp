@@ -5,7 +5,7 @@
  ** Major contributors: none
  ** Minor contributors (to current version): Morgan Deters
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -469,7 +469,7 @@ void Slicer::getBaseDecomposition(TNode node, std::vector<Node>& decomp) {
     low = utils::getExtractLow(node);
     top = node[0]; 
   }
-  Assert (d_nodeToId.find(top) != d_nodeToId.end()); 
+  AlwaysAssert (d_nodeToId.find(top) != d_nodeToId.end()); 
   TermId id = d_nodeToId[top];
   NormalForm nf(high-low+1); 
   d_unionFind.getNormalForm(ExtractTerm(id, high, low), nf);
@@ -498,7 +498,7 @@ bool Slicer::isCoreTerm(TNode node) {
   if (d_coreTermCache.find(node) == d_coreTermCache.end()) {
     Kind kind = node.getKind();
     bool not_core;
-    if (options::bitvectorCoreSolver()) {
+    if (options::bitvectorEqualitySlicer() != BITVECTOR_SLICER_OFF) {
       not_core = (kind != kind::BITVECTOR_EXTRACT && kind != kind::BITVECTOR_CONCAT); 
     } else {
       not_core = true; 

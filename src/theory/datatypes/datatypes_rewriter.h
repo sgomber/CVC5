@@ -3,9 +3,9 @@
  ** \verbatim
  ** Original author: Morgan Deters
  ** Major contributors: Andrew Reynolds
- ** Minor contributors (to current version): none
+ ** Minor contributors (to current version): Kshitij Bansal
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -88,7 +88,7 @@ public:
       const Record& rec = in[0].getType().getAttribute(expr::DatatypeRecordAttr()).getConst<Record>();
       return RewriteResponse(REWRITE_DONE, in[0][rec.getIndex(in.getOperator().getConst<RecordSelect>().getField())]);
     }
-    if(in.getKind() == kind::APPLY_SELECTOR &&
+    if(in.getKind() == kind::APPLY_SELECTOR_TOTAL &&
        (in[0].getKind() == kind::TUPLE || in[0].getKind() == kind::RECORD)) {
       // These strange (half-tuple-converted) terms can be created by
       // the system if you have something like "foo.1" for a tuple
@@ -118,7 +118,7 @@ public:
       Debug("tuprec") << "==> returning " << in[0][selectorIndex] << std::endl;
       return RewriteResponse(REWRITE_DONE, in[0][selectorIndex]);
     }
-    if(in.getKind() == kind::APPLY_SELECTOR &&
+    if(in.getKind() == kind::APPLY_SELECTOR_TOTAL &&
        in[0].getKind() == kind::APPLY_CONSTRUCTOR) {
       // Have to be careful not to rewrite well-typed expressions
       // where the selector doesn't match the constructor,
@@ -138,26 +138,76 @@ public:
                                    << std::endl;
         return RewriteResponse(REWRITE_DONE, in[0][selectorIndex]);
       }else{
-        if( options::dtRewriteErrorSel() ){
-          Node gt;
-          if( in.getType().isSort() ){
-            TypeEnumerator te(in.getType());
-            gt = *te;
-          }else{
-            gt = in.getType().mkGroundTerm();
-          }
-          TypeNode gtt = gt.getType();
+        //typically should not be called
+        TypeNode tn = in.getType();
+        Node gt;
+        if( tn.isSort() ){
+          TypeEnumerator te(tn);
+          gt = *te;
+        }else{
+          //check whether well-founded
+          //bool isWf = true;
+          //if( isTypeDatatype( tn ) ){
+          //  const Datatype& dta = ((DatatypeType)(tn).toType()).getDatatype();
+          //  isWf = dta.isWellFounded();
+          //}
+          //if( isWf || in[0].isConst() ){
+          gt = tn.mkGroundTerm();
+          //}
+        }
+        if( !gt.isNull() ){
           //Assert( gtt.isDatatype() || gtt.isParametricDatatype() );
-          if( gtt.isDatatype() && !gtt.isInstantiatedDatatype() ){
+          if( tn.isDatatype() && !tn.isInstantiatedDatatype() ){
             gt = NodeManager::currentNM()->mkNode(kind::APPLY_TYPE_ASCRIPTION,
-                                                  NodeManager::currentNM()->mkConst(AscriptionType(in.getType().toType())), gt);
+                                                  NodeManager::currentNM()->mkConst(AscriptionType(tn.toType())), gt);
           }
           Trace("datatypes-rewrite") << "DatatypesRewriter::postRewrite: "
                                      << "Rewrite trivial selector " << in
                                      << " to distinguished ground term "
-                                     << in.getType().mkGroundTerm() << std::endl;
+                                     << gt << std::endl;
           return RewriteResponse(REWRITE_DONE,gt );
         }
+      }
+    }
+    if(in.getKind() == kind::DT_SIZE ){
+      if( in[0].getKind()==kind::APPLY_CONSTRUCTOR ){
+        std::vector< Node > children;
+        for( unsigned i=0; i<in[0].getNumChildren(); i++ ){
+          if( in[0][i].getType().isDatatype() ){
+            children.push_back( NodeManager::currentNM()->mkNode( kind::DT_SIZE, in[0][i] ) );
+          }
+        }
+        Node res;
+        if( !children.empty() ){
+          children.push_back( NodeManager::currentNM()->mkConst( Rational(1) ) );
+          res = children.size()==1 ? children[0] : NodeManager::currentNM()->mkNode( kind::PLUS, children );
+        }else{
+          res = NodeManager::currentNM()->mkConst( Rational(0) );
+        }
+        Trace("datatypes-rewrite") << "DatatypesRewriter::postRewrite: rewrite size " << in << " to " << res << std::endl;
+        return RewriteResponse(REWRITE_AGAIN_FULL, res );
+      }
+    }else if(in.getKind() == kind::DT_HEIGHT_BOUND ){
+      if( in[0].getKind()==kind::APPLY_CONSTRUCTOR ){
+        std::vector< Node > children;
+        Node res;
+        Rational r = in[1].getConst<Rational>();
+        Rational rmo = Rational( r-Rational(1) );
+        for( unsigned i=0; i<in[0].getNumChildren(); i++ ){
+          if( in[0][i].getType().isDatatype() ){
+            if( r.isZero() ){
+              res = NodeManager::currentNM()->mkConst(false);
+              break;
+            }else{
+              children.push_back( NodeManager::currentNM()->mkNode( kind::DT_HEIGHT_BOUND, in[0][i], NodeManager::currentNM()->mkConst(rmo) ) );
+            }
+          }
+        }
+        if( res.isNull() ){
+          res = children.size()==0 ? NodeManager::currentNM()->mkConst(true) : ( children.size()==1 ? children[0] : NodeManager::currentNM()->mkNode( kind::AND, children ) );
+        }
+        Trace("datatypes-rewrite") << "DatatypesRewriter::postRewrite: rewrite height " << in << " to " << res << std::endl;
+        return RewriteResponse(REWRITE_AGAIN_FULL, res );
       }
     }
     if(in.getKind() == kind::TUPLE_SELECT &&
@@ -204,11 +254,17 @@ public:
       return RewriteResponse(REWRITE_DONE,
                              NodeManager::currentNM()->mkConst(true));
     }
-    if(in.getKind() == kind::EQUAL &&
-       checkClash(in[0], in[1])) {
-      Trace("datatypes-rewrite") << "Rewrite clashing equality " << in << " to false" << std::endl;
-      return RewriteResponse(REWRITE_DONE,
-                             NodeManager::currentNM()->mkConst(false));
+    if(in.getKind() == kind::EQUAL ) {
+      std::vector< Node > rew;
+      if( checkClash(in[0], in[1], rew) ){
+        Trace("datatypes-rewrite") << "Rewrite clashing equality " << in << " to false" << std::endl;
+        return RewriteResponse(REWRITE_DONE, NodeManager::currentNM()->mkConst(false));
+      }else if( rew.size()==1 && rew[0]!=in ){
+        Trace("datatypes-rewrite") << "Rewrite equality " << in << " to " << rew[0] << std::endl;
+        return RewriteResponse(REWRITE_AGAIN_FULL, rew[0] );
+      }else{
+        Trace("datatypes-rewrite-debug") << "Did not rewrite equality " << in << " " << in[0].getKind() << " " << in[1].getKind() << std::endl;
+      }
     }
 
     return RewriteResponse(REWRITE_DONE, in);
@@ -222,7 +278,7 @@ public:
   static inline void init() {}
   static inline void shutdown() {}
 
-  static bool checkClash( Node n1, Node n2 ) {
+  static bool checkClash( Node n1, Node n2, std::vector< Node >& rew ) {
     if( (n1.getKind() == kind::APPLY_CONSTRUCTOR && n2.getKind() == kind::APPLY_CONSTRUCTOR) ||
         (n1.getKind() == kind::TUPLE && n2.getKind() == kind::TUPLE) ||
         (n1.getKind() == kind::RECORD && n2.getKind() == kind::RECORD) ) {
@@ -231,24 +287,96 @@ public:
       } else {
         Assert( n1.getNumChildren() == n2.getNumChildren() );
         for( int i=0; i<(int)n1.getNumChildren(); i++ ) {
-          if( checkClash( n1[i], n2[i] ) ) {
+          if( checkClash( n1[i], n2[i], rew ) ) {
             return true;
           }
         }
       }
-    }else if( !isTermDatatype( n1 ) ){
-      //also check for clashes between non-datatypes
-      Node eq = NodeManager::currentNM()->mkNode( n1.getType().isBoolean() ? kind::IFF : kind::EQUAL, n1, n2 );
-      eq = Rewriter::rewrite( eq );
-      if( eq==NodeManager::currentNM()->mkConst(false) ){
+    }else if( n1!=n2 ){
+      if( n1.isConst() && n2.isConst() ){
+        return true;
+      }else{
+        Node eq = NodeManager::currentNM()->mkNode( n1.getType().isBoolean() ? kind::IFF : kind::EQUAL, n1, n2 );
+        rew.push_back( eq );
+      }
+    }
+    return false;
+  }
+  /** get instantiate cons */
+  static Node getInstCons( Node n, const Datatype& dt, int index ) {
+    Type tspec;
+    if( dt.isParametric() ){
+      tspec = dt[index].getSpecializedConstructorType(n.getType().toType());
+    }
+    std::vector< Node > children;
+    children.push_back( Node::fromExpr( dt[index].getConstructor() ) );
+    for( int i=0; i<(int)dt[index].getNumArgs(); i++ ){
+      Node nc = NodeManager::currentNM()->mkNode( kind::APPLY_SELECTOR_TOTAL, Node::fromExpr( dt[index][i].getSelector() ), n );
+      children.push_back( nc );
+    }
+    Node n_ic = NodeManager::currentNM()->mkNode( kind::APPLY_CONSTRUCTOR, children );
+    //add type ascription for ambiguous constructor types
+    if(!n_ic.getType().isComparableTo(n.getType())) {
+      Assert( dt.isParametric() );
+      Debug("datatypes-parametric") << "DtInstantiate: ambiguous type for " << n_ic << ", ascribe to " << n.getType() << std::endl;
+      Debug("datatypes-parametric") << "Constructor is " << dt[index] << std::endl;
+      Type tspec = dt[index].getSpecializedConstructorType(n.getType().toType());
+      Debug("datatypes-parametric") << "Type specification is " << tspec << std::endl;
+      children[0] = NodeManager::currentNM()->mkNode(kind::APPLY_TYPE_ASCRIPTION,
+                                                     NodeManager::currentNM()->mkConst(AscriptionType(tspec)), children[0] );
+      n_ic = NodeManager::currentNM()->mkNode( kind::APPLY_CONSTRUCTOR, children );
+      Assert( n_ic.getType()==n.getType() );
+    }
+    Assert( isInstCons( n_ic, dt, index ) );
+    //n_ic = Rewriter::rewrite( n_ic );
+    return n_ic;
+  }
+  static bool isInstCons( Node n, const Datatype& dt, int index ){
+    if( n.getKind()==kind::APPLY_CONSTRUCTOR ){
+      const DatatypeConstructor& c = dt[index];
+      if( n.getOperator()==Node::fromExpr( c.getConstructor() ) ){
+        for( unsigned i=0; i<n.getNumChildren(); i++ ){
+          if( n[i].getKind()!=kind::APPLY_SELECTOR_TOTAL ||
+              n[i].getOperator()!=Node::fromExpr( c[i].getSelector() ) ){
+            return false;
+          }
+        }
         return true;
       }
     }
     return false;
   }
+  static Node mkTester( Node n, int i, const Datatype& dt ){
+    //Node ret = n.eqNode( DatatypesRewriter::getInstCons( n, dt, i ) );
+    //Assert( isTester( ret )==i );
+    Node ret = NodeManager::currentNM()->mkNode( kind::APPLY_TESTER, Node::fromExpr( dt[i].getTester() ), n );
+    return ret;
+  }
+  static bool isNullaryApplyConstructor( Node n ){
+    Assert( n.getKind()==kind::APPLY_CONSTRUCTOR );
+    for( unsigned i=0; i<n.getNumChildren(); i++ ){
+      if( n[i].getType().isDatatype() ){
+        return false;
+      }
+    }
+    return true;
+  }
+  static bool isNullaryConstructor( const DatatypeConstructor& c ){
+    for( unsigned j=0; j<c.getNumArgs(); j++ ){
+      if( c[j].getType().getRangeType().isDatatype() ){
+        return false;
+      }
+    }
+    return true;
+  }
+
   /** is this term a datatype */
-  static bool isTermDatatype( Node n ){
+  static bool isTermDatatype( TNode n ){
     TypeNode tn = n.getType();
+    return tn.isDatatype() || tn.isParametricDatatype() ||
+           tn.isTuple() || tn.isRecord();
+  }
+  static bool isTypeDatatype( TypeNode tn ){
     return tn.isDatatype() || tn.isParametricDatatype() ||
            tn.isTuple() || tn.isRecord();
   }

@@ -5,7 +5,7 @@
  ** Major contributors: none
  ** Minor contributors (to current version): none
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -57,10 +57,11 @@ void SmtEngine::checkProof() {
 
   Chat() << "checking proof..." << endl;
 
-  if(!d_logic.isPure(theory::THEORY_BOOL) &&
-     !d_logic.isPure(theory::THEORY_UF)) {
+  if( ! ( d_logic.isPure(theory::THEORY_BOOL) ||
+          ( d_logic.isPure(theory::THEORY_UF) &&
+            ! d_logic.hasCardinalityConstraints() ) ) ) {
     // no checking for these yet
-    Notice() << "Notice: no proof-checking for non-UF proofs yet" << endl;
+    Notice() << "Notice: no proof-checking for non-UF/Bool proofs yet" << endl;
     return;
   }
 

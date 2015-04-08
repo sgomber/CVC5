@@ -6,18 +6,20 @@ AM_CXXFLAGS = -Wall
 AM_CFLAGS = -Wall
 
 noinst_PROGRAMS = \
-	linear_arith \
-	helloworld \
-	combination \
 	bitvectors \
 	bitvectors_and_arrays \
-	datatypes
+	combination \
+	datatypes \
+	helloworld \
+	linear_arith \
+	sets \
+	strings
 
 noinst_DATA =
 
-linear_arith_SOURCES = \
-	linear_arith.cpp
-linear_arith_LDADD = \
+bitvectors_SOURCES = \
+	bitvectors.cpp
+bitvectors_LDADD = \
 	@builddir@/../../src/libcvc4.la
 
 bitvectors_and_arrays_SOURCES = \
@@ -30,19 +32,31 @@ combination_SOURCES = \
 combination_LDADD = \
 	@builddir@/../../src/libcvc4.la
 
-helloworld_SOURCES = \
-	helloworld.cpp
-helloworld_LDADD = \
-	@builddir@/../../src/libcvc4.la
-
-bitvectors_SOURCES = \
-	bitvectors.cpp
-bitvectors_LDADD = \
-	@builddir@/../../src/libcvc4.la
-
 datatypes_SOURCES = \
 	datatypes.cpp
 datatypes_LDADD = \
+	@builddir@/../../src/libcvc4.la
+
+helloworld_SOURCES = \
+	helloworld.cpp
+helloworld_CXXFLAGS = \
+	-DCVC4_MAKE_EXAMPLES
+helloworld_LDADD = \
+	@builddir@/../../src/libcvc4.la
+
+linear_arith_SOURCES = \
+	linear_arith.cpp
+linear_arith_LDADD = \
+	@builddir@/../../src/libcvc4.la
+
+sets_SOURCES = \
+	sets.cpp
+sets_LDADD = \
+	@builddir@/../../src/libcvc4.la
+
+strings_SOURCES = \
+	strings.cpp
+strings_LDADD = \
 	@builddir@/../../src/libcvc4.la
 
 # for installation

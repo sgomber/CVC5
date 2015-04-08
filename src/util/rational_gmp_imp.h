@@ -5,7 +5,7 @@
  ** Major contributors: Morgan Deters
  ** Minor contributors (to current version): Dejan Jovanovic
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -27,6 +27,11 @@
 #include "util/exception.h"
 
 namespace CVC4 {
+
+class CVC4_PUBLIC RationalFromDoubleException : public Exception {
+public:
+  RationalFromDoubleException(double d) throw();
+};
 
 /**
  ** A multi-precision rational constant.
@@ -172,12 +177,7 @@ public:
     return Integer(d_value.get_den());
   }
 
-  /** Return an exact rational for a double d. */
-  static Rational fromDouble(double d){
-    Rational q;
-    mpq_set_d(q.d_value.get_mpq_t(), d);
-    return q;
-  }
+  static Rational fromDouble(double d) throw(RationalFromDoubleException);
 
   /**
    * Get a double representation of this Rational, which is
@@ -232,6 +232,10 @@ public:
     mpz_class q;
     mpz_cdiv_q(q.get_mpz_t(), d_value.get_num_mpz_t(), d_value.get_den_mpz_t());
     return Integer(q);
+  }
+
+  Rational floor_frac() const {
+    return (*this) - Rational(floor());
   }
 
   Rational& operator=(const Rational& x){
@@ -326,6 +330,10 @@ public:
     uint32_t denLen = getDenominator().length();
     return  numLen + denLen;
   }
+
+  /** Equivalent to calling (this->abs()).cmp(b.abs()) */
+  int absCmp(const Rational& q) const;
+
 };/* class Rational */
 
 struct RationalHashFunction {

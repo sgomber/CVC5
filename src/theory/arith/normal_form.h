@@ -5,7 +5,7 @@
  ** Major contributors: none
  ** Minor contributors (to current version): Dejan Jovanovic, Morgan Deters
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -23,12 +23,15 @@
 #include "expr/node.h"
 #include "expr/node_self_iterator.h"
 #include "util/rational.h"
-#include "theory/theory.h"
-#include "theory/arith/arith_utilities.h"
+#include "theory/arith/delta_rational.h"
+//#include "theory/arith/arith_utilities.h"
 
 #include <list>
 #include <algorithm>
-#include <ext/algorithm>
+
+#if IS_SORTED_IN_GNUCXX_NAMESPACE
+#  include <ext/algorithm>
+#endif /* IS_SORTED_IN_GNUCXX_NAMESPACE */
 
 namespace CVC4 {
 namespace theory {
@@ -247,11 +250,11 @@ public:
       // by a variable.
       return true;
     default:
-      return (!isRelationOperator(k)) &&
-        (Theory::isLeafOf(n, theory::THEORY_ARITH));
+      return isLeafMember(n);
     }
   }
 
+  static bool isLeafMember(Node n);
   static bool isDivMember(Node n);
   bool isDivLike() const{
     return isDivMember(getNode());
@@ -268,24 +271,55 @@ public:
   }
 
   bool operator<(const Variable& v) const {
-    bool thisIsVariable = isMetaKindVariable();
-    bool vIsVariable = v.isMetaKindVariable();
-
-    if(thisIsVariable == vIsVariable){
-      bool thisIsInteger = isIntegral();
-      bool vIsInteger = v.isIntegral();
-      if(thisIsInteger == vIsInteger){
-        return getNode() < v.getNode();
-      }else{
-        return thisIsInteger && !vIsInteger;
-      }
-    }else{
-      return thisIsVariable && !vIsVariable;
-    }
+    VariableNodeCmp cmp;
+    return cmp(this->getNode(), v.getNode());
   }
+
+  struct VariableNodeCmp {
+    static inline int cmp(Node n, Node m) {
+      if ( n == m ) { return 0; }
+
+      // this is now slightly off of the old variable order.
+
+      bool nIsInteger = n.getType().isInteger();
+      bool mIsInteger = m.getType().isInteger();
+
+      if(nIsInteger == mIsInteger){
+        bool nIsVariable = n.isVar();
+        bool mIsVariable = m.isVar();
+
+        if(nIsVariable == mIsVariable){
+          if(n < m){
+            return -1;
+          }else{
+            Assert( n != m );
+            return 1;
+          }
+        }else{
+          if(nIsVariable){
+            return -1; // nIsVariable => !mIsVariable
+          }else{
+            return 1; // !nIsVariable => mIsVariable
+          }
+        }
+      }else{
+        Assert(nIsInteger != mIsInteger);
+        if(nIsInteger){
+          return 1; // nIsInteger => !mIsInteger
+        }else{
+          return -1; // !nIsInteger => mIsInteger
+        }
+      }
+    }
+
+    bool operator()(Node n, Node m) const {
+      return VariableNodeCmp::cmp(n,m) < 0;
+    }
+  };
 
   bool operator==(const Variable& v) const { return getNode() == v.getNode();}
 
+  size_t getComplexity() const;
 };/* class Variable */
 
 
@@ -306,9 +340,7 @@ public:
     return Constant(n);
   }
 
-  static Constant mkConstant(const Rational& rat) {
-    return Constant(mkRationalNode(rat));
-  }
+  static Constant mkConstant(const Rational& rat);
 
   static Constant mkZero() {
     return mkConstant(Rational(0));
@@ -322,6 +354,7 @@ public:
     return getNode().getConst<Rational>();
   }
 
+  static int absCmp(const Constant& a, const Constant& b);
   bool isIntegral() const { return getValue().isIntegral(); }
 
   int sgn() const { return getValue().sgn(); }
@@ -373,6 +406,8 @@ public:
     return getValue().getNumerator().length();
   }
 
+  size_t getComplexity() const;
+
 };/* class Constant */
 
 
@@ -417,6 +452,27 @@ static void merge_ranges(GetNodeIterator first1,
   copy_range(first2, last2, result);
 }
 
+template <class GetNodeIterator, class T, class Cmp>
+static void merge_ranges(GetNodeIterator first1,
+                         GetNodeIterator last1,
+                         GetNodeIterator first2,
+                         GetNodeIterator last2,
+                         std::vector<T>& result,
+                         const Cmp& cmp) {
+
+  while(first1 != last1 && first2 != last2){
+    if( cmp(*first1, *first2) ){
+      result.push_back(*first1);
+      ++ first1;
+    }else{
+      result.push_back(*first2);
+      ++ first2;
+    }
+  }
+  copy_range(first1, last1, result);
+  copy_range(first2, last2, result);
+}
+
 /**
  * A VarList is a sorted list of variables representing a product.
  * If the VarList is empty, it represents an empty product or 1.
@@ -435,9 +491,7 @@ private:
 
   VarList() : NodeWrapper(Node::null()) {}
 
-  VarList(Node n) : NodeWrapper(n) {
-    Assert(isSorted(begin(), end()));
-  }
+  VarList(Node n);
 
   typedef expr::NodeSelfIterator internal_iterator;
 
@@ -459,7 +513,7 @@ private:
 
 public:
 
-  class iterator {
+  class iterator : public std::iterator<std::input_iterator_tag, Variable> {
   private:
     internal_iterator d_iter;
 
@@ -563,6 +617,7 @@ public:
     }
     return true;
   }
+  size_t getComplexity() const;
 
 private:
   bool isSorted(iterator start, iterator end);
@@ -680,12 +735,19 @@ public:
   }
 
   static bool isSorted(const std::vector<Monomial>& m) {
+#if IS_SORTED_IN_GNUCXX_NAMESPACE
     return __gnu_cxx::is_sorted(m.begin(), m.end());
+#else /* IS_SORTED_IN_GNUCXX_NAMESPACE */
+    return std::is_sorted(m.begin(), m.end());
+#endif /* IS_SORTED_IN_GNUCXX_NAMESPACE */
   }
 
   static bool isStrictlySorted(const std::vector<Monomial>& m) {
     return isSorted(m) && std::adjacent_find(m.begin(),m.end()) == m.end();
   }
+
+  static void sort(std::vector<Monomial>& m);
+  static void combineAdjacentMonomials(std::vector<Monomial>& m);
 
   /**
    * The variable product
@@ -717,11 +779,14 @@ public:
    * Given a sorted list of monomials, this function transforms this
    * into a strictly sorted list of monomials that does not contain zero.
    */
-  static std::vector<Monomial> sumLikeTerms(const std::vector<Monomial>& monos);
+  //static std::vector<Monomial> sumLikeTerms(const std::vector<Monomial>& monos);
 
-  bool absLessThan(const Monomial& other) const{
-    return getConstant().abs() < other.getConstant().abs();
+  int absCmp(const Monomial& other) const{
+    return getConstant().getValue().absCmp(other.getConstant().getValue());
   }
+  // bool absLessThan(const Monomial& other) const{
+  //   return getConstant().abs() < other.getConstant().abs();
+  // }
 
   uint32_t coefficientLength() const{
     return getConstant().length();
@@ -730,6 +795,7 @@ public:
   void print() const;
   static void printList(const std::vector<Monomial>& list);
 
+  size_t getComplexity() const;
 };/* class Monomial */
 
 class SumPair;
@@ -770,35 +836,7 @@ private:
   bool singleton() const { return d_singleton; }
 
 public:
-  static bool isMember(TNode n) {
-    if(Monomial::isMember(n)){
-      return true;
-    }else if(n.getKind() == kind::PLUS){
-      Assert(n.getNumChildren() >= 2);
-      Node::iterator currIter = n.begin(), end = n.end();
-      Node prev = *currIter;
-      if(!Monomial::isMember(prev)){
-        return false;
-      }
-
-      Monomial mprev = Monomial::parseMonomial(prev);
-      ++currIter;
-      for(; currIter != end; ++currIter){
-        Node curr = *currIter;
-        if(!Monomial::isMember(curr)){
-          return false;
-        }
-        Monomial mcurr = Monomial::parseMonomial(curr);
-        if(!(mprev < mcurr)){
-          return false;
-        }
-        mprev = mcurr;
-      }
-      return true;
-    } else {
-      return false;
-    }
-  }
+  static bool isMember(TNode n);
 
   class iterator {
   private:
@@ -938,8 +976,11 @@ public:
     return true;
   }
 
+  static Polynomial sumPolynomials(const std::vector<Polynomial>& polynomials);
+
   /** Returns true if the polynomial contains a non-linear monomial.*/
   bool isNonlinear() const;
+
 
   /**
    * Selects a minimal monomial in the polynomial by the absolute value of
@@ -1058,6 +1099,8 @@ public:
     return getHead().getVarList();
   }
 
+  size_t getComplexity() const;
+
   friend class SumPair;
   friend class Comparison;
 
@@ -1171,6 +1214,10 @@ public:
 
   bool isZero() const {
     return getConstant().isZero() && isConstant();
+  }
+
+  uint32_t size() const{
+    return getPolynomial().size();
   }
 
   bool isNonlinear() const{
@@ -1367,6 +1414,8 @@ public:
     Comparison parse = Comparison::parseNormalForm(n);
     return parse.isNormalForm();
   }
+
+  size_t getComplexity() const;
 
   SumPair toSumPair() const;
 

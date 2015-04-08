@@ -5,7 +5,7 @@
  ** Major contributors: none
  ** Minor contributors (to current version): none
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -33,26 +33,26 @@ namespace tptp {
 
 void TptpPrinter::toStream(std::ostream& out, TNode n,
                            int toDepth, bool types, size_t dag) const throw() {
-  n.toStream(out, toDepth, types, dag, language::output::LANG_SMTLIB_V2);
+  n.toStream(out, toDepth, types, dag, language::output::LANG_SMTLIB_V2_5);
 }/* TptpPrinter::toStream() */
 
 void TptpPrinter::toStream(std::ostream& out, const Command* c,
                            int toDepth, bool types, size_t dag) const throw() {
-  c->toStream(out, toDepth, types, dag, language::output::LANG_SMTLIB_V2);
+  c->toStream(out, toDepth, types, dag, language::output::LANG_SMTLIB_V2_5);
 }/* TptpPrinter::toStream() */
 
 void TptpPrinter::toStream(std::ostream& out, const CommandStatus* s) const throw() {
-  s->toStream(out, language::output::LANG_SMTLIB_V2);
+  s->toStream(out, language::output::LANG_SMTLIB_V2_5);
 }/* TptpPrinter::toStream() */
 
 void TptpPrinter::toStream(std::ostream& out, const SExpr& sexpr) const throw() {
-  Printer::getPrinter(language::output::LANG_SMTLIB_V2)->toStream(out, sexpr);
+  Printer::getPrinter(language::output::LANG_SMTLIB_V2_5)->toStream(out, sexpr);
 }/* TptpPrinter::toStream() */
 
 void TptpPrinter::toStream(std::ostream& out, const Model& m) const throw() {
   out << "% SZS output start FiniteModel for " << m.getInputName() << endl;
   for(size_t i = 0; i < m.getNumCommands(); ++i) {
-    this->Printer::toStreamUsing(language::output::LANG_SMTLIB_V2, out, m, m.getCommand(i));
+    this->Printer::toStreamUsing(language::output::LANG_SMTLIB_V2_5, out, m, m.getCommand(i));
   }
   out << "% SZS output end FiniteModel for " << m.getInputName() << endl;
 }

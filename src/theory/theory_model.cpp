@@ -3,9 +3,9 @@
  ** \verbatim
  ** Original author: Morgan Deters
  ** Major contributors: Andrew Reynolds, Clark Barrett
- ** Minor contributors (to current version): Tim King
+ ** Minor contributors (to current version): Kshitij Bansal, Liana Hadarean, Tim King
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -27,26 +27,33 @@ using namespace CVC4::kind;
 using namespace CVC4::context;
 using namespace CVC4::theory;
 
-TheoryModel::TheoryModel( context::Context* c, std::string name, bool enableFuncModels) :
+TheoryModel::TheoryModel(context::Context* c, std::string name, bool enableFuncModels) :
   d_substitutions(c, false), d_modelBuilt(c, false), d_enableFuncModels(enableFuncModels)
 {
   d_true = NodeManager::currentNM()->mkConst( true );
   d_false = NodeManager::currentNM()->mkConst( false );
 
   d_eeContext = new context::Context();
-  d_equalityEngine = new eq::EqualityEngine(d_eeContext, name);
+  d_equalityEngine = new eq::EqualityEngine(d_eeContext, name, false);
 
   // The kinds we are treating as function application in congruence
   d_equalityEngine->addFunctionKind(kind::APPLY_UF);
   d_equalityEngine->addFunctionKind(kind::SELECT);
   // d_equalityEngine->addFunctionKind(kind::STORE);
   d_equalityEngine->addFunctionKind(kind::APPLY_CONSTRUCTOR);
-  d_equalityEngine->addFunctionKind(kind::APPLY_SELECTOR);
+  d_equalityEngine->addFunctionKind(kind::APPLY_SELECTOR_TOTAL);
   d_equalityEngine->addFunctionKind(kind::APPLY_TESTER);
   d_eeContext->push();
 }
 
+TheoryModel::~TheoryModel() {
+  d_eeContext->pop();
+  delete d_equalityEngine;
+  delete d_eeContext;
+}
+
 void TheoryModel::reset(){
+  d_modelCache.clear();
   d_reps.clear();
   d_rep_set.clear();
   d_uf_terms.clear();
@@ -64,6 +71,8 @@ Node TheoryModel::getValue(TNode n) const {
     //normalize
     nn = Rewriter::rewrite(nn);
   }
+  Debug("model-getvalue") << "[model-getvalue] getValue( " << n << " ): " << std::endl
+                          << "[model-getvalue] returning " << nn << std::endl;
   return nn;
 }
 
@@ -90,6 +99,11 @@ Cardinality TheoryModel::getCardinality( Type t ) const{
 
 Node TheoryModel::getModelValue(TNode n, bool hasBoundVars) const
 {
+  std::hash_map<Node, Node, NodeHashFunction>::iterator it = d_modelCache.find(n);
+  if (it != d_modelCache.end()) {
+    return (*it).second;
+  }
+  Node ret = n;
   if(n.getKind() == kind::EXISTS || n.getKind() == kind::FORALL) {
     // We should have terms, thanks to TheoryQuantifiers::collectModelInfo().
     // However, if the Decision Engine stops us early, there might be a
@@ -106,19 +120,23 @@ Node TheoryModel::getModelValue(TNode n, bool hasBoundVars) const
     // checkModel(), and the quantifier actually matters, we'll get an
     // assert-fail since the quantifier isn't a constant.
     if(!d_equalityEngine->hasTerm(Rewriter::rewrite(n))) {
-      return n;
+      d_modelCache[n] = ret;
+      return ret;
     } else {
-      n = Rewriter::rewrite(n);
+      ret = Rewriter::rewrite(n);
     }
   } else {
     if(n.getKind() == kind::LAMBDA) {
       NodeManager* nm = NodeManager::currentNM();
       Node body = getModelValue(n[1], true);
       body = Rewriter::rewrite(body);
-      return nm->mkNode(kind::LAMBDA, n[0], body);
+      ret = nm->mkNode(kind::LAMBDA, n[0], body);
+      d_modelCache[n] = ret;
+      return ret;
     }
     if(n.isConst() || (hasBoundVars && n.getKind() == kind::BOUND_VARIABLE)) {
-      return n;
+      d_modelCache[n] = ret;
+      return ret;
     }
 
     TypeNode t = n.getType();
@@ -127,7 +145,9 @@ Node TheoryModel::getModelValue(TNode n, bool hasBoundVars) const
         std::map< Node, Node >::const_iterator it = d_uf_models.find(n);
         if (it != d_uf_models.end()) {
           // Existing function
-          return it->second;
+          ret = it->second;
+          d_modelCache[n] = ret;
+          return ret;
         }
         // Unknown function symbol: return LAMBDA x. c, where c is the first constant in the enumeration of the range type
         vector<TypeNode> argTypes = t.getArgTypes();
@@ -138,16 +158,22 @@ Node TheoryModel::getModelValue(TNode n, bool hasBoundVars) const
         }
         Node boundVarList = nm->mkNode(kind::BOUND_VAR_LIST, args);
         TypeEnumerator te(t.getRangeType());
-        return nm->mkNode(kind::LAMBDA, boundVarList, *te);
+        ret = nm->mkNode(kind::LAMBDA, boundVarList, *te);
+        d_modelCache[n] = ret;
+        return ret;
       }
       // TODO: if func models not enabled, throw an error?
       Unreachable();
     }
 
-    if (n.getNumChildren() > 0) {
+    if (n.getNumChildren() > 0 &&
+        n.getKind() != kind::BITVECTOR_ACKERMANIZE_UDIV &&
+        n.getKind() != kind::BITVECTOR_ACKERMANIZE_UREM) {
+      Debug("model-getvalue-debug") << "Get model value children " << n << std::endl;
       std::vector<Node> children;
       if (n.getKind() == APPLY_UF) {
         Node op = getModelValue(n.getOperator(), hasBoundVars);
+        Debug("model-getvalue-debug") << "  operator : " << op << std::endl;
         children.push_back(op);
       }
       else if (n.getMetaKind() == kind::metakind::PARAMETERIZED) {
@@ -155,34 +181,44 @@ Node TheoryModel::getModelValue(TNode n, bool hasBoundVars) const
       }
       //evaluate the children
       for (unsigned i = 0; i < n.getNumChildren(); ++i) {
-        Node val = getModelValue(n[i], hasBoundVars);
-        children.push_back(val);
+        ret = getModelValue(n[i], hasBoundVars);
+        Debug("model-getvalue-debug") << "  " << n << "[" << i << "] is " << ret << std::endl;
+        children.push_back(ret);
       }
-      Node val = Rewriter::rewrite(NodeManager::currentNM()->mkNode(n.getKind(), children));
-      if(val.getKind() == kind::CARDINALITY_CONSTRAINT) {
-        val = NodeManager::currentNM()->mkConst(getCardinality(val[0].getType().toType()).getFiniteCardinality() <= val[1].getConst<Rational>().getNumerator());
+      ret = Rewriter::rewrite(NodeManager::currentNM()->mkNode(n.getKind(), children));
+      if(ret.getKind() == kind::CARDINALITY_CONSTRAINT) {
+        ret = NodeManager::currentNM()->mkConst(getCardinality(ret[0].getType().toType()).getFiniteCardinality() <= ret[1].getConst<Rational>().getNumerator());
       }
-      if(val.getKind() == kind::COMBINED_CARDINALITY_CONSTRAINT ){
+      if(ret.getKind() == kind::COMBINED_CARDINALITY_CONSTRAINT ){
         //FIXME
-        val = NodeManager::currentNM()->mkConst(false);
+        ret = NodeManager::currentNM()->mkConst(false);
       }
-      return val;
+      d_modelCache[n] = ret;
+      return ret;
     }
 
     if (!d_equalityEngine->hasTerm(n)) {
-      // Unknown term - return first enumerated value for this type
-      TypeEnumerator te(n.getType());
-      return *te;
+      if(n.getType().isRegExp()) { 
+        ret = Rewriter::rewrite(ret);
+      } else {
+        // Unknown term - return first enumerated value for this type
+        TypeEnumerator te(n.getType());
+        ret = *te;
+      }
+      d_modelCache[n] = ret;
+      return ret;
     }
   }
-  Node val = d_equalityEngine->getRepresentative(n);
-  Assert(d_reps.find(val) != d_reps.end());
-  std::map< Node, Node >::const_iterator it = d_reps.find( val );
-  if( it!=d_reps.end() ){
-    return it->second;
-  }else{
-    return Node::null();
+  ret = d_equalityEngine->getRepresentative(ret);
+  Assert(d_reps.find(ret) != d_reps.end());
+  std::map< Node, Node >::const_iterator it2 = d_reps.find( ret );
+  if (it2 != d_reps.end()) {
+    ret = it2->second;
+  } else {
+    ret = Node::null();
   }
+  d_modelCache[n] = ret;
+  return ret;
 }
 
 Node TheoryModel::getDomainValue( TypeNode tn, std::vector< Node >& exclude ){
@@ -340,6 +376,7 @@ void TheoryModel::assertEqualityEngine(const eq::EqualityEngine* ee, set<Node>* 
 void TheoryModel::assertRepresentative(TNode n )
 {
   Trace("model-builder-reps") << "Assert rep : " << n << std::endl;
+  Trace("model-builder-reps") << "Rep eqc is : " << getRepresentative( n ) << std::endl;
   d_reps[ n ] = n;
 }
 
@@ -420,7 +457,7 @@ TheoryEngineModelBuilder::TheoryEngineModelBuilder( TheoryEngine* te ) : d_te( t
 
 bool TheoryEngineModelBuilder::isAssignable(TNode n)
 {
-  return (n.isVar() || n.getKind() == kind::APPLY_UF || n.getKind() == kind::SELECT || n.getKind() == kind::APPLY_SELECTOR);
+  return (n.isVar() || n.getKind() == kind::APPLY_UF || n.getKind() == kind::SELECT || n.getKind() == kind::APPLY_SELECTOR_TOTAL);
 }
 
 
@@ -520,7 +557,7 @@ void TheoryEngineModelBuilder::buildModel(Model* m, bool fullModel)
     else if (!rep.isNull()) {
       assertedReps[eqc] = rep;
       typeRepSet.add(eqct.getBaseType(), eqc);
-      allTypes.insert(eqct);
+      allTypes.insert(eqct.getBaseType());
     }
     else {
       typeNoRepSet.add(eqct, eqc);
@@ -610,7 +647,7 @@ void TheoryEngineModelBuilder::buildModel(Model* m, bool fullModel)
             Trace("model-builder") << "    Normalizing rep (" << rep << "), normalized to (" << normalized << ")" << endl;
             if (normalized.isConst()) {
               changed = true;
-              typeConstSet.add(t.getBaseType(), normalized);
+              typeConstSet.add(tb, normalized);
               constantReps[*i] = normalized;
               assertedReps.erase(*i);
               i2 = i;
@@ -649,6 +686,9 @@ void TheoryEngineModelBuilder::buildModel(Model* m, bool fullModel)
         continue;
       }
       TypeNode t = TypeSet::getType(it);
+      if(t.isTuple() || t.isRecord()) {
+        t = NodeManager::currentNM()->getDatatypeForTupleRecord(t);
+      }
       TypeNode tb = t.getBaseType();
       if (!assignOne) {
         set<Node>* repSet = typeRepSet.getSet(tb);
@@ -729,7 +769,7 @@ void TheoryEngineModelBuilder::buildModel(Model* m, bool fullModel)
   std::map< Node, Node >::iterator itMap;
   for (itMap = constantReps.begin(); itMap != constantReps.end(); ++itMap) {
     tm->d_reps[itMap->first] = itMap->second;
-    tm->d_rep_set.add(itMap->second);
+    tm->d_rep_set.add(itMap->second.getType(), itMap->second);
   }
 
   if (!fullModel) {
@@ -737,14 +777,14 @@ void TheoryEngineModelBuilder::buildModel(Model* m, bool fullModel)
     // Make sure every EC has a rep
     for (itMap = assertedReps.begin(); itMap != assertedReps.end(); ++itMap ) {
       tm->d_reps[itMap->first] = itMap->second;
-      tm->d_rep_set.add(itMap->second);
+      tm->d_rep_set.add(itMap->second.getType(), itMap->second);
     }
     for (it = typeNoRepSet.begin(); it != typeNoRepSet.end(); ++it) {
       set<Node>& noRepSet = TypeSet::getSet(it);
       set<Node>::iterator i;
       for (i = noRepSet.begin(); i != noRepSet.end(); ++i) {
         tm->d_reps[*i] = *i;
-        tm->d_rep_set.add(*i);
+        tm->d_rep_set.add((*i).getType(), *i);
       }
     }
   }
@@ -779,7 +819,7 @@ void TheoryEngineModelBuilder::buildModel(Model* m, bool fullModel)
           << "n: " << n << endl
           << "getValue(n): " << tm->getValue(n) << endl
           << "rep: " << rep << endl;
-        Assert(tm->getValue(*eqc_i) == rep);
+        Assert(tm->getValue(*eqc_i) == rep, "run with -d check-model::rep-checking for details");
       }
     }
   }
@@ -812,11 +852,11 @@ Node TheoryEngineModelBuilder::normalize(TheoryModel* m, TNode r, std::map< Node
           itMap = constantReps.find(m->d_equalityEngine->getRepresentative(ri));
           if (itMap != constantReps.end()) {
             ri = (*itMap).second;
-	    recurse = false;
+            recurse = false;
           }
           else if (!evalOnly) {
-	    recurse = false;
-	  }
+            recurse = false;
+          }
         }
         if (recurse) {
           ri = normalize(m, ri, constantReps, evalOnly);
@@ -830,7 +870,7 @@ Node TheoryEngineModelBuilder::normalize(TheoryModel* m, TNode r, std::map< Node
     retNode = NodeManager::currentNM()->mkNode( r.getKind(), children );
     if (childrenConst) {
       retNode = Rewriter::rewrite(retNode);
-      Assert(retNode.getKind() == kind::APPLY_UF || retNode.isConst());
+      Assert(retNode.getKind()==kind::APPLY_UF || retNode.getKind()==kind::REGEXP_RANGE || retNode.isConst());
     }
   }
   d_normalizedCache[r] = retNode;

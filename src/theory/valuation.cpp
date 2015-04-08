@@ -5,7 +5,7 @@
  ** Major contributors: Dejan Jovanovic
  ** Minor contributors (to current version): Andrew Reynolds, Clark Barrett, Tim King
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -23,34 +23,34 @@ namespace CVC4 {
 namespace theory {
 
 bool equalityStatusCompatible(EqualityStatus s1, EqualityStatus s2) {
- switch (s1) {
- case EQUALITY_TRUE:
- case EQUALITY_TRUE_IN_MODEL:
- case EQUALITY_TRUE_AND_PROPAGATED:
-   switch (s2) {
-   case EQUALITY_TRUE:
-   case EQUALITY_TRUE_IN_MODEL:
-   case EQUALITY_TRUE_AND_PROPAGATED:
-     return true;
-   default:
-     return false;
-   }
-   break;
- case EQUALITY_FALSE:
- case EQUALITY_FALSE_IN_MODEL:
- case EQUALITY_FALSE_AND_PROPAGATED:
-   switch (s2) {
-   case EQUALITY_FALSE:
-   case EQUALITY_FALSE_IN_MODEL:
-   case EQUALITY_FALSE_AND_PROPAGATED:
-     return true;
-   default:
-     return false;
-   }
-   break;
- default:
-   return false;
- }
+  switch (s1) {
+  case EQUALITY_TRUE:
+  case EQUALITY_TRUE_IN_MODEL:
+  case EQUALITY_TRUE_AND_PROPAGATED:
+    switch (s2) {
+    case EQUALITY_TRUE:
+    case EQUALITY_TRUE_IN_MODEL:
+    case EQUALITY_TRUE_AND_PROPAGATED:
+      return true;
+    default:
+      return false;
+    }
+    break;
+  case EQUALITY_FALSE:
+  case EQUALITY_FALSE_IN_MODEL:
+  case EQUALITY_FALSE_AND_PROPAGATED:
+    switch (s2) {
+    case EQUALITY_FALSE:
+    case EQUALITY_FALSE_IN_MODEL:
+    case EQUALITY_FALSE_AND_PROPAGATED:
+      return true;
+    default:
+      return false;
+    }
+    break;
+  default:
+    return false;
+  }
 }
 
 bool Valuation::isSatLiteral(TNode n) const {
@@ -87,15 +87,8 @@ Node Valuation::getModelValue(TNode var) {
   return d_engine->getModelValue(var);
 }
 
-
 Node Valuation::ensureLiteral(TNode n) {
-  Debug("ensureLiteral") << "rewriting: " << n << std::endl;
-  Node rewritten = Rewriter::rewrite(n);
-  Debug("ensureLiteral") << "      got: " << rewritten << std::endl;
-  Node preprocessed = d_engine->preprocess(rewritten);
-  Debug("ensureLiteral") << "preproced: " << preprocessed << std::endl;
-  d_engine->getPropEngine()->ensureLiteral(preprocessed);
-  return preprocessed;
+  return d_engine->ensureLiteral(n);
 }
 
 bool Valuation::isDecision(Node lit) const {
@@ -104,6 +97,14 @@ bool Valuation::isDecision(Node lit) const {
 
 unsigned Valuation::getAssertionLevel() const{
   return d_engine->getPropEngine()->getAssertionLevel();
+}
+
+std::pair<bool, Node> Valuation::entailmentCheck(theory::TheoryOfMode mode, TNode lit, const theory::EntailmentCheckParameters* params, theory::EntailmentCheckSideEffects* out) {
+  return d_engine->entailmentCheck(mode, lit, params, out);
+}
+
+bool Valuation::needCheck() const{
+  return d_engine->needCheck();
 }
 
 }/* CVC4::theory namespace */

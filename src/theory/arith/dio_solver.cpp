@@ -5,7 +5,7 @@
  ** Major contributors: Tim King
  ** Minor contributors (to current version): Dejan Jovanovic
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -281,7 +281,7 @@ void DioSolver::moveMinimumByAbsToQueueFront(){
   size_t N = d_currentF.size();
   for(size_t i=1; i < N; ++i){
     Monomial curr = d_trail[d_currentF[i]].d_minimalMonomial;
-    if(curr.absLessThan(minMonomial)){
+    if(curr.absCmp(minMonomial) < 0){
       indexInQueue = i;
       minMonomial = curr;
     }

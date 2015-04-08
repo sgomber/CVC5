@@ -5,7 +5,7 @@
  ** Major contributors: Morgan Deters
  ** Minor contributors (to current version): none
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -26,14 +26,6 @@ namespace CVC4 {
 namespace theory {
 namespace quantifiers {
 
-/** Attribute true for quantifiers that are axioms */
-struct AxiomAttributeId {};
-typedef expr::Attribute< AxiomAttributeId, bool > AxiomAttribute;
-
-/** Attribute true for quantifiers that are conjecture */
-struct ConjectureAttributeId {};
-typedef expr::Attribute< ConjectureAttributeId, bool > ConjectureAttribute;
-
 /** Attribute priority for rewrite rules */
 //struct RrPriorityAttributeId {};
 //typedef expr::Attribute< RrPriorityAttributeId, uint64_t > RrPriorityAttribute;
@@ -44,7 +36,7 @@ struct QuantifiersAttributes
     *   This function will apply a custom set of attributes to all top-level universal
     *   quantifiers contained in n
     */
-  static void setUserAttribute( const std::string& attr, Node n );
+  static void setUserAttribute( const std::string& attr, Node n, std::vector<Node> node_values, std::string str_value );
 };
 
 

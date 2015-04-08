@@ -5,7 +5,7 @@
  ** Major contributors: none
  ** Minor contributors (to current version): none
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -59,10 +59,12 @@ int main() {
     different = different || stats.getStatistic((*i).first) != (*i).second;
   }
 
+#ifdef CVC4_STATISTICS_ON
   if(!different) {
     cout << "stats are the same!  bailing.." << endl;
     exit(1);
   }
+#endif /* CVC4_STATISTICS_ON */
 
   return r == Result::VALID ? 0 : 1;
 }

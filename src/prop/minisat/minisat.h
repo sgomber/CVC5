@@ -5,7 +5,7 @@
  ** Major contributors:
  ** Minor contributors (to current version):
  ** This file is part of the CVC4 prototype.
- ** Copyright (c) 2009, 2010, 2011  The Analysis of Computer Systems Group (ACSys)
+ ** Copyright (c) 2009-2014  The Analysis of Computer Systems Group (ACSys)
  ** Courant Institute of Mathematical Sciences
  ** New York University
  ** See the file COPYING in the top-level source directory for licensing
@@ -13,13 +13,12 @@
  **
  ** \brief SAT Solver.
  **
- ** Implementation of the minisat for cvc4.
+ ** Implementation of the minisat interface for cvc4.
  **/
 
 #pragma once
 
 #include "prop/sat_solver.h"
-#include "prop/sat_solver_registry.h"
 #include "prop/minisat/simp/SimpSolver.h"
 
 namespace CVC4 {
@@ -30,11 +29,10 @@ class MinisatSatSolver : public DPLLSatSolverInterface {
   /** The SatSolver used */
   Minisat::SimpSolver* d_minisat;
 
-  /** The SatSolver uses this to communicate with the theories */
-  TheoryProxy* d_theoryProxy;
-
   /** Context we will be using to synchronize the sat solver */
   context::Context* d_context;
+
+  void setupOptions();
 
 public:
 
@@ -44,7 +42,6 @@ public:
   static SatVariable     toSatVariable(Minisat::Var var);
   static Minisat::Lit    toMinisatLit(SatLiteral lit);
   static SatLiteral      toSatLiteral(Minisat::Lit lit);
-  static SatValue        toSatLiteralValue(bool res);
   static SatValue        toSatLiteralValue(Minisat::lbool res);
   static Minisat::lbool  toMinisatlbool(SatValue val);
   //(Commented because not in use) static bool            tobool(SatValue val);
@@ -54,7 +51,7 @@ public:
   static void  toSatClause    (const Minisat::Clause& clause, SatClause& sat_clause);
   void initialize(context::Context* context, TheoryProxy* theoryProxy);
 
-  void addClause(SatClause& clause, bool removable);
+  void addClause(SatClause& clause, bool removable, uint64_t proof_id);
 
   SatVariable newVar(bool isTheoryAtom, bool preRegister, bool canErase);
   SatVariable trueVar() { return d_minisat->trueVar(); }
@@ -96,11 +93,10 @@ public:
     Statistics();
     ~Statistics();
     void init(Minisat::SimpSolver* d_minisat);
-  };
+  };/* class MinisatSatSolver::Statistics */
   Statistics d_statistics;
 
-};
+};/* class MinisatSatSolver */
 
-} // prop namespace
-} // cvc4 namespace
-
+}/* CVC4::prop namespace */
+}/* CVC4 namespace */

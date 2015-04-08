@@ -3,9 +3,9 @@
  ** \verbatim
  ** Original author: Andrew Reynolds
  ** Major contributors: none
- ** Minor contributors (to current version): Morgan Deters
+ ** Minor contributors (to current version): Kshitij Bansal, Morgan Deters
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -17,7 +17,8 @@
 #include "theory/quantifiers/term_database.h"
 #include "theory/quantifiers/quantifiers_attributes.h"
 #include "theory/quantifiers/full_model_check.h"
-#include "theory/quantifiers/qinterval_builder.h"
+#include "theory/quantifiers/ambqi_builder.h"
+#include "theory/quantifiers/options.h"
 
 #define USE_INDEX_ORDERING
 
@@ -35,10 +36,21 @@ d_qe( qe ), d_axiom_asserted( c, false ), d_forall_asserts( c ), d_isModelSet( c
 
 }
 
-void FirstOrderModel::assertQuantifier( Node n ){
-  d_forall_asserts.push_back( n );
-  if( n.getAttribute(AxiomAttribute()) ){
-    d_axiom_asserted = true;
+void FirstOrderModel::assertQuantifier( Node n, bool reduced ){
+  if( !reduced ){
+    if( n.getKind()==FORALL ){
+      d_forall_asserts.push_back( n );
+      if( n.getAttribute(AxiomAttribute()) ){
+        d_axiom_asserted = true;
+      }
+    }else if( n.getKind()==NOT ){
+      Assert( n[0].getKind()==FORALL );
+    }
+  }else{
+    Assert( n.getKind()==FORALL );
+    Assert( d_forall_to_reduce.find( n )==d_forall_to_reduce.end() );
+    d_forall_to_reduce[n] = true;
+    Trace("quant") << "Mark to reduce : " << n << std::endl;
   }
 }
 
@@ -68,22 +80,20 @@ Node FirstOrderModel::getCurrentModelValue( Node n, bool partial ) {
   }
 }
 
-void FirstOrderModel::initialize( bool considerAxioms ) {
+void FirstOrderModel::initialize() {
   processInitialize( true );
   //this is called after representatives have been chosen and the equality engine has been built
   //for each quantifier, collect all operators we care about
   for( int i=0; i<getNumAssertedQuantifiers(); i++ ){
     Node f = getAssertedQuantifier( i );
-    processInitializeQuantifier( f );
     if( d_quant_var_id.find( f )==d_quant_var_id.end() ){
       for(unsigned i=0; i<f[0].getNumChildren(); i++){
         d_quant_var_id[f][f[0][i]] = i;
       }
     }
-    if( considerAxioms || !f.hasAttribute(AxiomAttribute()) ){
-      //initialize relevant models within bodies of all quantifiers
-      initializeModelForTerm( f[1] );
-    }
+    processInitializeQuantifier( f );
+    //initialize relevant models within bodies of all quantifiers
+    initializeModelForTerm( f[1] );
   }
   processInitialize( false );
 }
@@ -100,13 +110,44 @@ Node FirstOrderModel::getSomeDomainElement(TypeNode tn){
   if (!d_rep_set.hasType(tn)) {
     Trace("fmc-model-debug") << "Must create domain element for " << tn << "..." << std::endl;
     Node mbt = d_qe->getTermDatabase()->getModelBasisTerm(tn);
-    d_rep_set.add(mbt);
+    Trace("fmc-model-debug") << "Add to representative set..." << std::endl;
+    d_rep_set.add(tn, mbt);
   }else if( d_rep_set.d_type_reps[tn].size()==0 ){
     Message() << "empty reps" << std::endl;
     exit(0);
   }
   return d_rep_set.d_type_reps[tn][0];
 }
+
+/** needs check */
+bool FirstOrderModel::checkNeeded() {
+  return d_forall_asserts.size()>0 || !d_forall_to_reduce.empty();
+}
+
+/** mark reduced */
+void FirstOrderModel::markQuantifierReduced( Node q ) {
+  Assert( d_forall_to_reduce.find( q )!=d_forall_to_reduce.end() );
+  d_forall_to_reduce.erase( q );
+  Trace("quant") << "Mark reduced : " << q << std::endl;
+}
+
+void FirstOrderModel::reset_round() {
+  d_quant_active.clear();
+}
+
+void FirstOrderModel::setQuantifierActive( TNode q, bool active ) {
+  d_quant_active[q] = active;
+}
+
+bool FirstOrderModel::isQuantifierActive( TNode q ) {
+  std::map< TNode, bool >::iterator it = d_quant_active.find( q );
+  if( it==d_quant_active.end() ){
+    return true;
+  }else{
+    return it->second;
+  }
+}
+
 
 FirstOrderModelIG::FirstOrderModelIG(QuantifiersEngine * qe, context::Context* c, std::string name) :
 FirstOrderModel(qe, c,name) {
@@ -544,6 +585,12 @@ FirstOrderModel(qe, c, name){
 
 }
 
+FirstOrderModelFmc::~FirstOrderModelFmc() {
+  for(std::map<Node, Def*>::iterator i = d_models.begin(); i != d_models.end(); ++i) {
+    delete (*i).second;
+  }
+}
+
 Node FirstOrderModelFmc::getUsedRepresentative(Node n, bool strict) {
   //Assert( fm->hasTerm(n) );
   TypeNode tn = n.getType();
@@ -584,7 +631,7 @@ void FirstOrderModelFmc::processInitialize( bool ispre ) {
         types.push_back(NodeManager::currentNM()->integerType());
       }
       TypeNode typ = NodeManager::currentNM()->mkFunctionType( types, NodeManager::currentNM()->integerType() );
-      intervalOp = NodeManager::currentNM()->mkSkolem( "interval_$$", typ, "op representing interval" );
+      intervalOp = NodeManager::currentNM()->mkSkolem( "interval", typ, "op representing interval" );
     }
     for( std::map<Node, Def * >::iterator it = d_models.begin(); it != d_models.end(); ++it ){
       it->second->reset();
@@ -610,7 +657,7 @@ bool FirstOrderModelFmc::isStar(Node n) {
 Node FirstOrderModelFmc::getStar(TypeNode tn) {
   std::map<TypeNode, Node >::iterator it = d_type_star.find( tn );
   if( it==d_type_star.end() ){
-    Node st = NodeManager::currentNM()->mkSkolem( "star_$$", tn, "skolem created for full-model checking" );
+    Node st = NodeManager::currentNM()->mkSkolem( "star", tn, "skolem created for full-model checking" );
     d_type_star[tn] = st;
     st.setAttribute(IsStarAttribute(), true );
     return st;
@@ -647,14 +694,32 @@ Node FirstOrderModelFmc::getFunctionValue(Node op, const char* argPrefix ) {
   Node boundVarList = NodeManager::currentNM()->mkNode(kind::BOUND_VAR_LIST, vars);
   Node curr;
   for( int i=(d_models[op]->d_cond.size()-1); i>=0; i--) {
-    Node v = getRepresentative( d_models[op]->d_value[i] );
+    Node v = d_models[op]->d_value[i];
+    Trace("fmc-model-func") << "Value is : " << v << std::endl;
+    if( !hasTerm( v ) ){
+      //can happen when the model basis term does not exist in ground assignment
+      TypeNode tn = v.getType();
+      //check if it is a constant introduced as a representative not existing in the model's equality engine
+      if( !d_rep_set.hasRep( tn, v ) ){
+        if( d_rep_set.d_type_reps.find( tn )!=d_rep_set.d_type_reps.end() && !d_rep_set.d_type_reps[ tn ].empty() ){
+          //see full_model_check.cpp line 366
+          v = d_rep_set.d_type_reps[tn][ d_rep_set.d_type_reps[tn].size()-1 ];
+        }else{
+          Assert( false );
+        }
+        Trace("fmc-model-func") << "No term, assign " << v << std::endl;
+      }
+    }
+    v = getRepresentative( v );
     if( curr.isNull() ){
+      Trace("fmc-model-func") << "base : " << v << std::endl;
       curr = v;
     }else{
       //make the condition
       Node cond = d_models[op]->d_cond[i];
       std::vector< Node > children;
       for( unsigned j=0; j<cond.getNumChildren(); j++) {
+        TypeNode tn = vars[j].getType();
         if (isInterval(cond[j])){
           if( !isStar(cond[j][0]) ){
             children.push_back( NodeManager::currentNM()->mkNode( GEQ, vars[j], cond[j][0] ) );
@@ -662,16 +727,20 @@ Node FirstOrderModelFmc::getFunctionValue(Node op, const char* argPrefix ) {
           if( !isStar(cond[j][1]) ){
             children.push_back( NodeManager::currentNM()->mkNode( LT, vars[j], cond[j][1] ) );
           }
-        }else if (!isStar(cond[j])){
+        }else if ( !isStar(cond[j]) &&  //handle the case where there are 0 or 1 ground eqc of this type
+                   d_rep_set.d_type_reps.find( tn )!=d_rep_set.d_type_reps.end() && d_rep_set.d_type_reps[ tn ].size()>1 ){
           Node c = getUsedRepresentative( cond[j] );
           children.push_back( NodeManager::currentNM()->mkNode( EQUAL, vars[j], c ) );
         }
       }
       Assert( !children.empty() );
       Node cc = children.size()==1 ? children[0] : NodeManager::currentNM()->mkNode( AND, children );
+
+      Trace("fmc-model-func") << "condition : " << cc << ", value : " << v << std::endl;
       curr = NodeManager::currentNM()->mkNode( ITE, cc, v, curr );
     }
   }
+  Trace("fmc-model") << "Made " << curr << " for " << op << std::endl;
   curr = Rewriter::rewrite( curr );
   return NodeManager::currentNM()->mkNode(kind::LAMBDA, boundVarList, curr);
 }
@@ -703,24 +772,25 @@ bool FirstOrderModelFmc::isInRange( Node v, Node i ) {
 }
 
 
-FirstOrderModelQInt::FirstOrderModelQInt(QuantifiersEngine * qe, context::Context* c, std::string name) :
+
+FirstOrderModelAbs::FirstOrderModelAbs(QuantifiersEngine * qe, context::Context* c, std::string name) :
 FirstOrderModel(qe, c, name) {
 
 }
 
-void FirstOrderModelQInt::processInitialize( bool ispre ) {
+void FirstOrderModelAbs::processInitialize( bool ispre ) {
   if( !ispre ){
-    Trace("qint-debug") << "Process initialize" << std::endl;
-    for( std::map<Node, QIntDef * >::iterator it = d_models.begin(); it != d_models.end(); ++it ) {
+    Trace("ambqi-debug") << "Process initialize" << std::endl;
+    for( std::map<Node, AbsDef * >::iterator it = d_models.begin(); it != d_models.end(); ++it ) {
       Node op = it->first;
       TypeNode tno = op.getType();
-      Trace("qint-debug") << "  Init " << op << " " << tno << std::endl;
+      Trace("ambqi-debug") << "  Init " << op << " " << tno << std::endl;
       for( unsigned i=0; i<tno.getNumChildren(); i++) {
         //make sure a representative of the type exists
         if( !d_rep_set.hasType( tno[i] ) ){
           Node e = getSomeDomainElement( tno[i] );
-          Trace("qint-debug") << "  * Initialize type " << tno[i] << ", add ";
-          Trace("qint-debug") << e << " " << e.getType() << std::endl;
+          Trace("ambqi-debug") << "  * Initialize type " << tno[i] << ", add ";
+          Trace("ambqi-debug") << e << " " << e.getType() << std::endl;
           //d_rep_set.add( e );
         }
       }
@@ -728,41 +798,17 @@ void FirstOrderModelQInt::processInitialize( bool ispre ) {
   }
 }
 
-Node FirstOrderModelQInt::getFunctionValue(Node op, const char* argPrefix ) {
-  Trace("qint-debug") << "Get function value for " << op << std::endl;
-  TypeNode type = op.getType();
-  std::vector< Node > vars;
-  for( size_t i=0; i<type.getNumChildren()-1; i++ ){
-    std::stringstream ss;
-    ss << argPrefix << (i+1);
-    Node b = NodeManager::currentNM()->mkBoundVar( ss.str(), type[i] );
-    vars.push_back( b );
-  }
-  Node boundVarList = NodeManager::currentNM()->mkNode(kind::BOUND_VAR_LIST, vars);
-  Node curr = d_models[op]->getFunctionValue( this, vars );
-  Node fv = NodeManager::currentNM()->mkNode(kind::LAMBDA, boundVarList, curr);
-  Trace("qint-debug") << "Return " << fv << std::endl;
-  return fv;
-}
-
-Node FirstOrderModelQInt::getCurrentUfModelValue( Node n, std::vector< Node > & args, bool partial ) {
-  Debug("qint-debug") << "get curr uf value " << n << std::endl;
-  return d_models[n]->evaluate( this, args );
-}
-
-void FirstOrderModelQInt::processInitializeModelForTerm(Node n) {
-  Debug("qint-debug") << "process init " << n << " " << n.getKind() << std::endl;
-
-  if( n.getKind()==APPLY_UF || n.getKind()==VARIABLE || n.getKind()==SKOLEM ){
-    Node op = n.getKind()==APPLY_UF ? n.getOperator() : n;
-    if( d_models.find(op)==d_models.end()) {
-      Debug("qint-debug") << "init model for " << op << std::endl;
-      d_models[op] = new QIntDef;
-    }
+unsigned FirstOrderModelAbs::getRepresentativeId( TNode n ) {
+  TNode r = getUsedRepresentative( n );
+  std::map< TNode, unsigned >::iterator it = d_rep_id.find( r );
+  if( it!=d_rep_id.end() ){
+    return it->second;
+  }else{
+    return 0;
   }
 }
 
-Node FirstOrderModelQInt::getUsedRepresentative( Node n ) {
+TNode FirstOrderModelAbs::getUsedRepresentative( TNode n ) {
   if( hasTerm( n ) ){
     if( n.getType().isBoolean() ){
       return areEqual(n, d_true) ? d_true : d_false;
@@ -776,88 +822,81 @@ Node FirstOrderModelQInt::getUsedRepresentative( Node n ) {
   }
 }
 
-void FirstOrderModelQInt::processInitializeQuantifier( Node q )  {
-  if( d_var_order.find( q )==d_var_order.end() ){
-    d_var_order[q] = new QuantVarOrder( q );
-    d_var_order[q]->debugPrint("qint-var-order");
-    Trace("qint-var-order") << std::endl;
-  }
-}
-unsigned FirstOrderModelQInt::getOrderedNumVars( Node q ) {
-  //return q[0].getNumChildren();
-  return d_var_order[q]->getNumVars();
-}
-
-TypeNode FirstOrderModelQInt::getOrderedVarType( Node q, int i ) {
-  //return q[0][i].getType();
-  return d_var_order[q]->getVar( i ).getType();
-}
-
-int FirstOrderModelQInt::getOrderedVarNumToVarNum( Node q, int i ) {
-  return getVariableId( q, d_var_order[q]->getVar( i ) );
-}
-
-bool FirstOrderModelQInt::isLessThan( Node v1, Node v2 ) {
-  Assert( !v1.isNull() );
-  Assert( !v2.isNull() );
-  if( v1.getType().isSort() ){
-    Assert( getRepId( v1 )!=-1 );
-    Assert( getRepId( v2 )!=-1 );
-    int rid1 = d_rep_id[v1];
-    int rid2 = d_rep_id[v2];
-    return rid1<rid2;
-  }else{
-    return false;
-  }
-}
-
-Node FirstOrderModelQInt::getMin( Node v1, Node v2 ) {
-  return isLessThan( v1, v2 ) ? v1 : v2;
-}
-
-Node FirstOrderModelQInt::getMax( Node v1, Node v2 ) {
-  return isLessThan( v1, v2 ) ? v2 : v1;
-}
-
-Node FirstOrderModelQInt::getMaximum( TypeNode tn ) {
-  return d_max[tn];
-}
-
-Node FirstOrderModelQInt::getNext( TypeNode tn, Node v ) {
-  if( v.isNull() ){
-    return d_min[tn];
-  }else{
-    Assert( getRepId( v )!=-1 );
-    int rid = d_rep_id[v];
-    if( rid==(int)(d_rep_set.d_type_reps[tn].size()-1) ){
-      Assert( false );
-      return Node::null();
-    }else{
-      return d_rep_set.d_type_reps[tn][ rid+1 ];
+Node FirstOrderModelAbs::getFunctionValue(Node op, const char* argPrefix ) {
+  if( d_models_valid[op] ){
+    Trace("ambqi-debug") << "Get function value for " << op << std::endl;
+    TypeNode type = op.getType();
+    std::vector< Node > vars;
+    for( size_t i=0; i<type.getNumChildren()-1; i++ ){
+      std::stringstream ss;
+      ss << argPrefix << (i+1);
+      Node b = NodeManager::currentNM()->mkBoundVar( ss.str(), type[i] );
+      vars.push_back( b );
     }
+    Node boundVarList = NodeManager::currentNM()->mkNode(kind::BOUND_VAR_LIST, vars);
+    Node curr = d_models[op]->getFunctionValue( this, op, vars );
+    Node fv = NodeManager::currentNM()->mkNode(kind::LAMBDA, boundVarList, curr);
+    Trace("ambqi-debug") << "Return " << fv << std::endl;
+    return fv;
+  }else{
+
   }
+  return Node::null();
 }
-Node FirstOrderModelQInt::getPrev( TypeNode tn, Node v ) {
-  if( v.isNull() ){
-    Assert( false );
+
+Node FirstOrderModelAbs::getCurrentUfModelValue( Node n, std::vector< Node > & args, bool partial ) {
+  Debug("qint-debug") << "get curr uf value " << n << std::endl;
+  if( d_models_valid[n] ){
+    TypeNode tn = n.getType();
+    if( tn.getNumChildren()>0 ){
+      tn = tn[tn.getNumChildren()-1];
+    }
+    return d_models[n]->evaluate( this, tn, args );
+  }else{
     return Node::null();
-  }else{
-    Assert( getRepId( v )!=-1 );
-    int rid = d_rep_id[v];
-    if( rid==0 ){
-      return Node::null();
-    }else{
-      return d_rep_set.d_type_reps[tn][ rid-1 ];
+  }
+}
+
+void FirstOrderModelAbs::processInitializeModelForTerm( Node n ) {
+  if( n.getKind()==APPLY_UF || n.getKind()==VARIABLE || n.getKind()==SKOLEM ){
+    Node op = n.getKind()==APPLY_UF ? n.getOperator() : n;
+    if( d_models.find(op)==d_models.end()) {
+      Trace("abmqi-debug") << "init model for " << op << std::endl;
+      d_models[op] = new AbsDef;
+      d_models_valid[op] = false;
     }
   }
 }
 
-bool FirstOrderModelQInt::doMeet( Node l1, Node u1, Node l2, Node u2, Node& lr, Node& ur ) {
-  Trace("qint-debug2") << "doMeet " << l1 << "..." << u1 << " with " << l2 << "..." << u2 << std::endl;
-  Assert( !u1.isNull() );
-  Assert( !u2.isNull() );
-  lr = l1.isNull() ? l2 : ( l2.isNull() ? l1 : getMax( l1, l2 ) );
-  ur = getMin( u1, u2 );
-  //return lr==ur || lr.isNull() || isLessThan( lr, ur );
-  return lr.isNull() || isLessThan( lr, ur );
+void FirstOrderModelAbs::collectEqVars( TNode q, TNode n, std::map< int, bool >& eq_vars ) {
+  for( unsigned i=0; i<n.getNumChildren(); i++ ){
+    if( n.getKind()==EQUAL && n[i].getKind()==BOUND_VARIABLE ){
+      int v = getVariableId( q, n[i] );
+      Assert( v>=0 && v<(int)q[0].getNumChildren() );
+      eq_vars[v] = true;
+    }
+    collectEqVars( q, n[i], eq_vars );
+  }
+}
+
+void FirstOrderModelAbs::processInitializeQuantifier( Node q ) {
+  if( d_var_order.find( q )==d_var_order.end() ){
+    std::map< int, bool > eq_vars;
+    for( unsigned i=0; i<q[0].getNumChildren(); i++ ){
+      eq_vars[i] = false;
+    }
+    collectEqVars( q, q[1], eq_vars );
+    for( unsigned r=0; r<2; r++ ){
+      for( std::map< int, bool >::iterator it = eq_vars.begin(); it != eq_vars.end(); ++it ){
+        if( it->second==(r==1) ){
+          d_var_index[q][it->first] = d_var_order[q].size();
+          d_var_order[q].push_back( it->first );
+        }
+      }
+    }
+  }
+}
+
+Node FirstOrderModelAbs::getVariable( Node q, unsigned i ) {
+  return q[0][d_var_order[q][i]];
 }

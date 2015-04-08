@@ -5,7 +5,7 @@
  ** Major contributors: Andrew Reynolds
  ** Minor contributors (to current version): none
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -146,8 +146,6 @@ public:
       bool getMustCombine( int cardinality );
       /** has splits */
       bool hasSplits() { return d_splitsSize>0; }
-      /** get representatives */
-      void getRepresentatives( std::vector< Node >& reps );
       /** get external disequalities */
       void getNumExternalDisequalities( std::map< Node, int >& num_ext_disequalities );
     public:
@@ -171,7 +169,7 @@ public:
     NodeIntMap d_regions_map;
     /** the score for each node for splitting */
     NodeIntMap d_split_score;
-    /** regions used to d_region_index */
+    /** number of valid disequalities in d_disequalities */
     context::CDO< unsigned > d_disequalities_index;
     /** list of all disequalities */
     std::vector< Node > d_disequalities;
@@ -244,11 +242,15 @@ public:
     std::map< int, std::vector< std::vector< Node > > > d_cliques;
     /** maximum negatively asserted cardinality */
     context::CDO< int > d_maxNegCard;
+    /** list of fresh representatives allocated */
+    std::vector< Node > d_fresh_aloc_reps;
   private:
     /** apply totality */
     bool applyTotality( int cardinality );
     /** get totality lemma terms */
     Node getTotalityLemmaTerm( int cardinality, int i );
+    /** simple check cardinality */
+    void simpleCheckCardinality();
   public:
     SortModel( Node n, context::Context* c, context::UserContext* u, StrongSolverTheoryUF* thss );
     virtual ~SortModel(){}
@@ -276,10 +278,10 @@ public:
     bool isConflict() { return d_conflict; }
     /** get cardinality */
     int getCardinality() { return d_cardinality; }
-    /** get representatives */
-    void getRepresentatives( std::vector< Node >& reps );
     /** has cardinality */
     bool hasCardinalityAsserted() { return d_hasCard; }
+    /** get cardinality term */
+    Node getCardinalityTerm() { return d_cardinality_term; }
     /** get cardinality literal */
     Node getCardinalityLiteral( int c );
     /** get maximum negative cardinality */
@@ -287,7 +289,7 @@ public:
     //print debug
     void debugPrint( const char* c );
     /** debug a model */
-    void debugModel( TheoryModel* m );
+    bool debugModel( TheoryModel* m );
   public:
     /** get number of regions (for debugging) */
     int getNumRegions();
@@ -310,12 +312,24 @@ private:
   std::map< int, Node > d_com_card_literal;
   /** combined cardinality assertions (indexed by cardinality literals ) */
   NodeBoolMap d_com_card_assertions;
+  /** cardinality literals for which we have added */
+  NodeBoolMap d_card_assertions_eqv_lemma;
   /** initialize */
   void initializeCombinedCardinality();
   /** allocateCombinedCardinality */
   void allocateCombinedCardinality();
   /** check */
   void checkCombinedCardinality();
+private:
+  /** relevant eqc */
+  NodeBoolMap d_rel_eqc;
+  /** ensure eqc */
+  void ensureEqc( SortModel* c, Node a );
+  /** ensure eqc for all subterms of n */
+  void ensureEqcRec( Node n );
+public:
+  /** has eqc */
+  bool hasEqc( Node a );
 private:
   /** disequality propagator */
   DisequalityPropagator* d_deq_prop;
@@ -365,7 +379,7 @@ public:
   //print debug
   void debugPrint( const char* c );
   /** debug a model */
-  void debugModel( TheoryModel* m );
+  bool debugModel( TheoryModel* m );
 public:
   /** get is in conflict */
   bool isConflict() { return d_conflict; }
@@ -373,8 +387,6 @@ public:
   int getCardinality( Node n );
   /** get cardinality for type */
   int getCardinality( TypeNode tn );
-  /** get representatives */
-  void getRepresentatives( Node n, std::vector< Node >& reps );
   /** minimize */
   bool minimize( TheoryModel* m = NULL );
 

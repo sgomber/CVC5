@@ -2,10 +2,10 @@
 /*! \file theory_bv_rewrite_rules_simplification.h
  ** \verbatim
  ** Original author: Liana Hadarean
- ** Major contributors: Clark Barrett
- ** Minor contributors (to current version): Morgan Deters, Dejan Jovanovic, Tim King
+ ** Major contributors: none
+ ** Minor contributors (to current version): Morgan Deters, Dejan Jovanovic, Tim King, Clark Barrett
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -787,6 +787,84 @@ Node RewriteRule<MultPow2>::apply(TNode node) {
 }
 
 /**
+ * ExtractMultLeadingBit
+ *
+ * If the bit-vectors multiplied have enough leading zeros,
+ * we can determine that the top bits of the multiplication
+ * are zero and not compute them. Only apply for large bitwidths
+ * as this can interfere with other mult normalization rewrites such
+ * as flattening. 
+ */
+
+template<> inline
+bool RewriteRule<ExtractMultLeadingBit>::applies(TNode node) {
+  if (node.getKind() != kind::BITVECTOR_EXTRACT)
+    return false;
+  unsigned low = utils::getExtractLow(node);
+  node = node[0];
+  
+  if (node.getKind() != kind::BITVECTOR_MULT ||
+      node.getNumChildren() != 2 ||
+      utils::getSize(node) <= 64)
+    return false;
+
+  if (node[0].getKind() != kind::BITVECTOR_CONCAT ||
+      node[1].getKind() != kind::BITVECTOR_CONCAT ||
+      !node[0][0].isConst() ||
+      !node[1][0].isConst())
+    return false;
+
+  unsigned n = utils::getSize(node);
+  // count number of leading zeroes
+  const Integer& int1 = node[0][0].getConst<BitVector>().toInteger();
+  const Integer& int2 = node[1][0].getConst<BitVector>().toInteger();
+  unsigned zeroes1 = int1.isZero()? utils::getSize(node[0][0]) :
+                                    int1.length();
+
+  unsigned zeroes2 = int2.isZero()? utils::getSize(node[1][0]) :
+                                    int2.length();
+
+  // first k bits are not zero in the result
+  unsigned k = 2 * n - (zeroes1 + zeroes2);
+  
+  if (k > low)
+    return false; 
+
+  return true; 
+}
+
+template<> inline
+Node RewriteRule<ExtractMultLeadingBit>::apply(TNode node) {
+  Debug("bv-rewrite") << "RewriteRule<MultLeadingBit>(" << node << ")" << std::endl;
+
+  unsigned bitwidth = utils::getSize(node); 
+  
+  // node = node[0];
+  // const Integer& int1 = node[0][0].getConst<BitVector>().toInteger();
+  // const Integer& int2 = node[1][0].getConst<BitVector>().toInteger();
+  // unsigned zeroes1 = int1.isZero()? utils::getSize(node[0][0]) :
+  //                                   int1.length();
+
+  // unsigned zeroes2 = int2.isZero()? utils::getSize(node[1][0]) :
+  //                                   int2.length();
+  // all bits >= k in the multiplier will have to be 0
+  // unsigned n = utils::getSize(node); 
+  // unsigned k = 2 * n - (zeroes1 + zeroes2);
+  // Node extract1 = utils::mkExtract(node[0], k - 1, 0);
+  // Node extract2 = utils::mkExtract(node[1], k - 1, 0);
+  // Node k_zeroes = utils::mkConst(n - k, 0u);
+
+  // Node new_mult = utils::mkNode(kind::BITVECTOR_MULT, extract1, extract2);
+  // Node result = utils::mkExtract(utils::mkNode(kind::BITVECTOR_CONCAT, k_zeroes, new_mult),
+  //                                high, low); 
+ 
+  // since the extract is over multiplier bits that have to be 0, return 0
+  Node result = utils::mkConst(bitwidth, 0u); 
+  //  std::cout << "MultLeadingBit " << node <<" => " << result <<"\n";
+  return result;
+}
+
+/**
  * NegIdemp
  *
  * -(-a) ==> a 
@@ -989,66 +1067,178 @@ Node RewriteRule<BBPlusNeg>::apply(TNode node) {
   return utils::mkNode(kind::BITVECTOR_PLUS, children); 
 }
 
-// /**
-//  * 
-//  *
-//  * 
-//  */
+template<> inline
+bool RewriteRule<MergeSignExtend>::applies(TNode node) {
+  if (node.getKind() != kind::BITVECTOR_SIGN_EXTEND ||
+      (node[0].getKind() != kind::BITVECTOR_SIGN_EXTEND &&
+       node[0].getKind() != kind::BITVECTOR_ZERO_EXTEND))
+    return false;
+  return true;
+}
 
-// template<> inline
-// bool RewriteRule<BBFactorOut>::applies(TNode node) {
-//   if (node.getKind() != kind::BITVECTOR_PLUS) {
-//     return false; 
-//   }
+template<> inline
+Node RewriteRule<MergeSignExtend>::apply(TNode node) {
+  Debug("bv-rewrite") << "RewriteRule<MergeSignExtend>(" << node << ")" << std::endl;
+  unsigned ammount1 = node.getOperator().getConst<BitVectorSignExtend>().signExtendAmount;
 
-//   for (unsigned i = 0; i < node.getNumChildren(); ++i) {
-//     if (node[i].getKind() != kind::BITVECTOR_MULT) {
-//       return false; 
-//     }
-//   }
-// }
-
-// template<> inline
-// Node RewriteRule<BBFactorOut>::apply(TNode node) {
-//   Debug("bv-rewrite") << "RewriteRule<BBFactorOut>(" << node << ")" << std::endl;
-//   std::hash_set<TNode, TNodeHashFunction> factors;
-
-//   for (unsigned i = 0; i < node.getNumChildren(); ++i) {
-//     Assert (node[i].getKind() == kind::BITVECTOR_MULT);
-//     for (unsigned j = 0; j < node[i].getNumChildren(); ++j) {
-//       factors.insert(node[i][j]); 
-//     }
-//   }
-
-//   std::vector<TNode> gcd; 
-//   std::hash_set<TNode, TNodeHashFunction>::const_iterator it;
-//   for (it = factors.begin(); it != factors.end(); ++it) {
-//     // for each factor check if it occurs in all children
-//     TNode f = *it; 
-//     for (unsigned i = 0; i < node.getNumChildren
-    
-//     }
-//   }
-//   return ; 
-// }
+  NodeManager* nm = NodeManager::currentNM();
+  if (node[0].getKind() == kind::BITVECTOR_ZERO_EXTEND) {
+    unsigned ammount2 = node[0].getOperator().getConst<BitVectorZeroExtend>().zeroExtendAmount;
+    if (ammount2 == 0) {
+      NodeBuilder<> nb(kind::BITVECTOR_SIGN_EXTEND);
+      Node op = nm->mkConst<BitVectorSignExtend>(BitVectorSignExtend(ammount1));
+      nb << op << node[0][0];
+      Node res = nb;
+      return res;
+    }
+    NodeBuilder<> nb(kind::BITVECTOR_ZERO_EXTEND);
+    Node op = nm->mkConst<BitVectorZeroExtend>(BitVectorZeroExtend(ammount1 + ammount2));
+    nb << op << node[0][0];
+    Node res = nb;
+    return res;
+  }
+  Assert (node[0].getKind() == kind::BITVECTOR_SIGN_EXTEND);
+  unsigned ammount2 = node[0].getOperator().getConst<BitVectorSignExtend>().signExtendAmount;
+  NodeBuilder<> nb(kind::BITVECTOR_SIGN_EXTEND);
+  Node op = nm->mkConst<BitVectorSignExtend>(BitVectorSignExtend(ammount1+ ammount2));
+  nb << op << node[0][0];
+  Node res = nb;
+  return res;
+}
 
 
-// /**
-//  * 
-//  *
-//  * 
-//  */
+template<> inline
+bool RewriteRule<MultSlice>::applies(TNode node) {
+  if (node.getKind() != kind::BITVECTOR_MULT) {
+    return false; 
+  }
+  if (utils::getSize(node[0]) % 2 != 0) {
+    return false; 
+  }
+  return true; 
+}
 
-// template<> inline
-// bool RewriteRule<>::applies(TNode node) {
-//   return (node.getKind() == );
-// }
+/** 
+ * Expressses the multiplication in terms of the top and bottom
+ * slices of the terms. Note increases circuit size, but could
+ * lead to simplifications (use wisely!).
+ * 
+ * @param node 
+ * 
+ * @return 
+ */
+template<> inline
+Node RewriteRule<MultSlice>::apply(TNode node) {
+  Debug("bv-rewrite") << "RewriteRule<MultSlice>(" << node << ")" << std::endl;
+  unsigned bitwidth = utils::getSize(node[0]);
+  Node zeros = utils::mkConst(bitwidth/2, 0);
+  TNode a = node[0];
+  Node bottom_a = utils::mkExtract(a, bitwidth/2 - 1, 0);
+  Node top_a = utils::mkExtract(a, bitwidth -1, bitwidth/2); 
+  TNode b = node[1];
+  Node bottom_b = utils::mkExtract(b, bitwidth/2 - 1, 0);
+  Node top_b = utils::mkExtract(b, bitwidth -1, bitwidth/2); 
 
-// template<> inline
-// Node RewriteRule<>::apply(TNode node) {
-//   Debug("bv-rewrite") << "RewriteRule<>(" << node << ")" << std::endl;
-//   return ; 
-// }
+  Node term1 = utils::mkNode(kind::BITVECTOR_MULT,
+                             utils::mkNode(kind::BITVECTOR_CONCAT, zeros, bottom_a),
+                             utils::mkNode(kind::BITVECTOR_CONCAT, zeros, bottom_b));
+
+  Node term2 = utils::mkNode(kind::BITVECTOR_CONCAT,
+                             utils::mkNode(kind::BITVECTOR_MULT, top_b, bottom_a),
+                             zeros);
+  Node term3 = utils::mkNode(kind::BITVECTOR_CONCAT,
+                             utils::mkNode(kind::BITVECTOR_MULT, top_a, bottom_b),
+                             zeros);
+  return utils::mkNode(kind::BITVECTOR_PLUS, term1, term2, term3); 
+}
+
+/** 
+ * x < y + 1 <=> (not y < x) and y != 1...1
+ * 
+ * @param node 
+ * 
+ * @return 
+ */
+template<> inline
+bool RewriteRule<UltPlusOne>::applies(TNode node) {
+  if (node.getKind() != kind::BITVECTOR_ULT) return false;
+  TNode x = node[0];
+  TNode y1 = node[1];
+  if (y1.getKind() != kind::BITVECTOR_PLUS) return false;
+  if (y1[0].getKind() != kind::CONST_BITVECTOR &&
+      y1[1].getKind() != kind::CONST_BITVECTOR)
+    return false;
+  
+  if (y1[0].getKind() == kind::CONST_BITVECTOR &&
+      y1[1].getKind() == kind::CONST_BITVECTOR)
+    return false;
+  
+  if (y1.getNumChildren() != 2)
+    return false; 
+
+  TNode one = y1[0].getKind() == kind::CONST_BITVECTOR ? y1[0] : y1[1];
+  if (one != utils::mkConst(utils::getSize(one), 1)) return false;
+  return true; 
+}
+
+template<> inline
+Node RewriteRule<UltPlusOne>::apply(TNode node) {
+  Debug("bv-rewrite") << "RewriteRule<UltPlusOne>(" << node << ")" << std::endl;
+  TNode x = node[0];
+  TNode y1 = node[1];
+  TNode y = y1[0].getKind() != kind::CONST_BITVECTOR ? y1[0] : y1[1];
+  unsigned size = utils::getSize(x); 
+  Node not_y_eq_1 = utils::mkNode(kind::NOT, utils::mkNode(kind::EQUAL, y, utils::mkOnes(size)));
+  Node not_y_lt_x = utils::mkNode(kind::NOT, utils::mkNode(kind::BITVECTOR_ULT, y, x));
+  return utils::mkNode(kind::AND, not_y_eq_1, not_y_lt_x);
+}
+
+/** 
+ * x ^(x-1) = 0 => 1 << sk
+ * WARNING: this is an **EQUISATISFIABLE** transformation!
+ * Only to be called on top level assertions. 
+ * 
+ * @param node 
+ * 
+ * @return 
+ */
+template<> inline
+bool RewriteRule<IsPowerOfTwo>::applies(TNode node) {
+  if (node.getKind()!= kind::EQUAL) return false;
+  if (node[0].getKind() != kind::BITVECTOR_AND &&
+      node[1].getKind() != kind::BITVECTOR_AND)
+    return false;
+  if (!utils::isZero(node[0]) &&
+      !utils::isZero(node[1]))
+    return false;
+
+  TNode t = !utils::isZero(node[0])? node[0]: node[1];
+  if (t.getNumChildren() != 2) return false; 
+  TNode a = t[0];
+  TNode b = t[1];
+  unsigned size = utils::getSize(t);
+  if(size < 2) return false;
+  Node diff = Rewriter::rewrite(utils::mkNode(kind::BITVECTOR_SUB, a, b));
+  return (diff.isConst() && (diff == utils::mkConst(size, 1u) || diff == utils::mkOnes(size)));
+}
+
+template<> inline
+Node RewriteRule<IsPowerOfTwo>::apply(TNode node) {
+  Debug("bv-rewrite") << "RewriteRule<IsPowerOfTwo>(" << node << ")" << std::endl;
+  TNode term = utils::isZero(node[0])? node[1] : node[0];
+  TNode a = term[0];
+  TNode b = term[1];
+  unsigned size = utils::getSize(term); 
+  Node diff = Rewriter::rewrite(utils::mkNode(kind::BITVECTOR_SUB, a, b));
+  Assert (diff.isConst());
+  TNode x = diff == utils::mkConst(size, 1u) ? a : b;
+  Node one = utils::mkConst(size, 1u);
+  Node sk = utils::mkVar(size);
+  Node sh = utils::mkNode(kind::BITVECTOR_SHL, one, sk);
+  Node x_eq_sh = utils::mkNode(kind::EQUAL, x, sh);
+  return x_eq_sh;
+}
+
 
 
 

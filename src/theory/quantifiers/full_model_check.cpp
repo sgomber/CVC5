@@ -3,9 +3,9 @@
  ** \verbatim
  ** Original author: Andrew Reynolds
  ** Major contributors: Morgan Deters
- ** Minor contributors (to current version): none
+ ** Minor contributors (to current version): Kshitij Bansal
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -15,6 +15,7 @@
 #include "theory/quantifiers/full_model_check.h"
 #include "theory/quantifiers/first_order_model.h"
 #include "theory/quantifiers/options.h"
+#include "theory/quantifiers/term_database.h"
 
 using namespace std;
 using namespace CVC4;
@@ -60,7 +61,7 @@ bool EntryTrie::hasGeneralization( FirstOrderModelFmc * m, Node c, int index ) {
         return true;
       }
     }
-    if( options::mbqiMode()!=quantifiers::MBQI_FMC_INTERVAL || !c[index].getType().isInteger() ){
+    if( c[index].getType().isSort() ){
       //for star: check if all children are defined and have generalizations
       if( c[index]==st ){     ///options::fmfFmcCoverSimplify()
         //check if all children exist and are complete
@@ -334,7 +335,7 @@ void FullModelChecker::processBuildModel(TheoryModel* m, bool fullModel){
   FirstOrderModelFmc * fm = ((FirstOrderModelFmc*)m)->asFirstOrderModelFmc();
   if( fullModel==optBuildAtFullModel() ){
     Trace("fmc") << "---Full Model Check reset() " << std::endl;
-    fm->initialize( d_considerAxioms );
+    fm->initialize();
     d_quant_models.clear();
     d_rep_ids.clear();
     d_star_insts.clear();
@@ -536,7 +537,9 @@ void FullModelChecker::initializeType( FirstOrderModelFmc * fm, TypeNode tn ){
     }else{
       mbn = d_qe->getTermDatabase()->getModelBasisTerm(tn);
     }
+    Trace("fmc") << "Get used rep for " << mbn << std::endl;
     Node mbnr = fm->getUsedRepresentative( mbn );
+    Trace("fmc") << "...got  " << mbnr << std::endl;
     fm->d_model_basis_rep[tn] = mbnr;
     Trace("fmc") << "Add model basis for type " << tn << " : " << mbn << " " << mbnr << std::endl;
   }
@@ -590,7 +593,7 @@ bool FullModelChecker::doExhaustiveInstantiation( FirstOrderModel * fm, Node f, 
           types.push_back(f[0][i].getType());
         }
         TypeNode typ = NodeManager::currentNM()->mkFunctionType( types, NodeManager::currentNM()->booleanType() );
-        Node op = NodeManager::currentNM()->mkSkolem( "fmc_$$", typ, "op created for full-model checking" );
+        Node op = NodeManager::currentNM()->mkSkolem( "fmc", typ, "op created for full-model checking" );
         d_quant_cond[f] = op;
       }
       //make sure all types are set
@@ -676,6 +679,9 @@ bool FullModelChecker::doExhaustiveInstantiation( FirstOrderModel * fm, Node f, 
                 if( d_qe->addInstantiation( f, inst ) ){
                   Trace("fmc-debug-inst") << "** Added instantiation." << std::endl;
                   d_addedLemmas++;
+                  if( options::fmfOneInstPerRound() ){
+                    break;
+                  }
                 }else{
                   Trace("fmc-debug-inst") << "** Instantiation was duplicate." << std::endl;
                   //this can happen if evaluation is unknown
@@ -793,6 +799,9 @@ bool FullModelChecker::exhaustiveInstantiate(FirstOrderModelFmc * fm, Node f, No
         if( d_qe->addInstantiation( f, inst ) ){
           Trace("fmc-exh-debug")  << " ...success.";
           addedLemmas++;
+          if( options::fmfOneInstPerRound() ){
+            break;
+          }
         }else{
           Trace("fmc-exh-debug") << ", failed.";
         }
@@ -802,9 +811,11 @@ bool FullModelChecker::exhaustiveInstantiate(FirstOrderModelFmc * fm, Node f, No
       Trace("fmc-exh-debug") << std::endl;
       int index = riter.increment();
       Trace("fmc-exh-debug") << "Incremented index " << index << std::endl;
-      if (index>=0 && riter.d_index[index]>0 && addedLemmas>0 && riter.d_enum_type[index]==RepSetIterator::ENUM_RANGE) {
-        Trace("fmc-exh-debug") << "Since this is a range enumeration, skip to the next..." << std::endl;
-        riter.increment2( index-1 );
+      if( !riter.isFinished() ){
+        if (index>=0 && riter.d_index[index]>0 && addedLemmas>0 && riter.d_enum_type[index]==RepSetIterator::ENUM_RANGE) {
+          Trace("fmc-exh-debug") << "Since this is a range enumeration, skip to the next..." << std::endl;
+          riter.increment2( index-1 );
+        }
       }
     }
     d_addedLemmas += addedLemmas;
@@ -862,7 +873,7 @@ void FullModelChecker::doCheck(FirstOrderModelFmc * fm, Node f, Def & d, Node n 
       Trace("fmc-debug") << "Can't process base array " << r << std::endl;
       //can't process this array
       d.reset();
-      d.addEntry(fm, defC, Node::null());
+      d.addEntry(fm, mkCondDefault(fm, f), Node::null());
     }
   }
   else if( n.getNumChildren()==0 ){
@@ -936,7 +947,7 @@ void FullModelChecker::doCheck(FirstOrderModelFmc * fm, Node f, Def & d, Node n 
 void FullModelChecker::doNegate( Def & dc ) {
   for (unsigned i=0; i<dc.d_cond.size(); i++) {
     if (!dc.d_value[i].isNull()) {
-      dc.d_value[i] = dc.d_value[i]==d_true ? d_false : d_true;
+      dc.d_value[i] = dc.d_value[i]==d_true ? d_false : ( dc.d_value[i]==d_false ? d_true : dc.d_value[i] );
     }
   }
 }
@@ -1266,7 +1277,7 @@ Node FullModelChecker::mkArrayCond( Node a ) {
   if( d_array_term_cond.find(a)==d_array_term_cond.end() ){
     if( d_array_cond.find(a.getType())==d_array_cond.end() ){
       TypeNode typ = NodeManager::currentNM()->mkFunctionType( a.getType(), NodeManager::currentNM()->booleanType() );
-      Node op = NodeManager::currentNM()->mkSkolem( "fmc_$$", typ, "op created for full-model checking" );
+      Node op = NodeManager::currentNM()->mkSkolem( "fmc", typ, "op created for full-model checking" );
       d_array_cond[a.getType()] = op;
     }
     std::vector< Node > cond;

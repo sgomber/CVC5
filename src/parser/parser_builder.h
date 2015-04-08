@@ -5,7 +5,7 @@
  ** Major contributors: Morgan Deters
  ** Minor contributors (to current version): none
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -79,6 +79,12 @@ class CVC4_PUBLIC ParserBuilder {
 
   /** Are we parsing only? */
   bool d_parseOnly;
+
+  /** Is the logic forced by the user? */
+  bool d_logicIsForced;
+
+  /** The forced logic name */
+  std::string d_forcedLogic;
 
   /** Initialize this parser builder */
   void init(ExprManager* exprManager, const std::string& filename);
@@ -164,6 +170,9 @@ public:
 
   /** Set the parser to use the given string for its input. */
   ParserBuilder& withStringInput(const std::string& input);
+
+  /** Set the parser to use the given logic string. */
+  ParserBuilder& withForcedLogic(const std::string& logic);
 };/* class ParserBuilder */
 
 }/* CVC4::parser namespace */

@@ -26,25 +26,33 @@ enumerator ARRAY_TYPE \
     "theory/arrays/type_enumerator.h"
 
 # select a i  is  a[i]
-operator SELECT 2 "array select"
+operator SELECT 2 "array select; first parameter is an array term, second is the selection index"
 
 # store a i e  is  a[i] <= e
-operator STORE 3 "array store"
+operator STORE 3 "array store; first parameter is an array term, second is the store index, third is the term to store at the index"
 
 # storeall t e  is  \all i in indexType(t) <= e
 constant STORE_ALL \
     ::CVC4::ArrayStoreAll \
     ::CVC4::ArrayStoreAllHashFunction \
     "util/array_store_all.h" \
-    "array store-all"
+    "array store-all; payload is an instance of the CVC4::ArrayStoreAll class (this is not supported by arrays decision procedure yet, but it is used for returned array models)"
 
 # used internally by array theory
-operator ARR_TABLE_FUN 4 "array table function (internal symbol)"
+operator ARR_TABLE_FUN 4 "array table function (internal-only symbol)"
+
+# used internally for substitutions in models (e.g. the Boolean terms converter)
+# The (single) argument is a lambda(x:T):U.  Type of the array lambda is
+# Array T of U.  Thus ARRAY_LAMBDA LAMBDA(x:INT) . (read a x) is the same array
+# as a.  ARRAY_LAMBDA LAMBDA(x:INT) . (read a (- x 1)) is the same array as
+# as a shifted over one.
+operator ARRAY_LAMBDA 1 "array lambda (internal-only symbol)"
 
 typerule SELECT ::CVC4::theory::arrays::ArraySelectTypeRule
 typerule STORE ::CVC4::theory::arrays::ArrayStoreTypeRule
 typerule STORE_ALL ::CVC4::theory::arrays::ArrayStoreTypeRule
 typerule ARR_TABLE_FUN ::CVC4::theory::arrays::ArrayTableFunTypeRule
+typerule ARRAY_LAMBDA ::CVC4::theory::arrays::ArrayLambdaTypeRule
 
 # store operations that are ordered (by index) over a store-all are constant
 construle STORE ::CVC4::theory::arrays::ArrayStoreTypeRule

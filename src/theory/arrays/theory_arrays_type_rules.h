@@ -5,7 +5,7 @@
  ** Major contributors: Clark Barrett
  ** Minor contributors (to current version): Christopher L. Conway
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -177,6 +177,23 @@ struct ArrayTableFunTypeRule {
     return arrayType.getArrayIndexType();
   }
 };/* struct ArrayTableFunTypeRule */
+
+struct ArrayLambdaTypeRule {
+  inline static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check)
+    throw (TypeCheckingExceptionPrivate, AssertionException) {
+    Assert(n.getKind() == kind::ARRAY_LAMBDA);
+    TypeNode lamType = n[0].getType(check);
+    if( check ) {
+      if(n[0].getKind() != kind::LAMBDA) {
+        throw TypeCheckingExceptionPrivate(n, "array lambda arg is non-lambda");
+      }
+    }
+    if(lamType.getNumChildren() != 2) {
+      throw TypeCheckingExceptionPrivate(n, "array lambda arg is not unary lambda");
+    }
+    return nodeManager->mkArrayType(lamType[0], lamType[1]);
+  }
+};/* struct ArrayLambdaTypeRule */
 
 struct ArraysProperties {
   inline static Cardinality computeCardinality(TypeNode type) {

@@ -5,7 +5,7 @@
  ** Major contributors: Morgan Deters
  ** Minor contributors (to current version): none
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -79,20 +79,20 @@ std::ostream& operator<<(std::ostream& out, theory::quantifiers::AxiomInstMode m
 
 std::ostream& operator<<(std::ostream& out, theory::quantifiers::MbqiMode mode) {
   switch(mode) {
-  case theory::quantifiers::MBQI_DEFAULT:
-    out << "MBQI_DEFAULT";
+  case theory::quantifiers::MBQI_GEN_EVAL:
+    out << "MBQI_GEN_EVAL";
     break;
   case theory::quantifiers::MBQI_NONE:
     out << "MBQI_NONE";
     break;
-  case theory::quantifiers::MBQI_INST_GEN:
-    out << "MBQI_INST_GEN";
-    break;
   case theory::quantifiers::MBQI_FMC:
     out << "MBQI_FMC";
     break;
-  case theory::quantifiers::MBQI_INTERVAL:
-    out << "MBQI_INTERVAL";
+  case theory::quantifiers::MBQI_ABS:
+    out << "MBQI_ABS";
+    break;
+  case theory::quantifiers::MBQI_TRUST:
+    out << "MBQI_TRUST";
     break;
   default:
     out << "MbqiMode!UNKNOWN";

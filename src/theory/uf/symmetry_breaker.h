@@ -5,7 +5,7 @@
  ** Major contributors: none
  ** Minor contributors (to current version): none
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -114,6 +114,7 @@ private:
   Template d_template;
   std::hash_map<Node, Node, NodeHashFunction> d_normalizationCache;
   TermEqs d_termEqs;
+  TermEqs d_termEqsOnly;
 
   void clear();
   void rerunAssertionsIfNecessary();
@@ -123,7 +124,7 @@ private:
   void selectTerms(const Permutation& p);
   Terms::iterator selectMostPromisingTerm(Terms& terms);
   void insertUsedIn(Term term, const Permutation& p, std::set<Node>& cts);
-  Node normInternal(TNode phi);
+  Node normInternal(TNode phi, size_t level);
   Node norm(TNode n);
 
   // === STATISTICS ===

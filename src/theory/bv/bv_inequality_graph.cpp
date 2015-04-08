@@ -5,7 +5,7 @@
  ** Major contributors: none
  ** Minor contributors (to current version): Morgan Deters
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -141,7 +141,12 @@ bool InequalityGraph::processQueue(BFSQueue& queue, TermId start) {
         // it means we have an overflow and hence a conflict
         std::vector<TermId> conflict;
         conflict.push_back(it->reason);
-        computeExplanation(start, current, conflict);
+        Assert (hasModelValue(start));
+        ReasonId start_reason = getModelValue(start).reason;
+        if (start_reason != UndefinedReasonId) {
+          conflict.push_back(start_reason);
+        }
+        computeExplanation(UndefinedTermId, current, conflict);
         Debug("bv-inequality") << "InequalityGraph::addInequality conflict: cycle \n"; 
         setConflict(conflict); 
         return false; 
@@ -258,9 +263,11 @@ ReasonId InequalityGraph::registerReason(TNode reason) {
   if (d_reasonToIdMap.find(reason) != d_reasonToIdMap.end()) {
     return d_reasonToIdMap[reason]; 
   }
+  d_reasonSet.insert(reason);
   ReasonId id = d_reasonNodes.size();
   d_reasonNodes.push_back(reason);
   d_reasonToIdMap[reason] = id;
+  Debug("bv-inequality-internal") << "InequalityGraph::registerReason " << reason << " => id"<< id << "\n"; 
   return id; 
 }
 

@@ -3,9 +3,9 @@
  ** \verbatim
  ** Original author: Morgan Deters
  ** Major contributors: none
- ** Minor contributors (to current version): Tim King
+ ** Minor contributors (to current version): none
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -65,8 +65,10 @@ inline void showConfiguration(std::string option, SmtEngine* smt) {
   printf("\n");
   printf("cudd       : %s\n", Configuration::isBuiltWithCudd() ? "yes" : "no");
   printf("cln        : %s\n", Configuration::isBuiltWithCln() ? "yes" : "no");
-  printf("glpk       : %s\n", Configuration::isBuiltWithGlpk() ? "yes" : "no");
   printf("gmp        : %s\n", Configuration::isBuiltWithGmp() ? "yes" : "no");
+  printf("glpk       : %s\n", Configuration::isBuiltWithGlpk() ? "yes" : "no");
+  printf("abc        : %s\n", Configuration::isBuiltWithAbc() ? "yes" : "no");
+  printf("readline   : %s\n", Configuration::isBuiltWithReadline() ? "yes" : "no");
   printf("tls        : %s\n", Configuration::isBuiltWithTlsSupport() ? "yes" : "no");
   exit(0);
 }

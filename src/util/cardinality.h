@@ -5,7 +5,7 @@
  ** Major contributors: none
  ** Minor contributors (to current version): Tim King
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -155,6 +155,10 @@ public:
   /** Returns true iff this cardinality is finite. */
   bool isFinite() const throw() {
     return d_card > 0;
+  }
+  /** Returns true iff this cardinality is one */
+  bool isOne() const throw() {
+    return d_card == 1;
   }
 
   /**

@@ -3,9 +3,9 @@
  ** \verbatim
  ** Original author: Morgan Deters
  ** Major contributors: none
- ** Minor contributors (to current version): none
+ ** Minor contributors (to current version): Kshitij Bansal
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -47,13 +47,14 @@ extern int optreset;
 
 #include "expr/expr.h"
 #include "util/configuration.h"
+#include "util/didyoumean.h"
 #include "util/exception.h"
 #include "util/language.h"
 #include "util/tls.h"
 
 ${include_all_option_headers}
 
-#line 57 "${template}"
+#line 58 "${template}"
 
 #include "util/output.h"
 #include "options/options_holder.h"
@@ -62,7 +63,7 @@ ${include_all_option_headers}
 
 ${option_handler_includes}
 
-#line 66 "${template}"
+#line 67 "${template}"
 
 using namespace CVC4;
 using namespace CVC4::options;
@@ -199,7 +200,7 @@ void runBoolPredicates(T, std::string option, bool b, SmtEngine* smt) {
 
 ${all_custom_handlers}
 
-#line 203 "${template}"
+#line 204 "${template}"
 
 #ifdef CVC4_DEBUG
 #  define USE_EARLY_TYPE_CHECKING_BY_DEFAULT true
@@ -225,22 +226,30 @@ Options::~Options() {
   delete d_holder;
 }
 
+Options& Options::operator=(const Options& options) {
+  if(this != &options) {
+    delete d_holder;
+    d_holder = new options::OptionsHolder(*options.d_holder);
+  }
+  return *this;
+}
+
 options::OptionsHolder::OptionsHolder() : ${all_modules_defaults}
 {
 }
 
-#line 233 "${template}"
+#line 242 "${template}"
 
 static const std::string mostCommonOptionsDescription = "\
 Most commonly-used CVC4 options:${common_documentation}";
 
-#line 238 "${template}"
+#line 247 "${template}"
 
 static const std::string optionsDescription = mostCommonOptionsDescription + "\n\
 \n\
 Additional CVC4 options:${remaining_documentation}";
 
-#line 244 "${template}"
+#line 253 "${template}"
 
 static const std::string optionsFootnote = "\n\
 [*] Each of these options has a --no-OPTIONNAME variant, which reverses the\n\
@@ -252,15 +261,22 @@ Languages currently supported as arguments to the -L / --lang option:\n\
   auto                           attempt to automatically determine language\n\
   cvc4 | presentation | pl       CVC4 presentation language\n\
   smt1 | smtlib1                 SMT-LIB format 1.2\n\
-  smt | smtlib | smt2 | smtlib2  SMT-LIB format 2.0\n\
+  smt | smtlib | smt2 |\n\
+    smt2.0 | smtlib2 | smtlib2.0 SMT-LIB format 2.0\n\
+  smt2.5 | smtlib2.5             SMT-LIB format 2.5\n\
   tptp                           TPTP format (cnf and fof)\n\
+  sygus                          SyGuS format\n\
 \n\
 Languages currently supported as arguments to the --output-lang option:\n\
   auto                           match output language to input language\n\
   cvc4 | presentation | pl       CVC4 presentation language\n\
+  cvc3                           CVC3 presentation language\n\
   smt1 | smtlib1                 SMT-LIB format 1.2\n\
-  smt | smtlib | smt2 | smtlib2  SMT-LIB format 2.0\n\
+  smt | smtlib | smt2 |\n\
+    smt2.0 | smtlib2.0 | smtlib2   SMT-LIB format 2.0\n\
+  smt2.5 | smtlib2.5             SMT-LIB format 2.5\n\
   tptp                           TPTP format\n\
+  z3str                          SMT-LIB 2.0 with Z3-str string constraints\n\
   ast                            internal format (simple syntax trees)\n\
 ";
 
@@ -311,7 +327,7 @@ static struct option cmdlineOptions[] = {${all_modules_long_options}
   { NULL, no_argument, NULL, '\0' }
 };/* cmdlineOptions */
 
-#line 315 "${template}"
+#line 330 "${template}"
 
 static void preemptGetopt(int& argc, char**& argv, const char* opt) {
   const size_t maxoptlen = 128;
@@ -504,7 +520,7 @@ std::vector<std::string> Options::parseOptions(int argc, char* main_argv[]) thro
     switch(c) {
 ${all_modules_option_handlers}
 
-#line 508 "${template}"
+#line 523 "${template}"
 
     case ':':
       // This can be a long or short option, and the way to get at the
@@ -548,31 +564,32 @@ ${all_modules_option_handlers}
         break;
       }
 
-      throw OptionException(std::string("can't understand option `") + option + "'");
+      throw OptionException(std::string("can't understand option `") + option + "'"
+                            + suggestCommandLineOptions(option));
     }
   }
 
   Debug("options") << "returning " << nonOptions.size() << " non-option arguments." << std::endl;
 
+  free(extra_argv);
+
   return nonOptions;
 }
 
-std::vector<std::string> Options::suggestCommandLineOptions(const std::string& optionName) throw() {
-  std::vector<std::string> suggestions;
+std::string Options::suggestCommandLineOptions(const std::string& optionName) throw() {
+  DidYouMean didYouMean;
 
   const char* opt;
   for(size_t i = 0; (opt = cmdlineOptions[i].name) != NULL; ++i) {
-    if(std::strstr(opt, optionName.c_str()) != NULL) {
-      suggestions.push_back(opt);
-    }
+    didYouMean.addWord(std::string("--") + cmdlineOptions[i].name);
   }
 
-  return suggestions;
+  return didYouMean.getMatchAsString(optionName.substr(0, optionName.find('=')));
 }
 
 static const char* smtOptions[] = {
   ${all_modules_smt_options},
-#line 576 "${template}"
+#line 592 "${template}"
   NULL
 };/* smtOptions[] */
 
@@ -594,7 +611,7 @@ SExpr Options::getOptions() const throw() {
 
   ${all_modules_get_options}
 
-#line 598 "${template}"
+#line 614 "${template}"
 
   return SExpr(opts);
 }

@@ -5,7 +5,7 @@
  ** Major contributors: Morgan Deters
  ** Minor contributors (to current version): none
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -38,6 +38,7 @@ class BoundedIntegers : public QuantifiersModule
   typedef context::CDHashMap<Node, bool, NodeHashFunction> NodeBoolMap;
   typedef context::CDHashMap<Node, int, NodeHashFunction> NodeIntMap;
   typedef context::CDHashMap<Node, Node, NodeHashFunction> NodeNodeMap;
+  typedef context::CDHashMap<int, bool> IntBoolMap;
 private:
   //for determining bounds
   bool isBound( Node f, Node v );
@@ -60,20 +61,22 @@ private:
   private:
     BoundedIntegers * d_bi;
     void allocateRange();
+    Node d_proxy_range;
   public:
-    RangeModel(BoundedIntegers * bi, Node r, context::Context* c) : d_bi(bi),
-      d_range(r), d_curr_max(-1), d_range_assertions(c), d_has_range(c,false), d_curr_range(c,-1) {}
+    RangeModel(BoundedIntegers * bi, Node r, context::Context* c, context::Context* u, bool isProxy);
     Node d_range;
     int d_curr_max;
     std::map< int, Node > d_range_literal;
     std::map< Node, bool > d_lit_to_pol;
-    std::map< Node, int > d_lit_to_range;
+    NodeIntMap d_lit_to_range;
     NodeBoolMap d_range_assertions;
     context::CDO< bool > d_has_range;
     context::CDO< int > d_curr_range;
+    IntBoolMap d_ranges_proxied;
     void initialize();
     void assertNode(Node n);
     Node getNextDecisionRequest();
+    bool proxyCurrentRange();
   };
 private:
   //information for minimizing ranges
@@ -108,7 +111,8 @@ private:
 public:
   BoundedIntegers( context::Context* c, QuantifiersEngine* qe );
 
-  void check( Theory::Effort e );
+  bool needsCheck( Theory::Effort e );
+  void check( Theory::Effort e, unsigned quant_e );
   void registerQuantifier( Node f );
   void assertNode( Node n );
   Node getNextDecisionRequest();
@@ -121,6 +125,9 @@ public:
   void getBounds( Node f, Node v, RepSetIterator * rsi, Node & l, Node & u );
   void getBoundValues( Node f, Node v, RepSetIterator * rsi, Node & l, Node & u );
   bool isGroundRange(Node f, Node v);
+
+  /** Identify this module */
+  std::string identify() const { return "BoundedIntegers"; }
 };
 
 }

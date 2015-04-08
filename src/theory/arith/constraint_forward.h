@@ -5,7 +5,7 @@
  ** Major contributors: none
  ** Minor contributors (to current version): Morgan Deters
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -16,22 +16,25 @@
  ** minimize interaction between header files.
  **/
 
-#include "cvc4_private.h"
-
 #ifndef __CVC4__THEORY__ARITH__CONSTRAINT_FORWARD_H
 #define __CVC4__THEORY__ARITH__CONSTRAINT_FORWARD_H
+
+#include "cvc4_private.h"
+#include <vector>
 
 namespace CVC4 {
 namespace theory {
 namespace arith {
 
-class ConstraintValue;
-typedef ConstraintValue* Constraint;
-typedef const ConstraintValue* const ConstConstraint;
+class Constraint_;
+typedef Constraint_* ConstraintP;
+typedef const Constraint_* ConstraintCP;
 
-static const Constraint NullConstraint = NULL;
+const ConstraintP NullConstraint = NULL;
 
 class ConstraintDatabase;
+
+typedef std::vector<ConstraintCP> ConstraintCPVec;
 
 }/* CVC4::theory::arith namespace */
 }/* CVC4::theory namespace */

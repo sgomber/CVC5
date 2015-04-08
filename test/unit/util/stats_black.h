@@ -3,9 +3,9 @@
  ** \verbatim
  ** Original author: Morgan Deters
  ** Major contributors: none
- ** Minor contributors (to current version): none
+ ** Minor contributors (to current version): Kshitij Bansal
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -90,13 +90,7 @@ public:
     TS_ASSERT_EQUALS(sstr.str(), "100");
     sstr.str("");
     sTimer.flushInformation(sstr);
-    TS_ASSERT_EQUALS(sstr.str(), "0.00000000");
-
-    sTimer.start();
-    timespec zero = { 0, 0 };
-    //TS_ASSERT_EQUALS(zero, sTimer.getData());
-    sTimer.stop();
-    TS_ASSERT_LESS_THAN(zero, sTimer.getData());
+    TS_ASSERT_EQUALS(sstr.str(), "0.000000000");
 #endif /* CVC4_STATISTICS_ON */
   }
 

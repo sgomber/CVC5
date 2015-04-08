@@ -20,7 +20,7 @@ AM_CPPFLAGS = \
 AM_CXXFLAGS = -Wall -Wno-unknown-pragmas -Wno-parentheses $(FLAG_VISIBILITY_HIDDEN)
 
 SUBDIRS = lib options expr util prop/minisat prop/bvminisat . parser compat bindings main
-THEORIES = builtin booleans uf arith bv arrays datatypes strings quantifiers rewriterules idl
+THEORIES = builtin booleans uf arith bv fp arrays datatypes sets strings quantifiers idl
 
 lib_LTLIBRARIES = libcvc4.la
 
@@ -67,8 +67,8 @@ libcvc4_la_SOURCES = \
 	printer/printer.cpp \
 	printer/dagification_visitor.h \
 	printer/dagification_visitor.cpp \
-	printer/model_format_mode.h \
-	printer/model_format_mode.cpp \
+	printer/modes.h \
+	printer/modes.cpp \
 	printer/ast/ast_printer.h \
 	printer/ast/ast_printer.cpp \
 	printer/smt1/smt1_printer.h \
@@ -100,9 +100,6 @@ libcvc4_la_SOURCES = \
 	prop/sat_solver_types.h \
 	prop/sat_solver_factory.h \
 	prop/sat_solver_factory.cpp \
-	prop/sat_solver_registry.h \
-	prop/sat_solver_registry.cpp \
-	prop/options_handlers.h \
 	smt/smt_engine.cpp \
 	smt/smt_engine_check_proof.cpp \
 	smt/smt_engine.h \
@@ -116,6 +113,8 @@ libcvc4_la_SOURCES = \
 	smt/boolean_terms.h \
 	smt/boolean_terms.cpp \
 	smt/logic_exception.h \
+	smt/logic_request.h \
+	smt/logic_request.cpp \
 	smt/simplification_mode.h \
 	smt/simplification_mode.cpp \
 	smt/options_handlers.h \
@@ -171,9 +170,8 @@ libcvc4_la_SOURCES = \
 	theory/uf/theory_uf_model.cpp \
 	theory/uf/options_handlers.h \
 	theory/bv/theory_bv_utils.h \
+	theory/bv/theory_bv_utils.cpp \
 	theory/bv/type_enumerator.h \
-	theory/bv/bitblaster.h \
-	theory/bv/bitblaster.cpp \
 	theory/bv/bv_to_bool.h \
 	theory/bv/bv_to_bool.cpp \
 	theory/bv/bv_subtheory.h \
@@ -185,8 +183,13 @@ libcvc4_la_SOURCES = \
 	theory/bv/bv_subtheory_inequality.cpp \
 	theory/bv/bv_inequality_graph.h \
 	theory/bv/bv_inequality_graph.cpp \
-	theory/bv/bitblast_strategies.h \
-	theory/bv/bitblast_strategies.cpp \
+	theory/bv/bitblast_strategies_template.h \
+	theory/bv/bitblaster_template.h \
+	theory/bv/lazy_bitblaster.cpp \
+	theory/bv/eager_bitblaster.cpp \
+	theory/bv/aig_bitblaster.cpp \
+	theory/bv/bv_eager_solver.h \
+	theory/bv/bv_eager_solver.cpp \
 	theory/bv/slicer.h \
 	theory/bv/slicer.cpp \
 	theory/bv/theory_bv.h \
@@ -201,6 +204,18 @@ libcvc4_la_SOURCES = \
 	theory/bv/theory_bv_rewriter.h \
 	theory/bv/theory_bv_rewriter.cpp \
 	theory/bv/cd_set_collection.h \
+	theory/bv/abstraction.h \
+	theory/bv/abstraction.cpp \
+	theory/bv/bv_quick_check.h \
+	theory/bv/bv_quick_check.cpp \
+	theory/bv/bv_subtheory_algebraic.h \
+	theory/bv/bv_subtheory_algebraic.cpp \
+	theory/bv/options_handlers.h \
+	theory/bv/bitblast_mode.h \
+	theory/bv/bitblast_mode.cpp \
+	theory/bv/bitblast_utils.h \
+	theory/bv/bvintropow2.h \
+	theory/bv/bvintropow2.cpp \
 	theory/idl/idl_model.h \
 	theory/idl/idl_model.cpp \
 	theory/idl/idl_assertion.h \
@@ -220,6 +235,21 @@ libcvc4_la_SOURCES = \
 	theory/datatypes/theory_datatypes.h \
 	theory/datatypes/datatypes_rewriter.h \
 	theory/datatypes/theory_datatypes.cpp \
+	theory/datatypes/datatypes_sygus.h \
+	theory/datatypes/datatypes_sygus.cpp \
+	theory/sets/expr_patterns.h \
+	theory/sets/normal_form.h \
+	theory/sets/options_handlers.h \
+	theory/sets/scrutinize.h \
+	theory/sets/term_info.h \
+	theory/sets/theory_sets.cpp \
+	theory/sets/theory_sets.h \
+	theory/sets/theory_sets_private.cpp \
+	theory/sets/theory_sets_private.h \
+	theory/sets/theory_sets_rewriter.cpp \
+	theory/sets/theory_sets_rewriter.h \
+	theory/sets/theory_sets_type_enumerator.h \
+	theory/sets/theory_sets_type_rules.h \
 	theory/strings/theory_strings.h \
 	theory/strings/theory_strings.cpp \
 	theory/strings/theory_strings_rewriter.h \
@@ -267,8 +297,6 @@ libcvc4_la_SOURCES = \
 	theory/quantifiers/model_builder.cpp \
 	theory/quantifiers/quantifiers_attributes.h \
 	theory/quantifiers/quantifiers_attributes.cpp \
-	theory/quantifiers/inst_gen.h \
-	theory/quantifiers/inst_gen.cpp \
 	theory/quantifiers/quant_util.h \
 	theory/quantifiers/quant_util.cpp \
 	theory/quantifiers/inst_match_generator.h \
@@ -291,33 +319,30 @@ libcvc4_la_SOURCES = \
 	theory/quantifiers/relevant_domain.cpp \
 	theory/quantifiers/symmetry_breaking.h \
 	theory/quantifiers/symmetry_breaking.cpp \
-	theory/quantifiers/qinterval_builder.h \
-	theory/quantifiers/qinterval_builder.cpp \
+	theory/quantifiers/ambqi_builder.h \
+	theory/quantifiers/ambqi_builder.cpp \
 	theory/quantifiers/quant_conflict_find.h \
 	theory/quantifiers/quant_conflict_find.cpp \
+	theory/quantifiers/conjecture_generator.h \
+	theory/quantifiers/conjecture_generator.cpp \
+	theory/quantifiers/ce_guided_instantiation.h \
+	theory/quantifiers/ce_guided_instantiation.cpp \
+	theory/quantifiers/ce_guided_single_inv.h \
+	theory/quantifiers/ce_guided_single_inv.cpp \
+	theory/quantifiers/ce_guided_single_inv_sol.h \
+	theory/quantifiers/ce_guided_single_inv_sol.cpp \
+	theory/quantifiers/local_theory_ext.h \
+	theory/quantifiers/local_theory_ext.cpp \
+	theory/quantifiers/fun_def_process.h \
+	theory/quantifiers/fun_def_process.cpp \
 	theory/quantifiers/options_handlers.h \
-	theory/rewriterules/theory_rewriterules_rules.h \
-	theory/rewriterules/theory_rewriterules_rules.cpp \
-	theory/rewriterules/theory_rewriterules.h \
-	theory/rewriterules/theory_rewriterules.cpp \
-	theory/rewriterules/theory_rewriterules_rewriter.h \
-	theory/rewriterules/theory_rewriterules_type_rules.h \
-	theory/rewriterules/theory_rewriterules_preprocess.h \
-	theory/rewriterules/theory_rewriterules_params.h \
-	theory/rewriterules/rr_inst_match.h \
-	theory/rewriterules/rr_inst_match_impl.h \
-	theory/rewriterules/rr_inst_match.cpp \
-	theory/rewriterules/rr_trigger.h \
-	theory/rewriterules/rr_trigger.cpp \
-	theory/rewriterules/rr_candidate_generator.h \
-	theory/rewriterules/rr_candidate_generator.cpp \
-	theory/rewriterules/efficient_e_matching.h \
-	theory/rewriterules/efficient_e_matching.cpp \
 	theory/arith/theory_arith_type_rules.h \
 	theory/arith/type_enumerator.h \
 	theory/arith/arithvar.h \
 	theory/arith/arithvar.cpp \
 	theory/arith/bound_counts.h \
+	theory/arith/arith_ite_utils.h \
+	theory/arith/arith_ite_utils.cpp \
 	theory/arith/arith_rewriter.h \
 	theory/arith/arith_rewriter.cpp \
 	theory/arith/arith_static_learner.h \
@@ -356,6 +381,8 @@ libcvc4_la_SOURCES = \
 	theory/arith/fc_simplex.cpp \
 	theory/arith/soi_simplex.h \
 	theory/arith/soi_simplex.cpp \
+	theory/arith/infer_bounds.h \
+	theory/arith/infer_bounds.cpp \
 	theory/arith/approx_simplex.h \
 	theory/arith/approx_simplex.cpp \
 	theory/arith/attempt_solution_simplex.h \
@@ -373,6 +400,10 @@ libcvc4_la_SOURCES = \
 	theory/arith/arith_unate_lemma_mode.cpp \
 	theory/arith/arith_propagation_mode.h \
 	theory/arith/arith_propagation_mode.cpp \
+	theory/arith/pseudoboolean_proc.h \
+	theory/arith/pseudoboolean_proc.cpp \
+	theory/arith/cut_log.h \
+	theory/arith/cut_log.cpp \
 	theory/arith/options_handlers.h \
 	theory/booleans/type_enumerator.h \
 	theory/booleans/theory_bool.h \
@@ -384,7 +415,12 @@ libcvc4_la_SOURCES = \
 	theory/booleans/circuit_propagator.cpp \
 	theory/booleans/boolean_term_conversion_mode.h \
 	theory/booleans/boolean_term_conversion_mode.cpp \
-	theory/booleans/options_handlers.h
+	theory/booleans/options_handlers.h \
+	theory/fp/theory_fp.h \
+	theory/fp/theory_fp.cpp \
+	theory/fp/theory_fp_rewriter.h \
+	theory/fp/theory_fp_rewriter.cpp \
+	theory/fp/theory_fp_type_rules.h
 
 nodist_libcvc4_la_SOURCES = \
 	smt/smt_options.cpp \
@@ -411,6 +447,12 @@ endif
 
 if CVC4_USE_GLPK
 libcvc4_la_LIBADD += $(GLPK_LIBS)
+libcvc4_la_LDFLAGS += $(GLPK_LDFLAGS)
+endif
+
+if CVC4_USE_ABC
+libcvc4_la_LIBADD += $(ABC_LIBS)
+libcvc4_la_LDFLAGS += $(ABC_LDFLAGS)
 endif
 
 BUILT_SOURCES = \
@@ -453,16 +495,18 @@ EXTRA_DIST = \
 	theory/idl/kinds \
 	theory/builtin/kinds \
 	theory/datatypes/kinds \
+	theory/sets/kinds \
 	theory/strings/kinds \
 	theory/arrays/kinds \
 	theory/quantifiers/kinds \
-	theory/rewriterules/kinds \
 	theory/arith/kinds \
 	theory/booleans/kinds \
 	theory/example/ecdata.h \
 	theory/example/ecdata.cpp \
 	theory/example/theory_uf_tim.h \
-	theory/example/theory_uf_tim.cpp
+	theory/example/theory_uf_tim.cpp \
+	theory/fp/kinds \
+	theory/fp/options_handlers.h
 
 svn_versioninfo.cpp: svninfo
 	$(AM_V_GEN)( \

@@ -3,9 +3,9 @@
  ** \verbatim
  ** Original author: Morgan Deters
  ** Major contributors: Tim King
- ** Minor contributors (to current version): none
+ ** Minor contributors (to current version): Kshitij Bansal
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -762,7 +762,7 @@ inline bool operator>=(const timespec& a, const timespec& b) {
 inline std::ostream& operator<<(std::ostream& os, const timespec& t) {
   // assumes t.tv_nsec is in range
   return os << t.tv_sec << "."
-            << std::setfill('0') << std::setw(8) << std::right << t.tv_nsec;
+            << std::setfill('0') << std::setw(9) << std::right << t.tv_nsec;
 }
 
 namespace CVC4 {
@@ -824,6 +824,7 @@ public:
  */
 class CodeTimer {
   TimerStat& d_timer;
+  bool d_reentrant;
 
   /** Private copy constructor undefined (no copy permitted). */
   CodeTimer(const CodeTimer& timer) CVC4_UNDEFINED;
@@ -831,11 +832,15 @@ class CodeTimer {
   CodeTimer& operator=(const CodeTimer& timer) CVC4_UNDEFINED;
 
 public:
-  CodeTimer(TimerStat& timer) : d_timer(timer) {
-    d_timer.start();
+  CodeTimer(TimerStat& timer, bool allow_reentrant = false) : d_timer(timer), d_reentrant(false) {
+    if(!allow_reentrant || !(d_reentrant = d_timer.running())) {
+      d_timer.start();
+    }
   }
   ~CodeTimer() {
-    d_timer.stop();
+    if(!d_reentrant) {
+      d_timer.stop();
+    }
   }
 };/* class CodeTimer */
 

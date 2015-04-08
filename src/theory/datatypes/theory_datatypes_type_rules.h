@@ -5,7 +5,7 @@
  ** Major contributors: Andrew Reynolds
  ** Minor contributors (to current version): Tim King
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -98,7 +98,7 @@ struct DatatypeConstructorTypeRule {
 struct DatatypeSelectorTypeRule {
   inline static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check)
     throw(TypeCheckingExceptionPrivate) {
-    Assert(n.getKind() == kind::APPLY_SELECTOR);
+    Assert(n.getKind() == kind::APPLY_SELECTOR || n.getKind() == kind::APPLY_SELECTOR_TOTAL );
     TypeNode selType = n.getOperator().getType(check);
     Type t = selType[0].toType();
     Assert( t.isDatatype() );
@@ -209,6 +209,49 @@ struct DatatypeAscriptionTypeRule {
   }
 };/* struct DatatypeAscriptionTypeRule */
 
+/* For co-datatypes */
+class DatatypeMuTypeRule {
+private:
+  //a Mu-expression is constant iff its body is composed of constructors applied to constant expr and bound variables only
+  inline static bool computeIsConstNode(TNode n, std::vector< TNode >& fv ){
+    if( n.getKind()==kind::MU ){
+      fv.push_back( n[0] );
+      bool ret = computeIsConstNode( n[1], fv );
+      fv.pop_back();
+      return ret;
+    }else if( n.isConst() || std::find( fv.begin(), fv.end(), n )!=fv.end() ){
+      return true;
+    }else if( n.getKind()==kind::APPLY_CONSTRUCTOR ){
+      for( unsigned i=0; i<n.getNumChildren(); i++ ){
+        if( !computeIsConstNode( n[i], fv ) ){
+          return false;
+        }
+      }
+      return true; 
+    }else{
+      return false;
+    }
+  }
+public:
+  inline static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check) {
+    if( n[0].getKind()!=kind::BOUND_VARIABLE  ) {
+      std::stringstream ss;
+      ss << "expected a bound var for MU expression, got `"
+         << n[0] << "'";
+      throw TypeCheckingExceptionPrivate(n, ss.str());
+    }
+    return n[1].getType(check);
+  }
+  inline static bool computeIsConst(NodeManager* nodeManager, TNode n)
+    throw(AssertionException) {
+    Assert(n.getKind() == kind::MU);
+    NodeManagerScope nms(nodeManager);
+    std::vector< TNode > fv;
+    return computeIsConstNode( n, fv );
+  }
+};
+
+
 struct ConstructorProperties {
   inline static Cardinality computeCardinality(TypeNode type) {
     // Constructors aren't exactly functions, they're like
@@ -220,49 +263,6 @@ struct ConstructorProperties {
       c *= type[i].getCardinality();
     }
     return c;
-  }
-
-  inline static bool isWellFounded(TypeNode type) {
-    // Constructors aren't exactly functions, they're like
-    // parameterized ground terms.  So the wellfoundedness is more
-    // like that of a tuple than that of a function.
-    AssertArgument(type.isConstructor(), type);
-    for(unsigned i = 0, i_end = type.getNumChildren(); i < i_end - 1; ++i) {
-      if(!type[i].isWellFounded()) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  inline static Node mkGroundTerm(TypeNode type) {
-    AssertArgument(type.isConstructor(), type);
-
-    // is this already in the cache ?
-    Node groundTerm = type.getAttribute(GroundTermAttr());
-    if(!groundTerm.isNull()) {
-      return groundTerm;
-    }
-
-    // This is a bit tricky; Constructors have a unique index within
-    // their datatype, but Constructor *types* do not; multiple
-    // Constructors within the same Datatype could share the same
-    // type.  So we scan through the datatype to find one that
-    // matches.
-    //const Datatype& dt = type[type.getNumChildren() - 1].getConst<Datatype>();
-    const Datatype& dt = DatatypeType(type[type.getNumChildren() - 1].toType()).getDatatype();
-    for(Datatype::const_iterator i = dt.begin(),
-          i_end = dt.end();
-        i != i_end;
-        ++i) {
-      if(TypeNode::fromType((*i).getConstructor().getType()) == type) {
-        groundTerm = Node::fromExpr((*i).mkGroundTerm( type.toType() ));
-        type.setAttribute(GroundTermAttr(), groundTerm);
-        return groundTerm;
-      }
-    }
-
-    InternalError("couldn't find a matching constructor?!");
   }
 };/* struct ConstructorProperties */
 
@@ -282,6 +282,9 @@ struct TupleTypeRule {
 struct TupleSelectTypeRule {
   inline static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check) {
     Assert(n.getKind() == kind::TUPLE_SELECT);
+    if(n.getOperator().getKind() != kind::TUPLE_SELECT_OP) {
+      throw TypeCheckingExceptionPrivate(n, "Tuple-select expression requires TupleSelect operator");
+    }
     const TupleSelect& ts = n.getOperator().getConst<TupleSelect>();
     TypeNode tupleType = n[0].getType(check);
     if(!tupleType.isTuple()) {
@@ -407,7 +410,9 @@ struct RecordTypeRule {
           throw TypeCheckingExceptionPrivate(n, "record description has different length than record literal");
         }
         if(!(*child_it).getType(check).isComparableTo(TypeNode::fromType((*i).second))) {
-          throw TypeCheckingExceptionPrivate(n, "record description types differ from record literal types");
+          std::stringstream ss;
+          ss << "record description types differ from record literal types\nDescription type: " << (*child_it).getType() << "\nLiteral type: " << (*i).second;
+          throw TypeCheckingExceptionPrivate(n, ss.str());
         }
       }
       if(i != rec.end()) {
@@ -422,6 +427,9 @@ struct RecordSelectTypeRule {
   inline static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check) {
     Assert(n.getKind() == kind::RECORD_SELECT);
     NodeManagerScope nms(nodeManager);
+    if(n.getOperator().getKind() != kind::RECORD_SELECT_OP) {
+      throw TypeCheckingExceptionPrivate(n, "Tuple-select expression requires TupleSelect operator");
+    }
     const RecordSelect& rs = n.getOperator().getConst<RecordSelect>();
     TypeNode recordType = n[0].getType(check);
     if(!recordType.isRecord()) {
@@ -471,7 +479,18 @@ struct RecordUpdateTypeRule {
 
 struct RecordProperties {
   inline static Node mkGroundTerm(TypeNode type) {
-    Unimplemented();
+    Assert(type.getKind() == kind::RECORD_TYPE);
+
+    const Record& rec = type.getRecord();
+    std::vector<Node> children;
+    for(Record::iterator i = rec.begin(),
+          i_end = rec.end();
+        i != i_end;
+        ++i) {
+      children.push_back((*i).second.mkGroundTerm());
+    }
+
+    return NodeManager::currentNM()->mkNode(NodeManager::currentNM()->mkConst(rec), children);
   }
 
   inline static bool computeIsConst(NodeManager* nodeManager, TNode n) {
@@ -490,6 +509,41 @@ struct RecordProperties {
     return true;
   }
 };/* struct RecordProperties */
+
+class DtSizeTypeRule {
+public:
+  inline static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check)
+    throw (TypeCheckingExceptionPrivate, AssertionException) {
+    if( check ) {
+      TypeNode t = n[0].getType(check);
+      if (!t.isDatatype()) {
+        throw TypeCheckingExceptionPrivate(n, "expecting datatype size term to have datatype argument.");
+      }
+    }
+    return nodeManager->integerType();
+  }
+};/* class DtSizeTypeRule */
+
+class DtHeightBoundTypeRule {
+public:
+  inline static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check)
+    throw (TypeCheckingExceptionPrivate, AssertionException) {
+    if( check ) {
+      TypeNode t = n[0].getType(check);
+      if (!t.isDatatype()) {
+        throw TypeCheckingExceptionPrivate(n, "expecting datatype height bound term to have datatype argument.");
+      }
+      if( n[1].getKind()!=kind::CONST_RATIONAL ){
+        throw TypeCheckingExceptionPrivate(n, "datatype height bound must be a constant");
+      }
+      if( n[1].getConst<Rational>().getNumerator().sgn()==-1 ){
+        throw TypeCheckingExceptionPrivate(n, "datatype height bound must be non-negative");
+      }
+    }
+    return nodeManager->integerType();
+  }
+};/* class DtHeightBoundTypeRule */
+
 
 }/* CVC4::theory::datatypes namespace */
 }/* CVC4::theory namespace */

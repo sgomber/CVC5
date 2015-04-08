@@ -5,7 +5,7 @@
  ** Major contributors: Morgan Deters
  ** Minor contributors (to current version): none
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -27,16 +27,21 @@
 namespace CVC4 {
 namespace theory {
 
+class QuantifiersEngine;
 
 class QuantArith
 {
 public:
+  static bool getMonomial( Node n, Node& c, Node& v );
   static bool getMonomial( Node n, std::map< Node, Node >& msum );
   static bool getMonomialSum( Node n, std::map< Node, Node >& msum );
   static bool getMonomialSumLit( Node lit, std::map< Node, Node >& msum );
-  static bool isolate( Node v, std::map< Node, Node >& msum, Node & veq, Kind k );
+  //return 1 : solved on LHS, return -1 : solved on RHS, return 0: failed
+  static int isolate( Node v, std::map< Node, Node >& msum, Node & veq, Kind k, bool doCoeff = false );
   static Node negate( Node t );
   static Node offset( Node t, int i );
+  static void debugPrintMonomialSum( std::map< Node, Node >& msum, const char * c );
+  static bool solveEqualityFor( Node lit, Node v, Node & veq );
 };
 
 
@@ -108,6 +113,7 @@ public:
 
   virtual void setLiberal( bool l ) = 0;
 };/* class EqualityQuery */
+
 
 }
 }

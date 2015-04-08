@@ -5,7 +5,7 @@
  ** Major contributors: Morgan Deters
  ** Minor contributors (to current version): none
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -15,6 +15,7 @@
 #include "theory/quantifiers/quant_util.h"
 #include "theory/quantifiers/inst_match.h"
 #include "theory/quantifiers/term_database.h"
+#include "theory/quantifiers_engine.h"
 
 using namespace std;
 using namespace CVC4;
@@ -22,7 +23,15 @@ using namespace CVC4::kind;
 using namespace CVC4::context;
 using namespace CVC4::theory;
 
-
+bool QuantArith::getMonomial( Node n, Node& c, Node& v ){
+  if( n.getKind()==MULT && n.getNumChildren()==2 && n[0].isConst() ){
+    c = n[0];
+    v = n[1];
+    return true;
+  }else{
+    return false;
+  }
+}
 bool QuantArith::getMonomial( Node n, std::map< Node, Node >& msum ) {
   if ( n.getKind()==MULT ){
     if( n.getNumChildren()==2 && msum.find(n[1])==msum.end() && n[0].isConst() ){
@@ -59,19 +68,36 @@ bool QuantArith::getMonomialSumLit( Node lit, std::map< Node, Node >& msum ) {
           msum[Node::null()] = negate( lit[1] );
         }
         return true;
+      }else{
+        //subtract the other side
+        std::map< Node, Node > msum2;
+        if( getMonomialSum( lit[1], msum2 ) ){
+          for( std::map< Node, Node >::iterator it = msum2.begin(); it != msum2.end(); ++it ){
+            std::map< Node, Node >::iterator it2 = msum.find( it->first );
+            if( it2!=msum.end() ){
+              Node r = NodeManager::currentNM()->mkNode( MINUS, it2->second.isNull() ? NodeManager::currentNM()->mkConst( Rational(1) ) : it2->second, 
+                                                                it->second.isNull() ? NodeManager::currentNM()->mkConst( Rational(1) ) : it->second );
+              msum[it->first] = Rewriter::rewrite( r );
+            }else{
+              msum[it->first] = negate( it->second.isNull() ? NodeManager::currentNM()->mkConst( Rational(1) ) : it->second );
+            }
+          }
+          return true;
+        }
       }
     }
   }
   return false;
 }
 
-bool QuantArith::isolate( Node v, std::map< Node, Node >& msum, Node & veq, Kind k ) {
-  if( msum.find(v)!=msum.end() ){
+int QuantArith::isolate( Node v, std::map< Node, Node >& msum, Node & veq, Kind k, bool doCoeff ) {
+  std::map< Node, Node >::iterator itv = msum.find( v );
+  if( itv!=msum.end() ){
     std::vector< Node > children;
-    Rational r = msum[v].isNull() ? Rational(1) : msum[v].getConst<Rational>();
+    Rational r = itv->second.isNull() ? Rational(1) : itv->second.getConst<Rational>();
     if ( r.sgn()!=0 ){
       for( std::map< Node, Node >::iterator it = msum.begin(); it != msum.end(); ++it ){
-        if( it->first.isNull() || it->first!=v ){
+        if( it->first!=v ){
           Node m;
           if( !it->first.isNull() ){
             if ( !it->second.isNull() ){
@@ -87,22 +113,24 @@ bool QuantArith::isolate( Node v, std::map< Node, Node >& msum, Node & veq, Kind
       }
       veq = children.size()>1 ? NodeManager::currentNM()->mkNode( PLUS, children ) :
                                 (children.size()==1 ? children[0] : NodeManager::currentNM()->mkConst( Rational(0) ));
-      if( !r.isNegativeOne() ){
-        if( r.isOne() ){
-          veq = negate(veq);
+      Node vc = v;
+      if( !r.isOne() && !r.isNegativeOne() ){
+        if( doCoeff ){
+          vc = NodeManager::currentNM()->mkNode( MULT, NodeManager::currentNM()->mkConst( r.abs() ), vc );
         }else{
-          //TODO
-          return false;
+          return 0;
         }
       }
+      if( r.sgn()==1 ){
+        veq = negate(veq);
+      }
       veq = Rewriter::rewrite( veq );
-      veq = NodeManager::currentNM()->mkNode( k, r.sgn()==1 ? v : veq, r.sgn()==1 ? veq : v );
-      return true;
+      bool inOrder = r.sgn()==1 || k==EQUAL;
+      veq = NodeManager::currentNM()->mkNode( k, inOrder ? vc : veq, inOrder ? veq : vc );
+      return inOrder ? 1 : -1;
     }
-    return false;
-  }else{
-    return false;
   }
+  return 0;
 }
 
 Node QuantArith::negate( Node t ) {
@@ -116,6 +144,50 @@ Node QuantArith::offset( Node t, int i ) {
   tt = Rewriter::rewrite( tt );
   return tt;
 }
+
+void QuantArith::debugPrintMonomialSum( std::map< Node, Node >& msum, const char * c ) {
+  for(std::map< Node, Node >::iterator it = msum.begin(); it != msum.end(); ++it ){
+    Trace(c) << "  ";
+    if( !it->second.isNull() ){
+      Trace(c) << it->second;
+      if( !it->first.isNull() ){
+        Trace(c) << " * ";
+      }
+    }
+    if( !it->first.isNull() ){
+      Trace(c) << it->first;
+    }
+    Trace(c) << std::endl;
+  }
+  Trace(c) << std::endl;
+}
+
+bool QuantArith::solveEqualityFor( Node lit, Node v, Node & veq ) {
+  Assert( lit.getKind()==EQUAL || lit.getKind()==IFF );
+  //first look directly at sides
+  TypeNode tn = lit[0].getType();
+  for( unsigned r=0; r<2; r++ ){
+    if( lit[r]==v ){
+      Node olitr = lit[r==0 ? 1 : 0];
+      veq = tn.isBoolean() ? lit[r].iffNode( olitr ) : lit[r].eqNode( olitr );
+      return true;
+    }
+  }
+  if( tn.isInteger() || tn.isReal() ){
+    std::map< Node, Node > msum;
+    if( QuantArith::getMonomialSumLit( lit, msum ) ){
+      if( QuantArith::isolate( v, msum, veq, EQUAL ) ){
+        if( veq[0]!=v ){
+          Assert( veq[1]==v );
+          veq = v.eqNode( veq[0] );
+        }
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 
 
 void QuantRelevance::registerQuantifier( Node f ){
@@ -241,6 +313,7 @@ void QuantPhaseReq::computePhaseReqs( Node n, bool polarity, std::map< Node, int
 }
 
 void QuantPhaseReq::getPolarity( Node n, int child, bool hasPol, bool pol, bool& newHasPol, bool& newPol ) {
+  Assert( n.getKind()!=IMPLIES && n.getKind()!=XOR );
   newHasPol = hasPol;
   newPol = pol;
   if( n.getKind()==NOT ){

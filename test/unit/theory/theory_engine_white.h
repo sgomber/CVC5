@@ -5,7 +5,7 @@
  ** Major contributors: Dejan Jovanovic
  ** Minor contributors (to current version): Andrew Reynolds, Christopher L. Conway, Tim King
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -58,7 +58,7 @@ class FakeOutputChannel : public OutputChannel {
   void propagateAsDecision(TNode n) throw(AssertionException) {
     Unimplemented();
   }
-  LemmaStatus lemma(TNode n, bool removable) throw(AssertionException) {
+  LemmaStatus lemma(TNode n, bool removable, bool preprocess) throw(AssertionException) {
     Unimplemented();
   }
   void requirePhase(TNode, bool) throw(AssertionException) {

@@ -5,7 +5,7 @@
  ** Major contributors: Morgan Deters
  ** Minor contributors (to current version): Dejan Jovanovic, Francois Bobot
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -25,6 +25,7 @@
 
 #include "expr/expr_manager.h"
 #include "parser/options.h"
+#include "smt/options.h"
 
 namespace CVC4 {
 namespace parser {
@@ -57,6 +58,8 @@ void ParserBuilder::init(ExprManager* exprManager,
   d_canIncludeFile = true;
   d_mmap = false;
   d_parseOnly = false;
+  d_logicIsForced = false;
+  d_forcedLogic = "";
 }
 
 Parser* ParserBuilder::build()
@@ -86,7 +89,11 @@ Parser* ParserBuilder::build()
   case language::input::LANG_SMTLIB_V1:
     parser = new Smt1(d_exprManager, input, d_strictMode, d_parseOnly);
     break;
-  case language::input::LANG_SMTLIB_V2:
+  case language::input::LANG_SMTLIB_V2_0:
+  case language::input::LANG_SMTLIB_V2_5:
+    parser = new Smt2(d_exprManager, input, d_strictMode, d_parseOnly);
+    break;
+  case language::input::LANG_SYGUS:
     parser = new Smt2(d_exprManager, input, d_strictMode, d_parseOnly);
     break;
   case language::input::LANG_TPTP:
@@ -107,6 +114,10 @@ Parser* ParserBuilder::build()
     parser->allowIncludeFile();
   } else {
     parser->disallowIncludeFile();
+  }
+
+  if( d_logicIsForced ) {
+    parser->forceLogic(d_forcedLogic);
   }
 
   return parser;
@@ -148,14 +159,19 @@ ParserBuilder& ParserBuilder::withParseOnly(bool flag) {
 }
 
 ParserBuilder& ParserBuilder::withOptions(const Options& options) {
-  return
-    withInputLanguage(options[options::inputLanguage])
+  ParserBuilder& retval = *this;
+  retval =
+    retval.withInputLanguage(options[options::inputLanguage])
       .withMmap(options[options::memoryMap])
       .withChecks(options[options::semanticChecks])
       .withStrictMode(options[options::strictParsing])
       .withParseOnly(options[options::parseOnly])
-      .withIncludeFile(options[options::canIncludeFile]);
+      .withIncludeFile(options[options::filesystemAccess]);
+  if(options.wasSetByUser(options::forceLogic)) {
+    retval = retval.withForcedLogic(options[options::forceLogic].getLogicString());
   }
+  return retval;
+}
 
 ParserBuilder& ParserBuilder::withStrictMode(bool flag) {
   d_strictMode = flag;
@@ -164,6 +180,12 @@ ParserBuilder& ParserBuilder::withStrictMode(bool flag) {
 
 ParserBuilder& ParserBuilder::withIncludeFile(bool flag) {
   d_canIncludeFile = flag;
+  return *this;
+}
+
+ParserBuilder& ParserBuilder::withForcedLogic(const std::string& logic) {
+  d_logicIsForced = true;
+  d_forcedLogic = logic;
   return *this;
 }
 

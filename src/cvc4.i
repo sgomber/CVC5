@@ -61,6 +61,15 @@ std::set<JavaInputStreamAdapter*> CVC4::JavaInputStreamAdapter::s_adapters;
 #endif
 %}
 
+#ifdef SWIGPYTHON
+%pythonappend CVC4::SmtEngine::SmtEngine %{
+  self.thisown = 0
+%}
+%pythonappend CVC4::ExprManager::ExprManager %{
+  self.thisown = 0
+%}
+#endif /* SWIGPYTHON */
+
 %template(vectorCommandPtr) std::vector< CVC4::Command* >;
 %template(vectorType) std::vector< CVC4::Type >;
 %template(vectorExpr) std::vector< CVC4::Expr >;
@@ -71,7 +80,7 @@ std::set<JavaInputStreamAdapter*> CVC4::JavaInputStreamAdapter::s_adapters;
 %template(vectorString) std::vector< std::string >;
 %template(vectorPairStringType) std::vector< std::pair< std::string, CVC4::Type > >;
 %template(pairStringType) std::pair< std::string, CVC4::Type >;
-%template(setType) std::set< CVC4::Type >;
+%template(setOfType) std::set< CVC4::Type >;
 %template(hashmapExpr) std::hash_map< CVC4::Expr, CVC4::Expr, CVC4::ExprHashFunction >;
 
 // This is unfortunate, but seems to be necessary; if we leave NULL
@@ -144,8 +153,11 @@ std::set<JavaInputStreamAdapter*> CVC4::JavaInputStreamAdapter::s_adapters;
 %typemap(throws) CVC4::ScopeException = CVC4::Exception;
 %typemap(throws) CVC4::IllegalArgumentException = CVC4::Exception;
 %typemap(throws) CVC4::AssertionException = CVC4::Exception;
+%typemap(throws) CVC4::UnsafeInterruptException = CVC4::Exception;
 %typemap(throws) CVC4::parser::InputStreamException = CVC4::Exception;
 %typemap(throws) CVC4::parser::ParserException = CVC4::Exception;
+
+%typemap(throws) CVC4::RationalFromDoubleException = Exception;
 
 // Generate an error if the mapping from C++ CVC4 Exception to Java CVC4 Exception doesn't exist above
 %typemap(throws) SWIGTYPE, SWIGTYPE &, SWIGTYPE *, SWIGTYPE [], SWIGTYPE [ANY] %{
@@ -242,11 +254,50 @@ std::set<JavaInputStreamAdapter*> CVC4::JavaInputStreamAdapter::s_adapters;
   }
 %}
 
+/* Copied (and modified) from java.swg; the standard swig version causes
+ * negative BigInteger to be interpreted unsigned.  Here we throw an
+ * exception. */
+%typemap(in) unsigned long long {
+  jclass clazz;
+  jmethodID mid;
+  jbyteArray ba;
+  jbyte* bae;
+  jsize sz;
+  int i;
+
+  if (!$input) {
+    SWIG_JavaThrowException(jenv, SWIG_JavaNullPointerException, "BigInteger null");
+    return $null;
+  }
+  clazz = JCALL1(GetObjectClass, jenv, $input);
+  mid = JCALL3(GetMethodID, jenv, clazz, "toByteArray", "()[B");
+  ba = (jbyteArray)JCALL2(CallObjectMethod, jenv, $input, mid);
+  bae = JCALL2(GetByteArrayElements, jenv, ba, 0);
+  sz = JCALL1(GetArrayLength, jenv, ba);
+  if((bae[0] & 0x80) != 0) {
+    SWIG_JavaThrowException(jenv, SWIG_JavaRuntimeException, "BigInteger argument must be nonnegative.");
+  }
+  jsize test_sz = sz;
+  if(sz > 1 && bae[0] == 0) {
+    --test_sz;
+  }
+  if(test_sz > sizeof(unsigned long long)) {
+    SWIG_JavaThrowException(jenv, SWIG_JavaRuntimeException, "BigInteger argument out of bounds.");
+  }
+  $1 = 0;
+  for(i=0; i<sz; i++) {
+    $1 = ($1 << 8) | ($1_type)(unsigned char)bae[i];
+  }
+  JCALL3(ReleaseByteArrayElements, jenv, ba, bae, 0);
+}
+
 #endif /* SWIGJAVA */
 
+%include "util/exception.i"
+%include "util/unsafe_interrupt_exception.i"
 %include "util/integer.i"
 %include "util/rational.i"
-%include "util/exception.i"
+//%include "util/floatingpoint.i"
 %include "util/language.i"
 %include "util/cardinality.i"
 %include "util/bool.i"
@@ -264,12 +315,15 @@ std::set<JavaInputStreamAdapter*> CVC4::JavaInputStreamAdapter::s_adapters;
 
 %include "expr/type.i"
 %include "util/ascription_type.i"
+%include "util/emptyset.i"
 %include "util/datatype.i"
 %include "util/tuple.i"
 %include "util/record.i"
 %include "util/regexp.i"
 %include "util/uninterpreted_constant.i"
 %include "util/proof.i"
+%include "util/resource_manager.i"
+%include "util/unsat_core.i"
 
 %include "expr/kind.i"
 %include "expr/expr.i"

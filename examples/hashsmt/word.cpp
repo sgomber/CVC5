@@ -5,7 +5,7 @@
  ** Major contributors: none
  ** Minor contributors (to current version): Morgan Deters
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -23,6 +23,8 @@
  */
 
 #include "word.h"
+
+#include <vector>
 
 using namespace std;
 using namespace hashsmt;
@@ -53,6 +55,14 @@ ExprManager* Word::em() {
 
 Expr Word::operator == (const Word& b) const {
   return em()->mkExpr(kind::EQUAL, d_expr, b.getExpr());
+}
+
+Word Word::concat(const Word words[], unsigned size) {
+  Expr concat = words[0].d_expr;
+  for(unsigned i = 1; i < size; ++i) {
+      concat = em()->mkExpr(kind::BITVECTOR_CONCAT, concat, words[i].d_expr);
+  }
+  return Word(concat);
 }
 
 void Word::print(ostream& out) const {

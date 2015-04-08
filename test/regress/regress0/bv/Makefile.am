@@ -91,10 +91,12 @@ SMT_TESTS = \
 	fuzz40.smt \
 	fuzz41.smt \
 	calc2_sec2_shifter_mult_bmc15.atlas.delta01.smt \
-	smtcompbug.smt
+	smtcompbug.smt \
+	unsound1.smt2 \
+	unsound1-reduced.smt2
 
 # Regression tests for SMT2 inputs
-SMT2_TESTS =
+SMT2_TESTS = divtest.smt2
 
 # Regression tests for PL inputs
 CVC_TESTS = bvsimple.cvc sizecheck.cvc

@@ -23,6 +23,7 @@ MAKEFLAGS = -k
 TESTS =	\
 	tuple.cvc \
 	tuple-model.cvc \
+	tuple-record-bug.cvc \
 	rec1.cvc \
 	rec2.cvc \
 	rec4.cvc \
@@ -31,7 +32,6 @@ TESTS =	\
 	datatype0.cvc \
 	datatype1.cvc \
 	datatype2.cvc \
-	datatype3.cvc \
 	datatype4.cvc \
 	datatype13.cvc \
 	empty_tuprec.cvc \
@@ -59,10 +59,15 @@ TESTS =	\
 	bug286.cvc \
 	bug438.cvc \
 	bug438b.cvc \
-	wrong-sel-simp.cvc
+	wrong-sel-simp.cvc \
+	tenum-bug.smt2 \
+	cdt-non-canon-stream.smt2 \
+	stream-singleton.smt2
 
 FAILING_TESTS = \
 	datatype-dump.cvc
+
+# takes a long time to build model on debug : datatype3.cvc
 
 EXTRA_DIST = $(TESTS)
 

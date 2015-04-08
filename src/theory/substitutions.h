@@ -5,7 +5,7 @@
  ** Major contributors: Clark Barrett, Dejan Jovanovic
  ** Minor contributors (to current version): none
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -53,9 +53,6 @@ private:
 
   typedef std::hash_map<Node, Node, NodeHashFunction> NodeCache;
 
-  /** The context within which this SubstitutionMap was constructed. */
-  context::Context* d_context;
-
   /** The variables, in order of addition */
   NodeMap d_substitutions;
 
@@ -95,14 +92,9 @@ private:
    */
   CacheInvalidator d_cacheInvalidator;
 
-  // Helper list and method for simplifyLHS methods
-  // std::vector<std::pair<Node, Node> > d_worklist;
-  // void processWorklist(std::vector<std::pair<Node, Node> >& equalities, bool rewrite);
-
 public:
 
   SubstitutionMap(context::Context* context, bool substituteUnderQuantifiers = true, bool solvedForm = false) :
-    d_context(context),
     d_substitutions(context),
     d_substitutionCache(),
     d_substituteUnderQuantifiers(substituteUnderQuantifiers),
@@ -185,18 +177,6 @@ public:
 
   // Simplify right-hand sides of current map with lhs -> rhs
   void simplifyRHS(TNode lhs, TNode rhs);
-
-  /*
-  // Simplify left-hand sides of current map using the given substitutions
-  void simplifyLHS(const SubstitutionMap& subMap,
-                   std::vector<std::pair<Node,Node> >& equalities,
-                   bool rewrite = true);
-
-  // Simplify left-hand sides of current map with lhs -> rhs and then add lhs -> rhs to the substitutions set
-  void simplifyLHS(TNode lhs, TNode rhs,
-                   std::vector<std::pair<Node,Node> >& equalities,
-                   bool rewrite = true);
-  */
 
   bool isSolvedForm() const { return d_solvedForm; }
 

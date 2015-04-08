@@ -5,7 +5,7 @@
  ** Major contributors: none
  ** Minor contributors (to current version): Morgan Deters
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -39,7 +39,7 @@ ErrorInformation::ErrorInformation()
   Debug("arith::error::mem") << "def constructor " << d_variable << " "  << d_amount << endl;
 }
 
-ErrorInformation::ErrorInformation(ArithVar var, Constraint vio, int sgn)
+ErrorInformation::ErrorInformation(ArithVar var, ConstraintP vio, int sgn)
   : d_variable(var)
   , d_violated(vio)
   , d_sgn(sgn)
@@ -105,7 +105,7 @@ ErrorInformation& ErrorInformation::operator=(const ErrorInformation& ei){
   return *this;
 }
 
-void ErrorInformation::reset(Constraint c, int sgn){
+void ErrorInformation::reset(ConstraintP c, int sgn){
   Assert(!isRelaxed());
   Assert(c != NullConstraint);
   d_violated = c;
@@ -253,11 +253,11 @@ void ErrorSet::update(ErrorInformation& ei){
     case MINIMUM_AMOUNT:
     case MAXIMUM_AMOUNT:
       ei.setAmount(computeDiff(ei.getVariable()));
-      d_focus.modify(ei.getHandle(), ei.getVariable());
+      d_focus.update(ei.getHandle(), ei.getVariable());
       break;
     case  SUM_METRIC:
       ei.setMetric(sumMetric(ei.getVariable()));
-      d_focus.modify(ei.getHandle(), ei.getVariable());
+      d_focus.update(ei.getHandle(), ei.getVariable());
       break;
     case  VAR_ORDER:
       //do nothing
@@ -272,7 +272,7 @@ void ErrorSet::transitionVariableOutOfError(ArithVar v) {
   ErrorInformation& ei = d_errInfo.get(v);
   Assert(ei.debugInitialized());
   if(ei.isRelaxed()){
-    Constraint viol = ei.getViolated();
+    ConstraintP viol = ei.getViolated();
     if(ei.sgn() > 0){
       d_variables.setLowerBoundConstraint(viol);
     }else{
@@ -293,7 +293,7 @@ void ErrorSet::transitionVariableIntoError(ArithVar v) {
   Assert(inconsistent(v));
   bool vilb = d_variables.cmpAssignmentLowerBound(v) < 0;
   int sgn = vilb ? 1 : -1;
-  Constraint c = vilb ?
+  ConstraintP c = vilb ?
     d_variables.getLowerBoundConstraint(v) : d_variables.getUpperBoundConstraint(v);
   d_errInfo.set(v, ErrorInformation(v, c, sgn));
   ErrorInformation& ei = d_errInfo.get(v);
@@ -373,7 +373,7 @@ int ErrorSet::popSignal() {
       Assert(!vilb || !viub);
       int currSgn = vilb ? 1 : -1;
       if(currSgn != prevSgn){
-        Constraint curr = vilb ?  d_variables.getLowerBoundConstraint(back)
+        ConstraintP curr = vilb ?  d_variables.getLowerBoundConstraint(back)
           : d_variables.getUpperBoundConstraint(back);
         ei.reset(curr, currSgn);
       }

@@ -5,7 +5,7 @@
  ** Major contributors: Kshitij Bansal, Morgan Deters
  ** Minor contributors (to current version): Clark Barrett, Christopher L. Conway, Tim King, Liana Hadarean
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -103,7 +103,7 @@ TNode TheoryProxy::getNode(SatLiteral lit) {
 }
 
 void TheoryProxy::notifyRestart() {
-  d_propEngine->checkTime();
+  d_propEngine->spendResource();
   d_theoryEngine->notifyRestart();
 
   static uint32_t lemmaCount = 0;
@@ -122,7 +122,7 @@ void TheoryProxy::notifyRestart() {
           if(lemmaCount % 1 == 0) {
             Debug("shared") << "=) " << asNode << std::endl;
           }
-          d_propEngine->assertLemma(d_theoryEngine->preprocess(asNode), false, true);
+          d_propEngine->assertLemma(d_theoryEngine->preprocess(asNode), false, true, RULE_INVALID);
         } else {
           Debug("shared") << "=(" << asNode << std::endl;
         }
@@ -179,8 +179,8 @@ void TheoryProxy::logDecision(SatLiteral lit) {
 #endif /* CVC4_REPLAY */
 }
 
-void TheoryProxy::checkTime() {
-  d_propEngine->checkTime();
+void TheoryProxy::spendResource() {
+  d_theoryEngine->spendResource();
 }
 
 bool TheoryProxy::isDecisionRelevant(SatVariable var) {

@@ -3,9 +3,9 @@
  ** \verbatim
  ** Original author: Christopher L. Conway
  ** Major contributors: Morgan Deters
- ** Minor contributors (to current version): Francois Bobot
+ ** Minor contributors (to current version): Kshitij Bansal, Francois Bobot
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -32,6 +32,8 @@
 #include "parser/parser.h"
 #include "parser/parser_builder.h"
 #include "options/options.h"
+#include "smt/options.h"
+#include "main/options.h"
 #include "util/language.h"
 #include "util/output.h"
 
@@ -41,7 +43,9 @@
 #if HAVE_LIBREADLINE
 #  include <readline/readline.h>
 #  include <readline/history.h>
-#  include <ext/stdio_filebuf.h>
+#  if HAVE_EXT_STDIO_FILEBUF_H
+#    include <ext/stdio_filebuf.h>
+#  endif /* HAVE_EXT_STDIO_FILEBUF_H */
 #endif /* HAVE_LIBREADLINE */
 
 using namespace std;
@@ -55,7 +59,9 @@ const string InteractiveShell::INPUT_FILENAME = "<shell>";
 
 #if HAVE_LIBREADLINE
 
+#if HAVE_EXT_STDIO_FILEBUF_H
 using __gnu_cxx::stdio_filebuf;
+#endif /* HAVE_EXT_STDIO_FILEBUF_H */
 
 char** commandCompletion(const char* text, int start, int end);
 char* commandGenerator(const char* text, int state);
@@ -92,6 +98,9 @@ InteractiveShell::InteractiveShell(ExprManager& exprManager,
   ParserBuilder parserBuilder(&exprManager, INPUT_FILENAME, options);
   /* Create parser with bogus input. */
   d_parser = parserBuilder.withStringInput("").build();
+  if(d_options.wasSetByUser(options::forceLogic)) {
+    d_parser->forceLogic(d_options[options::forceLogic].getLogicString());
+  }
 
 #if HAVE_LIBREADLINE
   if(d_in == cin) {
@@ -114,7 +123,8 @@ InteractiveShell::InteractiveShell(ExprManager& exprManager,
       commandsBegin = smt1_commands;
       commandsEnd = smt1_commands + sizeof(smt1_commands) / sizeof(*smt1_commands);
       break;
-    case output::LANG_SMTLIB_V2:
+    case output::LANG_SMTLIB_V2_0:
+    case output::LANG_SMTLIB_V2_5:
       d_historyFilename = string(getenv("HOME")) + "/.cvc4_history_smtlib2";
       commandsBegin = smt2_commands;
       commandsEnd = smt2_commands + sizeof(smt2_commands) / sizeof(*smt2_commands);
@@ -162,7 +172,7 @@ InteractiveShell::~InteractiveShell() {
 #endif /* HAVE_LIBREADLINE */
 }
 
-Command* InteractiveShell::readCommand() {
+Command* InteractiveShell::readCommand() throw (UnsafeInterruptException) {
   char* lineBuf = NULL;
   string line = "";
 
@@ -183,7 +193,7 @@ restart:
   /* Prompt the user for input. */
   if(d_usingReadline) {
 #if HAVE_LIBREADLINE
-    lineBuf = ::readline(d_options[options::verbosity] >= 0 ? (line == "" ? "CVC4> " : "... > ") : "");
+    lineBuf = ::readline(d_options[options::interactivePrompt] ? (line == "" ? "CVC4> " : "... > ") : "");
     if(lineBuf != NULL && lineBuf[0] != '\0') {
       ::add_history(lineBuf);
     }
@@ -191,7 +201,7 @@ restart:
     free(lineBuf);
 #endif /* HAVE_LIBREADLINE */
   } else {
-    if(d_options[options::verbosity] >= 0) {
+    if(d_options[options::interactivePrompt]) {
       if(line == "") {
         d_out << "CVC4> " << flush;
       } else {
@@ -259,7 +269,7 @@ restart:
       input[n] = '\n';
       if(d_usingReadline) {
 #if HAVE_LIBREADLINE
-        lineBuf = ::readline(d_options[options::verbosity] >= 0 ? "... > " : "");
+        lineBuf = ::readline(d_options[options::interactivePrompt] ? "... > " : "");
         if(lineBuf != NULL && lineBuf[0] != '\0') {
           ::add_history(lineBuf);
         }
@@ -267,7 +277,7 @@ restart:
         free(lineBuf);
 #endif /* HAVE_LIBREADLINE */
       } else {
-        if(d_options[options::verbosity] >= 0) {
+        if(d_options[options::interactivePrompt]) {
           d_out << "... > " << flush;
         }
 
@@ -314,7 +324,8 @@ restart:
     line += "\n";
     goto restart;
   } catch(ParserException& pe) {
-    if(d_options[options::outputLanguage] == output::LANG_SMTLIB_V2) {
+    if(d_options[options::outputLanguage] == output::LANG_SMTLIB_V2_0 ||
+       d_options[options::outputLanguage] == output::LANG_SMTLIB_V2_5) {
       d_out << "(error \"" << pe << "\")" << endl;
     } else {
       d_out << pe << endl;

@@ -3,9 +3,9 @@
  ** \verbatim
  ** Original author: Dejan Jovanovic
  ** Major contributors: Morgan Deters
- ** Minor contributors (to current version): Tim King, Dejan Jovanovic, Liana Hadarean, Andrew Reynolds
+ ** Minor contributors (to current version): Tim King, Kshitij Bansal, Dejan Jovanovic, Liana Hadarean, Andrew Reynolds
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -165,12 +165,12 @@ public:
   /**
    * Initialize the equality engine, given the notification class.
    */
-  EqualityEngine(EqualityEngineNotify& notify, context::Context* context, std::string name);
+  EqualityEngine(EqualityEngineNotify& notify, context::Context* context, std::string name, bool constantsAreTriggers);
 
   /**
    * Initialize the equality engine with no notification class.
    */
-  EqualityEngine(context::Context* context, std::string name);
+  EqualityEngine(context::Context* context, std::string name, bool constantsAreTriggers);
 
   /**
    * Just a destructor.
@@ -521,7 +521,7 @@ private:
   /**
    * Adds an equality of terms t1 and t2 to the database.
    */
-  void assertEqualityInternal(TNode t1, TNode t2, TNode reason);
+  void assertEqualityInternal(TNode t1, TNode t2, TNode reason, MergeReasonType pid = MERGED_THROUGH_EQUALITY);
 
   /**
    * Adds a trigger equality to the database with the trigger node and polarity for notification.
@@ -554,14 +554,8 @@ private:
     }
   };/* struct EqualityEngine::TriggerTermSet */
 
-  /** Internal tags for creating a new set */
-  Theory::Set d_newSetTags;
-
-  /** Internal triggers for creating a new set */
-  EqualityNodeId d_newSetTriggers[THEORY_LAST];
-
-  /** Size of the internal triggers array */
-  unsigned d_newSetTriggersSize;
+  /** Are the constants triggers */
+  bool d_constantsAreTriggers;
 
   /** The information about trigger terms is stored in this easily maintained memory. */
   char* d_triggerDatabase;
@@ -576,7 +570,7 @@ private:
   static const TriggerTermSetRef null_set_id = (TriggerTermSetRef)(-1);
 
   /** Create new trigger term set based on the internally set information */
-  TriggerTermSetRef newTriggerTermSet();
+  TriggerTermSetRef newTriggerTermSet(Theory::Set newSetTags, EqualityNodeId* newSetTriggers, unsigned newSetTriggersSize);
 
   /** Get the trigger set give a reference */
   TriggerTermSet& getTriggerTermSet(TriggerTermSetRef ref) {
@@ -751,7 +745,7 @@ public:
    *                 asserting the negated predicate
    * @param reason the reason to keep for building explanations
    */
-  void assertPredicate(TNode p, bool polarity, TNode reason);
+  void assertPredicate(TNode p, bool polarity, TNode reason, MergeReasonType pid = MERGED_THROUGH_EQUALITY);
 
   /**
    * Adds predicate p and q and makes them equal.
@@ -766,7 +760,7 @@ public:
    *                 asserting the negated equality
    * @param reason the reason to keep for building explanations
    */
-  void assertEquality(TNode eq, bool polarity, TNode reason);
+  void assertEquality(TNode eq, bool polarity, TNode reason, MergeReasonType pid = MERGED_THROUGH_EQUALITY);
 
   /**
    * Returns the current representative of the term t.
@@ -833,12 +827,14 @@ public:
   void addTriggerPredicate(TNode predicate);
 
   /**
-   * Returns true if the two are currently in the database and equal.
+   * Returns true if the two terms are equal. Requires both terms to
+   * be in the database.
    */
   bool areEqual(TNode t1, TNode t2) const;
 
   /**
-   * Check whether the two term are dis-equal.
+   * Check whether the two term are dis-equal. Requires both terms to
+   * be in the database.
    */
   bool areDisequal(TNode t1, TNode t2, bool ensureProof) const;
 

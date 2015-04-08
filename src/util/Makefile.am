@@ -60,7 +60,6 @@ libutil_la_SOURCES = \
 	channel.h \
 	language.cpp \
 	ntuple.h \
-	recursion_breaker.h \
 	subrange_bound.h \
 	dump.h \
 	dump.cpp \
@@ -70,8 +69,6 @@ libutil_la_SOURCES = \
 	cardinality.cpp \
 	cache.h \
 	utility.h \
-	trans_closure.h \
-	trans_closure.cpp \
 	boolean_simplification.h \
 	boolean_simplification.cpp \
 	ite_removal.h \
@@ -87,11 +84,24 @@ libutil_la_SOURCES = \
 	abstract_value.cpp \
 	array_store_all.h \
 	array_store_all.cpp \
+	emptyset.h \
+	emptyset.cpp \
 	model.h \
 	model.cpp \
 	sort_inference.h \
 	sort_inference.cpp \
-	regexp.h
+	regexp.h \
+	regexp.cpp \
+	bin_heap.h \
+	didyoumean.h \
+	didyoumean.cpp \
+	unsat_core.h \
+	unsat_core.cpp \
+	floatingpoint.h \
+	floatingpoint.cpp \
+	resource_manager.h \
+	resource_manager.cpp \
+	unsafe_interrupt_exception.h
 
 libstatistics_la_SOURCES = \
 	statistics_registry.h \
@@ -104,19 +114,23 @@ BUILT_SOURCES = \
 
 if CVC4_CLN_IMP
 libutil_la_SOURCES += \
-	rational_cln_imp.cpp
+	rational_cln_imp.cpp \
+	integer_cln_imp.cpp
 endif
 if CVC4_GMP_IMP
 libutil_la_SOURCES += \
-	rational_gmp_imp.cpp
+	rational_gmp_imp.cpp \
+	integer_gmp_imp.cpp
 endif
 
 EXTRA_DIST = \
 	rational_cln_imp.h \
 	integer_cln_imp.h \
+	integer_cln_imp.cpp \
 	rational_cln_imp.cpp \
 	rational_gmp_imp.h \
 	integer_gmp_imp.h \
+	integer_gmp_imp.cpp \
 	rational_gmp_imp.cpp \
 	rational.h.in \
 	integer.h.in \
@@ -138,6 +152,7 @@ EXTRA_DIST = \
 	language.i \
 	array.i \
 	array_store_all.i \
+	emptyset.i \
 	ascription_type.i \
 	rational.i \
 	hash.i \
@@ -145,7 +160,11 @@ EXTRA_DIST = \
 	uninterpreted_constant.i \
 	chain.i \
 	regexp.i \
-	proof.i
+	resource_manager.i \
+	unsafe_interrupt_exception.i \
+	proof.i \
+	unsat_core.i \
+	floatingpoint.i
 
 DISTCLEANFILES = \
 	integer.h.tmp \

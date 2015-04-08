@@ -5,7 +5,7 @@
  ** Major contributors: Morgan Deters
  ** Minor contributors (to current version): none
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -37,10 +37,12 @@ public:
   void clear();
   /** has type */
   bool hasType( TypeNode tn ) const { return d_type_reps.find( tn )!=d_type_reps.end(); }
+  /** has rep */
+  bool hasRep( TypeNode tn, Node n );
   /** get cardinality for type */
   int getNumRepresentatives( TypeNode tn ) const;
   /** add representative for type */
-  void add( Node n );
+  void add( TypeNode tn, Node n );
   /** returns index in d_type_reps for node n */
   int getIndexFor( Node n ) const;
   /** complete all values */

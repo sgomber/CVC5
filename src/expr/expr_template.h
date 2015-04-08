@@ -5,7 +5,7 @@
  ** Major contributors: Dejan Jovanovic
  ** Minor contributors (to current version): Liana Hadarean, Kshitij Bansal, Tim King, Christopher L. Conway
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -985,7 +985,7 @@ inline std::ostream& operator<<(std::ostream& out, ExprDag d) {
  * Use like this:
  *
  *   // let out be an ostream, e an Expr
- *   out << Expr::setlanguage(LANG_SMTLIB_V2) << e << endl;
+ *   out << Expr::setlanguage(LANG_SMTLIB_V2_5) << e << endl;
  *
  * The setting stays permanently (until set again) with the stream.
  */

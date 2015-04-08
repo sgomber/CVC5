@@ -5,7 +5,7 @@
  ** Major contributors: Andrew Reynolds
  ** Minor contributors (to current version): none
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -26,10 +26,6 @@ namespace CVC4 {
 namespace theory {
 namespace quantifiers {
 
-// attribute for "contains instantiation constants from"
-struct NestedQuantAttributeId {};
-typedef expr::Attribute<NestedQuantAttributeId, Node> NestedQuantAttribute;
-
 class QuantifiersRewriter {
 public:
   static bool isClause( Node n );
@@ -38,17 +34,18 @@ public:
 private:
   static void addNodeToOrBuilder( Node n, NodeBuilder<>& t );
   static Node mkForAll( std::vector< Node >& args, Node body, Node ipl );
-  static void computeArgs( std::vector< Node >& args, std::vector< Node >& activeArgs, Node n );
+  static void computeArgs( std::vector< Node >& args, std::map< Node, bool >& activeMap, Node n );
+  static void computeArgVec( std::vector< Node >& args, std::vector< Node >& activeArgs, Node n );
+  static void computeArgVec2( std::vector< Node >& args, std::vector< Node >& activeArgs, Node n, Node ipl );
   static bool hasArg( std::vector< Node >& args, Node n );
-  static void setNestedQuantifiers( Node n, Node q );
-  static void setNestedQuantifiers2( Node n, Node q, std::vector< Node >& processed );
+  static bool hasArg1( Node a, Node n );
   static Node computeClause( Node n );
 private:
   static Node computeElimSymbols( Node body );
-  static Node computeMiniscoping( std::vector< Node >& args, Node body, Node ipl, bool isNested = false );
-  static Node computeAggressiveMiniscoping( std::vector< Node >& args, Node body, bool isNested = false );
+  static Node computeMiniscoping( Node f, std::vector< Node >& args, Node body, Node ipl );
+  static Node computeAggressiveMiniscoping( std::vector< Node >& args, Node body );
   static Node computeNNF( Node body );
-  static Node computeSimpleIteLift( Node body );
+  static Node computeProcessIte( Node body, bool hasPol, bool pol );
   static Node computeVarElimination( Node body, std::vector< Node >& args, Node& ipl );
   static Node computeCNF( Node body, std::vector< Node >& args, NodeBuilder<>& defs, bool forcePred );
   static Node computePrenex( Node body, std::vector< Node >& args, bool pol );
@@ -59,7 +56,7 @@ private:
     COMPUTE_MINISCOPING,
     COMPUTE_AGGRESSIVE_MINISCOPING,
     COMPUTE_NNF,
-    COMPUTE_SIMPLE_ITE_LIFT,
+    COMPUTE_PROCESS_ITE,
     COMPUTE_PRENEX,
     COMPUTE_VAR_ELIMINATION,
     //COMPUTE_FLATTEN_ARGS_UF,
@@ -67,7 +64,7 @@ private:
     COMPUTE_SPLIT,
     COMPUTE_LAST
   };
-  static Node computeOperation( Node f, int computeOption );
+  static Node computeOperation( Node f, bool isNested, int computeOption );
 public:
   static RewriteResponse preRewrite(TNode in);
   static RewriteResponse postRewrite(TNode in);
@@ -79,8 +76,9 @@ private:
   static bool doMiniscopingAnd();
   static bool doOperation( Node f, bool isNested, int computeOption );
 public:
-  //static Node rewriteQuants( Node n, bool isNested = false );
-  //static Node rewriteQuant( Node n, bool isNested = false );
+  static Node rewriteRewriteRule( Node r );
+  static bool containsQuantifiers(Node n);
+  static Node preSkolemizeQuantifiers(Node n, bool polarity, std::vector< TypeNode >& fvTypes, std::vector<TNode>& fvs);
 };/* class QuantifiersRewriter */
 
 }/* CVC4::theory::quantifiers namespace */

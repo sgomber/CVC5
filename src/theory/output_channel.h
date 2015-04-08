@@ -5,7 +5,7 @@
  ** Major contributors: none
  ** Minor contributors (to current version): Andrew Reynolds, Dejan Jovanovic, Tim King
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -21,6 +21,7 @@
 
 #include "util/cvc4_assert.h"
 #include "theory/interrupted.h"
+#include "util/resource_manager.h"
 
 namespace CVC4 {
 namespace theory {
@@ -84,7 +85,7 @@ public:
    * With safePoint(), the theory signals that it is at a safe point
    * and can be interrupted.
    */
-  virtual void safePoint() throw(Interrupted, AssertionException) {
+  virtual void safePoint() throw(Interrupted, UnsafeInterruptException, AssertionException) {
   }
 
   /**
@@ -97,7 +98,7 @@ public:
    * unit conflict) which is assigned TRUE (and T-conflicting) in the
    * current assignment.
    */
-  virtual void conflict(TNode n) throw(AssertionException) = 0;
+  virtual void conflict(TNode n) throw(AssertionException, UnsafeInterruptException) = 0;
 
   /**
    * Propagate a theory literal.
@@ -105,7 +106,7 @@ public:
    * @param n - a theory consequence at the current decision level
    * @return false if an immediate conflict was encountered
    */
-  virtual bool propagate(TNode n) throw(AssertionException) = 0;
+  virtual bool propagate(TNode n) throw(AssertionException, UnsafeInterruptException) = 0;
 
   /**
    * Tell the core that a valid theory lemma at decision level 0 has
@@ -113,11 +114,13 @@ public:
    *
    * @param n - a theory lemma valid at decision level 0
    * @param removable - whether the lemma can be removed at any point
+   * @param preprocess - whether to apply more aggressive preprocessing
    * @return the "status" of the lemma, including user level at which
    * the lemma resides; the lemma will be removed when this user level pops
    */
-  virtual LemmaStatus lemma(TNode n, bool removable = false)
-    throw(TypeCheckingExceptionPrivate, AssertionException) = 0;
+  virtual LemmaStatus lemma(TNode n, bool removable = false,
+                            bool preprocess = false)
+    throw(TypeCheckingExceptionPrivate, AssertionException, UnsafeInterruptException) = 0;
 
   /**
    * Request a split on a new theory atom.  This is equivalent to
@@ -126,12 +129,12 @@ public:
    * @param n - a theory atom; must be of Boolean type
    */
   LemmaStatus split(TNode n)
-    throw(TypeCheckingExceptionPrivate, AssertionException) {
+    throw(TypeCheckingExceptionPrivate, AssertionException, UnsafeInterruptException) {
     return splitLemma(n.orNode(n.notNode()));
   }
 
   virtual LemmaStatus splitLemma(TNode n, bool removable = false)
-    throw(TypeCheckingExceptionPrivate, AssertionException) = 0;
+    throw(TypeCheckingExceptionPrivate, AssertionException, UnsafeInterruptException) = 0;
 
   /**
    * If a decision is made on n, it must be in the phase specified.
@@ -146,7 +149,7 @@ public:
    * @param phase - the phase to decide on n
    */
   virtual void requirePhase(TNode n, bool phase)
-    throw(Interrupted, TypeCheckingExceptionPrivate, AssertionException) = 0;
+    throw(Interrupted, TypeCheckingExceptionPrivate, AssertionException, UnsafeInterruptException) = 0;
 
   /**
    * Flips the most recent unflipped decision to the other phase and
@@ -189,14 +192,14 @@ public:
    * could be flipped, or if the root decision was re-flipped
    */
   virtual bool flipDecision()
-    throw(Interrupted, TypeCheckingExceptionPrivate, AssertionException) = 0;
+    throw(Interrupted, TypeCheckingExceptionPrivate, AssertionException, UnsafeInterruptException) = 0;
 
   /**
    * Notification from a theory that it realizes it is incomplete at
    * this context level.  If SAT is later determined by the
    * TheoryEngine, it should actually return an UNKNOWN result.
    */
-  virtual void setIncomplete() throw(AssertionException) = 0;
+  virtual void setIncomplete() throw(AssertionException, UnsafeInterruptException) = 0;
 
   /**
    * "Spend" a "resource."  The meaning is specific to the context in
@@ -209,7 +212,7 @@ public:
    * long-running operations, they cannot rely on resource() to break
    * out of infinite or intractable computations.
    */
-  virtual void spendResource() throw() {}
+  virtual void spendResource() throw(UnsafeInterruptException) {}
 
   /**
    * Handle user attribute.
@@ -224,7 +227,7 @@ public:
    * Using this leads to non-termination issues.
    * It is appropriate for prototyping for theories.
    */
-  virtual void demandRestart() throw(TypeCheckingExceptionPrivate, AssertionException) {}
+  virtual void demandRestart() throw(TypeCheckingExceptionPrivate, AssertionException, UnsafeInterruptException) {}
 
 };/* class OutputChannel */
 

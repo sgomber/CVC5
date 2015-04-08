@@ -3,9 +3,9 @@
  ** \verbatim
  ** Original author: Andrew Reynolds
  ** Major contributors: Morgan Deters
- ** Minor contributors (to current version): none
+ ** Minor contributors (to current version): Kshitij Bansal
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -18,6 +18,8 @@
 #include "theory/quantifiers/quant_util.h"
 #include "theory/quantifiers/first_order_model.h"
 #include "theory/quantifiers/model_engine.h"
+#include "theory/quantifiers/term_database.h"
+#include "theory/quantifiers/options.h"
 
 using namespace CVC4;
 using namespace std;
@@ -25,9 +27,22 @@ using namespace CVC4::theory;
 using namespace CVC4::theory::quantifiers;
 using namespace CVC4::kind;
 
+
+BoundedIntegers::RangeModel::RangeModel(BoundedIntegers * bi, Node r, context::Context* c, context::Context* u, bool isProxy) : d_bi(bi),
+      d_range(r), d_curr_max(-1), d_lit_to_range(u), d_range_assertions(c), d_has_range(c,false), d_curr_range(c,-1), d_ranges_proxied(u) { 
+  if( options::fmfBoundIntLazy() ){
+    d_proxy_range = isProxy ? r : NodeManager::currentNM()->mkSkolem( "pbir", r.getType() );
+  }else{
+    d_proxy_range = r;
+  }
+  if( !isProxy ){
+    Trace("bound-int") << "Introduce proxy " << d_proxy_range << " for " << d_range << std::endl;
+  }
+}
+
 void BoundedIntegers::RangeModel::initialize() {
   //add initial split lemma
-  Node ltr = NodeManager::currentNM()->mkNode( LT, d_range, NodeManager::currentNM()->mkConst( Rational(0) ) );
+  Node ltr = NodeManager::currentNM()->mkNode( LT, d_proxy_range, NodeManager::currentNM()->mkConst( Rational(0) ) );
   ltr = Rewriter::rewrite( ltr );
   Trace("bound-int-lemma") << " *** bound int: initial split on " << ltr << std::endl;
   d_bi->getQuantifiersEngine()->getOutputChannel().split( ltr );
@@ -44,16 +59,18 @@ void BoundedIntegers::RangeModel::assertNode(Node n) {
   bool pol = n.getKind()!=NOT;
   Node nlit = n.getKind()==NOT ? n[0] : n;
   if( d_lit_to_range.find( nlit )!=d_lit_to_range.end() ){
+    int vrange = d_lit_to_range[nlit];
     Trace("bound-int-assert") << "With polarity = " << pol << " (req "<< d_lit_to_pol[nlit] << ")";
     Trace("bound-int-assert") << ", found literal " << nlit;
-    Trace("bound-int-assert") << ", it is bound literal " << d_lit_to_range[nlit] << " for " << d_range << std::endl;
+    Trace("bound-int-assert") << ", it is bound literal " << vrange << " for " << d_range << std::endl;
     d_range_assertions[nlit] = (pol==d_lit_to_pol[nlit]);
     if( pol!=d_lit_to_pol[nlit] ){
       //check if we need a new split?
       if( !d_has_range ){
         bool needsRange = true;
-        for( std::map< Node, int >::iterator it = d_lit_to_range.begin(); it != d_lit_to_range.end(); ++it ){
-          if( d_range_assertions.find( it->first )==d_range_assertions.end() ){
+        for( NodeIntMap::iterator it = d_lit_to_range.begin(); it != d_lit_to_range.end(); ++it ){
+          if( d_range_assertions.find( (*it).first )==d_range_assertions.end() ){
+            Trace("bound-int-debug") << "Does not need range because of " << (*it).first << std::endl;
             needsRange = false;
             break;
           }
@@ -63,9 +80,9 @@ void BoundedIntegers::RangeModel::assertNode(Node n) {
         }
       }
     }else{
-      if (!d_has_range || d_lit_to_range[nlit]<d_curr_range ){
-        Trace("bound-int-bound") << "Successfully bound " << d_range << " to " << d_lit_to_range[nlit] << std::endl;
-        d_curr_range = d_lit_to_range[nlit];
+      if (!d_has_range || vrange<d_curr_range ){
+        Trace("bound-int-bound") << "Successfully bound " << d_range << " to " << vrange << std::endl;
+        d_curr_range = vrange;
       }
       //set the range
       d_has_range = true;
@@ -81,7 +98,7 @@ void BoundedIntegers::RangeModel::allocateRange() {
   int newBound = d_curr_max;
   Trace("bound-int-proc") << "Allocate range bound " << newBound << " for " << d_range << std::endl;
   //TODO: newBound should be chosen in a smarter way
-  Node ltr = NodeManager::currentNM()->mkNode( LEQ, d_range, NodeManager::currentNM()->mkConst( Rational(newBound) ) );
+  Node ltr = NodeManager::currentNM()->mkNode( LEQ, d_proxy_range, NodeManager::currentNM()->mkConst( Rational(newBound) ) );
   ltr = Rewriter::rewrite( ltr );
   Trace("bound-int-lemma") << " *** bound int: split on " << ltr << std::endl;
   d_bi->getQuantifiersEngine()->getOutputChannel().split( ltr );
@@ -95,13 +112,13 @@ void BoundedIntegers::RangeModel::allocateRange() {
 
 Node BoundedIntegers::RangeModel::getNextDecisionRequest() {
   //request the current cardinality as a decision literal, if not already asserted
-  for( std::map< Node, int >::iterator it = d_lit_to_range.begin(); it != d_lit_to_range.end(); ++it ){
-    int i = it->second;
+  for( NodeIntMap::iterator it = d_lit_to_range.begin(); it != d_lit_to_range.end(); ++it ){
+    int i = (*it).second;
     if( !d_has_range || i<d_curr_range ){
-      Node rn = it->first;
+      Node rn = (*it).first;
       Assert( !rn.isNull() );
       if( d_range_assertions.find( rn )==d_range_assertions.end() ){
-        if (!d_lit_to_pol[it->first]) {
+        if (!d_lit_to_pol[rn]) {
           rn = rn.negate();
         }
         Trace("bound-int-dec-debug") << "For " << d_range << ", make decision " << rn << " to make range " << i << std::endl;
@@ -110,6 +127,24 @@ Node BoundedIntegers::RangeModel::getNextDecisionRequest() {
     }
   }
   return Node::null();
+}
+
+bool BoundedIntegers::RangeModel::proxyCurrentRange() {
+  //Trace("model-engine") << "Range(" << d_range << ") currently is " << d_curr_max.get() << std::endl;
+  if( d_range!=d_proxy_range ){
+    //int curr = d_curr_range.get();
+    int curr = d_curr_max;
+    if( d_ranges_proxied.find( curr )==d_ranges_proxied.end() ){
+      d_ranges_proxied[curr] = true;
+      Assert( d_range_literal.find( curr )!=d_range_literal.end() );
+      Node lem = NodeManager::currentNM()->mkNode( IFF, d_range_literal[curr].negate(),
+                   NodeManager::currentNM()->mkNode( LEQ, d_range, NodeManager::currentNM()->mkConst( Rational(curr) ) ) );
+      Trace("bound-int-lemma") << "*** bound int : proxy lemma : " << lem << std::endl;
+      d_bi->getQuantifiersEngine()->addLemma( lem );
+      return true;
+    }
+  }
+  return false;
 }
 
 
@@ -144,24 +179,11 @@ void BoundedIntegers::processLiteral( Node f, Node lit, bool pol,
     std::map< Node, Node > msum;
     if (QuantArith::getMonomialSumLit( lit, msum )){
       Trace("bound-int-debug") << "Literal (polarity = " << pol << ") " << lit << " is monomial sum : " << std::endl;
-      for(std::map< Node, Node >::iterator it = msum.begin(); it != msum.end(); ++it ){
-        Trace("bound-int-debug") << "  ";
-        if( !it->second.isNull() ){
-          Trace("bound-int-debug") << it->second;
-          if( !it->first.isNull() ){
-            Trace("bound-int-debug") << " * ";
-          }
-        }
-        if( !it->first.isNull() ){
-          Trace("bound-int-debug") << it->first;
-        }
-        Trace("bound-int-debug") << std::endl;
-      }
-      Trace("bound-int-debug") << std::endl;
+      QuantArith::debugPrintMonomialSum( msum, "bound-int-debug" );
       for( std::map< Node, Node >::iterator it = msum.begin(); it != msum.end(); ++it ){
         if ( !it->first.isNull() && it->first.getKind()==BOUND_VARIABLE && !isBound( f, it->first ) ){
           Node veq;
-          if( QuantArith::isolate( it->first, msum, veq, GEQ ) ){
+          if( QuantArith::isolate( it->first, msum, veq, GEQ )!=0 ){
             Node n1 = veq[0];
             Node n2 = veq[1];
             if(pol){
@@ -209,8 +231,22 @@ void BoundedIntegers::process( Node f, Node n, bool pol,
   }
 }
 
-void BoundedIntegers::check( Theory::Effort e ) {
+bool BoundedIntegers::needsCheck( Theory::Effort e ) {
+  return e==Theory::EFFORT_LAST_CALL;
+}
 
+void BoundedIntegers::check( Theory::Effort e, unsigned quant_e ) {
+  if( quant_e==QuantifiersEngine::QEFFORT_STANDARD ){
+    Trace("bint-engine") << "---Bounded Integers---" << std::endl;
+    bool addedLemma = false;
+    //make sure proxies are up-to-date with range
+    for( unsigned i=0; i<d_ranges.size(); i++) {
+      if( d_rms[d_ranges[i]]->proxyCurrentRange() ){
+        addedLemma = true;
+      }
+    }
+    Trace("bint-engine") << "   addedLemma = " << addedLemma << std::endl;
+  }
 }
 
 
@@ -274,18 +310,20 @@ void BoundedIntegers::registerQuantifier( Node f ) {
       for( unsigned i=0; i<d_set[f].size(); i++) {
         Node v = d_set[f][i];
         Node r = d_range[f][v];
-        if( quantifiers::TermDb::hasBoundVarAttr(r) ){
+        bool isProxy = false;
+        if( r.hasBoundVar() ){
           //introduce a new bound
-          Node new_range = NodeManager::currentNM()->mkSkolem( "bir_$$", r.getType(), "bound for term" );
+          Node new_range = NodeManager::currentNM()->mkSkolem( "bir", r.getType(), "bound for term" );
           d_nground_range[f][v] = d_range[f][v];
           d_range[f][v] = new_range;
           r = new_range;
+          isProxy = true;
         }
         if( r.getKind()!=CONST_RATIONAL ){
           if( std::find(d_ranges.begin(), d_ranges.end(), r)==d_ranges.end() ){
             Trace("bound-int") << "For " << v << ", bounded Integer Module will try to minimize : " << r << " " << r.getKind() << std::endl;
             d_ranges.push_back( r );
-            d_rms[r] = new RangeModel(this, r, d_quantEngine->getSatContext() );
+            d_rms[r] = new RangeModel(this, r, d_quantEngine->getSatContext(), d_quantEngine->getUserContext(), isProxy );
             d_rms[r]->initialize();
           }
         }
@@ -363,7 +401,7 @@ void BoundedIntegers::getBounds( Node f, Node v, RepSetIterator * rsi, Node & l,
       nn = nn.substitute( vars.begin(), vars.end(), subs.begin(), subs.end() );
       Node lem = NodeManager::currentNM()->mkNode( LEQ, nn, d_range[f][v] );
       Trace("bound-int-lemma") << "*** Add lemma to minimize instantiated non-ground term " << lem << std::endl;
-      d_quantEngine->getOutputChannel().lemma(lem);
+      d_quantEngine->getOutputChannel().lemma(lem, false, true);
       l = Node::null();
       u = Node::null();
       return;
@@ -384,5 +422,6 @@ void BoundedIntegers::getBoundValues( Node f, Node v, RepSetIterator * rsi, Node
 }
 
 bool BoundedIntegers::isGroundRange(Node f, Node v) {
-  return isBoundVar(f,v) && !quantifiers::TermDb::hasBoundVarAttr(getLowerBound(f,v)) && !quantifiers::TermDb::hasBoundVarAttr(getUpperBound(f,v));
+  return isBoundVar(f,v) && !getLowerBound(f,v).hasBoundVar() && !getUpperBound(f,v).hasBoundVar();
 }
+

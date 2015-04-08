@@ -3,9 +3,9 @@
  ** \verbatim
  ** Original author: Tim King
  ** Major contributors: none
- ** Minor contributors (to current version): none
+ ** Minor contributors (to current version): Morgan Deters
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -31,7 +31,7 @@
 namespace CVC4 {
 namespace theory {
 
-class ContainsTermITEVistor;
+class ContainsTermITEVisitor;
 class IncomingArcCounter;
 class TermITEHeightCounter;
 class ITECompressor;
@@ -40,7 +40,7 @@ class ITECareSimplifier;
 
 class ITEUtilities {
 public:
-  ITEUtilities(ContainsTermITEVistor* containsVisitor);
+  ITEUtilities(ContainsTermITEVisitor* containsVisitor);
   ~ITEUtilities();
 
   Node simpITE(TNode assertion);
@@ -55,7 +55,7 @@ public:
   void clear();
 
 private:
-  ContainsTermITEVistor* d_containsVisitor;
+  ContainsTermITEVisitor* d_containsVisitor;
   ITECompressor* d_compressor;
   ITESimplifier* d_simplifier;
   ITECareSimplifier* d_careSimp;
@@ -64,10 +64,10 @@ private:
 /**
  * A caching visitor that computes whether a node contains a term ite.
  */
-class ContainsTermITEVistor {
+class ContainsTermITEVisitor {
 public:
-  ContainsTermITEVistor();
-  ~ContainsTermITEVistor();
+  ContainsTermITEVisitor();
+  ~ContainsTermITEVisitor();
 
   /** returns true if a node contains a term ite. */
   bool containsTermITE(TNode n);
@@ -140,7 +140,7 @@ private:
  */
 class ITECompressor {
 public:
-  ITECompressor(ContainsTermITEVistor* contains);
+  ITECompressor(ContainsTermITEVisitor* contains);
   ~ITECompressor();
 
   /* returns false if an assertion is discovered to be equal to false. */
@@ -153,7 +153,7 @@ private:
 
   Node d_true; /* Copy of true. */
   Node d_false; /* Copy of false. */
-  ContainsTermITEVistor* d_contains;
+  ContainsTermITEVisitor* d_contains;
   std::vector<Node>* d_assertions;
   IncomingArcCounter d_incoming;
 
@@ -180,7 +180,7 @@ private:
 
 class ITESimplifier {
 public:
-  ITESimplifier(ContainsTermITEVistor* d_containsVisitor);
+  ITESimplifier(ContainsTermITEVisitor* d_containsVisitor);
   ~ITESimplifier();
 
   Node simpITE(TNode assertion);
@@ -192,7 +192,7 @@ private:
   Node d_true;
   Node d_false;
 
-  ContainsTermITEVistor* d_containsVisitor;
+  ContainsTermITEVisitor* d_containsVisitor;
   inline bool containsTermITE(TNode n) {
     return d_containsVisitor->containsTermITE(n);
   }

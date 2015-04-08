@@ -2,10 +2,10 @@
 /*! \file inst_match.h
  ** \verbatim
  ** Original author: Morgan Deters
- ** Major contributors: Francois Bobot, Andrew Reynolds
- ** Minor contributors (to current version): none
+ ** Major contributors: Andrew Reynolds
+ ** Minor contributors (to current version): Francois Bobot
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -41,7 +41,7 @@ public:
   std::vector< Node > d_vals;
 public:
   InstMatch(){}
-  InstMatch( Node f );
+  explicit InstMatch( TNode f );
   InstMatch( InstMatch* m );
 
   /** fill all unfilled values with m */
@@ -100,6 +100,8 @@ public:
 public:
   /** the data */
   std::map< Node, InstMatchTrie > d_data;
+private:
+  void print( std::ostream& out, Node q, std::vector< TNode >& terms ) const;
 public:
   InstMatchTrie(){}
   ~InstMatchTrie(){}
@@ -126,6 +128,10 @@ public:
   }
   bool addInstMatch( QuantifiersEngine* qe, Node f, std::vector< Node >& m, bool modEq = false,
                      bool modInst = false, ImtIndexOrder* imtio = NULL, bool onlyExist = false, int index = 0 );
+  void print( std::ostream& out, Node q ) const{
+    std::vector< TNode > terms;
+    print( out, q, terms );
+  }
 };/* class InstMatchTrie */
 
 /** trie for InstMatch objects */
@@ -135,6 +141,8 @@ public:
   std::map< Node, CDInstMatchTrie* > d_data;
   /** is valid */
   context::CDO< bool > d_valid;
+private:
+  void print( std::ostream& out, Node q, std::vector< TNode >& terms ) const;
 public:
   CDInstMatchTrie( context::Context* c ) : d_valid( c, false ){}
   ~CDInstMatchTrie(){}
@@ -161,6 +169,10 @@ public:
   }
   bool addInstMatch( QuantifiersEngine* qe, Node f, std::vector< Node >& m, context::Context* c, bool modEq = false,
                      bool modInst = false, int index = 0, bool onlyExist = false );
+  void print( std::ostream& out, Node q ) const{
+    std::vector< TNode > terms;
+    print( out, q, terms );
+  }
 };/* class CDInstMatchTrie */
 
 

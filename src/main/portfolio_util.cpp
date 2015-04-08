@@ -5,7 +5,7 @@
  ** Major contributors: none
  ** Minor contributors (to current version): Morgan Deters
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -30,23 +30,12 @@ vector<Options> parseThreadSpecificOptions(Options opts)
 
   unsigned numThreads = opts[options::threads];
 
-  /**
-   * Use satRandomSeed for generating random numbers, in particular
-   * satRandomSeed-s
-   */
-  srand((unsigned int)(-opts[options::satRandomSeed]));
-
   for(unsigned i = 0; i < numThreads; ++i) {
     threadOptions.push_back(opts);
     Options& tOpts = threadOptions.back();
 
     // Set thread identifier
     tOpts.set(options::thread_id, i);
-
-    // If the random-seed is negative, pick a random seed randomly
-    if(opts[options::satRandomSeed] < 0) {
-      tOpts.set(options::satRandomSeed, (double)rand());
-    }
 
     if(i < opts[options::threadArgv].size() && 
        !opts[options::threadArgv][i].empty()) {
@@ -91,7 +80,7 @@ vector<Options> parseThreadSpecificOptions(Options opts)
         }
       }
       free(targv[0]);
-      delete targv;
+      delete [] targv;
       free(tbuf);
     }
   }

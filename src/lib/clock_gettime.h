@@ -5,7 +5,7 @@
  ** Major contributors: none
  ** Minor contributors (to current version): none
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -30,7 +30,7 @@
 
 /* otherwise, we have to define it */
 
-#if defined(__WIN32__) && !defined(__WIN64__)
+#if defined(__WIN32__) && !defined(_W64)
 
 #ifdef __cplusplus
 extern "C" {
@@ -45,12 +45,12 @@ struct timespec {
 }/* extern "C" */
 #endif /* __cplusplus */
 
-#else /* !__WIN32__ || __WIN64__ */
+#else /* !__WIN32__ || _W64 */
 
 /* get timespec from <time.h> */
 #include <time.h>
 
-#endif /* __WIN32__ && !__WIN64__ */
+#endif /* __WIN32__ && !_W64 */
 
 #ifdef __cplusplus
 extern "C" {

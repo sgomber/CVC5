@@ -5,7 +5,7 @@
  ** Major contributors: none
  ** Minor contributors (to current version): none
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -55,9 +55,7 @@ public:
     TS_ASSERT_THROWS_ANYTHING( ArrayStoreAll(d_em->integerType(), d_em->mkConst(UninterpretedConstant(d_em->mkSort("U"), 0))) );
     TS_ASSERT_THROWS_ANYTHING( ArrayStoreAll(d_em->integerType(), d_em->mkConst(Rational(9, 2))) );
 
-    TS_ASSERT_THROWS( ArrayStoreAll(d_em->mkArrayType(d_em->integerType(), d_em->integerType()), d_em->mkConst(Rational(9, 2))), IllegalArgumentException );
     TS_ASSERT_THROWS( ArrayStoreAll(d_em->mkArrayType(d_em->integerType(), d_em->mkSort("U")), d_em->mkConst(Rational(9, 2))), IllegalArgumentException );
-    TS_ASSERT_THROWS( ArrayStoreAll(d_em->mkArrayType(d_em->realType(), d_em->integerType()), d_em->mkConst(Rational(9, 2))), IllegalArgumentException );
   }
 
   void testConstError() {

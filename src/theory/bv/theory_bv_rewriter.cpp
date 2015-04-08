@@ -5,7 +5,7 @@
  ** Major contributors: Liana Hadarean
  ** Minor contributors (to current version): Tim King, Clark Barrett, Morgan Deters
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -16,6 +16,7 @@
  **/
 
 #include "theory/theory.h"
+#include "theory/bv/options.h"
 #include "theory/bv/theory_bv_rewriter.h"
 #include "theory/bv/theory_bv_rewrite_rules.h"
 #include "theory/bv/theory_bv_rewrite_rules_core.h"
@@ -61,12 +62,6 @@ RewriteResponse TheoryBVRewriter::postRewrite(TNode node) {
     Debug("bitvector-rewrite") << "TheoryBV::postRewrite    " << node << std::endl;
     Debug("bitvector-rewrite") << "TheoryBV::postRewrite to " << res.node << std::endl;
   }
-  // if (res.status == REWRITE_DONE) {
-  //   Node rewr = res.node;
-  //   Node rerewr = d_rewriteTable[rewr.getKind()](rewr, false).node;
-  //   Assert(rewr == rerewr);
-  // }
-  
   return res; 
 }
 
@@ -154,10 +149,10 @@ RewriteResponse TheoryBVRewriter::RewriteSge(TNode node, bool prerewrite){
 RewriteResponse TheoryBVRewriter::RewriteNot(TNode node, bool prerewrite){
   Node resultNode = node;
   
-  if(RewriteRule<NotXor>::applies(node)) {
-    resultNode = RewriteRule<NotXor>::run<false>(node);
-    return RewriteResponse(REWRITE_AGAIN_FULL, resultNode); 
-  }
+  // // if(RewriteRule<NotXor>::applies(node)) {
+  // //   resultNode = RewriteRule<NotXor>::run<false>(node);
+  // //   return RewriteResponse(REWRITE_AGAIN_FULL, resultNode); 
+  // // }
   resultNode = LinearRewriteStrategy
     < RewriteRule<EvalNot>,
       RewriteRule<NotIdemp>
@@ -179,27 +174,26 @@ RewriteResponse TheoryBVRewriter::RewriteExtract(TNode node, bool prerewrite) {
     return RewriteResponse(REWRITE_AGAIN_FULL, resultNode); 
   }
 
-  if (RewriteRule<ExtractBitwise>::applies(node)) {
-    resultNode = RewriteRule<ExtractBitwise>::run<false>(node);
-    return RewriteResponse(REWRITE_AGAIN_FULL, resultNode); 
-  }
-  
   if (RewriteRule<ExtractNot>::applies(node)) {
     resultNode = RewriteRule<ExtractNot>::run<false>(node);
     return RewriteResponse(REWRITE_AGAIN_FULL, resultNode); 
   }
 
-  if (RewriteRule<ExtractArith>::applies(node)) {
-    resultNode = RewriteRule<ExtractArith>::run<false>(node);
-    return RewriteResponse(REWRITE_AGAIN_FULL, resultNode); 
+  if (options::bvExtractArithRewrite()) {
+    if (RewriteRule<ExtractArith>::applies(node)) {
+      resultNode = RewriteRule<ExtractArith>::run<false>(node);
+      return RewriteResponse(REWRITE_AGAIN_FULL, resultNode); 
+    }
   }
 
+  
   resultNode = LinearRewriteStrategy
     < RewriteRule<ExtractConstant>, 
       RewriteRule<ExtractExtract>,
       // We could get another extract over extract
-      RewriteRule<ExtractWhole>
+      RewriteRule<ExtractWhole>,
       // At this point only Extract-Whole could apply
+      RewriteRule<ExtractMultLeadingBit>
       >::apply(node);
   
   return RewriteResponse(REWRITE_DONE, resultNode); 
@@ -223,7 +217,7 @@ RewriteResponse TheoryBVRewriter::RewriteConcat(TNode node, bool prerewrite) {
 RewriteResponse TheoryBVRewriter::RewriteAnd(TNode node, bool prerewrite) {
   Node resultNode = node;
   resultNode = LinearRewriteStrategy
-    < RewriteRule<FlattenAssocCommut>,
+    < RewriteRule<FlattenAssocCommutNoDuplicates>,
       RewriteRule<AndSimplify>
       >::apply(node);
 
@@ -243,7 +237,7 @@ RewriteResponse TheoryBVRewriter::RewriteAnd(TNode node, bool prerewrite) {
 RewriteResponse TheoryBVRewriter::RewriteOr(TNode node, bool prerewrite){
   Node resultNode = node;
   resultNode = LinearRewriteStrategy
-    < RewriteRule<FlattenAssocCommut>,
+    < RewriteRule<FlattenAssocCommutNoDuplicates>,
       RewriteRule<OrSimplify>
       >::apply(node);
 
@@ -317,27 +311,18 @@ RewriteResponse TheoryBVRewriter::RewriteComp(TNode node, bool prerewrite) {
 
 RewriteResponse TheoryBVRewriter::RewriteMult(TNode node, bool prerewrite) {
   Node resultNode = node; 
-
   resultNode = LinearRewriteStrategy
     < RewriteRule<FlattenAssocCommut>, // flattens and sorts
       RewriteRule<MultSimplify>,       // multiplies constant part and checks for 0
       RewriteRule<MultPow2>            // replaces multiplication by a power of 2 by a shift
-    >::apply(node);
+    >::apply(resultNode);
 
   // only apply if every subterm was already rewritten 
   if (!prerewrite) {
-    // distributes multiplication by constant over +, - and unary -
-    if(RewriteRule<MultDistribConst>::applies(resultNode)) {
-      resultNode = RewriteRule<MultDistribConst>::run<false>(resultNode);
-      // creating new terms that might simplify further
-      return RewriteResponse(REWRITE_AGAIN_FULL, resultNode); 
-    }
-    if(RewriteRule<MultDistribVariable>::applies(resultNode)) {
-      resultNode = RewriteRule<MultDistribVariable>::run<false>(resultNode);
-      // creating new terms that might simplify further
-      return RewriteResponse(REWRITE_AGAIN_FULL, resultNode); 
-    }
-
+    resultNode = LinearRewriteStrategy
+      <   RewriteRule<MultDistribConst>
+        , RewriteRule<MultDistrib>
+        >::apply(resultNode);
   }
 
   if(resultNode == node) {
@@ -540,10 +525,14 @@ RewriteResponse TheoryBVRewriter::RewriteZeroExtend(TNode node, bool prerewrite)
 
 RewriteResponse TheoryBVRewriter::RewriteSignExtend(TNode node, bool prerewrite) {
   Node resultNode = LinearRewriteStrategy
-    < RewriteRule<EvalSignExtend>
+    < RewriteRule<MergeSignExtend>
+    , RewriteRule<EvalSignExtend>
     >::apply(node);
+
   
-  // return RewriteResponse(REWRITE_AGAIN_FULL, resultNode);
+  if (resultNode != node) {
+    return RewriteResponse(REWRITE_AGAIN, resultNode);
+  }
   return RewriteResponse(REWRITE_DONE, resultNode); 
 }
 

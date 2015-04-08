@@ -5,7 +5,7 @@
  ** Major contributors: Andrew Reynolds
  ** Minor contributors (to current version): none
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -144,8 +144,14 @@ private:
   eq::EqClassesIterator d_eq;
   //equality you are trying to match equalities for
   Node d_match_pattern;
+  TypeNode d_match_pattern_type;
   //einstantiator pointer
   QuantifiersEngine* d_qe;
+  // quantifier/index for the variable we are matching
+  Node d_f;
+  unsigned d_index;
+  //first time
+  bool d_firstTime;
 public:
   CandidateGeneratorQEAll( QuantifiersEngine* qe, Node mpat );
   ~CandidateGeneratorQEAll(){}

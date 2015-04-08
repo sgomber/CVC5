@@ -5,7 +5,7 @@
  ** Major contributors: none
  ** Minor contributors (to current version): Morgan Deters
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -95,7 +95,7 @@ int main() {
        << "the assumptions are satisfiable: "
        << smt.checkSat(em.mkConst(true)) << "."<< endl;
 
-  cout << "Finally, after a SAT call, we recursively call smt.getValue(...) on"
+  cout << "Finally, after a SAT call, we recursively call smt.getValue(...) on "
        << "all of the assumptions to see what the satisfying model looks like."
        << endl;
   prefixPrintGetValue(smt, assumptions);

@@ -5,7 +5,7 @@
  ** Major contributors: Tim King, Morgan Deters
  ** Minor contributors (to current version): none
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -28,17 +28,16 @@ namespace prop {
 
 class Registrar {
 public:
+  virtual ~Registrar() {}
   virtual void preRegister(Node n) = 0;
 
 };/* class Registrar */
 
-class NullRegistrar: public Registrar {
+class NullRegistrar : public Registrar {
 public:
-  void preRegister(Node n) {};
+  void preRegister(Node n) {}
 
-};/* class Registrar */
-
-
+};/* class NullRegistrar */
 
 }/* CVC4::prop namespace */
 }/* CVC4 namespace */

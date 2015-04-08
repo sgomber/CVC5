@@ -5,7 +5,7 @@
  ** Major contributors: Andrew Reynolds
  ** Minor contributors (to current version): Francois Bobot, Dejan Jovanovic
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -22,8 +22,8 @@
 #include "theory/theory.h"
 #include "util/datatype.h"
 #include "util/hash.h"
-#include "util/trans_closure.h"
 #include "theory/uf/equality_engine.h"
+#include "theory/datatypes/datatypes_sygus.h"
 
 #include <ext/hash_set>
 #include <iostream>
@@ -34,10 +34,7 @@ namespace CVC4 {
 namespace theory {
 namespace datatypes {
 
-class EqualityQueryTheory;
-
 class TheoryDatatypes : public Theory {
-  friend class EqualityQueryTheory;
 private:
   typedef context::CDChunkList<Node> NodeList;
   typedef context::CDHashMap<Node, NodeList*, NodeHashFunction> NodeListMap;
@@ -50,7 +47,7 @@ private:
   /** inferences */
   NodeList d_infer;
   NodeList d_infer_exp;
-
+  Node d_true;
   /** mkAnd */
   Node mkAnd( std::vector< TNode >& assumptions );
 private:
@@ -123,14 +120,18 @@ private:
     //all selectors whose argument is this eqc
     context::CDO< bool > d_selectors;
   };
-  /** does eqc of n have a label? */
+  /** does eqc of n have a label (do we know its constructor)? */
   bool hasLabel( EqcInfo* eqc, Node n );
   /** get the label associated to n */
   Node getLabel( Node n );
   /** get the index of the label associated to n */
   int getLabelIndex( EqcInfo* eqc, Node n );
+  /** does eqc of n have any testers? */
+  bool hasTester( Node n );
   /** get the possible constructors for n */
   void getPossibleCons( EqcInfo* eqc, Node n, std::vector< bool >& cons );
+  /** mkExpDefSkolem */
+  void mkExpDefSkolem( Node sel, TypeNode dt, TypeNode rt );
 private:
   /** The notify class */
   NotifyClass d_notify;
@@ -138,12 +139,10 @@ private:
   eq::EqualityEngine d_equalityEngine;
   /** information necessary for equivalence classes */
   std::map< Node, EqcInfo* > d_eqc_info;
-  /** selector applications */
-  //BoolMap d_selector_apps;
   /** map from nodes to their instantiated equivalent for each constructor type */
   std::map< Node, std::map< int, Node > > d_inst_map;
   /** which instantiation lemmas we have sent */
-  std::map< Node, std::vector< Node > > d_inst_lemmas;
+  //std::map< Node, std::vector< Node > > d_inst_lemmas;
   /** labels for each equivalence class
    * for each eqc n, d_labels[n] is testers that hold for this equivalence class, either:
    * a list of equations of the form
@@ -156,8 +155,12 @@ private:
   NodeListMap d_labels;
   /** selector apps for eqch equivalence class */
   NodeListMap d_selector_apps;
+  /** constructor terms */
+  //BoolMap d_consEqc;
   /** Are we in conflict */
   context::CDO<bool> d_conflict;
+  /** Added lemma ? */
+  bool d_addedLemma;
   /** The conflict node */
   Node d_conflictNode;
   /** cache for which terms we have called collectTerms(...) on */
@@ -166,6 +169,22 @@ private:
   std::vector< Node > d_pending;
   std::map< Node, Node > d_pending_exp;
   std::vector< Node > d_pending_merge;
+  /** All the constructor terms that the theory has seen */
+  context::CDList<TNode> d_consTerms;
+  /** All the selector terms that the theory has seen */
+  context::CDList<TNode> d_selTerms;
+  /** counter for forcing assignments (ensures fairness) */
+  unsigned d_dtfCounter;
+  /** expand definition skolem functions */
+  std::map< Node, Node > d_exp_def_skolem;
+  /** sygus utilities */
+  SygusSplit * d_sygus_split;
+  SygusSymBreak * d_sygus_sym_break;
+private:
+  /** singleton lemmas (for degenerate co-datatype case) */
+  std::map< TypeNode, Node > d_singleton_lemma[2];
+  /** Cache for singleton equalities processed */
+  BoolMap d_singleton_eq;
 private:
   /** assert fact */
   void assertFact( Node fact, Node exp );
@@ -174,9 +193,11 @@ private:
   /** do pending merged */
   void doPendingMerges();
   /** get or make eqc info */
-  EqcInfo* getOrMakeEqcInfo( Node n, bool doMake = false );
+  EqcInfo* getOrMakeEqcInfo( TNode n, bool doMake = false );
   /** has eqc info */
-  bool hasEqcInfo( Node n ) { return d_labels.find( n )!=d_labels.end(); }
+  bool hasEqcInfo( TNode n ) { return d_labels.find( n )!=d_labels.end(); }
+  /** get eqc constructor */
+  TNode getEqcConstructor( TNode r );
 protected:
   /** compute care graph */
   void computeCareGraph();
@@ -193,8 +214,12 @@ public:
   /** propagate */
   bool propagate(TNode literal);
   /** explain */
+  void addAssumptions( std::vector<TNode>& assumptions, std::vector<TNode>& tassumptions );
+  void explainEquality( TNode a, TNode b, bool polarity, std::vector<TNode>& assumptions );
+  void explainPredicate( TNode p, bool polarity, std::vector<TNode>& assumptions );
   void explain( TNode literal, std::vector<TNode>& assumptions );
   Node explain( TNode literal );
+  Node explain( std::vector< Node >& lits );
   /** Conflict when merging two constants */
   void conflict(TNode a, TNode b);
   /** called when a new equivalance class is created */
@@ -208,6 +233,8 @@ public:
 
   void check(Effort e);
   void preRegisterTerm(TNode n);
+  void finishInit();
+  Node expandDefinition(LogicRequest &logicRequest, Node n);
   Node ppRewrite(TNode n);
   void presolve();
   void addSharedTerm(TNode t);
@@ -230,13 +257,22 @@ private:
   void collapseSelector( Node s, Node c );
   /** for checking if cycles exist */
   void checkCycles();
-  Node searchForCycle( Node n, Node on,
-                       std::map< Node, bool >& visited,
+  Node searchForCycle( TNode n, TNode on,
+                       std::map< TNode, bool >& visited,
                        std::vector< TNode >& explanation, bool firstTime = true );
+  /** for checking whether two codatatype terms must be equal */
+  void separateBisimilar( std::vector< Node >& part, std::vector< std::vector< Node > >& part_out,
+                          std::vector< TNode >& exp,
+                          std::map< Node, Node >& cn,
+                          std::map< Node, std::map< Node, int > >& dni, int dniLvl, bool mkExp );
+  /** build model */
+  Node getCodatatypesValue( Node n, std::map< Node, Node >& eqc_cons, std::map< Node, Node >& eqc_mu, std::map< Node, Node >& vmap, std::vector< Node >& fv );
+  /** get singleton lemma */
+  Node getSingletonLemma( TypeNode tn, bool pol );
   /** collect terms */
   void collectTerms( Node n );
   /** get instantiate cons */
-  Node getInstantiateCons( Node n, const Datatype& dt, int index, bool mkVar = false, bool isActive = true );
+  Node getInstantiateCons( Node n, const Datatype& dt, int index );
   /** process new term that was created internally */
   void processNewTerm( Node n );
   /** check instantiate */
@@ -248,12 +284,14 @@ private:
   bool mustSpecifyAssignment();
   /** must communicate fact */
   bool mustCommunicateFact( Node n, Node exp );
+  /** check clash mod eq */
+  bool checkClashModEq( TNode n1, TNode n2, std::vector< Node >& exp, std::vector< std::pair< TNode, TNode > >& deq_cand );
 private:
   //equality queries
-  bool hasTerm( Node a );
-  bool areEqual( Node a, Node b );
-  bool areDisequal( Node a, Node b );
-  Node getRepresentative( Node a );
+  bool hasTerm( TNode a );
+  bool areEqual( TNode a, TNode b );
+  bool areDisequal( TNode a, TNode b );
+  TNode getRepresentative( TNode a );
 public:
   /** get equality engine */
   eq::EqualityEngine* getEqualityEngine() { return &d_equalityEngine; }

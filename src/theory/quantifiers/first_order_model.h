@@ -5,7 +5,7 @@
  ** Major contributors: Morgan Deters
  ** Minor contributors (to current version): none
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -26,15 +26,18 @@ namespace theory {
 
 class QuantifiersEngine;
 
-namespace quantifiers{
+namespace quantifiers {
 
 class TermDb;
 
 class FirstOrderModelIG;
+
 namespace fmcheck {
   class FirstOrderModelFmc;
-}
+}/* CVC4::theory::quantifiers::fmcheck namespace */
+
 class FirstOrderModelQInt;
+class FirstOrderModelAbs;
 
 struct IsStarAttributeId {};
 typedef expr::Attribute<IsStarAttributeId, bool> IsStarAttribute;
@@ -48,6 +51,8 @@ protected:
   context::CDO< bool > d_axiom_asserted;
   /** list of quantifiers asserted in the current context */
   context::CDList<Node> d_forall_asserts;
+  /** list of quantifiers that have been marked to reduce */
+  std::map< Node, bool > d_forall_to_reduce;
   /** is model set */
   context::CDO< bool > d_isModelSet;
   /** get variable id */
@@ -56,11 +61,13 @@ protected:
   virtual Node getCurrentUfModelValue( Node n, std::vector< Node > & args, bool partial ) = 0;
 public: //for Theory Quantifiers:
   /** assert quantifier */
-  void assertQuantifier( Node n );
+  void assertQuantifier( Node n, bool reduced = false );
   /** get number of asserted quantifiers */
   int getNumAssertedQuantifiers() { return (int)d_forall_asserts.size(); }
   /** get asserted quantifier */
   Node getAssertedQuantifier( int i ) { return d_forall_asserts[i]; }
+  /** get number to reduce quantifiers */
+  unsigned getNumToReduceQuantifiers() { return d_forall_to_reduce.size(); }
   /** bool axiom asserted */
   bool isAxiomAsserted() { return d_axiom_asserted; }
   /** initialize model for term */
@@ -69,12 +76,13 @@ public: //for Theory Quantifiers:
   virtual void processInitializeQuantifier( Node q ) {}
 public:
   FirstOrderModel(QuantifiersEngine * qe, context::Context* c, std::string name );
-  virtual ~FirstOrderModel(){}
+  virtual ~FirstOrderModel() {}
   virtual FirstOrderModelIG * asFirstOrderModelIG() { return NULL; }
   virtual fmcheck::FirstOrderModelFmc * asFirstOrderModelFmc() { return NULL; }
   virtual FirstOrderModelQInt * asFirstOrderModelQInt() { return NULL; }
+  virtual FirstOrderModelAbs * asFirstOrderModelAbs() { return NULL; }
   // initialize the model
-  void initialize( bool considerAxioms = true );
+  void initialize();
   virtual void processInitialize( bool ispre ) = 0;
   /** mark model set */
   void markModelSet() { d_isModelSet = true; }
@@ -83,11 +91,28 @@ public:
   /** get current model value */
   Node getCurrentModelValue( Node n, bool partial = false );
   /** get variable id */
-  int getVariableId(Node f, Node n) {
-    return d_quant_var_id.find( f )!=d_quant_var_id.end() ? d_quant_var_id[f][n] : -1;
+  int getVariableId(TNode q, TNode n) {
+    return d_quant_var_id.find( q )!=d_quant_var_id.end() ? d_quant_var_id[q][n] : -1;
   }
   /** get some domain element */
   Node getSomeDomainElement(TypeNode tn);
+  /** do we need to do any work? */
+  bool checkNeeded();
+  /** mark reduced */
+  void markQuantifierReduced( Node q );
+private:
+  //list of inactive quantified formulas
+  std::map< TNode, bool > d_quant_active;
+public:
+  /** reset round */
+  void reset_round();
+  /** set quantified formula active/inactive 
+   * a quantified formula may be set inactive if for instance:
+   *   - it is entailed by other quantified formulas
+   */
+  void setQuantifierActive( TNode q, bool active );
+  /** is quantified formula active */
+  bool isQuantifierActive( TNode q );
 };/* class FirstOrderModel */
 
 
@@ -134,7 +159,7 @@ private:
   void clearEvalFailed( int index );
   std::map< Node, bool > d_eval_failed;
   std::map< int, std::vector< Node > > d_eval_failed_lits;
-};
+};/* class FirstOrderModelIG */
 
 
 namespace fmcheck {
@@ -156,6 +181,7 @@ private:
   void processInitializeModelForTerm(Node n);
 public:
   FirstOrderModelFmc(QuantifiersEngine * qe, context::Context* c, std::string name);
+  virtual ~FirstOrderModelFmc();
   FirstOrderModelFmc * asFirstOrderModelFmc() { return this; }
   // initialize the model
   void processInitialize( bool ispre );
@@ -169,54 +195,37 @@ public:
   bool isInterval(Node n);
   Node getInterval( Node lb, Node ub );
   bool isInRange( Node v, Node i );
-};
+};/* class FirstOrderModelFmc */
 
-}
+}/* CVC4::theory::quantifiers::fmcheck namespace */
 
+class AbsDef;
 
-class QIntDef;
-class QuantVarOrder;
-class FirstOrderModelQInt : public FirstOrderModel
+class FirstOrderModelAbs : public FirstOrderModel
 {
-  friend class QIntervalBuilder;
+public:
+  std::map< Node, AbsDef * > d_models;
+  std::map< Node, bool > d_models_valid;
+  std::map< TNode, unsigned > d_rep_id;
+  std::map< TypeNode, unsigned > d_domain;
+  std::map< Node, std::vector< int > > d_var_order;
+  std::map< Node, std::map< int, int > > d_var_index;
 private:
-  /** uf op to some representation */
-  std::map<Node, QIntDef * > d_models;
-  /** representatives to ids */
-  std::map< Node, int > d_rep_id;
-  std::map< TypeNode, Node > d_min;
-  std::map< TypeNode, Node > d_max;
-  /** quantifiers to information regarding variable ordering */
-  std::map<Node, QuantVarOrder * > d_var_order;
   /** get current model value */
   Node getCurrentUfModelValue( Node n, std::vector< Node > & args, bool partial );
   void processInitializeModelForTerm(Node n);
+  void processInitializeQuantifier( Node q );
+  void collectEqVars( TNode q, TNode n, std::map< int, bool >& eq_vars );
 public:
-  FirstOrderModelQInt(QuantifiersEngine * qe, context::Context* c, std::string name);
-  FirstOrderModelQInt * asFirstOrderModelQInt() { return this; }
+  FirstOrderModelAbs(QuantifiersEngine * qe, context::Context* c, std::string name);
+  FirstOrderModelAbs * asFirstOrderModelAbs() { return this; }
   void processInitialize( bool ispre );
+  unsigned getRepresentativeId( TNode n );
+  TNode getUsedRepresentative( TNode n );
+  bool isValidType( TypeNode tn ) { return d_domain.find( tn )!=d_domain.end(); }
   Node getFunctionValue(Node op, const char* argPrefix );
-
-  Node getUsedRepresentative( Node n );
-  int getRepId( Node n ) { return d_rep_id.find( n )==d_rep_id.end() ? -1 : d_rep_id[n]; }
-  bool isLessThan( Node v1, Node v2 );
-  Node getMin( Node v1, Node v2 );
-  Node getMax( Node v1, Node v2 );
-  Node getMinimum( TypeNode tn ) { return getNext( tn, Node::null() ); }
-  Node getMaximum( TypeNode tn );
-  bool isMinimum( Node n ) { return n==getMinimum( n.getType() ); }
-  bool isMaximum( Node n ) { return n==getMaximum( n.getType() ); }
-  Node getNext( TypeNode tn, Node v );
-  Node getPrev( TypeNode tn, Node v );
-  bool doMeet( Node l1, Node u1, Node l2, Node u2, Node& lr, Node& ur );
-  QuantVarOrder * getVarOrder( Node q ) { return d_var_order[q]; }
-
-  void processInitializeQuantifier( Node q ) ;
-  unsigned getOrderedNumVars( Node q );
-  TypeNode getOrderedVarType( Node q, int i );
-  int getOrderedVarNumToVarNum( Node q, int i );
+  Node getVariable( Node q, unsigned i );
 };
-
 
 }/* CVC4::theory::quantifiers namespace */
 }/* CVC4::theory namespace */

@@ -3,9 +3,9 @@
  ** \verbatim
  ** Original author: Dejan Jovanovic
  ** Major contributors: Liana Hadarean
- ** Minor contributors (to current version): Clark Barrett, Morgan Deters, Kshitij Bansal
+ ** Minor contributors (to current version): Kshitij Bansal, Clark Barrett, Morgan Deters
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -23,11 +23,14 @@
 #include <vector>
 #include <sstream>
 #include "expr/node_manager.h"
-#include "theory/decision_attributes.h"
 
 namespace CVC4 {
 namespace theory {
 namespace bv {
+
+typedef __gnu_cxx::hash_set<Node, NodeHashFunction> NodeSet;
+typedef __gnu_cxx::hash_set<TNode, TNodeHashFunction> TNodeSet;
+
 namespace utils {
 
 inline uint32_t pow2(uint32_t power) {
@@ -65,7 +68,8 @@ inline Node mkFalse() {
 
 inline Node mkVar(unsigned size) {
   NodeManager* nm =  NodeManager::currentNM();
-  return nm->mkSkolem("bv_$$", nm->mkBitVectorType(size), "is a variable created by the theory of bitvectors"); 
+
+  return nm->mkSkolem("BVSKOLEM$$", nm->mkBitVectorType(size), "is a variable created by the theory of bitvectors"); 
 }
 
 
@@ -253,8 +257,6 @@ inline unsigned isPow2Const(TNode node) {
   return bv.isPow2(); 
 }
 
-typedef __gnu_cxx::hash_set<TNode, TNodeHashFunction> TNodeSet;
-
 inline Node mkOr(const std::vector<Node>& nodes) {
   std::set<TNode> all;
   all.insert(nodes.begin(), nodes.end());
@@ -331,7 +333,10 @@ inline Node mkAnd(const std::vector<Node>& conjunctions) {
   return conjunction;
 }/* mkAnd() */
 
-
+inline bool isZero(TNode node) {
+  if (!node.isConst()) return false; 
+  return node == utils::mkConst(utils::getSize(node), 0u); 
+}
 
 inline Node flattenAnd(std::vector<TNode>& queue) {
   TNodeSet nodes;
@@ -435,8 +440,6 @@ inline Node mkConjunction(const std::vector<TNode>& nodes) {
 
 
 
-
-
 // Turn a set into a string
 inline std::string setToString(const std::set<TNode>& nodeSet) {
   std::stringstream out;
@@ -498,26 +501,13 @@ inline T gcd(T a, T b) {
   return a;
 }
 
+typedef __gnu_cxx::hash_map<TNode, bool, TNodeHashFunction> TNodeBoolMap;
 
-typedef __gnu_cxx::hash_set<TNode, TNodeHashFunction> TNodeSet;
+bool isCoreTerm(TNode term, TNodeBoolMap& cache);
+bool isEqualityTerm(TNode term, TNodeBoolMap& cache);
+typedef __gnu_cxx::hash_set<Node, NodeHashFunction> NodeSet;
 
-inline uint64_t numNodesAux(TNode node, TNodeSet& seen) {
-  if (seen.find(node) != seen.end())
-    return 0;
-
-  uint64_t size = 1;
-  for (unsigned i = 0; i < node.getNumChildren(); ++i) {
-    size += numNodesAux(node[i], seen);
-  }
-  seen.insert(node);
-  return size;
-}
-
-inline uint64_t numNodes(TNode node) {
-  TNodeSet seen;
-  uint64_t size = numNodesAux(node, seen);
-  return size;
-}
+uint64_t numNodes(TNode node, NodeSet& seen);
 
 }
 }

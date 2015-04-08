@@ -1,5 +1,5 @@
-SUBDIRS = . arith precedence uf uflra uflia bv arrays aufbv auflia datatypes quantifiers rewriterules lemmas push-pop preprocess tptp unconstrained decision fmf strings
-DIST_SUBDIRS = . arith precedence uf uflra uflia bv arrays aufbv auflia datatypes quantifiers rewriterules lemmas push-pop preprocess tptp unconstrained decision fmf strings
+SUBDIRS = . arith precedence uf uflra uflia bv arrays aufbv auflia datatypes quantifiers rewriterules lemmas push-pop preprocess tptp unconstrained decision fmf strings sets parser sygus
+DIST_SUBDIRS = $(SUBDIRS)
 
 # don't override a BINARY imported from a personal.mk
 @mk_if@eq ($(BINARY),)
@@ -46,16 +46,24 @@ SMT_TESTS = \
 
 # Regression tests for SMT2 inputs
 SMT2_TESTS = \
+	arrayinuf_declare.smt2 \
+	boolean-terms-kernel1.smt2 \
+	boolean-terms-kernel2.smt2 \
+	boolean-terms-bug-array.smt2 \
 	chained-equality.smt2 \
 	ite2.smt2 \
 	ite3.smt2 \
 	ite4.smt2 \
+	ite5.smt2 \
 	simple-lra.smt2 \
 	simple-rdl.smt2 \
 	simple-uf.smt2 \
 	simplification_bug4.smt2 \
 	parallel-let.smt2 \
 	get-value-incremental.smt2 \
+	get-value-reals.smt2 \
+	get-value-ints.smt2 \
+	get-value-reals-ints.smt2 \
 	hung13sdk_output1.smt2 \
 	hung10_itesdk_output2.smt2 \
 	hung10_itesdk_output1.smt2 \
@@ -100,9 +108,9 @@ CVC_TESTS = \
 	wiki.19.cvc \
 	wiki.20.cvc \
 	wiki.21.cvc \
-	simplification_bug3.cvc \
 	queries0.cvc \
-	print_lambda.cvc
+	trim.cvc \
+	print_lambda.cvc 
 
 # Regression tests for TPTP inputs
 TPTP_TESTS =
@@ -143,7 +151,6 @@ BUG_TESTS = \
 	bug484.smt2 \
 	bug486.cvc \
 	bug507.smt2 \
-	bug512.smt2 \
 	bug512.minimized.smt2 \
 	bug516.smt2 \
 	bug519.smt2 \
@@ -153,23 +160,46 @@ BUG_TESTS = \
 	bug522.smt2 \
 	bug528a.smt2 \
 	bug541.smt2 \
-	bug544.smt2
+	bug543.smt2 \
+	bug544.smt2 \
+	bug548a.smt2 \
+	bug567.smt2 \
+	bug576.smt2 \
+	bug576a.smt2 \
+	bug578.smt2 \
+	bug585.cvc \
+	bug586.cvc \
+	bug590.smt2 \
+	bug593.smt2 \
+	bug595.cvc \
+	bug596.cvc \
+	bug596b.cvc
 
-TESTS =	$(SMT_TESTS) $(SMT2_TESTS) $(CVC_TESTS) $(TPTP_TESTS) $(BUG_TESTS)
+TESTS = $(SMT_TESTS) $(SMT2_TESTS) $(CVC_TESTS) $(TPTP_TESTS) $(BUG_TESTS)
+
+# bug512 -- taking too long, --time-per not working perhaps? in any case,
+# we have a minimized version still getting tested
+DISABLED_TESTS = \
+	bug512.smt2
 
 EXTRA_DIST = $(TESTS) \
 	simplification_bug4.smt2.expect \
-	bug216.smt2.expect
+	bug216.smt2.expect \
+	bug590.smt2.expect
 
 if CVC4_BUILD_PROFILE_COMPETITION
 else
 TESTS += \
-	error.cvc
+	error.cvc \
+	errorcrash.smt2 \
+	arrayinuf_error.smt2
 endif
 
 # and make sure to distribute it
-EXTRA_DIST += \
+EXTRA_DIST += $(DISABLED_TESTS) \
 	subranges.cvc \
+	arrayinuf_error.smt2 \
+	errorcrash.smt2 \
 	error.cvc
 
 # synonyms for "check" in this directory

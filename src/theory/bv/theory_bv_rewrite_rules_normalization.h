@@ -5,7 +5,7 @@
  ** Major contributors: Clark Barrett
  ** Minor contributors (to current version): Dejan Jovanovic, Morgan Deters, Tim King
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -431,35 +431,6 @@ Node RewriteRule<MultSimplify>::apply(TNode node) {
   return utils::mkNode(kind::BITVECTOR_MULT, children); 
 }
 
-template<> inline
-bool RewriteRule<MultDistribVariable>::applies(TNode node) {
-  if (node.getKind() != kind::BITVECTOR_MULT ||
-      node.getNumChildren() != 2) {
-    return false;
-  }
-  Assert(!node[0].isConst());
-  if (!node[1].getNumChildren() == 0) {
-    return false;
-  }
-  TNode factor = node[0];
-  return (factor.getKind() == kind::BITVECTOR_PLUS ||
-          factor.getKind() == kind::BITVECTOR_SUB); 
-}
-
-template<> inline
-Node RewriteRule<MultDistribVariable>::apply(TNode node) {
-  Debug("bv-rewrite") << "RewriteRule<MultDistrib>(" << node << ")" << std::endl;
-  TNode var = node[1];
-  TNode factor = node[0];
-
-  std::vector<Node> children;
-  for(unsigned i = 0; i < factor.getNumChildren(); ++i) {
-    children.push_back(utils::mkNode(kind::BITVECTOR_MULT, factor[i], var));
-  }
-  
-  return utils::mkNode(factor.getKind(), children); 
-}
-
 
 template<> inline
 bool RewriteRule<MultDistribConst>::applies(TNode node) {
@@ -500,6 +471,72 @@ Node RewriteRule<MultDistribConst>::apply(TNode node) {
   
   return utils::mkNode(factor.getKind(), children); 
 }
+
+template<> inline
+bool RewriteRule<MultDistrib>::applies(TNode node) {
+  if (node.getKind() != kind::BITVECTOR_MULT ||
+      node.getNumChildren() != 2) {
+    return false;
+  }
+  if (node[0].getKind() == kind::BITVECTOR_PLUS ||
+      node[0].getKind() == kind::BITVECTOR_SUB) {
+    return node[1].getKind() != kind::BITVECTOR_PLUS &&
+           node[1].getKind() != kind::BITVECTOR_SUB;
+  }
+  return node[1].getKind() == kind::BITVECTOR_PLUS ||
+         node[1].getKind() == kind::BITVECTOR_SUB; 
+}
+
+template<> inline
+Node RewriteRule<MultDistrib>::apply(TNode node) {
+  Debug("bv-rewrite") << "RewriteRule<MultDistrib>(" << node << ")" << std::endl;
+
+  TNode factor = node[0].getKind() != kind::BITVECTOR_PLUS ? node[0] : node[1];
+  TNode sum = node[0].getKind() == kind::BITVECTOR_PLUS? node[0] : node[1];
+  Assert (factor.getKind() != kind::BITVECTOR_PLUS &&
+          factor.getKind() != kind::BITVECTOR_SUB &&
+          (sum.getKind() == kind::BITVECTOR_PLUS ||
+           sum.getKind() == kind::BITVECTOR_SUB));
+
+  std::vector<Node> children;
+  for(unsigned i = 0; i < sum.getNumChildren(); ++i) {
+    children.push_back(utils::mkNode(kind::BITVECTOR_MULT, sum[i], factor));
+  }
+  
+  return utils::mkNode(sum.getKind(), children); 
+}
+
+template<> inline
+bool RewriteRule<ConcatToMult>::applies(TNode node) {
+  if (node.getKind() != kind::BITVECTOR_CONCAT) return false;
+  if (node.getNumChildren() != 2) return false;
+  if (node[0].getKind()!= kind::BITVECTOR_EXTRACT) return false;
+  if (!node[1].isConst()) return false;
+  TNode extract = node[0];
+  TNode c = node[1];
+  unsigned ammount = utils::getSize(c);
+  
+  if (utils::getSize(node) != utils::getSize(extract[0])) return false; 
+  if (c != utils::mkConst(ammount, 0)) return false;
+
+  unsigned low = utils::getExtractLow(extract);
+  if (low != 0) return false; 
+  unsigned high = utils::getExtractHigh(extract);
+  if (high + ammount + 1 != utils::getSize(node)) return false;
+  return true;
+}
+
+template<> inline
+Node RewriteRule<ConcatToMult>::apply(TNode node) {
+  Debug("bv-rewrite") << "RewriteRule<ConcatToMult>(" << node << ")" << std::endl;
+  unsigned size = utils::getSize(node); 
+  Node factor = node[0][0];
+  Assert(utils::getSize(factor) == utils::getSize(node)); 
+  BitVector ammount = BitVector(size, utils::getSize(node[1]));
+  Node coef = utils::mkConst(BitVector(size, 1u).leftShift(ammount));
+  return utils::mkNode(kind::BITVECTOR_MULT, factor, coef); 
+}
+
 
 
 template<> inline
@@ -959,6 +996,51 @@ Node RewriteRule<AndSimplify>::apply(TNode node) {
 }
 
 template<> inline
+bool RewriteRule<FlattenAssocCommutNoDuplicates>::applies(TNode node) {
+  Kind kind = node.getKind();
+  if (kind != kind::BITVECTOR_OR &&
+      kind != kind::BITVECTOR_AND)
+    return false;
+  TNode::iterator child_it = node.begin();
+  for(; child_it != node.end(); ++child_it) {
+    if ((*child_it).getKind() == kind) {
+      return true;
+    }
+  }
+  return false;
+}
+  
+template<> inline
+Node RewriteRule<FlattenAssocCommutNoDuplicates>::apply(TNode node) {
+  Debug("bv-rewrite") << "RewriteRule<FlattenAssocCommut>(" << node << ")" << std::endl;
+  std::vector<Node> processingStack;
+  processingStack.push_back(node);
+  __gnu_cxx::hash_set<TNode, TNodeHashFunction> processed;
+  std::vector<Node> children;
+  Kind kind = node.getKind(); 
+  
+  while (! processingStack.empty()) {
+    TNode current = processingStack.back();
+    processingStack.pop_back();
+    if (processed.count(current))
+      continue;
+
+    processed.insert(current);
+    
+    // flatten expression
+    if (current.getKind() == kind) {
+      for (unsigned i = 0; i < current.getNumChildren(); ++i) {
+        processingStack.push_back(current[i]);
+      }
+    } else {
+      children.push_back(current); 
+    }
+  }
+  return utils::mkSortedNode(kind, children);
+}
+  
+  
+template<> inline
 bool RewriteRule<OrSimplify>::applies(TNode node) {
   return (node.getKind() == kind::BITVECTOR_OR);
 }
@@ -1129,7 +1211,8 @@ bool RewriteRule<BitwiseSlicing>::applies(TNode node) {
       node.getKind() != kind::BITVECTOR_XOR) ||
       utils::getSize(node) == 1)
     return false; 
-  
+  // find the first constant and return true if it's not only 1..1 or only 0..0
+  // (there could be more than one constant)
   for (unsigned i = 0; i < node.getNumChildren(); ++i) {
     if (node[i].getKind() == kind::CONST_BITVECTOR) {
       BitVector constant = node[i].getConst<BitVector>();
@@ -1141,6 +1224,7 @@ bool RewriteRule<BitwiseSlicing>::applies(TNode node) {
         if (!constant.isBitSet(i)) 
           return true; 
       }
+      return false; 
     }
   }
   return false; 
@@ -1150,13 +1234,12 @@ template<> inline
 Node RewriteRule<BitwiseSlicing>::apply(TNode node) {
   Debug("bv-rewrite") << "RewriteRule<BitwiseSlicing>(" << node << ")" << std::endl;
   // get the constant
-  bool found_constant CVC4_UNUSED = false ;
+  bool found_constant = false ;
   TNode constant;
   std::vector<Node> other_children; 
   for (unsigned i = 0; i < node.getNumChildren(); ++i) {
-    if (node[i].getKind() == kind::CONST_BITVECTOR) {
+    if (node[i].getKind() == kind::CONST_BITVECTOR && !found_constant) {
       constant = node[i];
-      Assert (!found_constant); 
       found_constant = true; 
     } else {
       other_children.push_back(node[i]); 

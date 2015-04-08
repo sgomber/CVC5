@@ -3,9 +3,9 @@
  ** \verbatim
  ** Original author: Morgan Deters
  ** Major contributors: none
- ** Minor contributors (to current version): Clark Barrett
+ ** Minor contributors (to current version): Clark Barrett, Liana Hadarean
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -21,6 +21,7 @@
 
 #include "cvc4autoconfig.h"
 #include "util/dump.h"
+#include "util/resource_manager.h"
 #include "smt/modal_exception.h"
 #include "smt/smt_engine.h"
 #include "lib/strtok_r.h"
@@ -121,7 +122,13 @@ t-explanations [non-stateful]\n\
 bv-rewrites [non-stateful]\n\
 + Output correctness queries for all bitvector rewrites\n\
 \n\
-theory::fullcheck [non-stateful]\n\
+bv-abstraction [non-stateful]\n\
++ Output correctness queries for all bv abstraction \n\
+\n\
+bv-algebraic [non-stateful]\n\
++ Output correctness queries for bv algebraic solver. \n\
+\n\
+theory::fullcheck [non-stateful]\n                                      \
 + Output completeness queries for all full-check effort-level theory checks\n\
 \n\
 Dump modes can be combined with multiple uses of --dump.  Generally you want\n\
@@ -146,10 +153,6 @@ batch (default) \n\
 + save up all ASSERTions; run nonclausal simplification and clausal\n\
   (MiniSat) propagation for all of them only after reaching a querying command\n\
   (CHECKSAT or QUERY or predicate SUBTYPE declaration)\n\
-\n\
-incremental\n\
-+ run nonclausal simplification and clausal propagation at each ASSERT\n\
-  (and at CHECKSAT/QUERY/SUBTYPE)\n\
 \n\
 none\n\
 + do not perform nonclausal simplification\n\
@@ -237,6 +240,10 @@ inline void dumpMode(std::string option, std::string optarg, SmtEngine* smt) {
     } else if(!strcmp(optargPtr, "help")) {
       puts(dumpHelp.c_str());
       exit(1);
+    } else if(!strcmp(optargPtr, "bv-abstraction")) {
+      Dump.on("bv-abstraction");
+    } else if(!strcmp(optargPtr, "bv-algebraic")) {
+      Dump.on("bv-algebraic");
     } else {
       throw OptionException(std::string("unknown option for --dump: `") +
                             optargPtr + "'.  Try --dump help.");
@@ -257,11 +264,22 @@ inline void dumpMode(std::string option, std::string optarg, SmtEngine* smt) {
 #endif /* CVC4_DUMPING */
 }
 
+inline LogicInfo stringToLogicInfo(std::string option, std::string optarg, SmtEngine* smt) throw(OptionException) {
+  try {
+    LogicInfo logic(optarg);
+    if(smt != NULL) {
+      smt->setLogic(logic);
+    }
+    return logic;
+  } catch(IllegalArgumentException& e) {
+    throw OptionException(std::string("invalid logic specification for --force-logic: `") +
+                          optarg + "':\n" + e.what());
+  }
+}
+
 inline SimplificationMode stringToSimplificationMode(std::string option, std::string optarg, SmtEngine* smt) throw(OptionException) {
   if(optarg == "batch") {
     return SIMPLIFICATION_MODE_BATCH;
-  } else if(optarg == "incremental") {
-    return SIMPLIFICATION_MODE_INCREMENTAL;
   } else if(optarg == "none") {
     return SIMPLIFICATION_MODE_NONE;
   } else if(optarg == "help") {
@@ -282,6 +300,11 @@ inline void beforeSearch(std::string option, bool value, SmtEngine* smt) throw(M
   }
 }
 
+inline void setProduceAssertions(std::string option, bool value, SmtEngine* smt) throw() {
+  options::produceAssertions.set(value);
+  options::interactiveMode.set(value);
+}
+
 // ensure we are a proof-enabled build of CVC4
 inline void proofEnabledBuild(std::string option, bool value, SmtEngine* smt) throw(OptionException) {
 #ifndef CVC4_PROOF
@@ -291,12 +314,6 @@ inline void proofEnabledBuild(std::string option, bool value, SmtEngine* smt) th
     throw OptionException(ss.str());
   }
 #endif /* CVC4_PROOF */
-}
-
-inline void unsatCoresEnabledBuild(std::string option, bool value, SmtEngine* smt) throw(OptionException) {
-  if(value) {
-    throw UnrecognizedOptionException("CVC4 does not yet have support for unsatisfiable cores");
-  }
 }
 
 // This macro is used for setting :regular-output-channel and :diagnostic-output-channel
@@ -321,6 +338,8 @@ inline void dumpToFile(std::string option, std::string optarg, SmtEngine* smt) {
     throw OptionException(std::string("Bad file name for --dump-to"));
   } else if(optarg == "-") {
     outStream = &DumpOutC::dump_cout;
+  } else if(!options::filesystemAccess()) {
+    throw OptionException(std::string("Filesystem access not permitted"));
   } else {
     errno = 0;
     outStream = new std::ofstream(optarg.c_str(), std::ofstream::out | std::ofstream::trunc);
@@ -344,6 +363,8 @@ inline void setRegularOutputChannel(std::string option, std::string optarg, SmtE
     outStream = &std::cout;
   } else if(optarg == "stderr") {
     outStream = &std::cerr;
+  } else if(!options::filesystemAccess()) {
+    throw OptionException(std::string("Filesystem access not permitted"));
   } else {
     errno = 0;
     outStream = new std::ofstream(optarg.c_str(), std::ofstream::out | std::ofstream::trunc);
@@ -364,6 +385,8 @@ inline void setDiagnosticOutputChannel(std::string option, std::string optarg, S
     outStream = &std::cout;
   } else if(optarg == "stderr") {
     outStream = &std::cerr;
+  } else if(!options::filesystemAccess()) {
+    throw OptionException(std::string("Filesystem access not permitted"));
   } else {
     errno = 0;
     outStream = new std::ofstream(optarg.c_str(), std::ofstream::out | std::ofstream::trunc);
@@ -402,6 +425,8 @@ inline std::ostream* checkReplayLogFilename(std::string option, std::string opta
     throw OptionException(std::string("Bad file name for --replay-log"));
   } else if(optarg == "-") {
     return &std::cout;
+  } else if(!options::filesystemAccess()) {
+    throw OptionException(std::string("Filesystem access not permitted"));
   } else {
     errno = 0;
     std::ostream* replayLog = new std::ofstream(optarg.c_str(), std::ofstream::out | std::ofstream::trunc);
@@ -426,6 +451,63 @@ inline void statsEnabledBuild(std::string option, bool value, SmtEngine* smt) th
     throw OptionException(ss.str());
   }
 #endif /* CVC4_STATISTICS_ON */
+}
+
+inline unsigned long tlimitHandler(std::string option, std::string optarg, SmtEngine* smt) throw(OptionException) {
+  unsigned long ms;
+  std::istringstream convert(optarg);
+  if (!(convert >> ms))
+    throw OptionException("option `"+option+"` requires a number as an argument");
+
+  // make sure the resource is set if the option is updated
+  // if the smt engine is null the resource will be set in the
+  if (smt != NULL) {
+    ResourceManager* rm = NodeManager::fromExprManager(smt->getExprManager())->getResourceManager();
+    rm->setTimeLimit(ms, true);
+  }
+  return ms;
+}
+
+inline unsigned long tlimitPerHandler(std::string option, std::string optarg, SmtEngine* smt) throw(OptionException) {
+  unsigned long ms;
+
+  std::istringstream convert(optarg);
+  if (!(convert >> ms))
+    throw OptionException("option `"+option+"` requires a number as an argument");
+
+  if (smt != NULL) {
+    ResourceManager* rm = NodeManager::fromExprManager(smt->getExprManager())->getResourceManager();
+    rm->setTimeLimit(ms, false);
+  }
+  return ms;
+}
+
+inline unsigned long rlimitHandler(std::string option, std::string optarg, SmtEngine* smt) throw(OptionException) {
+  unsigned long ms;
+
+  std::istringstream convert(optarg);
+  if (!(convert >> ms))
+    throw OptionException("option `"+option+"` requires a number as an argument");
+
+  if (smt != NULL) {
+    ResourceManager* rm = NodeManager::fromExprManager(smt->getExprManager())->getResourceManager();
+    rm->setResourceLimit(ms, true);
+  }
+  return ms;
+}
+
+inline unsigned long rlimitPerHandler(std::string option, std::string optarg, SmtEngine* smt) throw(OptionException) {
+  unsigned long ms;
+
+  std::istringstream convert(optarg);
+  if (!(convert >> ms))
+    throw OptionException("option `"+option+"` requires a number as an argument");
+
+  if (smt != NULL) {
+    ResourceManager* rm = NodeManager::fromExprManager(smt->getExprManager())->getResourceManager();
+    rm->setResourceLimit(ms, false);
+  }
+  return ms;
 }
 
 }/* CVC4::smt namespace */

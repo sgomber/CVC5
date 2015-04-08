@@ -5,7 +5,7 @@
  ** Major contributors:
  ** Minor contributors (to current version):
  ** This file is part of the CVC4 prototype.
- ** Copyright (c) 2009, 2010, 2011  The Analysis of Computer Systems Group (ACSys)
+ ** Copyright (c) 2009-2014  The Analysis of Computer Systems Group (ACSys)
  ** Courant Institute of Mathematical Sciences
  ** New York University
  ** See the file COPYING in the top-level source directory for licensing
@@ -13,7 +13,7 @@
  **
  ** \brief SAT Solver.
  **
- ** Implementation of the minisat for cvc4.
+ ** Implementation of the minisat interface for cvc4.
  **/
 
 #include "prop/minisat/minisat.h"
@@ -29,7 +29,6 @@ using namespace CVC4::prop;
 
 MinisatSatSolver::MinisatSatSolver() :
   d_minisat(NULL),
-  d_theoryProxy(NULL),
   d_context(NULL)
 {}
 
@@ -58,11 +57,6 @@ SatLiteral MinisatSatSolver::toSatLiteral(Minisat::Lit lit) {
 
   return SatLiteral(SatVariable(Minisat::var(lit)),
                     Minisat::sign(lit));
-}
-
-SatValue MinisatSatSolver::toSatLiteralValue(bool res) {
-  if(res) return SAT_VALUE_TRUE;
-  else return SAT_VALUE_FALSE;
 }
 
 SatValue MinisatSatSolver::toSatLiteralValue(Minisat::lbool res) {
@@ -111,8 +105,7 @@ void MinisatSatSolver::toSatClause(const Minisat::Clause& clause,
   Assert((unsigned)clause.size() == sat_clause.size());
 }
 
-void MinisatSatSolver::initialize(context::Context* context, TheoryProxy* theoryProxy)
-{
+void MinisatSatSolver::initialize(context::Context* context, TheoryProxy* theoryProxy) {
 
   d_context = context;
 
@@ -125,26 +118,36 @@ void MinisatSatSolver::initialize(context::Context* context, TheoryProxy* theory
   d_minisat = new Minisat::SimpSolver(theoryProxy, d_context,
                                       options::incrementalSolving() ||
                                       options::decisionMode() != decision::DECISION_STRATEGY_INTERNAL );
+
+  d_statistics.init(d_minisat);
+}
+
+// Like initialize() above, but called just before each search when in
+// incremental mode
+void MinisatSatSolver::setupOptions() {
+  // Copy options from CVC4 options structure into minisat, as appropriate
+
   // Set up the verbosity
   d_minisat->verbosity = (options::verbosity() > 0) ? 1 : -1;
 
   // Set up the random decision parameters
   d_minisat->random_var_freq = options::satRandomFreq();
-  d_minisat->random_seed = options::satRandomSeed();
+  // If 0, we use whatever we like (here, the Minisat default seed)
+  if(options::satRandomSeed() != 0) {
+    d_minisat->random_seed = double(options::satRandomSeed());
+  }
 
   // Give access to all possible options in the sat solver
   d_minisat->var_decay = options::satVarDecay();
   d_minisat->clause_decay = options::satClauseDecay();
   d_minisat->restart_first = options::satRestartFirst();
   d_minisat->restart_inc = options::satRestartInc();
-
-  d_statistics.init(d_minisat);
 }
 
-void MinisatSatSolver::addClause(SatClause& clause, bool removable) {
+void MinisatSatSolver::addClause(SatClause& clause, bool removable, uint64_t proof_id) {
   Minisat::vec<Minisat::Lit> minisat_clause;
   toMinisatClause(clause, minisat_clause);
-  d_minisat->addClause(minisat_clause, removable);
+  d_minisat->addClause(minisat_clause, removable, proof_id);
 }
 
 SatVariable MinisatSatSolver::newVar(bool isTheoryAtom, bool preRegister, bool canErase) {
@@ -153,21 +156,23 @@ SatVariable MinisatSatSolver::newVar(bool isTheoryAtom, bool preRegister, bool c
 
 SatValue MinisatSatSolver::solve(unsigned long& resource) {
   Trace("limit") << "SatSolver::solve(): have limit of " << resource << " conflicts" << std::endl;
+  setupOptions();
   if(resource == 0) {
     d_minisat->budgetOff();
   } else {
     d_minisat->setConfBudget(resource);
   }
   Minisat::vec<Minisat::Lit> empty;
-  unsigned long conflictsBefore = d_minisat->conflicts;
+  unsigned long conflictsBefore = d_minisat->conflicts + d_minisat->resources_consumed;
   SatValue result = toSatLiteralValue(d_minisat->solveLimited(empty));
   d_minisat->clearInterrupt();
-  resource = d_minisat->conflicts - conflictsBefore;
+  resource = d_minisat->conflicts + d_minisat->resources_consumed - conflictsBefore;
   Trace("limit") << "SatSolver::solve(): it took " << resource << " conflicts" << std::endl;
   return result;
 }
 
 SatValue MinisatSatSolver::solve() {
+  setupOptions();
   d_minisat->budgetOff();
   return toSatLiteralValue(d_minisat->solve());
 }
@@ -215,7 +220,7 @@ void MinisatSatSolver::push() {
   d_minisat->push();
 }
 
-void MinisatSatSolver::pop(){
+void MinisatSatSolver::pop() {
   d_minisat->pop();
 }
 

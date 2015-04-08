@@ -5,7 +5,7 @@
  ** Major contributors: Morgan Deters
  ** Minor contributors (to current version): none
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -44,6 +44,9 @@ class Smt2Input : public AntlrInput {
   /** The ANTLR3 SMT2 parser for the input. */
   pSmt2Parser d_pSmt2Parser;
 
+  /** Which (variant of the) input language we're using */
+  InputLanguage d_lang;
+
   /**
    * Initialize the class. Called from the constructors once the input
    * stream is initialized.
@@ -57,15 +60,19 @@ public:
    *
    * @param inputStream the input stream to use
    */
-  Smt2Input(AntlrInputStream& inputStream);
+  Smt2Input(AntlrInputStream& inputStream,
+            InputLanguage lang = language::input::LANG_SMTLIB_V2_5);
 
   /** Destructor. Frees the lexer and the parser. */
   virtual ~Smt2Input();
 
   /** Get the language that this Input is reading. */
   InputLanguage getLanguage() const throw() {
-    return language::input::LANG_SMTLIB_V2;
+    return d_lang;
   }
+
+  /** Set the language that this Input is reading. */
+  void setLanguage(InputLanguage);
 
 protected:
 

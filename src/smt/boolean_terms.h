@@ -5,7 +5,7 @@
  ** Major contributors: none
  ** Minor contributors (to current version): none
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -36,12 +36,12 @@ typedef expr::Attribute<attr::BooleanTermAttrTag, Node> BooleanTermAttr;
 
 class BooleanTermConverter {
   /** The type of the Boolean term conversion variable cache */
-  typedef std::hash_map<Node, Node, NodeHashFunction> BooleanTermVarCache;
+  typedef context::CDHashMap<Node, Node, NodeHashFunction> BooleanTermVarCache;
 
   /** The type of the Boolean term conversion cache */
-  typedef std::hash_map< std::pair<Node, theory::TheoryId>, Node,
-                         PairHashFunction< Node, bool,
-                                           NodeHashFunction, std::hash<size_t> > > BooleanTermCache;
+  typedef context::CDHashMap< std::pair<Node, theory::TheoryId>, Node,
+                              PairHashFunction< Node, bool,
+                                                NodeHashFunction, std::hash<size_t> > > BooleanTermCache;
   /** The type of the Boolean term conversion type cache */
   typedef std::hash_map< std::pair<TypeNode, bool>, TypeNode,
                          PairHashFunction< TypeNode, bool,
@@ -69,6 +69,8 @@ class BooleanTermConverter {
   BooleanTermTypeCache d_typeCache;
   /** The cache used during Boolean term datatype conversion */
   BooleanTermDatatypeCache d_datatypeCache;
+  /** A (reverse) cache for Boolean term datatype conversion */
+  BooleanTermDatatypeCache d_datatypeReverseCache;
 
   Node rewriteAs(TNode in, TypeNode as) throw();
 

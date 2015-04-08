@@ -3,9 +3,9 @@
  ** \verbatim
  ** Original author: Tim King
  ** Major contributors: none
- ** Minor contributors (to current version): none
+ ** Minor contributors (to current version): Morgan Deters
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -75,6 +75,7 @@ inline std::ostream& operator<<(std::ostream& out, const Maybe<T>& m){
   if(m.nothing()){
     out << "Nothing";
   }else{
+    out << "Just ";
     out << m.constValue();
   }
   out << "}";

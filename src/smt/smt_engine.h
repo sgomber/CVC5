@@ -3,9 +3,9 @@
  ** \verbatim
  ** Original author: Morgan Deters
  ** Major contributors: none
- ** Minor contributors (to current version): Andrew Reynolds, Tim King, Clark Barrett, Christopher L. Conway, Kshitij Bansal, Dejan Jovanovic
+ ** Minor contributors (to current version): Martin Brain <>, Tim King, Clark Barrett, Christopher L. Conway, Andrew Reynolds, Kshitij Bansal, Dejan Jovanovic
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -28,13 +28,14 @@
 #include "expr/expr.h"
 #include "expr/expr_manager.h"
 #include "util/proof.h"
+#include "util/unsat_core.h"
 #include "smt/modal_exception.h"
 #include "smt/logic_exception.h"
-#include "util/hash.h"
 #include "options/options.h"
 #include "util/result.h"
 #include "util/sexpr.h"
 #include "util/hash.h"
+#include "util/unsafe_interrupt_exception.h"
 #include "util/statistics.h"
 #include "theory/logic_info.h"
 
@@ -59,6 +60,7 @@ class TheoryEngine;
 class ProofManager;
 
 class Model;
+class LogicRequest;
 class StatisticsRegistry;
 
 namespace context {
@@ -69,6 +71,13 @@ namespace context {
 namespace prop {
   class PropEngine;
 }/* CVC4::prop namespace */
+
+namespace expr {
+  namespace attr {
+    class AttributeManager;
+    struct SmtAttributes;
+  }/* CVC4::expr::attr namespace */
+}/* CVC4::expr namespace */
 
 namespace smt {
   /**
@@ -182,6 +191,11 @@ class CVC4_PUBLIC SmtEngine {
   LogicInfo d_logic;
 
   /**
+   * Keep a copy of the original option settings (for reset()).
+   */
+  Options d_originalOptions;
+
+  /**
    * Number of internal pops that have been deferred.
    */
   unsigned d_pendingPops;
@@ -220,19 +234,6 @@ class CVC4_PUBLIC SmtEngine {
    */
   bool d_earlyTheoryPP;
 
-  /** A user-imposed cumulative time budget, in milliseconds.  0 = no limit. */
-  unsigned long d_timeBudgetCumulative;
-  /** A user-imposed per-call time budget, in milliseconds.  0 = no limit. */
-  unsigned long d_timeBudgetPerCall;
-  /** A user-imposed cumulative resource budget.  0 = no limit. */
-  unsigned long d_resourceBudgetCumulative;
-  /** A user-imposed per-call resource budget.  0 = no limit. */
-  unsigned long d_resourceBudgetPerCall;
-
-  /** The number of milliseconds used by this SmtEngine since its inception. */
-  unsigned long d_cumulativeTimeUsed;
-  /** The amount of resource used by this SmtEngine since its inception. */
-  unsigned long d_cumulativeResourceUsed;
 
   /**
    * Most recent result of last checkSat/query or (set-info :status).
@@ -255,7 +256,7 @@ class CVC4_PUBLIC SmtEngine {
   smt::SmtEnginePrivate* d_private;
 
   /**
-   * Check that a generated Proof (via getProof()) checks.
+   * Check that a generated proof (via getProof()) checks.
    */
   void checkProof();
 
@@ -277,11 +278,14 @@ class CVC4_PUBLIC SmtEngine {
    * as often as you like.  Should be called whenever the final options
    * and logic for the problem are set (at least, those options that are
    * not permitted to change after assertions and queries are made).
-   *
-   * FIXME: Above comment not true. Please don't call this more than
-   * once. (6/14/2012 -- K)
    */
   void finalOptionsAreSet();
+
+  /**
+   * Apply heuristics settings and other defaults.  Done once, at
+   * finishInit() time.
+   */
+  void setDefaults();
 
   /**
    * Create theory engine, prop engine, decision engine. Called by
@@ -334,11 +338,23 @@ class CVC4_PUBLIC SmtEngine {
   friend ::CVC4::StatisticsRegistry* ::CVC4::stats::getStatisticsRegistry(SmtEngine*);
   friend void ::CVC4::smt::beforeSearch(std::string, bool, SmtEngine*) throw(ModalException);
   friend ProofManager* ::CVC4::smt::currentProofManager();
+  friend class ::CVC4::LogicRequest;
   // to access d_modelCommands
   friend class ::CVC4::Model;
   friend class ::CVC4::theory::TheoryModel;
+  // to access SmtAttributes
+  friend class expr::attr::AttributeManager;
   // to access getModel(), which is private (for now)
   friend class GetModelCommand;
+
+  /**
+   * There's something of a handshake between the expr package's
+   * AttributeManager and the SmtEngine because the expr package
+   * doesn't have a Context on its own (that's owned by the
+   * SmtEngine).  Thus all context-dependent attributes are stored
+   * here.
+   */
+  expr::attr::SmtAttributes* d_smtAttributes;
 
   StatisticsRegistry* d_statisticsRegistry;
 
@@ -355,7 +371,11 @@ class CVC4_PUBLIC SmtEngine {
    * or INVALID query).  Only permitted if CVC4 was built with model
    * support and produce-models is on.
    */
-  Model* getModel() throw(ModalException);
+  Model* getModel() throw(ModalException, UnsafeInterruptException);
+
+  // disallow copy/assignment
+  SmtEngine(const SmtEngine&) CVC4_UNDEFINED;
+  SmtEngine& operator=(const SmtEngine&) CVC4_UNDEFINED;
 
 public:
 
@@ -416,8 +436,8 @@ public:
   /**
    * Add a formula to the current context: preprocess, do per-theory
    * setup, use processAssertionList(), asserting to T-solver for
-   * literals and conjunction of literals.  Returns false iff
-   * inconsistent.
+   * literals and conjunction of literals.  Returns false if
+   * immediately determined to be inconsistent.
    */
   void defineFunction(Expr func,
                       const std::vector<Expr>& formals,
@@ -426,23 +446,25 @@ public:
   /**
    * Add a formula to the current context: preprocess, do per-theory
    * setup, use processAssertionList(), asserting to T-solver for
-   * literals and conjunction of literals.  Returns false iff
-   * inconsistent.
+   * literals and conjunction of literals.  Returns false if
+   * immediately determined to be inconsistent.  This version
+   * takes a Boolean flag to determine whether to include this asserted
+   * formula in an unsat core (if one is later requested).
    */
-  Result assertFormula(const Expr& e) throw(TypeCheckingException, LogicException);
+  Result assertFormula(const Expr& e, bool inUnsatCore = true) throw(TypeCheckingException, LogicException, UnsafeInterruptException);
 
   /**
    * Check validity of an expression with respect to the current set
    * of assertions by asserting the query expression's negation and
    * calling check().  Returns valid, invalid, or unknown result.
    */
-  Result query(const Expr& e) throw(TypeCheckingException, ModalException, LogicException);
+  Result query(const Expr& e, bool inUnsatCore = true) throw(TypeCheckingException, ModalException, LogicException);
 
   /**
    * Assert a formula (if provided) to the current context and call
    * check().  Returns sat, unsat, or unknown result.
    */
-  Result checkSat(const Expr& e = Expr()) throw(TypeCheckingException, ModalException, LogicException);
+  Result checkSat(const Expr& e = Expr(), bool inUnsatCore = true) throw(TypeCheckingException, ModalException, LogicException);
 
   /**
    * Simplify a formula without doing "much" work.  Does not involve
@@ -453,20 +475,20 @@ public:
    * @todo (design) is this meant to give an equivalent or an
    * equisatisfiable formula?
    */
-  Expr simplify(const Expr& e) throw(TypeCheckingException, LogicException);
+  Expr simplify(const Expr& e) throw(TypeCheckingException, LogicException, UnsafeInterruptException);
 
   /**
    * Expand the definitions in a term or formula.  No other
    * simplification or normalization is done.
    */
-  Expr expandDefinitions(const Expr& e) throw(TypeCheckingException, LogicException);
+  Expr expandDefinitions(const Expr& e) throw(TypeCheckingException, LogicException, UnsafeInterruptException);
 
   /**
    * Get the assigned value of an expr (only if immediately preceded
    * by a SAT or INVALID query).  Only permitted if the SmtEngine is
    * set to operate interactively and produce-models is on.
    */
-  Expr getValue(const Expr& e) const throw(ModalException, TypeCheckingException, LogicException);
+  Expr getValue(const Expr& e) const throw(ModalException, TypeCheckingException, LogicException, UnsafeInterruptException);
 
   /**
    * Add a function to the set of expressions whose value is to be
@@ -484,14 +506,31 @@ public:
    * INVALID query).  Only permitted if the SmtEngine is set to
    * operate interactively and produce-assignments is on.
    */
-  CVC4::SExpr getAssignment() throw(ModalException);
+  CVC4::SExpr getAssignment() throw(ModalException, UnsafeInterruptException);
 
   /**
    * Get the last proof (only if immediately preceded by an UNSAT
    * or VALID query).  Only permitted if CVC4 was built with proof
    * support and produce-proofs is on.
    */
-  Proof* getProof() throw(ModalException);
+  Proof* getProof() throw(ModalException, UnsafeInterruptException);
+
+  /**
+   * Print all instantiations made by the quantifiers module.
+   */
+  void printInstantiations( std::ostream& out );
+
+  /**
+   * Print solution for synthesis conjectures found by ce_guided_instantiation module
+   */
+  void printSynthSolution( std::ostream& out );
+  
+  /**
+   * Get an unsatisfiable core (only if immediately preceded by an
+   * UNSAT or VALID query).  Only permitted if CVC4 was built with
+   * unsat-core support and produce-unsat-cores is on.
+   */
+  UnsatCore getUnsatCore() throw(ModalException, UnsafeInterruptException);
 
   /**
    * Get the current set of assertions.  Only permitted if the
@@ -502,12 +541,24 @@ public:
   /**
    * Push a user-level context.
    */
-  void push() throw(ModalException, LogicException);
+  void push() throw(ModalException, LogicException, UnsafeInterruptException);
 
   /**
    * Pop a user-level context.  Throws an exception if nothing to pop.
    */
-  void pop() throw(ModalException);
+  void pop() throw(ModalException, UnsafeInterruptException);
+
+  /**
+   * Completely reset the state of the solver, as though destroyed and
+   * recreated.  The result is as if newly constructed (so it still
+   * retains the same options structure and ExprManager).
+   */
+  void reset() throw();
+
+  /**
+   * Reset all assertions, global declarations, etc.
+   */
+  void resetAssertions() throw();
 
   /**
    * Interrupt a running query.  This can be called from another thread
@@ -638,8 +689,13 @@ public:
    * This function is called when an attribute is set by a user.
    * In SMT-LIBv2 this is done via the syntax (! expr :attr)
    */
-  void setUserAttribute(const std::string& attr, Expr expr);
+  void setUserAttribute(const std::string& attr, Expr expr, std::vector<Expr> expr_values, std::string str_value);
 
+  /**
+   * Set print function in model
+   */
+  void setPrintFuncInModel(Expr f, bool p);
+  
 };/* class SmtEngine */
 
 }/* CVC4 namespace */

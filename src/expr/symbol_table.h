@@ -5,7 +5,7 @@
  ** Major contributors: Christopher L. Conway
  ** Minor contributors (to current version): Andrew Reynolds, Dejan Jovanovic, Francois Bobot
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -197,6 +197,9 @@ public:
 
   /** Get the current level of this symbol table. */
   size_t getLevel() const throw();
+
+  /** Reset everything. */
+  void reset();
 
 };/* class SymbolTable */
 

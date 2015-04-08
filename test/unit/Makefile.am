@@ -41,6 +41,7 @@ UNIT_TESTS += \
 	context/stacking_vector_black \
 	util/array_store_all_black \
 	util/assert_white \
+	util/binary_heap_black \
 	util/bitvector_black \
 	util/datatype_black \
 	util/configuration_black \
@@ -51,10 +52,8 @@ UNIT_TESTS += \
 	util/rational_black \
 	util/rational_white \
 	util/stats_black \
-	util/trans_closure_black \
 	util/boolean_simplification_black \
 	util/subrange_bound_white \
-	util/recursion_breaker_black \
 	main/interactive_shell_black
 endif
 

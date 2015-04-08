@@ -5,7 +5,7 @@
  ** Major contributors: Morgan Deters
  ** Minor contributors (to current version): Tim King
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -22,6 +22,7 @@
 #include "theory/arith/arithvar.h"
 
 #include "util/statistics_registry.h"
+#include "theory/quantifiers/ce_guided_single_inv.h"
 
 namespace CVC4 {
 namespace theory {
@@ -38,12 +39,11 @@ namespace quantifiers {
 
 
 class InstStrategySimplex : public InstStrategy{
-protected:
-  /** calculate if we should process this quantifier */
-  bool calculateShouldProcess( Node f );
 private:
   /** reference to theory arithmetic */
   arith::TheoryArith* d_th;
+  /** quantifiers we should process */
+  std::map< Node, bool > d_quantActive;
   /** delta */
   std::map< TypeNode, Node > d_deltas;
   /** for each quantifier, simplex rows */
@@ -55,7 +55,7 @@ private:
   /** ce tableaux */
   std::map< Node, std::map< arith::ArithVar, std::map< Node, Node > > > d_ceTableaux;
   /** get value */
-  Node getTableauxValue( Node n, bool minus_delta = false );
+  //Node getTableauxValue( Node n, bool minus_delta = false );
   Node getTableauxValue( arith::ArithVar v, bool minus_delta = false );
   /** do instantiation */
   bool doInstantiation( Node f, Node ic, Node term, arith::ArithVar x, InstMatch& m, Node var );
@@ -67,7 +67,8 @@ private:
 private:
   /** */
   int d_counter;
-  /** negative one */
+  /** constants */
+  Node d_zero;
   Node d_negOne;
   /** process functions */
   void processResetInstantiationRound( Theory::Effort effort );
@@ -80,28 +81,40 @@ public:
 };
 
 
-class InstStrategyDatatypesValue : public InstStrategy
-{
-protected:
-  /** calculate if we should process this quantifier */
-  bool calculateShouldProcess( Node f );
-private:
-  /** reference to theory datatypes */
-  datatypes::TheoryDatatypes* d_th;
-  /** get value function */
-  Node getValueFor( Node n );
-public:
-  //constructor
-  InstStrategyDatatypesValue( datatypes::TheoryDatatypes* th, QuantifiersEngine* qe );
-  ~InstStrategyDatatypesValue(){}
-  /** reset instantiation */
-  void processResetInstantiationRound( Theory::Effort effort );
-  /** process method, returns a status */
-  int process( Node f, Theory::Effort effort, int e );
-  /** identify */
-  std::string identify() const { return std::string("InstStrategyDatatypesValue"); }
+//generalized counterexample guided quantifier instantiation
 
-};/* class InstStrategy */
+class InstStrategyCegqi;
+
+class CegqiOutputInstStrategy : public CegqiOutput
+{
+public:
+  CegqiOutputInstStrategy( InstStrategyCegqi * out ) : d_out( out ){}
+  InstStrategyCegqi * d_out;
+  bool addInstantiation( std::vector< Node >& subs, std::vector< int >& subs_typ );
+  bool isEligibleForInstantiation( Node n );
+  bool addLemma( Node lem );
+};
+
+class InstStrategyCegqi : public InstStrategy {
+private:
+  CegqiOutputInstStrategy * d_out;
+  std::map< Node, CegInstantiator * > d_cinst;
+  Node d_n_delta;
+  Node d_curr_quant;
+  bool d_check_delta_lemma;
+  /** process functions */
+  void processResetInstantiationRound( Theory::Effort effort );
+  int process( Node f, Theory::Effort effort, int e );
+public:
+  InstStrategyCegqi( QuantifiersEngine * qe );
+  ~InstStrategyCegqi(){}
+  
+  bool addInstantiation( std::vector< Node >& subs, std::vector< int >& subs_typ );
+  bool isEligibleForInstantiation( Node n );  
+  bool addLemma( Node lem );
+  /** identify */
+  std::string identify() const { return std::string("Cegqi"); }
+};
 
 }
 }

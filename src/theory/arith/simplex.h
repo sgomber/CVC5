@@ -5,7 +5,7 @@
  ** Major contributors: none
  ** Minor contributors (to current version): Morgan Deters
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -157,16 +157,16 @@ protected:
    * If a conflict is discovered a node summarizing the conflict is returned.
    * Otherwise, Node::null() is returned.
    */
-  Node maybeGenerateConflictForBasic(ArithVar basic) const;
+  bool maybeGenerateConflictForBasic(ArithVar basic) const;
 
   /** Returns true if a tracked basic variable has a conflict on it. */
   bool checkBasicForConflict(ArithVar b) const;
 
   /**
    * If a basic variable has a conflict on its row,
-   * this produces a minimized row.
+   * this produces a minimized row on the conflict channel.
    */
-  Node generateConflictForBasic(ArithVar basic) const;
+  void generateConflictForBasic(ArithVar basic, RaiseConflict& rc) const;
 
 
   /** Gets a fresh variable from TheoryArith. */

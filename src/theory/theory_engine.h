@@ -2,10 +2,10 @@
 /*! \file theory_engine.h
  ** \verbatim
  ** Original author: Morgan Deters
- ** Major contributors: Dejan Jovanovic
- ** Minor contributors (to current version): Christopher L. Conway, Francois Bobot, Kshitij Bansal, Clark Barrett, Liana Hadarean, Tim King, Andrew Reynolds
+ ** Major contributors: Andrew Reynolds, Dejan Jovanovic
+ ** Minor contributors (to current version): Christopher L. Conway, Francois Bobot, Kshitij Bansal, Clark Barrett, Liana Hadarean, Tim King
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -39,6 +39,7 @@
 #include "util/statistics_registry.h"
 #include "util/cvc4_assert.h"
 #include "util/sort_inference.h"
+#include "util/unsafe_interrupt_exception.h"
 #include "theory/quantifiers/quant_conflict_find.h"
 #include "theory/uf/equality_engine.h"
 #include "theory/bv/bv_to_bool.h"
@@ -46,6 +47,8 @@
 
 namespace CVC4 {
 
+class ResourceManager;
+  
 /**
  * A pair of a theory and a node. This is used to mark the flow of
  * propagations between theories.
@@ -73,8 +76,7 @@ struct NodeTheoryPairHashFunction {
 };/* struct NodeTheoryPairHashFunction */
 
 
-
-/* Forward Declarations Block */
+/* Forward declarations */
 namespace theory {
   class TheoryModel;
   class TheoryEngineModelBuilder;
@@ -82,8 +84,16 @@ namespace theory {
 
   namespace eq {
     class EqualityEngine;
+  }/* CVC4::theory::eq namespace */
+
+  namespace quantifiers {
+    class TermDb;
   }
+
+  class EntailmentCheckParameters;
+  class EntailmentCheckSideEffects;
 }/* CVC4::theory namespace */
+
 class DecisionEngine;
 class RemoveITE;
 class UnconstrainedSimplifier;
@@ -98,6 +108,7 @@ class TheoryEngine {
 
   /** Shared terms database can use the internals notify the theories */
   friend class SharedTermsDatabase;
+  friend class theory::quantifiers::TermDb;
 
   /** Associated PropEngine engine */
   prop::PropEngine* d_propEngine;
@@ -271,42 +282,42 @@ class TheoryEngine {
     {
     }
 
-    void safePoint() throw(theory::Interrupted, AssertionException) {
+      void safePoint() throw(theory::Interrupted, UnsafeInterruptException, AssertionException) {
       spendResource();
       if (d_engine->d_interrupted) {
         throw theory::Interrupted();
       }
     }
 
-    void conflict(TNode conflictNode) throw(AssertionException) {
+    void conflict(TNode conflictNode) throw(AssertionException, UnsafeInterruptException) {
       Trace("theory::conflict") << "EngineOutputChannel<" << d_theory << ">::conflict(" << conflictNode << ")" << std::endl;
       ++ d_statistics.conflicts;
       d_engine->d_outputChannelUsed = true;
       d_engine->conflict(conflictNode, d_theory);
     }
 
-    bool propagate(TNode literal) throw(AssertionException) {
+    bool propagate(TNode literal) throw(AssertionException, UnsafeInterruptException) {
       Trace("theory::propagate") << "EngineOutputChannel<" << d_theory << ">::propagate(" << literal << ")" << std::endl;
       ++ d_statistics.propagations;
       d_engine->d_outputChannelUsed = true;
       return d_engine->propagate(literal, d_theory);
     }
 
-    theory::LemmaStatus lemma(TNode lemma, bool removable = false) throw(TypeCheckingExceptionPrivate, AssertionException) {
+    theory::LemmaStatus lemma(TNode lemma, bool removable = false, bool preprocess = false) throw(TypeCheckingExceptionPrivate, AssertionException, UnsafeInterruptException) {
       Trace("theory::lemma") << "EngineOutputChannel<" << d_theory << ">::lemma(" << lemma << ")" << std::endl;
       ++ d_statistics.lemmas;
       d_engine->d_outputChannelUsed = true;
-      return d_engine->lemma(lemma, false, removable, theory::THEORY_LAST);
+      return d_engine->lemma(lemma, false, removable, preprocess, theory::THEORY_LAST);
     }
 
-    theory::LemmaStatus splitLemma(TNode lemma, bool removable = false) throw(TypeCheckingExceptionPrivate, AssertionException) {
+    theory::LemmaStatus splitLemma(TNode lemma, bool removable = false) throw(TypeCheckingExceptionPrivate, AssertionException, UnsafeInterruptException) {
       Trace("theory::lemma") << "EngineOutputChannel<" << d_theory << ">::lemma(" << lemma << ")" << std::endl;
       ++ d_statistics.lemmas;
       d_engine->d_outputChannelUsed = true;
-      return d_engine->lemma(lemma, false, removable, d_theory);
+      return d_engine->lemma(lemma, false, removable, false, d_theory);
     }
 
-    void demandRestart() throw(TypeCheckingExceptionPrivate, AssertionException) {
+    void demandRestart() throw(TypeCheckingExceptionPrivate, AssertionException, UnsafeInterruptException) {
       NodeManager* curr = NodeManager::currentNM();
       Node restartVar =  curr->mkSkolem("restartVar",
                                         curr->booleanType(),
@@ -317,7 +328,7 @@ class TheoryEngine {
     }
 
     void requirePhase(TNode n, bool phase)
-      throw(theory::Interrupted, AssertionException) {
+      throw(theory::Interrupted, AssertionException, UnsafeInterruptException) {
       Debug("theory") << "EngineOutputChannel::requirePhase("
                       << n << ", " << phase << ")" << std::endl;
       ++ d_statistics.requirePhase;
@@ -325,18 +336,18 @@ class TheoryEngine {
     }
 
     bool flipDecision()
-      throw(theory::Interrupted, AssertionException) {
+      throw(theory::Interrupted, AssertionException, UnsafeInterruptException) {
       Debug("theory") << "EngineOutputChannel::flipDecision()" << std::endl;
       ++ d_statistics.flipDecision;
       return d_engine->d_propEngine->flipDecision();
     }
 
-    void setIncomplete() throw(AssertionException) {
+    void setIncomplete() throw(AssertionException, UnsafeInterruptException) {
       Trace("theory") << "TheoryEngine::setIncomplete()" << std::endl;
       d_engine->setIncomplete(d_theory);
     }
 
-    void spendResource() throw() {
+    void spendResource() throw(UnsafeInterruptException) {
       d_engine->spendResource();
     }
 
@@ -379,12 +390,6 @@ class TheoryEngine {
     d_incomplete = true;
   }
 
-  /**
-   * "Spend" a resource during a search or preprocessing.
-   */
-  void spendResource() throw() {
-    d_propEngine->spendResource();
-  }
 
   /**
    * Mapping of propagations from recievers to senders.
@@ -451,7 +456,7 @@ class TheoryEngine {
    * @param removable can the lemma be remove (restrictions apply)
    * @param needAtoms if not THEORY_LAST, then
    */
-  theory::LemmaStatus lemma(TNode node, bool negated, bool removable, theory::TheoryId atomsTo);
+  theory::LemmaStatus lemma(TNode node, bool negated, bool removable, bool preprocess, theory::TheoryId atomsTo);
 
   /** Enusre that the given atoms are send to the given theory */
   void ensureLemmaAtoms(const std::vector<TNode>& atoms, theory::TheoryId theory);
@@ -469,6 +474,7 @@ class TheoryEngine {
 
   /** Whether we were just interrupted (or not) */
   bool d_interrupted;
+  ResourceManager* d_resourceManager;
 
 public:
 
@@ -479,6 +485,10 @@ public:
   ~TheoryEngine();
 
   void interrupt() throw(ModalException);
+  /**
+   * "Spend" a resource during a search or preprocessing.
+   */
+  void spendResource();
 
   /**
    * Adds a theory. Only one theory per TheoryId can be present, so if
@@ -743,6 +753,10 @@ public:
     return d_theoryTable[theoryId];
   }
 
+  inline bool isTheoryEnabled(theory::TheoryId theoryId) const {
+    return d_logicInfo.isTheoryEnabled(theoryId);
+  }
+  
   /**
    * Returns the equality status of the two terms, from the theory
    * that owns the domain type.  The types of a and b must be the same.
@@ -754,6 +768,27 @@ public:
    * has (or null if none);
    */
   Node getModelValue(TNode var);
+
+  /**
+   * Takes a literal and returns an equivalent literal that is guaranteed to be a SAT literal
+   */
+  Node ensureLiteral(TNode n);
+
+  /**
+   * Print all instantiations made by the quantifiers module.
+   */
+  void printInstantiations( std::ostream& out );
+
+  /**
+   * Print solution for synthesis conjectures found by ce_guided_instantiation module
+   */
+  void printSynthSolution( std::ostream& out );
+  
+  /**
+   * Forwards an entailment check according to the given theoryOfMode.
+   * See theory.h for documentation on entailmentCheck().
+   */
+  std::pair<bool, Node> entailmentCheck(theory::TheoryOfMode mode, TNode lit, const theory::EntailmentCheckParameters* params = NULL, theory::EntailmentCheckSideEffects* out = NULL);
 
 private:
 
@@ -781,8 +816,11 @@ private:
   /** For preprocessing pass lifting bit-vectors of size 1 to booleans */
   theory::bv::BvToBoolPreprocessor d_bvToBoolPreprocessor;
 public:
-
+  void staticInitializeBVOptions(const std::vector<Node>& assertions);
   void ppBvToBool(const std::vector<Node>& assertions, std::vector<Node>& new_assertions);
+  bool ppBvAbstraction(const std::vector<Node>& assertions, std::vector<Node>& new_assertions);
+  void mkAckermanizationAsssertions(std::vector<Node>& assertions);
+
   Node ppSimpITE(TNode assertion);
   /** Returns false if an assertion simplified to false. */
   bool donePPSimpITE(std::vector<Node>& assertions);
@@ -803,7 +841,7 @@ public:
    * This function is called when an attribute is set by a user.  In SMT-LIBv2 this is done
    * via the syntax (! n :attr)
    */
-  void setUserAttribute(const std::string& attr, Node n);
+  void setUserAttribute(const std::string& attr, Node n, std::vector<Node> node_values, std::string str_value);
 
   /**
    * Handle user attribute.
@@ -817,6 +855,9 @@ public:
    * This function is called from the smt engine's checkModel routine.
    */
   void checkTheoryAssertionsWithModel();
+
+private:
+  IntStat d_arithSubstitutionsAdded;
 
 };/* class TheoryEngine */
 

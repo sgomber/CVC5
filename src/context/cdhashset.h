@@ -3,9 +3,9 @@
  ** \verbatim
  ** Original author: Dejan Jovanovic
  ** Major contributors: Tim King, Morgan Deters
- ** Minor contributors (to current version): Francois Bobot
+ ** Minor contributors (to current version): Francois Bobot, Kshitij Bansal
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -16,8 +16,8 @@
 
 #include "cvc4_private.h"
 
-#ifndef __CVC4__CONTEXT__CDSET_H
-#define __CVC4__CONTEXT__CDSET_H
+#ifndef __CVC4__CONTEXT__CDHASHSET_H
+#define __CVC4__CONTEXT__CDHASHSET_H
 
 #include "context/context.h"
 #include "context/cdinsert_hashmap.h"
@@ -29,6 +29,10 @@ namespace context {
 template <class V, class HashFcn>
 class CDHashSet : protected CDInsertHashMap<V, bool, HashFcn> {
   typedef CDInsertHashMap<V, bool, HashFcn> super;
+
+  // no copy or assignment
+  CDHashSet(const CDHashSet&) CVC4_UNDEFINED;
+  CDHashSet& operator=(const CDHashSet&) CVC4_UNDEFINED;
 
 public:
 
@@ -55,6 +59,10 @@ public:
 
   size_t size() const {
     return super::size();
+  }
+
+  bool empty() const {
+    return super::empty();
   }
 
   bool insert(const V& v) {
@@ -144,9 +152,9 @@ public:
     return super::insertAtContextLevelZero(v, true);
   }
 
-};/* class CDSet */
+};/* class CDHashSet */
 
 }/* CVC4::context namespace */
 }/* CVC4 namespace */
 
-#endif /* __CVC4__CONTEXT__CDSET_H */
+#endif /* __CVC4__CONTEXT__CDHASHSET_H */

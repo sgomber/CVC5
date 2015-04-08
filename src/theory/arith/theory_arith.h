@@ -3,9 +3,9 @@
  ** \verbatim
  ** Original author: Morgan Deters
  ** Major contributors: Dejan Jovanovic, Tim King
- ** Minor contributors (to current version): Tianyi Liang, Andrew Reynolds
+ ** Minor contributors (to current version): Martin Brain <>, Tianyi Liang, Andrew Reynolds
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -20,6 +20,7 @@
 #include "theory/theory.h"
 #include "expr/node.h"
 #include "theory/arith/theory_arith_private_forward.h"
+
 
 namespace CVC4 {
 namespace theory {
@@ -53,6 +54,8 @@ public:
    */
   void preRegisterTerm(TNode n);
 
+  Node expandDefinition(LogicRequest &logicRequest, Node node);
+
   void setMasterEqualityEngine(eq::EqualityEngine* eq);
   void setQuantifiersEngine(QuantifiersEngine* qe);
 
@@ -77,6 +80,12 @@ public:
   void addSharedTerm(TNode n);
 
   Node getModelValue(TNode var);
+
+
+  std::pair<bool, Node> entailmentCheck(TNode lit,
+                                        const EntailmentCheckParameters* params,
+                                        EntailmentCheckSideEffects* out);
+
 };/* class TheoryArith */
 
 }/* CVC4::theory::arith namespace */

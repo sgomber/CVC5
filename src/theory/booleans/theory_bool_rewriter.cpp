@@ -5,7 +5,7 @@
  ** Major contributors: Kshitij Bansal, Tim King
  ** Minor contributors (to current version): Morgan Deters, Clark Barrett
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -233,7 +233,7 @@ RewriteResponse TheoryBoolRewriter::preRewrite(TNode n) {
         }
         else if (n[1][1] == t && n[1][0].isConst()) {
           matchesForm = true;
-          constantsEqual = (n[1][1] == c);
+          constantsEqual = (n[1][0] == c);
         }
       }
       if(matchesForm){

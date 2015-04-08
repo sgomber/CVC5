@@ -5,7 +5,7 @@
  ** Major contributors: Clark Barrett
  ** Minor contributors (to current version): Dejan Jovanovic
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -181,6 +181,20 @@ void ArrayInfo::setModelRep(const TNode a, const TNode b) {
   
 }
 
+void ArrayInfo::setConstArr(const TNode a, const TNode constArr) {
+  Assert(a.getType().isArray());
+  Info* temp_info;
+  CNodeInfoMap::iterator it = info_map.find(a);
+  if(it == info_map.end()) {
+    temp_info = new Info(ct, bck);
+    temp_info->constArr = constArr;
+    info_map[a] = temp_info;
+  } else {
+    (*it).second->constArr = constArr;
+  }
+  
+}
+
 /**
  * Returns the information associated with TNode a
  */
@@ -220,6 +234,16 @@ const TNode ArrayInfo::getModelRep(const TNode a) const
 
   if(it!= info_map.end()) {
     return (*it).second->modelRep;
+  }
+  return TNode();
+}
+
+const TNode ArrayInfo::getConstArr(const TNode a) const
+{
+  CNodeInfoMap::const_iterator it = info_map.find(a);
+
+  if(it!= info_map.end()) {
+    return (*it).second->constArr;
   }
   return TNode();
 }

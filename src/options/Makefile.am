@@ -21,8 +21,6 @@ OPTIONS_FILES_SRCS = \
 	../theory/arrays/options.h \
 	../theory/quantifiers/options.cpp \
 	../theory/quantifiers/options.h \
-	../theory/rewriterules/options.cpp \
-	../theory/rewriterules/options.h \
 	../theory/strings/options.cpp \
 	../theory/strings/options.h \
 	../prop/options.cpp \
@@ -40,7 +38,11 @@ OPTIONS_FILES_SRCS = \
 	../parser/options.cpp \
 	../parser/options.h \
 	../theory/idl/options.cpp \
-	../theory/idl/options.h
+	../theory/idl/options.h \
+	../theory/sets/options.cpp \
+	../theory/sets/options.h \
+	../theory/fp/options.cpp \
+	../theory/fp/options.h
 
 OPTIONS_FILES = \
 	$(patsubst %.cpp,%,$(filter %.cpp,$(OPTIONS_FILES_SRCS)))
@@ -82,8 +84,6 @@ nodist_liboptions_la_SOURCES = \
 	../theory/arrays/options.h \
 	../theory/quantifiers/options.cpp \
 	../theory/quantifiers/options.h \
-	../theory/rewriterules/options.cpp \
-	../theory/rewriterules/options.h \
 	../theory/strings/options.cpp \
 	../theory/strings/options.h \
 	../prop/options.cpp \
@@ -101,7 +101,11 @@ nodist_liboptions_la_SOURCES = \
 	../parser/options.cpp \
 	../parser/options.h \
 	../theory/idl/options.cpp \
-	../theory/idl/options.h
+	../theory/idl/options.h \
+	../theory/sets/options.cpp \
+	../theory/sets/options.h \
+	../theory/fp/options.cpp \
+	../theory/fp/options.h
 
 BUILT_SOURCES = \
 	exprs-builts \
@@ -169,9 +173,9 @@ endif
 # expression (no |, no \<, ...).
 Debug_tags.tmp Trace_tags.tmp:
 	$(AM_V_GEN)\
-	grep '\<$(@:_tags.tmp=)\(\.isOn\)* *( *\".*\" *)' \
+	grep -h '\<$(@:_tags.tmp=)\(\.isOn\)* *( *\".*\" *)' \
 		`find @srcdir@/../ -name "*.cpp" -o -name "*.h" -o -name "*.cc" -o -name "*.g"` | \
-	sed 's/^$(@:_tags.tmp=)\(\.isOn\)* *( *\"\([^"]*\)\".*/\2/;s/.*[^a-zA-Z0-9_]$(@:_tags.tmp=)\(\.isOn\)* *( *\"\([^"]*\)\".*/\2/' | LC_ALL=C sort | uniq >"$@"
+	sed 's/\/\/.*//;s/^$(@:_tags.tmp=)\(\.isOn\)* *( *\"\([^"]*\)\".*/\2/;s/.*[^a-zA-Z0-9_]$(@:_tags.tmp=)\(\.isOn\)* *( *\"\([^"]*\)\".*/\2/' | LC_ALL=C sort | uniq >"$@"
 
 MOSTLYCLEANFILES = \
 	Debug_tags \

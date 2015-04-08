@@ -5,7 +5,7 @@
  ** Major contributors: none
  ** Minor contributors (to current version): none
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -39,8 +39,8 @@ class StackingMapBlack : public CxxTest::TestSuite {
 public:
 
   void setUp() {
-    d_ctxt = new Context;
-    d_nm = new NodeManager(d_ctxt, NULL);
+    d_ctxt = new Context();
+    d_nm = new NodeManager(NULL);
     d_scope = new NodeManagerScope(d_nm);
     d_mapPtr = new StackingMap<TNode, TNode, TNodeHashFunction>(d_ctxt);
 

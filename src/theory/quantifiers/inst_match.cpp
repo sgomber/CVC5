@@ -3,9 +3,9 @@
  ** \verbatim
  ** Original author: Morgan Deters
  ** Major contributors: Andrew Reynolds
- ** Minor contributors (to current version): Clark Barrett, Francois Bobot
+ ** Minor contributors (to current version): Kshitij Bansal, Francois Bobot, Clark Barrett
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -27,7 +27,7 @@ namespace CVC4 {
 namespace theory {
 namespace inst {
 
-InstMatch::InstMatch( Node f ) {
+InstMatch::InstMatch( TNode f ) {
   for( unsigned i=0; i<f[0].getNumChildren(); i++ ){
     d_vals.push_back( Node::null() );
   }
@@ -198,6 +198,24 @@ bool InstMatchTrie::addInstMatch( QuantifiersEngine* qe, Node f, std::vector< No
   }
 }
 
+void InstMatchTrie::print( std::ostream& out, Node q, std::vector< TNode >& terms ) const {
+  if( terms.size()==q[0].getNumChildren() ){
+    out << "  ( ";
+    for( unsigned i=0; i<terms.size(); i++ ){
+      if( i>0 ){ out << ", ";}
+      out << terms[i];
+    }
+    out << " )" << std::endl;
+  }else{
+    for( std::map< Node, InstMatchTrie >::const_iterator it = d_data.begin(); it != d_data.end(); ++it ){
+      terms.push_back( it->first );
+      it->second.print( out, q, terms );
+      terms.pop_back();
+    }
+  }
+}
+
+
 bool CDInstMatchTrie::addInstMatch( QuantifiersEngine* qe, Node f, std::vector< Node >& m,
                                     context::Context* c, bool modEq, bool modInst, int index, bool onlyExist ){
   bool reset = false;
@@ -210,7 +228,7 @@ bool CDInstMatchTrie::addInstMatch( QuantifiersEngine* qe, Node f, std::vector< 
     }
   }
   if( index==(int)f[0].getNumChildren() ){
-    return false;
+    return reset;
   }else{
     Node n = m[ index ];
     std::map< Node, CDInstMatchTrie* >::iterator it = d_data.find( n );
@@ -255,12 +273,31 @@ bool CDInstMatchTrie::addInstMatch( QuantifiersEngine* qe, Node f, std::vector< 
     }
 
     if( !onlyExist ){
-      std::map< Node, CDInstMatchTrie* >::iterator it = d_data.find( n );
+      // std::map< Node, CDInstMatchTrie* >::iterator it = d_data.find( n );
       CDInstMatchTrie* imt = new CDInstMatchTrie( c );
       d_data[n] = imt;
       imt->addInstMatch( qe, f, m, c, modEq, modInst, index+1, false );
     }
     return true;
+  }
+}
+
+void CDInstMatchTrie::print( std::ostream& out, Node q, std::vector< TNode >& terms ) const{
+  if( d_valid.get() ){
+    if( terms.size()==q[0].getNumChildren() ){
+      out << "  ( ";
+      for( unsigned i=0; i<terms.size(); i++ ){
+        if( i>0 ) out << ", ";
+        out << terms[i];
+      }
+      out << " )" << std::endl;
+    }else{
+      for( std::map< Node, CDInstMatchTrie* >::const_iterator it = d_data.begin(); it != d_data.end(); ++it ){
+        terms.push_back( it->first );
+        it->second->print( out, q, terms );
+        terms.pop_back();
+      }
+    }
   }
 }
 

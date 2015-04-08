@@ -5,7 +5,7 @@
  ** Major contributors: Christopher L. Conway
  ** Minor contributors (to current version): Andrew Reynolds, Dejan Jovanovic, Francois Bobot
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -34,7 +34,7 @@ using namespace std;
 namespace CVC4 {
 
 SymbolTable::SymbolTable() :
-  d_context(new Context),
+  d_context(new Context()),
   d_exprMap(new(true) CDHashMap<std::string, Expr, StringHashFunction>(d_context)),
   d_typeMap(new(true) CDHashMap<std::string, pair<vector<Type>, Type>, StringHashFunction>(d_context)),
   d_functions(new(true) CDHashSet<Expr, ExprHashFunction>(d_context)) {
@@ -204,6 +204,11 @@ void SymbolTable::pushScope() throw() {
 
 size_t SymbolTable::getLevel() const throw() {
   return d_context->getLevel();
+}
+
+void SymbolTable::reset() {
+  this->SymbolTable::~SymbolTable();
+  new(this) SymbolTable();
 }
 
 }/* CVC4 namespace */

@@ -3,9 +3,9 @@
  ** \verbatim
  ** Original author: Morgan Deters
  ** Major contributors: Dejan Jovanovic
- ** Minor contributors (to current version): Andrew Reynolds, Tim King, Christopher L. Conway
+ ** Minor contributors (to current version): Andrew Reynolds, Kshitij Bansal, Tim King, Christopher L. Conway
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -45,6 +45,7 @@ class Options;
 class IntStat;
 struct ExprManagerMapCollection;
 class StatisticsRegistry;
+class ResourceManager;
 
 namespace expr {
   namespace pickle {
@@ -52,19 +53,12 @@ namespace expr {
   }/* CVC4::expr::pickle namespace */
 }/* CVC4::expr namespace */
 
-namespace context {
-  class Context;
-}/* CVC4::context namespace */
-
 namespace stats {
   StatisticsRegistry* getStatisticsRegistry(ExprManager*);
 }/* CVC4::stats namespace */
 
 class CVC4_PUBLIC ExprManager {
 private:
-  /** The context */
-  context::Context* d_ctxt;
-
   /** The internal node manager */
   NodeManager* d_nodeManager;
 
@@ -77,12 +71,6 @@ private:
    * internal users, i.e. the friend classes.
    */
   NodeManager* getNodeManager() const;
-
-  /**
-   * Returns the internal Context.  Used by internal users, i.e. the
-   * friend classes.
-   */
-  context::Context* getContext() const;
 
   /**
    * Check some things about a newly-created DatatypeType.
@@ -133,8 +121,11 @@ public:
    */
   ~ExprManager() throw();
 
-  /** Get this node manager's options */
+  /** Get this expr manager's options */
   const Options& getOptions() const;
+
+  /** Get this expr manager's resource manager */
+  ResourceManager* getResourceManager() throw();
 
   /** Get the type for booleans */
   BooleanType booleanType() const;
@@ -147,6 +138,9 @@ public:
 
   /** Get the type for integers */
   IntegerType integerType() const;
+
+  /** Get the type for rounding modes */
+  RoundingModeType roundingModeType() const;
 
   /**
    * Make a unary expression of a given kind (NOT, BVNOT, ...).
@@ -370,11 +364,17 @@ public:
    */
   SExprType mkSExprType(const std::vector<Type>& types);
 
+  /** Make a type representing a floating-point type with the given parameters. */
+  FloatingPointType mkFloatingPointType(unsigned exp, unsigned sig) const;
+
   /** Make a type representing a bit-vector of the given size. */
   BitVectorType mkBitVectorType(unsigned size) const;
 
   /** Make the type of arrays with the given parameterization. */
   ArrayType mkArrayType(Type indexType, Type constituentType) const;
+
+  /** Make the type of set with the given parameterization. */
+  SetType mkSetType(Type elementType) const;
 
   /** Make a type representing the given datatype. */
   DatatypeType mkDatatypeType(const Datatype& datatype);

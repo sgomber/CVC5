@@ -5,7 +5,7 @@
  ** Major contributors: Morgan Deters
  ** Minor contributors (to current version): none
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -19,6 +19,7 @@
 #include <string>
 
 #include "util/language.h"
+#include "util/unsafe_interrupt_exception.h"
 #include "options/options.h"
 
 namespace CVC4 {
@@ -56,7 +57,7 @@ public:
    * Read a command from the interactive shell. This will read as
    * many lines as necessary to parse a well-formed command.
    */
-  Command* readCommand();
+  Command* readCommand() throw (UnsafeInterruptException);
 
   /**
    * Return the internal parser being used.

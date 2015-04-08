@@ -5,7 +5,7 @@
  ** Major contributors: Dejan Jovanovic, Christopher L. Conway
  ** Minor contributors (to current version): Kshitij Bansal, Andrew Reynolds
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -17,7 +17,6 @@
 #include "expr/node_manager.h"
 #include "expr/expr_manager.h"
 #include "expr/variable_type_map.h"
-#include "context/context.h"
 #include "options/options.h"
 #include "util/statistics_registry.h"
 
@@ -29,7 +28,7 @@ ${includes}
 // compiler directs the user to the template file instead of the
 // generated one.  We don't want the user to modify the generated one,
 // since it'll get overwritten on a later build.
-#line 33 "${template}"
+#line 32 "${template}"
 
 #ifdef CVC4_STATISTICS_ON
   #define INC_STAT(kind) \
@@ -64,14 +63,12 @@ ${includes}
 #endif
 
 using namespace std;
-using namespace CVC4::context;
 using namespace CVC4::kind;
 
 namespace CVC4 {
 
 ExprManager::ExprManager() :
-  d_ctxt(new Context()),
-  d_nodeManager(new NodeManager(d_ctxt, this)) {
+  d_nodeManager(new NodeManager(this)) {
 #ifdef CVC4_STATISTICS_ON
   for (unsigned i = 0; i < kind::LAST_KIND; ++ i) {
     d_exprStatistics[i] = NULL;
@@ -83,8 +80,7 @@ ExprManager::ExprManager() :
 }
 
 ExprManager::ExprManager(const Options& options) :
-  d_ctxt(new Context()),
-  d_nodeManager(new NodeManager(d_ctxt, this, options)) {
+  d_nodeManager(new NodeManager(this, options)) {
 #ifdef CVC4_STATISTICS_ON
   for (unsigned i = 0; i < LAST_TYPE; ++ i) {
     d_exprStatisticsVars[i] = NULL;
@@ -105,18 +101,20 @@ ExprManager::~ExprManager() throw() {
       if (d_exprStatistics[i] != NULL) {
         d_nodeManager->getStatisticsRegistry()->unregisterStat_(d_exprStatistics[i]);
         delete d_exprStatistics[i];
+        d_exprStatistics[i] = NULL;
       }
     }
     for (unsigned i = 0; i < LAST_TYPE; ++ i) {
       if (d_exprStatisticsVars[i] != NULL) {
         d_nodeManager->getStatisticsRegistry()->unregisterStat_(d_exprStatisticsVars[i]);
         delete d_exprStatisticsVars[i];
+        d_exprStatisticsVars[i] = NULL;
       }
     }
 #endif
 
     delete d_nodeManager;
-    delete d_ctxt;
+    d_nodeManager = NULL;
 
   } catch(Exception& e) {
     Warning() << "CVC4 threw an exception during cleanup." << std::endl
@@ -130,6 +128,10 @@ StatisticsRegistry* ExprManager::getStatisticsRegistry() throw() {
 
 const Options& ExprManager::getOptions() const {
   return d_nodeManager->getOptions();
+}
+
+ResourceManager* ExprManager::getResourceManager() throw() {
+  return d_nodeManager->getResourceManager();
 }
 
 BooleanType ExprManager::booleanType() const {
@@ -152,8 +154,20 @@ IntegerType ExprManager::integerType() const {
   return IntegerType(Type(d_nodeManager, new TypeNode(d_nodeManager->integerType())));
 }
 
+RoundingModeType ExprManager::roundingModeType() const {
+  NodeManagerScope nms(d_nodeManager);
+  return RoundingModeType(Type(d_nodeManager, new TypeNode(d_nodeManager->roundingModeType())));
+}
+
+
 Expr ExprManager::mkExpr(Kind kind, Expr child1) {
-  const unsigned n = 1 - (kind::metaKindOf(kind) == kind::metakind::PARAMETERIZED ? 1 : 0);
+  const kind::MetaKind mk = kind::metaKindOf(kind);
+  const unsigned n = 1 - (mk == kind::metakind::PARAMETERIZED ? 1 : 0);
+  CheckArgument(mk == kind::metakind::PARAMETERIZED ||
+                mk == kind::metakind::OPERATOR, kind,
+                "Only operator-style expressions are made with mkExpr(); "
+                "to make variables and constants, see mkVar(), mkBoundVar(), "
+                "and mkConst().");
   CheckArgument(n >= minArity(kind) && n <= maxArity(kind), kind,
                 "Exprs with kind %s must have at least %u children and "
                 "at most %u children (the one under construction has %u)",
@@ -169,7 +183,13 @@ Expr ExprManager::mkExpr(Kind kind, Expr child1) {
 }
 
 Expr ExprManager::mkExpr(Kind kind, Expr child1, Expr child2) {
-  const unsigned n = 2 - (kind::metaKindOf(kind) == kind::metakind::PARAMETERIZED ? 1 : 0);
+  const kind::MetaKind mk = kind::metaKindOf(kind);
+  const unsigned n = 2 - (mk == kind::metakind::PARAMETERIZED ? 1 : 0);
+  CheckArgument(mk == kind::metakind::PARAMETERIZED ||
+                mk == kind::metakind::OPERATOR, kind,
+                "Only operator-style expressions are made with mkExpr(); "
+                "to make variables and constants, see mkVar(), mkBoundVar(), "
+                "and mkConst().");
   CheckArgument(n >= minArity(kind) && n <= maxArity(kind), kind,
                 "Exprs with kind %s must have at least %u children and "
                 "at most %u children (the one under construction has %u)",
@@ -186,9 +206,14 @@ Expr ExprManager::mkExpr(Kind kind, Expr child1, Expr child2) {
   }
 }
 
-Expr ExprManager::mkExpr(Kind kind, Expr child1, Expr child2,
-                         Expr child3) {
-  const unsigned n = 3 - (kind::metaKindOf(kind) == kind::metakind::PARAMETERIZED ? 1 : 0);
+Expr ExprManager::mkExpr(Kind kind, Expr child1, Expr child2, Expr child3) {
+  const kind::MetaKind mk = kind::metaKindOf(kind);
+  const unsigned n = 3 - (mk == kind::metakind::PARAMETERIZED ? 1 : 0);
+  CheckArgument(mk == kind::metakind::PARAMETERIZED ||
+                mk == kind::metakind::OPERATOR, kind,
+                "Only operator-style expressions are made with mkExpr(); "
+                "to make variables and constants, see mkVar(), mkBoundVar(), "
+                "and mkConst().");
   CheckArgument(n >= minArity(kind) && n <= maxArity(kind), kind,
                 "Exprs with kind %s must have at least %u children and "
                 "at most %u children (the one under construction has %u)",
@@ -206,9 +231,15 @@ Expr ExprManager::mkExpr(Kind kind, Expr child1, Expr child2,
   }
 }
 
-Expr ExprManager::mkExpr(Kind kind, Expr child1, Expr child2,
-                         Expr child3, Expr child4) {
-  const unsigned n = 4 - (kind::metaKindOf(kind) == kind::metakind::PARAMETERIZED ? 1 : 0);
+Expr ExprManager::mkExpr(Kind kind, Expr child1, Expr child2, Expr child3,
+                         Expr child4) {
+  const kind::MetaKind mk = kind::metaKindOf(kind);
+  const unsigned n = 4 - (mk == kind::metakind::PARAMETERIZED ? 1 : 0);
+  CheckArgument(mk == kind::metakind::PARAMETERIZED ||
+                mk == kind::metakind::OPERATOR, kind,
+                "Only operator-style expressions are made with mkExpr(); "
+                "to make variables and constants, see mkVar(), mkBoundVar(), "
+                "and mkConst().");
   CheckArgument(n >= minArity(kind) && n <= maxArity(kind), kind,
                 "Exprs with kind %s must have at least %u children and "
                 "at most %u children (the one under construction has %u)",
@@ -227,10 +258,15 @@ Expr ExprManager::mkExpr(Kind kind, Expr child1, Expr child2,
   }
 }
 
-Expr ExprManager::mkExpr(Kind kind, Expr child1, Expr child2,
-                         Expr child3, Expr child4,
-                         Expr child5) {
-  const unsigned n = 5 - (kind::metaKindOf(kind) == kind::metakind::PARAMETERIZED ? 1 : 0);
+Expr ExprManager::mkExpr(Kind kind, Expr child1, Expr child2, Expr child3,
+                         Expr child4, Expr child5) {
+  const kind::MetaKind mk = kind::metaKindOf(kind);
+  const unsigned n = 5 - (mk == kind::metakind::PARAMETERIZED ? 1 : 0);
+  CheckArgument(mk == kind::metakind::PARAMETERIZED ||
+                mk == kind::metakind::OPERATOR, kind,
+                "Only operator-style expressions are made with mkExpr(); "
+                "to make variables and constants, see mkVar(), mkBoundVar(), "
+                "and mkConst().");
   CheckArgument(n >= minArity(kind) && n <= maxArity(kind), kind,
                 "Exprs with kind %s must have at least %u children and "
                 "at most %u children (the one under construction has %u)",
@@ -251,7 +287,13 @@ Expr ExprManager::mkExpr(Kind kind, Expr child1, Expr child2,
 }
 
 Expr ExprManager::mkExpr(Kind kind, const std::vector<Expr>& children) {
-  const unsigned n = children.size() - (kind::metaKindOf(kind) == kind::metakind::PARAMETERIZED ? 1 : 0);
+  const kind::MetaKind mk = kind::metaKindOf(kind);
+  const unsigned n = children.size() - (mk == kind::metakind::PARAMETERIZED ? 1 : 0);
+  CheckArgument(mk == kind::metakind::PARAMETERIZED ||
+                mk == kind::metakind::OPERATOR, kind,
+                "Only operator-style expressions are made with mkExpr(); "
+                "to make variables and constants, see mkVar(), mkBoundVar(), "
+                "and mkConst().");
   CheckArgument(n >= minArity(kind) && n <= maxArity(kind), kind,
                 "Exprs with kind %s must have at least %u children and "
                 "at most %u children (the one under construction has %u)",
@@ -275,8 +317,15 @@ Expr ExprManager::mkExpr(Kind kind, const std::vector<Expr>& children) {
   }
 }
 
-Expr ExprManager::mkExpr(Kind kind, Expr child1, const std::vector<Expr>& otherChildren) {
-  const unsigned n = otherChildren.size() - (kind::metaKindOf(kind) == kind::metakind::PARAMETERIZED ? 1 : 0) + 1;
+Expr ExprManager::mkExpr(Kind kind, Expr child1,
+                         const std::vector<Expr>& otherChildren) {
+  const kind::MetaKind mk = kind::metaKindOf(kind);
+  const unsigned n = otherChildren.size() - (mk == kind::metakind::PARAMETERIZED ? 1 : 0) + 1;
+  CheckArgument(mk == kind::metakind::PARAMETERIZED ||
+                mk == kind::metakind::OPERATOR, kind,
+                "Only operator-style expressions are made with mkExpr(); "
+                "to make variables and constants, see mkVar(), mkBoundVar(), "
+                "and mkConst().");
   CheckArgument(n >= minArity(kind) && n <= maxArity(kind), kind,
                 "Exprs with kind %s must have at least %u children and "
                 "at most %u children (the one under construction has %u)",
@@ -530,6 +579,11 @@ SExprType ExprManager::mkSExprType(const std::vector<Type>& types) {
   return SExprType(Type(d_nodeManager, new TypeNode(d_nodeManager->mkSExprType(typeNodes))));
 }
 
+FloatingPointType ExprManager::mkFloatingPointType(unsigned exp, unsigned sig) const {
+  NodeManagerScope nms(d_nodeManager);
+  return FloatingPointType(Type(d_nodeManager, new TypeNode(d_nodeManager->mkFloatingPointType(exp,sig))));
+}
+
 BitVectorType ExprManager::mkBitVectorType(unsigned size) const {
   NodeManagerScope nms(d_nodeManager);
   return BitVectorType(Type(d_nodeManager, new TypeNode(d_nodeManager->mkBitVectorType(size))));
@@ -538,6 +592,11 @@ BitVectorType ExprManager::mkBitVectorType(unsigned size) const {
 ArrayType ExprManager::mkArrayType(Type indexType, Type constituentType) const {
   NodeManagerScope nms(d_nodeManager);
   return ArrayType(Type(d_nodeManager, new TypeNode(d_nodeManager->mkArrayType(*indexType.d_typeNode, *constituentType.d_typeNode))));
+}
+
+SetType ExprManager::mkSetType(Type elementType) const {
+  NodeManagerScope nms(d_nodeManager);
+  return SetType(Type(d_nodeManager, new TypeNode(d_nodeManager->mkSetType(*elementType.d_typeNode))));
 }
 
 DatatypeType ExprManager::mkDatatypeType(const Datatype& datatype) {
@@ -912,10 +971,6 @@ NodeManager* ExprManager::getNodeManager() const {
   return d_nodeManager;
 }
 
-Context* ExprManager::getContext() const {
-  return d_ctxt;
-}
-
 Statistics ExprManager::getStatistics() const throw() {
   return Statistics(*d_nodeManager->getStatisticsRegistry());
 }
@@ -929,7 +984,7 @@ namespace expr {
 Node exportInternal(TNode n, ExprManager* from, ExprManager* to, ExprManagerMapCollection& vmap);
 
 TypeNode exportTypeInternal(TypeNode n, NodeManager* from, NodeManager* to, ExprManagerMapCollection& vmap) {
-  Debug("export") << "type: " << n << std::endl;
+  Debug("export") << "type: " << n << " " << n.getId() << std::endl;
   if(theory::kindToTheoryId(n.getKind()) == theory::THEORY_DATATYPES) {
     throw ExportUnsupportedException
       ("export of types belonging to theory of DATATYPES kinds unsupported");

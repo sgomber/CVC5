@@ -3,9 +3,9 @@
  ** \verbatim
  ** Original author: Christopher L. Conway
  ** Major contributors: Morgan Deters
- ** Minor contributors (to current version): Tim King, Andrew Reynolds, Dejan Jovanovic
+ ** Minor contributors (to current version): Tim King, Dejan Jovanovic, Tianyi Liang, Andrew Reynolds
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -65,6 +65,7 @@ tokens {
   EXIT_TOK = 'EXIT';
   INCLUDE_TOK = 'INCLUDE';
   DUMP_PROOF_TOK = 'DUMP_PROOF';
+  DUMP_UNSAT_CORE_TOK = 'DUMP_UNSAT_CORE';
   DUMP_ASSUMPTIONS_TOK = 'DUMP_ASSUMPTIONS';
   DUMP_SIG_TOK = 'DUMP_SIG';
   DUMP_TCC_TOK = 'DUMP_TCC';
@@ -91,6 +92,7 @@ tokens {
   IN_TOK = 'IN';
   INT_TOK = 'INT';
   LET_TOK = 'LET';
+  MEMBER_TOK = 'IS_IN';
   NOT_TOK = 'NOT';
   OR_TOK = 'OR';
   REAL_TOK = 'REAL';
@@ -104,6 +106,7 @@ tokens {
   WITH_TOK = 'WITH';
 
   SUBTYPE_TOK = 'SUBTYPE';
+  SET_TOK = 'SET';
 
   FORALL_TOK = 'FORALL';
   EXISTS_TOK = 'EXISTS';
@@ -150,6 +153,8 @@ tokens {
   MOD_TOK = 'MOD';
   INTDIV_TOK = 'DIV';
   FLOOR_TOK = 'FLOOR';
+  ABS_TOK = 'ABS';
+  DIVISIBLE_TOK = 'DIVISIBLE';
   DISTINCT_TOK = 'DISTINCT';
 
   // Bitvectors
@@ -180,7 +185,7 @@ tokens {
   //BVTOINT_TOK = 'BVTOINT';
   //INTTOBV_TOK = 'INTTOBV';
   //BOOLEXTRACT_TOK = 'BOOLEXTRACT';
-  //IS_INTEGER_TOK = 'IS_INTEGER';
+  IS_INTEGER_TOK = 'IS_INTEGER';
   BVLT_TOK = 'BVLT';
   BVGT_TOK = 'BVGT';
   BVLE_TOK = 'BVLE';
@@ -194,6 +199,22 @@ tokens {
   BVSGT_TOK = 'BVSGT';
   BVSLE_TOK = 'BVSLE';
   BVSGE_TOK = 'BVSGE';
+
+  // Strings
+
+  STRING_TOK = 'STRING';
+  SCONCAT_TOK = 'SCONCAT';
+  SCONTAINS_TOK = 'CONTAINS';
+  SSUBSTR_TOK = 'SUBSTR';
+  SINDEXOF_TOK = 'INDEXOF';
+  SREPLACE_TOK = 'REPLACE';
+  SPREFIXOF_TOK = 'PREFIXOF';
+  SSUFFIXOF_TOK = 'SUFFIXOF';
+  STOINTEGER_TOK = 'TO_INTEGER';
+  STOSTRING_TOK = 'TO_STRING';
+  STORE_TOK = 'TO_RE';
+  
+  FMF_CARD_TOK = 'HAS_CARD';
 
   // these are parsed by special NUMBER_OR_RANGEOP rule, below
   DECIMAL_LITERAL;
@@ -223,7 +244,7 @@ int getOperatorPrecedence(int type) {
   case LBRACE: return 2;
   case LBRACKET: return 3;
   case ARROW_TOK: return 4;
-  //case IS_INTEGER_TOK: return 5;
+  case IS_INTEGER_TOK: return 5;
   case BVSLT_TOK:
   case BVSLE_TOK:
   case BVSGT_TOK:
@@ -271,7 +292,9 @@ int getOperatorPrecedence(int type) {
   case LEQ_TOK:
   case LT_TOK:
   case GEQ_TOK:
-  case GT_TOK: return 25;
+  case GT_TOK:
+  case MEMBER_TOK: 
+  case FMF_CARD_TOK: return 25;
   case EQUAL_TOK:
   case DISEQUAL_TOK: return 26;
   case NOT_TOK: return 27;
@@ -310,6 +333,8 @@ Kind getOperatorKind(int type, bool& negate) {
   case GEQ_TOK: return kind::GEQ;
   case LT_TOK: return kind::LT;
   case LEQ_TOK: return kind::LEQ;
+  case MEMBER_TOK: return kind::MEMBER;
+  case FMF_CARD_TOK: return kind::CARDINALITY_CONSTRAINT;
 
     // arithmeticBinop
   case PLUS_TOK: return kind::PLUS;
@@ -372,12 +397,23 @@ Expr createPrecedenceTree(Parser* parser, ExprManager* em,
   Kind k = getOperatorKind(operators[pivot], negate);
   Expr lhs = createPrecedenceTree(parser, em, expressions, operators, startIndex, pivot);
   Expr rhs = createPrecedenceTree(parser, em, expressions, operators, pivot + 1, stopIndex);
-  if(k == kind::EQUAL && lhs.getType().isBoolean()) {
-    if(parser->strictModeEnabled()) {
-      WarningOnce() << "Warning: in strict parsing mode, will not convert BOOL = BOOL to BOOL <=> BOOL" << std::endl;
-    } else {
-      k = kind::IFF;
+
+  switch(k) {
+  case kind::EQUAL: {
+    if(lhs.getType().isBoolean()) {
+      if(parser->strictModeEnabled()) {
+        WarningOnce() << "Warning: in strict parsing mode, will not convert BOOL = BOOL to BOOL <=> BOOL" << std::endl;
+      } else {
+        k = kind::IFF;
+      }
     }
+    break;
+  }
+  case kind::LEQ          : if(lhs.getType().isSet()) { k = kind::SUBSET; } break;
+  case kind::MINUS        : if(lhs.getType().isSet()) { k = kind::SETMINUS; } break;
+  case kind::BITVECTOR_AND: if(lhs.getType().isSet()) { k = kind::INTERSECTION; } break;
+  case kind::BITVECTOR_OR : if(lhs.getType().isSet()) { k = kind::UNION; } break;
+  default: break;
   }
   Expr e = em->mkExpr(k, lhs, rhs);
   return negate ? em->mkExpr(kind::NOT, e) : e;
@@ -553,7 +589,7 @@ using namespace CVC4::parser;
   } else if (k < size) {                                       \
     f = MK_EXPR(MK_CONST(BitVectorExtract(k - 1, 0)), f);      \
   }                                                            \
-}                                            
+}
 
 }/* @parser::postinclude */
 
@@ -603,6 +639,13 @@ command returns [CVC4::Command* cmd = NULL]
     { if($cmd == NULL) {
         cmd = new EmptyCommand();
       }
+    }
+  | IDENTIFIER SEMICOLON
+    { std::stringstream ss;
+      ss << "Unrecognized command `"
+         << AntlrInput::tokenText($IDENTIFIER)
+         << "'";
+      PARSER_STATE->parseError(ss.str());
     }
   ;
 
@@ -659,7 +702,14 @@ mainCommand[CVC4::Command*& cmd]
     { UNSUPPORTED("POPTO_SCOPE command"); }
 
   | RESET_TOK
-    { UNSUPPORTED("RESET command"); }
+    { cmd = new ResetCommand();
+      PARSER_STATE->reset();
+    }
+
+  | RESET_TOK ASSERTIONS_TOK
+    { cmd = new ResetAssertionsCommand();
+      PARSER_STATE->reset();
+    }
 
     // Datatypes can be mututally-recursive if they're in the same
     // definition block, separated by a comma.  So we parse everything
@@ -754,6 +804,9 @@ mainCommand[CVC4::Command*& cmd]
 
   | DUMP_PROOF_TOK
     { cmd = new GetProofCommand(); }
+
+  | DUMP_UNSAT_CORE_TOK
+    { cmd = new GetUnsatCoreCommand(); }
 
   | ( DUMP_ASSUMPTIONS_TOK
     | DUMP_SIG_TOK
@@ -1130,6 +1183,8 @@ restrictedTypePossiblyFunctionLHS[CVC4::Type& t,
     /* array types */
   | ARRAY_TOK restrictedType[t,check] OF_TOK restrictedType[t2,check]
     { t = EXPR_MANAGER->mkArrayType(t, t2); }
+  | SET_TOK OF_TOK restrictedType[t,check]
+    { t = EXPR_MANAGER->mkSetType(t); }
 
     /* subtypes */
   | SUBTYPE_TOK LPAREN
@@ -1186,6 +1241,9 @@ restrictedTypePossiblyFunctionLHS[CVC4::Type& t,
       }
       t = EXPR_MANAGER->mkBitVectorType(k);
     }
+
+    /* string type */
+  | STRING_TOK { t = EXPR_MANAGER->stringType(); }
 
     /* basic types */
   | BOOLEAN_TOK { t = EXPR_MANAGER->booleanType(); }
@@ -1332,14 +1390,6 @@ prefixFormula[CVC4::Expr& f]
       PARSER_STATE->preemptCommand(cmd);
       f = func;
     }
-
-    /* array literals */
-  | ARRAY_TOK { PARSER_STATE->pushScope(); } LPAREN
-    boundVarDecl[ids,t] RPAREN COLON formula[f]
-    { PARSER_STATE->popScope();
-      UNSUPPORTED("array literals not supported yet");
-      f = EXPR_MANAGER->mkVar(EXPR_MANAGER->mkArrayType(t, f.getType()), ExprManager::VAR_FLAG_GLOBAL);
-    }
   ;
 
 instantiationPatterns[ CVC4::Expr& expr ]
@@ -1408,18 +1458,8 @@ comparisonBinop[unsigned& op]
   | GEQ_TOK
   | LT_TOK
   | LEQ_TOK
-  ;
-
-term[CVC4::Expr& f]
-@init {
-  std::vector<CVC4::Expr> expressions;
-  std::vector<unsigned> operators;
-  unsigned op;
-  Type t;
-}
-  : storeTerm[f] { expressions.push_back(f); }
-    ( arithmeticBinop[op] storeTerm[f] { operators.push_back(op); expressions.push_back(f); } )*
-    { f = createPrecedenceTree(PARSER_STATE, EXPR_MANAGER, expressions, operators); }
+  | MEMBER_TOK
+  | FMF_CARD_TOK
   ;
 
 arithmeticBinop[unsigned& op]
@@ -1436,13 +1476,21 @@ arithmeticBinop[unsigned& op]
   ;
 
 /** Parses an array/tuple/record assignment term. */
-storeTerm[CVC4::Expr& f]
+term[CVC4::Expr& f]
+@init {
+  std::vector<CVC4::Expr> expressions;
+  std::vector<unsigned> operators;
+  unsigned op;
+  Type t;
+}
   : uminusTerm[f]
     ( WITH_TOK
       ( arrayStore[f] ( COMMA arrayStore[f] )*
       | DOT ( tupleStore[f] ( COMMA DOT tupleStore[f] )*
             | recordStore[f] ( COMMA DOT recordStore[f] )* ) )
-    | /* nothing */
+    | { expressions.push_back(f); }
+      ( arithmeticBinop[op] uminusTerm[f] { operators.push_back(op); expressions.push_back(f); } )*
+      { f = createPrecedenceTree(PARSER_STATE, EXPR_MANAGER, expressions, operators); }
     )
   ;
 
@@ -1452,28 +1500,15 @@ storeTerm[CVC4::Expr& f]
  */
 arrayStore[CVC4::Expr& f]
 @init {
-  Expr f2, f3;
-  std::vector<Expr> dims;
+  Expr f2, k;
 }
-  : ( LBRACKET formula[f2] { dims.push_back(f2); } RBRACKET )+
-    ASSIGN_TOK uminusTerm[f3]
-    { assert(dims.size() >= 1);
-      // these loops are a bit complicated; they're only used for the
-      // multidimensional ...WITH [a][b] :=... syntax
-      for(unsigned i = 0; i < dims.size() - 1; ++i) {
-        f = MK_EXPR(CVC4::kind::SELECT, f, dims[i]);
-      }
-      // a[i][j][k] := v  turns into
-      // store(a, i, store(a[i], j, store(a[i][j], k, v)))
-      for(unsigned i = dims.size() - 1; i > 0; --i) {
-        f3 = MK_EXPR(CVC4::kind::STORE, f, dims[i], f3);
-        // strip off one layer of the select
-        f = f[0];
-      }
-
-      // outermost wrapping
-      f = MK_EXPR(CVC4::kind::STORE, f, dims[0], f3);
-    }
+  : LBRACKET formula[k] RBRACKET
+    { f2 = MK_EXPR(CVC4::kind::SELECT, f, k); }
+    ( ( arrayStore[f2]
+      | DOT ( tupleStore[f2]
+            | recordStore[f2] ) )
+    | ASSIGN_TOK term[f2] )
+    { f = MK_EXPR(CVC4::kind::STORE, f, k, f2); }
   ;
 
 /**
@@ -1484,9 +1519,8 @@ tupleStore[CVC4::Expr& f]
 @init {
   Expr f2;
 }
-  : k=numeral ASSIGN_TOK uminusTerm[f2]
-    {
-      Type t = f.getType();
+  : k=numeral
+    { Type t = f.getType();
       if(! t.isTuple()) {
         PARSER_STATE->parseError("tuple-update applied to non-tuple");
       }
@@ -1496,8 +1530,13 @@ tupleStore[CVC4::Expr& f]
         ss << "tuple is of length " << length << "; cannot update index " << k;
         PARSER_STATE->parseError(ss.str());
       }
-      f = MK_EXPR(MK_CONST(TupleUpdate(k)), f, f2);
+      f2 = MK_EXPR(MK_CONST(TupleSelect(k)), f);
     }
+    ( ( arrayStore[f2]
+      | DOT ( tupleStore[f2]
+            | recordStore[f2] ) )
+    | ASSIGN_TOK term[f2] )
+    { f = MK_EXPR(MK_CONST(TupleUpdate(k)), f, f2); }
   ;
 
 /**
@@ -1509,19 +1548,27 @@ recordStore[CVC4::Expr& f]
   std::string id;
   Expr f2;
 }
-  : identifier[id,CHECK_NONE,SYM_VARIABLE] ASSIGN_TOK uminusTerm[f2]
-    {
-      Type t = f.getType();
+  : identifier[id,CHECK_NONE,SYM_VARIABLE]
+    { Type t = f.getType();
       if(! t.isRecord()) {
-        PARSER_STATE->parseError("record-update applied to non-record");
+        std::stringstream ss;
+        ss << "record-update applied to non-record term" << std::endl
+           << "the term: " << f << std::endl
+           << "its type: " << t;
+        PARSER_STATE->parseError(ss.str());
       }
       const Record& rec = RecordType(t).getRecord();
       Record::const_iterator fld = rec.find(id);
       if(fld == rec.end()) {
         PARSER_STATE->parseError(std::string("no such field `") + id + "' in record");
       }
-      f = MK_EXPR(MK_CONST(RecordUpdate(id)), f, f2);
+      f2 = MK_EXPR(MK_CONST(RecordSelect(id)), f);
     }
+    ( ( arrayStore[f2]
+      | DOT ( tupleStore[f2]
+            | recordStore[f2] ) )
+    | ASSIGN_TOK term[f2] )
+    { f = MK_EXPR(MK_CONST(RecordUpdate(id)), f, f2); }
   ;
 
 /** Parses a unary minus term. */
@@ -1662,6 +1709,12 @@ postfixTerm[CVC4::Expr& f]
     )*
     | FLOOR_TOK LPAREN formula[f] RPAREN
       { f = MK_EXPR(CVC4::kind::TO_INTEGER, f); }
+    | IS_INTEGER_TOK LPAREN formula[f] RPAREN
+      { f = MK_EXPR(CVC4::kind::IS_INTEGER, f); }
+    | ABS_TOK LPAREN formula[f] RPAREN
+      { f = MK_EXPR(CVC4::kind::ABS, f); }
+    | DIVISIBLE_TOK LPAREN formula[f] COMMA n=numeral RPAREN
+      { f = MK_EXPR(CVC4::kind::DIVISIBLE, MK_CONST(CVC4::Divisible(n)), f); }
     | DISTINCT_TOK LPAREN
       formula[f] { args.push_back(f); }
       ( COMMA formula[f] { args.push_back(f); } )* RPAREN
@@ -1676,6 +1729,8 @@ postfixTerm[CVC4::Expr& f]
                                MK_CONST(AscriptionType(dtc.getSpecializedConstructorType(t))), f.getOperator() ));
           v.insert(v.end(), f.begin(), f.end());
           f = MK_EXPR(CVC4::kind::APPLY_CONSTRUCTOR, v);
+        } else if(f.getKind() == CVC4::kind::EMPTYSET && t.isSet()) {
+          f = MK_CONST(CVC4::EmptySet(t));
         } else {
           if(f.getType() != t) {
             PARSER_STATE->parseError("Type ascription not satisfied.");
@@ -1707,11 +1762,11 @@ bvTerm[CVC4::Expr& f]
     { f = MK_EXPR(CVC4::kind::BITVECTOR_NEG, f); }
     /* BV addition */
   | BVPLUS_TOK LPAREN k=numeral COMMA formula[f] { args.push_back(f); }
-    ( COMMA formula[f2] { args.push_back(f2); } )+ RPAREN 
+    ( COMMA formula[f2] { args.push_back(f2); } )+ RPAREN
     {
       if (k <= 0) {
         PARSER_STATE->parseError("BVPLUS(k,_,_) must have k > 0");
-      }      
+      }
       for (unsigned i = 0; i < args.size(); ++ i) {
         ENSURE_BV_SIZE(k, args[i]);
       }
@@ -1719,17 +1774,17 @@ bvTerm[CVC4::Expr& f]
     }
     /* BV subtraction */
   | BVSUB_TOK LPAREN k=numeral COMMA formula[f] COMMA formula[f2] RPAREN
-    {       
+    {
       if (k <= 0) {
         PARSER_STATE->parseError("BVSUB(k,_,_) must have k > 0");
-      }      
+      }
       ENSURE_BV_SIZE(k, f);
       ENSURE_BV_SIZE(k, f2);
       f = MK_EXPR(CVC4::kind::BITVECTOR_SUB, f, f2);
     }
     /* BV multiplication */
   | BVMULT_TOK LPAREN k=numeral COMMA formula[f] COMMA formula[f2] RPAREN
-    { 
+    {
       if (k <= 0) {
         PARSER_STATE->parseError("BVMULT(k,_,_) must have k > 0");
       }
@@ -1805,10 +1860,42 @@ bvTerm[CVC4::Expr& f]
   | BVSGE_TOK LPAREN formula[f] COMMA formula[f2] RPAREN
     { f = MK_EXPR(CVC4::kind::BITVECTOR_SGE, f, f2); }
 
-  /*
-  | IS_INTEGER_TOK LPAREN formula[f] RPAREN
-    { f = MK_EXPR(CVC4::kind::BITVECTOR_IS_INTEGER, f); }
-  */
+  | stringTerm[f]
+  ;
+
+stringTerm[CVC4::Expr& f]
+@init {
+  Expr f2;
+  Expr f3;
+  std::string s;
+  std::vector<Expr> args;
+}
+    /* String prefix operators */
+  : SCONCAT_TOK LPAREN formula[f] { args.push_back(f); }
+    ( COMMA formula[f2] { args.push_back(f2); } )+ RPAREN
+    { f = MK_EXPR(CVC4::kind::STRING_CONCAT, args); }
+  | SCONTAINS_TOK LPAREN formula[f] COMMA formula[f2] RPAREN
+    { f = MK_EXPR(CVC4::kind::STRING_STRCTN, f, f2); }
+  | SSUBSTR_TOK LPAREN formula[f] COMMA formula[f2] COMMA formula[f3] RPAREN
+    { f = MK_EXPR(CVC4::kind::STRING_SUBSTR, f, f2, f3); }
+  | SINDEXOF_TOK LPAREN formula[f] COMMA formula[f2] COMMA formula[f3] RPAREN
+    { f = MK_EXPR(CVC4::kind::STRING_STRIDOF, f, f2, f3); }
+  | SREPLACE_TOK LPAREN formula[f] COMMA formula[f2] COMMA formula[f3] RPAREN
+    { f = MK_EXPR(CVC4::kind::STRING_STRREPL, f, f2, f3); }
+  | SPREFIXOF_TOK LPAREN formula[f] COMMA formula[f2] RPAREN
+    { f = MK_EXPR(CVC4::kind::STRING_PREFIX, f, f2); }
+  | SSUFFIXOF_TOK LPAREN formula[f] COMMA formula[f2] RPAREN
+    { f = MK_EXPR(CVC4::kind::STRING_SUFFIX, f, f2); }
+  | STOINTEGER_TOK LPAREN formula[f] RPAREN
+    { f = MK_EXPR(CVC4::kind::STRING_STOI, f); }
+  | STOSTRING_TOK LPAREN formula[f] RPAREN
+    { f = MK_EXPR(CVC4::kind::STRING_ITOS, f); }
+  | STORE_TOK LPAREN formula[f] RPAREN
+    { f = MK_EXPR(CVC4::kind::STRING_TO_REGEXP, f); }
+
+    /* string literal */
+  | str[s]
+    { f = MK_CONST(CVC4::String(s)); }
 
   | simpleTerm[f]
   ;
@@ -1821,7 +1908,7 @@ simpleTerm[CVC4::Expr& f]
   std::vector<std::string> names;
   Expr e;
   Debug("parser-extra") << "term: " << AntlrInput::tokenText(LT(1)) << std::endl;
-  Type t;
+  Type t, t2;
 }
     /* if-then-else */
   : iteTerm[f]
@@ -1849,6 +1936,45 @@ simpleTerm[CVC4::Expr& f]
   | PARENHASH HASHPAREN
     { RecordType t = EXPR_MANAGER->mkRecordType(std::vector< std::pair<std::string, Type> >());
       f = MK_EXPR(kind::RECORD, MK_CONST(t.getRecord()), std::vector<Expr>());
+    }
+
+    /* empty set literal */
+  | LBRACE RBRACE
+    { f = MK_CONST(EmptySet(Type())); }
+
+    /* finite set literal */
+  | LBRACE formula[f] { args.push_back(f); }
+    ( COMMA formula[f] { args.push_back(f); } )* RBRACE
+    { f = MK_EXPR(kind::SINGLETON, args[0]);
+      for(size_t i = 1; i < args.size(); ++i) {
+        f = MK_EXPR(kind::UNION, f, MK_EXPR(kind::SINGLETON, args[i]));
+      }
+    }
+
+    /* array literals */
+  | ARRAY_TOK /* { PARSER_STATE->pushScope(); } */ LPAREN
+    restrictedType[t, CHECK_DECLARED] OF_TOK restrictedType[t2, CHECK_DECLARED]
+    RPAREN COLON simpleTerm[f]
+    { /* Eventually if we support a bound var (like a lambda) for array
+       * literals, we can use the push/pop scope. */
+      /* PARSER_STATE->popScope(); */
+      t = EXPR_MANAGER->mkArrayType(t, t2);
+      if(!f.isConst()) {
+        std::stringstream ss;
+        ss << "expected constant term inside array constant, but found "
+           << "nonconstant term" << std::endl
+           << "the term: " << f;
+        PARSER_STATE->parseError(ss.str());
+      }
+      if(!t2.isComparableTo(f.getType())) {
+        std::stringstream ss;
+        ss << "type mismatch inside array constant term:" << std::endl
+           << "array type:          " << t << std::endl
+           << "expected const type: " << t2 << std::endl
+           << "computed const type: " << f.getType();
+        PARSER_STATE->parseError(ss.str());
+      }
+      f = MK_CONST( ArrayStoreAll(t, f) );
     }
 
     /* boolean literals */
@@ -1895,7 +2021,7 @@ simpleTerm[CVC4::Expr& f]
   ;
 
 /**
- * Matches (and performs) a type ascription.
+ * Matches a type ascription.
  * The f arg is the term to check (it is an input-only argument).
  */
 typeAscription[const CVC4::Expr& f, CVC4::Type& t]
@@ -1964,7 +2090,7 @@ datatypeDef[std::vector<CVC4::Datatype>& datatypes]
         params.push_back( t ); }
       )* RBRACKET
     )?
-    { datatypes.push_back(Datatype(id, params));
+    { datatypes.push_back(Datatype(id, params, false));
       if(!PARSER_STATE->isUnresolvedType(id)) {
         // if not unresolved, must be undeclared
         PARSER_STATE->checkDeclaration(id, CHECK_UNDECLARED, SYM_SORT);

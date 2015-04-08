@@ -40,6 +40,8 @@ handle_option() {
       # set the best configuration
       handle_option --with-readline
       handle_option --with-cln
+      handle_option --with-glpk
+      handle_option --with-abc
       return
       ;;
     -enable-proofs|--enable-proofs)
@@ -78,6 +80,12 @@ handle_option() {
       fi
       if expr "$ac_option" : '.*-glpk' >/dev/null || expr "$ac_option" : '.*-glpk-' >/dev/null; then
         eval 'ac_cvc4_rewritten_args="${ac_cvc4_rewritten_args+$ac_cvc4_rewritten_args }\"--with-glpk\""'
+      fi
+      if expr "$ac_option" : '.*-noabc' >/dev/null || expr "$ac_option" : '.*-noabc-' >/dev/null; then
+        eval 'ac_cvc4_rewritten_args="${ac_cvc4_rewritten_args+$ac_cvc4_rewritten_args }\"--without-abc\""'
+      fi
+      if expr "$ac_option" : '.*-abc' >/dev/null || expr "$ac_option" : '.*-abc-' >/dev/null; then
+        eval 'ac_cvc4_rewritten_args="${ac_cvc4_rewritten_args+$ac_cvc4_rewritten_args }\"--with-abc\""'
       fi
       for x in cln gmp; do
         if expr "$ac_option" : '.*-no'$x'$' >/dev/null || expr "$ac_option" : '.*-no'$x'-' >/dev/null; then

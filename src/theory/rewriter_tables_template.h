@@ -5,7 +5,7 @@
  ** Major contributors: Morgan Deters, Tim King
  ** Minor contributors (to current version): none
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -85,7 +85,7 @@ void Rewriter::shutdown() {
 ${rewrite_shutdown}
 }
 
-void Rewriter::garbageCollect() {
+void Rewriter::clearCachesInternal() {
   typedef CVC4::expr::attr::AttributeUniqueId AttributeUniqueId;
   std::vector<AttributeUniqueId> preids;
   ${pre_rewrite_attribute_ids}

@@ -5,7 +5,7 @@
  ** Major contributors: Morgan Deters
  ** Minor contributors (to current version): none
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -22,9 +22,9 @@
 #include "smt/options.h"
 
 #ifdef CVC4_PROOF
-#  define PROOF(x) if(options::proof()) { x; }
-#  define NULLPROOF(x) (options::proof()) ? x : NULL
-#  define PROOF_ON() options::proof()
+#  define PROOF(x) if(options::proof() || options::unsatCores()) { x; }
+#  define NULLPROOF(x) (options::proof() || options::unsatCores()) ? x : NULL
+#  define PROOF_ON() (options::proof() || options::unsatCores())
 #else /* CVC4_PROOF */
 #  define PROOF(x)
 #  define NULLPROOF(x) NULL

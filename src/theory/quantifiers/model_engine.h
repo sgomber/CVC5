@@ -5,7 +5,7 @@
  ** Major contributors: Andrew Reynolds
  ** Minor contributors (to current version): none
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -29,9 +29,6 @@ class ModelEngine : public QuantifiersModule
 {
   friend class RepSetIterator;
 private:
-  /** builder class */
-  QModelBuilder* d_builder;
-private:
   //options
   bool optOneQuantPerRound();
 private:
@@ -48,11 +45,11 @@ private:
   int d_totalLemmas;
 public:
   ModelEngine( context::Context* c, QuantifiersEngine* qe );
-  ~ModelEngine(){}
-  //get the builder
-  QModelBuilder* getModelBuilder() { return d_builder; }
+  virtual ~ModelEngine();
 public:
-  void check( Theory::Effort e );
+  bool needsCheck( Theory::Effort e );
+  bool needsModel( Theory::Effort e );
+  void check( Theory::Effort e, unsigned quant_e );
   void registerQuantifier( Node f );
   void assertNode( Node f );
   Node explain(TNode n){ return Node::null(); }
@@ -68,6 +65,8 @@ public:
     ~Statistics();
   };
   Statistics d_statistics;
+  /** Identify this module */
+  std::string identify() const { return "ModelEngine"; }
 };/* class ModelEngine */
 
 }/* CVC4::theory::quantifiers namespace */

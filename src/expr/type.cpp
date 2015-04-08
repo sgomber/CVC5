@@ -3,9 +3,9 @@
  ** \verbatim
  ** Original author: Christopher L. Conway
  ** Major contributors: Dejan Jovanovic, Morgan Deters
- ** Minor contributors (to current version): Andrew Reynolds
+ ** Minor contributors (to current version): Kshitij Bansal, Andrew Reynolds
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -223,10 +223,22 @@ bool Type::isString() const {
   return d_typeNode->isString();
 }
 
+/** Is this the rounding mode type? */
+bool Type::isRoundingMode() const {
+  NodeManagerScope nms(d_nodeManager);
+  return d_typeNode->isRoundingMode();
+}
+
 /** Is this the bit-vector type? */
 bool Type::isBitVector() const {
   NodeManagerScope nms(d_nodeManager);
   return d_typeNode->isBitVector();
+}
+
+/** Is this the floating-point type? */
+bool Type::isFloatingPoint() const {
+  NodeManagerScope nms(d_nodeManager);
+  return d_typeNode->isFloatingPoint();
 }
 
 /** Is this a datatype type? */
@@ -290,6 +302,12 @@ bool Type::isSExpr() const {
 bool Type::isArray() const {
   NodeManagerScope nms(d_nodeManager);
   return d_typeNode->isArray();
+}
+
+/** Is this a Set type? */
+bool Type::isSet() const {
+  NodeManagerScope nms(d_nodeManager);
+  return d_typeNode->isSet();
 }
 
 /** Is this a sort kind */
@@ -430,9 +448,19 @@ StringType::StringType(const Type& t) throw(IllegalArgumentException) :
   CheckArgument(isNull() || isString(), this);
 }
 
+RoundingModeType::RoundingModeType(const Type& t) throw(IllegalArgumentException) :
+  Type(t) {
+  CheckArgument(isNull() || isRoundingMode(), this);
+}
+
 BitVectorType::BitVectorType(const Type& t) throw(IllegalArgumentException) :
   Type(t) {
   CheckArgument(isNull() || isBitVector(), this);
+}
+
+FloatingPointType::FloatingPointType(const Type& t) throw(IllegalArgumentException) :
+  Type(t) {
+  CheckArgument(isNull() || isFloatingPoint(), this);
 }
 
 DatatypeType::DatatypeType(const Type& t) throw(IllegalArgumentException) :
@@ -480,6 +508,11 @@ ArrayType::ArrayType(const Type& t) throw(IllegalArgumentException) :
   CheckArgument(isNull() || isArray(), this);
 }
 
+SetType::SetType(const Type& t) throw(IllegalArgumentException) :
+  Type(t) {
+  CheckArgument(isNull() || isSet(), this);
+}
+
 SortType::SortType(const Type& t) throw(IllegalArgumentException) :
   Type(t) {
   CheckArgument(isNull() || isSort(), this);
@@ -509,12 +542,24 @@ unsigned BitVectorType::getSize() const {
   return d_typeNode->getBitVectorSize();
 }
 
+unsigned FloatingPointType::getExponentSize() const {
+  return d_typeNode->getFloatingPointExponentSize();
+}
+
+unsigned FloatingPointType::getSignificandSize() const {
+  return d_typeNode->getFloatingPointSignificandSize();
+}
+
 Type ArrayType::getIndexType() const {
   return makeType(d_typeNode->getArrayIndexType());
 }
 
 Type ArrayType::getConstituentType() const {
   return makeType(d_typeNode->getArrayConstituentType());
+}
+
+Type SetType::getElementType() const {
+  return makeType(d_typeNode->getSetElementType());
 }
 
 DatatypeType ConstructorType::getRangeType() const {

@@ -5,7 +5,7 @@
  ** Major contributors: Morgan Deters
  ** Minor contributors (to current version): Kshitij Bansal, Francois Bobot, Clark Barrett, Tim King, Christopher L. Conway
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -149,6 +149,7 @@ class NodeValue;
 
   namespace attr {
     class AttributeManager;
+    struct SmtAttributes;
   }/* CVC4::expr::attr namespace */
 
   class ExprSetDepth;
@@ -214,6 +215,7 @@ class NodeTemplate {
   friend class NodeBuilder;
 
   friend class ::CVC4::expr::attr::AttributeManager;
+  friend struct ::CVC4::expr::attr::SmtAttributes;
 
   friend struct ::CVC4::kind::metakind::NodeValueConstPrinter;
 
@@ -424,6 +426,13 @@ public:
   // bool properlyContainsDecision(); // maybe not atomic but all children are
 
   /**
+   * Returns true iff this node contains a bound variable.  This bound
+   * variable may or may not be free.
+   * @return true iff this node contains a bound variable.
+   */
+  bool hasBoundVar();
+
+  /**
    * Convert this Node into an Expr using the currently-in-scope
    * manager.  Essentially this is like an "operator Expr()" but we
    * don't want it to compete with implicit conversions between e.g.
@@ -432,7 +441,7 @@ public:
    * explicit Expr(Node) constructor---but that dirties the public
    * interface.
    */
-  inline Expr toExpr();
+  inline Expr toExpr() const;
 
   /**
    * Convert an Expr into a Node.
@@ -1376,7 +1385,9 @@ NodeTemplate<ref_count>::substitute(Iterator1 nodesBegin,
     NodeBuilder<> nb(getKind());
     if(getMetaKind() == kind::metakind::PARAMETERIZED) {
       // push the operator
-      nb << getOperator();
+      nb << getOperator().substitute(nodesBegin, nodesEnd,
+                                     replacementsBegin, replacementsEnd,
+                                     cache);
     }
     for(const_iterator i = begin(),
           iend = end();
@@ -1427,7 +1438,7 @@ NodeTemplate<ref_count>::substitute(Iterator substitutionsBegin,
     NodeBuilder<> nb(getKind());
     if(getMetaKind() == kind::metakind::PARAMETERIZED) {
       // push the operator
-      nb << getOperator();
+      nb << getOperator().substitute(substitutionsBegin, substitutionsEnd, cache);
     }
     for(const_iterator i = begin(),
           iend = end();
@@ -1442,7 +1453,7 @@ NodeTemplate<ref_count>::substitute(Iterator substitutionsBegin,
 }
 
 template <bool ref_count>
-inline Expr NodeTemplate<ref_count>::toExpr() {
+inline Expr NodeTemplate<ref_count>::toExpr() const {
   assertTNodeNotExpired();
   return NodeManager::currentNM()->toExpr(*this);
 }

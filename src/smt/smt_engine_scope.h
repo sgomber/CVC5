@@ -5,7 +5,7 @@
  ** Major contributors: none
  ** Minor contributors (to current version): none
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -38,11 +38,19 @@ inline SmtEngine* currentSmtEngine() {
   Assert(s_smtEngine_current != NULL);
   return s_smtEngine_current;
 }
+inline bool smtEngineInScope() {
+  return s_smtEngine_current != NULL;
+}
 
 inline ProofManager* currentProofManager() {
-  Assert(PROOF_ON());
+#ifdef CVC4_PROOF
+  Assert(options::proof() || options::unsatCores());
   Assert(s_smtEngine_current != NULL);
   return s_smtEngine_current->d_proofManager;
+#else /* CVC4_PROOF */
+  InternalError("proofs/unsat cores are not on, but ProofManager requested");
+  return NULL;
+#endif /* CVC4_PROOF */
 }
 
 class SmtScope : public NodeManagerScope {

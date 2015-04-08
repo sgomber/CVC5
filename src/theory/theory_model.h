@@ -5,7 +5,7 @@
  ** Major contributors: Andrew Reynolds, Clark Barrett
  ** Minor contributors (to current version): Tim King
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -38,7 +38,7 @@ protected:
   SubstitutionMap d_substitutions;
 public:
   TheoryModel(context::Context* c, std::string name, bool enableFuncModels);
-  virtual ~TheoryModel(){}
+  virtual ~TheoryModel();
 
   /** special local context for our equalityEngine so we can clear it independently of search context */
   context::Context* d_eeContext;
@@ -52,6 +52,7 @@ public:
   Node d_true;
   Node d_false;
   context::CDO<bool> d_modelBuilt;
+  mutable std::hash_map<Node, Node, NodeHashFunction> d_modelCache;
 
 protected:
   /** reset the model */

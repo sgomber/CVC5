@@ -5,7 +5,7 @@
  ** Major contributors: Morgan Deters
  ** Minor contributors (to current version): Dejan Jovanovic
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -25,7 +25,6 @@
 #include "theory/arith/arith_utilities.h"
 
 #include "context/context.h"
-#include "context/cdlist.h"
 #include "context/cdtrail_hashmap.h"
 #include <set>
 
@@ -45,6 +44,7 @@ private:
 
 public:
   ArithStaticLearner(context::Context* userContext);
+  ~ArithStaticLearner();
   void staticLearning(TNode n, NodeBuilder<>& learned);
 
   void addBound(TNode n);

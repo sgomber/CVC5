@@ -5,7 +5,7 @@
  ** Major contributors: none
  ** Minor contributors (to current version): Andrew Reynolds
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -18,6 +18,9 @@
 
 #ifndef __CVC4__PRINTER__PRINTER_H
 #define __CVC4__PRINTER__PRINTER_H
+
+#include <map>
+#include <string>
 
 #include "util/language.h"
 #include "util/sexpr.h"
@@ -102,6 +105,12 @@ public:
 
   /** Write a Model out to a stream with this Printer. */
   virtual void toStream(std::ostream& out, const Model& m) const throw();
+
+  /** Write an UnsatCore out to a stream with this Printer. */
+  virtual void toStream(std::ostream& out, const UnsatCore& core) const throw();
+
+  /** Write an UnsatCore out to a stream with this Printer. */
+  virtual void toStream(std::ostream& out, const UnsatCore& core, const std::map<Expr, std::string>& names) const throw();
 
 };/* class Printer */
 

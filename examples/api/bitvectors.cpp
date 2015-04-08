@@ -5,7 +5,7 @@
  ** Major contributors: Morgan Deters
  ** Minor contributors (to current version): none
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -101,7 +101,7 @@ int main() {
 
   // Assert encoding to CVC4 in current context;
   cout << "Asserting " << assignment2 << " to CVC4 " << endl;
-  smt.assertFormula(assignment1);
+  smt.assertFormula(assignment2);
 
   cout << " Querying: " << new_x_eq_new_x_ << endl;
   cout << " Expect valid. " << endl;

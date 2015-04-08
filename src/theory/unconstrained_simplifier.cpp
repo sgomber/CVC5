@@ -3,9 +3,9 @@
  ** \verbatim
  ** Original author: Clark Barrett
  ** Major contributors: none
- ** Minor contributors (to current version): Tim King, Morgan Deters
+ ** Minor contributors (to current version): Kshitij Bansal, Morgan Deters, Tim King, Liana Hadarean, Peter Collingbourne, Andrew Reynolds
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -92,7 +92,7 @@ void UnconstrainedSimplifier::visitAll(TNode assertion)
 
 Node UnconstrainedSimplifier::newUnconstrainedVar(TypeNode t, TNode var)
 {
-  Node n = NodeManager::currentNM()->mkSkolem("unconstrained_$$", t, "a new var introduced because of unconstrained variable " + var.toString());
+  Node n = NodeManager::currentNM()->mkSkolem("unconstrained", t, "a new var introduced because of unconstrained variable " + var.toString());
   return n;
 }
 
@@ -163,23 +163,26 @@ void UnconstrainedSimplifier::processUnconstrained()
               currentSub = Node();
             }
           }
-          else if (uCond && parent.getType().getCardinality().isFinite() && parent.getType().getCardinality().getFiniteCardinality() == 2) {
-            // Special case: condition is unconstrained, then and else are different, and total cardinality of the type is 2, then the result
-            // is unconstrained
-            Node test;
-            if (parent.getType().isBoolean()) {
-              test = Rewriter::rewrite(parent[1].iffNode(parent[2]));
-            }
-            else {
-              test = Rewriter::rewrite(parent[1].eqNode(parent[2]));
-            }
-            if (test == NodeManager::currentNM()->mkConst<bool>(false)) {
-              ++d_numUnconstrainedElim;
-              if (currentSub.isNull()) {
-                currentSub = current;
+          else if (uCond) {
+            Cardinality card = parent.getType().getCardinality();
+            if (card.isFinite() && !card.isLargeFinite() && card.getFiniteCardinality() == 2) {
+              // Special case: condition is unconstrained, then and else are different, and total cardinality of the type is 2, then the result
+              // is unconstrained
+              Node test;
+              if (parent.getType().isBoolean()) {
+                test = Rewriter::rewrite(parent[1].iffNode(parent[2]));
               }
-              currentSub = newUnconstrainedVar(parent.getType(), currentSub);
-              current = parent;
+              else {
+                test = Rewriter::rewrite(parent[1].eqNode(parent[2]));
+              }
+              if (test == NodeManager::currentNM()->mkConst<bool>(false)) {
+                ++d_numUnconstrainedElim;
+                if (currentSub.isNull()) {
+                  currentSub = current;
+                }
+                currentSub = newUnconstrainedVar(parent.getType(), currentSub);
+                current = parent;
+              }
             }
           }
           break;
@@ -191,6 +194,14 @@ void UnconstrainedSimplifier::processUnconstrained()
           if (parent[0].getType() != parent[1].getType()) {
             TNode other = (parent[0] == current) ? parent[1] : parent[0];
             if (current.getType().isSubtypeOf(other.getType())) {
+              break;
+            }
+          }
+          if( parent[0].getType().isDatatype() ){
+            TypeNode tn = parent[0].getType();
+            const Datatype& dt = ((DatatypeType)(tn).toType()).getDatatype();
+            if( dt.isRecursiveSingleton() ){
+              //domain size may be 1
               break;
             }
           }
@@ -277,8 +288,8 @@ void UnconstrainedSimplifier::processUnconstrained()
         case kind::BITVECTOR_SHL:
         case kind::BITVECTOR_LSHR:
         case kind::BITVECTOR_ASHR:
-        case kind::BITVECTOR_UDIV:
-        case kind::BITVECTOR_UREM:
+        case kind::BITVECTOR_UDIV_TOTAL:
+        case kind::BITVECTOR_UREM_TOTAL:
         case kind::BITVECTOR_SDIV:
         case kind::BITVECTOR_SREM:
         case kind::BITVECTOR_SMOD: {
@@ -631,16 +642,13 @@ void UnconstrainedSimplifier::processUnconstrained()
           break;
         }
 
-        // These should have been rewritten up front
-        case kind::BITVECTOR_REPEAT:
+        // Do nothing 
+        case kind::BITVECTOR_SIGN_EXTEND:
         case kind::BITVECTOR_ZERO_EXTEND:
+        case kind::BITVECTOR_REPEAT:
         case kind::BITVECTOR_ROTATE_LEFT:
         case kind::BITVECTOR_ROTATE_RIGHT:
-          Unreachable();
-          break;
 
-        // Do nothing
-        case kind::BITVECTOR_SIGN_EXTEND:
         default:
           break;
       }

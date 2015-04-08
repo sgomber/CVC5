@@ -5,7 +5,7 @@
  ** Major contributors: Morgan Deters
  ** Minor contributors (to current version): none
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -111,13 +111,15 @@ void RelevantDomain::compute(){
     TermDb * db = d_qe->getTermDatabase();
     for( std::map< Node, std::vector< Node > >::iterator it = db->d_op_map.begin(); it != db->d_op_map.end(); ++it ){
       Node op = it->first;
-      for( unsigned i=0; i<it->second.size(); i++ ){
+      unsigned sz = db->getNumGroundTerms( op );
+      for( unsigned i=0; i<sz; i++ ){
         Node n = it->second[i];
         //if it is a non-redundant term
         if( !n.getAttribute(NoMatchAttribute()) ){
           for( unsigned j=0; j<n.getNumChildren(); j++ ){
             RDomain * rf = getRDomain( op, j );
             rf->addTerm( n[j] );
+            Trace("rel-dom-debug") << "...add ground term " << n[j] << " to rel dom " << op << "[" << j << "]" << std::endl;
           }
         }
       }
@@ -188,9 +190,10 @@ void RelevantDomain::computeRelevantDomain( Node n, bool hasPol, bool pol ) {
     }else if( varCount==1 ){
       int oCh = varCh==0 ? 1 : 0;
       bool ng = d_qe->getTermDatabase()->hasInstConstAttr( n[oCh] );
+      Trace("rel-dom-debug") << "...add term " << n[oCh] << ", is ground = " << (!ng) << std::endl;
       //the negative occurrence adds the term to the domain
       if( !hasPol || !pol ){
-        rds[varCh]->addTerm( n[oCh] );
+        rds[varCh]->addTerm( n[oCh], ng );
       }
       //the positive occurence adds other terms
       if( ( !hasPol || pol ) && n[0].getType().isInteger() ){
@@ -219,6 +222,7 @@ void RelevantDomain::computeRelevantDomainOpCh( RDomain * rf, Node n ) {
       rq->merge( rf );
     }
   }else if( !d_qe->getTermDatabase()->hasInstConstAttr( n ) ){
+    Trace("rel-dom-debug") << "...add ground term to rel dom " << n << std::endl;
     //term to add
     rf->addTerm( n );
   }

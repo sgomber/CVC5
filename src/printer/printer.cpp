@@ -5,7 +5,7 @@
  ** Major contributors: none
  ** Minor contributors (to current version): Francois Bobot, Andrew Reynolds
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -37,10 +37,13 @@ Printer* Printer::makePrinter(OutputLanguage lang) throw() {
   using namespace CVC4::language::output;
 
   switch(lang) {
-  case LANG_SMTLIB_V1:
+  case LANG_SMTLIB_V1: // TODO the printer
     return new printer::smt1::Smt1Printer();
 
-  case LANG_SMTLIB_V2:
+  case LANG_SMTLIB_V2_0:
+    return new printer::smt2::Smt2Printer(printer::smt2::smt2_0_variant);
+
+  case LANG_SMTLIB_V2_5:
     return new printer::smt2::Smt2Printer();
 
   case LANG_TPTP:
@@ -49,8 +52,14 @@ Printer* Printer::makePrinter(OutputLanguage lang) throw() {
   case LANG_CVC4:
     return new printer::cvc::CvcPrinter();
 
+  case LANG_Z3STR:
+    return new printer::smt2::Smt2Printer(printer::smt2::z3str_variant);
+
   case LANG_AST:
     return new printer::ast::AstPrinter();
+
+  case LANG_CVC3:
+    return new printer::cvc::CvcPrinter(/* cvc3-mode = */ true);
 
   default:
     Unhandled(lang);
@@ -146,5 +155,18 @@ void Printer::toStream(std::ostream& out, const Model& m) const throw() {
     toStream(out, m, m.getCommand(i));
   }
 }/* Printer::toStream(Model) */
+
+void Printer::toStream(std::ostream& out, const UnsatCore& core) const throw() {
+  std::map<Expr, std::string> names;
+  toStream(out, core, names);
+}/* Printer::toStream(UnsatCore) */
+
+void Printer::toStream(std::ostream& out, const UnsatCore& core, const std::map<Expr, std::string>& names) const throw() {
+  for(UnsatCore::iterator i = core.begin(); i != core.end(); ++i) {
+    AssertCommand cmd(*i);
+    toStream(out, &cmd, -1, false, -1);
+    out << std::endl;
+  }
+}/* Printer::toStream(UnsatCore, std::map<Expr, std::string>) */
 
 }/* CVC4 namespace */

@@ -3,9 +3,9 @@
  ** \verbatim
  ** Original author: Andrew Reynolds
  ** Major contributors: none
- ** Minor contributors (to current version): none
+ ** Minor contributors (to current version): Morgan Deters
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -21,6 +21,7 @@
 #include "theory/theory_engine.h"
 #include "util/sort_inference.h"
 #include "theory/uf/theory_uf_strong_solver.h"
+#include "theory/uf/theory_uf.h"
 
 using namespace CVC4;
 using namespace CVC4::kind;
@@ -298,7 +299,7 @@ bool SubsortSymmetryBreaker::check( Theory::Effort level ) {
   //flush pending lemmas
   if( !d_pending_lemmas.empty() ){
     for( unsigned i=0; i<d_pending_lemmas.size(); i++ ){
-      getStrongSolver()->getOutputChannel().lemma( d_pending_lemmas[i] );
+      getStrongSolver()->getOutputChannel().lemma( d_pending_lemmas[i], false, true );
       ++( getStrongSolver()->d_statistics.d_sym_break_lemmas );
     }
     d_pending_lemmas.clear();

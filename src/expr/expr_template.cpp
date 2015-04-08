@@ -2,10 +2,10 @@
 /*! \file expr_template.cpp
  ** \verbatim
  ** Original author: Morgan Deters
- ** Major contributors: Dejan Jovanovic
- ** Minor contributors (to current version): Tim King, Christopher L. Conway, Kshitij Bansal
+ ** Major contributors: Dejan Jovanovic, Kshitij Bansal
+ ** Minor contributors (to current version): Tim King, Christopher L. Conway
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -114,7 +114,7 @@ ExprManager* Expr::getExprManager() const {
 
 namespace expr {
 
-static Node exportConstant(TNode n, NodeManager* to);
+static Node exportConstant(TNode n, NodeManager* to, ExprManagerMapCollection& vmap);
 
 class ExportPrivate {
 private:
@@ -135,7 +135,11 @@ public:
     }
 
     if(n.getMetaKind() == metakind::CONSTANT) {
-      return exportConstant(n, NodeManager::fromExprManager(to));
+      if(n.getKind() == kind::EMPTYSET) {
+        Type type = from->exportType(n.getConst< ::CVC4::EmptySet >().getType(), to, vmap);
+        return to->mkConst(::CVC4::EmptySet(type));
+      }
+      return exportConstant(n, NodeManager::fromExprManager(to), vmap);
     } else if(n.isVar()) {
       Expr from_e(from, new Node(n));
       Expr& to_e = vmap.d_typeMap[from_e];
@@ -570,13 +574,29 @@ ${getConst_implementations}
 
 namespace expr {
 
-static Node exportConstant(TNode n, NodeManager* to) {
+static Node exportConstant(TNode n, NodeManager* to, ExprManagerMapCollection& vmap) {
   Assert(n.isConst());
+  Debug("export") << "constant: " << n << std::endl;
+
+  if(n.getKind() == kind::STORE_ALL) {
+    // Special export for ArrayStoreAll.
+    //
+    // Ultimately we'll need special cases also for RecordUpdate,
+    // TupleUpdate, AscriptionType, and other constant-metakinded
+    // expressions that embed types.  For now datatypes aren't supported
+    // for export so those don't matter.
+    ExprManager* toEm = to->toExprManager();
+    const ArrayStoreAll& asa = n.getConst<ArrayStoreAll>();
+    return to->mkConst(ArrayStoreAll(asa.getType().exportTo(toEm, vmap),
+                                     asa.getExpr().exportTo(toEm, vmap)));
+  }
+
   switch(n.getKind()) {
 ${exportConstant_cases}
 
   default: Unhandled(n.getKind());
   }
+
 }/* exportConstant() */
 
 }/* CVC4::expr namespace */

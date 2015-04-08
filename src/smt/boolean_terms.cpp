@@ -3,9 +3,9 @@
  ** \verbatim
  ** Original author: Morgan Deters
  ** Major contributors: none
- ** Minor contributors (to current version): none
+ ** Minor contributors (to current version): Andrew Reynolds
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -43,10 +43,11 @@ BooleanTermConverter::BooleanTermConverter(SmtEngine& smt) :
   d_tt(),
   d_ffDt(),
   d_ttDt(),
-  d_varCache(),
-  d_termCache(),
+  d_varCache(smt.d_userContext),
+  d_termCache(smt.d_userContext),
   d_typeCache(),
-  d_datatypeCache() {
+  d_datatypeCache(),
+  d_datatypeReverseCache() {
 
   // set up our "false" and "true" conversions based on command-line option
   if(options::booleanTermConversionMode() == BOOLEAN_TERM_CONVERT_TO_BITVECTORS ||
@@ -116,6 +117,10 @@ static inline bool isBoolean(TNode top, unsigned i) {
 // to be for model-substitution, so the "in" is a Boolean-term-converted
 // node, and "as" is the original.  See how it's used in function
 // handling, below.
+//
+// Note this isn't the case any longer, and parts of what's below have
+// been repurposed for *forward* conversion, meaning this works in either
+// direction.
 Node BooleanTermConverter::rewriteAs(TNode in, TypeNode as) throw() {
   if(in.getType() == as) {
     return in;
@@ -127,13 +132,50 @@ Node BooleanTermConverter::rewriteAs(TNode in, TypeNode as) throw() {
   if(as.isBoolean() && in.getType().isBitVector() && in.getType().getBitVectorSize() == 1) {
     return NodeManager::currentNM()->mkNode(kind::EQUAL, NodeManager::currentNM()->mkConst(BitVector(1u, 1u)), in);
   }
+  if(in.getType().isRecord()) {
+    Assert(as.isRecord());
+    const Record& inRec = in.getType().getConst<Record>();
+    const Record& asRec = as.getConst<Record>();
+    Assert(inRec.getNumFields() == asRec.getNumFields());
+    NodeBuilder<> nb(kind::RECORD);
+    nb << NodeManager::currentNM()->mkConst(asRec);
+    for(size_t i = 0; i < asRec.getNumFields(); ++i) {
+      Assert(inRec[i].first == asRec[i].first);
+      Node arg = NodeManager::currentNM()->mkNode(NodeManager::currentNM()->mkConst(RecordSelect(inRec[i].first)), in);
+      if(inRec[i].second != asRec[i].second) {
+        arg = rewriteAs(arg, TypeNode::fromType(asRec[i].second));
+      }
+      nb << arg;
+    }
+    Node out = nb;
+    return out;
+  }
+  if(in.getType().isTuple()) {
+    Assert(as.isTuple());
+    Assert(in.getType().getNumChildren() == as.getNumChildren());
+    NodeBuilder<> nb(kind::TUPLE);
+    for(size_t i = 0; i < as.getNumChildren(); ++i) {
+      Node arg = NodeManager::currentNM()->mkNode(NodeManager::currentNM()->mkConst(TupleSelect(i)), in);
+      if(in.getType()[i] != as[i]) {
+        arg = rewriteAs(arg, as[i]);
+      }
+      nb << arg;
+    }
+    Node out = nb;
+    return out;
+  }
   if(in.getType().isDatatype()) {
     if(as.isBoolean() && in.getType().hasAttribute(BooleanTermAttr())) {
       return NodeManager::currentNM()->mkNode(kind::EQUAL, d_ttDt, in);
     }
     Assert(as.isDatatype());
     const Datatype* dt2 = &as.getDatatype();
-    const Datatype* dt1 = d_datatypeCache[dt2];
+    const Datatype* dt1;
+    if(d_datatypeCache.find(dt2) != d_datatypeCache.end()) {
+      dt1 = d_datatypeCache[dt2];
+    } else {
+      dt1 = d_datatypeReverseCache[dt2];
+    }
     Assert(dt1 != NULL, "expected datatype in cache");
     Assert(*dt1 == in.getType().getDatatype(), "improper rewriteAs() between datatypes");
     Node out;
@@ -142,7 +184,7 @@ Node BooleanTermConverter::rewriteAs(TNode in, TypeNode as) throw() {
       NodeBuilder<> appctorb(kind::APPLY_CONSTRUCTOR);
       appctorb << (*dt2)[i].getConstructor();
       for(size_t j = 0; j < ctor.getNumArgs(); ++j) {
-        appctorb << rewriteAs(NodeManager::currentNM()->mkNode(kind::APPLY_SELECTOR, ctor[j].getSelector(), in), TypeNode::fromType(SelectorType((*dt2)[i][j].getSelector().getType()).getRangeType()));
+        appctorb << rewriteAs(NodeManager::currentNM()->mkNode(kind::APPLY_SELECTOR_TOTAL, ctor[j].getSelector(), in), TypeNode::fromType(SelectorType((*dt2)[i][j].getSelector().getType()).getRangeType()));
       }
       Node appctor = appctorb;
       if(i == 0) {
@@ -152,6 +194,23 @@ Node BooleanTermConverter::rewriteAs(TNode in, TypeNode as) throw() {
         out = newOut;
       }
     }
+    return out;
+  }
+  if(in.getType().isArray()) {
+    // convert in to in'
+    // e.g. in : (Array Int Bool)
+    // for in' : (Array Int (_ BitVec 1))
+    // then subs  in  |=>  \array_lambda ( \lambda (x:Int) . [convert (read a' x) x]
+    Assert(as.isArray());
+    Assert(as.getArrayIndexType() == in.getType().getArrayIndexType());
+    Assert(as.getArrayConstituentType() != in.getType().getArrayConstituentType());
+    Node x = NodeManager::currentNM()->mkBoundVar(as.getArrayIndexType());
+    Node boundvars = NodeManager::currentNM()->mkNode(kind::BOUND_VAR_LIST, x);
+    Node sel = NodeManager::currentNM()->mkNode(kind::SELECT, in, x);
+    Node selprime = rewriteAs(sel, as.getArrayConstituentType());
+    Node lam = NodeManager::currentNM()->mkNode(kind::LAMBDA, boundvars, selprime);
+    Node out = NodeManager::currentNM()->mkNode(kind::ARRAY_LAMBDA, lam);
+    Assert(out.getType() == as);
     return out;
   }
   if(in.getType().isParametricDatatype() &&
@@ -165,7 +224,12 @@ Node BooleanTermConverter::rewriteAs(TNode in, TypeNode as) throw() {
       fromParams.push_back(TypeNode::fromType(dt2->getParameter(i)));
       toParams.push_back(as[i + 1]);
     }
-    const Datatype* dt1 = d_datatypeCache[dt2];
+    const Datatype* dt1;
+    if(d_datatypeCache.find(dt2) != d_datatypeCache.end()) {
+      dt1 = d_datatypeCache[dt2];
+    } else {
+      dt1 = d_datatypeReverseCache[dt2];
+    }
     Assert(dt1 != NULL, "expected datatype in cache");
     Assert(*dt1 == in.getType()[0].getDatatype(), "improper rewriteAs() between datatypes");
     Node out;
@@ -176,7 +240,7 @@ Node BooleanTermConverter::rewriteAs(TNode in, TypeNode as) throw() {
       for(size_t j = 0; j < ctor.getNumArgs(); ++j) {
         TypeNode asType = TypeNode::fromType(SelectorType((*dt2)[i][j].getSelector().getType()).getRangeType());
         asType = asType.substitute(fromParams.begin(), fromParams.end(), toParams.begin(), toParams.end());
-        appctorb << rewriteAs(NodeManager::currentNM()->mkNode(kind::APPLY_SELECTOR, ctor[j].getSelector(), in), asType);
+        appctorb << rewriteAs(NodeManager::currentNM()->mkNode(kind::APPLY_SELECTOR_TOTAL, ctor[j].getSelector(), in), asType);
       }
       Node appctor = appctorb;
       if(i == 0) {
@@ -213,9 +277,9 @@ const Datatype& BooleanTermConverter::convertDatatype(const Datatype& dt) throw(
         }
         vector<Datatype> newDtVector;
         if(dt.isParametric()) {
-          newDtVector.push_back(Datatype(dt.getName() + "'", dt.getParameters()));
+          newDtVector.push_back(Datatype(dt.getName() + "'", dt.getParameters(), false));
         } else {
-          newDtVector.push_back(Datatype(dt.getName() + "'"));
+          newDtVector.push_back(Datatype(dt.getName() + "'", false));
         }
         Datatype& newDt = newDtVector.front();
         Debug("boolean-terms") << "found a Boolean arg in constructor " << (*c).getName() << endl;
@@ -250,20 +314,24 @@ const Datatype& BooleanTermConverter::convertDatatype(const Datatype& dt) throw(
         const Datatype& newD = newDtt.getDatatype();
         for(c = dt.begin(); c != dt.end(); ++c) {
           Debug("boolean-terms") << "constructor " << (*c).getConstructor() << ":" << (*c).getConstructor().getType() << " made into " << newD[(*c).getName() + "'"].getConstructor() << ":" << newD[(*c).getName() + "'"].getConstructor().getType() << endl;
-          Node::fromExpr(newD[(*c).getName() + "'"].getConstructor()).setAttribute(BooleanTermAttr(), Node::fromExpr((*c).getConstructor()));// other attr?
+          const DatatypeConstructor *newC;
+          Node::fromExpr((*(newC = &newD[(*c).getName() + "'"])).getConstructor()).setAttribute(BooleanTermAttr(), Node::fromExpr((*c).getConstructor()));// other attr?
           Debug("boolean-terms") << "mapped " << newD[(*c).getName() + "'"].getConstructor() << " to " << (*c).getConstructor() << endl;
           d_varCache[Node::fromExpr((*c).getConstructor())] = Node::fromExpr(newD[(*c).getName() + "'"].getConstructor());
           d_varCache[Node::fromExpr((*c).getTester())] = Node::fromExpr(newD[(*c).getName() + "'"].getTester());
           for(DatatypeConstructor::const_iterator a = (*c).begin(); a != (*c).end(); ++a) {
+            Node::fromExpr((*newC)[(*a).getName() + "'"].getSelector()).setAttribute(BooleanTermAttr(), Node::fromExpr((*a).getSelector()));// other attr?
             d_varCache[Node::fromExpr((*a).getSelector())] = Node::fromExpr(newD[(*c).getName() + "'"].getSelector((*a).getName() + "'"));
           }
         }
         out = &newD;
+        d_datatypeReverseCache[&newD] = &dt;
         return newD;
       }
     }
   }
 
+  // this is identity; don't need the reverse cache
   out = &dt;
   return dt;
 
@@ -640,7 +708,7 @@ Node BooleanTermConverter::rewriteBooleanTermsRec(TNode top, theory::TheoryId pa
           if(dt != dt2) {
             Assert(d_varCache.find(top) != d_varCache.end(),
                    "constructor `%s' not in cache", top.toString().c_str());
-            result.top() << d_varCache[top];
+            result.top() << d_varCache[top].get();
             worklist.pop();
             goto next_worklist;
           }
@@ -658,7 +726,7 @@ Node BooleanTermConverter::rewriteBooleanTermsRec(TNode top, theory::TheoryId pa
           if(dt != dt2) {
             Assert(d_varCache.find(top) != d_varCache.end(),
                    "tester or selector `%s' not in cache", top.toString().c_str());
-            result.top() << d_varCache[top];
+            result.top() << d_varCache[top].get();
             worklist.pop();
             goto next_worklist;
           } else {
@@ -690,6 +758,7 @@ Node BooleanTermConverter::rewriteBooleanTermsRec(TNode top, theory::TheoryId pa
         goto next_worklist;
       }
       switch(k) {
+      case kind::INST_ATTRIBUTE:
       case kind::BOUND_VAR_LIST:
         result.top() << top;
         worklist.pop();
@@ -708,17 +777,19 @@ Node BooleanTermConverter::rewriteBooleanTermsRec(TNode top, theory::TheoryId pa
       case kind::EXISTS: {
         Debug("bt") << "looking at quantifier -> " << top << endl;
         set<TNode> ourVars;
+        set<TNode> output;
         for(TNode::iterator i = top[0].begin(); i != top[0].end(); ++i) {
           if((*i).getType().isBoolean()) {
             ourVars.insert(*i);
+          } else if(convertType((*i).getType(), false) != (*i).getType()) {
+            output.insert(*i);
           }
         }
-        if(ourVars.empty()) {
+        if(ourVars.empty() && output.empty()) {
           // Simple case, quantifier doesn't quantify over Boolean vars,
           // no special handling needed for quantifier.  Fall through.
           Debug("bt") << "- quantifier simple case (1), no Boolean vars bound" << endl;
         } else {
-          set<TNode> output;
           hash_set< pair<TNode, bool>, PairHashFunction<TNode, bool, TNodeHashFunction, BoolHashFunction> > alreadySeen;
           collectVarsInTermContext(top[1], ourVars, output, true, alreadySeen);
           if(output.empty()) {
@@ -730,7 +801,7 @@ Node BooleanTermConverter::rewriteBooleanTermsRec(TNode top, theory::TheoryId pa
             // We have Boolean vars appearing in term context.  Convert their
             // types in the quantifier.
             for(set<TNode>::const_iterator i = output.begin(); i != output.end(); ++i) {
-              Node newVar = nm->mkBoundVar((*i).toString(), nm->mkBitVectorType(1));
+              Node newVar = nm->mkBoundVar((*i).toString(), convertType((*i).getType(), false));
               Assert(quantBoolVars.find(*i) == quantBoolVars.end(), "bad quantifier: shares a bound var with another quantifier (don't do that!)");
               quantBoolVars[*i] = newVar;
             }
@@ -745,7 +816,13 @@ Node BooleanTermConverter::rewriteBooleanTermsRec(TNode top, theory::TheoryId pa
             }
             Node boundVarList = nm->mkNode(kind::BOUND_VAR_LIST, boundVars);
             Node body = rewriteBooleanTermsRec(top[1], theory::THEORY_BOOL, quantBoolVars);
-            Node quant = nm->mkNode(top.getKind(), boundVarList, body);
+            Node quant;
+            if( top.getNumChildren()==3 ){
+              Node ipl = rewriteBooleanTermsRec(top[2], theory::THEORY_BOOL, quantBoolVars);
+              quant = nm->mkNode(top.getKind(), boundVarList, body, ipl );
+            }else{
+              quant = nm->mkNode(top.getKind(), boundVarList, body);
+            }
             Debug("bt") << "rewrote quantifier to -> " << quant << endl;
             d_termCache[make_pair(top, theory::THEORY_BOOL)] = quant;
             d_termCache[make_pair(top, theory::THEORY_BUILTIN)] = quant.iteNode(d_tt, d_ff);
@@ -775,7 +852,17 @@ Node BooleanTermConverter::rewriteBooleanTermsRec(TNode top, theory::TheoryId pa
                     k != kind::TUPLE_UPDATE &&
                     k != kind::RECORD_SELECT &&
                     k != kind::RECORD_UPDATE &&
-                    k != kind::DIVISIBLE) {
+                    k != kind::DIVISIBLE &&
+        // Theory parametric functions go here
+        k != kind::FLOATINGPOINT_TO_FP_IEEE_BITVECTOR &&
+        k != kind::FLOATINGPOINT_TO_FP_FLOATINGPOINT &&
+        k != kind::FLOATINGPOINT_TO_FP_REAL &&
+        k != kind::FLOATINGPOINT_TO_FP_SIGNED_BITVECTOR &&
+        k != kind::FLOATINGPOINT_TO_FP_UNSIGNED_BITVECTOR &&
+        k != kind::FLOATINGPOINT_TO_UBV &&
+        k != kind::FLOATINGPOINT_TO_SBV &&
+        k != kind::FLOATINGPOINT_TO_REAL
+        ) {
             Debug("bt") << "rewriting: " << top.getOperator() << endl;
             result.top() << rewriteBooleanTermsRec(top.getOperator(), theory::THEORY_BUILTIN, quantBoolVars);
             Debug("bt") << "got: " << result.top().getOperator() << endl;

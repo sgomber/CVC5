@@ -5,7 +5,7 @@
  ** Major contributors: Andrew Reynolds
  ** Minor contributors (to current version): Morgan Deters
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -29,6 +29,7 @@ using namespace CVC4::theory::bv::utils;
 bool InequalitySolver::check(Theory::Effort e) {
   Debug("bv-subtheory-inequality") << "InequalitySolveR::check("<< e <<")\n";
   ++(d_statistics.d_numCallstoCheck);
+  d_bv->spendResource();
 
   bool ok = true;
   while (!done() && ok) {
@@ -37,9 +38,9 @@ bool InequalitySolver::check(Theory::Effort e) {
     if (fact.getKind() == kind::EQUAL) {
       TNode a = fact[0];
       TNode b = fact[1];
-      ok = d_inequalityGraph.addInequality(a, b, false, fact);
+      ok = addInequality(a, b, false, fact);
       if (ok)
-        ok = d_inequalityGraph.addInequality(b, a, false, fact);
+        ok = addInequality(b, a, false, fact);
     } else if (fact.getKind() == kind::NOT && fact[0].getKind() == kind::EQUAL) {
       TNode a = fact[0][0];
       TNode b = fact[0][1];
@@ -48,7 +49,7 @@ bool InequalitySolver::check(Theory::Effort e) {
     if (fact.getKind() == kind::NOT && fact[0].getKind() == kind::BITVECTOR_ULE) {
       TNode a = fact[0][1];
       TNode b = fact[0][0];
-      ok = d_inequalityGraph.addInequality(a, b, true, fact);
+      ok = addInequality(a, b, true, fact);
       // propagate
       // if (d_bv->isSharedTerm(a) && d_bv->isSharedTerm(b)) {
       //   Node neq = utils::mkNode(kind::NOT, utils::mkNode(kind::EQUAL, a, b));
@@ -58,11 +59,11 @@ bool InequalitySolver::check(Theory::Effort e) {
     } else if (fact.getKind() == kind::NOT && fact[0].getKind() == kind::BITVECTOR_ULT) {
       TNode a = fact[0][1];
       TNode b = fact[0][0];
-      ok = d_inequalityGraph.addInequality(a, b, false, fact);
+      ok = addInequality(a, b, false, fact);
     } else if (fact.getKind() == kind::BITVECTOR_ULT) {
       TNode a = fact[0];
       TNode b = fact[1];
-      ok = d_inequalityGraph.addInequality(a, b, true, fact);
+      ok = addInequality(a, b, true, fact);
       // propagate
       // if (d_bv->isSharedTerm(a) && d_bv->isSharedTerm(b)) {
       //   Node neq = utils::mkNode(kind::NOT, utils::mkNode(kind::EQUAL, a, b));
@@ -72,14 +73,16 @@ bool InequalitySolver::check(Theory::Effort e) {
     } else if (fact.getKind() == kind::BITVECTOR_ULE) {
       TNode a = fact[0];
       TNode b = fact[1];
-      ok = d_inequalityGraph.addInequality(a, b, false, fact);
+      ok = addInequality(a, b, false, fact);
     }
   }
 
   if (!ok) {
     std::vector<TNode> conflict;
     d_inequalityGraph.getConflict(conflict);
-    d_bv->setConflict(utils::flattenAnd(conflict));
+    Node confl = utils::flattenAnd(conflict);
+    d_bv->setConflict(confl);
+    Debug("bv-subtheory-inequality") << "InequalitySolver::conflict:  "<< confl <<"\n";
     return false;
   }
 
@@ -92,6 +95,7 @@ bool InequalitySolver::check(Theory::Effort e) {
       d_bv->lemma(lemmas[i]);
     }
   }
+  Debug("bv-subtheory-inequality") << "InequalitySolver done. ";
   return true;
 }
 
@@ -134,12 +138,12 @@ void InequalitySolver::assertFact(TNode fact) {
 }
 
 bool InequalitySolver::isInequalityOnly(TNode node) {
-  if (d_ineqTermCache.find(node) != d_ineqTermCache.end()) {
-    return d_ineqTermCache[node];
-  }
-
   if (node.getKind() == kind::NOT) {
     node = node[0];
+  }
+
+  if (node.getAttribute(IneqOnlyComputedAttribute())) {
+    return node.getAttribute(IneqOnlyAttribute());
   }
 
   if (node.getKind() != kind::EQUAL &&
@@ -149,13 +153,15 @@ bool InequalitySolver::isInequalityOnly(TNode node) {
       node.getKind() != kind::SELECT &&
       node.getKind() != kind::STORE &&
       node.getMetaKind() != kind::metakind::VARIABLE) {
+    // not worth caching
     return false;
   }
   bool res = true;
-  for (unsigned i = 0; i < node.getNumChildren(); ++i) {
+  for (unsigned i = 0; res && i < node.getNumChildren(); ++i) {
     res = res && isInequalityOnly(node[i]);
   }
-  d_ineqTermCache[node] = res;
+  node.setAttribute(IneqOnlyComputedAttribute(), true);
+  node.setAttribute(IneqOnlyAttribute(), res);
   return res;
 }
 
@@ -193,6 +199,28 @@ Node InequalitySolver::getModelValue(TNode var) {
   }
   Debug("bitvector-model") << " => " << result <<"\n";
   return result;
+}
+
+void InequalitySolver::preRegister(TNode node) {
+  Kind kind = node.getKind(); 
+  if (kind == kind::EQUAL ||
+      kind == kind::BITVECTOR_ULE ||
+      kind == kind::BITVECTOR_ULT) {
+    d_ineqTerms.insert(node[0]);
+    d_ineqTerms.insert(node[1]);
+  }
+}
+
+bool InequalitySolver::addInequality(TNode a, TNode b, bool strict, TNode fact) {
+  bool ok = d_inequalityGraph.addInequality(a, b, strict, fact);
+  if (!ok || !strict) return ok;
+
+  Node one = utils::mkConst(utils::getSize(a), 1);
+  Node a_plus_one = Rewriter::rewrite(utils::mkNode(kind::BITVECTOR_PLUS, a, one));
+  if (d_ineqTerms.find(a_plus_one) != d_ineqTerms.end()) {
+    ok = d_inequalityGraph.addInequality(a_plus_one, b, false, fact);
+  }
+  return ok;
 }
 
 InequalitySolver::Statistics::Statistics()

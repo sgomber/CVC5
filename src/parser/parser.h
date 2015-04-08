@@ -3,9 +3,9 @@
  ** \verbatim
  ** Original author: Morgan Deters
  ** Major contributors: Christopher L. Conway
- ** Minor contributors (to current version): Dejan Jovanovic, Francois Bobot, Andrew Reynolds
+ ** Minor contributors (to current version): Dejan Jovanovic, Kshitij Bansal, Francois Bobot, Andrew Reynolds
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -30,6 +30,7 @@
 #include "expr/symbol_table.h"
 #include "expr/kind.h"
 #include "expr/expr_stream.h"
+#include "util/unsafe_interrupt_exception.h"
 
 namespace CVC4 {
 
@@ -39,6 +40,7 @@ class ExprManager;
 class Command;
 class FunctionType;
 class Type;
+class ResourceManager;
 
 namespace parser {
 
@@ -108,6 +110,8 @@ class CVC4_PUBLIC Parser {
 
   /** The expression manager */
   ExprManager *d_exprManager;
+  /** The resource manager associated with this expr manager */
+  ResourceManager *d_resourceManager;
 
   /** The input that we're parsing. */
   Input *d_input;
@@ -132,6 +136,12 @@ class CVC4_PUBLIC Parser {
    * lambda.
    */
   size_t d_assertionLevel;
+
+  /**
+   * Whether we're in global declarations mode (all definitions and
+   * declarations are global).
+   */
+  bool d_globalDeclarations;
 
   /**
    * Maintains a list of reserved symbols at the assertion level that might
@@ -163,6 +173,16 @@ class CVC4_PUBLIC Parser {
    * e.g. the online version.)
    */
   bool d_canIncludeFile;
+
+  /**
+   * Whether the logic has been forced with --force-logic.
+   */
+  bool d_logicIsForced;
+
+  /**
+   * The logic, if d_logicIsForced == true.
+   */
+  std::string d_forcedLogic;
 
   /** The set of operators available in the current logic. */
   std::set<Kind> d_logicOperators;
@@ -262,6 +282,14 @@ public:
   void disallowIncludeFile() { d_canIncludeFile = false; }
   bool canIncludeFile() const { return d_canIncludeFile; }
 
+  /** Expose the functionality from SMT/SMT2 parsers, while making
+      implementation optional by returning false by default. */
+  virtual bool logicIsSet() { return false; }
+
+  void forceLogic(const std::string& logic) { assert(!d_logicIsForced); d_logicIsForced = true; d_forcedLogic = logic; }
+  const std::string& getForcedLogic() const { return d_forcedLogic; }
+  bool logicIsForced() const { return d_logicIsForced; }
+
   /**
    * Returns a variable, given a name.
    *
@@ -309,6 +337,7 @@ public:
    * @param name the symbol to check
    * @param check the kind of check to perform
    * @param type the type of the symbol
+   * @param notes notes to add to a parse error (if one is generated)
    * @throws ParserException if checks are enabled and the check fails
    */
   void checkDeclaration(const std::string& name, DeclarationCheck check,
@@ -479,10 +508,10 @@ public:
   bool isPredicate(const std::string& name);
 
   /** Parse and return the next command. */
-  Command* nextCommand() throw(ParserException);
+  Command* nextCommand() throw(ParserException, UnsafeInterruptException);
 
   /** Parse and return the next expression. */
-  Expr nextExpression() throw(ParserException);
+  Expr nextExpression() throw(ParserException, UnsafeInterruptException);
 
   /** Issue a warning to the user. */
   inline void warning(const std::string& msg) {
@@ -540,6 +569,14 @@ public:
       d_assertionLevel = scopeLevel();
       d_reservedSymbols.clear();
     }
+  }
+
+  virtual void reset() {
+    d_symtab->reset();
+  }
+
+  void setGlobalDeclarations(bool flag) {
+    d_globalDeclarations = flag;
   }
 
   /**

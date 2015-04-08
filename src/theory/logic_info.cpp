@@ -3,9 +3,9 @@
  ** \verbatim
  ** Original author: Morgan Deters
  ** Major contributors: none
- ** Minor contributors (to current version): Dejan Jovanovic, Tianyi Liang
+ ** Minor contributors (to current version): Dejan Jovanovic, Tianyi Liang, Kshitij Bansal, Andrew Reynolds
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -37,6 +37,7 @@ LogicInfo::LogicInfo() :
   d_reals(true),
   d_linear(true),// for now, "everything enabled" doesn't include non-linear arith
   d_differenceLogic(false),
+  d_cardinalityConstraints(false),
   d_locked(false) {
 
   for(TheoryId id = THEORY_FIRST; id < THEORY_LAST; ++id) {
@@ -52,6 +53,7 @@ LogicInfo::LogicInfo(std::string logicString) throw(IllegalArgumentException) :
   d_reals(false),
   d_linear(false),
   d_differenceLogic(false),
+  d_cardinalityConstraints(false),
   d_locked(false) {
 
   setLogicString(logicString);
@@ -66,6 +68,7 @@ LogicInfo::LogicInfo(const char* logicString) throw(IllegalArgumentException) :
   d_reals(false),
   d_linear(false),
   d_differenceLogic(false),
+  d_cardinalityConstraints(false),
   d_locked(false) {
 
   setLogicString(logicString);
@@ -97,8 +100,15 @@ std::string LogicInfo::getLogicString() const {
         ss << "UF";
         ++seen;
       }
+      if( d_cardinalityConstraints ){
+        ss << "C";
+      }
       if(d_theories[THEORY_BV]) {
         ss << "BV";
+        ++seen;
+      }
+      if(d_theories[THEORY_FP]) {
+        ss << "FP";
         ++seen;
       }
       if(d_theories[THEORY_DATATYPES]) {
@@ -120,6 +130,10 @@ std::string LogicInfo::getLogicString() const {
           ss << (areRealsUsed() ? "R" : "");
           ss << "A";
         }
+        ++seen;
+      }
+      if(d_theories[THEORY_SETS]) {
+        ss << "FS";
         ++seen;
       }
 
@@ -153,7 +167,9 @@ void LogicInfo::setLogicString(std::string logicString) throw(IllegalArgumentExc
   enableTheory(THEORY_BOOL);
 
   const char* p = logicString.c_str();
-  if(!strcmp(p, "QF_SAT") || *p == '\0') {
+  if(*p == '\0') {
+    // propositional logic only; we're done.
+  } else if(!strcmp(p, "QF_SAT")) {
     // propositional logic only; we're done.
     p += 6;
   } else if(!strcmp(p, "QF_ALL_SUPPORTED")) {
@@ -185,9 +201,17 @@ void LogicInfo::setLogicString(std::string logicString) throw(IllegalArgumentExc
         enableTheory(THEORY_UF);
         p += 2;
       }
+      if(!strncmp(p, "C", 1 )) {
+        d_cardinalityConstraints = true;
+        p += 1;
+      }
       // allow BV or DT in either order
       if(!strncmp(p, "BV", 2)) {
         enableTheory(THEORY_BV);
+        p += 2;
+      }
+      if(!strncmp(p, "FP", 2)) {
+        enableTheory(THEORY_FP);
         p += 2;
       }
       if(!strncmp(p, "DT", 2)) {
@@ -255,6 +279,10 @@ void LogicInfo::setLogicString(std::string logicString) throw(IllegalArgumentExc
         enableReals();
         arithNonLinear();
         p += 4;
+      }
+      if(!strncmp(p, "FS", 2)) {
+        enableTheory(THEORY_SETS);
+        p += 2;
       }
     }
   }

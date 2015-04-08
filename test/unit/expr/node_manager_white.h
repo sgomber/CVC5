@@ -5,7 +5,7 @@
  ** Major contributors: none
  ** Minor contributors (to current version): Tim King
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -19,33 +19,28 @@
 #include <string>
 
 #include "expr/node_manager.h"
-#include "context/context.h"
 
 #include "util/rational.h"
 #include "util/integer.h"
 
 using namespace CVC4;
 using namespace CVC4::expr;
-using namespace CVC4::context;
 
 class NodeManagerWhite : public CxxTest::TestSuite {
 
-  Context* d_ctxt;
   NodeManager* d_nm;
   NodeManagerScope* d_scope;
 
 public:
 
   void setUp() {
-    d_ctxt = new Context();
-    d_nm = new NodeManager(d_ctxt, NULL);
+    d_nm = new NodeManager(NULL);
     d_scope = new NodeManagerScope(d_nm);
   }
 
   void tearDown() {
     delete d_scope;
     delete d_nm;
-    delete d_ctxt;
   }
 
   void testMkConstRational() {

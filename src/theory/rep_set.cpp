@@ -3,9 +3,9 @@
  ** \verbatim
  ** Original author: Andrew Reynolds
  ** Major contributors: Morgan Deters
- ** Minor contributors (to current version): none
+ ** Minor contributors (to current version): Kshitij Bansal
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -28,6 +28,15 @@ void RepSet::clear(){
   d_tmap.clear();
 }
 
+bool RepSet::hasRep( TypeNode tn, Node n ) {
+  std::map< TypeNode, std::vector< Node > >::iterator it = d_type_reps.find( tn );
+  if( it==d_type_reps.end() ){
+    return false;
+  }else{
+    return std::find( it->second.begin(), it->second.end(), n )!=it->second.end();
+  }
+}
+
 int RepSet::getNumRepresentatives( TypeNode tn ) const{
   std::map< TypeNode, std::vector< Node > >::const_iterator it = d_type_reps.find( tn );
   if( it!=d_type_reps.end() ){
@@ -37,10 +46,11 @@ int RepSet::getNumRepresentatives( TypeNode tn ) const{
   }
 }
 
-void RepSet::add( Node n ){
-  TypeNode t = n.getType();
-  d_tmap[ n ] = (int)d_type_reps[t].size();
-  d_type_reps[t].push_back( n );
+void RepSet::add( TypeNode tn, Node n ){
+  Trace("rsi-debug") << "Add rep #" << d_type_reps[tn].size() << " for " << tn << " : " << n << std::endl;
+  Assert( n.getType().isSubtypeOf( tn ) );
+  d_tmap[ n ] = (int)d_type_reps[tn].size();
+  d_type_reps[tn].push_back( n );
 }
 
 int RepSet::getIndexFor( Node n ) const {
@@ -59,7 +69,7 @@ void RepSet::complete( TypeNode t ){
     while( !te.isFinished() ){
       Node n = *te;
       if( std::find( d_type_reps[t].begin(), d_type_reps[t].end(), n )==d_type_reps[t].end() ){
-        add( n );
+        add( t, n );
       }
       ++te;
     }
@@ -141,9 +151,9 @@ bool RepSetIterator::initialize(){
     TypeNode tn = d_types[i];
     if( tn.isSort() ){
       if( !d_rep_set->hasType( tn ) ){
-        Node var = NodeManager::currentNM()->mkSkolem( "repSet_$$", tn, "is a variable created by the RepSetIterator" );
+        Node var = NodeManager::currentNM()->mkSkolem( "repSet", tn, "is a variable created by the RepSetIterator" );
         Trace("mkVar") << "RepSetIterator:: Make variable " << var << " : " << tn << std::endl;
-        d_rep_set->add( var );
+        d_rep_set->add( tn, var );
       }
     }else if( tn.isInteger() ){
       bool inc = false;
@@ -169,7 +179,8 @@ bool RepSetIterator::initialize(){
         }
       }
     //enumerate if the sort is reasonably small, the upper bound of 1000 is chosen arbitrarily for now
-    }else if( tn.getCardinality().isFinite() && tn.getCardinality().getFiniteCardinality().toUnsignedInt()<=1000 ){
+    }else if( tn.getCardinality().isFinite() && !tn.getCardinality().isLargeFinite() &&
+              tn.getCardinality().getFiniteCardinality().toUnsignedInt()<=1000 ){
       d_rep_set->complete( tn );
     }else{
       Trace("fmf-incomplete") << "Incomplete because of quantification of type " << tn << std::endl;

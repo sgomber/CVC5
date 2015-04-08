@@ -5,7 +5,7 @@
  ** Major contributors: none
  ** Minor contributors (to current version): Francois Bobot
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -23,6 +23,7 @@
 #include <string>
 
 #include "util/exception.h"
+#include "options/option_exception.h"
 
 namespace CVC4 {
 namespace language {
@@ -44,15 +45,23 @@ enum CVC4_PUBLIC Language {
 
   /** The SMTLIB v1 input language */
   LANG_SMTLIB_V1 = 0,
-  /** The SMTLIB v2 input language */
-  LANG_SMTLIB_V2,
+  /** The SMTLIB v2.0 input language */
+  LANG_SMTLIB_V2_0,
+  /** The SMTLIB v2.5 input language */
+  LANG_SMTLIB_V2_5,
+  /** Backward-compatibility for enumeration naming */
+  LANG_SMTLIB_V2 = LANG_SMTLIB_V2_5,
   /** The TPTP input language */
   LANG_TPTP,
   /** The CVC4 input language */
   LANG_CVC4,
+  /** The Z3-str input language */
+  LANG_Z3STR,
 
   // START INPUT-ONLY LANGUAGES AT ENUM VALUE 10
   // THESE ARE IN PRINCIPLE NOT POSSIBLE OUTPUT LANGUAGES
+  /** The SyGuS input language */
+  LANG_SYGUS,
 
   /** LANG_MAX is > any valid InputLanguage id */
   LANG_MAX
@@ -67,14 +76,23 @@ inline std::ostream& operator<<(std::ostream& out, Language lang) {
   case LANG_SMTLIB_V1:
     out << "LANG_SMTLIB_V1";
     break;
-  case LANG_SMTLIB_V2:
-    out << "LANG_SMTLIB_V2";
+  case LANG_SMTLIB_V2_0:
+    out << "LANG_SMTLIB_V2_0";
+    break;
+  case LANG_SMTLIB_V2_5:
+    out << "LANG_SMTLIB_V2_5";
     break;
   case LANG_TPTP:
     out << "LANG_TPTP";
     break;
   case LANG_CVC4:
     out << "LANG_CVC4";
+    break;
+  case LANG_Z3STR:
+    out << "LANG_Z3STR";
+    break;
+  case LANG_SYGUS:
+    out << "LANG_SYGUS";
     break;
   default:
     out << "undefined_input_language";
@@ -101,18 +119,26 @@ enum CVC4_PUBLIC Language {
 
   /** The SMTLIB v1 output language */
   LANG_SMTLIB_V1 = input::LANG_SMTLIB_V1,
-  /** The SMTLIB v2 output language */
+  /** The SMTLIB v2.0 output language */
+  LANG_SMTLIB_V2_0 = input::LANG_SMTLIB_V2_0,
+  /** The SMTLIB v2.5 output language */
+  LANG_SMTLIB_V2_5 = input::LANG_SMTLIB_V2_5,
+  /** Backward-compatibility for enumeration naming */
   LANG_SMTLIB_V2 = input::LANG_SMTLIB_V2,
   /** The TPTP output language */
   LANG_TPTP = input::LANG_TPTP,
   /** The CVC4 output language */
   LANG_CVC4 = input::LANG_CVC4,
+  /** The Z3-str output language */
+  LANG_Z3STR = input::LANG_Z3STR,
 
   // START OUTPUT-ONLY LANGUAGES AT ENUM VALUE 10
   // THESE ARE IN PRINCIPLE NOT POSSIBLE INPUT LANGUAGES
 
   /** The AST output language */
   LANG_AST = 10,
+  /** The CVC3-compatibility output language */
+  LANG_CVC3,
 
   /** LANG_MAX is > any valid OutputLanguage id */
   LANG_MAX
@@ -124,8 +150,11 @@ inline std::ostream& operator<<(std::ostream& out, Language lang) {
   case LANG_SMTLIB_V1:
     out << "LANG_SMTLIB_V1";
     break;
-  case LANG_SMTLIB_V2:
-    out << "LANG_SMTLIB_V2";
+  case LANG_SMTLIB_V2_0:
+    out << "LANG_SMTLIB_V2_0";
+    break;
+  case LANG_SMTLIB_V2_5:
+    out << "LANG_SMTLIB_V2_5";
     break;
   case LANG_TPTP:
     out << "LANG_TPTP";
@@ -133,8 +162,14 @@ inline std::ostream& operator<<(std::ostream& out, Language lang) {
   case LANG_CVC4:
     out << "LANG_CVC4";
     break;
+  case LANG_Z3STR:
+    out << "LANG_Z3STR";
+    break;
   case LANG_AST:
     out << "LANG_AST";
+    break;
+  case LANG_CVC3:
+    out << "LANG_CVC3";
     break;
   default:
     out << "undefined_output_language";
@@ -153,6 +188,8 @@ namespace language {
 
 InputLanguage toInputLanguage(OutputLanguage language) CVC4_PUBLIC;
 OutputLanguage toOutputLanguage(InputLanguage language) CVC4_PUBLIC;
+InputLanguage toInputLanguage(std::string language) CVC4_PUBLIC;
+OutputLanguage toOutputLanguage(std::string language) CVC4_PUBLIC;
 
 }/* CVC4::language namespace */
 }/* CVC4 namespace */

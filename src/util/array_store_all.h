@@ -5,7 +5,7 @@
  ** Major contributors: none
  ** Minor contributors (to current version): none
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -46,7 +46,7 @@ public:
     // because this check is done in production builds too
     CheckArgument(type.isArray(), type, "array store-all constants can only be created for array types, not `%s'", type.toString().c_str());
 
-    CheckArgument(expr.getType().isSubtypeOf(type.getConstituentType()), expr, "expr type `%s' does not match constituent type of array type `%s'", expr.getType().toString().c_str(), type.toString().c_str());
+    CheckArgument(expr.getType().isComparableTo(type.getConstituentType()), expr, "expr type `%s' does not match constituent type of array type `%s'", expr.getType().toString().c_str(), type.toString().c_str());
     CheckArgument(expr.isConst(), expr, "ArrayStoreAll requires a constant expression");
   }
 

@@ -5,7 +5,7 @@
  ** Major contributors: Liana Hadarean
  ** Minor contributors (to current version): Tim King, Clark Barrett, Morgan Deters
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -121,6 +121,8 @@ enum RewriteRuleId {
   NotUlt,
   NotUle,
   MultPow2,
+  MultSlice,
+  ExtractMultLeadingBit,
   NegIdemp,
   UdivPow2,
   UdivOne,
@@ -133,6 +135,7 @@ enum RewriteRuleId {
   UltOne,
   SltZero, 
   ZeroUlt,
+  MergeSignExtend,
   
   /// normalization rules
   ExtractBitwise,
@@ -149,10 +152,11 @@ enum RewriteRuleId {
   NotOr,  // not sure why this would help (not done)
   NotXor, // not sure why this would help (not done)
   FlattenAssocCommut,
+  FlattenAssocCommutNoDuplicates,
   PlusCombineLikeTerms,
   MultSimplify,
   MultDistribConst,
-  MultDistribVariable,
+  MultDistrib,
   SolveEq,
   BitwiseEq,
   AndSimplify,
@@ -160,8 +164,11 @@ enum RewriteRuleId {
   XorSimplify,
   BitwiseSlicing,
   // rules to simplify bitblasting
-  BBPlusNeg
- };
+  BBPlusNeg,
+  UltPlusOne,
+  ConcatToMult,
+  IsPowerOfTwo
+};
 
 
 inline std::ostream& operator << (std::ostream& out, RewriteRuleId ruleId) {
@@ -248,6 +255,8 @@ inline std::ostream& operator << (std::ostream& out, RewriteRuleId ruleId) {
   case XorOne :       out << "XorOne";        return out;
   case XorZero :       out << "XorZero";        return out;
   case MultPow2 :            out << "MultPow2";             return out;
+  case MultSlice :            out << "MultSlice";             return out;
+  case ExtractMultLeadingBit :            out << "ExtractMultLeadingBit";             return out;
   case NegIdemp :            out << "NegIdemp";             return out;
   case UdivPow2 :            out << "UdivPow2";             return out;
   case UdivOne :            out << "UdivOne";             return out;
@@ -262,11 +271,11 @@ inline std::ostream& operator << (std::ostream& out, RewriteRuleId ruleId) {
   case SignExtendEliminate :            out << "SignExtendEliminate";             return out;
   case NotIdemp :                  out << "NotIdemp"; return out;
   case UleSelf:                    out << "UleSelf"; return out; 
-  case FlattenAssocCommut:     out << "FlattenAssocCommut"; return out; 
+  case FlattenAssocCommut:     out << "FlattenAssocCommut"; return out;
+  case FlattenAssocCommutNoDuplicates:     out << "FlattenAssocCommutNoDuplicates"; return out; 
   case PlusCombineLikeTerms: out << "PlusCombineLikeTerms"; return out;
   case MultSimplify: out << "MultSimplify"; return out;
   case MultDistribConst: out << "MultDistribConst"; return out;
-  case MultDistribVariable: out << "MultDistribConst"; return out;
   case SolveEq : out << "SolveEq"; return out;
   case BitwiseEq : out << "BitwiseEq"; return out;
   case NegMult : out << "NegMult"; return out;
@@ -279,9 +288,15 @@ inline std::ostream& operator << (std::ostream& out, RewriteRuleId ruleId) {
   case UltOne : out << "UltOne"; return out;
   case SltZero : out << "SltZero"; return out;
   case ZeroUlt : out << "ZeroUlt"; return out;
+  case MergeSignExtend : out << "MergeSignExtend"; return out;
+    
   case UleEliminate : out << "UleEliminate"; return out;
   case BitwiseSlicing : out << "BitwiseSlicing"; return out;
-  case ExtractSignExtend : out << "ExtractSignExtend"; return out; 
+  case ExtractSignExtend : out << "ExtractSignExtend"; return out;
+  case MultDistrib: out << "MultDistrib"; return out;
+  case UltPlusOne: out << "UltPlusOne"; return out;
+  case ConcatToMult: out << "ConcatToMult"; return out;
+  case IsPowerOfTwo: out << "IsPowerOfTwo"; return out;
   default:
     Unreachable();
   }
@@ -472,7 +487,10 @@ struct AllRewriteRules {
   RewriteRule<SubEliminate> rule82; 
   RewriteRule<XorOne> rule83;
   RewriteRule<XorZero> rule84;
+  RewriteRule<MultSlice> rule85;
+  RewriteRule<FlattenAssocCommutNoDuplicates> rule86;
   RewriteRule<MultPow2> rule87;
+  RewriteRule<ExtractMultLeadingBit> rule88;
   RewriteRule<NegIdemp> rule91;
   RewriteRule<UdivPow2> rule92;
   RewriteRule<UdivOne> rule93;
@@ -500,7 +518,10 @@ struct AllRewriteRules {
   RewriteRule<SltZero> rule115;
   RewriteRule<BVToNatEliminate>  rule116;
   RewriteRule<IntToBVEliminate>  rule117;
-  RewriteRule<MultDistribVariable> rule118;
+  RewriteRule<MultDistrib> rule118;
+  RewriteRule<UltPlusOne> rule119;
+  RewriteRule<ConcatToMult> rule120;
+  RewriteRule<IsPowerOfTwo> rule121;
 };
 
 template<> inline

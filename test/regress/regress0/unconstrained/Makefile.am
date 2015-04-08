@@ -13,8 +13,11 @@ TESTS_ENVIRONMENT = \
 	$(AM_LOG_FLAGS) $(LOG_FLAGS)
 endif
 
-override CVC4_REGRESSION_ARGS += --unconstrained-simp
+# models not supported with unconstrained simp
+override CVC4_REGRESSION_ARGS += --unconstrained-simp --no-check-models
 export CVC4_REGRESSION_ARGS
+
+MAKEFLAGS = -k
 
 # These are run for all build profiles.
 # If a test shouldn't be run in e.g. competition mode,
@@ -63,6 +66,7 @@ TESTS =	\
 	bvult.smt2 \
 	geq.smt2 \
 	gt.smt2 \
+	ite.smt2 \
 	leq.smt2 \
 	lt.smt2 \
 	uf1.smt2 \

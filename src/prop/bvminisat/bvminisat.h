@@ -5,7 +5,7 @@
  ** Major contributors:
  ** Minor contributors (to current version):
  ** This file is part of the CVC4 prototype.
- ** Copyright (c) 2009, 2010, 2011  The Analysis of Computer Systems Group (ACSys)
+ ** Copyright (c) 2009-2014  The Analysis of Computer Systems Group (ACSys)
  ** Courant Institute of Mathematical Sciences
  ** New York University
  ** See the file COPYING in the top-level source directory for licensing
@@ -21,7 +21,6 @@
 #pragma once
 
 #include "prop/sat_solver.h"
-#include "prop/sat_solver_registry.h"
 #include "prop/bvminisat/simp/SimpSolver.h"
 #include "context/cdo.h"
 
@@ -47,15 +46,17 @@ private:
       d_notify->notify(satClause);
     }
 
+    void spendResource() {
+      d_notify->spendResource();
+    }
     void safePoint() {
-      d_notify->safePoint(); 
+      d_notify->safePoint();
     }
   };
 
   BVMinisat::SimpSolver* d_minisat;
   MinisatNotify* d_minisatNotify;
 
-  unsigned d_solveCount;
   unsigned d_assertionsCount;
   context::CDO<unsigned> d_assertionsRealCount;
   context::CDO<unsigned> d_lastPropagation;
@@ -69,14 +70,15 @@ public:
   BVMinisatSatSolver() :
     ContextNotifyObj(NULL, false),
     d_assertionsRealCount(NULL, (unsigned)0),
-    d_lastPropagation(NULL, (unsigned)0)
+    d_lastPropagation(NULL, (unsigned)0),
+    d_statistics("")
   { Unreachable(); }
-  BVMinisatSatSolver(context::Context* mainSatContext);
+  BVMinisatSatSolver(context::Context* mainSatContext, const std::string& name = "");
   ~BVMinisatSatSolver() throw(AssertionException);
 
   void setNotify(Notify* notify);
 
-  void addClause(SatClause& clause, bool removable);
+  void addClause(SatClause& clause, bool removable, uint64_t proof_id);
 
   SatValue propagate();
 
@@ -91,7 +93,6 @@ public:
   
   SatValue solve();
   SatValue solve(long unsigned int&);
-  SatValue solve(bool quick_solve);
   void getUnsatCore(SatClause& unsatCore);
 
   SatValue value(SatLiteral l);
@@ -107,7 +108,6 @@ public:
   static SatVariable     toSatVariable(BVMinisat::Var var);
   static BVMinisat::Lit    toMinisatLit(SatLiteral lit);
   static SatLiteral      toSatLiteral(BVMinisat::Lit lit);
-  static SatValue toSatLiteralValue(bool res);
   static SatValue toSatLiteralValue(BVMinisat::lbool res);
 
   static void  toMinisatClause(SatClause& clause, BVMinisat::vec<BVMinisat::Lit>& minisat_clause);
@@ -129,8 +129,9 @@ public:
     ReferenceStat<uint64_t> d_statTotLiterals;
     ReferenceStat<int> d_statEliminatedVars;
     IntStat d_statCallsToSolve;
-    BackedStat<double> d_statSolveTime; 
-    Statistics();
+    BackedStat<double> d_statSolveTime;
+    bool d_registerStats;
+    Statistics(const std::string& prefix);
     ~Statistics();
     void init(BVMinisat::SimpSolver* minisat);
   };

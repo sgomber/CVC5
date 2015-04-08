@@ -5,7 +5,7 @@
  ** Major contributors: Morgan Deters
  ** Minor contributors (to current version): none
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -36,6 +36,8 @@ class InstStrategyUserPatterns : public InstStrategy{
 private:
   /** explicitly provided patterns */
   std::map< Node, std::vector< inst::Trigger* > > d_user_gen;
+  /** waiting to be generated patterns */
+  std::map< Node, std::vector< std::vector< Node > > > d_user_gen_wait;
   /** counter for quantifiers */
   std::map< Node, int > d_counter;
   /** process functions */
@@ -56,7 +58,7 @@ public:
   std::string identify() const { return std::string("UserPatterns"); }
 };/* class InstStrategyUserPatterns */
 
-class InstStrategyAutoGenTriggers : public InstStrategy{
+class InstStrategyAutoGenTriggers : public InstStrategy {
 public:
   enum {
     RELEVANCE_NONE,
@@ -68,10 +70,8 @@ private:
   /** regeneration */
   bool d_regenerate;
   int d_regenerate_frequency;
-  /** generate additional triggers */
-  bool d_generate_additional;
-  /** triggers for each quantifier */
-  std::map< Node, std::map< inst::Trigger*, bool > > d_auto_gen_trigger;
+  /** (single,multi) triggers for each quantifier */
+  std::map< Node, std::map< inst::Trigger*, bool > > d_auto_gen_trigger[2];
   std::map< Node, int > d_counter;
   /** single, multi triggers for each quantifier */
   std::map< Node, std::vector< Node > > d_patTerms[2];
@@ -80,38 +80,50 @@ private:
   std::map< Node, bool > d_made_multi_trigger;
   //processed trigger this round
   std::map< Node, std::map< inst::Trigger*, bool > > d_processed_trigger;
+  //instantiation no patterns
+  std::map< Node, std::vector< Node > > d_user_no_gen;
 private:
   /** process functions */
   void processResetInstantiationRound( Theory::Effort effort );
   int process( Node f, Theory::Effort effort, int e );
   /** generate triggers */
-  void generateTriggers( Node f, Theory::Effort effort, int e, int & status );
+  void generateTriggers( Node f, Theory::Effort effort, int e, int& status );
+  //bool addTrigger( inst::Trigger * tr, Node f, unsigned r );
+  /** has user patterns */
+  bool hasUserPatterns( Node f );
+  /** has user patterns */
+  std::map< Node, bool > d_hasUserPatterns;
 public:
-  /** tstrt is the type of triggers to use (maximum depth, minimum depth, or all)
-      rstrt is the relevance setting for trigger (use only relevant triggers vs. use all)
-      rgfr is the frequency at which triggers are generated */
-  InstStrategyAutoGenTriggers( QuantifiersEngine* qe, int tstrt,  int rgfr = -1 ) :
-      InstStrategy( qe ), d_tr_strategy( tstrt ), d_generate_additional( false ){
-    setRegenerateFrequency( rgfr );
-  }
+  InstStrategyAutoGenTriggers( QuantifiersEngine* qe );
   ~InstStrategyAutoGenTriggers(){}
 public:
   /** get auto-generated trigger */
   inst::Trigger* getAutoGenTrigger( Node f );
   /** identify */
   std::string identify() const { return std::string("AutoGenTriggers"); }
-  /** set regenerate frequency, if fr<0, turn off regenerate */
-  void setRegenerateFrequency( int fr ){
-    if( fr<0 ){
-      d_regenerate = false;
-    }else{
-      d_regenerate_frequency = fr;
-      d_regenerate = true;
-    }
-  }
-  /** set generate additional */
-  void setGenerateAdditional( bool val ) { d_generate_additional = val; }
+  /** add pattern */
+  void addUserNoPattern( Node f, Node pat );
 };/* class InstStrategyAutoGenTriggers */
+
+
+class InstStrategyLocalTheoryExt : public InstStrategy {
+private:
+  /** have we registered quantifier, value is whether it is an LTE term */
+  std::map< Node, bool > d_quant;
+  /** triggers for each quantifier */
+  std::map< Node, inst::Trigger* > d_lte_trigger;
+private:
+  /** process functions */
+  void processResetInstantiationRound( Theory::Effort effort );
+  int process( Node f, Theory::Effort effort, int e );
+public:
+  InstStrategyLocalTheoryExt( QuantifiersEngine* qe ) : InstStrategy( qe ){}
+  /** identify */
+  std::string identify() const { return std::string("LocalTheoryExt"); }
+  /** is local theory quantifier? */
+  bool isLocalTheoryExt( Node f );
+};
+
 
 class InstStrategyFreeVariable : public InstStrategy{
 private:
@@ -127,6 +139,7 @@ public:
   /** identify */
   std::string identify() const { return std::string("FreeVariable"); }
 };/* class InstStrategyFreeVariable */
+
 
 }
 }/* CVC4::theory namespace */

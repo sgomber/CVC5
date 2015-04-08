@@ -5,7 +5,7 @@
  ** Major contributors: Morgan Deters, Liana Hadarean
  ** Minor contributors (to current version): none
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -24,6 +24,7 @@
 #include "util/statistics_registry.h"
 #include "context/cdlist.h"
 #include "prop/sat_solver_types.h"
+#include "expr/node.h"
 
 namespace CVC4 {
 namespace prop {
@@ -38,7 +39,7 @@ public:
   virtual ~SatSolver() { }
 
   /** Assert a clause in the solver. */
-  virtual void addClause(SatClause& clause, bool removable) = 0;
+  virtual void addClause(SatClause& clause, bool removable, uint64_t proof_id) = 0;
 
   /**
    * Create a new boolean variable in the solver.
@@ -95,6 +96,7 @@ public:
      * Notify about a learnt clause.
      */
     virtual void notify(SatClause& clause) = 0;
+    virtual void spendResource() = 0;
     virtual void safePoint() = 0;
     
   };/* class BVSatSolverInterface::Notify */

@@ -5,7 +5,7 @@
  ** Major contributors: Andrew Reynolds
  ** Minor contributors (to current version): Francois Bobot
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -30,6 +30,7 @@ class QuantifiersEngine;
 namespace inst {
 
 class IMGenerator;
+class InstMatchGenerator;
 
 //a collect of nodes representing a trigger
 class Trigger {
@@ -93,7 +94,7 @@ private:
   static bool isUsable( Node n, Node f );
   static Node getIsUsableTrigger( Node n, Node f, bool pol = true, bool hasPol = false );
   /** collect all APPLY_UF pattern terms for f in n */
-  static bool collectPatTerms2( QuantifiersEngine* qe, Node f, Node n, std::map< Node, bool >& patMap, int tstrt, bool pol, bool hasPol );
+  static bool collectPatTerms2( QuantifiersEngine* qe, Node f, Node n, std::map< Node, bool >& patMap, int tstrt, std::vector< Node >& exclude, bool pol, bool hasPol );
 public:
   //different strategies for choosing trigger terms
   enum {
@@ -101,16 +102,20 @@ public:
     TS_MIN_TRIGGER,
     TS_ALL,
   };
-  static void collectPatTerms( QuantifiersEngine* qe, Node f, Node n, std::vector< Node >& patTerms, int tstrt, bool filterInst = false );
+  static void collectPatTerms( QuantifiersEngine* qe, Node f, Node n, std::vector< Node >& patTerms, int tstrt, std::vector< Node >& exclude, bool filterInst = false );
 public:
   /** is usable trigger */
-  static bool isUsableTrigger( std::vector< Node >& nodes, Node f );
   static bool isUsableTrigger( Node n, Node f );
   static bool isAtomicTrigger( Node n );
+  static bool isAtomicTriggerKind( Kind k );
   static bool isSimpleTrigger( Node n );
-  /** get pattern arithmetic */
-  static bool isArithmeticTrigger( Node f, Node n, std::map< Node, Node >& coeffs );
   static bool isBooleanTermTrigger( Node n );
+  static bool isPureTheoryTrigger( Node n );
+  static bool isLocalTheoryExt( Node n, std::vector< Node >& vars, std::vector< Node >& patTerms );
+  /** return data structure for producing matches for this trigger. */
+  static InstMatchGenerator* getInstMatchGenerator( Node n );
+  static Node getInversionVariable( Node n );
+  static Node getInversion( Node n, Node x );
 
   inline void toStream(std::ostream& out) const {
     /*

@@ -5,7 +5,7 @@
  ** Major contributors: Morgan Deters
  ** Minor contributors (to current version): Tim King
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -55,8 +55,13 @@ UnknownTypeException::UnknownTypeException(TNode n) throw() :
 /** Is this node constant? (and has that been computed yet?) */
 struct IsConstTag { };
 struct IsConstComputedTag { };
+struct HasBoundVarTag { };
+struct HasBoundVarComputedTag { };
 typedef expr::Attribute<IsConstTag, bool> IsConstAttr;
 typedef expr::Attribute<IsConstComputedTag, bool> IsConstComputedAttr;
+/** Attribute true for expressions with bound variables in them */
+typedef expr::Attribute<HasBoundVarTag, bool> HasBoundVarAttr;
+typedef expr::Attribute<HasBoundVarComputedTag, bool> HasBoundVarComputedAttr;
 
 template <bool ref_count>
 bool NodeTemplate<ref_count>::isConst() const {
@@ -91,7 +96,29 @@ bool NodeTemplate<ref_count>::isConst() const {
   }
 }
 
+template <bool ref_count>
+bool NodeTemplate<ref_count>::hasBoundVar() {
+  assertTNodeNotExpired();
+  if(! getAttribute(HasBoundVarComputedAttr())) {
+    bool hasBv = false;
+    if(getKind() == kind::BOUND_VARIABLE) {
+      hasBv = true;
+    } else {
+      for(iterator i = begin(); i != end() && !hasBv; ++i) {
+        hasBv = (*i).hasBoundVar();
+      }
+    }
+    setAttribute(HasBoundVarAttr(), hasBv);
+    setAttribute(HasBoundVarComputedAttr(), true);
+    Debug("bva") << *this << " has bva : " << getAttribute(HasBoundVarAttr()) << std::endl;
+    return hasBv;
+  }
+  return getAttribute(HasBoundVarAttr());
+}
+
 template bool NodeTemplate<true>::isConst() const;
 template bool NodeTemplate<false>::isConst() const;
+template bool NodeTemplate<true>::hasBoundVar();
+template bool NodeTemplate<false>::hasBoundVar();
 
 }/* CVC4 namespace */

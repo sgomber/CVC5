@@ -2,10 +2,10 @@
 /*! \file datatype.h
  ** \verbatim
  ** Original author: Morgan Deters
- ** Major contributors: none
- ** Minor contributors (to current version): Andrew Reynolds
+ ** Major contributors: Andrew Reynolds
+ ** Minor contributors (to current version): none
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -185,13 +185,15 @@ private:
   Expr d_constructor;
   Expr d_tester;
   std::vector<DatatypeConstructorArg> d_args;
+  /** the operator associated with this constructor (for sygus) */
+  Expr d_sygus_op;
 
   void resolve(ExprManager* em, DatatypeType self,
                const std::map<std::string, DatatypeType>& resolutions,
                const std::vector<Type>& placeholders,
                const std::vector<Type>& replacements,
                const std::vector< SortConstructorType >& paramTypes,
-               const std::vector< DatatypeType >& paramReplacements)
+               const std::vector< DatatypeType >& paramReplacements, size_t cindex)
     throw(IllegalArgumentException, DatatypeResolutionException);
   friend class Datatype;
 
@@ -207,6 +209,13 @@ private:
   Type doParametricSubstitution(Type range,
                                 const std::vector< SortConstructorType >& paramTypes,
                                 const std::vector< DatatypeType >& paramReplacements);
+  
+  /** compute the cardinality of this datatype */
+  Cardinality computeCardinality( std::vector< Type >& processing ) const throw(IllegalArgumentException);
+  /** compute whether this datatype is well-founded */
+  bool computeWellFounded( std::vector< Type >& processing ) const throw(IllegalArgumentException);
+  /** compute ground term */
+  Expr computeGroundTerm( Type t, std::vector< Type >& processing ) const throw(IllegalArgumentException);
 public:
   /**
    * Create a new Datatype constructor with the given name for the
@@ -223,6 +232,7 @@ public:
    * constructor and tester aren't created until resolution time.
    */
   DatatypeConstructor(std::string name, std::string tester);
+  DatatypeConstructor(std::string name, std::string tester, Expr sygus_op);
 
   /**
    * Add an argument (i.e., a data field) of the given name and type
@@ -268,6 +278,9 @@ public:
    * Datatype must be resolved.
    */
   Expr getTester() const;
+  
+  /** get sygus op */
+  Expr getSygusOp() const;
 
   /**
    * Get the tester name for this Datatype constructor.
@@ -305,20 +318,6 @@ public:
    * only be called for resolved constructors.
    */
   bool isFinite() const throw(IllegalArgumentException);
-
-  /**
-   * Return true iff this constructor is well-founded (there exist
-   * ground terms).  The constructor must be resolved or an
-   * exception is thrown.
-   */
-  bool isWellFounded() const throw(IllegalArgumentException);
-
-  /**
-   * Construct and return a ground term of this constructor.  The
-   * constructor must be both resolved and well-founded, or else an
-   * exception is thrown.
-   */
-  Expr mkGroundTerm( Type t ) const throw(IllegalArgumentException);
 
   /**
    * Returns true iff this Datatype constructor has already been
@@ -421,6 +420,7 @@ public:
  *
  */
 class CVC4_PUBLIC Datatype {
+  friend class DatatypeConstructor;
 public:
   /**
    * Get the datatype of a constructor, selector, or tester operator.
@@ -434,6 +434,12 @@ public:
    */
   static size_t indexOf(Expr item) CVC4_PUBLIC;
 
+  /**
+   * Get the index of constructor corresponding to selector.  (Zero is
+   * always the first index.)
+   */
+  static size_t cindexOf(Expr item) CVC4_PUBLIC;
+
   /** The type for iterators over constructors. */
   typedef DatatypeConstructorIterator iterator;
   /** The (const) type for iterators over constructors. */
@@ -442,13 +448,28 @@ public:
 private:
   std::string d_name;
   std::vector<Type> d_params;
+  bool d_isCo;
   std::vector<DatatypeConstructor> d_constructors;
   bool d_resolved;
   Type d_self;
+  bool d_involvesExt;
+  /** information for sygus */
+  Type d_sygus_type;
+  Expr d_sygus_bvl;  
 
   // "mutable" because computing the cardinality can be expensive,
   // and so it's computed just once, on demand---this is the cache
   mutable Cardinality d_card;
+  
+  // is this type a recursive singleton type
+  mutable int d_card_rec_singleton;
+  // if d_card_rec_singleton is true,
+  // infinite cardinality depends on at least one of the following uninterpreted sorts having cardinality > 1
+  mutable std::vector< Type > d_card_u_assume;
+  // is this well-founded
+  mutable int d_well_founded;
+  // ground term for this datatype
+  mutable std::map< Type, Expr > d_ground_term;
 
   /**
    * Datatypes refer to themselves, recursively, and we have a
@@ -485,16 +506,24 @@ private:
     throw(IllegalArgumentException, DatatypeResolutionException);
   friend class ExprManager;// for access to resolve()
 
+  /** compute the cardinality of this datatype */
+  Cardinality computeCardinality( std::vector< Type >& processing ) const throw(IllegalArgumentException);
+  /** compute whether this datatype is a recursive singleton */
+  bool computeCardinalityRecSingleton( std::vector< Type >& processing, std::vector< Type >& u_assume ) const throw(IllegalArgumentException);
+  /** compute whether this datatype is well-founded */
+  bool computeWellFounded( std::vector< Type >& processing ) const throw(IllegalArgumentException);
+  /** compute ground term */
+  Expr computeGroundTerm( Type t, std::vector< Type >& processing ) const throw(IllegalArgumentException);
 public:
 
   /** Create a new Datatype of the given name. */
-  inline explicit Datatype(std::string name);
+  inline explicit Datatype(std::string name, bool isCo = false);
 
   /**
    * Create a new Datatype of the given name, with the given
    * parameterization.
    */
-  inline Datatype(std::string name, const std::vector<Type>& params);
+  inline Datatype(std::string name, const std::vector<Type>& params, bool isCo = false);
 
   /**
    * Add a constructor to this Datatype.  Constructor names need not
@@ -502,6 +531,12 @@ public:
    */
   void addConstructor(const DatatypeConstructor& c);
 
+  /** set the sygus information of this datatype
+   *    st : the builtin type for this grammar
+   *    bvl : the list of arguments for the synth-fun
+   */
+  void setSygus( Type st, Expr bvl );
+  
   /** Get the name of this Datatype. */
   inline std::string getName() const throw();
 
@@ -519,6 +554,12 @@ public:
 
   /** Get parameters */
   inline std::vector<Type> getParameters() const;
+
+  /** is this a co-datatype? */
+  inline bool isCodatatype() const;
+  
+  /** is this a sygus datatype? */
+  inline bool isSygus() const;
 
   /**
    * Return the cardinality of this datatype (the sum of the
@@ -541,6 +582,16 @@ public:
    */
   bool isWellFounded() const throw(IllegalArgumentException);
 
+  /** 
+   * Return true iff this datatype is a recursive singleton
+   */
+  bool isRecursiveSingleton() const throw(IllegalArgumentException);
+  
+  
+  /** get number of recursive singleton argument types */
+  unsigned getNumRecursiveSingletonArgTypes() const throw(IllegalArgumentException);
+  Type getRecursiveSingletonArgType( unsigned i ) const throw(IllegalArgumentException);
+  
   /**
    * Construct and return a ground term of this Datatype.  The
    * Datatype must be both resolved and well-founded, or else an
@@ -608,6 +659,11 @@ public:
    * This Datatype must be resolved.
    */
   Expr getConstructor(std::string name) const;
+  
+  /** get sygus type */
+  Type getSygusType() const;
+  /** get sygus var list */
+  Expr getSygusVarList() const;
 
   /**
    * Get whether this datatype involves an external type.  If so,
@@ -656,22 +712,30 @@ inline std::string DatatypeUnresolvedType::getName() const throw() {
   return d_name;
 }
 
-inline Datatype::Datatype(std::string name) :
+inline Datatype::Datatype(std::string name, bool isCo) :
   d_name(name),
   d_params(),
+  d_isCo(isCo),
   d_constructors(),
   d_resolved(false),
   d_self(),
-  d_card(CardinalityUnknown()) {
+  d_involvesExt(false),
+  d_card(CardinalityUnknown()),
+  d_card_rec_singleton(0),
+  d_well_founded(0) {
 }
 
-inline Datatype::Datatype(std::string name, const std::vector<Type>& params) :
+inline Datatype::Datatype(std::string name, const std::vector<Type>& params, bool isCo) :
   d_name(name),
   d_params(params),
+  d_isCo(isCo),
   d_constructors(),
   d_resolved(false),
   d_self(),
-  d_card(CardinalityUnknown()) {
+  d_involvesExt(false),
+  d_card(CardinalityUnknown()),
+  d_card_rec_singleton(0),
+  d_well_founded(0) {
 }
 
 inline std::string Datatype::getName() const throw() {
@@ -699,6 +763,14 @@ inline Type Datatype::getParameter( unsigned int i ) const {
 inline std::vector<Type> Datatype::getParameters() const {
   CheckArgument(isParametric(), this, "cannot get type parameters of a non-parametric datatype");
   return d_params;
+}
+
+inline bool Datatype::isCodatatype() const {
+  return d_isCo;
+}
+
+inline bool Datatype::isSygus() const {
+  return !d_sygus_type.isNull();
 }
 
 inline bool Datatype::operator!=(const Datatype& other) const throw() {

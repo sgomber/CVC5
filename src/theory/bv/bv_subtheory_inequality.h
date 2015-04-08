@@ -3,9 +3,9 @@
  ** \verbatim
  ** Original author: Liana Hadarean
  ** Major contributors: Andrew Reynolds
- ** Minor contributors (to current version): Morgan Deters
+ ** Minor contributors (to current version): none
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -22,10 +22,19 @@
 #include "theory/bv/bv_subtheory.h"
 #include "theory/bv/bv_inequality_graph.h"
 #include "context/cdhashset.h"
+#include "expr/attribute.h"
 
 namespace CVC4 {
 namespace theory {
 namespace bv {
+
+/** Cache for InequalitySolver::isInequalityOnly() */
+struct IneqOnlyAttributeId {};
+typedef expr::Attribute<IneqOnlyAttributeId, bool> IneqOnlyAttribute;
+
+/** Whether the above has been computed yet or not for an expr */
+struct IneqOnlyComputedAttributeId {};
+typedef expr::Attribute<IneqOnlyComputedAttributeId, bool> IneqOnlyComputedAttribute;
 
 class InequalitySolver: public SubtheorySolver {
   struct Statistics {
@@ -38,8 +47,10 @@ class InequalitySolver: public SubtheorySolver {
   InequalityGraph d_inequalityGraph;
   context::CDHashMap<Node, TNode, NodeHashFunction> d_explanations;
   context::CDO<bool> d_isComplete;
-  __gnu_cxx::hash_map<TNode, bool, TNodeHashFunction> d_ineqTermCache;
+  typedef __gnu_cxx::hash_set<TNode, TNodeHashFunction> TNodeSet;
+  TNodeSet d_ineqTerms;
   bool isInequalityOnly(TNode node);
+  bool addInequality(TNode a, TNode b, bool strict, TNode fact);
   Statistics d_statistics;
 public:
   InequalitySolver(context::Context* c, TheoryBV* bv)
@@ -48,7 +59,7 @@ public:
       d_inequalityGraph(c),
       d_explanations(c),
       d_isComplete(c, true),
-      d_ineqTermCache(),
+      d_ineqTerms(),
       d_statistics()
   {}
 
@@ -60,6 +71,7 @@ public:
   Node getModelValue(TNode var);
   EqualityStatus getEqualityStatus(TNode a, TNode b);
   void assertFact(TNode fact);
+  void preRegister(TNode node);
 };
 
 }

@@ -3,9 +3,9 @@
  ** \verbatim
  ** Original author: Dejan Jovanovic
  ** Major contributors: Morgan Deters
- ** Minor contributors (to current version): Tim King
+ ** Minor contributors (to current version): Kshitij Bansal, Tim King
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -168,18 +168,21 @@ class CDOhash_map : public ContextObj {
   /** ensure copy ctor is only called by us */
   CDOhash_map(const CDOhash_map& other) :
     ContextObj(other),
-    d_key(other.d_key),
+    // don't need to save the key---and if we do we can get
+    // refcounts for Node keys messed up and leak memory
+    d_key(),
     d_data(other.d_data),
     d_map(other.d_map),
     d_prev(NULL),
     d_next(NULL) {
   }
+  CDOhash_map& operator=(const CDOhash_map&) CVC4_UNDEFINED;
 
 public:
 
   CDOhash_map(Context* context,
          CDHashMap<Key, Data, HashFcn>* map,
-	 const Key& key,
+         const Key& key,
          const Data& data,
          bool atLevelZero = false,
          bool allocatedInCMM = false) :
@@ -304,6 +307,10 @@ class CDHashMap : public ContextObj {
     }
     d_trash.clear();
   }
+
+  // no copy or assignment
+  CDHashMap(const CDHashMap&) CVC4_UNDEFINED;
+  CDHashMap& operator=(const CDHashMap&) CVC4_UNDEFINED;
 
 public:
 
@@ -586,4 +593,4 @@ public:
 }/* CVC4::context namespace */
 }/* CVC4 namespace */
 
-#endif /* __CVC4__CONTEXT__CDHashMAP_H */
+#endif /* __CVC4__CONTEXT__CDHASHMAP_H */

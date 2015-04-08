@@ -5,7 +5,7 @@
  ** Major contributors: Morgan Deters, Dejan Jovanovic
  ** Minor contributors (to current version): Tim King
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -21,7 +21,6 @@
 
 #include "expr/node_manager.h"
 #include "expr/node_manager_attributes.h"
-#include "context/context.h"
 
 #include "util/rational.h"
 #include "util/integer.h"
@@ -29,26 +28,22 @@
 using namespace CVC4;
 using namespace CVC4::expr;
 using namespace CVC4::kind;
-using namespace CVC4::context;
 
 class NodeManagerBlack : public CxxTest::TestSuite {
 
-  Context* d_context;
   NodeManager* d_nodeManager;
   NodeManagerScope* d_scope;
 
 public:
 
   void setUp() {
-    d_context = new Context;
-    d_nodeManager = new NodeManager(d_context, NULL);
+    d_nodeManager = new NodeManager(NULL);
     d_scope = new NodeManagerScope(d_nodeManager);
   }
 
   void tearDown() {
     delete d_scope;
     delete d_nodeManager;
-    delete d_context;
   }
 
   void testMkNodeNot() {

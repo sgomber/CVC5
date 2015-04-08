@@ -3,9 +3,9 @@
  ** \verbatim
  ** Original author: Morgan Deters
  ** Major contributors: Christopher L. Conway
- ** Minor contributors (to current version): Tim King, Dejan Jovanovic, Andrew Reynolds
+ ** Minor contributors (to current version): Tim King, Dejan Jovanovic, Kshitij Bansal, Andrew Reynolds
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2013  New York University and The University of Iowa
+ ** Copyright (c) 2009-2014  New York University and The University of Iowa
  ** See the file COPYING in the top-level source directory for licensing
  ** information.\endverbatim
  **
@@ -29,6 +29,7 @@
 #include "expr/kind.h"
 #include "expr/type.h"
 #include "util/output.h"
+#include "util/resource_manager.h"
 #include "options/options.h"
 
 using namespace std;
@@ -39,16 +40,20 @@ namespace parser {
 
 Parser::Parser(ExprManager* exprManager, Input* input, bool strictMode, bool parseOnly) :
   d_exprManager(exprManager),
+  d_resourceManager(d_exprManager->getResourceManager()),
   d_input(input),
   d_symtabAllocated(),
   d_symtab(&d_symtabAllocated),
   d_assertionLevel(0),
+  d_globalDeclarations(false),
   d_anonymousFunctionCount(0),
   d_done(false),
   d_checksEnabled(true),
   d_strictMode(strictMode),
   d_parseOnly(parseOnly),
-  d_canIncludeFile(true) {
+  d_canIncludeFile(true),
+  d_logicIsForced(false),
+  d_forcedLogic() {
   d_input->setParser(*this);
 }
 
@@ -140,6 +145,9 @@ bool Parser::isPredicate(const std::string& name) {
 
 Expr
 Parser::mkVar(const std::string& name, const Type& type, uint32_t flags) {
+  if(d_globalDeclarations) {
+    flags |= ExprManager::VAR_FLAG_GLOBAL;
+  }
   Debug("parser") << "mkVar(" << name << ", " << type << ")" << std::endl;
   Expr expr = d_exprManager->mkVar(name, type, flags);
   defineVar(name, expr, flags & ExprManager::VAR_FLAG_GLOBAL);
@@ -156,6 +164,9 @@ Parser::mkBoundVar(const std::string& name, const Type& type) {
 
 Expr
 Parser::mkFunction(const std::string& name, const Type& type, uint32_t flags) {
+  if(d_globalDeclarations) {
+    flags |= ExprManager::VAR_FLAG_GLOBAL;
+  }
   Debug("parser") << "mkVar(" << name << ", " << type << ")" << std::endl;
   Expr expr = d_exprManager->mkVar(name, type, flags);
   defineFunction(name, expr, flags & ExprManager::VAR_FLAG_GLOBAL);
@@ -164,6 +175,9 @@ Parser::mkFunction(const std::string& name, const Type& type, uint32_t flags) {
 
 Expr
 Parser::mkAnonymousFunction(const std::string& prefix, const Type& type, uint32_t flags) {
+  if(d_globalDeclarations) {
+    flags |= ExprManager::VAR_FLAG_GLOBAL;
+  }
   stringstream name;
   name << prefix << "_anon_" << ++d_anonymousFunctionCount;
   return d_exprManager->mkVar(name.str(), type, flags);
@@ -171,6 +185,9 @@ Parser::mkAnonymousFunction(const std::string& prefix, const Type& type, uint32_
 
 std::vector<Expr>
 Parser::mkVars(const std::vector<std::string> names, const Type& type, uint32_t flags) {
+  if(d_globalDeclarations) {
+    flags |= ExprManager::VAR_FLAG_GLOBAL;
+  }
   std::vector<Expr> vars;
   for(unsigned i = 0; i < names.size(); ++i) {
     vars.push_back(mkVar(names[i], type, flags));
@@ -232,6 +249,9 @@ Parser::defineParameterizedType(const std::string& name,
 
 SortType
 Parser::mkSort(const std::string& name, uint32_t flags) {
+  if(d_globalDeclarations) {
+    flags |= ExprManager::VAR_FLAG_GLOBAL;
+  }
   Debug("parser") << "newSort(" << name << ")" << std::endl;
   Type type = d_exprManager->mkSort(name, flags);
   defineType(name, type);
@@ -342,7 +362,15 @@ Parser::mkMutualDatatypeTypes(const std::vector<Datatype>& datatypes) {
     // complained of a bad substitution if anything is left unresolved.
     // Clear out the set.
     d_unresolved.clear();
-
+    
+    //throw exception if any datatype is not well-founded
+    for(unsigned i = 0; i < datatypes.size(); ++i) {
+      const Datatype& dt = types[i].getDatatype();
+      if( !dt.isCodatatype() && !dt.isWellFounded() ){
+        throw ParserException(dt.getName() + " is not well-founded");
+      }
+    }
+    
     return types;
   } catch(IllegalArgumentException& ie) {
     throw ParserException(ie.getMessage());
@@ -377,7 +405,7 @@ void Parser::checkDeclaration(const std::string& varName,
   switch(check) {
   case CHECK_DECLARED:
     if( !isDeclared(varName, type) ) {
-      parseError("Symbol " + varName + " not declared as a " +
+      parseError("Symbol '" + varName + "' not declared as a " +
                  (type == SYM_VARIABLE ? "variable" : "type") +
                  (notes.size() == 0 ? notes : "\n" + notes));
     }
@@ -385,7 +413,7 @@ void Parser::checkDeclaration(const std::string& varName,
 
   case CHECK_UNDECLARED:
     if( isDeclared(varName, type) ) {
-      parseError("Symbol " + varName + " previously declared as a " +
+      parseError("Symbol '" + varName + "' previously declared as a " +
                  (type == SYM_VARIABLE ? "variable" : "type") +
                  (notes.size() == 0 ? notes : "\n" + notes));
     }
@@ -443,7 +471,7 @@ void Parser::preemptCommand(Command* cmd) {
   d_commandQueue.push_back(cmd);
 }
 
-Command* Parser::nextCommand() throw(ParserException) {
+Command* Parser::nextCommand() throw(ParserException, UnsafeInterruptException) {
   Debug("parser") << "nextCommand()" << std::endl;
   Command* cmd = NULL;
   if(!d_commandQueue.empty()) {
@@ -466,11 +494,19 @@ Command* Parser::nextCommand() throw(ParserException) {
     }
   }
   Debug("parser") << "nextCommand() => " << cmd << std::endl;
+  if (cmd != NULL &&
+      dynamic_cast<SetOptionCommand*>(cmd) == NULL &&
+      dynamic_cast<QuitCommand*>(cmd) == NULL) {
+    // don't count set-option commands as to not get stuck in an infinite
+    // loop of resourcing out
+    d_resourceManager->spendResource();
+  }
   return cmd;
 }
 
-Expr Parser::nextExpression() throw(ParserException) {
+Expr Parser::nextExpression() throw(ParserException, UnsafeInterruptException) {
   Debug("parser") << "nextExpression()" << std::endl;
+  d_resourceManager->spendResource();
   Expr result;
   if(!done()) {
     try {
@@ -491,7 +527,7 @@ Expr Parser::nextExpression() throw(ParserException) {
 void Parser::attributeNotSupported(const std::string& attr) {
   if(d_attributesWarnedAbout.find(attr) == d_attributesWarnedAbout.end()) {
     stringstream ss;
-    ss << "warning: Attribute " << attr << " not supported (ignoring this and all following uses)";
+    ss << "warning: Attribute '" << attr << "' not supported (ignoring this and all following uses)";
     d_input->warning(ss.str());
     d_attributesWarnedAbout.insert(attr);
   }
