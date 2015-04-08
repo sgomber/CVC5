@@ -240,4 +240,9 @@ option ltePartialInst --lte-partial-inst bool :default false
 option lteRestrictInstClosure --lte-restrict-inst-closure bool :default false
   treat arguments of inst closure as restricted terms for instantiation
  
+### recursive function options
+
+option funDefs --fun-defs bool :default false
+  enable specialized techniques for recursive function definitions
+ 
 endmodule

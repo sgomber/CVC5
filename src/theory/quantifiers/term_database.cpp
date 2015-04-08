@@ -23,6 +23,7 @@
 #include "theory/datatypes/datatypes_rewriter.h"
 #include "theory/quantifiers/ce_guided_instantiation.h"
 #include "theory/quantifiers/rewrite_engine.h"
+#include "theory/quantifiers/fun_def_engine.h"
 
 //for sygus
 #include "theory/bv/theory_bv_utils.h"
@@ -1249,6 +1250,7 @@ void TermDb::computeAttributes( Node q ) {
             exit( 0 );
           }
           d_fun_defs[f] = true;
+          d_quantEngine->setOwner( q, d_quantEngine->getFunDefEngine() );
         }
         if( avar.getAttribute(SygusAttribute()) ){
           //not necessarily nested existential
