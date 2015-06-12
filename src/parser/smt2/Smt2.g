@@ -522,22 +522,27 @@ sygusCommand returns [CVC4::Command* cmd = NULL]
     DEFINE_SORT_TOK { PARSER_STATE->checkThatLogicIsSet(); }
     symbol[name,CHECK_UNDECLARED,SYM_SORT]
     { PARSER_STATE->checkUserSymbol(name); }
-    LPAREN_TOK symbolList[names,CHECK_NONE,SYM_SORT] RPAREN_TOK
-    { PARSER_STATE->pushScope(true);
-      for(std::vector<std::string>::const_iterator i = names.begin(),
-            iend = names.end();
-          i != iend;
-          ++i) {
-        sorts.push_back(PARSER_STATE->mkSort(*i));
+    ( LPAREN_TOK SYGUS_ENUM_TOK LPAREN_TOK symbolList[names,CHECK_NONE,SYM_SORT] RPAREN_TOK RPAREN_TOK {
+        Debug("parser-sygus") << "Defining enum datatype " << name << " with " << names.size() << " constructors." << std::endl;
+        //make datatype
+        datatypes.push_back(Datatype(name));
+        for( unsigned i=0; i<names.size(); i++ ){
+          std::string cname = name + "::" + names[i];
+          std::string testerId("is-");
+          testerId.append(cname);
+          PARSER_STATE->checkDeclaration(cname, CHECK_UNDECLARED, SYM_VARIABLE);
+          PARSER_STATE->checkDeclaration(testerId, CHECK_UNDECLARED, SYM_VARIABLE);
+          CVC4::DatatypeConstructor c(cname, testerId);
+          datatypes[0].addConstructor(c);
+        }
+        std::vector<DatatypeType> datatypeTypes = PARSER_STATE->mkMutualDatatypeTypes(datatypes);
+        $cmd = new DatatypeDeclarationCommand(datatypeTypes);
       }
-    }
-    sortSymbol[t,CHECK_DECLARED]
-    { PARSER_STATE->popScope();
-      // Do NOT call mkSort, since that creates a new sort!
-      // This name is not its own distinct sort, it's an alias.
-      PARSER_STATE->defineParameterizedType(name, sorts, t);
-      $cmd = new DefineTypeCommand(name, sorts, t);
-    }
+      | sortSymbol[t,CHECK_DECLARED] { 
+        PARSER_STATE->defineParameterizedType(name, sorts, t);
+        $cmd = new DefineTypeCommand(name, sorts, t);
+      }
+    )
   | /* declare-var */
     DECLARE_VAR_TOK { PARSER_STATE->checkThatLogicIsSet(); }
     symbol[name,CHECK_UNDECLARED,SYM_VARIABLE]
@@ -2657,6 +2662,7 @@ CHECK_SYNTH_TOK : 'check-synth';
 DECLARE_VAR_TOK : 'declare-var';
 CONSTRAINT_TOK : 'constraint';
 SET_OPTIONS_TOK : 'set-options';
+SYGUS_ENUM_TOK : { PARSER_STATE->sygus() }? 'Enum';
 SYGUS_CONSTANT_TOK : { PARSER_STATE->sygus() }? 'Constant';
 SYGUS_VARIABLE_TOK : { PARSER_STATE->sygus() }? 'Variable';
 SYGUS_INPUT_VARIABLE_TOK : { PARSER_STATE->sygus() }? 'InputVariable';

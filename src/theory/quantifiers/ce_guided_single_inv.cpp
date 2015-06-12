@@ -744,25 +744,33 @@ CegConjectureSingleInv::CegConjectureSingleInv( CegConjecture * p ) : d_parent( 
 
 Node CegConjectureSingleInv::getSingleInvLemma( Node guard ) {
   if( !d_single_inv.isNull() ) {
-    Assert( d_single_inv.getKind()==FORALL );
     d_single_inv_var.clear();
     d_single_inv_sk.clear();
-    for( unsigned i=0; i<d_single_inv[0].getNumChildren(); i++ ){
-      std::stringstream ss;
-      ss << "k_" << d_single_inv[0][i];
-      Node k = NodeManager::currentNM()->mkSkolem( ss.str(), d_single_inv[0][i].getType(), "single invocation function skolem" );
-      d_single_inv_var.push_back( d_single_inv[0][i] );
-      d_single_inv_sk.push_back( k );
-      d_single_inv_sk_index[k] = i;
+    Node inst;
+    if( d_single_inv.getKind()==FORALL ){
+      for( unsigned i=0; i<d_single_inv[0].getNumChildren(); i++ ){
+        std::stringstream ss;
+        ss << "k_" << d_single_inv[0][i];
+        Node k = NodeManager::currentNM()->mkSkolem( ss.str(), d_single_inv[0][i].getType(), "single invocation function skolem" );
+        d_single_inv_var.push_back( d_single_inv[0][i] );
+        d_single_inv_sk.push_back( k );
+        d_single_inv_sk_index[k] = i;
+      }
+      inst = d_single_inv[1].substitute( d_single_inv_var.begin(), d_single_inv_var.end(), d_single_inv_sk.begin(), d_single_inv_sk.end() );
+    }else{
+      inst = d_single_inv;
     }
-    Node inst = d_single_inv[1].substitute( d_single_inv_var.begin(), d_single_inv_var.end(), d_single_inv_sk.begin(), d_single_inv_sk.end() );
     inst = TermDb::simpleNegate( inst );
     Trace("cegqi-si") << "Single invocation initial lemma : " << inst << std::endl;
 
     //initialize the instantiator for this
-    CegqiOutputSingleInv * cosi = new CegqiOutputSingleInv( this );
-    d_cinst = new CegInstantiator( d_qe, cosi );
-    d_cinst->d_vars.insert( d_cinst->d_vars.end(), d_single_inv_sk.begin(), d_single_inv_sk.end() );
+    if( !d_single_inv_sk.empty() ){
+      CegqiOutputSingleInv * cosi = new CegqiOutputSingleInv( this );
+      d_cinst = new CegInstantiator( d_qe, cosi );
+      d_cinst->d_vars.insert( d_cinst->d_vars.end(), d_single_inv_sk.begin(), d_single_inv_sk.end() );
+    }else{
+      d_cinst = NULL;
+    }
 
     return NodeManager::currentNM()->mkNode( OR, guard.negate(), inst );
   }else{
@@ -879,8 +887,10 @@ void CegConjectureSingleInv::initialize( QuantifiersEngine * qe, Node q ) {
       //construct the single invocation version of the property
       Trace("cegqi-si") << "Single invocation formula conjuncts are : " << std::endl;
       //std::vector< Node > si_conj;
-      Assert( !pbvs.empty() );
-      Node pbvl = NodeManager::currentNM()->mkNode( BOUND_VAR_LIST, pbvs );
+      Node pbvl;
+      if( !pbvs.empty() ){
+        pbvl = NodeManager::currentNM()->mkNode( BOUND_VAR_LIST, pbvs );
+      }
       for( std::map< Node, std::vector< Node > >::iterator it = children.begin(); it != children.end(); ++it ){
         //should hold since we prevent miniscoping
         Assert( d_single_inv.isNull() );
@@ -976,9 +986,14 @@ void CegConjectureSingleInv::initialize( QuantifiersEngine * qe, Node q ) {
 
         if( singleInvocation ){
           Node bd = conjuncts.size()==1 ? conjuncts[0] : NodeManager::currentNM()->mkNode( OR, conjuncts );
-          d_single_inv = NodeManager::currentNM()->mkNode( FORALL, pbvl, bd );
+          if( pbvl.isNull() ){
+            d_single_inv = bd;
+          }else{
+            d_single_inv = NodeManager::currentNM()->mkNode( FORALL, pbvl, bd );
+          }
           Trace("cegqi-si-debug") << "...formula is : " << d_single_inv << std::endl;
-          if( options::eMatching.wasSetByUser() ){
+          /*
+          if( options::eMatching() && options::eMatching.wasSetByUser() ){
             Node bd = d_qe->getTermDatabase()->getInstConstantBody( d_single_inv );
             std::vector< Node > patTerms;
             std::vector< Node > exclude;
@@ -990,6 +1005,7 @@ void CegConjectureSingleInv::initialize( QuantifiersEngine * qe, Node q ) {
               }
             }
           }
+          */
         }
       }
     }
@@ -1169,8 +1185,7 @@ bool CegConjectureSingleInv::addLemma( Node n ) {
 }
 
 void CegConjectureSingleInv::check( std::vector< Node >& lems ) {
-  if( !d_single_inv.isNull() ) {
-    Assert( d_cinst!=NULL );
+  if( !d_single_inv.isNull() && d_cinst!=NULL ) {
     d_curr_lemmas.clear();
     //check if there are delta lemmas
     d_cinst->getDeltaLemmas( lems );

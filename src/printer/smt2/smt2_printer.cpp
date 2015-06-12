@@ -168,9 +168,14 @@ void Smt2Printer::toStream(std::ostream& out, TNode n,
       const BitVector& bv = n.getConst<BitVector>();
       const Integer& x = bv.getValue();
       unsigned n = bv.getSize();
-      out << "(_ ";
-      out << "bv" << x <<" " << n;
-      out << ")";
+      if(d_variant == sygus_variant ){
+        out << "#b" << bv.toString();
+      }else{
+        out << "(_ ";
+        out << "bv" << x <<" " << n;
+        out << ")";
+      }
+      
       // //out << "#b";
 
       // while(n-- > 0) {
