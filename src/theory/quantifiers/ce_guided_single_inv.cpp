@@ -637,6 +637,8 @@ Node CegInstantiator::applySubstitution( Node n, std::vector< Node >& subs, std:
 //check if delta has a lower bound L
 // if so, add lemma L>0 => L>d
 void CegInstantiator::getDeltaLemmas( std::vector< Node >& lems ) {
+  return;
+  /*  disable for now
   if( !d_n_delta.isNull() ){
     Theory* theory = d_qe->getTheoryEngine()->theoryOf( THEORY_ARITH );
     if( theory && d_qe->getTheoryEngine()->isTheoryEnabled( THEORY_ARITH ) ){
@@ -701,6 +703,7 @@ void CegInstantiator::getDeltaLemmas( std::vector< Node >& lems ) {
       }
     }
   }
+  */
 }
 
 void CegInstantiator::check() {
@@ -1232,7 +1235,7 @@ Node CegConjectureSingleInv::getSolution( unsigned sol_index, TypeNode stn, int&
 
   //reconstruct the solution into sygus if necessary
   reconstructed = 0;
-  if( options::cegqiSingleInvReconstruct() && !stn.isNull() ){
+  if( options::cegqiSingleInvReconstruct() && !dt.getSygusAllowAll() && !stn.isNull() ){
     d_sygus_solution = d_sol->reconstructSolution( s, stn, reconstructed );
     if( reconstructed==1 ){
       Trace("csi-sol") << "Solution (post-reconstruction into Sygus): " << d_sygus_solution << std::endl;

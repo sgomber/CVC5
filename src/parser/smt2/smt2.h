@@ -178,6 +178,50 @@ public:
     return e;
   }
 
+  void mkSygusDefaultGrammar( const Type& range, Expr& bvl, const std::string& fun, std::vector<CVC4::Datatype>& datatypes,
+                              std::vector<Type>& sorts, std::vector< std::vector<Expr> >& ops, std::vector<Expr> sygus_vars );
+
+  void mkSygusConstantsForType( const Type& type, std::vector<CVC4::Expr>& ops );
+
+  static bool pushSygusDatatypeDef( Type t, std::string& dname,
+                                    std::vector< CVC4::Datatype >& datatypes,
+                                    std::vector< CVC4::Type>& sorts,
+                                    std::vector< std::vector<CVC4::Expr> >& ops,
+                                    std::vector< std::vector<std::string> >& cnames,
+                                    std::vector< std::vector< std::vector< CVC4::Type > > >& cargs,
+                                    std::vector< bool >& allow_const,
+                                    std::vector< std::vector< std::string > >& unresolved_gterm_sym );
+
+  static bool popSygusDatatypeDef( std::vector< CVC4::Datatype >& datatypes,
+                                   std::vector< CVC4::Type>& sorts,
+                                   std::vector< std::vector<CVC4::Expr> >& ops,
+                                   std::vector< std::vector<std::string> >& cnames,
+                                   std::vector< std::vector< std::vector< CVC4::Type > > >& cargs,
+                                   std::vector< bool >& allow_const,
+                                   std::vector< std::vector< std::string > >& unresolved_gterm_sym );
+
+  Type processSygusNestedGTerm( int sub_dt_index, std::string& sub_dname, std::vector< CVC4::Datatype >& datatypes,
+                                std::vector< CVC4::Type>& sorts,
+                                std::vector< std::vector<CVC4::Expr> >& ops,
+                                std::vector< std::vector<std::string> >& cnames,
+                                std::vector< std::vector< std::vector< CVC4::Type > > >& cargs,
+                                std::vector< bool >& allow_const,
+                                std::vector< std::vector< std::string > >& unresolved_gterm_sym,
+                                std::map< CVC4::Type, CVC4::Type >& sygus_to_builtin,
+                                std::map< CVC4::Type, CVC4::Expr >& sygus_to_builtin_expr, Type sub_ret );
+
+  void processSygusLetConstructor( std::vector< CVC4::Expr >& let_vars,
+                                   int index, int start_index,
+                                   std::vector< CVC4::Datatype >& datatypes,
+                                   std::vector< CVC4::Type>& sorts,
+                                   std::vector< std::vector<CVC4::Expr> >& ops,
+                                   std::vector< std::vector<std::string> >& cnames,
+                                   std::vector< std::vector< std::vector< CVC4::Type > > >& cargs,
+                                   std::vector<CVC4::Expr>& sygus_vars, 
+                                   std::map< CVC4::Type, CVC4::Type >& sygus_to_builtin,
+                                   std::map< CVC4::Type, CVC4::Expr >& sygus_to_builtin_expr );
+  
+  
   void addSygusFun(const std::string& fun, Expr eval) {
     d_sygusFuns.push_back(std::make_pair(fun, eval));
   }
@@ -185,7 +229,9 @@ public:
   void defineSygusFuns();
 
   void mkSygusDatatype( CVC4::Datatype& dt, std::vector<CVC4::Expr>& ops,
-                        std::vector<std::string>& cnames, std::vector< std::vector< CVC4::Type > >& cargs );
+                        std::vector<std::string>& cnames, std::vector< std::vector< CVC4::Type > >& cargs,
+                        std::vector<std::string>& unresolved_gterm_sym, 
+                        std::map< CVC4::Type, CVC4::Type >& sygus_to_builtin );
 
   // i is index in datatypes/ops
   // j is index is datatype
@@ -227,6 +273,12 @@ public:
         name.find_first_not_of("0123456789", 1) != std::string::npos ) {
       this->Parser::checkDeclaration(name, check, type, notes);
       return;
+    }else{
+      //it is allowable in sygus
+      if( sygus() && name[0]=='-' ){
+        //do not check anything
+        return;
+      }
     }
 
     std::stringstream ss;
@@ -260,6 +312,15 @@ public:
   }
 
 private:
+  std::map< CVC4::Expr, CVC4::Type > d_sygus_bound_var_type;
+  std::map< CVC4::Expr, std::vector< CVC4::Expr > > d_sygus_let_func_to_vars;
+  std::map< CVC4::Expr, CVC4::Expr > d_sygus_let_func_to_body;
+  std::map< CVC4::Expr, unsigned > d_sygus_let_func_to_num_input_vars;
+  
+  void collectSygusLetArgs( CVC4::Expr e, std::vector< CVC4::Type >& sygusArgs, std::vector< CVC4::Expr >& builtinArgs );
+  
+  void addSygusDatatypeConstructor( CVC4::Datatype& dt, CVC4::Expr op, std::string& cname, std::vector< CVC4::Type >& cargs,
+                                    CVC4::Expr& let_body, std::vector< CVC4::Expr >& let_args, unsigned let_num_input_args );
 
   void addArithmeticOperators();
 

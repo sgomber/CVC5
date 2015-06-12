@@ -742,6 +742,7 @@ Node TermDb::getInstConstantBody( Node f ){
 
 Node TermDb::getCounterexampleLiteral( Node f ){
   if( d_ce_lit.find( f )==d_ce_lit.end() ){
+    /*
     Node ceBody = getInstConstantBody( f );
     //check if any variable are of bad types, and fail if so
     for( size_t i=0; i<d_inst_constants[f].size(); i++ ){
@@ -750,8 +751,10 @@ Node TermDb::getCounterexampleLiteral( Node f ){
         return Node::null();
       }
     }
+    */
+    Node g = NodeManager::currentNM()->mkSkolem( "g", NodeManager::currentNM()->booleanType() );
     //otherwise, ensure literal
-    Node ceLit = d_quantEngine->getValuation().ensureLiteral( ceBody.notNode() );
+    Node ceLit = d_quantEngine->getValuation().ensureLiteral( g );
     d_ce_lit[ f ] = ceLit;
   }
   return d_ce_lit[ f ];
@@ -1192,7 +1195,7 @@ bool TermDb::isFunDef( Node q ) {
 }
 
 Node TermDb::getFunDefHead( Node q ) {
-  //&& ( q[1].getKind()==EQUAL || q[1].getKind()==IFF ) && q[1][0].getKind()==APPLY_UF && 
+  //&& ( q[1].getKind()==EQUAL || q[1].getKind()==IFF ) && q[1][0].getKind()==APPLY_UF &&
   if( q.getKind()==FORALL && q.getNumChildren()==3 ){
     for( unsigned i=0; i<q[2].getNumChildren(); i++ ){
       if( q[2][i].getKind()==INST_ATTRIBUTE ){
@@ -1242,8 +1245,7 @@ void TermDb::computeAttributes( Node q ) {
         if( avar.getAttribute(FunDefAttribute()) ){
           Trace("quant-attr") << "Attribute : function definition : " << q << std::endl;
           d_qattr_fundef[q] = true;
-          //Assert( q[1].getKind()==EQUAL || q[1].getKind()==IFF );
-          //Assert( q[2][i][0]==q[1][0] || q[2][i][0]==q[1][1] );
+          //get operator directly from pattern
           Node f = q[2][i][0].getOperator();
           if( d_fun_defs.find( f )!=d_fun_defs.end() ){
             Message() << "Cannot define function " << f << " more than once." << std::endl;
@@ -1359,7 +1361,10 @@ int TermDb::getQAttrRewriteRulePriority( Node q ) {
 
 
 
-
+TermDbSygus::TermDbSygus(){
+  d_true = NodeManager::currentNM()->mkConst( true );
+  d_false = NodeManager::currentNM()->mkConst( false );
+}
 
 TNode TermDbSygus::getVar( TypeNode tn, int i ) {
   while( i>=(int)d_fv[tn].size() ){
@@ -1511,7 +1516,9 @@ Node TermDbSygus::getGenericBase( TypeNode tn, const Datatype& dt, int c ) {
     std::map< TypeNode, int > var_count;
     std::map< int, Node > pre;
     Node g = mkGeneric( dt, c, var_count, pre );
+    Trace("sygus-db-debug") << "Sygus DB : Generic is " << g << std::endl;
     Node gr = Rewriter::rewrite( g );
+    Trace("sygus-db-debug") << "Sygus DB : Generic rewritten is " << gr << std::endl;
     gr = Node::fromExpr( smt::currentSmtEngine()->expandDefinitions( gr.toExpr() ) );
     Trace("sygus-db") << "Sygus DB : Generic base " << dt[c].getName() << " : " << gr << std::endl;
     d_generic_base[tn][c] = gr;
@@ -1530,8 +1537,9 @@ Node TermDbSygus::mkGeneric( const Datatype& dt, int c, std::map< TypeNode, int 
   if( op.getKind()!=BUILTIN ){
     children.push_back( op );
   }
+  Trace("sygus-db") << "mkGeneric " << dt.getName() << " " << op << " " << op.getKind() << "..." << std::endl;
   for( int i=0; i<(int)dt[c].getNumArgs(); i++ ){
-    TypeNode tna = TypeNode::fromType( ((SelectorType)dt[c][i].getType()).getRangeType() );
+    TypeNode tna = getArgType( dt[c], i );
     Node a;
     std::map< int, Node >::iterator it = pre.find( i );
     if( it!=pre.end() ){
@@ -1542,13 +1550,14 @@ Node TermDbSygus::mkGeneric( const Datatype& dt, int c, std::map< TypeNode, int 
     Assert( !a.isNull() );
     children.push_back( a );
   }
+  Node ret;
   if( op.getKind()==BUILTIN ){
-    return NodeManager::currentNM()->mkNode( op, children );
+    ret = NodeManager::currentNM()->mkNode( op, children );
   }else{
     if( children.size()==1 ){
-      return children[0];
+      ret = children[0];
     }else{
-      return NodeManager::currentNM()->mkNode( APPLY, children );
+      ret = NodeManager::currentNM()->mkNode( APPLY, children );
       /*
       Node n = NodeManager::currentNM()->mkNode( APPLY, children );
       //must expand definitions
@@ -1558,6 +1567,8 @@ Node TermDbSygus::mkGeneric( const Datatype& dt, int c, std::map< TypeNode, int 
       */
     }
   }
+  Trace("sygus-db") << "...returning " << ret << std::endl;
+  return ret;
 }
 
 Node TermDbSygus::sygusToBuiltin( Node n, TypeNode tn ) {
@@ -1573,7 +1584,9 @@ Node TermDbSygus::sygusToBuiltin( Node n, TypeNode tn ) {
       pre[j] = sygusToBuiltin( n[j], getArgType( dt[i], j ) );
     }
     Node ret = mkGeneric( dt, i, var_count, pre );
+    Trace("sygus-db-debug") << "SygusToBuiltin : Generic is " << ret << std::endl;
     ret = Node::fromExpr( smt::currentSmtEngine()->expandDefinitions( ret.toExpr() ) );
+    Trace("sygus-db-debug") << "SygusToBuiltin : After expand definitions " << ret << std::endl;
     d_sygus_to_builtin[tn][n] = ret;
     return ret;
   }else{
@@ -1581,21 +1594,82 @@ Node TermDbSygus::sygusToBuiltin( Node n, TypeNode tn ) {
   }
 }
 
-Node TermDbSygus::builtinToSygusConst( Node c, TypeNode tn ) {
+//rcons_depth limits the number of recursive calls when doing accelerated constant reconstruction (currently limited to 1000)
+//this is hacky : depending upon order of calls, constant rcons may succeed, e.g. 1001, 999 vs. 999, 1001
+Node TermDbSygus::builtinToSygusConst( Node c, TypeNode tn, int rcons_depth ) {
   std::map< Node, Node >::iterator it = d_builtin_const_to_sygus[tn].find( c );
   if( it==d_builtin_const_to_sygus[tn].end() ){
+    Node sc;
+    d_builtin_const_to_sygus[tn][c] = sc;
     Assert( c.isConst() );
     Assert( datatypes::DatatypesRewriter::isTypeDatatype( tn ) );
     const Datatype& dt = ((DatatypeType)(tn).toType()).getDatatype();
+    Trace("csi-rcons-debug") << "Try to reconstruct " << c << " in " << dt.getName() << std::endl;
     Assert( dt.isSygus() );
-    Node sc;
-    int carg = getOpArg( tn, c );
-    if( carg!=-1 ){
-      sc = Node::fromExpr( dt[carg].getSygusOp() );
+    // if we are not interested in reconstructing constants, or the grammar allows them, return a proxy
+    if( !options::cegqiSingleInvReconstructConst() || dt.getSygusAllowConst() ){
+      Node k = NodeManager::currentNM()->mkSkolem( "sy", tn, "sygus proxy" );
+      SygusProxyAttribute spa;
+      k.setAttribute(spa,c);
+      sc = k;
     }else{
-      //TODO
-      
-      
+      int carg = getOpArg( tn, c );
+      if( carg!=-1 ){
+        //sc = Node::fromExpr( dt[carg].getSygusOp() );
+        sc = NodeManager::currentNM()->mkNode( APPLY_CONSTRUCTOR, Node::fromExpr( dt[carg].getConstructor() ) );
+      }else{
+        //identity functions
+        for( unsigned i=0; i<getNumIdFuncs( tn ); i++ ){
+          unsigned ii = getIdFuncIndex( tn, i );
+          Assert( dt[ii].getNumArgs()==1 );
+          //try to directly reconstruct from single argument
+          TypeNode tnc = getArgType( dt[ii], 0 );
+          Trace("csi-rcons-debug") << "Based on id function " << dt[ii].getSygusOp() << ", try reconstructing " << c << " instead in " << tnc << std::endl;
+          Node n = builtinToSygusConst( c, tnc, rcons_depth );
+          if( !n.isNull() ){
+            sc = NodeManager::currentNM()->mkNode( APPLY_CONSTRUCTOR, Node::fromExpr( dt[ii].getConstructor() ), n );
+            break;
+          }
+        }
+        if( sc.isNull() ){
+          if( rcons_depth<1000 ){
+            //accelerated, recursive reconstruction of constants
+            Kind pk = getPlusKind( TypeNode::fromType( dt.getSygusType() ) );
+            if( pk!=UNDEFINED_KIND ){
+              int arg = getKindArg( tn, pk );
+              if( arg!=-1 ){
+                Kind ck = getComparisonKind( TypeNode::fromType( dt.getSygusType() ) );
+                Kind pkm = getPlusKind( TypeNode::fromType( dt.getSygusType() ), true );
+                //get types
+                Assert( dt[arg].getNumArgs()==2 );
+                TypeNode tn1 = getArgType( dt[arg], 0 );
+                TypeNode tn2 = getArgType( dt[arg], 1 );
+                //iterate over all positive constants, largest to smallest
+                int start = d_const_list[tn1].size()-1;
+                int end = d_const_list[tn1].size()-d_const_list_pos[tn1];
+                for( int i=start; i>=end; --i ){
+                  Node c1 = d_const_list[tn1][i];
+                  //only consider if smaller than c, and 
+                  if( doCompare( c1, c, ck ) ){
+                    Node c2 = NodeManager::currentNM()->mkNode( pkm, c, c1 );
+                    c2 = Rewriter::rewrite( c2 );
+                    if( c2.isConst() ){
+                      //reconstruct constant on the other side
+                      Node sc2 = builtinToSygusConst( c2, tn2, rcons_depth+1 );
+                      if( !sc2.isNull() ){
+                        Node sc1 = builtinToSygusConst( c1, tn1, rcons_depth );
+                        Assert( !sc1.isNull() );
+                        sc = NodeManager::currentNM()->mkNode( APPLY_CONSTRUCTOR, Node::fromExpr( dt[arg].getConstructor() ), sc1, sc2 );
+                        break;
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
     d_builtin_const_to_sygus[tn][c] = sc;
     return sc;
@@ -1606,6 +1680,7 @@ Node TermDbSygus::builtinToSygusConst( Node c, TypeNode tn ) {
 
 Node TermDbSygus::getSygusNormalized( Node n, std::map< TypeNode, int >& var_count, std::map< Node, Node >& subs ) {
   return n;
+  /*  TODO?
   if( n.getKind()==SKOLEM ){
     std::map< Node, Node >::iterator its = subs.find( n );
     if( its!=subs.end() ){
@@ -1638,6 +1713,7 @@ Node TermDbSygus::getSygusNormalized( Node n, std::map< TypeNode, int >& var_cou
     }
     return n;
   }
+  */
 }
 
 Node TermDbSygus::getNormalized( TypeNode t, Node prog, bool do_pre_norm, bool do_post_norm ) {
@@ -1782,7 +1858,7 @@ Node TermDbSygus::getTypeValue( TypeNode tn, int val ) {
       n = NodeManager::currentNM()->mkConst<BitVector>(bval);
     }else if( tn.isBoolean() ){
       if( val==0 ){
-        n = NodeManager::currentNM()->mkConst( false );
+        n = d_false;
       }
     }
     d_type_value[tn][val] = n;
@@ -1799,7 +1875,7 @@ Node TermDbSygus::getTypeMaxValue( TypeNode tn ) {
     if( tn.isBitVector() ){
       n = bv::utils::mkOnes(tn.getConst<BitVectorSize>());
     }else if( tn.isBoolean() ){
-      n = NodeManager::currentNM()->mkConst( true );
+      n = d_true;
     }
     d_type_max_value[tn] = n;
     return n;
@@ -1831,6 +1907,18 @@ Node TermDbSygus::getTypeValueOffset( TypeNode tn, Node val, int offset, int& st
   }
 }
 
+struct sortConstants {
+  TermDbSygus * d_tds;
+  Kind d_comp_kind;
+  bool operator() (Node i, Node j) {
+    if( i!=j ){
+      return d_tds->doCompare( i, j, d_comp_kind );
+    }else{
+      return false;
+    }
+  }
+};
+
 void TermDbSygus::registerSygusType( TypeNode tn ){
   if( d_register.find( tn )==d_register.end() ){
     if( !datatypes::DatatypesRewriter::isTypeDatatype( tn ) ){
@@ -1842,6 +1930,11 @@ void TermDbSygus::registerSygusType( TypeNode tn ){
       if( d_register[tn].isNull() ){
         Trace("sygus-util") << "...not sygus." << std::endl;
       }else{
+        //for constant reconstruction
+        Kind ck = getComparisonKind( TypeNode::fromType( dt.getSygusType() ) );
+        Node z = getTypeValue( TypeNode::fromType( dt.getSygusType() ), 0 );
+        d_const_list_pos[tn] = 0;
+        //iterate over constructors
         for( unsigned i=0; i<dt.getNumConstructors(); i++ ){
           Expr sop = dt[i].getSygusOp();
           Assert( !sop.isNull() );
@@ -1856,10 +1949,38 @@ void TermDbSygus::registerSygusType( TypeNode tn ){
             Trace("sygus-util") << ", constant";
             d_consts[tn][n] = i;
             d_arg_const[tn][i] = n;
+            d_const_list[tn].push_back( n );
+            if( ck!=UNDEFINED_KIND && doCompare( z, n, ck ) ){
+              d_const_list_pos[tn]++;
+            }
+          }
+          if( dt[i].isSygusIdFunc() ){
+            d_id_funcs[tn].push_back( i );
           }
           d_ops[tn][n] = i;
           d_arg_ops[tn][i] = n;
           Trace("sygus-util") << std::endl;
+        }
+        //sort the constant list
+        if( !d_const_list[tn].empty() ){
+          if( ck!=UNDEFINED_KIND ){
+            sortConstants sc;
+            sc.d_comp_kind = ck;
+            sc.d_tds = this;
+            std::sort( d_const_list[tn].begin(), d_const_list[tn].end(), sc );
+          }
+          Trace("sygus-util") << "Type has " << d_const_list[tn].size() << " constants..." << std::endl << "  ";
+          for( unsigned i=0; i<d_const_list[tn].size(); i++ ){
+            Trace("sygus-util") << d_const_list[tn][i] << " ";
+          }
+          Trace("sygus-util") << std::endl;
+          Trace("sygus-util") << "Of these, " << d_const_list_pos[tn] << " are marked as positive." << std::endl;
+        }
+        //register connected types
+        for( unsigned i=0; i<dt.getNumConstructors(); i++ ){
+          for( unsigned j=0; j<dt[i].getNumArgs(); j++ ){
+            registerSygusType( getArgType( dt[i], j ) );
+          }
         }
       }
     }
@@ -1963,13 +2084,21 @@ bool TermDbSygus::isConstArg( TypeNode tn, int i ) {
   }
 }
 
+unsigned TermDbSygus::getNumIdFuncs( TypeNode tn ) {
+  return d_id_funcs[tn].size();
+}
+
+unsigned TermDbSygus::getIdFuncIndex( TypeNode tn, unsigned i ) {
+  return d_id_funcs[tn][i];
+}
+
 TypeNode TermDbSygus::getArgType( const DatatypeConstructor& c, int i ) {
   Assert( i>=0 && i<(int)c.getNumArgs() );
   return TypeNode::fromType( ((SelectorType)c[i].getType()).getRangeType() );
 }
 
 Node TermDbSygus::minimizeBuiltinTerm( Node n ) {
-  if( ( n.getKind()==EQUAL || n.getKind()==LEQ || n.getKind()==LT || n.getKind()==GEQ || n.getKind()==GT ) && 
+  if( ( n.getKind()==EQUAL || n.getKind()==LEQ || n.getKind()==LT || n.getKind()==GEQ || n.getKind()==GT ) &&
       ( n[0].getType().isInteger() || n[0].getType().isReal() ) ){
     bool changed = false;
     std::vector< Node > mon[2];
@@ -2023,3 +2152,116 @@ Node TermDbSygus::expandBuiltinTerm( Node t ){
   }
   return Node::null();
 }
+
+
+Kind TermDbSygus::getComparisonKind( TypeNode tn ) {
+  if( tn.isInteger() || tn.isReal() ){
+    return LT;
+  }else if( tn.isBitVector() ){
+    return BITVECTOR_ULT;
+  }else{
+    return UNDEFINED_KIND;
+  }
+}
+
+Kind TermDbSygus::getPlusKind( TypeNode tn, bool is_neg ) {
+  if( tn.isInteger() || tn.isReal() ){
+    return is_neg ? MINUS : PLUS;
+  }else if( tn.isBitVector() ){
+    return is_neg ? BITVECTOR_SUB : BITVECTOR_PLUS;
+  }else{
+    return UNDEFINED_KIND;
+  }
+}
+
+bool TermDbSygus::doCompare( Node a, Node b, Kind k ) {
+  Node com = NodeManager::currentNM()->mkNode( k, a, b );
+  com = Rewriter::rewrite( com );
+  return com==d_true;
+}
+
+void doStrReplace(std::string& str, const std::string& oldStr, const std::string& newStr){
+  size_t pos = 0;
+  while((pos = str.find(oldStr, pos)) != std::string::npos){
+     str.replace(pos, oldStr.length(), newStr);
+     pos += newStr.length();
+  }
+}
+
+void TermDbSygus::printSygusTerm( std::ostream& out, Node n, std::vector< Node >& lvs ) {
+  if( n.getKind()==APPLY_CONSTRUCTOR ){
+    TypeNode tn = n.getType();
+    const Datatype& dt = ((DatatypeType)(tn).toType()).getDatatype();
+    if( dt.isSygus() ){
+      int cIndex = Datatype::indexOf( n.getOperator().toExpr() );
+      Assert( !dt[cIndex].getSygusOp().isNull() );
+      if( dt[cIndex].getSygusLetBody().isNull() ){
+        if( n.getNumChildren()>0 ){
+          out << "(";
+        }
+        out << dt[cIndex].getSygusOp();
+        if( n.getNumChildren()>0 ){
+          for( unsigned i=0; i<n.getNumChildren(); i++ ){
+            out << " ";
+            printSygusTerm( out, n[i], lvs );
+          }
+          out << ")";
+        }
+      }else{
+        //print as let term
+        if( dt[cIndex].getNumSygusLetInputArgs()>0 ){
+          out << "(let (";
+        }
+        std::vector< Node > subs_lvs;
+        std::vector< Node > new_lvs;
+        for( unsigned i=0; i<dt[cIndex].getNumSygusLetArgs(); i++ ){
+          Node v = Node::fromExpr( dt[cIndex].getSygusLetArg( i ) );
+          subs_lvs.push_back( v );
+          std::stringstream ss;
+          ss << "_l_" << new_lvs.size();
+          Node lv = NodeManager::currentNM()->mkBoundVar( ss.str(), v.getType() );
+          new_lvs.push_back( lv );
+          //map free variables to proper terms
+          if( i<dt[cIndex].getNumSygusLetInputArgs() ){
+            //it should be printed as a let argument
+            out << "(";
+            out << lv << " " << lv.getType() << " ";
+            printSygusTerm( out, n[i], lvs );
+            out << ")";
+          }
+        }
+        if( dt[cIndex].getNumSygusLetInputArgs()>0 ){
+          out << ") ";
+        }
+        //print the body
+        Node let_body = Node::fromExpr( dt[cIndex].getSygusLetBody() );
+        let_body = let_body.substitute( subs_lvs.begin(), subs_lvs.end(), new_lvs.begin(), new_lvs.end() );
+        new_lvs.insert( new_lvs.end(), lvs.begin(), lvs.end() );
+        std::stringstream body_out;
+        printSygusTerm( body_out, let_body, new_lvs );
+        std::string body = body_out.str();
+        for( unsigned i=0; i<dt[cIndex].getNumSygusLetArgs(); i++ ){ 
+          std::stringstream old_str;
+          old_str << new_lvs[i];
+          std::stringstream new_str;
+          if( i>=dt[cIndex].getNumSygusLetInputArgs() ){
+            printSygusTerm( new_str, n[i], lvs );
+          }else{
+            new_str << Node::fromExpr( dt[cIndex].getSygusLetArg( i ) );
+          }
+          doStrReplace( body, old_str.str().c_str(), new_str.str().c_str() );
+        }
+        out << body;
+        if( dt[cIndex].getNumSygusLetInputArgs()>0 ){
+          out << ")";
+        }
+      }
+      return;
+    }
+  }else if( !n.getAttribute(SygusProxyAttribute()).isNull() ){
+    out << n.getAttribute(SygusProxyAttribute());
+  }else{
+    out << n;
+  }
+}
+

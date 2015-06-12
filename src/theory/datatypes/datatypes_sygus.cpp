@@ -928,10 +928,17 @@ bool SygusSymBreak::processCurrentProgram( Node a, TypeNode at, int depth, Node 
               Node progc = prog;
               if( options::sygusNormalFormGlobalArg() ){
                 bool argChanged = false;
+                Trace("sygus-nf-gen-debug") << "Check replacements on " << prog << " " << prog.getKind() << std::endl;
                 for( unsigned i=0; i<prog.getNumChildren(); i++ ){
                   Node prev = children[i];
                   children[i] = d_tds->getVarInc( children_stype[i], var_count );
+                  if( parentOpKind!=kind::BUILTIN ){
+                    children.insert( children.begin(), prog.getOperator() );
+                  }
                   Node progcn = NodeManager::currentNM()->mkNode( prog.getKind(), children );
+                  if( parentOpKind!=kind::BUILTIN ){
+                    children.erase( children.begin(), children.begin() + 1 );
+                  }
                   Node progcr = Rewriter::rewrite( progcn );
                   Trace("sygus-nf-gen-debug") << "Var replace argument " << i << " : " << progcn << " -> " << progcr << std::endl;
                   if( progcr==progr ){
@@ -1107,12 +1114,13 @@ bool SygusSymBreak::processCurrentProgram( Node a, TypeNode at, int depth, Node 
 }
 
 bool SygusSymBreak::isSeparation( Node rep_prog, Node tst_curr, std::map< Node, std::vector< Node > >& testers_u, std::vector< Node >& rlv_testers ) {
-  Trace("sygus-nf-gen-debug") << "is separation " << rep_prog << " " << tst_curr << std::endl;
   TypeNode tn = tst_curr[0].getType();
+  Trace("sygus-nf-gen-debug") << "is separation " << rep_prog << " " << tst_curr << " " << tn << std::endl;
   Node rop = rep_prog.getNumChildren()==0 ? rep_prog : rep_prog.getOperator();
   //we can continue if the tester in question is relevant
   if( std::find( rlv_testers.begin(), rlv_testers.end(), tst_curr )!=rlv_testers.end() ){
     unsigned tindex = Datatype::indexOf( tst_curr.getOperator().toExpr() );
+    d_tds->registerSygusType( tn );
     Node op = d_tds->getArgOp( tn, tindex );
     if( op!=rop ){
       Trace("sygus-nf-gen-debug") << "mismatch, success." << std::endl;

@@ -318,9 +318,6 @@ bool CommandExecutorPortfolio::doCommandSingleton(Command* cmd)
     d_statWaitTime.stop();
 #endif /* CVC4_STATISTICS_ON */
 
-    delete d_seq;
-    d_seq = new CommandSequence();
-
     d_lastWinner = portfolioReturn.first;
     d_result = d_smts[d_lastWinner]->getStatusOfLastCommand();
 
@@ -346,14 +343,17 @@ bool CommandExecutorPortfolio::doCommandSingleton(Command* cmd)
         << std::flush;
 
 #ifdef CVC4_COMPETITION_MODE
-      // There's some hang-up in thread destruction?
-      // Anyway for SMT-COMP we don't care, just exit now.
+      // We use CVC4 in competition with --no-wait-to-join. If
+      // destructors run, they will destroy(!) us. So, just exit now.
       _exit(0);
 #endif /* CVC4_COMPETITION_MODE */
     }
 
     /* cleanup this check sat specific stuff */
     lemmaSharingCleanup();
+
+    delete d_seq;
+    d_seq = new CommandSequence();
 
     delete[] fns;
 

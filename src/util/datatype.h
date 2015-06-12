@@ -187,6 +187,9 @@ private:
   std::vector<DatatypeConstructorArg> d_args;
   /** the operator associated with this constructor (for sygus) */
   Expr d_sygus_op;
+  Expr d_sygus_let_body;
+  std::vector< Expr > d_sygus_let_args;
+  unsigned d_sygus_num_let_input_args;
 
   void resolve(ExprManager* em, DatatypeType self,
                const std::map<std::string, DatatypeType>& resolutions,
@@ -232,7 +235,9 @@ public:
    * constructor and tester aren't created until resolution time.
    */
   DatatypeConstructor(std::string name, std::string tester);
-  DatatypeConstructor(std::string name, std::string tester, Expr sygus_op);
+  
+  /** set sygus */
+  void setSygus( Expr op, Expr let_body, std::vector< Expr >& let_args, unsigned num_let_input_argus );
 
   /**
    * Add an argument (i.e., a data field) of the given name and type
@@ -281,7 +286,17 @@ public:
   
   /** get sygus op */
   Expr getSygusOp() const;
-
+  /** get sygus let body */
+  Expr getSygusLetBody() const;
+  /** get number of sygus let args */
+  unsigned getNumSygusLetArgs() const;
+  /** get sygus let arg */
+  Expr getSygusLetArg( unsigned i ) const;
+  /** get number of let arguments that should be printed as arguments to let */
+  unsigned getNumSygusLetInputArgs() const;
+  /** is this a sygus identity function */
+  bool isSygusIdFunc() const;
+  
   /**
    * Get the tester name for this Datatype constructor.
    */
@@ -456,6 +471,8 @@ private:
   /** information for sygus */
   Type d_sygus_type;
   Expr d_sygus_bvl;  
+  bool d_sygus_allow_const;
+  bool d_sygus_allow_all;
 
   // "mutable" because computing the cardinality can be expensive,
   // and so it's computed just once, on demand---this is the cache
@@ -534,8 +551,9 @@ public:
   /** set the sygus information of this datatype
    *    st : the builtin type for this grammar
    *    bvl : the list of arguments for the synth-fun
+   *    allow_const : whether all constants are (implicitly) included in the grammar
    */
-  void setSygus( Type st, Expr bvl );
+  void setSygus( Type st, Expr bvl, bool allow_const, bool allow_all );
   
   /** Get the name of this Datatype. */
   inline std::string getName() const throw();
@@ -664,6 +682,10 @@ public:
   Type getSygusType() const;
   /** get sygus var list */
   Expr getSygusVarList() const;
+  /** does it allow constants */
+  bool getSygusAllowConst() const;
+  /** does it allow constants */
+  bool getSygusAllowAll() const;
 
   /**
    * Get whether this datatype involves an external type.  If so,

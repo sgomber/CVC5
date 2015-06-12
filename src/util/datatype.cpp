@@ -134,11 +134,13 @@ void Datatype::addConstructor(const DatatypeConstructor& c) {
 }
 
 
-void Datatype::setSygus( Type st, Expr bvl ){
+void Datatype::setSygus( Type st, Expr bvl, bool allow_const, bool allow_all ){
   CheckArgument(!d_resolved, this,
                 "cannot set sygus type to a finalized Datatype");
   d_sygus_type = st;
   d_sygus_bvl = bvl;
+  d_sygus_allow_const = allow_const || allow_all;
+  d_sygus_allow_all = allow_all;
 }
 
 
@@ -470,6 +472,14 @@ Expr Datatype::getSygusVarList() const {
   return d_sygus_bvl;
 }
 
+bool Datatype::getSygusAllowConst() const {
+  return d_sygus_allow_const;
+}
+
+bool Datatype::getSygusAllowAll() const {
+  return d_sygus_allow_const;
+}
+
 bool Datatype::involvesExternalType() const{
   return d_involvesExt;
 }
@@ -597,14 +607,13 @@ DatatypeConstructor::DatatypeConstructor(std::string name, std::string tester) :
   CheckArgument(!tester.empty(), tester, "cannot construct a datatype constructor without a tester");
 }
 
-DatatypeConstructor::DatatypeConstructor(std::string name, std::string tester, Expr sygus_op) :
-  d_name(name + '\0' + tester),
-  d_tester(),
-  d_args(),
-  d_sygus_op(sygus_op) {
-  CheckArgument(name != "", name, "cannot construct a datatype constructor without a name");
-  CheckArgument(!tester.empty(), tester, "cannot construct a datatype constructor without a tester");
+void DatatypeConstructor::setSygus( Expr op, Expr let_body, std::vector< Expr >& let_args, unsigned num_let_input_args ){
+  d_sygus_op = op;
+  d_sygus_let_body = let_body;
+  d_sygus_let_args.insert( d_sygus_let_args.end(), let_args.begin(), let_args.end() );
+  d_sygus_num_let_input_args = num_let_input_args;
 }
+
 
 void DatatypeConstructor::addArg(std::string selectorName, Type selectorType) {
   // We don't want to introduce a new data member, because eventually
@@ -679,6 +688,31 @@ Expr DatatypeConstructor::getSygusOp() const {
   return d_sygus_op;
 }
 
+Expr DatatypeConstructor::getSygusLetBody() const {
+  CheckArgument(isResolved(), this, "this datatype constructor is not yet resolved");
+  return d_sygus_let_body;
+}
+
+unsigned DatatypeConstructor::getNumSygusLetArgs() const {
+  CheckArgument(isResolved(), this, "this datatype constructor is not yet resolved");
+  return d_sygus_let_args.size();
+}
+
+Expr DatatypeConstructor::getSygusLetArg( unsigned i ) const {
+  CheckArgument(isResolved(), this, "this datatype constructor is not yet resolved");
+  return d_sygus_let_args[i];
+} 
+
+unsigned DatatypeConstructor::getNumSygusLetInputArgs() const {
+  CheckArgument(isResolved(), this, "this datatype constructor is not yet resolved");
+  return d_sygus_num_let_input_args;
+}
+
+bool DatatypeConstructor::isSygusIdFunc() const {
+  CheckArgument(isResolved(), this, "this datatype constructor is not yet resolved");
+  return d_sygus_let_args.size()==1 && d_sygus_let_args[0]==d_sygus_let_body;
+}
+  
 Cardinality DatatypeConstructor::getCardinality() const throw(IllegalArgumentException) {
   CheckArgument(isResolved(), this, "this datatype constructor is not yet resolved");
 
