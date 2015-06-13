@@ -33,16 +33,6 @@ bool FunDefEngine::needsCheck( Theory::Effort e ) {
   return e>=Theory::EFFORT_LAST_CALL; 
 }
 
-/* whether this module needs a model built */
-bool FunDefEngine::needsModel( Theory::Effort e ) { 
-  return false; 
-}
-
-/* whether this module needs a model built */
-bool FunDefEngine::needsFullModel( Theory::Effort e ) {
-  return false; 
-}
-
 /* reset at a round */
 void FunDefEngine::reset_round( Theory::Effort e ){
   //TODO

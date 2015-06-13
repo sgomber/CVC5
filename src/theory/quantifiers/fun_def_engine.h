@@ -39,10 +39,6 @@ public:
 
   /* whether this module needs to check this round */
   bool needsCheck( Theory::Effort e );
-  /* whether this module needs a model built */
-  bool needsModel( Theory::Effort e );
-  /* whether this module needs a model built */
-  bool needsFullModel( Theory::Effort e );
   /* reset at a round */
   void reset_round( Theory::Effort e );
   /* Call during quantifier engine's check */
