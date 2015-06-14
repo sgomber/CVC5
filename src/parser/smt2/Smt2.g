@@ -527,7 +527,7 @@ sygusCommand returns [CVC4::Command* cmd = NULL]
         //make datatype
         datatypes.push_back(Datatype(name));
         for( unsigned i=0; i<names.size(); i++ ){
-          std::string cname = name + "::" + names[i];
+          std::string cname = name + "__Enum__" + names[i];
           std::string testerId("is-");
           testerId.append(cname);
           PARSER_STATE->checkDeclaration(cname, CHECK_UNDECLARED, SYM_VARIABLE);
@@ -793,7 +793,8 @@ sygusGTerm[int index,
            std::map< CVC4::Type, CVC4::Type >& sygus_to_builtin, std::map< CVC4::Type, CVC4::Expr >& sygus_to_builtin_expr,
            CVC4::Type& ret, int gtermType]
 @declarations {
-  std::string name;
+  std::string name, name2;
+  bool readEnum = false;
   Kind k;
   Type t;
   CVC4::DatatypeConstructor* ctor = NULL;
@@ -1000,33 +1001,42 @@ sygusGTerm[int index,
       cnames[index].push_back( AntlrInput::tokenText($BINARY_LITERAL) );
       cargs[index].push_back( std::vector< CVC4::Type >() );
     }
-  | symbol[name,CHECK_NONE,SYM_VARIABLE]
-    { if( name[0] == '-' ){  //hack for unary minus
-        Debug("parser-sygus") << "Sygus grammar " << fun << " : unary minus integer literal " << name << std::endl;
-        ops[index].push_back(MK_CONST(Rational(name)));
+  | symbol[name,CHECK_NONE,SYM_VARIABLE] ( SYGUS_ENUM_CONS_TOK symbol[name2,CHECK_NONE,SYM_VARIABLE] { readEnum = true; } )?
+    { if( readEnum ){
+        name = name + "__Enum__" + name2;
+        Debug("parser-sygus") << "Sygus grammar " << fun << " : Enum constant " << name << std::endl;
+        Expr c = PARSER_STATE->getVariable(name);
+        ops[index].push_back(MK_EXPR(kind::APPLY_CONSTRUCTOR,c));
         cnames[index].push_back( name );
-        cargs[index].push_back( std::vector< CVC4::Type >() );
-      }else if( PARSER_STATE->isDeclared(name,SYM_VARIABLE) ){
-        Debug("parser-sygus") << "Sygus grammar " << fun << " : symbol " << name << std::endl;
-        Expr bv = PARSER_STATE->getVariable(name);
-        ops[index].push_back(bv);
-        cnames[index].push_back( name );
-        cargs[index].push_back( std::vector< CVC4::Type >() );
+        cargs[index].push_back( std::vector< CVC4::Type >() );        
       }else{
-        //prepend function name to base sorts when reading an operator
-        std::stringstream ss;
-        ss << fun << "_" << name;
-        name = ss.str();
-        if( PARSER_STATE->isDeclared(name, SYM_SORT) ){
-          Debug("parser-sygus") << "Sygus grammar " << fun << " : nested sort " << name << std::endl;
-          ret = PARSER_STATE->getSort(name);
+        if( name[0] == '-' ){  //hack for unary minus
+          Debug("parser-sygus") << "Sygus grammar " << fun << " : unary minus integer literal " << name << std::endl;
+          ops[index].push_back(MK_CONST(Rational(name)));
+          cnames[index].push_back( name );
+          cargs[index].push_back( std::vector< CVC4::Type >() );
+        }else if( PARSER_STATE->isDeclared(name,SYM_VARIABLE) ){
+          Debug("parser-sygus") << "Sygus grammar " << fun << " : symbol " << name << std::endl;
+          Expr bv = PARSER_STATE->getVariable(name);
+          ops[index].push_back(bv);
+          cnames[index].push_back( name );
+          cargs[index].push_back( std::vector< CVC4::Type >() );
         }else{
-          if( gtermType==-1 ){
-            Debug("parser-sygus") << "Sygus grammar " << fun << " : unresolved symbol " << name << std::endl;
-            unresolved_gterm_sym[index].push_back(name);
+          //prepend function name to base sorts when reading an operator
+          std::stringstream ss;
+          ss << fun << "_" << name;
+          name = ss.str();
+          if( PARSER_STATE->isDeclared(name, SYM_SORT) ){
+            Debug("parser-sygus") << "Sygus grammar " << fun << " : nested sort " << name << std::endl;
+            ret = PARSER_STATE->getSort(name);
           }else{
-            Debug("parser-sygus") << "Sygus grammar " << fun << " : unresolved " << name << std::endl;
-            ret = PARSER_STATE->mkUnresolvedType(name);
+            if( gtermType==-1 ){
+              Debug("parser-sygus") << "Sygus grammar " << fun << " : unresolved symbol " << name << std::endl;
+              unresolved_gterm_sym[index].push_back(name);
+            }else{
+              Debug("parser-sygus") << "Sygus grammar " << fun << " : unresolved " << name << std::endl;
+              ret = PARSER_STATE->mkUnresolvedType(name);
+            }
           }
         }
       }
@@ -1617,7 +1627,7 @@ term[CVC4::Expr& expr, CVC4::Expr& expr2]
   Debug("parser") << "term: " << AntlrInput::tokenText(LT(1)) << std::endl;
   Kind kind = kind::NULL_EXPR;
   Expr op;
-  std::string name;
+  std::string name, name2;
   std::vector<Expr> args;
   std::vector< std::pair<std::string, Type> > sortedVarNames;
   Expr f, f2, f3, f4;
@@ -1849,7 +1859,13 @@ term[CVC4::Expr& expr, CVC4::Expr& expr2]
     term[expr, f2]
     RPAREN_TOK
     { PARSER_STATE->popScope(); }
-
+  | symbol[name,CHECK_NONE,SYM_VARIABLE] SYGUS_ENUM_CONS_TOK symbol[name2,CHECK_NONE,SYM_VARIABLE] {
+      std::string cname = name + "__Enum__" + name2;
+      Debug("parser-sygus") << "Check for enum const " << cname << std::endl;
+      expr = PARSER_STATE->getVariable(cname);
+      //expr.getType().isConstructor() && ConstructorType(expr.getType()).getArity()==0;
+      expr = MK_EXPR(CVC4::kind::APPLY_CONSTRUCTOR, expr);
+    }
     /* a variable */
   | symbol[name,CHECK_DECLARED,SYM_VARIABLE]
     { if( PARSER_STATE->sygus() && name[0]=='-' && 
@@ -2663,6 +2679,7 @@ DECLARE_VAR_TOK : 'declare-var';
 CONSTRAINT_TOK : 'constraint';
 SET_OPTIONS_TOK : 'set-options';
 SYGUS_ENUM_TOK : { PARSER_STATE->sygus() }? 'Enum';
+SYGUS_ENUM_CONS_TOK : { PARSER_STATE->sygus() }? '::';
 SYGUS_CONSTANT_TOK : { PARSER_STATE->sygus() }? 'Constant';
 SYGUS_VARIABLE_TOK : { PARSER_STATE->sygus() }? 'Variable';
 SYGUS_INPUT_VARIABLE_TOK : { PARSER_STATE->sygus() }? 'InputVariable';

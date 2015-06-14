@@ -347,9 +347,6 @@ void Smt2::setLogic(std::string name) {
       ss << "Unknown SyGuS background logic `" << name << "'";
       parseError(ss.str());
     }
-    //TODO : add additional non-standard define-funs here
-    
-    
   }
 
   d_logicSet = true;
@@ -404,6 +401,11 @@ void Smt2::setLogic(std::string name) {
 
   if (d_logic.isTheoryEnabled(theory::THEORY_FP)) {
     addTheory(THEORY_FP);
+  }
+  
+  if( sygus() ){
+    //TODO : add additional non-standard define-funs here
+
   }
 
 }/* Smt2::setLogic() */
