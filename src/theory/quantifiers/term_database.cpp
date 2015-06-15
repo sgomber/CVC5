@@ -2208,9 +2208,10 @@ void TermDbSygus::printSygusTerm( std::ostream& out, Node n, std::vector< Node >
           out << ")";
         }
       }else{
+        std::stringstream let_out;
         //print as let term
         if( dt[cIndex].getNumSygusLetInputArgs()>0 ){
-          out << "(let (";
+          let_out << "(let (";
         }
         std::vector< Node > subs_lvs;
         std::vector< Node > new_lvs;
@@ -2224,22 +2225,25 @@ void TermDbSygus::printSygusTerm( std::ostream& out, Node n, std::vector< Node >
           //map free variables to proper terms
           if( i<dt[cIndex].getNumSygusLetInputArgs() ){
             //it should be printed as a let argument
-            out << "(";
-            out << lv << " " << lv.getType() << " ";
-            printSygusTerm( out, n[i], lvs );
-            out << ")";
+            let_out << "(";
+            let_out << lv << " " << lv.getType() << " ";
+            printSygusTerm( let_out, n[i], lvs );
+            let_out << ")";
           }
         }
         if( dt[cIndex].getNumSygusLetInputArgs()>0 ){
-          out << ") ";
+          let_out << ") ";
         }
         //print the body
         Node let_body = Node::fromExpr( dt[cIndex].getSygusLetBody() );
         let_body = let_body.substitute( subs_lvs.begin(), subs_lvs.end(), new_lvs.begin(), new_lvs.end() );
         new_lvs.insert( new_lvs.end(), lvs.begin(), lvs.end() );
-        std::stringstream body_out;
-        printSygusTerm( body_out, let_body, new_lvs );
-        std::string body = body_out.str();
+        printSygusTerm( let_out, let_body, new_lvs );
+        if( dt[cIndex].getNumSygusLetInputArgs()>0 ){
+          let_out << ")";
+        }
+        //do variable substitutions since ASSUMING : let_vars are interpreted literally and do not represent a class of variables
+        std::string lbody = let_out.str();
         for( unsigned i=0; i<dt[cIndex].getNumSygusLetArgs(); i++ ){ 
           std::stringstream old_str;
           old_str << new_lvs[i];
@@ -2249,12 +2253,9 @@ void TermDbSygus::printSygusTerm( std::ostream& out, Node n, std::vector< Node >
           }else{
             new_str << Node::fromExpr( dt[cIndex].getSygusLetArg( i ) );
           }
-          doStrReplace( body, old_str.str().c_str(), new_str.str().c_str() );
+          doStrReplace( lbody, old_str.str().c_str(), new_str.str().c_str() );
         }
-        out << body;
-        if( dt[cIndex].getNumSygusLetInputArgs()>0 ){
-          out << ")";
-        }
+        out << lbody;
       }
       return;
     }
