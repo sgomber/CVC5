@@ -81,6 +81,8 @@ void Smt2::addBitvectorOperators() {
   addOperator(kind::BITVECTOR_SLE, "bvsle");
   addOperator(kind::BITVECTOR_SGT, "bvsgt");
   addOperator(kind::BITVECTOR_SGE, "bvsge");
+  addOperator(kind::BITVECTOR_REDOR, "bvredor");
+  addOperator(kind::BITVECTOR_REDAND, "bvredand");
 
   Parser::addOperator(kind::BITVECTOR_BITOF);
   Parser::addOperator(kind::BITVECTOR_EXTRACT);

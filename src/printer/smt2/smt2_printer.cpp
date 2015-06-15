@@ -462,6 +462,8 @@ void Smt2Printer::toStream(std::ostream& out, TNode n,
   case kind::BITVECTOR_SGT: out << "bvsgt "; break;
   case kind::BITVECTOR_SGE: out << "bvsge "; break;
   case kind::BITVECTOR_TO_NAT: out << "bv2nat "; break;
+  case kind::BITVECTOR_REDOR: out << "bvredor "; break;
+  case kind::BITVECTOR_REDAND: out << "bvredand "; break;
 
   case kind::BITVECTOR_EXTRACT:
   case kind::BITVECTOR_REPEAT:
