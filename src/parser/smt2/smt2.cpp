@@ -626,6 +626,98 @@ void Smt2::mkSygusConstantsForType( const Type& type, std::vector<CVC4::Expr>& o
   //TODO : others?
 }
 
+//  This method adds N operators to ops[index], N names to cnames[index] and N type argument vectors to cargs[index] (where typically N=1)
+//  This method may also add new elements pairwise into datatypes/sorts/ops/cnames/cargs in the case of non-flat gterms.
+void Smt2::processSygusGTerm( CVC4::SygusGTerm& sgt, int index,                               
+                              std::vector< CVC4::Datatype >& datatypes,
+                              std::vector< CVC4::Type>& sorts,
+                              std::vector< std::vector<CVC4::Expr> >& ops,
+                              std::vector< std::vector<std::string> >& cnames,
+                              std::vector< std::vector< std::vector< CVC4::Type > > >& cargs,
+                              std::vector< bool >& allow_const,
+                              std::vector< std::vector< std::string > >& unresolved_gterm_sym,
+                              std::vector<CVC4::Expr>& sygus_vars, 
+                              std::map< CVC4::Type, CVC4::Type >& sygus_to_builtin, std::map< CVC4::Type, CVC4::Expr >& sygus_to_builtin_expr, 
+                              CVC4::Type& ret, bool isNested ){
+  if( sgt.d_gterm_type==SygusGTerm::gterm_op || sgt.d_gterm_type==SygusGTerm::gterm_let ){
+    Debug("parser-sygus") << "Add " << sgt.d_expr << " to datatype " << index << std::endl;
+    ops[index].push_back( sgt.d_expr );
+    cnames[index].push_back( sgt.d_name );
+    cargs[index].push_back( std::vector< CVC4::Type >() );
+    for( unsigned i=0; i<sgt.d_children.size(); i++ ){
+      std::stringstream ss;
+      ss << datatypes[index].getName() << "_" << ops[index].size() << "_arg_" << i;
+      std::string sub_dname = ss.str();
+      //add datatype for child
+      Type null_type;
+      pushSygusDatatypeDef( null_type, sub_dname, datatypes, sorts, ops, cnames, cargs, allow_const, unresolved_gterm_sym );
+      int sub_dt_index = datatypes.size()-1;
+      //process child
+      Type sub_ret;
+      processSygusGTerm( sgt.d_children[i], sub_dt_index, datatypes, sorts, ops, cnames, cargs, allow_const, unresolved_gterm_sym, 
+                         sygus_vars, sygus_to_builtin, sygus_to_builtin_expr, sub_ret, true );
+      //process the nested gterm (either pop the last datatype, or flatten the argument)
+      Type tt = processSygusNestedGTerm( sub_dt_index, sub_dname, datatypes, sorts, ops, cnames, cargs, allow_const, unresolved_gterm_sym, 
+                                         sygus_to_builtin, sygus_to_builtin_expr, sub_ret );
+      cargs[index].back().push_back(tt);
+    }
+    //if let, must create operator
+    if( sgt.d_gterm_type==SygusGTerm::gterm_let ){
+      processSygusLetConstructor( sgt.d_let_vars, index, datatypes, sorts, ops, cnames, cargs, 
+                                  sygus_vars, sygus_to_builtin, sygus_to_builtin_expr );
+    }
+  }else if( sgt.d_gterm_type==SygusGTerm::gterm_constant ){
+    if( sgt.getNumChildren()!=0 ){
+      parseError("Bad syntax for Sygus Constant.");
+    }
+    std::vector< Expr > consts;
+    mkSygusConstantsForType( sgt.d_type, consts );
+    Debug("parser-sygus") << "...made " << consts.size() << " constants." << std::endl;
+    for( unsigned i=0; i<consts.size(); i++ ){
+      std::stringstream ss;
+      ss << consts[i];
+      Debug("parser-sygus") << "...add for constant " << ss.str() << std::endl;
+      ops[index].push_back( consts[i] );
+      cnames[index].push_back( ss.str() );
+      cargs[index].push_back( std::vector< CVC4::Type >() );
+    }
+    allow_const[index] = true;
+  }else if( sgt.d_gterm_type==SygusGTerm::gterm_variable || sgt.d_gterm_type==SygusGTerm::gterm_input_variable ){
+    if( sgt.getNumChildren()!=0 ){
+      parseError("Bad syntax for Sygus Variable.");
+    }
+    Debug("parser-sygus") << "...process " << sygus_vars.size() << " variables." << std::endl;
+    for( unsigned i=0; i<sygus_vars.size(); i++ ){
+      if( sygus_vars[i].getType()==sgt.d_type ){
+        std::stringstream ss;
+        ss << sygus_vars[i];
+        Debug("parser-sygus") << "...add for variable " << ss.str() << std::endl;
+        ops[index].push_back( sygus_vars[i] );
+        cnames[index].push_back( ss.str() );
+        cargs[index].push_back( std::vector< CVC4::Type >() );
+      }
+    }
+  }else if( sgt.d_gterm_type==SygusGTerm::gterm_nested_sort ){
+    ret = sgt.d_type;
+  }else if( sgt.d_gterm_type==SygusGTerm::gterm_unresolved ){
+    if( isNested ){
+      if( isUnresolvedType(sgt.d_name) ){
+        ret = getSort(sgt.d_name);
+      }else{
+        //nested, unresolved symbol...fail
+        std::stringstream ss;
+        ss << "Cannot handle nested unresolved symbol " << sgt.d_name << std::endl;
+        parseError(ss.str());
+      }
+    }else{
+      //will resolve when adding constructors
+      unresolved_gterm_sym[index].push_back(sgt.d_name);
+    }
+  }else if( sgt.d_gterm_type==SygusGTerm::gterm_ignore ){
+    
+  }
+}
+
 bool Smt2::pushSygusDatatypeDef( Type t, std::string& dname,
                                   std::vector< CVC4::Datatype >& datatypes,
                                   std::vector< CVC4::Type>& sorts,
@@ -698,6 +790,15 @@ Type Smt2::processSygusNestedGTerm( int sub_dt_index, std::string& sub_dname, st
       for( unsigned i=0; i<cargs[sub_dt_index][0].size(); i++ ){
         std::map< CVC4::Type, CVC4::Expr >::iterator it = sygus_to_builtin_expr.find( cargs[sub_dt_index][0][i] );
         if( it==sygus_to_builtin_expr.end() ){
+          if( sygus_to_builtin.find( cargs[sub_dt_index][0][i] )==sygus_to_builtin.end() ){
+            std::stringstream ss;
+            ss << "Missing builtin type for type " << cargs[sub_dt_index][0][i] << "!" << std::endl;
+            ss << "Builtin types are currently : " << std::endl;
+            for( std::map< CVC4::Type, CVC4::Type >::iterator itb = sygus_to_builtin.begin(); itb != sygus_to_builtin.end(); ++itb ){
+              ss << "  " << itb->first << " -> " << itb->second << std::endl;
+            }
+            parseError(ss.str());
+          }
           Type bt = sygus_to_builtin[cargs[sub_dt_index][0][i]];
           Debug("parser-sygus") << ":  child " << i << " introduce type elem for " << cargs[sub_dt_index][0][i] << " " << bt << std::endl;
           std::stringstream ss;
@@ -730,7 +831,7 @@ Type Smt2::processSygusNestedGTerm( int sub_dt_index, std::string& sub_dname, st
 }
 
 void Smt2::processSygusLetConstructor( std::vector< CVC4::Expr >& let_vars,
-                                       int index, int start_index,
+                                       int index, 
                                        std::vector< CVC4::Datatype >& datatypes,
                                        std::vector< CVC4::Type>& sorts,
                                        std::vector< std::vector<CVC4::Expr> >& ops,
@@ -764,6 +865,7 @@ void Smt2::processSygusLetConstructor( std::vector< CVC4::Expr >& let_vars,
     Debug("parser-sygus") << "  let var " << i << " : " << let_vars[i] << " " << let_vars[i].getType() << std::endl;
     let_define_args.push_back( let_vars[i] );
   }
+  /*
   Debug("parser-sygus") << "index = " << index << ", start index = " << start_index << ", #Current datatypes = " << datatypes.size() << std::endl;
   for( unsigned i=start_index; i<datatypes.size(); i++ ){
     Debug("parser-sygus") << "  datatype " << i << " : " << datatypes[i].getName() << ", #cons = " << cargs[i].size() << std::endl;
@@ -776,6 +878,7 @@ void Smt2::processSygusLetConstructor( std::vector< CVC4::Expr >& let_vars,
       }
     }
   } 
+  */
   //last argument is the return, pop
   cargs[index][dindex].pop_back();
   collectSygusLetArgs( let_body, cargs[index][dindex], let_define_args );  
