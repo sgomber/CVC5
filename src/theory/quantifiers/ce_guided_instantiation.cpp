@@ -137,6 +137,10 @@ bool CegConjecture::isSingleInvocation() {
   return d_ceg_si->isSingleInvocation();
 }
 
+bool CegConjecture::needsCheck() {
+  return d_active && !d_infeasible && ( !isSingleInvocation() || d_ceg_si->needsCheck() );
+}
+
 CegInstantiation::CegInstantiation( QuantifiersEngine * qe, context::Context* c ) : QuantifiersModule( qe ){
   d_conj = new CegConjecture( qe->getSatContext() );
   d_last_inst_si = false;
@@ -155,7 +159,7 @@ void CegInstantiation::check( Theory::Effort e, unsigned quant_e ) {
     Trace("cegqi-engine") << "---Counterexample Guided Instantiation Engine---" << std::endl;
     Trace("cegqi-engine-debug") << std::endl;
     Trace("cegqi-engine-debug") << "Current conjecture status : active : " << d_conj->d_active << " feasible : " << !d_conj->d_infeasible << std::endl;
-    if( d_conj->d_active && !d_conj->d_infeasible ){
+    if( d_conj->needsCheck() ){
       checkCegConjecture( d_conj );
     }
     Trace("cegqi-engine") << "Finished Counterexample Guided Instantiation engine." << std::endl;

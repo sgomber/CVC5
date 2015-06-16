@@ -740,6 +740,7 @@ CegConjectureSingleInv::CegConjectureSingleInv( CegConjecture * p ) : d_parent( 
   d_sol = NULL;
   d_c_inst_match_trie = NULL;
   d_cinst = NULL;
+  d_has_ites = true;
 }
 
 Node CegConjectureSingleInv::getSingleInvLemma( Node guard ) {
@@ -796,6 +797,14 @@ void CegConjectureSingleInv::initialize( QuantifiersEngine * qe, Node q ) {
   std::map< Node, std::map< Node, bool > > contains;
   for( unsigned i=0; i<q[0].getNumChildren(); i++ ){
     progs.push_back( q[0][i] );
+    //check whether all types have ITE
+    TypeNode tn = q[0][i].getType();
+    d_qe->getTermDatabaseSygus()->registerSygusType( tn );
+    if( !d_qe->getTermDatabaseSygus()->sygusToBuiltinType( tn ).isBoolean() ){
+      if( !d_qe->getTermDatabaseSygus()->hasKind( tn, ITE ) ){
+        d_has_ites = false;
+      }
+    }
   }
   //collect information about conjunctions
   bool singleInvocation = false;
@@ -1289,6 +1298,15 @@ Node CegConjectureSingleInv::getSolution( unsigned sol_index, TypeNode stn, int&
   }else{
     return d_solution;
   }
+}
+
+bool CegConjectureSingleInv::needsCheck() {
+  if( options::cegqiSingleInvMultiInstAbort() ){
+    if( !hasITEs() ){
+      return d_inst.empty();
+    }
+  }
+  return true;
 }
 
 }

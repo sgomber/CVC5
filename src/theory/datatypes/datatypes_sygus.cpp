@@ -833,7 +833,7 @@ bool SygusSymBreak::processCurrentProgram( Node a, TypeNode at, int depth, Node 
     int tsize = d_tds->getTermSize( prog );
     if( itnp==d_normalized_to_orig[at].end() ){
       d_normalized_to_orig[at][progr] = prog;
-      if( progr.getKind()==SKOLEM && d_tds->getSygusType( progr )==at ){
+      if( progr.getKind()==SKOLEM && d_tds->getSygusTypeForVar( progr )==at ){
         Trace("sygus-nf") << "* Sygus sym break : " << prog << " rewrites to variable " << progr << " of same type as self" << std::endl;
         d_redundant[at][prog] = true;
         red = true;

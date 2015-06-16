@@ -1400,7 +1400,7 @@ TNode TermDbSygus::getVarInc( TypeNode tn, std::map< TypeNode, int >& var_count 
   }
 }
 
-TypeNode TermDbSygus::getSygusType( Node v ) {
+TypeNode TermDbSygus::getSygusTypeForVar( Node v ) {
   Assert( d_fv_stype.find( v )!=d_fv_stype.end() );
   return d_fv_stype[v];
 }
@@ -1562,7 +1562,7 @@ Node TermDbSygus::mkGeneric( const Datatype& dt, int c, std::map< TypeNode, int 
       Node n = NodeManager::currentNM()->mkNode( APPLY, children );
       //must expand definitions
       Node ne = Node::fromExpr( smt::currentSmtEngine()->expandDefinitions( n.toExpr() ) );
-      Trace("sygus-util-debug") << "Expanded definitions in " << n << " to " << ne << std::endl;
+      Trace("sygus-db-debug") << "Expanded definitions in " << n << " to " << ne << std::endl;
       return ne;
       */
     }
@@ -1925,10 +1925,10 @@ void TermDbSygus::registerSygusType( TypeNode tn ){
       d_register[tn] = TypeNode::null();
     }else{
       const Datatype& dt = ((DatatypeType)(tn).toType()).getDatatype();
-      Trace("sygus-util") << "Register type " << dt.getName() << "..." << std::endl;
+      Trace("sygus-db") << "Register type " << dt.getName() << "..." << std::endl;
       d_register[tn] = TypeNode::fromType( dt.getSygusType() );
       if( d_register[tn].isNull() ){
-        Trace("sygus-util") << "...not sygus." << std::endl;
+        Trace("sygus-db") << "...not sygus." << std::endl;
       }else{
         //for constant reconstruction
         Kind ck = getComparisonKind( TypeNode::fromType( dt.getSygusType() ) );
@@ -1939,14 +1939,14 @@ void TermDbSygus::registerSygusType( TypeNode tn ){
           Expr sop = dt[i].getSygusOp();
           Assert( !sop.isNull() );
           Node n = Node::fromExpr( sop );
-          Trace("sygus-util") << "  Operator #" << i << " : " << sop;
+          Trace("sygus-db") << "  Operator #" << i << " : " << sop;
           if( sop.getKind() == kind::BUILTIN ){
             Kind sk = NodeManager::operatorToKind( n );
-            Trace("sygus-util") << ", kind = " << sk;
+            Trace("sygus-db") << ", kind = " << sk;
             d_kinds[tn][sk] = i;
             d_arg_kind[tn][i] = sk;
           }else if( sop.isConst() ){
-            Trace("sygus-util") << ", constant";
+            Trace("sygus-db") << ", constant";
             d_consts[tn][n] = i;
             d_arg_const[tn][i] = n;
             d_const_list[tn].push_back( n );
@@ -1959,7 +1959,7 @@ void TermDbSygus::registerSygusType( TypeNode tn ){
           }
           d_ops[tn][n] = i;
           d_arg_ops[tn][i] = n;
-          Trace("sygus-util") << std::endl;
+          Trace("sygus-db") << std::endl;
         }
         //sort the constant list
         if( !d_const_list[tn].empty() ){
@@ -1969,12 +1969,12 @@ void TermDbSygus::registerSygusType( TypeNode tn ){
             sc.d_tds = this;
             std::sort( d_const_list[tn].begin(), d_const_list[tn].end(), sc );
           }
-          Trace("sygus-util") << "Type has " << d_const_list[tn].size() << " constants..." << std::endl << "  ";
+          Trace("sygus-db") << "Type has " << d_const_list[tn].size() << " constants..." << std::endl << "  ";
           for( unsigned i=0; i<d_const_list[tn].size(); i++ ){
-            Trace("sygus-util") << d_const_list[tn][i] << " ";
+            Trace("sygus-db") << d_const_list[tn][i] << " ";
           }
-          Trace("sygus-util") << std::endl;
-          Trace("sygus-util") << "Of these, " << d_const_list_pos[tn] << " are marked as positive." << std::endl;
+          Trace("sygus-db") << std::endl;
+          Trace("sygus-db") << "Of these, " << d_const_list_pos[tn] << " are marked as positive." << std::endl;
         }
         //register connected types
         for( unsigned i=0; i<dt.getNumConstructors(); i++ ){
@@ -1989,6 +1989,11 @@ void TermDbSygus::registerSygusType( TypeNode tn ){
 
 bool TermDbSygus::isRegistered( TypeNode tn ) {
   return d_register.find( tn )!=d_register.end();
+}
+
+TypeNode TermDbSygus::sygusToBuiltinType( TypeNode tn ) {
+  Assert( isRegistered( tn ) );
+  return d_register[tn];
 }
 
 int TermDbSygus::getKindArg( TypeNode tn, Kind k ) {

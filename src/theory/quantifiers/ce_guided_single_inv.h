@@ -135,6 +135,7 @@ private:
   Node d_orig_solution;
   Node d_solution;
   Node d_sygus_solution;
+  bool d_has_ites;
 private:
   std::vector< Node > d_curr_lemmas;
   //add instantiation
@@ -158,8 +159,12 @@ public:
   void check( std::vector< Node >& lems );
   //get solution
   Node getSolution( unsigned sol_index, TypeNode stn, int& reconstructed );
+  // has ites
+  bool hasITEs() { return d_has_ites; }
   // is single invocation
   bool isSingleInvocation() { return !d_single_inv.isNull(); }
+  //needs check
+  bool needsCheck();
 };
 
 }
