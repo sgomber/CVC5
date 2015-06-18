@@ -404,11 +404,6 @@ void Smt2::setLogic(std::string name) {
   if (d_logic.isTheoryEnabled(theory::THEORY_FP)) {
     addTheory(THEORY_FP);
   }
-  
-  if( sygus() ){
-    //TODO : add additional non-standard define-funs here
-
-  }
 
 }/* Smt2::setLogic() */
 
@@ -504,8 +499,8 @@ void Smt2::includeFile(const std::string& filename) {
 }
 
 void Smt2::mkSygusDefaultGrammar( const Type& range, Expr& bvl, const std::string& fun, std::vector<CVC4::Datatype>& datatypes,
-                                  std::vector<Type>& sorts, std::vector< std::vector<Expr> >& ops, std::vector<Expr> sygus_vars ) {
-
+                                  std::vector<Type>& sorts, std::vector< std::vector<Expr> >& ops, std::vector<Expr> sygus_vars, int& startIndex ) {
+  startIndex = 0;
   Debug("parser-sygus") << "Construct default grammar for " << fun << " " << range << std::endl;
   std::map< CVC4::Type, CVC4::Type > sygus_to_builtin;
   
@@ -926,6 +921,29 @@ void Smt2::collectSygusLetArgs( CVC4::Expr e, std::vector< CVC4::Type >& sygusAr
   }
 }
 
+void Smt2::setSygusStartIndex( std::string& fun, int startIndex, 
+                               std::vector< CVC4::Datatype >& datatypes,
+                               std::vector< CVC4::Type>& sorts,
+                               std::vector< std::vector<CVC4::Expr> >& ops ) {
+  if( startIndex>0 ){
+    CVC4::Datatype tmp_dt = datatypes[0];
+    Type tmp_sort = sorts[0];
+    std::vector< Expr > tmp_ops;
+    tmp_ops.insert( tmp_ops.end(), ops[0].begin(), ops[0].end() );
+    datatypes[0] = datatypes[startIndex];
+    sorts[0] = sorts[startIndex];
+    ops[0].clear();
+    ops[0].insert( ops[0].end(), ops[startIndex].begin(), ops[startIndex].end() );
+    datatypes[startIndex] = tmp_dt;
+    sorts[startIndex] = tmp_sort;
+    ops[startIndex].clear();
+    ops[startIndex].insert( ops[startIndex].begin(), tmp_ops.begin(), tmp_ops.end() );
+  }else if( startIndex<0 ){
+    std::stringstream ss;
+    ss << "warning: no symbol named Start for synth-fun " << fun << std::endl;
+    warning(ss.str());
+  }
+}
 
 void Smt2::defineSygusFuns() {
   // only define each one once

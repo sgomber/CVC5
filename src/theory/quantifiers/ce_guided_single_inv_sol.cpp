@@ -86,8 +86,11 @@ Node CegConjectureSingleInvSol::pullITEs( Node s ) {
         Trace("csi-sol-debug") << "For " << s << ", can pull " << cond << " -> " << t << " with remainder " << rem << std::endl;
         t = pullITEs( t );
         rem = pullITEs( rem );
+        Trace("csi-pull-ite") << "PI: Rewrite : " << s << std::endl;
+        Node prev = s;
         s = NodeManager::currentNM()->mkNode( ITE, TermDb::simpleNegate( cond ), t, rem );
-        //Trace("csi-debug-sol") << "Now : " << s << std::endl;
+        Trace("csi-pull-ite") << "PI: Rewrite Now : " << s << std::endl;
+        Trace("csi-pull-ite") << "(= " << prev << " " << s << ")" << std::endl;
         success = true;
       }
     }while( success );
@@ -99,11 +102,13 @@ Node CegConjectureSingleInvSol::pullITEs( Node s ) {
 bool CegConjectureSingleInvSol::pullITECondition( Node root, Node n_ite, std::vector< Node >& conj, Node& t, Node& rem, int depth ) {
   Assert( n_ite.getKind()==ITE );
   std::vector< Node > curr_conj;
+  std::vector< Node > orig_conj;
   bool isAnd;
   if( n_ite[0].getKind()==AND || n_ite[0].getKind()==OR ){
     isAnd = n_ite[0].getKind()==AND;
     for( unsigned i=0; i<n_ite[0].getNumChildren(); i++ ){
       Node cond = n_ite[0][i];
+      orig_conj.push_back( cond );
       if( n_ite[0].getKind()==OR ){
         cond = TermDb::simpleNegate( cond );
       }
@@ -112,12 +117,15 @@ bool CegConjectureSingleInvSol::pullITECondition( Node root, Node n_ite, std::ve
   }else{
     Node neg = n_ite[0].negate();
     if( std::find( conj.begin(), conj.end(), neg )!=conj.end() ){
+      //if negation of condition exists, use it
       isAnd = false;
       curr_conj.push_back( neg );
     }else{
+      //otherwise, use condition
       isAnd = true;
       curr_conj.push_back( n_ite[0] );
     }
+    orig_conj.push_back( n_ite[0] );
   }
   // take intersection with current conditions
   std::vector< Node > new_conj;
@@ -162,13 +170,14 @@ bool CegConjectureSingleInvSol::pullITECondition( Node root, Node n_ite, std::ve
     //make remainder : strip out conditions in conj
     Assert( !conj.empty() );
     std::vector< Node > cond_c;
+    Assert( orig_conj.size()==curr_conj.size() );
     for( unsigned i=0; i<curr_conj.size(); i++ ){
       if( std::find( conj.begin(), conj.end(), curr_conj[i] )==conj.end() ){
-        cond_c.push_back( curr_conj[i] );
+        cond_c.push_back( orig_conj[i] );
       }
     }
     if( cond_c.empty() ){
-      rem = isAnd ? tval : rem;
+      rem = tval;
     }else{
       Node new_cond = cond_c.size()==1 ? cond_c[0] : NodeManager::currentNM()->mkNode( n_ite[0].getKind(), cond_c );
       rem = NodeManager::currentNM()->mkNode( ITE, new_cond, isAnd ? tval : rem, isAnd ? rem : tval );

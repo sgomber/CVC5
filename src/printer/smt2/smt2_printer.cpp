@@ -743,6 +743,8 @@ static string smtKindString(Kind k) throw() {
   case kind::BITVECTOR_SLE: return "bvsle";
   case kind::BITVECTOR_SGT: return "bvsgt";
   case kind::BITVECTOR_SGE: return "bvsge";
+  case kind::BITVECTOR_REDOR: return "bvredor";
+  case kind::BITVECTOR_REDAND: return "bvredand";
 
   case kind::BITVECTOR_EXTRACT: return "extract";
   case kind::BITVECTOR_REPEAT: return "repeat";

@@ -660,7 +660,9 @@ sygusCommand returns [CVC4::Command* cmd = NULL]
     { 
       if( !read_syntax ){
         //create the default grammar
-        PARSER_STATE->mkSygusDefaultGrammar( range, terms[0], fun, datatypes, sorts, ops, sygus_vars );
+        PARSER_STATE->mkSygusDefaultGrammar( range, terms[0], fun, datatypes, sorts, ops, sygus_vars, startIndex );
+        //set start index
+        PARSER_STATE->setSygusStartIndex( fun, startIndex, datatypes, sorts, ops );        
       }else{
         Debug("parser-sygus") << "--- Process " << sgts.size() << " sygus gterms..." << std::endl;
         for( unsigned i=0; i<sgts.size(); i++ ){
@@ -683,23 +685,9 @@ sygusCommand returns [CVC4::Command* cmd = NULL]
           datatypes[i].setSygus( sorts[i], terms[0], allow_const[i], false );
           PARSER_STATE->mkSygusDatatype( datatypes[i], ops[i], cnames[i], cargs[i], unresolved_gterm_sym[i], sygus_to_builtin );
         }
-        //only care about datatypes/sorts/ops past here
-        if( startIndex>0 ){
-         // PARSER_STATE->swapSygusStart( startIndex, datatypes, sorts, ops, cnames, cargs, allow_const, unresolved_gterm_sym );
-          CVC4::Datatype tmp_dt = datatypes[0];
-          Type tmp_sort = sorts[0];
-          std::vector< Expr > tmp_ops;
-          tmp_ops.insert( tmp_ops.end(), ops[0].begin(), ops[0].end() );
-          datatypes[0] = datatypes[startIndex];
-          sorts[0] = sorts[startIndex];
-          ops[0].clear();
-          ops[0].insert( ops[0].end(), ops[startIndex].begin(), ops[startIndex].end() );
-          datatypes[startIndex] = tmp_dt;
-          sorts[startIndex] = tmp_sort;
-          ops[startIndex].clear();
-          ops[startIndex].insert( ops[startIndex].begin(), tmp_ops.begin(), tmp_ops.end() );
-        }
+        PARSER_STATE->setSygusStartIndex( fun, startIndex, datatypes, sorts, ops );
       }
+      //only care about datatypes/sorts/ops past here
       PARSER_STATE->popScope();
       Debug("parser-sygus") << "--- Make " << datatypes.size() << " mutual datatypes..." << std::endl;
       for( unsigned i=0; i<datatypes.size(); i++ ){
@@ -2418,8 +2406,11 @@ symbol[std::string& id,
      * use as symbols in SMT-LIB */
     | SET_OPTIONS_TOK { id = "set-options"; }
     | DECLARE_VAR_TOK { id = "declare-var"; }
+    | DECLARE_PRIMED_VAR_TOK { id = "declare-primed-var"; }
     | SYNTH_FUN_TOK { id = "synth-fun"; }
+    | SYNTH_INV_TOK { id = "synth-inv"; }
     | CONSTRAINT_TOK { id = "constraint"; }
+    | INV_CONSTRAINT_TOK { id = "inv-constraint"; }
     | CHECK_SYNTH_TOK { id = "check-synth"; }
     )
     { PARSER_STATE->checkDeclaration(id, check, type); }
@@ -2569,9 +2560,12 @@ INCLUDE_TOK : 'include';
 
 // SyGuS commands
 SYNTH_FUN_TOK : 'synth-fun';
+SYNTH_INV_TOK : 'synth-inv';
 CHECK_SYNTH_TOK : 'check-synth';
 DECLARE_VAR_TOK : 'declare-var';
+DECLARE_PRIMED_VAR_TOK : 'declare-primed-var';
 CONSTRAINT_TOK : 'constraint';
+INV_CONSTRAINT_TOK : 'inv-constraint';
 SET_OPTIONS_TOK : 'set-options';
 SYGUS_ENUM_TOK : { PARSER_STATE->sygus() }? 'Enum';
 SYGUS_ENUM_CONS_TOK : { PARSER_STATE->sygus() }? '::';

@@ -179,7 +179,7 @@ public:
   }
 
   void mkSygusDefaultGrammar( const Type& range, Expr& bvl, const std::string& fun, std::vector<CVC4::Datatype>& datatypes,
-                              std::vector<Type>& sorts, std::vector< std::vector<Expr> >& ops, std::vector<Expr> sygus_vars );
+                              std::vector<Type>& sorts, std::vector< std::vector<Expr> >& ops, std::vector<Expr> sygus_vars, int& startIndex );
 
   void mkSygusConstantsForType( const Type& type, std::vector<CVC4::Expr>& ops );
 
@@ -211,6 +211,11 @@ public:
                                    std::vector< std::vector< std::vector< CVC4::Type > > >& cargs,
                                    std::vector< bool >& allow_const,
                                    std::vector< std::vector< std::string > >& unresolved_gterm_sym );
+  
+  void setSygusStartIndex( std::string& fun, int startIndex, 
+                           std::vector< CVC4::Datatype >& datatypes,
+                           std::vector< CVC4::Type>& sorts,
+                           std::vector< std::vector<CVC4::Expr> >& ops );
   
   void addSygusFun(const std::string& fun, Expr eval) {
     d_sygusFuns.push_back(std::make_pair(fun, eval));
