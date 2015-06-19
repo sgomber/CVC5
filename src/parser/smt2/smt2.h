@@ -64,6 +64,7 @@ private:
   std::stack< std::map<Expr, std::string> > d_unsatCoreNames;
   std::vector<Expr> d_sygusVars, d_sygusConstraints, d_sygusFunSymbols;
   std::vector< std::pair<std::string, Expr> > d_sygusFuns;
+  std::map< Expr, bool > d_sygusVarPrimed;
   size_t d_nextSygusFun;
 
 protected:
@@ -172,11 +173,7 @@ public:
     return getExprManager()->mkConst(AbstractValue(Integer(name.substr(1))));
   }
 
-  Expr mkSygusVar(const std::string& name, const Type& type) {
-    Expr e = mkBoundVar(name, type);
-    d_sygusVars.push_back(e);
-    return e;
-  }
+  Expr mkSygusVar(const std::string& name, const Type& type, bool isPrimed = false);
 
   void mkSygusDefaultGrammar( const Type& range, Expr& bvl, const std::string& fun, std::vector<CVC4::Datatype>& datatypes,
                               std::vector<Type>& sorts, std::vector< std::vector<Expr> >& ops, std::vector<Expr> sygus_vars, int& startIndex );
@@ -233,6 +230,8 @@ public:
   Expr getSygusAssertion( std::vector<DatatypeType>& datatypeTypes, std::vector< std::vector<Expr> >& ops,
                           std::map<DatatypeType, Expr>& evals, std::vector<Expr>& terms,
                           Expr eval, const Datatype& dt, size_t i, size_t j );
+  
+
 
   void addSygusConstraint(Expr constraint) {
     d_sygusConstraints.push_back(constraint);
@@ -249,6 +248,7 @@ public:
   const std::vector<Expr>& getSygusVars() {
     return d_sygusVars;
   }
+  const void getSygusPrimedVars( std::vector<Expr>& vars, bool isPrimed );
 
   const std::vector<Expr>& getSygusFunSymbols() {
     return d_sygusFunSymbols;

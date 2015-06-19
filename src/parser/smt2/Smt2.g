@@ -504,7 +504,6 @@ sygusCommand returns [CVC4::Command* cmd = NULL]
   std::map< CVC4::Type, CVC4::Type > sygus_to_builtin;
   std::map< CVC4::Type, CVC4::Expr > sygus_to_builtin_expr;
   int startIndex = -1;
-  bool isSynthInv = false;
 }
   : /* set the logic */
     SET_LOGIC_TOK symbol[name,CHECK_NONE,SYM_SORT]
@@ -550,6 +549,13 @@ sygusCommand returns [CVC4::Command* cmd = NULL]
     { PARSER_STATE->checkUserSymbol(name); }
     sortSymbol[t,CHECK_DECLARED]
     { PARSER_STATE->mkSygusVar(name, t);
+      $cmd = new EmptyCommand(); }
+  | /* declare-primed-var */
+    DECLARE_PRIMED_VAR_TOK { PARSER_STATE->checkThatLogicIsSet(); }
+    symbol[name,CHECK_UNDECLARED,SYM_VARIABLE]
+    { PARSER_STATE->checkUserSymbol(name); }
+    sortSymbol[t,CHECK_DECLARED]
+    { PARSER_STATE->mkSygusVar(name, t, true);
       $cmd = new EmptyCommand(); }
   | /* declare-fun */
     DECLARE_FUN_TOK { PARSER_STATE->checkThatLogicIsSet(); }
@@ -601,7 +607,7 @@ sygusCommand returns [CVC4::Command* cmd = NULL]
       $cmd = new DefineFunctionCommand(name, func, terms, expr);
     }
   | /* synth-fun */
-    ( SYNTH_FUN_TOK | SYNTH_INV_TOK { isSynthInv = true; range = EXPR_MANAGER->booleanType(); } ) { PARSER_STATE->checkThatLogicIsSet(); }
+    ( SYNTH_FUN_TOK | SYNTH_INV_TOK { range = EXPR_MANAGER->booleanType(); } ) { PARSER_STATE->checkThatLogicIsSet(); }
     symbol[fun,CHECK_UNDECLARED,SYM_VARIABLE]
     LPAREN_TOK sortedVarList[sortedVarNames] RPAREN_TOK
     { seq = new CommandSequence();
@@ -741,14 +747,73 @@ sygusCommand returns [CVC4::Command* cmd = NULL]
       $cmd = seq;
     }
   | /* constraint */
-    CONSTRAINT_TOK { PARSER_STATE->checkThatLogicIsSet(); }
-    { Debug("parser-sygus") << "Sygus : define sygus funs..." << std::endl;
+    CONSTRAINT_TOK { 
+      PARSER_STATE->checkThatLogicIsSet();
+      Debug("parser-sygus") << "Sygus : define sygus funs..." << std::endl;
       PARSER_STATE->defineSygusFuns(); 
       Debug("parser-sygus") << "Sygus : read constraint..." << std::endl;
     }
     term[expr, expr2]
     { Debug("parser-sygus") << "...read constraint " << expr << std::endl;
       PARSER_STATE->addSygusConstraint(expr);
+      $cmd = new EmptyCommand();
+    }
+  | INV_CONSTRAINT_TOK {  
+      PARSER_STATE->checkThatLogicIsSet();
+      Debug("parser-sygus") << "Sygus : define sygus funs..." << std::endl;
+      PARSER_STATE->defineSygusFuns(); 
+      Debug("parser-sygus") << "Sygus : read inv-constraint..." << std::endl;
+    }
+    ( symbol[name,CHECK_NONE,SYM_VARIABLE] { 
+        if( !terms.empty() ){
+          if( !PARSER_STATE->isDefinedFunction(name) ){
+            std::stringstream ss;
+            ss << "Function " << name << " in inv-constraint is not defined.";
+            PARSER_STATE->parseError(ss.str());
+          }
+        }
+        terms.push_back( PARSER_STATE->getVariable(name) );
+      }
+    )+ {
+      if( terms.size()!=4 ){
+        PARSER_STATE->parseError("Bad syntax for inv-constraint: expected 4 arguments.");
+      }
+      //get primed variables
+      std::vector< Expr > primed[2];
+      std::vector< Expr > all;
+      for( unsigned i=0; i<2; i++ ){
+        PARSER_STATE->getSygusPrimedVars( primed[i], i==1 );
+        all.insert( all.end(), primed[i].begin(), primed[i].end() );
+      }
+      //make relevant terms
+      for( unsigned i=0; i<4; i++ ){
+        Debug("parser-sygus") << "Make inv-constraint term #" << i << "..." << std::endl;
+        Expr op = terms[i];
+        std::vector< Expr > children;
+        children.push_back( op );
+        if( i==2 ){
+          children.insert( children.end(), all.begin(), all.end() );
+        }else{
+          children.insert( children.end(), primed[0].begin(), primed[0].end() );
+        }
+        if( i==0 ){
+          terms[i] = EXPR_MANAGER->mkExpr(kind::APPLY_UF,children);
+          std::vector< Expr > children2;
+          children2.push_back( op );
+          children2.insert( children2.end(), primed[1].begin(), primed[1].end() );
+          terms.push_back( EXPR_MANAGER->mkExpr(kind::APPLY_UF,children2) );
+        }else{
+          terms[i] = EXPR_MANAGER->mkExpr(kind::APPLY,children);
+        }
+      }
+      //make constraints
+      std::vector< Expr > conj;
+      conj.push_back( EXPR_MANAGER->mkExpr(kind::IMPLIES, terms[1], terms[0] ) );
+      conj.push_back( EXPR_MANAGER->mkExpr(kind::IMPLIES, EXPR_MANAGER->mkExpr(kind::AND, terms[0], terms[2] ), terms[4] ) );
+      conj.push_back( EXPR_MANAGER->mkExpr(kind::IMPLIES, terms[0], terms[3] ) );
+      Expr ic = EXPR_MANAGER->mkExpr( kind::AND, conj );
+      Debug("parser-sygus") << "...read invariant constraint " << ic << std::endl;
+      PARSER_STATE->addSygusConstraint(ic);
       $cmd = new EmptyCommand();
     }
   | /* check-synth */

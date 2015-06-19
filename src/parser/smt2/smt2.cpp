@@ -498,6 +498,20 @@ void Smt2::includeFile(const std::string& filename) {
   }
 }
 
+Expr Smt2::mkSygusVar(const std::string& name, const Type& type, bool isPrimed) {
+  Expr e = mkBoundVar(name, type);
+  d_sygusVars.push_back(e);
+  d_sygusVarPrimed[e] = false;
+  if( isPrimed ){
+    std::stringstream ss;
+    ss << name << "'";
+    Expr ep = mkBoundVar(ss.str(), type);
+    d_sygusVars.push_back(ep);
+    d_sygusVarPrimed[ep] = true;
+  }
+  return e;
+}
+
 void Smt2::mkSygusDefaultGrammar( const Type& range, Expr& bvl, const std::string& fun, std::vector<CVC4::Datatype>& datatypes,
                                   std::vector<Type>& sorts, std::vector< std::vector<Expr> >& ops, std::vector<Expr> sygus_vars, int& startIndex ) {
   startIndex = -1;
@@ -1334,6 +1348,19 @@ Expr Smt2::getSygusAssertion( std::vector<DatatypeType>& datatypeTypes, std::vec
   return assertion;
 }
 
+const void Smt2::getSygusPrimedVars( std::vector<Expr>& vars, bool isPrimed ) {
+  for( unsigned i=0; i<d_sygusVars.size(); i++ ){
+    Expr v = d_sygusVars[i];
+    std::map< Expr, bool >::iterator it = d_sygusVarPrimed.find( v );
+    if( it!=d_sygusVarPrimed.end() ){
+      if( it->second==isPrimed ){
+        vars.push_back( v );
+      }
+    }else{
+      //should never happen
+    }
+  }
+}
 
 }/* CVC4::parser namespace */
 }/* CVC4 namespace */
