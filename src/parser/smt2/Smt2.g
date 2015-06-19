@@ -504,6 +504,7 @@ sygusCommand returns [CVC4::Command* cmd = NULL]
   std::map< CVC4::Type, CVC4::Type > sygus_to_builtin;
   std::map< CVC4::Type, CVC4::Expr > sygus_to_builtin_expr;
   int startIndex = -1;
+  bool isSynthInv = false;
 }
   : /* set the logic */
     SET_LOGIC_TOK symbol[name,CHECK_NONE,SYM_SORT]
@@ -600,7 +601,7 @@ sygusCommand returns [CVC4::Command* cmd = NULL]
       $cmd = new DefineFunctionCommand(name, func, terms, expr);
     }
   | /* synth-fun */
-    SYNTH_FUN_TOK { PARSER_STATE->checkThatLogicIsSet(); }
+    ( SYNTH_FUN_TOK | SYNTH_INV_TOK { isSynthInv = true; range = EXPR_MANAGER->booleanType(); } ) { PARSER_STATE->checkThatLogicIsSet(); }
     symbol[fun,CHECK_UNDECLARED,SYM_VARIABLE]
     LPAREN_TOK sortedVarList[sortedVarNames] RPAREN_TOK
     { seq = new CommandSequence();
@@ -620,7 +621,11 @@ sygusCommand returns [CVC4::Command* cmd = NULL]
       terms.clear();
       terms.push_back(bvl);
     }
-    sortSymbol[range,CHECK_DECLARED]
+    ( sortSymbol[range,CHECK_DECLARED] )? {
+      if( range.isNull() ){
+        PARSER_STATE->parseError("Must supply return type for synth-fun.");
+      }
+    }
     ( LPAREN_TOK
     ( LPAREN_TOK
       symbol[name,CHECK_NONE,SYM_VARIABLE] 
@@ -660,8 +665,10 @@ sygusCommand returns [CVC4::Command* cmd = NULL]
     { 
       if( !read_syntax ){
         //create the default grammar
+        Debug("parser-sygus") << "Make default grammar..." << std::endl;
         PARSER_STATE->mkSygusDefaultGrammar( range, terms[0], fun, datatypes, sorts, ops, sygus_vars, startIndex );
         //set start index
+        Debug("parser-sygus") << "Set start index " << startIndex << "..." << std::endl;
         PARSER_STATE->setSygusStartIndex( fun, startIndex, datatypes, sorts, ops );        
       }else{
         Debug("parser-sygus") << "--- Process " << sgts.size() << " sygus gterms..." << std::endl;
@@ -1522,6 +1529,7 @@ term[CVC4::Expr& expr, CVC4::Expr& expr2]
   Type type;
   std::string s;
   bool isBuiltinOperator = false;
+  bool readLetSort = false;
 }
   : /* a built-in operator application */
     LPAREN_TOK builtinOp[kind] termList[args,expr] RPAREN_TOK
@@ -1722,10 +1730,12 @@ term[CVC4::Expr& expr, CVC4::Expr& expr2]
   | /* a let binding */
     LPAREN_TOK LET_TOK LPAREN_TOK
     { PARSER_STATE->pushScope(true); }
-    ( LPAREN_TOK symbol[name,CHECK_NONE,SYM_VARIABLE] term[expr, f2] RPAREN_TOK
+    ( LPAREN_TOK symbol[name,CHECK_NONE,SYM_VARIABLE] (term[expr, f2] | sortSymbol[type,CHECK_DECLARED] { readLetSort = true; } term[expr, f2] ) RPAREN_TOK
       // this is a parallel let, so we have to save up all the contributions
       // of the let and define them only later on
-      { if(names.count(name) == 1) {
+      { if( readLetSort!=PARSER_STATE->sygus() ){
+          PARSER_STATE->parseError("Bad syntax for let term.");
+        }else if(names.count(name) == 1) {
           std::stringstream ss;
           ss << "warning: symbol `" << name << "' bound multiple times by let; the last binding will be used, shadowing earlier ones";
           PARSER_STATE->warning(ss.str());
