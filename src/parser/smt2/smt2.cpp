@@ -603,6 +603,7 @@ void Smt2::mkSygusDefaultGrammar( const Type& range, Expr& bvl, const std::strin
   }
 
   //make Boolean type
+  Type btype = getExprManager()->booleanType();
   datatypes.push_back(Datatype(dbname));
   ops.push_back(std::vector<Expr>());
   std::vector<std::string> cnames;
@@ -615,6 +616,19 @@ void Smt2::mkSygusDefaultGrammar( const Type& range, Expr& bvl, const std::strin
       ss << sygus_vars[i];
       Debug("parser-sygus") << "...add for variable " << ss.str() << std::endl;
       ops.back().push_back( sygus_vars[i] );
+      cnames.push_back( ss.str() );
+      cargs.push_back( std::vector< CVC4::Type >() );
+    }
+  }
+  //add constants if no variables and no connected types
+  if( ops.back().empty() && types.empty() ){
+    std::vector< Expr > consts;
+    mkSygusConstantsForType( btype, consts );
+    for( unsigned j=0; j<consts.size(); j++ ){
+      std::stringstream ss;
+      ss << consts[j];
+      Debug("parser-sygus") << "...add for constant " << ss.str() << std::endl;
+      ops.back().push_back( consts[j] );
       cnames.push_back( ss.str() );
       cargs.push_back( std::vector< CVC4::Type >() );
     }
@@ -656,7 +670,6 @@ void Smt2::mkSygusDefaultGrammar( const Type& range, Expr& bvl, const std::strin
       cargs.back().push_back(unres_types[i]);
     }
   }
-  Type btype = getExprManager()->booleanType();
   if( range==btype ){
     startIndex = sorts.size();
   }
@@ -1066,6 +1079,7 @@ void Smt2::defineSygusFuns() {
     }
     Expr apply = getExprManager()->mkExpr(kind::APPLY_UF, applyv);
     Debug("parser-sygus") << "...made apply " << apply << std::endl;
+    Debug("parser-sygus") << "--> Define " << fun << " as " << lambda << " " << apply << std::endl;
     Command* cmd = new DefineFunctionCommand(fun, lambda, sygusVars, apply);
     preemptCommand(cmd);
 

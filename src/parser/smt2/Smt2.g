@@ -796,14 +796,12 @@ sygusCommand returns [CVC4::Command* cmd = NULL]
         }else{
           children.insert( children.end(), primed[0].begin(), primed[0].end() );
         }
+        terms[i] = EXPR_MANAGER->mkExpr(kind::APPLY,children);
         if( i==0 ){
-          terms[i] = EXPR_MANAGER->mkExpr(kind::APPLY_UF,children);
           std::vector< Expr > children2;
           children2.push_back( op );
           children2.insert( children2.end(), primed[1].begin(), primed[1].end() );
-          terms.push_back( EXPR_MANAGER->mkExpr(kind::APPLY_UF,children2) );
-        }else{
-          terms[i] = EXPR_MANAGER->mkExpr(kind::APPLY,children);
+          terms.push_back( EXPR_MANAGER->mkExpr(kind::APPLY,children2) );
         }
       }
       //make constraints
