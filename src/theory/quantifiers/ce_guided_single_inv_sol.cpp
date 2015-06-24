@@ -318,7 +318,7 @@ Node CegConjectureSingleInvSol::simplifySolution( Node sol, TypeNode stn ){
   }
   Node sol0 = Rewriter::rewrite( sol );
   Trace("csi-sol") << "now : " << sol0 << std::endl;
-  
+
   Node curr_sol = sol0;
   Node prev_sol;
   do{
@@ -368,7 +368,7 @@ Node CegConjectureSingleInvSol::simplifySolution( Node sol, TypeNode stn ){
       curr_sol = sol4;
     }
   }while( curr_sol!=prev_sol );
-  
+
   return curr_sol;
 }
 
@@ -857,12 +857,10 @@ int CegConjectureSingleInvSol::collectReconstructNodes( Node t, TypeNode stn, in
                     }
                   }while( !new_t.isNull() );
                 }
+                //get decompositions
                 for( unsigned i=0; i<dt.getNumConstructors(); i++ ){
                   Kind k = d_qe->getTermDatabaseSygus()->getArgKind( stn, i );
-                  if( k==AND || k==OR ){
-                    equiv.push_back( NodeManager::currentNM()->mkNode( k, min_t, min_t ) );
-                    equiv.push_back( NodeManager::currentNM()->mkNode( k, min_t, NodeManager::currentNM()->mkConst( k==AND ) ) );
-                  }
+                  getEquivalentTerms( k, min_t, equiv );
                 }
                 //assign ids to terms
                 Trace("csi-rcons-debug") << "Term " << id << " is equivalent to " << equiv.size() << " terms : " << std::endl;
@@ -1055,4 +1053,62 @@ void CegConjectureSingleInvSol::setReconstructed( int id, Node n ) {
   }
 }
 
+void CegConjectureSingleInvSol::getEquivalentTerms( Kind k, Node n, std::vector< Node >& equiv ) {
+  if( k==AND || k==OR ){
+    equiv.push_back( NodeManager::currentNM()->mkNode( k, n, n ) );
+    equiv.push_back( NodeManager::currentNM()->mkNode( k, n, NodeManager::currentNM()->mkConst( k==AND ) ) );
+  }
+  //multiplication for integers
+  //TODO for bitvectors
+  Kind mk = ( k==PLUS || k==MINUS ) ? MULT : UNDEFINED_KIND;
+  if( mk!=UNDEFINED_KIND ){
+    if( n.getKind()==mk && n[0].isConst() && n[0].getType().isInteger() ){
+      bool success = true;
+      for( unsigned i=0; i<2; i++ ){
+        Node eq;
+        if( k==PLUS || k==MINUS ){
+          Node oth = NodeManager::currentNM()->mkConst( Rational(i==0 ? 1000 : -1000) );
+          eq = i==0 ? NodeManager::currentNM()->mkNode( LEQ, n[0], oth ) : NodeManager::currentNM()->mkNode( GEQ, n[0], oth );
+        }
+        if( !eq.isNull() ){
+          eq = Rewriter::rewrite( eq );
+          if( eq!=d_qe->getTermDatabase()->d_true ){
+            success = false;
+            break;
+          }
+        }
+      }
+      if( success ){
+        Node var = n[1];
+        Node rem;
+        if( k==PLUS || k==MINUS ){
+          int rem_coeff = (int)n[0].getConst<Rational>().getNumerator().getSignedInt();
+          if( rem_coeff>0 && k==PLUS ){
+            rem_coeff--;
+          }else if( rem_coeff<0 && k==MINUS ){
+            rem_coeff++;
+          }else{
+            success = false;
+          }
+          if( success ){
+            rem = NodeManager::currentNM()->mkNode( MULT, NodeManager::currentNM()->mkConst( Rational(rem_coeff) ), var );
+            rem = Rewriter::rewrite( rem );
+          }
+        }
+        if( !rem.isNull() ){
+          equiv.push_back( NodeManager::currentNM()->mkNode( k, rem, var ) );
+        }
+      }
+    }
+  }
+  //negative constants
+  if( k==MINUS ){
+    if( n.isConst() && n.getType().isInteger() && n.getConst<Rational>().getNumerator().strictlyNegative() ){
+      Node nn = NodeManager::currentNM()->mkNode( UMINUS, n );
+      nn = Rewriter::rewrite( nn );
+      equiv.push_back( NodeManager::currentNM()->mkNode( MINUS, NodeManager::currentNM()->mkConst( Rational(0) ), nn ) );
+    }
+  }  
+}
+  
 }

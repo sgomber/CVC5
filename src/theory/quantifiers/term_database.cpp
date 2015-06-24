@@ -1649,7 +1649,7 @@ Node TermDbSygus::builtinToSygusConst( Node c, TypeNode tn, int rcons_depth ) {
                 int end = d_const_list[tn1].size()-d_const_list_pos[tn1];
                 for( int i=start; i>=end; --i ){
                   Node c1 = d_const_list[tn1][i];
-                  //only consider if smaller than c, and 
+                  //only consider if smaller than c, and
                   if( doCompare( c1, c, ck ) ){
                     Node c2 = NodeManager::currentNM()->mkNode( pkm, c, c1 );
                     c2 = Rewriter::rewrite( c2 );
@@ -2185,6 +2185,7 @@ bool TermDbSygus::doCompare( Node a, Node b, Kind k ) {
   return com==d_true;
 }
 
+
 void doStrReplace(std::string& str, const std::string& oldStr, const std::string& newStr){
   size_t pos = 0;
   while((pos = str.find(oldStr, pos)) != std::string::npos){
@@ -2249,7 +2250,7 @@ void TermDbSygus::printSygusTerm( std::ostream& out, Node n, std::vector< Node >
         }
         //do variable substitutions since ASSUMING : let_vars are interpreted literally and do not represent a class of variables
         std::string lbody = let_out.str();
-        for( unsigned i=0; i<dt[cIndex].getNumSygusLetArgs(); i++ ){ 
+        for( unsigned i=0; i<dt[cIndex].getNumSygusLetArgs(); i++ ){
           std::stringstream old_str;
           old_str << new_lvs[i];
           std::stringstream new_str;
