@@ -446,7 +446,7 @@ Node CegConjectureSingleInvSol::simplifySolutionNode( Node sol, TypeNode stn, st
               ret = NodeManager::currentNM()->mkNode( ITE, exp_c, ret[1], ret[2] );
             }
             if( !d_qe->getTermDatabaseSygus()->hasKind( stnc[0], ret[0].getKind() ) ){
-              Trace("csi-sol") << "Flatten based on " << ret[0] << "." << std::endl;
+              Trace("csi-simp-debug") << "Flatten based on " << ret[0] << "." << std::endl;
               ret = flattenITEs( ret, false );
             }
           }

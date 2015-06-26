@@ -1022,8 +1022,67 @@ void CegConjectureSingleInv::initialize( QuantifiersEngine * qe, Node q ) {
   if( !singleInvocation ){
     Trace("cegqi-si") << "Property is not single invocation." << std::endl;
     if( options::cegqiSingleInvAbort() ){
-      Message() << "Property is not single invocation." << std::endl;
+      Notice() << "Property is not single invocation." << std::endl;
       exit( 0 );
+    }
+  }else{
+    if( options::cegqiSingleInvPreRegInst() && d_single_inv.getKind()==FORALL ){
+      Trace("cegqi-si-presolve") << "Check " << d_single_inv << std::endl;
+      //at preregister time, add proxy of obvious instantiations up front, which helps learning during preprocessing
+      std::vector< Node > vars;
+      std::map< Node, std::vector< Node > > teq;
+      for( unsigned i=0; i<d_single_inv[0].getNumChildren(); i++ ){
+        vars.push_back( d_single_inv[0][i] );
+        teq[d_single_inv[0][i]].clear();
+      }
+      collectPresolveEqTerms( d_single_inv[1], teq );
+      std::vector< Node > terms;
+      std::vector< Node > conj;
+      getPresolveEqConjuncts( vars, terms, teq, d_single_inv, conj );
+
+      if( !conj.empty() ){
+        Node lem = conj.size()==1 ? conj[0] : NodeManager::currentNM()->mkNode( AND, conj );
+        Node g = NodeManager::currentNM()->mkSkolem( "g", NodeManager::currentNM()->booleanType() );
+        lem = NodeManager::currentNM()->mkNode( OR, g, lem );
+        d_qe->getOutputChannel().lemma( lem, false, true );
+      }
+    }
+  }
+}
+
+void CegConjectureSingleInv::collectPresolveEqTerms( Node n, std::map< Node, std::vector< Node > >& teq ) {
+  if( n.getKind()==EQUAL ){
+    for( unsigned i=0; i<2; i++ ){
+      std::map< Node, std::vector< Node > >::iterator it = teq.find( n[i] );
+      if( it!=teq.end() ){
+        Node nn = n[ i==0 ? 1 : 0 ];
+        if( std::find( it->second.begin(), it->second.end(), nn )==it->second.end() ){
+          it->second.push_back( nn );
+          Trace("cegqi-si-presolve") << "  - " << n[i] << " = " << nn << std::endl;
+        }
+      }
+    }
+  }
+  for( unsigned i=0; i<n.getNumChildren(); i++ ){
+    collectPresolveEqTerms( n[i], teq );
+  }
+}
+
+void CegConjectureSingleInv::getPresolveEqConjuncts( std::vector< Node >& vars, std::vector< Node >& terms,
+                                                     std::map< Node, std::vector< Node > >& teq, Node f, std::vector< Node >& conj ) {
+  if( conj.size()<1000 ){
+    if( terms.size()==f[0].getNumChildren() ){
+      Node c = f[1].substitute( vars.begin(), vars.end(), terms.begin(), terms.end() );
+      conj.push_back( c );
+    }else{
+      unsigned i = terms.size();
+      Node v = f[0][i];
+      terms.push_back( Node::null() );
+      for( unsigned j=0; j<teq[v].size(); j++ ){
+        terms[i] = teq[v][j];
+        getPresolveEqConjuncts( vars, terms, teq, f, conj );
+      }
+      terms.pop_back();
     }
   }
 }
@@ -1208,19 +1267,33 @@ void CegConjectureSingleInv::check( std::vector< Node >& lems ) {
   }
 }
 
-Node CegConjectureSingleInv::constructSolution( unsigned i, unsigned index ) {
+Node CegConjectureSingleInv::constructSolution( std::vector< unsigned >& indices, unsigned i, unsigned index ) {
   Assert( index<d_inst.size() );
   Assert( i<d_inst[index].size() );
+  unsigned uindex = indices[index];
   if( index==d_inst.size()-1 ){
-    return d_inst[index][i];
+    return d_inst[uindex][i];
   }else{
-    Node cond = d_lemmas_produced[index];
+    Node cond = d_lemmas_produced[uindex];
     cond = TermDb::simpleNegate( cond );
-    Node ite1 = d_inst[index][i];
-    Node ite2 = constructSolution( i, index+1 );
+    Node ite1 = d_inst[uindex][i];
+    Node ite2 = constructSolution( indices, i, index+1 );
     return NodeManager::currentNM()->mkNode( ITE, cond, ite1, ite2 );
   }
 }
+
+//TODO: use term size?
+struct sortSiInstanceIndices {
+  CegConjectureSingleInv* d_ccsi;
+  int d_i;
+  bool operator() (unsigned i, unsigned j) {
+    if( d_ccsi->d_inst[i][d_i].isConst() ){
+      return true;
+    }else{
+      return false;
+    }
+  }
+};
 
 Node CegConjectureSingleInv::getSolution( unsigned sol_index, TypeNode stn, int& reconstructed ){
   Assert( d_sol!=NULL );
@@ -1247,7 +1320,17 @@ Node CegConjectureSingleInv::getSolution( unsigned sol_index, TypeNode stn, int&
     d_sol->d_varList.push_back( varList[i-1] );
   }
   //construct the solution
-  Node s = constructSolution( sol_index, 0 );
+  std::vector< unsigned > indices;
+  for( unsigned i=0; i<d_lemmas_produced.size(); i++ ){
+    indices.push_back( i );
+  }
+  //sort indices based on heuristic : currently, do all constant returns first (leads to simpler conditions)
+  // TODO : to minimize solution size, put the largest term last
+  sortSiInstanceIndices ssii;
+  ssii.d_ccsi = this;
+  ssii.d_i = sol_index;
+  std::sort( indices.begin(), indices.end(), ssii );
+  Node s = constructSolution( indices, sol_index, 0 );
   s = s.substitute( vars.begin(), vars.end(), d_varList.begin(), d_varList.end() );
   d_orig_solution = s;
 
