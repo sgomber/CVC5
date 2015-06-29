@@ -2205,7 +2205,20 @@ void TermDbSygus::printSygusTerm( std::ostream& out, Node n, std::vector< Node >
         if( n.getNumChildren()>0 ){
           out << "(";
         }
-        out << dt[cIndex].getSygusOp();
+        Node op = dt[cIndex].getSygusOp();
+        if( op.getType().isBitVector() && op.isConst() ){
+          //print in the style it was given
+          Trace("sygus-print-bvc") << "[Print " << op << " " << dt[cIndex].getName() << "]" << std::endl;
+          std::stringstream ss;
+          ss << dt[cIndex].getName();
+          std::string str = ss.str();
+          std::size_t found = str.find_last_of("_");
+          Assert( found!=std::string::npos );
+          std::string name = std::string( str.begin() + found +1, str.end() );
+          out << name;
+        }else{
+          out << op;
+        }
         if( n.getNumChildren()>0 ){
           for( unsigned i=0; i<n.getNumChildren(); i++ ){
             out << " ";

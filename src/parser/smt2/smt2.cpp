@@ -713,6 +713,10 @@ void Smt2::processSygusGTerm( CVC4::SygusGTerm& sgt, int index,
                               CVC4::Type& ret, bool isNested ){
   if( sgt.d_gterm_type==SygusGTerm::gterm_op || sgt.d_gterm_type==SygusGTerm::gterm_let ){
     Debug("parser-sygus") << "Add " << sgt.d_expr << " to datatype " << index << std::endl;
+    //convert to UMINUS if one child of -
+    if( sgt.d_children.size()==1 && sgt.d_expr==getExprManager()->operatorOf(kind::MINUS) ){
+      sgt.d_expr = getExprManager()->operatorOf(kind::UMINUS);
+    }
     ops[index].push_back( sgt.d_expr );
     cnames[index].push_back( sgt.d_name );
     cargs[index].push_back( std::vector< CVC4::Type >() );
