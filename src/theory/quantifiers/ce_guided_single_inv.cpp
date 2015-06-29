@@ -1287,7 +1287,7 @@ struct sortSiInstanceIndices {
   CegConjectureSingleInv* d_ccsi;
   int d_i;
   bool operator() (unsigned i, unsigned j) {
-    if( d_ccsi->d_inst[i][d_i].isConst() ){
+    if( d_ccsi->d_inst[i][d_i].isConst() && !d_ccsi->d_inst[j][d_i].isConst() ){
       return true;
     }else{
       return false;
@@ -1320,8 +1320,11 @@ Node CegConjectureSingleInv::getSolution( unsigned sol_index, TypeNode stn, int&
     d_sol->d_varList.push_back( varList[i-1] );
   }
   //construct the solution
+  Trace("csi-sol") << "Sort solution return values " << sol_index << std::endl;
+  Assert( d_lemmas_produced.size()==d_inst.size() );
   std::vector< unsigned > indices;
   for( unsigned i=0; i<d_lemmas_produced.size(); i++ ){
+    Assert( sol_index<d_inst[i].size() );
     indices.push_back( i );
   }
   //sort indices based on heuristic : currently, do all constant returns first (leads to simpler conditions)
@@ -1330,6 +1333,7 @@ Node CegConjectureSingleInv::getSolution( unsigned sol_index, TypeNode stn, int&
   ssii.d_ccsi = this;
   ssii.d_i = sol_index;
   std::sort( indices.begin(), indices.end(), ssii );
+  Trace("csi-sol") << "Construct solution" << std::endl;
   Node s = constructSolution( indices, sol_index, 0 );
   s = s.substitute( vars.begin(), vars.end(), d_varList.begin(), d_varList.end() );
   d_orig_solution = s;
