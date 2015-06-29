@@ -519,7 +519,7 @@ Node CegConjectureSingleInvSol::simplifySolutionNode( Node sol, TypeNode stn, st
       }
       if( !new_vars.empty() ){
         if( !inc.empty() ){
-          Node ret = inc.size()==1 ? sol[0] : NodeManager::currentNM()->mkNode( sol.getKind(), inc );
+          Node ret = inc.size()==1 ? inc[0] : NodeManager::currentNM()->mkNode( sol.getKind(), inc );
           Trace("csi-simp") << "Base return is : " << ret << std::endl;
           // apply substitution
           ret = ret.substitute( new_vars.begin(), new_vars.end(), new_subs.begin(), new_subs.end() );

@@ -210,7 +210,15 @@ void Smt2Printer::toStream(std::ostream& out, TNode n,
       break;
     case kind::CONST_RATIONAL: {
       const Rational& r = n.getConst<Rational>();
-      toStreamRational(out, r, false);
+      if(d_variant == sygus_variant ){
+        if(r < 0) {
+          out << "-" << -r;
+        }else{
+          toStreamRational(out, r, false);
+        }
+      }else{
+        toStreamRational(out, r, false);
+      }
       // Rational r = n.getConst<Rational>();
       // if(r < 0) {
       //   if(r.isIntegral()) {
@@ -727,6 +735,7 @@ static string smtKindString(Kind k) throw() {
   case kind::BITVECTOR_PLUS: return "bvadd";
   case kind::BITVECTOR_SUB: return "bvsub";
   case kind::BITVECTOR_NEG: return "bvneg";
+  case kind::BITVECTOR_UDIV_TOTAL:
   case kind::BITVECTOR_UDIV: return "bvudiv";
   case kind::BITVECTOR_UREM: return "bvurem";
   case kind::BITVECTOR_SDIV: return "bvsdiv";
