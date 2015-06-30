@@ -1295,6 +1295,30 @@ struct sortSiInstanceIndices {
   }
 };
 
+Node removeBooleanIte( Node n ){
+  if( n.getKind()==ITE && n.getType().isBoolean() ){
+    return NodeManager::currentNM()->mkNode( OR, NodeManager::currentNM()->mkNode( AND, n[0], n[1] ),
+                                                 NodeManager::currentNM()->mkNode( AND, n[0].negate(), n[2] ) );
+  }else{
+    bool childChanged = false;
+    std::vector< Node > children;
+    for( unsigned i=0; i<n.getNumChildren(); i++ ){
+      Node nn = removeBooleanIte( n[i] );
+      children.push_back( nn );
+      childChanged = childChanged || nn!=n[i];
+    }
+    if( childChanged ){
+      if( n.hasOperator() ){
+        children.insert( children.begin(), n.getOperator() );
+      }
+      return NodeManager::currentNM()->mkNode( n.getKind(), children );
+    }else{
+      return n;
+    }
+  }
+}
+
+
 Node CegConjectureSingleInv::getSolution( unsigned sol_index, TypeNode stn, int& reconstructed ){
   Assert( d_sol!=NULL );
   Assert( !d_lemmas_produced.empty() );
@@ -1350,6 +1374,12 @@ Node CegConjectureSingleInv::getSolution( unsigned sol_index, TypeNode stn, int&
     d_sygus_solution = d_sol->reconstructSolution( s, stn, reconstructed );
     if( reconstructed==1 ){
       Trace("csi-sol") << "Solution (post-reconstruction into Sygus): " << d_sygus_solution << std::endl;
+    }
+  }else{
+    //remove boolean ITE (not allowed for sygus comp 2015)
+    if( !d_solution.getType().isBoolean() ){
+      d_solution = removeBooleanIte( d_solution );
+      Trace("csi-sol") << "Solution (after remove boolean ITE) : " << d_solution << std::endl;
     }
   }
 
