@@ -1377,10 +1377,10 @@ Node CegConjectureSingleInv::getSolution( unsigned sol_index, TypeNode stn, int&
     }
   }else{
     //remove boolean ITE (not allowed for sygus comp 2015)
-    if( !d_solution.getType().isBoolean() ){
-      d_solution = removeBooleanIte( d_solution );
-      Trace("csi-sol") << "Solution (after remove boolean ITE) : " << d_solution << std::endl;
-    }
+    //if( !d_solution.getType().isBoolean() ){
+    d_solution = removeBooleanIte( d_solution );
+    Trace("csi-sol") << "Solution (after remove boolean ITE) : " << d_solution << std::endl;
+    //}
   }
 
 
