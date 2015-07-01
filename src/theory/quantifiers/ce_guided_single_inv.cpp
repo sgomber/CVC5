@@ -1297,8 +1297,10 @@ struct sortSiInstanceIndices {
 
 Node removeBooleanIte( Node n ){
   if( n.getKind()==ITE && n.getType().isBoolean() ){
-    return NodeManager::currentNM()->mkNode( OR, NodeManager::currentNM()->mkNode( AND, n[0], n[1] ),
-                                                 NodeManager::currentNM()->mkNode( AND, n[0].negate(), n[2] ) );
+    Node n1 = removeBooleanIte( n[1] );
+    Node n2 = removeBooleanIte( n[2] );
+    return NodeManager::currentNM()->mkNode( OR, NodeManager::currentNM()->mkNode( AND, n[0], n1 ),
+                                                 NodeManager::currentNM()->mkNode( AND, n[0].negate(), n2 ) );
   }else{
     bool childChanged = false;
     std::vector< Node > children;
