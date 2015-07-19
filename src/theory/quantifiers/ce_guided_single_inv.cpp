@@ -1295,6 +1295,7 @@ struct sortSiInstanceIndices {
   }
 };
 
+/*
 Node removeBooleanIte( Node n ){
   if( n.getKind()==ITE && n.getType().isBoolean() ){
     Node n1 = removeBooleanIte( n[1] );
@@ -1319,7 +1320,7 @@ Node removeBooleanIte( Node n ){
     }
   }
 }
-
+*/
 
 Node CegConjectureSingleInv::getSolution( unsigned sol_index, TypeNode stn, int& reconstructed ){
   Assert( d_sol!=NULL );
@@ -1378,11 +1379,9 @@ Node CegConjectureSingleInv::getSolution( unsigned sol_index, TypeNode stn, int&
       Trace("csi-sol") << "Solution (post-reconstruction into Sygus): " << d_sygus_solution << std::endl;
     }
   }else{
-    //remove boolean ITE (not allowed for sygus comp 2015)
-    //if( !d_solution.getType().isBoolean() ){
-    d_solution = removeBooleanIte( d_solution );
-    Trace("csi-sol") << "Solution (after remove boolean ITE) : " << d_solution << std::endl;
-    //}
+    ////remove boolean ITE (not allowed for sygus comp 2015)
+    //d_solution = removeBooleanIte( d_solution );
+    //Trace("csi-sol") << "Solution (after remove boolean ITE) : " << d_solution << std::endl;
   }
 
 
