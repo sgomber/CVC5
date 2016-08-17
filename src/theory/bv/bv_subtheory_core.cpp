@@ -211,13 +211,11 @@ bool CoreSolver::check(Theory::Effort e) {
     if( d_bv->getExtTheory()->doInferences( 0, nred ) ){
       return true;
     }
-    if( !nred.empty() ){
-      std::vector< Node > nredr;
-      if( d_bv->getExtTheory()->doReductions( 0, nred, nredr ) ){
-        return true;
-      }
-      Assert( nredr.empty() );
+    std::vector< Node > nredr;
+    if( d_bv->getExtTheory()->doReductions( 0, nred, nredr ) ){
+      return true;
     }
+    Assert( nredr.empty() );
   }
 
   if (Theory::fullEffort(e) && isComplete()) {

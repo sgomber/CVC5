@@ -529,7 +529,7 @@ bool TheoryBV::getCurrentSubstitution( int effort, std::vector< Node >& vars, st
   }
   return false;
 }
-int TheoryBV::doReductionFor( int effort, Node n, Node& nr ) {
+int TheoryBV::getReduction( int effort, Node n, Node& nr ) {
   Trace("bv-ext") << "TheoryBV::checkExt : non-reduced : " << n << std::endl;
   if( n.getKind()==kind::BITVECTOR_TO_NAT ){
     //taken from rewrite code

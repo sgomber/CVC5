@@ -24,6 +24,7 @@
 #include <string>
 
 #include "context/cdlist.h"
+#include "context/cdhashset.h"
 #include "context/cdo.h"
 #include "context/context.h"
 #include "expr/node.h"
@@ -903,7 +904,7 @@ public:
        if return value <0 then n is reduced context-independently.
        if nr is non-null, then ( n = nr ) should be added as a lemma by caller, and return value should be <0.
    */
-  virtual int doReductionFor( int effort, Node n, Node& nr ) { return 0; }
+  virtual int getReduction( int effort, Node n, Node& nr ) { return 0; }
  
   /**
    * Turn on proof-production mode.
@@ -978,11 +979,14 @@ public:
 class ExtTheory {
   friend class Theory;
   typedef context::CDHashMap<Node, bool, NodeHashFunction> NodeBoolMap;
+  typedef context::CDHashSet<Node, NodeHashFunction> NodeSet;
 protected:
   Theory * d_parent;
   Node d_true;
   //extended string terms, map to whether they are active
   NodeBoolMap d_ext_func_terms;
+  //context independent func terms
+  NodeSet d_ci_inactive;
   //any non-reduced extended functions exist
   context::CDO< bool > d_has_extf;
   //extf kind
@@ -996,23 +1000,26 @@ protected:
   std::map< Node, ExtfInfo > d_extf_info;
   //collect variables
   void collectVars( Node n, std::vector< Node >& vars, std::map< Node, bool >& visited );
+  // is context dependent inactive
+  bool isContextIndependentInactive( Node n );
+  //do inferences internal
+  bool doInferencesInternal( int effort, std::vector< Node >& terms, std::vector< Node >& nred, bool batch, bool isRed ); 
 public:
   ExtTheory( Theory * p );
   virtual ~ExtTheory(){}
   //add extf kind
   void addFunctionKind( Kind k ) { d_extf_kind[k] = true; }
   //do inferences 
-  //  input : effort, terms (if non-empty)
-  //  output : terms (if empty), sterms, exp, where 
-  //             terms if inputted empty contains all active ext terms, and ( exp[i] => terms[i] = sterms[i] ) for all i
+  //  input : effort, terms
+  //  output : sterms, exp, where ( exp[i] => terms[i] = sterms[i] ) for all i
   void getSubstitutedTerms( int effort, std::vector< Node >& terms, std::vector< Node >& sterms, std::vector< std::vector< Node > >& exp );
   //do inferences
   //  will send lemmas for all constant rewrites, outputs the non-reduced terms, true iff lemma is sent
-  bool doInferences( int effort, std::vector< Node >& terms, std::vector< Node >& nred ); 
-  bool doInferences( int effort, std::vector< Node >& nred );
+  bool doInferences( int effort, std::vector< Node >& terms, std::vector< Node >& nred, bool batch=true ); 
+  bool doInferences( int effort, std::vector< Node >& nred, bool batch=true  );
   //do reductions
-  bool doReductions( int effort, std::vector< Node >& terms, std::vector< Node >& nred ); 
-  bool doReductions( int effort, std::vector< Node >& nred ); 
+  bool doReductions( int effort, std::vector< Node >& terms, std::vector< Node >& nred, bool batch=true  ); 
+  bool doReductions( int effort, std::vector< Node >& nred, bool batch=true  ); 
   //register term
   void registerTerm( Node n );
   //mark reduced
