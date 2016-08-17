@@ -226,7 +226,7 @@ bool InstStrategyCbqi::doCbqi( Node q ){
         }
       }
     }
-    Trace("cbqi") << "doCbqi " << q << " returned " << ret << std::endl;
+    Trace("cbqi-debug") << "doCbqi " << q << " returned " << ret << std::endl;
     d_do_cbqi[q] = ret;
     return ret;
   }else{

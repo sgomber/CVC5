@@ -281,6 +281,20 @@ public:
   }
 };/* class BitVectorConversionTypeRule */
 
+class IntToBitVectorOpTypeRule {
+public:
+  inline static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check)
+      throw (TypeCheckingExceptionPrivate, AssertionException) {
+
+    if(n.getKind() == kind::INT_TO_BITVECTOR_OP) {
+      size_t bvSize = n.getConst<IntToBitVector>();
+      return nodeManager->mkFunctionType( nodeManager->integerType(), nodeManager->mkBitVectorType(bvSize) );
+    }
+
+    InternalError("bv-conversion typerule invoked for non-bv-conversion kind");
+  }
+};
+
 class CardinalityComputer {
 public:
   inline static Cardinality computeCardinality(TypeNode type) {

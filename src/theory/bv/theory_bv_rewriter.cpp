@@ -570,19 +570,26 @@ RewriteResponse TheoryBVRewriter::RewriteRedand(TNode node, bool prerewrite){
 }
 
 RewriteResponse TheoryBVRewriter::RewriteBVToNat(TNode node, bool prerewrite) {
-  Node resultNode = LinearRewriteStrategy
-    < RewriteRule<BVToNatEliminate>
-    >::apply(node);
-
-  return RewriteResponse(REWRITE_AGAIN_FULL, resultNode);
+  if( node[0].isConst() ){
+    Node resultNode = LinearRewriteStrategy
+      < RewriteRule<BVToNatEliminate>
+      >::apply(node);
+    return RewriteResponse(REWRITE_AGAIN_FULL, resultNode);
+  }else{
+    return RewriteResponse(REWRITE_DONE, node); 
+  }
 }
 
 RewriteResponse TheoryBVRewriter::RewriteIntToBV(TNode node, bool prerewrite) {
-  Node resultNode = LinearRewriteStrategy
-    < RewriteRule<IntToBVEliminate>
-    >::apply(node);
+  if( node[0].isConst() ){
+    Node resultNode = LinearRewriteStrategy
+      < RewriteRule<IntToBVEliminate>
+      >::apply(node);
 
-  return RewriteResponse(REWRITE_AGAIN_FULL, resultNode);
+    return RewriteResponse(REWRITE_AGAIN_FULL, resultNode);
+  }else{
+    return RewriteResponse(REWRITE_DONE, node); 
+  }
 }
 
 RewriteResponse TheoryBVRewriter::RewriteEqual(TNode node, bool prerewrite) {

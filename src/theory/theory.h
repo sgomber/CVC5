@@ -885,8 +885,11 @@ public:
    */
   virtual std::pair<bool, Node> entailmentCheck(TNode lit, const EntailmentCheckParameters* params = NULL, EntailmentCheckSideEffects* out = NULL);
 
-  /* equality engine */
+  /* equality engine TODO: use? */
   virtual eq::EqualityEngine * getEqualityEngine() { return NULL; }
+  
+  /* get extended theory */
+  virtual ExtTheory * getExtTheory() { return d_extt; }
 
   /* get current substitution at an effort
    *   input : vars
@@ -894,7 +897,14 @@ public:
    *   where ( exp[vars[i]] => vars[i] = subs[i] ) holds for all i
   */
   virtual bool getCurrentSubstitution( int effort, std::vector< Node >& vars, std::vector< Node >& subs, std::map< Node, std::vector< Node > >& exp ) { return false; }
-
+  
+  /* get reduction for node
+       if return value is not 0, then n is reduced. 
+       if return value <0 then n is reduced context-independently.
+       if nr is non-null, then ( n = nr ) should be added as a lemma by caller, and return value should be <0.
+   */
+  virtual int doReductionFor( int effort, Node n, Node& nr ) { return 0; }
+ 
   /**
    * Turn on proof-production mode.
    */
@@ -970,6 +980,7 @@ class ExtTheory {
   typedef context::CDHashMap<Node, bool, NodeHashFunction> NodeBoolMap;
 protected:
   Theory * d_parent;
+  Node d_true;
   //extended string terms, map to whether they are active
   NodeBoolMap d_ext_func_terms;
   //any non-reduced extended functions exist
@@ -991,13 +1002,21 @@ public:
   //add extf kind
   void addFunctionKind( Kind k ) { d_extf_kind[k] = true; }
   //do inferences 
-  //  input : effort
-  //  output : terms, sterms, exp, where ( exp[i] => terms[i] = sterms[i] ) for all i 
-  void getInferences( int effort, std::vector< Node >& terms, std::vector< Node >& sterms, std::vector< std::vector< Node > >& exp );
+  //  input : effort, terms (if non-empty)
+  //  output : terms (if empty), sterms, exp, where 
+  //             terms if inputted empty contains all active ext terms, and ( exp[i] => terms[i] = sterms[i] ) for all i
+  void getSubstitutedTerms( int effort, std::vector< Node >& terms, std::vector< Node >& sterms, std::vector< std::vector< Node > >& exp );
+  //do inferences
+  //  will send lemmas for all constant rewrites, outputs the non-reduced terms, true iff lemma is sent
+  bool doInferences( int effort, std::vector< Node >& terms, std::vector< Node >& nred ); 
+  bool doInferences( int effort, std::vector< Node >& nred );
+  //do reductions
+  bool doReductions( int effort, std::vector< Node >& terms, std::vector< Node >& nred ); 
+  bool doReductions( int effort, std::vector< Node >& nred ); 
   //register term
   void registerTerm( Node n );
   //mark reduced
-  void markReduced( Node n );
+  void markReduced( Node n, bool contextDepend = true );
   //mark congruent
   void markCongruent( Node a, Node b );
   //is active

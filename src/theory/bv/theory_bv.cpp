@@ -68,6 +68,9 @@ TheoryBV::TheoryBV(context::Context* c, context::UserContext* u,
     d_isCoreTheory(false),
     d_calledPreregister(false)
 {
+  d_extt = new ExtTheory( this );
+  d_extt->addFunctionKind( kind::BITVECTOR_TO_NAT );
+  d_extt->addFunctionKind( kind::INT_TO_BITVECTOR );
 
   if (options::bitblastMode() == theory::bv::BITBLAST_MODE_EAGER) {
     d_eagerSolver = new EagerBitblastSolver(this);
@@ -106,6 +109,7 @@ TheoryBV::~TheoryBV() {
     delete d_subtheories[i];
   }
   delete d_abstractionModule;
+  delete d_extt;
 }
 
 void TheoryBV::setMasterEqualityEngine(eq::EqualityEngine* eq) {
@@ -419,17 +423,20 @@ void TheoryBV::check(Effort e)
     TNode fact = get().assertion;
 
     checkForLemma(fact);
-
     for (unsigned i = 0; i < d_subtheories.size(); ++i) {
+      Trace("bv") << "Assert fact " << fact << " to " << d_subtheories[i] << std::endl;
       d_subtheories[i]->assertFact(fact);
+      Trace("bv") << "...finished " << d_subtheories[i] << std::endl;
     }
   }
 
   bool ok = true;
   bool complete = false;
   for (unsigned i = 0; i < d_subtheories.size(); ++i) {
+    Trace("bv") << "Check subtheory " << d_subtheories[i] << std::endl;
     Assert (!inConflict());
     ok = d_subtheories[i]->check(e);
+    Trace("bv") << "...finished " << d_subtheories[i] << std::endl;
     complete = d_subtheories[i]->isComplete();
 
     if (!ok) {
@@ -500,7 +507,6 @@ eq::EqualityEngine * TheoryBV::getEqualityEngine() {
 }
 
 bool TheoryBV::getCurrentSubstitution( int effort, std::vector< Node >& vars, std::vector< Node >& subs, std::map< Node, std::vector< Node > >& exp ) {
-#if 0
   CoreSolver* core = (CoreSolver*)d_subtheoryMap[SUB_CORE];
   if( core ){
     //get the constant equivalence classes
@@ -508,7 +514,7 @@ bool TheoryBV::getCurrentSubstitution( int effort, std::vector< Node >& vars, st
     for( unsigned i=0; i<vars.size(); i++ ){
       Node n = vars[i];
       if( core->getEqualityEngine()->hasTerm( n ) ){
-        Node nr = core->getEqualityEngine()->getRepresenative( n );
+        Node nr = core->getEqualityEngine()->getRepresentative( n );
         if( nr.isConst() ){
           subs.push_back( nr );
           exp[n].push_back( n.eqNode( nr ) );
@@ -521,8 +527,44 @@ bool TheoryBV::getCurrentSubstitution( int effort, std::vector< Node >& vars, st
     //return true if the substitution is non-trivial
     return retVal;
   }
-#endif
   return false;
+}
+int TheoryBV::doReductionFor( int effort, Node n, Node& nr ) {
+  Trace("bv-ext") << "TheoryBV::checkExt : non-reduced : " << n << std::endl;
+  if( n.getKind()==kind::BITVECTOR_TO_NAT ){
+    //taken from rewrite code
+    const unsigned size = utils::getSize(n[0]);
+    NodeManager* const nm = NodeManager::currentNM();
+    const Node z = nm->mkConst(Rational(0));
+    const Node bvone = nm->mkConst(BitVector(1u, 1u));
+    NodeBuilder<> result(kind::PLUS);
+    Integer i = 1;
+    for(unsigned bit = 0; bit < size; ++bit, i *= 2) {
+      Node cond = nm->mkNode(kind::EQUAL, nm->mkNode(nm->mkConst(BitVectorExtract(bit, bit)), n[0]), bvone);
+      result << nm->mkNode(kind::ITE, cond, nm->mkConst(Rational(i)), z);
+    }
+    nr = Node(result);
+    return -1;
+  }else if( n.getKind()==kind::INT_TO_BITVECTOR ){
+    //taken from rewrite code
+    const unsigned size = n.getOperator().getConst<IntToBitVector>().size;
+    NodeManager* const nm = NodeManager::currentNM();
+    const Node bvzero = nm->mkConst(BitVector(1u, 0u));
+    const Node bvone = nm->mkConst(BitVector(1u, 1u));
+    std::vector<Node> v;
+    Integer i = 2;
+    while(v.size() < size) {
+      Node cond = nm->mkNode(kind::GEQ, nm->mkNode(kind::INTS_MODULUS_TOTAL, n[0], nm->mkConst(Rational(i))), nm->mkConst(Rational(i, 2)));
+      cond = Rewriter::rewrite( cond );
+      v.push_back(nm->mkNode(kind::ITE, cond, bvone, bvzero));
+      i *= 2;
+    }
+    NodeBuilder<> result(kind::BITVECTOR_CONCAT);
+    result.append(v.rbegin(), v.rend());
+    nr = Node(result);
+    return -1;
+  }
+  return 0;
 }
   
 Theory::PPAssertStatus TheoryBV::ppAssert(TNode in, SubstitutionMap& outSubstitutions) {
