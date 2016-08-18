@@ -477,6 +477,7 @@ bool ExtTheory::doInferences( int effort, std::vector< Node >& terms, std::vecto
 
 bool ExtTheory::doInferences( int effort, std::vector< Node >& nred, bool batch ) {
   std::vector< Node > terms;
+  getActive( terms );
   return doInferencesInternal( effort, terms, nred, batch, false );
 }
 
@@ -490,6 +491,7 @@ bool ExtTheory::doReductions( int effort, std::vector< Node >& terms, std::vecto
 
 bool ExtTheory::doReductions( int effort, std::vector< Node >& nred, bool batch ) {
   std::vector< Node > terms;
+  getActive( terms );
   return doInferencesInternal( effort, terms, nred, batch, true );
 }
 
