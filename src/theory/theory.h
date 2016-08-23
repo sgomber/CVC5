@@ -987,6 +987,9 @@ protected:
   NodeBoolMap d_ext_func_terms;
   //context independent func terms
   NodeSet d_ci_inactive;
+  //all lemmas sent
+  NodeSet d_lemmas;
+  NodeSet d_pp_lemmas;
   //any non-reduced extended functions exist
   context::CDO< bool > d_has_extf;
   //extf kind
@@ -1004,6 +1007,8 @@ protected:
   bool isContextIndependentInactive( Node n );
   //do inferences internal
   bool doInferencesInternal( int effort, std::vector< Node >& terms, std::vector< Node >& nred, bool batch, bool isRed ); 
+  //send lemma
+  bool sendLemma( Node lem, bool preprocess = false );
 public:
   ExtTheory( Theory * p );
   virtual ~ExtTheory(){}

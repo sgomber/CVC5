@@ -314,7 +314,8 @@ EntailmentCheckSideEffects::~EntailmentCheckSideEffects() {
 
 
 ExtTheory::ExtTheory( Theory * p ) : d_parent( p ), 
-d_ext_func_terms( p->getSatContext() ), d_ci_inactive( p->getUserContext() ), d_has_extf( p->getSatContext() ){
+d_ext_func_terms( p->getSatContext() ), d_ci_inactive( p->getUserContext() ), 
+d_lemmas( p->getUserContext() ), d_pp_lemmas( p->getUserContext() ), d_has_extf( p->getSatContext() ){
   d_true = NodeManager::currentNM()->mkConst( true );
 }
 
@@ -409,11 +410,12 @@ bool ExtTheory::doInferencesInternal( int effort, std::vector< Node >& terms, st
         }else{
           if( !nr.isNull() && n!=nr ){
             Node lem = NodeManager::currentNM()->mkNode( n.getType().isBoolean() ? kind::IFF : kind::EQUAL, n, nr );
-            Trace("extt-lemma") << "ExtTheory : Reduction lemma : " << lem << std::endl;
-            d_parent->getOutputChannel().lemma( lem, false, true );
+            if( sendLemma( lem, true ) ){
+              Trace("extt-lemma") << "ExtTheory : Reduction lemma : " << lem << std::endl;
+              addedLemma = true;
+            }
           }
           markReduced( terms[i], ret<0 );
-          addedLemma = true;
         }
       }
     }else{
@@ -432,9 +434,10 @@ bool ExtTheory::doInferencesInternal( int effort, std::vector< Node >& terms, st
             Trace("extt-debug") << "ExtTheory::doInferences : infer : " << eq << " by " << expn << std::endl;
             Node lem = NodeManager::currentNM()->mkNode( kind::IMPLIES, expn, eq );
             Trace("extt-debug") << "...send lemma " << lem << std::endl;
-            Trace("extt-lemma") << "ExtTheory : Constant rewrite lemma : " << lem << std::endl;
-            d_parent->getOutputChannel().lemma( lem );
-            addedLemma = true;
+            if( sendLemma( lem ) ){
+              Trace("extt-lemma") << "ExtTheory : Constant rewrite lemma : " << lem << std::endl;
+              addedLemma = true;
+            }
           }
         }
         if( !processed ){
@@ -466,6 +469,23 @@ bool ExtTheory::doInferencesInternal( int effort, std::vector< Node >& terms, st
     }
     return false;
   }
+}
+
+bool ExtTheory::sendLemma( Node lem, bool preprocess ) {
+  if( preprocess ){
+    if( d_pp_lemmas.find( lem )==d_pp_lemmas.end() ){
+      d_pp_lemmas.insert( lem );
+      d_parent->getOutputChannel().lemma( lem, false, true );
+      return true;
+    }
+  }else{
+    if( d_lemmas.find( lem )==d_lemmas.end() ){
+      d_lemmas.insert( lem );
+      d_parent->getOutputChannel().lemma( lem );
+      return true;
+    }
+  }
+  return false;
 }
 
 bool ExtTheory::doInferences( int effort, std::vector< Node >& terms, std::vector< Node >& nred, bool batch ) {
