@@ -522,6 +522,8 @@ bool TheoryBV::getCurrentSubstitution( int effort, std::vector< Node >& vars, st
         }else{
           subs.push_back( n );
         }
+      }else{
+        subs.push_back( n );
       }
     }
     //return true if the substitution is non-trivial

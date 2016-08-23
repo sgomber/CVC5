@@ -357,6 +357,7 @@ void ExtTheory::getSubstitutedTerms( int effort, std::vector< Node >& terms, std
     }
     //get the current substitution for all variables
     if( d_parent->getCurrentSubstitution( effort, vars, sub, expc ) ){
+      Assert( vars.size()==sub.size() );
       for( unsigned i=0; i<terms.size(); i++ ){
         //do substitution
         Node n = terms[i];
