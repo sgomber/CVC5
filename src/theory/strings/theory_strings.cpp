@@ -334,6 +334,7 @@ bool TheoryStrings::getCurrentSubstitution( int effort, std::vector< Node >& var
 int TheoryStrings::getReduction( int effort, Node n, Node& nr ) {
   //determine the effort level to process the extf at
   // 0 - at assertion time, 1+ - after no other reduction is applicable
+  Assert( d_extf_info_tmp.find( n )!=d_extf_info_tmp.end() );
   if( d_extf_info_tmp[n].d_model_active ){
     int r_effort = -1;
     int pol = d_extf_info_tmp[n].d_pol;
@@ -406,8 +407,10 @@ int TheoryStrings::getReduction( int effort, Node n, Node& nr ) {
           sendInference( d_empty_vec, nnlem, "Reduction", true );
           //we've reduced this n
           Trace("strings-extf-debug") << "  resolve extf : " << n << " based on reduction." << std::endl;
-          return -1;
+          return 1;
         }
+      }else{
+        return 1;
       }
     }
   }
@@ -612,6 +615,12 @@ void TheoryStrings::preRegisterTerm(TNode n) {
         } else {
           // Function applications/predicates
           d_equalityEngine.addTerm(n);
+          if( options::stringExp() ){
+            //collect extended functions here: some may not be asserted to strings (such as those with return type Int),
+            //  but we need to record them so they are treated properly
+            std::map< Node, bool > visited;
+            collectExtendedFuncTerms( n, visited );          
+          }
         }
         //concat terms do not contribute to theory combination?  TODO: verify
         if( n.hasOperator() && kindToTheoryId( n.getKind() )==THEORY_STRINGS && n.getKind()!=kind::STRING_CONCAT ){
@@ -767,8 +776,26 @@ bool TheoryStrings::needsCheckLastEffort() {
 }
 
 void TheoryStrings::checkExtfReductions( int effort ) {
-  std::vector< Node > nred;
-  d_extt->doReductions( effort, nred, false );
+  //standardize this?
+  //std::vector< Node > nred;
+  //d_extt->doReductions( effort, nred, false );
+
+  std::vector< Node > extf;
+  d_extt->getActive( extf );
+  Trace("strings-process") << "checking " << extf.size() << " active extf" << std::endl;
+  for( unsigned i=0; i<extf.size(); i++ ){
+    Node n = extf[i];
+    Trace("strings-process") << "Check " << n << ", active in model=" << d_extf_info_tmp[n].d_model_active << std::endl;
+    Node nr;
+    int ret = getReduction( effort, n, nr );
+    Assert( nr.isNull() );
+    if( ret!=0 ){
+      d_extt->markReduced( extf[i] );
+      if( options::stringOpt1() && hasProcessed() ){
+        return;
+      }
+    }
+  }
 }
 
 TheoryStrings::EqcInfo::EqcInfo(  context::Context* c ) : d_length_term(c), d_cardinality_lem_k(c), d_normalized_length(c) {
@@ -817,7 +844,7 @@ void TheoryStrings::eqNotifyNewClass(TNode t){
     //we care about the length of this string
     registerTerm( t[0], 1 );
   }else{
-    d_extt->registerTerm( t );
+    //d_extt->registerTerm( t );
   }
 }
 
@@ -977,8 +1004,13 @@ void TheoryStrings::assertPendingFact(Node atom, bool polarity, Node exp) {
       }
     }
     //register the atom here, since it may not create a new equivalence class
-    d_extt->registerTerm( atom );
+    //d_extt->registerTerm( atom );
   }
+  Trace("strings-pending-debug") << "  Now collect terms" << std::endl;
+  //collect extended function terms in the atom
+  std::map< Node, bool > visited;
+  collectExtendedFuncTerms( atom, visited );
+  Trace("strings-pending-debug") << "  Finished collect terms" << std::endl;
 }
 
 void TheoryStrings::doPendingFacts() {
@@ -2929,7 +2961,7 @@ void TheoryStrings::processDeq( Node ni, Node nj ) {
                   }
                 }else{
                   Node sk = mkSkolemCached( nconst_k, firstChar, sk_id_dc_spt, "dc_spt", 2 );
-                  Node skr = mkSkolemCached( nconst_k, firstChar, sk_id_dc_spt_rem, "dc_spt_rem" );
+                  Node skr = mkSkolemCached( nconst_k, firstChar, sk_id_dc_spt_rem, "dc_spt_rem", -1 );
                   Node eq1 = nconst_k.eqNode( NodeManager::currentNM()->mkNode( kind::STRING_CONCAT, sk, skr ) );
                   eq1 = Rewriter::rewrite( eq1 );
                   Node eq2 = nconst_k.eqNode( NodeManager::currentNM()->mkNode( kind::STRING_CONCAT, firstChar, skr ) );
@@ -4832,6 +4864,15 @@ Node TheoryStrings::getNormalSymRegExp(Node r, std::vector<Node> &nf_exp) {
   return ret;
 }
 
+void TheoryStrings::collectExtendedFuncTerms( Node n, std::map< Node, bool >& visited ) {
+  if( visited.find( n )==visited.end() ){
+    visited[n] = true;
+    d_extt->registerTerm( n );
+    for( unsigned i=0; i<n.getNumChildren(); i++ ){
+      collectExtendedFuncTerms( n[i], visited );
+    }
+  }
+}
 
 }/* CVC4::theory::strings namespace */
 }/* CVC4::theory namespace */

@@ -397,9 +397,6 @@ bool ExtTheory::doInferencesInternal( int effort, std::vector< Node >& terms, st
   if( batch ){
     bool addedLemma = false;
     if( isRed ){
-      if( terms.empty() ){
-        getActive( terms );
-      }
       for( unsigned i=0; i<terms.size(); i++ ){
         Node n = terms[i];
         Node nr;
