@@ -324,8 +324,8 @@ void ExtTheory::collectVars( Node n, std::vector< Node >& vars, std::map< Node, 
   if( !n.isConst() ){
     if( visited.find( n )==visited.end() ){
       visited[n] = true;
-      //TODO: we should treat terms not belonging to this theory as leaf
-      if( n.getNumChildren()>0 ){
+      //treat terms not belonging to this theory as leaf
+      if( n.getNumChildren()>0 && Theory::theoryOf(n)==d_parent->getId() ){
         for( unsigned i=0; i<n.getNumChildren(); i++ ){
           collectVars( n[i], vars, visited );
         }
@@ -520,7 +520,7 @@ void ExtTheory::registerTerm( Node n ) {
     if( d_ext_func_terms.find( n )==d_ext_func_terms.end() ){
       Trace("extt-debug") << "Found extended function : " << n << " in " << d_parent->getId() << std::endl;
       d_ext_func_terms[n] = true;
-      d_has_extf = true;
+      d_has_extf = n;
       std::map< Node, bool > visited;
       collectVars( n, d_extf_info[n].d_vars, visited );
     }
@@ -534,7 +534,16 @@ void ExtTheory::markReduced( Node n, bool contextDepend ) {
     d_ci_inactive.insert( n );
   }
   
-  //TODO update has_extf
+  //update has_extf
+  if( d_has_extf.get()==n ){
+    for( NodeBoolMap::iterator it = d_ext_func_terms.begin(); it != d_ext_func_terms.end(); ++it ){
+      //if not already reduced
+      if( (*it).second && !isContextIndependentInactive( (*it).first ) ){
+         d_has_extf = (*it).first;
+      }
+    }
+  
+  }
 }
 
 //mark congruent
@@ -554,6 +563,10 @@ bool ExtTheory::isContextIndependentInactive( Node n ) {
   return d_ci_inactive.find( n )!=d_ci_inactive.end();
 }
 
+bool ExtTheory::hasActiveTerm() {
+  return !d_has_extf.get().isNull();
+}
+  
 //is active
 bool ExtTheory::isActive( Node n ) {
   NodeBoolMap::const_iterator it = d_ext_func_terms.find( n );
@@ -576,7 +589,7 @@ void ExtTheory::getActive( std::vector< Node >& active ) {
 void ExtTheory::getActive( std::vector< Node >& active, Kind k ) {
   for( NodeBoolMap::iterator it = d_ext_func_terms.begin(); it != d_ext_func_terms.end(); ++it ){
     //if not already reduced
-    if( (*it).second && !isContextIndependentInactive( (*it).first ) && (*it).first.getKind()==k ){
+    if( (*it).first.getKind()==k && (*it).second && !isContextIndependentInactive( (*it).first ) ){
       active.push_back( (*it).first );
     }
   }

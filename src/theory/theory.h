@@ -901,7 +901,7 @@ public:
   
   /* get reduction for node
        if return value is not 0, then n is reduced. 
-       if return value <0 then n is reduced context-independently.
+       if return value <0 then n is reduced SAT-context-independently (e.g. by a lemma that persists at this user-context level).
        if nr is non-null, then ( n = nr ) should be added as a lemma by caller, and return value should be <0.
    */
   virtual int getReduction( int effort, Node n, Node& nr ) { return 0; }
@@ -985,16 +985,17 @@ protected:
   Node d_true;
   //extended string terms, map to whether they are active
   NodeBoolMap d_ext_func_terms;
-  //context independent func terms
+  //set of terms from d_ext_func_terms that are SAT-context-independently inactive 
+  //  (e.g. term t when a reduction lemma of the form t = t' was added)
   NodeSet d_ci_inactive;
-  //all lemmas sent
+  //cache of all lemmas sent
   NodeSet d_lemmas;
   NodeSet d_pp_lemmas;
-  //any non-reduced extended functions exist
-  context::CDO< bool > d_has_extf;
+  //watched term for checking if any non-reduced extended functions exist 
+  context::CDO< Node > d_has_extf;
   //extf kind
   std::map< Kind, bool > d_extf_kind;
-  //information for extf
+  //information for each term in d_ext_func_terms
   class ExtfInfo {
   public:
     //all variables in this term
@@ -1014,27 +1015,38 @@ public:
   virtual ~ExtTheory(){}
   //add extf kind
   void addFunctionKind( Kind k ) { d_extf_kind[k] = true; }
-  //do inferences 
+  //register term
+  //  adds n to d_ext_func_terms if addFunctionKind( n.getKind() ) was called
+  void registerTerm( Node n );
+  // set n as reduced/inactive
+  //   if contextDepend = false, then n remains inactive in the duration of this user-context level
+  void markReduced( Node n, bool contextDepend = true );
+  // mark that a and b are congruent terms: set b inactive, set a to inactive if b was inactive
+  void markCongruent( Node a, Node b );
+  
+  //getSubstitutedTerms
   //  input : effort, terms
   //  output : sterms, exp, where ( exp[i] => terms[i] = sterms[i] ) for all i
   void getSubstitutedTerms( int effort, std::vector< Node >& terms, std::vector< Node >& sterms, std::vector< std::vector< Node > >& exp );
-  //do inferences
-  //  will send lemmas for all constant rewrites, outputs the non-reduced terms, true iff lemma is sent
+  //doInferences
+  //  * input : effort, terms, batch (whether to send one lemma or lemmas for all terms)
+  //  *   sends rewriting lemmas of the form ( exp => t = c ) where t is in terms and c is a constant, c = rewrite( t*sigma ) where exp |= sigma
+  //  * output : nred (the terms that are still active)
+  //  * return : true iff lemma is sent
   bool doInferences( int effort, std::vector< Node >& terms, std::vector< Node >& nred, bool batch=true ); 
   bool doInferences( int effort, std::vector< Node >& nred, bool batch=true  );
-  //do reductions
+  //doReductions 
+  //  same as doInferences, but will send reduction lemmas of the form ( t = t' ) where t is in terms, t' is equivalent, reduced term
   bool doReductions( int effort, std::vector< Node >& terms, std::vector< Node >& nred, bool batch=true  ); 
   bool doReductions( int effort, std::vector< Node >& nred, bool batch=true  ); 
-  //register term
-  void registerTerm( Node n );
-  //mark reduced
-  void markReduced( Node n, bool contextDepend = true );
-  //mark congruent
-  void markCongruent( Node a, Node b );
-  //is active
+
+  //has active term 
+  bool hasActiveTerm();
+  //is n active
   bool isActive( Node n );
-  //get active 
+  //get the set of active terms from d_ext_func_terms
   void getActive( std::vector< Node >& active );
+  //get the set of active terms from d_ext_func_terms of kind k
   void getActive( std::vector< Node >& active, Kind k );
 };
 
