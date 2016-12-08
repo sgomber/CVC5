@@ -1030,7 +1030,7 @@ public:
   bool hasFunctionKind( Kind k ) { return d_extf_kind.find( k )!=d_extf_kind.end(); }
   //register term
   //  adds n to d_ext_func_terms if addFunctionKind( n.getKind() ) was called
-  void registerTerm( Node n );
+  void registerTerm( Node n, bool checkKind = true );
   void registerTermRec( Node n );
   // set n as reduced/inactive
   //   if contextDepend = false, then n remains inactive in the duration of this user-context level

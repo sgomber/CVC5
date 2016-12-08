@@ -428,7 +428,12 @@ bool ExtTheory::doInferencesInternal( int effort, std::vector< Node >& terms, st
           if( sr.isConst() ){
             processed = true;
             markReduced( terms[i] );
-            Node eq = terms[i].eqNode( sr );
+            Node eq;
+            if( terms[i].getType().isBoolean() ){
+              eq = terms[i].iffNode( sr );
+            }else{
+              eq = terms[i].eqNode( sr );
+            }
             Node expn = exp[i].size()>1 ? NodeManager::currentNM()->mkNode( kind::AND, exp[i] ) : ( exp[i].size()==1 ? exp[i][0] : d_true );
             Trace("extt-debug") << "ExtTheory::doInferences : infer : " << eq << " by " << expn << std::endl;
             Node lem = NodeManager::currentNM()->mkNode( kind::IMPLIES, expn, eq );
@@ -517,8 +522,8 @@ bool ExtTheory::doReductions( int effort, std::vector< Node >& nred, bool batch 
 
 
 //register term
-void ExtTheory::registerTerm( Node n ) {
-  if( d_extf_kind.find( n.getKind() )!=d_extf_kind.end() ){
+void ExtTheory::registerTerm( Node n, bool checkKind ) {
+  if( d_extf_kind.find( n.getKind() )!=d_extf_kind.end() || !checkKind ){
     if( d_ext_func_terms.find( n )==d_ext_func_terms.end() ){
       Trace("extt-debug") << "Found extended function : " << n << " in " << d_parent->getId() << std::endl;
       d_ext_func_terms[n] = true;

@@ -59,6 +59,18 @@ class BitblastSolver : public SubtheorySolver {
   QuickXPlain* d_quickXplain;
   //  Node getModelValueRec(TNode node);
   void setConflict(TNode conflict);
+  
+  bool isBbExpensive( TNode atom, std::map< TNode, bool >& visited );
+  bool isBbExpensive( TNode atom ) {  
+    std::map< TNode, bool > visited;
+    return isBbExpensive( atom, visited );
+  } 
+  // for reducing bitblasted atoms
+  ExtTheory * d_bb_extt;
+  context::CDQueue<TNode> d_bbExpAtomsQueue;
+  bool d_isComplete;
+  
+  bool do_bb_solve();
 public:
   BitblastSolver(context::Context* c, TheoryBV* bv);
   ~BitblastSolver();
@@ -69,7 +81,7 @@ public:
   EqualityStatus getEqualityStatus(TNode a, TNode b);
   void collectModelInfo(TheoryModel* m, bool fullModel);
   Node getModelValue(TNode node);
-  bool isComplete() { return true; }
+  bool isComplete()  { return d_isComplete; }
   void bitblastQueue();
   void setAbstraction(AbstractionModule* module);
   uint64_t computeAtomWeight(TNode atom);
