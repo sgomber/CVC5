@@ -65,12 +65,20 @@ class BitblastSolver : public SubtheorySolver {
     std::map< TNode, bool > visited;
     return isBbExpensive( atom, visited );
   } 
+  typedef context::CDHashMap<Node, Node, NodeHashFunction> CDNodeMap;
+  CDNodeMap d_proxy_var;
+  Node getBbCheapNode( TNode atom, std::map< TNode, Node >& visited );
+  Node getBbCheapNode( TNode atom );
+  CDNodeMap d_cfact_map;
+  CDNodeMap d_cfact_map_rev;
+  
   // for reducing bitblasted atoms
   ExtTheory * d_bb_extt;
   context::CDQueue<TNode> d_bbExpAtomsQueue;
   bool d_isComplete;
   
   bool do_bb_solve();
+  void convertAtoms( std::vector<TNode>& conflictAtoms );
 public:
   BitblastSolver(context::Context* c, TheoryBV* bv);
   ~BitblastSolver();

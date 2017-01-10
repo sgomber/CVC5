@@ -46,6 +46,9 @@ BitblastSolver::BitblastSolver(context::Context* c, TheoryBV* bv)
     d_abstractionModule(NULL),
     d_quickCheck(options::bitvectorQuickXplain() ? new BVQuickCheck("bb", bv) : NULL),
     d_quickXplain(options::bitvectorQuickXplain() ? new QuickXPlain("bb", d_quickCheck) :  NULL),
+    d_proxy_var(bv->getUserContext()),
+    d_cfact_map(bv->getUserContext()),
+    d_cfact_map_rev(bv->getUserContext()),
     d_bbExpAtomsQueue(c),
     d_isComplete(true)
 {
@@ -101,6 +104,7 @@ uint64_t BitblastSolver::computeAtomWeight(TNode node) {
 
 void BitblastSolver::explain(TNode literal, std::vector<TNode>& assumptions) {
   d_bitblaster->explain(literal, assumptions);
+  convertAtoms(assumptions);
 }
 
 bool BitblastSolver::isBbExpensive( TNode atom, std::map< TNode, bool >& visited ) {
@@ -120,6 +124,63 @@ bool BitblastSolver::isBbExpensive( TNode atom, std::map< TNode, bool >& visited
   }
   return false;
 }
+Node BitblastSolver::getBbCheapNode( TNode atom, std::map< TNode, Node >& visited ) {
+  std::map< TNode, Node >::iterator it = visited.find( atom );
+  if( it!=visited.end() ){
+    return it->second;
+  }else{
+    Node ret = atom;
+    if( atom.getKind()==kind::BITVECTOR_MULT || atom.getKind()==kind::BITVECTOR_UDIV || 
+        atom.getKind()==kind::BITVECTOR_UDIV || atom.getKind()==kind::BITVECTOR_UREM ||
+        atom.getKind()==kind::BITVECTOR_SDIV || atom.getKind()==kind::BITVECTOR_SREM || atom.getKind()==kind::BITVECTOR_SMOD ){ //TODO
+      CDNodeMap::const_iterator it = d_proxy_var.find( atom );
+      if( it==d_proxy_var.end() ){
+        Node k = NodeManager::currentNM()->mkSkolem( "k", atom.getType() );
+        d_proxy_var[atom] = k;
+        ret = k;
+      }else{
+        ret = (*it).second;
+      }
+    }else if( atom.getNumChildren()>0 ){
+      std::vector< Node > children;
+      if( atom.getMetaKind() == kind::metakind::PARAMETERIZED ){
+        children.push_back( atom.getOperator() );
+      }
+      bool childChanged = false;
+      for( unsigned i=0; i<atom.getNumChildren(); i++ ){
+        Node c = getBbCheapNode( atom[i], visited );
+        childChanged = childChanged || c!=atom[i];
+        children.push_back( c );
+      }
+      if( childChanged ){
+        ret = NodeManager::currentNM()->mkNode( atom.getKind(), children );
+      }
+    }
+    visited[atom] = ret;
+    return ret;
+  }
+}
+
+Node BitblastSolver::getBbCheapNode( TNode atom ) {
+  if( !options::bvLazyBbExp() ){
+    return atom;
+  }else{
+    CDNodeMap::const_iterator it = d_cfact_map.find( atom );
+    if( it==d_cfact_map.end() ){
+      std::map< TNode, Node > visited;
+      Node ret = getBbCheapNode( atom, visited );
+      if( ret!=atom ){
+        Trace("bvext") << "EXT : cheap form of " << atom << " : " << std::endl;
+        Trace("bvext") << "                    " << ret << std::endl;
+      }
+      d_cfact_map[atom] = ret;
+      d_cfact_map_rev[ret] = atom;
+      return ret;
+    }else{
+      return (*it).second;    
+    }
+  }
+}
 
 void BitblastSolver::bitblastQueue() {
   while (!d_bitblastQueue.empty()) {
@@ -135,14 +196,20 @@ void BitblastSolver::bitblastQueue() {
       continue;
     }
     //check if it is an expensive atom
+    /*
     if( isBbExpensive( atom ) ){
       Trace("bv-bb-extf") << "Expensive bitblast atom : " << atom << "." << std::endl;
       continue;
     }
+    */
     Debug("bitblast-queue") << "Bitblasting atom " << atom <<"\n";
     {
+      Node catom = getBbCheapNode( atom );
+      if( catom!=atom ){
+        Debug("bitblast-queue") << "*** EXT: consider instead its cheap form : " << catom << std::endl;
+      }
       TimerStat::CodeTimer codeTimer(d_bitblaster->d_statistics.d_bitblastTimer);
-      d_bitblaster->bbAtom(atom);
+      d_bitblaster->bbAtom(catom);
     }
     Debug("bitblast-queue") << "...finished Bitblasting atom " << atom <<"\n";
   }
@@ -178,22 +245,31 @@ bool BitblastSolver::check(Theory::Effort e) {
         continue;
       }
     }
+    /*
     if( isBbExpensive( fact ) ){
       Debug("bv-bitblast") << "...expensive fact : " << fact << "." << std::endl;
       //d_bbExpAtomsQueue.push_back( fact );
       d_bb_extt->registerTerm( fact, false );
       continue;
     }
+    */
 
     if (!d_bv->inConflict() &&
         (!d_bv->wasPropagatedBySubtheory(fact) || d_bv->getPropagatingSubtheory(fact) != SUB_BITBLAST)) {
       // Some atoms have not been bit-blasted yet
-      d_bitblaster->bbAtom(fact);
+      Node cfact = getBbCheapNode( fact );
+      d_bitblaster->bbAtom(cfact);
+      if( cfact!=fact ){ 
+        Debug("bv-bitblast") << "*** EXT: assert instead its cheap form : " << cfact << std::endl;
+        d_bbExpAtomsQueue.push_back( fact );
+        d_bb_extt->registerTerm( fact, false );
+      }
       // Assert to sat
-      bool ok = d_bitblaster->assertToSat(fact, d_useSatPropagation);
+      bool ok = d_bitblaster->assertToSat(cfact, d_useSatPropagation);
       if (!ok) {
         std::vector<TNode> conflictAtoms;
         d_bitblaster->getConflict(conflictAtoms);
+        convertAtoms(conflictAtoms);
         setConflict(mkConjunction(conflictAtoms));
         return false;
       }
@@ -208,6 +284,7 @@ bool BitblastSolver::check(Theory::Effort e) {
     if (!ok) {
       std::vector<TNode> conflictAtoms;
       d_bitblaster->getConflict(conflictAtoms);
+      convertAtoms(conflictAtoms);
       setConflict(mkConjunction(conflictAtoms));
       return false;
     }
@@ -238,6 +315,7 @@ bool BitblastSolver::check(Theory::Effort e) {
       if (!ok) {
         std::vector<TNode> conflictAtoms;
         d_bitblaster->getConflict(conflictAtoms);
+        convertAtoms(conflictAtoms);
         setConflict(mkConjunction(conflictAtoms));
         return false;
       }
@@ -270,6 +348,7 @@ bool BitblastSolver::check(Theory::Effort e) {
           if (!ok) {
             std::vector<TNode> conflictAtoms;
             d_bitblaster->getConflict(conflictAtoms);
+            convertAtoms(conflictAtoms);
             setConflict(mkConjunction(conflictAtoms));
             return false;
           }
@@ -294,12 +373,23 @@ bool BitblastSolver::do_bb_solve() {
   if (!ok) {
     std::vector<TNode> conflictAtoms;
     d_bitblaster->getConflict(conflictAtoms);
+    convertAtoms(conflictAtoms);
     Node conflict = mkConjunction(conflictAtoms);
     setConflict(conflict);
   }
   return ok;
 }
-  
+
+void BitblastSolver::convertAtoms( std::vector<TNode>& conflictAtoms ) {
+  Trace("bvext-debug") << "Get conflict atoms, size = " << conflictAtoms.size() << std::endl;
+  //map back to originals
+  for( unsigned i=0; i<conflictAtoms.size(); i++ ){
+    CDNodeMap::const_iterator it = d_cfact_map_rev.find( conflictAtoms[i] );
+    if( it!=d_cfact_map_rev.end() ){
+      conflictAtoms[i] = (*it).second;
+    }
+  }
+}
   
 EqualityStatus BitblastSolver::getEqualityStatus(TNode a, TNode b) {
   return d_bitblaster->getEqualityStatus(a, b);
@@ -318,8 +408,6 @@ Node BitblastSolver::getModelValue(TNode node)
   Node val = d_bitblaster->getTermModel(node, true);
   return val;
 }
-
-
 
 void BitblastSolver::setConflict(TNode conflict) {
   Node final_conflict = conflict;

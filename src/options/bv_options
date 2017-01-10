@@ -78,4 +78,7 @@ option bvLazyReduceExtf --bv-lazy-reduce-extf bool :default false :read-write
 option bvAlgExtf --bv-alg-extf bool :default true :read-write
  algebraic inferences for extended functions
  
+option bvLazyBbExp --bv-lazy-bb-exp bool :default false :read-write
+ lazy bit-blasting for expensive operators
+ 
 endmodule
