@@ -94,6 +94,7 @@ public:
   virtual void collectModelInfo(TheoryModel* m, bool fullModel) = 0;
   virtual Node getModelValue(TNode var) = 0;
   virtual bool isComplete() = 0;
+  virtual bool needsCheckLastEffort() { return false; }
   virtual EqualityStatus getEqualityStatus(TNode a, TNode b) = 0;
   virtual void addSharedTerm(TNode node) {}
   bool done() { return d_assertionQueue.size() == d_assertionIndex; }

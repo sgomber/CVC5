@@ -76,8 +76,11 @@ class BitblastSolver : public SubtheorySolver {
   ExtTheory * d_bb_extt;
   context::CDQueue<TNode> d_bbExpAtomsQueue;
   bool d_isComplete;
+  std::vector< Node > d_ext_nred;
+  Node d_true;
   
   bool do_bb_solve();
+  bool processNonReducedExt(Theory::Effort e);
   void convertAtoms( std::vector<TNode>& conflictAtoms );
 public:
   BitblastSolver(context::Context* c, TheoryBV* bv);
@@ -90,6 +93,7 @@ public:
   void collectModelInfo(TheoryModel* m, bool fullModel);
   Node getModelValue(TNode node);
   bool isComplete()  { return d_isComplete; }
+  bool needsCheckLastEffort() { return !d_ext_nred.empty(); }
   void bitblastQueue();
   void setAbstraction(AbstractionModule* module);
   uint64_t computeAtomWeight(TNode atom);

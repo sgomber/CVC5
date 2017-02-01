@@ -396,76 +396,73 @@ void TheoryBV::check(Effort e)
     return;
   }
   
-  //last call : do reductions on extended bitvector functions
-  if( e==Theory::EFFORT_LAST_CALL ){
-    std::vector< Node > nred;
-    getExtTheory()->getActive( nred );
-    doExtfReductions( nred );
-    return;
-  }
-
   TimerStat::CodeTimer checkTimer(d_checkTime);
   Debug("bitvector") << "TheoryBV::check(" << e << ")" << std::endl;
   TimerStat::CodeTimer codeTimer(d_statistics.d_solveTimer);
-  // we may be getting new assertions so the model cache may not be sound
-  d_invalidateModelCache.set(true);
-  // if we are using the eager solver
-  if (options::bitblastMode() == theory::bv::BITBLAST_MODE_EAGER) {
-    // this can only happen on an empty benchmark
-    if (!d_eagerSolver->isInitialized()) {
-      d_eagerSolver->initialize();
-    }
-    if (!Theory::fullEffort(e))
-      return;
+  if( e!=Theory::EFFORT_LAST_CALL ){
+    // we may be getting new assertions so the model cache may not be sound
+    d_invalidateModelCache.set(true);
+    // if we are using the eager solver
+    if (options::bitblastMode() == theory::bv::BITBLAST_MODE_EAGER) {
+      // this can only happen on an empty benchmark
+      if (!d_eagerSolver->isInitialized()) {
+        d_eagerSolver->initialize();
+      }
+      if (!Theory::fullEffort(e))
+        return;
 
-    std::vector<TNode> assertions;
-    while (!done()) {
-      TNode fact = get().assertion;
-      Assert (fact.getKind() == kind::BITVECTOR_EAGER_ATOM);
-      assertions.push_back(fact);
-    }
-    Assert (d_eagerSolver->hasAssertions(assertions));
+      std::vector<TNode> assertions;
+      while (!done()) {
+        TNode fact = get().assertion;
+        Assert (fact.getKind() == kind::BITVECTOR_EAGER_ATOM);
+        assertions.push_back(fact);
+      }
+      Assert (d_eagerSolver->hasAssertions(assertions));
 
-    bool ok = d_eagerSolver->checkSat();
-    if (!ok) {
-      if (assertions.size() == 1) {
-        d_out->conflict(assertions[0]);
+      bool ok = d_eagerSolver->checkSat();
+      if (!ok) {
+        if (assertions.size() == 1) {
+          d_out->conflict(assertions[0]);
+          return;
+        }
+        Node conflict = NodeManager::currentNM()->mkNode(kind::AND, assertions);
+        d_out->conflict(conflict);
         return;
       }
-      Node conflict = NodeManager::currentNM()->mkNode(kind::AND, assertions);
-      d_out->conflict(conflict);
       return;
     }
-    return;
-  }
 
 
-  if (Theory::fullEffort(e)) {
-    ++(d_statistics.d_numCallsToCheckFullEffort);
-  } else {
-    ++(d_statistics.d_numCallsToCheckStandardEffort);
-  }
-  // if we are already in conflict just return the conflict
-  if (inConflict()) {
-    sendConflict();
-    return;
-  }
+    if (Theory::fullEffort(e)) {
+      ++(d_statistics.d_numCallsToCheckFullEffort);
+    } else {
+      ++(d_statistics.d_numCallsToCheckStandardEffort);
+    }
+    // if we are already in conflict just return the conflict
+    if (inConflict()) {
+      sendConflict();
+      return;
+    }
 
-  while (!done()) {
-    TNode fact = get().assertion;
+    while (!done()) {
+      TNode fact = get().assertion;
 
-    checkForLemma(fact);
+      checkForLemma(fact);
 
-    for (unsigned i = 0; i < d_subtheories.size(); ++i) {
-      d_subtheories[i]->assertFact(fact);
+      for (unsigned i = 0; i < d_subtheories.size(); ++i) {
+        d_subtheories[i]->assertFact(fact);
+      }
     }
   }
 
+  d_needsLastCallCheck = false;
   bool ok = true;
   bool complete = false;
   for (unsigned i = 0; i < d_subtheories.size(); ++i) {
     Assert (!inConflict());
-    ok = d_subtheories[i]->check(e);
+    if( e!=Theory::EFFORT_LAST_CALL || d_subtheories[i]->needsCheckLastEffort() ){
+      ok = d_subtheories[i]->check(e);
+    }
     complete = d_subtheories[i]->isComplete();
 
     if (!ok) {
@@ -487,7 +484,7 @@ void TheoryBV::check(Effort e)
     if( getExtTheory()->doInferences( 0, nred ) ){
       return;
     }
-    d_needsLastCallCheck = false;
+
     if( !nred.empty() ){
       //other inferences involving bv2nat, int2bv
       if( options::bvAlgExtf() ){
@@ -503,7 +500,22 @@ void TheoryBV::check(Effort e)
         d_needsLastCallCheck = true;
       }
     }
+    if( !d_needsLastCallCheck ){
+      for (unsigned i = 0; i < d_subtheories.size(); ++i) {
+        if( d_subtheories[i]->needsCheckLastEffort() ){
+          d_needsLastCallCheck = true;
+          break;
+        }
+      }
+    }
   }
+  //last call : do reductions on extended bitvector functions
+  if( e==Theory::EFFORT_LAST_CALL ){
+    std::vector< Node > nred;
+    getExtTheory()->getActive( nred );
+    doExtfReductions( nred );
+  }  
+  
 }
 
 bool TheoryBV::doExtfInferences( std::vector< Node >& terms ) {
@@ -579,6 +591,7 @@ bool TheoryBV::needsCheckLastEffort() {
 }
 
 void TheoryBV::collectModelInfo( TheoryModel* m, bool fullModel ){
+  Trace("bvext") << "...collect model info." << std::endl;
   Assert(!inConflict());
   if (options::bitblastMode() == theory::bv::BITBLAST_MODE_EAGER) {
     d_eagerSolver->collectModelInfo(m, fullModel);
@@ -589,6 +602,11 @@ void TheoryBV::collectModelInfo( TheoryModel* m, bool fullModel ){
       return;
     }
   }
+  if( d_subtheoryMap[SUB_BITBLAST] ){
+    d_subtheoryMap[SUB_BITBLAST]->collectModelInfo(m, fullModel);
+    return;
+  }
+  Assert( false );
 }
 
 Node TheoryBV::getModelValue(TNode var) {
@@ -597,6 +615,9 @@ Node TheoryBV::getModelValue(TNode var) {
     if (d_subtheories[i]->isComplete()) {
       return d_subtheories[i]->getModelValue(var);
     }
+  }
+  if( d_subtheoryMap[SUB_BITBLAST] ){
+    return d_subtheoryMap[SUB_BITBLAST]->getModelValue(var);
   }
   Unreachable();
 }
