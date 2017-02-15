@@ -81,4 +81,7 @@ option bvAlgExtf --bv-alg-extf bool :default true :read-write
 option bvLazyBbExp --bv-lazy-bb-exp bool :default false :read-write
  lazy bit-blasting for expensive operators
  
+option bvLazyBbExpInc --bv-lazy-bb-exp-inc bool :default false :read-write
+ incremental version of lazy bit-blasting for expensive operators
+ 
 endmodule

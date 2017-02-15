@@ -403,8 +403,9 @@ bool BitblastSolver::processNonReducedExt(Theory::Effort e) {
   bool changed_model = false;
   for( unsigned r=0; r<1; r++ ){
     if( !active[r].empty() ){
-      Trace("bv-bb-extf") << "  ...lazy bb " << active[r].size() << " / " << d_ext_nred.size() << " expensive atoms (" << r << ")." << std::endl;
-      for( unsigned j=0; j<active[r].size(); j++ ){
+      unsigned num = options::bvLazyBbExpInc() ? 1 : active[r].size();
+      Trace("bv-bb-extf") << "  ...lazy bb " << num << " / " << active[r].size()  << " / " << d_ext_nred.size() << " expensive atoms (" << r << ")." << std::endl;
+      for( unsigned j=0; j<num; j++ ){
         Node atom = active[r][j];
         Trace("bv-bb-extf-debug") << "  ...lazy bb " << atom << std::endl;
         d_bitblaster->bbAtom(atom);
@@ -425,7 +426,7 @@ bool BitblastSolver::processNonReducedExt(Theory::Effort e) {
         return false;
       }else{
         Trace("bv-bb-extf") << "...solved (" << r << ")" << std::endl;
-        for( unsigned j=0; j<active[r].size(); j++ ){
+        for( unsigned j=0; j<num; j++ ){
           Node atom = active[r][j];
           d_bb_extt->markReduced(atom);
         }
