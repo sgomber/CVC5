@@ -442,7 +442,17 @@ bool ExtTheory::doInferencesInternal( int effort, std::vector< Node >& terms, st
               Trace("extt-lemma") << "ExtTheory : Constant rewrite lemma : " << lem << std::endl;
               addedLemma = true;
             }
+            Trace("extt-rr") << "Rewrote (fully) : " << std::endl;
+            Trace("extt-rr") << "   " << sr << std::endl;
+            Trace("extt-rr") << "   " << sterms[i] << std::endl;
+          }else if( sr!=sterms[i] ){
+            Trace("extt-rr") << "Rewrote (partially) : " << std::endl;
+            Trace("extt-rr") << "   " << sr << std::endl;
+            Trace("extt-rr") << "   " << sterms[i] << std::endl;
           }
+        }else{
+          Trace("extt-rr") << "No rewrites for : " << std::endl;
+          Trace("extt-rr") << "   " << sterms[i] << std::endl;
         }
         if( !processed ){
           nred.push_back( terms[i] );

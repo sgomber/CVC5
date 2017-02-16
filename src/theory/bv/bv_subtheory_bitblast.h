@@ -67,8 +67,13 @@ class BitblastSolver : public SubtheorySolver {
   } 
   typedef context::CDHashMap<Node, Node, NodeHashFunction> CDNodeMap;
   CDNodeMap d_proxy_var;
+  CDNodeMap d_proxy_var_lit;
+  CDNodeMap d_proxy_var_lit_assert;
+  std::vector< Node > d_proxy_lits;
   Node getBbCheapNode( TNode atom, std::map< TNode, Node >& visited );
   Node getBbCheapNode( TNode atom );
+  void getExpensiveTerms( TNode atom, std::vector< Node >& terms, std::map< TNode, bool >& visited );
+  void getExpensiveTerms( TNode atom, std::vector< Node >& terms );
   CDNodeMap d_cfact_map;
   CDNodeMap d_cfact_map_rev;
   

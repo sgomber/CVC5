@@ -82,6 +82,13 @@ option bvLazyBbExp --bv-lazy-bb-exp bool :default false :read-write
  lazy bit-blasting for expensive operators
  
 option bvLazyBbExpInc --bv-lazy-bb-exp-inc bool :default false :read-write
- incremental version of lazy bit-blasting for expensive operators
+ incremental version of lazy bit-blasting for literals with expensive operators
+ 
+ 
+option bvLazyBbExpTerm --bv-lazy-bb-exp-term bool :default false :read-write
+ bit-blast expensive operator term equalities instead of literals
+ 
+option bvLazyBbExpTermInc --bv-lazy-bb-exp-tinc bool :default false :read-write
+ incremental version of lazy bit-blasting for expensive operator terms
  
 endmodule
