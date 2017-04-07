@@ -262,6 +262,11 @@ option cegqiSingleInvReconstructConst --cegqi-si-reconstruct-const bool :default
 option cegqiSingleInvAbort --cegqi-si-abort bool :default false
   abort if synthesis conjecture is not single invocation
   
+option sygusSymBreak --sygus-sym-break bool :default true
+  sygus sym break utility
+option sygusSplit --sygus-split bool :default true
+  sygus split utility  
+  
 option sygusNormalForm --sygus-nf bool :default true
   only search for sygus builtin terms that are in normal form
 option sygusNormalFormArg --sygus-nf-arg bool :default true

@@ -2083,6 +2083,7 @@ term[CVC4::Expr& expr, CVC4::Expr& expr2]
            if( args.size()!=dtc.getNumArgs() ){
              PARSER_STATE->parseError("Bad number of arguments for application of constructor in pattern.");
            }
+           //FIXME: make MATCH a kind and make this a rewrite
            // build a lambda
            std::vector<Expr> largs;
            largs.push_back( MK_EXPR( CVC4::kind::BOUND_VAR_LIST, args ) );
@@ -2091,7 +2092,8 @@ term[CVC4::Expr& expr, CVC4::Expr& expr2]
            aargs.push_back( MK_EXPR( CVC4::kind::LAMBDA, largs ) );
            for( unsigned i=0; i<dtc.getNumArgs(); i++ ){
              //can apply total version since we will be guarded by ITE condition
-             aargs.push_back( MK_EXPR( CVC4::kind::APPLY_SELECTOR_TOTAL, dtc[i].getSelector(), expr ) );
+             // however, we need to apply partial version since we don't have the internal selector available
+             aargs.push_back( MK_EXPR( CVC4::kind::APPLY_SELECTOR, dtc[i].getSelector(), expr ) );
            }
            patexprs.push_back( MK_EXPR( CVC4::kind::APPLY, aargs ) );
            patconds.push_back( MK_EXPR( CVC4::kind::APPLY_TESTER, dtc.getTester(), expr ) );

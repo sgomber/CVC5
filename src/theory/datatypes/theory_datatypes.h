@@ -136,7 +136,6 @@ private:
   bool hasTester( Node n );
   /** get the possible constructors for n */
   void getPossibleCons( EqcInfo* eqc, Node n, std::vector< bool >& cons );
-  void getSelectorsForCons( Node r, std::map< int, bool >& sels );
   /** mkExpDefSkolem */
   void mkExpDefSkolem( Node sel, TypeNode dt, TypeNode rt );
   /** skolems for terms */
@@ -192,7 +191,7 @@ private:
   /** sygus utilities */
   SygusSplit * d_sygus_split;
   SygusSymBreak * d_sygus_sym_break;
-
+  SelectorConversion * d_sel_conv;
 private:
   /** singleton lemmas (for degenerate co-datatype case) */
   std::map< TypeNode, Node > d_singleton_lemma[2];

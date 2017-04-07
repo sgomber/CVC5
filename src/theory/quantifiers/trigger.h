@@ -108,6 +108,7 @@ class Trigger {
   static bool isCbqiKind( Kind k );
   static bool isSimpleTrigger( Node n );
   static bool isBooleanTermTrigger( Node n );
+  static bool isSelectorTrigger( Node n );
   static bool isPureTheoryTrigger( Node n );
   static int getTriggerWeight( Node n );
   static bool isLocalTheoryExt( Node n, std::vector< Node >& vars,

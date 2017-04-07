@@ -509,6 +509,18 @@ bool Trigger::isBooleanTermTrigger( Node n ) {
   return false;
 }
 
+bool Trigger::isSelectorTrigger( Node n ) {
+  if( n.getKind()==ITE ){
+    //check for boolean term converted to ITE
+    if( n[0].getKind()==APPLY_TESTER &&
+        n[1].getKind()==APPLY_SELECTOR_TOTAL && n[0][0]==n[1][0] &&
+        n[2].getKind()==APPLY_UF && n[0][0]==n[2][0] ){
+      return true;
+    }
+  }
+  return false;
+}
+
 bool Trigger::isPureTheoryTrigger( Node n ) {
   if( n.getKind()==APPLY_UF || n.getKind()==VARIABLE || n.getKind()==SKOLEM ){  //|| !quantifiers::TermDb::hasInstConstAttr( n ) ){
     return false;

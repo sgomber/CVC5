@@ -386,17 +386,19 @@ void CvcPrinter::toStream(std::ostream& out, TNode n, int depth, bool types, boo
     case kind::APPLY_SELECTOR:
     case kind::APPLY_SELECTOR_TOTAL: {
         TypeNode t = n.getType();
+        Node opn = n.getOperator();
+        //TODO
         if( t.isTuple() ){
           toStream(out, n[0], depth, types, true);
-          out << '.' << Datatype::indexOf( n.getOperator().toExpr() );
+          out << '.' << Datatype::indexOf( opn.toExpr() );
         }else if( t.isRecord() ){
           toStream(out, n[0], depth, types, true);
           const Record& rec = t.getRecord();
-          unsigned index = Datatype::indexOf( n.getOperator().toExpr() );
+          unsigned index = Datatype::indexOf( opn.toExpr() );
           std::pair<std::string, Type> fld = rec[index];
           out << '.' << fld.first;
         }else{
-          toStream(op, n.getOperator(), depth, types, false);
+          toStream(op, opn, depth, types, false);
         }
       }
       break;

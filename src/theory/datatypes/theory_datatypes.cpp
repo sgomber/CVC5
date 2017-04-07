@@ -72,6 +72,7 @@ TheoryDatatypes::TheoryDatatypes(Context* c, UserContext* u, OutputChannel& out,
 
   d_sygus_split = NULL;
   d_sygus_sym_break = NULL;
+  d_sel_conv = NULL;
 }
 
 TheoryDatatypes::~TheoryDatatypes() {
@@ -83,6 +84,7 @@ TheoryDatatypes::~TheoryDatatypes() {
   }
   delete d_sygus_split;
   delete d_sygus_sym_break;
+  delete d_sel_conv;
 }
 
 void TheoryDatatypes::setMasterEqualityEngine(eq::EqualityEngine* eq) {
@@ -296,8 +298,10 @@ void TheoryDatatypes::check(Effort e) {
                     Trace("dt-split") << "*************Split for constructors on " << n <<  endl;
                     std::vector< Node > children;
                     if( dt.isSygus() && d_sygus_split ){
+                      Trace("dt-sygus") << "DtSygus : split on " << n << std::endl;
                       std::vector< Node > lemmas;
                       d_sygus_split->getSygusSplits( n, dt, children, lemmas );
+                      Trace("dt-sygus") << "Finished compute split, returned " << lemmas.size() << " lemmas." << std::endl;
                       for( unsigned i=0; i<lemmas.size(); i++ ){
                         Trace("dt-lemma-sygus") << "Dt sygus lemma : " << lemmas[i] << std::endl;
                         doSendLemma( lemmas[i] );
@@ -461,15 +465,34 @@ void TheoryDatatypes::assertFact( Node fact, Node exp ){
     EqcInfo* eqc = getOrMakeEqcInfo( rep, true );
     addTester( tindex, fact, eqc, rep, t_arg );
     Trace("dt-tester") << "Done assert tester." << std::endl;
+    //do pending merges
+    doPendingMerges();
+    Trace("dt-tester") << "Done pending merges." << std::endl;
     if( !d_conflict && polarity ){
       if( d_sygus_sym_break ){
-        //Assert( !d_sygus_util->d_conflict );
-        Trace("dt-tester") << "Assert tester to sygus : " << atom << std::endl;
-        d_sygus_sym_break->addTester( tindex, t_arg, atom );
-        Trace("dt-tester") << "Done assert tester to sygus." << std::endl;
+        Trace("dt-sygus") << "Assert tester to sygus : " << atom << std::endl;
+        if( !options::dtSharedSelectors() ){
+          //Assert( !d_sygus_util->d_conflict );
+          d_sygus_sym_break->addTester( tindex, t_arg, atom );
+        }else{      
+          std::vector< Node > etesters;
+          d_sel_conv->addTester( t_arg, atom, etesters );
+          Trace("dt-sygus") << "...lazy construction of " << etesters.size() << " testers." << std::endl;
+          for( unsigned i=0; i<etesters.size(); i++ ){
+            Trace("dt-sygus") << "......assert external tester to sygus : " << etesters[i] << std::endl;
+            Node tt;
+            int ttindex = DatatypesRewriter::isTester( etesters[i], tt );
+            Assert( ttindex!=-1 );
+            d_sygus_sym_break->addTester( ttindex, tt, etesters[i] );
+          }
+        }
+
+        Trace("dt-sygus") << "Done assert tester to sygus." << std::endl;
         for( unsigned i=0; i<d_sygus_sym_break->d_lemmas.size(); i++ ){
-          Trace("dt-lemma-sygus") << "Sygus symmetry breaking lemma : " << d_sygus_sym_break->d_lemmas[i] << std::endl;
-          doSendLemma( d_sygus_sym_break->d_lemmas[i] );
+          Node ilem = SelectorConversion::toInternal( d_sygus_sym_break->d_lemmas[i] );
+          Trace("dt-lemma-sygus") << "Sygus symmetry breaking lemma : " << ilem << std::endl;
+          Trace("dt-sygus") << "...external form of symmetry breaking lemma : " << d_sygus_sym_break->d_lemmas[i]  << std::endl;
+          doSendLemma( ilem );
         }
         d_sygus_sym_break->d_lemmas.clear();
         /*
@@ -490,7 +513,6 @@ void TheoryDatatypes::assertFact( Node fact, Node exp ){
   }else{
     Trace("dt-tester-debug") << "Assert (non-tester) : " << atom << std::endl;
   }
-  doPendingMerges();
   Trace("datatypes-debug") << "TheoryDatatypes::assertFact : finished " << fact << std::endl;
 }
 
@@ -519,23 +541,40 @@ void TheoryDatatypes::finishInit() {
   if( getQuantifiersEngine() && options::ceGuidedInst() ){
     quantifiers::TermDbSygus * tds = getQuantifiersEngine()->getTermDatabaseSygus();
     Assert( tds!=NULL );
-    d_sygus_split = new SygusSplit( tds );
-    d_sygus_sym_break = new SygusSymBreak( tds, getSatContext() );
+    if( options::sygusSplit() ){
+      d_sygus_split = new SygusSplit( tds );
+    }
+    if( options::sygusSymBreak() ){
+      d_sygus_sym_break = new SygusSymBreak( tds, getSatContext() );
+    }
+    d_sel_conv = new SelectorConversion( getSatContext() );
   }
 }
 
 Node TheoryDatatypes::expandDefinition(LogicRequest &logicRequest, Node n) {
   switch( n.getKind() ){
   case kind::APPLY_SELECTOR: {
+    Trace("dt-expand") << "Dt Expand definition : " << n << std::endl;
     Node selector = n.getOperator();
     Expr selectorExpr = selector.toExpr();
-    Node sel = NodeManager::currentNM()->mkNode( kind::APPLY_SELECTOR_TOTAL, Node::fromExpr( selectorExpr ), n[0] );
+    // APPLY_SELECTOR always applies to an external selector, cindexOf is legal here
+    size_t cindex = Datatype::cindexOf(selectorExpr);
+    const Datatype& dt = Datatype::datatypeOf(selectorExpr);
+    const DatatypeConstructor& c = dt[cindex];
+    Node selector_use;
+    TypeNode ndt = n[0].getType();
+    if( options::dtSharedSelectors() ){
+      size_t selectorIndex = Datatype::indexOf(selectorExpr);
+      Trace("dt-expand") << "...selector index = " << selectorIndex << std::endl;
+      Assert( selectorIndex<c.getNumArgs() );
+      selector_use = Node::fromExpr( c.getSelectorInternal( ndt.toType(), selectorIndex ) );
+    }else{
+      selector_use = selector;
+    }
+    Node sel = NodeManager::currentNM()->mkNode( kind::APPLY_SELECTOR_TOTAL, selector_use, n[0] );
     if( options::dtRewriteErrorSel() ){
       return sel;
     }else{
-      size_t selectorIndex = Datatype::cindexOf(selectorExpr);
-      const Datatype& dt = Datatype::datatypeOf(selectorExpr);
-      const DatatypeConstructor& c = dt[selectorIndex];
       Expr tester = c.getTester();
       Node tst = NodeManager::currentNM()->mkNode( kind::APPLY_TESTER, Node::fromExpr( tester ), n[0] );
       tst = Rewriter::rewrite( tst );
@@ -543,7 +582,6 @@ Node TheoryDatatypes::expandDefinition(LogicRequest &logicRequest, Node n) {
       if( tst==d_true ){
         n_ret = sel;
       }else{
-        TypeNode ndt = n[0].getType();
         mkExpDefSkolem( selector, ndt, n.getType() );
         Node sk = NodeManager::currentNM()->mkNode( kind::APPLY_UF, d_exp_def_skolem[ndt][ selector ], n[0]  );
         if( tst==NodeManager::currentNM()->mkConst( false ) ){
@@ -599,7 +637,7 @@ Node TheoryDatatypes::ppRewrite(TNode in) {
         b << in[1];
         Debug("tuprec") << "arg " << i << " gets updated to " << in[1] << std::endl;
       } else {
-        b << NodeManager::currentNM()->mkNode(kind::APPLY_SELECTOR_TOTAL, Node::fromExpr(dt[0][i].getSelector()), in[0]);
+        b << NodeManager::currentNM()->mkNode(kind::APPLY_SELECTOR_TOTAL, Node::fromExpr(dt[0].getSelectorInternal( t.toType(), i )), in[0]);
         Debug("tuprec") << "arg " << i << " copies " << b[b.getNumChildren() - 1] << std::endl;
       }
     }
@@ -986,17 +1024,6 @@ void TheoryDatatypes::getPossibleCons( EqcInfo* eqc, Node n, std::vector< bool >
   }
 }
 
-void TheoryDatatypes::getSelectorsForCons( Node r, std::map< int, bool >& sels ) {
-  NodeIntMap::iterator sel_i = d_selector_apps.find( r );
-  if( sel_i != d_selector_apps.end() ){
-    int n_sel = (*sel_i).second;
-    for( int j=0; j<n_sel; j++ ){
-      int sindex = Datatype::indexOf( d_selector_apps_data[r][j].getOperator().toExpr() );
-      sels[sindex] = true;
-    }
-  }
-}
-
 void TheoryDatatypes::mkExpDefSkolem( Node sel, TypeNode dt, TypeNode rt ) {
   if( d_exp_def_skolem[dt].find( sel )==d_exp_def_skolem[dt].end() ){
     std::stringstream ss;
@@ -1061,6 +1088,7 @@ void TheoryDatatypes::addTester( int ttindex, Node t, EqcInfo* eqc, Node n, Node
     NodeIntMap::iterator lbl_i = d_labels.find( n );
     Assert( lbl_i != d_labels.end() );
     int n_lbl = (*lbl_i).second;
+    std::map< int, bool > neg_testers;
     for( int i=0; i<n_lbl; i++ ){
       Node ti = d_labels_data[n][i];
       Assert( ti.getKind()==NOT );
@@ -1076,6 +1104,8 @@ void TheoryDatatypes::addTester( int ttindex, Node t, EqcInfo* eqc, Node n, Node
         }else{            //it is redundant
           return;
         }
+      }else{
+        neg_testers[jtindex] = true;
       }
     }
     if( !makeConflict ){
@@ -1093,6 +1123,16 @@ void TheoryDatatypes::addTester( int ttindex, Node t, EqcInfo* eqc, Node n, Node
       Debug("datatypes-labels") << "Labels at " << n_lbl << " / " << dt.getNumConstructors() << std::endl;
       if( tpolarity ){
         instantiate( eqc, n );
+        //TODO : and it is not the other testers FIXME
+        for( int i=0; i<(int)dt.getNumConstructors(); i++ ){
+          if( i!=ttindex && neg_testers.find( i )==neg_testers.end() ){
+            Assert( n.getKind()!=APPLY_CONSTRUCTOR );
+            Node infer = DatatypesRewriter::mkTester( n, i, dt ).negate();
+            Trace("datatypes-infer") << "DtInfer : neg label : " << infer << " by " << t << std::endl;
+            d_infer.push_back( infer );
+            d_infer_exp.push_back( t );
+          }
+        }
       }else{
         //check if we have reached the maximum number of testers
         // in this case, add the positive tester
@@ -1226,7 +1266,7 @@ void TheoryDatatypes::collapseSelector( Node s, Node c ) {
   Assert( c.getKind()==APPLY_CONSTRUCTOR );
   Trace("dt-collapse-sel") << "collapse selector : " << s << " " << c << std::endl;
   Node r;
-  bool wrong = false;
+  //bool wrong = false;
   Node use_s;
   Node eq_exp;
   if( options::dtRefIntro() ){
@@ -1238,7 +1278,7 @@ void TheoryDatatypes::collapseSelector( Node s, Node c ) {
   }
   if( s.getKind()==kind::APPLY_SELECTOR_TOTAL ){
     //Trace("dt-collapse-sel") << "Indices : " << Datatype::indexOf(c.getOperator().toExpr()) << " " << Datatype::cindexOf(s.getOperator().toExpr()) << std::endl;
-    wrong = Datatype::indexOf(c.getOperator().toExpr())!=Datatype::cindexOf(s.getOperator().toExpr());
+    //wrong = Datatype::indexOf(c.getOperator().toExpr())!=Datatype::cindexOf(s.getOperator().toExpr());
     //if( wrong ){
     //  return;
     //}
@@ -1277,7 +1317,7 @@ void TheoryDatatypes::collapseSelector( Node s, Node c ) {
         eq_exp = c.eqNode( s[0] );
       }
       Trace("datatypes-infer") << "DtInfer : collapse sel";
-      Trace("datatypes-infer") << ( wrong ? " wrong" : "");
+      //Trace("datatypes-infer") << ( wrong ? " wrong" : "");
       Trace("datatypes-infer") << " : " << eq << " by " << eq_exp << std::endl;
       d_pending.push_back( eq );
       d_pending_exp[ eq ] = eq_exp;

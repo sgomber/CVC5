@@ -17,6 +17,7 @@
 #include "expr/datatype.h"
 #include "options/base_options.h"
 #include "options/quantifiers_options.h"
+#include "options/datatypes_options.h"
 #include "theory/quantifiers/ce_guided_instantiation.h"
 #include "theory/quantifiers/first_order_model.h"
 #include "theory/quantifiers/fun_def_engine.h"
@@ -1100,7 +1101,10 @@ void getSelfSel( const Datatype& dt, const DatatypeConstructor& dc, Node n, Type
     }
     */
     for( unsigned k=0; k<ssc.size(); k++ ){
-      selfSel.push_back( NodeManager::currentNM()->mkNode( APPLY_SELECTOR_TOTAL, dc[j].getSelector(), n ) );
+      Node ss = NodeManager::currentNM()->mkNode( APPLY_SELECTOR_TOTAL, dc.getSelectorInternal( n.getType().toType(), j ), n );
+      if( std::find( selfSel.begin(), selfSel.end(), ss )==selfSel.end() ){
+        selfSel.push_back( ss );
+      }
     }
   }
 }
@@ -1855,13 +1859,16 @@ bool TermDb::getEnsureTypeCondition( Node n, TypeNode tn, std::vector< Node >& c
 
 void TermDb::getRelevancyCondition( Node n, std::vector< Node >& cond ) {
   if( n.getKind()==APPLY_SELECTOR_TOTAL ){
-    unsigned scindex = Datatype::cindexOf(n.getOperator().toExpr());
-    const Datatype& dt = ((DatatypeType)(n[0].getType()).toType()).getDatatype();
-    Node rc = NodeManager::currentNM()->mkNode( APPLY_TESTER, Node::fromExpr( dt[scindex].getTester() ), n[0] ).negate();
-    if( std::find( cond.begin(), cond.end(), rc )==cond.end() ){
-      cond.push_back( rc );
+    // don't worry about relevancy conditions if using shared selectors
+    if( !options::dtSharedSelectors() ){
+      unsigned scindex = Datatype::cindexOf(n.getOperator().toExpr());
+      const Datatype& dt = ((DatatypeType)(n[0].getType()).toType()).getDatatype();
+      Node rc = NodeManager::currentNM()->mkNode( APPLY_TESTER, Node::fromExpr( dt[scindex].getTester() ), n[0] ).negate();
+      if( std::find( cond.begin(), cond.end(), rc )==cond.end() ){
+        cond.push_back( rc );
+      }
+      getRelevancyCondition( n[0], cond );
     }
-    getRelevancyCondition( n[0], cond );
   }
 }
 
@@ -3352,13 +3359,20 @@ Node TermDbSygus::unfold( Node en, std::map< Node, Node >& vtm, std::vector< Nod
         exp.push_back( ee );
       }
     }
+    Assert( !dt.isParametric() );
     std::map< int, Node > pre;
     for( unsigned j=0; j<dt[i].getNumArgs(); j++ ){
       std::vector< Node > cc;
       //get the evaluation argument for the selector
+      Type rt = dt[i][j].getRangeType();
       const Datatype & ad = ((DatatypeType)dt[i][j].getRangeType()).getDatatype();
       cc.push_back( Node::fromExpr( ad.getSygusEvaluationFunc() ) );
-      Node s = en[0].getKind()==kind::APPLY_CONSTRUCTOR ? en[0][j] : NodeManager::currentNM()->mkNode( kind::APPLY_SELECTOR_TOTAL, Node::fromExpr( dt[i][j].getSelector() ), en[0] );
+      Node s;
+      if( en[0].getKind()==kind::APPLY_CONSTRUCTOR ){
+        s = en[0][j];
+      }else{
+        s = NodeManager::currentNM()->mkNode( kind::APPLY_SELECTOR_TOTAL, dt[i].getSelectorInternal( en[0].getType().toType(), j ), en[0] );
+      }
       cc.push_back( s );
       if( track_exp ){
         //update vtm map

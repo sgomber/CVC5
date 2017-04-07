@@ -111,6 +111,7 @@ private:
   std::map< TypeNode, std::map< Node, Node > > d_normalized_to_orig;
   std::map< TypeNode, std::map< Node, bool > > d_redundant;
   std::map< TypeNode, std::map< Node, int > > d_normalized_to_term_size;
+  std::map< TypeNode, std::map< Node, Node > > d_normalized_to_exp;
   std::map< TypeNode, std::map< Node, std::vector< Node > > > d_lemmas_reported;
   //which testers to include in the lemma
   std::map< TypeNode, std::map< Node, std::vector< bool > > > d_lemma_inc_tst;
@@ -136,6 +137,34 @@ public:
   void addTester( int tindex, Node n, Node exp );
   /** lemmas we have generated */
   std::vector< Node > d_lemmas;
+};
+
+class SelectorConversion {
+private:
+  typedef context::CDHashMap< Node, Node, NodeHashFunction > NodeMap;
+  NodeMap d_testers;
+  NodeMap d_testers_ext;
+  NodeMap d_to_external;
+  NodeMap d_to_external_exp;
+  std::map< Node, std::vector< Node > > d_watch_list;
+  void getExtTesters( Node n, std::vector< Node >& ext_testers );
+  /** to external */
+  Node toExternal( Node sel );
+public:
+  SelectorConversion( context::Context* c );
+  ~SelectorConversion() {}
+  /** add tester */
+  void addTester( Node n, Node tst, std::vector< Node >& ext_testers );
+  /** to external */
+  Node toExternal( Node sel, Node& exp );
+private:
+  static Node toInternal( Node n, std::map< Node, Node >& visited ); 
+public:
+  //convert to the internal representation
+  static Node toInternal( Node n ){
+    std::map< Node, Node > visited;
+    return toInternal( n, visited );
+  }  
 };
 
 }

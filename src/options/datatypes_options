@@ -29,5 +29,7 @@ option dtInferAsLemmas --dt-infer-as-lemmas bool :default false
 # regression explanations for datatype lemmas
 option dtBlastSplits --dt-blast-splits bool :default false
  when applicable, blast splitting lemmas for all variables at once
+option dtSharedSelectors --dt-share-sel bool :default false
+ internally use shared selectors across multiple constructors
  
 endmodule

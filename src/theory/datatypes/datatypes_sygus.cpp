@@ -34,158 +34,193 @@ void SygusSplit::getSygusSplits( Node n, const Datatype& dt, std::vector< Node >
     //get the kinds for child datatype
     TypeNode tnn = n.getType();
     registerSygusType( tnn );
+    
 
     //get parent information, if possible
-    int csIndex = -1;
-    int sIndex = -1;
-    Node arg1;
-    TypeNode tn1;
     TypeNode tnnp;
-    Node ptest;
+    Node sel_op;
+    Node p_bad_sel_test;
+    
+    std::vector< int > cindices;
+    std::vector< int > sindices;
+    
     if( n.getKind()==APPLY_SELECTOR_TOTAL ){
-      Node op = n.getOperator();
-      Expr selectorExpr = op.toExpr();
-      const Datatype& pdt = Datatype::datatypeOf(selectorExpr);
-      Assert( pdt.isSygus() );
-      csIndex = Datatype::cindexOf(selectorExpr);
-      sIndex = Datatype::indexOf(selectorExpr);
       tnnp = n[0].getType();
-      //register the constructors that are redundant children of argument sIndex of constructor index csIndex of dt
-      registerSygusTypeConstructorArg( tnn, dt, tnnp, pdt, csIndex, sIndex );
-
-      if( options::sygusNormalFormArg() ){
-        if( sIndex==1 && pdt[csIndex].getNumArgs()==2 ){
-          arg1 = NodeManager::currentNM()->mkNode( APPLY_SELECTOR_TOTAL, Node::fromExpr( pdt[csIndex][0].getSelector() ), n[0] );
-          tn1 = arg1.getType();
-          if( !tn1.isDatatype() ){
-            arg1 = Node::null();
+      sel_op = n.getOperator();
+      const Datatype& pdt = Datatype::datatypeOf(sel_op.toExpr());
+      if( !options::dtSharedSelectors() ){
+        int csIndex = Datatype::cindexOf(sel_op.toExpr());
+        cindices.push_back( csIndex );
+        sindices.push_back( Datatype::indexOf(sel_op.toExpr()) );
+        p_bad_sel_test = DatatypesRewriter::mkTester( n[0], csIndex, pdt ).negate();
+      }else{
+        std::vector< Node > pbsc;
+        for( unsigned i=0; i<pdt.getNumConstructors(); i++ ){
+          // if this selector is applicable to this constructor
+          int si_index = pdt[i].getSelectorIndexInternal( tnnp.toType(), sel_op.toExpr() );
+          if( si_index>=0 ){
+            Assert( si_index<(int)pdt[i].getNumArgs() );
+            Trace("sygus-split-debug") << "Selector " << sel_op << " is possibly " << si_index << " of " << pdt[i] << std::endl;
+            cindices.push_back( i );
+            sindices.push_back( si_index );
+          }else{
+            pbsc.push_back( DatatypesRewriter::mkTester( n[0], i, pdt ) );
           }
+        }
+        if( !pbsc.empty() ){
+          p_bad_sel_test = pbsc.size()==1 ? pbsc[0] : NodeManager::currentNM()->mkNode( kind::OR, pbsc );
+        }
+        Assert( !cindices.empty() );
+        //sel_op = Node::null();
+        //cindices.push_back( -1 );
+        //sindices.push_back( -1 );
+      }
+    }else{
+      cindices.push_back( -1 );
+      sindices.push_back( -1 );
+    }
+    
+    for( unsigned v=0; v<cindices.size(); v++ ){
+      // copy the information
+      int csIndex = cindices[v];
+      int sIndex = sindices[v];
+      Assert( csIndex!=-1 || cindices.size()==1 );
+      Node arg1;
+      Node ptest;
+      TypeNode tn1;
+      if( !sel_op.isNull() ){
+        //get the parent datatype
+        const Datatype& pdt = Datatype::datatypeOf(sel_op.toExpr());
+        //register the constructors that are redundant children of argument sIndex of constructor index csIndex of dt
+        registerSygusTypeConstructorArg( tnn, dt, tnnp, pdt, csIndex, sIndex );
+        if( options::sygusNormalFormArg() ){
+          if( sIndex==1 && pdt[csIndex].getNumArgs()==2 ){
+            arg1 = NodeManager::currentNM()->mkNode( APPLY_SELECTOR_TOTAL, Node::fromExpr( pdt[csIndex].getSelectorInternal( tnnp.toType(), 0 ) ), n[0] );
+            tn1 = arg1.getType();
+            if( !tn1.isDatatype() ){
+              arg1 = Node::null();
+            }
+          }
+        }
+        // we are splitting on a term that may later have no semantics : guard this case
+        ptest = DatatypesRewriter::mkTester( n[0], csIndex, pdt );
+        Trace("sygus-split-debug") << "Parent guard : " << ptest << std::endl;   
+      }
+      std::vector< Node > curr_splits;
+      for( unsigned i=0; i<dt.getNumConstructors(); i++ ){
+        Trace("sygus-split-debug2") << "Add split " << n << " : constructor " << dt[i].getName() << " : ";
+        Assert( d_sygus_nred.find( tnn )!=d_sygus_nred.end() );
+        bool addSplit = d_sygus_nred[tnn][i];
+        if( addSplit ){
+          if( csIndex!=-1 ){
+            Assert( d_sygus_pc_nred[tnn][csIndex].find( sIndex )!=d_sygus_pc_nred[tnn][csIndex].end() );
+            addSplit = d_sygus_pc_nred[tnn][csIndex][sIndex][i];
+          }
+          if( addSplit ){
+            std::vector< Node > test_c;
+            Node test = DatatypesRewriter::mkTester( n, i, dt );
+            test_c.push_back( test );
+            //check if we can strengthen the first argument
+            if( !arg1.isNull() ){
+              const Datatype& dt1 = ((DatatypeType)(tn1).toType()).getDatatype();
+              Kind k = d_tds->getArgKind( tnnp, csIndex );
+              //size comparison for arguments (if necessary)
+              Node sz_leq;
+              if( tn1==tnn && quantifiers::TermDb::isComm( k ) ){
+                sz_leq = NodeManager::currentNM()->mkNode( LEQ, NodeManager::currentNM()->mkNode( DT_SIZE, n ), NodeManager::currentNM()->mkNode( DT_SIZE, arg1 ) );
+              }
+              std::map< int, std::vector< int > >::iterator it = d_sygus_pc_arg_pos[tnn][csIndex].find( i );
+              if( it!=d_sygus_pc_arg_pos[tnn][csIndex].end() ){
+                Assert( !it->second.empty() );
+                std::vector< Node > lem_c;
+                for( unsigned j=0; j<it->second.size(); j++ ){
+                  Node tt = DatatypesRewriter::mkTester( arg1, it->second[j], dt1 );
+                  //if commutative operator, and children have same constructor type, then first arg is larger than second arg
+                  if( it->second[j]==(int)i && !sz_leq.isNull() ){
+                    tt = NodeManager::currentNM()->mkNode( AND, tt, sz_leq );
+                  }
+                  lem_c.push_back( tt );
+                }
+                Node argStr = lem_c.size()==1 ? lem_c[0] : NodeManager::currentNM()->mkNode( OR, lem_c );
+                Trace("sygus-str") << "...strengthen corresponding first argument of " << test << " : " << argStr << std::endl;
+                test_c.push_back( argStr );
+              }else{
+                if( !sz_leq.isNull() ){
+                  test_c.push_back( NodeManager::currentNM()->mkNode( OR, DatatypesRewriter::mkTester( arg1, i, dt1 ).negate(), sz_leq ) );
+                }
+              }
+            }
+            Assert( tnn==n.getType() );
+            //other constraints on arguments
+            Kind curr = d_tds->getArgKind( tnn, i );
+            if( curr!=UNDEFINED_KIND ){
+              //ITE children must be distinct when properly typed
+              if( curr==ITE ){
+                if( d_tds->getArgType( dt[i], 1 )==tnn && d_tds->getArgType( dt[i], 2 )==tnn ){
+                  Node arg_ite1 = NodeManager::currentNM()->mkNode( APPLY_SELECTOR_TOTAL, Node::fromExpr( dt[i].getSelectorInternal( tnn.toType(), 1 ) ), n );
+                  Node arg_ite2 = NodeManager::currentNM()->mkNode( APPLY_SELECTOR_TOTAL, Node::fromExpr( dt[i].getSelectorInternal( tnn.toType(), 2 ) ), n );
+                  Node deq = arg_ite1.eqNode( arg_ite2 ).negate();
+                  Trace("sygus-str") << "...ite strengthen arguments " << deq << std::endl;
+                  test_c.push_back( deq );
+                }
+                //condition must be distinct from all parent ITE's
+                Node curr = n;
+                Node arg_itec = NodeManager::currentNM()->mkNode( APPLY_SELECTOR_TOTAL, Node::fromExpr( dt[i].getSelectorInternal( tnn.toType(), 0 ) ), n );
+                while( curr.getKind()==APPLY_SELECTOR_TOTAL ){
+                  if( curr[0].getType()==tnn ){
+                    int sIndexCurr = Datatype::indexOf( curr.getOperator().toExpr() );
+                    int csIndexCurr = Datatype::cindexOf( curr.getOperator().toExpr() );
+                    if( sIndexCurr!=0 && csIndexCurr==(int)i ){
+                      Trace("sygus-ite") << "Parent ITE " << curr << " of " << n << std::endl;
+                      Node arg_itecp = NodeManager::currentNM()->mkNode( APPLY_SELECTOR_TOTAL, Node::fromExpr( dt[i].getSelectorInternal( curr[0].getType().toType(), 0 ) ), curr[0] );
+                      Node deq = arg_itec.eqNode( arg_itecp ).negate();
+                      Trace("sygus-str") << "...ite strengthen condition " << deq << std::endl;
+                      test_c.push_back( deq );
+                    }
+                  }
+                  curr = curr[0];
+                }
+              }
+            }
+            //add fairness constraint
+            if( options::ceGuidedInstFair()==quantifiers::CEGQI_FAIR_DT_SIZE ){
+              Node szl = NodeManager::currentNM()->mkNode( DT_SIZE, n );
+              Node szr = NodeManager::currentNM()->mkNode( DT_SIZE, DatatypesRewriter::getInstCons( n, dt, i ) );
+              szr = Rewriter::rewrite( szr );
+              test_c.push_back( szl.eqNode( szr ) );
+            }
+            test = test_c.size()==1 ? test_c[0] : NodeManager::currentNM()->mkNode( AND, test_c );
+            curr_splits.push_back( test );
+            Trace("sygus-split-debug2") << "SUCCESS" << std::endl;
+            Trace("sygus-split-debug") << "Disjunct #" << curr_splits.size() << " : " << test << std::endl;
+          }else{
+            Trace("sygus-split-debug2") << "redundant argument" << std::endl;
+          }
+        }else{
+          Trace("sygus-split-debug2") << "redundant operator" << std::endl;
         }
       }
-      // we are splitting on a term that may later have no semantics : guard this case
-      ptest = DatatypesRewriter::mkTester( n[0], csIndex, pdt );
-      Trace("sygus-split-debug") << "Parent guard : " << ptest << std::endl;
-    }
-
-    std::vector< Node > ptest_c;
-    bool narrow = false;
-    for( unsigned i=0; i<dt.getNumConstructors(); i++ ){
-      Trace("sygus-split-debug2") << "Add split " << n << " : constructor " << dt[i].getName() << " : ";
-      Assert( d_sygus_nred.find( tnn )!=d_sygus_nred.end() );
-      bool addSplit = d_sygus_nred[tnn][i];
-      if( addSplit ){
-        if( csIndex!=-1 ){
-          Assert( d_sygus_pc_nred[tnn][csIndex].find( sIndex )!=d_sygus_pc_nred[tnn][csIndex].end() );
-          addSplit = d_sygus_pc_nred[tnn][csIndex][sIndex][i];
-        }
-        if( addSplit ){
-          std::vector< Node > test_c;
-          Node test = DatatypesRewriter::mkTester( n, i, dt );
-          test_c.push_back( test );
-          //check if we can strengthen the first argument
-          if( !arg1.isNull() ){
-            const Datatype& dt1 = ((DatatypeType)(tn1).toType()).getDatatype();
-            Kind k = d_tds->getArgKind( tnnp, csIndex );
-            //size comparison for arguments (if necessary)
-            Node sz_leq;
-            if( tn1==tnn && quantifiers::TermDb::isComm( k ) ){
-              sz_leq = NodeManager::currentNM()->mkNode( LEQ, NodeManager::currentNM()->mkNode( DT_SIZE, n ), NodeManager::currentNM()->mkNode( DT_SIZE, arg1 ) );
-            }
-            std::map< int, std::vector< int > >::iterator it = d_sygus_pc_arg_pos[tnn][csIndex].find( i );
-            if( it!=d_sygus_pc_arg_pos[tnn][csIndex].end() ){
-              Assert( !it->second.empty() );
-              std::vector< Node > lem_c;
-              for( unsigned j=0; j<it->second.size(); j++ ){
-                Node tt = DatatypesRewriter::mkTester( arg1, it->second[j], dt1 );
-                //if commutative operator, and children have same constructor type, then first arg is larger than second arg
-                if( it->second[j]==(int)i && !sz_leq.isNull() ){
-                  tt = NodeManager::currentNM()->mkNode( AND, tt, sz_leq );
-                }
-                lem_c.push_back( tt );
-              }
-              Node argStr = lem_c.size()==1 ? lem_c[0] : NodeManager::currentNM()->mkNode( OR, lem_c );
-              Trace("sygus-str") << "...strengthen corresponding first argument of " << test << " : " << argStr << std::endl;
-              test_c.push_back( argStr );
-              narrow = true;
-            }else{
-              if( !sz_leq.isNull() ){
-                test_c.push_back( NodeManager::currentNM()->mkNode( OR, DatatypesRewriter::mkTester( arg1, i, dt1 ).negate(), sz_leq ) );
-                narrow = true;
-              }
-            }
-          }
-          //other constraints on arguments
-          Kind curr = d_tds->getArgKind( tnn, i );
-          if( curr!=UNDEFINED_KIND ){
-            //ITE children must be distinct when properly typed
-            if( curr==ITE ){
-              if( d_tds->getArgType( dt[i], 1 )==tnn && d_tds->getArgType( dt[i], 2 )==tnn ){
-                Node arg_ite1 = NodeManager::currentNM()->mkNode( APPLY_SELECTOR_TOTAL, Node::fromExpr( dt[i][1].getSelector() ), n );
-                Node arg_ite2 = NodeManager::currentNM()->mkNode( APPLY_SELECTOR_TOTAL, Node::fromExpr( dt[i][2].getSelector() ), n );
-                Node deq = arg_ite1.eqNode( arg_ite2 ).negate();
-                Trace("sygus-str") << "...ite strengthen arguments " << deq << std::endl;
-                test_c.push_back( deq );
-                narrow = true;
-              }
-              //condition must be distinct from all parent ITE's
-              Node curr = n;
-              Node arg_itec = NodeManager::currentNM()->mkNode( APPLY_SELECTOR_TOTAL, Node::fromExpr( dt[i][0].getSelector() ), n );
-              while( curr.getKind()==APPLY_SELECTOR_TOTAL ){
-                if( curr[0].getType()==tnn ){
-                  int sIndexCurr = Datatype::indexOf( curr.getOperator().toExpr() );
-                  int csIndexCurr = Datatype::cindexOf( curr.getOperator().toExpr() );
-                  if( sIndexCurr!=0 && csIndexCurr==(int)i ){
-                    Trace("sygus-ite") << "Parent ITE " << curr << " of " << n << std::endl;
-                    Node arg_itecp = NodeManager::currentNM()->mkNode( APPLY_SELECTOR_TOTAL, Node::fromExpr( dt[i][0].getSelector() ), curr[0] );
-                    Node deq = arg_itec.eqNode( arg_itecp ).negate();
-                    Trace("sygus-str") << "...ite strengthen condition " << deq << std::endl;
-                    test_c.push_back( deq );
-                    narrow = true;
-                  }
-                }
-                curr = curr[0];
-              }
-            }
-          }
-          //add fairness constraint
-          if( options::ceGuidedInstFair()==quantifiers::CEGQI_FAIR_DT_SIZE ){
-            Node szl = NodeManager::currentNM()->mkNode( DT_SIZE, n );
-            Node szr = NodeManager::currentNM()->mkNode( DT_SIZE, DatatypesRewriter::getInstCons( n, dt, i ) );
-            szr = Rewriter::rewrite( szr );
-            test_c.push_back( szl.eqNode( szr ) );
-          }
-          test = test_c.size()==1 ? test_c[0] : NodeManager::currentNM()->mkNode( AND, test_c );
-          d_splits[n].push_back( test );
-          Trace("sygus-split-debug2") << "SUCCESS" << std::endl;
-          Trace("sygus-split-debug") << "Disjunct #" << d_splits[n].size() << " : " << test << std::endl;
-        }else{
-          Trace("sygus-split-debug2") << "redundant argument" << std::endl;
-          narrow = true;
+      Node split = curr_splits.empty() ? NodeManager::currentNM()->mkConst( false ) :
+                                        ( curr_splits.size()==1 ? curr_splits[0] : NodeManager::currentNM()->mkNode( OR, curr_splits ) );
+      if( !ptest.isNull() ){
+        if( !curr_splits.empty() ){
+          split = NodeManager::currentNM()->mkNode( AND, ptest, split );
         }
       }else{
-        Trace("sygus-split-debug2") << "redundant operator" << std::endl;
-        narrow = true;
-      }
-      if( !ptest.isNull() ){
-        ptest_c.push_back( DatatypesRewriter::mkTester( n, i, dt ) );
-      }
-    }
-    if( narrow && !ptest.isNull() ){
-      Node split = d_splits[n].empty() ? NodeManager::currentNM()->mkConst( false ) :
-                                        ( d_splits[n].size()==1 ? d_splits[n][0] : NodeManager::currentNM()->mkNode( OR, d_splits[n] ) );
-      if( !d_splits[n].empty() ){
-        d_splits[n].clear();
-        split = NodeManager::currentNM()->mkNode( AND, ptest, split );
+        Assert( !curr_splits.empty() );
       }
       d_splits[n].push_back( split );
-      if( !ptest_c.empty() ){
-        ptest = NodeManager::currentNM()->mkNode( AND, ptest.negate(), NodeManager::currentNM()->mkNode( OR, ptest_c ) );
-      }
-      d_splits[n].push_back( ptest );
-    }else{
-      Assert( !d_splits[n].empty() );
     }
-
+    
+    if( !p_bad_sel_test.isNull() ){
+      //make the bad selector case
+      std::vector< Node > pbtest;
+      for( unsigned i=0; i<dt.getNumConstructors(); i++ ){
+        pbtest.push_back( DatatypesRewriter::mkTester( n, i, dt ) );
+      }
+      d_splits[n].push_back( NodeManager::currentNM()->mkNode( kind::AND, p_bad_sel_test, 
+                               pbtest.size()==1 ? pbtest[0] : NodeManager::currentNM()->mkNode( kind::OR, pbtest ) ) );
+    }
   }
   //copy to splits
   splits.insert( splits.end(), d_splits[n].begin(), d_splits[n].end() );
@@ -842,6 +877,7 @@ bool SygusSymBreak::ProgSearch::assignTester( int tindex, Node n, int depth ) {
   const Datatype& dt = ((DatatypeType)(tn).toType()).getDatatype();
   std::vector< Node > tst_waiting;
   for( unsigned i=0; i<dt[tindex].getNumArgs(); i++ ){
+    //should be the external representation
     Node sel = NodeManager::currentNM()->mkNode( kind::APPLY_SELECTOR_TOTAL, Node::fromExpr( dt[tindex][i].getSelector() ), n );
     NodeMap::const_iterator it = d_testers.find( sel );
     if( it!=d_testers.end() ){
@@ -947,6 +983,7 @@ Node SygusSymBreak::ProgSearch::getCandidateProgramAtDepth( int depth, Node prog
     std::map< int, Node > pre;
     if( curr_depth<depth ){
       for( unsigned i=0; i<dt[tindex].getNumArgs(); i++ ){
+        //this should be the internal representation
         Node sel = NodeManager::currentNM()->mkNode( kind::APPLY_SELECTOR_TOTAL, Node::fromExpr( dt[tindex][i].getSelector() ), prog );
         pre[i] = getCandidateProgramAtDepth( depth, sel, curr_depth+1, prog, var_count, testers, testers_u );
         if( pre[i].isNull() ){
@@ -986,7 +1023,7 @@ bool SygusSymBreak::processCurrentProgram( Node a, TypeNode at, int depth, Node 
       }
     }else{
       rep_prog = itnp->second;
-      if( tsize<d_normalized_to_term_size[at][progr] ){
+      if( tsize<=d_normalized_to_term_size[at][progr] ){
         d_normalized_to_orig[at][progr] = prog;
         Trace("sygus-nf-debug") << "Program is redundant, but has smaller size than " << rep_prog << std::endl;
         d_redundant[at].erase( rep_prog );
@@ -1003,6 +1040,11 @@ bool SygusSymBreak::processCurrentProgram( Node a, TypeNode at, int depth, Node 
     }
     if( !red ){
       d_normalized_to_term_size[at][progr] = tsize;
+      //store explanation
+      Assert( !testers.empty() );
+      Node exp = testers.size()==1 ? testers[0] : NodeManager::currentNM()->mkNode( kind::AND, testers );
+      Trace("sygus-sym-break") << "...recorded non-redundant program : " << progr << " : " << prog << " with explanation " << exp << std::endl;
+      d_normalized_to_exp[at][progr] = exp;
     }else{
       Assert( !testers.empty() );
       bool conflict_gen_set = false;
@@ -1318,8 +1360,9 @@ Node SygusSymBreak::getSeparationTemplate( TypeNode tn,  Node rep_prog, Node anc
       int new_status = 0;
       Node arg = getSeparationTemplate( tna, rep_prog[i], anc_var, new_status );
       if( new_status==1 ){
+        Assert( anc_var.getType()==tn );
         TNode tanc_var = anc_var;
-        TNode tanc_var_subs = NodeManager::currentNM()->mkNode( APPLY_SELECTOR_TOTAL, Node::fromExpr( dt[rop_arg][i].getSelector() ), anc_var );
+        TNode tanc_var_subs = NodeManager::currentNM()->mkNode( APPLY_SELECTOR_TOTAL, Node::fromExpr( dt[rop_arg].getSelectorInternal( tn.toType(), i ) ), anc_var );
         arg = arg.substitute( tanc_var, tanc_var_subs );
         status = 1;
       }
@@ -1371,3 +1414,141 @@ void SygusSymBreak::collectSubterms( Node n, Node tst_curr, std::map< Node, std:
     }
   }
 }
+
+
+
+SelectorConversion::SelectorConversion( context::Context* c ) :
+d_testers( c ),
+d_testers_ext( c ),
+d_to_external( c ),
+d_to_external_exp( c ){
+
+}
+
+/** add tester */
+void SelectorConversion::addTester( Node n, Node tst, std::vector< Node >& ext_testers ) {
+  d_testers[n] = tst;
+  if( n.getKind()==APPLY_SELECTOR_TOTAL ){
+    d_watch_list[n[0]].push_back( n );
+  }
+  getExtTesters( n, ext_testers );
+}
+
+void SelectorConversion::getExtTesters( Node n, std::vector< Node >& ext_testers ){
+  NodeMap::const_iterator it = d_testers.find( n );
+  if( it!=d_testers.end() ){
+    NodeMap::const_iterator itx = d_testers_ext.find( n );
+    //if we haven't already made the external tester
+    if( itx==d_testers_ext.end() ){
+      Trace("sygus-sel-conv-debug") << "Convert to external : " << n << std::endl;
+      Node e = toExternal( n );
+      Trace("sygus-sel-conv-debug") << "...got " << e << std::endl;
+      if( e.isNull() ) {
+        return;
+      }else{
+        Node xt = NodeManager::currentNM()->mkNode( APPLY_TESTER, (*it).second.getOperator(), e );
+        d_testers_ext[n] = xt;
+        ext_testers.push_back( xt );
+      }
+    }
+    std::map< Node, std::vector< Node > >::iterator itw = d_watch_list.find( n );
+    if( itw!=d_watch_list.end() ){
+      for( unsigned j=0; j<itw->second.size(); j++ ){
+        getExtTesters( itw->second[j], ext_testers );
+      }
+    }
+  }
+}
+
+/** to external */
+Node SelectorConversion::toExternal( Node sel, Node& exp ) {
+  Assert( exp.isNull() );
+  Node ret = toExternal( sel );
+  if( !ret.isNull() ){
+    exp = d_to_external_exp[sel];
+  }
+  return ret;
+}
+
+/** to external */
+Node SelectorConversion::toExternal( Node sel ) {
+  NodeMap::const_iterator itte = d_to_external.find( sel );
+  if( itte!=d_to_external.end() ){
+    return (*itte).second;
+  }else{
+    Node exp;
+    if( sel.getKind()==APPLY_SELECTOR_TOTAL ){
+      NodeMap::const_iterator it = d_testers.find( sel[0] );
+      if( it!=d_testers.end() ){
+        Node arg = toExternal( sel[0], exp );
+        if( !arg.isNull() ){
+          Node tst = (*it).second;
+          Trace("sygus-sel-conv-debug") << "toExternal : " << sel << ", converted arg : " << arg << ", tester is " << tst << std::endl;
+          TypeNode ts = sel[0].getType();
+          const Datatype& dt = ((DatatypeType)ts.toType()).getDatatype();
+          Node a;
+          int tindex = DatatypesRewriter::isTester( tst, a );
+          Trace("sygus-sel-conv-debug") << "Tester index is " << tindex << " with arg " << a << std::endl;
+          Assert( tindex>=0 && tindex<(int)dt.getNumConstructors() );
+          Assert( a==sel[0] );
+          int sindex = dt[tindex].getSelectorIndexInternal( ts.toType(), sel.getOperator().toExpr() );
+          if( sindex>=0 ){
+            Trace("sygus-sel-conv-debug") << "selector index is " << sindex << std::endl;
+            Assert( sindex<(int)dt[tindex].getNumArgs() );
+            if( exp.isNull() ){
+              exp = (*it).second;
+            }else{
+              exp = NodeManager::currentNM()->mkNode( kind::AND, exp, tst );
+            }
+            Node s_ext = NodeManager::currentNM()->mkNode( kind::APPLY_SELECTOR_TOTAL, dt[tindex][sindex].getSelector(), arg );
+            d_to_external[sel] = s_ext;
+            d_to_external_exp[sel] = exp;
+            return s_ext;
+          }
+        } 
+        //else not complete
+      }
+      return Node::null();
+    }else{
+      d_to_external[sel] = sel;
+      d_to_external_exp[sel] = exp;
+      return sel;
+    }
+  }
+}
+
+Node SelectorConversion::toInternal( Node n, std::map< Node, Node >& visited ){
+  std::map< Node, Node >::iterator it = visited.find( n );
+  if( it!=visited.end() ){
+    return it->second;
+  }else{
+    std::vector< Node > children;
+    bool childChanged = false;
+    if( n.getMetaKind() == kind::metakind::PARAMETERIZED ){
+      if( n.getKind()==kind::APPLY_SELECTOR_TOTAL ){
+        Node op = n.getOperator();
+        unsigned cindex = Datatype::cindexOf( op.toExpr() );
+        unsigned sindex = Datatype::indexOf( op.toExpr() );
+        const Datatype& dt = Datatype::datatypeOf( op.toExpr() );
+        Node iop = dt[cindex].getSelectorInternal( n[0].getType().toType(), sindex );
+        children.push_back( iop );
+        childChanged = true;
+      }else{
+        children.push_back( n.getOperator() );
+      }
+    }
+    for( unsigned i=0; i<n.getNumChildren(); i++ ){
+      Node nc = toInternal( n[i], visited );
+      children.push_back( nc );
+      childChanged = n[i]!=nc || childChanged;
+    }
+    Node ret;
+    if( childChanged ){
+      ret = NodeManager::currentNM()->mkNode( n.getKind(), children );
+    }else{
+      ret = n;
+    }
+    visited[n] = ret;
+    return ret;
+  }
+}  

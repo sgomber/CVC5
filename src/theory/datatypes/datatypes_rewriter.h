@@ -104,18 +104,22 @@ public:
       // Have to be careful not to rewrite well-typed expressions
       // where the selector doesn't match the constructor,
       // e.g. "pred(zero)".
+      TypeNode tn = in.getType();
+      TypeNode argType = in[0].getType();
       TNode selector = in.getOperator();
       TNode constructor = in[0].getOperator();
-      Expr selectorExpr = selector.toExpr();
-      Expr constructorExpr = constructor.toExpr();
-      size_t selectorIndex = Datatype::indexOf(selectorExpr);
-      size_t constructorIndex = Datatype::indexOf(constructorExpr);
-      const Datatype& dt = Datatype::datatypeOf(constructorExpr);
+      size_t constructorIndex = Datatype::indexOf(constructor.toExpr());
+      const Datatype& dt = ((DatatypeType)argType.toType()).getDatatype();
       const DatatypeConstructor& c = dt[constructorIndex];
-      if(c.getNumArgs() > selectorIndex && c[selectorIndex].getSelector() == selectorExpr) {
+      Trace("datatypes-rewrite-debug") << "Rewriting collapsable selector : " << in;
+      Trace("datatypes-rewrite-debug") << ", cindex = " << constructorIndex << ", selector is " << selector << std::endl;
+      int selectorIndex = c.getSelectorIndexInternal( argType.toType(), selector.toExpr() );
+      Trace("datatypes-rewrite-debug") << "Internal selector index is " << selectorIndex << std::endl;
+      if( selectorIndex>=0 ){
+        Assert( selectorIndex<(int)c.getNumArgs() );
         if( dt.isCodatatype() && in[0][selectorIndex].isConst() ){
           //must replace all debruijn indices with self  
-          Node sub = replaceDebruijn( in[0][selectorIndex], in[0], in[0].getType(), 0 );
+          Node sub = replaceDebruijn( in[0][selectorIndex], in[0], argType, 0 );
           Trace("datatypes-rewrite") << "DatatypesRewriter::postRewrite: "
                                      << "Rewrite trivial codatatype selector " << in << " to " << sub << std::endl;
           if( sub!=in ){
@@ -127,8 +131,6 @@ public:
           return RewriteResponse(REWRITE_DONE, in[0][selectorIndex]);
         }
       }else{
-        //typically should not be called
-        TypeNode tn = in.getType();
         Node gt;
         bool useTe = true;
         //if( !tn.isSort() ){
@@ -262,22 +264,25 @@ public:
     Assert( index>=0 && index<(int)dt.getNumConstructors() );
     std::vector< Node > children;
     children.push_back( Node::fromExpr( dt[index].getConstructor() ) );
-    for( int i=0; i<(int)dt[index].getNumArgs(); i++ ){
-      Node nc = NodeManager::currentNM()->mkNode( kind::APPLY_SELECTOR_TOTAL, Node::fromExpr( dt[index][i].getSelector() ), n );
+    Type t = n.getType().toType();
+    for( unsigned i=0; i<dt[index].getNumArgs(); i++ ){
+      Node nc = NodeManager::currentNM()->mkNode( kind::APPLY_SELECTOR_TOTAL, Node::fromExpr( dt[index].getSelectorInternal( t, i ) ), n );
       children.push_back( nc );
     }
     Node n_ic = NodeManager::currentNM()->mkNode( kind::APPLY_CONSTRUCTOR, children );
-    //add type ascription for ambiguous constructor types
-    if(!n_ic.getType().isComparableTo(n.getType())) {
-      Assert( dt.isParametric() );
-      Debug("datatypes-parametric") << "DtInstantiate: ambiguous type for " << n_ic << ", ascribe to " << n.getType() << std::endl;
-      Debug("datatypes-parametric") << "Constructor is " << dt[index] << std::endl;
-      Type tspec = dt[index].getSpecializedConstructorType(n.getType().toType());
-      Debug("datatypes-parametric") << "Type specification is " << tspec << std::endl;
-      children[0] = NodeManager::currentNM()->mkNode(kind::APPLY_TYPE_ASCRIPTION,
-                                                     NodeManager::currentNM()->mkConst(AscriptionType(tspec)), children[0] );
-      n_ic = NodeManager::currentNM()->mkNode( kind::APPLY_CONSTRUCTOR, children );
-      Assert( n_ic.getType()==n.getType() );
+    if( dt.isParametric() ){
+      TypeNode tn = TypeNode::fromType( t );
+      //add type ascription for ambiguous constructor types
+      if(!n_ic.getType().isComparableTo(tn)) {
+        Debug("datatypes-parametric") << "DtInstantiate: ambiguous type for " << n_ic << ", ascribe to " << n.getType() << std::endl;
+        Debug("datatypes-parametric") << "Constructor is " << dt[index] << std::endl;
+        Type tspec = dt[index].getSpecializedConstructorType(n.getType().toType());
+        Debug("datatypes-parametric") << "Type specification is " << tspec << std::endl;
+        children[0] = NodeManager::currentNM()->mkNode(kind::APPLY_TYPE_ASCRIPTION,
+                                                       NodeManager::currentNM()->mkConst(AscriptionType(tspec)), children[0] );
+        n_ic = NodeManager::currentNM()->mkNode( kind::APPLY_CONSTRUCTOR, children );
+        Assert( n_ic.getType()==tn );
+      }
     }
     Assert( isInstCons( n, n_ic, dt )==index );
     //n_ic = Rewriter::rewrite( n_ic );
@@ -288,9 +293,10 @@ public:
     if( n.getKind()==kind::APPLY_CONSTRUCTOR ){
       int index = Datatype::indexOf( n.getOperator().toExpr() );
       const DatatypeConstructor& c = dt[index];
+      Type nt = n.getType().toType();
       for( unsigned i=0; i<n.getNumChildren(); i++ ){
         if( n[i].getKind()!=kind::APPLY_SELECTOR_TOTAL ||
-            n[i].getOperator()!=Node::fromExpr( c[i].getSelector() ) ||
+            n[i].getOperator()!=Node::fromExpr( c.getSelectorInternal( nt, i ) ) ||
             n[i][0]!=t ){
           return -1;
         }

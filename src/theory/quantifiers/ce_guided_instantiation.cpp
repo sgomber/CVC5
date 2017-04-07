@@ -1696,7 +1696,7 @@ void CegInstantiation::getMeasureLemmas( Node n, Node v, std::vector< Node >& le
       for( unsigned j=0; j<dt[index].getNumArgs(); j++ ){
         TypeNode tnc = v[j].getType();
         if( tnc.isDatatype() ){
-          Node seln = NodeManager::currentNM()->mkNode( APPLY_SELECTOR_TOTAL, Node::fromExpr( dt[index][j].getSelector() ), n );
+          Node seln = NodeManager::currentNM()->mkNode( APPLY_SELECTOR_TOTAL, Node::fromExpr( dt[index].getSelectorInternal( tn.toType(), j ) ), n );
           sumc.push_back( getSizeTerm( seln, tnc, lems ) );
         }
       }
@@ -1718,7 +1718,7 @@ void CegInstantiation::getMeasureLemmas( Node n, Node v, std::vector< Node >& le
     }
     //get lemmas for children
     for( unsigned i=0; i<v.getNumChildren(); i++ ){
-      Node nn = NodeManager::currentNM()->mkNode( APPLY_SELECTOR_TOTAL, Node::fromExpr( dt[index][i].getSelector() ), n );
+      Node nn = NodeManager::currentNM()->mkNode( APPLY_SELECTOR_TOTAL, Node::fromExpr( dt[index].getSelectorInternal( tn.toType(), i ) ), n );
       getMeasureLemmas( nn, v[i], lems );
     }
 
