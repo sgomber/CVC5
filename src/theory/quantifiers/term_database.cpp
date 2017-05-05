@@ -2915,6 +2915,49 @@ void TermDbSygus::registerSygusType( TypeNode tn ){
             registerSygusType( getArgType( dt[i], j ) );
           }
         }
+        
+        //compute the redundant operators
+        for( unsigned i=0; i<dt.getNumConstructors(); i++ ){
+          bool nred = true;
+          if( options::sygusNormalForm() ){
+            Trace("sygus-split-debug") << "Is " << dt[i].getName() << " a redundant operator?" << std::endl;
+            Kind ck = getArgKind( tn, i );
+            if( ck!=UNDEFINED_KIND ){
+              Kind dk;
+              if( isAntisymmetric( ck, dk ) ){
+                int j = getKindArg( tn, dk );
+                if( j!=-1 ){
+                  Trace("sygus-split-debug") << "Possible redundant operator : " << ck << " with " << dk << std::endl;
+                  //check for type mismatches
+                  bool success = true;
+                  for( unsigned k=0; k<2; k++ ){
+                    unsigned ko = k==0 ? 1 : 0;
+                    TypeNode tni = TypeNode::fromType( ((SelectorType)dt[i][k].getType()).getRangeType() );
+                    TypeNode tnj = TypeNode::fromType( ((SelectorType)dt[j][ko].getType()).getRangeType() );
+                    if( tni!=tnj ){
+                      Trace("sygus-split-debug") << "Argument types " << tni << " and " << tnj << " are not equal." << std::endl;
+                      success = false;
+                      break;
+                    }
+                  }
+                  if( success ){
+                    Trace("sygus-nf") << "* Sygus norm " << dt.getName() << " : do not consider any " << ck << " terms." << std::endl;
+                    nred = false;
+                  }
+                }
+              }
+            }
+            if( nred ){
+              Trace("sygus-split-debug") << "Check " << dt[i].getName() << " based on generic rewriting" << std::endl;
+              std::map< TypeNode, int > var_count;
+              std::map< int, Node > pre;
+              Node g = mkGeneric( dt, i, var_count, pre );
+              nred = !computeGenericRedundant( tn, g );
+              Trace("sygus-split-debug") << "...done check " << dt[i].getName() << " based on generic rewriting" << std::endl;
+            }
+          }
+          d_sygus_nred[tn].push_back( nred );
+        }
       }
     }
   }
@@ -3404,6 +3447,36 @@ Node TermDbSygus::unfold( Node en, std::map< Node, Node >& vtm, std::vector< Nod
     Assert( en.isConst() );
   }
   return en;
+}
+  
+bool TermDbSygus::computeGenericRedundant( TypeNode tn, Node g ) {
+  //everything added to this cache should be mutually exclusive cases
+  std::map< Node, bool >::iterator it = d_gen_redundant[tn].find( g );
+  if( it==d_gen_redundant[tn].end() ){
+    Trace("sygus-gnf") << "Register generic for " << tn << " : " << g << std::endl;
+    Node gr = getNormalized( tn, g, false );
+    Trace("sygus-gnf-debug") << "Generic " << g << " rewrites to " << gr << std::endl;
+    std::map< Node, Node >::iterator itg = d_gen_terms[tn].find( gr );
+    bool red = true;
+    if( itg==d_gen_terms[tn].end() ){
+      red = false;
+      d_gen_terms[tn][gr] = g;
+      Trace("sygus-gnf-debug") << "...not redundant." << std::endl;
+      Trace("sygus-nf-reg") << "*** Sygus (generic) normal form : normal form of " << g << " is " << gr << std::endl;
+    }else{
+      Trace("sygus-gnf-debug") << "...redundant." << std::endl;
+      Trace("sygus-nf") << "* Sygus normal form : simplify since " << g << " and " << itg->second << " both rewrite to " << gr << std::endl;
+    }
+    d_gen_redundant[tn][g] = red;
+    return red;
+  }else{
+    return it->second;
+  }
+}
+
+bool TermDbSygus::isGenericRedundant( TypeNode tn, unsigned i ) {
+  Assert( i<d_sygus_nred[tn].size() );
+  return !d_sygus_nred[tn][i];
 }
 
 }/* CVC4::theory::quantifiers namespace */

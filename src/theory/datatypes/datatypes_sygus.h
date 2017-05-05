@@ -37,7 +37,15 @@ namespace quantifiers {
 
 namespace datatypes {
 
-class SygusSplit
+class SygusSplitAbs {
+public:
+  SygusSplitAbs(){}
+  virtual ~SygusSplitAbs(){}
+  virtual void getSygusSplits( Node n, const Datatype& dt, std::vector< Node >& splits, std::vector< Node >& lemmas ) = 0;
+};
+
+
+class SygusSplit : public SygusSplitAbs
 {
 private:
   quantifiers::TermDbSygus * d_tds;
@@ -69,15 +77,25 @@ private:
   bool isGenericRedundant( TypeNode tn, Node g, bool active = true );
 public:
   SygusSplit( quantifiers::TermDbSygus * tds ) : d_tds( tds ){}
-  ~SygusSplit(){}
+  virtual ~SygusSplit(){}
   /** get sygus splits */
   void getSygusSplits( Node n, const Datatype& dt, std::vector< Node >& splits, std::vector< Node >& lemmas );
 };
 
 
+class SygusSymBreakAbs
+{
+public:
+  SygusSymBreakAbs(){}
+  virtual ~SygusSymBreakAbs(){}
+  /** add tester */
+  virtual void addTester( int tindex, Node n, Node exp ) = 0;
+  /** lemmas we have generated */
+  std::vector< Node > d_lemmas;
+};
 
 
-class SygusSymBreak
+class SygusSymBreak : public SygusSymBreakAbs
 {
 private:
   quantifiers::TermDbSygus * d_tds;
@@ -135,8 +153,6 @@ public:
   ~SygusSymBreak();
   /** add tester */
   void addTester( int tindex, Node n, Node exp );
-  /** lemmas we have generated */
-  std::vector< Node > d_lemmas;
 };
 
 class SelectorConversion {

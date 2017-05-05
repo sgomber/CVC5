@@ -26,6 +26,7 @@
 #include "context/cdchunk_list.h"
 #include "expr/datatype.h"
 #include "theory/datatypes/datatypes_sygus.h"
+#include "theory/datatypes/datatypes_sygus_new.h"
 #include "theory/theory.h"
 #include "theory/uf/equality_engine.h"
 #include "util/hash.h"
@@ -189,8 +190,8 @@ private:
   /** expand definition skolem functions */
   std::map< TypeNode, std::map< Node, Node > > d_exp_def_skolem;
   /** sygus utilities */
-  SygusSplit * d_sygus_split;
-  SygusSymBreak * d_sygus_sym_break;
+  SygusSplitAbs * d_sygus_split;
+  SygusSymBreakAbs * d_sygus_sym_break;
   SelectorConversion * d_sel_conv;
 private:
   /** singleton lemmas (for degenerate co-datatype case) */

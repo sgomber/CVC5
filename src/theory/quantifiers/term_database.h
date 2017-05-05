@@ -679,6 +679,18 @@ public:
     std::vector< Node > exp;
     return unfold( en, vtm, exp, false );
   }
+  
+//for calculating redundant operators
+private:
+  //whether each constructor is redundant
+  std::map< TypeNode, std::vector< bool > > d_sygus_nred;
+  // type to (rewritten) to original
+  std::map< TypeNode, std::map< Node, Node > > d_gen_terms;
+  std::map< TypeNode, std::map< Node, bool > > d_gen_redundant;
+  //compute generic redundant
+  bool computeGenericRedundant( TypeNode tn, Node g );
+public:
+  bool isGenericRedundant( TypeNode tn, unsigned i );
 };
 
 }/* CVC4::theory::quantifiers namespace */

@@ -320,6 +320,8 @@ libcvc4_la_SOURCES = \
 	theory/datatypes/datatypes_rewriter.h \
 	theory/datatypes/datatypes_sygus.cpp \
 	theory/datatypes/datatypes_sygus.h \
+	theory/datatypes/datatypes_sygus_new.cpp \
+	theory/datatypes/datatypes_sygus_new.h \
 	theory/datatypes/theory_datatypes.cpp \
 	theory/datatypes/theory_datatypes.h \
 	theory/datatypes/theory_datatypes_type_rules.h \

@@ -109,7 +109,7 @@ public:
       TNode selector = in.getOperator();
       TNode constructor = in[0].getOperator();
       size_t constructorIndex = Datatype::indexOf(constructor.toExpr());
-      const Datatype& dt = ((DatatypeType)argType.toType()).getDatatype();
+      const Datatype& dt = Datatype::datatypeOf(selector.toExpr());
       const DatatypeConstructor& c = dt[constructorIndex];
       Trace("datatypes-rewrite-debug") << "Rewriting collapsable selector : " << in;
       Trace("datatypes-rewrite-debug") << ", cindex = " << constructorIndex << ", selector is " << selector << std::endl;

@@ -543,9 +543,15 @@ void TheoryDatatypes::finishInit() {
     Assert( tds!=NULL );
     if( options::sygusSplit() ){
       d_sygus_split = new SygusSplit( tds );
+    }else{
+      //conservative version
+      d_sygus_split = new SygusSplitNew( tds );
     }
     if( options::sygusSymBreak() ){
       d_sygus_sym_break = new SygusSymBreak( tds, getSatContext() );
+    }else{
+      //conservative version
+      d_sygus_sym_break = new SygusSymBreakNew( tds, getSatContext() );
     }
     d_sel_conv = new SelectorConversion( getSatContext() );
   }
