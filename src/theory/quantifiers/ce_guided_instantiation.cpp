@@ -286,12 +286,12 @@ Node CegConjecture::getFairnessLiteral( int i ) {
       Trace("cegqi-engine") << "******* CEGQI : allocate size literal " << i << std::endl;
       Node c = NodeManager::currentNM()->mkConst( Rational( i ) );
       Node lit = NodeManager::currentNM()->mkNode( DT_SYGUS_BOUND, c );
+      d_lits[i] = lit;
 
       Node lem = NodeManager::currentNM()->mkNode( kind::OR, lit, lit.negate() );
       Trace("cegqi-lemma") << "Cegqi::Lemma : Fairness split : " << lem << std::endl;
       d_qe->getOutputChannel().lemma( lem );
       d_qe->getOutputChannel().requirePhase( lit, true );
-
       return lit;
     }else{
       return it->second;

@@ -91,11 +91,10 @@ public:
   SygusSymBreakAbs(){}
   virtual ~SygusSymBreakAbs(){}
   /** add tester */
-  virtual void addTester( int tindex, Node n, Node exp ) = 0;
+  virtual void addTester( int tindex, TNode n, Node exp, std::vector< Node >& lemmas ) = 0;
   virtual void preRegisterTerm( TNode n ) = 0;
   virtual void notifySearchSize( unsigned s ) = 0;
-  /** lemmas we have generated */
-  std::vector< Node > d_lemmas;
+  virtual void check( std::vector< Node >& lemmas ) = 0; 
 };
 
 
@@ -153,13 +152,16 @@ private:
   void collectSubterms( Node n, Node tst_curr, std::map< Node, std::vector< Node > >& testers_u, std::map< Node, std::vector< Node > >& nodes );
   bool isSeparation( Node rep_prog, Node tst_curr, std::map< Node, std::vector< Node > >& testers_u, std::vector< Node >& rlv_testers );
   Node getSeparationTemplate( TypeNode tn, Node rep_prog, Node anc_var, int& status );
+  /** lemmas we have generated */
+  std::vector< Node > d_lemmas;
 public:
   SygusSymBreak( TheoryDatatypes * td, quantifiers::TermDbSygus * tds, context::Context* c );
   ~SygusSymBreak();
   /** add tester */
-  void addTester( int tindex, Node n, Node exp );
+  void addTester( int tindex, TNode n, Node exp, std::vector< Node >& lemmas );
   void preRegisterTerm( TNode n ){}
   void notifySearchSize( unsigned s ){}
+  void check( std::vector< Node >& lemmas ){}
 };
 
 }

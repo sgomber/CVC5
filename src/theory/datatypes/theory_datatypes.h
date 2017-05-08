@@ -208,6 +208,7 @@ private:
   void doPendingMerges();
   /** do send lemma */
   bool doSendLemma( Node lem );
+  bool doSendLemmas( std::vector< Node >& lem );
   /** get or make eqc info */
   EqcInfo* getOrMakeEqcInfo( TNode n, bool doMake = false );
 

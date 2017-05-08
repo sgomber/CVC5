@@ -1975,6 +1975,11 @@ bool TermDb::isComm( Kind k ) {
          k==BITVECTOR_PLUS || k==BITVECTOR_MULT || k==BITVECTOR_AND || k==BITVECTOR_OR || k==BITVECTOR_XOR || k==BITVECTOR_XNOR;
 }
 
+bool TermDb::isNonAdditive( Kind k ) {
+  return k==EQUAL || k==AND || k==OR || k==XOR || 
+         k==BITVECTOR_AND || k==BITVECTOR_OR || k==BITVECTOR_XOR || k==BITVECTOR_XNOR;
+}
+
 bool TermDb::isBoolConnective( Kind k ) {
   return k==OR || k==AND || k==EQUAL || k==ITE || k==FORALL || k==NOT || k==SEP_STAR;
 }
@@ -3078,6 +3083,30 @@ TypeNode TermDbSygus::getArgType( const DatatypeConstructor& c, int i ) {
   return TypeNode::fromType( ((SelectorType)c[i].getType()).getRangeType() );
 }
 
+/** get first occurrence */
+int TermDbSygus::getFirstArgOccurrence( const DatatypeConstructor& c, TypeNode tn ) {
+  for( unsigned i=0; i<c.getNumArgs(); i++ ){
+    TypeNode tni = getArgType( c, i );
+    if( tni==tn ){
+      return i;
+    }
+  }
+  return -1;
+}
+
+bool TermDbSygus::isTypeMatch( const DatatypeConstructor& c1, const DatatypeConstructor& c2 ) {
+  if( c1.getNumArgs()!=c2.getNumArgs() ){
+    return false;
+  }else{
+    for( unsigned i=0; i<c1.getNumArgs(); i++ ){
+      if( getArgType( c1, i )!=getArgType( c2, i ) ){
+        return false;
+      }
+    }
+    return true;
+  }
+}
+
 Node TermDbSygus::minimizeBuiltinTerm( Node n ) {
   if( ( n.getKind()==EQUAL || n.getKind()==LEQ || n.getKind()==LT || n.getKind()==GEQ || n.getKind()==GT ) &&
       ( n[0].getType().isInteger() || n[0].getType().isReal() ) ){
@@ -3288,6 +3317,15 @@ Node TermDbSygus::getAnchor( Node n ) {
     return n;
   }
 }
+
+unsigned TermDbSygus::getAnchorDepth( Node n ) {
+  if( n.getKind()==APPLY_SELECTOR_TOTAL ){
+    return 1+getAnchorDepth( n[0] );
+  }else{
+    return 0;
+  }
+}
+
 
 void TermDbSygus::registerEvalTerm( Node n ) {
   if( options::sygusDirectEval() ){

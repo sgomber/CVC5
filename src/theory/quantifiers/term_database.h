@@ -497,6 +497,8 @@ public:
   static bool isAssoc( Kind k );
   /** is comm */
   static bool isComm( Kind k );
+  /** ( x k ... ) k x = ( x k ... ) */
+  static bool isNonAdditive( Kind k );
   /** is bool connective */
   static bool isBoolConnective( Kind k );
   /** is bool connective term */
@@ -627,6 +629,10 @@ public:
   void registerSygusType( TypeNode tn );
   /** get arg type */
   TypeNode getArgType( const DatatypeConstructor& c, int i );
+  /** get first occurrence */
+  int getFirstArgOccurrence( const DatatypeConstructor& c, TypeNode tn );
+  /** is type match */
+  bool isTypeMatch( const DatatypeConstructor& c1, const DatatypeConstructor& c2 );
   /** isAntisymmetric */
   bool isAntisymmetric( Kind k, Kind& dk );
   /** is idempotent arg */
@@ -664,6 +670,7 @@ public:
   
   /** get anchor */
   static Node getAnchor( Node n );
+  static unsigned getAnchorDepth( Node n );
 //for eager instantiation
 private:
   std::map< Node, std::map< Node, bool > > d_subterms;

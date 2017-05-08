@@ -813,7 +813,8 @@ SygusSymBreak::~SygusSymBreak() {
   }
 }
 
-void SygusSymBreak::addTester( int tindex, Node n, Node exp ) {
+void SygusSymBreak::addTester( int tindex, TNode n, Node exp, std::vector< Node >& lemmas ) {
+  Assert( d_lemmas.empty() );
   if( options::sygusNormalFormGlobal() ){
     Node a = getAnchor( n );
     Trace("sygus-sym-break-debug") << "Add tester " << tindex << " " << n << " for " << a << std::endl;
@@ -837,6 +838,8 @@ void SygusSymBreak::addTester( int tindex, Node n, Node exp ) {
     if( ps ){
       ps->addTester( tindex, n, exp );
     }
+    lemmas.insert( lemmas.end(), d_lemmas.begin(), d_lemmas.end() );
+    d_lemmas.clear();
   }
 }
 

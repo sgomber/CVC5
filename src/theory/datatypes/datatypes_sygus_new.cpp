@@ -67,7 +67,8 @@ void SygusSplitNew::getSygusSplits( Node n, const Datatype& dt, std::vector< Nod
 
 
 SygusSymBreakNew::SygusSymBreakNew( TheoryDatatypes * td, quantifiers::TermDbSygus * tds, context::Context* c ) : 
-d_td( td ), d_tds( tds ), d_context( c ) {
+d_td( td ), d_tds( tds ), d_context( c ), 
+d_testers( c ), d_testers_exp( c ), d_curr_search_size(0) {
 
 }
 
@@ -76,31 +77,499 @@ SygusSymBreakNew::~SygusSymBreakNew() {
 }
 
 /** add tester */
-void SygusSymBreakNew::addTester( int tindex, Node n, Node exp ) {
+void SygusSymBreakNew::addTester( int tindex, TNode n, Node exp, std::vector< Node >& lemmas ) {
   Node e = quantifiers::TermDbSygus::getAnchor( n );
   if( e.isVar() ){
-    registerTerm( e );
-    if( d_register[e] ){
-      Trace("sygus-sb-debug") << "Sygus : process tester : " << e << std::endl;
-    
+    registerSizeTerm( e );
+    //must be a sygus datatype
+    if( d_register_st[e] ){
+      Trace("sygus-sb-debug") << "Sygus : process tester : " << exp << std::endl;
+      //d_sel_to_anchor[n] = e;
+      //d_testers[n] = tindex;
+      //d_testers_exp[n] = exp;
+      
+      //collect all top-level terms 
+      std::map< TypeNode, Node > top_level;
+      std::map< Node, unsigned > tdepth;
+      processSelectorChain( n, top_level, tdepth );
+      
+      // process context-dependent symmetry breaking
+      for( std::map< Node, unsigned >::iterator it = tdepth.begin(); it != tdepth.end(); ++it ){
+        Node nn = it->first;
+        unsigned depth = it->second;
+        bool tl = d_is_top_level.find( nn )!=d_is_top_level.end();
+        Trace("sygus-sb-debug") << "  term : " << nn << " at depth " << depth << ", tl=" << tl << std::endl;
+        if( tl ){
+           
+        }
+      }
+      
+      // process simple symmetry breaking
+      if( options::sygusSymBreak() ){
+        if( d_simple_proc.find( exp )==d_simple_proc.end() ){
+          d_simple_proc[exp] = true;
+          TypeNode tn = n.getType();
+          Node simple_sb_pred = getSimpleSymBreakPred( tn, tindex );
+          if( !simple_sb_pred.isNull() ){
+            TNode x = getSimpleSymBreakPredVar( tn );
+            simple_sb_pred = simple_sb_pred.substitute( x, n );
+            lemmas.push_back( simple_sb_pred ); 
+          }
+        }
+      }
     }
   }
 }
 
-void SygusSymBreakNew::preRegisterTerm( TNode n ) {
-  if( n.isVar() ){
-    registerTerm( n );
+Node SygusSymBreakNew::getSimpleSymBreakPred( TypeNode tn, int tindex ) {
+  std::map< int, Node >::iterator it = d_simple_sb_pred[tn].find( tindex );
+  if( it==d_simple_sb_pred[tn].end() ){
+    Node n = getSimpleSymBreakPredVar( tn );
+    const Datatype& dt = ((DatatypeType)(tn).toType()).getDatatype();
+    Assert( tindex>=0 && tindex<(int)dt.getNumConstructors() );
+    //get children
+    std::vector< Node > children;
+    for( unsigned j=0; j<dt[tindex].getNumArgs(); j++ ){
+      Node sel = NodeManager::currentNM()->mkNode( APPLY_SELECTOR_TOTAL, Node::fromExpr( dt[tindex].getSelectorInternal( tn.toType(), j ) ), n );
+      Assert( sel.getType().isDatatype() );
+      Assert( ((DatatypeType)sel.getType().toType()).getDatatype().isSygus() );
+      children.push_back( sel );
+    }
+    
+    
+    //conjunction
+    std::vector< Node > sbp_conj;
+    Kind nk = d_tds->getArgKind( tn, tindex );
+    if( nk!=UNDEFINED_KIND ){
+      // commutative operators 
+      if( quantifiers::TermDb::isComm( nk ) ){
+        if( children.size()==2 ){
+          if( children[0].getType()==children[1].getType() ){
+            std::vector< Node > comm_disj;
+            // (1) size of left is greater than size of right
+            Node sz_less = NodeManager::currentNM()->mkNode( GT, NodeManager::currentNM()->mkNode( DT_SIZE, children[0] ), 
+                                                                 NodeManager::currentNM()->mkNode( DT_SIZE, children[1] ) );
+            comm_disj.push_back( sz_less );
+            // (2) ...or sizes are equal and first child is less by term order
+            std::vector< Node > sz_eq_cases; 
+            Node sz_eq = NodeManager::currentNM()->mkNode( EQUAL, NodeManager::currentNM()->mkNode( DT_SIZE, children[0] ), 
+                                                                  NodeManager::currentNM()->mkNode( DT_SIZE, children[1] ) );
+            sz_eq_cases.push_back( sz_eq );
+            //TODO
+            
+            Node sz_eqc = sz_eq_cases.size()==1 ? sz_eq_cases[0] : NodeManager::currentNM()->mkNode( kind::AND, sz_eq_cases );
+            comm_disj.push_back( sz_eqc );
+            
+            Node comm_sb = NodeManager::currentNM()->mkNode( kind::OR, comm_disj );
+            sbp_conj.push_back( comm_sb );
+          }
+        }
+      }
+      // non-additive operators 
+      if( quantifiers::TermDb::isNonAdditive( nk ) ){
+        if( children.size()==2 ){
+          if( children[0].getType()==children[1].getType() && children[0].getType()==tn ){
+            // must have cardinality more than 1
+            if( !children[0].getType().getCardinality().isOne() ){
+              sbp_conj.push_back( children[0].eqNode( children[1] ).negate() );
+            }
+          }
+        }
+      }
+      
+      Trace("sygus-sb-simple-debug") << "Process arguments for " << tn << " : " << nk << " : " << std::endl;
+      // singular arguments (e.g. 0 for mult) 
+      // redundant arguments (e.g. 0 for plus, 1 for mult)
+      // right-associativity
+      // simple rewrites
+      for( unsigned j=0; j<dt[tindex].getNumArgs(); j++ ){
+        Node nc = children[j];
+        TypeNode tnc = nc.getType();
+        d_tds->registerSygusType( tnc );
+        const Datatype& cdt = ((DatatypeType)(tnc).toType()).getDatatype();
+        for( unsigned k=0; k<cdt.getNumConstructors(); k++ ){
+          // if not already generic redundant
+          if( !d_tds->isGenericRedundant( tnc, k ) ){
+            Kind nck = d_tds->getArgKind( tnc, k );
+            bool red = false;
+            //check if the argument is redundant
+            if( nck!=UNDEFINED_KIND ){
+              Trace("sygus-sb-simple-debug") << "  argument " << j << " " << k << " is : " << nck << std::endl;
+              red = !considerArgKind( cdt, dt, tnc, tn, nck, nk, j );
+            }else{
+              Node cc = d_tds->getArgConst( tnc, k  );
+              if( !cc.isNull() ){
+                Trace("sygus-sb-simple-debug") << "  argument " << j << " " << k << " is constant : " << cc << std::endl;
+                red = !considerConst( cdt, dt, tnc, tn, cc, nk, j );
+              }else{
+                //defined function?
+              }
+            }
+            if( red ){
+              Trace("sygus-sb-simple-debug") << "  ...redundant." << std::endl;
+              sbp_conj.push_back( DatatypesRewriter::mkTester( nc, k, cdt ).negate() );
+            }
+          }
+        }
+      }
+    }else{
+      // defined function?
+      
+    }
+    
+    Node sb_pred;
+    if( !sbp_conj.empty() ){
+      sb_pred = sbp_conj.size()==1 ? sbp_conj[0] : NodeManager::currentNM()->mkNode( kind::AND, sbp_conj );
+      sb_pred = NodeManager::currentNM()->mkNode( kind::OR, DatatypesRewriter::mkTester( n, tindex, dt ).negate(), sb_pred );
+      Trace("sygus-sb-simple") << "Simple symmetry breaking predicate for " << tn << " index " << tindex << " (" << nk << ") : " << std::endl;
+      Trace("sygus-sb-simple") << "   " << sb_pred << std::endl;
+    }
+    d_simple_sb_pred[tn][tindex] = sb_pred;
+    return sb_pred;
+  }else{
+    return it->second;
   }
 }
 
-void SygusSymBreakNew::registerTerm( Node e ) {
-  if( d_register.find( e )==d_register.end() ){
-    d_register[e] = false;
+class ReqTrie {
+public:
+  ReqTrie() : d_req_kind( UNDEFINED_KIND ){}
+  std::map< unsigned, ReqTrie > d_children;
+  Kind d_req_kind;
+  TypeNode d_req_type;
+  Node d_req_const;
+  void print( const char * c, int indent = 0 ){
+    if( d_req_kind!=UNDEFINED_KIND ){
+      Trace(c) << d_req_kind << " ";
+    }else if( !d_req_type.isNull() ){
+      Trace(c) << d_req_type;
+    }else if( !d_req_const.isNull() ){
+      Trace(c) << d_req_const;
+    }else{
+      Trace(c) << "_";
+    }
+    Trace(c) << std::endl;
+    for( std::map< unsigned, ReqTrie >::iterator it = d_children.begin(); it != d_children.end(); ++it ){
+      for( int i=0; i<=indent; i++ ) { Trace(c) << "  "; }
+      Trace(c) << it->first << " : ";
+      it->second.print( c, indent+1 );
+    }
+  }
+  bool satisfiedBy( quantifiers::TermDbSygus * tdb, TypeNode tn ){
+    if( d_req_kind!=UNDEFINED_KIND ){
+      int c = tdb->getKindArg( tn, d_req_kind );
+      if( c!=-1 ){
+        const Datatype& dt = ((DatatypeType)(tn).toType()).getDatatype();
+        for( std::map< unsigned, ReqTrie >::iterator it = d_children.begin(); it != d_children.end(); ++it ){
+          if( it->first<dt[c].getNumArgs() ){
+            TypeNode tnc = tdb->getArgType( dt[c], it->first );
+            if( !it->second.satisfiedBy( tdb, tnc ) ){
+              return false;
+            }
+          }else{
+            return false;
+          }
+        }
+        return true;
+      }else{
+        return false;
+      }
+    }else if( !d_req_const.isNull() ){
+      return tdb->hasConst( tn, d_req_const );
+    }else if( !d_req_type.isNull() ){
+      return tn==d_req_type;
+    }else{
+      return true;
+    }
+  }
+};
+
+
+//this function gets all easy redundant cases, before consulting rewriters
+bool SygusSymBreakNew::considerArgKind( const Datatype& dt, const Datatype& pdt, TypeNode tn, TypeNode tnp, Kind k, Kind pk, int arg ) {
+  Assert( d_tds->hasKind( tn, k ) );
+  Assert( d_tds->hasKind( tnp, pk ) );
+  Trace("sygus-split") << "Consider sygus split kind " << k << ", pk = " << pk << ", arg = " << arg << "?" << std::endl;
+  int c = d_tds->getKindArg( tn, k );
+  int pc = d_tds->getKindArg( tnp, pk );
+  if( k==pk ){
+    //check for associativity
+    if( quantifiers::TermDb::isAssoc( k ) ){
+      //if the operator is associative, then a repeated occurrence should only occur in the leftmost argument position
+      int firstArg = d_tds->getFirstArgOccurrence( pdt[pc], tn );
+      Assert( firstArg!=-1 );
+      Trace("sygus-split-debug") << "Associative, with first arg = " << firstArg << std::endl;
+      return arg==firstArg;
+    }
+  }
+  //describes the shape of an alternate term to construct
+  //  we check whether this term is in the sygus grammar below
+  ReqTrie rt;
+  bool rt_valid = false;
+  
+  //construct rt by cases
+  if( pk==NOT || pk==BITVECTOR_NOT || pk==UMINUS || pk==BITVECTOR_NEG ){
+    rt_valid = true;
+    //negation normal form
+    if( pk==k ){
+      rt.d_req_type = d_tds->getArgType( dt[c], 0 );
+    }else{
+      Kind reqk = UNDEFINED_KIND;       //required kind for all children
+      std::map< unsigned, Kind > reqkc; //required kind for some children
+      if( pk==NOT ){
+        if( k==AND ) {
+          rt.d_req_kind = OR;reqk = NOT;
+        }else if( k==OR ){
+          rt.d_req_kind = AND;reqk = NOT;
+        //AJR : eliminate this if we eliminate xor
+        }else if( k==EQUAL ) {
+          rt.d_req_kind = XOR;
+        }else if( k==XOR ) {
+          rt.d_req_kind = EQUAL;
+        }else if( k==ITE ){
+          rt.d_req_kind = ITE;reqkc[1] = NOT;reqkc[2] = NOT;
+          rt.d_children[0].d_req_type = d_tds->getArgType( dt[c], 0 );
+        }else if( k==LEQ || k==GT ){
+          //  (not (~ x y)) ----->  (~ (+ y 1) x)
+          rt.d_req_kind = k;
+          rt.d_children[0].d_req_kind = PLUS;
+          rt.d_children[0].d_children[0].d_req_type = d_tds->getArgType( dt[c], 1 );
+          rt.d_children[0].d_children[1].d_req_const = NodeManager::currentNM()->mkConst( Rational( 1 ) );
+          rt.d_children[1].d_req_type = d_tds->getArgType( dt[c], 0 );
+          //TODO: other possibilities?
+        }else if( k==LT || k==GEQ ){
+          //  (not (~ x y)) ----->  (~ y (+ x 1))
+          rt.d_req_kind = k;
+          rt.d_children[0].d_req_type = d_tds->getArgType( dt[c], 1 );
+          rt.d_children[1].d_req_kind = PLUS;
+          rt.d_children[1].d_children[0].d_req_type = d_tds->getArgType( dt[c], 0 );
+          rt.d_children[1].d_children[1].d_req_const = NodeManager::currentNM()->mkConst( Rational( 1 ) );
+        }else{
+          rt_valid = false;
+        }
+      }else if( pk==BITVECTOR_NOT ){
+        if( k==BITVECTOR_AND ) {
+          rt.d_req_kind = BITVECTOR_OR;reqk = BITVECTOR_NOT;
+        }else if( k==BITVECTOR_OR ){
+          rt.d_req_kind = BITVECTOR_AND;reqk = BITVECTOR_NOT;
+        }else if( k==BITVECTOR_XNOR ) {
+          rt.d_req_kind = BITVECTOR_XOR;
+        }else if( k==BITVECTOR_XOR ) {
+          rt.d_req_kind = BITVECTOR_XNOR;
+        }else{
+          rt_valid = false;
+        }
+      }else if( pk==UMINUS ){
+        if( k==PLUS ){
+          rt.d_req_kind = PLUS;reqk = UMINUS;
+        }else{
+          rt_valid = false;
+        }
+      }else if( pk==BITVECTOR_NEG ){
+        if( k==PLUS ){
+          rt.d_req_kind = PLUS;reqk = BITVECTOR_NEG;
+        }else{
+          rt_valid = false;
+        }
+      }
+      if( rt_valid && ( reqk!=UNDEFINED_KIND || !reqkc.empty() ) ){
+        int pcr = d_tds->getKindArg( tnp, rt.d_req_kind );
+        if( pcr!=-1 ){
+          Assert( pcr<(int)pdt.getNumConstructors() );
+          //must have same number of arguments
+          if( pdt[pcr].getNumArgs()==dt[c].getNumArgs() ){
+            for( unsigned i=0; i<pdt[pcr].getNumArgs(); i++ ){
+              Kind rk = reqk;
+              if( reqk==UNDEFINED_KIND ){
+                std::map< unsigned, Kind >::iterator itr = reqkc.find( i );
+                if( itr!=reqkc.end() ){
+                  rk = itr->second;
+                }
+              }
+              if( rk!=UNDEFINED_KIND ){
+                rt.d_children[i].d_req_kind = rk;
+                rt.d_children[i].d_children[0].d_req_type = d_tds->getArgType( dt[c], i );
+              }
+            }
+          }else{
+            rt_valid = false;
+          }
+        }else{
+          rt_valid = false;
+        }
+      }
+    }
+  }else if( k==MINUS || k==BITVECTOR_SUB ){
+    if( pk==EQUAL || 
+        pk==MINUS || pk==BITVECTOR_SUB || 
+        pk==LEQ || pk==LT || pk==GEQ || pk==GT ){
+      int oarg = arg==0 ? 1 : 0;
+      //  (~ x (- y z))  ---->  (~ (+ x z) y)
+      //  (~ (- y z) x)  ---->  (~ y (+ x z))
+      rt.d_req_kind = pk;
+      rt.d_children[arg].d_req_type = d_tds->getArgType( dt[c], 0 );
+      rt.d_children[oarg].d_req_kind = k==MINUS ? PLUS : BITVECTOR_PLUS;
+      rt.d_children[oarg].d_children[0].d_req_type = d_tds->getArgType( pdt[pc], oarg );
+      rt.d_children[oarg].d_children[1].d_req_type = d_tds->getArgType( dt[c], 1 );
+      rt_valid = true;
+    }else if( pk==PLUS || pk==BITVECTOR_PLUS ){
+      //  (+ x (- y z))  -----> (- (+ x y) z)
+      //  (+ (- y z) x)  -----> (- (+ x y) z)
+      rt.d_req_kind = pk==PLUS ? MINUS : BITVECTOR_SUB;
+      int oarg = arg==0 ? 1 : 0;
+      rt.d_children[0].d_req_kind = pk;
+      rt.d_children[0].d_children[0].d_req_type = d_tds->getArgType( pdt[pc], oarg );
+      rt.d_children[0].d_children[1].d_req_type = d_tds->getArgType( dt[c], 0 );
+      rt.d_children[1].d_req_type = d_tds->getArgType( dt[c], 1 );
+      rt_valid = true;
+    }
+  }else if( k==ITE ){
+    if( pk!=ITE ){
+      //  (o X (ite y z w) X')  -----> (ite y (o X z X') (o X w X'))
+      rt.d_req_kind = ITE;
+      rt.d_children[0].d_req_type = d_tds->getArgType( dt[c], 0 );
+      unsigned n_args = pdt[pc].getNumArgs();
+      for( unsigned r=1; r<=2; r++ ){
+        rt.d_children[r].d_req_kind = pk;
+        for( unsigned q=0; q<n_args; q++ ){
+          if( (int)q==arg ){
+            rt.d_children[r].d_children[q].d_req_type = d_tds->getArgType( dt[c], r );
+          }else{
+            rt.d_children[r].d_children[q].d_req_type = d_tds->getArgType( pdt[pc], q );
+          }
+        }
+      }
+      rt_valid = true;
+      //TODO: this increases term size but is probably a good idea
+    }
+  }else if( k==NOT ){
+    if( pk==ITE ){
+      //  (ite (not y) z w)  -----> (ite y w z)
+      rt.d_req_kind = ITE;
+      rt.d_children[0].d_req_type = d_tds->getArgType( dt[c], 0 );
+      rt.d_children[1].d_req_type = d_tds->getArgType( pdt[pc], 2 );
+      rt.d_children[2].d_req_type = d_tds->getArgType( pdt[pc], 1 );
+    }
+  }
+  Trace("sygus-consider-split") << "Consider sygus split kind " << k << ", pk = " << pk << ", arg = " << arg << "?" << std::endl;
+  if( rt_valid ){
+    rt.print("sygus-consider-split");
+    //check if it meets the requirements
+    if( rt.satisfiedBy( d_tds, tnp ) ){
+      Trace("sygus-consider-split") << "...success!" << std::endl;
+      //do not need to consider the kind in the search since there are ways to construct equivalent terms
+      return false;
+    }else{
+      Trace("sygus-consider-split") << "...failed." << std::endl;
+    }
+    Trace("sygus-consider-split") << std::endl;
+  }
+  //must consider this kind in the search  
+  return true;
+}
+
+
+bool SygusSymBreakNew::considerConst( const Datatype& dt, const Datatype& pdt, TypeNode tn, TypeNode tnp, Node c, Kind pk, int arg ) {
+  Assert( d_tds->hasConst( tn, c ) );
+  Assert( d_tds->hasKind( tnp, pk ) );
+  int pc = d_tds->getKindArg( tnp, pk );
+  Trace("sygus-split") << "Consider sygus split const " << c << ", parent = " << pk << ", arg = " << arg << "?" << std::endl;
+  if( d_tds->isIdempotentArg( c, pk, arg ) ){
+    Trace("sygus-split-debug") << "  " << c << " is idempotent arg " << arg << " of " << pk << "..." << std::endl;
+    if( pdt[pc].getNumArgs()==2 ){
+      int oarg = arg==0 ? 1 : 0;
+      TypeNode otn = TypeNode::fromType( ((SelectorType)pdt[pc][oarg].getType()).getRangeType() );
+      if( otn==tnp ){
+        return false;
+      }
+    }
+  }else if( d_tds->isSingularArg( c, pk, arg ) ){
+    Trace("sygus-split-debug") << "  " << c << " is singular arg " << arg << " of " << pk << "..." << std::endl;
+    if( d_tds->hasConst( tnp, c ) ){
+      return false;
+    }
+  }
+  if( pdt[pc].getNumArgs()==2 ){
+    Kind ok;
+    int offset;
+    if( d_tds->hasOffsetArg( pk, arg, offset, ok ) ){
+      Trace("sygus-split-debug") << pk << " has offset arg " << ok << " " << offset << std::endl;
+      int ok_arg = d_tds->getKindArg( tnp, ok );
+      if( ok_arg!=-1 ){
+        Trace("sygus-split-debug") << "...at argument " << ok_arg << std::endl;
+        //other operator be the same type
+        if( d_tds->isTypeMatch( pdt[ok_arg], pdt[arg] ) ){
+          int status;
+          Node co = d_tds->getTypeValueOffset( c.getType(), c, offset, status );
+          Trace("sygus-split-debug") << c << " with offset " << offset << " is " << co << ", status=" << status << std::endl;
+          if( status==0 && !co.isNull() ){
+            if( d_tds->hasConst( tn, co ) ){
+              Trace("sygus-split-debug") << "arg " << arg << " " << c << " in " << pk << " can be treated as " << co << " in " << ok << "..." << std::endl;
+              return false;
+            }else{
+              Trace("sygus-split-debug") << "Type does not have constant." << std::endl;
+            }
+          }
+        }else{
+          Trace("sygus-split-debug") << "Type mismatch." << std::endl;
+        }
+      }
+    }
+  }
+  return true;
+}
+
+TNode SygusSymBreakNew::getSimpleSymBreakPredVar( TypeNode tn ) {
+  std::map< TypeNode, Node >::iterator it = d_simple_sb_pred_var.find( tn );
+  if( it==d_simple_sb_pred_var.end() ){
+    Node x = NodeManager::currentNM()->mkSkolem( "x", tn );
+    d_simple_sb_pred_var[tn] = x;
+    return x;
+  }else{
+    return it->second;
+  }
+}
+
+unsigned SygusSymBreakNew::processSelectorChain( Node n, std::map< TypeNode, Node >& top_level, std::map< Node, unsigned >& tdepth ) {
+  unsigned ret = 0;
+  if( n.getKind()==APPLY_SELECTOR_TOTAL ){
+    ret = processSelectorChain( n[0], top_level, tdepth );
+  }
+  TypeNode tn = n.getType();
+  if( top_level.find( tn )==top_level.end() ){
+    top_level[tn] = n;
+    tdepth[n] = ret;
+    registerSearchTerm( tn, ret, n, true );
+  }else{
+    registerSearchTerm( tn, ret, n, false );
+  }
+  //tdepth[n] = ret;
+  return ret+1;
+}
+
+void SygusSymBreakNew::registerSearchTerm( TypeNode tn, unsigned d, Node n, bool topLevel ) {
+  unsigned i = topLevel ? 0 : 1;
+  //register this term
+  if( std::find( d_search_terms[i][tn][d].begin(), d_search_terms[i][tn][d].end(), n )==d_search_terms[i][tn][d].end() ){
+    d_search_terms[i][tn][d].push_back( n );
+    d_is_top_level[n] = topLevel;
+  }
+}
+  
+void SygusSymBreakNew::preRegisterTerm( TNode n ) {
+  if( n.isVar() ){
+    registerSizeTerm( n );
+  }
+}
+
+void SygusSymBreakNew::registerSizeTerm( Node e ) {
+  if( d_register_st.find( e )==d_register_st.end() ){
+    d_register_st[e] = false;
     if( e.getType().isDatatype() ){
       const Datatype& dt = ((DatatypeType)(e.getType()).toType()).getDatatype();
       if( dt.isSygus() ){
         Trace("sygus-sb") << "Sygus : register term : " << e << std::endl;
-        d_register[e] = true;
+        d_register_st[e] = true;
         d_td->registerSygusMeasuredTerm( e );
       }
     }
@@ -112,6 +581,65 @@ void SygusSymBreakNew::notifySearchSize( unsigned s ) {
     d_search_size[s] = true;
     Assert( s==0 || d_search_size.find( s-1 )!=d_search_size.end() );
     Trace("sygus-sb") << "Sygus : now considering term measure : " << s << std::endl;
+    Assert( s>=d_curr_search_size );
+    d_curr_search_size  = s;
+  }
+}
+
+void SygusSymBreakNew::check( std::vector< Node >& lemmas ) {
+  Trace("sygus-sb") << "SygusSymBreakNew::check" << std::endl;
+  //construct current candidate terms
+  std::map< Node, Node > cterm;
+  std::map< Node, Node > waiting;
+  std::map< Node, std::vector< Node > > cterm_exp;
+  for( std::map< Node, bool >::iterator it = d_register_st.begin(); it != d_register_st.end(); ++it ){
+    if( it->second ){
+      cterm[ it->first ] = it->first;
+      waiting[ it->first ] = it->first;
+    }
+  }
+  bool success;
+  do {
+    success = false;
+    for( IntMap::const_iterator iti = d_testers.begin(); iti != d_testers.end(); ++iti ){
+      Node n = (*iti).first;
+      int tindex = (*iti).second;
+      std::map< Node, Node >::iterator itw = waiting.find( n );
+      if( itw!=waiting.end() ){
+        Node ct = itw->second;
+        const Datatype& dt = ((DatatypeType)n.getType().toType()).getDatatype();
+        Node ic = DatatypesRewriter::getInstCons( n, dt, tindex );
+        std::vector< Node > ns;
+        ns.push_back( n );
+        std::vector< Node > ics;
+        ics.push_back( ic );
+        cterm[ct] = cterm[ct].substitute( ns.begin(), ns.end(), ics.begin(), ics.end() );
+        //add to explanation
+        NodeMap::const_iterator itte = d_testers_exp.find( n );
+        if( itte!=d_testers_exp.end() ){
+          cterm_exp[ct].push_back( (*itte).second );
+        }else{
+          Assert( false );
+        }
+        waiting.erase( n );
+        for( unsigned j=0; j<ic.getNumChildren(); j++ ){
+          waiting[ic[j]] = ct;
+        }
+        success = true;
+      }
+    }
+  }while( success );
+  
+  for( std::map< Node, bool >::iterator it = d_register_st.begin(); it != d_register_st.end(); ++it ){
+    if( it->second ){
+      Node prog = it->first;
+      Assert( cterm.find( prog )!=cterm.end() );
+      Trace("sygus-sb") << "  val[" << prog << "] = " << cterm[prog] << std::endl;
+      //convert to builtin
+      
+      //do rewriting techniques
+      
+    } 
   }
 }
 

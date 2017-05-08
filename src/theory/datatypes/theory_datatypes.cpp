@@ -353,6 +353,13 @@ void TheoryDatatypes::check(Effort e) {
     }while( !d_conflict && !d_addedLemma && d_addedFact );
     Trace("datatypes-debug") << "Finished, conflict=" << d_conflict << ", lemmas=" << d_addedLemma << std::endl;
     if( !d_conflict ){
+      if( !d_addedLemma ){
+        if( d_sygus_sym_break ){
+          std::vector< Node > lemmas;
+          d_sygus_sym_break->check( lemmas );
+          doSendLemmas( lemmas );
+        }
+      }
       Trace("dt-model-debug") << std::endl;
       printModelDebug("dt-model-debug");
     }
@@ -407,9 +414,7 @@ void TheoryDatatypes::flushPendingFacts(){
         }
       }
       Trace("dt-lemma") << "Datatypes lemma : " << lem << std::endl;
-      if( doSendLemma( lem ) ){
-        d_addedLemma = true;
-      }
+      doSendLemma( lem );
     }else{
       assertFact( fact, exp );
       d_addedFact = true;
@@ -439,12 +444,22 @@ bool TheoryDatatypes::doSendLemma( Node lem ) {
     Trace("dt-lemma-send") << "TheoryDatatypes::doSendLemma : " << lem << std::endl;
     d_lemmas_produced_c[lem] = true;
     d_out->lemma( lem );
+    d_addedLemma = true;
     return true;
   }else{
     return false;
   }
 }
-
+bool TheoryDatatypes::doSendLemmas( std::vector< Node >& lemmas ){
+  bool ret = false;
+  for( unsigned i=0; i<lemmas.size(); i++ ){
+    bool cret = doSendLemma( lemmas[i] );
+    ret = ret || cret;
+  }
+  lemmas.clear();
+  return ret;
+}
+        
 void TheoryDatatypes::assertFact( Node fact, Node exp ){
   Assert( d_pending_merge.empty() );
   Trace("datatypes-debug") << "TheoryDatatypes::assertFact : " << fact << std::endl;
@@ -487,28 +502,11 @@ void TheoryDatatypes::assertFact( Node fact, Node exp ){
         Trace("dt-sygus") << "Assert tester to sygus : " << atom << std::endl;
         Assert( !options::dtSharedSelectors() );
         //Assert( !d_sygus_util->d_conflict );
-        d_sygus_sym_break->addTester( tindex, t_arg, atom );
+        std::vector< Node > lemmas;
+        d_sygus_sym_break->addTester( tindex, t_arg, atom, lemmas );
 
         Trace("dt-sygus") << "Done assert tester to sygus." << std::endl;
-        for( unsigned i=0; i<d_sygus_sym_break->d_lemmas.size(); i++ ){
-          Node ilem = d_sygus_sym_break->d_lemmas[i];
-          Trace("dt-sygus") << "...external form of symmetry breaking lemma : " << ilem << std::endl;
-          doSendLemma( ilem );
-        }
-        d_sygus_sym_break->d_lemmas.clear();
-        /*
-        if( d_sygus_util->d_conflict ){
-          //d_conflict = true;
-          if( !d_sygus_util->d_conflictNode.isNull() ){
-            std::vector< TNode > assumptions;
-            explain( d_sygus_util->d_conflictNode, assumptions );
-            d_conflictNode = mkAnd( assumptions );
-            Trace("dt-conflict") << "CONFLICT: sygus symmetry breaking conflict : " << d_conflictNode << std::endl;
-            d_out->conflict( d_conflictNode );
-          }
-          return;
-        }
-        */
+        doSendLemmas( lemmas );
       }
     }
   }else{
@@ -545,18 +543,8 @@ void TheoryDatatypes::finishInit() {
   if( getQuantifiersEngine() && options::ceGuidedInst() ){
     quantifiers::TermDbSygus * tds = getQuantifiersEngine()->getTermDatabaseSygus();
     Assert( tds!=NULL );
-    if( options::sygusSplit() ){
-      d_sygus_split = new SygusSplit( tds );
-    }else{
-      //conservative version
-      d_sygus_split = new SygusSplitNew( tds );
-    }
-    if( options::sygusSymBreak() ){
-      d_sygus_sym_break = new SygusSymBreak( this, tds, getSatContext() );
-    }else{
-      //conservative version
-      d_sygus_sym_break = new SygusSymBreakNew( this, tds, getSatContext() );
-    }
+    d_sygus_split = new SygusSplitNew( tds );
+    d_sygus_sym_break = new SygusSymBreakNew( this, tds, getSatContext() );
   }
 }
 
