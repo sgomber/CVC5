@@ -20,6 +20,7 @@
 #include "theory/datatypes/datatypes_rewriter.h"
 #include "theory/datatypes/datatypes_sygus.h"
 #include "theory/quantifiers/term_database.h"
+#include "theory/datatypes/theory_datatypes.h"
 
 using namespace CVC4;
 using namespace CVC4::kind;
@@ -797,7 +798,8 @@ bool SygusSplit::isGenericRedundant( TypeNode tn, Node g, bool active ) {
 
 
 
-SygusSymBreak::SygusSymBreak( quantifiers::TermDbSygus * tds, context::Context* c ) : d_tds( tds ), d_context( c ) {
+SygusSymBreak::SygusSymBreak( TheoryDatatypes * td, quantifiers::TermDbSygus * tds, context::Context* c ) : 
+d_td( td ), d_tds( tds ), d_context( c ) {
 
 }
 
@@ -818,6 +820,7 @@ void SygusSymBreak::addTester( int tindex, Node n, Node exp ) {
     std::map< Node, ProgSearch * >::iterator it = d_prog_search.find( a );
     ProgSearch * ps;
     if( it==d_prog_search.end() ){
+      d_td->registerSygusMeasuredTerm( a );
       //check if sygus type
       TypeNode tn = a.getType();
       Assert( tn.isDatatype() );

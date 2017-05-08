@@ -247,8 +247,6 @@ option ceGuidedInst --cegqi bool :default false :read-write
   counterexample-guided quantifier instantiation
 option ceGuidedInstFair --cegqi-fair=MODE CVC4::theory::quantifiers::CegqiFairMode :default CVC4::theory::quantifiers::CEGQI_FAIR_DT_SIZE :include "options/quantifiers_modes.h" :handler stringToCegqiFairMode
   if and how to apply fairness for cegqi
-option sygusDtBounds --sygus-dt-bounds bool :default false
-  sygus dt bounds  
 option cegqiSingleInvMode --cegqi-si=MODE CVC4::theory::quantifiers::CegqiSingleInvMode :default CVC4::theory::quantifiers::CEGQI_SI_MODE_NONE :include "options/quantifiers_modes.h" :handler stringToCegqiSingleInvMode :read-write
   mode for processing single invocation synthesis conjectures
 option cegqiSingleInvPartial --cegqi-si-partial bool :default false
@@ -264,9 +262,9 @@ option cegqiSingleInvReconstructConst --cegqi-si-reconstruct-const bool :default
 option cegqiSingleInvAbort --cegqi-si-abort bool :default false
   abort if synthesis conjecture is not single invocation
   
-option sygusSymBreak --sygus-sym-break bool :default true
+option sygusSymBreak --sygus-sym-break bool :default false
   sygus sym break utility
-option sygusSplit --sygus-split bool :default true
+option sygusSplit --sygus-split bool :default false
   sygus split utility  
   
 option sygusNormalForm --sygus-nf bool :default true

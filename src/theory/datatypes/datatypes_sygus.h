@@ -37,6 +37,8 @@ namespace quantifiers {
 
 namespace datatypes {
 
+class TheoryDatatypes;
+
 class SygusSplitAbs {
 public:
   SygusSplitAbs(){}
@@ -100,6 +102,7 @@ public:
 class SygusSymBreak : public SygusSymBreakAbs
 {
 private:
+  TheoryDatatypes * d_td;
   quantifiers::TermDbSygus * d_tds;
   context::Context* d_context;
   class ProgSearch {
@@ -151,7 +154,7 @@ private:
   bool isSeparation( Node rep_prog, Node tst_curr, std::map< Node, std::vector< Node > >& testers_u, std::vector< Node >& rlv_testers );
   Node getSeparationTemplate( TypeNode tn, Node rep_prog, Node anc_var, int& status );
 public:
-  SygusSymBreak( quantifiers::TermDbSygus * tds, context::Context* c );
+  SygusSymBreak( TheoryDatatypes * td, quantifiers::TermDbSygus * tds, context::Context* c );
   ~SygusSymBreak();
   /** add tester */
   void addTester( int tindex, Node n, Node exp );

@@ -46,8 +46,6 @@ private:
   std::map< int, Node > d_lits;
   /** current cardinality */
   context::CDO< int > d_curr_lit;
-  /** active measure term */
-  Node d_active_measure_term;
   /** refinement lemmas */
   std::vector< Node > d_refinement_lemmas;
   std::vector< Node > d_refinement_lemmas_base;
@@ -100,8 +98,6 @@ public:
   };
   std::map< Node, CandidateInfo > d_cinfo;
   
-  /** measure term */
-  Node d_measure_term;
   /** measure sum size */
   int d_measure_term_size;
   /** refine count */
@@ -155,11 +151,6 @@ public:
   int getCurrentTermSize() { return d_curr_lit.get(); }
   /** increment current term size */
   void incrementCurrentTermSize() { d_curr_lit.set( d_curr_lit.get() + 1 ); }
-  /** set measure term */
-  void setMeasureTerm( Node mt );
-  /** get measure term */
-  Node getMeasureTermFactor( Node v );
-  Node getMeasureTerm() { return d_measure_term; }
   /** allocate literal */
   Node getFairnessLiteral( int i );
   /** get guard */

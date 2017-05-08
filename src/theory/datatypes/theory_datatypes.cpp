@@ -552,7 +552,7 @@ void TheoryDatatypes::finishInit() {
       d_sygus_split = new SygusSplitNew( tds );
     }
     if( options::sygusSymBreak() ){
-      d_sygus_sym_break = new SygusSymBreak( tds, getSatContext() );
+      d_sygus_sym_break = new SygusSymBreak( this, tds, getSatContext() );
     }else{
       //conservative version
       d_sygus_sym_break = new SygusSymBreakNew( this, tds, getSatContext() );

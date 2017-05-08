@@ -278,50 +278,26 @@ void CegConjecture::initializeGuard(){
     Assert( !getGuard().isNull() );
   }
 }
-
-void CegConjecture::setMeasureTerm( Node mt ){ 
-  d_measure_term = mt;
-  d_active_measure_term = mt;
-}
-
-Node CegConjecture::getMeasureTermFactor( Node v ) {
-  Node ret;
-  if( getCegqiFairMode()==CEGQI_FAIR_DT_SIZE ){
-    if( v.getType().isDatatype() ){
-      ret = NodeManager::currentNM()->mkNode( DT_SIZE, v );
-    }
-  }
-  //TODO
-  Assert( ret.isNull() || ret.getType().isInteger() );
-  return ret;
-}
-  
   
 Node CegConjecture::getFairnessLiteral( int i ) {
-  std::map< int, Node >::iterator it = d_lits.find( i );
-  if( it==d_lits.end() ){
-    Trace("cegqi-engine") << "******* CEGQI : allocate size literal " << i << std::endl;
-    Node c = NodeManager::currentNM()->mkConst( Rational( i ) );
-    Node lit;
-    if( !options::sygusDtBounds() ){
-      if( d_measure_term.isNull() ){
-        return Node::null();
-      }
-      lit = NodeManager::currentNM()->mkNode( LEQ, d_measure_term, c );
-      lit = Rewriter::rewrite( lit );
-      d_lits[i] = lit;
+  if( getCegqiFairMode()!=CEGQI_FAIR_NONE ){
+    std::map< int, Node >::iterator it = d_lits.find( i );
+    if( it==d_lits.end() ){
+      Trace("cegqi-engine") << "******* CEGQI : allocate size literal " << i << std::endl;
+      Node c = NodeManager::currentNM()->mkConst( Rational( i ) );
+      Node lit = NodeManager::currentNM()->mkNode( DT_SYGUS_BOUND, c );
+
+      Node lem = NodeManager::currentNM()->mkNode( kind::OR, lit, lit.negate() );
+      Trace("cegqi-lemma") << "Cegqi::Lemma : Fairness split : " << lem << std::endl;
+      d_qe->getOutputChannel().lemma( lem );
+      d_qe->getOutputChannel().requirePhase( lit, true );
+
+      return lit;
     }else{
-      lit = NodeManager::currentNM()->mkNode( DT_SYGUS_BOUND, c );
+      return it->second;
     }
-
-    Node lem = NodeManager::currentNM()->mkNode( kind::OR, lit, lit.negate() );
-    Trace("cegqi-lemma") << "Cegqi::Lemma : Fairness split : " << lem << std::endl;
-    d_qe->getOutputChannel().lemma( lem );
-    d_qe->getOutputChannel().requirePhase( lit, true );
-
-    return lit;
   }else{
-    return it->second;
+    return Node::null();
   }
 }
 
@@ -739,7 +715,6 @@ void CegConjecture::doCegConjectureRefine( std::vector< Node >& lems ){
       }
     }
     Trace("cegqi-refine") << "doCegConjectureRefine : conditional solution refinement, expand active conditional nodes" << std::endl;
-    std::vector< Node > new_active_measure_sum;
     for( unsigned i=0; i<d_candidates.size(); i++ ){
       Node v = d_candidates[i];
       Node ac = getActiveConditional( v );
@@ -769,55 +744,18 @@ void CegConjecture::doCegConjectureRefine( std::vector< Node >& lems ){
           Trace("sygus-unif") << d_cinfo[ac].d_csol_cond << ", " << d_cinfo[ac].d_csol_var[0] << ", ";
           Trace("sygus-unif") << d_cinfo[ac].d_csol_var[1] << " )" << std::endl;
           registerCandidateConditional( d_cinfo[ac].d_csol_var[1-d_cinfo[ac].d_csol_status] );
-          //add to measure sum
-          Node acfc = getMeasureTermFactor( d_cinfo[ac].d_csol_cond );
-          if( !acfc.isNull() ){
-            new_active_measure_sum.push_back( acfc );
-          }
-          Node acfv = getMeasureTermFactor( d_cinfo[ac].d_csol_var[d_cinfo[ac].d_csol_status] );
-          if( !acfv.isNull() ){
-            new_active_measure_sum.push_back( acfv );
-          }
           csol_active[v] = ac;
         }
       }
       if( !is_active_conditional ){
         Trace("sygus-unif") << "* For " << v << ", its active node " << ac << " is not a conditional node." << std::endl;
-        //if we have not already included this in the measure, do so
         if( d_cinfo[ac].d_csol_status==-1 ){
-          Node acf = getMeasureTermFactor( ac );
-          if( !acf.isNull() ){
-            new_active_measure_sum.push_back( acf );
-          }
           d_cinfo[ac].d_csol_status = 2;
         }
       }
       if( !csol_ccond_nodes[v].empty() ){
         Trace("sygus-unif") << "...it is nested under " << csol_ccond_nodes[v].size() << " other conditionals" << std::endl;
       }
-    }
-    // must add to active measure
-    if( !new_active_measure_sum.empty() ){
-      Node mcsum = new_active_measure_sum.size()==1 ? new_active_measure_sum[0] : NodeManager::currentNM()->mkNode( kind::PLUS, new_active_measure_sum );
-      Node mclem = NodeManager::currentNM()->mkNode( kind::LEQ, mcsum, d_active_measure_term );
-      Trace("cegqi-lemma") << "Cegqi::Lemma : Measure component lemma : " << mclem << std::endl;
-      d_qe->getOutputChannel().lemma( mclem );
-      /*    
-      for( unsigned i=0; i<new_active_measure_sum.size(); i++ ){
-        Node mclem = NodeManager::currentNM()->mkNode( kind::LEQ, new_active_measure_sum[i], d_active_measure_term );
-        Trace("cegqi-lemma") << "Cegqi::Lemma : Measure component lemma : " << mclem << std::endl;
-        d_qe->getOutputChannel().lemma( mclem );
-      }
-      
-      Node new_active_measure = NodeManager::currentNM()->mkSkolem( "K", NodeManager::currentNM()->integerType() );
-      new_active_measure_sum.push_back( new_active_measure );
-      Node namlem = NodeManager::currentNM()->mkNode( kind::GEQ, new_active_measure, NodeManager::currentNM()->mkConst(Rational(0)));
-      Node ramlem = d_active_measure_term.eqNode( NodeManager::currentNM()->mkNode( kind::PLUS, new_active_measure_sum ) );
-      namlem = NodeManager::currentNM()->mkNode( kind::AND, ramlem, namlem );
-      Trace("cegqi-lemma") << "Cegqi::Lemma : Measure expansion : " << namlem << std::endl;
-      d_qe->getOutputChannel().lemma( namlem );
-      d_active_measure_term = new_active_measure;
-      */
     }
   }
   
@@ -1205,35 +1143,6 @@ void CegInstantiation::registerQuantifier( Node q ) {
     if( !d_conj->isAssigned() ){
       Trace("cegqi") << "Register conjecture : " << q << std::endl;
       d_conj->assign( q );
-
-      //fairness
-      if( d_conj->getCegqiFairMode()!=CEGQI_FAIR_NONE ){
-        if( !options::sygusDtBounds() ){
-          std::vector< Node > mc;
-          if( options::sygusUnifCondSol() ){
-            //measure term is a fresh constant
-            mc.push_back( NodeManager::currentNM()->mkSkolem( "K", NodeManager::currentNM()->integerType() ) );
-          }else{
-            std::vector< Node > clist;
-            d_conj->getCandidateList( clist, true );
-            for( unsigned j=0; j<clist.size(); j++ ){
-              TypeNode tn = clist[j].getType();
-              if( d_conj->getCegqiFairMode()==CEGQI_FAIR_DT_SIZE ){
-                if( tn.isDatatype() ){
-                  mc.push_back( NodeManager::currentNM()->mkNode( DT_SIZE, clist[j] ) );
-                }
-              }
-            }
-          }
-          if( !mc.empty() ){
-            Node mt = mc.size()==1 ? mc[0] : NodeManager::currentNM()->mkNode( PLUS, mc );
-            Trace("cegqi") << "Measure term is : " << mt << std::endl;
-            d_conj->setMeasureTerm( mt );
-          }
-        }else{
-          //no measure term
-        }
-      }
     }else{
       Assert( d_conj->d_quant==q );
     }
@@ -1277,13 +1186,14 @@ Node CegInstantiation::getNextDecisionRequest( unsigned& priority ) {
       return lit;
     }
 
-    if( d_conj->getCegqiFairMode()!=CEGQI_FAIR_NONE ){
-      Node lit = d_conj->getFairnessLiteral( d_conj->getCurrentTermSize() );
+    lit = d_conj->getFairnessLiteral( d_conj->getCurrentTermSize() );
+    if( !lit.isNull() ){
       bool value;
       if( d_quantEngine->getValuation().hasSatValue( lit, value ) ) {
         if( !value ){
           d_conj->incrementCurrentTermSize();
           lit = d_conj->getFairnessLiteral( d_conj->getCurrentTermSize() );
+          Assert( !lit.isNull() );
           Trace("cegqi-debug") << "CEGQI : Decide on next lit : " << lit << "..." << std::endl;
           priority = 1;
           return lit;
