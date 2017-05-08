@@ -31,6 +31,7 @@
 #include "theory/type_enumerator.h"
 #include "theory/valuation.h"
 #include "options/theory_options.h"
+#include "options/quantifiers_options.h"
 
 using namespace std;
 using namespace CVC4::kind;
@@ -68,11 +69,11 @@ TheoryDatatypes::TheoryDatatypes(Context* c, UserContext* u, OutputChannel& out,
   //d_equalityEngine.addFunctionKind(kind::APPLY_UF);
 
   d_true = NodeManager::currentNM()->mkConst( true );
+  d_zero = NodeManager::currentNM()->mkConst( Rational(0) );
   d_dtfCounter = 0;
 
   d_sygus_split = NULL;
   d_sygus_sym_break = NULL;
-  d_sel_conv = NULL;
 }
 
 TheoryDatatypes::~TheoryDatatypes() {
@@ -84,7 +85,6 @@ TheoryDatatypes::~TheoryDatatypes() {
   }
   delete d_sygus_split;
   delete d_sygus_sym_break;
-  delete d_sel_conv;
 }
 
 void TheoryDatatypes::setMasterEqualityEngine(eq::EqualityEngine* eq) {
@@ -452,6 +452,20 @@ void TheoryDatatypes::assertFact( Node fact, Node exp ){
   TNode atom = polarity ? fact : fact[0];
   if (atom.getKind() == kind::EQUAL) {
     d_equalityEngine.assertEquality( atom, polarity, exp );
+  }else if(atom.getKind() == kind::DT_HEIGHT_BOUND || atom.getKind()==DT_SIZE_BOUND){
+    //reduce to arithmetic
+  }else if(atom.getKind() == kind::DT_SYGUS_BOUND){
+    Node m = getOrMkSygusMeasureTerm();
+    //it relates the measure term to arithmetic
+    Node blem = atom.eqNode( NodeManager::currentNM()->mkNode( kind::LEQ, m, atom[0] ) );
+    doSendLemma( blem );
+    //notify the symmetry breaking module
+    if( polarity ){
+      if( d_sygus_sym_break ){
+        unsigned s = atom[0].getConst<Rational>().getNumerator().toUnsignedInt();
+        d_sygus_sym_break->notifySearchSize( s );
+      }
+    }
   }else{
     d_equalityEngine.assertPredicate( atom, polarity, exp );
   }
@@ -471,27 +485,14 @@ void TheoryDatatypes::assertFact( Node fact, Node exp ){
     if( !d_conflict && polarity ){
       if( d_sygus_sym_break ){
         Trace("dt-sygus") << "Assert tester to sygus : " << atom << std::endl;
-        if( !options::dtSharedSelectors() ){
-          //Assert( !d_sygus_util->d_conflict );
-          d_sygus_sym_break->addTester( tindex, t_arg, atom );
-        }else{      
-          std::vector< Node > etesters;
-          d_sel_conv->addTester( t_arg, atom, etesters );
-          Trace("dt-sygus") << "...lazy construction of " << etesters.size() << " testers." << std::endl;
-          for( unsigned i=0; i<etesters.size(); i++ ){
-            Trace("dt-sygus") << "......assert external tester to sygus : " << etesters[i] << std::endl;
-            Node tt;
-            int ttindex = DatatypesRewriter::isTester( etesters[i], tt );
-            Assert( ttindex!=-1 );
-            d_sygus_sym_break->addTester( ttindex, tt, etesters[i] );
-          }
-        }
+        Assert( !options::dtSharedSelectors() );
+        //Assert( !d_sygus_util->d_conflict );
+        d_sygus_sym_break->addTester( tindex, t_arg, atom );
 
         Trace("dt-sygus") << "Done assert tester to sygus." << std::endl;
         for( unsigned i=0; i<d_sygus_sym_break->d_lemmas.size(); i++ ){
-          Node ilem = SelectorConversion::toInternal( d_sygus_sym_break->d_lemmas[i] );
-          Trace("dt-lemma-sygus") << "Sygus symmetry breaking lemma : " << ilem << std::endl;
-          Trace("dt-sygus") << "...external form of symmetry breaking lemma : " << d_sygus_sym_break->d_lemmas[i]  << std::endl;
+          Node ilem = d_sygus_sym_break->d_lemmas[i];
+          Trace("dt-sygus") << "...external form of symmetry breaking lemma : " << ilem << std::endl;
           doSendLemma( ilem );
         }
         d_sygus_sym_break->d_lemmas.clear();
@@ -531,6 +532,9 @@ void TheoryDatatypes::preRegisterTerm(TNode n) {
   default:
     // Function applications/predicates
     d_equalityEngine.addTerm(n);
+    if( d_sygus_sym_break ){
+      d_sygus_sym_break->preRegisterTerm(n);
+    }
     //d_equalityEngine.addTriggerTerm(n, THEORY_DATATYPES);
     break;
   }
@@ -551,9 +555,8 @@ void TheoryDatatypes::finishInit() {
       d_sygus_sym_break = new SygusSymBreak( tds, getSatContext() );
     }else{
       //conservative version
-      d_sygus_sym_break = new SygusSymBreakNew( tds, getSatContext() );
+      d_sygus_sym_break = new SygusSymBreakNew( this, tds, getSatContext() );
     }
-    d_sel_conv = new SelectorConversion( getSatContext() );
   }
 }
 
@@ -2271,6 +2274,35 @@ std::pair<bool, Node> TheoryDatatypes::entailmentCheck(TNode lit, const Entailme
 
   }
   return make_pair(false, Node::null());
+}
+
+Node TheoryDatatypes::getOrMkSygusMeasureTerm() {
+  if( d_sygus_measure_term.isNull() ){
+    d_sygus_measure_term = NodeManager::currentNM()->mkSkolem( "mt", NodeManager::currentNM()->integerType() );
+    doSendLemma( NodeManager::currentNM()->mkNode( kind::GEQ, d_sygus_measure_term, d_zero ) );
+  }
+  return d_sygus_measure_term;
+}
+
+void TheoryDatatypes::registerSygusMeasuredTerm( Node t ) {
+  Trace("dt-sygus") << "TheoryDatatypes::registerSygusMeasuredTerm : " << t << std::endl;
+  std::vector< Node > lems;
+  if( d_sygus_measure_term_active.isNull() ){
+    d_sygus_measure_term_active = getOrMkSygusMeasureTerm();
+  }
+  Node mt = d_sygus_measure_term_active;
+  Node new_mt = NodeManager::currentNM()->mkSkolem( "mt", NodeManager::currentNM()->integerType() );
+  lems.push_back( NodeManager::currentNM()->mkNode( kind::GEQ, new_mt, d_zero ) );
+  if( options::ceGuidedInstFair()==quantifiers::CEGQI_FAIR_DT_SIZE ){
+    Node ds = NodeManager::currentNM()->mkNode( kind::DT_SIZE, t );
+    lems.push_back( mt.eqNode( NodeManager::currentNM()->mkNode( kind::PLUS, new_mt, ds ) ) );
+    lems.push_back( NodeManager::currentNM()->mkNode( kind::GEQ, ds, d_zero ) );
+  }
+  d_sygus_measure_term_active = new_mt;
+  
+  for( unsigned i=0; i<lems.size(); i++ ){
+    doSendLemma( lems[i] );
+  }
 }
 
 } /* namepsace CVC4::theory::datatypes */

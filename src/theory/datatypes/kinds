@@ -106,6 +106,12 @@ operator DT_SIZE 1 "datatypes size"
 typerule DT_SIZE ::CVC4::theory::datatypes::DtSizeTypeRule
 
 operator DT_HEIGHT_BOUND 2 "datatypes height bound"
-typerule DT_HEIGHT_BOUND ::CVC4::theory::datatypes::DtHeightBoundTypeRule
+typerule DT_HEIGHT_BOUND ::CVC4::theory::datatypes::DtBoundTypeRule
+
+operator DT_SIZE_BOUND 2 "datatypes height bound"
+typerule DT_SIZE_BOUND ::CVC4::theory::datatypes::DtBoundTypeRule
+
+operator DT_SYGUS_BOUND 1 "datatypes sygus bound"
+typerule DT_SYGUS_BOUND ::CVC4::theory::datatypes::DtSygusBoundTypeRule
 
 endtheory

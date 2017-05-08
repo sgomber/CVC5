@@ -20,6 +20,7 @@
 #include "theory/datatypes/datatypes_rewriter.h"
 #include "theory/datatypes/datatypes_sygus_new.h"
 #include "theory/quantifiers/term_database.h"
+#include "theory/datatypes/theory_datatypes.h"
 
 using namespace CVC4;
 using namespace CVC4::kind;
@@ -65,7 +66,8 @@ void SygusSplitNew::getSygusSplits( Node n, const Datatype& dt, std::vector< Nod
 }
 
 
-SygusSymBreakNew::SygusSymBreakNew( quantifiers::TermDbSygus * tds, context::Context* c ) : d_tds( tds ), d_context( c ) {
+SygusSymBreakNew::SygusSymBreakNew( TheoryDatatypes * td, quantifiers::TermDbSygus * tds, context::Context* c ) : 
+d_td( td ), d_tds( tds ), d_context( c ) {
 
 }
 
@@ -75,6 +77,41 @@ SygusSymBreakNew::~SygusSymBreakNew() {
 
 /** add tester */
 void SygusSymBreakNew::addTester( int tindex, Node n, Node exp ) {
-  
+  Node e = quantifiers::TermDbSygus::getAnchor( n );
+  if( e.isVar() ){
+    registerTerm( e );
+    if( d_register[e] ){
+      Trace("sygus-sb-debug") << "Sygus : process tester : " << e << std::endl;
+    
+    }
+  }
+}
+
+void SygusSymBreakNew::preRegisterTerm( TNode n ) {
+  if( n.isVar() ){
+    registerTerm( n );
+  }
+}
+
+void SygusSymBreakNew::registerTerm( Node e ) {
+  if( d_register.find( e )==d_register.end() ){
+    d_register[e] = false;
+    if( e.getType().isDatatype() ){
+      const Datatype& dt = ((DatatypeType)(e.getType()).toType()).getDatatype();
+      if( dt.isSygus() ){
+        Trace("sygus-sb") << "Sygus : register term : " << e << std::endl;
+        d_register[e] = true;
+        d_td->registerSygusMeasuredTerm( e );
+      }
+    }
+  }
+}
+
+void SygusSymBreakNew::notifySearchSize( unsigned s ) {
+  if( d_search_size.find( s )==d_search_size.end() ){
+    d_search_size[s] = true;
+    Assert( s==0 || d_search_size.find( s-1 )!=d_search_size.end() );
+    Trace("sygus-sb") << "Sygus : now considering term measure : " << s << std::endl;
+  }
 }
 

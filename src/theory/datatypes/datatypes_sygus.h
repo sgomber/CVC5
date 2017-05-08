@@ -90,6 +90,8 @@ public:
   virtual ~SygusSymBreakAbs(){}
   /** add tester */
   virtual void addTester( int tindex, Node n, Node exp ) = 0;
+  virtual void preRegisterTerm( TNode n ) = 0;
+  virtual void notifySearchSize( unsigned s ) = 0;
   /** lemmas we have generated */
   std::vector< Node > d_lemmas;
 };
@@ -153,34 +155,8 @@ public:
   ~SygusSymBreak();
   /** add tester */
   void addTester( int tindex, Node n, Node exp );
-};
-
-class SelectorConversion {
-private:
-  typedef context::CDHashMap< Node, Node, NodeHashFunction > NodeMap;
-  NodeMap d_testers;
-  NodeMap d_testers_ext;
-  NodeMap d_to_external;
-  NodeMap d_to_external_exp;
-  std::map< Node, std::vector< Node > > d_watch_list;
-  void getExtTesters( Node n, std::vector< Node >& ext_testers );
-  /** to external */
-  Node toExternal( Node sel );
-public:
-  SelectorConversion( context::Context* c );
-  ~SelectorConversion() {}
-  /** add tester */
-  void addTester( Node n, Node tst, std::vector< Node >& ext_testers );
-  /** to external */
-  Node toExternal( Node sel, Node& exp );
-private:
-  static Node toInternal( Node n, std::map< Node, Node >& visited ); 
-public:
-  //convert to the internal representation
-  static Node toInternal( Node n ){
-    std::map< Node, Node > visited;
-    return toInternal( n, visited );
-  }  
+  void preRegisterTerm( TNode n ){}
+  void notifySearchSize( unsigned s ){}
 };
 
 }

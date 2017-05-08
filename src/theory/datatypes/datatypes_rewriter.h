@@ -200,6 +200,11 @@ public:
         Trace("datatypes-rewrite") << "DatatypesRewriter::postRewrite: rewrite height " << in << " to " << res << std::endl;
         return RewriteResponse(REWRITE_AGAIN_FULL, res );
       }
+    }else if( in.getKind()==kind::DT_SIZE_BOUND ){
+      if( in[0].isConst() ){
+        Node res = NodeManager::currentNM()->mkNode( kind::LEQ, NodeManager::currentNM()->mkNode( kind::DT_SIZE, in[0] ), in[1] );
+        return RewriteResponse(REWRITE_AGAIN_FULL, res );
+      }
     }
 
     if(in.getKind() == kind::EQUAL ) {

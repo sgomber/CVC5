@@ -222,19 +222,6 @@ private:
   bool d_last_inst_si;
   /** evaluation axioms */
   std::map< Node, bool > d_eval_axioms;
-private: //for enforcing fairness
-  /** measure functions */
-  std::map< TypeNode, Node > d_uf_measure;
-  /** register measured type */
-  void registerMeasuredType( TypeNode tn );
-  /** term -> size term */
-  std::map< Node, Node > d_size_term;
-  /** get size term */
-  Node getSizeTerm( Node n, TypeNode tn, std::vector< Node >& lems );
-  /** term x constructor -> lemma */
-  std::map< Node, std::map< int, Node > > d_size_term_lemma;
-  /** get measure lemmas */
-  void getMeasureLemmas( Node n, Node v, std::vector< Node >& lems );
 private: //for direct evaluation
   /** get refinement evaluation */
   void getCRefEvaluationLemmas( CegConjecture * conj, std::vector< Node >& vs, std::vector< Node >& ms, std::vector< Node >& lems );

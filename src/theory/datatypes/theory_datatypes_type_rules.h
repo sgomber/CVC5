@@ -295,7 +295,7 @@ class DtSizeTypeRule {
   }
 }; /* class DtSizeTypeRule */
 
-class DtHeightBoundTypeRule {
+class DtBoundTypeRule {
  public:
   inline static TypeNode computeType(NodeManager* nodeManager, TNode n,
                                      bool check) {
@@ -304,20 +304,39 @@ class DtHeightBoundTypeRule {
       if (!t.isDatatype()) {
         throw TypeCheckingExceptionPrivate(
             n,
-            "expecting datatype height bound term to have datatype argument.");
+            "expecting datatype bound term to have datatype argument.");
       }
       if (n[1].getKind() != kind::CONST_RATIONAL) {
         throw TypeCheckingExceptionPrivate(
-            n, "datatype height bound must be a constant");
+            n, "datatype bound must be a constant");
       }
       if (n[1].getConst<Rational>().getNumerator().sgn() == -1) {
         throw TypeCheckingExceptionPrivate(
-            n, "datatype height bound must be non-negative");
+            n, "datatype bound must be non-negative");
       }
     }
     return nodeManager->booleanType();
   }
-}; /* class DtHeightBoundTypeRule */
+}; /* class DtBoundTypeRule */
+
+class DtSygusBoundTypeRule {
+ public:
+  inline static TypeNode computeType(NodeManager* nodeManager, TNode n,
+                                     bool check) {
+    if (check) {
+      if (n[0].getKind() != kind::CONST_RATIONAL) {
+        throw TypeCheckingExceptionPrivate(
+            n, "datatype sygus bound must be a constant");
+      }
+      if (n[0].getConst<Rational>().getNumerator().sgn() == -1) {
+        throw TypeCheckingExceptionPrivate(
+            n, "datatype sygus bound must be non-negative");
+      }
+    }
+    return nodeManager->booleanType();
+  }
+}; /* class DtSygusBoundTypeRule */
+
 
 } /* CVC4::theory::datatypes namespace */
 } /* CVC4::theory namespace */

@@ -55,6 +55,7 @@ private:
   NodeList d_infer;
   NodeList d_infer_exp;
   Node d_true;
+  Node d_zero;
   /** mkAnd */
   Node mkAnd( std::vector< TNode >& assumptions );
 private:
@@ -189,10 +190,6 @@ private:
   unsigned d_dtfCounter;
   /** expand definition skolem functions */
   std::map< TypeNode, std::map< Node, Node > > d_exp_def_skolem;
-  /** sygus utilities */
-  SygusSplitAbs * d_sygus_split;
-  SygusSymBreakAbs * d_sygus_sym_break;
-  SelectorConversion * d_sel_conv;
 private:
   /** singleton lemmas (for degenerate co-datatype case) */
   std::map< TypeNode, Node > d_singleton_lemma[2];
@@ -319,6 +316,15 @@ private:
   bool areDisequal( TNode a, TNode b );
   bool areCareDisequal( TNode x, TNode y );
   TNode getRepresentative( TNode a );
+private:
+  /** sygus utilities */
+  SygusSplitAbs * d_sygus_split;
+  SygusSymBreakAbs * d_sygus_sym_break;
+  Node d_sygus_measure_term;
+  Node d_sygus_measure_term_active;
+  Node getOrMkSygusMeasureTerm();
+public:
+  void registerSygusMeasuredTerm( Node t );
 };/* class TheoryDatatypes */
 
 }/* CVC4::theory::datatypes namespace */

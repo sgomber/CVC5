@@ -38,6 +38,8 @@ namespace quantifiers {
 
 namespace datatypes {
 
+class TheoryDatatypes;
+
 class SygusSplitNew : public SygusSplitAbs
 {
 private:
@@ -51,18 +53,31 @@ public:
 };
 
 
-
 class SygusSymBreakNew : public SygusSymBreakAbs
 {
 private:
+  TheoryDatatypes * d_td;
   quantifiers::TermDbSygus * d_tds;
   context::Context* d_context;
+private:
+  //list of all terms encountered in search at depth
+  std::map< TypeNode, std::map< unsigned, std::vector< Node > > > d_search_terms;
+  //list of all lemmas at a particular 
+  std::map< TypeNode, std::map< unsigned, std::vector< Node > > > d_sb_lemmas;
+  // get symmetry breaking lemmas for tester
+  void getInitSymBreakLemmas( Node n );
+private:
+  //should be user-context dependent if sygus in incremental mode
+  std::map< Node, bool > d_register;
+  std::map< unsigned, bool > d_search_size;
+  void registerTerm( Node e );
 public:
-  SygusSymBreakNew( quantifiers::TermDbSygus * tds, context::Context* c );
+  SygusSymBreakNew( TheoryDatatypes * td, quantifiers::TermDbSygus * tds, context::Context* c );
   ~SygusSymBreakNew();
   /** add tester */
   void addTester( int tindex, Node n, Node exp );
-
+  void preRegisterTerm( TNode n );
+  void notifySearchSize( unsigned s );
 };
 
 
