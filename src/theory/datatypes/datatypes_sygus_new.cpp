@@ -96,14 +96,6 @@ void SygusSplitNew::getSygusSplits( Node n, const Datatype& dt, std::vector< Nod
       if( !d_tds->isGenericRedundant( tnn, i ) ){
         std::vector< Node > test_c;
         test_c.push_back( DatatypesRewriter::mkTester( n, i, dt ) );
-        //TODO : remove
-        if( options::ceGuidedInstFair()==quantifiers::CEGQI_FAIR_DT_SIZE ){
-          Node szl = NodeManager::currentNM()->mkNode( DT_SIZE, n );
-          Node szr = NodeManager::currentNM()->mkNode( DT_SIZE, DatatypesRewriter::getInstCons( n, dt, i ) );
-          szr = Rewriter::rewrite( szr );
-          test_c.push_back( szl.eqNode( szr ) );
-        }
-    
         Node test = test_c.size()==1 ? test_c[0] : NodeManager::currentNM()->mkNode( AND, test_c );
         curr_splits.push_back( test );
         Trace("sygus-split-debug2") << "SUCCESS" << std::endl;
@@ -188,15 +180,13 @@ Node SygusSymBreakNew::getSimpleSymBreakPred( TypeNode tn, int tindex ) {
     std::vector< Node > sbp_conj;
     
     //fairness
-    /*
     if( options::ceGuidedInstFair()==quantifiers::CEGQI_FAIR_DT_SIZE ){
       Node szl = NodeManager::currentNM()->mkNode( DT_SIZE, n );
       Node szr = NodeManager::currentNM()->mkNode( DT_SIZE, DatatypesRewriter::getInstCons( n, dt, tindex ) );
       szr = Rewriter::rewrite( szr );
       sbp_conj.push_back( szl.eqNode( szr ) );
-      sbp_conj.push_back( NodeManager::currentNM()->mkNode( kind::GEQ, szl, NodeManager::currentNM()->mkConst( Rational(0) ) ) );
+      //sbp_conj.push_back( NodeManager::currentNM()->mkNode( kind::GEQ, szl, NodeManager::currentNM()->mkConst( Rational(0) ) ) );
     }
-    */
     
     //symmetry breaking
     if( options::sygusSymBreak() ){
@@ -571,6 +561,24 @@ bool SygusSymBreakNew::considerConst( const Datatype& dt, const Datatype& pdt, T
       }
     }
   }
+  ReqTrie rt;
+  bool rt_valid = false;
+  Node max_c = d_tds->getTypeMaxValue( c.getType() );
+  if( pk==XOR || pk==BITVECTOR_XOR ){
+    if( c==max_c ){
+      rt.d_req_kind = pk==XOR ? NOT : BITVECTOR_NOT;
+      rt_valid = true;
+    }
+  }
+  if( rt_valid ){
+    //check if satisfied
+    if( rt.satisfiedBy( d_tds, tnp ) ){
+      Trace("sygus-sb-simple") << "  sb-simple : do not consider const " << c << " as arg " << arg << " of " << pk << std::endl;
+      //do not need to consider the constant in the search since there are ways to construct equivalent terms
+      return false;
+    }
+  }
+  
   if( pdt[pc].getNumArgs()==2 ){
     Kind ok;
     int offset;
@@ -647,7 +655,7 @@ void SygusSymBreakNew::registerSearchTerm( TypeNode tn, unsigned d, Node n, bool
             Node lem = it->second[k];
             //apply lemma
             Node slem = lem.substitute( x, t );
-            Trace("sygus-sb-sv-debug") << "SymBreak lemma : " << slem << std::endl;
+            Trace("sygus-sb-exc-debug") << "SymBreak lemma : " << slem << std::endl;
             lemmas.push_back( slem );
           }
         }
@@ -685,11 +693,11 @@ bool SygusSymBreakNew::registerSearchValue( Node n, Node nv, unsigned d, std::ve
           sz = prev_sz;
         }
         Assert( d_tds->getSygusTermSize( bad_val )==(int)sz );
-        if( Trace.isOn("sygus-sb-sv") ){
+        if( Trace.isOn("sygus-sb-exc") ){
           Node prev_bv = d_tds->sygusToBuiltin( itsv->second, tn );
-          Trace("sygus-sb-sv") << "  ......both " << prev_bv << " and " << bv << " rewrite to " << bvr << std::endl;
+          Trace("sygus-sb-exc") << "  ......both " << prev_bv << " and " << bv << " rewrite to " << bvr << std::endl;
           Node bad_val_bv = d_tds->sygusToBuiltin( bad_val, tn );
-          Trace("sygus-sb-sv") << "  ........exclude : " << bad_val_bv << std::endl;
+          Trace("sygus-sb-exc") << "  ........exclude : " << bad_val_bv << std::endl;
         } 
         Node x = getSimpleSymBreakPredVar( tn );
         
@@ -704,7 +712,7 @@ bool SygusSymBreakNew::registerSearchValue( Node n, Node nv, unsigned d, std::ve
         }
         Node ex = NodeManager::currentNM()->mkNode( kind::APPLY_UF, echildren );
         Node eq = ex.eqNode( bvr );
-        Trace("sygus-sb-sv") << "  ........evaluate : " << eq << std::endl;
+        Trace("sygus-sb-exc") << "  ........evaluate : " << eq << std::endl;
         std::map< Node, Node > visited;
         std::map< Node, Node > vtm;
         std::map< Node, std::vector< Node > > exp;
@@ -714,7 +722,7 @@ bool SygusSymBreakNew::registerSearchValue( Node n, Node nv, unsigned d, std::ve
         Assert( !exp[eq].empty() );
         Node lem = exp[eq].size()==1 ? exp[eq][0] : NodeManager::currentNM()->mkNode( kind::AND, exp[eq] );
         lem = lem.negate();
-        Trace("sygus-sb-sv") << "  ........exc lemma is " << lem << ", size = " << sz << std::endl;
+        Trace("sygus-sb-exc") << "  ........exc lemma is " << lem << ", size = " << sz << std::endl;
         registerSymBreakLemma( tn, lem, sz, lemmas );
       }
     }
@@ -745,7 +753,7 @@ void SygusSymBreakNew::registerSymBreakLemma( TypeNode tn, Node lem, unsigned sz
         TNode t = itt->second[k];
         // apply lemma
         Node slem = lem.substitute( x, t );
-        Trace("sygus-sb-sv-debug") << "SymBreak lemma : " << slem << std::endl;
+        Trace("sygus-sb-exc-debug") << "SymBreak lemma : " << slem << std::endl;
         lemmas.push_back( slem );
       }
     }
@@ -804,7 +812,7 @@ void SygusSymBreakNew::incrementCurrentSearchSize( std::vector< Node >& lemmas )
             TNode t = itt->second[k];
             //apply lemma
             Node slem = lem.substitute( x, t );
-            Trace("sygus-sb-sv-debug") << "SymBreak lemma : " << slem << std::endl;
+            Trace("sygus-sb-exc-debug") << "SymBreak lemma : " << slem << std::endl;
             lemmas.push_back( slem );
           }
         }
@@ -874,11 +882,49 @@ void SygusSymBreakNew::check( std::vector< Node >& lemmas ) {
     if( it->second ){
       Node prog = it->first;
       Node progv = d_td->getValuation().getModel()->getValue( prog );
-      Trace("sygus-sb") << "  val[" << prog << "] = " << progv << std::endl;
+      
+      //debugging : ensure fairness was properly handled
+      if( options::ceGuidedInstFair()==quantifiers::CEGQI_FAIR_DT_SIZE ){  
+        Node prog_sz = NodeManager::currentNM()->mkNode( kind::DT_SIZE, prog );
+        Node prog_szv = d_td->getValuation().getModel()->getValue( prog_sz );
+        Node progv_sz = NodeManager::currentNM()->mkNode( kind::DT_SIZE, progv );
+          
+        Trace("sygus-sb") << "  Mv[" << prog << "] = " << progv << ", size = " << prog_szv << std::endl;
+        if( prog_szv.getConst<Rational>().getNumerator().toUnsignedInt() > d_curr_search_size ){
+          debugTermSize( prog, 0 );
+          AlwaysAssert( false );
+          Node szlem = NodeManager::currentNM()->mkNode( kind::OR, prog.eqNode( progv ).negate(),
+                                                                   prog_sz.eqNode( progv_sz ) );
+          Trace("sygus-sb-warn") << "SygusSymBreak : WARNING : adding size correction : " << szlem << std::endl;
+          lemmas.push_back( szlem );                                                     
+          return;
+        }
+        //AlwaysAssert( prog_szv.getConst<Rational>().getNumerator().toUnsignedInt() <= d_curr_search_size );
+      }
+      
       if( !registerSearchValue( prog, progv, 0, lemmas ) ){
         break;
       }
     }
+  }
+}
+
+void SygusSymBreakNew::debugTermSize( Node n, int ind ) {
+  Node progv = d_td->getValuation().getModel()->getValue( n );
+  Assert( progv.getKind()==kind::APPLY_CONSTRUCTOR );
+  Node prog_sz = NodeManager::currentNM()->mkNode( kind::DT_SIZE, n );
+  Node prog_szv = d_td->getValuation().getModel()->getValue( prog_sz );
+  for( int i=0; i<ind; i++ ){
+    Trace("sygus-sb") << "  ";
+  }
+  Trace("sygus-sb") << n << " : " << progv << " : " << prog_szv << std::endl;
+  
+  TypeNode tn = n.getType();
+  const Datatype& dt = ((DatatypeType)tn.toType()).getDatatype();
+  int cindex = Datatype::indexOf( progv.getOperator().toExpr() );
+  for( unsigned i=0; i<progv.getNumChildren(); i++ ){
+    Node sel = NodeManager::currentNM()->mkNode( kind::APPLY_SELECTOR_TOTAL, Node::fromExpr( dt[cindex].getSelectorInternal( tn.toType(), i ) ), n );
+    debugTermSize( sel, ind+1 );
   }
 }
 

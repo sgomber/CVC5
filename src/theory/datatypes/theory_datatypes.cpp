@@ -534,6 +534,9 @@ void TheoryDatatypes::preRegisterTerm(TNode n) {
     d_equalityEngine.addTriggerPredicate(n);
     break;
   default:
+    if( n.getKind()==kind::DT_SIZE ){
+      d_out->lemma( NodeManager::currentNM()->mkNode( LEQ, d_zero, n ) );
+    }
     // Function applications/predicates
     d_equalityEngine.addTerm(n);
     if( d_sygus_sym_break ){
@@ -1295,21 +1298,6 @@ void TheoryDatatypes::collapseSelector( Node s, Node c ) {
     if( options::dtRefIntro() ){
       use_s = NodeManager::currentNM()->mkNode( kind::APPLY_SELECTOR_TOTAL, s.getOperator(), use_s );
     }
-  }else{
-    if( s.getKind()==DT_SIZE ){
-      r = NodeManager::currentNM()->mkNode( DT_SIZE, c );
-      if( options::dtRefIntro() ){
-        use_s = NodeManager::currentNM()->mkNode( DT_SIZE, use_s );
-      }
-    }else if( s.getKind()==DT_HEIGHT_BOUND ){
-      r = NodeManager::currentNM()->mkNode( DT_HEIGHT_BOUND, c, s[1] );
-      if( options::dtRefIntro() ){
-        use_s = NodeManager::currentNM()->mkNode( DT_HEIGHT_BOUND, use_s, s[1] );
-      }
-      if( r==d_true ){
-        return;
-      }
-    }
   }
   if( !r.isNull() ){
     Node rr = Rewriter::rewrite( r );
@@ -1644,13 +1632,6 @@ void TheoryDatatypes::collectTerms( Node n ) {
         addSelector( n, eqc, rep );
 
         if( n.getKind() == DT_SIZE ){
-          Node conc = NodeManager::currentNM()->mkNode( LEQ, NodeManager::currentNM()->mkConst( Rational(0) ), n );
-          //must be non-negative
-          Trace("datatypes-infer") << "DtInfer : non-negative size : " << conc << std::endl;
-          //d_pending.push_back( conc );
-          //d_pending_exp[ conc ] = d_true;
-          //d_infer.push_back( conc );
-          d_pending_lem.push_back( conc );
   /*
           //add size = 0 lemma
           Node nn = n.eqNode( NodeManager::currentNM()->mkConst( Rational(0) ) );
@@ -2297,7 +2278,7 @@ void TheoryDatatypes::registerSygusMeasuredTerm( Node t ) {
   if( options::ceGuidedInstFair()==quantifiers::CEGQI_FAIR_DT_SIZE ){
     Node ds = NodeManager::currentNM()->mkNode( kind::DT_SIZE, t );
     lems.push_back( mt.eqNode( NodeManager::currentNM()->mkNode( kind::PLUS, new_mt, ds ) ) );
-    lems.push_back( NodeManager::currentNM()->mkNode( kind::GEQ, ds, d_zero ) );
+    //lems.push_back( NodeManager::currentNM()->mkNode( kind::GEQ, ds, d_zero ) );
   }
   d_sygus_measure_term_active = new_mt;
 
