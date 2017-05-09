@@ -230,7 +230,7 @@ Node SygusSymBreakNew::getSimpleSymBreakPred( TypeNode tn, int tindex ) {
               Node sz_eq = NodeManager::currentNM()->mkNode( EQUAL, NodeManager::currentNM()->mkNode( DT_SIZE, children[0] ), 
                                                                     NodeManager::currentNM()->mkNode( DT_SIZE, children[1] ) );
               sz_eq_cases.push_back( sz_eq );
-              if( !options::sygusNormalFormGlobalArg() ){  //FIXME
+              if( options::sygusOpt1() ){
                 TypeNode tnc = children[0].getType();
                 const Datatype& cdt = ((DatatypeType)(tnc).toType()).getDatatype();
                 for( unsigned j=0; j<cdt.getNumConstructors(); j++ ){
@@ -707,7 +707,7 @@ bool SygusSymBreakNew::registerSearchValue( Node n, Node nv, unsigned d, std::ve
         } 
         Node x = getSimpleSymBreakPredVar( tn );
         
-        // do analysis of the evaluation
+        // do analysis of the evaluation  FIXME: does not work (evaluation is non-constant)
         /*
         const Datatype& dt = ((DatatypeType)tn.toType()).getDatatype();
         std::vector< Node > echildren;

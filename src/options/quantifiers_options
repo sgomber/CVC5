@@ -266,6 +266,8 @@ option sygusSymBreak --sygus-sym-break bool :default true
   simple sygus sym break lemmas
 option sygusSymBreakDynamic --sygus-sym-break-dynamic bool :default true
   dynamic sygus sym break lemmas
+option sygusOpt1 --sygus-opt1 bool :default false
+  sygus experimental option
 
 option sygusNormalForm --sygus-nf bool :default true
   only search for sygus builtin terms that are in normal form

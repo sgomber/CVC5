@@ -28,7 +28,6 @@
 #include "context/cdchunk_list.h"
 #include "context/cdhashmap.h"
 #include "context/cdo.h"
-#include "theory/datatypes/datatypes_sygus.h"
 
 namespace CVC4 {
 namespace theory {
@@ -40,7 +39,7 @@ namespace datatypes {
 
 class TheoryDatatypes;
 
-class SygusSplitNew : public SygusSplitAbs
+class SygusSplitNew
 {
 private:
   quantifiers::TermDbSygus * d_tds;
@@ -53,7 +52,7 @@ public:
 };
 
 
-class SygusSymBreakNew : public SygusSymBreakAbs
+class SygusSymBreakNew
 {
 private:
   TheoryDatatypes * d_td;

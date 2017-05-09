@@ -25,7 +25,6 @@
 
 #include "context/cdchunk_list.h"
 #include "expr/datatype.h"
-#include "theory/datatypes/datatypes_sygus.h"
 #include "theory/datatypes/datatypes_sygus_new.h"
 #include "theory/theory.h"
 #include "theory/uf/equality_engine.h"
@@ -325,8 +324,8 @@ private:
   TNode getRepresentative( TNode a );
 private:
   /** sygus utilities */
-  SygusSplitAbs * d_sygus_split;
-  SygusSymBreakAbs * d_sygus_sym_break;
+  SygusSplitNew * d_sygus_split;
+  SygusSymBreakNew * d_sygus_sym_break;
   Node d_sygus_measure_term;
   Node d_sygus_measure_term_active;
   Node getOrMkSygusMeasureTerm();

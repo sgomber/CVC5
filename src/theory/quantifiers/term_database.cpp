@@ -2726,9 +2726,10 @@ bool TermDbSygus::isAntisymmetric( Kind k, Kind& dk ) {
 bool TermDbSygus::isIdempotentArg( Node n, Kind ik, int arg ) {
   TypeNode tn = n.getType();
   if( n==getTypeValue( tn, 0 ) ){
-    if( ik==PLUS || ik==OR || ik==XOR || ik==BITVECTOR_PLUS || ik==BITVECTOR_OR || ik==BITVECTOR_XOR ){
+    if( ik==PLUS || ik==OR || ik==XOR || ik==BITVECTOR_PLUS || ik==BITVECTOR_OR || ik==BITVECTOR_XOR || ik==STRING_CONCAT ){
       return true;
-    }else if( ik==MINUS || ik==BITVECTOR_SHL || ik==BITVECTOR_LSHR || ik==BITVECTOR_ASHR || ik==BITVECTOR_SUB || ik==BITVECTOR_UREM_TOTAL ){
+    }else if( ik==MINUS || ik==BITVECTOR_SHL || ik==BITVECTOR_LSHR || ik==BITVECTOR_ASHR || ik==BITVECTOR_SUB || ik==BITVECTOR_UREM_TOTAL || 
+              ik==STRING_STRREPL ){
       return arg==1;
     }
   }else if( n==getTypeValue( tn, 1 ) ){
@@ -2751,7 +2752,8 @@ Node TermDbSygus::isSingularArg( Node n, Kind ik, int arg ) {
   if( n==getTypeValue( tn, 0 ) ){
     if( ik==AND || ik==MULT || ik==BITVECTOR_AND || ik==BITVECTOR_MULT ){
       return n;
-    }else if( ik==BITVECTOR_SHL || ik==BITVECTOR_LSHR || ik==BITVECTOR_ASHR || ik==BITVECTOR_UREM_TOTAL ){
+    }else if( ik==BITVECTOR_SHL || ik==BITVECTOR_LSHR || ik==BITVECTOR_ASHR || ik==BITVECTOR_UREM_TOTAL ||
+              ik==STRING_SUBSTR ){
       if( arg==0 ){
         return n;
       }
@@ -2815,6 +2817,10 @@ Node TermDbSygus::getTypeValue( TypeNode tn, int val ) {
     }else if( tn.isBoolean() ){
       if( val==0 ){
         n = d_false;
+      }
+    }else if( tn.isString() ){
+      if( val==0 ){
+        n = NodeManager::currentNM()->mkConst( ::CVC4::String("") );
       }
     }
     d_type_value[tn][val] = n;
