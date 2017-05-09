@@ -254,6 +254,7 @@ public:
   void eqNotifyDisequal(TNode t1, TNode t2, TNode reason);
 
   void check(Effort e);
+  bool needsCheckLastEffort();
   void preRegisterTerm(TNode n);
   void finishInit();
   Node expandDefinition(LogicRequest &logicRequest, Node n);

@@ -216,7 +216,6 @@ private:
 private: //for direct evaluation
   /** get refinement evaluation */
   void getCRefEvaluationLemmas( CegConjecture * conj, std::vector< Node >& vs, std::vector< Node >& ms, std::vector< Node >& lems );
-  Node crefEvaluate( Node lem, std::map< Node, Node >& vtm, std::map< Node, Node >& visited, std::map< Node, std::vector< Node > >& exp );
   /** get eager unfolding */
   Node getEagerUnfold( Node n, std::map< Node, Node >& visited );
 private:

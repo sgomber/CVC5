@@ -371,7 +371,7 @@ void SygusSplit::registerSygusTypeConstructorArg( TypeNode tnn, const Datatype& 
                 std::map< int, bool > rem_arg;
                 //collect information about this index
                 Node oac = d_tds->getArgConst( tnno, i );
-                bool isSingularConst = !oac.isNull() && d_tds->isSingularArg( oac, parentKind, 1 );
+                bool isSingularConst = !oac.isNull() && !d_tds->isSingularArg( oac, parentKind, 1 ).isNull();
                 bool argConsider = false;
                 for( unsigned j=0; j<dt.getNumConstructors(); j++ ){
                   if( d_sygus_pc_nred[tnn][csIndex][sIndex][j] ){
@@ -388,7 +388,7 @@ void SygusSplit::registerSygusTypeConstructorArg( TypeNode tnn, const Datatype& 
                       Trace("sygus-nf") << " : do not consider " << dt[j].getSygusOp() << " as first arg." << std::endl;
                     }else{
                       Node cac = d_tds->getArgConst( tnn, j );
-                      if( !cac.isNull() && d_tds->isSingularArg( cac, parentKind, 0 ) && larg_consider.find( j )!=larg_consider.end() ){
+                      if( !cac.isNull() && !d_tds->isSingularArg( cac, parentKind, 0 ).isNull() && larg_consider.find( j )!=larg_consider.end() ){
                         rem = true;
                         Trace("sygus-nf") << "* Sygus norm : LHS singularity arg " << dt[j].getSygusOp() << " of " << parentKind;
                         Trace("sygus-nf") << " : do not consider " << dto[i].getSygusOp() << " as second arg." << std::endl;
@@ -690,7 +690,7 @@ bool SygusSplit::considerSygusSplitConst( const Datatype& dt, const Datatype& pd
         return false;
       }
     }
-  }else if( d_tds->isSingularArg( c, parent, arg ) ){
+  }else if( !d_tds->isSingularArg( c, parent, arg ).isNull() ){
     Trace("sygus-split-debug") << "  " << c << " is singular arg " << arg << " of " << parent << "..." << std::endl;
     if( d_tds->hasConst( tnp, c ) ){
       return false;
@@ -1391,7 +1391,7 @@ bool SygusSymBreak::processConstantArg( TypeNode tnp, const Datatype & pdt, int 
         return false;
       }
     }
-  }else if( d_tds->isSingularArg( arg, k, i ) ){
+  }else if( !d_tds->isSingularArg( arg, k, i ).isNull() ){
     if( d_tds->hasConst( tnp, arg ) ){
       return false;
     }

@@ -136,11 +136,19 @@ TNode TheoryDatatypes::getEqcConstructor( TNode r ) {
 }
 
 void TheoryDatatypes::check(Effort e) {
-  if (done() && !fullEffort(e)) {
+  if (done() && e<EFFORT_FULL) {
     return;
   }
   Assert( d_pending.empty() && d_pending_merge.empty() );
   d_addedLemma = false;
+  
+  if( e == EFFORT_LAST_CALL ){
+    Assert( d_sygus_sym_break );
+    std::vector< Node > lemmas;
+    d_sygus_sym_break->check( lemmas );
+    doSendLemmas( lemmas );
+    return;
+  }
 
   TimerStat::CodeTimer checkTimer(d_checkTime);
 
@@ -353,13 +361,6 @@ void TheoryDatatypes::check(Effort e) {
     }while( !d_conflict && !d_addedLemma && d_addedFact );
     Trace("datatypes-debug") << "Finished, conflict=" << d_conflict << ", lemmas=" << d_addedLemma << std::endl;
     if( !d_conflict ){
-      if( !d_addedLemma ){
-        if( d_sygus_sym_break ){
-          std::vector< Node > lemmas;
-          d_sygus_sym_break->check( lemmas );
-          doSendLemmas( lemmas );
-        }
-      }
       Trace("dt-model-debug") << std::endl;
       printModelDebug("dt-model-debug");
     }
@@ -369,6 +370,10 @@ void TheoryDatatypes::check(Effort e) {
   if( Debug.isOn("datatypes") || Debug.isOn("datatypes-split") ) {
     Notice() << "TheoryDatatypes::check(): done" << endl;
   }
+}
+
+bool TheoryDatatypes::needsCheckLastEffort() {
+  return d_sygus_sym_break!=NULL;
 }
 
 void TheoryDatatypes::flushPendingFacts(){
@@ -478,7 +483,9 @@ void TheoryDatatypes::assertFact( Node fact, Node exp ){
     if( polarity ){
       if( d_sygus_sym_break ){
         unsigned s = atom[0].getConst<Rational>().getNumerator().toUnsignedInt();
-        d_sygus_sym_break->notifySearchSize( s );
+        std::vector< Node > lemmas;
+        d_sygus_sym_break->notifySearchSize( s, lemmas );
+        doSendLemmas( lemmas );
       }
     }
   }else{
@@ -1709,14 +1716,19 @@ Node TheoryDatatypes::getInstantiateCons( Node n, const Datatype& dt, int index 
   if( it!=d_inst_map[n].end() ){
     return it->second;
   }else{
-    //add constructor to equivalence class
-    Node k = getTermSkolemFor( n );
-    Node n_ic = DatatypesRewriter::getInstCons( k, dt, index );
-    //Assert( n_ic==Rewriter::rewrite( n_ic ) );
-    n_ic = Rewriter::rewrite( n_ic );
-    collectTerms( n_ic );
-    d_equalityEngine.addTerm(n_ic);
-    Debug("dt-enum") << "Made instantiate cons " << n_ic << std::endl;
+    Node n_ic;
+    if( n.getKind()==APPLY_CONSTRUCTOR && n.getNumChildren()==0 ){
+      n_ic = n;
+    }else{
+      //add constructor to equivalence class
+      Node k = getTermSkolemFor( n );
+      n_ic = DatatypesRewriter::getInstCons( k, dt, index );
+      //Assert( n_ic==Rewriter::rewrite( n_ic ) );
+      n_ic = Rewriter::rewrite( n_ic );
+      collectTerms( n_ic );
+      d_equalityEngine.addTerm(n_ic);
+      Debug("dt-enum") << "Made instantiate cons " << n_ic << std::endl;
+    }
     d_inst_map[n][index] = n_ic;
     return n_ic;
   }

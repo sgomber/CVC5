@@ -1388,7 +1388,7 @@ void CegInstantiation::getCRefEvaluationLemmas( CegConjecture * conj, std::vecto
           std::map< Node, Node > visitedc;
           std::map< Node, std::vector< Node > > expc;
           Node ce = conj->getConditionalEvaluationAntec( i, j );
-          Node cee = crefEvaluate( ce, vtm, visitedc, expc );
+          Node cee = d_quantEngine->getTermDatabaseSygus()->crefEvaluate( ce, vtm, visitedc, expc );
           Trace("sygus-cref-eval") << "Check conditional evaluation condition : " << ce << ", evaluates to " << cee << std::endl;
           if( !cee.isNull() && cee==d_quantEngine->getTermDatabase()->d_true  ){
             Node conc = conj->getConditionalEvaluationConc( i, j );
@@ -1416,7 +1416,7 @@ void CegInstantiation::getCRefEvaluationLemmas( CegConjecture * conj, std::vecto
       }
       if( !lem.isNull() ){
         Trace("sygus-cref-eval") << "Check refinement lemma " << lem << " against current model." << std::endl;
-        Node elem = crefEvaluate( lem, vtm, visited, exp );
+        Node elem = d_quantEngine->getTermDatabaseSygus()->crefEvaluate( lem, vtm, visited, exp );
         Trace("sygus-cref-eval") << "...evaluated to " << elem << ", exp size = " << exp[lem].size() << std::endl;
         if( !elem.isNull() && elem==d_quantEngine->getTermDatabase()->d_false ){
           elem = conj->getGuard().negate();
@@ -1437,102 +1437,6 @@ void CegInstantiation::getCRefEvaluationLemmas( CegConjecture * conj, std::vecto
   }
 }
 
-Node CegInstantiation::crefEvaluate( Node n, std::map< Node, Node >& vtm, std::map< Node, Node >& visited, std::map< Node, std::vector< Node > >& exp ){
-  std::map< Node, Node >::iterator itv = visited.find( n );
-  Node ret;
-  std::vector< Node > exp_c;
-  if( itv!=visited.end() ){
-    if( !itv->second.isConst() ){
-      //we stored a partially evaluated node, actually evaluate the result now
-      ret = crefEvaluate( itv->second, vtm, visited, exp );
-      exp_c.push_back( itv->second );
-    }else{
-      return itv->second;
-    }
-  }else{
-    if( n.getKind()==kind::APPLY_UF ){
-      //it is an evaluation function
-      Trace("sygus-cref-eval-debug") << "Compute evaluation for : " << n << std::endl;
-      //unfold by one step 
-      Node nn = d_quantEngine->getTermDatabaseSygus()->unfold( n, vtm, exp[n] );
-      Trace("sygus-cref-eval-debug") << "...unfolded once to " << nn << std::endl;
-      Assert( nn!=n );
-      //it is the result of evaluating the unfolding
-      ret = crefEvaluate( nn, vtm, visited, exp );
-      //carry explanation
-      exp_c.push_back( nn );
-    }
-    if( ret.isNull() ){
-      if( n.getNumChildren()>0 ){
-        std::vector< Node > children;
-        bool childChanged = false;
-        if( n.getMetaKind() == kind::metakind::PARAMETERIZED ){
-          children.push_back( n.getOperator() );
-        }
-        for( unsigned i=0; i<n.getNumChildren(); i++ ){
-          Node nc = crefEvaluate( n[i], vtm, visited, exp );
-          childChanged = nc!=n[i] || childChanged;
-          children.push_back( nc );
-          //Boolean short circuiting
-          if( n.getKind()==kind::AND ){
-            if( nc==d_quantEngine->getTermDatabase()->d_false ){
-              ret = nc;
-              exp_c.clear();
-            }
-          }else if( n.getKind()==kind::OR ){
-            if( nc==d_quantEngine->getTermDatabase()->d_true ){
-              ret = nc;
-              exp_c.clear();
-            }
-          }else if( n.getKind()==kind::ITE && i==0 ){
-            int index = -1;
-            if( nc==d_quantEngine->getTermDatabase()->d_true ){
-              index = 1;
-            }else if( nc==d_quantEngine->getTermDatabase()->d_false ){
-              index = 2;
-            }
-            if( index!=-1 ){
-              ret = crefEvaluate( n[index], vtm, visited, exp );
-              exp_c.push_back( n[index] );
-            }
-          }
-          //carry explanation
-          exp_c.push_back( n[i] );
-          if( !ret.isNull() ){
-            break;
-          }
-        }
-        if( ret.isNull() ){
-          if( childChanged ){
-            ret = NodeManager::currentNM()->mkNode( n.getKind(), children );
-            ret = Rewriter::rewrite( ret );
-          }else{
-            ret = n;
-          }
-        }
-      }else{
-        ret = n;
-      }
-    }
-  }
-  //carry explanation from children
-  for( unsigned i=0; i<exp_c.size(); i++ ){
-    Node nn = exp_c[i];
-    std::map< Node, std::vector< Node > >::iterator itx = exp.find( nn );
-    if( itx!=exp.end() ){
-      for( unsigned j=0; j<itx->second.size(); j++ ){
-        if( std::find( exp[n].begin(), exp[n].end(), itx->second[j] )==exp[n].end() ){
-          exp[n].push_back( itx->second[j] );
-        }
-      }
-    }
-  }
-  Trace("sygus-cref-eval-debug") << "... evaluation of " << n << " is (" << ret.getKind() << ") " << ret << std::endl;
-  Trace("sygus-cref-eval-debug") << "...... exp size = " << exp[n].size() << std::endl;
-  Assert( ret.isNull() || ret.isConst() );
-  visited[n] = ret;
-  return ret;
-}
 
 Node CegInstantiation::getEagerUnfold( Node n, std::map< Node, Node >& visited ) {
   std::map< Node, Node >::iterator itv = visited.find( n );

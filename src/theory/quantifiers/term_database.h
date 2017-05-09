@@ -638,7 +638,7 @@ public:
   /** is idempotent arg */
   bool isIdempotentArg( Node n, Kind ik, int arg );
   /** is singular arg */
-  bool isSingularArg( Node n, Kind ik, int arg );
+  Node isSingularArg( Node n, Kind ik, int arg );
   /** get offset arg */
   bool hasOffsetArg( Kind ik, int arg, int& offset, Kind& ok );
   /** get value */
@@ -686,7 +686,8 @@ public:
     std::vector< Node > exp;
     return unfold( en, vtm, exp, false );
   }
-  
+  // evaluate deep embedding term n, store minimized explanation for evaluation in exp
+  Node crefEvaluate( Node n, std::map< Node, Node >& vtm, std::map< Node, Node >& visited, std::map< Node, std::vector< Node > >& exp );
 //for calculating redundant operators
 private:
   //whether each constructor is redundant

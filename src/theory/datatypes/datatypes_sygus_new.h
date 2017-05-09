@@ -67,11 +67,16 @@ private:
 private:
   //list of all terms encountered in search at depth
   std::map< TypeNode, std::map< unsigned, std::vector< Node > > > d_search_terms[2];
+  std::map< Node, bool > d_search_val_proc;
+  std::map< TypeNode, std::map< Node, Node > > d_search_val;
+  std::map< TypeNode, std::map< Node, unsigned > > d_search_val_sz;
+  std::map< TypeNode, std::map< Node, Node > > d_search_val_b;
   std::map< Node, bool > d_is_top_level;
-  //list of all lemmas for a particular term
-  std::map< Node, std::vector< Node > > d_sb_lemmas;
+  std::map< TypeNode, std::map< unsigned, std::vector< Node > > > d_sb_lemmas;
   // register search term
   void registerSearchTerm( TypeNode tn, unsigned d, Node n, bool topLevel );
+  bool registerSearchValue( Node n, Node nv, unsigned d, std::vector< Node >& lemmas );
+  void registerSymBreakLemma( TypeNode tn, Node lem, unsigned sz );
 private:
   std::map< TypeNode, std::map< int, Node > > d_simple_sb_pred;
   std::map< TypeNode, Node > d_simple_sb_pred_var;
@@ -89,6 +94,7 @@ private:
 private:
   std::map< unsigned, bool > d_search_size;
   unsigned d_curr_search_size;
+  void incrementCurrentSearchSize( std::vector< Node >& lemmas );
 private:
   unsigned processSelectorChain( Node n, std::map< TypeNode, Node >& top_level, std::map< Node, unsigned >& tdepth );
 public:
@@ -97,7 +103,7 @@ public:
   /** add tester */
   void addTester( int tindex, TNode n, Node exp, std::vector< Node >& lemmas );
   void preRegisterTerm( TNode n );
-  void notifySearchSize( unsigned s );
+  void notifySearchSize( unsigned s, std::vector< Node >& lemmas );
   void check( std::vector< Node >& lemmas );
 };
 

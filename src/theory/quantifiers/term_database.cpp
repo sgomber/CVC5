@@ -1976,8 +1976,7 @@ bool TermDb::isComm( Kind k ) {
 }
 
 bool TermDb::isNonAdditive( Kind k ) {
-  return k==EQUAL || k==AND || k==OR || k==XOR || 
-         k==BITVECTOR_AND || k==BITVECTOR_OR || k==BITVECTOR_XOR || k==BITVECTOR_XNOR;
+  return k==AND || k==OR || k==BITVECTOR_AND || k==BITVECTOR_OR;
 }
 
 bool TermDb::isBoolConnective( Kind k ) {
@@ -2688,7 +2687,7 @@ Node TermDbSygus::getNormalized( TypeNode t, Node prog, bool do_pre_norm, bool d
 }
 
 int TermDbSygus::getSygusTermSize( Node n ){
-  if( isVar( n ) ){
+  if( n.getNumChildren()==0 ){
     return 0;
   }else{
     int sum = 0;
@@ -2728,13 +2727,13 @@ bool TermDbSygus::isIdempotentArg( Node n, Kind ik, int arg ) {
   if( n==getTypeValue( tn, 0 ) ){
     if( ik==PLUS || ik==OR || ik==XOR || ik==BITVECTOR_PLUS || ik==BITVECTOR_OR || ik==BITVECTOR_XOR ){
       return true;
-    }else if( ik==MINUS || ik==BITVECTOR_SHL || ik==BITVECTOR_LSHR || ik==BITVECTOR_SUB ){
+    }else if( ik==MINUS || ik==BITVECTOR_SHL || ik==BITVECTOR_LSHR || ik==BITVECTOR_ASHR || ik==BITVECTOR_SUB ){
       return arg==1;
     }
   }else if( n==getTypeValue( tn, 1 ) ){
     if( ik==MULT || ik==BITVECTOR_MULT ){
       return true;
-    }else if( ik==DIVISION || ik==BITVECTOR_UDIV || ik==BITVECTOR_SDIV ){
+    }else if( ik==DIVISION || ik==BITVECTOR_UDIV_TOTAL || ik==BITVECTOR_UDIV || ik==BITVECTOR_SDIV ){
       return arg==1;
     }
   }else if( n==getTypeMaxValue( tn ) ){
@@ -2746,20 +2745,29 @@ bool TermDbSygus::isIdempotentArg( Node n, Kind ik, int arg ) {
 }
 
 
-bool TermDbSygus::isSingularArg( Node n, Kind ik, int arg ) {
+Node TermDbSygus::isSingularArg( Node n, Kind ik, int arg ) {
   TypeNode tn = n.getType();
   if( n==getTypeValue( tn, 0 ) ){
     if( ik==AND || ik==MULT || ik==BITVECTOR_AND || ik==BITVECTOR_MULT ){
-      return true;
-    }else if( ik==DIVISION || ik==BITVECTOR_UDIV || ik==BITVECTOR_SDIV ){
-      return arg==0;
+      return n;
+    }else if( ik==BITVECTOR_SHL || ik==BITVECTOR_LSHR || ik==BITVECTOR_ASHR ){
+      if( arg==0 ){
+        return n;
+      }
+    }else if( ik==DIVISION_TOTAL || ik==BITVECTOR_UDIV_TOTAL || ik==BITVECTOR_UDIV || 
+              ik==BITVECTOR_SDIV || ik==BITVECTOR_UREM_TOTAL ){
+      //TODO?
+    }
+  }else if( n==getTypeValue( tn, 1 ) ){
+    if( ik==BITVECTOR_UREM_TOTAL ){
+      return getTypeValue( tn, 0 );
     }
   }else if( n==getTypeMaxValue( tn ) ){
     if( ik==OR || ik==BITVECTOR_OR ){
-      return true;
+      return n;
     }
   }
-  return false;
+  return Node::null();
 }
 
 bool TermDbSygus::hasOffsetArg( Kind ik, int arg, int& offset, Kind& ok ) {
@@ -3469,13 +3477,15 @@ Node TermDbSygus::unfold( Node en, std::map< Node, Node >& vtm, std::vector< Nod
       //replace by argument
       Node var_list = Node::fromExpr( dt.getSygusVarList() );
       //TODO : set argument # on sygus variables
+      bool foundArg = false;
       for( unsigned j=0; j<var_list.getNumChildren(); j++ ){
         if( var_list[j]==ret ){
           ret = args[j];
+          foundArg = true;
           break;
         }
       }
-      Assert( ret.isConst() );
+      Assert( foundArg );
     }else if( ret.getKind()==APPLY ){
       //must expand definitions to account for defined functions in sygus grammars
       ret = Node::fromExpr( smt::currentSmtEngine()->expandDefinitions( ret.toExpr() ) );
@@ -3485,6 +3495,103 @@ Node TermDbSygus::unfold( Node en, std::map< Node, Node >& vtm, std::vector< Nod
     Assert( en.isConst() );
   }
   return en;
+}
+
+Node TermDbSygus::crefEvaluate( Node n, std::map< Node, Node >& vtm, std::map< Node, Node >& visited, std::map< Node, std::vector< Node > >& exp ){
+  std::map< Node, Node >::iterator itv = visited.find( n );
+  Node ret;
+  std::vector< Node > exp_c;
+  if( itv!=visited.end() ){
+    if( !itv->second.isConst() && itv->second.getKind()==kind::APPLY_UF ){
+      //we stored a partially evaluated node, actually evaluate the result now
+      ret = crefEvaluate( itv->second, vtm, visited, exp );
+      exp_c.push_back( itv->second );
+    }else{
+      return itv->second;
+    }
+  }else{
+    if( n.getKind()==kind::APPLY_UF ){
+      //it is an evaluation function
+      Trace("sygus-cref-eval-debug") << "Compute evaluation for : " << n << std::endl;
+      //unfold by one step 
+      Node nn = unfold( n, vtm, exp[n] );
+      Trace("sygus-cref-eval-debug") << "...unfolded once to " << nn << std::endl;
+      Assert( nn!=n );
+      //it is the result of evaluating the unfolding
+      ret = crefEvaluate( nn, vtm, visited, exp );
+      //carry explanation
+      exp_c.push_back( nn );
+    }
+    if( ret.isNull() ){
+      if( n.getNumChildren()>0 ){
+        std::vector< Node > children;
+        bool childChanged = false;
+        if( n.getMetaKind() == kind::metakind::PARAMETERIZED ){
+          children.push_back( n.getOperator() );
+        }
+        for( unsigned i=0; i<n.getNumChildren(); i++ ){
+          Node nc = crefEvaluate( n[i], vtm, visited, exp );
+          childChanged = nc!=n[i] || childChanged;
+          children.push_back( nc );
+          //Boolean short circuiting
+          if( n.getKind()==kind::AND ){
+            if( nc==d_false ){
+              ret = nc;
+              exp_c.clear();
+            }
+          }else if( n.getKind()==kind::OR ){
+            if( nc==d_true ){
+              ret = nc;
+              exp_c.clear();
+            }
+          }else if( n.getKind()==kind::ITE && i==0 ){
+            int index = -1;
+            if( nc==d_true ){
+              index = 1;
+            }else if( nc==d_false ){
+              index = 2;
+            }
+            if( index!=-1 ){
+              ret = crefEvaluate( n[index], vtm, visited, exp );
+              exp_c.push_back( n[index] );
+            }
+          }
+          //carry explanation
+          exp_c.push_back( n[i] );
+          if( !ret.isNull() ){
+            break;
+          }
+        }
+        if( ret.isNull() ){
+          if( childChanged ){
+            ret = NodeManager::currentNM()->mkNode( n.getKind(), children );
+            ret = Rewriter::rewrite( ret );
+          }else{
+            ret = n;
+          }
+        }
+      }else{
+        ret = n;
+      }
+    }
+  }
+  //carry explanation from children
+  for( unsigned i=0; i<exp_c.size(); i++ ){
+    Node nn = exp_c[i];
+    std::map< Node, std::vector< Node > >::iterator itx = exp.find( nn );
+    if( itx!=exp.end() ){
+      for( unsigned j=0; j<itx->second.size(); j++ ){
+        if( std::find( exp[n].begin(), exp[n].end(), itx->second[j] )==exp[n].end() ){
+          exp[n].push_back( itx->second[j] );
+        }
+      }
+    }
+  }
+  Trace("sygus-cref-eval-debug") << "... evaluation of " << n << " is (" << ret.getKind() << ") " << ret << std::endl;
+  Trace("sygus-cref-eval-debug") << "...... exp size = " << exp[n].size() << std::endl;
+  //Assert( ret.isNull() || ret.isConst() );
+  visited[n] = ret;
+  return ret;
 }
   
 bool TermDbSygus::computeGenericRedundant( TypeNode tn, Node g ) {
