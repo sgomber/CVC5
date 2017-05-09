@@ -50,7 +50,9 @@ TESTS = commutative.sy \
         no-mention.sy \
         max2-univ.sy \
         strings-small.sy \
-        strings-unconstrained.sy
+        strings-unconstrained.sy \
+        tl-type-4x.sy \
+        tl-type-0.sy
 
 # sygus tests currently taking too long for make regress
 EXTRA_DIST = $(TESTS) \

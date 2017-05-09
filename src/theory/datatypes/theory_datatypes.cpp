@@ -1009,7 +1009,8 @@ bool TheoryDatatypes::hasTester( Node n ) {
 }
 
 void TheoryDatatypes::getPossibleCons( EqcInfo* eqc, Node n, std::vector< bool >& pcons ){
-  const Datatype& dt = ((DatatypeType)(n.getType()).toType()).getDatatype();
+  TypeNode tn = n.getType();
+  const Datatype& dt = ((DatatypeType)(tn).toType()).getDatatype();
   int lindex = getLabelIndex( eqc, n );
   pcons.resize( dt.getNumConstructors(), lindex==-1 );
   if( lindex!=-1 ){
@@ -1025,6 +1026,10 @@ void TheoryDatatypes::getPossibleCons( EqcInfo* eqc, Node n, std::vector< bool >
         int tindex = DatatypesRewriter::isTester( t[0] );
         Assert( tindex!=-1 );
         pcons[ tindex ] = false;
+      }
+      //further limit the possibilities based on grammar minimization
+      if( d_sygus_sym_break && dt.isSygus() ){
+        d_sygus_sym_break->getPossibleCons( dt, tn, pcons );
       }
     }
   }
@@ -1145,7 +1150,7 @@ void TheoryDatatypes::addTester( int ttindex, Node t, EqcInfo* eqc, Node n, Node
         //check if we have reached the maximum number of testers
         // in this case, add the positive tester
         //this should not be done for sygus, since cases may be limited
-        if( n_lbl==(int)dt.getNumConstructors()-1 && !dt.isSygus() ){
+        if( n_lbl==(int)dt.getNumConstructors()-1 ){
           std::vector< bool > pcons;
           getPossibleCons( eqc, n, pcons );
           int testerIndex = -1;
@@ -1155,7 +1160,7 @@ void TheoryDatatypes::addTester( int ttindex, Node t, EqcInfo* eqc, Node n, Node
               break;
             }
           }
-          Assert( testerIndex!=-1 );
+          Assert( dt.isSygus() || testerIndex!=-1 );
           //we must explain why each term in the set of testers for this equivalence class is equal
           std::vector< Node > eq_terms;
           NodeBuilder<> nb(kind::AND);
@@ -1175,7 +1180,7 @@ void TheoryDatatypes::addTester( int ttindex, Node t, EqcInfo* eqc, Node n, Node
               }
             }
           }
-          Node t_concl = DatatypesRewriter::mkTester( t_arg, testerIndex, dt );
+          Node t_concl = testerIndex==-1 ? NodeManager::currentNM()->mkConst( false ) : DatatypesRewriter::mkTester( t_arg, testerIndex, dt );
           Node t_concl_exp = ( nb.getNumChildren() == 1 ) ? nb.getChild( 0 ) : nb;
           d_pending.push_back( t_concl );
           d_pending_exp[ t_concl ] = t_concl_exp;

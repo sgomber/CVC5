@@ -95,6 +95,7 @@ public:
   virtual void preRegisterTerm( TNode n ) = 0;
   virtual void notifySearchSize( unsigned s, Node exp, std::vector< Node >& lemma ) = 0;
   virtual void check( std::vector< Node >& lemmas ) = 0; 
+  virtual void getPossibleCons( const Datatype& dt, TypeNode tn, std::vector< bool >& pcons ) = 0; 
 };
 
 
@@ -162,6 +163,7 @@ public:
   void preRegisterTerm( TNode n ){}
   void notifySearchSize( unsigned s, Node exp, std::vector< Node >& lemma ){}
   void check( std::vector< Node >& lemmas ){}
+  void getPossibleCons( const Datatype& dt, TypeNode tn, std::vector< bool >& pcons ) {}
 };
 
 }

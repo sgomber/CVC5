@@ -936,6 +936,16 @@ void SygusSymBreakNew::check( std::vector< Node >& lemmas ) {
   }
 }
 
+void SygusSymBreakNew::getPossibleCons( const Datatype& dt, TypeNode tn, std::vector< bool >& pcons ) {
+  Assert( pcons.size()==dt.getNumConstructors() );
+  d_tds->registerSygusType( tn );
+  for( unsigned i=0; i<dt.getNumConstructors(); i++ ){
+    if( d_tds->isGenericRedundant( tn, i ) ){
+      pcons[i] = false;
+    }
+  }
+}
+
 void SygusSymBreakNew::debugTermSize( Node n, int ind ) {
   Node progv = d_td->getValuation().getModel()->getValue( n );
   Assert( progv.getKind()==kind::APPLY_CONSTRUCTOR );

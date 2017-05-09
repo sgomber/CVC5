@@ -109,6 +109,7 @@ public:
   void preRegisterTerm( TNode n );
   void notifySearchSize( unsigned s, Node exp, std::vector< Node >& lemmas );
   void check( std::vector< Node >& lemmas );
+  void getPossibleCons( const Datatype& dt, TypeNode tn, std::vector< bool >& pcons );
 };
 
 
