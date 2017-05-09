@@ -61,6 +61,7 @@ private:
   context::Context* d_context;
   typedef context::CDHashMap< Node, int, NodeHashFunction > IntMap;
   typedef context::CDHashMap< Node, Node, NodeHashFunction > NodeMap;
+  typedef context::CDChunkList<Node> NodeList;
   IntMap d_testers;
   NodeMap d_testers_exp;
   std::map< Node, Node > d_sel_to_anchor;
@@ -92,6 +93,7 @@ private:
   std::map< Node, bool > d_register_st;
   void registerSizeTerm( Node e );
 private:
+  std::map< unsigned, Node > d_search_size_exp;
   std::map< unsigned, bool > d_search_size;
   unsigned d_curr_search_size;
   void incrementCurrentSearchSize( std::vector< Node >& lemmas );
@@ -105,7 +107,7 @@ public:
   /** add tester */
   void addTester( int tindex, TNode n, Node exp, std::vector< Node >& lemmas );
   void preRegisterTerm( TNode n );
-  void notifySearchSize( unsigned s, std::vector< Node >& lemmas );
+  void notifySearchSize( unsigned s, Node exp, std::vector< Node >& lemmas );
   void check( std::vector< Node >& lemmas );
 };
 

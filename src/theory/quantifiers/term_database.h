@@ -686,6 +686,7 @@ public:
     std::vector< Node > exp;
     return unfold( en, vtm, exp, false );
   }
+  void getExplanationForConstantEquality( Node n, Node vn, std::vector< Node >& exp );
   // evaluate deep embedding term n, store minimized explanation for evaluation in exp
   Node crefEvaluate( Node n, std::map< Node, Node >& vtm, std::map< Node, Node >& visited, std::map< Node, std::vector< Node > >& exp );
 //for calculating redundant operators

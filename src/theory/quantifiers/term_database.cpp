@@ -30,6 +30,7 @@
 //for sygus
 #include "smt/smt_engine_scope.h"
 #include "theory/bv/theory_bv_utils.h"
+#include "theory/datatypes/datatypes_rewriter.h"
 #include "util/bitvector.h"
 
 using namespace std;
@@ -3394,7 +3395,11 @@ void TermDbSygus::registerModelValue( Node a, Node v, std::vector< Node >& terms
         Node vn = n.substitute( at, vt );
         vn = Rewriter::rewrite( vn );
         unsigned start = d_node_mv_args_proc[n][vn];
-        Node antec = n.eqNode( vn );
+        // get explanation in terms of testers
+        std::vector< Node > antec_exp;
+        getExplanationForConstantEquality( n, vn, antec_exp );
+        Node antec = antec_exp.size()==1 ? antec_exp[0] : NodeManager::currentNM()->mkNode( kind::AND, antec_exp );
+        //Node antec = n.eqNode( vn );
         TypeNode tn = n.getType();
         Assert( tn.isDatatype() );
         const Datatype& dt = ((DatatypeType)(tn).toType()).getDatatype();
@@ -3429,6 +3434,19 @@ void TermDbSygus::registerModelValue( Node a, Node v, std::vector< Node >& terms
   }
 }
 
+void TermDbSygus::getExplanationForConstantEquality( Node n, Node vn, std::vector< Node >& exp ) {
+  Assert( vn.getKind()==kind::APPLY_CONSTRUCTOR );
+  Assert( n.getType()==vn.getType() );
+  TypeNode tn = n.getType();
+  Assert( tn.isDatatype() );
+  const Datatype& dt = ((DatatypeType)tn.toType()).getDatatype();
+  int i = Datatype::indexOf( vn.getOperator().toExpr() );
+  exp.push_back( datatypes::DatatypesRewriter::mkTester( n, i, dt ) );
+  for( unsigned j=0; j<vn.getNumChildren(); j++ ){
+    Node sel = NodeManager::currentNM()->mkNode( kind::APPLY_SELECTOR_TOTAL, Node::fromExpr( dt[i].getSelectorInternal( tn.toType(), j ) ), n );
+    getExplanationForConstantEquality( sel, vn[j], exp );
+  }
+}
 
 Node TermDbSygus::unfold( Node en, std::map< Node, Node >& vtm, std::vector< Node >& exp, bool track_exp ) {
   if( en.getKind()==kind::APPLY_UF ){

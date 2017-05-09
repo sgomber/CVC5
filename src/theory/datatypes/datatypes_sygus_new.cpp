@@ -130,9 +130,6 @@ void SygusSymBreakNew::addTester( int tindex, TNode n, Node exp, std::vector< No
     registerSizeTerm( e );
     //must be a sygus datatype
     if( d_register_st[e] ){
-      Trace("sygus-sb-debug2") << "Sygus : process tester : " << exp << std::endl;
-      //for eager
-      //d_sel_to_anchor[n] = e;
       //d_testers[n] = tindex;
       //d_testers_exp[n] = exp;
       
@@ -141,30 +138,46 @@ void SygusSymBreakNew::addTester( int tindex, TNode n, Node exp, std::vector< No
       std::map< Node, unsigned > tdepth;
       processSelectorChain( n, top_level, tdepth, lemmas );
       
-      // process context-dependent symmetry breaking (eager?)
-      /*
-      for( std::map< Node, unsigned >::iterator it = tdepth.begin(); it != tdepth.end(); ++it ){
-        Node nn = it->first;
-        unsigned depth = it->second;
-        bool tl = d_is_top_level.find( nn )!=d_is_top_level.end();
-        Trace("sygus-sb-debug") << "  term : " << nn << " at depth " << depth << ", tl=" << tl << std::endl;
-        if( tl ){
-           
+      unsigned adepth = quantifiers::TermDbSygus::getAnchorDepth( n );
+      //if( adepth<=d_curr_search_size ){
+        Trace("sygus-sb-debug2") << "Sygus : process tester, depth = " << adepth << " : " << exp << std::endl;
+        //for eager
+        //d_sel_to_anchor[n] = e;
+        
+        
+        // process context-dependent symmetry breaking (eager?)
+        /*
+        for( std::map< Node, unsigned >::iterator it = tdepth.begin(); it != tdepth.end(); ++it ){
+          Node nn = it->first;
+          unsigned depth = it->second;
+          bool tl = d_is_top_level.find( nn )!=d_is_top_level.end();
+          Trace("sygus-sb-debug") << "  term : " << nn << " at depth " << depth << ", tl=" << tl << std::endl;
+          if( tl ){
+             
+          }
         }
-      }
-      */
-      
-      // process simple symmetry breaking
-      if( d_simple_proc.find( exp )==d_simple_proc.end() ){
-        d_simple_proc[exp] = true;
-        TypeNode tn = n.getType();
-        Node simple_sb_pred = getSimpleSymBreakPred( tn, tindex );
-        if( !simple_sb_pred.isNull() ){
-          TNode x = getSimpleSymBreakPredVar( tn );
-          simple_sb_pred = simple_sb_pred.substitute( x, n );
-          lemmas.push_back( simple_sb_pred ); 
+        */
+        
+        // process simple symmetry breaking
+        if( d_simple_proc.find( exp )==d_simple_proc.end() ){
+          d_simple_proc[exp] = true;
+          TypeNode tn = n.getType();
+          Node simple_sb_pred = getSimpleSymBreakPred( tn, tindex );
+          if( !simple_sb_pred.isNull() ){
+            TNode x = getSimpleSymBreakPredVar( tn );
+            simple_sb_pred = simple_sb_pred.substitute( x, n );
+            lemmas.push_back( simple_sb_pred ); 
+          }
         }
-      }
+      //}else{
+        //delay
+        /*
+        Assert( d_search_size_exp.find( d_curr_search_size )!=d_search_size_exp.end() );
+        Node exps = d_search_size_exp[d_curr_search_size];
+        Node lem = NodeManager::currentNM()->mkNode( DT_SIZE, n ).eqNode( NodeManager::currentNM()->mkConst( Rational(0) ) );
+        lemmas.push_back( NodeManager::currentNM()->mkNode( kind::OR, exps.negate(), exp.negate(), lem ) );
+        */
+      //}
     }
   }
 }
@@ -217,32 +230,25 @@ Node SygusSymBreakNew::getSimpleSymBreakPred( TypeNode tn, int tindex ) {
               Node sz_eq = NodeManager::currentNM()->mkNode( EQUAL, NodeManager::currentNM()->mkNode( DT_SIZE, children[0] ), 
                                                                     NodeManager::currentNM()->mkNode( DT_SIZE, children[1] ) );
               sz_eq_cases.push_back( sz_eq );
-              //TODO
-              /*
-              TypeNode tnc = children[0].getType();
-              const Datatype& cdt = ((DatatypeType)(tnc).toType()).getDatatype();
-              for( unsigned j=0; j<cdt.getNumConstructors(); j++ ){
-                if( !d_tds->isGenericRedundant( tnc, j ) ){
-                  std::vector< Node > case_conj;
-                  for( unsigned k=0; k<j; k++ ){
-                    if( !d_tds->isGenericRedundant( tnc, k ) ){
-                      case_conj.push_back( DatatypesRewriter::mkTester( children[1], k, cdt ) );
+              if( !options::sygusNormalFormGlobalArg() ){  //FIXME
+                TypeNode tnc = children[0].getType();
+                const Datatype& cdt = ((DatatypeType)(tnc).toType()).getDatatype();
+                for( unsigned j=0; j<cdt.getNumConstructors(); j++ ){
+                  if( !d_tds->isGenericRedundant( tnc, j ) ){
+                    std::vector< Node > case_conj;
+                    for( unsigned k=0; k<j; k++ ){
+                      if( !d_tds->isGenericRedundant( tnc, k ) ){
+                        case_conj.push_back( DatatypesRewriter::mkTester( children[1], k, cdt ).negate() );
+                      }
                     }
-                  }
-                  if( options::ceGuidedInstFair()==quantifiers::CEGQI_FAIR_DT_SIZE ){
-                    Node szl = NodeManager::currentNM()->mkNode( DT_SIZE, children[0] );
-                    Node szr = NodeManager::currentNM()->mkNode( DT_SIZE, DatatypesRewriter::getInstCons( children[0], cdt, j ) );
-                    szr = Rewriter::rewrite( szr );
-                    case_conj.push_back( szl.eqNode( szr ) );
-                  }
-                  if( !case_conj.empty() ){
-                    Node corder = NodeManager::currentNM()->mkNode( kind::OR, DatatypesRewriter::mkTester( children[0], j, cdt ).negate(),
-                                                                    case_conj.size()==1 ? case_conj[0] : NodeManager::currentNM()->mkNode( kind::AND, case_conj ) );
-                    sz_eq_cases.push_back( corder );
+                    if( !case_conj.empty() ){
+                      Node corder = NodeManager::currentNM()->mkNode( kind::OR, DatatypesRewriter::mkTester( children[0], j, cdt ).negate(),
+                                                                      case_conj.size()==1 ? case_conj[0] : NodeManager::currentNM()->mkNode( kind::AND, case_conj ) );
+                      sz_eq_cases.push_back( corder );
+                    }
                   }
                 }
               }
-              */
               Node sz_eqc = sz_eq_cases.size()==1 ? sz_eq_cases[0] : NodeManager::currentNM()->mkNode( kind::AND, sz_eq_cases );
               comm_disj.push_back( sz_eqc );
               
@@ -702,6 +708,7 @@ bool SygusSymBreakNew::registerSearchValue( Node n, Node nv, unsigned d, std::ve
         Node x = getSimpleSymBreakPredVar( tn );
         
         // do analysis of the evaluation
+        /*
         const Datatype& dt = ((DatatypeType)tn.toType()).getDatatype();
         std::vector< Node > echildren;
         echildren.push_back( Node::fromExpr( dt.getSygusEvaluationFunc() ) );
@@ -721,6 +728,10 @@ bool SygusSymBreakNew::registerSearchValue( Node n, Node nv, unsigned d, std::ve
         //Assert( v==NodeManager::currentNM()->mkConst( true ) );
         Assert( !exp[eq].empty() );
         Node lem = exp[eq].size()==1 ? exp[eq][0] : NodeManager::currentNM()->mkNode( kind::AND, exp[eq] );
+        */
+        std::vector< Node > exp;
+        d_tds->getExplanationForConstantEquality( x, nv, exp );
+        Node lem = exp.size()==1 ? exp[0] : NodeManager::currentNM()->mkNode( kind::AND, exp );
         lem = lem.negate();
         Trace("sygus-sb-exc") << "  ........exc lemma is " << lem << ", size = " << sz << std::endl;
         registerSymBreakLemma( tn, lem, sz, lemmas );
@@ -782,15 +793,30 @@ void SygusSymBreakNew::registerSizeTerm( Node e ) {
   }
 }
 
-void SygusSymBreakNew::notifySearchSize( unsigned s, std::vector< Node >& lemmas ) {
+void SygusSymBreakNew::notifySearchSize( unsigned s, Node exp, std::vector< Node >& lemmas ) {
   if( d_search_size.find( s )==d_search_size.end() ){
     d_search_size[s] = true;
+    d_search_size_exp[s] = exp;
     Assert( s==0 || d_search_size.find( s-1 )!=d_search_size.end() );
     Trace("sygus-sb") << "SygusSymBreakNew:: now considering term measure : " << s << std::endl;
     Assert( s>=d_curr_search_size );
     while( s>d_curr_search_size ){
       incrementCurrentSearchSize( lemmas );
     }
+    /*
+    //re-add all testers (some may now be relevant) TODO
+    for( IntMap::const_iterator it = d_testers.begin(); it != d_testers.end(); ++it ){
+      Node n = (*it).first;
+      NodeMap::const_iterator itx = d_testers_exp.find( n );
+      if( itx!=d_testers_exp.end() ){
+        int tindex = (*it).second;
+        Node exp = (*itx).second;
+        addTester( tindex, n, exp, lemmas );
+      }else{
+        Assert( false );
+      }
+    }
+    */
   }
 }
 
@@ -901,9 +927,10 @@ void SygusSymBreakNew::check( std::vector< Node >& lemmas ) {
         }
         //AlwaysAssert( prog_szv.getConst<Rational>().getNumerator().toUnsignedInt() <= d_curr_search_size );
       }
-      
-      if( !registerSearchValue( prog, progv, 0, lemmas ) ){
-        break;
+      if( options::sygusSymBreakDynamic() ){
+        if( !registerSearchValue( prog, progv, 0, lemmas ) ){
+          break;
+        }
       }
     }
   }

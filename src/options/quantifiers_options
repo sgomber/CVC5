@@ -263,7 +263,9 @@ option cegqiSingleInvAbort --cegqi-si-abort bool :default false
   abort if synthesis conjecture is not single invocation
   
 option sygusSymBreak --sygus-sym-break bool :default true
-  sygus sym break utility
+  simple sygus sym break lemmas
+option sygusSymBreakDynamic --sygus-sym-break-dynamic bool :default true
+  dynamic sygus sym break lemmas
 
 option sygusNormalForm --sygus-nf bool :default true
   only search for sygus builtin terms that are in normal form

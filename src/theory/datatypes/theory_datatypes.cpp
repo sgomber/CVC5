@@ -484,7 +484,7 @@ void TheoryDatatypes::assertFact( Node fact, Node exp ){
       if( d_sygus_sym_break ){
         unsigned s = atom[0].getConst<Rational>().getNumerator().toUnsignedInt();
         std::vector< Node > lemmas;
-        d_sygus_sym_break->notifySearchSize( s, lemmas );
+        d_sygus_sym_break->notifySearchSize( s, atom, lemmas );
         doSendLemmas( lemmas );
       }
     }
