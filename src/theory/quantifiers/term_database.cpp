@@ -2727,13 +2727,13 @@ bool TermDbSygus::isIdempotentArg( Node n, Kind ik, int arg ) {
   if( n==getTypeValue( tn, 0 ) ){
     if( ik==PLUS || ik==OR || ik==XOR || ik==BITVECTOR_PLUS || ik==BITVECTOR_OR || ik==BITVECTOR_XOR ){
       return true;
-    }else if( ik==MINUS || ik==BITVECTOR_SHL || ik==BITVECTOR_LSHR || ik==BITVECTOR_ASHR || ik==BITVECTOR_SUB ){
+    }else if( ik==MINUS || ik==BITVECTOR_SHL || ik==BITVECTOR_LSHR || ik==BITVECTOR_ASHR || ik==BITVECTOR_SUB || ik==BITVECTOR_UREM_TOTAL ){
       return arg==1;
     }
   }else if( n==getTypeValue( tn, 1 ) ){
     if( ik==MULT || ik==BITVECTOR_MULT ){
       return true;
-    }else if( ik==DIVISION || ik==BITVECTOR_UDIV_TOTAL || ik==BITVECTOR_UDIV || ik==BITVECTOR_SDIV ){
+    }else if( ik==DIVISION || ik==DIVISION_TOTAL || ik==BITVECTOR_UDIV_TOTAL || ik==BITVECTOR_UDIV || ik==BITVECTOR_SDIV ){
       return arg==1;
     }
   }else if( n==getTypeMaxValue( tn ) ){
@@ -2750,13 +2750,22 @@ Node TermDbSygus::isSingularArg( Node n, Kind ik, int arg ) {
   if( n==getTypeValue( tn, 0 ) ){
     if( ik==AND || ik==MULT || ik==BITVECTOR_AND || ik==BITVECTOR_MULT ){
       return n;
-    }else if( ik==BITVECTOR_SHL || ik==BITVECTOR_LSHR || ik==BITVECTOR_ASHR ){
+    }else if( ik==BITVECTOR_SHL || ik==BITVECTOR_LSHR || ik==BITVECTOR_ASHR || ik==BITVECTOR_UREM_TOTAL ){
       if( arg==0 ){
         return n;
       }
-    }else if( ik==DIVISION_TOTAL || ik==BITVECTOR_UDIV_TOTAL || ik==BITVECTOR_UDIV || 
-              ik==BITVECTOR_SDIV || ik==BITVECTOR_UREM_TOTAL ){
-      //TODO?
+    }else if( ik==BITVECTOR_UDIV_TOTAL || ik==BITVECTOR_UDIV || ik==BITVECTOR_SDIV ){
+      if( arg==0 ){
+        return n;
+      }else if( arg==1 ){
+        return getTypeMaxValue( tn );
+      }
+    }else if( ik==DIVISION || ik==DIVISION_TOTAL ){
+      if( arg==0 ){
+        return n;
+      }else{
+        //TODO?
+      }
     }
   }else if( n==getTypeValue( tn, 1 ) ){
     if( ik==BITVECTOR_UREM_TOTAL ){

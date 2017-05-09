@@ -30,6 +30,7 @@
 #include "theory/theory.h"
 #include "theory/uf/equality_engine.h"
 #include "util/hash.h"
+#include "expr/attribute.h"
 
 namespace CVC4 {
 namespace theory {
@@ -39,6 +40,10 @@ namespace quantifiers{
 }
 
 namespace datatypes {
+
+/** Attribute true for nodes that are skolems for terms */
+struct TermSkolemAttributeId {};
+typedef expr::Attribute< TermSkolemAttributeId, Node > TermSkolemAttribute;
 
 class TheoryDatatypes : public Theory {
 private:

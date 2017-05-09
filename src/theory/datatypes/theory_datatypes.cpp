@@ -507,7 +507,6 @@ void TheoryDatatypes::assertFact( Node fact, Node exp ){
     if( !d_conflict && polarity ){
       if( d_sygus_sym_break ){
         Trace("dt-sygus") << "Assert tester to sygus : " << atom << std::endl;
-        Assert( !options::dtSharedSelectors() );
         //Assert( !d_sygus_util->d_conflict );
         std::vector< Node > lemmas;
         d_sygus_sym_break->addTester( tindex, t_arg, atom, lemmas );
@@ -1043,6 +1042,8 @@ Node TheoryDatatypes::getTermSkolemFor( Node n ) {
     if( it==d_term_sk.end() ){
       //add purification unit lemma ( k = n )
       Node k = NodeManager::currentNM()->mkSkolem( "k", n.getType(), "reference skolem for datatypes" );
+      TermSkolemAttribute tsa;
+      k.setAttribute(tsa,n);
       d_term_sk[n] = k;
       Node eq = k.eqNode( n );
       Trace("datatypes-infer") << "DtInfer : ref : " << eq << std::endl;
@@ -2299,10 +2300,8 @@ void TheoryDatatypes::registerSygusMeasuredTerm( Node t ) {
     lems.push_back( NodeManager::currentNM()->mkNode( kind::GEQ, ds, d_zero ) );
   }
   d_sygus_measure_term_active = new_mt;
-  
-  for( unsigned i=0; i<lems.size(); i++ ){
-    doSendLemma( lems[i] );
-  }
+
+  doSendLemmas( lems );
 }
 
 } /* namepsace CVC4::theory::datatypes */

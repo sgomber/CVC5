@@ -66,7 +66,7 @@ private:
   std::map< Node, Node > d_sel_to_anchor;
 private:
   //list of all terms encountered in search at depth
-  std::map< TypeNode, std::map< unsigned, std::vector< Node > > > d_search_terms[2];
+  std::map< TypeNode, std::map< unsigned, std::vector< Node > > > d_search_terms;
   std::map< Node, bool > d_search_val_proc;
   std::map< TypeNode, std::map< Node, Node > > d_search_val;
   std::map< TypeNode, std::map< Node, unsigned > > d_search_val_sz;
@@ -74,9 +74,9 @@ private:
   std::map< Node, bool > d_is_top_level;
   std::map< TypeNode, std::map< unsigned, std::vector< Node > > > d_sb_lemmas;
   // register search term
-  void registerSearchTerm( TypeNode tn, unsigned d, Node n, bool topLevel );
+  void registerSearchTerm( TypeNode tn, unsigned d, Node n, bool topLevel, std::vector< Node >& lemmas );
   bool registerSearchValue( Node n, Node nv, unsigned d, std::vector< Node >& lemmas );
-  void registerSymBreakLemma( TypeNode tn, Node lem, unsigned sz );
+  void registerSymBreakLemma( TypeNode tn, Node lem, unsigned sz, std::vector< Node >& lemmas );
 private:
   std::map< TypeNode, std::map< int, Node > > d_simple_sb_pred;
   std::map< TypeNode, Node > d_simple_sb_pred_var;
@@ -96,7 +96,8 @@ private:
   unsigned d_curr_search_size;
   void incrementCurrentSearchSize( std::vector< Node >& lemmas );
 private:
-  unsigned processSelectorChain( Node n, std::map< TypeNode, Node >& top_level, std::map< Node, unsigned >& tdepth );
+  unsigned processSelectorChain( Node n, std::map< TypeNode, Node >& top_level, 
+                                 std::map< Node, unsigned >& tdepth, std::vector< Node >& lemmas );
 public:
   SygusSymBreakNew( TheoryDatatypes * td, quantifiers::TermDbSygus * tds, context::Context* c );
   ~SygusSymBreakNew();
