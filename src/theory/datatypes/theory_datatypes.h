@@ -25,7 +25,7 @@
 
 #include "context/cdchunk_list.h"
 #include "expr/datatype.h"
-#include "theory/datatypes/datatypes_sygus_new.h"
+#include "theory/datatypes/datatypes_sygus.h"
 #include "theory/theory.h"
 #include "theory/uf/equality_engine.h"
 #include "util/hash.h"
