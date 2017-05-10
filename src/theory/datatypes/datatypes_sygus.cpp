@@ -959,6 +959,13 @@ void SygusSymBreakNew::debugTermSize( Node n, int ind ) {
   TypeNode tn = n.getType();
   const Datatype& dt = ((DatatypeType)tn.toType()).getDatatype();
   int cindex = Datatype::indexOf( progv.getOperator().toExpr() );
+  Node tst = DatatypesRewriter::mkTester( n, cindex, dt );
+  bool hastst = d_td->getValuation().getModel()->hasTerm( tst );
+  Node tstrep = d_td->getValuation().getModel()->getRepresentative( tst );
+  if( !hastst || tstrep!=NodeManager::currentNM()->mkConst( true ) ){
+    Trace("sygus-sb") << "- has tester : " << tst << " : " << ( hastst ? "true" : "false" );
+    Trace("sygus-sb") << ", value=" << tstrep << std::endl;
+  }
   for( unsigned i=0; i<progv.getNumChildren(); i++ ){
     Node sel = NodeManager::currentNM()->mkNode( kind::APPLY_SELECTOR_TOTAL, Node::fromExpr( dt[cindex].getSelectorInternal( tn.toType(), i ) ), n );
     debugTermSize( sel, ind+1 );

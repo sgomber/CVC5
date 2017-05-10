@@ -283,7 +283,7 @@ void TheoryDatatypes::check(Effort e) {
                 consIndex = fconsIndex!=-1 ? fconsIndex : consIndex;
               }
 
-              if( needSplit && consIndex!=-1 ) {
+              if( needSplit ) {
                 if( dt.getNumConstructors()==1 ){
                   //this may not be necessary?
                   //if only one constructor, then this term must be this constructor
@@ -293,7 +293,8 @@ void TheoryDatatypes::check(Effort e) {
                   Trace("datatypes-infer") << "DtInfer : 1-cons (full) : " << t << std::endl;
                   d_infer.push_back( t );
                 }else{
-                  if( options::dtBinarySplit() ){
+                  Assert( consIndex!=-1 || dt.isSygus() );
+                  if( options::dtBinarySplit() && consIndex!=-1 ){
                     Node test = DatatypesRewriter::mkTester( n, consIndex, dt );
                     Trace("dt-split") << "*************Split for possible constructor " << dt[consIndex] << " for " << n << endl;
                     test = Rewriter::rewrite( test );

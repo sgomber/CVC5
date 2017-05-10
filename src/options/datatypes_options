@@ -32,4 +32,11 @@ option dtBlastSplits --dt-blast-splits bool :default false
 option dtSharedSelectors --dt-share-sel bool :default false
  internally use shared selectors across multiple constructors
  
+option sygusSymBreak --sygus-sym-break bool :default true
+  simple sygus sym break lemmas
+option sygusSymBreakDynamic --sygus-sym-break-dynamic bool :default true
+  dynamic sygus sym break lemmas
+option sygusOpt1 --sygus-opt1 bool :default false
+  sygus experimental option 
+ 
 endmodule

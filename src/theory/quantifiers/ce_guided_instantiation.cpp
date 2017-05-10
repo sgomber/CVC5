@@ -1256,7 +1256,7 @@ void CegInstantiation::checkCegConjecture( CegConjecture * conj ) {
               }
             }
             if( addedEvalLemmas ){
-              return;
+              //return;
             }
           }
         }
@@ -1415,21 +1415,33 @@ void CegInstantiation::getCRefEvaluationLemmas( CegConjecture * conj, std::vecto
         lem = conj->getRefinementBaseLemma( i );
       }
       if( !lem.isNull() ){
-        Trace("sygus-cref-eval") << "Check refinement lemma " << lem << " against current model." << std::endl;
-        Node elem = d_quantEngine->getTermDatabaseSygus()->crefEvaluate( lem, vtm, visited, exp );
-        Trace("sygus-cref-eval") << "...evaluated to " << elem << ", exp size = " << exp[lem].size() << std::endl;
-        if( !elem.isNull() && elem==d_quantEngine->getTermDatabase()->d_false ){
-          elem = conj->getGuard().negate();
-          Node cre_lem;
-          if( !exp[lem].empty() ){
-            Node en = exp[lem].size()==1 ? exp[lem][0] : NodeManager::currentNM()->mkNode( kind::AND, exp[lem] );
-            cre_lem = NodeManager::currentNM()->mkNode( kind::OR, en.negate(), elem );
-          }else{
-            cre_lem = elem;
+        std::vector< Node > lem_conj;
+        //break into conjunctions
+        if( lem.getKind()==kind::AND ){
+          for( unsigned i=0; i<lem.getNumChildren(); i++ ){
+            lem_conj.push_back( lem[i] );
           }
-          if( std::find( lems.begin(), lems.end(), cre_lem )==lems.end() ){
-            Trace("sygus-cref-eval") << "...produced lemma : " << cre_lem << std::endl;
-            lems.push_back( cre_lem );
+        }else{
+          lem_conj.push_back( lem );
+        }
+        for( unsigned j=0; j<lem_conj.size(); j++ ){
+          Node lemc = lem_conj[j];
+          Trace("sygus-cref-eval") << "Check refinement lemma conjunct " << lemc << " against current model." << std::endl;
+          Node elem = d_quantEngine->getTermDatabaseSygus()->crefEvaluate( lemc, vtm, visited, exp );
+          Trace("sygus-cref-eval") << "...evaluated to " << elem << ", exp size = " << exp[lemc].size() << std::endl;
+          if( !elem.isNull() && elem==d_quantEngine->getTermDatabase()->d_false ){
+            elem = conj->getGuard().negate();
+            Node cre_lem;
+            if( !exp[lemc].empty() ){
+              Node en = exp[lemc].size()==1 ? exp[lemc][0] : NodeManager::currentNM()->mkNode( kind::AND, exp[lemc] );
+              cre_lem = NodeManager::currentNM()->mkNode( kind::OR, en.negate(), elem );
+            }else{
+              cre_lem = elem;
+            }
+            if( std::find( lems.begin(), lems.end(), cre_lem )==lems.end() ){
+              Trace("sygus-cref-eval") << "...produced lemma : " << cre_lem << std::endl;
+              lems.push_back( cre_lem );
+            }
           }
         }
       }
