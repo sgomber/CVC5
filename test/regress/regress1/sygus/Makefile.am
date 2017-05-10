@@ -18,7 +18,8 @@ endif
 # put it below in "TESTS +="
 TESTS =	\
 	hd-sdiv.sy \
-	stopwatch-bt.sy
+	stopwatch-bt.sy \
+	array_sum_dd.sy
 
 EXTRA_DIST = $(TESTS)
 

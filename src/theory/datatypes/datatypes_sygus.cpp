@@ -584,34 +584,6 @@ bool SygusSymBreakNew::considerConst( const Datatype& dt, const Datatype& pdt, T
       return false;
     }
   }
-  
-  if( pdt[pc].getNumArgs()==2 ){
-    Kind ok;
-    int offset;
-    if( d_tds->hasOffsetArg( pk, arg, offset, ok ) ){
-      Trace("sygus-sb-debug") << pk << " has offset arg " << ok << " " << offset << std::endl;
-      int ok_arg = d_tds->getKindArg( tnp, ok );
-      if( ok_arg!=-1 ){
-        Trace("sygus-sb-debug") << "...at argument " << ok_arg << std::endl;
-        //other operator be the same type
-        if( d_tds->isTypeMatch( pdt[ok_arg], pdt[arg] ) ){
-          int status;
-          Node co = d_tds->getTypeValueOffset( c.getType(), c, offset, status );
-          Trace("sygus-sb-debug") << c << " with offset " << offset << " is " << co << ", status=" << status << std::endl;
-          if( status==0 && !co.isNull() ){
-            if( d_tds->hasConst( tn, co ) ){
-              Trace("sygus-sb-simple") << "  sb-simple : arg " << arg << " " << c << " in " << pk << " can be treated as " << co << " in " << ok << "..." << std::endl;
-              return false;
-            }else{
-              Trace("sygus-sb-debug") << "Type does not have constant." << std::endl;
-            }
-          }
-        }else{
-          Trace("sygus-sb-debug") << "Type mismatch." << std::endl;
-        }
-      }
-    }
-  }
   return true;
 }
 
