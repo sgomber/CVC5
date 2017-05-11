@@ -27,6 +27,7 @@
 #include "context/context.h"
 #include "context/cdchunk_list.h"
 #include "context/cdhashmap.h"
+#include "context/cdhashset.h"
 #include "context/cdo.h"
 
 namespace CVC4 {
@@ -60,10 +61,13 @@ private:
   context::Context* d_context;
   typedef context::CDHashMap< Node, int, NodeHashFunction > IntMap;
   typedef context::CDHashMap< Node, Node, NodeHashFunction > NodeMap;
+  typedef context::CDHashMap< Node, bool, NodeHashFunction > BoolMap;
   typedef context::CDChunkList<Node> NodeList;
+  typedef context::CDHashSet<Node, NodeHashFunction> NodeSet;
   IntMap d_testers;
   NodeMap d_testers_exp;
-  std::map< Node, Node > d_sel_to_anchor;
+  NodeSet d_active_terms;
+  //std::map< Node, Node > d_sel_to_anchor;
 private:
   //list of all terms encountered in search at depth
   std::map< TypeNode, std::map< unsigned, std::vector< Node > > > d_search_terms;
@@ -73,11 +77,12 @@ private:
   std::map< TypeNode, std::map< Node, Node > > d_search_val_b;
   std::map< Node, bool > d_is_top_level;
   std::map< TypeNode, std::map< unsigned, std::vector< Node > > > d_sb_lemmas;
+  void addTesterInternal( int tindex, TNode n, Node exp, std::vector< Node >& lemmas );
   // register search term
   void registerSearchTerm( TypeNode tn, unsigned d, Node n, bool topLevel, std::vector< Node >& lemmas );
   bool registerSearchValue( Node n, Node nv, unsigned d, std::vector< Node >& lemmas );
   void registerSymBreakLemma( TypeNode tn, Node lem, unsigned sz, std::vector< Node >& lemmas );
-  void addSymBreakLemma( Node lem, TNode x, TNode n, std::vector< Node >& lemmas );
+  void addSymBreakLemma( TypeNode tn, Node lem, TNode x, TNode n, unsigned lem_sz, unsigned n_depth, std::vector< Node >& lemmas );
 private:
   std::map< Node, Node > d_rlv_cond;
   Node getRelevancyCondition( Node n );
@@ -115,10 +120,9 @@ public:
   void getPossibleCons( const Datatype& dt, TypeNode tn, std::vector< bool >& pcons );
 };
 
-
-
 }
 }
 }
 
 #endif
+

@@ -115,7 +115,7 @@ void SygusSplitNew::getSygusSplits( Node n, const Datatype& dt, std::vector< Nod
 
 SygusSymBreakNew::SygusSymBreakNew( TheoryDatatypes * td, quantifiers::TermDbSygus * tds, context::Context* c ) : 
 d_td( td ), d_tds( tds ), d_context( c ), 
-d_testers( c ), d_testers_exp( c ), d_curr_search_size(0) {
+d_testers( c ), d_testers_exp( c ), d_active_terms( c ), d_curr_search_size(0) {
 
 }
 
@@ -130,58 +130,83 @@ void SygusSymBreakNew::addTester( int tindex, TNode n, Node exp, std::vector< No
     registerSizeTerm( e );
     //must be a sygus datatype
     if( d_register_st[e] ){
-      //d_testers[n] = tindex;
-      //d_testers_exp[n] = exp;
-      
-      //collect all top-level terms 
-      std::map< TypeNode, Node > top_level;
-      std::map< Node, unsigned > tdepth;
-      processSelectorChain( n, top_level, tdepth, lemmas );
-      
-      unsigned adepth = quantifiers::TermDbSygus::getAnchorDepth( n );
-      //if( adepth<=d_curr_search_size ){
-        Trace("sygus-sb-debug2") << "Sygus : process tester, depth = " << adepth << " : " << exp << std::endl;
-        //for eager
-        //d_sel_to_anchor[n] = e;
+      Trace("sygus-sb-debug2") << "Sygus : process tester : " << exp << std::endl;
+      if( d_active_terms.find( n )==d_active_terms.end() ) {
+        d_testers[n] = tindex;
+        d_testers_exp[n] = exp;
         
-        
-        // process context-dependent symmetry breaking (eager?)
-        /*
-        for( std::map< Node, unsigned >::iterator it = tdepth.begin(); it != tdepth.end(); ++it ){
-          Node nn = it->first;
-          unsigned depth = it->second;
-          bool tl = d_is_top_level.find( nn )!=d_is_top_level.end();
-          Trace("sygus-sb-debug") << "  term : " << nn << " at depth " << depth << ", tl=" << tl << std::endl;
-          if( tl ){
-             
+        // check if parent is active
+        bool do_add = true;
+        if( n.getKind()==kind::APPLY_SELECTOR_TOTAL ){
+          NodeSet::const_iterator it = d_active_terms.find( n[0] );
+          if( it==d_active_terms.end() ){
+            do_add = false;
           }
         }
-        */
-        
-        // process simple symmetry breaking
-        if( d_simple_proc.find( exp )==d_simple_proc.end() ){
-          d_simple_proc[exp] = true;
-          TypeNode tn = n.getType();
-          Node simple_sb_pred = getSimpleSymBreakPred( tn, tindex );
-          if( !simple_sb_pred.isNull() ){
-            TNode x = getSimpleSymBreakPredVar( tn );
-            simple_sb_pred = simple_sb_pred.substitute( x, n );
-            Node rlv = getRelevancyCondition( n );
-            if( !rlv.isNull() ){
-              simple_sb_pred = NodeManager::currentNM()->mkNode( kind::OR, rlv.negate(), simple_sb_pred ); 
-            }
-            lemmas.push_back( simple_sb_pred ); 
-          }
+        if( do_add ){
+          addTesterInternal( tindex, n, exp, lemmas );
         }
-      //}else{
-        //delay
-        /*
-        Assert( d_search_size_exp.find( d_curr_search_size )!=d_search_size_exp.end() );
-        Node exps = d_search_size_exp[d_curr_search_size];
-        Node lem = NodeManager::currentNM()->mkNode( DT_SIZE, n ).eqNode( NodeManager::currentNM()->mkConst( Rational(0) ) );
-        lemmas.push_back( NodeManager::currentNM()->mkNode( kind::OR, exps.negate(), exp.negate(), lem ) );
-        */
-      //}
+      }
+    }
+  }
+}
+
+void SygusSymBreakNew::addTesterInternal( int tindex, TNode n, Node exp, std::vector< Node >& lemmas ) {
+  d_active_terms.insert( n );
+  Trace("sygus-sb-debug2") << "Sygus : activate term : " << n << " : " << exp << std::endl;
+  
+  //collect all top-level terms 
+  std::map< TypeNode, Node > top_level;
+  std::map< Node, unsigned > tdepth;
+  processSelectorChain( n, top_level, tdepth, lemmas );
+  
+  TypeNode ntn = n.getType();
+  
+  // now, add all applicable symmetry breaking lemmas for this term
+  Assert( tdepth.find( n )!=tdepth.end() );
+  unsigned d = tdepth[n];
+  std::map< TypeNode, std::map< unsigned, std::vector< Node > > >::iterator its = d_sb_lemmas.find( ntn );
+  if( its != d_sb_lemmas.end() ){
+    TNode x = getSimpleSymBreakPredVar( ntn );
+    //get symmetry breaking lemmas for this term 
+    int max_sz = ((int)d_curr_search_size) - ((int)d);
+    for( std::map< unsigned, std::vector< Node > >::iterator it = its->second.begin(); it != its->second.end(); ++it ){
+      if( (int)it->first<=max_sz ){
+        TNode t = n;
+        for( unsigned k=0; k<it->second.size(); k++ ){
+          Node lem = it->second[k];
+          addSymBreakLemma( ntn, lem, x, t, it->first, d, lemmas );
+        }
+      }
+    }
+  }
+    
+  // process simple symmetry breaking
+  if( d_simple_proc.find( exp )==d_simple_proc.end() ){
+    d_simple_proc[exp] = true;
+    TypeNode tn = n.getType();
+    Node simple_sb_pred = getSimpleSymBreakPred( tn, tindex );
+    if( !simple_sb_pred.isNull() ){
+      TNode x = getSimpleSymBreakPredVar( tn );
+      simple_sb_pred = simple_sb_pred.substitute( x, n );
+      Node rlv = getRelevancyCondition( n );
+      if( !rlv.isNull() ){
+        simple_sb_pred = NodeManager::currentNM()->mkNode( kind::OR, rlv.negate(), simple_sb_pred ); 
+      }
+      lemmas.push_back( simple_sb_pred ); 
+    }
+  }
+  
+  // add back testers for the children if they exist
+  const Datatype& dt = ((DatatypeType)ntn.toType()).getDatatype();
+  for( unsigned j=0; j<dt[tindex].getNumArgs(); j++ ){
+    Node sel = NodeManager::currentNM()->mkNode( APPLY_SELECTOR_TOTAL, Node::fromExpr( dt[tindex].getSelectorInternal( ntn.toType(), j ) ), n );
+    Trace("sygus-sb-debug2") << "  activate child sel : " << sel << std::endl;
+    Assert( d_active_terms.find( sel )==d_active_terms.end() );
+    IntMap::const_iterator itt = d_testers.find( sel );
+    if( itt != d_testers.end() ){
+      Assert( d_testers_exp.find( sel ) != d_testers_exp.end() );
+      addTesterInternal( (*itt).second, sel, d_testers_exp[sel], lemmas );
     }
   }
 }
@@ -656,12 +681,12 @@ unsigned SygusSymBreakNew::processSelectorChain( Node n, std::map< TypeNode, Nod
   TypeNode tn = n.getType();
   if( top_level.find( tn )==top_level.end() ){
     top_level[tn] = n;
-    tdepth[n] = ret;
+    //tdepth[n] = ret;
     registerSearchTerm( tn, ret, n, true, lemmas );
   }else{
     registerSearchTerm( tn, ret, n, false, lemmas );
   }
-  //tdepth[n] = ret;
+  tdepth[n] = ret;
   return ret+1;
 }
 
@@ -672,21 +697,6 @@ void SygusSymBreakNew::registerSearchTerm( TypeNode tn, unsigned d, Node n, bool
     d_search_terms[tn][d].push_back( n );
     if( topLevel ){
       d_is_top_level[n] = true;
-    }
-    std::map< TypeNode, std::map< unsigned, std::vector< Node > > >::iterator its = d_sb_lemmas.find( tn );
-    if( its != d_sb_lemmas.end() ){
-      TNode x = getSimpleSymBreakPredVar( tn );
-      //get symmetry breaking lemmas for this term 
-      int max_sz = ((int)d_curr_search_size) - ((int)d);
-      for( std::map< unsigned, std::vector< Node > >::iterator it = its->second.begin(); it != its->second.end(); ++it ){
-        if( (int)it->first<=max_sz ){
-          TNode t = n;
-          for( unsigned k=0; k<it->second.size(); k++ ){
-            Node lem = it->second[k];
-            addSymBreakLemma( lem, x, t, lemmas );
-          }
-        }
-      }
     }
   }
 }
@@ -783,14 +793,19 @@ void SygusSymBreakNew::registerSymBreakLemma( TypeNode tn, Node lem, unsigned sz
     std::map< unsigned, std::vector< Node > >::iterator itt = d_search_terms[tn].find( d );
     if( itt!=d_search_terms[tn].end() ){
       for( unsigned k=0; k<itt->second.size(); k++ ){
-        TNode t = itt->second[k];
-        addSymBreakLemma( lem, x, t, lemmas );
+        TNode t = itt->second[k];  
+        if( d_active_terms.find( t )!=d_active_terms.end() ){
+          addSymBreakLemma( tn, lem, x, t, sz, d, lemmas );
+        }
       }
     }
   }
 }
 
-void SygusSymBreakNew::addSymBreakLemma( Node lem, TNode x, TNode n, std::vector< Node >& lemmas ) {
+void SygusSymBreakNew::addSymBreakLemma( TypeNode tn, Node lem, TNode x, TNode n, unsigned lem_sz, unsigned n_depth, std::vector< Node >& lemmas ) {
+  Assert( d_active_terms.find( n )!=d_active_terms.end() );
+  Assert( std::find( d_sb_lemmas[tn][lem_sz].begin(), d_sb_lemmas[tn][lem_sz].end(), lem )!=d_sb_lemmas[tn][lem_sz].end() );
+  Assert( std::find( d_search_terms[tn][n_depth].begin(), d_search_terms[tn][n_depth].end(), n )!=d_search_terms[tn][n_depth].end() );
   // apply lemma
   Node slem = lem.substitute( x, n );
   Trace("sygus-sb-exc-debug") << "SymBreak lemma : " << slem << std::endl;
@@ -863,10 +878,12 @@ void SygusSymBreakNew::incrementCurrentSearchSize( std::vector< Node >& lemmas )
       std::map< unsigned, std::vector< Node > >::iterator itt = d_search_terms[tn].find( new_depth );
       if( itt!=d_search_terms[tn].end() ){
         for( unsigned k=0; k<itt->second.size(); k++ ){
-          for( unsigned j=0; j<it->second.size(); j++ ){
-            Node lem = it->second[j];
-            TNode t = itt->second[k];
-            addSymBreakLemma( lem, x, t, lemmas );
+          TNode t = itt->second[k];
+          if( d_active_terms.find( t )!=d_active_terms.end() ){
+            for( unsigned j=0; j<it->second.size(); j++ ){
+              Node lem = it->second[j];
+              addSymBreakLemma( tn, lem, x, t, sz, new_depth, lemmas );
+            }
           }
         }
       }
