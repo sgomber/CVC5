@@ -77,6 +77,10 @@ private:
   void registerSearchTerm( TypeNode tn, unsigned d, Node n, bool topLevel, std::vector< Node >& lemmas );
   bool registerSearchValue( Node n, Node nv, unsigned d, std::vector< Node >& lemmas );
   void registerSymBreakLemma( TypeNode tn, Node lem, unsigned sz, std::vector< Node >& lemmas );
+  void addSymBreakLemma( Node lem, TNode x, TNode n, std::vector< Node >& lemmas );
+private:
+  std::map< Node, Node > d_rlv_cond;
+  Node getRelevancyCondition( Node n );
 private:
   std::map< TypeNode, std::map< int, Node > > d_simple_sb_pred;
   std::map< TypeNode, Node > d_simple_sb_pred_var;

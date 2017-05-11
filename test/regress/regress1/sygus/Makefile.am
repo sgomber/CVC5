@@ -19,7 +19,8 @@ endif
 TESTS =	\
 	hd-sdiv.sy \
 	stopwatch-bt.sy \
-	array_sum_dd.sy
+	array_sum_dd.sy \
+	mpg_guard1-dd.sy
 
 EXTRA_DIST = $(TESTS)
 

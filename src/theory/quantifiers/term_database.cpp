@@ -2724,12 +2724,12 @@ bool TermDbSygus::isAntisymmetric( Kind k, Kind& dk ) {
 }
 
 bool TermDbSygus::isIdempotentArg( Node n, Kind ik, int arg ) {
+  // these should all be binary operators
   TypeNode tn = n.getType();
   if( n==getTypeValue( tn, 0 ) ){
     if( ik==PLUS || ik==OR || ik==XOR || ik==BITVECTOR_PLUS || ik==BITVECTOR_OR || ik==BITVECTOR_XOR || ik==STRING_CONCAT ){
       return true;
-    }else if( ik==MINUS || ik==BITVECTOR_SHL || ik==BITVECTOR_LSHR || ik==BITVECTOR_ASHR || ik==BITVECTOR_SUB || ik==BITVECTOR_UREM_TOTAL || 
-              ik==STRING_STRREPL ){
+    }else if( ik==MINUS || ik==BITVECTOR_SHL || ik==BITVECTOR_LSHR || ik==BITVECTOR_ASHR || ik==BITVECTOR_SUB || ik==BITVECTOR_UREM_TOTAL ){
       return arg==1;
     }
   }else if( n==getTypeValue( tn, 1 ) ){

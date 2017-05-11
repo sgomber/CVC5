@@ -166,6 +166,10 @@ void SygusSymBreakNew::addTester( int tindex, TNode n, Node exp, std::vector< No
           if( !simple_sb_pred.isNull() ){
             TNode x = getSimpleSymBreakPredVar( tn );
             simple_sb_pred = simple_sb_pred.substitute( x, n );
+            Node rlv = getRelevancyCondition( n );
+            if( !rlv.isNull() ){
+              simple_sb_pred = NodeManager::currentNM()->mkNode( kind::OR, rlv.negate(), simple_sb_pred ); 
+            }
             lemmas.push_back( simple_sb_pred ); 
           }
         }
@@ -179,6 +183,52 @@ void SygusSymBreakNew::addTester( int tindex, TNode n, Node exp, std::vector< No
         */
       //}
     }
+  }
+}
+
+Node SygusSymBreakNew::getRelevancyCondition( Node n ) {
+  std::map< Node, Node >::iterator itr = d_rlv_cond.find( n );
+  if( itr==d_rlv_cond.end() ){
+    Node cond;
+    if( n.getKind()==APPLY_SELECTOR_TOTAL ){
+      TypeNode ntn = n[0].getType();
+      Type nt = ntn.toType();
+      const Datatype& dt = ((DatatypeType)nt).getDatatype();
+      Expr selExpr = n.getOperator().toExpr();
+      if( options::dtSharedSelectors() ){
+        std::vector< Node > disj;
+        bool excl = false;
+        for( unsigned i=0; i<dt.getNumConstructors(); i++ ){
+          if( !d_tds->isGenericRedundant( ntn, i ) ){
+            int sindexi = dt[i].getSelectorIndexInternal( nt, selExpr );
+            if( sindexi!=-1 ){
+              disj.push_back( DatatypesRewriter::mkTester( n[0], i, dt ) );
+            }else{
+              excl = true;
+            }
+          }
+        }
+        Assert( !disj.empty() );
+        if( excl ){
+          cond = disj.size()==1 ? disj[0] : NodeManager::currentNM()->mkNode( kind::OR, disj );
+        }
+      }else{
+        int sindex = Datatype::cindexOf( selExpr );
+        Assert( sindex!=-1 );
+        cond = DatatypesRewriter::mkTester( n[0], sindex, dt );
+      }
+      Node c1 = getRelevancyCondition( n[0] );
+      if( cond.isNull() ){
+        cond = c1;
+      }else if( !c1.isNull() ){
+        cond = NodeManager::currentNM()->mkNode( kind::AND, cond, c1 );
+      }
+    }
+    Trace("sygus-sb-debug2") << "Relevancy condition for " << n << " is " << cond << std::endl;
+    d_rlv_cond[n] = cond;
+    return cond;
+  }else{
+    return itr->second;
   }
 }
 
@@ -369,7 +419,7 @@ bool SygusSymBreakNew::considerArgKind( const Datatype& dt, const Datatype& pdt,
       int firstArg = d_tds->getFirstArgOccurrence( pdt[pc], tn );
       Assert( firstArg!=-1 );
       if( arg!=firstArg ){
-        Trace("sygus-sb-simple") << "  sb-simple : do not consider " << k << " at child arg " << arg << " since it is associative, with first arg = " << firstArg << std::endl;
+        Trace("sygus-sb-simple") << "  sb-simple : do not consider " << k << " at child arg " << arg << " of " << k << " since it is associative, with first arg = " << firstArg << std::endl;
         return false;
       }else{
         return true;
@@ -618,9 +668,11 @@ unsigned SygusSymBreakNew::processSelectorChain( Node n, std::map< TypeNode, Nod
 void SygusSymBreakNew::registerSearchTerm( TypeNode tn, unsigned d, Node n, bool topLevel, std::vector< Node >& lemmas ) {
   //register this term
   if( std::find( d_search_terms[tn][d].begin(), d_search_terms[tn][d].end(), n )==d_search_terms[tn][d].end() ){
-    Trace("sygus-sb-debug") << "  register search term : " << n << " at depth " << d << ", tl=" << topLevel << std::endl;
+    Trace("sygus-sb-debug") << "  register search term : " << n << " at depth " << d << ", type=" << tn << ", tl=" << topLevel << std::endl;
     d_search_terms[tn][d].push_back( n );
-    d_is_top_level[n] = topLevel;
+    if( topLevel ){
+      d_is_top_level[n] = true;
+    }
     std::map< TypeNode, std::map< unsigned, std::vector< Node > > >::iterator its = d_sb_lemmas.find( tn );
     if( its != d_sb_lemmas.end() ){
       TNode x = getSimpleSymBreakPredVar( tn );
@@ -631,10 +683,7 @@ void SygusSymBreakNew::registerSearchTerm( TypeNode tn, unsigned d, Node n, bool
           TNode t = n;
           for( unsigned k=0; k<it->second.size(); k++ ){
             Node lem = it->second[k];
-            //apply lemma
-            Node slem = lem.substitute( x, t );
-            Trace("sygus-sb-exc-debug") << "SymBreak lemma : " << slem << std::endl;
-            lemmas.push_back( slem );
+            addSymBreakLemma( lem, x, t, lemmas );
           }
         }
       }
@@ -645,11 +694,21 @@ void SygusSymBreakNew::registerSearchTerm( TypeNode tn, unsigned d, Node n, bool
 bool SygusSymBreakNew::registerSearchValue( Node n, Node nv, unsigned d, std::vector< Node >& lemmas ) {
   Assert( n.getType()==nv.getType() );
   Assert( nv.getKind()==APPLY_CONSTRUCTOR );
-  TypeNode tn = n.getType();
+  TypeNode tn = n.getType(); 
+  if( nv.getNumChildren()>0 ){
+    const Datatype& dt = ((DatatypeType)tn.toType()).getDatatype();
+    unsigned cindex = Datatype::indexOf( nv.getOperator().toExpr() );
+    for( unsigned i=0; i<nv.getNumChildren(); i++ ){
+      Node sel = NodeManager::currentNM()->mkNode( APPLY_SELECTOR_TOTAL, Node::fromExpr( dt[cindex].getSelectorInternal( tn.toType(), i ) ), n );
+      if( !registerSearchValue( sel, nv[i], d+1, lemmas ) ){
+        return false;
+      }
+    }
+  }
   if( d_is_top_level.find( n )!=d_is_top_level.end() ){
     if( d_search_val_proc.find( nv )==d_search_val_proc.end() ){
       d_search_val_proc[nv] = true;
-      Trace("sygus-sb-debug") << "  ...register search value " << nv << std::endl;
+      Trace("sygus-sb-debug") << "  ...register search value " << nv << ", type=" << tn << std::endl;
       Node bv = d_tds->sygusToBuiltin( nv, tn );
       Trace("sygus-sb-debug") << "  ......builtin is " << bv << std::endl;
       unsigned sz = d_tds->getSygusTermSize( nv );
@@ -707,15 +766,6 @@ bool SygusSymBreakNew::registerSearchValue( Node n, Node nv, unsigned d, std::ve
         lem = lem.negate();
         Trace("sygus-sb-exc") << "  ........exc lemma is " << lem << ", size = " << sz << std::endl;
         registerSymBreakLemma( tn, lem, sz, lemmas );
-      }
-    }
-  }
-  if( nv.getNumChildren()>0 ){
-    const Datatype& dt = ((DatatypeType)tn.toType()).getDatatype();
-    unsigned cindex = Datatype::indexOf( nv.getOperator().toExpr() );
-    for( unsigned i=0; i<nv.getNumChildren(); i++ ){
-      Node sel = NodeManager::currentNM()->mkNode( APPLY_SELECTOR_TOTAL, Node::fromExpr( dt[cindex].getSelectorInternal( tn.toType(), i ) ), n );
-      if( !registerSearchValue( sel, nv[i], d+1, lemmas ) ){
         return false;
       }
     }
@@ -734,13 +784,21 @@ void SygusSymBreakNew::registerSymBreakLemma( TypeNode tn, Node lem, unsigned sz
     if( itt!=d_search_terms[tn].end() ){
       for( unsigned k=0; k<itt->second.size(); k++ ){
         TNode t = itt->second[k];
-        // apply lemma
-        Node slem = lem.substitute( x, t );
-        Trace("sygus-sb-exc-debug") << "SymBreak lemma : " << slem << std::endl;
-        lemmas.push_back( slem );
+        addSymBreakLemma( lem, x, t, lemmas );
       }
     }
   }
+}
+
+void SygusSymBreakNew::addSymBreakLemma( Node lem, TNode x, TNode n, std::vector< Node >& lemmas ) {
+  // apply lemma
+  Node slem = lem.substitute( x, n );
+  Trace("sygus-sb-exc-debug") << "SymBreak lemma : " << slem << std::endl;
+  Node rlv = getRelevancyCondition( n );
+  if( !rlv.isNull() ){
+    slem = NodeManager::currentNM()->mkNode( kind::OR, rlv.negate(), slem );
+  }
+  lemmas.push_back( slem );
 }
   
 void SygusSymBreakNew::preRegisterTerm( TNode n ) {
@@ -808,10 +866,7 @@ void SygusSymBreakNew::incrementCurrentSearchSize( std::vector< Node >& lemmas )
           for( unsigned j=0; j<it->second.size(); j++ ){
             Node lem = it->second[j];
             TNode t = itt->second[k];
-            //apply lemma
-            Node slem = lem.substitute( x, t );
-            Trace("sygus-sb-exc-debug") << "SymBreak lemma : " << slem << std::endl;
-            lemmas.push_back( slem );
+            addSymBreakLemma( lem, x, t, lemmas );
           }
         }
       }
