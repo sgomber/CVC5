@@ -134,6 +134,7 @@ void SygusSymBreakNew::addTester( int tindex, TNode n, Node exp, std::vector< No
       if( d_active_terms.find( n )==d_active_terms.end() ) {
         d_testers[n] = tindex;
         d_testers_exp[n] = exp;
+        d_sel_to_anchor[n] = e;
         
         // check if parent is active
         bool do_add = true;
@@ -725,27 +726,60 @@ bool SygusSymBreakNew::registerSearchValue( Node n, Node nv, unsigned d, std::ve
       Node bvr = Rewriter::rewrite( bv );
       Trace("sygus-sb-debug") << "  ......rewrites to " << bvr << std::endl;
       std::map< Node, Node >::iterator itsv = d_search_val[tn].find( bvr );
+      Node bad_val_bvr;
+      bool by_examples = false;
       if( itsv==d_search_val[tn].end() ){
+        // is it equivalent under examples?
+        if( options::sygusPbe() ){
+          Assert( d_sel_to_anchor.find( n )!=d_sel_to_anchor.end() );
+          Node e = d_sel_to_anchor[n];
+          //get the root
+          Node er = d_tds->isMeasuredTerm( e );
+          Assert( !er.isNull() );
+          if( d_tds->hasPbeExamples( er ) ){
+            unsigned nex = d_tds->getNumPbeExamples( er );
+            Node bvr_equiv = d_pbe_trie[e].addPbeExample( tn, er, bvr, d_tds, 0, nex );
+            if( bvr_equiv!=bvr ){
+              if( Trace.isOn("sygus-sb-exc") ){
+                Assert( d_search_val[tn].find( bvr_equiv )!=d_search_val[tn].end() );
+                Node prev = d_tds->sygusToBuiltin( d_search_val[tn][bvr_equiv], tn );
+                Trace("sygus-sb-exc") << "  ......programs " << prev << " and " << bv << " are equivalent up to examples." << std::endl;
+                by_examples = true;
+              }
+              bad_val_bvr = bvr_equiv;
+            }
+          }
+        }
+        //store rewritten values, regardless of whether it will be considers
         d_search_val[tn][bvr] = nv;
         d_search_val_sz[tn][bvr] = sz;
       }else{
-        Node bad_val = nv;
-        Assert( d_search_val_sz[tn].find( bvr )!=d_search_val_sz[tn].end() );
-        unsigned prev_sz = d_search_val_sz[tn][bvr];
-        if( prev_sz>sz ){
-          //swap : the excluded value is the previous
-          d_search_val[tn][bvr] = nv;
-          d_search_val_sz[tn][bvr] = sz;
-          bad_val = itsv->second;
-          sz = prev_sz;
-        }
-        Assert( d_tds->getSygusTermSize( bad_val )==(int)sz );
+        bad_val_bvr = bvr;
         if( Trace.isOn("sygus-sb-exc") ){
           Node prev_bv = d_tds->sygusToBuiltin( itsv->second, tn );
-          Trace("sygus-sb-exc") << "  ......both " << prev_bv << " and " << bv << " rewrite to " << bvr << std::endl;
-          Node bad_val_bv = d_tds->sygusToBuiltin( bad_val, tn );
-          Trace("sygus-sb-exc") << "  ........exclude : " << bad_val_bv << std::endl;
+          Trace("sygus-sb-exc") << "  ......programs " << prev_bv << " and " << bv << " rewrite to " << bvr << "." << std::endl;
         } 
+      }
+      if( !bad_val_bvr.isNull() ){
+        Node bad_val = nv;
+        Assert( d_search_val_sz[tn].find( bad_val_bvr )!=d_search_val_sz[tn].end() );
+        unsigned prev_sz = d_search_val_sz[tn][bad_val_bvr];
+        if( prev_sz>sz ){
+          //swap : the excluded value is the previous
+          d_search_val_sz[tn][bad_val_bvr] = sz;
+          bad_val = d_search_val[tn][bad_val_bvr];
+          sz = prev_sz;
+        }
+        if( Trace.isOn("sygus-sb-exc") ){
+          Node bad_val_bv = d_tds->sygusToBuiltin( bad_val, tn );
+          Trace("sygus-sb-exc") << "  ........exclude : " << bad_val_bv;
+          if( by_examples ){
+            Trace("sygus-sb-exc") << " (by examples)";
+          }
+          Trace("sygus-sb-exc") << std::endl;
+        } 
+        Assert( d_tds->getSygusTermSize( bad_val )==(int)sz );
+
         Node x = getSimpleSymBreakPredVar( tn );
         
         // do analysis of the evaluation  FIXME: does not work (evaluation is non-constant)
@@ -781,6 +815,39 @@ bool SygusSymBreakNew::registerSearchValue( Node n, Node nv, unsigned d, std::ve
     }
   }
   return true;
+}
+
+Node SygusSymBreakNew::PbeTrie::addPbeExample( TypeNode etn, Node e, Node b, quantifiers::TermDbSygus * tds, unsigned index, unsigned ntotal ) {
+  Assert( tds->getNumPbeExamples( e )==ntotal );
+  if( index==ntotal ){
+    //lazy child holds the leaf data
+    if( d_lazy_child.isNull() ){
+      d_lazy_child = b;
+    }
+    return d_lazy_child;
+  }else{
+    std::vector< Node > ex;
+    if( d_children.empty() ){
+      if( d_lazy_child.isNull() ){
+        d_lazy_child = b;
+        return d_lazy_child;
+      }else{
+        //evaluate the lazy child    
+        tds->getPbeExample( e, index, ex );
+        addPbeExampleEval( etn, e, d_lazy_child, ex, tds, index, ntotal );
+        Assert( !d_children.empty() );
+        d_lazy_child = Node::null();
+      }
+    }else{
+      tds->getPbeExample( e, index, ex );
+    }
+    return addPbeExampleEval( etn, e, b, ex, tds, index, ntotal );
+  }
+}
+
+Node SygusSymBreakNew::PbeTrie::addPbeExampleEval( TypeNode etn, Node e, Node b, std::vector< Node >& ex, quantifiers::TermDbSygus * tds, unsigned index, unsigned ntotal ) {
+  Node eb = tds->evaluateBuiltin( etn, b, ex );
+  return d_children[eb].addPbeExample( etn, e, b, tds, index+1, ntotal );
 }
 
 void SygusSymBreakNew::registerSymBreakLemma( TypeNode tn, Node lem, unsigned sz, std::vector< Node >& lemmas ) {

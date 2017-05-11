@@ -35,10 +35,12 @@ CegConjecture::CegConjecture( QuantifiersEngine * qe, context::Context* c )
     : d_qe( qe ), d_curr_lit( c, 0 ) {
   d_refine_count = 0;
   d_ceg_si = new CegConjectureSingleInv( qe, this );
+  d_ceg_pbe = new CegConjecturePbe( qe, this );
 }
 
 CegConjecture::~CegConjecture() {
   delete d_ceg_si;
+  delete d_ceg_pbe;
 }
 
 void CegConjecture::assign( Node q ) {
@@ -54,12 +56,24 @@ void CegConjecture::assign( Node q ) {
       q = d_ceg_si->d_quant;
     }
   }
+  if( options::sygusPbe() ){
+    // check if it is only applied to concrete examples
+    d_ceg_pbe->initialize( q );
+  }
   d_quant = q;
   Assert( d_candidates.empty() );
   std::vector< Node > vars;
   for( unsigned i=0; i<q[0].getNumChildren(); i++ ){
     vars.push_back( q[0][i] );
-    d_candidates.push_back( NodeManager::currentNM()->mkSkolem( "e", q[0][i].getType() ) );
+    Node e = NodeManager::currentNM()->mkSkolem( "e", q[0][i].getType() );
+    d_candidates.push_back( e );
+    d_qe->getTermDatabaseSygus()->registerMeasuredTerm( e, e );
+    if( options::sygusPbe() ){
+      std::vector< std::vector< Node > > exs;
+      if( d_ceg_pbe->getPbeExamples( q[0][i], exs ) ){
+        d_qe->getTermDatabaseSygus()->registerPbeExamples( e, exs );
+      }
+    }
   }
   Trace("cegqi") << "Base quantified formula is : " << q << std::endl;
   //construct base instantiation
@@ -83,7 +97,7 @@ void CegConjecture::assign( Node q ) {
     if( options::sygusUnifCondSol() ){
       // for each variable, determine whether we can do conditional counterexamples
       for( unsigned i=0; i<d_candidates.size(); i++ ){
-        registerCandidateConditional( d_candidates[i] );
+        registerCandidateConditional( d_candidates[i], d_candidates[i] );
       }
     }
     d_syntax_guided = true;
@@ -94,7 +108,7 @@ void CegConjecture::assign( Node q ) {
   }
 }
 
-void CegConjecture::registerCandidateConditional( Node v ) {
+void CegConjecture::registerCandidateConditional( Node v, Node root ) {
   TypeNode tn = v.getType();
   bool type_valid = false;
   bool success = false;
@@ -214,9 +228,13 @@ void CegConjecture::registerCandidateConditional( Node v ) {
     d_qe->getOutputChannel().requirePhase( pg, true );
               
     Assert( unif_types.size()==3 ); 
-    d_cinfo[v].d_csol_cond = NodeManager::currentNM()->mkSkolem( "c", unif_types[0] );
+    Node c = NodeManager::currentNM()->mkSkolem( "c", unif_types[0] );
+    d_cinfo[v].d_csol_cond = c;
+    d_qe->getTermDatabaseSygus()->registerMeasuredTerm( c, root );
     for( unsigned k=0; k<2; k++ ){
-      d_cinfo[v].d_csol_var[k] = NodeManager::currentNM()->mkSkolem( "e", unif_types[k+1] );
+      Node e = NodeManager::currentNM()->mkSkolem( "e", unif_types[k+1] );
+      d_cinfo[v].d_csol_var[k] = e;
+      d_qe->getTermDatabaseSygus()->registerMeasuredTerm( e, root );
       // optimization : need not be an ITE if types are equivalent  TODO
     }
     d_cinfo[v].d_csol_progress_guard = pg;
@@ -743,7 +761,7 @@ void CegConjecture::doCegConjectureRefine( std::vector< Node >& lems ){
           Trace("sygus-unif") << "...expanded to " << d_cinfo[ac].d_csol_op << "( ";
           Trace("sygus-unif") << d_cinfo[ac].d_csol_cond << ", " << d_cinfo[ac].d_csol_var[0] << ", ";
           Trace("sygus-unif") << d_cinfo[ac].d_csol_var[1] << " )" << std::endl;
-          registerCandidateConditional( d_cinfo[ac].d_csol_var[1-d_cinfo[ac].d_csol_status] );
+          registerCandidateConditional( d_cinfo[ac].d_csol_var[1-d_cinfo[ac].d_csol_status], v );
           csol_active[v] = ac;
         }
       }

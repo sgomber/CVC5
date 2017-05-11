@@ -67,7 +67,7 @@ private:
   IntMap d_testers;
   NodeMap d_testers_exp;
   NodeSet d_active_terms;
-  //std::map< Node, Node > d_sel_to_anchor;
+  std::map< Node, Node > d_sel_to_anchor;
 private:
   //list of all terms encountered in search at depth
   std::map< TypeNode, std::map< unsigned, std::vector< Node > > > d_search_terms;
@@ -83,6 +83,19 @@ private:
   bool registerSearchValue( Node n, Node nv, unsigned d, std::vector< Node >& lemmas );
   void registerSymBreakLemma( TypeNode tn, Node lem, unsigned sz, std::vector< Node >& lemmas );
   void addSymBreakLemma( TypeNode tn, Node lem, TNode x, TNode n, unsigned lem_sz, unsigned n_depth, std::vector< Node >& lemmas );
+private:
+  class PbeTrie {
+  private:
+    Node addPbeExampleEval( TypeNode etn, Node e, Node b, std::vector< Node >& ex, quantifiers::TermDbSygus * tds, unsigned index, unsigned ntotal );
+  public:
+    PbeTrie(){}
+    ~PbeTrie(){}
+    Node d_lazy_child;
+    std::map< Node, PbeTrie > d_children;
+    void clear() { d_children.clear(); }
+    Node addPbeExample( TypeNode etn, Node e, Node b, quantifiers::TermDbSygus * tds, unsigned index, unsigned ntotal );
+  };
+  std::map< Node, PbeTrie > d_pbe_trie;
 private:
   std::map< Node, Node > d_rlv_cond;
   Node getRelevancyCondition( Node n );

@@ -585,8 +585,13 @@ private:
 public:
   bool getMatch( Node n, TypeNode st, int& index_found, std::vector< Node >& args, int index_exc = -1, int index_start = 0 );
 private:
+  // stores root
+  std::map< Node, Node > d_measured_term;
+  std::map< Node, std::vector< std::vector< Node > > > d_measured_term_pbe_exs;
+private:
   //information for sygus types
   std::map< TypeNode, TypeNode > d_register;  //stores sygus -> builtin type
+  std::map< TypeNode, std::vector< Node > > d_var_list;
   std::map< TypeNode, std::map< int, Kind > > d_arg_kind;
   std::map< TypeNode, std::map< Kind, int > > d_kinds;
   std::map< TypeNode, std::map< int, Node > > d_arg_const;
@@ -610,7 +615,19 @@ public:
   ~TermDbSygus(){}
   bool reset( Theory::Effort e );
   std::string identify() const { return "TermDbSygus"; }
-  
+public: //registering enumeration terms
+  /** register a term that we will do enumerative search on */
+  void registerMeasuredTerm( Node e, Node root );
+  /** register examples for an enumerative search term. 
+      This should be a comprehensive set of examples. */
+  void registerPbeExamples( Node e, std::vector< std::vector< Node > >& exs );
+  /** is measured term */
+  Node isMeasuredTerm( Node e );
+  /** get examples */
+  bool hasPbeExamples( Node e );
+  unsigned getNumPbeExamples( Node e );
+  void getPbeExample( Node e, unsigned i, std::vector< Node >& ex );
+public:  //general sygus utilities
   bool isRegistered( TypeNode tn );
   TypeNode sygusToBuiltinType( TypeNode tn );
   int getKindArg( TypeNode tn, Kind k );
@@ -689,6 +706,7 @@ public:
   void getExplanationForConstantEquality( Node n, Node vn, std::vector< Node >& exp );
   // evaluate deep embedding term n, store minimized explanation for evaluation in exp
   Node crefEvaluate( Node n, std::map< Node, Node >& vtm, std::map< Node, Node >& visited, std::map< Node, std::vector< Node > >& exp );
+  Node evaluateBuiltin( TypeNode tn, Node bn, std::vector< Node >& args );
 //for calculating redundant operators
 private:
   //whether each constructor is redundant

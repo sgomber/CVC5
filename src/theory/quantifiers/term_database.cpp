@@ -2889,6 +2889,10 @@ void TermDbSygus::registerSygusType( TypeNode tn ){
       const Datatype& dt = ((DatatypeType)(tn).toType()).getDatatype();
       Trace("sygus-db") << "Register type " << dt.getName() << "..." << std::endl;
       d_register[tn] = TypeNode::fromType( dt.getSygusType() );
+      Node var_list = Node::fromExpr( dt.getSygusVarList() );
+      for( unsigned j=0; j<var_list.getNumChildren(); j++ ){
+        d_var_list[tn].push_back( var_list[j] );
+      }
       if( d_register[tn].isNull() ){
         Trace("sygus-db") << "...not sygus." << std::endl;
       }else{
@@ -2948,7 +2952,7 @@ void TermDbSygus::registerSygusType( TypeNode tn ){
         //compute the redundant operators
         for( unsigned i=0; i<dt.getNumConstructors(); i++ ){
           bool nred = true;
-          if( options::sygusNormalForm() ){
+          if( options::sygusMinGrammar() ){
             Trace("sygus-split-debug") << "Is " << dt[i].getName() << " a redundant operator?" << std::endl;
             Kind ck = getArgKind( tn, i );
             if( ck!=UNDEFINED_KIND ){
@@ -2989,6 +2993,51 @@ void TermDbSygus::registerSygusType( TypeNode tn ){
         }
       }
     }
+  }
+}
+
+void TermDbSygus::registerMeasuredTerm( Node e, Node root ) {
+  Assert( d_measured_term.find( e )==d_measured_term.end() );
+  Trace("sygus-db") << "Register measured term : " << e << " with root " << root << std::endl;
+  d_measured_term[e] = root;
+}
+
+void TermDbSygus::registerPbeExamples( Node e, std::vector< std::vector< Node > >& exs ) {
+  Assert( isMeasuredTerm( e )==e );
+  Assert( d_measured_term_pbe_exs.find( e )==d_measured_term_pbe_exs.end() );
+  Trace("sygus-db") << "Register " << exs.size() << " PBE examples with " << e << std::endl;
+  d_measured_term_pbe_exs[e] = exs;
+}
+
+Node TermDbSygus::isMeasuredTerm( Node e ) {
+  std::map< Node, Node >::iterator itm = d_measured_term.find( e );
+  if( itm!=d_measured_term.end() ){
+    return itm->second;
+  }else{
+    return Node::null();
+  }
+}
+
+bool TermDbSygus::hasPbeExamples( Node e ) {
+  return d_measured_term_pbe_exs.find( e )!=d_measured_term_pbe_exs.end();
+}
+
+unsigned TermDbSygus::getNumPbeExamples( Node e ) {
+  std::map< Node, std::vector< std::vector< Node > > >::iterator it = d_measured_term_pbe_exs.find( e );
+  if( it!=d_measured_term_pbe_exs.end() ){
+    return it->second.size();
+  }else{
+    return 0;
+  }
+}
+
+void TermDbSygus::getPbeExample( Node e, unsigned i, std::vector< Node >& ex ) {
+  std::map< Node, std::vector< std::vector< Node > > >::iterator it = d_measured_term_pbe_exs.find( e );
+  if( it!=d_measured_term_pbe_exs.end() ){
+    Assert( i<it->second.size() );
+    ex.insert( ex.end(), it->second[i].begin(), it->second[i].end() );
+  }else{
+    Assert( false );
   }
 }
 
@@ -3528,6 +3577,17 @@ Node TermDbSygus::unfold( Node en, std::map< Node, Node >& vtm, std::vector< Nod
     Assert( en.isConst() );
   }
   return en;
+}
+
+Node TermDbSygus::evaluateBuiltin( TypeNode tn, Node bn, std::vector< Node >& args ) {
+  std::map< TypeNode, std::vector< Node > >::iterator it = d_var_list.find( tn );
+  if( it!=d_var_list.end() ){
+    Assert( it->second.size()==args.size() );
+    return Rewriter::rewrite( bn.substitute( it->second.begin(), it->second.end(), args.begin(), args.end() ) );
+  }else{
+    Assert( false );
+    return bn;
+  }
 }
 
 Node TermDbSygus::crefEvaluate( Node n, std::map< Node, Node >& vtm, std::map< Node, Node >& visited, std::map< Node, std::vector< Node > >& exp ){

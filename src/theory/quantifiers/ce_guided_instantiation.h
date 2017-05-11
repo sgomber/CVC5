@@ -21,6 +21,7 @@
 #include "context/cdhashmap.h"
 #include "options/quantifiers_modes.h"
 #include "theory/quantifiers/ce_guided_single_inv.h"
+#include "theory/quantifiers/ce_guided_pbe.h"
 #include "theory/quantifiers_engine.h"
 
 namespace CVC4 {
@@ -68,7 +69,7 @@ private: //for condition solutions
   Node purifyConditionalEvaluations( Node n, std::map< Node, Node >& csol_cond, std::map< Node, Node >& psubs, 
                                      std::map< Node, Node >& visited );
   /** register candidate conditional */
-  void registerCandidateConditional( Node v );
+  void registerCandidateConditional( Node v, Node root );
   bool inferIteTemplate( unsigned k, Node n, std::map< Node, unsigned >& templ_var_index, std::map< unsigned, unsigned >& templ_injection );
 public:
   CegConjecture( QuantifiersEngine * qe, context::Context* c );
@@ -142,6 +143,8 @@ public:
 private:
   /** single invocation utility */
   CegConjectureSingleInv * d_ceg_si;
+  /** program by examples utility */
+  CegConjecturePbe * d_ceg_pbe;
 public: //non-syntax guided (deprecated)
   /** guard */
   bool d_syntax_guided;
