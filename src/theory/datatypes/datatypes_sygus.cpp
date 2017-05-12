@@ -153,8 +153,49 @@ void SygusSymBreakNew::assertTester( int tindex, TNode n, Node exp, std::vector<
 
 void SygusSymBreakNew::assertFact( Node n, bool polarity, std::vector< Node >& lemmas ) {
   if( n.getKind()==kind::DT_SYGUS_TERM_ORDER ){
-    
+    if( polarity ){
+      Trace("sygus-sb-torder") << "Sygus term order : " << n[0] << " < " << n[1] << std::endl;
+      Node comm_sb = getTermOrderPredicate( n[0], n[1] );
+      Node comm_lem = NodeManager::currentNM()->mkNode( kind::OR, n.negate(), comm_sb );
+      lemmas.push_back( comm_lem );
+    }
   }
+}
+
+Node SygusSymBreakNew::getTermOrderPredicate( Node n1, Node n2 ) {
+  std::vector< Node > comm_disj;
+  // (1) size of left is greater than size of right
+  Node sz_less = NodeManager::currentNM()->mkNode( GT, NodeManager::currentNM()->mkNode( DT_SIZE, n1 ), 
+                                                       NodeManager::currentNM()->mkNode( DT_SIZE, n2 ) );
+  comm_disj.push_back( sz_less );
+  // (2) ...or sizes are equal and first child is less by term order
+  std::vector< Node > sz_eq_cases; 
+  Node sz_eq = NodeManager::currentNM()->mkNode( EQUAL, NodeManager::currentNM()->mkNode( DT_SIZE, n1 ), 
+                                                        NodeManager::currentNM()->mkNode( DT_SIZE, n2 ) );
+  sz_eq_cases.push_back( sz_eq );
+  if( options::sygusOpt1() ){
+    TypeNode tnc = n1.getType();
+    const Datatype& cdt = ((DatatypeType)(tnc).toType()).getDatatype();
+    for( unsigned j=0; j<cdt.getNumConstructors(); j++ ){
+      if( !d_tds->isGenericRedundant( tnc, j ) ){
+        std::vector< Node > case_conj;
+        for( unsigned k=0; k<j; k++ ){
+          if( !d_tds->isGenericRedundant( tnc, k ) ){
+            case_conj.push_back( DatatypesRewriter::mkTester( n2, k, cdt ).negate() );
+          }
+        }
+        if( !case_conj.empty() ){
+          Node corder = NodeManager::currentNM()->mkNode( kind::OR, DatatypesRewriter::mkTester( n1, j, cdt ).negate(),
+                                                          case_conj.size()==1 ? case_conj[0] : NodeManager::currentNM()->mkNode( kind::AND, case_conj ) );
+          sz_eq_cases.push_back( corder );
+        }
+      }
+    }
+  }
+  Node sz_eqc = sz_eq_cases.size()==1 ? sz_eq_cases[0] : NodeManager::currentNM()->mkNode( kind::AND, sz_eq_cases );
+  comm_disj.push_back( sz_eqc );
+  
+  return NodeManager::currentNM()->mkNode( kind::OR, comm_disj );
 }
   
 void SygusSymBreakNew::registerTerm( Node n, std::vector< Node >& lemmas ) {
@@ -329,40 +370,30 @@ Node SygusSymBreakNew::getSimpleSymBreakPred( TypeNode tn, int tindex ) {
         if( quantifiers::TermDb::isComm( nk ) ){
           if( children.size()==2 ){
             if( children[0].getType()==children[1].getType() ){
-              std::vector< Node > comm_disj;
-              // (1) size of left is greater than size of right
-              Node sz_less = NodeManager::currentNM()->mkNode( GT, NodeManager::currentNM()->mkNode( DT_SIZE, children[0] ), 
-                                                                   NodeManager::currentNM()->mkNode( DT_SIZE, children[1] ) );
-              comm_disj.push_back( sz_less );
-              // (2) ...or sizes are equal and first child is less by term order
-              std::vector< Node > sz_eq_cases; 
-              Node sz_eq = NodeManager::currentNM()->mkNode( EQUAL, NodeManager::currentNM()->mkNode( DT_SIZE, children[0] ), 
-                                                                    NodeManager::currentNM()->mkNode( DT_SIZE, children[1] ) );
-              sz_eq_cases.push_back( sz_eq );
-              if( options::sygusOpt1() ){
-                TypeNode tnc = children[0].getType();
-                const Datatype& cdt = ((DatatypeType)(tnc).toType()).getDatatype();
-                for( unsigned j=0; j<cdt.getNumConstructors(); j++ ){
-                  if( !d_tds->isGenericRedundant( tnc, j ) ){
-                    std::vector< Node > case_conj;
-                    for( unsigned k=0; k<j; k++ ){
-                      if( !d_tds->isGenericRedundant( tnc, k ) ){
-                        case_conj.push_back( DatatypesRewriter::mkTester( children[1], k, cdt ).negate() );
-                      }
-                    }
-                    if( !case_conj.empty() ){
-                      Node corder = NodeManager::currentNM()->mkNode( kind::OR, DatatypesRewriter::mkTester( children[0], j, cdt ).negate(),
-                                                                      case_conj.size()==1 ? case_conj[0] : NodeManager::currentNM()->mkNode( kind::AND, case_conj ) );
-                      sz_eq_cases.push_back( corder );
-                    }
-                  }
-                }
+#if 0
+              Node order_pred = NodeManager::currentNM()->mkNode( DT_SYGUS_TERM_ORDER, children[0], children[1] );
+              sbp_conj.push_back( order_pred );
+              Node child11 = NodeManager::currentNM()->mkNode( APPLY_SELECTOR_TOTAL, Node::fromExpr( dt[tindex].getSelectorInternal( tn.toType(), 1 ) ), children[0] );
+              Assert( child11.getType()==children[1].getType() );
+              //chainable
+              if( children[0].getType()==tn ){
+                Node order_pred_trans = NodeManager::currentNM()->mkNode( OR, DatatypesRewriter::mkTester( children[0], tindex, dt ).negate(),
+                                                                          NodeManager::currentNM()->mkNode( DT_SYGUS_TERM_ORDER, child11, children[1] ) );
+                sbp_conj.push_back( order_pred_trans );
               }
-              Node sz_eqc = sz_eq_cases.size()==1 ? sz_eq_cases[0] : NodeManager::currentNM()->mkNode( kind::AND, sz_eq_cases );
-              comm_disj.push_back( sz_eqc );
-              
-              Node comm_sb = NodeManager::currentNM()->mkNode( kind::OR, comm_disj );
-              sbp_conj.push_back( comm_sb );
+#else   
+              Node order_pred = getTermOrderPredicate( children[0], children[1] );
+              sbp_conj.push_back( order_pred );
+              //chainable
+              if( children[0].getType()==tn ){
+                Node child11 = NodeManager::currentNM()->mkNode( APPLY_SELECTOR_TOTAL, Node::fromExpr( dt[tindex].getSelectorInternal( tn.toType(), 1 ) ), children[0] );
+                Assert( child11.getType()==children[1].getType() );
+                Node order_pred_trans = NodeManager::currentNM()->mkNode( OR, DatatypesRewriter::mkTester( children[0], tindex, dt ).negate(),
+                                                                          getTermOrderPredicate( child11, children[1] ) );
+
+                sbp_conj.push_back( order_pred_trans );
+              }
+#endif
             }
           }
         }
