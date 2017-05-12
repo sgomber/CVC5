@@ -567,14 +567,14 @@ class TermDbSygus {
 private:
   /** reference to the quantifiers engine */
   QuantifiersEngine* d_quantEngine;
-  std::map< TypeNode, std::vector< Node > > d_fv;
+  std::map< TypeNode, std::vector< Node > > d_fv[2];
   std::map< Node, TypeNode > d_fv_stype;
   std::map< Node, int > d_fv_num;
   Node d_true;
   Node d_false;
 public:
-  TNode getVar( TypeNode tn, int i );
-  TNode getVarInc( TypeNode tn, std::map< TypeNode, int >& var_count );
+  TNode getFreeVar( TypeNode tn, int i, bool useSygusType = false );
+  TNode getFreeVarInc( TypeNode tn, std::map< TypeNode, int >& var_count, bool useSygusType = false );
   bool isVar( Node n ) { return d_fv_stype.find( n )!=d_fv_stype.end(); }
   int getVarNum( Node n ) { return d_fv_num[n]; }
 private:
@@ -703,9 +703,13 @@ public:
     std::vector< Node > exp;
     return unfold( en, vtm, exp, false );
   }
+  // returns straightforward exp => n = vn
   void getExplanationForConstantEquality( Node n, Node vn, std::vector< Node >& exp );
+  // we have n = vn => eval( n ) = bvr, returns exp => eval( n ) = bvr
+  void getExplanationFor( TypeNode tn, Node n, Node vn, Node bvr, std::vector< Node >& exp );
   // evaluate deep embedding term n, store minimized explanation for evaluation in exp
   Node crefEvaluate( Node n, std::map< Node, Node >& vtm, std::map< Node, Node >& visited, std::map< Node, std::vector< Node > >& exp );
+  // builtin evaluation, returns rewrite( bn [ args / vars(tn) ] )
   Node evaluateBuiltin( TypeNode tn, Node bn, std::vector< Node >& args );
 //for calculating redundant operators
 private:

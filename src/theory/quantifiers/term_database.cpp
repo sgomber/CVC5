@@ -2311,16 +2311,23 @@ bool TermDbSygus::reset( Theory::Effort e ) {
   return true;  
 }
 
-TNode TermDbSygus::getVar( TypeNode tn, int i ) {
-  while( i>=(int)d_fv[tn].size() ){
+TNode TermDbSygus::getFreeVar( TypeNode tn, int i, bool useSygusType ) {
+  unsigned sindex = 0;
+  TypeNode vtn = tn;
+  if( useSygusType ){
+    if( tn.isDatatype() ){
+      const Datatype& dt = ((DatatypeType)(tn).toType()).getDatatype();
+      if( !dt.getSygusType().isNull() ){
+        vtn = TypeNode::fromType( dt.getSygusType() );
+        sindex = 1;
+      } 
+    }
+  }
+  while( i>=(int)d_fv[sindex][tn].size() ){
     std::stringstream ss;
-    TypeNode vtn = tn;
     if( tn.isDatatype() ){
       const Datatype& dt = ((DatatypeType)(tn).toType()).getDatatype();
       ss << "fv_" << dt.getName() << "_" << i;
-      if( !dt.getSygusType().isNull() ){
-        vtn = TypeNode::fromType( dt.getSygusType() );
-      }
     }else{
       ss << "fv_" << tn << "_" << i;
     }
@@ -2328,20 +2335,20 @@ TNode TermDbSygus::getVar( TypeNode tn, int i ) {
     Node v = NodeManager::currentNM()->mkSkolem( ss.str(), vtn, "for sygus normal form testing" );
     d_fv_stype[v] = tn;
     d_fv_num[v] = i;
-    d_fv[tn].push_back( v );
+    d_fv[sindex][tn].push_back( v );
   }
-  return d_fv[tn][i];
+  return d_fv[sindex][tn][i];
 }
 
-TNode TermDbSygus::getVarInc( TypeNode tn, std::map< TypeNode, int >& var_count ) {
+TNode TermDbSygus::getFreeVarInc( TypeNode tn, std::map< TypeNode, int >& var_count, bool useSygusType ) {
   std::map< TypeNode, int >::iterator it = var_count.find( tn );
   if( it==var_count.end() ){
     var_count[tn] = 1;
-    return getVar( tn, 0 );
+    return getFreeVar( tn, 0, useSygusType );
   }else{
     int index = it->second;
     var_count[tn]++;
-    return getVar( tn, index );
+    return getFreeVar( tn, index, useSygusType );
   }
 }
 
@@ -2490,7 +2497,7 @@ Node TermDbSygus::mkGeneric( const Datatype& dt, int c, std::map< TypeNode, int 
     if( it!=pre.end() ){
       a = it->second;
     }else{
-      a = getVarInc( tna, var_count );
+      a = getFreeVarInc( tna, var_count, true );
     }
     Assert( !a.isNull() );
     children.push_back( a );
@@ -2522,20 +2529,29 @@ Node TermDbSygus::sygusToBuiltin( Node n, TypeNode tn ) {
   std::map< Node, Node >::iterator it = d_sygus_to_builtin[tn].find( n );
   if( it==d_sygus_to_builtin[tn].end() ){
     Trace("sygus-db-debug") << "SygusToBuiltin : compute for " << n << ", type = " << tn << std::endl;
+    Node ret;
     const Datatype& dt = ((DatatypeType)(tn).toType()).getDatatype();
-    Assert( n.getKind()==APPLY_CONSTRUCTOR );
-    unsigned i = Datatype::indexOf( n.getOperator().toExpr() );
-    Assert( n.getNumChildren()==dt[i].getNumArgs() );
-    std::map< TypeNode, int > var_count;
-    std::map< int, Node > pre;
-    for( unsigned j=0; j<n.getNumChildren(); j++ ){
-      pre[j] = sygusToBuiltin( n[j], getArgType( dt[i], j ) );
+    if( n.getKind()==APPLY_CONSTRUCTOR ){
+      unsigned i = Datatype::indexOf( n.getOperator().toExpr() );
+      Assert( n.getNumChildren()==dt[i].getNumArgs() );
+      std::map< TypeNode, int > var_count;
+      std::map< int, Node > pre;
+      for( unsigned j=0; j<n.getNumChildren(); j++ ){
+        pre[j] = sygusToBuiltin( n[j], getArgType( dt[i], j ) );
+      }
+      ret = mkGeneric( dt, i, var_count, pre );
+      Trace("sygus-db-debug") << "SygusToBuiltin : Generic is " << ret << std::endl;
+      ret = Node::fromExpr( smt::currentSmtEngine()->expandDefinitions( ret.toExpr() ) );
+      Trace("sygus-db-debug") << "SygusToBuiltin : After expand definitions " << ret << std::endl;
+      d_sygus_to_builtin[tn][n] = ret;
+    }else{
+      Assert( isVar( n ) );
+      //map to builtin variable type
+      int fv_num = getVarNum( n );
+      Assert( !dt.getSygusType().isNull() );
+      TypeNode vtn = TypeNode::fromType( dt.getSygusType() );
+      ret = getFreeVar( vtn, fv_num );
     }
-    Node ret = mkGeneric( dt, i, var_count, pre );
-    Trace("sygus-db-debug") << "SygusToBuiltin : Generic is " << ret << std::endl;
-    ret = Node::fromExpr( smt::currentSmtEngine()->expandDefinitions( ret.toExpr() ) );
-    Trace("sygus-db-debug") << "SygusToBuiltin : After expand definitions " << ret << std::endl;
-    d_sygus_to_builtin[tn][n] = ret;
     return ret;
   }else{
     return it->second;
@@ -3529,6 +3545,65 @@ void TermDbSygus::getExplanationForConstantEquality( Node n, Node vn, std::vecto
   for( unsigned j=0; j<vn.getNumChildren(); j++ ){
     Node sel = NodeManager::currentNM()->mkNode( kind::APPLY_SELECTOR_TOTAL, Node::fromExpr( dt[i].getSelectorInternal( tn.toType(), j ) ), n );
     getExplanationForConstantEquality( sel, vn[j], exp );
+  }
+}
+
+void TermDbSygus::getExplanationFor( TypeNode tn, Node n, Node vn, Node bvr, std::vector< Node >& exp ) {
+  // naive :
+  //return getExplanationForConstantEquality( n, vn, exp );
+  Trace("sygus-sym-break-min-exp-debug") << "Minimize explanation for eval[" << vn << "] = " << bvr << std::endl;
+  Assert( vn.getKind()==kind::APPLY_CONSTRUCTOR );
+  Assert( Rewriter::rewrite( sygusToBuiltin( vn, tn ) )==bvr );
+ 
+  std::vector< Node > children;
+  children.push_back( vn.getOperator() );
+  for( unsigned i=0; i<vn.getNumChildren(); i++ ){
+    children.push_back( vn[i] );
+  }
+ 
+  Trace("sygus-sym-break-min-exp-debug") << "Analyze children..." << std::endl;
+  // for each child, check whether replacing by a fresh variable and rewriting again
+  std::map< unsigned, bool > crlv;
+  for( unsigned i=0; i<vn.getNumChildren(); i++ ){
+    Node x = getFreeVar( vn[i].getType(), i );    // redundant (could choose smaller i, but this is easy)
+    children[i+1] = x;
+    Node nvn = NodeManager::currentNM()->mkNode( kind::APPLY_CONSTRUCTOR, children );
+    Trace("sygus-sym-break-min-exp-debug") << "look at " << i << " : " << nvn << std::endl;
+    Assert( nvn.getKind()==kind::APPLY_CONSTRUCTOR );
+    Node nbv = sygusToBuiltin( nvn, tn );
+    Node nbvr = Rewriter::rewrite( nbv );
+    if( nbvr==bvr ){
+      // gives the same result : then the explanation for the child is irrelevant 
+      Trace("sygus-sym-break-min-exp") << "sb-min-exp : " << vn << " is rewritten to " << nbvr << " regardless of the content of argument " << i << std::endl;
+    }else{
+      if( nbvr.isVar() ){
+        Node bx = sygusToBuiltin( x, vn[i].getType() );
+        Assert( bx.getType()==nbvr.getType() );
+        if( nbvr==bx ){
+          Trace("sygus-sym-break-min-exp") << "sb-min-exp : " << vn << " always rewrites to argument " << i << std::endl;
+          /*  TODO : use this information?
+          // rewrites to the variable : then the explanation is only this child
+          crlv.clear();
+          crlv[i] = true;
+          break;
+          */
+        }
+      }
+      crlv[i] = true;
+      children[i+1] = vn[i];
+    }
+  }
+  
+  Trace("sygus-sym-break-min-exp-debug") << "Build explanation..." << std::endl;
+  int cindex = Datatype::indexOf( vn.getOperator().toExpr() );
+  const Datatype& dt = ((DatatypeType)tn.toType()).getDatatype();
+  exp.push_back( datatypes::DatatypesRewriter::mkTester( n, cindex, dt ) );
+  for( unsigned j=0; j<vn.getNumChildren(); j++ ){
+    if( crlv.find( j )!=crlv.end() ){
+      Node sel = NodeManager::currentNM()->mkNode( kind::APPLY_SELECTOR_TOTAL, Node::fromExpr( dt[cindex].getSelectorInternal( tn.toType(), j ) ), n );
+      // do not do analysis recursively : should be handled at top-level
+      getExplanationForConstantEquality( sel, vn[j], exp );
+    }
   }
 }
 

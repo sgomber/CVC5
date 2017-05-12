@@ -841,7 +841,7 @@ bool SygusSymBreakNew::registerSearchValue( Node n, Node nv, unsigned d, std::ve
         Node lem = exp[eq].size()==1 ? exp[eq][0] : NodeManager::currentNM()->mkNode( kind::AND, exp[eq] );
         */
         std::vector< Node > exp;
-        d_tds->getExplanationForConstantEquality( x, nv, exp );
+        d_tds->getExplanationFor( tn, x, bad_val, bvr, exp );
         Node lem = exp.size()==1 ? exp[0] : NodeManager::currentNM()->mkNode( kind::AND, exp );
         lem = lem.negate();
         Trace("sygus-sb-exc") << "  ........exc lemma is " << lem << ", size = " << sz << std::endl;
