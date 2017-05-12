@@ -693,6 +693,7 @@ private:
   std::map< Node, std::map< Node, bool > > d_subterms;
   std::map< Node, std::vector< Node > > d_evals;
   std::map< Node, std::vector< std::vector< Node > > > d_eval_args;
+  std::map< Node, std::vector< bool > > d_eval_args_const;
   std::map< Node, std::map< Node, unsigned > > d_node_mv_args_proc;
 public:
   void registerEvalTerm( Node n );

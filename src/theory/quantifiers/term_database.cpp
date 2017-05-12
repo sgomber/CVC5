@@ -3434,15 +3434,14 @@ void TermDbSygus::registerEvalTerm( Node n ) {
             Node var_list = Node::fromExpr( dt.getSygusVarList() );
             Assert( dt.isSygus() );
             d_eval_args[n[0]].push_back( std::vector< Node >() );
+            bool isConst = true;
             for( unsigned j=1; j<n.getNumChildren(); j++ ){
-              //if( var_list[j-1].getType().isBoolean() ){
-              //  //TODO: remove this case when boolean term conversion is eliminated
-              //  Node c = NodeManager::currentNM()->mkConst(BitVector(1u, 1u));
-              //  d_eval_args[n[0]].back().push_back( n[j].eqNode( c ) );
-              //}else{
-                d_eval_args[n[0]].back().push_back( n[j] );
-              //}
+              d_eval_args[n[0]].back().push_back( n[j] );
+              if( !n[j].isConst() ){
+                isConst = false;
+              }
             }
+            d_eval_args_const[n[0]].push_back( isConst );
             Node a = getAnchor( n[0] );
             d_subterms[a][n[0]] = true;
           }
@@ -3466,35 +3465,6 @@ void TermDbSygus::registerModelValue( Node a, Node v, std::vector< Node >& terms
         Node vn = n.substitute( at, vt );
         vn = Rewriter::rewrite( vn );
         unsigned start = d_node_mv_args_proc[n][vn];
-#if 1
-        TypeNode tn = n.getType();
-        Assert( tn.isDatatype() );
-        const Datatype& dt = ((DatatypeType)(tn).toType()).getDatatype();
-        Assert( dt.isSygus() );
-        std::vector< Node > eval_children;
-        eval_children.push_back( Node::fromExpr( dt.getSygusEvaluationFunc() ) );
-        eval_children.push_back( n );
-        // do explanation minimizing evaluation
-        for( unsigned i=start; i<it->second.size(); i++ ){
-          eval_children.insert( eval_children.end(), it->second[i].begin(), it->second[i].end() );
-          Node eval_fun = NodeManager::currentNM()->mkNode( kind::APPLY_UF, eval_children );
-          eval_children.resize( 2 );  
-          //evaluate tracking explanation
-          std::map< Node, Node > vtm; 
-          std::map< Node, Node > visited; 
-          std::map< Node, std::vector< Node > > exp;
-          vtm[n] = vn;
-          Node res = crefEvaluate( eval_fun, vtm, visited, exp );
-          Assert( !exp[eval_fun].empty() );
-          Node expn = exp[eval_fun].size()==1 ? exp[eval_fun][0] : NodeManager::currentNM()->mkNode( kind::AND, exp[eval_fun] );
-          terms.push_back( d_evals[n][i] );
-          vals.push_back( res );
-          exps.push_back( expn ); 
-          Trace("sygus-eager") << "Conclude : " << d_evals[n][i] << " == " << res << std::endl;
-          Trace("sygus-eager") << "   from " << expn << std::endl;       
-        }
-        d_node_mv_args_proc[n][vn] = it->second.size();
-#else
         // get explanation in terms of testers
         std::vector< Node > antec_exp;
         getExplanationForConstantEquality( n, vn, antec_exp );
@@ -3502,6 +3472,7 @@ void TermDbSygus::registerModelValue( Node a, Node v, std::vector< Node >& terms
         //Node antec = n.eqNode( vn );
         TypeNode tn = n.getType();
         Assert( tn.isDatatype() );
+        const Datatype& dt = ((DatatypeType)(tn).toType()).getDatatype();
         Assert( dt.isSygus() );
         Trace("sygus-eager") << "TermDbSygus::eager: Register model value : " << vn << " for " << n << std::endl;
         Trace("sygus-eager") << "...it has " << it->second.size() << " evaluations, already processed " << start << "." << std::endl;
@@ -3512,23 +3483,43 @@ void TermDbSygus::registerModelValue( Node a, Node v, std::vector< Node >& terms
         for( unsigned j=0; j<var_list.getNumChildren(); j++ ){
           vars.push_back( var_list[j] );
         }
+        //evaluation children
+        std::vector< Node > eval_children;
+        eval_children.push_back( Node::fromExpr( dt.getSygusEvaluationFunc() ) );
+        eval_children.push_back( n );
         //for each evaluation
         for( unsigned i=start; i<it->second.size(); i++ ){
-          Assert( vars.size()==it->second[i].size() );
-          Node sBTerm = bTerm.substitute( vars.begin(), vars.end(), it->second[i].begin(), it->second[i].end() );
-          sBTerm = Rewriter::rewrite( sBTerm );
-          //Node lem = NodeManager::currentNM()->mkNode(EQUAL, d_evals[n][i], sBTerm ); 
-          //lem = NodeManager::currentNM()->mkNode( OR, antec.negate(), lem );
+          Node res;
+          Node expn;
+          //if all constant, we can use the cref evaluation to minimize the explanation
+          Assert( i<d_eval_args_const[n].size() );
+          if( d_eval_args_const[n][i] ){
+            eval_children.insert( eval_children.end(), it->second[i].begin(), it->second[i].end() );
+            Node eval_fun = NodeManager::currentNM()->mkNode( kind::APPLY_UF, eval_children );
+            eval_children.resize( 2 );  
+            //evaluate tracking explanation
+            std::map< Node, Node > vtm; 
+            std::map< Node, Node > visited; 
+            std::map< Node, std::vector< Node > > exp;
+            vtm[n] = vn;
+            res = crefEvaluate( eval_fun, vtm, visited, exp );
+            Assert( !exp[eval_fun].empty() );
+            expn = exp[eval_fun].size()==1 ? exp[eval_fun][0] : NodeManager::currentNM()->mkNode( kind::AND, exp[eval_fun] );
+          //otherwise, just do a substitution
+          }else{
+            Assert( vars.size()==it->second[i].size() );
+            res = bTerm.substitute( vars.begin(), vars.end(), it->second[i].begin(), it->second[i].end() );
+            res = Rewriter::rewrite( res );
+            expn = antec;
+          }
+          Assert( !res.isNull() );
           terms.push_back( d_evals[n][i] );
-          vals.push_back( sBTerm );
-          exps.push_back( antec );
-          Trace("sygus-eager") << "Conclude : " << d_evals[n][i] << " == " << sBTerm << std::endl;
-          Trace("sygus-eager") << "   from " << antec << std::endl;
-          //Trace("sygus-eager") << "Lemma : " << lem << std::endl;
-          //lems.push_back( lem );
+          vals.push_back( res );
+          exps.push_back( expn );
+          Trace("sygus-eager") << "Conclude : " << d_evals[n][i] << " == " << res << ", cref eval = " << d_eval_args_const[n][i] << std::endl;
+          Trace("sygus-eager") << "   from " << expn << std::endl;
         }
         d_node_mv_args_proc[n][vn] = it->second.size();
-#endif
       }
     }
   }
