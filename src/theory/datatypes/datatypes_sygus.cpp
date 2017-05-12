@@ -124,7 +124,7 @@ SygusSymBreakNew::~SygusSymBreakNew() {
 }
 
 /** add tester */
-void SygusSymBreakNew::addTester( int tindex, TNode n, Node exp, std::vector< Node >& lemmas ) {
+void SygusSymBreakNew::assertTester( int tindex, TNode n, Node exp, std::vector< Node >& lemmas ) {
   registerTerm( n, lemmas );
   // check if this is a relevant (sygus) term
   if( d_term_to_anchor.find( n )!=d_term_to_anchor.end() ){
@@ -145,12 +145,18 @@ void SygusSymBreakNew::addTester( int tindex, TNode n, Node exp, std::vector< No
         }
       }
       if( do_add ){
-        addTesterInternal( tindex, n, exp, lemmas );
+        assertTesterInternal( tindex, n, exp, lemmas );
       }
     }
   }
 }
 
+void SygusSymBreakNew::assertFact( Node n, bool polarity, std::vector< Node >& lemmas ) {
+  if( n.getKind()==kind::DT_SYGUS_TERM_ORDER ){
+    
+  }
+}
+  
 void SygusSymBreakNew::registerTerm( Node n, std::vector< Node >& lemmas ) {
   if( d_is_top_level.find( n )==d_is_top_level.end() ){
     d_is_top_level[n] = false;
@@ -194,7 +200,7 @@ bool SygusSymBreakNew::computeTopLevel( TypeNode tn, Node n ){
   }
 }
 
-void SygusSymBreakNew::addTesterInternal( int tindex, TNode n, Node exp, std::vector< Node >& lemmas ) {
+void SygusSymBreakNew::assertTesterInternal( int tindex, TNode n, Node exp, std::vector< Node >& lemmas ) {
   d_active_terms.insert( n );
   Trace("sygus-sb-debug2") << "Sygus : activate term : " << n << " : " << exp << std::endl;
   
@@ -233,7 +239,7 @@ void SygusSymBreakNew::addTesterInternal( int tindex, TNode n, Node exp, std::ve
       IntMap::const_iterator itt = d_testers.find( sel );
       if( itt != d_testers.end() ){
         Assert( d_testers_exp.find( sel ) != d_testers_exp.end() );
-        addTesterInternal( (*itt).second, sel, d_testers_exp[sel], lemmas );
+        assertTesterInternal( (*itt).second, sel, d_testers_exp[sel], lemmas );
       }
     }
   }
@@ -971,7 +977,7 @@ void SygusSymBreakNew::notifySearchSize( unsigned s, Node exp, std::vector< Node
       if( itx!=d_testers_exp.end() ){
         int tindex = (*it).second;
         Node exp = (*itx).second;
-        addTester( tindex, n, exp, lemmas );
+        assertTester( tindex, n, exp, lemmas );
       }else{
         Assert( false );
       }

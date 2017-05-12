@@ -114,4 +114,7 @@ typerule DT_SIZE_BOUND ::CVC4::theory::datatypes::DtBoundTypeRule
 operator DT_SYGUS_BOUND 1 "datatypes sygus bound"
 typerule DT_SYGUS_BOUND ::CVC4::theory::datatypes::DtSygusBoundTypeRule
 
+operator DT_SYGUS_TERM_ORDER 2 "datatypes sygus term order"
+typerule DT_SYGUS_TERM_ORDER ::CVC4::theory::datatypes::DtSygusPredTypeRule
+
 endtheory

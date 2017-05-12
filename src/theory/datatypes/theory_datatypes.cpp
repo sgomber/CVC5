@@ -489,6 +489,13 @@ void TheoryDatatypes::assertFact( Node fact, Node exp ){
         doSendLemmas( lemmas );
       }
     }
+  }else if( atom.getKind() == kind::DT_SYGUS_TERM_ORDER ){
+    //notify the symmetry breaking module
+    if( d_sygus_sym_break ){
+      std::vector< Node > lemmas;
+      d_sygus_sym_break->assertFact( atom, polarity, lemmas );
+      doSendLemmas( lemmas );
+    }
   }else{
     d_equalityEngine.assertPredicate( atom, polarity, exp );
   }
@@ -510,8 +517,7 @@ void TheoryDatatypes::assertFact( Node fact, Node exp ){
         Trace("dt-sygus") << "Assert tester to sygus : " << atom << std::endl;
         //Assert( !d_sygus_util->d_conflict );
         std::vector< Node > lemmas;
-        d_sygus_sym_break->addTester( tindex, t_arg, atom, lemmas );
-
+        d_sygus_sym_break->assertTester( tindex, t_arg, atom, lemmas );
         Trace("dt-sygus") << "Done assert tester to sygus." << std::endl;
         doSendLemmas( lemmas );
       }

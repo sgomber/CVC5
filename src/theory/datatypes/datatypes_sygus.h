@@ -81,7 +81,7 @@ private:
   std::map< TypeNode, std::map< Node, unsigned > > d_search_val_sz;
   std::map< TypeNode, std::map< Node, Node > > d_search_val_b;
   std::map< TypeNode, std::map< unsigned, std::vector< Node > > > d_sb_lemmas;
-  void addTesterInternal( int tindex, TNode n, Node exp, std::vector< Node >& lemmas );
+  void assertTesterInternal( int tindex, TNode n, Node exp, std::vector< Node >& lemmas );
   // register search term
   void registerSearchTerm( TypeNode tn, unsigned d, Node n, bool topLevel, std::vector< Node >& lemmas );
   bool registerSearchValue( Node n, Node nv, unsigned d, std::vector< Node >& lemmas );
@@ -131,7 +131,8 @@ public:
   SygusSymBreakNew( TheoryDatatypes * td, quantifiers::TermDbSygus * tds, context::Context* c );
   ~SygusSymBreakNew();
   /** add tester */
-  void addTester( int tindex, TNode n, Node exp, std::vector< Node >& lemmas );
+  void assertTester( int tindex, TNode n, Node exp, std::vector< Node >& lemmas );
+  void assertFact( Node n, bool polarity, std::vector< Node >& lemmas );
   void preRegisterTerm( TNode n );
   void notifySearchSize( unsigned s, Node exp, std::vector< Node >& lemmas );
   void check( std::vector< Node >& lemmas );

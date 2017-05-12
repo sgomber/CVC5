@@ -3450,6 +3450,35 @@ void TermDbSygus::registerModelValue( Node a, Node v, std::vector< Node >& terms
         Node vn = n.substitute( at, vt );
         vn = Rewriter::rewrite( vn );
         unsigned start = d_node_mv_args_proc[n][vn];
+#if 1
+        TypeNode tn = n.getType();
+        Assert( tn.isDatatype() );
+        const Datatype& dt = ((DatatypeType)(tn).toType()).getDatatype();
+        Assert( dt.isSygus() );
+        std::vector< Node > eval_children;
+        eval_children.push_back( Node::fromExpr( dt.getSygusEvaluationFunc() ) );
+        eval_children.push_back( n );
+        // do explanation minimizing evaluation
+        for( unsigned i=start; i<it->second.size(); i++ ){
+          eval_children.insert( eval_children.end(), it->second[i].begin(), it->second[i].end() );
+          Node eval_fun = NodeManager::currentNM()->mkNode( kind::APPLY_UF, eval_children );
+          eval_children.resize( 2 );  
+          //evaluate tracking explanation
+          std::map< Node, Node > vtm; 
+          std::map< Node, Node > visited; 
+          std::map< Node, std::vector< Node > > exp;
+          vtm[n] = vn;
+          Node res = crefEvaluate( eval_fun, vtm, visited, exp );
+          Assert( !exp[eval_fun].empty() );
+          Node expn = exp[eval_fun].size()==1 ? exp[eval_fun][0] : NodeManager::currentNM()->mkNode( kind::AND, exp[eval_fun] );
+          terms.push_back( d_evals[n][i] );
+          vals.push_back( res );
+          exps.push_back( expn ); 
+          Trace("sygus-eager") << "Conclude : " << d_evals[n][i] << " == " << res << std::endl;
+          Trace("sygus-eager") << "   from " << expn << std::endl;       
+        }
+        d_node_mv_args_proc[n][vn] = it->second.size();
+#else
         // get explanation in terms of testers
         std::vector< Node > antec_exp;
         getExplanationForConstantEquality( n, vn, antec_exp );
@@ -3457,7 +3486,6 @@ void TermDbSygus::registerModelValue( Node a, Node v, std::vector< Node >& terms
         //Node antec = n.eqNode( vn );
         TypeNode tn = n.getType();
         Assert( tn.isDatatype() );
-        const Datatype& dt = ((DatatypeType)(tn).toType()).getDatatype();
         Assert( dt.isSygus() );
         Trace("sygus-eager") << "TermDbSygus::eager: Register model value : " << vn << " for " << n << std::endl;
         Trace("sygus-eager") << "...it has " << it->second.size() << " evaluations, already processed " << start << "." << std::endl;
@@ -3484,6 +3512,7 @@ void TermDbSygus::registerModelValue( Node a, Node v, std::vector< Node >& terms
           //lems.push_back( lem );
         }
         d_node_mv_args_proc[n][vn] = it->second.size();
+#endif
       }
     }
   }
@@ -3622,21 +3651,18 @@ Node TermDbSygus::crefEvaluate( Node n, std::map< Node, Node >& vtm, std::map< N
         if( n.getMetaKind() == kind::metakind::PARAMETERIZED ){
           children.push_back( n.getOperator() );
         }
+        Kind nk = n.getKind();
         for( unsigned i=0; i<n.getNumChildren(); i++ ){
           Node nc = crefEvaluate( n[i], vtm, visited, exp );
           childChanged = nc!=n[i] || childChanged;
           children.push_back( nc );
-          //Boolean short circuiting
-          if( n.getKind()==kind::AND ){
-            if( nc==d_false ){
-              ret = nc;
-              exp_c.clear();
-            }
-          }else if( n.getKind()==kind::OR ){
-            if( nc==d_true ){
-              ret = nc;
-              exp_c.clear();
-            }
+          // short circuiting
+          Node nc_singular = isSingularArg( nc, nk, i );
+          if( !nc_singular.isNull() ){
+            Trace("sygus-cref-eval-s") << "Short circuit evaluation of " << n << " at argument " << i << ", since value " << nc;
+            Trace("sygus-cref-eval-s") << " implies that the evaluation is " << nc_singular << std::endl;
+            ret = nc_singular;
+            exp_c.clear();
           }else if( n.getKind()==kind::ITE && i==0 ){
             int index = -1;
             if( nc==d_true ){
