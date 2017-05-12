@@ -20,7 +20,9 @@ TESTS =	\
 	hd-sdiv.sy \
 	stopwatch-bt.sy \
 	array_sum_dd.sy \
-	mpg_guard1-dd.sy
+	mpg_guard1-dd.sy \
+	VC22_a.sy \
+	inv_gen_n_c11.sy
 
 EXTRA_DIST = $(TESTS)
 

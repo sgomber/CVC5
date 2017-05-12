@@ -798,12 +798,14 @@ bool SygusSymBreakNew::registerSearchValue( Node n, Node nv, unsigned d, std::ve
       }
       if( !bad_val_bvr.isNull() ){
         Node bad_val = nv;
+        Node bad_val_o = d_search_val[tn][bad_val_bvr];
         Assert( d_search_val_sz[tn].find( bad_val_bvr )!=d_search_val_sz[tn].end() );
         unsigned prev_sz = d_search_val_sz[tn][bad_val_bvr];
         if( prev_sz>sz ){
           //swap : the excluded value is the previous
           d_search_val_sz[tn][bad_val_bvr] = sz;
           bad_val = d_search_val[tn][bad_val_bvr];
+          bad_val_o = nv;
           sz = prev_sz;
         }
         if( Trace.isOn("sygus-sb-exc") ){
@@ -841,7 +843,12 @@ bool SygusSymBreakNew::registerSearchValue( Node n, Node nv, unsigned d, std::ve
         Node lem = exp[eq].size()==1 ? exp[eq][0] : NodeManager::currentNM()->mkNode( kind::AND, exp[eq] );
         */
         std::vector< Node > exp;
-        d_tds->getExplanationFor( tn, x, bad_val, bvr, exp );
+        //if( by_examples ){
+          // cannot minimize?
+         //d_tds->getExplanationForConstantEquality( x, bad_val, exp );
+        //}else{
+        d_tds->getExplanationFor( tn, x, bad_val, bvr, exp, bad_val_o );
+        //}
         Node lem = exp.size()==1 ? exp[0] : NodeManager::currentNM()->mkNode( kind::AND, exp );
         lem = lem.negate();
         Trace("sygus-sb-exc") << "  ........exc lemma is " << lem << ", size = " << sz << std::endl;
