@@ -193,7 +193,7 @@ void SygusSymBreakNew::registerTerm( Node n, std::vector< Node >& lemmas ) {
 bool SygusSymBreakNew::computeTopLevel( TypeNode tn, Node n ){
   if( n.getType()==tn ){
     return false;
-  }else if( n.getKind()==kind::APPLY_SELECTOR ){
+  }else if( n.getKind()==kind::APPLY_SELECTOR_TOTAL ){
     return computeTopLevel( tn, n[0] );
   }else{
     return true;

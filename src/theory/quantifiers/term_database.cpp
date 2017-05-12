@@ -3659,10 +3659,11 @@ Node TermDbSygus::crefEvaluate( Node n, std::map< Node, Node >& vtm, std::map< N
           // short circuiting
           Node nc_singular = isSingularArg( nc, nk, i );
           if( !nc_singular.isNull() ){
-            Trace("sygus-cref-eval-s") << "Short circuit evaluation of " << n << " at argument " << i << ", since value " << nc;
+            Trace("sygus-cref-eval-s") << "cr-eval : Short circuit evaluation of " << n << " at argument " << i << ", since value " << nc;
             Trace("sygus-cref-eval-s") << " implies that the evaluation is " << nc_singular << std::endl;
             ret = nc_singular;
             exp_c.clear();
+          // ite implies only one branch is relevant
           }else if( n.getKind()==kind::ITE && i==0 ){
             int index = -1;
             if( nc==d_true ){
@@ -3671,6 +3672,8 @@ Node TermDbSygus::crefEvaluate( Node n, std::map< Node, Node >& vtm, std::map< N
               index = 2;
             }
             if( index!=-1 ){
+              Trace("sygus-cref-eval-s") << "cr-eval : Only evaluate child " << index << " of " << n << " since condition evaluates to "; 
+              Trace("sygus-cref-eval-s") << nc << std::endl;
               ret = crefEvaluate( n[index], vtm, visited, exp );
               exp_c.push_back( n[index] );
             }
