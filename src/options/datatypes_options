@@ -38,5 +38,9 @@ option sygusSymBreakDynamic --sygus-sym-break-dynamic bool :default true
   dynamic sygus sym break lemmas
 option sygusOpt1 --sygus-opt1 bool :default false
   sygus experimental option 
+option sygusSymBreakLazy --sygus-sym-break-lazy bool :default true
+  lazily add symmetry breaking lemmas for terms
+option sygusSymBreakRlv --sygus-sym-break-rlv bool :default false
+  add relevancy conditions to symmetry breaking lemmas
  
 endmodule

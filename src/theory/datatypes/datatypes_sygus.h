@@ -67,7 +67,12 @@ private:
   IntMap d_testers;
   NodeMap d_testers_exp;
   NodeSet d_active_terms;
-  std::map< Node, Node > d_sel_to_anchor;
+private:
+  std::map< Node, Node > d_term_to_anchor;
+  std::map< Node, unsigned > d_term_to_depth;
+  std::map< Node, bool > d_is_top_level;
+  void registerTerm( Node n, std::vector< Node >& lemmas );
+  bool computeTopLevel( TypeNode tn, Node n );
 private:
   //list of all terms encountered in search at depth
   std::map< TypeNode, std::map< unsigned, std::vector< Node > > > d_search_terms;
@@ -75,13 +80,13 @@ private:
   std::map< TypeNode, std::map< Node, Node > > d_search_val;
   std::map< TypeNode, std::map< Node, unsigned > > d_search_val_sz;
   std::map< TypeNode, std::map< Node, Node > > d_search_val_b;
-  std::map< Node, bool > d_is_top_level;
   std::map< TypeNode, std::map< unsigned, std::vector< Node > > > d_sb_lemmas;
   void addTesterInternal( int tindex, TNode n, Node exp, std::vector< Node >& lemmas );
   // register search term
   void registerSearchTerm( TypeNode tn, unsigned d, Node n, bool topLevel, std::vector< Node >& lemmas );
   bool registerSearchValue( Node n, Node nv, unsigned d, std::vector< Node >& lemmas );
   void registerSymBreakLemma( TypeNode tn, Node lem, unsigned sz, std::vector< Node >& lemmas );
+  void addSymBreakLemmasFor( TypeNode tn, Node t, unsigned d, std::vector< Node >& lemmas );
   void addSymBreakLemma( TypeNode tn, Node lem, TNode x, TNode n, unsigned lem_sz, unsigned n_depth, std::vector< Node >& lemmas );
 private:
   class PbeTrie {
