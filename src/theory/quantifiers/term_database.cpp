@@ -3530,26 +3530,43 @@ void TermDbSygus::registerModelValue( Node a, Node v, std::vector< Node >& terms
         for( unsigned i=start; i<it->second.size(); i++ ){
           Node res;
           Node expn;
-          //if all constant, we can use the cref evaluation to minimize the explanation
-          Assert( i<d_eval_args_const[n].size() );
-          if( d_eval_args_const[n][i] ){
+          // unfold?
+          bool do_unfold = false;
+          if( bTerm.getKind()==ITE || bTerm.getType().isBoolean() ){
+            do_unfold = true;
+          }
+          if( do_unfold ){
+            // TODO : this is replicated for different values, possibly do better caching
+            std::map< Node, Node > vtm; 
+            std::vector< Node > exp;
+            vtm[n] = vn;
             eval_children.insert( eval_children.end(), it->second[i].begin(), it->second[i].end() );
             Node eval_fun = NodeManager::currentNM()->mkNode( kind::APPLY_UF, eval_children );
             eval_children.resize( 2 );  
-            //evaluate tracking explanation
-            std::map< Node, Node > vtm; 
-            std::map< Node, Node > visited; 
-            std::map< Node, std::vector< Node > > exp;
-            vtm[n] = vn;
-            res = crefEvaluate( eval_fun, vtm, visited, exp );
-            Assert( !exp[eval_fun].empty() );
-            expn = exp[eval_fun].size()==1 ? exp[eval_fun][0] : NodeManager::currentNM()->mkNode( kind::AND, exp[eval_fun] );
-          //otherwise, just do a substitution
+            res = unfold( eval_fun, vtm, exp );
+            expn = exp.size()==1 ? exp[0] : NodeManager::currentNM()->mkNode( kind::AND, exp );
           }else{
-            Assert( vars.size()==it->second[i].size() );
-            res = bTerm.substitute( vars.begin(), vars.end(), it->second[i].begin(), it->second[i].end() );
-            res = Rewriter::rewrite( res );
-            expn = antec;
+            //if all constant, we can use the cref evaluation to minimize the explanation
+            Assert( i<d_eval_args_const[n].size() );
+            if( d_eval_args_const[n][i] ){
+              eval_children.insert( eval_children.end(), it->second[i].begin(), it->second[i].end() );
+              Node eval_fun = NodeManager::currentNM()->mkNode( kind::APPLY_UF, eval_children );
+              eval_children.resize( 2 );  
+              //evaluate tracking explanation
+              std::map< Node, Node > vtm; 
+              std::map< Node, Node > visited; 
+              std::map< Node, std::vector< Node > > exp;
+              vtm[n] = vn;
+              res = crefEvaluate( eval_fun, vtm, visited, exp );
+              Assert( !exp[eval_fun].empty() );
+              expn = exp[eval_fun].size()==1 ? exp[eval_fun][0] : NodeManager::currentNM()->mkNode( kind::AND, exp[eval_fun] );
+            //otherwise, just do a substitution
+            }else{
+              Assert( vars.size()==it->second[i].size() );
+              res = bTerm.substitute( vars.begin(), vars.end(), it->second[i].begin(), it->second[i].end() );
+              res = Rewriter::rewrite( res );
+              expn = antec;
+            }
           }
           Assert( !res.isNull() );
           terms.push_back( d_evals[n][i] );

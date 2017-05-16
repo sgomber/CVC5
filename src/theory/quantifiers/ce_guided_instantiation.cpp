@@ -1035,8 +1035,8 @@ void CegInstantiation::checkCegConjecture( CegConjecture * conj ) {
             Trace("cegqi-engine") << "  *** Do conjecture refinement evaluation..." << std::endl;
             for( unsigned j=0; j<cre_lems.size(); j++ ){
               Node lem = cre_lems[j];
-              Trace("cegqi-lemma") << "Cegqi::Lemma : cref evaluation : " << lem << std::endl;
               if( d_quantEngine->addLemma( lem ) ){
+                Trace("cegqi-lemma") << "Cegqi::Lemma : cref evaluation : " << lem << std::endl;
                 addedEvalLemmas = true;
               }
             }
@@ -1062,8 +1062,8 @@ void CegInstantiation::checkCegConjecture( CegConjecture * conj ) {
               //FIXME: hack to incorporate hacks from BV for division by zero
               lem = bv::TheoryBVRewriter::eliminateBVSDiv( lem );
             }
-            Trace("cegqi-lemma") << "Cegqi::Lemma : evaluation : " << lem << std::endl;
             if( d_quantEngine->addLemma( lem ) ){
+              Trace("cegqi-lemma") << "Cegqi::Lemma : evaluation : " << lem << std::endl;
               addedEvalLemmas = true;
             }
           }
