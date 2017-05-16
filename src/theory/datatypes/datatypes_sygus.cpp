@@ -950,6 +950,7 @@ void SygusSymBreakNew::addSymBreakLemma( TypeNode tn, Node lem, TNode x, TNode n
   
 void SygusSymBreakNew::preRegisterTerm( TNode n ) {
   if( n.isVar() ){
+    Trace("sygus-sb") << "Pre-register variable : " << n << std::endl;
     registerSizeTerm( n );
   }
 }

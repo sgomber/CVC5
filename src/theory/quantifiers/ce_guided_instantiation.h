@@ -69,8 +69,30 @@ private: //for condition solutions
   Node purifyConditionalEvaluations( Node n, std::map< Node, Node >& csol_cond, std::map< Node, Node >& psubs, 
                                      std::map< Node, Node >& visited );
   /** register candidate conditional */
-  void registerCandidateConditional( Node v, Node root );
   bool inferIteTemplate( unsigned k, Node n, std::map< Node, unsigned >& templ_var_index, std::map< unsigned, unsigned >& templ_injection );
+private: // new
+  std::map< Node, std::vector< Node > > d_enumerators;
+  
+  class EnumTypeInfo {
+  public:
+    EnumTypeInfo(){}
+    /** conditional solutions */
+    Node d_csol_op;
+    std::vector< TypeNode > d_csol_cts;
+    /** solution status */
+    int d_csol_status;
+    /** required for template solutions */
+    std::map< unsigned, Node > d_template;
+    std::map< unsigned, Node > d_template_arg; 
+  };
+  std::map< TypeNode, EnumTypeInfo > d_einfo;
+  std::map< TypeNode, std::map< int, Node > > d_esyms;
+  std::map< Node, TypeNode > d_esym_to_parent;
+  std::map< Node, int > d_esym_to_arg;
+  std::map< Node, Node > d_esym_to_active_guard;
+  
+  void collectEnumeratorTypes( Node e, TypeNode tn );
+  void registerEnumerator( Node et, Node e, TypeNode tn, int j );
 public:
   CegConjecture( QuantifiersEngine * qe, context::Context* c );
   ~CegConjecture();

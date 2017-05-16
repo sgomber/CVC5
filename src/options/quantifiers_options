@@ -271,6 +271,8 @@ option sygusInvTemplMode --sygus-inv-templ=MODE CVC4::theory::quantifiers::Sygus
   template mode for sygus invariant synthesis
 option sygusUnifCondSol --sygus-unif-csol bool :default false
   enable approach which unifies conditional solutions
+option sygusUnifCondSolNew --sygus-unif-csol-new bool :default false
+  enable new approach which unifies conditional solutions
 
 option sygusDirectEval --sygus-direct-eval bool :default true
   direct unfolding of evaluation functions
