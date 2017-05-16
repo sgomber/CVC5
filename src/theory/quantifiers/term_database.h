@@ -619,6 +619,8 @@ public: //registering enumeration terms
   void registerMeasuredTerm( Node e, Node root );
   /** is measured term */
   Node isMeasuredTerm( Node e );
+  /** get measured terms */
+  void getMeasuredTerms( std::vector< Node >& mts );
 public:  //general sygus utilities
   bool isRegistered( TypeNode tn );
   TypeNode sygusToBuiltinType( TypeNode tn );
@@ -710,6 +712,7 @@ public:
     std::vector< Node > exp;
     return unfold( en, vtm, exp, false );
   }
+  Node getEagerUnfold( Node n, std::map< Node, Node >& visited );
   // returns straightforward exp => n = vn
   void getExplanationForConstantEquality( Node n, Node vn, std::vector< Node >& exp );
   // we have n = vn => eval( n ) = bvr, returns exp => eval( n ) = bvr

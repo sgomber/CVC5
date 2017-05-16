@@ -950,7 +950,7 @@ void SygusSymBreakNew::addSymBreakLemma( TypeNode tn, Node lem, TNode x, TNode n
   
 void SygusSymBreakNew::preRegisterTerm( TNode n ) {
   if( n.isVar() ){
-    Trace("sygus-sb") << "Pre-register variable : " << n << std::endl;
+    Trace("sygus-sb-debug") << "Pre-register variable : " << n << std::endl;
     registerSizeTerm( n );
   }
 }
@@ -1053,11 +1053,19 @@ void SygusSymBreakNew::check( std::vector< Node >& lemmas ) {
       // register the search value ( prog -> progv ), this may invoke symmetry breaking 
       if( options::sygusSymBreakDynamic() ){
         if( !registerSearchValue( prog, progv, 0, lemmas ) ){
-          break;
+          return;
         }
       }
     }
   }
+  /*
+  //register any measured terms that we haven't encountered yet (should only be invoked on first call to check
+  std::vector< Node > mts;
+  d_tds->getMeasuredTerms( mts );
+  for( unsigned i=0; i<mts.size(); i++ ){
+    registerSizeTerm( mts[i] );
+  }
+  */
 }
 
 void SygusSymBreakNew::getPossibleCons( const Datatype& dt, TypeNode tn, std::vector< bool >& pcons ) {

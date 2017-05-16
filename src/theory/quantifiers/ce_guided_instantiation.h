@@ -90,6 +90,7 @@ private: // new
   std::map< Node, TypeNode > d_esym_to_parent;
   std::map< Node, int > d_esym_to_arg;
   std::map< Node, Node > d_esym_to_active_guard;
+  std::map< Node, std::vector< Node > > d_esym_list;
   
   void collectEnumeratorTypes( Node e, TypeNode tn );
   void registerEnumerator( Node et, Node e, TypeNode tn, int j );
@@ -132,7 +133,8 @@ public:
   
   bool needsRefinement();
   void getCandidateList( std::vector< Node >& clist, bool forceOrig = false );
-  bool constructCandidates( std::vector< Node >& clist, std::vector< Node >& model_values, std::vector< Node >& candidate_values );
+  bool constructCandidates( std::vector< Node >& clist, std::vector< Node >& model_values, std::vector< Node >& candidate_values, 
+                            std::vector< Node >& lems );
 
   void doCegConjectureSingleInvCheck(std::vector< Node >& lems);
   void doCegConjectureCheck(std::vector< Node >& lems, std::vector< Node >& model_values);
@@ -241,8 +243,6 @@ private:
 private: //for direct evaluation
   /** get refinement evaluation */
   void getCRefEvaluationLemmas( CegConjecture * conj, std::vector< Node >& vs, std::vector< Node >& ms, std::vector< Node >& lems );
-  /** get eager unfolding */
-  Node getEagerUnfold( Node n, std::map< Node, Node >& visited );
 private:
   /** check conjecture */
   void checkCegConjecture( CegConjecture * conj );
