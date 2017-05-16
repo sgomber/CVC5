@@ -748,7 +748,7 @@ sygusCommand [CVC4::PtrCloser<CVC4::Command>* cmd]
         for(size_t j = 0; j < dt.getNumConstructors(); ++j) {
           Expr assertion = PARSER_STATE->getSygusAssertion(
               datatypeTypes, ops, evals, terms, eval, dt, i, j );
-          seq->addCommand(new AssertCommand(assertion));
+          //seq->addCommand(new AssertCommand(assertion));
         }
       }
       cmd->reset(seq.release());

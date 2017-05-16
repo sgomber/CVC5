@@ -431,6 +431,7 @@ Node SygusSymBreakNew::getSimpleSymBreakPred( TypeNode tn, int tindex ) {
             }
           }
         }
+        //TODO : STRING_REPL should have distinct arguments
         // division by zero
         if( nk==BITVECTOR_UDIV_TOTAL ){
           Assert( children.size()==2 );
@@ -800,21 +801,15 @@ bool SygusSymBreakNew::registerSearchValue( Node n, Node nv, unsigned d, std::ve
         if( options::sygusPbe() ){
           Assert( d_term_to_anchor.find( n )!=d_term_to_anchor.end() );
           Node e = d_term_to_anchor[n];
-          //get the root
-          Node er = d_tds->isMeasuredTerm( e );
-          Assert( !er.isNull() );
-          if( d_tds->hasPbeExamples( er ) ){
-            unsigned nex = d_tds->getNumPbeExamples( er );
-            Node bvr_equiv = d_pbe_trie[e].addPbeExample( tn, er, bvr, d_tds, 0, nex );
-            if( bvr_equiv!=bvr ){
-              if( Trace.isOn("sygus-sb-exc") ){
-                Assert( d_search_val[tn].find( bvr_equiv )!=d_search_val[tn].end() );
-                Node prev = d_tds->sygusToBuiltin( d_search_val[tn][bvr_equiv], tn );
-                Trace("sygus-sb-exc") << "  ......programs " << prev << " and " << bv << " are equivalent up to examples." << std::endl;
-                by_examples = true;
-              }
-              bad_val_bvr = bvr_equiv;
+          Node bvr_equiv = d_tds->addPbeSearchVal( tn, e, bvr );
+          if( bvr_equiv!=bvr ){
+            if( Trace.isOn("sygus-sb-exc") ){
+              Assert( d_search_val[tn].find( bvr_equiv )!=d_search_val[tn].end() );
+              Node prev = d_tds->sygusToBuiltin( d_search_val[tn][bvr_equiv], tn );
+              Trace("sygus-sb-exc") << "  ......programs " << prev << " and " << bv << " are equivalent up to examples." << std::endl;
+              by_examples = true;
             }
+            bad_val_bvr = bvr_equiv;
           }
         }
         //store rewritten values, regardless of whether it will be considers
@@ -891,38 +886,7 @@ bool SygusSymBreakNew::registerSearchValue( Node n, Node nv, unsigned d, std::ve
   return true;
 }
 
-Node SygusSymBreakNew::PbeTrie::addPbeExample( TypeNode etn, Node e, Node b, quantifiers::TermDbSygus * tds, unsigned index, unsigned ntotal ) {
-  Assert( tds->getNumPbeExamples( e )==ntotal );
-  if( index==ntotal ){
-    //lazy child holds the leaf data
-    if( d_lazy_child.isNull() ){
-      d_lazy_child = b;
-    }
-    return d_lazy_child;
-  }else{
-    std::vector< Node > ex;
-    if( d_children.empty() ){
-      if( d_lazy_child.isNull() ){
-        d_lazy_child = b;
-        return d_lazy_child;
-      }else{
-        //evaluate the lazy child    
-        tds->getPbeExample( e, index, ex );
-        addPbeExampleEval( etn, e, d_lazy_child, ex, tds, index, ntotal );
-        Assert( !d_children.empty() );
-        d_lazy_child = Node::null();
-      }
-    }else{
-      tds->getPbeExample( e, index, ex );
-    }
-    return addPbeExampleEval( etn, e, b, ex, tds, index, ntotal );
-  }
-}
 
-Node SygusSymBreakNew::PbeTrie::addPbeExampleEval( TypeNode etn, Node e, Node b, std::vector< Node >& ex, quantifiers::TermDbSygus * tds, unsigned index, unsigned ntotal ) {
-  Node eb = tds->evaluateBuiltin( etn, b, ex );
-  return d_children[eb].addPbeExample( etn, e, b, tds, index+1, ntotal );
-}
 
 void SygusSymBreakNew::registerSymBreakLemma( TypeNode tn, Node lem, unsigned sz, std::vector< Node >& lemmas ) {
   // lem holds for all terms of type tn, and is applicable to terms of size sz

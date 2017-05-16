@@ -623,10 +623,6 @@ public: //registering enumeration terms
   void registerPbeExamples( Node e, std::vector< std::vector< Node > >& exs );
   /** is measured term */
   Node isMeasuredTerm( Node e );
-  /** get examples */
-  bool hasPbeExamples( Node e );
-  unsigned getNumPbeExamples( Node e );
-  void getPbeExample( Node e, unsigned i, std::vector< Node >& ex );
 public:  //general sygus utilities
   bool isRegistered( TypeNode tn );
   TypeNode sygusToBuiltinType( TypeNode tn );
@@ -688,6 +684,7 @@ public:  //general sygus utilities
   /** get anchor */
   static Node getAnchor( Node n );
   static unsigned getAnchorDepth( Node n );
+  
 //for eager instantiation
 private:
   std::map< Node, std::map< Node, bool > > d_subterms;
@@ -714,6 +711,7 @@ public:
   Node crefEvaluate( Node n, std::map< Node, Node >& vtm, std::map< Node, Node >& visited, std::map< Node, std::vector< Node > >& exp );
   // builtin evaluation, returns rewrite( bn [ args / vars(tn) ] )
   Node evaluateBuiltin( TypeNode tn, Node bn, std::vector< Node >& args );
+  
 //for calculating redundant operators
 private:
   //whether each constructor is redundant
@@ -725,6 +723,27 @@ private:
   bool computeGenericRedundant( TypeNode tn, Node g );
 public:
   bool isGenericRedundant( TypeNode tn, unsigned i );
+  
+//sygus pbe
+private:
+  class PbeTrie {
+  private:
+    Node addPbeExampleEval( TypeNode etn, Node e, Node b, std::vector< Node >& ex, quantifiers::TermDbSygus * tds, unsigned index, unsigned ntotal );
+  public:
+    PbeTrie(){}
+    ~PbeTrie(){}
+    Node d_lazy_child;
+    std::map< Node, PbeTrie > d_children;
+    void clear() { d_children.clear(); }
+    Node addPbeExample( TypeNode etn, Node e, Node b, quantifiers::TermDbSygus * tds, unsigned index, unsigned ntotal );
+  };
+  std::map< Node, PbeTrie > d_pbe_trie;
+public:
+  /** get examples */
+  bool hasPbeExamples( Node e );
+  unsigned getNumPbeExamples( Node e );
+  void getPbeExample( Node e, unsigned i, std::vector< Node >& ex );
+  Node addPbeSearchVal( TypeNode tn, Node e, Node bvr );
 };
 
 }/* CVC4::theory::quantifiers namespace */

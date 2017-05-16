@@ -29,7 +29,7 @@ option dtInferAsLemmas --dt-infer-as-lemmas bool :default false
 # regression explanations for datatype lemmas
 option dtBlastSplits --dt-blast-splits bool :default false
  when applicable, blast splitting lemmas for all variables at once
-option dtSharedSelectors --dt-share-sel bool :default false
+option dtSharedSelectors --dt-share-sel bool :default true
  internally use shared selectors across multiple constructors
  
 option sygusSymBreak --sygus-sym-break bool :default true
@@ -40,7 +40,7 @@ option sygusOpt1 --sygus-opt1 bool :default false
   sygus experimental option 
 option sygusSymBreakLazy --sygus-sym-break-lazy bool :default true
   lazily add symmetry breaking lemmas for terms
-option sygusSymBreakRlv --sygus-sym-break-rlv bool :default false
+option sygusSymBreakRlv --sygus-sym-break-rlv bool :default true
   add relevancy conditions to symmetry breaking lemmas
  
 endmodule

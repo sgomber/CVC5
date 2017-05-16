@@ -3859,6 +3859,51 @@ bool TermDbSygus::isGenericRedundant( TypeNode tn, unsigned i ) {
   return !d_sygus_nred[tn][i];
 }
 
+Node TermDbSygus::PbeTrie::addPbeExample( TypeNode etn, Node e, Node b, quantifiers::TermDbSygus * tds, unsigned index, unsigned ntotal ) {
+  Assert( tds->getNumPbeExamples( e )==ntotal );
+  if( index==ntotal ){
+    //lazy child holds the leaf data
+    if( d_lazy_child.isNull() ){
+      d_lazy_child = b;
+    }
+    return d_lazy_child;
+  }else{
+    std::vector< Node > ex;
+    if( d_children.empty() ){
+      if( d_lazy_child.isNull() ){
+        d_lazy_child = b;
+        return d_lazy_child;
+      }else{
+        //evaluate the lazy child    
+        tds->getPbeExample( e, index, ex );
+        addPbeExampleEval( etn, e, d_lazy_child, ex, tds, index, ntotal );
+        Assert( !d_children.empty() );
+        d_lazy_child = Node::null();
+      }
+    }else{
+      tds->getPbeExample( e, index, ex );
+    }
+    return addPbeExampleEval( etn, e, b, ex, tds, index, ntotal );
+  }
+}
+
+Node TermDbSygus::PbeTrie::addPbeExampleEval( TypeNode etn, Node e, Node b, std::vector< Node >& ex, quantifiers::TermDbSygus * tds, unsigned index, unsigned ntotal ) {
+  Node eb = tds->evaluateBuiltin( etn, b, ex );
+  return d_children[eb].addPbeExample( etn, e, b, tds, index+1, ntotal );
+}
+
+Node TermDbSygus::addPbeSearchVal( TypeNode tn, Node e, Node bvr ){
+  //get the root
+  Node er = isMeasuredTerm( e );
+  Assert( !er.isNull() );
+  if( hasPbeExamples( er ) ){
+    unsigned nex = getNumPbeExamples( er );
+    return d_pbe_trie[e].addPbeExample( tn, er, bvr, this, 0, nex );
+  }
+  return Node::null();
+}
+
 }/* CVC4::theory::quantifiers namespace */
 }/* CVC4::theory namespace */
 }/* CVC4 namespace */
+
