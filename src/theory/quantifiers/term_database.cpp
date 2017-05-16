@@ -30,8 +30,9 @@
 //for sygus
 #include "smt/smt_engine_scope.h"
 #include "theory/bv/theory_bv_utils.h"
-#include "theory/datatypes/datatypes_rewriter.h"
 #include "util/bitvector.h"
+#include "theory/datatypes/datatypes_rewriter.h"
+#include "theory/strings/theory_strings_rewriter.h"
 
 using namespace std;
 using namespace CVC4::kind;
@@ -3733,13 +3734,21 @@ Node TermDbSygus::evaluateBuiltin( TypeNode tn, Node bn, std::vector< Node >& ar
 }
 
 Node TermDbSygus::crefEvaluate( Node n, std::map< Node, Node >& vtm, std::map< Node, Node >& visited, std::map< Node, std::vector< Node > >& exp ){
+  CrefContext crc;
+  return crefEvaluate( n, vtm, visited, exp, crc );
+}
+
+Node TermDbSygus::crefEvaluate( Node n, std::map< Node, Node >& vtm, std::map< Node, Node >& visited, std::map< Node, std::vector< Node > >& exp, CrefContext& crc ) {
+  Assert( crc.d_owner.isNull() );
   std::map< Node, Node >::iterator itv = visited.find( n );
   Node ret;
+  //the children whose explanation is relevant
   std::vector< Node > exp_c;
   if( itv!=visited.end() ){
+    // TODO : why restricted to APPLY_UF?
     if( !itv->second.isConst() && itv->second.getKind()==kind::APPLY_UF ){
       //we stored a partially evaluated node, actually evaluate the result now
-      ret = crefEvaluate( itv->second, vtm, visited, exp );
+      ret = crefEvaluate( itv->second, vtm, visited, exp, crc );
       exp_c.push_back( itv->second );
     }else{
       return itv->second;
@@ -3752,13 +3761,21 @@ Node TermDbSygus::crefEvaluate( Node n, std::map< Node, Node >& vtm, std::map< N
       Node nn = unfold( n, vtm, exp[n] );
       Trace("sygus-cref-eval-debug") << "...unfolded once to " << nn << std::endl;
       Assert( nn!=n );
-      //it is the result of evaluating the unfolding
-      ret = crefEvaluate( nn, vtm, visited, exp );
-      //carry explanation
-      exp_c.push_back( nn );
+      if( crc.notifySubstitution( this, n, nn ) ){
+        Assert( !crc.d_owner.isNull() );
+        Trace("sygus-cref-eval-debug") << "...we now can evaluate parent " << crc.d_owner << std::endl;
+        //result is just this node, the evaluation at crc.d_owner will know how to rewrite it
+        ret = nn;
+      }else{
+        //it is the result of evaluating the unfolding
+        ret = crefEvaluate( nn, vtm, visited, exp, crc );
+        //carry explanation
+        exp_c.push_back( nn );
+      }
     }
     if( ret.isNull() ){
       if( n.getNumChildren()>0 ){
+        crc.add( n );
         std::vector< Node > children;
         bool childChanged = false;
         if( n.getMetaKind() == kind::metakind::PARAMETERIZED ){
@@ -3766,45 +3783,59 @@ Node TermDbSygus::crefEvaluate( Node n, std::map< Node, Node >& vtm, std::map< N
         }
         Kind nk = n.getKind();
         for( unsigned i=0; i<n.getNumChildren(); i++ ){
-          Node nc = crefEvaluate( n[i], vtm, visited, exp );
-          childChanged = nc!=n[i] || childChanged;
+          Node nc;
+          if( crc.d_owner.isNull() ){
+            nc = crefEvaluate( n[i], vtm, visited, exp, crc );
+            childChanged = nc!=n[i] || childChanged;
+            // short circuiting
+            Node nc_singular = isSingularArg( nc, nk, i );
+            if( !nc_singular.isNull() ){
+              Trace("sygus-cref-eval-s") << "cr-eval : Short circuit evaluation of " << n << " at argument " << i << ", since value " << nc;
+              Trace("sygus-cref-eval-s") << " implies that the evaluation is " << nc_singular << std::endl;
+              ret = nc_singular;
+              exp_c.clear();
+            // ite implies only one branch is relevant
+            }else if( n.getKind()==kind::ITE && i==0 && crc.d_owner.isNull() ){
+              int index = -1;
+              if( nc==d_true ){
+                index = 1;
+              }else if( nc==d_false ){
+                index = 2;
+              }
+              if( index!=-1 ){
+                Trace("sygus-cref-eval-s") << "cr-eval : Only evaluate child " << index << " of " << n << " since condition evaluates to "; 
+                Trace("sygus-cref-eval-s") << nc << std::endl;
+                ret = crefEvaluate( n[index], vtm, visited, exp, crc );
+                exp_c.push_back( n[index] );
+              }
+            }
+            //carry explanation
+            exp_c.push_back( n[i] );
+            if( !ret.isNull() ){
+              break;
+            }
+          }else{
+            nc = n[i];
+          }
           children.push_back( nc );
-          // short circuiting
-          Node nc_singular = isSingularArg( nc, nk, i );
-          if( !nc_singular.isNull() ){
-            Trace("sygus-cref-eval-s") << "cr-eval : Short circuit evaluation of " << n << " at argument " << i << ", since value " << nc;
-            Trace("sygus-cref-eval-s") << " implies that the evaluation is " << nc_singular << std::endl;
-            ret = nc_singular;
-            exp_c.clear();
-          // ite implies only one branch is relevant
-          }else if( n.getKind()==kind::ITE && i==0 ){
-            int index = -1;
-            if( nc==d_true ){
-              index = 1;
-            }else if( nc==d_false ){
-              index = 2;
-            }
-            if( index!=-1 ){
-              Trace("sygus-cref-eval-s") << "cr-eval : Only evaluate child " << index << " of " << n << " since condition evaluates to "; 
-              Trace("sygus-cref-eval-s") << nc << std::endl;
-              ret = crefEvaluate( n[index], vtm, visited, exp );
-              exp_c.push_back( n[index] );
-            }
-          }
-          //carry explanation
-          exp_c.push_back( n[i] );
-          if( !ret.isNull() ){
-            break;
-          }
         }
         if( ret.isNull() ){
           if( childChanged ){
             ret = NodeManager::currentNM()->mkNode( n.getKind(), children );
-            ret = Rewriter::rewrite( ret );
+            if( crc.d_owner==n ){
+              // there was a special way to rewrite it to a constant
+              Trace("sygus-cref-eval-s") << "cr-eval : contextual short circuit " << ret << " evaluates to " << crc.d_context[n] << std::endl;
+              ret = crc.d_context[n];
+              Assert( ret.isConst() );
+            }else{
+              ret = Rewriter::rewrite( ret );
+            }
           }else{
             ret = n;
+            Assert( crc.d_owner.isNull() );
           }
         }
+        crc.remove( n );
       }else{
         ret = n;
       }
@@ -3825,10 +3856,49 @@ Node TermDbSygus::crefEvaluate( Node n, std::map< Node, Node >& vtm, std::map< N
   Trace("sygus-cref-eval-debug") << "... evaluation of " << n << " is (" << ret.getKind() << ") " << ret << std::endl;
   Trace("sygus-cref-eval-debug") << "...... exp size = " << exp[n].size() << std::endl;
   //Assert( ret.isNull() || ret.isConst() );
-  visited[n] = ret;
+  if( crc.d_owner.isNull() ){
+    visited[n] = ret;
+  }
   return ret;
 }
   
+bool TermDbSygus::CrefContext::consider( Node n ) {
+  // can rewrite strings based on disequal prefix/suffix
+  if( n.getKind()==kind::EQUAL && n[0].getType().isString() ){
+    return true;
+  }
+  return false;
+}
+
+bool TermDbSygus::CrefContext::notifySubstitution( TermDbSygus * tds, TNode n, TNode nr ) {
+  for( std::map< Node, Node >::iterator it = d_context.begin(); it != d_context.end(); ++it ){
+    Node res = it->second.substitute( n, nr );
+    // check if this is rewritable
+    Trace("sygus-cref-eval-debug") << ".......now considering context : " << res << std::endl;
+    Node eres = tds->extendedRewrite( res );
+    if( eres.isConst() ){
+      Trace("sygus-cref-eval-debug") << ".........this rewrites to " << res << "!!!" << std::endl;
+      d_owner = it->first;
+      d_context[ it->first ] = eres;
+      return true;
+    }
+    d_context[ it->first ] = res;
+  }
+  return false;
+}
+
+void TermDbSygus::CrefContext::add( Node n ) {
+  if( consider( n ) ){
+    d_context[n] = n;
+  }
+}
+
+void TermDbSygus::CrefContext::remove( Node n ) {
+  if( consider( n ) ){
+    d_context.erase( n );
+  }
+}
+
 bool TermDbSygus::computeGenericRedundant( TypeNode tn, Node g ) {
   //everything added to this cache should be mutually exclusive cases
   std::map< Node, bool >::iterator it = d_gen_redundant[tn].find( g );
@@ -3901,6 +3971,47 @@ Node TermDbSygus::addPbeSearchVal( TypeNode tn, Node e, Node bvr ){
     return d_pbe_trie[e].addPbeExample( tn, er, bvr, this, 0, nex );
   }
   return Node::null();
+}
+
+Node TermDbSygus::extendedRewrite( Node n ) {
+  std::map< Node, Node >::iterator it = d_ext_rewrite_cache.find( n );
+  if( it == d_ext_rewrite_cache.end() ){
+    Node ret = Rewriter::rewrite( n );
+    if( ret.getKind()==kind::EQUAL ){
+      // string equalities with disequal prefix or suffix
+      if( ret[0].getType().isString() ){
+        std::vector< Node > c[2];
+        for( unsigned i=0; i<2; i++ ){
+          strings::TheoryStringsRewriter::getConcat( ret[i], c[i] );
+        }
+        if( c[0].empty()==c[1].empty() ){
+          if( !c[0].empty() ){
+            for( unsigned i=0; i<2; i++ ){
+              unsigned index1 = i==0 ? 0 : c[0].size()-1;
+              unsigned index2 = i==0 ? 0 : c[1].size()-1;
+              if( c[0][index1].isConst() && c[1][index2].isConst() ){
+                CVC4::String s = c[0][index1].getConst<String>();
+                CVC4::String t = c[1][index2].getConst<String>();
+                unsigned len_short = s.size() <= t.size() ? s.size() : t.size();
+                bool isSameFix = i==1 ? s.rstrncmp(t, len_short): s.strncmp(t, len_short);
+                if( !isSameFix ){
+                  Trace("sygus-ext-rewrite") << "sygus-extr : " << n << " rewrites to false due to disequal string prefix/suffix." << std::endl;
+                  ret = d_false;
+                  break;
+                }
+              }
+            }
+          }
+        }else{
+          ret = d_false;
+        }
+      }
+    }
+    d_ext_rewrite_cache[n] = ret;
+    return ret;
+  }else{
+    return it->second;
+  }
 }
 
 }/* CVC4::theory::quantifiers namespace */

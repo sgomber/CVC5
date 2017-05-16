@@ -692,6 +692,19 @@ private:
   std::map< Node, std::vector< std::vector< Node > > > d_eval_args;
   std::map< Node, std::vector< bool > > d_eval_args_const;
   std::map< Node, std::map< Node, unsigned > > d_node_mv_args_proc;
+
+  class CrefContext {
+  private:
+    bool consider( Node n );
+  public:
+    //the top-most node at which the evaluation is certain
+    Node d_owner;
+    std::map< Node, Node > d_context;
+    bool notifySubstitution( TermDbSygus * tds, TNode n, TNode nr );
+    void add( Node n );
+    void remove( Node n );
+  };
+  Node crefEvaluate( Node n, std::map< Node, Node >& vtm, std::map< Node, Node >& visited, std::map< Node, std::vector< Node > >& exp, CrefContext& crc );
 public:
   void registerEvalTerm( Node n );
   void registerModelValue( Node n, Node v, std::vector< Node >& exps, std::vector< Node >& terms, std::vector< Node >& vals );
@@ -735,7 +748,7 @@ private:
     Node d_lazy_child;
     std::map< Node, PbeTrie > d_children;
     void clear() { d_children.clear(); }
-    Node addPbeExample( TypeNode etn, Node e, Node b, quantifiers::TermDbSygus * tds, unsigned index, unsigned ntotal );
+    Node addPbeExample( TypeNode etn, Node e, Node b, TermDbSygus * tds, unsigned index, unsigned ntotal );
   };
   std::map< Node, PbeTrie > d_pbe_trie;
 public:
@@ -744,6 +757,12 @@ public:
   unsigned getNumPbeExamples( Node e );
   void getPbeExample( Node e, unsigned i, std::vector< Node >& ex );
   Node addPbeSearchVal( TypeNode tn, Node e, Node bvr );
+
+// extended rewriting
+private:
+  std::map< Node, Node > d_ext_rewrite_cache;
+public:
+  Node extendedRewrite( Node n );
 };
 
 }/* CVC4::theory::quantifiers namespace */

@@ -424,14 +424,23 @@ Node SygusSymBreakNew::getSimpleSymBreakPred( TypeNode tn, int tindex ) {
             sbp_conj.push_back( children[0].eqNode( children[1] ).negate() );
           }
         }
-        if( nk==ITE ){
-          if( children[1].getType()==children[2].getType() ){
-            if( !children[1].getType().getCardinality().isOne() ){
-              sbp_conj.push_back( children[1].eqNode( children[2] ).negate() );
+        std::vector< unsigned > deq_child[2];
+        if( nk==ITE || nk==STRING_STRREPL ){
+          deq_child[0].push_back( 1 );deq_child[1].push_back( 2 );
+        }
+        if( nk==STRING_STRREPL ){
+          deq_child[0].push_back( 0 );deq_child[1].push_back( 1 );
+        }
+        for( unsigned i=0; i<deq_child[0].size(); i++ ){
+          unsigned c1 = deq_child[0][i];
+          unsigned c2 = deq_child[1][i];
+          if( children[c1].getType()==children[c2].getType() ){
+            if( !children[c1].getType().getCardinality().isOne() ){
+              sbp_conj.push_back( children[c1].eqNode( children[c2] ).negate() );
             }
           }
         }
-        //TODO : STRING_REPL should have distinct arguments
+        
         // division by zero
         if( nk==BITVECTOR_UDIV_TOTAL ){
           Assert( children.size()==2 );
@@ -791,7 +800,7 @@ bool SygusSymBreakNew::registerSearchValue( Node n, Node nv, unsigned d, std::ve
       Node bv = d_tds->sygusToBuiltin( nv, tn );
       Trace("sygus-sb-debug") << "  ......builtin is " << bv << std::endl;
       unsigned sz = d_tds->getSygusTermSize( nv );
-      Node bvr = Rewriter::rewrite( bv );
+      Node bvr = d_tds->extendedRewrite( bv );
       Trace("sygus-sb-debug") << "  ......rewrites to " << bvr << std::endl;
       std::map< Node, Node >::iterator itsv = d_search_val[tn].find( bvr );
       Node bad_val_bvr;

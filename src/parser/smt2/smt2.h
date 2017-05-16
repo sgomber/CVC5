@@ -229,13 +229,6 @@ public:
                         std::vector<std::string>& unresolved_gterm_sym,
                         std::map< CVC4::Type, CVC4::Type >& sygus_to_builtin );
 
-  // i is index in datatypes/ops
-  // j is index is datatype
-  Expr getSygusAssertion( std::vector<DatatypeType>& datatypeTypes, std::vector< std::vector<Expr> >& ops,
-                          std::map<DatatypeType, Expr>& evals, std::vector<Expr>& terms,
-                          Expr eval, const Datatype& dt, size_t i, size_t j );
-
-
 
   void addSygusConstraint(Expr constraint) {
     d_sygusConstraints.push_back(constraint);

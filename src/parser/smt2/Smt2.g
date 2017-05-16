@@ -738,19 +738,6 @@ sygusCommand [CVC4::PtrCloser<CVC4::Command>* cmd]
           PARSER_STATE->addSygusFun(fun, eval);
         }
       }
-      // now go through and settle everything
-      for(size_t i = 0; i < datatypeTypes.size(); ++i) {
-        DatatypeType dtt = datatypeTypes[i];
-        const Datatype& dt = dtt.getDatatype();
-        Expr eval = evals[dtt];
-        Debug("parser-sygus") << "Sygus : process grammar : " << dt
-                              << std::endl;
-        for(size_t j = 0; j < dt.getNumConstructors(); ++j) {
-          Expr assertion = PARSER_STATE->getSygusAssertion(
-              datatypeTypes, ops, evals, terms, eval, dt, i, j );
-          //seq->addCommand(new AssertCommand(assertion));
-        }
-      }
       cmd->reset(seq.release());
     }
   | /* constraint */
