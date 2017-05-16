@@ -1058,14 +1058,12 @@ void SygusSymBreakNew::check( std::vector< Node >& lemmas ) {
       }
     }
   }
-  /*
   //register any measured terms that we haven't encountered yet (should only be invoked on first call to check
   std::vector< Node > mts;
   d_tds->getMeasuredTerms( mts );
   for( unsigned i=0; i<mts.size(); i++ ){
     registerSizeTerm( mts[i] );
   }
-  */
 }
 
 void SygusSymBreakNew::getPossibleCons( const Datatype& dt, TypeNode tn, std::vector< bool >& pcons ) {

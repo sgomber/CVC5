@@ -48,6 +48,39 @@ public:
   void initialize( Node q );
   bool getPbeExamples( TNode v, TNode e, std::vector< std::vector< Node > >& exs, 
                        std::vector< Node >& exos, std::vector< Node >& exts);
+  
+private:
+  class EnumTypeInfo {
+  public:
+    EnumTypeInfo(){}
+    /** conditional solutions */
+    Node d_csol_op;
+    std::vector< TypeNode > d_csol_cts;
+    /** solution status */
+    int d_csol_status;
+    /** required for template solutions */
+    std::map< unsigned, Node > d_template;
+    std::map< unsigned, Node > d_template_arg; 
+  };
+  std::map< TypeNode, EnumTypeInfo > d_einfo;
+  std::map< TypeNode, std::map< int, Node > > d_esyms;
+  std::map< Node, TypeNode > d_esym_to_parent;
+  std::map< Node, int > d_esym_to_arg;
+  std::map< Node, Node > d_esym_to_active_guard;
+  std::map< Node, std::vector< Node > > d_esym_list;
+  
+  void collectEnumeratorTypes( Node e, TypeNode tn );
+  void registerEnumerator( Node et, Node e, TypeNode tn, int j );
+
+  /** register candidate conditional */
+  bool inferIteTemplate( unsigned k, Node n, std::map< Node, unsigned >& templ_var_index, std::map< unsigned, unsigned >& templ_injection );  
+public:
+  void registerCandidates( std::vector< Node >& candidates ); 
+  void getCandidateList( std::vector< Node >& candidates, std::vector< Node >& clist );
+  // lems and candidate values are outputs  
+  bool constructCandidates( std::vector< Node >& enums, std::vector< Node >& enum_values, 
+                            std::vector< Node >& candidates, std::vector< Node >& candidate_values, 
+                            std::vector< Node >& lems );
 };
 
 
