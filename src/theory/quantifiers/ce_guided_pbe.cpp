@@ -43,6 +43,9 @@ void CegConjecturePbe::collectExamples( Node n, std::map< Node, bool >& visited,
     Node n_output;
     if( n.getKind()==APPLY_UF && n.getNumChildren()>0 ){
       neval = n;
+      if( hasPol ){
+        n_output = NodeManager::currentNM()->mkConst( !pol );
+      }
     }else if( n.getKind()==EQUAL && hasPol && !pol ){
       for( unsigned r=0; r<2; r++ ){
         if( n[r].getKind()==APPLY_UF && n[r].getNumChildren()>0 ){
@@ -54,35 +57,36 @@ void CegConjecturePbe::collectExamples( Node n, std::map< Node, bool >& visited,
       }
     }
     if( !neval.isNull() ){
-      if( n.getKind()==APPLY_UF && n.getNumChildren()>0 ){
+      if( neval.getKind()==APPLY_UF && neval.getNumChildren()>0 ){
         // is it an evaluation function?
-        std::map< Node, bool >::iterator itx = d_examples_invalid.find( n[0] );
+        std::map< Node, bool >::iterator itx = d_examples_invalid.find( neval[0] );
         if( itx!=d_examples_invalid.end() ){
           if( !itx->second ){
             //collect example
             bool success = true;
             std::vector< Node > ex;
-            for( unsigned j=1; j<n.getNumChildren(); j++ ){
-              if( !n[j].isConst() ){
+            for( unsigned j=1; j<neval.getNumChildren(); j++ ){
+              if( !neval[j].isConst() ){
                 success = false;
                 break;
               }else{
-                ex.push_back( n[j] );
+                ex.push_back( neval[j] );
               }
             }
             if( success ){
-              d_examples[n[0]].push_back( ex );
-              d_examples_out[n[0]].push_back( n_output );
+              d_examples[neval[0]].push_back( ex );
+              d_examples_out[neval[0]].push_back( n_output );
+              d_examples_term[neval[0]].push_back( neval );
               if( n_output.isNull() ){
-                d_examples_out_invalid[n[0]] = true;
+                d_examples_out_invalid[neval[0]] = true;
               }else{
                 Assert( n_output.isConst() );
               }
               //finished processing this node
               return;
             }else{
-              d_examples_invalid[n[0]] = true;
-              d_examples_out_invalid[n[0]] = true;
+              d_examples_invalid[neval[0]] = true;
+              d_examples_out_invalid[neval[0]] = true;
             }
           }
         }
@@ -105,6 +109,7 @@ void CegConjecturePbe::initialize( Node q ) {
     d_examples_invalid[q[0][i]] = false;
     d_examples_out[q[0][i]].clear();
     d_examples_out_invalid[q[0][i]] = false;
+    d_examples_term[q[0][i]].clear();
   }
   
   std::map< Node, bool > visited;
@@ -131,23 +136,25 @@ void CegConjecturePbe::initialize( Node q ) {
   }
 }
 
-bool CegConjecturePbe::getPbeExamples( Node v, std::vector< std::vector< Node > >& exs ) {
+bool CegConjecturePbe::getPbeExamples( TNode v, TNode e, std::vector< std::vector< Node > >& exs, 
+                                       std::vector< Node >& exos, std::vector< Node >& exts ) {
   std::map< Node, bool >::iterator itx = d_examples_invalid.find( v );
   if( itx!=d_examples_invalid.end() ){
     if( !itx->second ){
       Assert( d_examples.find( v )!=d_examples.end() );
       exs = d_examples[v];
+      Assert( d_examples_out.find( v )!=d_examples_out.end() );
+      exos = d_examples_out[v];
+      //exts = d_examples_term[v];
+      std::map< Node, std::vector< Node > >::iterator itx = d_examples_term.find( v );
+      Assert( itx!=d_examples_term.end() );
+      for( unsigned i=0; i<itx->second.size(); i++ ){
+        Node subs = itx->second[i].substitute( v, e );
+        exts.push_back( subs );
+      }      
       return true;
     }
   }
-  return false;
-}
-
-bool CegConjecturePbe::getPbeExampleOutputs( Node v, std::vector< Node >& exos ) {
-  Assert( d_examples_invalid.find( v )!=d_examples_invalid.end() );
-  Assert( !d_examples_invalid[v] );
-  Assert( d_examples_out.find( v )!=d_examples_out.end() );
-  exos = d_examples_out[v];
   return false;
 }
 

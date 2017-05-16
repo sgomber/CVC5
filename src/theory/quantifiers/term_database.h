@@ -587,7 +587,6 @@ public:
 private:
   // stores root
   std::map< Node, Node > d_measured_term;
-  std::map< Node, std::vector< std::vector< Node > > > d_measured_term_pbe_exs;
 private:
   //information for sygus types
   std::map< TypeNode, TypeNode > d_register;  //stores sygus -> builtin type
@@ -618,9 +617,6 @@ public:
 public: //registering enumeration terms
   /** register a term that we will do enumerative search on */
   void registerMeasuredTerm( Node e, Node root );
-  /** register examples for an enumerative search term. 
-      This should be a comprehensive set of examples. */
-  void registerPbeExamples( Node e, std::vector< std::vector< Node > >& exs );
   /** is measured term */
   Node isMeasuredTerm( Node e );
 public:  //general sygus utilities
@@ -739,6 +735,10 @@ public:
   
 //sygus pbe
 private:
+  std::map< Node, std::vector< std::vector< Node > > > d_measured_term_pbe_exs;
+  std::map< Node, std::vector< Node > > d_measured_term_pbe_exos;
+  std::map< Node, unsigned > d_measured_term_pbe_term_id;
+private:
   class PbeTrie {
   private:
     Node addPbeExampleEval( TypeNode etn, Node e, Node b, std::vector< Node >& ex, quantifiers::TermDbSygus * tds, unsigned index, unsigned ntotal );
@@ -752,10 +752,18 @@ private:
   };
   std::map< Node, PbeTrie > d_pbe_trie;
 public:
+  /** register examples for an enumerative search term. 
+      This should be a comprehensive set of examples. */
+  void registerPbeExamples( Node e, std::vector< std::vector< Node > >& exs, 
+                            std::vector< Node >& exos, std::vector< Node >& exts );
   /** get examples */
   bool hasPbeExamples( Node e );
   unsigned getNumPbeExamples( Node e );
+  /** return value is the required value for the example */
   void getPbeExample( Node e, unsigned i, std::vector< Node >& ex );
+  Node getPbeExampleOut( Node e, unsigned i );
+  int getPbeExampleId( Node n );
+  /** add the search val, returns an equivalent value (possibly the same) */
   Node addPbeSearchVal( TypeNode tn, Node e, Node bvr );
 
 // extended rewriting

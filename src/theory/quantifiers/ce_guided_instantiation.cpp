@@ -67,11 +67,14 @@ void CegConjecture::assign( Node q ) {
     vars.push_back( q[0][i] );
     Node e = NodeManager::currentNM()->mkSkolem( "e", q[0][i].getType() );
     d_candidates.push_back( e );
+    // register this term with sygus database
     d_qe->getTermDatabaseSygus()->registerMeasuredTerm( e, e );
     if( options::sygusPbe() ){
       std::vector< std::vector< Node > > exs;
-      if( d_ceg_pbe->getPbeExamples( q[0][i], exs ) ){
-        d_qe->getTermDatabaseSygus()->registerPbeExamples( e, exs );
+      std::vector< Node > exos;
+      std::vector< Node > exts;
+      if( d_ceg_pbe->getPbeExamples( q[0][i], e, exs, exos, exts ) ){
+        d_qe->getTermDatabaseSygus()->registerPbeExamples( e, exs, exos, exts );
       }
     }
   }
@@ -1120,6 +1123,7 @@ void CegInstantiation::check( Theory::Effort e, unsigned quant_e ) {
 }
 
 void CegInstantiation::preRegisterQuantifier( Node q ) {
+/*
   if( options::sygusDirectEval() ){
     if( q.getNumChildren()==3 && q[2].getKind()==INST_PATTERN_LIST && q[2][0].getKind()==INST_PATTERN ){  
       //check whether it is an evaluation axiom
@@ -1153,7 +1157,8 @@ void CegInstantiation::preRegisterQuantifier( Node q ) {
         }
       }
     }
-  }  
+  } 
+  */ 
 }
 
 void CegInstantiation::registerQuantifier( Node q ) {

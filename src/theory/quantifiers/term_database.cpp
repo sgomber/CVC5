@@ -3019,11 +3019,20 @@ void TermDbSygus::registerMeasuredTerm( Node e, Node root ) {
   d_measured_term[e] = root;
 }
 
-void TermDbSygus::registerPbeExamples( Node e, std::vector< std::vector< Node > >& exs ) {
+void TermDbSygus::registerPbeExamples( Node e, std::vector< std::vector< Node > >& exs, 
+                                       std::vector< Node >& exos, std::vector< Node >& exts  ) {
   Assert( isMeasuredTerm( e )==e );
   Assert( d_measured_term_pbe_exs.find( e )==d_measured_term_pbe_exs.end() );
   Trace("sygus-db") << "Register " << exs.size() << " PBE examples with " << e << std::endl;
+  Assert( exs.size()==exos.size() );
   d_measured_term_pbe_exs[e] = exs;
+  d_measured_term_pbe_exos[e] = exos;
+  for( unsigned i=0; i<exts.size(); i++ ){
+    Trace("sygus-db-debug") << "  # " << i << " : " << exts[i] << std::endl;
+    Assert( exts[i].getKind()==APPLY_UF );
+    Assert( exts[i][0]==e );
+    d_measured_term_pbe_term_id[exts[i]] = i;
+  }
 }
 
 Node TermDbSygus::isMeasuredTerm( Node e ) {
@@ -3052,9 +3061,29 @@ void TermDbSygus::getPbeExample( Node e, unsigned i, std::vector< Node >& ex ) {
   std::map< Node, std::vector< std::vector< Node > > >::iterator it = d_measured_term_pbe_exs.find( e );
   if( it!=d_measured_term_pbe_exs.end() ){
     Assert( i<it->second.size() );
+    Assert( i<d_measured_term_pbe_exos[e].size() );
     ex.insert( ex.end(), it->second[i].begin(), it->second[i].end() );
   }else{
     Assert( false );
+  }
+}
+Node TermDbSygus::getPbeExampleOut( Node e, unsigned i ) {
+  std::map< Node, std::vector< Node > >::iterator it = d_measured_term_pbe_exos.find( e );
+  if( it!=d_measured_term_pbe_exos.end() ){
+    Assert( i<it->second.size() );
+    return it->second[i];
+  }else{
+    Assert( false );
+    return Node::null();
+  }
+}
+
+int TermDbSygus::getPbeExampleId( Node n ) {
+  std::map< Node, unsigned >::iterator it = d_measured_term_pbe_term_id.find( n );
+  if( it!=d_measured_term_pbe_term_id.end() ){
+    return it->second;
+  }else{
+    return -1;
   }
 }
 
@@ -3428,6 +3457,15 @@ void TermDbSygus::registerEvalTerm( Node n ) {
           Node f = n.getOperator();
           Trace("sygus-eager") << "...the evaluation function is : " << f << std::endl;
           if( n[0].getKind()!=APPLY_CONSTRUCTOR ){
+            // check if it directly occurs in an input/ouput example
+            int pbe_id = getPbeExampleId( n );
+            if( pbe_id!=-1 ){
+              Node n_res = getPbeExampleOut( n[0], pbe_id );
+              if( !n_res.isNull() ){
+                Trace("sygus-eager") << "......do not evaluate " << n << " since it is an input/output example : " << n_res << std::endl;
+                return;
+              }
+            }
             d_evals[n[0]].push_back( n );
             TypeNode tn = n[0].getType();
             Assert( tn.isDatatype() );

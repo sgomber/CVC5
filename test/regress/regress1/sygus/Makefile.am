@@ -22,7 +22,8 @@ TESTS =	\
 	array_sum_dd.sy \
 	mpg_guard1-dd.sy \
 	VC22_a.sy \
-	inv_gen_n_c11.sy
+	inv_gen_n_c11.sy \
+	unbdd_inv_gen_ex7.sy
 
 EXTRA_DIST = $(TESTS)
 

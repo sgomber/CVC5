@@ -38,6 +38,7 @@ private:
   std::map< Node, bool > d_examples_out_invalid;
   std::map< Node, std::vector< std::vector< Node > > > d_examples;
   std::map< Node, std::vector< Node > > d_examples_out;
+  std::map< Node, std::vector< Node > > d_examples_term;
   
   void collectExamples( Node n, std::map< Node, bool >& visited, bool hasPol, bool pol );
 public:
@@ -45,8 +46,8 @@ public:
   ~CegConjecturePbe();
 
   void initialize( Node q );
-  bool getPbeExamples( Node v, std::vector< std::vector< Node > >& exs );
-  bool getPbeExampleOutputs( Node v, std::vector< Node >& exos );
+  bool getPbeExamples( TNode v, TNode e, std::vector< std::vector< Node > >& exs, 
+                       std::vector< Node >& exos, std::vector< Node >& exts);
 };
 
 
