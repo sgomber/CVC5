@@ -70,6 +70,7 @@ private:
   class EnumInfo {
   public:
     EnumInfo() : d_arg(-1){}
+    Node d_parent_candidate;
     TypeNode d_parent;
     int d_arg;
     Node d_active_guard;

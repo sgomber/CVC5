@@ -61,9 +61,9 @@ void CegConjecturePbe::collectExamples( Node n, std::map< Node, bool >& visited,
     if( !neval.isNull() ){
       if( neval.getKind()==APPLY_UF && neval.getNumChildren()>0 ){
         // is it an evaluation function?
-        std::map< Node, bool >::iterator itx = d_examples_invalid.find( neval[0] );
-        if( itx!=d_examples_invalid.end() ){
-          if( !itx->second ){
+        if( d_examples.find( neval[0] )!=d_examples.end() ){
+          std::map< Node, bool >::iterator itx = d_examples_invalid.find( neval[0] );
+          if( itx==d_examples_invalid.end() ){
             //collect example
             bool success = true;
             std::vector< Node > ex;
@@ -109,9 +109,7 @@ void CegConjecturePbe::initialize( Node n, std::vector< Node >& candidates ) {
   for( unsigned i=0; i<candidates.size(); i++ ){
     Node v = candidates[i];
     d_examples[v].clear();
-    d_examples_invalid[v] = false;
     d_examples_out[v].clear();
-    d_examples_out_invalid[v] = false;
     d_examples_term[v].clear();
   }
   
@@ -121,7 +119,7 @@ void CegConjecturePbe::initialize( Node n, std::vector< Node >& candidates ) {
   for( unsigned i=0; i<candidates.size(); i++ ){
     Node v = candidates[i];
     Trace("sygus-pbe") << "  examples for " << v << " : ";
-    if( d_examples_invalid[v] ){
+    if( d_examples_invalid.find( v )!=d_examples_invalid.end() ){
       Trace("sygus-pbe") << "INVALID" << std::endl;
     }else{
       Trace("sygus-pbe") << std::endl;
@@ -142,16 +140,14 @@ void CegConjecturePbe::initialize( Node n, std::vector< Node >& candidates ) {
 bool CegConjecturePbe::getPbeExamples( Node v, std::vector< std::vector< Node > >& exs, 
                                        std::vector< Node >& exos, std::vector< Node >& exts ) {
   std::map< Node, bool >::iterator itx = d_examples_invalid.find( v );
-  if( itx!=d_examples_invalid.end() ){
-    if( !itx->second ){
-      Assert( d_examples.find( v )!=d_examples.end() );
-      exs = d_examples[v];
-      Assert( d_examples_out.find( v )!=d_examples_out.end() );
-      exos = d_examples_out[v];
-      Assert( d_examples_term.find( v )!=d_examples_term.end() );
-      exts = d_examples_term[v];
-      return true;
-    }
+  if( itx==d_examples_invalid.end() ){
+    Assert( d_examples.find( v )!=d_examples.end() );
+    exs = d_examples[v];
+    Assert( d_examples_out.find( v )!=d_examples_out.end() );
+    exos = d_examples_out[v];
+    Assert( d_examples_term.find( v )!=d_examples_term.end() );
+    exts = d_examples_term[v];
+    return true;
   }
   return false;
 }
@@ -187,6 +183,7 @@ void CegConjecturePbe::registerCandidates( std::vector< Node >& candidates ) {
 void CegConjecturePbe::registerEnumerator( Node et, Node e, TypeNode tn, int j ) {
   //d_qe->getTermDatabaseSygus()->registerMeasuredTerm( et, e );
   d_tinfo[tn].d_esyms[j] = et;
+  d_einfo[et].d_parent_candidate = e;
   d_einfo[et].d_parent = tn;
   if( j>=0 ){
     d_einfo[et].d_arg = j;
@@ -386,8 +383,31 @@ bool CegConjecturePbe::addEnumeratedValue( Node x, Node v, std::vector< Node >& 
   if( getGuardStatus( it->second.d_active_guard )==1 ){
     Assert( std::find( it->second.d_enum.begin(), it->second.d_enum.end(), v )==it->second.d_enum.end() );
     bool keep = true;
-    //TODO
-    
+    Node e = it->second.d_parent_candidate;
+    if( d_examples_out_invalid.find( e )!=d_examples_out_invalid.end() ){
+      Trace("sygus-pbe-enum") << "Evaluation of " << e <<  " : ";
+      //evaluate all input/output examples
+      std::vector< bool > results;
+      std::map< Node, std::vector< std::vector< Node > > >::iterator itx = d_examples.find( e );
+      std::map< Node, std::vector< Node > >::iterator itxo = d_examples_out.find( e );
+      Assert( itx!=d_examples.end() );
+      Assert( itxo!=d_examples_out.end() );
+      Assert( itx->second.size()==itxo->second.size() );
+      TypeNode xtn = x.getType();
+      Node bv = d_tds->sygusToBuiltin( v, xtn );
+      for( unsigned j=0; j<itx->second.size(); j++ ){
+        Node out = itxo->second[j];
+        Node res = d_tds->evaluateBuiltin( xtn, bv, itx->second[j] );
+        Assert( res.isConst() );
+        Assert( out.isConst() );
+        results.push_back( res==out );
+        Trace("sygus-pbe-enum") << (res==out);
+      }
+      Trace("sygus-pbe-enum") << std::endl;
+      //check subsumbed/subsuming
+    }else{
+      keep = false;
+    }
     if( keep ){
       it->second.d_enum.push_back( v );
     }

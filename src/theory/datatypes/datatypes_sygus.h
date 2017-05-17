@@ -108,8 +108,6 @@ private:
   Node getSimpleSymBreakPred( TypeNode tn, int tindex );
   TNode getSimpleSymBreakPredVar( TypeNode tn );
   Node getTermOrderPredicate( Node n1, Node n2 );
-  bool considerArgKind( const Datatype& dt, const Datatype& pdt, TypeNode tn, TypeNode tnp, Kind k, Kind pk, int arg );
-  bool considerConst( const Datatype& dt, const Datatype& pdt, TypeNode tn, TypeNode tnp, Node c, Kind pk, int arg );
 private:
   //should be user-context dependent if sygus in incremental mode
   std::map< Node, bool > d_register_st;

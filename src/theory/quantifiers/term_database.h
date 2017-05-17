@@ -709,6 +709,9 @@ private:
   };
   Node crefEvaluate( Node n, std::map< Node, Node >& vtm, std::map< Node, Node >& visited, std::map< Node, std::vector< Node > >& exp, CrefContext& crc );
 public:
+  bool considerArgKind( const Datatype& dt, const Datatype& pdt, TypeNode tn, TypeNode tnp, Kind k, Kind pk, int arg );
+  bool considerConst( const Datatype& pdt, TypeNode tnp, Node c, Kind pk, int arg );
+public:
   void registerEvalTerm( Node n );
   void registerModelValue( Node n, Node v, std::vector< Node >& exps, std::vector< Node >& terms, std::vector< Node >& vals );
   Node unfold( Node en, std::map< Node, Node >& vtm, std::vector< Node >& exp, bool track_exp = true );
@@ -723,7 +726,7 @@ public:
   Node getExplanationForConstantEquality( Node n, Node vn );
   // we have n = vn => eval( n ) = bvr, returns exp => eval( n ) = bvr
   //   ensures the explanation still allows for vnr
-  void getExplanationFor( TypeNode tn, Node n, Node vn, Node bvr, std::vector< Node >& exp, Node vnr );
+  void getExplanationFor( TypeNode tn, Node n, Node vn, Node bvr, std::vector< Node >& exp, Node vnr, unsigned& sz );
   bool explainDisunification( Node n, Node vn, Node vnr, std::vector< Node >& exp, std::map< unsigned, bool >& crlv );
   // evaluate deep embedding term n, store minimized explanation for evaluation in exp
   Node crefEvaluate( Node n, std::map< Node, Node >& vtm, std::map< Node, Node >& visited, std::map< Node, std::vector< Node > >& exp );
