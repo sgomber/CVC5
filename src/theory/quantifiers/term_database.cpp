@@ -3601,6 +3601,13 @@ void TermDbSygus::getExplanationForConstantEquality( Node n, Node vn, std::vecto
   }
 }
 
+Node TermDbSygus::getExplanationForConstantEquality( Node n, Node vn ) {
+  std::vector< Node > exp;
+  getExplanationForConstantEquality( n, vn, exp );
+  Assert( !exp.empty() );
+  return exp.size()==1 ? exp[0] : NodeManager::currentNM()->mkNode( kind::AND, exp );
+}
+  
 void TermDbSygus::getExplanationFor( TypeNode tn, Node n, Node vn, Node bvr, std::vector< Node >& exp, Node vnr ) {
   // naive :
   //return getExplanationForConstantEquality( n, vn, exp );

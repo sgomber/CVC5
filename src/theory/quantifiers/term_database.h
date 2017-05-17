@@ -715,6 +715,7 @@ public:
   Node getEagerUnfold( Node n, std::map< Node, Node >& visited );
   // returns straightforward exp => n = vn
   void getExplanationForConstantEquality( Node n, Node vn, std::vector< Node >& exp );
+  Node getExplanationForConstantEquality( Node n, Node vn );
   // we have n = vn => eval( n ) = bvr, returns exp => eval( n ) = bvr
   //   ensures the explanation still allows for vnr
   void getExplanationFor( TypeNode tn, Node n, Node vn, Node bvr, std::vector< Node >& exp, Node vnr );

@@ -32,6 +32,7 @@ class CegEntailmentInfer;
 class CegConjecturePbe {
 private:
   QuantifiersEngine* d_qe;
+  quantifiers::TermDbSygus * d_tds;
   CegConjecture* d_parent;
 
   std::map< Node, bool > d_examples_invalid;
@@ -45,8 +46,8 @@ public:
   CegConjecturePbe( QuantifiersEngine * qe, CegConjecture * p );
   ~CegConjecturePbe();
 
-  void initialize( Node q );
-  bool getPbeExamples( TNode v, TNode e, std::vector< std::vector< Node > >& exs, 
+  void initialize( Node n, std::vector< Node >& candidates );
+  bool getPbeExamples( Node v, std::vector< std::vector< Node > >& exs, 
                        std::vector< Node >& exos, std::vector< Node >& exts);
   
 private:
@@ -60,20 +61,34 @@ private:
     int d_csol_status;
     /** required for template solutions */
     std::map< unsigned, Node > d_template;
-    std::map< unsigned, Node > d_template_arg; 
+    std::map< unsigned, Node > d_template_arg;
+    /** esyms */
+    std::map< int, Node > d_esyms;
   };
-  std::map< TypeNode, EnumTypeInfo > d_einfo;
-  std::map< TypeNode, std::map< int, Node > > d_esyms;
-  std::map< Node, TypeNode > d_esym_to_parent;
-  std::map< Node, int > d_esym_to_arg;
-  std::map< Node, Node > d_esym_to_active_guard;
+  std::map< TypeNode, EnumTypeInfo > d_tinfo;
+  
+  class EnumInfo {
+  public:
+    EnumInfo() : d_arg(-1){}
+    TypeNode d_parent;
+    int d_arg;
+    Node d_active_guard;
+    /** values we have enumerated */
+    std::vector< Node > d_enum;
+  };
+  std::map< Node, EnumInfo > d_einfo;
   std::map< Node, std::vector< Node > > d_esym_list;
+  /** add enumerated value */
+  bool addEnumeratedValue( Node x, Node v, std::vector< Node >& lems );
+  
   
   void collectEnumeratorTypes( Node e, TypeNode tn );
   void registerEnumerator( Node et, Node e, TypeNode tn, int j );
 
   /** register candidate conditional */
   bool inferIteTemplate( unsigned k, Node n, std::map< Node, unsigned >& templ_var_index, std::map< unsigned, unsigned >& templ_injection );  
+  /** get guard status */
+  int getGuardStatus( Node g );
 public:
   void registerCandidates( std::vector< Node >& candidates ); 
   void getCandidateList( std::vector< Node >& candidates, std::vector< Node >& clist );
@@ -81,6 +96,8 @@ public:
   bool constructCandidates( std::vector< Node >& enums, std::vector< Node >& enum_values, 
                             std::vector< Node >& candidates, std::vector< Node >& candidate_values, 
                             std::vector< Node >& lems );
+public:
+  Node getNextDecisionRequest( unsigned& priority );
 };
 
 

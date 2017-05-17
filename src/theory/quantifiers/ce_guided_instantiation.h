@@ -50,21 +50,6 @@ private:
   /** refinement lemmas */
   std::vector< Node > d_refinement_lemmas;
   std::vector< Node > d_refinement_lemmas_base;
-  //std::vector< Node > d_refinement_lemmas_cprogress;
-  //std::vector< std::vector< Node > > d_refinement_lemmas_cprogress_pts;
-private: //for condition solutions
-  std::vector< std::vector< Node > > d_refinement_lemmas_aux_vars;
-  std::vector< std::vector< Node > > d_refinement_lemmas_ceval_ant;
-  std::vector< std::vector< Node > > d_refinement_lemmas_ceval_conc;
-  std::vector< Node > d_refinement_lemmas_ngr; //non-ground version
-  std::map< Node, bool > d_refinement_lemmas_reproc;
-  /** get candidate list recursively for conditional solutions */
-  void getConditionalCandidateList( std::vector< Node >& clist, Node curr, bool reqAdd );
-  Node constructConditionalCandidate( std::map< Node, Node >& cmv, Node curr );
-  void getContextConditionalNodes( Node curr, Node x, std::vector< Node >& nodes );
-  Node mkConditionalEvalNode( Node c, std::vector< Node >& args );
-  Node mkConditionalNode( Node v, std::vector< Node >& args, unsigned eindex );
-  Node mkConditional( Node v, std::vector< Node >& args, bool pol = true );
 public:
   CegConjecture( QuantifiersEngine * qe, context::Context* c );
   ~CegConjecture();
@@ -170,17 +155,6 @@ public:
   Node getRefinementLemma( unsigned i ) { return d_refinement_lemmas[i]; }
   /** get refinement lemma */
   Node getRefinementBaseLemma( unsigned i ) { return d_refinement_lemmas_base[i]; }
-  /** get num conditional evaluations */
-  unsigned getNumConditionalEvaluations( unsigned i ) { return d_refinement_lemmas_ceval_ant[i].size(); }
-  /** get conditional evaluation */
-  Node getConditionalEvaluationAntec( unsigned i, unsigned j ) { return d_refinement_lemmas_ceval_ant[i][j]; }
-  Node getConditionalEvaluationConc( unsigned i, unsigned j ) { return d_refinement_lemmas_ceval_conc[i][j]; }
-  /** get progress lemma */
-  //Node getConditionalProgressLemma( unsigned i ) { return d_refinement_lemmas_cprogress[i]; }
-  /** get progress point */
-  //void getConditionalProgressLemmaPoint( unsigned i, std::vector< Node >& pt ){
-  //  pt.insert( pt.end(), d_refinement_lemmas_cprogress_pts[i].begin(), d_refinement_lemmas_cprogress_pts[i].end() );
-  //}
 private:
   Node getNextDecisionRequestConditional( Node v, unsigned& priority );
   // 1 : active, 0 : unknown, -1 : inactive, -2 : not applicable
