@@ -4107,8 +4107,27 @@ Node TermDbSygus::addPbeSearchVal( TypeNode tn, Node e, Node bvr ){
 Node TermDbSygus::extendedRewrite( Node n ) {
   std::map< Node, Node >::iterator it = d_ext_rewrite_cache.find( n );
   if( it == d_ext_rewrite_cache.end() ){
-    Node ret = Rewriter::rewrite( n );
+    Node ret = n;
+    if( n.getNumChildren()>0 ){
+      std::vector< Node > children;
+      if( n.getMetaKind() == kind::metakind::PARAMETERIZED ){
+        children.push_back( n.getOperator() );
+      }
+      bool childChanged = false;
+      for( unsigned i=0; i<n.getNumChildren(); i++ ){
+        Node nc = extendedRewrite( n[i] );
+        childChanged = nc!=n[i] || childChanged;
+        children.push_back( nc );
+      }
+      Node ret;
+      if( childChanged ){
+        ret = NodeManager::currentNM()->mkNode( n.getKind(), children );
+      }
+    }
+    ret = Rewriter::rewrite( n );
+
     if( ret.getKind()==kind::EQUAL ){
+      Node prev = ret;
       // string equalities with disequal prefix or suffix
       if( ret[0].getType().isString() ){
         std::vector< Node > c[2];
@@ -4137,6 +4156,16 @@ Node TermDbSygus::extendedRewrite( Node n ) {
           ret = d_false;
         }
       }
+      if( ret==prev ){
+        // simple ITE pulling
+        
+      }
+    }
+    if( ret.getKind()==kind::ITE ){
+      //conditional rewriting
+      
+      
+      
     }
     d_ext_rewrite_cache[n] = ret;
     return ret;
