@@ -30,6 +30,8 @@ CegConjecturePbe::CegConjecturePbe(QuantifiersEngine* qe, CegConjecture* p)
     : d_qe(qe),
       d_parent(p){
   d_tds = d_qe->getTermDatabaseSygus();
+  d_true = NodeManager::currentNM()->mkConst(true);
+  d_false = NodeManager::currentNM()->mkConst(false);
 }
 
 CegConjecturePbe::~CegConjecturePbe() {
@@ -186,7 +188,7 @@ void CegConjecturePbe::registerEnumerator( Node et, Node e, TypeNode tn, int j )
   d_einfo[et].d_parent_candidate = e;
   d_einfo[et].d_parent = tn;
   if( j>=0 ){
-    d_einfo[et].d_arg = j;
+    d_einfo[et].d_parent_arg = j;
   }
   d_esym_list[e].push_back( et );
   // make the guard
@@ -385,7 +387,12 @@ bool CegConjecturePbe::addEnumeratedValue( Node x, Node v, std::vector< Node >& 
     bool keep = true;
     Node e = it->second.d_parent_candidate;
     if( d_examples_out_invalid.find( e )!=d_examples_out_invalid.end() ){
-      Trace("sygus-pbe-enum") << "Evaluation of " << e <<  " : ";
+      bool is_conditional = (it->second.d_parent_arg==0);
+      Trace("sygus-pbe-enum") << "Evaluation of ";
+      if( is_conditional ){
+        Trace("sygus-pbe-enum")  << "conditional ";
+      }
+      Trace("sygus-pbe-enum")  << e <<  " : ";
       //evaluate all input/output examples
       std::vector< bool > results;
       std::map< Node, std::vector< std::vector< Node > > >::iterator itx = d_examples.find( e );
@@ -395,16 +402,44 @@ bool CegConjecturePbe::addEnumeratedValue( Node x, Node v, std::vector< Node >& 
       Assert( itx->second.size()==itxo->second.size() );
       TypeNode xtn = x.getType();
       Node bv = d_tds->sygusToBuiltin( v, xtn );
+      Node templ;
+      TNode templ_var;
+      if( it->second.d_parent_arg>=0 ){
+        TypeNode tnp = it->second.d_parent;
+        std::map< TypeNode, EnumTypeInfo >::iterator itp = d_tinfo.find( tnp );
+        Assert( itp!=d_tinfo.end() );
+        Assert( itp->second.d_template.find( it->second.d_parent_arg )!=itp->second.d_template.end() );
+        templ = itp->second.d_template[it->second.d_parent_arg];
+        Assert( itp->second.d_template_arg.find( it->second.d_parent_arg )!=itp->second.d_template_arg.end() );
+        templ_var = itp->second.d_template_arg[it->second.d_parent_arg];
+      }
       for( unsigned j=0; j<itx->second.size(); j++ ){
         Node out = itxo->second[j];
         Node res = d_tds->evaluateBuiltin( xtn, bv, itx->second[j] );
         Assert( res.isConst() );
         Assert( out.isConst() );
-        results.push_back( res==out );
-        Trace("sygus-pbe-enum") << (res==out);
+        if( !templ.isNull() ){
+          TNode tres = res;
+          res = templ.substitute( templ_var, res );
+          res = Rewriter::rewrite( res );
+          Assert( res.isConst() );
+        }
+        if( is_conditional ){
+          // it is a conditional
+          results.push_back( res==d_true );
+        }else{
+          results.push_back( res==out );
+          Trace("sygus-pbe-enum") << (res==out);
+        }
       }
       Trace("sygus-pbe-enum") << std::endl;
-      //check subsumbed/subsuming
+      if( is_conditional ){
+        // must be unique up to examples
+        
+      }else{
+        //check subsumbed/subsuming
+      
+      }
     }else{
       keep = false;
     }

@@ -493,9 +493,6 @@ void SygusSymBreakNew::registerSearchTerm( TypeNode tn, unsigned d, Node n, bool
       Node e = d_term_to_anchor_root[n];
       d_cache[e].d_search_terms[tn][d].push_back( n );
     }
-    if( topLevel ){
-      d_is_top_level[n] = true;
-    }
     if( !options::sygusSymBreakLazy() ){
       addSymBreakLemmasFor( tn, n, d, lemmas );
     }
@@ -506,6 +503,7 @@ bool SygusSymBreakNew::registerSearchValue( Node n, Node nv, unsigned d, std::ve
   Assert( n.getType()==nv.getType() );
   Assert( nv.getKind()==APPLY_CONSTRUCTOR );
   TypeNode tn = n.getType(); 
+  // currently bottom-up, could be top-down?
   if( nv.getNumChildren()>0 ){
     const Datatype& dt = ((DatatypeType)tn.toType()).getDatatype();
     unsigned cindex = Datatype::indexOf( nv.getOperator().toExpr() );
@@ -516,7 +514,8 @@ bool SygusSymBreakNew::registerSearchValue( Node n, Node nv, unsigned d, std::ve
       }
     }
   }
-  if( d_is_top_level.find( n )!=d_is_top_level.end() ){
+  Assert( d_is_top_level.find( n )!=d_is_top_level.end() );
+  if( d_is_top_level[n] ){
     if( d_search_val_proc.find( nv )==d_search_val_proc.end() ){
       d_search_val_proc[nv] = true;
 

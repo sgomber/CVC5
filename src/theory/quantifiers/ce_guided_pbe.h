@@ -34,6 +34,8 @@ private:
   QuantifiersEngine* d_qe;
   quantifiers::TermDbSygus * d_tds;
   CegConjecture* d_parent;
+  Node d_true;
+  Node d_false;
 
   std::map< Node, bool > d_examples_invalid;
   std::map< Node, bool > d_examples_out_invalid;
@@ -69,10 +71,10 @@ private:
   
   class EnumInfo {
   public:
-    EnumInfo() : d_arg(-1){}
+    EnumInfo() : d_parent_arg(-1){}
     Node d_parent_candidate;
     TypeNode d_parent;
-    int d_arg;
+    int d_parent_arg;
     Node d_active_guard;
     /** values we have enumerated */
     std::vector< Node > d_enum;
