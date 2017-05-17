@@ -810,15 +810,20 @@ bool SygusSymBreakNew::registerSearchValue( Node n, Node nv, unsigned d, std::ve
         if( options::sygusPbe() ){
           Assert( d_term_to_anchor.find( n )!=d_term_to_anchor.end() );
           Node e = d_term_to_anchor[n];
+          // FIXME : this is specific to e, but is not cached this way by this class
           Node bvr_equiv = d_tds->addPbeSearchVal( tn, e, bvr );
-          if( bvr_equiv!=bvr ){
-            if( Trace.isOn("sygus-sb-exc") ){
+          if( !bvr_equiv.isNull() ){
+            if( bvr_equiv!=bvr ){
+              Trace("sygus-sb-debug") << "......adding search val for " << bvr << " returned " << bvr_equiv << std::endl;
               Assert( d_search_val[tn].find( bvr_equiv )!=d_search_val[tn].end() );
-              Node prev = d_tds->sygusToBuiltin( d_search_val[tn][bvr_equiv], tn );
-              Trace("sygus-sb-exc") << "  ......programs " << prev << " and " << bv << " are equivalent up to examples." << std::endl;
-              by_examples = true;
+              Trace("sygus-sb-debug") << "......search value was " << d_search_val[tn][bvr_equiv] << std::endl;
+              if( Trace.isOn("sygus-sb-exc") ){
+                Node prev = d_tds->sygusToBuiltin( d_search_val[tn][bvr_equiv], tn );
+                Trace("sygus-sb-exc") << "  ......programs " << prev << " and " << bv << " are equivalent up to examples." << std::endl;
+                by_examples = true;
+              }
+              bad_val_bvr = bvr_equiv;
             }
-            bad_val_bvr = bvr_equiv;
           }
         }
         //store rewritten values, regardless of whether it will be considers

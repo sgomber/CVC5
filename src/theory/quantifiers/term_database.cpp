@@ -4126,8 +4126,8 @@ Node TermDbSygus::extendedRewrite( Node n ) {
     }
     ret = Rewriter::rewrite( n );
 
+    Node new_ret;
     if( ret.getKind()==kind::EQUAL ){
-      Node prev = ret;
       // string equalities with disequal prefix or suffix
       if( ret[0].getType().isString() ){
         std::vector< Node > c[2];
@@ -4146,26 +4146,46 @@ Node TermDbSygus::extendedRewrite( Node n ) {
                 bool isSameFix = i==1 ? s.rstrncmp(t, len_short): s.strncmp(t, len_short);
                 if( !isSameFix ){
                   Trace("sygus-ext-rewrite") << "sygus-extr : " << n << " rewrites to false due to disequal string prefix/suffix." << std::endl;
-                  ret = d_false;
+                  new_ret = d_false;
                   break;
                 }
               }
             }
           }
         }else{
-          ret = d_false;
+          new_ret = d_false;
         }
       }
-      if( ret==prev ){
+      if( new_ret.isNull() ){
         // simple ITE pulling
-        
+        for( unsigned i=0; i<2; i++ ){
+          if( ret[0].getKind()==kind::ITE ){
+            
+          }
+        }
+      }
+    }else if( ret.getKind()==kind::ITE ){
+      Assert( ret[1]!=ret[2] );
+      if( ret[0].getKind()==NOT ){
+        ret = NodeManager::currentNM()->mkNode( kind::ITE, ret[0][0], ret[2], ret[1] );
+      }
+      if( ret.getKind()==kind::EQUAL ){
+        for( unsigned i=0; i<2; i++ ){
+          if( ret[1]==ret[0][i] && ret[2]==ret[0][1-i] ){
+            Trace("sygus-ext-rewrite") << "sygus-extr : " << n << " rewrites to " << ret[2] << "due to simple invariant ITE." << std::endl;
+            new_ret = ret[2];
+            break;
+          }
+        }
+      }
+      
+      //conditional rewriting
+      if( new_ret.isNull() ){
+      
       }
     }
-    if( ret.getKind()==kind::ITE ){
-      //conditional rewriting
-      
-      
-      
+    if( !new_ret.isNull() ){
+      ret = new_ret;
     }
     d_ext_rewrite_cache[n] = ret;
     return ret;
