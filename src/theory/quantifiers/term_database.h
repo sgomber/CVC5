@@ -109,6 +109,11 @@ typedef expr::Attribute< QuantElimPartialAttributeId, bool > QuantElimPartialAtt
 struct QuantIdNumAttributeId {};
 typedef expr::Attribute< QuantIdNumAttributeId, uint64_t > QuantIdNumAttribute;
 
+/** sygus var num */
+struct SygusVarNumAttributeId {};
+typedef expr::Attribute<SygusVarNumAttributeId, uint64_t> SygusVarNumAttribute;
+
+
 
 class QuantifiersEngine;
 

@@ -2908,7 +2908,10 @@ void TermDbSygus::registerSygusType( TypeNode tn ){
       d_register[tn] = TypeNode::fromType( dt.getSygusType() );
       Node var_list = Node::fromExpr( dt.getSygusVarList() );
       for( unsigned j=0; j<var_list.getNumChildren(); j++ ){
-        d_var_list[tn].push_back( var_list[j] );
+        Node sv = var_list[j];
+        SygusVarNumAttribute svna;
+        sv.setAttribute( svna, j );
+        d_var_list[tn].push_back( sv );
       }
       if( d_register[tn].isNull() ){
         Trace("sygus-db") << "...not sygus." << std::endl;
@@ -3613,7 +3616,7 @@ void TermDbSygus::getExplanationFor( TypeNode tn, Node n, Node vn, Node bvr, std
   //return getExplanationForConstantEquality( n, vn, exp );
   Trace("sygus-sym-break-min-exp-debug") << "Minimize explanation for eval[" << vn << "] = " << bvr << std::endl;
   Assert( vn.getKind()==kind::APPLY_CONSTRUCTOR );
-  Assert( Rewriter::rewrite( sygusToBuiltin( vn, tn ) )==bvr );
+  Assert( extendedRewrite( sygusToBuiltin( vn, tn ) )==bvr );
  
   std::vector< Node > children;
   children.push_back( vn.getOperator() );
@@ -3766,18 +3769,10 @@ Node TermDbSygus::unfold( Node en, std::map< Node, Node >& vtm, std::vector< Nod
     Node ret = mkGeneric( dt, i, var_count, pre );
     // if it is a variable, apply the substitution
     if( ret.getKind()==kind::BOUND_VARIABLE ){
-      //replace by argument
-      Node var_list = Node::fromExpr( dt.getSygusVarList() );
-      //TODO : set argument # on sygus variables
-      bool foundArg = false;
-      for( unsigned j=0; j<var_list.getNumChildren(); j++ ){
-        if( var_list[j]==ret ){
-          ret = args[j];
-          foundArg = true;
-          break;
-        }
-      }
-      Assert( foundArg );
+      Assert( ret.hasAttribute(SygusVarNumAttribute()) );
+      int i = ret.getAttribute(SygusVarNumAttribute());
+      Assert( Node::fromExpr( dt.getSygusVarList() )[i]==ret );
+      ret = args[i];
     }else if( ret.getKind()==APPLY ){
       //must expand definitions to account for defined functions in sygus grammars
       ret = Node::fromExpr( smt::currentSmtEngine()->expandDefinitions( ret.toExpr() ) );
@@ -4094,12 +4089,10 @@ Node TermDbSygus::PbeTrie::addPbeExampleEval( TypeNode etn, Node e, Node b, std:
 }
 
 Node TermDbSygus::addPbeSearchVal( TypeNode tn, Node e, Node bvr ){
-  //get the root
-  Node er = isMeasuredTerm( e );
-  Assert( !er.isNull() );
-  if( hasPbeExamples( er ) ){
-    unsigned nex = getNumPbeExamples( er );
-    return d_pbe_trie[e].addPbeExample( tn, er, bvr, this, 0, nex );
+  Assert( !e.isNull() );
+  if( hasPbeExamples( e ) ){
+    unsigned nex = getNumPbeExamples( e );
+    return d_pbe_trie[e].addPbeExample( tn, e, bvr, this, 0, nex );
   }
   return Node::null();
 }
@@ -4159,8 +4152,28 @@ Node TermDbSygus::extendedRewrite( Node n ) {
       if( new_ret.isNull() ){
         // simple ITE pulling
         for( unsigned i=0; i<2; i++ ){
-          if( ret[0].getKind()==kind::ITE ){
-            
+          if( ret[i].getKind()==kind::ITE ){
+            for( unsigned j=0; j<2; j++ ){
+              Node eq = ret[i][j+1].eqNode( ret[1-i] );
+              Node eqr = extendedRewrite( eq );
+              if( eqr.isConst() ){
+                std::vector< Node > new_children;
+                Kind new_k;
+                if( eqr==d_true ){
+                  new_k = kind::OR;
+                  new_children.push_back( j==0 ? ret[i][0] : ret[i][0].negate() );
+                }else{
+                  Assert( eqr==d_false );
+                  new_k = kind::AND;
+                  new_children.push_back( j==0 ? ret[i][0].negate() : ret[i][0] );
+                }
+                new_children.push_back( ret[i][2-j].eqNode( ret[1-i] ) );
+                Node nc = NodeManager::currentNM()->mkNode( new_k, new_children );
+                Trace("sygus-ext-rewrite") << "sygus-extr : " << n << " rewrites to " << nc << " by simple ITE pulling." << std::endl;
+                //recurse
+                new_ret = extendedRewrite( nc );
+              }
+            }
           }
         }
       }
@@ -4169,10 +4182,10 @@ Node TermDbSygus::extendedRewrite( Node n ) {
       if( ret[0].getKind()==NOT ){
         ret = NodeManager::currentNM()->mkNode( kind::ITE, ret[0][0], ret[2], ret[1] );
       }
-      if( ret.getKind()==kind::EQUAL ){
+      if( ret[0].getKind()==kind::EQUAL ){
         for( unsigned i=0; i<2; i++ ){
           if( ret[1]==ret[0][i] && ret[2]==ret[0][1-i] ){
-            Trace("sygus-ext-rewrite") << "sygus-extr : " << n << " rewrites to " << ret[2] << "due to simple invariant ITE." << std::endl;
+            Trace("sygus-ext-rewrite") << "sygus-extr : " << n << " rewrites to " << ret[2] << " due to simple invariant ITE." << std::endl;
             new_ret = ret[2];
             break;
           }

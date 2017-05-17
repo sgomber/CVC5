@@ -69,23 +69,31 @@ private:
   NodeSet d_active_terms;
 private:
   std::map< Node, Node > d_term_to_anchor;
+  std::map< Node, Node > d_term_to_anchor_root;
   std::map< Node, unsigned > d_term_to_depth;
   std::map< Node, bool > d_is_top_level;
   void registerTerm( Node n, std::vector< Node >& lemmas );
   bool computeTopLevel( TypeNode tn, Node n );
 private:
   //list of all terms encountered in search at depth
-  std::map< TypeNode, std::map< unsigned, std::vector< Node > > > d_search_terms;
-  std::map< Node, bool > d_search_val_proc;
+  class SearchCache {
+  public:
+    SearchCache(){}
+    std::map< TypeNode, std::map< unsigned, std::vector< Node > > > d_search_terms;
+    std::map< TypeNode, std::map< unsigned, std::vector< Node > > > d_sb_lemmas;
+  };
+  std::map< Node, SearchCache > d_cache;
   std::map< TypeNode, std::map< Node, Node > > d_search_val;
   std::map< TypeNode, std::map< Node, unsigned > > d_search_val_sz;
   std::map< TypeNode, std::map< Node, Node > > d_search_val_b;
-  std::map< TypeNode, std::map< unsigned, std::vector< Node > > > d_sb_lemmas;
+  std::map< Node, bool > d_search_val_proc;
+  Node d_null;
   void assertTesterInternal( int tindex, TNode n, Node exp, std::vector< Node >& lemmas );
   // register search term
   void registerSearchTerm( TypeNode tn, unsigned d, Node n, bool topLevel, std::vector< Node >& lemmas );
   bool registerSearchValue( Node n, Node nv, unsigned d, std::vector< Node >& lemmas );
-  void registerSymBreakLemma( TypeNode tn, Node lem, unsigned sz, std::vector< Node >& lemmas );
+  void registerSymBreakLemma( TypeNode tn, Node lem, unsigned sz, Node e, std::vector< Node >& lemmas );
+  void addSymBreakLemmasFor( TypeNode tn, Node t, unsigned d, Node e, std::vector< Node >& lemmas );
   void addSymBreakLemmasFor( TypeNode tn, Node t, unsigned d, std::vector< Node >& lemmas );
   void addSymBreakLemma( TypeNode tn, Node lem, TNode x, TNode n, unsigned lem_sz, unsigned n_depth, std::vector< Node >& lemmas );
 private:

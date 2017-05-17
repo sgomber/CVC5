@@ -104,7 +104,7 @@ void CegConjecture::assign( Node q ) {
       }
     }
 
-    if( options::sygusUnifCondSolNew() ){
+    if( options::sygusUnifCondSol() ){
       Assert( options::sygusPbe() );
       if( !isSingleInvocation() ){
         d_ceg_pbe->registerCandidates( d_candidates );
@@ -245,7 +245,7 @@ bool CegConjecture::needsRefinement() {
 }
 
 void CegConjecture::getCandidateList( std::vector< Node >& clist, bool forceOrig ) {
-  if( options::sygusUnifCondSolNew() && !forceOrig ){
+  if( options::sygusUnifCondSol() && !forceOrig ){
     d_ceg_pbe->getCandidateList( d_candidates, clist );
   }else{
     clist.insert( clist.end(), d_candidates.begin(), d_candidates.end() );
@@ -255,7 +255,7 @@ void CegConjecture::getCandidateList( std::vector< Node >& clist, bool forceOrig
 bool CegConjecture::constructCandidates( std::vector< Node >& clist, std::vector< Node >& model_values, std::vector< Node >& candidate_values, 
                                          std::vector< Node >& lems ) {
   Assert( clist.size()==model_values.size() );
-  if( options::sygusUnifCondSolNew() ){
+  if( options::sygusUnifCondSol() ){
     return d_ceg_pbe->constructCandidates( clist, model_values, d_candidates, candidate_values, lems );
   }else{
     Assert( model_values.size()==d_candidates.size() );
@@ -279,13 +279,8 @@ void CegConjecture::doCegConjectureCheck(std::vector< Node >& lems, std::vector<
     }
     //must get a counterexample to the value of the current candidate
     Node inst = d_base_inst.substitute( d_candidates.begin(), d_candidates.end(), c_model_values.begin(), c_model_values.end() );
-    bool hasActiveConditionalNode = false;
-    if( options::sygusUnifCondSol() ){
-      //TODO
-      hasActiveConditionalNode = true;
-    }
     //check whether we will run CEGIS on inner skolem variables
-    bool sk_refine = ( !isGround() || d_refine_count==0 || hasActiveConditionalNode );
+    bool sk_refine = ( !isGround() || d_refine_count==0 );
     if( sk_refine ){
       Assert( d_ce_sk.empty() );
       d_ce_sk.push_back( std::vector< Node >() );
@@ -323,8 +318,6 @@ void CegConjecture::doCegConjectureCheck(std::vector< Node >& lems, std::vector<
     }
     lems.push_back( lem );
     recordInstantiation( c_model_values );
-  }else{
-    Assert( false );
   }
 }
         
@@ -464,7 +457,7 @@ int CegConjecture::getProgressStatus( Node v ) {
 }
 
 Node CegConjecture::getNextDecisionRequest( unsigned& priority ) {
-  if( options::sygusUnifCondSolNew() ){
+  if( options::sygusUnifCondSol() ){
     Node dlit = d_ceg_pbe->getNextDecisionRequest( priority );
     if( !dlit.isNull() ){
       return dlit;
