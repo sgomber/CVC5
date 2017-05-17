@@ -792,6 +792,7 @@ void SygusSymBreakNew::check( std::vector< Node >& lemmas ) {
       // register the search value ( prog -> progv ), this may invoke symmetry breaking 
       if( options::sygusSymBreakDynamic() ){
         if( !registerSearchValue( prog, progv, 0, lemmas ) ){
+          Trace("sygus-sb") << "  SygusSymBreakNew::check: ...added new symmetry breaking lemma." << std::endl;
           return;
         }
       }
@@ -803,6 +804,7 @@ void SygusSymBreakNew::check( std::vector< Node >& lemmas ) {
   for( unsigned i=0; i<mts.size(); i++ ){
     registerSizeTerm( mts[i] );
   }
+  Trace("sygus-sb") << " SygusSymBreakNew::check: finished." << std::endl;
 }
 
 void SygusSymBreakNew::getPossibleCons( const Datatype& dt, TypeNode tn, std::vector< bool >& pcons ) {

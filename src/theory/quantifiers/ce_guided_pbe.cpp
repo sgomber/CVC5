@@ -137,6 +137,43 @@ void CegConjecturePbe::initialize( Node n, std::vector< Node >& candidates ) {
       }
     }
   }
+  
+  //register candidates
+  bool typical_reg = true;
+  if( options::sygusUnifCondSol() ){  
+    if( candidates.size()==1 ){// conditional solutions for multiple function conjectures TODO?
+      // collect a pool of types over which we will enumerate terms 
+      Node e = candidates[0];
+      //the candidate must be input/output examples
+      if( d_examples_out_invalid.find( e )==d_examples_out_invalid.end() ){
+        Assert( d_examples.find( e )!=d_examples.end() );
+        collectEnumeratorTypes( e, e.getType() );
+        // now construct the enumerators
+        for( std::map< TypeNode, EnumTypeInfo >::iterator iti = d_cinfo[e].d_tinfo.begin(); iti != d_cinfo[e].d_tinfo.end(); ++iti ){
+          TypeNode tn = iti->first;
+          // register type
+          Node ee = NodeManager::currentNM()->mkSkolem( "ee", tn );
+          registerEnumerator( ee, e, tn, -1 );
+          Trace("sygus-unif-debug") << "...enumerate " << ee << " for " << ((DatatypeType)tn.toType()).getDatatype().getName() << std::endl;
+          for( unsigned j=0; j<iti->second.d_csol_cts.size(); j++ ){
+            if( iti->second.d_template.find( j )!=iti->second.d_template.end() ){
+              // it is templated, allocate a fresh variable
+              Node et = NodeManager::currentNM()->mkSkolem( "et", iti->second.d_csol_cts[j] );
+              Trace("sygus-unif-debug") << "...enumerate " << et << " of type " << ((DatatypeType)iti->second.d_csol_cts[j].toType()).getDatatype().getName();
+              Trace("sygus-unif-debug") << " for arg " << j << " of " << ((DatatypeType)tn.toType()).getDatatype().getName() << std::endl;
+              registerEnumerator( et, e, tn, j );
+            }
+          }
+        }
+        typical_reg = false;
+      }
+    }
+  }
+  if( typical_reg ){
+    for( unsigned i=0; i<candidates.size(); i++ ){
+      d_qe->getTermDatabaseSygus()->registerMeasuredTerm( candidates[i], candidates[i] );
+    }
+  }
 }
 
 bool CegConjecturePbe::getPbeExamples( Node v, std::vector< std::vector< Node > >& exs, 
@@ -157,55 +194,39 @@ bool CegConjecturePbe::getPbeExamples( Node v, std::vector< std::vector< Node > 
 
 // ----------------------------- establishing enumeration types
 
-void CegConjecturePbe::registerCandidates( std::vector< Node >& candidates ) {
-  if( candidates.size()==1 ){  // conditional solutions for multiple function conjectures TODO?
-    // collect a pool of types over which we will enumerate terms 
-    Node e = candidates[0];
-    collectEnumeratorTypes( e, e.getType() );
-    // now construct the enumerators
-    for( std::map< TypeNode, EnumTypeInfo >::iterator iti = d_tinfo.begin(); iti != d_tinfo.end(); ++iti ){
-      TypeNode tn = iti->first;
-      // register type
-      Node ee = NodeManager::currentNM()->mkSkolem( "ee", tn );
-      registerEnumerator( ee, e, tn, -1 );
-      Trace("sygus-unif-debug") << "...enumerate " << ee << " for " << ((DatatypeType)tn.toType()).getDatatype().getName() << std::endl;
-      for( unsigned j=0; j<iti->second.d_csol_cts.size(); j++ ){
-        if( iti->second.d_template.find( j )!=iti->second.d_template.end() ){
-          // it is templated, allocate a fresh variable
-          Node et = NodeManager::currentNM()->mkSkolem( "et", iti->second.d_csol_cts[j] );
-          Trace("sygus-unif-debug") << "...enumerate " << et << " of type " << ((DatatypeType)iti->second.d_csol_cts[j].toType()).getDatatype().getName();
-          Trace("sygus-unif-debug") << " for arg " << j << " of " << ((DatatypeType)tn.toType()).getDatatype().getName() << std::endl;
-          registerEnumerator( et, e, tn, j );
-        }
-      }
-    }
-  }
-}
 
 void CegConjecturePbe::registerEnumerator( Node et, Node e, TypeNode tn, int j ) {
-  //d_qe->getTermDatabaseSygus()->registerMeasuredTerm( et, e );
-  d_tinfo[tn].d_esyms[j] = et;
   d_einfo[et].d_parent_candidate = e;
   d_einfo[et].d_parent = tn;
   if( j>=0 ){
     d_einfo[et].d_parent_arg = j;
   }
-  d_esym_list[e].push_back( et );
-  // make the guard
-  Node eg = Rewriter::rewrite( NodeManager::currentNM()->mkSkolem( "eG", NodeManager::currentNM()->booleanType() ) );
-  eg = d_qe->getValuation().ensureLiteral( eg );
-  AlwaysAssert( !eg.isNull() );
-  d_qe->getOutputChannel().requirePhase( eg, true );
-  //add immediate lemma
-  Node lem = NodeManager::currentNM()->mkNode( OR, eg, eg.negate() );
-  Trace("cegqi-lemma") << "Cegqi::Lemma : enumerator : " << lem << std::endl;
-  d_qe->getOutputChannel().lemma( lem );
-  d_einfo[et].d_active_guard = eg;
+  std::map< TypeNode, Node >::iterator itn = d_cinfo[e].d_enum.find( tn );
+  if( itn==d_cinfo[e].d_enum.end() ){
+    d_cinfo[e].d_enum[tn] = et;
+    d_cinfo[e].d_esym_list.push_back( et );
+    d_einfo[et].d_enum_slave.push_back( et );
+    // make the guard
+    Node eg = Rewriter::rewrite( NodeManager::currentNM()->mkSkolem( "eG", NodeManager::currentNM()->booleanType() ) );
+    eg = d_qe->getValuation().ensureLiteral( eg );
+    AlwaysAssert( !eg.isNull() );
+    d_qe->getOutputChannel().requirePhase( eg, true );
+    //add immediate lemma
+    Node lem = NodeManager::currentNM()->mkNode( OR, eg, eg.negate() );
+    Trace("cegqi-lemma") << "Cegqi::Lemma : enumerator : " << lem << std::endl;
+    d_qe->getOutputChannel().lemma( lem );
+    d_einfo[et].d_active_guard = eg;
+    //register measured term
+    d_qe->getTermDatabaseSygus()->registerMeasuredTerm( et, e );
+  }else{
+    Trace("sygus-unif-debug") << "Make " << et << " a slave of " << itn->second << std::endl;
+    d_einfo[itn->second].d_enum_slave.push_back( et );
+  }
 }
 
 void CegConjecturePbe::collectEnumeratorTypes( Node e, TypeNode tn ) {
-  if( d_tinfo.find( tn )==d_tinfo.end() ){
-    d_tinfo[tn].d_csol_status = 0;
+  if( d_cinfo[e].d_tinfo.find( tn )==d_cinfo[e].d_tinfo.end() ){
+    d_cinfo[e].d_tinfo[tn].d_csol_status = 0;
     Trace("sygus-unif") << "Register enumerating type : " << tn << std::endl;
     Assert( tn.isDatatype() );
     const Datatype& dt = ((DatatypeType)tn.toType()).getDatatype();
@@ -221,12 +242,12 @@ void CegConjecturePbe::collectEnumeratorTypes( Node e, TypeNode tn ) {
               Trace("sygus-unif") << "...type " << dt.getName() << " has ITE, enumerate child types..." << std::endl;
               // we can do unification
               success = true;
-              d_tinfo[tn].d_csol_op = Node::fromExpr( dt[j].getConstructor() );
+              d_cinfo[e].d_tinfo[tn].d_csol_op = Node::fromExpr( dt[j].getConstructor() );
               Assert( dt[j].getNumArgs()==3 );
               for( unsigned k=0; k<3; k++ ){
                 TypeNode ct = TypeNode::fromType( dt[j][k].getRangeType() );
                 Trace("sygus-unif") << "   Child type " << k << " : " << ((DatatypeType)ct.toType()).getDatatype().getName() << std::endl;
-                d_tinfo[tn].d_csol_cts.push_back( ct );
+                d_cinfo[e].d_tinfo[tn].d_csol_cts.push_back( ct );
                 collectEnumeratorTypes( e, ct );
               }
               break;
@@ -290,15 +311,15 @@ void CegConjecturePbe::collectEnumeratorTypes( Node e, TypeNode tn ) {
               }
               if( success ){
                 Trace("sygus-unif") << "...type " << dt.getName() << "has ITE-like constructor, enumerate child types..." << std::endl;
-                d_tinfo[tn].d_csol_op = Node::fromExpr( dt[j].getConstructor() );
+                d_cinfo[e].d_tinfo[tn].d_csol_op = Node::fromExpr( dt[j].getConstructor() );
                 for( unsigned k=0; k<3; k++ ){
                   Assert( templ_injection.find( k )!=templ_injection.end() );
                   unsigned sk_index = templ_injection[k];
                   //also store the template information, if necessary
                   Node teut = eut[k];
                   if( !teut.isVar() ){
-                    d_tinfo[tn].d_template[k] = teut;
-                    d_tinfo[tn].d_template_arg[k] = ss[sk_index];
+                    d_cinfo[e].d_tinfo[tn].d_template[k] = teut;
+                    d_cinfo[e].d_tinfo[tn].d_template_arg[k] = ss[sk_index];
                     Trace("sygus-unif") << "  Arg " << k << " : template : " << teut << ", arg " << ss[sk_index] << std::endl;
                   }else{
                     Assert( teut==ss[sk_index] );
@@ -307,7 +328,7 @@ void CegConjecturePbe::collectEnumeratorTypes( Node e, TypeNode tn ) {
                 // collect children types
                 for( unsigned k=0; k<dt[j].getNumArgs(); k++ ){
                   Trace("sygus-unif") << "   Child type " << k << " : " << ((DatatypeType)sktns[k].toType()).getDatatype().getName() << std::endl;
-                  d_tinfo[tn].d_csol_cts.push_back( sktns[k] );
+                  d_cinfo[e].d_tinfo[tn].d_csol_cts.push_back( sktns[k] );
                   collectEnumeratorTypes( e, sktns[k] );
                 }
               }
@@ -355,9 +376,9 @@ bool CegConjecturePbe::inferIteTemplate( unsigned k, Node n, std::map< Node, uns
 void CegConjecturePbe::getCandidateList( std::vector< Node >& candidates, std::vector< Node >& clist ) {
   for( unsigned i=0; i<candidates.size(); i++ ){
     Node v = candidates[i];
-    std::map< Node, std::vector< Node > >::iterator it = d_esym_list.find( v );
-    if( it!=d_esym_list.end() ){
-      clist.insert( clist.end(), it->second.begin(), it->second.end() );
+    std::map< Node, CandidateInfo >::iterator it = d_cinfo.find( v );
+    if( it!=d_cinfo.end() ){
+      clist.insert( clist.end(), it->second.d_esym_list.begin(), it->second.d_esym_list.end() );
     }
   }
 }
@@ -366,9 +387,13 @@ bool CegConjecturePbe::constructCandidates( std::vector< Node >& enums, std::vec
                                             std::vector< Node >& candidates, std::vector< Node >& candidate_values, 
                                             std::vector< Node >& lems ) {
   Assert( enums.size()==enum_values.size() );
-  Trace("sygus-pbe-enum") << "Register new enumerated values : " << std::endl;
+  if( Trace.isOn("sygus-pbe-enum") ){
+    Trace("sygus-pbe-enum") << "Register new enumerated values : " << std::endl;
+    for( unsigned i=0; i<enums.size(); i++ ){
+      Trace("sygus-pbe-enum") << "  " << enums[i] << " -> " << enum_values[i] << std::endl;
+    }
+  }
   for( unsigned i=0; i<enums.size(); i++ ){
-    Trace("sygus-pbe-enum") << "  " << enums[i] << " -> " << enum_values[i] << std::endl;
     addEnumeratedValue( enums[i], enum_values[i], lems );
   }
   for( unsigned i=0; i<candidates.size(); i++ ){
@@ -379,72 +404,106 @@ bool CegConjecturePbe::constructCandidates( std::vector< Node >& enums, std::vec
   return true;
 }
 
-bool CegConjecturePbe::addEnumeratedValue( Node x, Node v, std::vector< Node >& lems ) {
+void CegConjecturePbe::addEnumeratedValue( Node x, Node v, std::vector< Node >& lems ) {
   std::map< Node, EnumInfo >::iterator it = d_einfo.find( x );
   Assert( it != d_einfo.end() );
   if( getGuardStatus( it->second.d_active_guard )==1 ){
     Assert( std::find( it->second.d_enum.begin(), it->second.d_enum.end(), v )==it->second.d_enum.end() );
     bool keep = true;
     Node e = it->second.d_parent_candidate;
-    if( d_examples_out_invalid.find( e )!=d_examples_out_invalid.end() ){
-      bool is_conditional = (it->second.d_parent_arg==0);
-      Trace("sygus-pbe-enum") << "Evaluation of ";
-      if( is_conditional ){
-        Trace("sygus-pbe-enum")  << "conditional ";
-      }
-      Trace("sygus-pbe-enum")  << e <<  " : ";
-      //evaluate all input/output examples
-      std::vector< bool > results;
+    if( d_examples_out_invalid.find( e )==d_examples_out_invalid.end() ){
+      TypeNode xtn = x.getType();
+      Node bv = d_tds->sygusToBuiltin( v, xtn );
       std::map< Node, std::vector< std::vector< Node > > >::iterator itx = d_examples.find( e );
       std::map< Node, std::vector< Node > >::iterator itxo = d_examples_out.find( e );
       Assert( itx!=d_examples.end() );
       Assert( itxo!=d_examples_out.end() );
       Assert( itx->second.size()==itxo->second.size() );
-      TypeNode xtn = x.getType();
-      Node bv = d_tds->sygusToBuiltin( v, xtn );
-      Node templ;
-      TNode templ_var;
-      if( it->second.d_parent_arg>=0 ){
-        TypeNode tnp = it->second.d_parent;
-        std::map< TypeNode, EnumTypeInfo >::iterator itp = d_tinfo.find( tnp );
-        Assert( itp!=d_tinfo.end() );
-        Assert( itp->second.d_template.find( it->second.d_parent_arg )!=itp->second.d_template.end() );
-        templ = itp->second.d_template[it->second.d_parent_arg];
-        Assert( itp->second.d_template_arg.find( it->second.d_parent_arg )!=itp->second.d_template_arg.end() );
-        templ_var = itp->second.d_template_arg[it->second.d_parent_arg];
-      }
-      for( unsigned j=0; j<itx->second.size(); j++ ){
-        Node out = itxo->second[j];
-        Node res = d_tds->evaluateBuiltin( xtn, bv, itx->second[j] );
-        Assert( res.isConst() );
-        Assert( out.isConst() );
-        if( !templ.isNull() ){
-          TNode tres = res;
-          res = templ.substitute( templ_var, res );
-          res = Rewriter::rewrite( res );
+      // notify all slaves
+      Assert( !it->second.d_enum_slave.empty() );
+      for( unsigned s=0; s<it->second.d_enum_slave.size(); s++ ){
+        Node xs = it->second.d_enum_slave[s];
+        std::map< Node, EnumInfo >::iterator itv = d_einfo.find( xs );
+        bool is_conditional = (itv->second.d_parent_arg==0);
+        if( is_conditional ){
+          Trace("sygus-pbe-enum") << " Cond-Eval of ";
+        }else{
+          Trace("sygus-pbe-enum") << "Evaluation of ";
+        }
+        Trace("sygus-pbe-enum")  << xs <<  " : ";
+        //evaluate all input/output examples
+        std::vector< bool > results;
+        Node templ;
+        TNode templ_var;
+        if( itv->second.d_parent_arg>=0 ){
+          TypeNode tnp = itv->second.d_parent;
+          std::map< TypeNode, EnumTypeInfo >::iterator itp = d_cinfo[e].d_tinfo.find( tnp );
+          Assert( itp!=d_cinfo[e].d_tinfo.end() );
+          Assert( itp->second.d_template.find( itv->second.d_parent_arg )!=itp->second.d_template.end() );
+          templ = itp->second.d_template[itv->second.d_parent_arg];
+          Assert( itp->second.d_template_arg.find( itv->second.d_parent_arg )!=itp->second.d_template_arg.end() );
+          templ_var = itp->second.d_template_arg[itv->second.d_parent_arg];
+        }
+        std::map< bool, bool > cond_vals;
+        for( unsigned j=0; j<itx->second.size(); j++ ){
+          Node out = itxo->second[j];
+          Node res = d_tds->evaluateBuiltin( xtn, bv, itx->second[j] );
           Assert( res.isConst() );
+          Assert( out.isConst() );
+          if( !templ.isNull() ){
+            TNode tres = res;
+            res = templ.substitute( templ_var, res );
+            res = Rewriter::rewrite( res );
+            Assert( res.isConst() );
+          }
+          bool resb;
+          if( is_conditional ){
+            resb = res==d_true;
+            // it is a conditional
+          }else{
+            resb = res==out;
+          }
+          cond_vals[resb] = true;
+          results.push_back( resb );
+          Trace("sygus-pbe-enum") << resb;
         }
         if( is_conditional ){
-          // it is a conditional
-          results.push_back( res==d_true );
+          if( cond_vals.size()==2 ){
+            // must be unique up to examples
+            Node val = d_cond_trie[e].addCond( v, results, 0 );
+            if( val==v ){
+              Trace("sygus-pbe-enum") << "  ...success!" << std::endl;
+            }else{
+              Trace("sygus-pbe-enum") << "  ...fail : conditional is not unique." << std::endl;
+              keep = false;
+            }
+          }else{
+            // must discriminate
+            Trace("sygus-pbe-enum") << "  ...fail : conditional is constant." << std::endl;
+            keep = false;
+          }
         }else{
-          results.push_back( res==out );
-          Trace("sygus-pbe-enum") << (res==out);
+          if( cond_vals.find( true )!=cond_vals.end() ){
+            //check subsumbed/subsuming
+            if( cond_vals.find( false )==cond_vals.end() ){
+              // it is the entire solution, we are done
+            }else{
+              // TODO
+            }
+            Trace("sygus-pbe-enum") << "  ...success!" << std::endl;
+          }else{
+            Trace("sygus-pbe-enum") << "  ...fail : it does not satisfy examples." << std::endl;
+            keep = false;
+          }
         }
-      }
-      Trace("sygus-pbe-enum") << std::endl;
-      if( is_conditional ){
-        // must be unique up to examples
-        
-      }else{
-        //check subsumbed/subsuming
-      
+        if( keep ){
+          itv->second.d_enum.push_back( v );
+          itv->second.d_enum_res.push_back( results );
+        }
       }
     }else{
       keep = false;
-    }
-    if( keep ){
-      it->second.d_enum.push_back( v );
+      Trace("sygus-pbe-enum-debug") << "  ...examples do not have output." << std::endl;
     }
     //exclude this value on subsequent iterations
     Node g = it->second.d_active_guard;
@@ -452,20 +511,30 @@ bool CegConjecturePbe::addEnumeratedValue( Node x, Node v, std::vector< Node >& 
     Node exlem = NodeManager::currentNM()->mkNode( kind::OR, g.negate(), exp.negate() );
     Trace("sygus-pbe-enum-lemma") << "CegConjecturePbe : enumeration exclude lemma : " << exlem << std::endl;
     lems.push_back( exlem );
-    return keep;
   }else{
     Trace("sygus-pbe-enum-debug") << "  ...guard is inactive." << std::endl;
-    return false;
+  }
+}
+Node CegConjecturePbe::CondTrie::addCond( Node cond, std::vector< bool >& vals, unsigned index ) {
+  if( index==vals.size() ){
+    if( d_cond.isNull() ){
+      d_cond = cond;
+    }
+    return d_cond;
+  }else{
+    return d_children[vals[index]].addCond( cond, vals, index+1 );
   }
 }
 
 Node CegConjecturePbe::getNextDecisionRequest( unsigned& priority ) {
   for( std::map< Node, EnumInfo >::iterator it = d_einfo.begin(); it != d_einfo.end(); ++it ){
     Node g = it->second.d_active_guard;
-    if( getGuardStatus( g )==0 ){
-      Trace("cegqi-debug") << "CegConjecturePbe : Decide next on : " << g << "..." << std::endl;
-      priority = 1;
-      return g;
+    if( !g.isNull() ){
+      if( getGuardStatus( g )==0 ){
+        Trace("cegqi-debug") << "CegConjecturePbe : Decide next on : " << g << "..." << std::endl;
+        priority = 1;
+        return g;
+      }
     }
   }
   return Node::null();

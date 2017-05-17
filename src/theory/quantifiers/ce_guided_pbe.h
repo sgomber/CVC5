@@ -51,7 +51,15 @@ public:
   void initialize( Node n, std::vector< Node >& candidates );
   bool getPbeExamples( Node v, std::vector< std::vector< Node > >& exs, 
                        std::vector< Node >& exos, std::vector< Node >& exts);
-  
+                       
+private:  // for registration
+  void collectEnumeratorTypes( Node e, TypeNode tn );
+  void registerEnumerator( Node et, Node e, TypeNode tn, int j );
+
+  /** register candidate conditional */
+  bool inferIteTemplate( unsigned k, Node n, std::map< Node, unsigned >& templ_var_index, std::map< unsigned, unsigned >& templ_injection );  
+  /** get guard status */
+  int getGuardStatus( Node g );
 private:
   class EnumTypeInfo {
   public:
@@ -67,7 +75,15 @@ private:
     /** esyms */
     std::map< int, Node > d_esyms;
   };
-  std::map< TypeNode, EnumTypeInfo > d_tinfo;
+  class CandidateInfo {
+  public:
+    CandidateInfo(){}
+    std::map< TypeNode, EnumTypeInfo > d_tinfo;
+    std::vector< Node > d_esym_list;
+    std::map< TypeNode, Node > d_enum;
+  };
+  //  candidate -> sygus type -> info
+  std::map< Node, CandidateInfo > d_cinfo;
   
   class EnumInfo {
   public:
@@ -76,22 +92,23 @@ private:
     TypeNode d_parent;
     int d_parent_arg;
     Node d_active_guard;
+    std::vector< Node > d_enum_slave;
     /** values we have enumerated */
     std::vector< Node > d_enum;
+    std::vector< std::vector< bool > > d_enum_res;
   };
   std::map< Node, EnumInfo > d_einfo;
-  std::map< Node, std::vector< Node > > d_esym_list;
+private:
+  class CondTrie {
+  public:
+    CondTrie(){}
+    Node d_cond;
+    std::map< bool, CondTrie > d_children;
+    Node addCond( Node cond, std::vector< bool >& vals, unsigned index = 0 );
+  };
+  std::map< Node, CondTrie > d_cond_trie;
   /** add enumerated value */
-  bool addEnumeratedValue( Node x, Node v, std::vector< Node >& lems );
-  
-  
-  void collectEnumeratorTypes( Node e, TypeNode tn );
-  void registerEnumerator( Node et, Node e, TypeNode tn, int j );
-
-  /** register candidate conditional */
-  bool inferIteTemplate( unsigned k, Node n, std::map< Node, unsigned >& templ_var_index, std::map< unsigned, unsigned >& templ_injection );  
-  /** get guard status */
-  int getGuardStatus( Node g );
+  void addEnumeratedValue( Node x, Node v, std::vector< Node >& lems );
 public:
   void registerCandidates( std::vector< Node >& candidates ); 
   void getCandidateList( std::vector< Node >& candidates, std::vector< Node >& clist );

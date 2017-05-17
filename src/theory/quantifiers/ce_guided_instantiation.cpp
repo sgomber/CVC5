@@ -72,10 +72,11 @@ void CegConjecture::assign( Node q ) {
   
   // register this term with sygus database
   if( !isSingleInvocation() ){
-    d_ceg_pbe->initialize( d_base_inst, d_candidates );
+    if( options::sygusPbe() ){
+      d_ceg_pbe->initialize( d_base_inst, d_candidates );
+    }
     for( unsigned i=0; i<d_candidates.size(); i++ ){
       Node e = d_candidates[i];
-      d_qe->getTermDatabaseSygus()->registerMeasuredTerm( e, e );
       if( options::sygusPbe() ){
         std::vector< std::vector< Node > > exs;
         std::vector< Node > exos;
@@ -83,6 +84,8 @@ void CegConjecture::assign( Node q ) {
         if( d_ceg_pbe->getPbeExamples( e, exs, exos, exts ) ){
           d_qe->getTermDatabaseSygus()->registerPbeExamples( e, exs, exos, exts );
         }
+      }else{
+        d_qe->getTermDatabaseSygus()->registerMeasuredTerm( e, e );
       }
     }
   }
@@ -101,13 +104,6 @@ void CegConjecture::assign( Node q ) {
           d_inner_vars.push_back( d_base_disj[j][0][0][k] );
           d_inner_vars_disj[j].push_back( d_base_disj[j][0][0][k] );
         }
-      }
-    }
-
-    if( options::sygusUnifCondSol() ){
-      Assert( options::sygusPbe() );
-      if( !isSingleInvocation() ){
-        d_ceg_pbe->registerCandidates( d_candidates );
       }
     }
     d_syntax_guided = true;

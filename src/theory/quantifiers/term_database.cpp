@@ -3931,15 +3931,18 @@ void TermDbSygus::getExplanationFor( TypeNode tn, Node n, Node vn, Node bvr, std
   int cindex = Datatype::indexOf( vn.getOperator().toExpr() );
   const Datatype& dt = ((DatatypeType)tn.toType()).getDatatype();
   Kind ck = getArgKind( tn, cindex );
-  // for each child, check whether argument rewrites to an excluded constant
-  for( unsigned i=0; i<vn.getNumChildren(); i++ ){
-    Node bv = sygusToBuiltin( vn[i], vn[i].getType() );
-    Node bvr = Rewriter::rewrite( bv );
-    if( bvr.isConst() ){
-      if( !considerConst( dt, tn, bvr, ck, i ) ){
-        Trace("sygus-sb-mexp") << "sb-min-exp : generalize explanation for " << vn << " since argument " << i << " rewrites to excluded constant " << bvr << std::endl;
-        did_rlv = true;
-        crlv[i] = true;
+  if( ck!=UNDEFINED_KIND ){
+    Trace("sygus-sb-mexp-debug") << "...parent kind is " << ck << std::endl;
+    // for each child, check whether argument rewrites to an excluded constant
+    for( unsigned i=0; i<vn.getNumChildren(); i++ ){
+      Node bv = sygusToBuiltin( vn[i], vn[i].getType() );
+      Node bvr = Rewriter::rewrite( bv );
+      if( bvr.isConst() ){
+        if( !considerConst( dt, tn, bvr, ck, i ) ){
+          Trace("sygus-sb-mexp") << "sb-min-exp : generalize explanation for " << vn << " since argument " << i << " rewrites to excluded constant " << bvr << std::endl;
+          did_rlv = true;
+          crlv[i] = true;
+        }
       }
     }
   }
