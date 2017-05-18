@@ -424,11 +424,12 @@ void CegConjecturePbe::addEnumeratedValue( Node x, Node v, std::vector< Node >& 
       for( unsigned s=0; s<it->second.d_enum_slave.size(); s++ ){
         Node xs = it->second.d_enum_slave[s];
         std::map< Node, EnumInfo >::iterator itv = d_einfo.find( xs );
-        bool is_conditional = (itv->second.d_parent_arg==0);
-        if( is_conditional ){
+        bool prevIsTotalTrue = false;
+        if( itv->second.isConditional() ){
           Trace("sygus-pbe-enum") << " Cond-Eval of ";
         }else{
           Trace("sygus-pbe-enum") << "Evaluation of ";
+          prevIsTotalTrue = itv->second.isTotalTrue();
         }
         Trace("sygus-pbe-enum")  << xs <<  " : ";
         //evaluate all input/output examples
@@ -457,7 +458,7 @@ void CegConjecturePbe::addEnumeratedValue( Node x, Node v, std::vector< Node >& 
             Assert( res.isConst() );
           }
           bool resb;
-          if( is_conditional ){
+          if( itv->second.isConditional() ){
             resb = res==d_true;
             // it is a conditional
           }else{
@@ -467,14 +468,14 @@ void CegConjecturePbe::addEnumeratedValue( Node x, Node v, std::vector< Node >& 
           results.push_back( resb );
           Trace("sygus-pbe-enum") << resb;
         }
-        if( is_conditional ){
+        if( itv->second.isConditional() ){
           if( cond_vals.size()==2 ){
             // must be unique up to examples
             Node val = d_cond_trie[e].addCond( v, results, 0 );
             if( val==v ){
               Trace("sygus-pbe-enum") << "  ...success!" << std::endl;
             }else{
-              Trace("sygus-pbe-enum") << "  ...fail : conditional is not unique." << std::endl;
+              Trace("sygus-pbe-enum") << "  ...fail : conditional is not unique" << std::endl;
               keep = false;
             }
           }else{
@@ -487,18 +488,36 @@ void CegConjecturePbe::addEnumeratedValue( Node x, Node v, std::vector< Node >& 
             //check subsumbed/subsuming
             if( cond_vals.find( false )==cond_vals.end() ){
               // it is the entire solution, we are done
+              Trace("sygus-pbe-enum") << "  ...success, full solution!" << std::endl;
             }else{
-              // TODO
+              std::vector< Node > subsume;
+              Node val = d_term_trie[e].addTerm( v, results, subsume );
+              if( val==v ){
+                Trace("sygus-pbe-enum") << "  ...success"; 
+                if( !subsume.empty() ){
+                  itv->second.d_enum_subsume.insert( itv->second.d_enum_subsume.end(), subsume.begin(), subsume.end() );
+                  Trace("sygus-pbe-enum") << " and subsumed " << subsume.size() << " terms";
+                }
+                Trace("sygus-pbe-enum") << "!" << std::endl;
+              }else{
+                Assert( subsume.empty() );
+                Trace("sygus-pbe-enum") << "  ...fail : subsumed" << std::endl;
+              }
             }
-            Trace("sygus-pbe-enum") << "  ...success!" << std::endl;
           }else{
             Trace("sygus-pbe-enum") << "  ...fail : it does not satisfy examples." << std::endl;
             keep = false;
           }
         }
         if( keep ){
-          itv->second.d_enum.push_back( v );
-          itv->second.d_enum_res.push_back( results );
+          itv->second.addEnumeratedValue( v, results );
+          if( Trace.isOn("sygus-pbe-enum") ){
+            if( !itv->second.isConditional() ){
+              if( !prevIsTotalTrue && itv->second.isTotalTrue() ){
+                Trace("sygus-pbe-enum") << "...success : Evaluation of " << xs << " now covers all examples." << std::endl;
+              }
+            }
+          }
         }
       }
     }else{
@@ -515,6 +534,34 @@ void CegConjecturePbe::addEnumeratedValue( Node x, Node v, std::vector< Node >& 
     Trace("sygus-pbe-enum-debug") << "  ...guard is inactive." << std::endl;
   }
 }
+
+void CegConjecturePbe::EnumInfo::addEnumeratedValue( Node v, std::vector< bool >& results ) {
+  d_enum.push_back( v );
+  d_enum_res.push_back( results );
+  if( !isConditional() ){
+    // compute 
+    if( d_enum_total.empty() ){
+      d_enum_total = results;
+    }else if( !d_enum_total_true ){
+      d_enum_total_true = true;
+      Assert( d_enum_total.size()==results.size() );
+      for( unsigned i=0; i<results.size(); i++ ){
+        if( d_enum_total[i] || results[i] ){
+          d_enum_total[i] = true;
+        }else{
+          d_enum_total[i] = false;
+          d_enum_total_true = false;
+        }
+      }
+    }
+  }
+}
+
+bool CegConjecturePbe::EnumInfo::isTotalTrue() {
+  Assert( !isConditional() );
+  return d_enum_total_true;
+}
+
 Node CegConjecturePbe::CondTrie::addCond( Node cond, std::vector< bool >& vals, unsigned index ) {
   if( index==vals.size() ){
     if( d_cond.isNull() ){
@@ -523,6 +570,80 @@ Node CegConjecturePbe::CondTrie::addCond( Node cond, std::vector< bool >& vals, 
     return d_cond;
   }else{
     return d_children[vals[index]].addCond( cond, vals, index+1 );
+  }
+}
+
+// 0 : exact, -1 : vals is subset, 1 : vals is superset
+Node CegConjecturePbe::SubsumeTrie::addTerm( Node t, std::vector< bool >& vals, std::vector< Node >& subsumed, int status, unsigned index ) {
+  if( index==vals.size() ){
+    if( status==0 ){
+      if( d_term.isNull() ){
+        d_term = t;
+      }
+    }else if( status==1 ){
+      Assert( !d_term.isNull() );
+      subsumed.push_back( d_term );
+      d_term = Node::null();
+    }else{
+      Assert( status==-1 );
+    }
+    return d_term;
+  }else{
+    std::vector< bool > check_subsumed_by;
+    if( status==0 ){
+      if( !vals[index] ){
+        check_subsumed_by.push_back( true );
+      }
+    }else if( status==-1 ){
+      check_subsumed_by.push_back( true );
+      if( !vals[index] ){
+        check_subsumed_by.push_back( false );
+      }
+    }
+    // check for subsumed nodes
+    for( unsigned i=0; i<check_subsumed_by.size(); i++ ){
+      bool csval = check_subsumed_by[i];
+      // check if subsumed
+      std::map< bool, SubsumeTrie >::iterator itc = d_children.find( csval );
+      if( itc!=d_children.end() ){
+        Node ret = itc->second.addTerm( t, vals, subsumed, -1, index+1 );
+        // ret subsumes t
+        if( !ret.isNull() ){
+          return ret;
+        }
+      }
+    }
+    Node ret;
+    std::vector< bool > check_subsume;
+    if( status==0 ){
+      ret = d_children[vals[index]].addTerm( t, vals, subsumed, 0, index+1 );
+      if( ret==t ){
+        // check for subsuming
+        if( vals[index] ){
+          check_subsume.push_back( false );
+        }
+      }else{
+        Assert( !ret.isNull() );
+      }
+    }else if( status==1 ){
+      check_subsume.push_back( false );
+      if( vals[index] ){
+        check_subsume.push_back( true );
+      }
+    }
+    // check for subsumed nodes
+    for( unsigned i=0; i<check_subsume.size(); i++ ){
+      bool csval = check_subsume[i];
+      std::map< bool, SubsumeTrie >::iterator itc = d_children.find( csval );
+      if( itc!=d_children.end() ){
+        itc->second.addTerm( t, vals, subsumed, 1, index+1 );
+        // clean up
+        if( itc->second.isEmpty() ){
+          d_children.erase( csval );
+        }
+      }
+    }
+    return ret;
   }
 }
 

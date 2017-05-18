@@ -86,8 +86,12 @@ private:
   std::map< Node, CandidateInfo > d_cinfo;
   
   class EnumInfo {
+  private:
+    /** an OR of all in d_enum_res */
+    std::vector< bool > d_enum_total;
+    bool d_enum_total_true;
   public:
-    EnumInfo() : d_parent_arg(-1){}
+    EnumInfo() : d_enum_total_true( false ), d_parent_arg(-1){}
     Node d_parent_candidate;
     TypeNode d_parent;
     int d_parent_arg;
@@ -96,6 +100,11 @@ private:
     /** values we have enumerated */
     std::vector< Node > d_enum;
     std::vector< std::vector< bool > > d_enum_res;
+    std::vector< Node > d_enum_subsume;
+  public:
+    bool isConditional() { return d_parent_arg==0; }
+    void addEnumeratedValue( Node v, std::vector< bool >& results );
+    bool isTotalTrue();
   };
   std::map< Node, EnumInfo > d_einfo;
 private:
@@ -107,6 +116,17 @@ private:
     Node addCond( Node cond, std::vector< bool >& vals, unsigned index = 0 );
   };
   std::map< Node, CondTrie > d_cond_trie;
+  // subsumption trie
+  class SubsumeTrie {
+  public:
+    SubsumeTrie(){}
+    Node d_term;
+    std::map< bool, SubsumeTrie > d_children;
+    Node addTerm( Node t, std::vector< bool >& vals, std::vector< Node >& subsumed, int status = 0, unsigned index = 0 );
+    bool isEmpty() { return d_term.isNull() && d_children.empty(); }
+  };
+  std::map< Node, SubsumeTrie > d_term_trie;
+
   /** add enumerated value */
   void addEnumeratedValue( Node x, Node v, std::vector< Node >& lems );
 public:
