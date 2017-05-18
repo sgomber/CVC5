@@ -91,6 +91,7 @@ private:
     bool d_active;
     void initialize( Node c );
     void initializeType( TypeNode tn );
+    Node getRootEnumerator();
     bool isCover( TypeNode tn, CegConjecturePbe * pbe, bool beneathCond, std::map< bool, std::map< TypeNode, bool > >& visited );
     bool isCover( CegConjecturePbe * pbe );
   };
@@ -123,12 +124,21 @@ private:
   };
   std::map< Node, EnumInfo > d_einfo;
 private:
+  class IndexFilter {
+  public:
+    IndexFilter(){}
+    std::map< unsigned, unsigned > d_next;
+    unsigned start();
+    unsigned next( unsigned i );
+    void clear() { d_next.clear(); }
+    bool isEq( std::vector< bool >& vs, bool v );
+  };
   class CondTrie {
   public:
     CondTrie(){}
     Node d_cond;
     std::map< bool, CondTrie > d_children;
-    Node addCond( Node cond, std::vector< bool >& vals, unsigned index = 0 );
+    Node addCond( Node cond, std::vector< bool >& vals, unsigned index = 0, bool checkExistsOnly = false );
   };
   std::map< Node, CondTrie > d_cond_trie;
   // subsumption trie
@@ -137,13 +147,35 @@ private:
     SubsumeTrie(){}
     Node d_term;
     std::map< bool, SubsumeTrie > d_children;
-    Node addTerm( Node t, std::vector< bool >& vals, std::vector< Node >& subsumed, int status = 0, unsigned index = 0 );
+    Node addTerm( Node t, std::vector< bool >& vals, std::vector< Node >& subsumed, IndexFilter * f = NULL, 
+                  int status = 0, unsigned index = 0, bool checkExistsOnly = false );
     bool isEmpty() { return d_term.isNull() && d_children.empty(); }
+    void clear() {
+      d_term = Node::null();
+      d_children.clear(); 
+    }
   };
   std::map< Node, SubsumeTrie > d_term_trie;
 
   /** add enumerated value */
   void addEnumeratedValue( Node x, Node v, std::vector< Node >& lems );
+  
+private:  
+  // filtering verion
+  class FilterSubsumeTrie {
+  public:
+    SubsumeTrie d_trie;
+    IndexFilter d_filter;
+    Node addTerm( Node t, std::vector< bool >& vals, std::vector< Node >& subsumed, bool checkExistsOnly = false ){
+      return d_trie.addTerm( t, vals, subsumed, &d_filter, 0, d_filter.start(), checkExistsOnly );
+    }
+  };
+  class UnifContext {
+  public:
+    IndexFilter d_filter;
+  };
+  /** construct solution */
+  Node constructSolution( Node c, Node e, UnifContext& x );
 public:
   void registerCandidates( std::vector< Node >& candidates ); 
   void getCandidateList( std::vector< Node >& candidates, std::vector< Node >& clist );
