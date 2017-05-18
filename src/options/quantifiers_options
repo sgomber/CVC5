@@ -274,6 +274,8 @@ option sygusUnifCondSol --sygus-unif-csol bool :default false
 
 option sygusDirectEval --sygus-direct-eval bool :default true
   direct unfolding of evaluation functions
+option sygusUnfoldBool --sygus-unfold-bool bool :default false
+  do unfolding of Boolean evaluation functions that appear in refinement lemmas
 option sygusCRefEval --sygus-cref-eval bool :default true
   direct evaluation of refinement lemmas for conflict analysis
   

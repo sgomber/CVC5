@@ -3115,6 +3115,37 @@ bool TermDbSygus::considerConst( const Datatype& pdt, TypeNode tnp, Node c, Kind
       return false;
     }
   }
+  
+  /*
+  if( pdt[pc].getNumArgs()==2 ){
+    Kind ok;
+    int offset;
+    if( hasOffsetArg( parent, arg, offset, ok ) ){
+      Trace("sygus-split-debug") << parent << " has offset arg " << ok << " " << offset << std::endl;
+      int ok_arg = d_tds->getKindArg( tnp, ok );
+      if( ok_arg!=-1 ){
+        Trace("sygus-split-debug") << "...at argument " << ok_arg << std::endl;
+        //other operator be the same type
+        if( isTypeMatch( pdt[ok_arg], pdt[arg] ) ){
+          int status;
+          Node co = d_tds->getTypeValueOffset( c.getType(), c, offset, status );
+          Trace("sygus-split-debug") << c << " with offset " << offset << " is " << co << ", status=" << status << std::endl;
+          if( status==0 && !co.isNull() ){
+            if( d_tds->hasConst( tn, co ) ){
+              Trace("sygus-split-debug") << "arg " << arg << " " << c << " in " << parent << " can be treated as " << co << " in " << ok << "..." << std::endl;
+              return false;
+            }else{
+              Trace("sygus-split-debug") << "Type does not have constant." << std::endl;
+            }
+          }
+        }else{
+          Trace("sygus-split-debug") << "Type mismatch." << std::endl;
+        }
+      }
+    }
+  }
+  */
+  
   return true;
 }
 
@@ -3840,8 +3871,10 @@ void TermDbSygus::registerModelValue( Node a, Node v, std::vector< Node >& terms
           Node expn;
           // unfold?
           bool do_unfold = false;
-          if( bTerm.getKind()==ITE || bTerm.getType().isBoolean() ){
-            do_unfold = true;
+          if( options::sygusUnfoldBool() ){
+            if( bTerm.getKind()==ITE || bTerm.getType().isBoolean() ){
+              do_unfold = true;
+            }
           }
           if( do_unfold ){
             // TODO : this is replicated for different values, possibly do better caching

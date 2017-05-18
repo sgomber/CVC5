@@ -2284,15 +2284,22 @@ void TheoryDatatypes::registerSygusMeasuredTerm( Node t ) {
   if( d_sygus_measure_term_active.isNull() ){
     d_sygus_measure_term_active = getOrMkSygusMeasureTerm();
   }
-  Node mt = d_sygus_measure_term_active;
-  Node new_mt = NodeManager::currentNM()->mkSkolem( "mt", NodeManager::currentNM()->integerType() );
-  lems.push_back( NodeManager::currentNM()->mkNode( kind::GEQ, new_mt, d_zero ) );
-  if( options::ceGuidedInstFair()==quantifiers::CEGQI_FAIR_DT_SIZE ){
-    Node ds = NodeManager::currentNM()->mkNode( kind::DT_SIZE, t );
-    lems.push_back( mt.eqNode( NodeManager::currentNM()->mkNode( kind::PLUS, new_mt, ds ) ) );
-    //lems.push_back( NodeManager::currentNM()->mkNode( kind::GEQ, ds, d_zero ) );
+  if( options::sygusFairMax() ){
+    if( options::ceGuidedInstFair()==quantifiers::CEGQI_FAIR_DT_SIZE ){
+      Node ds = NodeManager::currentNM()->mkNode( kind::DT_SIZE, t );
+      lems.push_back( NodeManager::currentNM()->mkNode( kind::LEQ, ds, d_sygus_measure_term_active ) );
+    }
+  }else{
+    Node mt = d_sygus_measure_term_active;
+    Node new_mt = NodeManager::currentNM()->mkSkolem( "mt", NodeManager::currentNM()->integerType() );
+    lems.push_back( NodeManager::currentNM()->mkNode( kind::GEQ, new_mt, d_zero ) );
+    if( options::ceGuidedInstFair()==quantifiers::CEGQI_FAIR_DT_SIZE ){
+      Node ds = NodeManager::currentNM()->mkNode( kind::DT_SIZE, t );
+      lems.push_back( mt.eqNode( NodeManager::currentNM()->mkNode( kind::PLUS, new_mt, ds ) ) );
+      //lems.push_back( NodeManager::currentNM()->mkNode( kind::GEQ, ds, d_zero ) );
+    }
+    d_sygus_measure_term_active = new_mt;
   }
-  d_sygus_measure_term_active = new_mt;
 
   doSendLemmas( lems );
 }
