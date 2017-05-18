@@ -52,7 +52,8 @@ TESTS = commutative.sy \
         strings-small.sy \
         strings-unconstrained.sy \
         tl-type-4x.sy \
-        tl-type-0.sy
+        tl-type-0.sy \
+        fg_polynomial3.sy
 
 # sygus tests currently taking too long for make regress
 EXTRA_DIST = $(TESTS) \

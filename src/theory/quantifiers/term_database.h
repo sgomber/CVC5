@@ -782,6 +782,7 @@ public:
 // extended rewriting
 private:
   std::map< Node, Node > d_ext_rewrite_cache;
+  Node extendedRewritePullIte( Node n );
 public:
   Node extendedRewrite( Node n );
 };

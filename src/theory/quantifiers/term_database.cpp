@@ -3044,6 +3044,7 @@ bool TermDbSygus::considerArgKind( const Datatype& dt, const Datatype& pdt, Type
       rt.d_children[0].d_req_type = getArgType( dt[c], 0 );
       rt.d_children[1].d_req_type = getArgType( pdt[pc], 2 );
       rt.d_children[2].d_req_type = getArgType( pdt[pc], 1 );
+      rt_valid = true;
     }
   }
   Trace("sygus-sb-debug") << "Consider sygus arg kind " << k << ", pk = " << pk << ", arg = " << arg << "?" << std::endl;
@@ -4456,6 +4457,47 @@ Node TermDbSygus::addPbeSearchVal( TypeNode tn, Node e, Node bvr ){
   return Node::null();
 }
 
+Node TermDbSygus::extendedRewritePullIte( Node n ) {
+  // generalize this?
+  Assert( n.getNumChildren()==2 );
+  Assert( n.getType().isBoolean() );
+  Assert( n.getMetaKind() != kind::metakind::PARAMETERIZED );
+  std::vector< Node > children;
+  for( unsigned i=0; i<n.getNumChildren(); i++ ){
+    children.push_back( n[i] );
+  }
+  for( unsigned i=0; i<2; i++ ){
+    if( n[i].getKind()==kind::ITE ){
+      for( unsigned j=0; j<2; j++ ){
+        children[i] = n[i][j+1];
+        Node eqr = extendedRewrite( NodeManager::currentNM()->mkNode( n.getKind(), children ) );
+        children[i] = n[i];
+        if( eqr.isConst() ){
+          std::vector< Node > new_children;
+          Kind new_k;
+          if( eqr==d_true ){
+            new_k = kind::OR;
+            new_children.push_back( j==0 ? n[i][0] : n[i][0].negate() );
+          }else{
+            Assert( eqr==d_false );
+            new_k = kind::AND;
+            new_children.push_back( j==0 ? n[i][0].negate() : n[i][0] );
+          }
+          children[i] = n[i][2-j];
+          Node rem_eq = NodeManager::currentNM()->mkNode( n.getKind(), children );
+          children[i] = n[i];
+          new_children.push_back( rem_eq );
+          Node nc = NodeManager::currentNM()->mkNode( new_k, new_children );
+          Trace("sygus-ext-rewrite") << "sygus-extr : " << n << " rewrites to " << nc << " by simple ITE pulling." << std::endl;
+          //recurse
+          return extendedRewrite( nc );
+        }
+      }
+    }
+  }
+  return Node::null();
+}
+
 Node TermDbSygus::extendedRewrite( Node n ) {
   std::map< Node, Node >::iterator it = d_ext_rewrite_cache.find( n );
   if( it == d_ext_rewrite_cache.end() ){
@@ -4477,6 +4519,7 @@ Node TermDbSygus::extendedRewrite( Node n ) {
       }
     }
     ret = Rewriter::rewrite( n );
+    Trace("sygus-ext-rewrite-debug") << "Do extended rewrite on : " << ret << " (from " << n << ")" << std::endl; 
 
     Node new_ret;
     if( ret.getKind()==kind::EQUAL ){
@@ -4510,37 +4553,14 @@ Node TermDbSygus::extendedRewrite( Node n ) {
       }
       if( new_ret.isNull() ){
         // simple ITE pulling
-        for( unsigned i=0; i<2; i++ ){
-          if( ret[i].getKind()==kind::ITE ){
-            for( unsigned j=0; j<2; j++ ){
-              Node eq = ret[i][j+1].eqNode( ret[1-i] );
-              Node eqr = extendedRewrite( eq );
-              if( eqr.isConst() ){
-                std::vector< Node > new_children;
-                Kind new_k;
-                if( eqr==d_true ){
-                  new_k = kind::OR;
-                  new_children.push_back( j==0 ? ret[i][0] : ret[i][0].negate() );
-                }else{
-                  Assert( eqr==d_false );
-                  new_k = kind::AND;
-                  new_children.push_back( j==0 ? ret[i][0].negate() : ret[i][0] );
-                }
-                new_children.push_back( ret[i][2-j].eqNode( ret[1-i] ) );
-                Node nc = NodeManager::currentNM()->mkNode( new_k, new_children );
-                Trace("sygus-ext-rewrite") << "sygus-extr : " << n << " rewrites to " << nc << " by simple ITE pulling." << std::endl;
-                //recurse
-                new_ret = extendedRewrite( nc );
-              }
-            }
-          }
-        }
+        new_ret = extendedRewritePullIte( ret );
       }
     }else if( ret.getKind()==kind::ITE ){
       Assert( ret[1]!=ret[2] );
       if( ret[0].getKind()==NOT ){
         ret = NodeManager::currentNM()->mkNode( kind::ITE, ret[0][0], ret[2], ret[1] );
       }
+      // simple invariant ITE
       if( ret[0].getKind()==kind::EQUAL ){
         for( unsigned i=0; i<2; i++ ){
           if( ret[1]==ret[0][i] && ret[2]==ret[0][1-i] ){
@@ -4550,14 +4570,53 @@ Node TermDbSygus::extendedRewrite( Node n ) {
           }
         }
       }
-      
       //conditional rewriting
       if( new_ret.isNull() ){
       
       }
+    }else if( ret.getKind()==kind::AND || ret.getKind()==kind::OR ){
+      // merging
     }
+    // more expensive rewrites 
+    if( new_ret.isNull() ){
+      Trace("sygus-ext-rewrite-debug2")  << "Do expensive rewrites on " << ret << std::endl;
+      bool polarity = ret.getKind()!=NOT;
+      Node ret_atom = ret.getKind()==NOT ? ret[0] : ret;
+      if( ( ret_atom.getKind()==EQUAL && ret_atom[0].getType().isReal() ) || ret_atom.getKind()==GEQ ){
+        Trace("sygus-ext-rewrite-debug2")  << "Compute monomial sum " << ret_atom << std::endl;
+        //compute monomial sum
+        std::map< Node, Node > msum;
+        if( QuantArith::getMonomialSumLit( ret_atom, msum ) ){
+          for( std::map< Node, Node >::iterator itm = msum.begin(); itm != msum.end(); ++itm ){
+            Node v = itm->first;
+            Trace("sygus-ext-rewrite-debug2") << itm->first << " * " << itm->second << std::endl;
+            if( v.getKind()==ITE ){
+              Node veq;
+              int res = QuantArith::isolate( v, msum, veq, ret_atom.getKind() );
+              if( res!=0 ){
+                Trace("sygus-ext-rewrite-debug") << "  have ITE relation, solved form : " << veq << std::endl;
+                // try pulling ITE
+                new_ret = extendedRewritePullIte( veq );
+                if( !new_ret.isNull() ){
+                  if( !polarity ){
+                    new_ret = new_ret.negate();
+                  }
+                  break;
+                }
+              }else{
+                Trace("sygus-ext-rewrite-debug") << "  failed to isolate " << v << " in " << ret << std::endl;
+              }
+            }
+          }
+        }else{
+          Trace("sygus-ext-rewrite-debug") << "  failed to get monomial sum of " << ret << std::endl;
+        }
+      }
+    }
+    
+    
     if( !new_ret.isNull() ){
-      ret = new_ret;
+      ret = Rewriter::rewrite( new_ret );
     }
     d_ext_rewrite_cache[n] = ret;
     return ret;
