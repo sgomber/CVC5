@@ -98,31 +98,6 @@ private:
   //  candidate -> sygus type -> info
   std::map< Node, CandidateInfo > d_cinfo;
   
-  class EnumInfo {
-  private:
-    /** an OR of all in d_enum_res */
-    std::vector< bool > d_enum_total;
-    bool d_enum_total_true;
-  public:
-    EnumInfo() : d_enum_total_true( false ), d_parent_arg(-1){}
-    Node d_parent_candidate;
-    TypeNode d_parent;
-    int d_parent_arg;
-    Node d_active_guard;
-    std::vector< Node > d_enum_slave;
-    /** values we have enumerated */
-    std::vector< Node > d_enum;
-    std::vector< std::vector< bool > > d_enum_res;
-    std::vector< Node > d_enum_subsume;
-    Node d_enum_solved;
-  public:
-    bool isBasic() { return d_parent_arg==-1; }
-    bool isConditional() { return d_parent_arg==0; }
-    void addEnumeratedValue( Node v, std::vector< bool >& results );
-    bool isCover();
-    bool isSolved();
-  };
-  std::map< Node, EnumInfo > d_einfo;
 private:
   class IndexFilter {
   public:
@@ -140,22 +115,60 @@ private:
     std::map< bool, CondTrie > d_children;
     Node addCond( Node cond, std::vector< bool >& vals, unsigned index = 0, bool checkExistsOnly = false );
   };
-  std::map< Node, CondTrie > d_cond_trie;
   // subsumption trie
   class SubsumeTrie {
+  private:
+    Node addTerm( Node t, std::vector< bool >& vals, std::vector< Node >& subsumed, IndexFilter * f, 
+                  int is_term, int status, unsigned index, bool checkExistsOnly );
   public:
     SubsumeTrie(){}
     Node d_term;
+    Node d_cond;
     std::map< bool, SubsumeTrie > d_children;
     Node addTerm( Node t, std::vector< bool >& vals, std::vector< Node >& subsumed, IndexFilter * f = NULL, 
-                  int status = 0, unsigned index = 0, bool checkExistsOnly = false );
-    bool isEmpty() { return d_term.isNull() && d_children.empty(); }
+                  unsigned index = 0, bool checkExistsOnly = false ) {
+      return addTerm( t, vals, subsumed, f, 0, 0, index, checkExistsOnly );
+    }
+    Node addCond( Node c, bool pol, std::vector< bool >& vals, std::vector< Node >& subsumed, IndexFilter * f = NULL,
+                  unsigned index = 0, bool checkExistsOnly = false ) {
+      return addTerm( c, vals, subsumed, f, pol ? 1 : -1, 0, index, checkExistsOnly );
+    }
+    bool isEmpty() { return d_term.isNull() && d_cond.isNull() && d_children.empty(); }
     void clear() {
       d_term = Node::null();
       d_children.clear(); 
     }
   };
-  std::map< Node, SubsumeTrie > d_term_trie;
+
+
+  class EnumInfo {
+  private:
+    /** an OR of all in d_enum_res */
+    std::vector< bool > d_enum_total;
+    bool d_enum_total_true;
+  public:
+    EnumInfo() : d_enum_total_true( false ), d_parent_arg(-1){}
+    Node d_parent_candidate;
+    TypeNode d_parent;
+    int d_parent_arg;
+    Node d_active_guard;
+    std::vector< Node > d_enum_slave;
+    /** values we have enumerated */
+    std::vector< Node > d_enum;
+    std::vector< std::vector< bool > > d_enum_res;
+    std::vector< Node > d_enum_subsume;
+    Node d_enum_solved;
+    CondTrie d_cond_trie;
+    SubsumeTrie d_term_trie;
+  public:
+    bool isBasic() { return d_parent_arg==-1; }
+    bool isConditional() { return d_parent_arg==0; }
+    void addEnumeratedValue( Node v, std::vector< bool >& results );
+    bool isCover();
+    bool isSolved();
+  };
+  std::map< Node, EnumInfo > d_einfo;
+
 
   /** add enumerated value */
   void addEnumeratedValue( Node x, Node v, std::vector< Node >& lems );
@@ -167,15 +180,25 @@ private:
     SubsumeTrie d_trie;
     IndexFilter d_filter;
     Node addTerm( Node t, std::vector< bool >& vals, std::vector< Node >& subsumed, bool checkExistsOnly = false ){
-      return d_trie.addTerm( t, vals, subsumed, &d_filter, 0, d_filter.start(), checkExistsOnly );
+      return d_trie.addTerm( t, vals, subsumed, &d_filter, d_filter.start(), checkExistsOnly );
     }
   };
   class UnifContext {
   public:
     IndexFilter d_filter;
+    std::vector< bool > d_vals;
+    class UEnumInfo {
+    public:
+      UEnumInfo() : d_status(-1){}
+      int d_status;
+      std::map< TypeNode, std::map< bool, Node > > d_look_ahead_sols;
+    };
+    std::map< Node, UEnumInfo > d_uinfo;
+    void initialize( unsigned sz );
   };
   /** construct solution */
-  Node constructSolution( Node c, Node e, UnifContext& x );
+  Node constructDecisionTree( Node c );
+  Node constructDecisionTree( Node c, Node e, UnifContext& x );
 public:
   void registerCandidates( std::vector< Node >& candidates ); 
   void getCandidateList( std::vector< Node >& candidates, std::vector< Node >& clist );
