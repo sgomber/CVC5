@@ -61,27 +61,38 @@ private:  // for registration
   /** get guard status */
   int getGuardStatus( Node g );
 private:
+  class CandidateInfo;
   class EnumTypeInfo {
   public:
-    EnumTypeInfo(){}
+    EnumTypeInfo() : d_parent( NULL ), d_csol_status(-1){}
+    CandidateInfo * d_parent;
+    Node d_enum;
+    TypeNode d_this_type;
     /** conditional solutions */
     Node d_csol_op;
     std::vector< TypeNode > d_csol_cts;
+    std::vector< Node > d_cenum;
     /** solution status */
     int d_csol_status;
     /** required for template solutions */
     std::map< unsigned, Node > d_template;
     std::map< unsigned, Node > d_template_arg;
-    /** esyms */
-    std::map< int, Node > d_esyms;
+    bool isCover( CegConjecturePbe * pbe, bool beneathCond, std::map< bool, std::map< TypeNode, bool > >& visited );
+    bool isSolved( CegConjecturePbe * pbe );
   };
   class CandidateInfo {
   public:
-    CandidateInfo(){}
+    CandidateInfo() : d_active( false ){}
+    Node d_this_candidate;
     TypeNode d_root;
     std::map< TypeNode, EnumTypeInfo > d_tinfo;
     std::vector< Node > d_esym_list;
     std::map< TypeNode, Node > d_enum;
+    bool d_active;
+    void initialize( Node c );
+    void initializeType( TypeNode tn );
+    bool isCover( TypeNode tn, CegConjecturePbe * pbe, bool beneathCond, std::map< bool, std::map< TypeNode, bool > >& visited );
+    bool isCover( CegConjecturePbe * pbe );
   };
   //  candidate -> sygus type -> info
   std::map< Node, CandidateInfo > d_cinfo;
@@ -102,10 +113,13 @@ private:
     std::vector< Node > d_enum;
     std::vector< std::vector< bool > > d_enum_res;
     std::vector< Node > d_enum_subsume;
+    Node d_enum_solved;
   public:
+    bool isBasic() { return d_parent_arg==-1; }
     bool isConditional() { return d_parent_arg==0; }
     void addEnumeratedValue( Node v, std::vector< bool >& results );
-    bool isTotalTrue();
+    bool isCover();
+    bool isSolved();
   };
   std::map< Node, EnumInfo > d_einfo;
 private:

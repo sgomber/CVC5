@@ -148,6 +148,7 @@ void CegConjecturePbe::initialize( Node n, std::vector< Node >& candidates ) {
       if( d_examples_out_invalid.find( e )==d_examples_out_invalid.end() ){
         Assert( d_examples.find( e )!=d_examples.end() );
         TypeNode etn = e.getType();
+        d_cinfo[e].initialize( e );
         d_cinfo[e].d_root = etn;
         collectEnumeratorTypes( e, etn );
         // now construct the enumerators
@@ -157,6 +158,10 @@ void CegConjecturePbe::initialize( Node n, std::vector< Node >& candidates ) {
           Node ee = NodeManager::currentNM()->mkSkolem( "ee", tn );
           registerEnumerator( ee, e, tn, -1 );
           Trace("sygus-unif-debug") << "...enumerate " << ee << " for " << ((DatatypeType)tn.toType()).getDatatype().getName() << std::endl;
+          iti->second.d_enum = ee;
+        }
+        for( std::map< TypeNode, EnumTypeInfo >::iterator iti = d_cinfo[e].d_tinfo.begin(); iti != d_cinfo[e].d_tinfo.end(); ++iti ){
+          TypeNode tn = iti->first;
           for( unsigned j=0; j<iti->second.d_csol_cts.size(); j++ ){
             if( iti->second.d_template.find( j )!=iti->second.d_template.end() ){
               // it is templated, allocate a fresh variable
@@ -164,6 +169,12 @@ void CegConjecturePbe::initialize( Node n, std::vector< Node >& candidates ) {
               Trace("sygus-unif-debug") << "...enumerate " << et << " of type " << ((DatatypeType)iti->second.d_csol_cts[j].toType()).getDatatype().getName();
               Trace("sygus-unif-debug") << " for arg " << j << " of " << ((DatatypeType)tn.toType()).getDatatype().getName() << std::endl;
               registerEnumerator( et, e, tn, j );
+              iti->second.d_cenum.push_back( et );
+            }else{
+              // otherwise use the previous
+              Assert( d_cinfo[e].d_enum.find( tn )!=d_cinfo[e].d_enum.end() );
+              Node ee = d_cinfo[e].d_enum[tn];
+              iti->second.d_cenum.push_back( ee );
             }
           }
         }
@@ -228,7 +239,7 @@ void CegConjecturePbe::registerEnumerator( Node et, Node e, TypeNode tn, int j )
 
 void CegConjecturePbe::collectEnumeratorTypes( Node e, TypeNode tn ) {
   if( d_cinfo[e].d_tinfo.find( tn )==d_cinfo[e].d_tinfo.end() ){
-    d_cinfo[e].d_tinfo[tn].d_csol_status = 0;
+    d_cinfo[e].initializeType( tn );
     Trace("sygus-unif") << "Register enumerating type : " << tn << std::endl;
     Assert( tn.isDatatype() );
     const Datatype& dt = ((DatatypeType)tn.toType()).getDatatype();
@@ -399,9 +410,16 @@ bool CegConjecturePbe::constructCandidates( std::vector< Node >& enums, std::vec
     addEnumeratedValue( enums[i], enum_values[i], lems );
   }
   for( unsigned i=0; i<candidates.size(); i++ ){
-    //build decision tree for candidate
-    //TODO
-    return false;
+    Node e = candidates[i];
+    std::map< Node, CandidateInfo >::iterator itc = d_cinfo.find( e );
+    if( itc->second.isCover( this ) ){
+      //build decision tree for candidate
+      //TODO
+      
+      return false;
+    }else{
+      return false;
+    }
   }
   return true;
 }
@@ -426,12 +444,12 @@ void CegConjecturePbe::addEnumeratedValue( Node x, Node v, std::vector< Node >& 
       for( unsigned s=0; s<it->second.d_enum_slave.size(); s++ ){
         Node xs = it->second.d_enum_slave[s];
         std::map< Node, EnumInfo >::iterator itv = d_einfo.find( xs );
-        bool prevIsTotalTrue = false;
+        bool prevIsCover = false;
         if( itv->second.isConditional() ){
           Trace("sygus-pbe-enum") << " Cond-Eval of ";
         }else{
           Trace("sygus-pbe-enum") << "Evaluation of ";
-          prevIsTotalTrue = itv->second.isTotalTrue();
+          prevIsCover = itv->second.isCover();
         }
         Trace("sygus-pbe-enum")  << xs <<  " : ";
         //evaluate all input/output examples
@@ -471,18 +489,17 @@ void CegConjecturePbe::addEnumeratedValue( Node x, Node v, std::vector< Node >& 
           Trace("sygus-pbe-enum") << resb;
         }
         if( itv->second.isConditional() ){
-          if( cond_vals.size()==2 ){
-            // must be unique up to examples
-            Node val = d_cond_trie[e].addCond( v, results, 0 );
-            if( val==v ){
-              Trace("sygus-pbe-enum") << "  ...success!" << std::endl;
-            }else{
-              Trace("sygus-pbe-enum") << "  ...fail : conditional is not unique" << std::endl;
-              keep = false;
-            }
+          //if( cond_vals.size()!=2 ){
+          //  // must discriminate
+          //  Trace("sygus-pbe-enum") << "  ...fail : conditional is constant." << std::endl;
+          //  keep = false;
+          //}
+          // must be unique up to examples
+          Node val = d_cond_trie[e].addCond( v, results, 0 );
+          if( val==v ){
+            Trace("sygus-pbe-enum") << "  ...success!" << std::endl;
           }else{
-            // must discriminate
-            Trace("sygus-pbe-enum") << "  ...fail : conditional is constant." << std::endl;
+            Trace("sygus-pbe-enum") << "  ...fail : conditional is not unique" << std::endl;
             keep = false;
           }
         }else{
@@ -491,6 +508,7 @@ void CegConjecturePbe::addEnumeratedValue( Node x, Node v, std::vector< Node >& 
             if( cond_vals.find( false )==cond_vals.end() ){
               // it is the entire solution, we are done
               Trace("sygus-pbe-enum") << "  ...success, full solution!" << std::endl;
+              itv->second.d_enum_solved = v;
             }else{
               std::vector< Node > subsume;
               Node val = d_term_trie[e].addTerm( v, results, subsume );
@@ -515,7 +533,7 @@ void CegConjecturePbe::addEnumeratedValue( Node x, Node v, std::vector< Node >& 
           itv->second.addEnumeratedValue( v, results );
           if( Trace.isOn("sygus-pbe-enum") ){
             if( !itv->second.isConditional() ){
-              if( !prevIsTotalTrue && itv->second.isTotalTrue() ){
+              if( !prevIsCover && itv->second.isCover() ){
                 Trace("sygus-pbe-enum") << "...success : Evaluation of " << xs << " now covers all examples." << std::endl;
               }
             }
@@ -559,9 +577,81 @@ void CegConjecturePbe::EnumInfo::addEnumeratedValue( Node v, std::vector< bool >
   }
 }
 
-bool CegConjecturePbe::EnumInfo::isTotalTrue() {
+bool CegConjecturePbe::EnumTypeInfo::isCover( CegConjecturePbe * pbe, bool beneathCond, std::map< bool, std::map< TypeNode, bool > >& visited ) {
+  if( beneathCond ){
+    std::map< Node, EnumInfo >::iterator itn = pbe->d_einfo.find( d_enum );
+    Assert( itn!=pbe->d_einfo.end() );
+    if( itn->second.isCover() ){
+      return true;
+    }
+  }
+  if( !d_csol_op.isNull() ){
+    Assert( d_csol_cts.size()==d_cenum.size() );
+    for( unsigned i=0; i<d_csol_cts.size(); i++ ){
+      TypeNode ct = d_csol_cts[i];
+      Node ce = d_cenum[i];
+      std::map< Node, EnumInfo >::iterator itnc = pbe->d_einfo.find( ce );
+      Assert( itnc!=pbe->d_einfo.end() );
+      if( i==0 ){
+        // must be able to construct a condition (even if trivial)
+        if( itnc->second.d_enum.empty() ){
+          return false;
+        }
+      }else{
+        if( !itnc->second.isCover() ){
+          // recurse : it could be conditionally constructable (cannot recurse if templated)  TODO?
+          if( !itnc->second.isBasic() || !d_parent->isCover( ct, pbe, true, visited ) ){
+            return false;
+          }
+        }
+      }
+    }
+    return true;
+  }
+  return false;
+}
+
+void CegConjecturePbe::CandidateInfo::initialize( Node c ) {
+  d_this_candidate = c;
+  d_root = c.getType();
+}
+
+void CegConjecturePbe::CandidateInfo::initializeType( TypeNode tn ) {
+  d_tinfo[tn].d_this_type = tn;
+  d_tinfo[tn].d_parent = this;
+}
+
+bool CegConjecturePbe::CandidateInfo::isCover( TypeNode tn, CegConjecturePbe * pbe, bool beneathCond, std::map< bool, std::map< TypeNode, bool > >& visited ) {
+  std::map< TypeNode, bool >::iterator itv = visited[beneathCond].find( tn );
+  if( itv==visited[beneathCond].end() ){
+    visited[beneathCond][tn] = false;
+    Assert( d_tinfo.find( tn )!=d_tinfo.end() );
+    bool ret = d_tinfo[tn].isCover( pbe, beneathCond, visited );
+    visited[beneathCond][tn] = ret;
+    return ret;
+  }else{
+    return itv->second;
+  }
+}
+
+bool CegConjecturePbe::CandidateInfo::isCover( CegConjecturePbe * pbe ) {
+  if( !d_active ){
+    std::map< bool, std::map< TypeNode, bool > > visited;
+    if( isCover( d_root, pbe, false, visited ) ){
+      Trace("sygus-pbe-enum") << "...success : Candidate " << d_this_candidate << " is now solvable." << std::endl;
+      d_active = true;
+    }
+  }
+  return d_active;
+}
+
+bool CegConjecturePbe::EnumInfo::isCover() {
   Assert( !isConditional() );
   return d_enum_total_true;
+}
+
+bool CegConjecturePbe::EnumInfo::isSolved() { 
+  return d_enum_solved.isNull(); 
 }
 
 Node CegConjecturePbe::CondTrie::addCond( Node cond, std::vector< bool >& vals, unsigned index ) {

@@ -525,110 +525,109 @@ bool SygusSymBreakNew::registerSearchValue( Node n, Node nv, unsigned d, std::ve
     }
   }
   Trace("sygus-sb-debug2") << "Registering search value " << n << " -> " << nv << std::endl;
-  Assert( d_is_top_level.find( n )!=d_is_top_level.end() );
-  if( d_is_top_level[n] ){
-    if( d_search_val_proc.find( nv )==d_search_val_proc.end() ){
-      d_search_val_proc[nv] = true;
+  // FIXME : still not correctly cached
+  // must do this for all nodes, regardless of top-level
+  if( d_search_val_proc.find( nv )==d_search_val_proc.end() ){
+    d_search_val_proc[nv] = true;
 
-      Trace("sygus-sb-debug") << "  ...register search value " << nv << ", type=" << tn << std::endl;
-      Node bv = d_tds->sygusToBuiltin( nv, tn );
-      Trace("sygus-sb-debug") << "  ......builtin is " << bv << std::endl;
-      unsigned sz = d_tds->getSygusTermSize( nv );
-      Node bvr = d_tds->extendedRewrite( bv );
-      Trace("sygus-sb-debug") << "  ......rewrites to " << bvr << std::endl;
-      std::map< Node, Node >::iterator itsv = d_search_val[tn].find( bvr );
-      Node bad_val_bvr;
-      Node bad_val_bvr_cache_term;
-      if( itsv==d_search_val[tn].end() ){
-        // is it equivalent under examples?
-        if( options::sygusPbe() ){
-          Assert( d_term_to_anchor_root.find( n )!=d_term_to_anchor_root.end() );
-          Node e = d_term_to_anchor_root[n];
-          Node bvr_equiv = d_tds->addPbeSearchVal( tn, e, bvr );
-          if( !bvr_equiv.isNull() ){
-            if( bvr_equiv!=bvr ){
-              Trace("sygus-sb-debug") << "......adding search val for " << bvr << " returned " << bvr_equiv << std::endl;
-              Assert( d_search_val[tn].find( bvr_equiv )!=d_search_val[tn].end() );
-              Trace("sygus-sb-debug") << "......search value was " << d_search_val[tn][bvr_equiv] << std::endl;
-              if( Trace.isOn("sygus-sb-exc") ){
-                Node prev = d_tds->sygusToBuiltin( d_search_val[tn][bvr_equiv], tn );
-                Trace("sygus-sb-exc") << "  ......programs " << prev << " and " << bv << " are equivalent up to examples." << std::endl;
-              }
-              bad_val_bvr = bvr_equiv;
-              // we will cache this lemma only for search terms in the space of "e"
-              bad_val_bvr_cache_term = e;
+    Trace("sygus-sb-debug") << "  ...register search value " << nv << ", type=" << tn << std::endl;
+    Node bv = d_tds->sygusToBuiltin( nv, tn );
+    Trace("sygus-sb-debug") << "  ......builtin is " << bv << std::endl;
+    unsigned sz = d_tds->getSygusTermSize( nv );
+    Node bvr = d_tds->extendedRewrite( bv );
+    Trace("sygus-sb-debug") << "  ......rewrites to " << bvr << std::endl;
+    std::map< Node, Node >::iterator itsv = d_search_val[tn].find( bvr );
+    Node bad_val_bvr;
+    Node bad_val_bvr_cache_term;
+    if( itsv==d_search_val[tn].end() ){
+      // is it equivalent under examples?
+      if( options::sygusPbe() ){
+        Assert( d_term_to_anchor_root.find( n )!=d_term_to_anchor_root.end() );
+        Node e = d_term_to_anchor_root[n];
+        Node bvr_equiv = d_tds->addPbeSearchVal( tn, e, bvr );
+        if( !bvr_equiv.isNull() ){
+          if( bvr_equiv!=bvr ){
+            Trace("sygus-sb-debug") << "......adding search val for " << bvr << " returned " << bvr_equiv << std::endl;
+            Assert( d_search_val[tn].find( bvr_equiv )!=d_search_val[tn].end() );
+            Trace("sygus-sb-debug") << "......search value was " << d_search_val[tn][bvr_equiv] << std::endl;
+            if( Trace.isOn("sygus-sb-exc") ){
+              Node prev = d_tds->sygusToBuiltin( d_search_val[tn][bvr_equiv], tn );
+              Trace("sygus-sb-exc") << "  ......programs " << prev << " and " << bv << " are equivalent up to examples." << std::endl;
             }
+            bad_val_bvr = bvr_equiv;
+            // we will cache this lemma only for search terms in the space of "e"
+            bad_val_bvr_cache_term = e;
           }
         }
-        //store rewritten values, regardless of whether it will be considers
-        d_search_val[tn][bvr] = nv;
-        d_search_val_sz[tn][bvr] = sz;
-      }else{
-        bad_val_bvr = bvr;
-        if( Trace.isOn("sygus-sb-exc") ){
-          Node prev_bv = d_tds->sygusToBuiltin( itsv->second, tn );
-          Trace("sygus-sb-exc") << "  ......programs " << prev_bv << " and " << bv << " rewrite to " << bvr << "." << std::endl;
-        } 
       }
-      if( !bad_val_bvr.isNull() ){
-        Node bad_val = nv;
-        Node bad_val_o = d_search_val[tn][bad_val_bvr];
-        Assert( d_search_val_sz[tn].find( bad_val_bvr )!=d_search_val_sz[tn].end() );
-        unsigned prev_sz = d_search_val_sz[tn][bad_val_bvr];
-        if( prev_sz>sz ){
-          //swap : the excluded value is the previous
-          d_search_val_sz[tn][bad_val_bvr] = sz;
-          bad_val = d_search_val[tn][bad_val_bvr];
-          bad_val_o = nv;
-          sz = prev_sz;
+      //store rewritten values, regardless of whether it will be considers
+      d_search_val[tn][bvr] = nv;
+      d_search_val_sz[tn][bvr] = sz;
+    }else{
+      bad_val_bvr = bvr;
+      if( Trace.isOn("sygus-sb-exc") ){
+        Node prev_bv = d_tds->sygusToBuiltin( itsv->second, tn );
+        Trace("sygus-sb-exc") << "  ......programs " << prev_bv << " and " << bv << " rewrite to " << bvr << "." << std::endl;
+      } 
+    }
+    if( !bad_val_bvr.isNull() ){
+      Node bad_val = nv;
+      Node bad_val_o = d_search_val[tn][bad_val_bvr];
+      Assert( d_search_val_sz[tn].find( bad_val_bvr )!=d_search_val_sz[tn].end() );
+      unsigned prev_sz = d_search_val_sz[tn][bad_val_bvr];
+      if( prev_sz>sz ){
+        //swap : the excluded value is the previous
+        d_search_val_sz[tn][bad_val_bvr] = sz;
+        bad_val = d_search_val[tn][bad_val_bvr];
+        bad_val_o = nv;
+        sz = prev_sz;
+      }
+      if( Trace.isOn("sygus-sb-exc") ){
+        Node bad_val_bv = d_tds->sygusToBuiltin( bad_val, tn );
+        Trace("sygus-sb-exc") << "  ........exclude : " << bad_val_bv;
+        if( !bad_val_bvr_cache_term.isNull() ){
+          Trace("sygus-sb-exc") << " (by examples)";
         }
-        if( Trace.isOn("sygus-sb-exc") ){
-          Node bad_val_bv = d_tds->sygusToBuiltin( bad_val, tn );
-          Trace("sygus-sb-exc") << "  ........exclude : " << bad_val_bv;
-          if( !bad_val_bvr_cache_term.isNull() ){
-            Trace("sygus-sb-exc") << " (by examples)";
-          }
-          Trace("sygus-sb-exc") << std::endl;
-        } 
-        Assert( d_tds->getSygusTermSize( bad_val )==(int)sz );
+        Trace("sygus-sb-exc") << std::endl;
+      } 
+      Assert( d_tds->getSygusTermSize( bad_val )==(int)sz );
 
-        Node x = getSimpleSymBreakPredVar( tn );
-        
-        // do analysis of the evaluation  FIXME: does not work (evaluation is non-constant)
-        /*
-        const Datatype& dt = ((DatatypeType)tn.toType()).getDatatype();
-        std::vector< Node > echildren;
-        echildren.push_back( Node::fromExpr( dt.getSygusEvaluationFunc() ) );
-        echildren.push_back( x );
-        Node sbvl = Node::fromExpr( dt.getSygusVarList() );
-        for( unsigned k=0; k<sbvl.getNumChildren(); k++ ){
-          echildren.push_back( sbvl[k] );
-        }
-        Node ex = NodeManager::currentNM()->mkNode( kind::APPLY_UF, echildren );
-        Node eq = ex.eqNode( bvr );
-        Trace("sygus-sb-exc") << "  ........evaluate : " << eq << std::endl;
-        std::map< Node, Node > visited;
-        std::map< Node, Node > vtm;
-        std::map< Node, std::vector< Node > > exp;
-        vtm[x] = nv;
-        Node v = d_tds->crefEvaluate( eq, vtm, visited, exp );
-        //Assert( v==NodeManager::currentNM()->mkConst( true ) );
-        Assert( !exp[eq].empty() );
-        Node lem = exp[eq].size()==1 ? exp[eq][0] : NodeManager::currentNM()->mkNode( kind::AND, exp[eq] );
-        */
-        std::vector< Node > exp;
-        //if( by_examples ){
-          // cannot minimize?
-         //d_tds->getExplanationForConstantEquality( x, bad_val, exp );
-        //}else{
-        d_tds->getExplanationFor( tn, x, bad_val, bvr, exp, bad_val_o, sz );
-        //}
-        Node lem = exp.size()==1 ? exp[0] : NodeManager::currentNM()->mkNode( kind::AND, exp );
-        lem = lem.negate();
-        Trace("sygus-sb-exc") << "  ........exc lemma is " << lem << ", size = " << sz << std::endl;
-        registerSymBreakLemma( tn, lem, sz, bad_val_bvr_cache_term, lemmas );
-        return false;
+      Node x = getSimpleSymBreakPredVar( tn );
+      
+      // do analysis of the evaluation  FIXME: does not work (evaluation is non-constant)
+      /*
+      const Datatype& dt = ((DatatypeType)tn.toType()).getDatatype();
+      std::vector< Node > echildren;
+      echildren.push_back( Node::fromExpr( dt.getSygusEvaluationFunc() ) );
+      echildren.push_back( x );
+      Node sbvl = Node::fromExpr( dt.getSygusVarList() );
+      for( unsigned k=0; k<sbvl.getNumChildren(); k++ ){
+        echildren.push_back( sbvl[k] );
       }
+      Node ex = NodeManager::currentNM()->mkNode( kind::APPLY_UF, echildren );
+      Node eq = ex.eqNode( bvr );
+      Trace("sygus-sb-exc") << "  ........evaluate : " << eq << std::endl;
+      std::map< Node, Node > visited;
+      std::map< Node, Node > vtm;
+      std::map< Node, std::vector< Node > > exp;
+      vtm[x] = nv;
+      Node v = d_tds->crefEvaluate( eq, vtm, visited, exp );
+      //Assert( v==NodeManager::currentNM()->mkConst( true ) );
+      Assert( !exp[eq].empty() );
+      Node lem = exp[eq].size()==1 ? exp[eq][0] : NodeManager::currentNM()->mkNode( kind::AND, exp[eq] );
+      */
+      std::vector< Node > exp;
+      //if( by_examples ){
+        // cannot minimize?
+       //d_tds->getExplanationForConstantEquality( x, bad_val, exp );
+      //}else{
+      d_tds->getExplanationFor( tn, x, bad_val, bvr, exp, bad_val_o, sz );
+      //}
+      Node lem = exp.size()==1 ? exp[0] : NodeManager::currentNM()->mkNode( kind::AND, exp );
+      lem = lem.negate();
+      Trace("sygus-sb-exc") << "  ........exc lemma is " << lem << ", size = " << sz << std::endl;
+      registerSymBreakLemma( tn, lem, sz, bad_val_bvr_cache_term, lemmas );
+      return false;
     }
   }
   return true;

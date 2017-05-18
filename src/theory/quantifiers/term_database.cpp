@@ -4572,7 +4572,7 @@ Node TermDbSygus::extendedRewrite( Node n ) {
       }
       //conditional rewriting
       if( new_ret.isNull() ){
-      
+        // substitution, entailment
       }
     }else if( ret.getKind()==kind::AND || ret.getKind()==kind::OR ){
       // merging
@@ -4613,7 +4613,6 @@ Node TermDbSygus::extendedRewrite( Node n ) {
         }
       }
     }
-    
     
     if( !new_ret.isNull() ){
       ret = Rewriter::rewrite( new_ret );
