@@ -112,6 +112,7 @@ void CegConjecture::assign( Node q ) {
   }else{
     Assert( false );
   }
+  Trace("cegqi") << "...finished, single invocation = " << isSingleInvocation() << std::endl;
 }
 
 void CegConjecture::initializeGuard(){

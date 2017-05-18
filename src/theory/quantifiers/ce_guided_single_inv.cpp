@@ -706,7 +706,6 @@ struct sortSiInstanceIndices {
 
 
 Node CegConjectureSingleInv::postProcessSolution( Node n ){
-  /*
   ////remove boolean ITE (not allowed for sygus comp 2015)
   if( n.getKind()==ITE && n.getType().isBoolean() ){
     Node n1 = postProcessSolution( n[1] );
@@ -714,29 +713,29 @@ Node CegConjectureSingleInv::postProcessSolution( Node n ){
     return NodeManager::currentNM()->mkNode( OR, NodeManager::currentNM()->mkNode( AND, n[0], n1 ),
                                                  NodeManager::currentNM()->mkNode( AND, n[0].negate(), n2 ) );
   }else{
-    */
-  bool childChanged = false;
-  Kind k = n.getKind();
-  if( n.getKind()==INTS_DIVISION_TOTAL ){
-    k = INTS_DIVISION;
-    childChanged = true;
-  }else if( n.getKind()==INTS_MODULUS_TOTAL ){
-    k = INTS_MODULUS;
-    childChanged = true;
-  }
-  std::vector< Node > children;
-  for( unsigned i=0; i<n.getNumChildren(); i++ ){
-    Node nn = postProcessSolution( n[i] );
-    children.push_back( nn );
-    childChanged = childChanged || nn!=n[i];
-  }
-  if( childChanged ){
-    if( n.hasOperator() && k==n.getKind() ){
-      children.insert( children.begin(), n.getOperator() );
+    bool childChanged = false;
+    Kind k = n.getKind();
+    if( n.getKind()==INTS_DIVISION_TOTAL ){
+      k = INTS_DIVISION;
+      childChanged = true;
+    }else if( n.getKind()==INTS_MODULUS_TOTAL ){
+      k = INTS_MODULUS;
+      childChanged = true;
     }
-    return NodeManager::currentNM()->mkNode( k, children );
-  }else{
-    return n;
+    std::vector< Node > children;
+    for( unsigned i=0; i<n.getNumChildren(); i++ ){
+      Node nn = postProcessSolution( n[i] );
+      children.push_back( nn );
+      childChanged = childChanged || nn!=n[i];
+    }
+    if( childChanged ){
+      if( n.hasOperator() && k==n.getKind() ){
+        children.insert( children.begin(), n.getOperator() );
+      }
+      return NodeManager::currentNM()->mkNode( k, children );
+    }else{
+      return n;
+    }
   }
 }
 

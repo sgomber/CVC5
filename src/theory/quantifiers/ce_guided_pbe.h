@@ -78,6 +78,7 @@ private:
   class CandidateInfo {
   public:
     CandidateInfo(){}
+    TypeNode d_root;
     std::map< TypeNode, EnumTypeInfo > d_tinfo;
     std::vector< Node > d_esym_list;
     std::map< TypeNode, Node > d_enum;

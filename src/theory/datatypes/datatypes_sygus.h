@@ -50,6 +50,7 @@ public:
   virtual ~SygusSplitNew(){}
   /** get sygus splits */
   void getSygusSplits( Node n, const Datatype& dt, std::vector< Node >& splits, std::vector< Node >& lemmas );
+  static Node getSygusSplit( quantifiers::TermDbSygus * tds, Node n, const Datatype& dt );
 };
 
 
@@ -120,7 +121,7 @@ private:
 private:
   unsigned processSelectorChain( Node n, std::map< TypeNode, Node >& top_level, 
                                  std::map< Node, unsigned >& tdepth, std::vector< Node >& lemmas );
-  void debugTermSize( Node n, int ind );
+  bool debugTesters( Node n, Node vn, int ind, std::vector< Node >& lemmas );
 public:
   SygusSymBreakNew( TheoryDatatypes * td, quantifiers::TermDbSygus * tds, context::Context* c );
   ~SygusSymBreakNew();

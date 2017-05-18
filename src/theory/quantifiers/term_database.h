@@ -629,15 +629,15 @@ public: //registering enumeration terms
 public:  //general sygus utilities
   bool isRegistered( TypeNode tn );
   TypeNode sygusToBuiltinType( TypeNode tn );
-  int getKindArg( TypeNode tn, Kind k );
-  int getConstArg( TypeNode tn, Node n );
-  int getOpArg( TypeNode tn, Node n );
+  int getKindConsNum( TypeNode tn, Kind k );
+  int getConstConsNum( TypeNode tn, Node n );
+  int getOpConsNum( TypeNode tn, Node n );
   bool hasKind( TypeNode tn, Kind k );
   bool hasConst( TypeNode tn, Node n );
   bool hasOp( TypeNode tn, Node n );
-  Node getArgConst( TypeNode tn, int i );
-  Node getArgOp( TypeNode tn, int i );
-  Kind getArgKind( TypeNode tn, int i );
+  Node getConsNumConst( TypeNode tn, int i );
+  Node getConsNumOp( TypeNode tn, int i );
+  Kind getConsNumKind( TypeNode tn, int i );
   bool isKindArg( TypeNode tn, int i );
   bool isConstArg( TypeNode tn, int i );
   unsigned getNumIdFuncs( TypeNode tn );
@@ -710,6 +710,7 @@ private:
   Node crefEvaluate( Node n, std::map< Node, Node >& vtm, std::map< Node, Node >& visited, std::map< Node, std::vector< Node > >& exp, CrefContext& crc );
 public:
   bool considerArgKind( const Datatype& dt, const Datatype& pdt, TypeNode tn, TypeNode tnp, Kind k, Kind pk, int arg );
+  bool considerConst( const Datatype& dt, const Datatype& pdt, TypeNode tn, TypeNode tnp, Node c, Kind pk, int arg );
   bool considerConst( const Datatype& pdt, TypeNode tnp, Node c, Kind pk, int arg );
 public:
   void registerEvalTerm( Node n );

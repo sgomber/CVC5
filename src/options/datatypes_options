@@ -43,7 +43,7 @@ option sygusSymBreakLazy --sygus-sym-break-lazy bool :default true
 option sygusSymBreakRlv --sygus-sym-break-rlv bool :default true
   add relevancy conditions to symmetry breaking lemmas
   
-option sygusFairMax --sygus-fair-max bool :default false
+option sygusFairMax --sygus-fair-max bool :default true
   use max instead of sum for multi-function sygus conjectures
   
 endmodule

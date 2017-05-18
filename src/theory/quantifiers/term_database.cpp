@@ -2473,7 +2473,7 @@ Node TermDbSygus::getGenericBase( TypeNode tn, const Datatype& dt, int c ) {
     Node gr = Rewriter::rewrite( g );
     Trace("sygus-db-debug") << "Sygus DB : Generic rewritten is " << gr << std::endl;
     gr = Node::fromExpr( smt::currentSmtEngine()->expandDefinitions( gr.toExpr() ) );
-    Trace("sygus-db") << "Sygus DB : Generic base " << dt[c].getName() << " : " << gr << std::endl;
+    Trace("sygus-db-debug") << "Sygus DB : Generic base " << dt[c].getName() << " : " << gr << std::endl;
     d_generic_base[tn][c] = gr;
     return gr;
   }else{
@@ -2490,7 +2490,7 @@ Node TermDbSygus::mkGeneric( const Datatype& dt, int c, std::map< TypeNode, int 
   if( op.getKind()!=BUILTIN ){
     children.push_back( op );
   }
-  Trace("sygus-db") << "mkGeneric " << dt.getName() << " " << op << " " << op.getKind() << "..." << std::endl;
+  Trace("sygus-db-debug") << "mkGeneric " << dt.getName() << " " << op << " " << op.getKind() << "..." << std::endl;
   for( int i=0; i<(int)dt[c].getNumArgs(); i++ ){
     TypeNode tna = getArgType( dt[c], i );
     Node a;
@@ -2508,7 +2508,7 @@ Node TermDbSygus::mkGeneric( const Datatype& dt, int c, std::map< TypeNode, int 
     ret = NodeManager::currentNM()->mkNode( op, children );
   }else{
     Kind ok = getOperatorKind( op );
-    Trace("sygus-db") << "Operator kind is " << ok << std::endl;
+    Trace("sygus-db-debug") << "Operator kind is " << ok << std::endl;
     if( children.size()==1 && ok==kind::UNDEFINED_KIND ){
       ret = children[0];
     }else{
@@ -2522,7 +2522,7 @@ Node TermDbSygus::mkGeneric( const Datatype& dt, int c, std::map< TypeNode, int 
       */
     }
   }
-  Trace("sygus-db") << "...returning " << ret << std::endl;
+  Trace("sygus-db-debug") << "...returning " << ret << std::endl;
   return ret;
 }
 
@@ -2580,7 +2580,7 @@ Node TermDbSygus::builtinToSygusConst( Node c, TypeNode tn, int rcons_depth ) {
       k.setAttribute(spa,c);
       sc = k;
     }else{
-      int carg = getOpArg( tn, c );
+      int carg = getOpConsNum( tn, c );
       if( carg!=-1 ){
         //sc = Node::fromExpr( dt[carg].getSygusOp() );
         sc = NodeManager::currentNM()->mkNode( APPLY_CONSTRUCTOR, Node::fromExpr( dt[carg].getConstructor() ) );
@@ -2603,7 +2603,7 @@ Node TermDbSygus::builtinToSygusConst( Node c, TypeNode tn, int rcons_depth ) {
             //accelerated, recursive reconstruction of constants
             Kind pk = getPlusKind( TypeNode::fromType( dt.getSygusType() ) );
             if( pk!=UNDEFINED_KIND ){
-              int arg = getKindArg( tn, pk );
+              int arg = getKindConsNum( tn, pk );
               if( arg!=-1 ){
                 Kind ck = getComparisonKind( TypeNode::fromType( dt.getSygusType() ) );
                 Kind pkm = getPlusKind( TypeNode::fromType( dt.getSygusType() ), true );
@@ -2849,7 +2849,7 @@ public:
   }
   bool satisfiedBy( quantifiers::TermDbSygus * tdb, TypeNode tn ){
     if( d_req_kind!=UNDEFINED_KIND ){
-      int c = tdb->getKindArg( tn, d_req_kind );
+      int c = tdb->getKindConsNum( tn, d_req_kind );
       if( c!=-1 ){
         const Datatype& dt = ((DatatypeType)(tn).toType()).getDatatype();
         for( std::map< unsigned, ReqTrie >::iterator it = d_children.begin(); it != d_children.end(); ++it ){
@@ -2881,8 +2881,8 @@ bool TermDbSygus::considerArgKind( const Datatype& dt, const Datatype& pdt, Type
   Assert( hasKind( tn, k ) );
   Assert( hasKind( tnp, pk ) );
   Trace("sygus-sb-debug") << "Consider sygus arg kind " << k << ", pk = " << pk << ", arg = " << arg << "?" << std::endl;
-  int c = getKindArg( tn, k );
-  int pc = getKindArg( tnp, pk );
+  int c = getKindConsNum( tn, k );
+  int pc = getKindConsNum( tnp, pk );
   if( k==pk ){
     //check for associativity
     if( quantifiers::TermDb::isAssoc( k ) ){
@@ -2968,7 +2968,7 @@ bool TermDbSygus::considerArgKind( const Datatype& dt, const Datatype& pdt, Type
         }
       }
       if( rt_valid && ( reqk!=UNDEFINED_KIND || !reqkc.empty() ) ){
-        int pcr = getKindArg( tnp, rt.d_req_kind );
+        int pcr = getKindConsNum( tnp, rt.d_req_kind );
         if( pcr!=-1 ){
           Assert( pcr<(int)pdt.getNumConstructors() );
           //must have same number of arguments
@@ -3064,12 +3064,44 @@ bool TermDbSygus::considerArgKind( const Datatype& dt, const Datatype& pdt, Type
   return true;
 }
 
+bool TermDbSygus::considerConst( const Datatype& dt, const Datatype& pdt, TypeNode tn, TypeNode tnp, Node c, Kind pk, int arg ) {
+  // child grammar-independent
+  if( !considerConst( pdt, tnp, c, pk, arg ) ){
+    return false;
+  }
+  int pc = getKindConsNum( tnp, pk );
+  if( pdt[pc].getNumArgs()==2 ){
+    Kind ok;
+    int offset;
+    if( hasOffsetArg( pk, arg, offset, ok ) ){
+      Trace("sygus-sb-simple-debug") << pk << " has offset arg " << ok << " " << offset << std::endl;
+      int ok_arg = getKindConsNum( tnp, ok );
+      if( ok_arg!=-1 ){
+        Trace("sygus-sb-simple-debug") << "...at argument " << ok_arg << std::endl;
+        //other operator be the same type
+        if( isTypeMatch( pdt[ok_arg], pdt[arg] ) ){
+          int status;
+          Node co = getTypeValueOffset( c.getType(), c, offset, status );
+          Trace("sygus-sb-simple-debug") << c << " with offset " << offset << " is " << co << ", status=" << status << std::endl;
+          if( status==0 && !co.isNull() ){
+            if( hasConst( tn, co ) ){
+              Trace("sygus-sb-simple") << "  sb-simple : by offset reasoning, do not consider const " << c;
+              Trace("sygus-sb-simple") << " as arg " << arg << " of " << pk << " since we can use " << co << " under " << ok << " " << std::endl;
+              return false;
+            }
+          }
+        }
+      }
+    }
+  }
+  return true;
+}
 
 bool TermDbSygus::considerConst( const Datatype& pdt, TypeNode tnp, Node c, Kind pk, int arg ) {
   Assert( hasKind( tnp, pk ) );
-  int pc = getKindArg( tnp, pk );
   Trace("sygus-sb-debug") << "Consider sygus const " << c << ", parent = " << pk << ", arg = " << arg << "?" << std::endl;
   if( isIdempotentArg( c, pk, arg ) ){
+    int pc = getKindConsNum( tnp, pk );
     if( pdt[pc].getNumArgs()==2 ){
       int oarg = arg==0 ? 1 : 0;
       TypeNode otn = TypeNode::fromType( ((SelectorType)pdt[pc][oarg].getType()).getRangeType() );
@@ -3115,37 +3147,6 @@ bool TermDbSygus::considerConst( const Datatype& pdt, TypeNode tnp, Node c, Kind
       return false;
     }
   }
-  
-  /*
-  if( pdt[pc].getNumArgs()==2 ){
-    Kind ok;
-    int offset;
-    if( hasOffsetArg( parent, arg, offset, ok ) ){
-      Trace("sygus-split-debug") << parent << " has offset arg " << ok << " " << offset << std::endl;
-      int ok_arg = d_tds->getKindArg( tnp, ok );
-      if( ok_arg!=-1 ){
-        Trace("sygus-split-debug") << "...at argument " << ok_arg << std::endl;
-        //other operator be the same type
-        if( isTypeMatch( pdt[ok_arg], pdt[arg] ) ){
-          int status;
-          Node co = d_tds->getTypeValueOffset( c.getType(), c, offset, status );
-          Trace("sygus-split-debug") << c << " with offset " << offset << " is " << co << ", status=" << status << std::endl;
-          if( status==0 && !co.isNull() ){
-            if( d_tds->hasConst( tn, co ) ){
-              Trace("sygus-split-debug") << "arg " << arg << " " << c << " in " << parent << " can be treated as " << co << " in " << ok << "..." << std::endl;
-              return false;
-            }else{
-              Trace("sygus-split-debug") << "Type does not have constant." << std::endl;
-            }
-          }
-        }else{
-          Trace("sygus-split-debug") << "Type mismatch." << std::endl;
-        }
-      }
-    }
-  }
-  */
-  
   return true;
 }
 
@@ -3206,6 +3207,7 @@ Node TermDbSygus::getTypeValueOffset( TypeNode tn, Node val, int offset, int& st
         status = 0;
       }else if( tn.isBitVector() ){
         val_o = Rewriter::rewrite( NodeManager::currentNM()->mkNode( BITVECTOR_PLUS, val, offset_val ) );
+        // TODO : enable?  watch for overflows
       }
     }
     d_type_value_offset[tn][val][offset] = val_o;
@@ -3305,11 +3307,11 @@ void TermDbSygus::registerSygusType( TypeNode tn ){
           bool nred = true;
           if( options::sygusMinGrammar() ){
             Trace("sygus-split-debug") << "Is " << dt[i].getName() << " a redundant operator?" << std::endl;
-            Kind ck = getArgKind( tn, i );
+            Kind ck = getConsNumKind( tn, i );
             if( ck!=UNDEFINED_KIND ){
               Kind dk;
               if( isAntisymmetric( ck, dk ) ){
-                int j = getKindArg( tn, dk );
+                int j = getKindConsNum( tn, dk );
                 if( j!=-1 ){
                   Trace("sygus-split-debug") << "Possible redundant operator : " << ck << " with " << dk << std::endl;
                   //check for type mismatches
@@ -3435,7 +3437,7 @@ TypeNode TermDbSygus::sygusToBuiltinType( TypeNode tn ) {
   return d_register[tn];
 }
 
-int TermDbSygus::getKindArg( TypeNode tn, Kind k ) {
+int TermDbSygus::getKindConsNum( TypeNode tn, Kind k ) {
   Assert( isRegistered( tn ) );
   std::map< TypeNode, std::map< Kind, int > >::iterator itt = d_kinds.find( tn );
   if( itt!=d_kinds.end() ){
@@ -3447,7 +3449,7 @@ int TermDbSygus::getKindArg( TypeNode tn, Kind k ) {
   return -1;
 }
 
-int TermDbSygus::getConstArg( TypeNode tn, Node n ){
+int TermDbSygus::getConstConsNum( TypeNode tn, Node n ){
   Assert( isRegistered( tn ) );
   std::map< TypeNode, std::map< Node, int > >::iterator itt = d_consts.find( tn );
   if( itt!=d_consts.end() ){
@@ -3459,7 +3461,7 @@ int TermDbSygus::getConstArg( TypeNode tn, Node n ){
   return -1;
 }
 
-int TermDbSygus::getOpArg( TypeNode tn, Node n ) {
+int TermDbSygus::getOpConsNum( TypeNode tn, Node n ) {
   std::map< Node, int >::iterator it = d_ops[tn].find( n );
   if( it!=d_ops[tn].end() ){
     return it->second;
@@ -3469,16 +3471,16 @@ int TermDbSygus::getOpArg( TypeNode tn, Node n ) {
 }
 
 bool TermDbSygus::hasKind( TypeNode tn, Kind k ) {
-  return getKindArg( tn, k )!=-1;
+  return getKindConsNum( tn, k )!=-1;
 }
 bool TermDbSygus::hasConst( TypeNode tn, Node n ) {
-  return getConstArg( tn, n )!=-1;
+  return getConstConsNum( tn, n )!=-1;
 }
 bool TermDbSygus::hasOp( TypeNode tn, Node n ) {
-  return getOpArg( tn, n )!=-1;
+  return getOpConsNum( tn, n )!=-1;
 }
 
-Node TermDbSygus::getArgOp( TypeNode tn, int i ) {
+Node TermDbSygus::getConsNumOp( TypeNode tn, int i ) {
   Assert( isRegistered( tn ) );
   std::map< TypeNode, std::map< int, Node > >::iterator itt = d_arg_ops.find( tn );
   if( itt!=d_arg_ops.end() ){
@@ -3490,7 +3492,7 @@ Node TermDbSygus::getArgOp( TypeNode tn, int i ) {
   return Node::null();
 }
 
-Node TermDbSygus::getArgConst( TypeNode tn, int i ) {
+Node TermDbSygus::getConsNumConst( TypeNode tn, int i ) {
   Assert( isRegistered( tn ) );
   std::map< TypeNode, std::map< int, Node > >::iterator itt = d_arg_const.find( tn );
   if( itt!=d_arg_const.end() ){
@@ -3502,7 +3504,7 @@ Node TermDbSygus::getArgConst( TypeNode tn, int i ) {
   return Node::null();
 }
 
-Kind TermDbSygus::getArgKind( TypeNode tn, int i ) {
+Kind TermDbSygus::getConsNumKind( TypeNode tn, int i ) {
   Assert( isRegistered( tn ) );
   std::map< TypeNode, std::map< int, Kind > >::iterator itt = d_arg_kind.find( tn );
   if( itt!=d_arg_kind.end() ){
@@ -3515,7 +3517,7 @@ Kind TermDbSygus::getArgKind( TypeNode tn, int i ) {
 }
 
 bool TermDbSygus::isKindArg( TypeNode tn, int i ) {
-  return getArgKind( tn, i )!=UNDEFINED_KIND;
+  return getConsNumKind( tn, i )!=UNDEFINED_KIND;
 }
 
 bool TermDbSygus::isConstArg( TypeNode tn, int i ) {
@@ -3963,7 +3965,7 @@ void TermDbSygus::getExplanationFor( TypeNode tn, Node n, Node vn, Node bvr, std
 
   int cindex = Datatype::indexOf( vn.getOperator().toExpr() );
   const Datatype& dt = ((DatatypeType)tn.toType()).getDatatype();
-  Kind ck = getArgKind( tn, cindex );
+  Kind ck = getConsNumKind( tn, cindex );
   if( ck!=UNDEFINED_KIND ){
     Trace("sygus-sb-mexp-debug") << "...parent kind is " << ck << std::endl;
     // for each child, check whether argument rewrites to an excluded constant

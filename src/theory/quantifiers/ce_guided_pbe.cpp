@@ -147,7 +147,9 @@ void CegConjecturePbe::initialize( Node n, std::vector< Node >& candidates ) {
       //the candidate must be input/output examples
       if( d_examples_out_invalid.find( e )==d_examples_out_invalid.end() ){
         Assert( d_examples.find( e )!=d_examples.end() );
-        collectEnumeratorTypes( e, e.getType() );
+        TypeNode etn = e.getType();
+        d_cinfo[e].d_root = etn;
+        collectEnumeratorTypes( e, etn );
         // now construct the enumerators
         for( std::map< TypeNode, EnumTypeInfo >::iterator iti = d_cinfo[e].d_tinfo.begin(); iti != d_cinfo[e].d_tinfo.end(); ++iti ){
           TypeNode tn = iti->first;
