@@ -433,7 +433,6 @@ bool CegConjecturePbe::constructCandidates( std::vector< Node >& enums, std::vec
     if( vc.isNull() ){     
       return false;
     }else{
-      Trace("sygus-pbe-enum") << "**** DT SOLVED : " << c << " = " << vc << std::endl;
       candidate_values.push_back( vc );
        
       //AlwaysAssert( false ); //FIXME
@@ -524,6 +523,7 @@ void CegConjecturePbe::addEnumeratedValue( Node x, Node v, std::vector< Node >& 
           }else{
             Trace("sygus-pbe-enum") << "  ...fail : conditional is not unique" << std::endl;
           }
+          itc->second.d_cond_count++;
         }else{
           if( cond_vals.find( true )!=cond_vals.end() || cond_vals.empty() ){  // latter is the degenerate case of no examples
             //check subsumbed/subsuming
@@ -939,13 +939,21 @@ Node CegConjecturePbe::constructDecisionTree( Node c ){
       // only check if an enumerator updated
       if( itc->second.d_check_dt ){
         itc->second.d_check_dt = false;
-        Trace("sygus-pbe-dt") << "ConstructDT for candidate: " << c << std::endl;
-        Node e = itc->second.getRootEnumerator();
-        UnifContext x;
-        // initialize with #examples
-        Assert( d_examples.find( c )!=d_examples.end() );
-        x.initialize( d_examples[c].size() );
-        return constructDecisionTree( c, e, x, 1 );
+        // try multiple times if we have done multiple conditions, due to non-determinism
+        for( unsigned i=0; i<=itc->second.d_cond_count; i++ ){
+          Trace("sygus-pbe-dt") << "ConstructDT for candidate: " << c << std::endl;
+          Node e = itc->second.getRootEnumerator();
+          UnifContext x;
+          // initialize with #examples
+          Assert( d_examples.find( c )!=d_examples.end() );
+          x.initialize( d_examples[c].size() );
+          Node vc = constructDecisionTree( c, e, x, 1 );
+          if( !vc.isNull() ){
+            Trace("sygus-pbe-enum") << "**** DT SOLVED : " << c << " = " << vc << std::endl;
+            itc->second.d_solution = vc;
+            return vc;
+          }
+        }
       }
     }
     return Node::null();

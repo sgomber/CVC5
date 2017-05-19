@@ -68,6 +68,7 @@ private:
   IntMap d_testers;
   NodeMap d_testers_exp;
   NodeSet d_active_terms;
+  Node d_zero;
 private:
   std::map< Node, Node > d_term_to_anchor;
   std::map< Node, Node > d_term_to_anchor_root;
@@ -112,12 +113,16 @@ private:
 private:
   //should be user-context dependent if sygus in incremental mode
   std::map< Node, bool > d_register_st;
-  void registerSizeTerm( Node e );
+  Node d_sygus_measure_term;
+  Node d_sygus_measure_term_active;
+  Node getOrMkSygusMeasureTerm( std::vector< Node >& lemmas );
+  void registerSizeTerm( Node e, std::vector< Node >& lemmas );
 private:
   std::map< unsigned, Node > d_search_size_exp;
   std::map< unsigned, bool > d_search_size;
   unsigned d_curr_search_size;
   void incrementCurrentSearchSize( std::vector< Node >& lemmas );
+  void notifySearchSize( unsigned s, Node exp, std::vector< Node >& lemmas );
 private:
   unsigned processSelectorChain( Node n, std::map< TypeNode, Node >& top_level, 
                                  std::map< Node, unsigned >& tdepth, std::vector< Node >& lemmas );
@@ -128,8 +133,7 @@ public:
   /** add tester */
   void assertTester( int tindex, TNode n, Node exp, std::vector< Node >& lemmas );
   void assertFact( Node n, bool polarity, std::vector< Node >& lemmas );
-  void preRegisterTerm( TNode n );
-  void notifySearchSize( unsigned s, Node exp, std::vector< Node >& lemmas );
+  void preRegisterTerm( TNode n, std::vector< Node >& lemmas  );
   void check( std::vector< Node >& lemmas );
   void getPossibleCons( const Datatype& dt, TypeNode tn, std::vector< bool >& pcons );
 };

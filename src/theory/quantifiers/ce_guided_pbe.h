@@ -156,7 +156,7 @@ private:
   };
   class CandidateInfo {
   public:
-    CandidateInfo() : d_active( false ), d_check_dt( false ){}
+    CandidateInfo() : d_active( false ), d_check_dt( false ), d_cond_count( 0 ){}
     Node d_this_candidate;
     TypeNode d_root;
     std::map< TypeNode, EnumTypeInfo > d_tinfo;
@@ -164,6 +164,7 @@ private:
     std::map< TypeNode, Node > d_enum;
     bool d_active;
     bool d_check_dt;
+    unsigned d_cond_count;
     Node d_solution;
     void initialize( Node c );
     void initializeType( TypeNode tn );

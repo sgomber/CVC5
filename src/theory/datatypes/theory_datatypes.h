@@ -40,10 +40,6 @@ namespace quantifiers{
 
 namespace datatypes {
 
-/** Attribute true for nodes that are skolems for terms */
-struct TermSkolemAttributeId {};
-typedef expr::Attribute< TermSkolemAttributeId, Node > TermSkolemAttribute;
-
 class TheoryDatatypes : public Theory {
 private:
   typedef context::CDChunkList<Node> NodeList;
@@ -326,11 +322,6 @@ private:
   /** sygus utilities */
   SygusSplitNew * d_sygus_split;
   SygusSymBreakNew * d_sygus_sym_break;
-  Node d_sygus_measure_term;
-  Node d_sygus_measure_term_active;
-  Node getOrMkSygusMeasureTerm();
-public:
-  void registerSygusMeasuredTerm( Node t );
 };/* class TheoryDatatypes */
 
 }/* CVC4::theory::datatypes namespace */

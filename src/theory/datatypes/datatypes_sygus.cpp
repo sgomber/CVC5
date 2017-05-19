@@ -65,7 +65,7 @@ void SygusSplitNew::getSygusSplits( Node n, const Datatype& dt, std::vector< Nod
 SygusSymBreakNew::SygusSymBreakNew( TheoryDatatypes * td, quantifiers::TermDbSygus * tds, context::Context* c ) : 
 d_td( td ), d_tds( tds ), d_context( c ), 
 d_testers( c ), d_testers_exp( c ), d_active_terms( c ), d_curr_search_size(0) {
-
+  d_zero = NodeManager::currentNM()->mkConst( Rational(0) );
 }
 
 SygusSymBreakNew::~SygusSymBreakNew() {
@@ -114,6 +114,18 @@ void SygusSymBreakNew::assertFact( Node n, bool polarity, std::vector< Node >& l
       Node comm_lem = NodeManager::currentNM()->mkNode( kind::OR, n.negate(), comm_sb );
       lemmas.push_back( comm_lem );
     }
+  }else if( n.getKind()==kind::DT_SYGUS_BOUND ){
+    Node m = getOrMkSygusMeasureTerm( lemmas );
+    //it relates the measure term to arithmetic
+    Node blem = n.eqNode( NodeManager::currentNM()->mkNode( kind::LEQ, m, n[0] ) );
+    lemmas.push_back( blem );
+    if( polarity ){
+      unsigned s = n[0].getConst<Rational>().getNumerator().toUnsignedInt();
+      notifySearchSize( s, n, lemmas );
+    }
+  }else if( n.getKind() == kind::DT_HEIGHT_BOUND || n.getKind()==DT_SIZE_BOUND ){
+    //reduce to arithmetic TODO ?
+
   }
 }
 
@@ -171,7 +183,7 @@ void SygusSymBreakNew::registerTerm( Node n, std::vector< Node >& lemmas ) {
         success = true;
       }
     }else if( n.isVar() ){
-      registerSizeTerm( n );
+      registerSizeTerm( n, lemmas );
       if( d_register_st[n] ){
         d_term_to_anchor[n] = n;
         d_term_to_anchor_root[n] = d_tds->isMeasuredTerm( n );
@@ -180,7 +192,7 @@ void SygusSymBreakNew::registerTerm( Node n, std::vector< Node >& lemmas ) {
         d = 0;
         is_top_level = true;
         success = true;
-      }   
+      }
     }
     if( success ){
       Trace("sygus-sb-debug") << "Register : " << n << ", depth : " << d << ", top level = " << is_top_level << ", type = " << ((DatatypeType)tn.toType()).getDatatype().getName() << std::endl;
@@ -694,25 +706,49 @@ void SygusSymBreakNew::addSymBreakLemma( TypeNode tn, Node lem, TNode x, TNode n
   lemmas.push_back( slem );
 }
   
-void SygusSymBreakNew::preRegisterTerm( TNode n ) {
+void SygusSymBreakNew::preRegisterTerm( TNode n, std::vector< Node >& lemmas  ) {
   if( n.isVar() ){
     Trace("sygus-sb-debug") << "Pre-register variable : " << n << std::endl;
-    registerSizeTerm( n );
+    registerSizeTerm( n, lemmas );
   }
 }
 
-void SygusSymBreakNew::registerSizeTerm( Node e ) {
+void SygusSymBreakNew::registerSizeTerm( Node e, std::vector< Node >& lemmas ) {
   if( d_register_st.find( e )==d_register_st.end() ){
-    d_register_st[e] = false;
-    if( !e.hasAttribute(TermSkolemAttribute()) ){  // TODO : use sygus measure
-      if( e.getType().isDatatype() ){
-        const Datatype& dt = ((DatatypeType)(e.getType()).toType()).getDatatype();
-        if( dt.isSygus() ){
+    if( e.getType().isDatatype() ){
+      const Datatype& dt = ((DatatypeType)(e.getType()).toType()).getDatatype();
+      if( dt.isSygus() ){
+        if( !d_tds->isMeasuredTerm( e ).isNull() ){
           Trace("sygus-sb") << "Sygus : register measured term : " << e << std::endl;
           d_register_st[e] = true;
-          d_td->registerSygusMeasuredTerm( e );
+          // update constraints on the measure term
+          if( d_sygus_measure_term_active.isNull() ){
+            d_sygus_measure_term_active = getOrMkSygusMeasureTerm( lemmas );
+          }
+          if( options::sygusFairMax() ){
+            if( options::ceGuidedInstFair()==quantifiers::CEGQI_FAIR_DT_SIZE ){
+              Node ds = NodeManager::currentNM()->mkNode( kind::DT_SIZE, e );
+              lemmas.push_back( NodeManager::currentNM()->mkNode( kind::LEQ, ds, d_sygus_measure_term_active ) );
+            }
+          }else{
+            Node mt = d_sygus_measure_term_active;
+            Node new_mt = NodeManager::currentNM()->mkSkolem( "mt", NodeManager::currentNM()->integerType() );
+            lemmas.push_back( NodeManager::currentNM()->mkNode( kind::GEQ, new_mt, d_zero ) );
+            if( options::ceGuidedInstFair()==quantifiers::CEGQI_FAIR_DT_SIZE ){
+              Node ds = NodeManager::currentNM()->mkNode( kind::DT_SIZE, e );
+              lemmas.push_back( mt.eqNode( NodeManager::currentNM()->mkNode( kind::PLUS, new_mt, ds ) ) );
+              //lemmas.push_back( NodeManager::currentNM()->mkNode( kind::GEQ, ds, d_zero ) );
+            }
+            d_sygus_measure_term_active = new_mt;
+          }
+        }else{
+          // not sure if it is or not
         }
+      }else{
+        d_register_st[e] = false;
       }
+    }else{
+      d_register_st[e] = false;
     }
   }
 }
@@ -816,7 +852,7 @@ void SygusSymBreakNew::check( std::vector< Node >& lemmas ) {
   std::vector< Node > mts;
   d_tds->getMeasuredTerms( mts );
   for( unsigned i=0; i<mts.size(); i++ ){
-    registerSizeTerm( mts[i] );
+    registerSizeTerm( mts[i], lemmas );
   }
   Trace("sygus-sb") << " SygusSymBreakNew::check: finished." << std::endl;
 }
@@ -863,5 +899,14 @@ bool SygusSymBreakNew::debugTesters( Node n, Node vn, int ind, std::vector< Node
     }
   }
   return true;
+}
+
+
+Node SygusSymBreakNew::getOrMkSygusMeasureTerm( std::vector< Node >& lemmas ) {
+  if( d_sygus_measure_term.isNull() ){
+    d_sygus_measure_term = NodeManager::currentNM()->mkSkolem( "mt", NodeManager::currentNM()->integerType() );
+    lemmas.push_back( NodeManager::currentNM()->mkNode( kind::GEQ, d_sygus_measure_term, d_zero ) );
+  }
+  return d_sygus_measure_term;
 }
 

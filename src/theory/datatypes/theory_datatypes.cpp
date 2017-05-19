@@ -473,33 +473,16 @@ void TheoryDatatypes::assertFact( Node fact, Node exp ){
   TNode atom = polarity ? fact : fact[0];
   if (atom.getKind() == kind::EQUAL) {
     d_equalityEngine.assertEquality( atom, polarity, exp );
-  }else if(atom.getKind() == kind::DT_HEIGHT_BOUND || atom.getKind()==DT_SIZE_BOUND){
-    //reduce to arithmetic
-  }else if(atom.getKind() == kind::DT_SYGUS_BOUND){
-    Node m = getOrMkSygusMeasureTerm();
-    //it relates the measure term to arithmetic
-    Node blem = atom.eqNode( NodeManager::currentNM()->mkNode( kind::LEQ, m, atom[0] ) );
-    doSendLemma( blem );
-    //notify the symmetry breaking module
-    if( polarity ){
-      if( d_sygus_sym_break ){
-        unsigned s = atom[0].getConst<Rational>().getNumerator().toUnsignedInt();
-        std::vector< Node > lemmas;
-        d_sygus_sym_break->notifySearchSize( s, atom, lemmas );
-        doSendLemmas( lemmas );
-      }
-    }
-  }else if( atom.getKind() == kind::DT_SYGUS_TERM_ORDER ){
-    //notify the symmetry breaking module
-    if( d_sygus_sym_break ){
-      std::vector< Node > lemmas;
-      d_sygus_sym_break->assertFact( atom, polarity, lemmas );
-      doSendLemmas( lemmas );
-    }
   }else{
     d_equalityEngine.assertPredicate( atom, polarity, exp );
   }
   doPendingMerges();
+  // could be sygus-specific
+  if( d_sygus_sym_break ){
+    std::vector< Node > lemmas;
+    d_sygus_sym_break->assertFact( atom, polarity, lemmas );
+    doSendLemmas( lemmas );
+  }
   //add to tester if applicable
   Node t_arg;
   int tindex = DatatypesRewriter::isTester( atom, t_arg );
@@ -547,7 +530,9 @@ void TheoryDatatypes::preRegisterTerm(TNode n) {
     // Function applications/predicates
     d_equalityEngine.addTerm(n);
     if( d_sygus_sym_break ){
-      d_sygus_sym_break->preRegisterTerm(n);
+      std::vector< Node > lemmas;
+      d_sygus_sym_break->preRegisterTerm(n, lemmas);
+      doSendLemmas( lemmas );
     }
     //d_equalityEngine.addTriggerTerm(n, THEORY_DATATYPES);
     break;
@@ -1057,8 +1042,6 @@ Node TheoryDatatypes::getTermSkolemFor( Node n ) {
     if( it==d_term_sk.end() ){
       //add purification unit lemma ( k = n )
       Node k = NodeManager::currentNM()->mkSkolem( "k", n.getType(), "reference skolem for datatypes" );
-      TermSkolemAttribute tsa;
-      k.setAttribute(tsa,n);
       d_term_sk[n] = k;
       Node eq = k.eqNode( n );
       Trace("datatypes-infer") << "DtInfer : ref : " << eq << std::endl;
@@ -2268,40 +2251,6 @@ std::pair<bool, Node> TheoryDatatypes::entailmentCheck(TNode lit, const Entailme
 
   }
   return make_pair(false, Node::null());
-}
-
-Node TheoryDatatypes::getOrMkSygusMeasureTerm() {
-  if( d_sygus_measure_term.isNull() ){
-    d_sygus_measure_term = NodeManager::currentNM()->mkSkolem( "mt", NodeManager::currentNM()->integerType() );
-    doSendLemma( NodeManager::currentNM()->mkNode( kind::GEQ, d_sygus_measure_term, d_zero ) );
-  }
-  return d_sygus_measure_term;
-}
-
-void TheoryDatatypes::registerSygusMeasuredTerm( Node t ) {
-  Trace("dt-sygus") << "TheoryDatatypes::registerSygusMeasuredTerm : " << t << std::endl;
-  std::vector< Node > lems;
-  if( d_sygus_measure_term_active.isNull() ){
-    d_sygus_measure_term_active = getOrMkSygusMeasureTerm();
-  }
-  if( options::sygusFairMax() ){
-    if( options::ceGuidedInstFair()==quantifiers::CEGQI_FAIR_DT_SIZE ){
-      Node ds = NodeManager::currentNM()->mkNode( kind::DT_SIZE, t );
-      lems.push_back( NodeManager::currentNM()->mkNode( kind::LEQ, ds, d_sygus_measure_term_active ) );
-    }
-  }else{
-    Node mt = d_sygus_measure_term_active;
-    Node new_mt = NodeManager::currentNM()->mkSkolem( "mt", NodeManager::currentNM()->integerType() );
-    lems.push_back( NodeManager::currentNM()->mkNode( kind::GEQ, new_mt, d_zero ) );
-    if( options::ceGuidedInstFair()==quantifiers::CEGQI_FAIR_DT_SIZE ){
-      Node ds = NodeManager::currentNM()->mkNode( kind::DT_SIZE, t );
-      lems.push_back( mt.eqNode( NodeManager::currentNM()->mkNode( kind::PLUS, new_mt, ds ) ) );
-      //lems.push_back( NodeManager::currentNM()->mkNode( kind::GEQ, ds, d_zero ) );
-    }
-    d_sygus_measure_term_active = new_mt;
-  }
-
-  doSendLemmas( lems );
 }
 
 } /* namepsace CVC4::theory::datatypes */
