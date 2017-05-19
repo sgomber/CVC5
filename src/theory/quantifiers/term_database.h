@@ -667,6 +667,7 @@ public:  //general sygus utilities
   Node getGenericBase( TypeNode tn, const Datatype& dt, int c );
   Node mkGeneric( const Datatype& dt, int c, std::map< TypeNode, int >& var_count, std::map< int, Node >& pre );
   Node sygusToBuiltin( Node n, TypeNode tn );
+  Node sygusToBuiltin( Node n ) { return sygusToBuiltin( n, n.getType() ); }
   Node builtinToSygusConst( Node c, TypeNode tn, int rcons_depth = 0 );
   Node getSygusNormalized( Node n, std::map< TypeNode, int >& var_count, std::map< Node, Node >& subs );
   Node getNormalized( TypeNode t, Node prog, bool do_pre_norm = false, bool do_post_norm = true );
@@ -748,9 +749,9 @@ public:
   
 //sygus pbe
 private:
-  std::map< Node, std::vector< std::vector< Node > > > d_measured_term_pbe_exs;
-  std::map< Node, std::vector< Node > > d_measured_term_pbe_exos;
-  std::map< Node, unsigned > d_measured_term_pbe_term_id;
+  std::map< Node, std::vector< std::vector< Node > > > d_pbe_exs;
+  std::map< Node, std::vector< Node > > d_pbe_exos;
+  std::map< Node, unsigned > d_pbe_term_id;
 private:
   class PbeTrie {
   private:

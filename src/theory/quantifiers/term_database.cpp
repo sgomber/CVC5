@@ -3358,17 +3358,17 @@ void TermDbSygus::registerMeasuredTerm( Node e, Node root ) {
 
 void TermDbSygus::registerPbeExamples( Node e, std::vector< std::vector< Node > >& exs, 
                                        std::vector< Node >& exos, std::vector< Node >& exts  ) {
-  Assert( isMeasuredTerm( e )==e );
-  Assert( d_measured_term_pbe_exs.find( e )==d_measured_term_pbe_exs.end() );
   Trace("sygus-db") << "Register " << exs.size() << " PBE examples with " << e << std::endl;
+  Assert( d_measured_term.find( e )==d_measured_term.end() || isMeasuredTerm( e )==e );
+  Assert( d_pbe_exs.find( e )==d_pbe_exs.end() );
   Assert( exs.size()==exos.size() );
-  d_measured_term_pbe_exs[e] = exs;
-  d_measured_term_pbe_exos[e] = exos;
+  d_pbe_exs[e] = exs;
+  d_pbe_exos[e] = exos;
   for( unsigned i=0; i<exts.size(); i++ ){
     Trace("sygus-db-debug") << "  # " << i << " : " << exts[i] << std::endl;
     Assert( exts[i].getKind()==APPLY_UF );
     Assert( exts[i][0]==e );
-    d_measured_term_pbe_term_id[exts[i]] = i;
+    d_pbe_term_id[exts[i]] = i;
   }
 }
 
@@ -3387,12 +3387,12 @@ void TermDbSygus::getMeasuredTerms( std::vector< Node >& mts ) {
 }
 
 bool TermDbSygus::hasPbeExamples( Node e ) {
-  return d_measured_term_pbe_exs.find( e )!=d_measured_term_pbe_exs.end();
+  return d_pbe_exs.find( e )!=d_pbe_exs.end();
 }
 
 unsigned TermDbSygus::getNumPbeExamples( Node e ) {
-  std::map< Node, std::vector< std::vector< Node > > >::iterator it = d_measured_term_pbe_exs.find( e );
-  if( it!=d_measured_term_pbe_exs.end() ){
+  std::map< Node, std::vector< std::vector< Node > > >::iterator it = d_pbe_exs.find( e );
+  if( it!=d_pbe_exs.end() ){
     return it->second.size();
   }else{
     return 0;
@@ -3400,18 +3400,18 @@ unsigned TermDbSygus::getNumPbeExamples( Node e ) {
 }
 
 void TermDbSygus::getPbeExample( Node e, unsigned i, std::vector< Node >& ex ) {
-  std::map< Node, std::vector< std::vector< Node > > >::iterator it = d_measured_term_pbe_exs.find( e );
-  if( it!=d_measured_term_pbe_exs.end() ){
+  std::map< Node, std::vector< std::vector< Node > > >::iterator it = d_pbe_exs.find( e );
+  if( it!=d_pbe_exs.end() ){
     Assert( i<it->second.size() );
-    Assert( i<d_measured_term_pbe_exos[e].size() );
+    Assert( i<d_pbe_exos[e].size() );
     ex.insert( ex.end(), it->second[i].begin(), it->second[i].end() );
   }else{
     Assert( false );
   }
 }
 Node TermDbSygus::getPbeExampleOut( Node e, unsigned i ) {
-  std::map< Node, std::vector< Node > >::iterator it = d_measured_term_pbe_exos.find( e );
-  if( it!=d_measured_term_pbe_exos.end() ){
+  std::map< Node, std::vector< Node > >::iterator it = d_pbe_exos.find( e );
+  if( it!=d_pbe_exos.end() ){
     Assert( i<it->second.size() );
     return it->second[i];
   }else{
@@ -3421,8 +3421,8 @@ Node TermDbSygus::getPbeExampleOut( Node e, unsigned i ) {
 }
 
 int TermDbSygus::getPbeExampleId( Node n ) {
-  std::map< Node, unsigned >::iterator it = d_measured_term_pbe_term_id.find( n );
-  if( it!=d_measured_term_pbe_term_id.end() ){
+  std::map< Node, unsigned >::iterator it = d_pbe_term_id.find( n );
+  if( it!=d_pbe_term_id.end() ){
     return it->second;
   }else{
     return -1;
@@ -3971,7 +3971,7 @@ void TermDbSygus::getExplanationFor( TypeNode tn, Node n, Node vn, Node bvr, std
     Trace("sygus-sb-mexp-debug") << "...parent kind is " << ck << std::endl;
     // for each child, check whether argument rewrites to an excluded constant
     for( unsigned i=0; i<vn.getNumChildren(); i++ ){
-      Node bv = sygusToBuiltin( vn[i], vn[i].getType() );
+      Node bv = sygusToBuiltin( vn[i] );
       Node bvr = Rewriter::rewrite( bv );
       if( bvr.isConst() ){
         if( !considerConst( dt, tn, bvr, ck, i ) ){
@@ -3985,7 +3985,8 @@ void TermDbSygus::getExplanationFor( TypeNode tn, Node n, Node vn, Node bvr, std
   if( !did_rlv ){
     // for each child, check whether replacing by a fresh variable and rewriting again
     for( unsigned i=0; i<vn.getNumChildren(); i++ ){
-      Node x = getFreeVar( vn[i].getType(), i );    // redundant (could choose smaller i, but this is easy)
+      TypeNode xtn = vn[i].getType();
+      Node x = getFreeVar( xtn, i );    // redundant (could choose smaller i, but this is easy)
       children[i+1] = x;
       Node nvn = NodeManager::currentNM()->mkNode( kind::APPLY_CONSTRUCTOR, children );
       Trace("sygus-sb-mexp-debug") << "look at " << i << " : " << nvn << std::endl;
@@ -3998,7 +3999,7 @@ void TermDbSygus::getExplanationFor( TypeNode tn, Node n, Node vn, Node bvr, std
         Trace("sygus-sb-mexp") << "sb-min-exp : " << vn << " is rewritten to " << nbvr << " regardless of the content of argument " << i << std::endl;
       }else{
         if( nbvr.isVar() ){
-          Node bx = sygusToBuiltin( x, vn[i].getType() );
+          Node bx = sygusToBuiltin( x, xtn );
           Assert( bx.getType()==nbvr.getType() );
           if( nbvr==bx ){
             Trace("sygus-sb-mexp") << "sb-min-exp : " << vn << " always rewrites to argument " << i << std::endl;
