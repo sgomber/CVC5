@@ -590,9 +590,10 @@ private:
 public:
   bool getMatch( Node n, TypeNode st, int& index_found, std::vector< Node >& args, int index_exc = -1, int index_start = 0 );
 private:
+  void registerSygusTypeInternal( TypeNode root_tn, TypeNode tn, unsigned type_depth );
+private:
   // stores root
   std::map< Node, Node > d_measured_term;
-private:
   //information for sygus types
   std::map< TypeNode, TypeNode > d_register;  //stores sygus -> builtin type
   std::map< TypeNode, std::vector< Node > > d_var_list;
@@ -614,12 +615,16 @@ private:
   std::map< TypeNode, std::map< Node, Node > > d_normalized;
   std::map< TypeNode, std::map< Node, Node > > d_sygus_to_builtin;
   std::map< TypeNode, std::map< Node, Node > > d_builtin_const_to_sygus;
+  // grammar information
+  std::map< TypeNode, unsigned > d_min_type_depth;
 public:
   TermDbSygus( context::Context* c, QuantifiersEngine* qe );
   ~TermDbSygus(){}
   bool reset( Theory::Effort e );
   std::string identify() const { return "TermDbSygus"; }
-public: //registering enumeration terms
+public:
+  /** register the sygus type */
+  void registerSygusType( TypeNode tn );
   /** register a term that we will do enumerative search on */
   void registerMeasuredTerm( Node e, Node root );
   /** is measured term */
@@ -628,6 +633,8 @@ public: //registering enumeration terms
   void getMeasuredTerms( std::vector< Node >& mts );
 public:  //general sygus utilities
   bool isRegistered( TypeNode tn );
+  // get the minimum depth of type in its parent grammar
+  unsigned getMinTypeDepth( TypeNode tn );
   TypeNode sygusToBuiltinType( TypeNode tn );
   int getKindConsNum( TypeNode tn, Kind k );
   int getConstConsNum( TypeNode tn, Node n );
@@ -642,7 +649,6 @@ public:  //general sygus utilities
   bool isConstArg( TypeNode tn, int i );
   unsigned getNumIdFuncs( TypeNode tn );
   unsigned getIdFuncIndex( TypeNode tn, unsigned i );
-  void registerSygusType( TypeNode tn );
   /** get arg type */
   TypeNode getArgType( const DatatypeConstructor& c, int i );
   /** get first occurrence */

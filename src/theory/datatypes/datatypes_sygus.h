@@ -102,13 +102,13 @@ private:
   std::map< Node, Node > d_rlv_cond;
   Node getRelevancyCondition( Node n );
 private:
-  std::map< TypeNode, std::map< int, Node > > d_simple_sb_pred;
-  std::map< TypeNode, Node > d_simple_sb_pred_var;
+  std::map< TypeNode, std::map< int, std::map< unsigned, Node > > > d_simple_sb_pred;
+  std::map< TypeNode, Node > d_free_var;
   // user-context dependent if sygus-incremental
-  std::map< Node, bool > d_simple_proc;
+  std::map< Node, unsigned > d_simple_proc;
   //get simple symmetry breaking predicate
-  Node getSimpleSymBreakPred( TypeNode tn, int tindex );
-  TNode getSimpleSymBreakPredVar( TypeNode tn );
+  Node getSimpleSymBreakPred( TypeNode tn, int tindex, unsigned depth );
+  TNode getFreeVar( TypeNode tn );
   Node getTermOrderPredicate( Node n1, Node n2 );
 private:
   //should be user-context dependent if sygus in incremental mode
