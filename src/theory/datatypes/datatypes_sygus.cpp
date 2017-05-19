@@ -48,6 +48,7 @@ Node SygusSplitNew::getSygusSplit( quantifiers::TermDbSygus * tds, Node n, const
   }
   Assert( !curr_splits.empty() );
   return curr_splits.size()==1 ? curr_splits[0] : NodeManager::currentNM()->mkNode( OR, curr_splits );
+
 }
  
 void SygusSplitNew::getSygusSplits( Node n, const Datatype& dt, std::vector< Node >& splits, std::vector< Node >& lemmas ) {
@@ -55,6 +56,7 @@ void SygusSplitNew::getSygusSplits( Node n, const Datatype& dt, std::vector< Nod
   if( d_splits.find( n )==d_splits.end() ){
     Trace("sygus-split") << "Get sygus splits " << n << std::endl;
     Node split = getSygusSplit( d_tds, n, dt );
+    Assert( !split.isNull() );
     d_splits[n].push_back( split );
   }
   //copy to splits
@@ -643,6 +645,16 @@ bool SygusSymBreakNew::registerSearchValue( Node n, Node nv, unsigned d, std::ve
       //}
       Node lem = exp.size()==1 ? exp[0] : NodeManager::currentNM()->mkNode( kind::AND, exp );
       lem = lem.negate();
+      Assert( d_term_to_anchor.find( n )!=d_term_to_anchor.end() );
+      TypeNode atype = d_term_to_anchor[n].getType();
+      if( atype!=tn ){
+        unsigned min_type_depth = d_tds->getMinTypeDepth( atype, tn );
+        if( min_type_depth>0 ){
+          Trace("sygus-sb-exc") << "  ........min type depth for " << ((DatatypeType)tn.toType()).getDatatype().getName() << " in ";
+          Trace("sygus-sb-exc") << ((DatatypeType)atype.toType()).getDatatype().getName() << " is " << min_type_depth << std::endl;
+          sz = sz + min_type_depth;
+        }
+      }
       Trace("sygus-sb-exc") << "  ........exc lemma is " << lem << ", size = " << sz << std::endl;
       registerSymBreakLemma( tn, lem, sz, bad_val_bvr_cache_term, lemmas );
       return false;
@@ -823,7 +835,7 @@ void SygusSymBreakNew::check( std::vector< Node >& lemmas ) {
       Node progv = d_td->getValuation().getModel()->getValue( prog );
       // TODO : remove this step (ensure there is no way a sygus term cannot be assigned a tester before this point)
       if( !debugTesters( prog, progv, 0, lemmas ) ){
-        Trace("sygus-sb") << "  SygusSymBreakNew::check: ...WARNING: added missing split for " << prog << "." << std::endl;
+        Trace("sygus-sb") << "  SygusSymBreakNew::check: ...WARNING: considered missing split for " << prog << "." << std::endl;
         // this should not happen generally, it is caused by a sygus term not being assigned a tester
         Assert( false );
       }else{
@@ -893,6 +905,7 @@ bool SygusSymBreakNew::debugTesters( Node n, Node vn, int ind, std::vector< Node
     Trace("sygus-sb-warn") << ", value=" << tstrep << std::endl;
     if( !hastst ){
       Node split = SygusSplitNew::getSygusSplit( d_tds, n, dt );
+      Assert( !split.isNull() );
       lemmas.push_back( split );
       return false;
     }

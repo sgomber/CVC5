@@ -2465,7 +2465,7 @@ bool TermDbSygus::getMatch( Node t, TypeNode st, int& index_found, std::vector< 
 Node TermDbSygus::getGenericBase( TypeNode tn, const Datatype& dt, int c ) {
   std::map< int, Node >::iterator it = d_generic_base[tn].find( c );
   if( it==d_generic_base[tn].end() ){
-    registerSygusType( tn );
+    Assert( isRegistered( tn ) );
     std::map< TypeNode, int > var_count;
     std::map< int, Node > pre;
     Node g = mkGeneric( dt, c, var_count, pre );
@@ -3232,11 +3232,7 @@ struct sortConstants {
   }
 };
 
-void TermDbSygus::registerSygusType( TypeNode tn ){
-  registerSygusTypeInternal( tn, tn, 0 );
-}
-
-void TermDbSygus::registerSygusTypeInternal( TypeNode root_tn, TypeNode tn, unsigned type_depth ) {
+void TermDbSygus::registerSygusType( TypeNode tn ) {
   std::map< TypeNode, TypeNode >::iterator itr = d_register.find( tn );
   if( itr==d_register.end() ){
     d_register[tn] = TypeNode::null();
@@ -3245,7 +3241,6 @@ void TermDbSygus::registerSygusTypeInternal( TypeNode root_tn, TypeNode tn, unsi
       Trace("sygus-db") << "Register type " << dt.getName() << "..." << std::endl;
       d_register[tn] = TypeNode::fromType( dt.getSygusType() );
       if( !d_register[tn].isNull() ){
-        d_min_type_depth[tn] = type_depth;
         // get the sygus variable list
         Node var_list = Node::fromExpr( dt.getSygusVarList() );
         Assert( !var_list.isNull() );
@@ -3304,7 +3299,7 @@ void TermDbSygus::registerSygusTypeInternal( TypeNode root_tn, TypeNode tn, unsi
         //register connected types
         for( unsigned i=0; i<dt.getNumConstructors(); i++ ){
           for( unsigned j=0; j<dt[i].getNumArgs(); j++ ){
-            registerSygusTypeInternal( root_tn, getArgType( dt[i], j ), type_depth+1 );
+            registerSygusType( getArgType( dt[i], j ) );
           }
         }
         
@@ -3349,17 +3344,6 @@ void TermDbSygus::registerSygusTypeInternal( TypeNode root_tn, TypeNode tn, unsi
             }
           }
           d_sygus_nred[tn].push_back( nred );
-        }
-      }
-    }
-  }else{
-    if( type_depth<d_min_type_depth[tn] && !itr->second.isNull() ){
-      d_min_type_depth[tn] = type_depth;
-      const Datatype& dt = ((DatatypeType)(tn).toType()).getDatatype();
-      //update the minimum depth of the connected types
-      for( unsigned i=0; i<dt.getNumConstructors(); i++ ){
-        for( unsigned j=0; j<dt[i].getNumArgs(); j++ ){
-          registerSygusTypeInternal( root_tn, getArgType( dt[i], j ), type_depth+1 );
         }
       }
     }
@@ -3454,9 +3438,30 @@ TypeNode TermDbSygus::sygusToBuiltinType( TypeNode tn ) {
   return d_register[tn];
 }
 
-unsigned TermDbSygus::getMinTypeDepth( TypeNode tn ){
-  Assert( d_min_type_depth.find( tn )!=d_min_type_depth.end() );
-  return d_min_type_depth[tn];
+void TermDbSygus::computeMinTypeDepthInternal( TypeNode root_tn, TypeNode tn, unsigned type_depth ) {
+  std::map< TypeNode, unsigned >::iterator it = d_min_type_depth[root_tn].find( tn );
+  if( it==d_min_type_depth[root_tn].end() || type_depth<it->second ){
+    d_min_type_depth[root_tn][tn] = type_depth;
+    Assert( tn.isDatatype() );
+    const Datatype& dt = ((DatatypeType)(tn).toType()).getDatatype();
+    //compute for connected types
+    for( unsigned i=0; i<dt.getNumConstructors(); i++ ){
+      for( unsigned j=0; j<dt[i].getNumArgs(); j++ ){
+        computeMinTypeDepthInternal( root_tn, getArgType( dt[i], j ), type_depth+1 );
+      }
+    }
+  }
+}
+  
+unsigned TermDbSygus::getMinTypeDepth( TypeNode root_tn, TypeNode tn ){
+  std::map< TypeNode, unsigned >::iterator it = d_min_type_depth[root_tn].find( tn );
+  if( it==d_min_type_depth[root_tn].end() ){
+    computeMinTypeDepthInternal( root_tn, root_tn, 0 );
+    Assert( d_min_type_depth[root_tn].find( tn )!=d_min_type_depth[root_tn].end() );  
+    return d_min_type_depth[root_tn][tn];
+  }else{
+    return it->second;
+  }
 }
 
 int TermDbSygus::getKindConsNum( TypeNode tn, Kind k ) {

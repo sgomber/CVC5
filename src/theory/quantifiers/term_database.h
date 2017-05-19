@@ -590,7 +590,7 @@ private:
 public:
   bool getMatch( Node n, TypeNode st, int& index_found, std::vector< Node >& args, int index_exc = -1, int index_start = 0 );
 private:
-  void registerSygusTypeInternal( TypeNode root_tn, TypeNode tn, unsigned type_depth );
+  void computeMinTypeDepthInternal( TypeNode root_tn, TypeNode tn, unsigned type_depth );
 private:
   // stores root
   std::map< Node, Node > d_measured_term;
@@ -616,7 +616,7 @@ private:
   std::map< TypeNode, std::map< Node, Node > > d_sygus_to_builtin;
   std::map< TypeNode, std::map< Node, Node > > d_builtin_const_to_sygus;
   // grammar information
-  std::map< TypeNode, unsigned > d_min_type_depth;
+  std::map< TypeNode, std::map< TypeNode, unsigned > > d_min_type_depth;
 public:
   TermDbSygus( context::Context* c, QuantifiersEngine* qe );
   ~TermDbSygus(){}
@@ -634,7 +634,7 @@ public:
 public:  //general sygus utilities
   bool isRegistered( TypeNode tn );
   // get the minimum depth of type in its parent grammar
-  unsigned getMinTypeDepth( TypeNode tn );
+  unsigned getMinTypeDepth( TypeNode root_tn, TypeNode tn );
   TypeNode sygusToBuiltinType( TypeNode tn );
   int getKindConsNum( TypeNode tn, Kind k );
   int getConstConsNum( TypeNode tn, Node n );
