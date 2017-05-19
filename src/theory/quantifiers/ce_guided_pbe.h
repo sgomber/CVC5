@@ -119,6 +119,7 @@ private:
     std::vector< Node > d_enum_vals;
     std::vector< std::vector< bool > > d_enum_vals_res;
     std::vector< Node > d_enum_subsume;
+    std::map< Node, unsigned > d_enum_val_to_index;
     Node d_enum_solved;
     SubsumeTrie d_term_trie;
   public:
@@ -189,12 +190,13 @@ private:
   public:
     IndexFilter d_filter;
     std::vector< bool > d_vals;
+    bool updateContext( std::vector< bool >& vals, bool pol );
     class UEnumInfo {
     public:
       UEnumInfo() : d_status(-1){}
       int d_status;
       // enum val -> polarity -> solved
-      std::map< Node, std::map< int, Node > > d_look_ahead_sols;
+      std::map< Node, std::map< unsigned, Node > > d_look_ahead_sols;
     };
     // enumerator -> info
     std::map< Node, UEnumInfo > d_uinfo;
@@ -203,7 +205,9 @@ private:
   /** construct solution */
   Node constructDecisionTree( Node c );
   Node constructDecisionTree( Node c, Node e, UnifContext& x, int ind );
-  Node constructBestSolution( std::vector< Node >& solved );
+  Node constructBestSolvedTerm( std::vector< Node >& solved, UnifContext& x );
+  Node constructBestSolvedConditional( std::vector< Node >& solved, UnifContext& x );
+  Node constructBestConditional( std::vector< Node >& conds, UnifContext& x );
 public:
   void registerCandidates( std::vector< Node >& candidates ); 
   void getCandidateList( std::vector< Node >& candidates, std::vector< Node >& clist );
