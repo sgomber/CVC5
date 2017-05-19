@@ -81,6 +81,7 @@ void CegConjecture::assign( Node q ) {
         std::vector< std::vector< Node > > exs;
         std::vector< Node > exos;
         std::vector< Node > exts;
+        // use the PBE examples, regardless of the search algorith, since these help search space pruning
         if( d_ceg_pbe->getPbeExamples( e, exs, exos, exts ) ){
           d_qe->getTermDatabaseSygus()->registerPbeExamples( e, exs, exos, exts );
         }
@@ -242,7 +243,7 @@ bool CegConjecture::needsRefinement() {
 }
 
 void CegConjecture::getCandidateList( std::vector< Node >& clist, bool forceOrig ) {
-  if( options::sygusUnifCondSol() && !forceOrig ){
+  if( d_ceg_pbe->isPbe() && !forceOrig ){
     d_ceg_pbe->getCandidateList( d_candidates, clist );
   }else{
     clist.insert( clist.end(), d_candidates.begin(), d_candidates.end() );
@@ -252,7 +253,7 @@ void CegConjecture::getCandidateList( std::vector< Node >& clist, bool forceOrig
 bool CegConjecture::constructCandidates( std::vector< Node >& clist, std::vector< Node >& model_values, std::vector< Node >& candidate_values, 
                                          std::vector< Node >& lems ) {
   Assert( clist.size()==model_values.size() );
-  if( options::sygusUnifCondSol() ){
+  if( d_ceg_pbe->isPbe() ){
     return d_ceg_pbe->constructCandidates( clist, model_values, d_candidates, candidate_values, lems );
   }else{
     Assert( model_values.size()==d_candidates.size() );
@@ -454,7 +455,7 @@ int CegConjecture::getProgressStatus( Node v ) {
 }
 
 Node CegConjecture::getNextDecisionRequest( unsigned& priority ) {
-  if( options::sygusUnifCondSol() ){
+  if( d_ceg_pbe->isPbe() ){
     Node dlit = d_ceg_pbe->getNextDecisionRequest( priority );
     if( !dlit.isNull() ){
       return dlit;

@@ -44,6 +44,7 @@ private:
   std::map< Node, std::vector< Node > > d_examples_term;
   
   void collectExamples( Node n, std::map< Node, bool >& visited, bool hasPol, bool pol );
+  bool d_is_pbe;
 public:
   CegConjecturePbe( QuantifiersEngine * qe, CegConjecture * p );
   ~CegConjecturePbe();
@@ -51,7 +52,7 @@ public:
   void initialize( Node n, std::vector< Node >& candidates );
   bool getPbeExamples( Node v, std::vector< std::vector< Node > >& exs, 
                        std::vector< Node >& exos, std::vector< Node >& exts);
-                       
+  bool isPbe() { return d_is_pbe; }
 private:  // for registration
   void collectEnumeratorTypes( Node e, TypeNode tn );
   void registerEnumerator( Node et, Node e, TypeNode tn, int j );
@@ -108,6 +109,7 @@ private:
     /** an OR of all in d_enum_res */
     std::vector< bool > d_enum_total;
     bool d_enum_total_true;
+    Node d_enum_solved;
   public:
     EnumInfo() : d_enum_total_true( false ), d_parent_arg(-1){}
     Node d_parent_candidate;
@@ -120,14 +122,15 @@ private:
     std::vector< std::vector< bool > > d_enum_vals_res;
     std::vector< Node > d_enum_subsume;
     std::map< Node, unsigned > d_enum_val_to_index;
-    Node d_enum_solved;
     SubsumeTrie d_term_trie;
   public:
     bool isBasic() { return d_parent_arg==-1; }
     bool isConditional() { return d_parent_arg==0; }
     void addEnumeratedValue( Node v, std::vector< bool >& results );
+    void setSolved( Node slv );
     bool isCover();
-    bool isSolved();
+    bool isSolved() { return !d_enum_solved.isNull(); }
+    Node getSolved() { return d_enum_solved; }
   };
   std::map< Node, EnumInfo > d_einfo;
 private:

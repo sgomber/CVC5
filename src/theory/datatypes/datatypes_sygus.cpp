@@ -175,6 +175,7 @@ void SygusSymBreakNew::registerTerm( Node n, std::vector< Node >& lemmas ) {
       if( d_register_st[n] ){
         d_term_to_anchor[n] = n;
         d_term_to_anchor_root[n] = d_tds->isMeasuredTerm( n );
+        // this assertion fails if we have a sygus term in the search that is unmeasured
         Assert( !d_term_to_anchor_root[n].isNull() );
         d = 0;
         is_top_level = true;

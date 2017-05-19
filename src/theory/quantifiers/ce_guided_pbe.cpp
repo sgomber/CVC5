@@ -47,6 +47,7 @@ CegConjecturePbe::CegConjecturePbe(QuantifiersEngine* qe, CegConjecture* p)
   d_tds = d_qe->getTermDatabaseSygus();
   d_true = NodeManager::currentNM()->mkConst(true);
   d_false = NodeManager::currentNM()->mkConst(false);
+  d_is_pbe = false;
 }
 
 CegConjecturePbe::~CegConjecturePbe() {
@@ -154,7 +155,6 @@ void CegConjecturePbe::initialize( Node n, std::vector< Node >& candidates ) {
   }
   
   //register candidates
-  bool typical_reg = true;
   if( options::sygusUnifCondSol() ){  
     if( candidates.size()==1 ){// conditional solutions for multiple function conjectures TODO?
       // collect a pool of types over which we will enumerate terms 
@@ -162,6 +162,7 @@ void CegConjecturePbe::initialize( Node n, std::vector< Node >& candidates ) {
       //the candidate must be input/output examples
       if( d_examples_out_invalid.find( e )==d_examples_out_invalid.end() ){
         Assert( d_examples.find( e )!=d_examples.end() );
+        Trace("sygus-unif") << "It is input/output examples..." << std::endl;
         TypeNode etn = e.getType();
         d_cinfo[e].initialize( e );
         d_cinfo[e].d_root = etn;
@@ -193,11 +194,12 @@ void CegConjecturePbe::initialize( Node n, std::vector< Node >& candidates ) {
             }
           }
         }
-        typical_reg = false;
+        d_is_pbe = true;
       }
     }
   }
-  if( typical_reg ){
+  if( !d_is_pbe ){
+    Trace("sygus-unif") << "Do not do PBE optimizations, register..." << std::endl;
     for( unsigned i=0; i<candidates.size(); i++ ){
       d_qe->getTermDatabaseSygus()->registerMeasuredTerm( candidates[i], candidates[i] );
     }
@@ -462,6 +464,7 @@ void CegConjecturePbe::addEnumeratedValue( Node x, Node v, std::vector< Node >& 
       for( unsigned s=0; s<it->second.d_enum_slave.size(); s++ ){
         Node xs = it->second.d_enum_slave[s];
         std::map< Node, EnumInfo >::iterator itv = d_einfo.find( xs );
+        Assert( itv!=d_einfo.end() );
         bool prevIsCover = false;
         if( itv->second.isConditional() ){
           Trace("sygus-pbe-enum") << " Cond-Eval of ";
@@ -522,27 +525,33 @@ void CegConjecturePbe::addEnumeratedValue( Node x, Node v, std::vector< Node >& 
             Trace("sygus-pbe-enum") << "  ...fail : conditional is not unique" << std::endl;
           }
         }else{
-          if( cond_vals.find( true )!=cond_vals.end() ){
+          if( cond_vals.find( true )!=cond_vals.end() || cond_vals.empty() ){  // latter is the degenerate case of no examples
             //check subsumbed/subsuming
+            std::vector< Node > subsume;
             if( cond_vals.find( false )==cond_vals.end() ){
               // it is the entire solution, we are done
               Trace("sygus-pbe-enum") << "  ...success, full solution added to DT pool : " << d_tds->sygusToBuiltin( v ) << std::endl;
-              itv->second.d_enum_solved = v;
-            }
-            std::vector< Node > subsume;
-            Node val = itv->second.d_term_trie.addTerm( v, results, true, subsume );
-            if( val==v ){
-              Trace("sygus-pbe-enum") << "  ...success"; 
-              if( !subsume.empty() ){
-                itv->second.d_enum_subsume.insert( itv->second.d_enum_subsume.end(), subsume.begin(), subsume.end() );
-                Trace("sygus-pbe-enum") << " and subsumed " << subsume.size() << " terms";
+              if( !itv->second.isSolved() ){
+                itv->second.setSolved( v );
+                // it subsumes everything
+                itv->second.d_term_trie.clear();
+                itv->second.d_term_trie.addTerm( v, results, true, subsume );
               }
-              Trace("sygus-pbe-enum") << "!   add to DT pool : " << d_tds->sygusToBuiltin( v ) << std::endl;
               keep = true;
             }else{
-              Assert( subsume.empty() );
-              Assert( itv->second.d_enum_solved!=v );
-              Trace("sygus-pbe-enum") << "  ...fail : subsumed" << std::endl;
+              Node val = itv->second.d_term_trie.addTerm( v, results, true, subsume );
+              if( val==v ){
+                Trace("sygus-pbe-enum") << "  ...success"; 
+                if( !subsume.empty() ){
+                  itv->second.d_enum_subsume.insert( itv->second.d_enum_subsume.end(), subsume.begin(), subsume.end() );
+                  Trace("sygus-pbe-enum") << " and subsumed " << subsume.size() << " terms";
+                }
+                Trace("sygus-pbe-enum") << "!   add to DT pool : " << d_tds->sygusToBuiltin( v ) << std::endl;
+                keep = true;
+              }else{
+                Assert( subsume.empty() );
+                Trace("sygus-pbe-enum") << "  ...fail : subsumed" << std::endl;
+              }
             }
           }else{
             Trace("sygus-pbe-enum") << "  ...fail : it does not satisfy examples." << std::endl;
@@ -598,13 +607,21 @@ void CegConjecturePbe::EnumInfo::addEnumeratedValue( Node v, std::vector< bool >
   }
 }
 
+void CegConjecturePbe::EnumInfo::setSolved( Node slv ) {
+  d_enum_solved = slv;
+  d_enum_total_true = true;
+}
+
+bool CegConjecturePbe::EnumInfo::isCover() {
+  Assert( !isConditional() );
+  return d_enum_total_true;
+}
+
 bool CegConjecturePbe::EnumTypeInfo::isCover( CegConjecturePbe * pbe, bool beneathCond, std::map< bool, std::map< TypeNode, bool > >& visited ) {
-  if( beneathCond ){
-    std::map< Node, EnumInfo >::iterator itn = pbe->d_einfo.find( d_enum );
-    Assert( itn!=pbe->d_einfo.end() );
-    if( itn->second.isCover() ){
-      return true;
-    }
+  std::map< Node, EnumInfo >::iterator itn = pbe->d_einfo.find( d_enum );
+  Assert( itn!=pbe->d_einfo.end() );
+  if( itn->second.isCover() ){
+    return true;
   }
   if( !d_csol_op.isNull() ){
     Assert( d_csol_cts.size()==d_cenum.size() );
@@ -674,14 +691,6 @@ bool CegConjecturePbe::CandidateInfo::isCover( CegConjecturePbe * pbe ) {
   return d_active;
 }
 
-bool CegConjecturePbe::EnumInfo::isCover() {
-  Assert( !isConditional() );
-  return d_enum_total_true;
-}
-
-bool CegConjecturePbe::EnumInfo::isSolved() { 
-  return !d_enum_solved.isNull(); 
-}
 
 
 // status : 0 : exact, -1 : vals is subset, 1 : vals is superset
@@ -975,7 +984,8 @@ Node CegConjecturePbe::constructDecisionTree( Node c, Node e, UnifContext& x, in
   Node ret_dt;
   if( itn->second.isSolved() ){
     // this type has a complete solution
-    ret_dt = itn->second.d_enum_solved;
+    ret_dt = itn->second.getSolved();
+    Assert( !ret_dt.isNull() );
     indent("sygus-pbe-dt-debug", ind);
     Trace("sygus-pbe-dt-debug") << "return DT: success : solved" << std::endl;
   }else{

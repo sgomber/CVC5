@@ -269,7 +269,7 @@ option sygusMinGrammar --sygus-min-grammar bool :default true
 
 option sygusInvTemplMode --sygus-inv-templ=MODE CVC4::theory::quantifiers::SygusInvTemplMode :default CVC4::theory::quantifiers::SYGUS_INV_TEMPL_MODE_NONE :include "options/quantifiers_modes.h" :handler stringToSygusInvTemplMode
   template mode for sygus invariant synthesis
-option sygusUnifCondSol --sygus-unif-csol bool :default false
+option sygusUnifCondSol --sygus-unif-csol bool :default true
   enable new approach which unifies conditional solutions
 
 option sygusDirectEval --sygus-direct-eval bool :default true

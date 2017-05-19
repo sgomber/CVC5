@@ -4453,7 +4453,9 @@ Node TermDbSygus::addPbeSearchVal( TypeNode tn, Node e, Node bvr ){
   Assert( !e.isNull() );
   if( hasPbeExamples( e ) ){
     unsigned nex = getNumPbeExamples( e );
-    return d_pbe_trie[e].addPbeExample( tn, e, bvr, this, 0, nex );
+    Node ret = d_pbe_trie[e][tn].addPbeExample( tn, e, bvr, this, 0, nex );
+    Assert( ret.getType()==bvr.getType() );
+    return ret;
   }
   return Node::null();
 }

@@ -764,7 +764,7 @@ private:
     void clear() { d_children.clear(); }
     Node addPbeExample( TypeNode etn, Node e, Node b, TermDbSygus * tds, unsigned index, unsigned ntotal );
   };
-  std::map< Node, PbeTrie > d_pbe_trie;
+  std::map< Node, std::map< TypeNode, PbeTrie > > d_pbe_trie;
 public:
   /** register examples for an enumerative search term. 
       This should be a comprehensive set of examples. */
