@@ -55,7 +55,7 @@ public:
   bool isPbe() { return d_is_pbe; }
 private:  // for registration
   void collectEnumeratorTypes( Node e, TypeNode tn );
-  void registerEnumerator( Node et, Node e, TypeNode tn, int j );
+  void registerEnumerator( Node et, Node e, TypeNode tn );
 
   /** register candidate conditional */
   bool inferIteTemplate( unsigned k, Node n, std::map< Node, unsigned >& templ_var_index, std::map< unsigned, unsigned >& templ_injection );  
@@ -114,7 +114,10 @@ private:
     EnumInfo() : d_enum_total_true( false ), d_parent_arg(-1){}
     Node d_parent_candidate;
     TypeNode d_parent;
+    // for template
     int d_parent_arg;
+    Kind d_parent_kind;
+    
     Node d_active_guard;
     std::vector< Node > d_enum_slave;
     /** values we have enumerated */
@@ -125,7 +128,7 @@ private:
     SubsumeTrie d_term_trie;
   public:
     bool isBasic() { return d_parent_arg==-1; }
-    bool isConditional() { return d_parent_arg==0; }
+    bool isConditional() { return d_parent_kind==kind::ITE && d_parent_arg==0; }
     void addEnumeratedValue( Node v, std::vector< bool >& results );
     void setSolved( Node slv );
     bool isCover();
@@ -135,24 +138,29 @@ private:
   std::map< Node, EnumInfo > d_einfo;
 private:
   class CandidateInfo;
+  class EnumTypeInfoStrat {
+  public:
+    /** conditional solutions */
+    Node d_csol_op;
+    std::vector< TypeNode > d_csol_cts;
+    std::vector< Node > d_cenum;
+    /** required for template solutions */
+    std::map< unsigned, Node > d_template;
+    std::map< unsigned, Node > d_template_arg;
+  };
   class EnumTypeInfo {
   public:
     EnumTypeInfo() : d_parent( NULL ), d_csol_status(-1){}
     CandidateInfo * d_parent;
     Node d_enum;
     TypeNode d_this_type;
-    /** conditional solutions */
-    Node d_csol_op;
-    std::vector< TypeNode > d_csol_cts;
-    std::vector< Node > d_cenum;
+    std::map< Kind, EnumTypeInfoStrat > d_strat;
     /** solution status */
     int d_csol_status;
-    /** required for template solutions */
-    std::map< unsigned, Node > d_template;
-    std::map< unsigned, Node > d_template_arg;
     bool isCover( CegConjecturePbe * pbe, bool beneathCond, std::map< bool, std::map< TypeNode, bool > >& visited );
     bool isSolved( CegConjecturePbe * pbe );
-    bool isConditionExpandable() { return !d_csol_op.isNull(); }
+    //bool isConditionExpandable() { return !d_csol_op.isNull(); }
+    bool isConditionExpandable() { return d_strat.find( kind::ITE )!=d_strat.end(); }
   };
   class CandidateInfo {
   public:
