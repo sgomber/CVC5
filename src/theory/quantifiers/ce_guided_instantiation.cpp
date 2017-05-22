@@ -16,6 +16,7 @@
 
 #include "expr/datatype.h"
 #include "options/quantifiers_options.h"
+#include "options/datatypes_options.h"
 #include "smt/smt_statistics_registry.h"
 #include "theory/quantifiers/first_order_model.h"
 #include "theory/quantifiers/term_database.h"
@@ -146,7 +147,7 @@ void CegConjecture::initializeGuard(){
 }
   
 Node CegConjecture::getFairnessLiteral( int i ) {
-  if( getCegqiFairMode()!=CEGQI_FAIR_NONE ){
+  if( getCegqiFairMode()!=SYGUS_FAIR_NONE ){
     std::map< int, Node >::iterator it = d_lits.find( i );
     if( it==d_lits.end() ){
       Trace("cegqi-engine") << "******* CEGQI : allocate size literal " << i << std::endl;
@@ -171,8 +172,8 @@ Node CegConjecture::getGuard() {
   return !d_syntax_guided ? d_nsg_guard : d_ceg_si->d_si_guard;
 }
 
-CegqiFairMode CegConjecture::getCegqiFairMode() {
-  return isSingleInvocation() ? CEGQI_FAIR_NONE : options::ceGuidedInstFair();
+SygusFairMode CegConjecture::getCegqiFairMode() {
+  return isSingleInvocation() ? SYGUS_FAIR_NONE : options::sygusFair();
 }
 
 bool CegConjecture::isSingleInvocation() const {
@@ -627,7 +628,7 @@ void CegInstantiation::checkCegConjecture( CegConjecture * conj ) {
     conj->debugPrint("cegqi-engine-debug");
     Trace("cegqi-engine-debug") << std::endl;
   }
-  if( conj->getCegqiFairMode()!=CEGQI_FAIR_NONE ){
+  if( conj->getCegqiFairMode()!=SYGUS_FAIR_NONE ){
     Trace("cegqi-engine") << "  * Current term size : " << conj->getCurrentTermSize() << std::endl;
   }  
 

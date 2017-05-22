@@ -20,6 +20,7 @@
 #include "context/cdchunk_list.h"
 #include "context/cdhashmap.h"
 #include "options/quantifiers_modes.h"
+#include "options/datatypes_modes.h"
 #include "theory/quantifiers/ce_guided_single_inv.h"
 #include "theory/quantifiers/ce_guided_pbe.h"
 #include "theory/quantifiers_engine.h"
@@ -130,7 +131,7 @@ public:
   /** is ground */
   bool isGround() { return d_inner_vars.empty(); }
   /** fairness */
-  CegqiFairMode getCegqiFairMode();
+  SygusFairMode getCegqiFairMode();
   /** is single invocation */
   bool isSingleInvocation() const;
   /** is single invocation */

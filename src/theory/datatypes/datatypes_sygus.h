@@ -68,6 +68,7 @@ private:
   IntMap d_testers;
   NodeMap d_testers_exp;
   NodeSet d_active_terms;
+  IntMap d_currTermSize;
   Node d_zero;
 private:
   std::map< Node, Node > d_term_to_anchor;
@@ -127,6 +128,7 @@ private:
   unsigned processSelectorChain( Node n, std::map< TypeNode, Node >& top_level, 
                                  std::map< Node, unsigned >& tdepth, std::vector< Node >& lemmas );
   bool debugTesters( Node n, Node vn, int ind, std::vector< Node >& lemmas );
+  Node getCurrentTemplate( Node n, std::map< TypeNode, int >& var_count );
 public:
   SygusSymBreakNew( TheoryDatatypes * td, quantifiers::TermDbSygus * tds, context::Context* c );
   ~SygusSymBreakNew();
