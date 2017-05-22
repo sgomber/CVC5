@@ -112,17 +112,23 @@ private:
     bool d_enum_total_true;
     Node d_enum_solved;
   public:
-    EnumInfo() : d_enum_total_true( false ), d_parent_arg(-1){}
+    EnumInfo() : d_enum_total_true( false ), d_parent_arg(-1), d_considers_output(true){}
     Node d_parent_candidate;
+    // parent information (context on how this should be enumerated)
     TypeNode d_parent;
-    // for template
     int d_parent_arg;
     Kind d_parent_kind;
+    
+    // TODO : make private
+    bool d_considers_output;
     
     Node d_active_guard;
     std::vector< Node > d_enum_slave;
     /** values we have enumerated */
     std::vector< Node > d_enum_vals;
+    /** this either stores the values of f( I ) for inputs 
+        or the value of f( I ) = O if considersOutput() = true
+    */
     std::vector< std::vector< Node > > d_enum_vals_res;
     std::vector< Node > d_enum_subsume;
     std::map< Node, unsigned > d_enum_val_to_index;
@@ -130,7 +136,8 @@ private:
   public:
     bool isBasic() { return d_parent_arg==-1; }
     bool isConditional() { return d_parent_kind==kind::ITE && d_parent_arg==0; }
-    void addEnumeratedValue( CegConjecturePbe * pbe, Node v, std::vector< Node >& results );
+    bool considersOutput();
+    void addEnumValue( CegConjecturePbe * pbe, Node v, std::vector< Node >& results );
     void setSolved( Node slv );
     bool isCover();
     bool isSolved() { return !d_enum_solved.isNull(); }
