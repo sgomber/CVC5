@@ -34,8 +34,6 @@ private:
   QuantifiersEngine* d_qe;
   quantifiers::TermDbSygus * d_tds;
   CegConjecture* d_parent;
-  Node d_true;
-  Node d_false;
 
   std::map< Node, bool > d_examples_invalid;
   std::map< Node, bool > d_examples_out_invalid;
@@ -45,6 +43,9 @@ private:
   
   void collectExamples( Node n, std::map< Node, bool >& visited, bool hasPol, bool pol );
   bool d_is_pbe;
+public:  
+  Node d_true;
+  Node d_false;
 public:
   CegConjecturePbe( QuantifiersEngine * qe, CegConjecture * p );
   ~CegConjecturePbe();
@@ -65,37 +66,37 @@ public:
   class IndexFilter {
   public:
     IndexFilter(){}
-    void mk( std::vector< bool >& vals, bool pol = true );
+    void mk( std::vector< Node >& vals, bool pol = true );
     std::map< unsigned, unsigned > d_next;
     unsigned start();
     unsigned next( unsigned i );
     void clear() { d_next.clear(); }
-    bool isEq( std::vector< bool >& vs, bool v );
+    bool isEq( std::vector< Node >& vs, Node v );
   };
 private:
   // subsumption trie
   class SubsumeTrie {
   private:
-    Node addTermInternal( Node t, std::vector< bool >& vals, bool pol, std::vector< Node >& subsumed, bool spol, IndexFilter * f, 
+    Node addTermInternal( CegConjecturePbe * pbe, Node t, std::vector< Node >& vals, bool pol, std::vector< Node >& subsumed, bool spol, IndexFilter * f, 
                           unsigned index, int status, bool checkExistsOnly, bool checkSubsume );
   public:
     SubsumeTrie(){}
     Node d_term;
-    std::map< bool, SubsumeTrie > d_children;
+    std::map< Node, SubsumeTrie > d_children;
     // adds term to the trie, removes based on subsumption
-    Node addTerm( Node t, std::vector< bool >& vals, bool pol, std::vector< Node >& subsumed, IndexFilter * f = NULL );
+    Node addTerm( CegConjecturePbe * pbe, Node t, std::vector< Node >& vals, bool pol, std::vector< Node >& subsumed, IndexFilter * f = NULL );
     // adds condition to the trie (does not do subsumption)
-    Node addCond( Node c, std::vector< bool >& vals, bool pol, IndexFilter * f = NULL );
+    Node addCond( CegConjecturePbe * pbe, Node c, std::vector< Node >& vals, bool pol, IndexFilter * f = NULL );
     // returns the set of terms that are subsets of vals
-    void getSubsumed( std::vector< bool >& vals, bool pol, std::vector< Node >& subsumed, IndexFilter * f = NULL );
+    void getSubsumed( CegConjecturePbe * pbe, std::vector< Node >& vals, bool pol, std::vector< Node >& subsumed, IndexFilter * f = NULL );
     // returns the set of terms that are supersets of vals
-    void getSubsumedBy( std::vector< bool >& vals, bool pol, std::vector< Node >& subsumed_by, IndexFilter * f = NULL );
+    void getSubsumedBy( CegConjecturePbe * pbe, std::vector< Node >& vals, bool pol, std::vector< Node >& subsumed_by, IndexFilter * f = NULL );
   private:
-    void getLeavesInternal( std::vector< bool >& vals, bool pol, std::map< int, std::vector< Node > >& v, IndexFilter * f, 
+    void getLeavesInternal( CegConjecturePbe * pbe, std::vector< Node >& vals, bool pol, std::map< int, std::vector< Node > >& v, IndexFilter * f, 
                             unsigned index, int status );
   public:
     // v[-1,1,0] -> children always false, always true, both
-    void getLeaves( std::vector< bool >& vals, bool pol, std::map< int, std::vector< Node > >& v, IndexFilter * f = NULL );
+    void getLeaves( CegConjecturePbe * pbe, std::vector< Node >& vals, bool pol, std::map< int, std::vector< Node > >& v, IndexFilter * f = NULL );
   public:
     bool isEmpty() { return d_term.isNull() && d_children.empty(); }
     void clear() {
@@ -107,7 +108,7 @@ private:
   class EnumInfo {
   private:
     /** an OR of all in d_enum_res */
-    std::vector< bool > d_enum_total;
+    std::vector< Node > d_enum_total;
     bool d_enum_total_true;
     Node d_enum_solved;
   public:
@@ -122,14 +123,14 @@ private:
     std::vector< Node > d_enum_slave;
     /** values we have enumerated */
     std::vector< Node > d_enum_vals;
-    std::vector< std::vector< bool > > d_enum_vals_res;
+    std::vector< std::vector< Node > > d_enum_vals_res;
     std::vector< Node > d_enum_subsume;
     std::map< Node, unsigned > d_enum_val_to_index;
     SubsumeTrie d_term_trie;
   public:
     bool isBasic() { return d_parent_arg==-1; }
     bool isConditional() { return d_parent_kind==kind::ITE && d_parent_arg==0; }
-    void addEnumeratedValue( Node v, std::vector< bool >& results );
+    void addEnumeratedValue( CegConjecturePbe * pbe, Node v, std::vector< Node >& results );
     void setSolved( Node slv );
     bool isCover();
     bool isSolved() { return !d_enum_solved.isNull(); }
@@ -201,8 +202,8 @@ private:
   class UnifContext {
   public:
     IndexFilter d_filter;
-    std::vector< bool > d_vals;
-    bool updateContext( std::vector< bool >& vals, bool pol );
+    std::vector< Node > d_vals;
+    bool updateContext( CegConjecturePbe * pbe, std::vector< Node >& vals, bool pol );
     class UEnumInfo {
     public:
       UEnumInfo() : d_status(-1){}
@@ -212,11 +213,11 @@ private:
     };
     // enumerator -> info
     std::map< Node, UEnumInfo > d_uinfo;
-    void initialize( unsigned sz );
+    void initialize( CegConjecturePbe * pbe, unsigned sz );
   };
   /** construct solution */
-  Node constructDecisionTree( Node c );
-  Node constructDecisionTree( Node c, Node e, UnifContext& x, int ind );
+  Node constructSolution( Node c );
+  Node constructSolution( Node c, Node e, UnifContext& x, int ind );
   Node constructBestSolvedTerm( std::vector< Node >& solved, UnifContext& x );
   Node constructBestSolvedConditional( std::vector< Node >& solved, UnifContext& x );
   Node constructBestConditional( std::vector< Node >& conds, UnifContext& x );

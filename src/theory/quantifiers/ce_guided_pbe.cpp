@@ -33,10 +33,11 @@ void indent( const char * c, int ind ) {
     }
   } 
 }
-void print_val( const char * c, std::vector< bool >& vals, bool pol = true ){
+void print_val( const char * c, std::vector< Node >& vals, bool pol = true ){
   if( Trace.isOn(c) ){
     for( unsigned i=0; i<vals.size(); i++ ){
-      Trace(c) << ( pol ? vals[i] : !vals[i] );
+      //Trace(c) << ( pol ? vals[i] : !vals[i] );
+      Trace(c) << ( ( pol ? vals[i].getConst<bool>() : !vals[i].getConst<bool>() ) ? "1" : "0" );
     }
   }
 }
@@ -64,7 +65,7 @@ void CegConjecturePbe::collectExamples( Node n, std::map< Node, bool >& visited,
     if( n.getKind()==APPLY_UF && n.getNumChildren()>0 ){
       neval = n;
       if( hasPol ){
-        n_output = NodeManager::currentNM()->mkConst( !pol );
+        n_output = !pol ? d_true : d_false;
       }
     }else if( n.getKind()==EQUAL && hasPol && !pol ){
       for( unsigned r=0; r<2; r++ ){
@@ -253,7 +254,9 @@ void CegConjecturePbe::collectEnumeratorTypes( Node e, TypeNode tn ) {
                 success = true;
                 Assert( dt[j].getNumArgs()==3 );
               }else if( sk==kind::STRING_CONCAT ){
-                
+                if( dt[j].getNumArgs()==2 ) {
+                  success = true;
+                }
               }
               if( success ){
                 // set the operator
@@ -448,14 +451,11 @@ bool CegConjecturePbe::constructCandidates( std::vector< Node >& enums, std::vec
   for( unsigned i=0; i<candidates.size(); i++ ){
     Node c = candidates[i];
     //build decision tree for candidate
-    Node vc = constructDecisionTree( c );
+    Node vc = constructSolution( c );
     if( vc.isNull() ){     
       return false;
     }else{
       candidate_values.push_back( vc );
-       
-      //AlwaysAssert( false ); //FIXME
-      //return false;
     }
   }
   return true;
@@ -492,7 +492,7 @@ void CegConjecturePbe::addEnumeratedValue( Node x, Node v, std::vector< Node >& 
         }
         Trace("sygus-pbe-enum")  << xs <<  " : ";
         //evaluate all input/output examples
-        std::vector< bool > results;
+        std::vector< Node > results;
         Node templ;
         TNode templ_var;
         if( itv->second.d_parent_arg>=0 ){
@@ -507,7 +507,7 @@ void CegConjecturePbe::addEnumeratedValue( Node x, Node v, std::vector< Node >& 
           Assert( itps->second.d_template_arg.find( itv->second.d_parent_arg )!=itps->second.d_template_arg.end() );
           templ_var = itps->second.d_template_arg[itv->second.d_parent_arg];
         }
-        std::map< bool, bool > cond_vals;
+        std::map< Node, bool > cond_vals;
         for( unsigned j=0; j<itx->second.size(); j++ ){
           Node out = itxo->second[j];
           Node res = d_tds->evaluateBuiltin( xtn, bv, itx->second[j] );
@@ -519,16 +519,16 @@ void CegConjecturePbe::addEnumeratedValue( Node x, Node v, std::vector< Node >& 
             res = Rewriter::rewrite( res );
             Assert( res.isConst() );
           }
-          bool resb;
+          Node resb;
           if( itv->second.isConditional() ){
-            resb = res==d_true;
             // it is a conditional
+            resb = res;
           }else{
-            resb = res==out;
+            resb = res==out ? d_true : d_false;
           }
           cond_vals[resb] = true;
           results.push_back( resb );
-          Trace("sygus-pbe-enum") << resb;
+          Trace("sygus-pbe-enum") << ( resb==d_true ? "1" : "0" );
         }
         bool keep = false;
         if( itv->second.isConditional() ){
@@ -538,7 +538,7 @@ void CegConjecturePbe::addEnumeratedValue( Node x, Node v, std::vector< Node >& 
           //  keep = false;
           //}
           // must be unique up to examples
-          Node val = itv->second.d_term_trie.addCond( v, results, true );
+          Node val = itv->second.d_term_trie.addCond( this, v, results, true );
           if( val==v ){
             Trace("sygus-pbe-enum") << "  ...success!   add to DT pool : " << d_tds->sygusToBuiltin( v ) << std::endl;
             keep = true;
@@ -547,21 +547,21 @@ void CegConjecturePbe::addEnumeratedValue( Node x, Node v, std::vector< Node >& 
           }
           itc->second.d_cond_count++;
         }else{
-          if( cond_vals.find( true )!=cond_vals.end() || cond_vals.empty() ){  // latter is the degenerate case of no examples
+          if( cond_vals.find( d_true )!=cond_vals.end() || cond_vals.empty() ){  // latter is the degenerate case of no examples
             //check subsumbed/subsuming
             std::vector< Node > subsume;
-            if( cond_vals.find( false )==cond_vals.end() ){
+            if( cond_vals.find( d_false )==cond_vals.end() ){
               // it is the entire solution, we are done
               Trace("sygus-pbe-enum") << "  ...success, full solution added to DT pool : " << d_tds->sygusToBuiltin( v ) << std::endl;
               if( !itv->second.isSolved() ){
                 itv->second.setSolved( v );
                 // it subsumes everything
                 itv->second.d_term_trie.clear();
-                itv->second.d_term_trie.addTerm( v, results, true, subsume );
+                itv->second.d_term_trie.addTerm( this, v, results, true, subsume );
               }
               keep = true;
             }else{
-              Node val = itv->second.d_term_trie.addTerm( v, results, true, subsume );
+              Node val = itv->second.d_term_trie.addTerm( this, v, results, true, subsume );
               if( val==v ){
                 Trace("sygus-pbe-enum") << "  ...success"; 
                 if( !subsume.empty() ){
@@ -582,7 +582,7 @@ void CegConjecturePbe::addEnumeratedValue( Node x, Node v, std::vector< Node >& 
         if( keep ){
           // notify the parent to retry the build of DT
           itc->second.d_check_dt = true;
-          itv->second.addEnumeratedValue( v, results );
+          itv->second.addEnumeratedValue( this, v, results );
           if( Trace.isOn("sygus-pbe-enum") ){
             if( !itv->second.isConditional() ){
               if( !prevIsCover && itv->second.isCover() ){
@@ -606,7 +606,7 @@ void CegConjecturePbe::addEnumeratedValue( Node x, Node v, std::vector< Node >& 
   }
 }
 
-void CegConjecturePbe::EnumInfo::addEnumeratedValue( Node v, std::vector< bool >& results ) {
+void CegConjecturePbe::EnumInfo::addEnumeratedValue( CegConjecturePbe * pbe, Node v, std::vector< Node >& results ) {
   d_enum_val_to_index[v] = d_enum_vals.size();
   d_enum_vals.push_back( v );
   d_enum_vals_res.push_back( results );
@@ -618,10 +618,10 @@ void CegConjecturePbe::EnumInfo::addEnumeratedValue( Node v, std::vector< bool >
       d_enum_total_true = true;
       Assert( d_enum_total.size()==results.size() );
       for( unsigned i=0; i<results.size(); i++ ){
-        if( d_enum_total[i] || results[i] ){
-          d_enum_total[i] = true;
+        if( d_enum_total[i]==pbe->d_true || results[i]==pbe->d_true ){
+          d_enum_total[i] = pbe->d_true;
         }else{
-          d_enum_total[i] = false;
+          d_enum_total[i] = pbe->d_false;
           d_enum_total_true = false;
         }
       }
@@ -722,7 +722,7 @@ bool CegConjecturePbe::CandidateInfo::isCover( CegConjecturePbe * pbe ) {
 
 
 // status : 0 : exact, -1 : vals is subset, 1 : vals is superset
-Node CegConjecturePbe::SubsumeTrie::addTermInternal( Node t, std::vector< bool >& vals, bool pol, 
+Node CegConjecturePbe::SubsumeTrie::addTermInternal( CegConjecturePbe * pbe, Node t, std::vector< Node >& vals, bool pol, 
                                                      std::vector< Node >& subsumed, bool spol, IndexFilter * f, 
                                                      unsigned index, int status, bool checkExistsOnly, bool checkSubsume ) {
   if( index==vals.size() ){
@@ -749,28 +749,28 @@ Node CegConjecturePbe::SubsumeTrie::addTermInternal( Node t, std::vector< bool >
     return d_term;
   }else{
     // the current value 
-    bool cv = pol ? vals[index] : !vals[index];
+    Node cv = pol ? vals[index] : ( vals[index]==pbe->d_true ? pbe->d_false : pbe->d_true );
     // if checkExistsOnly = false, check if the current value is subsumed if checkSubsume = true, if so, don't add
     if( !checkExistsOnly && checkSubsume ){
       std::vector< bool > check_subsumed_by;
       if( status==0 ){
-        if( !cv ){
+        if( cv==pbe->d_false ){
           check_subsumed_by.push_back( spol );
         }
       }else if( status==-1 ){
         check_subsumed_by.push_back( spol );
-        if( !cv ){
+        if( cv==pbe->d_false ){
           check_subsumed_by.push_back( !spol );
         }
       }
       // check for subsumed nodes
       for( unsigned i=0; i<check_subsumed_by.size(); i++ ){
-        bool csval = check_subsumed_by[i];
+        Node csval = check_subsumed_by[i] ? pbe->d_true : pbe->d_false;
         // check if subsumed
-        std::map< bool, SubsumeTrie >::iterator itc = d_children.find( csval );
+        std::map< Node, SubsumeTrie >::iterator itc = d_children.find( csval );
         if( itc!=d_children.end() ){
           unsigned next_index = f ? f->next( index ) : index+1;
-          Node ret = itc->second.addTermInternal( t, vals, pol, subsumed, spol, f, next_index, -1, checkExistsOnly, checkSubsume );
+          Node ret = itc->second.addTermInternal( pbe, t, vals, pol, subsumed, spol, f, next_index, -1, checkExistsOnly, checkSubsume );
           // ret subsumes t
           if( !ret.isNull() ){
             return ret;
@@ -783,13 +783,14 @@ Node CegConjecturePbe::SubsumeTrie::addTermInternal( Node t, std::vector< bool >
     if( status==0 ){
       unsigned next_index = f ? f->next( index ) : index+1;
       if( checkExistsOnly ){
-        std::map< bool, SubsumeTrie >::iterator itc = d_children.find( spol ? cv : !cv );
+        Node cvn = spol ? cv : ( cv==pbe->d_true ? pbe->d_false : pbe->d_true ); 
+        std::map< Node, SubsumeTrie >::iterator itc = d_children.find( cvn );
         if( itc!=d_children.end() ){
-          ret = itc->second.addTermInternal( t, vals, pol, subsumed, spol, f, next_index, 0, checkExistsOnly, checkSubsume );
+          ret = itc->second.addTermInternal( pbe, t, vals, pol, subsumed, spol, f, next_index, 0, checkExistsOnly, checkSubsume );
         }
       }else{
         Assert( spol );
-        ret = d_children[cv].addTermInternal( t, vals, pol, subsumed, spol, f, next_index, 0, checkExistsOnly, checkSubsume );
+        ret = d_children[cv].addTermInternal( pbe, t, vals, pol, subsumed, spol, f, next_index, 0, checkExistsOnly, checkSubsume );
         if( ret!=t ){
           // we were subsumed by ret, return
           return ret;
@@ -797,25 +798,25 @@ Node CegConjecturePbe::SubsumeTrie::addTermInternal( Node t, std::vector< bool >
       }
       if( checkSubsume ){
         // check for subsuming
-        if( cv ){
+        if( cv==pbe->d_true ){
           check_subsume.push_back( !spol );
         }
       }
     }else if( status==1 ){
       Assert( checkSubsume );
       check_subsume.push_back( !spol );
-      if( cv ){
+      if( cv==pbe->d_true ){
         check_subsume.push_back( spol );
       }
     }
     if( checkSubsume ){
       // check for subsumed terms
       for( unsigned i=0; i<check_subsume.size(); i++ ){
-        bool csval = check_subsume[i];
-        std::map< bool, SubsumeTrie >::iterator itc = d_children.find( csval );
+        Node csval = check_subsume[i] ? pbe->d_true : pbe->d_false;
+        std::map< Node, SubsumeTrie >::iterator itc = d_children.find( csval );
         if( itc!=d_children.end() ){
           unsigned next_index = f ? f->next( index ) : index+1;
-          itc->second.addTermInternal( t, vals, pol, subsumed, spol, f, next_index, 1, checkExistsOnly, checkSubsume );
+          itc->second.addTermInternal( pbe, t, vals, pol, subsumed, spol, f, next_index, 1, checkExistsOnly, checkSubsume );
           // clean up
           if( itc->second.isEmpty() ){
             Assert( !checkExistsOnly );
@@ -828,74 +829,75 @@ Node CegConjecturePbe::SubsumeTrie::addTermInternal( Node t, std::vector< bool >
   }
 }
 
-Node CegConjecturePbe::SubsumeTrie::addTerm( Node t, std::vector< bool >& vals, bool pol, std::vector< Node >& subsumed, IndexFilter * f ) {
+Node CegConjecturePbe::SubsumeTrie::addTerm( CegConjecturePbe * pbe, Node t, std::vector< Node >& vals, bool pol, std::vector< Node >& subsumed, IndexFilter * f ) {
   unsigned start_index = f ? f->start() : 0;
-  return addTermInternal( t, vals, pol, subsumed, true, f, start_index, 0, false, true );
+  return addTermInternal( pbe, t, vals, pol, subsumed, true, f, start_index, 0, false, true );
 }
 
-Node CegConjecturePbe::SubsumeTrie::addCond( Node c, std::vector< bool >& vals, bool pol, IndexFilter * f ) {
+Node CegConjecturePbe::SubsumeTrie::addCond( CegConjecturePbe * pbe, Node c, std::vector< Node >& vals, bool pol, IndexFilter * f ) {
   unsigned start_index = f ? f->start() : 0;
   std::vector< Node > subsumed;
-  return addTermInternal( c, vals, pol, subsumed, true, f, start_index, 0, false, false );
+  return addTermInternal( pbe, c, vals, pol, subsumed, true, f, start_index, 0, false, false );
 }
 
-void CegConjecturePbe::SubsumeTrie::getSubsumed( std::vector< bool >& vals, bool pol, std::vector< Node >& subsumed, IndexFilter * f ){
+void CegConjecturePbe::SubsumeTrie::getSubsumed( CegConjecturePbe * pbe, std::vector< Node >& vals, bool pol, std::vector< Node >& subsumed, IndexFilter * f ){
   unsigned start_index = f ? f->start() : 0;
-  addTermInternal( Node::null(), vals, pol, subsumed, true, f, start_index, 0, true, true );
+  addTermInternal( pbe, Node::null(), vals, pol, subsumed, true, f, start_index, 0, true, true );
 }
 
-void CegConjecturePbe::SubsumeTrie::getSubsumedBy( std::vector< bool >& vals, bool pol, std::vector< Node >& subsumed_by, IndexFilter * f ){
+void CegConjecturePbe::SubsumeTrie::getSubsumedBy( CegConjecturePbe * pbe, std::vector< Node >& vals, bool pol, std::vector< Node >& subsumed_by, IndexFilter * f ){
   // flip polarities
   unsigned start_index = f ? f->start() : 0;
-  addTermInternal( Node::null(), vals, !pol, subsumed_by, false, f, start_index, 0, true, true );
+  addTermInternal( pbe, Node::null(), vals, !pol, subsumed_by, false, f, start_index, 0, true, true );
 }
 
-void CegConjecturePbe::SubsumeTrie::getLeavesInternal( std::vector< bool >& vals, bool pol, std::map< int, std::vector< Node > >& v, 
+void CegConjecturePbe::SubsumeTrie::getLeavesInternal( CegConjecturePbe * pbe, std::vector< Node >& vals, bool pol, std::map< int, std::vector< Node > >& v, 
                                                        IndexFilter * f, unsigned index, int status ) {
   if( index==vals.size() ){
     Assert( !d_term.isNull() );
     Assert( std::find( v[status].begin(), v[status].end(), d_term )==v[status].end() );
     v[status].push_back( d_term );
   }else{
-    bool cv = pol ? vals[index] : !vals[index];
+    //bool cv = pol ? vals[index].getConst<bool>() : !vals[index].getConst<bool>();
     // filter should be for cv
-    Assert( f==NULL || cv );
-    for( std::map< bool, SubsumeTrie >::iterator it = d_children.begin(); it != d_children.end(); ++it ){
+    Assert( f==NULL || vals[index]==( pol ? pbe->d_true : pbe->d_false ) );
+    for( std::map< Node, SubsumeTrie >::iterator it = d_children.begin(); it != d_children.end(); ++it ){
       int new_status = status;
       // if the current value is true
-      if( cv ){
+      if( vals[index]==( pol ? pbe->d_true : pbe->d_false ) ){
         if( status!=0 ){
-          new_status = it->first ? 1 : -1;
+          new_status = ( it->first == pbe->d_true ? 1 : -1 );
           if( status!=-2 && new_status!=status ){
             new_status = 0;
           }
         }
       }
       unsigned next_index = f ? f->next( index ) : index+1;
-      it->second.getLeavesInternal( vals, pol, v, f, next_index, new_status );
+      it->second.getLeavesInternal( pbe, vals, pol, v, f, next_index, new_status );
     }
   }
 }
 
-void CegConjecturePbe::SubsumeTrie::getLeaves( std::vector< bool >& vals, bool pol, std::map< int, std::vector< Node > >& v, IndexFilter * f ) {
+void CegConjecturePbe::SubsumeTrie::getLeaves( CegConjecturePbe * pbe, std::vector< Node >& vals, bool pol, std::map< int, std::vector< Node > >& v, IndexFilter * f ) {
   unsigned start_index = f ? f->start() : 0;
-  getLeavesInternal( vals, pol, v, f, start_index, -2 );
+  getLeavesInternal( pbe, vals, pol, v, f, start_index, -2 );
 }
 
-void CegConjecturePbe::IndexFilter::mk( std::vector< bool >& vals, bool pol ) {
+void CegConjecturePbe::IndexFilter::mk( std::vector< Node >& vals, bool pol ) {
   Trace("sygus-pbe-debug") << "Make for : ";
   print_val( "sygus-pbe-debug", vals, pol );
   Trace("sygus-pbe-debug") << std::endl;
+  Node poln = NodeManager::currentNM()->mkConst( pol );
   
   unsigned curr_index = 0;
-  while( curr_index<vals.size() && vals[curr_index]!=pol ){
+  while( curr_index<vals.size() && vals[curr_index]!=poln ){
     curr_index++;
   }
   d_next[0] = curr_index;
   Trace("sygus-pbe-debug") << "0 -> " << curr_index << std::endl;
   unsigned i = curr_index;
   while( i<vals.size() ){
-    while( i<vals.size() && vals[i]!=pol ){
+    while( i<vals.size() && vals[i]!=poln ){
       i++;
     }
     i++;
@@ -907,17 +909,17 @@ void CegConjecturePbe::IndexFilter::mk( std::vector< bool >& vals, bool pol ) {
   // verify it is correct
   unsigned j = start();
   for( unsigned k=0; k<j; k++ ){
-    AlwaysAssert( vals[k]!=pol );
+    AlwaysAssert( vals[k]!=poln );
   }
   Trace("sygus-pbe-debug") << "...start : " << j << std::endl;
   unsigned counter = 0;
   while( j<vals.size() ){
     Trace("sygus-pbe-debug") << "...at : " << j << std::endl;
-    AlwaysAssert( vals[j]==pol );
+    AlwaysAssert( vals[j]==poln );
     unsigned jj = next( j );
     AlwaysAssert( jj>j );
     for( unsigned k=(j+1); k<jj; k++ ){
-      AlwaysAssert( vals[k]!=pol );
+      AlwaysAssert( vals[k]!=poln );
     }
     AlwaysAssert( counter<=vals.size() );
     counter++;
@@ -945,7 +947,7 @@ unsigned CegConjecturePbe::IndexFilter::next( unsigned i ) {
   }      
 }
 
-bool CegConjecturePbe::IndexFilter::isEq( std::vector< bool >& vals, bool v ) {
+bool CegConjecturePbe::IndexFilter::isEq( std::vector< Node >& vals, Node v ) {
   unsigned index = start();
   while( index<vals.size() ){
     if( vals[index]!=v ){
@@ -956,7 +958,7 @@ bool CegConjecturePbe::IndexFilter::isEq( std::vector< bool >& vals, bool v ) {
   return true;
 }
 
-Node CegConjecturePbe::constructDecisionTree( Node c ){
+Node CegConjecturePbe::constructSolution( Node c ){
   std::map< Node, CandidateInfo >::iterator itc = d_cinfo.find( c );
   Assert( itc!=d_cinfo.end() );
   if( !itc->second.d_solution.isNull() ){
@@ -974,8 +976,8 @@ Node CegConjecturePbe::constructDecisionTree( Node c ){
           UnifContext x;
           // initialize with #examples
           Assert( d_examples.find( c )!=d_examples.end() );
-          x.initialize( d_examples[c].size() );
-          Node vc = constructDecisionTree( c, e, x, 1 );
+          x.initialize( this, d_examples[c].size() );
+          Node vc = constructSolution( c, e, x, 1 );
           if( !vc.isNull() ){
             Trace("sygus-pbe-enum") << "**** DT SOLVED : " << c << " = " << vc << std::endl;
             itc->second.d_solution = vc;
@@ -1009,7 +1011,7 @@ Node CegConjecturePbe::constructBestConditional( std::vector< Node >& conds, Uni
   return conds[cindex];
 }
 
-Node CegConjecturePbe::constructDecisionTree( Node c, Node e, UnifContext& x, int ind ) {
+Node CegConjecturePbe::constructSolution( Node c, Node e, UnifContext& x, int ind ) {
   indent("sygus-pbe-dt", ind);
   Trace("sygus-pbe-dt") << "ConstructDT: enum: " << e << " in context ";
   print_val("sygus-pbe-dt-debug", x.d_vals);
@@ -1027,7 +1029,7 @@ Node CegConjecturePbe::constructDecisionTree( Node c, Node e, UnifContext& x, in
   }else{
     // it has an enumerated value that is conditionally correct under the current assumptions ?
     std::vector< Node > subsumed_by;
-    itn->second.d_term_trie.getSubsumedBy( x.d_vals, true, subsumed_by );
+    itn->second.d_term_trie.getSubsumedBy( this, x.d_vals, true, subsumed_by );
     if( !subsumed_by.empty() ){
       ret_dt = constructBestSolvedTerm( subsumed_by, x );
       indent("sygus-pbe-dt-debug", ind);
@@ -1066,7 +1068,7 @@ Node CegConjecturePbe::constructDecisionTree( Node c, Node e, UnifContext& x, in
             for( unsigned k=0; k<itnc->second.d_enum_vals.size(); k++ ){
               Node cond = itnc->second.d_enum_vals[k];
               std::vector< Node > solved;
-              itnt->second.d_term_trie.getSubsumedBy( itnc->second.d_enum_vals_res[k], branch_pol, solved );
+              itnt->second.d_term_trie.getSubsumedBy( this, itnc->second.d_enum_vals_res[k], branch_pol, solved );
               Trace("sygus-pbe-dt-debug2") << "  reg : DT: " << d_tds->sygusToBuiltin( cond ) << " has " << solved.size() << " solutions in branch " << i << std::endl;
               if( !solved.empty() ){
                 Node slv = constructBestSolvedTerm( solved, x );
@@ -1083,7 +1085,7 @@ Node CegConjecturePbe::constructDecisionTree( Node c, Node e, UnifContext& x, in
         std::map< Node, int > solved_cond;  //stores branch
         //IndexFilter f;
         //f.mk( x.d_vals );
-        itnc->second.d_term_trie.getLeaves( x.d_vals, true, possible_cond );
+        itnc->second.d_term_trie.getLeaves( this, x.d_vals, true, possible_cond );
         
         std::map< int, std::vector< Node > >::iterator itpc = possible_cond.find( 0 );
         if( itpc!=possible_cond.end() ){
@@ -1153,11 +1155,11 @@ Node CegConjecturePbe::constructDecisionTree( Node c, Node e, UnifContext& x, in
               // child enumerator
               Node te = itts->second.d_cenum[i];
               // update the context
-              std::vector< bool > prev = x.d_vals;
-              bool ret = x.updateContext( itnc->second.d_enum_vals_res[split_cond_res_index], i==1 );
+              std::vector< Node > prev = x.d_vals;
+              bool ret = x.updateContext( this, itnc->second.d_enum_vals_res[split_cond_res_index], i==1 );
               // must have updated the context
               AlwaysAssert( ret );
-              Node rec_c = constructDecisionTree( c, te, x, ind+1 );
+              Node rec_c = constructSolution( c, te, x, ind+1 );
               if( rec_c.isNull() ){
                 success = false;
                 break;
@@ -1197,13 +1199,14 @@ Node CegConjecturePbe::constructDecisionTree( Node c, Node e, UnifContext& x, in
   return ret_dt;
 }
 
-bool CegConjecturePbe::UnifContext::updateContext( std::vector< bool >& vals, bool pol ) {
+bool CegConjecturePbe::UnifContext::updateContext( CegConjecturePbe * pbe, std::vector< Node >& vals, bool pol ) {
   Assert( d_vals.size()==vals.size() );
   bool changed = false;
+  Node poln = pol ? pbe->d_true : pbe->d_false;
   for( unsigned i=0; i<vals.size(); i++ ){
-    if( vals[i]!=pol ){
-      if( d_vals[i] ){
-        d_vals[i] = false;
+    if( vals[i]!=poln ){
+      if( d_vals[i]==pbe->d_true ){
+        d_vals[i] = pbe->d_false;
         changed = true;
       }
     }
@@ -1211,9 +1214,9 @@ bool CegConjecturePbe::UnifContext::updateContext( std::vector< bool >& vals, bo
   return changed;
 }
 
-void CegConjecturePbe::UnifContext::initialize( unsigned sz ) {
+void CegConjecturePbe::UnifContext::initialize( CegConjecturePbe * pbe, unsigned sz ) {
   for( unsigned i=0; i<sz; i++ ){
-    d_vals.push_back( true );
+    d_vals.push_back( pbe->d_true );
   }
 }
     
