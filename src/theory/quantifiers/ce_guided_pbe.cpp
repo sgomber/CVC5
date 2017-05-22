@@ -155,7 +155,7 @@ void CegConjecturePbe::initialize( Node n, std::vector< Node >& candidates ) {
   }
   
   //register candidates
-  if( options::sygusUnifCondSol() ){  
+  if( options::sygusUnifCondSol() ){
     if( candidates.size()==1 ){// conditional solutions for multiple function conjectures TODO?
       // collect a pool of types over which we will enumerate terms 
       Node e = candidates[0];
@@ -165,35 +165,8 @@ void CegConjecturePbe::initialize( Node n, std::vector< Node >& candidates ) {
         Trace("sygus-unif") << "It is input/output examples..." << std::endl;
         TypeNode etn = e.getType();
         d_cinfo[e].initialize( e );
-        d_cinfo[e].d_root = etn;
+        // collect the enumerator types / form the strategy
         collectEnumeratorTypes( e, etn );
-        // now construct the enumerators
-        for( std::map< TypeNode, EnumTypeInfo >::iterator iti = d_cinfo[e].d_tinfo.begin(); iti != d_cinfo[e].d_tinfo.end(); ++iti ){
-          TypeNode tn = iti->first;
-          // register type
-          Node ee = NodeManager::currentNM()->mkSkolem( "ee", tn );
-          registerEnumerator( ee, e, tn, -1 );
-          Trace("sygus-unif-debug") << "...enumerate " << ee << " for " << ((DatatypeType)tn.toType()).getDatatype().getName() << std::endl;
-          iti->second.d_enum = ee;
-        }
-        for( std::map< TypeNode, EnumTypeInfo >::iterator iti = d_cinfo[e].d_tinfo.begin(); iti != d_cinfo[e].d_tinfo.end(); ++iti ){
-          TypeNode tn = iti->first;
-          for( unsigned j=0; j<iti->second.d_csol_cts.size(); j++ ){
-            if( iti->second.d_template.find( j )!=iti->second.d_template.end() ){
-              // it is templated, allocate a fresh variable
-              Node et = NodeManager::currentNM()->mkSkolem( "et", iti->second.d_csol_cts[j] );
-              Trace("sygus-unif-debug") << "...enumerate " << et << " of type " << ((DatatypeType)iti->second.d_csol_cts[j].toType()).getDatatype().getName();
-              Trace("sygus-unif-debug") << " for arg " << j << " of " << ((DatatypeType)tn.toType()).getDatatype().getName() << std::endl;
-              registerEnumerator( et, e, tn, j );
-              iti->second.d_cenum.push_back( et );
-            }else{
-              // otherwise use the previous
-              Assert( d_cinfo[e].d_enum.find( tn )!=d_cinfo[e].d_enum.end() );
-              Node ee = d_cinfo[e].d_enum[tn];
-              iti->second.d_cenum.push_back( ee );
-            }
-          }
-        }
         d_is_pbe = true;
       }
     }
@@ -256,12 +229,20 @@ void CegConjecturePbe::registerEnumerator( Node et, Node e, TypeNode tn, int j )
 
 void CegConjecturePbe::collectEnumeratorTypes( Node e, TypeNode tn ) {
   if( d_cinfo[e].d_tinfo.find( tn )==d_cinfo[e].d_tinfo.end() ){
-    d_cinfo[e].initializeType( tn );
+    // register type
     Trace("sygus-unif") << "Register enumerating type : " << tn << std::endl;
+    d_cinfo[e].initializeType( tn );
+    Node ee = NodeManager::currentNM()->mkSkolem( "ee", tn );
+    registerEnumerator( ee, e, tn, -1 );
+    Trace("sygus-unif-debug") << "...enumerate " << ee << " for " << ((DatatypeType)tn.toType()).getDatatype().getName() << std::endl;
+    d_cinfo[e].d_tinfo[tn].d_enum = ee;
+    
+    // look at information on how we will construct solutions for this type
     Assert( tn.isDatatype() );
     const Datatype& dt = ((DatatypeType)tn.toType()).getDatatype();
     Assert( dt.isSygus() );
     bool success = false;
+    std::vector< TypeNode > child_types;
     for( unsigned r=0; r<2; r++ ){
       for( unsigned j=0; j<dt.getNumConstructors(); j++ ){
         Node op = Node::fromExpr( dt[j].getSygusOp() );
@@ -277,7 +258,7 @@ void CegConjecturePbe::collectEnumeratorTypes( Node e, TypeNode tn ) {
               for( unsigned k=0; k<3; k++ ){
                 TypeNode ct = TypeNode::fromType( dt[j][k].getRangeType() );
                 Trace("sygus-unif") << "   Child type " << k << " : " << ((DatatypeType)ct.toType()).getDatatype().getName() << std::endl;
-                d_cinfo[e].d_tinfo[tn].d_csol_cts.push_back( ct );
+                child_types.push_back( ct );
                 collectEnumeratorTypes( e, ct );
               }
               break;
@@ -358,7 +339,7 @@ void CegConjecturePbe::collectEnumeratorTypes( Node e, TypeNode tn ) {
                 // collect children types
                 for( unsigned k=0; k<dt[j].getNumArgs(); k++ ){
                   Trace("sygus-unif") << "   Child type " << k << " : " << ((DatatypeType)sktns[k].toType()).getDatatype().getName() << std::endl;
-                  d_cinfo[e].d_tinfo[tn].d_csol_cts.push_back( sktns[k] );
+                  child_types.push_back( sktns[k] );
                   collectEnumeratorTypes( e, sktns[k] );
                 }
               }
@@ -372,6 +353,24 @@ void CegConjecturePbe::collectEnumeratorTypes( Node e, TypeNode tn ) {
     }
     if( !success ){
       Trace("sygus-unif") << "...consider " << dt.getName() << " a basic type" << std::endl;
+    }else{
+      for( unsigned j=0; j<child_types.size(); j++ ){
+        d_cinfo[e].d_tinfo[tn].d_csol_cts.push_back( child_types[j] );
+        if( d_cinfo[e].d_tinfo[tn].d_template.find( j )!=d_cinfo[e].d_tinfo[tn].d_template.end() ){
+          // it is templated, allocate a fresh variable
+          Node et = NodeManager::currentNM()->mkSkolem( "et", d_cinfo[e].d_tinfo[tn].d_csol_cts[j] );
+          Trace("sygus-unif-debug") << "...enumerate " << et << " of type " << ((DatatypeType)child_types[j].toType()).getDatatype().getName();
+          Trace("sygus-unif-debug") << " for arg " << j << " of " << ((DatatypeType)tn.toType()).getDatatype().getName() << std::endl;
+          registerEnumerator( et, e, tn, j );
+          d_cinfo[e].d_tinfo[tn].d_cenum.push_back( et );
+        }else{
+          // otherwise use the previous
+          Assert( d_cinfo[e].d_enum.find( tn )!=d_cinfo[e].d_enum.end() );
+          Node ee = d_cinfo[e].d_enum[tn];
+          d_cinfo[e].d_tinfo[tn].d_cenum.push_back( ee );
+        }
+      }
+      Assert( d_cinfo[e].d_tinfo[tn].d_cenum.size()==d_cinfo[e].d_tinfo[tn].d_csol_cts.size() );
     }
   }
 }
