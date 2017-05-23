@@ -594,6 +594,7 @@ private:
 private:
   // stores root
   std::map< Node, Node > d_measured_term;
+  std::map< Node, Node > d_measured_term_active_guard;
   //information for sygus types
   std::map< TypeNode, TypeNode > d_register;  //stores sygus -> builtin type
   std::map< TypeNode, std::vector< Node > > d_var_list;
@@ -616,7 +617,11 @@ private:
   std::map< TypeNode, std::map< Node, Node > > d_sygus_to_builtin;
   std::map< TypeNode, std::map< Node, Node > > d_builtin_const_to_sygus;
   // grammar information
+  // root -> type -> _
   std::map< TypeNode, std::map< TypeNode, unsigned > > d_min_type_depth;
+  // type -> cons -> _
+  std::map< TypeNode, unsigned > d_min_term_size;
+  std::map< TypeNode, std::map< unsigned, unsigned > > d_min_cons_term_size;
 public:
   TermDbSygus( context::Context* c, QuantifiersEngine* qe );
   ~TermDbSygus(){}
@@ -626,15 +631,21 @@ public:
   /** register the sygus type */
   void registerSygusType( TypeNode tn );
   /** register a term that we will do enumerative search on */
-  void registerMeasuredTerm( Node e, Node root );
+  void registerMeasuredTerm( Node e, Node root, bool mkActiveGuard = false );
   /** is measured term */
   Node isMeasuredTerm( Node e );
+  /** get active guard */
+  Node getActiveGuardForMeasureTerm( Node e );
   /** get measured terms */
   void getMeasuredTerms( std::vector< Node >& mts );
 public:  //general sygus utilities
   bool isRegistered( TypeNode tn );
   // get the minimum depth of type in its parent grammar
   unsigned getMinTypeDepth( TypeNode root_tn, TypeNode tn );
+  // get the minimum size for a constructor term
+  unsigned getMinTermSize( TypeNode tn );
+  unsigned getMinConsTermSize( TypeNode tn, unsigned cindex );
+public:
   TypeNode sygusToBuiltinType( TypeNode tn );
   int getKindConsNum( TypeNode tn, Kind k );
   int getConstConsNum( TypeNode tn, Node n );

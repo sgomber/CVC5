@@ -206,18 +206,9 @@ void CegConjecturePbe::registerEnumerator( Node et, Node e, TypeNode tn ) {
     d_cinfo[e].d_enum[tn] = et;
     d_cinfo[e].d_esym_list.push_back( et );
     d_einfo[et].d_enum_slave.push_back( et );
-    // make the guard
-    Node eg = Rewriter::rewrite( NodeManager::currentNM()->mkSkolem( "eG", NodeManager::currentNM()->booleanType() ) );
-    eg = d_qe->getValuation().ensureLiteral( eg );
-    AlwaysAssert( !eg.isNull() );
-    d_qe->getOutputChannel().requirePhase( eg, true );
-    //add immediate lemma
-    Node lem = NodeManager::currentNM()->mkNode( OR, eg, eg.negate() );
-    Trace("cegqi-lemma") << "Cegqi::Lemma : enumerator : " << lem << std::endl;
-    d_qe->getOutputChannel().lemma( lem );
-    d_einfo[et].d_active_guard = eg;
     //register measured term
-    d_qe->getTermDatabaseSygus()->registerMeasuredTerm( et, e );
+    d_qe->getTermDatabaseSygus()->registerMeasuredTerm( et, e, true );
+    d_einfo[et].d_active_guard = d_qe->getTermDatabaseSygus()->getActiveGuardForMeasureTerm( et );
   }else{
     Trace("sygus-unif-debug") << "Make " << et << " a slave of " << itn->second << std::endl;
     d_einfo[itn->second].d_enum_slave.push_back( et );
@@ -550,7 +541,7 @@ void CegConjecturePbe::addEnumeratedValue( Node x, Node v, std::vector< Node >& 
             std::vector< Node > subsume;
             if( cond_vals.find( d_false )==cond_vals.end() ){
               // it is the entire solution, we are done
-              Trace("sygus-pbe-enum") << "  ...success, full solution added to DT pool : " << d_tds->sygusToBuiltin( v ) << std::endl;
+              Trace("sygus-pbe-enum") << "  ...success, full solution added to PBE pool : " << d_tds->sygusToBuiltin( v ) << std::endl;
               if( !itv->second.isSolved() ){
                 itv->second.setSolved( v );
                 // it subsumes everything
@@ -566,7 +557,7 @@ void CegConjecturePbe::addEnumeratedValue( Node x, Node v, std::vector< Node >& 
                   itv->second.d_enum_subsume.insert( itv->second.d_enum_subsume.end(), subsume.begin(), subsume.end() );
                   Trace("sygus-pbe-enum") << " and subsumed " << subsume.size() << " terms";
                 }
-                Trace("sygus-pbe-enum") << "!   add to DT pool : " << d_tds->sygusToBuiltin( v ) << std::endl;
+                Trace("sygus-pbe-enum") << "!   add to PBE pool : " << d_tds->sygusToBuiltin( v ) << std::endl;
                 keep = true;
               }else{
                 Assert( subsume.empty() );
@@ -585,7 +576,7 @@ void CegConjecturePbe::addEnumeratedValue( Node x, Node v, std::vector< Node >& 
           // must be unique up to examples
           Node val = itv->second.d_term_trie.addCond( this, v, results, true );
           if( val==v ){
-            Trace("sygus-pbe-enum") << "  ...success!   add to DT pool : " << d_tds->sygusToBuiltin( v ) << std::endl;
+            Trace("sygus-pbe-enum") << "  ...success!   add to PBE pool : " << d_tds->sygusToBuiltin( v ) << std::endl;
             keep = true;
           }else{
             Trace("sygus-pbe-enum") << "  ...fail : conditional is not unique" << std::endl;
@@ -593,13 +584,13 @@ void CegConjecturePbe::addEnumeratedValue( Node x, Node v, std::vector< Node >& 
           itc->second.d_cond_count++;
         }
         if( keep ){
-          // notify the parent to retry the build of DT
+          // notify the parent to retry the build of PBE
           itc->second.d_check_dt = true;
           itv->second.addEnumValue( this, v, results );
           if( Trace.isOn("sygus-pbe-enum") ){
             if( itv->second.considersOutput() ){
               if( !prevIsCover && itv->second.isCover() ){
-                Trace("sygus-pbe-enum") << "...DT : success : Evaluation of " << xs << " now covers all examples." << std::endl;
+                Trace("sygus-pbe-enum") << "...PBE : success : Evaluation of " << xs << " now covers all examples." << std::endl;
               }
             }
           }
@@ -728,7 +719,7 @@ bool CegConjecturePbe::CandidateInfo::isCover( CegConjecturePbe * pbe ) {
   if( !d_active ){
     std::map< bool, std::map< TypeNode, bool > > visited;
     if( isCover( d_root, pbe, false, visited ) ){
-      Trace("sygus-pbe-enum") << "...DT : success : Candidate " << d_this_candidate << " is now solvable." << std::endl;
+      Trace("sygus-pbe-enum") << "...PBE : success : Candidate " << d_this_candidate << " is now solvable." << std::endl;
       d_active = true;
       d_check_dt = true;
     }
@@ -989,7 +980,7 @@ Node CegConjecturePbe::constructSolution( Node c ){
         itc->second.d_check_dt = false;
         // try multiple times if we have done multiple conditions, due to non-determinism
         for( unsigned i=0; i<=itc->second.d_cond_count; i++ ){
-          Trace("sygus-pbe-dt") << "ConstructDT for candidate: " << c << std::endl;
+          Trace("sygus-pbe-dt") << "ConstructPBE for candidate: " << c << std::endl;
           Node e = itc->second.getRootEnumerator();
           UnifContext x;
           // initialize with #examples
@@ -997,7 +988,7 @@ Node CegConjecturePbe::constructSolution( Node c ){
           x.initialize( this, d_examples[c].size() );
           Node vc = constructSolution( c, e, x, 1 );
           if( !vc.isNull() ){
-            Trace("sygus-pbe-enum") << "**** DT SOLVED : " << c << " = " << vc << std::endl;
+            Trace("sygus-pbe-enum") << "**** PBE SOLVED : " << c << " = " << vc << std::endl;
             itc->second.d_solution = vc;
             return vc;
           }
@@ -1031,7 +1022,7 @@ Node CegConjecturePbe::constructBestConditional( std::vector< Node >& conds, Uni
 
 Node CegConjecturePbe::constructSolution( Node c, Node e, UnifContext& x, int ind ) {
   indent("sygus-pbe-dt", ind);
-  Trace("sygus-pbe-dt") << "ConstructDT: enum: " << e << " in context ";
+  Trace("sygus-pbe-dt") << "ConstructPBE: enum: " << e << " in context ";
   print_val("sygus-pbe-dt-debug", x.d_vals);
   Trace("sygus-pbe-dt") << std::endl;
   std::map< Node, EnumInfo >::iterator itn = d_einfo.find( e );
@@ -1042,7 +1033,7 @@ Node CegConjecturePbe::constructSolution( Node c, Node e, UnifContext& x, int in
     ret_dt = itn->second.getSolved();
     Assert( !ret_dt.isNull() );
     indent("sygus-pbe-dt-debug", ind);
-    Trace("sygus-pbe-dt-debug") << "return DT: success : solved" << std::endl;
+    Trace("sygus-pbe-dt-debug") << "return PBE: success : solved" << std::endl;
   }else{
     // it has an enumerated value that is conditionally correct under the current assumptions ?
     std::vector< Node > subsumed_by;
@@ -1050,7 +1041,7 @@ Node CegConjecturePbe::constructSolution( Node c, Node e, UnifContext& x, int in
     if( !subsumed_by.empty() ){
       ret_dt = constructBestSolvedTerm( subsumed_by, x );
       indent("sygus-pbe-dt-debug", ind);
-      Trace("sygus-pbe-dt-debug") << "return DT: success : conditionally solved" << std::endl;
+      Trace("sygus-pbe-dt-debug") << "return PBE: success : conditionally solved" << std::endl;
     }else if( itn->second.isBasic() ){
       // try to construct a conditional solution, if it exists
       TypeNode etn = e.getType();
@@ -1073,7 +1064,7 @@ Node CegConjecturePbe::constructSolution( Node c, Node e, UnifContext& x, int in
         std::map< Node, EnumInfo >::iterator itnc = d_einfo.find( ce );
         Assert( itnc!=d_einfo.end() );
         if( x.d_uinfo.find( ce )==x.d_uinfo.end() ){
-          Trace("sygus-pbe-dt-debug2") << "  reg : DT: Look for direct solutions for conditional enumerator " << ce << " ... " << std::endl;
+          Trace("sygus-pbe-dt-debug2") << "  reg : PBE: Look for direct solutions for conditional enumerator " << ce << " ... " << std::endl;
           Assert( itnc->second.d_enum_vals.size()==itnc->second.d_enum_vals_res.size() );
           x.d_uinfo[ce].d_status = 0;
           for( unsigned i=1; i<=2; i++ ){
@@ -1086,10 +1077,10 @@ Node CegConjecturePbe::constructSolution( Node c, Node e, UnifContext& x, int in
               Node cond = itnc->second.d_enum_vals[k];
               std::vector< Node > solved;
               itnt->second.d_term_trie.getSubsumedBy( this, itnc->second.d_enum_vals_res[k], branch_pol, solved );
-              Trace("sygus-pbe-dt-debug2") << "  reg : DT: " << d_tds->sygusToBuiltin( cond ) << " has " << solved.size() << " solutions in branch " << i << std::endl;
+              Trace("sygus-pbe-dt-debug2") << "  reg : PBE: " << d_tds->sygusToBuiltin( cond ) << " has " << solved.size() << " solutions in branch " << i << std::endl;
               if( !solved.empty() ){
                 Node slv = constructBestSolvedTerm( solved, x );
-                Trace("sygus-pbe-dt-debug") << "  reg : DT: ..." << d_tds->sygusToBuiltin( slv ) << " is a solution under branch " << i;
+                Trace("sygus-pbe-dt-debug") << "  reg : PBE: ..." << d_tds->sygusToBuiltin( slv ) << " is a solution under branch " << i;
                 Trace("sygus-pbe-dt-debug") << " of condition " << d_tds->sygusToBuiltin( cond ) << std::endl;
                 x.d_uinfo[ce].d_look_ahead_sols[cond][i] = slv;
               }
@@ -1107,7 +1098,7 @@ Node CegConjecturePbe::constructSolution( Node c, Node e, UnifContext& x, int in
         std::map< int, std::vector< Node > >::iterator itpc = possible_cond.find( 0 );
         if( itpc!=possible_cond.end() ){
           indent("sygus-pbe-dt-debug", ind);
-          Trace("sygus-pbe-dt-debug") << "DT : We have " << itpc->second.size() << " distinguishable conditionals." << std::endl;          
+          Trace("sygus-pbe-dt-debug") << "PBE : We have " << itpc->second.size() << " distinguishable conditionals." << std::endl;          
         
           Node split_cond;
           std::map< unsigned, Node > look_ahead_solved_children;
@@ -1129,7 +1120,7 @@ Node CegConjecturePbe::constructSolution( Node c, Node e, UnifContext& x, int in
             if( !solved_cond[n].empty() ){
               split_cond = constructBestSolvedConditional( solved_cond[n], x );
               indent("sygus-pbe-dt-debug", ind);
-              Trace("sygus-pbe-dt-debug") << "DT: choose solved conditional " << d_tds->sygusToBuiltin( split_cond ) << " with " << n << " solved children..." << std::endl;
+              Trace("sygus-pbe-dt-debug") << "PBE: choose solved conditional " << d_tds->sygusToBuiltin( split_cond ) << " with " << n << " solved children..." << std::endl;
               std::map< Node, std::map< unsigned, Node > >::iterator itla = x.d_uinfo[ce].d_look_ahead_sols.find( split_cond );
               Assert( itla!=x.d_uinfo[ce].d_look_ahead_sols.end() );
               for( std::map< unsigned, Node >::iterator itla2 = itla->second.begin(); itla2 != itla->second.end(); ++itla2 ){
@@ -1150,7 +1141,7 @@ Node CegConjecturePbe::constructSolution( Node c, Node e, UnifContext& x, int in
             split_cond = constructBestConditional( itpc->second, x );
             Assert( !split_cond.isNull() );
             indent("sygus-pbe-dt-debug", ind);
-            Trace("sygus-pbe-dt-debug") << "DT: choose random conditional " << d_tds->sygusToBuiltin( split_cond ) << std::endl;
+            Trace("sygus-pbe-dt-debug") << "PBE: choose random conditional " << d_tds->sygusToBuiltin( split_cond ) << std::endl;
           }
           
           // make the children of the decision tree
@@ -1162,12 +1153,12 @@ Node CegConjecturePbe::constructSolution( Node c, Node e, UnifContext& x, int in
           Assert( split_cond_res_index<itnc->second.d_enum_vals_res.size() );
           for( unsigned i=1; i<=2; i++ ){
             indent("sygus-pbe-dt-debug", ind);
-            Trace("sygus-pbe-dt-debug") << "construct DT child #" << i << "..." << std::endl;
+            Trace("sygus-pbe-dt-debug") << "construct PBE child #" << i << "..." << std::endl;
             std::map< unsigned, Node >::iterator itla = look_ahead_solved_children.find( i );
             if( itla!=look_ahead_solved_children.end() ){
               dt_children.push_back( itla->second );
               indent("sygus-pbe-dt-debug", ind+1);
-              Trace("sygus-pbe-dt-debug") << "ConstructDT: look ahead solved : " << itla->second << std::endl;
+              Trace("sygus-pbe-dt-debug") << "ConstructPBE: look ahead solved : " << itla->second << std::endl;
             }else{
               // child enumerator
               Node te = itts->second.d_cenum[i];
@@ -1189,30 +1180,30 @@ Node CegConjecturePbe::constructSolution( Node c, Node e, UnifContext& x, int in
           if( success ){
             ret_dt = NodeManager::currentNM()->mkNode( kind::APPLY_CONSTRUCTOR, dt_children );
             indent("sygus-pbe-dt-debug", ind);
-            Trace("sygus-pbe-dt-debug") << "return DT: success : constructed conditional " << std::endl;
+            Trace("sygus-pbe-dt-debug") << "return PBE: success : constructed conditional " << std::endl;
           }else{
             indent("sygus-pbe-dt-debug", ind);
-            Trace("sygus-pbe-dt-debug") << "return DT: fail : child failed" << std::endl;
+            Trace("sygus-pbe-dt-debug") << "return PBE: fail : child failed" << std::endl;
           }
         }else{
           // TODO : degenerate case where children have different types
           indent("sygus-pbe-dt-debug", ind);
-          Trace("sygus-pbe-dt-debug") << "return DT: fail : cannot find a distinguishable condition" << std::endl;
+          Trace("sygus-pbe-dt-debug") << "return PBE: fail : cannot find a distinguishable condition" << std::endl;
         }
       }else{
         indent("sygus-pbe-dt-debug", ind);
-        Trace("sygus-pbe-dt-debug") << "return DT: fail : not conditionally expandable" << std::endl;
+        Trace("sygus-pbe-dt-debug") << "return PBE: fail : not conditionally expandable" << std::endl;
       }
     }else{
       indent("sygus-pbe-dt-debug", ind);
-      Trace("sygus-pbe-dt-debug") << "return DT: fail : non-basic" << std::endl;
+      Trace("sygus-pbe-dt-debug") << "return PBE: fail : non-basic" << std::endl;
     }
   }
   if( !ret_dt.isNull() ){
     Assert( ret_dt.getType()==e.getType() );
   }
   indent("sygus-pbe-dt", ind);
-  Trace("sygus-pbe-dt") << "ConstructDT: returned " << ret_dt << std::endl;
+  Trace("sygus-pbe-dt") << "ConstructPBE: returned " << ret_dt << std::endl;
   return ret_dt;
 }
 
@@ -1235,20 +1226,6 @@ void CegConjecturePbe::UnifContext::initialize( CegConjecturePbe * pbe, unsigned
   for( unsigned i=0; i<sz; i++ ){
     d_vals.push_back( pbe->d_true );
   }
-}
-    
-Node CegConjecturePbe::getNextDecisionRequest( unsigned& priority ) {
-  for( std::map< Node, EnumInfo >::iterator it = d_einfo.begin(); it != d_einfo.end(); ++it ){
-    Node g = it->second.d_active_guard;
-    if( !g.isNull() ){
-      if( getGuardStatus( g )==0 ){
-        Trace("cegqi-debug") << "CegConjecturePbe : Decide next on : " << g << "..." << std::endl;
-        priority = 1;
-        return g;
-      }
-    }
-  }
-  return Node::null();
 }
 
 int CegConjecturePbe::getGuardStatus( Node g ) {

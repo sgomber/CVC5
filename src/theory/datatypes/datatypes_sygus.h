@@ -119,17 +119,31 @@ private:
   void registerSizeTerm( Node e, std::vector< Node >& lemmas );
   class SearchSizeInfo {
   public:
-    SearchSizeInfo() : d_curr_search_size(0) {}
+    SearchSizeInfo( Node t, context::Context* c ) : d_this( t ), d_curr_search_size(0), d_curr_lit( c, 0 ) {}
+    Node d_this;
     std::map< unsigned, Node > d_search_size_exp;
     std::map< unsigned, bool > d_search_size;
     unsigned d_curr_search_size;
     Node d_sygus_measure_term;
     Node d_sygus_measure_term_active;
+    std::vector< Node > d_anchors;
     Node getOrMkSygusMeasureTerm( std::vector< Node >& lemmas );
     Node getOrMkSygusActiveMeasureTerm( std::vector< Node >& lemmas );
+  public:
+    /** current cardinality */
+    context::CDO< unsigned > d_curr_lit;
+    std::map< unsigned, Node > d_lits;
+    Node getFairnessLiteral( unsigned s, TheoryDatatypes * d, std::vector< Node >& lemmas );
+    Node getCurrentFairnessLiteral( TheoryDatatypes * d, std::vector< Node >& lemmas ) { 
+      return getFairnessLiteral( d_curr_lit.get(), d, lemmas ); 
+    }
+    /** increment current term size */
+    void incrementCurrentLiteral() { d_curr_lit.set( d_curr_lit.get() + 1 ); }
   };
-  std::map< Node, SearchSizeInfo > d_szinfo;
+  std::map< Node, SearchSizeInfo * > d_szinfo;
   std::map< Node, Node > d_anchor_to_measure_term;
+  std::map< Node, Node > d_anchor_to_active_guard;
+  Node d_generic_measure_term;
   void incrementCurrentSearchSize( Node m, std::vector< Node >& lemmas );
   void notifySearchSize( Node m, unsigned s, Node exp, std::vector< Node >& lemmas );
   void registerMeasureTerm( Node m );
@@ -141,6 +155,7 @@ private:
                                  std::map< Node, unsigned >& tdepth, std::vector< Node >& lemmas );
   bool debugTesters( Node n, Node vn, int ind, std::vector< Node >& lemmas );
   Node getCurrentTemplate( Node n, std::map< TypeNode, int >& var_count );
+  int getGuardStatus( Node g );
 public:
   SygusSymBreakNew( TheoryDatatypes * td, quantifiers::TermDbSygus * tds, context::Context* c );
   ~SygusSymBreakNew();
@@ -151,7 +166,7 @@ public:
   void check( std::vector< Node >& lemmas );
   void getPossibleCons( const Datatype& dt, TypeNode tn, std::vector< bool >& pcons );
 public:
-  Node getNextDecisionRequest( unsigned& priority );
+  Node getNextDecisionRequest( unsigned& priority, std::vector< Node >& lemmas );
 };
 
 }

@@ -324,13 +324,10 @@ class DtSygusBoundTypeRule {
   inline static TypeNode computeType(NodeManager* nodeManager, TNode n,
                                      bool check) {
     if (check) {
-      //FIXME
-      /*
       if (!n[0].getType().isDatatype()) {
         throw TypeCheckingExceptionPrivate(
             n, "datatype sygus bound takes a datatype");
       }
-      */
       if (n[1].getKind() != kind::CONST_RATIONAL) {
         throw TypeCheckingExceptionPrivate(
             n, "datatype sygus bound must be a constant");

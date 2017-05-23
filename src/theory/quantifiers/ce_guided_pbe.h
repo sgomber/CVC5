@@ -235,8 +235,6 @@ public:
   bool constructCandidates( std::vector< Node >& enums, std::vector< Node >& enum_values, 
                             std::vector< Node >& candidates, std::vector< Node >& candidate_values, 
                             std::vector< Node >& lems );
-public:
-  Node getNextDecisionRequest( unsigned& priority );
 };
 
 

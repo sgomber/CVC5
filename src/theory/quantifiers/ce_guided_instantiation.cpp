@@ -33,7 +33,7 @@ namespace quantifiers {
 
 
 CegConjecture::CegConjecture( QuantifiersEngine * qe, context::Context* c )
-    : d_qe( qe ), d_curr_lit( c, 0 ) {
+    : d_qe( qe ) {
   d_refine_count = 0;
   d_ceg_si = new CegConjectureSingleInv( qe, this );
   d_ceg_pbe = new CegConjecturePbe( qe, this );
@@ -145,35 +145,9 @@ void CegConjecture::initializeGuard(){
     Assert( !getGuard().isNull() );
   }
 }
-  
-Node CegConjecture::getFairnessLiteral( int i ) {
-  if( getCegqiFairMode()!=SYGUS_FAIR_NONE ){
-    std::map< int, Node >::iterator it = d_lits.find( i );
-    if( it==d_lits.end() ){
-      Trace("cegqi-engine") << "******* CEGQI : allocate size literal " << i << std::endl;
-      Node c = NodeManager::currentNM()->mkConst( Rational( i ) );
-      Node lit = NodeManager::currentNM()->mkNode( DT_SYGUS_BOUND, c, c );
-      d_lits[i] = lit;
-
-      Node lem = NodeManager::currentNM()->mkNode( kind::OR, lit, lit.negate() );
-      Trace("cegqi-lemma") << "Cegqi::Lemma : Fairness split : " << lem << std::endl;
-      d_qe->getOutputChannel().lemma( lem );
-      d_qe->getOutputChannel().requirePhase( lit, true );
-      return lit;
-    }else{
-      return it->second;
-    }
-  }else{
-    return Node::null();
-  }
-}
 
 Node CegConjecture::getGuard() {
   return !d_syntax_guided ? d_nsg_guard : d_ceg_si->d_si_guard;
-}
-
-SygusFairMode CegConjecture::getCegqiFairMode() {
-  return isSingleInvocation() ? SYGUS_FAIR_NONE : options::sygusFair();
 }
 
 bool CegConjecture::isSingleInvocation() const {
@@ -450,21 +424,6 @@ void CegConjecture::debugPrint( const char * c ) {
   }
 }
 
-int CegConjecture::getProgressStatus( Node v ) {
-
-  return -2;
-}
-
-Node CegConjecture::getNextDecisionRequest( unsigned& priority ) {
-  if( d_ceg_pbe->isPbe() ){
-    Node dlit = d_ceg_pbe->getNextDecisionRequest( priority );
-    if( !dlit.isNull() ){
-      return dlit;
-    }
-  }
-  return Node::null();
-}
-
 CegInstantiation::CegInstantiation( QuantifiersEngine * qe, context::Context* c ) : QuantifiersModule( qe ){
   d_conj = new CegConjecture( qe, qe->getSatContext() );
   d_last_inst_si = false;
@@ -567,10 +526,8 @@ void CegInstantiation::assertNode( Node n ) {
 }
 
 Node CegInstantiation::getNextDecisionRequest( unsigned& priority ) {
-  //enforce fairness
   if( d_conj->isAssigned() ){
     d_conj->initializeGuard();
-    // 
     std::vector< Node > req_dec;
     const CegConjectureSingleInv* ceg_si = d_conj->getCegConjectureSingleInv();
     if( ! ceg_si->d_full_guard.isNull() ){
@@ -591,33 +548,7 @@ Node CegInstantiation::getNextDecisionRequest( unsigned& priority ) {
         Trace("cegqi-debug2") << "CEGQI : " << req_dec[i] << " already has value " << value << std::endl;
       }
     }
-    
-    //ask the conjecture directly
-    Node lit = d_conj->getNextDecisionRequest( priority );
-    if( !lit.isNull() ){
-      return lit;
-    }
-
-    lit = d_conj->getFairnessLiteral( d_conj->getCurrentTermSize() );
-    if( !lit.isNull() ){
-      bool value;
-      if( d_quantEngine->getValuation().hasSatValue( lit, value ) ) {
-        if( !value ){
-          d_conj->incrementCurrentTermSize();
-          lit = d_conj->getFairnessLiteral( d_conj->getCurrentTermSize() );
-          Assert( !lit.isNull() );
-          Trace("cegqi-debug") << "CEGQI : Decide on next lit : " << lit << "..." << std::endl;
-          priority = 1;
-          return lit;
-        }
-      }else{
-        Trace("cegqi-debug") << "CEGQI : Decide on current lit : " << lit << "..." << std::endl;
-        priority = 1;
-        return lit;
-      }
-    }
   }
-
   return Node::null();
 }
 
@@ -628,9 +559,6 @@ void CegInstantiation::checkCegConjecture( CegConjecture * conj ) {
     conj->debugPrint("cegqi-engine-debug");
     Trace("cegqi-engine-debug") << std::endl;
   }
-  if( conj->getCegqiFairMode()!=SYGUS_FAIR_NONE ){
-    Trace("cegqi-engine") << "  * Current term size : " << conj->getCurrentTermSize() << std::endl;
-  }  
 
   if( !conj->needsRefinement() ){
     if( conj->d_syntax_guided ){

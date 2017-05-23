@@ -44,10 +44,6 @@ private:
   std::vector< std::vector< Node > > d_inner_vars_disj;
   /** current extential quantifeirs whose couterexamples we must refine */
   std::vector< std::vector< Node > > d_ce_sk;
-  /** the cardinality literals */
-  std::map< int, Node > d_lits;
-  /** current cardinality */
-  context::CDO< int > d_curr_lit;
   /** refinement lemmas */
   std::vector< Node > d_refinement_lemmas;
   std::vector< Node > d_refinement_lemmas_base;
@@ -120,12 +116,6 @@ public: //non-syntax guided (deprecated)
   bool d_syntax_guided;
   Node d_nsg_guard;
 public:
-  /** get current term size */
-  int getCurrentTermSize() { return d_curr_lit.get(); }
-  /** increment current term size */
-  void incrementCurrentTermSize() { d_curr_lit.set( d_curr_lit.get() + 1 ); }
-  /** allocate literal */
-  Node getFairnessLiteral( int i );
   /** get guard */
   Node getGuard();
   /** is ground */
@@ -156,12 +146,6 @@ public:
   Node getRefinementLemma( unsigned i ) { return d_refinement_lemmas[i]; }
   /** get refinement lemma */
   Node getRefinementBaseLemma( unsigned i ) { return d_refinement_lemmas_base[i]; }
-private:
-  Node getNextDecisionRequestConditional( Node v, unsigned& priority );
-  // 1 : active, 0 : unknown, -1 : inactive, -2 : not applicable
-  int getProgressStatus( Node v );
-public:
-  Node getNextDecisionRequest( unsigned& priority );
 };
 
 

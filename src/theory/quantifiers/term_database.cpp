@@ -3350,10 +3350,22 @@ void TermDbSygus::registerSygusType( TypeNode tn ) {
   }
 }
 
-void TermDbSygus::registerMeasuredTerm( Node e, Node root ) {
+void TermDbSygus::registerMeasuredTerm( Node e, Node root, bool mkActiveGuard ) {
   Assert( d_measured_term.find( e )==d_measured_term.end() );
   Trace("sygus-db") << "Register measured term : " << e << " with root " << root << std::endl;
   d_measured_term[e] = root;
+  if( mkActiveGuard ){
+    // make the guard
+    Node eg = Rewriter::rewrite( NodeManager::currentNM()->mkSkolem( "eG", NodeManager::currentNM()->booleanType() ) );
+    eg = d_quantEngine->getValuation().ensureLiteral( eg );
+    AlwaysAssert( !eg.isNull() );
+    d_quantEngine->getOutputChannel().requirePhase( eg, true );
+    //add immediate lemma
+    Node lem = NodeManager::currentNM()->mkNode( OR, eg, eg.negate() );
+    Trace("cegqi-lemma") << "Cegqi::Lemma : enumerator : " << lem << std::endl;
+    d_quantEngine->getOutputChannel().lemma( lem );
+    d_measured_term_active_guard[e] = eg;
+  }
 }
 
 void TermDbSygus::registerPbeExamples( Node e, std::vector< std::vector< Node > >& exs, 
@@ -3380,6 +3392,16 @@ Node TermDbSygus::isMeasuredTerm( Node e ) {
     return Node::null();
   }
 }
+
+Node TermDbSygus::getActiveGuardForMeasureTerm( Node e ) {
+  std::map< Node, Node >::iterator itag = d_measured_term_active_guard.find( e );
+  if( itag!=d_measured_term_active_guard.end() ){
+    return itag->second;
+  }else{
+    return Node::null();
+  }
+}
+
 void TermDbSygus::getMeasuredTerms( std::vector< Node >& mts ) {
   for( std::map< Node, Node >::iterator itm = d_measured_term.begin(); itm != d_measured_term.end(); ++itm ){
     mts.push_back( itm->first );
@@ -3463,6 +3485,49 @@ unsigned TermDbSygus::getMinTypeDepth( TypeNode root_tn, TypeNode tn ){
     return it->second;
   }
 }
+
+unsigned TermDbSygus::getMinTermSize( TypeNode tn ) {
+  Assert( isRegistered( tn ) );
+  std::map< TypeNode, unsigned >::iterator it = d_min_term_size.find( tn );
+  if( it==d_min_term_size.end() ){
+    const Datatype& dt = ((DatatypeType)(tn).toType()).getDatatype();
+    for( unsigned i=0; i<dt.getNumConstructors(); i++ ){
+      if( !isGenericRedundant( tn, i ) ){
+        if( dt[i].getNumArgs()==0 ){
+          d_min_term_size[tn] = 0;
+          return 0;
+        }
+      }
+    }
+    // TODO : improve
+    d_min_term_size[tn] = 1;
+    return 1;
+  }else{
+    return it->second;
+  }
+}
+
+unsigned TermDbSygus::getMinConsTermSize( TypeNode tn, unsigned cindex ) {
+  Assert( isRegistered( tn ) );
+  Assert( !isGenericRedundant( tn, cindex ) );
+  std::map< unsigned, unsigned >::iterator it = d_min_cons_term_size[tn].find( cindex );
+  if( it==d_min_cons_term_size[tn].end() ){
+    const Datatype& dt = ((DatatypeType)(tn).toType()).getDatatype();
+    Assert( cindex<dt.getNumConstructors() );
+    unsigned ret = 0;
+    if( dt[cindex].getNumArgs()>0 ){
+      ret = 1;
+      for( unsigned i=0; i<dt[cindex].getNumArgs(); i++ ){
+        ret += getMinTermSize( getArgType( dt[cindex], i ) );
+      }
+    }
+    d_min_cons_term_size[tn][cindex] = ret;
+    return ret;
+  }else{
+    return it->second;
+  }
+}
+
 
 int TermDbSygus::getKindConsNum( TypeNode tn, Kind k ) {
   Assert( isRegistered( tn ) );
