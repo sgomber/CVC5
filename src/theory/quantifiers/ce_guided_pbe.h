@@ -212,9 +212,17 @@ private:
   */
   class UnifContext {
   public:
-    IndexFilter d_filter;
+    UnifContext() : d_has_string_pos(false) {}
+    //IndexFilter d_filter;
+    // the value of the context conditional
     std::vector< Node > d_vals;
+    // update the examples
     bool updateContext( CegConjecturePbe * pbe, std::vector< Node >& vals, bool pol );
+    // the position in the strings
+    std::vector< unsigned > d_str_pos;
+    bool d_has_string_pos;
+    // update the string examples
+    bool updateStringPosition( CegConjecturePbe * pbe, std::vector< unsigned >& pos );
     class UEnumInfo {
     public:
       UEnumInfo() : d_status(-1){}
@@ -224,7 +232,9 @@ private:
     };
     // enumerator -> info
     std::map< Node, UEnumInfo > d_uinfo;
-    void initialize( CegConjecturePbe * pbe, unsigned sz );
+    void initialize( CegConjecturePbe * pbe, Node c );
+    void getCurrentStrings( CegConjecturePbe * pbe, bool isPrefix, std::vector< Node >& vals, std::vector< CVC4::String >& ex_vals );
+    bool getStringIncrement( CegConjecturePbe * pbe, bool isPrefix, std::vector< CVC4::String >& ex_vals, std::vector< Node >& vals, std::vector< unsigned >& inc, unsigned& tot );
   };
   /** construct solution */
   Node constructSolution( Node c );
@@ -232,6 +242,13 @@ private:
   Node constructBestSolvedTerm( std::vector< Node >& solved, UnifContext& x );
   Node constructBestSolvedConditional( std::vector< Node >& solved, UnifContext& x );
   Node constructBestConditional( std::vector< Node >& conds, UnifContext& x );
+  Node constructBestStringToConcat( std::vector< Node > strs,
+                                    std::map< Node, unsigned > total_inc, 
+                                    std::map< Node, std::vector< unsigned > > incr,
+                                    UnifContext& x );
+  void getStringIncrement( bool isPrefix, Node c, Node v,                                     
+                           std::map< Node, unsigned > total_inc, 
+                           std::map< Node, std::vector< unsigned > > incr );
 public:
   void registerCandidates( std::vector< Node >& candidates ); 
   void getCandidateList( std::vector< Node >& candidates, std::vector< Node >& clist );
