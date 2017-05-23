@@ -152,7 +152,7 @@ Node CegConjecture::getFairnessLiteral( int i ) {
     if( it==d_lits.end() ){
       Trace("cegqi-engine") << "******* CEGQI : allocate size literal " << i << std::endl;
       Node c = NodeManager::currentNM()->mkConst( Rational( i ) );
-      Node lit = NodeManager::currentNM()->mkNode( DT_SYGUS_BOUND, c );
+      Node lit = NodeManager::currentNM()->mkNode( DT_SYGUS_BOUND, c, c );
       d_lits[i] = lit;
 
       Node lem = NodeManager::currentNM()->mkNode( kind::OR, lit, lit.negate() );

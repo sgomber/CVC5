@@ -84,17 +84,19 @@ private:
     SearchCache(){}
     std::map< TypeNode, std::map< unsigned, std::vector< Node > > > d_search_terms;
     std::map< TypeNode, std::map< unsigned, std::vector< Node > > > d_sb_lemmas;
+    // search values
+    std::map< TypeNode, std::map< Node, Node > > d_search_val;
+    std::map< TypeNode, std::map< Node, unsigned > > d_search_val_sz;
+    std::map< TypeNode, std::map< Node, Node > > d_search_val_b;
+    std::map< Node, bool > d_search_val_proc;
   };
+  // anchor -> cache
   std::map< Node, SearchCache > d_cache;
-  std::map< TypeNode, std::map< Node, Node > > d_search_val;
-  std::map< TypeNode, std::map< Node, unsigned > > d_search_val_sz;
-  std::map< TypeNode, std::map< Node, Node > > d_search_val_b;
-  std::map< Node, bool > d_search_val_proc;
   Node d_null;
   void assertTesterInternal( int tindex, TNode n, Node exp, std::vector< Node >& lemmas );
   // register search term
   void registerSearchTerm( TypeNode tn, unsigned d, Node n, bool topLevel, std::vector< Node >& lemmas );
-  bool registerSearchValue( Node n, Node nv, unsigned d, std::vector< Node >& lemmas );
+  bool registerSearchValue( Node a, Node n, Node nv, unsigned d, std::vector< Node >& lemmas );
   void registerSymBreakLemma( TypeNode tn, Node lem, unsigned sz, Node e, std::vector< Node >& lemmas );
   void addSymBreakLemmasFor( TypeNode tn, Node t, unsigned d, Node e, std::vector< Node >& lemmas );
   void addSymBreakLemmasFor( TypeNode tn, Node t, unsigned d, std::vector< Node >& lemmas );
@@ -114,16 +116,26 @@ private:
 private:
   //should be user-context dependent if sygus in incremental mode
   std::map< Node, bool > d_register_st;
-  Node d_sygus_measure_term;
-  Node d_sygus_measure_term_active;
-  Node getOrMkSygusMeasureTerm( std::vector< Node >& lemmas );
   void registerSizeTerm( Node e, std::vector< Node >& lemmas );
-private:
-  std::map< unsigned, Node > d_search_size_exp;
-  std::map< unsigned, bool > d_search_size;
-  unsigned d_curr_search_size;
-  void incrementCurrentSearchSize( std::vector< Node >& lemmas );
-  void notifySearchSize( unsigned s, Node exp, std::vector< Node >& lemmas );
+  class SearchSizeInfo {
+  public:
+    SearchSizeInfo() : d_curr_search_size(0) {}
+    std::map< unsigned, Node > d_search_size_exp;
+    std::map< unsigned, bool > d_search_size;
+    unsigned d_curr_search_size;
+    Node d_sygus_measure_term;
+    Node d_sygus_measure_term_active;
+    Node getOrMkSygusMeasureTerm( std::vector< Node >& lemmas );
+    Node getOrMkSygusActiveMeasureTerm( std::vector< Node >& lemmas );
+  };
+  std::map< Node, SearchSizeInfo > d_szinfo;
+  std::map< Node, Node > d_anchor_to_measure_term;
+  void incrementCurrentSearchSize( Node m, std::vector< Node >& lemmas );
+  void notifySearchSize( Node m, unsigned s, Node exp, std::vector< Node >& lemmas );
+  void registerMeasureTerm( Node m );
+  unsigned getSearchSizeFor( Node n );
+  unsigned getSearchSizeForAnchor( Node n );
+  unsigned getSearchSizeForMeasureTerm( Node m );
 private:
   unsigned processSelectorChain( Node n, std::map< TypeNode, Node >& top_level, 
                                  std::map< Node, unsigned >& tdepth, std::vector< Node >& lemmas );
@@ -138,6 +150,8 @@ public:
   void preRegisterTerm( TNode n, std::vector< Node >& lemmas  );
   void check( std::vector< Node >& lemmas );
   void getPossibleCons( const Datatype& dt, TypeNode tn, std::vector< bool >& pcons );
+public:
+  Node getNextDecisionRequest( unsigned& priority );
 };
 
 }
