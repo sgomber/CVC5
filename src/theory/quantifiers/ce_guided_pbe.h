@@ -46,6 +46,10 @@ private:
 public:  
   Node d_true;
   Node d_false;
+  enum {
+    enum_io,
+    enum_term,
+  };
 public:
   CegConjecturePbe( QuantifiersEngine * qe, CegConjecture * p );
   ~CegConjecturePbe();
@@ -55,8 +59,8 @@ public:
                        std::vector< Node >& exos, std::vector< Node >& exts);
   bool isPbe() { return d_is_pbe; }
 private:  // for registration
-  void collectEnumeratorTypes( Node e, TypeNode tn );
-  void registerEnumerator( Node et, Node e, TypeNode tn );
+  void collectEnumeratorTypes( Node e, TypeNode tn, unsigned enum_role );
+  void registerEnumerator( Node et, Node e, TypeNode tn, unsigned enum_role );
 
   /** register candidate conditional */
   bool inferIteTemplate( unsigned k, Node n, std::map< Node, unsigned >& templ_var_index, std::map< unsigned, unsigned >& templ_injection );  
@@ -112,7 +116,7 @@ private:
     bool d_enum_total_true;
     Node d_enum_solved;
   public:
-    EnumInfo() : d_enum_total_true( false ), d_parent_arg(-1), d_considers_output(true){}
+    EnumInfo() : d_enum_total_true( false ), d_parent_arg(-1), d_role( enum_io ){}
     Node d_parent_candidate;
     // parent information (context on how this should be enumerated)
     TypeNode d_parent;
@@ -120,7 +124,7 @@ private:
     Kind d_parent_kind;
     
     // TODO : make private
-    bool d_considers_output;
+    unsigned d_role;
     
     Node d_active_guard;
     std::vector< Node > d_enum_slave;
@@ -160,8 +164,10 @@ private:
   public:
     EnumTypeInfo() : d_parent( NULL ), d_csol_status(-1){}
     CandidateInfo * d_parent;
-    Node d_enum;
+    // role -> _
+    std::map< unsigned, Node > d_enum;
     TypeNode d_this_type;
+    // strategies for enum_io role
     std::map< Kind, EnumTypeInfoStrat > d_strat;
     /** solution status */
     int d_csol_status;
@@ -177,7 +183,7 @@ private:
     TypeNode d_root;
     std::map< TypeNode, EnumTypeInfo > d_tinfo;
     std::vector< Node > d_esym_list;
-    std::map< TypeNode, Node > d_enum;
+    std::map< unsigned, std::map< TypeNode, Node > > d_enum;
     bool d_active;
     bool d_check_dt;
     unsigned d_cond_count;

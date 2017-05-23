@@ -251,9 +251,12 @@ void SygusSymBreakNew::assertTesterInternal( int tindex, TNode n, Node exp, std:
     Node m = d_anchor_to_measure_term[a];
     std::map< Node, SearchSizeInfo * >::iterator itsz = d_szinfo.find( m );
     if( itsz!=d_szinfo.end() ){
-      // TODO : add lower bounds for types
       if( dt[tindex].getNumArgs()>0 ){
-        d_currTermSize[a].set( d_currTermSize[a].get() + 1 );
+        // consider lower bounds for size of types
+        unsigned lb_add = d_tds->getMinConsTermSize( ntn, tindex );
+        unsigned lb_rem = n==a ? 0 : d_tds->getMinTermSize( ntn );
+        Assert( lb_add>=lb_rem );
+        d_currTermSize[a].set( d_currTermSize[a].get() + ( lb_add - lb_rem ) );
       }
       unsigned ssz = itsz->second->d_curr_search_size;
       if( (unsigned)d_currTermSize[a].get()>ssz ){
