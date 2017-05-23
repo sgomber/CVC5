@@ -1004,7 +1004,7 @@ void SygusSymBreakNew::check( std::vector< Node >& lemmas ) {
   
   if( Trace.isOn("cegqi-engine") ){
     if( lemmas.empty() ){
-      Trace("cegqi-engine") << "*** Sygus : passed datatypes check. term size : ";
+      Trace("cegqi-engine") << "*** Sygus : passed datatypes check. term size(s) : ";
       for( std::map< Node, SearchSizeInfo * >::iterator it = d_szinfo.begin(); it != d_szinfo.end(); ++it ){
         SearchSizeInfo * s = it->second;
         Trace("cegqi-engine") << s->d_curr_search_size << " ";
@@ -1106,7 +1106,7 @@ Node SygusSymBreakNew::SearchSizeInfo::getFairnessLiteral( unsigned s, TheoryDat
       lit = d->getValuation().ensureLiteral( lit );
       
       Trace("sygus-fair") << "******* Sygus : allocate size literal " << s << " for " << d_this << " : " << lit << std::endl;
-      Trace("cegqi-engine") << "******* Sygus : allocate size literal " << s << std::endl;
+      Trace("cegqi-engine") << "******* Sygus : allocate size literal " << s << " for " << d_this << std::endl;
       Node lem = NodeManager::currentNM()->mkNode( kind::OR, lit, lit.negate() );
       Trace("sygus-dec") << "Sygus : Fairness split : " << lem << std::endl;
       lemmas.push_back( lem );

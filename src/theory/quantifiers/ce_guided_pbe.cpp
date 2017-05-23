@@ -364,16 +364,22 @@ void CegConjecturePbe::collectEnumeratorTypes( Node e, TypeNode tn, unsigned enu
       }else{
         for( std::map< Kind, std::vector< TypeNode > >::iterator itct = child_types.begin(); itct != child_types.end(); ++itct ){
           Kind sk = itct->first;
+          
+          std::map< unsigned, unsigned > eroles;
 
           for( unsigned j=0; j<itct->second.size(); j++ ){
-            
             //calculate if we should allocate a new enumerator : should be true if we have a new role
-            unsigned enum_role = enum_term;
+            unsigned enum_role = enum_io;
             if( sk==kind::ITE ){
-              if( j==1 || j==2 ){
-                enum_role = enum_io;
+              if( j==0 ){
+                enum_role = enum_term;
+              }
+            }else if( sk==kind::STRING_CONCAT ){
+              if( j==0 ){
+                //NEW_STRINGS
               }
             }
+            eroles[j] = enum_role;
             
             // register the child type
             TypeNode ct = itct->second[j];
@@ -1067,152 +1073,167 @@ Node CegConjecturePbe::constructSolution( Node c, Node e, UnifContext& x, int in
       TypeNode etn = e.getType();
       std::map< TypeNode, EnumTypeInfo >::iterator itt = d_cinfo[c].d_tinfo.find( etn );
       Assert( itt!=d_cinfo[c].d_tinfo.end() );
-      if( itt->second.isConditionExpandable() ){
-        std::map< Kind, EnumTypeInfoStrat >::iterator itts = itt->second.d_strat.find( kind::ITE );
-        Assert( itts!=itt->second.d_strat.end() );
-        
-        // this is a conditionally expandable
-        
-        Assert( !itts->second.d_csol_op.isNull() );
-        Assert( itts->second.d_cenum.size()==3 ); // for now, fix to 3 child ITEs
-        
+      
+      // do various strategies 
+      for( std::map< Kind, EnumTypeInfoStrat >::iterator itts = itt->second.d_strat.begin(); itts!=itt->second.d_strat.end(); ++itts ){
         std::vector< Node > dt_children;
+        Assert( !itts->second.d_csol_op.isNull() );
         dt_children.push_back( itts->second.d_csol_op );
+        Kind sk = itts->first;
         
-        // register the condition enumerator
-        Node ce = itts->second.d_cenum[0];
-        std::map< Node, EnumInfo >::iterator itnc = d_einfo.find( ce );
-        Assert( itnc!=d_einfo.end() );
-        if( x.d_uinfo.find( ce )==x.d_uinfo.end() ){
-          Trace("sygus-pbe-dt-debug2") << "  reg : PBE: Look for direct solutions for conditional enumerator " << ce << " ... " << std::endl;
-          Assert( itnc->second.d_enum_vals.size()==itnc->second.d_enum_vals_res.size() );
-          x.d_uinfo[ce].d_status = 0;
-          for( unsigned i=1; i<=2; i++ ){
-            Node te = itts->second.d_cenum[i];
-            std::map< Node, EnumInfo >::iterator itnt = d_einfo.find( te );
-            Assert( itnt!=d_einfo.end() );
-            bool branch_pol = ( i==1 );
-            // for each condition, get terms that satisfy it in this branch
-            for( unsigned k=0; k<itnc->second.d_enum_vals.size(); k++ ){
-              Node cond = itnc->second.d_enum_vals[k];
-              std::vector< Node > solved;
-              itnt->second.d_term_trie.getSubsumedBy( this, itnc->second.d_enum_vals_res[k], branch_pol, solved );
-              Trace("sygus-pbe-dt-debug2") << "  reg : PBE: " << d_tds->sygusToBuiltin( cond ) << " has " << solved.size() << " solutions in branch " << i << std::endl;
-              if( !solved.empty() ){
-                Node slv = constructBestSolvedTerm( solved, x );
-                Trace("sygus-pbe-dt-debug") << "  reg : PBE: ..." << d_tds->sygusToBuiltin( slv ) << " is a solution under branch " << i;
-                Trace("sygus-pbe-dt-debug") << " of condition " << d_tds->sygusToBuiltin( cond ) << std::endl;
-                x.d_uinfo[ce].d_look_ahead_sols[cond][i] = slv;
-              }
-            }
-          }
-        }
+        bool success = true;
         
-        // get the conditionals in the current context : they must be distinguishable
-        std::map< int, std::vector< Node > > possible_cond;
-        std::map< Node, int > solved_cond;  //stores branch
-        //IndexFilter f;
-        //f.mk( x.d_vals );
-        itnc->second.d_term_trie.getLeaves( this, x.d_vals, true, possible_cond );
-        
-        std::map< int, std::vector< Node > >::iterator itpc = possible_cond.find( 0 );
-        if( itpc!=possible_cond.end() ){
+        // for ITE
+        std::map< unsigned, Node > look_ahead_solved_children;
+        int split_cond_res_index = -1;
+        std::map< Node, EnumInfo >::iterator itnc;
+        Assert( sk!=kind::ITE || itts->second.d_cenum.size()==3 ); // for now, fix to 3 child ITEs
+          
+        for( unsigned sc=0; sc<itts->second.d_cenum.size(); sc++ ){
+          Node rec_c;
           indent("sygus-pbe-dt-debug", ind);
-          Trace("sygus-pbe-dt-debug") << "PBE : We have " << itpc->second.size() << " distinguishable conditionals." << std::endl;          
-        
-          Node split_cond;
-          std::map< unsigned, Node > look_ahead_solved_children;
-          
-          // static look ahead conditional : choose conditionals that have solved terms in at least one branch
-          std::map< int, std::vector< Node > > solved_cond;
-          int solve_max = 0;
-          for( unsigned k=0; k<itpc->second.size(); k++ ){
-            Node cond = itpc->second[k];
-            std::map< Node, std::map< unsigned, Node > >::iterator itla = x.d_uinfo[ce].d_look_ahead_sols.find( cond );
-            if( itla!=x.d_uinfo[ce].d_look_ahead_sols.end() ){
-              int nsolved = itla->second.size();
-              solve_max = nsolved > solve_max ? nsolved : solve_max;
-              solved_cond[nsolved].push_back( cond );
-            }
-          }
-          int n = solve_max;
-          while( n>0 ){
-            if( !solved_cond[n].empty() ){
-              split_cond = constructBestSolvedConditional( solved_cond[n], x );
-              indent("sygus-pbe-dt-debug", ind);
-              Trace("sygus-pbe-dt-debug") << "PBE: choose solved conditional " << d_tds->sygusToBuiltin( split_cond ) << " with " << n << " solved children..." << std::endl;
-              std::map< Node, std::map< unsigned, Node > >::iterator itla = x.d_uinfo[ce].d_look_ahead_sols.find( split_cond );
-              Assert( itla!=x.d_uinfo[ce].d_look_ahead_sols.end() );
-              for( std::map< unsigned, Node >::iterator itla2 = itla->second.begin(); itla2 != itla->second.end(); ++itla2 ){
-                look_ahead_solved_children[ itla2->first ] = itla2->second;
-              }
-              break;
-            }
-            n--;
-          }
-          
-          // dynamic look ahead conditional : compute if there are any solved terms in this branch  TODO
-          if( ind>0 ){
-            
-          }
-          
-          // otherwise, guess a conditional
-          if( split_cond.isNull() ){
-            split_cond = constructBestConditional( itpc->second, x );
-            Assert( !split_cond.isNull() );
-            indent("sygus-pbe-dt-debug", ind);
-            Trace("sygus-pbe-dt-debug") << "PBE: choose random conditional " << d_tds->sygusToBuiltin( split_cond ) << std::endl;
-          }
-          
-          // make the children of the decision tree
-          dt_children.push_back( split_cond );
-          
-          bool success = true;
-          Assert( itnc->second.d_enum_val_to_index.find( split_cond )!=itnc->second.d_enum_val_to_index.end() );
-          unsigned split_cond_res_index = itnc->second.d_enum_val_to_index[split_cond];
-          Assert( split_cond_res_index<itnc->second.d_enum_vals_res.size() );
-          for( unsigned i=1; i<=2; i++ ){
-            indent("sygus-pbe-dt-debug", ind);
-            Trace("sygus-pbe-dt-debug") << "construct PBE child #" << i << "..." << std::endl;
-            std::map< unsigned, Node >::iterator itla = look_ahead_solved_children.find( i );
-            if( itla!=look_ahead_solved_children.end() ){
-              dt_children.push_back( itla->second );
-              indent("sygus-pbe-dt-debug", ind+1);
-              Trace("sygus-pbe-dt-debug") << "ConstructPBE: look ahead solved : " << itla->second << std::endl;
-            }else{
-              // child enumerator
-              Node te = itts->second.d_cenum[i];
-              // update the context
-              std::vector< Node > prev = x.d_vals;
-              bool ret = x.updateContext( this, itnc->second.d_enum_vals_res[split_cond_res_index], i==1 );
-              // must have updated the context
-              AlwaysAssert( ret );
-              Node rec_c = constructSolution( c, te, x, ind+1 );
-              if( rec_c.isNull() ){
-                success = false;
-                break;
-              }else{
-                dt_children.push_back( rec_c );
-                x.d_vals = prev;
-              }
-            }
-          }
-          if( success ){
-            ret_dt = NodeManager::currentNM()->mkNode( kind::APPLY_CONSTRUCTOR, dt_children );
-            indent("sygus-pbe-dt-debug", ind);
-            Trace("sygus-pbe-dt-debug") << "return PBE: success : constructed conditional " << std::endl;
+          Trace("sygus-pbe-dt-debug") << "construct PBE child #" << sc << "..." << std::endl;
+          std::map< unsigned, Node >::iterator itla = look_ahead_solved_children.find( sc );
+          if( itla!=look_ahead_solved_children.end() ){
+            rec_c = itla->second;
+            indent("sygus-pbe-dt-debug", ind+1);
+            Trace("sygus-pbe-dt-debug") << "ConstructPBE: look ahead solved : " << itla->second << std::endl;
           }else{
-            indent("sygus-pbe-dt-debug", ind);
-            Trace("sygus-pbe-dt-debug") << "return PBE: fail : child failed" << std::endl;
+            // get the child enumerator
+            Node ce = itts->second.d_cenum[sc];
+            if( sc==0 && sk==kind::ITE ){
+              // choose a condition
+              
+              // register the condition enumerator
+              itnc = d_einfo.find( ce );
+              Assert( itnc!=d_einfo.end() );
+              if( x.d_uinfo.find( ce )==x.d_uinfo.end() ){
+                Trace("sygus-pbe-dt-debug2") << "  reg : PBE: Look for direct solutions for conditional enumerator " << ce << " ... " << std::endl;
+                x.d_uinfo[ce].d_status = 0;
+                Assert( itnc->second.d_enum_vals.size()==itnc->second.d_enum_vals_res.size() );
+                for( unsigned i=1; i<=2; i++ ){
+                  Node te = itts->second.d_cenum[i];
+                  std::map< Node, EnumInfo >::iterator itnt = d_einfo.find( te );
+                  Assert( itnt!=d_einfo.end() );
+                  bool branch_pol = ( i==1 );
+                  // for each condition, get terms that satisfy it in this branch
+                  for( unsigned k=0; k<itnc->second.d_enum_vals.size(); k++ ){
+                    Node cond = itnc->second.d_enum_vals[k];
+                    std::vector< Node > solved;
+                    itnt->second.d_term_trie.getSubsumedBy( this, itnc->second.d_enum_vals_res[k], branch_pol, solved );
+                    Trace("sygus-pbe-dt-debug2") << "  reg : PBE: " << d_tds->sygusToBuiltin( cond ) << " has " << solved.size() << " solutions in branch " << i << std::endl;
+                    if( !solved.empty() ){
+                      Node slv = constructBestSolvedTerm( solved, x );
+                      Trace("sygus-pbe-dt-debug") << "  reg : PBE: ..." << d_tds->sygusToBuiltin( slv ) << " is a solution under branch " << i;
+                      Trace("sygus-pbe-dt-debug") << " of condition " << d_tds->sygusToBuiltin( cond ) << std::endl;
+                      x.d_uinfo[ce].d_look_ahead_sols[cond][i] = slv;
+                    }
+                  }
+                }
+              }
+              
+              // get the conditionals in the current context : they must be distinguishable
+              std::map< int, std::vector< Node > > possible_cond;
+              std::map< Node, int > solved_cond;  //stores branch
+              //IndexFilter f;
+              //f.mk( x.d_vals );
+              itnc->second.d_term_trie.getLeaves( this, x.d_vals, true, possible_cond );
+              
+              std::map< int, std::vector< Node > >::iterator itpc = possible_cond.find( 0 );
+              if( itpc!=possible_cond.end() ){
+                indent("sygus-pbe-dt-debug", ind);
+                Trace("sygus-pbe-dt-debug") << "PBE : We have " << itpc->second.size() << " distinguishable conditionals." << std::endl;          
+              
+                
+                // static look ahead conditional : choose conditionals that have solved terms in at least one branch
+                std::map< int, std::vector< Node > > solved_cond;
+                int solve_max = 0;
+                for( unsigned k=0; k<itpc->second.size(); k++ ){
+                  Node cond = itpc->second[k];
+                  std::map< Node, std::map< unsigned, Node > >::iterator itla = x.d_uinfo[ce].d_look_ahead_sols.find( cond );
+                  if( itla!=x.d_uinfo[ce].d_look_ahead_sols.end() ){
+                    int nsolved = itla->second.size();
+                    solve_max = nsolved > solve_max ? nsolved : solve_max;
+                    solved_cond[nsolved].push_back( cond );
+                  }
+                }
+                int n = solve_max;
+                while( n>0 ){
+                  if( !solved_cond[n].empty() ){
+                    rec_c = constructBestSolvedConditional( solved_cond[n], x );
+                    indent("sygus-pbe-dt-debug", ind);
+                    Trace("sygus-pbe-dt-debug") << "PBE: choose solved conditional " << d_tds->sygusToBuiltin( rec_c ) << " with " << n << " solved children..." << std::endl;
+                    std::map< Node, std::map< unsigned, Node > >::iterator itla = x.d_uinfo[ce].d_look_ahead_sols.find( rec_c );
+                    Assert( itla!=x.d_uinfo[ce].d_look_ahead_sols.end() );
+                    for( std::map< unsigned, Node >::iterator itla2 = itla->second.begin(); itla2 != itla->second.end(); ++itla2 ){
+                      look_ahead_solved_children[ itla2->first ] = itla2->second;
+                    }
+                    break;
+                  }
+                  n--;
+                }
+                
+                // dynamic look ahead conditional : compute if there are any solved terms in this branch  TODO
+                if( ind>0 ){
+                  
+                }
+                
+                // otherwise, guess a conditional
+                if( rec_c.isNull() ){
+                  rec_c = constructBestConditional( itpc->second, x );
+                  Assert( !rec_c.isNull() );
+                  indent("sygus-pbe-dt-debug", ind);
+                  Trace("sygus-pbe-dt-debug") << "PBE: choose random conditional " << d_tds->sygusToBuiltin( rec_c ) << std::endl;
+                }
+              }else{
+                // TODO : degenerate case where children have different types
+                indent("sygus-pbe-dt-debug", ind);
+                Trace("sygus-pbe-dt-debug") << "return PBE: fail : cannot find a distinguishable condition" << std::endl;
+              }
+              
+              Assert( itnc->second.d_enum_val_to_index.find( rec_c )!=itnc->second.d_enum_val_to_index.end() );
+              split_cond_res_index = itnc->second.d_enum_val_to_index[rec_c];
+              Assert( split_cond_res_index>=0 );
+              Assert( split_cond_res_index<(int)itnc->second.d_enum_vals_res.size() );
+            }else{
+              std::vector< Node > prev;
+              // update the context
+              if( sk==kind::ITE ){
+                Assert( itnc!=d_einfo.end() );
+                Assert( split_cond_res_index>=0 );
+                prev = x.d_vals;
+                bool ret = x.updateContext( this, itnc->second.d_enum_vals_res[split_cond_res_index], sc==1 );
+                // must have updated the context
+                AlwaysAssert( ret );
+              }
+              rec_c = constructSolution( c, ce, x, ind+1 );
+              if( !rec_c.isNull() ){
+                if( sk==kind::ITE ){
+                  x.d_vals = prev;
+                }
+              }
+            }
           }
-        }else{
-          // TODO : degenerate case where children have different types
-          indent("sygus-pbe-dt-debug", ind);
-          Trace("sygus-pbe-dt-debug") << "return PBE: fail : cannot find a distinguishable condition" << std::endl;
+          if( !rec_c.isNull() ){
+            dt_children.push_back( rec_c );
+          }else{
+            success = false;
+            break;
+          }
         }
-      }else{
+        if( success ){
+          ret_dt = NodeManager::currentNM()->mkNode( kind::APPLY_CONSTRUCTOR, dt_children );
+          indent("sygus-pbe-dt-debug", ind);
+          Trace("sygus-pbe-dt-debug") << "return PBE: success : constructed for strategy " << sk << std::endl;
+          break;
+        }else{
+          indent("sygus-pbe-dt-debug", ind);
+          Trace("sygus-pbe-dt-debug") << "return PBE: failed for strategy " << sk << std::endl;
+        }
+      }
+      if( ret_dt.isNull() ){
         indent("sygus-pbe-dt-debug", ind);
-        Trace("sygus-pbe-dt-debug") << "return PBE: fail : not conditionally expandable" << std::endl;
+        Trace("sygus-pbe-dt-debug") << "return PBE: fail : all strategies failed " << std::endl;
       }
     }else{
       indent("sygus-pbe-dt-debug", ind);

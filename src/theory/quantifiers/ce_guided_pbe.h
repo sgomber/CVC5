@@ -173,8 +173,6 @@ private:
     int d_csol_status;
     bool isCover( CegConjecturePbe * pbe, bool beneathCond, std::map< bool, std::map< TypeNode, bool > >& visited );
     bool isSolved( CegConjecturePbe * pbe );
-    //bool isConditionExpandable() { return !d_csol_op.isNull(); }
-    bool isConditionExpandable() { return d_strat.find( kind::ITE )!=d_strat.end(); }
   };
   class CandidateInfo {
   public:
