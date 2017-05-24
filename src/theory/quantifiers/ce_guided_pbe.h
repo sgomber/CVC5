@@ -60,8 +60,11 @@ public:
                        std::vector< Node >& exos, std::vector< Node >& exts);
   bool isPbe() { return d_is_pbe; }
 private:  // for registration
-  void collectEnumeratorTypes( Node e, TypeNode tn, unsigned enum_role );
-  void registerEnumerator( Node et, Node e, TypeNode tn, unsigned enum_role, bool inSearch );
+  void collectEnumeratorTypes( Node c, TypeNode tn, unsigned enum_role );
+  void registerEnumerator( Node et, Node c, TypeNode tn, unsigned enum_role, bool inSearch );
+  void staticLearnRedundantOps( Node c, std::vector< Node >& lemmas );
+  void staticLearnRedundantOps( Node c, Node e, std::map< Node, bool >& visited, std::vector< Node >& redundant, 
+                                std::vector< Node >& lemmas, int ind );
 
   /** register candidate conditional */
   bool inferTemplate( unsigned k, Node n, std::map< Node, unsigned >& templ_var_index, std::map< unsigned, unsigned >& templ_injection );  
@@ -139,7 +142,7 @@ private:
     std::map< Node, unsigned > d_enum_val_to_index;
     SubsumeTrie d_term_trie;
   public:
-    bool isBasic() { return d_template.isNull(); }
+    bool isTemplated() { return !d_template.isNull(); }
     bool considersOutput();
     void addEnumValue( CegConjecturePbe * pbe, Node v, std::vector< Node >& results );
     void setSolved( Node slv );
@@ -163,15 +166,13 @@ private:
   };
   class EnumTypeInfo {
   public:
-    EnumTypeInfo() : d_parent( NULL ), d_csol_status(-1){}
+    EnumTypeInfo() : d_parent( NULL ){}
     CandidateInfo * d_parent;
     // role -> _
     std::map< unsigned, Node > d_enum;
     TypeNode d_this_type;
     // strategies for enum_io role
     std::map< Node, EnumTypeInfoStrat > d_strat;
-    /** solution status */
-    int d_csol_status;
     bool isSolved( CegConjecturePbe * pbe );
   };
   class CandidateInfo {
