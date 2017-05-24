@@ -2771,8 +2771,7 @@ Node TermDbSygus::isSingularArg( Node n, Kind ik, int arg ) {
   if( n==getTypeValue( tn, 0 ) ){
     if( ik==AND || ik==MULT || ik==BITVECTOR_AND || ik==BITVECTOR_MULT ){
       return n;
-    }else if( ik==BITVECTOR_SHL || ik==BITVECTOR_LSHR || ik==BITVECTOR_ASHR || ik==BITVECTOR_UREM_TOTAL ||
-              ik==STRING_SUBSTR ){
+    }else if( ik==BITVECTOR_SHL || ik==BITVECTOR_LSHR || ik==BITVECTOR_ASHR || ik==BITVECTOR_UREM_TOTAL ){
       if( arg==0 ){
         return n;
       }
@@ -2788,6 +2787,16 @@ Node TermDbSygus::isSingularArg( Node n, Kind ik, int arg ) {
       }else{
         //TODO?
       }
+    }else if( ik==STRING_SUBSTR ){
+      if( arg==0 ){
+        return n;
+      }else if( arg==2 ){
+        return getTypeValue( NodeManager::currentNM()->stringType(), 0 );
+      }
+    }else if( ik==STRING_STRIDOF ){
+      if( arg==0 || arg==1 ){
+        return getTypeValue( NodeManager::currentNM()->integerType(), -1 );
+      }
     }
   }else if( n==getTypeValue( tn, 1 ) ){
     if( ik==BITVECTOR_UREM_TOTAL ){
@@ -2796,6 +2805,16 @@ Node TermDbSygus::isSingularArg( Node n, Kind ik, int arg ) {
   }else if( n==getTypeMaxValue( tn ) ){
     if( ik==OR || ik==BITVECTOR_OR ){
       return n;
+    }
+  }else{
+    if( n.getType().isReal() && n.getConst<Rational>().sgn()<0 ){
+      // negative arguments
+      if( ik==STRING_SUBSTR || ik==STRING_CHARAT ){
+        return getTypeValue( NodeManager::currentNM()->stringType(), 0 );
+      }else if( ik==STRING_STRIDOF ){
+        Assert( arg==2 );
+        return getTypeValue( NodeManager::currentNM()->integerType(), -1 );
+      }
     }
   }
   return Node::null();
@@ -2874,6 +2893,9 @@ public:
       return true;
     }
   }
+  bool empty() {
+    return d_req_kind==UNDEFINED_KIND && d_req_const.isNull() && d_req_type.isNull();
+  }
 };
 
 //this function gets all easy redundant cases, before consulting rewriters
@@ -2900,11 +2922,10 @@ bool TermDbSygus::considerArgKind( const Datatype& dt, const Datatype& pdt, Type
   //describes the shape of an alternate term to construct
   //  we check whether this term is in the sygus grammar below
   ReqTrie rt;
-  bool rt_valid = false;
+  Assert( rt.empty() );
   
   //construct rt by cases
   if( pk==NOT || pk==BITVECTOR_NOT || pk==UMINUS || pk==BITVECTOR_NEG ){
-    rt_valid = true;
     //negation normal form
     if( pk==k ){
       rt.d_req_type = getArgType( dt[c], 0 );
@@ -2939,8 +2960,6 @@ bool TermDbSygus::considerArgKind( const Datatype& dt, const Datatype& pdt, Type
           rt.d_children[1].d_req_kind = PLUS;
           rt.d_children[1].d_children[0].d_req_type = getArgType( dt[c], 0 );
           rt.d_children[1].d_children[1].d_req_const = NodeManager::currentNM()->mkConst( Rational( 1 ) );
-        }else{
-          rt_valid = false;
         }
       }else if( pk==BITVECTOR_NOT ){
         if( k==BITVECTOR_AND ) {
@@ -2951,23 +2970,17 @@ bool TermDbSygus::considerArgKind( const Datatype& dt, const Datatype& pdt, Type
           rt.d_req_kind = BITVECTOR_XOR;
         }else if( k==BITVECTOR_XOR ) {
           rt.d_req_kind = BITVECTOR_XNOR;
-        }else{
-          rt_valid = false;
         }
       }else if( pk==UMINUS ){
         if( k==PLUS ){
           rt.d_req_kind = PLUS;reqk = UMINUS;
-        }else{
-          rt_valid = false;
         }
       }else if( pk==BITVECTOR_NEG ){
         if( k==PLUS ){
           rt.d_req_kind = PLUS;reqk = BITVECTOR_NEG;
-        }else{
-          rt_valid = false;
         }
       }
-      if( rt_valid && ( reqk!=UNDEFINED_KIND || !reqkc.empty() ) ){
+      if( !rt.empty() && ( reqk!=UNDEFINED_KIND || !reqkc.empty() ) ){
         int pcr = getKindConsNum( tnp, rt.d_req_kind );
         if( pcr!=-1 ){
           Assert( pcr<(int)pdt.getNumConstructors() );
@@ -2986,11 +2999,7 @@ bool TermDbSygus::considerArgKind( const Datatype& dt, const Datatype& pdt, Type
                 rt.d_children[i].d_children[0].d_req_type = getArgType( dt[c], i );
               }
             }
-          }else{
-            rt_valid = false;
           }
-        }else{
-          rt_valid = false;
         }
       }
     }
@@ -3006,7 +3015,6 @@ bool TermDbSygus::considerArgKind( const Datatype& dt, const Datatype& pdt, Type
       rt.d_children[oarg].d_req_kind = k==MINUS ? PLUS : BITVECTOR_PLUS;
       rt.d_children[oarg].d_children[0].d_req_type = getArgType( pdt[pc], oarg );
       rt.d_children[oarg].d_children[1].d_req_type = getArgType( dt[c], 1 );
-      rt_valid = true;
     }else if( pk==PLUS || pk==BITVECTOR_PLUS ){
       //  (+ x (- y z))  -----> (- (+ x y) z)
       //  (+ (- y z) x)  -----> (- (+ x y) z)
@@ -3016,7 +3024,6 @@ bool TermDbSygus::considerArgKind( const Datatype& dt, const Datatype& pdt, Type
       rt.d_children[0].d_children[0].d_req_type = getArgType( pdt[pc], oarg );
       rt.d_children[0].d_children[1].d_req_type = getArgType( dt[c], 0 );
       rt.d_children[1].d_req_type = getArgType( dt[c], 1 );
-      rt_valid = true;
     }
   }else if( k==ITE ){
     if( pk!=ITE ){
@@ -3034,7 +3041,6 @@ bool TermDbSygus::considerArgKind( const Datatype& dt, const Datatype& pdt, Type
           }
         }
       }
-      rt_valid = true;
       //TODO: this increases term size but is probably a good idea
     }
   }else if( k==NOT ){
@@ -3044,11 +3050,10 @@ bool TermDbSygus::considerArgKind( const Datatype& dt, const Datatype& pdt, Type
       rt.d_children[0].d_req_type = getArgType( dt[c], 0 );
       rt.d_children[1].d_req_type = getArgType( pdt[pc], 2 );
       rt.d_children[2].d_req_type = getArgType( pdt[pc], 1 );
-      rt_valid = true;
     }
   }
   Trace("sygus-sb-debug") << "Consider sygus arg kind " << k << ", pk = " << pk << ", arg = " << arg << "?" << std::endl;
-  if( rt_valid ){
+  if( !rt.empty() ){
     rt.print("sygus-sb-debug");
     //check if it meets the requirements
     if( rt.satisfiedBy( this, tnp ) ){
@@ -3070,6 +3075,7 @@ bool TermDbSygus::considerConst( const Datatype& dt, const Datatype& pdt, TypeNo
   if( !considerConst( pdt, tnp, c, pk, arg ) ){
     return false;
   }
+  // TODO : this can probably be made child grammar independent
   int pc = getKindConsNum( tnp, pk );
   if( pdt[pc].getNumArgs()==2 ){
     Kind ok;
@@ -3100,15 +3106,16 @@ bool TermDbSygus::considerConst( const Datatype& dt, const Datatype& pdt, TypeNo
 
 bool TermDbSygus::considerConst( const Datatype& pdt, TypeNode tnp, Node c, Kind pk, int arg ) {
   Assert( hasKind( tnp, pk ) );
+  int pc = getKindConsNum( tnp, pk );
+  bool ret = true;
   Trace("sygus-sb-debug") << "Consider sygus const " << c << ", parent = " << pk << ", arg = " << arg << "?" << std::endl;
   if( isIdempotentArg( c, pk, arg ) ){
-    int pc = getKindConsNum( tnp, pk );
     if( pdt[pc].getNumArgs()==2 ){
       int oarg = arg==0 ? 1 : 0;
       TypeNode otn = TypeNode::fromType( ((SelectorType)pdt[pc][oarg].getType()).getRangeType() );
       if( otn==tnp ){
         Trace("sygus-sb-simple") << "  sb-simple : " << c << " is idempotent arg " << arg << " of " << pk << "..." << std::endl;
-        return false;
+        ret = false;
       }
     }
   }else{ 
@@ -3116,39 +3123,46 @@ bool TermDbSygus::considerConst( const Datatype& pdt, TypeNode tnp, Node c, Kind
     if( !sc.isNull() ){
       if( hasConst( tnp, sc ) ){
         Trace("sygus-sb-simple") << "  sb-simple : " << c << " is singular arg " << arg << " of " << pk << ", evaluating to " << sc << "..." << std::endl;
-        return false;
+        ret = false;
       }
     }
   }
-  ReqTrie rt;
-  bool rt_valid = false;
-  Node max_c = getTypeMaxValue( c.getType() );
-  Node zero_c = getTypeValue( c.getType(), 0 );
-  if( pk==XOR || pk==BITVECTOR_XOR ){
-    if( c==max_c ){
-      rt.d_req_kind = pk==XOR ? NOT : BITVECTOR_NOT;
-      rt_valid = true;
-    }
-  }else if( pk==ITE ){
-    if( arg==0 ){
+  if( ret ){
+    ReqTrie rt;
+    Assert( rt.empty() );
+    Node max_c = getTypeMaxValue( c.getType() );
+    Node zero_c = getTypeValue( c.getType(), 0 );
+    Node one_c = getTypeValue( c.getType(), 1 );
+    if( pk==XOR || pk==BITVECTOR_XOR ){
       if( c==max_c ){
-        rt.d_children[2].d_req_type = tnp;      
-        rt_valid = true;
-      }else if( c==zero_c ){
-        rt.d_children[1].d_req_type = tnp;      
-        rt_valid = true;
+        rt.d_req_kind = pk==XOR ? NOT : BITVECTOR_NOT;
+      }
+    }else if( pk==ITE ){
+      if( arg==0 ){
+        if( c==max_c ){
+          rt.d_children[2].d_req_type = tnp;
+        }else if( c==zero_c ){
+          rt.d_children[1].d_req_type = tnp;
+        }
+      }
+    }else if( pk==STRING_SUBSTR ){
+      if( c==one_c ){
+        rt.d_req_kind = STRING_CHARAT;
+        rt.d_children[0].d_req_type = getArgType( pdt[pc], 0 );
+        rt.d_children[1].d_req_type = getArgType( pdt[pc], 1 );
+      }
+    }
+    if( !rt.empty() ){
+      //check if satisfied
+      if( rt.satisfiedBy( this, tnp ) ){
+        Trace("sygus-sb-simple") << "  sb-simple : do not consider const " << c << " as arg " << arg << " of " << pk << std::endl;
+        //do not need to consider the constant in the search since there are ways to construct equivalent terms
+        ret = false;
       }
     }
   }
-  if( rt_valid ){
-    //check if satisfied
-    if( rt.satisfiedBy( this, tnp ) ){
-      Trace("sygus-sb-simple") << "  sb-simple : do not consider const " << c << " as arg " << arg << " of " << pk << std::endl;
-      //do not need to consider the constant in the search since there are ways to construct equivalent terms
-      return false;
-    }
-  }
-  return true;
+  // TODO : cache?
+  return ret;
 }
 
 
@@ -4084,24 +4098,29 @@ void TermDbSygus::getExplanationFor( TypeNode tn, Node n, Node vn, Node bvr, std
       Assert( nvn.getKind()==kind::APPLY_CONSTRUCTOR );
       Node nbv = sygusToBuiltin( nvn, tn );
       Node nbvr = Rewriter::rewrite( nbv );
+      bool exc_arg = false;
       if( nbvr==bvr ){
         // gives the same result : then the explanation for the child is irrelevant 
-        did_rlv = true;
-        Trace("sygus-sb-mexp") << "sb-min-exp : " << vn << " is rewritten to " << nbvr << " regardless of the content of argument " << i << std::endl;
+        exc_arg = true;
+        Trace("sygus-sb-mexp") << "sb-min-exp : " << sygusToBuiltin( vn, tn ) << " is rewritten to " << nbvr << " regardless of the content of argument " << i << std::endl;
       }else{
         if( nbvr.isVar() ){
           Node bx = sygusToBuiltin( x, xtn );
           Assert( bx.getType()==nbvr.getType() );
           if( nbvr==bx ){
-            Trace("sygus-sb-mexp") << "sb-min-exp : " << vn << " always rewrites to argument " << i << std::endl;
-            /*  TODO : use this information?
-            // rewrites to the variable : then the explanation is only this child
-            crlv.clear();
-            crlv[i] = true;
-            break;
-            */
+            Trace("sygus-sb-mexp") << "sb-min-exp : " << sygusToBuiltin( vn, tn ) << " always rewrites to argument " << i << std::endl;
+            if( xtn==tn ){
+              /*  TODO : use this information?
+              // rewrites to the variable : then the explanation of this is irrelevant as well
+              exc_arg = true;
+              */
+            }
           }
         }
+      }
+      if( exc_arg ){
+        did_rlv = true;
+      }else{
         crlv[i] = true;
         children[i+1] = vn[i];
       }

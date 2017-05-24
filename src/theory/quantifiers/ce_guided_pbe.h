@@ -61,7 +61,7 @@ public:
   bool isPbe() { return d_is_pbe; }
 private:  // for registration
   void collectEnumeratorTypes( Node e, TypeNode tn, unsigned enum_role );
-  void registerEnumerator( Node et, Node e, TypeNode tn, unsigned enum_role );
+  void registerEnumerator( Node et, Node e, TypeNode tn, unsigned enum_role, bool inSearch );
 
   /** register candidate conditional */
   bool inferTemplate( unsigned k, Node n, std::map< Node, unsigned >& templ_var_index, std::map< unsigned, unsigned >& templ_injection );  
@@ -189,6 +189,7 @@ private:
     void initialize( Node c );
     void initializeType( TypeNode tn );
     Node getRootEnumerator();
+    bool isNonTrivial();
   };
   //  candidate -> sygus type -> info
   std::map< Node, CandidateInfo > d_cinfo;

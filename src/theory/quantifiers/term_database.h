@@ -619,6 +619,7 @@ private:
   // grammar information
   // root -> type -> _
   std::map< TypeNode, std::map< TypeNode, unsigned > > d_min_type_depth;
+  //std::map< TypeNode, std::map< Node, std::map< std::map< int, bool > > > d_consider_const;
   // type -> cons -> _
   std::map< TypeNode, unsigned > d_min_term_size;
   std::map< TypeNode, std::map< unsigned, unsigned > > d_min_cons_term_size;

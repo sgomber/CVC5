@@ -219,6 +219,7 @@ bool CegConjecture::needsRefinement() {
 
 void CegConjecture::getCandidateList( std::vector< Node >& clist, bool forceOrig ) {
   if( d_ceg_pbe->isPbe() && !forceOrig ){
+    //Assert( isGround() );
     d_ceg_pbe->getCandidateList( d_candidates, clist );
   }else{
     clist.insert( clist.end(), d_candidates.begin(), d_candidates.end() );
@@ -229,6 +230,7 @@ bool CegConjecture::constructCandidates( std::vector< Node >& clist, std::vector
                                          std::vector< Node >& lems ) {
   Assert( clist.size()==model_values.size() );
   if( d_ceg_pbe->isPbe() ){
+    //Assert( isGround() );
     return d_ceg_pbe->constructCandidates( clist, model_values, d_candidates, candidate_values, lems );
   }else{
     Assert( model_values.size()==d_candidates.size() );
@@ -242,45 +244,63 @@ void CegConjecture::doCegConjectureCheck(std::vector< Node >& lems, std::vector<
   getCandidateList( clist );
   std::vector< Node > c_model_values;
   Trace("cegqi-check") << "CegConjuncture : check, build candidates..." << std::endl;
-  if( constructCandidates( clist, model_values, c_model_values, lems ) ){
-    Assert( c_model_values.size()==d_candidates.size() );
-    if( Trace.isOn("cegqi-check")  ){
+  bool constructed_cand = constructCandidates( clist, model_values, c_model_values, lems );
+  if( Trace.isOn("cegqi-check")  ){
+    if( constructed_cand ){
       Trace("cegqi-check") << "CegConjuncture : check candidate : " << std::endl;
       for( unsigned i=0; i<c_model_values.size(); i++ ){
         Trace("cegqi-check") << "  " << i << " : " << d_candidates[i] << " -> " << c_model_values[i] << std::endl;
       }
     }
-    //must get a counterexample to the value of the current candidate
-    Node inst = d_base_inst.substitute( d_candidates.begin(), d_candidates.end(), c_model_values.begin(), c_model_values.end() );
-    //check whether we will run CEGIS on inner skolem variables
-    bool sk_refine = ( !isGround() || d_refine_count==0 );
-    if( sk_refine ){
-      Assert( d_ce_sk.empty() );
-      d_ce_sk.push_back( std::vector< Node >() );
+  }
+  //must get a counterexample to the value of the current candidate
+  Node inst;
+  if( constructed_cand ){
+    Assert( c_model_values.size()==d_candidates.size() );
+    inst = d_base_inst.substitute( d_candidates.begin(), d_candidates.end(), c_model_values.begin(), c_model_values.end() );
+  }else{
+    inst = d_base_inst;
+  }
+  //check whether we will run CEGIS on inner skolem variables
+  bool sk_refine = ( !isGround() || d_refine_count==0 ) && ( !d_ceg_pbe->isPbe() || constructed_cand );
+  if( sk_refine ){
+    Assert( d_ce_sk.empty() );
+    d_ce_sk.push_back( std::vector< Node >() );
+  }else{
+    if( !constructed_cand ){
+      return;
     }
-    std::vector< Node > ic;
-    ic.push_back( d_assert_quant.negate() );
-    std::vector< Node > d;
-    CegInstantiation::collectDisjuncts( inst, d );
-    Assert( d.size()==d_base_disj.size() );
-    //immediately skolemize inner existentials
-    for( unsigned i=0; i<d.size(); i++ ){
-      Node dr = Rewriter::rewrite( d[i] );
-      if( dr.getKind()==NOT && dr[0].getKind()==FORALL ){
+  }
+  
+  std::vector< Node > ic;
+  ic.push_back( d_assert_quant.negate() );
+  std::vector< Node > d;
+  CegInstantiation::collectDisjuncts( inst, d );
+  Assert( d.size()==d_base_disj.size() );
+  //immediately skolemize inner existentials
+  for( unsigned i=0; i<d.size(); i++ ){
+    Node dr = Rewriter::rewrite( d[i] );
+    if( dr.getKind()==NOT && dr[0].getKind()==FORALL ){
+      if( constructed_cand ){
         ic.push_back( d_qe->getTermDatabase()->getSkolemizedBody( dr[0] ).negate() );
-        if( sk_refine ){
-          d_ce_sk.back().push_back( dr[0] );
-        }
-      }else{
+      }
+      if( sk_refine ){
+        Assert( !isGround() );
+        d_ce_sk.back().push_back( dr[0] );
+      }
+    }else{
+      if( constructed_cand ){
         ic.push_back( dr );
-        if( sk_refine ){
-          d_ce_sk.back().push_back( Node::null() );
-        }
         if( !d_inner_vars_disj[i].empty() ){
           Trace("cegqi-debug") << "*** quantified disjunct : " << d[i] << " simplifies to " << dr << std::endl;
         }
       }
+      if( sk_refine ){
+        d_ce_sk.back().push_back( Node::null() );
+      }
     }
+  }
+  if( constructed_cand ){
     Node lem = NodeManager::currentNM()->mkNode( OR, ic );
     lem = Rewriter::rewrite( lem );
     //eagerly unfold applications of evaluation function
@@ -694,6 +714,7 @@ void CegInstantiation::checkCegConjecture( CegConjecture * conj ) {
 }
 
 void CegInstantiation::getCRefEvaluationLemmas( CegConjecture * conj, std::vector< Node >& vs, std::vector< Node >& ms, std::vector< Node >& lems ) {
+  Trace("sygus-cref-eval") << "Cref eval : conjecture has " << conj->getNumRefinementLemmas() << " refinement lemmas." << std::endl;
   if( conj->getNumRefinementLemmas()>0 ){
     Assert( vs.size()==ms.size() );
     std::map< Node, Node > vtm;
