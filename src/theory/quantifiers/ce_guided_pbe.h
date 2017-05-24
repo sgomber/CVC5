@@ -49,6 +49,7 @@ public:
   enum {
     enum_io,
     enum_term,
+    enum_any,
   };
 public:
   CegConjecturePbe( QuantifiersEngine * qe, CegConjecture * p );
@@ -63,7 +64,7 @@ private:  // for registration
   void registerEnumerator( Node et, Node e, TypeNode tn, unsigned enum_role );
 
   /** register candidate conditional */
-  bool inferIteTemplate( unsigned k, Node n, std::map< Node, unsigned >& templ_var_index, std::map< unsigned, unsigned >& templ_injection );  
+  bool inferTemplate( unsigned k, Node n, std::map< Node, unsigned >& templ_var_index, std::map< unsigned, unsigned >& templ_injection );  
   /** get guard status */
   int getGuardStatus( Node g );
 public:
@@ -112,16 +113,16 @@ private:
   class EnumInfo {
   private:
     /** an OR of all in d_enum_res */
-    std::vector< Node > d_enum_total;
-    bool d_enum_total_true;
+    //std::vector< Node > d_enum_total;
+    //bool d_enum_total_true;
     Node d_enum_solved;
   public:
-    EnumInfo() : d_enum_total_true( false ), d_parent_arg(-1), d_role( enum_io ){}
+    EnumInfo() : d_role( enum_io ){}
     Node d_parent_candidate;
-    // parent information (context on how this should be enumerated)
-    TypeNode d_parent;
-    int d_parent_arg;
-    Kind d_parent_kind;
+    
+    // for template
+    Node d_template;
+    Node d_template_arg;
     
     // TODO : make private
     unsigned d_role;
@@ -138,8 +139,7 @@ private:
     std::map< Node, unsigned > d_enum_val_to_index;
     SubsumeTrie d_term_trie;
   public:
-    bool isBasic() { return d_parent_arg==-1; }
-    bool isConditional() { return d_parent_kind==kind::ITE && d_parent_arg==0; }
+    bool isBasic() { return d_template.isNull(); }
     bool considersOutput();
     void addEnumValue( CegConjecturePbe * pbe, Node v, std::vector< Node >& results );
     void setSolved( Node slv );
@@ -151,13 +151,15 @@ private:
   class CandidateInfo;
   class EnumTypeInfoStrat {
   public:
+    enum {
+      strat_ITE,
+      strat_CONCAT,
+      strat_ID,
+    };
+    unsigned d_this;
     /** conditional solutions */
-    Node d_csol_op;
     std::vector< TypeNode > d_csol_cts;
     std::vector< Node > d_cenum;
-    /** required for template solutions */
-    std::map< unsigned, Node > d_template;
-    std::map< unsigned, Node > d_template_arg;
   };
   class EnumTypeInfo {
   public:
@@ -167,7 +169,7 @@ private:
     std::map< unsigned, Node > d_enum;
     TypeNode d_this_type;
     // strategies for enum_io role
-    std::map< Kind, EnumTypeInfoStrat > d_strat;
+    std::map< Node, EnumTypeInfoStrat > d_strat;
     /** solution status */
     int d_csol_status;
     bool isSolved( CegConjecturePbe * pbe );
