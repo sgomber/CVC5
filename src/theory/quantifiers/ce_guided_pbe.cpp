@@ -202,12 +202,13 @@ bool CegConjecturePbe::getPbeExamples( Node v, std::vector< std::vector< Node > 
 void CegConjecturePbe::registerEnumerator( Node et, Node e, TypeNode tn, unsigned enum_role ) {
   d_einfo[et].d_parent_candidate = e;
   d_einfo[et].d_role = enum_role;
-  std::map< TypeNode, Node >::iterator itn = d_cinfo[e].d_enum[enum_role].find( tn );
-  if( itn==d_cinfo[e].d_enum[enum_role].end() ){
-    d_cinfo[e].d_enum[enum_role][tn] = et;
+  std::map< TypeNode, Node >::iterator itn = d_cinfo[e].d_search_enum.find( tn );
+  if( itn==d_cinfo[e].d_search_enum.end() ){
+    // use this for the search
+    d_cinfo[e].d_search_enum[tn] = et;
     d_cinfo[e].d_esym_list.push_back( et );
     d_einfo[et].d_enum_slave.push_back( et );
-    //register measured term
+    //register measured term with database
     d_qe->getTermDatabaseSygus()->registerMeasuredTerm( et, e, true );
     d_einfo[et].d_active_guard = d_qe->getTermDatabaseSygus()->getActiveGuardForMeasureTerm( et );
   }else{
@@ -225,8 +226,8 @@ void CegConjecturePbe::collectEnumeratorTypes( Node e, TypeNode tn, unsigned enu
   if( d_cinfo[e].d_tinfo[tn].d_enum.find( enum_role )==d_cinfo[e].d_tinfo[tn].d_enum.end() ){
     Node ee = NodeManager::currentNM()->mkSkolem( "ee", tn );
     registerEnumerator( ee, e, tn, enum_role );
-    Trace("sygus-unif-debug") << "...enumerate " << ee << " for " << ((DatatypeType)tn.toType()).getDatatype().getName() << std::endl;
     d_cinfo[e].d_tinfo[tn].d_enum[enum_role] = ee;
+    Trace("sygus-unif-debug") << "...enumerate " << ee << " for " << ((DatatypeType)tn.toType()).getDatatype().getName() << std::endl;
     
     if( enum_role==enum_io ){
       // look at information on how we will construct solutions for this type
@@ -409,8 +410,8 @@ void CegConjecturePbe::collectEnumeratorTypes( Node e, TypeNode tn, unsigned enu
               d_einfo[et].d_parent_kind = sk;
             }else{
               // otherwise use the previous
-              Assert( d_cinfo[e].d_enum[enum_role].find( ct )!=d_cinfo[e].d_enum[enum_role].end() );
-              et = d_cinfo[e].d_enum[enum_role][ct];
+              Assert( d_cinfo[e].d_tinfo[ct].d_enum.find( enum_role )!=d_cinfo[e].d_tinfo[ct].d_enum.end() );
+              et = d_cinfo[e].d_tinfo[ct].d_enum[enum_role];
             }
             Trace("sygus-unif-debug") << "Register child enumerator " << et << ", arg " << j << " of " << sk << ", role = " << enum_role << std::endl;
             d_cinfo[e].d_tinfo[tn].d_strat[sk].d_cenum.push_back( et );
@@ -468,14 +469,27 @@ bool CegConjecturePbe::constructCandidates( std::vector< Node >& enums, std::vec
                                             std::vector< Node >& candidates, std::vector< Node >& candidate_values, 
                                             std::vector< Node >& lems ) {
   Assert( enums.size()==enum_values.size() );
-  if( Trace.isOn("sygus-pbe-enum") ){
+  if( !enums.empty() ){
+    unsigned min_term_size = 0;
+    std::vector< unsigned > enum_consider;
     Trace("sygus-pbe-enum") << "Register new enumerated values : " << std::endl;
     for( unsigned i=0; i<enums.size(); i++ ){
       Trace("sygus-pbe-enum") << "  " << enums[i] << " -> " << enum_values[i] << std::endl;
+      unsigned sz = d_tds->getSygusTermSize( enum_values[i] );
+      if( i==0 || sz<min_term_size ){
+        enum_consider.clear();
+        min_term_size = sz;
+        enum_consider.push_back( i );
+      }else if( sz==min_term_size ){
+        enum_consider.push_back( i );
+      }
     }
-  }
-  for( unsigned i=0; i<enums.size(); i++ ){
-    addEnumeratedValue( enums[i], enum_values[i], lems );
+    // only consider the enumerators that are at minimum size (for fairness)
+    Trace("sygus-pbe-enum") << "...register " << enum_consider.size() << " / " << enums.size() << std::endl;
+    for( unsigned i=0; i<enum_consider.size(); i++ ){
+      unsigned j = enum_consider[i];
+      addEnumeratedValue( enums[j], enum_values[j], lems );
+    }
   }
   for( unsigned i=0; i<candidates.size(); i++ ){
     Node c = candidates[i];
@@ -513,10 +527,10 @@ void CegConjecturePbe::addEnumeratedValue( Node x, Node v, std::vector< Node >& 
         std::map< Node, EnumInfo >::iterator itv = d_einfo.find( xs );
         Assert( itv!=d_einfo.end() );
         Trace("sygus-pbe-enum") << "Process " << xs << " from " << s << " parent arg = " << itv->second.d_parent_arg << " " << itv->second.d_parent_kind << std::endl;
-        bool prevIsCover = false;
+        //bool prevIsCover = false;
         if( itv->second.considersOutput() ){
           Trace("sygus-pbe-enum") << "   IO-Eval of ";
-          prevIsCover = itv->second.isCover();
+          //prevIsCover = itv->second.isFeasible();
         }else{
           Trace("sygus-pbe-enum") << "Evaluation of ";
         }
@@ -618,15 +632,17 @@ void CegConjecturePbe::addEnumeratedValue( Node x, Node v, std::vector< Node >& 
         }
         if( keep ){
           // notify the parent to retry the build of PBE
-          itc->second.d_check_dt = true;
+          itc->second.d_check_sol = true;
           itv->second.addEnumValue( this, v, results );
+          /*
           if( Trace.isOn("sygus-pbe-enum") ){
             if( itv->second.considersOutput() ){
-              if( !prevIsCover && itv->second.isCover() ){
+              if( !prevIsCover && itv->second.isFeasible() ){
                 Trace("sygus-pbe-enum") << "...PBE : success : Evaluation of " << xs << " now covers all examples." << std::endl;
               }
             }
           }
+          */
         }
       }
     }else{
@@ -674,51 +690,6 @@ void CegConjecturePbe::EnumInfo::setSolved( Node slv ) {
   d_enum_solved = slv;
   d_enum_total_true = true;
 }
-
-bool CegConjecturePbe::EnumInfo::isCover() {
-  Assert( considersOutput() );
-  return d_enum_total_true;
-}
-
-bool CegConjecturePbe::EnumTypeInfo::isCover( CegConjecturePbe * pbe, bool beneathCond, std::map< bool, std::map< TypeNode, bool > >& visited ) {
-  std::map< unsigned, Node >::iterator itr = d_enum.find( enum_io );
-  Assert( itr!=d_enum.end() );  
-  std::map< Node, EnumInfo >::iterator itn = pbe->d_einfo.find( itr->second );
-  Assert( itn!=pbe->d_einfo.end() );
-  if( itn->second.isCover() ){
-    return true;
-  }
-  for( std::map< Kind, EnumTypeInfoStrat >::iterator its = d_strat.begin(); its != d_strat.end(); ++its ){
-    Assert( !its->second.d_csol_op.isNull() );
-    Assert( its->second.d_csol_cts.size()==its->second.d_cenum.size() );
-    bool success = true;
-    for( unsigned i=0; i<its->second.d_csol_cts.size(); i++ ){
-      TypeNode ct = its->second.d_csol_cts[i];
-      Node ce = its->second.d_cenum[i];
-      std::map< Node, EnumInfo >::iterator itnc = pbe->d_einfo.find( ce );
-      Assert( itnc!=pbe->d_einfo.end() );
-      if( itnc->second.d_role==enum_term ){
-        // must be able to construct a condition (even if trivial)
-        if( itnc->second.d_enum_vals.empty() ){
-          success = false;
-          break;
-        }
-      }else{
-        if( !itnc->second.isCover() ){
-          // recurse : it could be conditionally constructable (cannot recurse if templated)  TODO?
-          if( !itnc->second.isBasic() || !d_parent->isCover( ct, pbe, true, visited ) ){
-            success = false;
-            break;
-          }
-        }
-      }
-    }
-    if( success ){
-      return true;
-    }
-  }
-  return false;
-}
     
 void CegConjecturePbe::CandidateInfo::initialize( Node c ) {
   d_this_candidate = c;
@@ -731,37 +702,10 @@ void CegConjecturePbe::CandidateInfo::initializeType( TypeNode tn ) {
 }
 
 Node CegConjecturePbe::CandidateInfo::getRootEnumerator() {
-  std::map< TypeNode, Node >::iterator it = d_enum[enum_io].find( d_root );
-  Assert( it!=d_enum[enum_io].end() );
+  std::map< unsigned, Node >::iterator it = d_tinfo[d_root].d_enum.find( enum_io );
+  Assert( it!=d_tinfo[d_root].d_enum.end() );
   return it->second;
 }
-
-
-bool CegConjecturePbe::CandidateInfo::isCover( TypeNode tn, CegConjecturePbe * pbe, bool beneathCond, std::map< bool, std::map< TypeNode, bool > >& visited ) {
-  std::map< TypeNode, bool >::iterator itv = visited[beneathCond].find( tn );
-  if( itv==visited[beneathCond].end() ){
-    visited[beneathCond][tn] = false;
-    Assert( d_tinfo.find( tn )!=d_tinfo.end() );
-    bool ret = d_tinfo[tn].isCover( pbe, beneathCond, visited );
-    visited[beneathCond][tn] = ret;
-    return ret;
-  }else{
-    return itv->second;
-  }
-}
-
-bool CegConjecturePbe::CandidateInfo::isCover( CegConjecturePbe * pbe ) {
-  if( !d_active ){
-    std::map< bool, std::map< TypeNode, bool > > visited;
-    if( isCover( d_root, pbe, false, visited ) ){
-      Trace("sygus-pbe-enum") << "...PBE : success : Candidate " << d_this_candidate << " is now solvable." << std::endl;
-      d_active = true;
-      d_check_dt = true;
-    }
-  }
-  return d_active;
-}
-
 
 
 // status : 0 : exact, -1 : vals is subset, 1 : vals is superset
@@ -1009,22 +953,20 @@ Node CegConjecturePbe::constructSolution( Node c ){
     // already has a solution
     return itc->second.d_solution;
   }else{
-    if( itc->second.isCover( this ) ){
-      // only check if an enumerator updated
-      if( itc->second.d_check_dt ){
-        itc->second.d_check_dt = false;
-        // try multiple times if we have done multiple conditions, due to non-determinism
-        for( unsigned i=0; i<=itc->second.d_cond_count; i++ ){
-          Trace("sygus-pbe-dt") << "ConstructPBE for candidate: " << c << std::endl;
-          Node e = itc->second.getRootEnumerator();
-          UnifContext x;
-          x.initialize( this, c );
-          Node vc = constructSolution( c, e, x, 1 );
-          if( !vc.isNull() ){
-            Trace("sygus-pbe-enum") << "**** PBE SOLVED : " << c << " = " << vc << std::endl;
-            itc->second.d_solution = vc;
-            return vc;
-          }
+    // only check if an enumerator updated
+    if( itc->second.d_check_sol ){
+      itc->second.d_check_sol = false;
+      // try multiple times if we have done multiple conditions, due to non-determinism
+      for( unsigned i=0; i<=itc->second.d_cond_count; i++ ){
+        Trace("sygus-pbe-dt") << "ConstructPBE for candidate: " << c << std::endl;
+        Node e = itc->second.getRootEnumerator();
+        UnifContext x;
+        x.initialize( this, c );
+        Node vc = constructSolution( c, e, x, 1 );
+        if( !vc.isNull() ){
+          Trace("sygus-pbe-enum") << "**** PBE SOLVED : " << c << " = " << vc << std::endl;
+          itc->second.d_solution = vc;
+          return vc;
         }
       }
     }
@@ -1037,11 +979,19 @@ Node CegConjecturePbe::constructBestSolvedTerm( std::vector< Node >& solved, Uni
   // TODO
   return solved[0];
 }
+
+Node CegConjecturePbe::constructBestStringSolvedTerm( std::vector< Node >& solved, UnifContext& x ) {
+  Assert( !solved.empty() );
+  // TODO
+  return solved[0];
+}
+
 Node CegConjecturePbe::constructBestSolvedConditional( std::vector< Node >& solved, UnifContext& x ){
   Assert( !solved.empty() );
   // TODO
   return solved[0];
 }
+
 Node CegConjecturePbe::constructBestConditional( std::vector< Node >& conds, UnifContext& x ) {
   Assert( !conds.empty() );
   // TODO
@@ -1052,15 +1002,20 @@ Node CegConjecturePbe::constructBestConditional( std::vector< Node >& conds, Uni
   }
   return conds[cindex];
 }
+
 Node CegConjecturePbe::constructBestStringToConcat( std::vector< Node > strs,
                                                     std::map< Node, unsigned > total_inc, 
                                                     std::map< Node, std::vector< unsigned > > incr,
                                                     UnifContext& x ) {
   Assert( !strs.empty() );
   // TODO
-  return strs[0];
-}
-                                    
+  double r = (double)(rand())/((double)(RAND_MAX));
+  unsigned cindex = r*strs.size();
+  if( cindex>strs.size() ){
+    cindex = strs.size() - 1;
+  }
+  return strs[cindex];
+}                         
                                     
 Node CegConjecturePbe::constructSolution( Node c, Node e, UnifContext& x, int ind ) {
   indent("sygus-pbe-dt", ind);
@@ -1078,11 +1033,44 @@ Node CegConjecturePbe::constructSolution( Node c, Node e, UnifContext& x, int in
     indent("sygus-pbe-dt-debug", ind);
     Trace("sygus-pbe-dt-debug") << "return PBE: success : solved" << std::endl;
   }else{
-    if( x.d_has_string_pos ){
+    TypeNode etn = e.getType();
+    std::map< TypeNode, EnumTypeInfo >::iterator itt = d_cinfo[c].d_tinfo.find( etn );
+    Assert( itt!=d_cinfo[c].d_tinfo.end() );
+    if( x.d_has_string_pos!=0 ){
       // check if a current value that closes all examples
-      // TODO
-    }else{
-      // it has an enumerated value that is conditionally correct under the current assumptions ?
+      
+      // get the term enumerator for this type
+      std::map< unsigned, Node >::iterator itnt = itt->second.d_enum.find( enum_term );
+      Assert( itnt != itt->second.d_enum.end() );
+      Node et = itnt->second;
+      std::map< Node, EnumInfo >::iterator itet = d_einfo.find( et );
+      Assert( itet!=d_einfo.end() );
+
+      // get the current examples
+      std::map< Node, std::vector< Node > >::iterator itx = d_examples_out.find( c );
+      Assert( itx!=d_examples_out.end() );
+      std::vector< CVC4::String > ex_vals;
+      x.getCurrentStrings( this, itx->second, ex_vals );
+      Assert( itn->second.d_enum_vals.size()==itn->second.d_enum_vals_res.size() );
+      
+      // test each example in the term enumerator for the type
+      std::vector< Node > str_solved;
+      for( unsigned i=0; i<itet->second.d_enum_vals.size(); i++ ){
+        Trace("ajr-temp") << "Check solved for " << itet->second.d_enum_vals[i] << std::endl;
+        if( x.isStringSolved( this, ex_vals, itet->second.d_enum_vals_res[i] ) ){
+          str_solved.push_back( itet->second.d_enum_vals[i] );
+        }
+      }
+      if( !str_solved.empty() ){
+        ret_dt = constructBestStringSolvedTerm( str_solved, x );
+        indent("sygus-pbe-dt-debug", ind);
+        Trace("sygus-pbe-dt-debug") << "return PBE: success : string solved" << std::endl;
+      }else{
+        indent("sygus-pbe-dt-debug2", ind);
+        Trace("sygus-pbe-dt-debug2") << "  ...not currently string solved." << std::endl;
+      }
+    }else if( !x.isReturnValueModified() ){
+      // it has an enumerated value that is conditionally correct under the current assumptions
       std::vector< Node > subsumed_by;
       itn->second.d_term_trie.getSubsumedBy( this, x.d_vals, true, subsumed_by );
       if( !subsumed_by.empty() ){
@@ -1091,276 +1079,291 @@ Node CegConjecturePbe::constructSolution( Node c, Node e, UnifContext& x, int in
         Trace("sygus-pbe-dt-debug") << "return PBE: success : conditionally solved" << std::endl;
       }
     }
-    
-    if( ret_dt.isNull() && itn->second.isBasic() ){
-      // try to construct a compound solution, if strategies are available
-      TypeNode etn = e.getType();
-      std::map< TypeNode, EnumTypeInfo >::iterator itt = d_cinfo[c].d_tinfo.find( etn );
-      Assert( itt!=d_cinfo[c].d_tinfo.end() );
-      
-      // do various strategies 
-      for( std::map< Kind, EnumTypeInfoStrat >::iterator itts = itt->second.d_strat.begin(); itts!=itt->second.d_strat.end(); ++itts ){
-        std::map< unsigned, Node > dt_children_cons;
-        Kind sk = itts->first;
+    if( ret_dt.isNull() ){
+      if( itn->second.isBasic() ){
+        // try to construct a compound solution, if strategies are available
         
-        bool success = true;
-        Node pivot;
-        
-        // for ITE
-        std::map< unsigned, Node > look_ahead_solved_children;
-        int split_cond_res_index = -1;
-        Assert( sk!=kind::ITE || itts->second.d_cenum.size()==3 ); // for now, fix to 3 child ITEs
-        
-        //for CONCAT
-        std::map< Node, std::vector< unsigned > > incr;
+        // do various strategies 
+        for( std::map< Kind, EnumTypeInfoStrat >::iterator itts = itt->second.d_strat.begin(); itts!=itt->second.d_strat.end(); ++itts ){
+          std::map< unsigned, Node > dt_children_cons;
+          Kind sk = itts->first;
           
-        // construct the child order
-        std::vector< unsigned > corder;
-        if( sk==kind::STRING_CONCAT ){
-          for( unsigned sc=0; sc<itts->second.d_cenum.size(); sc++ ){
-            Node ce = itts->second.d_cenum[sc];
-            std::map< Node, EnumInfo >::iterator itsc = d_einfo.find( ce );
-            // first one that has the role of the enumerator term
-            if( itsc->second.d_role==enum_term ){
+          bool success = true;
+          
+          // for ITE
+          std::map< unsigned, Node > look_ahead_solved_children;
+          Node split_cond_enum;
+          int split_cond_res_index = -1;
+          Assert( sk!=kind::ITE || itts->second.d_cenum.size()==3 ); // for now, fix to 3 child ITEs
+          
+          //for CONCAT
+          Node incr_val;
+          int incr_type = 0;
+          std::map< Node, std::vector< unsigned > > incr;
+            
+          // construct the child order
+          std::vector< unsigned > corder;
+          if( sk==kind::STRING_CONCAT ){
+            for( unsigned sc=0; sc<itts->second.d_cenum.size(); sc++ ){
+              Node ce = itts->second.d_cenum[sc];
+              std::map< Node, EnumInfo >::iterator itsc = d_einfo.find( ce );
+              // first one that has the role of the enumerator term
+              if( itsc->second.d_role==enum_term ){
+                corder.push_back( sc );
+                for( unsigned scc=0; scc<itts->second.d_cenum.size(); scc++ ){
+                  if( scc!=sc ){
+                    corder.push_back( scc );
+                  }
+                }
+                break;
+              }
+            }
+          }else{
+            for( unsigned sc=0; sc<itts->second.d_cenum.size(); sc++ ){
               corder.push_back( sc );
-              for( unsigned scc=0; scc<itts->second.d_cenum.size(); scc++ ){
-                if( scc!=sc ){
-                  corder.push_back( scc );
+            }
+          }    
+          Assert( corder.size()==itts->second.d_cenum.size() );
+            
+            
+          for( unsigned scc=0; scc<corder.size(); scc++ ){
+            unsigned sc = corder[scc];
+            Node rec_c;
+            indent("sygus-pbe-dt-debug", ind);
+            Trace("sygus-pbe-dt-debug") << "construct PBE child #" << sc << "..." << std::endl;
+            std::map< unsigned, Node >::iterator itla = look_ahead_solved_children.find( sc );
+            if( itla!=look_ahead_solved_children.end() ){
+              rec_c = itla->second;
+              indent("sygus-pbe-dt-debug", ind+1);
+              Trace("sygus-pbe-dt-debug") << "ConstructPBE: look ahead solved : " << itla->second << std::endl;
+            }else{
+              // get the child enumerator
+              Node ce = itts->second.d_cenum[sc];
+              if( sk==kind::ITE && scc==0 ){
+                // choose a condition
+                
+                // register the condition enumerator
+                std::map< Node, EnumInfo >::iterator itnc = d_einfo.find( ce );
+                Assert( itnc!=d_einfo.end() );
+                // only used if the return value is not modified
+                if( !x.isReturnValueModified() ){
+                  if( x.d_uinfo.find( ce )==x.d_uinfo.end() ){
+                    Trace("sygus-pbe-dt-debug2") << "  reg : PBE: Look for direct solutions for conditional enumerator " << ce << " ... " << std::endl;
+                    x.d_uinfo[ce].d_status = 0;
+                    Assert( itnc->second.d_enum_vals.size()==itnc->second.d_enum_vals_res.size() );
+                    for( unsigned i=1; i<=2; i++ ){
+                      Node te = itts->second.d_cenum[i];
+                      std::map< Node, EnumInfo >::iterator itnt = d_einfo.find( te );
+                      Assert( itnt!=d_einfo.end() );
+                      bool branch_pol = ( i==1 );
+                      // for each condition, get terms that satisfy it in this branch
+                      for( unsigned k=0; k<itnc->second.d_enum_vals.size(); k++ ){
+                        Node cond = itnc->second.d_enum_vals[k];
+                        std::vector< Node > solved;
+                        itnt->second.d_term_trie.getSubsumedBy( this, itnc->second.d_enum_vals_res[k], branch_pol, solved );
+                        Trace("sygus-pbe-dt-debug2") << "  reg : PBE: " << d_tds->sygusToBuiltin( cond ) << " has " << solved.size() << " solutions in branch " << i << std::endl;
+                        if( !solved.empty() ){
+                          Node slv = constructBestSolvedTerm( solved, x );
+                          Trace("sygus-pbe-dt-debug") << "  reg : PBE: ..." << d_tds->sygusToBuiltin( slv ) << " is a solution under branch " << i;
+                          Trace("sygus-pbe-dt-debug") << " of condition " << d_tds->sygusToBuiltin( cond ) << std::endl;
+                          x.d_uinfo[ce].d_look_ahead_sols[cond][i] = slv;
+                        }
+                      }
+                    }
+                  }
+                }
+                
+                // get the conditionals in the current context : they must be distinguishable
+                std::map< int, std::vector< Node > > possible_cond;
+                std::map< Node, int > solved_cond;  //stores branch
+                itnc->second.d_term_trie.getLeaves( this, x.d_vals, true, possible_cond );
+                
+                std::map< int, std::vector< Node > >::iterator itpc = possible_cond.find( 0 );
+                if( itpc!=possible_cond.end() ){
+                  indent("sygus-pbe-dt-debug", ind);
+                  Trace("sygus-pbe-dt-debug") << "PBE : We have " << itpc->second.size() << " distinguishable conditionals." << std::endl;          
+                
+                  // static look ahead conditional : choose conditionals that have solved terms in at least one branch
+                  //    only applicable if we have not modified the return value
+                  std::map< int, std::vector< Node > > solved_cond;
+                  if( !x.isReturnValueModified() ){
+                    Assert( x.d_uinfo.find( ce )!=x.d_uinfo.end() );
+                    int solve_max = 0;
+                    for( unsigned k=0; k<itpc->second.size(); k++ ){
+                      Node cond = itpc->second[k];
+                      std::map< Node, std::map< unsigned, Node > >::iterator itla = x.d_uinfo[ce].d_look_ahead_sols.find( cond );
+                      if( itla!=x.d_uinfo[ce].d_look_ahead_sols.end() ){
+                        int nsolved = itla->second.size();
+                        solve_max = nsolved > solve_max ? nsolved : solve_max;
+                        solved_cond[nsolved].push_back( cond );
+                      }
+                    }
+                    int n = solve_max;
+                    while( n>0 ){
+                      if( !solved_cond[n].empty() ){
+                        rec_c = constructBestSolvedConditional( solved_cond[n], x );
+                        indent("sygus-pbe-dt-debug", ind);
+                        Trace("sygus-pbe-dt-debug") << "PBE: choose solved conditional " << d_tds->sygusToBuiltin( rec_c ) << " with " << n << " solved children..." << std::endl;
+                        std::map< Node, std::map< unsigned, Node > >::iterator itla = x.d_uinfo[ce].d_look_ahead_sols.find( rec_c );
+                        Assert( itla!=x.d_uinfo[ce].d_look_ahead_sols.end() );
+                        for( std::map< unsigned, Node >::iterator itla2 = itla->second.begin(); itla2 != itla->second.end(); ++itla2 ){
+                          look_ahead_solved_children[ itla2->first ] = itla2->second;
+                        }
+                        break;
+                      }
+                      n--;
+                    }
+                  }
+                  
+                  // dynamic look ahead conditional : compute if there are any solved terms in this branch  TODO
+                  if( ind>0 ){
+                    
+                  }
+                  
+                  // otherwise, guess a conditional
+                  if( rec_c.isNull() ){
+                    rec_c = constructBestConditional( itpc->second, x );
+                    Assert( !rec_c.isNull() );
+                    indent("sygus-pbe-dt-debug", ind);
+                    Trace("sygus-pbe-dt-debug") << "PBE: ITE strategy : choose random conditional " << d_tds->sygusToBuiltin( rec_c ) << std::endl;
+                  }
+                }else{
+                  // TODO : degenerate case where children have different types
+                  indent("sygus-pbe-dt-debug", ind);
+                  Trace("sygus-pbe-dt-debug") << "return PBE: failed ITE strategy, cannot find a distinguishable condition" << std::endl;
+                }
+                if( !rec_c.isNull() ){
+                  Assert( itnc->second.d_enum_val_to_index.find( rec_c )!=itnc->second.d_enum_val_to_index.end() );
+                  split_cond_res_index = itnc->second.d_enum_val_to_index[rec_c];
+                  split_cond_enum = ce;
+                  Assert( split_cond_res_index>=0 );
+                  Assert( split_cond_res_index<(int)itnc->second.d_enum_vals_res.size() );
+                }
+              }else if( sk==kind::STRING_CONCAT && scc==0 ){
+                std::map< Node, EnumInfo >::iterator itsc = d_einfo.find( ce );
+                Assert( itsc!=d_einfo.end() );
+                // ensured by the child order we set above
+                Assert( itsc->second.d_role==enum_term );
+                // check if each return value is a prefix/suffix of all open examples
+                incr_type = sc==0 ? -1 : 1;
+                if( x.d_has_string_pos==0 || x.d_has_string_pos==incr_type ){
+                  bool isPrefix = incr_type==-1;
+                  std::map< Node, unsigned > total_inc;
+                  std::vector< Node > inc_strs;
+                  std::map< Node, std::vector< Node > >::iterator itx = d_examples_out.find( c );
+                  Assert( itx!=d_examples_out.end() );
+                  // make the value of the examples
+                  std::vector< CVC4::String > ex_vals;
+                  x.getCurrentStrings( this, itx->second, ex_vals );
+
+                  // check if there is a value for which is a prefix/suffix of all active examples
+                  Assert( itsc->second.d_enum_vals.size()==itsc->second.d_enum_vals_res.size() );
+                  
+                  for( unsigned i=0; i<itsc->second.d_enum_vals.size(); i++ ){
+                    Node val_t = itsc->second.d_enum_vals[i];
+                    indent("sygus-pbe-dt-debug", ind);
+                    Trace("sygus-pbe-dt-debug") << "increment string values : " << val_t << " : ";
+                    Assert( itsc->second.d_enum_vals_res[i].size()==itx->second.size() );
+                    unsigned tot = 0;
+                    bool exsuccess = x.getStringIncrement( this, isPrefix, ex_vals, itsc->second.d_enum_vals_res[i], incr[val_t], tot );
+                    if( tot==0 ){
+                      exsuccess = false;
+                    }
+                    if( !exsuccess ){
+                      incr.erase( val_t );
+                      Trace("sygus-pbe-dt-debug") << "...fail" << std::endl;
+                    }else{
+                      total_inc[ val_t ] = tot;
+                      inc_strs.push_back( val_t );
+                      Trace("sygus-pbe-dt-debug") << "...success, total increment = " << tot << std::endl;
+                    }
+                  }
+
+                  if( !incr.empty() ){
+                    rec_c = constructBestStringToConcat( inc_strs, total_inc, incr, x );
+                    incr_val = rec_c;
+                    Assert( !rec_c.isNull() );
+                    indent("sygus-pbe-dt-debug", ind);
+                    Trace("sygus-pbe-dt-debug") << "PBE: CONCAT strategy : choose " << ( isPrefix ? "pre" : "suf" ) << "fix value." << std::endl;
+                  }else{
+                    indent("sygus-pbe-dt-debug", ind);
+                    Trace("sygus-pbe-dt-debug") << "PBE: failed CONCAT strategy, no values are " << ( isPrefix ? "pre" : "suf" ) << "fix of all examples." << std::endl;
+                  }
+                }else{
+                  indent("sygus-pbe-dt-debug", ind);
+                  Trace("sygus-pbe-dt-debug") << "PBE: failed CONCAT strategy, prefix/suffix mismatch." << std::endl;
+                }
+              }else{
+                // a standard term
+                
+                // store previous values
+                std::vector< Node > prev;
+                std::vector< unsigned > prev_str_pos;
+                int prev_has_str_pos = false;
+                // update the context
+                bool ret = false;
+                if( sk==kind::ITE ){
+                  std::map< Node, EnumInfo >::iterator itnc = d_einfo.find( split_cond_enum );
+                  Assert( itnc!=d_einfo.end() );
+                  Assert( split_cond_res_index>=0 );
+                  Assert( split_cond_res_index<(int)itnc->second.d_enum_vals_res.size() );
+                  prev = x.d_vals;
+                  ret = x.updateContext( this, itnc->second.d_enum_vals_res[split_cond_res_index], sc==1 );
+                }else if( sk==kind::STRING_CONCAT ){
+                  prev_str_pos = x.d_str_pos;
+                  prev_has_str_pos = x.d_has_string_pos;
+                  Assert( incr.find( incr_val )!=incr.end() );
+                  ret = x.updateStringPosition( this, incr[incr_val] );
+                  x.d_has_string_pos = incr_type;
+                }
+                // must have updated the context
+                AlwaysAssert( ret );
+                // recurse
+                rec_c = constructSolution( c, ce, x, ind+1 );
+                if( !rec_c.isNull() ){
+                  //revert context
+                  if( sk==kind::ITE ){
+                    x.d_vals = prev;
+                  }else if( sk==kind::STRING_CONCAT ){
+                    x.d_str_pos = prev_str_pos;
+                    x.d_has_string_pos = prev_has_str_pos;
+                  }
                 }
               }
+            }
+            if( !rec_c.isNull() ){
+              dt_children_cons[sc] = rec_c;
+            }else{
+              success = false;
               break;
             }
           }
-        }else{
-          for( unsigned sc=0; sc<itts->second.d_cenum.size(); sc++ ){
-            corder.push_back( sc );
-          }
-        }    
-        Assert( corder.size()==itts->second.d_cenum.size() );
-          
-          
-        for( unsigned scc=0; scc<corder.size(); scc++ ){
-          unsigned sc = corder[scc];
-          Node rec_c;
-          indent("sygus-pbe-dt-debug", ind);
-          Trace("sygus-pbe-dt-debug") << "construct PBE child #" << sc << "..." << std::endl;
-          std::map< unsigned, Node >::iterator itla = look_ahead_solved_children.find( sc );
-          if( itla!=look_ahead_solved_children.end() ){
-            rec_c = itla->second;
-            indent("sygus-pbe-dt-debug", ind+1);
-            Trace("sygus-pbe-dt-debug") << "ConstructPBE: look ahead solved : " << itla->second << std::endl;
-          }else{
-            // get the child enumerator
-            Node ce = itts->second.d_cenum[sc];
-            if( sk==kind::ITE && scc==0 ){
-              // choose a condition
-              
-              // register the condition enumerator
-              std::map< Node, EnumInfo >::iterator itnc = d_einfo.find( ce );
-              Assert( itnc!=d_einfo.end() );
-              if( x.d_uinfo.find( ce )==x.d_uinfo.end() ){
-                Trace("sygus-pbe-dt-debug2") << "  reg : PBE: Look for direct solutions for conditional enumerator " << ce << " ... " << std::endl;
-                x.d_uinfo[ce].d_status = 0;
-                Assert( itnc->second.d_enum_vals.size()==itnc->second.d_enum_vals_res.size() );
-                for( unsigned i=1; i<=2; i++ ){
-                  Node te = itts->second.d_cenum[i];
-                  std::map< Node, EnumInfo >::iterator itnt = d_einfo.find( te );
-                  Assert( itnt!=d_einfo.end() );
-                  bool branch_pol = ( i==1 );
-                  // for each condition, get terms that satisfy it in this branch
-                  for( unsigned k=0; k<itnc->second.d_enum_vals.size(); k++ ){
-                    Node cond = itnc->second.d_enum_vals[k];
-                    std::vector< Node > solved;
-                    itnt->second.d_term_trie.getSubsumedBy( this, itnc->second.d_enum_vals_res[k], branch_pol, solved );
-                    Trace("sygus-pbe-dt-debug2") << "  reg : PBE: " << d_tds->sygusToBuiltin( cond ) << " has " << solved.size() << " solutions in branch " << i << std::endl;
-                    if( !solved.empty() ){
-                      Node slv = constructBestSolvedTerm( solved, x );
-                      Trace("sygus-pbe-dt-debug") << "  reg : PBE: ..." << d_tds->sygusToBuiltin( slv ) << " is a solution under branch " << i;
-                      Trace("sygus-pbe-dt-debug") << " of condition " << d_tds->sygusToBuiltin( cond ) << std::endl;
-                      x.d_uinfo[ce].d_look_ahead_sols[cond][i] = slv;
-                    }
-                  }
-                }
-              }
-              
-              // get the conditionals in the current context : they must be distinguishable
-              std::map< int, std::vector< Node > > possible_cond;
-              std::map< Node, int > solved_cond;  //stores branch
-              //IndexFilter f;
-              //f.mk( x.d_vals );
-              itnc->second.d_term_trie.getLeaves( this, x.d_vals, true, possible_cond );
-              
-              std::map< int, std::vector< Node > >::iterator itpc = possible_cond.find( 0 );
-              if( itpc!=possible_cond.end() ){
-                indent("sygus-pbe-dt-debug", ind);
-                Trace("sygus-pbe-dt-debug") << "PBE : We have " << itpc->second.size() << " distinguishable conditionals." << std::endl;          
-              
-                // static look ahead conditional : choose conditionals that have solved terms in at least one branch
-                // TODO : only applicable if we have not modified the return value
-                std::map< int, std::vector< Node > > solved_cond;
-                int solve_max = 0;
-                for( unsigned k=0; k<itpc->second.size(); k++ ){
-                  Node cond = itpc->second[k];
-                  std::map< Node, std::map< unsigned, Node > >::iterator itla = x.d_uinfo[ce].d_look_ahead_sols.find( cond );
-                  if( itla!=x.d_uinfo[ce].d_look_ahead_sols.end() ){
-                    int nsolved = itla->second.size();
-                    solve_max = nsolved > solve_max ? nsolved : solve_max;
-                    solved_cond[nsolved].push_back( cond );
-                  }
-                }
-                int n = solve_max;
-                while( n>0 ){
-                  if( !solved_cond[n].empty() ){
-                    rec_c = constructBestSolvedConditional( solved_cond[n], x );
-                    indent("sygus-pbe-dt-debug", ind);
-                    Trace("sygus-pbe-dt-debug") << "PBE: choose solved conditional " << d_tds->sygusToBuiltin( rec_c ) << " with " << n << " solved children..." << std::endl;
-                    std::map< Node, std::map< unsigned, Node > >::iterator itla = x.d_uinfo[ce].d_look_ahead_sols.find( rec_c );
-                    Assert( itla!=x.d_uinfo[ce].d_look_ahead_sols.end() );
-                    for( std::map< unsigned, Node >::iterator itla2 = itla->second.begin(); itla2 != itla->second.end(); ++itla2 ){
-                      look_ahead_solved_children[ itla2->first ] = itla2->second;
-                    }
-                    break;
-                  }
-                  n--;
-                }
-                
-                // dynamic look ahead conditional : compute if there are any solved terms in this branch  TODO
-                if( ind>0 ){
-                  
-                }
-                
-                // otherwise, guess a conditional
-                if( rec_c.isNull() ){
-                  rec_c = constructBestConditional( itpc->second, x );
-                  Assert( !rec_c.isNull() );
-                  indent("sygus-pbe-dt-debug", ind);
-                  Trace("sygus-pbe-dt-debug") << "PBE: choose random conditional " << d_tds->sygusToBuiltin( rec_c ) << std::endl;
-                }
-              }else{
-                // TODO : degenerate case where children have different types
-                indent("sygus-pbe-dt-debug", ind);
-                Trace("sygus-pbe-dt-debug") << "return PBE: fail : cannot find a distinguishable condition" << std::endl;
-              }
-              
-              Assert( itnc->second.d_enum_val_to_index.find( rec_c )!=itnc->second.d_enum_val_to_index.end() );
-              split_cond_res_index = itnc->second.d_enum_val_to_index[rec_c];
-              Assert( split_cond_res_index>=0 );
-              Assert( split_cond_res_index<(int)itnc->second.d_enum_vals_res.size() );
-              pivot = ce;
-            }else if( sk==kind::STRING_CONCAT && scc==0 ){
-              std::map< Node, EnumInfo >::iterator itsc = d_einfo.find( ce );
-              Assert( itsc!=d_einfo.end() );
-              // ensured by the child order we set above
-              Assert( itsc->second.d_role==enum_term );
-              // check if each return value is a prefix/suffix of all open examples
-              bool isPrefix = sc==0;
-              std::map< Node, unsigned > total_inc;
-              std::vector< Node > inc_strs;
-              std::map< Node, std::vector< Node > >::iterator itx = d_examples_out.find( c );
-              Assert( itx!=d_examples_out.end() );
-              // make the value of the examples
-              std::vector< CVC4::String > ex_vals;
-              x.getCurrentStrings( this, isPrefix, itx->second, ex_vals );
-
-              // check if there is a value for which is a prefix/suffix of all active examples
-              Assert( itsc->second.d_enum_vals.size()==itsc->second.d_enum_vals_res.size() );
-              
-              for( unsigned i=0; i<itsc->second.d_enum_vals.size(); i++ ){
-                Node val_t = itsc->second.d_enum_vals[i];
-                indent("sygus-pbe-dt-debug", ind);
-                Trace("sygus-pbe-dt-debug") << "string example : " << val_t << " : ";
-                Assert( itsc->second.d_enum_vals_res[i].size()==itx->second.size() );
-                unsigned tot = 0;
-                bool exsuccess = x.getStringIncrement( this, isPrefix, ex_vals, itsc->second.d_enum_vals_res[i], incr[val_t], tot );
-                if( tot==0 ){
-                  exsuccess = false;
-                }
-                if( !exsuccess ){
-                  incr.erase( val_t );
-                  Trace("sygus-pbe-dt-debug") << "...fail" << std::endl;
-                }else{
-                  total_inc[ val_t ] = tot;
-                  inc_strs.push_back( val_t );
-                  Trace("sygus-pbe-dt-debug") << "...success, total increment = " << tot << std::endl;
-                }
-              }
-
-              if( !incr.empty() ){
-                rec_c = constructBestStringToConcat( inc_strs, total_inc, incr, x );
-                Assert( !rec_c.isNull() );
-              }
-              pivot = ce;
-            }else{
-              // a standard term
-              
-              // store previous values
-              std::vector< Node > prev;
-              std::vector< unsigned > prev_str_pos;
-              bool prev_has_str_pos = false;
-              // update the context
-              Assert( !pivot.isNull() );
-              bool ret = false;
-              if( sk==kind::ITE ){
-                std::map< Node, EnumInfo >::iterator itnc = d_einfo.find( pivot );
-                Assert( itnc!=d_einfo.end() );
-                Assert( split_cond_res_index>=0 );
-                Assert( split_cond_res_index<(int)itnc->second.d_enum_vals_res.size() );
-                prev = x.d_vals;
-                ret = x.updateContext( this, itnc->second.d_enum_vals_res[split_cond_res_index], sc==1 );
-              }else if( sk==kind::STRING_CONCAT ){
-                prev_str_pos = x.d_str_pos;
-                prev_has_str_pos = x.d_has_string_pos;
-                Assert( incr.find( pivot )!=incr.end() );
-                ret = x.updateStringPosition( this, incr[pivot] );
-                x.d_has_string_pos = true;
-              }
-              // must have updated the context
-              AlwaysAssert( ret );
-              // recurse
-              rec_c = constructSolution( c, ce, x, ind+1 );
-              if( !rec_c.isNull() ){
-                //revert context
-                if( sk==kind::ITE ){
-                  x.d_vals = prev;
-                }else if( sk==kind::STRING_CONCAT ){
-                  x.d_str_pos = prev_str_pos;
-                  x.d_has_string_pos = prev_has_str_pos;
-                }
-              }
-            }
-          }
-          if( !rec_c.isNull() ){
-            dt_children_cons[sc] = rec_c;
-          }else{
-            success = false;
+          if( success ){
+            std::vector< Node > dt_children;
+            Assert( !itts->second.d_csol_op.isNull() );
+            dt_children.push_back( itts->second.d_csol_op );
+            for( unsigned sc=0; sc<itts->second.d_cenum.size(); sc++ ){
+              std::map< unsigned, Node >::iterator itdc = dt_children_cons.find( sc );
+              Assert( itdc!=dt_children_cons.end() );
+              dt_children.push_back( itdc->second );
+            }         
+            ret_dt = NodeManager::currentNM()->mkNode( kind::APPLY_CONSTRUCTOR, dt_children );
+            indent("sygus-pbe-dt-debug", ind);
+            Trace("sygus-pbe-dt-debug") << "PBE: success : constructed for strategy " << sk << std::endl;
             break;
+          }else{
+            indent("sygus-pbe-dt-debug", ind);
+            Trace("sygus-pbe-dt-debug") << "PBE: failed for strategy " << sk << std::endl;
           }
         }
-        if( success ){
-          std::vector< Node > dt_children;
-          Assert( !itts->second.d_csol_op.isNull() );
-          dt_children.push_back( itts->second.d_csol_op );
-          for( unsigned sc=0; sc<itts->second.d_cenum.size(); sc++ ){
-            std::map< unsigned, Node >::iterator itdc = dt_children_cons.find( sc );
-            Assert( itdc!=dt_children_cons.end() );
-            dt_children.push_back( itdc->second );
-          }         
-          ret_dt = NodeManager::currentNM()->mkNode( kind::APPLY_CONSTRUCTOR, dt_children );
+        if( ret_dt.isNull() ){
           indent("sygus-pbe-dt-debug", ind);
-          Trace("sygus-pbe-dt-debug") << "return PBE: success : constructed for strategy " << sk << std::endl;
-          break;
-        }else{
-          indent("sygus-pbe-dt-debug", ind);
-          Trace("sygus-pbe-dt-debug") << "return PBE: failed for strategy " << sk << std::endl;
+          Trace("sygus-pbe-dt-debug") << "return PBE: fail : all strategies failed " << std::endl;
         }
-      }
-      if( ret_dt.isNull() ){
+      }else{
         indent("sygus-pbe-dt-debug", ind);
-        Trace("sygus-pbe-dt-debug") << "return PBE: fail : all strategies failed " << std::endl;
+        Trace("sygus-pbe-dt-debug") << "return PBE: fail : non-basic" << std::endl;
       }
-    }else{
-      indent("sygus-pbe-dt-debug", ind);
-      Trace("sygus-pbe-dt-debug") << "return PBE: fail : non-basic" << std::endl;
     }
   }
   if( !ret_dt.isNull() ){
@@ -1398,6 +1401,13 @@ bool CegConjecturePbe::UnifContext::updateStringPosition( CegConjecturePbe * pbe
   return changed;
 }
 
+bool CegConjecturePbe::UnifContext::isReturnValueModified() {
+  if( d_has_string_pos!=0 ){
+    return true;
+  }
+  return false;
+}
+
 void CegConjecturePbe::UnifContext::initialize( CegConjecturePbe * pbe, Node c ) {
   Assert( d_vals.empty() );
   Assert( d_str_pos.empty() );
@@ -1422,13 +1432,15 @@ void CegConjecturePbe::UnifContext::initialize( CegConjecturePbe * pbe, Node c )
 }
 
 
-void CegConjecturePbe::UnifContext::getCurrentStrings( CegConjecturePbe * pbe, bool isPrefix, std::vector< Node >& vals, std::vector< CVC4::String >& ex_vals ) {
+void CegConjecturePbe::UnifContext::getCurrentStrings( CegConjecturePbe * pbe, std::vector< Node >& vals, std::vector< CVC4::String >& ex_vals ) {
+  bool isPrefix = d_has_string_pos==-1;
   CVC4::String dummy;
   for( unsigned i=0; i<vals.size(); i++ ){
     if( d_vals[i]==pbe->d_true ){
       Assert( vals[i].isConst() );
       unsigned pos_value = d_str_pos[i];
       if( pos_value>0 ){
+        Assert( d_has_string_pos!=0 );
         CVC4::String s = vals[i].getConst<String>();
         Assert( pos_value<=s.size() );
         ex_vals.push_back( isPrefix ? s.suffix( s.size()-pos_value ) : 
@@ -1464,6 +1476,20 @@ bool CegConjecturePbe::UnifContext::getStringIncrement( CegConjecturePbe * pbe, 
     Trace("sygus-pbe-dt-debug") << ival;
     tot += ival;
     inc.push_back( ival );
+  }
+  return true;
+}
+bool CegConjecturePbe::UnifContext::isStringSolved( CegConjecturePbe * pbe, std::vector< CVC4::String >& ex_vals, std::vector< Node >& vals ) {
+  for( unsigned j=0; j<vals.size(); j++ ){
+    if( d_vals[j]==pbe->d_true ){
+      // example is active in this context
+      Assert( vals[j].isConst() );
+      CVC4::String mystr = vals[j].getConst<String>();
+      if( ex_vals[j]!=mystr ){
+        Trace("ajr-temp") << "(" << ex_vals[j] << ") is not (" << mystr << ")" << std::endl;
+        return false;
+      }
+    }
   }
   return true;
 }

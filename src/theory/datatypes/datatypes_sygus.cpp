@@ -680,7 +680,7 @@ bool SygusSymBreakNew::registerSearchValue( Node a, Node n, Node nv, unsigned d,
         }
         Trace("sygus-sb-exc") << std::endl;
       } 
-      Assert( d_tds->getSygusTermSize( bad_val )==(int)sz );
+      Assert( d_tds->getSygusTermSize( bad_val )==sz );
 
       Node x = getFreeVar( tn );
       
@@ -815,7 +815,7 @@ void SygusSymBreakNew::registerSizeTerm( Node e, std::vector< Node >& lemmas ) {
           }
           Node m;
           if( !ag.isNull() ){
-            // if it has an active guard, use itself as measure term (will enforce fairness on it independently)
+            // if it has an active guard (it is an enumerator), use itself as measure term. This will enforce fairness on it independently.
             m = e;
           }else{
             // otherwise we enforce fairness in a unified way for all

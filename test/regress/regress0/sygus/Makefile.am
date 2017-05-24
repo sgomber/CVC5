@@ -54,7 +54,9 @@ TESTS = commutative.sy \
         tl-type-4x.sy \
         tl-type-0.sy \
         fg_polynomial3.sy \
-        icfp_14.12.sy 
+        icfp_14.12.sy \
+        strings-trivial-simp.sy \
+        icfp_easy-ite.sy
 
 # sygus tests currently taking too long for make regress
 EXTRA_DIST = $(TESTS) \

@@ -143,7 +143,6 @@ private:
     bool considersOutput();
     void addEnumValue( CegConjecturePbe * pbe, Node v, std::vector< Node >& results );
     void setSolved( Node slv );
-    bool isCover();
     bool isSolved() { return !d_enum_solved.isNull(); }
     Node getSolved() { return d_enum_solved; }
   };
@@ -171,26 +170,23 @@ private:
     std::map< Kind, EnumTypeInfoStrat > d_strat;
     /** solution status */
     int d_csol_status;
-    bool isCover( CegConjecturePbe * pbe, bool beneathCond, std::map< bool, std::map< TypeNode, bool > >& visited );
     bool isSolved( CegConjecturePbe * pbe );
   };
   class CandidateInfo {
   public:
-    CandidateInfo() : d_active( false ), d_check_dt( false ), d_cond_count( 0 ){}
+    CandidateInfo() : d_check_sol( false ), d_cond_count( 0 ){}
     Node d_this_candidate;
     TypeNode d_root;
     std::map< TypeNode, EnumTypeInfo > d_tinfo;
     std::vector< Node > d_esym_list;
-    std::map< unsigned, std::map< TypeNode, Node > > d_enum;
-    bool d_active;
-    bool d_check_dt;
+    // role -> sygus type -> enumerator
+    std::map< TypeNode, Node > d_search_enum;
+    bool d_check_sol;
     unsigned d_cond_count;
     Node d_solution;
     void initialize( Node c );
     void initializeType( TypeNode tn );
     Node getRootEnumerator();
-    bool isCover( TypeNode tn, CegConjecturePbe * pbe, bool beneathCond, std::map< bool, std::map< TypeNode, bool > >& visited );
-    bool isCover( CegConjecturePbe * pbe );
   };
   //  candidate -> sygus type -> info
   std::map< Node, CandidateInfo > d_cinfo;
@@ -212,7 +208,7 @@ private:
   */
   class UnifContext {
   public:
-    UnifContext() : d_has_string_pos(false) {}
+    UnifContext() : d_has_string_pos(0) {}
     //IndexFilter d_filter;
     // the value of the context conditional
     std::vector< Node > d_vals;
@@ -220,9 +216,12 @@ private:
     bool updateContext( CegConjecturePbe * pbe, std::vector< Node >& vals, bool pol );
     // the position in the strings
     std::vector< unsigned > d_str_pos;
-    bool d_has_string_pos;
+    // 0 : pos not modified, 1 : pos indicates suffix incremented, -1 : pos indicates prefix incremented
+    int d_has_string_pos;
     // update the string examples
     bool updateStringPosition( CegConjecturePbe * pbe, std::vector< unsigned >& pos );
+    // is return value modified 
+    bool isReturnValueModified();
     class UEnumInfo {
     public:
       UEnumInfo() : d_status(-1){}
@@ -233,13 +232,16 @@ private:
     // enumerator -> info
     std::map< Node, UEnumInfo > d_uinfo;
     void initialize( CegConjecturePbe * pbe, Node c );
-    void getCurrentStrings( CegConjecturePbe * pbe, bool isPrefix, std::vector< Node >& vals, std::vector< CVC4::String >& ex_vals );
-    bool getStringIncrement( CegConjecturePbe * pbe, bool isPrefix, std::vector< CVC4::String >& ex_vals, std::vector< Node >& vals, std::vector< unsigned >& inc, unsigned& tot );
+    void getCurrentStrings( CegConjecturePbe * pbe, std::vector< Node >& vals, std::vector< CVC4::String >& ex_vals );
+    bool getStringIncrement( CegConjecturePbe * pbe, bool isPrefix, std::vector< CVC4::String >& ex_vals, 
+                             std::vector< Node >& vals, std::vector< unsigned >& inc, unsigned& tot );
+    bool isStringSolved( CegConjecturePbe * pbe, std::vector< CVC4::String >& ex_vals, std::vector< Node >& vals );
   };
   /** construct solution */
   Node constructSolution( Node c );
   Node constructSolution( Node c, Node e, UnifContext& x, int ind );
   Node constructBestSolvedTerm( std::vector< Node >& solved, UnifContext& x );
+  Node constructBestStringSolvedTerm( std::vector< Node >& solved, UnifContext& x );
   Node constructBestSolvedConditional( std::vector< Node >& solved, UnifContext& x );
   Node constructBestConditional( std::vector< Node >& conds, UnifContext& x );
   Node constructBestStringToConcat( std::vector< Node > strs,

@@ -2706,11 +2706,11 @@ Node TermDbSygus::getNormalized( TypeNode t, Node prog, bool do_pre_norm, bool d
   }
 }
 
-int TermDbSygus::getSygusTermSize( Node n ){
+unsigned TermDbSygus::getSygusTermSize( Node n ){
   if( n.getNumChildren()==0 ){
     return 0;
   }else{
-    int sum = 0;
+    unsigned sum = 0;
     for( unsigned i=0; i<n.getNumChildren(); i++ ){
       sum += getSygusTermSize( n[i] );
     }
