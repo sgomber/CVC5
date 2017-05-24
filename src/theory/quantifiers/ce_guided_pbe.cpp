@@ -548,16 +548,21 @@ void CegConjecturePbe::staticLearnRedundantOps( Node c, Node e, std::map< Node, 
       }else{
         Trace("sygus-unif") << "compound" << std::endl;
         // various strategies 
+        std::vector< Node > redundant_emp;
         for( std::map< Node, EnumTypeInfoStrat >::iterator itts = itt->second.d_strat.begin(); itts!=itt->second.d_strat.end(); ++itts ){
-          std::vector< Node > redundant;
-          redundant.push_back( itts->first );
+          std::vector< Node > redundant_c;
+          redundant_c.push_back( itts->first );
           indent("sygus-unif", ind+1);
           Trace("sygus-unif") << "Strategy : ";
           unsigned strat = itts->second.d_this;
           print_strat("sygus-unif", strat);
           Trace("sygus-unif") << std::endl;
           for( unsigned i=0; i<itts->second.d_cenum.size(); i++ ){
-            staticLearnRedundantOps( c, itts->second.d_cenum[i], visited, redundant, lemmas, ind+2 );
+            if( itts->second.d_csol_cts[i]==etn ){
+              staticLearnRedundantOps( c, itts->second.d_cenum[i], visited, redundant_c, lemmas, ind+2 );
+            }else{
+              staticLearnRedundantOps( c, itts->second.d_cenum[i], visited, redundant_emp, lemmas, ind+2 );
+            }
           }
         }
       }
