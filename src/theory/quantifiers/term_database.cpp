@@ -2867,31 +2867,42 @@ public:
     }
   }
   bool satisfiedBy( quantifiers::TermDbSygus * tdb, TypeNode tn ){
+    if( !d_req_const.isNull() ){
+      if( !tdb->hasConst( tn, d_req_const ) ){
+        return false;
+      }
+    }
+    if( !d_req_type.isNull() ){
+      if( tn!=d_req_type ){
+        return false;
+      }
+    }
     if( d_req_kind!=UNDEFINED_KIND ){
       int c = tdb->getKindConsNum( tn, d_req_kind );
       if( c!=-1 ){
+        bool ret = true;
         const Datatype& dt = ((DatatypeType)(tn).toType()).getDatatype();
         for( std::map< unsigned, ReqTrie >::iterator it = d_children.begin(); it != d_children.end(); ++it ){
           if( it->first<dt[c].getNumArgs() ){
             TypeNode tnc = tdb->getArgType( dt[c], it->first );
             if( !it->second.satisfiedBy( tdb, tnc ) ){
-              return false;
+              ret = false;
+              break;
             }
           }else{
-            return false;
+            ret = false;
+            break;
           }
         }
-        return true;
+        if( !ret ){
+          return false;
+        }
+        // TODO : commutative operators try both?
       }else{
         return false;
       }
-    }else if( !d_req_const.isNull() ){
-      return tdb->hasConst( tn, d_req_const );
-    }else if( !d_req_type.isNull() ){
-      return tn==d_req_type;
-    }else{
-      return true;
     }
+    return true;
   }
   bool empty() {
     return d_req_kind==UNDEFINED_KIND && d_req_const.isNull() && d_req_type.isNull();
@@ -2899,7 +2910,9 @@ public:
 };
 
 //this function gets all easy redundant cases, before consulting rewriters
-bool TermDbSygus::considerArgKind( const Datatype& dt, const Datatype& pdt, TypeNode tn, TypeNode tnp, Kind k, Kind pk, int arg ) {
+bool TermDbSygus::considerArgKind( TypeNode tn, TypeNode tnp, Kind k, Kind pk, int arg ) {
+  const Datatype& pdt = ((DatatypeType)(tnp).toType()).getDatatype();
+  const Datatype& dt = ((DatatypeType)(tn).toType()).getDatatype();
   Assert( hasKind( tn, k ) );
   Assert( hasKind( tnp, pk ) );
   Trace("sygus-sb-debug") << "Consider sygus arg kind " << k << ", pk = " << pk << ", arg = " << arg << "?" << std::endl;
@@ -3015,7 +3028,9 @@ bool TermDbSygus::considerArgKind( const Datatype& dt, const Datatype& pdt, Type
       rt.d_children[oarg].d_req_kind = k==MINUS ? PLUS : BITVECTOR_PLUS;
       rt.d_children[oarg].d_children[0].d_req_type = getArgType( pdt[pc], oarg );
       rt.d_children[oarg].d_children[1].d_req_type = getArgType( dt[c], 1 );
-    }else if( pk==PLUS || pk==BITVECTOR_PLUS ){
+    }
+    /*  this is subsumbed by solving for MINUS
+    else if( pk==PLUS || pk==BITVECTOR_PLUS ){
       //  (+ x (- y z))  -----> (- (+ x y) z)
       //  (+ (- y z) x)  -----> (- (+ x y) z)
       rt.d_req_kind = pk==PLUS ? MINUS : BITVECTOR_SUB;
@@ -3025,6 +3040,7 @@ bool TermDbSygus::considerArgKind( const Datatype& dt, const Datatype& pdt, Type
       rt.d_children[0].d_children[1].d_req_type = getArgType( dt[c], 0 );
       rt.d_children[1].d_req_type = getArgType( dt[c], 1 );
     }
+      */
   }else if( k==ITE ){
     if( pk!=ITE ){
       //  (o X (ite y z w) X')  -----> (ite y (o X z X') (o X w X'))
@@ -3070,7 +3086,8 @@ bool TermDbSygus::considerArgKind( const Datatype& dt, const Datatype& pdt, Type
   return true;
 }
 
-bool TermDbSygus::considerConst( const Datatype& dt, const Datatype& pdt, TypeNode tn, TypeNode tnp, Node c, Kind pk, int arg ) {
+bool TermDbSygus::considerConst( TypeNode tn, TypeNode tnp, Node c, Kind pk, int arg ) {
+  const Datatype& pdt = ((DatatypeType)(tnp).toType()).getDatatype();
   // child grammar-independent
   if( !considerConst( pdt, tnp, c, pk, arg ) ){
     return false;
@@ -3155,7 +3172,8 @@ bool TermDbSygus::considerConst( const Datatype& pdt, TypeNode tnp, Node c, Kind
     if( !rt.empty() ){
       //check if satisfied
       if( rt.satisfiedBy( this, tnp ) ){
-        Trace("sygus-sb-simple") << "  sb-simple : do not consider const " << c << " as arg " << arg << " of " << pk << std::endl;
+        Trace("sygus-sb-simple") << "  sb-simple : do not consider const " << c << " as arg " << arg << " of " << pk;
+        Trace("sygus-sb-simple") << " in " << ((DatatypeType)tnp.toType()).getDatatype().getName() << std::endl;
         //do not need to consider the constant in the search since there are ways to construct equivalent terms
         ret = false;
       }
@@ -3165,7 +3183,49 @@ bool TermDbSygus::considerConst( const Datatype& pdt, TypeNode tnp, Node c, Kind
   return ret;
 }
 
+int TermDbSygus::solveForArgument( TypeNode tn, unsigned cindex, unsigned arg ) {
+  Assert( isRegistered( tn ) );
+  const Datatype& dt = ((DatatypeType)(tn).toType()).getDatatype();
+  Assert( cindex<dt.getNumConstructors() );
+  Assert( arg<dt[cindex].getNumArgs() );
+  Kind nk = getConsNumKind( tn, cindex );
+  TypeNode tnc = getArgType( dt[cindex], arg );
+  const Datatype& cdt = ((DatatypeType)(tnc).toType()).getDatatype();
 
+  ReqTrie rt;
+  Assert( rt.empty() );
+  int solve_ret = -1;
+  if( nk==MINUS || nk==BITVECTOR_SUB ){
+    if( dt[cindex].getNumArgs()==2 && arg==0 ){
+      TypeNode tnco = getArgType( dt[cindex], 1 );
+      Node builtin = getTypeValue( sygusToBuiltinType( tnc ), 0 );
+      solve_ret = getConstConsNum( tn, builtin );
+      if( solve_ret!=-1 ){
+        // t - s    ----->  ( 0 - s ) + t
+        rt.d_req_kind = MINUS ? PLUS : BITVECTOR_PLUS;
+        rt.d_children[0].d_req_type = tn; // avoid?
+        rt.d_children[0].d_req_kind = nk;
+        rt.d_children[0].d_children[0].d_req_const = builtin;
+        rt.d_children[0].d_children[0].d_req_type = tnco;
+        rt.d_children[1].d_req_type = tnc;
+        // TODO : this can be made more general for multiple type grammars to remove MINUS entirely 
+      }
+    }
+  }
+  
+  if( !rt.empty() ){
+    Assert( solve_ret>=0 );
+    Assert( solve_ret<=cdt.getNumConstructors() );
+    //check if satisfied
+    if( rt.satisfiedBy( this, tn ) ){
+      Trace("sygus-sb-simple") << "  sb-simple : ONLY consider " << cdt[solve_ret].getSygusOp() << " as arg " << arg << " of " << nk;
+      Trace("sygus-sb-simple") << " in " << ((DatatypeType)tn.toType()).getDatatype().getName() << std::endl;
+      return solve_ret;
+    }
+  }
+  
+  return -1;
+}
 
 Node TermDbSygus::getTypeValue( TypeNode tn, int val ) {
   std::map< int, Node >::iterator it = d_type_value[tn].find( val );

@@ -707,6 +707,12 @@ public:
   static Node getAnchor( Node n );
   static unsigned getAnchorDepth( Node n );
   
+public: // for symmetry breaking
+  bool considerArgKind( TypeNode tn, TypeNode tnp, Kind k, Kind pk, int arg );
+  bool considerConst( TypeNode tn, TypeNode tnp, Node c, Kind pk, int arg );
+  bool considerConst( const Datatype& pdt, TypeNode tnp, Node c, Kind pk, int arg );
+  int solveForArgument( TypeNode tnp, unsigned cindex, unsigned arg );
+  
 //for eager instantiation
 private:
   std::map< Node, std::map< Node, bool > > d_subterms;
@@ -727,10 +733,6 @@ private:
     void remove( Node n );
   };
   Node crefEvaluate( Node n, std::map< Node, Node >& vtm, std::map< Node, Node >& visited, std::map< Node, std::vector< Node > >& exp, CrefContext& crc );
-public:
-  bool considerArgKind( const Datatype& dt, const Datatype& pdt, TypeNode tn, TypeNode tnp, Kind k, Kind pk, int arg );
-  bool considerConst( const Datatype& dt, const Datatype& pdt, TypeNode tn, TypeNode tnp, Node c, Kind pk, int arg );
-  bool considerConst( const Datatype& pdt, TypeNode tnp, Node c, Kind pk, int arg );
 public:
   void registerEvalTerm( Node n );
   void registerModelValue( Node n, Node v, std::vector< Node >& exps, std::vector< Node >& terms, std::vector< Node >& vals );

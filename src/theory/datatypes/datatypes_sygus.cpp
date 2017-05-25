@@ -417,6 +417,20 @@ Node SygusSymBreakNew::getSimpleSymBreakPred( TypeNode tn, int tindex, unsigned 
       //builtin type
       TypeNode tnb = TypeNode::fromType( dt.getSygusType() );
       
+      // direct solving for children
+      //   for instance, we may want to insist that the LHS of MINUS is 0
+      std::map< unsigned, unsigned > children_solved;
+      for( unsigned j=0; j<dt[tindex].getNumArgs(); j++ ){
+        int i = d_tds->solveForArgument( tn, tindex, j );
+        if( i>=0 ){
+          children_solved[j] = i;
+          TypeNode ctn = children[j].getType();
+          const Datatype& cdt = ((DatatypeType)(ctn).toType()).getDatatype();
+          Assert( i<cdt.getNumConstructors() );
+          sbp_conj.push_back( DatatypesRewriter::mkTester( children[j], i, cdt ) );
+        }
+      }
+      
       if( nk!=UNDEFINED_KIND ){
         // commutative operators 
         if( quantifiers::TermDb::isComm( nk ) ){
@@ -450,7 +464,8 @@ Node SygusSymBreakNew::getSimpleSymBreakPred( TypeNode tn, int tindex, unsigned 
           }
         }
         // operators whose arguments are non-additive (e.g. should be different)
-        if( children.size()==2 && children[0].getType()==children[1].getType() && children[0].getType()==tn ){
+        std::vector< unsigned > deq_child[2];
+        if( children.size()==2 && children[0].getType()==tn ){
           bool argDeq = false;
           if( quantifiers::TermDb::isNonAdditive( nk ) ){
             argDeq = true;
@@ -463,9 +478,7 @@ Node SygusSymBreakNew::getSimpleSymBreakPred( TypeNode tn, int tindex, unsigned 
             }else if( nk==EQUAL || nk==LEQ || nk==GEQ || nk==BITVECTOR_XNOR ){
               req_const = d_tds->getTypeMaxValue( tnb );
             }
-            //else if( nk==DIVISION_TOTAL || nk==BITVECTOR_UDIV_TOTAL ){
-            //  req_const = d_tds->getTypeValue( tnb, 1 );
-            //}
+            // cannot do division since we have to consider when both are zero
             if( !req_const.isNull() ){
               if( d_tds->hasConst( tn, req_const ) ){
                 argDeq = true;
@@ -473,10 +486,9 @@ Node SygusSymBreakNew::getSimpleSymBreakPred( TypeNode tn, int tindex, unsigned 
             }
           }
           if( argDeq ){
-            sbp_conj.push_back( children[0].eqNode( children[1] ).negate() );
+            deq_child[0].push_back( 0 );deq_child[1].push_back( 1 );
           }
         }
-        std::vector< unsigned > deq_child[2];
         if( nk==ITE || nk==STRING_STRREPL ){
           deq_child[0].push_back( 1 );deq_child[1].push_back( 2 );
         }
@@ -511,29 +523,32 @@ Node SygusSymBreakNew::getSimpleSymBreakPred( TypeNode tn, int tindex, unsigned 
         // simple rewrites
         for( unsigned j=0; j<dt[tindex].getNumArgs(); j++ ){
           Node nc = children[j];
-          TypeNode tnc = nc.getType();
-          const Datatype& cdt = ((DatatypeType)(tnc).toType()).getDatatype();
-          for( unsigned k=0; k<cdt.getNumConstructors(); k++ ){
-            // if not already generic redundant
-            if( !d_tds->isGenericRedundant( tnc, k ) ){
-              Kind nck = d_tds->getConsNumKind( tnc, k );
-              bool red = false;
-              //check if the argument is redundant
-              if( nck!=UNDEFINED_KIND ){
-                Trace("sygus-sb-simple-debug") << "  argument " << j << " " << k << " is : " << nck << std::endl;
-                red = !d_tds->considerArgKind( cdt, dt, tnc, tn, nck, nk, j );
-              }else{
-                Node cc = d_tds->getConsNumConst( tnc, k  );
-                if( !cc.isNull() ){
-                  Trace("sygus-sb-simple-debug") << "  argument " << j << " " << k << " is constant : " << cc << std::endl;
-                  red = !d_tds->considerConst( cdt, dt, tnc, tn, cc, nk, j );
+          // if not already solved
+          if( children_solved.find( j )==children_solved.end() ){
+            TypeNode tnc = nc.getType();
+            const Datatype& cdt = ((DatatypeType)(tnc).toType()).getDatatype();
+            for( unsigned k=0; k<cdt.getNumConstructors(); k++ ){
+              // if not already generic redundant
+              if( !d_tds->isGenericRedundant( tnc, k ) ){
+                Kind nck = d_tds->getConsNumKind( tnc, k );
+                bool red = false;
+                //check if the argument is redundant
+                if( nck!=UNDEFINED_KIND ){
+                  Trace("sygus-sb-simple-debug") << "  argument " << j << " " << k << " is : " << nck << std::endl;
+                  red = !d_tds->considerArgKind( tnc, tn, nck, nk, j );
                 }else{
-                  //defined function?
+                  Node cc = d_tds->getConsNumConst( tnc, k  );
+                  if( !cc.isNull() ){
+                    Trace("sygus-sb-simple-debug") << "  argument " << j << " " << k << " is constant : " << cc << std::endl;
+                    red = !d_tds->considerConst( tnc, tn, cc, nk, j );
+                  }else{
+                    //defined function?
+                  }
                 }
-              }
-              if( red ){
-                Trace("sygus-sb-simple-debug") << "  ...redundant." << std::endl;
-                sbp_conj.push_back( DatatypesRewriter::mkTester( nc, k, cdt ).negate() );
+                if( red ){
+                  Trace("sygus-sb-simple-debug") << "  ...redundant." << std::endl;
+                  sbp_conj.push_back( DatatypesRewriter::mkTester( nc, k, cdt ).negate() );
+                }
               }
             }
           }
