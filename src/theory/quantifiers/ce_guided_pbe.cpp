@@ -43,12 +43,20 @@ void print_val( const char * c, std::vector< Node >& vals, bool pol = true ){
   }
 }
 void print_strat( const char * c, unsigned s ){
-  //TODO
-  Trace(c) << s;
+  switch(s){
+  case CegConjecturePbe::strat_ITE:Trace(c) << "ITE";break;
+  case CegConjecturePbe::strat_CONCAT:Trace(c) << "CONCAT";break;
+  case CegConjecturePbe::strat_ID:Trace(c) << "ID";break;
+  default:Trace(c) << "strat_" << s;break;
+  }
 }
-void print_role( const char * c, unsigned s ){
-  //TODO
-  Trace(c) << s;
+void print_role( const char * c, unsigned r ){
+  switch(r){
+  case CegConjecturePbe::enum_io:Trace(c) << "IO";break;
+  case CegConjecturePbe::enum_term:Trace(c) << "TERM";break;
+  case CegConjecturePbe::enum_any:Trace(c) << "ANY";break;
+  default:Trace(c) << "role_" << r;break;
+  }
 }
 
 CegConjecturePbe::CegConjecturePbe(QuantifiersEngine* qe, CegConjecture* p)
@@ -131,7 +139,7 @@ void CegConjecturePbe::collectExamples( Node n, std::map< Node, bool >& visited,
   }
 }
 
-void CegConjecturePbe::initialize( Node n, std::vector< Node >& candidates ) {
+void CegConjecturePbe::initialize( Node n, std::vector< Node >& candidates, std::vector< Node >& lemmas ) {
   Trace("sygus-pbe") << "Initialize PBE : " << n << std::endl;
   
   for( unsigned i=0; i<candidates.size(); i++ ){
@@ -176,14 +184,11 @@ void CegConjecturePbe::initialize( Node n, std::vector< Node >& candidates ) {
         TypeNode ctn = c.getType();
         d_cinfo[c].initialize( c );
         // collect the enumerator types / form the strategy
-        std::vector< Node > lemmas;
         collectEnumeratorTypes( c, ctn, enum_io );
         // if we have non-trivial strategies, then use pbe
         if( d_cinfo[c].isNonTrivial() ){
-          // static learning of bad constructors
-          std::vector< Node > excl_lemmas;
-          staticLearnRedundantOps( c, excl_lemmas );
-        
+          // static learning of redundant constructors
+          staticLearnRedundantOps( c, lemmas );
           d_is_pbe = true;
         }
       }
@@ -218,7 +223,9 @@ bool CegConjecturePbe::getPbeExamples( Node v, std::vector< std::vector< Node > 
 
 void CegConjecturePbe::registerEnumerator( Node et, Node c, TypeNode tn, unsigned enum_role, bool inSearch ) {
   Trace("sygus-unif-debug") << "...register " << et << " for " << ((DatatypeType)tn.toType()).getDatatype().getName();
-  Trace("sygus-unif-debug") << ", role = " << enum_role << ", in search = " << inSearch << std::endl;
+  Trace("sygus-unif-debug") << ", role = ";
+  print_role( "sygus-unif-debug", enum_role );
+  Trace("sygus-unif-debug") << ", in search = " << inSearch << std::endl;
   d_einfo[et].d_parent_candidate = c;
   d_einfo[et].d_role = enum_role;
   // if we are actually enumerating this (could be a compound node in the strategy)
@@ -249,7 +256,9 @@ void CegConjecturePbe::collectEnumeratorTypes( Node e, TypeNode tn, unsigned enu
   
     Node ee = NodeManager::currentNM()->mkSkolem( "ee", tn );
     d_cinfo[e].d_tinfo[tn].d_enum[enum_role] = ee;
-    Trace("sygus-unif-debug") << "...enumerator " << ee << " for " << ((DatatypeType)tn.toType()).getDatatype().getName() << ", role = " << enum_role << std::endl;
+    Trace("sygus-unif-debug") << "...enumerator " << ee << " for " << ((DatatypeType)tn.toType()).getDatatype().getName() << ", role = ";
+    print_role( "sygus-unif-debug", enum_role );
+    Trace("sygus-unif-debug") << std::endl;
     // wait to register : may or may not actually be enumerating it
 
     if( enum_role==enum_io ){
@@ -276,10 +285,10 @@ void CegConjecturePbe::collectEnumeratorTypes( Node e, TypeNode tn, unsigned enu
                 Trace("sygus-unif") << "...type " << dt.getName() << " has ITE, enumerate child types..." << std::endl;
                 // we can do unification
                 Assert( dt[j].getNumArgs()==3 );
-                cop_to_strat[cop] = EnumTypeInfoStrat::strat_ITE;
+                cop_to_strat[cop] = strat_ITE;
               }else if( sk==kind::STRING_CONCAT ){
                 if( dt[j].getNumArgs()==2 ) {
-                  cop_to_strat[cop] = EnumTypeInfoStrat::strat_CONCAT;
+                  cop_to_strat[cop] = strat_CONCAT;
                 }
                 Trace("sygus-unif") << "...type " << dt.getName() << " has CONCAT, child types successful = " << success << std::endl;
               }
@@ -315,23 +324,23 @@ void CegConjecturePbe::collectEnumeratorTypes( Node e, TypeNode tn, unsigned enu
               echildren.push_back( sbvl[k] );
             }
             Node eut = NodeManager::currentNM()->mkNode( kind::APPLY_UF, echildren );
-            Trace("sygus-unif-debug") << "Test evaluation of " << eut << "..." << std::endl;
+            Trace("sygus-unif-debug2") << "Test evaluation of " << eut << "..." << std::endl;
             eut = d_qe->getTermDatabaseSygus()->unfold( eut );
-            Trace("sygus-unif-debug") << "...got " << eut << std::endl;       
-            Trace("sygus-unif-debug") << "Type : " << eut.getType() << std::endl;     
+            Trace("sygus-unif-debug2") << "...got " << eut << std::endl;       
+            Trace("sygus-unif-debug2") << "Type : " << eut.getType() << std::endl;     
 
             if( eut.getKind()==kind::ITE ){
               if( dt[j].getNumArgs()>=eut.getNumChildren() ){
-                cop_to_strat[cop] = EnumTypeInfoStrat::strat_ITE;
+                cop_to_strat[cop] = strat_ITE;
               }
             }else if( eut.getKind()==kind::STRING_CONCAT ){
               if( dt[j].getNumArgs()>=eut.getNumChildren() ){
-                cop_to_strat[cop] = EnumTypeInfoStrat::strat_CONCAT;
+                cop_to_strat[cop] = strat_CONCAT;
               }
             }else if( eut.getKind()==kind::APPLY_UF ){
               // identity operator?
               if( dt[j].getNumArgs()==1 ){
-                cop_to_strat[cop] = EnumTypeInfoStrat::strat_ID;
+                cop_to_strat[cop] = strat_ID;
               }
             }
             
@@ -345,19 +354,19 @@ void CegConjecturePbe::collectEnumeratorTypes( Node e, TypeNode tn, unsigned enu
                 const Datatype& cdt = ((DatatypeType)sks[k].getType().toType()).getDatatype();
                 echildren[0] = Node::fromExpr( cdt.getSygusEvaluationFunc() );
                 echildren[1] = sks[k];
-                Trace("sygus-unif-debug") << "...set eval dt to " << sks[k] << std::endl;
+                Trace("sygus-unif-debug2") << "...set eval dt to " << sks[k] << std::endl;
                 Node esk = NodeManager::currentNM()->mkNode( kind::APPLY_UF, echildren );
                 vs.push_back( esk );
                 Node tvar = NodeManager::currentNM()->mkSkolem( "templ", esk.getType() );
                 templ_var_index[tvar] = k;
-                Trace("sygus-unif-debug") << "* template inference : looking for " << tvar << " for arg " << k << std::endl;
+                Trace("sygus-unif-debug2") << "* template inference : looking for " << tvar << " for arg " << k << std::endl;
                 ss.push_back( tvar );
-                Trace("sygus-unif-debug") << "* substitute : " << esk << " -> " << tvar << std::endl;
+                Trace("sygus-unif-debug2") << "* substitute : " << esk << " -> " << tvar << std::endl;
               }
               eut = eut.substitute( vs.begin(), vs.end(), ss.begin(), ss.end() );
-              Trace("sygus-unif-debug") << "Defined constructor " << j << ", base term is " << eut << std::endl;
+              Trace("sygus-unif-debug2") << "Defined constructor " << j << ", base term is " << eut << std::endl;
               std::map< unsigned, Node > test_args;
-              if( cop_to_strat[cop] == EnumTypeInfoStrat::strat_ID ){
+              if( cop_to_strat[cop] == strat_ID ){
                 test_args[0] = eut;
               }else{
                 for( unsigned k=0; k<eut.getNumChildren(); k++ ){
@@ -369,12 +378,12 @@ void CegConjecturePbe::collectEnumeratorTypes( Node e, TypeNode tn, unsigned enu
                 Node eut_c = it->second;
                 //success if we can find a injection from args to sygus args
                 if( !inferTemplate( k, eut_c, templ_var_index, templ_injection ) ){
-                  Trace("sygus-unif-debug") << "...failed to find injection (range)." << std::endl;
+                  Trace("sygus-unif-debug2") << "...failed to find injection (range)." << std::endl;
                   cop_to_strat.erase( cop );
                   break;
                 }
                 if( templ_injection.find( k )==templ_injection.end() ){
-                  Trace("sygus-unif-debug") << "...failed to find injection (domain)." << std::endl;
+                  Trace("sygus-unif-debug2") << "...failed to find injection (domain)." << std::endl;
                   cop_to_strat.erase( cop );
                   break;
                 }
@@ -388,7 +397,7 @@ void CegConjecturePbe::collectEnumeratorTypes( Node e, TypeNode tn, unsigned enu
                   //also store the template information, if necessary
                   Node teut = eut[k];
                   if( !teut.isVar() ){
-                    if( cop_to_strat[cop] == EnumTypeInfoStrat::strat_ID ){
+                    if( cop_to_strat[cop] == strat_ID ){
                       Trace("sygus-unif-debug") << "...cannot use template with ID strategy." << std::endl;
                       cop_to_strat.erase( cop );
                     }else{
@@ -412,12 +421,12 @@ void CegConjecturePbe::collectEnumeratorTypes( Node e, TypeNode tn, unsigned enu
       }
       bool search_this = true;
       for( std::map< Node, unsigned >::iterator itc = cop_to_strat.begin(); itc != cop_to_strat.end(); ++itc ){
-        if( itc->second==EnumTypeInfoStrat::strat_CONCAT || itc->second==EnumTypeInfoStrat::strat_ID ){
+        if( itc->second==strat_CONCAT || itc->second==strat_ID ){
           search_this = false;
           break;
         }
       }
-      Trace("sygus-unif-debug") << "...this register..." << std::endl;
+      Trace("sygus-unif-debug2") << "...this register..." << std::endl;
       registerEnumerator( ee, e, tn, enum_role, search_this );
       
       if( cop_to_child_types.empty() ){
@@ -428,18 +437,20 @@ void CegConjecturePbe::collectEnumeratorTypes( Node e, TypeNode tn, unsigned enu
           Assert( cop_to_strat.find( cop )!=cop_to_strat.end() );
           unsigned strat = cop_to_strat[cop];
           d_cinfo[e].d_tinfo[tn].d_strat[cop].d_this = strat;
-          Trace("sygus-unif-debug") << "process strategy : " << cop << std::endl;
+          Trace("sygus-unif-debug") << "Process strategy for operator : " << cop << " : ";
+          print_strat("sygus-unif-debug", strat );
+          Trace("sygus-unif-debug") << std::endl;
 
           for( unsigned j=0; j<itct->second.size(); j++ ){
             //calculate if we should allocate a new enumerator : should be true if we have a new role
             unsigned enum_role_c = enum_role;
-            if( strat==EnumTypeInfoStrat::strat_ITE ){
+            if( strat==strat_ITE ){
               if( j==0 ){
                 enum_role_c = enum_term;
               }
-            }else if( strat==EnumTypeInfoStrat::strat_CONCAT ){
+            }else if( strat==strat_CONCAT ){
               enum_role_c = enum_term;
-            }else if( strat==EnumTypeInfoStrat::strat_ID ){
+            }else if( strat==strat_ID ){
               // role is the same as parent
             }
             
@@ -460,19 +471,25 @@ void CegConjecturePbe::collectEnumeratorTypes( Node e, TypeNode tn, unsigned enu
               Assert( !d_einfo[et].d_template.isNull() );
               Assert( !d_einfo[et].d_template_arg.isNull() );
             }else{
-              Trace("sygus-unif-debug") << "...child type enumerate " << ((DatatypeType)ct.toType()).getDatatype().getName() << ", role = " << enum_role_c << std::endl;
+              Trace("sygus-unif-debug") << "...child type enumerate " << ((DatatypeType)ct.toType()).getDatatype().getName() << ", role = ";
+              print_role( "sygus-unif-debug", enum_role_c );
+              Trace("sygus-unif-debug") << std::endl;
               collectEnumeratorTypes( e, ct, enum_role_c );
               // otherwise use the previous
               Assert( d_cinfo[e].d_tinfo[ct].d_enum.find( enum_role_c )!=d_cinfo[e].d_tinfo[ct].d_enum.end() );
               et = d_cinfo[e].d_tinfo[ct].d_enum[enum_role_c];
             }
-            Trace("sygus-unif-debug") << "Register child enumerator " << et << ", arg " << j << " of " << cop << ", role = " << enum_role_c << std::endl;
+            Trace("sygus-unif-debug") << "Register child enumerator " << et << ", arg " << j << " of " << cop << ", role = ";
+            print_role( "sygus-unif-debug", enum_role_c );
+            Trace("sygus-unif-debug") << std::endl;
             Assert( !et.isNull() );
             d_cinfo[e].d_tinfo[tn].d_strat[cop].d_cenum.push_back( et );
             // need to make this take into account template
             //Assert( et.getType()==e.getType() || !d_einfo[et].considersOutput() );
           }
-          Trace("sygus-unif") << "Initialized strategy " << strat << " for " << ((DatatypeType)tn.toType()).getDatatype().getName() << ", operator " << cop;
+          Trace("sygus-unif") << "Initialized strategy ";
+          print_strat( "sygus-unif", strat );
+          Trace("sygus-unif") << " for " << ((DatatypeType)tn.toType()).getDatatype().getName() << ", operator " << cop;
           Trace("sygus-unif") << ", #children = " << d_cinfo[e].d_tinfo[tn].d_strat[cop].d_cenum.size() << std::endl;
           Assert( d_cinfo[e].d_tinfo[tn].d_strat[cop].d_cenum.size()==d_cinfo[e].d_tinfo[tn].d_strat[cop].d_csol_cts.size() );
         }
@@ -520,7 +537,9 @@ void CegConjecturePbe::staticLearnRedundantOps( Node c, std::vector< Node >& lem
       Node es = itn->second.d_enum_slave[j];
       std::map< Node, EnumInfo >::iterator itns = d_einfo.find( es );
       Assert( itns!=d_einfo.end() );
-      Trace("sygus-unif") << "  " << es << ", role = " << itns->second.d_role << std::endl;
+      Trace("sygus-unif") << "  " << es << ", role = ";
+      print_role( "sygus-unif", itns->second.d_role );
+      Trace("sygus-unif") << std::endl;
     }
   }
   Trace("sygus-unif") << "Strategy for candidate " << c << " is : " << std::endl;
@@ -563,7 +582,16 @@ void CegConjecturePbe::staticLearnRedundantOps( Node c, Node e, std::map< Node, 
           print_strat("sygus-unif", strat);
           Trace("sygus-unif") << std::endl;
           for( unsigned i=0; i<itts->second.d_cenum.size(); i++ ){
+            bool no_repeat_op = false;
             if( itts->second.d_csol_cts[i]==etn ){
+              if( strat==strat_ITE && i!=0 ){
+                no_repeat_op = true;
+              }else if( strat==strat_CONCAT || strat==strat_ID ){
+                no_repeat_op = true;
+              }
+            }
+            
+            if( no_repeat_op ){
               staticLearnRedundantOps( c, itts->second.d_cenum[i], visited, redundant_c, lemmas, ind+2 );
             }else{
               staticLearnRedundantOps( c, itts->second.d_cenum[i], visited, redundant_emp, lemmas, ind+2 );
@@ -577,14 +605,17 @@ void CegConjecturePbe::staticLearnRedundantOps( Node c, Node e, std::map< Node, 
     Trace("sygus-unif") << e << std::endl;
   }
   if( !redundant.empty() ){
+    // TODO : if this becomes more general, must get master enumerator here
     if( itn->second.d_enum_slave.size()==1 ){
       for( unsigned i=0; i<redundant.size(); i++ ){
         int cindex = Datatype::indexOf( redundant[i].toExpr() );
         Assert( cindex!=-1 );
         const Datatype& dt = Datatype::datatypeOf( redundant[i].toExpr() );
         Node tst = datatypes::DatatypesRewriter::mkTester( e, cindex, dt ).negate();
-        Trace("sygus-unif-debug") << "...can exclude based on  : " << tst << std::endl;
-        lemmas.push_back( tst );
+        if( std::find( lemmas.begin(), lemmas.end(), tst )==lemmas.end() ){
+          Trace("sygus-unif") << "...can exclude based on  : " << tst << std::endl;
+          lemmas.push_back( tst );
+        }
       }
     }
   }
@@ -1243,7 +1274,7 @@ Node CegConjecturePbe::constructSolution( Node c, Node e, UnifContext& x, int in
             
           // construct the child order
           std::vector< unsigned > corder;
-          if( strat==EnumTypeInfoStrat::strat_CONCAT ){
+          if( strat==strat_CONCAT ){
             for( unsigned r=0; r<2; r++ ){
               unsigned sc = r==0 ? 0 : itts->second.d_cenum.size()-1;
               Node ce = itts->second.d_cenum[sc];
@@ -1282,7 +1313,7 @@ Node CegConjecturePbe::constructSolution( Node c, Node e, UnifContext& x, int in
             }else{
               // get the child enumerator
               Node ce = itts->second.d_cenum[sc];
-              if( strat==EnumTypeInfoStrat::strat_ITE && scc==0 ){
+              if( strat==strat_ITE && scc==0 ){
                 Assert( itts->second.d_cenum.size()==3 ); // for now, fix to 3 child ITEs
                 // choose a condition
                 
@@ -1388,7 +1419,7 @@ Node CegConjecturePbe::constructSolution( Node c, Node e, UnifContext& x, int in
                   Assert( split_cond_res_index>=0 );
                   Assert( split_cond_res_index<(int)itnc->second.d_enum_vals_res.size() );
                 }
-              }else if( strat==EnumTypeInfoStrat::strat_CONCAT && scc==0 ){
+              }else if( strat==strat_CONCAT && scc==0 ){
                 std::map< Node, EnumInfo >::iterator itsc = d_einfo.find( ce );
                 Assert( itsc!=d_einfo.end() );
                 // ensured by the child order we set above
@@ -1451,20 +1482,20 @@ Node CegConjecturePbe::constructSolution( Node c, Node e, UnifContext& x, int in
                 int prev_has_str_pos = false;
                 // update the context
                 bool ret = false;
-                if( strat==EnumTypeInfoStrat::strat_ITE ){
+                if( strat==strat_ITE ){
                   std::map< Node, EnumInfo >::iterator itnc = d_einfo.find( split_cond_enum );
                   Assert( itnc!=d_einfo.end() );
                   Assert( split_cond_res_index>=0 );
                   Assert( split_cond_res_index<(int)itnc->second.d_enum_vals_res.size() );
                   prev = x.d_vals;
                   ret = x.updateContext( this, itnc->second.d_enum_vals_res[split_cond_res_index], sc==1 );
-                }else if( strat==EnumTypeInfoStrat::strat_CONCAT ){
+                }else if( strat==strat_CONCAT ){
                   prev_str_pos = x.d_str_pos;
                   prev_has_str_pos = x.d_has_string_pos;
                   Assert( incr.find( incr_val )!=incr.end() );
                   ret = x.updateStringPosition( this, incr[incr_val] );
                   x.d_has_string_pos = incr_type;
-                }else if( strat==EnumTypeInfoStrat::strat_ID ){
+                }else if( strat==strat_ID ){
                   ret = true;
                 }
                 // must have updated the context
@@ -1473,9 +1504,9 @@ Node CegConjecturePbe::constructSolution( Node c, Node e, UnifContext& x, int in
                 rec_c = constructSolution( c, ce, x, ind+1 );
                 if( !rec_c.isNull() ){
                   //revert context
-                  if( strat==EnumTypeInfoStrat::strat_ITE ){
+                  if( strat==strat_ITE ){
                     x.d_vals = prev;
-                  }else if( strat==EnumTypeInfoStrat::strat_CONCAT ){
+                  }else if( strat==strat_CONCAT ){
                     x.d_str_pos = prev_str_pos;
                     x.d_has_string_pos = prev_has_str_pos;
                   }
@@ -1500,11 +1531,15 @@ Node CegConjecturePbe::constructSolution( Node c, Node e, UnifContext& x, int in
             }         
             ret_dt = NodeManager::currentNM()->mkNode( kind::APPLY_CONSTRUCTOR, dt_children );
             indent("sygus-pbe-dt-debug", ind);
-            Trace("sygus-pbe-dt-debug") << "PBE: success : constructed for strategy " << strat << std::endl;
+            Trace("sygus-pbe-dt-debug") << "PBE: success : constructed for strategy ";
+            print_strat( "sygus-pbe-dt-debug", strat );
+            Trace("sygus-pbe-dt-debug") << std::endl;
             break;
           }else{
             indent("sygus-pbe-dt-debug", ind);
-            Trace("sygus-pbe-dt-debug") << "PBE: failed for strategy " << strat << std::endl;
+            Trace("sygus-pbe-dt-debug") << "PBE: failed for strategy ";
+            print_strat( "sygus-pbe-dt-debug", strat );
+            Trace("sygus-pbe-dt-debug") << std::endl;
           }
         }
         if( ret_dt.isNull() ){

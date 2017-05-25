@@ -51,11 +51,16 @@ public:
     enum_term,
     enum_any,
   };
+  enum {
+    strat_ITE,
+    strat_CONCAT,
+    strat_ID,
+  };
 public:
   CegConjecturePbe( QuantifiersEngine * qe, CegConjecture * p );
   ~CegConjecturePbe();
 
-  void initialize( Node n, std::vector< Node >& candidates );
+  void initialize( Node n, std::vector< Node >& candidates, std::vector< Node >& lemmas );
   bool getPbeExamples( Node v, std::vector< std::vector< Node > >& exs, 
                        std::vector< Node >& exos, std::vector< Node >& exts);
   bool isPbe() { return d_is_pbe; }
@@ -154,11 +159,6 @@ private:
   class CandidateInfo;
   class EnumTypeInfoStrat {
   public:
-    enum {
-      strat_ITE,
-      strat_CONCAT,
-      strat_ID,
-    };
     unsigned d_this;
     /** conditional solutions */
     std::vector< TypeNode > d_csol_cts;

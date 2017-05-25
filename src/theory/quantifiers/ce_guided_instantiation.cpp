@@ -70,11 +70,11 @@ void CegConjecture::assign( Node q ) {
   //construct base instantiation
   d_base_inst = Rewriter::rewrite( d_qe->getInstantiation( q, vars, d_candidates ) );
   
-  
   // register this term with sygus database
+  std::vector< Node > guarded_lemmas;
   if( !isSingleInvocation() ){
     if( options::sygusPbe() ){
-      d_ceg_pbe->initialize( d_base_inst, d_candidates );
+      d_ceg_pbe->initialize( d_base_inst, d_candidates, guarded_lemmas );
     }
     for( unsigned i=0; i<d_candidates.size(); i++ ){
       Node e = d_candidates[i];
@@ -114,36 +114,38 @@ void CegConjecture::assign( Node q ) {
   }else{
     Assert( false );
   }
-  Trace("cegqi") << "...finished, single invocation = " << isSingleInvocation() << std::endl;
-}
-
-void CegConjecture::initializeGuard(){
-  if( isAssigned() ){
-    if( !d_syntax_guided ){
-      if( d_nsg_guard.isNull() ){
-        d_nsg_guard = Rewriter::rewrite( NodeManager::currentNM()->mkSkolem( "G", NodeManager::currentNM()->booleanType() ) );
-        d_nsg_guard = d_qe->getValuation().ensureLiteral( d_nsg_guard );
-        AlwaysAssert( !d_nsg_guard.isNull() );
-        d_qe->getOutputChannel().requirePhase( d_nsg_guard, true );
-        //add immediate lemma
-        Node lem = NodeManager::currentNM()->mkNode( OR, d_nsg_guard.negate(), d_base_inst.negate() );
-        Trace("cegqi-lemma") << "Cegqi::Lemma : non-syntax-guided : " << lem << std::endl;
-        d_qe->getOutputChannel().lemma( lem );
-      }
-    }else if( d_ceg_si->d_si_guard.isNull() ){
-      std::vector< Node > lems;
-      d_ceg_si->getInitialSingleInvLemma( lems );
-      for( unsigned i=0; i<lems.size(); i++ ){
-        Trace("cegqi-lemma") << "Cegqi::Lemma : single invocation " << i << " : " << lems[i] << std::endl;
-        d_qe->getOutputChannel().lemma( lems[i] );
-        if( Trace.isOn("cegqi-debug") ){
-          Node rlem = Rewriter::rewrite( lems[i] );
-          Trace("cegqi-debug") << "...rewritten : " << rlem << std::endl;
-        }
+  
+  // initialize the guard
+  if( !d_syntax_guided ){
+    if( d_nsg_guard.isNull() ){
+      d_nsg_guard = Rewriter::rewrite( NodeManager::currentNM()->mkSkolem( "G", NodeManager::currentNM()->booleanType() ) );
+      d_nsg_guard = d_qe->getValuation().ensureLiteral( d_nsg_guard );
+      AlwaysAssert( !d_nsg_guard.isNull() );
+      d_qe->getOutputChannel().requirePhase( d_nsg_guard, true );
+      // negated base as a guarded lemma
+      guarded_lemmas.push_back( d_base_inst.negate() );
+    }
+  }else if( d_ceg_si->d_si_guard.isNull() ){
+    std::vector< Node > lems;
+    d_ceg_si->getInitialSingleInvLemma( lems );
+    for( unsigned i=0; i<lems.size(); i++ ){
+      Trace("cegqi-lemma") << "Cegqi::Lemma : single invocation " << i << " : " << lems[i] << std::endl;
+      d_qe->getOutputChannel().lemma( lems[i] );
+      if( Trace.isOn("cegqi-debug") ){
+        Node rlem = Rewriter::rewrite( lems[i] );
+        Trace("cegqi-debug") << "...rewritten : " << rlem << std::endl;
       }
     }
-    Assert( !getGuard().isNull() );
   }
+  Assert( !getGuard().isNull() );
+  Node gneg = getGuard().negate();
+  for( unsigned i=0; i<guarded_lemmas.size(); i++ ){
+    Node lem = NodeManager::currentNM()->mkNode( OR, gneg, guarded_lemmas[i] );
+    Trace("cegqi-lemma") << "Cegqi::Lemma : initial (guarded) lemma : " << lem << std::endl;
+    d_qe->getOutputChannel().lemma( lem );
+  }
+  
+  Trace("cegqi") << "...finished, single invocation = " << isSingleInvocation() << std::endl;
 }
 
 Node CegConjecture::getGuard() {
@@ -245,22 +247,22 @@ void CegConjecture::doCegConjectureCheck(std::vector< Node >& lems, std::vector<
   std::vector< Node > c_model_values;
   Trace("cegqi-check") << "CegConjuncture : check, build candidates..." << std::endl;
   bool constructed_cand = constructCandidates( clist, model_values, c_model_values, lems );
-  if( Trace.isOn("cegqi-check")  ){
-    if( constructed_cand ){
+
+  //must get a counterexample to the value of the current candidate
+  Node inst;
+  if( constructed_cand ){
+    if( Trace.isOn("cegqi-check")  ){
       Trace("cegqi-check") << "CegConjuncture : check candidate : " << std::endl;
       for( unsigned i=0; i<c_model_values.size(); i++ ){
         Trace("cegqi-check") << "  " << i << " : " << d_candidates[i] << " -> " << c_model_values[i] << std::endl;
       }
     }
-  }
-  //must get a counterexample to the value of the current candidate
-  Node inst;
-  if( constructed_cand ){
     Assert( c_model_values.size()==d_candidates.size() );
     inst = d_base_inst.substitute( d_candidates.begin(), d_candidates.end(), c_model_values.begin(), c_model_values.end() );
   }else{
     inst = d_base_inst;
   }
+  
   //check whether we will run CEGIS on inner skolem variables
   bool sk_refine = ( !isGround() || d_refine_count==0 ) && ( !d_ceg_pbe->isPbe() || constructed_cand );
   if( sk_refine ){
@@ -530,7 +532,7 @@ void CegInstantiation::preRegisterQuantifier( Node q ) {
 }
 
 void CegInstantiation::registerQuantifier( Node q ) {
-  if( d_quantEngine->getOwner( q )==this && d_eval_axioms.find( q )==d_eval_axioms.end() ){
+  if( d_quantEngine->getOwner( q )==this ){ // && d_eval_axioms.find( q )==d_eval_axioms.end() ){
     if( !d_conj->isAssigned() ){
       Trace("cegqi") << "Register conjecture : " << q << std::endl;
       d_conj->assign( q );
@@ -547,7 +549,6 @@ void CegInstantiation::assertNode( Node n ) {
 
 Node CegInstantiation::getNextDecisionRequest( unsigned& priority ) {
   if( d_conj->isAssigned() ){
-    d_conj->initializeGuard();
     std::vector< Node > req_dec;
     const CegConjectureSingleInv* ceg_si = d_conj->getCegConjectureSingleInv();
     if( ! ceg_si->d_full_guard.isNull() ){

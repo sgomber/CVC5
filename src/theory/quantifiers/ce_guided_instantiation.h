@@ -130,8 +130,6 @@ public:
   bool needsCheck( std::vector< Node >& lem );
   /** preregister conjecture */
   void preregisterConjecture( Node q );
-  /** initialize guard */
-  void initializeGuard();
   /** assign */
   void assign( Node q );
   /** is assigned */
@@ -158,7 +156,7 @@ private:
   /** last instantiation by single invocation module? */
   bool d_last_inst_si;
   /** evaluation axioms */
-  std::map< Node, bool > d_eval_axioms;
+  //std::map< Node, bool > d_eval_axioms;
 private: //for direct evaluation
   /** get refinement evaluation */
   void getCRefEvaluationLemmas( CegConjecture * conj, std::vector< Node >& vs, std::vector< Node >& ms, std::vector< Node >& lems );
