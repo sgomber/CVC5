@@ -514,18 +514,19 @@ void CegConjecturePbe::staticLearnRedundantOps( Node c, std::vector< Node >& lem
     std::map< Node, EnumInfo >::iterator itn = d_einfo.find( e );
     Assert( itn!=d_einfo.end() );
     // see if there is anything we can eliminate
-    Trace("sygus-unif") << "* Search enumerator #" << i << " : " << e << " has " << itn->second.d_enum_slave.size() << " slaves:" << std::endl;
+    Trace("sygus-unif") << "* Search enumerator #" << i << " : type " << ((DatatypeType)e.getType().toType()).getDatatype().getName() << " : ";
+    Trace("sygus-unif") << e << " has " << itn->second.d_enum_slave.size() << " slaves:" << std::endl;
     for( unsigned j=0; j<itn->second.d_enum_slave.size(); j++ ){
       Node es = itn->second.d_enum_slave[j];
       std::map< Node, EnumInfo >::iterator itns = d_einfo.find( es );
       Assert( itns!=d_einfo.end() );
       Trace("sygus-unif") << "  " << es << ", role = " << itns->second.d_role << std::endl;
     }
-    Trace("sygus-unif") << "Strategy for " << c << " is : " << std::endl;
-    std::map< Node, bool > visited;
-    std::vector< Node > redundant;
-    staticLearnRedundantOps( c, d_cinfo[c].getRootEnumerator(), visited, redundant, lemmas, 0 );
   }
+  Trace("sygus-unif") << "Strategy for candidate " << c << " is : " << std::endl;
+  std::map< Node, bool > visited;
+  std::vector< Node > redundant;
+  staticLearnRedundantOps( c, d_cinfo[c].getRootEnumerator(), visited, redundant, lemmas, 0 );
 }
 
 void CegConjecturePbe::staticLearnRedundantOps( Node c, Node e, std::map< Node, bool >& visited, std::vector< Node >& redundant,
@@ -900,8 +901,7 @@ Node CegConjecturePbe::SubsumeTrie::addTermInternal( CegConjecturePbe * pbe, Nod
     if( status==0 ){
       unsigned next_index = f ? f->next( index ) : index+1;
       if( checkExistsOnly ){
-        Node cvn = spol ? cv : ( cv==pbe->d_true ? pbe->d_false : pbe->d_true ); 
-        std::map< Node, SubsumeTrie >::iterator itc = d_children.find( cvn );
+        std::map< Node, SubsumeTrie >::iterator itc = d_children.find( cv );
         if( itc!=d_children.end() ){
           ret = itc->second.addTermInternal( pbe, t, vals, pol, subsumed, spol, f, next_index, 0, checkExistsOnly, checkSubsume );
         }
@@ -959,13 +959,13 @@ Node CegConjecturePbe::SubsumeTrie::addCond( CegConjecturePbe * pbe, Node c, std
 
 void CegConjecturePbe::SubsumeTrie::getSubsumed( CegConjecturePbe * pbe, std::vector< Node >& vals, bool pol, std::vector< Node >& subsumed, IndexFilter * f ){
   unsigned start_index = f ? f->start() : 0;
-  addTermInternal( pbe, Node::null(), vals, pol, subsumed, true, f, start_index, 0, true, true );
+  addTermInternal( pbe, Node::null(), vals, pol, subsumed, true, f, start_index, 1, true, true );
 }
 
 void CegConjecturePbe::SubsumeTrie::getSubsumedBy( CegConjecturePbe * pbe, std::vector< Node >& vals, bool pol, std::vector< Node >& subsumed_by, IndexFilter * f ){
   // flip polarities
   unsigned start_index = f ? f->start() : 0;
-  addTermInternal( pbe, Node::null(), vals, !pol, subsumed_by, false, f, start_index, 0, true, true );
+  addTermInternal( pbe, Node::null(), vals, !pol, subsumed_by, false, f, start_index, 1, true, true );
 }
 
 void CegConjecturePbe::SubsumeTrie::getLeavesInternal( CegConjecturePbe * pbe, std::vector< Node >& vals, bool pol, std::map< int, std::vector< Node > >& v, 
@@ -1215,6 +1215,9 @@ Node CegConjecturePbe::constructSolution( Node c, Node e, UnifContext& x, int in
         ret_dt = constructBestSolvedTerm( subsumed_by, x );
         indent("sygus-pbe-dt", ind);
         Trace("sygus-pbe-dt") << "return PBE: success : conditionally solved" << d_tds->sygusToBuiltin( ret_dt ) << std::endl;
+      }else{
+        indent("sygus-pbe-dt-debug", ind);
+        Trace("sygus-pbe-dt-debug") << "  ...not currently conditionally solved." << std::endl;
       }
     }
     if( ret_dt.isNull() ){
@@ -1322,7 +1325,12 @@ Node CegConjecturePbe::constructSolution( Node c, Node e, UnifContext& x, int in
                 std::map< int, std::vector< Node > >::iterator itpc = possible_cond.find( 0 );
                 if( itpc!=possible_cond.end() ){
                   indent("sygus-pbe-dt-debug", ind);
-                  Trace("sygus-pbe-dt-debug") << "PBE : We have " << itpc->second.size() << " distinguishable conditionals." << std::endl;          
+                  Trace("sygus-pbe-dt-debug") << "PBE : We have " << itpc->second.size() << " distinguishable conditionals:" << std::endl;       
+                  for( unsigned k=0; k<itpc->second.size(); k++ ){                  
+                    indent("sygus-pbe-dt-debug", ind+1);
+                    Trace("sygus-pbe-dt-debug") << d_tds->sygusToBuiltin( itpc->second[k] ) << std::endl;
+                  }   
+                  
                 
                   // static look ahead conditional : choose conditionals that have solved terms in at least one branch
                   //    only applicable if we have not modified the return value
