@@ -1115,6 +1115,7 @@ Node CegConjecturePbe::constructSolution( Node c ){
   }else{
     // only check if an enumerator updated
     if( itc->second.d_check_sol ){
+      Trace("sygus-pbe") << "Construct solution, #iterations = " << itc->second.d_cond_count << std::endl;
       itc->second.d_check_sol = false;
       // try multiple times if we have done multiple conditions, due to non-determinism
       for( unsigned i=0; i<=itc->second.d_cond_count; i++ ){
@@ -1125,10 +1126,12 @@ Node CegConjecturePbe::constructSolution( Node c ){
         Node vc = constructSolution( c, e, x, 1 );
         if( !vc.isNull() ){
           Trace("sygus-pbe-enum") << "**** PBE SOLVED : " << c << " = " << vc << std::endl;
+          Trace("sygus-pbe") << "...solved at iteration " << i << std::endl;
           itc->second.d_solution = vc;
           return vc;
         }
       }
+      Trace("sygus-pbe") << "...failed to solve." << std::endl;
     }
     return Node::null();
   }

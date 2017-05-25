@@ -3028,9 +3028,7 @@ bool TermDbSygus::considerArgKind( TypeNode tn, TypeNode tnp, Kind k, Kind pk, i
       rt.d_children[oarg].d_req_kind = k==MINUS ? PLUS : BITVECTOR_PLUS;
       rt.d_children[oarg].d_children[0].d_req_type = getArgType( pdt[pc], oarg );
       rt.d_children[oarg].d_children[1].d_req_type = getArgType( dt[c], 1 );
-    }
-    /*  this is subsumbed by solving for MINUS
-    else if( pk==PLUS || pk==BITVECTOR_PLUS ){
+    }else if( pk==PLUS || pk==BITVECTOR_PLUS ){
       //  (+ x (- y z))  -----> (- (+ x y) z)
       //  (+ (- y z) x)  -----> (- (+ x y) z)
       rt.d_req_kind = pk==PLUS ? MINUS : BITVECTOR_SUB;
@@ -3039,8 +3037,8 @@ bool TermDbSygus::considerArgKind( TypeNode tn, TypeNode tnp, Kind k, Kind pk, i
       rt.d_children[0].d_children[0].d_req_type = getArgType( pdt[pc], oarg );
       rt.d_children[0].d_children[1].d_req_type = getArgType( dt[c], 0 );
       rt.d_children[1].d_req_type = getArgType( dt[c], 1 );
+      // TODO : this is subsumbed by solving for MINUS
     }
-      */
   }else if( k==ITE ){
     if( pk!=ITE ){
       //  (o X (ite y z w) X')  -----> (ite y (o X z X') (o X w X'))
@@ -3184,6 +3182,8 @@ bool TermDbSygus::considerConst( const Datatype& pdt, TypeNode tnp, Node c, Kind
 }
 
 int TermDbSygus::solveForArgument( TypeNode tn, unsigned cindex, unsigned arg ) {
+  // FIXME
+  return -1;  // TODO : if using, modify considerArgKind above
   Assert( isRegistered( tn ) );
   const Datatype& dt = ((DatatypeType)(tn).toType()).getDatatype();
   Assert( cindex<dt.getNumConstructors() );
@@ -4715,7 +4715,7 @@ Node TermDbSygus::extendedRewrite( Node n ) {
                 unsigned len_short = s.size() <= t.size() ? s.size() : t.size();
                 bool isSameFix = i==1 ? s.rstrncmp(t, len_short): s.strncmp(t, len_short);
                 if( !isSameFix ){
-                  Trace("sygus-ext-rewrite") << "sygus-extr : " << n << " rewrites to false due to disequal string prefix/suffix." << std::endl;
+                  Trace("sygus-ext-rewrite") << "sygus-extr : " << ret << " rewrites to false due to disequal string prefix/suffix." << std::endl;
                   new_ret = d_false;
                   break;
                 }
@@ -4735,22 +4735,31 @@ Node TermDbSygus::extendedRewrite( Node n ) {
       if( ret[0].getKind()==NOT ){
         ret = NodeManager::currentNM()->mkNode( kind::ITE, ret[0][0], ret[2], ret[1] );
       }
-      // simple invariant ITE
       if( ret[0].getKind()==kind::EQUAL ){
+        // simple invariant ITE
         for( unsigned i=0; i<2; i++ ){
           if( ret[1]==ret[0][i] && ret[2]==ret[0][1-i] ){
-            Trace("sygus-ext-rewrite") << "sygus-extr : " << n << " rewrites to " << ret[2] << " due to simple invariant ITE." << std::endl;
+            Trace("sygus-ext-rewrite") << "sygus-extr : " << ret << " rewrites to " << ret[2] << " due to simple invariant ITE." << std::endl;
             new_ret = ret[2];
             break;
           }
         }
+        // notice this is strictly more general that the above
+        if( new_ret.isNull() ){
+          // simple substitution
+          for( unsigned i=0; i<2; i++ ){
+            if( ret[0][i].isVar() && ( ( ret[0][1-i].isVar() && ret[0][i]<ret[0][1-i] ) || ret[0][1-i].isConst() ) ){
+              TNode r1 = ret[0][i];
+              TNode r2 = ret[0][1-i];
+              Node retn = ret[1].substitute( r1, r2 );
+              if( retn!=ret[1] ){
+                new_ret = NodeManager::currentNM()->mkNode( kind::ITE, ret[0], retn, ret[2] );
+                Trace("sygus-ext-rewrite") << "sygus-extr : " << ret << " rewrites to " << new_ret << " due to simple ITE substitution." << std::endl;
+              }
+            }
+          }
+        }
       }
-      //conditional rewriting
-      if( new_ret.isNull() ){
-        // substitution, entailment
-      }
-    }else if( ret.getKind()==kind::AND || ret.getKind()==kind::OR ){
-      // merging
     }
     // more expensive rewrites 
     if( new_ret.isNull() ){
@@ -4786,6 +4795,10 @@ Node TermDbSygus::extendedRewrite( Node n ) {
         }else{
           Trace("sygus-ext-rewrite-debug") << "  failed to get monomial sum of " << ret << std::endl;
         }
+      }else if( ret_atom.getKind()==ITE ){
+        // TODO : conditional rewriting
+      }else if( ret.getKind()==kind::AND || ret.getKind()==kind::OR ){
+        // TODO condition merging
       }
     }
     

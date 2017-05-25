@@ -455,16 +455,6 @@ Node SygusSymBreakNew::getSimpleSymBreakPred( TypeNode tn, int tindex, unsigned 
   #else   
                   Node order_pred = getTermOrderPredicate( children[0], children[1] );
                   sbp_conj.push_back( order_pred );
-                  //chainable
-                  // TODO : this is depth 2
-                  if( children[0].getType()==tn ){
-                    Node child11 = NodeManager::currentNM()->mkNode( APPLY_SELECTOR_TOTAL, Node::fromExpr( dt[tindex].getSelectorInternal( tn.toType(), 1 ) ), children[0] );
-                    Assert( child11.getType()==children[1].getType() );
-                    Node order_pred_trans = NodeManager::currentNM()->mkNode( OR, DatatypesRewriter::mkTester( children[0], tindex, dt ).negate(),
-                                                                              getTermOrderPredicate( child11, children[1] ) );
-
-                    sbp_conj.push_back( order_pred_trans );
-                  }
   #endif
                 }
               }
@@ -561,6 +551,26 @@ Node SygusSymBreakNew::getSimpleSymBreakPred( TypeNode tn, int tindex, unsigned 
             }
           }else{
             // defined function?
+          }
+        }else if( depth==2 ){
+          if( nk!=UNDEFINED_KIND ){
+            // commutative operators 
+            if( quantifiers::TermDb::isComm( nk ) ){
+              if( children.size()==2 ){
+                if( children[0].getType()==children[1].getType() ){
+                  //chainable
+                  // TODO : this is depth 2
+                  if( children[0].getType()==tn ){
+                    Node child11 = NodeManager::currentNM()->mkNode( APPLY_SELECTOR_TOTAL, Node::fromExpr( dt[tindex].getSelectorInternal( tn.toType(), 1 ) ), children[0] );
+                    Assert( child11.getType()==children[1].getType() );
+                    Node order_pred_trans = NodeManager::currentNM()->mkNode( OR, DatatypesRewriter::mkTester( children[0], tindex, dt ).negate(),
+                                                                              getTermOrderPredicate( child11, children[1] ) );
+
+                    sbp_conj.push_back( order_pred_trans );
+                  }
+                }
+              }
+            }
           }
         }
       }
