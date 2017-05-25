@@ -249,7 +249,7 @@ void CegConjecturePbe::collectEnumeratorTypes( Node e, TypeNode tn, unsigned enu
   
     Node ee = NodeManager::currentNM()->mkSkolem( "ee", tn );
     d_cinfo[e].d_tinfo[tn].d_enum[enum_role] = ee;
-    Trace("sygus-unif-debug") << "...enumerator " << ee << " for " << ((DatatypeType)tn.toType()).getDatatype().getName() << std::endl;
+    Trace("sygus-unif-debug") << "...enumerator " << ee << " for " << ((DatatypeType)tn.toType()).getDatatype().getName() << ", role = " << enum_role << std::endl;
     // wait to register : may or may not actually be enumerating it
 
     if( enum_role==enum_io ){
@@ -417,6 +417,7 @@ void CegConjecturePbe::collectEnumeratorTypes( Node e, TypeNode tn, unsigned enu
           break;
         }
       }
+      Trace("sygus-unif-debug") << "...this register..." << std::endl;
       registerEnumerator( ee, e, tn, enum_role, search_this );
       
       if( cop_to_child_types.empty() ){
@@ -427,6 +428,7 @@ void CegConjecturePbe::collectEnumeratorTypes( Node e, TypeNode tn, unsigned enu
           Assert( cop_to_strat.find( cop )!=cop_to_strat.end() );
           unsigned strat = cop_to_strat[cop];
           d_cinfo[e].d_tinfo[tn].d_strat[cop].d_this = strat;
+          Trace("sygus-unif-debug") << "process strategy : " << cop << std::endl;
 
           for( unsigned j=0; j<itct->second.size(); j++ ){
             //calculate if we should allocate a new enumerator : should be true if we have a new role
@@ -443,7 +445,6 @@ void CegConjecturePbe::collectEnumeratorTypes( Node e, TypeNode tn, unsigned enu
             
             // register the child type
             TypeNode ct = itct->second[j];
-            collectEnumeratorTypes( e, ct, enum_role_c );
             d_cinfo[e].d_tinfo[tn].d_strat[cop].d_csol_cts.push_back( ct );
             
             // make the enumerator
@@ -459,6 +460,8 @@ void CegConjecturePbe::collectEnumeratorTypes( Node e, TypeNode tn, unsigned enu
               Assert( !d_einfo[et].d_template.isNull() );
               Assert( !d_einfo[et].d_template_arg.isNull() );
             }else{
+              Trace("sygus-unif-debug") << "...child type enumerate " << ((DatatypeType)ct.toType()).getDatatype().getName() << ", role = " << enum_role_c << std::endl;
+              collectEnumeratorTypes( e, ct, enum_role_c );
               // otherwise use the previous
               Assert( d_cinfo[e].d_tinfo[ct].d_enum.find( enum_role_c )!=d_cinfo[e].d_tinfo[ct].d_enum.end() );
               et = d_cinfo[e].d_tinfo[ct].d_enum[enum_role_c];
@@ -475,6 +478,7 @@ void CegConjecturePbe::collectEnumeratorTypes( Node e, TypeNode tn, unsigned enu
         }
       }
     }else{
+      Trace("sygus-unif-debug") << "...this register (non-io)" << std::endl;
       registerEnumerator( ee, e, tn, enum_role, true );
     }
   }
