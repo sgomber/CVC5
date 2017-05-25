@@ -48,7 +48,8 @@ public:
   Node d_false;
   enum {
     enum_io,
-    enum_term,
+    enum_ite_condition,
+    enum_concat_term,
     enum_any,
   };
   enum {
@@ -140,7 +141,7 @@ private:
     /** values we have enumerated */
     std::vector< Node > d_enum_vals;
     /** this either stores the values of f( I ) for inputs 
-        or the value of f( I ) = O if considersOutput() = true
+        or the value of f( I ) = O if d_role==enum_io
     */
     std::vector< std::vector< Node > > d_enum_vals_res;
     std::vector< Node > d_enum_subsume;
@@ -148,7 +149,6 @@ private:
     SubsumeTrie d_term_trie;
   public:
     bool isTemplated() { return !d_template.isNull(); }
-    bool considersOutput();
     void addEnumValue( CegConjecturePbe * pbe, Node v, std::vector< Node >& results );
     void setSolved( Node slv );
     bool isSolved() { return !d_enum_solved.isNull(); }
@@ -197,6 +197,8 @@ private:
 
   /** add enumerated value */
   void addEnumeratedValue( Node x, Node v, std::vector< Node >& lems );
+  bool getExplanationForEnumeratorExclude( Node c, Node x, Node v, std::vector< Node >& results, EnumInfo& ei, std::vector< Node >& exp );
+  bool getExplanationForCTermEnumeratorExclude( Node c, Node x, Node v, Node bvs, unsigned exout_len, std::vector< Node >& exp );
   
 private:  
   // filtering verion

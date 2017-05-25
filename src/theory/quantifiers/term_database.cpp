@@ -2561,6 +2561,11 @@ Node TermDbSygus::sygusToBuiltin( Node n, TypeNode tn ) {
   }
 }
 
+Node TermDbSygus::sygusSubstituted( TypeNode tn, Node n, std::vector< Node >& args ) {
+  Assert( d_var_list[tn].size()==args.size() );
+  return n.substitute( d_var_list[tn].begin(), d_var_list[tn].end(), args.begin(), args.end() );
+}
+  
 //rcons_depth limits the number of recursive calls when doing accelerated constant reconstruction (currently limited to 1000)
 //this is hacky : depending upon order of calls, constant rcons may succeed, e.g. 1001, 999 vs. 999, 1001
 Node TermDbSygus::builtinToSygusConst( Node c, TypeNode tn, int rcons_depth ) {
@@ -3215,7 +3220,7 @@ int TermDbSygus::solveForArgument( TypeNode tn, unsigned cindex, unsigned arg ) 
   
   if( !rt.empty() ){
     Assert( solve_ret>=0 );
-    Assert( solve_ret<=cdt.getNumConstructors() );
+    Assert( solve_ret<=(int)cdt.getNumConstructors() );
     //check if satisfied
     if( rt.satisfiedBy( this, tn ) ){
       Trace("sygus-sb-simple") << "  sb-simple : ONLY consider " << cdt[solve_ret].getSygusOp() << " as arg " << arg << " of " << nk;
@@ -4091,6 +4096,11 @@ void TermDbSygus::registerModelValue( Node a, Node v, std::vector< Node >& terms
 }
 
 void TermDbSygus::getExplanationForConstantEquality( Node n, Node vn, std::vector< Node >& exp ) {
+  std::map< unsigned, bool > cexc;
+  getExplanationForConstantEquality( n, vn, exp, cexc );
+}
+
+void TermDbSygus::getExplanationForConstantEquality( Node n, Node vn, std::vector< Node >& exp, std::map< unsigned, bool >& cexc ) {
   Assert( vn.getKind()==kind::APPLY_CONSTRUCTOR );
   Assert( n.getType()==vn.getType() );
   TypeNode tn = n.getType();
@@ -4100,18 +4110,25 @@ void TermDbSygus::getExplanationForConstantEquality( Node n, Node vn, std::vecto
   Node tst = datatypes::DatatypesRewriter::mkTester( n, i, dt );
   exp.push_back( tst );
   for( unsigned j=0; j<vn.getNumChildren(); j++ ){
-    Node sel = NodeManager::currentNM()->mkNode( kind::APPLY_SELECTOR_TOTAL, Node::fromExpr( dt[i].getSelectorInternal( tn.toType(), j ) ), n );
-    getExplanationForConstantEquality( sel, vn[j], exp );
+    if( cexc.find( j )==cexc.end() ){
+      Node sel = NodeManager::currentNM()->mkNode( kind::APPLY_SELECTOR_TOTAL, Node::fromExpr( dt[i].getSelectorInternal( tn.toType(), j ) ), n );
+      getExplanationForConstantEquality( sel, vn[j], exp );
+    }
   }
 }
 
 Node TermDbSygus::getExplanationForConstantEquality( Node n, Node vn ) {
+  std::map< unsigned, bool > cexc;
+  return getExplanationForConstantEquality( n, vn, cexc );
+}
+
+Node TermDbSygus::getExplanationForConstantEquality( Node n, Node vn, std::map< unsigned, bool >& cexc ) {
   std::vector< Node > exp;
-  getExplanationForConstantEquality( n, vn, exp );
+  getExplanationForConstantEquality( n, vn, exp, cexc );
   Assert( !exp.empty() );
   return exp.size()==1 ? exp[0] : NodeManager::currentNM()->mkNode( kind::AND, exp );
 }
-  
+
 void TermDbSygus::getExplanationFor( TypeNode tn, Node n, Node vn, Node bvr, std::vector< Node >& exp, Node vnr, unsigned& sz ) {
   // naive :
   //return getExplanationForConstantEquality( n, vn, exp );

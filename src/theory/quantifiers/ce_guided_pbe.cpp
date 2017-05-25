@@ -53,7 +53,8 @@ void print_strat( const char * c, unsigned s ){
 void print_role( const char * c, unsigned r ){
   switch(r){
   case CegConjecturePbe::enum_io:Trace(c) << "IO";break;
-  case CegConjecturePbe::enum_term:Trace(c) << "TERM";break;
+  case CegConjecturePbe::enum_ite_condition:Trace(c) << "CONDITION";break;
+  case CegConjecturePbe::enum_concat_term:Trace(c) << "CTERM";break;
   case CegConjecturePbe::enum_any:Trace(c) << "ANY";break;
   default:Trace(c) << "role_" << r;break;
   }
@@ -446,10 +447,12 @@ void CegConjecturePbe::collectEnumeratorTypes( Node e, TypeNode tn, unsigned enu
             unsigned enum_role_c = enum_role;
             if( strat==strat_ITE ){
               if( j==0 ){
-                enum_role_c = enum_term;
+                enum_role_c = enum_ite_condition;
+              }else{
+                // role is the same as parent
               }
             }else if( strat==strat_CONCAT ){
-              enum_role_c = enum_term;
+              enum_role_c = enum_concat_term;
             }else if( strat==strat_ID ){
               // role is the same as parent
             }
@@ -485,7 +488,7 @@ void CegConjecturePbe::collectEnumeratorTypes( Node e, TypeNode tn, unsigned enu
             Assert( !et.isNull() );
             d_cinfo[e].d_tinfo[tn].d_strat[cop].d_cenum.push_back( et );
             // need to make this take into account template
-            //Assert( et.getType()==e.getType() || !d_einfo[et].considersOutput() );
+            //Assert( et.getType()==e.getType() || d_einfo[et].d_role!=enum_io );
           }
           Trace("sygus-unif") << "Initialized strategy ";
           print_strat( "sygus-unif", strat );
@@ -678,26 +681,28 @@ void CegConjecturePbe::addEnumeratedValue( Node x, Node v, std::vector< Node >& 
   Assert( it != d_einfo.end() );
   if( getGuardStatus( it->second.d_active_guard )==1 ){
     Assert( std::find( it->second.d_enum_vals.begin(), it->second.d_enum_vals.end(), v )==it->second.d_enum_vals.end() );
-    Node e = it->second.d_parent_candidate;
-    if( d_examples_out_invalid.find( e )==d_examples_out_invalid.end() ){
-      std::map< Node, CandidateInfo >::iterator itc = d_cinfo.find( e );
+    Node c = it->second.d_parent_candidate;
+    Node exp_exc;
+    if( d_examples_out_invalid.find( c )==d_examples_out_invalid.end() ){
+      std::map< Node, CandidateInfo >::iterator itc = d_cinfo.find( c );
       Assert( itc != d_cinfo.end() );      
       TypeNode xtn = x.getType();
       Node bv = d_tds->sygusToBuiltin( v, xtn );
-      std::map< Node, std::vector< std::vector< Node > > >::iterator itx = d_examples.find( e );
-      std::map< Node, std::vector< Node > >::iterator itxo = d_examples_out.find( e );
+      std::map< Node, std::vector< std::vector< Node > > >::iterator itx = d_examples.find( c );
+      std::map< Node, std::vector< Node > >::iterator itxo = d_examples_out.find( c );
       Assert( itx!=d_examples.end() );
       Assert( itxo!=d_examples_out.end() );
       Assert( itx->second.size()==itxo->second.size() );
       // notify all slaves
       Assert( !it->second.d_enum_slave.empty() );
+      //explanation for why this value should be excluded
       for( unsigned s=0; s<it->second.d_enum_slave.size(); s++ ){
         Node xs = it->second.d_enum_slave[s];
         std::map< Node, EnumInfo >::iterator itv = d_einfo.find( xs );
         Assert( itv!=d_einfo.end() );
         Trace("sygus-pbe-enum") << "Process " << xs << " from " << s << std::endl;
         //bool prevIsCover = false;
-        if( itv->second.considersOutput() ){
+        if( itv->second.d_role==enum_io ){
           Trace("sygus-pbe-enum") << "   IO-Eval of ";
           //prevIsCover = itv->second.isFeasible();
         }else{
@@ -719,7 +724,7 @@ void CegConjecturePbe::addEnumeratedValue( Node x, Node v, std::vector< Node >& 
             Assert( res.isConst() );
           }
           Node resb;
-          if( itv->second.considersOutput() ){
+          if( itv->second.d_role==enum_io ){
             Node out = itxo->second[j];
             Assert( out.isConst() );
             resb = res==out ? d_true : d_false;
@@ -737,7 +742,7 @@ void CegConjecturePbe::addEnumeratedValue( Node x, Node v, std::vector< Node >& 
           }
         }
         bool keep = false;
-        if( itv->second.considersOutput() ){
+        if( itv->second.d_role==enum_io ){
           if( cond_vals.find( d_true )!=cond_vals.end() || cond_vals.empty() ){  // latter is the degenerate case of no examples
             //check subsumbed/subsuming
             std::vector< Node > subsume;
@@ -770,20 +775,28 @@ void CegConjecturePbe::addEnumeratedValue( Node x, Node v, std::vector< Node >& 
             Trace("sygus-pbe-enum") << "  ...fail : it does not satisfy examples." << std::endl;
           }
         }else{
-          //if( cond_vals.size()!=2 ){
-          //  // must discriminate
-          //  Trace("sygus-pbe-enum") << "  ...fail : conditional is constant." << std::endl;
-          //  keep = false;
-          //}
-          // must be unique up to examples
-          Node val = itv->second.d_term_trie.addCond( this, v, results, true );
-          if( val==v ){
-            Trace("sygus-pbe-enum") << "  ...success!   add to PBE pool : " << d_tds->sygusToBuiltin( v ) << std::endl;
-            keep = true;
+          // is it excluded for domain-specific reason?
+          std::vector< Node > exp_exc_vec;
+          if( getExplanationForEnumeratorExclude( c, x, v, results, it->second, exp_exc_vec ) ){
+            Assert( !exp_exc_vec.empty() );
+            exp_exc = exp_exc_vec.size()==1 ? exp_exc_vec[0] : NodeManager::currentNM()->mkNode( kind::AND, exp_exc_vec );
+            Trace("sygus-pbe-enum") << "  ...fail : term is excluded (domain-specific)" << std::endl;
           }else{
-            Trace("sygus-pbe-enum") << "  ...fail : conditional is not unique" << std::endl;
+            //if( cond_vals.size()!=2 ){
+            //  // must discriminate
+            //  Trace("sygus-pbe-enum") << "  ...fail : conditional is constant." << std::endl;
+            //  keep = false;
+            //}
+            // must be unique up to examples
+            Node val = itv->second.d_term_trie.addCond( this, v, results, true );
+            if( val==v ){
+              Trace("sygus-pbe-enum") << "  ...success!   add to PBE pool : " << d_tds->sygusToBuiltin( v ) << std::endl;
+              keep = true;
+            }else{
+              Trace("sygus-pbe-enum") << "  ...fail : term is not unique" << std::endl;
+            }
+            itc->second.d_cond_count++;
           }
-          itc->second.d_cond_count++;
         }
         if( keep ){
           // notify the parent to retry the build of PBE
@@ -791,7 +804,7 @@ void CegConjecturePbe::addEnumeratedValue( Node x, Node v, std::vector< Node >& 
           itv->second.addEnumValue( this, v, results );
           /*
           if( Trace.isOn("sygus-pbe-enum") ){
-            if( itv->second.considersOutput() ){
+            if( itv->second.d_role==enum_io ){
               if( !prevIsCover && itv->second.isFeasible() ){
                 Trace("sygus-pbe-enum") << "...PBE : success : Evaluation of " << xs << " now covers all examples." << std::endl;
               }
@@ -805,8 +818,11 @@ void CegConjecturePbe::addEnumeratedValue( Node x, Node v, std::vector< Node >& 
     }
     //exclude this value on subsequent iterations
     Node g = it->second.d_active_guard;
-    Node exp = d_tds->getExplanationForConstantEquality( x, v );
-    Node exlem = NodeManager::currentNM()->mkNode( kind::OR, g.negate(), exp.negate() );
+    if( exp_exc.isNull() ){
+      // if we did not already explain why this should be excluded, use default
+      exp_exc = d_tds->getExplanationForConstantEquality( x, v );
+    }
+    Node exlem = NodeManager::currentNM()->mkNode( kind::OR, g.negate(), exp_exc.negate() );
     Trace("sygus-pbe-enum-lemma") << "CegConjecturePbe : enumeration exclude lemma : " << exlem << std::endl;
     lems.push_back( exlem );
   }else{
@@ -814,16 +830,161 @@ void CegConjecturePbe::addEnumeratedValue( Node x, Node v, std::vector< Node >& 
   }
 }
 
-bool CegConjecturePbe::EnumInfo::considersOutput() {
-  return d_role==enum_io;
+bool CegConjecturePbe::getExplanationForEnumeratorExclude( Node c, Node x, Node v, std::vector< Node >& results, EnumInfo& ei, std::vector< Node >& exp ) {
+  if( ei.d_enum_slave.size()==1 ){
+    // this check whether the example evaluates to something that is larger than the output
+    //  if so, then this term is never useful when using a concatenation strategy
+    if( ei.d_role==enum_concat_term ){
+      if( Trace.isOn("sygus-pbe-cterm-debug") ){
+        Trace("sygus-pbe-enum") << std::endl;
+      }
+      // check if all examples had longer length that the output
+      std::map< Node, std::vector< Node > >::iterator itxo = d_examples_out.find( c );
+      Assert( itxo!=d_examples_out.end() );
+      Assert( itxo->second.size()==results.size() );
+      Trace("sygus-pbe-cterm-debug") << "Check length generalization for " << x << " -> " << d_tds->sygusToBuiltin( v ) << std::endl;
+      std::map< int, std::vector< unsigned > > cmp_indices;
+      for( unsigned i=0; i<results.size(); i++ ){
+        Assert( results[i].isConst() );
+        Assert( itxo->second[i].isConst() );
+        unsigned vlen = results[i].getConst<String>().size();
+        unsigned xlen = itxo->second[i].getConst<String>().size();
+        Trace("sygus-pbe-cterm-debug") << "  " << results[i] << " <> " << itxo->second[i];
+        int index = vlen>xlen ? 1 : ( vlen<xlen ? -1 : 0 );
+        Trace("sygus-pbe-cterm-debug") << "..." << index << std::endl;
+        cmp_indices[index].push_back( i );
+      }
+      // TODO : stronger requirement if we incorporate ITE + CONCAT mixed strategy : must be longer than *all* examples
+      if( !cmp_indices[1].empty() ){
+        if( Trace.isOn("sygus-pbe-cterm") ){
+          Trace("sygus-pbe-enum") << std::endl;
+        }
+        Node bv = d_tds->sygusToBuiltin( v );
+        Trace("sygus-pbe-cterm") << "Cterm is longer than examples : " << x << " -> " << bv << std::endl; 
+        for( unsigned i=0; i<cmp_indices[1].size(); i++ ){
+          unsigned j = cmp_indices[1][i];
+          Assert( j<d_examples[c].size() );
+          Node bvs = d_tds->sygusSubstituted( v.getType(), bv, d_examples[c][j] );
+          Trace("sygus-pbe-cterm") << "  " << j << " : " << results[j] << " > " << itxo->second[i] << std::endl;
+          Trace("sygus-pbe-cterm") << "  ...analyze " << bvs << std::endl;
+          exp.clear();
+          if( getExplanationForCTermEnumeratorExclude( c, x, v, bvs, itxo->second[i].getConst<String>().size(), exp ) ){
+            return true;
+          }
+        }
+      }
+    }
+  }
+  return false;
 }
+
+
+// ensures exp = > len( x )[ v / x ] > exout_len
+bool CegConjecturePbe::getExplanationForCTermEnumeratorExclude( Node c, Node x, Node v, Node bvs, unsigned exout_len, std::vector< Node >& exp ) {
+  Assert( bvs.getType().isString() );
+  Assert( Rewriter::rewrite( bvs ).isConst() );
+  Assert( Rewriter::rewrite( bvs ).getConst<String>().size()>exout_len );
+  
+  Assert( x.getType()==v.getType() );
+  std::map< unsigned, unsigned > child_len;
+  std::map< unsigned, Node > child_vals;
+  for( unsigned i=0; i<bvs.getNumChildren(); i++ ){
+    Node bvsc = Rewriter::rewrite( bvs[i] );
+    Assert( bvsc.isConst() );
+    child_vals[i] = bvsc;
+    if( bvsc.getType().isString() ){
+      child_len[i] = bvsc.getConst<String>().size();
+    }
+    //else if( bvsc.getType().isInteger() ){
+      // TODO?
+    //}
+  }
+  
+  std::map< unsigned, bool > cexc;
+  std::map< unsigned, unsigned > new_len;
+  if( bvs.getKind()==STRING_STRREPL ){
+    if( child_len[0]>exout_len+child_len[1] ){
+      // len( replace( x, y, z ) ) >= len( x ) - len( y ) > o
+      cexc[2] = true;
+      Trace("sygus-pbe-cterm") << "PBE-cterm : enumerator exclusion : " << d_tds->sygusToBuiltin( v ) << ", arg 2 based on replace substitution." << std::endl;
+      new_len[0] = exout_len+child_len[1];
+    }else if( child_len[0]>exout_len && child_len[2]>exout_len ){
+      // len( replace( x, y, z ) ) >= min( len( x ), len( z ) ) > o
+      cexc[1] = true;
+      Trace("sygus-pbe-cterm") << "PBE-cterm : enumerator exclusion : " << d_tds->sygusToBuiltin( v ) << ", arg 1 based on replace invariance." << std::endl;
+      new_len[0] = exout_len;
+    }
+  }else if( bvs.getKind()==STRING_SUBSTR ){
+    // len( substr( x, n, m ) ) >= min( len( x ) - n, m ) > o
+    Node out = NodeManager::currentNM()->mkConst( Rational(exout_len) );
+    Node cond2 = NodeManager::currentNM()->mkNode( kind::GT, child_vals[2], out );
+    if( Rewriter::rewrite( cond2 )==d_true ){
+      Node cond1_lhs = Rewriter::rewrite( NodeManager::currentNM()->mkNode( kind::PLUS, child_vals[1], out ) );
+      Node cond1 = NodeManager::currentNM()->mkNode( kind::GT, NodeManager::currentNM()->mkConst( Rational( child_len[0] ) ), cond1_lhs );
+      if( Rewriter::rewrite( cond1 )==d_true ){
+        Trace("sygus-pbe-cterm") << "PBE-cterm : enumerator exclusion : " << d_tds->sygusToBuiltin( v ) << ", recurse for substring invariance." << std::endl;
+        // string is longer than this, so it should be safe
+        Assert(cond1_lhs.getConst<Rational>() <= Rational(LONG_MAX));
+        // cannot exclude, but can recurse
+        new_len[0] = cond1_lhs.getConst<Rational>().getNumerator().toUnsignedInt();
+      }
+    }
+  }else if( bvs.getKind()==STRING_CONCAT ){
+    // len( concat( x_1, x_2 ) ) >= len( x_i )
+    unsigned max_index = 0;
+    unsigned max_len = 0;
+    for( unsigned i=0; i<bvs.getNumChildren(); i++ ){
+      if( i==0 || child_len[i]>max_len ){
+        max_index = i;
+        max_len = child_len[i];
+      }
+    }
+    if( child_len[max_index]>exout_len ){
+      Trace("sygus-pbe-cterm") << "PBE-cterm : enumerator exclusion : " << d_tds->sygusToBuiltin( v ) << ", arg " << max_index << " based on concat sum." << std::endl;
+      for( unsigned j=0; j<bvs.getNumChildren(); j++ ){
+        if( j!=max_index ){
+          cexc[j] = true;
+        }
+      }
+      new_len[max_index] = exout_len;
+    }
+  }
+  
+  if( !cexc.empty() ){
+    TypeNode tn = x.getType();
+    const Datatype& dt = ((DatatypeType)tn.toType()).getDatatype();
+    int cindex = Datatype::indexOf( v.getOperator().toExpr() );
+    Assert( cindex>=0 );
+    Node tst = datatypes::DatatypesRewriter::mkTester( x, cindex, dt );
+    exp.push_back( tst );
+    for( unsigned i=0; i<bvs.getNumChildren(); i++ ){
+      if( cexc.find( i )==cexc.end() ){
+        Node sel = NodeManager::currentNM()->mkNode( kind::APPLY_SELECTOR_TOTAL, Node::fromExpr( dt[cindex].getSelectorInternal( tn.toType(), i ) ), x );
+        std::map< unsigned, unsigned >::iterator itnl = new_len.find( i );
+        if( itnl!=new_len.end() ){
+          // recurse
+          getExplanationForCTermEnumeratorExclude( c, sel, v[i], bvs[i], itnl->second, exp );          
+        }else{
+          d_tds->getExplanationForConstantEquality( sel, v[i], exp );
+        }
+      }
+    }
+    return true;
+  }else{
+    if( x.getKind()==kind::APPLY_SELECTOR_TOTAL ){
+      d_tds->getExplanationForConstantEquality( x, v, exp );
+    }
+    return false;
+  }
+}
+
 
 void CegConjecturePbe::EnumInfo::addEnumValue( CegConjecturePbe * pbe, Node v, std::vector< Node >& results ) {
   d_enum_val_to_index[v] = d_enum_vals.size();
   d_enum_vals.push_back( v );
   d_enum_vals_res.push_back( results );
   /*
-  if( considersOutput() ){
+  if( d_role==enum_io ){
     // compute 
     if( d_enum_total.empty() ){
       d_enum_total = results;
@@ -1208,10 +1369,10 @@ Node CegConjecturePbe::constructSolution( Node c, Node e, UnifContext& x, int in
       
       // get the term enumerator for this type
       std::map< Node, EnumInfo >::iterator itet;
-      if( itn->second.d_role==enum_term ){
+      if( itn->second.d_role==enum_concat_term ){
         itet = itn;
       }else{
-        std::map< unsigned, Node >::iterator itnt = itt->second.d_enum.find( enum_term );
+        std::map< unsigned, Node >::iterator itnt = itt->second.d_enum.find( enum_concat_term );
         Assert( itnt != itt->second.d_enum.end() );
         Node et = itnt->second;
         itet = d_einfo.find( et );
@@ -1284,7 +1445,7 @@ Node CegConjecturePbe::constructSolution( Node c, Node e, UnifContext& x, int in
               if( ce.getType()==etn ){
                 // prefer simple recursion (self type)
                 Assert( d_einfo.find( ce )!=d_einfo.end() );
-                Assert( d_einfo[ce].d_role==enum_term );
+                Assert( d_einfo[ce].d_role==enum_concat_term );
                 corder.push_back( sc );
                 unsigned inc = r==0 ? 1 : -1;
                 unsigned scc = sc + inc;
@@ -1426,7 +1587,7 @@ Node CegConjecturePbe::constructSolution( Node c, Node e, UnifContext& x, int in
                 std::map< Node, EnumInfo >::iterator itsc = d_einfo.find( ce );
                 Assert( itsc!=d_einfo.end() );
                 // ensured by the child order we set above
-                Assert( itsc->second.d_role==enum_term );
+                Assert( itsc->second.d_role==enum_concat_term );
                 // check if each return value is a prefix/suffix of all open examples
                 incr_type = sc==0 ? -1 : 1;
                 if( x.d_has_string_pos==0 || x.d_has_string_pos==incr_type ){

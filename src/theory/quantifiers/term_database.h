@@ -686,6 +686,7 @@ public:
   Node mkGeneric( const Datatype& dt, int c, std::map< TypeNode, int >& var_count, std::map< int, Node >& pre );
   Node sygusToBuiltin( Node n, TypeNode tn );
   Node sygusToBuiltin( Node n ) { return sygusToBuiltin( n, n.getType() ); }
+  Node sygusSubstituted( TypeNode tn, Node n, std::vector< Node >& args );
   Node builtinToSygusConst( Node c, TypeNode tn, int rcons_depth = 0 );
   Node getSygusNormalized( Node n, std::map< TypeNode, int >& var_count, std::map< Node, Node >& subs );
   Node getNormalized( TypeNode t, Node prog, bool do_pre_norm = false, bool do_post_norm = true );
@@ -745,7 +746,9 @@ public:
   Node getEagerUnfold( Node n, std::map< Node, Node >& visited );
   // returns straightforward exp => n = vn
   void getExplanationForConstantEquality( Node n, Node vn, std::vector< Node >& exp );
+  void getExplanationForConstantEquality( Node n, Node vn, std::vector< Node >& exp, std::map< unsigned, bool >& cexc );
   Node getExplanationForConstantEquality( Node n, Node vn );
+  Node getExplanationForConstantEquality( Node n, Node vn, std::map< unsigned, bool >& cexc );
   // we have n = vn => eval( n ) = bvr, returns exp => eval( n ) = bvr
   //   ensures the explanation still allows for vnr
   void getExplanationFor( TypeNode tn, Node n, Node vn, Node bvr, std::vector< Node >& exp, Node vnr, unsigned& sz );
