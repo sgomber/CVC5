@@ -4136,11 +4136,11 @@ void TermDbSygus::getExplanationFor( TypeNode tn, Node n, Node vn, Node bvr, std
     Trace("sygus-sb-mexp-debug") << "...parent kind is " << ck << std::endl;
     // for each child, check whether argument rewrites to an excluded constant
     for( unsigned i=0; i<vn.getNumChildren(); i++ ){
-      Node bv = sygusToBuiltin( vn[i] );
-      Node bvr = Rewriter::rewrite( bv );
-      if( bvr.isConst() ){
-        if( !considerConst( dt, tn, bvr, ck, i ) ){
-          Trace("sygus-sb-mexp") << "sb-min-exp : generalize explanation for " << vn << " since argument " << i << " rewrites to excluded constant " << bvr << std::endl;
+      Node nbv = sygusToBuiltin( vn[i] );
+      Node nbvr = Rewriter::rewrite( nbv );
+      if( nbvr.isConst() ){
+        if( !considerConst( dt, tn, nbvr, ck, i ) ){
+          Trace("sygus-sb-mexp") << "sb-min-exp : generalize explanation for " << vn << " since argument " << i << " rewrites to excluded constant " << nbvr << std::endl;
           did_rlv = true;
           crlv[i] = true;
         }
@@ -4162,14 +4162,16 @@ void TermDbSygus::getExplanationFor( TypeNode tn, Node n, Node vn, Node bvr, std
       if( nbvr==bvr ){
         // gives the same result : then the explanation for the child is irrelevant 
         exc_arg = true;
-        Trace("sygus-sb-mexp") << "sb-min-exp : " << sygusToBuiltin( vn, tn ) << " is rewritten to " << nbvr << " regardless of the content of argument " << i << std::endl;
+        Trace("sygus-sb-mexp") << "sb-min-exp : " << sygusToBuiltin( nvn, tn ) << " is rewritten to " << nbvr << " regardless of the content of argument " << i << std::endl;
       }else{
         if( nbvr.isVar() ){
           Node bx = sygusToBuiltin( x, xtn );
           Assert( bx.getType()==nbvr.getType() );
           if( nbvr==bx ){
-            Trace("sygus-sb-mexp") << "sb-min-exp : " << sygusToBuiltin( vn, tn ) << " always rewrites to argument " << i << std::endl;
+            Trace("sygus-sb-mexp") << "sb-min-exp : " << sygusToBuiltin( nvn, tn ) << " always rewrites to argument " << i << std::endl;
             if( xtn==tn ){
+              exc_arg = true;
+              bvr = nbvr;
               /*  TODO : use this information?
               // rewrites to the variable : then the explanation of this is irrelevant as well
               exc_arg = true;
