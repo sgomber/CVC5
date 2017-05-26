@@ -4876,7 +4876,8 @@ void TermDbSygus::collectSygusGrammarTypesFor( TypeNode range, std::vector< Type
   }
 }
 
-void TermDbSygus::mkSygusDefaultGrammar( TypeNode range, Node bvl, const std::string& fun, std::vector< CVC4::Datatype >& datatypes, std::set<Type>& unres ) {
+void TermDbSygus::mkSygusDefaultGrammar( TypeNode range, Node bvl, const std::string& fun, std::map< TypeNode, std::vector< Node > >& extra_cons, 
+                                         std::vector< CVC4::Datatype >& datatypes, std::set<Type>& unres ) {
   // collect the variables
   std::vector<Node> sygus_vars;
   if( !bvl.isNull() ){
@@ -4940,6 +4941,15 @@ void TermDbSygus::mkSygusDefaultGrammar( TypeNode range, Node bvl, const std::st
     //add constants
     std::vector< Node > consts;
     mkSygusConstantsForType( types[i], consts );
+    std::map< TypeNode, std::vector< Node > >::iterator itec = extra_cons.find( types[i] );
+    if( itec!=extra_cons.end() ){
+      //consts.insert( consts.end(), itec->second.begin(), itec->second.end() );
+      for( unsigned j=0; j<itec->second.size(); j++ ){
+        if( std::find( consts.begin(), consts.end(), itec->second[j] )==consts.end() ){
+          consts.push_back( itec->second[j] );
+        }
+      }
+    }
     for( unsigned j=0; j<consts.size(); j++ ){
       std::stringstream ss;
       ss << consts[j];
@@ -5113,11 +5123,15 @@ void TermDbSygus::mkSygusDefaultGrammar( TypeNode range, Node bvl, const std::st
 }
 
 
-TypeNode TermDbSygus::mkSygusDefaultType( TypeNode range, Node bvl, const std::string& fun ) {
-  Trace("sygus-grammar-def")  << "*** Make sygus default type " << range << ", make datatypes..." << std::endl;
+TypeNode TermDbSygus::mkSygusDefaultType( TypeNode range, Node bvl, const std::string& fun, 
+                                          std::map< TypeNode, std::vector< Node > >& extra_cons ) {
+  Trace("sygus-grammar-def") << "*** Make sygus default type " << range << ", make datatypes..." << std::endl;
+  for( std::map< TypeNode, std::vector< Node > >::iterator it = extra_cons.begin(); it != extra_cons.end(); ++it ){
+    Trace("sygus-grammar-def") << "    ...using " << it->second.size() << " extra constants for " << it->first << std::endl;
+  }
   std::set<Type> unres;
   std::vector< CVC4::Datatype > datatypes;
-  mkSygusDefaultGrammar( range, bvl, fun, datatypes, unres );
+  mkSygusDefaultGrammar( range, bvl, fun, extra_cons, datatypes, unres );
   Trace("sygus-grammar-def")  << "...made " << datatypes.size() << " datatypes, now make mutual datatype types..." << std::endl;
   Assert( !datatypes.empty() );
   std::vector<DatatypeType> types = NodeManager::currentNM()->toExprManager()->mkMutualDatatypeTypes(datatypes, unres);

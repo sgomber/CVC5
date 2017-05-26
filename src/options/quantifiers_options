@@ -264,7 +264,9 @@ option sygusPbe --sygus-pbe bool :default true
   
 option sygusMinGrammar --sygus-min-grammar bool :default true
   statically minimize sygus grammars
-
+option sygusAddConstGrammar --sygus-add-const-grammar bool :default false
+  statically add constants appearing in conjecture to grammars
+  
 option sygusInvTemplMode --sygus-inv-templ=MODE CVC4::theory::quantifiers::SygusInvTemplMode :default CVC4::theory::quantifiers::SYGUS_INV_TEMPL_MODE_NONE :include "options/quantifiers_modes.h" :handler stringToSygusInvTemplMode
   template mode for sygus invariant synthesis
 option sygusUnifCondSol --sygus-unif-csol bool :default true

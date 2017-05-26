@@ -88,14 +88,43 @@ Node CegConjecture::convertToEmbedding( Node n, std::map< Node, Node >& synth_fu
   }
 }
 
+void CegConjecture::collectConstants( Node n, std::map< TypeNode, std::vector< Node > >& consts, std::map< Node, bool >& visited ) {
+  if( visited.find( n )==visited.end() ){
+    visited[n] = true;
+    if( n.isConst() ){
+      TypeNode tn = n.getType();
+      Node nc = n;
+      if( tn.isReal() ){
+        nc = NodeManager::currentNM()->mkConst( n.getConst<Rational>().abs() );
+      }
+      if( std::find( consts[tn].begin(), consts[tn].end(), nc )==consts[tn].end() ){
+        Trace("cegqi-debug") << "...consider const : " << nc << std::endl;
+        consts[tn].push_back( nc );
+      }
+    }
+    
+    for( unsigned i=0; i<n.getNumChildren(); i++ ){
+      collectConstants( n[i], consts, visited );
+    }
+  }
+}
+
 void CegConjecture::assign( Node q ) {
   Assert( d_quant.isNull() );
   Assert( q.getKind()==FORALL );
   Trace("cegqi") << "CegConjecture : assign : " << q << std::endl;
   d_assert_quant = q;
+  std::map< TypeNode, std::vector< Node > > extra_cons;
+  
+  Trace("cegqi") << "CegConjecture : collect constants..." << std::endl;
+  if( options::sygusAddConstGrammar() ){
+    std::map< Node, bool > cvisited;
+    collectConstants( q[1], extra_cons, cvisited );
+  } 
+  
+  Trace("cegqi") << "CegConjecture : convert to deep embedding..." << std::endl;
   //convert to deep embedding
   std::vector< Node > qchildren;
-  
   std::map< Node, Node > visited;
   std::map< Node, Node > synth_fun_vars;
   std::vector< Node > ebvl;
@@ -113,7 +142,7 @@ void CegConjecture::assign( Node q ) {
       // make the default grammar
       std::stringstream ss;
       ss << sf;
-      tn = d_qe->getTermDatabaseSygus()->mkSygusDefaultType( v.getType(), sfvl, ss.str() );
+      tn = d_qe->getTermDatabaseSygus()->mkSygusDefaultType( v.getType(), sfvl, ss.str(), extra_cons );
     }
     // ev is the first-order variable corresponding to this synth fun
     std::stringstream ss;
