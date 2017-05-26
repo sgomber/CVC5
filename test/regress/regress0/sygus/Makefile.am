@@ -58,7 +58,8 @@ TESTS = commutative.sy \
         strings-trivial-simp.sy \
         icfp_easy-ite.sy \
         strings-template-infer.sy \
-        strings-trivial.sy
+        strings-trivial.sy \
+        General_plus10.sy
 
 
 # sygus tests currently taking too long for make regress

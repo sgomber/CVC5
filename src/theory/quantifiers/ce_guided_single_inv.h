@@ -180,7 +180,6 @@ class CegConjectureSingleInv {
 class SingleInvocationPartition {
  private:
   //options
-  Kind d_checkKind;
   bool inferArgTypes( Node n, std::vector< TypeNode >& typs, std::map< Node, bool >& visited );
   void process( Node n );
   bool collectConjuncts( Node n, bool pol, std::vector< Node >& conj );
@@ -189,13 +188,15 @@ class SingleInvocationPartition {
   Node getSpecificationInst( Node n, std::map< Node, Node >& lam, std::map< Node, Node >& visited );
   void extractInvariant2( Node n, Node& func, int& pol, std::vector< Node >& disjuncts, bool hasPol, std::map< Node, bool >& visited );
 public:
-  SingleInvocationPartition( Kind checkKind = kind::APPLY_UF ) : d_checkKind( checkKind ){}
+  SingleInvocationPartition(){}
   ~SingleInvocationPartition(){}
   bool init( Node n );
-  bool init( std::vector< TypeNode >& typs, Node n );
+  bool init( std::vector< Node >& funcs, Node n );
+  bool init( std::vector< Node >& funcs, std::vector< TypeNode >& typs, Node n );
 
   //outputs (everything is with bound var)
   std::vector< TypeNode > d_arg_types;
+  std::vector< Node > d_input_funcs;
   std::map< Node, bool > d_funcs;
   std::map< Node, Node > d_func_inv;
   std::map< Node, Node > d_inv_to_func;

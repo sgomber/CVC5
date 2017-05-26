@@ -613,7 +613,12 @@ sygusCommand [CVC4::PtrCloser<CVC4::Command>* cmd]
         var_sorts.push_back( (*i).second );
       }
       Debug("parser-sygus") << "Define synth fun : " << fun << std::endl;
-      Type synth_fun_type = EXPR_MANAGER->mkFunctionType(var_sorts, range);
+      Type synth_fun_type;
+      if( var_sorts.size()>0 ){
+        synth_fun_type = EXPR_MANAGER->mkFunctionType(var_sorts, range);
+      }else{
+        synth_fun_type = range;
+      }
       synth_fun = PARSER_STATE->mkVar(fun, synth_fun_type);
       PARSER_STATE->pushScope(true);
       for(std::vector<std::pair<std::string, CVC4::Type> >::const_iterator i =

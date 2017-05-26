@@ -1049,8 +1049,6 @@ Node CegConjecturePbe::SubsumeTrie::addTermInternal( CegConjecturePbe * pbe, Nod
           // remove it if checkExistsOnly = false
           d_term = Node::null();
         }
-      }else{
-        Assert( false );
       }
     }else{
       Assert( !checkExistsOnly && checkSubsume );
@@ -1364,43 +1362,49 @@ Node CegConjecturePbe::constructSolution( Node c, Node e, UnifContext& x, int in
     TypeNode etn = e.getType();
     std::map< TypeNode, EnumTypeInfo >::iterator itt = d_cinfo[c].d_tinfo.find( etn );
     Assert( itt!=d_cinfo[c].d_tinfo.end() );
-    if( x.d_has_string_pos!=0 ){
+    if( d_tds->sygusToBuiltinType( e.getType() ).isString() ){
       // check if a current value that closes all examples
       
       // get the term enumerator for this type
+      bool success = true;
       std::map< Node, EnumInfo >::iterator itet;
       if( itn->second.d_role==enum_concat_term ){
         itet = itn;
       }else{
         std::map< unsigned, Node >::iterator itnt = itt->second.d_enum.find( enum_concat_term );
-        Assert( itnt != itt->second.d_enum.end() );
-        Node et = itnt->second;
-        itet = d_einfo.find( et );
-      }
-      Assert( itet!=d_einfo.end() );
-
-      // get the current examples
-      std::map< Node, std::vector< Node > >::iterator itx = d_examples_out.find( c );
-      Assert( itx!=d_examples_out.end() );
-      std::vector< CVC4::String > ex_vals;
-      x.getCurrentStrings( this, itx->second, ex_vals );
-      Assert( itn->second.d_enum_vals.size()==itn->second.d_enum_vals_res.size() );
-      
-      // test each example in the term enumerator for the type
-      std::vector< Node > str_solved;
-      for( unsigned i=0; i<itet->second.d_enum_vals.size(); i++ ){
-        Trace("ajr-temp") << "Check solved for " << itet->second.d_enum_vals[i] << std::endl;
-        if( x.isStringSolved( this, ex_vals, itet->second.d_enum_vals_res[i] ) ){
-          str_solved.push_back( itet->second.d_enum_vals[i] );
+        if( itnt != itt->second.d_enum.end() ){
+          Node et = itnt->second;
+          itet = d_einfo.find( et );
+        }else{
+          success = false;
         }
       }
-      if( !str_solved.empty() ){
-        ret_dt = constructBestStringSolvedTerm( str_solved, x );
-        indent("sygus-pbe-dt", ind);
-        Trace("sygus-pbe-dt") << "return PBE: success : string solved " << d_tds->sygusToBuiltin( ret_dt ) << std::endl;
-      }else{
-        indent("sygus-pbe-dt-debug", ind);
-        Trace("sygus-pbe-dt-debug") << "  ...not currently string solved." << std::endl;
+      if( success ){
+        Assert( itet!=d_einfo.end() );
+
+        // get the current examples
+        std::map< Node, std::vector< Node > >::iterator itx = d_examples_out.find( c );
+        Assert( itx!=d_examples_out.end() );
+        std::vector< CVC4::String > ex_vals;
+        x.getCurrentStrings( this, itx->second, ex_vals );
+        Assert( itn->second.d_enum_vals.size()==itn->second.d_enum_vals_res.size() );
+        
+        // test each example in the term enumerator for the type
+        std::vector< Node > str_solved;
+        for( unsigned i=0; i<itet->second.d_enum_vals.size(); i++ ){
+          Trace("ajr-temp") << "Check solved for " << itet->second.d_enum_vals[i] << std::endl;
+          if( x.isStringSolved( this, ex_vals, itet->second.d_enum_vals_res[i] ) ){
+            str_solved.push_back( itet->second.d_enum_vals[i] );
+          }
+        }
+        if( !str_solved.empty() ){
+          ret_dt = constructBestStringSolvedTerm( str_solved, x );
+          indent("sygus-pbe-dt", ind);
+          Trace("sygus-pbe-dt") << "return PBE: success : string solved " << d_tds->sygusToBuiltin( ret_dt ) << std::endl;
+        }else{
+          indent("sygus-pbe-dt-debug", ind);
+          Trace("sygus-pbe-dt-debug") << "  ...not currently string solved." << std::endl;
+        }
       }
     }else if( itn->second.d_role==enum_io && !x.isReturnValueModified() ){
       // it has an enumerated value that is conditionally correct under the current assumptions

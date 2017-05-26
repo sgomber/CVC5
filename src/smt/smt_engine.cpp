@@ -89,6 +89,7 @@
 #include "theory/quantifiers/fun_def_process.h"
 #include "theory/quantifiers/macros.h"
 #include "theory/quantifiers/quantifiers_rewriter.h"
+#include "theory/quantifiers/term_database.h"
 #include "theory/sort_inference.h"
 #include "theory/strings/theory_strings.h"
 #include "theory/substitutions.h"
@@ -4592,8 +4593,14 @@ Result SmtEngine::checkSynth(const Expr& e) throw(TypeCheckingException, ModalEx
       Node conj_se = Node::fromExpr( expandDefinitions( conj[1][1].toExpr() ) );
 
       Trace("smt-synth") << "Compute single invocation for " << conj_se << "..." << std::endl;
-      quantifiers::SingleInvocationPartition sip( kind::APPLY_UF );
-      sip.init( conj_se );
+      quantifiers::SingleInvocationPartition sip;
+      std::vector< Node > funcs;
+      for( unsigned i=0; i<conj[0].getNumChildren(); i++ ){
+        Node sf = conj[0][i].getAttribute(theory::SygusSynthFunAttribute());
+        Assert( !sf.isNull() );
+        funcs.push_back( sf );
+      }
+      sip.init( funcs, conj_se );
       Trace("smt-synth") << "...finished, got:" << std::endl;
       sip.debugPrint("smt-synth");
 

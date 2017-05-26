@@ -48,25 +48,33 @@ Node CegConjecture::convertToEmbedding( Node n, std::map< Node, Node >& synth_fu
   std::map< Node, Node >::iterator it = visited.find( n );
   if( it==visited.end() ){
     Node ret = n;
+    
+    std::vector< Node > children;
+    bool childChanged = false;
+    bool madeOp = false;
+    Kind ret_k = n.getKind();
+    Node op;
     if( n.getNumChildren()>0 ){
-      std::vector< Node > children;
-      bool childChanged = false;
-      bool madeOp = false;
       if( n.getKind()==kind::APPLY_UF ){
-        // is it a synth function?
-        Node op = n.getOperator();
-        std::map< Node, Node >::iterator its = synth_fun_vars.find( op );
-        if( its!=synth_fun_vars.end() ){
-          Assert( its->second.getType().isDatatype() );
-          // make into evaluation function
-          const Datatype& dt = ((DatatypeType)its->second.getType().toType()).getDatatype();
-          Assert( dt.isSygus() );
-          children.push_back( Node::fromExpr( dt.getSygusEvaluationFunc() ) );
-          children.push_back( its->second );
-          madeOp = true;
-          childChanged = true;
-        }
+        op = n.getOperator();
       }
+    }else{
+      op = n;
+    }
+    // is it a synth function?
+    std::map< Node, Node >::iterator its = synth_fun_vars.find( op );
+    if( its!=synth_fun_vars.end() ){
+      Assert( its->second.getType().isDatatype() );
+      // make into evaluation function
+      const Datatype& dt = ((DatatypeType)its->second.getType().toType()).getDatatype();
+      Assert( dt.isSygus() );
+      children.push_back( Node::fromExpr( dt.getSygusEvaluationFunc() ) );
+      children.push_back( its->second );
+      madeOp = true;
+      childChanged = true;
+      ret_k = kind::APPLY_UF;
+    }
+    if( n.getNumChildren()>0 || childChanged ){
       if( !madeOp ){
         if( n.getMetaKind() == kind::metakind::PARAMETERIZED ){
           children.push_back( n.getOperator() );
@@ -78,7 +86,7 @@ Node CegConjecture::convertToEmbedding( Node n, std::map< Node, Node >& synth_fu
         children.push_back( nc );
       }
       if( childChanged ){
-        ret = NodeManager::currentNM()->mkNode( n.getKind(), children );
+        ret = NodeManager::currentNM()->mkNode( ret_k, children );
       }
     }
     visited[n] = ret;
@@ -144,6 +152,7 @@ void CegConjecture::assign( Node q ) {
       ss << sf;
       tn = d_qe->getTermDatabaseSygus()->mkSygusDefaultType( v.getType(), sfvl, ss.str(), extra_cons );
     }
+    d_qe->getTermDatabaseSygus()->registerSygusType( tn );
     // ev is the first-order variable corresponding to this synth fun
     std::stringstream ss;
     ss << "f" << sf;

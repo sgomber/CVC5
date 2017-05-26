@@ -802,6 +802,7 @@ void CegInstantiator::processAssertions() {
     ++eqcs_i;
   }
   //construct substitution from auxiliary variable equalities (if e.g. ITE removal was applied to CE body of quantified formula)
+  Trace("cbqi-proc-debug") << "...build aux var substitution" << std::endl;
   std::vector< Node > subs_lhs;
   std::vector< Node > subs_rhs;
   for( unsigned i=0; i<d_aux_vars.size(); i++ ){
@@ -816,6 +817,7 @@ void CegInstantiator::processAssertions() {
   }
 
   //apply substitutions to everything, if necessary
+  Trace("cbqi-proc-debug") << "...apply aux var substitution" << std::endl;
   if( !subs_lhs.empty() ){
     Trace("cbqi-proc") << "Applying substitution : " << std::endl;
     for( unsigned i=0; i<subs_lhs.size(); i++ ){
@@ -840,6 +842,7 @@ void CegInstantiator::processAssertions() {
   }
 
   //remove unecessary assertions
+  Trace("cbqi-proc-debug") << "...remove unecessary assertions" << std::endl;
   for( std::map< TheoryId, std::vector< Node > >::iterator it = d_curr_asserts.begin(); it != d_curr_asserts.end(); ++it ){
     std::vector< Node > akeep;
     for( unsigned i=0; i<it->second.size(); i++ ){
@@ -862,6 +865,7 @@ void CegInstantiator::processAssertions() {
   }
 
   //remove duplicate terms from eqc
+  Trace("cbqi-proc-debug") << "...remove duplicate terms" << std::endl;
   for( std::map< Node, std::vector< Node > >::iterator it = d_curr_eqc.begin(); it != d_curr_eqc.end(); ++it ){
     std::vector< Node > new_eqc;
     for( unsigned i=0; i<it->second.size(); i++ ){
@@ -872,6 +876,7 @@ void CegInstantiator::processAssertions() {
     it->second.clear();
     it->second.insert( it->second.end(), new_eqc.begin(), new_eqc.end() );
   }
+  Trace("cbqi-proc-debug") << "...finished process assertions" << std::endl;
 }
 
 void CegInstantiator::addToAuxVarSubstitution( std::vector< Node >& subs_lhs, std::vector< Node >& subs_rhs, Node l, Node r ) {

@@ -3322,12 +3322,15 @@ void TermDbSygus::registerSygusType( TypeNode tn ) {
       if( !d_register[tn].isNull() ){
         // get the sygus variable list
         Node var_list = Node::fromExpr( dt.getSygusVarList() );
-        Assert( !var_list.isNull() );
-        for( unsigned j=0; j<var_list.getNumChildren(); j++ ){
-          Node sv = var_list[j];
-          SygusVarNumAttribute svna;
-          sv.setAttribute( svna, j );
-          d_var_list[tn].push_back( sv );
+        if( !var_list.isNull() ){
+          for( unsigned j=0; j<var_list.getNumChildren(); j++ ){
+            Node sv = var_list[j];
+            SygusVarNumAttribute svna;
+            sv.setAttribute( svna, j );
+            d_var_list[tn].push_back( sv );
+          }
+        }else{
+          // no arguments to synthesis functions
         }
         //for constant reconstruction
         Kind ck = getComparisonKind( TypeNode::fromType( dt.getSygusType() ) );
@@ -4268,6 +4271,7 @@ bool TermDbSygus::explainDisunification( Node n, Node vn, Node vnr, std::vector<
 
 Node TermDbSygus::unfold( Node en, std::map< Node, Node >& vtm, std::vector< Node >& exp, bool track_exp ) {
   if( en.getKind()==kind::APPLY_UF ){
+    Trace("sygus-db-debug") << "Unfold : " << en << std::endl;
     Node ev = en[0];
     if( track_exp ){
       std::map< Node, Node >::iterator itv = vtm.find( en[0] );
@@ -4404,7 +4408,6 @@ Node TermDbSygus::evaluateBuiltin( TypeNode tn, Node bn, std::vector< Node >& ar
     Assert( it->second.size()==args.size() );
     return Rewriter::rewrite( bn.substitute( it->second.begin(), it->second.end(), args.begin(), args.end() ) );
   }else{
-    Assert( false );
     return bn;
   }
 }
