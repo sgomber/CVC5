@@ -694,6 +694,7 @@ void CegInstantiation::checkCegConjecture( CegConjecture * conj ) {
   }
 
   if( !conj->needsRefinement() ){
+    Trace("cegqi-engine-debug") << "Do conjecture check..." << std::endl;
     if( conj->d_syntax_guided ){
       std::vector< Node > clems;
       conj->doCegConjectureSingleInvCheck( clems );
