@@ -1230,25 +1230,106 @@ void Smt2::mkSygusDatatype( CVC4::Datatype& dt, std::vector<CVC4::Expr>& ops,
   std::vector<CVC4::Expr> df_op;
   std::vector< std::vector<Expr> > df_let_args;
   std::vector< Expr > df_let_body;
-  dt.mkSygusConstructors( ops, cnames, cargs, sygus_to_builtin, 
-                          d_sygus_let_func_to_vars, d_sygus_let_func_to_body, d_sygus_let_func_to_num_input_vars, 
-                          df_name, df_op, df_let_args, df_let_body );
+  //dt.mkSygusConstructors( ops, cnames, cargs, sygus_to_builtin, 
+  //                        d_sygus_let_func_to_vars, d_sygus_let_func_to_body, d_sygus_let_func_to_num_input_vars, 
+  //                        df_name, df_op, df_let_args, df_let_body );
   
-  
-  Debug("dt-sygus") << "  add constructors for unresolved symbols..." << std::endl;
+  Debug("parser-sygus") << "SMT2 sygus parser : Making constructors for sygus datatype " << dt.getName() << std::endl;
+  Debug("parser-sygus") << "  add constructors..." << std::endl;
+  for( int i=0; i<(int)cnames.size(); i++ ){
+    bool is_dup = false;
+    bool is_dup_op = false;
+    Expr let_body;
+    std::vector< Expr > let_args;
+    unsigned let_num_input_args = 0;
+    for( int j=0; j<i; j++ ){
+      if( ops[i]==ops[j] ){
+        is_dup_op = true;
+        if( cargs[i].size()==cargs[j].size() ){
+          is_dup = true;
+          for( unsigned k=0; k<cargs[i].size(); k++ ){
+            if( cargs[i][k]!=cargs[j][k] ){
+              is_dup = false;
+              break;
+            }
+          }
+        }
+        if( is_dup ){
+          break;
+        }
+      }
+    }
+    if( is_dup ){
+      Debug("parser-sygus") << "--> Duplicate gterm : " << ops[i] << " at " << i << std::endl;
+      ops.erase( ops.begin() + i, ops.begin() + i + 1 );
+      cnames.erase( cnames.begin() + i, cnames.begin() + i + 1 );
+      cargs.erase( cargs.begin() + i, cargs.begin() + i + 1 );
+      i--;
+    }else if( is_dup_op ){
+      Debug("parser-sygus") << "--> Duplicate gterm operator : " << ops[i] << " at " << i << std::endl;
+      //make into define-fun
+      std::vector<CVC4::Type> fsorts;
+      for( unsigned j=0; j<cargs[i].size(); j++ ){
+        Type bt = sygus_to_builtin[cargs[i][j]];
+        std::stringstream ss;
+        ss << dt.getName() << "_x_" << i << "_" << j;
+        Expr v = mkBoundVar(ss.str(), bt);
+        let_args.push_back( v );
+        fsorts.push_back( bt );
+        Debug("parser-sygus") << ": var " << i << " " << v << " with type " << bt << " from " << cargs[i][j] << std::endl;
+      }
+      //make the let_body
+      std::vector< Expr > children;
+      if( ops[i].getKind() != kind::BUILTIN ){
+        children.push_back( ops[i] );
+      }
+      children.insert( children.end(), let_args.begin(), let_args.end() );
+      Kind sk = ops[i].getKind() != kind::BUILTIN ? kind::APPLY : getExprManager()->operatorToKind(ops[i]);
+      Debug("parser-sygus") << ": replace " << ops[i] << " " << ops[i].getKind() << " " << sk << std::endl;
+      let_body = getExprManager()->mkExpr( sk, children );
+      Debug("parser-sygus") << ": new body of function is " << let_body << std::endl;
+
+      Type ft = getExprManager()->mkFunctionType(fsorts, let_body.getType());
+      Debug("parser-sygus") << ": function type is " << ft << std::endl;
+      std::stringstream ss;
+      ss << dt.getName() << "_df_" << i;
+      //replace operator and name
+      ops[i] = mkFunction(ss.str(), ft, ExprManager::VAR_FLAG_DEFINED);
+      cnames[i] = ss.str();
+      // indicate we need a define function
+      df_name.push_back( ss.str() );
+      df_op.push_back( ops[i] );
+      df_let_args.push_back( let_args );
+      df_let_body.push_back( let_body );
+      
+      //d_sygus_defined_funs.push_back( ops[i] );
+      //preemptCommand( new DefineFunctionCommand(ss.str(), ops[i], let_args, let_body) );
+      dt.addSygusConstructor( ops[i], cnames[i], cargs[i], let_body, let_args, 0 );
+    }else{
+      std::map< CVC4::Expr, CVC4::Expr >::iterator it = d_sygus_let_func_to_body.find( ops[i] );
+      if( it!=d_sygus_let_func_to_body.end() ){
+        let_body = it->second;
+        let_args.insert( let_args.end(), d_sygus_let_func_to_vars[ops[i]].begin(), d_sygus_let_func_to_vars[ops[i]].end() );
+        let_num_input_args = d_sygus_let_func_to_num_input_vars[ops[i]];
+      }
+      dt.addSygusConstructor( ops[i], cnames[i], cargs[i], let_body, let_args, let_num_input_args );
+    }
+  }
+
+  Debug("parser-sygus") << "  add constructors for unresolved symbols..." << std::endl;
   if( !unresolved_gterm_sym.empty() ){
     std::vector< Type > types;
-    Debug("dt-sygus") << "...resolve " << unresolved_gterm_sym.size() << " symbols..." << std::endl;
+    Debug("parser-sygus") << "...resolve " << unresolved_gterm_sym.size() << " symbols..." << std::endl;
     for( unsigned i=0; i<unresolved_gterm_sym.size(); i++ ){
-      Debug("dt-sygus") << "  resolve : " << unresolved_gterm_sym[i] << std::endl;
+      Debug("parser-sygus") << "  resolve : " << unresolved_gterm_sym[i] << std::endl;
       if( isUnresolvedType(unresolved_gterm_sym[i]) ){
-        Debug("dt-sygus") << "    it is an unresolved type." << std::endl;
+        Debug("parser-sygus") << "    it is an unresolved type." << std::endl;
         Type t = getSort(unresolved_gterm_sym[i]);
         if( std::find( types.begin(), types.end(), t )==types.end() ){
           types.push_back( t );
           //identity element
           Type bt = dt.getSygusType();
-          Debug("dt-sygus") << ":  make identity function for " << bt << ", argument type " << t << std::endl;
+          Debug("parser-sygus") << ":  make identity function for " << bt << ", argument type " << t << std::endl;
           std::stringstream ss;
           ss << t << "_x_id";
           Expr let_body = mkBoundVar(ss.str(), bt);
@@ -1270,12 +1351,12 @@ void Smt2::mkSygusDatatype( CVC4::Datatype& dt, std::vector<CVC4::Expr>& ops,
           //make the sygus argument list
           std::vector< Type > id_carg;
           id_carg.push_back( t );
-          dt.addSygusDatatypeConstructor( id_op, unresolved_gterm_sym[i], id_carg, let_body, let_args, 0 );
+          dt.addSygusConstructor( id_op, unresolved_gterm_sym[i], id_carg, let_body, let_args, 0 );
           //add to operators
           ops.push_back( id_op );
         }
       }else{
-        Debug("dt-sygus") << "    ignore. (likely a free let variable)" << std::endl;
+        Debug("parser-sygus") << "    ignore. (likely a free let variable)" << std::endl;
       }
     }
   }

@@ -820,11 +820,10 @@ public:
   
 // for default grammar construction
 private:
-  TypeNode mkUnresolvedType(const std::string& name);
+  TypeNode mkUnresolvedType(const std::string& name, std::set<Type>& unres);
   void mkSygusConstantsForType( TypeNode type, std::vector<CVC4::Node>& ops );
   void collectSygusGrammarTypesFor( TypeNode range, std::vector< TypeNode >& types, std::map< TypeNode, std::vector< DatatypeConstructorArg > >& sels );
-  void mkSygusDefaultGrammar( TypeNode range, Node bvl, const std::string& fun, std::vector< CVC4::Datatype >& datatypes,
-                              std::vector< TypeNode >& sorts, std::vector< std::vector< Node > >& ops, std::vector< Node >& sygus_vars, int& startIndex );
+  void mkSygusDefaultGrammar( TypeNode range, Node bvl, const std::string& fun, std::vector< CVC4::Datatype >& datatypes, std::set<Type>& unres );
 public:
   TypeNode mkSygusDefaultType( TypeNode range, Node bvl, const std::string& fun );
 };

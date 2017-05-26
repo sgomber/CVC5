@@ -4834,8 +4834,9 @@ Node TermDbSygus::extendedRewrite( Node n ) {
 
 
 
-TypeNode TermDbSygus::mkUnresolvedType(const std::string& name) {
+TypeNode TermDbSygus::mkUnresolvedType(const std::string& name, std::set<Type>& unres) {
   TypeNode unresolved = NodeManager::currentNM()->mkSort(name, ExprManager::SORT_FLAG_PLACEHOLDER);
+  unres.insert( unresolved.toType() );
   return unresolved;
 }
 
@@ -4875,14 +4876,17 @@ void TermDbSygus::collectSygusGrammarTypesFor( TypeNode range, std::vector< Type
   }
 }
 
-void TermDbSygus::mkSygusDefaultGrammar( TypeNode range, Node bvl, const std::string& fun, std::vector< CVC4::Datatype >& datatypes,
-                                         std::vector<TypeNode>& sorts, std::vector< std::vector< Node > >& opsn, std::vector<Node>& sygus_vars, int& startIndex ) {
-
+void TermDbSygus::mkSygusDefaultGrammar( TypeNode range, Node bvl, const std::string& fun, std::vector< CVC4::Datatype >& datatypes, std::set<Type>& unres ) {
+  // collect the variables
+  std::vector<Node> sygus_vars;
+  for( unsigned i=0; i<bvl.getNumChildren(); i++ ){
+    sygus_vars.push_back( bvl[i] );
+  }
   //if( !range.isBoolean() && !range.isInteger() && !range.isBitVector() && !range.isDatatype() ){
   //  parseError("No default grammar for type.");
   //}
   std::vector< std::vector< Expr > > ops;
-  startIndex = -1;
+  int startIndex = -1;
   Trace("sygus-grammar-def") << "Construct default grammar for " << fun << " " << range << std::endl;
   std::map< Type, Type > sygus_to_builtin;
 
@@ -4899,7 +4903,7 @@ void TermDbSygus::mkSygusDefaultGrammar( TypeNode range, Node bvl, const std::st
   std::stringstream ssb;
   ssb << fun << "_Bool";
   std::string dbname = ssb.str();
-  Type unres_bt = mkUnresolvedType(ssb.str()).toType();
+  Type unres_bt = mkUnresolvedType(ssb.str(), unres).toType();
 
   std::vector< Type > unres_types;
   std::map< TypeNode, Type > type_to_unres;
@@ -4910,7 +4914,7 @@ void TermDbSygus::mkSygusDefaultGrammar( TypeNode range, Node bvl, const std::st
     datatypes.push_back(Datatype(dname));
     ops.push_back(std::vector< Expr >());
     //make unresolved type
-    Type unres_t = mkUnresolvedType(dname).toType();
+    Type unres_t = mkUnresolvedType(dname, unres).toType();
     unres_types.push_back(unres_t);
     type_to_unres[types[i]] = unres_t;
     sygus_to_builtin[unres_t] = types[i].toType();
@@ -4998,8 +5002,10 @@ void TermDbSygus::mkSygusDefaultGrammar( TypeNode range, Node bvl, const std::st
     }
     Trace("sygus-grammar-def") << "...make datatype " << datatypes.back() << std::endl;
     datatypes[i].setSygus( types[i].toType(), bvl.toExpr(), true, true );
-    datatypes[i].mkSygusConstructors( ops[i], cnames, cargs, sygus_to_builtin );
-    sorts.push_back( types[i] );
+    for( unsigned j=0; j<ops[i].size(); j++ ){
+      datatypes[i].addSygusConstructor( ops[i][j], cnames[j], cargs[j] );
+    }
+    //sorts.push_back( types[i] );
     //set start index if applicable
     if( types[i]==range ){
       startIndex = i;
@@ -5087,21 +5093,34 @@ void TermDbSygus::mkSygusDefaultGrammar( TypeNode range, Node bvl, const std::st
     }
   }
   if( range==btype ){
-    startIndex = sorts.size();
+    startIndex = datatypes.size()-1;
   }
   Trace("sygus-grammar-def") << "...make datatype " << datatypes.back() << std::endl;
   datatypes.back().setSygus( btype.toType(), bvl.toExpr(), true, true );
-  datatypes.back().mkSygusConstructors( ops.back(), cnames, cargs, sygus_to_builtin );
-  sorts.push_back( btype );
+  for( unsigned j=0; j<ops.back().size(); j++ ){
+    datatypes.back().addSygusConstructor( ops.back()[j], cnames[j], cargs[j] );
+  }
+  //sorts.push_back( btype );
   Trace("sygus-grammar-def") << "...finished make default grammar for " << fun << " " << range << std::endl;
   
-  // get the opsn?  TODO
-  
+  if( startIndex>0 ){
+    CVC4::Datatype tmp_dt = datatypes[0];
+    datatypes[0] = datatypes[startIndex];
+    datatypes[startIndex] = tmp_dt;
+  }
 }
 
 
 TypeNode TermDbSygus::mkSygusDefaultType( TypeNode range, Node bvl, const std::string& fun ) {
-  return range;
+  Trace("sygus-grammar-def")  << "*** Make sygus default type " << range << ", make datatypes..." << std::endl;
+  std::set<Type> unres;
+  std::vector< CVC4::Datatype > datatypes;
+  mkSygusDefaultGrammar( range, bvl, fun, datatypes, unres );
+  Trace("sygus-grammar-def")  << "...made " << datatypes.size() << " datatypes, now make mutual datatype types..." << std::endl;
+  Assert( !datatypes.empty() );
+  std::vector<DatatypeType> types = NodeManager::currentNM()->toExprManager()->mkMutualDatatypeTypes(datatypes, unres);
+  Assert( types.size()==datatypes.size() );
+  return TypeNode::fromType( types[0] );
 }
 
 }/* CVC4::theory::quantifiers namespace */

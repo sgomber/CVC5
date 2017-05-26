@@ -181,8 +181,8 @@ void Datatype::setSygus( Type st, Expr bvl, bool allow_const, bool allow_all ){
   d_sygus_allow_all = allow_all;
 }
 
-void Datatype::addSygusDatatypeConstructor( CVC4::Expr op, std::string& cname, std::vector< CVC4::Type >& cargs,
-                                            CVC4::Expr& let_body, std::vector< CVC4::Expr >& let_args, unsigned let_num_input_args ) {
+void Datatype::addSygusConstructor( CVC4::Expr op, std::string& cname, std::vector< CVC4::Type >& cargs,
+                                    CVC4::Expr& let_body, std::vector< CVC4::Expr >& let_args, unsigned let_num_input_args ) {
   Debug("dt-sygus") << "--> Add constructor " << cname << " to " << getName() << std::endl;
   if( !let_body.isNull() ){
     Debug("dt-sygus") << "    let body = " << let_body << ", args = " << let_args.size() << "," << let_num_input_args << std::endl;
@@ -209,112 +209,11 @@ void Datatype::addSygusDatatypeConstructor( CVC4::Expr op, std::string& cname, s
   addConstructor(c);
 }
 
-void Datatype::mkSygusConstructors( std::vector<CVC4::Expr>& ops,
-                                    std::vector<std::string>& cnames, std::vector< std::vector< CVC4::Type > >& cargs,
-                                    std::map< CVC4::Type, CVC4::Type >& sygus_to_builtin,
-                                    std::map< CVC4::Expr, std::vector< CVC4::Expr > >& let_func_to_vars,
-                                    std::map< CVC4::Expr, CVC4::Expr >& let_func_to_body,
-                                    std::map< CVC4::Expr, unsigned >& let_func_to_num_input_vars,
-                                    std::vector<std::string>& df_name, std::vector<CVC4::Expr>& df_op,
-                                    std::vector<std::vector<Expr> >& df_let_args, std::vector< Expr >& df_let_body ) {
-  Debug("dt-sygus") << "Making constructors for sygus datatype " << getName() << std::endl;
-  Debug("dt-sygus") << "  add constructors..." << std::endl;
-  for( int i=0; i<(int)cnames.size(); i++ ){
-    bool is_dup = false;
-    bool is_dup_op = false;
-    Expr let_body;
-    std::vector< Expr > let_args;
-    unsigned let_num_input_args = 0;
-    for( int j=0; j<i; j++ ){
-      if( ops[i]==ops[j] ){
-        is_dup_op = true;
-        if( cargs[i].size()==cargs[j].size() ){
-          is_dup = true;
-          for( unsigned k=0; k<cargs[i].size(); k++ ){
-            if( cargs[i][k]!=cargs[j][k] ){
-              is_dup = false;
-              break;
-            }
-          }
-        }
-        if( is_dup ){
-          break;
-        }
-      }
-    }
-    if( is_dup ){
-      Debug("dt-sygus") << "--> Duplicate gterm : " << ops[i] << " at " << i << std::endl;
-      ops.erase( ops.begin() + i, ops.begin() + i + 1 );
-      cnames.erase( cnames.begin() + i, cnames.begin() + i + 1 );
-      cargs.erase( cargs.begin() + i, cargs.begin() + i + 1 );
-      i--;
-    }else if( is_dup_op ){
-      Debug("dt-sygus") << "--> Duplicate gterm operator : " << ops[i] << " at " << i << std::endl;
-      //make into define-fun
-      std::vector<CVC4::Type> fsorts;
-      for( unsigned j=0; j<cargs[i].size(); j++ ){
-        Type bt = sygus_to_builtin[cargs[i][j]];
-        std::stringstream ss;
-        ss << getName() << "_x_" << i << "_" << j;
-        Expr v = ops[i].getExprManager()->mkBoundVar(ss.str(), bt);
-        let_args.push_back( v );
-        fsorts.push_back( bt );
-        Debug("dt-sygus") << ": var " << i << " " << v << " with type " << bt << " from " << cargs[i][j] << std::endl;
-      }
-      //make the let_body
-      std::vector< Expr > children;
-      if( ops[i].getKind() != kind::BUILTIN ){
-        children.push_back( ops[i] );
-      }
-      children.insert( children.end(), let_args.begin(), let_args.end() );
-      Kind sk = ops[i].getKind() != kind::BUILTIN ? kind::APPLY : ops[i].getExprManager()->operatorToKind(ops[i]);
-      Debug("dt-sygus") << ": replace " << ops[i] << " " << ops[i].getKind() << " " << sk << std::endl;
-      let_body = ops[i].getExprManager()->mkExpr( sk, children );
-      Debug("dt-sygus") << ": new body of function is " << let_body << std::endl;
-
-      Type ft = ops[i].getExprManager()->mkFunctionType(fsorts, let_body.getType());
-      Debug("dt-sygus") << ": function type is " << ft << std::endl;
-      std::stringstream ss;
-      ss << getName() << "_df_" << i;
-      //replace operator and name
-      ops[i] = ops[i].getExprManager()->mkVar(ss.str(), ft, ExprManager::VAR_FLAG_DEFINED);
-      cnames[i] = ss.str();
-      // indicate we need a define function
-      df_name.push_back( ss.str() );
-      df_op.push_back( ops[i] );
-      df_let_args.push_back( let_args );
-      df_let_body.push_back( let_body );
-      
-      //d_sygus_defined_funs.push_back( ops[i] );
-      //preemptCommand( new DefineFunctionCommand(ss.str(), ops[i], let_args, let_body) );
-      addSygusDatatypeConstructor( ops[i], cnames[i], cargs[i], let_body, let_args, 0 );
-    }else{
-      std::map< CVC4::Expr, CVC4::Expr >::iterator it = let_func_to_body.find( ops[i] );
-      if( it!=let_func_to_body.end() ){
-        let_body = it->second;
-        let_args.insert( let_args.end(), let_func_to_vars[ops[i]].begin(), let_func_to_vars[ops[i]].end() );
-        let_num_input_args = let_func_to_num_input_vars[ops[i]];
-      }
-      addSygusDatatypeConstructor( ops[i], cnames[i], cargs[i], let_body, let_args, let_num_input_args );
-    }
-  }
-}
-
-void Datatype::mkSygusConstructors( std::vector<CVC4::Expr>& ops,
-                                    std::vector<std::string>& cnames, std::vector< std::vector< CVC4::Type > >& cargs,
-                                    std::map< CVC4::Type, CVC4::Type >& sygus_to_builtin ) {
-
-  std::vector<std::string> df_name; 
-  std::vector<CVC4::Expr> df_out;
-  std::vector< std::vector<Expr> > df_let_args;
-  std::vector< Expr > df_let_body;
-  std::map< CVC4::Expr, std::vector< CVC4::Expr > > let_func_to_vars;
-  std::map< CVC4::Expr, CVC4::Expr > let_func_to_body;
-  std::map< CVC4::Expr, unsigned > let_func_to_num_input_vars;
-  mkSygusConstructors( ops, cnames, cargs, sygus_to_builtin, 
-                       let_func_to_vars, let_func_to_body, let_func_to_num_input_vars, 
-                       df_name, df_out, df_let_args, df_let_body );
-  Assert( df_name.empty() );
+void Datatype::addSygusConstructor( CVC4::Expr op, std::string& cname, std::vector< CVC4::Type >& cargs ) {
+  CVC4::Expr let_body; 
+  std::vector< CVC4::Expr > let_args; 
+  unsigned let_num_input_args = 0;
+  addSygusConstructor( op, cname, cargs, let_body, let_args, let_num_input_args );
 }
                                     
 void Datatype::setTuple() {
