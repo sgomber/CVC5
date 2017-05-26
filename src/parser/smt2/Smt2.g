@@ -577,6 +577,7 @@ sygusCommand [CVC4::PtrCloser<CVC4::Command>* cmd]
   std::map< CVC4::Type, CVC4::Type > sygus_to_builtin;
   std::map< CVC4::Type, CVC4::Expr > sygus_to_builtin_expr;
   int startIndex = -1;
+  Expr synth_fun;
 }
   : /* declare-var */
     DECLARE_VAR_TOK { PARSER_STATE->checkThatLogicIsSet(); }
@@ -600,7 +601,20 @@ sygusCommand [CVC4::PtrCloser<CVC4::Command>* cmd]
     { PARSER_STATE->checkThatLogicIsSet(); }
     symbol[fun,CHECK_UNDECLARED,SYM_VARIABLE]
     LPAREN_TOK sortedVarList[sortedVarNames] RPAREN_TOK
-    { seq.reset(new CommandSequence());
+    ( sortSymbol[range,CHECK_DECLARED] )? {
+      if( range.isNull() ){
+        PARSER_STATE->parseError("Must supply return type for synth-fun.");
+      }
+      seq.reset(new CommandSequence());
+      std::vector<Type> var_sorts;
+      for(std::vector<std::pair<std::string, CVC4::Type> >::const_iterator i =
+            sortedVarNames.begin(), iend = sortedVarNames.end(); i != iend;
+          ++i) {
+        var_sorts.push_back( (*i).second );
+      }
+      Debug("parser-sygus") << "Define synth fun : " << fun << std::endl;
+      Type synth_fun_type = EXPR_MANAGER->mkFunctionType(var_sorts, range);
+      synth_fun = PARSER_STATE->mkVar(fun, synth_fun_type);
       PARSER_STATE->pushScope(true);
       for(std::vector<std::pair<std::string, CVC4::Type> >::const_iterator i =
             sortedVarNames.begin(), iend = sortedVarNames.end(); i != iend;
@@ -615,11 +629,6 @@ sygusCommand [CVC4::PtrCloser<CVC4::Command>* cmd]
       }
       terms.clear();
       terms.push_back(bvl);
-    }
-    ( sortSymbol[range,CHECK_DECLARED] )? {
-      if( range.isNull() ){
-        PARSER_STATE->parseError("Must supply return type for synth-fun.");
-      }
     }
     ( LPAREN_TOK
     ( LPAREN_TOK
@@ -663,18 +672,18 @@ sygusCommand [CVC4::PtrCloser<CVC4::Command>* cmd]
     )+
     RPAREN_TOK { read_syntax = true; }
     )?
-    { 
+    { // the sygus sym type specifies the required grammar for synth_fun, expressed as a type
+      Type sygus_sym_type;
       if( !read_syntax ){
         //create the default grammar
         Debug("parser-sygus") << "Make default grammar..." << std::endl;
-        PARSER_STATE->mkSygusDefaultGrammar(
+        PARSER_STATE->mkSygusDefaultGrammar( 
             range, terms[0], fun, datatypes, sorts, ops, sygus_vars,
             startIndex);
         //set start index
         Debug("parser-sygus") << "Set start index " << startIndex << "..."
                               << std::endl;
-        PARSER_STATE->setSygusStartIndex(fun, startIndex, datatypes, sorts,
-                                         ops);        
+        PARSER_STATE->setSygusStartIndex(fun, startIndex, datatypes, sorts, ops);
       }else{
         Debug("parser-sygus") << "--- Process " << sgts.size()
                               << " sygus gterms..." << std::endl;
@@ -707,9 +716,9 @@ sygusCommand [CVC4::PtrCloser<CVC4::Command>* cmd]
               datatypes[i], ops[i], cnames[i], cargs[i],
               unresolved_gterm_sym[i], sygus_to_builtin );
         }
-        PARSER_STATE->setSygusStartIndex(fun, startIndex, datatypes, sorts,
-                                         ops);
+        PARSER_STATE->setSygusStartIndex(fun, startIndex, datatypes, sorts, ops);
       }
+      
       //only care about datatypes/sorts/ops past here
       PARSER_STATE->popScope();
       Debug("parser-sygus") << "--- Make " << datatypes.size()
@@ -721,7 +730,6 @@ sygusCommand [CVC4::PtrCloser<CVC4::Command>* cmd]
       std::vector<DatatypeType> datatypeTypes =
           PARSER_STATE->mkMutualDatatypeTypes(datatypes);
       seq->addCommand(new DatatypeDeclarationCommand(datatypeTypes));
-      std::map<DatatypeType, Expr> evals;
       if( sorts[0]!=range ){
         PARSER_STATE->parseError(std::string("Bad return type in grammar for "
                                              "SyGuS function ") + fun);
@@ -733,11 +741,10 @@ sygusCommand [CVC4::PtrCloser<CVC4::Command>* cmd]
         Expr eval = dt.getSygusEvaluationFunc();
         Debug("parser-sygus") << "Make eval " << eval << " for " << dt.getName()
                               << std::endl;
-        evals.insert(std::make_pair(dtt, eval));
-        if(i == 0) {
-          PARSER_STATE->addSygusFun(fun, eval);
-        }
       }
+      sygus_sym_type = datatypeTypes[0];
+      // store a dummy variable which stands for second-order quantification, linked to synth fun by an attribute
+      PARSER_STATE->addSygusFunSymbol( sygus_sym_type, synth_fun );
       cmd->reset(seq.release());
     }
   | /* constraint */
@@ -782,9 +789,8 @@ sygusCommand [CVC4::PtrCloser<CVC4::Command>* cmd]
       }
       //make relevant terms
       for( unsigned i=0; i<4; i++ ){
-        Debug("parser-sygus") << "Make inv-constraint term #" << i << "..."
-                              << std::endl;
         Expr op = terms[i];
+        Debug("parser-sygus") << "Make inv-constraint term #" << i << " : " << op  << "..." << std::endl;
         std::vector< Expr > children;
         children.push_back( op );
         if( i==2 ){
@@ -792,13 +798,13 @@ sygusCommand [CVC4::PtrCloser<CVC4::Command>* cmd]
         }else{
           children.insert( children.end(), primed[0].begin(), primed[0].end() );
         }
-        terms[i] = EXPR_MANAGER->mkExpr(kind::APPLY,children);
+        terms[i] = EXPR_MANAGER->mkExpr( i==0 ? kind::APPLY_UF : kind::APPLY,children);
         if( i==0 ){
           std::vector< Expr > children2;
           children2.push_back( op );
           children2.insert(children2.end(), primed[1].begin(),
                            primed[1].end());
-          terms.push_back( EXPR_MANAGER->mkExpr(kind::APPLY,children2) );
+          terms.push_back( EXPR_MANAGER->mkExpr(kind::APPLY_UF,children2) );
         }
       }
       //make constraints

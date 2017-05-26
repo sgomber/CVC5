@@ -44,10 +44,88 @@ CegConjecture::~CegConjecture() {
   delete d_ceg_pbe;
 }
 
+Node CegConjecture::convertToEmbedding( Node n, std::map< Node, Node >& synth_fun_vars, std::map< Node, Node >& visited ){
+  std::map< Node, Node >::iterator it = visited.find( n );
+  if( it==visited.end() ){
+    Node ret = n;
+    if( n.getNumChildren()>0 ){
+      std::vector< Node > children;
+      bool childChanged = false;
+      bool madeOp = false;
+      if( n.getKind()==kind::APPLY_UF ){
+        // is it a synth function?
+        Node op = n.getOperator();
+        std::map< Node, Node >::iterator its = synth_fun_vars.find( op );
+        if( its!=synth_fun_vars.end() ){
+          Assert( its->second.getType().isDatatype() );
+          // make into evaluation function
+          const Datatype& dt = ((DatatypeType)its->second.getType().toType()).getDatatype();
+          Assert( dt.isSygus() );
+          children.push_back( Node::fromExpr( dt.getSygusEvaluationFunc() ) );
+          children.push_back( its->second );
+          madeOp = true;
+          childChanged = true;
+        }
+      }
+      if( !madeOp ){
+        if( n.getMetaKind() == kind::metakind::PARAMETERIZED ){
+          children.push_back( n.getOperator() );
+        }
+      }
+      for( unsigned i=0; i<n.getNumChildren(); i++ ){
+        Node nc = convertToEmbedding( n[i], synth_fun_vars, visited ); 
+        childChanged = childChanged || nc!=n[i];
+        children.push_back( nc );
+      }
+      if( childChanged ){
+        ret = NodeManager::currentNM()->mkNode( n.getKind(), children );
+      }
+    }
+    visited[n] = ret;
+    return ret;
+  }else{
+    return it->second;
+  }
+}
+
 void CegConjecture::assign( Node q ) {
   Assert( d_quant.isNull() );
   Assert( q.getKind()==FORALL );
+  Trace("cegqi") << "CegConjecture : assign : " << q << std::endl;
   d_assert_quant = q;
+  //convert to deep embedding
+  std::vector< Node > qchildren;
+  
+  std::map< Node, Node > visited;
+  std::map< Node, Node > synth_fun_vars;
+  std::vector< Node > ebvl;
+  for( unsigned i=0; i<q[0].getNumChildren(); i++ ){
+    Node v = q[0][i];
+    Node sf = v.getAttribute(SygusSynthFunAttribute());
+    Assert( !sf.isNull() );
+    TypeNode tn;
+    if( v.getType().isDatatype() ){
+      tn = v.getType();
+    }else{
+      // TODO : default grammar
+      Assert( false );
+    }
+    // ev is the first-order variable corresponding to this synth fun
+    std::stringstream ss;
+    ss << "f" << sf;
+    Node ev = NodeManager::currentNM()->mkBoundVar( ss.str(), tn ); 
+    ebvl.push_back( ev );
+    synth_fun_vars[sf] = ev;
+    Trace("cegqi") << "...embedding synth fun : " << sf << " -> " << ev << std::endl;
+  }
+  qchildren.push_back( NodeManager::currentNM()->mkNode( kind::BOUND_VAR_LIST, ebvl ) );
+  qchildren.push_back( convertToEmbedding( q[1], synth_fun_vars, visited ) );
+  if( q.getNumChildren()==3 ){
+    qchildren.push_back( q[2] );
+  }
+  q = NodeManager::currentNM()->mkNode( kind::FORALL, qchildren );
+  Trace("cegqi") << "CegConjecture : converted to embedding : " << q << std::endl;
+
   //register with single invocation if applicable
   if( d_qe->getTermDatabase()->isQAttrSygus( d_assert_quant ) && options::cegqiSingleInvMode()!=CEGQI_SI_MODE_NONE ){
     d_ceg_si->initialize( q );

@@ -1382,5 +1382,16 @@ const void Smt2::getSygusPrimedVars( std::vector<Expr>& vars, bool isPrimed ) {
   }
 }
 
+const void Smt2::addSygusFunSymbol( Type t, Expr synth_fun ){
+  Expr sym = mkBoundVar("sfproxy", t);
+  d_sygusFunSymbols.push_back(sym);
+  
+  std::vector< Expr > attr_value;
+  attr_value.push_back( synth_fun );
+  Command* cattr = new SetUserAttributeCommand("sygus-synth-fun", sym, attr_value);
+  cattr->setMuted(true);
+  preemptCommand(cattr);
+}
+
 }/* CVC4::parser namespace */
 }/* CVC4 namespace */

@@ -93,6 +93,10 @@ typedef expr::Attribute< LtePartialInstAttributeId, bool > LtePartialInstAttribu
 struct SygusProxyAttributeId {};
 typedef expr::Attribute<SygusProxyAttributeId, Node> SygusProxyAttribute;
 
+// attribute for "contains instantiation constants from"
+struct SygusSynthFunAttributeId {};
+typedef expr::Attribute<SygusSynthFunAttributeId, Node> SygusSynthFunAttribute;
+
 //attribute for fun-def abstraction type
 struct AbsTypeFunDefAttributeId {};
 typedef expr::Attribute<AbsTypeFunDefAttributeId, bool> AbsTypeFunDefAttribute;

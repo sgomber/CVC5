@@ -42,6 +42,11 @@ void QuantifiersAttributes::setUserAttribute( const std::string& attr, Node n, s
     Trace("quant-attr-debug") << "Set sygus " << n << std::endl;
     SygusAttribute ca;
     n.setAttribute( ca, true );
+  }else if( attr=="sygus-synth-fun" ){
+    Assert( node_values.size()==1 );
+    Trace("quant-attr-debug") << "Set sygus synth fun " << n << " to "  << node_values[0] << std::endl;
+    SygusSynthFunAttribute ssfa;
+    n.setAttribute( ssfa, node_values[0] );
   }else if( attr=="synthesis" ){
     Trace("quant-attr-debug") << "Set synthesis " << n << std::endl;
     SynthesisAttribute ca;

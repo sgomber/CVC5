@@ -247,6 +247,7 @@ public:
   }
   const void getSygusPrimedVars( std::vector<Expr>& vars, bool isPrimed );
 
+  const void addSygusFunSymbol( Type t, Expr synth_fun );
   const std::vector<Expr>& getSygusFunSymbols() {
     return d_sygusFunSymbols;
   }

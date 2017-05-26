@@ -4592,7 +4592,7 @@ Result SmtEngine::checkSynth(const Expr& e) throw(TypeCheckingException, ModalEx
       Node conj_se = conj[1][1];
 
       Trace("smt-synth") << "Compute single invocation for " << conj_se << "..." << std::endl;
-      quantifiers::SingleInvocationPartition sip( kind::APPLY );
+      quantifiers::SingleInvocationPartition sip( kind::APPLY_UF );
       sip.init( conj_se );
       Trace("smt-synth") << "...finished, got:" << std::endl;
       sip.debugPrint("smt-synth");
