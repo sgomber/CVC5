@@ -178,9 +178,6 @@ public:
 
   Expr mkSygusVar(const std::string& name, const Type& type, bool isPrimed = false);
 
-  void mkSygusDefaultGrammar( const Type& range, Expr& bvl, const std::string& fun, std::vector<CVC4::Datatype>& datatypes,
-                              std::vector<Type>& sorts, std::vector< std::vector<Expr> >& ops, std::vector<Expr> sygus_vars, int& startIndex );
-
   void mkSygusConstantsForType( const Type& type, std::vector<CVC4::Expr>& ops );
 
   void processSygusGTerm( CVC4::SygusGTerm& sgt, int index,

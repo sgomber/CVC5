@@ -107,7 +107,7 @@ void CegConjecture::assign( Node q ) {
     // sfvl may be null for constant synthesis functions
     Trace("cegqi-debug") << "...sygus var list associated with " << sf << " is " << sfvl << std::endl;
     TypeNode tn;
-    if( v.getType().isDatatype() ){
+    if( v.getType().isDatatype() && ((DatatypeType)v.getType().toType()).getDatatype().isSygus() ){
       tn = v.getType();
     }else{
       // make the default grammar

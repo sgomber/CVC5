@@ -681,15 +681,8 @@ sygusCommand [CVC4::PtrCloser<CVC4::Command>* cmd]
     { // the sygus sym type specifies the required grammar for synth_fun, expressed as a type
       Type sygus_sym_type;
       if( !read_syntax ){
-        //create the default grammar
-        Debug("parser-sygus") << "Make default grammar..." << std::endl;
-        PARSER_STATE->mkSygusDefaultGrammar( 
-            range, terms[0], fun, datatypes, sorts, ops, sygus_vars,
-            startIndex);
-        //set start index
-        Debug("parser-sygus") << "Set start index " << startIndex << "..."
-                              << std::endl;
-        PARSER_STATE->setSygusStartIndex(fun, startIndex, datatypes, sorts, ops);
+        sygus_sym_type = range;
+        PARSER_STATE->popScope();
       }else{
         Debug("parser-sygus") << "--- Process " << sgts.size()
                               << " sygus gterms..." << std::endl;
@@ -723,23 +716,23 @@ sygusCommand [CVC4::PtrCloser<CVC4::Command>* cmd]
               unresolved_gterm_sym[i], sygus_to_builtin );
         }
         PARSER_STATE->setSygusStartIndex(fun, startIndex, datatypes, sorts, ops);
+        //only care about datatypes/sorts/ops past here
+        PARSER_STATE->popScope();
+        Debug("parser-sygus") << "--- Make " << datatypes.size()
+                              << " mutual datatypes..." << std::endl;
+        for( unsigned i=0; i<datatypes.size(); i++ ){
+          Debug("parser-sygus") << "  " << i << " : " << datatypes[i].getName() << std::endl;
+        }
+        std::vector<DatatypeType> datatypeTypes =
+            PARSER_STATE->mkMutualDatatypeTypes(datatypes);
+        seq->addCommand(new DatatypeDeclarationCommand(datatypeTypes));
+        if( sorts[0]!=range ){
+          PARSER_STATE->parseError(std::string("Bad return type in grammar for "
+                                               "SyGuS function ") + fun);
+        }
+        sygus_sym_type = datatypeTypes[0];
       }
       
-      //only care about datatypes/sorts/ops past here
-      PARSER_STATE->popScope();
-      Debug("parser-sygus") << "--- Make " << datatypes.size()
-                            << " mutual datatypes..." << std::endl;
-      for( unsigned i=0; i<datatypes.size(); i++ ){
-        Debug("parser-sygus") << "  " << i << " : " << datatypes[i].getName() << std::endl;
-      }
-      std::vector<DatatypeType> datatypeTypes =
-          PARSER_STATE->mkMutualDatatypeTypes(datatypes);
-      seq->addCommand(new DatatypeDeclarationCommand(datatypeTypes));
-      if( sorts[0]!=range ){
-        PARSER_STATE->parseError(std::string("Bad return type in grammar for "
-                                             "SyGuS function ") + fun);
-      }
-      sygus_sym_type = datatypeTypes[0];
       // store a dummy variable which stands for second-order quantification, linked to synth fun by an attribute
       PARSER_STATE->addSygusFunSymbol( sygus_sym_type, synth_fun );
       cmd->reset(seq.release());
