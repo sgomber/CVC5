@@ -110,8 +110,10 @@ void CegConjecture::assign( Node q ) {
     if( v.getType().isDatatype() ){
       tn = v.getType();
     }else{
-      // TODO : default grammar
-      Assert( false );
+      // make the default grammar
+      std::stringstream ss;
+      ss << sf;
+      tn = d_qe->getTermDatabaseSygus()->mkSygusDefaultType( v.getType(), sfvl, ss.str() );
     }
     // ev is the first-order variable corresponding to this synth fun
     std::stringstream ss;

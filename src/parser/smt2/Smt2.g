@@ -748,7 +748,6 @@ sygusCommand [CVC4::PtrCloser<CVC4::Command>* cmd]
     CONSTRAINT_TOK { 
       PARSER_STATE->checkThatLogicIsSet();
       Debug("parser-sygus") << "Sygus : define sygus funs..." << std::endl;
-      PARSER_STATE->defineSygusFuns(); 
       Debug("parser-sygus") << "Sygus : read constraint..." << std::endl;
     }
     term[expr, expr2]
@@ -759,7 +758,6 @@ sygusCommand [CVC4::PtrCloser<CVC4::Command>* cmd]
   | INV_CONSTRAINT_TOK {  
       PARSER_STATE->checkThatLogicIsSet();
       Debug("parser-sygus") << "Sygus : define sygus funs..." << std::endl;
-      PARSER_STATE->defineSygusFuns(); 
       Debug("parser-sygus") << "Sygus : read inv-constraint..." << std::endl;
     }
     ( symbol[name,CHECK_NONE,SYM_VARIABLE] { 
@@ -821,7 +819,7 @@ sygusCommand [CVC4::PtrCloser<CVC4::Command>* cmd]
     }
   | /* check-synth */
     CHECK_SYNTH_TOK
-    { PARSER_STATE->checkThatLogicIsSet(); PARSER_STATE->defineSygusFuns(); }
+    { PARSER_STATE->checkThatLogicIsSet(); }
     { Expr sygusVar = EXPR_MANAGER->mkVar("sygus", EXPR_MANAGER->booleanType());
       Expr inst_attr =EXPR_MANAGER->mkExpr(kind::INST_ATTRIBUTE, sygusVar);
       Expr sygusAttr = EXPR_MANAGER->mkExpr(kind::INST_PATTERN_LIST, inst_attr);

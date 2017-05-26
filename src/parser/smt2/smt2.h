@@ -62,10 +62,9 @@ private:
   std::pair<Expr, std::string> d_lastNamedTerm;
   // this is a user-context stack
   std::stack< std::map<Expr, std::string> > d_unsatCoreNames;
+  // for sygus
   std::vector<Expr> d_sygusVars, d_sygusConstraints, d_sygusFunSymbols;
-  std::vector< std::pair<std::string, Expr> > d_sygusFuns;
   std::map< Expr, bool > d_sygusVarPrimed;
-  size_t d_nextSygusFun;
 
 protected:
   Smt2(ExprManager* exprManager, Input* input, bool strictMode = false, bool parseOnly = false);
@@ -218,12 +217,6 @@ public:
                            std::vector< CVC4::Type>& sorts,
                            std::vector< std::vector<CVC4::Expr> >& ops );
 
-  void addSygusFun(const std::string& fun, Expr eval) {
-    d_sygusFuns.push_back(std::make_pair(fun, eval));
-  }
-
-  void defineSygusFuns();
-
   void mkSygusDatatype( CVC4::Datatype& dt, std::vector<CVC4::Expr>& ops,
                         std::vector<std::string>& cnames, std::vector< std::vector< CVC4::Type > >& cargs,
                         std::vector<std::string>& unresolved_gterm_sym,
@@ -320,9 +313,6 @@ private:
   std::vector< CVC4::Expr > d_sygus_defined_funs;
 
   void collectSygusLetArgs( CVC4::Expr e, std::vector< CVC4::Type >& sygusArgs, std::vector< CVC4::Expr >& builtinArgs );
-
-  void addSygusDatatypeConstructor( CVC4::Datatype& dt, CVC4::Expr op, std::string& cname, std::vector< CVC4::Type >& cargs,
-                                    CVC4::Expr& let_body, std::vector< CVC4::Expr >& let_args, unsigned let_num_input_args );
 
   Type processSygusNestedGTerm( int sub_dt_index, std::string& sub_dname, std::vector< CVC4::Datatype >& datatypes,
                                 std::vector< CVC4::Type>& sorts,

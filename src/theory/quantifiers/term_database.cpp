@@ -4879,8 +4879,10 @@ void TermDbSygus::collectSygusGrammarTypesFor( TypeNode range, std::vector< Type
 void TermDbSygus::mkSygusDefaultGrammar( TypeNode range, Node bvl, const std::string& fun, std::vector< CVC4::Datatype >& datatypes, std::set<Type>& unres ) {
   // collect the variables
   std::vector<Node> sygus_vars;
-  for( unsigned i=0; i<bvl.getNumChildren(); i++ ){
-    sygus_vars.push_back( bvl[i] );
+  if( !bvl.isNull() ){
+    for( unsigned i=0; i<bvl.getNumChildren(); i++ ){
+      sygus_vars.push_back( bvl[i] );
+    }
   }
   //if( !range.isBoolean() && !range.isInteger() && !range.isBitVector() && !range.isDatatype() ){
   //  parseError("No default grammar for type.");
