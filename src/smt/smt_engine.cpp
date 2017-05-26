@@ -4589,7 +4589,7 @@ Result SmtEngine::checkSynth(const Expr& e) throw(TypeCheckingException, ModalEx
   if( conj.getKind()==kind::FORALL ){
     //possibly run quantifier elimination to make formula into single invocation
     if( conj[1].getKind()==kind::EXISTS ){
-      Node conj_se = conj[1][1];
+      Node conj_se = Node::fromExpr( expandDefinitions( conj[1][1].toExpr() ) );
 
       Trace("smt-synth") << "Compute single invocation for " << conj_se << "..." << std::endl;
       quantifiers::SingleInvocationPartition sip( kind::APPLY_UF );
