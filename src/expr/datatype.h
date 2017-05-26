@@ -596,7 +596,23 @@ public:
    *    allow_const : whether all constants are (implicitly) included in the grammar
    */
   void setSygus( Type st, Expr bvl, bool allow_const, bool allow_all );
-
+  /** make the constructors (this is very verbose to accomodate the SyGuS input language) */
+  void mkSygusConstructors( std::vector<CVC4::Expr>& ops,
+                            std::vector<std::string>& cnames, std::vector< std::vector< CVC4::Type > >& cargs,
+                            std::map< CVC4::Type, CVC4::Type >& sygus_to_builtin,
+                            std::map< CVC4::Expr, std::vector< CVC4::Expr > >& let_func_to_vars,
+                            std::map< CVC4::Expr, CVC4::Expr >& let_func_to_body,
+                            std::map< CVC4::Expr, unsigned >& let_func_to_num_input_vars,
+                            std::vector<std::string>& df_name, std::vector<CVC4::Expr>& df_op,
+                            std::vector<std::vector<Expr> >& df_let_args, std::vector< Expr >& df_let_body );
+  /** make the constructors (this is very verbose to accomodate the SyGuS input language) */
+  void mkSygusConstructors( std::vector<CVC4::Expr>& ops,
+                            std::vector<std::string>& cnames, std::vector< std::vector< CVC4::Type > >& cargs,
+                            std::map< CVC4::Type, CVC4::Type >& sygus_to_builtin );
+  /** add sygus constructor */
+  void addSygusDatatypeConstructor( CVC4::Expr op, std::string& cname, std::vector< CVC4::Type >& cargs,
+                                    CVC4::Expr& let_body, std::vector< CVC4::Expr >& let_args, unsigned let_num_input_args );
+                                    
   /** set tuple */
   void setTuple();
 

@@ -629,6 +629,12 @@ sygusCommand [CVC4::PtrCloser<CVC4::Command>* cmd]
       }
       terms.clear();
       terms.push_back(bvl);
+      // associate this variable list with the synth fun
+      std::vector< Expr > attr_val_bvl;
+      attr_val_bvl.push_back( bvl );
+      Command* cattr_bvl = new SetUserAttributeCommand("sygus-synth-fun-var-list", synth_fun, attr_val_bvl);
+      cattr_bvl->setMuted(true);
+      PARSER_STATE->preemptCommand(cattr_bvl);
     }
     ( LPAREN_TOK
     ( LPAREN_TOK
@@ -724,8 +730,7 @@ sygusCommand [CVC4::PtrCloser<CVC4::Command>* cmd]
       Debug("parser-sygus") << "--- Make " << datatypes.size()
                             << " mutual datatypes..." << std::endl;
       for( unsigned i=0; i<datatypes.size(); i++ ){
-        Debug("parser-sygus") << "  " << i << " : " << datatypes[i].getName()
-                              << std::endl;
+        Debug("parser-sygus") << "  " << i << " : " << datatypes[i].getName() << std::endl;
       }
       std::vector<DatatypeType> datatypeTypes =
           PARSER_STATE->mkMutualDatatypeTypes(datatypes);
@@ -733,14 +738,6 @@ sygusCommand [CVC4::PtrCloser<CVC4::Command>* cmd]
       if( sorts[0]!=range ){
         PARSER_STATE->parseError(std::string("Bad return type in grammar for "
                                              "SyGuS function ") + fun);
-      }
-      // make all the evals first, since they are mutually referential
-      for(size_t i = 0; i < datatypeTypes.size(); ++i) {
-        DatatypeType dtt = datatypeTypes[i];
-        const Datatype& dt = dtt.getDatatype();
-        Expr eval = dt.getSygusEvaluationFunc();
-        Debug("parser-sygus") << "Make eval " << eval << " for " << dt.getName()
-                              << std::endl;
       }
       sygus_sym_type = datatypeTypes[0];
       // store a dummy variable which stands for second-order quantification, linked to synth fun by an attribute

@@ -1226,6 +1226,67 @@ void Smt2::mkSygusDatatype( CVC4::Datatype& dt, std::vector<CVC4::Expr>& ops,
                             std::map< CVC4::Type, CVC4::Type >& sygus_to_builtin ) {
   Debug("parser-sygus") << "Making sygus datatype " << dt.getName() << std::endl;
   Debug("parser-sygus") << "  add constructors..." << std::endl;
+  std::vector<std::string> df_name; 
+  std::vector<CVC4::Expr> df_op;
+  std::vector< std::vector<Expr> > df_let_args;
+  std::vector< Expr > df_let_body;
+  dt.mkSygusConstructors( ops, cnames, cargs, sygus_to_builtin, 
+                          d_sygus_let_func_to_vars, d_sygus_let_func_to_body, d_sygus_let_func_to_num_input_vars, 
+                          df_name, df_op, df_let_args, df_let_body );
+  
+  
+  Debug("dt-sygus") << "  add constructors for unresolved symbols..." << std::endl;
+  if( !unresolved_gterm_sym.empty() ){
+    std::vector< Type > types;
+    Debug("dt-sygus") << "...resolve " << unresolved_gterm_sym.size() << " symbols..." << std::endl;
+    for( unsigned i=0; i<unresolved_gterm_sym.size(); i++ ){
+      Debug("dt-sygus") << "  resolve : " << unresolved_gterm_sym[i] << std::endl;
+      if( isUnresolvedType(unresolved_gterm_sym[i]) ){
+        Debug("dt-sygus") << "    it is an unresolved type." << std::endl;
+        Type t = getSort(unresolved_gterm_sym[i]);
+        if( std::find( types.begin(), types.end(), t )==types.end() ){
+          types.push_back( t );
+          //identity element
+          Type bt = dt.getSygusType();
+          Debug("dt-sygus") << ":  make identity function for " << bt << ", argument type " << t << std::endl;
+          std::stringstream ss;
+          ss << t << "_x_id";
+          Expr let_body = mkBoundVar(ss.str(), bt);
+          std::vector< Expr > let_args;
+          let_args.push_back( let_body );
+          //make the identity function
+          Type ft = getExprManager()->mkFunctionType(bt, bt);
+          std::stringstream ssid;
+          ssid << unresolved_gterm_sym[i] << "_id";
+          Expr id_op = mkFunction(ss.str(), ft, ExprManager::VAR_FLAG_DEFINED);
+          // indicate we need a define function
+          df_name.push_back( ssid.str() );
+          df_op.push_back( id_op );
+          df_let_args.push_back( let_args );
+          df_let_body.push_back( let_body );
+          
+          //d_sygus_defined_funs.push_back( id_op );
+          //preemptCommand( new DefineFunctionCommand(ssid.str(), id_op, let_args, let_body) );
+          //make the sygus argument list
+          std::vector< Type > id_carg;
+          id_carg.push_back( t );
+          dt.addSygusDatatypeConstructor( id_op, unresolved_gterm_sym[i], id_carg, let_body, let_args, 0 );
+          //add to operators
+          ops.push_back( id_op );
+        }
+      }else{
+        Debug("dt-sygus") << "    ignore. (likely a free let variable)" << std::endl;
+      }
+    }
+  }
+  
+  
+  for( unsigned i=0; i<df_name.size(); i++ ){
+    d_sygus_defined_funs.push_back( df_op[i] );
+    preemptCommand( new DefineFunctionCommand(df_name[i], df_op[i], df_let_args[i], df_let_body[i]) );
+  }
+  
+/*  
   for( int i=0; i<(int)cnames.size(); i++ ){
     bool is_dup = false;
     bool is_dup_op = false;
@@ -1337,7 +1398,7 @@ void Smt2::mkSygusDatatype( CVC4::Datatype& dt, std::vector<CVC4::Expr>& ops,
       }
     }
   }
-
+*/
 }
 
 void Smt2::addSygusDatatypeConstructor( CVC4::Datatype& dt, CVC4::Expr op, std::string& cname, std::vector< CVC4::Type >& cargs,

@@ -103,6 +103,9 @@ void CegConjecture::assign( Node q ) {
     Node v = q[0][i];
     Node sf = v.getAttribute(SygusSynthFunAttribute());
     Assert( !sf.isNull() );
+    Node sfvl = sf.getAttribute(SygusSynthFunVarListAttribute());
+    // sfvl may be null for constant synthesis functions
+    Trace("cegqi-debug") << "...sygus var list associated with " << sf << " is " << sfvl << std::endl;
     TypeNode tn;
     if( v.getType().isDatatype() ){
       tn = v.getType();

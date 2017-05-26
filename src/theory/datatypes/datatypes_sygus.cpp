@@ -429,7 +429,7 @@ Node SygusSymBreakNew::getSimpleSymBreakPred( TypeNode tn, int tindex, unsigned 
             children_solved[j] = i;
             TypeNode ctn = children[j].getType();
             const Datatype& cdt = ((DatatypeType)(ctn).toType()).getDatatype();
-            Assert( i<cdt.getNumConstructors() );
+            Assert( i<(int)cdt.getNumConstructors() );
             sbp_conj.push_back( DatatypesRewriter::mkTester( children[j], i, cdt ) );
           }
         }

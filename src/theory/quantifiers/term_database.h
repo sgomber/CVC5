@@ -93,9 +93,13 @@ typedef expr::Attribute< LtePartialInstAttributeId, bool > LtePartialInstAttribu
 struct SygusProxyAttributeId {};
 typedef expr::Attribute<SygusProxyAttributeId, Node> SygusProxyAttribute;
 
-// attribute for "contains instantiation constants from"
+// attribute for associating a synthesis function with a first order variable
 struct SygusSynthFunAttributeId {};
 typedef expr::Attribute<SygusSynthFunAttributeId, Node> SygusSynthFunAttribute;
+
+// attribute for associating a variable list with a synth fun
+struct SygusSynthFunVarListAttributeId {};
+typedef expr::Attribute<SygusSynthFunVarListAttributeId, Node> SygusSynthFunVarListAttribute;
 
 //attribute for fun-def abstraction type
 struct AbsTypeFunDefAttributeId {};
@@ -813,6 +817,16 @@ private:
   Node extendedRewritePullIte( Node n );
 public:
   Node extendedRewrite( Node n );
+  
+// for default grammar construction
+private:
+  TypeNode mkUnresolvedType(const std::string& name);
+  void mkSygusConstantsForType( TypeNode type, std::vector<CVC4::Node>& ops );
+  void collectSygusGrammarTypesFor( TypeNode range, std::vector< TypeNode >& types, std::map< TypeNode, std::vector< DatatypeConstructorArg > >& sels );
+  void mkSygusDefaultGrammar( TypeNode range, Node bvl, const std::string& fun, std::vector< CVC4::Datatype >& datatypes,
+                              std::vector< TypeNode >& sorts, std::vector< std::vector< Node > >& ops, std::vector< Node >& sygus_vars, int& startIndex );
+public:
+  TypeNode mkSygusDefaultType( TypeNode range, Node bvl, const std::string& fun );
 };
 
 }/* CVC4::theory::quantifiers namespace */
