@@ -4132,7 +4132,7 @@ Node TermDbSygus::getExplanationForConstantEquality( Node n, Node vn, std::map< 
   return exp.size()==1 ? exp[0] : NodeManager::currentNM()->mkNode( kind::AND, exp );
 }
 
-void TermDbSygus::getExplanationFor( TypeNode tn, Node n, Node vn, Node bvr, std::vector< Node >& exp, Node vnr, unsigned& sz ) {
+void TermDbSygus::getExplanationFor( TypeNode tn, Node ar, Node n, Node vn, Node bvr, std::vector< Node >& exp, Node vnr, unsigned& sz ) {
   // naive :
   //return getExplanationForConstantEquality( n, vn, exp );
   Trace("sygus-sb-mexp-debug") << "Minimize explanation for eval[" << vn << "] = " << bvr << std::endl;
@@ -4168,6 +4168,15 @@ void TermDbSygus::getExplanationFor( TypeNode tn, Node n, Node vn, Node bvr, std
     }
   }
   if( !did_rlv ){
+    std::vector< Node > ex_curr;
+    //compute the current examples
+    std::map< Node, std::vector< std::vector< Node > > >::iterator itx = d_pbe_exs.find( ar );
+    if( itx!=d_pbe_exs.end() ){
+      Node nbv = sygusToBuiltin( vn, tn );
+      for( unsigned i=0; i<itx->second.size(); i++ ){
+        ex_curr.push_back( evaluateBuiltin( tn, nbv, itx->second[i] ) );
+      }
+    }
     // for each child, check whether replacing by a fresh variable and rewriting again
     for( unsigned i=0; i<vn.getNumChildren(); i++ ){
       TypeNode xtn = vn[i].getType();
@@ -4179,6 +4188,7 @@ void TermDbSygus::getExplanationFor( TypeNode tn, Node n, Node vn, Node bvr, std
       Node nbv = sygusToBuiltin( nvn, tn );
       Node nbvr = Rewriter::rewrite( nbv );
       bool exc_arg = false;
+      // equivalent / singular up to normalization
       if( nbvr==bvr ){
         // gives the same result : then the explanation for the child is irrelevant 
         exc_arg = true;
@@ -4190,13 +4200,28 @@ void TermDbSygus::getExplanationFor( TypeNode tn, Node n, Node vn, Node bvr, std
           if( nbvr==bx ){
             Trace("sygus-sb-mexp") << "sb-min-exp : " << sygusToBuiltin( nvn, tn ) << " always rewrites to argument " << i << std::endl;
             if( xtn==tn ){
-              exc_arg = true;
-              bvr = nbvr;
-              /*  TODO : use this information?
               // rewrites to the variable : then the explanation of this is irrelevant as well
               exc_arg = true;
-              */
+              bvr = nbvr;
             }
+          }
+        }
+      }
+      // equivalent under examples
+      if( !exc_arg ){
+        if( itx!=d_pbe_exs.end() ){
+          bool ex_equiv = true;
+          for( unsigned j=0; j<ex_curr.size(); j++ ){
+            Node nbvr_ex = evaluateBuiltin( tn, nbvr, itx->second[i] );
+            if( nbvr_ex!=ex_curr[j] ){
+              ex_equiv = false;
+              break;
+            }
+          }
+          if( ex_equiv ){
+            Trace("sygus-sb-mexp") << "sb-min-exp : " << sygusToBuiltin( nvn, tn );
+            Trace("sygus-sb-mexp")  << " is invariant w.r.t. examples regardless of the content of argument " << i << std::endl;
+            exc_arg = true;
           }
         }
       }
@@ -4403,8 +4428,9 @@ Node TermDbSygus::getEagerUnfold( Node n, std::map< Node, Node >& visited ) {
 
 
 Node TermDbSygus::evaluateBuiltin( TypeNode tn, Node bn, std::vector< Node >& args ) {
-  std::map< TypeNode, std::vector< Node > >::iterator it = d_var_list.find( tn );
-  if( it!=d_var_list.end() ){
+  if( !args.empty() ){
+    std::map< TypeNode, std::vector< Node > >::iterator it = d_var_list.find( tn );
+    Assert( it!=d_var_list.end() );
     Assert( it->second.size()==args.size() );
     return Rewriter::rewrite( bn.substitute( it->second.begin(), it->second.end(), args.begin(), args.end() ) );
   }else{

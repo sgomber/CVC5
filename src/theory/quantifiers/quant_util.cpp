@@ -531,3 +531,68 @@ Node QuantEPR::mkEPRAxiom( TypeNode tn ) {
   }
 }
 
+void TermRecBuild::init( Node n ) {
+  Assert( d_term.empty() );
+  d_term.push_back( n );
+}
+
+void TermRecBuild::push( unsigned p ) {
+  Assert( !d_term.empty() );
+  unsigned curr = d_term.size()-1;
+  Assert( d_pos.size()==curr );
+  Assert( d_pos.size()==d_children.size() );
+  Assert( p<d_term[curr].getNumChildren() );
+  std::vector< Node > currc;
+  if( d_term[curr].getMetaKind()==kind::metakind::PARAMETERIZED ){
+    currc.push_back( d_term[curr].getOperator() );
+    d_has_op.push_back( true );
+  }else{
+    d_has_op.push_back( false );
+  }
+  for( unsigned i=0; i<d_term[curr].getNumChildren(); i++ ){
+    currc.push_back( d_term[curr][i] );
+    if( i==p ){
+      d_term.push_back( d_term[curr][i] );
+    }
+  }
+  d_children.push_back( currc );
+  d_pos.push_back( p );
+}
+
+void TermRecBuild::pop() {
+  Assert( !d_pos.empty() );
+  d_pos.pop_back();
+  d_has_op.pop_back();
+  d_children.pop_back();
+  d_term.pop_back(); 
+}
+
+void TermRecBuild::replaceChild( unsigned i, Node n ) {
+  Assert( !d_pos.empty() );
+  unsigned curr = d_pos.size()-1;
+  unsigned o = d_has_op[curr] ? 1 : 0;
+  d_children[curr][i+o] = n;
+}
+
+Node TermRecBuild::build( unsigned d ) {
+  Assert( d_pos.size()+1==d_term.size() );
+  Assert( d<d_term.size() );
+  if( d+1==d_term.size() ){
+    return d_term[d];
+  }else{
+    unsigned p = d_pos[d];
+    std::vector< Node > children;
+    unsigned o = d_has_op[d] ? 1 : 0;
+    for( unsigned i=0; i<d_children.size(); i++ ){
+      Node nc;
+      if( p+o==i ){
+        nc = build( d+1 );
+      }else{
+        nc = d_children[d][i];
+      }
+      children.push_back( nc );
+    }
+    return NodeManager::currentNM()->mkNode( kind::APPLY_CONSTRUCTOR, children );
+  }
+}
+

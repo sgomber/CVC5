@@ -652,7 +652,10 @@ bool SygusSymBreakNew::registerSearchValue( Node a, Node n, Node nv, unsigned d,
   // must do this for all nodes, regardless of top-level
   if( d_cache[a].d_search_val_proc.find( nv )==d_cache[a].d_search_val_proc.end() ){
     d_cache[a].d_search_val_proc[nv] = true;
-
+    // get the root (for PBE symmetry breaking)
+    Assert( d_term_to_anchor_root.find( a )!=d_term_to_anchor_root.end() );
+    Node ar = d_term_to_anchor_root[a];
+    Assert( !ar.isNull() );
     Trace("sygus-sb-debug") << "  ...register search value " << nv << ", type=" << tn << std::endl;
     Node bv = d_tds->sygusToBuiltin( nv, tn );
     Trace("sygus-sb-debug") << "  ......builtin is " << bv << std::endl;
@@ -664,23 +667,18 @@ bool SygusSymBreakNew::registerSearchValue( Node a, Node n, Node nv, unsigned d,
     bool by_examples = false;
     if( itsv==d_cache[a].d_search_val[tn].end() ){
       // is it equivalent under examples?
-      if( options::sygusPbe() ){
-        Assert( d_term_to_anchor_root.find( a )!=d_term_to_anchor_root.end() );
-        Node ar = d_term_to_anchor_root[a];
-        Assert( !ar.isNull() );
-        Node bvr_equiv = d_tds->addPbeSearchVal( tn, ar, bvr );
-        if( !bvr_equiv.isNull() ){
-          if( bvr_equiv!=bvr ){
-            Trace("sygus-sb-debug") << "......adding search val for " << bvr << " returned " << bvr_equiv << std::endl;
-            Assert( d_cache[a].d_search_val[tn].find( bvr_equiv )!=d_cache[a].d_search_val[tn].end() );
-            Trace("sygus-sb-debug") << "......search value was " << d_cache[a].d_search_val[tn][bvr_equiv] << std::endl;
-            if( Trace.isOn("sygus-sb-exc") ){
-              Node prev = d_tds->sygusToBuiltin( d_cache[a].d_search_val[tn][bvr_equiv], tn );
-              Trace("sygus-sb-exc") << "  ......programs " << prev << " and " << bv << " are equivalent up to examples." << std::endl;
-            }
-            bad_val_bvr = bvr_equiv;
-            by_examples = true;
+      Node bvr_equiv = d_tds->addPbeSearchVal( tn, ar, bvr );
+      if( !bvr_equiv.isNull() ){
+        if( bvr_equiv!=bvr ){
+          Trace("sygus-sb-debug") << "......adding search val for " << bvr << " returned " << bvr_equiv << std::endl;
+          Assert( d_cache[a].d_search_val[tn].find( bvr_equiv )!=d_cache[a].d_search_val[tn].end() );
+          Trace("sygus-sb-debug") << "......search value was " << d_cache[a].d_search_val[tn][bvr_equiv] << std::endl;
+          if( Trace.isOn("sygus-sb-exc") ){
+            Node prev = d_tds->sygusToBuiltin( d_cache[a].d_search_val[tn][bvr_equiv], tn );
+            Trace("sygus-sb-exc") << "  ......programs " << prev << " and " << bv << " are equivalent up to examples." << std::endl;
           }
+          bad_val_bvr = bvr_equiv;
+          by_examples = true;
         }
       }
       //store rewritten values, regardless of whether it will be considers
@@ -744,7 +742,7 @@ bool SygusSymBreakNew::registerSearchValue( Node a, Node n, Node nv, unsigned d,
         // cannot minimize?
        //d_tds->getExplanationForConstantEquality( x, bad_val, exp );
       //}else{
-      d_tds->getExplanationFor( tn, x, bad_val, bvr, exp, bad_val_o, sz );
+      d_tds->getExplanationFor( tn, ar, x, bad_val, bvr, exp, bad_val_o, sz );
       //}
       Node lem = exp.size()==1 ? exp[0] : NodeManager::currentNM()->mkNode( kind::AND, exp );
       lem = lem.negate();
