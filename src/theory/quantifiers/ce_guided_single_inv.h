@@ -178,7 +178,9 @@ class CegConjectureSingleInv {
 // "d_arg_types",  and all invocations are in the same order across all
 // functions
 class SingleInvocationPartition {
- private:
+private:
+  bool d_has_input_funcs;
+  std::vector< Node > d_input_funcs;
   //options
   bool inferArgTypes( Node n, std::vector< TypeNode >& typs, std::map< Node, bool >& visited );
   void process( Node n );
@@ -187,16 +189,15 @@ class SingleInvocationPartition {
                         std::vector< Node >& terms, std::vector< Node >& subs );
   Node getSpecificationInst( Node n, std::map< Node, Node >& lam, std::map< Node, Node >& visited );
   void extractInvariant2( Node n, Node& func, int& pol, std::vector< Node >& disjuncts, bool hasPol, std::map< Node, bool >& visited );
+  bool init( std::vector< Node >& funcs, std::vector< TypeNode >& typs, Node n, bool has_funcs );
 public:
-  SingleInvocationPartition(){}
+  SingleInvocationPartition() : d_has_input_funcs( false ){}
   ~SingleInvocationPartition(){}
   bool init( Node n );
   bool init( std::vector< Node >& funcs, Node n );
-  bool init( std::vector< Node >& funcs, std::vector< TypeNode >& typs, Node n );
 
   //outputs (everything is with bound var)
   std::vector< TypeNode > d_arg_types;
-  std::vector< Node > d_input_funcs;
   std::map< Node, bool > d_funcs;
   std::map< Node, Node > d_func_inv;
   std::map< Node, Node > d_inv_to_func;

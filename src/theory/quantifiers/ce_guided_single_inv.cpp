@@ -183,7 +183,7 @@ void CegConjectureSingleInv::initialize( Node q ) {
       }
     
       //process the single invocation-ness of the property
-      d_sip->init( prog_funcs, types, qq );
+      d_sip->init( prog_funcs, qq );
       Trace("cegqi-si") << "- Partitioned to single invocation parts : " << std::endl;
       d_sip->debugPrint( "cegqi-si" );
       //map from program to bound variables
@@ -906,54 +906,71 @@ void CegConjectureSingleInv::preregisterConjecture( Node q ) {
   d_orig_conjecture = q;
 }
 
-bool SingleInvocationPartition::init( Node n ){
-  std::vector< Node > funcs;
-  return init( funcs, n );
-}
-
-bool SingleInvocationPartition::init( std::vector< Node >& funcs, Node n ) {
+bool SingleInvocationPartition::init( Node n ) {
   //first, get types of arguments for functions
   std::vector< TypeNode > typs;
   std::map< Node, bool > visited;
+  std::vector< Node > funcs;
   if( inferArgTypes( n, typs, visited ) ){
-    return init( funcs, typs, n );
+    return init( funcs, typs, n, false );
   }else{
     Trace("si-prt") << "Could not infer argument types." << std::endl;
     return false;
   }
 }
 
+// gets the argument type list for the first APPLY_UF we see
 bool SingleInvocationPartition::inferArgTypes( Node n, std::vector< TypeNode >& typs, std::map< Node, bool >& visited ) {
   if( visited.find( n )==visited.end() ){
     visited[n] = true;
     if( n.getKind()!=FORALL ){
-    //if( TermDb::hasBoundVarAttr( n ) ){
-    /*
-      if( n.getKind()==d_checkKind ){
+      if( n.getKind()==APPLY_UF ){
         for( unsigned i=0; i<n.getNumChildren(); i++ ){
           typs.push_back( n[i].getType() );
         }
         return true;
       }else{
-      */
-    for( unsigned i=0; i<n.getNumChildren(); i++ ){
-      if( inferArgTypes( n[i], typs, visited ) ){
-        return true;
+        for( unsigned i=0; i<n.getNumChildren(); i++ ){
+          if( inferArgTypes( n[i], typs, visited ) ){
+            return true;
+          }
+        }
       }
-    }
-      //}
-    //}
     }
   }
   return false;
 }
 
-bool SingleInvocationPartition::init( std::vector< Node >& funcs, std::vector< TypeNode >& typs, Node n ){
+bool SingleInvocationPartition::init( std::vector< Node >& funcs, Node n ) {
+  Trace("si-prt") << "Initialize with " << funcs.size() << " input functions..." << std::endl;
+  std::vector< TypeNode > typs;
+  if( !funcs.empty() ){
+    TypeNode tn0 = funcs[0].getType();
+    for( unsigned i=1; i<funcs.size(); i++ ){
+      if( funcs[i].getType()!=tn0 ){
+        // can't anti-skolemize functions of different sort
+        Trace("si-prt") << "...type mismatch" << std::endl;
+        return false;
+      }
+    }
+    if( tn0.getNumChildren()>1 ){
+      for( unsigned j=0; j<tn0.getNumChildren()-1; j++ ){
+        typs.push_back( tn0[j] );
+      }
+    }
+  }
+  Trace("si-prt") << "#types = " << typs.size() << std::endl;
+  return init( funcs, typs, n, true );  
+}
+
+bool SingleInvocationPartition::init( std::vector< Node >& funcs, std::vector< TypeNode >& typs, Node n, bool has_funcs ){
   Assert( d_arg_types.empty() );
   Assert( d_input_funcs.empty() );
   Assert( d_si_vars.empty() );
+  d_has_input_funcs = has_funcs;
   d_arg_types.insert( d_arg_types.end(), typs.begin(), typs.end() );
   d_input_funcs.insert( d_input_funcs.end(), funcs.begin(), funcs.end() );
+  Trace("si-prt") << "Initialize..." << std::endl;
   for( unsigned j=0; j<d_arg_types.size(); j++ ){
     std::stringstream ss;
     ss << "s_" << j;
@@ -1116,8 +1133,20 @@ bool SingleInvocationPartition::processConjunct( Node n, std::map< Node, bool >&
         }
       }
       if( ret ){
-        Node f = n.hasOperator() ? n.getOperator() : n;
-        if( std::find( d_input_funcs.begin(), d_input_funcs.end(), f )!=d_input_funcs.end() ){
+        Node f;
+        bool success = false;
+        if( d_has_input_funcs ){
+          f = n.hasOperator() ? n.getOperator() : n;
+          if( std::find( d_input_funcs.begin(), d_input_funcs.end(), f )!=d_input_funcs.end() ){
+            success = true;
+          }
+        }else{
+          if( n.getKind()==kind::APPLY_UF ){
+            f = n.getOperator();
+            success = true;
+          }
+        }
+        if( success ){
           if( std::find( terms.begin(), terms.end(), n )==terms.end() ){
             //check if it matches the type requirement
             if( isAntiSkolemizableType( f ) ){
@@ -1218,9 +1247,21 @@ Node SingleInvocationPartition::getSpecificationInst( Node n, std::map< Node, No
       childChanged = childChanged || ( nn!=n[i] );
     }
     Node ret;
-    Node f = n.hasOperator() ? n.getOperator() : n;
-    if( std::find( d_input_funcs.begin(), d_input_funcs.end(), f )!=d_input_funcs.end() ){
-      std::map< Node, Node >::iterator itl = lam.find( n.getOperator() );
+    Node f;
+    bool success = false;
+    if( d_has_input_funcs ){
+      f = n.hasOperator() ? n.getOperator() : n;
+      if( std::find( d_input_funcs.begin(), d_input_funcs.end(), f )!=d_input_funcs.end() ){
+        success = true;
+      }
+    }else{
+      if( n.getKind()==APPLY_UF ){
+        f = n.getOperator();
+        success = true;
+      }
+    }
+    if( success ){
+      std::map< Node, Node >::iterator itl = lam.find( f );
       if( itl!=lam.end() ){
         Assert( itl->second[0].getNumChildren()==children.size() );
         std::vector< Node > terms;
