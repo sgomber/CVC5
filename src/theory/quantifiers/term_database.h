@@ -742,6 +742,9 @@ private:
     void remove( Node n );
   };
   Node crefEvaluate( Node n, std::map< Node, Node >& vtm, std::map< Node, Node >& visited, std::map< Node, std::vector< Node > >& exp, CrefContext& crc );
+  void getExplanationFor( TermRecBuild& trb, TypeNode tn, Node n, Node vn, Node& bvr, std::vector< Node >& exp, std::map< TypeNode, int >& var_count,
+                          bool has_ex, std::vector< std::vector< Node > >& ex, std::vector< Node >& exo, 
+                          Node vnr, Node& vnr_exp, unsigned& sz );
 public:
   void registerEvalTerm( Node n );
   void registerModelValue( Node n, Node v, std::vector< Node >& exps, std::vector< Node >& terms, std::vector< Node >& vals );

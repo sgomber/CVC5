@@ -4132,6 +4132,116 @@ Node TermDbSygus::getExplanationForConstantEquality( Node n, Node vn, std::map< 
   return exp.size()==1 ? exp[0] : NodeManager::currentNM()->mkNode( kind::AND, exp );
 }
 
+void TermDbSygus::getExplanationFor( TermRecBuild& trb, TypeNode tn, Node n, Node vn, Node& bvr, std::vector< Node >& exp, std::map< TypeNode, int >& var_count,
+                                     bool has_ex, std::vector< std::vector< Node > >& ex, std::vector< Node >& exo, 
+                                     Node vnr, Node& vnr_exp, unsigned& sz ) {
+  Assert( vnr.isNull() || vn!=vnr );
+  Assert( vn.getKind()==APPLY_CONSTRUCTOR );
+  Assert( vnr.isNull() || vnr.getKind()==APPLY_CONSTRUCTOR );
+  Assert( n.getType()==vn.getType() );
+  TypeNode ntn = n.getType();
+  std::map< unsigned, bool > cexc;
+  // for each child, check whether replacing by a fresh variable and rewriting again
+  for( unsigned i=0; i<vn.getNumChildren(); i++ ){
+    TypeNode xtn = vn[i].getType();
+    Node x = getFreeVarInc( xtn, var_count );    // redundant (could choose smaller i, but this is easy)
+    //children[i+1] = x;
+    //Node nvn = NodeManager::currentNM()->mkNode( kind::APPLY_CONSTRUCTOR, children );
+    trb.replaceChild( i, x );
+    Node nvn = trb.build();
+    Trace("sygus-sb-mexp-debug") << "look at " << i << " : " << sygusToBuiltin( nvn ) << std::endl;
+    Assert( nvn.getType()==tn );
+    Assert( nvn.getKind()==kind::APPLY_CONSTRUCTOR );
+    Node nbv = sygusToBuiltin( nvn, tn );
+    Node nbvr = Rewriter::rewrite( nbv );
+    bool exc_arg = false;
+    // equivalent / singular up to normalization
+    if( nbvr==bvr ){
+      // gives the same result : then the explanation for the child is irrelevant 
+      exc_arg = true;
+      Trace("sygus-sb-mexp") << "sb-min-exp : " << sygusToBuiltin( nvn ) << " is rewritten to " << nbvr;
+      Trace("sygus-sb-mexp") << " regardless of the content of " << sygusToBuiltin( x ) << std::endl;
+    }else{
+      if( nbvr.isVar() ){
+        Node bx = sygusToBuiltin( x, xtn );
+        Assert( bx.getType()==nbvr.getType() );
+        if( nbvr==bx ){
+          Trace("sygus-sb-mexp") << "sb-min-exp : " << sygusToBuiltin( nvn ) << " always rewrites to argument " << nbvr << std::endl;
+          if( xtn==tn ){
+            // rewrites to the variable : then the explanation of this is irrelevant as well
+            exc_arg = true;
+            bvr = nbvr;
+          }
+        }
+      }
+    }
+    // equivalent under examples
+    if( !exc_arg ){
+      if( has_ex ){
+        bool ex_equiv = true;
+        for( unsigned j=0; j<ex.size(); j++ ){
+          Node nbvr_ex = evaluateBuiltin( tn, nbvr, ex[i] );
+          if( nbvr_ex!=exo[j] ){
+            ex_equiv = false;
+            break;
+          }
+        }
+        if( ex_equiv ){
+          Trace("sygus-sb-mexp") << "sb-min-exp : " << sygusToBuiltin( nvn );
+          Trace("sygus-sb-mexp") << " is the same w.r.t. examples regardless of the content of " << sygusToBuiltin( x ) << std::endl;
+          exc_arg = true;
+        }
+      }
+    }
+    if( exc_arg ){
+      cexc[i] = true;
+      unsigned s = getSygusTermSize( vn[i] );
+      Assert( sz>=s );
+      sz = sz - s;
+    }else{
+      trb.replaceChild( i, vn[i] );
+    }
+  }
+  const Datatype& dt = ((DatatypeType)ntn.toType()).getDatatype();
+  int cindex = Datatype::indexOf( vn.getOperator().toExpr() );
+  Assert( cindex>=0 && cindex<(int)dt.getNumConstructors() );
+  Node tst = datatypes::DatatypesRewriter::mkTester( n, cindex, dt );
+  exp.push_back( tst );
+  // if the operator of vn is different than vnr, then disunification obligation is met
+  if( !vnr.isNull() ){
+    if( vnr.getOperator()!=vn.getOperator() ){
+      vnr = Node::null();
+      vnr_exp = d_true;
+    }
+  }
+  for( unsigned i=0; i<vn.getNumChildren(); i++ ){
+    Node sel = NodeManager::currentNM()->mkNode( kind::APPLY_SELECTOR_TOTAL, Node::fromExpr( dt[cindex].getSelectorInternal( ntn.toType(), i ) ), n );
+    Node vnr_c = vnr.isNull() ? vnr : ( vn[i]==vnr[i] ? Node::null() : vnr[i] );
+    if( cexc.find( i )==cexc.end() ){
+      trb.push( i );
+      Node vnr_exp_c;
+      getExplanationFor( trb, tn, sel, vn[i], bvr, exp, var_count, has_ex, ex, exo, vnr_c, vnr_exp_c, sz );
+      trb.pop();
+      if( !vnr_c.isNull() ){
+        Assert( !vnr_exp_c.isNull() );
+        if( vnr_exp_c.isConst() || vnr_exp.isNull() ){
+          // recursively satisfied the disunification obligation
+          if( vnr_exp_c.isConst() ){
+            // was successful, don't consider further
+            vnr = Node::null();
+          }
+          vnr_exp = vnr_exp_c;
+        }
+      }
+    }else{
+      // if excluded, we may need to add the explanation for this
+      if( vnr_exp.isNull() && !vnr_c.isNull() ){
+        vnr_exp = getExplanationForConstantEquality( sel, vnr[i] );
+      }
+    }
+  }
+}
+
 void TermDbSygus::getExplanationFor( TypeNode tn, Node ar, Node n, Node vn, Node bvr, std::vector< Node >& exp, Node vnr, unsigned& sz ) {
   // naive :
   //return getExplanationForConstantEquality( n, vn, exp );
@@ -4139,35 +4249,38 @@ void TermDbSygus::getExplanationFor( TypeNode tn, Node ar, Node n, Node vn, Node
   Assert( vn.getKind()==kind::APPLY_CONSTRUCTOR );
   Assert( extendedRewrite( sygusToBuiltin( vn, tn ) )==bvr );
  
-  std::vector< Node > children;
-  children.push_back( vn.getOperator() );
-  for( unsigned i=0; i<vn.getNumChildren(); i++ ){
-    children.push_back( vn[i] );
-  }
- 
-  bool did_rlv = false;
-  std::map< unsigned, bool > crlv;
+  std::map< unsigned, bool > cexc;
   Trace("sygus-sb-mexp-debug") << "Analyze children..." << std::endl;
 
   int cindex = Datatype::indexOf( vn.getOperator().toExpr() );
   const Datatype& dt = ((DatatypeType)tn.toType()).getDatatype();
   Kind ck = getConsNumKind( tn, cindex );
+#if 0
   if( ck!=UNDEFINED_KIND ){
     Trace("sygus-sb-mexp-debug") << "...parent kind is " << ck << std::endl;
     // for each child, check whether argument rewrites to an excluded constant
-    for( unsigned i=0; i<vn.getNumChildren(); i++ ){
-      Node nbv = sygusToBuiltin( vn[i] );
-      Node nbvr = Rewriter::rewrite( nbv );
-      if( nbvr.isConst() ){
-        if( !considerConst( dt, tn, nbvr, ck, i ) ){
-          Trace("sygus-sb-mexp") << "sb-min-exp : generalize explanation for " << vn << " since argument " << i << " rewrites to excluded constant " << nbvr << std::endl;
-          did_rlv = true;
-          crlv[i] = true;
+    if( vn.getNumChildren()>1 ){
+      for( unsigned i=0; i<vn.getNumChildren(); i++ ){
+        Node nbv = sygusToBuiltin( vn[i] );
+        Node nbvr = Rewriter::rewrite( nbv );
+        if( nbvr.isConst() ){
+          if( !considerConst( dt, tn, nbvr, ck, i ) ){
+            Trace("sygus-sb-mexp") << "sb-min-exp : generalize explanation for " << vn << " since argument " << i << " rewrites to excluded constant " << nbvr << std::endl;
+            for( unsigned j=0; j<vn.getNumChildren(); j++ ){
+              if( j!=i ){
+                cexc[j] = true;
+                unsigned s = getSygusTermSize( vn[i] );
+                Assert( sz>=s );
+                sz = sz - s;
+              }
+            }
+          }
         }
       }
     }
   }
-  if( !did_rlv ){
+#endif
+  if( cexc.empty() ){
     std::vector< Node > ex_curr;
     //compute the current examples
     std::map< Node, std::vector< std::vector< Node > > >::iterator itx = d_pbe_exs.find( ar );
@@ -4177,10 +4290,29 @@ void TermDbSygus::getExplanationFor( TypeNode tn, Node ar, Node n, Node vn, Node
         ex_curr.push_back( evaluateBuiltin( tn, nbv, itx->second[i] ) );
       }
     }
+    std::map< TypeNode, int > var_count;  
+#if 1   
+    TermRecBuild trb;
+    trb.init( vn );
+    Node vnr_exp;
+    getExplanationFor( trb, tn, n, vn, bvr, exp, var_count, itx!=d_pbe_exs.end(), itx->second, ex_curr, vnr, vnr_exp, sz );
+    Assert( vnr.isNull() || !vnr_exp.isNull() );
+    if( !vnr_exp.isNull() && !vnr_exp.isConst() ){
+      exp.push_back( vnr_exp.negate() );
+    }
+  }else{
+  
+  }   
+#else
+    std::vector< Node > children;
+    children.push_back( vn.getOperator() );
+    for( unsigned i=0; i<vn.getNumChildren(); i++ ){
+      children.push_back( vn[i] );
+    }
     // for each child, check whether replacing by a fresh variable and rewriting again
     for( unsigned i=0; i<vn.getNumChildren(); i++ ){
       TypeNode xtn = vn[i].getType();
-      Node x = getFreeVar( xtn, i );    // redundant (could choose smaller i, but this is easy)
+      Node x = getFreeVarInc( xtn, var_count );    // redundant (could choose smaller i, but this is easy)
       children[i+1] = x;
       Node nvn = NodeManager::currentNM()->mkNode( kind::APPLY_CONSTRUCTOR, children );
       Trace("sygus-sb-mexp-debug") << "look at " << i << " : " << nvn << std::endl;
@@ -4192,13 +4324,14 @@ void TermDbSygus::getExplanationFor( TypeNode tn, Node ar, Node n, Node vn, Node
       if( nbvr==bvr ){
         // gives the same result : then the explanation for the child is irrelevant 
         exc_arg = true;
-        Trace("sygus-sb-mexp") << "sb-min-exp : " << sygusToBuiltin( nvn, tn ) << " is rewritten to " << nbvr << " regardless of the content of argument " << i << std::endl;
+        Trace("sygus-sb-mexp") << "sb-min-exp : " << sygusToBuiltin( nvn, tn ) << " is rewritten to " << nbvr;
+        Trace("sygus-sb-mexp") << " regardless of the content of " << children[i+1] << std::endl;
       }else{
         if( nbvr.isVar() ){
           Node bx = sygusToBuiltin( x, xtn );
           Assert( bx.getType()==nbvr.getType() );
           if( nbvr==bx ){
-            Trace("sygus-sb-mexp") << "sb-min-exp : " << sygusToBuiltin( nvn, tn ) << " always rewrites to argument " << i << std::endl;
+            Trace("sygus-sb-mexp") << "sb-min-exp : " << sygusToBuiltin( nvn, tn ) << " always rewrites to " << children[i+1] << std::endl;
             if( xtn==tn ){
               // rewrites to the variable : then the explanation of this is irrelevant as well
               exc_arg = true;
@@ -4220,47 +4353,37 @@ void TermDbSygus::getExplanationFor( TypeNode tn, Node ar, Node n, Node vn, Node
           }
           if( ex_equiv ){
             Trace("sygus-sb-mexp") << "sb-min-exp : " << sygusToBuiltin( nvn, tn );
-            Trace("sygus-sb-mexp")  << " is invariant w.r.t. examples regardless of the content of argument " << i << std::endl;
+            Trace("sygus-sb-mexp")  << " is the same w.r.t. examples regardless of the content of " << children[i+1] << std::endl;
             exc_arg = true;
           }
         }
       }
       if( exc_arg ){
-        did_rlv = true;
-      }else{
-        crlv[i] = true;
-        children[i+1] = vn[i];
-      }
-    }
-  }
-  
-  if( did_rlv ){
-    Trace("sygus-sb-mexp-debug") << "Build explanation..." << std::endl;
-    Node tst = datatypes::DatatypesRewriter::mkTester( n, cindex, dt );
-    exp.push_back( tst );
-    for( unsigned j=0; j<vn.getNumChildren(); j++ ){
-      if( crlv.find( j )!=crlv.end() ){
-        Node sel = NodeManager::currentNM()->mkNode( kind::APPLY_SELECTOR_TOTAL, Node::fromExpr( dt[cindex].getSelectorInternal( tn.toType(), j ) ), n );
-        // do not do analysis recursively : should be handled at top-level
-        getExplanationForConstantEquality( sel, vn[j], exp );
-      }else{
-        // subtract from size
-        unsigned s = getSygusTermSize( vn[j] );
+        cexc[i] = true;
+        unsigned s = getSygusTermSize( vn[i] );
         Assert( sz>=s );
         sz = sz - s;
+      }else{
+        children[i+1] = vn[i];
       }
-    }
+    }   
+  }
+  
+  if( !cexc.empty() ){
+    Trace("sygus-sb-mexp-debug") << "Build explanation..." << std::endl;
+    getExplanationForConstantEquality( n, vn, exp, cexc );
     if( !vnr.isNull() ){
-      bool exp_dis = explainDisunification( n, vn, vnr, exp, crlv );
+      bool exp_dis = explainDisunification( n, vn, vnr, exp, cexc );
       AlwaysAssert( exp_dis );
     }
   }else{
     getExplanationForConstantEquality( n, vn, exp );
   }
+#endif     
 }
 
-// ensure that exp ^ exp' explains why vn != vnr where exp' explains vn[i] for children[i] in crlv
-bool TermDbSygus::explainDisunification( Node n, Node vn, Node vnr, std::vector< Node >& exp, std::map< unsigned, bool >& crlv ) {
+// ensure that exp ^ exp' explains why vn != vnr where exp' explains vn[i] for children[i] not in cexc
+bool TermDbSygus::explainDisunification( Node n, Node vn, Node vnr, std::vector< Node >& exp, std::map< unsigned, bool >& cexc ) {
   Assert( vn.getKind()==APPLY_CONSTRUCTOR );
   Assert( vnr.getKind()==APPLY_CONSTRUCTOR );
   Assert( n.getType()==vn.getType() );
@@ -4274,7 +4397,7 @@ bool TermDbSygus::explainDisunification( Node n, Node vn, Node vnr, std::vector<
     for( unsigned i=0; i<vn.getNumChildren(); i++ ){
       if( vn[i]!=vnr[i] ){
         Node sel = NodeManager::currentNM()->mkNode( kind::APPLY_SELECTOR_TOTAL, Node::fromExpr( dt[cindex].getSelectorInternal( tn.toType(), i ) ), n );
-        if( crlv.find( i )==crlv.end() ){
+        if( cexc.find( i )!=cexc.end() ){
           //we are not saying what sel is, this might require an explanation
           std::vector< Node > eexp;
           getExplanationForConstantEquality( sel, vnr[i], eexp );
