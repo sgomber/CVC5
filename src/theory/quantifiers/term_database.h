@@ -763,7 +763,6 @@ public:
   // we have n = vn => eval( n ) = bvr, returns exp => eval( n ) = bvr
   //   ensures the explanation still allows for vnr
   void getExplanationFor( TypeNode tn, Node ar, Node n, Node vn, Node bvr, std::vector< Node >& exp, Node vnr, unsigned& sz );
-  bool explainDisunification( Node n, Node vn, Node vnr, std::vector< Node >& exp, std::map< unsigned, bool >& crlv );
   // evaluate deep embedding term n, store minimized explanation for evaluation in exp
   Node crefEvaluate( Node n, std::map< Node, Node >& vtm, std::map< Node, Node >& visited, std::map< Node, std::vector< Node > >& exp );
   // builtin evaluation, returns rewrite( bn [ args / vars(tn) ] )
