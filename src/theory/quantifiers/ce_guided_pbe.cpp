@@ -830,6 +830,60 @@ void CegConjecturePbe::addEnumeratedValue( Node x, Node v, std::vector< Node >& 
   }
 }
 
+
+
+class NegContainsSygusInvarianceTest : public quantifiers::SygusInvarianceTest {
+public:
+  NegContainsSygusInvarianceTest(){}
+  ~NegContainsSygusInvarianceTest(){}
+  Node d_ar;
+  std::vector< Node > d_exo;
+  std::vector< unsigned > d_neg_con_indices;
+  
+  void init( quantifiers::TermDbSygus * tds, Node ar, std::vector< Node >& exo, std::vector< unsigned >& ncind ) {
+    if( tds->hasPbeExamples( ar ) ){
+      Assert( tds->getNumPbeExamples( ar )==exo.size() );
+      d_ar = ar;
+      d_exo.insert( d_exo.end(), exo.begin(), exo.end() );
+      d_neg_con_indices.insert( d_neg_con_indices.end(), ncind.begin(), ncind.end() );
+    }
+  }
+  bool exclude( quantifiers::TermDbSygus * tds, Node nvn, Node x ){
+    if( !d_ar.isNull() ){
+      TypeNode tn = nvn.getType();
+      Node nbv = tds->sygusToBuiltin( nvn, tn );
+      Node nbvr = Rewriter::rewrite( nbv );
+      // if for any of the examples, it is not contained, then we can exclude
+      for( unsigned i=0; i<d_neg_con_indices.size(); i++ ){
+        unsigned ii = d_neg_con_indices[i];
+        Assert( ii<d_exo.size() );
+        Node nbvre = tds->evaluateBuiltin( tn, nbvr, d_ar, ii );
+        Node out = d_exo[ii];
+        Node cont = NodeManager::currentNM()->mkNode( kind::STRING_STRCTN, out, nbvre );
+        Node contr = Rewriter::rewrite( cont );
+        if( contr==tds->d_false ){
+          if( Trace.isOn("sygus-pbe-cterm") ){
+            Trace("sygus-pbe-cterm") << "PBE-cterm : enumerator : do not consider ";
+            Trace("sygus-pbe-cterm") << nbv << " for any " << tds->sygusToBuiltin( x ) << " since " << std::endl;
+            Trace("sygus-pbe-cterm") << "   PBE-cterm :       for input example : ";
+            std::vector< Node > ex;
+            tds->getPbeExample( d_ar, ii, ex );
+            for( unsigned j=0; j<ex.size(); j++ ){
+              Trace("sygus-pbe-cterm") << ex[j] << " ";
+            }
+            Trace("sygus-pbe-cterm") << std::endl;
+            Trace("sygus-pbe-cterm") << "   PBE-cterm :          it rewrites to : " << nbvre << std::endl;
+            Trace("sygus-pbe-cterm") << "   PBE-cterm : not contained in output : " << out << std::endl;
+          }
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+};
+
+
 bool CegConjecturePbe::getExplanationForEnumeratorExclude( Node c, Node x, Node v, std::vector< Node >& results, EnumInfo& ei, std::vector< Node >& exp ) {
   if( ei.d_enum_slave.size()==1 ){
     // this check whether the example evaluates to something that is larger than the output
@@ -838,24 +892,45 @@ bool CegConjecturePbe::getExplanationForEnumeratorExclude( Node c, Node x, Node 
       if( Trace.isOn("sygus-pbe-cterm-debug") ){
         Trace("sygus-pbe-enum") << std::endl;
       }
+
       // check if all examples had longer length that the output
       std::map< Node, std::vector< Node > >::iterator itxo = d_examples_out.find( c );
       Assert( itxo!=d_examples_out.end() );
       Assert( itxo->second.size()==results.size() );
-      Trace("sygus-pbe-cterm-debug") << "Check length generalization for " << x << " -> " << d_tds->sygusToBuiltin( v ) << std::endl;
-      std::map< int, std::vector< unsigned > > cmp_indices;
+      Trace("sygus-pbe-cterm-debug") << "Check enumerator exclusion for " << x << " -> " << d_tds->sygusToBuiltin( v ) << " based on containment." << std::endl;
+      std::vector< unsigned > cmp_indices;
       for( unsigned i=0; i<results.size(); i++ ){
         Assert( results[i].isConst() );
         Assert( itxo->second[i].isConst() );
+        /*
         unsigned vlen = results[i].getConst<String>().size();
         unsigned xlen = itxo->second[i].getConst<String>().size();
         Trace("sygus-pbe-cterm-debug") << "  " << results[i] << " <> " << itxo->second[i];
         int index = vlen>xlen ? 1 : ( vlen<xlen ? -1 : 0 );
         Trace("sygus-pbe-cterm-debug") << "..." << index << std::endl;
         cmp_indices[index].push_back( i );
+        */
+        Trace("sygus-pbe-cterm-debug") << "  " << results[i] << " <> " << itxo->second[i];
+        Node cont = NodeManager::currentNM()->mkNode( kind::STRING_STRCTN, itxo->second[i], results[i] );
+        Node contr = Rewriter::rewrite( cont );
+        if( contr==d_false ){
+          cmp_indices.push_back( i );
+          Trace("sygus-pbe-cterm-debug") << "...not contained." << std::endl;
+        }else{
+          Trace("sygus-pbe-cterm-debug") << "...contained." << std::endl;
+        }
       }
       // TODO : stronger requirement if we incorporate ITE + CONCAT mixed strategy : must be longer than *all* examples
-      if( !cmp_indices[1].empty() ){
+      if( !cmp_indices.empty() ){
+        //set up the inclusion set
+        NegContainsSygusInvarianceTest ncset;
+        ncset.init( d_tds, c, itxo->second, cmp_indices );
+        d_tds->getExplanationFor( x, v, exp, ncset );
+        Trace("sygus-pbe-cterm") << "PBE-cterm : enumerator exclude " << d_tds->sygusToBuiltin( v ) << " due to negative containment." << std::endl;
+        return true;
+      
+      
+      /*
         if( Trace.isOn("sygus-pbe-cterm") ){
           Trace("sygus-pbe-enum") << std::endl;
         }
@@ -872,6 +947,7 @@ bool CegConjecturePbe::getExplanationForEnumeratorExclude( Node c, Node x, Node 
             return true;
           }
         }
+        */
       }
     }
   }

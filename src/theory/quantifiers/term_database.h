@@ -576,6 +576,12 @@ public:
   static void computeQuantAttributes( Node q, QAttributes& qa );
 };/* class TermDb */
 
+class SygusInvarianceTest {
+public:
+  // check whether nvn[ x ] should be excluded
+  virtual bool exclude( TermDbSygus * tds, Node nvn, Node x ) = 0;
+};
+
 class TermDbSygus {
 private:
   /** reference to the quantifiers engine */
@@ -583,6 +589,7 @@ private:
   std::map< TypeNode, std::vector< Node > > d_fv[2];
   std::map< Node, TypeNode > d_fv_stype;
   std::map< Node, int > d_fv_num;
+public:
   Node d_true;
   Node d_false;
 public:
@@ -742,9 +749,8 @@ private:
     void remove( Node n );
   };
   Node crefEvaluate( Node n, std::map< Node, Node >& vtm, std::map< Node, Node >& visited, std::map< Node, std::vector< Node > >& exp, CrefContext& crc );
-  void getExplanationFor( TermRecBuild& trb, TypeNode tn, Node n, Node vn, Node& bvr, std::vector< Node >& exp, std::map< TypeNode, int >& var_count,
-                          bool has_ex, std::vector< std::vector< Node > >& ex, std::vector< Node >& exo, 
-                          Node vnr, Node& vnr_exp, unsigned& sz );
+  void getExplanationFor( TermRecBuild& trb, Node n, Node vn, std::vector< Node >& exp, std::map< TypeNode, int >& var_count,
+                          SygusInvarianceTest& et, Node vnr, Node& vnr_exp, int& sz );
 public:
   void registerEvalTerm( Node n );
   void registerModelValue( Node n, Node v, std::vector< Node >& exps, std::vector< Node >& terms, std::vector< Node >& vals );
@@ -762,11 +768,13 @@ public:
   Node getExplanationForConstantEquality( Node n, Node vn, std::map< unsigned, bool >& cexc );
   // we have n = vn => eval( n ) = bvr, returns exp => eval( n ) = bvr
   //   ensures the explanation still allows for vnr
-  void getExplanationFor( TypeNode tn, Node ar, Node n, Node vn, Node bvr, std::vector< Node >& exp, Node vnr, unsigned& sz );
+  void getExplanationFor( Node n, Node vn, std::vector< Node >& exp, SygusInvarianceTest& et, Node vnr, unsigned& sz );
+  void getExplanationFor( Node n, Node vn, std::vector< Node >& exp, SygusInvarianceTest& et );
   // evaluate deep embedding term n, store minimized explanation for evaluation in exp
   Node crefEvaluate( Node n, std::map< Node, Node >& vtm, std::map< Node, Node >& visited, std::map< Node, std::vector< Node > >& exp );
   // builtin evaluation, returns rewrite( bn [ args / vars(tn) ] )
   Node evaluateBuiltin( TypeNode tn, Node bn, std::vector< Node >& args );
+  Node evaluateBuiltin( TypeNode tn, Node bn, Node ar, unsigned i );
   
 //for calculating redundant operators
 private:

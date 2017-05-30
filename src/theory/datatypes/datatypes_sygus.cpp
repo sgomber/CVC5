@@ -633,6 +633,73 @@ void SygusSymBreakNew::registerSearchTerm( TypeNode tn, unsigned d, Node n, bool
   }
 }
 
+class EquivSygusInvarianceTest : public quantifiers::SygusInvarianceTest {
+public:
+  EquivSygusInvarianceTest(){}
+  ~EquivSygusInvarianceTest(){}
+  Node d_ex_ar;
+  Node d_bvr;
+  std::vector< Node > d_exo;
+  void init( quantifiers::TermDbSygus * tds, TypeNode tn, Node ar, Node bvr ) {
+    //compute the current examples
+    d_bvr = bvr;
+    if( tds->hasPbeExamples( ar ) ){
+      d_ex_ar = ar;
+      unsigned nex = tds->getNumPbeExamples( ar );
+      for( unsigned i=0; i<nex; i++ ){
+        d_exo.push_back( tds->evaluateBuiltin( tn, bvr, ar, i ) );
+      }
+    }
+  }
+  bool exclude( quantifiers::TermDbSygus * tds, Node nvn, Node x ){
+    TypeNode tn = nvn.getType();
+    Node nbv = tds->sygusToBuiltin( nvn, tn );
+    Node nbvr = Rewriter::rewrite( nbv );
+    Trace("sygus-sb-mexp-debug") << "  min-exp check : " << nbv << " -> " << nbvr << std::endl;
+    bool exc_arg = false;
+    // equivalent / singular up to normalization
+    if( nbvr==d_bvr ){
+      // gives the same result : then the explanation for the child is irrelevant 
+      exc_arg = true;
+      Trace("sygus-sb-mexp") << "sb-min-exp : " << tds->sygusToBuiltin( nvn ) << " is rewritten to " << nbvr;
+      Trace("sygus-sb-mexp") << " regardless of the content of " << tds->sygusToBuiltin( x ) << std::endl;
+    }else{
+      if( nbvr.isVar() ){
+        TypeNode xtn = x.getType();
+        if( xtn==tn ){
+          Node bx = tds->sygusToBuiltin( x, xtn );
+          Assert( bx.getType()==nbvr.getType() );
+          if( nbvr==bx ){
+            Trace("sygus-sb-mexp") << "sb-min-exp : " << tds->sygusToBuiltin( nvn ) << " always rewrites to argument " << nbvr << std::endl;
+            // rewrites to the variable : then the explanation of this is irrelevant as well
+            exc_arg = true;
+            d_bvr = nbvr;
+          }
+        }
+      }
+    }
+    // equivalent under examples
+    if( !exc_arg ){
+      if( !d_ex_ar.isNull() ){
+        bool ex_equiv = true;
+        for( unsigned j=0; j<d_exo.size(); j++ ){
+          Node nbvr_ex = tds->evaluateBuiltin( tn, nbvr, d_ex_ar, j );
+          if( nbvr_ex!=d_exo[j] ){
+            ex_equiv = false;
+            break;
+          }
+        }
+        if( ex_equiv ){
+          Trace("sygus-sb-mexp") << "sb-min-exp : " << tds->sygusToBuiltin( nvn );
+          Trace("sygus-sb-mexp") << " is the same w.r.t. examples regardless of the content of " << tds->sygusToBuiltin( x ) << std::endl;
+          exc_arg = true;
+        }
+      }
+    }
+    return exc_arg;
+  }
+};
+
 bool SygusSymBreakNew::registerSearchValue( Node a, Node n, Node nv, unsigned d, std::vector< Node >& lemmas ) {
   Assert( n.getType()==nv.getType() );
   Assert( nv.getKind()==APPLY_CONSTRUCTOR );
@@ -716,34 +783,11 @@ bool SygusSymBreakNew::registerSearchValue( Node a, Node n, Node nv, unsigned d,
       Node x = getFreeVar( tn );
       
       // do analysis of the evaluation  FIXME: does not work (evaluation is non-constant)
-      /*
-      const Datatype& dt = ((DatatypeType)tn.toType()).getDatatype();
-      std::vector< Node > echildren;
-      echildren.push_back( Node::fromExpr( dt.getSygusEvaluationFunc() ) );
-      echildren.push_back( x );
-      Node sbvl = Node::fromExpr( dt.getSygusVarList() );
-      for( unsigned k=0; k<sbvl.getNumChildren(); k++ ){
-        echildren.push_back( sbvl[k] );
-      }
-      Node ex = NodeManager::currentNM()->mkNode( kind::APPLY_UF, echildren );
-      Node eq = ex.eqNode( bvr );
-      Trace("sygus-sb-exc") << "  ........evaluate : " << eq << std::endl;
-      std::map< Node, Node > visited;
-      std::map< Node, Node > vtm;
-      std::map< Node, std::vector< Node > > exp;
-      vtm[x] = nv;
-      Node v = d_tds->crefEvaluate( eq, vtm, visited, exp );
-      //Assert( v==NodeManager::currentNM()->mkConst( true ) );
-      Assert( !exp[eq].empty() );
-      Node lem = exp[eq].size()==1 ? exp[eq][0] : NodeManager::currentNM()->mkNode( kind::AND, exp[eq] );
-      */
       std::vector< Node > exp;
-      //if( by_examples ){
-        // cannot minimize?
-       //d_tds->getExplanationForConstantEquality( x, bad_val, exp );
-      //}else{
-      d_tds->getExplanationFor( tn, ar, x, bad_val, bvr, exp, bad_val_o, sz );
-      //}
+      EquivSygusInvarianceTest eset;
+      eset.init( d_tds, tn, ar, bvr );
+      Trace("sygus-sb-mexp-debug") << "Minimize explanation for eval[" << d_tds->sygusToBuiltin( bad_val ) << "] = " << bvr << std::endl;
+      d_tds->getExplanationFor( x, bad_val, exp, eset, bad_val_o, sz );
       Node lem = exp.size()==1 ? exp[0] : NodeManager::currentNM()->mkNode( kind::AND, exp );
       lem = lem.negate();
       /*  add min type depth to size : TODO?

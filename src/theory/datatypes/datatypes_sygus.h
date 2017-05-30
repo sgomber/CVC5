@@ -29,13 +29,10 @@
 #include "context/cdhashmap.h"
 #include "context/cdhashset.h"
 #include "context/cdo.h"
+#include "theory/quantifiers/term_database.h"
 
 namespace CVC4 {
 namespace theory {
-namespace quantifiers {
-  class TermDbSygus;
-} /* namespace quantifiers */
-
 namespace datatypes {
 
 class TheoryDatatypes;
@@ -52,7 +49,6 @@ public:
   void getSygusSplits( Node n, const Datatype& dt, std::vector< Node >& splits, std::vector< Node >& lemmas );
   static Node getSygusSplit( quantifiers::TermDbSygus * tds, Node n, const Datatype& dt );
 };
-
 
 class SygusSymBreakNew
 {

@@ -47,6 +47,10 @@ private:
   static Node rewriteMembership(TNode node);
 
   static bool hasEpsilonNode(TNode node);
+  
+  static void getLengthEntail( Node s, Node& lower, Node& upper );
+  static bool entailCheck( Node ieq );
+  static Node getApproximation( Node n, bool isLower, bool ensurePrefix = false, bool ensureSuffix = false );
 public:
   static RewriteResponse postRewrite(TNode node);
   static RewriteResponse preRewrite(TNode node);
@@ -57,6 +61,7 @@ public:
   static Node rewriteContains( Node n );
   static Node rewriteIndexof( Node n );
   static Node rewriteReplace( Node n );
+  static Node rewriteSubstr( Node n );
   
   static void getConcat( Node n, std::vector< Node >& c );
   static Node mkConcat( Kind k, std::vector< Node >& c );
@@ -67,6 +72,10 @@ public:
   static bool canConstantContainList( Node c, std::vector< Node >& l, int& firstc, int& lastc );
   static Node getNextConstantAt( std::vector< Node >& vec, unsigned& start_index, unsigned& end_index, bool isRev );
   static Node collectConstantStringAt( std::vector< Node >& vec, unsigned& end_index, bool isRev );
+  static int componentContains( std::vector< Node >& n1, std::vector< Node >& n2, std::vector< Node >& nr, bool computeRemainder = false );
+  static bool stripConstantPrefix( std::vector< Node >& children, Node& startn );
+  static bool stripConstantEndpoints( std::vector< Node >& n1, std::vector< Node >& n2, std::vector< Node >& nb, std::vector< Node >& ne, int dir = 0 );
+  static unsigned stripSymbolicLength( std::vector< Node >& n1, std::vector< Node >& nr, Node& curr_s );
 };/* class TheoryStringsRewriter */
 
 }/* CVC4::theory::strings namespace */
