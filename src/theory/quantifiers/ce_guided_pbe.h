@@ -198,7 +198,6 @@ private:
   /** add enumerated value */
   void addEnumeratedValue( Node x, Node v, std::vector< Node >& lems );
   bool getExplanationForEnumeratorExclude( Node c, Node x, Node v, std::vector< Node >& results, EnumInfo& ei, std::vector< Node >& exp );
-  bool getExplanationForCTermEnumeratorExclude( Node c, Node x, Node v, Node bvs, unsigned exout_len, std::vector< Node >& exp );
   
 private:  
   // filtering verion

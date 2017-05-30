@@ -865,15 +865,15 @@ public:
           if( Trace.isOn("sygus-pbe-cterm") ){
             Trace("sygus-pbe-cterm") << "PBE-cterm : enumerator : do not consider ";
             Trace("sygus-pbe-cterm") << nbv << " for any " << tds->sygusToBuiltin( x ) << " since " << std::endl;
-            Trace("sygus-pbe-cterm") << "   PBE-cterm :       for input example : ";
+            Trace("sygus-pbe-cterm") << "   PBE-cterm :    for input example : ";
             std::vector< Node > ex;
             tds->getPbeExample( d_ar, ii, ex );
             for( unsigned j=0; j<ex.size(); j++ ){
               Trace("sygus-pbe-cterm") << ex[j] << " ";
             }
             Trace("sygus-pbe-cterm") << std::endl;
-            Trace("sygus-pbe-cterm") << "   PBE-cterm :          it rewrites to : " << nbvre << std::endl;
-            Trace("sygus-pbe-cterm") << "   PBE-cterm : not contained in output : " << out << std::endl;
+            Trace("sygus-pbe-cterm") << "   PBE-cterm :     this rewrites to : " << nbvre << std::endl;
+            Trace("sygus-pbe-cterm") << "   PBE-cterm : and is not in output : " << out << std::endl;
           }
           return true;
         }
@@ -928,131 +928,12 @@ bool CegConjecturePbe::getExplanationForEnumeratorExclude( Node c, Node x, Node 
         d_tds->getExplanationFor( x, v, exp, ncset );
         Trace("sygus-pbe-cterm") << "PBE-cterm : enumerator exclude " << d_tds->sygusToBuiltin( v ) << " due to negative containment." << std::endl;
         return true;
-      
-      
-      /*
-        if( Trace.isOn("sygus-pbe-cterm") ){
-          Trace("sygus-pbe-enum") << std::endl;
-        }
-        Node bv = d_tds->sygusToBuiltin( v );
-        Trace("sygus-pbe-cterm") << "Cterm is longer than examples : " << x << " -> " << bv << std::endl; 
-        for( unsigned i=0; i<cmp_indices[1].size(); i++ ){
-          unsigned j = cmp_indices[1][i];
-          Assert( j<d_examples[c].size() );
-          Node bvs = d_tds->sygusSubstituted( v.getType(), bv, d_examples[c][j] );
-          Trace("sygus-pbe-cterm") << "  " << j << " : " << results[j] << " > " << itxo->second[i] << std::endl;
-          Trace("sygus-pbe-cterm") << "  ...analyze " << bvs << std::endl;
-          exp.clear();
-          if( getExplanationForCTermEnumeratorExclude( c, x, v, bvs, itxo->second[i].getConst<String>().size(), exp ) ){
-            return true;
-          }
-        }
-        */
       }
     }
   }
   return false;
 }
 
-
-// ensures exp = > len( x )[ v / x ] > exout_len
-bool CegConjecturePbe::getExplanationForCTermEnumeratorExclude( Node c, Node x, Node v, Node bvs, unsigned exout_len, std::vector< Node >& exp ) {
-  Assert( bvs.getType().isString() );
-  Assert( Rewriter::rewrite( bvs ).isConst() );
-  Assert( Rewriter::rewrite( bvs ).getConst<String>().size()>exout_len );
-  
-  Assert( x.getType()==v.getType() );
-  std::map< unsigned, unsigned > child_len;
-  std::map< unsigned, Node > child_vals;
-  for( unsigned i=0; i<bvs.getNumChildren(); i++ ){
-    Node bvsc = Rewriter::rewrite( bvs[i] );
-    Assert( bvsc.isConst() );
-    child_vals[i] = bvsc;
-    if( bvsc.getType().isString() ){
-      child_len[i] = bvsc.getConst<String>().size();
-    }
-    //else if( bvsc.getType().isInteger() ){
-      // TODO?
-    //}
-  }
-  
-  std::map< unsigned, bool > cexc;
-  std::map< unsigned, unsigned > new_len;
-  if( bvs.getKind()==STRING_STRREPL ){
-    if( child_len[0]>exout_len+child_len[1] ){
-      // len( replace( x, y, z ) ) >= len( x ) - len( y ) > o
-      cexc[2] = true;
-      Trace("sygus-pbe-cterm") << "PBE-cterm : enumerator exclusion : " << d_tds->sygusToBuiltin( v ) << ", arg 2 based on replace substitution." << std::endl;
-      new_len[0] = exout_len+child_len[1];
-    }else if( child_len[0]>exout_len && child_len[2]>exout_len ){
-      // len( replace( x, y, z ) ) >= min( len( x ), len( z ) ) > o
-      cexc[1] = true;
-      Trace("sygus-pbe-cterm") << "PBE-cterm : enumerator exclusion : " << d_tds->sygusToBuiltin( v ) << ", arg 1 based on replace invariance." << std::endl;
-      new_len[0] = exout_len;
-    }
-  }else if( bvs.getKind()==STRING_SUBSTR ){
-    // len( substr( x, n, m ) ) >= min( len( x ) - n, m ) > o
-    Node out = NodeManager::currentNM()->mkConst( Rational(exout_len) );
-    Node cond2 = NodeManager::currentNM()->mkNode( kind::GT, child_vals[2], out );
-    if( Rewriter::rewrite( cond2 )==d_true ){
-      Node cond1_lhs = Rewriter::rewrite( NodeManager::currentNM()->mkNode( kind::PLUS, child_vals[1], out ) );
-      Node cond1 = NodeManager::currentNM()->mkNode( kind::GT, NodeManager::currentNM()->mkConst( Rational( child_len[0] ) ), cond1_lhs );
-      if( Rewriter::rewrite( cond1 )==d_true ){
-        Trace("sygus-pbe-cterm") << "PBE-cterm : enumerator exclusion : " << d_tds->sygusToBuiltin( v ) << ", recurse for substring invariance." << std::endl;
-        // string is longer than this, so it should be safe
-        Assert(cond1_lhs.getConst<Rational>() <= Rational(LONG_MAX));
-        // cannot exclude, but can recurse
-        new_len[0] = cond1_lhs.getConst<Rational>().getNumerator().toUnsignedInt();
-      }
-    }
-  }else if( bvs.getKind()==STRING_CONCAT ){
-    // len( concat( x_1, x_2 ) ) >= len( x_i )
-    unsigned max_index = 0;
-    unsigned max_len = 0;
-    for( unsigned i=0; i<bvs.getNumChildren(); i++ ){
-      if( i==0 || child_len[i]>max_len ){
-        max_index = i;
-        max_len = child_len[i];
-      }
-    }
-    if( child_len[max_index]>exout_len ){
-      Trace("sygus-pbe-cterm") << "PBE-cterm : enumerator exclusion : " << d_tds->sygusToBuiltin( v ) << ", arg " << max_index << " based on concat sum." << std::endl;
-      for( unsigned j=0; j<bvs.getNumChildren(); j++ ){
-        if( j!=max_index ){
-          cexc[j] = true;
-        }
-      }
-      new_len[max_index] = exout_len;
-    }
-  }
-  
-  if( !cexc.empty() ){
-    TypeNode tn = x.getType();
-    const Datatype& dt = ((DatatypeType)tn.toType()).getDatatype();
-    int cindex = Datatype::indexOf( v.getOperator().toExpr() );
-    Assert( cindex>=0 );
-    Node tst = datatypes::DatatypesRewriter::mkTester( x, cindex, dt );
-    exp.push_back( tst );
-    for( unsigned i=0; i<bvs.getNumChildren(); i++ ){
-      if( cexc.find( i )==cexc.end() ){
-        Node sel = NodeManager::currentNM()->mkNode( kind::APPLY_SELECTOR_TOTAL, Node::fromExpr( dt[cindex].getSelectorInternal( tn.toType(), i ) ), x );
-        std::map< unsigned, unsigned >::iterator itnl = new_len.find( i );
-        if( itnl!=new_len.end() ){
-          // recurse
-          getExplanationForCTermEnumeratorExclude( c, sel, v[i], bvs[i], itnl->second, exp );          
-        }else{
-          d_tds->getExplanationForConstantEquality( sel, v[i], exp );
-        }
-      }
-    }
-    return true;
-  }else{
-    if( x.getKind()==kind::APPLY_SELECTOR_TOTAL ){
-      d_tds->getExplanationForConstantEquality( x, v, exp );
-    }
-    return false;
-  }
-}
 
 
 void CegConjecturePbe::EnumInfo::addEnumValue( CegConjecturePbe * pbe, Node v, std::vector< Node >& results ) {
