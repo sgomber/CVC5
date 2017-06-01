@@ -226,21 +226,35 @@ void CegConjectureSingleInv::initialize( Node q ) {
           singleInvocation = true;
         }else if( options::sygusInvTemplMode() != SYGUS_INV_TEMPL_MODE_NONE ){
           //if we are doing invariant templates, then construct the template
+          Trace("cegqi-inv") << std::endl;
+          TransitionInference ti;
+          ti.process( qq );
+          Trace("cegqi-inv") << "----------------------------------" << std::endl;
+          std::map< Node, Node > prog_templ;
+          if( !ti.d_func.isNull() ){
+            Assert( d_nsi_op_map_to_prog.find( ti.d_func )!=d_nsi_op_map_to_prog.end() );
+            Node prog = d_nsi_op_map_to_prog[ti.d_func];
+            Assert( d_prog_templ_vars[prog].empty() );
+            d_prog_templ_vars[prog].insert( d_prog_templ_vars[prog].end(), ti.d_vars.begin(), ti.d_vars.end() );
+            d_trans_pre[prog] = ti.getComponent( 1 );
+            d_trans_post[prog] = ti.getComponent( -1 );
+#if 0
           std::map< Node, bool > has_inv;
           std::map< Node, std::vector< Node > > inv_pre_post[2];
           for( unsigned i=0; i<d_sip->d_conjuncts[2].size(); i++ ){
             std::vector< Node > disjuncts;
+            std::map< Node, Node > const_eq;
             Node func;
             int pol = -1;
             Trace("cegqi-inv") << "INV process " << d_sip->d_conjuncts[2][i] << std::endl;
-            d_sip->extractInvariant( d_sip->d_conjuncts[2][i], func, pol, disjuncts );
+            d_sip->extractInvariant( d_sip->d_conjuncts[2][i], func, pol, disjuncts, const_eq );
             if( pol>=0 ){
               Assert( d_nsi_op_map_to_prog.find( func )!=d_nsi_op_map_to_prog.end() );
               Node prog = d_nsi_op_map_to_prog[func];
-              Trace("cegqi-inv") << "..." << ( pol==0 ? "pre" : "post" ) << "-condition for " << prog << "." << std::endl;
+              Trace("cegqi-inv") << "..." << ( pol==0 ? "pre" : "post" ) << "-condition for " << prog << ": ";
               Node c = disjuncts.empty() ? d_qe->getTermDatabase()->d_false : ( disjuncts.size()==1 ? disjuncts[0] : NodeManager::currentNM()->mkNode( OR, disjuncts ) );
               c = pol==0 ? TermDb::simpleNegate( c ) : c;
-              Trace("cegqi-inv-debug") << "...extracted : " << c << std::endl;
+              Trace("cegqi-inv-debug") << c << std::endl;
               inv_pre_post[pol][prog].push_back( c );
               has_inv[prog] = true;
             }else{
@@ -269,6 +283,7 @@ void CegConjectureSingleInv::initialize( Node q ) {
             Node post = inv_pre_post[1][prog].empty() ? NodeManager::currentNM()->mkConst( true ) :
                         ( inv_pre_post[1][prog].size()==1 ? inv_pre_post[1][prog][0] : NodeManager::currentNM()->mkNode( AND, inv_pre_post[1][prog] ) );
             d_trans_post[prog] = post.substitute( d_sip->d_si_vars.begin(), d_sip->d_si_vars.end(), d_prog_templ_vars[prog].begin(), d_prog_templ_vars[prog].end() );
+#endif
             Trace("cegqi-inv") << "   precondition : " << d_trans_pre[prog] << std::endl;
             Trace("cegqi-inv") << "  postcondition : " << d_trans_post[prog] << std::endl;
             Node invariant = single_inv_app_map[prog];
@@ -1293,18 +1308,37 @@ Node SingleInvocationPartition::getSpecificationInst( int index, std::map< Node,
   return getSpecificationInst( conj, lam, visited );
 }
 
-void SingleInvocationPartition::extractInvariant( Node n, Node& func, int& pol, std::vector< Node >& disjuncts ) {
+// pol : -1 not set, 0 : precondition, 1 : postcondition, -2 : invalid
+void SingleInvocationPartition::extractInvariant( Node n, Node& func, int& pol, std::vector< Node >& disjuncts, std::map< Node, Node >& const_eq ) {
   std::map< Node, bool > visited;
-  extractInvariant2( n, func, pol, disjuncts, true, visited );
+  std::vector< Node > const_var;
+  std::vector< Node > const_subs;
+  Trace("cegqi-inv") << "Infer pre/post condition..." << std::endl;
+  extractInvariant2( n, func, pol, disjuncts, const_var, const_subs, true, visited );
+  if( pol>=0 ){
+    Trace("cegqi-inv-debug2") << "We have constant substitution : " << std::endl;
+    for( unsigned i=0; i<const_var.size(); i++ ){
+      Trace("cegqi-inv-debug2") << "  " << const_var[i] << " -> " << const_subs[i] << std::endl;
+      const_eq[const_var[i]] = const_subs[i];
+    }
+    Trace("cegqi-inv-debug2") << "...size = " << const_var.size() << ", #si vars = " << d_si_vars.size() << std::endl;
+  }
 }
 
-void SingleInvocationPartition::extractInvariant2( Node n, Node& func, int& pol, std::vector< Node >& disjuncts, bool hasPol, std::map< Node, bool >& visited ) {
-  if( visited.find( n )==visited.end() && pol!=-2 ){
-    Trace("cegqi-inv-debug2") << "Extract : " << n << " " << hasPol << ", pol = " << pol << std::endl;
+// hasPol : whether we are in an entailed true polarity position
+void SingleInvocationPartition::extractInvariant2( Node n, Node& func, int& pol, std::vector< Node >& disjuncts, 
+                                                   std::vector< Node >& const_var, std::vector< Node >& const_subs,
+                                                   bool hasPol, std::map< Node, bool >& visited ) {
+  Assert( pol!=-2 );
+  if( visited.find( n )==visited.end() ){
+    Trace("cegqi-inv-debug2") << "Extract : " << n << ", hasPol = " << hasPol << ", pol = " << pol << std::endl;
     visited[n] = true;
     if( n.getKind()==OR && hasPol ){
       for( unsigned i=0; i<n.getNumChildren(); i++ ){
-        extractInvariant2( n[i], func, pol, disjuncts, true, visited );
+        extractInvariant2( n[i], func, pol, disjuncts, const_var, const_subs, true, visited );
+        if( pol==-2 ){
+          break;
+        }
       }
     }else{
       if( hasPol ){
@@ -1321,6 +1355,33 @@ void SingleInvocationPartition::extractInvariant2( Node n, Node& func, int& pol,
           }
           return;
         }else{
+          Trace("cegqi-inv-debug2") << "...add disjunct : " << n << std::endl;
+          bool slit_pol = lit_pol;
+          Node slit = lit;
+          if( !const_var.empty() ){
+            Node sn = n.substitute( const_var.begin(), const_var.end(), const_subs.begin(), const_subs.end() );
+            sn = Rewriter::rewrite( sn );
+            slit_pol = sn.getKind()!=NOT;
+            slit = sn.getKind()==NOT ? sn[0] : sn;
+          }
+          if( slit.getKind()==EQUAL && !slit_pol ){
+            // check if it is a variable equality
+            for( unsigned r=0; r<2; r++ ){
+              if( slit[r].getKind()==BOUND_VARIABLE && std::find( d_si_vars.begin(), d_si_vars.end(), slit[r] )!=d_si_vars.end() ){
+                if( !TermDb::containsTerm( slit[1-r], slit[r] ) ){
+                  TNode v = slit[r];
+                  TNode s = slit[1-r];
+                  for( unsigned k=0; k<const_subs.size(); k++ ){
+                    const_subs[k] = Rewriter::rewrite( const_subs[k].substitute( v, s ) );
+                  }
+                  Trace("cegqi-inv-debug2") << "...substitution : " << v << " -> " << s << std::endl;
+                  const_var.push_back( v );
+                  const_subs.push_back( s );
+                  break;
+                }
+              }
+            }
+          }
           disjuncts.push_back( n );
         }
       }
@@ -1328,15 +1389,20 @@ void SingleInvocationPartition::extractInvariant2( Node n, Node& func, int& pol,
       if( n.getKind()==APPLY_UF ){
         Node op = n.getOperator();
         if( d_funcs.find( op )!=d_funcs.end() ){
+          Trace("cegqi-inv-debug2") << "...failed, free function : " << n << std::endl;
           pol = -2;
           return;
         }
       }else if( n.getKind()==BOUND_VARIABLE && std::find( d_si_vars.begin(), d_si_vars.end(), n )==d_si_vars.end() ){
+        Trace("cegqi-inv-debug2") << "...failed, free variable : " << n << std::endl;
         pol = -2;
         return;
       }
       for( unsigned i=0; i<n.getNumChildren(); i++ ){
-        extractInvariant2( n[i], func, pol, disjuncts, false, visited );
+        extractInvariant2( n[i], func, pol, disjuncts, const_var, const_subs, false, visited );
+        if( pol==-2 ){
+          break;
+        }
       }
     }
   }
@@ -1365,6 +1431,167 @@ void SingleInvocationPartition::debugPrint( const char * c ) {
     }
   }
   Trace(c) << std::endl;
+}
+
+void TransitionInference::initialize( Node f, std::vector< Node >& vars ) {
+  Assert( d_vars.empty() );
+  d_func = f;
+  d_vars.insert( d_vars.end(), vars.begin(), vars.end() );
+}
+
+void TransitionInference::process( Node n ) {
+  std::vector< Node > n_check;
+  if( n.getKind()==AND ){
+    for( unsigned i=0; i<n.getNumChildren(); i++ ){
+      n_check.push_back( n[i] );
+    }
+  }else{
+    n_check.push_back( n );
+  }
+  for( unsigned i=0; i<n_check.size(); i++ ){
+    Node nn = n_check[i];
+    std::map< Node, bool > visited;
+    std::map< bool, Node > terms;
+    std::vector< Node > disjuncts;
+    Trace("cegqi-inv") << "TransitionInference : Process disjunct : " << nn << std::endl;
+    if( processDisjunct( nn, terms, disjuncts, visited, true ) ){
+      if( !terms.empty() ){
+        Node norm_args;
+        int comp_num;
+        std::map< bool, Node >::iterator itt = terms.find( true );
+        if( itt!=terms.end() ){
+          norm_args = itt->second;
+          if( terms.find( false )!=terms.end() ){
+            comp_num = 0;
+          }else{
+            comp_num = 1;
+          }
+        }else{
+          norm_args = terms[false];
+          comp_num = -1;
+        }
+        std::vector< Node > subs;
+        for( unsigned j=0; j<norm_args.getNumChildren(); j++ ){
+          subs.push_back( norm_args[j] );
+        }        
+        Trace("cegqi-inv-debug") << "  normalize based on " << norm_args << std::endl;
+        Assert( d_vars.size()==subs.size() );
+        for( unsigned j=0; j<disjuncts.size(); j++ ){
+          disjuncts[j] = Rewriter::rewrite( disjuncts[j].substitute( subs.begin(), subs.end(), d_vars.begin(), d_vars.end() ) );
+          Trace("cegqi-inv-debug") << "  ..." << disjuncts[j] << std::endl;
+        }
+        std::vector< Node > const_var;
+        std::vector< Node > const_subs;
+        for( unsigned j=0; j<disjuncts.size(); j++ ){
+          Node sn;
+          if( !const_var.empty() ){
+            sn = disjuncts[j].substitute( const_var.begin(), const_var.end(), const_subs.begin(), const_subs.end() );
+            sn = Rewriter::rewrite( sn );
+          }else{
+            sn = disjuncts[j];
+          }
+          bool slit_pol = sn.getKind()!=NOT;
+          Node slit = sn.getKind()==NOT ? sn[0] : sn;
+          if( slit.getKind()==EQUAL && !slit_pol ){
+            // check if it is a variable equality
+            // TODO : this should be a solvable equality
+            for( unsigned r=0; r<2; r++ ){
+              if( slit[r].getKind()==BOUND_VARIABLE && std::find( d_vars.begin(), d_vars.end(), slit[r] )!=d_vars.end() ){
+                if( !TermDb::containsTerm( slit[1-r], slit[r] ) ){
+                  TNode v = slit[r];
+                  TNode s = slit[1-r];
+                  for( unsigned k=0; k<const_subs.size(); k++ ){
+                    const_subs[k] = Rewriter::rewrite( const_subs[k].substitute( v, s ) );
+                  }
+                  Trace("cegqi-inv-debug") << "...substitution : " << v << " -> " << s << std::endl;
+                  const_var.push_back( v );
+                  const_subs.push_back( s );
+                  break;
+                }
+              }
+            }
+          }
+        }
+        Node res;
+        if( disjuncts.empty() ){
+          res = NodeManager::currentNM()->mkConst( false );
+        }else if( disjuncts.size()==1 ){
+          res = disjuncts[0];
+        }else{
+          res = NodeManager::currentNM()->mkNode( kind::OR, disjuncts );
+        }
+        if( comp_num==0 ){
+          //transition
+          Trace("cegqi-inv-debug") << "We have constant substitution : " << std::endl;
+          for( unsigned i=0; i<const_var.size(); i++ ){
+            Trace("cegqi-inv-debug") << "  " << const_var[i] << " -> " << const_subs[i] << std::endl;
+            //const_eq[const_var[i]] = const_subs[i];
+          }
+          Trace("cegqi-inv-debug") << "...size = " << const_var.size() << ", #si vars = " << d_vars.size() << std::endl;
+        }else{
+          Trace("cegqi-inv") << "*** inferred " << ( comp_num==1 ? "pre" : ( comp_num==-1 ? "post" : "?" ) ) << "-condition : " << res << std::endl;
+          d_com[comp_num].d_conjuncts.push_back( res );
+        }
+      }
+    }
+  }
+}
+
+bool TransitionInference::processDisjunct( Node n, std::map< bool, Node >& terms, std::vector< Node >& disjuncts, 
+                                           std::map< Node, bool >& visited, bool topLevel ) {
+  if( visited.find( n )==visited.end() ){
+    visited[n] = true;
+    bool childTopLevel = n.getKind()==OR && topLevel;
+    //if another part mentions UF or a free variable, then fail
+    bool lit_pol = n.getKind()!=NOT;
+    Node lit = n.getKind()==NOT ? n[0] : n;
+    if( lit.getKind()==APPLY_UF ){
+      Node op = lit.getOperator();
+      if( d_func.isNull() ){
+        d_func = op;
+        Trace("cegqi-inv-debug") << "Use " << op << " with args ";
+        for( unsigned i=0; i<lit.getNumChildren(); i++ ){
+          Node v = NodeManager::currentNM()->mkSkolem( "j", lit[i].getType(), "template inference argument" );
+          d_vars.push_back( v );
+          Trace("cegqi-inv-debug") << v << " ";
+        }
+        Trace("cegqi-inv-debug") << std::endl;
+      }
+      if( op!=d_func ){
+        Trace("cegqi-inv-debug") << "...failed, free function : " << n << std::endl;
+        return false;
+      }else if( topLevel ){
+        if( terms.find( lit_pol )==terms.end() ){
+          terms[lit_pol] = lit;
+          return true;
+        }else{
+          Trace("cegqi-inv-debug") << "...failed, repeated inv-app : " << lit << std::endl;
+          return false;
+        }
+      }else{
+        Trace("cegqi-inv-debug") << "...failed, non-entailed inv-app : " << lit << std::endl;
+        return false;
+      }
+    }else if( topLevel && !childTopLevel ){
+      disjuncts.push_back( n );
+    }
+    for( unsigned i=0; i<n.getNumChildren(); i++ ){
+      if( !processDisjunct( n[i], terms, disjuncts, visited, childTopLevel ) ){
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+Node TransitionInference::getComponent( int i ) {
+  if( d_com[i].d_conjuncts.empty() ){
+    return NodeManager::currentNM()->mkConst( true );
+  }else if( d_com[i].d_conjuncts.size()==1 ){
+    return d_com[i].d_conjuncts[0];
+  }else{
+    return NodeManager::currentNM()->mkNode( kind::AND, d_com[i].d_conjuncts );
+  }
 }
 
 }

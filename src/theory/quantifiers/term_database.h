@@ -706,6 +706,8 @@ public:
   Node getSygusNormalized( Node n, std::map< TypeNode, int >& var_count, std::map< Node, Node >& subs );
   Node getNormalized( TypeNode t, Node prog, bool do_pre_norm = false, bool do_post_norm = true );
   unsigned getSygusTermSize( Node n );
+  // returns size
+  unsigned getSygusConstructors( Node n, std::vector< Node >& cons );
   /** given a term, construct an equivalent smaller one that respects syntax */
   Node minimizeBuiltinTerm( Node n );
   /** given a term, expand it into more basic components */

@@ -188,7 +188,9 @@ private:
   bool processConjunct( Node n, std::map< Node, bool >& visited, std::vector< Node >& args,
                         std::vector< Node >& terms, std::vector< Node >& subs );
   Node getSpecificationInst( Node n, std::map< Node, Node >& lam, std::map< Node, Node >& visited );
-  void extractInvariant2( Node n, Node& func, int& pol, std::vector< Node >& disjuncts, bool hasPol, std::map< Node, bool >& visited );
+  void extractInvariant2( Node n, Node& func, int& pol, std::vector< Node >& disjuncts, 
+                          std::vector< Node >& const_var, std::vector< Node >& const_subs,
+                          bool hasPol, std::map< Node, bool >& visited );
   bool init( std::vector< Node >& funcs, std::vector< TypeNode >& typs, Node n, bool has_funcs );
 public:
   SingleInvocationPartition() : d_has_input_funcs( false ){}
@@ -218,12 +220,32 @@ public:
 
   Node getSpecificationInst( int index, std::map< Node, Node >& lam );
 
-  void extractInvariant( Node n, Node& func, int& pol, std::vector< Node >& disjuncts );
+  void extractInvariant( Node n, Node& func, int& pol, std::vector< Node >& disjuncts, std::map< Node, Node >& const_eq );
 
   bool isPurelySingleInvocation() { return d_conjuncts[1].empty(); }
   bool isNonGroundSingleInvocation() { return d_conjuncts[3].size()==d_conjuncts[1].size(); }
 
   void debugPrint( const char * c );
+};
+
+
+class TransitionInference {
+private:
+  bool processDisjunct( Node n, std::map< bool, Node >& terms, std::vector< Node >& disjuncts, std::map< Node, bool >& visited, bool topLevel );
+public:
+  std::vector< Node > d_vars;
+  Node d_func;
+  
+  class Component {
+  public:
+    std::vector< Node > d_conjuncts;
+    std::map< Node, Node > d_const_eq;
+  };
+  std::map< int, Component > d_com;
+  
+  void initialize( Node f, std::vector< Node >& vars );
+  void process( Node n );
+  Node getComponent( int i );
 };
 
 }/* namespace CVC4::theory::quantifiers */
