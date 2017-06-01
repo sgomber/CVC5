@@ -44,6 +44,27 @@ public:
 
 class SingleInvocationPartition;
 
+class TransitionInference {
+private:
+  bool processDisjunct( Node n, std::map< bool, Node >& terms, std::vector< Node >& disjuncts, std::map< Node, bool >& visited, bool topLevel );
+  void getConstantSubstitution( std::vector< Node >& vars, std::vector< Node >& disjuncts, std::vector< Node >& const_var, std::vector< Node >& const_subs, bool reqPol );
+public:
+  std::vector< Node > d_vars;
+  std::vector< Node > d_prime_vars;
+  Node d_func;
+  
+  class Component {
+  public:
+    std::vector< Node > d_conjuncts;
+    std::map< Node, std::map< Node, Node > > d_const_eq;
+  };
+  std::map< int, Component > d_com;
+  
+  void initialize( Node f, std::vector< Node >& vars );
+  void process( Node n );
+  Node getComponent( int i );
+};
+
 class CegConjectureSingleInv {
  private:
   friend class CegqiOutputSingleInv;
@@ -72,6 +93,7 @@ class CegConjectureSingleInv {
   QuantifiersEngine* d_qe;
   CegConjecture* d_parent;
   SingleInvocationPartition* d_sip;
+  std::map< Node, TransitionInference > d_ti;
   CegConjectureSingleInvSol* d_sol;
   CegEntailmentInfer* d_ei;
   // the instantiator
@@ -223,25 +245,6 @@ public:
   void debugPrint( const char * c );
 };
 
-
-class TransitionInference {
-private:
-  bool processDisjunct( Node n, std::map< bool, Node >& terms, std::vector< Node >& disjuncts, std::map< Node, bool >& visited, bool topLevel );
-public:
-  std::vector< Node > d_vars;
-  Node d_func;
-  
-  class Component {
-  public:
-    std::vector< Node > d_conjuncts;
-    std::map< Node, Node > d_const_eq;
-  };
-  std::map< int, Component > d_com;
-  
-  void initialize( Node f, std::vector< Node >& vars );
-  void process( Node n );
-  Node getComponent( int i );
-};
 
 }/* namespace CVC4::theory::quantifiers */
 }/* namespace CVC4::theory */
