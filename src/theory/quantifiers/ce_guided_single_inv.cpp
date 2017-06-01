@@ -231,6 +231,7 @@ void CegConjectureSingleInv::initialize( Node q ) {
           Trace("cegqi-inv") << std::endl;
           std::map< Node, Node > prog_templ;
           if( !d_ti[q].d_func.isNull() ){
+            // map the program back via non-single invocation map
             Assert( d_nsi_op_map_to_prog.find( d_ti[q].d_func )!=d_nsi_op_map_to_prog.end() );
             Node prog = d_nsi_op_map_to_prog[d_ti[q].d_func];
             Assert( d_prog_templ_vars[prog].empty() );
@@ -1286,6 +1287,54 @@ void SingleInvocationPartition::debugPrint( const char * c ) {
   Trace(c) << std::endl;
 }
 
+
+bool DetTrace::DetTraceTrie::add( Node loc, std::vector< Node >& val, unsigned index ){
+  if( index==val.size() ){
+    if( d_children.empty() ){
+      d_children[loc].clear();
+      return true;
+    }else{
+      return false;
+    }
+  }else{
+    return add( loc, val, index+1 );
+  }
+}
+
+Node DetTrace::DetTraceTrie::constructFormula( std::vector< Node >& vars, unsigned index ){
+  if( index==vars.size() ){
+    return NodeManager::currentNM()->mkConst( true );    
+  }else{
+    std::vector< Node > disj;
+    for( std::map< Node, DetTraceTrie >::iterator it = d_children.begin(); it != d_children.end(); ++it ){
+      Node eq = vars[index].eqNode( it->first );
+      if( index<vars.size()-1 ){
+        Node conc = it->second.constructFormula( vars, index+1 );
+        disj.push_back( NodeManager::currentNM()->mkNode( kind::AND, eq, conc ) );
+      }else{
+        disj.push_back( eq );
+      }
+    }
+    Assert( !disj.empty() );
+    return disj.size()==1 ? disj[0] : NodeManager::currentNM()->mkNode( kind::OR, disj );
+  }
+}
+
+bool DetTrace::increment( Node loc, std::vector< Node >& vals ){
+  if( d_trie.add( loc, vals ) ){
+    for( unsigned i=0; i<vals.size(); i++ ){
+      d_curr[i] = vals[i];
+    }
+    return true;
+  }else{
+    return false;
+  }
+}
+
+Node DetTrace::constructFormula( std::vector< Node >& vars ) {
+  return d_trie.constructFormula( vars );
+}
+
 void TransitionInference::initialize( Node f, std::vector< Node >& vars ) {
   Assert( d_vars.empty() );
   d_func = f;
@@ -1431,9 +1480,12 @@ void TransitionInference::process( Node n ) {
           d_com[comp_num].d_conjuncts.push_back( res );
           if( !const_var.empty() ){
             Trace("cegqi-inv") << "    with constant substitution : " << std::endl;
+            bool has_const_eq = const_var.size()==d_vars.size();
             for( unsigned i=0; i<const_var.size(); i++ ){
               Trace("cegqi-inv") << "      " << const_var[i] << " -> " << const_subs[i] << std::endl;
-              d_com[comp_num].d_const_eq[res][const_var[i]] = const_subs[i];
+              if( has_const_eq ){
+                d_com[comp_num].d_const_eq[res][const_var[i]] = const_subs[i];
+              }
             }
             Trace("cegqi-inv") << "...size = " << const_var.size() << ", #vars = " << d_vars.size() << std::endl;
           }
@@ -1445,6 +1497,23 @@ void TransitionInference::process( Node n ) {
     }else{
       full_success = false;
     }
+  }
+  
+  // finalize the components
+  for( int i=-1; i<=1; i++ ){
+    Node ret;
+    if( d_com[i].d_conjuncts.empty() ){
+      ret = NodeManager::currentNM()->mkConst( true );
+    }else if( d_com[i].d_conjuncts.size()==1 ){
+      ret = d_com[i].d_conjuncts[0];
+    }else{
+      ret = NodeManager::currentNM()->mkNode( kind::AND, d_com[i].d_conjuncts );
+    }
+    if( i==0 || i==1 ){
+      // pre-condition and transition are negated
+      ret = TermDb::simpleNegate( ret );
+    }
+    d_com[i].d_this = ret;
   }
 }
 
@@ -1496,20 +1565,63 @@ bool TransitionInference::processDisjunct( Node n, std::map< bool, Node >& terms
 }
 
 Node TransitionInference::getComponent( int i ) {
-  Node ret;
-  if( d_com[i].d_conjuncts.empty() ){
-    ret = NodeManager::currentNM()->mkConst( true );
-  }else if( d_com[i].d_conjuncts.size()==1 ){
-    ret = d_com[i].d_conjuncts[0];
-  }else{
-    ret = NodeManager::currentNM()->mkNode( kind::AND, d_com[i].d_conjuncts );
+  return d_com[i].d_this;
+}
+
+int TransitionInference::initialize( DetTrace& dt, Node loc, bool fwd ) {
+  unsigned index = fwd ? 1 : -1;
+  Assert( d_com[index].has( loc ) );
+  std::map< Node, std::map< Node, Node > >::iterator it = d_com[index].d_const_eq.find( loc );
+  if( it!=d_com[index].d_const_eq.end() ){
+    std::vector< Node > next;
+    for( unsigned i=0; i<d_vars.size(); i++ ){
+      Node v = d_vars[i];
+      Assert( it->second.find( v )!=it->second.end() );
+      next.push_back( it->second[v] );
+    }
+    bool ret = dt.increment( loc, next );
+    AlwaysAssert( ret );
+    return 0;
   }
-  if( i==1 ){
-    // pre-condition is negated
-    return TermDb::simpleNegate( ret );
+  return -1;
+}
+  
+int TransitionInference::increment( DetTrace& dt, Node loc, bool fwd ) {
+  Assert( d_com[0].has( loc ) );
+  // terminates?
+  Node c = getComponent( 0 );
+  Node cr = Rewriter::rewrite( c.substitute( d_vars.begin(), d_vars.end(), dt.d_curr.begin(), dt.d_curr.end() ) );
+  if( cr.isConst() ){
+    if( !cr.getConst<bool>() ){
+      return 1;
+    }else{
+      return -1;
+    }
   }else{
-    return ret;
+    if( fwd ){
+      std::map< Node, std::map< Node, Node > >::iterator it = d_com[0].d_const_eq.find( loc );
+      if( it!=d_com[0].d_const_eq.end() ){
+        std::vector< Node > next;
+        for( unsigned i=0; i<d_prime_vars.size(); i++ ){
+          Node pv = d_prime_vars[i];
+          Assert( it->second.find( pv )!=it->second.end() );
+          Node pvs = it->second[pv];
+          Node pvsr = Rewriter::rewrite( pvs.substitute( d_vars.begin(), d_vars.end(), dt.d_curr.begin(), dt.d_curr.end() ) );
+          next.push_back( pvs );
+        }
+        if( dt.increment( loc, next ) ){
+          return 0;
+        }else{
+          // looped
+          return 1;
+        }
+      }
+    }else{
+      //TODO
+    }
+    return -1;
   }
 }
 
-}
+} //namespace CVC4
+

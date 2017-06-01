@@ -44,6 +44,22 @@ public:
 
 class SingleInvocationPartition;
 
+class DetTrace {
+private:
+  class DetTraceTrie {
+  public:
+    std::map< Node, DetTraceTrie > d_children;
+    bool add( Node loc, std::vector< Node >& val, unsigned index = 0 );
+    void clear() { d_children.clear(); }
+    Node constructFormula( std::vector< Node >& vars, unsigned index = 0 );
+  };
+  DetTraceTrie d_trie;
+public:
+  std::vector< Node > d_curr;
+  bool increment( Node loc, std::vector< Node >& vals );
+  Node constructFormula( std::vector< Node >& vars );
+};
+
 class TransitionInference {
 private:
   bool processDisjunct( Node n, std::map< bool, Node >& terms, std::vector< Node >& disjuncts, std::map< Node, bool >& visited, bool topLevel );
@@ -55,15 +71,23 @@ public:
   
   class Component {
   public:
+    Component(){}
+    Node d_this;
     std::vector< Node > d_conjuncts;
     std::map< Node, std::map< Node, Node > > d_const_eq;
+    bool has( Node c ) { return std::find( d_conjuncts.begin(), d_conjuncts.end(), c )!=d_conjuncts.end(); }
   };
   std::map< int, Component > d_com;
   
   void initialize( Node f, std::vector< Node >& vars );
   void process( Node n );
   Node getComponent( int i );
+  
+  // 0 : success, 1 : terminated, -1 : invalid
+  int initialize( DetTrace& dt, Node loc, bool fwd = true );
+  int increment( DetTrace& dt, Node loc, bool fwd = true );
 };
+
 
 class CegConjectureSingleInv {
  private:
