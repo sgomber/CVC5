@@ -885,6 +885,12 @@ sygusGTerm[CVC4::SygusGTerm& sgt, std::string& fun]
           k = CVC4::kind::BITVECTOR_UDIV_TOTAL;
         }else if( k==CVC4::kind::BITVECTOR_UREM ){
           k = CVC4::kind::BITVECTOR_UREM_TOTAL;
+        }else if( k==CVC4::kind::DIVISION ){
+          k = CVC4::kind::DIVISION_TOTAL;
+        }else if( k==CVC4::kind::INTS_DIVISION ){
+          k = CVC4::kind::INTS_DIVISION_TOTAL;
+        }else if( k==CVC4::kind::INTS_MODULUS ){
+          k = CVC4::kind::INTS_MODULUS_TOTAL;
         }
         sgt.d_name = kind::kindToString(k);
         sgt.d_gterm_type = SygusGTerm::gterm_op;
@@ -937,6 +943,12 @@ sygusGTerm[CVC4::SygusGTerm& sgt, std::string& fun]
             k = CVC4::kind::BITVECTOR_UDIV_TOTAL;
           }else if( k==CVC4::kind::BITVECTOR_UREM ){
             k = CVC4::kind::BITVECTOR_UREM_TOTAL;
+          }else if( k==CVC4::kind::DIVISION ){
+            k = CVC4::kind::DIVISION_TOTAL;
+          }else if( k==CVC4::kind::INTS_DIVISION ){
+            k = CVC4::kind::INTS_DIVISION_TOTAL;
+          }else if( k==CVC4::kind::INTS_MODULUS ){
+            k = CVC4::kind::INTS_MODULUS_TOTAL;
           }
           sgt.d_name = kind::kindToString(k);
           sgt.d_gterm_type = SygusGTerm::gterm_op;

@@ -589,14 +589,16 @@ private:
   std::map< TypeNode, std::vector< Node > > d_fv[2];
   std::map< Node, TypeNode > d_fv_stype;
   std::map< Node, int > d_fv_num;
+  bool hasFreeVar( Node n, std::map< Node, bool >& visited );
 public:
   Node d_true;
   Node d_false;
 public:
   TNode getFreeVar( TypeNode tn, int i, bool useSygusType = false );
   TNode getFreeVarInc( TypeNode tn, std::map< TypeNode, int >& var_count, bool useSygusType = false );
-  bool isVar( Node n ) { return d_fv_stype.find( n )!=d_fv_stype.end(); }
+  bool isFreeVar( Node n ) { return d_fv_stype.find( n )!=d_fv_stype.end(); }
   int getVarNum( Node n ) { return d_fv_num[n]; }
+  bool hasFreeVar( Node n );
 private:
   std::map< TypeNode, std::map< int, Node > > d_generic_base;
   std::map< TypeNode, std::vector< Node > > d_generic_templ;
@@ -606,6 +608,7 @@ public:
   bool getMatch( Node n, TypeNode st, int& index_found, std::vector< Node >& args, int index_exc = -1, int index_start = 0 );
 private:
   void computeMinTypeDepthInternal( TypeNode root_tn, TypeNode tn, unsigned type_depth );
+  bool involvesDivByZero( Node n, std::map< Node, bool >& visited );
 private:
   // stores root
   std::map< Node, Node > d_measured_term;
@@ -622,6 +625,7 @@ private:
   std::map< TypeNode, std::vector< int > > d_id_funcs;
   std::map< TypeNode, std::vector< Node > > d_const_list; //sorted list of constants for type
   std::map< TypeNode, unsigned > d_const_list_pos;
+  std::map< TypeNode, std::map< Node, Node > > d_semantic_skolem;
   //information for builtin types
   std::map< TypeNode, std::map< int, Node > > d_type_value;
   std::map< TypeNode, Node > d_type_max_value;
@@ -716,11 +720,16 @@ public:
   Kind getComparisonKind( TypeNode tn );
   Kind getPlusKind( TypeNode tn, bool is_neg = false );
   bool doCompare( Node a, Node b, Kind k );
+  // get semantic skolem for n (a sygus term whose builtin version is n)
+  Node getSemanticSkolem( TypeNode tn, Node n, bool doMk = true );
+  /** involves div-by-zero */
+  bool involvesDivByZero( Node n );
+  
   /** get operator kind */
   static Kind getOperatorKind( Node op );
   /** print sygus term */
   static void printSygusTerm( std::ostream& out, Node n, std::vector< Node >& lvs );
-  
+
   /** get anchor */
   static Node getAnchor( Node n );
   static unsigned getAnchorDepth( Node n );

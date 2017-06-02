@@ -80,23 +80,6 @@ namespace CVC4 {
 namespace theory {
 namespace arith {
 
-namespace attr {
-  struct ToIntegerTag { };
-  struct LinearIntDivTag { };
-}/* CVC4::theory::arith::attr namespace */
-
-/**
- * This attribute maps the child of a to_int / is_int to the
- * corresponding integer skolem.
- */
-typedef expr::CDAttribute<attr::ToIntegerTag, Node> ToIntegerAttr;
-
-/**
- * This attribute maps division-by-constant-k terms to a variable
- * used to eliminate them.
- */
-typedef expr::CDAttribute<attr::LinearIntDivTag, Node> LinearIntDivAttr;
-
 static Node toSumNode(const ArithVariables& vars, const DenseMap<Rational>& sum);
 static double fRand(double fMin, double fMax);
 static bool complexityBelow(const DenseMap<Rational>& row, uint32_t cap);
@@ -158,11 +141,14 @@ TheoryArithPrivate::TheoryArithPrivate(TheoryArith& containing, context::Context
   d_dioSolveResources(0),
   d_solveIntMaybeHelp(0u),
   d_solveIntAttempts(0u),
-  d_statistics()
+  d_statistics(),
+  d_to_int_skolem(u),
+  d_div_skolem(u),
+  d_int_div_skolem(u)
 {
   srand(79);
   
-  if( options::nlAlg() ){
+  if( options::nlExt() ){
     d_nonlinearExtension = new NonlinearExtension(
         containing, d_congruenceManager.getEqualityEngine());
   }
@@ -227,46 +213,6 @@ static void resolve(ConstraintCPVec& buf, ConstraintP c, const ConstraintCPVec& 
   // dropPosition(nb, upconf, uppos);
   // return safeConstructNary(nb);
 }
-
-// Returns a skolem variable that is constrained to equal
-// division_total(num, den) in the current context. May add lemmas to out.
-static Node getSkolemConstrainedToDivisionTotal(
-    Node num, Node den, OutputChannel* out) {
-  NodeManager* nm = NodeManager::currentNM();
-  Node total_div_node = nm->mkNode(kind::DIVISION_TOTAL, num, den);
-  Node total_div_skolem;
-  if(total_div_node.getAttribute(LinearIntDivAttr(), total_div_skolem)) {
-    return total_div_skolem;
-  }
-  total_div_skolem = nm->mkSkolem("DivisionTotalSkolem", nm->integerType(),
-                                  "the result of an intdiv-by-k term");
-  total_div_node.setAttribute(LinearIntDivAttr(), total_div_skolem);
-  Node zero = mkRationalNode(0);
-  Node lemma = den.eqNode(zero).iteNode(
-      total_div_skolem.eqNode(zero), num.eqNode(mkMult(total_div_skolem, den)));
-  out->lemma(lemma);
-  return total_div_skolem;
-}
-
-// Returns a skolem variable that is constrained to equal division(num, den) in
-// the current context. May add lemmas to out.
-static Node getSkolemConstrainedToDivision(
-    Node num, Node den, Node div0Func, OutputChannel* out) {
-  NodeManager* nm = NodeManager::currentNM();
-  Node div_node = nm->mkNode(kind::DIVISION, num, den);
-  Node div_skolem;
-  if(div_node.getAttribute(LinearIntDivAttr(), div_skolem)) {
-    return div_skolem;
-  }
-  div_skolem = nm->mkSkolem("DivisionSkolem", nm->integerType(),
-                            "the result of an intdiv-by-k term");
-  div_node.setAttribute(LinearIntDivAttr(), div_skolem);
-  Node div0 = nm->mkNode(APPLY_UF, div0Func, num);
-  Node total_div = getSkolemConstrainedToDivisionTotal(num, den, out);
-  out->lemma(mkOnZeroIte(den, div_skolem, div0, total_div));
-  return div_skolem;
-}
-
 
 // Integer division axioms:
 // These concenrate the high level constructs needed to constrain the functions:
@@ -362,116 +308,8 @@ Node mkAxiomForTotalIntMod(Node m, Node n, Node q, Node r) {
 //                     when_den_is_zero);
 // }
 
-// Returns a skolem variable that is constrained to equal
-// integer_division_total(num, den) in the current context. May add lemmas to
-// out.
-static Node getSkolemConstrainedToIntegerDivisionTotal(
-    Node num, Node den, OutputChannel* out) {
-  NodeManager* nm = NodeManager::currentNM();
-  Node total_div_node = nm->mkNode(kind::INTS_DIVISION_TOTAL, num, den);
-  Node total_div_skolem;
-  if(total_div_node.getAttribute(LinearIntDivAttr(), total_div_skolem)) {
-    return total_div_skolem;
-  }
-  total_div_skolem = nm->mkSkolem("linearIntDiv", nm->integerType(),
-                                  "the result of an intdiv-by-k term");
-  total_div_node.setAttribute(LinearIntDivAttr(), total_div_skolem);
-  out->lemma(mkAxiomForTotalIntDivision(num, den, total_div_skolem));
-  return total_div_skolem;
-}
-
-// Returns a skolem variable that is constrained to equal
-// integer_division(num, den) in the current context. May add lemmas to out.
-static Node getSkolemConstrainedToIntegerDivision(
-    Node num, Node den, Node div0Func, OutputChannel* out) {
-  NodeManager* nm = NodeManager::currentNM();
-  Node div_node = nm->mkNode(kind::INTS_DIVISION, num, den);
-  Node div_skolem;
-  if(div_node.getAttribute(LinearIntDivAttr(), div_skolem)) {
-    return div_skolem;
-  }
-  div_skolem = nm->mkSkolem("IntDivSkolem", nm->integerType(),
-                            "the result of an intdiv-by-k term");
-  div_node.setAttribute(LinearIntDivAttr(), div_skolem);
-  Node div0 = nm->mkNode(APPLY_UF, div0Func, num);
-  Node total_div = getSkolemConstrainedToIntegerDivisionTotal(num, den, out);
-  out->lemma(mkOnZeroIte(den, div_skolem, div0, total_div));
-  return div_skolem;
-}
-
-// Returns a skolem variable that is constrained to equal
-// integer_modulus_total(num, den) in the current context. May add lemmas to
-// out.
-static Node getSkolemConstrainedToIntegerModulusTotal(
-    Node num, Node den, OutputChannel* out) {
-  NodeManager* nm = NodeManager::currentNM();
-  Node total_mod_node = nm->mkNode(kind::INTS_MODULUS_TOTAL, num, den);
-  Node total_mod_skolem;
-  if(total_mod_node.getAttribute(LinearIntDivAttr(), total_mod_skolem)) {
-    return total_mod_skolem;
-  }
-  total_mod_skolem = nm->mkSkolem("IntModTotalSkolem", nm->integerType(),
-                                  "the result of an intdiv-by-k term");
-  total_mod_node.setAttribute(LinearIntDivAttr(), total_mod_skolem);
-  Node total_div = getSkolemConstrainedToIntegerDivisionTotal(num, den, out);
-  out->lemma(mkAxiomForTotalIntMod(num, den, total_div, total_mod_skolem));
-  return total_mod_skolem;
-}
-
-// Returns a skolem variable that is constrained to equal
-// integer_modulus(num, den) in the current context. May add lemmas to out.
-static Node getSkolemConstrainedToIntegerModulus(
-    Node num, Node den, Node mod0Func, OutputChannel* out) {
-  NodeManager* nm = NodeManager::currentNM();
-  Node mod_node = nm->mkNode(kind::INTS_MODULUS, num, den);
-  Node mod_skolem;
-  if(mod_node.getAttribute(LinearIntDivAttr(), mod_skolem)) {
-    return mod_skolem;
-  }
-  mod_skolem = nm->mkSkolem("IntModSkolem", nm->integerType(),
-                            "the result of an intdiv-by-k term");
-  mod_node.setAttribute(LinearIntDivAttr(), mod_skolem);
-  Node mod0 = nm->mkNode(APPLY_UF, mod0Func, num);
-  Node total_mod = getSkolemConstrainedToIntegerModulusTotal(num, den, out);
-  out->lemma(mkOnZeroIte(den, mod_skolem, mod0, total_mod));
-  return mod_skolem;
-}
-
 void TheoryArithPrivate::setMasterEqualityEngine(eq::EqualityEngine* eq) {
   d_congruenceManager.setMasterEqualityEngine(eq);
-}
-
-Node TheoryArithPrivate::getRealDivideBy0Func(){
-  Assert(!getLogicInfo().isLinear());
-  Assert(getLogicInfo().areRealsUsed());
-
-  if(d_realDivideBy0Func.isNull()){
-    TypeNode realType = NodeManager::currentNM()->realType();
-    d_realDivideBy0Func = skolemFunction("/by0", realType, realType);
-  }
-  return d_realDivideBy0Func;
-}
-
-Node TheoryArithPrivate::getIntDivideBy0Func(){
-  Assert(!getLogicInfo().isLinear());
-  Assert(getLogicInfo().areIntegersUsed());
-
-  if(d_intDivideBy0Func.isNull()){
-    TypeNode intType = NodeManager::currentNM()->integerType();
-    d_intDivideBy0Func = skolemFunction("divby0", intType, intType);
-  }
-  return d_intDivideBy0Func;
-}
-
-Node TheoryArithPrivate::getIntModulusBy0Func(){
-  Assert(!getLogicInfo().isLinear());
-  Assert(getLogicInfo().areIntegersUsed());
-
-  if(d_intModulusBy0Func.isNull()){
-    TypeNode intType = NodeManager::currentNM()->integerType();
-    d_intModulusBy0Func = skolemFunction("modby0", intType, intType);
-  }
-  return d_intModulusBy0Func;
 }
 
 TheoryArithPrivate::ModelException::ModelException(TNode n, const char* msg) throw (){
@@ -1314,9 +1152,9 @@ void TheoryArithPrivate::addSharedTerm(TNode n){
 
 Node TheoryArithPrivate::getModelValue(TNode term) {
   try{
-    DeltaRational drv = getDeltaValue(term);
+    const DeltaRational drv = getDeltaValue(term);
     const Rational& delta = d_partialModel.getDelta();
-    Rational qmodel = drv.substituteDelta( delta );
+    const Rational qmodel = drv.substituteDelta( delta );
     return mkRationalNode( qmodel );
   } catch (DeltaRationalException& dr) {
     return Node::null();
@@ -1337,16 +1175,19 @@ Node TheoryArithPrivate::ppRewriteTerms(TNode n) {
   case kind::TO_INTEGER:
   case kind::IS_INTEGER: {
     Node toIntSkolem;
-    if(!n[0].getAttribute(ToIntegerAttr(), toIntSkolem)) {
+    NodeMap::const_iterator it = d_to_int_skolem.find( n[0] );
+    if( it==d_to_int_skolem.end() ){
       toIntSkolem = nm->mkSkolem("toInt", nm->integerType(),
                             "a conversion of a Real term to its Integer part");
-      n[0].setAttribute(ToIntegerAttr(), toIntSkolem);
+      d_to_int_skolem[n[0]] = toIntSkolem;
       // n[0] - 1 < toIntSkolem <= n[0]
       // -1 < toIntSkolem - n[0] <= 0
       // 0 <= n[0] - toIntSkolem < 1
       Node one = mkRationalNode(1);
       Node lem = mkAxiomForTotalIntDivision(n[0], one, toIntSkolem);
       d_containing.d_out->lemma(lem);
+    }else{
+      toIntSkolem = (*it).second;
     }
     if(k == kind::IS_INTEGER) {
       return nm->mkNode(kind::EQUAL, n[0], toIntSkolem);
@@ -1354,42 +1195,79 @@ Node TheoryArithPrivate::ppRewriteTerms(TNode n) {
     Assert(k == kind::TO_INTEGER);
     return toIntSkolem;
   }
-  case kind::INTS_MODULUS:
-  case kind::INTS_MODULUS_TOTAL:
   case kind::INTS_DIVISION:
-  case kind::INTS_DIVISION_TOTAL: {
+  case kind::INTS_MODULUS:
+  case kind::DIVISION:
+    // these should be removed during expand definitions
+    Assert( false );
+    break;
+  
+  case kind::INTS_DIVISION_TOTAL: 
+  case kind::INTS_MODULUS_TOTAL: {
     Node den = Rewriter::rewrite(n[1]);
-    if (!options::rewriteDivk() && den.isConst()) {
+    if(!options::rewriteDivk() && den.isConst()) {
       return n;
     }
     Node num = Rewriter::rewrite(n[0]);
-    if (k == kind::INTS_MODULUS) {
-      return getSkolemConstrainedToIntegerModulus(
-          num, den, getIntModulusBy0Func(), d_containing.d_out);
-    } else if (k == kind::INTS_MODULUS_TOTAL) {
-      return getSkolemConstrainedToIntegerModulusTotal(num, den,
-                                                       d_containing.d_out);
-    } else if (k == kind::INTS_DIVISION) {
-      return getSkolemConstrainedToIntegerDivision(
-          num, den, getIntDivideBy0Func(), d_containing.d_out);
+    Node intVar;
+    Node rw = nm->mkNode(k, num, den);
+    NodeMap::const_iterator it = d_int_div_skolem.find( rw );
+    if( it==d_int_div_skolem.end() ){
+      intVar = nm->mkSkolem("linearIntDiv", nm->integerType(), "the result of an intdiv-by-k term");
+      d_int_div_skolem[rw] = intVar;
+      Node lem;
+      if (den.isConst()) {
+        const Rational& rat = den.getConst<Rational>();
+        Assert(!num.isConst());
+        if(rat != 0) {
+          if(rat > 0) {
+            lem = nm->mkNode(kind::AND, nm->mkNode(kind::LEQ, nm->mkNode(kind::MULT, den, intVar), num), 
+                                        nm->mkNode(kind::LT, num, nm->mkNode(kind::MULT, den, nm->mkNode(kind::PLUS, intVar, nm->mkConst(Rational(1))))));
+          } else {
+            lem = nm->mkNode(kind::AND, nm->mkNode(kind::LEQ, nm->mkNode(kind::MULT, den, intVar), num), 
+                                        nm->mkNode(kind::LT, num, nm->mkNode(kind::MULT, den, nm->mkNode(kind::PLUS, intVar, nm->mkConst(Rational(-1))))));
+          }
+        }
+      }else{
+        lem = nm->mkNode(kind::AND,
+                nm->mkNode(kind::IMPLIES, NodeManager::currentNM()->mkNode( kind::GT, den, nm->mkConst(Rational(0)) ),
+                  nm->mkNode(kind::AND, nm->mkNode(kind::LEQ, nm->mkNode(kind::MULT, den, intVar), num), 
+                                        nm->mkNode(kind::LT, num, nm->mkNode(kind::MULT, den, nm->mkNode(kind::PLUS, intVar, nm->mkConst(Rational(1))))))),
+                nm->mkNode(kind::IMPLIES, NodeManager::currentNM()->mkNode( kind::LT, den, nm->mkConst(Rational(0)) ),
+                  nm->mkNode(kind::AND, nm->mkNode(kind::LEQ, nm->mkNode(kind::MULT, den, intVar), num), 
+                                        nm->mkNode(kind::LT, num, nm->mkNode(kind::MULT, den, nm->mkNode(kind::PLUS, intVar, nm->mkConst(Rational(-1))))))));                
+      }    
+      if( !lem.isNull() ){
+        d_containing.d_out->lemma(lem);
+      }
+    }else{
+      intVar = (*it).second;
     }
-    Assert(k == kind::INTS_DIVISION_TOTAL);
-    return getSkolemConstrainedToIntegerDivisionTotal(num, den,
-                                                      d_containing.d_out);
+    if( k==kind::INTS_MODULUS_TOTAL ){
+      Node node = nm->mkNode(kind::MINUS, num, nm->mkNode(kind::MULT, den, intVar));
+      return node;
+    }else{
+      return intVar;
+    }
+    break;
   }
-  case kind::DIVISION:
   case kind::DIVISION_TOTAL: {
     Node num = Rewriter::rewrite(n[0]);
     Node den = Rewriter::rewrite(n[1]);
     Assert(!den.isConst());
-    if (k == kind::DIVISION) {
-      return getSkolemConstrainedToDivision(num, den, getRealDivideBy0Func(),
-                                            d_containing.d_out);
+    Node var;
+    Node rw = nm->mkNode(k, num, den);
+    NodeMap::const_iterator it = d_div_skolem.find( rw );
+    if( it==d_div_skolem.end() ){
+      var = nm->mkSkolem("nonlinearDiv", nm->realType(), "the result of a non-linear div term");
+      d_div_skolem[rw] = var;
+      d_containing.d_out->lemma(nm->mkNode(kind::IMPLIES, den.eqNode(nm->mkConst(Rational(0))).negate(), nm->mkNode(kind::MULT, den, var).eqNode(num)));
+    }else{
+      var = (*it).second;
     }
-    Assert(k == kind::DIVISION_TOTAL);
-    return getSkolemConstrainedToDivisionTotal(num, den, d_containing.d_out);
+    return var;
+    break;
   }
-
   default:
     break;
   }
@@ -1437,7 +1315,8 @@ Theory::PPAssertStatus TheoryArithPrivate::ppAssert(TNode in, SubstitutionMap& o
   Rational minConstant = 0;
   Node minMonomial;
   Node minVar;
-  if (in.getKind() == kind::EQUAL) {
+  if (in.getKind() == kind::EQUAL &&
+      Theory::theoryOf(in[0].getType()) == THEORY_ARITH) {
     Comparison cmp = Comparison::parseNormalForm(in);
 
     Polynomial left = cmp.getLeft();
@@ -1529,7 +1408,8 @@ ArithVar TheoryArithPrivate::findShortestBasicRow(ArithVar variable){
       bestRowLength = rowLength;
     }
   }
-  Assert(bestBasic == ARITHVAR_SENTINEL || bestRowLength < std::numeric_limits<uint32_t>::max());
+  Assert(bestBasic == ARITHVAR_SENTINEL ||
+         bestRowLength < std::numeric_limits<uint32_t>::max());
   return bestBasic;
 }
 
@@ -1544,7 +1424,6 @@ void TheoryArithPrivate::setupVariable(const Variable& x){
   //setupInitialValue(varN);
 
   markSetup(n);
-
 
   if(x.isDivLike()){
     setupDivLike(x);
@@ -1574,7 +1453,7 @@ void TheoryArithPrivate::setupVariableList(const VarList& vl){
       throw LogicException("A non-linear fact was asserted to arithmetic in a linear logic.");
     }
 
-    if( !options::nlAlg() ){
+    if( !options::nlExt() ){
       setIncomplete();
       d_nlIncomplete = true;
     }
@@ -1610,7 +1489,11 @@ void TheoryArithPrivate::setupDivLike(const Variable& v){
   Assert(v.isDivLike());
 
   if(getLogicInfo().isLinear()){
-    throw LogicException("A non-linear fact (involving div/mod/divisibility) was asserted to arithmetic in a linear logic;\nif you only use division (or modulus) by a constant value, or if you only use the divisibility-by-k predicate, try using the --rewrite-divk option.");
+    throw LogicException(
+        "A non-linear fact (involving div/mod/divisibility) was asserted to "
+        "arithmetic in a linear logic;\nif you only use division (or modulus) "
+        "by a constant value, or if you only use the divisibility-by-k "
+        "predicate, try using the --rewrite-divk option.");
   }
 
   Node vnode = v.getNode();
@@ -1626,7 +1509,8 @@ void TheoryArithPrivate::setupDivLike(const Variable& v){
   case DIVISION:
   case INTS_DIVISION:
   case INTS_MODULUS:
-    lem = definingIteForDivLike(vnode);
+    // these should be removed during expand definitions
+    Assert( false );
     break;
   case DIVISION_TOTAL:
     lem = axiomIteForTotalDivision(vnode);
@@ -1644,40 +1528,6 @@ void TheoryArithPrivate::setupDivLike(const Variable& v){
     Debug("arith::div") << lem << endl;
     outputLemma(lem);
   }
-}
-
-Node TheoryArithPrivate::definingIteForDivLike(Node divLike){
-  Kind k = divLike.getKind();
-  Assert(k == DIVISION || k == INTS_DIVISION || k == INTS_MODULUS);
-  // (for all ((n Real) (d Real))
-  //  (=
-  //   (DIVISION n d)
-  //   (ite (= d 0)
-  //    (APPLY [div_0_skolem_function] n)
-  //    (DIVISION_TOTAL n d))))
-
-  Polynomial n = Polynomial::parsePolynomial(divLike[0]);
-  Polynomial d = Polynomial::parsePolynomial(divLike[1]);
-
-  NodeManager* currNM = NodeManager::currentNM();
-  Node dEq0 = currNM->mkNode(EQUAL, d.getNode(), mkRationalNode(0));
-
-  Kind kTotal = (k == DIVISION) ? DIVISION_TOTAL :
-    (k == INTS_DIVISION) ? INTS_DIVISION_TOTAL : INTS_MODULUS_TOTAL;
-
-  Node by0Func = (k == DIVISION) ?  getRealDivideBy0Func():
-    (k == INTS_DIVISION) ? getIntDivideBy0Func() : getIntModulusBy0Func();
-
-
-  Debug("arith::div") << divLike << endl;
-  Debug("arith::div") << by0Func << endl;
-
-  Node divTotal = currNM->mkNode(kTotal, n.getNode(), d.getNode());
-  Node divZero = currNM->mkNode(APPLY_UF, by0Func, n.getNode());
-
-  Node defining = divLike.eqNode(dEq0.iteNode( divZero, divTotal));
-
-  return defining;
 }
 
 Node TheoryArithPrivate::axiomIteForTotalDivision(Node div_tot){
@@ -1820,7 +1670,7 @@ void TheoryArithPrivate::setupAtom(TNode atom) {
 void TheoryArithPrivate::preRegisterTerm(TNode n) {
   Debug("arith::preregister") <<"begin arith::preRegisterTerm("<< n <<")"<< endl;
   
-  if( options::nlAlg() ){
+  if( options::nlExt() ){
     d_containing.getExtTheory()->registerTermRec( n );
   }
 
@@ -3647,7 +3497,7 @@ void TheoryArithPrivate::check(Theory::Effort effortLevel){
   }
 
   if(effortLevel == Theory::EFFORT_LAST_CALL){
-    if( options::nlAlg() ){
+    if( options::nlExt() ){
       d_nonlinearExtension->check( effortLevel );
     }
     return;
@@ -3967,7 +3817,7 @@ void TheoryArithPrivate::check(Theory::Effort effortLevel){
   }//if !emmittedConflictOrSplit && fullEffort(effortLevel) && !hasIntegerModel()
 
   if(!emmittedConflictOrSplit && effortLevel>=Theory::EFFORT_FULL){
-    if( options::nlAlg() ){
+    if( options::nlExt() ){
       d_nonlinearExtension->check( effortLevel );
     }
   }
@@ -4148,7 +3998,7 @@ void TheoryArithPrivate::debugPrintModel(std::ostream& out) const{
 }
 
 bool TheoryArithPrivate::needsCheckLastEffort() {
-  if( options::nlAlg() ){
+  if( options::nlExt() ){
     return d_nonlinearExtension->needsCheckLastEffort();
   }else{
     return false;
@@ -4185,7 +4035,7 @@ Node TheoryArithPrivate::explain(TNode n) {
 }
 
 bool TheoryArithPrivate::getCurrentSubstitution( int effort, std::vector< Node >& vars, std::vector< Node >& subs, std::map< Node, std::vector< Node > >& exp ) {
-  if( options::nlAlg() ){
+  if( options::nlExt() ){
     return d_nonlinearExtension->getCurrentSubstitution( effort, vars, subs, exp );
   }else{
     return false;
@@ -4194,7 +4044,7 @@ bool TheoryArithPrivate::getCurrentSubstitution( int effort, std::vector< Node >
 
 bool TheoryArithPrivate::isExtfReduced(int effort, Node n, Node on,
                                        std::vector<Node>& exp) {
-  if (options::nlAlg()) {
+  if (options::nlExt()) {
     std::pair<bool, Node> reduced =
         d_nonlinearExtension->isExtfReduced(effort, n, on, exp);
     if (!reduced.second.isNull()) {
@@ -4271,95 +4121,71 @@ void TheoryArithPrivate::propagate(Theory::Effort e) {
   }
 }
 
-DeltaRational TheoryArithPrivate::getDeltaValue(TNode n) const throw (DeltaRationalException, ModelException) {
+DeltaRational TheoryArithPrivate::getDeltaValue(TNode term) const
+    throw(DeltaRationalException, ModelException) {
   AlwaysAssert(d_qflraStatus != Result::SAT_UNKNOWN);
-  Debug("arith::value") << n << std::endl;
+  Debug("arith::value") << term << std::endl;
 
-  switch(n.getKind()) {
-
-  case kind::CONST_RATIONAL:
-    return n.getConst<Rational>();
-
-  case kind::PLUS: { // 2+ args
-    DeltaRational value(0);
-    for(TNode::iterator i = n.begin(), iend = n.end(); i != iend; ++i) {
-      value = value + getDeltaValue(*i);
-    }
-    return value;
+  if (d_partialModel.hasArithVar(term)) {
+    ArithVar var = d_partialModel.asArithVar(term);
+    return d_partialModel.getAssignment(var);
   }
 
-  case kind::MULT: { // 2+ args
-    DeltaRational value(1);
-    unsigned variableParts = 0;
-    for(TNode::iterator i = n.begin(), iend = n.end(); i != iend; ++i) {
-      TNode curr = *i;
-      value = value * getDeltaValue(curr);
-      if(!curr.isConst()){
-        ++variableParts;
+  switch (Kind kind = term.getKind()) {
+    case kind::CONST_RATIONAL:
+      return term.getConst<Rational>();
+
+    case kind::PLUS: {  // 2+ args
+      DeltaRational value(0);
+      for (TNode::iterator i = term.begin(), iend = term.end(); i != iend;
+           ++i) {
+        value = value + getDeltaValue(*i);
+      }
+      return value;
+    }
+
+    case kind::NONLINEAR_MULT:
+    case kind::MULT: {  // 2+ args
+      Assert(!isSetup(term));
+      DeltaRational value(1);
+      for (TNode::iterator i = term.begin(), iend = term.end(); i != iend;
+           ++i) {
+        value = value * getDeltaValue(*i);
+      }
+      return value;
+    }
+    case kind::MINUS: {  // 2 args
+      return getDeltaValue(term[0]) - getDeltaValue(term[1]);
+    }
+    case kind::UMINUS: {  // 1 arg
+      return (-getDeltaValue(term[0]));
+    }
+
+    case kind::DIVISION: {  // 2 args
+      Assert(!isSetup(term));
+      return getDeltaValue(term[0]) / getDeltaValue(term[1]);
+    }
+    case kind::DIVISION_TOTAL:
+    case kind::INTS_DIVISION_TOTAL:
+    case kind::INTS_MODULUS_TOTAL: {  // 2 args
+      Assert(!isSetup(term));
+      DeltaRational denominator = getDeltaValue(term[1]);
+      if (denominator.isZero()) {
+        return DeltaRational(0, 0);
+      }
+      DeltaRational numerator = getDeltaValue(term[0]);
+      if (kind == kind::DIVISION_TOTAL) {
+        return numerator / denominator;
+      } else if (kind == kind::INTS_DIVISION_TOTAL) {
+        return Rational(numerator.euclidianDivideQuotient(denominator));
+      } else {
+        Assert(kind == kind::INTS_MODULUS_TOTAL);
+        return Rational(numerator.euclidianDivideRemainder(denominator));
       }
     }
-    // TODO: This is a bit of a weak check
-    if(isSetup(n)){
-      ArithVar var = d_partialModel.asArithVar(n);
-      const DeltaRational& assign = d_partialModel.getAssignment(var);
-      if(assign != value){
-        throw ModelException(n, "Model disagrees on non-linear term.");
-      }
-    }
-    return value;
-  }
-  case kind::MINUS:{ // 2 args
-    return getDeltaValue(n[0]) - getDeltaValue(n[1]);
-  }
 
-  case kind::UMINUS:{ // 1 arg
-    return (- getDeltaValue(n[0]));
-  }
-
-  case kind::DIVISION:{ // 2 args
-    DeltaRational res = getDeltaValue(n[0]) / getDeltaValue(n[1]);
-    if(isSetup(n)){
-      ArithVar var = d_partialModel.asArithVar(n);
-      if(d_partialModel.getAssignment(var) != res){
-        throw ModelException(n, "Model disagrees on non-linear term.");
-      }
-    }
-    return res;
-  }
-  case kind::DIVISION_TOTAL:
-  case kind::INTS_DIVISION_TOTAL:
-  case kind::INTS_MODULUS_TOTAL: { // 2 args
-    DeltaRational denom = getDeltaValue(n[1]);
-    if(denom.isZero()){
-      return DeltaRational(0,0);
-    }else{
-      DeltaRational numer = getDeltaValue(n[0]);
-      DeltaRational res;
-      if(n.getKind() == kind::DIVISION_TOTAL){
-        res = numer / denom;
-      }else if(n.getKind() == kind::INTS_DIVISION_TOTAL){
-        res = Rational(numer.euclidianDivideQuotient(denom));
-      }else{
-        Assert(n.getKind() == kind::INTS_MODULUS_TOTAL);
-        res = Rational(numer.euclidianDivideRemainder(denom));
-      }
-      if(isSetup(n)){
-        ArithVar var = d_partialModel.asArithVar(n);
-        if(d_partialModel.getAssignment(var) != res){
-          throw ModelException(n, "Model disagrees on non-linear term.");
-        }
-      }
-      return res;
-    }
-  }
-
-  default:
-    if(isSetup(n)){
-      ArithVar var = d_partialModel.asArithVar(n);
-      return d_partialModel.getAssignment(var);
-    }else{
-      throw ModelException(n, "Expected a setup node.");
-    }
+    default:
+      throw ModelException(term, "No model assignment.");
   }
 }
 

@@ -63,8 +63,10 @@ TheoryDatatypes::TheoryDatatypes(Context* c, UserContext* u, OutputChannel& out,
   // The kinds we are treating as function application in congruence
   d_equalityEngine.addFunctionKind(kind::APPLY_CONSTRUCTOR);
   d_equalityEngine.addFunctionKind(kind::APPLY_SELECTOR_TOTAL);
-  d_equalityEngine.addFunctionKind(kind::DT_SIZE);
-  d_equalityEngine.addFunctionKind(kind::DT_HEIGHT_BOUND);
+  //d_equalityEngine.addFunctionKind(kind::DT_SIZE);
+  //d_equalityEngine.addFunctionKind(kind::DT_HEIGHT_BOUND);
+  //d_equalityEngine.addFunctionKind(kind::DT_SYGUS_TERM_ORDER);
+  //d_equalityEngine.addFunctionKind(kind::DT_SYGUS_IS_CONST);
   d_equalityEngine.addFunctionKind(kind::APPLY_TESTER);
   //d_equalityEngine.addFunctionKind(kind::APPLY_UF);
 

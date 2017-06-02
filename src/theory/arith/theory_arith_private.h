@@ -401,20 +401,21 @@ private:
     virtual ~ModelException() throw ();
   };
 
-  /** Internal model value for the node */
-  DeltaRational getDeltaValue(TNode n) const throw (DeltaRationalException, ModelException);
-
-  /** Uninterpretted function symbol for use when interpreting
-   * division by zero.
+  /**
+   * Computes the delta rational value of a term from the current partial
+   * model. This returns the delta value assignment to the term if it is in the
+   * partial model. Otherwise, this is computed recursively for arithmetic terms
+   * from each subterm.
+   *
+   * This throws a DeltaRationalException if the value cannot be represented as
+   * a DeltaRational. This throws a ModelException if there is a term is not in
+   * the partial model and is not a theory of arithmetic term.
+   *
+   * precondition: The linear abstraction of the nodes must be satisfiable.
    */
-  Node d_realDivideBy0Func;
-  Node d_intDivideBy0Func;
-  Node d_intModulusBy0Func;
-  Node getRealDivideBy0Func();
-  Node getIntDivideBy0Func();
-  Node getIntModulusBy0Func();
+  DeltaRational getDeltaValue(TNode term) const
+      throw(DeltaRationalException, ModelException);
 
-  Node definingIteForDivLike(Node divLike);
   Node axiomIteForTotalDivision(Node div_tot);
   Node axiomIteForTotalIntDivision(Node int_div_like);
 
@@ -847,8 +848,16 @@ private:
    * semantics.  Needed to deal with partial function "mod".
    */
   Node d_modZero;
-
-
+  
+  /** 
+   *  Maps for Skolems for to-integer, real/integer div-by-k.
+   *  Introduced during ppRewriteTerms.
+   */
+  typedef context::CDHashMap< Node, Node, NodeHashFunction > NodeMap;
+  NodeMap d_to_int_skolem;
+  NodeMap d_div_skolem;
+  NodeMap d_int_div_skolem;
+  
 };/* class TheoryArithPrivate */
 
 }/* CVC4::theory::arith namespace */

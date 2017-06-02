@@ -62,6 +62,7 @@ private:
   typedef context::CDChunkList<Node> NodeList;
   typedef context::CDHashSet<Node, NodeHashFunction> NodeSet;
   IntMap d_testers;
+  IntMap d_is_const;
   NodeMap d_testers_exp;
   NodeSet d_active_terms;
   IntMap d_currTermSize;
@@ -152,6 +153,8 @@ private:
   bool debugTesters( Node n, Node vn, int ind, std::vector< Node >& lemmas );
   Node getCurrentTemplate( Node n, std::map< TypeNode, int >& var_count );
   int getGuardStatus( Node g );
+private:
+  void assertIsConst( Node n, bool polarity, std::vector< Node >& lemmas );
 public:
   SygusSymBreakNew( TheoryDatatypes * td, quantifiers::TermDbSygus * tds, context::Context* c );
   ~SygusSymBreakNew();

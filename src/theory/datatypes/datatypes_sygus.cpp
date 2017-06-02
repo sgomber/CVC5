@@ -66,7 +66,7 @@ void SygusSplitNew::getSygusSplits( Node n, const Datatype& dt, std::vector< Nod
 
 SygusSymBreakNew::SygusSymBreakNew( TheoryDatatypes * td, quantifiers::TermDbSygus * tds, context::Context* c ) : 
 d_td( td ), d_tds( tds ), d_context( c ), 
-d_testers( c ), d_testers_exp( c ), d_active_terms( c ), d_currTermSize( c ) {
+d_testers( c ), d_is_const( c ), d_testers_exp( c ), d_active_terms( c ), d_currTermSize( c ) {
   d_zero = NodeManager::currentNM()->mkConst( Rational(0) );
 }
 
@@ -146,9 +146,54 @@ void SygusSymBreakNew::assertFact( Node n, bool polarity, std::vector< Node >& l
       unsigned s = n[1].getConst<Rational>().getNumerator().toUnsignedInt();
       notifySearchSize( m, s, n, lemmas );
     }
+  }else if( n.getKind() == kind::DT_SYGUS_IS_CONST ){
+    assertIsConst( n[0], polarity, lemmas );
   }else if( n.getKind() == kind::DT_HEIGHT_BOUND || n.getKind()==DT_SIZE_BOUND ){
     //reduce to arithmetic TODO ?
 
+  }
+}
+
+void SygusSymBreakNew::assertIsConst( Node n, bool polarity, std::vector< Node >& lemmas ) {
+  if( d_active_terms.find( n )!=d_active_terms.end() ) {
+    // what kind of constructor is n?
+    IntMap::const_iterator itt = d_testers.find( n );
+    Assert( itt!=d_testers.end() );
+    int tindex = (*itt).second;
+    TypeNode tn = n.getType();
+    const Datatype& dt = ((DatatypeType)tn.toType()).getDatatype();
+    Node lem;
+    if( dt[tindex].getNumArgs()==0 ){
+      // is this a constant?
+      Node sygus_op = Node::fromExpr( dt[tindex].getSygusOp() );
+      if( sygus_op.isConst()!=polarity ){
+        lem = NodeManager::currentNM()->mkNode( kind::DT_SYGUS_IS_CONST, n );
+        if( polarity ){
+          lem.negate();
+        }
+      }
+    }else{
+      // reduce
+      std::vector< Node > child_conj;
+      for( unsigned j=0; j<dt[tindex].getNumArgs(); j++ ){
+        Node sel = NodeManager::currentNM()->mkNode( APPLY_SELECTOR_TOTAL, Node::fromExpr( dt[tindex].getSelectorInternal( tn.toType(), j ) ), n );
+        child_conj.push_back( NodeManager::currentNM()->mkNode( kind::DT_SYGUS_IS_CONST, sel ) );
+      }
+      lem = child_conj.size()==1 ? child_conj[0] : NodeManager::currentNM()->mkNode( kind::AND, child_conj );
+      // only an implication (TODO : strengthen?)
+      lem = NodeManager::currentNM()->mkNode( kind::OR, lem.negate(), NodeManager::currentNM()->mkNode( kind::DT_SYGUS_IS_CONST, n ) );
+    }
+    if( !lem.isNull() ){
+      Trace("sygus-isc") << "Sygus is-const lemma : " << lem << std::endl;
+      Node rlv = getRelevancyCondition( n );
+      if( !rlv.isNull() ){
+        lem = NodeManager::currentNM()->mkNode( kind::OR, rlv.negate(), lem );
+      }
+      lemmas.push_back( lem );
+    }
+  }else{
+    // lazy
+    d_is_const[n] = polarity ? 1 : -1;
   }
 }
 
@@ -241,6 +286,14 @@ bool SygusSymBreakNew::computeTopLevel( TypeNode tn, Node n ){
 void SygusSymBreakNew::assertTesterInternal( int tindex, TNode n, Node exp, std::vector< Node >& lemmas ) {
   d_active_terms.insert( n );
   Trace("sygus-sb-debug2") << "Sygus : activate term : " << n << " : " << exp << std::endl;  
+  
+  /* TODO
+  IntMap::const_iterator itisc = d_is_const.find( n );
+  if( itisc != d_is_const.end() ){
+    assertIsConst( n, (*itisc).second==1, lemmas );
+  }
+  */
+  
   TypeNode ntn = n.getType();
   const Datatype& dt = ((DatatypeType)ntn.toType()).getDatatype();
   
@@ -501,16 +554,25 @@ Node SygusSymBreakNew::getSimpleSymBreakPred( TypeNode tn, int tindex, unsigned 
               }
             }
             
-            // division by zero
-            if( nk==BITVECTOR_UDIV_TOTAL ){
+            /*
+            // division by zero  TODO ?
+            if( nk==DIVISION || nk==DIVISION_TOTAL || nk==INTS_DIVISION || nk==INTS_DIVISION_TOTAL || 
+                nk==INTS_MODULUS || nk==INTS_MODULUS_TOTAL ){
               Assert( children.size()==2 );
-              Node bv_zero = d_tds->getTypeValue( tnb, 0 );
-              int zero_arg = d_tds->getConstConsNum( tn, bv_zero );
+              // do not consider non-constant denominators ?
+              sbp_conj.push_back( NodeManager::currentNM()->mkNode( kind::DT_SYGUS_IS_CONST, children[1] ) );
+              // do not consider zero denominator
+              Node tzero = d_tds->getTypeValue( tnb, 0 );
+              int zero_arg = d_tds->getConstConsNum( children[1].getType(), tzero );
               if( zero_arg!=-1 ){
-                // if denominator is zero, then consider only one numerator (TODO)
                 
-              }      
+              }else{
+                // semantic skolem for zero?
+              }
+            }else if( nk==BITVECTOR_UDIV_TOTAL || nk==BITVECTOR_UDIV || nk==BITVECTOR_SDIV || nk==BITVECTOR_UREM || nk==BITVECTOR_UREM_TOTAL ){
+
             }
+            */
             
             Trace("sygus-sb-simple-debug") << "Process arguments for " << tn << " : " << nk << " : " << std::endl;
             // singular arguments (e.g. 0 for mult) 
@@ -654,7 +716,7 @@ public:
   bool exclude( quantifiers::TermDbSygus * tds, Node nvn, Node x ){
     TypeNode tn = nvn.getType();
     Node nbv = tds->sygusToBuiltin( nvn, tn );
-    Node nbvr = Rewriter::rewrite( nbv );
+    Node nbvr = tds->extendedRewrite( nbv );
     Trace("sygus-sb-mexp-debug") << "  min-exp check : " << nbv << " -> " << nbvr << std::endl;
     bool exc_arg = false;
     // equivalent / singular up to normalization
@@ -700,6 +762,25 @@ public:
   }
 };
 
+
+class DivByZeroSygusInvarianceTest : public quantifiers::SygusInvarianceTest {
+public:
+  DivByZeroSygusInvarianceTest(){}
+  ~DivByZeroSygusInvarianceTest(){}
+
+  bool exclude( quantifiers::TermDbSygus * tds, Node nvn, Node x ){
+    TypeNode tn = nvn.getType();
+    Node nbv = tds->sygusToBuiltin( nvn, tn );
+    Node nbvr = tds->extendedRewrite( nbv );
+    if( tds->involvesDivByZero( nbvr ) ){
+      Trace("sygus-sb-mexp") << "sb-min-exp : " << tds->sygusToBuiltin( nvn ) << " involves div-by-zero regardless of " << tds->sygusToBuiltin( x ) << std::endl;
+      return true;
+    }else{
+      return false;
+    }
+  }
+};
+
 bool SygusSymBreakNew::registerSearchValue( Node a, Node n, Node nv, unsigned d, std::vector< Node >& lemmas ) {
   Assert( n.getType()==nv.getType() );
   Assert( nv.getKind()==APPLY_CONSTRUCTOR );
@@ -726,68 +807,81 @@ bool SygusSymBreakNew::registerSearchValue( Node a, Node n, Node nv, unsigned d,
     Trace("sygus-sb-debug") << "  ...register search value " << nv << ", type=" << tn << std::endl;
     Node bv = d_tds->sygusToBuiltin( nv, tn );
     Trace("sygus-sb-debug") << "  ......builtin is " << bv << std::endl;
-    unsigned sz = d_tds->getSygusTermSize( nv );
     Node bvr = d_tds->extendedRewrite( bv );
     Trace("sygus-sb-debug") << "  ......rewrites to " << bvr << std::endl;
-    std::map< Node, Node >::iterator itsv = d_cache[a].d_search_val[tn].find( bvr );
-    Node bad_val_bvr;
-    bool by_examples = false;
-    if( itsv==d_cache[a].d_search_val[tn].end() ){
-      // is it equivalent under examples?
-      Node bvr_equiv = d_tds->addPbeSearchVal( tn, ar, bvr );
-      if( !bvr_equiv.isNull() ){
-        if( bvr_equiv!=bvr ){
-          Trace("sygus-sb-debug") << "......adding search val for " << bvr << " returned " << bvr_equiv << std::endl;
-          Assert( d_cache[a].d_search_val[tn].find( bvr_equiv )!=d_cache[a].d_search_val[tn].end() );
-          Trace("sygus-sb-debug") << "......search value was " << d_cache[a].d_search_val[tn][bvr_equiv] << std::endl;
-          if( Trace.isOn("sygus-sb-exc") ){
-            Node prev = d_tds->sygusToBuiltin( d_cache[a].d_search_val[tn][bvr_equiv], tn );
-            Trace("sygus-sb-exc") << "  ......programs " << prev << " and " << bv << " are equivalent up to examples." << std::endl;
-          }
-          bad_val_bvr = bvr_equiv;
-          by_examples = true;
-        }
-      }
-      //store rewritten values, regardless of whether it will be considers
-      d_cache[a].d_search_val[tn][bvr] = nv;
-      d_cache[a].d_search_val_sz[tn][bvr] = sz;
-    }else{
-      bad_val_bvr = bvr;
-      if( Trace.isOn("sygus-sb-exc") ){
-        Node prev_bv = d_tds->sygusToBuiltin( itsv->second, tn );
-        Trace("sygus-sb-exc") << "  ......programs " << prev_bv << " and " << bv << " rewrite to " << bvr << "." << std::endl;
-      } 
-    }
-    if( !bad_val_bvr.isNull() ){
-      Node bad_val = nv;
-      Node bad_val_o = d_cache[a].d_search_val[tn][bad_val_bvr];
-      Assert( d_cache[a].d_search_val_sz[tn].find( bad_val_bvr )!=d_cache[a].d_search_val_sz[tn].end() );
-      unsigned prev_sz = d_cache[a].d_search_val_sz[tn][bad_val_bvr];
-      if( prev_sz>sz ){
-        //swap : the excluded value is the previous
-        d_cache[a].d_search_val_sz[tn][bad_val_bvr] = sz;
-        bad_val = d_cache[a].d_search_val[tn][bad_val_bvr];
-        bad_val_o = nv;
-        sz = prev_sz;
-      }
-      if( Trace.isOn("sygus-sb-exc") ){
-        Node bad_val_bv = d_tds->sygusToBuiltin( bad_val, tn );
-        Trace("sygus-sb-exc") << "  ........exclude : " << bad_val_bv;
-        if( by_examples ){
-          Trace("sygus-sb-exc") << " (by examples)";
-        }
-        Trace("sygus-sb-exc") << std::endl;
-      } 
-      Assert( d_tds->getSygusTermSize( bad_val )==sz );
-
+    unsigned sz = d_tds->getSygusTermSize( nv );      
+    std::vector< Node > exp;
+    bool do_exclude = false;
+    if( d_tds->involvesDivByZero( bvr ) ){
       Node x = getFreeVar( tn );
+      DivByZeroSygusInvarianceTest dbzet;
+      Trace("sygus-sb-mexp-debug") << "Minimize explanation for div-by-zero in " << d_tds->sygusToBuiltin( nv ) << std::endl;
+      d_tds->getExplanationFor( x, nv, exp, dbzet, Node::null(), sz );
+      do_exclude = true;
+    }else{
+      std::map< Node, Node >::iterator itsv = d_cache[a].d_search_val[tn].find( bvr );
+      Node bad_val_bvr;
+      bool by_examples = false;
+      if( itsv==d_cache[a].d_search_val[tn].end() ){
+        // is it equivalent under examples?
+        Node bvr_equiv = d_tds->addPbeSearchVal( tn, ar, bvr );
+        if( !bvr_equiv.isNull() ){
+          if( bvr_equiv!=bvr ){
+            Trace("sygus-sb-debug") << "......adding search val for " << bvr << " returned " << bvr_equiv << std::endl;
+            Assert( d_cache[a].d_search_val[tn].find( bvr_equiv )!=d_cache[a].d_search_val[tn].end() );
+            Trace("sygus-sb-debug") << "......search value was " << d_cache[a].d_search_val[tn][bvr_equiv] << std::endl;
+            if( Trace.isOn("sygus-sb-exc") ){
+              Node prev = d_tds->sygusToBuiltin( d_cache[a].d_search_val[tn][bvr_equiv], tn );
+              Trace("sygus-sb-exc") << "  ......programs " << prev << " and " << bv << " are equivalent up to examples." << std::endl;
+            }
+            bad_val_bvr = bvr_equiv;
+            by_examples = true;
+          }
+        }
+        //store rewritten values, regardless of whether it will be considered
+        d_cache[a].d_search_val[tn][bvr] = nv;
+        d_cache[a].d_search_val_sz[tn][bvr] = sz;
+      }else{
+        bad_val_bvr = bvr;
+        if( Trace.isOn("sygus-sb-exc") ){
+          Node prev_bv = d_tds->sygusToBuiltin( itsv->second, tn );
+          Trace("sygus-sb-exc") << "  ......programs " << prev_bv << " and " << bv << " rewrite to " << bvr << "." << std::endl;
+        } 
+      }
       
-      // do analysis of the evaluation  FIXME: does not work (evaluation is non-constant)
-      std::vector< Node > exp;
-      EquivSygusInvarianceTest eset;
-      eset.init( d_tds, tn, ar, bvr );
-      Trace("sygus-sb-mexp-debug") << "Minimize explanation for eval[" << d_tds->sygusToBuiltin( bad_val ) << "] = " << bvr << std::endl;
-      d_tds->getExplanationFor( x, bad_val, exp, eset, bad_val_o, sz );
+      if( !bad_val_bvr.isNull() ){
+        Node bad_val = nv;
+        Node bad_val_o = d_cache[a].d_search_val[tn][bad_val_bvr];
+        Assert( d_cache[a].d_search_val_sz[tn].find( bad_val_bvr )!=d_cache[a].d_search_val_sz[tn].end() );
+        unsigned prev_sz = d_cache[a].d_search_val_sz[tn][bad_val_bvr];
+        if( prev_sz>sz ){
+          //swap : the excluded value is the previous
+          d_cache[a].d_search_val_sz[tn][bad_val_bvr] = sz;
+          bad_val = d_cache[a].d_search_val[tn][bad_val_bvr];
+          bad_val_o = nv;
+          sz = prev_sz;
+        }
+        if( Trace.isOn("sygus-sb-exc") ){
+          Node bad_val_bv = d_tds->sygusToBuiltin( bad_val, tn );
+          Trace("sygus-sb-exc") << "  ........exclude : " << bad_val_bv;
+          if( by_examples ){
+            Trace("sygus-sb-exc") << " (by examples)";
+          }
+          Trace("sygus-sb-exc") << std::endl;
+        } 
+        Assert( d_tds->getSygusTermSize( bad_val )==sz );
+
+        Node x = getFreeVar( tn );
+        
+        // do analysis of the evaluation  FIXME: does not work (evaluation is non-constant)
+        EquivSygusInvarianceTest eset;
+        eset.init( d_tds, tn, ar, bvr );
+        Trace("sygus-sb-mexp-debug") << "Minimize explanation for eval[" << d_tds->sygusToBuiltin( bad_val ) << "] = " << bvr << std::endl;
+        d_tds->getExplanationFor( x, bad_val, exp, eset, bad_val_o, sz );
+        do_exclude = true;
+      }
+    }
+    if( do_exclude ){
       Node lem = exp.size()==1 ? exp[0] : NodeManager::currentNM()->mkNode( kind::AND, exp );
       lem = lem.negate();
       /*  add min type depth to size : TODO?

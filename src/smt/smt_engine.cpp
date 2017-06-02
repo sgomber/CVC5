@@ -1981,7 +1981,7 @@ void SmtEngine::setDefaults() {
   }
 
   // Non-linear arithmetic does not support models unless nlAlg is enabled
-  if (d_logic.isTheoryEnabled(THEORY_ARITH) && !d_logic.isLinear() && !options::nlAlg() ) {
+  if (d_logic.isTheoryEnabled(THEORY_ARITH) && !d_logic.isLinear() && !options::nlExt() ) {
     if (options::produceModels()) {
       if(options::produceModels.wasSetByUser()) {
         throw OptionException("produce-model not supported with nonlinear arith");
@@ -3999,7 +3999,7 @@ void SmtEnginePrivate::processAssertions() {
 
   Debug("smt") << " d_assertions     : " << d_assertions.size() << endl;
   
-  if( options::nlAlgPurify() ){
+  if( options::nlExtPurify() ){
     hash_map<Node, Node, NodeHashFunction> cache;
     hash_map<Node, Node, NodeHashFunction> bcache;
     std::vector< Node > var_eq;

@@ -852,7 +852,7 @@ public:
     if( !d_ar.isNull() ){
       TypeNode tn = nvn.getType();
       Node nbv = tds->sygusToBuiltin( nvn, tn );
-      Node nbvr = Rewriter::rewrite( nbv );
+      Node nbvr = tds->extendedRewrite( nbv );
       // if for any of the examples, it is not contained, then we can exclude
       for( unsigned i=0; i<d_neg_con_indices.size(); i++ ){
         unsigned ii = d_neg_con_indices[i];
@@ -1349,7 +1349,6 @@ Node CegConjecturePbe::constructSolution( Node c, Node e, UnifContext& x, int in
         // test each example in the term enumerator for the type
         std::vector< Node > str_solved;
         for( unsigned i=0; i<itet->second.d_enum_vals.size(); i++ ){
-          Trace("ajr-temp") << "Check solved for " << itet->second.d_enum_vals[i] << std::endl;
           if( x.isStringSolved( this, ex_vals, itet->second.d_enum_vals_res[i] ) ){
             str_solved.push_back( itet->second.d_enum_vals[i] );
           }
@@ -1797,7 +1796,6 @@ bool CegConjecturePbe::UnifContext::isStringSolved( CegConjecturePbe * pbe, std:
       Assert( vals[j].isConst() );
       CVC4::String mystr = vals[j].getConst<String>();
       if( ex_vals[j]!=mystr ){
-        Trace("ajr-temp") << "(" << ex_vals[j] << ") is not (" << mystr << ")" << std::endl;
         return false;
       }
     }

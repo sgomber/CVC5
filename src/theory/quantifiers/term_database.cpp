@@ -2353,6 +2353,26 @@ TNode TermDbSygus::getFreeVarInc( TypeNode tn, std::map< TypeNode, int >& var_co
   }
 }
 
+bool TermDbSygus::hasFreeVar( Node n, std::map< Node, bool >& visited ){
+  if( visited.find( n )==visited.end() ){
+    visited[n] = true;
+    if( isFreeVar( n ) ){
+      return true;    
+    }
+    for( unsigned i=0; i<n.getNumChildren(); i++ ){
+      if( hasFreeVar( n[i], visited ) ){
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+bool TermDbSygus::hasFreeVar( Node n ) {
+  std::map< Node, bool > visited;
+  return hasFreeVar( n, visited );
+}
+  
 TypeNode TermDbSygus::getSygusTypeForVar( Node v ) {
   Assert( d_fv_stype.find( v )!=d_fv_stype.end() );
   return d_fv_stype[v];
@@ -2548,7 +2568,7 @@ Node TermDbSygus::sygusToBuiltin( Node n, TypeNode tn ) {
       Trace("sygus-db-debug") << "SygusToBuiltin : After expand definitions " << ret << std::endl;
       d_sygus_to_builtin[tn][n] = ret;
     }else{
-      Assert( isVar( n ) );
+      Assert( isFreeVar( n ) );
       //map to builtin variable type
       int fv_num = getVarNum( n );
       Assert( !dt.getSygusType().isNull() );
@@ -2766,17 +2786,21 @@ bool TermDbSygus::isAntisymmetric( Kind k, Kind& dk ) {
 
 bool TermDbSygus::isIdempotentArg( Node n, Kind ik, int arg ) {
   // these should all be binary operators
+  //Assert( ik!=DIVISION && ik!=INTS_DIVISION && ik!=INTS_MODULUS && ik!=BITVECTOR_UDIV );
   TypeNode tn = n.getType();
   if( n==getTypeValue( tn, 0 ) ){
     if( ik==PLUS || ik==OR || ik==XOR || ik==BITVECTOR_PLUS || ik==BITVECTOR_OR || ik==BITVECTOR_XOR || ik==STRING_CONCAT ){
       return true;
-    }else if( ik==MINUS || ik==BITVECTOR_SHL || ik==BITVECTOR_LSHR || ik==BITVECTOR_ASHR || ik==BITVECTOR_SUB || ik==BITVECTOR_UREM_TOTAL ){
+    }else if( ik==MINUS || ik==BITVECTOR_SHL || ik==BITVECTOR_LSHR || ik==BITVECTOR_ASHR || ik==BITVECTOR_SUB || 
+              ik==BITVECTOR_UREM || ik==BITVECTOR_UREM_TOTAL ){
       return arg==1;
     }
   }else if( n==getTypeValue( tn, 1 ) ){
     if( ik==MULT || ik==BITVECTOR_MULT ){
       return true;
-    }else if( ik==DIVISION || ik==DIVISION_TOTAL || ik==BITVECTOR_UDIV_TOTAL || ik==BITVECTOR_UDIV || ik==BITVECTOR_SDIV ){
+    }else if( ik==DIVISION || ik==DIVISION_TOTAL || ik==INTS_DIVISION || ik==INTS_DIVISION_TOTAL || 
+              ik==INTS_MODULUS || ik==INTS_MODULUS_TOTAL || 
+              ik==BITVECTOR_UDIV_TOTAL || ik==BITVECTOR_UDIV || ik==BITVECTOR_SDIV ){
       return arg==1;
     }
   }else if( n==getTypeMaxValue( tn ) ){
@@ -2793,7 +2817,8 @@ Node TermDbSygus::isSingularArg( Node n, Kind ik, int arg ) {
   if( n==getTypeValue( tn, 0 ) ){
     if( ik==AND || ik==MULT || ik==BITVECTOR_AND || ik==BITVECTOR_MULT ){
       return n;
-    }else if( ik==BITVECTOR_SHL || ik==BITVECTOR_LSHR || ik==BITVECTOR_ASHR || ik==BITVECTOR_UREM_TOTAL ){
+    }else if( ik==BITVECTOR_SHL || ik==BITVECTOR_LSHR || ik==BITVECTOR_ASHR || 
+              ik==BITVECTOR_UREM || ik==BITVECTOR_UREM_TOTAL ){
       if( arg==0 ){
         return n;
       }
@@ -2803,7 +2828,8 @@ Node TermDbSygus::isSingularArg( Node n, Kind ik, int arg ) {
       }else if( arg==1 ){
         return getTypeMaxValue( tn );
       }
-    }else if( ik==DIVISION || ik==DIVISION_TOTAL ){
+    }else if( ik==DIVISION || ik==DIVISION_TOTAL || ik==INTS_DIVISION || ik==INTS_DIVISION_TOTAL || 
+              ik==INTS_MODULUS || ik==INTS_MODULUS_TOTAL  ){
       if( arg==0 ){
         return n;
       }else{
@@ -3843,6 +3869,49 @@ bool TermDbSygus::doCompare( Node a, Node b, Kind k ) {
   return com==d_true;
 }
 
+Node TermDbSygus::getSemanticSkolem( TypeNode tn, Node n, bool doMk ){
+  std::map< Node, Node >::iterator its = d_semantic_skolem[tn].find( n );
+  if( its!=d_semantic_skolem[tn].end() ){
+    return its->second;
+  }else if( doMk ){
+    Node ss = NodeManager::currentNM()->mkSkolem( "sem", tn, "semantic skolem for sygus" );
+    d_semantic_skolem[tn][n] = ss;
+    return ss;
+  }else{
+    return Node::null();
+  }
+}
+
+bool TermDbSygus::involvesDivByZero( Node n, std::map< Node, bool >& visited ){
+  if( visited.find( n )==visited.end() ){
+    visited[n] = true;
+    Kind k = n.getKind();
+    if( k==DIVISION || k==DIVISION_TOTAL || k==INTS_DIVISION || k==INTS_DIVISION_TOTAL || 
+        k==INTS_MODULUS || k==INTS_MODULUS_TOTAL ){
+      if( n[1].isConst() ){
+        if( n[1]==getTypeValue( n[1].getType(), 0 ) ){
+          return true;
+        }
+      }else{
+        // if it has free variables it might be a non-zero constant
+        if( !hasFreeVar( n[1] ) ){
+          return true;
+        }
+      }
+    }
+    for( unsigned i=0; i<n.getNumChildren(); i++ ){
+      if( involvesDivByZero( n[i], visited ) ){
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+bool TermDbSygus::involvesDivByZero( Node n ) {
+  std::map< Node, bool > visited;
+  return involvesDivByZero( n, visited );
+}
 
 void doStrReplace(std::string& str, const std::string& oldStr, const std::string& newStr){
   size_t pos = 0;
@@ -4494,9 +4563,12 @@ Node TermDbSygus::crefEvaluate( Node n, std::map< Node, Node >& vtm, std::map< N
               ret = crc.d_context[n];
               Assert( ret.isConst() );
             }else{
-              ret = Rewriter::rewrite( ret );
+              Trace("sygus-cref-eval-debug") << "Rewrite " << ret << " to ";
+              ret = extendedRewrite( ret );
+              Trace("sygus-cref-eval-debug") << ret << std::endl;
             }
           }else{
+            Trace("sygus-cref-eval-debug") << "...recovered " << n << std::endl;
             ret = n;
             Assert( crc.d_owner.isNull() );
           }
@@ -4737,6 +4809,7 @@ Node TermDbSygus::extendedRewrite( Node n ) {
         // simple ITE pulling
         new_ret = extendedRewritePullIte( ret );
       }
+      // TODO : ( ~contains( x, y ) --> false ) => x != y
     }else if( ret.getKind()==kind::ITE ){
       Assert( ret[1]!=ret[2] );
       if( ret[0].getKind()==NOT ){
@@ -4766,6 +4839,23 @@ Node TermDbSygus::extendedRewrite( Node n ) {
             }
           }
         }
+      }
+    }else if( ret.getKind()==DIVISION || ret.getKind()==INTS_DIVISION || ret.getKind()==INTS_MODULUS ){
+      // rewrite as though total
+      std::vector< Node > children;
+      bool all_const = true;
+      for( unsigned i=0; i<ret.getNumChildren(); i++ ){
+        if( ret[i].isConst() ){
+          children.push_back( ret[i] );
+        }else{
+          all_const = false;
+          break;
+        }
+      }
+      if( all_const ){
+        Kind new_k = ( ret.getKind()==DIVISION ? DIVISION_TOTAL : ( ret.getKind()==INTS_DIVISION ? INTS_DIVISION_TOTAL : INTS_MODULUS_TOTAL ) ); 
+        new_ret = NodeManager::currentNM()->mkNode( new_k, children );
+        Trace("sygus-ext-rewrite") << "sygus-extr : " << ret << " rewrites to " << new_ret << " due to total interpretation." << std::endl;
       }
     }
     // more expensive rewrites 

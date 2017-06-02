@@ -1156,7 +1156,6 @@ Expr DatatypeConstructorArg::getSelector() const {
 
 Expr DatatypeConstructor::getSelectorInternal( Type domainType, size_t index ) const {
   PrettyCheckArgument(isResolved(), this, "cannot get an internal selector for an unresolved datatype constructor");
-  Trace("ajr-temp") << "Get selector " << index << " for " << d_name << ", with #args = " << getNumArgs() << std::endl;
   PrettyCheckArgument(index < getNumArgs(), index, "index out of bounds");
   if( options::dtSharedSelectors() ){
     computeSharedSelectors( domainType );

@@ -60,7 +60,8 @@ TESTS = commutative.sy \
         strings-template-infer.sy \
         strings-trivial.sy \
         General_plus10.sy \
-        qe.sy
+        qe.sy \
+        cggmp.sy
 
 
 # sygus tests currently taking too long for make regress
