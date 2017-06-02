@@ -835,15 +835,42 @@ void CegInstantiation::checkCegConjecture( CegConjecture * conj ) {
   }
 }
 
+
+class VerifySygusInvarianceTest : public quantifiers::SygusInvarianceTest {
+public:
+  Node d_conj;
+  TNode d_var;
+  Node d_update_nvn;
+  
+  bool exclude( quantifiers::TermDbSygus * tds, Node nvn, Node x ){
+    TNode tnvn = nvn;
+    Node conj_subs = d_conj.substitute( d_var, tnvn );
+    Node conj_subs_unfold = tds->evaluateWithUnfolding( conj_subs );
+    Trace("sygus-cref-eval2-debug") << "...check unfolding : " << conj_subs_unfold << std::endl;
+    Trace("sygus-cref-eval2-debug") << "......from : " << conj_subs << std::endl;
+    if( conj_subs_unfold.isConst() ){
+      Assert( !conj_subs_unfold.getConst<bool>() );
+      Trace("sygus-cref-eval2") << "Evaluation min explain : " << conj_subs << " still evaluates to false regardless of ";
+      Trace("sygus-cref-eval2") << x << std::endl;
+      d_update_nvn = nvn;
+      return true;
+    }else{
+      return false;
+    }
+  }
+};
+
+
 void CegInstantiation::getCRefEvaluationLemmas( CegConjecture * conj, std::vector< Node >& vs, std::vector< Node >& ms, std::vector< Node >& lems ) {
   Trace("sygus-cref-eval") << "Cref eval : conjecture has " << conj->getNumRefinementLemmas() << " refinement lemmas." << std::endl;
   if( conj->getNumRefinementLemmas()>0 ){
     Assert( vs.size()==ms.size() );
+
     std::map< Node, Node > vtm;
     for( unsigned i=0; i<vs.size(); i++ ){
       vtm[vs[i]] = ms[i];
     }
-
+    Node neg_guard = conj->getGuard().negate();
     for( unsigned i=0; i<conj->getNumRefinementLemmas(); i++ ){
       Node lem;
       std::map< Node, Node > visited;
@@ -862,17 +889,49 @@ void CegInstantiation::getCRefEvaluationLemmas( CegConjecture * conj, std::vecto
         for( unsigned j=0; j<lem_conj.size(); j++ ){
           Node lemc = lem_conj[j];
           Trace("sygus-cref-eval") << "Check refinement lemma conjunct " << lemc << " against current model." << std::endl;
-          Node elem = d_quantEngine->getTermDatabaseSygus()->crefEvaluate( lemc, vtm, visited, exp );
-          Trace("sygus-cref-eval") << "...evaluated to " << elem << ", exp size = " << exp[lemc].size() << std::endl;
-          if( !elem.isNull() && elem==d_quantEngine->getTermDatabase()->d_false ){
-            elem = conj->getGuard().negate();
-            Node cre_lem;
-            if( !exp[lemc].empty() ){
-              Node en = exp[lemc].size()==1 ? exp[lemc][0] : NodeManager::currentNM()->mkNode( kind::AND, exp[lemc] );
-              cre_lem = NodeManager::currentNM()->mkNode( kind::OR, en.negate(), elem );
-            }else{
-              cre_lem = elem;
+          Trace("sygus-cref-eval2") << "Check refinement lemma conjunct " << lemc << " against current model." << std::endl;
+          Node cre_lem;
+          if( options::sygusCRefEvalMinExp() ){
+            Node lemcs = lemc.substitute( vs.begin(), vs.end(), ms.begin(), ms.end() );
+            Trace("sygus-cref-eval2") << "...under substitution it is : " << lemcs << std::endl;
+            Node lemcsu = d_quantEngine->getTermDatabaseSygus()->evaluateWithUnfolding( lemcs );
+            Trace("sygus-cref-eval2") << "...after unfolding is : " << lemcsu << std::endl;
+            if( lemcsu==d_quantEngine->getTermDatabase()->d_false ){
+              std::vector< Node > msu;
+              std::vector< Node > mexp;
+              msu.insert( msu.end(), ms.begin(), ms.end() );
+              for( unsigned k=0; k<vs.size(); k++ ){
+                VerifySygusInvarianceTest vsit;
+                vsit.d_var = vs[k];
+                vsit.d_update_nvn = msu[k];
+                msu[k] = vs[k];
+                // substitute for everything except this
+                vsit.d_conj = lemc.substitute( vs.begin(), vs.end(), msu.begin(), msu.end() );
+                // get minimal explanation for this
+                Trace("sygus-cref-eval2-debug") << "Checking evaluation min explain of : " << vs[k] << " = " << vsit.d_update_nvn << std::endl;
+                d_quantEngine->getTermDatabaseSygus()->getExplanationFor( vs[k], vsit.d_update_nvn, mexp, vsit );
+                msu[k] = vsit.d_update_nvn;
+              }
+              if( !mexp.empty() ){
+                Node en = mexp.size()==1 ? mexp[0] : NodeManager::currentNM()->mkNode( kind::AND, mexp );
+                cre_lem = NodeManager::currentNM()->mkNode( kind::OR, en.negate(), neg_guard );
+              }else{
+                cre_lem = neg_guard;
+              }
             }
+          }else{
+            Node elem = d_quantEngine->getTermDatabaseSygus()->crefEvaluate( lemc, vtm, visited, exp );
+            Trace("sygus-cref-eval") << "...evaluated to " << elem << ", exp size = " << exp[lemc].size() << std::endl;
+            if( !elem.isNull() && elem==d_quantEngine->getTermDatabase()->d_false ){
+              if( !exp[lemc].empty() ){
+                Node en = exp[lemc].size()==1 ? exp[lemc][0] : NodeManager::currentNM()->mkNode( kind::AND, exp[lemc] );
+                cre_lem = NodeManager::currentNM()->mkNode( kind::OR, en.negate(), neg_guard );
+              }else{
+                cre_lem = neg_guard;
+              }
+            }
+          }
+          if( !cre_lem.isNull() ){
             if( std::find( lems.begin(), lems.end(), cre_lem )==lems.end() ){
               Trace("sygus-cref-eval") << "...produced lemma : " << cre_lem << std::endl;
               lems.push_back( cre_lem );

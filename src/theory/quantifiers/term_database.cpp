@@ -4468,6 +4468,42 @@ Node TermDbSygus::evaluateBuiltin( TypeNode tn, Node bn, Node ar, unsigned i ) {
   }
 }
 
+Node TermDbSygus::evaluateWithUnfolding( Node n, std::map< Node, Node >& visited ) {
+  std::map< Node, Node >::iterator it = visited.find( n );
+  if( it==visited.end() ){
+    Node ret = n;
+    while( ret.getKind()==APPLY_UF && ret[0].getKind()==APPLY_CONSTRUCTOR ){
+      ret = unfold( ret );
+    }    
+    if( ret.getNumChildren()>0 ){
+      std::vector< Node > children;
+      if( ret.getMetaKind() == kind::metakind::PARAMETERIZED ){
+        children.push_back( ret.getOperator() );
+      }
+      bool childChanged = false;
+      for( unsigned i=0; i<ret.getNumChildren(); i++ ){
+        Node nc = evaluateWithUnfolding( ret[i], visited ); 
+        childChanged = childChanged || nc!=ret[i];
+        children.push_back( nc );
+      }
+      if( childChanged ){
+        ret = NodeManager::currentNM()->mkNode( ret.getKind(), children );
+      }
+      // TODO : extended rewrite?
+      ret = extendedRewrite( ret );
+    }
+    visited[n] = ret;
+    return ret;
+  }else{
+    return it->second;
+  }
+}
+
+Node TermDbSygus::evaluateWithUnfolding( Node n ) {
+  std::map< Node, Node > visited;
+  return evaluateWithUnfolding( n, visited );
+}
+
 Node TermDbSygus::crefEvaluate( Node n, std::map< Node, Node >& vtm, std::map< Node, Node >& visited, std::map< Node, std::vector< Node > >& exp ){
   CrefContext crc;
   return crefEvaluate( n, vtm, visited, exp, crc );
