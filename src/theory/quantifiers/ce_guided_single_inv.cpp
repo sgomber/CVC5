@@ -243,16 +243,54 @@ void CegConjectureSingleInv::initialize( Node q ) {
             Node invariant = single_inv_app_map[prog];
             invariant = invariant.substitute( d_sip->d_si_vars.begin(), d_sip->d_si_vars.end(), d_prog_templ_vars[prog].begin(), d_prog_templ_vars[prog].end() );
             Trace("cegqi-inv") << "      invariant : " << invariant << std::endl;
+            
             //construct template
-            Node templ;
-            if( options::sygusInvTemplMode() == SYGUS_INV_TEMPL_MODE_PRE ){
-              //templ = NodeManager::currentNM()->mkNode( AND, NodeManager::currentNM()->mkNode( OR, d_trans_pre[prog], invariant ), d_trans_post[prog] );
-              templ = NodeManager::currentNM()->mkNode( OR, d_trans_pre[prog], invariant );
-            }else{
-              Assert( options::sygusInvTemplMode() == SYGUS_INV_TEMPL_MODE_POST );
-              //templ = NodeManager::currentNM()->mkNode( OR, d_trans_pre[prog], NodeManager::currentNM()->mkNode( AND, d_trans_post[prog], invariant ) );
-              templ = NodeManager::currentNM()->mkNode( AND, d_trans_post[prog], invariant );
+            d_templ_arg[prog] = NodeManager::currentNM()->mkSkolem( "I", invariant.getType() );
+            if( options::sygusInvAutoUnfold() ){
+              if( d_ti[q].isComplete() ){
+                Trace("cegqi-inv-auto-unfold") << "Automatic deterministic unfolding... " << std::endl;
+                // auto-unfold
+                DetTrace dt;
+                int init_dt = d_ti[q].initializeTrace( dt );
+                if( init_dt==0 ){
+                  Trace("cegqi-inv-auto-unfold") << "  Init : ";
+                  dt.print("cegqi-inv-auto-unfold");
+                  Trace("cegqi-inv-auto-unfold") << std::endl;
+                  unsigned counter = 0;
+                  unsigned status = 0;
+                  while( counter<100 && status==0 ){
+                    status = d_ti[q].incrementTrace( dt );
+                    counter++;
+                    Trace("cegqi-inv-auto-unfold") << "  #" << counter << " : ";
+                    dt.print("cegqi-inv-auto-unfold");
+                    Trace("cegqi-inv-auto-unfold") << "...status = " << status << std::endl;
+                  }
+                  if( status==1 ){
+                    // we have a trivial invariant
+                    d_templ[prog] = d_ti[q].constructFormulaTrace( dt );
+                    Trace("cegqi-inv") << "By finite deterministic terminating trace, a solution invariant is : " << std::endl;
+                    Trace("cegqi-inv") << "   " << d_templ[prog] << std::endl;
+                    // FIXME : this should be uncessary
+                    d_templ[prog] = NodeManager::currentNM()->mkNode( AND, d_templ[prog], d_templ_arg[prog] );
+                  }
+                }else{
+                  Trace("cegqi-inv-auto-unfold") << "...failed initialize." << std::endl;
+                }
+              }
             }
+            if( d_templ[prog].isNull() ){
+              if( options::sygusInvTemplMode() == SYGUS_INV_TEMPL_MODE_PRE ){
+                //d_templ[prog] = NodeManager::currentNM()->mkNode( AND, NodeManager::currentNM()->mkNode( OR, d_trans_pre[prog], invariant ), d_trans_post[prog] );
+                d_templ[prog] = NodeManager::currentNM()->mkNode( OR, d_trans_pre[prog], d_templ_arg[prog] );
+              }else{
+                Assert( options::sygusInvTemplMode() == SYGUS_INV_TEMPL_MODE_POST );
+                //d_templ[prog] = NodeManager::currentNM()->mkNode( OR, d_trans_pre[prog], NodeManager::currentNM()->mkNode( AND, d_trans_post[prog], invariant ) );
+                d_templ[prog] = NodeManager::currentNM()->mkNode( AND, d_trans_post[prog], d_templ_arg[prog] );
+              }
+            }
+            TNode iv = d_templ_arg[prog];
+            TNode is = invariant;
+            Node templ = d_templ[prog].substitute( iv, is );
             visited.clear();
             templ = addDeepEmbedding( templ, visited );
             Trace("cegqi-inv") << "       template : " << templ << std::endl;
@@ -1297,7 +1335,7 @@ bool DetTrace::DetTraceTrie::add( Node loc, std::vector< Node >& val, unsigned i
       return false;
     }
   }else{
-    return add( loc, val, index+1 );
+    return d_children[val[index]].add( loc, val, index+1 );
   }
 }
 
@@ -1333,6 +1371,13 @@ bool DetTrace::increment( Node loc, std::vector< Node >& vals ){
 
 Node DetTrace::constructFormula( std::vector< Node >& vars ) {
   return d_trie.constructFormula( vars );
+}
+
+
+void DetTrace::print( const char* c ) {
+  for( unsigned i=0; i<d_curr.size(); i++ ){
+    Trace(c) << d_curr[i] << " ";
+  }
 }
 
 void TransitionInference::initialize( Node f, std::vector< Node >& vars ) {
@@ -1397,6 +1442,7 @@ void TransitionInference::getConstantSubstitution( std::vector< Node >& vars, st
 }
 
 void TransitionInference::process( Node n ) {
+  d_complete = true;
   std::vector< Node > n_check;
   if( n.getKind()==AND ){
     for( unsigned i=0; i<n.getNumChildren(); i++ ){
@@ -1405,7 +1451,6 @@ void TransitionInference::process( Node n ) {
   }else{
     n_check.push_back( n );
   }
-  bool full_success = true;
   for( unsigned i=0; i<n_check.size(); i++ ){
     Node nn = n_check[i];
     std::map< Node, bool > visited;
@@ -1465,7 +1510,7 @@ void TransitionInference::process( Node n ) {
           }
           getConstantSubstitution( d_prime_vars, disjuncts, const_var, const_subs, false );
         }else{
-          getConstantSubstitution( d_vars, disjuncts, const_var, const_subs, comp_num==-1 );
+          getConstantSubstitution( d_vars, disjuncts, const_var, const_subs, false );
         }
         Node res;
         if( disjuncts.empty() ){
@@ -1479,8 +1524,8 @@ void TransitionInference::process( Node n ) {
           Trace("cegqi-inv") << "*** inferred " << ( comp_num==1 ? "pre" : ( comp_num==-1 ? "post" : "trans" ) ) << "-condition : " << res << std::endl;
           d_com[comp_num].d_conjuncts.push_back( res );
           if( !const_var.empty() ){
-            Trace("cegqi-inv") << "    with constant substitution : " << std::endl;
             bool has_const_eq = const_var.size()==d_vars.size();
+            Trace("cegqi-inv") << "    with constant substitution, complete = " << has_const_eq << " : " << std::endl;
             for( unsigned i=0; i<const_var.size(); i++ ){
               Trace("cegqi-inv") << "      " << const_var[i] << " -> " << const_subs[i] << std::endl;
               if( has_const_eq ){
@@ -1491,11 +1536,11 @@ void TransitionInference::process( Node n ) {
           }
         }else{
           Trace("cegqi-inv-debug2") << "...failed, free variable." << std::endl;
-          full_success = false;
+          d_complete = false;
         }
       }
     }else{
-      full_success = false;
+      d_complete = false;
     }
   }
   
@@ -1568,8 +1613,8 @@ Node TransitionInference::getComponent( int i ) {
   return d_com[i].d_this;
 }
 
-int TransitionInference::initialize( DetTrace& dt, Node loc, bool fwd ) {
-  unsigned index = fwd ? 1 : -1;
+int TransitionInference::initializeTrace( DetTrace& dt, Node loc, bool fwd ) {
+  int index = fwd ? 1 : -1;
   Assert( d_com[index].has( loc ) );
   std::map< Node, std::map< Node, Node > >::iterator it = d_com[index].d_const_eq.find( loc );
   if( it!=d_com[index].d_const_eq.end() ){
@@ -1578,7 +1623,9 @@ int TransitionInference::initialize( DetTrace& dt, Node loc, bool fwd ) {
       Node v = d_vars[i];
       Assert( it->second.find( v )!=it->second.end() );
       next.push_back( it->second[v] );
+      dt.d_curr.push_back( it->second[v] );
     }
+    Trace("cegqi-inv-debug2") << "dtrace : initial increment" << std::endl;
     bool ret = dt.increment( loc, next );
     AlwaysAssert( ret );
     return 0;
@@ -1586,42 +1633,83 @@ int TransitionInference::initialize( DetTrace& dt, Node loc, bool fwd ) {
   return -1;
 }
   
-int TransitionInference::increment( DetTrace& dt, Node loc, bool fwd ) {
+int TransitionInference::incrementTrace( DetTrace& dt, Node loc, bool fwd ) {
   Assert( d_com[0].has( loc ) );
+  // check if it satisfies the pre/post condition
+  int check_index = fwd ? -1 : 1;
+  Node cc = getComponent( check_index );
+  Assert( !cc.isNull() );
+  Node ccr = Rewriter::rewrite( cc.substitute( d_vars.begin(), d_vars.end(), dt.d_curr.begin(), dt.d_curr.end() ) );
+  if( ccr.isConst() ){
+    if( ccr.getConst<bool>()==( fwd ? false : true ) ){
+      Trace("cegqi-inv-debug2") << "dtrace : counterexample" << std::endl;
+      return 2;
+    }
+  }
+
+
   // terminates?
   Node c = getComponent( 0 );
+  Assert( !c.isNull() );
+
+  Assert( d_vars.size()==dt.d_curr.size() );
   Node cr = Rewriter::rewrite( c.substitute( d_vars.begin(), d_vars.end(), dt.d_curr.begin(), dt.d_curr.end() ) );
   if( cr.isConst() ){
     if( !cr.getConst<bool>() ){
+      Trace("cegqi-inv-debug2") << "dtrace : terminated" << std::endl;
       return 1;
     }else{
       return -1;
     }
-  }else{
-    if( fwd ){
-      std::map< Node, std::map< Node, Node > >::iterator it = d_com[0].d_const_eq.find( loc );
-      if( it!=d_com[0].d_const_eq.end() ){
-        std::vector< Node > next;
-        for( unsigned i=0; i<d_prime_vars.size(); i++ ){
-          Node pv = d_prime_vars[i];
-          Assert( it->second.find( pv )!=it->second.end() );
-          Node pvs = it->second[pv];
-          Node pvsr = Rewriter::rewrite( pvs.substitute( d_vars.begin(), d_vars.end(), dt.d_curr.begin(), dt.d_curr.end() ) );
-          next.push_back( pvs );
-        }
-        if( dt.increment( loc, next ) ){
-          return 0;
-        }else{
-          // looped
-          return 1;
-        }
+  }
+  if( fwd ){
+    std::map< Node, std::map< Node, Node > >::iterator it = d_com[0].d_const_eq.find( loc );
+    if( it!=d_com[0].d_const_eq.end() ){
+      std::vector< Node > next;
+      for( unsigned i=0; i<d_prime_vars.size(); i++ ){
+        Node pv = d_prime_vars[i];
+        Assert( it->second.find( pv )!=it->second.end() );
+        Node pvs = it->second[pv];
+        Assert( d_vars.size()==dt.d_curr.size() );
+        Node pvsr = Rewriter::rewrite( pvs.substitute( d_vars.begin(), d_vars.end(), dt.d_curr.begin(), dt.d_curr.end() ) );
+        next.push_back( pvsr );
       }
-    }else{
-      //TODO
+      if( dt.increment( loc, next ) ){
+        Trace("cegqi-inv-debug2") << "dtrace : success increment" << std::endl;
+        return 0;
+      }else{
+        // looped
+        Trace("cegqi-inv-debug2") << "dtrace : looped" << std::endl;
+        return 1;
+      }
     }
+  }else{
+    //TODO
+  }
+  return -1;
+}
+
+int TransitionInference::initializeTrace( DetTrace& dt, bool fwd ) {
+  Trace("cegqi-inv-debug2") << "Initialize trace" << std::endl;
+  int index = fwd ? 1 : -1;
+  if( d_com[index].d_conjuncts.size()==1 ){
+    return initializeTrace( dt, d_com[index].d_conjuncts[0], fwd );
+  }else{
     return -1;
   }
 }
 
+int TransitionInference::incrementTrace( DetTrace& dt, bool fwd ) {
+  if( d_com[0].d_conjuncts.size()==1 ){
+    return incrementTrace( dt, d_com[0].d_conjuncts[0], fwd );
+  }else{
+    return -1;
+  }
+}
+
+Node TransitionInference::constructFormulaTrace( DetTrace& dt ) {
+  return dt.constructFormula( d_vars );
+}
+  
 } //namespace CVC4
 

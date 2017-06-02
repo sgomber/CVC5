@@ -58,13 +58,16 @@ public:
   std::vector< Node > d_curr;
   bool increment( Node loc, std::vector< Node >& vals );
   Node constructFormula( std::vector< Node >& vars );
+  void print( const char* c );
 };
 
 class TransitionInference {
 private:
   bool processDisjunct( Node n, std::map< bool, Node >& terms, std::vector< Node >& disjuncts, std::map< Node, bool >& visited, bool topLevel );
   void getConstantSubstitution( std::vector< Node >& vars, std::vector< Node >& disjuncts, std::vector< Node >& const_var, std::vector< Node >& const_subs, bool reqPol );
+  bool d_complete;
 public:
+  TransitionInference() : d_complete( false ) {}
   std::vector< Node > d_vars;
   std::vector< Node > d_prime_vars;
   Node d_func;
@@ -82,10 +85,14 @@ public:
   void initialize( Node f, std::vector< Node >& vars );
   void process( Node n );
   Node getComponent( int i );
+  bool isComplete() { return d_complete; }
   
-  // 0 : success, 1 : terminated, -1 : invalid
-  int initialize( DetTrace& dt, Node loc, bool fwd = true );
-  int increment( DetTrace& dt, Node loc, bool fwd = true );
+  // 0 : success, 1 : terminated, 2 : counterexample, -1 : invalid
+  int initializeTrace( DetTrace& dt, Node loc, bool fwd = true );
+  int incrementTrace( DetTrace& dt, Node loc, bool fwd = true );
+  int initializeTrace( DetTrace& dt, bool fwd = true );
+  int incrementTrace( DetTrace& dt, bool fwd = true );
+  Node constructFormulaTrace( DetTrace& dt );
 };
 
 
@@ -176,6 +183,8 @@ class CegConjectureSingleInv {
   std::map< Node, Node > d_trans_pre;
   std::map< Node, Node > d_trans_post;
   std::map< Node, std::vector< Node > > d_prog_templ_vars;
+  std::map< Node, Node > d_templ;
+  std::map< Node, Node > d_templ_arg;
   //the non-single invocation portion of the quantified formula
   std::map< Node, Node > d_nsi_op_map;
   std::map< Node, Node > d_nsi_op_map_to_prog;
@@ -215,6 +224,22 @@ class CegConjectureSingleInv {
   Node getTransPost(Node prog) const {
     std::map<Node, Node>::const_iterator location = d_trans_post.find(prog);
     return location->second;
+  }
+  Node getTemplate(Node prog) const {
+    std::map<Node, Node>::const_iterator tmpl = d_templ.find(prog);
+    if( tmpl!=d_templ.end() ){
+      return tmpl->second;
+    }else{
+      return Node::null();
+    }
+  }
+  Node getTemplateArg(Node prog) const {
+    std::map<Node, Node>::const_iterator tmpla = d_templ_arg.find(prog);
+    if( tmpla != d_templ_arg.end() ){
+      return tmpla->second;
+    }else{
+      return Node::null();
+    }
   }
 
 };

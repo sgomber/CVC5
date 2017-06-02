@@ -176,6 +176,7 @@ void CegConjecture::assign( Node q ) {
       //Node red_lem = NodeManager::currentNM()->mkNode( OR, q.negate(), d_cegqi_si->d_quant );
       //may have rewritten quantified formula (for invariant synthesis)
       q = d_ceg_si->d_quant;
+      Assert( q.getKind()==kind::FORALL );
     }
   }
 
@@ -924,8 +925,10 @@ void CegInstantiation::printSynthSolution( std::ostream& out ) {
             for( unsigned j=0; j<svl.getNumChildren(); j++ ){
               subs.push_back( Node::fromExpr( svl[j] ) );
             }
-            bool templIsPost = false;
-            Node templ;
+            //bool templIsPost = false;
+            const CegConjectureSingleInv* ceg_si = d_conj->getCegConjectureSingleInv();
+            Node templ = ceg_si->getTemplate( prog );
+            /*
             if( options::sygusInvTemplMode() == SYGUS_INV_TEMPL_MODE_PRE ){
               const CegConjectureSingleInv* ceg_si = d_conj->getCegConjectureSingleInv();
               if(ceg_si->d_trans_pre.find( prog ) != ceg_si->d_trans_pre.end()){
@@ -939,8 +942,11 @@ void CegInstantiation::printSynthSolution( std::ostream& out ) {
                 templIsPost = true;
               }
             }
+            */
             Trace("cegqi-inv") << "Template is " << templ << std::endl;
             if( !templ.isNull() ){
+              TNode templa = ceg_si->getTemplateArg( prog );
+              Assert( !templa.isNull() );
               std::vector<Node>& templ_vars = d_conj->getProgTempVars(prog);
               std::vector< Node > vars;
               vars.insert( vars.end(), templ_vars.begin(), templ_vars.end() );
@@ -958,7 +964,9 @@ void CegInstantiation::printSynthSolution( std::ostream& out ) {
               Trace("cegqi-inv") << "Builtin version of solution is : "
                                  << sol << ", type : " << sol.getType()
                                  << std::endl;
-              sol = NodeManager::currentNM()->mkNode( templIsPost ? AND : OR, sol, templ );
+              //sol = NodeManager::currentNM()->mkNode( templIsPost ? AND : OR, sol, templ );
+              TNode tsol = sol;
+              sol = templ.substitute( templa, tsol );
             }
             if( sol==sygus_sol ){
               sol = sygus_sol;

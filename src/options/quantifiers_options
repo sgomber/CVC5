@@ -269,6 +269,8 @@ option sygusAddConstGrammar --sygus-add-const-grammar bool :default true
   
 option sygusInvTemplMode --sygus-inv-templ=MODE CVC4::theory::quantifiers::SygusInvTemplMode :default CVC4::theory::quantifiers::SYGUS_INV_TEMPL_MODE_NONE :include "options/quantifiers_modes.h" :handler stringToSygusInvTemplMode
   template mode for sygus invariant synthesis
+option sygusInvAutoUnfold --sygus-auto-unfold bool :default true
+  enable approach which automatically unfolds transition systems for directly solving invariant synthesis problems
 option sygusUnifCondSol --sygus-unif-csol bool :default true
   enable new approach which unifies conditional solutions
 
