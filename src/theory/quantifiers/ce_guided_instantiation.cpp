@@ -846,8 +846,8 @@ public:
     TNode tnvn = nvn;
     Node conj_subs = d_conj.substitute( d_var, tnvn );
     Node conj_subs_unfold = tds->evaluateWithUnfolding( conj_subs );
-    Trace("sygus-cref-eval2-debug") << "...check unfolding : " << conj_subs_unfold << std::endl;
-    Trace("sygus-cref-eval2-debug") << "......from : " << conj_subs << std::endl;
+    Trace("sygus-cref-eval2-debug") << "  ...check unfolding : " << conj_subs_unfold << std::endl;
+    Trace("sygus-cref-eval2-debug") << "  ......from : " << conj_subs << std::endl;
     if( conj_subs_unfold.isConst() ){
       Assert( !conj_subs_unfold.getConst<bool>() );
       Trace("sygus-cref-eval2") << "Evaluation min explain : " << conj_subs << " still evaluates to false regardless of ";
@@ -908,7 +908,7 @@ void CegInstantiation::getCRefEvaluationLemmas( CegConjecture * conj, std::vecto
                 // substitute for everything except this
                 vsit.d_conj = lemc.substitute( vs.begin(), vs.end(), msu.begin(), msu.end() );
                 // get minimal explanation for this
-                Trace("sygus-cref-eval2-debug") << "Checking evaluation min explain of : " << vs[k] << " = " << vsit.d_update_nvn << std::endl;
+                Trace("sygus-cref-eval2-debug") << "  compute min explain of : " << vs[k] << " = " << vsit.d_update_nvn << std::endl;
                 d_quantEngine->getTermDatabaseSygus()->getExplanationFor( vs[k], vsit.d_update_nvn, mexp, vsit );
                 msu[k] = vsit.d_update_nvn;
               }
