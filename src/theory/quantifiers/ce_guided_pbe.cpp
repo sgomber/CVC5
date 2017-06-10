@@ -422,7 +422,7 @@ void CegConjecturePbe::collectEnumeratorTypes( Node e, TypeNode tn, unsigned enu
       }
       bool search_this = true;
       for( std::map< Node, unsigned >::iterator itc = cop_to_strat.begin(); itc != cop_to_strat.end(); ++itc ){
-        if( itc->second==strat_CONCAT || itc->second==strat_ID ){
+        if( itc->second==strat_CONCAT || ( itc->second==strat_ID && dt.getNumConstructors()==1 ) ){
           search_this = false;
           break;
         }
@@ -632,7 +632,14 @@ void CegConjecturePbe::getCandidateList( std::vector< Node >& candidates, std::v
     Node v = candidates[i];
     std::map< Node, CandidateInfo >::iterator it = d_cinfo.find( v );
     if( it!=d_cinfo.end() ){
-      clist.insert( clist.end(), it->second.d_esym_list.begin(), it->second.d_esym_list.end() );
+      for( unsigned j=0; j<it->second.d_esym_list.size(); j++ ){
+        Node e = it->second.d_esym_list[j];
+        std::map< Node, EnumInfo >::iterator it = d_einfo.find( e );
+        Assert( it != d_einfo.end() );
+        if( getGuardStatus( it->second.d_active_guard )==1 ){
+          clist.push_back( e );
+        }
+      }
     }
   }
 }
@@ -716,6 +723,7 @@ void CegConjecturePbe::addEnumeratedValue( Node x, Node v, std::vector< Node >& 
         std::map< Node, bool > cond_vals;
         for( unsigned j=0; j<itx->second.size(); j++ ){
           Node res = d_tds->evaluateBuiltin( xtn, bv, itx->second[j] );
+          Trace("sygus-pbe-enum-debug") << "...got res = " << res << " from " << bv << std::endl;
           Assert( res.isConst() );
           if( !templ.isNull() ){
             TNode tres = res;

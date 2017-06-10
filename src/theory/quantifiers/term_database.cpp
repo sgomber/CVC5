@@ -4454,7 +4454,7 @@ Node TermDbSygus::evaluateBuiltin( TypeNode tn, Node bn, std::vector< Node >& ar
     Assert( it->second.size()==args.size() );
     return Rewriter::rewrite( bn.substitute( it->second.begin(), it->second.end(), args.begin(), args.end() ) );
   }else{
-    return bn;
+    return Rewriter::rewrite( bn );
   }
 }
 
@@ -4464,7 +4464,7 @@ Node TermDbSygus::evaluateBuiltin( TypeNode tn, Node bn, Node ar, unsigned i ) {
     Assert( i<it->second.size() );
     return evaluateBuiltin( tn, bn, it->second[i] );
   }else{
-    return bn;
+    return Rewriter::rewrite( bn );
   }
 }
 
