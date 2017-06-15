@@ -280,7 +280,7 @@ option sygusUnfoldBool --sygus-unfold-bool bool :default true
   do unfolding of Boolean evaluation functions that appear in refinement lemmas
 option sygusCRefEval --sygus-cref-eval bool :default true
   direct evaluation of refinement lemmas for conflict analysis
-option sygusCRefEvalMinExp --sygus-cref-eval-min-exp bool :default false
+option sygusCRefEvalMinExp --sygus-cref-eval-min-exp bool :default true
   use min explain for direct evaluation of refinement lemmas for conflict analysis
   
 # approach applied to general quantified formulas

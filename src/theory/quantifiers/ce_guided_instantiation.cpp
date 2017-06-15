@@ -841,11 +841,12 @@ public:
   Node d_conj;
   TNode d_var;
   Node d_update_nvn;
+  std::map< Node, Node > d_visited;
   
   bool exclude( quantifiers::TermDbSygus * tds, Node nvn, Node x ){
     TNode tnvn = nvn;
     Node conj_subs = d_conj.substitute( d_var, tnvn );
-    Node conj_subs_unfold = tds->evaluateWithUnfolding( conj_subs );
+    Node conj_subs_unfold = tds->evaluateWithUnfolding( conj_subs, d_visited );
     Trace("sygus-cref-eval2-debug") << "  ...check unfolding : " << conj_subs_unfold << std::endl;
     Trace("sygus-cref-eval2-debug") << "  ......from : " << conj_subs << std::endl;
     if( conj_subs_unfold.isConst() ){
@@ -886,6 +887,7 @@ void CegInstantiation::getCRefEvaluationLemmas( CegConjecture * conj, std::vecto
         }else{
           lem_conj.push_back( lem );
         }
+        VerifySygusInvarianceTest vsit;
         for( unsigned j=0; j<lem_conj.size(); j++ ){
           Node lemc = lem_conj[j];
           Trace("sygus-cref-eval") << "Check refinement lemma conjunct " << lemc << " against current model." << std::endl;
@@ -894,14 +896,13 @@ void CegInstantiation::getCRefEvaluationLemmas( CegConjecture * conj, std::vecto
           if( options::sygusCRefEvalMinExp() ){
             Node lemcs = lemc.substitute( vs.begin(), vs.end(), ms.begin(), ms.end() );
             Trace("sygus-cref-eval2") << "...under substitution it is : " << lemcs << std::endl;
-            Node lemcsu = d_quantEngine->getTermDatabaseSygus()->evaluateWithUnfolding( lemcs );
+            Node lemcsu = d_quantEngine->getTermDatabaseSygus()->evaluateWithUnfolding( lemcs, vsit.d_visited );
             Trace("sygus-cref-eval2") << "...after unfolding is : " << lemcsu << std::endl;
             if( lemcsu==d_quantEngine->getTermDatabase()->d_false ){
               std::vector< Node > msu;
               std::vector< Node > mexp;
               msu.insert( msu.end(), ms.begin(), ms.end() );
               for( unsigned k=0; k<vs.size(); k++ ){
-                VerifySygusInvarianceTest vsit;
                 vsit.d_var = vs[k];
                 vsit.d_update_nvn = msu[k];
                 msu[k] = vs[k];
