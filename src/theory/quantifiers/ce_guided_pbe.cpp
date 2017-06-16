@@ -1242,18 +1242,24 @@ Node CegConjecturePbe::constructSolution( Node c ){
       Trace("sygus-pbe") << "Construct solution, #iterations = " << itc->second.d_cond_count << std::endl;
       itc->second.d_check_sol = false;
       // try multiple times if we have done multiple conditions, due to non-determinism
+      Node vc;
       for( unsigned i=0; i<=itc->second.d_cond_count; i++ ){
         Trace("sygus-pbe-dt") << "ConstructPBE for candidate: " << c << std::endl;
         Node e = itc->second.getRootEnumerator();
         UnifContext x;
         x.initialize( this, c );
-        Node vc = constructSolution( c, e, x, 1 );
-        if( !vc.isNull() ){
-          Trace("sygus-pbe-enum") << "**** PBE SOLVED : " << c << " = " << vc << std::endl;
-          Trace("sygus-pbe") << "...solved at iteration " << i << std::endl;
-          itc->second.d_solution = vc;
-          return vc;
+        Node vcc = constructSolution( c, e, x, 1 );
+        if( !vcc.isNull() ){
+          if( vc.isNull() || ( !vc.isNull() && d_tds->getSygusTermSize( vcc )<d_tds->getSygusTermSize( vc ) ) ){
+            Trace("sygus-pbe") << "**** PBE SOLVED : " << c << " = " << vcc << std::endl;
+            Trace("sygus-pbe") << "...solved at iteration " << i << std::endl;
+            vc = vcc;
+          }
         }
+      }
+      if( !vc.isNull() ){
+        itc->second.d_solution = vc;
+        return vc;
       }
       Trace("sygus-pbe") << "...failed to solve." << std::endl;
     }
