@@ -713,7 +713,8 @@ public:
       }
     }
   }
-  bool exclude( quantifiers::TermDbSygus * tds, Node nvn, Node x ){
+protected:
+  bool invariant( quantifiers::TermDbSygus * tds, Node nvn, Node x ){
     TypeNode tn = nvn.getType();
     Node nbv = tds->sygusToBuiltin( nvn, tn );
     Node nbvr = tds->extendedRewrite( nbv );
@@ -768,7 +769,8 @@ public:
   DivByZeroSygusInvarianceTest(){}
   ~DivByZeroSygusInvarianceTest(){}
 
-  bool exclude( quantifiers::TermDbSygus * tds, Node nvn, Node x ){
+protected:
+  bool invariant( quantifiers::TermDbSygus * tds, Node nvn, Node x ){
     TypeNode tn = nvn.getType();
     Node nbv = tds->sygusToBuiltin( nvn, tn );
     Node nbvr = tds->extendedRewrite( nbv );

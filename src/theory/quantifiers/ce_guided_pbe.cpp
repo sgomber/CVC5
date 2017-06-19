@@ -549,6 +549,9 @@ void CegConjecturePbe::staticLearnRedundantOps( Node c, std::vector< Node >& lem
   std::map< Node, bool > visited;
   std::vector< Node > redundant;
   staticLearnRedundantOps( c, d_cinfo[c].getRootEnumerator(), visited, redundant, lemmas, 0 );
+  for( unsigned i=0; i<lemmas.size(); i++ ){  
+    Trace("sygus-unif") << "...can exclude based on  : " << lemmas[i] << std::endl;
+  }
 }
 
 void CegConjecturePbe::staticLearnRedundantOps( Node c, Node e, std::map< Node, bool >& visited, std::vector< Node >& redundant,
@@ -616,7 +619,6 @@ void CegConjecturePbe::staticLearnRedundantOps( Node c, Node e, std::map< Node, 
         const Datatype& dt = Datatype::datatypeOf( redundant[i].toExpr() );
         Node tst = datatypes::DatatypesRewriter::mkTester( e, cindex, dt ).negate();
         if( std::find( lemmas.begin(), lemmas.end(), tst )==lemmas.end() ){
-          Trace("sygus-unif") << "...can exclude based on  : " << tst << std::endl;
           lemmas.push_back( tst );
         }
       }
@@ -856,7 +858,8 @@ public:
       d_neg_con_indices.insert( d_neg_con_indices.end(), ncind.begin(), ncind.end() );
     }
   }
-  bool exclude( quantifiers::TermDbSygus * tds, Node nvn, Node x ){
+protected:  
+  bool invariant( quantifiers::TermDbSygus * tds, Node nvn, Node x ){
     if( !d_ar.isNull() ){
       TypeNode tn = nvn.getType();
       Node nbv = tds->sygusToBuiltin( nvn, tn );

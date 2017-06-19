@@ -577,9 +577,30 @@ public:
 };/* class TermDb */
 
 class SygusInvarianceTest {
-public:
+protected:
   // check whether nvn[ x ] should be excluded
-  virtual bool exclude( TermDbSygus * tds, Node nvn, Node x ) = 0;
+  virtual bool invariant( TermDbSygus * tds, Node nvn, Node x ) = 0;
+public:
+  bool is_invariant( TermDbSygus * tds, Node nvn, Node x ){
+    if( invariant( tds, nvn, x ) ){
+      d_update_nvn = nvn;
+      return true;
+    }else{
+      return false;
+    }
+  }
+  // result of the node after invariant replacements
+  Node d_update_nvn;
+};
+
+class EvalSygusInvarianceTest : public SygusInvarianceTest {
+public:
+  Node d_conj;
+  TNode d_var;
+  std::map< Node, Node > d_visited;
+  Node d_result;
+protected:
+  bool invariant( quantifiers::TermDbSygus * tds, Node nvn, Node x );
 };
 
 class TermDbSygus {
@@ -748,18 +769,6 @@ private:
   std::map< Node, std::vector< bool > > d_eval_args_const;
   std::map< Node, std::map< Node, unsigned > > d_node_mv_args_proc;
 
-  class CrefContext {
-  private:
-    bool consider( Node n );
-  public:
-    //the top-most node at which the evaluation is certain
-    Node d_owner;
-    std::map< Node, Node > d_context;
-    bool notifySubstitution( TermDbSygus * tds, TNode n, TNode nr );
-    void add( Node n );
-    void remove( Node n );
-  };
-  Node crefEvaluate( Node n, std::map< Node, Node >& vtm, std::map< Node, Node >& visited, std::map< Node, std::vector< Node > >& exp, CrefContext& crc );
   void getExplanationFor( TermRecBuild& trb, Node n, Node vn, std::vector< Node >& exp, std::map< TypeNode, int >& var_count,
                           SygusInvarianceTest& et, Node vnr, Node& vnr_exp, int& sz );
 public:
@@ -781,8 +790,6 @@ public:
   //   ensures the explanation still allows for vnr
   void getExplanationFor( Node n, Node vn, std::vector< Node >& exp, SygusInvarianceTest& et, Node vnr, unsigned& sz );
   void getExplanationFor( Node n, Node vn, std::vector< Node >& exp, SygusInvarianceTest& et );
-  // evaluate deep embedding term n, store minimized explanation for evaluation in exp
-  Node crefEvaluate( Node n, std::map< Node, Node >& vtm, std::map< Node, Node >& visited, std::map< Node, std::vector< Node > >& exp );
   // builtin evaluation, returns rewrite( bn [ args / vars(tn) ] )
   Node evaluateBuiltin( TypeNode tn, Node bn, std::vector< Node >& args );
   Node evaluateBuiltin( TypeNode tn, Node bn, Node ar, unsigned i );

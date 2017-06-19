@@ -2303,6 +2303,22 @@ Node TermDb::getQAttrQuantIdNumNode( Node q ) {
   }
 }
 
+
+bool EvalSygusInvarianceTest::invariant( quantifiers::TermDbSygus * tds, Node nvn, Node x ){
+  TNode tnvn = nvn;
+  Node conj_subs = d_conj.substitute( d_var, tnvn );
+  Node conj_subs_unfold = tds->evaluateWithUnfolding( conj_subs, d_visited );
+  Trace("sygus-cref-eval2-debug") << "  ...check unfolding : " << conj_subs_unfold << std::endl;
+  Trace("sygus-cref-eval2-debug") << "  ......from : " << conj_subs << std::endl;
+  if( conj_subs_unfold==d_result ){
+    Trace("sygus-cref-eval2") << "Evaluation min explain : " << conj_subs << " still evaluates to " << d_result << " regardless of ";
+    Trace("sygus-cref-eval2") << x << std::endl;
+    return true;
+  }else{
+    return false;
+  }
+}
+
 TermDbSygus::TermDbSygus( context::Context* c, QuantifiersEngine* qe ) : d_quantEngine( qe ){
   d_true = NodeManager::currentNM()->mkConst( true );
   d_false = NodeManager::currentNM()->mkConst( false );
@@ -4288,13 +4304,28 @@ void TermDbSygus::registerModelValue( Node a, Node v, std::vector< Node >& terms
             res = unfold( eval_fun, vtm, exp );
             expn = exp.size()==1 ? exp[0] : NodeManager::currentNM()->mkNode( kind::AND, exp );
           }else{
-            //if all constant, we can use the cref evaluation to minimize the explanation
-            Assert( i<d_eval_args_const[n].size() );
-            if( d_eval_args_const[n][i] ){
-              eval_children.insert( eval_children.end(), it->second[i].begin(), it->second[i].end() );
-              Node eval_fun = NodeManager::currentNM()->mkNode( kind::APPLY_UF, eval_children );
-              eval_children.resize( 2 );  
-              //evaluate tracking explanation
+
+            EvalSygusInvarianceTest esit;
+            eval_children.insert( eval_children.end(), it->second[i].begin(), it->second[i].end() );
+            esit.d_conj = NodeManager::currentNM()->mkNode( kind::APPLY_UF, eval_children );
+            esit.d_var = n;
+            eval_children[1] = vn;
+            Node eval_fun = NodeManager::currentNM()->mkNode( kind::APPLY_UF, eval_children );
+            esit.d_result = evaluateWithUnfolding( eval_fun );
+            res = esit.d_result;
+            eval_children.resize( 2 );  
+            eval_children[1] = n;
+            
+            //evaluate with minimal explanation
+            std::vector< Node > mexp;
+            getExplanationFor( n, vn, mexp, esit );
+            Assert( !mexp.empty() );
+            expn = mexp.size()==1 ? mexp[0] : NodeManager::currentNM()->mkNode( kind::AND, mexp );
+            
+            //if all constant, we can use evaluation to minimize the explanation
+            //Assert( i<d_eval_args_const[n].size() );
+            //if( d_eval_args_const[n][i] ){
+              /*
               std::map< Node, Node > vtm; 
               std::map< Node, Node > visited; 
               std::map< Node, std::vector< Node > > exp;
@@ -4302,6 +4333,8 @@ void TermDbSygus::registerModelValue( Node a, Node v, std::vector< Node >& terms
               res = crefEvaluate( eval_fun, vtm, visited, exp );
               Assert( !exp[eval_fun].empty() );
               expn = exp[eval_fun].size()==1 ? exp[eval_fun][0] : NodeManager::currentNM()->mkNode( kind::AND, exp[eval_fun] );
+              */
+              /*
             //otherwise, just do a substitution
             }else{
               Assert( vars.size()==it->second[i].size() );
@@ -4309,6 +4342,7 @@ void TermDbSygus::registerModelValue( Node a, Node v, std::vector< Node >& terms
               res = Rewriter::rewrite( res );
               expn = antec;
             }
+            */
           }
           Assert( !res.isNull() );
           terms.push_back( d_evals[n][i] );
@@ -4373,7 +4407,7 @@ void TermDbSygus::getExplanationFor( TermRecBuild& trb, Node n, Node vn, std::ve
     trb.replaceChild( i, x );
     Node nvn = trb.build();
     Assert( nvn.getKind()==kind::APPLY_CONSTRUCTOR );
-    if( et.exclude( this, nvn, x ) ){
+    if( et.is_invariant( this, nvn, x ) ){
       cexc[i] = true;
       // we are tracking term size if positive
       if( sz>=0 ){
@@ -4641,175 +4675,6 @@ Node TermDbSygus::evaluateWithUnfolding( Node n, std::map< Node, Node >& visited
 Node TermDbSygus::evaluateWithUnfolding( Node n ) {
   std::map< Node, Node > visited;
   return evaluateWithUnfolding( n, visited );
-}
-
-Node TermDbSygus::crefEvaluate( Node n, std::map< Node, Node >& vtm, std::map< Node, Node >& visited, std::map< Node, std::vector< Node > >& exp ){
-  CrefContext crc;
-  return crefEvaluate( n, vtm, visited, exp, crc );
-}
-
-Node TermDbSygus::crefEvaluate( Node n, std::map< Node, Node >& vtm, std::map< Node, Node >& visited, std::map< Node, std::vector< Node > >& exp, CrefContext& crc ) {
-  Assert( crc.d_owner.isNull() );
-  std::map< Node, Node >::iterator itv = visited.find( n );
-  Node ret;
-  //the children whose explanation is relevant
-  std::vector< Node > exp_c;
-  if( itv!=visited.end() ){
-    // TODO : why restricted to APPLY_UF?
-    if( !itv->second.isConst() && itv->second.getKind()==kind::APPLY_UF ){
-      //we stored a partially evaluated node, actually evaluate the result now
-      ret = crefEvaluate( itv->second, vtm, visited, exp, crc );
-      exp_c.push_back( itv->second );
-    }else{
-      return itv->second;
-    }
-  }else{
-    if( n.getKind()==kind::APPLY_UF ){
-      //it is an evaluation function
-      Trace("sygus-cref-eval-debug") << "Compute evaluation for : " << n << std::endl;
-      //unfold by one step 
-      Node nn = unfold( n, vtm, exp[n] );
-      Trace("sygus-cref-eval-debug") << "...unfolded once to " << nn << std::endl;
-      Assert( nn!=n );
-      if( crc.notifySubstitution( this, n, nn ) ){
-        Assert( !crc.d_owner.isNull() );
-        Trace("sygus-cref-eval-debug") << "...we now can evaluate parent " << crc.d_owner << std::endl;
-        //result is just this node, the evaluation at crc.d_owner will know how to rewrite it
-        ret = nn;
-      }else{
-        //it is the result of evaluating the unfolding
-        ret = crefEvaluate( nn, vtm, visited, exp, crc );
-        //carry explanation
-        exp_c.push_back( nn );
-      }
-    }
-    if( ret.isNull() ){
-      if( n.getNumChildren()>0 ){
-        crc.add( n );
-        std::vector< Node > children;
-        bool childChanged = false;
-        if( n.getMetaKind() == kind::metakind::PARAMETERIZED ){
-          children.push_back( n.getOperator() );
-        }
-        Kind nk = n.getKind();
-        for( unsigned i=0; i<n.getNumChildren(); i++ ){
-          Node nc;
-          if( crc.d_owner.isNull() ){
-            nc = crefEvaluate( n[i], vtm, visited, exp, crc );
-            childChanged = nc!=n[i] || childChanged;
-            // short circuiting
-            Node nc_singular = isSingularArg( nc, nk, i );
-            if( !nc_singular.isNull() ){
-              Trace("sygus-cref-eval-s") << "cr-eval : Short circuit evaluation of " << n << " at argument " << i << ", since value " << nc;
-              Trace("sygus-cref-eval-s") << " implies that the evaluation is " << nc_singular << std::endl;
-              ret = nc_singular;
-              exp_c.clear();
-            // ite implies only one branch is relevant
-            }else if( n.getKind()==kind::ITE && i==0 && crc.d_owner.isNull() ){
-              int index = -1;
-              if( nc==d_true ){
-                index = 1;
-              }else if( nc==d_false ){
-                index = 2;
-              }
-              if( index!=-1 ){
-                Trace("sygus-cref-eval-s") << "cr-eval : Only evaluate child " << index << " of " << n << " since condition evaluates to "; 
-                Trace("sygus-cref-eval-s") << nc << std::endl;
-                ret = crefEvaluate( n[index], vtm, visited, exp, crc );
-                exp_c.push_back( n[index] );
-              }
-            }
-            //carry explanation
-            exp_c.push_back( n[i] );
-            if( !ret.isNull() ){
-              break;
-            }
-          }else{
-            nc = n[i];
-          }
-          children.push_back( nc );
-        }
-        if( ret.isNull() ){
-          if( childChanged ){
-            ret = NodeManager::currentNM()->mkNode( n.getKind(), children );
-            if( crc.d_owner==n ){
-              // there was a special way to rewrite it to a constant
-              Trace("sygus-cref-eval-s") << "cr-eval : contextual short circuit " << ret << " evaluates to " << crc.d_context[n] << std::endl;
-              ret = crc.d_context[n];
-              Assert( ret.isConst() );
-            }else{
-              Trace("sygus-cref-eval-debug") << "Rewrite " << ret << " to ";
-              ret = extendedRewrite( ret );
-              Trace("sygus-cref-eval-debug") << ret << std::endl;
-            }
-          }else{
-            Trace("sygus-cref-eval-debug") << "...recovered " << n << std::endl;
-            ret = n;
-            Assert( crc.d_owner.isNull() );
-          }
-        }
-        crc.remove( n );
-      }else{
-        ret = n;
-      }
-    }
-  }
-  //carry explanation from children
-  for( unsigned i=0; i<exp_c.size(); i++ ){
-    Node nn = exp_c[i];
-    std::map< Node, std::vector< Node > >::iterator itx = exp.find( nn );
-    if( itx!=exp.end() ){
-      for( unsigned j=0; j<itx->second.size(); j++ ){
-        if( std::find( exp[n].begin(), exp[n].end(), itx->second[j] )==exp[n].end() ){
-          exp[n].push_back( itx->second[j] );
-        }
-      }
-    }
-  }
-  Trace("sygus-cref-eval-debug") << "... evaluation of " << n << " is (" << ret.getKind() << ") " << ret << std::endl;
-  Trace("sygus-cref-eval-debug") << "...... exp size = " << exp[n].size() << std::endl;
-  //Assert( ret.isNull() || ret.isConst() );
-  if( crc.d_owner.isNull() ){
-    visited[n] = ret;
-  }
-  return ret;
-}
-  
-bool TermDbSygus::CrefContext::consider( Node n ) {
-  // can rewrite strings based on disequal prefix/suffix
-  if( n.getKind()==kind::EQUAL && n[0].getType().isString() ){
-    return true;
-  }
-  return false;
-}
-
-bool TermDbSygus::CrefContext::notifySubstitution( TermDbSygus * tds, TNode n, TNode nr ) {
-  for( std::map< Node, Node >::iterator it = d_context.begin(); it != d_context.end(); ++it ){
-    Node res = it->second.substitute( n, nr );
-    // check if this is rewritable
-    Trace("sygus-cref-eval-debug") << ".......now considering context : " << res << std::endl;
-    Node eres = tds->extendedRewrite( res );
-    if( eres.isConst() ){
-      Trace("sygus-cref-eval-debug") << ".........this rewrites to " << res << "!!!" << std::endl;
-      d_owner = it->first;
-      d_context[ it->first ] = eres;
-      return true;
-    }
-    d_context[ it->first ] = res;
-  }
-  return false;
-}
-
-void TermDbSygus::CrefContext::add( Node n ) {
-  if( consider( n ) ){
-    d_context[n] = n;
-  }
-}
-
-void TermDbSygus::CrefContext::remove( Node n ) {
-  if( consider( n ) ){
-    d_context.erase( n );
-  }
 }
 
 bool TermDbSygus::computeGenericRedundant( TypeNode tn, Node g ) {
