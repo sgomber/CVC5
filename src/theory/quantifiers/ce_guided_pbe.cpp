@@ -545,6 +545,7 @@ void CegConjecturePbe::staticLearnRedundantOps( Node c, std::vector< Node >& lem
       Trace("sygus-unif") << std::endl;
     }
   }
+  Trace("sygus-unif") << std::endl;
   Trace("sygus-unif") << "Strategy for candidate " << c << " is : " << std::endl;
   std::map< Node, bool > visited;
   std::vector< Node > redundant;
@@ -578,17 +579,16 @@ void CegConjecturePbe::staticLearnRedundantOps( Node c, Node e, std::map< Node, 
       }else{
         Trace("sygus-unif") << "compound" << std::endl;
         // various strategies 
-        std::vector< Node > redundant_emp;
         for( std::map< Node, EnumTypeInfoStrat >::iterator itts = itt->second.d_strat.begin(); itts!=itt->second.d_strat.end(); ++itts ){
-          std::vector< Node > redundant_c;
-          redundant_c.push_back( itts->first );
           indent("sygus-unif", ind+1);
           Trace("sygus-unif") << "Strategy : ";
           unsigned strat = itts->second.d_this;
           print_strat("sygus-unif", strat);
           Trace("sygus-unif") << std::endl;
           for( unsigned i=0; i<itts->second.d_cenum.size(); i++ ){
+            std::vector< Node > redundant_c;
             bool no_repeat_op = false;
+            // do not repeat operators that the strategy uses
             if( itts->second.d_csol_cts[i]==etn ){
               if( strat==strat_ITE && i!=0 ){
                 no_repeat_op = true;
@@ -596,12 +596,35 @@ void CegConjecturePbe::staticLearnRedundantOps( Node c, Node e, std::map< Node, 
                 no_repeat_op = true;
               }
             }
-            
             if( no_repeat_op ){
-              staticLearnRedundantOps( c, itts->second.d_cenum[i], visited, redundant_c, lemmas, ind+2 );
-            }else{
-              staticLearnRedundantOps( c, itts->second.d_cenum[i], visited, redundant_emp, lemmas, ind+2 );
+              redundant_c.push_back( itts->first );
             }
+            //do not use standard Boolean connectives in ITE conditions
+            if( strat==strat_ITE && i==0 && itts->second.d_csol_cts[1]==itts->second.d_csol_cts[2] ){
+              TypeNode ctn = itts->second.d_csol_cts[0];
+              const Datatype& cdt = ((DatatypeType)ctn.toType()).getDatatype();
+              for( unsigned j=0; j<cdt.getNumConstructors(); j++ ){
+                Kind ck = d_tds->getConsNumKind( ctn, j );
+                if( ck!=UNDEFINED_KIND && TermDb::isBoolConnective( ck ) ){
+                  bool typeCorrect = true;
+                  for( unsigned k=0; k<cdt[j].getNumArgs(); k++ ){
+                    if( d_tds->getArgType( cdt[j], k )!=ctn ){
+                      typeCorrect = false;
+                      break;
+                    }
+                  }
+                  if( typeCorrect ){
+                    Trace("sygus-unif-debug") << "Exclude Boolean connective in ITE conditional : " << ck << " in conditional type " << cdt.getName() << std::endl;
+                    Node exc_cons = Node::fromExpr( cdt[j].getConstructor() );
+                    if( std::find( redundant_c.begin(), redundant_c.end(), exc_cons )==redundant_c.end() ){
+                      redundant_c.push_back( exc_cons );
+                    }
+                  }
+                }
+              }
+            }
+            // recurse
+            staticLearnRedundantOps( c, itts->second.d_cenum[i], visited, redundant_c, lemmas, ind+2 );
           }
         }
       }

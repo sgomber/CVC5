@@ -4849,7 +4849,7 @@ Node TermDbSygus::extendedRewrite( Node n ) {
         // simple ITE pulling
         new_ret = extendedRewritePullIte( ret );
       }
-      // TODO : ( ~contains( x, y ) --> false ) => x != y
+      // TODO : ( ~contains( x, y ) --> false ) => ( ~x=y --> false )
     }else if( ret.getKind()==kind::ITE ){
       Assert( ret[1]!=ret[2] );
       if( ret[0].getKind()==NOT ){
