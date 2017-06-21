@@ -3527,7 +3527,7 @@ void TermDbSygus::registerSygusType( TypeNode tn ) {
               nred = !computeGenericRedundant( tn, g );
               Trace("sygus-split-debug") << "...done check " << dt[i].getName() << " based on generic rewriting" << std::endl;
             }
-            d_sygus_nred[tn].push_back( nred );
+            d_sygus_red_status[tn].push_back( nred ? 0 : 1 );
           }
           // run an enumerator for this type
           if( options::sygusMinGrammarAgg() ){
@@ -3586,7 +3586,7 @@ void TermDbSygus::registerSygusType( TypeNode tn ) {
                     }else{
                       Trace("sygus-static-enum") << "*** already can eliminate constructor " << clist[e][0] << std::endl;
                       unsigned cindex =  Datatype::indexOf( clist[e][0].toExpr() );
-                      d_sygus_nred[tn][cindex] = false;
+                      d_sygus_red_status[tn][cindex] = 1;
                     }
                   }
                   //}
@@ -3614,7 +3614,7 @@ void TermDbSygus::registerSygusType( TypeNode tn ) {
               if( !next_rcons.isNull() ){
                 Trace("sygus-static-enum") << "*** eliminate constructor " << next_rcons << std::endl;
                 unsigned cindex =  Datatype::indexOf( next_rcons.toExpr() );
-                d_sygus_nred[tn][cindex] = false;
+                d_sygus_red_status[tn][cindex] = 2;
               }
             }while( !next_rcons.isNull() );
             Trace("sygus-static-enum") << "...finished..." << std::endl;
@@ -3622,7 +3622,7 @@ void TermDbSygus::registerSygusType( TypeNode tn ) {
         }else{
           // assume all are non-redundant
           for( unsigned i=0; i<dt.getNumConstructors(); i++ ){
-            d_sygus_nred[tn].push_back( true );
+            d_sygus_red_status[tn].push_back( 0 );
           }
         }
       }
@@ -4703,8 +4703,12 @@ bool TermDbSygus::computeGenericRedundant( TypeNode tn, Node g ) {
 }
 
 bool TermDbSygus::isGenericRedundant( TypeNode tn, unsigned i ) {
-  Assert( i<d_sygus_nred[tn].size() );
-  return !d_sygus_nred[tn][i];
+  Assert( i<d_sygus_red_status[tn].size() );
+  if( options::sygusMinGrammarAgg() ){
+    return d_sygus_red_status[tn][i]!=0;
+  }else{
+    return d_sygus_red_status[tn][i]==1;
+  }
 }
 
 Node TermDbSygus::PbeTrie::addPbeExample( TypeNode etn, Node e, Node b, quantifiers::TermDbSygus * tds, unsigned index, unsigned ntotal ) {

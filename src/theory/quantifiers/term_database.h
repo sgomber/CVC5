@@ -799,7 +799,8 @@ public:
 //for calculating redundant operators
 private:
   //whether each constructor is redundant
-  std::map< TypeNode, std::vector< bool > > d_sygus_nred;
+  // 0 : not redundant, 1 : redundant, 2 : partially redundant
+  std::map< TypeNode, std::vector< int > > d_sygus_red_status;
   // type to (rewritten) to original
   std::map< TypeNode, std::map< Node, Node > > d_gen_terms;
   std::map< TypeNode, std::map< Node, bool > > d_gen_redundant;
