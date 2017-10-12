@@ -1082,7 +1082,12 @@ void CegConjectureSingleInvSol::getEquivalentTerms( Kind k, Node n, std::vector<
   if( k==AND || k==OR ){
     equiv.push_back( NodeManager::currentNM()->mkNode( k, n, n ) );
     equiv.push_back( NodeManager::currentNM()->mkNode( k, n, NodeManager::currentNM()->mkConst( k==AND ) ) );
+  }else if( ( k==XOR && n.getKind()==EQUAL ) || 
+            ( k==EQUAL && n.getKind()==XOR ) ){
+    equiv.push_back( NodeManager::currentNM()->mkNode( k, n[0], n[1].negate() ) );
+    equiv.push_back( NodeManager::currentNM()->mkNode( k, n[0].negate(), n[1] ) );
   }
+  
   //multiplication for integers
   //TODO for bitvectors
   Kind mk = ( k==PLUS || k==MINUS ) ? MULT : UNDEFINED_KIND;
