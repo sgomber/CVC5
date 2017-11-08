@@ -3967,12 +3967,296 @@ void SmtEnginePrivate::applySubstitutionsToAssertions() {
   }
 }
 
+
+Node mkRandom(unsigned depth, std::vector< Node >& vars, unsigned& index, double rf ){
+  if( depth==0 ){
+    double r = (double)(rand())/((double)(RAND_MAX));
+    unsigned iuse;
+    if( r<rf || vars.empty() ){
+      while( index>=vars.size() ){
+        std::stringstream ss;
+        ss << "t" << vars.size();
+        vars.push_back( NodeManager::currentNM()->mkBoundVar( ss.str(), NodeManager::currentNM()->realType() ) );
+      }
+      iuse = index;
+      index++;
+    }else{
+      r = (double)(rand())/((double)(RAND_MAX));
+      iuse = (unsigned)( (double(vars.size())*r ) );
+      if( iuse>=vars.size() ){
+        iuse = vars.size()-1;        
+      }
+    }
+    Node v = vars[iuse];
+    return v;
+  }else{
+    std::vector< Node > children;
+    for( unsigned i=0; i<2; i++ ){
+      Node c = mkRandom( depth-1, vars, index, rf );
+      children.push_back( c );
+    }
+    return NodeManager::currentNM()->mkNode( kind::PLUS, children );
+  }
+}
+
+bool findUSet( TNode n, TNode v ){
+  std::unordered_set<TNode, TNodeHashFunction> visited;
+  std::unordered_set<TNode, TNodeHashFunction>::iterator it;
+  std::stack<TNode> visit;
+  TNode cur;
+  visit.push(n);
+  do {
+    cur = visit.top();
+    visit.pop();
+    it = visited.find(cur);
+
+    if (it == visited.end()) {
+      visited.insert(cur);
+      if( cur==v ){
+        return true;
+      }
+      for (unsigned i = 0; i < cur.getNumChildren(); i++) {
+        visit.push(cur[i]);
+      }
+    }
+  } while (!visit.empty());
+  return false;
+}
+
+bool findVec( TNode n, TNode v ){
+  std::vector<TNode> visited;
+  std::stack<TNode> visit;
+  TNode cur;
+  visit.push(n);
+  do {
+    cur = visit.top();
+    visit.pop();
+
+    if (std::find(visited.begin(),visited.end(),cur) == visited.end()) {
+      visited.push_back(cur);
+      if( cur==v ){
+        return true;
+      }
+      for (unsigned i = 0; i < cur.getNumChildren(); i++) {
+        visit.push(cur[i]);
+      }
+    }
+  } while (!visit.empty());
+  return false;
+}
+
+bool findMap( TNode n, TNode v ){
+  std::map<TNode, bool> visited;
+  std::map<TNode, bool>::iterator it;
+  std::stack<TNode> visit;
+  TNode cur;
+  visit.push(n);
+  do {
+    cur = visit.top();
+    visit.pop();
+    it = visited.find(cur);
+
+    if (it == visited.end()) {
+      visited[cur] = true;
+      if( cur==v ){
+        return true;
+      }
+      for (unsigned i = 0; i < cur.getNumChildren(); i++) {
+        visit.push(cur[i]);
+      }
+    }
+  } while (!visit.empty());
+  return false;
+}
+
+bool findUMap( TNode n, TNode v ){
+  std::unordered_map<TNode, bool, TNodeHashFunction> visited;
+  std::unordered_map<TNode, bool, TNodeHashFunction>::iterator it;
+  std::stack<TNode> visit;
+  TNode cur;
+  visit.push(n);
+  do {
+    cur = visit.top();
+    visit.pop();
+    it = visited.find(cur);
+
+    if (it == visited.end()) {
+      visited[cur] = true;
+      if( cur==v ){
+        return true;
+      }
+      for (unsigned i = 0; i < cur.getNumChildren(); i++) {
+        visit.push(cur[i]);
+      }
+    }
+  } while (!visit.empty());
+  return false;
+}
+
+bool findUSetRec( TNode n, TNode v, std::unordered_set<TNode, TNodeHashFunction>& visited ){
+  if( visited.find( n )==visited.end() ){
+    visited.insert(n);
+    if( n==v ){
+      return true;
+    }
+    
+    for( unsigned i=0; i<n.getNumChildren(); i++ ){
+      if( findUSetRec( n[i], v, visited ) ){
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+bool findVecRec( TNode n, TNode v, std::vector< TNode >& visited ){
+  if( std::find( visited.begin(), visited.end(), n )==visited.end() ){
+    visited.push_back( n );
+    if( n==v ){
+      return true;
+    }
+    
+    for( unsigned i=0; i<n.getNumChildren(); i++ ){
+      if( findVecRec( n[i], v, visited ) ){
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+bool findMapRec( TNode n, TNode v, std::map< TNode, bool >& visited ){
+  if( visited.find( n )==visited.end() ){
+    visited[n] = true;
+    if( n==v ){
+      return true;
+    }
+    
+    for( unsigned i=0; i<n.getNumChildren(); i++ ){
+      if( findMapRec( n[i], v, visited ) ){
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+bool findUMapRec( TNode n, TNode v, std::unordered_map< TNode, bool, TNodeHashFunction >& visited ){
+  if( visited.find( n )==visited.end() ){
+    visited[n] = true;
+    if( n==v ){
+      return true;
+    }
+    
+    for( unsigned i=0; i<n.getNumChildren(); i++ ){
+      if( findUMapRec( n[i], v, visited ) ){
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 void SmtEnginePrivate::processAssertions() {
   TimerStat::CodeTimer paTimer(d_smt.d_stats->d_processAssertionsTime);
   spendResource(options::preprocessStep());
   Assert(d_smt.d_fullyInited);
   Assert(d_smt.d_pendingPops == 0);
 
+  if( options::doTests() ){
+    std::vector< Node > vars;
+    unsigned depth = options::testDepth();  
+    unsigned index = 0;
+    Trace("ajr-test") << "Making depth " << depth << " term..." << std::endl;
+    double rf = double(1.0)/double(options::testTermReuseFreq());
+    Trace("ajr-test") << "Term reuse factor is " << (1.0-rf) << "..." << std::endl;
+    Node r = mkRandom(depth,vars,index,rf);
+    Trace("ajr-test") << "Number of variables introduced was " << index << "..." << std::endl;
+    // make double the vars (find succeeds half the time)
+    for( unsigned i=0; i<index; i++ ){
+      std::stringstream ss;
+      ss << "nt" << vars.size();
+      vars.push_back( NodeManager::currentNM()->mkBoundVar( ss.str(), NodeManager::currentNM()->realType() ) );
+    }
+    index = vars.size();
+    std::random_shuffle( vars.begin(), vars.end() );
+    
+    unsigned testType = options::testType();
+    Trace("ajr-test") << "Test type is " << testType << "..." << std::endl;
+    
+    unsigned totalTestsF = options::totalTests()>1 ? options::totalTests() : 1;
+    Trace("ajr-test") << "Test factor is " << totalTestsF << "..." << std::endl;
+    unsigned totalTests = double(totalTestsF)*100000000.0/(double)(index);
+    Trace("ajr-test") << "Total tests is " << totalTests << "..." << std::endl;
+    
+    unsigned tests = 0;
+    if( testType==0 ){
+      while( tests<totalTests ){
+        for( unsigned i=0; i<index; i++ ){
+          bool ret = findUSet( r, vars[i] );
+          tests++;
+        }
+      }
+    }else if( testType==1 ){
+      while( tests<totalTests ){
+        for( unsigned i=0; i<index; i++ ){
+          bool ret = findVec( r, vars[i] );
+          tests++;
+        }
+      }
+    }else if( testType==2 ){
+      while( tests<totalTests ){
+        for( unsigned i=0; i<index; i++ ){
+          bool ret = findMap( r, vars[i] );
+          tests++;
+        }
+      }
+    }else if( testType==3 ){
+      while( tests<totalTests ){
+        for( unsigned i=0; i<index; i++ ){
+          bool ret = findUMap( r, vars[i] );
+          tests++;
+        }
+      }
+    }else if( testType==4 ){
+      while( tests<totalTests ){
+        for( unsigned i=0; i<index; i++ ){
+          std::unordered_set<TNode, TNodeHashFunction> visited;
+          bool ret = findUSetRec( r, vars[i], visited );
+          tests++;
+        }
+      }
+    }else if( testType==5 ){
+      while( tests<totalTests ){
+        for( unsigned i=0; i<index; i++ ){
+          std::vector<TNode> visited;
+          bool ret = findVecRec( r, vars[i], visited );
+          tests++;
+        }
+      }
+    }else if( testType==6 ){
+      while( tests<totalTests ){
+        for( unsigned i=0; i<index; i++ ){
+          std::map<TNode, bool> visited;
+          bool ret = findMapRec( r, vars[i], visited );
+          tests++;
+        }
+      }
+    }else if( testType==7 ){
+      while( tests<totalTests ){
+        for( unsigned i=0; i<index; i++ ){
+          std::unordered_map<TNode, bool, TNodeHashFunction> visited;
+          bool ret = findUMapRec( r, vars[i], visited );
+          tests++;
+        }
+      }
+    }
+    Trace("ajr-test") << "Finished." << std::endl;
+    exit( 0 );
+  }
+  
+  
+  
   // Dump the assertions
   dumpAssertions("pre-everything", d_assertions);
 
