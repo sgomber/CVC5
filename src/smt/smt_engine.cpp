@@ -4001,16 +4001,14 @@ Node mkRandom(unsigned depth, std::vector< Node >& vars, unsigned& index, double
 
 bool findUSet( TNode n, TNode v ){
   std::unordered_set<TNode, TNodeHashFunction> visited;
-  std::unordered_set<TNode, TNodeHashFunction>::iterator it;
   std::stack<TNode> visit;
   TNode cur;
   visit.push(n);
   do {
     cur = visit.top();
     visit.pop();
-    it = visited.find(cur);
 
-    if (it == visited.end()) {
+    if (visited.find(cur) == visited.end()) {
       visited.insert(cur);
       if( cur==v ){
         return true;
@@ -4047,16 +4045,14 @@ bool findVec( TNode n, TNode v ){
 
 bool findMap( TNode n, TNode v ){
   std::map<TNode, bool> visited;
-  std::map<TNode, bool>::iterator it;
   std::stack<TNode> visit;
   TNode cur;
   visit.push(n);
   do {
     cur = visit.top();
     visit.pop();
-    it = visited.find(cur);
 
-    if (it == visited.end()) {
+    if (visited.find(cur) == visited.end()) {
       visited[cur] = true;
       if( cur==v ){
         return true;
@@ -4071,16 +4067,14 @@ bool findMap( TNode n, TNode v ){
 
 bool findUMap( TNode n, TNode v ){
   std::unordered_map<TNode, bool, TNodeHashFunction> visited;
-  std::unordered_map<TNode, bool, TNodeHashFunction>::iterator it;
   std::stack<TNode> visit;
   TNode cur;
   visit.push(n);
   do {
     cur = visit.top();
     visit.pop();
-    it = visited.find(cur);
 
-    if (it == visited.end()) {
+    if (visited.find(cur) == visited.end()) {
       visited[cur] = true;
       if( cur==v ){
         return true;
