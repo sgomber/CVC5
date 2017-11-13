@@ -3999,7 +3999,7 @@ Node mkRandom(unsigned depth, std::vector< Node >& vars, unsigned& index, double
   }
 }
 
-bool findUSet( TNode n, TNode v ){
+bool findUSetIterStack( TNode n, TNode v ){
   std::unordered_set<TNode, TNodeHashFunction> visited;
   std::stack<TNode> visit;
   TNode cur;
@@ -4021,7 +4021,7 @@ bool findUSet( TNode n, TNode v ){
   return false;
 }
 
-bool findVec( TNode n, TNode v ){
+bool findVecIterStack( TNode n, TNode v ){
   std::vector<TNode> visited;
   std::stack<TNode> visit;
   TNode cur;
@@ -4043,7 +4043,7 @@ bool findVec( TNode n, TNode v ){
   return false;
 }
 
-bool findMap( TNode n, TNode v ){
+bool findMapIterStack( TNode n, TNode v ){
   std::map<TNode, bool> visited;
   std::stack<TNode> visit;
   TNode cur;
@@ -4065,7 +4065,7 @@ bool findMap( TNode n, TNode v ){
   return false;
 }
 
-bool findUMap( TNode n, TNode v ){
+bool findUMapIterStack( TNode n, TNode v ){
   std::unordered_map<TNode, bool, TNodeHashFunction> visited;
   std::stack<TNode> visit;
   TNode cur;
@@ -4151,6 +4151,95 @@ bool findUMapRec( TNode n, TNode v, std::unordered_map< TNode, bool, TNodeHashFu
   return false;
 }
 
+
+bool findUSetIterVec( TNode n, TNode v ){
+  std::unordered_set<TNode, TNodeHashFunction> visited;
+  std::vector<TNode> visit;
+  TNode cur;
+  visit.push_back(n);
+  do {
+    cur = visit.back();
+    visit.pop_back();
+
+    if (visited.find(cur) == visited.end()) {
+      visited.insert(cur);
+      if( cur==v ){
+        return true;
+      }
+      for (unsigned i = 0; i < cur.getNumChildren(); i++) {
+        visit.push_back(cur[i]);
+      }
+    }
+  } while (!visit.empty());
+  return false;
+}
+
+bool findVecIterVec( TNode n, TNode v ){
+  std::vector<TNode> visited;
+  std::vector<TNode> visit;
+  TNode cur;
+  visit.push_back(n);
+  do {
+    cur = visit.back();
+    visit.pop_back();
+
+    if (std::find(visited.begin(),visited.end(),cur) == visited.end()) {
+      visited.push_back(cur);
+      if( cur==v ){
+        return true;
+      }
+      for (unsigned i = 0; i < cur.getNumChildren(); i++) {
+        visit.push_back(cur[i]);
+      }
+    }
+  } while (!visit.empty());
+  return false;
+}
+
+bool findMapIterVec( TNode n, TNode v ){
+  std::map<TNode, bool> visited;
+  std::vector<TNode> visit;
+  TNode cur;
+  visit.push_back(n);
+  do {
+    cur = visit.back();
+    visit.pop_back();
+
+    if (visited.find(cur) == visited.end()) {
+      visited[cur] = true;
+      if( cur==v ){
+        return true;
+      }
+      for (unsigned i = 0; i < cur.getNumChildren(); i++) {
+        visit.push_back(cur[i]);
+      }
+    }
+  } while (!visit.empty());
+  return false;
+}
+
+bool findUMapIterVec( TNode n, TNode v ){
+  std::unordered_map<TNode, bool, TNodeHashFunction> visited;
+  std::vector<TNode> visit;
+  TNode cur;
+  visit.push_back(n);
+  do {
+    cur = visit.back();
+    visit.pop_back();
+
+    if (visited.find(cur) == visited.end()) {
+      visited[cur] = true;
+      if( cur==v ){
+        return true;
+      }
+      for (unsigned i = 0; i < cur.getNumChildren(); i++) {
+        visit.push_back(cur[i]);
+      }
+    }
+  } while (!visit.empty());
+  return false;
+}
+
 void SmtEnginePrivate::processAssertions() {
   TimerStat::CodeTimer paTimer(d_smt.d_stats->d_processAssertionsTime);
   spendResource(options::preprocessStep());
@@ -4187,28 +4276,28 @@ void SmtEnginePrivate::processAssertions() {
     if( testType==0 ){
       while( tests<totalTests ){
         for( unsigned i=0; i<index; i++ ){
-          bool ret = findUSet( r, vars[i] );
+          bool ret = findUSetIterStack( r, vars[i] );
           tests++;
         }
       }
     }else if( testType==1 ){
       while( tests<totalTests ){
         for( unsigned i=0; i<index; i++ ){
-          bool ret = findVec( r, vars[i] );
+          bool ret = findVecIterStack( r, vars[i] );
           tests++;
         }
       }
     }else if( testType==2 ){
       while( tests<totalTests ){
         for( unsigned i=0; i<index; i++ ){
-          bool ret = findMap( r, vars[i] );
+          bool ret = findMapIterStack( r, vars[i] );
           tests++;
         }
       }
     }else if( testType==3 ){
       while( tests<totalTests ){
         for( unsigned i=0; i<index; i++ ){
-          bool ret = findUMap( r, vars[i] );
+          bool ret = findUMapIterStack( r, vars[i] );
           tests++;
         }
       }
@@ -4241,6 +4330,34 @@ void SmtEnginePrivate::processAssertions() {
         for( unsigned i=0; i<index; i++ ){
           std::unordered_map<TNode, bool, TNodeHashFunction> visited;
           bool ret = findUMapRec( r, vars[i], visited );
+          tests++;
+        }
+      }
+    }else if( testType==8 ){
+      while( tests<totalTests ){
+        for( unsigned i=0; i<index; i++ ){
+          bool ret = findUSetIterVec( r, vars[i] );
+          tests++;
+        }
+      }
+    }else if( testType==9 ){
+      while( tests<totalTests ){
+        for( unsigned i=0; i<index; i++ ){
+          bool ret = findVecIterVec( r, vars[i] );
+          tests++;
+        }
+      }
+    }else if( testType==10 ){
+      while( tests<totalTests ){
+        for( unsigned i=0; i<index; i++ ){
+          bool ret = findMapIterVec( r, vars[i] );
+          tests++;
+        }
+      }
+    }else if( testType==11 ){
+      while( tests<totalTests ){
+        for( unsigned i=0; i<index; i++ ){
+          bool ret = findUMapIterVec( r, vars[i] );
           tests++;
         }
       }
