@@ -4366,7 +4366,7 @@ void SmtEnginePrivate::processAssertions() {
           }
         }
       }
-    }else if( options::testFamily()==1 ){
+    }else if( options::testFamily()==1 || options::testFamily()==2 ){
       Trace("ajr-test") << "----Test count..." << std::endl;
       // 0 : counter over vector 
       // 1 : counter+size over vector 
@@ -4378,9 +4378,19 @@ void SmtEnginePrivate::processAssertions() {
       // 7 : range iterator over vector with unknown
       std::vector< Node > vars;
       for( unsigned i=0; i<depth; i++ ){
-        std::stringstream ss;
-        ss << "t" << vars.size();
-        vars.push_back( NodeManager::currentNM()->mkBoundVar( ss.str(), NodeManager::currentNM()->realType() ) );
+        double r = (double)(rand())/((double)(RAND_MAX));
+        if( r<rf || vars.empty() ){
+          std::stringstream ss;
+          ss << "t" << vars.size();
+          vars.push_back( NodeManager::currentNM()->mkBoundVar( ss.str(), NodeManager::currentNM()->realType() ) );
+        }else{
+          r = (double)(rand())/((double)(RAND_MAX));
+          unsigned iuse = (unsigned)( (double(vars.size())*r ) );
+          if( iuse>=vars.size() ){
+            iuse = vars.size()-1;        
+          }
+          vars.push_back(vars[iuse]);
+        }
       }
       // the find variable 
       Node fvar = vars[0];
@@ -4390,11 +4400,12 @@ void SmtEnginePrivate::processAssertions() {
       
       bool unk = options::dummyUnknown();
       
-      unsigned totalTests = double(totalTestsF)*1000000000.0/(double)(depth);
-      unsigned tests = 0;
+      long totalTests = double(totalTestsF)*1000000000.0/(double)(depth);
+      Trace("ajr-test") << "----Total tests is " << totalTests << "..." << std::endl;
+      long tests = 0;
       if( options::testFamily()==1 ){
         Trace("ajr-test") << "----Test count..." << std::endl;
-        unsigned count = 0;
+        long count = 0;
         if( testType==0 ){
           while( tests<totalTests ){
             for( unsigned i=0; i<vars.size(); i++ ){
@@ -4488,9 +4499,11 @@ void SmtEnginePrivate::processAssertions() {
           types.push_back( vars[i].getType() );
         }
         TypeNode ftn = NodeManager::currentNM()->mkFunctionType( types, NodeManager::currentNM()->realType() );
-        std::stringstream ss;
-        ss << "t" << vars.size();
-        Node f = NodeManager::currentNM()->mkBoundVar( ss.str(), NodeManager::currentNM()->realType() );
+        Node ff = NodeManager::currentNM()->mkBoundVar( "f", ftn );
+        std::vector< Node > fchildren;
+        fchildren.push_back( ff );
+        fchildren.insert( fchildren.end(), vars.begin(), vars.end() );
+        Node f = NodeManager::currentNM()->mkNode( kind::APPLY_UF, fchildren );
         
         unsigned count = 0;
         if( testType==0 ){
