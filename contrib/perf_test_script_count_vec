@@ -5,7 +5,7 @@ shift
 FREQ=$1
 shift
 
-echo "Run tests, factor $NUMTESTS, term reuse factor $FREQ..."
+echo "Run count vector tests, factor $NUMTESTS, term reuse factor $FREQ..."
 
 function measure()
 {

@@ -21,7 +21,7 @@ void PerfTest::runTestCountDataStructures()
   lvars.insert(lvars.end(),d_vars.begin(),d_vars.end());
   std::random_shuffle(lvars.begin(),lvars.end());
   
-  if( d_testType==0 || d_testType==1 ){
+  if( d_testType==0 || d_testType==1 || d_testType==2 || d_testType==3 ){
     // maps
     std::map< Node, Node > vmap;
     for( unsigned i=0; i<lvars.size(); i++ ){
@@ -45,14 +45,32 @@ void PerfTest::runTestCountDataStructures()
         }
         tests++;
       }
+    }else if( d_testType==2 ){
+      while( tests<totalTests ){
+        for( const std::pair< Node, Node >& v : vmap ){
+          if( v.first==fvar ){
+            count++;
+          }
+        }
+        tests++;
+      }
+    }else if( d_testType==3 ){
+      while( tests<totalTests ){
+        for( auto& v : vmap ){
+          if( v.first==fvar ){
+            count++;
+          }
+        }
+        tests++;
+      }
     }
-  }else if( d_testType==2 || d_testType==3 ){
+  }else if( d_testType==4 || d_testType==5 || d_testType==6 || d_testType==7 ){
     // unordered maps
     std::unordered_map< Node, Node, NodeHashFunction > vmap;
     for( unsigned i=0; i<lvars.size(); i++ ){
       vmap[d_vars[i]] = lvars[i];
     }
-    if( d_testType==2 ){
+    if( d_testType==4 ){
       while( tests<totalTests ){
         for( std::unordered_map< Node, Node, NodeHashFunction >::iterator it = vmap.begin(); it != vmap.end(); ++it ){
           if( it->first==fvar ){
@@ -61,7 +79,7 @@ void PerfTest::runTestCountDataStructures()
         }
         tests++;
       }
-    }else if( d_testType==3 ){
+    }else if( d_testType==5 ){
       while( tests<totalTests ){
         for( std::pair< Node, Node > v : vmap ){
           if( v.first==fvar ){
@@ -70,14 +88,32 @@ void PerfTest::runTestCountDataStructures()
         }
         tests++;
       }
+    }else if( d_testType==6 ){
+      while( tests<totalTests ){
+        for( const std::pair< Node, Node >& v : vmap ){
+          if( v.first==fvar ){
+            count++;
+          }
+        }
+        tests++;
+      }
+    }else if( d_testType==7 ){
+      while( tests<totalTests ){
+        for( auto& v : vmap ){
+          if( v.first==fvar ){
+            count++;
+          }
+        }
+        tests++;
+      }
     }
-  }else if( d_testType==4 || d_testType==5 ){
+  }else if( d_testType==8 || d_testType==9 || d_testType==10 || d_testType==11  ){
     // unordered maps
     std::unordered_set< Node, NodeHashFunction > vset;
     for( unsigned i=0; i<lvars.size(); i++ ){
       vset.insert( d_vars[i] );
     }
-    if( d_testType==4 ){
+    if( d_testType==8 ){
       while( tests<totalTests ){
         for( std::unordered_set< Node, NodeHashFunction >::iterator it = vset.begin(); it != vset.end(); ++it ){
           if( *it==fvar ){
@@ -86,9 +122,27 @@ void PerfTest::runTestCountDataStructures()
         }
         tests++;
       }
-    }else if( d_testType==5 ){
+    }else if( d_testType==9 ){
       while( tests<totalTests ){
         for( Node v : vset ){
+          if( v==fvar ){
+            count++;
+          }
+        }
+        tests++;
+      }
+    }else if( d_testType==10 ){
+      while( tests<totalTests ){
+        for( const Node& v : vset ){
+          if( v==fvar ){
+            count++;
+          }
+        }
+        tests++;
+      }
+    }else if( d_testType==1 ){
+      while( tests<totalTests ){
+        for( auto& v : vset ){
           if( v==fvar ){
             count++;
           }

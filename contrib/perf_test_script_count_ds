@@ -5,7 +5,7 @@ shift
 FREQ=$1
 shift
 
-echo "Run tests, factor $NUMTESTS, term reuse factor $FREQ..."
+echo "Run count data structure tests, factor $NUMTESTS, term reuse factor $FREQ..."
 
 function measure()
 {
@@ -30,7 +30,7 @@ TIMEFORMAT=%2R
 function do_tests()
 {
 echo -n "depth $@ : "
-for i in {0..5..1}
+for i in {0..11..1}
   do 
   do_one $1 $i $NUMTESTS $FREQ
 done
