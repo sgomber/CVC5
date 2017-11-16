@@ -47,7 +47,7 @@ void PerfTest::runTestCountDataStructures()
       }
     }else if( d_testType==2 ){
       while( tests<totalTests ){
-        for( const std::pair< Node, Node >& v : vmap ){
+        for( std::pair< const Node, Node >& v : vmap ){
           if( v.first==fvar ){
             count++;
           }
@@ -90,7 +90,7 @@ void PerfTest::runTestCountDataStructures()
       }
     }else if( d_testType==6 ){
       while( tests<totalTests ){
-        for( const std::pair< Node, Node >& v : vmap ){
+        for( std::pair< const Node, Node >& v : vmap ){
           if( v.first==fvar ){
             count++;
           }
