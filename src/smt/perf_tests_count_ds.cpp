@@ -140,7 +140,7 @@ void PerfTest::runTestCountDataStructures()
         }
         tests++;
       }
-    }else if( d_testType==1 ){
+    }else if( d_testType==11 ){
       while( tests<totalTests ){
         for( auto& v : vset ){
           if( v==fvar ){

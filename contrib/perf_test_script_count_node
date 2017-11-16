@@ -10,7 +10,7 @@ echo "Run count node tests, factor $NUMTESTS, term reuse factor $FREQ..."
 function measure()
 {
  #time $@ 2>/dev/null
-  ulimit -t 5000;time ajr-cvc4 test.smt2 --do-test --test-family=1 --test-depth=$1 --test-type=$2 --total-tests=$3 --test-term-reuse-freq=$4 2>/dev/null
+  ulimit -t 5000;time cvc4 test.smt2 --do-test --test-family=1 --test-depth=$1 --test-type=$2 --total-tests=$3 --test-term-reuse-freq=$4 2>/dev/null
 }
 
 function do_one()
