@@ -2,14 +2,14 @@
 
 echo "Run count Node tests with options $@..."
 
-./perf_test_script 2 2 $@ 
-./perf_test_script 2 3 $@
-./perf_test_script 2 4 $@
-./perf_test_script 2 5 $@
-./perf_test_script 2 6 $@
-./perf_test_script 2 7 $@
-./perf_test_script 2 8 $@
-./perf_test_script 2 9 $@
-./perf_test_script 2 10 $@
-./perf_test_script 2 11 $@
-./perf_test_script 2 12 $@
+./perf_test_script 2 6 2 $@ 
+./perf_test_script 2 6 3 $@
+./perf_test_script 2 6 4 $@
+./perf_test_script 2 6 5 $@
+./perf_test_script 2 6 6 $@
+./perf_test_script 2 6 7 $@
+./perf_test_script 2 6 8 $@
+./perf_test_script 2 6 9 $@
+./perf_test_script 2 6 10 $@
+./perf_test_script 2 6 11 $@
+./perf_test_script 2 6 12 $@

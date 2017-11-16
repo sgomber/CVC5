@@ -2,15 +2,15 @@
 
 echo "Run count data structure tests with options $@..."
 
-./perf_test_script 3 2 $@ 
-./perf_test_script 3 3 $@
-./perf_test_script 3 4 $@
-./perf_test_script 3 5 $@
-./perf_test_script 3 6 $@
-./perf_test_script 3 7 $@
-./perf_test_script 3 8 $@
-./perf_test_script 3 9 $@
-./perf_test_script 3 10 $@
-./perf_test_script 3 11 $@
-./perf_test_script 3 12 $@
+./perf_test_script 3 12 2 $@ 
+./perf_test_script 3 12 3 $@
+./perf_test_script 3 12 4 $@
+./perf_test_script 3 12 5 $@
+./perf_test_script 3 12 6 $@
+./perf_test_script 3 12 7 $@
+./perf_test_script 3 12 8 $@
+./perf_test_script 3 12 9 $@
+./perf_test_script 3 12 10 $@
+./perf_test_script 3 12 11 $@
+./perf_test_script 3 12 12 $@
 

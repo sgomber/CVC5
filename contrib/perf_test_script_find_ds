@@ -2,15 +2,15 @@
 
 echo "Run find data structure tests with options $@..."
 
-./perf_test_script 0 2 $@ 
-./perf_test_script 0 3 $@
-./perf_test_script 0 4 $@
-./perf_test_script 0 5 $@
-./perf_test_script 0 6 $@
-./perf_test_script 0 7 $@
-./perf_test_script 0 8 $@
-./perf_test_script 0 9 $@
-./perf_test_script 0 10 $@
-./perf_test_script 0 11 $@
-./perf_test_script 0 12 $@
+./perf_test_script 0 12 2 $@ 
+./perf_test_script 0 12 3 $@
+./perf_test_script 0 12 4 $@
+./perf_test_script 0 12 5 $@
+./perf_test_script 0 12 6 $@
+./perf_test_script 0 12 7 $@
+./perf_test_script 0 12 8 $@
+./perf_test_script 0 12 9 $@
+./perf_test_script 0 12 10 $@
+./perf_test_script 0 12 11 $@
+./perf_test_script 0 12 12 $@
 
