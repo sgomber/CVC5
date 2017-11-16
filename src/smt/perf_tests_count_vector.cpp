@@ -73,7 +73,7 @@ void PerfTest::runTestCountVector()
       }
     }else if( d_testType==5 ){
       while( tests<totalTests ){
-        for( auto v : d_vars ){
+        for( auto& v : d_vars ){
           if( v==fvar ){
             count++;
           }
@@ -148,7 +148,7 @@ void PerfTest::runTestCountVector()
       }
     }else if( d_testType==5 ){
       while( tests<totalTests ){
-        for( auto v : d_vars ){
+        for( auto& v : d_vars ){
           if( v==fvar ){
             count++;
           }
