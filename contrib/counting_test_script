@@ -1,0 +1,51 @@
+#!/bin/bash
+
+NUMTESTS=$1
+shift
+FREQ=$1
+shift
+
+echo "Run tests, factor $NUMTESTS, term reuse factor $FREQ..."
+
+function measure()
+{
+ #time $@ 2>/dev/null
+  ulimit -t 5000;time ajr-cvc4 test.smt2 --do-test --test-family=1 --test-depth=$1 --test-type=$2 --total-tests=$3 --test-term-reuse-freq=$4 2>/dev/null
+}
+
+function do_one()
+{
+  EXEC_TIME=`measure $@ 2>&1`
+  RVAL=$?
+  EXEC_TIME=${EXEC_TIME//$'\n'/ }
+  RESULT="E$RVAL:$EXEC_TIME"
+  if [ $RVAL == 137 ]; then
+    RESULT="E$RVAL:timeout $EXEC_TIME "
+  fi
+  echo -n "$RESULT "
+}
+
+TIMEFORMAT=%2R
+
+function do_tests()
+{
+echo -n "depth $@ : "
+for i in {0..7..1}
+  do 
+  do_one $1 $i $NUMTESTS $FREQ
+done
+echo
+}
+
+do_tests 2
+do_tests 3
+do_tests 4
+do_tests 5
+do_tests 6
+do_tests 7
+do_tests 8
+do_tests 9
+do_tests 10
+do_tests 11
+do_tests 12
+
