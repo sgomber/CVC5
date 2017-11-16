@@ -261,7 +261,7 @@ void PerfTest::runTestFindDataStructures()
   index = d_vars.size();
   std::random_shuffle( d_vars.begin(), d_vars.end() );
   
-  unsigned totalTests = double(d_totalTestsF)*100000000.0/(double)(index);
+  unsigned totalTests = double(d_totalTestsF)*10000000.0/(double)(index);
   Trace("ajr-test") << "Total tests is " << totalTests << "..." << std::endl;
   
   unsigned tests = 0;

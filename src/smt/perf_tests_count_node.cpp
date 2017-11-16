@@ -11,7 +11,7 @@ void PerfTest::runTestCountNode()
   // shuffle
   std::random_shuffle( d_vars.begin(), d_vars.end() );
     
-  long totalTests = double(d_totalTestsF)*1000000000.0/(double)(d_depth);
+  long totalTests = double(d_totalTestsF)*100000000.0/(double)(d_depth);
   Trace("ajr-test") << "---Total tests is " << totalTests << "..." << std::endl;
   long tests = 0;
   long count = 0;

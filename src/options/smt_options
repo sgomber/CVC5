@@ -172,7 +172,7 @@ undocumented-option solveRealAsInt --solve-real-as-int bool :default false
  
 option doTests --do-test bool :read-write :default false
  do tests
-option totalTests --total-tests=N int :default 1
+option totalTests --total-tests=N int :default 10
  total tests
 option testDepth --test-depth=N int :default 3
  test depth
