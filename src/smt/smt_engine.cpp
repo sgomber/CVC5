@@ -4366,20 +4366,12 @@ void SmtEnginePrivate::processAssertions() {
           }
         }
       }
-    }else if( options::testFamily()==1 || options::testFamily()==2 ){
+    }else if( options::testFamily()>=1 && options::testFamily()<=4 ){
       Trace("ajr-test") << "----Test count..." << std::endl;
-      // 0 : counter over vector 
-      // 1 : counter+size over vector 
-      // 2 : iterator over vector 
-      // 3 : range iterator over vector
-      // 4 : counter over vector with unknown
-      // 5 : counter+size over vector with unknown
-      // 6 : iterator over vector with unknown
-      // 7 : range iterator over vector with unknown
       std::vector< Node > vars;
       for( unsigned i=0; i<depth; i++ ){
         double r = (double)(rand())/((double)(RAND_MAX));
-        if( r<rf || vars.empty() ){
+        if( r<rf || vars.empty() || options::testFamily()>=3 ){
           std::stringstream ss;
           ss << "t" << vars.size();
           vars.push_back( NodeManager::currentNM()->mkBoundVar( ss.str(), NodeManager::currentNM()->realType() ) );
@@ -4403,9 +4395,17 @@ void SmtEnginePrivate::processAssertions() {
       long totalTests = double(totalTestsF)*1000000000.0/(double)(depth);
       Trace("ajr-test") << "----Total tests is " << totalTests << "..." << std::endl;
       long tests = 0;
+      long count = 0;
       if( options::testFamily()==1 ){
+        // 0 : counter over vector 
+        // 1 : counter+size over vector 
+        // 2 : iterator over vector 
+        // 3 : range iterator over vector
+        // 4 : counter over vector with unknown
+        // 5 : counter+size over vector with unknown
+        // 6 : iterator over vector with unknown
+        // 7 : range iterator over vector with unknown
         Trace("ajr-test") << "----Test count..." << std::endl;
-        long count = 0;
         if( testType==0 ){
           while( tests<totalTests ){
             for( unsigned i=0; i<vars.size(); i++ ){
@@ -4492,7 +4492,15 @@ void SmtEnginePrivate::processAssertions() {
           }
         }
         Trace("ajr-test") << "Count is " << count << std::endl;
-      }else{
+      }else if( options::testFamily()==2 ){
+        // 0 : counter over Node 
+        // 1 : counter+getNumChildren over Node 
+        // 2 : iterator over Node 
+        // 3 : range iterator over Node
+        // 4 : counter over Node with unknown
+        // 5 : counter+getNumChildren over Node with unknown
+        // 6 : iterator over Node with unknown
+        // 7 : range iterator over Node with unknown
         Trace("ajr-test") << "----Test count (Node version)..." << std::endl;
         std::vector< TypeNode > types;
         for( unsigned i=0; i<vars.size(); i++ ){
@@ -4591,8 +4599,63 @@ void SmtEnginePrivate::processAssertions() {
             tests++;
           }
         }
-        Trace("ajr-test") << "Count is " << count << std::endl;
+      }else if( options::testFamily()==3 || options::testFamily()==4 ){
+        std::vector< Node > lvars;
+        lvars.insert(lvars.end(),vars.begin(),vars.end());
+        std::random_shuffle(lvars.begin(),lvars.end());
+        
+        if( options::testFamily()==3 ){
+          std::map< Node, Node > vmap;
+          for( unsigned i=0; i<lvars.size(); i++ ){
+            vmap[vars[i]] = lvars[i];
+          }
+          if( testType==0 ){
+            while( tests<totalTests ){
+              for( std::map< Node, Node >::iterator it = vmap.begin(); it != vmap.end(); ++it ){
+                if( it->first==fvar ){
+                  count++;
+                }
+              }
+              tests++;
+            }
+          }else if( testType==1 ){
+            while( tests<totalTests ){
+              for( std::pair< Node, Node > v : vmap ){
+                if( v.first==fvar ){
+                  count++;
+                }
+              }
+              tests++;
+            }
+          }
+        }else if( options::testFamily()==4 ){
+          std::unordered_map< Node, Node, NodeHashFunction > vmap;
+          for( unsigned i=0; i<lvars.size(); i++ ){
+            vmap[vars[i]] = lvars[i];
+          }
+          if( testType==0 ){
+            while( tests<totalTests ){
+              for( std::unordered_map< Node, Node, NodeHashFunction >::iterator it = vmap.begin(); it != vmap.end(); ++it ){
+                if( it->first==fvar ){
+                  count++;
+                }
+              }
+              tests++;
+            }
+          }else if( testType==1 ){
+            while( tests<totalTests ){
+              for( std::pair< Node, Node > v : vmap ){
+                if( v.first==fvar ){
+                  count++;
+                }
+              }
+              tests++;
+            }
+          }
+        }
+        
       }
+      Trace("ajr-test") << "Count is " << count << std::endl;
     }
     Trace("ajr-test") << "Finished." << std::endl;
     exit( 0 );
