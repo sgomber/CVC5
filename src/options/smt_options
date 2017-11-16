@@ -169,4 +169,22 @@ undocumented-option solveIntAsBV --solve-int-as-bv uint32_t :default 0
 undocumented-option solveRealAsInt --solve-real-as-int bool :default false
  attempt to solve a pure real satisfiable problem as a integer problem (for non-linear)
 
+ 
+option doTests --do-test bool :read-write :default false
+ do tests
+option totalTests --total-tests=N int :default 1
+ total tests
+option testDepth --test-depth=N int :default 3
+ test depth
+option testType --test-type=N int :default 0
+ test type
+option testTermReuseFreq --test-term-reuse-freq=N int :default 1
+ divisor for term reuse
+ 
+option testFamily --test-family=N int :default 0
+ test family
+ 
+option dummyUnknown --dummy-unk bool :read-write :default false
+ dummy unknown value 
+ 
 endmodule

@@ -133,6 +133,12 @@ libcvc4_la_SOURCES = \
 	smt/managed_ostreams.h \
 	smt/model.cpp \
 	smt/model.h \
+	smt/perf_tests.cpp \
+	smt/perf_tests_count_ds.cpp \
+	smt/perf_tests_count_node.cpp \
+	smt/perf_tests_count_vector.cpp \
+	smt/perf_tests_find_ds.cpp \
+	smt/perf_tests.h \
 	smt/smt_engine.cpp \
 	smt/smt_engine.h \
 	smt/smt_engine_check_proof.cpp \

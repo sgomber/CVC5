@@ -45,23 +45,5 @@ option ufHo --uf-ho bool :read-write :default false
  enable support for higher-order reasoning
 option ufHoExt --uf-ho-ext bool :read-write :default true
  apply extensionality on function symbols
-
- 
-option doTests --do-test bool :read-write :default false
- do tests
-option totalTests --total-tests=N int :default 1
- total tests
-option testDepth --test-depth=N int :default 3
- test depth
-option testType --test-type=N int :default 0
- test type
-option testTermReuseFreq --test-term-reuse-freq=N int :default 1
- divisor for term reuse
- 
-option testFamily --test-family=N int :default 0
- test family
- 
-option dummyUnknown --dummy-unk bool :read-write :default false
- dummy unknown value
  
 endmodule
