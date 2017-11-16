@@ -58,5 +58,10 @@ option testType --test-type=N int :default 0
 option testTermReuseFreq --test-term-reuse-freq=N int :default 1
  divisor for term reuse
  
+option testFamily --test-family=N int :default 0
+ test family
+ 
+option dummyUnknown --dummy-unk bool :read-write :default false
+ dummy unknown value
  
 endmodule

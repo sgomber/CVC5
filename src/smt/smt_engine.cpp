@@ -4247,119 +4247,338 @@ void SmtEnginePrivate::processAssertions() {
   Assert(d_smt.d_pendingPops == 0);
 
   if( options::doTests() ){
-    std::vector< Node > vars;
     unsigned depth = options::testDepth();  
-    unsigned index = 0;
-    Trace("ajr-test") << "Making depth " << depth << " term..." << std::endl;
-    double rf = double(1.0)/double(options::testTermReuseFreq());
-    Trace("ajr-test") << "Term reuse factor is " << (1.0-rf) << "..." << std::endl;
-    Node r = mkRandom(depth,vars,index,rf);
-    Trace("ajr-test") << "Number of variables introduced was " << index << "..." << std::endl;
-    // make double the vars (find succeeds half the time)
-    for( unsigned i=0; i<index; i++ ){
-      std::stringstream ss;
-      ss << "nt" << vars.size();
-      vars.push_back( NodeManager::currentNM()->mkBoundVar( ss.str(), NodeManager::currentNM()->realType() ) );
-    }
-    index = vars.size();
-    std::random_shuffle( vars.begin(), vars.end() );
-    
+    Trace("ajr-test") << "Test depth is " << depth << "..." << std::endl;
     unsigned testType = options::testType();
     Trace("ajr-test") << "Test type is " << testType << "..." << std::endl;
-    
     unsigned totalTestsF = options::totalTests()>1 ? options::totalTests() : 1;
     Trace("ajr-test") << "Test factor is " << totalTestsF << "..." << std::endl;
-    unsigned totalTests = double(totalTestsF)*100000000.0/(double)(index);
-    Trace("ajr-test") << "Total tests is " << totalTests << "..." << std::endl;
+    double rf = double(1.0)/double(options::testTermReuseFreq());
+    Trace("ajr-test") << "Term reuse factor is " << (1.0-rf) << "..." << std::endl;
     
-    unsigned tests = 0;
-    if( testType==0 ){
-      while( tests<totalTests ){
-        for( unsigned i=0; i<index; i++ ){
-          bool ret = findUSetIterStack( r, vars[i] );
-          tests++;
+    if( options::testFamily()==0 ){
+      Trace("ajr-test") << "----Test find..." << std::endl;
+      std::vector< Node > vars;
+      unsigned index = 0;
+      Trace("ajr-test") << "  Making depth " << depth << " term..." << std::endl;
+      Node r = mkRandom(depth,vars,index,rf);
+      Trace("ajr-test") << "  Number of variables introduced was " << index << "..." << std::endl;
+      // make double the vars (find succeeds half the time)
+      for( unsigned i=0; i<index; i++ ){
+        std::stringstream ss;
+        ss << "nt" << vars.size();
+        vars.push_back( NodeManager::currentNM()->mkBoundVar( ss.str(), NodeManager::currentNM()->realType() ) );
+      }
+      index = vars.size();
+      std::random_shuffle( vars.begin(), vars.end() );
+      
+      
+      unsigned totalTests = double(totalTestsF)*10000000000.0/(double)(index);
+      Trace("ajr-test") << "Total tests is " << totalTests << "..." << std::endl;
+      
+      unsigned tests = 0;
+      if( testType==0 ){
+        while( tests<totalTests ){
+          for( unsigned i=0; i<index; i++ ){
+            bool ret = findUSetIterStack( r, vars[i] );
+            tests++;
+          }
+        }
+      }else if( testType==1 ){
+        while( tests<totalTests ){
+          for( unsigned i=0; i<index; i++ ){
+            bool ret = findVecIterStack( r, vars[i] );
+            tests++;
+          }
+        }
+      }else if( testType==2 ){
+        while( tests<totalTests ){
+          for( unsigned i=0; i<index; i++ ){
+            bool ret = findMapIterStack( r, vars[i] );
+            tests++;
+          }
+        }
+      }else if( testType==3 ){
+        while( tests<totalTests ){
+          for( unsigned i=0; i<index; i++ ){
+            bool ret = findUMapIterStack( r, vars[i] );
+            tests++;
+          }
+        }
+      }else if( testType==4 ){
+        while( tests<totalTests ){
+          for( unsigned i=0; i<index; i++ ){
+            std::unordered_set<TNode, TNodeHashFunction> visited;
+            bool ret = findUSetRec( r, vars[i], visited );
+            tests++;
+          }
+        }
+      }else if( testType==5 ){
+        while( tests<totalTests ){
+          for( unsigned i=0; i<index; i++ ){
+            std::vector<TNode> visited;
+            bool ret = findVecRec( r, vars[i], visited );
+            tests++;
+          }
+        }
+      }else if( testType==6 ){
+        while( tests<totalTests ){
+          for( unsigned i=0; i<index; i++ ){
+            std::map<TNode, bool> visited;
+            bool ret = findMapRec( r, vars[i], visited );
+            tests++;
+          }
+        }
+      }else if( testType==7 ){
+        while( tests<totalTests ){
+          for( unsigned i=0; i<index; i++ ){
+            std::unordered_map<TNode, bool, TNodeHashFunction> visited;
+            bool ret = findUMapRec( r, vars[i], visited );
+            tests++;
+          }
+        }
+      }else if( testType==8 ){
+        while( tests<totalTests ){
+          for( unsigned i=0; i<index; i++ ){
+            bool ret = findUSetIterVec( r, vars[i] );
+            tests++;
+          }
+        }
+      }else if( testType==9 ){
+        while( tests<totalTests ){
+          for( unsigned i=0; i<index; i++ ){
+            bool ret = findVecIterVec( r, vars[i] );
+            tests++;
+          }
+        }
+      }else if( testType==10 ){
+        while( tests<totalTests ){
+          for( unsigned i=0; i<index; i++ ){
+            bool ret = findMapIterVec( r, vars[i] );
+            tests++;
+          }
+        }
+      }else if( testType==11 ){
+        while( tests<totalTests ){
+          for( unsigned i=0; i<index; i++ ){
+            bool ret = findUMapIterVec( r, vars[i] );
+            tests++;
+          }
         }
       }
-    }else if( testType==1 ){
-      while( tests<totalTests ){
-        for( unsigned i=0; i<index; i++ ){
-          bool ret = findVecIterStack( r, vars[i] );
-          tests++;
-        }
+    }else if( options::testFamily()==1 ){
+      Trace("ajr-test") << "----Test count..." << std::endl;
+      // 0 : counter over vector 
+      // 1 : counter+size over vector 
+      // 2 : iterator over vector 
+      // 3 : range iterator over vector
+      // 4 : counter over vector with unknown
+      // 5 : counter+size over vector with unknown
+      // 6 : iterator over vector with unknown
+      // 7 : range iterator over vector with unknown
+      std::vector< Node > vars;
+      for( unsigned i=0; i<depth; i++ ){
+        std::stringstream ss;
+        ss << "t" << vars.size();
+        vars.push_back( NodeManager::currentNM()->mkBoundVar( ss.str(), NodeManager::currentNM()->realType() ) );
       }
-    }else if( testType==2 ){
-      while( tests<totalTests ){
-        for( unsigned i=0; i<index; i++ ){
-          bool ret = findMapIterStack( r, vars[i] );
-          tests++;
+      // the find variable 
+      Node fvar = vars[0];
+      
+      // shuffle
+      std::random_shuffle( vars.begin(), vars.end() );
+      
+      bool unk = options::dummyUnknown();
+      
+      unsigned totalTests = double(totalTestsF)*1000000000.0/(double)(depth);
+      unsigned tests = 0;
+      if( options::testFamily()==1 ){
+        Trace("ajr-test") << "----Test count..." << std::endl;
+        unsigned count = 0;
+        if( testType==0 ){
+          while( tests<totalTests ){
+            for( unsigned i=0; i<vars.size(); i++ ){
+              if( vars[i]==fvar ){
+                count++;
+              }
+            }
+            tests++;
+          }
+        }else if( testType==1 ){
+          while( tests<totalTests ){
+            for( unsigned i=0, size = vars.size(); i<size; i++ ){
+              if( vars[i]==fvar ){
+                count++;
+              }
+            }
+            tests++;
+          }
+        }else if( testType==2 ){
+          while( tests<totalTests ){
+            for( std::vector< Node >::iterator it = vars.begin(); it != vars.end(); ++it ){
+              if( *it==fvar ){
+                count++;
+              }
+            }
+            tests++;
+          }
+        }else if( testType==3 ){
+          while( tests<totalTests ){
+            for( Node v : vars ){
+              if( v==fvar ){
+                count++;
+              }
+            }
+            tests++;
+          }
+        }if( testType==4 ){
+          while( tests<totalTests ){
+            for( unsigned i=0; i<vars.size(); i++ ){
+              if( vars[i]==fvar ){
+                count++;
+              }
+              if( unk ){
+                vars.push_back(fvar);
+              }
+            }
+            tests++;
+          }
+        }else if( testType==5 ){
+          while( tests<totalTests ){
+            for( unsigned i=0, size = vars.size(); i<size; i++ ){
+              if( vars[i]==fvar ){
+                count++;
+              }
+              if( unk ){
+                vars.push_back(fvar);
+              }
+            }
+            tests++;
+          }
+        }else if( testType==6 ){
+          while( tests<totalTests ){
+            for( std::vector< Node >::iterator it = vars.begin(); it != vars.end(); ++it ){
+              if( *it==fvar ){
+                count++;
+              }
+              if( unk ){
+                vars.push_back(fvar);
+              }
+            }
+            tests++;
+          }
+        }else if( testType==7 ){
+          while( tests<totalTests ){
+            for( Node v : vars ){
+              if( v==fvar ){
+                count++;
+              }
+              if( unk ){
+                vars.push_back(fvar);
+              }
+            }
+            tests++;
+          }
         }
-      }
-    }else if( testType==3 ){
-      while( tests<totalTests ){
-        for( unsigned i=0; i<index; i++ ){
-          bool ret = findUMapIterStack( r, vars[i] );
-          tests++;
+        Trace("ajr-test") << "Count is " << count << std::endl;
+      }else{
+        Trace("ajr-test") << "----Test count (Node version)..." << std::endl;
+        std::vector< TypeNode > types;
+        for( unsigned i=0; i<vars.size(); i++ ){
+          types.push_back( vars[i].getType() );
         }
-      }
-    }else if( testType==4 ){
-      while( tests<totalTests ){
-        for( unsigned i=0; i<index; i++ ){
-          std::unordered_set<TNode, TNodeHashFunction> visited;
-          bool ret = findUSetRec( r, vars[i], visited );
-          tests++;
+        TypeNode ftn = NodeManager::currentNM()->mkFunctionType( types, NodeManager::currentNM()->realType() );
+        std::stringstream ss;
+        ss << "t" << vars.size();
+        Node f = NodeManager::currentNM()->mkBoundVar( ss.str(), NodeManager::currentNM()->realType() );
+        
+        unsigned count = 0;
+        if( testType==0 ){
+          while( tests<totalTests ){
+            for( unsigned i=0; i<f.getNumChildren(); i++ ){
+              if( f[i]==fvar ){
+                count++;
+              }
+            }
+            tests++;
+          }
+        }else if( testType==1 ){
+          while( tests<totalTests ){
+            for( unsigned i=0, size = f.getNumChildren(); i<size; i++ ){
+              if( f[i]==fvar ){
+                count++;
+              }
+            }
+            tests++;
+          }
+        }else if( testType==2 ){
+          while( tests<totalTests ){
+            for( Node::iterator it = f.begin(); it != f.end(); ++it ){
+              if( *it==fvar ){
+                count++;
+              }
+            }
+            tests++;
+          }
+        }else if( testType==3 ){
+          while( tests<totalTests ){
+            for( Node v : f ){
+              if( v==fvar ){
+                count++;
+              }
+            }
+            tests++;
+          }
+        }else if( testType==4 ){
+          while( tests<totalTests ){
+            for( unsigned i=0; i<f.getNumChildren(); i++ ){
+              if( f[i]==fvar ){
+                count++;
+              }
+              if( unk ){
+                vars.push_back(fvar);
+              }
+            }
+            tests++;
+          }
+        }else if( testType==5 ){
+          while( tests<totalTests ){
+            for( unsigned i=0, size = f.getNumChildren(); i<size; i++ ){
+              if( f[i]==fvar ){
+                count++;
+              }
+              if( unk ){
+                vars.push_back(fvar);
+              }
+            }
+            tests++;
+          }
+        }else if( testType==6 ){
+          while( tests<totalTests ){
+            for( Node::iterator it = f.begin(); it != f.end(); ++it ){
+              if( *it==fvar ){
+                count++;
+              }
+              if( unk ){
+                vars.push_back(fvar);
+              }
+            }
+            tests++;
+          }
+        }else if( testType==7 ){
+          while( tests<totalTests ){
+            for( Node v : f ){
+              if( v==fvar ){
+                count++;
+              }
+              if( unk ){
+                vars.push_back(fvar);
+              }
+            }
+            tests++;
+          }
         }
-      }
-    }else if( testType==5 ){
-      while( tests<totalTests ){
-        for( unsigned i=0; i<index; i++ ){
-          std::vector<TNode> visited;
-          bool ret = findVecRec( r, vars[i], visited );
-          tests++;
-        }
-      }
-    }else if( testType==6 ){
-      while( tests<totalTests ){
-        for( unsigned i=0; i<index; i++ ){
-          std::map<TNode, bool> visited;
-          bool ret = findMapRec( r, vars[i], visited );
-          tests++;
-        }
-      }
-    }else if( testType==7 ){
-      while( tests<totalTests ){
-        for( unsigned i=0; i<index; i++ ){
-          std::unordered_map<TNode, bool, TNodeHashFunction> visited;
-          bool ret = findUMapRec( r, vars[i], visited );
-          tests++;
-        }
-      }
-    }else if( testType==8 ){
-      while( tests<totalTests ){
-        for( unsigned i=0; i<index; i++ ){
-          bool ret = findUSetIterVec( r, vars[i] );
-          tests++;
-        }
-      }
-    }else if( testType==9 ){
-      while( tests<totalTests ){
-        for( unsigned i=0; i<index; i++ ){
-          bool ret = findVecIterVec( r, vars[i] );
-          tests++;
-        }
-      }
-    }else if( testType==10 ){
-      while( tests<totalTests ){
-        for( unsigned i=0; i<index; i++ ){
-          bool ret = findMapIterVec( r, vars[i] );
-          tests++;
-        }
-      }
-    }else if( testType==11 ){
-      while( tests<totalTests ){
-        for( unsigned i=0; i<index; i++ ){
-          bool ret = findUMapIterVec( r, vars[i] );
-          tests++;
-        }
+        Trace("ajr-test") << "Count is " << count << std::endl;
       }
     }
     Trace("ajr-test") << "Finished." << std::endl;
