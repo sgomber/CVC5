@@ -184,6 +184,9 @@ option testTermReuseFreq --test-term-reuse-freq=N int :default 1
 option testFamily --test-family=N int :default 0
  test family
  
+option useUnknown --use-unk bool :read-write :default true
+ use dummy unknown value 
+ 
 option dummyUnknown --dummy-unk bool :read-write :default false
  dummy unknown value 
  

@@ -1,5 +1,7 @@
 #include "perf_tests.h"
 
+#include "options/smt_options.h"
+
 namespace CVC4 {
   
 void PerfTest::runTestCountVector()
@@ -20,99 +22,147 @@ void PerfTest::runTestCountVector()
   // 1 : counter+size over vector 
   // 2 : iterator over vector 
   // 3 : range iterator over vector
-  // 4 : counter over vector with unknown
-  // 5 : counter+size over vector with unknown
-  // 6 : iterator over vector with unknown
-  // 7 : range iterator over vector with unknown
-  Trace("ajr-test") << "----Test count..." << std::endl;
-  if( d_testType==0 ){
-    while( tests<totalTests ){
-      for( unsigned i=0; i<d_vars.size(); i++ ){
-        if( d_vars[i]==fvar ){
-          count++;
+  // 4 : const reference range iterator over vector
+  // 5 : auto range iterator over vector
+  Trace("ajr-test") << "----Test count vector..." << std::endl;
+  if( !options::useUnknown() ){
+    if( d_testType==0 ){
+      while( tests<totalTests ){
+        for( unsigned i=0; i<d_vars.size(); i++ ){
+          if( d_vars[i]==fvar ){
+            count++;
+          }
         }
+        tests++;
       }
-      tests++;
-    }
-  }else if( d_testType==1 ){
-    while( tests<totalTests ){
-      for( unsigned i=0, size = d_vars.size(); i<size; i++ ){
-        if( d_vars[i]==fvar ){
-          count++;
+    }else if( d_testType==1 ){
+      while( tests<totalTests ){
+        for( unsigned i=0, size = d_vars.size(); i<size; i++ ){
+          if( d_vars[i]==fvar ){
+            count++;
+          }
         }
+        tests++;
       }
-      tests++;
-    }
-  }else if( d_testType==2 ){
-    while( tests<totalTests ){
-      for( std::vector< Node >::iterator it = d_vars.begin(); it != d_vars.end(); ++it ){
-        if( *it==fvar ){
-          count++;
+    }else if( d_testType==2 ){
+      while( tests<totalTests ){
+        for( std::vector< Node >::iterator it = d_vars.begin(); it != d_vars.end(); ++it ){
+          if( *it==fvar ){
+            count++;
+          }
         }
+        tests++;
       }
-      tests++;
-    }
-  }else if( d_testType==3 ){
-    while( tests<totalTests ){
-      for( Node v : d_vars ){
-        if( v==fvar ){
-          count++;
+    }else if( d_testType==3 ){
+      while( tests<totalTests ){
+        for( Node v : d_vars ){
+          if( v==fvar ){
+            count++;
+          }
         }
+        tests++;
       }
-      tests++;
-    }
-  }else if( d_testType==4 ){
-    while( tests<totalTests ){
-      for( unsigned i=0; i<d_vars.size(); i++ ){
-        if( d_vars[i]==fvar ){
-          count++;
+    }else if( d_testType==4 ){
+      while( tests<totalTests ){
+        for( const Node& v : d_vars ){
+          if( v==fvar ){
+            count++;
+          }
         }
-        if( d_unk ){
-          d_vars.push_back(fvar);
-        }
+        tests++;
       }
-      tests++;
-    }
-  }else if( d_testType==5 ){
-    while( tests<totalTests ){
-      for( unsigned i=0, size = d_vars.size(); i<size; i++ ){
-        if( d_vars[i]==fvar ){
-          count++;
+    }else if( d_testType==5 ){
+      while( tests<totalTests ){
+        for( auto v : d_vars ){
+          if( v==fvar ){
+            count++;
+          }
         }
-        if( d_unk ){
-          d_vars.push_back(fvar);
-        }
+        tests++;
       }
-      tests++;
-    }
-  }else if( d_testType==6 ){
-    while( tests<totalTests ){
-      for( std::vector< Node >::iterator it = d_vars.begin(); it != d_vars.end(); ++it ){
-        if( *it==fvar ){
-          count++;
-        }
-        if( d_unk ){
-          d_vars.push_back(fvar);
-        }
-      }
-      tests++;
-    }
-  }else if( d_testType==7 ){
-    while( tests<totalTests ){
-      for( Node v : d_vars ){
-        if( v==fvar ){
-          count++;
-        }
-        if( d_unk ){
-          d_vars.push_back(fvar);
-        }
-      }
-      tests++;
+    }else{
+      std::stringstream ss;
+      ss << "Unknown test type " << d_testType << " for count vector test";
+      Unhandled(ss.str());
     }
   }else{
-    std::stringstream ss;
-    ss << "Unknown test type " << d_testType << " for count vector test";
-    Unhandled(ss.str());
+    if( d_testType==0 ){
+      while( tests<totalTests ){
+        for( unsigned i=0; i<d_vars.size(); i++ ){
+          if( d_vars[i]==fvar ){
+            count++;
+          }
+          if( d_unk ){
+            d_vars.push_back(fvar);
+          }
+        }
+        tests++;
+      }
+    }else if( d_testType==1 ){
+      while( tests<totalTests ){
+        for( unsigned i=0, size = d_vars.size(); i<size; i++ ){
+          if( d_vars[i]==fvar ){
+            count++;
+          }
+          if( d_unk ){
+            d_vars.push_back(fvar);
+          }
+        }
+        tests++;
+      }
+    }else if( d_testType==2 ){
+      while( tests<totalTests ){
+        for( std::vector< Node >::iterator it = d_vars.begin(); it != d_vars.end(); ++it ){
+          if( *it==fvar ){
+            count++;
+          }
+          if( d_unk ){
+            d_vars.push_back(fvar);
+          }
+        }
+        tests++;
+      }
+    }else if( d_testType==3 ){
+      while( tests<totalTests ){
+        for( Node v : d_vars ){
+          if( v==fvar ){
+            count++;
+          }
+          if( d_unk ){
+            d_vars.push_back(fvar);
+          }
+        }
+        tests++;
+      }
+    }else if( d_testType==4 ){
+      while( tests<totalTests ){
+        for( const Node& v : d_vars ){
+          if( v==fvar ){
+            count++;
+          }
+          if( d_unk ){
+            d_vars.push_back(fvar);
+          }
+        }
+        tests++;
+      }
+    }else if( d_testType==5 ){
+      while( tests<totalTests ){
+        for( auto v : d_vars ){
+          if( v==fvar ){
+            count++;
+          }
+          if( d_unk ){
+            d_vars.push_back(fvar);
+          }
+        }
+        tests++;
+      }
+    }else{
+      std::stringstream ss;
+      ss << "Unknown test type " << d_testType << " for count vector test";
+      Unhandled(ss.str());
+    }
   }
   Trace("ajr-test") << "Count is " << count << std::endl;  
 }
