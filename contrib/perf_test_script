@@ -1,0 +1,43 @@
+#!/bin/bash
+
+FAMILY=$1
+shift
+NUM=$1
+shift
+DEPTH=$1
+shift
+  
+function measure()
+{
+ #time $@ 2>/dev/null
+  TYPE=$1
+  shift
+  ulimit -t 5000;time cvc4 test.smt2 --do-test --test-family=$FAMILY --test-type=$TYPE --test-depth=$DEPTH $@ 2>/dev/null
+}
+
+function do_one()
+{
+  EXEC_TIME=`measure $@ 2>&1`
+  RVAL=$?
+  EXEC_TIME=${EXEC_TIME//$'\n'/ }
+  RESULT="E$RVAL:$EXEC_TIME"
+  if [ $RVAL == 137 ]; then
+    RESULT="E$RVAL:timeout $EXEC_TIME "
+  fi
+  echo -n "$RESULT "
+}
+
+TIMEFORMAT=%2R
+
+function do_tests()
+{
+
+echo -n "depth $DEPTH : "
+for (( i=0; i<$NUM; i++ ))
+  do 
+  do_one $i $@
+done
+echo
+}
+
+do_tests $@

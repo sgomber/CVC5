@@ -1,0 +1,8 @@
+#!/bin/bash
+
+DEPTH=$1
+shift
+
+echo "Run count data structure test with depth $DEPTH, options $@..."
+
+./perf_test_script 3 12 $DEPTH $@ 
