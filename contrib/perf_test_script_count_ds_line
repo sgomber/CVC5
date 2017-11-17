@@ -5,4 +5,4 @@ shift
 
 echo "Run count data structure test with depth $DEPTH, options $@..."
 
-./perf_test_script 3 12 $DEPTH $@ 
+./perf_test_script 3 16 $DEPTH $@ 
