@@ -92,7 +92,7 @@ class QRepBoundExt : public RepBoundExt
 class FirstOrderModel : public TheoryModel
 {
  public:
-  FirstOrderModel(QuantifiersEngine* qe, theory::eq::EqualityEngineNotify& notify, context::Context* c, std::string name);
+  FirstOrderModel(QuantifiersEngine* qe, theory::eq::EqualityEngineNotify* notify, context::Context* c, std::string name);
   virtual ~FirstOrderModel() throw() {}
   virtual FirstOrderModelIG* asFirstOrderModelIG() { return nullptr; }
   virtual fmcheck::FirstOrderModelFmc* asFirstOrderModelFmc() { return nullptr; }
@@ -213,7 +213,7 @@ private:
   void makeEvalUfIndexOrder( Node n );
 //the following functions are for evaluating quantifier bodies
 public:
-  FirstOrderModelIG(QuantifiersEngine * qe, theory::eq::EqualityEngineNotify& notify, context::Context* c, std::string name);
+  FirstOrderModelIG(QuantifiersEngine * qe, theory::eq::EqualityEngineNotify* notify, context::Context* c, std::string name);
   ~FirstOrderModelIG() throw() {}
   FirstOrderModelIG * asFirstOrderModelIG() { return this; }
   // initialize the model
@@ -256,7 +256,7 @@ private:
   /** get current model value */
   void processInitializeModelForTerm(Node n);
 public:
-  FirstOrderModelFmc(QuantifiersEngine * qe, theory::eq::EqualityEngineNotify& notify, context::Context* c, std::string name);
+  FirstOrderModelFmc(QuantifiersEngine * qe, theory::eq::EqualityEngineNotify* notify, context::Context* c, std::string name);
   virtual ~FirstOrderModelFmc() throw();
   FirstOrderModelFmc * asFirstOrderModelFmc() { return this; }
   // initialize the model
@@ -291,7 +291,7 @@ private:
   void collectEqVars( TNode q, TNode n, std::map< int, bool >& eq_vars );
   TNode getUsedRepresentative( TNode n );
 public:
-  FirstOrderModelAbs(QuantifiersEngine * qe, theory::eq::EqualityEngineNotify& notify, context::Context* c, std::string name);
+  FirstOrderModelAbs(QuantifiersEngine * qe, theory::eq::EqualityEngineNotify* notify, context::Context* c, std::string name);
   ~FirstOrderModelAbs() throw();
   FirstOrderModelAbs * asFirstOrderModelAbs() { return this; }
   void processInitialize( bool ispre );

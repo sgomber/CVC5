@@ -25,15 +25,19 @@ using namespace CVC4::context;
 namespace CVC4 {
 namespace theory {
 
-TheoryModel::TheoryModel(theory::eq::EqualityEngineNotify& notify, context::Context* c, std::string name, bool enableFuncModels) :
+TheoryModel::TheoryModel(theory::eq::EqualityEngineNotify* notify, context::Context* c, std::string name, bool enableFuncModels) :
   d_substitutions(c, false), d_modelBuilt(false), d_enableFuncModels(enableFuncModels)
 {
   d_true = NodeManager::currentNM()->mkConst( true );
   d_false = NodeManager::currentNM()->mkConst( false );
 
   d_eeContext = new context::Context();
-  d_equalityEngine = new eq::EqualityEngine(notify, d_eeContext, name, false);
-
+  if( notify!=nullptr ){
+    d_equalityEngine = new eq::EqualityEngine(*notify, d_eeContext, name, false);
+  }else{
+    d_equalityEngine = new eq::EqualityEngine(d_eeContext, name, false);
+  }
+  
   // The kinds we are treating as function application in congruence
   d_equalityEngine->addFunctionKind(kind::APPLY_UF, false, options::ufHo());
   d_equalityEngine->addFunctionKind(kind::HO_APPLY);

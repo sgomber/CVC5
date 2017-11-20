@@ -720,7 +720,7 @@ public:
   /** 
    * Get the model notify object
    */
-  theory::eq::EqualityEngineNotify * getModelNotify() { return &d_modelNotify; }
+  theory::eq::EqualityEngineNotify * getModelNotify();
   
   /**
    * Get the model builder
@@ -861,6 +861,7 @@ private:
   std::set< std::string > d_theoryAlternatives;
 
   std::map< std::string, std::vector< theory::Theory* > > d_attr_handle;
+  
 public:
 
   /**

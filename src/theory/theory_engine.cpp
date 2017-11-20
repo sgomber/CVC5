@@ -233,7 +233,7 @@ void TheoryEngine::finishInit() {
     d_curr_model_builder = d_quantEngine->getModelBuilder();
     d_curr_model = d_quantEngine->getModel();
   } else {
-    d_curr_model = new theory::TheoryModel(d_modelNotify, d_userContext, "DefaultModel", true);
+    d_curr_model = new theory::TheoryModel(getModelNotify(), d_userContext, "DefaultModel", true);
     d_aloc_curr_model = true;
   }
   //make the default builder, e.g. in the case that the quantifiers engine does not have a model builder
@@ -606,7 +606,6 @@ void TheoryEngine::check(Theory::Effort effort) {
         printAssertions("theory::assertions-model");
       }
       //checks for theories requiring the model go at last call
-      d_curr_model->reset();
       for (TheoryId theoryId = THEORY_FIRST; theoryId < THEORY_LAST; ++theoryId) {
         if( theoryId!=THEORY_QUANTIFIERS ){
           Theory* theory = d_theoryTable[theoryId];
@@ -900,6 +899,14 @@ void TheoryEngine::postProcessModel( theory::TheoryModel* m ){
 /* get model */
 TheoryModel* TheoryEngine::getModel() {
   return d_curr_model;
+}  
+
+theory::eq::EqualityEngineNotify * TheoryEngine::getModelNotify() { 
+  if( options::modelBasedTc() ){
+    return &d_modelNotify;
+  }else{
+    return nullptr;
+  }
 }
 
 bool TheoryEngine::presolve() {
