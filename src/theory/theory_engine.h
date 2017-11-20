@@ -161,20 +161,21 @@ class TheoryEngine {
     bool eqNotifyTriggerPredicate(TNode predicate, bool value) { return true; }
     bool eqNotifyTriggerTermEquality(theory::TheoryId tag, TNode t1, TNode t2, bool value) { return true; }
     void eqNotifyConstantTermMerge(TNode t1, TNode t2) {}
-    void eqNotifyNewClass(TNode t) { d_te.eqNotifyNewClass(t); }
-    void eqNotifyPreMerge(TNode t1, TNode t2) { d_te.eqNotifyPreMerge(t1, t2); }
-    void eqNotifyPostMerge(TNode t1, TNode t2) { d_te.eqNotifyPostMerge(t1, t2); }
-    void eqNotifyDisequal(TNode t1, TNode t2, TNode reason) { d_te.eqNotifyDisequal(t1, t2, reason); }
+    void eqNotifyNewClass(TNode t) { d_te.eqNotifyNewClass(t, this); }
+    void eqNotifyPreMerge(TNode t1, TNode t2) { d_te.eqNotifyPreMerge(t1, t2, this); }
+    void eqNotifyPostMerge(TNode t1, TNode t2) { d_te.eqNotifyPostMerge(t1, t2, this); }
+    void eqNotifyDisequal(TNode t1, TNode t2, TNode reason) { d_te.eqNotifyDisequal(t1, t2, reason, this); }
   };/* class TheoryEngine::NotifyClass */
-  NotifyClass d_masterEENotify;
+  NotifyClass d_masterEENotify;  
+  NotifyClass d_modelNotify;
 
   /**
    * notification methods
    */
-  void eqNotifyNewClass(TNode t);
-  void eqNotifyPreMerge(TNode t1, TNode t2);
-  void eqNotifyPostMerge(TNode t1, TNode t2);
-  void eqNotifyDisequal(TNode t1, TNode t2, TNode reason);
+  void eqNotifyNewClass(TNode t, NotifyClass* c);
+  void eqNotifyPreMerge(TNode t1, TNode t2, NotifyClass* c);
+  void eqNotifyPostMerge(TNode t1, TNode t2, NotifyClass* c);
+  void eqNotifyDisequal(TNode t1, TNode t2, TNode reason, NotifyClass* c);
 
   /**
    * The quantifiers engine
@@ -716,6 +717,11 @@ public:
    */
   theory::TheoryModel* getModel();
 
+  /** 
+   * Get the model notify object
+   */
+  theory::eq::EqualityEngineNotify * getModelNotify() { return &d_modelNotify; }
+  
   /**
    * Get the model builder
    */

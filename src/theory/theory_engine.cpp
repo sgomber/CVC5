@@ -233,7 +233,7 @@ void TheoryEngine::finishInit() {
     d_curr_model_builder = d_quantEngine->getModelBuilder();
     d_curr_model = d_quantEngine->getModel();
   } else {
-    d_curr_model = new theory::TheoryModel(d_userContext, "DefaultModel", true);
+    d_curr_model = new theory::TheoryModel(d_modelNotify, d_userContext, "DefaultModel", true);
     d_aloc_curr_model = true;
   }
   //make the default builder, e.g. in the case that the quantifiers engine does not have a model builder
@@ -249,27 +249,35 @@ void TheoryEngine::finishInit() {
   }
 }
 
-void TheoryEngine::eqNotifyNewClass(TNode t){
-  if (d_logicInfo.isQuantified()) {
-    d_quantEngine->eqNotifyNewClass( t );
+void TheoryEngine::eqNotifyNewClass(TNode t, NotifyClass* c){
+  if( c==&d_masterEENotify ){
+    if (d_logicInfo.isQuantified()) {
+      d_quantEngine->eqNotifyNewClass( t );
+    }
   }
 }
 
-void TheoryEngine::eqNotifyPreMerge(TNode t1, TNode t2){
-  if (d_logicInfo.isQuantified()) {
-    d_quantEngine->eqNotifyPreMerge( t1, t2 );
+void TheoryEngine::eqNotifyPreMerge(TNode t1, TNode t2, NotifyClass* c){
+  if( c==&d_masterEENotify ){
+    if (d_logicInfo.isQuantified()) {
+      d_quantEngine->eqNotifyPreMerge( t1, t2 );
+    }
   }
 }
 
-void TheoryEngine::eqNotifyPostMerge(TNode t1, TNode t2){
-  if (d_logicInfo.isQuantified()) {
-    d_quantEngine->eqNotifyPostMerge( t1, t2 );
+void TheoryEngine::eqNotifyPostMerge(TNode t1, TNode t2, NotifyClass* c){
+  if( c==&d_masterEENotify ){
+    if (d_logicInfo.isQuantified()) {
+      d_quantEngine->eqNotifyPostMerge( t1, t2 );
+    }
   }
 }
 
-void TheoryEngine::eqNotifyDisequal(TNode t1, TNode t2, TNode reason){
-  if (d_logicInfo.isQuantified()) {
-    d_quantEngine->eqNotifyDisequal( t1, t2, reason );
+void TheoryEngine::eqNotifyDisequal(TNode t1, TNode t2, TNode reason, NotifyClass* c){
+  if( c==&d_masterEENotify ){
+    if (d_logicInfo.isQuantified()) {
+      d_quantEngine->eqNotifyDisequal( t1, t2, reason );
+    }
   }
 }
 
@@ -287,6 +295,7 @@ TheoryEngine::TheoryEngine(context::Context* context,
   d_sharedTerms(this, context),
   d_masterEqualityEngine(NULL),
   d_masterEENotify(*this),
+  d_modelNotify(*this),
   d_quantEngine(NULL),
   d_curr_model(NULL),
   d_aloc_curr_model(false),
