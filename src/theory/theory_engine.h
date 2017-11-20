@@ -658,6 +658,16 @@ public:
    * Run the combination framework.
    */
   void combineTheories();
+  
+  /**
+   * Run the combination framework.
+   */
+  void combineTheoriesModelBased();
+  
+  /** merged shared terms */
+  void mergeSharedTerms(TNode t1, TNode t2);
+  
+  theory::TheoryId considerSharedTermSplit( TNode a, TNode b );
 
   /**
    * Calls ppStaticLearn() on all theories, accumulating their
@@ -862,6 +872,7 @@ private:
 
   std::map< std::string, std::vector< theory::Theory* > > d_attr_handle;
   
+  std::map< TNode, std::vector< TNode > > d_shared_terms_merge;
 public:
 
   /**

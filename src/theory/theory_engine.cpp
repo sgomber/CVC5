@@ -254,6 +254,15 @@ void TheoryEngine::eqNotifyNewClass(TNode t, NotifyClass* c){
     if (d_logicInfo.isQuantified()) {
       d_quantEngine->eqNotifyNewClass( t );
     }
+  }else{
+    // if it is a shared term, track the equivalence class
+    if(d_sharedTerms.isShared(t)){
+      if(d_shared_terms_merge.find(t)==d_shared_terms_merge.end()){
+        d_shared_terms_merge[t].push_back(t);
+      }else{
+        // FIXME
+      }
+    }
   }
 }
 
@@ -270,6 +279,36 @@ void TheoryEngine::eqNotifyPostMerge(TNode t1, TNode t2, NotifyClass* c){
     if (d_logicInfo.isQuantified()) {
       d_quantEngine->eqNotifyPostMerge( t1, t2 );
     }
+  }else{ 
+    mergeSharedTerms( t1, t2 );
+  }
+}
+
+void TheoryEngine::mergeSharedTerms(TNode t1, TNode t2){
+  // equivalence classes on the model have merged, update the shared term equivalence classes
+  std::map< TNode, std::vector< TNode > >::iterator it2 = d_shared_terms_merge.find( t2 );
+  if( it2 != d_shared_terms_merge.end() ){
+    std::map< TNode, std::vector< TNode > >::iterator it1 = d_shared_terms_merge.find( t1 );
+    if( it1!=d_shared_terms_merge.end() ){
+      std::vector< TNode > merge;
+      for( const TNode& b : it2->second ){
+        // only care if not propagated equal to an existing one 
+        bool success = true;
+        for( const TNode& a : it1->second ){
+          if (d_sharedTerms.areEqual(a,b)) {
+            success = false; 
+            break;
+          }
+        }
+        if( success ){
+          merge.push_back(b);
+        }
+      }
+      it1->second.insert( it1->second.end(), merge.begin(), merge.end() );
+    }else{
+      d_shared_terms_merge[t1] = d_shared_terms_merge[t2];
+    }
+    d_shared_terms_merge.erase( it2 );
   }
 }
 
@@ -589,12 +628,19 @@ void TheoryEngine::check(Theory::Effort effort) {
       propagate(effort);
 
       // We do combination if all has been processed and we are in fullcheck
-      if (Theory::fullEffort(effort) && d_logicInfo.isSharingEnabled() && !d_factsAsserted && !d_lemmasAdded && !d_inConflict) {
-        // Do the combination
-        Debug("theory") << "TheoryEngine::check(" << effort << "): running combination" << endl;
-        combineTheories();
-        if(d_logicInfo.isQuantified()){
-          d_quantEngine->notifyCombineTheories();
+      if (Theory::fullEffort(effort) && !d_factsAsserted && !d_inConflict && !needCheck()) {
+        d_curr_model->reset();
+        if( d_logicInfo.isSharingEnabled() ){
+          // Do the combination
+          Debug("theory") << "TheoryEngine::check(" << effort << "): running combination" << endl;
+          if( options::modelBasedTc() ){
+            combineTheoriesModelBased();
+          }else{
+            combineTheories();
+          }
+          if(d_logicInfo.isQuantified()){
+            d_quantEngine->notifyCombineTheories();
+          }
         }
       }
     }
@@ -606,7 +652,6 @@ void TheoryEngine::check(Theory::Effort effort) {
         printAssertions("theory::assertions-model");
       }
       //checks for theories requiring the model go at last call
-      d_curr_model->reset();
       for (TheoryId theoryId = THEORY_FIRST; theoryId < THEORY_LAST; ++theoryId) {
         if( theoryId!=THEORY_QUANTIFIERS ){
           Theory* theory = d_theoryTable[theoryId];
@@ -726,6 +771,181 @@ void TheoryEngine::combineTheories() {
     //   }
     // }
   }
+}
+
+void TheoryEngine::combineTheoriesModelBased() {
+  Trace("theory::assertions-model-pre") << endl;
+  if (Trace.isOn("theory::assertions-model-pre")) {
+    printAssertions("theory::assertions-model-pre");
+  }
+  d_shared_terms_merge.clear();
+  Trace("tc-model") << "Combining theories..." << std::endl;
+  bool success = true;
+  if( d_curr_model_builder->buildModel(d_curr_model) ){
+    // verify all pairs of terms in equivalence classes evaluate to the same value
+    std::map< Node, TNode > val_to_eqc;
+    Node curr_val;
+    eq::EqualityEngine* ee = d_curr_model->getEqualityEngine();
+    eq::EqClassesIterator eqcs_i = eq::EqClassesIterator( ee );
+    while( !eqcs_i.isFinished() ){
+      TNode r = (*eqcs_i);
+      TNode ur = r;
+      Node rval;
+      std::map< Node, TNode > val_to_node;
+      eq::EqClassIterator eqc_i = eq::EqClassIterator( r, ee );
+      while( !eqc_i.isFinished() ){
+        TNode n = (*eqc_i);
+        // get the value of n
+        Node val = d_curr_model->getValue(n);
+        std::map< Node, TNode >::iterator itvn = val_to_node.find(val);
+        if(itvn==val_to_node.end() ){
+          if( !val_to_node.empty() ){
+            if( success ){
+              success = false;
+              if( Trace.isOn("tc-model-debug") ){
+                Trace("tc-model-debug") << "...equivalence class has 2+ values : " << std::endl;
+                for(std::pair< const Node, TNode >& p : val_to_node ){
+                  Trace("tc-model-debug") << "  " << p.first << " -> " << p.second << std::endl;
+                }
+              }
+            }
+          }
+          val_to_node[val] = n;
+          // now, check if there is an external equivalence class 
+          std::map< Node, TNode >::iterator itve = val_to_eqc.find(val);
+          if( itve != val_to_eqc.end() ){
+            TNode ur_merge = itve->second;
+            // merge ur's shared terms into ur_merge
+            mergeSharedTerms(ur_merge, ur);
+            if( curr_val.isNull() ){
+              val_to_eqc[curr_val] = ur_merge;
+            }
+            ur = ur_merge;
+            if( success ){
+              success = false;
+              Trace("tc-model-debug") << "...distinct equivalence classes evaluate to the same value" << std::endl;
+            }
+          }else{
+            val_to_eqc[val] = ur;
+          }
+          curr_val = val;
+        }
+        ++eqc_i;
+      }
+      ++eqcs_i;
+    }
+    if( success ){
+      Trace("tc-model") << "--> model building succeeded" << std::endl;
+    }else{
+      Trace("tc-model") << "--> model was inconsistent during verification" << std::endl;
+    }    
+  }else{
+    // building was inconsistent (e.g. during collectModelInfo)
+    success = false;
+    Trace("tc-model") << "--> model was inconsistent during building" << std::endl;
+  }
+  
+  if( !success ){
+    unsigned numSplits = 0;
+    
+    // get the shared terms for each theory
+    std::map<TheoryId,std::unordered_set<TNode, TNodeHashFunction> > tshared;
+    for(TheoryId tid = theory::THEORY_FIRST; tid != theory::THEORY_LAST; ++ tid) {
+      tshared[tid] = d_theoryTable[tid]->currentlySharedTerms();
+    }
+    
+    // cache of the splits between shared terms we have added
+    std::unordered_map< TNode, std::unordered_map<TNode, TheoryId, TNodeHashFunction>, TNodeHashFunction > sharedEq;
+    std::unordered_map< TNode, std::unordered_set< TNode, TNodeHashFunction >, TNodeHashFunction > sharedDeq;
+    
+    // for each equivalence class of the model containing 2+ non-propagated equal shared terms
+    Trace("tc-model") << "Processing " << d_shared_terms_merge.size() << " equivalence classes with shared terms..." << std::endl;
+    for( std::pair< const TNode, std::vector< TNode > >& p : d_shared_terms_merge ){
+      if( p.second.size()>1 ){
+        
+        if( Trace.isOn("tc-model") ){
+          Trace("tc-model") << "* Equivalence class " << p.first << " has " << p.second.size() << " shared terms : " << std::endl;
+          for( unsigned i=0, size=p.second.size(); i<size; i++ ){
+            Trace("tc-model") << "  " << i << " : " << p.second[i] << std::endl;
+          }
+        }
+        
+        // for each theory
+        for( std::pair<const TheoryId,std::unordered_set<TNode, TNodeHashFunction> >& tts : tshared){
+          TheoryId tid = tts.first;
+          
+          // maintain the subset of p.second that is unique modulo equality and shared with this theory
+          std::vector< TNode > shared_eqc;
+          
+          // for each term in the equivalence class
+          for( const TNode& b : p.second ){
+            Assert(d_sharedTerms.isShared(b));
+            
+            // is b shared with this theory?
+            if( tts.second.find(b)!=tts.second.end() ){
+              
+              // check each relevant previously processed term
+              bool success = true;
+              for( const TNode& a : shared_eqc ){
+                Assert(!d_sharedTerms.areEqual(a,b));
+                if(!d_sharedTerms.areDisequal(a,b)){
+                  EqualityStatus es = d_theoryTable[tid]->getEqualityStatus( a, b );
+                  Trace("tc-model-debug") << "    " << a << " " << b << " have equality status " << es << " in " << tid << std::endl;
+                  if( es==EQUALITY_TRUE || es==EQUALITY_TRUE_IN_MODEL ){
+                    // Case that a = b
+                    sharedEq[a][b] = tid;
+                    // don't consider 2+ terms that this theory thinks are equal
+                    success = false;
+                  }else if( es==EQUALITY_FALSE || es==EQUALITY_FALSE_IN_MODEL ){
+                    // Case that a != b
+                    sharedDeq[a].insert(b);
+                  }else{
+                    // Case that a =? b
+                    if( sharedEq[a].find(b)==sharedEq[a].end() ){
+                      sharedEq[a][b] = tid;
+                    }
+                    sharedDeq[a].insert(b);
+                  }
+                }
+              }
+              
+              // add to shared_eqc if not equal to another previously seen term
+              if( success ){
+                shared_eqc.push_back(b);
+              }
+            }
+          }
+        }
+      }
+    }
+    // now, go back and check each equality a=b.
+    // if at least one theory thinks it may be equal, 
+    // and at least one thinks it may be disqual, we split.
+    for( std::pair< const TNode, std::unordered_map<TNode, TheoryId, TNodeHashFunction> >& eq : sharedEq ){
+      TNode a = eq.first;
+      std::unordered_map< TNode, std::unordered_set< TNode, TNodeHashFunction >, TNodeHashFunction >::iterator deq = sharedDeq.find(a);
+      if( deq!=sharedDeq.end() ){
+        for( std::pair<const TNode, TheoryId>& eq_lhs : eq.second ){
+          TNode b = eq_lhs.first;
+          if( deq->second.find(b)!=deq->second.end()) {
+            TheoryId tid = eq_lhs.second;
+            Node equality = a.eqNode(b);
+            Assert(d_sharedTerms.isShared(a));
+            Assert(d_sharedTerms.isShared(b));
+            Assert(!d_sharedTerms.areEqual(a,b));
+            Assert(!d_sharedTerms.areDisequal(a,b));
+            Trace("tc-model") << "---> split on " << equality << ", theory = " << tid << std::endl;
+            lemma(equality.orNode(equality.notNode()), RULE_INVALID, false, false, false, tid);
+            Node e = ensureLiteral(equality);
+            d_propEngine->requirePhase(e, true);
+            numSplits++;
+          }
+        }
+      }
+    }
+    Assert( numSplits>0 );
+  }
+  Trace("tc-model") << "...finished combining theories." << std::endl;
 }
 
 void TheoryEngine::propagate(Theory::Effort effort) {
