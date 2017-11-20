@@ -11,4 +11,7 @@ expert-option theoryOfMode theoryof-mode --theoryof-mode=MODE CVC4::theory::Theo
 option useTheoryList use-theory --use-theory=NAME std::string :handler handleUseTheoryList :notify notifyUseTheoryList
  use alternate theory implementation NAME (--use-theory=help for a list). This option may be repeated or a comma separated list.
 
+option modelBasedTc --model-based-tc bool :default false
+ use model-based theory combination 
+ 
 endmodule

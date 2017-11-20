@@ -332,20 +332,20 @@ void TheoryModel::addTerm(TNode n ){
 }
 
 /** assert equality */
-void TheoryModel::assertEquality(TNode a, TNode b, bool polarity ){
+bool TheoryModel::assertEquality(TNode a, TNode b, bool polarity ){
   if (a == b && polarity) {
-    return;
+    return true;
   }
   Trace("model-builder-assertions") << "(assert " << (polarity ? "(= " : "(not (= ") << a << " " << b << (polarity ? "));" : ")));") << endl;
   d_equalityEngine->assertEquality( a.eqNode(b), polarity, Node::null() );
-  Assert(d_equalityEngine->consistent());
+  return d_equalityEngine->consistent();
 }
 
 /** assert predicate */
-void TheoryModel::assertPredicate(TNode a, bool polarity ){
+bool TheoryModel::assertPredicate(TNode a, bool polarity ){
   if ((a == d_true && polarity) ||
       (a == d_false && (!polarity))) {
-    return;
+    return true;
   }
   if (a.getKind() == EQUAL) {
     Trace("model-builder-assertions") << "(assert " << (polarity ? " " : "(not ") << a << (polarity ? ");" : "));") << endl;
@@ -353,12 +353,12 @@ void TheoryModel::assertPredicate(TNode a, bool polarity ){
   } else {
     Trace("model-builder-assertions") << "(assert " << (polarity ? "" : "(not ") << a << (polarity ? ");" : "));") << endl;
     d_equalityEngine->assertPredicate( a, polarity, Node::null() );
-    Assert(d_equalityEngine->consistent());
   }
+  return d_equalityEngine->consistent();
 }
 
 /** assert equality engine */
-void TheoryModel::assertEqualityEngine(const eq::EqualityEngine* ee, set<Node>* termSet)
+bool TheoryModel::assertEqualityEngine(const eq::EqualityEngine* ee, set<Node>* termSet)
 {
   eq::EqClassesIterator eqcs_i = eq::EqClassesIterator( ee );
   for (; !eqcs_i.isFinished(); ++eqcs_i) {
@@ -383,11 +383,10 @@ void TheoryModel::assertEqualityEngine(const eq::EqualityEngine* ee, set<Node>* 
         continue;
       }
       if (predicate) {
-        if (predTrue) {
-          assertPredicate(*eqc_i, true);
-        }
-        else if (predFalse) {
-          assertPredicate(*eqc_i, false);
+        if (predTrue || predFalse) {
+          if( !assertPredicate(*eqc_i, predTrue) ){
+            return false;
+          }
         }
         else {
           if (first) {
@@ -397,7 +396,9 @@ void TheoryModel::assertEqualityEngine(const eq::EqualityEngine* ee, set<Node>* 
           else {
             Trace("model-builder-assertions") << "(assert (= " << *eqc_i << " " << rep << "));" << endl;
             d_equalityEngine->mergePredicates(*eqc_i, rep, Node::null());
-            Assert(d_equalityEngine->consistent());
+            if(!d_equalityEngine->consistent()){
+              return false;
+            }
           }
         }
       } else {
@@ -412,11 +413,14 @@ void TheoryModel::assertEqualityEngine(const eq::EqualityEngine* ee, set<Node>* 
           first = false;
         }
         else {
-          assertEquality(*eqc_i, rep, true);
+          if( !assertEquality(*eqc_i, rep, true) ){
+            return false;
+          }
         }
       }
     }
   }
+  return true;
 }
 
 void TheoryModel::assertRepresentative(TNode n )

@@ -97,12 +97,21 @@ public:
     *  and adding n to the equality engine of this model.
     */
   virtual void addTerm(TNode n);
-  /** assert equality holds in the model */
-  void assertEquality(TNode a, TNode b, bool polarity);
-  /** assert predicate holds in the model */
-  void assertPredicate(TNode a, bool polarity);
-  /** assert all equalities/predicates in equality engine hold in the model */
-  void assertEqualityEngine(const eq::EqualityEngine* ee, std::set<Node>* termSet = NULL);
+  /** assert equality holds in the model 
+   * 
+   * Returns true if the equality engine of this model is still consistent.
+   */
+  bool assertEquality(TNode a, TNode b, bool polarity);
+  /** assert predicate holds in the model
+   * 
+   * Returns true if the equality engine of this model is still consistent.
+   */
+  bool assertPredicate(TNode a, bool polarity);
+  /** assert all equalities/predicates in equality engine hold in the model
+   * 
+   * Returns true if the equality engine of this model is still consistent.
+   */
+  bool assertEqualityEngine(const eq::EqualityEngine* ee, std::set<Node>* termSet = NULL);
   /** assert representative
     *  This function tells the model that n should be the representative of its equivalence class.
     *  It should be called during model generation, before final representatives are chosen.  In the
