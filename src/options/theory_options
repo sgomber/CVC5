@@ -17,4 +17,7 @@ option modelBasedTc --model-based-tc bool :default false
 option modelBasedTcMode --model-based-tc-mode=N int :default 0
  experimental option for model-based theory combination
  
+option modelBasedTcRlv --model-based-tc-rlv bool :default true
+ use relevant equivalence classes 
+ 
 endmodule
