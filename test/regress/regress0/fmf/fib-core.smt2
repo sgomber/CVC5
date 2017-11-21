@@ -1,4 +1,3 @@
-AJR-BROKEN
 ; COMMAND-LINE: --finite-model-find --fmf-inst-engine
 ; EXPECT: unsat
 (set-logic ALL_SUPPORTED)

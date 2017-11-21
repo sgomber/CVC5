@@ -774,18 +774,21 @@ void TheoryEngine::combineTheories() {
 }
 
 void TheoryEngine::combineTheoriesModelBased() {
+  Trace("combineTheories") << "TheoryEngine::combineTheoriesModelBased()" << endl;
+
   Trace("theory::assertions-model-pre") << endl;
   if (Trace.isOn("theory::assertions-model-pre")) {
     printAssertions("theory::assertions-model-pre");
   }
+  Trace("tc-model") << "------model-based theory combination" << std::endl;
   d_shared_terms_merge.clear();
-  Trace("tc-model") << "Combining theories..." << std::endl;
   bool success = true;
   if( d_curr_model_builder->buildModel(d_curr_model) ){
     // verify all pairs of terms in equivalence classes evaluate to the same value
     std::map< Node, TNode > val_to_eqc;
     Node curr_val;
     eq::EqualityEngine* ee = d_curr_model->getEqualityEngine();
+    Assert( ee->consistent() );
     eq::EqClassesIterator eqcs_i = eq::EqClassesIterator( ee );
     while( !eqcs_i.isFinished() ){
       TNode r = (*eqcs_i);
@@ -845,18 +848,33 @@ void TheoryEngine::combineTheoriesModelBased() {
     Trace("tc-model") << "--> model was inconsistent during building" << std::endl;
   }
   
+  unsigned numSplits = 0;
   if( !success ){
-    unsigned numSplits = 0;
     
     // get the shared terms for each theory
     std::map<TheoryId,std::unordered_set<TNode, TNodeHashFunction> > tshared;
-    for(TheoryId tid = theory::THEORY_FIRST; tid != theory::THEORY_LAST; ++ tid) {
-      tshared[tid] = d_theoryTable[tid]->currentlySharedTerms();
+    std::map<TheoryId,bool> tparametric;
+#ifdef CVC4_FOR_EACH_THEORY_STATEMENT
+#undef CVC4_FOR_EACH_THEORY_STATEMENT
+#endif
+#define CVC4_FOR_EACH_THEORY_STATEMENT(THEORY) \
+    if (d_logicInfo.isTheoryEnabled(THEORY)) { \
+      tshared[THEORY] = theoryOf(THEORY)->currentlySharedTerms(); \
+      tparametric[THEORY] = theory::TheoryTraits<THEORY>::isParametric; \
     }
+
+    // Call on each parametric theory to give us its shared terms
+    CVC4_FOR_EACH_THEORY;
     
     // cache of the splits between shared terms we have added
     std::unordered_map< TNode, std::unordered_map<TNode, TheoryId, TNodeHashFunction>, TNodeHashFunction > sharedEq;
-    std::unordered_map< TNode, std::unordered_set< TNode, TNodeHashFunction >, TNodeHashFunction > sharedDeq;
+    std::unordered_map< TNode, std::unordered_map<TNode, TheoryId, TNodeHashFunction >, TNodeHashFunction > sharedDeq;
+    
+    // modelBasedTcMode 
+    // 0 : all splits
+    // 1 : one split
+    // 2 : splits unique to terms
+    std::unordered_set< TNode, TNodeHashFunction > split_terms;
     
     // for each equivalence class of the model containing 2+ non-propagated equal shared terms
     Trace("tc-model") << "Processing " << d_shared_terms_merge.size() << " equivalence classes with shared terms..." << std::endl;
@@ -890,21 +908,29 @@ void TheoryEngine::combineTheoriesModelBased() {
                 Assert(!d_sharedTerms.areEqual(a,b));
                 if(!d_sharedTerms.areDisequal(a,b)){
                   EqualityStatus es = d_theoryTable[tid]->getEqualityStatus( a, b );
-                  Trace("tc-model-debug") << "    " << a << " " << b << " have equality status " << es << " in " << tid << std::endl;
+                  Assert( es!=EQUALITY_TRUE_AND_PROPAGATED );
+                  Assert( es!=EQUALITY_FALSE_AND_PROPAGATED );
+                  Trace("tc-model-debug") << "    " << a << " and " << b << " have equality status " << es << " in " << tid << std::endl;
                   if( es==EQUALITY_TRUE || es==EQUALITY_TRUE_IN_MODEL ){
-                    // Case that a = b
-                    sharedEq[a][b] = tid;
+                    // Case that a == b
+                    if( sharedEq[a].find(b)==sharedEq[a].end() || tparametric[tid] ){
+                      sharedEq[a][b] = tid;
+                    }
                     // don't consider 2+ terms that this theory thinks are equal
                     success = false;
                   }else if( es==EQUALITY_FALSE || es==EQUALITY_FALSE_IN_MODEL ){
                     // Case that a != b
-                    sharedDeq[a].insert(b);
-                  }else{
+                    if( sharedDeq[a].find(b)==sharedDeq[a].end() || tparametric[tid] ){
+                      sharedDeq[a][b] = tid;
+                    }
+                  }else if( es==EQUALITY_UNKNOWN ){
                     // Case that a =? b
                     if( sharedEq[a].find(b)==sharedEq[a].end() ){
                       sharedEq[a][b] = tid;
                     }
-                    sharedDeq[a].insert(b);
+                    if( sharedDeq[a].find(b)==sharedDeq[a].end() ){
+                      sharedDeq[a][b] = tid;
+                    }
                   }
                 }
               }
@@ -921,31 +947,62 @@ void TheoryEngine::combineTheoriesModelBased() {
     // now, go back and check each equality a=b.
     // if at least one theory thinks it may be equal, 
     // and at least one thinks it may be disqual, we split.
+    bool finished = false;
     for( std::pair< const TNode, std::unordered_map<TNode, TheoryId, TNodeHashFunction> >& eq : sharedEq ){
       TNode a = eq.first;
-      std::unordered_map< TNode, std::unordered_set< TNode, TNodeHashFunction >, TNodeHashFunction >::iterator deq = sharedDeq.find(a);
-      if( deq!=sharedDeq.end() ){
-        for( std::pair<const TNode, TheoryId>& eq_lhs : eq.second ){
-          TNode b = eq_lhs.first;
-          if( deq->second.find(b)!=deq->second.end()) {
-            TheoryId tid = eq_lhs.second;
-            Node equality = a.eqNode(b);
-            Assert(d_sharedTerms.isShared(a));
-            Assert(d_sharedTerms.isShared(b));
-            Assert(!d_sharedTerms.areEqual(a,b));
-            Assert(!d_sharedTerms.areDisequal(a,b));
-            Trace("tc-model") << "---> split on " << equality << ", theory = " << tid << std::endl;
-            lemma(equality.orNode(equality.notNode()), RULE_INVALID, false, false, false, tid);
-            Node e = ensureLiteral(equality);
-            d_propEngine->requirePhase(e, true);
-            numSplits++;
+      if( options::modelBasedTcMode()!=2 || split_terms.find(a)==split_terms.end() ){
+        std::unordered_map< TNode, std::unordered_map< TNode, TheoryId, TNodeHashFunction >, TNodeHashFunction >::iterator deq = sharedDeq.find(a);
+        if( deq!=sharedDeq.end() ){
+          for( std::pair<const TNode, TheoryId>& eq_lhs : eq.second ){
+            TNode b = eq_lhs.first;
+            if( options::modelBasedTcMode()!=2 || split_terms.find(b)==split_terms.end() ){
+              std::unordered_map< TNode, TheoryId, TNodeHashFunction >::iterator deq_lhs = deq->second.find(b);
+              if( deq_lhs!=deq->second.end()) {
+                TheoryId tid_eq = eq_lhs.second;
+                TheoryId tid_deq = deq_lhs->second;
+                Trace("tc-model") << "Split candidate : " << a << " <> " << b << std::endl;
+                Trace("tc-model") << "   true/unknown in : " << tid_eq << std::endl;
+                Trace("tc-model") << "  false/unknown in : " << tid_deq << std::endl;
+                // split must come from a parametric theory
+                TheoryId tid = tparametric[tid_eq] ? tid_eq : tid_deq;
+                if( tparametric[tid] )
+                {
+                  Node equality = a.eqNode(b);
+                  Assert(d_sharedTerms.isShared(a));
+                  Assert(d_sharedTerms.isShared(b));
+                  Assert(!d_sharedTerms.areEqual(a,b));
+                  Assert(!d_sharedTerms.areDisequal(a,b));
+                  Trace("tc-model") << "---> split on " << equality << ", theory = " << tid << std::endl;
+                  lemma(equality.orNode(equality.notNode()), RULE_INVALID, false, false, false, tid);
+                  Node e = ensureLiteral(equality);
+                  d_propEngine->requirePhase(e, true);
+                  numSplits++;
+                  if( options::modelBasedTcMode()!=0 ){
+                    split_terms.insert(a);
+                    split_terms.insert(b);
+                    break;
+                  }
+                }
+              }
+            }
           }
+        }
+        if( options::modelBasedTcMode()==1 && !split_terms.empty() ){
+          break;
         }
       }
     }
-    Assert( numSplits>0 );
-  }
-  Trace("tc-model") << "...finished combining theories." << std::endl;
+    //Assert( numSplits>0 );
+    if( numSplits>0 ){
+      Trace("tc-model") << "--> combine theories produced " << numSplits << " splits on shared terms." << std::endl;
+    }else{
+      Trace("tc-model") << "--> combine theories produced no splits" << std::endl;
+      //Assert(false);
+    }
+  } 
+  Trace("tc-model") << "------end model-based theory combination" << std::endl;
+  
+  Trace("combineTheories") << "TheoryEngine::combineTheoriesModelBased() : requested " << numSplits << " splits." << std::endl;
 }
 
 void TheoryEngine::propagate(Theory::Effort effort) {
