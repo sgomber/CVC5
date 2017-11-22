@@ -1,0 +1,8 @@
+#!/bin/bash
+
+DEPTH=$1
+shift
+
+echo "Run count std::unordered_set test with depth $DEPTH, options $@..."
+
+./perf_test_script 5 7 $DEPTH $@ 
