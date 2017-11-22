@@ -8,10 +8,6 @@ void PerfTest::runTestCountVector()
 {
   Trace("ajr-test") << "----Test count..." << std::endl;
   initializeVars(d_depth, d_rf);
-  // the find variable 
-  Node fvar = d_vars[0];
-  // shuffle
-  std::random_shuffle( d_vars.begin(), d_vars.end() );
     
   long totalTests = double(d_totalTestsF)*1000000000.0/(double)(d_depth);
   Trace("ajr-test") << "---Total tests is " << totalTests << "..." << std::endl;
@@ -29,7 +25,7 @@ void PerfTest::runTestCountVector()
     if( d_testType==0 ){
       while( tests<totalTests ){
         for( unsigned i=0; i<d_vars.size(); i++ ){
-          if( d_vars[i]==fvar ){
+          if( testVar(d_vars[i]) ){
             count++;
           }
         }
@@ -38,7 +34,7 @@ void PerfTest::runTestCountVector()
     }else if( d_testType==1 ){
       while( tests<totalTests ){
         for( unsigned i=0, size = d_vars.size(); i<size; i++ ){
-          if( d_vars[i]==fvar ){
+          if( testVar(d_vars[i]) ){
             count++;
           }
         }
@@ -47,7 +43,7 @@ void PerfTest::runTestCountVector()
     }else if( d_testType==2 ){
       while( tests<totalTests ){
         for( std::vector< Node >::iterator it = d_vars.begin(); it != d_vars.end(); ++it ){
-          if( *it==fvar ){
+          if( testVar(*it) ){
             count++;
           }
         }
@@ -56,7 +52,7 @@ void PerfTest::runTestCountVector()
     }else if( d_testType==3 ){
       while( tests<totalTests ){
         for( Node v : d_vars ){
-          if( v==fvar ){
+          if( testVar(v) ){
             count++;
           }
         }
@@ -65,7 +61,7 @@ void PerfTest::runTestCountVector()
     }else if( d_testType==4 ){
       while( tests<totalTests ){
         for( const Node& v : d_vars ){
-          if( v==fvar ){
+          if( testVar(v) ){
             count++;
           }
         }
@@ -74,7 +70,7 @@ void PerfTest::runTestCountVector()
     }else if( d_testType==5 ){
       while( tests<totalTests ){
         for( auto& v : d_vars ){
-          if( v==fvar ){
+          if( testVar(v) ){
             count++;
           }
         }
@@ -89,11 +85,11 @@ void PerfTest::runTestCountVector()
     if( d_testType==0 ){
       while( tests<totalTests ){
         for( unsigned i=0; i<d_vars.size(); i++ ){
-          if( d_vars[i]==fvar ){
+          if( testVar(d_vars[i]) ){
             count++;
           }
           if( d_unk ){
-            d_vars.push_back(fvar);
+            d_vars.push_back(d_vars[i]);
           }
         }
         tests++;
@@ -101,11 +97,11 @@ void PerfTest::runTestCountVector()
     }else if( d_testType==1 ){
       while( tests<totalTests ){
         for( unsigned i=0, size = d_vars.size(); i<size; i++ ){
-          if( d_vars[i]==fvar ){
+          if( testVar(d_vars[i]) ){
             count++;
           }
           if( d_unk ){
-            d_vars.push_back(fvar);
+            d_vars.push_back(d_vars[i]);
           }
         }
         tests++;
@@ -113,11 +109,11 @@ void PerfTest::runTestCountVector()
     }else if( d_testType==2 ){
       while( tests<totalTests ){
         for( std::vector< Node >::iterator it = d_vars.begin(); it != d_vars.end(); ++it ){
-          if( *it==fvar ){
+          if( testVar(*it) ){
             count++;
           }
           if( d_unk ){
-            d_vars.push_back(fvar);
+            d_vars.push_back(*it);
           }
         }
         tests++;
@@ -125,11 +121,11 @@ void PerfTest::runTestCountVector()
     }else if( d_testType==3 ){
       while( tests<totalTests ){
         for( Node v : d_vars ){
-          if( v==fvar ){
+          if( testVar(v) ){
             count++;
           }
           if( d_unk ){
-            d_vars.push_back(fvar);
+            d_vars.push_back(v);
           }
         }
         tests++;
@@ -137,11 +133,11 @@ void PerfTest::runTestCountVector()
     }else if( d_testType==4 ){
       while( tests<totalTests ){
         for( const Node& v : d_vars ){
-          if( v==fvar ){
+          if( testVar(v) ){
             count++;
           }
           if( d_unk ){
-            d_vars.push_back(fvar);
+            d_vars.push_back(v);
           }
         }
         tests++;
@@ -149,11 +145,11 @@ void PerfTest::runTestCountVector()
     }else if( d_testType==5 ){
       while( tests<totalTests ){
         for( auto& v : d_vars ){
-          if( v==fvar ){
+          if( testVar(v) ){
             count++;
           }
           if( d_unk ){
-            d_vars.push_back(fvar);
+            d_vars.push_back(v);
           }
         }
         tests++;

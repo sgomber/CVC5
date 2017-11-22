@@ -33,13 +33,23 @@ void PerfTest::run()
   }
 }
 
+Node PerfTest::mkVar() {
+  std::stringstream ss;
+  ss << "t" << d_mkVarCount;
+  Node v = NodeManager::currentNM()->mkBoundVar( ss.str(), NodeManager::currentNM()->realType() );
+  if( d_mkVarCount%2==0 ){
+    d_vars_test.insert(v);
+  }
+  d_mkVarCount++;
+  return v;
+}
+  
 void PerfTest::initializeVars( unsigned use_depth, double use_rf ) {
   for( unsigned i=0; i<use_depth; i++ ){
     double r = (double)(rand())/((double)(RAND_MAX));
     if( r<use_rf || d_vars.empty() ){
-      std::stringstream ss;
-      ss << "t" << d_vars.size();
-      d_vars.push_back( NodeManager::currentNM()->mkBoundVar( ss.str(), NodeManager::currentNM()->realType() ) );
+      Node v = mkVar();
+      d_vars.push_back( v );
     }else{
       r = (double)(rand())/((double)(RAND_MAX));
       unsigned iuse = (unsigned)( (double(d_vars.size())*r ) );
@@ -49,6 +59,8 @@ void PerfTest::initializeVars( unsigned use_depth, double use_rf ) {
       d_vars.push_back(d_vars[iuse]);
     }
   }
+  // shuffle
+  std::random_shuffle( d_vars.begin(), d_vars.end() );
 }
 
 Node PerfTest::mkRandom(unsigned depth, double rf ){
@@ -59,7 +71,8 @@ Node PerfTest::mkRandom(unsigned depth, double rf ){
       iuse = d_vars.size();
       std::stringstream ss;
       ss << "t" << d_vars.size();
-      d_vars.push_back( NodeManager::currentNM()->mkBoundVar( ss.str(), NodeManager::currentNM()->realType() ) );
+      Node v = mkVar();
+      d_vars.push_back( v );
     }else{
       r = (double)(rand())/((double)(RAND_MAX));
       iuse = (unsigned)( (double(d_vars.size())*r ) );

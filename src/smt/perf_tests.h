@@ -17,6 +17,7 @@ namespace CVC4 {
 class PerfTest
 {
 public:
+  PerfTest() : d_rf(0.0), d_depth(0), d_testType(0), d_totalTestsF(0), d_mkVarCount(0), d_unk(false){}
   void run();
 private:
   void runTestFindDataStructures();
@@ -28,11 +29,15 @@ private:
   unsigned d_depth;
   unsigned d_testType;
   unsigned d_totalTestsF;
+  unsigned d_mkVarCount;
   std::vector< Node > d_vars;
+  std::unordered_set< Node, NodeHashFunction > d_vars_test;
   bool d_unk;
   
   void initializeVars( unsigned use_depth, double use_rf);
+  Node mkVar();
   Node mkRandom(unsigned depth, double rf );
+  inline bool testVar( Node v ) { return d_vars_test.find(v)!=d_vars_test.end(); }
 };
 
 } 
