@@ -87,6 +87,33 @@ void PerfTest::runTestCountNode()
       }
       tests++;
     }
+  }else if( d_testType==6 ){
+    while( tests<totalTests ){
+      for( const Node v : f ){
+        if( testVar(v) ){
+          count++;
+        }
+      }
+      tests++;
+    }
+  }else if( d_testType==7 ){
+    while( tests<totalTests ){
+      for( const auto& v : f ){
+        if( testVar(v) ){
+          count++;
+        }
+      }
+      tests++;
+    }   
+  }else if( d_testType==8 ){
+    while( tests<totalTests ){
+      for( const auto v : f ){
+        if( testVar(v) ){
+          count++;
+        }
+      }
+      tests++;
+    }
   }else{
     std::stringstream ss;
     ss << "Unknown test type " << d_testType << " for count node test";

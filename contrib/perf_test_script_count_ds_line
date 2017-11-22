@@ -3,6 +3,6 @@
 DEPTH=$1
 shift
 
-echo "Run count data structure test with depth $DEPTH, options $@..."
+echo "Run count std::map test with depth $DEPTH, options $@..."
 
-./perf_test_script 3 16 $DEPTH $@ 
+./perf_test_script 3 9 $DEPTH $@ 

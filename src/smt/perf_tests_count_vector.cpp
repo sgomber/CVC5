@@ -86,6 +86,35 @@ void PerfTest::runTestCountVector()
         }
         tests++;
       }
+    }else if( d_testType==7 ){
+      while( tests<totalTests ){
+        for( auto v : d_vars ){
+          if( testVar(v) ){
+            count++;
+          }
+        }
+        tests++;
+      }
+
+    }else if( d_testType==8 ){
+      while( tests<totalTests ){
+        for( const auto& v : d_vars ){
+          if( testVar(v) ){
+            count++;
+          }
+        }
+        tests++;
+      }
+
+    }else if( d_testType==9 ){
+      while( tests<totalTests ){
+        for( const auto v : d_vars ){
+          if( testVar(v) ){
+            count++;
+          }
+        }
+        tests++;
+      }
     }else{
       std::stringstream ss;
       ss << "Unknown test type " << d_testType << " for count vector test";

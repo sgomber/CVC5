@@ -17,7 +17,7 @@ namespace CVC4 {
 class PerfTest
 {
 public:
-  PerfTest() : d_rf(0.0), d_depth(0), d_testType(0), d_totalTestsF(0), d_mkVarCount(0), d_unk(false){}
+  PerfTest() : d_rf(0.0), d_depth(0), d_testFamily(0), d_testType(0), d_totalTestsF(0), d_mkVarCount(0), d_unk(false){}
   void run();
 private:
   void runTestFindDataStructures();
@@ -27,6 +27,7 @@ private:
   
   double d_rf;
   unsigned d_depth;
+  unsigned d_testFamily;
   unsigned d_testType;
   unsigned d_totalTestsF;
   unsigned d_mkVarCount;

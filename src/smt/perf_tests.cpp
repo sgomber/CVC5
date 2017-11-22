@@ -18,17 +18,19 @@ void PerfTest::run()
   // should be unknown but always false
   d_unk = options::dummyUnknown();
   
-  if( options::testFamily()==0 ){
+  d_testFamily = options::testFamily();
+  
+  if( d_testFamily==0 ){
     runTestFindDataStructures();
-  }else if( options::testFamily()==1 ){
+  }else if( d_testFamily==1 ){
     runTestCountVector();
-  }else if( options::testFamily()==2 ){
+  }else if( d_testFamily==2 ){
     runTestCountNode();
-  }else if( options::testFamily()==3 ){
+  }else if( d_testFamily>=3 && d_testFamily<=5 ){
     runTestCountDataStructures();
   }else{
     std::stringstream ss;
-    ss << "Unknown test family " << options::testFamily();
+    ss << "Unknown test family " << d_testFamily;
     Unhandled(ss.str());
   }
 }

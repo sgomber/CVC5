@@ -18,7 +18,7 @@ void PerfTest::runTestCountDataStructures()
   lvars.insert(lvars.end(),d_vars.begin(),d_vars.end());
   std::random_shuffle(lvars.begin(),lvars.end());
   
-  if( d_testType>=0 && d_testType<=5 ){
+  if( d_testFamily==3 ){
     // maps
     std::map< Node, Node > vmap;
     for( unsigned i=0; i<lvars.size(); i++ ){
@@ -78,17 +78,10 @@ void PerfTest::runTestCountDataStructures()
         }
         tests++;
       }
-    }
-  }else if( d_testType>=6 && d_testType<=11 ){
-    // unordered maps
-    std::unordered_map< Node, Node, NodeHashFunction > vmap;
-    for( unsigned i=0; i<lvars.size(); i++ ){
-      vmap[d_vars[i]] = lvars[i];
-    }
-    if( d_testType==6 ){
+    }else if( d_testType==6 ){
       while( tests<totalTests ){
-        for( std::unordered_map< Node, Node, NodeHashFunction >::iterator it = vmap.begin(); it != vmap.end(); ++it ){
-          if( testVar(it->first) ){
+        for( const auto& v : vmap ){
+          if( testVar(v.first) ){
             count++;
           }
         }
@@ -96,7 +89,7 @@ void PerfTest::runTestCountDataStructures()
       }
     }else if( d_testType==7 ){
       while( tests<totalTests ){
-        for( std::pair< Node, Node > v : vmap ){
+        for( auto v : vmap ){
           if( testVar(v.first) ){
             count++;
           }
@@ -105,6 +98,44 @@ void PerfTest::runTestCountDataStructures()
       }
     }else if( d_testType==8 ){
       while( tests<totalTests ){
+        for( const auto v : vmap ){
+          if( testVar(v.first) ){
+            count++;
+          }
+        }
+        tests++;
+      }
+    }else{
+      std::stringstream ss;
+      ss << "Unknown test type " << d_testType << " for count std::map test";
+      Unhandled(ss.str());
+    }
+  }else if( d_testFamily==4 ){
+    // unordered maps
+    std::unordered_map< Node, Node, NodeHashFunction > vmap;
+    for( unsigned i=0; i<lvars.size(); i++ ){
+      vmap[d_vars[i]] = lvars[i];
+    }
+    if( d_testType==0 ){
+      while( tests<totalTests ){
+        for( std::unordered_map< Node, Node, NodeHashFunction >::iterator it = vmap.begin(); it != vmap.end(); ++it ){
+          if( testVar(it->first) ){
+            count++;
+          }
+        }
+        tests++;
+      }
+    }else if( d_testType==1 ){
+      while( tests<totalTests ){
+        for( std::pair< Node, Node > v : vmap ){
+          if( testVar(v.first) ){
+            count++;
+          }
+        }
+        tests++;
+      }
+    }else if( d_testType==2 ){
+      while( tests<totalTests ){
         for( const std::pair< Node, Node >& v : vmap ){
           if( testVar(v.first) ){
             count++;
@@ -112,7 +143,7 @@ void PerfTest::runTestCountDataStructures()
         }
         tests++;
       }
-    }else if( d_testType==9 ){
+    }else if( d_testType==3 ){
       while( tests<totalTests ){
         for( std::pair< const Node, Node >& v : vmap ){
           if( testVar(v.first) ){
@@ -121,7 +152,7 @@ void PerfTest::runTestCountDataStructures()
         }
         tests++;
       }
-    }else if( d_testType==10 ){
+    }else if( d_testType==4 ){
       while( tests<totalTests ){
         for( const std::pair< const Node, Node >& v : vmap ){
           if( testVar(v.first) ){
@@ -130,7 +161,7 @@ void PerfTest::runTestCountDataStructures()
         }
         tests++;
       }
-    }else if( d_testType==11 ){
+    }else if( d_testType==5 ){
       while( tests<totalTests ){
         for( auto& v : vmap ){
           if( testVar(v.first) ){
@@ -139,14 +170,45 @@ void PerfTest::runTestCountDataStructures()
         }
         tests++;
       }
+    }else if( d_testType==6 ){
+      while( tests<totalTests ){
+        for( const auto& v : vmap ){
+          if( testVar(v.first) ){
+            count++;
+          }
+        }
+        tests++;
+      }
+    }else if( d_testType==7 ){
+      while( tests<totalTests ){
+        for( auto v : vmap ){
+          if( testVar(v.first) ){
+            count++;
+          }
+        }
+        tests++;
+      }
+    }else if( d_testType==8 ){
+      while( tests<totalTests ){
+        for( const auto v : vmap ){
+          if( testVar(v.first) ){
+            count++;
+          }
+        }
+        tests++;
+      }
+    }else{
+      std::stringstream ss;
+      ss << "Unknown test type " << d_testType << " for count std::unordered_map test";
+      Unhandled(ss.str());
     }
-  }else if( d_testType>=12 && d_testType<=15 ){
+  }else if( d_testFamily==5 ){
     // unordered maps
     std::unordered_set< Node, NodeHashFunction > vset;
     for( unsigned i=0; i<lvars.size(); i++ ){
       vset.insert( d_vars[i] );
     }
-    if( d_testType==12 ){
+    if( d_testType==0 ){
       while( tests<totalTests ){
         for( std::unordered_set< Node, NodeHashFunction >::iterator it = vset.begin(); it != vset.end(); ++it ){
           if( testVar(*it) ){
@@ -155,7 +217,7 @@ void PerfTest::runTestCountDataStructures()
         }
         tests++;
       }
-    }else if( d_testType==13 ){
+    }else if( d_testType==1 ){
       while( tests<totalTests ){
         for( Node v : vset ){
           if( testVar(v) ){
@@ -164,7 +226,7 @@ void PerfTest::runTestCountDataStructures()
         }
         tests++;
       }
-    }else if( d_testType==14 ){
+    }else if( d_testType==2 ){
       while( tests<totalTests ){
         for( const Node& v : vset ){
           if( testVar(v) ){
@@ -173,7 +235,7 @@ void PerfTest::runTestCountDataStructures()
         }
         tests++;
       }
-    }else if( d_testType==15 ){
+    }else if( d_testType==3 ){
       while( tests<totalTests ){
         for( auto& v : vset ){
           if( testVar(v) ){
@@ -182,6 +244,37 @@ void PerfTest::runTestCountDataStructures()
         }
         tests++;
       }
+    }else if( d_testType==4 ){
+      while( tests<totalTests ){
+        for( const auto& v : vset ){
+          if( testVar(v) ){
+            count++;
+          }
+        }
+        tests++;
+      }
+    }else if( d_testType==5 ){
+      while( tests<totalTests ){
+        for( auto v : vset ){
+          if( testVar(v) ){
+            count++;
+          }
+        }
+        tests++;
+      }
+    }else if( d_testType==6 ){
+      while( tests<totalTests ){
+        for( const auto v : vset ){
+          if( testVar(v) ){
+            count++;
+          }
+        }
+        tests++;
+      }
+    }else{
+      std::stringstream ss;
+      ss << "Unknown test type " << d_testType << " for count std::unordered_set test";
+      Unhandled(ss.str());
     }
   }else{
     std::stringstream ss;
