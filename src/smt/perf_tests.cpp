@@ -59,6 +59,12 @@ void PerfTest::initializeVars( unsigned use_depth, double use_rf ) {
       d_vars.push_back(d_vars[iuse]);
     }
   }
+  double r = (double)(rand())/((double)(RAND_MAX));
+  unsigned iuse = (unsigned)( (double(d_vars.size())*r ) );
+  if( iuse>=d_vars.size() ){
+    iuse = d_vars.size()-1;        
+  }
+  d_test_var = d_vars[iuse];
   // shuffle
   std::random_shuffle( d_vars.begin(), d_vars.end() );
 }

@@ -8,6 +8,7 @@ void PerfTest::runTestCountDataStructures()
   // do not resue terms
   initializeVars(d_depth, 1.0);
     
+  // 10^8 tests
   long totalTests = double(d_totalTestsF)*100000000.0/(double)(d_depth);
   Trace("ajr-test") << "---Total tests is " << totalTests << "..." << std::endl;
   long tests = 0;

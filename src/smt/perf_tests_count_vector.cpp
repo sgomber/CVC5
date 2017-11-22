@@ -9,7 +9,8 @@ void PerfTest::runTestCountVector()
   Trace("ajr-test") << "----Test count..." << std::endl;
   initializeVars(d_depth, d_rf);
     
-  long totalTests = double(d_totalTestsF)*1000000000.0/(double)(d_depth);
+  // 10^8 tests
+  long totalTests = double(d_totalTestsF)*100000000.0/(double)(d_depth);
   Trace("ajr-test") << "---Total tests is " << totalTests << "..." << std::endl;
   long tests = 0;
   long count = 0;

@@ -31,13 +31,15 @@ private:
   unsigned d_totalTestsF;
   unsigned d_mkVarCount;
   std::vector< Node > d_vars;
+  Node d_test_var;
   std::unordered_set< Node, NodeHashFunction > d_vars_test;
   bool d_unk;
   
   void initializeVars( unsigned use_depth, double use_rf);
   Node mkVar();
   Node mkRandom(unsigned depth, double rf );
-  inline bool testVar( Node v ) { return d_vars_test.find(v)!=d_vars_test.end(); }
+  //inline bool testVar( Node v ) { return d_vars_test.find(v)!=d_vars_test.end(); }
+  inline bool testVar( Node v ) { return v>d_test_var; }
 };
 
 } 
