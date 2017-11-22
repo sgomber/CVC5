@@ -33,140 +33,64 @@ void PerfTest::runTestCountNode()
   fchildren.insert( fchildren.end(), d_vars.begin(), d_vars.end() );
   Node f = NodeManager::currentNM()->mkNode( kind::APPLY_UF, fchildren );
   
-  if( !options::useUnknown() ){
-    if( d_testType==0 ){
-      while( tests<totalTests ){
-        for( unsigned i=0; i<f.getNumChildren(); i++ ){
-          if( testVar(f[i]) ){
-            count++;
-          }
+  if( d_testType==0 ){
+    while( tests<totalTests ){
+      for( unsigned i=0; i<f.getNumChildren(); i++ ){
+        if( testVar(f[i]) ){
+          count++;
         }
-        tests++;
       }
-    }else if( d_testType==1 ){
-      while( tests<totalTests ){
-        for( unsigned i=0, size = f.getNumChildren(); i<size; i++ ){
-          if( testVar(f[i]) ){
-            count++;
-          }
+      tests++;
+    }
+  }else if( d_testType==1 ){
+    while( tests<totalTests ){
+      for( unsigned i=0, size = f.getNumChildren(); i<size; i++ ){
+        if( testVar(f[i]) ){
+          count++;
         }
-        tests++;
       }
-    }else if( d_testType==2 ){
-      while( tests<totalTests ){
-        for( Node::iterator it = f.begin(); it != f.end(); ++it ){
-          if( testVar(*it) ){
-            count++;
-          }
+      tests++;
+    }
+  }else if( d_testType==2 ){
+    while( tests<totalTests ){
+      for( Node::iterator it = f.begin(); it != f.end(); ++it ){
+        if( testVar(*it) ){
+          count++;
         }
-        tests++;
       }
-    }else if( d_testType==3 ){
-      while( tests<totalTests ){
-        for( Node v : f ){
-          if( testVar(v) ){
-            count++;
-          }
+      tests++;
+    }
+  }else if( d_testType==3 ){
+    while( tests<totalTests ){
+      for( Node v : f ){
+        if( testVar(v) ){
+          count++;
         }
-        tests++;
       }
-    }else if( d_testType==4 ){
-      while( tests<totalTests ){
-        for( const Node& v : f ){
-          if( testVar(v) ){
-            count++;
-          }
+      tests++;
+    }
+  }else if( d_testType==4 ){
+    while( tests<totalTests ){
+      for( const Node& v : f ){
+        if( testVar(v) ){
+          count++;
         }
-        tests++;
       }
-    }else if( d_testType==5 ){
-      while( tests<totalTests ){
-        for( auto v : f ){
-          if( testVar(v) ){
-            count++;
-          }
+      tests++;
+    }
+  }else if( d_testType==5 ){
+    while( tests<totalTests ){
+      for( auto v : f ){
+        if( testVar(v) ){
+          count++;
         }
-        tests++;
       }
+      tests++;
     }
   }else{
-    if( d_testType==0 ){
-      while( tests<totalTests ){
-        for( unsigned i=0; i<f.getNumChildren(); i++ ){
-          if( testVar(f[i]) ){
-            count++;
-          }
-          if( d_unk ){
-            d_vars.push_back(f[i]);
-          }
-        }
-        tests++;
-      }
-    }else if( d_testType==1 ){
-      while( tests<totalTests ){
-        for( unsigned i=0, size = f.getNumChildren(); i<size; i++ ){
-          if( testVar(f[i]) ){
-            count++;
-          }
-          if( d_unk ){
-            d_vars.push_back(f[i]);
-          }
-        }
-        tests++;
-      }
-    }else if( d_testType==2 ){
-      while( tests<totalTests ){
-        for( Node::iterator it = f.begin(); it != f.end(); ++it ){
-          if( testVar(*it) ){
-            count++;
-          }
-          if( d_unk ){
-            d_vars.push_back(*it);
-          }
-        }
-        tests++;
-      }
-    }else if( d_testType==3 ){
-      while( tests<totalTests ){
-        for( Node v : f ){
-          if( testVar(v) ){
-            count++;
-          }
-          if( d_unk ){
-            d_vars.push_back(v);
-          }
-        }
-        tests++;
-      }
-    }else if( d_testType==4 ){
-      while( tests<totalTests ){
-        for( const Node& v : f ){
-          if( testVar(v) ){
-            count++;
-          }
-          if( d_unk ){
-            d_vars.push_back(v);
-          }
-        }
-        tests++;
-      }
-    }else if( d_testType==5 ){
-      while( tests<totalTests ){
-        for( auto v : f ){
-          if( testVar(v) ){
-            count++;
-          }
-          if( d_unk ){
-            d_vars.push_back(v);
-          }
-        }
-        tests++;
-      }
-    }else{
-      std::stringstream ss;
-      ss << "Unknown test type " << d_testType << " for count node test";
-      Unhandled(ss.str());
-    }
+    std::stringstream ss;
+    ss << "Unknown test type " << d_testType << " for count node test";
+    Unhandled(ss.str());
   }
   Trace("ajr-test") << "Count is " << count << std::endl;  
 }

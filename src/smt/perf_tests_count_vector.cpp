@@ -61,7 +61,7 @@ void PerfTest::runTestCountVector()
       }
     }else if( d_testType==4 ){
       while( tests<totalTests ){
-        for( const Node& v : d_vars ){
+        for( Node& v : d_vars ){
           if( testVar(v) ){
             count++;
           }
@@ -69,6 +69,15 @@ void PerfTest::runTestCountVector()
         tests++;
       }
     }else if( d_testType==5 ){
+      while( tests<totalTests ){
+        for( const Node& v : d_vars ){
+          if( testVar(v) ){
+            count++;
+          }
+        }
+        tests++;
+      }
+    }else if( d_testType==6 ){
       while( tests<totalTests ){
         for( auto& v : d_vars ){
           if( testVar(v) ){
@@ -133,7 +142,7 @@ void PerfTest::runTestCountVector()
       }
     }else if( d_testType==4 ){
       while( tests<totalTests ){
-        for( const Node& v : d_vars ){
+        for( Node& v : d_vars ){
           if( testVar(v) ){
             count++;
           }
@@ -144,6 +153,18 @@ void PerfTest::runTestCountVector()
         tests++;
       }
     }else if( d_testType==5 ){
+      while( tests<totalTests ){
+        for( const Node& v : d_vars ){
+          if( testVar(v) ){
+            count++;
+          }
+          if( d_unk ){
+            d_vars.push_back(v);
+          }
+        }
+        tests++;
+      }
+    }else if( d_testType==6 ){
       while( tests<totalTests ){
         for( auto& v : d_vars ){
           if( testVar(v) ){
