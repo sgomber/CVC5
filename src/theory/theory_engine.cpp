@@ -785,6 +785,7 @@ void TheoryEngine::combineTheoriesModelBased() {
   bool success = true;
   std::unordered_set< TNode, TNodeHashFunction > relevant_eqc;
   if( d_curr_model_builder->buildModel(d_curr_model) ){
+    Trace("tc-model-debug") << "--- model was consistent, verifying..." << std::endl;
     // verify all pairs of terms in equivalence classes evaluate to the same value
     std::map< Node, TNode > val_to_eqc;
     Node curr_val;
@@ -794,6 +795,7 @@ void TheoryEngine::combineTheoriesModelBased() {
     while( !eqcs_i.isFinished() ){
       TNode r = (*eqcs_i);
       TNode ur = r;
+      Trace("tc-model-debug2") << ". Look at equivalence class " << r << "..." << std::endl;
       Node rval;
       std::map< Node, TNode > val_to_node;
       eq::EqClassIterator eqc_i = eq::EqClassIterator( r, ee );
@@ -801,9 +803,12 @@ void TheoryEngine::combineTheoriesModelBased() {
         TNode n = (*eqc_i);
         // get the value of n
         Node val = d_curr_model->getValue(n);
+        Trace("tc-model-debug2") << ". M( " << n << " ) = " << val << std::endl;
         std::map< Node, TNode >::iterator itvn = val_to_node.find(val);
         if(itvn==val_to_node.end() ){
-          if( !val_to_node.empty() ){
+          bool vempty = val_to_node.empty();
+          val_to_node[val] = n;
+          if( !vempty ){
             if( success ){
               success = false;
               Trace("tc-model") << "    fail, since equivalence class has 2+ values." << std::endl;
@@ -811,12 +816,11 @@ void TheoryEngine::combineTheoriesModelBased() {
             if( Trace.isOn("tc-model-debug") ){
               Trace("tc-model-debug") << "...equivalence class has 2+ values : " << std::endl;
               for(std::pair< const Node, TNode >& p : val_to_node ){
-                Trace("tc-model-debug") << "  " << p.first << " -> " << p.second << std::endl;
+                Trace("tc-model-debug") << "  " << p.second << " -> " << p.first << std::endl;
               }
             }
             relevant_eqc.insert(ur);
           }
-          val_to_node[val] = n;
           // now, check if there is an external equivalence class 
           std::map< Node, TNode >::iterator itve = val_to_eqc.find(val);
           if( itve != val_to_eqc.end() ){
