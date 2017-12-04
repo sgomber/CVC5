@@ -955,7 +955,9 @@ void TheoryEngineModelBuilder::assignFunction(TheoryModel* m, Node f)
     Node v = m->getRepresentative(un);
     Trace("model-builder") << "  Setting (" << simp << ") to (" << v << ")"
                            << endl;
-    ufmt.setValue(m, simp, v);
+    if( !ufmt.setValue(m, simp, v) ){
+      Trace("model-builder") << "  FAILED to set model value!" << std::endl;
+    }
     default_v = v;
   }
   if (default_v.isNull())

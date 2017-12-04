@@ -41,7 +41,7 @@ public:
   //clear
   void clear();
   /** setValue function */
-  void setValue( TheoryModel* m, Node n, Node v, std::vector< int >& indexOrder, bool ground, int argIndex );
+  bool setValue( TheoryModel* m, Node n, Node v, std::vector< int >& indexOrder, bool ground, unsigned argIndex );
   /**  getValue function */
   Node getValue( TheoryModel* m, Node n, std::vector< int >& indexOrder, int& depIndex, int argIndex );
   Node getValue( TheoryModel* m, Node n, std::vector< int >& indexOrder, std::vector< int >& depIndex, int argIndex );
@@ -87,12 +87,12 @@ public:
     * For each argument of n with ModelBasisAttribute() set to true will be considered default arguments if ground=false
     *
     */
-  void setValue( TheoryModel* m, Node n, Node v, bool ground = true ){
-    d_tree.setValue( m, n, v, d_index_order, ground, 0 );
+  bool setValue( TheoryModel* m, Node n, Node v, bool ground = true ){
+    return d_tree.setValue( m, n, v, d_index_order, ground, 0 );
   }
   /** setDefaultValue function */
-  void setDefaultValue( TheoryModel* m, Node v ){
-    d_tree.setValue( m, Node::null(), v, d_index_order, false, 0 );
+  bool setDefaultValue( TheoryModel* m, Node v ){
+    return d_tree.setValue( m, Node::null(), v, d_index_order, false, 0 );
   }
   /**  getValue function
     *
@@ -147,7 +147,6 @@ public:
     d_tree.debugPrint( out, m, d_index_order, ind );
   }
 };
-
 
 class UfModelTreeGenerator
 {

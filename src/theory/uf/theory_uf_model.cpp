@@ -24,10 +24,6 @@
 #include "theory/uf/equality_engine.h"
 #include "theory/uf/theory_uf.h"
 
-
-#define RECONSIDER_FUNC_DEFAULT_VALUE
-#define USE_PARTIAL_DEFAULT_VALUES
-
 using namespace std;
 using namespace CVC4;
 using namespace CVC4::kind;
@@ -53,21 +49,27 @@ bool UfModelTreeNode::hasConcreteArgumentDefinition(){
 }
 
 //set value function
-void UfModelTreeNode::setValue( TheoryModel* m, Node n, Node v, std::vector< int >& indexOrder, bool ground, int argIndex ){
-  if( d_data.empty() ){
-    //overwrite value if either at leaf or this is a fresh tree
-    d_value = v;
-  }else if( !d_value.isNull() && d_value!=v ){
+bool UfModelTreeNode::setValue( TheoryModel* m, Node n, Node v, std::vector< int >& indexOrder, bool ground, unsigned argIndex ){
+  if( !d_value.isNull() && d_value!=v ){
     //value is no longer constant
     d_value = Node::null();
   }
-  if( argIndex<(int)indexOrder.size() ){
+  else if( d_data.empty() )
+  {
+    //overwrite value if either at leaf or this is a fresh tree
+    d_value = v;
+  }
+  if( argIndex<indexOrder.size() ){
     //take r = null when argument is the model basis
     Node r;
     if( ground || ( !n.isNull() && !n[ indexOrder[argIndex] ].getAttribute(ModelBasisAttribute()) ) ){
       r = m->getRepresentative( n[ indexOrder[argIndex] ] );
     }
-    d_data[ r ].setValue( m, n, v, indexOrder, ground, argIndex+1 );
+    return d_data[ r ].setValue( m, n, v, indexOrder, ground, argIndex+1 );
+  }
+  else
+  {
+    return !d_value.isNull();
   }
 }
 
@@ -389,11 +391,7 @@ void UfModelTreeGenerator::makeModel( TheoryModel* m, UfModelTree& tree ){
 }
 
 bool UfModelTreeGenerator::optUsePartialDefaults(){
-#ifdef USE_PARTIAL_DEFAULT_VALUES
   return true;
-#else
-  return false;
-#endif
 }
 
 void UfModelTreeGenerator::clear(){
@@ -432,7 +430,6 @@ Node UfModelPreferenceData::getBestDefaultValue( Node defaultTerm, TheoryModel* 
       maxScore = score;
     }
   }
-#ifdef RECONSIDER_FUNC_DEFAULT_VALUE
   if( maxScore<1.0 ){
     //consider finding another value, if possible
     Debug("fmf-model-cons-debug") << "Poor choice for default value, score = " << maxScore << std::endl;
@@ -452,7 +449,6 @@ Node UfModelPreferenceData::getBestDefaultValue( Node defaultTerm, TheoryModel* 
       Debug("fmf-model-cons-debug") << std::endl;
     }
   }
-#endif
   //get the default term (this term must be defined non-ground in model)
   Debug("fmf-model-cons-debug") << "  Choose ";
   m->printRepresentativeDebug("fmf-model-cons-debug", defaultVal );
