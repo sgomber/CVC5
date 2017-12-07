@@ -252,9 +252,7 @@ void TheoryEngine::finishInit() {
 #undef CVC4_FOR_EACH_THEORY_STATEMENT
 #endif
 #define CVC4_FOR_EACH_THEORY_STATEMENT(THEORY) \
-  if (d_logicInfo.isTheoryEnabled(THEORY)) { \
-    d_tparametric[THEORY] = theory::TheoryTraits<THEORY>::isParametric; \
-  }
+  d_tparametric[THEORY] = theory::TheoryTraits<THEORY>::isParametric;
 
   // compute whether each theory is parametric
   CVC4_FOR_EACH_THEORY;
@@ -868,8 +866,8 @@ unsigned TheoryEngine::checkSharedTermMaps(
               TheoryId tid_eq = eq_lhs.second;
               TheoryId tid_deq = deq_lhs->second;
               Trace("tc-model-debug") << "Split candidate : " << a << " <> " << b << std::endl;
-              Trace("tc-model-debug") << "   true/unknown in : " << tid_eq << std::endl;
-              Trace("tc-model-debug") << "  false/unknown in : " << tid_deq << std::endl;
+              Trace("tc-model-debug") << "   true/unknown in : " << tid_eq << " (parametric : " << d_tparametric[tid_eq] << ")" << std::endl;
+              Trace("tc-model-debug") << "  false/unknown in : " << tid_deq << " (parametric : " << d_tparametric[tid_deq] << ")" <<std::endl;
               // split must come from a parametric theory
               TheoryId tid = d_tparametric[tid_eq] ? tid_eq : tid_deq;
               if( d_tparametric[tid] )
@@ -1056,7 +1054,7 @@ void TheoryEngine::combineTheoriesModelBased() {
       numSplits = checkSharedTermMaps( sharedEq, sharedDeq, tshared, relevant_eqc, term_to_eqc );
     }
     if( numSplits==0 ){
-      // technically it can happen that a shared term equality was not propagated but set true in the model
+      // it can happen that a shared term disequality was not propagated but set true in the model
       Trace("tc-model-debug") << "--------check shared terms in same equivalence classes..." << std::endl;
       // for each equivalence class of the model containing 2+ non-propagated equal shared terms
       Trace("tc-model-debug") << "Processing " << d_shared_terms_merge.size() << " equivalence classes with shared terms..." << std::endl;
