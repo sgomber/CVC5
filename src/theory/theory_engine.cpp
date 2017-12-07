@@ -247,6 +247,17 @@ void TheoryEngine::finishInit() {
       d_theoryTable[theoryId]->finishInit();
     }
   }
+  
+#ifdef CVC4_FOR_EACH_THEORY_STATEMENT
+#undef CVC4_FOR_EACH_THEORY_STATEMENT
+#endif
+#define CVC4_FOR_EACH_THEORY_STATEMENT(THEORY) \
+  if (d_logicInfo.isTheoryEnabled(THEORY)) { \
+    d_tparametric[THEORY] = theory::TheoryTraits<THEORY>::isParametric; \
+  }
+
+  // compute whether each theory is parametric
+  CVC4_FOR_EACH_THEORY;
 }
 
 void TheoryEngine::eqNotifyNewClass(TNode t, NotifyClass* c){
@@ -779,7 +790,6 @@ theory::EqualityStatus TheoryEngine::checkPair( TNode a, TNode b,
     std::unordered_map< TNode, std::unordered_map<TNode, TheoryId, TNodeHashFunction >, TNodeHashFunction >& sharedDeq,
     TheoryId tid, bool tparametric )
 {
-  Assert(!d_sharedTerms.areEqual(a,b));
   EqualityStatus es;
   if(!d_sharedTerms.areDisequal(a,b)){
     EqualityStatus es = d_theoryTable[tid]->getEqualityStatus( a, b );
@@ -874,21 +884,20 @@ void TheoryEngine::combineTheoriesModelBased() {
         term_to_eqc[n] = r;
         Trace("tc-model-debug") << "model-verify: evaluate " << n << std::endl;
         // check whether this is a parametric operator
-        Kind k = n.getKind();
-        if( k==kind::APPLY_UF || 
-            k==kind::SELECT || k==kind::STORE || 
-            k==kind::UNION || k==kind::INTERSECTION || k==kind::SUBSET || k==kind::SETMINUS || k==kind::MEMBER || k==kind::SINGLETON || 
-            k==kind::APPLY_SELECTOR_TOTAL || k==kind::APPLY_TESTER || 
-            k==kind::HO_APPLY )
+        if( n.hasOperator() )
         {
-          Node op = n.getOperator();
-          Node ncong = model_trie[op].add(d_curr_model,n);
-          if( ncong!=n )
+          TheoryId tid = Theory::theoryOf( n );
+          if( d_tparametric[tid] )
           {
-            // model is incorrect
-            conflict_pairs.push_back( std::pair< Node, Node >( n, ncong ) );
-            success = false;
-            Trace("tc-model-debug") << "Conflict pair : " << n << " <> " << ncong << std::endl;
+            Node op = n.getOperator();
+            Node ncong = model_trie[op].add(d_curr_model,n);
+            if( ncong!=n )
+            {
+              // model is incorrect
+              conflict_pairs.push_back( std::pair< Node, Node >( n, ncong ) );
+              success = false;
+              Trace("tc-model-debug") << "Conflict pair : " << n << " <> " << ncong << std::endl;
+            }
           }
         }
         ++eqc_i;
@@ -980,17 +989,15 @@ void TheoryEngine::combineTheoriesModelBased() {
     
     // get the shared terms for each theory
     std::map<TheoryId,std::unordered_set<TNode, TNodeHashFunction> > tshared;
-    std::map<TheoryId,bool> tparametric;
 #ifdef CVC4_FOR_EACH_THEORY_STATEMENT
 #undef CVC4_FOR_EACH_THEORY_STATEMENT
 #endif
 #define CVC4_FOR_EACH_THEORY_STATEMENT(THEORY) \
     if (d_logicInfo.isTheoryEnabled(THEORY)) { \
       tshared[THEORY] = theoryOf(THEORY)->currentlySharedTerms(); \
-      tparametric[THEORY] = theory::TheoryTraits<THEORY>::isParametric; \
     }
 
-    // Call on each parametric theory to give us its shared terms
+    // Call on each theory to give us its shared terms
     CVC4_FOR_EACH_THEORY;
     
     std::unordered_map< TNode, std::unordered_map<TNode, TheoryId, TNodeHashFunction>, TNodeHashFunction > sharedEq;
@@ -1013,7 +1020,7 @@ void TheoryEngine::combineTheoriesModelBased() {
           TheoryId tid = tts.first;
           if( tts.second.find( ac )!=tts.second.end() && tts.second.find( bc )!=tts.second.end() )
           {
-            checkPair( ac, bc, sharedEq, sharedDeq, tid, tparametric[tid] );
+            checkPair( ac, bc, sharedEq, sharedDeq, tid, d_tparametric[tid] );
           }
         }
       }
@@ -1036,7 +1043,7 @@ void TheoryEngine::combineTheoriesModelBased() {
         // for each theory
         for( std::pair<const TheoryId,std::unordered_set<TNode, TNodeHashFunction> >& tts : tshared){
           TheoryId tid = tts.first;
-          bool tpar = tparametric[tid];
+          bool tpar = d_tparametric[tid];
           
           // maintain the subset of p.second that is unique modulo equality and shared with this theory
           std::vector< TNode > shared_eqc;
@@ -1110,8 +1117,8 @@ void TheoryEngine::combineTheoriesModelBased() {
                 Trace("tc-model-debug") << "   true/unknown in : " << tid_eq << std::endl;
                 Trace("tc-model-debug") << "  false/unknown in : " << tid_deq << std::endl;
                 // split must come from a parametric theory
-                TheoryId tid = tparametric[tid_eq] ? tid_eq : tid_deq;
-                if( tparametric[tid] )
+                TheoryId tid = d_tparametric[tid_eq] ? tid_eq : tid_deq;
+                if( d_tparametric[tid] )
                 {
                   Node equality = a.eqNode(b);
                   bool add = true;

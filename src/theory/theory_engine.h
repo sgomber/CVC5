@@ -672,6 +672,7 @@ public:
       std::unordered_map< TNode, std::unordered_map<TNode, theory::TheoryId, TNodeHashFunction >, TNodeHashFunction >& sharedDeq,
       theory::TheoryId tid, bool tparametric );
   
+  std::map< theory::TheoryId, bool > d_tparametric;
   
   /**
    * Calls ppStaticLearn() on all theories, accumulating their
