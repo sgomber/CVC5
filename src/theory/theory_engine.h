@@ -672,6 +672,14 @@ public:
       std::unordered_map< TNode, std::unordered_map<TNode, theory::TheoryId, TNodeHashFunction >, TNodeHashFunction >& sharedDeq,
       theory::TheoryId tid, bool tparametric );
   
+  unsigned checkSharedTermMaps(
+      const std::unordered_map< TNode, std::unordered_map<TNode, theory::TheoryId, TNodeHashFunction>, TNodeHashFunction >& sharedEq,
+      const std::unordered_map< TNode, std::unordered_map<TNode, theory::TheoryId, TNodeHashFunction >, TNodeHashFunction >& sharedDeq,
+      const std::map<theory::TheoryId, std::unordered_set<TNode, TNodeHashFunction> >& tshared,
+      const std::unordered_set< TNode, TNodeHashFunction >& relevant_eqc,
+      const std::unordered_map< TNode, TNode, TNodeHashFunction >& term_to_eqc
+           );
+  
   std::map< theory::TheoryId, bool > d_tparametric;
   
   /**
