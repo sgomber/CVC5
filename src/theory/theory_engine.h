@@ -667,9 +667,9 @@ public:
   /** merged shared terms */
   void mergeSharedTerms(TNode t1, TNode t2);
 
-  bool checkPair( TNode a, TNode b,
-      std::unordered_map< TNode, std::unordered_map<TNode, theory::TheoryId, TNodeHashFunction>, TNodeHashFunction > sharedEq,
-      std::unordered_map< TNode, std::unordered_map<TNode, theory::TheoryId, TNodeHashFunction >, TNodeHashFunction > sharedDeq,
+  theory::EqualityStatus checkPair( TNode a, TNode b,
+      std::unordered_map< TNode, std::unordered_map<TNode, theory::TheoryId, TNodeHashFunction>, TNodeHashFunction >& sharedEq,
+      std::unordered_map< TNode, std::unordered_map<TNode, theory::TheoryId, TNodeHashFunction >, TNodeHashFunction >& sharedDeq,
       theory::TheoryId tid, bool tparametric );
   
   

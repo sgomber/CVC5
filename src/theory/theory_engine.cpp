@@ -774,12 +774,13 @@ void TheoryEngine::combineTheories() {
 }
 
 
-bool TheoryEngine::checkPair( TNode a, TNode b,
-    std::unordered_map< TNode, std::unordered_map<TNode, TheoryId, TNodeHashFunction>, TNodeHashFunction > sharedEq,
-    std::unordered_map< TNode, std::unordered_map<TNode, TheoryId, TNodeHashFunction >, TNodeHashFunction > sharedDeq,
+theory::EqualityStatus TheoryEngine::checkPair( TNode a, TNode b,
+    std::unordered_map< TNode, std::unordered_map<TNode, TheoryId, TNodeHashFunction>, TNodeHashFunction >& sharedEq,
+    std::unordered_map< TNode, std::unordered_map<TNode, TheoryId, TNodeHashFunction >, TNodeHashFunction >& sharedDeq,
     TheoryId tid, bool tparametric )
 {
   Assert(!d_sharedTerms.areEqual(a,b));
+  EqualityStatus es;
   if(!d_sharedTerms.areDisequal(a,b)){
     EqualityStatus es = d_theoryTable[tid]->getEqualityStatus( a, b );
     Assert( es!=EQUALITY_TRUE_AND_PROPAGATED );
@@ -791,7 +792,6 @@ bool TheoryEngine::checkPair( TNode a, TNode b,
         sharedEq[a][b] = tid;
       }
       // don't consider 2+ terms that this theory thinks are equal
-      return false;
     }else if( es==EQUALITY_FALSE || es==EQUALITY_FALSE_IN_MODEL ){
       // Case that a != b
       if( sharedDeq[a].find(b)==sharedDeq[a].end() || tparametric ){
@@ -806,8 +806,10 @@ bool TheoryEngine::checkPair( TNode a, TNode b,
         sharedDeq[a][b] = tid;
       }
     }
+  }else{
+    es = EQUALITY_FALSE;
   }
-  return true;
+  return es;
 }
 
 class ModelTrie
@@ -823,9 +825,9 @@ public:
     std::vector< Node > argvs;
     for( const Node& nc : n )
     {
-      argvs.push_back( m->getValue( nc ) );
+      argvs.push_back( m->getRepresentative( nc ) );
     }
-    Node val = m->getValue( n );
+    Node val = m->getRepresentative( n );
     
     for( unsigned i=0, size=argvs.size(); i<size; i++ ){
       mt = &mt->d_children[argvs[i]];
@@ -836,6 +838,7 @@ public:
       Trace("tc-model-debug") << "M( " << n << " ) = " << val << std::endl;
     }else if( mt->d_value!=val )
     {
+      Trace("tc-model-debug") << "M( " << n << " ) = " << val << " != " << mt->d_value << std::endl;
       // model is in conflict
       return mt->d_term;
     }
@@ -853,6 +856,7 @@ void TheoryEngine::combineTheoriesModelBased() {
   Trace("tc-model") << "------model-based theory combination" << std::endl;
   d_shared_terms_merge.clear();
   bool success = true;
+  std::unordered_map< TNode, TNode, TNodeHashFunction > term_to_eqc;
   std::unordered_set< TNode, TNodeHashFunction > relevant_eqc;
   std::vector< std::pair< Node, Node > > conflict_pairs;
   if( d_curr_model_builder->buildModel(d_curr_model) ){
@@ -867,6 +871,8 @@ void TheoryEngine::combineTheoriesModelBased() {
       eq::EqClassIterator eqc_i = eq::EqClassIterator( r, ee );
       while( !eqc_i.isFinished() ){
         TNode n = (*eqc_i);
+        term_to_eqc[n] = r;
+        Trace("tc-model-debug") << "model-verify: evaluate " << n << std::endl;
         // check whether this is a parametric operator
         Kind k = n.getKind();
         if( k==kind::APPLY_UF || 
@@ -1013,13 +1019,8 @@ void TheoryEngine::combineTheoriesModelBased() {
       }
     }
     
-    
-    
-    
+    // technically it can happen that a shared term equality was not propagated but set true in the model
     Trace("tc-model-debug") << "--------check shared terms in same equivalence classes..." << std::endl;
-    // cache of the splits between shared terms we have added
-    std::unordered_map< TNode, TNode, TNodeHashFunction > term_to_eqc;
-    
     // for each equivalence class of the model containing 2+ non-propagated equal shared terms
     Trace("tc-model-debug") << "Processing " << d_shared_terms_merge.size() << " equivalence classes with shared terms..." << std::endl;
     for( std::pair< const TNode, std::vector< TNode > >& p : d_shared_terms_merge ){
@@ -1053,6 +1054,7 @@ void TheoryEngine::combineTheoriesModelBased() {
                 term_to_eqc[a] = p.first;
                 if( !checkPair( a, b, sharedEq, sharedDeq, tid, tpar ) ){
                   success = false;
+                  break;
                 }
               }
               
@@ -1065,8 +1067,6 @@ void TheoryEngine::combineTheoriesModelBased() {
         }
       }
     }
-    
-    
     
     // modelBasedTcMode 
     // 0 : all splits
@@ -1086,7 +1086,7 @@ void TheoryEngine::combineTheoriesModelBased() {
     bool splitRewUnique = options::modelBasedTcMode()==3 || options::modelBasedTcMode()==4;
     unsigned riter = 1;
     if( options::modelBasedTcRlv() ){
-      riter = !relevant_eqc.empty() ? 2 : 1;
+      riter = relevant_eqc.empty() ? 1 : 2;
       Trace("tc-model") << relevant_eqc.size() << " / " << d_shared_terms_merge.size() << " equivalence classes are relevant." << std::endl;
     }else{
       relevant_eqc.clear();
