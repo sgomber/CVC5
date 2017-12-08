@@ -931,7 +931,7 @@ unsigned TheoryEngine::checkSharedTermMaps(
   if (options::modelBasedTcRlv())
   {
     riter = relevant_eqc.empty() ? 1 : 2;
-    Trace("tc-model-debug")
+    Trace("tc-model-debug2")
         << relevant_eqc.size() << " / " << d_shared_terms_merge.size()
         << " equivalence classes are marked relevant." << std::endl;
   }
@@ -1178,33 +1178,63 @@ void TheoryEngine::combineTheoriesModelBased()
 
     if (!conflict_pairs.empty())
     {
-      Trace("tc-model-debug") << "--------check conflict pairs..." << std::endl;
+      Trace("tc-model-debug") << "--------check " << conflict_pairs.size() << " conflict pairs..." << std::endl;
       for (std::pair<Node, Node>& cp : conflict_pairs)
       {
         Node a = cp.first;
         Node b = cp.second;
         Assert(a.getNumChildren() == b.getNumChildren());
         Assert(a.getOperator() == b.getOperator());
-        for (unsigned i = 0, size = a.getNumChildren(); i < size; i++)
+        if( options::modelBasedTcAck() )
         {
-          Node ac = a[i];
-          Node bc = b[i];
-
-          for (std::pair<const TheoryId,
-                         std::unordered_set<TNode, TNodeHashFunction> >& tts :
-               tshared)
+          std::vector< Node > lem_c;
+          Node eq = a.eqNode( b );
+          TheoryId tid = Theory::theoryOf( eq );
+          lem_c.push_back( eq );
+          for (unsigned i = 0, size = a.getNumChildren(); i < size; i++)
           {
-            TheoryId tid = tts.first;
-            if (tts.second.find(ac) != tts.second.end()
-                && tts.second.find(bc) != tts.second.end())
+            Node ac = a[i];
+            Node bc = b[i];
+            lem_c.push_back( ac.eqNode( bc ).negate() );
+          }
+          Node lem;
+          if( lem_c.size()> 0 ) 
+          {
+            lem = NodeManager::currentNM()->mkNode( kind::OR, lem_c );
+          }
+          else 
+          {
+            lem = lem_c[0];
+          }
+          lemma( lem, RULE_INVALID, false, false, false, tid );
+          numSplits++;
+        }
+        else
+        {
+          for (unsigned i = 0, size = a.getNumChildren(); i < size; i++)
+          {
+            Node ac = a[i];
+            Node bc = b[i];
+
+            for (std::pair<const TheoryId,
+                          std::unordered_set<TNode, TNodeHashFunction> >& tts :
+                tshared)
             {
-              checkPair(ac, bc, sharedEq, sharedDeq, tid, d_tparametric[tid]);
+              TheoryId tid = tts.first;
+              if (tts.second.find(ac) != tts.second.end()
+                  && tts.second.find(bc) != tts.second.end())
+              {
+                checkPair(ac, bc, sharedEq, sharedDeq, tid, d_tparametric[tid]);
+              }
             }
           }
         }
       }
-      numSplits = checkSharedTermMaps(
-          sharedEq, sharedDeq, tshared, relevant_eqc, term_to_eqc);
+      if (numSplits == 0)
+      {
+        numSplits = checkSharedTermMaps(
+            sharedEq, sharedDeq, tshared, relevant_eqc, term_to_eqc);
+      }
     }
     if (numSplits == 0)
     {
