@@ -650,6 +650,16 @@ Expr Datatype::getCompressedSelector(Type dtt, Type t, unsigned index) const {
   return s;
 }
 
+void printTypeDebug(const char* c, TypeNode tn)
+{
+  if( tn.isDatatype() ){
+    const Datatype& d = static_cast<DatatypeType>(tn.toType()).getDatatype();
+    Trace(c) << d.getName();
+  }else{
+    Trace(c) << tn;
+  }
+}
+
 void Datatype::computeCompressedSelectors(Type dtt) 
 {
   if( !d_sinfo[dtt].d_computed_compress ){
@@ -663,6 +673,12 @@ void Datatype::computeCompressedSelectors(Type dtt)
     //     D.d_sinfo[dtt'].d_compression_map[dtt][S] is populated
     
     SelectorInfo& si = d_sinfo[dtt];
+    if(Trace.isOn("compress-sel"))
+    {
+      Trace("compress-sel") << "---- Compute compressed sel for ";
+      printTypeDebug("compress-sel", dttn);
+      Trace("compress-sel") << std::endl;
+    }
     
     // ------------------compute the graph
     // nodes of the graph
@@ -794,6 +810,14 @@ void Datatype::computeCompressedSelectors(Type dtt)
               }
             }
           }
+          if(Trace.isOn("compress-sel-debug"))
+          {
+            Trace("compress-sel-debug") << "  Check edge ( ";
+            printTypeDebug("compress-sel-debug", ti);
+            Trace("compress-sel-debug") << " -> ";
+            printTypeDebug("compress-sel-debug", tx);
+            Trace("compress-sel-debug") << " ) ... " << std::endl;
+          }
           // if siblings of paths to this node cannot reach this node, we can assign a compressed selector at this edge
           if( std::find( reach.begin(), reach.end(), ti )==reach.end() )
           {
@@ -818,6 +842,10 @@ void Datatype::computeCompressedSelectors(Type dtt)
                     break;
                   }
                 }
+                if(Trace.isOn("compress-sel-debug"))
+                {
+                  Trace("compress-sel-debug") << "  ...assignable to existing symbol." << std::endl;
+                }
               }
               else
               {
@@ -832,6 +860,7 @@ void Datatype::computeCompressedSelectors(Type dtt)
                 compress_sel[tx].push_back(csel);
                 si.d_compress_sel.push_back(csel.toExpr());
                 cs_index++;
+                Trace("compress-sel-debug") << "  ...assignable to new symbol." << std::endl;
               }
               
               if( !csel.isNull() )
@@ -846,8 +875,20 @@ void Datatype::computeCompressedSelectors(Type dtt)
                 si.d_compression_map[ti.toType()][tx.toType()] = csel.toExpr();
                 alloc--;
                 csel_to_sources[csel].insert( ti );
+                if(Trace.isOn("compress-sel"))
+                {
+                  Trace("compress-sel") << "  * Assign ( ";
+                  printTypeDebug("compress-sel", ti);
+                  Trace("compress-sel") << " -> ";
+                  printTypeDebug("compress-sel", tx);
+                  Trace("compress-sel") << " ) to " << csel << std::endl;
+                }
               }
             }
+          }
+          else
+          {
+            Trace("compress-sel-debug") << "  ...unassignable, since reachable from sibling" << std::endl;
           }
         }
       }
