@@ -22,16 +22,22 @@
 namespace CVC4 {
 namespace theory {
 
-std::ostream& operator<<(std::ostream& os, EqualityStatus s) {
-  switch (s) {
-  case EQUALITY_TRUE_AND_PROPAGATED:os << "EQUALITY_TRUE_AND_PROPAGATED";break;
-  case EQUALITY_FALSE_AND_PROPAGATED:os << "EQUALITY_FALSE_AND_PROPAGATED";break;
-  case EQUALITY_TRUE:os << "EQUALITY_TRUE";break;
-  case EQUALITY_FALSE:os << "EQUALITY_FALSE";break;
-  case EQUALITY_TRUE_IN_MODEL:os << "EQUALITY_TRUE_IN_MODEL";break;
-  case EQUALITY_FALSE_IN_MODEL:os << "EQUALITY_FALSE_IN_MODEL";break;
-  case EQUALITY_UNKNOWN:os << "EQUALITY_UNKNOWN";break;
-  default:Unhandled();break;
+std::ostream& operator<<(std::ostream& os, EqualityStatus s)
+{
+  switch (s)
+  {
+    case EQUALITY_TRUE_AND_PROPAGATED:
+      os << "EQUALITY_TRUE_AND_PROPAGATED";
+      break;
+    case EQUALITY_FALSE_AND_PROPAGATED:
+      os << "EQUALITY_FALSE_AND_PROPAGATED";
+      break;
+    case EQUALITY_TRUE: os << "EQUALITY_TRUE"; break;
+    case EQUALITY_FALSE: os << "EQUALITY_FALSE"; break;
+    case EQUALITY_TRUE_IN_MODEL: os << "EQUALITY_TRUE_IN_MODEL"; break;
+    case EQUALITY_FALSE_IN_MODEL: os << "EQUALITY_FALSE_IN_MODEL"; break;
+    case EQUALITY_UNKNOWN: os << "EQUALITY_UNKNOWN"; break;
+    default: Unhandled(); break;
   }
   return os;
 }

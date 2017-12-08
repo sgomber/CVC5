@@ -162,11 +162,20 @@ class TheoryEngine {
     bool eqNotifyTriggerTermEquality(theory::TheoryId tag, TNode t1, TNode t2, bool value) { return true; }
     void eqNotifyConstantTermMerge(TNode t1, TNode t2) {}
     void eqNotifyNewClass(TNode t) { d_te.eqNotifyNewClass(t, this); }
-    void eqNotifyPreMerge(TNode t1, TNode t2) { d_te.eqNotifyPreMerge(t1, t2, this); }
-    void eqNotifyPostMerge(TNode t1, TNode t2) { d_te.eqNotifyPostMerge(t1, t2, this); }
-    void eqNotifyDisequal(TNode t1, TNode t2, TNode reason) { d_te.eqNotifyDisequal(t1, t2, reason, this); }
+    void eqNotifyPreMerge(TNode t1, TNode t2)
+    {
+      d_te.eqNotifyPreMerge(t1, t2, this);
+    }
+    void eqNotifyPostMerge(TNode t1, TNode t2)
+    {
+      d_te.eqNotifyPostMerge(t1, t2, this);
+    }
+    void eqNotifyDisequal(TNode t1, TNode t2, TNode reason)
+    {
+      d_te.eqNotifyDisequal(t1, t2, reason, this);
+    }
   };/* class TheoryEngine::NotifyClass */
-  NotifyClass d_masterEENotify;  
+  NotifyClass d_masterEENotify;
   NotifyClass d_modelNotify;
 
   /**
@@ -658,30 +667,49 @@ public:
    * Run the combination framework.
    */
   void combineTheories();
-  
+
   /**
    * Run the combination framework.
    */
   void combineTheoriesModelBased();
-  
+
   /** merged shared terms */
   void mergeSharedTerms(TNode t1, TNode t2);
 
-  theory::EqualityStatus checkPair( TNode a, TNode b,
-      std::unordered_map< TNode, std::unordered_map<TNode, theory::TheoryId, TNodeHashFunction>, TNodeHashFunction >& sharedEq,
-      std::unordered_map< TNode, std::unordered_map<TNode, theory::TheoryId, TNodeHashFunction >, TNodeHashFunction >& sharedDeq,
-      theory::TheoryId tid, bool tparametric );
-  
+  theory::EqualityStatus checkPair(
+      TNode a,
+      TNode b,
+      std::unordered_map<TNode,
+                         std::unordered_map<TNode,
+                                            theory::TheoryId,
+                                            TNodeHashFunction>,
+                         TNodeHashFunction>& sharedEq,
+      std::unordered_map<TNode,
+                         std::unordered_map<TNode,
+                                            theory::TheoryId,
+                                            TNodeHashFunction>,
+                         TNodeHashFunction>& sharedDeq,
+      theory::TheoryId tid,
+      bool tparametric);
+
   unsigned checkSharedTermMaps(
-      const std::unordered_map< TNode, std::unordered_map<TNode, theory::TheoryId, TNodeHashFunction>, TNodeHashFunction >& sharedEq,
-      const std::unordered_map< TNode, std::unordered_map<TNode, theory::TheoryId, TNodeHashFunction >, TNodeHashFunction >& sharedDeq,
-      const std::map<theory::TheoryId, std::unordered_set<TNode, TNodeHashFunction> >& tshared,
-      const std::unordered_set< TNode, TNodeHashFunction >& relevant_eqc,
-      const std::unordered_map< TNode, TNode, TNodeHashFunction >& term_to_eqc
-           );
-  
-  std::map< theory::TheoryId, bool > d_tparametric;
-  
+      const std::unordered_map<TNode,
+                               std::unordered_map<TNode,
+                                                  theory::TheoryId,
+                                                  TNodeHashFunction>,
+                               TNodeHashFunction>& sharedEq,
+      const std::unordered_map<TNode,
+                               std::unordered_map<TNode,
+                                                  theory::TheoryId,
+                                                  TNodeHashFunction>,
+                               TNodeHashFunction>& sharedDeq,
+      const std::map<theory::TheoryId,
+                     std::unordered_set<TNode, TNodeHashFunction> >& tshared,
+      const std::unordered_set<TNode, TNodeHashFunction>& relevant_eqc,
+      const std::unordered_map<TNode, TNode, TNodeHashFunction>& term_to_eqc);
+
+  std::map<theory::TheoryId, bool> d_tparametric;
+
   /**
    * Calls ppStaticLearn() on all theories, accumulating their
    * combined contributions in the "learned" builder.
@@ -731,7 +759,7 @@ public:
   /**
    * collect model info
    */
-  bool collectModelInfo( theory::TheoryModel* m );
+  bool collectModelInfo(theory::TheoryModel* m);
   /** post process model */
   void postProcessModel( theory::TheoryModel* m );
 
@@ -740,11 +768,11 @@ public:
    */
   theory::TheoryModel* getModel();
 
-  /** 
+  /**
    * Get the model notify object
    */
-  theory::eq::EqualityEngineNotify * getModelNotify();
-  
+  theory::eq::EqualityEngineNotify* getModelNotify();
+
   /**
    * Get the model builder
    */
@@ -884,9 +912,10 @@ private:
   std::set< std::string > d_theoryAlternatives;
 
   std::map< std::string, std::vector< theory::Theory* > > d_attr_handle;
-  
-  std::map< TNode, std::vector< TNode > > d_shared_terms_merge;
-public:
+
+  std::map<TNode, std::vector<TNode> > d_shared_terms_merge;
+
+ public:
 
   /**
    * Set user attribute.

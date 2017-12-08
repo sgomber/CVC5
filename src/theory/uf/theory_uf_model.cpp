@@ -49,23 +49,31 @@ bool UfModelTreeNode::hasConcreteArgumentDefinition(){
 }
 
 //set value function
-bool UfModelTreeNode::setValue( TheoryModel* m, Node n, Node v, std::vector< int >& indexOrder, bool ground, unsigned argIndex ){
-  if( !d_value.isNull() && d_value!=v ){
+bool UfModelTreeNode::setValue(TheoryModel* m,
+                               Node n,
+                               Node v,
+                               std::vector<int>& indexOrder,
+                               bool ground,
+                               unsigned argIndex)
+{
+  if (!d_value.isNull() && d_value != v)
+  {
     //value is no longer constant
     d_value = Node::null();
   }
-  else if( d_data.empty() )
+  else if (d_data.empty())
   {
-    //overwrite value if either at leaf or this is a fresh tree
+    // overwrite value if either at leaf or this is a fresh tree
     d_value = v;
   }
-  if( argIndex<indexOrder.size() ){
+  if (argIndex < indexOrder.size())
+  {
     //take r = null when argument is the model basis
     Node r;
     if( ground || ( !n.isNull() && !n[ indexOrder[argIndex] ].getAttribute(ModelBasisAttribute()) ) ){
       r = m->getRepresentative( n[ indexOrder[argIndex] ] );
     }
-    return d_data[ r ].setValue( m, n, v, indexOrder, ground, argIndex+1 );
+    return d_data[r].setValue(m, n, v, indexOrder, ground, argIndex + 1);
   }
   else
   {

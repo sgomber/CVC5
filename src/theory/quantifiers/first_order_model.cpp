@@ -125,9 +125,12 @@ bool QRepBoundExt::getVariableOrder(Node owner, std::vector<unsigned>& varOrder)
   return false;
 }
 
-FirstOrderModel::FirstOrderModel(QuantifiersEngine * qe, theory::eq::EqualityEngineNotify* notify, context::Context* c, std::string name ) :
-TheoryModel( notify, c, name, true ),
-d_qe( qe ), d_forall_asserts( c ){
+FirstOrderModel::FirstOrderModel(QuantifiersEngine* qe,
+                                 theory::eq::EqualityEngineNotify* notify,
+                                 context::Context* c,
+                                 std::string name)
+    : TheoryModel(notify, c, name, true), d_qe(qe), d_forall_asserts(c)
+{
   d_rlv_count = 0;
 }
 
@@ -426,9 +429,12 @@ unsigned FirstOrderModel::getModelBasisArg(Node n)
   return n.getAttribute(ModelBasisArgAttribute());
 }
 
-FirstOrderModelIG::FirstOrderModelIG(QuantifiersEngine * qe, theory::eq::EqualityEngineNotify* notify, context::Context* c, std::string name) :
-FirstOrderModel(qe, notify, c,name) {
-
+FirstOrderModelIG::FirstOrderModelIG(QuantifiersEngine* qe,
+                                     theory::eq::EqualityEngineNotify* notify,
+                                     context::Context* c,
+                                     std::string name)
+    : FirstOrderModel(qe, notify, c, name)
+{
 }
 
 void FirstOrderModelIG::processInitialize( bool ispre ){
@@ -829,11 +835,12 @@ Node FirstOrderModelIG::getCurrentUfModelValue( Node n, std::vector< Node > & ar
 }
 */
 
-
-
-FirstOrderModelFmc::FirstOrderModelFmc(QuantifiersEngine * qe, theory::eq::EqualityEngineNotify* notify, context::Context* c, std::string name) :
-FirstOrderModel(qe, notify, c, name){
-
+FirstOrderModelFmc::FirstOrderModelFmc(QuantifiersEngine* qe,
+                                       theory::eq::EqualityEngineNotify* notify,
+                                       context::Context* c,
+                                       std::string name)
+    : FirstOrderModel(qe, notify, c, name)
+{
 }
 
 FirstOrderModelFmc::~FirstOrderModelFmc() throw() {
@@ -997,11 +1004,12 @@ bool FirstOrderModelFmc::isInRange( Node v, Node i ) {
   }
 }
 
-
-
-FirstOrderModelAbs::FirstOrderModelAbs(QuantifiersEngine * qe, theory::eq::EqualityEngineNotify* notify, context::Context* c, std::string name) :
-FirstOrderModel(qe, notify, c, name) {
-
+FirstOrderModelAbs::FirstOrderModelAbs(QuantifiersEngine* qe,
+                                       theory::eq::EqualityEngineNotify* notify,
+                                       context::Context* c,
+                                       std::string name)
+    : FirstOrderModel(qe, notify, c, name)
+{
 }
 
 FirstOrderModelAbs::~FirstOrderModelAbs() throw() {

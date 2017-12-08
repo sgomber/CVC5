@@ -320,19 +320,23 @@ void QuantifiersEngine::finishInit(){
     if( options::mbqiMode()==quantifiers::MBQI_FMC || options::mbqiMode()==quantifiers::MBQI_FMC_INTERVAL ||
         options::mbqiMode()==quantifiers::MBQI_TRUST || options::fmfBound() ){
       Trace("quant-engine-debug") << "...make fmc builder." << std::endl;
-      d_model = new quantifiers::fmcheck::FirstOrderModelFmc( this, d_te->getModelNotify(), c, "FirstOrderModelFmc" );
+      d_model = new quantifiers::fmcheck::FirstOrderModelFmc(
+          this, d_te->getModelNotify(), c, "FirstOrderModelFmc");
       d_builder = new quantifiers::fmcheck::FullModelChecker( c, this );
     }else if( options::mbqiMode()==quantifiers::MBQI_ABS ){
       Trace("quant-engine-debug") << "...make abs mbqi builder." << std::endl;
-      d_model = new quantifiers::FirstOrderModelAbs( this, d_te->getModelNotify(), c, "FirstOrderModelAbs" );
+      d_model = new quantifiers::FirstOrderModelAbs(
+          this, d_te->getModelNotify(), c, "FirstOrderModelAbs");
       d_builder = new quantifiers::AbsMbqiBuilder( c, this );
     }else{
       Trace("quant-engine-debug") << "...make default model builder." << std::endl;
-      d_model = new quantifiers::FirstOrderModelIG( this, d_te->getModelNotify(), c, "FirstOrderModelIG" );
+      d_model = new quantifiers::FirstOrderModelIG(
+          this, d_te->getModelNotify(), c, "FirstOrderModelIG");
       d_builder = new quantifiers::QModelBuilderDefault( c, this );
     }
   }else{
-    d_model = new quantifiers::FirstOrderModelIG( this, d_te->getModelNotify(), c, "FirstOrderModelIG" );
+    d_model = new quantifiers::FirstOrderModelIG(
+        this, d_te->getModelNotify(), c, "FirstOrderModelIG");
   }
 }
 

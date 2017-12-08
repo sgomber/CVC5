@@ -513,8 +513,7 @@ public:
    * model.  This should be called after a call to check( FULL_EFFORT )
    * for all theories with no conflicts and no lemmas added.
    */
-  virtual bool collectModelInfo( TheoryModel* m ){ return true; }
-
+  virtual bool collectModelInfo(TheoryModel* m) { return true; }
   /** if theories want to do something with model after building, do it here */
   virtual void postProcessModel( TheoryModel* m ){ }
   /**

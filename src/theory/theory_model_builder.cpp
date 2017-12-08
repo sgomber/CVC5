@@ -290,7 +290,8 @@ bool TheoryEngineModelBuilder::buildModel(Model* m)
   // Collect model info from the theories
   Trace("model-builder") << "TheoryEngineModelBuilder: Collect model info..."
                          << std::endl;
-  if( !d_te->collectModelInfo(tm) ){
+  if (!d_te->collectModelInfo(tm))
+  {
     return false;
   }
 
@@ -955,7 +956,8 @@ void TheoryEngineModelBuilder::assignFunction(TheoryModel* m, Node f)
     Node v = m->getRepresentative(un);
     Trace("model-builder") << "  Setting (" << simp << ") to (" << v << ")"
                            << endl;
-    if( !ufmt.setValue(m, simp, v) ){
+    if (!ufmt.setValue(m, simp, v))
+    {
       Trace("model-builder") << "  FAILED to set model value!" << std::endl;
     }
     default_v = v;

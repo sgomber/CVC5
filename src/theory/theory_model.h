@@ -73,108 +73,118 @@ class TheoryModel : public Model
 {
   friend class TheoryEngineModelBuilder;
 public:
-  TheoryModel(theory::eq::EqualityEngineNotify* notify, context::Context* c, std::string name, bool enableFuncModels);
-  virtual ~TheoryModel() throw();
+ TheoryModel(theory::eq::EqualityEngineNotify* notify,
+             context::Context* c,
+             std::string name,
+             bool enableFuncModels);
+ virtual ~TheoryModel() throw();
 
-  /** reset the model */
-  virtual void reset();
-  /** is built
-   *
-   * Have we (attempted to) build this model since the last
-   * call to reset? Notice for model building techniques
-   * that are not guaranteed to succeed (such as
-   * when quantified formulas are enabled), a true return
-   * value does not imply that this is a model of the
-   * current assertions.
+ /** reset the model */
+ virtual void reset();
+ /** is built
+  *
+  * Have we (attempted to) build this model since the last
+  * call to reset? Notice for model building techniques
+  * that are not guaranteed to succeed (such as
+  * when quantified formulas are enabled), a true return
+  * value does not imply that this is a model of the
+  * current assertions.
+  */
+ bool isBuilt() { return d_modelBuilt; }
+ //---------------------------- for building the model
+ /** Adds a substitution from x to t. */
+ void addSubstitution(TNode x, TNode t, bool invalidateCache = true);
+ /** add term
+   *  This will do any model-specific processing necessary for n,
+   *  such as constraining the interpretation of uninterpreted functions,
+   *  and adding n to the equality engine of this model.
    */
-  bool isBuilt() { return d_modelBuilt; }
-  //---------------------------- for building the model
-  /** Adds a substitution from x to t. */
-  void addSubstitution(TNode x, TNode t, bool invalidateCache = true);
-  /** add term
-    *  This will do any model-specific processing necessary for n,
-    *  such as constraining the interpretation of uninterpreted functions,
-    *  and adding n to the equality engine of this model.
-    */
-  virtual void addTerm(TNode n);
-  /** assert equality holds in the model 
-   * 
-   * Returns true if the equality engine of this model is still consistent.
+ virtual void addTerm(TNode n);
+ /** assert equality holds in the model
+  *
+  * Returns true if the equality engine of this model is still consistent.
+  */
+ bool assertEquality(TNode a, TNode b, bool polarity);
+ /** assert predicate holds in the model
+  *
+  * Returns true if the equality engine of this model is still consistent.
+  */
+ bool assertPredicate(TNode a, bool polarity);
+ /** assert all equalities/predicates in equality engine hold in the model
+  *
+  * Returns true if the equality engine of this model is still consistent.
+  */
+ bool assertEqualityEngine(const eq::EqualityEngine* ee,
+                           std::set<Node>* termSet = NULL);
+ /** assert representative
+   *  This function tells the model that n should be the representative of its
+  * equivalence class.
+   *  It should be called during model generation, before final representatives
+  * are chosen.  In the
+   *  case of TheoryEngineModelBuilder, it should be called during Theory's
+  * collectModelInfo( ... )
+   *  functions.
    */
-  bool assertEquality(TNode a, TNode b, bool polarity);
-  /** assert predicate holds in the model
-   * 
-   * Returns true if the equality engine of this model is still consistent.
-   */
-  bool assertPredicate(TNode a, bool polarity);
-  /** assert all equalities/predicates in equality engine hold in the model
-   * 
-   * Returns true if the equality engine of this model is still consistent.
-   */
-  bool assertEqualityEngine(const eq::EqualityEngine* ee, std::set<Node>* termSet = NULL);
-  /** assert representative
-    *  This function tells the model that n should be the representative of its equivalence class.
-    *  It should be called during model generation, before final representatives are chosen.  In the
-    *  case of TheoryEngineModelBuilder, it should be called during Theory's collectModelInfo( ... )
-    *  functions.
-    */
-  void assertRepresentative(TNode n);
-  //---------------------------- end building the model
+ void assertRepresentative(TNode n);
+ //---------------------------- end building the model
 
-  // ------------------- general equality queries
-  /** does the equality engine of this model have term a? */
-  bool hasTerm(TNode a);
-  /** get the representative of a in the equality engine of this model */
-  Node getRepresentative(TNode a);
-  /** are a and b equal in the equality engine of this model? */
-  bool areEqual(TNode a, TNode b);
-  /** are a and b disequal in the equality engine of this model? */
-  bool areDisequal(TNode a, TNode b);
-  /** get the equality engine for this model */
-  eq::EqualityEngine* getEqualityEngine() { return d_equalityEngine; }
-  // ------------------- end general equality queries
+ // ------------------- general equality queries
+ /** does the equality engine of this model have term a? */
+ bool hasTerm(TNode a);
+ /** get the representative of a in the equality engine of this model */
+ Node getRepresentative(TNode a);
+ /** are a and b equal in the equality engine of this model? */
+ bool areEqual(TNode a, TNode b);
+ /** are a and b disequal in the equality engine of this model? */
+ bool areDisequal(TNode a, TNode b);
+ /** get the equality engine for this model */
+ eq::EqualityEngine* getEqualityEngine() { return d_equalityEngine; }
+ // ------------------- end general equality queries
 
-  /** Get value function.
-   * This should be called only after a ModelBuilder
-   * has called buildModel(...) on this model.
-   *   useDontCares is whether to return Node::null() if
-   *     n does not occur in the equality engine.
-   */
-  Node getValue(TNode n, bool useDontCares = false) const;
-  /** get comments */
-  void getComments(std::ostream& out) const;
+ /** Get value function.
+  * This should be called only after a ModelBuilder
+  * has called buildModel(...) on this model.
+  *   useDontCares is whether to return Node::null() if
+  *     n does not occur in the equality engine.
+  */
+ Node getValue(TNode n, bool useDontCares = false) const;
+ /** get comments */
+ void getComments(std::ostream& out) const;
 
-  //---------------------------- separation logic
-  /** set the heap and value sep.nil is equal to */
-  void setHeapModel(Node h, Node neq);
-  /** get the heap and value sep.nil is equal to */
-  bool getHeapModel(Expr& h, Expr& neq) const;
-  //---------------------------- end separation logic
+ //---------------------------- separation logic
+ /** set the heap and value sep.nil is equal to */
+ void setHeapModel(Node h, Node neq);
+ /** get the heap and value sep.nil is equal to */
+ bool getHeapModel(Expr& h, Expr& neq) const;
+ //---------------------------- end separation logic
 
-  /** get the representative set object */
-  const RepSet* getRepSet() const { return &d_rep_set; }
-  /** get the representative set object (FIXME: remove this, see #1199) */
-  RepSet* getRepSetPtr() { return &d_rep_set; }
-  /** return whether this node is a don't-care */
-  bool isDontCare(Expr expr) const;
-  /** get value function for Exprs. */
-  Expr getValue( Expr expr ) const;
-  /** get cardinality for sort */
-  Cardinality getCardinality( Type t ) const;
-  /** print representative debug function */
-  void printRepresentativeDebug( const char* c, Node r );
-  /** print representative function */
-  void printRepresentative( std::ostream& out, Node r );
+ /** get the representative set object */
+ const RepSet* getRepSet() const { return &d_rep_set; }
+ /** get the representative set object (FIXME: remove this, see #1199) */
+ RepSet* getRepSetPtr() { return &d_rep_set; }
+ /** return whether this node is a don't-care */
+ bool isDontCare(Expr expr) const;
+ /** get value function for Exprs. */
+ Expr getValue(Expr expr) const;
+ /** get cardinality for sort */
+ Cardinality getCardinality(Type t) const;
+ /** print representative debug function */
+ void printRepresentativeDebug(const char* c, Node r);
+ /** print representative function */
+ void printRepresentative(std::ostream& out, Node r);
 
-  //---------------------------- function values
-  /** a map from functions f to a list of all APPLY_UF terms with operator f */
-  std::map< Node, std::vector< Node > > d_uf_terms;
-  /** a map from functions f to a list of all HO_APPLY terms with first argument f */
-  std::map< Node, std::vector< Node > > d_ho_uf_terms;
-  /** assign function value f to definition f_def */
-  void assignFunctionDefinition( Node f, Node f_def );
-  /** have we assigned function f? */
-  bool hasAssignedFunctionDefinition( Node f ) const { return d_uf_models.find( f )!=d_uf_models.end(); }
+ //---------------------------- function values
+ /** a map from functions f to a list of all APPLY_UF terms with operator f */
+ std::map<Node, std::vector<Node> > d_uf_terms;
+ /** a map from functions f to a list of all HO_APPLY terms with first argument
+  * f */
+ std::map<Node, std::vector<Node> > d_ho_uf_terms;
+ /** assign function value f to definition f_def */
+ void assignFunctionDefinition(Node f, Node f_def);
+ /** have we assigned function f? */
+ bool hasAssignedFunctionDefinition(Node f) const
+ {
+   return d_uf_models.find(f) != d_uf_models.end(); }
   /** get the list of functions to assign. 
   * This list will contain all terms of function type that are terms in d_equalityEngine.
   * If higher-order is enabled, we ensure that this list is sorted by type size.

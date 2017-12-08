@@ -25,19 +25,28 @@ using namespace CVC4::context;
 namespace CVC4 {
 namespace theory {
 
-TheoryModel::TheoryModel(theory::eq::EqualityEngineNotify* notify, context::Context* c, std::string name, bool enableFuncModels) :
-  d_substitutions(c, false), d_modelBuilt(false), d_enableFuncModels(enableFuncModels)
+TheoryModel::TheoryModel(theory::eq::EqualityEngineNotify* notify,
+                         context::Context* c,
+                         std::string name,
+                         bool enableFuncModels)
+    : d_substitutions(c, false),
+      d_modelBuilt(false),
+      d_enableFuncModels(enableFuncModels)
 {
   d_true = NodeManager::currentNM()->mkConst( true );
   d_false = NodeManager::currentNM()->mkConst( false );
 
   d_eeContext = new context::Context();
-  if( notify!=nullptr ){
-    d_equalityEngine = new eq::EqualityEngine(*notify, d_eeContext, name, false);
-  }else{
+  if (notify != nullptr)
+  {
+    d_equalityEngine =
+        new eq::EqualityEngine(*notify, d_eeContext, name, false);
+  }
+  else
+  {
     d_equalityEngine = new eq::EqualityEngine(d_eeContext, name, false);
   }
-  
+
   // The kinds we are treating as function application in congruence
   d_equalityEngine->addFunctionKind(kind::APPLY_UF, false, options::ufHo());
   d_equalityEngine->addFunctionKind(kind::HO_APPLY);
@@ -336,7 +345,8 @@ void TheoryModel::addTerm(TNode n ){
 }
 
 /** assert equality */
-bool TheoryModel::assertEquality(TNode a, TNode b, bool polarity ){
+bool TheoryModel::assertEquality(TNode a, TNode b, bool polarity)
+{
   if (a == b && polarity) {
     return true;
   }
@@ -346,7 +356,8 @@ bool TheoryModel::assertEquality(TNode a, TNode b, bool polarity ){
 }
 
 /** assert predicate */
-bool TheoryModel::assertPredicate(TNode a, bool polarity ){
+bool TheoryModel::assertPredicate(TNode a, bool polarity)
+{
   if ((a == d_true && polarity) ||
       (a == d_false && (!polarity))) {
     return true;
@@ -362,7 +373,8 @@ bool TheoryModel::assertPredicate(TNode a, bool polarity ){
 }
 
 /** assert equality engine */
-bool TheoryModel::assertEqualityEngine(const eq::EqualityEngine* ee, set<Node>* termSet)
+bool TheoryModel::assertEqualityEngine(const eq::EqualityEngine* ee,
+                                       set<Node>* termSet)
 {
   eq::EqClassesIterator eqcs_i = eq::EqClassesIterator( ee );
   for (; !eqcs_i.isFinished(); ++eqcs_i) {
@@ -387,8 +399,10 @@ bool TheoryModel::assertEqualityEngine(const eq::EqualityEngine* ee, set<Node>* 
         continue;
       }
       if (predicate) {
-        if (predTrue || predFalse) {
-          if( !assertPredicate(*eqc_i, predTrue) ){
+        if (predTrue || predFalse)
+        {
+          if (!assertPredicate(*eqc_i, predTrue))
+          {
             return false;
           }
         }
@@ -400,7 +414,8 @@ bool TheoryModel::assertEqualityEngine(const eq::EqualityEngine* ee, set<Node>* 
           else {
             Trace("model-builder-assertions") << "(assert (= " << *eqc_i << " " << rep << "));" << endl;
             d_equalityEngine->mergePredicates(*eqc_i, rep, Node::null());
-            if(!d_equalityEngine->consistent()){
+            if (!d_equalityEngine->consistent())
+            {
               return false;
             }
           }
@@ -417,7 +432,8 @@ bool TheoryModel::assertEqualityEngine(const eq::EqualityEngine* ee, set<Node>* 
           first = false;
         }
         else {
-          if( !assertEquality(*eqc_i, rep, true) ){
+          if (!assertEquality(*eqc_i, rep, true))
+          {
             return false;
           }
         }
