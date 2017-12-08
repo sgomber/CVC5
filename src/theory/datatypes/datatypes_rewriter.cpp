@@ -265,7 +265,7 @@ RewriteResponse DatatypesRewriter::rewriteSelector(TNode in)
               {
                 zcount[tx]++;
               }
-              // we do not revisit nodes that have the same type as top
+              // we cannot loop into the type itself
               if( tx!=t )
               {
                 visit.push_back(cur[i]);
@@ -352,8 +352,7 @@ RewriteResponse DatatypesRewriter::rewriteSelector(TNode in)
       if( options::dtCompressSelectors() && !Datatype::isCompressed( in.toExpr() ) )
       {
         Trace("compress-sel-rew") << "Compress : " << in << std::endl;
-        // in[0] should be a compressed selector chain    
-        
+        // in[0] should be a compressed selector chain
         
         unsigned k = Datatype::sharedSelectorIndex(selector.toExpr());
         
@@ -363,6 +362,7 @@ RewriteResponse DatatypesRewriter::rewriteSelector(TNode in)
         Type parent_t = parent.getType().toType();
         while( !parent.isNull() && parent.getKind()==kind::APPLY_SELECTOR_TOTAL )
         {
+          Assert( Datatype::isCompressed( parent.getOperator().toExpr() ) );
           // get the child
           Node child = parent[0];
           Type child_t = child.getType().toType();
@@ -376,6 +376,7 @@ RewriteResponse DatatypesRewriter::rewriteSelector(TNode in)
           {
             cand_zsel = NodeManager::currentNM()->mkNode( kind::APPLY_SELECTOR_TOTAL, Node::fromExpr( z ), child );
           }
+          // we cannot loop into the type itself
           if( child_t==t )
           {
             parent = Node::null();
@@ -386,6 +387,7 @@ RewriteResponse DatatypesRewriter::rewriteSelector(TNode in)
             parent_t = child_t;
           }
         }
+        Trace("compress-sel-rew") << "...return " << cand_zsel << std::endl;
         Assert( !cand_zsel.isNull() );
         return RewriteResponse(REWRITE_DONE, cand_zsel);
       }
