@@ -613,6 +613,11 @@ public:
    * always the first index.)
    */
   static size_t cindexOf(Expr item) CVC4_PUBLIC;
+  
+  /**
+   * This method returns true if item is a compressed selector.
+   */
+  static bool isCompressed(Expr item) CVC4_PUBLIC;
 
   /** The type for iterators over constructors. */
   typedef DatatypeConstructorIterator iterator;
@@ -988,9 +993,25 @@ public:
   mutable int d_well_founded;
   /** cache of ground term for this datatype */
   mutable std::map<Type, Expr> d_ground_term;
-  /** cache of shared selectors for this datatype */
-  mutable std::map<Type, std::map<Type, std::map<unsigned, Expr> > >
-      d_shared_sel;
+  /** selector info 
+   * 
+   * This stores information about the selectors of this datatype.
+   */
+  class SelectorInfo
+  {
+  public:
+    SelectorInfo() : d_computed_compress(false) {}
+    /** cache of shared selectors for this datatype */
+    std::map<Type, std::map<unsigned, Expr> > d_shared_sel;
+    /** whether we have computed compressed selectors */
+    bool d_computed_compress;
+    /** cache of compressed selectors for this datatype */
+    std::vector< Expr > d_compress_sel;
+    /** cache of shared selectors to compressed selectors */
+    std::map< Type, std::map< Type, Expr > > d_compression_map;
+  };
+  /** selector information for each instantiation of this datatype */
+  mutable std::map< Type, SelectorInfo > d_sinfo;
 
   /**
    * Datatypes refer to themselves, recursively, and we have a
@@ -1056,6 +1077,20 @@ public:
    * this returns the term sel_{dtt}^{t,index}.
    */
   Expr getSharedSelector(Type dtt, Type t, unsigned index) const;
+  /** Get the compressed selector
+   * 
+   * The returns the index^th (path-agnotic) selector for type t. The type dtt 
+   * is the datatype type whose datatype is this class, where this may
+   * be an instantiated parametric datatype.
+   * 
+   * In the terminology of "Datatypes with Shared Selectors",
+   * this returns the term z_{dtt}^{t,index}.
+   */
+  Expr getCompressedSelector(Type dtt, Type t, unsigned index) const;
+  /** compute compressed selectors
+   * 
+   */
+  void computeCompressedSelectors(Type dtt);
 };/* class Datatype */
 
 /**

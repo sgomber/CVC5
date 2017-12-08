@@ -31,6 +31,8 @@ option dtBlastSplits --dt-blast-splits bool :default false
  when applicable, blast splitting lemmas for all variables at once
 option dtSharedSelectors --dt-share-sel bool :default true
  internally use shared selectors across multiple constructors
+option dtCompressSelectors --dt-compress-sel bool :default false
+ internally use compressed selectors
  
 option sygusSymBreak --sygus-sym-break bool :default true
   simple sygus sym break lemmas

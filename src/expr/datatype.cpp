@@ -38,6 +38,7 @@ namespace expr {
   namespace attr {
     struct DatatypeIndexTag {};
     struct DatatypeConsIndexTag {};
+    struct DatatypeSelCompressedTag {};
     struct DatatypeFiniteTag {};
     struct DatatypeFiniteComputedTag {};
     struct DatatypeUFiniteTag {};
@@ -47,6 +48,7 @@ namespace expr {
 
 typedef expr::Attribute<expr::attr::DatatypeIndexTag, uint64_t> DatatypeIndexAttr;
 typedef expr::Attribute<expr::attr::DatatypeConsIndexTag, uint64_t> DatatypeConsIndexAttr;
+typedef expr::Attribute<expr::attr::DatatypeSelCompressedTag, bool> DatatypeSelCompressedAttr;
 typedef expr::Attribute<expr::attr::DatatypeFiniteTag, bool> DatatypeFiniteAttr;
 typedef expr::Attribute<expr::attr::DatatypeFiniteComputedTag, bool> DatatypeFiniteComputedAttr;
 typedef expr::Attribute<expr::attr::DatatypeUFiniteTag, bool> DatatypeUFiniteAttr;
@@ -98,6 +100,15 @@ size_t Datatype::cindexOf(Expr item) {
     Assert(n.hasAttribute(DatatypeConsIndexAttr()));
     return n.getAttribute(DatatypeConsIndexAttr());
   }
+}
+
+bool Datatype::isCompressed(Expr item) {
+  ExprManagerScope ems(item);
+  PrettyCheckArgument(item.getType().isSelector(),
+                item,
+                "arg must be a datatype selector");
+  TNode n = Node::fromExpr(item);
+  return n.getAttribute(DatatypeSelCompressedAttr());
 }
 
 void Datatype::resolve(ExprManager* em,
@@ -611,10 +622,10 @@ const DatatypeConstructor& Datatype::operator[](std::string name) const {
 
 Expr Datatype::getSharedSelector( Type dtt, Type t, unsigned index ) const{
   PrettyCheckArgument(isResolved(), this, "this datatype is not yet resolved");
-  std::map< Type, std::map< Type, std::map< unsigned, Expr > > >::iterator itd = d_shared_sel.find( dtt );
-  if( itd!=d_shared_sel.end() ){
-    std::map< Type, std::map< unsigned, Expr > >::iterator its = itd->second.find( t );
-    if( its!=itd->second.end() ){
+  std::map< Type, SelectorInfo >::iterator itd = d_sinfo.find( dtt );
+  if( itd!=d_sinfo.end() ){
+    std::map< Type, std::map< unsigned, Expr > >::iterator its = itd->second.d_shared_sel.find( t );
+    if( its!=itd->second.d_shared_sel.end() ){
       std::map< unsigned, Expr >::iterator it = its->second.find( index );
       if( it!=its->second.end() ){
         return it->second;
@@ -627,10 +638,227 @@ Expr Datatype::getSharedSelector( Type dtt, Type t, unsigned index ) const{
   std::stringstream ss;
   ss << "sel_" << index;
   s = nm->mkSkolem(ss.str(), nm->mkSelectorType(TypeNode::fromType(dtt), TypeNode::fromType(t)), "is a shared selector", NodeManager::SKOLEM_NO_NOTIFY).toExpr();
-  d_shared_sel[dtt][t][index] = s;
+  d_sinfo[dtt].d_shared_sel[t][index] = s;
   Trace("dt-shared-sel") << "Made " << s << " of type " << dtt << " -> " << t << std::endl;
   return s; 
 }
+
+Expr Datatype::getCompressedSelector(Type dtt, Type t, unsigned index) const {
+  PrettyCheckArgument(isResolved(), this, "this datatype is not yet resolved");
+  Expr s;
+
+  return s;
+}
+
+void Datatype::computeCompressedSelectors(Type dtt) 
+{
+  if( !d_sinfo[dtt].d_computed_compress ){
+    
+    TypeNode dttn = TypeNode::fromType( dtt );
+    
+    // We compute d_sinfo[dtt].d_compress_sel
+    //   and
+    // For each connected datatype D to this one, with type dtt', we ensure that
+    //   For each shared selector S belonging to D,
+    //     D.d_sinfo[dtt'].d_compression_map[dtt][S] is populated
+    
+    SelectorInfo& si = d_sinfo[dtt];
+    
+    // ------------------compute the graph
+    // nodes of the graph
+    std::vector< TypeNode > g_dtt;
+    // edges of the graph : stores max # of child fields
+    std::map< TypeNode, std::map< TypeNode, unsigned > > g_e;
+    // siblings on paths from dtt to the domain
+    std::map<TypeNode, std::unordered_set< TypeNode, TypeNodeHashFunction > > siblings;
+    unsigned count = 0;
+    g_dtt.push_back( dttn );
+    while( count<g_dtt.size() )
+    {
+      TypeNode curr = g_dtt[count];
+      count++;
+      if( curr.isDatatype() )
+      {
+        const Datatype& dcurr = static_cast<DatatypeType>(curr.toType()).getDatatype();
+        for( unsigned i=0, size = dcurr.getNumConstructors(); i<size; i++ )
+        {
+          const DatatypeConstructor& dc = dcurr[i];
+          std::map< TypeNode, unsigned > child_count;
+          TypeNode ctype = TypeNode::fromType( dc.getSpecializedConstructorType(curr.toType()) );
+          for( unsigned j=0, size2 = ctype.getNumChildren(); j<size2-1; j++ ){
+            TypeNode tn = ctype[j];
+            child_count[tn]++;
+            // add to nodes if not allocated
+            if( std::find( g_dtt.begin(), g_dtt.end(), tn )==g_dtt.end() )
+            {
+              g_dtt.push_back( tn );
+            }
+          }
+          // for each outgoing type from curr
+          for( std::pair< const TypeNode, unsigned >& cc : child_count )
+          {
+            // add to siblings
+            for( std::pair< const TypeNode, unsigned >& cs : child_count )
+            {
+              siblings[cc.first].insert( cs.first );
+            }
+            if( cc.second>1 )
+            {
+              siblings[cc.first].insert( cc.first );
+            }
+            // add weighted edge
+            if( cc.second>g_e[curr][cc.first] )
+            {
+              g_e[curr][cc.first] = cc.second;
+            }
+          }
+        }
+      }
+    }
+    
+    //------------------ compute siblings map
+    bool success;
+    do
+    {
+      success = false;
+      for( unsigned i=0, size = g_dtt.size(); i<size; i++ )
+      {
+        TypeNode ti = g_dtt[i];
+        std::map< TypeNode, std::unordered_set< TypeNode, TypeNodeHashFunction > >::iterator its = siblings.find( ti );
+        std::map< TypeNode, std::map< TypeNode, unsigned > >::iterator itg = g_e.find( ti );
+        if( its!=siblings.end() && itg!=g_e.end() )
+        {
+          // for all outgoing edges 
+          for( std::pair< const TypeNode, unsigned >& e : itg->second )
+          {
+            TypeNode tx = e.first;
+            // push siblings of ti to siblings of tx
+            std::unordered_set< TypeNode, TypeNodeHashFunction >& sx = siblings[tx];
+            for( const TypeNode& s : its->second )
+            {
+              if( sx.find( s )==sx.end() )
+              {
+                sx.insert( s );
+                success = true;
+              }
+            }
+          }
+        }
+      }
+    }while( success );
+    
+    //-------------------- compute compression map
+    // the total number of compressed selectors for all return types
+    unsigned tot_index = 0;
+    // compressed selectors with return type domain
+    std::map< TypeNode, std::vector< Node > > compress_sel;
+    // for each of these selectors, a list of source nodes for it
+    std::map< Node, std::unordered_set< TypeNode, TypeNodeHashFunction > > csel_to_sources;
+    // for each edge in the graph
+    for( unsigned i=0, size = g_dtt.size(); i<size; i++ )
+    {
+      TypeNode ti = g_dtt[i];
+      std::map< TypeNode, std::unordered_set< TypeNode, TypeNodeHashFunction > >::iterator its = siblings.find( ti );
+      std::map< TypeNode, std::map< TypeNode, unsigned > >::iterator itg = g_e.find( ti );
+      if( itg!=g_e.end() )
+      {
+        for( std::pair< const TypeNode, unsigned > e : itg->second )
+        {
+          TypeNode tx = e.first;
+          unsigned m = e.second;
+          std::unordered_set< TypeNode, TypeNodeHashFunction >& sib_ti = its->second;
+          
+          // compute the set of nodes that are reachable from sib_ti that do not pass through dttn
+          std::vector< TypeNode > reach( sib_ti.begin(), sib_ti.end() );
+          unsigned rcount = 0;
+          while( rcount<reach.size() )
+          {
+            TypeNode t1 = reach[rcount];
+            rcount++;
+            if( t1!=dttn )
+            {
+              std::map< TypeNode, std::map< TypeNode, unsigned > >::iterator itgc = g_e.find( t1 );
+              if( itgc!=g_e.end() )
+              {
+                for( std::pair< const TypeNode, unsigned >& re : itgc->second )
+                {
+                  TypeNode t2 = re.first;
+                  if( t2!=dttn )
+                  {
+                    if( std::find( reach.begin(), reach.end(), t2 )==reach.end() )
+                    {
+                      reach.push_back( t2 );
+                    }
+                  }
+                }
+              }
+            }
+          }
+          // if siblings of paths to this node cannot reach this node, we can assign a compressed selector at this edge
+          if( std::find( reach.begin(), reach.end(), ti )==reach.end() )
+          {
+            // allocate m compressed selectors
+            int alloc = m;
+            unsigned cs_index = 0;
+            while( alloc>=0 )
+            {
+              Node csel;
+              if( cs_index<compress_sel[tx].size() )
+              {
+                // can we allocate the compressed selector at this index?
+                csel = compress_sel[tx][cs_index];
+                std::unordered_set< TypeNode, TypeNodeHashFunction >& csel_srcs = csel_to_sources[csel];
+                for(const TypeNode& src : csel_srcs )
+                {
+                  if( std::find( reach.begin(), reach.end(), src )!=reach.end() )
+                  {
+                    // cannot assign this compressed selector
+                    csel = Node::null();
+                    cs_index++;
+                    break;
+                  }
+                }
+              }
+              else
+              {
+                Assert( cs_index==compress_sel[tx].size() );
+                // allocate a new compressed selector
+                NodeManager* nm = NodeManager::fromExprManager( d_self.getExprManager() );
+                std::stringstream ss;
+                ss << "zel_" << tot_index;
+                tot_index++;
+                csel = nm->mkSkolem(ss.str(), nm->mkSelectorType(dttn, tx), "is a compressed selector", NodeManager::SKOLEM_NO_NOTIFY);
+                csel.setAttribute(DatatypeSelCompressedAttr(),true);
+                compress_sel[tx].push_back(csel);
+                si.d_compress_sel.push_back(csel.toExpr());
+                cs_index++;
+              }
+              
+              if( !csel.isNull() )
+              {
+                // assign to the compression map
+                //unsigned w_index = m-alloc;
+                // we index by the shared selector 
+                //Assert( ti.isDatatype() );
+                //const Datatype& dti = static_cast<DatatypeType>(ti).getDatatype();
+                //Expr ssel = dti.getSharedSelector(ti,tx,w_index);
+                //Expr csel = csel.toExpr();
+                si.d_compression_map[ti.toType()][tx.toType()] = csel.toExpr();
+                alloc--;
+                csel_to_sources[csel].insert( ti );
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    // set compute compress
+    si.d_computed_compress = true;
+  }
+}
+
+
 
 Expr Datatype::getConstructor(std::string name) const {
   return (*this)[name].getConstructor();
@@ -858,14 +1086,17 @@ Type DatatypeConstructor::getSpecializedConstructorType(Type returnType) const {
   PrettyCheckArgument(returnType.isDatatype(), this, "cannot get specialized constructor type for non-datatype type");
   ExprManagerScope ems(d_constructor);
   const Datatype& dt = Datatype::datatypeOf(d_constructor);
-  PrettyCheckArgument(dt.isParametric(), this, "this datatype constructor is not parametric");
-  DatatypeType dtt = dt.getDatatypeType();
-  Matcher m(dtt);
-  m.doMatching( TypeNode::fromType(dtt), TypeNode::fromType(returnType) );
-  vector<Type> subst;
-  m.getMatches(subst);
-  vector<Type> params = dt.getParameters();
-  return d_constructor.getType().substitute(params, subst);
+  if( dt.isParametric() ){
+    DatatypeType dtt = dt.getDatatypeType();
+    Matcher m(dtt);
+    m.doMatching( TypeNode::fromType(dtt), TypeNode::fromType(returnType) );
+    vector<Type> subst;
+    m.getMatches(subst);
+    vector<Type> params = dt.getParameters();
+    return d_constructor.getType().substitute(params, subst);
+  }else{
+    return d_constructor.getType();
+  }
 }
 
 Expr DatatypeConstructor::getTester() const {
@@ -1068,12 +1299,7 @@ Expr DatatypeConstructor::computeGroundTerm( Type t, std::vector< Type >& proces
 
 void DatatypeConstructor::computeSharedSelectors( Type domainType ) const {
   if( d_shared_selectors[domainType].size()<getNumArgs() ){
-    TypeNode ctype;
-    if( DatatypeType(domainType).isParametric() ){
-      ctype = TypeNode::fromType( getSpecializedConstructorType( domainType ) );
-    }else{
-      ctype = TypeNode::fromType( d_constructor.getType() );
-    }
+    TypeNode ctype = TypeNode::fromType( getSpecializedConstructorType( domainType ) );
     Assert( ctype.isConstructor() );
     Assert( ctype.getNumChildren()-1==getNumArgs() );
     //compute the shared selectors
