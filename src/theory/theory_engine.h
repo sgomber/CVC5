@@ -916,16 +916,18 @@ private:
   std::map<TNode, std::vector<TNode> > d_shared_terms_merge;
 
  public:
-
-  /**
-   * Set user attribute.
-   * This function is called when an attribute is set by a user.  In SMT-LIBv2 this is done
-   * via the syntax (! n :attr)
+  /** Set user attribute.
+   * 
+   * This function is called when an attribute is set by a user.  In SMT-LIBv2
+   * this is done via the syntax (! n :attr)
    */
-  void setUserAttribute(const std::string& attr, Node n, std::vector<Node>& node_values, std::string str_value);
+  void setUserAttribute(const std::string& attr,
+                        Node n,
+                        const std::vector<Node>& node_values,
+                        const std::string& str_value);
 
-  /**
-   * Handle user attribute.
+  /** Handle user attribute.
+   * 
    * Associates theory t with the attribute attr.  Theory t will be
    * notified whenever an attribute of name attr is set.
    */
@@ -937,7 +939,7 @@ private:
    */
   void checkTheoryAssertionsWithModel(bool hardFailure);
 
-private:
+ private:
   IntStat d_arithSubstitutionsAdded;
 
 };/* class TheoryEngine */

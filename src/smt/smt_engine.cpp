@@ -86,6 +86,7 @@
 #include "theory/arith/arith_msum.h"
 #include "theory/arith/pseudoboolean_proc.h"
 #include "theory/booleans/circuit_propagator.h"
+#include "theory/bv/bvgauss.h"
 #include "theory/bv/bvintropow2.h"
 #include "theory/bv/theory_bv_rewriter.h"
 #include "theory/logic_info.h"
@@ -185,6 +186,8 @@ public:
 };/* class AssertionPipeline */
 
 struct SmtEngineStatistics {
+  /** time spent in gaussian elimination */
+  TimerStat d_gaussElimTime;
   /** time spent in definition-expansion */
   TimerStat d_definitionExpansionTime;
   /** time spent in non-clausal simplification */
@@ -232,6 +235,7 @@ struct SmtEngineStatistics {
   ReferenceStat<uint64_t> d_resourceUnitsUsed;
 
   SmtEngineStatistics() :
+    d_gaussElimTime("smt::SmtEngine::gaussElimTime"),
     d_definitionExpansionTime("smt::SmtEngine::definitionExpansionTime"),
     d_nonclausalSimplificationTime("smt::SmtEngine::nonclausalSimplificationTime"),
     d_miplibPassTime("smt::SmtEngine::miplibPassTime"),
@@ -256,6 +260,7 @@ struct SmtEngineStatistics {
     d_resourceUnitsUsed("smt::SmtEngine::resourceUnitsUsed")
  {
 
+    smtStatisticsRegistry()->registerStat(&d_gaussElimTime);
     smtStatisticsRegistry()->registerStat(&d_definitionExpansionTime);
     smtStatisticsRegistry()->registerStat(&d_nonclausalSimplificationTime);
     smtStatisticsRegistry()->registerStat(&d_miplibPassTime);
@@ -281,6 +286,7 @@ struct SmtEngineStatistics {
   }
 
   ~SmtEngineStatistics() {
+    smtStatisticsRegistry()->unregisterStat(&d_gaussElimTime);
     smtStatisticsRegistry()->unregisterStat(&d_definitionExpansionTime);
     smtStatisticsRegistry()->unregisterStat(&d_nonclausalSimplificationTime);
     smtStatisticsRegistry()->unregisterStat(&d_miplibPassTime);
@@ -1304,6 +1310,11 @@ void SmtEngine::setDefaults() {
     {
       options::ceGuidedInst.set(true);
     }
+    // must use Ferrante/Rackoff for real arithmetic
+    if (!options::cbqiMidpoint.wasSetByUser())
+    {
+      options::cbqiMidpoint.set(true);
+    }
   }
 
   if(options::forceLogicString.wasSetByUser()) {
@@ -1427,9 +1438,10 @@ void SmtEngine::setDefaults() {
       if(options::bvIntroducePow2.wasSetByUser()) {
         throw OptionException("bv-intro-pow2 not supported with unsat cores");
       }
-      Notice() << "SmtEngine: turning off bv-introduce-pow2 to support unsat-cores" << endl;
+      Notice() << "SmtEngine: turning off bv-intro-pow2 to support unsat-cores" << endl;
       setOption("bv-intro-pow2", false);
     }
+
     if(options::repeatSimp()) {
       if(options::repeatSimp.wasSetByUser()) {
         throw OptionException("repeat-simp not supported with unsat cores");
@@ -1912,6 +1924,14 @@ void SmtEngine::setDefaults() {
     if( !options::cbqi.wasSetByUser() ){
       options::cbqi.set( true );
     }
+    // check whether we should apply full cbqi
+    if (d_logic.isPure(THEORY_BV))
+    {
+      if (!options::cbqiFullEffort.wasSetByUser())
+      {
+        options::cbqiFullEffort.set(true);
+      }
+    }
   }
   if( options::cbqi() ){
     //must rewrite divk
@@ -1931,8 +1951,11 @@ void SmtEngine::setDefaults() {
         options::instWhenMode.set( quantifiers::INST_WHEN_LAST_CALL );
       }
     }else{
-      //only supported in pure arithmetic
-      options::cbqiNestedQE.set(false);
+      // only supported in pure arithmetic or pure BV
+      if (d_logic.isPure(THEORY_BV))
+      {
+        options::cbqiNestedQE.set(false);
+      }
     }
   }
   //implied options...
@@ -2245,12 +2268,8 @@ CVC4::SExpr SmtEngine::getInfo(const std::string& key) const {
   }
 }
 
-void SmtEngine::defineFunction(Expr func,
-                               const std::vector<Expr>& formals,
-                               Expr formula) {
-  SmtScope smts(this);
-  doPendingPops();
-  Trace("smt") << "SMT defineFunction(" << func << ")" << endl;
+void SmtEngine::debugCheckFormals(const std::vector<Expr>& formals, Expr func)
+{
   for(std::vector<Expr>::const_iterator i = formals.begin(); i != formals.end(); ++i) {
     if((*i).getKind() != kind::BOUND_VARIABLE) {
       stringstream ss;
@@ -2261,25 +2280,13 @@ void SmtEngine::defineFunction(Expr func,
       throw TypeCheckingException(func, ss.str());
     }
   }
+}
 
-  stringstream ss;
-  ss << language::SetLanguage(language::SetLanguage::getLanguage(Dump.getStream()))
-     << func;
-  DefineFunctionCommand c(ss.str(), func, formals, formula);
-  addToModelCommandAndDump(c, ExprManager::VAR_FLAG_DEFINED, true, "declarations");
-
-
-  PROOF( if (options::checkUnsatCores()) {
-      d_defineCommands.push_back(c.clone());
-    });
-
-
-  // Substitute out any abstract values in formula
-  Expr form = d_private->substituteAbstractValues(Node::fromExpr(formula)).toExpr();
-
-  // type check body
-  Type formulaType = form.getType(options::typeChecking());
-
+void SmtEngine::debugCheckFunctionBody(Expr formula,
+                                       const std::vector<Expr>& formals,
+                                       Expr func)
+{
+  Type formulaType = formula.getType(options::typeChecking());
   Type funcType = func.getType();
   // We distinguish here between definitions of constants and functions,
   // because the type checking for them is subtly different.  Perhaps we
@@ -2308,6 +2315,36 @@ void SmtEngine::defineFunction(Expr func,
       throw TypeCheckingException(func, ss.str());
     }
   }
+}
+
+void SmtEngine::defineFunction(Expr func,
+                               const std::vector<Expr>& formals,
+                               Expr formula)
+{
+  SmtScope smts(this);
+  doPendingPops();
+  Trace("smt") << "SMT defineFunction(" << func << ")" << endl;
+  debugCheckFormals(formals, func);
+
+  stringstream ss;
+  ss << language::SetLanguage(
+            language::SetLanguage::getLanguage(Dump.getStream()))
+     << func;
+  DefineFunctionCommand c(ss.str(), func, formals, formula);
+  addToModelCommandAndDump(
+      c, ExprManager::VAR_FLAG_DEFINED, true, "declarations");
+
+  PROOF(if (options::checkUnsatCores()) {
+    d_defineCommands.push_back(c.clone());
+  });
+
+  // type check body
+  debugCheckFunctionBody(formula, formals, func);
+
+  // Substitute out any abstract values in formula
+  Expr form =
+      d_private->substituteAbstractValues(Node::fromExpr(formula)).toExpr();
+
   TNode funcNode = func.getTNode();
   vector<Node> formalsNodes;
   for(vector<Expr>::const_iterator i = formals.begin(),
@@ -2323,6 +2360,97 @@ void SmtEngine::defineFunction(Expr func,
   // d_haveAdditions = true;
   Debug("smt") << "definedFunctions insert " << funcNode << " " << formNode << endl;
   d_definedFunctions->insert(funcNode, def);
+}
+
+void SmtEngine::defineFunctionsRec(
+    const std::vector<Expr>& funcs,
+    const std::vector<std::vector<Expr> >& formals,
+    const std::vector<Expr>& formulas)
+{
+  SmtScope smts(this);
+  finalOptionsAreSet();
+  doPendingPops();
+  Trace("smt") << "SMT defineFunctionsRec(...)" << endl;
+
+  if (funcs.size() != formals.size() && funcs.size() != formulas.size())
+  {
+    stringstream ss;
+    ss << "Number of functions, formals, and function bodies passed to "
+          "defineFunctionsRec do not match:"
+       << "\n"
+       << "        #functions : " << funcs.size() << "\n"
+       << "        #arg lists : " << formals.size() << "\n"
+       << "  #function bodies : " << formulas.size() << "\n";
+    throw ModalException(ss.str());
+  }
+  for (unsigned i = 0, size = funcs.size(); i < size; i++)
+  {
+    // check formal argument list
+    debugCheckFormals(formals[i], funcs[i]);
+    // type check body
+    debugCheckFunctionBody(formulas[i], formals[i], funcs[i]);
+  }
+
+  if (Dump.isOn("raw-benchmark"))
+  {
+    Dump("raw-benchmark") << DefineFunctionRecCommand(funcs, formals, formulas);
+  }
+
+  ExprManager* em = getExprManager();
+  for (unsigned i = 0, size = funcs.size(); i < size; i++)
+  {
+    // we assert a quantified formula
+    Expr func_app;
+    // make the function application
+    if (formals[i].empty())
+    {
+      // it has no arguments
+      func_app = funcs[i];
+    }
+    else
+    {
+      std::vector<Expr> children;
+      children.push_back(funcs[i]);
+      children.insert(children.end(), formals[i].begin(), formals[i].end());
+      func_app = em->mkExpr(kind::APPLY_UF, children);
+    }
+    Expr lem = em->mkExpr(kind::EQUAL, func_app, formulas[i]);
+    if (!formals[i].empty())
+    {
+      // set the attribute to denote this is a function definition
+      std::string attr_name("fun-def");
+      Expr aexpr = em->mkExpr(kind::INST_ATTRIBUTE, func_app);
+      aexpr = em->mkExpr(kind::INST_PATTERN_LIST, aexpr);
+      std::vector<Expr> expr_values;
+      std::string str_value;
+      setUserAttribute(attr_name, func_app, expr_values, str_value);
+      // make the quantified formula
+      Expr boundVars = em->mkExpr(kind::BOUND_VAR_LIST, formals[i]);
+      lem = em->mkExpr(kind::FORALL, boundVars, lem, aexpr);
+    }
+    // assert the quantified formula
+    //   notice we don't call assertFormula directly, since this would
+    //   duplicate the output on raw-benchmark.
+    Expr e = d_private->substituteAbstractValues(Node::fromExpr(lem)).toExpr();
+    if (d_assertionList != NULL)
+    {
+      d_assertionList->push_back(e);
+    }
+    d_private->addFormula(e.getNode(), false);
+  }
+}
+
+void SmtEngine::defineFunctionRec(Expr func,
+                                  const std::vector<Expr>& formals,
+                                  Expr formula)
+{
+  std::vector<Expr> funcs;
+  funcs.push_back(func);
+  std::vector<std::vector<Expr> > formals_multi;
+  formals_multi.push_back(formals);
+  std::vector<Expr> formulas;
+  formulas.push_back(formula);
+  defineFunctionsRec(funcs, formals_multi, formulas);
 }
 
 bool SmtEngine::isDefinedFunction( Expr func ){
@@ -2805,6 +2933,8 @@ Node SmtEnginePrivate::realToInt(TNode n, NodeMap& cache, std::vector< Node >& v
         if( !n.getType().isInteger() ){
           ret = NodeManager::currentNM()->mkSkolem("__realToInt_var", NodeManager::currentNM()->integerType(), "Variable introduced in realToInt pass");
           var_eq.push_back( n.eqNode( ret ) );
+          TheoryModel* m = d_smt.d_theoryEngine->getModel();
+          m->addSubstitution(n,ret);
         }
       }
     }
@@ -3991,6 +4121,12 @@ void SmtEnginePrivate::processAssertions() {
   if (d_assertions.size() == 0) {
     // nothing to do
     return;
+  }
+
+  if(options::bvGaussElim())
+  {
+    TimerStat::CodeTimer gaussElimTimer(d_smt.d_stats->d_gaussElimTime);
+    theory::bv::BVGaussElim::gaussElimRewrite(d_assertions.ref());
   }
 
   if (d_assertionsProcessed && options::incrementalSolving()) {
@@ -5595,6 +5731,7 @@ void SmtEngine::reset() throw() {
 
 void SmtEngine::resetAssertions() throw() {
   SmtScope smts(this);
+  doPendingPops();
 
   Trace("smt") << "SMT resetAssertions()" << endl;
   if(Dump.isOn("benchmark")) {
@@ -5657,7 +5794,11 @@ void SmtEngine::safeFlushStatistics(int fd) const {
   d_statisticsRegistry->safeFlushInformation(fd);
 }
 
-void SmtEngine::setUserAttribute(const std::string& attr, Expr expr, std::vector<Expr> expr_values, std::string str_value) {
+void SmtEngine::setUserAttribute(const std::string& attr,
+                                 Expr expr,
+                                 const std::vector<Expr>& expr_values,
+                                 const std::string& str_value)
+{
   SmtScope smts(this);
   std::vector<Node> node_values;
   for( unsigned i=0; i<expr_values.size(); i++ ){

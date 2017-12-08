@@ -31,6 +31,7 @@ TheoryModel::TheoryModel(theory::eq::EqualityEngineNotify* notify,
                          bool enableFuncModels)
     : d_substitutions(c, false),
       d_modelBuilt(false),
+      d_modelBuiltSuccess(false),
       d_enableFuncModels(enableFuncModels)
 {
   d_true = NodeManager::currentNM()->mkConst( true );
@@ -66,6 +67,7 @@ TheoryModel::~TheoryModel() throw() {
 
 void TheoryModel::reset(){
   d_modelBuilt = false;
+  d_modelBuiltSuccess = false;
   d_modelCache.clear();
   d_comment_str.clear();
   d_sep_heap = Node::null();
@@ -315,7 +317,8 @@ void TheoryModel::addSubstitution( TNode x, TNode t, bool invalidateCache ){
 }
 
 /** add term */
-void TheoryModel::addTerm(TNode n ){
+void TheoryModel::addTermInternal(TNode n)
+{
   Assert(d_equalityEngine->hasTerm(n));
   Trace("model-builder-debug2") << "TheoryModel::addTerm : " << n << std::endl;
   //must collect UF terms
@@ -347,6 +350,7 @@ void TheoryModel::addTerm(TNode n ){
 /** assert equality */
 bool TheoryModel::assertEquality(TNode a, TNode b, bool polarity)
 {
+  Assert(d_equalityEngine->consistent());
   if (a == b && polarity) {
     return true;
   }
@@ -358,6 +362,7 @@ bool TheoryModel::assertEquality(TNode a, TNode b, bool polarity)
 /** assert predicate */
 bool TheoryModel::assertPredicate(TNode a, bool polarity)
 {
+  Assert(d_equalityEngine->consistent());
   if ((a == d_true && polarity) ||
       (a == d_false && (!polarity))) {
     return true;
@@ -376,6 +381,7 @@ bool TheoryModel::assertPredicate(TNode a, bool polarity)
 bool TheoryModel::assertEqualityEngine(const eq::EqualityEngine* ee,
                                        set<Node>* termSet)
 {
+  Assert(d_equalityEngine->consistent());
   eq::EqClassesIterator eqcs_i = eq::EqClassesIterator( ee );
   for (; !eqcs_i.isFinished(); ++eqcs_i) {
     Node eqc = (*eqcs_i);
@@ -443,10 +449,11 @@ bool TheoryModel::assertEqualityEngine(const eq::EqualityEngine* ee,
   return true;
 }
 
-void TheoryModel::assertRepresentative(TNode n )
+void TheoryModel::assertSkeleton(TNode n)
 {
-  Trace("model-builder-reps") << "Assert rep : " << n << std::endl;
-  Trace("model-builder-reps") << "Rep eqc is : " << getRepresentative( n ) << std::endl;
+  Trace("model-builder-reps") << "Assert skeleton : " << n << std::endl;
+  Trace("model-builder-reps") << "...rep eqc is : " << getRepresentative(n)
+                              << std::endl;
   d_reps[ n ] = n;
 }
 
@@ -536,6 +543,7 @@ void TheoryModel::assignFunctionDefinition( Node f, Node f_def ) {
 
   if( options::ufHo() ){
     Trace("model-builder-debug") << "  ...function is first-class member of equality engine" << std::endl;
+    Assert(d_equalityEngine->hasTerm(f));
     // assign to representative if higher-order
     Node r = d_equalityEngine->getRepresentative( f );
     //always replace the representative, since it is initially assigned to itself

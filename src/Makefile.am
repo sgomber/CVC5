@@ -36,7 +36,6 @@ libcvc4_la_SOURCES = \
 	git_versioninfo.cpp \
 	svn_versioninfo.cpp \
 	context/backtrackable.h \
-	context/cdchunk_list.h \
 	context/cddense_set.h \
 	context/cdhashmap.h \
 	context/cdhashmap_forward.h \
@@ -67,6 +66,8 @@ libcvc4_la_SOURCES = \
 	printer/dagification_visitor.h \
 	printer/printer.cpp \
 	printer/printer.h \
+	printer/sygus_print_callback.cpp \
+	printer/sygus_print_callback.h \
 	printer/ast/ast_printer.cpp \
 	printer/ast/ast_printer.h \
 	printer/cvc/cvc_printer.cpp \
@@ -304,6 +305,8 @@ libcvc4_la_SOURCES = \
 	theory/bv/bv_subtheory_inequality.h \
 	theory/bv/bv_to_bool.cpp \
 	theory/bv/bv_to_bool.h \
+	theory/bv/bvgauss.cpp \
+	theory/bv/bvgauss.h \
 	theory/bv/bvintropow2.cpp \
 	theory/bv/bvintropow2.h \
 	theory/bv/cd_set_collection.h \
@@ -325,6 +328,7 @@ libcvc4_la_SOURCES = \
 	theory/bv/theory_bv_utils.cpp \
 	theory/bv/theory_bv_utils.h \
 	theory/bv/type_enumerator.h \
+	theory/datatypes/datatypes_rewriter.cpp \
 	theory/datatypes/datatypes_rewriter.h \
 	theory/datatypes/datatypes_sygus.cpp \
 	theory/datatypes/datatypes_sygus.h \
@@ -393,8 +397,12 @@ libcvc4_la_SOURCES = \
 	theory/quantifiers/fun_def_process.h \
 	theory/quantifiers/ho_trigger.cpp \
 	theory/quantifiers/ho_trigger.h \
+	theory/quantifiers/instantiate.cpp \
+	theory/quantifiers/instantiate.h \
 	theory/quantifiers/inst_match.cpp \
 	theory/quantifiers/inst_match.h \
+	theory/quantifiers/inst_match_trie.cpp \
+	theory/quantifiers/inst_match_trie.h \
 	theory/quantifiers/inst_match_generator.cpp \
 	theory/quantifiers/inst_match_generator.h \
 	theory/quantifiers/inst_propagator.cpp \
@@ -445,6 +453,8 @@ libcvc4_la_SOURCES = \
 	theory/quantifiers/sygus_invariance.h \
 	theory/quantifiers/sygus_grammar_cons.cpp \
 	theory/quantifiers/sygus_grammar_cons.h \
+	theory/quantifiers/sygus_grammar_norm.cpp \
+	theory/quantifiers/sygus_grammar_norm.h \
 	theory/quantifiers/sygus_process_conj.cpp \
 	theory/quantifiers/sygus_process_conj.h \
 	theory/quantifiers/symmetry_breaking.cpp \
