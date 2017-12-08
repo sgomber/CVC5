@@ -92,6 +92,8 @@ public:
  static bool checkClash(Node n1, Node n2, std::vector<Node>& rew);
 
 private:
+ /** get return arbitrary value */
+ static Node getArbitraryValue(TypeNode tn);
  /** rewrite constructor term in */
  static RewriteResponse rewriteConstructor(TNode in);
  /** rewrite selector term in */
@@ -115,6 +117,7 @@ private:
                              Node orig,
                              TypeNode orig_tn,
                              unsigned depth);
+ 
 };/* class DatatypesRewriter */
 
 }/* CVC4::theory::datatypes namespace */

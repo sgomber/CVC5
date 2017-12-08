@@ -225,89 +225,204 @@ RewriteResponse DatatypesRewriter::rewriteConstructor(TNode in)
 
 RewriteResponse DatatypesRewriter::rewriteSelector(TNode in)
 {
+  TNode selector = in.getOperator();
+  const Datatype& dt = Datatype::datatypeOf(selector.toExpr());
   if (in[0].getKind() == kind::APPLY_CONSTRUCTOR)
   {
-    // Have to be careful not to rewrite well-typed expressions
-    // where the selector doesn't match the constructor,
-    // e.g. "pred(zero)".
-    TypeNode tn = in.getType();
-    TypeNode argType = in[0].getType();
-    TNode selector = in.getOperator();
-    TNode constructor = in[0].getOperator();
-    size_t constructorIndex = Datatype::indexOf(constructor.toExpr());
-    const Datatype& dt = Datatype::datatypeOf(selector.toExpr());
-    const DatatypeConstructor& c = dt[constructorIndex];
-    Trace("datatypes-rewrite-debug") << "Rewriting collapsable selector : "
-                                     << in;
-    Trace("datatypes-rewrite-debug") << ", cindex = " << constructorIndex
-                                     << ", selector is " << selector
-                                     << std::endl;
-    int selectorIndex = c.getSelectorIndexInternal(selector.toExpr());
-    Trace("datatypes-rewrite-debug") << "Internal selector index is "
-                                     << selectorIndex << std::endl;
-    if (selectorIndex >= 0)
+    if( options::dtCompressSelectors() && Datatype::isCompressed( in.toExpr() ) )
     {
-      Assert(selectorIndex < (int)c.getNumArgs());
-      if (dt.isCodatatype() && in[0][selectorIndex].isConst())
+      Trace("compress-sel-rew") << "Decompress : " << in << std::endl;
+      // look for a parent -> child edge that is labelled in 
+      // the compression map with the compressed selector
+      Expr z = in.toExpr();
+      
+      Type t = in[0].getType().toType();
+      
+      std::unordered_set<TNode, TNodeHashFunction> visited;
+      std::vector<TNode> visit;
+      TNode cur;
+      visit.push_back(in[0]);
+      do {
+        cur = visit.back();
+        visit.pop_back();
+
+        if (visited.find(cur) == visited.end()) {
+          visited.insert(cur);
+          Type ti = cur.getType().toType();
+          // only recurse if also a constructor
+          if( cur.getKind()==kind::APPLY_CONSTRUCTOR )
+          {
+            std::map< Type, unsigned > zcount;
+            for (unsigned i = 0; i < cur.getNumChildren(); i++) {
+              Type tx = cur[i].getType().toType();
+              Expr zlabel = dt.getCompressedSelector( t, ti, tx, zcount[tx] );  
+              if( zlabel==z )
+              {
+                Trace("compress-sel-rew") << "...return " << cur[i] << std::endl;
+                return RewriteResponse(REWRITE_DONE, cur[i]);
+              }
+              else if( !zlabel.isNull() )
+              {
+                zcount[tx]++;
+              }
+              // we do not revisit nodes that have the same type as top
+              if( tx!=t )
+              {
+                visit.push_back(cur[i]);
+              }
+            }
+          }
+        }
+      } while (!visit.empty());
+      
+      // in the case we are a constant, then it is unspecified but
+      // we must return an arbitrary value, since by our semantics we are
+      // guaranteed that the compressed selector is undefined
+      if( in[0].isConst() )
       {
-        // must replace all debruijn indices with self
-        Node sub = replaceDebruijn(in[0][selectorIndex], in[0], argType, 0);
-        Trace("datatypes-rewrite") << "DatatypesRewriter::postRewrite: "
-                                   << "Rewrite trivial codatatype selector "
-                                   << in << " to " << sub << std::endl;
-        if (sub != in)
+        Node gt = getArbitraryValue( TypeNode::fromType( t ) );
+        if( !gt.isNull() )
         {
-          return RewriteResponse(REWRITE_AGAIN_FULL, sub);
+          Trace("compress-sel-rew") << "...return arbitrary term " << gt << std::endl;
+          return RewriteResponse(REWRITE_DONE, gt);
         }
       }
-      else
-      {
-        Trace("datatypes-rewrite") << "DatatypesRewriter::postRewrite: "
-                                   << "Rewrite trivial selector " << in
-                                   << std::endl;
-        return RewriteResponse(REWRITE_DONE, in[0][selectorIndex]);
-      }
+      Trace("compress-sel-rew") << "...no rewrite" << std::endl;
     }
     else
     {
-      Node gt;
-      bool useTe = true;
-      // if( !tn.isSort() ){
-      //  useTe = false;
-      //}
-      if (tn.isDatatype())
+      // Have to be careful not to rewrite well-typed expressions
+      // where the selector doesn't match the constructor,
+      // e.g. "pred(zero)".
+      TypeNode tn = in.getType();
+      TypeNode argType = in[0].getType();
+      TNode constructor = in[0].getOperator();
+      size_t constructorIndex = Datatype::indexOf(constructor.toExpr());
+      const DatatypeConstructor& c = dt[constructorIndex];
+      Trace("datatypes-rewrite-debug") << "Rewriting collapsable selector : "
+                                      << in;
+      Trace("datatypes-rewrite-debug") << ", cindex = " << constructorIndex
+                                      << ", selector is " << selector
+                                      << std::endl;
+      int selectorIndex = c.getSelectorIndexInternal(selector.toExpr());
+      Trace("datatypes-rewrite-debug") << "Internal selector index is "
+                                      << selectorIndex << std::endl;
+      if (selectorIndex >= 0)
       {
-        const Datatype& dta = ((DatatypeType)(tn).toType()).getDatatype();
-        useTe = !dta.isCodatatype();
-      }
-      if (useTe)
-      {
-        TypeEnumerator te(tn);
-        gt = *te;
+        Assert(selectorIndex < (int)c.getNumArgs());
+        if (dt.isCodatatype() && in[0][selectorIndex].isConst())
+        {
+          // must replace all debruijn indices with self
+          Node sub = replaceDebruijn(in[0][selectorIndex], in[0], argType, 0);
+          Trace("datatypes-rewrite") << "DatatypesRewriter::postRewrite: "
+                                    << "Rewrite trivial codatatype selector "
+                                    << in << " to " << sub << std::endl;
+          if (sub != in)
+          {
+            return RewriteResponse(REWRITE_AGAIN_FULL, sub);
+          }
+        }
+        else
+        {
+          Trace("datatypes-rewrite") << "DatatypesRewriter::postRewrite: "
+                                    << "Rewrite trivial selector " << in
+                                    << std::endl;
+          return RewriteResponse(REWRITE_DONE, in[0][selectorIndex]);
+        }
       }
       else
       {
-        gt = tn.mkGroundTerm();
-      }
-      if (!gt.isNull())
-      {
-        // Assert( gtt.isDatatype() || gtt.isParametricDatatype() );
-        if (tn.isDatatype() && !tn.isInstantiatedDatatype())
+        Node gt = getArbitraryValue( tn );
+        if( !gt.isNull()) 
         {
-          gt = NodeManager::currentNM()->mkNode(
-              kind::APPLY_TYPE_ASCRIPTION,
-              NodeManager::currentNM()->mkConst(AscriptionType(tn.toType())),
-              gt);
+          Trace("datatypes-rewrite") << "DatatypesRewriter::postRewrite: "
+                                     << "Rewrite trivial selector " << in
+                                     << " to distinguished ground term " << gt
+                                     << std::endl;
+          return RewriteResponse(REWRITE_DONE, gt);
         }
-        Trace("datatypes-rewrite") << "DatatypesRewriter::postRewrite: "
-                                   << "Rewrite trivial selector " << in
-                                   << " to distinguished ground term " << gt
-                                   << std::endl;
-        return RewriteResponse(REWRITE_DONE, gt);
+      }
+    }
+  }
+  else if( options::dtCompressSelectors() )
+  {
+    if( in[0].getKind()==kind::APPLY_SELECTOR_TOTAL )
+    {
+      // compress the chain
+      if( options::dtCompressSelectors() && !Datatype::isCompressed( in.toExpr() ) )
+      {
+        Trace("compress-sel-rew") << "Compress : " << in << std::endl;
+        // in[0] should be a compressed selector chain    
+        
+        
+        unsigned k = Datatype::sharedSelectorIndex(selector.toExpr());
+        
+        Type t = in[0].getType().toType();
+        Node cand_zsel;
+        Node parent = in[0];
+        Type parent_t = parent.getType().toType();
+        while( !parent.isNull() && parent.getKind()==kind::APPLY_SELECTOR_TOTAL )
+        {
+          // get the child
+          Node child = parent[0];
+          Type child_t = child.getType().toType();
+          
+          // k????
+          Expr z = dt.getCompressedSelector( t, parent_t, child_t, k );
+          if( !z.isNull() )
+          {
+            cand_zsel = NodeManager::currentNM()->mkNode( kind::APPLY_SELECTOR_TOTAL, Node::fromExpr( z ), child );
+          }
+          if( child_t==t )
+          {
+            parent = Node::null();
+          }
+          else 
+          {
+            parent = child;
+            parent_t = child_t;
+          }
+        }
+        Assert( !cand_zsel.isNull() );
+        return RewriteResponse(REWRITE_DONE, cand_zsel);
       }
     }
   }
   return RewriteResponse(REWRITE_DONE, in);
+}
+
+Node DatatypesRewriter::getArbitraryValue(TypeNode tn) 
+{
+  Node gt;
+  bool useTe = true;
+  // if( !tn.isSort() ){
+  //  useTe = false;
+  //}
+  if (tn.isDatatype())
+  {
+    const Datatype& dta = ((DatatypeType)(tn).toType()).getDatatype();
+    useTe = !dta.isCodatatype();
+  }
+  if (useTe)
+  {
+    TypeEnumerator te(tn);
+    gt = *te;
+  }
+  else
+  {
+    gt = tn.mkGroundTerm();
+  }
+  if( !gt.isNull() )
+  {
+    if (tn.isDatatype() && !tn.isInstantiatedDatatype())
+    {
+      gt = NodeManager::currentNM()->mkNode(
+          kind::APPLY_TYPE_ASCRIPTION,
+          NodeManager::currentNM()->mkConst(AscriptionType(tn.toType())),
+          gt);
+    }
+  }
+  return gt;
 }
 
 RewriteResponse DatatypesRewriter::rewriteTester(TNode in)

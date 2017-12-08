@@ -38,6 +38,7 @@ namespace expr {
   namespace attr {
     struct DatatypeIndexTag {};
     struct DatatypeConsIndexTag {};
+    struct DatatypeSharedSelIndexTag {};
     struct DatatypeSelCompressedTag {};
     struct DatatypeFiniteTag {};
     struct DatatypeFiniteComputedTag {};
@@ -48,6 +49,7 @@ namespace expr {
 
 typedef expr::Attribute<expr::attr::DatatypeIndexTag, uint64_t> DatatypeIndexAttr;
 typedef expr::Attribute<expr::attr::DatatypeConsIndexTag, uint64_t> DatatypeConsIndexAttr;
+typedef expr::Attribute<expr::attr::DatatypeSharedSelIndexTag, uint64_t> DatatypeSharedSelIndexAttr;
 typedef expr::Attribute<expr::attr::DatatypeSelCompressedTag, bool> DatatypeSelCompressedAttr;
 typedef expr::Attribute<expr::attr::DatatypeFiniteTag, bool> DatatypeFiniteAttr;
 typedef expr::Attribute<expr::attr::DatatypeFiniteComputedTag, bool> DatatypeFiniteComputedAttr;
@@ -100,6 +102,15 @@ size_t Datatype::cindexOf(Expr item) {
     Assert(n.hasAttribute(DatatypeConsIndexAttr()));
     return n.getAttribute(DatatypeConsIndexAttr());
   }
+}
+
+size_t Datatype::sharedSelectorIndex(Expr item) {
+  ExprManagerScope ems(item);
+  PrettyCheckArgument(item.getType().isSelector(),
+                item,
+                "arg must be a datatype selector");
+  TNode n = Node::fromExpr(item);
+  return n.getAttribute(DatatypeSharedSelIndexAttr());
 }
 
 bool Datatype::isCompressed(Expr item) {
@@ -633,20 +644,34 @@ Expr Datatype::getSharedSelector( Type dtt, Type t, unsigned index ) const{
     }
   }
   //make the shared selector
-  Expr s;
   NodeManager* nm = NodeManager::fromExprManager( d_self.getExprManager() );
   std::stringstream ss;
   ss << "sel_" << index;
-  s = nm->mkSkolem(ss.str(), nm->mkSelectorType(TypeNode::fromType(dtt), TypeNode::fromType(t)), "is a shared selector", NodeManager::SKOLEM_NO_NOTIFY).toExpr();
+  Node sn = nm->mkSkolem(ss.str(), nm->mkSelectorType(TypeNode::fromType(dtt), TypeNode::fromType(t)), "is a shared selector", NodeManager::SKOLEM_NO_NOTIFY);
+  sn.setAttribute(DatatypeSharedSelIndexAttr(),index);
+  
+  Expr s = sn.toExpr();
   d_sinfo[dtt].d_shared_sel[t][index] = s;
   Trace("dt-shared-sel") << "Made " << s << " of type " << dtt << " -> " << t << std::endl;
   return s; 
 }
 
-Expr Datatype::getCompressedSelector(Type dtt, Type t, unsigned index) const {
+Expr Datatype::getCompressedSelector(Type dtt, Type src, Type dst, unsigned index) const {
   PrettyCheckArgument(isResolved(), this, "this datatype is not yet resolved");
+  computeCompressedSelectors(dtt);
   Expr s;
-
+  std::map< Type, std::map< Type, std::vector< Expr > > >::const_iterator its = d_sinfo[dtt].d_compression_map.find(src);
+  if( its != d_sinfo[dtt].d_compression_map.end() )
+  {
+    std::map< Type, std::vector< Expr > >::const_iterator itd = its->second.find(dst);
+    if( itd!=its->second.end() )
+    {
+      if( index<its->second.size() )
+      {
+        s = itd->second[index];
+      }
+    }
+  }
   return s;
 }
 
@@ -660,7 +685,7 @@ void printTypeDebug(const char* c, TypeNode tn)
   }
 }
 
-void Datatype::computeCompressedSelectors(Type dtt) 
+void Datatype::computeCompressedSelectors(Type dtt) const
 {
   if( !d_sinfo[dtt].d_computed_compress ){
     
@@ -866,13 +891,7 @@ void Datatype::computeCompressedSelectors(Type dtt)
               if( !csel.isNull() )
               {
                 // assign to the compression map
-                //unsigned w_index = m-alloc;
-                // we index by the shared selector 
-                //Assert( ti.isDatatype() );
-                //const Datatype& dti = static_cast<DatatypeType>(ti).getDatatype();
-                //Expr ssel = dti.getSharedSelector(ti,tx,w_index);
-                //Expr csel = csel.toExpr();
-                si.d_compression_map[ti.toType()][tx.toType()] = csel.toExpr();
+                si.d_compression_map[ti.toType()][tx.toType()].push_back( csel.toExpr() );
                 alloc--;
                 csel_to_sources[csel].insert( ti );
                 if(Trace.isOn("compress-sel"))
