@@ -688,16 +688,11 @@ void printTypeDebug(const char* c, TypeNode tn)
 void Datatype::computeCompressedSelectors(Type dtt) const
 {
   if( !d_sinfo[dtt].d_computed_compress ){
-    
+    SelectorInfo& si = d_sinfo[dtt];
     TypeNode dttn = TypeNode::fromType( dtt );
     
-    // We compute d_sinfo[dtt].d_compress_sel
-    //   and
-    // For each connected datatype D to this one, with type dtt', we ensure that
-    //   For each shared selector S belonging to D,
-    //     D.d_sinfo[dtt'].d_compression_map[dtt][S] is populated
+    // The following computes si.d_compress_sel and si.d_compression_map
     
-    SelectorInfo& si = d_sinfo[dtt];
     if(Trace.isOn("compress-sel"))
     {
       Trace("compress-sel") << "---- Compute compressed sel for ";
@@ -732,6 +727,12 @@ void Datatype::computeCompressedSelectors(Type dtt) const
             // add to nodes if not allocated
             if( std::find( g_dtt.begin(), g_dtt.end(), tn )==g_dtt.end() )
             {
+              if(Trace.isOn("compress-sel"))
+              {
+                Trace("compress-sel-debug") << "Node : ";
+                printTypeDebug("compress-sel-debug", dttn);
+                Trace("compress-sel-debug") << std::endl;
+              }
               g_dtt.push_back( tn );
             }
           }
@@ -746,6 +747,17 @@ void Datatype::computeCompressedSelectors(Type dtt) const
             if( cc.second>1 )
             {
               siblings[cc.first].insert( cc.first );
+            }
+            if(Trace.isOn("compress-sel"))
+            {
+              if( g_e[curr].find( cc.first )==g_e[curr].end() )
+              {
+                Trace("compress-sel-debug") << "Edge : ";
+                printTypeDebug("compress-sel-debug", curr);
+                Trace("compress-sel-debug") << " -> ";
+                printTypeDebug("compress-sel-debug", cc.first);
+                Trace("compress-sel-debug") << std::endl;
+              }
             }
             // add weighted edge
             if( cc.second>g_e[curr][cc.first] )

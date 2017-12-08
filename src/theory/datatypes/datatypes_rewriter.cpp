@@ -229,7 +229,7 @@ RewriteResponse DatatypesRewriter::rewriteSelector(TNode in)
   const Datatype& dt = Datatype::datatypeOf(selector.toExpr());
   if (in[0].getKind() == kind::APPLY_CONSTRUCTOR)
   {
-    if( options::dtCompressSelectors() && Datatype::isCompressed( in.toExpr() ) )
+    if( options::dtCompressSelectors() && Datatype::isCompressed( in.getOperator().toExpr() ) )
     {
       Trace("compress-sel-rew") << "Decompress : " << in << std::endl;
       // look for a parent -> child edge that is labelled in 
@@ -346,32 +346,47 @@ RewriteResponse DatatypesRewriter::rewriteSelector(TNode in)
   }
   else if( options::dtCompressSelectors() )
   {
-    if( in[0].getKind()==kind::APPLY_SELECTOR_TOTAL )
+    // compress the chain
+    if( options::dtCompressSelectors() && !Datatype::isCompressed( in.getOperator().toExpr() ) )
     {
-      // compress the chain
-      if( options::dtCompressSelectors() && !Datatype::isCompressed( in.toExpr() ) )
+      Trace("compress-sel-rew") << "Compress : " << in << std::endl;
+      // in[0] should be a compressed selector chain
+      Type t = in[0].getType().toType();
+      
+      Node cand_zsel;
+      unsigned k = Datatype::sharedSelectorIndex(selector.toExpr());
+      // FIXME : should allow multiple parallel paths
+      if( k>0 )
       {
-        Trace("compress-sel-rew") << "Compress : " << in << std::endl;
-        // in[0] should be a compressed selector chain
-        
-        unsigned k = Datatype::sharedSelectorIndex(selector.toExpr());
-        
-        Type t = in[0].getType().toType();
-        Node cand_zsel;
-        Node parent = in[0];
+        // We are guaranteed that there are no compressed selectors that 
+        // are downstream from the first edge, since it induces self-siblings.
+        // Hence, we directly look up the compressed selector here.
+        // Notice that the edge goes ( self -> parent ) since the 
+        // selector's type is ( source -> destination ).
+        Type parent_t = in.getType().toType();
+        Expr z = dt.getCompressedSelector( t, t, parent_t, k );
+        if( !z.isNull() )
+        {
+          cand_zsel = NodeManager::currentNM()->mkNode( kind::APPLY_SELECTOR_TOTAL, Node::fromExpr( z ), in[0] );
+        }
+        Trace("compress-sel-rew") << "...return (base case) " << cand_zsel << std::endl;
+      }
+      else
+      {
+        Node parent = in;
         Type parent_t = parent.getType().toType();
         while( !parent.isNull() && parent.getKind()==kind::APPLY_SELECTOR_TOTAL )
         {
-          Assert( Datatype::isCompressed( parent.getOperator().toExpr() ) );
+          Assert( parent==in || Datatype::isCompressed( parent.getOperator().toExpr() ) );
           // get the child
           Node child = parent[0];
           Type child_t = child.getType().toType();
           
-          // if we are compressing the shared selector, then (in the base case) 
-          // we use its index
-          // otherwise, we can get any compressed selector since there is only 
-          // one path to this node in the type graph
-          Expr z = dt.getCompressedSelector( t, parent_t, child_t, parent_t==t ? k : 0 );
+          // We can get any compressed selector since there is only one path
+          // to this node in the type graph, hence we take the first one.
+          // Notice that the edge goes ( child -> parent ) since the 
+          // selector's type is ( source -> destination ).
+          Expr z = dt.getCompressedSelector( t, child_t, parent_t, 0 );
           if( !z.isNull() )
           {
             cand_zsel = NodeManager::currentNM()->mkNode( kind::APPLY_SELECTOR_TOTAL, Node::fromExpr( z ), child );
@@ -388,9 +403,9 @@ RewriteResponse DatatypesRewriter::rewriteSelector(TNode in)
           }
         }
         Trace("compress-sel-rew") << "...return " << cand_zsel << std::endl;
-        Assert( !cand_zsel.isNull() );
-        return RewriteResponse(REWRITE_DONE, cand_zsel);
       }
+      Assert( !cand_zsel.isNull() );
+      return RewriteResponse(REWRITE_DONE, cand_zsel);
     }
   }
   return RewriteResponse(REWRITE_DONE, in);
