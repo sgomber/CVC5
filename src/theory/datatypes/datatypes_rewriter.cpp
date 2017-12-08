@@ -367,8 +367,11 @@ RewriteResponse DatatypesRewriter::rewriteSelector(TNode in)
           Node child = parent[0];
           Type child_t = child.getType().toType();
           
-          // k????
-          Expr z = dt.getCompressedSelector( t, parent_t, child_t, k );
+          // if we are compressing the shared selector, then (in the base case) 
+          // we use its index
+          // otherwise, we can get any compressed selector since there is only 
+          // one path to this node in the type graph
+          Expr z = dt.getCompressedSelector( t, parent_t, child_t, parent_t==t ? k : 0 );
           if( !z.isNull() )
           {
             cand_zsel = NodeManager::currentNM()->mkNode( kind::APPLY_SELECTOR_TOTAL, Node::fromExpr( z ), child );
