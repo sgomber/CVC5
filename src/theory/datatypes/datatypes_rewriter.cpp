@@ -369,7 +369,7 @@ RewriteResponse DatatypesRewriter::rewriteSelector(TNode in)
         {
           cand_zsel = NodeManager::currentNM()->mkNode( kind::APPLY_SELECTOR_TOTAL, Node::fromExpr( z ), in[0] );
         }
-        Trace("compress-sel-rew") << "...return (base case) " << cand_zsel << std::endl;
+        Trace("compress-sel-rew") << "...return (base case #" << k << ") " << cand_zsel << std::endl;
       }
       else
       {

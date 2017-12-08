@@ -856,7 +856,8 @@ void Datatype::computeCompressedSelectors(Type dtt) const
             Trace("compress-sel-debug") << " ) ... " << std::endl;
           }
           // if siblings of paths to this node cannot reach this node, we can assign a compressed selector at this edge
-          if( std::find( reach.begin(), reach.end(), ti )==reach.end() )
+          // FIXME should not have a special case
+          if( std::find( reach.begin(), reach.end(), ti )==reach.end() || ti==dttn )
           {
             // allocate m compressed selectors
             int alloc = m;
