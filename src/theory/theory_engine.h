@@ -708,16 +708,13 @@ public:
       const std::unordered_set<TNode, TNodeHashFunction>& relevant_eqc,
       const std::unordered_map<TNode, TNode, TNodeHashFunction>& term_to_eqc);
   
-  unsigned checkSplitCandidate(TNode a, TNode b, theory::TheoryId t1, theory::TheoryId t2,
-  bool splitRewUnique,
-  std::unordered_set<Node, NodeHashFunction>& split_eq_rew
-  );
-  unsigned checkSplitCandidate(TNode a, TNode b, theory::TheoryId t1, theory::TheoryId t2 ) {
-    std::unordered_set<Node, NodeHashFunction> split_eq_rew;
-    return checkSplitCandidate( a, b, t1, t2, false, split_eq_rew );
-  }
+  unsigned checkSplitCandidate(TNode a, TNode b, theory::TheoryId t1, theory::TheoryId t2);
   
   std::map<theory::TheoryId, bool> d_tparametric;
+
+  std::unordered_set<Node, NodeHashFunction> d_split_eq_rew;
+  
+  std::map<TNode, std::vector<TNode> > d_shared_terms_merge;
 
   /**
    * Calls ppStaticLearn() on all theories, accumulating their
@@ -921,8 +918,6 @@ private:
   std::set< std::string > d_theoryAlternatives;
 
   std::map< std::string, std::vector< theory::Theory* > > d_attr_handle;
-
-  std::map<TNode, std::vector<TNode> > d_shared_terms_merge;
 
  public:
   /** Set user attribute.

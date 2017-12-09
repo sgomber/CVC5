@@ -54,15 +54,6 @@ bool PreRegisterVisitor::alreadyVisited(TNode current, TNode parent) {
   d_theories = Theory::setInsert(currentTheoryId, d_theories);
   d_theories = Theory::setInsert(parentTheoryId, d_theories);
 
-  /*
-  if(parent.getKind()==kind::EQUAL)
-  {
-    // always include type based
-    TheoryId eqTheoryIdType = Theory::theoryOf(THEORY_OF_TYPE_BASED,parent);
-    d_theories = Theory::setInsert(eqTheoryIdType, d_theories);
-  }
-  */
-  
   // Should we use the theory of the type
   bool useType = false;
   TheoryId typeTheoryId = THEORY_LAST;
@@ -197,19 +188,18 @@ bool SharedTermsVisitor::alreadyVisited(TNode current, TNode parent) const {
         // parent.getKind() == kind::CARDINALITY_CONSTRAINT
       ) &&
       current != parent ) {
-    Debug("register::internal") << "quantifier, return true" << std::endl;
+    Debug("register::internal") << "quantifier:true" << std::endl;
     return true;
   }
   TNodeVisitedMap::const_iterator find = d_visited.find(current);
 
   // If node is not visited at all, just return false
   if (find == d_visited.end()) {
-    Debug("register::internal") << "no visit, return false" << std::endl;
+    Debug("register::internal") << "1:false" << std::endl;
     return false;
   }
 
   Theory::Set theories = (*find).second;
-  Debug("register::internal") << "already visited with " << Theory::setToString(theories) << std::endl;
 
   TheoryId currentTheoryId = Theory::theoryOf(current);
   TheoryId parentTheoryId  = Theory::theoryOf(parent);
@@ -234,23 +224,34 @@ bool SharedTermsVisitor::alreadyVisited(TNode current, TNode parent) const {
       }
     }
   }
+  if (current != parent) {
+    if (currentTheoryId != parentTheoryId) {
+      // If enclosed by different theories it's shared -- in read(a, f(a)) f(a) should be shared with integers
+      TypeNode type = current.getType();
+      useType = true;
+      typeTheoryId = Theory::theoryOf(type);
+    } else {
+      TypeNode type = current.getType();
+      typeTheoryId = Theory::theoryOf(type);
+      if (typeTheoryId != currentTheoryId) {
+        if (type.isInterpretedFinite()) {
+          useType = true;
+        }
+      }
+    }
+  }
 
   if (Theory::setContains(currentTheoryId, theories)) {
       if (Theory::setContains(parentTheoryId, theories)) {
         if (useType) {
-          bool setc = Theory::setContains(typeTheoryId, theories);
-          Debug("register::internal") << "check set contains, return " << setc << std::endl;
-          return setc;
+          return Theory::setContains(typeTheoryId, theories);
         } else {
-          Debug("register::internal") << "no use type, return true" << std::endl;
           return true;
         }
       } else {
-        Debug("register::internal") << "no contain parent, return false" << std::endl;
         return false;
       }
   } else {
-        Debug("register::internal") << "no contain current, return false" << std::endl;
     return false;
   }
 }
@@ -310,7 +311,6 @@ void SharedTermsVisitor::visit(TNode current, TNode parent) {
 
   // If there is more than two theories and a new one has been added notify the shared terms database
   if (Theory::setDifference(visitedTheories, Theory::setInsert(currentTheoryId))) {
-    Trace("tc-shared-term") << "Shared term in " << d_atom << " : "<< current << " with " << Theory::setToString(visitedTheories) << std::endl;
     d_sharedTerms.addSharedTerm(d_atom, current, visitedTheories);
   }
 

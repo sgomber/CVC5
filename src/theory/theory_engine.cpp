@@ -469,7 +469,6 @@ void TheoryEngine::interrupt() throw(ModalException) {
 void TheoryEngine::preRegister(TNode preprocessed) {
 
   Debug("theory") << "TheoryEngine::preRegister( " << preprocessed << ")" << std::endl;
-  Trace("ajr-temp") << "TheoryEngine::preRegister( " << preprocessed << ")" << std::endl;
   if(Dump.isOn("missed-t-propagations")) {
     d_possiblePropagations.push_back(preprocessed);
   }
@@ -484,7 +483,6 @@ void TheoryEngine::preRegister(TNode preprocessed) {
       // Get the next atom to pre-register
       preprocessed = d_preregisterQueue.front();
       d_preregisterQueue.pop();
-      Trace("ajr-temp") << "Look at " << preprocessed << std::endl;
 
       if (d_logicInfo.isSharingEnabled() && preprocessed.getKind() == kind::EQUAL) {
         // When sharing is enabled, we propagate from the shared terms manager also
@@ -517,11 +515,8 @@ void TheoryEngine::preRegister(TNode preprocessed) {
         }
       }
       if (multipleTheories) {
-        Trace("ajr-temp") << "...multi theory for " << preprocessed << ", run..." << std::endl;
         // Collect the shared terms if there are multiple theories
         NodeVisitor<SharedTermsVisitor>::run(d_sharedTermsVisitor, preprocessed);
-      }else{
-        Trace("ajr-temp") << "...single theory for " << preprocessed << std::endl;
       }
     }
 
@@ -926,7 +921,6 @@ unsigned TheoryEngine::checkSharedTermMaps(
   // 3 : splits unique to eqc, unique to rewriting
   // 4 : splits unique to rewriting
   std::unordered_set<TNode, TNodeHashFunction> split_terms;
-  std::unordered_set<Node, NodeHashFunction> split_eq_rew;
 
   // now, go back and check each split candidate (a,b). If:
   // (1) at least one theory X thinks it may be equal,
@@ -935,8 +929,6 @@ unsigned TheoryEngine::checkSharedTermMaps(
   // then we split on a==b.
   bool splitTermsUnique =
       options::modelBasedTcMode() == 2 || options::modelBasedTcMode() == 3;
-  bool splitRewUnique =
-      options::modelBasedTcMode() == 3 || options::modelBasedTcMode() == 4;
   unsigned riter = 1;
   if (options::modelBasedTcRlv())
   {
@@ -987,7 +979,7 @@ unsigned TheoryEngine::checkSharedTermMaps(
                   << "  false/unknown in : " << tid_deq
                   << " (parametric : " << d_tparametric[tid_deq] << ")"
                   << std::endl;
-              numSplits += checkSplitCandidate( a, b, tid_eq, tid_deq, splitRewUnique, split_eq_rew );
+              numSplits += checkSplitCandidate( a, b, tid_eq, tid_deq );
             }
           }
         }
@@ -1006,29 +998,21 @@ unsigned TheoryEngine::checkSharedTermMaps(
 }
 
 
-unsigned TheoryEngine::checkSplitCandidate(TNode a, TNode b, theory::TheoryId t1, theory::TheoryId t2, bool splitRewUnique,
-  std::unordered_set<Node, NodeHashFunction>& split_eq_rew )
+unsigned TheoryEngine::checkSplitCandidate(TNode a, TNode b, theory::TheoryId t1, theory::TheoryId t2 )
 {
   // split must come from a parametric theory
   TheoryId tid = d_tparametric[t1] ? t1 : t2;
   if (d_tparametric[tid])
   {
     Node equality = a.eqNode(b);
-    bool add = true;
-    if (splitRewUnique)
+    Node eqr = equality;
+    if (options::modelBasedTcRewUnique())
     {
-      Node eqr = Rewriter::rewrite(equality);
-      if (split_eq_rew.find(eqr) == split_eq_rew.end())
-      {
-        split_eq_rew.insert(eqr);
-      }
-      else
-      {
-        add = false;
-      }
+      eqr = Rewriter::rewrite(equality);
     }
-    if (add)
+    if (d_split_eq_rew.find(eqr) == d_split_eq_rew.end())
     {
+      d_split_eq_rew.insert(eqr);
       //Assert(d_sharedTerms.isShared(a));
       //Assert(d_sharedTerms.isShared(b));
       Assert(!d_sharedTerms.isShared(a) || !d_sharedTerms.isShared(b) || ( !d_sharedTerms.areEqual(a, b) && !d_sharedTerms.areDisequal(a, b)));
@@ -1104,7 +1088,9 @@ void TheoryEngine::combineTheoriesModelBased()
   }
   Trace("tc-model") << "------model-based theory combination" << std::endl;
   d_shared_terms_merge.clear();
+  d_split_eq_rew.clear();
   bool success = true;
+  unsigned numSplits = 0;
   std::unordered_map<TNode, TNode, TNodeHashFunction> term_to_eqc;
   std::unordered_set<TNode, TNodeHashFunction> relevant_eqc;
   std::vector<std::pair<Node, Node> > conflict_pairs;
@@ -1161,33 +1147,7 @@ void TheoryEngine::combineTheoriesModelBased()
       Trace("tc-model") << "--> model was inconsistent during verification"
                         << std::endl;
     }
-  }
-  else
-  {
-    // building was inconsistent (e.g. during collectModelInfo)
-    success = false;
-    Trace("tc-model") << "--> model was inconsistent during building"
-                      << std::endl;
-    // we look at shared terms in same equivalence classes
-  }
-
-  unsigned numSplits = 0;
-  if (!success)
-  {
-    // get the shared terms for each theory
-    std::map<TheoryId, std::unordered_set<TNode, TNodeHashFunction> > tshared;
-#ifdef CVC4_FOR_EACH_THEORY_STATEMENT
-#undef CVC4_FOR_EACH_THEORY_STATEMENT
-#endif
-#define CVC4_FOR_EACH_THEORY_STATEMENT(THEORY)                  \
-  if (d_logicInfo.isTheoryEnabled(THEORY))                      \
-  {                                                             \
-    tshared[THEORY] = theoryOf(THEORY)->currentlySharedTerms(); \
-  }
-
-    // Call on each theory to give us its shared terms
-    CVC4_FOR_EACH_THEORY;
-
+    
     if (!conflict_pairs.empty())
     {
       Trace("tc-model-debug") << "--------check " << conflict_pairs.size() << " conflict pairs..." << std::endl;
@@ -1243,37 +1203,40 @@ void TheoryEngine::combineTheoriesModelBased()
                   numSplits += checkSplitCandidate( ac, bc, parentId, childId );
                 }
               }
-              /*
-              checkPair(ac, bc, sharedEq, sharedDeq, parentId, d_tparametric[parentId]);
-              if( parentId!=childId ){
-                checkPair(ac, bc, sharedEq, sharedDeq, childId, d_tparametric[childId]);
-              }
-              for (std::pair<const TheoryId,
-                            std::unordered_set<TNode, TNodeHashFunction> >& tts :
-                  tshared)
-              {
-                TheoryId tid = tts.first;
-                if (tid!=parentId && tid!=childId &&
-                    tts.second.find(ac) != tts.second.end()
-                    && tts.second.find(bc) != tts.second.end())
-                {
-                  checkPair(ac, bc, sharedEq, sharedDeq, tid, d_tparametric[tid]);
-                }
-              }
-              */
             }
           }
         }
       }
-      if (numSplits == 0)
-      {
-        numSplits = checkSharedTermMaps(
-            sharedEq, sharedDeq, tshared, relevant_eqc, term_to_eqc);
-      }
       Assert( numSplits>0 );
     }
+  }
+  else
+  {
+    // building was inconsistent (e.g. during collectModelInfo)
+    success = false;
+    Trace("tc-model") << "--> model was inconsistent during building"
+                      << std::endl;
+    // we look at shared terms in same equivalence classes below
+  }
+  
+  if (!success)
+  {
     if (numSplits == 0)
     {
+      // get the shared terms for each theory
+      std::map<TheoryId, std::unordered_set<TNode, TNodeHashFunction> > tshared;
+#ifdef CVC4_FOR_EACH_THEORY_STATEMENT
+#undef CVC4_FOR_EACH_THEORY_STATEMENT
+#endif
+#define CVC4_FOR_EACH_THEORY_STATEMENT(THEORY)                  \
+      if (d_logicInfo.isTheoryEnabled(THEORY))                      \
+      {                                                             \
+        tshared[THEORY] = theoryOf(THEORY)->currentlySharedTerms(); \
+      }
+
+      // Call on each theory to give us its shared terms
+      CVC4_FOR_EACH_THEORY;
+        
       // it can happen that a shared term disequality was not propagated but set
       // true in the model
       Trace("tc-model-debug")

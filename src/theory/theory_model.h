@@ -159,7 +159,7 @@ public:
    * has called buildModel(...) on this model.
    *   useDontCares is whether to return Node::null() if
    *     n does not occur in the equality engine.
-  */
+   */
   Node getValue(TNode n, bool useDontCares = false) const;
   /** get comments */
   void getComments(std::ostream& out) const;
@@ -178,34 +178,31 @@ public:
   /** return whether this node is a don't-care */
   bool isDontCare(Expr expr) const;
   /** get value function for Exprs. */
-  Expr getValue(Expr expr) const;
+  Expr getValue( Expr expr ) const;
   /** get cardinality for sort */
-  Cardinality getCardinality(Type t) const;
+  Cardinality getCardinality( Type t ) const;
   /** print representative debug function */
-  void printRepresentativeDebug(const char* c, Node r);
+  void printRepresentativeDebug( const char* c, Node r );
   /** print representative function */
-  void printRepresentative(std::ostream& out, Node r);
+  void printRepresentative( std::ostream& out, Node r );
 
   //---------------------------- function values
   /** a map from functions f to a list of all APPLY_UF terms with operator f */
-  std::map<Node, std::vector<Node> > d_uf_terms;
-  /** a map from functions f to a list of all HO_APPLY terms with first argument
-    * f */
-  std::map<Node, std::vector<Node> > d_ho_uf_terms;
+  std::map< Node, std::vector< Node > > d_uf_terms;
+  /** a map from functions f to a list of all HO_APPLY terms with first argument f */
+  std::map< Node, std::vector< Node > > d_ho_uf_terms;
   /** assign function value f to definition f_def */
-  void assignFunctionDefinition(Node f, Node f_def);
+  void assignFunctionDefinition( Node f, Node f_def );
   /** have we assigned function f? */
-  bool hasAssignedFunctionDefinition(Node f) const
-  {
-    return d_uf_models.find(f) != d_uf_models.end(); }
-    /** get the list of functions to assign. 
-    * This list will contain all terms of function type that are terms in d_equalityEngine.
-    * If higher-order is enabled, we ensure that this list is sorted by type size.
-    * This allows us to assign functions T -> T before ( T x T ) -> T and before ( T -> T ) -> T,
-    * which is required for "dag form" model construction (see TheoryModelBuilder::assignHoFunction).
-    */
-    std::vector< Node > getFunctionsToAssign();
-    //---------------------------- end function values
+  bool hasAssignedFunctionDefinition( Node f ) const { return d_uf_models.find( f )!=d_uf_models.end(); }
+  /** get the list of functions to assign. 
+  * This list will contain all terms of function type that are terms in d_equalityEngine.
+  * If higher-order is enabled, we ensure that this list is sorted by type size.
+  * This allows us to assign functions T -> T before ( T x T ) -> T and before ( T -> T ) -> T,
+  * which is required for "dag form" model construction (see TheoryModelBuilder::assignHoFunction).
+  */
+  std::vector< Node > getFunctionsToAssign();
+  //---------------------------- end function values
  protected:
   /** substitution map for this model */
   SubstitutionMap d_substitutions;

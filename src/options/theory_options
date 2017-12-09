@@ -22,5 +22,8 @@ option modelBasedTcRlv --model-based-tc-rlv bool :default true
  
 option modelBasedTcAck --model-based-tc-ack bool :default false
  use Ackermanization lemmas instead of care splits
+
+option modelBasedTcRewUnique --model-based-tc-runique bool :default false
+ consider splits that are unique up to rewriting
  
 endmodule
