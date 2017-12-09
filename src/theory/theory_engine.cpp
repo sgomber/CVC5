@@ -1229,23 +1229,20 @@ void TheoryEngine::combineTheoriesModelBased()
             Node bc = b[i];
             TheoryId childId = Theory::theoryOf( ac );
             checkPair(ac, bc, sharedEq, sharedDeq, parentId, d_tparametric[parentId]);
-            checkPair(ac, bc, sharedEq, sharedDeq, childId, d_tparametric[childId]);
-            unsigned checked = 0;
+            if( parentId!=childId ){
+              checkPair(ac, bc, sharedEq, sharedDeq, childId, d_tparametric[childId]);
+            }
             for (std::pair<const TheoryId,
                           std::unordered_set<TNode, TNodeHashFunction> >& tts :
                 tshared)
             {
               TheoryId tid = tts.first;
-              if (tts.second.find(ac) != tts.second.end()
+              if (tid!=parentId && tid!=childId &&
+                  tts.second.find(ac) != tts.second.end()
                   && tts.second.find(bc) != tts.second.end())
               {
                 checkPair(ac, bc, sharedEq, sharedDeq, tid, d_tparametric[tid]);
-                checked++;
               }
-            }
-            if( checked<2 )
-            {
-              Trace("tc-model") << "WARN : only checked " << ac << " <> " << bc << " with " << checked << " theories." << std::endl;
             }
           }
         }
