@@ -988,48 +988,7 @@ unsigned TheoryEngine::checkSharedTermMaps(
                   << "  false/unknown in : " << tid_deq
                   << " (parametric : " << d_tparametric[tid_deq] << ")"
                   << std::endl;
-              // split must come from a parametric theory
-              TheoryId tid = d_tparametric[tid_eq] ? tid_eq : tid_deq;
-              if (d_tparametric[tid])
-              {
-                Node equality = a.eqNode(b);
-                bool add = true;
-                if (splitRewUnique)
-                {
-                  Node eqr = Rewriter::rewrite(equality);
-                  if (split_eq_rew.find(eqr) == split_eq_rew.end())
-                  {
-                    split_eq_rew.insert(eqr);
-                  }
-                  else
-                  {
-                    add = false;
-                  }
-                }
-                if (add)
-                {
-                  //Assert(d_sharedTerms.isShared(a));
-                  //Assert(d_sharedTerms.isShared(b));
-                  Assert(!d_sharedTerms.isShared(a) || !d_sharedTerms.isShared(b) || !d_sharedTerms.areEqual(a, b));
-                  Assert(!d_sharedTerms.isShared(a) || !d_sharedTerms.isShared(b) || !d_sharedTerms.areDisequal(a, b));
-                  Trace("tc-model-split") << "---> split on " << equality
-                                          << ", theory = " << tid << std::endl;
-                  lemma(equality.orNode(equality.notNode()),
-                        RULE_INVALID,
-                        false,
-                        false,
-                        false,
-                        tid);
-                  Node e = ensureLiteral(equality);
-                  d_propEngine->requirePhase(e, true);
-                  numSplits++;
-                  if (options::modelBasedTcMode() == 1 || splitTermsUnique)
-                  {
-                    split_terms.insert(ra);
-                    break;
-                  }
-                }
-              }
+              numSplits += checkSplitCandidate( a, b, tid_eq, tid_deq, splitRewUnique, split_eq_rew );
             }
           }
         }
@@ -1047,6 +1006,51 @@ unsigned TheoryEngine::checkSharedTermMaps(
   return numSplits;
 }
 
+
+unsigned TheoryEngine::checkSplitCandidate(TNode a, TNode b, theory::TheoryId t1, theory::TheoryId t2, bool splitRewUnique,
+  std::unordered_set<Node, NodeHashFunction>& split_eq_rew )
+{
+  // split must come from a parametric theory
+  TheoryId tid = d_tparametric[t1] ? t1 : t2;
+  if (d_tparametric[tid])
+  {
+    Node equality = a.eqNode(b);
+    bool add = true;
+    if (splitRewUnique)
+    {
+      Node eqr = Rewriter::rewrite(equality);
+      if (split_eq_rew.find(eqr) == split_eq_rew.end())
+      {
+        split_eq_rew.insert(eqr);
+      }
+      else
+      {
+        add = false;
+      }
+    }
+    if (add)
+    {
+      //Assert(d_sharedTerms.isShared(a));
+      //Assert(d_sharedTerms.isShared(b));
+      Assert(!d_sharedTerms.isShared(a) || !d_sharedTerms.isShared(b) || !d_sharedTerms.areEqual(a, b));
+      Assert(!d_sharedTerms.isShared(a) || !d_sharedTerms.isShared(b) || !d_sharedTerms.areDisequal(a, b));
+      lemma(equality.orNode(equality.notNode()),
+            RULE_INVALID,
+            false,
+            false,
+            false,
+            tid);
+      Node e = ensureLiteral(equality);
+      d_propEngine->requirePhase(e, true);
+      Trace("tc-model-split") << "---> split on " << equality
+                              << ", theory = " << tid << std::endl;
+      Trace("tc-model-debug") << "---> rewritten split : " << e << std::endl;
+      return 1;
+    }
+  }
+  return 0;
+}
+
 class ModelTrie
 {
  public:
@@ -1056,19 +1060,19 @@ class ModelTrie
 
   void add(TheoryModel* m, Node n, std::vector< std::pair< Node, Node > >& cps)
   {
-    Trace("tc-model-debug") << "  evaluate " << n << " :: ";
+    Trace("tc-model-debug-mv") << "  evaluate " << n << " :: ";
     ModelTrie* mt = this;
     std::vector<Node> argvs;
-    Trace("tc-model-debug") << "( ";
+    Trace("tc-model-debug-mv") << "( ";
     for (const Node& nc : n)
     {
       Node r = m->getRepresentative(nc);
-      Trace("tc-model-debug") << r << " ";
+      Trace("tc-model-debug-mv") << r << " ";
       argvs.push_back(r);
     }
-    Trace("tc-model-debug") << ")";
+    Trace("tc-model-debug-mv") << ")";
     Node val = m->getRepresentative(n);
-    Trace("tc-model-debug") << " = " << val << std::endl;
+    Trace("tc-model-debug-mv") << " = " << val << std::endl;
 
     for (unsigned i = 0, size = argvs.size(); i < size; i++)
     {
@@ -1081,8 +1085,8 @@ class ModelTrie
       if( v!=val )
       {
         cps.push_back( std::pair< Node, Node >( mt->d_terms[i], n ) );
-        Trace("tc-model-debug") << "...conflict pair : " << n << " <> "
-                                << mt->d_terms[i] << std::endl;
+        Trace("tc-model-debug-mv") << "...conflict pair : " << n << " <> "
+                                 << mt->d_terms[i] << std::endl;
       }
     }
     mt->d_terms.push_back(n);
@@ -1193,6 +1197,7 @@ void TheoryEngine::combineTheoriesModelBased()
       {
         Node a = cp.first;
         Node b = cp.second;
+        Trace("tc-model-debug") << "  check " << a << " <> " << b << "..." << std::endl;
         Assert(a.getNumChildren() == b.getNumChildren());
         Assert(a.getOperator() == b.getOperator());
         TheoryId parentId = Theory::theoryOf( a );
@@ -1227,21 +1232,33 @@ void TheoryEngine::combineTheoriesModelBased()
           {
             Node ac = a[i];
             Node bc = b[i];
-            TheoryId childId = Theory::theoryOf( ac );
-            checkPair(ac, bc, sharedEq, sharedDeq, parentId, d_tparametric[parentId]);
-            if( parentId!=childId ){
-              checkPair(ac, bc, sharedEq, sharedDeq, childId, d_tparametric[childId]);
-            }
-            for (std::pair<const TheoryId,
-                          std::unordered_set<TNode, TNodeHashFunction> >& tts :
-                tshared)
+            if( ac!=bc )
             {
-              TheoryId tid = tts.first;
-              if (tid!=parentId && tid!=childId &&
-                  tts.second.find(ac) != tts.second.end()
-                  && tts.second.find(bc) != tts.second.end())
+              TheoryId childId = Theory::theoryOf( ac );
+              if( ( !d_sharedTerms.isShared(ac) || !d_sharedTerms.isShared(bc) ) && parentId!=childId )
               {
-                checkPair(ac, bc, sharedEq, sharedDeq, tid, d_tparametric[tid]);
+                // must split immediately
+                Trace("tc-model-debug") << "-> Direct check split candidate..." << std::endl;
+                numSplits += checkSplitCandidate( ac, bc, parentId, childId );
+              }
+              else
+              {
+                checkPair(ac, bc, sharedEq, sharedDeq, parentId, d_tparametric[parentId]);
+                if( parentId!=childId ){
+                  checkPair(ac, bc, sharedEq, sharedDeq, childId, d_tparametric[childId]);
+                }
+                for (std::pair<const TheoryId,
+                              std::unordered_set<TNode, TNodeHashFunction> >& tts :
+                    tshared)
+                {
+                  TheoryId tid = tts.first;
+                  if (tid!=parentId && tid!=childId &&
+                      tts.second.find(ac) != tts.second.end()
+                      && tts.second.find(bc) != tts.second.end())
+                  {
+                    checkPair(ac, bc, sharedEq, sharedDeq, tid, d_tparametric[tid]);
+                  }
+                }
               }
             }
           }

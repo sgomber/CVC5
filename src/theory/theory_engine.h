@@ -707,7 +707,16 @@ public:
                      std::unordered_set<TNode, TNodeHashFunction> >& tshared,
       const std::unordered_set<TNode, TNodeHashFunction>& relevant_eqc,
       const std::unordered_map<TNode, TNode, TNodeHashFunction>& term_to_eqc);
-
+  
+  unsigned checkSplitCandidate(TNode a, TNode b, theory::TheoryId t1, theory::TheoryId t2,
+  bool splitRewUnique,
+  std::unordered_set<Node, NodeHashFunction>& split_eq_rew
+  );
+  unsigned checkSplitCandidate(TNode a, TNode b, theory::TheoryId t1, theory::TheoryId t2 ) {
+    std::unordered_set<Node, NodeHashFunction> split_eq_rew;
+    return checkSplitCandidate( a, b, t1, t2, false, split_eq_rew );
+  }
+  
   std::map<theory::TheoryId, bool> d_tparametric;
 
   /**
