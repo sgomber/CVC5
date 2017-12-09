@@ -54,6 +54,15 @@ bool PreRegisterVisitor::alreadyVisited(TNode current, TNode parent) {
   d_theories = Theory::setInsert(currentTheoryId, d_theories);
   d_theories = Theory::setInsert(parentTheoryId, d_theories);
 
+  /*
+  if(parent.getKind()==kind::EQUAL)
+  {
+    // always include type based
+    TheoryId eqTheoryIdType = Theory::theoryOf(THEORY_OF_TYPE_BASED,parent);
+    d_theories = Theory::setInsert(eqTheoryIdType, d_theories);
+  }
+  */
+  
   // Should we use the theory of the type
   bool useType = false;
   TheoryId typeTheoryId = THEORY_LAST;

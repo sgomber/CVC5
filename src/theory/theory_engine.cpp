@@ -851,10 +851,15 @@ theory::EqualityStatus TheoryEngine::checkPair(
     TheoryId tid,
     bool tparametric)
 {
+  Trace("tc-model-debug-pair") << "Check pair "<< a << " <> "<< b << " with "<< tid << std::endl;
   EqualityStatus es;
-  if (!d_sharedTerms.areDisequal(a, b))
+  if( !d_sharedTerms.isShared(a) || !d_sharedTerms.isShared(b) )
   {
-    EqualityStatus es = d_theoryTable[tid]->getEqualityStatus(a, b);
+    es = EQUALITY_FALSE_IN_MODEL;
+  }
+  else if (!d_sharedTerms.areDisequal(a, b))
+  {
+    es = d_theoryTable[tid]->getEqualityStatus(a, b);
     Assert(es != EQUALITY_TRUE_AND_PROPAGATED);
     Assert(es != EQUALITY_FALSE_AND_PROPAGATED);
     Trace("tc-model-debug") << "    " << a << " and " << b
@@ -1003,10 +1008,10 @@ unsigned TheoryEngine::checkSharedTermMaps(
                 }
                 if (add)
                 {
-                  Assert(d_sharedTerms.isShared(a));
-                  Assert(d_sharedTerms.isShared(b));
-                  Assert(!d_sharedTerms.areEqual(a, b));
-                  Assert(!d_sharedTerms.areDisequal(a, b));
+                  //Assert(d_sharedTerms.isShared(a));
+                  //Assert(d_sharedTerms.isShared(b));
+                  Assert(!d_sharedTerms.isShared(a) || !d_sharedTerms.isShared(b) || !d_sharedTerms.areEqual(a, b));
+                  Assert(!d_sharedTerms.isShared(a) || !d_sharedTerms.isShared(b) || !d_sharedTerms.areDisequal(a, b));
                   Trace("tc-model-split") << "---> split on " << equality
                                           << ", theory = " << tid << std::endl;
                   lemma(equality.orNode(equality.notNode()),
@@ -1190,6 +1195,7 @@ void TheoryEngine::combineTheoriesModelBased()
         Node b = cp.second;
         Assert(a.getNumChildren() == b.getNumChildren());
         Assert(a.getOperator() == b.getOperator());
+        TheoryId parentId = Theory::theoryOf( a );
         if( options::modelBasedTcAck() )
         {
           std::vector< Node > lem_c;
@@ -1221,7 +1227,10 @@ void TheoryEngine::combineTheoriesModelBased()
           {
             Node ac = a[i];
             Node bc = b[i];
-
+            TheoryId childId = Theory::theoryOf( ac );
+            checkPair(ac, bc, sharedEq, sharedDeq, parentId, d_tparametric[parentId]);
+            checkPair(ac, bc, sharedEq, sharedDeq, childId, d_tparametric[childId]);
+            unsigned checked = 0;
             for (std::pair<const TheoryId,
                           std::unordered_set<TNode, TNodeHashFunction> >& tts :
                 tshared)
@@ -1231,7 +1240,12 @@ void TheoryEngine::combineTheoriesModelBased()
                   && tts.second.find(bc) != tts.second.end())
               {
                 checkPair(ac, bc, sharedEq, sharedDeq, tid, d_tparametric[tid]);
+                checked++;
               }
+            }
+            if( checked<2 )
+            {
+              Trace("tc-model") << "WARN : only checked " << ac << " <> " << bc << " with " << checked << " theories." << std::endl;
             }
           }
         }
