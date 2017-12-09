@@ -20,7 +20,7 @@ option modelBasedTcMode --model-based-tc-mode=N int :default 0
 option modelBasedTcRlv --model-based-tc-rlv bool :default true
  use relevant equivalence classes 
  
-option modelBasedTcAck --model-based-tc-ack bool :default true
+option modelBasedTcAck --model-based-tc-ack bool :default false
  use Ackermanization lemmas instead of care splits
  
 endmodule

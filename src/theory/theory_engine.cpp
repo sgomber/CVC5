@@ -469,6 +469,7 @@ void TheoryEngine::interrupt() throw(ModalException) {
 void TheoryEngine::preRegister(TNode preprocessed) {
 
   Debug("theory") << "TheoryEngine::preRegister( " << preprocessed << ")" << std::endl;
+  Trace("ajr-temp") << "TheoryEngine::preRegister( " << preprocessed << ")" << std::endl;
   if(Dump.isOn("missed-t-propagations")) {
     d_possiblePropagations.push_back(preprocessed);
   }
@@ -483,6 +484,7 @@ void TheoryEngine::preRegister(TNode preprocessed) {
       // Get the next atom to pre-register
       preprocessed = d_preregisterQueue.front();
       d_preregisterQueue.pop();
+      Trace("ajr-temp") << "Look at " << preprocessed << std::endl;
 
       if (d_logicInfo.isSharingEnabled() && preprocessed.getKind() == kind::EQUAL) {
         // When sharing is enabled, we propagate from the shared terms manager also
@@ -515,8 +517,11 @@ void TheoryEngine::preRegister(TNode preprocessed) {
         }
       }
       if (multipleTheories) {
+        Trace("ajr-temp") << "...multi theory for " << preprocessed << ", run..." << std::endl;
         // Collect the shared terms if there are multiple theories
         NodeVisitor<SharedTermsVisitor>::run(d_sharedTermsVisitor, preprocessed);
+      }else{
+        Trace("ajr-temp") << "...single theory for " << preprocessed << std::endl;
       }
     }
 
@@ -887,6 +892,7 @@ theory::EqualityStatus TheoryEngine::checkPair(
   }
   else
   {
+    Trace("tc-model-debug") << "    " << a << " and " << b << "are already disequal in theory engine." << std::endl;
     es = EQUALITY_FALSE;
   }
   return es;
@@ -1045,15 +1051,17 @@ class ModelTrie
 
   void add(TheoryModel* m, Node n, std::vector< std::pair< Node, Node > >& cps)
   {
+    Trace("tc-model-debug") << "  evaluate " << n << " :: ";
     ModelTrie* mt = this;
-    Trace("tc-model-debug") << n << " ->";
     std::vector<Node> argvs;
+    Trace("tc-model-debug") << "( ";
     for (const Node& nc : n)
     {
       Node r = m->getRepresentative(nc);
-      Trace("tc-model-debug") << " " << r;
+      Trace("tc-model-debug") << r << " ";
       argvs.push_back(r);
     }
+    Trace("tc-model-debug") << ")";
     Node val = m->getRepresentative(n);
     Trace("tc-model-debug") << " = " << val << std::endl;
 
@@ -1068,7 +1076,7 @@ class ModelTrie
       if( v!=val )
       {
         cps.push_back( std::pair< Node, Node >( mt->d_terms[i], n ) );
-        Trace("tc-model-debug") << "Conflict pair : " << n << " <> "
+        Trace("tc-model-debug") << "...conflict pair : " << n << " <> "
                                 << mt->d_terms[i] << std::endl;
       }
     }
@@ -1120,8 +1128,8 @@ void TheoryEngine::combineTheoriesModelBased()
       while (!eqc_i.isFinished())
       {
         TNode n = (*eqc_i);
+        Trace("tc-model-debug2") << "  term " << n << std::endl;
         term_to_eqc[n] = r;
-        Trace("tc-model-debug") << "model-verify: evaluate " << n << std::endl;
         // check whether this is a parametric operator
         if (n.hasOperator())
         {
