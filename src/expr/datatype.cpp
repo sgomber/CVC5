@@ -659,20 +659,48 @@ Expr Datatype::getSharedSelector( Type dtt, Type t, unsigned index ) const{
 Expr Datatype::getCompressedSelector(Type dtt, Type src, Type dst, unsigned index) const {
   PrettyCheckArgument(isResolved(), this, "this datatype is not yet resolved");
   computeCompressedSelectors(dtt);
+  SelectorInfo& si = d_sinfo[dtt];
   Expr s;
-  std::map< Type, std::map< Type, std::vector< Expr > > >::const_iterator its = d_sinfo[dtt].d_compression_map.find(src);
-  if( its != d_sinfo[dtt].d_compression_map.end() )
+  std::map< Type, std::map< Type, unsigned > >::const_iterator its = si.d_compression_id.find(src);
+  if( its != d_sinfo[dtt].d_compression_id.end() )
   {
-    std::map< Type, std::vector< Expr > >::const_iterator itd = its->second.find(dst);
+    std::map< Type, unsigned >::const_iterator itd = its->second.find(dst);
     if( itd!=its->second.end() )
     {
-      if( index<its->second.size() )
+      unsigned cid = itd->second;
+      std::map< unsigned, Expr >::const_iterator iti = si.d_compress_sel[cid].find( index );
+      if( iti!=si.d_compress_sel[cid].end() )
       {
-        s = itd->second[index];
+        return iti->second;
       }
+      NodeManager* nm = NodeManager::currentNM();
+      std::stringstream ss;
+      ss << "zsel_" << index;
+      Node csel = nm->mkSkolem(ss.str(), nm->mkSelectorType(TypeNode::fromType( dtt ), TypeNode::fromType( dst )), "is a compressed selector", NodeManager::SKOLEM_NO_NOTIFY);
+      //csel.setAttribute(DatatypeSelCompressedAttr(),bool);
+      csel.setAttribute(DatatypeIndexAttr(),index);
+      s = csel.toExpr();
+      si.d_compress_sel[cid][index] = s;
     }
   }
   return s;
+}
+
+unsigned Datatype::getCompressionPathWeight(Type dtt, Type src, Type dst) const
+{
+  PrettyCheckArgument(isResolved(), this, "this datatype is not yet resolved");
+  computeCompressedSelectors(dtt);
+  SelectorInfo& si = d_sinfo[dtt];
+  std::map< Type, std::map< Type, unsigned > >::const_iterator its = si.d_edges.find(src);
+  if( its != d_sinfo[dtt].d_edges.end() )
+  {
+    std::map< Type, unsigned >::const_iterator itd = its->second.find(dst);
+    if( itd!=its->second.end() )
+    {
+      return itd->second;
+    }
+  }
+  return 0;
 }
 
 void printTypeDebug(const char* c, TypeNode tn)
@@ -691,7 +719,7 @@ void Datatype::computeCompressedSelectors(Type dtt) const
     SelectorInfo& si = d_sinfo[dtt];
     TypeNode dttn = TypeNode::fromType( dtt );
     
-    // The following computes si.d_compress_sel and si.d_compression_map
+    // The following computes si.d_nodes, si.d_edges and si.d_compression_id
     
     if(Trace.isOn("compress-sel"))
     {
@@ -709,6 +737,7 @@ void Datatype::computeCompressedSelectors(Type dtt) const
     std::map<TypeNode, std::unordered_set< TypeNode, TypeNodeHashFunction > > siblings;
     unsigned count = 0;
     g_dtt.push_back( dttn );
+    si.d_nodes.push_back( dtt );
     while( count<g_dtt.size() )
     {
       TypeNode curr = g_dtt[count];
@@ -734,48 +763,52 @@ void Datatype::computeCompressedSelectors(Type dtt) const
                 Trace("compress-sel-debug") << std::endl;
               }
               g_dtt.push_back( tn );
+              si.d_nodes.push_back( tn.toType() );
             }
           }
           // for each outgoing type from current constructor
           for( std::pair< const TypeNode, unsigned >& cc : child_count )
           {
+            TypeNode tx = cc.first;
             // add to siblings
             for( std::pair< const TypeNode, unsigned >& cs : child_count )
             {
-              if( cc.first!=cs.first )
+              if( tx!=cs.first )
               {
-                siblings[cc.first].insert( cs.first );
+                siblings[tx].insert( cs.first );
               }
             }
-            if( g_e[curr].find( cc.first )==g_e[curr].end() )
+            if( g_e[curr].find( tx )==g_e[curr].end() )
             {
               if(Trace.isOn("compress-sel"))
               {
                 Trace("compress-sel-debug") << "Edge : ";
                 printTypeDebug("compress-sel-debug", curr);
                 Trace("compress-sel-debug") << " ->^" << cc.second << " ";
-                printTypeDebug("compress-sel-debug", cc.first);
+                printTypeDebug("compress-sel-debug", tx);
                 Trace("compress-sel-debug") << std::endl;
               }
-              // add (weighted) edge
-              g_e[curr][cc.first] = cc.second;
+              // add (weighted edge
+              g_e[curr][tx] = cc.second;
+              si.d_edges[curr.toType()][tx.toType()] = cc.second;
             }
             else
             {
               // update edge
-              if( cc.second>g_e[curr][cc.first] )
+              if( cc.second>g_e[curr][tx] )
               {
                 if(Trace.isOn("compress-sel"))
                 {
                   Trace("compress-sel-debug") << "Modify edge : ";
                   printTypeDebug("compress-sel-debug", curr);
                   Trace("compress-sel-debug") << " ->^" << cc.second << " ";
-                  printTypeDebug("compress-sel-debug", cc.first);
+                  printTypeDebug("compress-sel-debug", tx);
                   Trace("compress-sel-debug") << " and set self sibling" << std::endl;
                 }
-                g_e[curr][cc.first] = cc.second;
+                g_e[curr][tx] = cc.second;
+                si.d_edges[curr.toType()][tx.toType()] = cc.second;
                 // now must be a self sibling since number of this is variable
-                siblings[cc.first].insert( cc.first );
+                siblings[tx].insert( tx );
               }
             }
           }
@@ -815,12 +848,10 @@ void Datatype::computeCompressedSelectors(Type dtt) const
     }while( success );
     
     //-------------------- compute compression map
-    // the total number of compressed selectors for all return types
-    unsigned tot_index = 0;
-    // compressed selectors with return type domain
-    std::map< TypeNode, std::vector< Node > > compress_sel;
-    // for each of these selectors, a list of source nodes for it
-    std::map< Node, std::unordered_set< TypeNode, TypeNodeHashFunction > > csel_to_sources;
+    // compression ids with return type domain
+    std::map< TypeNode, unsigned > compress_sel_id_count;
+    // for each of these compression ids, a list of source nodes for it
+    std::map< unsigned, std::unordered_set< TypeNode, TypeNodeHashFunction > > cid_to_sources;
     // for each edge in the graph
     for( unsigned i=0, size = g_dtt.size(); i<size; i++ )
     {
@@ -832,7 +863,6 @@ void Datatype::computeCompressedSelectors(Type dtt) const
         for( std::pair< const TypeNode, unsigned > e : itg->second )
         {
           TypeNode tx = e.first;
-          unsigned m = e.second;
           std::unordered_set< TypeNode, TypeNodeHashFunction >& sib_ti = its->second;
           
           // compute the set of nodes that are reachable from sib_ti that do not pass through dttn
@@ -873,64 +903,36 @@ void Datatype::computeCompressedSelectors(Type dtt) const
           // FIXME should not have a special case
           if( std::find( reach.begin(), reach.end(), ti )==reach.end() || ti==dttn )
           {
-            // allocate m compressed selectors
-            int alloc = m;
-            unsigned cs_index = 0;
-            while( alloc>=0 )
+            // reuse a compression id, or allocate a new one
+            int compress_id = -1;
+            unsigned compress_id_alloc = compress_sel_id_count[tx];
+            for( unsigned j=0; j<compress_id_alloc; j++ )
             {
-              Node csel;
-              if( cs_index<compress_sel[tx].size() )
+              // we can allocate if
+              bool success = true;
+              std::unordered_set< TypeNode, TypeNodeHashFunction >& csel_srcs = cid_to_sources[j];
+              for(const TypeNode& src : csel_srcs )
               {
-                // can we allocate the compressed selector at this index?
-                csel = compress_sel[tx][cs_index];
-                std::unordered_set< TypeNode, TypeNodeHashFunction >& csel_srcs = csel_to_sources[csel];
-                for(const TypeNode& src : csel_srcs )
+                if( std::find( reach.begin(), reach.end(), src )!=reach.end() )
                 {
-                  if( std::find( reach.begin(), reach.end(), src )!=reach.end() )
-                  {
-                    // cannot assign this compressed selector
-                    csel = Node::null();
-                    cs_index++;
-                    break;
-                  }
-                }
-                if(Trace.isOn("compress-sel-debug"))
-                {
-                  Trace("compress-sel-debug") << "  ...assignable to existing symbol." << std::endl;
+                  // cannot assign the compression id j since a sibling on this path can reach it
+                  success = false;
+                  break;
                 }
               }
-              else
+              if( success )
               {
-                Assert( cs_index==compress_sel[tx].size() );
-                // allocate a new compressed selector
-                NodeManager* nm = NodeManager::fromExprManager( d_self.getExprManager() );
-                std::stringstream ss;
-                ss << "zel_" << tot_index;
-                tot_index++;
-                csel = nm->mkSkolem(ss.str(), nm->mkSelectorType(dttn, tx), "is a compressed selector", NodeManager::SKOLEM_NO_NOTIFY);
-                csel.setAttribute(DatatypeSelCompressedAttr(),true);
-                compress_sel[tx].push_back(csel);
-                si.d_compress_sel.push_back(csel.toExpr());
-                cs_index++;
-                Trace("compress-sel-debug") << "  ...assignable to new symbol." << std::endl;
-              }
-              
-              if( !csel.isNull() )
-              {
-                // assign to the compression map
-                si.d_compression_map[ti.toType()][tx.toType()].push_back( csel.toExpr() );
-                alloc--;
-                csel_to_sources[csel].insert( ti );
-                if(Trace.isOn("compress-sel"))
-                {
-                  Trace("compress-sel") << "  * Assign ( ";
-                  printTypeDebug("compress-sel", ti);
-                  Trace("compress-sel") << " -> ";
-                  printTypeDebug("compress-sel", tx);
-                  Trace("compress-sel") << " ) to " << csel << std::endl;
-                }
+                compress_id = static_cast<int>(j);
+                break;
               }
             }
+            if( compress_id<0 )
+            {
+              compress_id = compress_sel_id_count[tx];
+              compress_sel_id_count[tx]++;
+            }
+            si.d_compression_id[ti.toType()][tx.toType()] = compress_id;
+            cid_to_sources[compress_id].insert( ti );
           }
           else
           {

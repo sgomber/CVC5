@@ -895,6 +895,10 @@ public:
    */
   Expr getCompressedSelector(Type dtt, Type src, Type dst, unsigned index) const;
   
+  /** Get the path weight
+   */
+  unsigned getCompressionPathWeight(Type dtt, Type src, Type dst) const;
+  
   /** get sygus type
    * This gets the built-in type associated with
    * this sygus datatype, i.e. the type of the
@@ -1023,10 +1027,13 @@ public:
     std::map<Type, std::map<unsigned, Expr> > d_shared_sel;
     /** whether we have computed compressed selectors */
     bool d_computed_compress;
-    /** cache of compressed selectors for this datatype */
-    std::vector< Expr > d_compress_sel;
-    /** cache of shared selectors to compressed selectors */
-    std::map< Type, std::map< Type, std::vector< Expr > > > d_compression_map;
+    /** weighted graph */
+    std::vector< Type > d_nodes;
+    std::map< Type, std::map< Type, unsigned > > d_edges;
+    /** map from edges to compression ids */
+    std::map< Type, std::map< Type, unsigned > > d_compression_id;
+    /** cache of compressed selectors for each compression id */
+    std::map< unsigned, std::map< unsigned, Expr > > d_compress_sel;
   };
   /** selector information for each instantiation of this datatype */
   mutable std::map< Type, SelectorInfo > d_sinfo;

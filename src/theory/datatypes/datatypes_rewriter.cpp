@@ -234,17 +234,23 @@ RewriteResponse DatatypesRewriter::rewriteSelector(TNode in)
       Trace("compress-sel-rew") << "Decompress : " << in << std::endl;
       // look for a parent -> child edge that is labelled in 
       // the compression map with the compressed selector
-      Expr z = in.toExpr();
+      Expr z = in.getOperator().toExpr();
+      unsigned zindex = Datatype::indexOf(z);
       
       Type t = in[0].getType().toType();
       
       std::unordered_set<TNode, TNodeHashFunction> visited;
       std::vector<TNode> visit;
+      std::vector<unsigned> visit_zindex;
       TNode cur;
+      unsigned cur_zindex;
       visit.push_back(in[0]);
+      visit_zindex.push_back(zindex);
       do {
         cur = visit.back();
         visit.pop_back();
+        cur_zindex = visit_zindex.back();
+        visit_zindex.pop_back();
 
         if (visited.find(cur) == visited.end()) {
           visited.insert(cur);
@@ -255,13 +261,13 @@ RewriteResponse DatatypesRewriter::rewriteSelector(TNode in)
             std::map< Type, unsigned > zcount;
             for (unsigned i = 0; i < cur.getNumChildren(); i++) {
               Type tx = cur[i].getType().toType();
-              Expr zlabel = dt.getCompressedSelector( t, ti, tx, zcount[tx] );  
-              if( zlabel==z )
+              // return if we are in the right location
+              if( zcount[tx]==cur_zindex )
               {
                 Trace("compress-sel-rew") << "...return " << cur[i] << std::endl;
                 return RewriteResponse(REWRITE_DONE, cur[i]);
               }
-              else if( !zlabel.isNull() )
+              else
               {
                 zcount[tx]++;
               }
@@ -269,6 +275,10 @@ RewriteResponse DatatypesRewriter::rewriteSelector(TNode in)
               if( tx!=t )
               {
                 visit.push_back(cur[i]);
+                // we divide by the weight on the edge from ti to tx
+                unsigned pweight = dt.getCompressionPathWeight( t, ti, tx );
+                Assert( pweight>0 );
+                visit_zindex.push_back( cur_zindex/pweight );
               }
             }
           }
@@ -354,56 +364,38 @@ RewriteResponse DatatypesRewriter::rewriteSelector(TNode in)
       Type t = in[0].getType().toType();
       
       Node cand_zsel;
-      unsigned k = Datatype::sharedSelectorIndex(selector.toExpr());
-      // FIXME : should allow multiple parallel paths
-      if( k>0 )
+      unsigned zindex = Datatype::sharedSelectorIndex(selector.toExpr());
+
+      
+      Node parent = in;
+      Type parent_t = parent.getType().toType();
+      while( !parent.isNull() && parent.getKind()==kind::APPLY_SELECTOR_TOTAL )
       {
-        // We are guaranteed that there are no compressed selectors that 
-        // are downstream from the first edge, since it induces self-siblings.
-        // Hence, we directly look up the compressed selector here.
-        // Notice that the edge goes ( self -> parent ) since the 
+        Assert( parent==in || Datatype::isCompressed( parent.getOperator().toExpr() ) );
+        // get the child
+        Node child = parent[0];
+        Type child_t = child.getType().toType();
+        
+        // Notice that the edge goes ( child -> parent ) since the 
         // selector's type is ( source -> destination ).
-        Type parent_t = in.getType().toType();
-        Expr z = dt.getCompressedSelector( t, t, parent_t, k );
+        // FIXME : zindex should multiply by edge weight
+        Expr z = dt.getCompressedSelector( t, child_t, parent_t, zindex );
         if( !z.isNull() )
         {
-          cand_zsel = NodeManager::currentNM()->mkNode( kind::APPLY_SELECTOR_TOTAL, Node::fromExpr( z ), in[0] );
+          cand_zsel = NodeManager::currentNM()->mkNode( kind::APPLY_SELECTOR_TOTAL, Node::fromExpr( z ), child );
         }
-        Trace("compress-sel-rew") << "...return (base case #" << k << ") " << cand_zsel << std::endl;
-      }
-      else
-      {
-        Node parent = in;
-        Type parent_t = parent.getType().toType();
-        while( !parent.isNull() && parent.getKind()==kind::APPLY_SELECTOR_TOTAL )
+        // we cannot loop into the type itself
+        if( child_t==t )
         {
-          Assert( parent==in || Datatype::isCompressed( parent.getOperator().toExpr() ) );
-          // get the child
-          Node child = parent[0];
-          Type child_t = child.getType().toType();
-          
-          // We can get any compressed selector since there is only one path
-          // to this node in the type graph, hence we take the first one.
-          // Notice that the edge goes ( child -> parent ) since the 
-          // selector's type is ( source -> destination ).
-          Expr z = dt.getCompressedSelector( t, child_t, parent_t, 0 );
-          if( !z.isNull() )
-          {
-            cand_zsel = NodeManager::currentNM()->mkNode( kind::APPLY_SELECTOR_TOTAL, Node::fromExpr( z ), child );
-          }
-          // we cannot loop into the type itself
-          if( child_t==t )
-          {
-            parent = Node::null();
-          }
-          else 
-          {
-            parent = child;
-            parent_t = child_t;
-          }
+          parent = Node::null();
         }
-        Trace("compress-sel-rew") << "...return " << cand_zsel << std::endl;
+        else 
+        {
+          parent = child;
+          parent_t = child_t;
+        }
       }
+      Trace("compress-sel-rew") << "...return " << cand_zsel << std::endl;
       Assert( !cand_zsel.isNull() );
       return RewriteResponse(REWRITE_DONE, cand_zsel);
     }
