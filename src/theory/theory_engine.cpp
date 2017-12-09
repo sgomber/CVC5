@@ -1039,38 +1039,41 @@ unsigned TheoryEngine::checkSharedTermMaps(
 class ModelTrie
 {
  public:
-  Node d_term;
-  Node d_value;
+  std::vector< Node > d_terms;
+  std::vector< Node > d_values;
   std::map<Node, ModelTrie> d_children;
 
-  Node add(TheoryModel* m, Node n)
+  void add(TheoryModel* m, Node n, std::vector< std::pair< Node, Node > >& cps)
   {
     ModelTrie* mt = this;
+    Trace("tc-model-debug") << n << " ->";
     std::vector<Node> argvs;
     for (const Node& nc : n)
     {
-      argvs.push_back(m->getRepresentative(nc));
+      Node r = m->getRepresentative(nc);
+      Trace("tc-model-debug") << " " << r;
+      argvs.push_back(r);
     }
     Node val = m->getRepresentative(n);
+    Trace("tc-model-debug") << " = " << val << std::endl;
 
     for (unsigned i = 0, size = argvs.size(); i < size; i++)
     {
       mt = &mt->d_children[argvs[i]];
     }
-    if (mt->d_term.isNull())
+    
+    for( unsigned i=0, size = mt->d_terms.size(); i<size; i++ )
     {
-      mt->d_term = n;
-      mt->d_value = val;
-      Trace("tc-model-debug") << "M( " << n << " ) = " << val << std::endl;
+      Node v = mt->d_values[i];
+      if( v!=val )
+      {
+        cps.push_back( std::pair< Node, Node >( mt->d_terms[i], n ) );
+        Trace("tc-model-debug") << "Conflict pair : " << n << " <> "
+                                << mt->d_terms[i] << std::endl;
+      }
     }
-    else if (mt->d_value != val)
-    {
-      Trace("tc-model-debug") << "M( " << n << " ) = " << val
-                              << " != " << mt->d_value << std::endl;
-      // model is in conflict
-      return mt->d_term;
-    }
-    return n;
+    mt->d_terms.push_back(n);
+    mt->d_values.push_back(val);
   }
 };
 
@@ -1112,6 +1115,7 @@ void TheoryEngine::combineTheoriesModelBased()
     while (!eqcs_i.isFinished())
     {
       TNode r = (*eqcs_i);
+      Trace("tc-model-debug") << "model-verify: EQC : " << r << std::endl;
       eq::EqClassIterator eqc_i = eq::EqClassIterator(r, ee);
       while (!eqc_i.isFinished())
       {
@@ -1125,27 +1129,20 @@ void TheoryEngine::combineTheoriesModelBased()
           if (d_tparametric[tid])
           {
             Node op = n.getOperator();
-            Node ncong = model_trie[op].add(d_curr_model, n);
-            if (ncong != n)
-            {
-              // model is incorrect
-              conflict_pairs.push_back(std::pair<Node, Node>(n, ncong));
-              success = false;
-              Trace("tc-model-debug") << "Conflict pair : " << n << " <> "
-                                      << ncong << std::endl;
-            }
+            model_trie[op].add(d_curr_model, n, conflict_pairs);
           }
         }
         ++eqc_i;
       }
       ++eqcs_i;
     }
-    if (success)
+    if (conflict_pairs.empty())
     {
       Trace("tc-model") << "--> model building succeeded" << std::endl;
     }
     else
     {
+      success = false;
       Trace("tc-model") << "--> model was inconsistent during verification"
                         << std::endl;
     }
@@ -1206,6 +1203,7 @@ void TheoryEngine::combineTheoriesModelBased()
           {
             lem = lem_c[0];
           }
+          Trace("tc-model-split") << "Ackermanization lemma : " << lem << std::endl;
           lemma( lem, RULE_INVALID, false, false, false, tid );
           numSplits++;
         }
