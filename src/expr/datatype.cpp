@@ -736,33 +736,47 @@ void Datatype::computeCompressedSelectors(Type dtt) const
               g_dtt.push_back( tn );
             }
           }
-          // for each outgoing type from curr
+          // for each outgoing type from current constructor
           for( std::pair< const TypeNode, unsigned >& cc : child_count )
           {
             // add to siblings
             for( std::pair< const TypeNode, unsigned >& cs : child_count )
             {
-              siblings[cc.first].insert( cs.first );
+              if( cc.first!=cs.first )
+              {
+                siblings[cc.first].insert( cs.first );
+              }
             }
-            if( cc.second>1 )
+            if( g_e[curr].find( cc.first )==g_e[curr].end() )
             {
-              siblings[cc.first].insert( cc.first );
-            }
-            if(Trace.isOn("compress-sel"))
-            {
-              if( g_e[curr].find( cc.first )==g_e[curr].end() )
+              if(Trace.isOn("compress-sel"))
               {
                 Trace("compress-sel-debug") << "Edge : ";
                 printTypeDebug("compress-sel-debug", curr);
-                Trace("compress-sel-debug") << " -> ";
+                Trace("compress-sel-debug") << " ->^" << cc.second << " ";
                 printTypeDebug("compress-sel-debug", cc.first);
                 Trace("compress-sel-debug") << std::endl;
               }
-            }
-            // add weighted edge
-            if( cc.second>g_e[curr][cc.first] )
-            {
+              // add (weighted) edge
               g_e[curr][cc.first] = cc.second;
+            }
+            else
+            {
+              // update edge
+              if( cc.second>g_e[curr][cc.first] )
+              {
+                if(Trace.isOn("compress-sel"))
+                {
+                  Trace("compress-sel-debug") << "Modify edge : ";
+                  printTypeDebug("compress-sel-debug", curr);
+                  Trace("compress-sel-debug") << " ->^" << cc.second << " ";
+                  printTypeDebug("compress-sel-debug", cc.first);
+                  Trace("compress-sel-debug") << " and set self sibling" << std::endl;
+                }
+                g_e[curr][cc.first] = cc.second;
+                // now must be a self sibling since number of this is variable
+                siblings[cc.first].insert( cc.first );
+              }
             }
           }
         }
