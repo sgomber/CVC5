@@ -370,47 +370,47 @@ TheoryEngine::TheoryEngine(context::Context* context,
                            RemoveTermFormulas& iteRemover,
                            const LogicInfo& logicInfo,
                            LemmaChannels* channels)
-    : d_propEngine(NULL),
-      d_decisionEngine(NULL),
-      d_context(context),
-      d_userContext(userContext),
-      d_logicInfo(logicInfo),
-      d_sharedTerms(this, context),
-      d_masterEqualityEngine(NULL),
-      d_masterEENotify(*this),
-      d_modelNotify(*this),
-      d_quantEngine(NULL),
-      d_curr_model(NULL),
-      d_aloc_curr_model(false),
-      d_curr_model_builder(NULL),
-      d_aloc_curr_model_builder(false),
-      d_ppCache(),
-      d_possiblePropagations(context),
-      d_hasPropagated(context),
-      d_inConflict(context, false),
-      d_hasShutDown(false),
-      d_incomplete(context, false),
-      d_propagationMap(context),
-      d_propagationMapTimestamp(context, 0),
-      d_propagatedLiterals(context),
-      d_propagatedLiteralsIndex(context, 0),
-      d_atomRequests(context),
-      d_tform_remover(iteRemover),
-      d_combineTheoriesTime("TheoryEngine::combineTheoriesTime"),
-      d_true(),
-      d_false(),
-      d_interrupted(false),
-      d_resourceManager(NodeManager::currentResourceManager()),
-      d_channels(channels),
-      d_inPreregister(false),
-      d_factsAsserted(context, false),
-      d_preRegistrationVisitor(this, context),
-      d_sharedTermsVisitor(d_sharedTerms),
-      d_unconstrainedSimp(new UnconstrainedSimplifier(context, logicInfo)),
-      d_bvToBoolPreprocessor(),
-      d_theoryAlternatives(),
-      d_attr_handle(),
-      d_arithSubstitutionsAdded("theory::arith::zzz::arith::substitutions", 0)
+: d_propEngine(NULL),
+  d_decisionEngine(NULL),
+  d_context(context),
+  d_userContext(userContext),
+  d_logicInfo(logicInfo),
+  d_sharedTerms(this, context),
+  d_masterEqualityEngine(NULL),
+  d_masterEENotify(*this),
+  d_modelNotify(*this),
+  d_quantEngine(NULL),
+  d_curr_model(NULL),
+  d_aloc_curr_model(false),
+  d_curr_model_builder(NULL),
+  d_aloc_curr_model_builder(false),
+  d_ppCache(),
+  d_possiblePropagations(context),
+  d_hasPropagated(context),
+  d_inConflict(context, false),
+  d_hasShutDown(false),
+  d_incomplete(context, false),
+  d_propagationMap(context),
+  d_propagationMapTimestamp(context, 0),
+  d_propagatedLiterals(context),
+  d_propagatedLiteralsIndex(context, 0),
+  d_atomRequests(context),
+  d_tform_remover(iteRemover),
+  d_combineTheoriesTime("TheoryEngine::combineTheoriesTime"),
+  d_true(),
+  d_false(),
+  d_interrupted(false),
+  d_resourceManager(NodeManager::currentResourceManager()),
+  d_channels(channels),
+  d_inPreregister(false),
+  d_factsAsserted(context, false),
+  d_preRegistrationVisitor(this, context),
+  d_sharedTermsVisitor(d_sharedTerms),
+  d_unconstrainedSimp(new UnconstrainedSimplifier(context, logicInfo)),
+  d_bvToBoolPreprocessor(),
+  d_theoryAlternatives(),
+  d_attr_handle(),
+  d_arithSubstitutionsAdded("theory::arith::zzz::arith::substitutions", 0)
 {
   for(TheoryId theoryId = theory::THEORY_FIRST; theoryId != theory::THEORY_LAST;
       ++ theoryId)
@@ -837,12 +837,6 @@ void TheoryEngine::combineTheories() {
 theory::EqualityStatus TheoryEngine::checkPair(
     TNode a,
     TNode b,
-    std::unordered_map<TNode,
-                       std::unordered_map<TNode, TheoryId, TNodeHashFunction>,
-                       TNodeHashFunction>& sharedEq,
-    std::unordered_map<TNode,
-                       std::unordered_map<TNode, TheoryId, TNodeHashFunction>,
-                       TNodeHashFunction>& sharedDeq,
     TheoryId tid,
     bool tparametric)
 {
@@ -863,29 +857,29 @@ theory::EqualityStatus TheoryEngine::checkPair(
     if (es == EQUALITY_TRUE || es == EQUALITY_TRUE_IN_MODEL)
     {
       // Case that a == b
-      if (sharedEq[a].find(b) == sharedEq[a].end() || tparametric)
+      if (d_sharedEq[a].find(b) == d_sharedEq[a].end() || tparametric)
       {
-        sharedEq[a][b] = tid;
+        d_sharedEq[a][b] = tid;
       }
     }
     else if (es == EQUALITY_FALSE || es == EQUALITY_FALSE_IN_MODEL)
     {
       // Case that a != b
-      if (sharedDeq[a].find(b) == sharedDeq[a].end() || tparametric)
+      if (d_sharedDeq[a].find(b) == d_sharedDeq[a].end() || tparametric)
       {
-        sharedDeq[a][b] = tid;
+        d_sharedDeq[a][b] = tid;
       }
     }
     else if (es == EQUALITY_UNKNOWN)
     {
       // Case that a =? b
-      if (sharedEq[a].find(b) == sharedEq[a].end())
+      if (d_sharedEq[a].find(b) == d_sharedEq[a].end())
       {
-        sharedEq[a][b] = tid;
+        d_sharedEq[a][b] = tid;
       }
-      if (sharedDeq[a].find(b) == sharedDeq[a].end())
+      if (d_sharedDeq[a].find(b) == d_sharedDeq[a].end())
       {
-        sharedDeq[a][b] = tid;
+        d_sharedDeq[a][b] = tid;
       }
     }
   }
@@ -898,16 +892,6 @@ theory::EqualityStatus TheoryEngine::checkPair(
 }
 
 unsigned TheoryEngine::checkSharedTermMaps(
-    const std::unordered_map<TNode,
-                             std::unordered_map<TNode,
-                                                theory::TheoryId,
-                                                TNodeHashFunction>,
-                             TNodeHashFunction>& sharedEq,
-    const std::unordered_map<TNode,
-                             std::unordered_map<TNode,
-                                                theory::TheoryId,
-                                                TNodeHashFunction>,
-                             TNodeHashFunction>& sharedDeq,
     const std::map<TheoryId, std::unordered_set<TNode, TNodeHashFunction> >&
         tshared,
     const std::unordered_set<TNode, TNodeHashFunction>& relevant_eqc,
@@ -943,7 +927,7 @@ unsigned TheoryEngine::checkSharedTermMaps(
     for (const std::
              pair<const TNode,
                   std::unordered_map<TNode, TheoryId, TNodeHashFunction> >& eq :
-         sharedEq)
+         d_sharedEq)
     {
       TNode a = eq.first;
       Assert(term_to_eqc.find(a) != term_to_eqc.end());
@@ -957,8 +941,8 @@ unsigned TheoryEngine::checkSharedTermMaps(
                                               TheoryId,
                                               TNodeHashFunction>,
                            TNodeHashFunction>::const_iterator deq =
-            sharedDeq.find(a);
-        if (deq != sharedDeq.end())
+            d_sharedDeq.find(a);
+        if (deq != d_sharedDeq.end())
         {
           for (const std::pair<const TNode, TheoryId>& eq_lhs : eq.second)
           {
@@ -1104,6 +1088,8 @@ void TheoryEngine::combineTheoriesModelBased()
   d_shared_terms_merge.clear();
   d_split_eq_rew.clear();
   d_split_terms.clear();
+  d_sharedEq.clear();
+  d_sharedDeq.clear();
   bool success = true;
   unsigned numSplits = 0;
   std::unordered_map<TNode, TNode, TNodeHashFunction> term_to_eqc;
@@ -1226,14 +1212,6 @@ void TheoryEngine::combineTheoriesModelBased()
   
   if (!success && numSplits == 0)
   {
-    std::unordered_map<TNode,
-                      std::unordered_map<TNode, TheoryId, TNodeHashFunction>,
-                      TNodeHashFunction>
-        sharedEq;
-    std::unordered_map<TNode,
-                      std::unordered_map<TNode, TheoryId, TNodeHashFunction>,
-                      TNodeHashFunction>
-        sharedDeq;
     // get the shared terms for each theory
     std::map<TheoryId, std::unordered_set<TNode, TNodeHashFunction> > tshared;
 #ifdef CVC4_FOR_EACH_THEORY_STATEMENT
@@ -1299,7 +1277,7 @@ void TheoryEngine::combineTheoriesModelBased()
               for (const TNode& a : shared_eqc)
               {
                 term_to_eqc[a] = p.first;
-                EqualityStatus es = checkPair(a, b, sharedEq, sharedDeq, tid, tpar);
+                EqualityStatus es = checkPair(a, b, tid, tpar);
                 /*
                 if (es==EQUALITY_TRUE || es==EQUALITY_TRUE_IN_MODEL)
                 {
@@ -1321,8 +1299,7 @@ void TheoryEngine::combineTheoriesModelBased()
         }
       }
     }
-    numSplits = checkSharedTermMaps(
-        sharedEq, sharedDeq, tshared, relevant_eqc, term_to_eqc);
+    numSplits = checkSharedTermMaps(tshared, relevant_eqc, term_to_eqc);
     if (numSplits == 0)
     {
       // verify the model?
