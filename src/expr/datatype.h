@@ -899,6 +899,9 @@ public:
    */
   unsigned getCompressionPathWeight(Type dtt, Type src, Type dst) const;
   
+  /** Get the source type */
+  Type getSourceTypeForCompressedSelector(Type dtt, Expr zsel) const;
+  
   /** get sygus type
    * This gets the built-in type associated with
    * this sygus datatype, i.e. the type of the
@@ -1034,6 +1037,8 @@ public:
     std::map< Type, std::map< Type, unsigned > > d_compression_id;
     /** cache of compressed selectors for each compression id */
     std::map< unsigned, std::map< unsigned, Expr > > d_compress_sel;
+    /** to source type */
+    std::map< Expr, Type > d_compress_sel_srct;
   };
   /** selector information for each instantiation of this datatype */
   mutable std::map< Type, SelectorInfo > d_sinfo;

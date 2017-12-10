@@ -681,9 +681,24 @@ Expr Datatype::getCompressedSelector(Type dtt, Type src, Type dst, unsigned inde
       csel.setAttribute(DatatypeIndexAttr(),index);
       s = csel.toExpr();
       si.d_compress_sel[cid][index] = s;
+      si.d_compress_sel_srct[s] = src;
     }
   }
   return s;
+}
+
+Type Datatype::getSourceTypeForCompressedSelector(Type dtt, Expr zsel) const
+{
+  PrettyCheckArgument(isResolved(), this, "this datatype is not yet resolved");
+  SelectorInfo& si = d_sinfo[dtt];
+  Assert( si.d_computed_compress );
+  Type t;
+  std::map< Expr, Type >::const_iterator it = si.d_compress_sel_srct.find(zsel);
+  if( it!=si.d_compress_sel_srct.end() )
+  {
+    t = it->second;
+  }
+  return t;
 }
 
 unsigned Datatype::getCompressionPathWeight(Type dtt, Type src, Type dst) const
