@@ -238,22 +238,16 @@ RewriteResponse DatatypesRewriter::rewriteSelector(TNode in)
       // the compression map with the compressed selector
       Expr z = in.getOperator().toExpr();
       unsigned zindex = Datatype::indexOf(z);
-      // the edge we should be looking for in the type graph of t
-      Type srct = dt.getSourceTypeForCompressedSelector(t,z);
+      Assert(compress_id>=0);
       Type dstt = in.getType().toType();
       
       std::unordered_set<TNode, TNodeHashFunction> visited;
       std::vector<TNode> visit;
-      std::vector<unsigned> visit_zindex;
       TNode cur;
-      unsigned cur_zindex;
       visit.push_back(in[0]);
-      visit_zindex.push_back(zindex);
       do {
         cur = visit.back();
         visit.pop_back();
-        cur_zindex = visit_zindex.back();
-        visit_zindex.pop_back();
 
         if (visited.find(cur) == visited.end()) {
           visited.insert(cur);
@@ -261,30 +255,21 @@ RewriteResponse DatatypesRewriter::rewriteSelector(TNode in)
           // only recurse if also a constructor
           if( cur.getKind()==kind::APPLY_CONSTRUCTOR )
           {
-            unsigned zcount = 0;
             for (unsigned i = 0; i < cur.getNumChildren(); i++) {
               Type tx = cur[i].getType().toType();
-              if( ti==srct && tx==dstt )
+              if( tx==dstt )
               {
-                // return if we are in the right location
-                if( zcount==cur_zindex )
+                Expr zsel_edge = dt.getCompressedSelector(t,ti,tx,zindex,false);
+                if( zsel_edge==z )
                 {
                   Trace("compress-sel-rew") << "...return " << cur[i] << std::endl;
                   return RewriteResponse(REWRITE_DONE, cur[i]);
-                }
-                else
-                {
-                  zcount++;
                 }
               }
               // we cannot loop into the type itself
               if( tx!=t )
               {
                 visit.push_back(cur[i]);
-                // we divide by the weight on the edge from ti to tx
-                unsigned pweight = dt.getCompressionPathWeight( t, ti, tx );
-                Assert( pweight>0 );
-                visit_zindex.push_back( cur_zindex/pweight );
               }
             }
           }

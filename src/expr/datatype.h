@@ -893,14 +893,17 @@ public:
    * this returns the index^{th} selector on the compression labelled on the 
    * edge src -> dst.
    */
-  Expr getCompressedSelector(Type dtt, Type src, Type dst, unsigned index) const;
+  Expr getCompressedSelector(Type dtt, Type src, Type dst, unsigned index, bool doMake=true) const;
   
   /** Get the path weight
    */
   unsigned getCompressionPathWeight(Type dtt, Type src, Type dst) const;
+
+  /** get the compression id for edge */
+  int getCompressionId(Type dtt, Type src, Type dst) const;
   
-  /** Get the source type */
-  Type getSourceTypeForCompressedSelector(Type dtt, Expr zsel) const;
+  /** Get the compression id */
+  int getCompressionIdForSelector(Type dtt, Expr zsel) const;
   
   /** get sygus type
    * This gets the built-in type associated with
@@ -1037,8 +1040,8 @@ public:
     std::map< Type, std::map< Type, unsigned > > d_compression_id;
     /** cache of compressed selectors for each compression id */
     std::map< unsigned, std::map< unsigned, Expr > > d_compress_sel;
-    /** to source type */
-    std::map< Expr, Type > d_compress_sel_srct;
+    /** compression selector to compression id */
+    std::map< Expr, unsigned > d_compress_sel_to_cid;
   };
   /** selector information for each instantiation of this datatype */
   mutable std::map< Type, SelectorInfo > d_sinfo;

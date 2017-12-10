@@ -50,7 +50,7 @@ namespace expr {
 typedef expr::Attribute<expr::attr::DatatypeIndexTag, uint64_t> DatatypeIndexAttr;
 typedef expr::Attribute<expr::attr::DatatypeConsIndexTag, uint64_t> DatatypeConsIndexAttr;
 typedef expr::Attribute<expr::attr::DatatypeSharedSelIndexTag, uint64_t> DatatypeSharedSelIndexAttr;
-typedef expr::Attribute<expr::attr::DatatypeSelCompressedTag, bool> DatatypeSelCompressedAttr;
+typedef expr::Attribute<expr::attr::DatatypeSelCompressedTag, uint64_t> DatatypeSelCompressedAttr;
 typedef expr::Attribute<expr::attr::DatatypeFiniteTag, bool> DatatypeFiniteAttr;
 typedef expr::Attribute<expr::attr::DatatypeFiniteComputedTag, bool> DatatypeFiniteComputedAttr;
 typedef expr::Attribute<expr::attr::DatatypeUFiniteTag, bool> DatatypeUFiniteAttr;
@@ -119,7 +119,7 @@ bool Datatype::isCompressed(Expr item) {
                 item,
                 "arg must be a datatype selector");
   TNode n = Node::fromExpr(item);
-  return n.getAttribute(DatatypeSelCompressedAttr());
+  return n.hasAttribute(DatatypeSelCompressedAttr());
 }
 
 void Datatype::resolve(ExprManager* em,
@@ -656,7 +656,7 @@ Expr Datatype::getSharedSelector( Type dtt, Type t, unsigned index ) const{
   return s; 
 }
 
-Expr Datatype::getCompressedSelector(Type dtt, Type src, Type dst, unsigned index) const {
+Expr Datatype::getCompressedSelector(Type dtt, Type src, Type dst, unsigned index, bool doMake) const {
   PrettyCheckArgument(isResolved(), this, "this datatype is not yet resolved");
   computeCompressedSelectors(dtt);
   SelectorInfo& si = d_sinfo[dtt];
@@ -673,32 +673,21 @@ Expr Datatype::getCompressedSelector(Type dtt, Type src, Type dst, unsigned inde
       {
         return iti->second;
       }
-      NodeManager* nm = NodeManager::currentNM();
-      std::stringstream ss;
-      ss << "zsel_" << index;
-      Node csel = nm->mkSkolem(ss.str(), nm->mkSelectorType(TypeNode::fromType( dtt ), TypeNode::fromType( dst )), "is a compressed selector", NodeManager::SKOLEM_NO_NOTIFY);
-      //csel.setAttribute(DatatypeSelCompressedAttr(),bool);
-      csel.setAttribute(DatatypeIndexAttr(),index);
-      s = csel.toExpr();
-      si.d_compress_sel[cid][index] = s;
-      si.d_compress_sel_srct[s] = src;
+      if( doMake )
+      {
+        NodeManager* nm = NodeManager::currentNM();
+        std::stringstream ss;
+        ss << "zsel_" << index;
+        Node csel = nm->mkSkolem(ss.str(), nm->mkSelectorType(TypeNode::fromType( dtt ), TypeNode::fromType( dst )), "is a compressed selector", NodeManager::SKOLEM_NO_NOTIFY);
+        csel.setAttribute(DatatypeSelCompressedAttr(),cid);
+        csel.setAttribute(DatatypeIndexAttr(),index);
+        s = csel.toExpr();
+        si.d_compress_sel[cid][index] = s;
+        si.d_compress_sel_to_cid[s] = cid;
+      }
     }
   }
   return s;
-}
-
-Type Datatype::getSourceTypeForCompressedSelector(Type dtt, Expr zsel) const
-{
-  PrettyCheckArgument(isResolved(), this, "this datatype is not yet resolved");
-  SelectorInfo& si = d_sinfo[dtt];
-  Assert( si.d_computed_compress );
-  Type t;
-  std::map< Expr, Type >::const_iterator it = si.d_compress_sel_srct.find(zsel);
-  if( it!=si.d_compress_sel_srct.end() )
-  {
-    t = it->second;
-  }
-  return t;
 }
 
 unsigned Datatype::getCompressionPathWeight(Type dtt, Type src, Type dst) const
@@ -716,6 +705,36 @@ unsigned Datatype::getCompressionPathWeight(Type dtt, Type src, Type dst) const
     }
   }
   return 0;
+}
+
+int Datatype::getCompressionId(Type dtt, Type src, Type dst) const
+{
+  PrettyCheckArgument(isResolved(), this, "this datatype is not yet resolved");
+  computeCompressedSelectors(dtt);
+  SelectorInfo& si = d_sinfo[dtt];
+  std::map< Type, std::map< Type, unsigned > >::const_iterator its = si.d_compression_id.find(src);
+  if( its != d_sinfo[dtt].d_compression_id.end() )
+  {
+    std::map< Type, unsigned >::const_iterator itd = its->second.find(dst);
+    if( itd!=its->second.end() )
+    {
+      return itd->second;
+    }
+  }
+  return -1;  
+}
+
+int Datatype::getCompressionIdForSelector(Type dtt, Expr zsel) const
+{
+  PrettyCheckArgument(isResolved(), this, "this datatype is not yet resolved");
+  SelectorInfo& si = d_sinfo[dtt];
+  std::map< Expr, unsigned >::const_iterator it = si.d_compress_sel_to_cid.find(zsel);
+  if( it==si.d_compress_sel_to_cid.end() )
+  {
+    return it->second;
+  }
+  Assert( false );
+  return -1;
 }
 
 void printTypeDebug(const char* c, TypeNode tn)
