@@ -676,17 +676,9 @@ public:
   /** merged shared terms */
   void mergeSharedTerms(TNode t1, TNode t2);
 
-  theory::EqualityStatus checkPair(
-      TNode a,
-      TNode b,
-      theory::TheoryId tid,
-      bool tparametric);
+  unsigned checkPair(TNode a, TNode b, theory::TheoryId tid, bool tparametric);
   
-  unsigned checkSharedTermMaps(
-    const std::map<theory::TheoryId, std::unordered_set<TNode, TNodeHashFunction> >&
-        tshared,
-    const std::unordered_set<TNode, TNodeHashFunction>& relevant_eqc,
-    const std::unordered_map<TNode, TNode, TNodeHashFunction>& term_to_eqc);
+  unsigned checkSharedTermMaps(const std::map<theory::TheoryId, std::unordered_set<TNode, TNodeHashFunction> >& tshared);
   
   unsigned checkSplitCandidate(TNode a, TNode b, theory::TheoryId t1, theory::TheoryId t2);
   
@@ -698,15 +690,9 @@ public:
   
   std::map<TNode, std::vector<TNode> > d_shared_terms_merge;
 
-  std::unordered_map<TNode,
-                    std::unordered_map<TNode, theory::TheoryId, TNodeHashFunction>,
-                    TNodeHashFunction>
-      d_sharedEq;
+  std::unordered_map<TNode, std::unordered_map<TNode, theory::TheoryId, TNodeHashFunction>, TNodeHashFunction> d_sharedEq;
       
-  std::unordered_map<TNode,
-                    std::unordered_map<TNode, theory::TheoryId, TNodeHashFunction>,
-                    TNodeHashFunction>
-      d_sharedDeq;
+  std::unordered_map<TNode, std::unordered_map<TNode, theory::TheoryId, TNodeHashFunction>, TNodeHashFunction> d_sharedDeq;
   
   /**
    * Calls ppStaticLearn() on all theories, accumulating their
