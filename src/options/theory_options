@@ -26,4 +26,7 @@ option modelBasedTcAck --model-based-tc-ack bool :default false
 option modelBasedTcRewUnique --model-based-tc-runique bool :default false
  consider splits that are unique up to rewriting
  
+option modelBasedTcTermUnique --model-based-tc-tunique bool :default false
+ consider splits on unique terms
+ 
 endmodule

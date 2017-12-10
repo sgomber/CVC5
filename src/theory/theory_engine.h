@@ -714,6 +714,8 @@ public:
 
   std::unordered_set<Node, NodeHashFunction> d_split_eq_rew;
   
+  std::unordered_set<Node, NodeHashFunction> d_split_terms;
+  
   std::map<TNode, std::vector<TNode> > d_shared_terms_merge;
 
   /**
