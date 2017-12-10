@@ -239,7 +239,7 @@ RewriteResponse DatatypesRewriter::rewriteSelector(TNode in)
       Expr z = in.getOperator().toExpr();
       unsigned zindex = Datatype::indexOf(z);
       // the edge we should be looking for in the type graph of t
-      Type srct = dt.getSourceTypeForCompressedSelector(t,src);
+      Type srct = dt.getSourceTypeForCompressedSelector(t,z);
       Type dstt = in.getType().toType();
       
       std::unordered_set<TNode, TNodeHashFunction> visited;
@@ -276,7 +276,7 @@ RewriteResponse DatatypesRewriter::rewriteSelector(TNode in)
                 {
                   zcount++;
                 }
-              }s
+              }
               // we cannot loop into the type itself
               if( tx!=t )
               {
