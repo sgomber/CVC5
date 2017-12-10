@@ -648,7 +648,7 @@ Expr Datatype::getSharedSelector( Type dtt, Type t, unsigned index ) const{
   std::stringstream ss;
   ss << "sel_" << index;
   Node sn = nm->mkSkolem(ss.str(), nm->mkSelectorType(TypeNode::fromType(dtt), TypeNode::fromType(t)), "is a shared selector", NodeManager::SKOLEM_NO_NOTIFY);
-  sn.setAttribute(DatatypeSharedSelIndexAttr(),index);
+  sn.setAttribute(DatatypeIndexAttr(),index);
   
   Expr s = sn.toExpr();
   d_sinfo[dtt].d_shared_sel[t][index] = s;
@@ -793,7 +793,7 @@ void Datatype::computeCompressedSelectors(Type dtt) const
               if(Trace.isOn("compress-sel"))
               {
                 Trace("compress-sel-debug") << "Node : ";
-                printTypeDebug("compress-sel-debug", dttn);
+                printTypeDebug("compress-sel-debug", tn);
                 Trace("compress-sel-debug") << std::endl;
               }
               g_dtt.push_back( tn );
@@ -842,6 +842,7 @@ void Datatype::computeCompressedSelectors(Type dtt) const
                 g_e[curr][tx] = cc.second;
                 si.d_edges[curr.toType()][tx.toType()] = cc.second;
                 // now must be a self sibling since number of this is variable
+                // TODO : is this correct?
                 siblings[tx].insert( tx );
               }
             }
@@ -934,7 +935,7 @@ void Datatype::computeCompressedSelectors(Type dtt) const
             Trace("compress-sel-debug") << " ) ... " << std::endl;
           }
           // if siblings of paths to this node cannot reach this node, we can assign a compressed selector at this edge
-          // FIXME should not have a special case
+          // FIXME should not have a special case?
           if( std::find( reach.begin(), reach.end(), ti )==reach.end() || ti==dttn )
           {
             // reuse a compression id, or allocate a new one

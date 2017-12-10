@@ -238,7 +238,6 @@ RewriteResponse DatatypesRewriter::rewriteSelector(TNode in)
       // the compression map with the compressed selector
       Expr z = in.getOperator().toExpr();
       unsigned zindex = Datatype::indexOf(z);
-      Assert(compress_id>=0);
       Type dstt = in.getType().toType();
       
       std::unordered_set<TNode, TNodeHashFunction> visited;
@@ -262,6 +261,7 @@ RewriteResponse DatatypesRewriter::rewriteSelector(TNode in)
                 Expr zsel_edge = dt.getCompressedSelector(t,ti,tx,zindex,false);
                 if( zsel_edge==z )
                 {
+                  Assert( cur[i].getType().isComparableTo( in.getType() ) );
                   Trace("compress-sel-rew") << "...return " << cur[i] << std::endl;
                   return RewriteResponse(REWRITE_DONE, cur[i]);
                 }
@@ -348,7 +348,7 @@ RewriteResponse DatatypesRewriter::rewriteSelector(TNode in)
   else if( options::dtCompressSelectors() )
   {
     // compress the chain
-    if( options::dtCompressSelectors() && !Datatype::isCompressed( in.getOperator().toExpr() ) )
+    if( !Datatype::isCompressed( in.getOperator().toExpr() ) )
     {
       Trace("compress-sel-rew") << "Compress : " << in << std::endl;
       // in[0] should be a compressed selector chain
