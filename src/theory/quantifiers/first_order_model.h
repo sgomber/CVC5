@@ -92,10 +92,7 @@ class QRepBoundExt : public RepBoundExt
 class FirstOrderModel : public TheoryModel
 {
  public:
-  FirstOrderModel(QuantifiersEngine* qe,
-                  theory::eq::EqualityEngineNotify* notify,
-                  context::Context* c,
-                  std::string name);
+  FirstOrderModel(QuantifiersEngine* qe, theory::eq::EqualityEngineNotify* notify, context::Context* c, std::string name);
   virtual ~FirstOrderModel() throw() {}
   virtual FirstOrderModelIG* asFirstOrderModelIG() { return nullptr; }
   virtual fmcheck::FirstOrderModelFmc* asFirstOrderModelFmc() { return nullptr; }
@@ -216,21 +213,18 @@ private:
   void makeEvalUfIndexOrder( Node n );
 //the following functions are for evaluating quantifier bodies
  public:
-  FirstOrderModelIG(QuantifiersEngine* qe,
-                    theory::eq::EqualityEngineNotify* notify,
-                    context::Context* c,
-                    std::string name);
+  FirstOrderModelIG(QuantifiersEngine * qe, theory::eq::EqualityEngineNotify* notify, context::Context* c, std::string name);
   ~FirstOrderModelIG() throw() {}
-  FirstOrderModelIG* asFirstOrderModelIG() { return this; }
+  FirstOrderModelIG * asFirstOrderModelIG() { return this; }
   // initialize the model
-  void processInitialize(bool ispre);
-  // for initialize model
-  void processInitializeModelForTerm(Node n);
+  void processInitialize( bool ispre );
+  //for initialize model
+  void processInitializeModelForTerm( Node n );
   /** reset evaluation */
   void resetEvaluate();
   /** evaluate functions */
-  int evaluate(Node n, int& depIndex, RepSetIterator* ri);
-  Node evaluateTerm(Node n, int& depIndex, RepSetIterator* ri);
+  int evaluate( Node n, int& depIndex, RepSetIterator* ri  );
+  Node evaluateTerm( Node n, int& depIndex, RepSetIterator* ri  );
 public:
   //statistics
   int d_eval_formulas;
@@ -262,22 +256,19 @@ private:
   /** get current model value */
   void processInitializeModelForTerm(Node n);
  public:
-  FirstOrderModelFmc(QuantifiersEngine* qe,
-                    theory::eq::EqualityEngineNotify* notify,
-                    context::Context* c,
-                    std::string name);
+  FirstOrderModelFmc(QuantifiersEngine * qe, theory::eq::EqualityEngineNotify* notify, context::Context* c, std::string name);
   virtual ~FirstOrderModelFmc() throw();
-  FirstOrderModelFmc* asFirstOrderModelFmc() { return this; }
+  FirstOrderModelFmc * asFirstOrderModelFmc() { return this; }
   // initialize the model
-  void processInitialize(bool ispre);
-  Node getFunctionValue(Node op, const char* argPrefix);
+  void processInitialize( bool ispre );
+  Node getFunctionValue(Node op, const char* argPrefix );
 
   bool isStar(Node n);
   Node getStar(TypeNode tn);
   Node getStarElement(TypeNode tn);
   bool isInterval(Node n);
-  Node getInterval(Node lb, Node ub);
-  bool isInRange(Node v, Node i);
+  Node getInterval( Node lb, Node ub );
+  bool isInRange( Node v, Node i );
 };/* class FirstOrderModelFmc */
 
 }/* CVC4::theory::quantifiers::fmcheck namespace */
@@ -300,17 +291,14 @@ private:
   void collectEqVars( TNode q, TNode n, std::map< int, bool >& eq_vars );
   TNode getUsedRepresentative( TNode n );
  public:
-  FirstOrderModelAbs(QuantifiersEngine* qe,
-                    theory::eq::EqualityEngineNotify* notify,
-                    context::Context* c,
-                    std::string name);
+  FirstOrderModelAbs(QuantifiersEngine * qe, theory::eq::EqualityEngineNotify* notify, context::Context* c, std::string name);
   ~FirstOrderModelAbs() throw();
-  FirstOrderModelAbs* asFirstOrderModelAbs() { return this; }
-  void processInitialize(bool ispre);
-  unsigned getRepresentativeId(TNode n);
-  bool isValidType(TypeNode tn) { return d_domain.find(tn) != d_domain.end(); }
-  Node getFunctionValue(Node op, const char* argPrefix);
-  Node getVariable(Node q, unsigned i);
+  FirstOrderModelAbs * asFirstOrderModelAbs() { return this; }
+  void processInitialize( bool ispre );
+  unsigned getRepresentativeId( TNode n );
+  bool isValidType( TypeNode tn ) { return d_domain.find( tn )!=d_domain.end(); }
+  Node getFunctionValue(Node op, const char* argPrefix );
+  Node getVariable( Node q, unsigned i );
 };
 
 }/* CVC4::theory::quantifiers namespace */

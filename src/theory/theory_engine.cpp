@@ -1143,6 +1143,7 @@ void TheoryEngine::combineTheoriesModelBased()
       }
       ++eqcs_i;
     }
+    
     if (conflict_pairs.empty())
     {
       Trace("tc-model") << "--> model building succeeded" << std::endl;
@@ -1204,7 +1205,7 @@ void TheoryEngine::combineTheoriesModelBased()
                 if(!d_sharedTerms.isShared(ac) || !d_sharedTerms.isShared(bc) || 
                    ( !d_sharedTerms.areEqual(ac, bc) && !d_sharedTerms.areDisequal(ac, bc)))
                 {
-                  // must split immediately
+                  // check split immediately
                   numSplits += checkSplitCandidate( ac, bc, parentId, childId );
                 }
               }
