@@ -307,47 +307,42 @@ void TheoryEngine::eqNotifyPostMerge(TNode t1, TNode t2, NotifyClass* c)
   }
   else
   {
-    mergeSharedTerms(t1, t2);
-  }
-}
-
-void TheoryEngine::mergeSharedTerms(TNode t1, TNode t2)
-{
-  // equivalence classes on the model have merged, update the shared term
-  // equivalence classes
-  std::map<TNode, std::vector<TNode> >::iterator it2 =
-      d_shared_terms_merge.find(t2);
-  if (it2 != d_shared_terms_merge.end())
-  {
-    std::map<TNode, std::vector<TNode> >::iterator it1 =
-        d_shared_terms_merge.find(t1);
-    if (it1 != d_shared_terms_merge.end())
+    // equivalence classes on the model have merged, update the shared term
+    // equivalence classes
+    std::map<TNode, std::vector<TNode> >::iterator it2 =
+        d_shared_terms_merge.find(t2);
+    if (it2 != d_shared_terms_merge.end())
     {
-      std::vector<TNode> merge;
-      for (const TNode& b : it2->second)
+      std::map<TNode, std::vector<TNode> >::iterator it1 =
+          d_shared_terms_merge.find(t1);
+      if (it1 != d_shared_terms_merge.end())
       {
-        // only care if not propagated equal to an existing one
-        bool success = true;
-        for (const TNode& a : it1->second)
+        std::vector<TNode> merge;
+        for (const TNode& b : it2->second)
         {
-          if (d_sharedTerms.areEqual(a, b))
+          // only care if not propagated equal to an existing one
+          bool success = true;
+          for (const TNode& a : it1->second)
           {
-            success = false;
-            break;
+            if (d_sharedTerms.areEqual(a, b))
+            {
+              success = false;
+              break;
+            }
+          }
+          if (success)
+          {
+            merge.push_back(b);
           }
         }
-        if (success)
-        {
-          merge.push_back(b);
-        }
+        it1->second.insert(it1->second.end(), merge.begin(), merge.end());
       }
-      it1->second.insert(it1->second.end(), merge.begin(), merge.end());
+      else
+      {
+        d_shared_terms_merge[t1] = d_shared_terms_merge[t2];
+      }
+      d_shared_terms_merge.erase(it2);
     }
-    else
-    {
-      d_shared_terms_merge[t1] = d_shared_terms_merge[t2];
-    }
-    d_shared_terms_merge.erase(it2);
   }
 }
 
