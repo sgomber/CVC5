@@ -242,12 +242,15 @@ RewriteResponse DatatypesRewriter::rewriteSelector(TNode in)
       Trace("compress-sel-rew-debug") << "  index is " << zindex << std::endl;
       
       std::unordered_set<TNode, TNodeHashFunction> visited;
-      std::vector<TNode> visit;
+      std::vector<std::pair<TNode,unsigned> > visit;
       TNode cur;
-      visit.push_back(in[0]);
+      unsigned cur_zindex;
+      visit.push_back(std::pair<TNode, unsigned >( in[0], zindex ));
       do {
-        cur = visit.back();
+        std::pair<TNode,unsigned> pv = visit.back();
         visit.pop_back();
+        cur = pv.first;
+        cur_zindex = pv.second;
 
         if (visited.find(cur) == visited.end()) {
           visited.insert(cur);
@@ -256,22 +259,31 @@ RewriteResponse DatatypesRewriter::rewriteSelector(TNode in)
           {
             TypeNode t_cons = cur.getOperator().getType();
             Type ti = cur.getType().toType();
+            unsigned dst_count = 0;
             for (unsigned i = 0; i < cur.getNumChildren(); i++) {
               Type tx = t_cons[i].toType();
               if( tx==dstt )
               {
-                Expr zsel_edge = dt.getCompressedSelector(t,ti,tx,zindex,false);
-                if( zsel_edge==z )
+                if( cur_zindex==dst_count )
                 {
-                  Assert( cur[i].getType().isComparableTo( in.getType() ) );
-                  Trace("compress-sel-rew") << "...return " << cur[i] << std::endl;
-                  return RewriteResponse(REWRITE_DONE, cur[i]);
+                  Expr zsel_edge = dt.getCompressedSelector(t,ti,tx,zindex,false);
+                  if( zsel_edge==z )
+                  {
+                    Assert( cur[i].getType().isComparableTo( in.getType() ) );
+                    Trace("compress-sel-rew") << "...return " << cur[i] << std::endl;
+                    return RewriteResponse(REWRITE_DONE, cur[i]);
+                  }
+                }
+                else
+                {
+                  dst_count++;
                 }
               }
               // we cannot loop into the type itself
               if( tx!=t )
               {
-                visit.push_back(cur[i]);
+                unsigned w = dt.getCompressionPathWeight(t,ti,tx);
+                visit.push_back(std::pair<TNode,unsigned>( cur[i],  w==0 ? 0 : cur_zindex/w ) );
               }
             }
           }
