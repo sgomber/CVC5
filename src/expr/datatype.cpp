@@ -50,7 +50,7 @@ namespace expr {
 typedef expr::Attribute<expr::attr::DatatypeIndexTag, uint64_t> DatatypeIndexAttr;
 typedef expr::Attribute<expr::attr::DatatypeConsIndexTag, uint64_t> DatatypeConsIndexAttr;
 typedef expr::Attribute<expr::attr::DatatypeSharedSelIndexTag, uint64_t> DatatypeSharedSelIndexAttr;
-typedef expr::Attribute<expr::attr::DatatypeSelCompressedTag, uint64_t> DatatypeSelCompressedAttr;
+typedef expr::Attribute<expr::attr::DatatypeSelCompressedTag, bool> DatatypeSelCompressedAttr;
 typedef expr::Attribute<expr::attr::DatatypeFiniteTag, bool> DatatypeFiniteAttr;
 typedef expr::Attribute<expr::attr::DatatypeFiniteComputedTag, bool> DatatypeFiniteComputedAttr;
 typedef expr::Attribute<expr::attr::DatatypeUFiniteTag, bool> DatatypeUFiniteAttr;
@@ -119,7 +119,7 @@ bool Datatype::isCompressed(Expr item) {
                 item,
                 "arg must be a datatype selector");
   TNode n = Node::fromExpr(item);
-  return n.hasAttribute(DatatypeSelCompressedAttr());
+  return n.getAttribute(DatatypeSelCompressedAttr());
 }
 
 void Datatype::resolve(ExprManager* em,
@@ -652,7 +652,7 @@ Expr Datatype::getSharedSelector( Type dtt, Type t, unsigned index ) const{
   
   Expr s = sn.toExpr();
   d_sinfo[dtt].d_shared_sel[t][index] = s;
-  Trace("dt-shared-sel") << "Made " << s << " of type " << dtt << " -> " << t << std::endl;
+  Trace("selectors") << "Shared selector : " << s << ", type " << dtt << " -> " << t << ", index = " << index << std::endl;
   return s; 
 }
 
@@ -679,11 +679,12 @@ Expr Datatype::getCompressedSelector(Type dtt, Type src, Type dst, unsigned inde
         std::stringstream ss;
         ss << "zsel_" << index;
         Node csel = nm->mkSkolem(ss.str(), nm->mkSelectorType(TypeNode::fromType( dtt ), TypeNode::fromType( dst )), "is a compressed selector", NodeManager::SKOLEM_NO_NOTIFY);
-        csel.setAttribute(DatatypeSelCompressedAttr(),cid);
+        csel.setAttribute(DatatypeSelCompressedAttr(),true);
         csel.setAttribute(DatatypeIndexAttr(),index);
         s = csel.toExpr();
         si.d_compress_sel[cid][index] = s;
         si.d_compress_sel_to_cid[s] = cid;
+        Trace("selectors") << "Compressed selector : " << s << ", for " << dtt << ", type " << src << " -> " << dst << ", index = " << index << std::endl;
       }
     }
   }
@@ -837,13 +838,13 @@ void Datatype::computeCompressedSelectors(Type dtt) const
                   printTypeDebug("compress-sel-debug", curr);
                   Trace("compress-sel-debug") << " ->^" << cc.second << " ";
                   printTypeDebug("compress-sel-debug", tx);
-                  Trace("compress-sel-debug") << " and set self sibling" << std::endl;
+                  Trace("compress-sel-debug") << std::endl;
                 }
                 g_e[curr][tx] = cc.second;
                 si.d_edges[curr.toType()][tx.toType()] = cc.second;
                 // now must be a self sibling since number of this is variable
                 // TODO : is this correct?
-                siblings[tx].insert( tx );
+                //siblings[tx].insert( tx );
               }
             }
           }
@@ -883,8 +884,10 @@ void Datatype::computeCompressedSelectors(Type dtt) const
     }while( success );
     
     //-------------------- compute compression map
+    // total number of compression ids
+    unsigned compress_sel_id_count = 0;
     // compression ids with return type domain
-    std::map< TypeNode, unsigned > compress_sel_id_count;
+    std::map< TypeNode, std::vector< unsigned > > compress_id_alloc;
     // for each of these compression ids, a list of source nodes for it
     std::map< unsigned, std::unordered_set< TypeNode, TypeNodeHashFunction > > cid_to_sources;
     // for each edge in the graph
@@ -897,35 +900,7 @@ void Datatype::computeCompressedSelectors(Type dtt) const
       {
         for( std::pair< const TypeNode, unsigned > e : itg->second )
         {
-          TypeNode tx = e.first;
-          std::unordered_set< TypeNode, TypeNodeHashFunction >& sib_ti = its->second;
-          
-          // compute the set of nodes that are reachable from sib_ti that do not pass through dttn
-          std::vector< TypeNode > reach( sib_ti.begin(), sib_ti.end() );
-          unsigned rcount = 0;
-          while( rcount<reach.size() )
-          {
-            TypeNode t1 = reach[rcount];
-            rcount++;
-            if( t1!=dttn )
-            {
-              std::map< TypeNode, std::map< TypeNode, unsigned > >::iterator itgc = g_e.find( t1 );
-              if( itgc!=g_e.end() )
-              {
-                for( std::pair< const TypeNode, unsigned >& re : itgc->second )
-                {
-                  TypeNode t2 = re.first;
-                  if( t2!=dttn )
-                  {
-                    if( std::find( reach.begin(), reach.end(), t2 )==reach.end() )
-                    {
-                      reach.push_back( t2 );
-                    }
-                  }
-                }
-              }
-            }
-          }
+          TypeNode tx = e.first;          
           if(Trace.isOn("compress-sel-debug"))
           {
             Trace("compress-sel-debug") << "  Check edge ( ";
@@ -934,16 +909,60 @@ void Datatype::computeCompressedSelectors(Type dtt) const
             printTypeDebug("compress-sel-debug", tx);
             Trace("compress-sel-debug") << " ) ... " << std::endl;
           }
+          std::vector< TypeNode > reach;
+          if( its!=siblings.end() )
+          {
+            std::unordered_set< TypeNode, TypeNodeHashFunction >& sib_ti = its->second;
+            // compute the set of nodes that are reachable from sib_ti that do not pass through dttn
+            reach.insert( reach.end(), sib_ti.begin(), sib_ti.end() );
+            unsigned rcount = 0;
+            while( rcount<reach.size() )
+            {
+              TypeNode t1 = reach[rcount];
+              rcount++;
+              if( t1!=dttn )
+              {
+                std::map< TypeNode, std::map< TypeNode, unsigned > >::iterator itgc = g_e.find( t1 );
+                if( itgc!=g_e.end() )
+                {
+                  for( std::pair< const TypeNode, unsigned >& re : itgc->second )
+                  {
+                    TypeNode t2 = re.first;
+                    if( t2!=dttn )
+                    {
+                      if( std::find( reach.begin(), reach.end(), t2 )==reach.end() )
+                      {
+                        reach.push_back( t2 );
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+          if(Trace.isOn("compress-sel-debug"))
+          {
+            Trace("compress-sel-debug") << "  ..reachable set from siblings : ";
+            for( TypeNode& tn : reach ) 
+            {
+              printTypeDebug("compress-sel-debug", tn );
+              Trace("compress-sel-debug") << " ";
+            }
+            if( reach.empty() )
+            {
+              Trace("compress-sel-debug") << "(empty)";
+            }
+            Trace("compress-sel-debug") << std::endl;
+          }
           // if siblings of paths to this node cannot reach this node, we can assign a compressed selector at this edge
           // FIXME should not have a special case?
           if( std::find( reach.begin(), reach.end(), ti )==reach.end() || ti==dttn )
           {
             // reuse a compression id, or allocate a new one
             int compress_id = -1;
-            unsigned compress_id_alloc = compress_sel_id_count[tx];
-            for( unsigned j=0; j<compress_id_alloc; j++ )
+            for( unsigned j : compress_id_alloc[tx] )
             {
-              // we can allocate if
+              // we can reuse this id if no siblings on the path can reach this
               bool success = true;
               std::unordered_set< TypeNode, TypeNodeHashFunction >& csel_srcs = cid_to_sources[j];
               for(const TypeNode& src : csel_srcs )
@@ -958,20 +977,23 @@ void Datatype::computeCompressedSelectors(Type dtt) const
               if( success )
               {
                 compress_id = static_cast<int>(j);
+                Trace("compress-sel-debug") << "  ...assign existing compression id " << compress_id << std::endl;
                 break;
               }
             }
             if( compress_id<0 )
             {
-              compress_id = compress_sel_id_count[tx];
-              compress_sel_id_count[tx]++;
+              compress_id = compress_sel_id_count;
+              compress_sel_id_count++;
+              compress_id_alloc[tx].push_back( compress_id );
+              Trace("compress-sel-debug") << "  ...assign new compression id " << compress_id << std::endl;
             }
             si.d_compression_id[ti.toType()][tx.toType()] = compress_id;
             cid_to_sources[compress_id].insert( ti );
           }
           else
           {
-            Trace("compress-sel-debug") << "  ...unassignable, since reachable from sibling" << std::endl;
+            Trace("compress-sel-debug") << "  ...unassignable, since self-reachable from sibling" << std::endl;
           }
         }
       }
@@ -1515,10 +1537,29 @@ int DatatypeConstructor::getSelectorIndexInternal( Expr sel ) const {
   if( options::dtSharedSelectors() ){
     Assert( sel.getType().isSelector() );
     Type domainType = ((SelectorType)sel.getType()).getDomain();
-    computeSharedSelectors( domainType );
-    std::map< Expr, unsigned >::iterator its = d_shared_selector_index[domainType].find( sel );
-    if( its!=d_shared_selector_index[domainType].end() ){
-      return (int)its->second;
+    if( Datatype::isCompressed(sel) )
+    {
+      Assert( options::dtCompressSelectors() );
+      unsigned zindex = Datatype::indexOf(sel);
+      const Datatype& dt = static_cast<DatatypeType>(domainType).getDatatype();
+      TypeNode ctype = TypeNode::fromType( getSpecializedConstructorType(domainType) );
+      for( unsigned i=0, size = ctype.getNumChildren(); i<(size-1); i++ )
+      {
+        Type tx = ctype[i].toType();
+        Expr zselc = dt.getCompressedSelector(domainType,domainType,tx,zindex,false);
+        if(zselc==sel )
+        {
+          return i;
+        }
+      }
+    }
+    else
+    {
+      computeSharedSelectors( domainType );
+      std::map< Expr, unsigned >::iterator its = d_shared_selector_index[domainType].find( sel );
+      if( its!=d_shared_selector_index[domainType].end() ){
+        return (int)its->second;
+      }
     }
   }else{
     unsigned sindex = Datatype::indexOf(sel);

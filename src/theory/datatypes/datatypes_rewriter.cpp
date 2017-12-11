@@ -239,6 +239,7 @@ RewriteResponse DatatypesRewriter::rewriteSelector(TNode in)
       Expr z = in.getOperator().toExpr();
       unsigned zindex = Datatype::indexOf(z);
       Type dstt = in.getType().toType();
+      Trace("compress-sel-rew-debug") << "  index is " << zindex << std::endl;
       
       std::unordered_set<TNode, TNodeHashFunction> visited;
       std::vector<TNode> visit;
@@ -250,12 +251,13 @@ RewriteResponse DatatypesRewriter::rewriteSelector(TNode in)
 
         if (visited.find(cur) == visited.end()) {
           visited.insert(cur);
-          Type ti = cur.getType().toType();
           // only recurse if also a constructor
           if( cur.getKind()==kind::APPLY_CONSTRUCTOR )
           {
+            TypeNode t_cons = cur.getOperator().getType();
+            Type ti = cur.getType().toType();
             for (unsigned i = 0; i < cur.getNumChildren(); i++) {
-              Type tx = cur[i].getType().toType();
+              Type tx = t_cons[i].toType();
               if( tx==dstt )
               {
                 Expr zsel_edge = dt.getCompressedSelector(t,ti,tx,zindex,false);
@@ -355,9 +357,11 @@ RewriteResponse DatatypesRewriter::rewriteSelector(TNode in)
       
       Node cand_zsel;
       unsigned zindex = Datatype::indexOf(selector.toExpr());
-      Type ti = in[0].getType().toType();
-      Type tx = in.getType().toType();
+      Type selType =in.getOperator().getType().toType();
+      Type ti = static_cast<SelectorType>(selType).getDomain();
+      Type tx = static_cast<SelectorType>(selType).getRangeType();
       unsigned curr_weight = dt.getCompressionPathWeight(ti,ti,tx);
+      Trace("compress-sel-rew-debug") << "  index/weight : " << zindex << "/" << curr_weight << " for " << ti << " -> " << tx << std::endl;
       
       if( in[0].getKind()==kind::APPLY_SELECTOR_TOTAL )
       {
