@@ -241,16 +241,13 @@ RewriteResponse DatatypesRewriter::rewriteSelector(TNode in)
       Type dstt = in.getType().toType();
       Trace("compress-sel-rew-debug") << "  index is " << zindex << std::endl;
       
-      std::unordered_set<TNode, TNodeHashFunction> visited;
-      std::vector<std::pair<TNode,unsigned> > visit;
-      TNode cur;
-      unsigned cur_zindex;
-      visit.push_back(std::pair<TNode, unsigned >( in[0], zindex ));
+      std::unordered_set<Node, NodeHashFunction> visited;
+      std::vector< Node > visit;
+      Node cur;
+      visit.push_back(in[0]);
       do {
-        std::pair<TNode,unsigned> pv = visit.back();
+        cur = visit.back();
         visit.pop_back();
-        cur = pv.first;
-        cur_zindex = pv.second;
 
         if (visited.find(cur) == visited.end()) {
           visited.insert(cur);
@@ -264,7 +261,8 @@ RewriteResponse DatatypesRewriter::rewriteSelector(TNode in)
               Type tx = t_cons[i].toType();
               if( tx==dstt )
               {
-                if( cur_zindex==dst_count )
+                unsigned w = dt.getCompressionPathWeight(t,ti,tx);
+                if( zindex%w==dst_count )
                 {
                   Expr zsel_edge = dt.getCompressedSelector(t,ti,tx,zindex,false);
                   if( zsel_edge==z )
@@ -282,8 +280,7 @@ RewriteResponse DatatypesRewriter::rewriteSelector(TNode in)
               // we cannot loop into the type itself
               if( tx!=t )
               {
-                unsigned w = dt.getCompressionPathWeight(t,ti,tx);
-                visit.push_back(std::pair<TNode,unsigned>( cur[i],  w==0 ? 0 : cur_zindex/w ) );
+                visit.push_back(cur[i]);
               }
             }
           }
@@ -295,7 +292,7 @@ RewriteResponse DatatypesRewriter::rewriteSelector(TNode in)
       // guaranteed that the compressed selector is undefined
       if( in[0].isConst() )
       {
-        Node gt = getArbitraryValue( TypeNode::fromType( t ) );
+        Node gt = getArbitraryValue( in.getType() );
         if( !gt.isNull() )
         {
           Trace("compress-sel-rew") << "...return arbitrary term " << gt << std::endl;

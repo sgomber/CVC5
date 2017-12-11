@@ -793,9 +793,9 @@ void Datatype::computeCompressedSelectors(Type dtt) const
             {
               if(Trace.isOn("compress-sel"))
               {
-                Trace("compress-sel-debug") << "Node : ";
-                printTypeDebug("compress-sel-debug", tn);
-                Trace("compress-sel-debug") << std::endl;
+                Trace("compress-sel") << "Node : ";
+                printTypeDebug("compress-sel", tn);
+                Trace("compress-sel") << std::endl;
               }
               g_dtt.push_back( tn );
               si.d_nodes.push_back( tn.toType() );
@@ -817,11 +817,11 @@ void Datatype::computeCompressedSelectors(Type dtt) const
             {
               if(Trace.isOn("compress-sel"))
               {
-                Trace("compress-sel-debug") << "Edge : ";
-                printTypeDebug("compress-sel-debug", curr);
-                Trace("compress-sel-debug") << " ->^" << cc.second << " ";
-                printTypeDebug("compress-sel-debug", tx);
-                Trace("compress-sel-debug") << std::endl;
+                Trace("compress-sel") << "Edge : ";
+                printTypeDebug("compress-sel", curr);
+                Trace("compress-sel") << " ->^" << cc.second << " ";
+                printTypeDebug("compress-sel", tx);
+                Trace("compress-sel") << std::endl;
               }
               // add (weighted edge
               g_e[curr][tx] = cc.second;
@@ -834,11 +834,11 @@ void Datatype::computeCompressedSelectors(Type dtt) const
               {
                 if(Trace.isOn("compress-sel"))
                 {
-                  Trace("compress-sel-debug") << "Modify edge : ";
-                  printTypeDebug("compress-sel-debug", curr);
-                  Trace("compress-sel-debug") << " ->^" << cc.second << " ";
-                  printTypeDebug("compress-sel-debug", tx);
-                  Trace("compress-sel-debug") << std::endl;
+                  Trace("compress-sel") << "Modify edge : ";
+                  printTypeDebug("compress-sel", curr);
+                  Trace("compress-sel") << " ->^" << cc.second << " ";
+                  printTypeDebug("compress-sel", tx);
+                  Trace("compress-sel") << std::endl;
                 }
                 g_e[curr][tx] = cc.second;
                 si.d_edges[curr.toType()][tx.toType()] = cc.second;
