@@ -1030,18 +1030,18 @@ public:
   public:
     SelectorInfo() : d_computed_compress(false) {}
     /** cache of shared selectors for this datatype */
-    mutable std::map<Type, std::map<unsigned, Expr> > d_shared_sel;
+    std::map<Type, std::map<unsigned, Expr> > d_shared_sel;
     /** whether we have computed compressed selectors */
-    mutable bool d_computed_compress;
+    bool d_computed_compress;
     /** weighted graph */
-    mutable std::vector< Type > d_nodes;
-    mutable std::map< Type, std::map< Type, unsigned > > d_edges;
+    std::vector< Type > d_nodes;
+    std::map< Type, std::map< Type, unsigned > > d_edges;
     /** map from edges to compression ids */
-    mutable std::map< Type, std::map< Type, unsigned > > d_compression_id;
+    std::map< Type, std::map< Type, unsigned > > d_compression_id;
     /** cache of compressed selectors for each compression id */
-    mutable std::map< unsigned, std::map< unsigned, Expr > > d_compress_sel;
+    std::map< unsigned, std::map< unsigned, Expr > > d_compress_sel;
     /** compression selector to compression id */
-    mutable std::map< Expr, unsigned > d_compress_sel_to_cid;
+    std::map< Expr, unsigned > d_compress_sel_to_cid;
   };
   /** selector information for each instantiation of this datatype */
   mutable std::map< Type, SelectorInfo > d_sinfo;

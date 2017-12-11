@@ -262,9 +262,11 @@ RewriteResponse DatatypesRewriter::rewriteSelector(TNode in)
               if( tx==dstt )
               {
                 unsigned w = dt.getCompressionPathWeight(t,ti,tx);
+                Trace("compress-sel-rew-debug2") << "...possible edge " << ti << " -> " << tx << ", count = " << dst_count << ", weight = " << w << std::endl;
                 if( zindex%w==dst_count )
                 {
                   Expr zsel_edge = dt.getCompressedSelector(t,ti,tx,zindex,false);
+                  Trace("compress-sel-rew-debug2") << "...compressed selector at this edge : " << zsel_edge << std::endl;
                   if( zsel_edge==z )
                   {
                     Assert( cur[i].getType().isComparableTo( in.getType() ) );
@@ -374,10 +376,11 @@ RewriteResponse DatatypesRewriter::rewriteSelector(TNode in)
       
       if( in[0].getKind()==kind::APPLY_SELECTOR_TOTAL )
       {
-        Type t = in[0][0].getType().toType();
-        Assert( t.isDatatype() );
         Expr pselector = in[0].getOperator().toExpr();
-        const Datatype& pdt = Datatype::datatypeOf(selector.toExpr());
+        Type selType = pselector.getType();
+        Type t = static_cast<SelectorType>(selType).getDomain();
+        
+        const Datatype& pdt = Datatype::datatypeOf(pselector);
         unsigned zindex_parent = Datatype::indexOf(pselector);
         unsigned new_index = zindex + curr_weight*zindex_parent;
       
