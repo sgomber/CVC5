@@ -128,7 +128,7 @@ void SygusSymBreakNew::assertTester( int tindex, TNode n, Node exp, std::vector<
               */
               sindex_in_parent = Datatype::indexOf(sel);
             }else{
-              sindex_in_parent = pdt[ptindex].getSelectorIndexInternal(sel);
+              sindex_in_parent = pdt[ptindex].getSelectorIndexInternal(ptn.toType(),sel);
             }
             // the tester is irrelevant in this branch
             if( sindex_in_parent==-1 ){
@@ -454,12 +454,14 @@ Node SygusSymBreakNew::getRelevancyCondition( Node n ) {
       Type nt = ntn.toType();
       const Datatype& dt = ((DatatypeType)nt).getDatatype();
       Expr selExpr = n.getOperator().toExpr();
-      if( options::dtSharedSelectors() ){
+      if( options::dtCompressSelectors() ){
+        // TODO?
+      }else if( options::dtSharedSelectors() ){
         std::vector< Node > disj;
         bool excl = false;
         for( unsigned i=0; i<dt.getNumConstructors(); i++ ){
           if( !d_tds->isGenericRedundant( ntn, i ) ){
-            int sindexi = dt[i].getSelectorIndexInternal( selExpr );
+            int sindexi = dt[i].getSelectorIndexInternal( ntn.toType(), selExpr );
             if( sindexi!=-1 ){
               disj.push_back( DatatypesRewriter::mkTester( n[0], i, dt ) );
             }else{

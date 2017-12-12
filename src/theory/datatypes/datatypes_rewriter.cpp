@@ -232,13 +232,13 @@ RewriteResponse DatatypesRewriter::rewriteSelector(TNode in)
     if( options::dtCompressSelectors() && Datatype::isCompressed( in.getOperator().toExpr() ) )
     {
       Trace("compress-sel-rew") << "Decompress : " << in << std::endl;
-      Type t = in[0].getType().toType();
+      TypeNode tn = in[0].getType();
       
       // look for a parent -> child edge that is labelled in 
       // the compression map with the compressed selector
       Expr z = in.getOperator().toExpr();
       unsigned zindex = Datatype::indexOf(z);
-      Type dstt = in.getType().toType();
+      Type tx_find = in.getType().toType();
       Trace("compress-sel-rew-debug") << "  index is " << zindex << std::endl;
       
       std::unordered_set<Node, NodeHashFunction> visited;
@@ -254,33 +254,19 @@ RewriteResponse DatatypesRewriter::rewriteSelector(TNode in)
           // only recurse if also a constructor
           if( cur.getKind()==kind::APPLY_CONSTRUCTOR )
           {
-            TypeNode t_cons = cur.getOperator().getType();
-            Type ti = cur.getType().toType();
-            unsigned dst_count = 0;
+            Trace("compress-sel-rew-debug2") << "  Look at : " << cur << std::endl;
+            size_t constructorIndex = Datatype::indexOf(cur.getOperator().toExpr());
+            const DatatypeConstructor& c = dt[constructorIndex];
+            int selectorIndex = c.getSelectorIndexInternal(cur.getType().toType(),selector.toExpr());
+            if( selectorIndex!=-1 )
+            {
+              Assert( selectorIndex>=0 && selectorIndex<static_cast<int>(cur.getNumChildren()) );
+              Trace("compress-sel-rew") << "...return " << cur[selectorIndex] << std::endl;
+              return RewriteResponse(REWRITE_DONE, cur[selectorIndex]);
+            }
             for (unsigned i = 0; i < cur.getNumChildren(); i++) {
-              Type tx = t_cons[i].toType();
-              if( tx==dstt )
-              {
-                unsigned w = dt.getCompressionPathWeight(t,ti,tx);
-                Trace("compress-sel-rew-debug2") << "...possible edge " << ti << " -> " << tx << ", count = " << dst_count << ", weight = " << w << std::endl;
-                if( zindex%w==dst_count )
-                {
-                  Expr zsel_edge = dt.getCompressedSelector(t,ti,tx,zindex,false);
-                  Trace("compress-sel-rew-debug2") << "...compressed selector at this edge : " << zsel_edge << std::endl;
-                  if( zsel_edge==z )
-                  {
-                    Assert( cur[i].getType().isComparableTo( in.getType() ) );
-                    Trace("compress-sel-rew") << "...return " << cur[i] << std::endl;
-                    return RewriteResponse(REWRITE_DONE, cur[i]);
-                  }
-                }
-                else
-                {
-                  dst_count++;
-                }
-              }
               // we cannot loop into the type itself
-              if( tx!=t )
+              if( cur[i].getType()!=tn )
               {
                 visit.push_back(cur[i]);
               }
@@ -318,7 +304,7 @@ RewriteResponse DatatypesRewriter::rewriteSelector(TNode in)
       Trace("datatypes-rewrite-debug") << ", cindex = " << constructorIndex
                                       << ", selector is " << selector
                                       << std::endl;
-      int selectorIndex = c.getSelectorIndexInternal(selector.toExpr());
+      int selectorIndex = c.getSelectorIndexInternal(in[0].getType().toType(),selector.toExpr());
       Trace("datatypes-rewrite-debug") << "Internal selector index is "
                                       << selectorIndex << std::endl;
       if (selectorIndex >= 0)

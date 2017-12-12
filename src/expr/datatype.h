@@ -422,7 +422,7 @@ class CVC4_PUBLIC DatatypeConstructor {
    * of this constructor, then this method returns
    *   stoa(T,C,index)
    */
-  int getSelectorIndexInternal( Expr sel ) const;
+  int getSelectorIndexInternal( Type dtt, Expr sel ) const;
 
   /** involves external type
    *

@@ -1326,7 +1326,10 @@ void TheoryDatatypes::collapseSelector( Node s, Node c ) {
     size_t constructorIndex = Datatype::indexOf(c.getOperator().toExpr());
     const Datatype& dt = Datatype::datatypeOf(selectorExpr);
     const DatatypeConstructor& dtc = dt[constructorIndex];
-    int selectorIndex = dtc.getSelectorIndexInternal( selectorExpr );
+    // collapse selector only looks one level
+    // since this is only (in theory) for propagation, this isn't an issue
+    // TODO : revisit this
+    int selectorIndex = dtc.getSelectorIndexInternal( s[0].getType().toType(), selectorExpr );
     wrong = selectorIndex<0;
     
     //if( wrong ){

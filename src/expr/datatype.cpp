@@ -1556,32 +1556,48 @@ Expr DatatypeConstructor::getSelectorInternal( Type domainType, size_t index ) c
   }
 }
 
-int DatatypeConstructor::getSelectorIndexInternal( Expr sel ) const {
+int DatatypeConstructor::getSelectorIndexInternal( Type dtt, Expr sel ) const {
   PrettyCheckArgument(isResolved(), this, "cannot get an internal selector index for an unresolved datatype constructor");
   if( options::dtSharedSelectors() ){
-    Assert( sel.getType().isSelector() );
-    Type domainType = ((SelectorType)sel.getType()).getDomain();
+    Type stype = sel.getType();
+    Assert( stype.isSelector() );
     if( Datatype::isCompressed(sel) )
     {
       Assert( options::dtCompressSelectors() );
+      Type t = static_cast<SelectorType>(stype).getDomain();
+      const Datatype& dt = static_cast<DatatypeType>(t).getDatatype();
+      
+      Type ct = getSpecializedConstructorType(dtt);
+      std::vector<Type> targs = static_cast<ConstructorType>(ct).getArgTypes();
+      Type ti = static_cast<ConstructorType>(ct).getRangeType();
+      
       unsigned zindex = Datatype::indexOf(sel);
-      const Datatype& dt = static_cast<DatatypeType>(domainType).getDatatype();
-      TypeNode ctype = TypeNode::fromType( getSpecializedConstructorType(domainType) );
-      for( unsigned i=0, size = ctype.getNumChildren(); i<(size-1); i++ )
+      Type tx_find = static_cast<SelectorType>(stype).getRangeType();
+      unsigned tx_find_count = 0;
+      for( unsigned i=0, size = targs.size(); i<size; i++ )
       {
-        Type tx = ctype[i].toType();
-        Expr zselc = dt.getCompressedSelector(domainType,domainType,tx,zindex,false);
-        if(zselc==sel )
+        Type tx = targs[i];
+        if( tx==tx_find )
         {
-          return i;
+          unsigned w = dt.getCompressionPathWeight(t,ti,tx);
+          if( tx_find_count==zindex%w )
+          {
+            Expr zselc = dt.getCompressedSelector(t,ti,tx,zindex,false);
+            if(zselc==sel )
+            {
+              return i;
+            }
+            break;
+          }
+          tx_find_count++;
         }
       }
     }
     else
     {
-      computeSharedSelectors( domainType );
-      std::map< Expr, unsigned >::iterator its = d_shared_selector_index[domainType].find( sel );
-      if( its!=d_shared_selector_index[domainType].end() ){
+      computeSharedSelectors( dtt );
+      std::map< Expr, unsigned >::iterator its = d_shared_selector_index[dtt].find( sel );
+      if( its!=d_shared_selector_index[dtt].end() ){
         return (int)its->second;
       }
     }

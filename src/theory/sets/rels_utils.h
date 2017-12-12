@@ -17,6 +17,9 @@
 #ifndef SRC_THEORY_SETS_RELS_UTILS_H_
 #define SRC_THEORY_SETS_RELS_UTILS_H_
 
+#include "expr/node.h"
+#include "theory/rewriter.h"
+
 namespace CVC4 {
 namespace theory {
 namespace sets {
@@ -68,7 +71,7 @@ public:
     }
     TypeNode tn = tuple.getType();
     Datatype dt = tn.getDatatype();
-    return NodeManager::currentNM()->mkNode(kind::APPLY_SELECTOR_TOTAL, dt[0].getSelectorInternal( tn.toType(), n_th ), tuple);
+    return Rewriter::rewrite( NodeManager::currentNM()->mkNode(kind::APPLY_SELECTOR_TOTAL, dt[0].getSelectorInternal( tn.toType(), n_th ), tuple) );
   } 
   
   static Node reverseTuple( Node tuple ) {

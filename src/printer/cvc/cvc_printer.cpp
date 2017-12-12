@@ -395,14 +395,14 @@ void CvcPrinter::toStream(
         if( t.isTuple() ){
           toStream(out, n[0], depth, types, true);
           const Datatype& dt = ((DatatypeType)t.toType()).getDatatype();
-          int sindex = dt[0].getSelectorIndexInternal( opn.toExpr() );
+          int sindex = dt[0].getSelectorIndexInternal( t.toType(), opn.toExpr() );
           Assert( sindex>=0 );
           out << '.' << sindex;
         }else if( t.isRecord() ){
           toStream(out, n[0], depth, types, true);
           const Record& rec = t.getRecord();
           const Datatype& dt = ((DatatypeType)t.toType()).getDatatype();
-          int sindex = dt[0].getSelectorIndexInternal( opn.toExpr() );
+          int sindex = dt[0].getSelectorIndexInternal( t.toType(), opn.toExpr() );
           Assert( sindex>=0 );
           std::pair<std::string, Type> fld = rec[sindex];
           out << '.' << fld.first;
