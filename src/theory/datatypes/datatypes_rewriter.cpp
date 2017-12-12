@@ -374,6 +374,7 @@ RewriteResponse DatatypesRewriter::rewriteSelector(TNode in)
       unsigned curr_weight = dt.getCompressionPathWeight(ti,ti,tx);
       Trace("compress-sel-rew-debug") << "  index/weight : " << zindex << "/" << curr_weight << " for " << ti << " -> " << tx << std::endl;
       
+      // TODO : This should be recursive.
       if( in[0].getKind()==kind::APPLY_SELECTOR_TOTAL )
       {
         Expr pselector = in[0].getOperator().toExpr();

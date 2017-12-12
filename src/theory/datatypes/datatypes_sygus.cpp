@@ -112,7 +112,24 @@ void SygusSymBreakNew::assertTester( int tindex, TNode n, Node exp, std::vector<
             int ptindex = (*itt).second;
             TypeNode ptn = n[0].getType();
             const Datatype& pdt = ((DatatypeType)ptn.toType()).getDatatype();
-            int sindex_in_parent = pdt[ptindex].getSelectorIndexInternal( n.getOperator().toExpr() );
+            int sindex_in_parent = -1;
+            Expr sel = n.getOperator().toExpr();
+            if( Datatype::isCompressed(sel) ){
+              /*
+              const Datatype& dt = Datatype::datatypeOf(sel);
+              unsigned zindex = Datatype::indexOf(sel);
+              Type t;
+              Type ti;
+              Type tx;
+              if( dt.getCompressedSelector(t,ti,tx,zindex,false)==sel ){
+                unsigned w = dt.getCompressionPathWeight(t, ti, tx);
+                sindex_in_parent = zindex%w;
+              }
+              */
+              sindex_in_parent = Datatype::indexOf(sel);
+            }else{
+              sindex_in_parent = pdt[ptindex].getSelectorIndexInternal(sel);
+            }
             // the tester is irrelevant in this branch
             if( sindex_in_parent==-1 ){
               do_add = false;

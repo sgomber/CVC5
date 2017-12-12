@@ -743,6 +743,7 @@ Node DtInstantiator::solve_dt( Node v, Node a, Node b, Node sa, Node sb ) {
       const Datatype& dt = ((DatatypeType)(tn).toType()).getDatatype();
       for( unsigned i=0; i<a.getNumChildren(); i++ ){
         Node nn = NodeManager::currentNM()->mkNode( APPLY_SELECTOR_TOTAL, Node::fromExpr( dt[cindex].getSelectorInternal( tn.toType(), i ) ), sb );
+        nn = Rewriter::rewrite( nn );
         Node s = solve_dt( v, a[i], Node::null(), sa[i], nn );
         if( !s.isNull() ){
           return s;
@@ -781,6 +782,7 @@ bool DtInstantiator::processEqualTerms(CegInstantiator* ci,
       //now must solve for selectors applied to pv
       for( unsigned j=0; j<dt[cindex].getNumArgs(); j++ ){
         Node c = NodeManager::currentNM()->mkNode( APPLY_SELECTOR_TOTAL, Node::fromExpr( dt[cindex].getSelectorInternal( d_type.toType(), j ) ), pv );
+        c = Rewriter::rewrite( c );
         ci->pushStackVariable( c );
         children.push_back( c );
       }
