@@ -979,6 +979,7 @@ void Datatype::computeCompressedSelectors(Type dtt) const
           }
           // if siblings of paths to this node cannot reach this node, we can assign a compressed selector at this edge
           // FIXME should not have a special case?
+          // FIXME : use this condition!!!!
           //if( std::find( reach.begin(), reach.end(), ti )==reach.end() || ti==dttn )
           if( ti==dttn )
           {

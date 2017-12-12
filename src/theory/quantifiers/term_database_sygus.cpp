@@ -1250,33 +1250,41 @@ unsigned TermDbSygus::getMinConsTermSize( TypeNode tn, unsigned cindex ) {
 
 unsigned TermDbSygus::getSelectorWeight(TypeNode tn, Node sel)
 {
-  std::map<TypeNode, std::map<Node, unsigned> >::iterator itsw =
-      d_sel_weight.find(tn);
-  if (itsw == d_sel_weight.end())
+  if( Datatype::isCompressed(sel.toExpr()) )
   {
-    d_sel_weight[tn].clear();
-    itsw = d_sel_weight.find(tn);
-    Type t = tn.toType();
-    const Datatype& dt = static_cast<DatatypeType>(t).getDatatype();
-    Trace("sygus-db") << "Compute selector weights for " << dt.getName()
-                      << std::endl;
-    for (unsigned i = 0, size = dt.getNumConstructors(); i < size; i++)
+    // TODO : needs to do sum the path
+    return 1;
+  }
+  else
+  {
+    std::map<TypeNode, std::map<Node, unsigned> >::iterator itsw =
+        d_sel_weight.find(tn);
+    if (itsw == d_sel_weight.end())
     {
-      unsigned cw = dt[i].getWeight();
-      for (unsigned j = 0, size2 = dt[i].getNumArgs(); j < size2; j++)
+      d_sel_weight[tn].clear();
+      itsw = d_sel_weight.find(tn);
+      Type t = tn.toType();
+      const Datatype& dt = static_cast<DatatypeType>(t).getDatatype();
+      Trace("sygus-db") << "Compute selector weights for " << dt.getName()
+                        << std::endl;
+      for (unsigned i = 0, size = dt.getNumConstructors(); i < size; i++)
       {
-        Node csel = Node::fromExpr(dt[i].getSelectorInternal(t, j));
-        std::map<Node, unsigned>::iterator its = itsw->second.find(csel);
-        if (its == itsw->second.end() || cw < its->second)
+        unsigned cw = dt[i].getWeight();
+        for (unsigned j = 0, size2 = dt[i].getNumArgs(); j < size2; j++)
         {
-          d_sel_weight[tn][csel] = cw;
-          Trace("sygus-db") << "  w(" << csel << ") <= " << cw << std::endl;
+          Node csel = Node::fromExpr(dt[i].getSelectorInternal(t, j));
+          std::map<Node, unsigned>::iterator its = itsw->second.find(csel);
+          if (its == itsw->second.end() || cw < its->second)
+          {
+            d_sel_weight[tn][csel] = cw;
+            Trace("sygus-db") << "  w(" << csel << ") <= " << cw << std::endl;
+          }
         }
       }
     }
+    Assert(itsw->second.find(sel) != itsw->second.end());
+    return itsw->second[sel];
   }
-  Assert(itsw->second.find(sel) != itsw->second.end());
-  return itsw->second[sel];
 }
 
 int TermDbSygus::getKindConsNum( TypeNode tn, Kind k ) {
