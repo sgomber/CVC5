@@ -377,19 +377,22 @@ RewriteResponse DatatypesRewriter::rewriteSelector(TNode in)
       if( in[0].getKind()==kind::APPLY_SELECTOR_TOTAL )
       {
         Expr pselector = in[0].getOperator().toExpr();
-        Type selType = pselector.getType();
-        Type t = static_cast<SelectorType>(selType).getDomain();
-        
-        const Datatype& pdt = Datatype::datatypeOf(pselector);
-        unsigned zindex_parent = Datatype::indexOf(pselector);
-        unsigned new_index = zindex + curr_weight*zindex_parent;
-      
-        // could be a compressed selector from parent
-        Expr z = pdt.getCompressedSelector( t, ti, tx, new_index );
-        if( !z.isNull() )
+        Type pselType = pselector.getType();
+        Type t = static_cast<SelectorType>(pselType).getDomain();
+        Trace("compress-sel-rew-debug") << "  check compression for parent type " << t << std::endl;
+        if( t!=tx )
         {
-          cand_zsel = NodeManager::currentNM()->mkNode( kind::APPLY_SELECTOR_TOTAL, Node::fromExpr( z ), in[0][0] );
-          Trace("compress-sel-rew") << "...return (compressed) " << cand_zsel << std::endl;
+          const Datatype& pdt = Datatype::datatypeOf(pselector);
+          unsigned zindex_parent = Datatype::indexOf(pselector);
+          unsigned new_index = zindex + curr_weight*zindex_parent;
+        
+          // could be a compressed selector from parent
+          Expr z = pdt.getCompressedSelector( t, ti, tx, new_index );
+          if( !z.isNull() )
+          {
+            cand_zsel = NodeManager::currentNM()->mkNode( kind::APPLY_SELECTOR_TOTAL, Node::fromExpr( z ), in[0][0] );
+            Trace("compress-sel-rew") << "...return (compressed) " << cand_zsel << std::endl;
+          }
         }
       }
       

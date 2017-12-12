@@ -810,7 +810,18 @@ void Datatype::computeCompressedSelectors(Type dtt) const
             {
               if( tx!=cs.first )
               {
-                siblings[tx].insert( cs.first );
+                if( siblings[tx].find( cs.first )==siblings[tx].end() )
+                {
+                  if(Trace.isOn("compress-sel"))
+                  {
+                    Trace("compress-sel") << "Sibling of ";
+                    printTypeDebug("compress-sel", tx);
+                    Trace("compress-sel") << " : ";
+                    printTypeDebug("compress-sel", cs.first);
+                    Trace("compress-sel") << std::endl;
+                  }
+                  siblings[tx].insert( cs.first );
+                }
               }
             }
             if( g_e[curr].find( tx )==g_e[curr].end() )
@@ -823,7 +834,7 @@ void Datatype::computeCompressedSelectors(Type dtt) const
                 printTypeDebug("compress-sel", tx);
                 Trace("compress-sel") << std::endl;
               }
-              // add (weighted edge
+              // add (weighted) edge
               g_e[curr][tx] = cc.second;
               si.d_edges[curr.toType()][tx.toType()] = cc.second;
             }
@@ -875,6 +886,14 @@ void Datatype::computeCompressedSelectors(Type dtt) const
               if( sx.find( s )==sx.end() )
               {
                 sx.insert( s );
+                if(Trace.isOn("compress-sel"))
+                {
+                  Trace("compress-sel") << "Push, sibling of ";
+                  printTypeDebug("compress-sel", tx);
+                  Trace("compress-sel") << " : ";
+                  printTypeDebug("compress-sel", s);
+                  Trace("compress-sel") << std::endl;
+                }
                 success = true;
               }
             }
@@ -894,7 +913,6 @@ void Datatype::computeCompressedSelectors(Type dtt) const
     for( unsigned i=0, size = g_dtt.size(); i<size; i++ )
     {
       TypeNode ti = g_dtt[i];
-      std::map< TypeNode, std::unordered_set< TypeNode, TypeNodeHashFunction > >::iterator its = siblings.find( ti );
       std::map< TypeNode, std::map< TypeNode, unsigned > >::iterator itg = g_e.find( ti );
       if( itg!=g_e.end() )
       {
@@ -910,11 +928,16 @@ void Datatype::computeCompressedSelectors(Type dtt) const
             Trace("compress-sel-debug") << " ) ... " << std::endl;
           }
           std::vector< TypeNode > reach;
-          if( its!=siblings.end() )
+          if( ti==tx )
           {
-            std::unordered_set< TypeNode, TypeNodeHashFunction >& sib_ti = its->second;
+            reach.push_back( ti );
+          }
+          std::map< TypeNode, std::unordered_set< TypeNode, TypeNodeHashFunction > >::iterator itx = siblings.find( tx );
+          if( itx!=siblings.end() )
+          {
+            std::unordered_set< TypeNode, TypeNodeHashFunction >& sib_tx = itx->second;
             // compute the set of nodes that are reachable from sib_ti that do not pass through dttn
-            reach.insert( reach.end(), sib_ti.begin(), sib_ti.end() );
+            reach.insert( reach.end(), sib_tx.begin(), sib_tx.end() );
             unsigned rcount = 0;
             while( rcount<reach.size() )
             {

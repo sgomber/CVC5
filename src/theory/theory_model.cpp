@@ -142,8 +142,8 @@ Node TheoryModel::getModelValue(TNode n, bool hasBoundVars, bool useDontCares) c
   if (it != d_modelCache.end()) {
     return (*it).second;
   }
-  Debug("model-getvalue-debug") << "Get model value " << n << " ... ";
-  Debug("model-getvalue-debug") << d_equalityEngine->hasTerm(n) << std::endl;
+  Debug("model-getvalue-debug") << "Get model value " << n << " ... (hasTerm=";
+  Debug("model-getvalue-debug") << d_equalityEngine->hasTerm(n) << ")" << std::endl;
   Node ret = n;
   if(n.getKind() == kind::EXISTS || n.getKind() == kind::FORALL || n.getKind() == kind::COMBINED_CARDINALITY_CONSTRAINT ) {
     // We should have terms, thanks to TheoryQuantifiers::collectModelInfo().
