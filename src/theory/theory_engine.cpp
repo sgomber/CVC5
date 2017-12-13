@@ -1052,7 +1052,7 @@ void TheoryEngine::combineTheoriesModelBased()
         TNode n = (*eqc_i);
         Trace("tc-model-debug2") << "  term " << n << std::endl;
         // check whether this is a parametric operator
-        if (n.hasOperator())
+        if (n.getKind()!=kind::EQUAL && n.hasOperator())
         {
           TheoryId tid = Theory::theoryOf(n);
           if (d_tparametric[tid])
