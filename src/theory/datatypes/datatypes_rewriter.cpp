@@ -256,13 +256,20 @@ RewriteResponse DatatypesRewriter::rewriteSelector(TNode in)
           {
             Trace("compress-sel-rew-debug2") << "  Look at : " << cur << std::endl;
             size_t constructorIndex = Datatype::indexOf(cur.getOperator().toExpr());
-            const DatatypeConstructor& c = dt[constructorIndex];
+            const Datatype& cdt = static_cast<DatatypeType>(cur.getType().toType()).getDatatype();
+            Trace("compress-sel-rew-debug2") << "  Constructor index : " << constructorIndex << std::endl;
+            Assert( constructorIndex<cdt.getNumConstructors() );
+            const DatatypeConstructor& c = cdt[constructorIndex];
             int selectorIndex = c.getSelectorIndexInternal(cur.getType().toType(),selector.toExpr());
             if( selectorIndex!=-1 )
             {
-              Assert( selectorIndex>=0 && selectorIndex<static_cast<int>(cur.getNumChildren()) );
-              Trace("compress-sel-rew") << "...return " << cur[selectorIndex] << std::endl;
-              return RewriteResponse(REWRITE_DONE, cur[selectorIndex]);
+              Trace("compress-sel-rew") << "...sel index " << selectorIndex << std::endl;
+              // must be less than the number of children, it could be a compressed selector for the right node
+              if( selectorIndex<static_cast<int>(cur.getNumChildren()) )
+              {
+                Trace("compress-sel-rew") << "...return " << cur[selectorIndex] << std::endl;
+                return RewriteResponse(REWRITE_DONE, cur[selectorIndex]);
+              }
             }
             for (unsigned i = 0; i < cur.getNumChildren(); i++) {
               // we cannot loop into the type itself
@@ -400,7 +407,7 @@ RewriteResponse DatatypesRewriter::rewriteSelector(TNode in)
         Trace("compress-sel-rew") << "...return (compressed) " << cand_zsel << std::endl;
       }
       Assert( !cand_zsel.isNull() );
-      return RewriteResponse(REWRITE_DONE, cand_zsel);
+      return RewriteResponse(REWRITE_AGAIN_FULL, cand_zsel);
     }
   }
   return RewriteResponse(REWRITE_DONE, in);
