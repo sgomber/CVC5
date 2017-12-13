@@ -605,6 +605,8 @@ public:
    * Get the index of a constructor or tester in its datatype, or the
    * index of a selector in its constructor.  (Zero is always the
    * first index.)
+   * 
+   * TODO : expand this
    */
   static size_t indexOf(Expr item) CVC4_PUBLIC;
 
@@ -613,11 +615,6 @@ public:
    * always the first index.)
    */
   static size_t cindexOf(Expr item) CVC4_PUBLIC;
-  
-  /**
-   * This method returns the shared selector index of a selector item.
-   */
-  static size_t sharedSelectorIndex(Expr item) CVC4_PUBLIC;
   
   /**
    * This method returns true if item is a compressed selector.

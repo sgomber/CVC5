@@ -104,15 +104,6 @@ size_t Datatype::cindexOf(Expr item) {
   }
 }
 
-size_t Datatype::sharedSelectorIndex(Expr item) {
-  ExprManagerScope ems(item);
-  PrettyCheckArgument(item.getType().isSelector(),
-                item,
-                "arg must be a datatype selector");
-  TNode n = Node::fromExpr(item);
-  return n.getAttribute(DatatypeSharedSelIndexAttr());
-}
-
 bool Datatype::isCompressed(Expr item) {
   ExprManagerScope ems(item);
   PrettyCheckArgument(item.getType().isSelector(),
@@ -981,7 +972,8 @@ void Datatype::computeCompressedSelectors(Type dtt) const
           // FIXME should not have a special case?
           // FIXME : use this condition!!!!
           //if( std::find( reach.begin(), reach.end(), ti )==reach.end() || ti==dttn )
-          if( ti==dttn )
+          //if( ti==dttn )
+          if( false )
           {
             // reuse a compression id, or allocate a new one
             int compress_id = -1;

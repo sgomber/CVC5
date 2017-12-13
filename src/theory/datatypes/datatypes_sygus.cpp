@@ -98,6 +98,8 @@ void SygusSymBreakNew::assertTester( int tindex, TNode n, Node exp, std::vector<
       d_testers[n] = tindex;
       d_testers_exp[n] = exp;
       
+      // must convert to shared selector chain here
+      
       // check if parent is active
       bool do_add = true;
       if( options::sygusSymBreakLazy() ){
