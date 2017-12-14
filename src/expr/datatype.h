@@ -1034,7 +1034,7 @@ public:
     /** whether we have computed compressed selectors */
     bool d_computed_compress;
     /** weighted graph */
-    std::vector< Type > d_nodes;
+    std::map< Type, unsigned > d_nodes;
     std::map< Type, std::map< Type, unsigned > > d_edges;
     /** map from edges to compression ids */
     std::map< Type, std::map< Type, unsigned > > d_compression_id;

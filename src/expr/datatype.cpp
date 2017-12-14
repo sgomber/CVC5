@@ -772,7 +772,7 @@ void Datatype::computeCompressedSelectors(Type dtt) const
     std::map<TypeNode, std::unordered_set< TypeNode, TypeNodeHashFunction > > siblings;
     unsigned count = 0;
     g_dtt.push_back( dttn );
-    si.d_nodes.push_back( dtt );
+    si.d_nodes[ dtt ] = 1;
     while( count<g_dtt.size() )
     {
       TypeNode curr = g_dtt[count];
@@ -789,7 +789,7 @@ void Datatype::computeCompressedSelectors(Type dtt) const
             TypeNode tn = ctype[j];
             child_count[tn]++;
             // add to nodes if not allocated
-            if( std::find( g_dtt.begin(), g_dtt.end(), tn )==g_dtt.end() )
+            if( si.d_nodes.find( tn.toType() )==si.d_nodes.end() )
             {
               if(Trace.isOn("compress-sel"))
               {
@@ -798,7 +798,7 @@ void Datatype::computeCompressedSelectors(Type dtt) const
                 Trace("compress-sel") << std::endl;
               }
               g_dtt.push_back( tn );
-              si.d_nodes.push_back( tn.toType() );
+              si.d_nodes[tn.toType()] = 0;
             }
           }
           // for each outgoing type from current constructor
