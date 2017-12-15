@@ -994,11 +994,7 @@ void Datatype::computeCompressedSelectors(Type dtt) const
             Trace("compress-sel-debug") << std::endl;
           }
           // if siblings of paths to this node cannot reach this node, we can assign a compressed selector at this edge
-          // FIXME should not have a special case?
-          // FIXME : use this condition!!!!
-          //if( std::find( reach.begin(), reach.end(), ti )==reach.end() || ti==dttn )
-          //if( ti==dttn )
-          if( false )
+          if( std::find( reach.begin(), reach.end(), ti )==reach.end() )
           {
             // reuse a compression id, or allocate a new one
             int compress_id = -1;
@@ -1043,6 +1039,14 @@ void Datatype::computeCompressedSelectors(Type dtt) const
     
     // set compute compress
     si.d_computed_compress = true;
+    
+    if(Trace.isOn("compress-sel"))
+    {
+      Trace("compress-sel") << "---- Finish compute compressed sel for ";
+      printTypeDebug("compress-sel", dttn);
+      Trace("compress-sel") << std::endl;
+    }
+    
   }
 }
 

@@ -231,7 +231,7 @@ RewriteResponse DatatypesRewriter::rewriteSelector(TNode in)
   {
     if( options::dtCompressSelectors() && Datatype::isCompressed( in.getOperator().toExpr() ) )
     {
-      Trace("compress-sel-rew") << "Decompress : " << in << std::endl;
+      Trace("compress-sel-rew") << "dt-compress : decompress " << in << std::endl;
       TypeNode tn = in[0].getType();
       
       // look for a parent -> child edge that is labelled in 
@@ -361,6 +361,7 @@ RewriteResponse DatatypesRewriter::rewriteSelector(TNode in)
   }
   else if( options::dtCompressSelectors() )
   {
+    Trace("compress-sel-rew") << "dt-compress : compress " << in << std::endl;
     unsigned zindex = Datatype::indexOf(selector.toExpr());
     Type stype = selector.getType().toType();
     Type ti = static_cast<SelectorType>(stype).getDomain();
@@ -382,6 +383,7 @@ RewriteResponse DatatypesRewriter::rewriteSelector(TNode in)
           {
             Assert( Datatype::indexOf(pselector)==1 );
             Node ret = NodeManager::currentNM()->mkNode( kind::APPLY_SELECTOR_TOTAL, Node::fromExpr( z ), in[0][0] );
+            Trace("compress-sel-rew") << "...return (compressed over shared) " << ret << std::endl;
             return RewriteResponse(REWRITE_AGAIN_FULL, ret);
           }
         }
@@ -407,6 +409,7 @@ RewriteResponse DatatypesRewriter::rewriteSelector(TNode in)
         Expr z = dt.getCompressedSelector(tp,ti,tx,new_index);
         if( !z.isNull() ){
           Node ret = NodeManager::currentNM()->mkNode( kind::APPLY_SELECTOR_TOTAL, Node::fromExpr( z ), in[0][0] );
+          Trace("compress-sel-rew") << "...return (shared over compressed) " << ret << std::endl;
           return RewriteResponse(REWRITE_AGAIN_FULL, ret);
         }
       }
@@ -423,15 +426,18 @@ RewriteResponse DatatypesRewriter::rewriteSelector(TNode in)
             if( cur[0].getType().toType()==ti )
             {
               Node ret = NodeManager::currentNM()->mkNode( kind::APPLY_SELECTOR_TOTAL, selector, cur[0] );
+              Trace("compress-sel-rew") << "...return (drop self loop) " << ret << std::endl;
               return RewriteResponse(REWRITE_AGAIN_FULL, ret);
             }
+            cur = cur[0];
           }
-          
           Node ret = NodeManager::currentNM()->mkNode( kind::APPLY_SELECTOR_TOTAL, Node::fromExpr( z ), in[0] );
+          Trace("compress-sel-rew") << "...return (intro compressed) " << ret << std::endl;
           return RewriteResponse(REWRITE_AGAIN_FULL, ret);
         }
       }
     }
+    Trace("compress-sel-rew") << "...no rewrite" << std::endl;
   }
   return RewriteResponse(REWRITE_DONE, in);
 }
