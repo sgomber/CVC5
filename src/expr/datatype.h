@@ -894,7 +894,10 @@ public:
   
   /** Get the path weight
    */
-  unsigned getCompressionPathWeight(Type dtt, Type src, Type dst) const;
+  unsigned getCompressionEdgeWeight(Type dtt, Type src, Type dst) const;
+  
+  /** Get node weight */
+  int getCompressionNodeWeight(Type dtt, Type n) const;
 
   /** get the compression id for edge */
   int getCompressionId(Type dtt, Type src, Type dst) const;
@@ -1031,7 +1034,7 @@ public:
     /** whether we have computed compressed selectors */
     bool d_computed_compress;
     /** weighted graph */
-    std::map< Type, unsigned > d_nodes;
+    std::map< Type, int > d_nodes;
     std::map< Type, std::map< Type, unsigned > > d_edges;
     /** map from edges to compression ids */
     std::map< Type, std::map< Type, unsigned > > d_compression_id;

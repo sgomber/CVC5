@@ -682,7 +682,7 @@ Expr Datatype::getCompressedSelector(Type dtt, Type src, Type dst, unsigned inde
   return s;
 }
 
-unsigned Datatype::getCompressionPathWeight(Type dtt, Type src, Type dst) const
+unsigned Datatype::getCompressionEdgeWeight(Type dtt, Type src, Type dst) const
 {
   PrettyCheckArgument(isResolved(), this, "this datatype is not yet resolved");
   computeCompressedSelectors(dtt);
@@ -697,6 +697,19 @@ unsigned Datatype::getCompressionPathWeight(Type dtt, Type src, Type dst) const
     }
   }
   return 0;
+}
+
+int Datatype::getCompressionNodeWeight(Type dtt, Type n) const
+{
+  PrettyCheckArgument(isResolved(), this, "this datatype is not yet resolved");
+  computeCompressedSelectors(dtt);
+  SelectorInfo& si = d_sinfo[dtt];
+  std::map< Type, int >::const_iterator itn = si.d_nodes.find(n);
+  if( itn!=si.d_nodes.end() )
+  {
+    return itn->second;
+  }
+  return -1;
 }
 
 int Datatype::getCompressionId(Type dtt, Type src, Type dst) const
@@ -767,6 +780,7 @@ void Datatype::computeCompressedSelectors(Type dtt) const
     while( count<g_dtt.size() )
     {
       TypeNode curr = g_dtt[count];
+      unsigned curr_nw = si.d_nodes[curr.toType()];
       count++;
       if( curr.isDatatype() )
       {
@@ -779,23 +793,34 @@ void Datatype::computeCompressedSelectors(Type dtt) const
           for( unsigned j=0, size2 = ctype.getNumChildren(); j<size2-1; j++ ){
             TypeNode tn = ctype[j];
             child_count[tn]++;
-            // add to nodes if not allocated
-            if( si.d_nodes.find( tn.toType() )==si.d_nodes.end() )
-            {
-              if(Trace.isOn("compress-sel"))
-              {
-                Trace("compress-sel") << "Node : ";
-                printTypeDebug("compress-sel", tn);
-                Trace("compress-sel") << std::endl;
-              }
-              g_dtt.push_back( tn );
-              si.d_nodes[tn.toType()] = 0;
-            }
           }
           // for each outgoing type from current constructor
           for( std::pair< const TypeNode, unsigned >& cc : child_count )
           {
             TypeNode tx = cc.first;
+            // add to nodes if not allocated
+            if( std::find( g_dtt.begin(), g_dtt.end(), tx )==g_dtt.end() )
+            {
+              if(Trace.isOn("compress-sel"))
+              {
+                Trace("compress-sel") << "Node : ";
+                printTypeDebug("compress-sel", tx);
+                Trace("compress-sel") << std::endl;
+              }
+              g_dtt.push_back( tx );
+            }
+            // update weight on node
+            unsigned new_nw = curr_nw*cc.second;
+            if( new_nw>si.d_nodes[tx.toType()] )
+            {
+              if(Trace.isOn("compress-sel"))
+              {
+                Trace("compress-sel") << "Update weight of ";
+                printTypeDebug("compress-sel", tx);
+                Trace("compress-sel") << " : " << new_nw << std::endl;
+              }
+              si.d_nodes[tx.toType()] = new_nw;
+            }
             // add to siblings
             for( std::pair< const TypeNode, unsigned >& cs : child_count )
             {
@@ -836,7 +861,7 @@ void Datatype::computeCompressedSelectors(Type dtt) const
               {
                 if(Trace.isOn("compress-sel"))
                 {
-                  Trace("compress-sel") << "Modify edge : ";
+                  Trace("compress-sel") << "Update weight on edge : ";
                   printTypeDebug("compress-sel", curr);
                   Trace("compress-sel") << " ->^" << cc.second << " ";
                   printTypeDebug("compress-sel", tx);
@@ -1572,7 +1597,7 @@ int DatatypeConstructor::getSelectorIndexInternal( Type dtt, Expr sel ) const {
         Type tx = targs[i];
         if( tx==tx_find )
         {
-          unsigned w = dt.getCompressionPathWeight(t,ti,tx);
+          unsigned w = dt.getCompressionEdgeWeight(t,ti,tx);
           if( tx_find_count==zindex%w )
           {
             Expr zselc = dt.getCompressedSelector(t,ti,tx,zindex,false);
