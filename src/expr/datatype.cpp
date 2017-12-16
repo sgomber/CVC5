@@ -935,13 +935,13 @@ void Datatype::computeCompressedSelectors(Type dtt) const
         for( std::pair< const TypeNode, unsigned > e : itg->second )
         {
           TypeNode tx = e.first;          
-          if(Trace.isOn("compress-sel-debug"))
+          if(Trace.isOn("compress-sel"))
           {
-            Trace("compress-sel-debug") << "  Check edge ( ";
-            printTypeDebug("compress-sel-debug", ti);
-            Trace("compress-sel-debug") << " -> ";
-            printTypeDebug("compress-sel-debug", tx);
-            Trace("compress-sel-debug") << " ) ... " << std::endl;
+            Trace("compress-sel") << "  Check edge ( ";
+            printTypeDebug("compress-sel", ti);
+            Trace("compress-sel") << " -> ";
+            printTypeDebug("compress-sel", tx);
+            Trace("compress-sel") << " ) ... " << std::endl;
           }
           std::vector< TypeNode > reach;
           if( ti==tx )
@@ -1015,7 +1015,7 @@ void Datatype::computeCompressedSelectors(Type dtt) const
               if( success )
               {
                 compress_id = static_cast<int>(j);
-                Trace("compress-sel-debug") << "  ...assign existing compression id " << compress_id << std::endl;
+                Trace("compress-sel") << "  ...*** assign existing compression id " << compress_id << std::endl;
                 break;
               }
             }
@@ -1024,14 +1024,14 @@ void Datatype::computeCompressedSelectors(Type dtt) const
               compress_id = compress_sel_id_count;
               compress_sel_id_count++;
               compress_id_alloc[tx].push_back( compress_id );
-              Trace("compress-sel-debug") << "  ...assign new compression id " << compress_id << std::endl;
+              Trace("compress-sel") << "  ...*** assign new compression id " << compress_id << std::endl;
             }
             si.d_compression_id[ti.toType()][tx.toType()] = compress_id;
             cid_to_sources[compress_id].insert( ti );
           }
           else
           {
-            Trace("compress-sel-debug") << "  ...unassignable, since self-reachable from sibling" << std::endl;
+            Trace("compress-sel") << "  ...unassignable, since self-reachable from sibling" << std::endl;
           }
         }
       }

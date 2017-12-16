@@ -231,7 +231,7 @@ RewriteResponse DatatypesRewriter::rewriteSelector(TNode in)
   {
     if( options::dtCompressSelectors() && Datatype::isCompressed( in.getOperator().toExpr() ) )
     {
-      Trace("compress-sel-rew") << "dt-compress : decompress " << in << std::endl;
+      Trace("compress-sel-rew") << "dt-decompress : process " << in << std::endl;
       TypeNode tn = in[0].getType();
       
       // look for a parent -> child edge that is labelled in 
@@ -252,21 +252,25 @@ RewriteResponse DatatypesRewriter::rewriteSelector(TNode in)
         visit.pop_back();
 
         if (visited[cur].find(cur_zindex) == visited[cur].end()) {
+          Trace("compress-sel-rew-debug") << "  process " << cur << " / " << cur_zindex << std::endl;
           visited[cur].insert(cur_zindex);
           // only recurse if a constructor
           if( cur.getKind()==kind::APPLY_CONSTRUCTOR )
           {
             Type ti = cur.getType().toType();
             const Datatype& cdt = static_cast<DatatypeType>(ti).getDatatype();
+            Type ctype = cur.getOperator().getType().toType();
+            std::vector< Type > cargs = static_cast<ConstructorType>(ctype).getArgTypes();
             // sort by type
             std::map< Type, std::vector< Node > > children;
-            for( const TNode& cc : cur )
+            for( unsigned i=0, size=cargs.size(); i<size; i++ )
             {
-              Type tx = cc.getType().toType();
+              Type tx = cargs[i];
+              TNode cc = cur[i];
               // check if we are in the right location
-              if( tx==tx_find && children[tx].size()+1==cur_zindex )
+              if( tx==tx_find && children[tx].size()==cur_zindex )
               {
-                Trace("compress-sel-rew") << "...return " << cc << std::endl;
+                Trace("compress-sel-rew") << "dt-decompress : return " << cc << std::endl;
                 return RewriteResponse(REWRITE_DONE, cc);
               }
               children[tx].push_back(cc);
@@ -274,7 +278,10 @@ RewriteResponse DatatypesRewriter::rewriteSelector(TNode in)
             for( std::pair< const Type, std::vector< Node > >& cp : children )
             {
               Type tx = cp.first;
+              Trace("compress-sel-rew-debug") << "  process " << cp.second.size() << " " << ti << " -> " << tx << " children..." << std::endl;
               unsigned w = cdt.getCompressionEdgeWeight(ti,ti,tx);
+              Trace("compress-sel-rew-debug") << "  edge weight is " << w << std::endl;
+              Assert( w>=cp.second.size() );
               unsigned index = cur_zindex%w;
               // notice when this check fails, it indicates that the compressed
               // selector must be intended for a different constructor, in 
@@ -298,7 +305,7 @@ RewriteResponse DatatypesRewriter::rewriteSelector(TNode in)
         Node gt = getArbitraryValue( in.getType() );
         if( !gt.isNull() )
         {
-          Trace("compress-sel-rew") << "...return arbitrary term " << gt << std::endl;
+          Trace("compress-sel-rew") << "dt-decompress : return arbitrary term " << gt << std::endl;
           return RewriteResponse(REWRITE_DONE, gt);
         }
       }
@@ -361,7 +368,7 @@ RewriteResponse DatatypesRewriter::rewriteSelector(TNode in)
   }
   else if( options::dtCompressSelectors() )
   {
-    Trace("compress-sel-rew") << "dt-compress : compress " << in << std::endl;
+    Trace("compress-sel-rew") << "dt-compress : process " << in << std::endl;
     unsigned zindex = Datatype::indexOf(selector.toExpr());
     Type stype = selector.getType().toType();
     Type ti = static_cast<SelectorType>(stype).getDomain();
@@ -383,7 +390,7 @@ RewriteResponse DatatypesRewriter::rewriteSelector(TNode in)
           {
             Assert( Datatype::indexOf(pselector)==1 );
             Node ret = NodeManager::currentNM()->mkNode( kind::APPLY_SELECTOR_TOTAL, Node::fromExpr( z ), in[0][0] );
-            Trace("compress-sel-rew") << "...return (compressed over shared) " << ret << std::endl;
+            Trace("compress-sel-rew") << "dt-compress : return (compressed over shared) " << ret << std::endl;
             return RewriteResponse(REWRITE_AGAIN_FULL, ret);
           }
         }
@@ -409,7 +416,7 @@ RewriteResponse DatatypesRewriter::rewriteSelector(TNode in)
         Expr z = dt.getCompressedSelector(tp,ti,tx,new_index);
         if( !z.isNull() ){
           Node ret = NodeManager::currentNM()->mkNode( kind::APPLY_SELECTOR_TOTAL, Node::fromExpr( z ), in[0][0] );
-          Trace("compress-sel-rew") << "...return (shared over compressed) " << ret << std::endl;
+          Trace("compress-sel-rew") << "dt-compress : return (shared over compressed) " << ret << std::endl;
           return RewriteResponse(REWRITE_AGAIN_FULL, ret);
         }
       }
@@ -426,18 +433,18 @@ RewriteResponse DatatypesRewriter::rewriteSelector(TNode in)
             if( cur[0].getType().toType()==ti )
             {
               Node ret = NodeManager::currentNM()->mkNode( kind::APPLY_SELECTOR_TOTAL, selector, cur[0] );
-              Trace("compress-sel-rew") << "...return (drop self loop) " << ret << std::endl;
+              Trace("compress-sel-rew") << "dt-compress : return (drop self loop) " << ret << std::endl;
               return RewriteResponse(REWRITE_AGAIN_FULL, ret);
             }
             cur = cur[0];
           }
           Node ret = NodeManager::currentNM()->mkNode( kind::APPLY_SELECTOR_TOTAL, Node::fromExpr( z ), in[0] );
-          Trace("compress-sel-rew") << "...return (intro compressed) " << ret << std::endl;
+          Trace("compress-sel-rew") << "dt-compress : return (intro compressed) " << ret << std::endl;
           return RewriteResponse(REWRITE_AGAIN_FULL, ret);
         }
       }
     }
-    Trace("compress-sel-rew") << "...no rewrite" << std::endl;
+    Trace("compress-sel-rew") << "dt-compress : no rewrite" << std::endl;
   }
   return RewriteResponse(REWRITE_DONE, in);
 }
