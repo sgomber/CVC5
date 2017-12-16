@@ -368,52 +368,22 @@ RewriteResponse DatatypesRewriter::rewriteSelector(TNode in)
   }
   else if( options::dtCompressSelectors() )
   {
-    Trace("compress-sel-rew") << "dt-compress : process " << in << std::endl;
-    unsigned zindex = Datatype::indexOf(selector.toExpr());
-    Type stype = selector.getType().toType();
-    Type ti = static_cast<SelectorType>(stype).getDomain();
-    Type tx = static_cast<SelectorType>(stype).getRangeType();
-    // three cases:
-    if( Datatype::isCompressed( in.getOperator().toExpr()) ){
-      if( in[0].getKind()==kind::APPLY_SELECTOR_TOTAL )
-      {
-        // compressed selector applied to shared selector child
-        if( !Datatype::isCompressed(in[0].getOperator().toExpr()) )
-        {
-          // if possible, combine with the shared selector child
-          Expr pselector = in[0].getOperator().toExpr();
-          Type pselType = pselector.getType();
-          Type tp = static_cast<SelectorType>(pselType).getDomain();
-          const Datatype& pdt = Datatype::datatypeOf(pselector);
-          Expr z = pdt.getCompressedSelector(tp,ti,tx,zindex);
-          if( !z.isNull() )
-          {
-            Assert( Datatype::indexOf(pselector)==1 );
-            Node ret = NodeManager::currentNM()->mkNode( kind::APPLY_SELECTOR_TOTAL, Node::fromExpr( z ), in[0][0] );
-            Trace("compress-sel-rew") << "dt-compress : return (compressed over shared) " << ret << std::endl;
-            return RewriteResponse(REWRITE_AGAIN_FULL, ret);
-          }
-        }
-        else
-        {
-          // compressed applied to compressed does not matter ?
-        }
-      }
-    }
-    else
+    if( !Datatype::isCompressed( selector.toExpr()) )
     {
+      Trace("compress-sel-rew") << "dt-compress : process " << in << std::endl;
+      unsigned zindex = Datatype::indexOf(selector.toExpr());
+      Type stype = selector.getType().toType();
+      Type ti = static_cast<SelectorType>(stype).getDomain();
+      Type tx = static_cast<SelectorType>(stype).getRangeType();
       // shared selector applied to a compressed selector
       if( in[0].getKind()==kind::APPLY_SELECTOR_TOTAL && Datatype::isCompressed(in[0].getOperator().toExpr()))
       {
         // if possible, combine with the compressed selector child
-        Expr pselector = in[0].getOperator().toExpr();
-        Type pselType = pselector.getType();
-        Type tp = static_cast<SelectorType>(pselType).getDomain();
-        const Datatype& pdt = Datatype::datatypeOf(pselector);
-        unsigned pindex = Datatype::indexOf(pselector);
-        unsigned w = pdt.getCompressionNodeWeight(tp,ti);
-        unsigned new_index = pindex + w*zindex;
-        Expr z = dt.getCompressedSelector(tp,ti,tx,new_index);
+        Expr psel = in[0].getOperator().toExpr();
+        Type pselType = psel.getType();
+        Type tp = static_cast<SelectorType>(pselType).getDomain();  
+        const Datatype& pdt = static_cast<DatatypeType>(tp).getDatatype();
+        Expr z = pdt.getCompressedSelector(tp,ti,tx,zindex,psel);
         if( !z.isNull() ){
           Node ret = NodeManager::currentNM()->mkNode( kind::APPLY_SELECTOR_TOTAL, Node::fromExpr( z ), in[0][0] );
           Trace("compress-sel-rew") << "dt-compress : return (shared over compressed) " << ret << std::endl;
@@ -425,7 +395,6 @@ RewriteResponse DatatypesRewriter::rewriteSelector(TNode in)
         // check whether there exists a compression id for the appropriate edge and convert to the compressed selector
         Expr z = dt.getCompressedSelector(ti,ti,tx,zindex);
         if( !z.isNull() ){
-          
           // if we have a compressed selector, we can remove self loops on ti
           TNode cur = in[0];
           while( cur.getKind()==kind::APPLY_SELECTOR_TOTAL && !Datatype::isCompressed(cur.getOperator().toExpr()) )

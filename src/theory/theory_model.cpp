@@ -451,6 +451,7 @@ void TheoryModel::assertSkeleton(TNode n)
 
 void TheoryModel::assertAssignable(TNode n)
 {
+  Trace("model-builder-reps") << "Assert assignable : " << n << std::endl;
   d_assignable.insert(n);
 }
 

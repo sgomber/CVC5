@@ -892,6 +892,11 @@ public:
    */
   Expr getCompressedSelector(Type dtt, Type src, Type dst, unsigned index, bool doMake=true) const;
   
+  /** Get the compressed selector
+   * 
+   */
+  Expr getCompressedSelector(Type dtt, Type src, Type dst, unsigned index, Expr psel) const;
+  
   /** Get the path weight
    */
   unsigned getCompressionEdgeWeight(Type dtt, Type src, Type dst) const;

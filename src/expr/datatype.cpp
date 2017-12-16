@@ -682,6 +682,18 @@ Expr Datatype::getCompressedSelector(Type dtt, Type src, Type dst, unsigned inde
   return s;
 }
 
+Expr Datatype::getCompressedSelector(Type dtt, Type src, Type dst, unsigned index, Expr psel) const
+{
+  PrettyCheckArgument(isResolved(), this, "this datatype is not yet resolved");
+  unsigned pindex = Datatype::indexOf(psel);
+  unsigned w = getCompressionNodeWeight(dtt,src);
+  unsigned new_index = pindex + w*index;
+  Expr ret_sel = getCompressedSelector(dtt,src,dst,new_index);
+  // TODO : do closure of connections
+  
+  return ret_sel;
+}
+
 unsigned Datatype::getCompressionEdgeWeight(Type dtt, Type src, Type dst) const
 {
   PrettyCheckArgument(isResolved(), this, "this datatype is not yet resolved");
