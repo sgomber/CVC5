@@ -30,9 +30,10 @@ TheoryEngineModelBuilder::TheoryEngineModelBuilder(TheoryEngine* te) : d_te(te)
 {
 }
 
-bool TheoryEngineModelBuilder::isAssignable(TNode n)
+bool TheoryEngineModelBuilder::isAssignable(TNode n, TheoryModel* tm)
 {
-  if (n.getKind() == kind::SELECT || n.getKind() == kind::APPLY_SELECTOR_TOTAL)
+  //if (n.getKind() == kind::SELECT || n.getKind() == kind::APPLY_SELECTOR_TOTAL)
+  if (tm->d_assignable.find(n)!=tm->d_assignable.end())
   {
     // selectors are always assignable (where we guarantee that they are not
     // evaluatable here)
@@ -80,7 +81,7 @@ void TheoryEngineModelBuilder::addAssignableSubterms(TNode n,
   {
     return;
   }
-  if (isAssignable(n))
+  if (isAssignable(n, tm))
   {
     tm->d_equalityEngine->addTerm(n);
   }
@@ -484,7 +485,7 @@ bool TheoryEngineModelBuilder::buildModel(Model* m)
               Node n = *eqc_i;
               Trace("model-builder-debug") << "Look at term : " << n
                                            << std::endl;
-              if (isAssignable(n))
+              if (isAssignable(n, tm))
               {
                 assignable = true;
                 Trace("model-builder-debug") << "...assignable" << std::endl;
@@ -651,7 +652,7 @@ bool TheoryEngineModelBuilder::buildModel(Model* m)
         for (; !eqc_i.isFinished(); ++eqc_i)
         {
           Node n = *eqc_i;
-          if (isAssignable(n))
+          if (isAssignable(n, tm))
           {
             assignable = true;
           }

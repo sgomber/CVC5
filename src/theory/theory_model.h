@@ -139,6 +139,8 @@ public:
    * during Theory's collectModelInfo( ... ) functions.
    */
   void assertSkeleton(TNode n);
+  /** assert assignable */
+  void assertAssignable(TNode n);
   //---------------------------- end building the model
 
   // ------------------- general equality queries
@@ -218,6 +220,8 @@ public:
   /** map of representatives of equality engine to used representatives in
    * representative set */
   std::map<Node, Node> d_reps;
+  /** set of nodes that are assignable */
+  std::unordered_set< Node, NodeHashFunction > d_assignable;
   /** stores set of representatives for each type */
   RepSet d_rep_set;
   /** true/false nodes */

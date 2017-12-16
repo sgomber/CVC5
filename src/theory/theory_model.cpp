@@ -64,6 +64,7 @@ void TheoryModel::reset(){
   d_sep_heap = Node::null();
   d_sep_nil_eq = Node::null();
   d_reps.clear();
+  d_assignable.clear();
   d_rep_set.clear();
   d_uf_terms.clear();
   d_ho_uf_terms.clear();
@@ -446,6 +447,11 @@ void TheoryModel::assertSkeleton(TNode n)
   Trace("model-builder-reps") << "...rep eqc is : " << getRepresentative(n)
                               << std::endl;
   d_reps[ n ] = n;
+}
+
+void TheoryModel::assertAssignable(TNode n)
+{
+  d_assignable.insert(n);
 }
 
 bool TheoryModel::hasTerm(TNode a)

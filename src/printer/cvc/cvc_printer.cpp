@@ -392,21 +392,28 @@ void CvcPrinter::toStream(
     case kind::APPLY_SELECTOR_TOTAL: {
         TypeNode t = n[0].getType();
         Node opn = n.getOperator();
-        if( t.isTuple() ){
-          toStream(out, n[0], depth, types, true);
-          const Datatype& dt = ((DatatypeType)t.toType()).getDatatype();
-          int sindex = dt[0].getSelectorIndexInternal( t.toType(), opn.toExpr() );
-          Assert( sindex>=0 );
-          out << '.' << sindex;
-        }else if( t.isRecord() ){
-          toStream(out, n[0], depth, types, true);
-          const Record& rec = t.getRecord();
-          const Datatype& dt = ((DatatypeType)t.toType()).getDatatype();
-          int sindex = dt[0].getSelectorIndexInternal( t.toType(), opn.toExpr() );
-          Assert( sindex>=0 && sindex<rec.getNumFields() );
-          std::pair<std::string, Type> fld = rec[sindex];
-          out << '.' << fld.first;
-        }else{
+        bool needsPrint = true;
+        if( !Datatype::isCompressed( opn.toExpr() ) )
+        {
+          if( t.isTuple() ){
+            toStream(out, n[0], depth, types, true);
+            const Datatype& dt = ((DatatypeType)t.toType()).getDatatype();
+            int sindex = dt[0].getSelectorIndexInternal( t.toType(), opn.toExpr() );
+            Assert( sindex>=0 );
+            out << '.' << sindex;
+            needsPrint = false;
+          }else if( t.isRecord() ){
+            toStream(out, n[0], depth, types, true);
+            const Record& rec = t.getRecord();
+            const Datatype& dt = ((DatatypeType)t.toType()).getDatatype();
+            int sindex = dt[0].getSelectorIndexInternal( t.toType(), opn.toExpr() );
+            Assert( sindex>=0 && sindex<(int)rec.getNumFields() );
+            std::pair<std::string, Type> fld = rec[sindex];
+            out << '.' << fld.first;
+            needsPrint = false;
+          }
+        }
+        if( needsPrint ){
           toStream(op, opn, depth, types, false);
         }
       }

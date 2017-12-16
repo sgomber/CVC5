@@ -1152,6 +1152,7 @@ bool TheoryArrays::collectModelInfo(TheoryModel* m)
     // If this term is a select, record that the EC rep of its store parameter is being read from using this term
     if (n.getKind() == kind::SELECT) {
       selects[d_equalityEngine.getRepresentative(n[0])].push_back(n);
+      m->assertAssignable(n);
     }
   }
 

@@ -115,7 +115,7 @@ class TheoryEngineModelBuilder : public ModelBuilder
    * all instances of the above terms are not
    * assignable if they have a higher-order (function) type.
    */
-  bool isAssignable(TNode n);
+  bool isAssignable(TNode n, TheoryModel* tm);
   /** add assignable subterms
    * Adds all assignable subterms of n to tm's equality engine.
    */

@@ -1516,7 +1516,6 @@ bool TheoryDatatypes::collectModelInfo(TheoryModel* m)
 
   //get all constructors
   eq::EqClassesIterator eqccs_i = eq::EqClassesIterator( &d_equalityEngine );
-  std::vector< Node > cons;
   std::vector< Node > nodes;
   std::map< Node, Node > eqc_cons;
   while( !eqccs_i.isFinished() ){
@@ -1529,7 +1528,6 @@ bool TheoryDatatypes::collectModelInfo(TheoryModel* m)
       EqcInfo* ei = getOrMakeEqcInfo( eqc );
       if( ei && !ei->d_constructor.get().isNull() ){
         Node c = ei->d_constructor.get();
-        cons.push_back( c );
         eqc_cons[ eqc ] = c;
       }else{
         //if eqc contains a symbol known to datatypes (a selector), then we must assign
@@ -1551,7 +1549,6 @@ bool TheoryDatatypes::collectModelInfo(TheoryModel* m)
   while( index<nodes.size() ){
     Node eqc = nodes[index];
     Node neqc;
-    bool addCons = false;
     Type tt = eqc.getType().toType();
     const Datatype& dt = ((DatatypeType)tt).getDatatype();
     if( !d_equalityEngine.hasTerm( eqc ) ){
@@ -1574,18 +1571,11 @@ bool TheoryDatatypes::collectModelInfo(TheoryModel* m)
             bool cfinite = dt[ i ].isInterpretedFinite( tt );
             if( pcons[i] && (r==1)==cfinite ){
               neqc = DatatypesRewriter::getInstCons( eqc, dt, i );
-              //for( unsigned j=0; j<neqc.getNumChildren(); j++ ){
-              //  //if( sels[i].find( j )==sels[i].end() && neqc[j].getType().isDatatype() ){
-              //  if( !d_equalityEngine.hasTerm( neqc[j] ) && neqc[j].getType().isDatatype() ){
-              //    nodes.push_back( neqc[j] );
-              //  }
-              //}
               break;
             }
           }
         }
       }
-      addCons = true;
     }
     if( !neqc.isNull() ){
       Trace("dt-cmi") << "Assign : " << neqc << std::endl;
@@ -1595,18 +1585,13 @@ bool TheoryDatatypes::collectModelInfo(TheoryModel* m)
       }
       eqc_cons[ eqc ] = neqc;
     }
-    if( addCons ){
-      cons.push_back( neqc );
-    }
     ++index;
   }
 
   for( std::map< Node, Node >::iterator it = eqc_cons.begin(); it != eqc_cons.end(); ++it ){
     Node eqc = it->first;
     if( eqc.getType().isCodatatype() ){
-      //until models are implemented for codatatypes
-      //throw Exception("Models for codatatypes are not supported in this version.");
-      //must proactive expand to avoid looping behavior in model builder
+      //must proactively expand to avoid looping behavior in model builder
       if( !it->second.isNull() ){
         std::map< Node, int > vmap;
         Node v = getCodatatypesValue( it->first, eqc_cons, vmap, 0 );
@@ -1620,6 +1605,11 @@ bool TheoryDatatypes::collectModelInfo(TheoryModel* m)
     }else{
       Trace("dt-cmi") << "Datatypes : assert representative " << it->second << " for " << it->first << std::endl;
       m->assertSkeleton(it->second);
+      for( unsigned i=0,size=it->second.getNumChildren(); i<size; i++ ){
+        if( it->second[i].getKind()==kind::APPLY_SELECTOR_TOTAL ){
+          m->assertAssignable( it->second[i] );
+        }
+      }
     }
   }
   return true;
