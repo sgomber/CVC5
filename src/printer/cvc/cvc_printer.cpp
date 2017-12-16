@@ -403,7 +403,7 @@ void CvcPrinter::toStream(
           const Record& rec = t.getRecord();
           const Datatype& dt = ((DatatypeType)t.toType()).getDatatype();
           int sindex = dt[0].getSelectorIndexInternal( t.toType(), opn.toExpr() );
-          Assert( sindex>=0 );
+          Assert( sindex>=0 && sindex<rec.getNumFields() );
           std::pair<std::string, Type> fld = rec[sindex];
           out << '.' << fld.first;
         }else{

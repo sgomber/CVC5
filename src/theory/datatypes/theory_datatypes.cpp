@@ -1326,22 +1326,25 @@ void TheoryDatatypes::collapseSelector( Node s, Node c ) {
     size_t constructorIndex = Datatype::indexOf(c.getOperator().toExpr());
     const Datatype& dt = Datatype::datatypeOf(selectorExpr);
     const DatatypeConstructor& dtc = dt[constructorIndex];
-    // collapse selector only looks one level
-    // since this is only (in theory) for propagation, this isn't an issue
-    // TODO : revisit this
     int selectorIndex = dtc.getSelectorIndexInternal( s[0].getType().toType(), selectorExpr );
     wrong = selectorIndex<0;
     
-    //if( wrong ){
-    //  return;
-    //}
-    //if( Datatype::indexOf(c.getOperator().toExpr())!=Datatype::cindexOf(s.getOperator().toExpr()) ){
-    //  mkExpDefSkolem( s.getOperator(), s[0].getType(), s.getType() );
-    //  r = NodeManager::currentNM()->mkNode( kind::APPLY_UF, d_exp_def_skolem[s.getOperator().toExpr()], s[0] );
-    //}else{
-    r = NodeManager::currentNM()->mkNode( kind::APPLY_SELECTOR_TOTAL, s.getOperator(), c );
-    if( options::dtRefIntro() ){
-      use_s = NodeManager::currentNM()->mkNode( kind::APPLY_SELECTOR_TOTAL, s.getOperator(), use_s );
+    // collapse selector only looks one level with compressed selectors
+    // since this is only (in theory) for propagation, this isn't an issue
+    // TODO : revisit this
+    if( !wrong || !Datatype::isCompressed( selectorExpr ) )
+    {
+      //if( wrong ){
+      //  return;
+      //}
+      //if( Datatype::indexOf(c.getOperator().toExpr())!=Datatype::cindexOf(s.getOperator().toExpr()) ){
+      //  mkExpDefSkolem( s.getOperator(), s[0].getType(), s.getType() );
+      //  r = NodeManager::currentNM()->mkNode( kind::APPLY_UF, d_exp_def_skolem[s.getOperator().toExpr()], s[0] );
+      //}else{
+      r = NodeManager::currentNM()->mkNode( kind::APPLY_SELECTOR_TOTAL, s.getOperator(), c );
+      if( options::dtRefIntro() ){
+        use_s = NodeManager::currentNM()->mkNode( kind::APPLY_SELECTOR_TOTAL, s.getOperator(), use_s );
+      }
     }
   }
   if( !r.isNull() ){
