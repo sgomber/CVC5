@@ -688,11 +688,12 @@ Expr Datatype::getCompressedSelector(Type dtt, Type src, Type dst, unsigned inde
   unsigned pindex = Datatype::indexOf(psel);
   unsigned w = getCompressionNodeWeight(dtt,src);
   unsigned new_index = pindex + w*index;
-  Expr ret_sel = getCompressedSelector(dtt,src,dst,new_index);
-  // TODO : do closure of connections
+  Expr zsel = getCompressedSelector(dtt,src,dst,new_index);
+  // add to parents
   SelectorInfo& si = d_sinfo[dtt];
-  
-  return ret_sel;
+  getCompressedParentsForSelector(dtt,psel,si.d_compress_sel_to_parents[zsel]);
+  si.d_compress_sel_to_parents[zsel].insert(psel);  
+  return zsel;
 }
 
 unsigned Datatype::getCompressionEdgeWeight(Type dtt, Type src, Type dst) const
@@ -755,14 +756,14 @@ int Datatype::getCompressionIdForSelector(Type dtt, Expr zsel) const
   return -1;
 }
 
-void Datatype::getCompressedParentsForSelector(Type dtt, Expr zsel, std::vector<Expr>& parents) const
+void Datatype::getCompressedParentsForSelector(Type dtt, Expr zsel, std::unordered_set<Expr, ExprHashFunction>& parents) const
 {
   PrettyCheckArgument(isResolved(), this, "this datatype is not yet resolved");
   SelectorInfo& si = d_sinfo[dtt];
-  std::map< Expr, std::vector<Expr> >::const_iterator it = si.d_compress_sel_to_parents.find(zsel);
+  std::map< Expr, std::unordered_set<Expr, ExprHashFunction> >::const_iterator it = si.d_compress_sel_to_parents.find(zsel);
   if( it!=si.d_compress_sel_to_parents.end() )
   {
-    parents.insert(parents.end(),it->second.begin(),it->second.end());
+    parents.insert(it->second.begin(),it->second.end());
   }
 }
 

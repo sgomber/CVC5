@@ -190,6 +190,37 @@ void TheoryDatatypes::check(Effort e) {
   
     //check for splits
     Trace("datatypes-debug") << "Check for splits " << e << endl;
+    // if we have compressed selectors, 
+    // we need to compute whether eqc have selectors
+    if( options::dtCompressSelectors() )
+    {
+      NodeManager* nm = NodeManager::currentNM();
+      for( context::CDList<TNode>::const_iterator itf = d_functionTerms.begin(); itf != d_functionTerms.end(); ++itf )
+      {
+        TNode n = *itf;
+        if( n.getKind()==APPLY_SELECTOR_TOTAL )
+        {
+          Expr sel = n.getOperator().toExpr();
+          if( Datatype::isCompressed( sel ) )
+          {
+            Type t = n[0].getType().toType();
+            const Datatype& dt = static_cast<DatatypeType>(t).getDatatype();
+            std::unordered_set<Expr, ExprHashFunction> parents;
+            dt.getCompressedParentsForSelector(t,sel,parents);
+            for( std::unordered_set<Expr, ExprHashFunction>::iterator itp = parents.begin(); itp != parents.end(); ++itp ){
+              Node pn = nm->mkNode( kind::APPLY_SELECTOR_TOTAL, Node::fromExpr(*itp), n[0] );
+              if( hasTerm( pn ) )
+              {
+                Node r = getRepresentative( pn );
+                EqcInfo* eqc = getOrMakeEqcInfo( r, true );
+                Trace("datatypes-compress-sel") << "compress-sel-parent : set has selector : " << pn << ", from " << n << "." << std::endl;
+                eqc->d_selectors = true;
+              }
+            }
+          }
+        }
+      }
+    }
     do {
       d_addedFact = false;
       bool added_split = false;

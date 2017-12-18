@@ -317,8 +317,18 @@ private:
   /** needs split 
    * 
    * This method returns true if need to split on the constructor of n.
-   *   dt is the datatype of n's type,
-   *   consIndex is an index t
+   *   dt : the datatype of n's type,
+   *   consIndex : an index that is updated, when applicable, to be a possible
+   *               constructor for n,
+   *   rec_singletons : a cache of recursive singletons for each type. This is
+   *                    used for applying the "Single" rule from 
+   *                    Reynolds/Blanchette CADE 2015.
+   * 
+   * This method will return true when:
+   * (1) the type of n is finite and it is not a recursive singleton,
+   * (2) there is a selector applied to n, or 
+   * (3) if we force assignments to datatype terms using
+   * options::dtForceAssignment().
    */
   bool needsSplit( Node n, const Datatype& dt, int& consIndex, std::map< TypeNode, Node >& rec_singletons ); 
   /** do split

@@ -23,6 +23,7 @@
 #include <functional>
 #include <iostream>
 #include <string>
+#include <unordered_set>
 #include <vector>
 #include <map>
 
@@ -911,7 +912,7 @@ public:
   int getCompressionIdForSelector(Type dtt, Expr zsel) const;
   
   /** Get the parents for compressed selector */
-  void getCompressedParentsForSelector(Type dtt, Expr zsel, std::vector<Expr>& parents) const;
+  void getCompressedParentsForSelector(Type dtt, Expr zsel, std::unordered_set<Expr, ExprHashFunction>& parents) const;
   
   /** get sygus type
    * This gets the built-in type associated with
@@ -1051,7 +1052,7 @@ public:
     /** compression selector to compression id */
     std::map< Expr, unsigned > d_compress_sel_to_cid;
     /** compression selector to list of parents */
-    std::map< Expr, std::vector< Expr > > d_compress_sel_to_parents;
+    std::map< Expr, std::unordered_set< Expr, ExprHashFunction > > d_compress_sel_to_parents;
   };
   /** selector information for each instantiation of this datatype */
   mutable std::map< Type, SelectorInfo > d_sinfo;
