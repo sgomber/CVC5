@@ -314,9 +314,15 @@ private:
   /** get relevant terms */
   void getRelevantTerms( std::set<Node>& termSet );
   
-  /** needs split */
-  bool needsSplit( Node n, const Datatype& dt, int& consIndex ); 
-  /** do split */
+  /** needs split 
+   * 
+   * TODO
+   */
+  bool needsSplit( Node n, const Datatype& dt, int& consIndex, std::map< TypeNode, Node >& rec_singletons ); 
+  /** do split
+   * 
+   * TODO
+   */
   bool doSplit( Node n, const Datatype& dt, int consIndex ); 
   
 private:

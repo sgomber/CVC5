@@ -201,106 +201,18 @@ void TheoryDatatypes::check(Effort e) {
         TypeNode tn = n.getType();
         if( tn.isDatatype() ){
           Trace("datatypes-debug") << "Process equivalence class " << n << std::endl;
-          EqcInfo* eqc = getOrMakeEqcInfo( n );
-          //if there are more than 1 possible constructors for eqc
-          if( !hasLabel( eqc, n ) ){
-            Trace("datatypes-debug") << "No constructor..." << std::endl;
-            Type tt = tn.toType();
-            const Datatype& dt = ((DatatypeType)tt).getDatatype();
-            Trace("datatypes-debug") << "Datatype " << dt << " is " << dt.isFinite( tt ) << " " << dt.isInterpretedFinite( tt ) << " " << dt.isRecursiveSingleton( tt ) << std::endl;
-            bool continueProc = true;
-            if( dt.isRecursiveSingleton( tt ) ){
-              Trace("datatypes-debug") << "Check recursive singleton..." << std::endl;
-              //handle recursive singleton case
-              std::map< TypeNode, Node >::iterator itrs = rec_singletons.find( tn );
-              if( itrs!=rec_singletons.end() ){
-                Node eq = n.eqNode( itrs->second );
-                if( d_singleton_eq.find( eq )==d_singleton_eq.end() ){
-                  d_singleton_eq[eq] = true;
-                  // get assumptions
-                  bool success = true;
-                  std::vector< Node > assumptions;
-                  //if there is at least one uninterpreted sort occurring within the datatype and the logic is not quantified, add lemmas ensuring cardinality is more than one,
-                  //  do not infer the equality if at least one sort was processed.
-                  //otherwise, if the logic is quantified, under the assumption that all uninterpreted sorts have cardinality one,
-                  //  infer the equality.
-                  for( unsigned i=0; i<dt.getNumRecursiveSingletonArgTypes( tt ); i++ ){
-                    TypeNode tn = TypeNode::fromType( dt.getRecursiveSingletonArgType( tt, i ) );
-                    if( getQuantifiersEngine() ){
-                      // under the assumption that the cardinality of this type is one
-                      Node a = getSingletonLemma( tn, true );
-                      assumptions.push_back( a.negate() );
-                    }else{
-                      success = false;
-                      // assert that the cardinality of this type is more than one
-                      getSingletonLemma( tn, false );
-                    }
-                  }
-                  if( success ){
-                    Node eq = n.eqNode( itrs->second );
-                    assumptions.push_back( eq );
-                    Node lemma = assumptions.size()==1 ? assumptions[0] : NodeManager::currentNM()->mkNode( OR, assumptions );
-                    Trace("dt-singleton") << "*************Singleton equality lemma " << lemma << std::endl;
-                    doSendLemma( lemma );
-                  }
-                }
-              }else{
-                rec_singletons[tn] = n;
-              }
-              //do splitting for quantified logics (incomplete anyways)
-              continueProc = ( getQuantifiersEngine()!=NULL );
-            }
-            if( continueProc ){
-              Trace("datatypes-debug") << "Get possible cons..." << std::endl;
-              //all other cases
-              std::vector< bool > pcons;
-              getPossibleCons( eqc, n, pcons );
-              //std::map< int, bool > sel_apps;
-              //getSelectorsForCons( n, sel_apps );
-              //check if we do not need to resolve the constructor type for this equivalence class.
-              // this is if there are no selectors for this equivalence class, and its possible values are infinite,
-              //  then do not split.
-              int consIndex = -1;
-              int fconsIndex = -1;
-              bool needSplit = true;
-              for( unsigned int j=0; j<pcons.size(); j++ ) {
-                if( pcons[j] ) {
-                  if( consIndex==-1 ){
-                    consIndex = j;
-                  }
-                  if( !dt[ j ].isInterpretedFinite( tt ) ) {
-                    if( !eqc || !eqc->d_selectors ){
-                      needSplit = false;
-                    }
-                  }else{
-                    if( fconsIndex==-1 ){
-                      fconsIndex = j;
-                    }
-                  }
-                }
-              }
-              //if we want to force an assignment of constructors to all ground eqc
-              //d_dtfCounter++;
-              if( !needSplit && options::dtForceAssignment() && d_dtfCounter%2==0 ){
-                Trace("datatypes-force-assign") << "Force assignment for " << n << std::endl;
-                needSplit = true;
-                consIndex = fconsIndex!=-1 ? fconsIndex : consIndex;
-              }
-
-              if( needSplit ) {
-                if( doSplit( n, dt, consIndex ) )
-                {
-                  added_split = true;
-                  if( !options::dtBlastSplits() ){
-                    return;
-                  }
-                }
-              }else{
-                Trace("dt-split-debug") << "Do not split constructor for " << n << " : " << n.getType() << " " << dt.getNumConstructors() << std::endl;
+          int consIndex = -1;
+          const Datatype& dt = static_cast<DatatypeType>(tn.toType()).getDatatype();
+          if( needsSplit( n, dt, consIndex, rec_singletons ) ) {
+            if( doSplit( n, dt, consIndex ) )
+            {
+              added_split = true;
+              if( !options::dtBlastSplits() ){
+                return;
               }
             }
           }else{
-            Trace("datatypes-debug") << "Has constructor " << eqc->d_constructor.get() << std::endl;
+            Trace("dt-split-debug") << "Do not split constructor for " << n << " : " << n.getType() << " " << dt.getNumConstructors() << std::endl;
           }
         }
         ++eqcs_i;
@@ -310,18 +222,6 @@ void TheoryDatatypes::check(Effort e) {
       }
       Trace("datatypes-debug") << "Flush pending facts..."  << std::endl;
       flushPendingFacts();
-      /*
-      if( !d_conflict ){
-        if( options::dtRewriteErrorSel() ){
-          bool innerAddedFact = false;
-          do {
-            collapseSelectors();
-            innerAddedFact = !d_pending.empty() || !d_pending_merge.empty();
-            flushPendingFacts();
-          }while( !d_conflict && innerAddedFact );
-        }
-      }
-      */
     }while( !d_conflict && !d_addedLemma && d_addedFact );
     Trace("datatypes-debug") << "Finished, conflict=" << d_conflict << ", lemmas=" << d_addedLemma << std::endl;
     if( !d_conflict ){
@@ -336,9 +236,104 @@ void TheoryDatatypes::check(Effort e) {
   }
 }
 
-bool TheoryDatatypes::needsSplit( Node n, const Datatype& dt, int& consIndex )
+bool TheoryDatatypes::needsSplit( Node n, const Datatype& dt, int& consIndex, std::map< TypeNode, Node >& rec_singletons )
 {
-  return false;
+  EqcInfo* eqc = getOrMakeEqcInfo( n );
+  //if there are more than 1 possible constructors for eqc
+  if( hasLabel( eqc, n ) ){
+    Trace("datatypes-debug") << "Has constructor " << eqc->d_constructor.get() << std::endl;
+    return false;
+  }
+  
+  Trace("datatypes-debug") << "No constructor..." << std::endl;
+  TypeNode tn = n.getType();
+  Type tt = tn.toType();
+  Trace("datatypes-debug") << "Datatype " << dt << " is " << dt.isFinite( tt ) << " " << dt.isInterpretedFinite( tt ) << " " << dt.isRecursiveSingleton( tt ) << std::endl;
+  if( dt.isRecursiveSingleton( tt ) ){
+    Trace("datatypes-debug") << "Check recursive singleton..." << std::endl;
+    //handle recursive singleton case
+    std::map< TypeNode, Node >::iterator itrs = rec_singletons.find( tn );
+    if( itrs!=rec_singletons.end() ){
+      Node eq = n.eqNode( itrs->second );
+      if( d_singleton_eq.find( eq )==d_singleton_eq.end() ){
+        d_singleton_eq[eq] = true;
+        // get assumptions
+        bool success = true;
+        std::vector< Node > assumptions;
+        // If there is at least one uninterpreted sort occurring within the 
+        // datatype and the logic is not quantified, add lemmas ensuring 
+        // cardinality is more than one, do not infer the equality if at least
+        // one sort was processed.
+        // Otherwise, if the logic is quantified, under the assumption that all 
+        // uninterpreted sorts have cardinality one, infer the equality.
+        for( unsigned i=0, size = dt.getNumRecursiveSingletonArgTypes( tt ); i<size; i++ ){
+          TypeNode tn = TypeNode::fromType( dt.getRecursiveSingletonArgType( tt, i ) );
+          if( getQuantifiersEngine() ){
+            // under the assumption that the cardinality of this type is one
+            Node a = getSingletonLemma( tn, true );
+            assumptions.push_back( a.negate() );
+          }else{
+            success = false;
+            // assert that the cardinality of this type is more than one
+            getSingletonLemma( tn, false );
+          }
+        }
+        if( success ){
+          Node eq = n.eqNode( itrs->second );
+          assumptions.push_back( eq );
+          Node lemma = assumptions.size()==1 ? assumptions[0] : NodeManager::currentNM()->mkNode( OR, assumptions );
+          Trace("dt-singleton") << "*************Singleton equality lemma " << lemma << std::endl;
+          doSendLemma( lemma );
+        }
+      }
+    }else{
+      rec_singletons[tn] = n;
+    }
+    //do splitting only for quantified logics (incomplete anyways)
+    if( getQuantifiersEngine()==nullptr )
+    {
+      return false;
+    }
+  }
+  
+  Trace("datatypes-debug") << "Get possible cons..." << std::endl;
+  std::vector< bool > pcons;
+  getPossibleCons( eqc, n, pcons );
+  // Check if we do not need to resolve the constructor type for this 
+  // equivalence class. This is if there are no selectors for this equivalence 
+  // class, and its possible values are infinite, then do not split.
+  consIndex = -1;
+  int fconsIndex = -1;
+  bool needSplit = true;
+  for( unsigned j=0, size = pcons.size(); j<size; j++ ) {
+    if( pcons[j] ) {
+      if( consIndex==-1 ){
+        consIndex = j;
+      }
+      if( !dt[ j ].isInterpretedFinite( tt ) ) {
+        if( !eqc || !eqc->d_selectors ){
+          needSplit = false;
+        }
+      }else{
+        if( fconsIndex==-1 ){
+          fconsIndex = j;
+        }
+      }
+    }
+  }
+  //if we want to force an assignment of constructors to all ground eqc
+  //d_dtfCounter++;
+  if( !needSplit && options::dtForceAssignment() && d_dtfCounter%2==0 ){
+    Trace("datatypes-debug") << "Force assignment for " << n << std::endl;
+    needSplit = true;
+    consIndex = fconsIndex!=-1 ? fconsIndex : consIndex;
+  }
+
+  if( !needSplit ) {
+    Trace("dt-split-debug") << "Do not split constructor for " << n << " : " << n.getType() << " " << dt.getNumConstructors() << std::endl;
+    return false;
+  }
+  return true;
 }
 
 bool TheoryDatatypes::doSplit( Node n, const Datatype& dt, int consIndex ) 
@@ -374,9 +369,9 @@ bool TheoryDatatypes::doSplit( Node n, const Datatype& dt, int consIndex )
       Trace("dt-split") << "Finished compute split, returned "
                         << lemmas.size() << " lemmas."
                         << std::endl;
-      for( unsigned i=0; i<lemmas.size(); i++ ){
-        Trace("dt-lemma-sygus") << "Dt sygus lemma : " << lemmas[i] << std::endl;
-        doSendLemma( lemmas[i] );
+      for( const Node& lem : lemmas ){
+        Trace("dt-lemma-sygus") << "Dt sygus lemma : " << lem << std::endl;
+        doSendLemma( lem );
       }
     }else{
       for( unsigned i=0, size = dt.getNumConstructors(); i<size; i++ ){
