@@ -344,6 +344,17 @@ private:
    */
   bool doSplit( Node n, const Datatype& dt, int consIndex ); 
   
+  /** collapse compressed selector rec 
+   * 
+   * 
+   */
+  Node collapseCompressedSelectorRec(Node seln, 
+                                     TypeNode txr, 
+                                     Node eqc, 
+                                     unsigned cur_zindex, 
+                                     std::vector< TNode >& exp,
+                                     std::unordered_set<Node, NodeHashFunction >& split_eqc,
+                                     std::unordered_map<Node, std::unordered_set< unsigned >, NodeHashFunction>& visited);
 private:
   //equality queries
   bool hasTerm( TNode a );

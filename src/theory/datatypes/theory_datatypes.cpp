@@ -200,23 +200,55 @@ void TheoryDatatypes::check(Effort e) {
         TNode n = *itf;
         if( n.getKind()==APPLY_SELECTOR_TOTAL )
         {
-          Expr sel = n.getOperator().toExpr();
-          if( Datatype::isCompressed( sel ) )
+          Expr zsel = n.getOperator().toExpr();
+          if( Datatype::isCompressed( zsel ) )
           {
-            Type t = n[0].getType().toType();
-            const Datatype& dt = static_cast<DatatypeType>(t).getDatatype();
-            std::unordered_set<Expr, ExprHashFunction> parents;
-            dt.getCompressedParentsForSelector(t,sel,parents);
-            for( std::unordered_set<Expr, ExprHashFunction>::iterator itp = parents.begin(); itp != parents.end(); ++itp ){
-              Node pn = nm->mkNode( kind::APPLY_SELECTOR_TOTAL, Node::fromExpr(*itp), n[0] );
-              Trace("datatypes-compress-sel") << "compress-sel-parent : set has selector : " << pn << ", from " << n << "." << std::endl;
-              pn = Rewriter::rewrite( pn );
-              Trace("datatypes-compress-sel") << "compress-sel-parent : post-rewrite : " << pn << std::endl;
-              if( hasTerm( pn ) )
+            Trace("datatypes-compress-sel") << "dt-compress-sel : process " << n << "..." << std::endl;
+            TypeNode tn = n.getType();
+            Node eqc = n[0];
+            unsigned cur_zindex = Datatype::indexOf(zsel);
+            std::vector< TNode > exp;
+            std::unordered_set<Node, NodeHashFunction > split_eqc;
+            std::unordered_map<Node, std::unordered_set< unsigned >, NodeHashFunction> visited;
+            Node cc = collapseCompressedSelectorRec( n, tn, eqc, cur_zindex, exp, split_eqc, visited );
+            Trace("datatypes-compress-sel") << "dt-compress-sel : " << n << " == " << cc << ", with " << split_eqc.size() << " split equivalence classes." << std::endl;
+            if( !cc.isNull() ){
+              if( !areEqual( cc, n ) )
               {
-                Node r = getRepresentative( pn );
-                EqcInfo* eqc = getOrMakeEqcInfo( r, true );
-                eqc->d_selectors = true;
+                Node eq = cc.eqNode( n );
+                Node eq_exp = mkAnd( exp );
+                // infer the equality + explanation
+                Trace("datatypes-infer") << "DtInfer : rec-collapse sel";
+                //Trace("datatypes-infer") << ( wrong ? " wrong" : "");
+                Trace("datatypes-infer") << " : " << eq << " by " << eq_exp << std::endl;
+                d_pending.push_back( eq );
+                d_pending_exp[ eq ] = eq_exp;
+                d_infer.push_back( eq );
+                d_infer_exp.push_back( eq_exp );
+              }
+            }else{
+              // set equivalence classes
+              /*
+              for( const Node& seqc : split_eqc ){
+                EqcInfo* ei = getOrMakeEqcInfo( seqc, true );
+                ei->d_selectors = true;
+              }
+              */
+              Type t = eqc.getType().toType();
+              const Datatype& dt = static_cast<DatatypeType>(t).getDatatype();
+              std::unordered_set<Expr, ExprHashFunction> parents;
+              dt.getCompressedParentsForSelector(t,zsel,parents);
+              for( std::unordered_set<Expr, ExprHashFunction>::iterator itp = parents.begin(); itp != parents.end(); ++itp ){
+                Node pn = nm->mkNode( kind::APPLY_SELECTOR_TOTAL, Node::fromExpr(*itp), n[0] );
+                Trace("datatypes-compress-sel") << "compress-sel-parent : set has selector : " << pn << ", from " << n << "." << std::endl;
+                pn = Rewriter::rewrite( pn );
+                Trace("datatypes-compress-sel") << "compress-sel-parent : post-rewrite : " << pn << std::endl;
+                if( hasTerm( pn ) )
+                {
+                  Node r = getRepresentative( pn );
+                  EqcInfo* eqc = getOrMakeEqcInfo( r, true );
+                  eqc->d_selectors = true;
+                }
               }
             }
           }
@@ -416,6 +448,71 @@ bool TheoryDatatypes::doSplit( Node n, const Datatype& dt, int consIndex )
   return true;
 }
 
+Node TheoryDatatypes::collapseCompressedSelectorRec( Node seln, 
+                                                     TypeNode txr, 
+                                                     Node eqc, 
+                                                     unsigned cur_zindex, 
+                                                     std::vector< TNode >& exp,
+                                                     std::unordered_set<Node, NodeHashFunction >& split_eqc,
+                                                     std::unordered_map<Node, std::unordered_set< unsigned >, NodeHashFunction>& visited)
+{
+  Trace("dt-compress-sel-debug") << "Process compress sel rec " << eqc << " / " << cur_zindex << " " << eqc.getType() << std::endl;
+  if( !eqc.getType().isDatatype() ){
+    Trace("dt-compress-sel-debug") << "...not datatype." << std::endl;
+    return Node::null();
+  }
+  Assert( hasTerm(eqc) );
+  
+  Node r = getRepresentative(eqc);
+  
+  if (visited[r].find(cur_zindex) != visited[r].end()) {
+    Trace("dt-compress-sel-debug") << "...already visited." << std::endl;
+    return Node::null();
+  }
+  visited[r].insert(cur_zindex);
+  
+  // check whether there is a constructor in this equivalence class
+  TNode cur;
+  EqcInfo* ei = getOrMakeEqcInfo( r );
+  if( ei ){
+    cur = ei->d_constructor.get();
+  }
+
+  Trace("dt-compress-sel-debug") << "Constructor is " << cur << std::endl;
+  if( cur.isNull() ){
+    split_eqc.insert(r);
+    Trace("dt-compress-sel-debug") << "*** split eqc : " << r << std::endl;
+    return Node::null();
+  }
+  
+  Trace("dt-compress-sel-debug") << "Decompress..." << std::endl;
+  std::vector< std::pair< TNode, unsigned > > visit;
+  Node cc = DatatypesRewriter::decompressSelector( txr, cur, cur_zindex, visit );
+  Trace("dt-compress-sel-debug") << "Decompress returned " << cc << ", visit = " << visit.size() << std::endl;
+  
+  if( !cc.isNull() )
+  {
+    Assert( cc.getType().isComparableTo( seln.getType() ) );
+    Trace("dt-compress-sel-debug") << "...return " << cc << std::endl;
+    explainEquality( cur, eqc, true, exp );
+    return cc;
+  }
+  
+  // otherwise, traverse
+  for( const std::pair< TNode, unsigned >& v : visit )
+  {
+    cc = collapseCompressedSelectorRec( seln, txr, v.first, v.second, exp, split_eqc, visited );
+    if( !cc.isNull() )
+    {
+      Trace("dt-compress-sel-debug") << "...recursive return " << cc << std::endl;
+      explainEquality( cur, eqc, true, exp );
+      return cc;
+    }
+  }
+  
+  return Node::null();
+}
+  
 bool TheoryDatatypes::needsCheckLastEffort() {
   return d_sygus_sym_break!=NULL;
 }

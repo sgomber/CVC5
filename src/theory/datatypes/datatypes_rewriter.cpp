@@ -232,13 +232,12 @@ RewriteResponse DatatypesRewriter::rewriteSelector(TNode in)
     if( options::dtCompressSelectors() && Datatype::isCompressed( in.getOperator().toExpr() ) )
     {
       Trace("compress-sel-rew") << "dt-decompress : process " << in << std::endl;
-      TypeNode tn = in[0].getType();
       
       // look for a parent -> child edge that is labelled in 
       // the compression map with the compressed selector
       Expr z = in.getOperator().toExpr();
       unsigned zindex = Datatype::indexOf(z);
-      Type tx_find = in.getType().toType();
+      TypeNode txr = in.getType();
       Trace("compress-sel-rew-debug") << "  index is " << zindex << std::endl;
       
       std::unordered_map<Node, std::unordered_set< unsigned >, NodeHashFunction> visited;
@@ -254,45 +253,14 @@ RewriteResponse DatatypesRewriter::rewriteSelector(TNode in)
         if (visited[cur].find(cur_zindex) == visited[cur].end()) {
           Trace("compress-sel-rew-debug") << "  process " << cur << " / " << cur_zindex << std::endl;
           visited[cur].insert(cur_zindex);
-          // only recurse if a constructor
-          if( cur.getKind()==kind::APPLY_CONSTRUCTOR )
+          
+          // decompress the selector
+          Node cc = decompressSelector( txr, cur, cur_zindex, visit );
+          
+          if( !cc.isNull() )
           {
-            Type ti = cur.getType().toType();
-            const Datatype& cdt = static_cast<DatatypeType>(ti).getDatatype();
-            Type ctype = cur.getOperator().getType().toType();
-            std::vector< Type > cargs = static_cast<ConstructorType>(ctype).getArgTypes();
-            // sort by type
-            std::map< Type, std::vector< Node > > children;
-            for( unsigned i=0, size=cargs.size(); i<size; i++ )
-            {
-              Type tx = cargs[i];
-              TNode cc = cur[i];
-              // check if we are in the right location
-              if( tx==tx_find && children[tx].size()==cur_zindex )
-              {
-                Trace("compress-sel-rew") << "dt-decompress : return " << cc << std::endl;
-                return RewriteResponse(REWRITE_DONE, cc);
-              }
-              children[tx].push_back(cc);
-            }
-            for( std::pair< const Type, std::vector< Node > >& cp : children )
-            {
-              Type tx = cp.first;
-              Trace("compress-sel-rew-debug") << "  process " << cp.second.size() << " " << ti << " -> " << tx << " children..." << std::endl;
-              unsigned w = cdt.getCompressionEdgeWeight(ti,ti,tx);
-              Trace("compress-sel-rew-debug") << "  edge weight is " << w << std::endl;
-              Assert( w>=cp.second.size() );
-              unsigned index = cur_zindex%w;
-              // notice when this check fails, it indicates that the compressed
-              // selector must be intended for a different constructor, in 
-              // particular one that has more tx children than this one.
-              if( index<cp.second.size() )
-              {
-                // recurse
-                unsigned nw = cur_zindex/w;
-                visit.push_back(std::pair<TNode,unsigned>(cp.second[index],nw));
-              }
-            }
+            Trace("compress-sel-rew") << "dt-decompress : return " << cc << std::endl;
+            return RewriteResponse(REWRITE_DONE, cc);
           }
         }
       } while (!visit.empty());
@@ -416,6 +384,53 @@ RewriteResponse DatatypesRewriter::rewriteSelector(TNode in)
     Trace("compress-sel-rew") << "dt-compress : no rewrite" << std::endl;
   }
   return RewriteResponse(REWRITE_DONE, in);
+}
+
+
+
+Node DatatypesRewriter::decompressSelector( TypeNode txr, Node cur, unsigned cur_zindex, std::vector< std::pair< TNode, unsigned > >& visit )
+{
+  // only recurse if a constructor
+  if( cur.getKind()==kind::APPLY_CONSTRUCTOR )
+  {
+    Type ti = cur.getType().toType();
+    Type tx_find = txr.toType();
+    const Datatype& cdt = static_cast<DatatypeType>(ti).getDatatype();
+    Type ctype = cur.getOperator().getType().toType();
+    std::vector< Type > cargs = static_cast<ConstructorType>(ctype).getArgTypes();
+    // sort by type
+    std::map< Type, std::vector< Node > > children;
+    for( unsigned i=0, size=cargs.size(); i<size; i++ )
+    {
+      Type tx = cargs[i];
+      TNode cc = cur[i];
+      // check if we are in the right location
+      if( tx==tx_find && children[tx].size()==cur_zindex )
+      {
+        return cc;
+      }
+      children[tx].push_back(cc);
+    }
+    for( std::pair< const Type, std::vector< Node > >& cp : children )
+    {
+      Type tx = cp.first;
+      Trace("compress-sel-rew-debug") << "  process " << cp.second.size() << " " << ti << " -> " << tx << " children..." << std::endl;
+      unsigned w = cdt.getCompressionEdgeWeight(ti,ti,tx);
+      Trace("compress-sel-rew-debug") << "  edge weight is " << w << std::endl;
+      Assert( w>=cp.second.size() );
+      unsigned index = cur_zindex%w;
+      // notice when this check fails, it indicates that the compressed
+      // selector must be intended for a different constructor, in 
+      // particular one that has more tx children than this one.
+      if( index<cp.second.size() )
+      {
+        // recurse
+        unsigned nw = cur_zindex/w;
+        visit.push_back(std::pair<TNode,unsigned>(cp.second[index],nw));
+      }
+    }
+  }
+  return Node::null();
 }
 
 Node DatatypesRewriter::getArbitraryValue(TypeNode tn) 

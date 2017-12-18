@@ -91,6 +91,8 @@ public:
   */
  static bool checkClash(Node n1, Node n2, std::vector<Node>& rew);
 
+ /** decompress */
+ static Node decompressSelector( TypeNode txr, Node cur, unsigned cur_zindex, std::vector< std::pair< TNode, unsigned > >& visit );
 private:
  /** get return arbitrary value */
  static Node getArbitraryValue(TypeNode tn);
