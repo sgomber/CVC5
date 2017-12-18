@@ -66,6 +66,8 @@ private:
   NodeSet d_active_terms;
   IntMap d_currTermSize;
   Node d_zero;
+  /** inferred argument map */
+  NodeMap d_compressed_waitlist;
 private:
   std::map< Node, Node > d_term_to_anchor;
   std::map<Node, quantifiers::CegConjecture*> d_term_to_anchor_conj;

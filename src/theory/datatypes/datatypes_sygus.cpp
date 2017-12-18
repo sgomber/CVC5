@@ -77,7 +77,8 @@ SygusSymBreakNew::SygusSymBreakNew(TheoryDatatypes* td,
       d_is_const(c),
       d_testers_exp(c),
       d_active_terms(c),
-      d_currTermSize(c) {
+      d_currTermSize(c),
+      d_compressed_waitlist(c){
   d_zero = NodeManager::currentNM()->mkConst(Rational(0));
 }
 
@@ -89,30 +90,42 @@ SygusSymBreakNew::~SygusSymBreakNew() {
 
 /** add tester */
 void SygusSymBreakNew::assertTester( int tindex, TNode n, Node exp, std::vector< Node >& lemmas ) {
-  registerTerm( n, lemmas );
-  // check if this is a relevant (sygus) term
-  if( d_term_to_anchor.find( n )!=d_term_to_anchor.end() ){
-    Trace("sygus-sb-debug2") << "Sygus : process tester : " << exp << std::endl;
-    // if not already active (may have duplicate calls for the same tester)
-    if( d_active_terms.find( n )==d_active_terms.end() ) {
-      d_testers[n] = tindex;
-      d_testers_exp[n] = exp;
-      
-      // must convert to shared selector chain here
-      
-      // check if parent is active
-      bool do_add = true;
+  Trace("sygus-sb-debug2") << "Sygus : process tester : " << exp << std::endl;
+  // if not already active (may have duplicate calls for the same tester)
+  if( d_active_terms.find( n )==d_active_terms.end() ) {
+    d_testers[n] = tindex;
+    d_testers_exp[n] = exp;
+    
+    bool do_add = true;
+    // must convert to shared selector chain here
+    if( options::dtCompressSelectors() ){
+      if( n.getKind()==APPLY_SELECTOR_TOTAL ){
+        NodeMap::const_iterator itam = d_compressed_waitlist.find( n );
+        if( itam!=d_compressed_waitlist.end() )
+        {
+          n = (*itam).second;
+        }
+        else
+        {
+          do_add = false;
+        }
+      }
+    }
+    
+    // check if parent is active
+    if( do_add ){
       if( options::sygusSymBreakLazy() ){
         if( n.getKind()==kind::APPLY_SELECTOR_TOTAL ){
-          NodeSet::const_iterator it = d_active_terms.find( n[0] );
+          Node nar = Rewriter::rewrite( n[0] );
+          NodeSet::const_iterator it = d_active_terms.find( nar );
           if( it==d_active_terms.end() ){
             do_add = false;
           }else{
             //this must be a proper selector
-            IntMap::const_iterator itt = d_testers.find( n[0] );
+            IntMap::const_iterator itt = d_testers.find( nar );
             Assert( itt!=d_testers.end() );
             int ptindex = (*itt).second;
-            TypeNode ptn = n[0].getType();
+            TypeNode ptn = nar.getType();
             const Datatype& pdt = ((DatatypeType)ptn.toType()).getDatatype();
             Expr sel = n.getOperator().toExpr();
             int sindex_in_parent = pdt[ptindex].getSelectorIndexInternal(ptn.toType(),sel);
@@ -123,17 +136,16 @@ void SygusSymBreakNew::assertTester( int tindex, TNode n, Node exp, std::vector<
           }
         }
       }
-      if( do_add ){
-        assertTesterInternal( tindex, n, exp, lemmas );
-      }else{
-        Trace("sygus-sb-debug2") << "...ignore inactive tester : " << exp << std::endl;
-      }
+    }
+    if( do_add ){
+      assertTesterInternal( tindex, n, exp, lemmas );
     }else{
-      Trace("sygus-sb-debug2") << "...ignore repeated tester : " << exp << std::endl;
+      Trace("sygus-sb-debug2") << "...ignore inactive tester : " << exp << std::endl;
     }
   }else{
-    Trace("sygus-sb-debug2") << "...ignore non-sygus tester : " << exp << std::endl;
+    Trace("sygus-sb-debug2") << "...ignore repeated tester : " << exp << std::endl;
   }
+
 }
 
 void SygusSymBreakNew::assertFact( Node n, bool polarity, std::vector< Node >& lemmas ) {
@@ -300,6 +312,14 @@ bool SygusSymBreakNew::computeTopLevel( TypeNode tn, Node n ){
 }
 
 void SygusSymBreakNew::assertTesterInternal( int tindex, TNode n, Node exp, std::vector< Node >& lemmas ) {
+  // n should not contain compressed selectors here!!!!
+  
+  registerTerm( n, lemmas );
+  // check if this is a relevant (sygus) term
+  if( d_term_to_anchor.find( n )==d_term_to_anchor.end() ){
+    return;
+  }
+  
   d_active_terms.insert( n );
   Trace("sygus-sb-debug2") << "Sygus : activate term : " << n << " : " << exp << std::endl;  
   
@@ -420,12 +440,15 @@ void SygusSymBreakNew::assertTesterInternal( int tindex, TNode n, Node exp, std:
   if( options::sygusSymBreakLazy() ){
     for( unsigned j=0; j<dt[tindex].getNumArgs(); j++ ){
       Node sel = NodeManager::currentNM()->mkNode( APPLY_SELECTOR_TOTAL, Node::fromExpr( dt[tindex].getSelectorInternal( ntn.toType(), j ) ), n );
-      Trace("sygus-sb-debug2") << "  activate child sel : " << sel << std::endl;
-      Assert( d_active_terms.find( sel )==d_active_terms.end() );
-      IntMap::const_iterator itt = d_testers.find( sel );
+      Node zsel = Rewriter::rewrite( sel );
+      Trace("sygus-sb-debug2") << "  activate child sel : " << sel << " / " << zsel << std::endl;
+      Assert( d_active_terms.find( zsel )==d_active_terms.end() );
+      IntMap::const_iterator itt = d_testers.find( zsel );
       if( itt != d_testers.end() ){
-        Assert( d_testers_exp.find( sel ) != d_testers_exp.end() );
-        assertTesterInternal( (*itt).second, sel, d_testers_exp[sel], lemmas );
+        Assert( d_testers_exp.find( zsel ) != d_testers_exp.end() );
+        assertTesterInternal( (*itt).second, sel, d_testers_exp[zsel], lemmas );
+      }else if( options::dtCompressSelectors() ){
+        d_compressed_waitlist[zsel] = sel;
       }
     }
   }
@@ -440,9 +463,7 @@ Node SygusSymBreakNew::getRelevancyCondition( Node n ) {
       Type nt = ntn.toType();
       const Datatype& dt = ((DatatypeType)nt).getDatatype();
       Expr selExpr = n.getOperator().toExpr();
-      if( options::dtCompressSelectors() ){
-        // TODO?
-      }else if( options::dtSharedSelectors() ){
+      if( options::dtSharedSelectors() ){
         std::vector< Node > disj;
         bool excl = false;
         for( unsigned i=0; i<dt.getNumConstructors(); i++ ){
@@ -1214,7 +1235,8 @@ bool SygusSymBreakNew::debugTesters( Node n, Node vn, int ind, std::vector< Node
 Node SygusSymBreakNew::getCurrentTemplate( Node n, std::map< TypeNode, int >& var_count ) {
   if( d_active_terms.find( n )!=d_active_terms.end() ){
     TypeNode tn = n.getType();
-    IntMap::const_iterator it = d_testers.find( n );
+    Node nr = Rewriter::rewrite( n );
+    IntMap::const_iterator it = d_testers.find( nr );
     Assert( it != d_testers.end() );
     const Datatype& dt = ((DatatypeType)tn.toType()).getDatatype();
     int tindex = (*it).second;
