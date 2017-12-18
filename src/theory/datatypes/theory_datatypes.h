@@ -313,6 +313,12 @@ private:
   bool checkClashModEq( TNode n1, TNode n2, std::vector< Node >& exp, std::vector< std::pair< TNode, TNode > >& deq_cand );
   /** get relevant terms */
   void getRelevantTerms( std::set<Node>& termSet );
+  
+  /** needs split */
+  bool needsSplit( Node n, const Datatype& dt, int& consIndex ); 
+  /** do split */
+  bool doSplit( Node n, const Datatype& dt, int consIndex ); 
+  
 private:
   //equality queries
   bool hasTerm( TNode a );

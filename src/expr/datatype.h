@@ -910,6 +910,9 @@ public:
   /** Get the compression id */
   int getCompressionIdForSelector(Type dtt, Expr zsel) const;
   
+  /** Get the parents for compressed selector */
+  void getCompressedParentsForSelector(Type dtt, Expr zsel, std::vector<Expr>& parents) const;
+  
   /** get sygus type
    * This gets the built-in type associated with
    * this sygus datatype, i.e. the type of the
@@ -1047,6 +1050,8 @@ public:
     std::map< unsigned, std::map< unsigned, Expr > > d_compress_sel;
     /** compression selector to compression id */
     std::map< Expr, unsigned > d_compress_sel_to_cid;
+    /** compression selector to list of parents */
+    std::map< Expr, std::vector< Expr > > d_compress_sel_to_parents;
   };
   /** selector information for each instantiation of this datatype */
   mutable std::map< Type, SelectorInfo > d_sinfo;

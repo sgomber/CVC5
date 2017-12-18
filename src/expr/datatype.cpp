@@ -690,6 +690,7 @@ Expr Datatype::getCompressedSelector(Type dtt, Type src, Type dst, unsigned inde
   unsigned new_index = pindex + w*index;
   Expr ret_sel = getCompressedSelector(dtt,src,dst,new_index);
   // TODO : do closure of connections
+  SelectorInfo& si = d_sinfo[dtt];
   
   return ret_sel;
 }
@@ -752,6 +753,17 @@ int Datatype::getCompressionIdForSelector(Type dtt, Expr zsel) const
   }
   Assert( false );
   return -1;
+}
+
+void Datatype::getCompressedParentsForSelector(Type dtt, Expr zsel, std::vector<Expr>& parents) const
+{
+  PrettyCheckArgument(isResolved(), this, "this datatype is not yet resolved");
+  SelectorInfo& si = d_sinfo[dtt];
+  std::map< Expr, std::vector<Expr> >::const_iterator it = si.d_compress_sel_to_parents.find(zsel);
+  if( it!=si.d_compress_sel_to_parents.end() )
+  {
+    parents.insert(parents.end(),it->second.begin(),it->second.end());
+  }
 }
 
 void printTypeDebug(const char* c, TypeNode tn)
