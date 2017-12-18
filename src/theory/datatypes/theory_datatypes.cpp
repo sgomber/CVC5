@@ -209,11 +209,13 @@ void TheoryDatatypes::check(Effort e) {
             dt.getCompressedParentsForSelector(t,sel,parents);
             for( std::unordered_set<Expr, ExprHashFunction>::iterator itp = parents.begin(); itp != parents.end(); ++itp ){
               Node pn = nm->mkNode( kind::APPLY_SELECTOR_TOTAL, Node::fromExpr(*itp), n[0] );
+              Trace("datatypes-compress-sel") << "compress-sel-parent : set has selector : " << pn << ", from " << n << "." << std::endl;
+              pn = Rewriter::rewrite( pn );
+              Trace("datatypes-compress-sel") << "compress-sel-parent : post-rewrite : " << pn << std::endl;
               if( hasTerm( pn ) )
               {
                 Node r = getRepresentative( pn );
                 EqcInfo* eqc = getOrMakeEqcInfo( r, true );
-                Trace("datatypes-compress-sel") << "compress-sel-parent : set has selector : " << pn << ", from " << n << "." << std::endl;
                 eqc->d_selectors = true;
               }
             }
@@ -270,7 +272,7 @@ void TheoryDatatypes::check(Effort e) {
 bool TheoryDatatypes::needsSplit( Node n, const Datatype& dt, int& consIndex, std::map< TypeNode, Node >& rec_singletons )
 {
   EqcInfo* eqc = getOrMakeEqcInfo( n );
-  //if there are more than 1 possible constructors for eqc
+  //if there is only 1 possible constructor for eqc
   if( hasLabel( eqc, n ) ){
     Trace("datatypes-debug") << "Has constructor " << eqc->d_constructor.get() << std::endl;
     return false;
@@ -1380,6 +1382,10 @@ void TheoryDatatypes::collapseSelector( Node s, Node c ) {
         use_s = NodeManager::currentNM()->mkNode( kind::APPLY_SELECTOR_TOTAL, s.getOperator(), use_s );
       }
     }
+    else 
+    {
+      Trace("dt-collapse-sel") << "collapse selector : failed." << std::endl;
+    }
   }
   if( !r.isNull() ){
     Node rr = Rewriter::rewrite( r );
@@ -1637,10 +1643,11 @@ bool TheoryDatatypes::collectModelInfo(TheoryModel* m)
         m->assertSkeleton(v);
       }
     }else{
-      Trace("dt-cmi") << "Datatypes : assert representative " << it->second << " for " << it->first << std::endl;
+      Trace("dt-cmi") << "Datatypes : assert skeleton " << it->second << " for " << it->first << std::endl;
       m->assertSkeleton(it->second);
       for( unsigned i=0,size=it->second.getNumChildren(); i<size; i++ ){
         if( it->second[i].getKind()==kind::APPLY_SELECTOR_TOTAL ){
+          Trace("dt-cmi") << "Datatypes : assert assignable " << it->second[i] << std::endl;
           m->assertAssignable( it->second[i] );
         }
       }

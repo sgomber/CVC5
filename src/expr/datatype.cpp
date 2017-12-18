@@ -1611,8 +1611,7 @@ int DatatypeConstructor::getSelectorIndexInternal( Type dtt, Expr sel ) const {
     if( Datatype::isCompressed(sel) )
     {
       Assert( options::dtCompressSelectors() );
-      Type t = static_cast<SelectorType>(stype).getDomain();
-      const Datatype& dt = static_cast<DatatypeType>(t).getDatatype();
+      const Datatype& dt = static_cast<DatatypeType>(dtt).getDatatype();
       
       Type ct = getSpecializedConstructorType(dtt);
       std::vector<Type> targs = static_cast<ConstructorType>(ct).getArgTypes();
@@ -1626,10 +1625,10 @@ int DatatypeConstructor::getSelectorIndexInternal( Type dtt, Expr sel ) const {
         Type tx = targs[i];
         if( tx==tx_find )
         {
-          unsigned w = dt.getCompressionEdgeWeight(t,ti,tx);
+          unsigned w = dt.getCompressionEdgeWeight(dtt,ti,tx);
           if( tx_find_count==zindex%w )
           {
-            Expr zselc = dt.getCompressedSelector(t,ti,tx,zindex,false);
+            Expr zselc = dt.getCompressedSelector(dtt,ti,tx,zindex,false);
             if(zselc==sel )
             {
               return i;
