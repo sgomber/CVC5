@@ -316,12 +316,21 @@ private:
   
   /** needs split 
    * 
-   * TODO
+   * This method returns true if need to split on the constructor of n.
+   *   dt is the datatype of n's type,
+   *   consIndex is an index t
    */
   bool needsSplit( Node n, const Datatype& dt, int& consIndex, std::map< TypeNode, Node >& rec_singletons ); 
   /** do split
    * 
-   * TODO
+   * Splits on the constructor for datatype term n, where  
+   *   dt is the datatype of n's type,
+   *   consIndex is the index of a possible constructor for n.
+   * The latter is used only when we are using the binary split split strategy.
+   * 
+   * This method returns true if a lemma corresponding to the split was sent
+   * on the output channel of this class. If dt has only one constructor, this
+   * method may infer an (internal) equality and return false.
    */
   bool doSplit( Node n, const Datatype& dt, int consIndex ); 
   

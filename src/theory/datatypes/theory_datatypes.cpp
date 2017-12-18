@@ -328,12 +328,7 @@ bool TheoryDatatypes::needsSplit( Node n, const Datatype& dt, int& consIndex, st
     needSplit = true;
     consIndex = fconsIndex!=-1 ? fconsIndex : consIndex;
   }
-
-  if( !needSplit ) {
-    Trace("dt-split-debug") << "Do not split constructor for " << n << " : " << n.getType() << " " << dt.getNumConstructors() << std::endl;
-    return false;
-  }
-  return true;
+  return needSplit;
 }
 
 bool TheoryDatatypes::doSplit( Node n, const Datatype& dt, int consIndex ) 
