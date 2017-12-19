@@ -381,7 +381,7 @@ RewriteResponse DatatypesRewriter::rewriteSelector(TNode in)
         }
       }
     }
-    Trace("compress-sel-rew") << "dt-compress : no rewrite" << std::endl;
+    Trace("compress-sel-rew") << "dt-compress : no rewrite for " << in << std::endl;
   }
   return RewriteResponse(REWRITE_DONE, in);
 }

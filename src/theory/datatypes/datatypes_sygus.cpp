@@ -77,6 +77,7 @@ SygusSymBreakNew::SygusSymBreakNew(TheoryDatatypes* td,
       d_is_const(c),
       d_testers_exp(c),
       d_active_terms(c),
+      d_active_testers(c),
       d_currTermSize(c),
       d_compressed_waitlist(c){
   d_zero = NodeManager::currentNM()->mkConst(Rational(0));
@@ -322,7 +323,13 @@ void SygusSymBreakNew::assertTesterInternal( int tindex, TNode n, Node exp, std:
     return;
   }
   
+  // check if haven't already added the tester (for another term n)
+  if( d_active_testers.find(exp)!=d_active_testers.end() ){
+    return;
+  }
+  
   d_active_terms.insert( n );
+  d_active_testers.insert( exp );
   Trace("sygus-sb") << "Sygus : activate term : " << n << " : " << exp << std::endl;  
   
   /* TODO

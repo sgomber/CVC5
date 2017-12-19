@@ -63,11 +63,43 @@ private:
   IntMap d_testers;
   IntMap d_is_const;
   NodeMap d_testers_exp;
+  /** active terms 
+   * 
+   * The set of terms (shared or standard selector chains) that are active in 
+   * the current context. A selector chain S( t ) is active if:
+   * (1) S( t ) is defined in the current context,
+   * (2) A tester is-X( S( t ) ) has been asserted for some X, and 
+   * (3) t is a registered sygus enumerator. 
+   * 
+   * For example, for the datatype:
+   *   A := C( s1 : A, s2 : A ) | nil
+   * If x is a registered sygus enumerator, and if we have asserted:
+   *   is-C( x ), is-C( s1( x ) ), is-C( s1( s2( x ) ) )
+   * then x and s1( x ) are active only. Notice that s2( x ) is not active 
+   * because no tester has been asserted for it. Likewise, s1( s2( x ) ) is not
+   * active since we do not know the constructor type of s2( x ), hence it is
+   * not (yet) defined. 
+   */
   NodeSet d_active_terms;
+  /** active testers 
+   * 
+   * The set of tester predicates that are active in the current context. A 
+   * tester is active if it is applied to an active term (see above).
+   */
+  NodeSet d_active_testers;
+  /** compressed waitlist 
+   * 
+   * This map is used when options::dtCompressedSel() is on.
+   * 
+   * This map stores an entry of the form Z( x ) -> s( S( x ) ), where Z( x ) 
+   * is a compressed selector chain, and S( x ) is a (shared or standard) 
+   * selector chain, and S( x ) is an active term in the current context. Such 
+   * an entry indicates we are waiting for a tester for Z( x ) to be asserted, 
+   * after which we activate its shared selector equivalent, s( S( x ) ).
+   */
+  NodeMap d_compressed_waitlist;
   IntMap d_currTermSize;
   Node d_zero;
-  /** inferred argument map */
-  NodeMap d_compressed_waitlist;
 private:
   std::map< Node, Node > d_term_to_anchor;
   std::map<Node, quantifiers::CegConjecture*> d_term_to_anchor_conj;
