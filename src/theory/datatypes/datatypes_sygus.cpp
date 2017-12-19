@@ -515,8 +515,8 @@ Node SygusSymBreakNew::getSimpleSymBreakPred( TypeNode tn, int tindex, unsigned 
       if( options::sygusFair()==SYGUS_FAIR_DT_SIZE ){
         Node szl = NodeManager::currentNM()->mkNode( DT_SIZE, n );
         Node szr = NodeManager::currentNM()->mkNode( DT_SIZE, DatatypesRewriter::getInstCons( n, dt, tindex ) );
-        szr = Rewriter::rewrite( szr );
-        Trace("ajr-temp") << "Rewritten size lemma : " << szr << std::endl;
+        //szr = Rewriter::rewrite( szr );
+        //Trace("ajr-temp") << "Rewritten size lemma : " << szr << std::endl;
         sbp_conj.push_back( szl.eqNode( szr ) );
         //sbp_conj.push_back( NodeManager::currentNM()->mkNode( kind::GEQ, szl, NodeManager::currentNM()->mkConst( Rational(0) ) ) );
       }
