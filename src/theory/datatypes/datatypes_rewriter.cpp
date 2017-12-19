@@ -381,6 +381,10 @@ RewriteResponse DatatypesRewriter::rewriteSelector(TNode in)
         }
       }
     }
+    else
+    {
+      Assert( in[0].getKind()!=kind::APPLY_SELECTOR_TOTAL || !Datatype::isCompressed(in[0].getOperator().toExpr())); 
+    }
     Trace("compress-sel-rew") << "dt-compress : no rewrite" << std::endl;
   }
   return RewriteResponse(REWRITE_DONE, in);

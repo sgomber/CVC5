@@ -362,12 +362,13 @@ void SygusSymBreakNew::assertTesterInternal( int tindex, TNode n, Node exp, std:
         Node x = *its;
         Node xa = d_term_to_anchor[x];
         if( xa==a ){
-          IntMap::const_iterator ittv = d_testers.find( x );
+          Node xr = Rewriter::rewrite( x );
+          IntMap::const_iterator ittv = d_testers.find( xr );
           Assert( ittv != d_testers.end() );
           int tindex = (*ittv).second;
           const Datatype& dti = ((DatatypeType)x.getType().toType()).getDatatype();
           if( dti[tindex].getNumArgs()>0 ){
-            NodeMap::const_iterator itt = d_testers_exp.find( x );
+            NodeMap::const_iterator itt = d_testers_exp.find( xr );
             Assert( itt != d_testers_exp.end() );
             conflict.push_back( (*itt).second );
           }
@@ -515,6 +516,7 @@ Node SygusSymBreakNew::getSimpleSymBreakPred( TypeNode tn, int tindex, unsigned 
         Node szl = NodeManager::currentNM()->mkNode( DT_SIZE, n );
         Node szr = NodeManager::currentNM()->mkNode( DT_SIZE, DatatypesRewriter::getInstCons( n, dt, tindex ) );
         szr = Rewriter::rewrite( szr );
+        Trace("ajr-temp") << "Rewritten size lemma : " << szr << std::endl;
         sbp_conj.push_back( szl.eqNode( szr ) );
         //sbp_conj.push_back( NodeManager::currentNM()->mkNode( kind::GEQ, szl, NodeManager::currentNM()->mkConst( Rational(0) ) ) );
       }
@@ -1135,7 +1137,7 @@ void SygusSymBreakNew::check( std::vector< Node >& lemmas ) {
       if( !debugTesters( prog, progv, 0, lemmas ) ){
         Trace("sygus-sb") << "  SygusSymBreakNew::check: ...WARNING: considered missing split for " << prog << "." << std::endl;
         // this should not happen generally, it is caused by a sygus term not being assigned a tester
-        //Assert( false );
+        Assert( false );
       }else{
         //debugging : ensure fairness was properly handled
         if( options::sygusFair()==SYGUS_FAIR_DT_SIZE ){  
@@ -1225,6 +1227,7 @@ bool SygusSymBreakNew::debugTesters( Node n, Node vn, int ind, std::vector< Node
   }
   for( unsigned i=0; i<vn.getNumChildren(); i++ ){
     Node sel = NodeManager::currentNM()->mkNode( kind::APPLY_SELECTOR_TOTAL, Node::fromExpr( dt[cindex].getSelectorInternal( tn.toType(), i ) ), n );
+    sel = Rewriter::rewrite( sel );
     if( !debugTesters( sel, vn[i], ind+1, lemmas ) ){
       return false;
     }
