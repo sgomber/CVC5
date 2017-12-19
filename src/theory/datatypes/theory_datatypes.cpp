@@ -1456,13 +1456,13 @@ void TheoryDatatypes::collapseSelector( Node s, Node c ) {
   }
   if( s.getKind()==kind::APPLY_SELECTOR_TOTAL ){
     Expr selectorExpr = s.getOperator().toExpr();
-    if( !Datatype::isCompressed( selectorExpr ) ){
-      size_t constructorIndex = Datatype::indexOf(c.getOperator().toExpr());
-      const Datatype& dt = Datatype::datatypeOf(selectorExpr);
-      const DatatypeConstructor& dtc = dt[constructorIndex];
-      int selectorIndex = dtc.getSelectorIndexInternal( s[0].getType().toType(), selectorExpr );
-      wrong = selectorIndex<0;
+    size_t constructorIndex = Datatype::indexOf(c.getOperator().toExpr());
+    const Datatype& dt = Datatype::datatypeOf(selectorExpr);
+    const DatatypeConstructor& dtc = dt[constructorIndex];
+    int selectorIndex = dtc.getSelectorIndexInternal( s[0].getType().toType(), selectorExpr );
+    wrong = selectorIndex<0;
       
+    if( !wrong || !Datatype::isCompressed( selectorExpr ) ){
       // collapse selector only looks one level with compressed selectors
       // since this is only (in theory) for propagation, this isn't an issue
       // TODO : revisit this

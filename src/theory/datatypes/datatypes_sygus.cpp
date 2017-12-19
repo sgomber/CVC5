@@ -90,7 +90,7 @@ SygusSymBreakNew::~SygusSymBreakNew() {
 
 /** add tester */
 void SygusSymBreakNew::assertTester( int tindex, TNode n, Node exp, std::vector< Node >& lemmas ) {
-  Trace("sygus-sb-debug2") << "Sygus : process tester : " << exp << std::endl;
+  Trace("sygus-sb-debug2") << "Sygus : process tester : " << n << " " << exp << std::endl;
   // if not already active (may have duplicate calls for the same tester)
   if( d_active_terms.find( n )==d_active_terms.end() ) {
     d_testers[n] = tindex;
@@ -104,9 +104,11 @@ void SygusSymBreakNew::assertTester( int tindex, TNode n, Node exp, std::vector<
         if( itam!=d_compressed_waitlist.end() )
         {
           n = (*itam).second;
+          Trace("sygus-sb-debug2") << "...shared selector chain : " << n << std::endl;
         }
         else
         {
+          Trace("sygus-sb-debug2") << "...not on compressed watch list." << std::endl;
           do_add = false;
         }
       }
@@ -116,12 +118,12 @@ void SygusSymBreakNew::assertTester( int tindex, TNode n, Node exp, std::vector<
     if( do_add ){
       if( options::sygusSymBreakLazy() ){
         if( n.getKind()==kind::APPLY_SELECTOR_TOTAL ){
-          Node nar = Rewriter::rewrite( n[0] );
-          NodeSet::const_iterator it = d_active_terms.find( nar );
+          NodeSet::const_iterator it = d_active_terms.find( n[0] );
           if( it==d_active_terms.end() ){
             do_add = false;
           }else{
             //this must be a proper selector
+            Node nar = Rewriter::rewrite( n[0] );
             IntMap::const_iterator itt = d_testers.find( nar );
             Assert( itt!=d_testers.end() );
             int ptindex = (*itt).second;
@@ -321,7 +323,7 @@ void SygusSymBreakNew::assertTesterInternal( int tindex, TNode n, Node exp, std:
   }
   
   d_active_terms.insert( n );
-  Trace("sygus-sb-debug2") << "Sygus : activate term : " << n << " : " << exp << std::endl;  
+  Trace("sygus-sb") << "Sygus : activate term : " << n << " : " << exp << std::endl;  
   
   /* TODO
   IntMap::const_iterator itisc = d_is_const.find( n );
@@ -442,13 +444,15 @@ void SygusSymBreakNew::assertTesterInternal( int tindex, TNode n, Node exp, std:
     for( unsigned j=0; j<dt[tindex].getNumArgs(); j++ ){
       Node sel = NodeManager::currentNM()->mkNode( APPLY_SELECTOR_TOTAL, Node::fromExpr( dt[tindex].getSelectorInternal( ntn.toType(), j ) ), n );
       Node zsel = Rewriter::rewrite( sel );
-      Trace("sygus-sb-debug2") << "  activate child sel : " << sel << " / " << zsel << std::endl;
+      Trace("sygus-sb-debug2") << "  activate child sel : " << sel << " / " << zsel << " ? " << std::endl;
       Assert( d_active_terms.find( zsel )==d_active_terms.end() );
       IntMap::const_iterator itt = d_testers.find( zsel );
       if( itt != d_testers.end() ){
+        Trace("sygus-sb-debug2") << "...assert tester" << std::endl;
         Assert( d_testers_exp.find( zsel ) != d_testers_exp.end() );
         assertTesterInternal( (*itt).second, sel, d_testers_exp[zsel], lemmas );
       }else if( options::dtCompressSelectors() ){
+        Trace("sygus-sb-debug2") << "...add to compressed watch list" << std::endl;
         d_compressed_waitlist[zsel] = sel;
       }
     }
