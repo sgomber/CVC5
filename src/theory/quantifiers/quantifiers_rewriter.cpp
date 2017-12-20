@@ -1146,6 +1146,97 @@ Node QuantifiersRewriter::computePrenex( Node body, std::vector< Node >& args, s
   return body;
 }
 
+Node QuantifiersRewriter::computePrenexNew( Node n )
+{
+  if( n.getKind()==FORALL || ( n.getKind()==NOT && n[0].getKind()==FORALL ) ){
+    return n;
+  }
+  
+  NodeManager* nm = NodeManager::currentNM();
+  std::unordered_map<TNode, std::unordered_map< int, Node >, TNodeHashFunction> visited;
+  std::unordered_map< int, Node >::iterator it;
+  std::unordered_map<TNode, Node, TNodeHashFunction> quants;
+  std::unordered_map<TNode, int, TNodeHashFunction> quant_pols;
+  std::vector< std::pair<TNode,int> > visit;
+  std::pair<TNode,int> cur;
+  visit.push_back(std::pair<TNode,int>(n,1));
+  do {
+    cur = visit.back();
+    visit.pop_back();
+    TNode curn = cur.first;
+    int cur_pol = cur.second;
+
+    it = visited[curn].find(cur_pol);
+    if (it == visited[curn].end()) {
+      if( curn.getKind()==FORALL )
+      {
+        // replace with a fresh variable
+        std::unordered_map<TNode, Node, TNodeHashFunction>::iterator itq = quants.find(curn);
+        if( itq==quants.end() ){
+          Node v = nm->mkSkolem( "Q", NodeManager::currentNM()->booleanType() );
+          quants[curn] = v;
+        }
+        visited[curn][cur_pol] = quants[curn];
+        std::unordered_map<TNode, int, TNodeHashFunction>::iterator itqp = quant_pols.find(curn);
+        if( itqp==quant_pols.end() ){
+          quant_pols[curn] = cur_pol;
+        }else{
+          quant_pols[curn] = QuantPhaseReq::addPolarity( cur_pol, itqp->second );
+        }
+      }else{
+        visited[curn][cur_pol] = Node::null();
+        visit.push_back(std::pair<TNode,int>(curn,cur_pol));
+        for (unsigned i = 0, size = curn.getNumChildren(); i < size; i++) {
+          // pass the polarity
+          int newPol = QuantPhaseReq::getPolarity(curn,i,cur_pol);
+          visit.push_back(std::pair<TNode,int>(curn[i],newPol));
+        }
+      }
+    } else if (it->second.isNull()) {
+      Node ret = curn;
+      bool childChanged = false;
+      std::vector<Node> children;
+      if (curn.getMetaKind() == kind::metakind::PARAMETERIZED) {
+        children.push_back(curn.getOperator());
+      }
+      for (unsigned i = 0, size = curn.getNumChildren(); i < size; i++) {
+        int newPol = QuantPhaseReq::getPolarity(curn,i,cur_pol);
+        it = visited[curn[i]].find(newPol);
+        Assert(it != visited[curn[i]].end());
+        Assert(!it->second.isNull());
+        childChanged = childChanged || curn[i] != it->second;
+        children.push_back(it->second);
+      }
+      if (childChanged) {
+        ret = nm->mkNode(curn.getKind(), children);
+      }
+      visited[curn][cur_pol] = ret;
+    }
+  } while (!visit.empty());
+  Assert(visited[n].find(1) != visited[n].end());
+  Assert(!visited[n].find(1)->second.isNull());
+  Node ret = visited[n][1];
+  
+  if( !quants.empty() ){
+    std::vector< Node > quant_eqs;
+    quant_eqs.push_back( visited[n][1] );
+    for( std::pair<const TNode, int >& qp : quant_pols )
+    {
+      Node q = qp.first;
+      int p = qp.second;
+      Node v = quants[q];
+      Assert( !v.isNull() );
+      if( p==-1 ){
+        quant_eqs.push_back( nm->mkNode( IMPLIES, q, v ) );
+      }else{
+        quant_eqs.push_back( nm->mkNode( p==0 ? EQUAL : IMPLIES, v, q ) );
+      }
+    }
+    ret = NodeManager::currentNM()->mkNode( kind::AND, quant_eqs );
+  }
+  return ret;
+}
+  
 Node QuantifiersRewriter::computePrenexAgg( Node n, bool topLevel, std::map< unsigned, std::map< Node, Node > >& visited ){
   unsigned tindex = topLevel ? 0 : 1;
   std::map< Node, Node >::iterator itv = visited[tindex].find( n );
@@ -1856,6 +1947,10 @@ Node QuantifiersRewriter::preprocess( Node n, bool isInst ) {
   if( options::prenexQuant()==PRENEX_QUANT_DISJ_NORMAL || options::prenexQuant()==PRENEX_QUANT_NORMAL ){
     Trace("quantifiers-prenex") << "Prenexing : " << n << std::endl;
     std::map< unsigned, std::map< Node, Node > > visited;
+    if( options::prenexQuantLift() ){
+      n = quantifiers::QuantifiersRewriter::computePrenexNew( n );
+    }
+    Trace("quantifiers-prenex") << "Prenexing initial returned : " << n << std::endl;
     n = quantifiers::QuantifiersRewriter::computePrenexAgg( n, true, visited );
     n = Rewriter::rewrite( n );
     Trace("quantifiers-prenex") << "Prenexing returned : " << n << std::endl;

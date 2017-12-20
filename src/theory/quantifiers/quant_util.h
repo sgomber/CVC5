@@ -203,6 +203,10 @@ public:
 
   static void getPolarity( Node n, int child, bool hasPol, bool pol, bool& newHasPol, bool& newPol );
   static void getEntailPolarity( Node n, int child, bool hasPol, bool pol, bool& newHasPol, bool& newPol );
+  
+  static int getPolarity( Node n, unsigned child, int pol );
+  static int getEntailPolarity( Node n, unsigned child, int pol );
+  static int addPolarity( int pol1, int pol2 );
 };
 
 /** EqualityQuery

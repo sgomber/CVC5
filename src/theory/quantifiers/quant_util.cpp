@@ -163,5 +163,31 @@ void QuantPhaseReq::getEntailPolarity( Node n, int child, bool hasPol, bool pol,
   }
 }
 
+int QuantPhaseReq::getPolarity( Node n, unsigned child, int pol )
+{
+  if( n.getKind()==AND || n.getKind()==OR || n.getKind()==SEP_STAR ){
+    return pol;
+  }else if( n.getKind()==IMPLIES ){
+    return child==0 ? -pol : pol;
+  }else if( n.getKind()==NOT ){
+    return -pol;
+  }else if( n.getKind()==ITE ){
+    return child==0 ? 0 : pol;
+  }else if( n.getKind()==FORALL ){
+    return child==1 ? pol : 0;
+  }
+  return 0;
+}
+
+int QuantPhaseReq::getEntailPolarity( Node n, unsigned child, int pol )
+{
+  // TODO
+  return 0;
+}
+
+int QuantPhaseReq::addPolarity( int pol1, int pol2 ){
+  return pol1==pol2 ? pol1 : 0;
+}
+
 } /* namespace CVC4::theory */
 } /* namespace CVC4 */
