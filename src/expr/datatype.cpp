@@ -849,7 +849,8 @@ void Datatype::computeCompressedSelectors(Type dtt) const
             // add to siblings
             for( std::pair< const TypeNode, unsigned >& cs : child_count )
             {
-              if( tx!=cs.first )
+              // self sibling
+              if( tx!=cs.first || cs.second>1 )
               {
                 if( siblings[tx].find( cs.first )==siblings[tx].end() )
                 {
