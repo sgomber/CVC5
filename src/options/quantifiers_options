@@ -23,7 +23,7 @@ option prenexQuant --prenex-quant=MODE CVC4::theory::quantifiers::PrenexQuantMod
  prenex mode for quantified formulas
 option prenexQuantUser --prenex-quant-user bool :default false :read-write
  prenex quantified formulas with user patterns
-option prenexQuantLift --prenext-quant-lift bool :read-write :default false
+option prenexQuantLift --prenex-quant-lift bool :read-write :default false
  lift quantified formulas when prenexing
 # Whether to variable-eliminate quantifiers.
 # For example, forall x y. ( P( x, y ) V x != c ) will be rewritten to

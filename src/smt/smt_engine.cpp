@@ -1955,8 +1955,10 @@ void SmtEngine::setDefaults() {
   if( options::cbqi() && 
       ( options::cbqiNestedQE() || options::decisionMode()==decision::DECISION_STRATEGY_INTERNAL ) ){
     //only complete with prenex = disj_normal or normal
-    if( options::prenexQuant()<=quantifiers::PRENEX_QUANT_DISJ_NORMAL ){
-      options::prenexQuant.set( quantifiers::PRENEX_QUANT_DISJ_NORMAL );
+    if( !options::prenexQuant.wasSetByUser() ){
+      if( options::prenexQuant()<=quantifiers::PRENEX_QUANT_DISJ_NORMAL ){
+        options::prenexQuant.set( quantifiers::PRENEX_QUANT_DISJ_NORMAL );
+      }
     }
   }
   if( options::cbqiNestedQE() ){
