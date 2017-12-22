@@ -1943,13 +1943,13 @@ Node QuantifiersRewriter::preprocess( Node n, bool isInst ) {
       }
     }
   }
+  if( options::prenexQuantLift() ){
+    n = quantifiers::QuantifiersRewriter::computePrenexNew( n );
+  }
   //pull all quantifiers globally
   if( options::prenexQuant()==PRENEX_QUANT_DISJ_NORMAL || options::prenexQuant()==PRENEX_QUANT_NORMAL ){
     Trace("quantifiers-prenex") << "Prenexing : " << n << std::endl;
     std::map< unsigned, std::map< Node, Node > > visited;
-    if( options::prenexQuantLift() ){
-      n = quantifiers::QuantifiersRewriter::computePrenexNew( n );
-    }
     Trace("quantifiers-prenex") << "Prenexing initial returned : " << n << std::endl;
     n = quantifiers::QuantifiersRewriter::computePrenexAgg( n, true, visited );
     n = Rewriter::rewrite( n );
