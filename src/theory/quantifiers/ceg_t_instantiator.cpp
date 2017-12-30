@@ -1053,35 +1053,41 @@ Node BvInstantiator::hasProcessAssertion(CegInstantiator* ci,
       // others are not unhandled
       return Node::null();
     }
+    NodeManager* nm = NodeManager::currentNM();
+    Node s = atom[0];
+    Node t = atom[1];
+    /*
+    if( k == BITVECTOR_SLT) { 
+      unsigned size = bv::utils::getSize(s);
+      Node pow_two = bv::utils::mkConst(BitVector(size, Integer(1).multiplyByPow2(size - 1)));
+      s = nm->mkNode(BITVECTOR_PLUS,s,pow_two);
+      t = nm->mkNode(BITVECTOR_PLUS,t,pow_two);
+      k = BITVECTOR_ULT;
+    }
+    */
+      
     // for all other predicates, we convert them to a positive equality based on
     // the current model M, e.g.:
     //   (not) s ~ t  --->  s = t + ( s^M - t^M )
+    Node ret;
     if (useSlack) {
-      Node s = atom[0];
-      Node t = atom[1];
       // only handle equalities between bitvectors
       if (s.getType().isBitVector()) {
-        NodeManager* nm = NodeManager::currentNM();
         Node sm = ci->getModelValue(s);
         Assert(!sm.isNull() && sm.isConst());
         Node tm = ci->getModelValue(t);
         Assert(!tm.isNull() && tm.isConst());
-        Node ret;
         if (sm != tm) {
-          Node slack =
-              Rewriter::rewrite(nm->mkNode(kind::BITVECTOR_SUB, sm, tm));
+          Node slack = Rewriter::rewrite(nm->mkNode(BITVECTOR_SUB, sm, tm));
           Assert(slack.isConst());
           // remember the slack value for the asserted literal
           d_alit_to_model_slack[lit] = slack;
-          ret = nm->mkNode(kind::EQUAL, s,
-                           nm->mkNode(kind::BITVECTOR_PLUS, t, slack));
+          ret = s.eqNode( nm->mkNode(kind::BITVECTOR_PLUS, t, slack));
           Trace("cegqi-bv") << "Process " << lit << " as " << ret
                             << ", slack is " << slack << std::endl;
         } else {
           ret = s.eqNode(t);          
-          Trace("cegqi-bv") << "Process " << lit << " as " << ret << std::endl;
         }
-        return ret;
       }
     } else {
       // otherwise, we optimistically solve for the boundary point of an inequality
@@ -1091,19 +1097,17 @@ Node BvInstantiator::hasProcessAssertion(CegInstantiator* ci,
       // notice that this equality does not necessarily hold in the model, and
       // hence the corresponding instantiation strategy is not guaranteed to be
       // monotonic.
-      Node ret;
       if (!pol) {
-        ret = atom[0].eqNode(atom[1]);
+        ret = s.eqNode(t);
       } else {
         unsigned one = 1;
         BitVector bval(atom[0].getType().getConst<BitVectorSize>(), one);
-        Node bv_one = NodeManager::currentNM()->mkConst<BitVector>(bval);
-        ret = NodeManager::currentNM()
-                  ->mkNode(kind::BITVECTOR_PLUS, atom[0], bv_one)
-                  .eqNode(atom[1]);
+        Node bv_one = nm->mkConst<BitVector>(bval);
+        ret = nm->mkNode(kind::BITVECTOR_PLUS, s, bv_one).eqNode(t);
       }
-      return ret;
     }
+    Trace("cegqi-bv") << "Process " << lit << " as " << ret << std::endl;
+    return ret;
   }
   return Node::null();
 }
