@@ -95,6 +95,7 @@
 #include "theory/logic_info.h"
 #include "theory/quantifiers/ce_guided_instantiation.h"
 #include "theory/quantifiers/fun_def_process.h"
+#include "theory/quantifiers/global_negate.h"
 #include "theory/quantifiers/macros.h"
 #include "theory/quantifiers/quantifiers_rewriter.h"
 #include "theory/quantifiers/single_inv_partition.h"
@@ -982,38 +983,39 @@ public:
 
 }/* namespace CVC4::smt */
 
-SmtEngine::SmtEngine(ExprManager* em) throw() :
-  d_context(new Context()),
-  d_userLevels(),
-  d_userContext(new UserContext()),
-  d_exprManager(em),
-  d_nodeManager(d_exprManager->getNodeManager()),
-  d_decisionEngine(NULL),
-  d_theoryEngine(NULL),
-  d_propEngine(NULL),
-  d_proofManager(NULL),
-  d_definedFunctions(NULL),
-  d_fmfRecFunctionsDefined(NULL),
-  d_assertionList(NULL),
-  d_assignments(NULL),
-  d_modelGlobalCommands(),
-  d_modelCommands(NULL),
-  d_dumpCommands(),
-  d_defineCommands(),
-  d_logic(),
-  d_originalOptions(),
-  d_pendingPops(0),
-  d_fullyInited(false),
-  d_problemExtended(false),
-  d_queryMade(false),
-  d_needPostsolve(false),
-  d_earlyTheoryPP(true),
-  d_status(),
-  d_replayStream(NULL),
-  d_private(NULL),
-  d_statisticsRegistry(NULL),
-  d_stats(NULL),
-  d_channels(new LemmaChannels())
+SmtEngine::SmtEngine(ExprManager* em) throw()
+    : d_context(new Context()),
+      d_userLevels(),
+      d_userContext(new UserContext()),
+      d_exprManager(em),
+      d_nodeManager(d_exprManager->getNodeManager()),
+      d_decisionEngine(NULL),
+      d_theoryEngine(NULL),
+      d_propEngine(NULL),
+      d_proofManager(NULL),
+      d_definedFunctions(NULL),
+      d_fmfRecFunctionsDefined(NULL),
+      d_assertionList(NULL),
+      d_assignments(NULL),
+      d_modelGlobalCommands(),
+      d_modelCommands(NULL),
+      d_dumpCommands(),
+      d_defineCommands(),
+      d_logic(),
+      d_originalOptions(),
+      d_pendingPops(0),
+      d_fullyInited(false),
+      d_problemExtended(false),
+      d_queryMade(false),
+      d_needPostsolve(false),
+      d_earlyTheoryPP(true),
+      d_globalNegation(false),
+      d_status(),
+      d_replayStream(NULL),
+      d_private(NULL),
+      d_statisticsRegistry(NULL),
+      d_stats(NULL),
+      d_channels(new LemmaChannels())
 {
   SmtScope smts(this);
   d_originalOptions.copyValues(em->getOptions());
@@ -1931,7 +1933,8 @@ void SmtEngine::setDefaults() {
     if( !options::rewriteDivk.wasSetByUser()) {
       options::rewriteDivk.set( true );
     }
-    if( d_logic.isPure(THEORY_ARITH) ){
+    if (d_logic.isPure(THEORY_ARITH) || d_logic.isPure(THEORY_BV))
+    {
       options::cbqiAll.set( false );
       if( !options::quantConflictFind.wasSetByUser() ){
         options::quantConflictFind.set( false );
@@ -1945,9 +1948,23 @@ void SmtEngine::setDefaults() {
       }
     }else{
       // only supported in pure arithmetic or pure BV
-      if (!d_logic.isPure(THEORY_BV))
+      options::cbqiNestedQE.set(false);
+    }
+    // prenexing
+    if (options::cbqiNestedQE()
+        || options::decisionMode() == decision::DECISION_STRATEGY_INTERNAL)
+    {
+      // only complete with prenex = disj_normal or normal
+      if (options::prenexQuant() <= quantifiers::PRENEX_QUANT_DISJ_NORMAL)
       {
-        options::cbqiNestedQE.set(false);
+        options::prenexQuant.set(quantifiers::PRENEX_QUANT_DISJ_NORMAL);
+      }
+    }
+    else if (options::globalNegate())
+    {
+      if (!options::prenexQuant.wasSetByUser())
+      {
+        options::prenexQuant.set(quantifiers::PRENEX_QUANT_NONE);
       }
     }
   }
@@ -1959,13 +1976,6 @@ void SmtEngine::setDefaults() {
   }
   if( options::qcfMode.wasSetByUser() || options::qcfTConstraint() ){
     options::quantConflictFind.set( true );
-  }
-  if( options::cbqi() && 
-      ( options::cbqiNestedQE() || options::decisionMode()==decision::DECISION_STRATEGY_INTERNAL ) ){
-    //only complete with prenex = disj_normal or normal
-    if( options::prenexQuant()<=quantifiers::PRENEX_QUANT_DISJ_NORMAL ){
-      options::prenexQuant.set( quantifiers::PRENEX_QUANT_DISJ_NORMAL );
-    }
   }
   if( options::cbqiNestedQE() ){
     options::prenexQuantUser.set( true );
@@ -2084,6 +2094,12 @@ void SmtEngine::setDefaults() {
   if(options::incrementalSolving() && options::proof()) {
     Warning() << "SmtEngine: turning off incremental solving mode (not yet supported with --proof, try --tear-down-incremental instead)" << endl;
     setOption("incremental", SExpr("false"));
+  }
+
+  // can't global negate if incremental
+  if (options::incrementalSolving())
+  {
+    options::globalNegate.set(false);
   }
 }
 
@@ -4170,6 +4186,14 @@ void SmtEnginePrivate::processAssertions() {
 
   Debug("smt") << " d_assertions     : " << d_assertions.size() << endl;
 
+  // global negation of the formula
+  if (options::globalNegate())
+  {
+    quantifiers::GlobalNegate gn;
+    gn.simplify(d_assertions.ref());
+    d_smt.d_globalNegation = !d_smt.d_globalNegation;
+  }
+
   if( options::nlExtPurify() ){
     unordered_map<Node, Node, NodeHashFunction> cache;
     unordered_map<Node, Node, NodeHashFunction> bcache;
@@ -4660,6 +4684,9 @@ Result SmtEngine::checkSatisfiability(const Expr& ex, bool inUnsatCore, bool isQ
     // Note that a query has been made
     d_queryMade = true;
 
+    // reset global negation
+    d_globalNegation = false;
+
     // Add the formula
     if(!e.isNull()) {
       d_problemExtended = true;
@@ -4675,6 +4702,28 @@ Result SmtEngine::checkSatisfiability(const Expr& ex, bool inUnsatCore, bool isQ
 
     if ( ( options::solveRealAsInt() || options::solveIntAsBV() > 0 ) && r.asSatisfiabilityResult().isSat() == Result::UNSAT) {
       r = Result(Result::SAT_UNKNOWN, Result::UNKNOWN_REASON);
+    }
+    // flipped if we did a global negation
+    if (d_globalNegation)
+    {
+      Trace("smt") << "SmtEngine::process global negate " << r << std::endl;
+      if (r.asSatisfiabilityResult().isSat() == Result::UNSAT)
+      {
+        r = Result(Result::SAT);
+      }
+      else if (r.asSatisfiabilityResult().isSat() == Result::SAT)
+      {
+        // only if satisfaction complete
+        if (d_logic.isPure(THEORY_ARITH) || d_logic.isPure(THEORY_BV))
+        {
+          r = Result(Result::UNSAT);
+        }
+        else
+        {
+          r = Result(Result::SAT_UNKNOWN, Result::UNKNOWN_REASON);
+        }
+      }
+      Trace("smt") << "SmtEngine::global negate returned " << r << std::endl;
     }
 
     d_needPostsolve = true;
