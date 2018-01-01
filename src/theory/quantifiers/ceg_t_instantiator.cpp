@@ -1112,12 +1112,12 @@ Node BvInstantiator::hasProcessAssertion(CegInstantiator* ci,
       // notice that this equality does not necessarily hold in the model, and
       // hence the corresponding instantiation strategy is not guaranteed to be
       // monotonic.
-      if (pol) {
+      if (!pol) {
         ret = s.eqNode(t);
       } else {
         unsigned one = 1;
         BitVector bval(atom[0].getType().getConst<BitVectorSize>(), one);
-        Node bv_one = nm->mkConst<BitVector>(-bval);
+        Node bv_one = nm->mkConst<BitVector>(bval);
         ret = nm->mkNode(kind::BITVECTOR_PLUS, s, bv_one).eqNode(t);
       }
     }
