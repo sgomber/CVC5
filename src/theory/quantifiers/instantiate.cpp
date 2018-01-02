@@ -284,8 +284,10 @@ bool Instantiate::addInstantiation(
       lem = NodeManager::currentNM()->mkNode(kind::OR, rlv_cond);
     }
   }
+  Trace("ajr-temp") << "rewrite " << lem << "... rewrite ..." << std::endl;
 
   lem = Rewriter::rewrite(lem);
+  Trace("ajr-temp") << "finished rewrite..." << std::endl;
 
   // check for lemma duplication
   if (!d_qe->addLemma(lem, true, false))
@@ -429,7 +431,9 @@ Node Instantiate::getInstantiation(Node q,
   Assert(vars.size() == terms.size());
   Assert(q[0].getNumChildren() == vars.size());
   // TODO (#1386) : optimize this
+  Trace("ajr-temp") << "Substitute..." << std::endl;
   body = q[1].substitute(vars.begin(), vars.end(), terms.begin(), terms.end());
+  Trace("ajr-temp") << "Finished substitute..." << std::endl;
   if (doVts)
   {
     // do virtual term substitution

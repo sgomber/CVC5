@@ -86,5 +86,8 @@ option bvAlgExtf --bv-alg-extf bool :default true :read-write
 
 option bvElimSlt --bv-elim-slt bool :default false :read-write
  eliminate signed less than constraints
+
+option bvElimMultConst --bv-elim-mult-const bool :default false :read-write
+ eliminate multiplication by constant
  
 endmodule

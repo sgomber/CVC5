@@ -208,7 +208,9 @@ RewriteResponse QuantifiersRewriter::postRewrite(TNode in) {
       if( !qa.isRewriteRule() ){
         for( int op=0; op<COMPUTE_LAST; op++ ){
           if( doOperation( in, op, qa ) ){
+            Trace("ajr-temp") << "Compute operation " << op << " on " << in << " " << qa.d_qid_num << std::endl;
             ret = computeOperation( in, op, qa );
+            Trace("ajr-temp") << "...return " << ret << std::endl;
             if( ret!=in ){
               rew_op = op;
               status = REWRITE_AGAIN_FULL;
