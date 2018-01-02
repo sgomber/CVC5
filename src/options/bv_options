@@ -83,5 +83,8 @@ option bvLazyReduceExtf --bv-lazy-reduce-extf bool :default false :read-write
  
 option bvAlgExtf --bv-alg-extf bool :default true :read-write
  algebraic inferences for extended functions
+
+option bvElimSlt --bv-elim-slt bool :default false :read-write
+ eliminate signed less than constraints
  
 endmodule

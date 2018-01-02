@@ -1098,8 +1098,7 @@ Node BvInstantiator::hasProcessAssertion(CegInstantiator* ci,
           // remember the slack value for the asserted literal
           d_alit_to_model_slack[lit] = slack;
           ret = s.eqNode( nm->mkNode(kind::BITVECTOR_PLUS, t, slack));
-          Trace("cegqi-bv") << "Process " << lit << " as " << ret
-                            << ", slack is " << slack << std::endl;
+          Trace("cegqi-bv") << "Model slack is " << slack << std::endl;
         } else {
           ret = s.eqNode(t);          
         }
