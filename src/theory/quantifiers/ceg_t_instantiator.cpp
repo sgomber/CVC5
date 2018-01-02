@@ -1246,6 +1246,7 @@ bool BvInstantiator::processAssertions(CegInstantiator* ci,
         TermProperties pv_prop_bv;
         Trace("cegqi-bv") << "*** try " << pv << " -> " << inst_term
                           << std::endl;
+        Trace("cegqi-bv") << "    from : " << alit << std::endl;
         d_var_to_curr_inst_id[pv] = inst_id;
         d_tried_assertion_inst = true;
         ci->markSolved(alit);
@@ -1941,7 +1942,7 @@ void BvInstantiatorPreprocess::registerCounterexampleLemma(
                          "variable to represent disjoint extract region");
         Node ceq_lem = var.eqNode(ex);
         Trace("cegqi-bv-pp") << "Introduced : " << ceq_lem << std::endl;
-        new_lems.push_back(ceq_lem);
+        //new_lems.push_back(ceq_lem);
         children.push_back(var);
         vars.push_back(var);
       }
