@@ -1081,6 +1081,17 @@ Node BvInstantiator::hasProcessAssertion(CegInstantiator* ci,
       }
     }
     */
+    /*
+    if( k == BITVECTOR_ULT) { 
+      unsigned size = bv::utils::getSize(s);
+      Node zero = bv::utils::mkZero(size);
+      if( pol ){
+        if( tm==zero ){
+          t = zero;
+        }
+      }
+    }
+    */
     
     
     // for all other predicates, we convert them to a positive equality based on
