@@ -1041,19 +1041,14 @@ Node BvInstantiator::hasProcessAssertion(CegInstantiator* ci,
     }
   } else {
     bool useSlack = false;
-    if (k == EQUAL && atom[0].getType().isBitVector())
-    {
-      // always use slack for disequalities
-      useSlack = true;
-    } else if (k == BITVECTOR_ULT || k == BITVECTOR_SLT) {
-      if (options::cbqiBvIneqMode() == CBQI_BV_INEQ_EQ_SLACK)
-      {
-        useSlack = true;
-      }
-    } else {
+    if (k != EQUAL && k !=BITVECTOR_ULT && k !=BITVECTOR_SLT ){
       // others are not unhandled
       return Node::null();
+    }else if (atom[0].getType().isBitVector())
+    {
+      return Node::null();
     }
+
     NodeManager* nm = NodeManager::currentNM();
     Node s = atom[0];
     Node t = atom[1];
@@ -1063,6 +1058,24 @@ Node BvInstantiator::hasProcessAssertion(CegInstantiator* ci,
     Trace("cegqi-bv") << "Model value: " << std::endl;
     Trace("cegqi-bv") << "   " << s << " == " << t << " is " << std::endl;
     Trace("cegqi-bv") << "   " << sm << " == " << tm << std::endl;
+    
+    if (options::cbqiBvIneqMode() == CBQI_BV_INEQ_EQ_SLACK)
+    {
+      useSlack = true;
+    }
+    else if( k==EQUAL )
+    {
+      Node comp = nm->mkNode( BITVECTOR_ULT, sm, tm );
+      comp = Rewriter::rewrite( comp );
+      k = BITVECTOR_ULT;
+      // go in the direction of the model
+      if( !comp.getConst<bool>() ){
+        Node u = s;
+        s = t;
+        t = u;
+      }
+      pol = true;
+    }
     
     /*
     if((k == BITVECTOR_ULT || k == BITVECTOR_SLT) && pol && !useSlack) { 
