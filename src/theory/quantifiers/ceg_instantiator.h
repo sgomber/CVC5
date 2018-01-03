@@ -154,9 +154,9 @@ enum CegInstEffort
   // uninitialized
   CEG_INST_EFFORT_NONE,
   // standard effort level
+  CEG_INST_EFFORT_PRIORITY,
+  // standard effort level
   CEG_INST_EFFORT_STANDARD,
-  // standard effort level, but we have used model values
-  CEG_INST_EFFORT_STANDARD_MV,
   // full effort level
   CEG_INST_EFFORT_FULL
 };
@@ -697,7 +697,7 @@ public:
                              Node pv,
                              CegInstEffort effort)
   {
-    return effort > CEG_INST_EFFORT_STANDARD;
+    return effort == CEG_INST_EFFORT_FULL;
   }
   /** do we allow the model value as instantiation for pv? */
   virtual bool allowModelValue(CegInstantiator* ci,

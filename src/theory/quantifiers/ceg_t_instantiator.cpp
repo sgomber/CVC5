@@ -1030,7 +1030,8 @@ Node BvInstantiator::hasProcessAssertion(CegInstantiator* ci,
       return lit;
     }
   }
-  else if (options::cbqiBvIneqMode() == CBQI_BV_INEQ_KEEP)
+  else if (options::cbqiBvIneqMode() == CBQI_BV_INEQ_KEEP || 
+          ( effort==CEG_INST_EFFORT_PRIORITY && options::cbqiBvIneqMode() == CBQI_BV_INEQ_KEEP_EQ_BOUNDARY ) )
   {
     // if option is set, disequalities and inequalities we leave unmodified
     if ((k == EQUAL && atom[0].getType().isBitVector()) || k == BITVECTOR_ULT

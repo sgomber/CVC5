@@ -461,6 +461,9 @@ eq-boundary \n\
 keep  \n\
 + Solve for the inequality directly using side conditions for invertibility.\n\
 \n\
+keep-eqb \n\
++ Solve for the inequality directly, then the boundary point.\n\
+\n\
 ";
 
 const std::string OptionsHandler::s_cegqiSingleInvHelp = "\
@@ -802,6 +805,10 @@ theory::quantifiers::CbqiBvIneqMode OptionsHandler::stringToCbqiBvIneqMode(
   else if (optarg == "keep")
   {
     return theory::quantifiers::CBQI_BV_INEQ_KEEP;
+  }
+  else if (optarg == "keep-eqb")
+  {
+    return theory::quantifiers::CBQI_BV_INEQ_KEEP_EQ_BOUNDARY;
   }
   else if (optarg == "help")
   {

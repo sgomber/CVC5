@@ -203,6 +203,8 @@ enum CbqiBvIneqMode
   CBQI_BV_INEQ_EQ_BOUNDARY,
   /** solve for inequalities directly, using side conditions */
   CBQI_BV_INEQ_KEEP,
+  /** solve for inequalities directly, then using boundary points */
+  CBQI_BV_INEQ_KEEP_EQ_BOUNDARY,
 };
 
 enum CegqiSingleInvMode {

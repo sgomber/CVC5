@@ -39,8 +39,8 @@ std::ostream& operator<<(std::ostream& os, CegInstEffort e)
   switch (e)
   {
     case CEG_INST_EFFORT_NONE: os << "?"; break;
+    case CEG_INST_EFFORT_PRIORITY: os << "PRIORITY"; break;
     case CEG_INST_EFFORT_STANDARD: os << "STANDARD"; break;
-    case CEG_INST_EFFORT_STANDARD_MV: os << "STANDARD_MV"; break;
     case CEG_INST_EFFORT_FULL: os << "FULL"; break;
     default: Unreachable();
   }
@@ -487,17 +487,10 @@ bool CegInstantiator::constructInstantiation(SolvedForm& sf, unsigned i)
       TermProperties pv_prop_m;
       Trace("cbqi-inst-debug") << "[4] " << i << "...try model value " << mv << std::endl;
       d_curr_iphase[pv] = CEG_INST_PHASE_MVALUE;
-      CegInstEffort prev = d_effort;
-      if (d_effort < CEG_INST_EFFORT_STANDARD_MV)
-      {
-        // update the effort level to indicate we have used a model value
-        d_effort = CEG_INST_EFFORT_STANDARD_MV;
-      }
       if (constructInstantiationInc(pv, mv, pv_prop_m, sf))
       {
         return true;
       }
-      d_effort = prev;
     }
     Trace("cbqi-inst-debug") << "[No instantiation found for " << pv << "]" << std::endl;
     if( is_cv ){
@@ -866,8 +859,8 @@ bool CegInstantiator::check() {
     return false;
   }
   processAssertions();
-  for( unsigned r=0; r<2; r++ ){
-    d_effort = r == 0 ? CEG_INST_EFFORT_STANDARD : CEG_INST_EFFORT_FULL;
+  for( unsigned r=0; r<3; r++ ){
+    d_effort = r == 0 ? CEG_INST_EFFORT_PRIORITY : ( r==1 ? CEG_INST_EFFORT_STANDARD : CEG_INST_EFFORT_FULL );
     SolvedForm sf;
     d_stack_vars.clear();
     d_bound_var_index.clear();

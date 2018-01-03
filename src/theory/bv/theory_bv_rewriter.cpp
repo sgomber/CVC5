@@ -93,6 +93,9 @@ RewriteResponse TheoryBVRewriter::RewriteSlt(TNode node, bool prerewrite){
       RewriteRule<MultSltMult>,
       RewriteRule<SltZero>
        >::apply(node);
+  if( resultNode!=node ){
+    return RewriteResponse(REWRITE_AGAIN_FULL, resultNode); 
+  }
 
   if( !options::bvElimSlt() ){
     return RewriteResponse(REWRITE_DONE, resultNode); 
