@@ -1063,12 +1063,16 @@ Node BvInstantiator::hasProcessAssertion(CegInstantiator* ci,
     Trace("cegqi-bv") << "   " << s << " == " << t << " is " << std::endl;
     Trace("cegqi-bv") << "   " << sm << " == " << tm << std::endl;
     
-    /*
+    
     if( k == BITVECTOR_SLT) { 
       unsigned size = bv::utils::getSize(s);
       Node pow_two = bv::utils::mkConst(BitVector(size, Integer(1).multiplyByPow2(size - 1)));
-      Node st = nm->mkNode(BITVECTOR_PLUS,s,pow_two);
-      Node tt = nm->mkNode(BITVECTOR_PLUS,t,pow_two);
+      //Node st = nm->mkNode(BITVECTOR_PLUS,s,pow_two);
+      //Node tt = nm->mkNode(BITVECTOR_PLUS,t,pow_two);
+      if( tm==pow_two ){
+        t = bv::utils::mkZero(size);
+      }
+      /*
       //k = BITVECTOR_ULT;
       Node smt = ci->getModelValue(st);
       Node tmt = ci->getModelValue(tt);
@@ -1079,8 +1083,8 @@ Node BvInstantiator::hasProcessAssertion(CegInstantiator* ci,
         Node neg_one = nm->mkConst<BitVector>(-bval);
         s = nm->mkNode(BITVECTOR_PLUS,s,pow_two,neg_one);
       }
+      */
     }
-    */
     /*
     if( k == BITVECTOR_ULT) { 
       unsigned size = bv::utils::getSize(s);
