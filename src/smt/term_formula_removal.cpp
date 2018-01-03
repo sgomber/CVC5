@@ -69,6 +69,53 @@ bool RemoveTermFormulas::containsTermITE(TNode e) const {
   return d_containsVisitor->containsTermITE(e);
 }
 
+bool hasBoundVar(Node node)
+{
+  std::unordered_set<TNode, TNodeHashFunction > bound_variables;
+  std::map<TNode, std::vector<TNode> > node_to_bind_var;
+  std::unordered_set<TNode, TNodeHashFunction> visited;
+  std::vector<TNode> visit;
+  TNode cur;
+  visit.push_back(node);
+  do {
+    cur = visit.back();
+    visit.pop_back();
+
+    if (visited.find(cur) == visited.end()) {
+      visited.insert(cur);
+      if( cur.getKind()==kind::BOUND_VARIABLE && 
+          bound_variables.find(cur)==bound_variables.end() ){
+        return true;
+      }
+      if( cur.getKind()==kind::LAMBDA || cur.getKind()==kind::CHOICE || 
+          cur.getKind()==kind::FORALL || cur.getKind()==kind::EXISTS )
+      {
+        visit.push_back(cur);
+        for( const TNode& var : cur[0] ){
+          if( bound_variables.find(var)==bound_variables.end()){
+            bound_variables.insert(var);
+            node_to_bind_var[cur].push_back(var);
+          }
+        }
+        visit.push_back(cur[1]);
+      }else{
+        for (const TNode& cc : cur) {
+          visit.push_back(cc);
+        }
+      }
+    }else{
+      std::map<TNode, std::vector<TNode> >::iterator itb = node_to_bind_var.find( cur );
+      if( itb != node_to_bind_var.end() ){
+        for( const TNode& var : itb->second ){
+          bound_variables.erase(var);
+        }
+        node_to_bind_var.erase( cur );
+      }
+    }
+  } while (!visit.empty());
+  return false;
+}
+
 Node RemoveTermFormulas::run(TNode node, std::vector<Node>& output,
                     IteSkolemMap& iteSkolemMap, bool inQuant, bool inTerm) {
   // Current node
@@ -101,7 +148,7 @@ Node RemoveTermFormulas::run(TNode node, std::vector<Node>& output,
   Node newAssertion;
   if(node.getKind() == kind::ITE) {
     // If an ITE, replace it
-    if (!nodeType.isBoolean() && (!inQuant || !node.hasBoundVar()))
+    if (!nodeType.isBoolean() && (!inQuant || !hasBoundVar(node)))
     {
       skolem = getSkolemForNode(node);
       if (skolem.isNull())
@@ -122,7 +169,7 @@ Node RemoveTermFormulas::run(TNode node, std::vector<Node>& output,
   else if (node.getKind() == kind::LAMBDA)
   {
     // if a lambda, do lambda-lifting
-    if (!inQuant)
+    if (!inQuant || !hasBoundVar(node))
     {
       skolem = getSkolemForNode(node);
       if (skolem.isNull())
@@ -154,7 +201,7 @@ Node RemoveTermFormulas::run(TNode node, std::vector<Node>& output,
     // If a Hilbert choice function, witness the choice.
     //   For details on this operator, see
     //   http://planetmath.org/hilbertsvarepsilonoperator.
-    if (!inQuant)
+    if (!inQuant || !hasBoundVar(node))
     {
       skolem = getSkolemForNode(node);
       if (skolem.isNull())
