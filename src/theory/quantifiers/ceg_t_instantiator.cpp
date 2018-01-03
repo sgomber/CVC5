@@ -1944,17 +1944,24 @@ void BvInstantiatorPreprocess::registerCounterexampleLemma(
       }
       std::sort(boundaries.rbegin(), boundaries.rend());
 
+      Node t = es.first;
+      if( !t.isVar() ){
+        Node var = nm->mkSkolem("ekt",t.getType(),"purify for extract term");
+        vars.push_back(var);
+        Node eq_lem = var.eqNode( t );
+        Trace("cegqi-bv-pp") << "Introduced : " << ceq_lem << std::endl;
+        new_lems.push_back( eq_lem );
+        t = var;
+      }
+      
       // make the extract variables
       std::vector<Node> children;
       for (unsigned i = 1; i < boundaries.size(); i++)
       {
         Assert(boundaries[i - 1] > 0);
         Node ex = bv::utils::mkExtract(
-            es.first, boundaries[i - 1] - 1, boundaries[i]);
-        Node var =
-            nm->mkSkolem("ek",
-                         ex.getType(),
-                         "variable to represent disjoint extract region");
+            t, boundaries[i - 1] - 1, boundaries[i]);
+        Node var = nm->mkSkolem("ek", ex.getType(),"disjoint extract region");
         Node ceq_lem = var.eqNode(ex);
         Trace("cegqi-bv-pp") << "Introduced : " << ceq_lem << std::endl;
         //new_lems.push_back(ceq_lem);
@@ -1963,8 +1970,8 @@ void BvInstantiatorPreprocess::registerCounterexampleLemma(
       }
 
       Node conc = nm->mkNode(kind::BITVECTOR_CONCAT, children);
-      Assert(conc.getType() == es.first.getType());
-      Node eq_lem = conc.eqNode(es.first);
+      Assert(conc.getType() == t.getType());
+      Node eq_lem = conc.eqNode(t);
       Trace("cegqi-bv-pp") << "Introduced : " << eq_lem << std::endl;
       new_lems.push_back(eq_lem);
       Trace("cegqi-bv-pp") << "...finished processing extracts for term "

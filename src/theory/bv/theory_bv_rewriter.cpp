@@ -90,8 +90,7 @@ RewriteResponse TheoryBVRewriter::RewriteUltBv(TNode node, bool prerewrite) {
 RewriteResponse TheoryBVRewriter::RewriteSlt(TNode node, bool prerewrite){
   Node resultNode = LinearRewriteStrategy
     < RewriteRule<EvalSlt>,
-      RewriteRule<MultSltMult>,
-      RewriteRule<SltZero>
+      RewriteRule<MultSltMult>
        >::apply(node);
   if( resultNode!=node ){
     return RewriteResponse(REWRITE_AGAIN_FULL, resultNode); 
