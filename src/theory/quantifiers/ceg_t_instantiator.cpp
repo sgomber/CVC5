@@ -1064,7 +1064,7 @@ Node BvInstantiator::hasProcessAssertion(CegInstantiator* ci,
     Trace("cegqi-bv") << "   " << s << " == " << t << " is " << std::endl;
     Trace("cegqi-bv") << "   " << sm << " == " << tm << std::endl;
     
-    
+    /*
     if((k == BITVECTOR_ULT || k == BITVECTOR_SLT) && pol && !useSlack) { 
       unsigned size = bv::utils::getSize(s);
       Node min_val;
@@ -1086,19 +1086,8 @@ Node BvInstantiator::hasProcessAssertion(CegInstantiator* ci,
       }else{
         max_val = bv::utils::mkConst(~BitVector(size, Integer(1).multiplyByPow2(size - 1)));
       }
-      /*
-      //k = BITVECTOR_ULT;
-      Node smt = ci->getModelValue(st);
-      Node tmt = ci->getModelValue(tt);
-      Trace("cegqi-bv") << "   " << smt << " == " << tmt << std::endl;
-      // if negative/positive
-      if( bv::utils::getBit(sm,size-1) && !bv::utils::getBit(tm,size-1) ){
-        BitVector bval(atom[0].getType().getConst<BitVectorSize>(), static_cast<unsigned>(1));
-        Node neg_one = nm->mkConst<BitVector>(-bval);
-        s = nm->mkNode(BITVECTOR_PLUS,s,pow_two,neg_one);
-      }
-      */
     }
+    */
     
     
     // for all other predicates, we convert them to a positive equality based on
@@ -1952,6 +1941,8 @@ void BvInstantiatorPreprocess::registerCounterexampleLemma(
       std::sort(boundaries.rbegin(), boundaries.rend());
 
       Node t = es.first;
+      /*
+      Node t = es.first;
       if( !t.isVar() ){
         Node var = nm->mkSkolem("ekt",t.getType(),"purify for extract term");
         vars.push_back(var);
@@ -1960,6 +1951,7 @@ void BvInstantiatorPreprocess::registerCounterexampleLemma(
         new_lems.push_back( eq_lem );
         t = var;
       }
+      */
       
       // make the extract variables
       std::vector<Node> children;

@@ -563,7 +563,7 @@ template<> inline
 bool RewriteRule<UltZero>::applies(TNode node) {
   if( node.getKind() == kind::BITVECTOR_ULT ){
     Node zero = utils::mkZero(utils::getSize(node[0]));
-    return (node[0]==zero || node[1]==zero);
+    return node[1]==zero;
   }else{
     return false;
   }
