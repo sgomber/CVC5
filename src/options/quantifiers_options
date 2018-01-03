@@ -357,6 +357,8 @@ option cbqiBvLinearize --cbqi-bv-linear bool :read-write :default true
   linearize adder chains for variables
 option cbqiBvLinearOnly --cbqi-bv-linear-only bool :read-write :default false
   only solve linear literals
+option cbqiBvNoSolveChoice --cbqi-bv-no-solve-choice bool :read-write :default false
+  do not solve literals with choice
  
 ### local theory extensions options 
 

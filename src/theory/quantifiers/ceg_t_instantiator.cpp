@@ -1399,7 +1399,7 @@ Node BvInstantiator::rewriteAssertionForSolvePv(CegInstantiator* ci,
 
   Node result = visited.top()[lit];
 
-  if (Trace.isOn("cegqi-bv-nl") || options::cbqiBvLinearOnly())
+  if (Trace.isOn("cegqi-bv-nl") || options::cbqiBvLinearOnly() || options::cbqiBvNoSolveChoice())
   {
     std::vector<TNode> trace_visit;
     std::unordered_set<TNode, TNodeHashFunction> trace_visited;
@@ -1409,6 +1409,9 @@ Node BvInstantiator::rewriteAssertionForSolvePv(CegInstantiator* ci,
     {
       cur = trace_visit.back();
       trace_visit.pop_back();
+      if( cur.getKind()==kind::CHOICE && options::cbqiBvNoSolveChoice() ){
+        return Node::null();
+      }
 
       if (trace_visited.find(cur) == trace_visited.end())
       {
@@ -1907,71 +1910,73 @@ void BvInstantiatorPreprocess::registerCounterexampleLemma(
     }
     for (std::pair<const Node, std::vector<Node> >& es : extract_map)
     {
-      // sort based on the extract start position
-      std::vector<Node>& curr_vec = es.second;
-
-      SortBvExtractInterval sbei;
-      std::sort(curr_vec.begin(), curr_vec.end(), sbei);
-
-      unsigned width = es.first.getType().getBitVectorSize();
-
-      // list of points b such that:
-      //   b>0 and we must start a segment at (b-1)  or  b==0
-      std::vector<unsigned> boundaries;
-      boundaries.push_back(width);
-      boundaries.push_back(0);
-
-      Trace("cegqi-bv-pp") << "For term " << es.first << " : " << std::endl;
-      for (unsigned i = 0, size = curr_vec.size(); i < size; i++)
+      if( TermUtil::containsTerms( es.first, ce_vars ) )
       {
-        Trace("cegqi-bv-pp") << "  " << i << " : " << curr_vec[i] << std::endl;
-        BitVectorExtract e =
-            curr_vec[i].getOperator().getConst<BitVectorExtract>();
-        if (std::find(boundaries.begin(), boundaries.end(), e.high + 1)
-            == boundaries.end())
-        {
-          boundaries.push_back(e.high + 1);
-        }
-        if (std::find(boundaries.begin(), boundaries.end(), e.low)
-            == boundaries.end())
-        {
-          boundaries.push_back(e.low);
-        }
-      }
-      std::sort(boundaries.rbegin(), boundaries.rend());
+        // sort based on the extract start position
+        std::vector<Node>& curr_vec = es.second;
 
-      Node t = es.first;
-      /*
-      Node t = es.first;
-      if( !t.isVar() ){
-        Node var = nm->mkSkolem("ekt",t.getType(),"purify for extract term");
-        vars.push_back(var);
-        Node eq_lem = var.eqNode( t );
+        SortBvExtractInterval sbei;
+        std::sort(curr_vec.begin(), curr_vec.end(), sbei);
+
+        unsigned width = es.first.getType().getBitVectorSize();
+
+        // list of points b such that:
+        //   b>0 and we must start a segment at (b-1)  or  b==0
+        std::vector<unsigned> boundaries;
+        boundaries.push_back(width);
+        boundaries.push_back(0);
+
+        Trace("cegqi-bv-pp") << "For term " << es.first << " : " << std::endl;
+        for (unsigned i = 0, size = curr_vec.size(); i < size; i++)
+        {
+          Trace("cegqi-bv-pp") << "  " << i << " : " << curr_vec[i] << std::endl;
+          BitVectorExtract e =
+              curr_vec[i].getOperator().getConst<BitVectorExtract>();
+          if (std::find(boundaries.begin(), boundaries.end(), e.high + 1)
+              == boundaries.end())
+          {
+            boundaries.push_back(e.high + 1);
+          }
+          if (std::find(boundaries.begin(), boundaries.end(), e.low)
+              == boundaries.end())
+          {
+            boundaries.push_back(e.low);
+          }
+        }
+        std::sort(boundaries.rbegin(), boundaries.rend());
+
+        Node t = es.first;
+        /*
+        if( !t.isVar() ){
+          Node var = nm->mkSkolem("ekt",t.getType(),"purify for extract term");
+          vars.push_back(var);
+          Node eq_lem = var.eqNode( t );
+          Trace("cegqi-bv-pp") << "Introduced : " << eq_lem << std::endl;
+          new_lems.push_back( eq_lem );
+          t = var;
+        }
+        */
+        
+        // make the extract variables
+        std::vector<Node> children;
+        for (unsigned i = 1; i < boundaries.size(); i++)
+        {
+          Assert(boundaries[i - 1] > 0);
+          Node ex = bv::utils::mkExtract(
+              t, boundaries[i - 1] - 1, boundaries[i]);
+          Node var = nm->mkSkolem("ek", ex.getType(),"disjoint extract region");
+          children.push_back(var);
+          vars.push_back(var);
+        }
+
+        Node conc = nm->mkNode(kind::BITVECTOR_CONCAT, children);
+        Assert(conc.getType() == t.getType());
+        Node eq_lem = conc.eqNode(t);
         Trace("cegqi-bv-pp") << "Introduced : " << eq_lem << std::endl;
-        new_lems.push_back( eq_lem );
-        t = var;
+        new_lems.push_back(eq_lem);
+        Trace("cegqi-bv-pp") << "...finished processing extracts for term "
+                              << es.first << std::endl;
       }
-      */
-      
-      // make the extract variables
-      std::vector<Node> children;
-      for (unsigned i = 1; i < boundaries.size(); i++)
-      {
-        Assert(boundaries[i - 1] > 0);
-        Node ex = bv::utils::mkExtract(
-            t, boundaries[i - 1] - 1, boundaries[i]);
-        Node var = nm->mkSkolem("ek", ex.getType(),"disjoint extract region");
-        children.push_back(var);
-        vars.push_back(var);
-      }
-
-      Node conc = nm->mkNode(kind::BITVECTOR_CONCAT, children);
-      Assert(conc.getType() == t.getType());
-      Node eq_lem = conc.eqNode(t);
-      Trace("cegqi-bv-pp") << "Introduced : " << eq_lem << std::endl;
-      new_lems.push_back(eq_lem);
-      Trace("cegqi-bv-pp") << "...finished processing extracts for term "
-                            << es.first << std::endl;
     }
     Trace("cegqi-bv-pp") << "-----done remove extracts" << std::endl;
   }
@@ -2005,15 +2010,17 @@ void BvInstantiatorPreprocess::collectExtracts(
     if (visited.find(cur) == visited.end())
     {
       visited.insert(cur);
-
-      if (cur.getKind() == BITVECTOR_EXTRACT)
+      if( cur.getKind() != FORALL )
       {
-        extract_map[cur[0]].push_back(cur);
-      }
+        if (cur.getKind() == BITVECTOR_EXTRACT)
+        {
+          extract_map[cur[0]].push_back(cur);
+        }
 
-      for (const Node& nc : cur)
-      {
-        visit.push_back(nc);
+        for (const Node& nc : cur)
+        {
+          visit.push_back(nc);
+        }
       }
     }
   } while (!visit.empty());
