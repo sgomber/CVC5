@@ -556,19 +556,24 @@ Node RewriteRule<ZeroUlt>::apply(TNode node) {
 /**
  * UltZero
  *
- * a < 0 ==> false
+ * a < 0 ==> false or 0 < a ==> 0 != a
  */
 
 template<> inline
 bool RewriteRule<UltZero>::applies(TNode node) {
-  return (node.getKind() == kind::BITVECTOR_ULT &&
-          node[1] == utils::mkConst(BitVector(utils::getSize(node[0]), Integer(0))));
+  Node zero = utils::mkZero(utils::getSize(node[0]));
+  return (node.getKind() == kind::BITVECTOR_ULT && node[0]==zero || node[1]==zero);
 }
 
 template<> inline
 Node RewriteRule<UltZero>::apply(TNode node) {
   Debug("bv-rewrite") << "RewriteRule<UltZero>(" << node << ")" << std::endl;
-  return utils::mkFalse(); 
+  Node zero = utils::mkZero(utils::getSize(node[0]));
+  if( node[1]==zero ){
+    return utils::mkFalse(); 
+  }else{
+    return node[0].eqNode(node[1]).negate();
+  }
 }
 
 

@@ -1080,6 +1080,12 @@ Node BvInstantiator::hasProcessAssertion(CegInstantiator* ci,
         Trace("cegqi-bv") << "Since min value, change to " << s << " == " << t << std::endl;
         pol = false;
       }
+      Node max_val;
+      if( k == BITVECTOR_ULT ){
+        max_val = bv::utils::mkOnes(size);
+      }else{
+        max_val = bv::utils::mkConst(~BitVector(size, Integer(1).multiplyByPow2(size - 1)));
+      }
       /*
       //k = BITVECTOR_ULT;
       Node smt = ci->getModelValue(st);
