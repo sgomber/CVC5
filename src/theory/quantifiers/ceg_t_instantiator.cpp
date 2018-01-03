@@ -1065,13 +1065,20 @@ Node BvInstantiator::hasProcessAssertion(CegInstantiator* ci,
     Trace("cegqi-bv") << "   " << sm << " == " << tm << std::endl;
     
     
-    if( k == BITVECTOR_SLT) { 
+    if((k == BITVECTOR_ULT || k == BITVECTOR_SLT) && pol && !useSlack) { 
       unsigned size = bv::utils::getSize(s);
-      Node pow_two = bv::utils::mkConst(BitVector(size, Integer(1).multiplyByPow2(size - 1)));
+      Node min_val;
+      if( k == BITVECTOR_ULT ){
+        min_val = bv::utils::mkZero(size);
+      }else{
+        min_val = bv::utils::mkConst(BitVector(size, Integer(1).multiplyByPow2(size - 1)));
+      }
       //Node st = nm->mkNode(BITVECTOR_PLUS,s,pow_two);
       //Node tt = nm->mkNode(BITVECTOR_PLUS,t,pow_two);
-      if( tm==pow_two ){
-        t = bv::utils::mkZero(size);
+      if( sm==min_val ){
+        t = min_val;
+        Trace("cegqi-bv") << "Since min value, change to " << s << " == " << t << std::endl;
+        pol = false;
       }
       /*
       //k = BITVECTOR_ULT;
@@ -1086,17 +1093,6 @@ Node BvInstantiator::hasProcessAssertion(CegInstantiator* ci,
       }
       */
     }
-    /*
-    if( k == BITVECTOR_ULT) { 
-      unsigned size = bv::utils::getSize(s);
-      Node zero = bv::utils::mkZero(size);
-      if( pol ){
-        if( tm==zero ){
-          t = zero;
-        }
-      }
-    }
-    */
     
     
     // for all other predicates, we convert them to a positive equality based on
@@ -1160,7 +1156,9 @@ bool BvInstantiator::processAssertion(CegInstantiator* ci,
         Trace("cegqi-bv") << "...rewritten to " << rlit << std::endl;
       }
     }
-    processLiteral(ci, sf, pv, rlit, alit, effort);
+    if( !rlit.isNull() ){
+      processLiteral(ci, sf, pv, rlit, alit, effort);
+    }
   }
   return false;
 }
@@ -1406,7 +1404,7 @@ Node BvInstantiator::rewriteAssertionForSolvePv(CegInstantiator* ci,
 
   Node result = visited.top()[lit];
 
-  if (Trace.isOn("cegqi-bv-nl"))
+  if (Trace.isOn("cegqi-bv-nl") || options::cbqiBvLinearOnly())
   {
     std::vector<TNode> trace_visit;
     std::unordered_set<TNode, TNodeHashFunction> trace_visited;
@@ -1426,6 +1424,9 @@ Node BvInstantiator::rewriteAssertionForSolvePv(CegInstantiator* ci,
       {
         Trace("cegqi-bv-nl")
             << "NONLINEAR LITERAL for " << pv << " : " << lit << std::endl;
+        if( options::cbqiBvLinearOnly() ){
+          return Node::null();
+        }
       }
     } while (!trace_visit.empty());
   }
@@ -1949,7 +1950,7 @@ void BvInstantiatorPreprocess::registerCounterexampleLemma(
         Node var = nm->mkSkolem("ekt",t.getType(),"purify for extract term");
         vars.push_back(var);
         Node eq_lem = var.eqNode( t );
-        Trace("cegqi-bv-pp") << "Introduced : " << ceq_lem << std::endl;
+        Trace("cegqi-bv-pp") << "Introduced : " << eq_lem << std::endl;
         new_lems.push_back( eq_lem );
         t = var;
       }
@@ -1962,9 +1963,6 @@ void BvInstantiatorPreprocess::registerCounterexampleLemma(
         Node ex = bv::utils::mkExtract(
             t, boundaries[i - 1] - 1, boundaries[i]);
         Node var = nm->mkSkolem("ek", ex.getType(),"disjoint extract region");
-        Node ceq_lem = var.eqNode(ex);
-        Trace("cegqi-bv-pp") << "Introduced : " << ceq_lem << std::endl;
-        //new_lems.push_back(ceq_lem);
         children.push_back(var);
         vars.push_back(var);
       }
