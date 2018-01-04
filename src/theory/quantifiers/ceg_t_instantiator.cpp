@@ -1044,7 +1044,7 @@ Node BvInstantiator::hasProcessAssertion(CegInstantiator* ci,
     if (k != EQUAL && k !=BITVECTOR_ULT && k !=BITVECTOR_SLT ){
       // others are not unhandled
       return Node::null();
-    }else if (atom[0].getType().isBitVector())
+    }else if (!atom[0].getType().isBitVector())
     {
       return Node::null();
     }
@@ -1065,6 +1065,8 @@ Node BvInstantiator::hasProcessAssertion(CegInstantiator* ci,
     }
     else if( k==EQUAL )
     {
+      useSlack = true;
+      /*
       Node comp = nm->mkNode( BITVECTOR_ULT, sm, tm );
       comp = Rewriter::rewrite( comp );
       k = BITVECTOR_ULT;
@@ -1075,6 +1077,7 @@ Node BvInstantiator::hasProcessAssertion(CegInstantiator* ci,
         t = u;
       }
       pol = true;
+      */
     }
     
     /*
