@@ -859,7 +859,13 @@ bool CegInstantiator::check() {
     return false;
   }
   processAssertions();
-  for( unsigned r=0; r<3; r++ ){
+  
+  unsigned rstart = 1;
+  if( options::cbqiBvIneqMode() == CBQI_BV_INEQ_KEEP_EQ_BOUNDARY ){
+    rstart = 0;
+  }
+  
+  for( unsigned r=rstart; r<3; r++ ){
     d_effort = r == 0 ? CEG_INST_EFFORT_PRIORITY : ( r==1 ? CEG_INST_EFFORT_STANDARD : CEG_INST_EFFORT_FULL );
     SolvedForm sf;
     d_stack_vars.clear();
