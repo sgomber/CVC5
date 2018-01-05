@@ -1126,7 +1126,9 @@ bool BvInstantiator::processAssertion(CegInstantiator* ci,
         Trace("cegqi-bv") << "...rewritten to " << rlit << std::endl;
       }
     }
-    processLiteral(ci, sf, pv, rlit, alit, effort);
+    if( !rlit.isNull() ){
+      processLiteral(ci, sf, pv, rlit, alit, effort);
+    }
   }
   return false;
 }
@@ -1285,6 +1287,10 @@ Node BvInstantiator::rewriteAssertionForSolvePv(CegInstantiator* ci,
       {
         if (cur.getKind() == CHOICE)
         {
+          if( !options::cbqiBvSolveChoice() ){
+            // do not solve this literal
+            return Node::null();
+          }
           // must replace variables of choice functions
           // with new variables to avoid variable
           // capture when considering substitutions

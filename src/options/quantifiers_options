@@ -355,6 +355,8 @@ option cbqiBvRmExtract --cbqi-bv-rm-extract bool :read-write :default true
   replaces extract terms with variables for counterexample-guided instantiation for bit-vectors
 option cbqiBvLinearize --cbqi-bv-linear bool :read-write :default true
   linearize adder chains for variables
+option cbqiBvSolveChoice --cbqi-bv-solve-choice bool :read-write :default true
+  do not solve literals with choice
  
 ### local theory extensions options 
 
