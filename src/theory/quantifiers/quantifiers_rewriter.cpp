@@ -892,16 +892,29 @@ void QuantifiersRewriter::isVariableBoundElig( Node n, std::map< Node, int >& ex
 
 bool QuantifiersRewriter::computeVariableElimLit( Node lit, bool pol, std::vector< Node >& args, std::vector< Node >& vars, std::vector< Node >& subs,
                                                   std::map< Node, std::map< bool, std::map< Node, bool > > >& num_bounds ) {
-  if( lit.getKind()==EQUAL && pol && options::varElimQuant() ){
-    for( unsigned i=0; i<2; i++ ){
-      std::vector< Node >::iterator ita = std::find( args.begin(), args.end(), lit[i] );
-      if( ita!=args.end() ){
-        if( isVariableElim( lit[i], lit[1-i] ) ){
-          Trace("var-elim-quant") << "Variable eliminate based on equality : " << lit[i] << " -> " << lit[1-i] << std::endl;
-          vars.push_back( lit[i] );
-          subs.push_back( lit[1-i] );
-          args.erase( ita );
-          return true;
+  if( lit.getKind()==EQUAL && options::varElimQuant() ){
+    if( pol || lit[0].getType().isBoolean() ){
+      for( unsigned i=0; i<2; i++ ){
+        bool tpol = pol;
+        Node v_slv = lit[i];
+        if( v_slv.getKind()==NOT ){
+          v_slv = v_slv[0];
+          tpol = !tpol;
+        }
+        std::vector< Node >::iterator ita = std::find( args.begin(), args.end(), v_slv );
+        if( ita!=args.end() ){
+          if( isVariableElim( v_slv, lit[1-i] ) ){
+            Node slv = lit[1-i];
+            if( !tpol ){
+              Assert( slv.getType().isBoolean() );
+              slv = slv.negate();
+            }
+            Trace("var-elim-quant") << "Variable eliminate based on equality : " << v_slv << " -> " << slv << std::endl;
+            vars.push_back( v_slv );
+            subs.push_back( slv );
+            args.erase( ita );
+            return true;
+          }
         }
       }
     }
