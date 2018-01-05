@@ -2041,7 +2041,7 @@ void BvInstantiatorPreprocess::collectExtracts(
     if (visited.find(cur) == visited.end())
     {
       visited.insert(cur);
-      if( cur.getKind() != FORALL )
+      if (cur.getKind() != FORALL)
       {
         if (cur.getKind() == BITVECTOR_EXTRACT)
         {
