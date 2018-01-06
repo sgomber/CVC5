@@ -994,12 +994,15 @@ void BvInstantiator::processLiteral(CegInstantiator* ci,
     if (!inst.isNull())
     {
       inst = Rewriter::rewrite(inst);
-      Trace("cegqi-bv") << "...solved form is " << inst << std::endl;
-      // store information for id and increment
-      d_var_to_inst_id[pv].push_back(iid);
-      d_inst_id_to_term[iid] = inst;
-      d_inst_id_to_alit[iid] = alit;
-      d_inst_id_counter++;
+      if ( inst.isConst() || !ci->hasNestedQuantification())
+      {
+        Trace("cegqi-bv") << "...solved form is " << inst << std::endl;
+        // store information for id and increment
+        d_var_to_inst_id[pv].push_back(iid);
+        d_inst_id_to_term[iid] = inst;
+        d_inst_id_to_alit[iid] = alit;
+        d_inst_id_counter++;
+      }
     }
     else
     {
@@ -1014,7 +1017,7 @@ Node BvInstantiator::hasProcessAssertion(CegInstantiator* ci,
                                          Node lit,
                                          CegInstEffort effort)
 {
-  if (effort == CEG_INST_EFFORT_FULL || ci->hasNestedQuantification())
+  if (effort == CEG_INST_EFFORT_FULL)
   {
     // always use model values at full effort
     return Node::null();
