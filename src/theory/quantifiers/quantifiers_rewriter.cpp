@@ -892,13 +892,13 @@ void QuantifiersRewriter::isVariableBoundElig( Node n, std::map< Node, int >& ex
 }
 
 
-Node checkBvVariableElim( Node lit, std::vector< Node >& args, Node& var ){
+Node QuantifiersRewriter::computeVariableElimLitBv( Node lit, std::vector< Node >& args, Node& var ){
   if( Trace.isOn("quant-velim-bv") ){
     Trace("quant-velim-bv") << "Bv-Elim : " << lit << " varList = { ";
     for( const Node& v : args ){
       Trace("quant-velim-bv") << v << " ";
     }
-    Trace("quant-velim-bv") << "}" << std::endl;
+    Trace("quant-velim-bv") << "} ?" << std::endl;
   }
   Assert( lit.getKind()==EQUAL );
   // figure out if this literal is linear and invertible on path with args
@@ -935,8 +935,10 @@ Node checkBvVariableElim( Node lit, std::vector< Node >& args, Node& var ){
       if( !slit.isNull() ){
         Node slv = binv.solveBvLit(cvar,lit,path,nullptr);
         Trace("quant-velim-bv") << "...solution : " << slv << std::endl;
-        var = cvar;
-        return slv;
+        if( !slv.isNull() ){
+          var = cvar;
+          return slv;
+        }
       }else{
         Trace("quant-velim-bv") << "...non-invertible path." << std::endl;
       }
@@ -1067,9 +1069,9 @@ bool QuantifiersRewriter::computeVariableElimLit( Node lit, bool pol, std::vecto
     }
   }else if( lit.getKind()==EQUAL && lit[0].getType().isBitVector() && pol && options::varElimQuant() ){
     Node var;
-    Node slv = checkBvVariableElim(lit, args, var);
-    Assert( !var.isNull() );
+    Node slv = computeVariableElimLitBv(lit, args, var);
     if( !slv.isNull() ){
+      Assert( !var.isNull() );
       std::vector< Node >::iterator ita = std::find( args.begin(), args.end(), var );
       Assert( ita!=args.end() );
       Assert( isVariableElim( var, slv ) );

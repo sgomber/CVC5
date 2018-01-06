@@ -39,11 +39,9 @@ class BvInverterQuery
   BvInverterQuery() {}
   ~BvInverterQuery() {}
   /** returns the current model value of n */
-  virtual Node getModelValue(Node n) { return Node::null(); }
+  virtual Node getModelValue(Node n) = 0;
   /** returns a bound variable of type tn */
-  virtual Node getBoundVariable(TypeNode tn) {
-    return NodeManager::currentNM()->mkBoundVar("invx",tn);
-  }
+  virtual Node getBoundVariable(TypeNode tn) = 0;
 };
 
 // inverter class
@@ -56,8 +54,10 @@ class BvInverter
   /** get dummy fresh variable of type tn, used as argument for sv */
   Node getSolveVariable(TypeNode tn);
 
-  /** Get path to pv in lit, replace that occurrence by sv and all others by
-   * pvs. If return value R is non-null, then : lit.path = pv R.path = sv
+  /** 
+   * Get path to pv in lit, replace that occurrence by sv and all others by
+   * pvs (if pvs is non-null). If return value R is non-null, then : 
+   *   lit.path = pv R.path = sv
    *   R.path' = pvs for all lit.path' = pv, where path' != path
    */
   Node getPathToPv(
@@ -65,7 +65,7 @@ class BvInverter
   
   /** 
    * Same as above, but does not linearize lit for pv.
-   * We use this version if we know lit is linear wrt pv. 
+   * Use this version if we know lit is linear wrt pv. 
    */
   Node getPathToPv(Node lit, Node pv, std::vector<unsigned>& path){
     return getPathToPv( lit, pv, pv, Node::null(), path );
