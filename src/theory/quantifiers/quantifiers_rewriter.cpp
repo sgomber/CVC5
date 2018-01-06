@@ -950,7 +950,7 @@ Node QuantifiersRewriter::computeVariableElimLitBv( Node lit, std::vector< Node 
 
 bool QuantifiersRewriter::computeVariableElimLit( Node lit, bool pol, std::vector< Node >& args, std::vector< Node >& vars, std::vector< Node >& subs,
                                                   std::map< Node, std::map< bool, std::map< Node, bool > > >& num_bounds ) {
-  Trace("ajr-temp") << "Elim : " <<  lit << ", pol = " << pol << "?" << std::endl;
+  Trace("var-elim-quant-debug") << "Eliminate : " <<  lit << ", pol = " << pol << "?" << std::endl;
   if( lit.getKind()==EQUAL && options::varElimQuant() ){
     if( pol || lit[0].getType().isBoolean() ){
       for( unsigned i=0; i<2; i++ ){
