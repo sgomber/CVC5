@@ -987,25 +987,22 @@ void BvInstantiator::processLiteral(CegInstantiator* ci,
   Node slit = d_inverter->getPathToPv(lit, pv, sv, pvs, path);
   if (!slit.isNull())
   {
-    Trace("cegqi-bv") << "Solve lit to bv inverter : " << slit << std::endl;
+    CegInstantiatorBvInverterQuery m(ci);
     unsigned iid = d_inst_id_counter;
-    Node inst;
-    if( !ci->hasNestedQuantification() ){
-      CegInstantiatorBvInverterQuery m(ci);
-      inst = d_inverter->solveBvLit(sv, slit, path, &m);
-    }else{
-      // do not use choice functions when instantiating nested quantifiers
-      inst = d_inverter->solveBvLit(sv, slit, path, nullptr);
-    }
+    Trace("cegqi-bv") << "Solve lit to bv inverter : " << slit << std::endl;
+    Node inst = d_inverter->solveBvLit(sv, slit, path, &m);
     if (!inst.isNull())
     {
       inst = Rewriter::rewrite(inst);
-      Trace("cegqi-bv") << "...solved form is " << inst << std::endl;
-      // store information for id and increment
-      d_var_to_inst_id[pv].push_back(iid);
-      d_inst_id_to_term[iid] = inst;
-      d_inst_id_to_alit[iid] = alit;
-      d_inst_id_counter++;
+      if ( inst.isConst() || !ci->hasNestedQuantification())
+      {
+        Trace("cegqi-bv") << "...solved form is " << inst << std::endl;
+        // store information for id and increment
+        d_var_to_inst_id[pv].push_back(iid);
+        d_inst_id_to_term[iid] = inst;
+        d_inst_id_to_alit[iid] = alit;
+        d_inst_id_counter++;
+      }
     }
     else
     {
