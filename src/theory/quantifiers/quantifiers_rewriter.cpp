@@ -21,6 +21,7 @@
 #include "theory/quantifiers/term_database.h"
 #include "theory/quantifiers/term_util.h"
 #include "theory/quantifiers/trigger.h"
+#include "theory/quantifiers/bv_inverter.h"
 
 using namespace std;
 using namespace CVC4::kind;
@@ -890,8 +891,64 @@ void QuantifiersRewriter::isVariableBoundElig( Node n, std::map< Node, int >& ex
   }
 }
 
+
+Node checkBvVariableElim( Node lit, std::vector< Node >& args, Node& var ){
+  if( Trace.isOn("quant-velim-bv") ){
+    Trace("quant-velim-bv") << "Bv-Elim : " << lit << " varList = { ";
+    for( const Node& v : args ){
+      Trace("quant-velim-bv") << v << " ";
+    }
+    Trace("quant-velim-bv") << "}" << std::endl;
+  }
+  Assert( lit.getKind()==EQUAL );
+  // figure out if this literal is linear and invertible on path with args
+  std::map< TNode, bool > linear;
+  std::unordered_set<TNode, TNodeHashFunction> visited;
+  std::unordered_set<TNode, TNodeHashFunction>::iterator it;
+  std::vector<TNode> visit;
+  TNode cur;
+  visit.push_back(lit);
+  do {
+    cur = visit.back();
+    visit.pop_back();
+    if( std::find( args.begin(), args.end(), cur )!=args.end() ){
+      linear[cur] = linear.find( cur )==linear.end();
+    }
+    if (visited.find(cur) == visited.end()) {
+      visited.insert(cur);
+      
+      for (const Node& cn : cur ){
+        visit.push_back(cn);
+      }
+    }
+  } while (!visit.empty());
+  
+  BvInverter binv;
+  for( std::pair< const TNode, bool >& lp : linear )
+  {
+    if( lp.second )
+    {
+      TNode cvar = lp.first;
+      Trace("quant-velim-bv") << "...linear wrt " << cvar << std::endl;
+      std::vector< unsigned > path;
+      Node slit = binv.getPathToPv( lit, cvar, path );
+      if( !slit.isNull() ){
+        Node slv = binv.solveBvLit(cvar,lit,path,nullptr);
+        Trace("quant-velim-bv") << "...solution : " << slv << std::endl;
+        var = cvar;
+        return slv;
+      }else{
+        Trace("quant-velim-bv") << "...non-invertible path." << std::endl;
+      }
+    }
+  }
+  
+  return Node::null();
+}
+
 bool QuantifiersRewriter::computeVariableElimLit( Node lit, bool pol, std::vector< Node >& args, std::vector< Node >& vars, std::vector< Node >& subs,
                                                   std::map< Node, std::map< bool, std::map< Node, bool > > >& num_bounds ) {
+  Trace("ajr-temp") << "Elim : " <<  lit << ", pol = " << pol << "?" << std::endl;
   if( lit.getKind()==EQUAL && options::varElimQuant() ){
     if( pol || lit[0].getType().isBoolean() ){
       for( unsigned i=0; i<2; i++ ){
@@ -1007,6 +1064,20 @@ bool QuantifiersRewriter::computeVariableElimLit( Node lit, bool pol, std::vecto
           }
         }
       }
+    }
+  }else if( lit.getKind()==EQUAL && lit[0].getType().isBitVector() && pol && options::varElimQuant() ){
+    Node var;
+    Node slv = checkBvVariableElim(lit, args, var);
+    Assert( !var.isNull() );
+    if( !slv.isNull() ){
+      std::vector< Node >::iterator ita = std::find( args.begin(), args.end(), var );
+      Assert( ita!=args.end() );
+      Assert( isVariableElim( var, slv ) );
+      Trace("var-elim-quant") << "Variable eliminate based on bit-vector inversion : " << var << " -> " << slv << std::endl;
+      vars.push_back( var );
+      subs.push_back( slv );
+      args.erase( ita );
+      return true;
     }
   }
   
