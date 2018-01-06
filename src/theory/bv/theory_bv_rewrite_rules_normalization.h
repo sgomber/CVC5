@@ -236,18 +236,18 @@ Node RewriteRule<FlattenAssocCommut>::apply(TNode node) {
 }
 
 static inline void addToCoefMap(std::map<Node, BitVector>& map,
-                                TNode term, const BitVector& coef) {
+                                TNode term, const BitVector& coef, bool isNeg) {
   if (map.find(term) != map.end()) {
-    map[term] = map[term] + coef; 
+    map[term] = map[term] + ( isNeg ? -coef : coef ); 
   } else {
-    map[term] = coef;
+    map[term] = ( isNeg ? -coef : coef );
   }
 }
 
 
 static inline void updateCoefMap(TNode current, unsigned size,
                                  std::map<Node, BitVector>& factorToCoefficient,
-                                 BitVector& constSum) {
+                                 BitVector& constSum, bool isNeg = false) {
   switch (current.getKind()) {
     case kind::BITVECTOR_MULT: {
       // look for c * term, where c is a constant
@@ -278,25 +278,25 @@ static inline void updateCoefMap(TNode current, unsigned size,
       if(term.getKind() == kind::BITVECTOR_SUB) {
         TNode a = term[0];
         TNode b = term[1];
-        addToCoefMap(factorToCoefficient, a, coeff);
-        addToCoefMap(factorToCoefficient, b, -coeff); 
+        addToCoefMap(factorToCoefficient, a, coeff, isNeg);
+        addToCoefMap(factorToCoefficient, b, -coeff, isNeg); 
       }
       else if(term.getKind() == kind::BITVECTOR_NEG) {
-        addToCoefMap(factorToCoefficient, term[0], -BitVector(size, coeff));
+        addToCoefMap(factorToCoefficient, term[0], -BitVector(size, coeff), isNeg);
       }
       else {
-        addToCoefMap(factorToCoefficient, term, coeff);
+        addToCoefMap(factorToCoefficient, term, coeff, isNeg);
       }
       break;
     }
     case kind::BITVECTOR_SUB:
       // turn into a + (-1)*b 
       Assert(current.getNumChildren() == 2);
-      addToCoefMap(factorToCoefficient, current[0], BitVector(size, (unsigned)1)); 
-      addToCoefMap(factorToCoefficient, current[1], -BitVector(size, (unsigned)1)); 
+      addToCoefMap(factorToCoefficient, current[0], BitVector(size, (unsigned)1), isNeg); 
+      addToCoefMap(factorToCoefficient, current[1], -BitVector(size, (unsigned)1), isNeg); 
       break;
     case kind::BITVECTOR_NEG:
-      addToCoefMap(factorToCoefficient, current[0], -BitVector(size, (unsigned)1)); 
+      updateCoefMap(current[0],size,factorToCoefficient,constSum,!isNeg);
       break;
     case kind::CONST_BITVECTOR: {
       BitVector constValue = current.getConst<BitVector>(); 
@@ -305,7 +305,7 @@ static inline void updateCoefMap(TNode current, unsigned size,
     }
     default:
       // store as 1 * current
-      addToCoefMap(factorToCoefficient, current, BitVector(size, (unsigned)1)); 
+      addToCoefMap(factorToCoefficient, current, BitVector(size, (unsigned)1), isNeg); 
       break;
   }
 }
@@ -371,11 +371,13 @@ Node RewriteRule<PlusCombineLikeTerms>::apply(TNode node) {
     children.push_back(utils::mkConst(constSum)); 
   }
 
+  Node ret;
   if(children.size() == 0) {
-    return utils::mkConst(size, (unsigned)0); 
+    ret = utils::mkConst(size, (unsigned)0); 
+  }else{
+    ret = utils::mkNode(kind::BITVECTOR_PLUS, children);
   }
-
-  return utils::mkNode(kind::BITVECTOR_PLUS, children);
+  return ret;
 }
 
 
