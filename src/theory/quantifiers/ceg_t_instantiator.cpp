@@ -1042,7 +1042,7 @@ Node BvInstantiator::hasProcessAssertion(CegInstantiator* ci,
     
     bool useSlack = false;
     if (k != EQUAL && k !=BITVECTOR_ULT && k !=BITVECTOR_SLT ){
-      // others are not unhandled
+      // others are unhandled
       return Node::null();
     }else if (!atom[0].getType().isBitVector())
     {
@@ -1079,12 +1079,11 @@ Node BvInstantiator::hasProcessAssertion(CegInstantiator* ci,
       pol = true;
     }
 
-    // for all other predicates, we convert them to a positive equality based on
+    // if using slack, we convert constraints to a positive equality based on
     // the current model M, e.g.:
     //   (not) s ~ t  --->  s = t + ( s^M - t^M )
     Node ret;
     if (useSlack) {
-      Node ret;
       if (sm != tm) {
         Node slack =
             Rewriter::rewrite(nm->mkNode(kind::BITVECTOR_SUB, sm, tm));
@@ -1098,8 +1097,8 @@ Node BvInstantiator::hasProcessAssertion(CegInstantiator* ci,
         ret = s.eqNode(t);
       }
     } else {
-      // otherwise, we optimistically solve for the boundary point of an inequality
-      // for example
+      // otherwise, we optimistically solve for the boundary point of an 
+      // inequality, for example:
       //   for s < t, we solve s+1 = t
       //   for ~( s < t ), we solve s = t
       // notice that this equality does not necessarily hold in the model, and
