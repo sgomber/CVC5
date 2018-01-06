@@ -538,7 +538,7 @@ Node QuantifiersRewriter::computeProcessTerms2( Node body, bool hasPol, bool pol
     Trace("quantifiers-rewrite-term-debug2") << "Return (cached) " << ret << " for " << body << std::endl;
   }else{
     //only do context dependent processing up to depth 8
-    bool doCD = nCurrCond<8;
+    bool doCD = options::condRewriteQuant() && nCurrCond<8;
     bool changed = false;
     std::vector< Node > children;
     //set entailed conditions based on OR/AND
@@ -1652,7 +1652,7 @@ bool QuantifiersRewriter::doOperation( Node q, int computeOption, QAttributes& q
   }else if( computeOption==COMPUTE_AGGRESSIVE_MINISCOPING ){
     return options::aggressiveMiniscopeQuant() && is_std;
   }else if( computeOption==COMPUTE_PROCESS_TERMS ){
-    return options::condRewriteQuant();
+    return options::condRewriteQuant() || options::elimExtArithQuant() || options::iteLiftQuant()!=ITE_LIFT_QUANT_MODE_NONE;
   }else if( computeOption==COMPUTE_COND_SPLIT ){
     return ( options::iteDtTesterSplitQuant() || options::condVarSplitQuant() ) && !is_strict_trigger;
   }else if( computeOption==COMPUTE_PRENEX ){

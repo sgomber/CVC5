@@ -2204,7 +2204,7 @@ static Node getScBvShl(bool pol,
   return sc;
 }
 
-Integer calcInverse(Integer a, Integer n)
+Integer calcMultInverse(Integer a, Integer n)
 {
   Integer t = Integer(0), newt = Integer(1);
   Integer r = n, newr = a;  
@@ -2337,7 +2337,7 @@ Node BvInverter::solveBvLit(Node sv,
           Integer a = s.getConst<BitVector>().toInteger();
           Integer w = Integer(1).multiplyByPow2(ssize);
           Trace("bv-invert") << "Compute inverse : " << a << " " << w << std::endl;
-          Integer inv = calcInverse( a, w );
+          Integer inv = calcMultInverse( a, w );
           Trace("bv-invert") << "Inverse : " << inv << std::endl;
           Node inv_val = nm->mkConst(BitVector(ssize,inv));
           t_new = nm->mkNode(BITVECTOR_MULT,inv_val,t);
