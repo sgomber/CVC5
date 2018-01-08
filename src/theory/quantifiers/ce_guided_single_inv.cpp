@@ -106,7 +106,7 @@ void CegConjectureSingleInv::getInitialSingleInvLemma( std::vector< Node >& lems
       delete d_cinst;
     }
     d_cinst = new CegInstantiator( d_qe, d_cosi, false, false );
-    d_cinst->registerCounterexampleLemma( lems, d_single_inv_sk );
+    d_cinst->registerCounterexampleLemma( Node::null(), lems, d_single_inv_sk );
   }
 }
 

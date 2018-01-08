@@ -625,20 +625,14 @@ bool CegInstantiator::constructInstantiationInc(Node pv,
       Trace("cbqi-inst-debug2") << "Adding to vectors..." << std::endl;
       sf.push_back( pv, n, pv_prop );
       Trace("cbqi-inst-debug2") << "Recurse..." << std::endl;
-      
-      for( unsigned r=0; r<2; r++ ){
-        TheoryId tid = r==0 ? Theory::theoryOf( pv.getType() ) : THEORY_UF;
-        std::map< TheoryId, std::vector< Node > >::iterator ita = d_curr_asserts.find( tid );
-        if( ita!=d_curr_asserts.end() ){
-          for (const Node& lit : ita->second) {
-            Node slit = applySubstitutionToLiteral(lit, sf);
-            if( !slit.isNull() ){
-              if( slit.isConst() && !slit.getConst<bool>() ){
-                Trace("cbqi-inst-debug2") << "False literal : " << lit << " after substitution for " << pv << std::endl;
-                success = false;
-              }
-            }
-          }
+      if( !d_quant.isNull() ){
+        Node squant = d_quant.substitute( sf.d_vars.begin(), sf.d_vars.end(), sf.d_subs.begin(), sf.d_subs.end() );
+        Trace("cbqi-inst-mval-debug") << "Subs quant is " << squant << std::endl;
+        Node squantr = Rewriter::rewrite( squant );
+        Trace("cbqi-inst-mval-debug") << "After rewrite : " << squantr << std::endl;
+        if( squantr.isConst() && squantr.getConst<bool>() ){
+          Trace("cbqi-inst-mval") << "Quantified formula is true after substitution for " << pv << std::endl;
+          success = false;
         }
       }
       if( success )
@@ -1222,8 +1216,12 @@ void CegInstantiator::collectCeAtoms( Node n, std::map< Node, bool >& visited ) 
   }
 }
 
-void CegInstantiator::registerCounterexampleLemma( std::vector< Node >& lems, std::vector< Node >& ce_vars ) {
+void CegInstantiator::registerCounterexampleLemma( Node q, std::vector< Node >& lems, std::vector< Node >& ce_vars ) {
   Trace("cbqi-reg") << "Register counterexample lemma..." << std::endl;
+  if( !q.isNull() ){
+    Assert( q.getKind()==FORALL );
+    d_quant = d_qe->getTermUtil()->getInstConstantBody( q );
+  }
   d_input_vars.clear();
   d_input_vars.insert(d_input_vars.end(), ce_vars.begin(), ce_vars.end());
 

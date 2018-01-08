@@ -212,6 +212,7 @@ class CegInstantiator {
   void presolve(Node q);
   /** Register the counterexample lemma
    *
+   * q : the quantified formula
    * lems : contains the conjuncts of the counterexample lemma of the
    *        quantified formula we are processing. The counterexample
    *        lemma is the formula { ~phi[e/x] } in Figure 1 of Reynolds
@@ -225,7 +226,7 @@ class CegInstantiator {
    * - Theory-specific preprocessing of instantiation lemmas.
    * It may also introduce new variables to ce_vars if necessary.
    */
-  void registerCounterexampleLemma(std::vector<Node>& lems,
+  void registerCounterexampleLemma(Node q, std::vector<Node>& lems,
                                    std::vector<Node>& ce_vars);
   /** get the output channel of this class */
   CegqiOutput* getOutput() { return d_out; }
@@ -407,6 +408,8 @@ class CegInstantiator {
   std::unordered_set<Node, NodeHashFunction> d_vars_set;
   /** index of variables reported in instantiation */
   std::vector<unsigned> d_var_order_index;
+  /** the quantified formula */
+  Node d_quant;
   /** number of input variables
    *
    * These are the variables, in order, for the instantiations we are generating
@@ -539,6 +542,8 @@ class CegInstantiator {
   bool doAddInstantiation(std::vector<Node>& vars,
                           std::vector<Node>& subs,
                           std::vector<Node>& lemmas);
+  /** get instantiation */
+  void getCurrentInstantiation(std::vector<Node>& vars, std::vector<Node>& subs);
 };
 
 /** Instantiator class

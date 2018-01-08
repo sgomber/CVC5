@@ -811,7 +811,7 @@ void InstStrategyCegqi::registerCounterexampleLemma( Node q, Node lem ) {
   std::vector< Node > lems;
   lems.push_back( lem );
   CegInstantiator * cinst = getInstantiator( q );
-  cinst->registerCounterexampleLemma( lems, ce_vars );
+  cinst->registerCounterexampleLemma( q, lems, ce_vars );
   for( unsigned i=0; i<lems.size(); i++ ){
     Trace("cbqi-debug") << "Counterexample lemma " << i << " : " << lems[i] << std::endl;
     d_quantEngine->addLemma( lems[i], false );
