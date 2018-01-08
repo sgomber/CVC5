@@ -644,6 +644,14 @@ bool CegInstantiator::constructInstantiationInc(Node pv,
   }
 }
 
+bool CegInstantiator::isInstIncTrueInModel(Node pv, 
+                          Node n,
+                          TermProperties& pv_prop,
+                          SolvedForm& sf)
+{
+  return false;
+}
+  
 bool CegInstantiator::doAddInstantiation( std::vector< Node >& vars, std::vector< Node >& subs, std::vector< Node >& lemmas ) {
   if (vars.size() > d_input_vars.size() || !d_var_order_index.empty())
   {
