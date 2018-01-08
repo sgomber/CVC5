@@ -357,6 +357,8 @@ option cbqiBvLinearize --cbqi-bv-linear bool :read-write :default true
   linearize adder chains for variables
 option cbqiBvSolveChoice --cbqi-bv-solve-choice bool :read-write :default true
   do not solve literals with choice
+option cbqiBvNestedMval --cbqi-bv-nested-mval bool :read-write :default false
+  only use model values when instantiating quantifiers with nesting
  
 ### local theory extensions options 
 
