@@ -519,11 +519,23 @@ void CegInstantiator::popStackVariable() {
 }
 
 bool CegInstantiator::constructInstantiationInc(Node pv,
+                                Node n,
+                                TermProperties& pv_prop,
+                                SolvedForm& sf,
+                                bool revertOnSuccess)
+{
+  bool didRecurse;
+  return constructInstantiationInc(pv,n,pv_prop,sf,didRecurse,revertOnSuccess);
+}
+  
+bool CegInstantiator::constructInstantiationInc(Node pv,
                                                 Node n,
                                                 TermProperties& pv_prop,
                                                 SolvedForm& sf,
+                                                bool& didRecurse,
                                                 bool revertOnSuccess)
 {
+  didRecurse = false;
   Node cnode = pv_prop.getCacheNode();
   if( d_curr_subs_proc[pv][n].find( cnode )==d_curr_subs_proc[pv][n].end() ){
     d_curr_subs_proc[pv][n][cnode] = true;
@@ -613,8 +625,29 @@ bool CegInstantiator::constructInstantiationInc(Node pv,
       Trace("cbqi-inst-debug2") << "Adding to vectors..." << std::endl;
       sf.push_back( pv, n, pv_prop );
       Trace("cbqi-inst-debug2") << "Recurse..." << std::endl;
-      unsigned i = d_curr_index[pv];
-      success = constructInstantiation(sf, d_stack_vars.empty() ? i + 1 : i);
+      
+      for( unsigned r=0; r<2; r++ ){
+        TheoryId tid = r==0 ? Theory::theoryOf( pv.getType() ) : THEORY_UF;
+        std::map< TheoryId, std::vector< Node > >::iterator ita = d_curr_asserts.find( tid );
+        if( ita!=d_curr_asserts.end() ){
+          for (const Node& lit : ita->second) {
+            Node slit = applySubstitutionToLiteral(lit, sf);
+            if( !slit.isNull() ){
+              if( slit.isConst() && !slit.getConst<bool>() ){
+                Trace("cbqi-inst-debug2") << "False literal : " << lit << " after substitution for " << pv << std::endl;
+                success = false;
+              }
+            }
+          }
+        }
+      }
+      if( success )
+      {
+        unsigned i = d_curr_index[pv];
+        success = constructInstantiation(sf, d_stack_vars.empty() ? i + 1 : i);
+        didRecurse = true;
+      }
+      
       if (!success || revertOnSuccess)
       {
         Trace("cbqi-inst-debug2") << "Removing from vectors..." << std::endl;
@@ -642,14 +675,6 @@ bool CegInstantiator::constructInstantiationInc(Node pv,
     //already tried this substitution
     return false;
   }
-}
-
-bool CegInstantiator::isInstIncTrueInModel(Node pv, 
-                          Node n,
-                          TermProperties& pv_prop,
-                          SolvedForm& sf)
-{
-  return false;
 }
   
 bool CegInstantiator::doAddInstantiation( std::vector< Node >& vars, std::vector< Node >& subs, std::vector< Node >& lemmas ) {

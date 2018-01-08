@@ -1181,8 +1181,6 @@ bool BvInstantiator::processAssertions(CegInstantiator* ci,
           Trace("cegqi-bv") << "  ...this is the first variable" << std::endl;
         }
       }
-      // the order of instantiation ids we will try
-      std::vector<unsigned> inst_ids_try;
       // until we have a model-preserving selection function for BV, this must
       // be heuristic (we only pick one literal)
       // hence we randomize the list
@@ -1191,23 +1189,24 @@ bool BvInstantiator::processAssertions(CegInstantiator* ci,
       // we may find an invertible literal that leads to a useful instantiation.
       std::random_shuffle(iti->second.begin(), iti->second.end());
 
-      for (unsigned j = 0; j < iti->second.size(); j++) {
-        unsigned inst_id = iti->second[j];
-        Assert(d_inst_id_to_term.find(inst_id) != d_inst_id_to_term.end());
-        Node inst_term = d_inst_id_to_term[inst_id];
-        Assert(d_inst_id_to_alit.find(inst_id) != d_inst_id_to_alit.end());
-        Node alit = d_inst_id_to_alit[inst_id];
+      if (Trace.isOn("cegqi-bv")) 
+      {
+        for (unsigned j = 0, size = iti->second.size(); j<size; j++) {
+          unsigned inst_id = iti->second[j];
+          Assert(d_inst_id_to_term.find(inst_id) != d_inst_id_to_term.end());
+          Node inst_term = d_inst_id_to_term[inst_id];
+          Assert(d_inst_id_to_alit.find(inst_id) != d_inst_id_to_alit.end());
+          Node alit = d_inst_id_to_alit[inst_id];
 
-        // get the slack value introduced for the asserted literal
-        Node curr_slack_val;
-        std::unordered_map<Node, Node, NodeHashFunction>::iterator itms =
-            d_alit_to_model_slack.find(alit);
-        if (itms != d_alit_to_model_slack.end()) {
-          curr_slack_val = itms->second;
-        }
+          // get the slack value introduced for the asserted literal
+          Node curr_slack_val;
+          std::unordered_map<Node, Node, NodeHashFunction>::iterator itms =
+              d_alit_to_model_slack.find(alit);
+          if (itms != d_alit_to_model_slack.end()) {
+            curr_slack_val = itms->second;
+          }
 
-        // debug printing
-        if (Trace.isOn("cegqi-bv")) {
+          // debug printing
           Trace("cegqi-bv") << "   [" << j << "] : ";
           Trace("cegqi-bv") << inst_term << std::endl;
           if (!curr_slack_val.isNull()) {
@@ -1217,18 +1216,6 @@ bool BvInstantiator::processAssertions(CegInstantiator* ci,
           Trace("cegqi-bv-debug") << "   ...from : " << alit << std::endl;
           Trace("cegqi-bv") << std::endl;
         }
-
-        // currently:
-        //   We select the first literal, and
-        //   for the first variable, we select all 
-        //   if cbqiMultiInst is enabled.
-        if (inst_ids_try.empty() || (firstVar && options::cbqiMultiInst()))
-        {
-          // try the first one
-          inst_ids_try.push_back(inst_id);
-        } else {
-          // selection criteria across multiple literals goes here
-        }
       }
 
       // Now, try all instantiation ids we want to try
@@ -1236,9 +1223,10 @@ bool BvInstantiator::processAssertions(CegInstantiator* ci,
       // for constructing instantiations is exponential on the number of
       // variables in this quantifier prefix.
       bool ret = false;
-      bool revertOnSuccess = inst_ids_try.size() > 1;
-      for (unsigned j = 0; j < inst_ids_try.size(); j++) {
-        unsigned inst_id = inst_ids_try[j];
+      bool tryMultipleInst = firstVar && options::cbqiMultiInst();
+      bool revertOnSuccess = tryMultipleInst;
+      for (unsigned j = 0, size = iti->second.size(); j<size; j++) {
+        unsigned inst_id = iti->second[j];
         Assert(d_inst_id_to_term.find(inst_id) != d_inst_id_to_term.end());
         Node inst_term = d_inst_id_to_term[inst_id];
         Node alit = d_inst_id_to_alit[inst_id];
@@ -1249,12 +1237,18 @@ bool BvInstantiator::processAssertions(CegInstantiator* ci,
         d_var_to_curr_inst_id[pv] = inst_id;
         d_tried_assertion_inst = true;
         ci->markSolved(alit);
+        bool didRecurse;
         if (ci->constructInstantiationInc(
-                pv, inst_term, pv_prop_bv, sf, revertOnSuccess))
+                pv, inst_term, pv_prop_bv, sf, didRecurse, revertOnSuccess))
         {
           ret = true;
         }
         ci->markSolved(alit, false);
+        // if we recursed, then we are done unless we try multiple instances
+        if( didRecurse && !tryMultipleInst )
+        {
+          break;
+        }
       }
       if (ret)
       {

@@ -260,11 +260,13 @@ class CegInstantiator {
                                  TermProperties& pv_prop,
                                  SolvedForm& sf,
                                  bool revertOnSuccess = false);
-  /** is substitution true */
-  bool isInstIncTrueInModel(Node pv, 
-                            Node n,
-                            TermProperties& pv_prop,
-                            SolvedForm& sf);
+  /** same as above, but track whether we failed to recurse */
+  bool constructInstantiationInc(Node pv,
+                                 Node n,
+                                 TermProperties& pv_prop,
+                                 SolvedForm& sf,
+                                 bool& didRecurse,
+                                 bool revertOnSuccess = false);
   /** get the current model value of term n */
   Node getModelValue(Node n);
   /** get bound variable for type
