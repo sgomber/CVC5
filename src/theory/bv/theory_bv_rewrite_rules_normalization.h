@@ -279,10 +279,10 @@ static inline void updateCoefMap(TNode current, unsigned size,
         TNode a = term[0];
         TNode b = term[1];
         addToCoefMap(factorToCoefficient, a, coeff, isNeg);
-        addToCoefMap(factorToCoefficient, b, -coeff, isNeg); 
+        addToCoefMap(factorToCoefficient, b, coeff, !isNeg); 
       }
       else if(term.getKind() == kind::BITVECTOR_NEG) {
-        addToCoefMap(factorToCoefficient, term[0], -BitVector(size, coeff), isNeg);
+        addToCoefMap(factorToCoefficient, term[0], BitVector(size, coeff), !isNeg);
       }
       else {
         addToCoefMap(factorToCoefficient, term, coeff, isNeg);
@@ -293,7 +293,7 @@ static inline void updateCoefMap(TNode current, unsigned size,
       // turn into a + (-1)*b 
       Assert(current.getNumChildren() == 2);
       addToCoefMap(factorToCoefficient, current[0], BitVector(size, (unsigned)1), isNeg); 
-      addToCoefMap(factorToCoefficient, current[1], -BitVector(size, (unsigned)1), isNeg); 
+      addToCoefMap(factorToCoefficient, current[1], BitVector(size, (unsigned)1), !isNeg); 
       break;
     case kind::BITVECTOR_NEG:
       updateCoefMap(current[0],size,factorToCoefficient,constSum,!isNeg);
