@@ -1226,9 +1226,7 @@ Node QuantifiersRewriter::computeVarElimination2( Node body, std::vector< Node >
         recurse = true;
       }
       if( recurse ){
-        if( cur.getKind()==FORALL ){
-          visit.push_back(std::pair<TNode,int>(cur[1],cur_pol));
-        }else if( cur.getKind()!=NOT && ( cur.getKind()==EQUAL || isLiteral(cur) ) ){
+        if( cur.getKind()!=NOT && ( cur.getKind()==EQUAL || isLiteral(cur) ) ){
           if( visited[cur]==0 ){
             Trace("velim-agg") << "  No polarity literal : " << cur << std::endl;
             // variables in this are ineligible
@@ -1282,7 +1280,7 @@ Node QuantifiersRewriter::computeVarElimination2( Node body, std::vector< Node >
         if( p.second!=0 )
         {
           Node lit = p.first;
-          if( lit.getKind()!=FORALL && lit.getKind()!=NOT && ( lit.getKind()==EQUAL || isLiteral(lit) ) ){
+          if( lit.getKind()!=NOT && ( lit.getKind()==EQUAL || isLiteral(lit) ) ){
             bool pol = (p.second==1);
             Trace("velim-agg") << "Check polarity literal : " << lit << " : " << pol << std::endl;
             std::map< Node, std::map< bool, std::map< Node, bool > > > num_bounds;
