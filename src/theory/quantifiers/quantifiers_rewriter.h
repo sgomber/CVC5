@@ -49,7 +49,7 @@ private:
   static bool isVariableElim( Node v, Node s );
   static void isVariableBoundElig( Node n, std::map< Node, int >& exclude, std::map< Node, std::map< int, bool > >& visited, bool hasPol, bool pol, 
                                    std::map< Node, bool >& elig_vars );
-  static bool computeVariableElimLit( Node n, bool pol, std::vector< Node >& args, std::vector< Node >& var, std::vector< Node >& subs,
+  static bool computeVariableElimLit( Node n, bool pol, std::vector< Node >& args, std::vector< Node >& elig_args, std::vector< Node >& var, std::vector< Node >& subs,
                                       std::map< Node, std::map< bool, std::map< Node, bool > > >& num_bounds );
   static Node computeVarElimination2( Node body, std::vector< Node >& args, QAttributes& qa );
   /** variable eliminate for bit-vector literals

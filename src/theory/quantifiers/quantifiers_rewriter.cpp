@@ -966,6 +966,7 @@ bool QuantifiersRewriter::computeVariableElimLit(
     Node lit,
     bool pol,
     std::vector<Node>& args,
+    std::vector<Node>& elig_args,
     std::vector<Node>& vars,
     std::vector<Node>& subs,
     std::map<Node, std::map<bool, std::map<Node, bool> > >& num_bounds)
@@ -986,9 +987,10 @@ bool QuantifiersRewriter::computeVariableElimLit(
           tpol = !tpol;
         }
         std::vector<Node>::iterator ita =
-            std::find(args.begin(), args.end(), v_slv);
-        if (ita != args.end())
+            std::find(elig_args.begin(), elig_args.end(), v_slv);
+        if (ita != elig_args.end())
         {
+          ita = std::find(args.begin(), args.end(), v_slv);
           if (isVariableElim(v_slv, lit[1 - i]))
           {
             Node slv = lit[1 - i];
@@ -1010,8 +1012,9 @@ bool QuantifiersRewriter::computeVariableElimLit(
     }
   }else if( lit.getKind()==APPLY_TESTER && pol && lit[0].getKind()==BOUND_VARIABLE && options::dtVarExpandQuant() ){
     Trace("var-elim-dt") << "Expand datatype variable based on : " << lit << std::endl;
-    std::vector< Node >::iterator ita = std::find( args.begin(), args.end(), lit[0] );
-    if( ita!=args.end() ){
+    std::vector< Node >::iterator ita = std::find( elig_args.begin(), elig_args.end(), lit[0] );
+    if( ita!=elig_args.end() ){
+      ita = std::find(args.begin(), args.end(), lit[0]);
       vars.push_back( lit[0] );
       Expr testerExpr = lit.getOperator().toExpr();
       int index = Datatype::indexOf( testerExpr );
@@ -1033,8 +1036,9 @@ bool QuantifiersRewriter::computeVariableElimLit(
       return true;
     }
   }else if( lit.getKind()==BOUND_VARIABLE && options::varElimQuant() ){
-    std::vector< Node >::iterator ita = std::find( args.begin(), args.end(), lit );
-    if( ita!=args.end() ){
+    std::vector< Node >::iterator ita = std::find( elig_args.begin(), elig_args.end(), lit );
+    if( ita!=elig_args.end() ){
+      ita = std::find(args.begin(), args.end(), lit);
       Trace("var-elim-bool") << "Variable eliminate : " << lit << std::endl;
       vars.push_back( lit );
       subs.push_back( NodeManager::currentNM()->mkConst( pol ) );
@@ -1050,8 +1054,9 @@ bool QuantifiersRewriter::computeVariableElimLit(
     {
       for( std::map< Node, Node >::iterator itm = msum.begin(); itm != msum.end(); ++itm ){
         if( !itm->first.isNull() ){
-          std::vector< Node >::iterator ita = std::find( args.begin(), args.end(), itm->first );
-          if( ita!=args.end() ){
+          std::vector< Node >::iterator ita = std::find( elig_args.begin(), elig_args.end(), itm->first );
+          if( ita!=elig_args.end() ){
+            ita = std::find( args.begin(), args.end(), itm->first );
             if( lit.getKind()==EQUAL ){
               Assert( pol );
               Node veq_c;
@@ -1103,7 +1108,7 @@ bool QuantifiersRewriter::computeVariableElimLit(
            && options::varElimQuant())
   {
     Node var;
-    Node slv = computeVariableElimLitBv(lit, args, var);
+    Node slv = computeVariableElimLitBv(lit, elig_args, var);
     if (!slv.isNull())
     {
       Assert(!var.isNull());
@@ -1130,22 +1135,18 @@ Node QuantifiersRewriter::computeVarElimination2( Node body, std::vector< Node >
   QuantPhaseReq qpr( body );
   std::vector< Node > vars;
   std::vector< Node > subs;
+  std::vector< Node > elig_args;
+  elig_args.insert(elig_args.end(),args.begin(), args.end() );
   for( std::map< Node, bool >::iterator it = qpr.d_phase_reqs.begin(); it != qpr.d_phase_reqs.end(); ++it ){
     Trace("var-elim-quant-debug") << "   phase req : " << it->first << " -> " << ( it->second ? "true" : "false" ) << std::endl;
-    if( computeVariableElimLit( it->first, it->second, args, vars, subs, num_bounds ) ){
+    if( computeVariableElimLit( it->first, it->second, args, elig_args, vars, subs, num_bounds ) ){
       break;
     }
   }
   
+  bool didElim = false;
   if( !vars.empty() ){
-    Trace("var-elim-quant-debug") << "VE " << vars.size() << "/" << args.size() << std::endl;
-    //remake with eliminated nodes
-    body = body.substitute( vars.begin(), vars.end(), subs.begin(), subs.end() );
-    body = Rewriter::rewrite( body );
-    if( !qa.d_ipl.isNull() ){
-      qa.d_ipl = qa.d_ipl.substitute( vars.begin(), vars.end(), subs.begin(), subs.end() );
-    }
-    Trace("var-elim-quant") << "Return " << body << std::endl;
+    didElim = true;
   }else{
     //collect all variables that have only upper/lower bounds
     std::map< Node, bool > elig_vars;
@@ -1192,9 +1193,116 @@ Node QuantifiersRewriter::computeVarElimination2( Node body, std::vector< Node >
           std::vector< Node >::iterator ita = std::find( args.begin(), args.end(), v );
           Assert( ita!=args.end() );
           args.erase( ita );
+          didElim = true;
         }
       } 
     }
+  }
+  // aggressive version : find literals that are entailed only with one polarity
+  if( !didElim )
+  {
+    Trace("velim-agg") << "Aggressive variable elimination for " << body << "..." << std::endl;
+    // 0 : no polarity, 1 : positive, -1 : negative
+    std::map< Node, bool > var_elig;
+    std::map< Node, bool > var_inelig;
+    std::map< Node, bool > vi_visited;
+    std::unordered_map<TNode, int, TNodeHashFunction> visited;
+    std::unordered_set<TNode, TNodeHashFunction>::iterator it;
+    std::vector<std::pair<TNode, int > > visit;
+    TNode cur;
+    int cur_pol;
+    visit.push_back( std::pair<TNode, int >(body,true) );
+    do {
+      std::pair<TNode, int > pcur = visit.back();
+      visit.pop_back();
+      cur = pcur.first;
+      cur_pol = pcur.second;
+      bool recurse = false;
+      if (visited.find(cur) == visited.end() ){
+        visited[cur] = cur_pol;
+        recurse = true;
+      }else if( visited[cur]!=cur_pol && visited[cur]!=0) {
+        visited[cur] = 0;
+        recurse = true;
+      }
+      if( recurse ){
+        if( cur.getKind()==FORALL ){
+          visit.push_back(std::pair<TNode,int>(cur[1],cur_pol));
+        }else if( cur.getKind()!=NOT && ( cur.getKind()==EQUAL || isLiteral(cur) ) ){
+          if( visited[cur]==0 ){
+            Trace("velim-agg") << "  No polarity literal : " << cur << std::endl;
+            // variables in this are ineligible
+            computeArgs( args, var_inelig, cur, vi_visited );
+          }else{
+            Trace("velim-agg") << "  Polarity literal : " << cur << " : " << cur_pol << std::endl;
+            std::map< Node, bool > var_elig_tmp;
+            std::map< Node, bool > ve_visited;
+            computeArgs( args, var_elig_tmp, cur, ve_visited );
+            for( std::pair< const Node, bool >& p : var_elig_tmp )
+            {
+              Node v = p.first;
+              if( var_elig.find( v )==var_elig.end() )
+              {
+                Trace("velim-agg") << "  now eligible : " << v << std::endl;
+                var_elig[v] = true;
+              }
+              else
+              {
+                Trace("velim-agg") << "  now ineligible : " << v << std::endl;
+                var_inelig[v] = true;
+              }
+            }
+          }
+        }else{
+          bool hasPol = cur_pol!=0;
+          bool pol = cur_pol==1;
+          for (unsigned i=0,size=cur.getNumChildren(); i<size; i++ ){
+            bool newHasPol, newPol;
+            QuantPhaseReq::getPolarity(cur,i,hasPol,pol,newHasPol,newPol);
+            int new_index = newHasPol ? ( newPol ? 1 : -1 ) : 0;
+            visit.push_back(std::pair<TNode,int>(cur[i], new_index));
+          }
+        }
+      }
+    } while (!visit.empty() && var_inelig.size()<args.size());
+    
+    if( var_inelig.size()<args.size() )
+    {
+      elig_args.clear();
+      for( std::pair<const Node, bool >& p : var_elig )
+      {
+        if( var_inelig.find( p.first )==var_inelig.end() ){
+          Trace("velim-agg") << p.first << " is eligible for elimination..." << std::endl;
+          elig_args.push_back( p.first );
+        }
+      }
+      
+      for( std::pair<const TNode, int>& p : visited )
+      {
+        if( p.second!=0 )
+        {
+          Node lit = p.first;
+          if( lit.getKind()!=FORALL && lit.getKind()!=NOT && ( lit.getKind()==EQUAL || isLiteral(lit) ) ){
+            bool pol = (p.second==1);
+            Trace("velim-agg") << "Check polarity literal : " << lit << " : " << pol << std::endl;
+            std::map< Node, std::map< bool, std::map< Node, bool > > > num_bounds;
+            if( computeVariableElimLit( lit, !pol, args, elig_args, vars, subs, num_bounds ) ){
+              break;
+            }
+          }
+        }
+      }
+    }
+  }
+  if( !vars.empty() ){
+    Trace("var-elim-quant-debug") << "VE " << vars.size() << "/" << args.size() << std::endl;
+    //remake with eliminated nodes
+    body = body.substitute( vars.begin(), vars.end(), subs.begin(), subs.end() );
+    body = Rewriter::rewrite( body );
+    if( !qa.d_ipl.isNull() ){
+      qa.d_ipl = qa.d_ipl.substitute( vars.begin(), vars.end(), subs.begin(), subs.end() );
+    }
+    Trace("var-elim-quant") << "Return " << body << std::endl;
   }
   return body;
 }
