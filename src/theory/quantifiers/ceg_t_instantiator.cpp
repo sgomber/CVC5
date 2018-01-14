@@ -994,7 +994,7 @@ void BvInstantiator::processLiteral(CegInstantiator* ci,
     if (!inst.isNull())
     {
       inst = Rewriter::rewrite(inst);
-      if ( inst.isConst() || !ci->hasNestedQuantification())
+      if (inst.isConst() || !ci->hasNestedQuantification())
       {
         Trace("cegqi-bv") << "...solved form is " << inst << std::endl;
         // store information for id and increment
@@ -1025,94 +1025,82 @@ Node BvInstantiator::hasProcessAssertion(CegInstantiator* ci,
   Node atom = lit.getKind() == NOT ? lit[0] : lit;
   bool pol = lit.getKind() != NOT;
   Kind k = atom.getKind();
-  if (pol && k == EQUAL)
+  if (k != EQUAL && k != BITVECTOR_ULT && k != BITVECTOR_SLT)
   {
-    // positively asserted equalities between bitvector terms we always leave
-    // unmodified
-    if (atom[0].getType().isBitVector()) {
-      return lit;
-    }
+    // others are unhandled
+    return Node::null();
   }
-  else if (options::cbqiBvIneqMode() == CBQI_BV_INEQ_KEEP)
+  else if (!atom[0].getType().isBitVector())
   {
-    // if option is set, disequalities and inequalities we leave unmodified
-    if ((k == EQUAL && atom[0].getType().isBitVector()) || k == BITVECTOR_ULT
-        || k == BITVECTOR_SLT)
-    {
-      return lit;
-    }
-  } else {    
-    if (k != EQUAL && k !=BITVECTOR_ULT && k !=BITVECTOR_SLT ){
-      // others are unhandled
-      return Node::null();
-    }else if (!atom[0].getType().isBitVector())
-    {
-      return Node::null();
-    }
+    return Node::null();
+  }
+  else if (options::cbqiBvIneqMode() == CBQI_BV_INEQ_KEEP
+           || (pol && k == EQUAL))
+  {
+    return lit;
+  }
+  NodeManager* nm = NodeManager::currentNM();
+  Node s = atom[0];
+  Node t = atom[1];
 
-    NodeManager* nm = NodeManager::currentNM();
-    Node s = atom[0];
-    Node t = atom[1];
-    
-    Node sm = ci->getModelValue(s);
-    Node tm = ci->getModelValue(t);
-    Assert(!sm.isNull() && sm.isConst());
-    Assert(!tm.isNull() && tm.isConst());
-    Trace("cegqi-bv") << "Model value: " << std::endl;
-    Trace("cegqi-bv") << "   " << s << " " << k << " " << t << " is " << std::endl;
-    Trace("cegqi-bv") << "   " << sm << " <> " << tm << std::endl;
+  Node sm = ci->getModelValue(s);
+  Node tm = ci->getModelValue(t);
+  Assert(!sm.isNull() && sm.isConst());
+  Assert(!tm.isNull() && tm.isConst());
+  Trace("cegqi-bv") << "Model value: " << std::endl;
+  Trace("cegqi-bv") << "   " << s << " " << k << " " << t << " is "
+                    << std::endl;
+  Trace("cegqi-bv") << "   " << sm << " <> " << tm << std::endl;
 
-    Node ret;
-    if (options::cbqiBvIneqMode() == CBQI_BV_INEQ_EQ_SLACK) {
-      // if using slack, we convert constraints to a positive equality based on
-      // the current model M, e.g.:
-      //   (not) s ~ t  --->  s = t + ( s^M - t^M )
-      if (sm != tm) {
-        Node slack =
-            Rewriter::rewrite(nm->mkNode(BITVECTOR_SUB, sm, tm));
-        Assert(slack.isConst());
-        // remember the slack value for the asserted literal
-        d_alit_to_model_slack[lit] = slack;
-        ret = nm->mkNode(EQUAL, s,
-                          nm->mkNode(BITVECTOR_PLUS, t, slack));
-        Trace("cegqi-bv") << "Slack is " << slack << std::endl;
-      } else {
-        ret = s.eqNode(t);
-      }
-    } else {
-      // turn disequality into an inequality
-      // e.g. s != t becomes s < t
-      if( k==EQUAL )
+  Node ret;
+  if (options::cbqiBvIneqMode() == CBQI_BV_INEQ_EQ_SLACK)
+  {
+    // if using slack, we convert constraints to a positive equality based on
+    // the current model M, e.g.:
+    //   (not) s ~ t  --->  s = t + ( s^M - t^M )
+    if (sm != tm)
+    {
+      Node slack = Rewriter::rewrite(nm->mkNode(BITVECTOR_SUB, sm, tm));
+      Assert(slack.isConst());
+      // remember the slack value for the asserted literal
+      d_alit_to_model_slack[lit] = slack;
+      ret = nm->mkNode(EQUAL, s, nm->mkNode(BITVECTOR_PLUS, t, slack));
+      Trace("cegqi-bv") << "Slack is " << slack << std::endl;
+    }
+    else
+    {
+      ret = s.eqNode(t);
+    }
+  } else {
+    // turn disequality into an inequality
+    // e.g. s != t becomes s < t or t < s
+    if (k == EQUAL)
+    {
+      if (Random::getRandom().pickWithProb(0.5))
       {
-        Node comp = nm->mkNode( BITVECTOR_ULT, sm, tm );
-        comp = Rewriter::rewrite( comp );
-        k = BITVECTOR_ULT;
-        // go in the direction of the model
-        if( !comp.getConst<bool>() ){
-          std::swap(s,t);
-        }
-        pol = true;
-      }      
-      // otherwise, we optimistically solve for the boundary point of an 
-      // inequality, for example:
-      //   for s < t, we solve s+1 = t
-      //   for ~( s < t ), we solve s = t
-      // notice that this equality does not necessarily hold in the model, and
-      // hence the corresponding instantiation strategy is not guaranteed to be
-      // monotonic.
-      if (!pol) {
-        ret = s.eqNode(t);
-      } else {
-        unsigned one = 1;
-        BitVector bval(s.getType().getConst<BitVectorSize>(), one);
-        Node bv_one = nm->mkConst<BitVector>(bval);
-        ret = nm->mkNode(BITVECTOR_PLUS, s, bv_one).eqNode(t);
+        std::swap(s, t);
       }
+      pol = true;
+    }
+    // otherwise, we optimistically solve for the boundary point of an
+    // inequality, for example:
+    //   for s < t, we solve s+1 = t
+    //   for ~( s < t ), we solve s = t
+    // notice that this equality does not necessarily hold in the model, and
+    // hence the corresponding instantiation strategy is not guaranteed to be
+    // monotonic.
+    if (!pol)
+    {
+      ret = s.eqNode(t);
+    } else {
+      Node bv_one = bv::utils::mkOne(bv::utils::getSize(s));
+      ret = nm->mkNode(BITVECTOR_PLUS, s, bv_one).eqNode(t);
     }
     Trace("cegqi-bv") << "Process " << lit << " as " << ret << std::endl;
     return ret;
   }
-  return Node::null();
+  Trace("cegqi-bv") << "Process " << lit << " as " << ret << std::endl;
+  return ret;
 }
 
 bool BvInstantiator::processAssertion(CegInstantiator* ci,
@@ -1133,7 +1121,8 @@ bool BvInstantiator::processAssertion(CegInstantiator* ci,
         Trace("cegqi-bv") << "...rewritten to " << rlit << std::endl;
       }
     }
-    if( !rlit.isNull() ){
+    if (!rlit.isNull())
+    {
       processLiteral(ci, sf, pv, rlit, alit, effort);
     }
   }
@@ -1180,9 +1169,10 @@ bool BvInstantiator::processAssertions(CegInstantiator* ci,
       // we may find an invertible literal that leads to a useful instantiation.
       std::random_shuffle(iti->second.begin(), iti->second.end());
 
-      if (Trace.isOn("cegqi-bv")) 
+      if (Trace.isOn("cegqi-bv"))
       {
-        for (unsigned j = 0, size = iti->second.size(); j<size; j++) {
+        for (unsigned j = 0, size = iti->second.size(); j < size; j++)
+        {
           unsigned inst_id = iti->second[j];
           Assert(d_inst_id_to_term.find(inst_id) != d_inst_id_to_term.end());
           Node inst_term = d_inst_id_to_term[inst_id];
@@ -1193,7 +1183,8 @@ bool BvInstantiator::processAssertions(CegInstantiator* ci,
           Node curr_slack_val;
           std::unordered_map<Node, Node, NodeHashFunction>::iterator itms =
               d_alit_to_model_slack.find(alit);
-          if (itms != d_alit_to_model_slack.end()) {
+          if (itms != d_alit_to_model_slack.end())
+          {
             curr_slack_val = itms->second;
           }
 
@@ -1210,13 +1201,14 @@ bool BvInstantiator::processAssertions(CegInstantiator* ci,
       }
 
       // Now, try all instantiation ids we want to try
-      // Typically size( inst_ids_try )<=1, otherwise worst-case performance
+      // Typically we try only one, otherwise worst-case performance
       // for constructing instantiations is exponential on the number of
       // variables in this quantifier prefix.
       bool ret = false;
       bool tryMultipleInst = firstVar && options::cbqiMultiInst();
       bool revertOnSuccess = tryMultipleInst;
-      for (unsigned j = 0, size = iti->second.size(); j<size; j++) {
+      for (unsigned j = 0, size = iti->second.size(); j < size; j++)
+      {
         unsigned inst_id = iti->second[j];
         Assert(d_inst_id_to_term.find(inst_id) != d_inst_id_to_term.end());
         Node inst_term = d_inst_id_to_term[inst_id];
@@ -1464,7 +1456,8 @@ static Node getPvCoeff(TNode pv, TNode n)
  *  pv * -(a * b * c)
  *
  * Returns the normalized node if the resulting term is linear w.r.t. pv and
- * a null node otherwise.
+ * a null node otherwise. If pv does not occur in children it returns a
+ * multiplication over children.
  */
 static Node normalizePvMult(
     TNode pv,
@@ -1526,13 +1519,21 @@ static Node normalizePvMult(
   {
     return zero;
   }
-  else if (coeff == bv::utils::mkOne(size_coeff))
+  Node result;
+  if (found_pv)
   {
-    return pv;
+    if (coeff == bv::utils::mkOne(size_coeff))
+    {
+      return pv;
+    }
+    result = nm->mkNode(BITVECTOR_MULT, pv, coeff);
+    contains_pv[result] = true;
+    result.setAttribute(is_linear, true);
   }
-  Node result = nm->mkNode(BITVECTOR_MULT, pv, coeff);
-  contains_pv[result] = true;
-  result.setAttribute(is_linear, true);
+  else
+  {
+    result = coeff;
+  }
   return result;
 }
 
@@ -1572,7 +1573,8 @@ static bool isLinearPlus(
  *  pv * (a - c) + b
  *
  * Returns the normalized node if the resulting term is linear w.r.t. pv and
- * a null node otherwise.
+ * a null node otherwise. If pv does not occur in children it returns an
+ * addition over children.
  */
 static Node normalizePvPlus(
     Node pv,
@@ -1617,6 +1619,7 @@ static Node normalizePvPlus(
     {
       Assert(isLinearPlus(nc, pv, contains_pv));
       Node coeff = getPvCoeff(pv, nc[0]);
+      Assert(!coeff.isNull());
       Node leaf = nc[1];
       if (neg)
       {
@@ -1630,22 +1633,23 @@ static Node normalizePvPlus(
     /* can't collect coefficients of 'pv' in 'cur' -> non-linear */
     return Node::null();
   }
-  Assert(nb_c.getNumChildren() > 0);
+  Assert(nb_c.getNumChildren() > 0 || nb_l.getNumChildren() > 0);
 
-  Node coeffs = (nb_c.getNumChildren() == 1) ? nb_c[0] : nb_c.constructNode();
-  coeffs = Rewriter::rewrite(coeffs);
-
-  std::vector<Node> mult_children = {pv, coeffs};
-  Node pv_mult_coeffs = normalizePvMult(pv, mult_children, contains_pv);
+  Node pv_mult_coeffs, result;
+  if (nb_c.getNumChildren() > 0)
+  {
+    Node coeffs = (nb_c.getNumChildren() == 1) ? nb_c[0] : nb_c.constructNode();
+    coeffs = Rewriter::rewrite(coeffs);
+    result = pv_mult_coeffs = normalizePvMult(pv, {pv, coeffs}, contains_pv);
+  }
 
   if (nb_l.getNumChildren() > 0)
   {
     Node leafs = (nb_l.getNumChildren() == 1) ? nb_l[0] : nb_l.constructNode();
     leafs = Rewriter::rewrite(leafs);
     Node zero = bv::utils::mkZero(bv::utils::getSize(pv));
-    Node result;
     /* pv * 0 + t --> t */
-    if (pv_mult_coeffs == zero)
+    if (pv_mult_coeffs.isNull() || pv_mult_coeffs == zero)
     {
       result = leafs;
     }
@@ -1655,9 +1659,9 @@ static Node normalizePvPlus(
       contains_pv[result] = true;
       result.setAttribute(is_linear, true);
     }
-    return result;
   }
-  return pv_mult_coeffs;
+  Assert(!result.isNull());
+  return result;
 }
 
 /**
