@@ -86,7 +86,46 @@ class TermRecBuild
   void addTerm(Node n);
 };
 
-/*The SygusExplain utility
+
+/** Virtual sygus term 
+ * 
+ * This class is a trie that represents the shape of a sygus term, as specified
+ * by a list of tester predicates.
+ */
+class VirtualSygusTerm
+{
+public:
+  VirtualSygusTerm() : d_cindex(-1){}
+  /** add the tester tst to this trie */
+  void addTester(TermDbSygus* tdb, TypeNode tn, Node tst);
+  /** build the node corresponding to this node in the trie 
+   * 
+   * 
+   */
+  Node build(TermDbSygus* tdb, TypeNode tn, std::map<TypeNode,int>& var_count, std::map< Node, std::vector< VirtualSygusTerm * > >& subterms);
+  /** same as above, but without var_count or subterms */
+  Node build(TermDbSygus* tdb, TypeNode tn);
+  /** set build term */
+  void setBuildTerm( Node t ) { d_build_term = t; }
+  /** clear build term */
+  void clearBuildTerm() { d_build_term = Node::null(); }
+private:
+  /** build term 
+   * 
+   * If this node is non-null, then calls to build(...) for this node return
+   * this node. This is used for custom construction of nodes using this class,
+   * where the subterm at a particular location may be modified.
+   */
+  Node d_build_term;
+  /** 
+   * The constructor index of this node in the trie, or -1 if none specified.
+   */
+  int d_cindex;
+  /** The children of this node of the trie */
+  std::map< unsigned, VirtualSygusTerm > d_children;
+};
+
+/** The SygusExplain utility
  *
  * This class is used to produce explanations for refinement lemmas
  * in the counterexample-guided inductive synthesis (CEGIS) loop.

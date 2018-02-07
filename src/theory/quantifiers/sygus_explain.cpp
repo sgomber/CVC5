@@ -110,6 +110,83 @@ Node TermRecBuild::build(unsigned d)
   return NodeManager::currentNM()->mkNode(d_kind[d], children);
 }
 
+
+void VirtualSygusTerm::addTester(TermDbSygus* tdb, TypeNode tn, Node tst )
+{
+  Node a;
+  int cindex = datatypes::DatatypesRewriter::isTester( tst, a );
+  Assert( cindex!=-1 );
+  
+  std::vector< Node > chain;
+  while( a.getKind()==APPLY_SELECTOR_TOTAL )
+  {
+    chain.push_back( a );
+    a = a[0];
+  }
+  std::reverse( chain.begin(), chain.end() );
+  
+  VirtualSygusTerm * curr = this;
+  for( const Node& sel : chain )
+  {
+    Expr selExpr = sel.getOperator().toExpr();
+    const Datatype& dt = Datatype::datatypeOf(selExpr);
+    Assert( curr->d_cindex>=0 );
+    const DatatypeConstructor& dtc = dt[curr->d_cindex];
+    int selectorIndex = dtc.getSelectorIndexInternal(selExpr);
+    Assert( selectorIndex>=0 );
+    curr = &(curr->d_children[selectorIndex]);
+  }
+  curr->d_cindex = cindex;
+}
+
+void VirtualSygusTerm::setTerm(TermDbSygus* tdb, Node n)
+{
+  if( n.getKind()==APPLY_CONSTRUCTOR )
+  {
+
+  }
+  else
+  {
+    d_build_term = n;
+  }
+}
+
+Node VirtualSygusTerm::build(TermDbSygus* tdb, TypeNode tn)
+{
+  std::map<TypeNode, int> var_count;
+  std::map< Node, std::vector< VirtualSygusTerm * > > subterms;
+  return build(tdb,tn,var_count, subterms);
+}
+
+Node VirtualSygusTerm::build(TermDbSygus* tdb, TypeNode tn, std::map<TypeNode,int>& var_count, std::map< Node, std::vector< VirtualSygusTerm * > >& subterms)
+{
+  Assert( tn.isDatatype() );
+  Node ret;
+  if( !d_build_term.isNull() )
+  {
+    ret = d_build_term;
+  }
+  else if( d_cindex==-1 )
+  {
+    ret = tdb->getFreeVarInc(tn,var_count);
+  }
+  else
+  {
+    const Datatype& dt = static_cast<DatatypeType>(tn.toType()).getDatatype();
+    Assert( d_cindex<(int)dt.getNumConstructors() );
+    const DatatypeConstructor& dtc = dt[d_cindex];
+    std::map< int, Node > pre;
+    for( std::map< unsigned, VirtualSygusTerm >::iterator it = d_children.begin(); it != d_children.end(); ++it )
+    {
+      TypeNode ctn = tdb->getArgType( dtc, it->first );
+      pre[it->first] = it->second.build(tdb,ctn,var_count, subterms);
+    }
+    ret = tdb->mkGeneric(dt,d_cindex,var_count,pre);
+  }
+  subterms[ret].push_back( this );
+  return ret;
+}
+
 void SygusExplain::getExplanationForConstantEquality(Node n,
                                                      Node vn,
                                                      std::vector<Node>& exp)
@@ -273,6 +350,22 @@ void SygusExplain::getExplanationFor(Node n,
   Node vnr_exp;
   int sz_use = sz;
   getExplanationFor(trb, n, vn, exp, var_count, et, vnr, vnr_exp, sz_use);
+  
+  
+  Trace("ajr-temp") << "Get explanation for " << n << " == " << vn << " returned: " << std::endl;
+  TypeNode tn = n.getType();
+  VirtualSygusTerm vst;
+  for( const Node& e : exp )
+  {
+    Trace("ajr-temp") << "  " << e << std::endl;
+    vst.addTester( d_tdb, tn, e );
+  }
+  var_count.clear();
+  std::map< Node, std::vector< VirtualSygusTerm * > > subterms;
+  Node vsb = vst.build( d_tdb, tn, var_count, subterms );
+  Trace("ajr-temp") << "Virtual sygus term built : " << vsb << std::endl;
+  
+  
   Assert(sz_use >= 0);
   sz = sz_use;
   Assert(vnr.isNull() || !vnr_exp.isNull());
