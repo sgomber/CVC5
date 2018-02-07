@@ -111,7 +111,7 @@ Node TermRecBuild::build(unsigned d)
 }
 
 
-void VirtualSygusTerm::addTester(TermDbSygus* tdb, TypeNode tn, Node tst )
+VirtualSygusTerm * VirtualSygusTerm::addTester(TermDbSygus* tdb, TypeNode tn, Node tst )
 {
   Node a;
   int cindex = datatypes::DatatypesRewriter::isTester( tst, a );
@@ -137,18 +137,33 @@ void VirtualSygusTerm::addTester(TermDbSygus* tdb, TypeNode tn, Node tst )
     curr = &(curr->d_children[selectorIndex]);
   }
   curr->d_cindex = cindex;
+  return curr;
 }
 
 void VirtualSygusTerm::setTerm(TermDbSygus* tdb, Node n)
 {
   if( n.getKind()==APPLY_CONSTRUCTOR )
   {
-
+    d_build_term = Node::null();
+    d_children.clear();
+    Node constructor = n.getOperator();
+    d_cindex = Datatype::indexOf(constructor.toExpr());
+    for( unsigned i=0,size=n.getNumChildren(); i<size; i++ )
+    {
+      d_children[i].setTerm(tdb,n[i]);
+    }
   }
   else
   {
     d_build_term = n;
   }
+}
+
+void VirtualSygusTerm::clear()
+{
+  d_build_term = Node::null();
+  d_cindex = -1;
+  d_children.clear();
 }
 
 Node VirtualSygusTerm::build(TermDbSygus* tdb, TypeNode tn)
@@ -160,6 +175,7 @@ Node VirtualSygusTerm::build(TermDbSygus* tdb, TypeNode tn)
 
 Node VirtualSygusTerm::build(TermDbSygus* tdb, TypeNode tn, std::map<TypeNode,int>& var_count, std::map< Node, std::vector< VirtualSygusTerm * > >& subterms)
 {
+  Trace("ajr-temp") << "...compute for " << tn << std::endl;
   Assert( tn.isDatatype() );
   Node ret;
   if( !d_build_term.isNull() )
@@ -168,21 +184,36 @@ Node VirtualSygusTerm::build(TermDbSygus* tdb, TypeNode tn, std::map<TypeNode,in
   }
   else if( d_cindex==-1 )
   {
-    ret = tdb->getFreeVarInc(tn,var_count);
+    ret = tdb->getFreeVarInc(tn,var_count, true);
   }
   else
   {
     const Datatype& dt = static_cast<DatatypeType>(tn.toType()).getDatatype();
     Assert( d_cindex<(int)dt.getNumConstructors() );
     const DatatypeConstructor& dtc = dt[d_cindex];
-    std::map< int, Node > pre;
-    for( std::map< unsigned, VirtualSygusTerm >::iterator it = d_children.begin(); it != d_children.end(); ++it )
+    Trace("ajr-temp") << "...constructor " << dtc << std::endl;
+    std::vector< Node > children;
+    children.push_back( Node::fromExpr(dtc.getConstructor()) );
+    for( unsigned i=0, nargs=dtc.getNumArgs(); i<nargs; i++ )
     {
-      TypeNode ctn = tdb->getArgType( dtc, it->first );
-      pre[it->first] = it->second.build(tdb,ctn,var_count, subterms);
+      TypeNode ctn = tdb->getArgType( dtc, i );
+      Node c;
+      std::map< unsigned, VirtualSygusTerm >::iterator itc = d_children.find(i);
+      if( itc != d_children.end() )
+      {
+        c = itc->second.build(tdb, ctn, var_count, subterms );
+      }
+      else
+      {
+        c = tdb->getFreeVarInc(ctn,var_count, true);
+      }
+      Assert( !c.isNull() );
+      Assert( c.getType()==ctn );
+      children.push_back( c );
     }
-    ret = tdb->mkGeneric(dt,d_cindex,var_count,pre);
+    ret = NodeManager::currentNM()->mkNode( APPLY_CONSTRUCTOR, children );
   }
+  Trace("ajr-temp") << "...return " << ret << std::endl;
   subterms[ret].push_back( this );
   return ret;
 }
@@ -286,7 +317,7 @@ void SygusExplain::getExplanationFor(TermRecBuild& trb,
   // if the operator of vn is different than vnr, then disunification obligation
   // is met
   if (!vnr.isNull())
-  {
+  {useSygusType
     if (vnr.getOperator() != vn.getOperator())
     {
       vnr = Node::null();
@@ -352,19 +383,34 @@ void SygusExplain::getExplanationFor(Node n,
   getExplanationFor(trb, n, vn, exp, var_count, et, vnr, vnr_exp, sz_use);
   
   
-  Trace("ajr-temp") << "Get explanation for " << n << " == " << vn << " returned: " << std::endl;
+  Trace("sygus-eq-gen") << "Get explanation for " << n << " == " << vn << " returned: " << std::endl;
   TypeNode tn = n.getType();
   VirtualSygusTerm vst;
+  // map from virtual sygus terms to their explanations (tester applied to 
+  // selector chain)
+  std::map< VirtualSygusTerm *, Node > vst_exp;
   for( const Node& e : exp )
   {
-    Trace("ajr-temp") << "  " << e << std::endl;
-    vst.addTester( d_tdb, tn, e );
+    Trace("sygus-eq-gen") << "  " << e << std::endl;
+    VirtualSygusTerm * vsg = vst.addTester( d_tdb, tn, e );
+    vst_exp[vsg] = e;
+    Trace("sygus-eq-gen") << "  ...returned " << vsg << std::endl;
   }
   var_count.clear();
+  /*
   std::map< Node, std::vector< VirtualSygusTerm * > > subterms;
+  Trace("sygus-eq-gen") << "Build virtual sygus term..." << std::endl;
   Node vsb = vst.build( d_tdb, tn, var_count, subterms );
-  Trace("ajr-temp") << "Virtual sygus term built : " << vsb << std::endl;
-  
+  Trace("sygus-eq-gen") << "Virtual sygus term built : " << vsb << std::endl;
+  for( const std::pair< Node, std::vector< VirtualSygusTerm * > >& st : subterms )
+  {
+    if( st.second.size()>1 )
+    {
+      Node t = st.first;
+      Trace("sygus-eq-gen") << "..." << st.second.size() << " subterms for " << t << std::endl;
+    }
+  }
+  */
   
   Assert(sz_use >= 0);
   sz = sz_use;

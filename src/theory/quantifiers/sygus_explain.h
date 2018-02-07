@@ -89,15 +89,20 @@ class TermRecBuild
 
 /** Virtual sygus term 
  * 
- * This class is a trie that represents the shape of a sygus term, as specified
- * by a list of tester predicates.
+ * This class is a trie that represents the shape of a sygus term. This is
+ * specified by a list of tester predicates applied to selector chains, via
+ * calls to addTester, or by a call to setTerm.
  */
 class VirtualSygusTerm
 {
 public:
   VirtualSygusTerm() : d_cindex(-1){}
   /** add the tester tst to this trie */
-  void addTester(TermDbSygus* tdb, TypeNode tn, Node tst);
+  VirtualSygusTerm * addTester(TermDbSygus* tdb, TypeNode tn, Node tst);
+  /** set term */
+  void setTerm(TermDbSygus* tdb, Node n);
+  /** clear */
+  void clear();
   /** build the node corresponding to this node in the trie 
    * 
    * 
@@ -105,10 +110,6 @@ public:
   Node build(TermDbSygus* tdb, TypeNode tn, std::map<TypeNode,int>& var_count, std::map< Node, std::vector< VirtualSygusTerm * > >& subterms);
   /** same as above, but without var_count or subterms */
   Node build(TermDbSygus* tdb, TypeNode tn);
-  /** set build term */
-  void setBuildTerm( Node t ) { d_build_term = t; }
-  /** clear build term */
-  void clearBuildTerm() { d_build_term = Node::null(); }
 private:
   /** build term 
    * 
@@ -124,6 +125,7 @@ private:
   /** The children of this node of the trie */
   std::map< unsigned, VirtualSygusTerm > d_children;
 };
+
 
 /** The SygusExplain utility
  *
