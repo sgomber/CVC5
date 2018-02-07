@@ -97,12 +97,14 @@ class VirtualSygusTerm
 {
 public:
   VirtualSygusTerm() : d_cindex(-1){}
+  /** clear */
+  void clear();
   /** add the tester tst to this trie */
   VirtualSygusTerm * addTester(TermDbSygus* tdb, TypeNode tn, Node tst);
   /** set term */
   void setTerm(TermDbSygus* tdb, Node n);
-  /** clear */
-  void clear();
+  /** clear term */
+  void clearTerm();
   /** build the node corresponding to this node in the trie 
    * 
    * 
@@ -110,6 +112,8 @@ public:
   Node build(TermDbSygus* tdb, TypeNode tn, std::map<TypeNode,int>& var_count, std::map< Node, std::vector< VirtualSygusTerm * > >& subterms);
   /** same as above, but without var_count or subterms */
   Node build(TermDbSygus* tdb, TypeNode tn);
+  /** get subterms */
+  void getSubterms( std::vector< VirtualSygusTerm * >& subterms );
 private:
   /** build term 
    * 
