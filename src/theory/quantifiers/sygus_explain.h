@@ -90,7 +90,7 @@ class TermRecBuild
  *
  * This class is a trie that represents the shape of a sygus term. This is
  * specified by a list of tester predicates applied to selector chains, via
- * calls to addTester or by calls to setTerm. Its main functionality is to 
+ * calls to addTester or by calls to setTerm. Its main functionality is to
  * built terms of sygus datatype type via calls to build(...).
  */
 class VirtualSygusTerm
@@ -99,12 +99,12 @@ class VirtualSygusTerm
   VirtualSygusTerm() : d_cindex(-1) {}
   /** clear this data structure */
   void clear();
-  /** add the tester tst to this trie 
-   * 
+  /** add the tester tst to this trie
+   *
    * Given a tester applied to a selector chain tst = is-Ck( s1( ... sn( x ) ),
    * where tn is the type of x, this sets the d_cindex of node on the path
    *   cindex_n, ..., cindex_1
-   * where cindex_j is the index of selector sj to k. Notice that a tester of 
+   * where cindex_j is the index of selector sj to k. Notice that a tester of
    * the above form should only be added if a tester is-Ck'( s2( ... sn( x ) )
    * was already added to this trie.
    */
@@ -113,7 +113,7 @@ class VirtualSygusTerm
   void setTerm(TermDbSygus* tdb, Node n);
   /** clear term */
   void clearTerm();
-  /** build 
+  /** build
    *
    * This constructs the term corresponding to this node in the trie.
    * In particular, if d_build_term is not null, it returns that term.
@@ -129,8 +129,8 @@ class VirtualSygusTerm
              std::map<Node, std::vector<VirtualSygusTerm*> >& subterms);
   /** same as above, but without var_count or subterms */
   Node build(TermDbSygus* tdb, TypeNode tn);
-  /** get subterms 
-   * 
+  /** get subterms
+   *
    * Returns all trie nodes that are subterms of this node, stores them in
    * subterms.
    */
