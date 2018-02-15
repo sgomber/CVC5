@@ -59,7 +59,8 @@ TheoryModel::TheoryModel(theory::eq::EqualityEngineNotify* notify,
   d_eeContext->push();
 }
 
-TheoryModel::~TheoryModel() throw() {
+TheoryModel::~TheoryModel()
+{
   d_eeContext->pop();
   delete d_equalityEngine;
   delete d_eeContext;

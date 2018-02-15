@@ -40,7 +40,7 @@
 #include "theory/care_graph.h"
 #include "theory/ite_utilities.h"
 #include "theory/quantifiers/first_order_model.h"
-#include "theory/quantifiers/model_engine.h"
+#include "theory/quantifiers/fmf/model_engine.h"
 #include "theory/quantifiers/theory_quantifiers.h"
 #include "theory/quantifiers_engine.h"
 #include "theory/rewriter.h"
@@ -457,10 +457,7 @@ TheoryEngine::~TheoryEngine() {
   smtStatisticsRegistry()->unregisterStat(&d_arithSubstitutionsAdded);
 }
 
-void TheoryEngine::interrupt() throw(ModalException) {
-  d_interrupted = true;
-}
-
+void TheoryEngine::interrupt() { d_interrupted = true; }
 void TheoryEngine::preRegister(TNode preprocessed) {
 
   Debug("theory") << "TheoryEngine::preRegister( " << preprocessed << ")" << std::endl;
@@ -1445,6 +1442,11 @@ theory::eq::EqualityEngineNotify* TheoryEngine::getModelNotify()
   {
     return nullptr;
   }
+}
+
+void TheoryEngine::getSynthSolutions(std::map<Node, Node>& sol_map)
+{
+  d_quantEngine->getSynthSolutions(sol_map);
 }
 
 bool TheoryEngine::presolve() {
@@ -2862,8 +2864,9 @@ std::pair<bool, Node> TheoryEngine::entailmentCheck(theory::TheoryOfMode mode, T
   }
 }
 
-void TheoryEngine::spendResource(unsigned ammount) {
-  d_resourceManager->spendResource(ammount);
+void TheoryEngine::spendResource(unsigned amount)
+{
+  d_resourceManager->spendResource(amount);
 }
 
 void TheoryEngine::enableTheoryAlternative(const std::string& name){

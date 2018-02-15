@@ -13,6 +13,8 @@ UNIT_TESTS += \
 	theory/theory_arith_white \
 	theory/theory_bv_white \
 	theory/theory_bv_bvgauss_white \
+	theory/theory_quantifiers_bv_instantiator_white \
+	theory/theory_quantifiers_bv_inverter_white \
 	theory/type_enumerator_white \
 	expr/node_white \
 	expr/node_black \
@@ -39,6 +41,7 @@ UNIT_TESTS += \
 	context/cdvector_black \
 	util/array_store_all_black \
 	util/assert_white \
+	util/check_white \
 	util/binary_heap_black \
 	util/bitvector_black \
 	util/datatype_black \

@@ -15,10 +15,10 @@
 #include "theory/quantifiers/first_order_model.h"
 #include "options/base_options.h"
 #include "options/quantifiers_options.h"
-#include "theory/quantifiers/ambqi_builder.h"
-#include "theory/quantifiers/bounded_integers.h"
-#include "theory/quantifiers/full_model_check.h"
-#include "theory/quantifiers/model_engine.h"
+#include "theory/quantifiers/fmf/ambqi_builder.h"
+#include "theory/quantifiers/fmf/bounded_integers.h"
+#include "theory/quantifiers/fmf/full_model_check.h"
+#include "theory/quantifiers/fmf/model_engine.h"
 #include "theory/quantifiers/quantifiers_attributes.h"
 #include "theory/quantifiers/term_database.h"
 #include "theory/quantifiers/term_enumeration.h"
@@ -843,7 +843,8 @@ FirstOrderModelFmc::FirstOrderModelFmc(QuantifiersEngine* qe,
 {
 }
 
-FirstOrderModelFmc::~FirstOrderModelFmc() throw() {
+FirstOrderModelFmc::~FirstOrderModelFmc()
+{
   for(std::map<Node, Def*>::iterator i = d_models.begin(); i != d_models.end(); ++i) {
     delete (*i).second;
   }
@@ -1012,7 +1013,8 @@ FirstOrderModelAbs::FirstOrderModelAbs(QuantifiersEngine* qe,
 {
 }
 
-FirstOrderModelAbs::~FirstOrderModelAbs() throw() {
+FirstOrderModelAbs::~FirstOrderModelAbs()
+{
   for(std::map<Node, AbsDef*>::iterator i = d_models.begin(); i != d_models.end(); ++i) {
     delete (*i).second;
   }

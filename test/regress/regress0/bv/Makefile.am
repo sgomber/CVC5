@@ -103,7 +103,10 @@ SMT_TESTS = \
 	bv-int-collapse2.smt2 \
 	bv-int-collapse2-sat.smt2 \
 	divtest_2_5.smt2 \
-	divtest_2_6.smt2
+	divtest_2_6.smt2 \
+	mul-neg-unsat.smt2 \
+	mul-negpow2.smt2 \
+	bvmul-pow2-only.smt2
 
 # This benchmark is currently disabled as it uses --check-proof
 # bench_38.delta.smt2

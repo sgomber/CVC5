@@ -471,10 +471,9 @@ public:
   /** Destroys a theory engine */
   ~TheoryEngine();
 
-  void interrupt() throw(ModalException);
-  /**
-   * "Spend" a resource during a search or preprocessing.
-   */
+  void interrupt();
+
+  /** "Spend" a resource during a search or preprocessing.*/
   void spendResource(unsigned amount);
 
   /**
@@ -747,6 +746,17 @@ public:
    * Get the current model
    */
   theory::TheoryModel* getModel();
+
+  /** get synth solutions
+   *
+   * This function adds entries to sol_map that map functions-to-synthesize with
+   * their solutions, for all active conjectures. This should be called
+   * immediately after the solver answers unsat for sygus input.
+   *
+   * For details on what is added to sol_map, see
+   * CegConjecture::getSynthSolutions.
+   */
+  void getSynthSolutions(std::map<Node, Node>& sol_map);
 
   /**
    * Get the model notify object
