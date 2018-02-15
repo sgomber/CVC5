@@ -79,7 +79,7 @@ class TheoryModel : public Model
 {
   friend class TheoryEngineModelBuilder;
 public:
-  TheoryModel(context::Context* c, std::string name, bool enableFuncModels);
+  TheoryModel(theory::eq::EqualityEngineNotify* notify, context::Context* c, std::string name, bool enableFuncModels);
   ~TheoryModel() override;
 
   /** reset the model */

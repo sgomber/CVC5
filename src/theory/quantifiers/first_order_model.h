@@ -92,7 +92,7 @@ class QRepBoundExt : public RepBoundExt
 class FirstOrderModel : public TheoryModel
 {
  public:
-  FirstOrderModel(QuantifiersEngine* qe, context::Context* c, std::string name);
+  FirstOrderModel(QuantifiersEngine* qe, theory::eq::EqualityEngineNotify* notify, context::Context* c, std::string name);
 
   virtual FirstOrderModelIG* asFirstOrderModelIG() { return nullptr; }
   virtual fmcheck::FirstOrderModelFmc* asFirstOrderModelFmc() { return nullptr; }
@@ -212,15 +212,9 @@ private:
   std::map< Node, std::vector< int > > d_eval_term_index_order;
   void makeEvalUfIndexOrder( Node n );
 //the following functions are for evaluating quantifier bodies
-<<<<<<< HEAD
- public:
-  FirstOrderModelIG(QuantifiersEngine * qe, theory::eq::EqualityEngineNotify* notify, context::Context* c, std::string name);
-  ~FirstOrderModelIG() throw() {}
-=======
 public:
-  FirstOrderModelIG(QuantifiersEngine * qe, context::Context* c, std::string name);
+  FirstOrderModelIG(QuantifiersEngine * qe, theory::eq::EqualityEngineNotify* notify, context::Context* c, std::string name);
 
->>>>>>> bf385ca69a958e0939524d8fbcf988c1fb45d131
   FirstOrderModelIG * asFirstOrderModelIG() { return this; }
   // initialize the model
   void processInitialize( bool ispre );
@@ -261,20 +255,12 @@ class FirstOrderModelFmc : public FirstOrderModel
   std::map<TypeNode, Node > d_type_star;
   Node intervalOp;
   /** get current model value */
-<<<<<<< HEAD
-  void processInitializeModelForTerm(Node n);
- public:
-  FirstOrderModelFmc(QuantifiersEngine * qe, theory::eq::EqualityEngineNotify* notify, context::Context* c, std::string name);
-  virtual ~FirstOrderModelFmc() throw();
-  FirstOrderModelFmc * asFirstOrderModelFmc() { return this; }
-=======
   void processInitializeModelForTerm(Node n) override;
 
  public:
-  FirstOrderModelFmc(QuantifiersEngine * qe, context::Context* c, std::string name);
+  FirstOrderModelFmc(QuantifiersEngine * qe, theory::eq::EqualityEngineNotify* notify, context::Context* c, std::string name);
   ~FirstOrderModelFmc() override;
   FirstOrderModelFmc* asFirstOrderModelFmc() override { return this; }
->>>>>>> bf385ca69a958e0939524d8fbcf988c1fb45d131
   // initialize the model
   void processInitialize(bool ispre) override;
   Node getFunctionValue(Node op, const char* argPrefix );
@@ -307,20 +293,11 @@ class FirstOrderModelAbs : public FirstOrderModel
   void processInitializeQuantifier(Node q) override;
   void collectEqVars( TNode q, TNode n, std::map< int, bool >& eq_vars );
   TNode getUsedRepresentative( TNode n );
-<<<<<<< HEAD
  public:
   FirstOrderModelAbs(QuantifiersEngine * qe, theory::eq::EqualityEngineNotify* notify, context::Context* c, std::string name);
-  ~FirstOrderModelAbs() throw();
-  FirstOrderModelAbs * asFirstOrderModelAbs() { return this; }
-  void processInitialize( bool ispre );
-=======
-
- public:
-  FirstOrderModelAbs(QuantifiersEngine * qe, context::Context* c, std::string name);
   ~FirstOrderModelAbs() override;
   FirstOrderModelAbs* asFirstOrderModelAbs() override { return this; }
-  void processInitialize(bool ispre) override;
->>>>>>> bf385ca69a958e0939524d8fbcf988c1fb45d131
+  void processInitialize( bool ispre );
   unsigned getRepresentativeId( TNode n );
   bool isValidType( TypeNode tn ) { return d_domain.find( tn )!=d_domain.end(); }
   Node getFunctionValue(Node op, const char* argPrefix );
