@@ -61,10 +61,24 @@ private:
   LogicInfo d_logic;
   std::unordered_map<std::string, Kind> operatorKindMap;
   std::pair<Expr, std::string> d_lastNamedTerm;
-  // for sygus
-  std::vector<Expr> d_sygusVars, d_sygusConstraints, d_sygusFunSymbols;
+  // ------------------------- for sygus
+  /** the list of variables introduced by declare-var commands */
+  std::vector<Expr> d_sygusVars;
+  /** the list of constraints introduced by constraint commands */
+  std::vector<Expr> d_sygusConstraints;
+  /** the list of functions introduced by synth-fun/synth-inv commands */
+  std::vector<Expr> d_sygusFunSymbols;
+  /** for each variable in d_sygusVars, whether it is a primed variable */
   std::map< Expr, bool > d_sygusVarPrimed;
+  /** the list of conjectures introduced by push-synth-conjecture commands */
+  std::vector<Expr> d_sygusConjectures;
+  // ------------------------- for sygus
 
+  /** get the conjunction of the current sygus constraints 
+   * 
+   * TODO
+   */
+  Expr getCurrentSygusConstraints(Expr name);
 protected:
   Smt2(ExprManager* exprManager, Input* input, bool strictMode = false, bool parseOnly = false);
 
@@ -251,18 +265,19 @@ public:
                         std::vector<std::string>& unresolved_gterm_sym,
                         std::map< CVC4::Type, CVC4::Type >& sygus_to_builtin );
 
-
+  
   void addSygusConstraint(Expr constraint) {
     d_sygusConstraints.push_back(constraint);
   }
 
-  Expr getSygusConstraints() {
-    switch(d_sygusConstraints.size()) {
-    case 0: return getExprManager()->mkConst(bool(true));
-    case 1: return d_sygusConstraints[0];
-    default: return getExprManager()->mkExpr(kind::AND, d_sygusConstraints);
-    }
-  }
+  /** get the current set of sygus constraints */
+  Expr getSygusConstraints();
+  
+  /** push sygus conjecture
+   * 
+   * TODO
+   */
+  void pushSygusConjecture(const std::string& name);
 
   const std::vector<Expr>& getSygusVars() {
     return d_sygusVars;

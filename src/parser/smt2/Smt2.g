@@ -858,16 +858,9 @@ sygusCommand [std::unique_ptr<CVC4::Command>* cmd]
       std::vector<Expr> bodyv;
       Debug("parser-sygus") << "Sygus : Constructing sygus constraint..."
                             << std::endl;
-      Expr body = EXPR_MANAGER->mkExpr(kind::NOT,
-                                       PARSER_STATE->getSygusConstraints());
+      Expr body = PARSER_STATE->getSygusConstraints();
       Debug("parser-sygus") << "...constructed sygus constraint " << body
                             << std::endl;      
-      if( !PARSER_STATE->getSygusVars().empty() ){
-        Expr boundVars = EXPR_MANAGER->mkExpr(kind::BOUND_VAR_LIST,
-                                              PARSER_STATE->getSygusVars());
-        body = EXPR_MANAGER->mkExpr(kind::EXISTS, boundVars, body);
-        Debug("parser-sygus") << "...constructed exists " << body << std::endl;
-      }
       if( !PARSER_STATE->getSygusFunSymbols().empty() ){
         Expr boundVars = EXPR_MANAGER->mkExpr(
             kind::BOUND_VAR_LIST, PARSER_STATE->getSygusFunSymbols());

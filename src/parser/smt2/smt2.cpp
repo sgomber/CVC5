@@ -1196,6 +1196,67 @@ Expr Smt2::makeSygusBoundVarList(Datatype& dt,
   return getExprManager()->mkExpr(kind::BOUND_VAR_LIST, lvars);
 }
 
+Expr Smt2::getSygusConstraints()
+{
+  if(d_sygusConjectures.empty())
+  {
+    Expr nullExpr;
+    return getCurrentSygusConstraints(nullExpr);
+  }
+  else if( d_sygusConjectures.size()==1 )
+  {
+    return d_sygusConjectures[0];
+  }
+  return getExprManager()->mkExpr(kind::AND, d_sygusConjectures);
+}
+
+Expr Smt2::getCurrentSygusConstraints(Expr name)
+{
+  Expr body;
+  if( d_sygusConstraints.empty() )
+  {
+    body = getExprManager()->mkConst(bool(true));
+  }
+  else if( d_sygusConstraints.size()==1 )
+  {
+    body = d_sygusConstraints[0];
+  }
+  else
+  {
+    body = getExprManager()->mkExpr(kind::AND, d_sygusConstraints);
+  }
+  
+  if( !d_sygusVars.empty() || !name.isNull() )
+  {
+    // must add dummy variable if none exists
+    if( d_sygusVars.empty() )
+    {
+      
+    }
+    Expr boundVars = getExprManager()->mkExpr(kind::BOUND_VAR_LIST,d_sygusVars);
+    std::vector<Expr> children;
+    children.push_back(boundVars);
+    children.push_back(body);
+    if( !name.isNull() )
+    {
+      
+    }
+    body = getExprManager()->mkExpr(kind::FORALL, boundVars, body);
+  }
+  body = getExprManager()->mkExpr(kind::NOT, body);
+  return body;
+}
+
+void Smt2::pushSygusConjecture(const std::string& name)
+{
+  Expr var = mkVar(name,getExprManager()->booleanType());
+  Expr conj = getCurrentSygusConstraints(var);
+  Debug("parser-sygus") << "Pushed conjecture " << name << " " <<  " : " << conj << std::endl;
+  d_sygusConjectures.push_back( conj );
+  d_sygusConstraints.clear();
+  d_sygusVars.clear();
+}
+  
 const void Smt2::getSygusPrimedVars( std::vector<Expr>& vars, bool isPrimed ) {
   for( unsigned i=0; i<d_sygusVars.size(); i++ ){
     Expr v = d_sygusVars[i];
