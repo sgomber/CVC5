@@ -1231,7 +1231,7 @@ Expr Smt2::getCurrentSygusConstraints(Expr name)
     // must add dummy variable if none exists
     if( d_sygusVars.empty() )
     {
-      
+      d_sygusVars.push_back(getExprManager()->mkBoundVar(getExprManager()->booleanType()));
     }
     Expr boundVars = getExprManager()->mkExpr(kind::BOUND_VAR_LIST,d_sygusVars);
     std::vector<Expr> children;
@@ -1239,7 +1239,9 @@ Expr Smt2::getCurrentSygusConstraints(Expr name)
     children.push_back(body);
     if( !name.isNull() )
     {
-      
+      Expr ia = getExprManager()->mkExpr(kind::INST_ATTRIBUTE, name);
+      Expr ipl = getExprManager()->mkExpr(kind::INST_PATTERN_LIST,ia);
+      children.push_back(ipl);
     }
     body = getExprManager()->mkExpr(kind::FORALL, boundVars, body);
   }

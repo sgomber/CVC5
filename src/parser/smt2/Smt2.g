@@ -877,6 +877,7 @@ sygusCommand [std::unique_ptr<CVC4::Command>* cmd]
     { PARSER_STATE->checkThatLogicIsSet(); }
     symbol[name,CHECK_NONE,SYM_VARIABLE] {
       PARSER_STATE->pushSygusConjecture(name);
+      cmd->reset(new EmptyCommand());
     }
   | command[cmd]
  //   /* error handling */
