@@ -89,19 +89,20 @@ void CegInstantiation::registerQuantifier( Node q ) {
         std::vector< Node > cnames;
         for( const Node& c : q[1] )
         {
-          Assert( c.getKind()==FORALL );
+          Assert( c.getKind()==NOT && c[0].getKind()==FORALL );
           QAttributes qa;
-          QuantAttributes::computeQuantAttributes(c,qa);
+          QuantAttributes::computeQuantAttributes(c[0],qa);
           // remember the name
           Node cname = qa.d_name;
           // remove the name and rewrite
-          Node cc = nm->mkNode( FORALL, c[0], c[1] );
+          Node cc = nm->mkNode( FORALL, c[0][0], c[0][1] );
           cc = Rewriter::rewrite( cc );
           // make the (miniscoped) conjecture
-          Node conj = nm->mkNode( FORALL, q[0], cc );
+          Node conj = nm->mkNode( FORALL, q[0], cc.negate() );
           // add to vector
           cnames.push_back( cname );
           conjectures.push_back( conj );
+          Trace("cegqi") << "...conjecture " << cname << " : " << conj << std::endl;
         }
         // TODO 
         AlwaysAssert(false);
