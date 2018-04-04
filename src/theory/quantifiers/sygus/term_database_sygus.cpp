@@ -689,8 +689,12 @@ void TermDbSygus::registerEnumerator(Node e,
                                      CegConjecture* conj,
                                      bool mkActiveGuard)
 {
-  Assert(d_enum_to_conjecture.find(e) == d_enum_to_conjecture.end());
-  Trace("sygus-db") << "Register measured term : " << e << std::endl;
+  // if we've already registered it, return
+  if(d_enum_to_conjecture.find(e) != d_enum_to_conjecture.end())
+  {
+    return;
+  }
+  Trace("sygus-db") << "Register enumerator : " << e << std::endl;
   d_enum_to_conjecture[e] = conj;
   d_enum_to_synth_fun[e] = f;
   if( mkActiveGuard ){

@@ -30,9 +30,11 @@ class CegInstantiation : public QuantifiersModule
   typedef context::CDHashMap<Node, bool, NodeHashFunction> NodeBoolMap;
 private:
   /** the quantified formula stating the synthesis conjecture */
-  std::unique_ptr<CegConjecture> d_conj;
+  CegConjecture * d_master_conj;
   /** slave conjectures */
-  std::vector< std::unique_ptr<CegConjecture> > d_slave_conj;
+  std::vector< std::unique_ptr<CegConjecture> > d_conjs;
+  /** names for the sygus conjectures */
+  std::vector< Node > d_conj_names;
   /** last instantiation by single invocation module? */
   bool d_last_inst_si;
   /** check conjecture */
