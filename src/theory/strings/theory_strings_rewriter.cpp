@@ -23,6 +23,8 @@
 #include "smt/logic_exception.h"
 #include "theory/arith/arith_msum.h"
 #include "theory/theory.h"
+#include "theory/strings/theory_strings_rewriter_old.h"
+#include "options/quantifiers_options.h"
 
 using namespace std;
 using namespace CVC4;
@@ -1130,6 +1132,11 @@ Node TheoryStringsRewriter::rewriteMembership(TNode node) {
 }
 
 RewriteResponse TheoryStringsRewriter::postRewrite(TNode node) {
+  if( !options::sygusExtRew() )
+  {
+    // call the old rewriter
+    return TheoryStringsRewriterOld::postRewrite(node);
+  }
   Trace("strings-postrewrite") << "Strings::postRewrite start " << node << std::endl;
   Node retNode = node;
   Node orig = retNode;
@@ -1242,6 +1249,11 @@ bool TheoryStringsRewriter::hasEpsilonNode(TNode node) {
 }
 
 RewriteResponse TheoryStringsRewriter::preRewrite(TNode node) {
+  if( !options::sygusExtRew() )
+  {
+    // call the old rewriter
+    return TheoryStringsRewriterOld::postRewrite(node);
+  }
   Node retNode = node;
   Node orig = retNode;
   Trace("strings-prerewrite") << "Strings::preRewrite start " << node << std::endl;
