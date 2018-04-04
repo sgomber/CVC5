@@ -872,11 +872,17 @@ sygusCommand [std::unique_ptr<CVC4::Command>* cmd]
       PARSER_STATE->preemptCommand(c);
       cmd->reset(new CheckSynthCommand(body));
     }
-  | /* push synth conjecture */
-    PUSH_SYNTH_CONJECTURE
+  | /* begin synth conjecture */
+    BEGIN_SYNTH_CONJECTURE
     { PARSER_STATE->checkThatLogicIsSet(); }
     symbol[name,CHECK_NONE,SYM_VARIABLE] {
-      PARSER_STATE->pushSygusConjecture(name);
+      PARSER_STATE->beginSygusConjecture(name);
+      cmd->reset(new EmptyCommand());
+    }
+  | /* end synth conjecture */
+    END_SYNTH_CONJECTURE
+    { PARSER_STATE->checkThatLogicIsSet();
+      PARSER_STATE->endSygusConjecture();
       cmd->reset(new EmptyCommand());
     }
   | command[cmd]
@@ -3153,7 +3159,8 @@ SYGUS_CONSTANT_TOK : { PARSER_STATE->sygus() }? 'Constant';
 SYGUS_VARIABLE_TOK : { PARSER_STATE->sygus() }? 'Variable';
 SYGUS_INPUT_VARIABLE_TOK : { PARSER_STATE->sygus() }? 'InputVariable';
 SYGUS_LOCAL_VARIABLE_TOK : { PARSER_STATE->sygus() }? 'LocalVariable';
-PUSH_SYNTH_CONJECTURE : 'push-synth-conjecture';
+BEGIN_SYNTH_CONJECTURE : 'begin-synth-conjecture';
+END_SYNTH_CONJECTURE : 'end-synth-conjecture';
 
 // attributes
 ATTRIBUTE_PATTERN_TOK : ':pattern';

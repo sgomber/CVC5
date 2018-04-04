@@ -1198,6 +1198,10 @@ Expr Smt2::makeSygusBoundVarList(Datatype& dt,
 
 Expr Smt2::getSygusConstraints()
 {
+  if( !d_sygus_conj_name.isNull() )
+  {
+    parseError("Did not end last synthesis conjecture.");
+  }    
   if(d_sygusConjectures.empty())
   {
     Expr nullExpr;
@@ -1239,24 +1243,48 @@ Expr Smt2::getCurrentSygusConstraints(Expr name)
     children.push_back(body);
     if( !name.isNull() )
     {
+      // set attribute on the variable
+      Command* cattr =
+          new SetUserAttributeCommand("quant-name", name);
+      cattr->setMuted(true);
+      preemptCommand(cattr);
       Expr ia = getExprManager()->mkExpr(kind::INST_ATTRIBUTE, name);
       Expr ipl = getExprManager()->mkExpr(kind::INST_PATTERN_LIST,ia);
       children.push_back(ipl);
     }
-    body = getExprManager()->mkExpr(kind::FORALL, boundVars, body);
+    body = getExprManager()->mkExpr(kind::FORALL, children);
   }
   body = getExprManager()->mkExpr(kind::NOT, body);
   return body;
 }
 
-void Smt2::pushSygusConjecture(const std::string& name)
+void Smt2::beginSygusConjecture(const std::string& name)
 {
-  Expr var = mkVar(name,getExprManager()->booleanType());
-  Expr conj = getCurrentSygusConstraints(var);
-  Debug("parser-sygus") << "Pushed conjecture " << name << " " <<  " : " << conj << std::endl;
+  if( !d_sygus_conj_name.isNull() )
+  {
+    parseError("Cannot begin more than one synth conjecture at a time.");
+  }  
+  if( !d_sygusVars.empty() || !d_sygusConstraints.empty() )
+  {
+    parseError("Must begin synth conjecture before constraints and variables.");
+  }
+  d_sygus_conj_name = mkVar(name,getExprManager()->booleanType());
+  pushScope();
+}
+
+void Smt2::endSygusConjecture()
+{
+  popScope();
+  if( d_sygus_conj_name.isNull() )
+  {
+    parseError("Cannot end synth conjecture with beginning.");
+  }
+  Expr conj = getCurrentSygusConstraints(d_sygus_conj_name);
+  Debug("parser-sygus") << "Pushed conjecture : " << conj << std::endl;
   d_sygusConjectures.push_back( conj );
   d_sygusConstraints.clear();
   d_sygusVars.clear();
+  d_sygus_conj_name = d_nullExpr;
 }
   
 const void Smt2::getSygusPrimedVars( std::vector<Expr>& vars, bool isPrimed ) {

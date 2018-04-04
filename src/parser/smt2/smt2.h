@@ -61,6 +61,8 @@ private:
   LogicInfo d_logic;
   std::unordered_map<std::string, Kind> operatorKindMap;
   std::pair<Expr, std::string> d_lastNamedTerm;
+  /** the null expression */
+  Expr d_nullExpr;
   // ------------------------- for sygus
   /** the list of variables introduced by declare-var commands */
   std::vector<Expr> d_sygusVars;
@@ -70,6 +72,8 @@ private:
   std::vector<Expr> d_sygusFunSymbols;
   /** for each variable in d_sygusVars, whether it is a primed variable */
   std::map< Expr, bool > d_sygusVarPrimed;
+  /** the current sygus conjecture name */
+  Expr d_sygus_conj_name;
   /** the list of conjectures introduced by push-synth-conjecture commands */
   std::vector<Expr> d_sygusConjectures;
   // ------------------------- for sygus
@@ -273,11 +277,17 @@ public:
   /** get the current set of sygus constraints */
   Expr getSygusConstraints();
   
-  /** push sygus conjecture
+  /** begin sygus conjecture
    * 
    * TODO
    */
-  void pushSygusConjecture(const std::string& name);
+  void beginSygusConjecture(const std::string& name);
+  
+  /** end sygus conjecture
+   * 
+   * TODO
+   */
+  void endSygusConjecture();  
 
   const std::vector<Expr>& getSygusVars() {
     return d_sygusVars;
