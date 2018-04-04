@@ -41,7 +41,7 @@ namespace quantifiers {
  */
 class CegConjecture {
 public:
-  CegConjecture( QuantifiersEngine * qe );
+  CegConjecture( QuantifiersEngine * qe, CegConjecture * master=nullptr );
   ~CegConjecture();
   /** get original version of conjecture */
   Node getConjecture() { return d_quant; }
@@ -129,6 +129,8 @@ public:
 private:
   /** reference to quantifier engine */
   QuantifiersEngine * d_qe;
+  /** master conjecture */
+  CegConjecture * d_cmaster;
   /** single invocation utility */
   std::unique_ptr<CegConjectureSingleInv> d_ceg_si;
   /** utility for static preprocessing and analysis of conjectures */
