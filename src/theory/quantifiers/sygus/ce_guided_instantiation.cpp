@@ -29,13 +29,12 @@ namespace CVC4 {
 namespace theory {
 namespace quantifiers {
 
-CegInstantiation::CegInstantiation( QuantifiersEngine * qe, context::Context* c ) : QuantifiersModule( qe ){
-  d_conj = new CegConjecture( qe );
-  d_last_inst_si = false;
+CegInstantiation::CegInstantiation( QuantifiersEngine * qe, context::Context* c ) : QuantifiersModule( qe ),
+d_conj(new CegConjecture( qe )),
+d_last_inst_si(false){
 }
 
 CegInstantiation::~CegInstantiation(){ 
-  delete d_conj;
 }
 
 bool CegInstantiation::needsCheck( Theory::Effort e ) {
@@ -64,7 +63,7 @@ void CegInstantiation::check(Theory::Effort e, QEffort quant_e)
     Trace("cegqi-engine-debug") << "Current conjecture status : active : " << active << std::endl;
     std::vector< Node > lem;
     if( active && d_conj->needsCheck( lem ) ){
-      checkCegConjecture( d_conj );
+      checkCegConjecture( d_conj.get() );
     }else{
       Trace("cegqi-engine-debug") << "...does not need check." << std::endl;
       for( unsigned i=0; i<lem.size(); i++ ){
@@ -77,12 +76,43 @@ void CegInstantiation::check(Theory::Effort e, QEffort quant_e)
 }
 
 void CegInstantiation::registerQuantifier( Node q ) {
-  if( d_quantEngine->getOwner( q )==this ){ // && d_eval_axioms.find( q )==d_eval_axioms.end() ){
+  if( d_quantEngine->getOwner( q )==this ){
     if( !d_conj->isAssigned() ){
+      Assert( q.getKind()==FORALL );
       Trace("cegqi") << "Register conjecture : " << q << std::endl;
-      d_conj->assign( q );
+      // is it a multi-conjecture?
+      if( q[1].getKind()==AND )
+      {
+        NodeManager * nm = NodeManager::currentNM();
+        // make the set of conjectures
+        std::vector< Node > conjectures;
+        std::vector< Node > cnames;
+        for( const Node& c : q[1] )
+        {
+          Assert( c.getKind()==FORALL );
+          QAttributes qa;
+          QuantAttributes::computeQuantAttributes(c,qa);
+          // remember the name
+          Node cname = qa.d_name;
+          // remove the name and rewrite
+          Node cc = nm->mkNode( FORALL, c[0], c[1] );
+          cc = Rewriter::rewrite( cc );
+          // make the (miniscoped) conjecture
+          Node conj = nm->mkNode( FORALL, q[0], cc );
+          // add to vector
+          cnames.push_back( cname );
+          conjectures.push_back( conj );
+        }
+        // TODO 
+        AlwaysAssert(false);
+      }
+      else
+      {
+        // normal initialization
+        d_conj->assign( q );
+      }
     }else{
-      Assert( d_conj->getEmbeddedConjecture()==q );
+      Assert( false );
     }
   }else{
     Trace("cegqi-debug") << "Register quantifier : " << q << std::endl;
