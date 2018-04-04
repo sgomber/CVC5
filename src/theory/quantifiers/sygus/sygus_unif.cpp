@@ -26,7 +26,9 @@ namespace CVC4 {
 namespace theory {
 namespace quantifiers {
 
-SygusUnif::SygusUnif()
+SygusUnif::SygusUnif() :
+d_check_sol(false),
+d_cond_count(0)
 {
 }
 

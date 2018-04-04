@@ -166,9 +166,9 @@ Node CegGrammarConstructor::process( Node q, const std::map< Node, Node >& templ
       Assert( itta!=templates_arg.end() );
       TNode templ_arg = itta->second;
       Assert( !templ_arg.isNull() );
-      Trace("cegqi-debug") << "Template for " << sf << " is : " << templ << " with arg " << templ_arg << std::endl;
       // if there is a template for this argument, make a sygus type on top of it
       if( options::sygusTemplEmbedGrammar() ){
+        Trace("cegqi-debug") << "Template for " << sf << " is : " << templ << " with arg " << templ_arg << std::endl;
         Trace("cegqi-debug") << "  embed this template as a grammar..." << std::endl;
         tn = mkSygusTemplateType( templ, templ_arg, tn, sfvl, ss.str() );
       }
@@ -206,10 +206,10 @@ Node CegGrammarConstructor::process( Node q, const std::map< Node, Node >& templ
       Assert( itta!=templates_arg.end() );
       TNode templ_arg = itta->second;
       Assert( !templ_arg.isNull() );
-      Trace("cegqi-debug") << "Template for " << sf << " is : " << templ << " with arg " << templ_arg << std::endl;
       // if there is a template for this argument, make a sygus type on top of it
       if( !options::sygusTemplEmbedGrammar() ){
         // otherwise, apply it as a preprocessing pass 
+        Trace("cegqi-debug") << "Template for " << sf << " is : " << templ << " with arg " << templ_arg << std::endl;
         Trace("cegqi-debug") << "  apply this template as a substituion during preprocess..." << std::endl;
         std::vector< Node > schildren;
         std::vector< Node > largs;
