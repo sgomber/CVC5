@@ -104,6 +104,7 @@ void CegInstantiation::registerQuantifier( Node q ) {
           if( i==0 )
           {
             // assign the master conjecture
+            //d_master_conj->setMaster(true); // TODO
             d_master_conj->assign( q );
           }
           else
@@ -114,7 +115,7 @@ void CegInstantiation::registerQuantifier( Node q ) {
             d_conjs[i]->assign( q );
           }
           // set the name of the conjecture
-          //d_conjs[i]->setName( cname[i] );
+          d_conjs[i]->setName( cnames[i] );
         }
         AlwaysAssert(false);
       }

@@ -91,8 +91,31 @@ void CegConjecture::assign( Node q ) {
 
   // finished simplifying the quantified formula at this point
 
+  Assert( d_candidates.empty() );
   // convert to deep embedding and finalize single invocation here
-  d_embed_quant = d_ceg_gc->process(d_simp_quant, templates, templates_arg);
+  std::vector< Node > vars;
+  if( d_cmaster==nullptr )
+  {
+    d_embed_quant = d_ceg_gc->process(d_simp_quant, templates, templates_arg);
+    for( const Node& v : d_embed_quant[0] )
+    {
+      vars.push_back(v);
+      Node e = NodeManager::currentNM()->mkSkolem( "e", v.getType() );
+      d_candidates.push_back( e );
+    }
+  }
+  else
+  {
+    // if there is a master conjecture, we reuse its first-order variables
+    Node master_embed_quant = d_cmaster->getEmbeddedConjecture();
+    for( const Node& v : master_embed_quant[0] )
+    {
+      vars.push_back(v);
+    }
+    d_embed_quant = d_ceg_gc->process(d_simp_quant, templates, templates_arg,vars);
+    // take candidates from the master
+    d_candidates.insert(d_candidates.end(),d_cmaster->d_candidates.begin(),d_cmaster->d_candidates.end() );
+  }
   Trace("cegqi") << "CegConjecture : converted to embedding : " << d_embed_quant << std::endl;
 
   // we now finalize the single invocation module, based on the syntax restrictions
@@ -100,14 +123,8 @@ void CegConjecture::assign( Node q ) {
   {
     d_ceg_si->finishInit( d_ceg_gc->isSyntaxRestricted(), d_ceg_gc->hasSyntaxITE() );
   }
+  Assert( vars.size()==d_candidates.size() );
 
-  Assert( d_candidates.empty() );
-  std::vector< Node > vars;
-  for( unsigned i=0; i<d_embed_quant[0].getNumChildren(); i++ ){
-    vars.push_back( d_embed_quant[0][i] );
-    Node e = NodeManager::currentNM()->mkSkolem( "e", d_embed_quant[0][i].getType() );
-    d_candidates.push_back( e );
-  }
   Trace("cegqi") << "Base quantified formula is : " << d_embed_quant << std::endl;
   //construct base instantiation
   d_base_inst = Rewriter::rewrite(d_qe->getInstantiate()->getInstantiation(

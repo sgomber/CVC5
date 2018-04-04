@@ -43,6 +43,29 @@ class CegConjecture {
 public:
   CegConjecture( QuantifiersEngine * qe, CegConjecture * master=nullptr );
   ~CegConjecture();
+  //-----------------------------------initialization
+  /** preregister conjecture 
+  * This is used as a heuristic for solution reconstruction, so that we 
+  * remember expressions in the conjecture before preprocessing, since they
+  * may be helpful during solution reconstruction (Figure 5 of Reynolds et al 
+  * CAV 2015).
+  */
+  void preregisterConjecture( Node q );
+  /** assign conjecture q to this class 
+   * 
+   * This initializes this class with synthesis conjecture q. As part of the
+   * initialization process, we do the following:
+   * (1) TODO
+   */
+  void assign( Node q );
+  /** has a conjecture been assigned to this class */
+  bool isAssigned() { return !d_embed_quant.isNull(); }
+  //-----------------------------------end initialization
+  
+  /** set the name of this conjecture */
+  void setName(Node name) { d_name = name; }
+  /** get the name of this conjecture */
+  Node getName() const { return d_name; }
   /** get original version of conjecture */
   Node getConjecture() { return d_quant; }
   /** get deep embedding version of conjecture */
@@ -102,16 +125,7 @@ public:
   bool isSyntaxGuided() const { return d_syntax_guided; }
   /** are we using single invocation techniques */
   bool isSingleInvocation() const;
-  /** preregister conjecture 
-  * This is used as a heuristic for solution reconstruction, so that we 
-  * remember expressions in the conjecture before preprocessing, since they
-  * may be helpful during solution reconstruction (Figure 5 of Reynolds et al CAV 2015)
-  */
-  void preregisterConjecture( Node q );
-  /** assign conjecture q to this class */
-  void assign( Node q );
-  /** has a conjecture been assigned to this class */
-  bool isAssigned() { return !d_embed_quant.isNull(); }
+
   /** get model values for terms n, store in vector v */
   void getModelValues( std::vector< Node >& n, std::vector< Node >& v );
   /** get model value for term n */
@@ -131,6 +145,8 @@ private:
   QuantifiersEngine * d_qe;
   /** master conjecture */
   CegConjecture * d_cmaster;
+  /** the name of this conjecture */
+  Node d_name;
   /** single invocation utility */
   std::unique_ptr<CegConjectureSingleInv> d_ceg_si;
   /** utility for static preprocessing and analysis of conjectures */
