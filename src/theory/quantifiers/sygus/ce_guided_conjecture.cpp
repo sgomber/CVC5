@@ -378,7 +378,10 @@ void CegConjecture::doCheck(std::vector<Node>& lems)
       // This is the "verification lemma", which states
       // either this conjecture does not have a solution, or candidate_values
       // is a solution for this conjecture.
-      lem = nm->mkNode(OR, d_quant.negate(), lem);
+      if( isFullConjecture() )
+      {
+        lem = nm->mkNode(OR, d_quant.negate(), lem);
+      }
       lem = getStreamGuardedLemma(lem);
       lems.push_back(lem);
     }
@@ -492,7 +495,7 @@ Node CegConjecture::getCurrentStreamGuard() const {
 
 Node CegConjecture::getStreamGuardedLemma(Node n) const
 {
-  if (options::sygusStream())
+  if (options::sygusStream() || !isFullConjecture())
   {
     // if we are in streaming mode, we guard with the current stream guard
     Node csg = getCurrentStreamGuard();
@@ -609,7 +612,7 @@ void CegConjecture::printAndContinueStream()
   }
 }
 
-bool CegConjecture::isFullConjecture()
+bool CegConjecture::isFullConjecture() const
 {
   return !d_is_master && d_cmaster==nullptr;
 }

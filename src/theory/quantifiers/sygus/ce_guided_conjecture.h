@@ -68,9 +68,9 @@ public:
 
   //-------------------------------- multi-conjecture synthesis 
   /** get master conjecture */
-  CegConjecture * getMasterConjecture() { return d_cmaster; }
+  CegConjecture * getMasterConjecture() const { return d_cmaster; }
   /** Returns true if this is the only conjecture we are considering. */
-  bool isFullConjecture();
+  bool isFullConjecture() const;
   //-------------------------------- end multi-conjecture synthesis 
   
   /** set the name of this conjecture */
