@@ -41,6 +41,7 @@ private:
  Node d_conj_quant;
  /** check conjecture */
  void checkCegConjecture(CegConjecture* conj);
+
 public:
   CegInstantiation( QuantifiersEngine * qe, context::Context* c );
   ~CegInstantiation();
