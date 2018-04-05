@@ -92,9 +92,11 @@ bool Cegis::constructCandidates(const std::vector<Node>& enums,
       {
         if( checkOnly )
         {
-          // there is at least one previous refinement lemma that evaluates to
+          // There is at least one previous refinement lemma that evaluates to
           // false for the candidate. Thus, we are not interested in checking
-          // this candidate.
+          // this candidate. We also cannot send the evaluation lemmas below,
+          // since they are specific to this conjecture, and this is not the
+          // only conjecture we are testing.
           return false;
         }
         if (!cre_lems.empty())

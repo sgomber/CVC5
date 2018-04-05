@@ -35,6 +35,8 @@ private:
   std::vector< std::unique_ptr<CegConjecture> > d_conjs;
   /** last instantiation by single invocation module? */
   bool d_last_inst_si;
+  /** whether all conjectures have requested necessary decisions */
+  context::CDO<bool> d_requested_dec;
   /** check conjecture */
   void checkCegConjecture( CegConjecture * conj );
 public:

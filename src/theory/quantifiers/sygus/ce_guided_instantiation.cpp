@@ -31,7 +31,8 @@ namespace quantifiers {
 
 CegInstantiation::CegInstantiation( QuantifiersEngine * qe, context::Context* c ) : QuantifiersModule( qe ),
 d_master_conj(nullptr),
-d_last_inst_si(false){
+d_last_inst_si(false),
+d_requested_dec(c,false){
   d_conjs.push_back(std::unique_ptr<CegConjecture>(new CegConjecture(qe)));
   d_master_conj = d_conjs[0].get();    
 }
@@ -62,84 +63,103 @@ void CegInstantiation::check(Theory::Effort e, QEffort quant_e)
       Trace("cegqi-engine-debug") << "...no value for quantified formula." << std::endl;
     }
     Trace("cegqi-engine-debug") << "Current conjecture status : active : " << active << std::endl;
-    if( active && d_master_conj->needsCheck() ){
-      checkCegConjecture( d_master_conj );
+    if( active )
+    {
+      for( unsigned i=0,size=d_conjs.size(); i<size; i++ )
+      {
+        if( d_conjs[i]->needsCheck() )
+        {
+          Trace("cegqi-engine-debug") << "  check conjecture #" << i << "..." << std::endl;
+          checkCegConjecture( d_conjs[i].get() );
+        }
+      }
     }
     Trace("cegqi-engine") << "Finished Counterexample Guided Instantiation engine." << std::endl;
   }
 }
 
 void CegInstantiation::registerQuantifier( Node q ) {
-  if( d_quantEngine->getOwner( q )==this ){
-    if( !d_master_conj->isAssigned() ){
-      Assert( q.getKind()==FORALL );
-      Trace("cegqi") << "Register conjecture : " << q << std::endl;
-      // is it a multi-conjecture?
-      if( q[1].getKind()==AND )
+  if( d_quantEngine->getOwner( q )!=this ){
+    Trace("cegqi-debug") << "Register quantifier : " << q << std::endl;
+    return;
+  }
+  else if( d_master_conj->isAssigned() )
+  {
+    Assert(false);
+    return;
+  }
+  Assert( q.getKind()==FORALL );
+  Trace("cegqi") << "Register conjecture : " << q << std::endl;
+  // is it a multi-conjecture?
+  if( q[1].getKind()==AND )
+  {
+    NodeManager * nm = NodeManager::currentNM();
+    // make the set of conjectures
+    std::vector< Node > conjectures;
+    std::vector< Node > cnames;
+    for( const Node& c : q[1] )
+    {
+      Assert( c.getKind()==NOT && c[0].getKind()==FORALL );
+      QAttributes qa;
+      QuantAttributes::computeQuantAttributes(c[0],qa);
+      // remember the name
+      Node cname = qa.d_name;
+      // remove the name and rewrite
+      Node cc = nm->mkNode( FORALL, c[0][0], c[0][1] );
+      cc = Rewriter::rewrite( cc );
+      // make the (miniscoped) conjecture
+      Node conj = nm->mkNode( FORALL, q[0], cc.negate() );
+      // add to vector
+      cnames.push_back( cname );
+      conjectures.push_back( conj );
+      Trace("cegqi") << "...conjecture " << cname << " : " << conj << std::endl;
+    }
+    for( unsigned i=0, size=conjectures.size(); i<size; i++ )
+    {
+      Node q = conjectures[i];
+      if( i==0 )
       {
-        NodeManager * nm = NodeManager::currentNM();
-        // make the set of conjectures
-        std::vector< Node > conjectures;
-        std::vector< Node > cnames;
-        for( const Node& c : q[1] )
-        {
-          Assert( c.getKind()==NOT && c[0].getKind()==FORALL );
-          QAttributes qa;
-          QuantAttributes::computeQuantAttributes(c[0],qa);
-          // remember the name
-          Node cname = qa.d_name;
-          // remove the name and rewrite
-          Node cc = nm->mkNode( FORALL, c[0][0], c[0][1] );
-          cc = Rewriter::rewrite( cc );
-          // make the (miniscoped) conjecture
-          Node conj = nm->mkNode( FORALL, q[0], cc.negate() );
-          // add to vector
-          cnames.push_back( cname );
-          conjectures.push_back( conj );
-          Trace("cegqi") << "...conjecture " << cname << " : " << conj << std::endl;
-        }
-        for( unsigned i=0, size=conjectures.size(); i<size; i++ )
-        {
-          Node q = conjectures[i];
-          if( i==0 )
-          {
-            // assign the master conjecture
-            //d_master_conj->setMaster(true); // TODO
-            d_master_conj->assign( q );
-          }
-          else
-          {
-            // make a new conjecture
-            d_conjs.push_back(std::unique_ptr<CegConjecture>(new CegConjecture(d_quantEngine,d_master_conj)));
-            Assert( d_conjs.size()==i );
-            d_conjs[i]->assign( q );
-          }
-          // set the name of the conjecture
-          d_conjs[i]->setName( cnames[i] );
-        }
-        AlwaysAssert(false);
-      }
-      else
-      {    
-        // normal initialization
+        // assign the master conjecture
+        //d_master_conj->setMaster(true); // TODO
         d_master_conj->assign( q );
       }
-    }else{
-      Assert( false );
+      else
+      {
+        // make a new conjecture
+        d_conjs.push_back(std::unique_ptr<CegConjecture>(new CegConjecture(d_quantEngine,d_master_conj)));
+        Assert( d_conjs.size()==i );
+        d_conjs[i]->assign( q );
+      }
+      // set the name of the conjecture
+      d_conjs[i]->setName( cnames[i] );
     }
-  }else{
-    Trace("cegqi-debug") << "Register quantifier : " << q << std::endl;
+    AlwaysAssert(false);
+  }
+  else
+  {    
+    // normal initialization
+    d_master_conj->assign( q );
   }
 }
 
 Node CegInstantiation::getNextDecisionRequest( unsigned& priority ) {
-  if( d_master_conj->isAssigned() ){
-    Node dec_req = d_master_conj->getNextDecisionRequest( priority );
-    if( !dec_req.isNull() ){
-      Trace("cegqi-debug") << "CEGQI : Decide next on : " << dec_req << "..." << std::endl;
+  if( !d_master_conj->isAssigned() || d_requested_dec.get() )
+  {
+    // not yet initialized, or we've made all necessary decisions
+    return Node::null();
+  }
+  for( unsigned i=0,size=d_conjs.size(); i<size; i++ )
+  {
+    Node dec_req = d_conjs[i]->getNextDecisionRequest( priority );
+    if( !dec_req.isNull() )
+    {
+      Trace("cegqi-debug") << "CEGQI : Conjecture #" << i << " decide next on : " << dec_req << "..." << std::endl;
       return dec_req;
     }
   }
+  Trace("cegqi-debug") << "...no decisions." << std::endl;
+  // no more decisions will be made in this SAT context
+  d_requested_dec.set(true);
   return Node::null();
 }
 
