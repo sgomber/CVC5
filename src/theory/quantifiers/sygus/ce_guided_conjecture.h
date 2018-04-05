@@ -55,12 +55,23 @@ public:
    * 
    * This initializes this class with synthesis conjecture q. As part of the
    * initialization process, we do the following:
-   * (1) TODO
+   * (1) Infer whether we can use single-invocation techniques for q,
+   * (2) Construct the "deep embedding" form of q, which involves constructing
+   * a grammars in the form of inductive datatypes corresponding to syntactic
+   * restrictions for the solutions of the outermost variables of q,
+   * (3) TODO
    */
   void assign( Node q );
   /** has a conjecture been assigned to this class */
   bool isAssigned() { return !d_embed_quant.isNull(); }
   //-----------------------------------end initialization
+
+  //-------------------------------- multi-conjecture synthesis 
+  /** get master conjecture */
+  CegConjecture * getMasterConjecture() { return d_cmaster; }
+  /** Returns true if this is the only conjecture we are considering. */
+  bool isFullConjecture();
+  //-------------------------------- end multi-conjecture synthesis 
   
   /** set the name of this conjecture */
   void setName(Node name) { d_name = name; }

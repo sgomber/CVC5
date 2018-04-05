@@ -101,10 +101,12 @@ class Cegis : public SygusModule
    * Given a candidate solution ms for candidates vs, this function adds lemmas
    * to lems based on evaluating the conjecture, instantiated for ms, on lemmas
    * for previous refinements (d_refinement_lemmas).
+   * 
    */
-  void getRefinementEvalLemmas(const std::vector<Node>& vs,
+  bool getRefinementEvalLemmas(const std::vector<Node>& vs,
                                const std::vector<Node>& ms,
-                               std::vector<Node>& lems);
+                               std::vector<Node>& lems,
+                               bool checkOnly);
   /** sampler object for the option cegisSample()
    *
    * This samples points of the type of the inner variables of the synthesis

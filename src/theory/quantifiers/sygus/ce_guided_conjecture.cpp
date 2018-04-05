@@ -503,15 +503,15 @@ Node CegConjecture::getNextDecisionRequest( unsigned& priority ) {
   }else{
     if( value ){  
       // the conjecture is feasible
-      if( options::sygusStream() ){
+      if( options::sygusStream() || !isFullConjecture() ){
         Assert( !isSingleInvocation() );
         // if we are in sygus streaming mode, then get the "next guard" 
         // which denotes "we have not yet generated the next solution to the conjecture"
         Node curr_stream_guard = getCurrentStreamGuard();
         bool needs_new_stream_guard = false;
-        if( curr_stream_guard.isNull() ){
+        if( d_stream_guards.empty() ){
           needs_new_stream_guard = true;
-        }else{
+        }else if( !curr_stream_guard.isNull() ){
           // check the polarity of the guard
           if( !d_qe->getValuation().hasSatValue( curr_stream_guard, value ) ) {
             priority = 0;
@@ -520,7 +520,15 @@ Node CegConjecture::getNextDecisionRequest( unsigned& priority ) {
             if( !value ){
               Trace("cegqi-debug") << "getNextDecision : we have a new solution since stream guard was propagated false: " << curr_stream_guard << std::endl;
               // need to make the next stream guard
-              needs_new_stream_guard = true;
+              if( options::sygusStream() )
+              {
+                needs_new_stream_guard = true;
+              }
+              else
+              {
+                // we are finished, push the null node to stream guards
+                d_stream_guards.push_back( Node::null() );
+              }
               // the guard has propagated false, indicating that a verify
               // lemma was unsatisfiable. Hence, the previous candidate is
               // an actual solution. We print and continue the stream.
@@ -562,36 +570,50 @@ void CegConjecture::printAndContinueStream()
   d_ce_sk.clear();
   // However, we need to exclude the current solution using an explicit
   // blocking clause, so that we proceed to the next solution.
-  std::vector<Node> terms;
-  d_master->getTermList(d_candidates, terms);
-  std::vector<Node> exp;
-  for (const Node& cprog : terms)
+  // We only add this blocking clause if we are the full conjecture.
+  // Otherwise, this is managed by ce_guided_instantiation.
+  if( isFullConjecture() )
   {
-    Node sol = cprog;
-    if (!d_cinfo[cprog].d_inst.empty())
+    std::vector<Node> terms;
+    d_master->getTermList(d_candidates, terms);
+    std::vector<Node> exp;
+    for (const Node& cprog : terms)
     {
-      sol = d_cinfo[cprog].d_inst.back();
-      // add to explanation of exclusion
-      d_qe->getTermDatabaseSygus()->getExplain()->getExplanationForEquality(
-          cprog, sol, exp);
+      Node sol = cprog;
+      if (!d_cinfo[cprog].d_inst.empty())
+      {
+        sol = d_cinfo[cprog].d_inst.back();
+        // add to explanation of exclusion
+        d_qe->getTermDatabaseSygus()->getExplain()->getExplanationForEquality(
+            cprog, sol, exp);
+      }
     }
+    Assert(!exp.empty());
+    Node exc_lem = exp.size() == 1
+                      ? exp[0]
+                      : NodeManager::currentNM()->mkNode(kind::AND, exp);
+    exc_lem = exc_lem.negate();
+    Trace("cegqi-lemma") << "Cegqi::Lemma : stream exclude current solution : "
+                        << exc_lem << std::endl;
+    d_qe->getOutputChannel().lemma(exc_lem);
   }
-  Assert(!exp.empty());
-  Node exc_lem = exp.size() == 1
-                     ? exp[0]
-                     : NodeManager::currentNM()->mkNode(kind::AND, exp);
-  exc_lem = exc_lem.negate();
-  Trace("cegqi-lemma") << "Cegqi::Lemma : stream exclude current solution : "
-                       << exc_lem << std::endl;
-  d_qe->getOutputChannel().lemma(exc_lem);
 }
 
+bool CegConjecture::isFullConjecture()
+{
+  return !d_is_master && d_cmaster==nullptr;
+}
+  
 void CegConjecture::printSynthSolution( std::ostream& out, bool singleInvocation ) {
   Trace("cegqi-debug") << "Printing synth solution..." << std::endl;
   Assert( d_quant[0].getNumChildren()==d_embed_quant[0].getNumChildren() );
   std::vector<Node> sols;
   std::vector<int> statuses;
   getSynthSolutionsInternal(sols, statuses, singleInvocation);
+  if( !d_name.isNull() )
+  {
+    out << "(synth-solution " << d_name << std::endl;
+  }
   for (unsigned i = 0, size = d_embed_quant[0].getNumChildren(); i < size; i++)
   {
     Node sol = sols[i];
@@ -737,6 +759,10 @@ void CegConjecture::printSynthSolution( std::ostream& out, bool singleInvocation
         }
       }
     }
+  }
+  if( !d_name.isNull() )
+  {
+    out << ")" << std::endl;
   }
 }
 
