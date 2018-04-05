@@ -431,6 +431,11 @@ class SygusSamplerExt : public SygusSampler
    */
   Node registerTerm(Node n, bool forceKeep = false) override;
 
+  /** register relevant pair 
+   * 
+   * TODO
+   */
+  bool registerRelevantPair(Node a, Node b);
  private:
   /** dynamic rewriter class */
   std::unique_ptr<DynamicRewriter> d_drewrite;

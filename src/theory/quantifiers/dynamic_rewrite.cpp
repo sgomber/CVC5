@@ -62,6 +62,7 @@ bool DynamicRewriter::addRewrite(Node a, Node b)
   Node eq = ai.eqNode(bi);
   d_rewrites.push_back(eq);
   d_equalityEngine.assertEquality(eq, true, eq);
+  Assert( d_equalityEngine.consistent() );
   Trace("dyn-rewrite-debug") << "Finished" << std::endl;
   return true;
 }

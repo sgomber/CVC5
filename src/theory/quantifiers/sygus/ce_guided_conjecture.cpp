@@ -622,9 +622,9 @@ void CegConjecture::printSynthSolution( std::ostream& out, bool singleInvocation
         // eq_sol is a candidate solution that is equivalent to sol
         if (eq_sol != sol)
         {
-          ++(cei->d_statistics.d_candidate_rewrites);
           // if eq_sol is null, then we have an uninteresting candidate rewrite,
           // e.g. one that is alpha-equivalent to another.
+          bool success = true;
           if (!eq_sol.isNull())
           {
             ExtendedRewriter* er = sygusDb->getExtRewriter();
@@ -632,7 +632,6 @@ void CegConjecture::printSynthSolution( std::ostream& out, bool singleInvocation
             Node solbr = er->extendedRewrite(solb);
             Node eq_solb = sygusDb->sygusToBuiltin(eq_sol);
             Node eq_solr = er->extendedRewrite(eq_solb);
-            bool success = true;
             bool verified = false;
             // verify it if applicable
             if (options::sygusRewSynthCheck())
@@ -678,7 +677,20 @@ void CegConjecture::printSynthSolution( std::ostream& out, bool singleInvocation
                 verified = true;
               }
             }
-            if (success)
+            else
+            {
+              // just insist that constants are not relevant pairs
+              success = !solb.isConst() || !eq_solb.isConst();
+            }
+            if( success )
+            {
+              if( !d_sampler[prog].registerRelevantPair(sol,eq_sol) )
+              {
+                // the rewrite rule is redundant
+                eq_sol = Node::null();
+              }
+            }
+            if (success && !eq_sol.isNull())
             {
               if (!options::sygusSilent())
               {
@@ -726,6 +738,11 @@ void CegConjecture::printSynthSolution( std::ostream& out, bool singleInvocation
                 sygusDb->registerSymBreakLemma(d_candidates[i], lem, ptn, sz);
               }
             }
+          }
+          // we count this as a rewrite if we did not explicitly rule it out
+          if( success )
+          {
+            ++(cei->d_statistics.d_candidate_rewrites);
           }
         }
       }
