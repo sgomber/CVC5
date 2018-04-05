@@ -215,7 +215,8 @@ bool CegConjecture::isSingleInvocation() const {
   return d_ceg_si->isSingleInvocation();
 }
 
-bool CegConjecture::needsCheck() {
+bool CegConjecture::needsCheck() 
+{
   if( !d_cslaves.empty() )
   {
     // if any slave needs checking, we need checking
@@ -227,7 +228,11 @@ bool CegConjecture::needsCheck() {
       }
     }
   }
-  
+  return needsCheckInternal();
+}
+
+bool CegConjecture::needsCheckInternal() 
+{
   if( isSingleInvocation() && !d_ceg_si->needsCheck() )
   {
     return false;
@@ -307,6 +312,10 @@ void CegConjecture::doCheck(std::vector<Node>& lems)
     Node exc_lem = exp_disj.size()==1 ? exp_disj[0] : nm->mkNode( OR, exp_disj );
     Trace("cegqi-lemma") << "Cegqi::Lemma : master exclusion : " << exc_lem << std::endl;
     lems.push_back( exc_lem );
+    if( !needsCheckInternal() )
+    {
+      return;
+    }
   }
   
 

@@ -225,6 +225,8 @@ private:
       d_cinfo[d_candidates[i]].d_inst.push_back( vs[i] );
     }
   }
+  /** needs check internal */
+  bool needsCheckInternal();
   /** get synth solutions internal
    *
    * This function constructs the body of solutions for all
