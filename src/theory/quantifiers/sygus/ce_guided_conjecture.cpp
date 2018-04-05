@@ -41,7 +41,6 @@ namespace quantifiers {
 CegConjecture::CegConjecture(QuantifiersEngine* qe, CegConjecture * master)
     : d_qe(qe),
       d_cmaster(master),
-      d_is_master(false),
       d_ceg_si(new CegConjectureSingleInv(qe, this)),
       d_ceg_proc(new CegConjectureProcess(qe)),
       d_ceg_gc(new CegGrammarConstructor(qe, this)),
@@ -58,7 +57,7 @@ CegConjecture::CegConjecture(QuantifiersEngine* qe, CegConjecture * master)
   d_modules.push_back(d_ceg_cegis.get());
   if( d_cmaster!=nullptr )
   {
-    d_cmaster->d_is_master = true;
+    d_cmaster->d_cslaves.push_back(this);
   }
 }
 
@@ -217,7 +216,20 @@ bool CegConjecture::isSingleInvocation() const {
 }
 
 bool CegConjecture::needsCheck() {
-  if( isSingleInvocation() && !d_ceg_si->needsCheck() ){
+  if( !d_cslaves.empty() )
+  {
+    // if any slave needs checking, we need checking
+    for( unsigned i=0,size=d_cslaves.size(); i<size; i++ )
+    {
+      if( d_cslaves[i]->needsCheck() )
+      {
+        return true;
+      }
+    }
+  }
+  
+  if( isSingleInvocation() && !d_ceg_si->needsCheck() )
+  {
     return false;
   }
   bool value;
@@ -276,13 +288,33 @@ void CegConjecture::doCheck(std::vector<Node>& lems)
   // get their model value
   std::vector<Node> enum_values;
   getModelValues(terms, enum_values);
+  
+  NodeManager* nm = NodeManager::currentNM();
+  
+  // if we are in multi-conjecture mode, we proactively add a trivial
+  // blocking clause to exclude the current model values.
+  if( !d_cslaves.empty() )
+  {
+    std::vector< Node > exp_disj;
+    for( unsigned i=0,size=terms.size(); i<size; i++ )
+    {
+      // add to explanation of exclusion
+      Node exp = d_qe->getTermDatabaseSygus()->getExplain()->getExplanationForEquality(
+          terms[i], enum_values[i]);
+
+      exp_disj.push_back( exp.negate() );
+    }
+    Node exc_lem = exp_disj.size()==1 ? exp_disj[0] : nm->mkNode( OR, exp_disj );
+    Trace("cegqi-lemma") << "Cegqi::Lemma : master exclusion : " << exc_lem << std::endl;
+    lems.push_back( exc_lem );
+  }
+  
 
   std::vector<Node> candidate_values;
   Trace("cegqi-check") << "CegConjuncture : check, build candidates..." << std::endl;
   bool constructed_cand = d_master->constructCandidates(
       terms, enum_values, d_candidates, candidate_values, lems);
 
-  NodeManager* nm = NodeManager::currentNM();
 
   //must get a counterexample to the value of the current candidate
   Node inst;
@@ -614,7 +646,7 @@ void CegConjecture::printAndContinueStream()
 
 bool CegConjecture::isFullConjecture() const
 {
-  return !d_is_master && d_cmaster==nullptr;
+  return d_cslaves.empty() && d_cmaster==nullptr;
 }
   
 void CegConjecture::printSynthSolution( std::ostream& out, bool singleInvocation ) {

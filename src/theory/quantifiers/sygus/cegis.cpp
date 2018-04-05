@@ -83,7 +83,7 @@ bool Cegis::constructCandidates(const std::vector<Node>& enums,
     bool addedEvalLemmas = false;
     if (options::sygusCRefEval())
     {
-      Trace("cegqi-engine") << "  *** Do conjecture refinement evaluation..."
+      Trace("cegqi-engine") << "  *** Do cached refinement evaluation..."
                             << std::endl;
       // see if any refinement lemma is refuted by evaluation
       std::vector<Node> cre_lems;
@@ -117,7 +117,7 @@ bool Cegis::constructCandidates(const std::vector<Node>& enums,
         }
       }
     }
-    Trace("cegqi-engine") << "  *** Do direct evaluation..." << std::endl;
+    Trace("cegqi-engine") << "  *** Do evaluation function unfolding..." << std::endl;
     std::vector<Node> eager_terms;
     std::vector<Node> eager_vals;
     std::vector<Node> eager_exps;
@@ -133,7 +133,7 @@ bool Cegis::constructCandidates(const std::vector<Node>& enums,
                               eager_exps);
     }
     Trace("cegqi-debug") << "...produced " << eager_terms.size()
-                         << " eager evaluation lemmas." << std::endl;
+                         << " lemmas." << std::endl;
 
     for (unsigned j = 0, size = eager_terms.size(); j < size; j++)
     {
@@ -148,7 +148,7 @@ bool Cegis::constructCandidates(const std::vector<Node>& enums,
       }
       if (d_qe->addLemma(lem))
       {
-        Trace("cegqi-lemma") << "Cegqi::Lemma : evaluation : " << lem
+        Trace("cegqi-lemma") << "Cegqi::Lemma : evaluation function unfolding : " << lem
                              << std::endl;
         addedEvalLemmas = true;
       }

@@ -72,18 +72,21 @@ void CegInstantiation::check(Theory::Effort e, QEffort quant_e)
     Trace("cegqi-engine-debug") << "...no value for quantified formula." << std::endl;
   }
   Trace("cegqi-engine-debug") << "Current conjecture status : active : " << active << std::endl;
-  if( active )
+  if( !active )
   {
-    for( unsigned i=0,size=d_conjs.size(); i<size; i++ )
+    // if not active, we are done
+    return;
+  }
+  // check each conjecture
+  for( unsigned i=0,size=d_conjs.size(); i<size; i++ )
+  {
+    if( size>1 )
     {
-      if( size>1 )
-      {
-        Trace("cegqi-engine") << "-----conjecture #" << i << "..." << std::endl;
-      }
-      if( d_conjs[i]->needsCheck() )
-      {
-        checkCegConjecture( d_conjs[i].get() );
-      }
+      Trace("cegqi-engine") << "-----conjecture #" << i << "..." << std::endl;
+    }
+    if( d_conjs[i]->needsCheck() )
+    {
+      checkCegConjecture( d_conjs[i].get() );
     }
   }
   Trace("cegqi-engine") << "Finished Counterexample Guided Instantiation engine." << std::endl;
@@ -134,21 +137,15 @@ void CegInstantiation::registerQuantifier( Node q ) {
       conjectures.push_back( conj );
       Trace("cegqi") << "...conjecture " << cname << " : " << conj << std::endl;
     }
+    // make new conjectures
+    for( unsigned i=1, size=conjectures.size(); i<size; i++ )
+    {
+      d_conjs.push_back(std::unique_ptr<CegConjecture>(new CegConjecture(d_quantEngine,d_master_conj)));
+    }
     for( unsigned i=0, size=conjectures.size(); i<size; i++ )
     {
-      Node qc = conjectures[i];
-      if( i==0 )
-      {
-        // assign the master conjecture
-        d_master_conj->assign( qc );
-      }
-      else
-      {
-        // make a new conjecture
-        d_conjs.push_back(std::unique_ptr<CegConjecture>(new CegConjecture(d_quantEngine,d_master_conj)));
-        Assert( d_conjs.size()==i );
-        d_conjs[i]->assign( qc );
-      }
+      // assign the conjecture
+      d_conjs[i]->assign( conjectures[i] );
       // set the name of the conjecture
       d_conjs[i]->setName( cnames[i] );
     }
@@ -211,22 +208,23 @@ void CegInstantiation::checkCegConjecture( CegConjecture * conj ) {
       for( unsigned i=0; i<cclems.size(); i++ ){
         Node lem = cclems[i];
         d_last_inst_si = false;
-        Trace("cegqi-lemma") << "Cegqi::Lemma : counterexample : " << lem << std::endl;
+        Trace("cegqi-lemma") << "Cegqi::Lemma : check : " << lem << std::endl;
         if( d_quantEngine->addLemma( lem ) ){
           ++(d_statistics.d_cegqi_lemmas_ce);
           addedLemma = true;
         }else{
           //this may happen if we eagerly unfold, simplify to true
           if( !options::sygusDirectEval() ){
-            Trace("cegqi-warn") << "  ...FAILED to add candidate!" << std::endl;
+            Trace("cegqi-warn") << "  ...FAILED to add check lemma!" << std::endl;
           }else{
-            Trace("cegqi-engine-debug") << "  ...FAILED to add candidate!" << std::endl;
+            Trace("cegqi-engine-debug") << "  ...FAILED to add check lemma!" << std::endl;
           }
         }
       }
       if( addedLemma ){
-        Trace("cegqi-engine") << "  ...check for counterexample." << std::endl;
+        Trace("cegqi-engine") << "  ...added check lemma." << std::endl;
       }else{
+        Trace("cegqi-engine") << "  ...did not add check lemma." << std::endl;
         if( conj->needsRefinement() ){
           //immediately go to refine candidate
           checkCegConjecture( conj );
@@ -246,18 +244,26 @@ void CegInstantiation::checkCegConjecture( CegConjecture * conj ) {
     bool addedLemma = false;
     for( unsigned i=0; i<rlems.size(); i++ ){
       Node lem = rlems[i];
-      Trace("cegqi-lemma") << "Cegqi::Lemma : candidate refinement : " << lem << std::endl;
+      Trace("cegqi-lemma") << "Cegqi::Lemma : refinement : " << lem << std::endl;
       bool res = d_quantEngine->addLemma( lem );
       if( res ){
         ++(d_statistics.d_cegqi_lemmas_refine);
         conj->incrementRefineCount();
         addedLemma = true;
       }else{
-        Trace("cegqi-warn") << "  ...FAILED to add refinement!" << std::endl;
+        Trace("cegqi-warn") << "  ...FAILED to add refine lemma!" << std::endl;
       }
     }
     if( addedLemma ){
-      Trace("cegqi-engine") << "  ...refine candidate." << std::endl;
+      Trace("cegqi-engine") << "  ...added refine lemma." << std::endl;
+    }else{
+      Trace("cegqi-engine") << "  ...did not add refine lemma." << std::endl;
+      if( !conj->needsRefinement() )
+      {
+        //immediately go to check candidate
+        checkCegConjecture( conj );
+        return;
+      }
     }
   }
 }

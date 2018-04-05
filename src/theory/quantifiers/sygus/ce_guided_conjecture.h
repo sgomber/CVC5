@@ -156,8 +156,8 @@ private:
   QuantifiersEngine * d_qe;
   /** master conjecture */
   CegConjecture * d_cmaster;
-  /** is this conjecture the master to any others? */
-  bool d_is_master;
+  /** the slave conjectures */
+  std::vector< CegConjecture * > d_cslaves;
   /** the name of this conjecture */
   Node d_name;
   /** single invocation utility */
