@@ -29,19 +29,21 @@ namespace CVC4 {
 namespace theory {
 namespace quantifiers {
 
-CegInstantiation::CegInstantiation( QuantifiersEngine * qe, context::Context* c ) : QuantifiersModule( qe ),
-d_master_conj(nullptr),
-d_last_inst_si(false),
-d_requested_dec(c,false){
+CegInstantiation::CegInstantiation(QuantifiersEngine* qe, context::Context* c)
+    : QuantifiersModule(qe),
+      d_master_conj(nullptr),
+      d_last_inst_si(false),
+      d_requested_dec(c, false)
+{
   d_conjs.push_back(std::unique_ptr<CegConjecture>(new CegConjecture(qe)));
-  d_master_conj = d_conjs[0].get();    
+  d_master_conj = d_conjs[0].get();
 }
 
 CegInstantiation::~CegInstantiation(){ 
 }
 
 bool CegInstantiation::needsCheck( Theory::Effort e ) {
-  return e>=Theory::EFFORT_LAST_CALL && !d_conj_quant.isNull();
+  return e >= Theory::EFFORT_LAST_CALL && !d_conj_quant.isNull();
 }
 
 QuantifiersModule::QEffort CegInstantiation::needsModel(Theory::Effort e)
@@ -51,125 +53,137 @@ QuantifiersModule::QEffort CegInstantiation::needsModel(Theory::Effort e)
 
 void CegInstantiation::check(Theory::Effort e, QEffort quant_e)
 {
-  if( d_conj_quant.isNull() )
+  if (d_conj_quant.isNull())
   {
     // not assigned, nothing to do
     return;
   }
-  QEffort echeck = d_master_conj->isSingleInvocation() ? QEFFORT_STANDARD : QEFFORT_MODEL;
-  if( quant_e!=echeck )
+  QEffort echeck =
+      d_master_conj->isSingleInvocation() ? QEFFORT_STANDARD : QEFFORT_MODEL;
+  if (quant_e != echeck)
   {
     // must be at the correct effort level
     return;
   }
-  Trace("cegqi-engine") << "---Counterexample Guided Instantiation Engine---" << std::endl;
+  Trace("cegqi-engine") << "---Counterexample Guided Instantiation Engine---"
+                        << std::endl;
   Trace("cegqi-engine-debug") << std::endl;
   bool active = false;
   bool value;
-  if( d_quantEngine->getValuation().hasSatValue( d_conj_quant, value ) ) {
+  if (d_quantEngine->getValuation().hasSatValue(d_conj_quant, value))
+  {
     active = value;
-  }else{
-    Trace("cegqi-engine-debug") << "...no value for quantified formula." << std::endl;
   }
-  Trace("cegqi-engine-debug") << "Current conjecture status : active : " << active << std::endl;
-  if( !active )
+  else
+  {
+    Trace("cegqi-engine-debug")
+        << "...no value for quantified formula." << std::endl;
+  }
+  Trace("cegqi-engine-debug")
+      << "Current conjecture status : active : " << active << std::endl;
+  if (!active)
   {
     // if not active, we are done
     return;
   }
   // check each conjecture
-  for( unsigned i=0,size=d_conjs.size(); i<size; i++ )
+  for (unsigned i = 0, size = d_conjs.size(); i < size; i++)
   {
-    if( size>1 )
+    if (size > 1)
     {
       Trace("cegqi-engine") << "-----conjecture #" << i << "..." << std::endl;
     }
-    if( d_conjs[i]->needsCheck() )
+    if (d_conjs[i]->needsCheck())
     {
-      checkCegConjecture( d_conjs[i].get() );
+      checkCegConjecture(d_conjs[i].get());
     }
   }
-  Trace("cegqi-engine") << "Finished Counterexample Guided Instantiation engine." << std::endl;
+  Trace("cegqi-engine")
+      << "Finished Counterexample Guided Instantiation engine." << std::endl;
 }
 
 void CegInstantiation::registerQuantifier( Node q ) {
-  if( d_quantEngine->getOwner( q )!=this ){
+  if (d_quantEngine->getOwner(q) != this)
+  {
     Trace("cegqi-debug") << "Register quantifier : " << q << std::endl;
     return;
   }
-  else if( !d_conj_quant.isNull() )
+  else if (!d_conj_quant.isNull())
   {
     Assert(false);
     return;
   }
-  Assert( q.getKind()==FORALL );
+  Assert(q.getKind() == FORALL);
   d_conj_quant = q;
   Trace("cegqi") << "Register conjecture : " << q << std::endl;
   // is it a multi-conjecture?
-  if( q[1].getKind()==AND )
+  if (q[1].getKind() == AND)
   {
-    NodeManager * nm = NodeManager::currentNM();
+    NodeManager* nm = NodeManager::currentNM();
     // make the set of conjectures
-    std::vector< Node > conjectures;
-    std::vector< Node > cnames;
-    std::vector< Node > qchildren;
-    qchildren.push_back( q[0] );
-    qchildren.push_back( Node::null() );
-    if( q.getNumChildren()==3 )
+    std::vector<Node> conjectures;
+    std::vector<Node> cnames;
+    std::vector<Node> qchildren;
+    qchildren.push_back(q[0]);
+    qchildren.push_back(Node::null());
+    if (q.getNumChildren() == 3)
     {
-      qchildren.push_back( q[2] );
+      qchildren.push_back(q[2]);
     }
-    for( const Node& c : q[1] )
+    for (const Node& c : q[1])
     {
-      Assert( c.getKind()==NOT && c[0].getKind()==FORALL );
+      Assert(c.getKind() == NOT && c[0].getKind() == FORALL);
       QAttributes qa;
-      QuantAttributes::computeQuantAttributes(c[0],qa);
+      QuantAttributes::computeQuantAttributes(c[0], qa);
       // remember the name
       Node cname = qa.d_name;
       // remove the name and rewrite
-      Node cc = nm->mkNode( FORALL, c[0][0], c[0][1] );
-      cc = Rewriter::rewrite( cc );
+      Node cc = nm->mkNode(FORALL, c[0][0], c[0][1]);
+      cc = Rewriter::rewrite(cc);
       // make the (miniscoped) conjecture
       qchildren[1] = cc.negate();
-      Node conj = nm->mkNode( FORALL, qchildren );
+      Node conj = nm->mkNode(FORALL, qchildren);
       // add to vector
-      cnames.push_back( cname );
-      conjectures.push_back( conj );
+      cnames.push_back(cname);
+      conjectures.push_back(conj);
       Trace("cegqi") << "...conjecture " << cname << " : " << conj << std::endl;
     }
     // make new conjectures
-    for( unsigned i=1, size=conjectures.size(); i<size; i++ )
+    for (unsigned i = 1, size = conjectures.size(); i < size; i++)
     {
-      d_conjs.push_back(std::unique_ptr<CegConjecture>(new CegConjecture(d_quantEngine,d_master_conj)));
+      d_conjs.push_back(std::unique_ptr<CegConjecture>(
+          new CegConjecture(d_quantEngine, d_master_conj)));
     }
-    for( unsigned i=0, size=conjectures.size(); i<size; i++ )
+    for (unsigned i = 0, size = conjectures.size(); i < size; i++)
     {
       // assign the conjecture
-      d_conjs[i]->assign( conjectures[i] );
+      d_conjs[i]->assign(conjectures[i]);
       // set the name of the conjecture
-      d_conjs[i]->setName( cnames[i] );
+      d_conjs[i]->setName(cnames[i]);
     }
-    //AlwaysAssert(false);
+    // AlwaysAssert(false);
   }
   else
-  {    
+  {
     // normal initialization
-    d_master_conj->assign( q );
+    d_master_conj->assign(q);
   }
 }
 
 Node CegInstantiation::getNextDecisionRequest( unsigned& priority ) {
-  if( !d_master_conj->isAssigned() || d_requested_dec.get() )
+  if (!d_master_conj->isAssigned() || d_requested_dec.get())
   {
     // not yet initialized, or we've made all necessary decisions
     return Node::null();
   }
-  for( unsigned i=0,size=d_conjs.size(); i<size; i++ )
+  for (unsigned i = 0, size = d_conjs.size(); i < size; i++)
   {
-    Node dec_req = d_conjs[i]->getNextDecisionRequest( priority );
-    if( !dec_req.isNull() )
+    Node dec_req = d_conjs[i]->getNextDecisionRequest(priority);
+    if (!dec_req.isNull())
     {
-      Trace("cegqi-debug") << "CEGQI : Conjecture #" << i << " decide next on : " << dec_req << "..." << std::endl;
+      Trace("cegqi-debug") << "CEGQI : Conjecture #" << i
+                           << " decide next on : " << dec_req << "..."
+                           << std::endl;
       return dec_req;
     }
   }
@@ -215,9 +229,11 @@ void CegInstantiation::checkCegConjecture( CegConjecture * conj ) {
         }else{
           //this may happen if we eagerly unfold, simplify to true
           if( !options::sygusDirectEval() ){
-            Trace("cegqi-warn") << "  ...FAILED to add check lemma!" << std::endl;
+            Trace("cegqi-warn")
+                << "  ...FAILED to add check lemma!" << std::endl;
           }else{
-            Trace("cegqi-engine-debug") << "  ...FAILED to add check lemma!" << std::endl;
+            Trace("cegqi-engine-debug")
+                << "  ...FAILED to add check lemma!" << std::endl;
           }
         }
       }
@@ -244,7 +260,8 @@ void CegInstantiation::checkCegConjecture( CegConjecture * conj ) {
     bool addedLemma = false;
     for( unsigned i=0; i<rlems.size(); i++ ){
       Node lem = rlems[i];
-      Trace("cegqi-lemma") << "Cegqi::Lemma : refinement : " << lem << std::endl;
+      Trace("cegqi-lemma") << "Cegqi::Lemma : refinement : " << lem
+                           << std::endl;
       bool res = d_quantEngine->addLemma( lem );
       if( res ){
         ++(d_statistics.d_cegqi_lemmas_refine);
@@ -256,12 +273,14 @@ void CegInstantiation::checkCegConjecture( CegConjecture * conj ) {
     }
     if( addedLemma ){
       Trace("cegqi-engine") << "  ...added refine lemma." << std::endl;
-    }else{
+    }
+    else
+    {
       Trace("cegqi-engine") << "  ...did not add refine lemma." << std::endl;
-      if( !conj->needsRefinement() )
+      if (!conj->needsRefinement())
       {
-        //immediately go to check candidate
-        checkCegConjecture( conj );
+        // immediately go to check candidate
+        checkCegConjecture(conj);
         return;
       }
     }
@@ -269,9 +288,9 @@ void CegInstantiation::checkCegConjecture( CegConjecture * conj ) {
 }
 
 void CegInstantiation::printSynthSolution( std::ostream& out ) {
-  if( d_master_conj->isAssigned() )
+  if (d_master_conj->isAssigned())
   {
-    d_master_conj->printSynthSolution( out, d_last_inst_si );
+    d_master_conj->printSynthSolution(out, d_last_inst_si);
   }
   else
   {
@@ -296,7 +315,7 @@ void CegInstantiation::preregisterAssertion( Node n ) {
   if( QuantAttributes::checkSygusConjecture( n ) ){
     //this is a sygus conjecture
     Trace("cegqi") << "Preregister sygus conjecture : " << n << std::endl;
-    d_master_conj->preregisterConjecture( n );
+    d_master_conj->preregisterConjecture(n);
   }
 }
 

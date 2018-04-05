@@ -35,7 +35,7 @@ public:
  CegGrammarConstructor(QuantifiersEngine* qe, CegConjecture* p);
  ~CegGrammarConstructor() {}
  /** process
-  * 
+  *
   * This converts node q based on its deep embedding
   * (Section 4 of Reynolds et al CAV 2015).
   * The syntactic restrictions are associated with
@@ -51,7 +51,7 @@ public:
  Node process(Node q,
               const std::map<Node, Node>& templates,
               const std::map<Node, Node>& templates_arg);
- /** 
+ /**
   * Same as above, but we have already determined that the set of first-order
   * datatype variables that will quantify the deep embedding conjecture are
   * the vector ebvl.
@@ -59,8 +59,7 @@ public:
  Node process(Node q,
               const std::map<Node, Node>& templates,
               const std::map<Node, Node>& templates_arg,
-              const std::vector< Node >& ebvl
-             );
+              const std::vector<Node>& ebvl);
  /** is the syntax restricted? */
  bool isSyntaxRestricted() { return d_is_syntax_restricted; }
  /** does the syntax allow ITE expressions? */

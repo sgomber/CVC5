@@ -1198,16 +1198,16 @@ Expr Smt2::makeSygusBoundVarList(Datatype& dt,
 
 Expr Smt2::getSygusConstraints()
 {
-  if( !d_sygus_conj_name.isNull() )
+  if (!d_sygus_conj_name.isNull())
   {
     parseError("Did not end last synthesis conjecture.");
-  }    
-  if(d_sygusConjectures.empty())
+  }
+  if (d_sygusConjectures.empty())
   {
     Expr nullExpr;
     return getCurrentSygusConstraints(nullExpr);
   }
-  else if( d_sygusConjectures.size()==1 )
+  else if (d_sygusConjectures.size() == 1)
   {
     return d_sygusConjectures[0];
   }
@@ -1217,11 +1217,11 @@ Expr Smt2::getSygusConstraints()
 Expr Smt2::getCurrentSygusConstraints(Expr name)
 {
   Expr body;
-  if( d_sygusConstraints.empty() )
+  if (d_sygusConstraints.empty())
   {
     body = getExprManager()->mkConst(bool(true));
   }
-  else if( d_sygusConstraints.size()==1 )
+  else if (d_sygusConstraints.size() == 1)
   {
     body = d_sygusConstraints[0];
   }
@@ -1229,27 +1229,28 @@ Expr Smt2::getCurrentSygusConstraints(Expr name)
   {
     body = getExprManager()->mkExpr(kind::AND, d_sygusConstraints);
   }
-  
-  if( !d_sygusVars.empty() || !name.isNull() )
+
+  if (!d_sygusVars.empty() || !name.isNull())
   {
     // must add dummy variable if none exists
-    if( d_sygusVars.empty() )
+    if (d_sygusVars.empty())
     {
-      d_sygusVars.push_back(getExprManager()->mkBoundVar(getExprManager()->booleanType()));
+      d_sygusVars.push_back(
+          getExprManager()->mkBoundVar(getExprManager()->booleanType()));
     }
-    Expr boundVars = getExprManager()->mkExpr(kind::BOUND_VAR_LIST,d_sygusVars);
+    Expr boundVars =
+        getExprManager()->mkExpr(kind::BOUND_VAR_LIST, d_sygusVars);
     std::vector<Expr> children;
     children.push_back(boundVars);
     children.push_back(body);
-    if( !name.isNull() )
+    if (!name.isNull())
     {
       // set attribute on the variable
-      Command* cattr =
-          new SetUserAttributeCommand("quant-name", name);
+      Command* cattr = new SetUserAttributeCommand("quant-name", name);
       cattr->setMuted(true);
       preemptCommand(cattr);
       Expr ia = getExprManager()->mkExpr(kind::INST_ATTRIBUTE, name);
-      Expr ipl = getExprManager()->mkExpr(kind::INST_PATTERN_LIST,ia);
+      Expr ipl = getExprManager()->mkExpr(kind::INST_PATTERN_LIST, ia);
       children.push_back(ipl);
     }
     body = getExprManager()->mkExpr(kind::FORALL, children);
@@ -1260,33 +1261,33 @@ Expr Smt2::getCurrentSygusConstraints(Expr name)
 
 void Smt2::beginSygusConjecture(const std::string& name)
 {
-  if( !d_sygus_conj_name.isNull() )
+  if (!d_sygus_conj_name.isNull())
   {
     parseError("Cannot begin more than one synth conjecture at a time.");
-  }  
-  if( !d_sygusVars.empty() || !d_sygusConstraints.empty() )
+  }
+  if (!d_sygusVars.empty() || !d_sygusConstraints.empty())
   {
     parseError("Must begin synth conjecture before constraints and variables.");
   }
-  d_sygus_conj_name = mkVar(name,getExprManager()->booleanType());
+  d_sygus_conj_name = mkVar(name, getExprManager()->booleanType());
   pushScope();
 }
 
 void Smt2::endSygusConjecture()
 {
   popScope();
-  if( d_sygus_conj_name.isNull() )
+  if (d_sygus_conj_name.isNull())
   {
     parseError("Cannot end synth conjecture with beginning.");
   }
   Expr conj = getCurrentSygusConstraints(d_sygus_conj_name);
   Debug("parser-sygus") << "Pushed conjecture : " << conj << std::endl;
-  d_sygusConjectures.push_back( conj );
+  d_sygusConjectures.push_back(conj);
   d_sygusConstraints.clear();
   d_sygusVars.clear();
   d_sygus_conj_name = d_nullExpr;
 }
-  
+
 const void Smt2::getSygusPrimedVars( std::vector<Expr>& vars, bool isPrimed ) {
   for( unsigned i=0; i<d_sygusVars.size(); i++ ){
     Expr v = d_sygusVars[i];

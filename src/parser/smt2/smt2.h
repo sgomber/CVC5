@@ -78,12 +78,13 @@ private:
   std::vector<Expr> d_sygusConjectures;
   // ------------------------- for sygus
 
-  /** get the conjunction of the current sygus constraints 
-   * 
+  /** get the conjunction of the current sygus constraints
+   *
    * TODO
    */
   Expr getCurrentSygusConstraints(Expr name);
-protected:
+
+ protected:
   Smt2(ExprManager* exprManager, Input* input, bool strictMode = false, bool parseOnly = false);
 
 public:
@@ -269,25 +270,24 @@ public:
                         std::vector<std::string>& unresolved_gterm_sym,
                         std::map< CVC4::Type, CVC4::Type >& sygus_to_builtin );
 
-  
   void addSygusConstraint(Expr constraint) {
     d_sygusConstraints.push_back(constraint);
   }
 
   /** get the current set of sygus constraints */
   Expr getSygusConstraints();
-  
+
   /** begin sygus conjecture
-   * 
+   *
    * TODO
    */
   void beginSygusConjecture(const std::string& name);
-  
+
   /** end sygus conjecture
-   * 
+   *
    * TODO
    */
-  void endSygusConjecture();  
+  void endSygusConjecture();
 
   const std::vector<Expr>& getSygusVars() {
     return d_sygusVars;

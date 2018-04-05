@@ -690,7 +690,7 @@ void TermDbSygus::registerEnumerator(Node e,
                                      bool mkActiveGuard)
 {
   // if we've already registered it, return
-  if(d_enum_to_conjecture.find(e) != d_enum_to_conjecture.end())
+  if (d_enum_to_conjecture.find(e) != d_enum_to_conjecture.end())
   {
     return;
   }

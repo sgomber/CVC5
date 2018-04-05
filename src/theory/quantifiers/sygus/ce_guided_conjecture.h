@@ -41,123 +41,124 @@ namespace quantifiers {
  */
 class CegConjecture {
 public:
-  CegConjecture( QuantifiersEngine * qe, CegConjecture * master=nullptr );
-  ~CegConjecture();
-  //-----------------------------------initialization
-  /** preregister conjecture 
-  * This is used as a heuristic for solution reconstruction, so that we 
-  * remember expressions in the conjecture before preprocessing, since they
-  * may be helpful during solution reconstruction (Figure 5 of Reynolds et al 
-  * CAV 2015).
+ CegConjecture(QuantifiersEngine* qe, CegConjecture* master = nullptr);
+ ~CegConjecture();
+ //-----------------------------------initialization
+ /** preregister conjecture
+ * This is used as a heuristic for solution reconstruction, so that we
+ * remember expressions in the conjecture before preprocessing, since they
+ * may be helpful during solution reconstruction (Figure 5 of Reynolds et al
+ * CAV 2015).
+ */
+ void preregisterConjecture(Node q);
+ /** assign conjecture q to this class
+  *
+  * This initializes this class with synthesis conjecture q. As part of the
+  * initialization process, we do the following:
+  * (1) Infer whether we can use single-invocation techniques for q,
+  * (2) Construct the "deep embedding" form of q, which involves constructing
+  * a grammars in the form of inductive datatypes corresponding to syntactic
+  * restrictions for the solutions of the outermost variables of q,
+  * (3) TODO
   */
-  void preregisterConjecture( Node q );
-  /** assign conjecture q to this class 
-   * 
-   * This initializes this class with synthesis conjecture q. As part of the
-   * initialization process, we do the following:
-   * (1) Infer whether we can use single-invocation techniques for q,
-   * (2) Construct the "deep embedding" form of q, which involves constructing
-   * a grammars in the form of inductive datatypes corresponding to syntactic
-   * restrictions for the solutions of the outermost variables of q,
-   * (3) TODO
-   */
-  void assign( Node q );
-  /** has a conjecture been assigned to this class */
-  bool isAssigned() { return !d_embed_quant.isNull(); }
-  //-----------------------------------end initialization
+ void assign(Node q);
+ /** has a conjecture been assigned to this class */
+ bool isAssigned() { return !d_embed_quant.isNull(); }
+ //-----------------------------------end initialization
 
-  //-------------------------------- multi-conjecture synthesis 
-  /** get master conjecture */
-  CegConjecture * getMasterConjecture() const { return d_cmaster; }
-  /** Returns true if this is the only conjecture we are considering. */
-  bool isFullConjecture() const;
-  //-------------------------------- end multi-conjecture synthesis 
-  
-  /** set the name of this conjecture */
-  void setName(Node name) { d_name = name; }
-  /** get the name of this conjecture */
-  Node getName() const { return d_name; }
-  /** get original version of conjecture */
-  Node getConjecture() { return d_quant; }
-  /** get deep embedding version of conjecture */
-  Node getEmbeddedConjecture() { return d_embed_quant; }
-  /** get next decision request */
-  Node getNextDecisionRequest( unsigned& priority );
+ //-------------------------------- multi-conjecture synthesis
+ /** get master conjecture */
+ CegConjecture* getMasterConjecture() const { return d_cmaster; }
+ /** Returns true if this is the only conjecture we are considering. */
+ bool isFullConjecture() const;
+ //-------------------------------- end multi-conjecture synthesis
 
-  //-------------------------------for counterexample-guided check/refine
-  /** increment the number of times we have successfully done candidate
-   * refinement */
-  void incrementRefineCount() { d_refine_count++; }
-  /** whether the conjecture is waiting for a call to doCheck below */
-  bool needsCheck();
-  /** whether the conjecture is waiting for a call to doRefine below */
-  bool needsRefinement();
-  /** do single invocation check 
-  * This updates Gamma for an iteration of step 2 of Figure 1 of Reynolds et al CAV 2015.
-  */
-  void doSingleInvCheck(std::vector< Node >& lems);
-  /** do syntax-guided enumerative check 
-  * This is step 2(a) of Figure 3 of Reynolds et al CAV 2015.
-  */
-  void doCheck(std::vector<Node>& lems);
-  /** do basic check 
-  * This is called for non-SyGuS synthesis conjectures
-  */
-  void doBasicCheck(std::vector< Node >& lems);
-  /** do refinement 
-  * This is step 2(b) of Figure 3 of Reynolds et al CAV 2015.
-  */
-  void doRefine(std::vector< Node >& lems);
-  //-------------------------------end for counterexample-guided check/refine
-  /**
-   * prints the synthesis solution to output stream out.
-   *
-   * singleInvocation : set to true if we should consult the single invocation
-   * module to get synthesis solutions.
-   */
-  void printSynthSolution( std::ostream& out, bool singleInvocation );
-  /** get synth solutions
-   *
-   * This returns a map from function-to-synthesize variables to their
-   * builtin solution, which has the same type. For example, for synthesis
-   * conjecture exists f. forall x. f( x )>x, this function may return the map
-   * containing the entry:
-   *   f -> (lambda x. x+1)
-   *
-   * singleInvocation : set to true if we should consult the single invocation
-   * module to get synthesis solutions.
-   */
-  void getSynthSolutions(std::map<Node, Node>& sol_map, bool singleInvocation);
-  /** get guard, this is "G" in Figure 3 of Reynolds et al CAV 2015 */
-  Node getGuard();
-  /** is ground */
-  bool isGround() { return d_inner_vars.empty(); }
-  /** does this conjecture correspond to a syntax-guided synthesis input */
-  bool isSyntaxGuided() const { return d_syntax_guided; }
-  /** are we using single invocation techniques */
-  bool isSingleInvocation() const;
+ /** set the name of this conjecture */
+ void setName(Node name) { d_name = name; }
+ /** get the name of this conjecture */
+ Node getName() const { return d_name; }
+ /** get original version of conjecture */
+ Node getConjecture() { return d_quant; }
+ /** get deep embedding version of conjecture */
+ Node getEmbeddedConjecture() { return d_embed_quant; }
+ /** get next decision request */
+ Node getNextDecisionRequest(unsigned& priority);
 
-  /** get model values for terms n, store in vector v */
-  void getModelValues( std::vector< Node >& n, std::vector< Node >& v );
-  /** get model value for term n */
-  Node getModelValue( Node n );
+ //-------------------------------for counterexample-guided check/refine
+ /** increment the number of times we have successfully done candidate
+  * refinement */
+ void incrementRefineCount() { d_refine_count++; }
+ /** whether the conjecture is waiting for a call to doCheck below */
+ bool needsCheck();
+ /** whether the conjecture is waiting for a call to doRefine below */
+ bool needsRefinement();
+ /** do single invocation check
+ * This updates Gamma for an iteration of step 2 of Figure 1 of Reynolds et al
+ * CAV 2015.
+ */
+ void doSingleInvCheck(std::vector<Node>& lems);
+ /** do syntax-guided enumerative check
+ * This is step 2(a) of Figure 3 of Reynolds et al CAV 2015.
+ */
+ void doCheck(std::vector<Node>& lems);
+ /** do basic check
+ * This is called for non-SyGuS synthesis conjectures
+ */
+ void doBasicCheck(std::vector<Node>& lems);
+ /** do refinement
+ * This is step 2(b) of Figure 3 of Reynolds et al CAV 2015.
+ */
+ void doRefine(std::vector<Node>& lems);
+ //-------------------------------end for counterexample-guided check/refine
+ /**
+  * prints the synthesis solution to output stream out.
+  *
+  * singleInvocation : set to true if we should consult the single invocation
+  * module to get synthesis solutions.
+  */
+ void printSynthSolution(std::ostream& out, bool singleInvocation);
+ /** get synth solutions
+  *
+  * This returns a map from function-to-synthesize variables to their
+  * builtin solution, which has the same type. For example, for synthesis
+  * conjecture exists f. forall x. f( x )>x, this function may return the map
+  * containing the entry:
+  *   f -> (lambda x. x+1)
+  *
+  * singleInvocation : set to true if we should consult the single invocation
+  * module to get synthesis solutions.
+  */
+ void getSynthSolutions(std::map<Node, Node>& sol_map, bool singleInvocation);
+ /** get guard, this is "G" in Figure 3 of Reynolds et al CAV 2015 */
+ Node getGuard();
+ /** is ground */
+ bool isGround() { return d_inner_vars.empty(); }
+ /** does this conjecture correspond to a syntax-guided synthesis input */
+ bool isSyntaxGuided() const { return d_syntax_guided; }
+ /** are we using single invocation techniques */
+ bool isSingleInvocation() const;
 
-  /** get program by examples utility */
-  CegConjecturePbe* getPbe() { return d_ceg_pbe.get(); }
-  /** get utility for static preprocessing and analysis of conjectures */
-  CegConjectureProcess* getProcess() { return d_ceg_proc.get(); }
-  /** get the symmetry breaking predicate for type */
-  Node getSymmetryBreakingPredicate(
-      Node x, Node e, TypeNode tn, unsigned tindex, unsigned depth);
-  /** print out debug information about this conjecture */
-  void debugPrint( const char * c );
+ /** get model values for terms n, store in vector v */
+ void getModelValues(std::vector<Node>& n, std::vector<Node>& v);
+ /** get model value for term n */
+ Node getModelValue(Node n);
+
+ /** get program by examples utility */
+ CegConjecturePbe* getPbe() { return d_ceg_pbe.get(); }
+ /** get utility for static preprocessing and analysis of conjectures */
+ CegConjectureProcess* getProcess() { return d_ceg_proc.get(); }
+ /** get the symmetry breaking predicate for type */
+ Node getSymmetryBreakingPredicate(
+     Node x, Node e, TypeNode tn, unsigned tindex, unsigned depth);
+ /** print out debug information about this conjecture */
+ void debugPrint(const char* c);
 private:
   /** reference to quantifier engine */
   QuantifiersEngine * d_qe;
   /** master conjecture */
-  CegConjecture * d_cmaster;
+  CegConjecture* d_cmaster;
   /** the slave conjectures */
-  std::vector< CegConjecture * > d_cslaves;
+  std::vector<CegConjecture*> d_cslaves;
   /** the name of this conjecture */
   Node d_name;
   /** single invocation utility */

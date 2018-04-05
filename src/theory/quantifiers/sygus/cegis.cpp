@@ -74,8 +74,8 @@ bool Cegis::constructCandidates(const std::vector<Node>& enums,
                                 std::vector<Node>& candidate_values,
                                 std::vector<Node>& lems)
 {
-  Assert( enums.size()==enum_values.size() );
-  Assert( candidates.size()==enums.size() );
+  Assert(enums.size() == enum_values.size());
+  Assert(candidates.size() == enums.size());
 
   if (options::sygusDirectEval())
   {
@@ -83,14 +83,14 @@ bool Cegis::constructCandidates(const std::vector<Node>& enums,
     bool addedEvalLemmas = false;
     if (options::sygusCRefEval())
     {
-      Trace("cegqi-engine") << "  *** Do cached refinement evaluation..."
-                            << std::endl;
+      Trace("cegqi-engine")
+          << "  *** Do cached refinement evaluation..." << std::endl;
       // see if any refinement lemma is refuted by evaluation
       std::vector<Node> cre_lems;
       bool checkOnly = !d_parent->isFullConjecture();
-      if( getRefinementEvalLemmas(candidates, enum_values, cre_lems, checkOnly) )
+      if (getRefinementEvalLemmas(candidates, enum_values, cre_lems, checkOnly))
       {
-        if( checkOnly )
+        if (checkOnly)
         {
           // There is at least one previous refinement lemma that evaluates to
           // false for the candidate. Thus, we are not interested in checking
@@ -106,8 +106,8 @@ bool Cegis::constructCandidates(const std::vector<Node>& enums,
             Node lem = cre_lems[j];
             if (d_qe->addLemma(lem))
             {
-              Trace("cegqi-lemma") << "Cegqi::Lemma : cref evaluation : " << lem
-                                  << std::endl;
+              Trace("cegqi-lemma")
+                  << "Cegqi::Lemma : cref evaluation : " << lem << std::endl;
               addedEvalLemmas = true;
             }
           }
@@ -117,7 +117,8 @@ bool Cegis::constructCandidates(const std::vector<Node>& enums,
         }
       }
     }
-    Trace("cegqi-engine") << "  *** Do evaluation function unfolding..." << std::endl;
+    Trace("cegqi-engine") << "  *** Do evaluation function unfolding..."
+                          << std::endl;
     std::vector<Node> eager_terms;
     std::vector<Node> eager_vals;
     std::vector<Node> eager_exps;
@@ -126,14 +127,11 @@ bool Cegis::constructCandidates(const std::vector<Node>& enums,
     {
       Trace("cegqi-debug") << "  register " << candidates[j] << " -> "
                            << enum_values[j] << std::endl;
-      tds->registerModelValue(candidates[j],
-                              enum_values[j],
-                              eager_terms,
-                              eager_vals,
-                              eager_exps);
+      tds->registerModelValue(
+          candidates[j], enum_values[j], eager_terms, eager_vals, eager_exps);
     }
-    Trace("cegqi-debug") << "...produced " << eager_terms.size()
-                         << " lemmas." << std::endl;
+    Trace("cegqi-debug") << "...produced " << eager_terms.size() << " lemmas."
+                         << std::endl;
 
     for (unsigned j = 0, size = eager_terms.size(); j < size; j++)
     {
@@ -148,8 +146,9 @@ bool Cegis::constructCandidates(const std::vector<Node>& enums,
       }
       if (d_qe->addLemma(lem))
       {
-        Trace("cegqi-lemma") << "Cegqi::Lemma : evaluation function unfolding : " << lem
-                             << std::endl;
+        Trace("cegqi-lemma")
+            << "Cegqi::Lemma : evaluation function unfolding : " << lem
+            << std::endl;
         addedEvalLemmas = true;
       }
     }
@@ -162,7 +161,7 @@ bool Cegis::constructCandidates(const std::vector<Node>& enums,
   // we wish to try this candidate
   candidate_values.insert(
       candidate_values.end(), enum_values.begin(), enum_values.end());
-  
+
   return true;
 }
 
@@ -173,15 +172,15 @@ void Cegis::registerRefinementLemma(const std::vector<Node>& vars,
   // remember the refinement lemma
   d_refinement_lemmas.push_back(lem);
   // only if the parent is the full conjecture
-  if( d_parent->isFullConjecture() )
+  if (d_parent->isFullConjecture())
   {
     // Make the refinement lemma and add it to lems.
     // This lemma is guarded by the parent's guard, which has the semantics
     // "this conjecture has a solution", hence this lemma states:
     // if the parent conjecture has a solution, it satisfies the specification
     // for the given concrete point.
-    Node rlem =
-        NodeManager::currentNM()->mkNode(OR, d_parent->getGuard().negate(), lem);
+    Node rlem = NodeManager::currentNM()->mkNode(
+        OR, d_parent->getGuard().negate(), lem);
     lems.push_back(rlem);
   }
 }
@@ -189,8 +188,7 @@ void Cegis::registerRefinementLemma(const std::vector<Node>& vars,
 bool Cegis::getRefinementEvalLemmas(const std::vector<Node>& vs,
                                     const std::vector<Node>& ms,
                                     std::vector<Node>& lems,
-                                    bool checkOnly
-                                   )
+                                    bool checkOnly)
 {
   Trace("sygus-cref-eval") << "Cref eval : conjecture has "
                            << getNumRefinementLemmas() << " refinement lemmas."
@@ -290,7 +288,7 @@ bool Cegis::getRefinementEvalLemmas(const std::vector<Node>& vs,
           }
           if (!cre_lem.isNull())
           {
-            if( checkOnly )
+            if (checkOnly)
             {
               return true;
             }

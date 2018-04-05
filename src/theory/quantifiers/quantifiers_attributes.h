@@ -51,11 +51,13 @@ typedef expr::Attribute< QuantElimPartialAttributeId, bool > QuantElimPartialAtt
 struct SygusAttributeId {};
 typedef expr::Attribute< SygusAttributeId, bool > SygusAttribute;
 
-/** 
- * Attribute true for quantifiers that are sub-conjectures of SyGuS conjectures. 
+/**
+ * Attribute true for quantifiers that are sub-conjectures of SyGuS conjectures.
  */
-struct QuantNameAttributeId {};
-typedef expr::Attribute< QuantNameAttributeId, bool > QuantNameAttribute;
+struct QuantNameAttributeId
+{
+};
+typedef expr::Attribute<QuantNameAttributeId, bool> QuantNameAttribute;
 
 /** Attribute true for quantifiers that are synthesis conjectures */
 struct SynthesisAttributeId {};
@@ -126,10 +128,10 @@ struct QAttributes
   bool isRewriteRule() const { return !d_rr.isNull(); }
   /** is this quantified formula a function definition? */
   bool isFunDef() const { return !d_fundef_f.isNull(); }
-  /** 
+  /**
    * Is this a standard quantifier? A standard quantifier is one that we can
    * perform destructive updates (variable elimination, miniscoping, etc).
-   * 
+   *
    * A quantified formula is not standard if it is sygus, one for which
    * we are performing quantifier elimination, is a function definition, or
    * has a name.

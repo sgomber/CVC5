@@ -101,7 +101,7 @@ class Cegis : public SygusModule
    * Given a candidate solution ms for candidates vs, this function adds lemmas
    * to lems based on evaluating the conjecture, instantiated for ms, on lemmas
    * for previous refinements (d_refinement_lemmas).
-   * 
+   *
    * TODO
    */
   bool getRefinementEvalLemmas(const std::vector<Node>& vs,
