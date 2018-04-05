@@ -1594,7 +1594,7 @@ Node TheoryStringsRewriterOld::rewriteReplace( Node node ) {
   }else{
     if( node[1].isConst() ){
       if( node[1].getConst<String>().isEmptyString() ){
-        return node[0];
+        return NodeManager::currentNM()->mkNode( kind::STRING_CONCAT,node[2],node[0]);
       }
       std::vector< Node > children;
       getConcat( node[0], children );
