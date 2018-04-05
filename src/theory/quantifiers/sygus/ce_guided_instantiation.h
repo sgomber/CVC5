@@ -37,6 +37,8 @@ private:
   bool d_last_inst_si;
   /** whether all conjectures have requested necessary decisions */
   context::CDO<bool> d_requested_dec;
+  /** the overall synthesis conjecture we registered with the above class(es) */
+  Node d_conj_quant;
   /** check conjecture */
   void checkCegConjecture( CegConjecture * conj );
 public:
