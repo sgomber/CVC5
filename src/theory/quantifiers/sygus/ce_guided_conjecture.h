@@ -40,7 +40,7 @@ namespace quantifiers {
  * conjecture, and has interfaces for implementing them.
  */
 class CegConjecture {
-public:
+ public:
  CegConjecture(QuantifiersEngine* qe, CegConjecture* master = nullptr);
  ~CegConjecture();
  //-----------------------------------initialization
