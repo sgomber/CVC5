@@ -41,6 +41,7 @@ namespace quantifiers {
 CegConjecture::CegConjecture(QuantifiersEngine* qe, CegConjecture * master)
     : d_qe(qe),
       d_cmaster(master),
+      d_is_master(false),
       d_ceg_si(new CegConjectureSingleInv(qe, this)),
       d_ceg_proc(new CegConjectureProcess(qe)),
       d_ceg_gc(new CegGrammarConstructor(qe, this)),
@@ -55,6 +56,10 @@ CegConjecture::CegConjecture(QuantifiersEngine* qe, CegConjecture * master)
     d_modules.push_back(d_ceg_pbe.get());
   }
   d_modules.push_back(d_ceg_cegis.get());
+  if( d_cmaster!=nullptr )
+  {
+    d_cmaster->d_is_master = true;
+  }
 }
 
 CegConjecture::~CegConjecture() {}
