@@ -51,9 +51,7 @@ typedef expr::Attribute< QuantElimPartialAttributeId, bool > QuantElimPartialAtt
 struct SygusAttributeId {};
 typedef expr::Attribute< SygusAttributeId, bool > SygusAttribute;
 
-/**
- * Attribute true for quantifiers that are sub-conjectures of SyGuS conjectures.
- */
+/**Attribute to give names to quantified formulas */
 struct QuantNameAttributeId
 {
 };
