@@ -682,16 +682,10 @@ void CegConjecture::printSynthSolution( std::ostream& out, bool singleInvocation
               // just insist that constants are not relevant pairs
               success = !solb.isConst() || !eq_solb.isConst();
             }
-            if( success )
+            if (success)
             {
-              if( !d_sampler[prog].registerRelevantPair(sol,eq_sol) )
-              {
-                // the rewrite rule is redundant
-                eq_sol = Node::null();
-              }
-            }
-            if (success && !eq_sol.isNull())
-            {
+              // register this as a relevant pair (helps filtering)
+              d_sampler[prog].registerRelevantPair(sol,eq_sol);
               if (!options::sygusSilent())
               {
                 // The analog of terms sol and eq_sol are equivalent under

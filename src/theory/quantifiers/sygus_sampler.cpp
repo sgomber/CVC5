@@ -730,7 +730,19 @@ Node SygusSamplerExt::registerTerm(Node n, bool forceKeep)
       Trace("sygus-synth-rr-debug") << "...redundant (matchable)" << std::endl;
     }
   }
-
+  
+  // ----- check rewriting redundancy
+  if (d_drewrite != nullptr)
+  {
+    Trace("sygus-synth-rr-debug") << "Add rewrite pair..." << std::endl;
+    if (!d_drewrite->areEqual(bn, beq_n))
+    {
+      // must be unique according to the dynamic rewriter
+      Trace("sygus-synth-rr-debug") << "...redundant (rewritable)" << std::endl;
+      keep = false;
+    }
+  }
+  
   if (keep)
   {
     return eq_n;
@@ -743,7 +755,7 @@ Node SygusSamplerExt::registerTerm(Node n, bool forceKeep)
   return Node::null();
 }
 
-bool SygusSamplerExt::registerRelevantPair(Node n, Node eq_n)
+void SygusSamplerExt::registerRelevantPair(Node n, Node eq_n)
 {
   Node bn = n;
   Node beq_n = eq_n;
@@ -760,7 +772,7 @@ bool SygusSamplerExt::registerRelevantPair(Node n, Node eq_n)
     {
       // must be unique according to the dynamic rewriter
       Trace("sygus-synth-rr-debug") << "...redundant (rewritable)" << std::endl;
-      return false;
+      return;
     }
   }
   // add to match information
@@ -776,7 +788,6 @@ bool SygusSamplerExt::registerRelevantPair(Node n, Node eq_n)
     }
     d_pairs[t].insert(to);
   }
-  return true;
 }
 
 bool SygusSamplerExt::notify(Node s,
