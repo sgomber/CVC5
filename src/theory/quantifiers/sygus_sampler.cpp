@@ -14,6 +14,8 @@
 
 #include "theory/quantifiers/sygus_sampler.h"
 
+#include "printer/printer.h"
+#include "options/base_options.h"
 #include "options/quantifiers_options.h"
 #include "util/bitvector.h"
 #include "util/random.h"
@@ -747,10 +749,17 @@ Node SygusSamplerExt::registerTerm(Node n, bool forceKeep)
   {
     return eq_n;
   }
-  else if (Trace.isOn("sygus-synth-rr"))
+  Trace("sygus-synth-rr") << "Redundant pair : " << eq_n << " " << n;
+  Trace("sygus-synth-rr") << std::endl;
+  if (Trace.isOn("sygus-rr-filter"))
   {
-    Trace("sygus-synth-rr") << "Redundant pair : " << eq_n << " " << n;
-    Trace("sygus-synth-rr") << std::endl;
+    Printer* p = Printer::getPrinter(options::outputLanguage());
+    std::stringstream ss;
+    ss << "(redundant-rewrite ";
+    p->toStreamSygus(ss, n);
+    ss << " ";
+    p->toStreamSygus(ss, eq_n);
+    Trace("sygus-rr-filter") << ss.str() << std::endl;
   }
   return Node::null();
 }

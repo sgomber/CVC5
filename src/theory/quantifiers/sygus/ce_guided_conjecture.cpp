@@ -582,31 +582,10 @@ void CegConjecture::printSynthSolution( std::ostream& out, bool singleInvocation
       ss << prog;
       std::string f(ss.str());
       f.erase(f.begin());
-      if (!options::sygusSilent())
-      {
-        out << "(define-fun " << f << " ";
-        if (dt.getSygusVarList().isNull())
-        {
-          out << "() ";
-        }
-        else
-        {
-          out << dt.getSygusVarList() << " ";
-        }
-        out << dt.getSygusType() << " ";
-        if (status == 0)
-        {
-          out << sol;
-        }
-        else
-        {
-          Printer::getPrinter(options::outputLanguage())
-              ->toStreamSygus(out, sol);
-        }
-        out << ")" << std::endl;
-      }
       CegInstantiation* cei = d_qe->getCegInstantiation();
       ++(cei->d_statistics.d_solutions);
+      
+      bool is_unique_term = true;
 
       if (status != 0 && options::sygusRewSynth())
       {
@@ -622,6 +601,7 @@ void CegConjecture::printSynthSolution( std::ostream& out, bool singleInvocation
         // eq_sol is a candidate solution that is equivalent to sol
         if (eq_sol != sol)
         {
+          is_unique_term = false;
           // if eq_sol is null, then we have an uninteresting candidate rewrite,
           // e.g. one that is alpha-equivalent to another.
           bool success = true;
@@ -654,6 +634,7 @@ void CegConjecture::printSynthSolution( std::ostream& out, bool singleInvocation
                 Trace("rr-check")
                     << "...rewrite does not hold for: " << std::endl;
                 success = false;
+                is_unique_term = true;
                 if( options::sygusSampleModel() )
                 {
                   std::vector<Node> vars;
@@ -739,6 +720,29 @@ void CegConjecture::printSynthSolution( std::ostream& out, bool singleInvocation
             ++(cei->d_statistics.d_candidate_rewrites);
           }
         }
+      }
+      if (is_unique_term && !options::sygusSilent())
+      {
+        out << "(define-fun " << f << " ";
+        if (dt.getSygusVarList().isNull())
+        {
+          out << "() ";
+        }
+        else
+        {
+          out << dt.getSygusVarList() << " ";
+        }
+        out << dt.getSygusType() << " ";
+        if (status == 0)
+        {
+          out << sol;
+        }
+        else
+        {
+          Printer::getPrinter(options::outputLanguage())
+              ->toStreamSygus(out, sol);
+        }
+        out << ")" << std::endl;
       }
     }
   }
