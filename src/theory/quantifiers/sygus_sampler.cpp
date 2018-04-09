@@ -700,13 +700,13 @@ void SygusSamplerExt::initializeSygusExt(QuantifiersEngine* qe,
 Node SygusSamplerExt::registerTerm(Node n, bool forceKeep)
 {
   Node eq_n = SygusSampler::registerTerm(n, forceKeep);
-  Trace("sygus-synth-rr") << "sygusSampleExt : " << n << "..." << eq_n
-                          << std::endl;
   if (eq_n == n)
   {
     // this is a unique term
     return n;
   }
+  Trace("sygus-synth-rr") << "sygusSampleExt : " << n << "..." << eq_n
+                          << std::endl;
   Node bn = n;
   Node beq_n = eq_n;
   if (d_use_sygus_type)
@@ -727,7 +727,7 @@ Node SygusSamplerExt::registerTerm(Node n, bool forceKeep)
     if (!d_match_trie.getMatches(bn, &d_ssenm))
     {
       keep = false;
-      Trace("sygus-synth-rr-debug") << "...redundant (matchable)" << std::endl;
+      Trace("sygus-synth-rr") << "...redundant (matchable)" << std::endl;
     }
   }
   
@@ -735,10 +735,10 @@ Node SygusSamplerExt::registerTerm(Node n, bool forceKeep)
   if (d_drewrite != nullptr)
   {
     Trace("sygus-synth-rr-debug") << "Add rewrite pair..." << std::endl;
-    if (!d_drewrite->areEqual(bn, beq_n))
+    if (d_drewrite->areEqual(bn, beq_n))
     {
       // must be unique according to the dynamic rewriter
-      Trace("sygus-synth-rr-debug") << "...redundant (rewritable)" << std::endl;
+      Trace("sygus-synth-rr") << "...redundant (rewritable)" << std::endl;
       keep = false;
     }
   }

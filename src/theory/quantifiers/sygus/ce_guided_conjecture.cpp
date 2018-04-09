@@ -633,10 +633,10 @@ void CegConjecture::printSynthSolution( std::ostream& out, bool singleInvocation
             Node eq_solb = sygusDb->sygusToBuiltin(eq_sol);
             Node eq_solr = er->extendedRewrite(eq_solb);
             bool verified = false;
+            Trace("rr-check") << "Check candidate rewrite..." << std::endl;
             // verify it if applicable
             if (options::sygusRewSynthCheck())
             {
-              Trace("rr-check") << "Check candidate rewrite..." << std::endl;
               // Notice we don't set produce-models. rrChecker takes the same
               // options as the SmtEngine we belong to, where we ensure that
               // produce-models is set.
