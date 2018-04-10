@@ -4156,6 +4156,12 @@ void SmtEnginePrivate::processAssertions() {
   dumpAssertions("post-substitution", d_assertions);
 
   // Assertions ARE guaranteed to be rewritten by this point
+#ifdef CVC4_ASSERTIONS
+  for (unsigned i = 0; i < d_assertions.size(); ++i)
+  {
+    Assert(Rewriter::rewrite(d_assertions[i]) == d_assertions[i]);
+  }
+#endif
 
   // Lift bit-vectors of size 1 to bool
   if(options::bitvectorToBool()) {
@@ -4640,10 +4646,15 @@ Result SmtEngine::checkSatisfiability(const vector<Expr>& assumptions,
     // Dump the query if requested
     if (Dump.isOn("benchmark"))
     {
+      size_t size = assumptions.size();
       // the expr already got dumped out if assertion-dumping is on
-      if (isQuery && assumptions.size() == 1)
+      if (isQuery && size == 1)
       {
         Dump("benchmark") << QueryCommand(assumptions[0]);
+      }
+      else if (size == 0)
+      {
+        Dump("benchmark") << CheckSatCommand();
       }
       else
       {
