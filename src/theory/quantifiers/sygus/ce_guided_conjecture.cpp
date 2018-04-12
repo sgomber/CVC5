@@ -587,6 +587,8 @@ void CegConjecture::printSynthSolution( std::ostream& out, bool singleInvocation
       
       bool is_unique_term = true;
 
+      bool is_unique_term = true;
+
       if (status != 0 && options::sygusRewSynth())
       {
         TermDbSygus* sygusDb = d_qe->getTermDatabaseSygus();
@@ -712,7 +714,7 @@ void CegConjecture::printSynthSolution( std::ostream& out, bool singleInvocation
             }
           }
           // we count this as a rewrite if we did not explicitly rule it out
-          if( success )
+          if (success)
           {
             ++(cei->d_statistics.d_candidate_rewrites);
           }

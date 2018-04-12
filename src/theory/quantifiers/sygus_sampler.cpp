@@ -14,9 +14,9 @@
 
 #include "theory/quantifiers/sygus_sampler.h"
 
-#include "printer/printer.h"
 #include "options/base_options.h"
 #include "options/quantifiers_options.h"
+#include "printer/printer.h"
 #include "util/bitvector.h"
 #include "util/random.h"
 
@@ -777,12 +777,8 @@ void SygusSamplerExt::registerRelevantPair(Node n, Node eq_n)
   if (d_drewrite != nullptr)
   {
     Trace("sygus-synth-rr-debug") << "Add rewrite pair..." << std::endl;
-    if (!d_drewrite->addRewrite(bn, beq_n))
-    {
-      // must be unique according to the dynamic rewriter
-      Trace("sygus-synth-rr-debug") << "...redundant (rewritable)" << std::endl;
-      return;
-    }
+    Assert(!d_drewrite->areEqual(bn, beq_n));
+    d_drewrite->addRewrite(bn, beq_n);
   }
   // add to match information
   for (unsigned r = 0; r < 2; r++)
