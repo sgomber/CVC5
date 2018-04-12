@@ -587,8 +587,6 @@ void CegConjecture::printSynthSolution( std::ostream& out, bool singleInvocation
       
       bool is_unique_term = true;
 
-      bool is_unique_term = true;
-
       if (status != 0 && options::sygusRewSynth())
       {
         TermDbSygus* sygusDb = d_qe->getTermDatabaseSygus();
