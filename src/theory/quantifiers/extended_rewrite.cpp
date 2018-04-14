@@ -856,6 +856,11 @@ Node ExtendedRewriter::extendedRewriteEqChain(
       children.push_back(cp.first);
     }
   }
+  AlwaysAssert( children.size()>0 );
+  //if( children.empty() )
+  //{
+  //  return nm->mkConst(gpol);
+  //}
   std::sort(children.begin(), children.end());
 
   Node new_ret;
@@ -1985,10 +1990,11 @@ int ExtendedRewriter::bitVectorArithComp(Node a, Node b, bool strict)
   }
 
   // flip
-  if (a.getKind() == BITVECTOR_NEG && b.getKind() == BITVECTOR_NEG)
-  {
-    return bitVectorArithComp(b[0], a[0], strict);
-  }
+  // this is unsound: FIXME?
+  //if (a.getKind() == BITVECTOR_NEG && b.getKind() == BITVECTOR_NEG)
+  //{
+  //  return bitVectorArithComp(b[0], a[0], strict);
+  //}
 
   // shifting right always shrinks
   if (b.getKind() == BITVECTOR_LSHR)
