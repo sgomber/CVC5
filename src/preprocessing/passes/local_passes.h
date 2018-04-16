@@ -27,11 +27,13 @@ namespace CVC4 {
 namespace preprocessing {
 namespace passes {
 
+/*
 class LocalPassState
 {
 public:
   
 };
+*/
   
 /** Local pass
  * 
@@ -63,7 +65,7 @@ class LocalPasses : public PreprocessingPass
   void registerLocalPass( LocalPass * lp );
  protected:
   /** the state */
-  LocalPassState d_state;
+  //LocalPassState d_state;
   /** list of local passes */
   std::vector< LocalPass * > d_lps;
   /** apply internal */

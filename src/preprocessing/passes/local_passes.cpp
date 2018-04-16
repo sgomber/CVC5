@@ -28,6 +28,11 @@ using namespace CVC4::kind;
 LocalPasses::LocalPasses(PreprocessingPassContext* preprocContext)
     : PreprocessingPass(preprocContext, "local-passes"){};
 
+void LocalPasses::registerLocalPass( LocalPass * lp )
+{
+  d_lps.push_back(lp);
+}
+  
 PreprocessingPassResult LocalPasses::applyInternal(
     AssertionPipeline* assertionsToPreprocess)
 {
