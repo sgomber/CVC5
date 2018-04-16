@@ -64,6 +64,8 @@ libcvc4_la_SOURCES = \
 	decision/justification_heuristic.h \
 	preprocessing/passes/int_to_bv.cpp \
 	preprocessing/passes/int_to_bv.h \
+	preprocessing/passes/local_passes.cpp \
+	preprocessing/passes/local_passes.h \
 	preprocessing/passes/bv_gauss.cpp \
 	preprocessing/passes/bv_gauss.h \
 	preprocessing/preprocessing_pass.cpp \
