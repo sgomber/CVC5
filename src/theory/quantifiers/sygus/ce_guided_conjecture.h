@@ -282,6 +282,11 @@ class CegConjecture {
    * rewrite rules.
    */
   std::map<Node, SygusSamplerExt> d_sampler;
+  /**
+   * Cache of skolems for each free variable that appears in a synthesis check
+   * (for --sygus-rr-synth-check).
+   */
+  std::map<Node, Node> d_fv_to_skolem;
 };
 
 } /* namespace CVC4::theory::quantifiers */

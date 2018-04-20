@@ -597,7 +597,11 @@ int VarMatchGeneratorTermSubs::getNextMatch(Node q,
 InstMatchGeneratorMultiLinear::InstMatchGeneratorMultiLinear( Node q, std::vector< Node >& pats, QuantifiersEngine* qe ) {
   //order patterns to maximize eager matching failures
   std::map< Node, std::vector< Node > > var_contains;
-  qe->getTermUtil()->getVarContains( q, pats, var_contains );
+  for (const Node& pat : pats)
+  {
+    quantifiers::TermUtil::computeInstConstContainsForQuant(
+        q, pat, var_contains[pat]);
+  }
   std::map< Node, std::vector< Node > > var_to_node;
   for( std::map< Node, std::vector< Node > >::iterator it = var_contains.begin(); it != var_contains.end(); ++it ){
     for( unsigned i=0; i<it->second.size(); i++ ){
@@ -710,7 +714,11 @@ InstMatchGeneratorMulti::InstMatchGeneratorMulti(Node q,
 {
   Trace("multi-trigger-cache") << "Making smart multi-trigger for " << q << std::endl;
   std::map< Node, std::vector< Node > > var_contains;
-  qe->getTermUtil()->getVarContains( q, pats, var_contains );
+  for (const Node& pat : pats)
+  {
+    quantifiers::TermUtil::computeInstConstContainsForQuant(
+        q, pat, var_contains[pat]);
+  }
   //convert to indicies
   for( std::map< Node, std::vector< Node > >::iterator it = var_contains.begin(); it != var_contains.end(); ++it ){
     Trace("multi-trigger-cache") << "Pattern " << it->first << " contains: ";
@@ -1042,8 +1050,12 @@ void InstMatchGeneratorSimple::addInstantiations(InstMatch& m,
     TNode t = tat->getNodeData();
     Debug("simple-trigger") << "Actual term is " << t << std::endl;
     //convert to actual used terms
-    for( std::map< int, int >::iterator it = d_var_num.begin(); it != d_var_num.end(); ++it ){
+    for (std::map<unsigned, int>::iterator it = d_var_num.begin();
+         it != d_var_num.end();
+         ++it)
+    {
       if( it->second>=0 ){
+        Assert(it->first < t.getNumChildren());
         Debug("simple-trigger") << "...set " << it->second << " " << t[it->first] << std::endl;
         m.setValue( it->second, t[it->first] );
       }
