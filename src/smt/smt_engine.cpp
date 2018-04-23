@@ -5517,7 +5517,17 @@ void SmtEngine::checkSynthSolution()
     // Apply solution map to conjecture body
     Node conjBody;
     /* Whether property is quantifier free */
-    if (conj[1].getKind() != kind::EXISTS)
+    Node inner_quant;
+    if( conj[1].getKind()==kind::EXISTS)
+    {
+      inner_quant = conj[1];
+    }
+    else if( conj[1].getKind()==kind::NOT && conj[1][0].getKind()==kind::FORALL )
+    {
+      inner_quant = conj[1][0];
+    }
+    
+    if (inner_quant.isNull())
     {
       conjBody = conj[1].substitute(function_vars.begin(),
                                     function_vars.end(),
@@ -5526,24 +5536,28 @@ void SmtEngine::checkSynthSolution()
     }
     else
     {
-      conjBody = conj[1][1].substitute(function_vars.begin(),
+      conjBody = inner_quant[1].substitute(function_vars.begin(),
                                        function_vars.end(),
                                        function_sols.begin(),
                                        function_sols.end());
 
       /* Skolemize property */
       std::vector<Node> vars, skos;
-      for (unsigned j = 0, size = conj[1][0].getNumChildren(); j < size; ++j)
+      for (unsigned j = 0, size = inner_quant[0].getNumChildren(); j < size; ++j)
       {
-        vars.push_back(conj[1][0][j]);
+        vars.push_back(inner_quant[0][j]);
         std::stringstream ss;
         ss << "sk_" << j;
-        skos.push_back(nm->mkSkolem(ss.str(), conj[1][0][j].getType()));
-        Trace("check-synth-sol") << "\tSkolemizing " << conj[1][0][j] << " to "
+        skos.push_back(nm->mkSkolem(ss.str(), inner_quant[0][j].getType()));
+        Trace("check-synth-sol") << "\tSkolemizing " << inner_quant[0][j] << " to "
                                  << skos.back() << "\n";
       }
       conjBody = conjBody.substitute(
           vars.begin(), vars.end(), skos.begin(), skos.end());
+      if( conj[1].getKind()==kind::NOT )
+      {
+        conjBody = conjBody.negate();
+      }
     }
     Notice() << "SmtEngine::checkSynthSolution(): -- body substitutes to "
              << conjBody << endl;
