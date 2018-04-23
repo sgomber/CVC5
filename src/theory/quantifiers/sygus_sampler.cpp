@@ -828,18 +828,6 @@ Node SygusSamplerExt::registerTerm(Node n, bool forceKeep)
     {
       Trace("sygus-synth-rr") << "...redundant (unordered)" << std::endl;
     }
-    else if (!nor)
-    {
-      keep = !containsFreeVariables(bn, beq_n, true);
-    }
-  }
-  else
-  {
-    keep = false;
-  }
-  if (!keep)
-  {
-    Trace("sygus-synth-rr") << "...redundant (unordered)" << std::endl;
   }
 
   // ----- check rewriting redundancy
