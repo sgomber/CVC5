@@ -4902,18 +4902,9 @@ Node TheoryArithPrivate::expandDefinition(LogicRequest &logicRequest, Node node)
       Node ret = nm->mkNode(kind::DIVISION_TOTAL, num, den);
       if (!den.isConst() || den.getConst<Rational>().sgn() == 0)
       {
-        // partial function: division
-        if (d_divByZero.isNull())
-        {
-          d_divByZero =
-              nm->mkSkolem("divByZero",
-                           nm->mkFunctionType(nm->realType(), nm->realType()),
-                           "partial real division",
-                           NodeManager::SKOLEM_EXACT_NAME);
-          logicRequest.widenLogic(THEORY_UF);
-        }
+        Node divByZeroNum =
+            getArithSkolemApp(logicRequest, num, arith_skolem_div_by_zero);
         Node denEq0 = nm->mkNode(kind::EQUAL, den, nm->mkConst(Rational(0)));
-        Node divByZeroNum = nm->mkNode(kind::APPLY_UF, d_divByZero, num);
         ret = nm->mkNode(kind::ITE, denEq0, divByZeroNum, ret);
       }
       return ret;
@@ -4927,17 +4918,9 @@ Node TheoryArithPrivate::expandDefinition(LogicRequest &logicRequest, Node node)
       Node ret = nm->mkNode(kind::INTS_DIVISION_TOTAL, num, den);
       if (!den.isConst() || den.getConst<Rational>().sgn() == 0)
       {
-        if (d_intDivByZero.isNull())
-        {
-          d_intDivByZero = nm->mkSkolem(
-              "intDivByZero",
-              nm->mkFunctionType(nm->integerType(), nm->integerType()),
-              "partial integer division",
-              NodeManager::SKOLEM_EXACT_NAME);
-          logicRequest.widenLogic(THEORY_UF);
-        }
+        Node intDivByZeroNum =
+            getArithSkolemApp(logicRequest, num, arith_skolem_int_div_by_zero);
         Node denEq0 = nm->mkNode(kind::EQUAL, den, nm->mkConst(Rational(0)));
-        Node intDivByZeroNum = nm->mkNode(kind::APPLY_UF, d_intDivByZero, num);
         ret = nm->mkNode(kind::ITE, denEq0, intDivByZeroNum, ret);
       }
       return ret;
@@ -4951,17 +4934,9 @@ Node TheoryArithPrivate::expandDefinition(LogicRequest &logicRequest, Node node)
       Node ret = nm->mkNode(kind::INTS_MODULUS_TOTAL, num, den);
       if (!den.isConst() || den.getConst<Rational>().sgn() == 0)
       {
-        if (d_modZero.isNull())
-        {
-          d_modZero = nm->mkSkolem(
-              "modZero",
-              nm->mkFunctionType(nm->integerType(), nm->integerType()),
-              "partial modulus",
-              NodeManager::SKOLEM_EXACT_NAME);
-          logicRequest.widenLogic(THEORY_UF);
-        }
+        Node modZeroNum =
+            getArithSkolemApp(logicRequest, num, arith_skolem_mod_by_zero);
         Node denEq0 = nm->mkNode(kind::EQUAL, den, nm->mkConst(Rational(0)));
-        Node modZeroNum = nm->mkNode(kind::APPLY_UF, d_modZero, num);
         ret = nm->mkNode(kind::ITE, denEq0, modZeroNum, ret);
       }
       return ret;
@@ -4988,14 +4963,11 @@ Node TheoryArithPrivate::expandDefinition(LogicRequest &logicRequest, Node node)
       NodeMap::const_iterator it = d_nlin_inverse_skolem.find(node);
       if (it == d_nlin_inverse_skolem.end())
       {
-        Node var = nm->mkSkolem("nonlinearInv",
-                                nm->realType(),
-                                "the result of a non-linear inverse function");
-        d_nlin_inverse_skolem[node] = var;
+        Node var = nm->mkBoundVar(nm->realType());
         Node lem;
         if (k == kind::SQRT)
         {
-          lem = nm->mkNode(kind::MULT, node[0], node[0]).eqNode(var);
+          lem = nm->mkNode(kind::MULT, var, var).eqNode(node[0]);
         }
         else
         {
@@ -5019,10 +4991,6 @@ Node TheoryArithPrivate::expandDefinition(LogicRequest &logicRequest, Node node)
                               nm->mkNode(LEQ, nm->mkConst(Rational(0)), var),
                               nm->mkNode(LT, var, pi));
           }
-          if (options::nlExt())
-          {
-            d_nonlinearExtension->addDefinition(rlem);
-          }
 
           Kind rk = k == kind::ARCSINE
                         ? kind::SINE
@@ -5036,21 +5004,12 @@ Node TheoryArithPrivate::expandDefinition(LogicRequest &logicRequest, Node node)
                                                     ? kind::SECANT
                                                     : kind::COTANGENT))));
           Node invTerm = nm->mkNode(rk, var);
-          // since invTerm may introduce division,
-          // we must also call expandDefinition on the result
-          invTerm = expandDefinition(logicRequest, invTerm);
-          lem = invTerm.eqNode(node[0]);
+          lem = nm->mkNode(AND, rlem, invTerm.eqNode(node[0]));
         }
         Assert(!lem.isNull());
-        if (options::nlExt())
-        {
-          d_nonlinearExtension->addDefinition(lem);
-        }
-        else
-        {
-          d_nlIncomplete = true;
-        }
-        return var;
+        Node ret = nm->mkNode(CHOICE, nm->mkNode(BOUND_VAR_LIST, var), lem);
+        d_nlin_inverse_skolem[node] = ret;
+        return ret;
       }
       return (*it).second;
       break;
@@ -5062,8 +5021,68 @@ Node TheoryArithPrivate::expandDefinition(LogicRequest &logicRequest, Node node)
   Unreachable();
 }
 
+Node TheoryArithPrivate::getArithSkolem(LogicRequest& logicRequest,
+                                        ArithSkolemId asi)
+{
+  std::map<ArithSkolemId, Node>::iterator it = d_arith_skolem.find(asi);
+  if (it == d_arith_skolem.end())
+  {
+    NodeManager* nm = NodeManager::currentNM();
 
+    TypeNode tn;
+    std::string name;
+    std::string desc;
+    if (asi == arith_skolem_div_by_zero)
+    {
+      tn = nm->realType();
+      name = std::string("divByZero");
+      desc = std::string("partial real division");
+    }
+    else if (asi == arith_skolem_int_div_by_zero)
+    {
+      tn = nm->integerType();
+      name = std::string("intDivByZero");
+      desc = std::string("partial int division");
+    }
+    else if (asi == arith_skolem_mod_by_zero)
+    {
+      tn = nm->integerType();
+      name = std::string("modZero");
+      desc = std::string("partial modulus");
+    }
 
+    Node skolem;
+    if (options::arithNoPartialFun())
+    {
+      // partial function: division
+      skolem = nm->mkSkolem(name, tn, desc, NodeManager::SKOLEM_EXACT_NAME);
+    }
+    else
+    {
+      // partial function: division
+      skolem = nm->mkSkolem(name,
+                            nm->mkFunctionType(tn, tn),
+                            desc,
+                            NodeManager::SKOLEM_EXACT_NAME);
+      logicRequest.widenLogic(THEORY_UF);
+    }
+    d_arith_skolem[asi] = skolem;
+    return skolem;
+  }
+  return it->second;
+}
+
+Node TheoryArithPrivate::getArithSkolemApp(LogicRequest& logicRequest,
+                                           Node n,
+                                           ArithSkolemId asi)
+{
+  Node skolem = getArithSkolem(logicRequest, asi);
+  if (!options::arithNoPartialFun())
+  {
+    skolem = NodeManager::currentNM()->mkNode(APPLY_UF, skolem, n);
+  }
+  return skolem;
+}
 
 // InferBoundsResult TheoryArithPrivate::inferBound(TNode term, const InferBoundsParameters& param){
 //   Node t = Rewriter::rewrite(term);

@@ -436,6 +436,12 @@ public:
   bool hasBoundVar();
 
   /**
+   * Returns true iff this node contains a free variable.
+   * @return true iff this node contains a free variable.
+   */
+  bool hasFreeVar();
+
+  /**
    * Convert this Node into an Expr using the currently-in-scope
    * manager.  Essentially this is like an "operator Expr()" but we
    * don't want it to compete with implicit conversions between e.g.
@@ -923,23 +929,6 @@ inline std::ostream& operator<<(std::ostream& out, TNode n) {
   return out;
 }
 
-namespace {
-
-template <typename T>
-void nodeContainerToOut(std::ostream& out, const T& container)
-{
-  out << "[";
-  bool is_first = true;
-  for (const auto& item : container)
-  {
-    out << (!is_first ? ", " : "") << item;
-    is_first = false;
-  }
-  out << "]";
-}
-
-}
-
 /**
  * Serialize a vector of nodes to given stream.
  *
@@ -951,7 +940,7 @@ template <bool RC>
 std::ostream& operator<<(std::ostream& out,
                          const std::vector<NodeTemplate<RC>>& container)
 {
-  nodeContainerToOut(out, container);
+  container_to_stream(out, container);
   return out;
 }
 
@@ -966,7 +955,7 @@ template <bool RC>
 std::ostream& operator<<(std::ostream& out,
                          const std::set<NodeTemplate<RC>>& container)
 {
-  nodeContainerToOut(out, container);
+  container_to_stream(out, container);
   return out;
 }
 
@@ -982,7 +971,7 @@ std::ostream& operator<<(
     std::ostream& out,
     const std::unordered_set<NodeTemplate<RC>, hash_function>& container)
 {
-  nodeContainerToOut(out, container);
+  container_to_stream(out, container);
   return out;
 }
 
@@ -998,7 +987,7 @@ std::ostream& operator<<(
     std::ostream& out,
     const std::map<NodeTemplate<RC>, V>& container)
 {
-  nodeContainerToOut(out, container);
+  container_to_stream(out, container);
   return out;
 }
 
@@ -1014,7 +1003,7 @@ std::ostream& operator<<(
     std::ostream& out,
     const std::unordered_map<NodeTemplate<RC>, V, HF>& container)
 {
-  nodeContainerToOut(out, container);
+  container_to_stream(out, container);
   return out;
 }
 
@@ -1550,6 +1539,10 @@ bool NodeTemplate<ref_count>::hasSubterm(NodeTemplate<false> t, bool strict) con
 
   for (unsigned i = 0; i < toProcess.size(); ++ i) {
     TNode current = toProcess[i];
+    if (current.hasOperator() && current.getOperator() == t)
+    {
+      return true;
+    }
     for(unsigned j = 0, j_end = current.getNumChildren(); j < j_end; ++ j) {
       TNode child = current[j];
       if (child == t) {

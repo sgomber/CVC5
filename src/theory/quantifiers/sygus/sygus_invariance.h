@@ -112,7 +112,7 @@ class EvalSygusInvarianceTest : public SygusInvarianceTest
 
  protected:
   /** does d_conj{ d_var -> nvn } still rewrite to d_result? */
-  bool invariant(TermDbSygus* tds, Node nvn, Node x);
+  bool invariant(TermDbSygus* tds, Node nvn, Node x) override;
 
  private:
   /** the formula we are evaluating */
@@ -170,7 +170,7 @@ class EquivSygusInvarianceTest : public SygusInvarianceTest
 
  protected:
   /** checks whether the analog of nvn still rewrites to d_bvr */
-  bool invariant(TermDbSygus* tds, Node nvn, Node x);
+  bool invariant(TermDbSygus* tds, Node nvn, Node x) override;
 
  private:
   /** the conjecture associated with the enumerator d_enum */
@@ -202,7 +202,7 @@ class DivByZeroSygusInvarianceTest : public SygusInvarianceTest
 
  protected:
   /** checks whether nvn involves division by zero. */
-  bool invariant(TermDbSygus* tds, Node nvn, Node x);
+  bool invariant(TermDbSygus* tds, Node nvn, Node x) override;
 };
 
 /** NegContainsSygusInvarianceTest
@@ -234,39 +234,39 @@ class DivByZeroSygusInvarianceTest : public SygusInvarianceTest
 class NegContainsSygusInvarianceTest : public SygusInvarianceTest
 {
  public:
-  NegContainsSygusInvarianceTest() : d_conj(nullptr) {}
+  NegContainsSygusInvarianceTest() {}
 
   /** initialize this invariance test
-   *  cpbe is the conjecture utility.
    *  e is the enumerator which we are reasoning about (associated with a synth
    *    fun).
-   *  exo is the list of outputs of the PBE conjecture.
-   *  ncind is the set of possible indices of the PBE conjecture to check
-   *    invariance of non-containment.
+   *  ex is the list of inputs,
+   *  exo is the list of outputs,
+   *  ncind is the set of possible example indices to check invariance of
+   *  non-containment.
    *    For example, in the above example, when t[x1] = "ab", then this
    *    has the index 1 since contains("de de", "ab") ---> false but not
    *    the index 0 since contains("abc abc","ab") ---> true.
    */
-  void init(CegConjecture* conj,
-            Node e,
+  void init(Node e,
+            std::vector<std::vector<Node> >& ex,
             std::vector<Node>& exo,
             std::vector<unsigned>& ncind);
 
  protected:
   /** checks if contains( out_i, nvn[in_i] ) --> false for some I/O pair i. */
-  bool invariant(TermDbSygus* tds, Node nvn, Node x);
+  bool invariant(TermDbSygus* tds, Node nvn, Node x) override;
 
  private:
   /** The enumerator whose value we are considering in this invariance test */
   Node d_enum;
+  /** The input examples */
+  std::vector<std::vector<Node> > d_ex;
   /** The output examples for the enumerator */
   std::vector<Node> d_exo;
   /** The set of I/O pair indices i such that
    *    contains( out_i, nvn[in_i] ) ---> false
    */
   std::vector<unsigned> d_neg_con_indices;
-  /** reference to the conjecture associated with this test */
-  CegConjecture* d_conj;
 };
 
 } /* CVC4::theory::quantifiers namespace */

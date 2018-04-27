@@ -14,6 +14,7 @@
 
 #include "theory/quantifiers/sygus/term_database_sygus.h"
 
+#include "base/cvc4_check.h"
 #include "options/quantifiers_options.h"
 #include "theory/arith/arith_msum.h"
 #include "theory/quantifiers/quantifiers_attributes.h"
@@ -161,42 +162,53 @@ Node TermDbSygus::mkGeneric(const Datatype& dt, int c, std::map<int, Node>& pre)
   return mkGeneric(dt, c, var_count, pre);
 }
 
+struct SygusToBuiltinAttributeId
+{
+};
+typedef expr::Attribute<SygusToBuiltinAttributeId, Node>
+    SygusToBuiltinAttribute;
+
 Node TermDbSygus::sygusToBuiltin( Node n, TypeNode tn ) {
   Assert( n.getType()==tn );
   Assert( tn.isDatatype() );
-  std::map< Node, Node >::iterator it = d_sygus_to_builtin[tn].find( n );
-  if( it==d_sygus_to_builtin[tn].end() ){
-    Trace("sygus-db-debug") << "SygusToBuiltin : compute for " << n << ", type = " << tn << std::endl;
-    const Datatype& dt = ((DatatypeType)(tn).toType()).getDatatype();
-    if( n.getKind()==APPLY_CONSTRUCTOR ){
-      unsigned i = Datatype::indexOf( n.getOperator().toExpr() );
-      Assert( n.getNumChildren()==dt[i].getNumArgs() );
-      std::map< TypeNode, int > var_count;
-      std::map< int, Node > pre;
-      for (unsigned j = 0, size = n.getNumChildren(); j < size; j++)
-      {
-        pre[j] = sygusToBuiltin( n[j], getArgType( dt[i], j ) );
-      }
-      Node ret = mkGeneric(dt, i, var_count, pre);
-      Trace("sygus-db-debug") << "SygusToBuiltin : Generic is " << ret << std::endl;
-      d_sygus_to_builtin[tn][n] = ret;
-      return ret;
-    }
-    if (n.hasAttribute(SygusPrintProxyAttribute()))
-    {
-      // this variable was associated by an attribute to a builtin node
-      return n.getAttribute(SygusPrintProxyAttribute());
-    }
-    Assert(isFreeVar(n));
-    // map to builtin variable type
-    int fv_num = getVarNum(n);
-    Assert(!dt.getSygusType().isNull());
-    TypeNode vtn = TypeNode::fromType(dt.getSygusType());
-    Node ret = getFreeVar(vtn, fv_num);
-    return ret;
-  }else{
-    return it->second;
+
+  // has it already been computed?
+  if (n.hasAttribute(SygusToBuiltinAttribute()))
+  {
+    return n.getAttribute(SygusToBuiltinAttribute());
   }
+
+  Trace("sygus-db-debug") << "SygusToBuiltin : compute for " << n
+                          << ", type = " << tn << std::endl;
+  const Datatype& dt = static_cast<DatatypeType>(tn.toType()).getDatatype();
+  if (n.getKind() == APPLY_CONSTRUCTOR)
+  {
+    unsigned i = Datatype::indexOf(n.getOperator().toExpr());
+    Assert(n.getNumChildren() == dt[i].getNumArgs());
+    std::map<TypeNode, int> var_count;
+    std::map<int, Node> pre;
+    for (unsigned j = 0, size = n.getNumChildren(); j < size; j++)
+    {
+      pre[j] = sygusToBuiltin(n[j], getArgType(dt[i], j));
+    }
+    Node ret = mkGeneric(dt, i, var_count, pre);
+    Trace("sygus-db-debug")
+        << "SygusToBuiltin : Generic is " << ret << std::endl;
+    n.setAttribute(SygusToBuiltinAttribute(), ret);
+    return ret;
+  }
+  if (n.hasAttribute(SygusPrintProxyAttribute()))
+  {
+    // this variable was associated by an attribute to a builtin node
+    return n.getAttribute(SygusPrintProxyAttribute());
+  }
+  Assert(isFreeVar(n));
+  // map to builtin variable type
+  int fv_num = getVarNum(n);
+  Assert(!dt.getSygusType().isNull());
+  TypeNode vtn = TypeNode::fromType(dt.getSygusType());
+  Node ret = getFreeVar(vtn, fv_num);
+  return ret;
 }
 
 Node TermDbSygus::sygusSubstituted( TypeNode tn, Node n, std::vector< Node >& args ) {
@@ -543,7 +555,8 @@ bool TermDbSygus::considerConst( const Datatype& pdt, TypeNode tnp, Node c, Kind
         }
       }
     }else if( pk==STRING_SUBSTR ){
-      if( c==one_c ){
+      if (c == one_c && arg == 2)
+      {
         rt.d_req_kind = STRING_CHARAT;
         rt.d_children[0].d_req_type = getArgType( pdt[pc], 0 );
         rt.d_children[1].d_req_type = getArgType( pdt[pc], 1 );
@@ -651,6 +664,15 @@ void TermDbSygus::registerSygusType( TypeNode tn ) {
           d_ops[tn][n] = i;
           d_arg_ops[tn][i] = n;
           Trace("sygus-db") << std::endl;
+          // ensure that terms that this constructor encodes are
+          // of the type specified in the datatype. This will fail if
+          // e.g. bitvector-and is a constructor of an integer grammar.
+          std::map<int, Node> pre;
+          Node g = mkGeneric(dt, i, pre);
+          TypeNode gtn = g.getType();
+          CVC4_CHECK(gtn.isSubtypeOf(btn))
+              << "Sygus datatype " << dt.getName()
+              << " encodes terms that are not of type " << btn << std::endl;
         }
         //register connected types
         for( unsigned i=0; i<dt.getNumConstructors(); i++ ){
@@ -731,6 +753,59 @@ void TermDbSygus::getEnumerators(std::vector<Node>& mts)
        itm != d_enum_to_conjecture.end(); ++itm) {
     mts.push_back( itm->first );
   }
+}
+
+void TermDbSygus::registerSymBreakLemma(Node e,
+                                        Node lem,
+                                        TypeNode tn,
+                                        unsigned sz)
+{
+  d_enum_to_sb_lemmas[e].push_back(lem);
+  d_sb_lemma_to_type[lem] = tn;
+  d_sb_lemma_to_size[lem] = sz;
+}
+
+bool TermDbSygus::hasSymBreakLemmas(std::vector<Node>& enums) const
+{
+  if (!d_enum_to_sb_lemmas.empty())
+  {
+    for (std::pair<const Node, std::vector<Node> > sb : d_enum_to_sb_lemmas)
+    {
+      enums.push_back(sb.first);
+    }
+    return true;
+  }
+  return false;
+}
+
+void TermDbSygus::getSymBreakLemmas(Node e, std::vector<Node>& lemmas) const
+{
+  std::map<Node, std::vector<Node> >::const_iterator itsb =
+      d_enum_to_sb_lemmas.find(e);
+  if (itsb != d_enum_to_sb_lemmas.end())
+  {
+    lemmas.insert(lemmas.end(), itsb->second.begin(), itsb->second.end());
+  }
+}
+
+TypeNode TermDbSygus::getTypeForSymBreakLemma(Node lem) const
+{
+  std::map<Node, TypeNode>::const_iterator it = d_sb_lemma_to_type.find(lem);
+  Assert(it != d_sb_lemma_to_type.end());
+  return it->second;
+}
+unsigned TermDbSygus::getSizeForSymBreakLemma(Node lem) const
+{
+  std::map<Node, unsigned>::const_iterator it = d_sb_lemma_to_size.find(lem);
+  Assert(it != d_sb_lemma_to_size.end());
+  return it->second;
+}
+
+void TermDbSygus::clearSymBreakLemmas()
+{
+  d_enum_to_sb_lemmas.clear();
+  d_sb_lemma_to_type.clear();
+  d_sb_lemma_to_size.clear();
 }
 
 bool TermDbSygus::isRegistered( TypeNode tn ) {
@@ -1202,7 +1277,7 @@ void TermDbSygus::registerModelValue( Node a, Node v, std::vector< Node >& terms
         unsigned start = d_node_mv_args_proc[n][vn];
         // get explanation in terms of testers
         std::vector< Node > antec_exp;
-        d_syexp->getExplanationForConstantEquality(n, vn, antec_exp);
+        d_syexp->getExplanationForEquality(n, vn, antec_exp);
         Node antec = antec_exp.size()==1 ? antec_exp[0] : NodeManager::currentNM()->mkNode( kind::AND, antec_exp );
         //Node antec = n.eqNode( vn );
         TypeNode tn = n.getType();

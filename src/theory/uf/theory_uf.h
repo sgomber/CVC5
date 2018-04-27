@@ -55,7 +55,8 @@ public:
   public:
     NotifyClass(TheoryUF& uf): d_uf(uf) {}
 
-    bool eqNotifyTriggerEquality(TNode equality, bool value) {
+    bool eqNotifyTriggerEquality(TNode equality, bool value) override
+    {
       Debug("uf") << "NotifyClass::eqNotifyTriggerEquality(" << equality << ", " << (value ? "true" : "false" )<< ")" << std::endl;
       if (value) {
         return d_uf.propagate(equality);
@@ -65,7 +66,8 @@ public:
       }
     }
 
-    bool eqNotifyTriggerPredicate(TNode predicate, bool value) {
+    bool eqNotifyTriggerPredicate(TNode predicate, bool value) override
+    {
       Debug("uf") << "NotifyClass::eqNotifyTriggerPredicate(" << predicate << ", " << (value ? "true" : "false") << ")" << std::endl;
       if (value) {
         return d_uf.propagate(predicate);
@@ -74,7 +76,11 @@ public:
       }
     }
 
-    bool eqNotifyTriggerTermEquality(TheoryId tag, TNode t1, TNode t2, bool value) {
+    bool eqNotifyTriggerTermEquality(TheoryId tag,
+                                     TNode t1,
+                                     TNode t2,
+                                     bool value) override
+    {
       Debug("uf") << "NotifyClass::eqNotifyTriggerTermMerge(" << tag << ", " << t1 << ", " << t2 << ")" << std::endl;
       if (value) {
         return d_uf.propagate(t1.eqNode(t2));
@@ -83,27 +89,32 @@ public:
       }
     }
 
-    void eqNotifyConstantTermMerge(TNode t1, TNode t2) {
+    void eqNotifyConstantTermMerge(TNode t1, TNode t2) override
+    {
       Debug("uf-notify") << "NotifyClass::eqNotifyConstantTermMerge(" << t1 << ", " << t2 << ")" << std::endl;
       d_uf.conflict(t1, t2);
     }
 
-    void eqNotifyNewClass(TNode t) {
+    void eqNotifyNewClass(TNode t) override
+    {
       Debug("uf-notify") << "NotifyClass::eqNotifyNewClass(" << t << ")" << std::endl;
       d_uf.eqNotifyNewClass(t);
     }
 
-    void eqNotifyPreMerge(TNode t1, TNode t2) {
+    void eqNotifyPreMerge(TNode t1, TNode t2) override
+    {
       Debug("uf-notify") << "NotifyClass::eqNotifyPreMerge(" << t1 << ", " << t2 << ")" << std::endl;
       d_uf.eqNotifyPreMerge(t1, t2);
     }
 
-    void eqNotifyPostMerge(TNode t1, TNode t2) {
+    void eqNotifyPostMerge(TNode t1, TNode t2) override
+    {
       Debug("uf-notify") << "NotifyClass::eqNotifyPostMerge(" << t1 << ", " << t2 << ")" << std::endl;
       d_uf.eqNotifyPostMerge(t1, t2);
     }
 
-    void eqNotifyDisequal(TNode t1, TNode t2, TNode reason) {
+    void eqNotifyDisequal(TNode t1, TNode t2, TNode reason) override
+    {
       Debug("uf-notify") << "NotifyClass::eqNotifyDisequal(" << t1 << ", " << t2 << ", " << reason << ")" << std::endl;
       d_uf.eqNotifyDisequal(t1, t2, reason);
     }
@@ -128,7 +139,10 @@ private:
   Node d_conflictNode;
 
   /** extensionality has been applied to these disequalities */
-  NodeSet d_extensionality_deq;
+  NodeSet d_extensionality;
+
+  /** cache of getExtensionalityDeq below */
+  std::map<Node, Node> d_extensionality_deq;
 
   /** map from non-standard operators to their skolems */
   NodeNodeMap d_uf_std_skolem;
@@ -174,31 +188,55 @@ private:
   /** called when two equivalence classes are made disequal */
   void eqNotifyDisequal(TNode t1, TNode t2, TNode reason);
 
-private: // for higher-order
-  /** applyExtensionality 
-   * Given disequality deq 
-   * If not already cached, this sends a lemma of the form 
+ private:  // for higher-order
+  /** get extensionality disequality
+   *
+   * Given disequality deq f != g, this returns the disequality:
+   *   (f k) != (g k) for fresh constant(s) k.
+   */
+  Node getExtensionalityDeq(TNode deq);
+
+  /** applyExtensionality
+   *
+   * Given disequality deq f != g, if not already cached, this sends a lemma of
+   * the form:
    *   f = g V (f k) != (g k) for fresh constant k.
-   * on the output channel.
-   * Return value is the number of lemmas sent.
+   * on the output channel. This is an "extensionality lemma".
+   * Return value is the number of lemmas of this form sent on the output
+   * channel.
    */
   unsigned applyExtensionality(TNode deq);
 
-  /** check whether extensionality should be applied for any
-   * pair of terms in the equality engine.
+  /**
+   * Check whether extensionality should be applied for any pair of terms in the
+   * equality engine.
+   *
+   * If we pass a null model m to this function, then we add extensionality
+   * lemmas to the output channel and return the total number of lemmas added.
+   * We only add lemmas for functions whose type is finite, since pairs of
+   * functions whose types are infinite can be made disequal in a model by
+   * witnessing a point they are disequal.
+   *
+   * If we pass a non-null model m to this function, then we add disequalities
+   * that correspond to the conclusion of extensionality lemmas to the model's
+   * equality engine. We return 0 if the equality engine of m is consistent
+   * after this call, and 1 otherwise. We only add disequalities for functions
+   * whose type is infinite, since our decision procedure guarantees that
+   * extensionality lemmas are added for all pairs of functions whose types are
+   * finite.
    */
-  unsigned checkExtensionality();
-  
+  unsigned checkExtensionality(TheoryModel* m = nullptr);
+
   /** applyAppCompletion
-   * This infers a correspondence between APPLY_UF and HO_APPLY 
+   * This infers a correspondence between APPLY_UF and HO_APPLY
    * versions of terms for higher-order.
-   * Given APPLY_UF node e.g. (f a b c), this adds the equality to its 
+   * Given APPLY_UF node e.g. (f a b c), this adds the equality to its
    * HO_APPLY equivalent:
    *   (f a b c) == (@ (@ (@ f a) b) c)
    * to equality engine, if not already equal.
    * Return value is the number of equalities added.
    */
-  unsigned applyAppCompletion( TNode n );
+  unsigned applyAppCompletion(TNode n);
 
   /** check whether app-completion should be applied for any
    * pair of terms in the equality engine.
@@ -213,19 +251,31 @@ private: // for higher-order
   */
   unsigned checkHigherOrder();
 
-  /** get apply uf for ho apply 
+  /** collect model info for higher-order term
+   *
+   * This adds required constraints to m for term n. In particular, if n is
+   * an APPLY_UF term, we add its HO_APPLY equivalent in this call. We return
+   * true if the model m is consistent after this call.
+   */
+  bool collectModelInfoHoTerm(Node n, TheoryModel* m);
+
+  /** get apply uf for ho apply
    * This returns the APPLY_UF equivalent for the HO_APPLY term node, where
    * node has non-functional return type (that is, it corresponds to a fully
    * applied function term).
    * This call may introduce a skolem for the head operator and send out a lemma
    * specifying the definition.
   */
-  Node getApplyUfForHoApply( Node node );
-  /** get the operator for this node (node should be either APPLY_UF or HO_APPLY) */
-  Node getOperatorForApplyTerm( TNode node );
-  /** get the starting index of the arguments for node (node should be either APPLY_UF or HO_APPLY) */
-  unsigned getArgumentStartIndexForApplyTerm( TNode node );
-public:
+  Node getApplyUfForHoApply(Node node);
+  /** get the operator for this node (node should be either APPLY_UF or
+   * HO_APPLY)
+   */
+  Node getOperatorForApplyTerm(TNode node);
+  /** get the starting index of the arguments for node (node should be either
+   * APPLY_UF or HO_APPLY) */
+  unsigned getArgumentStartIndexForApplyTerm(TNode node);
+
+ public:
 
   /** Constructs a new instance of TheoryUF w.r.t. the provided context.*/
   TheoryUF(context::Context* c, context::UserContext* u, OutputChannel& out,

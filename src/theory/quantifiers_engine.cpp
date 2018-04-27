@@ -30,7 +30,6 @@
 #include "theory/quantifiers/equality_query.h"
 #include "theory/quantifiers/first_order_model.h"
 #include "theory/quantifiers/fmf/full_model_check.h"
-#include "theory/quantifiers/fun_def_engine.h"
 #include "theory/quantifiers/inst_propagator.h"
 #include "theory/quantifiers/cegqi/inst_strategy_cbqi.h"
 #include "theory/quantifiers/ematching/inst_strategy_e_matching.h"
@@ -41,7 +40,6 @@
 #include "theory/quantifiers/fmf/model_engine.h"
 #include "theory/quantifiers/quant_conflict_find.h"
 #include "theory/quantifiers/quant_epr.h"
-#include "theory/quantifiers/quant_equality_engine.h"
 #include "theory/quantifiers/quant_relevance.h"
 #include "theory/quantifiers/quant_split.h"
 #include "theory/quantifiers/quantifiers_attributes.h"
@@ -162,8 +160,6 @@ QuantifiersEngine::QuantifiersEngine(context::Context* c,
   d_ceg_inst = NULL;
   d_lte_part_inst = NULL;
   d_alpha_equiv = NULL;
-  d_fun_def_engine = NULL;
-  d_uee = NULL;
   d_fs = NULL;
   d_rel_dom = NULL;
   d_bv_invert = NULL;
@@ -175,62 +171,7 @@ QuantifiersEngine::QuantifiersEngine(context::Context* c,
   d_ierCounter_lc = 0;
   d_ierCounterLastLc = 0;
   d_inst_when_phase = 1 + ( options::instWhenPhase()<1 ? 1 : options::instWhenPhase() );
-}
 
-QuantifiersEngine::~QuantifiersEngine(){
-  delete d_alpha_equiv;
-  delete d_builder;
-  delete d_qepr;
-  delete d_rr_engine;
-  delete d_bint;
-  delete d_model_engine;
-  delete d_inst_engine;
-  delete d_qcf;
-  delete d_quant_rel;
-  delete d_rel_dom;
-  delete d_bv_invert;
-  delete d_model;
-  delete d_tr_trie;
-  delete d_term_db;
-  delete d_sygus_tdb;
-  delete d_term_util;
-  delete d_eq_inference;
-  delete d_eq_query;
-  delete d_sg_gen;
-  delete d_ceg_inst;
-  delete d_lte_part_inst;
-  delete d_fun_def_engine;
-  delete d_uee;
-  delete d_fs;
-  delete d_i_cbqi;
-  delete d_qsplit;
-  delete d_anti_skolem;
-  delete d_inst_prop;
-}
-
-EqualityQuery* QuantifiersEngine::getEqualityQuery() {
-  return d_eq_query;
-}
-
-context::Context* QuantifiersEngine::getSatContext(){
-  return d_te->theoryOf( THEORY_QUANTIFIERS )->getSatContext();
-}
-
-context::UserContext* QuantifiersEngine::getUserContext(){
-  return d_te->theoryOf( THEORY_QUANTIFIERS )->getUserContext();
-}
-
-OutputChannel& QuantifiersEngine::getOutputChannel(){
-  return d_te->theoryOf( THEORY_QUANTIFIERS )->getOutputChannel();
-}
-/** get default valuation for the quantifiers engine */
-Valuation& QuantifiersEngine::getValuation(){
-  return d_te->theoryOf( THEORY_QUANTIFIERS )->getValuation();
-}
-
-void QuantifiersEngine::finishInit(){
-  context::Context * c = getSatContext();
-  Trace("quant-engine-debug") << "QuantifiersEngine : finishInit " << std::endl;
   bool needsBuilder = false;
   bool needsRelDom = false;
   //add quantifiers modules
@@ -289,14 +230,6 @@ void QuantifiersEngine::finishInit(){
   if( options::quantAlphaEquiv() ){
     d_alpha_equiv = new quantifiers::AlphaEquivalence( this );
   }
-  //if( options::funDefs() ){
-  //  d_fun_def_engine = new quantifiers::FunDefEngine( this, c );
-  //  d_modules.push_back( d_fun_def_engine );
-  //}
-  if( options::quantEqualityEngine() ){
-    d_uee = new quantifiers::QuantEqualityEngine( this, c );
-    d_modules.push_back( d_uee );
-  }
   //full saturation : instantiate from relevant domain, then arbitrary terms
   if( options::fullSaturateQuant() || options::fullSaturateInterleave() ){
     d_fs = new quantifiers::InstStrategyEnum(this);
@@ -333,6 +266,58 @@ void QuantifiersEngine::finishInit(){
     d_model = new quantifiers::FirstOrderModelIG(
         this, d_te->getModelNotify(), c, "FirstOrderModelIG");
   }
+}
+
+QuantifiersEngine::~QuantifiersEngine()
+{
+  delete d_alpha_equiv;
+  delete d_builder;
+  delete d_qepr;
+  delete d_rr_engine;
+  delete d_bint;
+  delete d_model_engine;
+  delete d_inst_engine;
+  delete d_qcf;
+  delete d_quant_rel;
+  delete d_rel_dom;
+  delete d_bv_invert;
+  delete d_model;
+  delete d_tr_trie;
+  delete d_term_db;
+  delete d_sygus_tdb;
+  delete d_term_util;
+  delete d_eq_inference;
+  delete d_eq_query;
+  delete d_sg_gen;
+  delete d_ceg_inst;
+  delete d_lte_part_inst;
+  delete d_fs;
+  delete d_i_cbqi;
+  delete d_qsplit;
+  delete d_anti_skolem;
+  delete d_inst_prop;
+}
+
+EqualityQuery* QuantifiersEngine::getEqualityQuery() { return d_eq_query; }
+
+context::Context* QuantifiersEngine::getSatContext()
+{
+  return d_te->theoryOf(THEORY_QUANTIFIERS)->getSatContext();
+}
+
+context::UserContext* QuantifiersEngine::getUserContext()
+{
+  return d_te->theoryOf(THEORY_QUANTIFIERS)->getUserContext();
+}
+
+OutputChannel& QuantifiersEngine::getOutputChannel()
+{
+  return d_te->theoryOf(THEORY_QUANTIFIERS)->getOutputChannel();
+}
+/** get default valuation for the quantifiers engine */
+Valuation& QuantifiersEngine::getValuation()
+{
+  return d_te->theoryOf(THEORY_QUANTIFIERS)->getValuation();
 }
 
 QuantifiersModule * QuantifiersEngine::getOwner( Node q ) {

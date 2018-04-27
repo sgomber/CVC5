@@ -4,7 +4,7 @@
  ** Top contributors (to current version):
  **   Dejan Jovanovic, Morgan Deters, Guy Katz
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -214,12 +214,11 @@ void TheoryEngine::EngineOutputChannel::conflict(TNode conflictNode,
 }
 
 void TheoryEngine::finishInit() {
-  // initialize the quantifiers engine
-  d_quantEngine = new QuantifiersEngine(d_context, d_userContext, this);
 
   //initialize the quantifiers engine, master equality engine, model, model builder
   if( d_logicInfo.isQuantified() ) {
-    d_quantEngine->finishInit();
+    // initialize the quantifiers engine
+    d_quantEngine = new QuantifiersEngine(d_context, d_userContext, this);
     Assert(d_masterEqualityEngine == 0);
     d_masterEqualityEngine = new eq::EqualityEngine(d_masterEENotify,getSatContext(), "theory::master", false);
 
@@ -402,7 +401,6 @@ TheoryEngine::TheoryEngine(context::Context* context,
   d_preRegistrationVisitor(this, context),
   d_sharedTermsVisitor(d_sharedTerms),
   d_unconstrainedSimp(new UnconstrainedSimplifier(context, logicInfo)),
-  d_bvToBoolPreprocessor(),
   d_theoryAlternatives(),
   d_attr_handle(),
   d_arithSubstitutionsAdded("theory::arith::zzz::arith::substitutions", 0)
@@ -422,7 +420,7 @@ TheoryEngine::TheoryEngine(context::Context* context,
   ProofManager::currentPM()->initTheoryProofEngine();
 #endif
 
-  d_iteUtilities = new ITEUtilities(d_tform_remover.getContainsVisitor());
+  d_iteUtilities = new ITEUtilities();
 
   smtStatisticsRegistry()->registerStat(&d_arithSubstitutionsAdded);
 }
@@ -481,6 +479,10 @@ void TheoryEngine::preRegister(TNode preprocessed) {
         d_sharedTerms.addEqualityToPropagate(preprocessed);
       }
 
+      // the atom should not have free variables
+      Debug("theory") << "TheoryEngine::preRegister: " << preprocessed
+                      << std::endl;
+      Assert(!preprocessed.hasFreeVar());
       // Pre-register the terms in the atom
       Theory::Set theories = NodeVisitor<PreRegisterVisitor>::run(d_preRegistrationVisitor, preprocessed);
       theories = Theory::setRemove(THEORY_BOOL, theories);
@@ -741,7 +743,12 @@ void TheoryEngine::check(Theory::Effort effort) {
         AlwaysAssert(d_curr_model->isBuiltSuccess());
         if (options::produceModels())
         {
-          d_curr_model_builder->debugCheckModel(d_curr_model);
+          // if we are incomplete, there is no guarantee on the model.
+          // thus, we do not check the model here. (related to #1693)
+          if (!d_incomplete)
+          {
+            d_curr_model_builder->debugCheckModel(d_curr_model);
+          }
           // Do post-processing of model from the theories (used for THEORY_SEP
           // to construct heap model)
           postProcessModel(d_curr_model);
@@ -1446,7 +1453,14 @@ theory::eq::EqualityEngineNotify* TheoryEngine::getModelNotify()
 
 void TheoryEngine::getSynthSolutions(std::map<Node, Node>& sol_map)
 {
-  d_quantEngine->getSynthSolutions(sol_map);
+  if (d_quantEngine)
+  {
+    d_quantEngine->getSynthSolutions(sol_map);
+  }
+  else
+  {
+    Assert(false);
+  }
 }
 
 bool TheoryEngine::presolve() {
@@ -1585,9 +1599,15 @@ Node TheoryEngine::ppTheoryRewrite(TNode term) {
   Trace("theory-pp") << "ppTheoryRewrite { " << term << endl;
 
   Node newTerm;
-  if (theoryOf(term)->ppDontRewriteSubterm(term)) {
+  // do not rewrite inside quantifiers
+  if (term.getKind() == kind::FORALL || term.getKind() == kind::EXISTS
+      || term.getKind() == kind::CHOICE
+      || term.getKind() == kind::LAMBDA)
+  {
     newTerm = Rewriter::rewrite(term);
-  } else {
+  }
+  else
+  {
     NodeBuilder<> newNode(term.getKind());
     if (term.getMetaKind() == kind::metakind::PARAMETERIZED) {
       newNode << term.getOperator();
@@ -2022,6 +2042,7 @@ void TheoryEngine::printInstantiations( std::ostream& out ) {
     d_quantEngine->printInstantiations( out );
   }else{
     out << "Internal error : instantiations not available when quantifiers are not present." << std::endl;
+    Assert(false);
   }
 }
 
@@ -2030,6 +2051,7 @@ void TheoryEngine::printSynthSolution( std::ostream& out ) {
     d_quantEngine->printSynthSolution( out );
   }else{
     out << "Internal error : synth solution not available when quantifiers are not present." << std::endl;
+    Assert(false);
   }
 }
 
@@ -2465,43 +2487,48 @@ void TheoryEngine::conflict(TNode conflict, TheoryId theoryId) {
     });
 }
 
-void TheoryEngine::staticInitializeBVOptions(const std::vector<Node>& assertions) {
+void TheoryEngine::staticInitializeBVOptions(
+    const std::vector<Node>& assertions)
+{
   bool useSlicer = true;
-  if (options::bitvectorEqualitySlicer() == bv::BITVECTOR_SLICER_ON) {
+  if (options::bitvectorEqualitySlicer() == bv::BITVECTOR_SLICER_ON)
+  {
+    if (!d_logicInfo.isPure(theory::THEORY_BV) || d_logicInfo.isQuantified())
+      throw ModalException(
+          "Slicer currently only supports pure QF_BV formulas. Use "
+          "--bv-eq-slicer=off");
     if (options::incrementalSolving())
-      throw ModalException("Slicer does not currently support incremental mode. Use --bv-eq-slicer=off");
+      throw ModalException(
+          "Slicer does not currently support incremental mode. Use "
+          "--bv-eq-slicer=off");
     if (options::produceModels())
-      throw ModalException("Slicer does not currently support model generation. Use --bv-eq-slicer=off");
-    useSlicer = true;
-
-  } else if (options::bitvectorEqualitySlicer() == bv::BITVECTOR_SLICER_OFF) {
+      throw ModalException(
+          "Slicer does not currently support model generation. Use "
+          "--bv-eq-slicer=off");
+  }
+  else if (options::bitvectorEqualitySlicer() == bv::BITVECTOR_SLICER_OFF)
+  {
     return;
-
-  } else if (options::bitvectorEqualitySlicer() == bv::BITVECTOR_SLICER_AUTO) {
-    if (options::incrementalSolving() ||
-        options::produceModels())
+  }
+  else if (options::bitvectorEqualitySlicer() == bv::BITVECTOR_SLICER_AUTO)
+  {
+    if ((!d_logicInfo.isPure(theory::THEORY_BV) || d_logicInfo.isQuantified())
+        || options::incrementalSolving()
+        || options::produceModels())
       return;
 
-    useSlicer = true;
     bv::utils::TNodeBoolMap cache;
-    for (unsigned i = 0; i < assertions.size(); ++i) {
+    for (unsigned i = 0; i < assertions.size(); ++i)
+    {
       useSlicer = useSlicer && bv::utils::isCoreTerm(assertions[i], cache);
     }
   }
 
-  if (useSlicer) {
+  if (useSlicer)
+  {
     bv::TheoryBV* bv_theory = (bv::TheoryBV*)d_theoryTable[THEORY_BV];
     bv_theory->enableCoreTheorySlicer();
   }
-
-}
-
-void TheoryEngine::ppBvToBool(const std::vector<Node>& assertions, std::vector<Node>& new_assertions) {
-  d_bvToBoolPreprocessor.liftBvToBool(assertions, new_assertions);
-}
-
-void TheoryEngine::ppBoolToBv(const std::vector<Node>& assertions, std::vector<Node>& new_assertions) {
-  d_bvToBoolPreprocessor.lowerBoolToBv(assertions, new_assertions);
 }
 
 bool  TheoryEngine::ppBvAbstraction(const std::vector<Node>& assertions, std::vector<Node>& new_assertions) {
@@ -2516,7 +2543,8 @@ void TheoryEngine::mkAckermanizationAssertions(std::vector<Node>& assertions) {
 
 Node TheoryEngine::ppSimpITE(TNode assertion)
 {
-  if (!d_tform_remover.containsTermITE(assertion)) {
+  if (!d_iteUtilities->containsTermITE(assertion))
+  {
     return assertion;
   } else {
     Node result = d_iteUtilities->simpITE(assertion);
@@ -2557,7 +2585,6 @@ bool TheoryEngine::donePPSimpITE(std::vector<Node>& assertions){
         Chat() << "....node manager contains " << nm->poolSize() << " nodes before cleanup" << endl;
         d_iteUtilities->clear();
         Rewriter::clearCaches();
-        d_tform_remover.garbageCollect();
         nm->reclaimZombiesUntil(options::zombieHuntThreshold());
         Chat() << "....node manager contains " << nm->poolSize() << " nodes after cleanup" << endl;
       }
@@ -2568,7 +2595,8 @@ bool TheoryEngine::donePPSimpITE(std::vector<Node>& assertions){
   if(d_logicInfo.isTheoryEnabled(theory::THEORY_ARITH)
      && !options::incrementalSolving() ){
     if(!simpDidALotOfWork){
-      ContainsTermITEVisitor& contains = *d_tform_remover.getContainsVisitor();
+      ContainsTermITEVisitor& contains =
+          *(d_iteUtilities->getContainsVisitor());
       arith::ArithIteUtils aiteu(contains, d_userContext, getModel());
       bool anyItes = false;
       for(size_t i = 0;  i < assertions.size(); ++i){
@@ -2882,12 +2910,12 @@ bool TheoryEngine::useTheoryAlternative(const std::string& name) {
 
 
 TheoryEngine::Statistics::Statistics(theory::TheoryId theory):
-    conflicts(mkName("theory<", theory, ">::conflicts"), 0),
-    propagations(mkName("theory<", theory, ">::propagations"), 0),
-    lemmas(mkName("theory<", theory, ">::lemmas"), 0),
-    requirePhase(mkName("theory<", theory, ">::requirePhase"), 0),
-    flipDecision(mkName("theory<", theory, ">::flipDecision"), 0),
-    restartDemands(mkName("theory<", theory, ">::restartDemands"), 0)
+    conflicts(getStatsPrefix(theory) + "::conflicts", 0),
+    propagations(getStatsPrefix(theory) + "::propagations", 0),
+    lemmas(getStatsPrefix(theory) + "::lemmas", 0),
+    requirePhase(getStatsPrefix(theory) + "::requirePhase", 0),
+    flipDecision(getStatsPrefix(theory) + "::flipDecision", 0),
+    restartDemands(getStatsPrefix(theory) + "::restartDemands", 0)
 {
   smtStatisticsRegistry()->registerStat(&conflicts);
   smtStatisticsRegistry()->registerStat(&propagations);

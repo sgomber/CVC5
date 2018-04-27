@@ -24,7 +24,7 @@
 #include "proof/proof_utils.h"
 #include "proof/sat_proof_implementation.h"
 #include "prop/bvminisat/bvminisat.h"
-#include "theory/bv/bitblaster_template.h"
+#include "theory/bv/bitblast/bitblaster.h"
 #include "theory/bv/theory_bv.h"
 #include "theory/bv/theory_bv_rewrite_rules.h"
 
@@ -51,6 +51,7 @@ void BitVectorProof::initSatProof(CVC4::BVMinisat::Solver* solver) {
   d_resolutionProof = new LFSCBVSatProof(solver, &d_fakeContext, "bb", true);
 }
 
+theory::TheoryId BitVectorProof::getTheoryId() { return theory::THEORY_BV; }
 void BitVectorProof::initCnfProof(prop::CnfStream* cnfStream,
                                   context::Context* cnf) {
   Assert (d_cnfProof == NULL);
