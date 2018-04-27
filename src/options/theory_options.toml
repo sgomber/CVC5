@@ -23,3 +23,43 @@ header = "options/theory_options.h"
   notifies   = ["notifyUseTheoryList"]
   read_only  = true
   help       = "use alternate theory implementation NAME (--use-theory=help for a list). This option may be repeated or a comma separated list."
+
+[[option]]
+  name       = "modelBasedTc"
+  category   = "regular"
+  long       = "model-based-tc"
+  type       = "bool"
+  default    = "false"
+  help       = "use model-based theory combination"
+
+[[option]]
+  name       = "modelBasedTcRlv"
+  category   = "regular"
+  long       = "model-based-tc-rlv"
+  type       = "bool"
+  default    = "true"
+  help       = "use relevant equivalence classes for model-based theory combination"
+
+[[option]]
+  name       = "modelBasedTcAck"
+  category   = "regular"
+  long       = "model-based-tc"
+  type       = "bool"
+  default    = "false"
+  help       = "use Ackermanization lemmas instead of care splits"
+
+[[option]]
+  name       = "modelBasedTcRewUnique"
+  category   = "regular"
+  long       = "model-based-tc-runique"
+  type       = "bool"
+  default    = "false"
+  help       = "consider splits that are unique up to rewriting"
+
+[[option]]
+  name       = "modelBasedTc"
+  category   = "regular"
+  long       = "model-based-tc-tunique"
+  type       = "bool"
+  default    = "false"
+  help       = "consider splits on unique terms"
