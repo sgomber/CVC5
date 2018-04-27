@@ -57,7 +57,7 @@ header = "options/theory_options.h"
   help       = "consider splits that are unique up to rewriting"
 
 [[option]]
-  name       = "modelBasedTc"
+  name       = "modelBasedTcTermUnique"
   category   = "regular"
   long       = "model-based-tc-tunique"
   type       = "bool"
