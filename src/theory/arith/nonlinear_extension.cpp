@@ -1027,7 +1027,6 @@ bool NonlinearExtension::checkModel(const std::vector<Node>& assertions,
                 interval_vars[cur].clear();
                 interval_vars[cur].push_back(bit->second.first);
                 interval_vars[cur].push_back(bit->second.second);
-                Assert(bit->second.second >= bit->second.first);
                 // random interior value
                 unsigned r = Random::getRandom().pick(0, 32767);
                 Node rnd =
@@ -1052,6 +1051,7 @@ bool NonlinearExtension::checkModel(const std::vector<Node>& assertions,
                 Trace("nl-ext-test") << " ";
                 printRationalApprox("nl-ext-test", bit->second.second, 10);
                 Trace("nl-ext-test") << std::endl;
+                Assert(bit->second.second.getConst<Rational>() >= bit->second.first.getConst<Rational>());
                 Assert(rinterior.getConst<Rational>()
                        >= bit->second.first.getConst<Rational>());
                 Assert(rinterior.getConst<Rational>()
@@ -1149,6 +1149,9 @@ void NonlinearExtension::addCheckModelSubstitution(TNode v, TNode s)
 void NonlinearExtension::addCheckModelBound(TNode v, TNode l, TNode u)
 {
   Assert(!hasCheckModelAssignment(v));
+  Assert( l.isConst() );
+  Assert( u.isConst() );
+  Assert( l.getConst<Rational>()<=u.getConst<Rational>() );
   d_check_model_bounds[v] = std::pair<Node, Node>(l, u);
 }
 
@@ -1387,6 +1390,14 @@ bool NonlinearExtension::solveEqualitySimple(Node eq)
           MULT, coeffa, nm->mkNode(r == 0 ? MINUS : PLUS, negb, val));
       approx = Rewriter::rewrite(approx);
       bounds[r][b] = approx;
+      Assert( approx.isConst() );
+    }
+    if(bounds[r][0].getConst<Rational>()>bounds[r][1].getConst<Rational>())
+    {
+      // ensure bound is (lower, upper)
+      Node tmp = bounds[r][0];
+      bounds[r][0] = bounds[r][1];
+      bounds[r][1] = tmp;
     }
     Node diff =
         nm->mkNode(MINUS,
@@ -1409,6 +1420,7 @@ bool NonlinearExtension::solveEqualitySimple(Node eq)
     printRationalApprox("nl-ext-cm-debug", diff_bound[r]);
     Trace("nl-ext-cm-debug") << std::endl;
   }
+  
   // take the one that var is closer to in the model
   Node cmp = nm->mkNode(GEQ, diff_bound[0], diff_bound[1]);
   cmp = Rewriter::rewrite(cmp);
@@ -1561,9 +1573,9 @@ bool NonlinearExtension::simpleCheckModelLit(Node lit)
         }
         Trace("nl-ext-cms-debug") << "  apex " << apex << std::endl;
         Trace("nl-ext-cms-debug")
-            << "  min " << boundn[0] << ", cmp: " << cmp[0] << std::endl;
+            << "  lower " << boundn[0] << ", cmp: " << cmp[0] << std::endl;
         Trace("nl-ext-cms-debug")
-            << "  max " << boundn[1] << ", cmp: " << cmp[1] << std::endl;
+            << "  upper " << boundn[1] << ", cmp: " << cmp[1] << std::endl;
         Assert(boundn[0].getConst<Rational>()
                <= boundn[1].getConst<Rational>());
         Node s;
