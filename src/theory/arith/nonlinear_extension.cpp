@@ -1848,7 +1848,7 @@ bool NonlinearExtension::simpleCheckModelMsum(const std::map<Node, Node>& msum,
               << "  failed due to conflicting bound for " << vc << std::endl;
           return false;
         }
-        // must over/under approximate
+        // must over/under approximate based on vc_set_lower, computed above
         Node vb = vc_set_lower ? l : u;
         for (unsigned i = 0; i < vcfact; i++)
         {
