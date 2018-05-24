@@ -525,7 +525,7 @@ header = "options/arith_options.h"
   category   = "regular"
   long       = "nl-ext-cm-sample"
   type       = "bool"
-  default    = "false"
+  default    = "true"
   help       = "do nl-ext check model sample testing"
 
 [[option]]
