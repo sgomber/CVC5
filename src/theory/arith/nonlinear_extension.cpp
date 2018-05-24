@@ -1051,7 +1051,8 @@ bool NonlinearExtension::checkModel(const std::vector<Node>& assertions,
                 Trace("nl-ext-test") << " ";
                 printRationalApprox("nl-ext-test", bit->second.second, 10);
                 Trace("nl-ext-test") << std::endl;
-                Assert(bit->second.second.getConst<Rational>() >= bit->second.first.getConst<Rational>());
+                Assert(bit->second.second.getConst<Rational>()
+                       >= bit->second.first.getConst<Rational>());
                 Assert(rinterior.getConst<Rational>()
                        >= bit->second.first.getConst<Rational>());
                 Assert(rinterior.getConst<Rational>()
@@ -1149,9 +1150,9 @@ void NonlinearExtension::addCheckModelSubstitution(TNode v, TNode s)
 void NonlinearExtension::addCheckModelBound(TNode v, TNode l, TNode u)
 {
   Assert(!hasCheckModelAssignment(v));
-  Assert( l.isConst() );
-  Assert( u.isConst() );
-  Assert( l.getConst<Rational>()<=u.getConst<Rational>() );
+  Assert(l.isConst());
+  Assert(u.isConst());
+  Assert(l.getConst<Rational>() <= u.getConst<Rational>());
   d_check_model_bounds[v] = std::pair<Node, Node>(l, u);
 }
 
@@ -1390,9 +1391,9 @@ bool NonlinearExtension::solveEqualitySimple(Node eq)
           MULT, coeffa, nm->mkNode(r == 0 ? MINUS : PLUS, negb, val));
       approx = Rewriter::rewrite(approx);
       bounds[r][b] = approx;
-      Assert( approx.isConst() );
+      Assert(approx.isConst());
     }
-    if(bounds[r][0].getConst<Rational>()>bounds[r][1].getConst<Rational>())
+    if (bounds[r][0].getConst<Rational>() > bounds[r][1].getConst<Rational>())
     {
       // ensure bound is (lower, upper)
       Node tmp = bounds[r][0];
@@ -1420,7 +1421,7 @@ bool NonlinearExtension::solveEqualitySimple(Node eq)
     printRationalApprox("nl-ext-cm-debug", diff_bound[r]);
     Trace("nl-ext-cm-debug") << std::endl;
   }
-  
+
   // take the one that var is closer to in the model
   Node cmp = nm->mkNode(GEQ, diff_bound[0], diff_bound[1]);
   cmp = Rewriter::rewrite(cmp);
@@ -1779,7 +1780,9 @@ bool NonlinearExtension::simpleCheckModelMsum(const std::map<Node, Node>& msum,
       }
       // whether we will try to minimize/maximize (-1/1) the absolute value
       int setAbs = (set_lower == has_neg_factor) ? 1 : -1;
-      Trace("nl-ext-cms-debug") << "set absolute value to " << (setAbs==1 ? "maximal" : "minimal") << std::endl;
+      Trace("nl-ext-cms-debug")
+          << "set absolute value to " << (setAbs == 1 ? "maximal" : "minimal")
+          << std::endl;
 
       std::vector<Node> vbs;
       Trace("nl-ext-cms-debug") << "set bounds..." << std::endl;
@@ -1791,7 +1794,9 @@ bool NonlinearExtension::simpleCheckModelMsum(const std::map<Node, Node>& msum,
         Node u = us[i];
         bool vc_set_lower;
         int vcsign = signs[i];
-        Trace("nl-ext-cms-debug") << "Bounds for " << vc << " : " << l << ", " << u << ", sign : " << vcsign << ", factor : " << vcfact << std::endl;
+        Trace("nl-ext-cms-debug")
+            << "Bounds for " << vc << " : " << l << ", " << u
+            << ", sign : " << vcsign << ", factor : " << vcfact << std::endl;
         if (l == u)
         {
           // by convention, always say it is lower if they are the same
@@ -1801,12 +1806,12 @@ bool NonlinearExtension::simpleCheckModelMsum(const std::map<Node, Node>& msum,
         }
         else
         {
-          if( vcfact%2==0 )
+          if (vcfact % 2 == 0)
           {
             // minimize or maximize its absolute value
             Rational la = l.getConst<Rational>().abs();
             Rational ua = u.getConst<Rational>().abs();
-            if( la==ua )
+            if (la == ua)
             {
               // by convention, always say it is lower if abs are the same
               vc_set_lower = true;
@@ -1815,7 +1820,7 @@ bool NonlinearExtension::simpleCheckModelMsum(const std::map<Node, Node>& msum,
             }
             else
             {
-              vc_set_lower = (la>ua)==(setAbs==1);
+              vc_set_lower = (la > ua) == (setAbs == 1);
             }
           }
           else if (signs[i] == 0)
