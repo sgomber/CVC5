@@ -27,6 +27,7 @@
 #include "theory/arith/theory_arith.h"
 #include "theory/quantifiers/quant_util.h"
 #include "theory/theory_model.h"
+#include "util/random.h"
 
 using namespace CVC4::kind;
 
@@ -975,6 +976,9 @@ bool NonlinearExtension::checkModel(const std::vector<Node>& assertions,
 
   Trace("nl-ext-cm-debug") << "  check assertions..." << std::endl;
   std::vector<Node> check_assertions;
+  // for sample testing
+  NodeManager * nm = NodeManager::currentNM();
+  unsigned nsamples = options::nlExtSampleCheckModelPoints();
   for (const Node& a : passertions)
   {
     if (d_check_model_solved.find(a) == d_check_model_solved.end())
@@ -997,6 +1001,77 @@ bool NonlinearExtension::checkModel(const std::vector<Node>& assertions,
         check_assertions.push_back(av);
         Trace("nl-ext-cm-debug")
             << "...check-model : failed assertion, value : " << av << std::endl;
+      }
+      else if( options::nlExtSampleCheckModel() )
+      {
+        // use fresh map (only some variables are relevant to this)
+        std::map< Node, std::vector< Node > > interval_vars;
+        // test
+        Trace("nl-ext-test") << "Test literal " << av << " on " << nsamples << " points..." << std::endl;
+        visited.clear();
+        visit.clear();
+        visit.push_back(av);
+        do
+        {
+          cur = visit.back();
+          visit.pop_back();
+          if (visited.find(cur) == visited.end())
+          {
+            std::map<Node, std::pair<Node, Node> >::iterator bit = d_check_model_bounds.find(cur);
+            if( bit!=d_check_model_bounds.end() )
+            {
+              if( interval_vars.find(cur)==interval_vars.end() )
+              {
+                interval_vars[cur].clear();
+                interval_vars[cur].push_back( bit->second.first );
+                interval_vars[cur].push_back( bit->second.second );
+                Assert( bit->second.second>=bit->second.first );
+                // random interior value
+                unsigned r = Random::getRandom().pick(0,32767);
+                Node rnd = nm->mkConst(Rational(r,static_cast<unsigned>(32767)));
+                Node rinterior = nm->mkNode( PLUS, bit->second.first, nm->mkNode( MULT, rnd, nm->mkNode( MINUS, bit->second.second, bit->second.first ) ) );
+                Trace("nl-ext-test") << "  interior point : " << rinterior << std::endl;
+                rinterior = Rewriter::rewrite( rinterior );
+                Trace("nl-ext-test") << "  simplified to : " << rinterior << std::endl;
+                Trace("nl-ext-test") << "Approximations: ";
+                printRationalApprox("nl-ext-test", bit->second.first, 10);
+                Trace("nl-ext-test") << " ";
+                printRationalApprox("nl-ext-test", rinterior, 10);
+                Trace("nl-ext-test") << " ";
+                printRationalApprox("nl-ext-test", bit->second.second, 10);
+                Trace("nl-ext-test") << std::endl;
+                Assert( rinterior.getConst<Rational>()>=bit->second.first.getConst<Rational>() );
+                Assert( rinterior.getConst<Rational>()<=bit->second.second.getConst<Rational>() );
+                interval_vars[cur].push_back(rinterior);
+                Trace("nl-ext-test") << "  sample values : " << cur << " : " << interval_vars[cur] << std::endl;
+              }
+            }
+            for (const Node& cn : cur)
+            {
+              visit.push_back(cn);
+            }
+          }
+        }while (!visit.empty());
+        Trace("nl-ext-test") << " ";
+        // try 100 random values
+        for( unsigned i=0; i<100; i++ )
+        {
+          std::vector< Node > vars;
+          std::vector< Node > subs;
+          for( const std::pair< const Node, std::vector< Node > >& iv : interval_vars )
+          {
+            Node v = iv.first;
+            Node s = iv.second[Random::getRandom().pick(0,iv.second.size()-1)];
+            vars.push_back(v);
+            subs.push_back(s);
+            Trace("nl-ext-test") << " (" << v << " -> " << s << ")";
+          }
+          Node sav = av.substitute(vars.begin(), vars.end(), subs.begin(), subs.end() );
+          sav = Rewriter::rewrite( sav );
+          Trace("nl-ext-test") << " ---> " << sav << std::endl;
+          AlwaysAssert( sav.isConst() );
+          AlwaysAssert( sav.getConst<bool>() );
+        }
       }
     }
   }
@@ -1448,6 +1523,8 @@ bool NonlinearExtension::simpleCheckModelLit(Node lit)
         t = Rewriter::rewrite(t);
         Trace("nl-ext-cms-debug") << "Trying to find min/max for quadratic "
                                   << t << "..." << std::endl;
+        Trace("nl-ext-cms-debug") << "    a=" << a << std::endl;
+        Trace("nl-ext-cms-debug") << "    b=" << b << std::endl;
         // find maximal/minimal value on the interval
         Node apex = nm->mkNode(
             DIVISION, nm->mkNode(UMINUS, b), nm->mkNode(MULT, d_two, a));
@@ -1468,6 +1545,7 @@ bool NonlinearExtension::simpleCheckModelLit(Node lit)
             << "  min " << boundn[0] << ", cmp: " << cmp[0] << std::endl;
         Trace("nl-ext-cms-debug")
             << "  max " << boundn[1] << ", cmp: " << cmp[1] << std::endl;
+        Assert( boundn[0].getConst<Rational>()<=boundn[1].getConst<Rational>() );
         Node s;
         qvars.push_back(v);
         if (cmp[0] != cmp[1])

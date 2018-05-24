@@ -519,3 +519,19 @@ header = "options/arith_options.h"
   default    = "true"
   read_only  = true
   help       = "whether to increment the precision for irrational function constraints"
+
+[[option]]
+  name       = "nlExtSampleCheckModel"
+  category   = "regular"
+  long       = "nl-ext-cm-sample"
+  type       = "bool"
+  default    = "false"
+  help       = "do nl-ext check model sample testing"
+
+[[option]]
+  name       = "nlExtSampleCheckModelPoints"
+  category   = "regular"
+  long       = "nl-ext-cm-samples=N"
+  type       = "int"
+  default    = "100"
+  help       = "number of points to consider when doing nl-ext check model sample testing"
