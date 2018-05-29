@@ -801,8 +801,6 @@ Node SygusSymBreakNew::registerSearchValue(
     }
   }
   Trace("sygus-sb-debug2") << "Registering search value " << n << " -> " << nv << std::endl;
-  nv = d_tds->canonizeBuiltin(nv);
-  Trace("sygus-sb-debug") << "  ...canonized value is " << nv << std::endl;
   // must do this for all nodes, regardless of top-level
   if( d_cache[a].d_search_val_proc.find( nv )==d_cache[a].d_search_val_proc.end() ){
     d_cache[a].d_search_val_proc.insert(nv);
@@ -811,6 +809,8 @@ Node SygusSymBreakNew::registerSearchValue(
     quantifiers::CegConjecture* aconj = d_anchor_to_conj[a];
     Assert(aconj != NULL);
     Trace("sygus-sb-debug") << "  ...register search value " << nv << ", type=" << tn << std::endl;
+  //Node cnv = d_tds->canonizeBuiltin(nv);
+  //Trace("sygus-sb-debug") << "  ...canonized value is " << nv << std::endl;
     Node bv = d_tds->sygusToBuiltin( nv, tn );
     Trace("sygus-sb-debug") << "  ......builtin is " << bv << std::endl;
     Node bvr = d_tds->getExtRewriter()->extendedRewrite(bv);
@@ -819,7 +819,7 @@ Node SygusSymBreakNew::registerSearchValue(
     unsigned sz = d_tds->getSygusTermSize( nv );      
     if( d_tds->involvesDivByZero( bvr ) ){
       quantifiers::DivByZeroSygusInvarianceTest dbzet;
-      Trace("sygus-sb-mexp-debug") << "Minimize explanation for div-by-zero in " << d_tds->sygusToBuiltin( nv ) << std::endl;
+      Trace("sygus-sb-mexp-debug") << "Minimize explanation for div-by-zero in " << bv << std::endl;
       registerSymBreakLemmaForValue(a, nv, dbzet, Node::null(), lemmas);
       return Node::null();
     }else{
