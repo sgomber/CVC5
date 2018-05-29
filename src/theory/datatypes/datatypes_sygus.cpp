@@ -801,6 +801,8 @@ Node SygusSymBreakNew::registerSearchValue(
     }
   }
   Trace("sygus-sb-debug2") << "Registering search value " << n << " -> " << nv << std::endl;
+  nv = d_tds->canonizeBuiltin(nv);
+  Trace("sygus-sb-debug") << "  ...canonized value is " << nv << std::endl;
   // must do this for all nodes, regardless of top-level
   if( d_cache[a].d_search_val_proc.find( nv )==d_cache[a].d_search_val_proc.end() ){
     d_cache[a].d_search_val_proc.insert(nv);

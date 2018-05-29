@@ -171,6 +171,66 @@ Node TermDbSygus::mkGeneric(const Datatype& dt, int c)
   return mkGeneric(dt, c, pre);
 }
 
+struct CanonizeBuiltinAttributeId
+{
+};
+using CanonizeBuiltinAttribute =
+    expr::Attribute<CanonizeBuiltinAttributeId, Node>;
+
+Node TermDbSygus::canonizeBuiltin(Node n)
+{
+  std::map<TypeNode, int> var_count;
+  return canonizeBuiltin(n, var_count);
+}
+
+Node TermDbSygus::canonizeBuiltin(Node n,
+                                  std::map<TypeNode, int>& var_count)
+{
+  // has it already been computed?
+  bool var_count_empty = var_count.empty();
+  if (var_count_empty && n.hasAttribute(CanonizeBuiltinAttribute()))
+  {
+    return n.getAttribute(CanonizeBuiltinAttribute());
+  }
+  Trace("sygus-db-canon") << "  CanonizeBuiltin : compute for " << n << "\n";
+  Node ret = n;
+  // it is symbolic if it represents "any constant"
+  if (n.getKind() == APPLY_SELECTOR_TOTAL)
+  {
+    ret = getFreeVarInc(n[0].getType(), var_count, true);
+  }
+  else if (n.getKind() != APPLY_CONSTRUCTOR)
+  {
+    ret = n;
+  }
+  else
+  {
+    Assert(n.getKind() == APPLY_CONSTRUCTOR);
+    bool childChanged = false;
+    std::vector<Node> children;
+    children.push_back(n.getOperator());
+    for (unsigned j = 0, size = n.getNumChildren(); j < size; ++j)
+    {
+      Node child = canonizeBuiltin(n[j], var_count);
+      children.push_back(child);
+      childChanged = childChanged || child != n[j];
+    }
+    if (childChanged)
+    {
+      ret = NodeManager::currentNM()->mkNode(APPLY_CONSTRUCTOR, children);
+    }
+  }
+  // cache if we had a fresh variable count
+  if (var_count_empty)
+  {
+    n.setAttribute(CanonizeBuiltinAttribute(), ret);
+  }
+  Trace("sygus-db-canon") << "  ...normalized " << n << " --> " << ret
+                          << std::endl;
+  Assert(ret.getType().isComparableTo(n.getType()));
+  return ret;
+}
+
 struct SygusToBuiltinAttributeId
 {
 };
@@ -179,7 +239,7 @@ typedef expr::Attribute<SygusToBuiltinAttributeId, Node>
 
 Node TermDbSygus::sygusToBuiltin(Node n, TypeNode tn)
 {
-  Assert( n.getType()==tn );
+  Assert(n.getType().isComparableTo(tn));
   if (!tn.isDatatype())
   {
     return n;
