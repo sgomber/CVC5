@@ -1302,8 +1302,10 @@ void SmtEngine::setDefaults() {
     options::bitvectorDivByZeroConst.set(
         language::isInputLang_smt2_6(options::inputLanguage()));
   }
+  bool is_sygus = false;
   if (options::inputLanguage() == language::input::LANG_SYGUS)
   {
+    is_sygus = true;
     if (!options::ceGuidedInst.wasSetByUser())
     {
       options::ceGuidedInst.set(true);
@@ -1313,11 +1315,6 @@ void SmtEngine::setDefaults() {
     {
       options::cbqiMidpoint.set(true);
     }
-  }
-  else
-  {
-    // cannot use sygus repair constants
-    options::sygusRepairConst.set(false);
   }
 
   if (options::bitblastMode() == theory::bv::BITBLAST_MODE_EAGER)
@@ -1582,7 +1579,7 @@ void SmtEngine::setDefaults() {
   // cases where we need produce models
   if (!options::produceModels()
       && (options::produceAssignments() || options::sygusRewSynthCheck()
-          || options::sygusRepairConst()))
+          || is_sygus))
   {
     Notice() << "SmtEngine: turning on produce-models" << endl;
     setOption("produce-models", SExpr("true"));
