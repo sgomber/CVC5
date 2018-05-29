@@ -44,6 +44,7 @@ SygusSymBreakNew::SygusSymBreakNew(TheoryDatatypes* td,
       d_active_terms(c),
       d_currTermSize(c) {
   d_zero = NodeManager::currentNM()->mkConst(Rational(0));
+  d_true = NodeManager::currentNM()->mkConst(true);
 }
 
 SygusSymBreakNew::~SygusSymBreakNew() {
@@ -1345,9 +1346,14 @@ bool SygusSymBreakNew::checkTesters(Node n,
   const Datatype& dt = ((DatatypeType)tn.toType()).getDatatype();
   int cindex = DatatypesRewriter::indexOf(vn.getOperator());
   Node tst = DatatypesRewriter::mkTester( n, cindex, dt );
-  bool hastst = d_td->getValuation().getModel()->hasTerm( tst );
-  Node tstrep = d_td->getValuation().getModel()->getRepresentative( tst );
-  if( !hastst || tstrep!=NodeManager::currentNM()->mkConst( true ) ){
+  bool hastst = d_td->getEqualityEngine()->hasTerm(tst);
+  Node tstrep;
+  if (hastst)
+  {
+    tstrep = d_td->getEqualityEngine()->getRepresentative(tst);
+  }
+  if (!hastst || tstrep != d_true)
+  {
     Trace("sygus-sb-warn") << "- has tester : " << tst << " : " << ( hastst ? "true" : "false" );
     Trace("sygus-sb-warn") << ", value=" << tstrep << std::endl;
     if( !hastst ){

@@ -178,6 +178,7 @@ private:
    * skolems are analyzed during doRefine().
    */
   std::vector<Node> d_ce_sk_vars;
+  std::vector<Node> d_ce_sk_var_mvs;
   /**
    * Whether the above vector has been set. We have this flag since the above
    * vector may be set to empty (e.g. for ground synthesis conjectures).

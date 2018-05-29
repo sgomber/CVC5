@@ -20,6 +20,9 @@
 #include "options/quantifiers_options.h"
 #include "printer/printer.h"
 #include "prop/prop_engine.h"
+#include "smt/smt_engine.h"
+#include "smt/smt_engine_scope.h"
+#include "smt/smt_statistics_registry.h"
 #include "theory/quantifiers/first_order_model.h"
 #include "theory/quantifiers/instantiate.h"
 #include "theory/quantifiers/quantifiers_attributes.h"
@@ -391,12 +394,33 @@ void CegConjecture::doCheck(std::vector<Node>& lems)
     }
     else
     {
-      // This is the "verification lemma", which states
-      // either this conjecture does not have a solution, or candidate_values
-      // is a solution for this conjecture.
-      lem = nm->mkNode(OR, d_quant.negate(), lem);
-      lem = getStreamGuardedLemma(lem);
-      lems.push_back(lem);
+      Trace("cegqi-engine") << "  *** Direct verify..." << std::endl;
+      SmtEngine verifySmt(nm->toExprManager());
+      verifySmt.setLogic(smt::currentSmtEngine()->getLogicInfo());
+      verifySmt.assertFormula(lem.toExpr());
+      Result r = verifySmt.checkSat();
+      Trace("cegqi-engine") << "  ...got " << r << std::endl;
+      if (r.asSatisfiabilityResult().isSat() == Result::SAT)
+      {
+        Trace("cegqi-engine") << "  verification lemma failed for:\n";
+        // do not send out
+        for (const Node& v : d_ce_sk_vars)
+        {
+          Node mv = Node::fromExpr(verifySmt.getValue(v.toExpr()));
+          Trace("cegqi-engine") << "    " << v << " -> " << mv << "\n";
+          d_ce_sk_var_mvs.push_back(mv);
+        }
+      }
+      else
+      {
+        // This is the "verification lemma", which states
+        // either this conjecture does not have a solution, or candidate_values
+        // is a solution for this conjecture.
+        // lem = nm->mkNode(OR, d_quant.negate(), lem);
+        lem = d_quant.negate();
+        lem = getStreamGuardedLemma(lem);
+        lems.push_back(lem);
+      }
     }
   }
 }
@@ -414,10 +438,19 @@ void CegConjecture::doRefine( std::vector< Node >& lems ){
   {
     Trace("cegqi-refine") << "Get model values for skolems..." << std::endl;
     Assert(d_inner_vars.size() == d_ce_sk_vars.size());
-    std::vector<Node> model_values;
-    getModelValues(d_ce_sk_vars, model_values);
+    if (d_ce_sk_var_mvs.empty())
+    {
+      std::vector<Node> model_values;
+      getModelValues(d_ce_sk_vars, model_values);
+      sk_subs.insert(sk_subs.end(), model_values.begin(), model_values.end());
+    }
+    else
+    {
+      Assert(d_ce_sk_var_mvs.size() == d_ce_sk_vars.size());
+      sk_subs.insert(
+          sk_subs.end(), d_ce_sk_var_mvs.begin(), d_ce_sk_var_mvs.end());
+    }
     sk_vars.insert(sk_vars.end(), d_inner_vars.begin(), d_inner_vars.end());
-    sk_subs.insert(sk_subs.end(), model_values.begin(), model_values.end());
   }
   else
   {
@@ -450,6 +483,7 @@ void CegConjecture::doRefine( std::vector< Node >& lems ){
   Trace("cegqi-refine") << "doRefine : finished" << std::endl;
   d_set_ce_sk_vars = false;
   d_ce_sk_vars.clear();
+  d_ce_sk_var_mvs.clear();
 }
 
 void CegConjecture::preregisterConjecture( Node q ) {
@@ -602,6 +636,7 @@ void CegConjecture::printAndContinueStream()
   // thus, we clear information regarding the current refinement
   d_set_ce_sk_vars = false;
   d_ce_sk_vars.clear();
+  d_ce_sk_var_mvs.clear();
   // However, we need to exclude the current solution using an explicit
   // blocking clause, so that we proceed to the next solution.
   std::vector<Node> terms;
