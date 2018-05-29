@@ -2196,8 +2196,15 @@ void SmtEngine::setDefaults() {
 
   //until bugs 371,431 are fixed
   if( ! options::minisatUseElim.wasSetByUser()){
-    //AJR: cannot use minisat elim for new implementation of sets TODO: why?
-    if( d_logic.isTheoryEnabled(THEORY_SETS) || d_logic.isQuantified() || options::produceModels() || options::produceAssignments() || options::checkModels() ){
+    // cannot use minisat elimination for logics where a theory solver
+    // introduces new literals into the search. This includes quantifiers
+    // (quantifier instantiation), and the lemma schemas used in non-linear
+    // and sets. We also can't use it if models are enabled.
+    if (d_logic.isTheoryEnabled(THEORY_SETS) || d_logic.isQuantified()
+        || options::produceModels() || options::produceAssignments()
+        || options::checkModels()
+        || (d_logic.isTheoryEnabled(THEORY_ARITH) && !d_logic.isLinear()))
+    {
       options::minisatUseElim.set( false );
     }
   }
@@ -2356,7 +2363,9 @@ void SmtEngine::setInfo(const std::string& key, const CVC4::SExpr& value)
   } else if(key == "name") {
     d_filename = value.getValue();
     return;
-  } else if(key == "smt-lib-version") {
+  }
+  else if (key == "smt-lib-version" && !options::inputLanguage.wasSetByUser())
+  {
     language::input::Language ilang = language::input::LANG_AUTO;
     if( (value.isInteger() && value.getIntegerValue() == Integer(2)) ||
         (value.isRational() && value.getRationalValue() == Rational(2)) ||
