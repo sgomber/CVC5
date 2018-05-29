@@ -177,49 +177,41 @@ struct CanonizeBuiltinAttributeId
 using CanonizeBuiltinAttribute =
     expr::Attribute<CanonizeBuiltinAttributeId, Node>;
 
-Node TermDbSygus::canonizeBuiltin(Node n, TypeNode tn)
+Node TermDbSygus::canonizeBuiltin(Node n)
 {
   std::map<TypeNode, int> var_count;
-  return canonizeBuiltin(n, tn, var_count);
+  return canonizeBuiltin(n, var_count);
 }
 
 Node TermDbSygus::canonizeBuiltin(Node n,
-                                  TypeNode tn,
                                   std::map<TypeNode, int>& var_count)
 {
-  // not a datatype
-  if (n.getKind() != APPLY_CONSTRUCTOR)
-  {
-    return n;
-  }
   // has it already been computed?
   bool var_count_empty = var_count.empty();
   if (var_count_empty && n.hasAttribute(CanonizeBuiltinAttribute()))
   {
     return n.getAttribute(CanonizeBuiltinAttribute());
   }
-  Trace("sygus-db-canon") << "  CanonizeBuiltin : compute for " << n
-                          << ", type = " << tn << std::endl;
+  Trace("sygus-db-canon") << "  CanonizeBuiltin : compute for " << n << "\n";
   Node ret = n;
-  const Datatype& dt = static_cast<DatatypeType>(tn.toType()).getDatatype();
-  Assert(dt.isSygus());
-  unsigned i = datatypes::DatatypesRewriter::indexOf(n.getOperator());
   // it is symbolic if it represents "any constant"
-  if (Node::fromExpr(dt[i].getSygusOp()).getAttribute(SygusAnyConstAttribute()))
+  if (n.getKind() == APPLY_SELECTOR_TOTAL)
   {
-    ret = getFreeVarInc(n[0].getType(), var_count);
+    ret = getFreeVarInc(n[0].getType(), var_count, true);
+  }
+  else if (n.getKind() != APPLY_CONSTRUCTOR)
+  {
+    ret = n;
   }
   else
   {
-    Assert(n.getNumChildren() == dt[i].getNumArgs());
+    Assert(n.getKind() == APPLY_CONSTRUCTOR);
     bool childChanged = false;
     std::vector<Node> children;
     children.push_back(n.getOperator());
     for (unsigned j = 0, size = n.getNumChildren(); j < size; ++j)
     {
-      Node child = canonizeBuiltin(
-          n[j], TypeNode::fromType(dt[i].getArgType(j)), var_count);
-
+      Node child = canonizeBuiltin(n[j], var_count);
       children.push_back(child);
       childChanged = childChanged || child != n[j];
     }
@@ -233,6 +225,9 @@ Node TermDbSygus::canonizeBuiltin(Node n,
   {
     n.setAttribute(CanonizeBuiltinAttribute(), ret);
   }
+  Trace("sygus-db-canon") << "  ...normalized " << n << " --> " << ret
+                          << std::endl;
+  Assert(ret.getType().isComparableTo(n.getType()));
   return ret;
 }
 
@@ -244,7 +239,7 @@ typedef expr::Attribute<SygusToBuiltinAttributeId, Node>
 
 Node TermDbSygus::sygusToBuiltin(Node n, TypeNode tn)
 {
-  Assert( n.getType()==tn );
+  Assert(n.getType().isComparableTo(tn));
   if (!tn.isDatatype())
   {
     return n;

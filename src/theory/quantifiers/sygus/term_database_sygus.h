@@ -175,8 +175,8 @@ class TermDbSygus {
    * unique variables. To track counters for introducing unique variables, we
    * use the var_count map.
    */
-  Node canonizeBuiltin(Node n, TypeNode tn);
-  Node canonizeBuiltin(Node n, TypeNode tn, std::map<TypeNode, int>& var_count);
+  Node canonizeBuiltin(Node n);
+  Node canonizeBuiltin(Node n, std::map<TypeNode, int>& var_count);
   /** sygus to builtin
    *
    * Given a sygus datatype term n of type tn, this function returns its analog,
