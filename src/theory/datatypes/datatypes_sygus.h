@@ -145,6 +145,8 @@ class SygusSymBreakNew
   IntMap d_currTermSize;
   /** zero */
   Node d_zero;
+  /** true */
+  Node d_true;
   /**
    * Map from terms (selector chains) to their anchors. The anchor of a
    * selector chain S1( ... Sn( x ) ... ) is x.
