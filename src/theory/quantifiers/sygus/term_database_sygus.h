@@ -170,12 +170,13 @@ class TermDbSygus {
   Node mkGeneric(const Datatype& dt, int c);
   /** makes a symbolic term concrete
    *
-   * Given a builtin term n of type tn with holes (selection chains), this
-   * function returns a term in which holes are replaced by unique variables. To
-   * track counters for introducing unique variables, we use the var_count map.
+   * Given a sygus datatype term n of type tn with holes (symbolic constructor
+   * applications), this function returns a term in which holes are replaced by
+   * unique variables. To track counters for introducing unique variables, we
+   * use the var_count map.
    */
-  Node reify(Node n);
-  Node reify(Node n, std::map<TypeNode, int>& var_count);
+  Node canonizeBuiltin(Node n, TypeNode tn);
+  Node canonizeBuiltin(Node n, TypeNode tn, std::map<TypeNode, int>& var_count);
   /** sygus to builtin
    *
    * Given a sygus datatype term n of type tn, this function returns its analog,

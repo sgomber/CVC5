@@ -800,6 +800,8 @@ Node SygusSymBreakNew::registerSearchValue(
     }
   }
   Trace("sygus-sb-debug2") << "Registering search value " << n << " -> " << nv << std::endl;
+  nv = d_tds->canonizeBuiltin(nv, tn);
+  Trace("sygus-sb-debug") << "  ...canonized value is " << nv << std::endl;
   // must do this for all nodes, regardless of top-level
   if( d_cache[a].d_search_val_proc.find( nv )==d_cache[a].d_search_val_proc.end() ){
     d_cache[a].d_search_val_proc.insert(nv);
@@ -810,10 +812,8 @@ Node SygusSymBreakNew::registerSearchValue(
     Trace("sygus-sb-debug") << "  ...register search value " << nv << ", type=" << tn << std::endl;
     Node bv = d_tds->sygusToBuiltin( nv, tn );
     Trace("sygus-sb-debug") << "  ......builtin is " << bv << std::endl;
-    // Node rv = d_tds->reify(bv);
-    // Trace("sygus-sb-debug") << "  ......reified is " << rv << std::endl;
-    // Node bvr = d_tds->getExtRewriter()->extendedRewrite(rv);
     Node bvr = d_tds->getExtRewriter()->extendedRewrite(bv);
+    // Node bvr = d_tds->getExtRewriter()->extendedRewrite(bv);
     Trace("sygus-sb-debug") << "  ......rewrites to " << bvr << std::endl;
     Trace("dt-sygus") << "  * DT builtin : " << n << " -> " << bvr << std::endl;
     unsigned sz = d_tds->getSygusTermSize( nv );      

@@ -171,63 +171,68 @@ Node TermDbSygus::mkGeneric(const Datatype& dt, int c)
   return mkGeneric(dt, c, pre);
 }
 
-
-struct ReifyAttributeId
+struct CanonizeBuiltinAttributeId
 {
 };
-using ReifyAttribute = expr::Attribute<ReifyAttributeId, Node>;
+using CanonizeBuiltinAttribute =
+    expr::Attribute<CanonizeBuiltinAttributeId, Node>;
 
-Node TermDbSygus::reify(Node n)
+Node TermDbSygus::canonizeBuiltin(Node n, TypeNode tn)
 {
-  // has it already been computed?
-  if (n.hasAttribute(ReifyAttribute()))
+  std::map<TypeNode, int> var_count;
+  return canonizeBuiltin(n, tn, var_count);
+}
+
+Node TermDbSygus::canonizeBuiltin(Node n,
+                                  TypeNode tn,
+                                  std::map<TypeNode, int>& var_count)
+{
+  // not a datatype
+  if (n.getKind() != APPLY_CONSTRUCTOR)
   {
-    return n.getAttribute(ReifyAttribute());
+    return n;
   }
-  Trace("sygus-db-reify") << "Reify : compute for " << n << ", type "
-                          << n.getType() << "\n";
-  Node ret = n;
-  if (n.getKind() == APPLY_SELECTOR_TOTAL)
+  // has it already been computed?
+  bool var_count_empty = var_count.empty();
+  if (var_count_empty && n.hasAttribute(CanonizeBuiltinAttribute()))
   {
-    // map to builtin variable type
-    ret = getFreeVar(n.getType(), getVarNum(n));
+    return n.getAttribute(CanonizeBuiltinAttribute());
+  }
+  Trace("sygus-db-canon") << "  CanonizeBuiltin : compute for " << n
+                          << ", type = " << tn << std::endl;
+  Node ret = n;
+  const Datatype& dt = static_cast<DatatypeType>(tn.toType()).getDatatype();
+  Assert(dt.isSygus());
+  unsigned i = datatypes::DatatypesRewriter::indexOf(n.getOperator());
+  // it is symbolic if it represents "any constant"
+  if (Node::fromExpr(dt[i].getSygusOp()).getAttribute(SygusAnyConstAttribute()))
+  {
+    ret = getFreeVarInc(n[0].getType(), var_count);
   }
   else
   {
+    Assert(n.getNumChildren() == dt[i].getNumArgs());
     bool childChanged = false;
     std::vector<Node> children;
-    if (n.getMetaKind() == metakind::PARAMETERIZED)
+    children.push_back(n.getOperator());
+    for (unsigned j = 0, size = n.getNumChildren(); j < size; ++j)
     {
-      children.push_back(n.getOperator());
-    }
-    for (unsigned i = 0, size = n.getNumChildren(); i < size; ++i)
-    {
-      Node child;
-      // if the child is a selection chain, create a free variable
-      if (n[i].getKind() == APPLY_SELECTOR_TOTAL)
-      {
-        // map to builtin variable type
-        child = getFreeVar(n[i].getType(), getVarNum(n[i]));
-        Trace("sygus-db-reify") << "...symb const " << n[i] << " into " << child
-                                << std::endl;
-      }
-      else
-      {
-        Trace("sygus-db-reify") << "...not symb const : " << n[i] << std::endl;
-        child = reify(n[i]);
-      }
+      Node child = canonizeBuiltin(
+          n[j], TypeNode::fromType(dt[i].getArgType(j)), var_count);
+
       children.push_back(child);
-      childChanged = childChanged || child != n[i];
+      childChanged = childChanged || child != n[j];
     }
     if (childChanged)
     {
-      ret = NodeManager::currentNM()->mkNode(n.getKind(), children);
-      Trace("sygus-db-reify") << "Reify : Normalized " << n << " to " << ret
-                              << std::endl;
+      ret = NodeManager::currentNM()->mkNode(APPLY_CONSTRUCTOR, children);
     }
   }
   // cache if we had a fresh variable count
-  n.setAttribute(ReifyAttribute(), ret);
+  if (var_count_empty)
+  {
+    n.setAttribute(CanonizeBuiltinAttribute(), ret);
+  }
   return ret;
 }
 
