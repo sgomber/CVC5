@@ -171,6 +171,66 @@ Node TermDbSygus::mkGeneric(const Datatype& dt, int c)
   return mkGeneric(dt, c, pre);
 }
 
+
+struct ReifyAttributeId
+{
+};
+using ReifyAttribute = expr::Attribute<ReifyAttributeId, Node>;
+
+Node TermDbSygus::reify(Node n)
+{
+  // has it already been computed?
+  if (n.hasAttribute(ReifyAttribute()))
+  {
+    return n.getAttribute(ReifyAttribute());
+  }
+  Trace("sygus-db-reify") << "Reify : compute for " << n << ", type "
+                          << n.getType() << "\n";
+  Node ret = n;
+  if (n.getKind() == APPLY_SELECTOR_TOTAL)
+  {
+    // map to builtin variable type
+    ret = getFreeVar(n.getType(), getVarNum(n));
+  }
+  else
+  {
+    bool childChanged = false;
+    std::vector<Node> children;
+    if (n.getMetaKind() == metakind::PARAMETERIZED)
+    {
+      children.push_back(n.getOperator());
+    }
+    for (unsigned i = 0, size = n.getNumChildren(); i < size; ++i)
+    {
+      Node child;
+      // if the child is a selection chain, create a free variable
+      if (n[i].getKind() == APPLY_SELECTOR_TOTAL)
+      {
+        // map to builtin variable type
+        child = getFreeVar(n[i].getType(), getVarNum(n[i]));
+        Trace("sygus-db-reify") << "...symb const " << n[i] << " into " << child
+                                << std::endl;
+      }
+      else
+      {
+        Trace("sygus-db-reify") << "...not symb const : " << n[i] << std::endl;
+        child = reify(n[i]);
+      }
+      children.push_back(child);
+      childChanged = childChanged || child != n[i];
+    }
+    if (childChanged)
+    {
+      ret = NodeManager::currentNM()->mkNode(n.getKind(), children);
+      Trace("sygus-db-reify") << "Reify : Normalized " << n << " to " << ret
+                              << std::endl;
+    }
+  }
+  // cache if we had a fresh variable count
+  n.setAttribute(ReifyAttribute(), ret);
+  return ret;
+}
+
 struct SygusToBuiltinAttributeId
 {
 };

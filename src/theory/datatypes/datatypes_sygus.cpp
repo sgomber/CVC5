@@ -810,6 +810,9 @@ Node SygusSymBreakNew::registerSearchValue(
     Trace("sygus-sb-debug") << "  ...register search value " << nv << ", type=" << tn << std::endl;
     Node bv = d_tds->sygusToBuiltin( nv, tn );
     Trace("sygus-sb-debug") << "  ......builtin is " << bv << std::endl;
+    // Node rv = d_tds->reify(bv);
+    // Trace("sygus-sb-debug") << "  ......reified is " << rv << std::endl;
+    // Node bvr = d_tds->getExtRewriter()->extendedRewrite(rv);
     Node bvr = d_tds->getExtRewriter()->extendedRewrite(bv);
     Trace("sygus-sb-debug") << "  ......rewrites to " << bvr << std::endl;
     Trace("dt-sygus") << "  * DT builtin : " << n << " -> " << bvr << std::endl;
