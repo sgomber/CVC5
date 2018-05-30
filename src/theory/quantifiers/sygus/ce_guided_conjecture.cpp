@@ -354,6 +354,7 @@ void CegConjecture::doCheck(std::vector<Node>& lems)
         Node sk = nm->mkSkolem("rsk", v.getType());
         sks.push_back(sk);
         vars.push_back(v);
+        Trace("cegqi-check-debug") << "  introduce skolem " << sk << " for " << v << "\n";
       }
       lem = inst[0][1].substitute(
           vars.begin(), vars.end(), sks.begin(), sks.end());
@@ -385,43 +386,52 @@ void CegConjecture::doCheck(std::vector<Node>& lems)
     // record the instantiation
     // this is used for remembering the solution
     recordInstantiation(candidate_values);
-    if (lem.isConst() && !lem.getConst<bool>() && options::sygusStream())
+    Node query = lem;
+    if (query.isConst() && !query.getConst<bool>() && options::sygusStream())
     {
       // short circuit the check
       // instead, we immediately print the current solution.
       // this saves us from introducing a check lemma and a new guard.
       printAndContinueStream();
+      return;
     }
-    else
+    // This is the "verification lemma", which states
+    // either this conjecture does not have a solution, or candidate_values
+    // is a solution for this conjecture.
+    lem = nm->mkNode(OR, d_quant.negate(), query);
+    if( options::sygusVerifySubcall() )
     {
       Trace("cegqi-engine") << "  *** Direct verify..." << std::endl;
       SmtEngine verifySmt(nm->toExprManager());
       verifySmt.setLogic(smt::currentSmtEngine()->getLogicInfo());
-      verifySmt.assertFormula(lem.toExpr());
+      verifySmt.assertFormula(query.toExpr());
       Result r = verifySmt.checkSat();
       Trace("cegqi-engine") << "  ...got " << r << std::endl;
       if (r.asSatisfiabilityResult().isSat() == Result::SAT)
       {
-        Trace("cegqi-engine") << "  verification lemma failed for:\n";
+        Trace("cegqi-engine") << "  * Verification lemma failed for:\n   ";
         // do not send out
         for (const Node& v : d_ce_sk_vars)
         {
           Node mv = Node::fromExpr(verifySmt.getValue(v.toExpr()));
-          Trace("cegqi-engine") << "    " << v << " -> " << mv << "\n";
+          Trace("cegqi-engine") << v << " -> " << mv << " ";
           d_ce_sk_var_mvs.push_back(mv);
         }
+        Trace("cegqi-engine") << std::endl;
+        return;
       }
-      else
+      else if(r.asSatisfiabilityResult().isSat() == Result::UNSAT )
       {
-        // This is the "verification lemma", which states
-        // either this conjecture does not have a solution, or candidate_values
-        // is a solution for this conjecture.
-        // lem = nm->mkNode(OR, d_quant.negate(), lem);
+        // if the result in the subcall was unsatisfiable, we avoid
+        // rechecking, hence we drop "query" from the verification lemma
         lem = d_quant.negate();
-        lem = getStreamGuardedLemma(lem);
-        lems.push_back(lem);
       }
+      // in the rare case that the subcall is unknown, we add the verification
+      // lemma in the main solver. this should only happen if the quantifier
+      // free logic is undecidable.
     }
+    lem = getStreamGuardedLemma(lem);
+    lems.push_back(lem);
   }
 }
         
