@@ -263,8 +263,6 @@ void CegConjecture::doCheck(std::vector<Node>& lems)
   // constants here.
   if (options::sygusRepairConst() && !d_master->usingRepairConst())
   {
-    Trace("cegqi-check") << "CegConjuncture : repair previous solution..."
-                         << std::endl;
     // have we tried to repair the previous solution?
     // if not, call the repair constant utility
     unsigned ninst = d_cinfo[d_candidates[0]].d_inst.size();
@@ -275,6 +273,17 @@ void CegConjecture::doCheck(std::vector<Node>& lems)
       {
         Assert(d_repair_index < d_cinfo[cprog].d_inst.size());
         fail_cvs.push_back(d_cinfo[cprog].d_inst[d_repair_index]);
+      }
+      if( Trace.isOn("cegqi-check") )
+      {
+        Trace("cegqi-check") << "CegConjuncture : repair previous solution ";
+        for( const Node& fc : fail_cvs )
+        {
+          std::stringstream ss;
+          Printer::getPrinter(options::outputLanguage())->toStreamSygus(ss, fc);
+          Trace("cegqi-check") << ss.str() << " ";
+        }
+        Trace("cegqi-check") << std::endl;
       }
       d_repair_index++;
       if (d_sygus_rconst->repairSolution(
