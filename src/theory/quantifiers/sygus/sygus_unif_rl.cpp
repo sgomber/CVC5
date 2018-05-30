@@ -674,7 +674,7 @@ Node SygusUnifRl::DecisionTreeInfo::buildSol(Node cons,
           << "  add condition (" << c_counter << "/" << d_conds.size()
           << "): " << ce << " -> " << ss.str() << std::endl;
     }
-    cv = repairCondition(cv,e,er);
+    //cv = repairConditionToSeparate(ce, cv,e,er);
     d_conds[c_counter] = cv;
     // cache the separation class
     std::vector<Node> prev_sep_c = d_pt_sep.d_trie.d_rep_to_class[er];
@@ -828,11 +828,64 @@ Node SygusUnifRl::DecisionTreeInfo::buildSol(Node cons,
   return cache[root];
 }
 
-Node SygusUnifRl::DecisionTreeInfo::repairCondition( Node cond, Node e1, Node e2 )
+Node SygusUnifRl::DecisionTreeInfo::repairConditionToSeparate( Node ce, Node cv, Node e1, Node e2 )
 {
   // repair condition
-  
-  return cond;
+  if( options::sygusRepairConst() )
+  {
+    if( SygusRepairConst::mustRepair(cv) )
+    {
+      SygusRepairConst src(d_unif->d_qe);
+      Node t[2];
+      for( unsigned i=0; i<2; i++ )
+      {
+        Node ei = i==0 ? e1 : e2;
+        std::map<Node, std::vector<Node>>::iterator it = d_unif->d_hd_to_pt.find(ei);
+        Assert( it != d_unif->d_hd_to_pt.end() );
+        std::vector< Node > children;
+        children.push_back(ce);
+        children.insert(children.end(),it->second.begin(),it->second.end());
+        t[i] = datatypes::DatatypesRewriter::mkSygusEvalApp(children);
+      }
+      Node deq = t[0].eqNode(t[1]).negate();
+      Trace("sygus-unif-sol") << "Try to repair to satisfy : " << deq << std::endl;
+      std::vector< Node > candidate;
+      candidate.push_back(ce);
+      std::vector< Node > candidate_value;
+      candidate_value.push_back(cv);
+      src.initialize(deq,candidate);
+      std::vector< Node > repair_cv;
+      if(src.repairSolution(candidate,candidate_value,repair_cv))
+      {
+        Assert(repair_cv.size()==1);
+        Node cvr = repair_cv[0];
+        if(Trace.isOn("sygus-unif-sol"))
+        {
+          Trace("sygus-unif-sol") << "Repaired ";
+          std::stringstream ss;
+          Printer::getPrinter(options::outputLanguage())
+              ->toStreamSygus(ss, cv);
+          Trace("sygus-unif-sol") << ss.str() << " to ";
+          std::stringstream ssr;
+          Printer::getPrinter(options::outputLanguage())
+              ->toStreamSygus(ssr, cvr);
+          Trace("sygus-unif-sol") << ssr.str() << " to separate points:\n";
+          for( unsigned i=0; i<2; i++ )
+          {
+            Node ei = i==0 ? e1 : e2;
+            std::map<Node, std::vector<Node>>::iterator it = d_unif->d_hd_to_pt.find(ei);
+            Trace("sygus-unif-sol") << "  " << it->second << std::endl;
+          }
+        }
+        return cvr;
+      }
+      else
+      {
+        Trace("sygus-unif-sol") << "...failed." << std::endl;
+      }
+    }
+  }
+  return cv;
 }
 
 void SygusUnifRl::DecisionTreeInfo::PointSeparator::initialize(

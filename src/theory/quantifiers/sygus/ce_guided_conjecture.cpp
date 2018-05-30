@@ -124,7 +124,7 @@ void CegConjecture::assign( Node q ) {
   // initialize the sygus constant repair utility
   if (options::sygusRepairConst())
   {
-    d_sygus_rconst->initialize(d_base_inst, d_candidates);
+    d_sygus_rconst->initialize(d_base_inst.negate(), d_candidates);
   }
 
   // register this term with sygus database and other utilities that impact

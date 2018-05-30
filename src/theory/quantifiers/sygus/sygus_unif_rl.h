@@ -279,8 +279,8 @@ class SygusUnifRl : public SygusUnif
       /** reference to parent unif util */
       DecisionTreeInfo* d_dt;
     };
-    /** repair condition */
-    Node repairCondition( Node cond, Node e1, Node e2 );
+    /** repair condition to separate */
+    Node repairConditionToSeparate( Node ce, Node cv, Node e1, Node e2 );
     /**
      * Utility for determining how evaluation points are separated by currently
      * enumerated condiotion values

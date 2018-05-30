@@ -415,7 +415,7 @@ Node SygusRepairConst::getFoQuery(const std::vector<Node>& candidates,
                                   const std::vector<Node>& sk_vars)
 {
   NodeManager* nm = NodeManager::currentNM();
-  Node body = d_base_inst.negate();
+  Node body = d_base_inst;
   Trace("sygus-repair-const") << "  Substitute skeletons..." << std::endl;
   body = body.substitute(candidates.begin(),
                          candidates.end(),
