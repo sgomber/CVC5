@@ -340,13 +340,12 @@ void CegConjecture::doCheck(std::vector<Node>& lems)
   }
   
   //immediately skolemize inner existentials
-  d_set_ce_sk_vars = sk_refine;
   Node lem;
-  if (inst.getKind() == NOT && inst[0].getKind() == FORALL)
+  // introduce the skolem variables
+  std::vector<Node> sks;
+  if (constructed_cand)
   {
-    // introduce the skolem variables
-    std::vector<Node> sks;
-    if (constructed_cand)
+    if (inst.getKind() == NOT && inst[0].getKind() == FORALL)
     {
       std::vector<Node> vars;
       for (const Node& v : inst[0][0])
@@ -360,22 +359,18 @@ void CegConjecture::doCheck(std::vector<Node>& lems)
           vars.begin(), vars.end(), sks.begin(), sks.end());
       lem = lem.negate();
     }
-    if (sk_refine)
-    {
-      d_ce_sk_vars.insert(d_ce_sk_vars.end(), sks.begin(), sks.end());
-    }
-    Assert(!isGround());
-  }
-  else
-  {
-    if (constructed_cand)
+    else
     {
       // use the instance itself
       lem = inst;
     }
-    // we add null so that one test of the conjecture for the empty
-    // substitution is checked
   }
+  if (sk_refine)
+  {
+    d_ce_sk_vars.insert(d_ce_sk_vars.end(), sks.begin(), sks.end());
+    d_set_ce_sk_vars = true;
+  }
+
   if (!lem.isNull())
   {
     lem = Rewriter::rewrite( lem );
