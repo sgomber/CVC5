@@ -801,17 +801,18 @@ Node SygusSymBreakNew::registerSearchValue(
     }
   }
   Trace("sygus-sb-debug2") << "Registering search value " << n << " -> " << nv << std::endl;
+  std::map<TypeNode, int> var_count;
+  Node cnv = d_tds->canonizeBuiltin(nv, var_count);
+  Trace("sygus-sb-debug") << "  ...canonized value is " << cnv << std::endl;
   // must do this for all nodes, regardless of top-level
-  if( d_cache[a].d_search_val_proc.find( nv )==d_cache[a].d_search_val_proc.end() ){
-    d_cache[a].d_search_val_proc.insert(nv);
+  if( d_cache[a].d_search_val_proc.find( cnv )==d_cache[a].d_search_val_proc.end() ){
+    d_cache[a].d_search_val_proc.insert(cnv);
     // get the root (for PBE symmetry breaking)
     Assert(d_anchor_to_conj.find(a) != d_anchor_to_conj.end());
     quantifiers::CegConjecture* aconj = d_anchor_to_conj[a];
     Assert(aconj != NULL);
-    Trace("sygus-sb-debug") << "  ...register search value " << nv << ", type=" << tn << std::endl;
-  //Node cnv = d_tds->canonizeBuiltin(nv);
-  //Trace("sygus-sb-debug") << "  ...canonized value is " << nv << std::endl;
-    Node bv = d_tds->sygusToBuiltin( nv, tn );
+    Trace("sygus-sb-debug") << "  ...register search value " << cnv << ", type=" << tn << std::endl;
+    Node bv = d_tds->sygusToBuiltin( cnv, tn );
     Trace("sygus-sb-debug") << "  ......builtin is " << bv << std::endl;
     Node bvr = d_tds->getExtRewriter()->extendedRewrite(bv);
     Trace("sygus-sb-debug") << "  ......rewrites to " << bvr << std::endl;
@@ -820,7 +821,7 @@ Node SygusSymBreakNew::registerSearchValue(
     if( d_tds->involvesDivByZero( bvr ) ){
       quantifiers::DivByZeroSygusInvarianceTest dbzet;
       Trace("sygus-sb-mexp-debug") << "Minimize explanation for div-by-zero in " << bv << std::endl;
-      registerSymBreakLemmaForValue(a, nv, dbzet, Node::null(), lemmas);
+      registerSymBreakLemmaForValue(a, nv, dbzet, Node::null(), var_count, lemmas);
       return Node::null();
     }else{
       std::unordered_map<Node, Node, NodeHashFunction>::iterator itsv =
@@ -955,7 +956,7 @@ Node SygusSymBreakNew::registerSearchValue(
         eset.init(d_tds, tn, aconj, a, bvr);
 
         Trace("sygus-sb-mexp-debug") << "Minimize explanation for eval[" << d_tds->sygusToBuiltin( bad_val ) << "] = " << bvr << std::endl;
-        registerSymBreakLemmaForValue(a, bad_val, eset, bad_val_o, lemmas);
+        registerSymBreakLemmaForValue(a, bad_val, eset, bad_val_o, var_count, lemmas);
         return Node::null();
       }
     }
@@ -968,13 +969,14 @@ void SygusSymBreakNew::registerSymBreakLemmaForValue(
     Node val,
     quantifiers::SygusInvarianceTest& et,
     Node valr,
+    std::map<TypeNode, int>& var_count,
     std::vector<Node>& lemmas)
 {
   TypeNode tn = val.getType();
   Node x = getFreeVar(tn);
   unsigned sz = d_tds->getSygusTermSize(val);
   std::vector<Node> exp;
-  d_tds->getExplain()->getExplanationFor(x, val, exp, et, valr, sz);
+  d_tds->getExplain()->getExplanationFor(x, val, exp, et, valr, var_count, sz);
   Node lem =
       exp.size() == 1 ? exp[0] : NodeManager::currentNM()->mkNode(AND, exp);
   lem = lem.negate();

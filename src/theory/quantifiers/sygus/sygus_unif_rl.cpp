@@ -674,6 +674,8 @@ Node SygusUnifRl::DecisionTreeInfo::buildSol(Node cons,
           << "  add condition (" << c_counter << "/" << d_conds.size()
           << "): " << ce << " -> " << ss.str() << std::endl;
     }
+    cv = repairCondition(cv,e,er);
+    d_conds[c_counter] = cv;
     // cache the separation class
     std::vector<Node> prev_sep_c = d_pt_sep.d_trie.d_rep_to_class[er];
     // add new classifier
@@ -824,6 +826,13 @@ Node SygusUnifRl::DecisionTreeInfo::buildSol(Node cons,
                                  cache[root], cache[root].getType())
                           << "\n";
   return cache[root];
+}
+
+Node SygusUnifRl::DecisionTreeInfo::repairCondition( Node cond, Node e1, Node e2 )
+{
+  // repair condition
+  
+  return cond;
 }
 
 void SygusUnifRl::DecisionTreeInfo::PointSeparator::initialize(

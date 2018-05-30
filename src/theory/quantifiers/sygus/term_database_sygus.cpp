@@ -116,9 +116,19 @@ Node TermDbSygus::getProxyVariable(TypeNode tn, Node c)
   std::map<Node, Node>::iterator it = d_proxy_vars[tn].find(c);
   if (it == d_proxy_vars[tn].end())
   {
-    Node k = NodeManager::currentNM()->mkSkolem("sy", tn, "sygus proxy");
-    SygusPrintProxyAttribute spa;
-    k.setAttribute(spa, c);
+    int anyC = getAnyConstantConsNum(tn);
+    Node k;
+    if( anyC==-1 )
+    {
+      k = NodeManager::currentNM()->mkSkolem("sy", tn, "sygus proxy");
+      SygusPrintProxyAttribute spa;
+      k.setAttribute(spa, c);
+    }
+    else
+    {
+      const Datatype& dt = static_cast<DatatypeType>(tn.toType()).getDatatype();
+      k = NodeManager::currentNM()->mkNode( APPLY_CONSTRUCTOR, Node::fromExpr( dt[anyC].getConstructor() ), c );
+    }
     d_proxy_vars[tn][c] = k;
     return k;
   }
@@ -187,10 +197,11 @@ Node TermDbSygus::canonizeBuiltin(Node n,
                                   std::map<TypeNode, int>& var_count)
 {
   // has it already been computed?
-  bool var_count_empty = var_count.empty();
-  if (var_count_empty && n.hasAttribute(CanonizeBuiltinAttribute()))
+  if (var_count.empty() && n.hasAttribute(CanonizeBuiltinAttribute()))
   {
-    return n.getAttribute(CanonizeBuiltinAttribute());
+    Node ret = n.getAttribute(CanonizeBuiltinAttribute());
+    Trace("sygus-db-canon") << "cached " << n << " : " << ret << "\n";
+    return ret;
   }
   Trace("sygus-db-canon") << "  CanonizeBuiltin : compute for " << n << "\n";
   Node ret = n;
@@ -221,7 +232,7 @@ Node TermDbSygus::canonizeBuiltin(Node n,
     }
   }
   // cache if we had a fresh variable count
-  if (var_count_empty)
+  if (var_count.empty())
   {
     n.setAttribute(CanonizeBuiltinAttribute(), ret);
   }

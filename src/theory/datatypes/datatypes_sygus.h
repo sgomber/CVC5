@@ -339,6 +339,7 @@ private:
                                      Node val,
                                      quantifiers::SygusInvarianceTest& et,
                                      Node valr,
+                                     std::map<TypeNode, int>& var_count,
                                      std::vector<Node>& lemmas);
   /** Add symmetry breaking lemmas for term
    *
