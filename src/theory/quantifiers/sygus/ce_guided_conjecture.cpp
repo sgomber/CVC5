@@ -421,8 +421,8 @@ void CegConjecture::doCheck(std::vector<Node>& lems)
         // rechecking, hence we drop "query" from the verification lemma
         lem = d_quant.negate();
       }
-      // in the rare case that the subcall is unknown, we add the verification
-      // lemma in the main solver. this should only happen if the quantifier
+      // In the rare case that the subcall is unknown, we add the verification
+      // lemma in the main solver. This should only happen if the quantifier
       // free logic is undecidable.
     }
     lem = getStreamGuardedLemma(lem);

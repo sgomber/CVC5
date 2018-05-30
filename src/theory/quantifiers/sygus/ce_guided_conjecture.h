@@ -178,6 +178,11 @@ private:
    * skolems are analyzed during doRefine().
    */
   std::vector<Node> d_ce_sk_vars;
+  /**
+   * If we have already tested the satisfiability of the current verification
+   * lemma, this stores the model values of d_ce_sk_vars in the current
+   * (satisfiable, failed) verification lemma.
+   */
   std::vector<Node> d_ce_sk_var_mvs;
   /**
    * Whether the above vector has been set. We have this flag since the above
