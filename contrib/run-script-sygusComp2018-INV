@@ -29,5 +29,6 @@ function finishwith {
   esac)
 }
 
-trywith 30 
-finishwith --sygus-unif
+trywith 10
+trywith 120 --sygus-unif
+finishwith --no-sygus-repair-const
