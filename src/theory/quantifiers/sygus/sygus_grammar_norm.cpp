@@ -133,7 +133,11 @@ void SygusGrammarNorm::TypeObject::buildDatatype(SygusGrammarNorm* sygus_norm,
       // beneath the same application
       // we set its weight to zero since it should be considered at the
       // same level as constants.
-      d_dt.addSygusConstructor(av.toExpr(), cname, builtin_arg, nullptr, 0);
+      d_ops.insert(d_ops.begin(),av.toExpr());
+      d_cons_names.insert(d_cons_names.begin(),cname);
+      d_cons_args_t.insert(d_cons_args_t.begin(),builtin_arg);
+      d_pc.insert(d_pc.begin(),printer::SygusEmptyPrintCallback::getEmptyPC());
+      d_weight.insert(d_weight.begin(),0);
     }
   }
   for (unsigned i = 0, size_d_ops = d_ops.size(); i < size_d_ops; ++i)
