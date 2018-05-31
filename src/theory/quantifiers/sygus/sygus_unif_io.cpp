@@ -730,7 +730,7 @@ Node SygusUnifIo::constructSolutionNode(std::vector<Node>& lemmas)
         Trace("sygus-pbe") << "...solved at iteration " << i << std::endl;
         vc = vcc;
       }
-      else if( !d_sol_cons_non_det )
+      else if( !d_sol_cons_nondet )
       {
         break;
       }
