@@ -727,6 +727,7 @@ void CegConjecture::printSynthSolution( std::ostream& out, bool singleInvocation
         out << dt.getSygusType() << " ";
         if (status == 0)
         {
+          sol = d_qe->getTermDatabaseSygus()->getExtRewriter()->extendedRewrite(sol);
           out << sol;
         }
         else

@@ -323,6 +323,31 @@ Node ExtendedRewriter::extendedRewriteIte(Kind itek, Node n, bool full)
     }
     return new_ret;
   }
+  // Boolean true/false return
+  TypeNode tn = n.getType();
+  if( tn.isBoolean() )
+  {
+    for( unsigned i=1; i<=2; i++ )
+    {
+      if( n[i].isConst() )
+      {
+        Node cond = i==1 ? n[0] : n[0].negate();
+        Node other = n[i==1 ? 2 : 1];
+        Kind retk = AND;
+        if( n[i].getConst<bool>() )
+        {
+          retk = OR;
+          cond = cond.negate();
+        }
+        Node new_ret = nm->mkNode( retk, cond, other );
+        if (full)
+        {
+          debugExtendedRewrite(n, new_ret, "ITE const return");
+        }
+        return new_ret;
+      }
+    }
+  }
 
   // get entailed equalities in the condition
   std::vector<Node> eq_conds;
