@@ -12,10 +12,13 @@ function trywith {
   sol=$(runl $@)
   status=$?
   if [ $status -ne 134 ]; then
-    echo $sol |
-    (read result w1;
+    echo $sol |&
+    (read result w1 w2;
     case "$result" in
-    unsat) echo "$w1";cat;exit 0;;
+    unsat)
+      case "$w1" in
+        "(define-fun") echo "$w1 $w2";cat;exit 0;;
+        esac; exit 1;;
     esac; exit 1)
     if [ ${PIPESTATUS[1]} -eq 0 ]; then exit 0; fi  
   fi
@@ -29,5 +32,5 @@ function finishwith {
   esac)
 }
 
-trywith 120 --cegqi-si=all-abort --cegqi-si-abort --decision=internal --cbqi-prereg-inst
+trywith 120 --cegqi-si=all-abort --cegqi-si-abort --decision=internal --cbqi --cbqi-prereg-inst
 finishwith --cegqi-si=none
