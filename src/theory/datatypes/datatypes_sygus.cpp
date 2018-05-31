@@ -568,24 +568,9 @@ Node SygusSymBreakNew::getSimpleSymBreakPred(TypeNode tn,
           if (tnc == children[c2].getType() && !tnc.getCardinality().isOne())
           {
             Node sym_lem_deq = children[c1].eqNode(children[c2]).negate();
-            // must guard if there are symbolic constructors
-            // the issue is that ite( C, _any_constant, _any_constant ) is
-            // a useful solution, since the two instances of _any_constant
-            // can be repaired to different values. Hence, below, we say
-            // e.g. d.i is a symbolic constructor, or it must be different
-            // from d.j.
-            int anyc_cons_num_c = d_tds->getAnyConstantConsNum(tnc);
-            if (anyc_cons_num_c != -1)
-            {
-              const Datatype& cdt =
-                  static_cast<DatatypeType>(tnc.toType()).getDatatype();
-              Node fv = d_tds->getFreeVar(tnc, 0);
-              Node guard_val = datatypes::DatatypesRewriter::getInstCons(
-                  fv, cdt, anyc_cons_num_c);
-              Node exp = d_tds->getExplain()->getExplanationForEquality(
-                  children[c1], guard_val);
-              sym_lem_deq = nm->mkNode(OR, exp, sym_lem_deq);
-            }
+            // notice that this symmetry breaking still allows for
+            //   ite( C, any_constant(x), any_constant(y) )
+            // since any_constant takes a builtin argument.
             sbp_conj.push_back(sym_lem_deq);
           }
         }
