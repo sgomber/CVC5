@@ -93,20 +93,6 @@ public:
         return RewriteResponse(REWRITE_DONE, NodeManager::currentNM()->mkConst(false));
       }
     }
-    if(node.getKind() == kind::APPLY_UF && node.getOperator().getKind() == kind::LAMBDA) {
-      // resolve away the lambda
-      context::Context fakeContext;
-      theory::SubstitutionMap substitutions(&fakeContext);
-      TNode lambda = node.getOperator();
-      for(TNode::iterator formal = lambda[0].begin(), arg = node.begin(); formal != lambda[0].end(); ++formal, ++arg) {
-        // typechecking should ensure that the APPLY_UF is well-typed, correct arity, etc.
-        Assert(formal != node.end());
-        // This rewrite step is important: see note in postRewrite().
-        Node n = Rewriter::rewrite(*arg);
-        substitutions.addSubstitution(*formal, n);
-      }
-      return RewriteResponse(REWRITE_DONE, substitutions.apply(lambda[1]));
-    }
     return RewriteResponse(REWRITE_DONE, node);
   }
 
