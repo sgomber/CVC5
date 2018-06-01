@@ -365,9 +365,12 @@ private:
    *
    * This adds the lemma R => lem{ x -> n } to lemmas, where R is a "relevancy
    * condition" that states which contexts n is relevant in (see
-   * getRelevancyCondition).
+   * getRelevancyCondition). The argument cache stores other nodes for which
+   * the substitution { x -> n } has been applied, and is passed to the
+   * underlying substitute call.
    */
-  void addSymBreakLemma(Node lem, TNode x, TNode n, std::vector<Node>& lemmas);
+  void addSymBreakLemma(Node lem, TNode x, TNode n, std::vector<Node>& lemmas, 
+                                        std::unordered_map<TNode, TNode, TNodeHashFunction>& cache);
   //------------------------end dynamic symmetry breaking
 
   /** Get relevancy condition
