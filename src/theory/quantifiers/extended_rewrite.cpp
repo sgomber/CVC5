@@ -337,6 +337,9 @@ Node ExtendedRewriter::extendedRewriteIte(Kind itek, Node n, bool full)
         if( n[i].getConst<bool>() )
         {
           retk = OR;
+        }
+        else
+        {
           cond = cond.negate();
         }
         Node new_ret = nm->mkNode( retk, cond, other );
