@@ -474,10 +474,6 @@ void CegisUnifEnumManager::incrementNumEnumerators()
                                  << " to strategy point " << ci.second.d_pt
                                  << "\n";
         d_tds->registerEnumerator(e, ci.second.d_pt, d_parent, false, index==0 ? options::sygusUnifRepairRet() : options::sygusUnifRepairCond());
-        // TODO symmetry breaking for making
-        //   e distinct from ei : (ci.second.d_enums[index] \ {e})
-        // if its respective type has had at least
-        // ci.second.d_enums[index].size() distinct values enumerated
       }
     }
     // register the evaluation points at the new value
