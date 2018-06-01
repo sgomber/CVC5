@@ -790,14 +790,17 @@ Node SygusSymBreakNew::registerSearchValue(
   Node cnv = d_tds->canonizeBuiltin(nv, var_count);
   Trace("sygus-sb-debug") << "  ...canonized value is " << cnv << std::endl;
   // must do this for all nodes, regardless of top-level
-  if( d_cache[a].d_search_val_proc.find( cnv )==d_cache[a].d_search_val_proc.end() ){
+  if (d_cache[a].d_search_val_proc.find(cnv)
+      == d_cache[a].d_search_val_proc.end())
+  {
     d_cache[a].d_search_val_proc.insert(cnv);
     // get the root (for PBE symmetry breaking)
     Assert(d_anchor_to_conj.find(a) != d_anchor_to_conj.end());
     quantifiers::CegConjecture* aconj = d_anchor_to_conj[a];
     Assert(aconj != NULL);
-    Trace("sygus-sb-debug") << "  ...register search value " << cnv << ", type=" << tn << std::endl;
-    Node bv = d_tds->sygusToBuiltin( cnv, tn );
+    Trace("sygus-sb-debug")
+        << "  ...register search value " << cnv << ", type=" << tn << std::endl;
+    Node bv = d_tds->sygusToBuiltin(cnv, tn);
     Trace("sygus-sb-debug") << "  ......builtin is " << bv << std::endl;
     Node bvr = d_tds->getExtRewriter()->extendedRewrite(bv);
     Trace("sygus-sb-debug") << "  ......rewrites to " << bvr << std::endl;
@@ -805,8 +808,10 @@ Node SygusSymBreakNew::registerSearchValue(
     unsigned sz = d_tds->getSygusTermSize( nv );      
     if( d_tds->involvesDivByZero( bvr ) ){
       quantifiers::DivByZeroSygusInvarianceTest dbzet;
-      Trace("sygus-sb-mexp-debug") << "Minimize explanation for div-by-zero in " << bv << std::endl;
-      registerSymBreakLemmaForValue(a, nv, dbzet, Node::null(), var_count, lemmas);
+      Trace("sygus-sb-mexp-debug")
+          << "Minimize explanation for div-by-zero in " << bv << std::endl;
+      registerSymBreakLemmaForValue(
+          a, nv, dbzet, Node::null(), var_count, lemmas);
       return Node::null();
     }else{
       std::unordered_map<Node, Node, NodeHashFunction>::iterator itsv =
@@ -941,7 +946,8 @@ Node SygusSymBreakNew::registerSearchValue(
         eset.init(d_tds, tn, aconj, a, bvr);
 
         Trace("sygus-sb-mexp-debug") << "Minimize explanation for eval[" << d_tds->sygusToBuiltin( bad_val ) << "] = " << bvr << std::endl;
-        registerSymBreakLemmaForValue(a, bad_val, eset, bad_val_o, var_count, lemmas);
+        registerSymBreakLemmaForValue(
+            a, bad_val, eset, bad_val_o, var_count, lemmas);
         return Node::null();
       }
     }
@@ -985,7 +991,8 @@ void SygusSymBreakNew::registerSymBreakLemma( TypeNode tn, Node lem, unsigned sz
   for( int d=0; d<=max_depth; d++ ){
     std::map< unsigned, std::vector< Node > >::iterator itt = d_cache[a].d_search_terms[tn].find( d );
     if( itt!=d_cache[a].d_search_terms[tn].end() ){
-      for( const TNode& t : itt->second ){
+      for (const TNode& t : itt->second)
+      {
         if( !options::sygusSymBreakLazy() || d_active_terms.find( t )!=d_active_terms.end() ){
           std::unordered_map<TNode, TNode, TNodeHashFunction> cache;
           addSymBreakLemma(lem, x, t, lemmas, cache);
@@ -1017,7 +1024,7 @@ void SygusSymBreakNew::addSymBreakLemmasFor( TypeNode tn, Node t, unsigned d, No
     std::unordered_map<TNode, TNode, TNodeHashFunction> cache;
     for( std::map< unsigned, std::vector< Node > >::iterator it = its->second.begin(); it != its->second.end(); ++it ){
       if( (int)it->first<=max_sz ){
-        for( const Node& lem : it->second )
+        for (const Node& lem : it->second)
         {
           addSymBreakLemma(lem, x, t, lemmas, cache);
         }
@@ -1027,15 +1034,16 @@ void SygusSymBreakNew::addSymBreakLemmasFor( TypeNode tn, Node t, unsigned d, No
   Trace("sygus-sb-debug2") << "...finished." << std::endl;
 }
 
-void SygusSymBreakNew::addSymBreakLemma(Node lem,
-                                        TNode x,
-                                        TNode n,
-                                        std::vector<Node>& lemmas, 
-                                        std::unordered_map<TNode, TNode, TNodeHashFunction>& cache)
+void SygusSymBreakNew::addSymBreakLemma(
+    Node lem,
+    TNode x,
+    TNode n,
+    std::vector<Node>& lemmas,
+    std::unordered_map<TNode, TNode, TNodeHashFunction>& cache)
 {
   Assert( !options::sygusSymBreakLazy() || d_active_terms.find( n )!=d_active_terms.end() );
   // apply lemma
-  Node slem = lem.substitute( x, n, cache );
+  Node slem = lem.substitute(x, n, cache);
   Trace("sygus-sb-exc-debug") << "SymBreak lemma : " << slem << std::endl;
   Node rlv = getRelevancyCondition( n );
   if( !rlv.isNull() ){
@@ -1192,7 +1200,7 @@ void SygusSymBreakNew::incrementCurrentSearchSize( Node m, std::vector< Node >& 
               TNode t = itt->second[k];
               if( !options::sygusSymBreakLazy() || d_active_terms.find( t )!=d_active_terms.end() ){
                 std::unordered_map<TNode, TNode, TNodeHashFunction> cache;
-                for( const Node& lem : it->second )
+                for (const Node& lem : it->second)
                 {
                   addSymBreakLemma(lem, x, t, lemmas, cache);
                 }
