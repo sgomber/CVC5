@@ -379,9 +379,10 @@ private:
 
   /** Get relevancy condition
    *
-   * This returns a predicate that holds in the contexts in which the selector
-   * chain n is specified. For example, the relevancy condition for
-   * sel_{C2,1}( sel_{C1,1}( d ) ) is is-C1( d ) ^ is-C2( sel_{C1,1}( d ) ).
+   * This returns (the negation of) a predicate that holds in the contexts in
+   * which the selector chain n is specified. For example, the negation of the
+   * relevancy condition for sel_{C2,1}( sel_{C1,1}( d ) ) is
+   *    ~( is-C1( d ) ^ is-C2( sel_{C1,1}( d ) ) )
    * If shared selectors are enabled, this is a conjunction of disjunctions,
    * since shared selectors may apply to multiple constructors.
    */

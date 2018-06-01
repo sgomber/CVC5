@@ -326,12 +326,13 @@ void SygusSymBreakNew::assertTesterInternal( int tindex, TNode n, Node exp, std:
 
     // add the above symmetry breaking predicates to lemmas
     Node rlv = getRelevancyCondition(n);
+    std::unordered_map<TNode, TNode, TNodeHashFunction> cache;
     for (unsigned i = 0; i < sb_lemmas.size(); i++)
     {
-      Node pred = sb_lemmas[i].substitute(x, n);
+      Node pred = sb_lemmas[i].substitute(x, n, cache);
       if (!rlv.isNull())
       {
-        pred = NodeManager::currentNM()->mkNode(kind::OR, rlv.negate(), pred);
+        pred = NodeManager::currentNM()->mkNode(kind::OR, rlv, pred);
       }
       lemmas.push_back(pred);
     }
@@ -372,7 +373,7 @@ Node SygusSymBreakNew::getRelevancyCondition( Node n ) {
           int sindexi = dt[i].getSelectorIndexInternal(selExpr);
           if (sindexi != -1)
           {
-            disj.push_back(DatatypesRewriter::mkTester(n[0], i, dt));
+            disj.push_back(DatatypesRewriter::mkTester(n[0], i, dt).negate());
           }
           else
           {
@@ -381,18 +382,18 @@ Node SygusSymBreakNew::getRelevancyCondition( Node n ) {
         }
         Assert( !disj.empty() );
         if( excl ){
-          cond = disj.size()==1 ? disj[0] : NodeManager::currentNM()->mkNode( kind::OR, disj );
+          cond = disj.size()==1 ? disj[0] : NodeManager::currentNM()->mkNode( kind::AND, disj );
         }
       }else{
         int sindex = Datatype::cindexOf( selExpr );
         Assert( sindex!=-1 );
-        cond = DatatypesRewriter::mkTester( n[0], sindex, dt );
+        cond = DatatypesRewriter::mkTester( n[0], sindex, dt ).negate();
       }
       Node c1 = getRelevancyCondition( n[0] );
       if( cond.isNull() ){
         cond = c1;
       }else if( !c1.isNull() ){
-        cond = NodeManager::currentNM()->mkNode( kind::AND, cond, c1 );
+        cond = NodeManager::currentNM()->mkNode( kind::OR, cond, c1 );
       }
     }
     Trace("sygus-sb-debug2") << "Relevancy condition for " << n << " is " << cond << std::endl;
@@ -1047,7 +1048,7 @@ void SygusSymBreakNew::addSymBreakLemma(
   Trace("sygus-sb-exc-debug") << "SymBreak lemma : " << slem << std::endl;
   Node rlv = getRelevancyCondition( n );
   if( !rlv.isNull() ){
-    slem = NodeManager::currentNM()->mkNode( kind::OR, rlv.negate(), slem );
+    slem = NodeManager::currentNM()->mkNode( kind::OR, rlv, slem );
   }
   lemmas.push_back( slem );
 }
