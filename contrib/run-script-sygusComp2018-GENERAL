@@ -5,7 +5,7 @@ bench="$1"
 
 function runl {
   limit=$1; shift;
-  ulimit -S -t "$limit";$cvc4 --lang=sygus --no-checking --no-interactive --default-dag-thresh=0 "$@" $bench
+  ulimit -S -t "$limit";$cvc4 --lang=sygus --no-checking --no-interactive --default-dag-thresh=0 "$@" $bench 2>/dev/null
 }
 
 function trywith {

@@ -3,7 +3,7 @@
 cvc4=./cvc4
 bench="$1"
 
-function trywith {
+function finishwith {
   ($cvc4 --lang=sygus --no-checking --no-interactive --default-dag-thresh=0 "$@" $bench) 2>/dev/null |
   (read result w1;
   case "$result" in
@@ -12,5 +12,5 @@ function trywith {
   if [ ${PIPESTATUS[1]} -eq 0 ]; then exit 0; fi
 }
 
-trywith --cegqi-si=none
+finishwith --cegqi-si=none
  
