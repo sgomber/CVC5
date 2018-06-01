@@ -369,11 +369,10 @@ private:
    * the substitution { x -> n } has been applied, and is passed to the
    * underlying substitute call.
    */
-  void addSymBreakLemma(
+  Node getSymBreakLemmaRlv(
       Node lem,
       TNode x,
       TNode n,
-      std::vector<Node>& lemmas,
       std::unordered_map<TNode, TNode, TNodeHashFunction>& cache);
   //------------------------end dynamic symmetry breaking
 
