@@ -361,19 +361,6 @@ private:
       TypeNode tn, Node t, unsigned d, Node a, std::vector<Node>& lemmas);
   /** calls the above function where a is the anchor t */
   void addSymBreakLemmasFor( TypeNode tn, Node t, unsigned d, std::vector< Node >& lemmas );
-  /** add symmetry breaking lemma
-   *
-   * This adds the lemma R => lem{ x -> n } to lemmas, where R is a "relevancy
-   * condition" that states which contexts n is relevant in (see
-   * getRelevancyCondition). The argument cache stores other nodes for which
-   * the substitution { x -> n } has been applied, and is passed to the
-   * underlying substitute call.
-   */
-  Node getSymBreakLemmaRlv(
-      Node lem,
-      TNode x,
-      TNode n,
-      std::unordered_map<TNode, TNode, TNodeHashFunction>& cache);
   //------------------------end dynamic symmetry breaking
 
   /** Get relevancy condition

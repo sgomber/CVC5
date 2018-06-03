@@ -327,20 +327,15 @@ void SygusSymBreakNew::assertTesterInternal( int tindex, TNode n, Node exp, std:
 
     // add the above symmetry breaking predicates to lemmas
     std::unordered_map<TNode, TNode, TNodeHashFunction> cache;
-    std::vector< Node > preds;
+    Node rlv = getRelevancyCondition(n);
     for( const Node& slem : sb_lemmas )
     {
-      preds.push_back(slem.substitute(x, n, cache));
-    }
-    if( !preds.empty() )
-    {
-      Node lem = preds.size()==1 ? preds[0] : nm->mkNode(AND,preds);
-      Node rlv = getRelevancyCondition(n);
+      Node sslem = slem.substitute(x, n, cache);
       if( !rlv.isNull() )
       {
-        lem = nm->mkNode(OR,rlv,lem);
+        sslem = nm->mkNode(OR,rlv,sslem);
       }
-      lemmas.push_back(lem);
+      lemmas.push_back(sslem);
     }
   }
   d_simple_proc[exp] = max_depth + 1;
@@ -995,15 +990,20 @@ void SygusSymBreakNew::registerSymBreakLemma( TypeNode tn, Node lem, unsigned sz
   TNode x = getFreeVar( tn );
   unsigned csz = getSearchSizeForAnchor( a );
   int max_depth = ((int)csz)-((int)sz);
+  NodeManager * nm = NodeManager::currentNM();
   for( int d=0; d<=max_depth; d++ ){
     std::map< unsigned, std::vector< Node > >::iterator itt = d_cache[a].d_search_terms[tn].find( d );
     if( itt!=d_cache[a].d_search_terms[tn].end() ){
       for (const TNode& t : itt->second)
       {
         if( !options::sygusSymBreakLazy() || d_active_terms.find( t )!=d_active_terms.end() ){
-          std::unordered_map<TNode, TNode, TNodeHashFunction> cache;
-          Node sbl = getSymBreakLemmaRlv(lem, x, t, cache);
-          lemmas.push_back(sbl);
+          Node slem = lem.substitute(x,t);
+          Node rlv = getRelevancyCondition( t );
+          if( !rlv.isNull() )
+          {
+            slem = nm->mkNode( OR, rlv, slem );
+          }
+          lemmas.push_back(slem);
         }
       }
     }
@@ -1020,8 +1020,9 @@ void SygusSymBreakNew::addSymBreakLemmasFor( TypeNode tn, Node t, unsigned d, No
   Assert( !a.isNull() );
   Trace("sygus-sb-debug2") << "add sym break lemmas for " << t << " " << d
                            << " " << a << std::endl;
-  std::vector< Node > slemmas;
   std::map< TypeNode, std::map< unsigned, std::vector< Node > > >::iterator its = d_cache[a].d_sb_lemmas.find( tn );
+  Node rlv = getRelevancyCondition( t );
+  NodeManager * nm = NodeManager::currentNM();
   if( its != d_cache[a].d_sb_lemmas.end() ){
     TNode x = getFreeVar( tn );
     //get symmetry breaking lemmas for this term 
@@ -1035,45 +1036,20 @@ void SygusSymBreakNew::addSymBreakLemmasFor( TypeNode tn, Node t, unsigned d, No
       if( (int)it->first<=max_sz ){
         for (const Node& lem : it->second)
         {
-          slemmas.push_back(lem.substitute(x,t,cache));
+          Node slem = lem.substitute(x,t,cache);
+          // add the relevancy condition for t
+          if( !rlv.isNull() )
+          {
+            slem = nm->mkNode( OR, rlv, slem );
+          }
+          lemmas.push_back(slem);
         }
       }
     }
   }
   Trace("sygus-sb-debug2") << "...finished." << std::endl;
-  // add the relevancy condition
-  if( !slemmas.empty() )
-  {
-    NodeManager * nm = NodeManager::currentNM();
-    Node slem = slemmas.size()==1 ? slemmas[0] : nm->mkNode( AND, slemmas );
-    Node rlv = getRelevancyCondition( t );
-    if( !rlv.isNull() )
-    {
-      slem = nm->mkNode( OR, rlv, slem );
-    }
-    lemmas.push_back( slem );
-  }
 }
 
-
-
-Node SygusSymBreakNew::getSymBreakLemmaRlv(
-    Node lem,
-    TNode x,
-    TNode n,
-    std::unordered_map<TNode, TNode, TNodeHashFunction>& cache)
-{
-  Assert( !options::sygusSymBreakLazy() || d_active_terms.find( n )!=d_active_terms.end() );
-  // apply lemma
-  Node slem = lem.substitute(x, n, cache);
-  Trace("sygus-sb-exc-debug") << "SymBreak lemma : " << slem << std::endl;
-  Node rlv = getRelevancyCondition( n );
-  if( !rlv.isNull() ){
-    slem = NodeManager::currentNM()->mkNode( OR, rlv, slem );
-  }
-  return slem;
-}
-  
 void SygusSymBreakNew::preRegisterTerm( TNode n, std::vector< Node >& lemmas  ) {
   if( n.isVar() ){
     Trace("sygus-sb-debug") << "Pre-register variable : " << n << std::endl;
