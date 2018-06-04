@@ -88,6 +88,9 @@ class ExtendedRewriter
    * strictly decrease the term size of n.
    */
   Node extendedRewriteIte(Kind itek, Node n, bool full = true);
+  /** Rewrite AND/OR
+   */
+  Node extendedRewriteAndOr(Node n);
   /** Pull ITE, for example:
    *
    *   D=C2 ---> false
@@ -128,6 +131,12 @@ class ExtendedRewriter
    */
   Node extendedRewriteBcp(
       Kind andk, Kind ork, Kind notk, std::map<Kind, bool>& bcp_kinds, Node n);
+  /** (type-independent) factoring, for example:
+   * 
+   */
+  
+  Node extendedRewriteFactoring(
+      Kind andk, Kind ork, Kind notk, Node n);
   /** (type-independent) equality resolution, for example:
    *
    *   ( A V C ) & ( A = B ) ---> ( B V C ) & ( A = B )
