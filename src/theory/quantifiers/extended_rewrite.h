@@ -132,11 +132,10 @@ class ExtendedRewriter
   Node extendedRewriteBcp(
       Kind andk, Kind ork, Kind notk, std::map<Kind, bool>& bcp_kinds, Node n);
   /** (type-independent) factoring, for example:
-   * 
+   *
    */
-  
-  Node extendedRewriteFactoring(
-      Kind andk, Kind ork, Kind notk, Node n);
+
+  Node extendedRewriteFactoring(Kind andk, Kind ork, Kind notk, Node n);
   /** (type-independent) equality resolution, for example:
    *
    *   ( A V C ) & ( A = B ) ---> ( B V C ) & ( A = B )

@@ -294,7 +294,7 @@ void SygusSymBreakNew::assertTesterInternal( int tindex, TNode n, Node exp, std:
   Trace("sygus-sb-debug") << "Get simple symmetry breaking predicates...\n";
   unsigned max_depth = ssz>=d ? ssz-d : 0;
   unsigned min_depth = d_simple_proc[exp];
-  NodeManager * nm = NodeManager::currentNM();
+  NodeManager* nm = NodeManager::currentNM();
   if( min_depth<=max_depth ){
     TNode x = getFreeVar( ntn );
     std::vector<Node> sb_lemmas;
@@ -328,12 +328,12 @@ void SygusSymBreakNew::assertTesterInternal( int tindex, TNode n, Node exp, std:
     // add the above symmetry breaking predicates to lemmas
     std::unordered_map<TNode, TNode, TNodeHashFunction> cache;
     Node rlv = getRelevancyCondition(n);
-    for( const Node& slem : sb_lemmas )
+    for (const Node& slem : sb_lemmas)
     {
       Node sslem = slem.substitute(x, n, cache);
-      if( !rlv.isNull() )
+      if (!rlv.isNull())
       {
-        sslem = nm->mkNode(OR,rlv,sslem);
+        sslem = nm->mkNode(OR, rlv, sslem);
       }
       lemmas.push_back(sslem);
     }
@@ -383,18 +383,20 @@ Node SygusSymBreakNew::getRelevancyCondition( Node n ) {
         }
         Assert( !disj.empty() );
         if( excl ){
-          cond = disj.size()==1 ? disj[0] : NodeManager::currentNM()->mkNode( kind::AND, disj );
+          cond = disj.size() == 1
+                     ? disj[0]
+                     : NodeManager::currentNM()->mkNode(kind::AND, disj);
         }
       }else{
         int sindex = Datatype::cindexOf( selExpr );
         Assert( sindex!=-1 );
-        cond = DatatypesRewriter::mkTester( n[0], sindex, dt ).negate();
+        cond = DatatypesRewriter::mkTester(n[0], sindex, dt).negate();
       }
       Node c1 = getRelevancyCondition( n[0] );
       if( cond.isNull() ){
         cond = c1;
       }else if( !c1.isNull() ){
-        cond = NodeManager::currentNM()->mkNode( kind::OR, cond, c1 );
+        cond = NodeManager::currentNM()->mkNode(kind::OR, cond, c1);
       }
     }
     Trace("sygus-sb-debug2") << "Relevancy condition for " << n << " is " << cond << std::endl;
@@ -990,18 +992,18 @@ void SygusSymBreakNew::registerSymBreakLemma( TypeNode tn, Node lem, unsigned sz
   TNode x = getFreeVar( tn );
   unsigned csz = getSearchSizeForAnchor( a );
   int max_depth = ((int)csz)-((int)sz);
-  NodeManager * nm = NodeManager::currentNM();
+  NodeManager* nm = NodeManager::currentNM();
   for( int d=0; d<=max_depth; d++ ){
     std::map< unsigned, std::vector< Node > >::iterator itt = d_cache[a].d_search_terms[tn].find( d );
     if( itt!=d_cache[a].d_search_terms[tn].end() ){
       for (const TNode& t : itt->second)
       {
         if( !options::sygusSymBreakLazy() || d_active_terms.find( t )!=d_active_terms.end() ){
-          Node slem = lem.substitute(x,t);
-          Node rlv = getRelevancyCondition( t );
-          if( !rlv.isNull() )
+          Node slem = lem.substitute(x, t);
+          Node rlv = getRelevancyCondition(t);
+          if (!rlv.isNull())
           {
-            slem = nm->mkNode( OR, rlv, slem );
+            slem = nm->mkNode(OR, rlv, slem);
           }
           lemmas.push_back(slem);
         }
@@ -1021,8 +1023,8 @@ void SygusSymBreakNew::addSymBreakLemmasFor( TypeNode tn, Node t, unsigned d, No
   Trace("sygus-sb-debug2") << "add sym break lemmas for " << t << " " << d
                            << " " << a << std::endl;
   std::map< TypeNode, std::map< unsigned, std::vector< Node > > >::iterator its = d_cache[a].d_sb_lemmas.find( tn );
-  Node rlv = getRelevancyCondition( t );
-  NodeManager * nm = NodeManager::currentNM();
+  Node rlv = getRelevancyCondition(t);
+  NodeManager* nm = NodeManager::currentNM();
   if( its != d_cache[a].d_sb_lemmas.end() ){
     TNode x = getFreeVar( tn );
     //get symmetry breaking lemmas for this term 
@@ -1036,11 +1038,11 @@ void SygusSymBreakNew::addSymBreakLemmasFor( TypeNode tn, Node t, unsigned d, No
       if( (int)it->first<=max_sz ){
         for (const Node& lem : it->second)
         {
-          Node slem = lem.substitute(x,t,cache);
+          Node slem = lem.substitute(x, t, cache);
           // add the relevancy condition for t
-          if( !rlv.isNull() )
+          if (!rlv.isNull())
           {
-            slem = nm->mkNode( OR, rlv, slem );
+            slem = nm->mkNode(OR, rlv, slem);
           }
           lemmas.push_back(slem);
         }
@@ -1179,7 +1181,7 @@ void SygusSymBreakNew::incrementCurrentSearchSize( Node m, std::vector< Node >& 
   Assert( itsz!=d_szinfo.end() );
   itsz->second->d_curr_search_size++;
   Trace("sygus-fair") << "  register search size " << itsz->second->d_curr_search_size << " for " << m << std::endl;
-  NodeManager * nm = NodeManager::currentNM();
+  NodeManager* nm = NodeManager::currentNM();
   for( std::map< Node, SearchCache >::iterator itc = d_cache.begin(); itc != d_cache.end(); ++itc ){
     Node a = itc->first;
     Trace("sygus-fair-debug") << "  look at anchor " << a << "..." << std::endl;
@@ -1195,24 +1197,29 @@ void SygusSymBreakNew::incrementCurrentSearchSize( Node m, std::vector< Node >& 
           int new_depth = ((int)itsz->second->d_curr_search_size) - ((int)sz);
           std::map< unsigned, std::vector< Node > >::iterator itt = itc->second.d_search_terms[tn].find( new_depth );
           if( itt!=itc->second.d_search_terms[tn].end() ){
-            for( const TNode& t : itt->second ){
-              if( !options::sygusSymBreakLazy() || d_active_terms.find( t )!=d_active_terms.end() && !it->second.empty() ){
-                std::vector< Node > slemmas;
+            for (const TNode& t : itt->second)
+            {
+              if (!options::sygusSymBreakLazy()
+                  || d_active_terms.find(t) != d_active_terms.end()
+                         && !it->second.empty())
+              {
+                std::vector<Node> slemmas;
                 std::unordered_map<TNode, TNode, TNodeHashFunction> cache;
                 for (const Node& lem : it->second)
                 {
-                  slemmas.push_back(lem.substitute(x,t,cache));
+                  slemmas.push_back(lem.substitute(x, t, cache));
                 }
-                if( !slemmas.empty() )
+                if (!slemmas.empty())
                 {
-                  Node slem = slemmas.size()==1 ? slemmas[0] : nm->mkNode( AND, slemmas );
+                  Node slem = slemmas.size() == 1 ? slemmas[0]
+                                                  : nm->mkNode(AND, slemmas);
                   // add the relevancy condition
-                  Node rlv = getRelevancyCondition( t );
-                  if( !rlv.isNull() )
+                  Node rlv = getRelevancyCondition(t);
+                  if (!rlv.isNull())
                   {
-                    slem = nm->mkNode( OR, rlv, slem );
+                    slem = nm->mkNode(OR, rlv, slem);
                   }
-                  lemmas.push_back( slem );
+                  lemmas.push_back(slem);
                 }
               }
             }
