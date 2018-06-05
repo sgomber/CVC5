@@ -867,14 +867,13 @@ void TermDbSygus::registerEnumerator(Node e,
   d_enum_to_using_sym_cons[e] = useSymbolicCons;
   // depending on if we are using symbolic constructors, introduce symmetry
   // breaking lemma templates for each relevant subtype of the grammar
-  std::map<TypeNode, std::map<TypeNode, unsigned> >::iterator it =
-      d_min_type_depth.find(et);
-  Assert(it != d_min_type_depth.end());
-  // for each type of subterm of this enumerator
-  for (const std::pair<const TypeNode, unsigned>& st : it->second)
+  std::vector< TypeNode > sf_types;
+  getSubfieldTypes(et,sf_types);
+  // for each type of subfield type of this enumerator
+  for( unsigned i=0, ntypes = sf_types.size(); i<ntypes; i++ )
   {
     std::vector<unsigned> rm_indices;
-    TypeNode stn = st.first;
+    TypeNode stn = sf_types[i];
     Assert(stn.isDatatype());
     const Datatype& dt = static_cast<DatatypeType>(stn.toType()).getDatatype();
     std::map<TypeNode, unsigned>::iterator itsa =
@@ -1137,6 +1136,17 @@ unsigned TermDbSygus::getSelectorWeight(TypeNode tn, Node sel)
   }
   Assert(itsw->second.find(sel) != itsw->second.end());
   return itsw->second[sel];
+}
+
+void TermDbSygus::getSubfieldTypes(TypeNode tn, std::vector<TypeNode>& sf_types)
+{
+  std::map<TypeNode, std::map<TypeNode, unsigned> >::iterator it =
+      d_min_type_depth.find(tn);
+  Assert(it != d_min_type_depth.end());
+  for (const std::pair<const TypeNode, unsigned>& st : it->second)
+  {
+    sf_types.push_back(st.first);
+  }
 }
 
 int TermDbSygus::getKindConsNum( TypeNode tn, Kind k ) {

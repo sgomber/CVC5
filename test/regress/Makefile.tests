@@ -809,10 +809,12 @@ REG0_TESTS = \
 	regress0/strings/type001.smt2 \
 	regress0/strings/unsound-0908.smt2 \
 	regress0/sygus/General_plus10.sy \
+	regress0/sygus/aig-si.sy \
 	regress0/sygus/c100.sy \
 	regress0/sygus/ccp16.lus.sy \
 	regress0/sygus/check-generic-red.sy \
 	regress0/sygus/const-var-test.sy \
+	regress0/sygus/crcy-no-si.sy \
 	regress0/sygus/dt-no-syntax.sy \
 	regress0/sygus/let-ringer.sy \
 	regress0/sygus/let-simp.sy \

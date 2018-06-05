@@ -341,7 +341,14 @@ class TermDbSygus {
   unsigned getMinConsTermSize( TypeNode tn, unsigned cindex );
   /** get the weight of the selector, where tn is the domain of sel */
   unsigned getSelectorWeight(TypeNode tn, Node sel);
-
+  /** get subfield types 
+   * 
+   * This adds all "subfield types" of tn to sf_types. A type tnc is a subfield
+   * type of tn if there exists a selector chain S1( ... Sn( x )...) that has 
+   * type tnc, where x has type tn. In other words, tnc is the type of some
+   * subfield of terms of type tn, at any depth.
+   */
+  void getSubfieldTypes(TypeNode tn, std::vector<TypeNode>& sf_types);
  public:
   int getKindConsNum( TypeNode tn, Kind k );
   int getConstConsNum( TypeNode tn, Node n );
