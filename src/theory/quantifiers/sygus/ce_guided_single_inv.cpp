@@ -293,6 +293,7 @@ void CegConjectureSingleInv::initialize( Node q ) {
 
 void CegConjectureSingleInv::finishInit( bool syntaxRestricted, bool hasItes ) {
   d_has_ites = hasItes;
+  Trace("cegqi-si-debug") << "Single invocation, finish init, has ITEs = " << d_has_ites << std::endl;
   // do not do single invocation if grammar is restricted and CEGQI_SI_MODE_ALL is not enabled
   if( options::cegqiSingleInvMode()==CEGQI_SI_MODE_USE && d_single_invocation && syntaxRestricted ){
     d_single_invocation = false;

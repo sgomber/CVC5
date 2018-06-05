@@ -247,10 +247,8 @@ Node CegGrammarConstructor::process(Node q,
     }
     d_qe->getTermDatabaseSygus()->registerSygusType( tn );
     // check grammar restrictions
-    if( !d_qe->getTermDatabaseSygus()->sygusToBuiltinType( tn ).isBoolean() ){
-      if( !d_qe->getTermDatabaseSygus()->hasKind( tn, ITE ) ){
-        d_has_ite = false;
-      }
+    if( !d_qe->getTermDatabaseSygus()->hasKind( tn, ITE ) ){
+      d_has_ite = false;
     }
     Assert( tn.isDatatype() );
     const Datatype& dt = ((DatatypeType)(tn).toType()).getDatatype();
