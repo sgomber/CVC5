@@ -1076,19 +1076,64 @@ Node ExtendedRewriter::extendedRewriteEqChain(
   std::vector< std::pair< Node, unsigned > > atom_count;
   for (std::pair<const Node, bool>& cp : cstatus)
   {
+    if( !cp.second )
+    {
+      // already eliminated
+      continue;
+    }
     Node c = cp.first;
-    Assert( cp.second );
     Kind ck = c.getKind();
     if (ck == andk || ck == ork)
     {
-      for( const Node& cl : c )
+      for(unsigned j=0, nchild = c.getNumChildren(); j<nchild; j++ )
       {
+        Node cl = c[j];
         bool pol = cl.getKind() != notk;
         Node ca = pol ? cl : cl[0];
         Assert( atoms[c].find(ca)==atoms[c].end() );
         // polarity is flipped when we are AND
         atoms[c][ca] = pol==(ck==ork); 
         alist[c].push_back(ca);
+        
+        // if this already exists as a child of the equality chain, eliminate.
+        // this catches cases like ( x & y ) = ( ( x & y ) | z ), where we
+        // consider ( x & y ) a unit, whereas below it is expanded to 
+        // ~( ~x | ~y ).
+        std::map<Node, bool>::iterator itc = cstatus.find(ca);
+        if (itc != cstatus.end() && itc->second)
+        {
+          // cancel it
+          cstatus[ca] = false;
+          cstatus[c] = false;
+          // make new child
+          // x = ( y | ~x ) ---> y & x
+          // x = ( y | x ) ---> ~y | x
+          // x = ( y & x ) ---> y | ~x
+          // x = ( y & ~x ) ---> ~y & ~x
+          std::vector<Node> new_children;
+          for (unsigned k = 0, nchild = c.getNumChildren(); k < nchild; k++)
+          {
+            if (j != k)
+            {
+              new_children.push_back(c[k]);
+            }
+          }
+          Node nc[2];
+          nc[0] = c[j];
+          nc[1] = new_children.size() == 1 ? new_children[0]
+                                            : nm->mkNode(ck, new_children);
+          // negate the proper child
+          unsigned nindex = (ck == andk) == pol ? 0 : 1;
+          nc[nindex] = TermUtil::mkNegate(notk, nc[nindex]);
+          Kind nk = pol ? ork : andk;
+          // store as new child
+          children.push_back(nm->mkNode(nk, nc[0], nc[1]));
+          if (isXor)
+          {
+            gpol = !gpol;
+          }
+          break;
+        }
       }
     }
     else
@@ -1181,7 +1226,10 @@ Node ExtendedRewriter::extendedRewriteEqChain(
         Node remn = rem_children.size()==1 ? rem_children[0] : nm->mkNode( ork, rem_children );
         remn = TermUtil::mkNegate( notk, remn );
         children.push_back(nm->mkNode(ork,diff_children[0],remn));
-        gpol = !gpol;
+        if (!isXor)
+        {
+          gpol = !gpol;
+        }
         Trace("ext-rew-eqchain") << "    apply unit resolution\n";
       }
       else if( diff_children.size()==1 && itc->second.size()==itcc->second.size() )
@@ -1191,6 +1239,10 @@ Node ExtendedRewriter::extendedRewriteEqChain(
         Assert( !common_children.empty() );
         Node comn = common_children.size()==1 ? common_children[0] : nm->mkNode(ork, common_children);
         children.push_back(comn);
+        if (isXor)
+        {
+          gpol = !gpol;
+        }
         Trace("ext-rew-eqchain") << "    apply resolution\n";
       }
       else if( diff_children.empty() )
@@ -1201,6 +1253,10 @@ Node ExtendedRewriter::extendedRewriteEqChain(
           // x | y = x | y ---> true
           // this can happen if we have ( ~x & ~y ) = ( x | y )
           children.push_back(TermUtil::mkTypeMaxValue(tn));
+          if (isXor)
+          {
+            gpol = !gpol;
+          }
           Trace("ext-rew-eqchain") << "    apply cancel\n";
         }
         else
@@ -1210,11 +1266,16 @@ Node ExtendedRewriter::extendedRewriteEqChain(
           remn = TermUtil::mkNegate( notk, remn );
           Node comn = common_children.size()==1 ? common_children[0] : nm->mkNode(ork, common_children);
           children.push_back(nm->mkNode(ork,comn,remn));
+          if (isXor)
+          {
+            gpol = !gpol;
+          }
           Trace("ext-rew-eqchain") << "    apply subsume\n";
         }
       }
       if( do_rewrite )
       {
+        // eliminate the children, reverse polarity as needed
         for( unsigned r=0; r<2; r++ )
         {
           Node c_rem = r==0 ? c : cc;
@@ -1224,69 +1285,11 @@ Node ExtendedRewriter::extendedRewriteEqChain(
             gpol = !gpol;
           }
         }
-        // 
         break;
       }
     }
   }
   Trace("ext-rew-eqchain") << "eqchain-simplify: finish" << std::endl;
-  
-  // cancel AND/OR children if possible
-  // this catches cases like ( x & y ) = ( ( x & y ) | z ), where ( x & y ) is
-  // considered a unit, whereas above it is expanded to ~( ~x | ~y ).
-  for (std::pair<const Node, bool>& cp : cstatus)
-  {
-    if (cp.second)
-    {
-      Node c = cp.first;
-      Kind ck = c.getKind();
-      if (ck == andk || ck == ork)
-      {
-        for (unsigned j = 0, nchild = c.getNumChildren(); j < nchild; j++)
-        {
-          Node cl = c[j];
-          Node ca = cl.getKind() == notk ? cl[0] : cl;
-          bool capol = cl.getKind() != notk;
-          // if this already exists as a child of the equality chain
-          std::map<Node, bool>::iterator itc = cstatus.find(ca);
-          if (itc != cstatus.end() && itc->second)
-          {
-            // cancel it
-            cstatus[ca] = false;
-            cstatus[c] = false;
-            // make new child
-            // x = ( y | ~x ) ---> y & x
-            // x = ( y | x ) ---> ~y | x
-            // x = ( y & x ) ---> y | ~x
-            // x = ( y & ~x ) ---> ~y & ~x
-            std::vector<Node> new_children;
-            for (unsigned k = 0, nchild = c.getNumChildren(); k < nchild; k++)
-            {
-              if (j != k)
-              {
-                new_children.push_back(c[k]);
-              }
-            }
-            Node nc[2];
-            nc[0] = c[j];
-            nc[1] = new_children.size() == 1 ? new_children[0]
-                                             : nm->mkNode(ck, new_children);
-            // negate the proper child
-            unsigned nindex = (ck == andk) == capol ? 0 : 1;
-            nc[nindex] = TermUtil::mkNegate(notk, nc[nindex]);
-            Kind nk = capol ? ork : andk;
-            // store as new child
-            children.push_back(nm->mkNode(nk, nc[0], nc[1]));
-            if (isXor)
-            {
-              gpol = !gpol;
-            }
-            break;
-          }
-        }
-      }
-    }
-  }
 
   // sorted right associative chain
   bool has_nvar = false;
