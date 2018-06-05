@@ -800,6 +800,41 @@ Node ExtendedRewriter::extendedRewriteBcp(
 Node ExtendedRewriter::extendedRewriteFactoring(
     Kind andk, Kind ork, Kind notk, Node n)
 {
+  Kind nk = n.getKind();
+  Assert( nk==andk || nk==ork );
+  Kind onk = nk==andk ? ork : andk;
+  // count the number of times atoms occur
+  std::map< Node, std::vector< Node > > lit_to_cl;
+  for( const Node& nc : n )
+  {
+    Kind nck = nc.getKind();
+    if( nck==onk )
+    {
+      for( const Node& ncl : nc )
+      {
+        lit_to_cl[ncl].push_back(nc);
+      }
+    }
+    else
+    {
+      lit_to_cl[nc].push_back(nc);
+    }
+  }
+  // get the maximum shared literal
+  unsigned max_size = 0;
+  Node max_lit;
+  for( const std::pair< const Node, std::vector< Node > >& ltc : lit_to_cl )
+  {
+    if( ltc.second.size()>max_size )
+    {
+      max_size = ltc.second.size();
+      max_lit = ltc.first;
+    }
+  }
+  if( max_size>1 )
+  {
+    
+  }
   return Node::null();
 }
 
