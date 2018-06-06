@@ -403,6 +403,7 @@ class SygusUnifStrategy
       Node e,
       NodeRole nrole,
       std::map<Node, std::map<NodeRole, bool>>& visited,
+      std::map<Node, std::vector<Node>>& strategy_lemmas,
       std::map<Node, std::map<unsigned, bool>>& needs_cons,
       StrategyRestrictions& restrictions);
   /** finish initialization of the strategy tree

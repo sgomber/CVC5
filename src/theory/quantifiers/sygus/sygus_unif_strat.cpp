@@ -14,6 +14,7 @@
 
 #include "theory/quantifiers/sygus/sygus_unif_strat.h"
 
+#include "options/datatypes_options.h"
 #include "theory/datatypes/datatypes_rewriter.h"
 #include "theory/quantifiers/sygus/sygus_unif.h"
 #include "theory/quantifiers/sygus/term_database_sygus.h"
@@ -721,7 +722,7 @@ void SygusUnifStrategy::staticLearnRedundantOps(
   std::map<Node, std::map<NodeRole, bool> > visited;
   std::map<Node, std::map<unsigned, bool> > needs_cons;
   staticLearnRedundantOps(
-      getRootEnumerator(), role_equal, visited, needs_cons, restrictions);
+                          getRootEnumerator(), role_equal, visited, needs_cons, strategy_lemmas, restrictions);
   // now, check the needs_cons map
   for (std::pair<const Node, std::map<unsigned, bool> >& nce : needs_cons)
   {
@@ -747,7 +748,7 @@ void SygusUnifStrategy::staticLearnRedundantOps(
     }
     if (!lemmas.empty())
     {
-      strategy_lemmas[em] = lemmas;
+      strategy_lemmas[em].insert(strategy_lemmas[em].end(), lemmas.begin(), lemmas.end());
     }
   }
 }
@@ -765,7 +766,9 @@ void SygusUnifStrategy::staticLearnRedundantOps(
     Node e,
     NodeRole nrole,
     std::map<Node, std::map<NodeRole, bool>>& visited,
+    std::map<Node, std::vector<Node>>& strategy_lemmas,
     std::map<Node, std::map<unsigned, bool>>& needs_cons,
+
     StrategyRestrictions& restrictions)
 {
   if (visited[e].find(nrole) != visited[e].end())
@@ -869,23 +872,11 @@ void SygusUnifStrategy::staticLearnRedundantOps(
           {
             continue;
           }
-          Node fv = tds->getFreeVar(etn, 0);
-          Node exc_val =
-              datatypes::DatatypesRewriter::getInstCons(fv, dt, cindex);
-          // should not include the constuctor in any subterm
-          Node x = tds->getFreeVar(etn, 0);
-          Trace("sygus-strat-slearn")
-              << "Construct symmetry breaking lemma from " << x
-              << " == " << exc_val << std::endl;
-          Node lem = tds->getExplain()->getExplanationForEquality(x, exc_val);
-          lem = lem.negate();
-          Trace("cegqi-lemma")
-              << "Cegqi::Lemma : exclude ITE cons lemma (template) : "
-              << lem << std::endl;
-          // the size of the subterm we are blocking is the weight of the
-          // constructor (usually one)
-          tds->registerSymBreakLemma(
-              cec.first, lem, etn, dt[cindex].getWeight());
+          Node sym_break_lemma = guard_tn_occurr(cec.first.getType(), etn, cec.first, Node::fromExpr(dt[cindex].getTester()));
+          if (!sym_break_lemma.isNull())
+          {
+            strategy_lemmas[cec.first].push_back(sym_break_lemma);
+          }
         }
       }
     }
@@ -961,6 +952,55 @@ void SygusUnifStrategy::staticLearnRedundantOps(
       needs_cons[e][j] = needs_cons[e][j] || needs_cons_curr[j];
     }
   }
+}
+
+Node SygusUnifStrategy::guard_tn_occurr(TypeNode src,
+                                        TypeNode tn,
+                                        Node n,
+                                        Node tester)
+{
+  // Ignore non-datatypes
+  if (!src.isDatatype())
+  {
+    return Node::null();
+  }
+  NodeManager* nm = NodeManager::currentNM();
+
+  // type occurrence, put basis for building selection chain term
+  if (src == tn)
+  {
+    AlwaysAssert(options::dtUseTesters());
+    return nm->mkNode(APPLY_TESTER, Node::fromExpr(dt[i].getTester()), n);
+  }
+  Assert(src.getKind() == APPLY_CONSTRUCTOR);
+  Node res;
+  const Datatype& dt = static_cast<DatatypeType>(src.toType()).getDatatype();
+  for (const DatatypeConstructor& cons : dt)
+  {
+    // TODO make tester of this cons
+    Node res_cons;
+    std::vector<Node> children;
+    for (unsigned i = 0, size = cons.getNumArgs(); i < size; ++i)
+    {
+      // make sel application for this argument, go down
+      Node res_arg = collect_tn_occurrences(
+          TypeNode::fromType(
+              static_cast<SelectorType>(cons[i].getType()).getRangeType()),
+          tn,
+          nm->mkNode(
+              APPLY_SELECTOR_TOTAL,
+              Node::fromExpr(cons.getSelectorInternal(n.getType().toType(), i)),
+              n),
+          tester);
+      if (!res_arg.isNull())
+      {
+        // TODO add to children
+      }
+    }
+    // TODO if at least one chield, make and AND with cons tester
+    // TODO if more than on chield, make an OR with children
+  }
+  return res;
 }
 
 void SygusUnifStrategy::finishInit(
