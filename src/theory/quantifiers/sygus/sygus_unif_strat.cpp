@@ -883,7 +883,7 @@ void SygusUnifStrategy::staticLearnRedundantOps(
               << "Cegqi::Lemma : exclude ITE cons lemma (template) : "
               << lem << std::endl;
           // the size of the subterm we are blocking is the weight of the
-          // constructor (usually zero)
+          // constructor (usually one)
           tds->registerSymBreakLemma(
               cec.first, lem, etn, dt[cindex].getWeight());
         }
