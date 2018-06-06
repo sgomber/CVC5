@@ -238,7 +238,7 @@ private:
    * may set ( sols, status ) to ( { x+1, d_x() }, { 1, 0 } ), where d_x() is
    * the sygus datatype constructor corresponding to variable x.
    */
-  void getSynthSolutionsInternal(std::vector<Node>& sols,
+  bool getSynthSolutionsInternal(std::vector<Node>& sols,
                                  std::vector<int>& status,
                                  bool singleInvocation);
   //-------------------------------- sygus stream
