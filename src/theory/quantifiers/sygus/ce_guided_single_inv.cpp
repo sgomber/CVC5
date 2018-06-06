@@ -568,9 +568,10 @@ Node CegConjectureSingleInv::reconstructToSyntax( Node s, TypeNode stn, int& rec
 
   //reconstruct the solution into sygus if necessary
   reconstructed = 0;
-  if( options::cegqiSingleInvReconstruct() && !dt.getSygusAllowAll() && !stn.isNull() && rconsSygus ){
+  if( options::cegqiSingleInvReconstruct()!=CEGQI_SI_RCONS_MODE_NONE && !dt.getSygusAllowAll() && !stn.isNull() && rconsSygus ){
     d_sol->preregisterConjecture( d_orig_conjecture );
-    d_sygus_solution = d_sol->reconstructSolution( s, stn, reconstructed );
+    bool tryEnum = options::cegqiSingleInvReconstruct()==CEGQI_SI_RCONS_MODE_ALL;
+    d_sygus_solution = d_sol->reconstructSolution( s, stn, reconstructed, tryEnum );
     if( reconstructed==1 ){
       Trace("csi-sol") << "Solution (post-reconstruction into Sygus): " << d_sygus_solution << std::endl;
     }

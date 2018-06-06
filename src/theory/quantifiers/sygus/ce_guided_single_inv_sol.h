@@ -67,9 +67,13 @@ private:
    * Returns (if possible) a node that is equivalent to sol those syntax
    * matches the grammar corresponding to sygus datatype stn.
    * The value reconstructed is set to 1 if we successfully return a node,
-   * otherwise it is set to -1.
+   * otherwise it is set to -1. 
+   * 
+   * This method quickly tries to match sol to the grammar induced by stn. If
+   * this fails and tryEnum is true, we use non-terminating enumerative 
+   * techniques to try to repair the solution.
    */
-  Node reconstructSolution(Node sol, TypeNode stn, int& reconstructed);
+  Node reconstructSolution(Node sol, TypeNode stn, int& reconstructed, bool tryEnum);
   /** preregister conjecture
    *
    * q : the synthesis conjecture this class is for.

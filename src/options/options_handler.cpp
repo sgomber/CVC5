@@ -492,6 +492,23 @@ all \n\
 \n\
 ";
 
+const std::string OptionsHandler::s_cegqiSingleInvRconsHelp = "\
+Modes for reconstruction solutions while using single invocation techniques, supported by --cegqi-si-rcons:\n\
+\n\
+none \n\
++ Do not try to reconstruct solutions in the original (user-provided) grammar\
+  when using single invocation techniques. In this mode, solutions produced by\
+  CVC4 may violate grammar restrictions.\n\
+\n\
+try (default) \n\
++ Try to reconstruction solutions in the original grammar when using single\
+  invocation techniques in an incomplete (fail-fast) manner.\n\
+\n\
+all \n\
++ Always try to reconstruct solutions in the original grammar. \n\
+\n\
+";
+
 const std::string OptionsHandler::s_cegisSampleHelp =
     "\
 Modes for sampling with counterexample-guided inductive synthesis (CEGIS),\
@@ -893,6 +910,25 @@ OptionsHandler::stringToCegqiSingleInvMode(std::string option,
   } else {
     throw OptionException(std::string("unknown option for --cegqi-si: `") +
                           optarg + "'.  Try --cegqi-si help.");
+  }
+}
+
+theory::quantifiers::CegqiSingleInvRconsMode
+OptionsHandler::stringToCegqiSingleInvRconsMode(std::string option,
+                                           std::string optarg)
+{
+  if(optarg == "none" ) {
+    return theory::quantifiers::CEGQI_SI_RCONS_MODE_NONE;
+  } else if(optarg == "try") {
+    return theory::quantifiers::CEGQI_SI_RCONS_MODE_TRY;
+  } else if(optarg == "all") {
+    return theory::quantifiers::CEGQI_SI_RCONS_MODE_ALL;
+  } else if(optarg ==  "help") {
+    puts(s_cegqiSingleInvRconsHelp.c_str());
+    exit(1);
+  } else {
+    throw OptionException(std::string("unknown option for --cegqi-si-rcons: `") +
+                          optarg + "'.  Try --cegqi-si-rcons help.");
   }
 }
 

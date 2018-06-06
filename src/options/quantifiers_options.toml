@@ -917,11 +917,21 @@ header = "options/quantifiers_options.h"
 [[option]]
   name       = "cegqiSingleInvReconstruct"
   category   = "regular"
-  long       = "cegqi-si-reconstruct"
+  long       = "cegqi-si-rcons=MODE"
+  type       = "CVC4::theory::quantifiers::CegqiSingleInvRconsMode"
+  default    = "CVC4::theory::quantifiers::CEGQI_SI_RCONS_MODE_ALL"
+  handler    = "stringToCegqiSingleInvRconsMode"
+  includes   = ["options/quantifiers_modes.h"]
+  help       = "policy for reconstructing solutions for single invocation conjectures"
+
+[[option]]
+  name       = "cegqiSingleInvReconstructConst"
+  category   = "regular"
+  long       = "cegqi-si-reconstruct-const"
   type       = "bool"
   default    = "true"
   read_only  = true
-  help       = "reconstruct solutions for single invocation conjectures in original grammar"
+  help       = "include constants when reconstruct solutions for single invocation conjectures in original grammar"
 
 [[option]]
   name       = "cegqiSolMinCore"
@@ -940,15 +950,6 @@ header = "options/quantifiers_options.h"
   default    = "true"
   read_only  = true
   help       = "minimize individual instantiations for single invocation conjectures based on unsat core"
-
-[[option]]
-  name       = "cegqiSingleInvReconstructConst"
-  category   = "regular"
-  long       = "cegqi-si-reconstruct-const"
-  type       = "bool"
-  default    = "true"
-  read_only  = true
-  help       = "include constants when reconstruct solutions for single invocation conjectures in original grammar"
 
 [[option]]
   name       = "cegqiSingleInvAbort"
