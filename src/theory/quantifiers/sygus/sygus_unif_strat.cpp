@@ -465,7 +465,7 @@ void SygusUnifStrategy::buildStrategyGraph(TypeNode tn, NodeRole nrole)
         }
       }
     }
-    
+
     std::map<Node, std::vector<StrategyType> >::iterator itcs = cop_to_strat.find(cop);
     if (itcs != cop_to_strat.end())
     {
@@ -853,9 +853,8 @@ void SygusUnifStrategy::staticLearnRedundantOps(
         }
       }
     }
-    // do not use ITEs in subtypes of conditional ITEs that are the same as the
-    // return type
-    if (restrictions.d_iteCondPullRetITEs)
+    // do not use ITEs in types whose strategy has ITE as its constructor
+    if (restrictions.d_pullRetITEs)
     {
       TermDbSygus* tds = d_qe->getTermDatabaseSygus();
       const Datatype& dt =
@@ -864,17 +863,12 @@ void SygusUnifStrategy::staticLearnRedundantOps(
       if (op.getKind() == kind::BUILTIN
           && NodeManager::operatorToKind(op) == ITE)
       {
-        Trace("sygus-strat-slearn") << "......check if guys with ITE cons for "
-                                       "strategy has a child enumerator for "
-                                       "conditions\n";
         for (std::pair<Node, NodeRole>& cec : etis->d_cenum)
         {
           if (cec.second != role_ite_condition)
           {
             continue;
           }
-          Trace("sygus-strat-slearn") << "......trying lemma for " << cec.first
-                                      << " | " << cec.second << "\n";
           Node fv = tds->getFreeVar(etn, 0);
           Node exc_val =
               datatypes::DatatypesRewriter::getInstCons(fv, dt, cindex);

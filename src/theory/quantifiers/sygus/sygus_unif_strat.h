@@ -246,7 +246,7 @@ struct StrategyRestrictions
   StrategyRestrictions()
       : d_iteReturnBoolConst(false),
         d_iteCondOnlyAtoms(true),
-        d_iteCondPullRetITEs(true)
+        d_pullRetITEs(true)
   {
   }
   /**
@@ -261,11 +261,12 @@ struct StrategyRestrictions
   bool d_iteCondOnlyAtoms;
   /**
    * if this flag is true then staticLearnRedundantOps will also try to "pull"
-   * the ITEs from condition values. This can be done for the subtypes of the
-   * condition type that are equal to the return type (the one to which we are
-   * enumerating conditions for building ITEs in the first place)
+   * ITEs from condition values. This can be done by creating symmetry breaking
+   * lemmas for types using a strategy whose constructor is an ITE, which means
+   * that the child strategy doing the ITE condition enumeration does not need
+   * to have ITEs in its value.
    */
-  bool d_iteCondPullRetITEs;
+  bool d_pullRetITEs;
   /**
    * A list of unused strategies. This maps strategy points to the indices
    * in StrategyNode::d_strats that are not used by the caller of
