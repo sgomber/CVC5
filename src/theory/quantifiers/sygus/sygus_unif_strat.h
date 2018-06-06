@@ -243,7 +243,10 @@ class EnumTypeInfoStrat
  */
 struct StrategyRestrictions
 {
-  StrategyRestrictions() : d_iteReturnBoolConst(false), d_iteCondOnlyAtoms(true)
+  StrategyRestrictions()
+      : d_iteReturnBoolConst(false),
+        d_iteCondOnlyAtoms(true),
+        d_iteCondPullITEs(true)
   {
   }
   /**
@@ -256,6 +259,13 @@ struct StrategyRestrictions
    * the condition values of ITEs to be restricted to atoms
    */
   bool d_iteCondOnlyAtoms;
+  /**
+   * if this flag is true then staticLearnRedundantOps will also try to "pull"
+   * the ITEs from condition values. This can be done for the subtypes of the
+   * condition type that are equal to the return type (the one to which we are
+   * enumerating conditions for building ITEs in the first place)
+   */
+  bool d_iteCondPullITEs;
   /**
    * A list of unused strategies. This maps strategy points to the indices
    * in StrategyNode::d_strats that are not used by the caller of

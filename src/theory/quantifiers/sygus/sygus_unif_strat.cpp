@@ -905,6 +905,22 @@ void SygusUnifStrategy::staticLearnRedundantOps(
       }
     }
   }
+  // do not use ITEs in subtypes of conditional ITEs that are the same as the
+  // return type
+  if (nrole == role_ite_condition && restrictions.d_iteCondPullITEs)
+  {
+    TypeNode sygus_tn = TypeNode::fromType(dt.getSygusType());
+    // get subtypes in condition
+    std::vector<TypeNode> sf_tns;
+    d_qe->getTermDatabaseSygus()->getSubfieldTypes(sygus_tn, sf_tns);
+    // retrieve ITE return type
+    // TODO
+    // exclude ITE of respective subfields
+    for(const TypeNode& sf_tn : sf_tns)
+    {
+
+    }
+  }
   // all other constructors are needed
   for (unsigned j = 0, size = dt.getNumConstructors(); j < size; j++)
   {
