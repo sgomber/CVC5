@@ -70,13 +70,14 @@ private:
    * otherwise it is set to -1.
    *
    * This method quickly tries to match sol to the grammar induced by stn. If
-   * this fails and tryEnum is true, we use non-terminating enumerative
-   * techniques to try to repair the solution.
+   * this fails, we use enumerative techniques to try to repair the solution.
+   * The number of iterations for this enumeration is bounded by the argument
+   * enumLimit if it is positive, and unbounded otherwise. 
    */
   Node reconstructSolution(Node sol,
                            TypeNode stn,
                            int& reconstructed,
-                           bool tryEnum);
+                           int enumLimit);
   /** preregister conjecture
    *
    * q : the synthesis conjecture this class is for.

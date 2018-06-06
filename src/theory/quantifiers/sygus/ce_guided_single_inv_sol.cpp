@@ -642,7 +642,7 @@ void CegConjectureSingleInvSol::preregisterConjecture( Node q ) {
 Node CegConjectureSingleInvSol::reconstructSolution(Node sol,
                                                     TypeNode stn,
                                                     int& reconstructed,
-                                                    bool tryEnum)
+                                                    int enumLimit)
 {
   Trace("csi-rcons") << "Solution (pre-reconstruction) is : " << sol << std::endl;
   int status;
@@ -678,9 +678,9 @@ Node CegConjectureSingleInvSol::reconstructSolution(Node sol,
       Assert(!it->second.empty());
     }
   }
-  if (tryEnum)
+  if (enumLimit!=0)
   {
-    unsigned index = 0;
+    int index = 0;
     std::map< TypeNode, bool > active;
     for( std::map< TypeNode, std::map< Node, int > >::iterator it = d_rcons_to_id.begin(); it != d_rcons_to_id.end(); ++it ){
       active[it->first] = true;
@@ -727,7 +727,7 @@ Node CegConjectureSingleInvSol::reconstructSolution(Node sol,
       if( index%100==0 ){
         Trace("csi-rcons-stats") << "Tried " << index << " for each type."  << std::endl;
       }
-    }while( !active.empty() );
+    }while( !active.empty() && ( enumLimit<0 || index<enumLimit) );
   }
 
   // we ran out of elements, return null

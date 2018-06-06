@@ -50,7 +50,6 @@ CegConjectureSingleInv::CegConjectureSingleInv(QuantifiersEngine* qe,
       d_cosi(new CegqiOutputSingleInv(this)),
       d_cinst(NULL),
       d_c_inst_match_trie(NULL),
-      d_has_ites(true),
       d_single_invocation(false) {
   //  third and fourth arguments set to (false,false) until we have solution
   //  reconstruction for delta and infinity
@@ -291,10 +290,8 @@ void CegConjectureSingleInv::initialize( Node q ) {
   }
 }
 
-void CegConjectureSingleInv::finishInit( bool syntaxRestricted, bool hasItes ) {
-  d_has_ites = hasItes;
-  Trace("cegqi-si-debug") << "Single invocation, finish init, has ITEs = "
-                          << d_has_ites << std::endl;
+void CegConjectureSingleInv::finishInit( bool syntaxRestricted ) {
+  Trace("cegqi-si-debug") << "Single invocation: finish init" << std::endl;
   // do not do single invocation if grammar is restricted and CEGQI_SI_MODE_ALL is not enabled
   if( options::cegqiSingleInvMode()==CEGQI_SI_MODE_USE && d_single_invocation && syntaxRestricted ){
     d_single_invocation = false;
@@ -572,10 +569,17 @@ Node CegConjectureSingleInv::reconstructToSyntax( Node s, TypeNode stn, int& rec
       && !dt.getSygusAllowAll() && !stn.isNull() && rconsSygus)
   {
     d_sol->preregisterConjecture( d_orig_conjecture );
-    bool tryEnum =
-        options::cegqiSingleInvReconstruct() == CEGQI_SI_RCONS_MODE_ALL;
+    int enumLimit = -1;
+    if( options::cegqiSingleInvReconstruct() == CEGQI_SI_RCONS_MODE_TRY )
+    {
+      enumLimit = 0;
+    }
+    else if( options::cegqiSingleInvReconstruct() == CEGQI_SI_RCONS_MODE_ALL_LIMIT )
+    {
+      enumLimit = options::cegqiSingleInvReconstructLimit();
+    }
     d_sygus_solution =
-        d_sol->reconstructSolution(s, stn, reconstructed, tryEnum);
+        d_sol->reconstructSolution(s, stn, reconstructed, enumLimit);
     if( reconstructed==1 ){
       Trace("csi-sol") << "Solution (post-reconstruction into Sygus): " << d_sygus_solution << std::endl;
     }
@@ -637,11 +641,6 @@ Node CegConjectureSingleInv::reconstructToSyntax( Node s, TypeNode stn, int& rec
 }
 
 bool CegConjectureSingleInv::needsCheck() {
-  if( options::cegqiSingleInvMode()==CEGQI_SI_MODE_ALL_ABORT ){
-    if( !d_has_ites ){
-      return d_inst.empty();
-    }
-  }
   return true;
 }
 

@@ -501,12 +501,17 @@ none \n\
   when using single invocation techniques. In this mode, solutions produced by\
   CVC4 may violate grammar restrictions.\n\
 \n\
-try (default) \n\
+try \n\
 + Try to reconstruction solutions in the original grammar when using single\
   invocation techniques in an incomplete (fail-fast) manner.\n\
 \n\
 all \n\
-+ Always try to reconstruct solutions in the original grammar. \n\
++ Try to reconstruct solutions in the original grammar. In this mode,\
+  we do not terminate until a solution is successfully reconstructed. \n\
+\n\
+all-limit \n\
++ Try to reconstruct solutions in the original grammar, but termintate if a\
+  maximum number of rounds for reconstruction is exceeded.\n\
 \n\
 ";
 
@@ -901,8 +906,6 @@ OptionsHandler::stringToCegqiSingleInvMode(std::string option,
     return theory::quantifiers::CEGQI_SI_MODE_NONE;
   } else if(optarg == "use" || optarg == "default") {
     return theory::quantifiers::CEGQI_SI_MODE_USE;
-  } else if(optarg == "all-abort") {
-    return theory::quantifiers::CEGQI_SI_MODE_ALL_ABORT;
   } else if(optarg == "all") {
     return theory::quantifiers::CEGQI_SI_MODE_ALL;
   } else if(optarg ==  "help") {
@@ -929,6 +932,10 @@ OptionsHandler::stringToCegqiSingleInvRconsMode(std::string option,
   else if (optarg == "all")
   {
     return theory::quantifiers::CEGQI_SI_RCONS_MODE_ALL;
+  }
+  else if (optarg == "all-limit")
+  {
+    return theory::quantifiers::CEGQI_SI_RCONS_MODE_ALL_LIMIT;
   }
   else if (optarg == "help")
   {

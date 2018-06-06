@@ -210,8 +210,6 @@ enum CegqiSingleInvMode {
   CEGQI_SI_MODE_NONE,
   /** use single invocation techniques */
   CEGQI_SI_MODE_USE,
-  /** always use single invocation techniques, abort if solution reconstruction will fail */
-  CEGQI_SI_MODE_ALL_ABORT,
   /** always use single invocation techniques */
   CEGQI_SI_MODE_ALL,
 };
@@ -240,6 +238,11 @@ enum CegqiSingleInvRconsMode
    * we succesfully reconstruct the solution, although it may not terminate.
    */
   CEGQI_SI_RCONS_MODE_ALL,
+  /**
+   * Reconsturct solutions to single invocation conjectures, but fail if we
+   * reach an upper limit on number of iterations in the enumeration
+   */
+  CEGQI_SI_RCONS_MODE_ALL_LIMIT,
 };
 
 enum CegisSampleMode

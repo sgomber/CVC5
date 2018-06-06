@@ -919,10 +919,19 @@ header = "options/quantifiers_options.h"
   category   = "regular"
   long       = "cegqi-si-rcons=MODE"
   type       = "CVC4::theory::quantifiers::CegqiSingleInvRconsMode"
-  default    = "CVC4::theory::quantifiers::CEGQI_SI_RCONS_MODE_ALL"
+  default    = "CVC4::theory::quantifiers::CEGQI_SI_RCONS_MODE_ALL_LIMIT"
   handler    = "stringToCegqiSingleInvRconsMode"
   includes   = ["options/quantifiers_modes.h"]
   help       = "policy for reconstructing solutions for single invocation conjectures"
+
+[[option]]
+  name       = "cegqiSingleInvReconstructLimit"
+  category   = "regular"
+  long       = "cegqi-si-rcons-limit=N"
+  type       = "int"
+  default    = "10000"
+  read_only  = true
+  help       = "number of rounds of enumeration to use during solution reconstruction (negative means unlimited)"
 
 [[option]]
   name       = "cegqiSingleInvReconstructConst"
