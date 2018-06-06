@@ -198,7 +198,7 @@ Node CegGrammarConstructor::process(Node q,
   std::vector<Node> qchildren;
   Node qbody_subs = q[1];
   std::map<Node, Node> synth_fun_vars;
-  TermDbSygus * tds = d_qe->getTermDatabaseSygus();
+  TermDbSygus* tds = d_qe->getTermDatabaseSygus();
   for (unsigned i = 0, size = q[0].getNumChildren(); i < size; i++)
   {
     Node sf = q[0][i];
@@ -246,42 +246,42 @@ Node CegGrammarConstructor::process(Node q,
         Trace("cegqi-debug") << "  body is now : " << qbody_subs << std::endl;
       }
     }
-    tds->registerSygusType( tn );
-    Assert( tn.isDatatype() );
+    tds->registerSygusType(tn);
+    Assert(tn.isDatatype());
     const Datatype& dt = static_cast<DatatypeType>(tn.toType()).getDatatype();
-    Assert( dt.isSygus() );
+    Assert(dt.isSygus());
     // check grammar restrictions
     if (!tds->hasKind(tn, ITE))
     {
       d_has_ite = false;
-      // can maybe (fully) simulate the ITE 
-      if( tds->sygusToBuiltinType( tn ).isBoolean() )
+      // can maybe (fully) simulate the ITE
+      if (tds->sygusToBuiltinType(tn).isBoolean())
       {
         // if it has a recursive AND or OR, and NOT.
         bool success = true;
-        for( unsigned j=0; j<3; j++ )
+        for (unsigned j = 0; j < 3; j++)
         {
-          Assert( success );
-          Kind k = i==0 ? NOT : ( i==1 ? AND : OR );
+          Assert(success);
+          Kind k = i == 0 ? NOT : (i == 1 ? AND : OR);
           // do we have the required kind?
-          int cn = tds->getKindConsNum(tn,k);
-          success = cn>=0;
-          if( success )
+          int cn = tds->getKindConsNum(tn, k);
+          success = cn >= 0;
+          if (success)
           {
             // check whether we are recursive on types
-            for( unsigned a=0, nargs=dt[cn].getNumArgs(); a<nargs; a++ )
+            for (unsigned a = 0, nargs = dt[cn].getNumArgs(); a < nargs; a++)
             {
               TypeNode tna = TypeNode::fromType(dt[cn].getArgType(a));
-              if( tna!=tn )
+              if (tna != tn)
               {
                 success = false;
                 break;
               }
             }
           }
-          if( !success )
+          if (!success)
           {
-            if( j!=1 )
+            if (j != 1)
             {
               break;
             }
@@ -289,7 +289,7 @@ Node CegGrammarConstructor::process(Node q,
             success = true;
           }
         }
-        if( success )
+        if (success)
         {
           d_has_ite = true;
         }

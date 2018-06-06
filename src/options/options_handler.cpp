@@ -492,7 +492,8 @@ all \n\
 \n\
 ";
 
-const std::string OptionsHandler::s_cegqiSingleInvRconsHelp = "\
+const std::string OptionsHandler::s_cegqiSingleInvRconsHelp =
+    "\
 Modes for reconstruction solutions while using single invocation techniques, supported by --cegqi-si-rcons:\n\
 \n\
 none \n\
@@ -915,20 +916,29 @@ OptionsHandler::stringToCegqiSingleInvMode(std::string option,
 
 theory::quantifiers::CegqiSingleInvRconsMode
 OptionsHandler::stringToCegqiSingleInvRconsMode(std::string option,
-                                           std::string optarg)
+                                                std::string optarg)
 {
-  if(optarg == "none" ) {
+  if (optarg == "none")
+  {
     return theory::quantifiers::CEGQI_SI_RCONS_MODE_NONE;
-  } else if(optarg == "try") {
+  }
+  else if (optarg == "try")
+  {
     return theory::quantifiers::CEGQI_SI_RCONS_MODE_TRY;
-  } else if(optarg == "all") {
+  }
+  else if (optarg == "all")
+  {
     return theory::quantifiers::CEGQI_SI_RCONS_MODE_ALL;
-  } else if(optarg ==  "help") {
+  }
+  else if (optarg == "help")
+  {
     puts(s_cegqiSingleInvRconsHelp.c_str());
     exit(1);
-  } else {
-    throw OptionException(std::string("unknown option for --cegqi-si-rcons: `") +
-                          optarg + "'.  Try --cegqi-si-rcons help.");
+  }
+  else
+  {
+    throw OptionException(std::string("unknown option for --cegqi-si-rcons: `")
+                          + optarg + "'.  Try --cegqi-si-rcons help.");
   }
 }
 

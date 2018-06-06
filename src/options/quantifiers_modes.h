@@ -216,24 +216,25 @@ enum CegqiSingleInvMode {
   CEGQI_SI_MODE_ALL,
 };
 
-/** Solution reconstruction modes for single invocation conjectures 
- * 
+/** Solution reconstruction modes for single invocation conjectures
+ *
  * These modes indicate the policy when CVC4 solves a synthesis conjecture using
  * single invocation techniques for a sygus problem with a user-specified
  * grammar.
  */
-enum CegqiSingleInvRconsMode {
-  /** 
+enum CegqiSingleInvRconsMode
+{
+  /**
    * Do not try to reconstruct solutions to single invocation conjectures. With
-   * this mode, solutions produced by CVC4 may violate grammar restrictions. 
+   * this mode, solutions produced by CVC4 may violate grammar restrictions.
    */
   CEGQI_SI_RCONS_MODE_NONE,
-  /** 
-   * Try to reconstruct solution to single invocation conjectures in an 
-   * incomplete (fail fast) way. 
+  /**
+   * Try to reconstruct solution to single invocation conjectures in an
+   * incomplete (fail fast) way.
    */
   CEGQI_SI_RCONS_MODE_TRY,
-  /** 
+  /**
    * Reconsturct solutions to single invocation conjectures. This method
    * relies on an expensive enumeration technique which only terminate when
    * we succesfully reconstruct the solution, although it may not terminate.

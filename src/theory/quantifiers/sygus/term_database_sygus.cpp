@@ -867,10 +867,10 @@ void TermDbSygus::registerEnumerator(Node e,
   d_enum_to_using_sym_cons[e] = useSymbolicCons;
   // depending on if we are using symbolic constructors, introduce symmetry
   // breaking lemma templates for each relevant subtype of the grammar
-  std::vector< TypeNode > sf_types;
-  getSubfieldTypes(et,sf_types);
+  std::vector<TypeNode> sf_types;
+  getSubfieldTypes(et, sf_types);
   // for each type of subfield type of this enumerator
-  for( unsigned i=0, ntypes = sf_types.size(); i<ntypes; i++ )
+  for (unsigned i = 0, ntypes = sf_types.size(); i < ntypes; i++)
   {
     std::vector<unsigned> rm_indices;
     TypeNode stn = sf_types[i];
