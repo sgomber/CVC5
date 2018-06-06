@@ -853,6 +853,48 @@ void SygusUnifStrategy::staticLearnRedundantOps(
         }
       }
     }
+    // do not use ITEs in subtypes of conditional ITEs that are the same as the
+    // return type
+    if (restrictions.d_iteCondPullRetITEs)
+    {
+      TermDbSygus* tds = d_qe->getTermDatabaseSygus();
+      const Datatype& dt =
+          static_cast<DatatypeType>(etn.toType()).getDatatype();
+      Node op = Node::fromExpr(dt[cindex].getSygusOp());
+      if (op.getKind() == kind::BUILTIN
+          && NodeManager::operatorToKind(op) == ITE)
+      {
+        Trace("sygus-strat-slearn") << "......check if guys with ITE cons for "
+                                       "strategy has a child enumerator for "
+                                       "conditions\n";
+        for (std::pair<Node, NodeRole>& cec : etis->d_cenum)
+        {
+          if (cec.second != role_ite_condition)
+          {
+            continue;
+          }
+          Trace("sygus-strat-slearn") << "......trying lemma for " << cec.first
+                                      << " | " << cec.second << "\n";
+          Node fv = tds->getFreeVar(etn, 0);
+          Node exc_val =
+              datatypes::DatatypesRewriter::getInstCons(fv, dt, cindex);
+          // should not include the constuctor in any subterm
+          Node x = tds->getFreeVar(etn, 0);
+          Trace("sygus-strat-slearn")
+              << "Construct symmetry breaking lemma from " << x
+              << " == " << exc_val << std::endl;
+          Node lem = tds->getExplain()->getExplanationForEquality(x, exc_val);
+          lem = lem.negate();
+          Trace("cegqi-lemma")
+              << "Cegqi::Lemma : exclude ITE cons lemma (template) : "
+              << lem << std::endl;
+          // the size of the subterm we are blocking is the weight of the
+          // constructor (usually zero)
+          tds->registerSymBreakLemma(
+              cec.first, lem, etn, dt[cindex].getWeight());
+        }
+      }
+    }
     for (std::pair<Node, NodeRole>& cec : etis->d_cenum)
     {
       staticLearnRedundantOps(
@@ -903,22 +945,6 @@ void SygusUnifStrategy::staticLearnRedundantOps(
           }
         }
       }
-    }
-  }
-  // do not use ITEs in subtypes of conditional ITEs that are the same as the
-  // return type
-  if (nrole == role_ite_condition && restrictions.d_iteCondPullITEs)
-  {
-    TypeNode sygus_tn = TypeNode::fromType(dt.getSygusType());
-    // get subtypes in condition
-    std::vector<TypeNode> sf_tns;
-    d_qe->getTermDatabaseSygus()->getSubfieldTypes(sygus_tn, sf_tns);
-    // retrieve ITE return type
-    // TODO
-    // exclude ITE of respective subfields
-    for(const TypeNode& sf_tn : sf_tns)
-    {
-
     }
   }
   // all other constructors are needed
