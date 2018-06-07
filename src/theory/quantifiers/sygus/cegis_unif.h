@@ -58,7 +58,7 @@ class CegisUnifEnumManager
    */
   void initialize(const std::vector<Node>& es,
                   const std::map<Node, Node>& e_to_cond,
-                  const std::map<Node, std::vector<Node>>& strategy_lemmas);
+                  const std::map<Node, StrategyRedundancies>& strategy_lemmas);
   /** get the current set of enumerators for strategy point e
    *
    * Index 0 adds the set of return value enumerators to es, index 1 adds the
@@ -126,10 +126,10 @@ class CegisUnifEnumManager
      * each of these are equal to one of d_enums[0].
      */
     std::vector<Node> d_eval_points;
-    /** symmetry breaking lemma template for this strategy point
+    /** static symmetry breaking lemma template for this strategy point
      *
-     * Each pair stores (the symmetry breaking lemma template, argument (to be
-     * instantiated) of symmetry breaking lemma template).
+     * Each pair stores (the static symmetry breaking lemma template, argument
+     * (to be instantiated) of symmetry breaking lemma template).
      *
      * Index 0 stores the symmetry breaking lemma template for return values,
      * index 1 stores the template for conditions.

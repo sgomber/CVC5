@@ -684,14 +684,14 @@ bool SygusUnifStrategy::inferTemplate(
 }
 
 void SygusUnifStrategy::staticLearnRedundantOps(
-    std::map<Node, std::vector<Node>>& strategy_lemmas)
+    std::map<Node, StrategyRedundancies>& strategy_lemmas)
 {
   StrategyRestrictions restrictions;
   staticLearnRedundantOps(strategy_lemmas, restrictions);
 }
 
 void SygusUnifStrategy::staticLearnRedundantOps(
-    std::map<Node, std::vector<Node>>& strategy_lemmas,
+    std::map<Node, StrategyRedundancies>& strategy_lemmas,
     StrategyRestrictions& restrictions)
 {
   for (unsigned i = 0; i < d_esym_list.size(); i++)
@@ -719,16 +719,17 @@ void SygusUnifStrategy::staticLearnRedundantOps(
   Trace("sygus-unif") << "Strategy for candidate " << d_candidate
                       << " is : " << std::endl;
   debugPrint("sygus-unif");
-  std::map<Node, std::map<NodeRole, bool> > visited;
-  std::map<Node, std::map<unsigned, bool> > needs_cons;
+  std::map<Node, std::map<NodeRole, bool>> visited;
+  std::map<Node, std::map<unsigned, bool>> needs_cons;
+  std::map<Node, std::map<TypeNode, std::pair<Node, unsigned>>> exclude_sf_cons;
   staticLearnRedundantOps(getRootEnumerator(),
                           role_equal,
                           visited,
                           needs_cons,
-                          strategy_lemmas,
+                          exclude_sf_cons,
                           restrictions);
   // now, check the needs_cons map
-  for (std::pair<const Node, std::map<unsigned, bool> >& nce : needs_cons)
+  for (std::pair<const Node, std::map<unsigned, bool>>& nce : needs_cons)
   {
     Node em = nce.first;
     const Datatype& dt =
@@ -752,7 +753,19 @@ void SygusUnifStrategy::staticLearnRedundantOps(
     }
     if (!lemmas.empty())
     {
-      strategy_lemmas[em].insert(strategy_lemmas[em].end(), lemmas.begin(), lemmas.end());
+      strategy_lemmas[em].d_simple_lemmas = lemmas;
+    }
+  }
+  // now check the exclude_sf_cons map and build overall strategy lemmas
+  for (std::pair<const Node, std::map<TypeNode, std::pair<Node, unsigned>>>&
+           temp_info_e : exclude_sf_cons)
+  {
+    for (std::pair<const TypeNode, std::pair<Node, unsigned>>& info_tn :
+         temp_info_e.second)
+    {
+      strategy_lemmas[temp_info_e.first]
+          .d_template_lemmas[info_tn.first]
+          .push_back(info_tn.second);
     }
   }
 }
@@ -771,7 +784,8 @@ void SygusUnifStrategy::staticLearnRedundantOps(
     NodeRole nrole,
     std::map<Node, std::map<NodeRole, bool>>& visited,
     std::map<Node, std::map<unsigned, bool>>& needs_cons,
-    std::map<Node, std::vector<Node>>& strategy_lemmas,
+    std::map<Node, std::map<TypeNode, std::pair<Node, unsigned>>>&
+        exclude_sf_cons,
     StrategyRestrictions& restrictions)
 {
   if (visited[e].find(nrole) != visited[e].end())
@@ -859,7 +873,8 @@ void SygusUnifStrategy::staticLearnRedundantOps(
         }
       }
     }
-    // do not use ITEs in types whose strategy has ITE as its constructor
+    // do not use ITEs in occurrences of this type as a subtype of a condition
+    // enumerator type
     if (restrictions.d_removeRetITEs)
     {
       const Datatype& dt =
@@ -870,21 +885,40 @@ void SygusUnifStrategy::staticLearnRedundantOps(
       {
         for (std::pair<Node, NodeRole>& cec : etis->d_cenum)
         {
+          // whether condition enumerator
           if (cec.second != role_ite_condition)
           {
             continue;
           }
-          std::unordered_set<TypeNode, TypeNodeHashFunction> visited;
-          Node sym_break_lemma = excludeConsFromTnOccurrence(
-              cec.first, etn, Node::fromExpr(dt[cindex].getTester()), visited);
-          if (!sym_break_lemma.isNull())
+          // whether has etn as a subtype
+          std::vector<TypeNode> sf_types;
+          d_qe->getTermDatabaseSygus()->getSubfieldTypes(cec.first.getType(),
+                                                         sf_types);
+          if (std::find(sf_types.begin(), sf_types.end(), etn)
+              == sf_types.end())
           {
-            strategy_lemmas[cec.first].push_back(sym_break_lemma.negate());
-            Trace("sygus-strat-slearn")
-                << " for enum " << cec.first
-                << " can exclude ITE from subterm with lemma "
-                << sym_break_lemma.negate() << "\n";
+            continue;
           }
+          Node fv = tds->getFreeVar(etn, 0);
+          Node exc_val =
+              datatypes::DatatypesRewriter::getInstCons(fv, dt, cindex);
+          // should not include the constuctor in any subterm
+          Node x = tds->getFreeVar(etn, 0);
+          Trace("sygus-strat-slearn")
+              << "Construct symmetry breaking lemma from " << x
+              << " == " << exc_val << std::endl;
+          Node lem = tds->getExplain()->getExplanationForEquality(x, exc_val);
+          lem = lem.negate();
+          Trace("cegqi-lemma")
+              << "Cegqi::Lemma : exclude ITE cons lemma (template) : " << lem
+              << std::endl;
+          // the size of the subterm we are blocking is the weight of the
+          // constructor (usually one)
+          exclude_sf_cons[cec.first].push_back(
+              TemplateInfo(lem, etn, dt[cindex].getWeight()));
+          Trace("sygus-strat-slearn")
+              << " for enum " << cec.first
+              << " can exclude ITE from subterms of type " << etn << "\n";
         }
       }
     }
@@ -964,85 +998,6 @@ void SygusUnifStrategy::staticLearnRedundantOps(
       needs_cons[e][j] = needs_cons[e][j] || needs_cons_curr[j];
     }
   }
-}
-
-Node SygusUnifStrategy::excludeConsFromTnOccurrence(
-    Node n,
-    TypeNode target_tn,
-    Node tester,
-    std::unordered_set<TypeNode, TypeNodeHashFunction>& visited)
-{
-  TypeNode src_tn = n.getType();
-  Node res = Node::null();
-  // Ignore non-datatypes
-  if (!src_tn.isDatatype())
-  {
-    return res;
-  }
-  // Ignore cycles
-  std::unordered_set<TypeNode, TypeNodeHashFunction>::iterator it =
-      visited.find(src_tn);
-  if (it != visited.end())
-  {
-    return res;
-  }
-  NodeManager* nm = NodeManager::currentNM();
-  Trace("sygus-strat-slearn-debug")
-      << "...guard_tn: in with datatype "
-      << static_cast<DatatypeType>(src_tn.toType()).getDatatype()
-      << " and term " << n << "\n";
-  // found type occurrence, exclude cons
-  if (src_tn == target_tn)
-  {
-    AlwaysAssert(options::dtUseTesters());
-    res = nm->mkNode(APPLY_TESTER, tester, n);
-    Trace("sygus-strat-slearn-debug") << "......type " << src_tn << " equal to "
-                                      << target_tn << ", making tester " << res
-                                      << "\n";
-    return res;
-  }
-  // to prevent cycles
-  visited.insert(src_tn);
-  const Datatype& dt = static_cast<DatatypeType>(src_tn.toType()).getDatatype();
-  std::vector<Node> children;
-  for (const DatatypeConstructor& cons : dt)
-  {
-    std::vector<Node> children_cons;
-    for (unsigned i = 0, size = cons.getNumArgs(); i < size; ++i)
-    {
-      // make sel application for this argument
-      Node arg_sel = nm->mkNode(
-          APPLY_SELECTOR_TOTAL,
-          Node::fromExpr(cons.getSelectorInternal(n.getType().toType(), i)),
-          n);
-      TypeNode arg_tn = TypeNode::fromType(
-          static_cast<SelectorType>(cons[i].getType()).getRangeType());
-      // go down
-      Node res_arg =
-          excludeConsFromTnOccurrence(arg_sel, target_tn, tester, visited);
-      if (!res_arg.isNull())
-      {
-        children_cons.push_back(res_arg);
-      }
-    }
-    if (children_cons.empty())
-    {
-      continue;
-    }
-    Node res_cons = nm->mkNode(
-        AND,
-        nm->mkNode(APPLY_TESTER, Node::fromExpr(cons.getTester()), n),
-        children_cons.size() == 1 ? children_cons[0]
-                                  : nm->mkNode(OR, children_cons));
-    children.push_back(res_cons);
-  }
-  if (!children.empty())
-  {
-    res = children.size() == 1 ? children[0] : nm->mkNode(OR, children);
-  }
-  // to allow checking other occurrences
-  visited.erase(src_tn);
-  return res;
 }
 
 void SygusUnifStrategy::finishInit(

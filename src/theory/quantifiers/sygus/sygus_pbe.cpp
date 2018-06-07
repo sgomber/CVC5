@@ -182,7 +182,7 @@ bool CegConjecturePbe::initialize(Node n,
     Assert(d_examples.find(c) != d_examples.end());
     Trace("sygus-pbe") << "Initialize unif utility for " << c << "..."
                        << std::endl;
-    std::map<Node, std::vector<Node>> strategy_lemmas;
+    std::map<Node, StrategyRedundancies> strategy_lemmas;
     d_sygus_unif[c].initializeCandidate(
         d_qe, c, d_candidate_to_enum[c], strategy_lemmas);
     Assert(!d_candidate_to_enum[c].empty());
@@ -190,7 +190,7 @@ bool CegConjecturePbe::initialize(Node n,
                        << " enumerators for " << c << "..." << std::endl;
     // collect list per type of strategy points with strategy lemmas
     std::map<TypeNode, std::vector<Node>> tn_to_strategy_pt;
-    for (const std::pair<const Node, std::vector<Node>>& p : strategy_lemmas)
+    for (const std::pair<const Node, StrategyRedundancies>& p : strategy_lemmas)
     {
       TypeNode tnsp = p.first.getType();
       tn_to_strategy_pt[tnsp].push_back(p.first);
@@ -205,7 +205,7 @@ bool CegConjecturePbe::initialize(Node n,
       d_enum_to_active_guard[e] = g;
       d_enum_to_candidate[e] = c;
       TNode te = e;
-      // initialize static symmetry breaking lemmas for it
+      // initialize static and dynamic symmetry breaking lemmas for it
       // we register only one "master" enumerator per type
       // thus, the strategy lemmas (which are for individual strategy points)
       // are applicable (disjunctively) to the master enumerator
@@ -213,28 +213,58 @@ bool CegConjecturePbe::initialize(Node n,
           tn_to_strategy_pt.find(etn);
       if (itt != tn_to_strategy_pt.end())
       {
-        std::vector<Node> disj;
+        std::vector<Node> disj_static;
+        std::map<TypeNode, std::pair<std::vector<Node>, unsigned>> disj_dynamic;
         for (const Node& sp : itt->second)
         {
-          std::map<Node, std::vector<Node>>::iterator itsl =
+          std::map<Node, StrategyRedundancies>::iterator itsl =
               strategy_lemmas.find(sp);
           Assert(itsl != strategy_lemmas.end());
-          if (!itsl->second.empty())
+          if (!itsl->second.d_simple_lemmas.empty())
           {
             TNode tsp = sp;
-            Node lem = itsl->second.size() == 1 ? itsl->second[0]
-                                                : nm->mkNode(AND, itsl->second);
+            Node lem = itsl->second.d_simple_lemmas.size() == 1
+                           ? itsl->second.d_simple_lemmas[0]
+                           : nm->mkNode(AND, itsl->second.d_simple_lemmas);
             if (tsp != te)
             {
               lem = lem.substitute(tsp, te);
             }
-            disj.push_back(lem);
+            disj_static.push_back(lem);
+          }
+          if (!itsl->second.d_template_lemmas.empty())
+          {
+            for (std::pair<const TypeNode,
+                           std::pair<std::vector<Node>, unsigned>>& temp :
+                 itsl->second.d_template_lemmas)
+            {
+              unsigned weight = temp.second.second;
+              // get minimal weight
+              if (disj_dynamic.find(temp.first) == disj_dynamic.end()
+                  || weight < disj_dynamic[temp.first].second.second)
+              {
+                disj_dynamic[temp.first].second = weight;
+              }
+              disj_dynamic[temp.first].first.push_back(temp.second.first);
+            }
           }
         }
-        Node lem = disj.size() == 1 ? disj[0] : nm->mkNode(OR, disj);
-        Trace("sygus-pbe") << "  static redundant op lemma : " << lem
-                           << std::endl;
-        lemmas.push_back(lem);
+        Node lem_static = disj_static.size() == 1 ? disj_static[0]
+                                                  : nm->mkNode(OR, disj_static);
+        Trace("sygus-pbe") << "  static redundant op lemma : " << lem << "\n";
+        lemmas.push_back(lem_static);
+        for (std::pair<const TypeNode, std::pair<std::vector<Node>, unsigned>>&
+                 disj_tn : disj_dynamic)
+        {
+          unsigned weight = disj_tn.second.second;
+          Assert(!disj_tn.second.first.empty());
+          Node lem = disj_tn.second.first.size() == 1
+                         ? disj_tn.second.first[0]
+                         : nm->mkNode(OR, disj_tn.second.first);
+          Trace("sygus-pbe") << "  dynamic redundant op lemma : " << lem
+                             << "\n";
+          d_tds->registerSymBreakLemma(e, lem, disj_tn.first, weight);
+        }
       }
     }
     Trace("sygus-pbe") << "Initialize " << d_examples[c].size()

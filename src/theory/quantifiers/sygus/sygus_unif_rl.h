@@ -54,7 +54,7 @@ class SygusUnifRl : public SygusUnif
       QuantifiersEngine* qe,
       Node f,
       std::vector<Node>& enums,
-      std::map<Node, std::vector<Node>>& strategy_lemmas) override;
+      std::map<Node, StrategyRedundancies>& strategy_lemmas) override;
 
   /** Notify enumeration (unused) */
   void notifyEnumeration(Node e, Node v, std::vector<Node>& lemmas) override;

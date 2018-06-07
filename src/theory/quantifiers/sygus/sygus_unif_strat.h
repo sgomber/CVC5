@@ -276,6 +276,13 @@ struct StrategyRestrictions
   std::map<Node, std::unordered_set<unsigned>> d_unused_strategies;
 };
 
+class StrategyRedundancies
+{
+ public:
+  std::vector<Node> d_simple_lemmas;
+  std::map<TypeNode, std::pair<Node, unsigned>> d_template_lemmas;
+};
+
 /**
  * Stores strategy and enumeration information for a function-to-synthesize.
  *
@@ -323,14 +330,14 @@ class SygusUnifStrategy
    * StrategyRestrictions for more details)
    */
   void staticLearnRedundantOps(
-      std::map<Node, std::vector<Node>>& strategy_lemmas,
+      std::map<Node, StrategyRedundancies>& strategy_lemmas,
       StrategyRestrictions& restrictions);
   /**
    * creates the default restrictions when they are not given and calls the
    * above function
    */
   void staticLearnRedundantOps(
-      std::map<Node, std::vector<Node>>& strategy_lemmas);
+      std::map<Node, StrategyRedundancies>& strategy_lemmas);
 
   /** debug print this strategy on Trace c */
   void debugPrint(const char* c);
@@ -409,22 +416,9 @@ class SygusUnifStrategy
       NodeRole nrole,
       std::map<Node, std::map<NodeRole, bool>>& visited,
       std::map<Node, std::map<unsigned, bool>>& needs_cons,
-      std::map<Node, std::vector<Node>>& strategy_lemmas,
+      std::map<Node, std::map<TypeNode, std::pair<Node, unsigned>>>&
+          exclude_sf_cons,
       StrategyRestrictions& restrictions);
-
-  /** looks for occurrences of a subtype and generate a symmetry breaking lemma
-   * for one of its constructors
-   *
-   * n is a selection chain applied to an enumerator
-   * target_tn is a subtype of the enumerator's type
-   * tester is the tester for the respective constructor to be excluded
-   * visited caches the a type being recursed on to prevent cycles
-   */
-  Node excludeConsFromTnOccurrence(
-      Node n,
-      TypeNode target_tn,
-      Node tester,
-      std::unordered_set<TypeNode, TypeNodeHashFunction>& visited);
 
   /** finish initialization of the strategy tree
    *
