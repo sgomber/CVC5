@@ -416,7 +416,7 @@ class SygusUnifStrategy
       NodeRole nrole,
       std::map<Node, std::map<NodeRole, bool>>& visited,
       std::map<Node, std::map<unsigned, bool>>& needs_cons,
-      std::map<Node, std::map<TypeNode, std::pair<Node, unsigned>>>&
+      std::map<Node, std::map<TypeNode, std::map<Node, unsigned>>>&
           exclude_sf_cons,
       StrategyRestrictions& restrictions);
 

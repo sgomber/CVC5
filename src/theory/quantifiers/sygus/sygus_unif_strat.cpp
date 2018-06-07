@@ -721,13 +721,14 @@ void SygusUnifStrategy::staticLearnRedundantOps(
   debugPrint("sygus-unif");
   std::map<Node, std::map<NodeRole, bool>> visited;
   std::map<Node, std::map<unsigned, bool>> needs_cons;
-  std::map<Node, std::map<TypeNode, std::pair<Node, unsigned>>> exclude_sf_cons;
+  std::map<Node, std::map<TypeNode, std::map<Node, unsigned>>> exclude_sf_cons;
   staticLearnRedundantOps(getRootEnumerator(),
                           role_equal,
                           visited,
                           needs_cons,
                           exclude_sf_cons,
                           restrictions);
+  NodeManager* nm = NodeManager::currentNM();
   // now, check the needs_cons map
   for (std::pair<const Node, std::map<unsigned, bool>>& nce : needs_cons)
   {
@@ -757,15 +758,26 @@ void SygusUnifStrategy::staticLearnRedundantOps(
     }
   }
   // now check the exclude_sf_cons map and build overall strategy lemmas
-  for (std::pair<const Node, std::map<TypeNode, std::pair<Node, unsigned>>>&
+  for (std::pair<const Node, std::map<TypeNode, std::map<Node, unsigned>>>&
            temp_info_e : exclude_sf_cons)
   {
-    for (std::pair<const TypeNode, std::pair<Node, unsigned>>& info_tn :
+    for (std::pair<const TypeNode, std::map<Node, unsigned>>& info_tn :
          temp_info_e.second)
     {
-      strategy_lemmas[temp_info_e.first]
-          .d_template_lemmas[info_tn.first]
-          .push_back(info_tn.second);
+      unsigned min_weight = 0;
+      std::vector<Node> conjs;
+      for (std::pair<const Node, unsigned>& lems : info_tn.second)
+      {
+        conjs.push_back(lems.first);
+        if (min_weight < lems.second)
+        {
+          min_weight = lems.second;
+        }
+      }
+      Assert(!conjs.empty());
+      Node lem = conjs.size() == 1 ? conjs[0] : nm->mkNode(AND, conjs);
+      strategy_lemmas[temp_info_e.first].d_template_lemmas[info_tn.first] =
+          std::pair<Node, unsigned>(lem, min_weight);
     }
   }
 }
@@ -784,7 +796,7 @@ void SygusUnifStrategy::staticLearnRedundantOps(
     NodeRole nrole,
     std::map<Node, std::map<NodeRole, bool>>& visited,
     std::map<Node, std::map<unsigned, bool>>& needs_cons,
-    std::map<Node, std::map<TypeNode, std::pair<Node, unsigned>>>&
+    std::map<Node, std::map<TypeNode, std::map<Node, unsigned>>>&
         exclude_sf_cons,
     StrategyRestrictions& restrictions)
 {
@@ -892,7 +904,8 @@ void SygusUnifStrategy::staticLearnRedundantOps(
           }
           // whether has etn as a subtype
           std::vector<TypeNode> sf_types;
-          d_qe->getTermDatabaseSygus()->getSubfieldTypes(cec.first.getType(),
+          TermDbSygus* tds = d_qe->getTermDatabaseSygus();
+          tds->getSubfieldTypes(cec.first.getType(),
                                                          sf_types);
           if (std::find(sf_types.begin(), sf_types.end(), etn)
               == sf_types.end())
@@ -914,8 +927,7 @@ void SygusUnifStrategy::staticLearnRedundantOps(
               << std::endl;
           // the size of the subterm we are blocking is the weight of the
           // constructor (usually one)
-          exclude_sf_cons[cec.first].push_back(
-              TemplateInfo(lem, etn, dt[cindex].getWeight()));
+          exclude_sf_cons[cec.first][etn][lem] = dt[cindex].getWeight();
           Trace("sygus-strat-slearn")
               << " for enum " << cec.first
               << " can exclude ITE from subterms of type " << etn << "\n";
@@ -928,7 +940,7 @@ void SygusUnifStrategy::staticLearnRedundantOps(
                               cec.second,
                               visited,
                               needs_cons,
-                              strategy_lemmas,
+                              exclude_sf_cons,
                               restrictions);
     }
   }

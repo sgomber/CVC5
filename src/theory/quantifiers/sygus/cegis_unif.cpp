@@ -322,8 +322,8 @@ void CegisUnifEnumManager::initialize(
       }
       // collect lemmas for removing redundant ops statically for this
       // candidate's type
-      Node d_sbt_lemma = it->second.size() == 1
-                             ? it->second[0]
+      Node d_sbt_lemma = it->second.d_simple_lemmas.size() == 1
+                             ? it->second.d_simple_lemmas[0]
                              : nm->mkNode(AND, it->second.d_simple_lemmas);
       Trace("cegis-unif-enum-debug")
           << "...adding lemma template to remove redundant operators for " << sp
@@ -331,8 +331,8 @@ void CegisUnifEnumManager::initialize(
       d_ce_info[e].d_sbt_lemma_tmpl[index] =
           std::pair<Node, Node>(d_sbt_lemma, sp);
       // add symmetry breaking templates for this enumerator
-      for (std::pair<const TypeNode, std::pair<std::vector<Node>, unsigned>>&
-               temp : it->second.d_template_lemmas)
+      for (const std::pair<const TypeNode, std::pair<Node, unsigned>>& temp :
+           it->second.d_template_lemmas)
       {
         Trace("cegis-unif-enum-debug")
             << "...adding dynamic lemma template to remove opos of subterms : "

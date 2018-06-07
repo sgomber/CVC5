@@ -234,14 +234,13 @@ bool CegConjecturePbe::initialize(Node n,
           }
           if (!itsl->second.d_template_lemmas.empty())
           {
-            for (std::pair<const TypeNode,
-                           std::pair<std::vector<Node>, unsigned>>& temp :
-                 itsl->second.d_template_lemmas)
+            for (std::pair<const TypeNode, std::pair<Node, unsigned>>&
+                     temp : itsl->second.d_template_lemmas)
             {
               unsigned weight = temp.second.second;
               // get minimal weight
               if (disj_dynamic.find(temp.first) == disj_dynamic.end()
-                  || weight < disj_dynamic[temp.first].second.second)
+                  || weight < disj_dynamic[temp.first].second)
               {
                 disj_dynamic[temp.first].second = weight;
               }
@@ -249,21 +248,21 @@ bool CegConjecturePbe::initialize(Node n,
             }
           }
         }
-        Node lem_static = disj_static.size() == 1 ? disj_static[0]
-                                                  : nm->mkNode(OR, disj_static);
+        Node lem = disj_static.size() == 1 ? disj_static[0]
+                                           : nm->mkNode(OR, disj_static);
         Trace("sygus-pbe") << "  static redundant op lemma : " << lem << "\n";
-        lemmas.push_back(lem_static);
+        lemmas.push_back(lem);
         for (std::pair<const TypeNode, std::pair<std::vector<Node>, unsigned>>&
                  disj_tn : disj_dynamic)
         {
           unsigned weight = disj_tn.second.second;
           Assert(!disj_tn.second.first.empty());
-          Node lem = disj_tn.second.first.size() == 1
+          Node lem_dynamic = disj_tn.second.first.size() == 1
                          ? disj_tn.second.first[0]
                          : nm->mkNode(OR, disj_tn.second.first);
-          Trace("sygus-pbe") << "  dynamic redundant op lemma : " << lem
+          Trace("sygus-pbe") << "  dynamic redundant op lemma : " << lem_dynamic
                              << "\n";
-          d_tds->registerSymBreakLemma(e, lem, disj_tn.first, weight);
+          d_tds->registerSymBreakLemma(e, lem_dynamic, disj_tn.first, weight);
         }
       }
     }
