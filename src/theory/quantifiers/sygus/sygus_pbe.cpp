@@ -234,8 +234,8 @@ bool CegConjecturePbe::initialize(Node n,
           }
           if (!itsl->second.d_template_lemmas.empty())
           {
-            for (std::pair<const TypeNode, std::pair<Node, unsigned>>&
-                     temp : itsl->second.d_template_lemmas)
+            for (std::pair<const TypeNode, std::pair<Node, unsigned>>& temp :
+                 itsl->second.d_template_lemmas)
             {
               unsigned weight = temp.second.second;
               // get minimal weight
@@ -248,18 +248,22 @@ bool CegConjecturePbe::initialize(Node n,
             }
           }
         }
-        Node lem = disj_static.size() == 1 ? disj_static[0]
-                                           : nm->mkNode(OR, disj_static);
-        Trace("sygus-pbe") << "  static redundant op lemma : " << lem << "\n";
-        lemmas.push_back(lem);
+        if (!disj_static.empty())
+        {
+          Node lem = disj_static.size() == 1 ? disj_static[0]
+                                             : nm->mkNode(OR, disj_static);
+
+          Trace("sygus-pbe") << "  static redundant op lemma : " << lem << "\n";
+          lemmas.push_back(lem);
+        }
         for (std::pair<const TypeNode, std::pair<std::vector<Node>, unsigned>>&
                  disj_tn : disj_dynamic)
         {
           unsigned weight = disj_tn.second.second;
           Assert(!disj_tn.second.first.empty());
           Node lem_dynamic = disj_tn.second.first.size() == 1
-                         ? disj_tn.second.first[0]
-                         : nm->mkNode(OR, disj_tn.second.first);
+                                 ? disj_tn.second.first[0]
+                                 : nm->mkNode(OR, disj_tn.second.first);
           Trace("sygus-pbe") << "  dynamic redundant op lemma : " << lem_dynamic
                              << "\n";
           d_tds->registerSymBreakLemma(e, lem_dynamic, disj_tn.first, weight);

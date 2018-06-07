@@ -804,8 +804,8 @@ void SygusUnifStrategy::staticLearnRedundantOps(
   {
     return;
   }
-  Trace("sygus-strat-slearn") << "Learn redundant operators " << e << " "
-                              << nrole << "..." << std::endl;
+  Trace("sygus-strat-slearn") << "Learn redundant operators " << e << ", type "
+                              << e.getType() << ", role " << nrole << "...\n";
   visited[e][nrole] = true;
   EnumInfo& ei = getEnumInfo(e);
   if (ei.isTemplated())
