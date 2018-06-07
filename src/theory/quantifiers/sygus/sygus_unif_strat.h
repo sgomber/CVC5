@@ -398,14 +398,34 @@ class SygusUnifStrategy
    *
    * This method builds the mapping needs_cons, which maps (master) enumerators
    * to a map from the constructors that it needs.
+   *
+   * It also may directly add simple symmetry breaking lemmas to strategy_lemmas
+   * when we exclude constructors from selection chains applied to enumerators
+   * (e.g. to exclude ITE from subterms of a condition value whose type allows
+   * an ITE strategy)
    */
   void staticLearnRedundantOps(
       Node e,
       NodeRole nrole,
       std::map<Node, std::map<NodeRole, bool>>& visited,
-      std::map<Node, std::vector<Node>>& strategy_lemmas,
       std::map<Node, std::map<unsigned, bool>>& needs_cons,
+      std::map<Node, std::vector<Node>>& strategy_lemmas,
       StrategyRestrictions& restrictions);
+
+  /** looks for occurrences of a subtype and generate a symmetry breaking lemma
+   * for one of tis constructors
+   *
+   * n is a selection chain applied to an enumerator
+   * target_tn is a subtype of the enumerator's type
+   * tester is the tester for the respective constructor to be excluded
+   * visited caches the a type being recursed on to prevent cycles
+   */
+  Node exclude_cons_from_tn_occurrence(
+      Node n,
+      TypeNode target_tn,
+      Node tester,
+      std::unordered_set<TypeNode, TypeNodeHashFunction>& visited);
+
   /** finish initialization of the strategy tree
    *
    * (e, nrole) specify the strategy node in the graph we are currently

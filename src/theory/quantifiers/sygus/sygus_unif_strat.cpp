@@ -721,8 +721,12 @@ void SygusUnifStrategy::staticLearnRedundantOps(
   debugPrint("sygus-unif");
   std::map<Node, std::map<NodeRole, bool> > visited;
   std::map<Node, std::map<unsigned, bool> > needs_cons;
-  staticLearnRedundantOps(
-                          getRootEnumerator(), role_equal, visited, needs_cons, strategy_lemmas, restrictions);
+  staticLearnRedundantOps(getRootEnumerator(),
+                          role_equal,
+                          visited,
+                          needs_cons,
+                          strategy_lemmas,
+                          restrictions);
   // now, check the needs_cons map
   for (std::pair<const Node, std::map<unsigned, bool> >& nce : needs_cons)
   {
@@ -766,9 +770,8 @@ void SygusUnifStrategy::staticLearnRedundantOps(
     Node e,
     NodeRole nrole,
     std::map<Node, std::map<NodeRole, bool>>& visited,
-    std::map<Node, std::vector<Node>>& strategy_lemmas,
     std::map<Node, std::map<unsigned, bool>>& needs_cons,
-
+    std::map<Node, std::vector<Node>>& strategy_lemmas,
     StrategyRestrictions& restrictions)
 {
   if (visited[e].find(nrole) != visited[e].end())
@@ -859,7 +862,6 @@ void SygusUnifStrategy::staticLearnRedundantOps(
     // do not use ITEs in types whose strategy has ITE as its constructor
     if (restrictions.d_pullRetITEs)
     {
-      TermDbSygus* tds = d_qe->getTermDatabaseSygus();
       const Datatype& dt =
           static_cast<DatatypeType>(etn.toType()).getDatatype();
       Node op = Node::fromExpr(dt[cindex].getSygusOp());
@@ -872,18 +874,28 @@ void SygusUnifStrategy::staticLearnRedundantOps(
           {
             continue;
           }
-          Node sym_break_lemma = guard_tn_occurr(cec.first.getType(), etn, cec.first, Node::fromExpr(dt[cindex].getTester()));
+          std::unordered_set<TypeNode, TypeNodeHashFunction> visited;
+          Node sym_break_lemma = exclude_cons_from_tn_occurrence(
+              cec.first, etn, Node::fromExpr(dt[cindex].getTester()), visited);
           if (!sym_break_lemma.isNull())
           {
-            strategy_lemmas[cec.first].push_back(sym_break_lemma);
+            strategy_lemmas[cec.first].push_back(sym_break_lemma.negate());
+            Trace("sygus-strat-slearn")
+                << " for enum " << cec.first
+                << " can exclude ITE from subterm with lemma "
+                << sym_break_lemma.negate() << "\n";
           }
         }
       }
     }
     for (std::pair<Node, NodeRole>& cec : etis->d_cenum)
     {
-      staticLearnRedundantOps(
-          cec.first, cec.second, visited, needs_cons, restrictions);
+      staticLearnRedundantOps(cec.first,
+                              cec.second,
+                              visited,
+                              needs_cons,
+                              strategy_lemmas,
+                              restrictions);
     }
   }
   // get the current datatype
@@ -954,52 +966,82 @@ void SygusUnifStrategy::staticLearnRedundantOps(
   }
 }
 
-Node SygusUnifStrategy::guard_tn_occurr(TypeNode src,
-                                        TypeNode tn,
-                                        Node n,
-                                        Node tester)
+Node SygusUnifStrategy::exclude_cons_from_tn_occurrence(
+    Node n,
+    TypeNode target_tn,
+    Node tester,
+    std::unordered_set<TypeNode, TypeNodeHashFunction>& visited)
 {
+  TypeNode src_tn = n.getType();
+  Node res = Node::null();
   // Ignore non-datatypes
-  if (!src.isDatatype())
+  if (!src_tn.isDatatype())
   {
-    return Node::null();
+    return res;
+  }
+  // Ignore cycles
+  std::unordered_set<TypeNode, TypeNodeHashFunction>::iterator it =
+      visited.find(src_tn);
+  if (it != visited.end())
+  {
+    return res;
   }
   NodeManager* nm = NodeManager::currentNM();
-
-  // type occurrence, put basis for building selection chain term
-  if (src == tn)
+  Trace("sygus-strat-slearn-debug")
+      << "...guard_tn: in with datatype "
+      << static_cast<DatatypeType>(src_tn.toType()).getDatatype()
+      << " and term " << n << "\n";
+  // found type occurrence, exclude cons
+  if (src_tn == target_tn)
   {
     AlwaysAssert(options::dtUseTesters());
-    return nm->mkNode(APPLY_TESTER, Node::fromExpr(dt[i].getTester()), n);
+    res = nm->mkNode(APPLY_TESTER, tester, n);
+    Trace("sygus-strat-slearn-debug") << "......type " << src_tn << " equal to "
+                                      << target_tn << ", making tester " << res
+                                      << "\n";
+    return res;
   }
-  Assert(src.getKind() == APPLY_CONSTRUCTOR);
-  Node res;
-  const Datatype& dt = static_cast<DatatypeType>(src.toType()).getDatatype();
+  // to prevent cycles
+  visited.insert(src_tn);
+  const Datatype& dt = static_cast<DatatypeType>(src_tn.toType()).getDatatype();
+  std::vector<Node> children;
   for (const DatatypeConstructor& cons : dt)
   {
-    // TODO make tester of this cons
-    Node res_cons;
-    std::vector<Node> children;
+    std::vector<Node> children_cons;
     for (unsigned i = 0, size = cons.getNumArgs(); i < size; ++i)
     {
-      // make sel application for this argument, go down
-      Node res_arg = collect_tn_occurrences(
-          TypeNode::fromType(
-              static_cast<SelectorType>(cons[i].getType()).getRangeType()),
-          tn,
-          nm->mkNode(
-              APPLY_SELECTOR_TOTAL,
-              Node::fromExpr(cons.getSelectorInternal(n.getType().toType(), i)),
-              n),
-          tester);
+      // make sel application for this argument
+      Node arg_sel = nm->mkNode(
+          APPLY_SELECTOR_TOTAL,
+          Node::fromExpr(cons.getSelectorInternal(n.getType().toType(), i)),
+          n);
+      TypeNode arg_tn = TypeNode::fromType(
+          static_cast<SelectorType>(cons[i].getType()).getRangeType());
+      // go down
+      Node res_arg =
+          exclude_cons_from_tn_occurrence(arg_sel, target_tn, tester, visited);
       if (!res_arg.isNull())
       {
-        // TODO add to children
+        children_cons.push_back(res_arg);
       }
     }
-    // TODO if at least one chield, make and AND with cons tester
-    // TODO if more than on chield, make an OR with children
+    if (children_cons.empty())
+    {
+      continue;
+    }
+    Node res_cons = nm->mkNode(
+        AND,
+        nm->mkNode(APPLY_TESTER, Node::fromExpr(cons.getTester()), n),
+        children_cons.size() == 1 ? children_cons[0]
+                                  : nm->mkNode(OR, children_cons));
+    children.push_back(res_cons);
   }
+  if (!children.empty())
+  {
+    res = children.size() == 1 ? children[0] : nm->mkNode(OR, children);
+  }
+  // to allow checking other occurrences
+  visited.erase(src_tn);
   return res;
 }
 
