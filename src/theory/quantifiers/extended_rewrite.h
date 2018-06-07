@@ -301,6 +301,23 @@ class ExtendedRewriter
                 Node n2,
                 std::vector<Node>& n1v,
                 std::vector<Node>& n2v);
+  /** splice bv to constant bit
+   *
+   * If the return value of this method is a non-negative value i, it adds k
+   * terms to nv such that:
+   *   n1 is equivalent to nv[0] ++ ... ++ nv[i] ++ ... ++ nv[k-1],
+   *   n2 is equivalent to nv[0] ++ ... ++ (~)nv[i] ++ ... ++ nv[k-1], and
+   *   nv[i] is a constant of bit-width one.
+   */
+  int spliceBvConstBit(Node n1,
+                       Node n2,
+                       std::vector<Node>& nv);
+  /** extend
+   * 
+   * This returns the concatentation node of the form 
+   */
+  Node extendBv(Node n, std::map< unsigned, Node >& ex_map);
+  Node extendBv(Node n, std::vector< Node >& exs);
   //--------------------------------------end bit-vectors
 };
 
