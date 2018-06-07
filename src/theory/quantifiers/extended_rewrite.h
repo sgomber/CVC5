@@ -220,9 +220,9 @@ class ExtendedRewriter
 
   //--------------------------------------theory-specific top-level calls
   /** extended rewrite arith */
-  Node extendedRewriteArith(Node ret, bool& pol);
+  Node extendedRewriteArith(Node ret);
   /** extended rewrite bv */
-  Node extendedRewriteBv(Node ret, bool& pol);
+  Node extendedRewriteBv(Node ret);
   //--------------------------------------end theory-specific top-level calls
 
   //--------------------------------------bit-vectors

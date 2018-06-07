@@ -186,21 +186,23 @@ Node ExtendedRewriter::extendedRewrite(Node n)
   //----------------------theory-specific post-rewriting
   if (new_ret.isNull())
   {
-    Node atom = ret.getKind() == NOT ? ret[0] : ret;
-    bool pol = ret.getKind() != NOT;
-    TheoryId tid = Theory::theoryOf(atom);
+    TheoryId tid;
+    if( ret.getKind()==ITE )
+    {
+      tid = Theory::theoryOf(ret.getType());
+    }
+    else
+    {
+      tid = Theory::theoryOf(ret);
+    }
+    Trace("q-ext-rewrite-debug") << "theoryOf( " << ret << " )= " << tid << std::endl;
     if (tid == THEORY_ARITH)
     {
-      new_ret = extendedRewriteArith(atom, pol);
+      new_ret = extendedRewriteArith(ret);
     }
     else if (tid == THEORY_BV)
     {
-      new_ret = extendedRewriteBv(atom, pol);
-    }
-    // add back negation if not processed
-    if (!pol && !new_ret.isNull())
-    {
-      new_ret = new_ret.negate();
+      new_ret = extendedRewriteBv(ret);
     }
   }
   //----------------------end theory-specific post-rewriting
@@ -1496,7 +1498,7 @@ bool ExtendedRewriter::inferSubstitution(Node n,
   return false;
 }
 
-Node ExtendedRewriter::extendedRewriteArith(Node ret, bool& pol)
+Node ExtendedRewriter::extendedRewriteArith(Node ret)
 {
   Kind k = ret.getKind();
   NodeManager* nm = NodeManager::currentNM();
@@ -1531,15 +1533,11 @@ Node ExtendedRewriter::extendedRewriteArith(Node ret, bool& pol)
   return new_ret;
 }
 
-Node ExtendedRewriter::extendedRewriteBv(Node ret, bool& pol)
+Node ExtendedRewriter::extendedRewriteBv(Node ret)
 {
   if (Trace.isOn("q-ext-rewrite-bv"))
   {
     Trace("q-ext-rewrite-bv") << "Extended rewrite bv : ";
-    if (!pol)
-    {
-      Trace("q-ext-rewrite-bv") << "(not) ";
-    }
     Trace("q-ext-rewrite-bv") << ret << std::endl;
   }
   Kind k = ret.getKind();
@@ -1672,6 +1670,10 @@ Node ExtendedRewriter::extendedRewriteBv(Node ret, bool& pol)
       new_ret = Node::null();
     }
     debugExtendedRewrite(ret, new_ret, "BV-eq-solve");
+  }
+  else if (k == ITE )
+  {
+    
   }
   else if (k == BITVECTOR_AND || k == BITVECTOR_OR)
   {
