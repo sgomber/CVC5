@@ -860,7 +860,7 @@ void SygusUnifStrategy::staticLearnRedundantOps(
       }
     }
     // do not use ITEs in types whose strategy has ITE as its constructor
-    if (restrictions.d_pullRetITEs)
+    if (restrictions.d_removeRetITEs)
     {
       const Datatype& dt =
           static_cast<DatatypeType>(etn.toType()).getDatatype();
@@ -875,7 +875,7 @@ void SygusUnifStrategy::staticLearnRedundantOps(
             continue;
           }
           std::unordered_set<TypeNode, TypeNodeHashFunction> visited;
-          Node sym_break_lemma = exclude_cons_from_tn_occurrence(
+          Node sym_break_lemma = excludeConsFromTnOccurrence(
               cec.first, etn, Node::fromExpr(dt[cindex].getTester()), visited);
           if (!sym_break_lemma.isNull())
           {
@@ -966,7 +966,7 @@ void SygusUnifStrategy::staticLearnRedundantOps(
   }
 }
 
-Node SygusUnifStrategy::exclude_cons_from_tn_occurrence(
+Node SygusUnifStrategy::excludeConsFromTnOccurrence(
     Node n,
     TypeNode target_tn,
     Node tester,
@@ -1019,7 +1019,7 @@ Node SygusUnifStrategy::exclude_cons_from_tn_occurrence(
           static_cast<SelectorType>(cons[i].getType()).getRangeType());
       // go down
       Node res_arg =
-          exclude_cons_from_tn_occurrence(arg_sel, target_tn, tester, visited);
+          excludeConsFromTnOccurrence(arg_sel, target_tn, tester, visited);
       if (!res_arg.isNull())
       {
         children_cons.push_back(res_arg);

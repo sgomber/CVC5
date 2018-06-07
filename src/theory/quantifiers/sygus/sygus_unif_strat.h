@@ -246,7 +246,7 @@ struct StrategyRestrictions
   StrategyRestrictions()
       : d_iteReturnBoolConst(false),
         d_iteCondOnlyAtoms(true),
-        d_pullRetITEs(true)
+        d_removeRetITEs(true)
   {
   }
   /**
@@ -266,7 +266,7 @@ struct StrategyRestrictions
    * that the child strategy doing the ITE condition enumeration does not need
    * to have ITEs in its value.
    */
-  bool d_pullRetITEs;
+  bool d_removeRetITEs;
   /**
    * A list of unused strategies. This maps strategy points to the indices
    * in StrategyNode::d_strats that are not used by the caller of
@@ -413,14 +413,14 @@ class SygusUnifStrategy
       StrategyRestrictions& restrictions);
 
   /** looks for occurrences of a subtype and generate a symmetry breaking lemma
-   * for one of tis constructors
+   * for one of its constructors
    *
    * n is a selection chain applied to an enumerator
    * target_tn is a subtype of the enumerator's type
    * tester is the tester for the respective constructor to be excluded
    * visited caches the a type being recursed on to prevent cycles
    */
-  Node exclude_cons_from_tn_occurrence(
+  Node excludeConsFromTnOccurrence(
       Node n,
       TypeNode target_tn,
       Node tester,
