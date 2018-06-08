@@ -182,7 +182,7 @@ bool CegConjecturePbe::initialize(Node n,
     Assert(d_examples.find(c) != d_examples.end());
     Trace("sygus-pbe") << "Initialize unif utility for " << c << "..."
                        << std::endl;
-    std::map<Node, StrategyRedundancies> strategy_lemmas;
+    std::map<Node, StrategySymBreak> strategy_lemmas;
     d_sygus_unif[c].initializeCandidate(
         d_qe, c, d_candidate_to_enum[c], strategy_lemmas);
     Assert(!d_candidate_to_enum[c].empty());
@@ -190,7 +190,7 @@ bool CegConjecturePbe::initialize(Node n,
                        << " enumerators for " << c << "..." << std::endl;
     // collect list per type of strategy points with strategy lemmas
     std::map<TypeNode, std::vector<Node>> tn_to_strategy_pt;
-    for (const std::pair<const Node, StrategyRedundancies>& p : strategy_lemmas)
+    for (const std::pair<const Node, StrategySymBreak>& p : strategy_lemmas)
     {
       TypeNode tnsp = p.first.getType();
       tn_to_strategy_pt[tnsp].push_back(p.first);
@@ -217,7 +217,7 @@ bool CegConjecturePbe::initialize(Node n,
         std::map<TypeNode, std::pair<std::vector<Node>, unsigned>> disj_dynamic;
         for (const Node& sp : itt->second)
         {
-          std::map<Node, StrategyRedundancies>::iterator itsl =
+          std::map<Node, StrategySymBreak>::iterator itsl =
               strategy_lemmas.find(sp);
           Assert(itsl != strategy_lemmas.end());
           if (!itsl->second.d_simple_lemmas.empty())
@@ -231,6 +231,10 @@ bool CegConjecturePbe::initialize(Node n,
               lem = lem.substitute(tsp, te);
             }
             disj_static.push_back(lem);
+          }
+          else
+          {
+            disj_static.push_back(nm->mkConst(true));
           }
           if (!itsl->second.d_template_lemmas.empty())
           {

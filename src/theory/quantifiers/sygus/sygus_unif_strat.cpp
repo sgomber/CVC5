@@ -684,14 +684,14 @@ bool SygusUnifStrategy::inferTemplate(
 }
 
 void SygusUnifStrategy::staticLearnRedundantOps(
-    std::map<Node, StrategyRedundancies>& strategy_lemmas)
+    std::map<Node, StrategySymBreak>& strategy_lemmas)
 {
   StrategyRestrictions restrictions;
   staticLearnRedundantOps(strategy_lemmas, restrictions);
 }
 
 void SygusUnifStrategy::staticLearnRedundantOps(
-    std::map<Node, StrategyRedundancies>& strategy_lemmas,
+    std::map<Node, StrategySymBreak>& strategy_lemmas,
     StrategyRestrictions& restrictions)
 {
   for (unsigned i = 0; i < d_esym_list.size(); i++)
@@ -842,15 +842,12 @@ void SygusUnifStrategy::staticLearnRedundantOps(
     needs_cons_curr[cindex] = false;
     // try to eliminate from etn's datatype all operators except TRUE/FALSE if
     // arguments of ITE are the same BOOL type
-    if (restrictions.d_iteReturnBoolConst)
+    if (etis->d_this == strat_ITE && restrictions.d_iteReturnBoolConst)
     {
       const Datatype& dt =
           static_cast<DatatypeType>(etn.toType()).getDatatype();
-      Node op = Node::fromExpr(dt[cindex].getSygusOp());
       TypeNode sygus_tn = TypeNode::fromType(dt.getSygusType());
-      if (op.getKind() == kind::BUILTIN
-          && NodeManager::operatorToKind(op) == ITE
-          && sygus_tn.isBoolean()
+      if (sygus_tn.isBoolean()
           && (TypeNode::fromType(dt[cindex].getArgType(1))
               == TypeNode::fromType(dt[cindex].getArgType(2))))
       {
@@ -887,36 +884,52 @@ void SygusUnifStrategy::staticLearnRedundantOps(
     }
     // do not use ITEs in occurrences of this type as a subtype of a condition
     // enumerator type
-    if (restrictions.d_removeRetITEs)
+    if (etis->d_this == strat_ITE && restrictions.d_removeRetITEs)
     {
       const Datatype& dt =
           static_cast<DatatypeType>(etn.toType()).getDatatype();
-      Node op = Node::fromExpr(dt[cindex].getSygusOp());
-      if (op.getKind() == kind::BUILTIN
-          && NodeManager::operatorToKind(op) == ITE)
+      TermDbSygus* tds = d_qe->getTermDatabaseSygus();
+      for (std::pair<Node, NodeRole>& cec : etis->d_cenum)
       {
-        for (std::pair<Node, NodeRole>& cec : etis->d_cenum)
+        // whether condition enumerator
+        if (cec.second != role_ite_condition)
         {
-          // whether condition enumerator
-          if (cec.second != role_ite_condition)
+          continue;
+        }
+        // whether the condition has a subtype with an ITE with the same types
+        // as the one for the strategy. This would always be true for etn, if it
+        // is a subtype of the condition enumerator's type, but can also apply
+        // for other subtypes
+        std::vector<TypeNode> sf_types;
+        tds->getSubfieldTypes(cec.first.getType(), sf_types);
+        for (const TypeNode& sf_tn : sf_types)
+        {
+          // check has ite
+          int ite_cons_index = tds->getKindConsNum(sf_tn, ITE);
+          if (ite_cons_index == -1)
           {
             continue;
           }
-          // whether has etn as a subtype
-          std::vector<TypeNode> sf_types;
-          TermDbSygus* tds = d_qe->getTermDatabaseSygus();
-          tds->getSubfieldTypes(cec.first.getType(),
-                                                         sf_types);
-          if (std::find(sf_types.begin(), sf_types.end(), etn)
-              == sf_types.end())
+          const Datatype& dt_sf =
+              static_cast<DatatypeType>(sf_tn.toType()).getDatatype();
+          // check arg types match
+          for (unsigned i = 0; i < 3; ++i)
+          {
+            if (tds->getArgType(dt[cindex], i)
+                != tds->getArgType(dt[ite_cons_index], i))
+            {
+              break;
+            }
+          }
+          if (i != 3)
           {
             continue;
           }
-          Node fv = tds->getFreeVar(etn, 0);
+          Node fv = tds->getFreeVar(sf_tn, 0);
           Node exc_val =
               datatypes::DatatypesRewriter::getInstCons(fv, dt, cindex);
           // should not include the constuctor in any subterm
-          Node x = tds->getFreeVar(etn, 0);
+          Node x = tds->getFreeVar(sf_tn, 0);
           Trace("sygus-strat-slearn")
               << "Construct symmetry breaking lemma from " << x
               << " == " << exc_val << std::endl;
@@ -927,10 +940,10 @@ void SygusUnifStrategy::staticLearnRedundantOps(
               << std::endl;
           // the size of the subterm we are blocking is the weight of the
           // constructor (usually one)
-          exclude_sf_cons[cec.first][etn][lem] = dt[cindex].getWeight();
+          exclude_sf_cons[cec.first][sf_tn][lem] = dt[cindex].getWeight();
           Trace("sygus-strat-slearn")
               << " for enum " << cec.first
-              << " can exclude ITE from subterms of type " << etn << "\n";
+              << " can exclude ITE from subterms of type " << sf_tn << "\n";
         }
       }
     }

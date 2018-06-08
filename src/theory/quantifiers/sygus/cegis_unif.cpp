@@ -42,7 +42,7 @@ bool CegisUnif::processInitialize(Node n,
   // map from strategy points to their conditions
   std::map<Node, Node> pt_to_cond;
   // strategy lemmas for each strategy point
-  std::map<Node, StrategyRedundancies> strategy_lemmas;
+  std::map<Node, StrategySymBreak> strategy_lemmas;
   // Initialize strategies for all functions-to-synhesize
   for (const Node& f : candidates)
   {
@@ -287,7 +287,7 @@ CegisUnifEnumManager::CegisUnifEnumManager(QuantifiersEngine* qe,
 void CegisUnifEnumManager::initialize(
     const std::vector<Node>& es,
     const std::map<Node, Node>& e_to_cond,
-    const std::map<Node, StrategyRedundancies>& strategy_lemmas)
+    const std::map<Node, StrategySymBreak>& strategy_lemmas)
 {
   Assert(!d_initialized);
   d_initialized = true;
@@ -314,7 +314,7 @@ void CegisUnifEnumManager::initialize(
     {
       Assert(d_ce_info[e].d_sbt_lemma_tmpl[index].first.isNull());
       Node sp = index == 0 ? e : cond;
-      std::map<Node, StrategyRedundancies>::const_iterator it =
+      std::map<Node, StrategySymBreak>::const_iterator it =
           strategy_lemmas.find(sp);
       if (it == strategy_lemmas.end())
       {

@@ -32,7 +32,7 @@ void SygusUnif::initializeCandidate(
     QuantifiersEngine* qe,
     Node f,
     std::vector<Node>& enums,
-    std::map<Node, StrategyRedundancies>& strategy_lemmas)
+    std::map<Node, StrategySymBreak>& strategy_lemmas)
 {
   d_qe = qe;
   d_tds = qe->getTermDatabaseSygus();

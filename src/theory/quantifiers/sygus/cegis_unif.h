@@ -58,7 +58,7 @@ class CegisUnifEnumManager
    */
   void initialize(const std::vector<Node>& es,
                   const std::map<Node, Node>& e_to_cond,
-                  const std::map<Node, StrategyRedundancies>& strategy_lemmas);
+                  const std::map<Node, StrategySymBreak>& strategy_lemmas);
   /** get the current set of enumerators for strategy point e
    *
    * Index 0 adds the set of return value enumerators to es, index 1 adds the

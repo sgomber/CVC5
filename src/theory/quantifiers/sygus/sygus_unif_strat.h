@@ -276,7 +276,7 @@ struct StrategyRestrictions
   std::map<Node, std::unordered_set<unsigned>> d_unused_strategies;
 };
 
-class StrategyRedundancies
+class StrategySymBreak
 {
  public:
   std::vector<Node> d_simple_lemmas;
@@ -330,14 +330,14 @@ class SygusUnifStrategy
    * StrategyRestrictions for more details)
    */
   void staticLearnRedundantOps(
-      std::map<Node, StrategyRedundancies>& strategy_lemmas,
+      std::map<Node, StrategySymBreak>& strategy_lemmas,
       StrategyRestrictions& restrictions);
   /**
    * creates the default restrictions when they are not given and calls the
    * above function
    */
   void staticLearnRedundantOps(
-      std::map<Node, StrategyRedundancies>& strategy_lemmas);
+      std::map<Node, StrategySymBreak>& strategy_lemmas);
 
   /** debug print this strategy on Trace c */
   void debugPrint(const char* c);
