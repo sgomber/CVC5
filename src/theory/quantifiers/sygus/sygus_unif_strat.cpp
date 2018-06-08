@@ -893,11 +893,6 @@ void SygusUnifStrategy::staticLearnRedundantOps(
       TermDbSygus* tds = d_qe->getTermDatabaseSygus();
       for (std::pair<Node, NodeRole>& cec : etis->d_cenum)
       {
-        // whether condition enumerator
-        if (cec.second != role_ite_condition)
-        {
-          continue;
-        }
         // whether the condition has a subtype with an ITE with the same types
         // as the one for the strategy. This would always be true for etn, if it
         // is a subtype of the condition enumerator's type, but can also apply
@@ -914,17 +909,14 @@ void SygusUnifStrategy::staticLearnRedundantOps(
           }
           const Datatype& dt_sf =
               static_cast<DatatypeType>(sf_tn.toType()).getDatatype();
-          // check arg types match
-          unsigned i;
-          for (i = 0; i < 3; ++i)
-          {
-            if (tds->getArgType(dt[cindex], i)
-                != tds->getArgType(dt_sf[ite_cons_index], i))
-            {
-              break;
-            }
-          }
-          if (i != 3)
+          // check condition type is the same an etn->d_cons condition type and
+          // that return args are the same as the return are of the subtype ITE
+          if (tds->getArgType(dt[cindex], 0)
+                  != tds->getArgType(dt_sf[ite_cons_index], 0)
+              || dt_sf[ite_cons_index].getType()
+                     != tds->getArgType(dt_sf[ite_cons_index], 1)
+              || dt_sf[ite_cons_index].getType()
+                     != tds->getArgType(dt_sf[ite_cons_index], 2))
           {
             continue;
           }

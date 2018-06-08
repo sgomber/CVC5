@@ -135,6 +135,15 @@ class CegisUnifEnumManager
      * index 1 stores the template for conditions.
      */
     std::pair<Node, Node> d_sbt_lemma_tmpl[2];
+    /** dynamic symmetry breaking lemma template for this strategy point
+     *
+     * Each map stores the type of the template variables, the lemma and the
+     * minimal weight of the constructors being eliminated
+     *
+     * Index 0 stores the symmetry breaking lemma template for return values,
+     * index 1 stores the template for conditions.
+     */
+    std::map<TypeNode, std::pair<Node, unsigned>> d_dyn_sbt_lemma_tmpl[2];
   };
   /** map strategy points to the above info */
   std::map<Node, StrategyPtInfo> d_ce_info;

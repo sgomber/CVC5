@@ -330,16 +330,7 @@ void CegisUnifEnumManager::initialize(
           << " --> lambda " << sp << ". " << d_sbt_lemma << "\n";
       d_ce_info[e].d_sbt_lemma_tmpl[index] =
           std::pair<Node, Node>(d_sbt_lemma, sp);
-      // add symmetry breaking templates for this enumerator
-      for (const std::pair<const TypeNode, std::pair<Node, unsigned>>& temp :
-           it->second.d_template_lemmas)
-      {
-        Trace("cegis-unif-enum-debug")
-            << "...adding dynamic lemma template to remove opos of subterms : "
-            << temp.second.first << "\n";
-        d_tds->registerSymBreakLemma(
-            e, temp.second.first, temp.first, temp.second.second);
-      }
+      d_ce_info[e].d_dyn_sbt_lemma_tmpl[index] = it->second.d_template_lemmas;
     }
   }
   // initialize the current literal
@@ -466,6 +457,19 @@ void CegisUnifEnumManager::incrementNumEnumerators()
               << "CegisUnifEnum::lemma, remove redundant ops of " << e << " : "
               << sym_break_red_ops << "\n";
           d_qe->getOutputChannel().lemma(sym_break_red_ops);
+        }
+        if (!ci.second.d_dyn_sbt_lemma_tmpl[index].empty())
+        {
+          // add symmetry breaking templates for this enumerator
+          for (const std::pair<const TypeNode, std::pair<Node, unsigned>>&
+                   temp : ci.second.d_dyn_sbt_lemma_tmpl[index])
+          {
+            Trace("cegis-unif-enum-lemma")
+                << "CegisUnifEnum::lemma, remove redundant ops of subterms of "
+                << e << " : " << temp.second.first << "\n";
+            d_tds->registerSymBreakLemma(
+                e, temp.second.first, temp.first, temp.second.second);
+          }
         }
         // symmetry breaking between enumerators
         if (!ci.second.d_enums[index].empty() && index == 0)
