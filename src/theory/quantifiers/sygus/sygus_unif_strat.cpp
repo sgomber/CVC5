@@ -721,6 +721,8 @@ void SygusUnifStrategy::staticLearnRedundantOps(
   debugPrint("sygus-unif");
   std::map<Node, std::map<NodeRole, bool>> visited;
   std::map<Node, std::map<unsigned, bool>> needs_cons;
+  // for each enumerator, map types to symmetry breaking lemma templates
+  // excluding a constructor of that type and its weight
   std::map<Node, std::map<TypeNode, std::map<Node, unsigned>>> exclude_sf_cons;
   staticLearnRedundantOps(getRootEnumerator(),
                           role_equal,
@@ -902,7 +904,7 @@ void SygusUnifStrategy::staticLearnRedundantOps(
         // for other subtypes
         std::vector<TypeNode> sf_types;
         tds->getSubfieldTypes(cec.first.getType(), sf_types);
-        for (const TypeNode& sf_tn : sf_types)
+        for (TypeNode& sf_tn : sf_types)
         {
           // check has ite
           int ite_cons_index = tds->getKindConsNum(sf_tn, ITE);
@@ -913,10 +915,11 @@ void SygusUnifStrategy::staticLearnRedundantOps(
           const Datatype& dt_sf =
               static_cast<DatatypeType>(sf_tn.toType()).getDatatype();
           // check arg types match
-          for (unsigned i = 0; i < 3; ++i)
+          unsigned i;
+          for (i = 0; i < 3; ++i)
           {
             if (tds->getArgType(dt[cindex], i)
-                != tds->getArgType(dt[ite_cons_index], i))
+                != tds->getArgType(dt_sf[ite_cons_index], i))
             {
               break;
             }

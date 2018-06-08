@@ -276,10 +276,19 @@ struct StrategyRestrictions
   std::map<Node, std::unordered_set<unsigned>> d_unused_strategies;
 };
 
+/** Accumulates information inferred from strategies for building symmetry
+ * breaking lemmas */
 class StrategySymBreak
 {
  public:
+  /** Simple symmetry breaking lemmas for excluding top level occurrinces of
+   * constructors in enumerators */
   std::vector<Node> d_simple_lemmas;
+  /** Necessary information for building a symmetry breaking lemma template
+   *
+   * each type is mapped to a conjunction of lemmas and the minimal weight of
+   * the constructor being eliminated
+   */
   std::map<TypeNode, std::pair<Node, unsigned>> d_template_lemmas;
 };
 
