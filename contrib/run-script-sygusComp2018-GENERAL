@@ -32,5 +32,5 @@ function finishwith {
   esac)
 }
 
-trywith 120 --cegqi-si=all-abort --cegqi-si-abort --decision=internal --cbqi --cbqi-prereg-inst
+trywith 120 --cegqi-si=all --cegqi-si-abort --decision=internal --cbqi --cbqi-prereg-inst
 finishwith --cegqi-si=none

@@ -917,11 +917,30 @@ header = "options/quantifiers_options.h"
 [[option]]
   name       = "cegqiSingleInvReconstruct"
   category   = "regular"
-  long       = "cegqi-si-reconstruct"
+  long       = "cegqi-si-rcons=MODE"
+  type       = "CVC4::theory::quantifiers::CegqiSingleInvRconsMode"
+  default    = "CVC4::theory::quantifiers::CEGQI_SI_RCONS_MODE_ALL_LIMIT"
+  handler    = "stringToCegqiSingleInvRconsMode"
+  includes   = ["options/quantifiers_modes.h"]
+  help       = "policy for reconstructing solutions for single invocation conjectures"
+
+[[option]]
+  name       = "cegqiSingleInvReconstructLimit"
+  category   = "regular"
+  long       = "cegqi-si-rcons-limit=N"
+  type       = "int"
+  default    = "10000"
+  read_only  = true
+  help       = "number of rounds of enumeration to use during solution reconstruction (negative means unlimited)"
+
+[[option]]
+  name       = "cegqiSingleInvReconstructConst"
+  category   = "regular"
+  long       = "cegqi-si-reconstruct-const"
   type       = "bool"
   default    = "true"
   read_only  = true
-  help       = "reconstruct solutions for single invocation conjectures in original grammar"
+  help       = "include constants when reconstruct solutions for single invocation conjectures in original grammar"
 
 [[option]]
   name       = "cegqiSolMinCore"
@@ -942,15 +961,6 @@ header = "options/quantifiers_options.h"
   help       = "minimize individual instantiations for single invocation conjectures based on unsat core"
 
 [[option]]
-  name       = "cegqiSingleInvReconstructConst"
-  category   = "regular"
-  long       = "cegqi-si-reconstruct-const"
-  type       = "bool"
-  default    = "true"
-  read_only  = true
-  help       = "include constants when reconstruct solutions for single invocation conjectures in original grammar"
-
-[[option]]
   name       = "cegqiSingleInvAbort"
   category   = "regular"
   long       = "cegqi-si-abort"
@@ -958,6 +968,14 @@ header = "options/quantifiers_options.h"
   default    = "false"
   read_only  = true
   help       = "abort if synthesis conjecture is not single invocation"
+  
+[[option]]
+  name       = "sygusExcInvPred"
+  category   = "regular"
+  long       = "sygus-exc-inv-pred"
+  type       = "bool"
+  default    = "false"
+  help       = "Use exclusion invariance predicates"
 
 [[option]]
   name       = "sygusUnif"

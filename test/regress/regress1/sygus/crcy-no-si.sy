@@ -1,5 +1,6 @@
-; EXPECT: unknown
-; COMMAND-LINE: --cegqi-si=all-abort --cegqi-si-abort --decision=internal --cbqi --cbqi-prereg-inst --sygus-out=status
+; EXPECT: (error "Cannot get synth function: reconstruction to syntax failed.")
+; EXPECT: unsat
+; COMMAND-LINE: --cegqi-si=all --cegqi-si-abort --decision=internal --cegqi-si-rcons=try --no-check-synth-sol
 
 (set-logic BV)
 
@@ -48,5 +49,6 @@
 
 (constraint (= (origCir LN24 k3 LN237 ) (skel LN24 k3 LN237 )))
 
-
+; this benchmark can be solved by single invocation techniques, but solution
+; reconstruction fails
 (check-synth)

@@ -105,7 +105,7 @@ void CegConjecture::assign( Node q ) {
   // we now finalize the single invocation module, based on the syntax restrictions
   if (d_qe->getQuantAttributes()->isSygus(q))
   {
-    d_ceg_si->finishInit( d_ceg_gc->isSyntaxRestricted(), d_ceg_gc->hasSyntaxITE() );
+    d_ceg_si->finishInit( d_ceg_gc->isSyntaxRestricted());
   }
 
   Assert( d_candidates.empty() );
@@ -683,7 +683,10 @@ void CegConjecture::printSynthSolution( std::ostream& out, bool singleInvocation
   Assert( d_quant[0].getNumChildren()==d_embed_quant[0].getNumChildren() );
   std::vector<Node> sols;
   std::vector<int> statuses;
-  getSynthSolutionsInternal(sols, statuses, singleInvocation);
+  if( !getSynthSolutionsInternal(sols, statuses, singleInvocation) )
+  {
+    return;
+  }
   for (unsigned i = 0, size = d_embed_quant[0].getNumChildren(); i < size; i++)
   {
     Node sol = sols[i];
@@ -748,7 +751,10 @@ void CegConjecture::getSynthSolutions(std::map<Node, Node>& sol_map,
   TermDbSygus* sygusDb = d_qe->getTermDatabaseSygus();
   std::vector<Node> sols;
   std::vector<int> statuses;
-  getSynthSolutionsInternal(sols, statuses, singleInvocation);
+  if( !getSynthSolutionsInternal(sols, statuses, singleInvocation) )
+  {
+    return;
+  }
   for (unsigned i = 0, size = d_embed_quant[0].getNumChildren(); i < size; i++)
   {
     Node sol = sols[i];
@@ -775,7 +781,7 @@ void CegConjecture::getSynthSolutions(std::map<Node, Node>& sol_map,
   }
 }
 
-void CegConjecture::getSynthSolutionsInternal(std::vector<Node>& sols,
+bool CegConjecture::getSynthSolutionsInternal(std::vector<Node>& sols,
                                               std::vector<int>& statuses,
                                               bool singleInvocation)
 {
@@ -792,10 +798,11 @@ void CegConjecture::getSynthSolutionsInternal(std::vector<Node>& sols,
     {
       Assert(d_ceg_si != NULL);
       sol = d_ceg_si->getSolution(i, tn, status, true);
-      if (!sol.isNull())
+      if (sol.isNull())
       {
-        sol = sol.getKind() == LAMBDA ? sol[1] : sol;
+        return false;
       }
+      sol = sol.getKind() == LAMBDA ? sol[1] : sol;
     }
     else
     {
@@ -855,6 +862,7 @@ void CegConjecture::getSynthSolutionsInternal(std::vector<Node>& sols,
     sols.push_back(sol);
     statuses.push_back(status);
   }
+  return true;
 }
 
 Node CegConjecture::getSymmetryBreakingPredicate(
