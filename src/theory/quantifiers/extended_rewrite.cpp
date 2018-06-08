@@ -1464,7 +1464,13 @@ bool ExtendedRewriter::inferSubstitution(Node n,
     Node v[2];
     for (unsigned i = 0; i < 2; i++)
     {
-      if (n[i].isVar() || n[i].isConst())
+      if( n[i].isConst() )
+      {
+        vars.push_back(n[1-i]);
+        subs.push_back(n[i]);
+        return true;
+      }
+      if (n[i].isVar())
       {
         v[i] = n[i];
       }
@@ -1829,6 +1835,38 @@ Node ExtendedRewriter::extendedRewriteBv(Node ret)
           new_ret = nm->mkNode(
               ck == BITVECTOR_AND ? BITVECTOR_OR : BITVECTOR_AND, children);
           debugExtendedRewrite(ret, new_ret, "NEG-AND/OR-zero-miniscope");
+        }
+      }
+    }
+    else if( ck==BITVECTOR_CONCAT )
+    {
+      // -concat( t, 1 ) ---> concat( ~t, 1 )
+      // if its last bit is one 
+      Node last_child = ret[0][ret[0].getNumChildren()-1];
+      if( last_child.isConst() )
+      {
+        if( bv::utils::getBit(last_child,0) )
+        {
+          std::vector< Node > children;
+          for( unsigned j=0, size=ret[0].getNumChildren(); j<size-1; j++ )
+          {
+            children.push_back(TermUtil::mkNegate(BITVECTOR_NOT,ret[0][j]));
+          }
+          unsigned size = bv::utils::getSize(last_child);
+          if( size>1 )
+          {
+            Node extract =
+                bv::utils::mkExtract(last_child, size-1, 1);
+            extract = TermUtil::mkNegate(BITVECTOR_NOT,extract);
+            children.push_back(extract);
+            children.push_back(bv::utils::mkOnes(1));
+          }
+          else
+          {
+            children.push_back(last_child);
+          }
+          new_ret = nm->mkNode(BITVECTOR_CONCAT,children);
+          debugExtendedRewrite(ret, new_ret, "NEG-odd");
         }
       }
     }

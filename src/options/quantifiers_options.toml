@@ -968,6 +968,14 @@ header = "options/quantifiers_options.h"
   default    = "false"
   read_only  = true
   help       = "abort if synthesis conjecture is not single invocation"
+  
+[[option]]
+  name       = "sygusExcInvPred"
+  category   = "regular"
+  long       = "sygus-exc-inv-pred"
+  type       = "bool"
+  default    = "false"
+  help       = "Use exclusion invariance predicates"
 
 [[option]]
   name       = "sygusUnif"
