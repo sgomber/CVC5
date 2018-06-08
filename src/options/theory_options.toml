@@ -25,6 +25,23 @@ header = "options/theory_options.h"
   help       = "use alternate theory implementation NAME (--use-theory=help for a list). This option may be repeated or a comma separated list."
 
 [[option]]
+  name       = "assignFunctionValues"
+  category   = "regular"
+  long       = "assign-function-values"
+  type       = "bool"
+  default    = "true"
+  help       = "assign values for uninterpreted functions in models"
+
+[[option]]
+  name       = "condenseFunctionValues"
+  category   = "regular"
+  long       = "condense-function-values"
+  type       = "bool"
+  default    = "true"
+  read_only  = true
+  help       = "condense values for functions in models rather than explicitly representing them"
+
+[[option]]
   name       = "modelBasedTc"
   category   = "regular"
   long       = "model-based-tc"
@@ -63,3 +80,4 @@ header = "options/theory_options.h"
   type       = "bool"
   default    = "false"
   help       = "consider splits on unique terms"
+

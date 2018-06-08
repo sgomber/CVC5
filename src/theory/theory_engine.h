@@ -801,7 +801,8 @@ public:
   inline bool isTheoryEnabled(theory::TheoryId theoryId) const {
     return d_logicInfo.isTheoryEnabled(theoryId);
   }
-
+  /** get the logic info used by this theory engine */
+  const LogicInfo& getLogicInfo() const;
   /**
    * Returns the equality status of the two terms, from the theory
    * that owns the domain type.  The types of a and b must be the same.
@@ -932,8 +933,6 @@ private:
   /** For preprocessing pass lifting bit-vectors of size 1 to booleans */
 public:
   void staticInitializeBVOptions(const std::vector<Node>& assertions);
-  bool ppBvAbstraction(const std::vector<Node>& assertions, std::vector<Node>& new_assertions);
-  void mkAckermanizationAssertions(std::vector<Node>& assertions);
 
   Node ppSimpITE(TNode assertion);
   /** Returns false if an assertion simplified to false. */

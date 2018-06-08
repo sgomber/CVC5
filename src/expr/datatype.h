@@ -390,6 +390,11 @@ class CVC4_PUBLIC DatatypeConstructor {
    * is returned.
    */
   Expr getSelector(std::string name) const;
+  /**
+   * Get argument type. Returns the return type of the i^th selector of this
+   * constructor.
+   */
+  Type getArgType(unsigned i) const;
 
   /** get selector internal
    *
@@ -609,6 +614,13 @@ public:
    * always the first index.)
    */
   static size_t cindexOf(Expr item) CVC4_PUBLIC;
+
+  /**
+   * Same as above, but without checks. These methods should be used by
+   * internal (Node-level) code.
+   */
+  static size_t indexOfInternal(Expr item);
+  static size_t cindexOfInternal(Expr item);
 
   /** The type for iterators over constructors. */
   typedef DatatypeConstructorIterator iterator;

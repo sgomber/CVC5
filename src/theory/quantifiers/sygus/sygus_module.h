@@ -114,10 +114,26 @@ class SygusModule
                                        std::vector<Node>& lems)
   {
   }
+  /** get next decision request
+   *
+   * This has the same contract as Theory::getNextDecisionRequest.
+   */
+  virtual Node getNextDecisionRequest(unsigned& priority)
+  {
+    return Node::null();
+  }
+  /**
+   * Are we trying to repair constants in candidate solutions?
+   * If we return true for usingRepairConst is true, then this module has
+   * attmepted to repair any solutions returned by constructCandidates.
+   */
+  virtual bool usingRepairConst() { return false; }
 
  protected:
   /** reference to quantifier engine */
   QuantifiersEngine* d_qe;
+  /** sygus term database of d_qe */
+  quantifiers::TermDbSygus* d_tds;
   /** reference to the parent conjecture */
   CegConjecture* d_parent;
 };

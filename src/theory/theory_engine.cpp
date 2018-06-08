@@ -233,7 +233,7 @@ void TheoryEngine::finishInit() {
     d_curr_model = d_quantEngine->getModel();
   } else {
     d_curr_model = new theory::TheoryModel(
-        getModelNotify(), d_userContext, "DefaultModel", true);
+        getModelNotify(), d_userContext, "DefaultModel", options::assignFunctionValues());
     d_aloc_curr_model = true;
   }
   //make the default builder, e.g. in the case that the quantifiers engine does not have a model builder
@@ -713,7 +713,8 @@ void TheoryEngine::check(Theory::Effort effort) {
           }
         }
       }
-      if( ! d_inConflict && ! needCheck() ){
+      if (!d_inConflict)
+      {
         if(d_logicInfo.isQuantified()) {
           // quantifiers engine must check at last call effort
           d_quantEngine->check(Theory::EFFORT_LAST_CALL);
@@ -745,7 +746,9 @@ void TheoryEngine::check(Theory::Effort effort) {
         {
           // if we are incomplete, there is no guarantee on the model.
           // thus, we do not check the model here. (related to #1693)
-          if (!d_incomplete)
+          // we also don't debug-check the model if the checkModels()
+          // is not enabled.
+          if (!d_incomplete && options::checkModels())
           {
             d_curr_model_builder->debugCheckModel(d_curr_model);
           }
@@ -2005,6 +2008,7 @@ bool TheoryEngine::propagate(TNode literal, theory::TheoryId theory) {
   return !d_inConflict;
 }
 
+const LogicInfo& TheoryEngine::getLogicInfo() const { return d_logicInfo; }
 
 theory::EqualityStatus TheoryEngine::getEqualityStatus(TNode a, TNode b) {
   Assert(a.getType().isComparableTo(b.getType()));
@@ -2529,16 +2533,6 @@ void TheoryEngine::staticInitializeBVOptions(
     bv::TheoryBV* bv_theory = (bv::TheoryBV*)d_theoryTable[THEORY_BV];
     bv_theory->enableCoreTheorySlicer();
   }
-}
-
-bool  TheoryEngine::ppBvAbstraction(const std::vector<Node>& assertions, std::vector<Node>& new_assertions) {
-  bv::TheoryBV* bv_theory = (bv::TheoryBV*)d_theoryTable[THEORY_BV];
-  return bv_theory->applyAbstraction(assertions, new_assertions);
-}
-
-void TheoryEngine::mkAckermanizationAssertions(std::vector<Node>& assertions) {
-  bv::TheoryBV* bv_theory = (bv::TheoryBV*)d_theoryTable[THEORY_BV];
-  bv_theory->mkAckermanizationAssertions(assertions);
 }
 
 Node TheoryEngine::ppSimpITE(TNode assertion)

@@ -62,8 +62,14 @@ libcvc4_la_SOURCES = \
 	decision/decision_strategy.h \
 	decision/justification_heuristic.cpp \
 	decision/justification_heuristic.h \
+	preprocessing/passes/bv_abstraction.cpp \
+	preprocessing/passes/bv_abstraction.h \
+	preprocessing/passes/bv_ackermann.cpp \
+	preprocessing/passes/bv_ackermann.h \
 	preprocessing/passes/bv_gauss.cpp \
 	preprocessing/passes/bv_gauss.h \
+	preprocessing/passes/bv_intro_pow2.cpp \
+	preprocessing/passes/bv_intro_pow2.h \
 	preprocessing/passes/int_to_bv.cpp \
 	preprocessing/passes/int_to_bv.h \
 	preprocessing/passes/pseudo_boolean_processor.cpp \
@@ -72,6 +78,12 @@ libcvc4_la_SOURCES = \
 	preprocessing/passes/bool_to_bv.h \
 	preprocessing/passes/bv_to_bool.cpp \
 	preprocessing/passes/bv_to_bool.h \
+	preprocessing/passes/real_to_int.cpp \
+	preprocessing/passes/real_to_int.h \
+	preprocessing/passes/static_learning.cpp \
+	preprocessing/passes/static_learning.h \
+	preprocessing/passes/symmetry_breaker.cpp \
+	preprocessing/passes/symmetry_breaker.h \
 	preprocessing/passes/symmetry_detect.cpp \
 	preprocessing/passes/symmetry_detect.h \
 	preprocessing/preprocessing_pass.cpp \
@@ -90,8 +102,6 @@ libcvc4_la_SOURCES = \
 	printer/ast/ast_printer.h \
 	printer/cvc/cvc_printer.cpp \
 	printer/cvc/cvc_printer.h \
-	printer/smt1/smt1_printer.cpp \
-	printer/smt1/smt1_printer.h \
 	printer/smt2/smt2_printer.cpp \
 	printer/smt2/smt2_printer.h \
 	printer/tptp/tptp_printer.cpp \
@@ -326,8 +336,6 @@ libcvc4_la_SOURCES = \
 	theory/bv/bv_subtheory_core.h \
 	theory/bv/bv_subtheory_inequality.cpp \
 	theory/bv/bv_subtheory_inequality.h \
-	theory/bv/bvintropow2.cpp \
-	theory/bv/bvintropow2.h \
 	theory/bv/slicer.cpp \
 	theory/bv/slicer.h \
 	theory/bv/theory_bv.cpp \
@@ -431,6 +439,8 @@ libcvc4_la_SOURCES = \
 	theory/quantifiers/inst_propagator.h \
 	theory/quantifiers/inst_strategy_enumerative.cpp \
 	theory/quantifiers/inst_strategy_enumerative.h \
+	theory/quantifiers/lazy_trie.cpp \
+	theory/quantifiers/lazy_trie.h \
 	theory/quantifiers/local_theory_ext.cpp \
 	theory/quantifiers/local_theory_ext.h \
 	theory/quantifiers/macros.cpp \
@@ -471,6 +481,8 @@ libcvc4_la_SOURCES = \
 	theory/quantifiers/sygus/sygus_pbe.h \
 	theory/quantifiers/sygus/ce_guided_single_inv_sol.cpp \
 	theory/quantifiers/sygus/ce_guided_single_inv_sol.h \
+	theory/quantifiers/sygus/sygus_eval_unfold.cpp \
+	theory/quantifiers/sygus/sygus_eval_unfold.h \
 	theory/quantifiers/sygus/sygus_explain.cpp \
 	theory/quantifiers/sygus/sygus_explain.h \
 	theory/quantifiers/sygus/sygus_invariance.cpp \
@@ -485,6 +497,8 @@ libcvc4_la_SOURCES = \
 	theory/quantifiers/sygus/sygus_module.h \
 	theory/quantifiers/sygus/sygus_process_conj.cpp \
 	theory/quantifiers/sygus/sygus_process_conj.h \
+	theory/quantifiers/sygus/sygus_repair_const.cpp \
+	theory/quantifiers/sygus/sygus_repair_const.h \
 	theory/quantifiers/sygus/sygus_unif.cpp \
 	theory/quantifiers/sygus/sygus_unif.h \
 	theory/quantifiers/sygus/sygus_unif_io.cpp \
@@ -499,8 +513,6 @@ libcvc4_la_SOURCES = \
 	theory/quantifiers/sygus_inference.h \
 	theory/quantifiers/sygus_sampler.cpp \
 	theory/quantifiers/sygus_sampler.h \
-	theory/quantifiers/symmetry_breaking.cpp \
-	theory/quantifiers/symmetry_breaking.h \
 	theory/quantifiers/term_database.cpp \
 	theory/quantifiers/term_database.h \
 	theory/quantifiers/term_enumeration.cpp \
