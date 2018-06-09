@@ -143,6 +143,10 @@ class UnifContextIo : public UnifContext
     * pairs.
     */
     std::map<Node, std::map<unsigned, Node>> d_look_ahead_sols;
+    /** clear */
+    void clear() { d_look_ahead_sols.clear(); }
+    /** is empty */
+    bool empty() { return d_look_ahead_sols.empty(); }
   };
   /** map from enumerators to the above info class */
   std::map<Node, UEnumInfo> d_uinfo;

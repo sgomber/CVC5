@@ -1282,6 +1282,7 @@ Node SygusUnifIo::constructSol(
             {
               if (x.d_uinfo.find(ce) == x.d_uinfo.end())
               {
+                x.d_uinfo[ce].clear();
                 Trace("sygus-sui-dt-debug2")
                     << "  reg : PBE: Look for direct solutions for conditional "
                        "enumerator "
@@ -1352,9 +1353,8 @@ Node SygusUnifIo::constructSol(
               // solved terms in at least one branch
               //    only applicable if we have not modified the return value
               std::map<int, std::vector<Node> > solved_cond;
-              if (!x.isReturnValueModified())
+              if (!x.isReturnValueModified() && !x.d_uinfo[ce].empty())
               {
-                Assert(x.d_uinfo.find(ce) != x.d_uinfo.end());
                 int solve_max = 0;
                 for (Node& cond : itpc->second)
                 {
