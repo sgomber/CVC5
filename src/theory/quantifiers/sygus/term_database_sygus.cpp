@@ -18,6 +18,7 @@
 #include "options/quantifiers_options.h"
 #include "theory/arith/arith_msum.h"
 #include "theory/datatypes/datatypes_rewriter.h"
+#include "theory/evaluator.h"
 #include "theory/quantifiers/quantifiers_attributes.h"
 #include "theory/quantifiers/term_database.h"
 #include "theory/quantifiers/term_util.h"
@@ -1635,7 +1636,24 @@ Node TermDbSygus::evaluateBuiltin( TypeNode tn, Node bn, std::vector< Node >& ar
     std::map< TypeNode, std::vector< Node > >::iterator it = d_var_list.find( tn );
     Assert( it!=d_var_list.end() );
     Assert( it->second.size()==args.size() );
-    return Rewriter::rewrite( bn.substitute( it->second.begin(), it->second.end(), args.begin(), args.end() ) );
+
+    Evaluator eval;
+    Node res = eval.eval(bn, it->second, args);
+    //Node res;
+    if (!res.isNull())
+    {
+      Assert(res
+             == Rewriter::rewrite(bn.substitute(it->second.begin(),
+                                                it->second.end(),
+                                                args.begin(),
+                                                args.end())));
+      return res;
+    }
+    else
+    {
+      return Rewriter::rewrite(bn.substitute(
+          it->second.begin(), it->second.end(), args.begin(), args.end()));
+    }
   }else{
     return Rewriter::rewrite( bn );
   }

@@ -11,6 +11,7 @@ UNIT_TESTS += \
 	theory/theory_black \
 	theory/theory_bv_white \
 	theory/theory_engine_white \
+	theory/theory_evaluator_white \
 	theory/theory_quantifiers_bv_instantiator_white \
 	theory/theory_quantifiers_bv_inverter_white \
 	theory/theory_strings_rewriter_white \
