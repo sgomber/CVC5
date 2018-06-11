@@ -18,6 +18,7 @@
 #include "options/quantifiers_options.h"
 #include "theory/quantifiers/sygus/term_database_sygus.h"
 #include "theory/quantifiers/term_util.h"
+#include "theory/evaluator.h"
 #include "util/random.h"
 
 using namespace CVC4::kind;
@@ -515,6 +516,7 @@ void SygusUnifIo::notifyEnumeration(Node e, Node v, std::vector<Node>& lemmas)
   }
   // get the results for each slave enumerator
   std::map<Node, std::vector< Node > > srmap;
+  Evaluator ev;
   for( const Node& xs : ei.d_enum_slave )
   {
     Assert( srmap.find(xs)==srmap.end());
@@ -523,11 +525,16 @@ void SygusUnifIo::notifyEnumeration(Node e, Node v, std::vector<Node>& lemmas)
     if( !templ.isNull() )
     {
       TNode templ_var = eiv.d_template_arg;
+      std::vector< Node > args;
+      args.push_back(templ_var);
       std::vector< Node > sresults;
       for( const Node& res : base_results )
       {
         TNode tres = res;
-        Node sres = templ.substitute(templ_var,tres);
+        std::vector< Node > vals;
+        vals.push_back(tres);
+        Node sres = ev.eval(templ,args,vals);
+        Assert( !sres.isNull() );
         sresults.push_back(Rewriter::rewrite(sres));
       }
       srmap[xs] = sresults;
