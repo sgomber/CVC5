@@ -1184,6 +1184,10 @@ void SygusSymBreakNew::incrementCurrentSearchSize( Node m, std::vector< Node >& 
   std::map< Node, SearchSizeInfo * >::iterator itsz = d_szinfo.find( m );
   Assert( itsz!=d_szinfo.end() );
   itsz->second->d_curr_search_size++;
+  if( options::sygusSymBreakLazy() )
+  {
+    return;
+  }
   Trace("sygus-fair") << "  register search size " << itsz->second->d_curr_search_size << " for " << m << std::endl;
   NodeManager* nm = NodeManager::currentNM();
   for( std::map< Node, SearchCache >::iterator itc = d_cache.begin(); itc != d_cache.end(); ++itc ){
@@ -1203,8 +1207,7 @@ void SygusSymBreakNew::incrementCurrentSearchSize( Node m, std::vector< Node >& 
           if( itt!=itc->second.d_search_terms[tn].end() ){
             for (const TNode& t : itt->second)
             {
-              if (!options::sygusSymBreakLazy()
-                  || d_active_terms.find(t) != d_active_terms.end()
+              if (d_active_terms.find(t) != d_active_terms.end()
                          && !it->second.empty())
               {
                 std::vector<Node> slemmas;
