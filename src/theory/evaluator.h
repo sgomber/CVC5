@@ -21,6 +21,7 @@
 #include <utility>
 #include <vector>
 
+#include "base/output.h"
 #include "expr/node.h"
 #include "util/bitvector.h"
 
@@ -96,7 +97,7 @@ struct Result
       case Result::BOOL: return nm->mkConst(d_bool);
       default:
       {
-        Debug("evaluator") << "Missing conversion from " << d_tag << " to node"
+        Trace("evaluator") << "Missing conversion from " << d_tag << " to node"
                            << std::endl;
         return Node();
       }
