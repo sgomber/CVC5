@@ -989,6 +989,10 @@ void SygusSymBreakNew::registerSymBreakLemma( TypeNode tn, Node lem, unsigned sz
   Trace("sygus-sb-debug") << "     size : " << sz << std::endl;
   Assert( !a.isNull() );
   d_cache[a].d_sb_lemmas[tn][sz].push_back( lem );
+  if( options::sygusSymBreakLazy() )
+  {
+    return;
+  }
   TNode x = getFreeVar( tn );
   unsigned csz = getSearchSizeForAnchor( a );
   int max_depth = ((int)csz)-((int)sz);
@@ -998,7 +1002,7 @@ void SygusSymBreakNew::registerSymBreakLemma( TypeNode tn, Node lem, unsigned sz
     if( itt!=d_cache[a].d_search_terms[tn].end() ){
       for (const TNode& t : itt->second)
       {
-        if( !options::sygusSymBreakLazy() || d_active_terms.find( t )!=d_active_terms.end() ){
+        if( d_active_terms.find( t )!=d_active_terms.end() ){
           Node slem = lem.substitute(x, t);
           Node rlv = getRelevancyCondition(t);
           if (!rlv.isNull())
