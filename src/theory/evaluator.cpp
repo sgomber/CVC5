@@ -35,6 +35,12 @@ Node Evaluator::eval(TNode n,
   {
     TNode currNode = queue.back();
 
+    if (d_results.find(currNode) != d_results.end())
+    {
+      queue.pop_back();
+      continue;
+    }
+
     bool doEval = true;
     for (const auto& currNodeChild : currNode)
     {
@@ -59,7 +65,7 @@ Node Evaluator::eval(TNode n,
           return Node::null();
         }
 
-        ptrdiff_t pos = std::distance(it, args.begin());
+        ptrdiff_t pos = std::distance(args.begin(), it);
         currNodeVal = vals[pos];
       }
       else if (currNode.getKind() == kind::APPLY_UF
