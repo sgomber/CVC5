@@ -534,8 +534,14 @@ void SygusUnifIo::notifyEnumeration(Node e, Node v, std::vector<Node>& lemmas)
         std::vector< Node > vals;
         vals.push_back(tres);
         Node sres = ev.eval(templ,args,vals);
-        Assert( !sres.isNull() );
-        sresults.push_back(Rewriter::rewrite(sres));
+        if( sres.isNull() )
+        {
+          // fall back on rewriter
+          TNode tres = res;
+          sres = templ.substitute(templ_var,tres);
+          sres = Rewriter::rewrite(sres);
+        }
+        sresults.push_back(sres);
       }
       srmap[xs] = sresults;
     }
