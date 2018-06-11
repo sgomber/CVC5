@@ -198,9 +198,15 @@ Node Evaluator::eval(TNode n,
           break;
         }
 
+        case kind::NOT:
+        {
+          d_results[currNode] = Result(!(d_results[currNode[0]].d_bool));
+          break;
+        }
+
         default:
         {
-          Debug("evaluator") << "Kind " << currNodeVal.getKind()
+          Trace("evaluator") << "Kind " << currNodeVal.getKind()
                              << " not supported" << std::endl;
           d_results[currNode] = Result();
         }
