@@ -93,9 +93,13 @@ struct Result
     switch (d_tag)
     {
       case Result::BITVECTOR: return nm->mkConst(d_bv);
+      case Result::BOOL: return nm->mkConst(d_bool);
       default:
-        std::cout << "Not supported:( " << d_tag << std::endl;
-        std::exit(1);
+      {
+        Debug("evaluator") << "Missing conversion from " << d_tag << " to node"
+                           << std::endl;
+        return Node();
+      }
     }
 
     return Node();

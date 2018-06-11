@@ -199,8 +199,11 @@ Node Evaluator::eval(TNode n,
         }
 
         default:
-          std::cout << "Not supported: " << currNodeVal << std::endl;
-          std::exit(1);
+        {
+          Debug("evaluator") << "Kind " << currNodeVal.getKind()
+                             << " not supported" << std::endl;
+          d_results[currNode] = Result();
+        }
       }
     }
   }
