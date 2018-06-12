@@ -18,6 +18,7 @@
 
 #include "theory/bv/theory_bv_utils.h"
 #include "theory/theory.h"
+#include "util/rational.h"
 
 namespace CVC4 {
 namespace theory {
@@ -99,6 +100,158 @@ EvalResult Evaluator::evalInternal(TNode n,
 
       switch (currNodeVal.getKind())
       {
+        case kind::CONST_RATIONAL:
+        {
+          const Rational& r = currNodeVal.getConst<Rational>();
+          Assert(r.getDenominator() == 1);
+          results[currNode] = EvalResult(r.getNumerator());
+          break;
+        }
+
+        case kind::PLUS:
+        {
+          Integer res = results[currNode[0]].d_int;
+          for (size_t i = 1, end = currNode.getNumChildren(); i < end; i++)
+          {
+            res = res + results[currNode[i]].d_int;
+          }
+          results[currNode] = EvalResult(res);
+          break;
+        }
+
+        case kind::MINUS:
+        {
+          const Integer& x = results[currNode[0]].d_int;
+          const Integer& y = results[currNode[1]].d_int;
+          results[currNode] = EvalResult(x - y);
+          break;
+        }
+
+        case kind::CONST_STRING:
+          results[currNode] = EvalResult(currNodeVal.getConst<String>());
+          break;
+
+        case kind::STRING_CONCAT:
+        {
+          String res = results[currNode[0]].d_str;
+          for (size_t i = 1, end = currNode.getNumChildren(); i < end; i++)
+          {
+            res = res.concat(results[currNode[i]].d_str);
+          }
+          results[currNode] = EvalResult(res);
+          break;
+        }
+
+        case kind::STRING_LENGTH:
+        {
+          const String& s = results[currNode[0]].d_str;
+          results[currNode] = EvalResult(Integer(s.size()));
+          break;
+        }
+
+        case kind::STRING_SUBSTR:
+        {
+          const String& s = results[currNode[0]].d_str;
+          Integer s_len = Integer(s.size());
+          const Integer& i = results[currNode[1]].d_int;
+          const Integer& j = results[currNode[2]].d_int;
+
+          if (i.strictlyNegative() || j.strictlyNegative() || i >= s_len)
+          {
+            results[currNode] = EvalResult(String(""));
+          }
+          else if (i + j > s_len)
+          {
+            results[currNode] =
+                EvalResult(s.suffix((s_len - i).toUnsignedInt()));
+          }
+          else
+          {
+            results[currNode] =
+                EvalResult(s.substr(i.toUnsignedInt(), j.toUnsignedInt()));
+          }
+          break;
+        }
+
+        case kind::STRING_CHARAT:
+        {
+          const String& s = results[currNode[0]].d_str;
+          Integer s_len = Integer(s.size());
+          const Integer& i = results[currNode[1]].d_int;
+          if (i.strictlyNegative() || i >= s_len)
+          {
+            results[currNode] = EvalResult(String(""));
+          }
+          else
+          {
+            results[currNode] = EvalResult(s.substr(i.toUnsignedInt(), 1));
+          }
+          break;
+        }
+
+        case kind::STRING_STRIDOF:
+        {
+          const String& s = results[currNode[0]].d_str;
+          Integer s_len = Integer(s.size());
+          const String& x = results[currNode[1]].d_str;
+          const Integer& i = results[currNode[2]].d_int;
+
+          if (i.strictlyNegative() || i >= s_len)
+          {
+            results[currNode] = EvalResult(Integer(-1));
+          }
+          else
+          {
+            size_t r = s.find(x, i.toUnsignedInt());
+            if (r == std::string::npos)
+            {
+              results[currNode] = EvalResult(Integer(-1));
+            }
+            else
+            {
+              results[currNode] = EvalResult(Integer(r));
+            }
+          }
+          break;
+        }
+
+        case kind::STRING_STRREPL:
+        {
+          const String& s = results[currNode[0]].d_str;
+          const String& x = results[currNode[1]].d_str;
+          const String& y = results[currNode[2]].d_str;
+          results[currNode] = EvalResult(s.replace(x, y));
+          break;
+        }
+
+        case kind::STRING_ITOS:
+        {
+          const Integer& i = results[currNode[0]].d_int;
+          if (i.strictlyNegative())
+          {
+            results[currNode] = EvalResult(String(""));
+          }
+          else
+          {
+            results[currNode] = EvalResult(String(i.toString()));
+          }
+          break;
+        }
+
+        case kind::STRING_STOI:
+        {
+          const String& s = results[currNode[0]].d_str;
+          if (s.isNumber())
+          {
+            results[currNode] = EvalResult(Integer(-1));
+          }
+          else
+          {
+            results[currNode] = EvalResult(Integer(s.toNumber()));
+          }
+          break;
+        }
+
         case kind::CONST_BITVECTOR:
           results[currNode] = EvalResult(currNodeVal.getConst<BitVector>());
           break;
@@ -239,7 +392,7 @@ EvalResult Evaluator::evalInternal(TNode n,
         {
           Trace("evaluator") << "Kind " << currNodeVal.getKind()
                              << " not supported" << std::endl;
-          results[currNode] = EvalResult();
+          return EvalResult();
         }
       }
     }

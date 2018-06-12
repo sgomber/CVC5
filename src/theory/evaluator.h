@@ -24,6 +24,8 @@
 #include "base/output.h"
 #include "expr/node.h"
 #include "util/bitvector.h"
+#include "util/integer.h"
+#include "util/regexp.h"
 
 namespace CVC4 {
 namespace theory {
@@ -32,14 +34,19 @@ struct EvalResult
 {
   enum
   {
-    BITVECTOR,
     BOOL,
+    BITVECTOR,
+    INTEGER,
+    STRING,
     INVALID
   } d_tag;
+
   union
   {
     bool d_bool;
     BitVector d_bv;
+    Integer d_int;
+    String d_str;
   };
 
   EvalResult(const EvalResult& other)
@@ -47,11 +54,19 @@ struct EvalResult
     d_tag = other.d_tag;
     switch (d_tag)
     {
+      case BOOL: d_bool = other.d_bool; break;
       case BITVECTOR:
         new (&d_bv) BitVector;
         d_bv = other.d_bv;
         break;
-      case BOOL: d_bool = other.d_bool; break;
+      case INTEGER:
+        new (&d_bv) Integer;
+        d_int = other.d_int;
+        break;
+      case STRING:
+        new (&d_str) String;
+        d_str = other.d_str;
+        break;
       case INVALID: break;
     }
   }
@@ -62,6 +77,10 @@ struct EvalResult
 
   EvalResult(const BitVector& bv) : d_tag(BITVECTOR), d_bv(bv) {}
 
+  EvalResult(const Integer& i) : d_tag(INTEGER), d_int(i) {}
+
+  EvalResult(const String& str) : d_tag(STRING), d_str(str) {}
+
   EvalResult& operator=(const EvalResult& other)
   {
     if (this != &other)
@@ -69,11 +88,19 @@ struct EvalResult
       d_tag = other.d_tag;
       switch (d_tag)
       {
+        case BOOL: d_bool = other.d_bool; break;
         case BITVECTOR:
           new (&d_bv) BitVector;
           d_bv = other.d_bv;
           break;
-        case BOOL: d_bool = other.d_bool; break;
+        case INTEGER:
+          new (&d_bv) Integer;
+          d_int = other.d_int;
+          break;
+        case STRING:
+          new (&d_str) String;
+          d_str = other.d_str;
+          break;
         case INVALID: break;
       }
     }
@@ -82,9 +109,25 @@ struct EvalResult
 
   ~EvalResult()
   {
-    if (d_tag == BITVECTOR)
+    switch (d_tag)
     {
-      d_bv.~BitVector();
+      case BITVECTOR:
+      {
+        d_bv.~BitVector();
+        break;
+      }
+      case INTEGER:
+      {
+        d_int.~Integer();
+        break;
+      }
+      case STRING:
+      {
+        d_str.~String();
+        break;
+
+        default: break;
+      }
     }
   }
 
@@ -93,8 +136,10 @@ struct EvalResult
     NodeManager* nm = NodeManager::currentNM();
     switch (d_tag)
     {
-      case EvalResult::BITVECTOR: return nm->mkConst(d_bv);
       case EvalResult::BOOL: return nm->mkConst(d_bool);
+      case EvalResult::BITVECTOR: return nm->mkConst(d_bv);
+      case EvalResult::INTEGER: return nm->mkConst(Rational(d_int));
+      case EvalResult::STRING: return nm->mkConst(d_str);
       default:
       {
         Trace("evaluator") << "Missing conversion from " << d_tag << " to node"
