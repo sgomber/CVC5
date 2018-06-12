@@ -998,7 +998,9 @@ void SygusSymBreakNew::registerSymBreakLemma( TypeNode tn, Node lem, unsigned sz
     if( itt!=d_cache[a].d_search_terms[tn].end() ){
       for (const TNode& t : itt->second)
       {
-        if( !options::sygusSymBreakLazy() || d_active_terms.find( t )!=d_active_terms.end() ){
+        if (!options::sygusSymBreakLazy()
+            || d_active_terms.find(t) != d_active_terms.end())
+        {
           Node slem = lem.substitute(x, t);
           Node rlv = getRelevancyCondition(t);
           if (!rlv.isNull())
@@ -1199,8 +1201,8 @@ void SygusSymBreakNew::incrementCurrentSearchSize( Node m, std::vector< Node >& 
           if( itt!=itc->second.d_search_terms[tn].end() ){
             for (const TNode& t : itt->second)
             {
-              if (!options::sygusSymBreakLazy() ||
-                   d_active_terms.find(t) != d_active_terms.end()
+              if (!options::sygusSymBreakLazy()
+                  || d_active_terms.find(t) != d_active_terms.end()
                          && !it->second.empty())
               {
                 std::vector<Node> slemmas;
