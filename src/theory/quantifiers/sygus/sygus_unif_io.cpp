@@ -537,7 +537,6 @@ void SygusUnifIo::notifyEnumeration(Node e, Node v, std::vector<Node>& lemmas)
         if( sres.isNull() )
         {
           // fall back on rewriter
-          TNode tres = res;
           sres = templ.substitute(templ_var,tres);
           sres = Rewriter::rewrite(sres);
         }
