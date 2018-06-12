@@ -31,11 +31,11 @@ Node Evaluator::eval(TNode n,
   return evalInternal(n, args, vals).toNode();
 }
 
-Result Evaluator::evalInternal(TNode n,
+EvalResult Evaluator::evalInternal(TNode n,
                                const std::vector<Node>& args,
                                const std::vector<Node>& vals)
 {
-  std::unordered_map<TNode, Result, TNodeHashFunction> results;
+  std::unordered_map<TNode, EvalResult, TNodeHashFunction> results;
   std::vector<TNode> queue;
   queue.emplace_back(n);
 
@@ -70,7 +70,7 @@ Result Evaluator::evalInternal(TNode n,
 
         if (it == args.end())
         {
-          return Result();
+          return EvalResult();
         }
 
         ptrdiff_t pos = std::distance(args.begin(), it);
@@ -100,22 +100,22 @@ Result Evaluator::evalInternal(TNode n,
       switch (currNodeVal.getKind())
       {
         case kind::CONST_BITVECTOR:
-          results[currNode] = Result(currNodeVal.getConst<BitVector>());
+          results[currNode] = EvalResult(currNodeVal.getConst<BitVector>());
           break;
 
         case kind::BITVECTOR_NOT:
-          results[currNode] = Result(~results[currNode[0]].d_bv);
+          results[currNode] = EvalResult(~results[currNode[0]].d_bv);
           break;
 
         case kind::BITVECTOR_NEG:
-          results[currNode] = Result(-results[currNode[0]].d_bv);
+          results[currNode] = EvalResult(-results[currNode[0]].d_bv);
           break;
 
         case kind::BITVECTOR_EXTRACT:
         {
           unsigned lo = bv::utils::getExtractLow(currNodeVal);
           unsigned hi = bv::utils::getExtractHigh(currNodeVal);
-          results[currNode] = Result(results[currNode[0]].d_bv.extract(hi, lo));
+          results[currNode] = EvalResult(results[currNode[0]].d_bv.extract(hi, lo));
           break;
         }
 
@@ -126,7 +126,7 @@ Result Evaluator::evalInternal(TNode n,
           {
             res = res.concat(results[currNode[i]].d_bv);
           }
-          results[currNode] = Result(res);
+          results[currNode] = EvalResult(res);
           break;
         }
 
@@ -137,7 +137,7 @@ Result Evaluator::evalInternal(TNode n,
           {
             res = res + results[currNode[i]].d_bv;
           }
-          results[currNode] = Result(res);
+          results[currNode] = EvalResult(res);
           break;
         }
 
@@ -148,7 +148,7 @@ Result Evaluator::evalInternal(TNode n,
           {
             res = res * results[currNode[i]].d_bv;
           }
-          results[currNode] = Result(res);
+          results[currNode] = EvalResult(res);
           break;
         }
         case kind::BITVECTOR_AND:
@@ -158,7 +158,7 @@ Result Evaluator::evalInternal(TNode n,
           {
             res = res & results[currNode[i]].d_bv;
           }
-          results[currNode] = Result(res);
+          results[currNode] = EvalResult(res);
           break;
         }
 
@@ -169,7 +169,7 @@ Result Evaluator::evalInternal(TNode n,
           {
             res = res | results[currNode[i]].d_bv;
           }
-          results[currNode] = Result(res);
+          results[currNode] = EvalResult(res);
           break;
         }
 
@@ -180,26 +180,26 @@ Result Evaluator::evalInternal(TNode n,
           {
             res = res ^ results[currNode[i]].d_bv;
           }
-          results[currNode] = Result(res);
+          results[currNode] = EvalResult(res);
           break;
         }
 
         case kind::EQUAL:
         {
-          Result lhs = results[currNode[0]];
-          Result rhs = results[currNode[1]];
+          EvalResult lhs = results[currNode[0]];
+          EvalResult rhs = results[currNode[1]];
 
           switch (lhs.d_tag)
           {
-            case Result::BOOL:
+            case EvalResult::BOOL:
             {
-              results[currNode] = Result(lhs.d_bool == rhs.d_bool);
+              results[currNode] = EvalResult(lhs.d_bool == rhs.d_bool);
               break;
             }
 
-            case Result::BITVECTOR:
+            case EvalResult::BITVECTOR:
             {
-              results[currNode] = Result(lhs.d_bv == rhs.d_bv);
+              results[currNode] = EvalResult(lhs.d_bv == rhs.d_bv);
               break;
             }
 
@@ -207,7 +207,7 @@ Result Evaluator::evalInternal(TNode n,
             {
               Trace("evaluator") << "Theory " << Theory::theoryOf(currNode[0])
                                  << " not supported" << std::endl;
-              results[currNode] = Result();
+              results[currNode] = EvalResult();
               break;
             }
           }
@@ -230,7 +230,7 @@ Result Evaluator::evalInternal(TNode n,
 
         case kind::NOT:
         {
-          results[currNode] = Result(!(results[currNode[0]].d_bool));
+          results[currNode] = EvalResult(!(results[currNode[0]].d_bool));
           break;
         }
 
@@ -238,7 +238,7 @@ Result Evaluator::evalInternal(TNode n,
         {
           Trace("evaluator") << "Kind " << currNodeVal.getKind()
                              << " not supported" << std::endl;
-          results[currNode] = Result();
+          results[currNode] = EvalResult();
         }
       }
     }

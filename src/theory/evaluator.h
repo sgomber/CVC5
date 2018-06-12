@@ -28,7 +28,7 @@
 namespace CVC4 {
 namespace theory {
 
-struct Result
+struct EvalResult
 {
   enum
   {
@@ -42,7 +42,7 @@ struct Result
     BitVector d_bv;
   };
 
-  Result(const Result& other)
+  EvalResult(const EvalResult& other)
   {
     d_tag = other.d_tag;
     switch (d_tag)
@@ -56,13 +56,13 @@ struct Result
     }
   }
 
-  Result() : d_tag(INVALID) {}
+  EvalResult() : d_tag(INVALID) {}
 
-  Result(bool b) : d_tag(BOOL), d_bool(b) {}
+  EvalResult(bool b) : d_tag(BOOL), d_bool(b) {}
 
-  Result(const BitVector& bv) : d_tag(BITVECTOR), d_bv(bv) {}
+  EvalResult(const BitVector& bv) : d_tag(BITVECTOR), d_bv(bv) {}
 
-  Result& operator=(const Result& other)
+  EvalResult& operator=(const EvalResult& other)
   {
     if (this != &other)
     {
@@ -80,7 +80,7 @@ struct Result
     return *this;
   }
 
-  ~Result()
+  ~EvalResult()
   {
     if (d_tag == BITVECTOR)
     {
@@ -93,8 +93,8 @@ struct Result
     NodeManager* nm = NodeManager::currentNM();
     switch (d_tag)
     {
-      case Result::BITVECTOR: return nm->mkConst(d_bv);
-      case Result::BOOL: return nm->mkConst(d_bool);
+      case EvalResult::BITVECTOR: return nm->mkConst(d_bv);
+      case EvalResult::BOOL: return nm->mkConst(d_bool);
       default:
       {
         Trace("evaluator") << "Missing conversion from " << d_tag << " to node"
@@ -115,7 +115,7 @@ class Evaluator
             const std::vector<Node>& vals);
 
  private:
-  Result evalInternal(TNode n,
+  EvalResult evalInternal(TNode n,
                       const std::vector<Node>& args,
                       const std::vector<Node>& vals);
 };

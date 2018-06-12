@@ -18,7 +18,6 @@
 #include "options/quantifiers_options.h"
 #include "theory/arith/arith_msum.h"
 #include "theory/datatypes/datatypes_rewriter.h"
-#include "theory/evaluator.h"
 #include "theory/quantifiers/quantifiers_attributes.h"
 #include "theory/quantifiers/term_database.h"
 #include "theory/quantifiers/term_util.h"
@@ -34,6 +33,7 @@ TermDbSygus::TermDbSygus(context::Context* c, QuantifiersEngine* qe)
     : d_quantEngine(qe),
       d_syexp(new SygusExplain(this)),
       d_ext_rw(new ExtendedRewriter(true)),
+      d_eval(new Evaluator),
       d_eval_unfold(new SygusEvalUnfold(this))
 {
   d_true = NodeManager::currentNM()->mkConst( true );
@@ -1631,15 +1631,21 @@ Node TermDbSygus::getEagerUnfold( Node n, std::map< Node, Node >& visited ) {
 }
 
 
-Node TermDbSygus::evaluateBuiltin( TypeNode tn, Node bn, std::vector< Node >& args ) {
+Node TermDbSygus::evaluateBuiltin( TypeNode tn, Node bn, std::vector< Node >& args, bool tryEval ) {
   if( !args.empty() ){
     std::map< TypeNode, std::vector< Node > >::iterator it = d_var_list.find( tn );
     Assert( it!=d_var_list.end() );
     Assert( it->second.size()==args.size() );
 
-    Evaluator eval;
-    Node res = eval.eval(bn, it->second, args);
-    //Node res;
+    Node res;
+    if( tryEval )
+    {
+      // Try evaluating, which is much faster than substitution+rewriting.
+      // This may fail if there is a subterm of bn under the
+      // substitution that is not constant, or if an operator in bn is not
+      // supported by the evaluator
+      res = d_eval->eval(bn, it->second, args);
+    }
     if (!res.isNull())
     {
       Assert(res
