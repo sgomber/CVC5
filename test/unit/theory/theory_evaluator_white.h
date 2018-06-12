@@ -22,6 +22,7 @@
 #include "expr/node_manager.h"
 #include "smt/smt_engine.h"
 #include "smt/smt_engine_scope.h"
+#include "theory/bv/theory_bv_utils.h"
 #include "theory/evaluator.h"
 #include "theory/rewriter.h"
 #include "theory/strings/theory_strings_rewriter.h"
@@ -60,7 +61,7 @@ class TheoryEvaluatorWhite : public CxxTest::TestSuite
     delete d_em;
   }
 
-  void testCheckEntailArithWithAssumption()
+  void testSimple()
   {
     TypeNode bv64Type = d_nm->mkBitVectorType(64);
 
@@ -85,5 +86,34 @@ class TheoryEvaluatorWhite : public CxxTest::TestSuite
     eval.eval(d_nm->mkNode(kind::ITE, d_nm->mkNode(kind::EQUAL, y, one), x, w),
               args,
               vals);
+  }
+
+  void testLoop()
+  {
+    TypeNode bv64Type = d_nm->mkBitVectorType(64);
+
+    Node w = d_nm->mkBoundVar(bv64Type);
+    Node x = d_nm->mkVar("x", bv64Type);
+
+    Node zero = d_nm->mkConst(BitVector(1, (unsigned int)0));
+    Node one = d_nm->mkConst(BitVector(64, (unsigned int)1));
+
+    Node largs = d_nm->mkNode(kind::BOUND_VAR_LIST, w);
+    Node lbody = d_nm->mkNode(
+        kind::BITVECTOR_CONCAT, bv::utils::mkExtract(w, 62, 0), zero);
+    Node lambda = d_nm->mkNode(kind::LAMBDA, largs, lbody);
+
+    Node t = d_nm->mkNode(kind::BITVECTOR_AND,
+                          d_nm->mkNode(kind::APPLY_UF, lambda, one),
+                          d_nm->mkNode(kind::APPLY_UF, lambda, x));
+
+    Node c = d_nm->mkConst(BitVector(
+        64,
+        (unsigned int)0b0001111000010111110000110110001101011110111001101100000101010100));
+
+    std::vector<Node> args = {x};
+    std::vector<Node> vals = {c};
+    Evaluator eval;
+    eval.eval(t, args, vals);
   }
 };
