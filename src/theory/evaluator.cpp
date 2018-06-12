@@ -17,6 +17,7 @@
 #include "theory/evaluator.h"
 
 #include "theory/bv/theory_bv_utils.h"
+#include "theory/theory.h"
 
 namespace CVC4 {
 namespace theory {
@@ -181,7 +182,29 @@ Node Evaluator::eval(TNode n,
           Result lhs = d_results[currNode[0]];
           Result rhs = d_results[currNode[1]];
 
-          d_results[currNode] = Result(lhs.d_bv == rhs.d_bv);
+          switch (Theory::theoryOf(currNode[0]))
+          {
+            case THEORY_BOOL:
+            {
+              d_results[currNode] = Result(lhs.d_bool == rhs.d_bool);
+              break;
+            }
+
+            case THEORY_BV:
+            {
+              d_results[currNode] = Result(lhs.d_bv == rhs.d_bv);
+              break;
+            }
+
+            default:
+            {
+              Trace("evaluator") << "Theory " << Theory::theoryOf(currNode[0])
+                                 << " not supported" << std::endl;
+              d_results[currNode] = Result();
+              break;
+            }
+          }
+
           break;
         }
 
