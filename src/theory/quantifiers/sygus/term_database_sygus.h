@@ -19,8 +19,8 @@
 
 #include <unordered_set>
 
-#include "theory/quantifiers/extended_rewrite.h"
 #include "theory/evaluator.h"
+#include "theory/quantifiers/extended_rewrite.h"
 #include "theory/quantifiers/sygus/sygus_eval_unfold.h"
 #include "theory/quantifiers/sygus/sygus_explain.h"
 #include "theory/quantifiers/term_database.h"
@@ -193,11 +193,14 @@ class TermDbSygus {
    * bn is a term of some sygus datatype tn. This function returns the rewritten
    * form of bn [ args / vars(tn) ], where vars(tn) is the sygus variable
    * list for type tn (see Datatype::getSygusVarList).
-   * 
+   *
    * If the argument tryEval is true, we consult the evaluator before the
    * rewriter, for performance reasons.
    */
-  Node evaluateBuiltin(TypeNode tn, Node bn, std::vector<Node>& args, bool tryEval = true);
+  Node evaluateBuiltin(TypeNode tn,
+                       Node bn,
+                       std::vector<Node>& args,
+                       bool tryEval = true);
   /** evaluate with unfolding
    *
    * n is any term that may involve sygus evaluation functions. This function

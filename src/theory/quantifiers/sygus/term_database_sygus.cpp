@@ -1630,15 +1630,18 @@ Node TermDbSygus::getEagerUnfold( Node n, std::map< Node, Node >& visited ) {
   }
 }
 
-
-Node TermDbSygus::evaluateBuiltin( TypeNode tn, Node bn, std::vector< Node >& args, bool tryEval ) {
+Node TermDbSygus::evaluateBuiltin(TypeNode tn,
+                                  Node bn,
+                                  std::vector<Node>& args,
+                                  bool tryEval)
+{
   if( !args.empty() ){
     std::map< TypeNode, std::vector< Node > >::iterator it = d_var_list.find( tn );
     Assert( it!=d_var_list.end() );
     Assert( it->second.size()==args.size() );
 
     Node res;
-    if( tryEval )
+    if (tryEval)
     {
       // Try evaluating, which is much faster than substitution+rewriting.
       // This may fail if there is a subterm of bn under the

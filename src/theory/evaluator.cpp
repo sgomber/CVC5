@@ -32,8 +32,8 @@ Node Evaluator::eval(TNode n,
 }
 
 EvalResult Evaluator::evalInternal(TNode n,
-                               const std::vector<Node>& args,
-                               const std::vector<Node>& vals)
+                                   const std::vector<Node>& args,
+                                   const std::vector<Node>& vals)
 {
   std::unordered_map<TNode, EvalResult, TNodeHashFunction> results;
   std::vector<TNode> queue;
@@ -115,7 +115,8 @@ EvalResult Evaluator::evalInternal(TNode n,
         {
           unsigned lo = bv::utils::getExtractLow(currNodeVal);
           unsigned hi = bv::utils::getExtractHigh(currNodeVal);
-          results[currNode] = EvalResult(results[currNode[0]].d_bv.extract(hi, lo));
+          results[currNode] =
+              EvalResult(results[currNode[0]].d_bv.extract(hi, lo));
           break;
         }
 

@@ -116,8 +116,8 @@ class Evaluator
 
  private:
   EvalResult evalInternal(TNode n,
-                      const std::vector<Node>& args,
-                      const std::vector<Node>& vals);
+                          const std::vector<Node>& args,
+                          const std::vector<Node>& vals);
 };
 
 }  // namespace theory
