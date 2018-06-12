@@ -115,8 +115,9 @@ class Evaluator
             const std::vector<Node>& vals);
 
  private:
-  bool d_hasResult;
-  std::unordered_map<TNode, Result, TNodeHashFunction> d_results;
+  Result evalInternal(TNode n,
+                      const std::vector<Node>& args,
+                      const std::vector<Node>& vals);
 };
 
 }  // namespace theory

@@ -17,6 +17,7 @@
 #include "theory/evaluator.h"
 
 #include "theory/bv/theory_bv_utils.h"
+#include "theory/theory.h"
 
 namespace CVC4 {
 namespace theory {
@@ -25,9 +26,16 @@ Node Evaluator::eval(TNode n,
                      const std::vector<Node>& args,
                      const std::vector<Node>& vals)
 {
-  d_results.clear();
-  d_hasResult = true;
+  Trace("evaluator") << "Evaluating " << n << " under substitution " << args
+                     << " " << vals << std::endl;
+  return evalInternal(n, args, vals).toNode();
+}
 
+Result Evaluator::evalInternal(TNode n,
+                               const std::vector<Node>& args,
+                               const std::vector<Node>& vals)
+{
+  std::unordered_map<TNode, Result, TNodeHashFunction> results;
   std::vector<TNode> queue;
   queue.emplace_back(n);
 
@@ -35,7 +43,7 @@ Node Evaluator::eval(TNode n,
   {
     TNode currNode = queue.back();
 
-    if (d_results.find(currNode) != d_results.end())
+    if (results.find(currNode) != results.end())
     {
       queue.pop_back();
       continue;
@@ -44,7 +52,7 @@ Node Evaluator::eval(TNode n,
     bool doEval = true;
     for (const auto& currNodeChild : currNode)
     {
-      if (d_results.find(currNodeChild) == d_results.end())
+      if (results.find(currNodeChild) == results.end())
       {
         queue.emplace_back(currNodeChild);
         doEval = false;
@@ -62,7 +70,7 @@ Node Evaluator::eval(TNode n,
 
         if (it == args.end())
         {
-          return Node::null();
+          return Result();
         }
 
         ptrdiff_t pos = std::distance(args.begin(), it);
@@ -82,125 +90,147 @@ Node Evaluator::eval(TNode n,
 
         for (const auto& lambdaVal : currNode)
         {
-          lambdaVals.insert(lambdaVals.begin(), d_results[lambdaVal].toNode());
+          lambdaVals.insert(lambdaVals.begin(), results[lambdaVal].toNode());
         }
 
-        currNodeVal = eval(op[1], lambdaArgs, lambdaVals);
+        results[currNode] = evalInternal(op[1], lambdaArgs, lambdaVals);
+        continue;
       }
 
       switch (currNodeVal.getKind())
       {
         case kind::CONST_BITVECTOR:
-          d_results[currNode] = Result(currNodeVal.getConst<BitVector>());
+          results[currNode] = Result(currNodeVal.getConst<BitVector>());
           break;
 
         case kind::BITVECTOR_NOT:
-          d_results[currNode] = Result(~d_results[currNode[0]].d_bv);
+          results[currNode] = Result(~results[currNode[0]].d_bv);
           break;
 
         case kind::BITVECTOR_NEG:
-          d_results[currNode] = Result(-d_results[currNode[0]].d_bv);
+          results[currNode] = Result(-results[currNode[0]].d_bv);
           break;
 
         case kind::BITVECTOR_EXTRACT:
         {
           unsigned lo = bv::utils::getExtractLow(currNodeVal);
           unsigned hi = bv::utils::getExtractHigh(currNodeVal);
-          d_results[currNode] =
-              Result(d_results[currNode[0]].d_bv.extract(hi, lo));
+          results[currNode] = Result(results[currNode[0]].d_bv.extract(hi, lo));
           break;
         }
 
         case kind::BITVECTOR_CONCAT:
         {
-          BitVector res = d_results[currNode[0]].d_bv;
+          BitVector res = results[currNode[0]].d_bv;
           for (size_t i = 1, end = currNode.getNumChildren(); i < end; i++)
           {
-            res = res.concat(d_results[currNode[i]].d_bv);
+            res = res.concat(results[currNode[i]].d_bv);
           }
-          d_results[currNode] = Result(res);
+          results[currNode] = Result(res);
           break;
         }
 
         case kind::BITVECTOR_PLUS:
         {
-          BitVector res = d_results[currNode[0]].d_bv;
+          BitVector res = results[currNode[0]].d_bv;
           for (size_t i = 1, end = currNode.getNumChildren(); i < end; i++)
           {
-            res = res + d_results[currNode[i]].d_bv;
+            res = res + results[currNode[i]].d_bv;
           }
-          d_results[currNode] = Result(res);
+          results[currNode] = Result(res);
           break;
         }
 
         case kind::BITVECTOR_MULT:
         {
-          BitVector res = d_results[currNode[0]].d_bv;
+          BitVector res = results[currNode[0]].d_bv;
           for (size_t i = 1, end = currNode.getNumChildren(); i < end; i++)
           {
-            res = res * d_results[currNode[i]].d_bv;
+            res = res * results[currNode[i]].d_bv;
           }
-          d_results[currNode] = Result(res);
+          results[currNode] = Result(res);
           break;
         }
         case kind::BITVECTOR_AND:
         {
-          BitVector res = d_results[currNode[0]].d_bv;
+          BitVector res = results[currNode[0]].d_bv;
           for (size_t i = 1, end = currNode.getNumChildren(); i < end; i++)
           {
-            res = res & d_results[currNode[i]].d_bv;
+            res = res & results[currNode[i]].d_bv;
           }
-          d_results[currNode] = Result(res);
+          results[currNode] = Result(res);
           break;
         }
 
         case kind::BITVECTOR_OR:
         {
-          BitVector res = d_results[currNode[0]].d_bv;
+          BitVector res = results[currNode[0]].d_bv;
           for (size_t i = 1, end = currNode.getNumChildren(); i < end; i++)
           {
-            res = res | d_results[currNode[i]].d_bv;
+            res = res | results[currNode[i]].d_bv;
           }
-          d_results[currNode] = Result(res);
+          results[currNode] = Result(res);
           break;
         }
 
         case kind::BITVECTOR_XOR:
         {
-          BitVector res = d_results[currNode[0]].d_bv;
+          BitVector res = results[currNode[0]].d_bv;
           for (size_t i = 1, end = currNode.getNumChildren(); i < end; i++)
           {
-            res = res ^ d_results[currNode[i]].d_bv;
+            res = res ^ results[currNode[i]].d_bv;
           }
-          d_results[currNode] = Result(res);
+          results[currNode] = Result(res);
           break;
         }
 
         case kind::EQUAL:
         {
-          Result lhs = d_results[currNode[0]];
-          Result rhs = d_results[currNode[1]];
+          Result lhs = results[currNode[0]];
+          Result rhs = results[currNode[1]];
 
-          d_results[currNode] = Result(lhs.d_bv == rhs.d_bv);
+          switch (lhs.d_tag)
+          {
+            case Result::BOOL:
+            {
+              results[currNode] = Result(lhs.d_bool == rhs.d_bool);
+              break;
+            }
+
+            case Result::BITVECTOR:
+            {
+              results[currNode] = Result(lhs.d_bv == rhs.d_bv);
+              break;
+            }
+
+            default:
+            {
+              Trace("evaluator") << "Theory " << Theory::theoryOf(currNode[0])
+                                 << " not supported" << std::endl;
+              results[currNode] = Result();
+              break;
+            }
+          }
+
           break;
         }
 
         case kind::ITE:
         {
-          if (d_results[currNode[0]].d_bool)
+          if (results[currNode[0]].d_bool)
           {
-            d_results[currNode] = d_results[currNode[1]];
+            results[currNode] = results[currNode[1]];
           }
           else
           {
-            d_results[currNode] = d_results[currNode[2]];
+            results[currNode] = results[currNode[2]];
           }
           break;
         }
 
         case kind::NOT:
         {
-          d_results[currNode] = Result(!(d_results[currNode[0]].d_bool));
+          results[currNode] = Result(!(results[currNode[0]].d_bool));
           break;
         }
 
@@ -208,13 +238,13 @@ Node Evaluator::eval(TNode n,
         {
           Trace("evaluator") << "Kind " << currNodeVal.getKind()
                              << " not supported" << std::endl;
-          d_results[currNode] = Result();
+          results[currNode] = Result();
         }
       }
     }
   }
 
-  return d_results[n].toNode();
+  return results[n];
 }
 
 }  // namespace theory
