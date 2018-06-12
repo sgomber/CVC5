@@ -1168,6 +1168,14 @@ header = "options/quantifiers_options.h"
   default    = "true"
   help       = "Minimize synthesis solutions"
 
+[[option]]
+  name       = "sygusEvalOpt"
+  category   = "regular"
+  long       = "sygus-eval-opt"
+  type       = "bool"
+  default    = "true"
+  help       = "use optimized approach for evaluation in sygus"
+
 # Internal uses of sygus
 
 [[option]]
