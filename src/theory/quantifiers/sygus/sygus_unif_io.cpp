@@ -516,7 +516,8 @@ void SygusUnifIo::notifyEnumeration(Node e, Node v, std::vector<Node>& lemmas)
   }
   // get the results for each slave enumerator
   std::map<Node, std::vector< Node > > srmap;
-  Evaluator ev;
+  Evaluator* ev = d_tds->getEvaluator();
+  bool tryEval = options::sygusEvalOpt();
   for( const Node& xs : ei.d_enum_slave )
   {
     Assert( srmap.find(xs)==srmap.end());
@@ -533,7 +534,11 @@ void SygusUnifIo::notifyEnumeration(Node e, Node v, std::vector<Node>& lemmas)
         TNode tres = res;
         std::vector< Node > vals;
         vals.push_back(tres);
-        Node sres = ev.eval(templ,args,vals);
+        Node sres;
+        if (tryEval)
+        {
+          sres = ev->eval(templ, args, vals);
+        }
         if( sres.isNull() )
         {
           // fall back on rewriter

@@ -989,10 +989,6 @@ void SygusSymBreakNew::registerSymBreakLemma( TypeNode tn, Node lem, unsigned sz
   Trace("sygus-sb-debug") << "     size : " << sz << std::endl;
   Assert( !a.isNull() );
   d_cache[a].d_sb_lemmas[tn][sz].push_back( lem );
-  if( options::sygusSymBreakLazy() )
-  {
-    return;
-  }
   TNode x = getFreeVar( tn );
   unsigned csz = getSearchSizeForAnchor( a );
   int max_depth = ((int)csz)-((int)sz);
@@ -1002,7 +998,9 @@ void SygusSymBreakNew::registerSymBreakLemma( TypeNode tn, Node lem, unsigned sz
     if( itt!=d_cache[a].d_search_terms[tn].end() ){
       for (const TNode& t : itt->second)
       {
-        if( d_active_terms.find( t )!=d_active_terms.end() ){
+        if (!options::sygusSymBreakLazy()
+            || d_active_terms.find(t) != d_active_terms.end())
+        {
           Node slem = lem.substitute(x, t);
           Node rlv = getRelevancyCondition(t);
           if (!rlv.isNull())
@@ -1184,10 +1182,6 @@ void SygusSymBreakNew::incrementCurrentSearchSize( Node m, std::vector< Node >& 
   std::map< Node, SearchSizeInfo * >::iterator itsz = d_szinfo.find( m );
   Assert( itsz!=d_szinfo.end() );
   itsz->second->d_curr_search_size++;
-  if( options::sygusSymBreakLazy() )
-  {
-    return;
-  }
   Trace("sygus-fair") << "  register search size " << itsz->second->d_curr_search_size << " for " << m << std::endl;
   NodeManager* nm = NodeManager::currentNM();
   for( std::map< Node, SearchCache >::iterator itc = d_cache.begin(); itc != d_cache.end(); ++itc ){
@@ -1207,7 +1201,8 @@ void SygusSymBreakNew::incrementCurrentSearchSize( Node m, std::vector< Node >& 
           if( itt!=itc->second.d_search_terms[tn].end() ){
             for (const TNode& t : itt->second)
             {
-              if (d_active_terms.find(t) != d_active_terms.end()
+              if (!options::sygusSymBreakLazy()
+                  || d_active_terms.find(t) != d_active_terms.end()
                          && !it->second.empty())
               {
                 std::vector<Node> slemmas;

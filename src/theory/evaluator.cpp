@@ -392,7 +392,7 @@ EvalResult Evaluator::evalInternal(TNode n,
             {
               Trace("evaluator") << "Theory " << Theory::theoryOf(currNode[0])
                                  << " not supported" << std::endl;
-              results[currNode] = EvalResult();
+              return EvalResult();
               break;
             }
           }
