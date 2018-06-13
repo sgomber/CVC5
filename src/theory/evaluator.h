@@ -24,7 +24,7 @@
 #include "base/output.h"
 #include "expr/node.h"
 #include "util/bitvector.h"
-#include "util/integer.h"
+#include "util/rational.h"
 #include "util/regexp.h"
 
 namespace CVC4 {
@@ -36,7 +36,7 @@ struct EvalResult
   {
     BOOL,
     BITVECTOR,
-    INTEGER,
+    RATIONAL,
     STRING,
     INVALID
   } d_tag;
@@ -45,7 +45,7 @@ struct EvalResult
   {
     bool d_bool;
     BitVector d_bv;
-    Integer d_int;
+    Rational d_rat;
     String d_str;
   };
 
@@ -59,9 +59,9 @@ struct EvalResult
         new (&d_bv) BitVector;
         d_bv = other.d_bv;
         break;
-      case INTEGER:
-        new (&d_bv) Integer;
-        d_int = other.d_int;
+      case RATIONAL:
+        new (&d_bv) Rational;
+        d_rat = other.d_rat;
         break;
       case STRING:
         new (&d_str) String;
@@ -77,7 +77,7 @@ struct EvalResult
 
   EvalResult(const BitVector& bv) : d_tag(BITVECTOR), d_bv(bv) {}
 
-  EvalResult(const Integer& i) : d_tag(INTEGER), d_int(i) {}
+  EvalResult(const Rational& i) : d_tag(RATIONAL), d_rat(i) {}
 
   EvalResult(const String& str) : d_tag(STRING), d_str(str) {}
 
@@ -93,9 +93,9 @@ struct EvalResult
           new (&d_bv) BitVector;
           d_bv = other.d_bv;
           break;
-        case INTEGER:
-          new (&d_bv) Integer;
-          d_int = other.d_int;
+        case RATIONAL:
+          new (&d_bv) Rational;
+          d_rat = other.d_rat;
           break;
         case STRING:
           new (&d_str) String;
@@ -116,9 +116,9 @@ struct EvalResult
         d_bv.~BitVector();
         break;
       }
-      case INTEGER:
+      case RATIONAL:
       {
-        d_int.~Integer();
+        d_rat.~Rational();
         break;
       }
       case STRING:
@@ -138,7 +138,7 @@ struct EvalResult
     {
       case EvalResult::BOOL: return nm->mkConst(d_bool);
       case EvalResult::BITVECTOR: return nm->mkConst(d_bv);
-      case EvalResult::INTEGER: return nm->mkConst(Rational(d_int));
+      case EvalResult::RATIONAL: return nm->mkConst(d_rat);
       case EvalResult::STRING: return nm->mkConst(d_str);
       default:
       {

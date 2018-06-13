@@ -18,7 +18,7 @@
 
 #include "theory/bv/theory_bv_utils.h"
 #include "theory/theory.h"
-#include "util/rational.h"
+#include "util/integer.h"
 
 namespace CVC4 {
 namespace theory {
@@ -110,10 +110,10 @@ EvalResult Evaluator::evalInternal(TNode n,
 
         case kind::PLUS:
         {
-          Integer res = results[currNode[0]].d_int;
+          Rational res = results[currNode[0]].d_rat;
           for (size_t i = 1, end = currNode.getNumChildren(); i < end; i++)
           {
-            res = res + results[currNode[i]].d_int;
+            res = res + results[currNode[i]].d_rat;
           }
           results[currNode] = EvalResult(res);
           break;
@@ -121,18 +121,18 @@ EvalResult Evaluator::evalInternal(TNode n,
 
         case kind::MINUS:
         {
-          const Integer& x = results[currNode[0]].d_int;
-          const Integer& y = results[currNode[1]].d_int;
+          const Rational& x = results[currNode[0]].d_rat;
+          const Rational& y = results[currNode[1]].d_rat;
           results[currNode] = EvalResult(x - y);
           break;
         }
 
         case kind::MULT:
         {
-          Integer res = results[currNode[0]].d_int;
+          Rational res = results[currNode[0]].d_rat;
           for (size_t i = 1, end = currNode.getNumChildren(); i < end; i++)
           {
-            res = res * results[currNode[i]].d_int;
+            res = res * results[currNode[i]].d_rat;
           }
           results[currNode] = EvalResult(res);
           break;
@@ -140,8 +140,8 @@ EvalResult Evaluator::evalInternal(TNode n,
 
         case kind::GEQ:
         {
-          const Integer& x = results[currNode[0]].d_int;
-          const Integer& y = results[currNode[1]].d_int;
+          const Rational& x = results[currNode[0]].d_rat;
+          const Rational& y = results[currNode[1]].d_rat;
           results[currNode] = EvalResult(x >= y);
           break;
         }
@@ -164,16 +164,16 @@ EvalResult Evaluator::evalInternal(TNode n,
         case kind::STRING_LENGTH:
         {
           const String& s = results[currNode[0]].d_str;
-          results[currNode] = EvalResult(Integer(s.size()));
+          results[currNode] = EvalResult(Rational(s.size()));
           break;
         }
 
         case kind::STRING_SUBSTR:
         {
           const String& s = results[currNode[0]].d_str;
-          Integer s_len = Integer(s.size());
-          const Integer& i = results[currNode[1]].d_int;
-          const Integer& j = results[currNode[2]].d_int;
+          Integer s_len(s.size());
+          Integer i = results[currNode[1]].d_rat.getNumerator();
+          Integer j = results[currNode[2]].d_rat.getNumerator();
 
           if (i.strictlyNegative() || j.strictlyNegative() || i >= s_len)
           {
@@ -195,8 +195,8 @@ EvalResult Evaluator::evalInternal(TNode n,
         case kind::STRING_CHARAT:
         {
           const String& s = results[currNode[0]].d_str;
-          Integer s_len = Integer(s.size());
-          const Integer& i = results[currNode[1]].d_int;
+          Integer s_len(s.size());
+          Integer i = results[currNode[1]].d_rat.getNumerator();
           if (i.strictlyNegative() || i >= s_len)
           {
             results[currNode] = EvalResult(String(""));
@@ -211,24 +211,24 @@ EvalResult Evaluator::evalInternal(TNode n,
         case kind::STRING_STRIDOF:
         {
           const String& s = results[currNode[0]].d_str;
-          Integer s_len = Integer(s.size());
+          Integer s_len(s.size());
           const String& x = results[currNode[1]].d_str;
-          const Integer& i = results[currNode[2]].d_int;
+          Integer i = results[currNode[2]].d_rat.getNumerator();
 
           if (i.strictlyNegative() || i >= s_len)
           {
-            results[currNode] = EvalResult(Integer(-1));
+            results[currNode] = EvalResult(Rational(-1));
           }
           else
           {
             size_t r = s.find(x, i.toUnsignedInt());
             if (r == std::string::npos)
             {
-              results[currNode] = EvalResult(Integer(-1));
+              results[currNode] = EvalResult(Rational(-1));
             }
             else
             {
-              results[currNode] = EvalResult(Integer(r));
+              results[currNode] = EvalResult(Rational(r));
             }
           }
           break;
@@ -245,7 +245,7 @@ EvalResult Evaluator::evalInternal(TNode n,
 
         case kind::STRING_ITOS:
         {
-          const Integer& i = results[currNode[0]].d_int;
+          Integer i = results[currNode[0]].d_rat.getNumerator();
           if (i.strictlyNegative())
           {
             results[currNode] = EvalResult(String(""));
@@ -262,11 +262,11 @@ EvalResult Evaluator::evalInternal(TNode n,
           const String& s = results[currNode[0]].d_str;
           if (s.isNumber())
           {
-            results[currNode] = EvalResult(Integer(-1));
+            results[currNode] = EvalResult(Rational(-1));
           }
           else
           {
-            results[currNode] = EvalResult(Integer(s.toNumber()));
+            results[currNode] = EvalResult(Rational(s.toNumber()));
           }
           break;
         }
@@ -376,9 +376,9 @@ EvalResult Evaluator::evalInternal(TNode n,
               break;
             }
 
-            case EvalResult::INTEGER:
+            case EvalResult::RATIONAL:
             {
-              results[currNode] = EvalResult(lhs.d_int == rhs.d_int);
+              results[currNode] = EvalResult(lhs.d_rat == rhs.d_rat);
               break;
             }
 
