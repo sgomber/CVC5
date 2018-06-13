@@ -240,6 +240,7 @@ EvalResult Evaluator::evalInternal(TNode n,
           Trace("evaluator") << "Kind " << currNodeVal.getKind()
                              << " not supported" << std::endl;
           results[currNode] = EvalResult();
+          return EvalResult();
         }
       }
     }
