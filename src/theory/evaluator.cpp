@@ -127,6 +127,25 @@ EvalResult Evaluator::evalInternal(TNode n,
           break;
         }
 
+        case kind::MULT:
+        {
+          Integer res = results[currNode[0]].d_int;
+          for (size_t i = 1, end = currNode.getNumChildren(); i < end; i++)
+          {
+            res = res * results[currNode[i]].d_int;
+          }
+          results[currNode] = EvalResult(res);
+          break;
+        }
+
+        case kind::GEQ:
+        {
+          const Integer& x = results[currNode[0]].d_int;
+          const Integer& y = results[currNode[1]].d_int;
+          results[currNode] = EvalResult(x >= y);
+          break;
+        }
+
         case kind::CONST_STRING:
           results[currNode] = EvalResult(currNodeVal.getConst<String>());
           break;
@@ -354,6 +373,18 @@ EvalResult Evaluator::evalInternal(TNode n,
             case EvalResult::BITVECTOR:
             {
               results[currNode] = EvalResult(lhs.d_bv == rhs.d_bv);
+              break;
+            }
+
+            case EvalResult::INTEGER:
+            {
+              results[currNode] = EvalResult(lhs.d_int == rhs.d_int);
+              break;
+            }
+
+            case EvalResult::STRING:
+            {
+              results[currNode] = EvalResult(lhs.d_str == rhs.d_str);
               break;
             }
 
