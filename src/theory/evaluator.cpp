@@ -103,8 +103,7 @@ EvalResult Evaluator::evalInternal(TNode n,
         case kind::CONST_RATIONAL:
         {
           const Rational& r = currNodeVal.getConst<Rational>();
-          Assert(r.getDenominator() == 1);
-          results[currNode] = EvalResult(r.getNumerator());
+          results[currNode] = EvalResult(r);
           break;
         }
 
