@@ -60,7 +60,7 @@ struct EvalResult
         d_bv = other.d_bv;
         break;
       case RATIONAL:
-        new (&d_bv) Rational;
+        new (&d_rat) Rational;
         d_rat = other.d_rat;
         break;
       case STRING:
@@ -94,7 +94,7 @@ struct EvalResult
           d_bv = other.d_bv;
           break;
         case RATIONAL:
-          new (&d_bv) Rational;
+          new (&d_rat) Rational;
           d_rat = other.d_rat;
           break;
         case STRING:
