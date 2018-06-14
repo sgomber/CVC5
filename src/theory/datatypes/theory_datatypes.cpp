@@ -2226,26 +2226,13 @@ bool TheoryDatatypes::checkClashModEq( TNode n1, TNode n2, std::vector< Node >& 
 
 void TheoryDatatypes::getRelevantTerms( std::set<Node>& termSet ) {
   // Compute terms appearing in assertions and shared terms
-  computeRelevantTerms(termSet);
+  std::set<Kind> irr_kinds;
+  // testers are not relevant for model construction
+  irr_kinds.insert(APPLY_TESTER);
+  computeRelevantTerms(termSet, irr_kinds);
 
   Trace("dt-cmi") << "Have " << termSet.size() << " relevant terms..."
                   << std::endl;
-  // testers are not relevant for model construction
-  std::vector<Node> testers;
-  for (const Node& t : termSet)
-  {
-    Node ta = t.getKind() == NOT ? t[0] : t;
-    if (ta.getKind() == APPLY_TESTER)
-    {
-      testers.push_back(t);
-    }
-  }
-  for (const Node& t : testers)
-  {
-    termSet.erase(t);
-  }
-  Trace("dt-cmi") << "After removing testers, has " << termSet.size()
-                  << " relevant terms..." << std::endl;
 
   //also include non-singleton equivalence classes  TODO : revisit this
   eq::EqClassesIterator eqcs_i = eq::EqClassesIterator( &d_equalityEngine );
