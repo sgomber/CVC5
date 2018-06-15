@@ -473,7 +473,7 @@ void SygusUnifIo::initializeCandidate(
     QuantifiersEngine* qe,
     Node f,
     std::vector<Node>& enums,
-    std::map<Node, std::vector<Node>>& strategy_lemmas)
+    std::map<Node, StrategySymBreak>& strategy_lemmas)
 {
   d_examples.clear();
   d_examples_out.clear();
