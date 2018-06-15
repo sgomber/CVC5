@@ -66,7 +66,7 @@ class SygusUnif
       QuantifiersEngine* qe,
       Node f,
       std::vector<Node>& enums,
-      std::map<Node, StrategySymBreak>& strategy_lemmas);
+      std::map<Node, std::vector<Node>>& strategy_lemmas);
 
   /**
    * Notify that the value v has been enumerated for enumerator e. This call

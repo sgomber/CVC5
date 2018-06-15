@@ -58,7 +58,7 @@ class CegisUnifEnumManager
    */
   void initialize(const std::vector<Node>& es,
                   const std::map<Node, Node>& e_to_cond,
-                  const std::map<Node, StrategySymBreak>& strategy_lemmas);
+                  const std::map<Node, std::vector<Node>>& strategy_lemmas);
   /** get the current set of enumerators for strategy point e
    *
    * Index 0 adds the set of return value enumerators to es, index 1 adds the
@@ -126,24 +126,15 @@ class CegisUnifEnumManager
      * each of these are equal to one of d_enums[0].
      */
     std::vector<Node> d_eval_points;
-    /** static symmetry breaking lemma template for this strategy point
+    /** symmetry breaking lemma template for this strategy point
      *
-     * Each pair stores (the static symmetry breaking lemma template, argument
-     * (to be instantiated) of symmetry breaking lemma template).
+     * Each pair stores (the symmetry breaking lemma template, argument (to be
+     * instantiated) of symmetry breaking lemma template).
      *
      * Index 0 stores the symmetry breaking lemma template for return values,
      * index 1 stores the template for conditions.
      */
     std::pair<Node, Node> d_sbt_lemma_tmpl[2];
-    /** dynamic symmetry breaking lemma template for this strategy point
-     *
-     * Each map stores the type of the template variables, the lemma and the
-     * minimal weight of the constructors being eliminated
-     *
-     * Index 0 stores the symmetry breaking lemma template for return values,
-     * index 1 stores the template for conditions.
-     */
-    std::map<TypeNode, std::pair<Node, unsigned>> d_dyn_sbt_lemma_tmpl[2];
   };
   /** map strategy points to the above info */
   std::map<Node, StrategyPtInfo> d_ce_info;

@@ -243,10 +243,7 @@ class EnumTypeInfoStrat
  */
 struct StrategyRestrictions
 {
-  StrategyRestrictions()
-      : d_iteReturnBoolConst(false),
-        d_iteCondOnlyAtoms(true),
-        d_removeRetITEs(true)
+  StrategyRestrictions() : d_iteReturnBoolConst(false), d_iteCondOnlyAtoms(true)
   {
   }
   /**
@@ -260,36 +257,12 @@ struct StrategyRestrictions
    */
   bool d_iteCondOnlyAtoms;
   /**
-   * if this flag is true then staticLearnRedundantOps will also try to "pull"
-   * ITEs from condition values. This can be done by creating symmetry breaking
-   * lemmas for types using a strategy whose constructor is an ITE, which means
-   * that the child strategy doing the ITE condition enumeration does not need
-   * to have ITEs in its value.
-   */
-  bool d_removeRetITEs;
-  /**
    * A list of unused strategies. This maps strategy points to the indices
    * in StrategyNode::d_strats that are not used by the caller of
    * staticLearnRedundantOps, and hence should not be taken into account
    * when doing redundant operator learning.
    */
   std::map<Node, std::unordered_set<unsigned>> d_unused_strategies;
-};
-
-/** Accumulates information inferred from strategies for building symmetry
- * breaking lemmas */
-class StrategySymBreak
-{
- public:
-  /** Simple symmetry breaking lemmas for excluding top level occurrinces of
-   * constructors in enumerators */
-  std::vector<Node> d_simple_lemmas;
-  /** Necessary information for building a symmetry breaking lemma template
-   *
-   * each type is mapped to a conjunction of lemmas and the minimal weight of
-   * the constructor being eliminated
-   */
-  std::map<TypeNode, std::pair<Node, unsigned>> d_template_lemmas;
 };
 
 /**
@@ -339,14 +312,14 @@ class SygusUnifStrategy
    * StrategyRestrictions for more details)
    */
   void staticLearnRedundantOps(
-      std::map<Node, StrategySymBreak>& strategy_lemmas,
+      std::map<Node, std::vector<Node>>& strategy_lemmas,
       StrategyRestrictions& restrictions);
   /**
    * creates the default restrictions when they are not given and calls the
    * above function
    */
   void staticLearnRedundantOps(
-      std::map<Node, StrategySymBreak>& strategy_lemmas);
+      std::map<Node, std::vector<Node>>& strategy_lemmas);
 
   /** debug print this strategy on Trace c */
   void debugPrint(const char* c);
@@ -414,21 +387,13 @@ class SygusUnifStrategy
    *
    * This method builds the mapping needs_cons, which maps (master) enumerators
    * to a map from the constructors that it needs.
-   *
-   * It also may directly add simple symmetry breaking lemmas to strategy_lemmas
-   * when we exclude constructors from selection chains applied to enumerators
-   * (e.g. to exclude ITE from subterms of a condition value whose type allows
-   * an ITE strategy)
    */
   void staticLearnRedundantOps(
       Node e,
       NodeRole nrole,
       std::map<Node, std::map<NodeRole, bool>>& visited,
       std::map<Node, std::map<unsigned, bool>>& needs_cons,
-      std::map<Node, std::map<TypeNode, std::map<Node, unsigned>>>&
-          exclude_sf_cons,
       StrategyRestrictions& restrictions);
-
   /** finish initialization of the strategy tree
    *
    * (e, nrole) specify the strategy node in the graph we are currently

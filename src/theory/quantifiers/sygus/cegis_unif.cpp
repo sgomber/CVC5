@@ -42,7 +42,7 @@ bool CegisUnif::processInitialize(Node n,
   // map from strategy points to their conditions
   std::map<Node, Node> pt_to_cond;
   // strategy lemmas for each strategy point
-  std::map<Node, StrategySymBreak> strategy_lemmas;
+  std::map<Node, std::vector<Node>> strategy_lemmas;
   // Initialize strategies for all functions-to-synhesize
   for (const Node& f : candidates)
   {
@@ -287,7 +287,7 @@ CegisUnifEnumManager::CegisUnifEnumManager(QuantifiersEngine* qe,
 void CegisUnifEnumManager::initialize(
     const std::vector<Node>& es,
     const std::map<Node, Node>& e_to_cond,
-    const std::map<Node, StrategySymBreak>& strategy_lemmas)
+    const std::map<Node, std::vector<Node>>& strategy_lemmas)
 {
   Assert(!d_initialized);
   d_initialized = true;
@@ -314,23 +314,20 @@ void CegisUnifEnumManager::initialize(
     {
       Assert(d_ce_info[e].d_sbt_lemma_tmpl[index].first.isNull());
       Node sp = index == 0 ? e : cond;
-      std::map<Node, StrategySymBreak>::const_iterator it =
+      std::map<Node, std::vector<Node>>::const_iterator it =
           strategy_lemmas.find(sp);
       if (it == strategy_lemmas.end())
       {
         continue;
       }
-      // collect lemmas for removing redundant ops statically for this
-      // candidate's type
-      Node d_sbt_lemma = it->second.d_simple_lemmas.size() == 1
-                             ? it->second.d_simple_lemmas[0]
-                             : nm->mkNode(AND, it->second.d_simple_lemmas);
+      // collect lemmas for removing redundant ops for this candidate's type
+      Node d_sbt_lemma =
+          it->second.size() == 1 ? it->second[0] : nm->mkNode(AND, it->second);
       Trace("cegis-unif-enum-debug")
           << "...adding lemma template to remove redundant operators for " << sp
           << " --> lambda " << sp << ". " << d_sbt_lemma << "\n";
       d_ce_info[e].d_sbt_lemma_tmpl[index] =
           std::pair<Node, Node>(d_sbt_lemma, sp);
-      d_ce_info[e].d_dyn_sbt_lemma_tmpl[index] = it->second.d_template_lemmas;
     }
   }
   // initialize the current literal
@@ -457,19 +454,6 @@ void CegisUnifEnumManager::incrementNumEnumerators()
               << "CegisUnifEnum::lemma, remove redundant ops of " << e << " : "
               << sym_break_red_ops << "\n";
           d_qe->getOutputChannel().lemma(sym_break_red_ops);
-        }
-        if (!ci.second.d_dyn_sbt_lemma_tmpl[index].empty())
-        {
-          // add symmetry breaking templates for this enumerator
-          for (const std::pair<const TypeNode, std::pair<Node, unsigned>>&
-                   temp : ci.second.d_dyn_sbt_lemma_tmpl[index])
-          {
-            Trace("cegis-unif-enum-lemma")
-                << "CegisUnifEnum::lemma, remove redundant ops of subterms of "
-                << e << " : " << temp.second.first << "\n";
-            d_tds->registerSymBreakLemma(
-                e, temp.second.first, temp.first, temp.second.second);
-          }
         }
         // symmetry breaking between enumerators
         if (!ci.second.d_enums[index].empty() && index == 0)
