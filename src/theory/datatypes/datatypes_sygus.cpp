@@ -161,6 +161,57 @@ Node SygusSymBreakNew::getTermOrderPredicate( Node n1, Node n2 ) {
 
   return nm->mkNode(kind::OR, comm_disj);
 }
+
+Node SygusSymBreakNew::getIsConstantPredicate( TNode n )
+{
+  TypeNode tn = n.getType();
+  Node constPred;
+  TNode x = getFreeVar( tn );
+  std::map< TypeNode, Node >::iterator itcp = d_isconst_pred.find(tn);
+  if( itcp==d_isconst_pred.end() )
+  {
+    const Datatype& dt = static_cast<DatatypeType>(tn.toType()).getDatatype();
+    std::vector<Node> exp_const;
+    int anyc_cons_num = d_tds->getAnyConstantConsNum(tn);
+    for (unsigned k = 0, ncons = dt.getNumConstructors(); k < ncons; k++)
+    {
+      Kind nck = d_tds->getConsNumKind(tn, k);
+      bool is_const = false;
+      if( static_cast<int>(k) == anyc_cons_num )
+      {
+        is_const = true;
+      }
+      else if( nck==UNDEFINED_KIND )
+      {
+        Node cc = d_tds->getConsNumConst(tn, k);
+        if (!cc.isNull())
+        {
+          is_const = true;
+        }
+      }
+      if (is_const)
+      {
+        Node tester = DatatypesRewriter::mkTester(x, k, dt);
+        exp_const.push_back(tester);
+      }
+    }
+    if( !exp_const.empty() )
+    {
+      NodeManager * nm = NodeManager::currentNM();
+      constPred = exp_const.size()==1 ? exp_const[0] : nm->mkNode(OR,exp_const);
+    }
+    d_isconst_pred[tn] = constPred;
+  }
+  else
+  {
+    constPred = itcp->second;
+  }
+  if( constPred.isNull() )
+  {
+    return constPred;
+  }
+  return constPred.substitute(x,n);
+}
   
 void SygusSymBreakNew::registerTerm( Node n, std::vector< Node >& lemmas ) {
   if( d_is_top_level.find( n )==d_is_top_level.end() ){
@@ -851,6 +902,10 @@ Node SygusSymBreakNew::registerSearchValue(
         //store rewritten values, regardless of whether it will be considered
         d_cache[a].d_search_val[tn][bvr] = nv;
         d_cache[a].d_search_val_sz[tn][bvr] = sz;
+        if( bvr.isConst() )
+        {
+          d_cache[a].d_search_val_consts[tn].insert(bvr);
+        }
       }else{
         bad_val_bvr = bvr;
         if( Trace.isOn("sygus-sb-exc") ){
@@ -943,9 +998,8 @@ Node SygusSymBreakNew::registerSearchValue(
         } 
         Assert( d_tds->getSygusTermSize( bad_val )==sz );
 
-        Node x = getFreeVar( tn );
-        
-        // do analysis of the evaluation  FIXME: does not work (evaluation is non-constant)
+        // generalize the explanation for why the analog of bad_val 
+        // is equivalent to bvr
         quantifiers::EquivSygusInvarianceTest eset;
         eset.init(d_tds, tn, aconj, a, bvr);
 

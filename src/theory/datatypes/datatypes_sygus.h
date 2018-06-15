@@ -205,6 +205,11 @@ private:
     /** the size of terms in the range of d_search val. */
     std::map<TypeNode, std::unordered_map<Node, unsigned, NodeHashFunction>>
         d_search_val_sz;
+    /** 
+     * For each type tn, this stores all builtin constants in the domain of 
+     * d_search_val[tn]. 
+     */
+    std::map< TypeNode, std::unordered_set<Node, NodeHashFunction>  > d_search_val_consts;
     /** For each term, whether this cache has processed that term */
     std::unordered_set<Node, NodeHashFunction> d_search_val_proc;
   };
@@ -429,7 +434,21 @@ private:
    *   ( DT_SIZE n1 ) >= ( DT_SIZE n2 )
    */
   Node getTermOrderPredicate( Node n1, Node n2 );
-
+  /** get is-constant predicate 
+   * 
+   * Given a term n of sygus datatype type, this returns a predicate that holds
+   * iff the builtin version of n is a (possibly symbolic) constant. For
+   * example, for:
+   *   A -> 0 | 1 | x | A+A
+   * this returns the predicate is-0( n ) V is-1( n ).
+   */
+  Node getIsConstantPredicate( TNode n );
+  /** the is-constant predicate, per sygus datatype type 
+   * 
+   * For each sygus datatype tn, this predicate states that x is a sygus 
+   * datatype value corresponding to a constant, where x is getFreeVar( tn ).
+   */
+  std::map< TypeNode, Node > d_isconst_pred;
  private:
   /**
    * Map from registered variables to whether they are a sygus enumerator.
