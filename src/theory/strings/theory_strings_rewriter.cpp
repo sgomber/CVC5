@@ -19,10 +19,13 @@
 #include <stdint.h>
 #include <algorithm>
 
+#include "expr/node_builder.h"
 #include "options/strings_options.h"
 #include "smt/logic_exception.h"
 #include "theory/arith/arith_msum.h"
 #include "theory/theory.h"
+#include "util/integer.h"
+#include "util/rational.h"
 
 using namespace std;
 using namespace CVC4;
@@ -2016,6 +2019,31 @@ Node TheoryStringsRewriter::rewriteIndexof( Node node ) {
       return returnRewrite(node, negone, "idof-nctn");
     }
   }
+  else
+  {
+    Node new_len = node[2];
+    std::vector<Node> nr;
+    if (stripSymbolicLength(children0, nr, 1, new_len))
+    {
+      // Normalize the string before the start index.
+      //
+      // For example:
+      // str.indexof(str.++("ABCD", x), y, 3) --->
+      // str.indexof(str.++("AAAD", x), y, 3)
+      Node nodeNr = mkConcat(kind::STRING_CONCAT, nr);
+      Node normNr = lengthPreserveRewrite(nodeNr);
+      if (normNr != nodeNr)
+      {
+        std::vector<Node> normNrChildren;
+        getConcat(normNr, normNrChildren);
+        std::vector<Node> children(normNrChildren);
+        children.insert(children.end(), children0.begin(), children0.end());
+        Node nn = mkConcat(kind::STRING_CONCAT, children);
+        Node res = nm->mkNode(kind::STRING_STRIDOF, nn, node[1], node[2]);
+        return returnRewrite(node, res, "idof-norm-prefix");
+      }
+    }
+  }
 
   if (node[2].isConst() && node[2].getConst<Rational>().sgn()==0)
   {
@@ -3034,6 +3062,70 @@ bool TheoryStringsRewriter::stripConstantEndpoints(std::vector<Node>& n1,
   //      which is larger that the upper bound for length of str.substr(y,0,3),
   //      which is 3.
   return changed;
+}
+
+Node TheoryStringsRewriter::canonicalStrForSymbolicLength(Node len)
+{
+  NodeManager* nm = NodeManager::currentNM();
+
+  Node res;
+  if (len.getKind() == kind::CONST_RATIONAL)
+  {
+    // c -> "A" repeated c times
+    Rational ratLen = len.getConst<Rational>();
+    Assert(ratLen.getDenominator() == 1);
+    Integer intLen = ratLen.getNumerator();
+    res = nm->mkConst(String(std::string(intLen.getUnsignedInt(), 'A')));
+  }
+  else if (len.getKind() == kind::PLUS)
+  {
+    // x + y -> norm(x) + norm(y)
+    NodeBuilder<> concatBuilder(kind::STRING_CONCAT);
+    for (const auto& n : len)
+    {
+      Node sn = canonicalStrForSymbolicLength(n);
+      if (sn.isNull())
+      {
+        return Node::null();
+      }
+      std::vector<Node> snChildren;
+      getConcat(sn, snChildren);
+      concatBuilder.append(snChildren);
+    }
+    res = concatBuilder.constructNode();
+  }
+  else if (len.getKind() == kind::MULT && len.getNumChildren() == 2
+           && len[0].isConst())
+  {
+    // c * x -> norm(x) repeated c times
+    Rational ratReps = len[0].getConst<Rational>();
+    Assert(ratReps.getDenominator() == 1);
+    Integer intReps = ratReps.getNumerator();
+
+    Node nRep = canonicalStrForSymbolicLength(len[1]);
+    std::vector<Node> nRepChildren;
+    getConcat(nRep, nRepChildren);
+    NodeBuilder<> concatBuilder(kind::STRING_CONCAT);
+    for (size_t i = 0, reps = intReps.getUnsignedInt(); i < reps; i++)
+    {
+      concatBuilder.append(nRepChildren);
+    }
+    res = concatBuilder.constructNode();
+  }
+  else if (len.getKind() == kind::STRING_LENGTH)
+  {
+    // len(x) -> x
+    res = len[0];
+  }
+  return res;
+}
+
+Node TheoryStringsRewriter::lengthPreserveRewrite(Node n)
+{
+  NodeManager* nm = NodeManager::currentNM();
+  Node len = Rewriter::rewrite(nm->mkNode(kind::STRING_LENGTH, n));
+  Node res = canonicalStrForSymbolicLength(len);
+  return res.isNull() ? n : res;
 }
 
 bool TheoryStringsRewriter::checkEntailNonEmpty(Node a)

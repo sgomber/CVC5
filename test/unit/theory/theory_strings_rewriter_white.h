@@ -245,4 +245,81 @@ class TheoryStringsRewriterWhite : public CxxTest::TestSuite
     Node res_a_repl_substr = Rewriter::rewrite(a_repl_substr);
     TS_ASSERT_EQUALS(res_repl_substr_a, res_a_repl_substr);
   }
+
+  void testLengthPreserveRewrite()
+  {
+    TypeNode intType = d_nm->integerType();
+    TypeNode strType = d_nm->stringType();
+
+    Node empty = d_nm->mkConst(::CVC4::String(""));
+    Node abcd = d_nm->mkConst(::CVC4::String("ABCD"));
+    Node f = d_nm->mkConst(::CVC4::String("F"));
+    Node gh = d_nm->mkConst(::CVC4::String("GH"));
+    Node ij = d_nm->mkConst(::CVC4::String("IJ"));
+
+    Node i = d_nm->mkVar("i", intType);
+    Node s = d_nm->mkVar("s", strType);
+    Node x = d_nm->mkVar("x", strType);
+    Node y = d_nm->mkVar("y", strType);
+
+    // Same length preserving rewrite for:
+    //
+    // (str.++ "ABCD" (str.++ x x))
+    //
+    // (str.++ "GH" (str.repl "GH" "IJ") "IJ")
+    Node concat1 = d_nm->mkNode(
+        kind::STRING_CONCAT, abcd, d_nm->mkNode(kind::STRING_CONCAT, x, x));
+    Node concat2 = d_nm->mkNode(kind::STRING_CONCAT,
+                                gh,
+                                x,
+                                d_nm->mkNode(kind::STRING_STRREPL, x, gh, ij),
+                                ij);
+    Node res_concat1 = TheoryStringsRewriter::lengthPreserveRewrite(concat1);
+    Node res_concat2 = TheoryStringsRewriter::lengthPreserveRewrite(concat2);
+    TS_ASSERT_EQUALS(res_concat1, res_concat2);
+  }
+
+  void testRewriteIndexOf()
+  {
+    TypeNode strType = d_nm->stringType();
+
+    Node a = d_nm->mkConst(::CVC4::String("A"));
+    Node abcd = d_nm->mkConst(::CVC4::String("ABCD"));
+    Node aaad = d_nm->mkConst(::CVC4::String("AAAD"));
+    Node b = d_nm->mkConst(::CVC4::String("B"));
+    Node x = d_nm->mkVar("x", strType);
+    Node y = d_nm->mkVar("y", strType);
+    Node one = d_nm->mkConst(Rational(2));
+    Node three = d_nm->mkConst(Rational(3));
+
+    // Same normal form for:
+    //
+    // (str.to.int (str.indexof "A" x 1))
+    //
+    // (str.to.int (str.indexof "B" x 1))
+    Node a_idof_x = d_nm->mkNode(kind::STRING_STRIDOF, a, x, one);
+    Node itos_a_idof_x = d_nm->mkNode(kind::STRING_ITOS, a_idof_x);
+    Node b_idof_x = d_nm->mkNode(kind::STRING_STRIDOF, b, x, one);
+    Node itos_b_idof_x = d_nm->mkNode(kind::STRING_ITOS, b_idof_x);
+    Node res_itos_a_idof_x = Rewriter::rewrite(itos_a_idof_x);
+    Node res_itos_b_idof_x = Rewriter::rewrite(itos_b_idof_x);
+    TS_ASSERT_EQUALS(res_itos_a_idof_x, res_itos_b_idof_x);
+
+    // Same normal form for:
+    //
+    // (str.indexof (str.++ "ABCD" x) y 3)
+    //
+    // (str.indexof (str.++ "AAAD" x) y 3)
+    Node idof_abcd = d_nm->mkNode(kind::STRING_STRIDOF,
+                                  d_nm->mkNode(kind::STRING_CONCAT, abcd, x),
+                                  y,
+                                  three);
+    Node idof_aaad = d_nm->mkNode(kind::STRING_STRIDOF,
+                                  d_nm->mkNode(kind::STRING_CONCAT, aaad, x),
+                                  y,
+                                  three);
+    Node res_idof_abcd = Rewriter::rewrite(idof_abcd);
+    Node res_idof_aaad = Rewriter::rewrite(idof_aaad);
+    TS_ASSERT_EQUALS(res_idof_abcd, res_idof_aaad);
+  }
 };
