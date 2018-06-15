@@ -1132,6 +1132,7 @@ Node TheoryStringsRewriter::rewriteMembership(TNode node) {
 
 RewriteResponse TheoryStringsRewriter::postRewrite(TNode node) {
   Trace("strings-postrewrite") << "Strings::postRewrite start " << node << std::endl;
+  NodeManager* nm = NodeManager::currentNM();
   Node retNode = node;
   Node orig = retNode;
 
@@ -1162,12 +1163,13 @@ RewriteResponse TheoryStringsRewriter::postRewrite(TNode node) {
         }
         retNode = NodeManager::currentNM()->mkNode(kind::PLUS, node_vec);
       }
-    }else if( node[0].getKind()==kind::STRING_STRREPL ){
-      if( node[0][1].isConst() && node[0][2].isConst() ){
-        // TODO (#1180) length entailment here
-        if( node[0][1].getConst<String>().size()==node[0][2].getConst<String>().size() ){
-          retNode = NodeManager::currentNM()->mkNode( kind::STRING_LENGTH, node[0][0] );
-        }
+    }else if( node[0].getKind()==STRING_STRREPL ){
+      Node len1 = Rewriter::rewrite(nm->mkNode(STRING_LENGTH, node[0][1]));
+      Node len2 = Rewriter::rewrite(nm->mkNode(STRING_LENGTH, node[0][2]));
+      if( len1==len2 )
+      {
+        // len( y ) == len( z ) => len( str.replace( x, y, z ) ) ---> len( x )
+        retNode = nm->mkNode( STRING_LENGTH, node[0][0] );
       }
     }
   }else if( node.getKind() == kind::STRING_CHARAT ){
@@ -1180,7 +1182,6 @@ RewriteResponse TheoryStringsRewriter::postRewrite(TNode node) {
   }
   else if (node.getKind() == kind::STRING_LT)
   {
-    NodeManager* nm = NodeManager::currentNM();
     // eliminate s < t ---> s != t AND s <= t
     retNode = nm->mkNode(AND,
                          node[0].eqNode(node[1]).negate(),

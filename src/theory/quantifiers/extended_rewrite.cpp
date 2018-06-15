@@ -1779,6 +1779,7 @@ Node ExtendedRewriter::extendedRewriteBv(Node ret)
           new_ret = ret[0].eqNode(ret[1]);
           new_ret = new_ret.negate();
           debugExtendedRewrite(ret, new_ret, "ULT-neq");
+          return new_ret;
         }
       }
     }
@@ -1788,6 +1789,7 @@ Node ExtendedRewriter::extendedRewriteBv(Node ret)
       {
         new_ret = nm->mkConst(false);
         debugExtendedRewrite(ret, new_ret, "SLT-id");
+        return new_ret;
       }
     }
   }
@@ -1809,6 +1811,7 @@ Node ExtendedRewriter::extendedRewriteBv(Node ret)
                            TermUtil::mkNegate(BITVECTOR_NEG, ret[0][0]),
                            ret[0][1]);
       debugExtendedRewrite(ret, new_ret, "NEG-SHL-miniscope");
+      return new_ret;
     }
     else if (ck == BITVECTOR_NOT)
     {
@@ -1835,13 +1838,14 @@ Node ExtendedRewriter::extendedRewriteBv(Node ret)
           new_ret = nm->mkNode(
               ck == BITVECTOR_AND ? BITVECTOR_OR : BITVECTOR_AND, children);
           debugExtendedRewrite(ret, new_ret, "NEG-AND/OR-zero-miniscope");
+          return new_ret;
         }
       }
     }
     else if( ck==BITVECTOR_CONCAT )
     {
+      // negating odd numbers flips all but the lsb
       // -concat( t, 1 ) ---> concat( ~t, 1 )
-      // if its last bit is one 
       Node last_child = ret[0][ret[0].getNumChildren()-1];
       if( last_child.isConst() )
       {
@@ -1852,11 +1856,10 @@ Node ExtendedRewriter::extendedRewriteBv(Node ret)
           {
             children.push_back(TermUtil::mkNegate(BITVECTOR_NOT,ret[0][j]));
           }
-          unsigned size = bv::utils::getSize(last_child);
-          if( size>1 )
+          unsigned csize = bv::utils::getSize(last_child);
+          if( csize>1 )
           {
-            Node extract =
-                bv::utils::mkExtract(last_child, size-1, 1);
+            Node extract = bv::utils::mkExtract(last_child, csize-1, 1);
             extract = TermUtil::mkNegate(BITVECTOR_NOT,extract);
             children.push_back(extract);
             children.push_back(bv::utils::mkOnes(1));
@@ -1867,6 +1870,35 @@ Node ExtendedRewriter::extendedRewriteBv(Node ret)
           }
           new_ret = nm->mkNode(BITVECTOR_CONCAT,children);
           debugExtendedRewrite(ret, new_ret, "NEG-odd");
+          return new_ret;
+        }
+      }
+      // negating numbers with msb 1-bits flips all but the last
+      // -concat( 1...11, t ) ----> concat( 0...0, -concat(1, t) )
+      Node first_child = ret[0][0];
+      if( first_child.isConst() )
+      {
+        unsigned csize = bv::utils::getSize(first_child);
+        int i = csize-1;
+        while( i>=0 && bv::utils::getBit(first_child,i) )
+        {
+          i--;
+        }
+        i = i+2;
+        if( i<=static_cast<int>(csize-1) )
+        {
+          Assert( i>0 );
+          Node extract_flip = bv::utils::mkExtract(first_child, csize-1, i);
+          extract_flip = TermUtil::mkNegate(BITVECTOR_NOT,extract_flip);
+          std::vector< Node > nchildren;
+          nchildren.push_back(bv::utils::mkExtract(first_child, i-1, 0));
+          for( unsigned j=1, size=ret[0].getNumChildren(); j<size; j++ )
+          {
+            nchildren.push_back( ret[0][j] );
+          }
+          new_ret = nm->mkNode(BITVECTOR_CONCAT,extract_flip, nm->mkNode(BITVECTOR_NEG, nm->mkNode(BITVECTOR_CONCAT,nchildren)));
+          debugExtendedRewrite(ret, new_ret, "NEG-msb-1");
+          return new_ret;
         }
       }
     }
@@ -1886,6 +1918,7 @@ Node ExtendedRewriter::extendedRewriteBv(Node ret)
       Node c = TermUtil::mkNegate(BITVECTOR_NEG, ret[0]);
       new_ret = nm->mkNode(BITVECTOR_PLUS, c, max_bv);
       debugExtendedRewrite(ret, new_ret, "NOT-plus-miniscope");
+      return new_ret;
     }
 
     // NNF
@@ -1926,6 +1959,7 @@ Node ExtendedRewriter::extendedRewriteBv(Node ret)
       }
       new_ret = nm->mkNode(nnfk, nnfc);
       debugExtendedRewrite(ret, new_ret, "NNF bv");
+      return new_ret;
     }
   }
   else if (k == BITVECTOR_CONCAT)
@@ -1946,6 +1980,7 @@ Node ExtendedRewriter::extendedRewriteBv(Node ret)
       }
       new_ret = nm->mkNode(ITE, new_children);
       debugExtendedRewrite(ret, new_ret, "EXTRACT-miniscope");
+      return new_ret;
     }
     else if (ret[0].getKind() == BITVECTOR_NEG)
     {
@@ -1954,6 +1989,7 @@ Node ExtendedRewriter::extendedRewriteBv(Node ret)
       {
         new_ret = nm->mkNode(ret.getOperator(), ret[0][0]);
         debugExtendedRewrite(ret, new_ret, "EXTRACT-NEG-0bit");
+        return new_ret;
       }
     }
   }
