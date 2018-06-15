@@ -913,9 +913,9 @@ void SygusUnifStrategy::staticLearnRedundantOps(
           // that return args are the same as the return are of the subtype ITE
           if (tds->getArgType(dt[cindex], 0)
                   != tds->getArgType(dt_sf[ite_cons_index], 0)
-              || dt_sf[ite_cons_index].getType()
+              || tds->getArgType(dt_sf[ite_cons_index], 1 )
                      != tds->getArgType(dt_sf[ite_cons_index], 1)
-              || dt_sf[ite_cons_index].getType()
+              || tds->getArgType(dt_sf[ite_cons_index], 2 )
                      != tds->getArgType(dt_sf[ite_cons_index], 2))
           {
             continue;
