@@ -2029,8 +2029,9 @@ Node TheoryStringsRewriter::rewriteIndexof( Node node ) {
       // For example:
       // str.indexof(str.++("ABCD", x), y, 3) --->
       // str.indexof(str.++("AAAD", x), y, 3)
-      Node normNr = lengthPreserveRewrite(mkConcat(kind::STRING_CONCAT, nr));
-      if (normNr != mkConcat(kind::STRING_CONCAT, nr))
+      Node nodeNr = mkConcat(kind::STRING_CONCAT, nr);
+      Node normNr = lengthPreserveRewrite(nodeNr);
+      if (normNr != nodeNr)
       {
         std::vector<Node> normNrChildren;
         getConcat(normNr, normNrChildren);
