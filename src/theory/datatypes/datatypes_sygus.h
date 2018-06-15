@@ -210,6 +210,13 @@ private:
      * d_search_val[tn]. 
      */
     std::map< TypeNode, std::unordered_set<Node, NodeHashFunction>  > d_search_val_consts;
+    /** 
+     * The (finite) cardinality of each type if it exists, or -1 if the 
+     * cardinality of the type is large or infinite). 
+     */
+    std::map<TypeNode, int > d_search_val_const_cardinality;
+    /** explanation for why any search value is a constant */
+    std::map<TypeNode, Node > d_isconst_rec_pred;
     /** For each term, whether this cache has processed that term */
     std::unordered_set<Node, NodeHashFunction> d_search_val_proc;
   };
@@ -366,6 +373,12 @@ private:
       TypeNode tn, Node t, unsigned d, Node a, std::vector<Node>& lemmas);
   /** calls the above function where a is the anchor t */
   void addSymBreakLemmasFor( TypeNode tn, Node t, unsigned d, std::vector< Node >& lemmas );
+  /** get explanation for constant evaluation 
+   * 
+   * If this method returns true, then exp implies that the builtin analog of x
+   * rewrites to a constant.
+   */
+  bool getExplanationForEvalConstant( Node x, Node n, std::vector< Node >& exp );
   //------------------------end dynamic symmetry breaking
 
   /** Get relevancy condition

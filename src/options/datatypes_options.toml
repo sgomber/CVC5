@@ -139,6 +139,14 @@ header = "options/datatypes_options.h"
   help       = "lazily add symmetry breaking lemmas for terms"
 
 [[option]]
+  name       = "sygusSymBreakAllConst"
+  category   = "regular"
+  long       = "sygus-sym-break-all-const"
+  type       = "bool"
+  default    = "false"
+  help       = "add symmetry breaking lemmas based on all-constant reasoning"
+
+[[option]]
   name       = "sygusSymBreakRlv"
   category   = "regular"
   long       = "sygus-sym-break-rlv"
