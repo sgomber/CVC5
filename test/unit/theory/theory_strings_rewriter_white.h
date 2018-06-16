@@ -322,4 +322,31 @@ class TheoryStringsRewriterWhite : public CxxTest::TestSuite
     Node res_idof_aaad = Rewriter::rewrite(idof_aaad);
     TS_ASSERT_EQUALS(res_idof_abcd, res_idof_aaad);
   }
+
+  void testRewriteReplace()
+  {
+    TypeNode strType = d_nm->stringType();
+
+    Node a = d_nm->mkConst(::CVC4::String("A"));
+    Node b = d_nm->mkConst(::CVC4::String("B"));
+    Node c = d_nm->mkConst(::CVC4::String("C"));
+    Node d = d_nm->mkConst(::CVC4::String("D"));
+    Node x = d_nm->mkVar("x", strType);
+
+    // (str.replace "A" (str.replace "B", x, "C") "D") --> "A"
+    Node repl_repl = d_nm->mkNode(kind::STRING_STRREPL,
+                                  a,
+                                  d_nm->mkNode(kind::STRING_STRREPL, b, x, c),
+                                  d);
+    Node res_repl_repl = Rewriter::rewrite(repl_repl);
+    TS_ASSERT_EQUALS(res_repl_repl, a);
+
+    // (str.replace "A" (str.replace "B", x, "A") "D") -/-> "A"
+    repl_repl = d_nm->mkNode(kind::STRING_STRREPL,
+                             a,
+                             d_nm->mkNode(kind::STRING_STRREPL, b, x, a),
+                             d);
+    res_repl_repl = Rewriter::rewrite(repl_repl);
+    TS_ASSERT_DIFFERS(res_repl_repl, a);
+  }
 };

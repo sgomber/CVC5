@@ -2193,6 +2193,31 @@ Node TheoryStringsRewriter::rewriteReplace( Node node ) {
     }
   }
 
+  if (node[1].getKind() == kind::STRING_STRREPL)
+  {
+    // (str.replace x (str.replace y z w) u) --> x
+    // if (str.contains x y) = false and (str.contains x w) = false
+    //
+    // Reasoning: (str.contains x y) checks that x does not contain y if the
+    // inner replacement does not change y. (str.contains x w) checks that if
+    // the inner replacement changes anything in y, the w makes it impossible
+    // for it to occur in x.
+    Node ctnUnchanged = nm->mkNode(kind::STRING_STRCTN, node[0], node[1][0]);
+    Node ctnUnchangedR = Rewriter::rewrite(ctnUnchanged);
+
+    if (ctnUnchangedR.isConst() && !ctnUnchangedR.getConst<bool>())
+    {
+      Node ctnChange = nm->mkNode(kind::STRING_STRCTN, node[0], node[1][2]);
+      Node ctnChangeR = Rewriter::rewrite(ctnChange);
+
+      if (ctnChangeR.isConst() && !ctnChangeR.getConst<bool>())
+      {
+        Node res = node[0];
+        return returnRewrite(node, res, "rpl-rpl-non-ctn");
+      }
+    }
+  }
+
   if (cmp_conr != cmp_con)
   {
     if (checkEntailNonEmpty(node[1]))
