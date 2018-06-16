@@ -322,4 +322,59 @@ class TheoryStringsRewriterWhite : public CxxTest::TestSuite
     Node res_idof_aaad = Rewriter::rewrite(idof_aaad);
     TS_ASSERT_EQUALS(res_idof_abcd, res_idof_aaad);
   }
+
+  void testRewriteReplace()
+  {
+    TypeNode strType = d_nm->stringType();
+
+    Node a = d_nm->mkConst(::CVC4::String("A"));
+    Node x = d_nm->mkVar("x", strType);
+    Node y = d_nm->mkVar("y", strType);
+    Node z = d_nm->mkVar("z", strType);
+    Node one = d_nm->mkConst(Rational(2));
+    Node three = d_nm->mkConst(Rational(3));
+    Node four = d_nm->mkConst(Rational(4));
+
+    // Same normal form for:
+    //
+    // (str.replace "A" (str.substr x 1 3) y z)
+    //
+    // (str.replace "A" (str.substr x 1 4) y z)
+    Node substr_3 =
+        d_nm->mkNode(kind::STRING_STRREPL,
+                     a,
+                     d_nm->mkNode(kind::STRING_SUBSTR, x, one, three),
+                     z);
+    Node substr_4 =
+        d_nm->mkNode(kind::STRING_STRREPL,
+                     a,
+                     d_nm->mkNode(kind::STRING_SUBSTR, x, one, four),
+                     z);
+    Node res_substr_3 = Rewriter::rewrite(substr_3);
+    Node res_substr_4 = Rewriter::rewrite(substr_4);
+    TS_ASSERT_EQUALS(res_substr_3, res_substr_4);
+
+    // Same normal form for:
+    //
+    // (str.replace "A" (str.++ y (str.substr x 1 3)) y z)
+    //
+    // (str.replace "A" (str.++ y (str.substr x 1 4)) y z)
+    Node concat_substr_3 = d_nm->mkNode(
+        kind::STRING_STRREPL,
+        a,
+        d_nm->mkNode(kind::STRING_CONCAT,
+                     y,
+                     d_nm->mkNode(kind::STRING_SUBSTR, x, one, three)),
+        z);
+    Node concat_substr_4 = d_nm->mkNode(
+        kind::STRING_STRREPL,
+        a,
+        d_nm->mkNode(kind::STRING_CONCAT,
+                     y,
+                     d_nm->mkNode(kind::STRING_SUBSTR, x, one, four)),
+        z);
+    Node res_concat_substr_3 = Rewriter::rewrite(concat_substr_3);
+    Node res_concat_substr_4 = Rewriter::rewrite(concat_substr_4);
+    TS_ASSERT_EQUALS(res_concat_substr_3, res_concat_substr_4);
+  }
 };
