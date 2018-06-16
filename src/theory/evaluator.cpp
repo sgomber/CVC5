@@ -100,6 +100,38 @@ EvalResult Evaluator::evalInternal(TNode n,
 
       switch (currNodeVal.getKind())
       {
+        case kind::CONST_BOOLEAN:
+          results[currNode] = EvalResult(currNodeVal.getConst<bool>());
+          break;
+
+        case kind::NOT:
+        {
+          results[currNode] = EvalResult(!(results[currNode[0]].d_bool));
+          break;
+        }
+
+        case kind::AND:
+        {
+          bool res = results[currNode[0]].d_bool;
+          for (size_t i = 1, end = currNode.getNumChildren(); i < end; i++)
+          {
+            res = res && results[currNode[i]].d_bool;
+          }
+          results[currNode] = EvalResult(res);
+          break;
+        }
+
+        case kind::OR:
+        {
+          bool res = results[currNode[0]].d_bool;
+          for (size_t i = 1, end = currNode.getNumChildren(); i < end; i++)
+          {
+            res = res || results[currNode[i]].d_bool;
+          }
+          results[currNode] = EvalResult(res);
+          break;
+        }
+
         case kind::CONST_RATIONAL:
         {
           const Rational& r = currNodeVal.getConst<Rational>();
@@ -207,6 +239,14 @@ EvalResult Evaluator::evalInternal(TNode n,
           break;
         }
 
+        case kind::STRING_STRCTN:
+        {
+          const String& s = results[currNode[0]].d_str;
+          const String& t = results[currNode[1]].d_str;
+          results[currNode] = EvalResult(s.find(t) != std::string::npos);
+          break;
+        }
+
         case kind::STRING_STRIDOF:
         {
           const String& s = results[currNode[0]].d_str;
@@ -239,6 +279,36 @@ EvalResult Evaluator::evalInternal(TNode n,
           const String& x = results[currNode[1]].d_str;
           const String& y = results[currNode[2]].d_str;
           results[currNode] = EvalResult(s.replace(x, y));
+          break;
+        }
+
+        case kind::STRING_PREFIX:
+        {
+          const String& t = results[currNode[0]].d_str;
+          const String& s = results[currNode[1]].d_str;
+          if (s.size() < t.size())
+          {
+            results[currNode] = EvalResult(false);
+          }
+          else
+          {
+            results[currNode] = EvalResult(s.prefix(t.size()) == t);
+          }
+          break;
+        }
+
+        case kind::STRING_SUFFIX:
+        {
+          const String& t = results[currNode[0]].d_str;
+          const String& s = results[currNode[1]].d_str;
+          if (s.size() < t.size())
+          {
+            results[currNode] = EvalResult(false);
+          }
+          else
+          {
+            results[currNode] = EvalResult(s.suffix(t.size()) == t);
+          }
           break;
         }
 
@@ -409,12 +479,6 @@ EvalResult Evaluator::evalInternal(TNode n,
           {
             results[currNode] = results[currNode[2]];
           }
-          break;
-        }
-
-        case kind::NOT:
-        {
-          results[currNode] = EvalResult(!(results[currNode[0]].d_bool));
           break;
         }
 
