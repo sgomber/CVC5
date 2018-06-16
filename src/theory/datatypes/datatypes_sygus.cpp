@@ -1409,22 +1409,12 @@ void SygusSymBreakNew::incrementCurrentSearchSize( Node m, std::vector< Node >& 
                   || d_active_terms.find(t) != d_active_terms.end()
                          && !it->second.empty())
               {
-                std::vector<Node> slemmas;
+                Node rlv = getRelevancyCondition(t);
                 std::unordered_map<TNode, TNode, TNodeHashFunction> cache;
                 for (const Node& lem : it->second)
                 {
-                  slemmas.push_back(lem.substitute(x, t, cache));
-                }
-                if (!slemmas.empty())
-                {
-                  Node slem = slemmas.size() == 1 ? slemmas[0]
-                                                  : nm->mkNode(AND, slemmas);
-                  // add the relevancy condition
-                  Node rlv = getRelevancyCondition(t);
-                  if (!rlv.isNull())
-                  {
-                    slem = nm->mkNode(OR, rlv, slem);
-                  }
+                  Node slem = lem.substitute(x, t, cache);
+                  slem = nm->mkNode(OR, rlv, slem);
                   lemmas.push_back(slem);
                 }
               }

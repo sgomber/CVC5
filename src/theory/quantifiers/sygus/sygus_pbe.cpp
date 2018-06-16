@@ -413,7 +413,9 @@ bool CegConjecturePbe::constructCandidates(const std::vector<Node>& enums,
     std::vector< unsigned > enum_consider;
     Trace("sygus-pbe-enum") << "Register new enumerated values : " << std::endl;
     for( unsigned i=0; i<enums.size(); i++ ){
-      Trace("sygus-pbe-enum") << "  " << enums[i] << " -> " << enum_values[i] << std::endl;
+      Trace("sygus-pbe-enum") << "  " << enums[i] << " -> ";
+      TermDbSygus::toStreamSygus("sygus-pbe-enum",enum_values[i]);
+      Trace("sygus-pbe-enum") << std::endl;
       unsigned sz = d_tds->getSygusTermSize( enum_values[i] );
       if( i==0 || sz<min_term_size ){
         enum_consider.clear();

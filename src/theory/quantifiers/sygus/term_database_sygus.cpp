@@ -22,6 +22,8 @@
 #include "theory/quantifiers/term_database.h"
 #include "theory/quantifiers/term_util.h"
 #include "theory/quantifiers_engine.h"
+#include "options/base_options.h"
+#include "printer/printer.h"
 
 using namespace CVC4::kind;
 
@@ -1037,6 +1039,16 @@ bool TermDbSygus::isRegistered(TypeNode tn) const
 TypeNode TermDbSygus::sygusToBuiltinType( TypeNode tn ) {
   Assert( isRegistered( tn ) );
   return d_register[tn];
+}
+
+void TermDbSygus::toStreamSygus( const char * c, Node n )
+{
+  if( Trace.isOn(c) )
+  {
+    std::stringstream ss;
+    Printer::getPrinter(options::outputLanguage())->toStreamSygus(ss, n);
+    Trace(c) << ss.str();
+  }
 }
 
 void TermDbSygus::computeMinTypeDepthInternal( TypeNode root_tn, TypeNode tn, unsigned type_depth ) {

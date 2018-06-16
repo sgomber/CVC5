@@ -1149,8 +1149,9 @@ Node SygusUnifIo::constructSol(
         Node val_t = ecache.d_enum_vals[i];
         Assert(incr.find(val_t) == incr.end());
         indent("sygus-sui-dt-debug", ind);
-        Trace("sygus-sui-dt-debug")
-            << "increment string values : " << val_t << " : ";
+        Trace("sygus-sui-dt-debug") << "increment string values : ";
+        TermDbSygus::toStreamSygus("sygus-sui-dt-debug",val_t);
+        Trace("sygus-sui-dt-debug") << " : ";
         Assert(ecache.d_enum_vals_res[i].size() == d_examples_out.size());
         unsigned tot = 0;
         bool exsuccess = x.getStringIncrement(this,

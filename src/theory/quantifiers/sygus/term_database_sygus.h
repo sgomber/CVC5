@@ -230,7 +230,9 @@ class TermDbSygus {
    */
   TypeNode sygusToBuiltinType(TypeNode tn);
   //-----------------------------end conversion from sygus to builtin
-
+  
+  /** print to sygus stream n on trace c */
+  static void toStreamSygus( const char * c, Node n );
  private:
   /** reference to the quantifiers engine */
   QuantifiersEngine* d_quantEngine;
