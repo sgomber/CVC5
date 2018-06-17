@@ -2219,6 +2219,42 @@ Node TheoryStringsRewriter::rewriteReplace( Node node ) {
     }
   }
 
+  children1.clear();
+  getConcat(node[1], children1);
+  Node lastChild1 = children1[children1.size() - 1];
+  if (lastChild1.getKind() == kind::STRING_SUBSTR)
+  {
+    // (str.replace x (str.++ t (str.substr y i j)) z) --->
+    // (str.replace x (str.++ t
+    //                  (str.substr y i (+ (str.len x) 1 (- (str.len t))))) z)
+    // if j > len(x)
+
+    children1.pop_back();
+    // Length of the non-substr components in the second argument
+    Node partLen1 = nm->mkNode(kind::STRING_LENGTH,
+                               mkConcat(kind::STRING_CONCAT, children1));
+    Node maxLen1 = nm->mkNode(kind::PLUS, partLen1, lastChild1[2]);
+
+    Node zero = nm->mkConst(Rational(0));
+    Node one = nm->mkConst(Rational(1));
+    Node len0 = nm->mkNode(kind::STRING_LENGTH, node[0]);
+    Node len0_1 = nm->mkNode(kind::PLUS, len0, one);
+    if (checkEntailArith(maxLen1, len0_1, true))
+    {
+      children1.push_back(nm->mkNode(
+          kind::STRING_SUBSTR,
+          lastChild1[0],
+          lastChild1[1],
+          nm->mkNode(
+              kind::PLUS, len0, one, nm->mkNode(kind::UMINUS, partLen1))));
+      Node res = nm->mkNode(kind::STRING_STRREPL,
+                            node[0],
+                            mkConcat(kind::STRING_CONCAT, children1),
+                            node[2]);
+      return returnRewrite(node, res, "repl-subst-idx");
+    }
+  }
+
   // TODO (#1180) incorporate these?
   // contains( t, s ) =>
   //   replace( replace( x, t, s ), s, r ) ----> replace( x, t, r )
