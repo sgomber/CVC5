@@ -2224,9 +2224,9 @@ Node TheoryStringsRewriter::rewriteReplace( Node node ) {
   Node lastChild1 = children1[children1.size() - 1];
   if (lastChild1.getKind() == kind::STRING_SUBSTR)
   {
-    // (str.replace x (str.++ ... (str.substr y i j)) z) --->
-    // (str.replace x (str.++ ...
-    //                  (str.substr y i (+ (str.len x) 1 (- (str.len ...))))) z)
+    // (str.replace x (str.++ t (str.substr y i j)) z) --->
+    // (str.replace x (str.++ t
+    //                  (str.substr y i (+ (str.len x) 1 (- (str.len t))))) z)
     // if j > len(x)
 
     children1.pop_back();
