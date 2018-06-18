@@ -349,4 +349,25 @@ class TheoryStringsRewriterWhite : public CxxTest::TestSuite
     res_repl_repl = Rewriter::rewrite(repl_repl);
     TS_ASSERT_DIFFERS(res_repl_repl, a);
   }
+
+  void testRewriteContains()
+  {
+    TypeNode strType = d_nm->stringType();
+
+    Node a = d_nm->mkConst(::CVC4::String("A"));
+    Node b = d_nm->mkConst(::CVC4::String("B"));
+    Node c = d_nm->mkConst(::CVC4::String("C"));
+    Node f = d_nm->mkConst(false);
+    Node x = d_nm->mkVar("x", strType);
+
+    // (str.contains "A" (str.++ a (str.replace "B", x, "C")) --> false
+    Node repl_repl =
+        d_nm->mkNode(kind::STRING_STRCTN,
+                     a,
+                     d_nm->mkNode(kind::STRING_CONCAT,
+                                  a,
+                                  d_nm->mkNode(kind::STRING_STRREPL, b, x, c)));
+    Node res_repl_repl = Rewriter::rewrite(repl_repl);
+    TS_ASSERT_EQUALS(res_repl_repl, f);
+  }
 };

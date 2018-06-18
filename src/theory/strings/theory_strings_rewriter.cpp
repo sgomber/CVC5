@@ -1648,6 +1648,8 @@ Node TheoryStringsRewriter::rewriteSubstr(Node node)
 
 Node TheoryStringsRewriter::rewriteContains( Node node ) {
   Assert(node.getKind() == kind::STRING_STRCTN);
+  NodeManager* nm = NodeManager::currentNM();
+
   if( node[0] == node[1] ){
     Node ret = NodeManager::currentNM()->mkConst(true);
     return returnRewrite(node, ret, "ctn-eq");
@@ -1721,6 +1723,34 @@ Node TheoryStringsRewriter::rewriteContains( Node node ) {
     Node ret = NodeManager::currentNM()->mkNode(
         kind::STRING_STRCTN, mkConcat(kind::STRING_CONCAT, nc1), node[1]);
     return returnRewrite(node, ret, "ctn-strip-endpt");
+  }
+
+  for (const Node& n : nc2)
+  {
+    if (n.getKind() == kind::STRING_STRREPL)
+    {
+      // (str.contains x (str.replace y z w)) --> false
+      // if (str.contains x y) = false and (str.contains x w) = false
+      //
+      // Reasoning: (str.contains x y) checks that x does not contain y if the
+      // inner replacement does not change y. (str.contains x w) checks that if
+      // the inner replacement changes anything in y, the w makes it impossible
+      // for it to occur in x.
+      Node ctnUnchanged = nm->mkNode(kind::STRING_STRCTN, node[0], n[0]);
+      Node ctnUnchangedR = Rewriter::rewrite(ctnUnchanged);
+
+      if (ctnUnchangedR.isConst() && !ctnUnchangedR.getConst<bool>())
+      {
+        Node ctnChange = nm->mkNode(kind::STRING_STRCTN, node[0], n[2]);
+        Node ctnChangeR = Rewriter::rewrite(ctnChange);
+
+        if (ctnChangeR.isConst() && !ctnChangeR.getConst<bool>())
+        {
+          Node res = nm->mkConst(false);
+          return returnRewrite(node, res, "ctn-rpl-non-ctn");
+        }
+      }
+    }
   }
 
   // length entailment
@@ -2190,31 +2220,6 @@ Node TheoryStringsRewriter::rewriteReplace( Node node ) {
     {
       // ~contains( t, s ) => ( replace( t, s, r ) ----> t )
       return returnRewrite(node, node[0], "rpl-nctn");
-    }
-  }
-
-  if (node[1].getKind() == kind::STRING_STRREPL)
-  {
-    // (str.replace x (str.replace y z w) u) --> x
-    // if (str.contains x y) = false and (str.contains x w) = false
-    //
-    // Reasoning: (str.contains x y) checks that x does not contain y if the
-    // inner replacement does not change y. (str.contains x w) checks that if
-    // the inner replacement changes anything in y, the w makes it impossible
-    // for it to occur in x.
-    Node ctnUnchanged = nm->mkNode(kind::STRING_STRCTN, node[0], node[1][0]);
-    Node ctnUnchangedR = Rewriter::rewrite(ctnUnchanged);
-
-    if (ctnUnchangedR.isConst() && !ctnUnchangedR.getConst<bool>())
-    {
-      Node ctnChange = nm->mkNode(kind::STRING_STRCTN, node[0], node[1][2]);
-      Node ctnChangeR = Rewriter::rewrite(ctnChange);
-
-      if (ctnChangeR.isConst() && !ctnChangeR.getConst<bool>())
-      {
-        Node res = node[0];
-        return returnRewrite(node, res, "rpl-rpl-non-ctn");
-      }
     }
   }
 
