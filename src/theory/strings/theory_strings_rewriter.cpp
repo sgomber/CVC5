@@ -2284,6 +2284,37 @@ Node TheoryStringsRewriter::rewriteReplace( Node node ) {
       return returnRewrite(node, res, "repl-subst-idx");
     }
   }
+  if( node[1].getKind()==STRING_STRREPL )
+  {
+    if( node[1][0]==node[0] && node[1][0]==node[1][2] && node[1][0]==node[2] )
+    {
+      // str.replace( x, str.replace( x, y, x ), x ) ---> x
+      return returnRewrite(node, node[0], "repl-repl2-inv-id");
+    }
+  }
+  if( node[2].getKind()==STRING_STRREPL )
+  {
+    // str.contains( z, w ) ----> false implies
+    // str.replace( x, z, str.replace( w, x, y ) ) ---> str.replace( x, z, w )
+    if( node[2][1]==node[0] )
+    {
+      Node cmp_con = nm->mkNode(STRING_STRCTN, node[1], node[2][0]);
+      cmp_con = Rewriter::rewrite( cmp_con );
+      if (cmp_con.isConst() && !cmp_con.getConst<bool>())
+      {
+        Node res = nm->mkNode(kind::STRING_STRREPL,
+                              node[0],
+                              node[1],
+                              node[2][0]);
+        return returnRewrite(node, res, "repl-repl3-inv");
+      }
+    }
+    if( node[2][0]==node[1] && node[2][0]==node[2][2] && node[2][1]==node[0] )
+    {
+      // str.replace( x, y, str.replace( y, x, y ) ) ---> x
+      return returnRewrite(node, node[0], "repl-repl3-inv-id");
+    }
+  }
 
   // TODO (#1180) incorporate these?
   // contains( t, s ) =>
