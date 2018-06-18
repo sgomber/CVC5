@@ -1733,9 +1733,9 @@ Node TheoryStringsRewriter::rewriteContains( Node node ) {
       // if (str.contains x y) = false and (str.contains x w) = false
       //
       // Reasoning: (str.contains x y) checks that x does not contain y if the
-      // inner replacement does not change y. (str.contains x w) checks that if
-      // the inner replacement changes anything in y, the w makes it impossible
-      // for it to occur in x.
+      // replacement does not change y. (str.contains x w) checks that if the
+      // replacement changes anything in y, the w makes it impossible for it to
+      // occur in x.
       Node ctnUnchanged = nm->mkNode(kind::STRING_STRCTN, node[0], n[0]);
       Node ctnUnchangedR = Rewriter::rewrite(ctnUnchanged);
 
