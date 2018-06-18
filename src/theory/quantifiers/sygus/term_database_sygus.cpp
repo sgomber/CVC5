@@ -362,26 +362,22 @@ public:
     if( d_req_kind!=UNDEFINED_KIND ){
       Trace("sygus-sb-debug") << "- check if " << tn << " has " << d_req_kind
                               << std::endl;
-      int c = tdb->getKindConsNum( tn, d_req_kind );
-      if( c!=-1 ){
+      std::vector< TypeNode > argts;
+      if( tdb->canConstructKind(tn, d_req_kind, argts ) ){
         bool ret = true;
-        const Datatype& dt = ((DatatypeType)(tn).toType()).getDatatype();
         for( std::map< unsigned, ReqTrie >::iterator it = d_children.begin(); it != d_children.end(); ++it ){
-          if( it->first<dt[c].getNumArgs() ){
-            TypeNode tnc = tdb->getArgType( dt[c], it->first );
+          if( it->first<argts.size() ){
+            TypeNode tnc = argts[it->first];
             if( !it->second.satisfiedBy( tdb, tnc ) ){
-              ret = false;
-              break;
+              return false;
             }
           }else{
-            ret = false;
-            break;
+            return false;
           }
         }
         if( !ret ){
           return false;
         }
-        // TODO : commutative operators try both?
       }else{
         return false;
       }
@@ -1317,6 +1313,25 @@ bool TermDbSygus::isSymbolicConsApp(Node n) const
   Node sygusOp = Node::fromExpr(dt[cindex].getSygusOp());
   // it is symbolic if it represents "any constant"
   return sygusOp.getAttribute(SygusAnyConstAttribute());
+}
+
+bool TermDbSygus::canConstructKind( TypeNode tn, Kind k, std::vector< TypeNode >& argts )
+{
+  int c = getKindConsNum( tn, k );
+  if( c!=-1 )
+  {
+    const Datatype& dt = static_cast<DatatypeType>(tn.toType()).getDatatype();
+    for( unsigned i=0, nargs=dt[c].getNumArgs(); i<nargs; i++ )
+    {
+      argts.push_back(TypeNode::fromType(dt[c].getArgType(i)));
+    }
+    return true;
+  }
+  // ITE with (AND|OR) & NOT
+  
+  
+  
+  return false;
 }
 
 Node TermDbSygus::minimizeBuiltinTerm( Node n ) {

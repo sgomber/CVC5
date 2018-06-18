@@ -393,6 +393,24 @@ class TermDbSygus {
   bool hasSubtermSymbolicCons(TypeNode tn) const;
   /** return whether n is an application of a symbolic constructor */
   bool isSymbolicConsApp(Node n) const;
+  /** can construct kind 
+   * 
+   * Given a sygus datatype type tn, if this method returns true, then there
+   * exists values of tn whose builtin analog is equivalent to
+   * <k>( t1, ..., tn ). The sygus types of t1...tn are added to arg_types.
+   * 
+   * For example, if:
+   *   A -> A+A | ite( B, A, A ) | x | 1 | 0
+   *   B -> and( B, B ) | not( B ) | or( B, B ) | A = A
+   * - canConstructKind( A, +, ... ) returns true and adds {A,A} to arg_types,
+   * - canConstructKind( B, not, ... ) returns true and adds { B } to arg types.
+   * 
+   * We also may infer that operator is constructable. For example,
+   * - canConstructKind( B, ite, ... ) may return true, adding { B, B, B } to
+   * arg_types, noting that the term 
+   *   (and (or (not b1) b2) (or b1 b3)) is equivalent to (ite b1 b2 b3)
+   */
+  bool canConstructKind( TypeNode tn, Kind k, std::vector< TypeNode >& argts );
 
   TypeNode getSygusTypeForVar( Node v );
   Node sygusSubstituted( TypeNode tn, Node n, std::vector< Node >& args );
