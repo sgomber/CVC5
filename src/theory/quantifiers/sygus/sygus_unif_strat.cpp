@@ -752,6 +752,133 @@ void SygusUnifStrategy::staticLearnRedundantOps(
   }
 }
 
+bool SygusUnifStrategy::isTrivial()
+{
+  Node root_e = getRootEnumerator();
+  TypeNode etn = root_e.getType();
+  EnumTypeInfo& tinfo = getEnumTypeInfo(etn);
+  StrategyNode& snode = tinfo.getStrategyNode(role_equal);
+  if( snode.d_strats.empty() )
+  {
+    return true;
+  }
+  return false;
+}
+
+bool SygusUnifStrategy::isNonDeterministic()
+{
+  std::map<Node, std::map<NodeRole, bool>> visited;
+  std::vector< Node > visit;
+  std::vector< NodeRole > visit_role;
+  visit.push_back(getRootEnumerator());
+  visit_role.push_back(role_equal);
+  Node e;
+  NodeRole erole;
+  do
+  {
+    e = visit.back();
+    visit.pop_back();
+    erole = visit_role.back();
+    visit_role.pop_back();
+    if (visited[e].find(erole) == visited[e].end())
+    {
+      visited[e][erole] = true;
+      TypeNode etn = e.getType();
+      EnumTypeInfo& tinfo = getEnumTypeInfo(etn);
+      StrategyNode& snode = tinfo.getStrategyNode(erole);
+      for (unsigned j = 0, size = snode.d_strats.size(); j < size; j++)
+      {
+        EnumTypeInfoStrat* etis = snode.d_strats[j];
+        StrategyType strat = etis->d_this;
+        if( strat==strat_CONCAT_PREFIX || strat==strat_CONCAT_SUFFIX )
+        {
+          return true;
+        }
+        for (std::pair<Node, NodeRole>& cec : etis->d_cenum)
+        {
+          visit.push_back( cec.first );
+          visit_role.push_back( cec.second );
+        }
+      }
+    }
+  }while( !visit.empty() );
+  return false;
+}
+
+/*
+TypeNode SygusUnifStrategy::getStrategyType()
+{
+  Node root_e = getRootEnumerator();
+  std::map<Node, std::map<NodeRole, bool>> visited;
+  std::map<Node, std::map<NodeRole, TypeNode>> visitedt;
+  std::vector< Node > visit;
+  std::vector< NodeRole > visit_role;
+  visit.push_back(getRootEnumerator());
+  visit_role.push_back(role_equal);
+  Node e;
+  NodeRole erole;
+  do
+  {
+    e = visit.back();
+    visit.pop_back();
+    erole = visit_role.back();
+    visit_role.pop_back();
+    int process = -1;
+    if (visited[e].find(erole) == visited[e].end())
+    {
+      visited[e][erole] = true;
+      process = 0;
+    }
+    else if( visitedt[e].find(erole) == visitedt[e].end() )
+    {
+      process = 1;
+    }
+    if( process>=0 )
+    {
+      TypeNode etn = e.getType();
+      EnumTypeInfo& tinfo = getEnumTypeInfo(etn);
+      StrategyNode& snode = tinfo.getStrategyNode(erole);
+      
+      // process=1 --> building a sygus datatype
+      std::stringstream dname;
+      dname << "strategy_" << e << "_" << erole;
+      Datatype dts(dname);
+      for (unsigned j = 0, size = snode.d_strats.size(); j < size; j++)
+      {
+        EnumTypeInfoStrat* etis = snode.d_strats[j];
+        StrategyType strat = etis->d_this;
+        // process=1 --> building a sygus datatype constructor
+        std::vector< Type > childArgTypes;
+        for (std::pair<Node, NodeRole>& cec : etis->d_cenum)
+        {
+          Node cn = cec.first;
+          NodeRole cnr = cec.second;
+          if( process==1 )
+          {
+            // get the child sygus datatype 
+            Assert( visitedt[cn].find(cnr)!=visitedt[cn].end());
+            TypeNode childt = visitedt[cn][cnr];
+            childArgTypes.push_back(childt.toType());
+          }
+          else
+          {
+            // recurse
+            visit.push_back( cn );
+            visit_role.push_back( cnr );
+          }
+        }
+        if( process==1 )
+        {
+          //dts.addSygusConstructor();
+        }
+      }
+    }
+  }while( !visit.empty() );
+  
+  return visited[root_e][role_equal];
+}
+*/
+
 void SygusUnifStrategy::debugPrint(const char* c)
 {
   if (Trace.isOn(c))

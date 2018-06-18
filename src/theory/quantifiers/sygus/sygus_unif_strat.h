@@ -320,10 +320,18 @@ class SygusUnifStrategy
    */
   void staticLearnRedundantOps(
       std::map<Node, std::vector<Node>>& strategy_lemmas);
+  /** is trivial? */
+  bool isTrivial();
+  /** is non-deterministic? */
+  bool isNonDeterministic();
+  /** get strategy type 
+   * 
+   * TODO: build type that summarizes shapes?
+   */
+  //TypeNode getStrategyType();
 
   /** debug print this strategy on Trace c */
   void debugPrint(const char* c);
-
  private:
   /** reference to quantifier engine */
   QuantifiersEngine* d_qe;
