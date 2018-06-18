@@ -1315,22 +1315,86 @@ bool TermDbSygus::isSymbolicConsApp(Node n) const
   return sygusOp.getAttribute(SygusAnyConstAttribute());
 }
 
-bool TermDbSygus::canConstructKind( TypeNode tn, Kind k, std::vector< TypeNode >& argts )
+bool TermDbSygus::canConstructKind( TypeNode tn, Kind k, std::vector< TypeNode >& argts, bool aggr )
 {
   int c = getKindConsNum( tn, k );
+  const Datatype& dt = static_cast<DatatypeType>(tn.toType()).getDatatype();
   if( c!=-1 )
   {
-    const Datatype& dt = static_cast<DatatypeType>(tn.toType()).getDatatype();
     for( unsigned i=0, nargs=dt[c].getNumArgs(); i<nargs; i++ )
     {
       argts.push_back(TypeNode::fromType(dt[c].getArgType(i)));
     }
     return true;
   }
-  // ITE with (AND|OR) & NOT
-  
-  
-  
+  // ITE with AND, OR, NOT
+  /*
+  // FIXME leads to timeouts in the regressions
+  if (sygusToBuiltinType(tn).isBoolean())
+  {
+    // ite( b1, b2, b3 ) <---- and( or( ~b1, b2 ), or( b1, b3 ) )
+    std::vector< TypeNode > conj_types;
+    if( canConstructKind( tn, AND, conj_types, true ) && conj_types.size()==2 )
+    {
+      bool success = true;
+      std::vector< TypeNode > disj_types[2];
+      for( unsigned c=0; c<2; c++ )
+      {
+        if( !canConstructKind( conj_types[c], OR, disj_types[c], true ) || disj_types[c].size()!=2 )
+        {
+          success = false;
+          break;
+        }
+      }
+      if( success )
+      {
+        for( unsigned r=0; r<2; r++ )
+        {
+          for( unsigned d=0, size=disj_types[r].size(); d<size; d++ )
+          {
+            TypeNode dtn = disj_types[r][d];
+            // must have negation that occurs in the other conjunct
+            std::vector< TypeNode > ntypes;
+            if( canConstructKind( dtn, NOT, ntypes ) && ntypes.size()==1 )
+            {
+              TypeNode ntn = ntypes[0];
+              for( unsigned dd=0, size=disj_types[1-r].size(); dd<size; dd++ )
+              {
+                if( disj_types[1-r][dd]==ntn )
+                {
+                  argts.push_back(ntn);
+                  argts.push_back(disj_types[r][d]);
+                  argts.push_back(disj_types[1-r][1-dd]);
+                  if( Trace.isOn("sygus-cons-kind") )
+                  {
+                    Trace("sygus-cons-kind") << "Can construct kind " << k << " in " << tn << " via child types:" << std::endl;
+                    for( unsigned i=0; i<3; i++ )
+                    {
+                      Trace("sygus-cons-kind") << "  " << argts[i] << std::endl;
+                    }
+                  }
+                  return true;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  // aggressive
+  if( aggr )
+  {
+    if( k==OR || k==AND )
+    {
+      std::vector< TypeNode > ntypes;
+      if( canConstructKind( tn, NOT, ntypes )
+      {
+        
+      }
+    }
+  }
+  */
   return false;
 }
 

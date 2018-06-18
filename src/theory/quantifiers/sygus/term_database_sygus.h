@@ -410,7 +410,7 @@ class TermDbSygus {
    * arg_types, noting that the term 
    *   (and (or (not b1) b2) (or b1 b3)) is equivalent to (ite b1 b2 b3)
    */
-  bool canConstructKind( TypeNode tn, Kind k, std::vector< TypeNode >& argts );
+  bool canConstructKind( TypeNode tn, Kind k, std::vector< TypeNode >& argts, bool aggr = false );
 
   TypeNode getSygusTypeForVar( Node v );
   Node sygusSubstituted( TypeNode tn, Node n, std::vector< Node >& args );

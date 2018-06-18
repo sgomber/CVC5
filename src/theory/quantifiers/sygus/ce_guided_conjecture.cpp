@@ -125,6 +125,16 @@ void CegConjecture::assign( Node q ) {
   if (options::sygusRepairConst())
   {
     d_sygus_rconst->initialize(d_base_inst.negate(), d_candidates);
+    if( options::sygusConstRepairAbort() )
+    {
+      if( !d_sygus_rconst->isActive() )
+      {
+        // no constant repair is possible: abort
+        std::stringstream ss;
+        ss << "Grammar does not require repair constants." << std::endl;
+        throw LogicException(ss.str());
+      }
+    }
   }
 
   // register this term with sygus database and other utilities that impact

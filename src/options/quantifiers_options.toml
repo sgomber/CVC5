@@ -968,7 +968,16 @@ header = "options/quantifiers_options.h"
   default    = "false"
   read_only  = true
   help       = "abort if synthesis conjecture is not single invocation"
-  
+
+[[option]]
+  name       = "sygusConstRepairAbort"
+  category   = "regular"
+  long       = "sygus-crepair-abort"
+  type       = "bool"
+  default    = "false"
+  read_only  = true
+  help       = "abort if constant repair techniques are not applicable"
+
 [[option]]
   name       = "sygusExcInvPred"
   category   = "regular"
