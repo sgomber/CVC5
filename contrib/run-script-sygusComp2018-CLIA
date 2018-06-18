@@ -33,4 +33,5 @@ function finishwith {
 }
 
 trywith 120 --cegqi-si=all --cegqi-si-abort --decision=internal --cbqi --cbqi-prereg-inst
-finishwith --cegqi-si=none
+trywith 10 --cegqi-si=none
+finishwith --cegqi-si=none --no-sygus-repair-const
