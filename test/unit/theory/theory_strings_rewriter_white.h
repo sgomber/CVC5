@@ -328,12 +328,42 @@ class TheoryStringsRewriterWhite : public CxxTest::TestSuite
     TypeNode strType = d_nm->stringType();
 
     Node a = d_nm->mkConst(::CVC4::String("A"));
+    Node b = d_nm->mkConst(::CVC4::String("B"));
+    Node c = d_nm->mkConst(::CVC4::String("C"));
+    Node d = d_nm->mkConst(::CVC4::String("D"));
+    Node x = d_nm->mkVar("x", strType);
+
+    // (str.replace "A" (str.replace "B", x, "C") "D") --> "A"
+    Node repl_repl = d_nm->mkNode(kind::STRING_STRREPL,
+                                  a,
+                                  d_nm->mkNode(kind::STRING_STRREPL, b, x, c),
+                                  d);
+    Node res_repl_repl = Rewriter::rewrite(repl_repl);
+    TS_ASSERT_EQUALS(res_repl_repl, a);
+
+    // (str.replace "A" (str.replace "B", x, "A") "D") -/-> "A"
+    repl_repl = d_nm->mkNode(kind::STRING_STRREPL,
+                             a,
+                             d_nm->mkNode(kind::STRING_STRREPL, b, x, a),
+                             d);
+    res_repl_repl = Rewriter::rewrite(repl_repl);
+    TS_ASSERT_DIFFERS(res_repl_repl, a);
+  }
+
+  void testRewriteContains()
+  {
+    TypeNode strType = d_nm->stringType();
+
+    Node a = d_nm->mkConst(::CVC4::String("A"));
+    Node b = d_nm->mkConst(::CVC4::String("B"));
+    Node c = d_nm->mkConst(::CVC4::String("C"));
     Node x = d_nm->mkVar("x", strType);
     Node y = d_nm->mkVar("y", strType);
     Node z = d_nm->mkVar("z", strType);
     Node one = d_nm->mkConst(Rational(2));
     Node three = d_nm->mkConst(Rational(3));
     Node four = d_nm->mkConst(Rational(4));
+    Node f = d_nm->mkConst(false);
 
     // Same normal form for:
     //
@@ -376,5 +406,15 @@ class TheoryStringsRewriterWhite : public CxxTest::TestSuite
     Node res_concat_substr_3 = Rewriter::rewrite(concat_substr_3);
     Node res_concat_substr_4 = Rewriter::rewrite(concat_substr_4);
     TS_ASSERT_EQUALS(res_concat_substr_3, res_concat_substr_4);
+
+    // (str.contains "A" (str.++ a (str.replace "B", x, "C")) --> false
+    Node ctn_repl =
+        d_nm->mkNode(kind::STRING_STRCTN,
+                     a,
+                     d_nm->mkNode(kind::STRING_CONCAT,
+                                  a,
+                                  d_nm->mkNode(kind::STRING_STRREPL, b, x, c)));
+    Node res_ctn_repl = Rewriter::rewrite(ctn_repl);
+    TS_ASSERT_EQUALS(res_ctn_repl, f);
   }
 };
