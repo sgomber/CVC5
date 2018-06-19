@@ -467,7 +467,7 @@ void SubsumeTrie::getLeaves(const std::vector<Node>& vals,
 }
 
 SygusUnifIo::SygusUnifIo()
-    : d_check_sol(false), d_solved(false), d_cond_count(0), d_sol_cons_nondet(false)
+    : d_check_sol(false), d_cond_count(0), d_sol_cons_nondet(false)
 {
   d_true = NodeManager::currentNM()->mkConst(true);
   d_false = NodeManager::currentNM()->mkConst(false);
@@ -759,7 +759,7 @@ Node SygusUnifIo::constructSolutionNode(std::vector<Node>& lemmas)
     d_check_sol = false;
     // try multiple times if we have done multiple conditions, due to
     // non-determinism
-    Node vc;
+    unsigned sol_term_size = 0;
     for (unsigned i = 0; i <= d_cond_count; i++)
     {
       Trace("sygus-pbe-dt") << "ConstructPBE for candidate: " << c << std::endl;
@@ -772,25 +772,24 @@ Node SygusUnifIo::constructSolutionNode(std::vector<Node>& lemmas)
       // if we constructed the solution, and we either did not previously have
       // a solution, or the new solution is better (smaller).
       if (!vcc.isNull()
-          && (vc.isNull() || (!vc.isNull()
+          && (d_solution.isNull() || (!d_solution.isNull()
                               && d_tds->getSygusTermSize(vcc)
-                                     < d_tds->getSygusTermSize(vc))))
+                                     < sol_term_size)))
       {
         Trace("sygus-pbe") << "**** SygusUnif SOLVED : " << c << " = " << vcc
                            << std::endl;
         Trace("sygus-pbe") << "...solved at iteration " << i << std::endl;
-        vc = vcc;
-        d_solved = true;
+        d_solution = vcc;
+        sol_term_size = d_tds->getSygusTermSize(vcc);
       }
       else if (!d_sol_cons_nondet)
       {
         break;
       }
     }
-    if (!vc.isNull())
+    if (!d_solution.isNull())
     {
-      d_solution = vc;
-      return vc;
+      return d_solution;
     }
     Trace("sygus-pbe") << "...failed to solve." << std::endl;
   }
@@ -1248,7 +1247,7 @@ Node SygusUnifIo::constructSol(
   // the reasoning is that splitting on conditions only subdivides the problem
   // and cannot be the source of failure, whereas the wrong choice for a
   // concatenation term may lead to failure
-  if( !d_solved )
+  if( d_solution.isNull() )
   {
     for( unsigned i=0; i<snode.d_strats.size(); i++ )
     {
