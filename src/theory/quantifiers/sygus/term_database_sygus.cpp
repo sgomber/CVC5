@@ -1327,7 +1327,10 @@ bool TermDbSygus::canConstructKind( TypeNode tn, Kind k, std::vector< TypeNode >
     }
     return true;
   }
-  /*
+  if( !options::sygusSymBreakAgg() )
+  {
+    return false;
+  }
   if (sygusToBuiltinType(tn).isBoolean())
   {
     if( k==ITE )
@@ -1384,6 +1387,7 @@ bool TermDbSygus::canConstructKind( TypeNode tn, Kind k, std::vector< TypeNode >
     }
   }
   // aggressive
+  /*
   if( aggr )
   {
     if( k==OR || k==AND )
