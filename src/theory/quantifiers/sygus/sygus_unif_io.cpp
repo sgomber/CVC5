@@ -177,9 +177,14 @@ bool UnifContextIo::getStringIncrement(SygusUnifIo* sui,
         Trace("sygus-sui-dt-debug") << "X";
         return false;
       }
+      Trace("sygus-sui-dt-debug") << ival;
+      tot += ival;
     }
-    Trace("sygus-sui-dt-debug") << ival;
-    tot += ival;
+    else
+    {
+      // inactive in this context
+      Trace("sygus-sui-dt-debug") << "-";
+    }
     inc.push_back(ival);
   }
   return true;
@@ -462,7 +467,7 @@ void SubsumeTrie::getLeaves(const std::vector<Node>& vals,
 }
 
 SygusUnifIo::SygusUnifIo()
-    : d_check_sol(false), d_cond_count(0), d_sol_cons_nondet(false)
+    : d_check_sol(false), d_solved(false), d_cond_count(0), d_sol_cons_nondet(false)
 {
   d_true = NodeManager::currentNM()->mkConst(true);
   d_false = NodeManager::currentNM()->mkConst(false);
@@ -775,6 +780,7 @@ Node SygusUnifIo::constructSolutionNode(std::vector<Node>& lemmas)
                            << std::endl;
         Trace("sygus-pbe") << "...solved at iteration " << i << std::endl;
         vc = vcc;
+        d_solved = true;
       }
       else if (!d_sol_cons_nondet)
       {
@@ -1238,8 +1244,24 @@ Node SygusUnifIo::constructSol(
   {
     std::random_shuffle(snode.d_strats.begin(), snode.d_strats.end());
   }
-  // TODO: ITE always first, if possible
-  
+  // ITE always first if we have not yet solved
+  // the reasoning is that splitting on conditions only subdivides the problem
+  // and cannot be the source of failure, whereas the wrong choice for a
+  // concatenation term may lead to failure
+  if( !d_solved )
+  {
+    for( unsigned i=0; i<snode.d_strats.size(); i++ )
+    {
+      if( snode.d_strats[i]->d_this==strat_ITE )
+      {
+        // flip the two
+        EnumTypeInfoStrat * etis = snode.d_strats[i];
+        snode.d_strats[i] = snode.d_strats[0];
+        snode.d_strats[0] = etis;
+        break;
+      }
+    }
+  }
   
   // iterate over the strategies
   unsigned sindex = 0;
