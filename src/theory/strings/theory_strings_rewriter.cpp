@@ -2156,6 +2156,24 @@ Node TheoryStringsRewriter::rewriteReplace( Node node ) {
       return returnRewrite(node, ret, "rpl-const-find");
     }
   }
+  
+  if( node[0].isConst() )
+  {
+    // str.replace( "", x, t ) ---> str.replace( "", x, t{x->""} )
+    CVC4::String s = node[0].getConst<String>();
+    if( s.empty() )
+    {
+      TNode v = node[1];
+      TNode s = node[0];
+      Node sn2 = node[2].substitute(v,s);
+      if( sn2!=node[2] )
+      {
+        Node ret = nm->mkNode( STRING_STRREPL, node[0], node[1], sn2 );
+        Trace("ajr-temp") << "rew : " << node << " -> " << ret << std::endl;
+        return returnRewrite(node, ret, "repl-empty-subs");
+      }
+    }
+  }
 
   if (node[0] == node[2])
   {
@@ -2356,6 +2374,8 @@ Node TheoryStringsRewriter::rewriteReplace( Node node ) {
       cmp_con = Rewriter::rewrite( cmp_con );
       if( cmp_con.isConst() && !cmp_con.getConst<bool>() )
       {
+        cmp_con = nm->mkNode(STRING_STRCTN, node[0], node[1][2]);
+        cmp_con = Rewriter::rewrite( cmp_con );
         invSuccess = cmp_con.isConst() && !cmp_con.getConst<bool>();
       }
     }
