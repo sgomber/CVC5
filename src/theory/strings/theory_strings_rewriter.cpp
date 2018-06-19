@@ -2295,7 +2295,7 @@ Node TheoryStringsRewriter::rewriteReplace( Node node ) {
   if( node[2].getKind()==STRING_STRREPL )
   {
     // str.contains( z, w ) ----> false implies
-    // str.replace( x, z, str.replace( w, x, y ) ) ---> str.replace( x, z, w )
+    // str.replace( x, w, str.replace( z, x, y ) ) ---> str.replace( x, w, z )
     if( node[2][1]==node[0] )
     {
       Node cmp_con = nm->mkNode(STRING_STRCTN, node[1], node[2][0]);
