@@ -2169,7 +2169,6 @@ Node TheoryStringsRewriter::rewriteReplace( Node node ) {
       if( sn2!=node[2] )
       {
         Node ret = nm->mkNode( STRING_STRREPL, node[0], node[1], sn2 );
-        Trace("ajr-temp") << "rew : " << node << " -> " << ret << std::endl;
         return returnRewrite(node, ret, "repl-empty-subs");
       }
     }
