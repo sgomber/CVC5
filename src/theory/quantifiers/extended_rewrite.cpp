@@ -35,6 +35,8 @@ typedef expr::Attribute<ExtRewriteAttributeId, Node> ExtRewriteAttribute;
 
 ExtendedRewriter::ExtendedRewriter(bool aggr) : d_aggr(aggr)
 {
+  d_true = NodeManager::currentNM()->mkConst(true);
+  d_false = NodeManager::currentNM()->mkConst(false);
 }
 
 void ExtendedRewriter::setCache(Node n, Node ret)
@@ -282,7 +284,6 @@ Node ExtendedRewriter::extendedRewriteAggr(Node n)
           << "  failed to get monomial sum of " << n << std::endl;
     }
   }
-  // TODO (#1706) : conditional rewriting, condition merging
   return new_ret;
 }
 
@@ -395,10 +396,7 @@ Node ExtendedRewriter::extendedRewriteIte(Kind itek, Node n, bool full)
     // substitution to the children of ite( x = t ^ C, s, t ) below.
     std::vector<Node> vars;
     std::vector<Node> subs;
-    for (const Node& eq : eq_conds)
-    {
-      inferSubstitution(eq, vars, subs);
-    }
+    inferSubstitution(n[0], vars, subs, true);
 
     if (!vars.empty())
     {
@@ -437,6 +435,92 @@ Node ExtendedRewriter::extendedRewriteIte(Kind itek, Node n, bool full)
         }
       }
     }
+    if( new_ret.isNull() )
+    {
+      // ite( C, t, s ) ----> ite( C, t, s { C -> false } )
+      TNode tv = n[0];
+      TNode ts = d_false;
+      Node nn = t2.substitute( tv, ts );
+      if( nn != t2 )
+      {
+        nn = Rewriter::rewrite( nn );
+        if (nn == t1)
+        {
+          new_ret = nn;
+          ss_reason << "ITE subs invariant false";
+        }
+        else if (full || nn.isConst())
+        {
+          new_ret = nm->mkNode(itek, n[0], t1, nn);
+          ss_reason << "ITE subs false";
+        }
+      }
+    }
+    if( new_ret.isNull() )
+    {
+      // look for two level ITE similifications
+      for( unsigned i=1; i<=2; i++ )
+      {
+        if( n[i].getKind()==itek )
+        {
+          Node no = n[i==1 ? 2 : 1];
+          TNode tv = n[i][0];
+          for( unsigned j=1; j<=2; j++ )
+          {
+            // B => ~A implies ite( A, x, ite( B, y, z ) ) --> ite( B, y, ite( A, x, z ) )
+            // ~B => ~A implies ite( A, x, ite( B, y, z ) ) --> ite( B, ite( A, x, y ), z )
+            // B => A implies ite( A, ite( B, y, z ), x ) --> ite( B, y, ite( A, z, x ) )
+            // ~B => A implies ite( A, ite( B, y, z ), x ) --> ite( B, ite( A, y, x ), z )
+            TNode ts = j==1 ? d_false : d_true;
+            Node cr = n[0].substitute( tv, ts );
+            Node crr = Rewriter::rewrite( cr );
+            bool does_imply = false;
+            // top condition always follows into this branch
+            if( crr.isConst() && crr.getConst<bool>()==(i==1) )
+            {
+              does_imply = true;
+            }
+            else
+            {
+              // use simple implies test?
+              //Node bc = j==1 ? n[i][0].negate() : n[i][0];
+              //does_imply = simpleImpliesTest( bc, n[0] )==( i==1 ? 1 : -1 );
+            }
+            if( does_imply )
+            {
+              Node cc = nm->mkNode( itek, n[0], i==1 ? n[i][j] : n[1], i==1 ? n[2] : n[i][j] );
+              new_ret = nm->mkNode( itek, n[i][0], j==1 ? cc : n[i][1], j==1 ? n[i][2] : cc );
+              ss_reason << "ITE level collapse";
+              Trace("q-ext-rewrite-debug") << "ite-level-collapse: " << n << " -> " << new_ret << std::endl;
+              break;
+            }
+            else if( crr!=n[0] && n[i][j]==no )
+            {
+              // can keep the condition
+              new_ret = nm->mkNode( itek, crr, n[1], n[2] );
+              ss_reason << "ITE level simplify";
+              Trace("q-ext-rewrite-debug") << "ite-level-simp: " << n << " -> " << new_ret << std::endl;
+              break;
+            }
+          }
+          if( !new_ret.isNull() )
+          {
+            break;
+          }
+          // simple implication test
+          Node cond = i==1 ? n[0] : n[0].negate();
+          int si_res = simpleImpliesTest( cond, n[i][0] );
+          if( si_res!=0 )
+          {
+            Node imp_ret = n[i][si_res==1 ? 1 : 2];
+            new_ret = nm->mkNode( itek, n[0], i==1 ? imp_ret : n[1], i==2 ? imp_ret : n[2] );
+            ss_reason << "ITE simple implies";
+              Trace("q-ext-rewrite-debug") << "ite-simple-imp: " << n << " -> " << new_ret << std::endl;
+            break;
+          }
+        }
+      }
+    }
   }
 
   // only print debug trace if full=true
@@ -469,7 +553,107 @@ Node ExtendedRewriter::extendedRewriteAndOr(Node n)
 
   // equality resolution
   new_ret = extendedRewriteEqRes(AND, OR, EQUAL, NOT, bcp_kinds, n, false);
-  debugExtendedRewrite(n, new_ret, "Bool eq res");
+  if (!new_ret.isNull())
+  {
+    debugExtendedRewrite(n, new_ret, "Bool eq res");
+    return new_ret;
+  }
+  
+  // inequality merging/elimination
+  NodeManager * nm = NodeManager::currentNM();
+  std::vector< Node > children;
+  bool childrenChanged = false;
+  std::map< Node, Node > ineq_bounds[2];
+  std::map< Node, Node > ineq_bounds_exp[2];
+  for( const Node& cn : n )
+  {
+    bool pol = (cn.getKind()!=NOT)==(n.getKind()==AND);
+    Node cna = cn.getKind()==NOT ? cn[0] : cn;
+    if( cna.getKind()==GEQ && cna[1].isConst() )
+    {
+      unsigned index = pol ? 0 :1;
+      std::map< Node, Node >::iterator iti = ineq_bounds[index].find( cna[0] );
+      bool set_bound = true;
+      if( iti!=ineq_bounds[index].end() )
+      {
+        if( ( pol && cna[1].getConst<Rational>()<iti->second.getConst<Rational>() ) ||
+            ( !pol && cna[1].getConst<Rational>()>iti->second.getConst<Rational>() ) )
+        {
+          // subsumed bound
+          set_bound = false;
+          childrenChanged = true;
+        }
+        else
+        {
+          // subsumed another bound
+          ineq_bounds_exp[index][cna[0]] = Node::null();
+        }
+      }
+      if( set_bound )
+      {
+        ineq_bounds[index][cna[0]] = cna[1];
+        ineq_bounds_exp[index][cna[0]] = cn;
+      }
+    }
+    else
+    {
+      // not an inequality
+      children.push_back(cn);
+    }
+  }
+  // add all the inequalities
+  for( unsigned r=0; r<2; r++ )
+  {
+    for( const std::pair< Node, Node >& ib : ineq_bounds[r] )
+    {
+      Node v = ib.first;
+      if( ineq_bounds_exp[r][ib.first].isNull() )
+      {
+        continue;
+      }
+      // check contradictions and merging
+      if( r==0 )
+      {
+        std::map< Node, Node >::iterator itu = ineq_bounds[1].find(v);
+        if( itu!=ineq_bounds[1].end() )
+        {
+          Rational l = ib.second.getConst<Rational>();
+          Rational u = itu->second.getConst<Rational>();
+          if( l>=u )
+          {
+            new_ret = n.getKind()==OR ? d_true : d_false;
+            debugExtendedRewrite(n, new_ret, "Ineq contra");
+            return new_ret;
+          }
+          else
+          {
+            Rational sl = l + Rational(1);
+            if( sl==u )
+            {
+              // x >= c ^ ~( x >= c+1 ) ----> x = c
+              Node eq = v.eqNode( ib.second );
+              eq = n.getKind()==OR ? eq.negate() : eq;
+              children.push_back( eq );
+              ineq_bounds_exp[0][ib.first] = Node::null();
+              ineq_bounds_exp[1][ib.first] = Node::null();
+              childrenChanged = true;
+            }
+          }
+        }
+      }
+      if( !ineq_bounds_exp[r][ib.first].isNull() )
+      {
+        children.push_back( ineq_bounds_exp[r][ib.first] );
+      }
+    }
+  }
+  if( childrenChanged )
+  {
+    new_ret = children.size()==1 ? children[0] : nm->mkNode( n.getKind(), children );
+    debugExtendedRewrite(n, new_ret, "Ineq merge");
+    return new_ret;
+  }
+  
   return new_ret;
 }
 
@@ -1451,8 +1635,19 @@ Node ExtendedRewriter::solveEquality(Node n)
 
 bool ExtendedRewriter::inferSubstitution(Node n,
                                          std::vector<Node>& vars,
-                                         std::vector<Node>& subs)
+                                         std::vector<Node>& subs,
+                                         bool usePred)
 {
+  if( n.getKind() == AND )
+  {
+    bool ret = false;
+    for( const Node& nc : n )
+    {
+      bool cret = inferSubstitution( nc, vars, subs, usePred );
+      ret = ret || cret;
+    }
+    return ret;
+  }
   if (n.getKind() == EQUAL)
   {
     // see if it can be put into form x = y
@@ -1501,9 +1696,42 @@ bool ExtendedRewriter::inferSubstitution(Node n,
       }
     }
   }
+  if( usePred )
+  {
+    bool negated = n.getKind()==NOT;
+    vars.push_back( negated ? n[0] : n );
+    subs.push_back( negated ? d_false : d_true );
+    return true;
+  }
   return false;
 }
 
+int ExtendedRewriter::simpleImpliesTest( Node a, Node b )
+{
+  //if( b.getKind()==NOT && a.getKind()==NOT )
+  //{
+  //  // contrapositive
+  //  return simpleImpliesTest( b.negate(), a.negate() );
+  //}
+  Node aa = a.getKind()==NOT ? a[0] : a;
+  bool apol = a.getKind()!=NOT;
+  if( aa.getKind()==GEQ && b.getKind()==GEQ )
+  {
+    if( aa[0]==b[0] && aa[1].isConst() && b[1].isConst() )
+    {
+      if( apol && aa[1].getConst<Rational>()>=b[1].getConst<Rational>() )
+      {
+        return 1;
+      }
+      else if( !apol && aa[1].getConst<Rational>()<=b[1].getConst<Rational>() )
+      {
+        return -1;
+      }
+    }
+  }
+  return 0;
+}
+  
 Node ExtendedRewriter::extendedRewriteArith(Node ret)
 {
   Kind k = ret.getKind();
@@ -1534,6 +1762,70 @@ Node ExtendedRewriter::extendedRewriteArith(Node ret)
                                                      : INTS_MODULUS_TOTAL));
       new_ret = nm->mkNode(new_k, children);
       debugExtendedRewrite(ret, new_ret, "total-interpretation");
+    }
+  }
+  if( k==PLUS )
+  {
+    // normalize ITE children
+    std::map<Node, Node> msum;
+    if (ArithMSum::getMonomialSum(ret, msum))
+    {
+      std::vector< Node > new_children;
+      bool mkNewSum = false;
+      for( const std::pair< Node, Node >& m : msum )
+      {
+        Node v = m.first;
+        Node mn = v.isNull() ? m.second : ArithMSum::mkCoeffTerm( m.second, v );
+        if( !v.isNull() && v.getKind()==ITE && !mkNewSum )
+        {
+          // get monomials in both branches
+          std::map< Node, Node > msumb[2];
+          bool success = true;
+          for( unsigned j=0; j<2; j++ )
+          {
+            if( !ArithMSum::getMonomialSum(v[j+1], msumb[j]) )
+            {
+              success = false;
+              break;
+            }
+          }
+          if( success )
+          {
+            // ignore zero
+            if( !v[1].isConst() || v[1].getConst<Rational>().sgn()!=0 )
+            {
+              for( const std::pair< Node, Node >& mb : msumb[0] )
+              {
+                Node vb = mb.first;
+                if( msum.find(vb)!=msum.end() || msumb[1].find(vb)!=msumb[1].end() )
+                {
+                  // x+ite(C,x+z,y) ----> x+x+ite(C,(x+z)-x,y-x)
+                  mkNewSum = true;
+                  Node mnb = vb.isNull() ? mb.second : ArithMSum::mkCoeffTerm( mb.second, vb );
+                  Node new_ite = nm->mkNode( ITE, v[0], nm->mkNode( MINUS, v[1], mnb ), nm->mkNode( MINUS, v[2], mnb ) );
+                  Node new_child = nm->mkNode( PLUS, mnb, new_ite );
+                  new_child= ArithMSum::mkCoeffTerm( m.second, new_child );
+                  new_children.push_back( new_child );
+                  mn = Node::null();
+                  break;
+                }
+              }
+            }
+          }
+        }
+        // if we haven't processed mn
+        if( !mn.isNull() )
+        {
+          // add to children
+          new_children.push_back( mn );
+        }
+      }
+      if( mkNewSum )
+      {
+        Assert( new_children.size()>1 );
+        new_ret = nm->mkNode( PLUS, new_children );
+        debugExtendedRewrite(ret, new_ret, "ite-plus-factoring");
+      }
     }
   }
   return new_ret;

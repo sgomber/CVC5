@@ -884,7 +884,10 @@ Node SygusSymBreakNew::registerSearchValue(
           // we have detected unsoundness in the rewriter
           Options& nodeManagerOptions = NodeManager::currentNM()->getOptions();
           std::ostream* out = nodeManagerOptions.getOut();
-          (*out) << "(unsound-rewrite " << bv << " " << bvr << ")" << std::endl;
+          std::stringstream ss;
+          Printer::getPrinter(options::outputLanguage())
+              ->toStreamSygus(ss, cnv);
+          (*out) << "(unsound-rewrite " << ss.str() << " " << bvr << ")" << std::endl;
           // debugging information
           if (Trace.isOn("sygus-rr-debug"))
           {
