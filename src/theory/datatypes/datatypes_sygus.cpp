@@ -887,7 +887,8 @@ Node SygusSymBreakNew::registerSearchValue(
           std::stringstream ss;
           Printer::getPrinter(options::outputLanguage())
               ->toStreamSygus(ss, cnv);
-          (*out) << "(unsound-rewrite " << ss.str() << " " << bvr << ")" << std::endl;
+          (*out) << "(unsound-rewrite " << ss.str() << " " << bvr << ")"
+                 << std::endl;
           // debugging information
           if (Trace.isOn("sygus-rr-debug"))
           {

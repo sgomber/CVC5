@@ -189,7 +189,7 @@ Node ExtendedRewriter::extendedRewrite(Node n)
   if (new_ret.isNull())
   {
     TheoryId tid;
-    if( ret.getKind()==ITE )
+    if (ret.getKind() == ITE)
     {
       tid = Theory::theoryOf(ret.getType());
     }
@@ -197,7 +197,8 @@ Node ExtendedRewriter::extendedRewrite(Node n)
     {
       tid = Theory::theoryOf(ret);
     }
-    Trace("q-ext-rewrite-debug") << "theoryOf( " << ret << " )= " << tid << std::endl;
+    Trace("q-ext-rewrite-debug")
+        << "theoryOf( " << ret << " )= " << tid << std::endl;
     if (tid == THEORY_ARITH)
     {
       new_ret = extendedRewriteArith(ret);
@@ -435,15 +436,15 @@ Node ExtendedRewriter::extendedRewriteIte(Kind itek, Node n, bool full)
         }
       }
     }
-    if( new_ret.isNull() )
+    if (new_ret.isNull())
     {
       // ite( C, t, s ) ----> ite( C, t, s { C -> false } )
       TNode tv = n[0];
       TNode ts = d_false;
-      Node nn = t2.substitute( tv, ts );
-      if( nn != t2 )
+      Node nn = t2.substitute(tv, ts);
+      if (nn != t2)
       {
-        nn = Rewriter::rewrite( nn );
+        nn = Rewriter::rewrite(nn);
         if (nn == t1)
         {
           new_ret = nn;
@@ -456,66 +457,73 @@ Node ExtendedRewriter::extendedRewriteIte(Kind itek, Node n, bool full)
         }
       }
     }
-    if( new_ret.isNull() )
+    if (new_ret.isNull())
     {
       // look for two level ITE similifications
-      for( unsigned i=1; i<=2; i++ )
+      for (unsigned i = 1; i <= 2; i++)
       {
-        if( n[i].getKind()==itek )
+        if (n[i].getKind() == itek)
         {
-          Node no = n[i==1 ? 2 : 1];
+          Node no = n[i == 1 ? 2 : 1];
           TNode tv = n[i][0];
-          for( unsigned j=1; j<=2; j++ )
+          for (unsigned j = 1; j <= 2; j++)
           {
-            // B => ~A implies ite( A, x, ite( B, y, z ) ) --> ite( B, y, ite( A, x, z ) )
-            // ~B => ~A implies ite( A, x, ite( B, y, z ) ) --> ite( B, ite( A, x, y ), z )
-            // B => A implies ite( A, ite( B, y, z ), x ) --> ite( B, y, ite( A, z, x ) )
-            // ~B => A implies ite( A, ite( B, y, z ), x ) --> ite( B, ite( A, y, x ), z )
-            TNode ts = j==1 ? d_false : d_true;
-            Node cr = n[0].substitute( tv, ts );
-            Node crr = Rewriter::rewrite( cr );
+            // B => ~A implies ite( A, x, ite( B, y, z ) ) --> ite( B, y, ite(
+            // A, x, z ) ) ~B => ~A implies ite( A, x, ite( B, y, z ) ) --> ite(
+            // B, ite( A, x, y ), z ) B => A implies ite( A, ite( B, y, z ), x )
+            // --> ite( B, y, ite( A, z, x ) ) ~B => A implies ite( A, ite( B,
+            // y, z ), x ) --> ite( B, ite( A, y, x ), z )
+            TNode ts = j == 1 ? d_false : d_true;
+            Node cr = n[0].substitute(tv, ts);
+            Node crr = Rewriter::rewrite(cr);
             bool does_imply = false;
             // top condition always follows into this branch
-            if( crr.isConst() && crr.getConst<bool>()==(i==1) )
+            if (crr.isConst() && crr.getConst<bool>() == (i == 1))
             {
               does_imply = true;
             }
             else
             {
               // use simple implies test?
-              //Node bc = j==1 ? n[i][0].negate() : n[i][0];
-              //does_imply = simpleImpliesTest( bc, n[0] )==( i==1 ? 1 : -1 );
+              // Node bc = j==1 ? n[i][0].negate() : n[i][0];
+              // does_imply = simpleImpliesTest( bc, n[0] )==( i==1 ? 1 : -1 );
             }
-            if( does_imply )
+            if (does_imply)
             {
-              Node cc = nm->mkNode( itek, n[0], i==1 ? n[i][j] : n[1], i==1 ? n[2] : n[i][j] );
-              new_ret = nm->mkNode( itek, n[i][0], j==1 ? cc : n[i][1], j==1 ? n[i][2] : cc );
+              Node cc = nm->mkNode(
+                  itek, n[0], i == 1 ? n[i][j] : n[1], i == 1 ? n[2] : n[i][j]);
+              new_ret = nm->mkNode(
+                  itek, n[i][0], j == 1 ? cc : n[i][1], j == 1 ? n[i][2] : cc);
               ss_reason << "ITE level collapse";
-              Trace("q-ext-rewrite-debug") << "ite-level-collapse: " << n << " -> " << new_ret << std::endl;
+              Trace("q-ext-rewrite-debug") << "ite-level-collapse: " << n
+                                           << " -> " << new_ret << std::endl;
               break;
             }
-            else if( crr!=n[0] && n[i][j]==no )
+            else if (crr != n[0] && n[i][j] == no)
             {
               // can keep the condition
-              new_ret = nm->mkNode( itek, crr, n[1], n[2] );
+              new_ret = nm->mkNode(itek, crr, n[1], n[2]);
               ss_reason << "ITE level simplify";
-              Trace("q-ext-rewrite-debug") << "ite-level-simp: " << n << " -> " << new_ret << std::endl;
+              Trace("q-ext-rewrite-debug")
+                  << "ite-level-simp: " << n << " -> " << new_ret << std::endl;
               break;
             }
           }
-          if( !new_ret.isNull() )
+          if (!new_ret.isNull())
           {
             break;
           }
           // simple implication test
-          Node cond = i==1 ? n[0] : n[0].negate();
-          int si_res = simpleImpliesTest( cond, n[i][0] );
-          if( si_res!=0 )
+          Node cond = i == 1 ? n[0] : n[0].negate();
+          int si_res = simpleImpliesTest(cond, n[i][0]);
+          if (si_res != 0)
           {
-            Node imp_ret = n[i][si_res==1 ? 1 : 2];
-            new_ret = nm->mkNode( itek, n[0], i==1 ? imp_ret : n[1], i==2 ? imp_ret : n[2] );
+            Node imp_ret = n[i][si_res == 1 ? 1 : 2];
+            new_ret = nm->mkNode(
+                itek, n[0], i == 1 ? imp_ret : n[1], i == 2 ? imp_ret : n[2]);
             ss_reason << "ITE simple implies";
-              Trace("q-ext-rewrite-debug") << "ite-simple-imp: " << n << " -> " << new_ret << std::endl;
+            Trace("q-ext-rewrite-debug")
+                << "ite-simple-imp: " << n << " -> " << new_ret << std::endl;
             break;
           }
         }
@@ -558,26 +566,29 @@ Node ExtendedRewriter::extendedRewriteAndOr(Node n)
     debugExtendedRewrite(n, new_ret, "Bool eq res");
     return new_ret;
   }
-  
+
   // inequality merging/elimination
-  NodeManager * nm = NodeManager::currentNM();
-  std::vector< Node > children;
+  NodeManager* nm = NodeManager::currentNM();
+  std::vector<Node> children;
   bool childrenChanged = false;
-  std::map< Node, Node > ineq_bounds[2];
-  std::map< Node, Node > ineq_bounds_exp[2];
-  for( const Node& cn : n )
+  std::map<Node, Node> ineq_bounds[2];
+  std::map<Node, Node> ineq_bounds_exp[2];
+  for (const Node& cn : n)
   {
-    bool pol = (cn.getKind()!=NOT)==(n.getKind()==AND);
-    Node cna = cn.getKind()==NOT ? cn[0] : cn;
-    if( cna.getKind()==GEQ && cna[1].isConst() )
+    bool pol = (cn.getKind() != NOT) == (n.getKind() == AND);
+    Node cna = cn.getKind() == NOT ? cn[0] : cn;
+    if (cna.getKind() == GEQ && cna[1].isConst())
     {
-      unsigned index = pol ? 0 :1;
-      std::map< Node, Node >::iterator iti = ineq_bounds[index].find( cna[0] );
+      unsigned index = pol ? 0 : 1;
+      std::map<Node, Node>::iterator iti = ineq_bounds[index].find(cna[0]);
       bool set_bound = true;
-      if( iti!=ineq_bounds[index].end() )
+      if (iti != ineq_bounds[index].end())
       {
-        if( ( pol && cna[1].getConst<Rational>()<iti->second.getConst<Rational>() ) ||
-            ( !pol && cna[1].getConst<Rational>()>iti->second.getConst<Rational>() ) )
+        if ((pol
+             && cna[1].getConst<Rational>() < iti->second.getConst<Rational>())
+            || (!pol
+                && cna[1].getConst<Rational>()
+                       > iti->second.getConst<Rational>()))
         {
           // subsumed bound
           set_bound = false;
@@ -589,7 +600,7 @@ Node ExtendedRewriter::extendedRewriteAndOr(Node n)
           ineq_bounds_exp[index][cna[0]] = Node::null();
         }
       }
-      if( set_bound )
+      if (set_bound)
       {
         ineq_bounds[index][cna[0]] = cna[1];
         ineq_bounds_exp[index][cna[0]] = cn;
@@ -602,38 +613,38 @@ Node ExtendedRewriter::extendedRewriteAndOr(Node n)
     }
   }
   // add all the inequalities
-  for( unsigned r=0; r<2; r++ )
+  for (unsigned r = 0; r < 2; r++)
   {
-    for( const std::pair< Node, Node >& ib : ineq_bounds[r] )
+    for (const std::pair<Node, Node>& ib : ineq_bounds[r])
     {
       Node v = ib.first;
-      if( ineq_bounds_exp[r][ib.first].isNull() )
+      if (ineq_bounds_exp[r][ib.first].isNull())
       {
         continue;
       }
       // check contradictions and merging
-      if( r==0 )
+      if (r == 0)
       {
-        std::map< Node, Node >::iterator itu = ineq_bounds[1].find(v);
-        if( itu!=ineq_bounds[1].end() )
+        std::map<Node, Node>::iterator itu = ineq_bounds[1].find(v);
+        if (itu != ineq_bounds[1].end())
         {
           Rational l = ib.second.getConst<Rational>();
           Rational u = itu->second.getConst<Rational>();
-          if( l>=u )
+          if (l >= u)
           {
-            new_ret = n.getKind()==OR ? d_true : d_false;
+            new_ret = n.getKind() == OR ? d_true : d_false;
             debugExtendedRewrite(n, new_ret, "Ineq contra");
             return new_ret;
           }
           else
           {
             Rational sl = l + Rational(1);
-            if( sl==u )
+            if (sl == u)
             {
               // x >= c ^ ~( x >= c+1 ) ----> x = c
-              Node eq = v.eqNode( ib.second );
-              eq = n.getKind()==OR ? eq.negate() : eq;
-              children.push_back( eq );
+              Node eq = v.eqNode(ib.second);
+              eq = n.getKind() == OR ? eq.negate() : eq;
+              children.push_back(eq);
               ineq_bounds_exp[0][ib.first] = Node::null();
               ineq_bounds_exp[1][ib.first] = Node::null();
               childrenChanged = true;
@@ -641,19 +652,20 @@ Node ExtendedRewriter::extendedRewriteAndOr(Node n)
           }
         }
       }
-      if( !ineq_bounds_exp[r][ib.first].isNull() )
+      if (!ineq_bounds_exp[r][ib.first].isNull())
       {
-        children.push_back( ineq_bounds_exp[r][ib.first] );
+        children.push_back(ineq_bounds_exp[r][ib.first]);
       }
     }
   }
-  if( childrenChanged )
+  if (childrenChanged)
   {
-    new_ret = children.size()==1 ? children[0] : nm->mkNode( n.getKind(), children );
+    new_ret =
+        children.size() == 1 ? children[0] : nm->mkNode(n.getKind(), children);
     debugExtendedRewrite(n, new_ret, "Ineq merge");
     return new_ret;
   }
-  
+
   return new_ret;
 }
 
@@ -1638,12 +1650,12 @@ bool ExtendedRewriter::inferSubstitution(Node n,
                                          std::vector<Node>& subs,
                                          bool usePred)
 {
-  if( n.getKind() == AND )
+  if (n.getKind() == AND)
   {
     bool ret = false;
-    for( const Node& nc : n )
+    for (const Node& nc : n)
     {
-      bool cret = inferSubstitution( nc, vars, subs, usePred );
+      bool cret = inferSubstitution(nc, vars, subs, usePred);
       ret = ret || cret;
     }
     return ret;
@@ -1659,9 +1671,9 @@ bool ExtendedRewriter::inferSubstitution(Node n,
     Node v[2];
     for (unsigned i = 0; i < 2; i++)
     {
-      if( n[i].isConst() )
+      if (n[i].isConst())
       {
-        vars.push_back(n[1-i]);
+        vars.push_back(n[1 - i]);
         subs.push_back(n[i]);
         return true;
       }
@@ -1696,34 +1708,34 @@ bool ExtendedRewriter::inferSubstitution(Node n,
       }
     }
   }
-  if( usePred )
+  if (usePred)
   {
-    bool negated = n.getKind()==NOT;
-    vars.push_back( negated ? n[0] : n );
-    subs.push_back( negated ? d_false : d_true );
+    bool negated = n.getKind() == NOT;
+    vars.push_back(negated ? n[0] : n);
+    subs.push_back(negated ? d_false : d_true);
     return true;
   }
   return false;
 }
 
-int ExtendedRewriter::simpleImpliesTest( Node a, Node b )
+int ExtendedRewriter::simpleImpliesTest(Node a, Node b)
 {
-  //if( b.getKind()==NOT && a.getKind()==NOT )
+  // if( b.getKind()==NOT && a.getKind()==NOT )
   //{
   //  // contrapositive
   //  return simpleImpliesTest( b.negate(), a.negate() );
   //}
-  Node aa = a.getKind()==NOT ? a[0] : a;
-  bool apol = a.getKind()!=NOT;
-  if( aa.getKind()==GEQ && b.getKind()==GEQ )
+  Node aa = a.getKind() == NOT ? a[0] : a;
+  bool apol = a.getKind() != NOT;
+  if (aa.getKind() == GEQ && b.getKind() == GEQ)
   {
-    if( aa[0]==b[0] && aa[1].isConst() && b[1].isConst() )
+    if (aa[0] == b[0] && aa[1].isConst() && b[1].isConst())
     {
-      if( apol && aa[1].getConst<Rational>()>=b[1].getConst<Rational>() )
+      if (apol && aa[1].getConst<Rational>() >= b[1].getConst<Rational>())
       {
         return 1;
       }
-      else if( !apol && aa[1].getConst<Rational>()<=b[1].getConst<Rational>() )
+      else if (!apol && aa[1].getConst<Rational>() <= b[1].getConst<Rational>())
       {
         return -1;
       }
@@ -1731,7 +1743,7 @@ int ExtendedRewriter::simpleImpliesTest( Node a, Node b )
   }
   return 0;
 }
-  
+
 Node ExtendedRewriter::extendedRewriteArith(Node ret)
 {
   Kind k = ret.getKind();
@@ -1764,48 +1776,54 @@ Node ExtendedRewriter::extendedRewriteArith(Node ret)
       debugExtendedRewrite(ret, new_ret, "total-interpretation");
     }
   }
-  if( k==PLUS )
+  if (k == PLUS)
   {
     // normalize ITE children
     std::map<Node, Node> msum;
     if (ArithMSum::getMonomialSum(ret, msum))
     {
-      std::vector< Node > new_children;
+      std::vector<Node> new_children;
       bool mkNewSum = false;
-      for( const std::pair< Node, Node >& m : msum )
+      for (const std::pair<Node, Node>& m : msum)
       {
         Node v = m.first;
-        Node mn = v.isNull() ? m.second : ArithMSum::mkCoeffTerm( m.second, v );
-        if( !v.isNull() && v.getKind()==ITE && !mkNewSum )
+        Node mn = v.isNull() ? m.second : ArithMSum::mkCoeffTerm(m.second, v);
+        if (!v.isNull() && v.getKind() == ITE && !mkNewSum)
         {
           // get monomials in both branches
-          std::map< Node, Node > msumb[2];
+          std::map<Node, Node> msumb[2];
           bool success = true;
-          for( unsigned j=0; j<2; j++ )
+          for (unsigned j = 0; j < 2; j++)
           {
-            if( !ArithMSum::getMonomialSum(v[j+1], msumb[j]) )
+            if (!ArithMSum::getMonomialSum(v[j + 1], msumb[j]))
             {
               success = false;
               break;
             }
           }
-          if( success )
+          if (success)
           {
             // ignore zero
-            if( !v[1].isConst() || v[1].getConst<Rational>().sgn()!=0 )
+            if (!v[1].isConst() || v[1].getConst<Rational>().sgn() != 0)
             {
-              for( const std::pair< Node, Node >& mb : msumb[0] )
+              for (const std::pair<Node, Node>& mb : msumb[0])
               {
                 Node vb = mb.first;
-                if( msum.find(vb)!=msum.end() || msumb[1].find(vb)!=msumb[1].end() )
+                if (msum.find(vb) != msum.end()
+                    || msumb[1].find(vb) != msumb[1].end())
                 {
                   // x+ite(C,x+z,y) ----> x+x+ite(C,(x+z)-x,y-x)
                   mkNewSum = true;
-                  Node mnb = vb.isNull() ? mb.second : ArithMSum::mkCoeffTerm( mb.second, vb );
-                  Node new_ite = nm->mkNode( ITE, v[0], nm->mkNode( MINUS, v[1], mnb ), nm->mkNode( MINUS, v[2], mnb ) );
-                  Node new_child = nm->mkNode( PLUS, mnb, new_ite );
-                  new_child= ArithMSum::mkCoeffTerm( m.second, new_child );
-                  new_children.push_back( new_child );
+                  Node mnb = vb.isNull()
+                                 ? mb.second
+                                 : ArithMSum::mkCoeffTerm(mb.second, vb);
+                  Node new_ite = nm->mkNode(ITE,
+                                            v[0],
+                                            nm->mkNode(MINUS, v[1], mnb),
+                                            nm->mkNode(MINUS, v[2], mnb));
+                  Node new_child = nm->mkNode(PLUS, mnb, new_ite);
+                  new_child = ArithMSum::mkCoeffTerm(m.second, new_child);
+                  new_children.push_back(new_child);
                   mn = Node::null();
                   break;
                 }
@@ -1814,16 +1832,16 @@ Node ExtendedRewriter::extendedRewriteArith(Node ret)
           }
         }
         // if we haven't processed mn
-        if( !mn.isNull() )
+        if (!mn.isNull())
         {
           // add to children
-          new_children.push_back( mn );
+          new_children.push_back(mn);
         }
       }
-      if( mkNewSum )
+      if (mkNewSum)
       {
-        Assert( new_children.size()>1 );
-        new_ret = nm->mkNode( PLUS, new_children );
+        Assert(new_children.size() > 1);
+        new_ret = nm->mkNode(PLUS, new_children);
         debugExtendedRewrite(ret, new_ret, "ite-plus-factoring");
       }
     }
@@ -1969,51 +1987,56 @@ Node ExtendedRewriter::extendedRewriteBv(Node ret)
     }
     debugExtendedRewrite(ret, new_ret, "BV-eq-solve");
   }
-  else if (k == ITE )
+  else if (k == ITE)
   {
-    if( ret[0].getKind()==EQUAL && ret[0][0].getType().isBitVector() )
+    if (ret[0].getKind() == EQUAL && ret[0][0].getType().isBitVector())
     {
-      for( unsigned i=0; i<2; i++ )
+      for (unsigned i = 0; i < 2; i++)
       {
         Node ct = ret[0][i];
-        Node cto = ret[0][1-i];
-        if( ct.isConst() && bv::utils::getSize(ct)==1 )
+        Node cto = ret[0][1 - i];
+        if (ct.isConst() && bv::utils::getSize(ct) == 1)
         {
           // do they differ by exactly one bit?
-          std::vector< Node > rcc;
-          int diff_index = spliceBvConstBit(ret[1],ret[2],rcc);
-          if( diff_index>=0 )
+          std::vector<Node> rcc;
+          int diff_index = spliceBvConstBit(ret[1], ret[2], rcc);
+          if (diff_index >= 0)
           {
-            Node rpl = rcc[diff_index]==ct ? cto : TermUtil::mkNegate(BITVECTOR_NOT,cto);
+            Node rpl = rcc[diff_index] == ct
+                           ? cto
+                           : TermUtil::mkNegate(BITVECTOR_NOT, cto);
             rcc[diff_index] = rpl;
-            new_ret = rcc.size()==1 ? rcc[0] : nm->mkNode( BITVECTOR_CONCAT, rcc );
+            new_ret =
+                rcc.size() == 1 ? rcc[0] : nm->mkNode(BITVECTOR_CONCAT, rcc);
             debugExtendedRewrite(ret, new_ret, "BV 1bit ITE");
           }
         }
-        else if( ct.getKind()==BITVECTOR_EXTRACT )
+        else if (ct.getKind() == BITVECTOR_EXTRACT)
         {
           Node cte = ct[0];
-          if( cte==ret[1] || cte==ret[2] )
+          if (cte == ret[1] || cte == ret[2])
           {
             // get the other branch
-            Node ob = ret[cte==ret[1] ? 2 : 1];
+            Node ob = ret[cte == ret[1] ? 2 : 1];
             // get the extension of the extract
-            std::vector< Node > exs;
+            std::vector<Node> exs;
             exs.push_back(ct);
-            Node ext = extendBv(cte,exs);
-            Assert(ext.getType()==ob.getType());
+            Node ext = extendBv(cte, exs);
+            Assert(ext.getType() == ob.getType());
             // now, splice the other branch
-            std::vector< Node > extc;
-            std::vector< Node > obc;
-            spliceBv(ext,ob,extc,obc);
-            if( obc.size()==2 && ( cto==obc[0] || cto==obc[1] ) )
+            std::vector<Node> extc;
+            std::vector<Node> obc;
+            spliceBv(ext, ob, extc, obc);
+            if (obc.size() == 2 && (cto == obc[0] || cto == obc[1]))
             {
-              unsigned cflip_index = cto==obc[0] ? 1 : 0;
-              if( obc[cflip_index].isConst() && bv::utils::getSize(obc[cflip_index])==1 )
+              unsigned cflip_index = cto == obc[0] ? 1 : 0;
+              if (obc[cflip_index].isConst()
+                  && bv::utils::getSize(obc[cflip_index]) == 1)
               {
-                obc[cflip_index] = TermUtil::mkNegate(BITVECTOR_NOT,obc[cflip_index]);
-                Node new_eq = cte.eqNode( nm->mkNode( BITVECTOR_CONCAT, obc ) );
-                new_ret = nm->mkNode( ITE, new_eq, ret[1], ret[2] );
+                obc[cflip_index] =
+                    TermUtil::mkNegate(BITVECTOR_NOT, obc[cflip_index]);
+                Node new_eq = cte.eqNode(nm->mkNode(BITVECTOR_CONCAT, obc));
+                new_ret = nm->mkNode(ITE, new_eq, ret[1], ret[2]);
                 debugExtendedRewrite(ret, new_ret, "BV 1bit exrem ITE");
               }
             }
@@ -2134,25 +2157,26 @@ Node ExtendedRewriter::extendedRewriteBv(Node ret)
         }
       }
     }
-    else if( ck==BITVECTOR_CONCAT )
+    else if (ck == BITVECTOR_CONCAT)
     {
       // negating odd numbers flips all but the lsb
       // -concat( t, 1 ) ---> concat( ~t, 1 )
-      Node last_child = ret[0][ret[0].getNumChildren()-1];
-      if( last_child.isConst() )
+      Node last_child = ret[0][ret[0].getNumChildren() - 1];
+      if (last_child.isConst())
       {
-        if( bv::utils::getBit(last_child,0) )
+        if (bv::utils::getBit(last_child, 0))
         {
-          std::vector< Node > children;
-          for( unsigned j=0, size=ret[0].getNumChildren(); j<size-1; j++ )
+          std::vector<Node> children;
+          for (unsigned j = 0, size = ret[0].getNumChildren(); j < size - 1;
+               j++)
           {
-            children.push_back(TermUtil::mkNegate(BITVECTOR_NOT,ret[0][j]));
+            children.push_back(TermUtil::mkNegate(BITVECTOR_NOT, ret[0][j]));
           }
           unsigned csize = bv::utils::getSize(last_child);
-          if( csize>1 )
+          if (csize > 1)
           {
-            Node extract = bv::utils::mkExtract(last_child, csize-1, 1);
-            extract = TermUtil::mkNegate(BITVECTOR_NOT,extract);
+            Node extract = bv::utils::mkExtract(last_child, csize - 1, 1);
+            extract = TermUtil::mkNegate(BITVECTOR_NOT, extract);
             children.push_back(extract);
             children.push_back(bv::utils::mkOnes(1));
           }
@@ -2160,7 +2184,7 @@ Node ExtendedRewriter::extendedRewriteBv(Node ret)
           {
             children.push_back(last_child);
           }
-          new_ret = nm->mkNode(BITVECTOR_CONCAT,children);
+          new_ret = nm->mkNode(BITVECTOR_CONCAT, children);
           debugExtendedRewrite(ret, new_ret, "NEG-odd");
           return new_ret;
         }
@@ -2168,27 +2192,31 @@ Node ExtendedRewriter::extendedRewriteBv(Node ret)
       // negating numbers with msb 1-bits flips all but the last
       // -concat( 1...11, t ) ----> concat( 0...0, -concat(1, t) )
       Node first_child = ret[0][0];
-      if( first_child.isConst() )
+      if (first_child.isConst())
       {
         unsigned csize = bv::utils::getSize(first_child);
-        int i = csize-1;
-        while( i>=0 && bv::utils::getBit(first_child,i) )
+        int i = csize - 1;
+        while (i >= 0 && bv::utils::getBit(first_child, i))
         {
           i--;
         }
-        i = i+2;
-        if( i<=static_cast<int>(csize-1) )
+        i = i + 2;
+        if (i <= static_cast<int>(csize - 1))
         {
-          Assert( i>0 );
-          Node extract_flip = bv::utils::mkExtract(first_child, csize-1, i);
-          extract_flip = TermUtil::mkNegate(BITVECTOR_NOT,extract_flip);
-          std::vector< Node > nchildren;
-          nchildren.push_back(bv::utils::mkExtract(first_child, i-1, 0));
-          for( unsigned j=1, size=ret[0].getNumChildren(); j<size; j++ )
+          Assert(i > 0);
+          Node extract_flip = bv::utils::mkExtract(first_child, csize - 1, i);
+          extract_flip = TermUtil::mkNegate(BITVECTOR_NOT, extract_flip);
+          std::vector<Node> nchildren;
+          nchildren.push_back(bv::utils::mkExtract(first_child, i - 1, 0));
+          for (unsigned j = 1, size = ret[0].getNumChildren(); j < size; j++)
           {
-            nchildren.push_back( ret[0][j] );
+            nchildren.push_back(ret[0][j]);
           }
-          new_ret = nm->mkNode(BITVECTOR_CONCAT,extract_flip, nm->mkNode(BITVECTOR_NEG, nm->mkNode(BITVECTOR_CONCAT,nchildren)));
+          new_ret =
+              nm->mkNode(BITVECTOR_CONCAT,
+                         extract_flip,
+                         nm->mkNode(BITVECTOR_NEG,
+                                    nm->mkNode(BITVECTOR_CONCAT, nchildren)));
           debugExtendedRewrite(ret, new_ret, "NEG-msb-1");
           return new_ret;
         }
@@ -3515,134 +3543,141 @@ void ExtendedRewriter::spliceBv(Node a,
   }
 }
 
-
-int ExtendedRewriter::spliceBvConstBit(Node n1,
-            Node n2,
-            std::vector<Node>& nv)
+int ExtendedRewriter::spliceBvConstBit(Node n1, Node n2, std::vector<Node>& nv)
 {
-  if( n1==n2 )
+  if (n1 == n2)
   {
     return -1;
   }
-  Trace("q-ext-rewrite-debug") << "Splice constant bv bit " << n1 << " " << n2 << std::endl;
+  Trace("q-ext-rewrite-debug")
+      << "Splice constant bv bit " << n1 << " " << n2 << std::endl;
   // splice the children
-  std::vector< Node > rc1;
-  std::vector< Node > rc2;
-  spliceBv(n1,n2,rc1,rc2);
-  Assert( rc1.size()==rc2.size() );
+  std::vector<Node> rc1;
+  std::vector<Node> rc2;
+  spliceBv(n1, n2, rc1, rc2);
+  Assert(rc1.size() == rc2.size());
   int diff_index = -1;
-  for( unsigned r=0; r<rc1.size(); r++ )
+  for (unsigned r = 0; r < rc1.size(); r++)
   {
-    if( rc1[r]!=rc2[r] )
+    if (rc1[r] != rc2[r])
     {
-      if( diff_index>=0 )
+      if (diff_index >= 0)
       {
         // differ at more than one index
-        Trace("q-ext-rewrite-debug") << "...more than one diff component." << std::endl;
+        Trace("q-ext-rewrite-debug")
+            << "...more than one diff component." << std::endl;
         return -1;
       }
       diff_index = r;
     }
   }
-  Assert( diff_index>=0 );
-  if( !rc1[diff_index].isConst() || !rc2[diff_index].isConst() )
+  Assert(diff_index >= 0);
+  if (!rc1[diff_index].isConst() || !rc2[diff_index].isConst())
   {
-    Trace("q-ext-rewrite-debug") << "...non-constant diff components." << std::endl;
+    Trace("q-ext-rewrite-debug")
+        << "...non-constant diff components." << std::endl;
     return -1;
   }
   // insert prefix
-  if( diff_index>0 )
+  if (diff_index > 0)
   {
-    nv.insert(nv.end(),rc1.begin(),rc1.begin()+diff_index);
+    nv.insert(nv.end(), rc1.begin(), rc1.begin() + diff_index);
   }
-  Assert( rc1[diff_index]!=rc2[diff_index] );
+  Assert(rc1[diff_index] != rc2[diff_index]);
   Node c1 = rc1[diff_index];
   Node c2 = rc2[diff_index];
   // do they differ by exactly one bit?
   int bit_diff_index = -1;
   unsigned csize = bv::utils::getSize(c1);
-  for( unsigned i=0; i<csize; i++ )
+  for (unsigned i = 0; i < csize; i++)
   {
-    if( bv::utils::getBit(c1,i)!=bv::utils::getBit(c2,i) )
+    if (bv::utils::getBit(c1, i) != bv::utils::getBit(c2, i))
     {
-      if( bit_diff_index>=0 )
+      if (bit_diff_index >= 0)
       {
         // differ by more than one bit
         nv.clear();
-        Trace("q-ext-rewrite-debug") << "...more than one bit diff." << std::endl;
+        Trace("q-ext-rewrite-debug")
+            << "...more than one bit diff." << std::endl;
         return -1;
       }
       bit_diff_index = i;
     }
   }
-  if( bit_diff_index>=0 )
+  if (bit_diff_index >= 0)
   {
-    std::vector< Node > split;
-    if( bit_diff_index+1<static_cast<int>(csize) )
+    std::vector<Node> split;
+    if (bit_diff_index + 1 < static_cast<int>(csize))
     {
-      Node extract = bv::utils::mkExtract(c1, csize-1, bit_diff_index+1);
+      Node extract = bv::utils::mkExtract(c1, csize - 1, bit_diff_index + 1);
       nv.push_back(Rewriter::rewrite(extract));
     }
-    Node bit = bv::utils::getBit(c1,bit_diff_index) ? bv::utils::mkOnes(1) : bv::utils::mkZero(1);
+    Node bit = bv::utils::getBit(c1, bit_diff_index) ? bv::utils::mkOnes(1)
+                                                     : bv::utils::mkZero(1);
     diff_index = nv.size();
     nv.push_back(bit);
     // remainder
-    if( bit_diff_index>0 )
+    if (bit_diff_index > 0)
     {
-      Node extract = bv::utils::mkExtract(c1, bit_diff_index-1,0);
+      Node extract = bv::utils::mkExtract(c1, bit_diff_index - 1, 0);
       nv.push_back(Rewriter::rewrite(extract));
     }
     // insert suffix
-    if( diff_index<static_cast<int>(rc1.size()) )
+    if (diff_index < static_cast<int>(rc1.size()))
     {
-      nv.insert(nv.end(),rc1.begin()+diff_index+1,rc1.end());
+      nv.insert(nv.end(), rc1.begin() + diff_index + 1, rc1.end());
     }
     return diff_index;
   }
   return -1;
 }
 
-Node ExtendedRewriter::extendBv(Node n, std::vector< Node >& exs)
+Node ExtendedRewriter::extendBv(Node n, std::vector<Node>& exs)
 {
-  std::map< unsigned, Node > ex_map;
-  for( const Node& e : exs )
+  std::map<unsigned, Node> ex_map;
+  for (const Node& e : exs)
   {
     ex_map[bv::utils::getExtractHigh(e)] = e;
   }
-  return extendBv(n,ex_map);
+  return extendBv(n, ex_map);
 }
 
-Node ExtendedRewriter::extendBv(Node n, std::map< unsigned, Node >& ex_map)
+Node ExtendedRewriter::extendBv(Node n, std::map<unsigned, Node>& ex_map)
 {
   Trace("q-ext-rewrite-debug") << "extendBv " << n << std::endl;
-  std::vector< Node > children;
+  std::vector<Node> children;
   int counter = bv::utils::getSize(n) - 1;
-  for( const std::pair< const unsigned, Node >& ep : ex_map )
+  for (const std::pair<const unsigned, Node>& ep : ex_map)
   {
-    Trace("q-ext-rewrite-debug") << "  process " << ep.first << " : " << ep.second << ", counter=" << counter << std::endl;
+    Trace("q-ext-rewrite-debug")
+        << "  process " << ep.first << " : " << ep.second
+        << ", counter=" << counter << std::endl;
     unsigned start = ep.first;
-    Assert( static_cast<int>(start)<=counter );
-    if( static_cast<int>(start)<counter )
+    Assert(static_cast<int>(start) <= counter);
+    if (static_cast<int>(start) < counter)
     {
-      children.push_back( bv::utils::mkExtract(n, counter, start+1) );
+      children.push_back(bv::utils::mkExtract(n, counter, start + 1));
     }
     Node ex = ep.second;
-    children.push_back( ex );
+    children.push_back(ex);
     // update the counter
     unsigned esize = bv::utils::getSize(ex);
-    counter = start-esize;
-    Assert( counter+1>=0 );
+    counter = start - esize;
+    Assert(counter + 1 >= 0);
   }
-  if( counter>=0 )
+  if (counter >= 0)
   {
-    children.push_back( bv::utils::mkExtract(n, counter, 0) );
+    children.push_back(bv::utils::mkExtract(n, counter, 0));
   }
-  Trace("q-ext-rewrite-debug") << "extendBv finish, children = " << children << std::endl;
-  if( children.empty() )
+  Trace("q-ext-rewrite-debug")
+      << "extendBv finish, children = " << children << std::endl;
+  if (children.empty())
   {
     return n;
   }
-  return children.size()==1 ? children[0] : NodeManager::currentNM()->mkNode( BITVECTOR_CONCAT, children );
+  return children.size() == 1
+             ? children[0]
+             : NodeManager::currentNM()->mkNode(BITVECTOR_CONCAT, children);
 }
 
 void ExtendedRewriter::debugExtendedRewrite(Node n,
