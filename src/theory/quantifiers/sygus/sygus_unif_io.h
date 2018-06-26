@@ -415,15 +415,17 @@ class SygusUnifIo : public SygusUnif
    * exp : if this function returns true, then exp contains a (possibly
    * generalize) explanation for why v can be excluded.
    */
-  bool getExplanationForEnumeratorExclude(Node e,
-                                          Node v,
-                                          std::vector<Node>& results,
-                                                     std::map< Node, std::vector< Node > >& srmap,
-                                                     bool prereg,
-                                          std::vector<Node>& exp);
-  Node getExclusionInvariancePredicate(Node e, Node v,
-                                       std::map< Node, std::vector< Node > >& srmap,
-                                                     bool prereg);
+  bool getExplanationForEnumeratorExclude(
+      Node e,
+      Node v,
+      std::vector<Node>& results,
+      std::map<Node, std::vector<Node>>& srmap,
+      bool prereg,
+      std::vector<Node>& exp);
+  Node getExclusionInvariancePredicate(Node e,
+                                       Node v,
+                                       std::map<Node, std::vector<Node>>& srmap,
+                                       bool prereg);
   /** returns true if we can exlude values of e based on negative str.contains
    *
    * Values v for e may be excluded if we realize that the value of v under the

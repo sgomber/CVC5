@@ -326,11 +326,11 @@ class SygusUnifStrategy
   bool isTrivial();
   /** is non-deterministic? */
   bool isNonDeterministic();
-  /** get strategy type 
-   * 
+  /** get strategy type
+   *
    * TODO: build type that summarizes shapes?
    */
-  //TypeNode getStrategyType();
+  // TypeNode getStrategyType();
 
   /** debug print this strategy on Trace c */
   void debugPrint(const char* c);
