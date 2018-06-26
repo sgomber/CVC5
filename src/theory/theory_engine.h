@@ -903,6 +903,8 @@ private:
    *     ( t, s, T1, T2 ).
    */
   unsigned checkSplitCandidate(TNode a, TNode b, theory::TheoryId t1, theory::TheoryId t2);
+  /** merge shared term equivalence classes */
+  void mergeSharedTermEqcs(TNode t1, TNode t2);
   //-----------------------------------end model-based theory combination
   
   //-------------------------caches per model-based theory combination call

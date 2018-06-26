@@ -306,42 +306,47 @@ void TheoryEngine::eqNotifyPostMerge(TNode t1, TNode t2, NotifyClass* c)
   }
   else
   {
-    // equivalence classes on the model have merged, update the shared term
-    // equivalence classes
-    std::map<TNode, std::vector<TNode> >::iterator it2 =
-        d_shared_terms_merge.find(t2);
-    if (it2 != d_shared_terms_merge.end())
+    mergeSharedTermEqcs(t1,t2);
+  }
+}
+
+void TheoryEngine::mergeSharedTermEqcs(TNode t1, TNode t2)
+{
+  // equivalence classes on the model have merged, update the shared term
+  // equivalence classes
+  std::map<TNode, std::vector<TNode> >::iterator it2 =
+      d_shared_terms_merge.find(t2);
+  if (it2 != d_shared_terms_merge.end())
+  {
+    std::map<TNode, std::vector<TNode> >::iterator it1 =
+        d_shared_terms_merge.find(t1);
+    if (it1 != d_shared_terms_merge.end())
     {
-      std::map<TNode, std::vector<TNode> >::iterator it1 =
-          d_shared_terms_merge.find(t1);
-      if (it1 != d_shared_terms_merge.end())
+      std::vector<TNode> merge;
+      for (const TNode& b : it2->second)
       {
-        std::vector<TNode> merge;
-        for (const TNode& b : it2->second)
+        // only care if not propagated equal to an existing one
+        bool success = true;
+        for (const TNode& a : it1->second)
         {
-          // only care if not propagated equal to an existing one
-          bool success = true;
-          for (const TNode& a : it1->second)
+          if (d_sharedTerms.areEqual(a, b))
           {
-            if (d_sharedTerms.areEqual(a, b))
-            {
-              success = false;
-              break;
-            }
-          }
-          if (success)
-          {
-            merge.push_back(b);
+            success = false;
+            break;
           }
         }
-        it1->second.insert(it1->second.end(), merge.begin(), merge.end());
+        if (success)
+        {
+          merge.push_back(b);
+        }
       }
-      else
-      {
-        d_shared_terms_merge[t1] = d_shared_terms_merge[t2];
-      }
-      d_shared_terms_merge.erase(it2);
+      it1->second.insert(it1->second.end(), merge.begin(), merge.end());
     }
+    else
+    {
+      d_shared_terms_merge[t1] = d_shared_terms_merge[t2];
+    }
+    d_shared_terms_merge.erase(it2);
   }
 }
 
@@ -1039,7 +1044,7 @@ void TheoryEngine::combineTheoriesModelBased()
   bool success = true;
   unsigned numSplits = 0;
   std::vector<std::pair<Node, Node> > conflict_pairs;
-
+  std::map< Node, Node > value_to_rep;
   if (d_curr_model_builder->buildModel(d_curr_model))
   {
     Trace("tc-model-debug") << "--- model was consistent, verifying..."
@@ -1048,11 +1053,29 @@ void TheoryEngine::combineTheoriesModelBased()
     std::map<Node, ModelTrie> model_trie;
     eq::EqualityEngine* ee = d_curr_model->getEqualityEngine();
     Assert(ee->consistent());
+    // map from equivalence classes to values
     eq::EqClassesIterator eqcs_i = eq::EqClassesIterator(ee);
     while (!eqcs_i.isFinished())
     {
       TNode r = (*eqcs_i);
       Trace("tc-model-debug") << "model-verify: EQC : " << r << std::endl;
+      Node rr = d_curr_model->getRepresentative(r);
+      Trace("tc-model-debug") << "              rep : " << rr << std::endl;
+      std::map< Node, Node >::iterator itv = value_to_rep.find(rr);
+      if( itv!=value_to_rep.end() )
+      {
+        Trace("tc-model-debug") << "Merge shared term eqc : " << itv->second << " " << r << std::endl;
+        // since these two equivalence classes were assigned the same value,
+        // they are the same equivalence class, even though they have
+        // not merged in the equality engine of the model.
+        mergeSharedTermEqcs(itv->second,r);
+        // cannot guarantee success
+        success = false;
+      }
+      else
+      {
+        value_to_rep[rr] = r;
+      }
       eq::EqClassIterator eqc_i = eq::EqClassIterator(r, ee);
       while (!eqc_i.isFinished())
       {
@@ -1072,15 +1095,22 @@ void TheoryEngine::combineTheoriesModelBased()
       }
       ++eqcs_i;
     }
-    
-    if (conflict_pairs.empty())
+    if( success )
     {
-      Trace("tc-model") << "--> model building succeeded" << std::endl;
+      if (conflict_pairs.empty())
+      {
+        Trace("tc-model") << "--> model building succeeded" << std::endl;
+      }
+      else
+      {
+        success = false;
+        Trace("tc-model") << "--> model was inconsistent during verification (by congruence)"
+                          << std::endl;
+      }
     }
     else
     {
-      success = false;
-      Trace("tc-model") << "--> model was inconsistent during verification"
+      Trace("tc-model") << "--> model was inconsistent during verification (by equality)"
                         << std::endl;
     }
     
