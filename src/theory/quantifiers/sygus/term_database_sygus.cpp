@@ -24,6 +24,8 @@
 #include "theory/quantifiers/term_database.h"
 #include "theory/quantifiers/term_util.h"
 #include "theory/quantifiers_engine.h"
+#include "options/base_options.h"
+#include "printer/printer.h"
 
 using namespace CVC4::kind;
 
@@ -1761,14 +1763,6 @@ Node TermDbSygus::evaluateBuiltin(TypeNode tn,
     }
     if (!res.isNull())
     {
-      /*
-      std::cout << bn << std::endl;
-      std::cout << res << std::endl;
-      std::cout << Rewriter::rewrite(bn.substitute(it->second.begin(),
-                                                it->second.end(),
-                                                args.begin(),
-                                                args.end())) << std::endl;
-                                                */
       Assert(res
              == Rewriter::rewrite(bn.substitute(it->second.begin(),
                                                 it->second.end(),
