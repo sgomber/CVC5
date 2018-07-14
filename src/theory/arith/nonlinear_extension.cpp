@@ -1009,30 +1009,6 @@ bool NonlinearExtension::checkModel(const std::vector<Node>& assertions,
     return false;
   }
   Trace("nl-ext-cm") << "...simple check succeeded!" << std::endl;
-
-  // must assert and re-check if produce models is true
-  if (options::produceModels())
-  {
-    NodeManager* nm = NodeManager::currentNM();
-    // model guard whose semantics is "the model we constructed holds"
-    Node mg = nm->mkSkolem("model", nm->booleanType());
-    mg = Rewriter::rewrite(mg);
-    mg = d_containing.getValuation().ensureLiteral(mg);
-    d_containing.getOutputChannel().requirePhase(mg, true);
-    // assert the constructed model as assertions
-    for (const std::pair<const Node, std::pair<Node, Node> > cb :
-         d_check_model_bounds)
-    {
-      Node l = cb.second.first;
-      Node u = cb.second.second;
-      Node v = cb.first;
-      Node pred = nm->mkNode(AND, nm->mkNode(GEQ, v, l), nm->mkNode(GEQ, u, v));
-      pred = nm->mkNode(OR, mg.negate(), pred);
-      Trace("nl-ext-lemma-model") << "Assert : " << pred << std::endl;
-      d_containing.getOutputChannel().lemma(pred);
-    }
-    d_builtModel = true;
-  }
   return true;
 }
 
@@ -2390,6 +2366,30 @@ void NonlinearExtension::check(Theory::Effort e) {
                           << std::endl;
           d_containing.getOutputChannel().setIncomplete();
         }
+      }
+      else if (options::produceModels())
+      {
+        // we are answering SAT
+        // must assert and re-check if produce models is true
+        NodeManager* nm = NodeManager::currentNM();
+        // model guard whose semantics is "the model we constructed holds"
+        Node mg = nm->mkSkolem("model", nm->booleanType());
+        mg = Rewriter::rewrite(mg);
+        mg = d_containing.getValuation().ensureLiteral(mg);
+        d_containing.getOutputChannel().requirePhase(mg, true);
+        // assert the constructed model as assertions
+        for (const std::pair<const Node, std::pair<Node, Node> > cb :
+            d_check_model_bounds)
+        {
+          Node l = cb.second.first;
+          Node u = cb.second.second;
+          Node v = cb.first;
+          Node pred = nm->mkNode(AND, nm->mkNode(GEQ, v, l), nm->mkNode(GEQ, u, v));
+          pred = nm->mkNode(OR, mg.negate(), pred);
+          Trace("nl-ext-lemma-model") << "Assert : " << pred << std::endl;
+          d_containing.getOutputChannel().lemma(pred);
+        }
+        d_builtModel = true;
       }
 
     } while (needsRecheck);
