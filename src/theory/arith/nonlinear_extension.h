@@ -312,6 +312,9 @@ class NonlinearExtension {
    */
   std::vector<Node> d_check_model_vars;
   std::vector<Node> d_check_model_subs;
+  /** context-independent version of the above vectors */
+  std::vector< Node > d_g_check_model_vars;
+  std::vector< Node > d_g_check_model_subs;
   /** add check model substitution
    *
    * Adds the model substitution v -> s. This applies the substitution

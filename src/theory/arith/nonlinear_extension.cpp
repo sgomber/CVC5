@@ -851,6 +851,14 @@ bool NonlinearExtension::checkModel(const std::vector<Node>& assertions,
   d_check_model_bounds.clear();
   d_check_model_vars.clear();
   d_check_model_subs.clear();
+  
+  for( unsigned i=0,size=d_g_check_model_vars.size(); i<size; i++ )
+  {
+    Node sv = computeModelValue(d_g_check_model_subs[i]);
+    d_check_model_vars.push_back(d_g_check_model_vars[i]);
+    d_check_model_subs.push_back(sv);
+    Trace("nl-ext-cm-debug") << "---ch global bound : " << d_g_check_model_vars[i] << " " << d_g_check_model_subs[i] << " " << sv << std::endl;
+  }
 
   // get the presubstitution
   Trace("nl-ext-cm-debug") << "  apply pre-substitution..." << std::endl;
@@ -2290,7 +2298,7 @@ void NonlinearExtension::check(Theory::Effort e) {
                       << std::endl;
 
       // if we did not add a lemma during check and there is a chance for SAT
-      if (complete_status == 0)
+      if (complete_status >= 0)
       {
         Trace("nl-ext")
             << "Check model based on bounds for irrational-valued functions..."
@@ -2386,6 +2394,14 @@ void NonlinearExtension::check(Theory::Effort e) {
           Node v = cb.first;
           Node pred = nm->mkNode(AND, nm->mkNode(GEQ, v, l), nm->mkNode(GEQ, u, v));
           pred = nm->mkNode(OR, mg.negate(), pred);
+          Trace("nl-ext-lemma-model") << "Assert : " << pred << std::endl;
+          d_containing.getOutputChannel().lemma(pred);
+        }
+        for( unsigned i=0, size=d_check_model_vars.size(); i<size; i++ )
+        {
+          Node v = d_check_model_vars[i];
+          Node s = d_check_model_subs[i];
+          Node pred = nm->mkNode(OR, mg.negate(), v.eqNode(s));
           Trace("nl-ext-lemma-model") << "Assert : " << pred << std::endl;
           d_containing.getOutputChannel().lemma(pred);
         }
@@ -3595,6 +3611,8 @@ Node NonlinearExtension::getFactorSkolem( Node n, std::vector< Node >& lemmas ) 
     Node k = NodeManager::currentNM()->mkSkolem( "kf", n.getType() );
     Node k_eq = Rewriter::rewrite( k.eqNode( n ) );
     d_skolem_atoms.insert( k_eq );
+    d_g_check_model_vars.push_back( k );
+    d_g_check_model_subs.push_back( n );
     lemmas.push_back( k_eq );
     d_factor_skolem[n] = k;
     return k;
