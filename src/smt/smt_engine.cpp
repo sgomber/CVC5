@@ -1318,18 +1318,6 @@ void SmtEngine::setDefaults() {
 
   if (options::bitblastMode() == theory::bv::BITBLAST_MODE_EAGER)
   {
-    if (options::incrementalSolving())
-    {
-      if (options::incrementalSolving.wasSetByUser())
-      {
-        throw OptionException(std::string(
-            "Eager bit-blasting does not currently support incremental mode. "
-            "Try --bitblast=lazy"));
-      }
-      Notice() << "SmtEngine: turning off incremental to support eager "
-               << "bit-blasting" << endl;
-      setOption("incremental", SExpr("false"));
-    }
     if (options::produceModels()
         && (d_logic.isTheoryEnabled(THEORY_ARRAYS)
             || d_logic.isTheoryEnabled(THEORY_UF)))
@@ -1345,6 +1333,13 @@ void SmtEngine::setDefaults() {
       Notice() << "SmtEngine: setting bit-blast mode to lazy to support model"
                << "generation" << endl;
       setOption("bitblastMode", SExpr("lazy"));
+    }
+
+    if (options::incrementalSolving() && !d_logic.isPure(THEORY_BV))
+    {
+      throw OptionException(
+          "Incremental eager bit-blasting is currently "
+          "only supported for QF_BV. Try --bitblast=lazy.");
     }
   }
 
@@ -1765,11 +1760,6 @@ void SmtEngine::setDefaults() {
       d_logic.isTheoryEnabled(THEORY_BV)) {
     Trace("smt") << "enabling eager bit-vector explanations " << endl;
     options::bvEagerExplanations.set(true);
-  }
-
-  if( !options::bitvectorEqualitySolver() ){
-    Trace("smt") << "disabling bvLazyRewriteExtf since equality solver is disabled" << endl;
-    options::bvLazyRewriteExtf.set(false);
   }
 
   // Turn on arith rewrite equalities only for pure arithmetic
@@ -2319,6 +2309,22 @@ void SmtEngine::setDefaults() {
                << std::endl;
       options::bitvectorInequalitySolver.set(false);
     }
+  }
+
+  if (!options::bitvectorEqualitySolver())
+  {
+    if (options::bvLazyRewriteExtf())
+    {
+      if (options::bvLazyRewriteExtf.wasSetByUser())
+      {
+        throw OptionException(
+            "--bv-lazy-rewrite-extf requires --bv-eq-solver to be set");
+      }
+    }
+    Trace("smt")
+        << "disabling bvLazyRewriteExtf since equality solver is disabled"
+        << endl;
+    options::bvLazyRewriteExtf.set(false);
   }
 }
 
@@ -4149,7 +4155,8 @@ void SmtEnginePrivate::processAssertions() {
                          "Try --bv-div-zero-const to interpret division by zero as a constant.");
   }
 
-  if (options::bitblastMode() == theory::bv::BITBLAST_MODE_EAGER)
+  if (options::bitblastMode() == theory::bv::BITBLAST_MODE_EAGER
+      && !options::incrementalSolving())
   {
     d_preprocessingPassRegistry.getPass("bv-ackermann")->apply(&d_assertions);
   }
@@ -4330,9 +4337,9 @@ void SmtEnginePrivate::processAssertions() {
   Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : post-simplify" << endl;
   dumpAssertions("post-simplify", d_assertions);
 
-  if (options::symmetryBreakerExp())
+  if (options::symmetryBreakerExp() && !options::incrementalSolving())
   {
-    // apply symmetry breaking
+    // apply symmetry breaking if not in incremental mode
     d_preprocessingPassRegistry.getPass("sym-break")->apply(&d_assertions);
   }
 
@@ -5251,6 +5258,36 @@ Model* SmtEngine::getModel() {
   return m;
 }
 
+Expr SmtEngine::getHeapExpr()
+{
+  NodeManagerScope nms(d_nodeManager);
+  Expr heap;
+  Expr nil;  // we don't actually use this
+  Model* m = getModel();
+  if (m->getHeapModel(heap, nil))
+  {
+    return heap;
+  }
+  InternalError(
+      "SmtEngine::getHeapExpr(): failed to obtain heap expression from theory "
+      "model.");
+}
+
+Expr SmtEngine::getNilExpr()
+{
+  NodeManagerScope nms(d_nodeManager);
+  Expr heap;  // we don't actually use this
+  Expr nil;
+  Model* m = getModel();
+  if (m->getHeapModel(heap, nil))
+  {
+    return nil;
+  }
+  InternalError(
+      "SmtEngine::getNilExpr(): failed to obtain nil expression from theory "
+      "model.");
+}
+
 void SmtEngine::checkUnsatCore() {
   Assert(options::unsatCores(), "cannot check unsat core if unsat cores are turned off");
 
@@ -5540,6 +5577,11 @@ void SmtEngine::checkSynthSolution()
     }
     Notice() << "SmtEngine::checkSynthSolution(): -- expands to " << conj << endl;
     Trace("check-synth-sol") << "Expanded assertion " << conj << "\n";
+    if (conj.getKind() != kind::FORALL)
+    {
+      Trace("check-synth-sol") << "Not a checkable assertion.\n";
+      continue;
+    }
 
     // Apply solution map to conjecture body
     Node conjBody;
