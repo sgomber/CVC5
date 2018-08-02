@@ -412,8 +412,13 @@ Node Instantiate::getInstantiation(Node q,
   Node body;
   Assert(vars.size() == terms.size());
   Assert(q[0].getNumChildren() == vars.size());
-  // TODO (#1386) : optimize this
-  body = q[1].substitute(vars.begin(), vars.end(), terms.begin(), terms.end());
+  std::map< Node, CacheSubstitute >::iterator itc = d_csubs.find(q);
+  if (itc==d_csubs.end())
+  {
+    d_csubs[q].initialize(q[1],vars);
+    itc = d_csubs.find(q);
+  }
+  body = itc->second.getSubstitute(terms);
   if (doVts)
   {
     // do virtual term substitution
