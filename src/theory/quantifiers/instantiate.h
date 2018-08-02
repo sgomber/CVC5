@@ -22,6 +22,7 @@
 #include "expr/node.h"
 #include "theory/quantifiers/inst_match_trie.h"
 #include "theory/quantifiers/quant_util.h"
+#include "theory/quantifiers/cache_substitute.h"
 #include "theory/quantifiers_engine.h"
 #include "util/statistics_registry.h"
 
@@ -368,6 +369,8 @@ class Instantiate : public QuantifiersUtil
    * of these instantiations, for each quantified formula.
    */
   std::vector<std::pair<Node, std::vector<Node> > > d_recorded_inst;
+  /** for each quantified formula, a cache substitution object */
+  std::map< Node, CacheSubstitute > d_csubs;
 };
 
 } /* CVC4::theory::quantifiers namespace */
