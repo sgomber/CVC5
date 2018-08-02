@@ -14,10 +14,12 @@
 
 #include "cvc4_private.h"
 
-#ifndef __CVC4__THEORY__QUANTIFIERS__INSTANTIATE_H
-#define __CVC4__THEORY__QUANTIFIERS__INSTANTIATE_H
+#ifndef __CVC4__THEORY__QUANTIFIERS__CACHE_SUBSTITUTE_H
+#define __CVC4__THEORY__QUANTIFIERS__CACHE_SUBSTITUTE_H
 
 #include <map>
+
+#include "expr/node.h"
 
 namespace CVC4 {
 namespace theory {
@@ -25,13 +27,32 @@ namespace quantifiers {
 
 /** CacheSubstitute
  * 
+ * This class is useful when we need to compute many substitutions of a
+ * fixed term over a variable domain.
  */
-class CacheSubstitute 
+class CacheSubstitute
 {
 public:
-  CacheSubstitute( QuantifiersEngine * qe );
-  ~CacheSubstitute(){}
+  CacheSubstitute(){}
+  /** initialize
+   * 
+   * This call initializes this class to cache information that is useful for
+   * computing substitutions of the form n * { vars -> subs }, for some subs,
+   * where * denotes application of substitution.
+   */
+  void initialize( Node n, const std::vector< Node >& vars );
+  /** get substitute 
+   * 
+   * This computes n * { vars -> subs }, where this class was initialized with
+   * the pair ( n, vars ), where * denotes application of substitution.
+   */
+  Node getSubstitute( const std::vector< Node >& subs );
 private:
+  /** the following information */
+  std::vector< Kind > d_kinds;
+  std::vector< std::vector< unsigned > > d_cons_ptr;
+  std::vector< std::vector< Node > > d_data;
+  std::vector< Node > d_data_out;
 };
 
 
