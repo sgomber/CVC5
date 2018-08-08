@@ -3,7 +3,7 @@
 DEPTH=$1
 shift
 
-echo "Run count std::vector test with depth $DEPTH, options $@..."
+echo "Run count std::vector Node test with depth $DEPTH, options $@..."
 
 ./perf_test_script 1 7 $DEPTH $@ 
 

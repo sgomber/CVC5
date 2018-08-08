@@ -28,6 +28,8 @@ void PerfTest::run()
     runTestCountNode();
   }else if( d_testFamily>=3 && d_testFamily<=5 ){
     runTestCountDataStructures();
+  }else if( d_testFamily==6 ){
+    runTestCountTNode();
   }else{
     std::stringstream ss;
     ss << "Unknown test family " << d_testFamily;

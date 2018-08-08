@@ -1,0 +1,10 @@
+#!/bin/bash
+
+DEPTH=$1
+shift
+
+echo "Run count std::vector TNode test with depth $DEPTH, options $@..."
+
+./perf_test_script 6 7 $DEPTH $@ 
+
+

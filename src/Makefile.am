@@ -174,6 +174,7 @@ libcvc4_la_SOURCES = \
 	smt/perf_tests.cpp \
 	smt/perf_tests_count_ds.cpp \
 	smt/perf_tests_count_node.cpp \
+	smt/perf_tests_count_tnode.cpp \
 	smt/perf_tests_count_vector.cpp \
 	smt/perf_tests_find_ds.cpp \
 	smt/perf_tests.h \

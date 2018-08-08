@@ -687,7 +687,7 @@ header = "options/smt_options.h"
   type       = "int"
   default    = "1"
   help       = "divisor for term reuse"
-  
+
 [[option]]
   name       = "useUnknown"
   category   = "undocumented"

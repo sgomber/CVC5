@@ -23,6 +23,7 @@ private:
   void runTestFindDataStructures();
   void runTestCountVector();
   void runTestCountNode();
+  void runTestCountTNode();
   void runTestCountDataStructures();
   
   double d_rf;
