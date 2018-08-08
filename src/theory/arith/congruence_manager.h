@@ -2,9 +2,9 @@
 /*! \file congruence_manager.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Tim King, Paul Meng, Morgan Deters
+ **   Tim King, Paul Meng, Mathias Preiner
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -61,17 +61,20 @@ private:
   public:
     ArithCongruenceNotify(ArithCongruenceManager& acm);
 
-    bool eqNotifyTriggerEquality(TNode equality, bool value);
+    bool eqNotifyTriggerEquality(TNode equality, bool value) override;
 
-    bool eqNotifyTriggerPredicate(TNode predicate, bool value);
+    bool eqNotifyTriggerPredicate(TNode predicate, bool value) override;
 
-    bool eqNotifyTriggerTermEquality(TheoryId tag, TNode t1, TNode t2, bool value);
+    bool eqNotifyTriggerTermEquality(TheoryId tag,
+                                     TNode t1,
+                                     TNode t2,
+                                     bool value) override;
 
-    void eqNotifyConstantTermMerge(TNode t1, TNode t2);
-    void eqNotifyNewClass(TNode t);
-    void eqNotifyPreMerge(TNode t1, TNode t2);
-    void eqNotifyPostMerge(TNode t1, TNode t2);
-    void eqNotifyDisequal(TNode t1, TNode t2, TNode reason);
+    void eqNotifyConstantTermMerge(TNode t1, TNode t2) override;
+    void eqNotifyNewClass(TNode t) override;
+    void eqNotifyPreMerge(TNode t1, TNode t2) override;
+    void eqNotifyPostMerge(TNode t1, TNode t2) override;
+    void eqNotifyDisequal(TNode t1, TNode t2, TNode reason) override;
   };
   ArithCongruenceNotify d_notify;
   

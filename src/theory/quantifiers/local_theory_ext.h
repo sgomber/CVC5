@@ -2,9 +2,9 @@
 /*! \file local_theory_ext.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Andrew Reynolds, Tim King
+ **   Andrew Reynolds, Mathias Preiner
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -56,22 +56,18 @@ private:
 public:
   LtePartialInst( QuantifiersEngine * qe, context::Context* c );
   /** determine whether this quantified formula will be reduced */
-  void preRegisterQuantifier( Node q );
+  void checkOwnership(Node q) override;
   /** was invoked */
   bool wasInvoked() { return d_wasInvoked; }
   
   /* whether this module needs to check this round */
-  bool needsCheck( Theory::Effort e );
+  bool needsCheck(Theory::Effort e) override;
   /* Call during quantifier engine's check */
-  void check( Theory::Effort e, unsigned quant_e );
-  /* Called for new quantifiers */
-  void registerQuantifier( Node q ) {}
+  void check(Theory::Effort e, QEffort quant_e) override;
   /* check complete */
-  bool checkComplete() { return !d_wasInvoked; }
-  void assertNode( Node n ) {}
+  bool checkComplete() override { return !d_wasInvoked; }
   /** Identify this module (for debugging, dynamic configuration, etc..) */
-  std::string identify() const { return "LtePartialInst"; }
-  
+  std::string identify() const override { return "LtePartialInst"; }
 };
 
 }

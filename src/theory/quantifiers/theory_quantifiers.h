@@ -4,7 +4,7 @@
  ** Top contributors (to current version):
  **   Morgan Deters, Tim King, Andrew Reynolds
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -33,37 +33,37 @@ namespace theory {
 namespace quantifiers {
 
 class TheoryQuantifiers : public Theory {
-private:
-  typedef context::CDHashMap< Node, bool, NodeHashFunction > BoolMap;
-  /** number of instantiations */
-  int d_numInstantiations;
-  int d_baseDecLevel;
-private:
-  void computeCareGraph();
-
-public:
+ public:
   TheoryQuantifiers(context::Context* c, context::UserContext* u,
                     OutputChannel& out, Valuation valuation,
                     const LogicInfo& logicInfo);
   ~TheoryQuantifiers();
 
-  void setMasterEqualityEngine(eq::EqualityEngine* eq);
-  void addSharedTerm(TNode t);
-  void notifyEq(TNode lhs, TNode rhs);
-  void preRegisterTerm(TNode n);
-  void presolve();
-  void ppNotifyAssertions(const std::vector<Node>& assertions);
-  void check(Effort e);
-  Node getNextDecisionRequest( unsigned& priority );
-  Node getValue(TNode n);
-  void collectModelInfo( TheoryModel* m );
-  void shutdown() { }
-  std::string identify() const { return std::string("TheoryQuantifiers"); }
-  void setUserAttribute(const std::string& attr, Node n, std::vector<Node> node_values, std::string str_value);
-  bool ppDontRewriteSubterm(TNode atom) { return atom.getKind() == kind::FORALL || atom.getKind() == kind::EXISTS; }
-private:
+  /** finish initialization */
+  void finishInit() override;
+  void preRegisterTerm(TNode n) override;
+  void presolve() override;
+  void ppNotifyAssertions(const std::vector<Node>& assertions) override;
+  void check(Effort e) override;
+  Node getNextDecisionRequest(unsigned& priority) override;
+  bool collectModelInfo(TheoryModel* m) override;
+  void shutdown() override {}
+  std::string identify() const override
+  {
+    return std::string("TheoryQuantifiers");
+  }
+  void setUserAttribute(const std::string& attr,
+                        Node n,
+                        std::vector<Node> node_values,
+                        std::string str_value) override;
+
+ private:
   void assertUniversal( Node n );
   void assertExistential( Node n );
+  /** number of instantiations */
+  int d_numInstantiations;
+  int d_baseDecLevel;
+
 };/* class TheoryQuantifiers */
 
 }/* CVC4::theory::quantifiers namespace */

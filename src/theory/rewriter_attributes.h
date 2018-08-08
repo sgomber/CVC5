@@ -2,9 +2,9 @@
 /*! \file rewriter_attributes.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Dejan Jovanovic, Morgan Deters, Paul Meng
+ **   Dejan Jovanovic, Morgan Deters, Tim King
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -35,7 +35,8 @@ struct RewriteAttibute {
   /**
    * Get the value of the pre-rewrite cache.
    */
-  static Node getPreRewriteCache(TNode node) throw() {
+  static Node getPreRewriteCache(TNode node)
+  {
     Node cache;
     if (node.hasAttribute(pre_rewrite())) {
       node.getAttribute(pre_rewrite(), cache);
@@ -52,7 +53,8 @@ struct RewriteAttibute {
   /**
    * Set the value of the pre-rewrite cache.
    */
-  static void setPreRewriteCache(TNode node, TNode cache) throw() {
+  static void setPreRewriteCache(TNode node, TNode cache)
+  {
     Trace("rewriter") << "setting pre-rewrite of " << node << " to " << cache << std::endl;
     Assert(!cache.isNull());
     if (node == cache) {
@@ -66,7 +68,8 @@ struct RewriteAttibute {
    * Get the value of the post-rewrite cache.
    * none).
    */
-  static Node getPostRewriteCache(TNode node) throw() {
+  static Node getPostRewriteCache(TNode node)
+  {
     Node cache;
     if (node.hasAttribute(post_rewrite())) {
       node.getAttribute(post_rewrite(), cache);
@@ -83,7 +86,8 @@ struct RewriteAttibute {
   /**
    * Set the value of the post-rewrite cache.  v cannot be a null Node.
    */
-  static void setPostRewriteCache(TNode node, TNode cache) throw() {
+  static void setPostRewriteCache(TNode node, TNode cache)
+  {
     Assert(!cache.isNull());
     Trace("rewriter") << "setting rewrite of " << node << " to " << cache << std::endl;
     if (node == cache) {

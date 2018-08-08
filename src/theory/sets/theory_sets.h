@@ -2,9 +2,9 @@
 /*! \file theory_sets.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Kshitij Bansal, Paul Meng, Andrew Reynolds
+ **   Kshitij Bansal, Tim King, Andrew Reynolds
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -46,36 +46,36 @@ public:
 
   ~TheorySets();
 
-  void addSharedTerm(TNode);
+  void addSharedTerm(TNode) override;
 
-  void check(Effort);
-  
-  bool needsCheckLastEffort();
+  void check(Effort) override;
 
-  void collectModelInfo(TheoryModel* m);
+  bool needsCheckLastEffort() override;
 
-  void computeCareGraph();
+  bool collectModelInfo(TheoryModel* m) override;
 
-  Node explain(TNode);
+  void computeCareGraph() override;
 
-  EqualityStatus getEqualityStatus(TNode a, TNode b);
+  Node explain(TNode) override;
 
-  Node getModelValue(TNode);
+  EqualityStatus getEqualityStatus(TNode a, TNode b) override;
 
-  std::string identify() const { return "THEORY_SETS"; }
+  Node getModelValue(TNode) override;
 
-  void preRegisterTerm(TNode node);
+  std::string identify() const override { return "THEORY_SETS"; }
 
-  Node expandDefinition(LogicRequest &logicRequest, Node n);
+  void preRegisterTerm(TNode node) override;
 
-  PPAssertStatus ppAssert(TNode in, SubstitutionMap& outSubstitutions);
+  Node expandDefinition(LogicRequest& logicRequest, Node n) override;
 
-  void presolve();
+  PPAssertStatus ppAssert(TNode in, SubstitutionMap& outSubstitutions) override;
 
-  void propagate(Effort);
+  void presolve() override;
 
-  void setMasterEqualityEngine(eq::EqualityEngine* eq);
-  
+  void propagate(Effort) override;
+
+  void setMasterEqualityEngine(eq::EqualityEngine* eq) override;
+
   bool isEntailed( Node n, bool pol );
 
 };/* class TheorySets */

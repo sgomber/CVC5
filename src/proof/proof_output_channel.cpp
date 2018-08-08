@@ -4,7 +4,7 @@
  ** Top contributors (to current version):
  **   Guy Katz, Tim King
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -24,18 +24,19 @@
 namespace CVC4 {
 
 ProofOutputChannel::ProofOutputChannel() : d_conflict(), d_proof(nullptr) {}
-
-Proof* ProofOutputChannel::getConflictProof() {
+const Proof& ProofOutputChannel::getConflictProof() const
+{
   Assert(hasConflict());
-  return d_proof;
+  return *d_proof;
 }
 
-void ProofOutputChannel::conflict(TNode n, Proof* pf) {
+void ProofOutputChannel::conflict(TNode n, std::unique_ptr<Proof> pf)
+{
   Trace("pf::tp") << "ProofOutputChannel: CONFLICT: " << n << std::endl;
   Assert(!hasConflict());
   Assert(!d_proof);
   d_conflict = n;
-  d_proof = pf;
+  d_proof = std::move(pf);
   Assert(hasConflict());
   Assert(d_proof);
 }

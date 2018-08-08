@@ -2,9 +2,9 @@
 /*! \file cdinsert_hashmap.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Tim King, Morgan Deters
+ **   Tim King, Mathias Preiner, Morgan Deters
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -54,11 +54,11 @@ namespace context {
 template <class Key, class Data, class HashFcn = std::hash<Key> >
 class InsertHashMap {
 private:
-  typedef std::deque<Key> KeyVec;
+  using KeyVec = std::deque<Key>;
   /** A list of the keys in the map maintained as a stack. */
   KeyVec d_keys;
 
-  typedef std::unordered_map<Key, Data, HashFcn> HashMap;
+  using HashMap = std::unordered_map<const Key, const Data, HashFcn>;
   /** The hash_map used for element lookup. */
   HashMap d_hashMap;
 
@@ -73,6 +73,8 @@ public:
   /**An iterator over the elements in the hash_map. */
   typedef typename HashMap::const_iterator const_iterator;
 
+  // The type of the <Key, Data> values in the hashmap.
+  using value_type = typename HashMap::value_type;
 
   /**
    * Returns an iterator to the begining of the HashMap.
@@ -212,7 +214,7 @@ private:
                     << " from " << &l
                     << " size " << d_size << std::endl;
   }
-  CDInsertHashMap& operator=(const CDInsertHashMap&) CVC4_UNDEFINED;
+  CDInsertHashMap& operator=(const CDInsertHashMap&) = delete;
 
   /**
    * Implementation of mandatory ContextObj method save: simply copies
@@ -221,7 +223,8 @@ private:
    * restored on a pop).  The saved information is allocated using the
    * ContextMemoryManager.
    */
-  ContextObj* save(ContextMemoryManager* pCMM) {
+  ContextObj* save(ContextMemoryManager* pCMM) override
+  {
     ContextObj* data = new(pCMM) CDInsertHashMap<Key, Data, HashFcn>(*this);
     Debug("CDInsertHashMap") << "save " << this
                             << " at level " << this->getContext()->getLevel()
@@ -237,23 +240,25 @@ protected:
    * of new pushFront calls have happened since saving.
    * The d_insertMap is untouched and d_pushFronts is also kept.
    */
-  void restore(ContextObj* data) {
-    Debug("CDInsertHashMap") << "restore " << this
-                            << " level " << this->getContext()->getLevel()
-                            << " data == " << data
-                            << " d_insertMap == " << this->d_insertMap << std::endl;
-    size_t oldSize = ((CDInsertHashMap<Key, Data, HashFcn>*)data)->d_size;
-    size_t oldPushFronts = ((CDInsertHashMap<Key, Data, HashFcn>*)data)->d_pushFronts;
-    Assert(oldPushFronts <= d_pushFronts);
+ void restore(ContextObj* data) override
+ {
+   Debug("CDInsertHashMap")
+       << "restore " << this << " level " << this->getContext()->getLevel()
+       << " data == " << data << " d_insertMap == " << this->d_insertMap
+       << std::endl;
+   size_t oldSize = ((CDInsertHashMap<Key, Data, HashFcn>*)data)->d_size;
+   size_t oldPushFronts =
+       ((CDInsertHashMap<Key, Data, HashFcn>*)data)->d_pushFronts;
+   Assert(oldPushFronts <= d_pushFronts);
 
-    // The size to restore to.
-    size_t restoreSize = oldSize + (d_pushFronts - oldPushFronts);
-    d_insertMap->pop_to_size(restoreSize);
-    d_size = restoreSize;
-    Assert(d_insertMap->size() == d_size);
-    Debug("CDInsertHashMap") << "restore " << this
-                            << " level " << this->getContext()->getLevel()
-                            << " size back to " << this->d_size << std::endl;
+   // The size to restore to.
+   size_t restoreSize = oldSize + (d_pushFronts - oldPushFronts);
+   d_insertMap->pop_to_size(restoreSize);
+   d_size = restoreSize;
+   Assert(d_insertMap->size() == d_size);
+   Debug("CDInsertHashMap")
+       << "restore " << this << " level " << this->getContext()->getLevel()
+       << " size back to " << this->d_size << std::endl;
   }
 public:
 
@@ -285,6 +290,9 @@ public:
    * (See std::deque<>::iterator).
    */
   typedef typename IHM::key_iterator key_iterator;
+
+  // The type of the <key, data> values in the hashmap.
+  using value_type = typename IHM::value_type;
 
   /** Returns true if the map is empty in the current context. */
   bool empty() const{

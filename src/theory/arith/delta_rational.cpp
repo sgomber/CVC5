@@ -2,9 +2,9 @@
 /*! \file delta_rational.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Tim King, Morgan Deters, Paul Meng
+ **   Tim King, Morgan Deters
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -72,18 +72,19 @@ void DeltaRational::seperatingDelta(Rational& res, const DeltaRational& a, const
   }
 }
 
-
-DeltaRationalException::DeltaRationalException(const char* op, const DeltaRational& a, const DeltaRational& b) throw (){
-    std::stringstream ss;
-    ss << "Operation [" << op << "] between DeltaRational values ";
-    ss << a << " and " << b << " is not a DeltaRational.";
-    setMessage(ss.str());
+DeltaRationalException::DeltaRationalException(const char* op,
+                                               const DeltaRational& a,
+                                               const DeltaRational& b)
+{
+  std::stringstream ss;
+  ss << "Operation [" << op << "] between DeltaRational values ";
+  ss << a << " and " << b << " is not a DeltaRational.";
+  setMessage(ss.str());
 }
 
-DeltaRationalException::~DeltaRationalException() throw () { }
-
-
-Integer DeltaRational::euclidianDivideQuotient(const DeltaRational& y) const throw(DeltaRationalException){
+DeltaRationalException::~DeltaRationalException() {}
+Integer DeltaRational::euclidianDivideQuotient(const DeltaRational& y) const
+{
   if(isIntegral() && y.isIntegral()){
     Integer ti = floor();
     Integer yi = y.floor();
@@ -93,7 +94,8 @@ Integer DeltaRational::euclidianDivideQuotient(const DeltaRational& y) const thr
   }
 }
 
-Integer DeltaRational::euclidianDivideRemainder(const DeltaRational& y) const throw(DeltaRationalException){
+Integer DeltaRational::euclidianDivideRemainder(const DeltaRational& y) const
+{
   if(isIntegral() && y.isIntegral()){
     Integer ti = floor();
     Integer yi = y.floor();

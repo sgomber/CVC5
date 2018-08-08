@@ -2,9 +2,9 @@
 /*! \file theory_arrays_type_rules.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Morgan Deters, Clark Barrett, Paul Meng
+ **   Morgan Deters, Clark Barrett, Christopher L. Conway
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -28,7 +28,7 @@ namespace arrays {
 
 struct ArraySelectTypeRule {
   inline static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check)
-    throw (TypeCheckingExceptionPrivate, AssertionException) {
+  {
     Assert(n.getKind() == kind::SELECT);
     TypeNode arrayType = n[0].getType(check);
     if( check ) {
@@ -46,7 +46,7 @@ struct ArraySelectTypeRule {
 
 struct ArrayStoreTypeRule {
   inline static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check)
-    throw (TypeCheckingExceptionPrivate, AssertionException) {
+  {
     if (n.getKind() == kind::STORE) {
       TypeNode arrayType = n[0].getType(check);
       if( check ) {
@@ -75,7 +75,7 @@ struct ArrayStoreTypeRule {
   }
 
   inline static bool computeIsConst(NodeManager* nodeManager, TNode n)
-    throw (AssertionException) {
+  {
     Assert(n.getKind() == kind::STORE);
     NodeManagerScope nms(nodeManager);
 
@@ -154,7 +154,7 @@ struct ArrayStoreTypeRule {
 
 struct ArrayTableFunTypeRule {
   inline static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check)
-    throw (TypeCheckingExceptionPrivate, AssertionException) {
+  {
     Assert(n.getKind() == kind::ARR_TABLE_FUN);
     TypeNode arrayType = n[0].getType(check);
     if( check ) {
@@ -180,7 +180,7 @@ struct ArrayTableFunTypeRule {
 
 struct ArrayLambdaTypeRule {
   inline static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check)
-    throw (TypeCheckingExceptionPrivate, AssertionException) {
+  {
     Assert(n.getKind() == kind::ARRAY_LAMBDA);
     TypeNode lamType = n[0].getType(check);
     if( check ) {
@@ -217,7 +217,7 @@ struct ArraysProperties {
 
 struct ArrayPartialSelectTypeRule {
   inline static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check)
-    throw (TypeCheckingExceptionPrivate, AssertionException) {
+  {
     Assert(n.getKind() == kind::PARTIAL_SELECT_0 || n.getKind() == kind::PARTIAL_SELECT_1);
     return nodeManager->integerType();
   }

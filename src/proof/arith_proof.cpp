@@ -2,9 +2,9 @@
 /*! \file arith_proof.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Guy Katz, Andrew Reynolds, Andres Noetzli
+ **   Guy Katz, Tim King, Andrew Reynolds
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -67,26 +67,31 @@ inline static bool match(TNode n1, TNode n2) {
   return true;
 }
 
-
-void ProofArith::toStream(std::ostream& out) {
+void ProofArith::toStream(std::ostream& out) const
+{
   Trace("theory-proof-debug") << "; Print Arith proof..." << std::endl;
   //AJR : carry this further?
   ProofLetMap map;
   toStreamLFSC(out, ProofManager::getArithProof(), *d_proof, map);
 }
 
-void ProofArith::toStreamLFSC(std::ostream& out, TheoryProof* tp,
+void ProofArith::toStreamLFSC(std::ostream& out,
+                              TheoryProof* tp,
                               const theory::eq::EqProof& pf,
-                              const ProofLetMap& map) {
+                              const ProofLetMap& map)
+{
   Debug("lfsc-arith") << "Printing arith proof in LFSC : " << std::endl;
   pf.debug_print("lfsc-arith");
   Debug("lfsc-arith") << std::endl;
   toStreamRecLFSC(out, tp, pf, 0, map);
 }
 
-Node ProofArith::toStreamRecLFSC(std::ostream& out, TheoryProof* tp,
-                                 const theory::eq::EqProof& pf, unsigned tb,
-                                 const ProofLetMap& map) {
+Node ProofArith::toStreamRecLFSC(std::ostream& out,
+                                 TheoryProof* tp,
+                                 const theory::eq::EqProof& pf,
+                                 unsigned tb,
+                                 const ProofLetMap& map)
+{
   Debug("pf::arith") << std::endl
                      << std::endl
                      << "toStreamRecLFSC called. tb = " << tb
@@ -638,6 +643,7 @@ ArithProof::ArithProof(theory::arith::TheoryArith* arith, TheoryProofEngine* pe)
   : TheoryProof(arith, pe), d_realMode(false)
 {}
 
+theory::TheoryId ArithProof::getTheoryId() { return theory::THEORY_ARITH; }
 void ArithProof::registerTerm(Expr term) {
   Debug("pf::arith") << "Arith register term: " << term << ". Kind: " << term.getKind()
                             << ". Type: " << term.getType() << std::endl;

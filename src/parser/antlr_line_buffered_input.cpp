@@ -4,7 +4,7 @@
  ** Top contributors (to current version):
  **   Morgan Deters, Andres Noetzli, Tim King
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -287,12 +287,11 @@ static void bufferedInputSeek(pANTLR3_INT_STREAM is, ANTLR3_MARKER seekPoint) {
   // rewinding in the original code, which we do not do when rewinding,
   // so this should be fine).
   pANTLR3_INPUT_STREAM input = ((pANTLR3_INPUT_STREAM)(is->super));
-  pANTLR3_LINE_BUFFERED_INPUT_STREAM line_buffered_input =
-      (CVC4::parser::pANTLR3_LINE_BUFFERED_INPUT_STREAM)input;
 
   // Check that we are not seeking backwards.
-  assert(!line_buffered_input->line_buffer->isPtrBefore(
-      (uint8_t*)seekPoint, input->line, input->charPositionInLine));
+  assert(!((CVC4::parser::pANTLR3_LINE_BUFFERED_INPUT_STREAM)input)
+              ->line_buffer->isPtrBefore(
+                  (uint8_t*)seekPoint, input->line, input->charPositionInLine));
 
   while ((ANTLR3_MARKER)(input->nextChar) != seekPoint) {
     is->consume(is);

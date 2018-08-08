@@ -2,9 +2,9 @@
 /*! \file normal_form.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Tim King, Morgan Deters, Paul Meng
+ **   Tim King, Andrew Reynolds, Morgan Deters
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -95,7 +95,16 @@ bool Variable::isTranscendentalMember(Node n) {
   case kind::SINE:
   case kind::COSINE:
   case kind::TANGENT:
-    return Polynomial::isMember(n[0]);
+  case kind::COSECANT:
+  case kind::SECANT:
+  case kind::COTANGENT:
+  case kind::ARCSINE:
+  case kind::ARCCOSINE:
+  case kind::ARCTANGENT:
+  case kind::ARCCOSECANT:
+  case kind::ARCSECANT:
+  case kind::ARCCOTANGENT:
+  case kind::SQRT: return Polynomial::isMember(n[0]);
   case kind::PI:
     return true;
   default:

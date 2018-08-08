@@ -2,9 +2,9 @@
 /*! \file cdo.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Morgan Deters, Tim King, Francois Bobot
+ **   Morgan Deters, Tim King, Mathias Preiner
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -50,14 +50,15 @@ protected:
   /**
    * operator= for CDO is private to ensure CDO object is not copied.
    */
-  CDO<T>& operator=(const CDO<T>& cdo) CVC4_UNDEFINED;
+  CDO<T>& operator=(const CDO<T>& cdo) = delete;
 
   /**
    * Implementation of mandatory ContextObj method save: simply copies the
    * current data to a copy using the copy constructor.  Memory is allocated
    * using the ContextMemoryManager.
    */
-  virtual ContextObj* save(ContextMemoryManager* pCMM) {
+  ContextObj* save(ContextMemoryManager* pCMM) override
+  {
     Debug("context") << "save cdo " << this;
     ContextObj* p = new(pCMM) CDO<T>(*this);
     Debug("context") << " to " << p << std::endl;
@@ -68,7 +69,8 @@ protected:
    * Implementation of mandatory ContextObj method restore: simply copies the
    * saved data back from the saved copy using operator= for T.
    */
-  virtual void restore(ContextObj* pContextObj) {
+  void restore(ContextObj* pContextObj) override
+  {
     //Debug("context") << "restore cdo " << this;
     CDO<T>* p = static_cast<CDO<T>*>(pContextObj);
     d_data = p->d_data;

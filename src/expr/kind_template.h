@@ -2,9 +2,9 @@
 /*! \file kind_template.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Morgan Deters, Dejan Jovanovic, Paul Meng
+ **   Morgan Deters, Dejan Jovanovic, Andres Noetzli
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -64,7 +64,7 @@ struct KindHashFunction {
 /**
  * The enumeration for the built-in atomic types.
  */
-enum TypeConstant {
+enum CVC4_PUBLIC TypeConstant {
 ${type_constant_list}
 #line 70 "${template}"
   LAST_TYPE
@@ -99,6 +99,7 @@ CVC4_PUBLIC inline TheoryId& operator++(TheoryId& id) {
 std::ostream& operator<<(std::ostream& out, TheoryId theoryId);
 TheoryId kindToTheoryId(::CVC4::Kind k) CVC4_PUBLIC;
 TheoryId typeConstantToTheoryId(::CVC4::TypeConstant typeConstant) CVC4_PUBLIC;
+std::string getStatsPrefix(TheoryId theoryId) CVC4_PUBLIC;
 
 }/* CVC4::theory namespace */
 }/* CVC4 namespace */

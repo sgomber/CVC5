@@ -2,9 +2,9 @@
 /*! \file boolean_simplification.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Morgan Deters, Paul Meng, Tim King
+ **   Morgan Deters, Tim King
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -18,10 +18,9 @@
 
 namespace CVC4 {
 
-bool
-BooleanSimplification::push_back_associative_commute_recursive
-    (Node n, std::vector<Node>& buffer, Kind k, Kind notK, bool negateNode)
-    throw(AssertionException) {
+bool BooleanSimplification::push_back_associative_commute_recursive(
+    Node n, std::vector<Node>& buffer, Kind k, Kind notK, bool negateNode)
+{
   Node::iterator i = n.begin(), end = n.end();
   for(; i != end; ++i){
     Node child = *i;

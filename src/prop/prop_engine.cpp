@@ -4,7 +4,7 @@
  ** Top contributors (to current version):
  **   Morgan Deters, Dejan Jovanovic, Tim King
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -281,6 +281,12 @@ void PropEngine::pop() {
   Debug("prop") << "pop()" << endl;
 }
 
+void PropEngine::resetTrail()
+{
+  d_satSolver->resetTrail();
+  Debug("prop") << "resetTrail()" << endl;
+}
+
 unsigned PropEngine::getAssertionLevel() const {
   return d_satSolver->getAssertionLevel();
 }
@@ -288,8 +294,8 @@ unsigned PropEngine::getAssertionLevel() const {
 bool PropEngine::isRunning() const {
   return d_inCheckSat;
 }
-
-void PropEngine::interrupt() throw(ModalException) {
+void PropEngine::interrupt()
+{
   if(! d_inCheckSat) {
     return;
   }
@@ -299,8 +305,9 @@ void PropEngine::interrupt() throw(ModalException) {
   Debug("prop") << "interrupt()" << endl;
 }
 
-void PropEngine::spendResource(unsigned ammount) throw (UnsafeInterruptException) {
-  d_resourceManager->spendResource(ammount);
+void PropEngine::spendResource(unsigned amount)
+{
+  d_resourceManager->spendResource(amount);
 }
 
 bool PropEngine::properExplanation(TNode node, TNode expl) const {

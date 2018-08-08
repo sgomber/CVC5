@@ -2,9 +2,9 @@
 /*! \file theory_fp.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Martin Brain, Paul Meng, Tim King
+ **   Martin Brain, Mathias Preiner, Tim King
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -38,21 +38,24 @@ class TheoryFp : public Theory {
   TheoryFp(context::Context* c, context::UserContext* u, OutputChannel& out,
            Valuation valuation, const LogicInfo& logicInfo);
 
-  Node expandDefinition(LogicRequest& lr, Node node);
+  Node expandDefinition(LogicRequest& lr, Node node) override;
 
-  void preRegisterTerm(TNode node);
-  void addSharedTerm(TNode node);
+  void preRegisterTerm(TNode node) override;
+  void addSharedTerm(TNode node) override;
 
-  void check(Effort);
+  Node ppRewrite(TNode node) override;
 
-  Node getModelValue(TNode var);
-  void collectModelInfo(TheoryModel* m);
+  void check(Effort) override;
 
-  std::string identify() const { return "THEORY_FP"; }
+  bool needsCheckLastEffort() override { return true; }
+  Node getModelValue(TNode var) override;
+  bool collectModelInfo(TheoryModel* m) override;
 
-  void setMasterEqualityEngine(eq::EqualityEngine* eq);
+  std::string identify() const override { return "THEORY_FP"; }
 
-  Node explain(TNode n);
+  void setMasterEqualityEngine(eq::EqualityEngine* eq) override;
+
+  Node explain(TNode n) override;
 
  protected:
   /** Equality engine */
@@ -62,15 +65,17 @@ class TheoryFp : public Theory {
 
    public:
     NotifyClass(TheoryFp& solver) : d_theorySolver(solver) {}
-    bool eqNotifyTriggerEquality(TNode equality, bool value);
-    bool eqNotifyTriggerPredicate(TNode predicate, bool value);
-    bool eqNotifyTriggerTermEquality(TheoryId tag, TNode t1, TNode t2,
-                                     bool value);
-    void eqNotifyConstantTermMerge(TNode t1, TNode t2);
-    void eqNotifyNewClass(TNode t) {}
-    void eqNotifyPreMerge(TNode t1, TNode t2) {}
-    void eqNotifyPostMerge(TNode t1, TNode t2) {}
-    void eqNotifyDisequal(TNode t1, TNode t2, TNode reason) {}
+    bool eqNotifyTriggerEquality(TNode equality, bool value) override;
+    bool eqNotifyTriggerPredicate(TNode predicate, bool value) override;
+    bool eqNotifyTriggerTermEquality(TheoryId tag,
+                                     TNode t1,
+                                     TNode t2,
+                                     bool value) override;
+    void eqNotifyConstantTermMerge(TNode t1, TNode t2) override;
+    void eqNotifyNewClass(TNode t) override {}
+    void eqNotifyPreMerge(TNode t1, TNode t2) override {}
+    void eqNotifyPostMerge(TNode t1, TNode t2) override {}
+    void eqNotifyDisequal(TNode t1, TNode t2, TNode reason) override {}
   };
   friend NotifyClass;
 
@@ -98,6 +103,8 @@ class TheoryFp : public Theory {
   context::CDO<Node> d_conflictNode;
 
   /** Uninterpretted functions for partially defined functions. **/
+  void enableUF(LogicRequest& lr);
+
   typedef context::CDHashMap<TypeNode, Node, TypeNodeHashFunction>
       ComparisonUFMap;
 
@@ -120,6 +127,21 @@ class TheoryFp : public Theory {
   ComparisonUFMap d_toRealMap;
 
   Node toRealUF(Node);
+
+  /** Uninterpretted functions for lazy handling of conversions */
+  typedef ComparisonUFMap conversionAbstractionMap;
+
+  conversionAbstractionMap realToFloatMap;
+  conversionAbstractionMap floatToRealMap;
+
+  Node abstractRealToFloat(Node);
+  Node abstractFloatToReal(Node);
+
+  typedef context::CDHashMap<Node, Node, NodeHashFunction> abstractionMapType;
+  abstractionMapType abstractionMap;  // abstract -> original
+
+  bool refineAbstraction(TheoryModel* m, TNode abstract, TNode concrete);
+
 }; /* class TheoryFp */
 
 }  // namespace fp

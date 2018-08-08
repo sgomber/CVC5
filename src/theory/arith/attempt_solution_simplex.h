@@ -2,9 +2,9 @@
 /*! \file attempt_solution_simplex.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Tim King, Paul Meng, Morgan Deters
+ **   Tim King, Mathias Preiner
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -67,11 +67,9 @@ public:
 
   Result::Sat attempt(const ApproximateSimplex::Solution& sol);
 
-  Result::Sat findModel(bool exactResult){
-    Unreachable();
-  }
+  Result::Sat findModel(bool exactResult) override { Unreachable(); }
 
-private:
+ private:
   bool matchesNewValue(const DenseMap<DeltaRational>& nv, ArithVar v) const;
 
   bool processSignals(){

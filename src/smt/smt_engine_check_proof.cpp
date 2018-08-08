@@ -2,9 +2,9 @@
 /*! \file smt_engine_check_proof.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Morgan Deters, Guy Katz, Tim King
+ **   Morgan Deters, Mark Laws, Guy Katz
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -32,6 +32,7 @@
 #include "base/cvc4_assert.h"
 #include "base/output.h"
 #include "smt/smt_engine.h"
+#include "util/proof.h"
 #include "util/statistics_registry.h"
 
 #if (IS_LFSC_BUILD && IS_PROOFS_BUILD)
@@ -66,7 +67,7 @@ void SmtEngine::checkProof() {
 
   Chat() << "generating proof..." << endl;
 
-  Proof* pf = getProof();
+  const Proof& pf = getProof();
 
   Chat() << "checking proof..." << endl;
 
@@ -112,7 +113,7 @@ void SmtEngine::checkProof() {
 
   ofstream pfStream(pfFile);
   pfStream << proof::plf_signatures << endl;
-  pf->toStream(pfStream);
+  pf.toStream(pfStream);
   pfStream.close();
   lfscc_init();
   lfscc_check_file(pfFile, false, false, false, false, false, false, false);

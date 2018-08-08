@@ -2,9 +2,9 @@
 /*! \file anti_skolem.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Andrew Reynolds, Tim King
+ **   Andrew Reynolds, Tim King, Mathias Preiner
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -20,11 +20,11 @@
 #include <map>
 #include <vector>
 
-#include "expr/node.h"
-#include "expr/type_node.h"
 #include "context/cdhashset.h"
 #include "context/cdo.h"
-#include "theory/quantifiers/ce_guided_single_inv.h"
+#include "expr/node.h"
+#include "expr/type_node.h"
+#include "theory/quantifiers/single_inv_partition.h"
 #include "theory/quantifiers_engine.h"
 
 namespace CVC4 {
@@ -40,12 +40,12 @@ public:
                                bool pconnected = true );
 
   /* Call during quantifier engine's check */
-  void check( Theory::Effort e, unsigned quant_e );
+  void check(Theory::Effort e, QEffort quant_e) override;
   /* Called for new quantifiers */
-  void registerQuantifier( Node q ) {}
-  void assertNode( Node n ) {}
+  void registerQuantifier(Node q) override {}
+  void assertNode(Node n) override {}
   /** Identify this module (for debugging, dynamic configuration, etc..) */
-  std::string identify() const { return "QuantAntiSkolem"; }
+  std::string identify() const override { return "QuantAntiSkolem"; }
 
  private:
   typedef context::CDHashSet<Node, NodeHashFunction> NodeSet;

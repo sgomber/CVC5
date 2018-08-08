@@ -4,7 +4,7 @@
  ** Top contributors (to current version):
  **   Andrew Reynolds
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -15,6 +15,7 @@
 #include "theory/quantifiers/skolemize.h"
 
 #include "options/quantifiers_options.h"
+#include "theory/quantifiers/quantifiers_attributes.h"
 #include "theory/quantifiers/term_util.h"
 #include "theory/quantifiers_engine.h"
 #include "theory/sort_inference.h"
@@ -286,7 +287,7 @@ Node Skolemize::mkSkolemizedBody(Node f,
   // if it has an instantiation level, set the skolemized body to that level
   if (f.hasAttribute(InstLevelAttribute()))
   {
-    theory::QuantifiersEngine::setInstantiationLevelAttr(
+    QuantAttributes::setInstantiationLevelAttr(
         ret, f.getAttribute(InstLevelAttribute()));
   }
 

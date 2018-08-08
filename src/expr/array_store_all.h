@@ -2,9 +2,9 @@
 /*! \file array_store_all.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Morgan Deters, Tim King, Paul Meng
+ **   Tim King, Morgan Deters
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -40,20 +40,20 @@ class CVC4_PUBLIC ArrayStoreAll {
    * not a constant of type `type`.
    */
   ArrayStoreAll(const ArrayType& type, const Expr& expr);
-  ~ArrayStoreAll() throw();
+  ~ArrayStoreAll();
 
   ArrayStoreAll(const ArrayStoreAll& other);
   ArrayStoreAll& operator=(const ArrayStoreAll& other);
 
-  const ArrayType& getType() const throw();
-  const Expr& getExpr() const throw();
+  const ArrayType& getType() const;
+  const Expr& getExpr() const;
 
-  bool operator==(const ArrayStoreAll& asa) const throw();
-  bool operator!=(const ArrayStoreAll& asa) const throw();
-  bool operator<(const ArrayStoreAll& asa) const throw();
-  bool operator<=(const ArrayStoreAll& asa) const throw();
-  bool operator>(const ArrayStoreAll& asa) const throw();
-  bool operator>=(const ArrayStoreAll& asa) const throw();
+  bool operator==(const ArrayStoreAll& asa) const;
+  bool operator!=(const ArrayStoreAll& asa) const;
+  bool operator<(const ArrayStoreAll& asa) const;
+  bool operator<=(const ArrayStoreAll& asa) const;
+  bool operator>(const ArrayStoreAll& asa) const;
+  bool operator>=(const ArrayStoreAll& asa) const;
 
  private:
   std::unique_ptr<ArrayType> d_type;

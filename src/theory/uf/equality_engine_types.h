@@ -2,9 +2,9 @@
 /*! \file equality_engine_types.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Dejan Jovanovic, Andrew Reynolds, Paul Meng
+ **   Dejan Jovanovic, Andres Noetzli, Andrew Reynolds
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -351,11 +351,10 @@ struct TriggerInfo {
   Node trigger;
   /** Polarity of the trigger */
   bool polarity;
-  TriggerInfo() {}
+  TriggerInfo() : polarity(false) {}
   TriggerInfo(Node trigger, bool polarity)
-  : trigger(trigger), polarity(polarity) {}
-  };
-
+      : trigger(trigger), polarity(polarity) {}
+};
 
 } // namespace eq
 } // namespace theory

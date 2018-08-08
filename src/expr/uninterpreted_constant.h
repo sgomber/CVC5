@@ -2,9 +2,9 @@
 /*! \file uninterpreted_constant.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Morgan Deters, Tim King, Paul Meng
+ **   Morgan Deters, Tim King
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -25,42 +25,40 @@
 namespace CVC4 {
 
 class CVC4_PUBLIC UninterpretedConstant {
-public:
+ public:
+  UninterpretedConstant(Type type, Integer index);
 
-  UninterpretedConstant(Type type, Integer index) throw(IllegalArgumentException);
-
-  ~UninterpretedConstant() throw() { }
-
-  Type getType() const throw() {
-    return d_type;
-  }
-  const Integer& getIndex() const throw() {
-    return d_index;
-  }
-
-  bool operator==(const UninterpretedConstant& uc) const throw() {
+  Type getType() const { return d_type; }
+  const Integer& getIndex() const { return d_index; }
+  bool operator==(const UninterpretedConstant& uc) const
+  {
     return d_type == uc.d_type && d_index == uc.d_index;
   }
-  bool operator!=(const UninterpretedConstant& uc) const throw() {
+  bool operator!=(const UninterpretedConstant& uc) const
+  {
     return !(*this == uc);
   }
 
-  bool operator<(const UninterpretedConstant& uc) const throw() {
+  bool operator<(const UninterpretedConstant& uc) const
+  {
     return d_type < uc.d_type ||
            (d_type == uc.d_type && d_index < uc.d_index);
   }
-  bool operator<=(const UninterpretedConstant& uc) const throw() {
+  bool operator<=(const UninterpretedConstant& uc) const
+  {
     return d_type < uc.d_type ||
            (d_type == uc.d_type && d_index <= uc.d_index);
   }
-  bool operator>(const UninterpretedConstant& uc) const throw() {
+  bool operator>(const UninterpretedConstant& uc) const
+  {
     return !(*this <= uc);
   }
-  bool operator>=(const UninterpretedConstant& uc) const throw() {
+  bool operator>=(const UninterpretedConstant& uc) const
+  {
     return !(*this < uc);
   }
 
-private:
+ private:
   const Type d_type;
   const Integer d_index;
 };/* class UninterpretedConstant */

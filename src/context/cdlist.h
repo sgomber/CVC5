@@ -2,9 +2,9 @@
 /*! \file cdlist.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Morgan Deters, Tim King, Francois Bobot
+ **   Morgan Deters, Tim King, Mathias Preiner
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -113,7 +113,7 @@ protected:
                     << " from " << &l
                     << " size " << d_size << std::endl;
   }
-  CDList& operator=(const CDList& l) CVC4_UNDEFINED;
+  CDList& operator=(const CDList& l) = delete;
 
 private:
   /**
@@ -165,7 +165,8 @@ private:
    * restored on a pop).  The saved information is allocated using the
    * ContextMemoryManager.
    */
-  ContextObj* save(ContextMemoryManager* pCMM) {
+  ContextObj* save(ContextMemoryManager* pCMM) override
+  {
     ContextObj* data = new(pCMM) CDList<T, CleanUp, Allocator>(*this);
     Debug("cdlist") << "save " << this
                     << " at level " << this->getContext()->getLevel()
@@ -182,17 +183,17 @@ protected:
    * restores the previous size.  Note that the list pointer and the
    * allocated size are not changed.
    */
-  void restore(ContextObj* data) {
-    Debug("cdlist") << "restore " << this
-                    << " level " << this->getContext()->getLevel()
-                    << " data == " << data
-                    << " call dtor == " << this->d_callDestructor
-                    << " d_list == " << this->d_list << std::endl;
-    truncateList(((CDList<T, CleanUp, Allocator>*)data)->d_size);
-    Debug("cdlist") << "restore " << this
-                    << " level " << this->getContext()->getLevel()
-                    << " size back to " << this->d_size
-                    << " sizeAlloc at " << this->d_sizeAlloc << std::endl;
+ void restore(ContextObj* data) override
+ {
+   Debug("cdlist") << "restore " << this << " level "
+                   << this->getContext()->getLevel() << " data == " << data
+                   << " call dtor == " << this->d_callDestructor
+                   << " d_list == " << this->d_list << std::endl;
+   truncateList(((CDList<T, CleanUp, Allocator>*)data)->d_size);
+   Debug("cdlist") << "restore " << this << " level "
+                   << this->getContext()->getLevel() << " size back to "
+                   << this->d_size << " sizeAlloc at " << this->d_sizeAlloc
+                   << std::endl;
   }
 
   /**
@@ -419,7 +420,6 @@ public:
 template <class T, class CleanUp>
 class CDList<T, CleanUp, ContextMemoryAllocator<T> > : public ContextObj {
   /* CDList is incompatible for use with a ContextMemoryAllocator.
-   * Consider using CDChunkList<T> instead.
    *
    * Explanation:
    * If ContextMemoryAllocator is used and d_list grows at a deeper context

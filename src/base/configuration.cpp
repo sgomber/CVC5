@@ -2,9 +2,9 @@
 /*! \file configuration.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Morgan Deters, Francois Bobot, Tim King
+ **   Morgan Deters, Aina Niemetz, Mathias Preiner
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -112,7 +112,7 @@ std::string Configuration::getVersionExtra() {
 
 std::string Configuration::copyright() {
   std::stringstream ss;
-  ss << "Copyright (c) 2009-2017 by the authors and their institutional\n"
+  ss << "Copyright (c) 2009-2018 by the authors and their institutional\n"
      << "affiliations listed at http://cvc4.cs.stanford.edu/authors\n\n";
 
   if (Configuration::licenseIsGpl()) {
@@ -133,8 +133,11 @@ std::string Configuration::copyright() {
      << "See licenses/antlr3-LICENSE for copyright and licensing information."
      << "\n\n";
 
-  if (Configuration::isBuiltWithAbc()
-      || Configuration::isBuiltWithLfsc()) {
+  if (Configuration::isBuiltWithAbc() || Configuration::isBuiltWithLfsc()
+      || Configuration::isBuiltWithCadical()
+      || Configuration::isBuiltWithCryptominisat()
+      || Configuration::isBuiltWithSymFPU())
+  {
     ss << "This version of CVC4 is linked against the following non-(L)GPL'ed\n"
        << "third party libraries.\n\n";
     if (Configuration::isBuiltWithAbc()) {
@@ -147,21 +150,34 @@ std::string Configuration::copyright() {
          << "  See http://github.com/CVC4/LFSC for copyright and\n"
          << "  licensing information.\n\n";
     }
+    if (Configuration::isBuiltWithCadical())
+    {
+      ss << "  CaDiCaL - Simplified Satisfiability Solver\n"
+         << "  See https://github.com/arminbiere/cadical for copyright "
+         << "information.\n\n";
+    }
+    if (Configuration::isBuiltWithCryptominisat())
+    {
+      ss << "  CryptoMiniSat - An Advanced SAT Solver\n"
+         << "  See https://github.com/msoos/cryptominisat for copyright "
+         << "information.\n\n";
+    }
+    if (Configuration::isBuiltWithSymFPU())
+    {
+      ss << "  SymFPU - The Symbolic Floating Point Unit\n"
+         << "  See https://github.com/martin-cs/symfpu/tree/CVC4 for copyright "
+         << "information.\n\n";
+    }
   }
 
-  if (Configuration::isBuiltWithGmp()
-      || Configuration::isBuiltWithCryptominisat()) {
+  if (Configuration::isBuiltWithGmp())
+  {
     ss << "This version of CVC4 is linked against the following third party\n"
        << "libraries covered by the LGPLv3 license.\n"
        << "See licenses/lgpl-3.0.txt for more information.\n\n";
     if (Configuration::isBuiltWithGmp()) {
       ss << "  GMP - Gnu Multi Precision Arithmetic Library\n"
          << "  See http://gmplib.org for copyright information.\n\n";
-    }
-    if (Configuration::isBuiltWithCryptominisat()) {
-      ss << "  CryptoMiniSat - An Advanced SAT Solver\n"
-         << "  See http://github.com/msoos/cryptominisat for copyright "
-         << "information.\n\n";
     }
   }
 
@@ -199,8 +215,6 @@ std::string Configuration::about() {
   ss << "This is CVC4 version " << CVC4_RELEASE_STRING;
   if (Configuration::isGitBuild()) {
     ss << " [" << Configuration::getGitId() << "]";
-  } else if (CVC4::Configuration::isSubversionBuild()) {
-    ss << " [" << Configuration::getSubversionId() << "]";
   }
   ss << "\ncompiled with " << Configuration::getCompiler()
      << "\non " << Configuration::getCompiledDateTime() << "\n\n";
@@ -228,6 +242,8 @@ bool Configuration::isBuiltWithAbc() {
   return IS_ABC_BUILD;
 }
 
+bool Configuration::isBuiltWithCadical() { return IS_CADICAL_BUILD; }
+
 bool Configuration::isBuiltWithCryptominisat() {
   return IS_CRYPTOMINISAT_BUILD;
 }
@@ -236,13 +252,11 @@ bool Configuration::isBuiltWithReadline() {
   return IS_READLINE_BUILD;
 }
 
-bool Configuration::isBuiltWithTlsSupport() {
-  return USING_TLS;
-}
-
 bool Configuration::isBuiltWithLfsc() {
   return IS_LFSC_BUILD;
 }
+
+bool Configuration::isBuiltWithSymFPU() { return IS_SYMFPU_BUILD; }
 
 unsigned Configuration::getNumDebugTags() {
 #if defined(CVC4_DEBUG) && defined(CVC4_TRACING)
@@ -339,33 +353,6 @@ std::string Configuration::getGitId() {
   stringstream ss;
   ss << "git " << branchName << " " << string(getGitCommit()).substr(0, 8)
      << ( ::CVC4::Configuration::hasGitModifications() ? " (with modifications)" : "" );
-  return ss.str();
-}
-
-bool Configuration::isSubversionBuild() {
-  return IS_SUBVERSION_BUILD;
-}
-
-const char* Configuration::getSubversionBranchName() {
-  return SUBVERSION_BRANCH_NAME;
-}
-
-unsigned Configuration::getSubversionRevision() {
-  return SUBVERSION_REVISION;
-}
-
-bool Configuration::hasSubversionModifications() {
-  return SUBVERSION_HAS_MODIFICATIONS;
-}
-
-std::string Configuration::getSubversionId() {
-  if(! isSubversionBuild()) {
-    return "";
-  }
-
-  stringstream ss;
-  ss << "subversion " << getSubversionBranchName() << " r" << getSubversionRevision()
-     << ( ::CVC4::Configuration::hasSubversionModifications() ? " (with modifications)" : "" );
   return ss.str();
 }
 

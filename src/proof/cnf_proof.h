@@ -2,9 +2,9 @@
 /*! \file cnf_proof.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Liana Hadarean, Guy Katz, Morgan Deters
+ **   Liana Hadarean, Guy Katz, Tim King
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -127,6 +127,11 @@ public:
   void popCurrentDefinition();
   Node getCurrentDefinition();
 
+  /**
+   * Checks whether the assertion stack is empty.
+   */
+  bool isAssertionStackEmpty() const { return d_currentAssertionStack.empty(); }
+
   void setProofRecipe(LemmaProofRecipe* proofRecipe);
   LemmaProofRecipe getProofRecipe(const std::set<Node> &lemma);
   bool haveProofRecipe(const std::set<Node> &lemma);
@@ -171,20 +176,20 @@ public:
 
   void printAtomMapping(const std::set<Node>& atoms,
                         std::ostream& os,
-                        std::ostream& paren);
+                        std::ostream& paren) override;
 
   void printAtomMapping(const std::set<Node>& atoms,
                         std::ostream& os,
                         std::ostream& paren,
-                        ProofLetMap &letMap);
+                        ProofLetMap& letMap) override;
 
   void printClause(const prop::SatClause& clause,
                    std::ostream& os,
-                   std::ostream& paren);
+                   std::ostream& paren) override;
   void printCnfProofForClause(ClauseId id,
                               const prop::SatClause* clause,
                               std::ostream& os,
-                              std::ostream& paren);
+                              std::ostream& paren) override;
 };/* class LFSCCnfProof */
 
 } /* CVC4 namespace */

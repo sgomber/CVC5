@@ -2,9 +2,9 @@
 /*! \file tptp.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Francois Bobot, Morgan Deters, Andrew Reynolds
+ **   Francois Bobot, Tim King, Andrew Reynolds
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -17,10 +17,11 @@
 // Do not #include "parser/antlr_input.h" directly. Rely on the header.
 #include "parser/tptp/tptp.h"
 
+#include <algorithm>
+#include <set>
+
 #include "expr/type.h"
 #include "parser/parser.h"
-
-#include <algorithm>
 
 // ANTLR defines these, which is really bad!
 #undef true
@@ -183,36 +184,33 @@ void Tptp::includeFile(std::string fileName) {
   }
 }
 
-void Tptp::checkLetBinding(std::vector<Expr>& bvlist, Expr lhs, Expr rhs, bool formula) {
-  if(lhs.getKind() != CVC4::kind::APPLY_UF) {
+void Tptp::checkLetBinding(const std::vector<Expr>& bvlist, Expr lhs, Expr rhs,
+                           bool formula) {
+  if (lhs.getKind() != CVC4::kind::APPLY_UF) {
     parseError("malformed let: LHS must be a flat function application");
   }
-  std::vector<CVC4::Expr> v = lhs.getChildren();
+  const std::multiset<CVC4::Expr> vars{lhs.begin(), lhs.end()};
   if(formula && !lhs.getType().isBoolean()) {
     parseError("malformed let: LHS must be formula");
   }
-  for(size_t i = 0; i < v.size(); ++i) {
-    if(v[i].hasOperator()) {
-      parseError("malformed let: LHS must be flat, illegal child: " + v[i].toString());
+  for (const CVC4::Expr& var : vars) {
+    if (var.hasOperator()) {
+      parseError("malformed let: LHS must be flat, illegal child: " +
+                 var.toString());
     }
   }
-  std::sort(v.begin(), v.end());
-  std::sort(bvlist.begin(), bvlist.end());
+
   // ensure all let-bound variables appear on the LHS, and appear only once
-  for (size_t i = 0; i < bvlist.size(); ++i) {
-    std::vector<CVC4::Expr>::const_iterator found =
-        std::lower_bound(v.begin(), v.end(), bvlist[i]);
-    if (found == v.end() || *found != bvlist[i]) {
+  for (const Expr& bound_var : bvlist) {
+    const size_t count = vars.count(bound_var);
+    if (count == 0) {
       parseError(
           "malformed let: LHS must make use of all quantified variables, "
           "missing `" +
-          bvlist[i].toString() + "'");
-    }
-    assert(found != v.end());
-    std::vector<CVC4::Expr>::const_iterator found2 = found + 1;
-    if (found2 != v.end() && *found2 == *found) {
+          bound_var.toString() + "'");
+    } else if (count >= 2) {
       parseError("malformed let: LHS cannot use same bound variable twice: " +
-                 (*found).toString());
+                 bound_var.toString());
     }
   }
 }
@@ -259,9 +257,9 @@ Expr Tptp::convertRatToUnsorted(Expr expr) {
 
 Expr Tptp::convertStrToUnsorted(std::string str) {
   Expr& e = d_distinct_objects[str];
-  if (e.isNull()) {
-    e = getExprManager()->mkConst(
-        UninterpretedConstant(d_unsorted, d_distinct_objects.size() - 1));
+  if (e.isNull())
+  {
+    e = getExprManager()->mkVar(str, d_unsorted);
   }
   return e;
 }
@@ -324,6 +322,20 @@ Expr Tptp::getAssertionExpr(FormulaRole fr, Expr expr) {
       break;
   }
   assert(false);  // unreachable
+  return d_nullExpr;
+}
+
+Expr Tptp::getAssertionDistinctConstants()
+{
+  std::vector<Expr> constants;
+  for (std::pair<const std::string, Expr>& cs : d_distinct_objects)
+  {
+    constants.push_back(cs.second);
+  }
+  if (constants.size() > 1)
+  {
+    return getExprManager()->mkExpr(kind::DISTINCT, constants);
+  }
   return d_nullExpr;
 }
 

@@ -2,9 +2,9 @@
 /*! \file theory_registrar.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Tim King, Morgan Deters, Paul Meng
+ **   Tim King, Liana Hadarean, Morgan Deters
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -37,9 +37,7 @@ public:
 
   TheoryRegistrar(TheoryEngine* te) : d_theoryEngine(te) { }
 
-  void preRegister(Node n) {
-    d_theoryEngine->preRegister(n);
-  }
+  void preRegister(Node n) override { d_theoryEngine->preRegister(n); }
 
 };/* class TheoryRegistrar */
 

@@ -2,9 +2,9 @@
 /*! \file term_formula_removal.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Morgan Deters, Dejan Jovanovic, Tim King
+ **   Andrew Reynolds, Morgan Deters, Dejan Jovanovic
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -30,18 +30,52 @@
 
 namespace CVC4 {
 
-namespace theory {
-  class ContainsTermITEVisitor;
-}/* CVC4::theory namespace */
-
 typedef std::unordered_map<Node, unsigned, NodeHashFunction> IteSkolemMap;
 
 class RemoveTermFormulas {
-  typedef context::CDInsertHashMap< std::pair<Node, int>, Node, PairHashFunction<Node, int, NodeHashFunction, BoolHashFunction> > ITECache;
-  ITECache d_iteCache;
+  typedef context::
+      CDInsertHashMap<std::pair<Node, int>,
+                      Node,
+                      PairHashFunction<Node, int, NodeHashFunction> >
+          TermFormulaCache;
+  /** term formula removal cache
+   *
+   * This stores the results of term formula removal for inputs to the run(...)
+   * function below, where the integer in the pair we hash on is the
+   * result of cacheVal below.
+   */
+  TermFormulaCache d_tfCache;
 
+  /** return the integer cache value for the input flags to run(...) */
   static inline int cacheVal( bool inQuant, bool inTerm ) { return (inQuant ? 1 : 0) + 2*(inTerm ? 1 : 0); }
-  
+
+  /** skolem cache
+   *
+   * This is a cache that maps terms to the skolem we use to replace them.
+   *
+   * Notice that this cache is necessary in addition to d_tfCache, since
+   * we should use the same skolem to replace terms, regardless of the input
+   * arguments to run(...). For example:
+   *
+   * ite( G, a, b ) = c ^ forall x. P( ite( G, a, b ), x )
+   *
+   * should be processed to:
+   *
+   * k = c ^ forall x. P( k, x ) ^ ite( G, k=a, k=b )
+   *
+   * where notice
+   *   d_skolem_cache[ite( G, a, b )] = k, and
+   *   d_tfCache[<ite( G, a, b ),0>] = d_tfCache[<ite( G, a, b ),1>] = k.
+   */
+  context::CDInsertHashMap<Node, Node, NodeHashFunction> d_skolem_cache;
+
+  /** gets the skolem for node
+   *
+   * This returns the d_skolem_cache value for node, if it exists as a key
+   * in the above map, or the null node otherwise.
+   */
+  inline Node getSkolemForNode(Node node) const;
+
   static bool hasNestedTermChildren( TNode node );
 public:
 
@@ -111,18 +145,8 @@ public:
   /** Returns true if e contains a term ite. */
   bool containsTermITE(TNode e) const;
 
-  /** Returns the collected size of the caches. */
-  size_t collectedCacheSizes() const;
-
   /** Garbage collects non-context dependent data-structures. */
   void garbageCollect();
-
-  /** Return the RemoveTermFormulas's containsVisitor. */
-  theory::ContainsTermITEVisitor* getContainsVisitor();
-
-private:
-  theory::ContainsTermITEVisitor* d_containsVisitor;
-
 };/* class RemoveTTE */
 
 }/* CVC4 namespace */

@@ -2,9 +2,9 @@
 /*! \file smt2.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Morgan Deters, Andrew Reynolds, Christopher L. Conway
+ **   Andrew Reynolds, Morgan Deters, Christopher L. Conway
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -40,21 +40,23 @@ class Smt2 : public Parser {
   friend class ParserBuilder;
 
 public:
-  enum Theory {
-    THEORY_ARRAYS,
-    THEORY_BITVECTORS,
-    THEORY_CORE,
-    THEORY_DATATYPES,
-    THEORY_INTS,
-    THEORY_REALS,
-    THEORY_REALS_INTS,
-    THEORY_QUANTIFIERS,
-    THEORY_SETS,
-    THEORY_STRINGS,
-    THEORY_UF,
-    THEORY_FP,
-    THEORY_SEP
-  };
+ enum Theory
+ {
+   THEORY_ARRAYS,
+   THEORY_BITVECTORS,
+   THEORY_CORE,
+   THEORY_DATATYPES,
+   THEORY_INTS,
+   THEORY_REALS,
+   THEORY_TRANSCENDENTALS,
+   THEORY_REALS_INTS,
+   THEORY_QUANTIFIERS,
+   THEORY_SETS,
+   THEORY_STRINGS,
+   THEORY_UF,
+   THEORY_FP,
+   THEORY_SEP
+ };
 
 private:
   bool d_logicSet;
@@ -62,7 +64,8 @@ private:
   std::unordered_map<std::string, Kind> operatorKindMap;
   std::pair<Expr, std::string> d_lastNamedTerm;
   // for sygus
-  std::vector<Expr> d_sygusVars, d_sygusConstraints, d_sygusFunSymbols;
+  std::vector<Expr> d_sygusVars, d_sygusInvVars, d_sygusConstraints,
+      d_sygusFunSymbols;
   std::map< Expr, bool > d_sygusVarPrimed;
 
 protected:
@@ -84,14 +87,58 @@ public:
 
   bool isTheoryEnabled(Theory theory) const;
 
-  bool logicIsSet();
-  
+  bool logicIsSet() override;
+
   /**
    * Returns the expression that name should be interpreted as. 
    */
-  virtual Expr getExpressionForNameAndType(const std::string& name, Type t);
+  Expr getExpressionForNameAndType(const std::string& name, Type t) override;
 
-  void reset();
+  /** Make function defined by a define-fun(s)-rec command.
+  *
+  * fname : the name of the function.
+  * sortedVarNames : the list of variable arguments for the function.
+  * t : the range type of the function we are defining.
+  *
+  * This function will create a bind a new function term to name fname.
+  * The type of this function is
+  * Parser::mkFlatFunctionType(sorts,t,flattenVars),
+  * where sorts are the types in the second components of sortedVarNames.
+  * As descibed in Parser::mkFlatFunctionType, new bound variables may be
+  * added to flattenVars in this function if the function is given a function
+  * range type.
+  */
+  Expr mkDefineFunRec(
+      const std::string& fname,
+      const std::vector<std::pair<std::string, Type> >& sortedVarNames,
+      Type t,
+      std::vector<Expr>& flattenVars);
+
+  /** Push scope for define-fun-rec
+   *
+  * This calls Parser::pushScope(bindingLevel) and sets up
+  * initial information for reading a body of a function definition
+  * in the define-fun-rec and define-funs-rec command.
+  * The input parameters func/flattenVars are the result
+  * of a call to mkDefineRec above.
+  *
+  * func : the function whose body we are defining.
+  * sortedVarNames : the list of variable arguments for the function.
+  * flattenVars : the implicit variables introduced when defining func.
+  *
+  * This function:
+  * (1) Calls Parser::pushScope(bindingLevel).
+  * (2) Computes the bound variable list for the quantified formula
+  *     that defined this definition and stores it in bvs.
+  */
+  void pushDefineFunRecScope(
+      const std::vector<std::pair<std::string, Type> >& sortedVarNames,
+      Expr func,
+      const std::vector<Expr>& flattenVars,
+      std::vector<Expr>& bvs,
+      bool bindingLevel = false);
+
+  void reset() override;
 
   void resetAssertions();
 
@@ -109,22 +156,26 @@ public:
   const LogicInfo& getLogic() const { return d_logic; }
 
   bool v2_0() const {
-    return getInput()->getLanguage() == language::input::LANG_SMTLIB_V2_0;
+    return getLanguage() == language::input::LANG_SMTLIB_V2_0;
   }
-  // 2.6 is a superset of 2.5, use exact=false to query whether smt lib 2.5 or above
-  bool v2_5( bool exact = true ) const {
-    return exact ? getInput()->getLanguage() == language::input::LANG_SMTLIB_V2_5 : 
-                   ( getInput()->getLanguage() >= language::input::LANG_SMTLIB_V2_5 && 
-                     getInput()->getLanguage() <= language::input::LANG_SMTLIB_V2 );
+  /**
+   * Are we using smtlib 2.5 or above? If exact=true, then this method returns
+   * false if the input language is not exactly SMT-LIB 2.5.
+   */
+  bool v2_5(bool exact = false) const
+  {
+    return language::isInputLang_smt2_5(getLanguage(), exact);
   }
-  bool v2_6() const {
-    return getInput()->getLanguage() == language::input::LANG_SMTLIB_V2_6;
-  }
-  bool sygus() const {
-    return getInput()->getLanguage() == language::input::LANG_SYGUS;
+  /**
+   * Are we using smtlib 2.6 or above? If exact=true, then this method returns
+   * false if the input language is not exactly SMT-LIB 2.6.
+   */
+  bool v2_6(bool exact = false) const
+  {
+    return language::isInputLang_smt2_6(getLanguage(), exact);
   }
 
-  void setLanguage(InputLanguage lang);
+  bool sygus() const { return getLanguage() == language::input::LANG_SYGUS; }
 
   void setInfo(const std::string& flag, const SExpr& sexpr);
 
@@ -136,6 +187,12 @@ public:
     if(name.length() > 0 && (name[0] == '.' || name[0] == '@')) {
       std::stringstream ss;
       ss << "cannot declare or define symbol `" << name << "'; symbols starting with . and @ are reserved in SMT-LIB";
+      parseError(ss.str());
+    }
+    else if (isOperatorEnabled(name))
+    {
+      std::stringstream ss;
+      ss << "Symbol `" << name << "' is shadowing a theory function symbol";
       parseError(ss.str());
     }
   }
@@ -234,9 +291,11 @@ public:
    * Smt2 parser provides its own checkDeclaration, which does the
    * same as the base, but with some more helpful errors.
    */
-  void checkDeclaration(const std::string& name, DeclarationCheck check,
+  void checkDeclaration(const std::string& name,
+                        DeclarationCheck check,
                         SymbolType type = SYM_VARIABLE,
-                        std::string notes = "") throw(ParserException) {
+                        std::string notes = "")
+  {
     // if the symbol is something like "-1", we'll give the user a helpful
     // syntax hint.  (-1 is a valid identifier in SMT-LIB, NOT unary minus.)
     if( check != CHECK_DECLARED ||
@@ -260,7 +319,8 @@ public:
     this->Parser::checkDeclaration(name, check, type, ss.str());
   }
 
-  void checkOperator(Kind kind, unsigned numArgs) throw(ParserException) {
+  void checkOperator(Kind kind, unsigned numArgs)
+  {
     Parser::checkOperator(kind, numArgs);
     // strict SMT-LIB mode enables extra checks for some bitvector operators
     // that CVC4 permits as N-ary but the standard requires is binary
@@ -284,7 +344,8 @@ public:
   }
 
   // Throw a ParserException with msg appended with the current logic.
-  inline void parseErrorLogic(const std::string& msg) throw(ParserException) {
+  inline void parseErrorLogic(const std::string& msg)
+  {
     const std::string withLogic = msg + getLogic().getLogicString();
     parseError(withLogic);
   }
@@ -319,7 +380,22 @@ private:
                                    std::map< CVC4::Type, CVC4::Type >& sygus_to_builtin,
                                    std::map< CVC4::Type, CVC4::Expr >& sygus_to_builtin_expr );
 
+  /** make sygus bound var list
+   *
+   * This is used for converting non-builtin sygus operators to lambda
+   * expressions. It takes as input a datatype and constructor index (for
+   * naming) and a vector of type ltypes.
+   * It appends a bound variable to lvars for each type in ltypes, and returns
+   * a bound variable list whose children are lvars.
+   */
+  Expr makeSygusBoundVarList(Datatype& dt,
+                             unsigned i,
+                             const std::vector<Type>& ltypes,
+                             std::vector<Expr>& lvars);
+
   void addArithmeticOperators();
+
+  void addTranscendentalOperators();
 
   void addBitvectorOperators();
 
@@ -328,6 +404,8 @@ private:
   void addFloatingPointOperators();
 
   void addSepOperators();
+
+  InputLanguage getLanguage() const;
 };/* class Smt2 */
 
 }/* CVC4::parser namespace */

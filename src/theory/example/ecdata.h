@@ -2,9 +2,9 @@
 /*! \file ecdata.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Morgan Deters, Paul Meng
+ **   Morgan Deters, Tim King
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -74,8 +74,7 @@ struct Link {
     return pCMM->newData(size);
   }
 
-private:
-
+ private:
   /**
    * The destructor isn't actually defined.  This declaration keeps
    * the compiler from creating (wastefully) a default definition, and
@@ -84,7 +83,7 @@ private:
    * be allocated in a ContextMemoryManager, which doesn't call
    * destructors.
    */
-  ~Link() throw();
+  ~Link();
 
   /**
    * Just like the destructor, this is not defined.  This ensures no

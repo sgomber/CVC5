@@ -4,7 +4,7 @@
  ** Top contributors (to current version):
  **   Tim King, Paul Meng
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -19,19 +19,17 @@
 #include "options/theoryof_mode.h"
 
 #include <ostream>
-#include "base/cvc4_assert.h"
 
 namespace CVC4 {
 namespace theory {
 
-std::ostream& operator<<(std::ostream& out, TheoryOfMode m) throw() {
+std::ostream& operator<<(std::ostream& out, TheoryOfMode m)
+{
   switch(m) {
   case THEORY_OF_TYPE_BASED: return out << "THEORY_OF_TYPE_BASED";
   case THEORY_OF_TERM_BASED: return out << "THEORY_OF_TERM_BASED";
   default: return out << "TheoryOfMode!UNKNOWN";
   }
-
-  Unreachable();
 }
 
 }/* CVC4::theory namespace */

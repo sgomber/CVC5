@@ -4,7 +4,7 @@
  ** Top contributors (to current version):
  **   Morgan Deters, Andrew Reynolds, Tim King
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -20,8 +20,8 @@
 #include "base/cvc4_assert.h"
 #include "expr/kind.h"
 #include "options/quantifiers_options.h"
-#include "theory/quantifiers/instantiation_engine.h"
-#include "theory/quantifiers/model_engine.h"
+#include "theory/quantifiers/ematching/instantiation_engine.h"
+#include "theory/quantifiers/fmf/model_engine.h"
 #include "theory/quantifiers/quantifiers_attributes.h"
 #include "theory/quantifiers/term_database.h"
 #include "theory/quantifiers/term_util.h"
@@ -44,6 +44,7 @@ TheoryQuantifiers::TheoryQuantifiers(Context* c, context::UserContext* u, Output
   out.handleUserAttribute( "conjecture", this );
   out.handleUserAttribute( "fun-def", this );
   out.handleUserAttribute( "sygus", this );
+  out.handleUserAttribute("quant-name", this);
   out.handleUserAttribute("sygus-synth-grammar", this);
   out.handleUserAttribute( "sygus-synth-fun-var-list", this );
   out.handleUserAttribute( "synthesis", this );
@@ -56,30 +57,33 @@ TheoryQuantifiers::TheoryQuantifiers(Context* c, context::UserContext* u, Output
 TheoryQuantifiers::~TheoryQuantifiers() {
 }
 
-void TheoryQuantifiers::setMasterEqualityEngine(eq::EqualityEngine* eq) {
-
-}
-
-void TheoryQuantifiers::addSharedTerm(TNode t) {
-  Debug("quantifiers-other") << "TheoryQuantifiers::addSharedTerm(): "
-                     << t << endl;
-}
-
-
-void TheoryQuantifiers::notifyEq(TNode lhs, TNode rhs) {
-  Debug("quantifiers-other") << "TheoryQuantifiers::notifyEq(): "
-                     << lhs << " = " << rhs << endl;
-
+void TheoryQuantifiers::finishInit()
+{
+  // quantifiers are not evaluated in getModelValue
+  TheoryModel* tm = d_valuation.getModel();
+  Assert(tm != nullptr);
+  tm->setUnevaluatedKind(EXISTS);
+  tm->setUnevaluatedKind(FORALL);
 }
 
 void TheoryQuantifiers::preRegisterTerm(TNode n) {
-  Debug("quantifiers-prereg") << "TheoryQuantifiers::preRegisterTerm() " << n << endl;
-  if( n.getKind()==FORALL ){
-    if( !options::cbqi() || options::recurseCbqi() || !TermUtil::hasInstConstAttr(n) ){
-      getQuantifiersEngine()->registerQuantifier( n );
-      Debug("quantifiers-prereg") << "TheoryQuantifiers::preRegisterTerm() done " << n << endl;
-    }
+  if (n.getKind() != FORALL)
+  {
+    return;
   }
+  Debug("quantifiers-prereg") << "TheoryQuantifiers::preRegisterTerm() " << n << endl;
+  if (options::cbqi() && !options::recurseCbqi()
+      && TermUtil::hasInstConstAttr(n))
+  {
+    Debug("quantifiers-prereg")
+        << "TheoryQuantifiers::preRegisterTerm() done, unused " << n << endl;
+    return;
+  }
+  // Preregister the quantified formula.
+  // This initializes the modules used for handling n in this user context.
+  getQuantifiersEngine()->preRegisterQuantifier(n);
+  Debug("quantifiers-prereg")
+      << "TheoryQuantifiers::preRegisterTerm() done " << n << endl;
 }
 
 
@@ -99,37 +103,24 @@ void TheoryQuantifiers::ppNotifyAssertions(
   }
 }
 
-Node TheoryQuantifiers::getValue(TNode n) {
-  //NodeManager* nodeManager = NodeManager::currentNM();
-  switch(n.getKind()) {
-  case FORALL:
-  case EXISTS:
-    bool value;
-    if( d_valuation.hasSatValue( n, value ) ){
-      return NodeManager::currentNM()->mkConst(value);
-    }else{
-      return NodeManager::currentNM()->mkConst(false);  //FIX_THIS?
-    }
-    break;
-  default:
-    Unhandled(n.getKind());
-  }
-}
-
-void TheoryQuantifiers::computeCareGraph() {
-  //do nothing
-}
-
-void TheoryQuantifiers::collectModelInfo(TheoryModel* m) {
+bool TheoryQuantifiers::collectModelInfo(TheoryModel* m)
+{
   for(assertions_iterator i = facts_begin(); i != facts_end(); ++i) {
     if((*i).assertion.getKind() == kind::NOT) {
       Debug("quantifiers::collectModelInfo") << "got quant FALSE: " << (*i).assertion[0] << endl;
-      m->assertPredicate((*i).assertion[0], false);
+      if (!m->assertPredicate((*i).assertion[0], false))
+      {
+        return false;
+      }
     } else {
       Debug("quantifiers::collectModelInfo") << "got quant TRUE : " << *i << endl;
-      m->assertPredicate(*i, true);
+      if (!m->assertPredicate(*i, true))
+      {
+        return false;
+      }
     }
   }
+  return true;
 }
 
 void TheoryQuantifiers::check(Effort e) {

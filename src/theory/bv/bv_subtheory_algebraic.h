@@ -2,9 +2,9 @@
 /*! \file bv_subtheory_algebraic.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Liana Hadarean, Paul Meng, Morgan Deters
+ **   Liana Hadarean, Mathias Preiner, Tim King
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -224,16 +224,19 @@ public:
   AlgebraicSolver(context::Context* c, TheoryBV* bv);
   ~AlgebraicSolver();
 
-  void  preRegister(TNode node) {}
-  bool  check(Theory::Effort e);
-  void  explain(TNode literal, std::vector<TNode>& assumptions) {Unreachable("AlgebraicSolver does not propagate.\n");}
-  EqualityStatus getEqualityStatus(TNode a, TNode b); 
-  void collectModelInfo(TheoryModel* m, bool fullModel); 
-  Node getModelValue(TNode node); 
-  bool isComplete();
-  virtual void assertFact(TNode fact);
+  void preRegister(TNode node) override {}
+  bool check(Theory::Effort e) override;
+  void explain(TNode literal, std::vector<TNode>& assumptions) override
+  {
+    Unreachable("AlgebraicSolver does not propagate.\n");
+  }
+  EqualityStatus getEqualityStatus(TNode a, TNode b) override;
+  bool collectModelInfo(TheoryModel* m, bool fullModel) override;
+  Node getModelValue(TNode node) override;
+  bool isComplete() override;
+  void assertFact(TNode fact) override;
 };
 
-}
-}
-}
+}  // namespace bv
+}  // namespace theory
+}  // namespace CVC4

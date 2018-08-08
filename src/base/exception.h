@@ -2,9 +2,9 @@
 /*! \file exception.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Morgan Deters, Tim King, Paul Meng
+ **   Morgan Deters, Tim King, Andres Noetzli
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -27,29 +27,27 @@
 #include <stdexcept>
 #include <string>
 
-#include "base/tls.h"
-
 namespace CVC4 {
 
 class CVC4_PUBLIC Exception : public std::exception {
-protected:
+ protected:
   std::string d_msg;
 
-public:
+ public:
   // Constructors
-  Exception() throw() : d_msg("Unknown exception") {}
-  Exception(const std::string& msg) throw() : d_msg(msg) {}
-  Exception(const char* msg) throw() : d_msg(msg) {}
+  Exception() : d_msg("Unknown exception") {}
+  Exception(const std::string& msg) : d_msg(msg) {}
+  Exception(const char* msg) : d_msg(msg) {}
 
   // Destructor
-  virtual ~Exception() throw() {}
+  virtual ~Exception() {}
 
   // NON-VIRTUAL METHOD for setting and printing the error message
-  void setMessage(const std::string& msg) throw() { d_msg = msg; }
-  std::string getMessage() const throw() { return d_msg; }
+  void setMessage(const std::string& msg) { d_msg = msg; }
+  std::string getMessage() const { return d_msg; }
 
   // overridden from base class std::exception
-  virtual const char* what() const throw() { return d_msg.c_str(); }
+  const char* what() const noexcept override { return d_msg.c_str(); }
 
   /**
    * Get this exception as a string.  Note that
@@ -63,7 +61,8 @@ public:
    * toString(), there is no stream, so the parameters are default
    * and you'll get exprs and types printed using the AST language.
    */
-  std::string toString() const throw() {
+  std::string toString() const
+  {
     std::stringstream ss;
     toStream(ss);
     return ss.str();
@@ -74,7 +73,7 @@ public:
    * a derived class, it's recommended that this method print the
    * type of exception before the actual message.
    */
-  virtual void toStream(std::ostream& os) const throw() { os << d_msg; }
+  virtual void toStream(std::ostream& os) const { os << d_msg; }
 
 };/* class Exception */
 
@@ -116,8 +115,10 @@ public:
   static std::string formatVariadic(const char* format, ...);
 };/* class IllegalArgumentException */
 
-inline std::ostream& operator<<(std::ostream& os, const Exception& e) throw() CVC4_PUBLIC;
-inline std::ostream& operator<<(std::ostream& os, const Exception& e) throw() {
+inline std::ostream& operator<<(std::ostream& os,
+                                const Exception& e) CVC4_PUBLIC;
+inline std::ostream& operator<<(std::ostream& os, const Exception& e)
+{
   e.toStream(os);
   return os;
 }
@@ -155,12 +156,12 @@ public:
 
 private:
   /* Disallow copies */
-  LastExceptionBuffer(const LastExceptionBuffer&) CVC4_UNDEFINED;
-  LastExceptionBuffer& operator=(const LastExceptionBuffer&) CVC4_UNDEFINED;
+  LastExceptionBuffer(const LastExceptionBuffer&) = delete;
+  LastExceptionBuffer& operator=(const LastExceptionBuffer&) = delete;
 
   char* d_contents;
 
-  static CVC4_THREAD_LOCAL LastExceptionBuffer* s_currentBuffer;
+  static thread_local LastExceptionBuffer* s_currentBuffer;
 }; /* class LastExceptionBuffer */
 
 }/* CVC4 namespace */

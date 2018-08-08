@@ -1,8 +1,7 @@
 #!/usr/bin/perl -w
 #
 # update-copyright.pl
-# Morgan Deters <mdeters@cs.nyu.edu> for CVC4
-# Copyright (c) 2009-2014  The CVC4 Project
+# Copyright (c) 2009-2018  The CVC4 Project
 #
 # usage: update-copyright [-m] [files/directories...]
 #        update-copyright [-h | --help]
@@ -48,7 +47,7 @@ $excluded_paths .= '$)';
 
 # Years of copyright for the template.  E.g., the string
 # "1985, 1987, 1992, 1997, 2008" or "2006-2009" or whatever.
-my $years = '2009-2017';
+my $years = '2009-2018';
 
 my $standard_template = <<EOF;
  ** This file is part of the CVC4 project.
@@ -199,7 +198,8 @@ $line";
       print $OUT "/*! \\file $file\n";
     }
     print $OUT " ** \\verbatim\n";
-    print $OUT " ** Top authors (to current version): $authors\n";
+    print $OUT " ** Top contributors (to current version):\n";
+    print $OUT " **   $authors\n";
     print $OUT $standard_template;
     print $OUT " **\n";
     print $OUT " ** \\brief [[ Add one-line brief description here ]]\n";

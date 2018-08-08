@@ -2,9 +2,9 @@
 /*! \file quant_relevance.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Andrew Reynolds
+ **   Andrew Reynolds, Mathias Preiner
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -42,11 +42,11 @@ class QuantRelevance : public QuantifiersUtil
   QuantRelevance(bool cr) : d_computeRel(cr) {}
   ~QuantRelevance() {}
   /** reset */
-  virtual bool reset(Theory::Effort e) override { return true; }
+  bool reset(Theory::Effort e) override { return true; }
   /** register quantifier */
-  virtual void registerQuantifier(Node q) override;
+  void registerQuantifier(Node q) override;
   /** identify */
-  virtual std::string identify() const override { return "QuantRelevance"; }
+  std::string identify() const override { return "QuantRelevance"; }
   /** set relevance of symbol s to r */
   void setRelevance(Node s, int r);
   /** get relevance of symbol s */

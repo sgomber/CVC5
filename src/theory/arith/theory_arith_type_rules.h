@@ -2,9 +2,9 @@
 /*! \file theory_arith_type_rules.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Morgan Deters, Dejan Jovanovic, Christopher L. Conway
+ **   Dejan Jovanovic, Morgan Deters, Christopher L. Conway
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -27,7 +27,7 @@ namespace arith {
 class ArithConstantTypeRule {
 public:
   inline static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check)
-      throw (TypeCheckingExceptionPrivate, AssertionException) {
+  {
     Assert(n.getKind() == kind::CONST_RATIONAL);
     if(n.getConst<Rational>().isIntegral()){
       return nodeManager->integerType();
@@ -40,7 +40,7 @@ public:
 class ArithOperatorTypeRule {
 public:
   inline static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check)
-      throw (TypeCheckingExceptionPrivate, AssertionException) {
+  {
     TypeNode integerType = nodeManager->integerType();
     TypeNode realType = nodeManager->realType();
     TNode::iterator child_it = n.begin();
@@ -76,7 +76,7 @@ public:
 class IntOperatorTypeRule {
 public:
   inline static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check)
-      throw (TypeCheckingExceptionPrivate, AssertionException) {
+  {
     TNode::iterator child_it = n.begin();
     TNode::iterator child_it_end = n.end();
     if(check) {
@@ -94,7 +94,7 @@ public:
 class RealOperatorTypeRule {
 public:
   inline static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check)
-      throw (TypeCheckingExceptionPrivate, AssertionException) {
+  {
     TNode::iterator child_it = n.begin();
     TNode::iterator child_it_end = n.end();
     if(check) {
@@ -112,7 +112,7 @@ public:
 class ArithPredicateTypeRule {
 public:
   inline static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check)
-      throw (TypeCheckingExceptionPrivate, AssertionException) {
+  {
     if( check ) {
       TypeNode lhsType = n[0].getType(check);
       if (!lhsType.isReal()) {
@@ -130,7 +130,7 @@ public:
 class ArithUnaryPredicateTypeRule {
 public:
   inline static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check)
-      throw (TypeCheckingExceptionPrivate, AssertionException) {
+  {
     if( check ) {
       TypeNode t = n[0].getType(check);
       if (!t.isReal()) {
@@ -144,7 +144,7 @@ public:
 class IntUnaryPredicateTypeRule {
 public:
   inline static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check)
-      throw (TypeCheckingExceptionPrivate, AssertionException) {
+  {
     if( check ) {
       TypeNode t = n[0].getType(check);
       if (!t.isInteger()) {
@@ -158,7 +158,7 @@ public:
 class RealNullaryOperatorTypeRule {
 public:
   inline static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check)
-      throw (TypeCheckingExceptionPrivate, AssertionException) {
+  {
     // for nullary operators, we only computeType for check=true, since they are given TypeAttr() on creation
     Assert(check);
     TypeNode realType = n.getType();

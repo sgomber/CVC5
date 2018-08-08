@@ -2,9 +2,9 @@
 /*! \file smt1_input.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Christopher L. Conway, Morgan Deters, Paul Meng
+ **   Christopher L. Conway, Morgan Deters, Tim King
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -53,20 +53,14 @@ public:
   /** Destructor. Frees the lexer and the parser. */
   virtual ~Smt1Input();
 
-  /** Get the language that this Input is reading. */
-  InputLanguage getLanguage() const throw() {
-    return language::input::LANG_SMTLIB_V1;
-  }
-
-protected:
-
+ protected:
   /**
    * Parse a command from the input. Returns <code>NULL</code> if
    * there is no command there to parse.
    *
    * @throws ParserException if an error is encountered during parsing.
    */
-  Command* parseCommand();
+  Command* parseCommand() override;
 
   /**
    * Parse an expression from the input. Returns a null
@@ -74,10 +68,9 @@ protected:
    *
    * @throws ParserException if an error is encountered during parsing.
    */
-  Expr parseExpr();
+  Expr parseExpr() override;
 
-private:
-
+ private:
   /**
    * Initialize the class. Called from the constructors once the input
    * stream is initialized.

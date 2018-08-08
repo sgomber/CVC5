@@ -4,7 +4,7 @@
  ** Top contributors (to current version):
  **   Andrew Reynolds, Tim King, Morgan Deters
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -59,8 +59,6 @@ enum MbqiMode {
   MBQI_NONE,
   /** default, mbqi from Section 5.4.2 of AJR thesis */
   MBQI_FMC,
-  /** mbqi with integer intervals */
-  MBQI_FMC_INTERVAL,
   /** abstract mbqi algorithm */
   MBQI_ABS,
   /** mbqi trust (produce no instantiations) */
@@ -87,19 +85,65 @@ enum QcfMode {
   QCF_PARTIAL,
 };
 
-enum UserPatMode {
-  /** use but do not trust */
+/** User pattern mode.
+*
+* These modes determine how user provided patterns (triggers) are
+* used during E-matching. The modes vary on when instantiation based on
+* user-provided triggers is combined with instantiation based on
+* automatically selected triggers.
+*/
+enum UserPatMode
+{
+  /** First instantiate based on user-provided triggers. If no instantiations
+  * are produced, use automatically selected triggers.
+  */
   USER_PAT_MODE_USE,
-  /** default, if patterns are supplied for a quantifier, use only those */
+  /** Default, if triggers are supplied for a quantifier, use only those. */
   USER_PAT_MODE_TRUST,
-  /** resort to user patterns only when necessary */
+  /** Resort to user triggers only when no instantiations are
+  * produced by automatically selected triggers
+  */
   USER_PAT_MODE_RESORT,
-  /** ignore user patterns */
+  /** Ignore user patterns. */
   USER_PAT_MODE_IGNORE,
-  /** interleave use/resort for user patterns */
+  /** Interleave use/resort modes for quantified formulas with user patterns. */
   USER_PAT_MODE_INTERLEAVE,
 };
 
+/** Trigger selection mode.
+*
+* These modes are used for determining which terms to select
+* as triggers for quantified formulas, when necessary, during E-matching.
+* In the following, note the following terminology. A trigger is a set of terms,
+* where a single trigger is a singleton set and a multi-trigger is a set of more
+* than one term.
+*
+* TRIGGER_SEL_MIN selects single triggers of minimal term size.
+* TRIGGER_SEL_MAX selects single triggers of maximal term size.
+*
+* For example, consider the quantified formula :
+*   forall xy. P( f( g( x, y ) ) ) V Q( f( x ), y )
+*
+* TRIGGER_SEL_MIN will select g( x, y ) and Q( f( x ), y ).
+* TRIGGER_SEL_MAX will select P( f( g( x ) ) ) and Q( f( x ), y ).
+*
+* The remaining three trigger selections make a difference for multi-triggers
+* only. For quantified formulas that require multi-triggers, we build a set of
+* partial triggers that don't contain all variables, call this set S. Then,
+* multi-triggers are built by taking a random subset of S that collectively
+* contains all variables.
+*
+* Consider the quantified formula :
+*   forall xyz. P( h( x ), y ) V Q( y, z )
+*
+* For TRIGGER_SEL_ALL and TRIGGER_SEL_MIN_SINGLE_ALL,
+*   S = { h( x ), P( h( x ), y ), Q( y, z ) }.
+* For TRIGGER_SEL_MIN_SINGLE_MAX,
+*   S = { P( h( x ), y ), Q( y, z ) }.
+*
+* Furthermore, TRIGGER_SEL_MIN_SINGLE_ALL and TRIGGER_SEL_MIN_SINGLE_MAX, when
+* selecting single triggers, only select terms of minimal size.
+*/
 enum TriggerSelMode {
   /** only consider minimal terms for triggers */
   TRIGGER_SEL_MIN,
@@ -164,10 +208,49 @@ enum CegqiSingleInvMode {
   CEGQI_SI_MODE_NONE,
   /** use single invocation techniques */
   CEGQI_SI_MODE_USE,
-  /** always use single invocation techniques, abort if solution reconstruction will fail */
-  CEGQI_SI_MODE_ALL_ABORT,
   /** always use single invocation techniques */
   CEGQI_SI_MODE_ALL,
+};
+
+/** Solution reconstruction modes for single invocation conjectures
+ *
+ * These modes indicate the policy when CVC4 solves a synthesis conjecture using
+ * single invocation techniques for a sygus problem with a user-specified
+ * grammar.
+ */
+enum CegqiSingleInvRconsMode
+{
+  /**
+   * Do not try to reconstruct solutions to single invocation conjectures. With
+   * this mode, solutions produced by CVC4 may violate grammar restrictions.
+   */
+  CEGQI_SI_RCONS_MODE_NONE,
+  /**
+   * Try to reconstruct solution to single invocation conjectures in an
+   * incomplete (fail fast) way.
+   */
+  CEGQI_SI_RCONS_MODE_TRY,
+  /**
+   * Reconstruct solutions to single invocation conjectures, but fail if we
+   * reach an upper limit on number of iterations in the enumeration
+   */
+  CEGQI_SI_RCONS_MODE_ALL_LIMIT,
+  /**
+   * Reconstruct solutions to single invocation conjectures. This method
+   * relies on an expensive enumeration technique which only terminates when
+   * we succesfully reconstruct the solution, although it may not terminate.
+   */
+  CEGQI_SI_RCONS_MODE_ALL,
+};
+
+enum CegisSampleMode
+{
+  /** do not use samples for CEGIS */
+  CEGIS_SAMPLE_NONE,
+  /** use samples for CEGIS */
+  CEGIS_SAMPLE_USE,
+  /** trust samples for CEGQI */
+  CEGIS_SAMPLE_TRUST,
 };
 
 enum SygusInvTemplMode {
@@ -204,17 +287,6 @@ enum QuantRepMode {
   QUANT_REP_MODE_FIRST,
   /** choose representatives that have minimal depth */
   QUANT_REP_MODE_DEPTH,
-};
-
-enum FmfBoundMinMode {
-  /** do not minimize bounds */
-  FMF_BOUND_MIN_NONE,
-  /** default, minimize integer ranges */
-  FMF_BOUND_MIN_INT_RANGE,
-  /** minimize set cardinality ranges */
-  FMF_BOUND_MIN_SET_CARD,
-  /** minimize all bounds */
-  FMF_BOUND_MIN_ALL,
 };
 
 }/* CVC4::theory::quantifiers namespace */

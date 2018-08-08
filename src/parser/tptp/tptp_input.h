@@ -2,9 +2,9 @@
 /*! \file tptp_input.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Francois Bobot, Paul Meng, Morgan Deters
+ **   Francois Bobot, Tim King
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -50,8 +50,7 @@ class TptpInput : public AntlrInput {
    */
   void init();
 
-public:
-
+ public:
   /**
    * Create an input.
    *
@@ -62,20 +61,14 @@ public:
   /** Destructor. Frees the lexer and the parser. */
   virtual ~TptpInput();
 
-  /** Get the language that this Input is reading. */
-  InputLanguage getLanguage() const throw() {
-    return language::input::LANG_TPTP;
-  }
-
-protected:
-
+ protected:
   /**
    * Parse a command from the input. Returns <code>NULL</code> if
    * there is no command there to parse.
    *
    * @throws ParserException if an error is encountered during parsing.
    */
-  Command* parseCommand();
+  Command* parseCommand() override;
 
   /**
    * Parse an expression from the input. Returns a null
@@ -83,7 +76,7 @@ protected:
    *
    * @throws ParserException if an error is encountered during parsing.
    */
-  Expr parseExpr();
+  Expr parseExpr() override;
 
 };/* class TptpInput */
 

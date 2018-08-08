@@ -4,7 +4,7 @@
  ** Top contributors (to current version):
  **   Tim King, Morgan Deters, Liana Hadarean
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -20,6 +20,7 @@
 #define __CVC4__THEORY__THEORY_TEST_UTILS_H
 
 #include <iostream>
+#include <memory>
 #include <utility>
 #include <vector>
 
@@ -27,6 +28,7 @@
 #include "expr/node.h"
 #include "theory/interrupted.h"
 #include "theory/output_channel.h"
+#include "util/proof.h"
 #include "util/unsafe_interrupt_exception.h"
 
 namespace CVC4 {
@@ -67,8 +69,8 @@ public:
   ~TestOutputChannel() override {}
 
   void safePoint(uint64_t amount) override {}
-
-  void conflict(TNode n, Proof* pf = nullptr) override {
+  void conflict(TNode n, std::unique_ptr<Proof> pf) override
+  {
     push(CONFLICT, n);
   }
 

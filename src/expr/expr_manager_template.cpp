@@ -2,9 +2,9 @@
 /*! \file expr_manager_template.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Morgan Deters, Tim King, Christopher L. Conway
+ **   Morgan Deters, Christopher L. Conway, Dejan Jovanovic
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -93,7 +93,8 @@ ExprManager::ExprManager(const Options& options) :
 #endif
 }
 
-ExprManager::~ExprManager() throw() {
+ExprManager::~ExprManager()
+{
   NodeManagerScope nms(d_nodeManager);
 
   try {
@@ -128,7 +129,8 @@ const Options& ExprManager::getOptions() const {
   return d_nodeManager->getOptions();
 }
 
-ResourceManager* ExprManager::getResourceManager() throw() {
+ResourceManager* ExprManager::getResourceManager()
+{
   return d_nodeManager->getResourceManager();
 }
 
@@ -144,7 +146,7 @@ StringType ExprManager::stringType() const {
 
 RegExpType ExprManager::regExpType() const {
   NodeManagerScope nms(d_nodeManager);
-  return StringType(Type(d_nodeManager, new TypeNode(d_nodeManager->regExpType())));
+  return RegExpType(Type(d_nodeManager, new TypeNode(d_nodeManager->regExpType())));
 }
 
 RealType ExprManager::realType() const {
@@ -370,18 +372,11 @@ Expr ExprManager::mkExpr(Kind kind, Expr child1,
 }
 
 Expr ExprManager::mkExpr(Expr opExpr) {
-  const unsigned n = 0;
-  Kind kind = NodeManager::operatorToKind(opExpr.getNode());
+  const Kind kind = NodeManager::operatorToKind(opExpr.getNode());
   PrettyCheckArgument(
       opExpr.getKind() == kind::BUILTIN ||
       kind::metaKindOf(kind) == kind::metakind::PARAMETERIZED, opExpr,
       "This Expr constructor is for parameterized kinds only");
-  PrettyCheckArgument(
-      n >= minArity(kind) && n <= maxArity(kind), kind,
-      "Exprs with kind %s must have at least %u children and "
-      "at most %u children (the one under construction has %u)",
-      kind::kindToString(kind).c_str(),
-      minArity(kind), maxArity(kind), n);
   NodeManagerScope nms(d_nodeManager);
   try {
     INC_STAT(kind);
@@ -836,10 +831,13 @@ SortType ExprManager::mkSort(const std::string& name, uint32_t flags) const {
 }
 
 SortConstructorType ExprManager::mkSortConstructor(const std::string& name,
-                                                   size_t arity) const {
+                                                   size_t arity,
+                                                   uint32_t flags) const
+{
   NodeManagerScope nms(d_nodeManager);
-  return SortConstructorType(Type(d_nodeManager,
-              new TypeNode(d_nodeManager->mkSortConstructor(name, arity))));
+  return SortConstructorType(
+      Type(d_nodeManager,
+           new TypeNode(d_nodeManager->mkSortConstructor(name, arity, flags))));
 }
 
 /**
@@ -867,7 +865,8 @@ SortConstructorType ExprManager::mkSortConstructor(const std::string& name,
  * @param check whether we should check the type as we compute it
  * (default: false)
  */
-Type ExprManager::getType(Expr e, bool check) throw (TypeCheckingException) {
+Type ExprManager::getType(Expr e, bool check)
+{
   NodeManagerScope nms(d_nodeManager);
   Type t;
   try {
@@ -993,12 +992,13 @@ unsigned ExprManager::maxArity(Kind kind) {
 NodeManager* ExprManager::getNodeManager() const {
   return d_nodeManager;
 }
-
-Statistics ExprManager::getStatistics() const throw() {
+Statistics ExprManager::getStatistics() const
+{
   return Statistics(*d_nodeManager->getStatisticsRegistry());
 }
 
-SExpr ExprManager::getStatistic(const std::string& name) const throw() {
+SExpr ExprManager::getStatistic(const std::string& name) const
+{
   return d_nodeManager->getStatisticsRegistry()->getStatistic(name);
 }
 
@@ -1025,6 +1025,16 @@ TypeNode exportTypeInternal(TypeNode n, NodeManager* from, NodeManager* to, Expr
     return to->mkTypeConst(n.getConst<TypeConstant>());
   } else if(n.getKind() == kind::BITVECTOR_TYPE) {
     return to->mkBitVectorType(n.getConst<BitVectorSize>());
+  }
+  else if (n.getKind() == kind::FLOATINGPOINT_TYPE)
+  {
+    return to->mkFloatingPointType(n.getConst<FloatingPointSize>());
+  }
+  else if (n.getNumChildren() == 0)
+  {
+    std::stringstream msg;
+    msg << "export of type " << n << " not supported";
+    throw ExportUnsupportedException(msg.str().c_str());
   }
   Type from_t = from->toType(n);
   Type& to_t = vmap.d_typeMap[from_t];

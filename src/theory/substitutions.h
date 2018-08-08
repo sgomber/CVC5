@@ -4,7 +4,7 @@
  ** Top contributors (to current version):
  **   Morgan Deters, Dejan Jovanovic, Clark Barrett
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -76,9 +76,8 @@ private:
   class CacheInvalidator : public context::ContextNotifyObj {
     bool& d_cacheInvalidated;
   protected:
-    void contextNotifyPop() {
-      d_cacheInvalidated = true;
-    }
+   void contextNotifyPop() override { d_cacheInvalidated = true; }
+
   public:
     CacheInvalidator(context::Context* context, bool& cacheInvalidated) :
       context::ContextNotifyObj(context),

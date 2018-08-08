@@ -2,9 +2,9 @@
 /*! \file lemma_input_channel.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Morgan Deters, Paul Meng
+ **   Morgan Deters, Tim King
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -26,10 +26,10 @@ namespace CVC4 {
 
 class CVC4_PUBLIC LemmaInputChannel {
 public:
-  virtual ~LemmaInputChannel() throw() { }
+ virtual ~LemmaInputChannel() {}
 
-  virtual bool hasNewLemma() = 0;
-  virtual Expr getNewLemma() = 0;
+ virtual bool hasNewLemma() = 0;
+ virtual Expr getNewLemma() = 0;
 
 };/* class LemmaOutputChannel */
 

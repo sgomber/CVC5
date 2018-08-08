@@ -2,9 +2,9 @@
 /*! \file bv_bitblast_mode.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Liana Hadarean, Tim King
+ **   Liana Hadarean, Tim King, Mathias Preiner
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -61,11 +61,12 @@ enum BvSlicerMode {
 };/* enum BvSlicerMode */
 
 /** Enumeration of sat solvers that can be used. */
-enum SatSolverMode {
+enum SatSolverMode
+{
   SAT_SOLVER_MINISAT,
   SAT_SOLVER_CRYPTOMINISAT,
-};/* enum SatSolver */
-
+  SAT_SOLVER_CADICAL,
+}; /* enum SatSolver */
 
 }/* CVC4::theory::bv namespace */
 }/* CVC4::theory namespace */

@@ -2,9 +2,9 @@
 /*! \file conjecture_generator.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Clark Barrett, Paul Meng, Andrew Reynolds
+ **   Andrew Reynolds, Mathias Preiner, Tim King
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -18,7 +18,6 @@
 #define CONJECTURE_GENERATOR_H
 
 #include "context/cdhashmap.h"
-#include "context/cdchunk_list.h"
 #include "theory/quantifiers_engine.h"
 #include "theory/type_enumerator.h"
 
@@ -229,7 +228,6 @@ class ConjectureGenerator : public QuantifiersModule
   friend class SubsEqcIndex;
   friend class TermGenerator;
   friend class TermGenEnv;
-  typedef context::CDChunkList<Node> NodeList;
   typedef context::CDHashMap< Node, Node, NodeHashFunction > NodeMap;
   typedef context::CDHashMap< Node, bool, NodeHashFunction > BoolMap;
 //this class maintains a congruence closure for *universal* facts
@@ -239,14 +237,35 @@ private:
     ConjectureGenerator& d_sg;
   public:
     NotifyClass(ConjectureGenerator& sg): d_sg(sg) {}
-    bool eqNotifyTriggerEquality(TNode equality, bool value) { return true; }
-    bool eqNotifyTriggerPredicate(TNode predicate, bool value) { return true; }
-    bool eqNotifyTriggerTermEquality(TheoryId tag, TNode t1, TNode t2, bool value) { return true; }
-    void eqNotifyConstantTermMerge(TNode t1, TNode t2) { }
-    void eqNotifyNewClass(TNode t) { d_sg.eqNotifyNewClass(t); }
-    void eqNotifyPreMerge(TNode t1, TNode t2) { d_sg.eqNotifyPreMerge(t1, t2); }
-    void eqNotifyPostMerge(TNode t1, TNode t2) { d_sg.eqNotifyPostMerge(t1, t2); }
-    void eqNotifyDisequal(TNode t1, TNode t2, TNode reason) {d_sg.eqNotifyDisequal(t1, t2, reason); }
+    bool eqNotifyTriggerEquality(TNode equality, bool value) override
+    {
+      return true;
+    }
+    bool eqNotifyTriggerPredicate(TNode predicate, bool value) override
+    {
+      return true;
+    }
+    bool eqNotifyTriggerTermEquality(TheoryId tag,
+                                     TNode t1,
+                                     TNode t2,
+                                     bool value) override
+    {
+      return true;
+    }
+    void eqNotifyConstantTermMerge(TNode t1, TNode t2) override {}
+    void eqNotifyNewClass(TNode t) override { d_sg.eqNotifyNewClass(t); }
+    void eqNotifyPreMerge(TNode t1, TNode t2) override
+    {
+      d_sg.eqNotifyPreMerge(t1, t2);
+    }
+    void eqNotifyPostMerge(TNode t1, TNode t2) override
+    {
+      d_sg.eqNotifyPostMerge(t1, t2);
+    }
+    void eqNotifyDisequal(TNode t1, TNode t2, TNode reason) override
+    {
+      d_sg.eqNotifyDisequal(t1, t2, reason);
+    }
   };/* class ConjectureGenerator::NotifyClass */
   /** The notify class */
   NotifyClass d_notify;
@@ -359,7 +378,23 @@ private:
   std::map< TypeNode, Node > d_typ_pred;
   //get predicate for type
   Node getPredicateForType( TypeNode tn );
-  //
+  /** get enumerate uf term
+   *
+   * This function adds up to #num f-applications to terms, where f is
+   * n.getOperator(). These applications are enumerated in a fair manner based
+   * on an iterative deepening of the sum of indices of the arguments. For
+   * example, if f : U x U -> U, an the term enumerator for U gives t1, t2, t3
+   * ..., then we add f-applications to terms in this order:
+   *   f( t1, t1 )
+   *   f( t2, t1 )
+   *   f( t1, t2 )
+   *   f( t1, t3 )
+   *   f( t2, t2 )
+   *   f( t3, t1 )
+   *   ...
+   * This function may add fewer than #num terms to terms if the enumeration is
+   * exhausted, or if an internal error occurs.
+   */
   void getEnumerateUfTerm( Node n, unsigned num, std::vector< Node >& terms );
   //
   void getEnumeratePredUfTerm( Node n, unsigned num, std::vector< Node >& terms );
@@ -401,20 +436,18 @@ private:  //information about ground equivalence classes
   unsigned flushWaitingConjectures( unsigned& addedLemmas, int ldepth, int rdepth );
 public:
   ConjectureGenerator( QuantifiersEngine * qe, context::Context* c );
-  ~ConjectureGenerator() throw() {}
+  ~ConjectureGenerator();
+
   /* needs check */
-  bool needsCheck( Theory::Effort e );
+  bool needsCheck(Theory::Effort e) override;
   /* reset at a round */
-  void reset_round( Theory::Effort e );
+  void reset_round(Theory::Effort e) override;
   /* Call during quantifier engine's check */
-  void check( Theory::Effort e, unsigned quant_e );
-  /* Called for new quantifiers */
-  void registerQuantifier( Node q );
-  void assertNode( Node n );
+  void check(Theory::Effort e, QEffort quant_e) override;
   /** Identify this module (for debugging, dynamic configuration, etc..) */
-  std::string identify() const { return "ConjectureGenerator"; }
-//options
-private:
+  std::string identify() const override { return "ConjectureGenerator"; }
+  // options
+ private:
   bool optReqDistinctVarPatterns();
   bool optFilterUnknown();
   int optFilterScoreThreshold();

@@ -2,9 +2,9 @@
 /*! \file cdinsert_hashmap_forward.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Tim King, Paul Meng
+ **   Tim King
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -23,16 +23,16 @@
 
 #include "cvc4_public.h"
 
-#pragma once
+#ifndef __CVC4__CONTEXT__CDINSERT_HASHMAP_FORWARD_H
+#define __CVC4__CONTEXT__CDINSERT_HASHMAP_FORWARD_H
 
-namespace __gnu_cxx {
-  template <class Key> struct hash;
-}/* __gnu_cxx namespace */
+#include <functional>
 
 namespace CVC4 {
-  namespace context {
-    template <class Key, class Data, class HashFcn = __gnu_cxx::hash<Key> >
-    class CDInsertHashMap;
-  }/* CVC4::context namespace */
-}/* CVC4 namespace */
+namespace context {
+template <class Key, class Data, class HashFcn = std::hash<Key> >
+class CDInsertHashMap;
+}  // namespace context
+}  // namespace CVC4
 
+#endif /* __CVC4__CONTEXT__CDINSERT_HASHMAP_FORWARD_H */

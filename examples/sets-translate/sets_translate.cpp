@@ -2,9 +2,9 @@
 /*! \file sets_translate.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Kshitij Bansal, Tim King, Paul Meng
+ **   Kshitij Bansal, Tim King, Mathias Preiner
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -314,7 +314,7 @@ int main(int argc, char* argv[])
             cout << SetBenchmarkLogicCommand(logicinfo.getLogicString()) << endl;
           }
         } else {
-          logicinfo.enableTheory(theory::THEORY_ARRAY);
+          logicinfo.enableTheory(theory::THEORY_ARRAYS);
           // we print logic string only for Quantifiers, for Z3 stuff
           // we don't set the logic
         }

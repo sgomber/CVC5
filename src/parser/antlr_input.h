@@ -2,9 +2,9 @@
 /*! \file antlr_input.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Christopher L. Conway, Morgan Deters, Tim King
+ **   Christopher L. Conway, Tim King, Morgan Deters
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -69,11 +69,10 @@ private:
                    LineBuffer* line_buffer);
 
   /* This is private and unimplemented, because you should never use it. */
-  AntlrInputStream(const AntlrInputStream& inputStream) CVC4_UNDEFINED;
+  AntlrInputStream(const AntlrInputStream& inputStream) = delete;
 
   /* This is private and unimplemented, because you should never use it. */
-  AntlrInputStream& operator=(const AntlrInputStream& inputStream)
-    CVC4_UNDEFINED;
+  AntlrInputStream& operator=(const AntlrInputStream& inputStream) = delete;
 
 public:
 
@@ -88,14 +87,12 @@ public:
    * input will use the standard ANTLR3 I/O implementation.
    */
   static AntlrInputStream* newFileInputStream(const std::string& name,
-                                              bool useMmap = false)
-    throw (InputStreamException);
+                                              bool useMmap = false);
 
   /** Create an input from an istream. */
   static AntlrInputStream* newStreamInputStream(std::istream& input,
                                                 const std::string& name,
-                                                bool lineBuffered = false)
-    throw (InputStreamException);
+                                                bool lineBuffered = false);
 
   /** Create a string input.
    * NOTE: the new AntlrInputStream will take ownership of input over
@@ -105,8 +102,7 @@ public:
    * @param name the "filename" to use when reporting errors
    */
   static AntlrInputStream* newStringInputStream(const std::string& input,
-                                                const std::string& name)
-    throw (InputStreamException);
+                                                const std::string& name);
 };/* class AntlrInputStream */
 
 class Parser;
@@ -223,13 +219,12 @@ protected:
   /**
    * Issue a non-fatal warning to the user with file, line, and column info.
    */
-  void warning(const std::string& msg);
+  void warning(const std::string& msg) override;
 
   /**
    * Throws a <code>ParserException</code> with the given message.
    */
-  void parseError(const std::string& msg, bool eofException = false)
-    throw (ParserException);
+  void parseError(const std::string& msg, bool eofException = false) override;
 
   /** Set the ANTLR3 lexer for this input. */
   void setAntlr3Lexer(pANTLR3_LEXER pLexer);
@@ -238,7 +233,7 @@ protected:
   void setAntlr3Parser(pANTLR3_PARSER pParser);
 
   /** Set the Parser object for this input. */
-  virtual void setParser(Parser& parser);
+  void setParser(Parser& parser) override;
 };/* class AntlrInput */
 
 inline std::string AntlrInput::tokenText(pANTLR3_COMMON_TOKEN token) {

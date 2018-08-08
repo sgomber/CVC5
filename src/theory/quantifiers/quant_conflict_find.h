@@ -2,9 +2,9 @@
 /*! \file quant_conflict_find.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Clark Barrett, Andrew Reynolds, Tim King
+ **   Andrew Reynolds, Tim King, Mathias Preiner
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -17,10 +17,13 @@
 #ifndef QUANT_CONFLICT_FIND
 #define QUANT_CONFLICT_FIND
 
+#include <ostream>
+#include <vector>
+
 #include "context/cdhashmap.h"
-#include "context/cdchunk_list.h"
-#include "theory/quantifiers_engine.h"
+#include "context/cdlist.h"
 #include "theory/quantifiers/term_database.h"
+#include "theory/quantifiers_engine.h"
 
 namespace CVC4 {
 namespace theory {
@@ -72,7 +75,6 @@ public:
     typ_eq,
     typ_formula,
     typ_var,
-    typ_ite_var,
     typ_bool_var,
     typ_tconstraint,
     typ_tsym,
@@ -91,8 +93,6 @@ public:
   void reset_round( QuantConflictFind * p );
   void reset( QuantConflictFind * p, bool tgt, QuantInfo * qi );
   bool getNextMatch( QuantConflictFind * p, QuantInfo * qi );
-  bool getExplanation( QuantConflictFind * p, QuantInfo * qi, std::vector< Node >& exp );
-  Node getExplanationTerm( QuantConflictFind * p, QuantInfo * qi, Node t, std::vector< Node >& exp );
   bool isValid() { return d_type!=typ_invalid; }
   void setInvalid();
 
@@ -135,7 +135,6 @@ public:
   std::map< TNode, int > d_var_num;
   std::vector< int > d_tsym_vars;
   std::map< TNode, bool > d_inMatchConstraint;
-  std::map< int, std::vector< Node > > d_var_constraint[2];
   int getVarNum( TNode v ) { return d_var_num.find( v )!=d_var_num.end() ? d_var_num[v] : -1; }
   bool isVar( TNode v ) { return d_var_num.find( v )!=d_var_num.end(); }
   int getNumVars() { return (int)d_vars.size(); }
@@ -188,7 +187,6 @@ class QuantConflictFind : public QuantifiersModule
 {
   friend class MatchGen;
   friend class QuantInfo;
-  typedef context::CDChunkList<Node> NodeList;
   typedef context::CDHashMap<Node, bool, NodeHashFunction> NodeBoolMap;
 private:
   context::CDO< bool > d_conflict;
@@ -202,9 +200,7 @@ private:
   void setIrrelevantFunction( TNode f );
 private:
   std::map< Node, Node > d_op_node;
-  int d_fid_count;
   std::map< Node, int > d_fid;
-  Node mkEqNode( Node a, Node b );
 public:  //for ground terms
   Node d_true;
   Node d_false;
@@ -214,24 +210,34 @@ private:
 private:  //for equivalence classes
   // type -> list(eqc)
   std::map< TypeNode, std::vector< TNode > > d_eqcs;
-public:
-  enum {
-    effort_conflict,
-    effort_prop_eq,
+
+ public:
+  enum Effort : unsigned {
+    EFFORT_CONFLICT,
+    EFFORT_PROP_EQ,
+    EFFORT_INVALID,
   };
-  short d_effort;
-  void setEffort( int e ) { d_effort = e; }
-  static short getMaxQcfEffort();
+  void setEffort(Effort e) { d_effort = e; }
+
+  inline bool atConflictEffort() const {
+    return d_effort == QuantConflictFind::EFFORT_CONFLICT;
+  }
+
+ private:
+  Effort d_effort;
+
+ public:
   bool areMatchEqual( TNode n1, TNode n2 );
   bool areMatchDisequal( TNode n1, TNode n2 );
 public:
   QuantConflictFind( QuantifiersEngine * qe, context::Context* c );
-  ~QuantConflictFind() throw() {}
+
   /** register quantifier */
-  void registerQuantifier( Node q );
-public:
+  void registerQuantifier(Node q) override;
+
+ public:
   /** assert quantifier */
-  void assertNode( Node q );
+  void assertNode(Node q) override;
   /** new node */
   void newEqClass( Node n );
   /** merge */
@@ -239,12 +245,13 @@ public:
   /** assert disequal */
   void assertDisequal( Node a, Node b );
   /** needs check */
-  bool needsCheck( Theory::Effort level );
+  bool needsCheck(Theory::Effort level) override;
   /** reset round */
-  void reset_round( Theory::Effort level );
+  void reset_round(Theory::Effort level) override;
   /** check */
-  void check( Theory::Effort level, unsigned quant_e );
-private:
+  void check(Theory::Effort level, QEffort quant_e) override;
+
+ private:
   bool d_needs_computeRelEqr;
 public:
   void computeRelevantEqr();
@@ -266,8 +273,10 @@ public:
   };
   Statistics d_statistics;
   /** Identify this module */
-  std::string identify() const { return "QcfEngine"; }
+  std::string identify() const override { return "QcfEngine"; }
 };
+
+std::ostream& operator<<(std::ostream& os, const QuantConflictFind::Effort& e);
 
 } /* namespace CVC4::theory::quantifiers */
 } /* namespace CVC4::theory */

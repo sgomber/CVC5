@@ -2,9 +2,9 @@
 /*! \file type_enumerator.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Tianyi Liang, Paul Meng, Andres Noetzli
+ **   Tianyi Liang, Tim King, Andres Noetzli
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -38,48 +38,52 @@ class StringEnumerator : public TypeEnumeratorBase<StringEnumerator> {
     //make constant from d_data
     d_curr = NodeManager::currentNM()->mkConst( ::CVC4::String( d_data ) );
   }
-public:
 
-  StringEnumerator(TypeNode type, TypeEnumeratorProperties * tep = NULL) throw(AssertionException) :
-    TypeEnumeratorBase<StringEnumerator>(type) {
+ public:
+  StringEnumerator(TypeNode type, TypeEnumeratorProperties* tep = nullptr)
+      : TypeEnumeratorBase<StringEnumerator>(type)
+  {
     Assert(type.getKind() == kind::TYPE_CONSTANT &&
            type.getConst<TypeConstant>() == STRING_TYPE);
     d_cardinality = 256;
     mkCurr();
   }
-  Node operator*() throw() {
-    return d_curr;
-  }
-  StringEnumerator& operator++() {
-  bool changed = false;
-  do{
-    for(unsigned i=0; i<d_data.size(); ++i) {
-      if( d_data[i] + 1 < d_cardinality ) {
-        ++d_data[i]; changed = true;
-        break;
-      } else {
-        d_data[i] = 0;
+  Node operator*() override { return d_curr; }
+  StringEnumerator& operator++() override
+  {
+    bool changed = false;
+    do
+    {
+      for (unsigned i = 0; i < d_data.size(); ++i)
+      {
+        if (d_data[i] + 1 < d_cardinality)
+        {
+          ++d_data[i];
+          changed = true;
+          break;
+        }
+        else
+        {
+          d_data[i] = 0;
+        }
       }
-    }
 
-    if(!changed) {
-      d_data.push_back( 0 );
-    }
-  }while(!changed);
+      if (!changed)
+      {
+        d_data.push_back(0);
+      }
+    } while (!changed);
 
-  mkCurr();
+    mkCurr();
     return *this;
   }
 
-  bool isFinished() throw() {
-    return d_curr.isNull();
-  }
-
+  bool isFinished() override { return d_curr.isNull(); }
 };/* class StringEnumerator */
 
 
 class StringEnumeratorLength {
-private:
+ private:
   unsigned d_cardinality;
   std::vector< unsigned > d_data;
   Node d_curr;
@@ -87,7 +91,8 @@ private:
     //make constant from d_data
     d_curr = NodeManager::currentNM()->mkConst( ::CVC4::String( d_data ) );
   }
-public:
+
+ public:
   StringEnumeratorLength(unsigned length, unsigned card = 256) : d_cardinality(card) {
     for( unsigned i=0; i<length; i++ ){
       d_data.push_back( 0 );
@@ -95,10 +100,7 @@ public:
     mkCurr();
   }
 
-  Node operator*() throw() {
-    return d_curr;
-  }
-
+  Node operator*() { return d_curr; }
   StringEnumeratorLength& operator++() {
     bool changed = false;
     for(unsigned i=0; i<d_data.size(); ++i) {
@@ -118,9 +120,7 @@ public:
     return *this;
   }
 
-  bool isFinished() throw() {
-    return d_curr.isNull();
-  }
+  bool isFinished() { return d_curr.isNull(); }
 };
 
 }/* CVC4::theory::strings namespace */

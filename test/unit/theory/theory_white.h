@@ -4,7 +4,7 @@
  ** Top contributors (to current version):
  **   Tim King, Morgan Deters, Clark Barrett
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -15,9 +15,9 @@
  **/
 
 #include <cxxtest/TestSuite.h>
+#include <memory>
 #include <vector>
 
-// taking: Add include for Proof*.
 #include "context/context.h"
 #include "expr/node.h"
 #include "expr/node_manager.h"
@@ -25,7 +25,7 @@
 #include "smt/smt_engine_scope.h"
 #include "theory/theory.h"
 #include "theory/theory_engine.h"
-
+#include "util/proof.h"
 
 using namespace CVC4;
 using namespace CVC4::theory;
@@ -46,8 +46,8 @@ class TestOutputChannel : public OutputChannel {
   ~TestOutputChannel() override {}
 
   void safePoint(uint64_t amount) override {}
-
-  void conflict(TNode n, Proof* pf = nullptr) override {
+  void conflict(TNode n, std::unique_ptr<Proof> pf) override
+  {
     push(CONFLICT, n);
   }
 

@@ -2,9 +2,9 @@
 /*! \file equality_infer.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Andrew Reynolds, Tim King
+ **   Andrew Reynolds, Andres Noetzli
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -21,11 +21,10 @@
 #include <map>
 #include <vector>
 
+#include "context/cdhashmap.h"
+#include "context/cdhashset.h"
 #include "context/context.h"
 #include "context/context_mm.h"
-#include "context/cdhashmap.h"
-#include "context/cdchunk_list.h"
-#include "context/cdhashset.h"
 #include "theory/theory.h"
 
 
@@ -37,7 +36,7 @@ class EqualityInference
 {
   typedef context::CDHashMap< Node, Node, NodeHashFunction > NodeMap;
   typedef context::CDHashMap< Node, bool, NodeHashFunction > BoolMap;
-  typedef context::CDChunkList<Node> NodeList;
+  typedef context::CDList<Node> NodeList;
   typedef context::CDHashMap< Node, int, NodeHashFunction > NodeIntMap;
 private:
   context::Context * d_c;

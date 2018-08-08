@@ -2,9 +2,9 @@
 /*! \file minisat.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Dejan Jovanovic, Tim King, Morgan Deters
+ **   Dejan Jovanovic, Mathias Preiner, Morgan Deters
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -39,45 +39,50 @@ public:
 
   static void  toMinisatClause(SatClause& clause, Minisat::vec<Minisat::Lit>& minisat_clause);
   static void  toSatClause    (const Minisat::Clause& clause, SatClause& sat_clause);
-  void initialize(context::Context* context, TheoryProxy* theoryProxy);
+  void initialize(context::Context* context, TheoryProxy* theoryProxy) override;
 
-  ClauseId addClause(SatClause& clause, bool removable);
-  ClauseId addXorClause(SatClause& clause, bool rhs, bool removable) {
+  ClauseId addClause(SatClause& clause, bool removable) override;
+  ClauseId addXorClause(SatClause& clause, bool rhs, bool removable) override
+  {
     Unreachable("Minisat does not support native XOR reasoning");
   }
 
-  SatVariable newVar(bool isTheoryAtom, bool preRegister, bool canErase);
-  SatVariable trueVar() { return d_minisat->trueVar(); }
-  SatVariable falseVar() { return d_minisat->falseVar(); }
+  SatVariable newVar(bool isTheoryAtom,
+                     bool preRegister,
+                     bool canErase) override;
+  SatVariable trueVar() override { return d_minisat->trueVar(); }
+  SatVariable falseVar() override { return d_minisat->falseVar(); }
 
-  SatValue solve();
-  SatValue solve(long unsigned int&);
+  SatValue solve() override;
+  SatValue solve(long unsigned int&) override;
 
-  bool ok() const;
-  
-  void interrupt();
+  bool ok() const override;
 
-  SatValue value(SatLiteral l);
+  void interrupt() override;
 
-  SatValue modelValue(SatLiteral l);
+  SatValue value(SatLiteral l) override;
 
-  bool properExplanation(SatLiteral lit, SatLiteral expl) const;
+  SatValue modelValue(SatLiteral l) override;
+
+  bool properExplanation(SatLiteral lit, SatLiteral expl) const override;
 
   /** Incremental interface */
 
-  unsigned getAssertionLevel() const;
+  unsigned getAssertionLevel() const override;
 
-  void push();
+  void push() override;
 
-  void pop();
+  void pop() override;
 
-  void requirePhase(SatLiteral lit);
+  void resetTrail() override;
 
-  bool flipDecision();
+  void requirePhase(SatLiteral lit) override;
 
-  bool isDecision(SatVariable decn) const;
+  bool flipDecision() override;
 
-private:
+  bool isDecision(SatVariable decn) const override;
+
+ private:
 
   /** The SatSolver used */
   Minisat::SimpSolver* d_minisat;

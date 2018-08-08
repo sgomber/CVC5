@@ -2,9 +2,9 @@
 /*! \file emptyset.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Tim King, Kshitij Bansal, Morgan Deters
+ **   Tim King, Kshitij Bansal
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -49,38 +49,26 @@ EmptySet& EmptySet::operator=(const EmptySet& es) {
   return *this;
 }
 
-
-EmptySet::~EmptySet() throw() {
-  delete d_type;
-}
-
+EmptySet::~EmptySet() { delete d_type; }
 const SetType& EmptySet::getType() const {
   return *d_type;
 }
-
-bool EmptySet::operator==(const EmptySet& es) const throw() {
+bool EmptySet::operator==(const EmptySet& es) const
+{
   return getType() == es.getType();
 }
 
-bool EmptySet::operator!=(const EmptySet& es) const throw() {
-  return !(*this == es);
-}
-
-bool EmptySet::operator<(const EmptySet& es) const throw() {
+bool EmptySet::operator!=(const EmptySet& es) const { return !(*this == es); }
+bool EmptySet::operator<(const EmptySet& es) const
+{
   return getType() < es.getType();
 }
 
-bool EmptySet::operator<=(const EmptySet& es) const throw() {
+bool EmptySet::operator<=(const EmptySet& es) const
+{
   return getType() <= es.getType();
 }
 
-bool EmptySet::operator>(const EmptySet& es) const throw() {
-  return !(*this <= es);
-}
-
-bool EmptySet::operator>=(const EmptySet& es) const throw() {
-  return !(*this < es);
-}
-
-
+bool EmptySet::operator>(const EmptySet& es) const { return !(*this <= es); }
+bool EmptySet::operator>=(const EmptySet& es) const { return !(*this < es); }
 }/* CVC4 namespace */

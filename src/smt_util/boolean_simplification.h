@@ -2,9 +2,9 @@
 /*! \file boolean_simplification.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Morgan Deters, Tim King, Paul Meng
+ **   Morgan Deters, Tim King
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -35,15 +35,14 @@ namespace CVC4 {
  */
 class BooleanSimplification {
   // cannot construct one of these
-  BooleanSimplification() CVC4_UNDEFINED;
-  BooleanSimplification(const BooleanSimplification&) CVC4_UNDEFINED;
+  BooleanSimplification() = delete;
+  BooleanSimplification(const BooleanSimplification&) = delete;
 
-  static bool push_back_associative_commute_recursive
-    (Node n, std::vector<Node>& buffer, Kind k, Kind notK, bool negateNode)
-    throw(AssertionException) CVC4_WARN_UNUSED_RESULT;
+  static bool push_back_associative_commute_recursive(
+      Node n, std::vector<Node>& buffer, Kind k, Kind notK, bool negateNode)
+      CVC4_WARN_UNUSED_RESULT;
 
-public:
-
+ public:
   /**
    * The threshold for removing duplicates.  (See removeDuplicates().)
    */
@@ -55,7 +54,7 @@ public:
    * function is a no-op.
    */
   static void removeDuplicates(std::vector<Node>& buffer)
-      throw(AssertionException) {
+  {
     if(buffer.size() < DUPLICATE_REMOVAL_THRESHOLD) {
       std::sort(buffer.begin(), buffer.end());
       std::vector<Node>::iterator new_end =
@@ -70,7 +69,8 @@ public:
    * push_back_associative_commute()), removes duplicates, and returns
    * the resulting Node.
    */
-  static Node simplifyConflict(Node andNode) throw(AssertionException) {
+  static Node simplifyConflict(Node andNode)
+  {
     AssertArgument(!andNode.isNull(), andNode);
     AssertArgument(andNode.getKind() == kind::AND, andNode);
 
@@ -94,7 +94,8 @@ public:
    * push_back_associative_commute()), removes duplicates, and returns
    * the resulting Node.
    */
-  static Node simplifyClause(Node orNode) throw(AssertionException) {
+  static Node simplifyClause(Node orNode)
+  {
     AssertArgument(!orNode.isNull(), orNode);
     AssertArgument(orNode.getKind() == kind::OR, orNode);
 
@@ -120,7 +121,8 @@ public:
    * The input doesn't actually have to be Horn, it seems, but that's
    * the common case(?), hence the name.
    */
-  static Node simplifyHornClause(Node implication) throw(AssertionException) {
+  static Node simplifyHornClause(Node implication)
+  {
     AssertArgument(implication.getKind() == kind::IMPLIES, implication);
 
     TNode left = implication[0];
@@ -151,10 +153,12 @@ public:
    * this if e.g. you're simplifying the (OR...) in (NOT (OR...)),
    * intending to make the result an AND.
    */
-  static inline void
-  push_back_associative_commute(Node n, std::vector<Node>& buffer,
-                                Kind k, Kind notK, bool negateChildren = false)
-      throw(AssertionException) {
+  static inline void push_back_associative_commute(Node n,
+                                                   std::vector<Node>& buffer,
+                                                   Kind k,
+                                                   Kind notK,
+                                                   bool negateChildren = false)
+  {
     AssertArgument(buffer.empty(), buffer);
     AssertArgument(!n.isNull(), n);
     AssertArgument(k != kind::UNDEFINED_KIND && k != kind::NULL_EXPR, k);
@@ -177,7 +181,8 @@ public:
    *
    * @param n the node to negate (cannot be the null node)
    */
-  static Node negate(TNode n) throw(AssertionException) {
+  static Node negate(TNode n)
+  {
     AssertArgument(!n.isNull(), n);
 
     bool polarity = true;
@@ -202,7 +207,8 @@ public:
    *
    * @param e the Expr to negate (cannot be the null Expr)
    */
-  static Expr negate(Expr e) throw(AssertionException) {
+  static Expr negate(Expr e)
+  {
     ExprManagerScope ems(e);
     return negate(Node::fromExpr(e)).toExpr();
   }
@@ -211,7 +217,8 @@ public:
    * Simplify an OR, AND, or IMPLIES.  This function is the identity
    * for all other kinds.
    */
-  inline static Node simplify(TNode n) throw(AssertionException) {
+  inline static Node simplify(TNode n)
+  {
     switch(n.getKind()) {
     case kind::AND:
       return simplifyConflict(n);

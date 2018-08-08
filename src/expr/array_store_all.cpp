@@ -2,9 +2,9 @@
 /*! \file array_store_all.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Tim King, Morgan Deters, Paul Meng
+ **   Tim King, Morgan Deters
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -57,41 +57,46 @@ ArrayStoreAll::ArrayStoreAll(const ArrayStoreAll& other)
     : d_type(new ArrayType(other.getType())),
       d_expr(new Expr(other.getExpr())) {}
 
-ArrayStoreAll::~ArrayStoreAll() throw() {}
-
+ArrayStoreAll::~ArrayStoreAll() {}
 ArrayStoreAll& ArrayStoreAll::operator=(const ArrayStoreAll& other) {
   (*d_type) = other.getType();
   (*d_expr) = other.getExpr();
   return *this;
 }
 
-const ArrayType& ArrayStoreAll::getType() const throw() { return *d_type; }
+const ArrayType& ArrayStoreAll::getType() const { return *d_type; }
 
-const Expr& ArrayStoreAll::getExpr() const throw() { return *d_expr; }
+const Expr& ArrayStoreAll::getExpr() const { return *d_expr; }
 
-bool ArrayStoreAll::operator==(const ArrayStoreAll& asa) const throw() {
+bool ArrayStoreAll::operator==(const ArrayStoreAll& asa) const
+{
   return getType() == asa.getType() && getExpr() == asa.getExpr();
 }
 
-bool ArrayStoreAll::operator!=(const ArrayStoreAll& asa) const throw() {
+bool ArrayStoreAll::operator!=(const ArrayStoreAll& asa) const
+{
   return !(*this == asa);
 }
 
-bool ArrayStoreAll::operator<(const ArrayStoreAll& asa) const throw() {
+bool ArrayStoreAll::operator<(const ArrayStoreAll& asa) const
+{
   return (getType() < asa.getType()) ||
          (getType() == asa.getType() && getExpr() < asa.getExpr());
 }
 
-bool ArrayStoreAll::operator<=(const ArrayStoreAll& asa) const throw() {
+bool ArrayStoreAll::operator<=(const ArrayStoreAll& asa) const
+{
   return (getType() < asa.getType()) ||
          (getType() == asa.getType() && getExpr() <= asa.getExpr());
 }
 
-bool ArrayStoreAll::operator>(const ArrayStoreAll& asa) const throw() {
+bool ArrayStoreAll::operator>(const ArrayStoreAll& asa) const
+{
   return !(*this <= asa);
 }
 
-bool ArrayStoreAll::operator>=(const ArrayStoreAll& asa) const throw() {
+bool ArrayStoreAll::operator>=(const ArrayStoreAll& asa) const
+{
   return !(*this < asa);
 }
 

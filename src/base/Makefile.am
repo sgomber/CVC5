@@ -20,14 +20,15 @@ libbase_la_SOURCES = \
 	configuration_private.h \
 	cvc4_assert.cpp \
 	cvc4_assert.h \
+	cvc4_check.cpp \
+	cvc4_check.h \
 	exception.cpp \
 	exception.h \
 	listener.cpp \
 	listener.h \
 	modal_exception.h \
 	output.cpp \
-	output.h \
-	tls.h
+	output.h
 
 # listing {Debug,Trace}_tags too ensures that make doesn't auto-remove it
 # after building (if it does, we don't get the "cached" effect with

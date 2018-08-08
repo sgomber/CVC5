@@ -2,9 +2,9 @@
 /*! \file integer_gmp_imp.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Tim King, Morgan Deters, Liana Hadarean
+ **   Tim King, Liana Hadarean, Morgan Deters
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -293,6 +293,7 @@ public:
       }
     }
   }
+
   /**
    * Returns the quotient according to Boute's Euclidean definition.
    * See the documentation for euclidianQR.
@@ -390,6 +391,30 @@ public:
     mpz_lcm(result.get_mpz_t(), d_value.get_mpz_t(), y.d_value.get_mpz_t());
     return Integer(result);
   }
+
+  /**
+   * Compute addition of this Integer x + y modulo m.
+   */
+  Integer modAdd(const Integer& y, const Integer& m) const;
+
+  /**
+   * Compute multiplication of this Integer x * y modulo m.
+   */
+  Integer modMultiply(const Integer& y, const Integer& m) const;
+
+  /**
+   * Compute modular inverse x^-1 of this Integer x modulo m with m > 0.
+   * Returns a value x^-1 with 0 <= x^-1 < m such that x * x^-1 = 1 modulo m
+   * if such an inverse exists, and -1 otherwise.
+   *
+   * Such an inverse only exists if
+   *   - x is non-zero
+   *   - x and m are coprime, i.e., if gcd (x, m) = 1
+   *
+   * Note that if x and m are coprime, then x^-1 > 0 if m > 1 and x^-1 = 0
+   * if m = 1 (the zero ring).
+   */
+  Integer modInverse(const Integer& m) const;
 
   /**
    * All non-zero integers z, z.divide(0)

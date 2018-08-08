@@ -2,9 +2,9 @@
 /*! \file quantifiers_attributes.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Morgan Deters, Paul Meng, Andrew Reynolds
+ **   Andrew Reynolds
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -51,9 +51,31 @@ typedef expr::Attribute< QuantElimPartialAttributeId, bool > QuantElimPartialAtt
 struct SygusAttributeId {};
 typedef expr::Attribute< SygusAttributeId, bool > SygusAttribute;
 
+/**Attribute to give names to quantified formulas */
+struct QuantNameAttributeId
+{
+};
+typedef expr::Attribute<QuantNameAttributeId, bool> QuantNameAttribute;
+
 /** Attribute true for quantifiers that are synthesis conjectures */
 struct SynthesisAttributeId {};
 typedef expr::Attribute< SynthesisAttributeId, bool > SynthesisAttribute;
+
+struct InstLevelAttributeId
+{
+};
+typedef expr::Attribute<InstLevelAttributeId, uint64_t> InstLevelAttribute;
+
+/** Attribute for setting printing information for sygus variables
+ *
+ * For variable d of sygus datatype type, if
+ * d.getAttribute(SygusPrintProxyAttribute) = t, then printing d will print t.
+ */
+struct SygusPrintProxyAttributeId
+{
+};
+typedef expr::Attribute<SygusPrintProxyAttributeId, Node>
+    SygusPrintProxyAttribute;
 
 namespace quantifiers {
 
@@ -96,12 +118,23 @@ struct QAttributes
   /** the instantiation pattern list for this quantified formula (its 3rd child)
    */
   Node d_ipl;
+  /** the name of this quantified formula */
+  Node d_name;
   /** the quantifier id associated with this formula */
   Node d_qid_num;
   /** is this quantified formula a rewrite rule? */
-  bool isRewriteRule() { return !d_rr.isNull(); }
+  bool isRewriteRule() const { return !d_rr.isNull(); }
   /** is this quantified formula a function definition? */
-  bool isFunDef() { return !d_fundef_f.isNull(); }
+  bool isFunDef() const { return !d_fundef_f.isNull(); }
+  /**
+   * Is this a standard quantifier? A standard quantifier is one that we can
+   * perform destructive updates (variable elimination, miniscoping, etc).
+   *
+   * A quantified formula is not standard if it is sygus, one for which
+   * we are performing quantifier elimination, is a function definition, or
+   * has a name.
+   */
+  bool isStandard() const;
 };
 
 /** This class caches information about attributes of quantified formulas
@@ -174,7 +207,12 @@ public:
   /** get quant id num */
   Node getQuantIdNumNode( Node q );
 
-private:
+  /** set instantiation level attr */
+  static void setInstantiationLevelAttr(Node n, uint64_t level);
+  /** set instantiation level attr */
+  static void setInstantiationLevelAttr(Node n, Node qn, uint64_t level);
+
+ private:
   /** pointer to quantifiers engine */
   QuantifiersEngine * d_quantEngine;
   /** cache of attributes */

@@ -2,9 +2,9 @@
 /*! \file dump.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Morgan Deters, Tim King, Paul Meng
+ **   Morgan Deters, Tim King
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -34,24 +34,24 @@ class CVC4_PUBLIC CVC4dumpstream {
   CommandSequence* d_commands;
 #endif /* CVC4_PORTFOLIO */
 
-public:
-  CVC4dumpstream() throw()
+ public:
+  CVC4dumpstream()
 #if defined(CVC4_DUMPING) && !defined(CVC4_MUZZLE) && defined(CVC4_PORTFOLIO)
-    : d_os(NULL), d_commands(NULL)
+      : d_os(NULL), d_commands(NULL)
 #elif defined(CVC4_DUMPING) && !defined(CVC4_MUZZLE)
-    : d_os(NULL)
+      : d_os(NULL)
 #elif defined(CVC4_PORTFOLIO)
-    : d_commands(NULL)
+      : d_commands(NULL)
 #endif /* CVC4_PORTFOLIO */
   { }
 
-  CVC4dumpstream(std::ostream& os, CommandSequence& commands) throw()
+  CVC4dumpstream(std::ostream& os, CommandSequence& commands)
 #if defined(CVC4_DUMPING) && !defined(CVC4_MUZZLE) && defined(CVC4_PORTFOLIO)
-    : d_os(&os), d_commands(&commands)
+      : d_os(&os), d_commands(&commands)
 #elif defined(CVC4_DUMPING) && !defined(CVC4_MUZZLE)
-    : d_os(&os)
+      : d_os(&os)
 #elif defined(CVC4_PORTFOLIO)
-    : d_commands(&commands)
+      : d_commands(&commands)
 #endif /* CVC4_PORTFOLIO */
   { }
 

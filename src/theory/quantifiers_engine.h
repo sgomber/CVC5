@@ -2,9 +2,9 @@
 /*! \file quantifiers_engine.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Andrew Reynolds, Morgan Deters, Tim King
+ **   Andrew Reynolds, Morgan Deters, Haniel Barbosa
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -22,8 +22,8 @@
 #include <memory>
 #include <unordered_map>
 
-#include "context/cdchunk_list.h"
 #include "context/cdhashset.h"
+#include "context/cdlist.h"
 #include "expr/attribute.h"
 #include "options/quantifiers_modes.h"
 #include "theory/quantifiers/inst_match.h"
@@ -40,14 +40,6 @@ namespace theory {
 
 class QuantifiersEngine;
 
-class InstantiationNotify {
-public:
-  InstantiationNotify(){}
-  virtual ~InstantiationNotify() {}
-  virtual bool notifyInstantiation( unsigned quant_e, Node q, Node lem, std::vector< Node >& terms, Node body ) = 0;
-  virtual void filterInstantiations() = 0;
-};
-
 namespace quantifiers {
   //TODO: organize this more/review this, github issue #1163
   //TODO: include these instead of doing forward declarations? #1307
@@ -55,6 +47,7 @@ namespace quantifiers {
   class TermDb;
   class TermDbSygus;
   class TermUtil;
+  class Instantiate;
   class Skolemize;
   class TermEnumeration;
   class FirstOrderModel;
@@ -77,8 +70,6 @@ namespace quantifiers {
   class CegInstantiation;
   class LtePartialInst;
   class AlphaEquivalence;
-  class FunDefEngine;
-  class QuantEqualityEngine;
   class InstStrategyEnum;
   class InstStrategyCbqi;
   class InstStrategyCegqi;
@@ -93,6 +84,7 @@ namespace inst {
 
 
 class QuantifiersEngine {
+  // TODO: remove these github issue #1163
   friend class quantifiers::InstantiationEngine;
   friend class quantifiers::InstStrategyCbqi;
   friend class quantifiers::InstStrategyCegqi;
@@ -101,8 +93,8 @@ class QuantifiersEngine {
   friend class quantifiers::QuantConflictFind;
   friend class inst::InstMatch;
   typedef context::CDHashMap< Node, bool, NodeHashFunction > BoolMap;
-  typedef context::CDChunkList<Node> NodeList;
-  typedef context::CDChunkList<bool> BoolList;
+  typedef context::CDList<Node> NodeList;
+  typedef context::CDList<bool> BoolList;
   typedef context::CDHashSet<Node, NodeHashFunction> NodeSet;
 private:
   /** reference to theory engine object */
@@ -111,8 +103,6 @@ private:
   std::vector< QuantifiersUtil* > d_util;
   /** vector of modules for quantifiers */
   std::vector< QuantifiersModule* > d_modules;
-  /** instantiation notify */
-  std::vector< InstantiationNotify* > d_inst_notify;
   /** equality query class */
   quantifiers::EqualityQueryQuantifiersEngine* d_eq_query;
   /** equality inference class */
@@ -137,12 +127,12 @@ private:
   quantifiers::TermUtil* d_term_util;
   /** quantifiers attributes */
   std::unique_ptr<quantifiers::QuantAttributes> d_quant_attr;
+  /** instantiate utility */
+  std::unique_ptr<quantifiers::Instantiate> d_instantiate;
   /** skolemize utility */
   std::unique_ptr<quantifiers::Skolemize> d_skolemize;
   /** term enumeration utility */
   std::unique_ptr<quantifiers::TermEnumeration> d_term_enum;
-
- private:
   /** instantiation engine */
   quantifiers::InstantiationEngine* d_inst_engine;
   /** model engine */
@@ -159,10 +149,6 @@ private:
   quantifiers::CegInstantiation * d_ceg_inst;
   /** lte partial instantiation */
   quantifiers::LtePartialInst * d_lte_part_inst;
-  /** function definitions engine */
-  quantifiers::FunDefEngine * d_fun_def_engine;
-  /** quantifiers equality engine */
-  quantifiers::QuantEqualityEngine * d_uee;
   /** full saturation */
   quantifiers::InstStrategyEnum* d_fs;
   /** counterexample-based quantifier instantiation */
@@ -174,28 +160,21 @@ private:
   /** quantifiers instantiation propagtor */
   quantifiers::InstPropagator * d_inst_prop;
 
- public:  // effort levels (TODO : make an enum and use everywhere #1293)
-  enum {
-    QEFFORT_CONFLICT,
-    QEFFORT_STANDARD,
-    QEFFORT_MODEL,
-    QEFFORT_LAST_CALL,
-    //none
-    QEFFORT_NONE,
-  };
-private:  //this information is reset during check
-  /** current effort level */
-  unsigned d_curr_effort_level;
+ private:  //this information is reset during check
+    /** current effort level */
+  QuantifiersModule::QEffort d_curr_effort_level;
   /** are we in conflict */
   bool d_conflict;
-  context::CDO< bool > d_conflict_c;
+  context::CDO<bool> d_conflict_c;
   /** has added lemma this round */
   bool d_hasAddedLemma;
   /** whether to use model equality engine */
   bool d_useModelEe;
-private:
+ private:
   /** list of all quantifiers seen */
   std::map< Node, bool > d_quants;
+  /** quantifiers pre-registered */
+  NodeSet d_quants_prereg;
   /** quantifiers reduced */
   BoolMap d_quants_red;
   std::map< Node, Node > d_quants_red_lem;
@@ -206,19 +185,10 @@ private:
   std::vector< Node > d_lemmas_waiting;
   /** phase requirements waiting */
   std::map< Node, bool > d_phase_req_waiting;
-  /** list of all instantiations produced for each quantifier */
-  std::map< Node, inst::InstMatchTrie > d_inst_match_trie;
-  std::map< Node, inst::CDInstMatchTrie* > d_c_inst_match_trie;
-  /** recorded instantiations */
-  std::vector< std::pair< Node, std::vector< Node > > > d_recorded_inst;
   /** all triggers will be stored in this trie */
   inst::TriggerTrie* d_tr_trie;
   /** extended model object */
   quantifiers::FirstOrderModel* d_model;
-  /** statistics for debugging */
-  std::map< Node, int > d_total_inst_debug;
-  std::map< Node, int > d_temp_inst_debug;
-  int d_total_inst_count_debug;
   /** inst round counters TODO: make context-dependent? */
   context::CDO< int > d_ierCounter_c;
   int d_ierCounter;
@@ -250,6 +220,8 @@ public:
   OutputChannel& getOutputChannel();
   /** get default valuation for the quantifiers engine */
   Valuation& getValuation();
+  /** get the logic info for the quantifiers engine */
+  const LogicInfo& getLogicInfo() const;
   /** get relevant domain */
   quantifiers::RelevantDomain* getRelevantDomain() { return d_rel_dom; }
   /** get the BV inverter utility */
@@ -277,10 +249,6 @@ public:
   quantifiers::CegInstantiation * getCegInstantiation() { return d_ceg_inst; }
   /** local theory ext partial inst */
   quantifiers::LtePartialInst * getLtePartialInst() { return d_lte_part_inst; }
-  /** function definition engine */
-  quantifiers::FunDefEngine * getFunDefEngine() { return d_fun_def_engine; }
-  /** quantifiers equality engine */
-  quantifiers::QuantEqualityEngine * getQuantEqualityEngine() { return d_uee; }
   /** get full saturation */
   quantifiers::InstStrategyEnum* getInstStrategyEnum() { return d_fs; }
   /** get inst strategy cbqi */
@@ -303,8 +271,6 @@ public:
   /** is finite bound */
   bool isFiniteBound( Node q, Node v );
 public:
-  /** initialize */
-  void finishInit();
   /** presolve */
   void presolve();
   /** notify preprocessed assertion */
@@ -313,54 +279,39 @@ public:
   void check( Theory::Effort e );
   /** notify that theories were combined */
   void notifyCombineTheories();
-  /** register quantifier */
-  bool registerQuantifier( Node f );
+  /** preRegister quantifier
+   *
+   * This function is called after registerQuantifier for quantified formulas
+   * that are pre-registered to the quantifiers theory.
+   */
+  void preRegisterQuantifier(Node q);
   /** register quantifier */
   void registerPattern( std::vector<Node> & pattern);
   /** assert universal quantifier */
   void assertQuantifier( Node q, bool pol );
-  /** propagate */
-  void propagate( Theory::Effort level );
   /** get next decision request */
   Node getNextDecisionRequest( unsigned& priority );
 private:
-  /** reduceQuantifier, return true if reduced */
-  bool reduceQuantifier( Node q );
-  /** compute term vector */
-  void computeTermVector( Node f, InstMatch& m, std::vector< Node >& vars, std::vector< Node >& terms );
-  /** record instantiation, return true if it was non-duplicate */
-  bool recordInstantiationInternal( Node q, std::vector< Node >& terms, bool modEq = false, bool addedLem = true );
-  /** remove instantiation */
-  bool removeInstantiationInternal( Node q, std::vector< Node >& terms );
-  /** set instantiation level attr */
-  static void setInstantiationLevelAttr( Node n, Node qn, uint64_t level );
-  /** flush lemmas */
-  void flushLemmas();
+ /** (context-indepentent) register quantifier internal
+  *
+  * This is called when a quantified formula q is pre-registered to the
+  * quantifiers theory, and updates the modules in this class with
+  * context-independent information about how to handle q. This includes basic
+  * information such as which module owns q.
+  */
+ void registerQuantifierInternal(Node q);
+ /** reduceQuantifier, return true if reduced */
+ bool reduceQuantifier(Node q);
+ /** flush lemmas */
+ void flushLemmas();
+
 public:
-  /** get instantiation */
-  Node getInstantiation( Node q, std::vector< Node >& vars, std::vector< Node >& terms, bool doVts = false );
-  /** get instantiation */
-  Node getInstantiation( Node q, InstMatch& m, bool doVts = false );
-  /** get instantiation */
-  Node getInstantiation( Node q, std::vector< Node >& terms, bool doVts = false );
-  /** do substitution */
-  Node getSubstitute( Node n, std::vector< Node >& terms, std::map< Node, Node >& visited );
   /** add lemma lem */
   bool addLemma( Node lem, bool doCache = true, bool doRewrite = true );
   /** remove pending lemma */
   bool removeLemma( Node lem );
   /** add require phase */
   void addRequirePhase( Node lit, bool req );
-  /** do instantiation specified by m */
-  bool addInstantiation( Node q, InstMatch& m, bool mkRep = false, bool modEq = false, bool doVts = false );
-  /** add instantiation */
-  bool addInstantiation( Node q, std::vector< Node >& terms, bool mkRep = false, bool modEq = false, bool doVts = false );
-  /** remove pending instantiation */
-  bool removeInstantiation( Node q, Node lem, std::vector< Node >& terms );
-  /** split on node n */
-  bool addSplit( Node n, bool reqPhase = false, bool reqPhasePol = true );
-  /** add split equality */
-  bool addSplitEquality( Node n1, Node n2, bool reqPhase = false, bool reqPhasePol = true );
   /** add EPR axiom */
   bool addEPRAxiom( TypeNode tn );
   /** mark relevant quantified formula, this will indicate it should be checked before the others */
@@ -371,14 +322,14 @@ public:
   bool inConflict() { return d_conflict; }
   /** set conflict */
   void setConflict();
+  /** get current q effort */
+  QuantifiersModule::QEffort getCurrentQEffort() { return d_curr_effort_level; }
   /** get number of waiting lemmas */
   unsigned getNumLemmasWaiting() { return d_lemmas_waiting.size(); }
   /** get needs check */
   bool getInstWhenNeedsCheck( Theory::Effort e );
   /** get user pat mode */
   quantifiers::UserPatMode getInstUserPatMode();
-  /** set instantiation level attr */
-  static void setInstantiationLevelAttr( Node n, uint64_t level );
 public:
   /** get model */
   quantifiers::FirstOrderModel* getModel() { return d_model; }
@@ -392,6 +343,8 @@ public:
   quantifiers::QuantAttributes* getQuantAttributes() {
     return d_quant_attr.get();
   }
+  /** get instantiate utility */
+  quantifiers::Instantiate* getInstantiate() { return d_instantiate.get(); }
   /** get skolemize utility */
   quantifiers::Skolemize* getSkolemize() { return d_skolemize.get(); }
   /** get term enumeration utility */
@@ -412,42 +365,53 @@ public:
   eq::EqualityEngine* getMasterEqualityEngine();
   /** get the active equality engine */
   eq::EqualityEngine* getActiveEqualityEngine();
+  /** use model equality engine */
+  bool usingModelEqualityEngine() const { return d_useModelEe; }
   /** debug print equality engine */
   void debugPrintEqualityEngine( const char * c );
   /** get internal representative */
   Node getInternalRepresentative( Node a, Node q, int index );
-  /** get term for type
-   *
-   * This returns an arbitrary term for type tn.
-   * This term is chosen heuristically to be the best
-   * term for instantiation. Currently, this
-   * heuristic enumerates the first term of the
-   * type if the type is closed enumerable, otherwise
-   * an existing ground term from the term database if
-   * one exists, or otherwise a fresh variable.
-   */
-  Node getTermForType(TypeNode tn);
 
  public:
+  //----------user interface for instantiations (see quantifiers/instantiate.h)
   /** print instantiations */
-  void printInstantiations( std::ostream& out );
+  void printInstantiations(std::ostream& out);
   /** print solution for synthesis conjectures */
-  void printSynthSolution( std::ostream& out );
+  void printSynthSolution(std::ostream& out);
   /** get list of quantified formulas that were instantiated */
-  void getInstantiatedQuantifiedFormulas( std::vector< Node >& qs );
+  void getInstantiatedQuantifiedFormulas(std::vector<Node>& qs);
   /** get instantiations */
-  void getInstantiations( Node q, std::vector< Node >& insts );
-  void getInstantiations( std::map< Node, std::vector< Node > >& insts );
+  void getInstantiations(Node q, std::vector<Node>& insts);
+  void getInstantiations(std::map<Node, std::vector<Node> >& insts);
   /** get instantiation term vectors */
-  void getInstantiationTermVectors( Node q, std::vector< std::vector< Node > >& tvecs );
-  void getInstantiationTermVectors( std::map< Node, std::vector< std::vector< Node > > >& insts );
+  void getInstantiationTermVectors(Node q,
+                                   std::vector<std::vector<Node> >& tvecs);
+  void getInstantiationTermVectors(
+      std::map<Node, std::vector<std::vector<Node> > >& insts);
   /** get instantiated conjunction */
-  Node getInstantiatedConjunction( Node q );
+  Node getInstantiatedConjunction(Node q);
   /** get unsat core lemmas */
-  bool getUnsatCoreLemmas( std::vector< Node >& active_lemmas );
-  bool getUnsatCoreLemmas( std::vector< Node >& active_lemmas, std::map< Node, Node >& weak_imp );
-  /** get inst for lemmas */
-  void getExplanationForInstLemmas( std::vector< Node >& lems, std::map< Node, Node >& quant, std::map< Node, std::vector< Node > >& tvec ); 
+  bool getUnsatCoreLemmas(std::vector<Node>& active_lemmas);
+  bool getUnsatCoreLemmas(std::vector<Node>& active_lemmas,
+                          std::map<Node, Node>& weak_imp);
+  /** get explanation for instantiation lemmas */
+  void getExplanationForInstLemmas(const std::vector<Node>& lems,
+                                   std::map<Node, Node>& quant,
+                                   std::map<Node, std::vector<Node> >& tvec);
+
+  /** get synth solutions
+   *
+   * This function adds entries to sol_map that map functions-to-synthesize with
+   * their solutions, for all active conjectures. This should be called
+   * immediately after the solver answers unsat for sygus input.
+   *
+   * For details on what is added to sol_map, see
+   * CegConjecture::getSynthSolutions.
+   */
+  void getSynthSolutions(std::map<Node, Node>& sol_map);
+
+  //----------end user interface for instantiations
+
   /** statistics class */
   class Statistics {
   public:
@@ -457,11 +421,6 @@ public:
     IntStat d_num_quant;
     IntStat d_instantiation_rounds;
     IntStat d_instantiation_rounds_lc;
-    IntStat d_instantiations;
-    IntStat d_inst_duplicate;
-    IntStat d_inst_duplicate_eq;
-    IntStat d_inst_duplicate_ent;
-    IntStat d_inst_duplicate_model_true;
     IntStat d_triggers;
     IntStat d_simple_triggers;
     IntStat d_multi_triggers;

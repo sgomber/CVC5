@@ -2,9 +2,9 @@
 /*! \file array_proof.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Guy Katz, Liana Hadarean, Tim King
+ **   Liana Hadarean, Guy Katz, Tim King
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -38,15 +38,20 @@ class ProofArray : public Proof {
 
   void registerSkolem(Node equality, Node skolem);
 
-  void toStream(std::ostream& out);
-  void toStream(std::ostream& out, const ProofLetMap& map);
- private:
-  void toStreamLFSC(std::ostream& out, TheoryProof* tp,
-                    const theory::eq::EqProof& pf, const ProofLetMap& map);
+  void toStream(std::ostream& out) const override;
+  void toStream(std::ostream& out, const ProofLetMap& map) const override;
 
-  Node toStreamRecLFSC(std::ostream& out, TheoryProof* tp,
-                       const theory::eq::EqProof& pf, unsigned tb,
-                       const ProofLetMap& map);
+ private:
+  void toStreamLFSC(std::ostream& out,
+                    TheoryProof* tp,
+                    const theory::eq::EqProof& pf,
+                    const ProofLetMap& map) const;
+
+  Node toStreamRecLFSC(std::ostream& out,
+                       TheoryProof* tp,
+                       const theory::eq::EqProof& pf,
+                       unsigned tb,
+                       const ProofLetMap& map) const;
 
   // It is simply an equality engine proof.
   std::shared_ptr<theory::eq::EqProof> d_proof;
@@ -74,13 +79,14 @@ protected:
   ExprSet d_declarations; // all the variable/function declarations
   ExprSet d_skolemDeclarations; // all the skolem variable declarations
   std::map<Expr, std::string> d_skolemToLiteral;
+  theory::TheoryId getTheoryId() override;
 
-public:
+ public:
   ArrayProof(theory::arrays::TheoryArrays* arrays, TheoryProofEngine* proofEngine);
 
   std::string skolemToLiteral(Expr skolem);
 
-  virtual void registerTerm(Expr term);
+  void registerTerm(Expr term) override;
 };
 
 class LFSCArrayProof : public ArrayProof {
@@ -89,15 +95,23 @@ public:
     : ArrayProof(arrays, proofEngine)
   {}
 
-  virtual void printOwnedTerm(Expr term, std::ostream& os, const ProofLetMap& map);
-  virtual void printOwnedSort(Type type, std::ostream& os);
-  virtual void printTheoryLemmaProof(std::vector<Expr>& lemma, std::ostream& os, std::ostream& paren, const ProofLetMap& map);
-  virtual void printSortDeclarations(std::ostream& os, std::ostream& paren);
-  virtual void printTermDeclarations(std::ostream& os, std::ostream& paren);
-  virtual void printDeferredDeclarations(std::ostream& os, std::ostream& paren);
-  virtual void printAliasingDeclarations(std::ostream& os, std::ostream& paren, const ProofLetMap &globalLetMap);
+  void printOwnedTerm(Expr term,
+                      std::ostream& os,
+                      const ProofLetMap& map) override;
+  void printOwnedSort(Type type, std::ostream& os) override;
+  void printTheoryLemmaProof(std::vector<Expr>& lemma,
+                             std::ostream& os,
+                             std::ostream& paren,
+                             const ProofLetMap& map) override;
+  void printSortDeclarations(std::ostream& os, std::ostream& paren) override;
+  void printTermDeclarations(std::ostream& os, std::ostream& paren) override;
+  void printDeferredDeclarations(std::ostream& os,
+                                 std::ostream& paren) override;
+  void printAliasingDeclarations(std::ostream& os,
+                                 std::ostream& paren,
+                                 const ProofLetMap& globalLetMap) override;
 
-  bool printsAsBool(const Node &n);
+  bool printsAsBool(const Node& n) override;
 };
 
 

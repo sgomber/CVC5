@@ -2,9 +2,9 @@
 /*! \file quantifiers_attributes.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Andrew Reynolds, Morgan Deters, Paul Meng
+ **   Andrew Reynolds, Paul Meng, Tim King
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -14,12 +14,12 @@
 
 #include "theory/quantifiers/quantifiers_attributes.h"
 
-#include "theory/quantifiers_engine.h"
 #include "options/quantifiers_options.h"
-#include "theory/quantifiers/ce_guided_instantiation.h"
-#include "theory/quantifiers/fun_def_engine.h"
+#include "theory/arith/arith_msum.h"
 #include "theory/quantifiers/rewrite_engine.h"
+#include "theory/quantifiers/sygus/ce_guided_instantiation.h"
 #include "theory/quantifiers/term_util.h"
+#include "theory/quantifiers_engine.h"
 
 using namespace std;
 using namespace CVC4::kind;
@@ -28,6 +28,11 @@ using namespace CVC4::context;
 namespace CVC4 {
 namespace theory {
 namespace quantifiers {
+
+bool QAttributes::isStandard() const
+{
+  return !d_sygus && !d_quant_elim && !isFunDef() && d_name.isNull();
+}
 
 QuantAttributes::QuantAttributes( QuantifiersEngine * qe ) : 
 d_quantEngine(qe) {
@@ -52,6 +57,12 @@ void QuantAttributes::setUserAttribute( const std::string& attr, Node n, std::ve
     Trace("quant-attr-debug") << "Set sygus " << n << std::endl;
     SygusAttribute ca;
     n.setAttribute( ca, true );
+  }
+  else if (attr == "quant-name")
+  {
+    Trace("quant-attr-debug") << "Set quant-name " << n << std::endl;
+    QuantNameAttribute qna;
+    n.setAttribute(qna, true);
   } else if (attr == "sygus-synth-grammar") {
     Assert( node_values.size()==1 );
     Trace("quant-attr-debug") << "Set sygus synth grammar " << n << " to "
@@ -146,6 +157,21 @@ Node QuantAttributes::getFunDefBody( Node q ) {
       }else if( q[1][1]==h ){
         return q[1][0];
       }
+      else if (q[1][0].getType().isReal())
+      {
+        // solve for h in the equality
+        std::map<Node, Node> msum;
+        if (ArithMSum::getMonomialSum(q[1], msum))
+        {
+          Node veq;
+          int res = ArithMSum::isolate(h, msum, veq, EQUAL);
+          if (res != 0)
+          {
+            Assert(veq.getKind() == EQUAL);
+            return res == 1 ? veq[0] : veq[1];
+          }
+        }
+      }
     }else{
       Node atom = q[1].getKind()==NOT ? q[1][0] : q[1];
       bool pol = q[1].getKind()!=NOT;
@@ -205,7 +231,6 @@ void QuantAttributes::computeAttributes( Node q ) {
       AlwaysAssert(false);
     }
     d_fun_defs[f] = true;
-    d_quantEngine->setOwner( q, d_quantEngine->getFunDefEngine(), 2 );
   }
   if( d_qattr[q].d_sygus ){
     if( d_quantEngine->getCegInstantiation()==NULL ){
@@ -250,6 +275,12 @@ void QuantAttributes::computeQuantAttributes( Node q, QAttributes& qa ){
           //Assert( q[1][0].getKind()==FORALL );
           Trace("quant-attr") << "Attribute : sygus : " << q << std::endl;
           qa.d_sygus = true;
+        }
+        if (avar.getAttribute(QuantNameAttribute()))
+        {
+          Trace("quant-attr") << "Attribute : quantifier name : " << avar
+                              << " for " << q << std::endl;
+          qa.d_name = avar;
         }
         if( avar.getAttribute(SynthesisAttribute()) ){
           Trace("quant-attr") << "Attribute : synthesis : " << q << std::endl;
@@ -385,6 +416,44 @@ Node QuantAttributes::getQuantIdNumNode( Node q ) {
     return Node::null();
   }else{
     return it->second.d_qid_num;
+  }
+}
+
+void QuantAttributes::setInstantiationLevelAttr(Node n, Node qn, uint64_t level)
+{
+  Trace("inst-level-debug2") << "IL : " << n << " " << qn << " " << level
+                             << std::endl;
+  // if not from the vector of terms we instantiatied
+  if (qn.getKind() != BOUND_VARIABLE && n != qn)
+  {
+    // if this is a new term, without an instantiation level
+    if (!n.hasAttribute(InstLevelAttribute()))
+    {
+      InstLevelAttribute ila;
+      n.setAttribute(ila, level);
+      Trace("inst-level-debug") << "Set instantiation level " << n << " to "
+                                << level << std::endl;
+      Assert(n.getNumChildren() == qn.getNumChildren());
+      for (unsigned i = 0; i < n.getNumChildren(); i++)
+      {
+        setInstantiationLevelAttr(n[i], qn[i], level);
+      }
+    }
+  }
+}
+
+void QuantAttributes::setInstantiationLevelAttr(Node n, uint64_t level)
+{
+  if (!n.hasAttribute(InstLevelAttribute()))
+  {
+    InstLevelAttribute ila;
+    n.setAttribute(ila, level);
+    Trace("inst-level-debug") << "Set instantiation level " << n << " to "
+                              << level << std::endl;
+    for (unsigned i = 0; i < n.getNumChildren(); i++)
+    {
+      setInstantiationLevelAttr(n[i], level);
+    }
   }
 }
 

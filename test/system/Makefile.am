@@ -3,9 +3,11 @@ TEST_EXTENSIONS = .class
 CPLUSPLUS_TESTS = \
 	boilerplate \
 	ouroborous \
+	reset_assertions \
 	two_smt_engines \
 	smt2_compliance \
-	statistics
+	statistics \
+	sep_log_api
 
 if CVC4_BUILD_LIBCOMPAT
 #CPLUSPLUS_TESTS += \

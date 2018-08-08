@@ -2,9 +2,9 @@
 /*! \file pickler.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Morgan Deters, Paul Meng, Kshitij Bansal
+ **   Morgan Deters, Tim King, Clark Barrett
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -64,14 +64,8 @@ class CVC4_PUBLIC Pickler {
   friend class PicklerPrivate;
 
 protected:
-  virtual uint64_t variableToMap(uint64_t x) const
-    throw(PicklingException) {
-    return x;
-  }
-  virtual uint64_t variableFromMap(uint64_t x) const {
-    return x;
-  }
-
+ virtual uint64_t variableToMap(uint64_t x) const { return x; }
+ virtual uint64_t variableFromMap(uint64_t x) const { return x; }
 public:
   Pickler(ExprManager* em);
   virtual ~Pickler();
@@ -85,7 +79,7 @@ public:
    *
    * @return the pickle, which should be dispose()'d when you're done with it
    */
-  void toPickle(Expr e, Pickle& p) throw(PicklingException);
+  void toPickle(Expr e, Pickle& p);
 
   /**
    * Constructs a node from a Pickle.
@@ -111,21 +105,21 @@ public:
     d_fromMap(from) {
   }
 
-  virtual ~MapPickler() throw() {}
-
 protected:
-
-  virtual uint64_t variableToMap(uint64_t x) const
-    throw(PicklingException) {
-    VarMap::const_iterator i = d_toMap.find(x);
-    if(i != d_toMap.end()) {
-      return i->second;
-    } else {
-      throw PicklingException();
-    }
+ uint64_t variableToMap(uint64_t x) const override
+ {
+   VarMap::const_iterator i = d_toMap.find(x);
+   if (i != d_toMap.end())
+   {
+     return i->second;
+   }
+   else
+   {
+     throw PicklingException();
+   }
   }
 
-  virtual uint64_t variableFromMap(uint64_t x) const; 
+  uint64_t variableFromMap(uint64_t x) const override;
 };/* class MapPickler */
 
 }/* CVC4::expr::pickle namespace */

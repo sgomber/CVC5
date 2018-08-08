@@ -2,9 +2,9 @@
 /*! \file sat_solver_factory.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Dejan Jovanovic, Tim King, Liana Hadarean
+ **   Mathias Preiner, Dejan Jovanovic, Liana Hadarean
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -16,7 +16,8 @@
 
 #include "cvc4_private.h"
 
-#pragma once
+#ifndef __CVC4__PROP__SAT_SOLVER_FACTORY_H
+#define __CVC4__PROP__SAT_SOLVER_FACTORY_H
 
 #include <string>
 #include <vector>
@@ -28,17 +29,25 @@
 namespace CVC4 {
 namespace prop {
 
-class SatSolverFactory {
-public:
-
+class SatSolverFactory
+{
+ public:
   static BVSatSolverInterface* createMinisat(context::Context* mainSatContext,
                                              StatisticsRegistry* registry,
                                              const std::string& name = "");
-  static DPLLSatSolverInterface* createDPLLMinisat(StatisticsRegistry* registry);
+
+  static DPLLSatSolverInterface* createDPLLMinisat(
+      StatisticsRegistry* registry);
+
   static SatSolver* createCryptoMinisat(StatisticsRegistry* registry,
                                         const std::string& name = "");
 
-};/* class SatSolverFactory */
+  static SatSolver* createCadical(StatisticsRegistry* registry,
+                                  const std::string& name = "");
 
-}/* CVC4::prop namespace */
-}/* CVC4 namespace */
+}; /* class SatSolverFactory */
+
+}  // namespace prop
+}  // namespace CVC4
+
+#endif  // __CVC4__PROP__SAT_SOLVER_FACTORY_H

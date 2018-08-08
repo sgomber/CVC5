@@ -2,9 +2,9 @@
 /*! \file smt2_input.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Christopher L. Conway, Morgan Deters, Paul Meng
+ **   Christopher L. Conway, Tim King, Andres Noetzli
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -44,45 +44,31 @@ class Smt2Input : public AntlrInput {
   /** The ANTLR3 SMT2 parser for the input. */
   pSmt2Parser d_pSmt2Parser;
 
-  /** Which (variant of the) input language we're using */
-  InputLanguage d_lang;
-
   /**
    * Initialize the class. Called from the constructors once the input
    * stream is initialized.
    */
   void init();
 
-public:
-
+ public:
   /**
    * Create an input.
    *
    * @param inputStream the input stream to use
    */
-  Smt2Input(AntlrInputStream& inputStream,
-            InputLanguage lang = language::input::LANG_SMTLIB_V2_5);
+  Smt2Input(AntlrInputStream& inputStream);
 
   /** Destructor. Frees the lexer and the parser. */
   virtual ~Smt2Input();
 
-  /** Get the language that this Input is reading. */
-  InputLanguage getLanguage() const throw() {
-    return d_lang;
-  }
-
-  /** Set the language that this Input is reading. */
-  void setLanguage(InputLanguage);
-
-protected:
-
+ protected:
   /**
    * Parse a command from the input. Returns <code>NULL</code> if
    * there is no command there to parse.
    *
    * @throws ParserException if an error is encountered during parsing.
    */
-  Command* parseCommand();
+  Command* parseCommand() override;
 
   /**
    * Parse an expression from the input. Returns a null
@@ -90,7 +76,7 @@ protected:
    *
    * @throws ParserException if an error is encountered during parsing.
    */
-  Expr parseExpr();
+  Expr parseExpr() override;
 
 };/* class Smt2Input */
 

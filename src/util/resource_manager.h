@@ -4,7 +4,7 @@
  ** Top contributors (to current version):
  **   Liana Hadarean, Tim King, Morgan Deters
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -34,28 +34,17 @@ namespace CVC4 {
  * the PropEngine when the budget expires.
  */
 class CVC4_PUBLIC Timer {
-
-  uint64_t d_ms;
-  timeval d_wall_limit;
-  clock_t d_cpu_start_time;
-  clock_t d_cpu_limit;
-
-  bool d_wall_time;
-
-  /** Return the milliseconds elapsed since last set() cpu time. */
-  uint64_t elapsedCPU() const;
-  /** Return the milliseconds elapsed since last set() wall time. */
-  uint64_t elapsedWall() const;
-
-public:
-
+ public:
   /** Construct a Timer. */
   Timer()
-    : d_ms(0)
-    , d_cpu_start_time(0)
-    , d_cpu_limit(0)
-    , d_wall_time(true)
-  {}
+      : d_ms(0),
+        d_cpu_start_time(0),
+        d_cpu_limit(0),
+        d_wall_time(true)
+  {
+    d_wall_limit.tv_sec = 0;
+    d_wall_limit.tv_usec = 0;
+  }
 
   /** Is the timer currently active? */
   bool on() const {
@@ -69,6 +58,18 @@ public:
   uint64_t elapsed() const;
   bool expired() const;
 
+ private:
+
+  /** Return the milliseconds elapsed since last set() cpu time. */
+  uint64_t elapsedCPU() const;
+  /** Return the milliseconds elapsed since last set() wall time. */
+  uint64_t elapsedWall() const;
+
+  uint64_t d_ms;
+  clock_t d_cpu_start_time;
+  clock_t d_cpu_limit;
+  bool d_wall_time;
+  timeval d_wall_limit;
 };/* class Timer */
 
 
@@ -91,11 +92,11 @@ class CVC4_PUBLIC ResourceManager {
   /** The amount of resource used. */
   uint64_t d_cumulativeResourceUsed;
 
-  /** The ammount of resource used during this call. */
+  /** The amount of resource used during this call. */
   uint64_t d_thisCallResourceUsed;
 
   /**
-   * The ammount of resource budget for this call (min between per call
+   * The amount of resource budget for this call (min between per call
    * budget and left-over cumulative budget.
    */
   uint64_t d_thisCallTimeBudget;
@@ -119,13 +120,13 @@ class CVC4_PUBLIC ResourceManager {
    * ResourceManagers cannot be copied as they are given an explicit
    * list of Listeners to respond to.
    */
-  ResourceManager(const ResourceManager&) CVC4_UNDEFINED;
+  ResourceManager(const ResourceManager&) = delete;
 
   /**
    * ResourceManagers cannot be assigned as they are given an explicit
    * list of Listeners to respond to.
    */
-  ResourceManager& operator=(const ResourceManager&) CVC4_UNDEFINED;
+  ResourceManager& operator=(const ResourceManager&) = delete;
 
 public:
 
@@ -151,8 +152,8 @@ public:
   uint64_t getResourceBudgetForThisCall() {
     return d_thisCallResourceBudget;
   }
-
-  void spendResource(unsigned ammount) throw(UnsafeInterruptException);
+  // Throws an UnsafeInterruptException if there are no remaining resources.
+  void spendResource(unsigned amount);
 
   void setHardLimit(bool value);
   void setResourceLimit(uint64_t units, bool cumulative = false);

@@ -2,9 +2,9 @@
 /*! \file node_manager_listeners.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Tim King, Paul Meng
+ **   Tim King, Mathias Preiner
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -28,7 +28,8 @@ namespace expr {
 class TlimitListener : public Listener {
  public:
   TlimitListener(ResourceManager* rm) : d_rm(rm) {}
-  virtual void notify();
+  void notify() override;
+
  private:
   ResourceManager* d_rm;
 };
@@ -36,7 +37,8 @@ class TlimitListener : public Listener {
 class TlimitPerListener : public Listener {
  public:
   TlimitPerListener(ResourceManager* rm) : d_rm(rm) {}
-  virtual void notify();
+  void notify() override;
+
  private:
   ResourceManager* d_rm;
 };
@@ -44,7 +46,8 @@ class TlimitPerListener : public Listener {
 class RlimitListener : public Listener {
  public:
   RlimitListener(ResourceManager* rm) : d_rm(rm) {}
-  virtual void notify();
+  void notify() override;
+
  private:
   ResourceManager* d_rm;
 };
@@ -52,7 +55,8 @@ class RlimitListener : public Listener {
 class RlimitPerListener : public Listener {
  public:
   RlimitPerListener(ResourceManager* rm) : d_rm(rm) {}
-  virtual void notify();
+  void notify() override;
+
  private:
   ResourceManager* d_rm;
 };

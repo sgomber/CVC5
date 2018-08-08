@@ -2,9 +2,9 @@
 /*! \file bv_quick_check.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Liana Hadarean, Paul Meng, Morgan Deters
+ **   Liana Hadarean, Morgan Deters, Tim King
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -97,7 +97,7 @@ public:
    * @return 
    */
   uint64_t computeAtomWeight(TNode atom, NodeSet& seen);
-  void collectModelInfo(theory::TheoryModel* model, bool fullModel); 
+  bool collectModelInfo(theory::TheoryModel* model, bool fullModel);
 
   typedef std::unordered_set<TNode, TNodeHashFunction>::const_iterator vars_iterator;
   vars_iterator beginVars(); 
@@ -117,7 +117,7 @@ class QuickXPlain {
     IntStat d_numConflictsMinimized;
     IntStat d_finalPeriod;
     AverageStat d_avgMinimizationRatio;
-    Statistics(const std::string&);
+    Statistics(const std::string& name);
     ~Statistics();
   };
   BVQuickCheck* d_solver;

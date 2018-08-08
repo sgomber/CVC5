@@ -2,9 +2,9 @@
 /*! \file node.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Morgan Deters, Tim King, Dejan Jovanovic
+ **   Morgan Deters, Andrew Reynolds, Tim King
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -27,32 +27,47 @@ using namespace std;
 namespace CVC4 {
 
 TypeCheckingExceptionPrivate::TypeCheckingExceptionPrivate(TNode node,
-                                                           std::string message) throw() :
-  Exception(message),
-  d_node(new Node(node)) {
+                                                           std::string message)
+    : Exception(message), d_node(new Node(node))
+{
 #ifdef CVC4_DEBUG
+  std::stringstream ss;
   LastExceptionBuffer* current = LastExceptionBuffer::getCurrent();
   if(current != NULL){
-    current->setContents(toString().c_str());
+    // Since this node is malformed, we cannot use toString().
+    // Instead, we print the kind and the children.
+    ss << "node kind: " << node.getKind() << ". children: ";
+    int i = 0;
+    for (const TNode& child : node)
+    {
+      ss << "child[" << i << "]: " << child << ". ";
+      i++;
+    }
+    string ssstring = ss.str();
+    current->setContents(ssstring.c_str());
   }
 #endif /* CVC4_DEBUG */
 }
 
-TypeCheckingExceptionPrivate::~TypeCheckingExceptionPrivate() throw () {
-  delete d_node;
-}
+TypeCheckingExceptionPrivate::~TypeCheckingExceptionPrivate() { delete d_node; }
 
-void TypeCheckingExceptionPrivate::toStream(std::ostream& os) const throw() {
+void TypeCheckingExceptionPrivate::toStream(std::ostream& os) const
+{
   os << "Error during type checking: " << d_msg << std::endl << *d_node << endl << "The ill-typed expression: " << *d_node;
 }
 
-NodeTemplate<true> TypeCheckingExceptionPrivate::getNode() const throw() {
+NodeTemplate<true> TypeCheckingExceptionPrivate::getNode() const
+{
   return *d_node;
 }
 
-UnknownTypeException::UnknownTypeException(TNode n) throw() :
-  TypeCheckingExceptionPrivate(n, "this expression contains an element of unknown type (such as an abstract value);"
-                               " its type cannot be computed until it is substituted away") {
+UnknownTypeException::UnknownTypeException(TNode n)
+    : TypeCheckingExceptionPrivate(
+          n,
+          "this expression contains an element of unknown type (such as an "
+          "abstract value);"
+          " its type cannot be computed until it is substituted away")
+{
 }
 
 /** Is this node constant? (and has that been computed yet?) */
@@ -122,9 +137,77 @@ bool NodeTemplate<ref_count>::hasBoundVar() {
   return getAttribute(HasBoundVarAttr());
 }
 
+template <bool ref_count>
+bool NodeTemplate<ref_count>::hasFreeVar()
+{
+  assertTNodeNotExpired();
+  std::unordered_set<TNode, TNodeHashFunction> bound_var;
+  std::unordered_map<TNode, bool, TNodeHashFunction> visited;
+  std::vector<TNode> visit;
+  TNode cur;
+  visit.push_back(*this);
+  do
+  {
+    cur = visit.back();
+    visit.pop_back();
+    // can skip if it doesn't have a bound variable
+    if (!cur.hasBoundVar())
+    {
+      continue;
+    }
+    Kind k = cur.getKind();
+    bool isQuant = k == kind::FORALL || k == kind::EXISTS || k == kind::LAMBDA
+                   || k == kind::CHOICE;
+    std::unordered_map<TNode, bool, TNodeHashFunction>::iterator itv =
+        visited.find(cur);
+    if (itv == visited.end())
+    {
+      if (k == kind::BOUND_VARIABLE)
+      {
+        if (bound_var.find(cur) == bound_var.end())
+        {
+          return true;
+        }
+      }
+      else if (isQuant)
+      {
+        for (const TNode& cn : cur[0])
+        {
+          // should not shadow
+          Assert(bound_var.find(cn) == bound_var.end());
+          bound_var.insert(cn);
+        }
+        visit.push_back(cur);
+      }
+      // must visit quantifiers again to clean up below
+      visited[cur] = !isQuant;
+      if (cur.hasOperator())
+      {
+        visit.push_back(cur.getOperator());
+      }
+      for (const TNode& cn : cur)
+      {
+        visit.push_back(cn);
+      }
+    }
+    else if (!itv->second)
+    {
+      Assert(isQuant);
+      for (const TNode& cn : cur[0])
+      {
+        bound_var.erase(cn);
+      }
+      visited[cur] = true;
+    }
+  } while (!visit.empty());
+  return false;
+}
+
 template bool NodeTemplate<true>::isConst() const;
 template bool NodeTemplate<false>::isConst() const;
 template bool NodeTemplate<true>::hasBoundVar();
 template bool NodeTemplate<false>::hasBoundVar();
+template bool NodeTemplate<true>::hasFreeVar();
+template bool NodeTemplate<false>::hasFreeVar();
 
 }/* CVC4 namespace */

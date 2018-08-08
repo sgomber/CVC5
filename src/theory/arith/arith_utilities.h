@@ -2,9 +2,9 @@
 /*! \file arith_utilities.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Tim King, Morgan Deters, Paul Meng
+ **   Tim King, Andrew Reynolds, Morgan Deters
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -295,6 +295,12 @@ inline Node mkInRange(Node term, Node start, Node end) {
 inline Node mkOnZeroIte(Node n, Node q, Node if_zero, Node not_zero) {
   Node zero = mkRationalNode(0);
   return n.eqNode(zero).iteNode(q.eqNode(if_zero), q.eqNode(not_zero));
+}
+
+inline Node mkPi()
+{
+  return NodeManager::currentNM()->mkNullaryOperator(
+      NodeManager::currentNM()->realType(), kind::PI);
 }
 
 }/* CVC4::theory::arith namespace */

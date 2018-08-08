@@ -2,9 +2,9 @@
 /*! \file resource_manager.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Liana Hadarean, Tim King, Paul Meng
+ **   Liana Hadarean, Tim King, Morgan Deters
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -173,13 +173,14 @@ uint64_t ResourceManager::getTimeRemaining() const {
   return d_thisCallTimeBudget - time_passed;
 }
 
-void ResourceManager::spendResource(unsigned ammount) throw (UnsafeInterruptException) {
+void ResourceManager::spendResource(unsigned amount)
+{
   ++d_spendResourceCalls;
-  d_cumulativeResourceUsed += ammount;
+  d_cumulativeResourceUsed += amount;
   if (!d_on) return;
 
   Debug("limit") << "ResourceManager::spendResource()" << std::endl;
-  d_thisCallResourceUsed += ammount;
+  d_thisCallResourceUsed += amount;
   if(out()) {
     Trace("limit") << "ResourceManager::spendResource: interrupt!" << std::endl;
     Trace("limit") << "          on call " << d_spendResourceCalls << std::endl;

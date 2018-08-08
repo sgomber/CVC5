@@ -2,9 +2,9 @@
 /*! \file options_holder_template.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Morgan Deters, Paul Meng
+ **   Morgan Deters, Mathias Preiner
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -19,22 +19,20 @@
 #ifndef __CVC4__OPTIONS__OPTIONS_HOLDER_H
 #define __CVC4__OPTIONS__OPTIONS_HOLDER_H
 
-${include_all_option_headers}
+${headers_module}$
 
-#line 25 "${template}"
 
 namespace CVC4 {
 namespace options {
 
 struct OptionsHolder {
   OptionsHolder();
-${all_modules_contributions}
+  ${macros_module}$
 
-#line 34 "${template}"
 
 };/* struct OptionsHolder */
 
-}/* CVC4::options namespace */
-}/* CVC4 namespace */
+}  // namespace options
+}  // namespace CVC4
 
 #endif /* __CVC4__OPTIONS__OPTIONS_HOLDER_H */

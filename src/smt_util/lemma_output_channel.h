@@ -2,9 +2,9 @@
 /*! \file lemma_output_channel.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Morgan Deters, Paul Meng
+ **   Morgan Deters, Tim King
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -32,13 +32,13 @@ namespace CVC4 {
  */
 class CVC4_PUBLIC LemmaOutputChannel {
 public:
-  virtual ~LemmaOutputChannel() throw() { }
+ virtual ~LemmaOutputChannel() {}
 
-  /**
-   * Notifies this output channel that there's a new lemma.
-   * The lemma may or may not be in CNF.
-   */
-  virtual void notifyNewLemma(Expr lemma) = 0;
+ /**
+  * Notifies this output channel that there's a new lemma.
+  * The lemma may or may not be in CNF.
+  */
+ virtual void notifyNewLemma(Expr lemma) = 0;
 };/* class LemmaOutputChannel */
 
 }/* CVC4 namespace */

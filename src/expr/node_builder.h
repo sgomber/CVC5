@@ -4,7 +4,7 @@
  ** Top contributors (to current version):
  **   Morgan Deters, Dejan Jovanovic, Christopher L. Conway
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -687,10 +687,11 @@ private:
   expr::NodeValue* constructNV() const;
 
 #ifdef CVC4_DEBUG
-  void maybeCheckType(const TNode n) const
-    throw(TypeCheckingExceptionPrivate, AssertionException);
+  // Throws a TypeCheckingExceptionPrivate on a failure.
+  void maybeCheckType(const TNode n) const;
 #else /* CVC4_DEBUG */
-  inline void maybeCheckType(const TNode n) const throw() { }
+  // Do nothing if not in debug mode.
+  inline void maybeCheckType(const TNode n) const {}
 #endif /* CVC4_DEBUG */
 
 public:
@@ -1320,7 +1321,7 @@ void NodeBuilder<nchild_thresh>::internalCopy(const NodeBuilder<N>& nb) {
 #ifdef CVC4_DEBUG
 template <unsigned nchild_thresh>
 inline void NodeBuilder<nchild_thresh>::maybeCheckType(const TNode n) const
-    throw(TypeCheckingExceptionPrivate, AssertionException) {
+{
   /* force an immediate type check, if early type checking is
      enabled and the current node isn't a variable or constant */
   if( d_nm->getOptions()[options::earlyTypeChecking] ) {

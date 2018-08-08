@@ -2,9 +2,9 @@
 /*! \file theory_bv.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Liana Hadarean, Morgan Deters, Dejan Jovanovic
+ **   Liana Hadarean, Morgan Deters, Tim King
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -64,40 +64,43 @@ public:
 
   ~TheoryBV();
 
-  void setMasterEqualityEngine(eq::EqualityEngine* eq);
+  void setMasterEqualityEngine(eq::EqualityEngine* eq) override;
 
-  Node expandDefinition(LogicRequest &logicRequest, Node node);
+  void finishInit() override;
 
-  void mkAckermanizationAssertions(std::vector<Node>& assertions);
+  Node expandDefinition(LogicRequest& logicRequest, Node node) override;
 
-  void preRegisterTerm(TNode n);
+  void preRegisterTerm(TNode n) override;
 
-  void check(Effort e);
-  
-  bool needsCheckLastEffort();
+  void check(Effort e) override;
 
-  void propagate(Effort e);
+  bool needsCheckLastEffort() override;
 
-  Node explain(TNode n);
+  void propagate(Effort e) override;
 
-  void collectModelInfo( TheoryModel* m );
+  Node explain(TNode n) override;
 
-  std::string identify() const { return std::string("TheoryBV"); }
+  bool collectModelInfo(TheoryModel* m) override;
+
+  std::string identify() const override { return std::string("TheoryBV"); }
 
   /** equality engine */
-  eq::EqualityEngine * getEqualityEngine();
-  bool getCurrentSubstitution( int effort, std::vector< Node >& vars, std::vector< Node >& subs, std::map< Node, std::vector< Node > >& exp );
-  int getReduction( int effort, Node n, Node& nr );
-  
-  PPAssertStatus ppAssert(TNode in, SubstitutionMap& outSubstitutions);
+  eq::EqualityEngine* getEqualityEngine() override;
+  bool getCurrentSubstitution(int effort,
+                              std::vector<Node>& vars,
+                              std::vector<Node>& subs,
+                              std::map<Node, std::vector<Node> >& exp) override;
+  int getReduction(int effort, Node n, Node& nr) override;
+
+  PPAssertStatus ppAssert(TNode in, SubstitutionMap& outSubstitutions) override;
 
   void enableCoreTheorySlicer();
 
-  Node ppRewrite(TNode t);
+  Node ppRewrite(TNode t) override;
 
-  void ppStaticLearn(TNode in, NodeBuilder<>& learned);
+  void ppStaticLearn(TNode in, NodeBuilder<>& learned) override;
 
-  void presolve();
+  void presolve() override;
 
   bool applyAbstraction(const std::vector<Node>& assertions, std::vector<Node>& new_assertions);
 
@@ -114,13 +117,13 @@ private:
     IntStat     d_numCallsToCheckStandardEffort;
     TimerStat   d_weightComputationTimer;
     IntStat     d_numMultSlice;
-    Statistics(const std::string &name);
+    Statistics();
     ~Statistics();
   };
 
   Statistics d_statistics;
 
-  void spendResource(unsigned ammount) throw(UnsafeInterruptException);
+  void spendResource(unsigned amount);
 
   /**
    * Return the uninterpreted function symbol corresponding to division-by-zero
@@ -133,8 +136,6 @@ private:
   Node getBVDivByZero(Kind k, unsigned width);
 
   typedef std::unordered_set<TNode, TNodeHashFunction> TNodeSet;
-  void collectFunctionSymbols(TNode term, TNodeSet& seen);
-  void storeFunction(TNode func, TNode term);
   typedef std::unordered_set<Node, NodeHashFunction> NodeSet;
   NodeSet d_staticLearnCache;
 
@@ -145,12 +146,7 @@ private:
   std::unordered_map<unsigned, Node> d_BVDivByZero;
   std::unordered_map<unsigned, Node> d_BVRemByZero;
 
-
-  typedef std::unordered_map<Node, NodeSet, NodeHashFunction>  FunctionToArgs;
   typedef std::unordered_map<Node, Node, NodeHashFunction>  NodeToNode;
-  // for ackermanization
-  FunctionToArgs d_funcToArgs;
-  CVC4::theory::SubstitutionMap d_funcToSkolem;
 
   context::CDO<bool> d_lemmasAdded;
 
@@ -185,7 +181,28 @@ private:
   bool d_needsLastCallCheck;
   context::CDHashSet<Node, NodeHashFunction> d_extf_range_infer;
   context::CDHashSet<Node, NodeHashFunction> d_extf_collapse_infer;
+  /** do extended function inferences
+   *
+   * This method adds lemmas on the output channel of TheoryBV based on
+   * reasoning about extended functions, such as bv2nat and int2bv. Examples
+   * of lemmas added by this method include:
+   *   0 <= ((_ int2bv w) x) < 2^w
+   *   ((_ int2bv w) (bv2nat x)) = x
+   *   (bv2nat ((_ int2bv w) x)) == x + k*2^w
+   * The purpose of these lemmas is to recognize easy conflicts before fully
+   * reducing extended functions based on their full semantics.
+   */
   bool doExtfInferences( std::vector< Node >& terms );
+  /** do extended function reductions
+   *
+   * This method adds lemmas on the output channel of TheoryBV based on
+   * reducing all extended function applications that are preregistered to
+   * this theory and have not already been reduced by context-dependent
+   * simplification (see theory/ext_theory.h). Examples of lemmas added by
+   * this method include:
+   *   (bv2nat x) = (ite ((_ extract w w-1) x) 2^{w-1} 0) + ... +
+   *                (ite ((_ extract 1 0) x) 1 0)
+   */
   bool doExtfReductions( std::vector< Node >& terms );
   
   bool wasPropagatedBySubtheory(TNode literal) const {
@@ -206,13 +223,13 @@ private:
    */
   void explain(TNode literal, std::vector<TNode>& assumptions);
 
-  void addSharedTerm(TNode t);
+  void addSharedTerm(TNode t) override;
 
   bool isSharedTerm(TNode t) { return d_sharedTermsSet.contains(t); }
 
-  EqualityStatus getEqualityStatus(TNode a, TNode b);
+  EqualityStatus getEqualityStatus(TNode a, TNode b) override;
 
-  Node getModelValue(TNode var);
+  Node getModelValue(TNode var) override;
 
   inline std::string indent()
   {

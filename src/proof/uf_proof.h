@@ -2,9 +2,9 @@
 /*! \file uf_proof.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Liana Hadarean, Guy Katz, Tim King
+ **   Liana Hadarean, Mathias Preiner, Tim King
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -30,11 +30,12 @@
 namespace CVC4 {
 
 // proof object outputted by TheoryUF
-class ProofUF : public Proof {
+class ProofUF : public Proof
+{
  public:
   ProofUF(std::shared_ptr<theory::eq::EqProof> pf) : d_proof(pf) {}
-  void toStream(std::ostream& out) override;
-  void toStream(std::ostream& out, const ProofLetMap& map) override;
+  void toStream(std::ostream& out) const override;
+  void toStream(std::ostream& out, const ProofLetMap& map) const override;
 
  private:
   static void toStreamLFSC(std::ostream& out, TheoryProof* tp,
@@ -61,11 +62,12 @@ class UFProof : public TheoryProof {
 protected:
   TypeSet d_sorts;        // all the uninterpreted sorts in this theory
   ExprSet d_declarations; // all the variable/function declarations
+  theory::TheoryId getTheoryId() override;
 
-public:
+ public:
   UFProof(theory::uf::TheoryUF* uf, TheoryProofEngine* proofEngine);
 
-  virtual void registerTerm(Expr term);
+  void registerTerm(Expr term) override;
 };
 
 class LFSCUFProof : public UFProof {
@@ -73,17 +75,28 @@ public:
   LFSCUFProof(theory::uf::TheoryUF* uf, TheoryProofEngine* proofEngine)
     : UFProof(uf, proofEngine)
   {}
-  virtual void printOwnedTerm(Expr term, std::ostream& os, const ProofLetMap& map);
-  virtual void printOwnedSort(Type type, std::ostream& os);
-  virtual void printTheoryLemmaProof(std::vector<Expr>& lemma, std::ostream& os, std::ostream& paren, const ProofLetMap& map);
-  virtual void printSortDeclarations(std::ostream& os, std::ostream& paren);
-  virtual void printTermDeclarations(std::ostream& os, std::ostream& paren);
-  virtual void printDeferredDeclarations(std::ostream& os, std::ostream& paren);
-  virtual void printAliasingDeclarations(std::ostream& os, std::ostream& paren, const ProofLetMap &globalLetMap);
+  void printOwnedTerm(Expr term,
+                      std::ostream& os,
+                      const ProofLetMap& map) override;
+  void printOwnedSort(Type type, std::ostream& os) override;
+  void printTheoryLemmaProof(std::vector<Expr>& lemma,
+                             std::ostream& os,
+                             std::ostream& paren,
+                             const ProofLetMap& map) override;
+  void printSortDeclarations(std::ostream& os, std::ostream& paren) override;
+  void printTermDeclarations(std::ostream& os, std::ostream& paren) override;
+  void printDeferredDeclarations(std::ostream& os,
+                                 std::ostream& paren) override;
+  void printAliasingDeclarations(std::ostream& os,
+                                 std::ostream& paren,
+                                 const ProofLetMap& globalLetMap) override;
 
-  bool printsAsBool(const Node &n);
+  bool printsAsBool(const Node& n) override;
 
-  void printConstantDisequalityProof(std::ostream& os, Expr c1, Expr c2, const ProofLetMap &globalLetMap);
+  void printConstantDisequalityProof(std::ostream& os,
+                                     Expr c1,
+                                     Expr c2,
+                                     const ProofLetMap& globalLetMap) override;
 };
 
 

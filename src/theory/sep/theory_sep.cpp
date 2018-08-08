@@ -4,7 +4,7 @@
  ** Top contributors (to current version):
  **   Andrew Reynolds, Tim King, Mathias Preiner
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -39,7 +39,7 @@ TheorySep::TheorySep(context::Context* c, context::UserContext* u, OutputChannel
   Theory(THEORY_SEP, c, u, out, valuation, logicInfo),
   d_lemmas_produced_c(u),
   d_notify(*this),
-  d_equalityEngine(d_notify, c, "theory::sep::TheorySep", true),
+  d_equalityEngine(d_notify, c, "theory::sep::ee", true),
   d_conflict(c, false),
   d_reduce(u),
   d_infer(c),
@@ -200,15 +200,15 @@ void TheorySep::computeCareGraph() {
 // MODEL GENERATION
 /////////////////////////////////////////////////////////////////////////////
 
-
-void TheorySep::collectModelInfo( TheoryModel* m ){
+bool TheorySep::collectModelInfo(TheoryModel* m)
+{
   set<Node> termSet;
 
   // Compute terms appearing in assertions and shared terms
   computeRelevantTerms(termSet);
 
   // Send the equality engine information to the model
-  m->assertEqualityEngine( &d_equalityEngine, &termSet );
+  return m->assertEqualityEngine(&d_equalityEngine, &termSet);
 }
 
 void TheorySep::postProcessModel( TheoryModel* m ){

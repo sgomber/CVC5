@@ -4,7 +4,7 @@
  ** Top contributors (to current version):
  **   Morgan Deters, Dejan Jovanovic, Tim King
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -213,6 +213,12 @@ public:
    */
   void pop();
 
+  /*
+   * Reset the decisions in the DPLL(T) SAT solver at the current assertion
+   * level.
+   */
+  void resetTrail();
+
   /**
    * Get the assertion level of the SAT solver.
    */
@@ -226,14 +232,16 @@ public:
 
   /**
    * Interrupt a running solver (cause a timeout).
+   *
+   * Can potentially throw a ModalException.
    */
-  void interrupt() throw(ModalException);
+  void interrupt();
 
   /**
    * Informs the ResourceManager that a resource has been spent.  If out of
    * resources, can throw an UnsafeInterruptException exception.
    */
-  void spendResource(unsigned ammount) throw (UnsafeInterruptException);
+  void spendResource(unsigned amount);
 
   /**
    * For debugging.  Return true if "expl" is a well-formed

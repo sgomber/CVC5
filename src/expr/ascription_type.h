@@ -2,9 +2,9 @@
 /*! \file ascription_type.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Morgan Deters, Paul Meng
+ **   Morgan Deters, Tim King
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -32,13 +32,16 @@ namespace CVC4 {
  */
 class CVC4_PUBLIC AscriptionType {
   Type d_type;
-public:
-  AscriptionType(Type t) throw() : d_type(t) {}
-  Type getType() const throw() { return d_type; }
-  bool operator==(const AscriptionType& other) const throw() {
+
+ public:
+  AscriptionType(Type t) : d_type(t) {}
+  Type getType() const { return d_type; }
+  bool operator==(const AscriptionType& other) const
+  {
     return d_type == other.d_type;
   }
-  bool operator!=(const AscriptionType& other) const throw() {
+  bool operator!=(const AscriptionType& other) const
+  {
     return d_type != other.d_type;
   }
 };/* class AscriptionType */

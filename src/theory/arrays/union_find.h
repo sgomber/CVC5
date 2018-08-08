@@ -2,9 +2,9 @@
 /*! \file union_find.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Morgan Deters, Paul Meng
+ **   Morgan Deters, Tim King
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -56,13 +56,11 @@ class UnionFind : context::ContextNotifyObj {
   /** Our current offset in the d_trace stack (context-dependent). */
   context::CDO<size_t> d_offset;
 
-public:
+ public:
   UnionFind(context::Context* ctxt) :
     context::ContextNotifyObj(ctxt),
     d_offset(ctxt, 0) {
   }
-
-  ~UnionFind() throw() { }
 
   /**
    * Return a Node's union-find representative, doing path compression.

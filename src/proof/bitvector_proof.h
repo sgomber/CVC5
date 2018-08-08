@@ -2,9 +2,9 @@
 /*! \file bitvector_proof.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Liana Hadarean, Guy Katz, Tim King
+ **   Liana Hadarean, Mathias Preiner, Guy Katz
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -83,7 +83,7 @@ protected:
 
   std::map<Expr,std::string> d_constantLetMap;
   bool d_useConstantLetification;
-
+  theory::TheoryId getTheoryId() override;
   context::Context d_fakeContext;
 public:
   BitVectorProof(theory::bv::TheoryBV* bv, TheoryProofEngine* proofEngine);
@@ -110,7 +110,7 @@ public:
   void registerTermBB(Expr term);
   void registerAtomBB(Expr atom, Expr atom_bb);
 
-  virtual void registerTerm(Expr term);
+  void registerTerm(Expr term) override;
 
   virtual void printTermBitblasting(Expr term, std::ostream& os) = 0;
   virtual void printAtomBitblasting(Expr term, std::ostream& os, bool swap) = 0;
@@ -143,22 +143,37 @@ public:
   LFSCBitVectorProof(theory::bv::TheoryBV* bv, TheoryProofEngine* proofEngine)
     :BitVectorProof(bv, proofEngine)
   {}
-  virtual void printOwnedTerm(Expr term, std::ostream& os, const ProofLetMap& map);
-  virtual void printOwnedSort(Type type, std::ostream& os);
-  virtual void printTermBitblasting(Expr term, std::ostream& os);
-  virtual void printAtomBitblasting(Expr term, std::ostream& os, bool swap);
-  virtual void printAtomBitblastingToFalse(Expr term, std::ostream& os);
-  virtual void printTheoryLemmaProof(std::vector<Expr>& lemma, std::ostream& os, std::ostream& paren, const ProofLetMap& map);
-  virtual void printSortDeclarations(std::ostream& os, std::ostream& paren);
-  virtual void printTermDeclarations(std::ostream& os, std::ostream& paren);
-  virtual void printDeferredDeclarations(std::ostream& os, std::ostream& paren);
-  virtual void printAliasingDeclarations(std::ostream& os, std::ostream& paren, const ProofLetMap &globalLetMap);
-  virtual void printBitblasting(std::ostream& os, std::ostream& paren);
-  virtual void printResolutionProof(std::ostream& os, std::ostream& paren, ProofLetMap& letMap);
-  void calculateAtomsInBitblastingProof();
-  const std::set<Node>* getAtomsInBitblastingProof();
-  void printConstantDisequalityProof(std::ostream& os, Expr c1, Expr c2, const ProofLetMap &globalLetMap);
-  void printRewriteProof(std::ostream& os, const Node &n1, const Node &n2);
+  void printOwnedTerm(Expr term,
+                      std::ostream& os,
+                      const ProofLetMap& map) override;
+  void printOwnedSort(Type type, std::ostream& os) override;
+  void printTermBitblasting(Expr term, std::ostream& os) override;
+  void printAtomBitblasting(Expr term, std::ostream& os, bool swap) override;
+  void printAtomBitblastingToFalse(Expr term, std::ostream& os) override;
+  void printTheoryLemmaProof(std::vector<Expr>& lemma,
+                             std::ostream& os,
+                             std::ostream& paren,
+                             const ProofLetMap& map) override;
+  void printSortDeclarations(std::ostream& os, std::ostream& paren) override;
+  void printTermDeclarations(std::ostream& os, std::ostream& paren) override;
+  void printDeferredDeclarations(std::ostream& os,
+                                 std::ostream& paren) override;
+  void printAliasingDeclarations(std::ostream& os,
+                                 std::ostream& paren,
+                                 const ProofLetMap& globalLetMap) override;
+  void printBitblasting(std::ostream& os, std::ostream& paren) override;
+  void printResolutionProof(std::ostream& os,
+                            std::ostream& paren,
+                            ProofLetMap& letMap) override;
+  void calculateAtomsInBitblastingProof() override;
+  const std::set<Node>* getAtomsInBitblastingProof() override;
+  void printConstantDisequalityProof(std::ostream& os,
+                                     Expr c1,
+                                     Expr c2,
+                                     const ProofLetMap& globalLetMap) override;
+  void printRewriteProof(std::ostream& os,
+                         const Node& n1,
+                         const Node& n2) override;
 };
 
 }/* CVC4 namespace */

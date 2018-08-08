@@ -2,9 +2,9 @@
 /*! \file context.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Morgan Deters, Clark Barrett, Tim King
+ **   Clark Barrett, Morgan Deters, Tim King
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -135,8 +135,8 @@ void Context::addNotifyObjPost(ContextNotifyObj* pCNO) {
   d_pCNOpost = pCNO;
 }
 
-
-void ContextObj::update() throw(AssertionException) {
+void ContextObj::update()
+{
   Debug("context") << "before update(" << this << "):" << std::endl
                    << "context is " << getContext() << std::endl
                    << *getContext() << std::endl;
@@ -194,8 +194,8 @@ void ContextObj::update() throw(AssertionException) {
                    << *getContext() << std::endl;
 }
 
-
-ContextObj* ContextObj::restoreAndContinue() throw(AssertionException) {
+ContextObj* ContextObj::restoreAndContinue()
+{
   // Variable to hold next object in list
   ContextObj* pContextObjNext;
 
@@ -235,8 +235,8 @@ ContextObj* ContextObj::restoreAndContinue() throw(AssertionException) {
   return pContextObjNext;
 }
 
-
-void ContextObj::destroy() throw(AssertionException) {
+void ContextObj::destroy()
+{
   /* Context can be big and complicated, so we only want to process this output
    * if we're really going to use it. (Same goes below.) */
   Debug("context") << "before destroy " << this << " (level " << getLevel()
@@ -319,9 +319,8 @@ ContextNotifyObj::~ContextNotifyObj() {
   }
 }
 
-
-std::ostream& operator<<(std::ostream& out,
-                         const Context& context) throw(AssertionException) {
+std::ostream& operator<<(std::ostream& out, const Context& context)
+{
   static const std::string separator(79, '-');
 
   int level = context.d_scopeList.size() - 1;
@@ -338,9 +337,8 @@ std::ostream& operator<<(std::ostream& out,
   return out << separator << std::endl;
 }
 
-
-std::ostream& operator<<(std::ostream& out,
-                         const Scope& scope) throw(AssertionException) {
+std::ostream& operator<<(std::ostream& out, const Scope& scope)
+{
   out << "Scope " << scope.d_level << " [" << &scope << "]:";
   ContextObj* pContextObj = scope.d_pContextObjList;
   Assert(pContextObj == NULL ||

@@ -2,9 +2,9 @@
 /*! \file options_handler.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Tim King, Andrew Reynolds, Liana Hadarean
+ **   Tim King, Andrew Reynolds, Aina Niemetz
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -53,6 +53,28 @@
 namespace CVC4 {
 namespace options {
 
+// helper functions
+namespace {
+
+void throwLazyBBUnsupported(theory::bv::SatSolverMode m)
+{
+  std::string sat_solver;
+  if (m == theory::bv::SAT_SOLVER_CADICAL)
+  {
+    sat_solver = "CaDiCaL";
+  }
+  else
+  {
+    Assert(m == theory::bv::SAT_SOLVER_CRYPTOMINISAT);
+    sat_solver = "CryptoMiniSat";
+  }
+  std::string indent(25, ' ');
+  throw OptionException(sat_solver + " does not support lazy bit-blasting.\n"
+                        + indent + "Try --bv-sat-solver=minisat");
+}
+
+}  // namespace
+
 OptionsHandler::OptionsHandler(Options* options) : d_options(options) { }
 
 void OptionsHandler::notifyForceLogic(const std::string& option){
@@ -60,7 +82,6 @@ void OptionsHandler::notifyForceLogic(const std::string& option){
 }
 
 void OptionsHandler::notifyBeforeSearch(const std::string& option)
-    throw(ModalException)
 {
   try{
     d_options->d_beforeSearchListeners.notify();
@@ -89,48 +110,18 @@ void OptionsHandler::notifyRlimitPer(const std::string& option) {
   d_options->d_rlimitPerListeners.notify();
 }
 
-
-unsigned long OptionsHandler::tlimitHandler(std::string option, std::string optarg) throw(OptionException)  {
+unsigned long OptionsHandler::limitHandler(std::string option,
+                                           std::string optarg)
+{
   unsigned long ms;
   std::istringstream convert(optarg);
-  if (!(convert >> ms)) {
-    throw OptionException("option `"+option+"` requires a number as an argument");
+  if (!(convert >> ms))
+  {
+    throw OptionException("option `" + option
+                          + "` requires a number as an argument");
   }
   return ms;
 }
-
-unsigned long OptionsHandler::tlimitPerHandler(std::string option, std::string optarg) throw(OptionException) {
-  unsigned long ms;
-
-  std::istringstream convert(optarg);
-  if (!(convert >> ms)) {
-    throw OptionException("option `"+option+"` requires a number as an argument");
-  }
-  return ms;
-}
-
-unsigned long OptionsHandler::rlimitHandler(std::string option, std::string optarg) throw(OptionException) {
-  unsigned long ms;
-
-  std::istringstream convert(optarg);
-  if (!(convert >> ms)) {
-    throw OptionException("option `"+option+"` requires a number as an argument");
-  }
-  return ms;
-}
-
-
-unsigned long OptionsHandler::rlimitPerHandler(std::string option, std::string optarg) throw(OptionException) {
-  unsigned long ms;
-
-  std::istringstream convert(optarg);
-  if (!(convert >> ms)) {
-    throw OptionException("option `"+option+"` requires a number as an argument");
-  }
-
-  return ms;
-}
-
 
 /* options/base_options_handlers.h */
 void OptionsHandler::notifyPrintSuccess(std::string option) {
@@ -176,7 +167,9 @@ Heuristic pivot rules available:\n\
   The variable order\n\
 ";
 
-ArithUnateLemmaMode OptionsHandler::stringToArithUnateLemmaMode(std::string option, std::string optarg) throw(OptionException) {
+ArithUnateLemmaMode OptionsHandler::stringToArithUnateLemmaMode(
+    std::string option, std::string optarg)
+{
   if(optarg == "all") {
     return ALL_PRESOLVE_LEMMAS;
   } else if(optarg == "none") {
@@ -194,7 +187,9 @@ ArithUnateLemmaMode OptionsHandler::stringToArithUnateLemmaMode(std::string opti
   }
 }
 
-ArithPropagationMode OptionsHandler::stringToArithPropagationMode(std::string option, std::string optarg) throw(OptionException) {
+ArithPropagationMode OptionsHandler::stringToArithPropagationMode(
+    std::string option, std::string optarg)
+{
   if(optarg == "none") {
     return NO_PROP;
   } else if(optarg == "unate") {
@@ -212,7 +207,9 @@ ArithPropagationMode OptionsHandler::stringToArithPropagationMode(std::string op
   }
 }
 
-ErrorSelectionRule OptionsHandler::stringToErrorSelectionRule(std::string option, std::string optarg) throw(OptionException) {
+ErrorSelectionRule OptionsHandler::stringToErrorSelectionRule(
+    std::string option, std::string optarg)
+{
   if(optarg == "min") {
     return MINIMUM_AMOUNT;
   } else if(optarg == "varord") {
@@ -288,9 +285,6 @@ gen-ev \n\
 + Use model-based quantifier instantiation algorithm from CADE 24 finite\n\
   model finding paper based on generalizing evaluations.\n\
 \n\
-fmc-interval \n\
-+ Same as default, but with intervals for models of integer functions.\n\
-\n\
 abs \n\
 + Use abstract MBQI algorithm (uses disjoint sets). \n\
 \n\
@@ -322,12 +316,6 @@ prop-eq \n\
 \n\
 conflict \n\
 + Apply QCF algorithm to find conflicts only.\n\
-\n\
-partial \n\
-+ Apply QCF algorithm to instantiate heuristically as well. \n\
-\n\
-mc \n\
-+ Apply QCF algorithm in a complete way, so that a model is ensured when it fails. \n\
 \n\
 ";
 
@@ -481,6 +469,49 @@ all \n\
 \n\
 ";
 
+const std::string OptionsHandler::s_cegqiSingleInvRconsHelp =
+    "\
+Modes for reconstruction solutions while using single invocation techniques,\
+supported by --cegqi-si-rcons:\n\
+\n\
+none \n\
++ Do not try to reconstruct solutions in the original (user-provided) grammar\
+  when using single invocation techniques. In this mode, solutions produced by\
+  CVC4 may violate grammar restrictions.\n\
+\n\
+try \n\
++ Try to reconstruct solutions in the original grammar when using single\
+  invocation techniques in an incomplete (fail-fast) manner.\n\
+\n\
+all-limit \n\
++ Try to reconstruct solutions in the original grammar, but termintate if a\
+  maximum number of rounds for reconstruction is exceeded.\n\
+\n\
+all \n\
++ Try to reconstruct solutions in the original grammar. In this mode,\
+  we do not terminate until a solution is successfully reconstructed. \n\
+\n\
+";
+
+const std::string OptionsHandler::s_cegisSampleHelp =
+    "\
+Modes for sampling with counterexample-guided inductive synthesis (CEGIS),\
+supported by --cegis-sample:\n\
+\n\
+none (default) \n\
++ Do not use sampling with CEGIS.\n\
+\n\
+use \n\
++ Use sampling to accelerate CEGIS. This will rule out solutions for a\
+  conjecture when they are not satisfied by a sample point.\n\
+\n\
+trust  \n\
++ Trust that when a solution for a conjecture is always true under sampling,\
+  then it is indeed a solution. Note this option may print out spurious\
+  solutions for synthesis conjectures.\n\
+\n\
+";
+
 const std::string OptionsHandler::s_sygusInvTemplHelp = "\
 Template modes for sygus invariant synthesis, supported by --sygus-inv-templ:\n\
 \n\
@@ -537,24 +568,9 @@ depth \n\
 \n\
 ";
 
-const std::string OptionsHandler::s_fmfBoundMinModeModeHelp = "\
-Modes for finite model finding bound minimization, supported by --fmf-bound-min-mode:\n\
-\n\
-none \n\
-+ Do not minimize inferred bounds.\n\
-\n\
-int (default) \n\
-+ Minimize integer ranges only.\n\
-\n\
-setc \n\
-+ Minimize cardinality of set membership ranges only.\n\
-\n\
-all \n\
-+ Minimize all inferred bounds.\n\
-\n\
-";
-
-theory::quantifiers::InstWhenMode OptionsHandler::stringToInstWhenMode(std::string option, std::string optarg) throw(OptionException) {
+theory::quantifiers::InstWhenMode OptionsHandler::stringToInstWhenMode(
+    std::string option, std::string optarg)
+{
   if(optarg == "pre-full") {
     return theory::quantifiers::INST_WHEN_PRE_FULL;
   } else if(optarg == "full") {
@@ -576,13 +592,17 @@ theory::quantifiers::InstWhenMode OptionsHandler::stringToInstWhenMode(std::stri
   }
 }
 
-void OptionsHandler::checkInstWhenMode(std::string option, theory::quantifiers::InstWhenMode mode) throw(OptionException)  {
+void OptionsHandler::checkInstWhenMode(std::string option,
+                                       theory::quantifiers::InstWhenMode mode)
+{
   if(mode == theory::quantifiers::INST_WHEN_PRE_FULL) {
     throw OptionException(std::string("Mode pre-full for ") + option + " is not supported in this release.");
   }
 }
 
-theory::quantifiers::LiteralMatchMode OptionsHandler::stringToLiteralMatchMode(std::string option, std::string optarg) throw(OptionException) {
+theory::quantifiers::LiteralMatchMode OptionsHandler::stringToLiteralMatchMode(
+    std::string option, std::string optarg)
+{
   if(optarg ==  "none") {
     return theory::quantifiers::LITERAL_MATCH_NONE;
   } else if(optarg ==  "use") {
@@ -600,19 +620,20 @@ theory::quantifiers::LiteralMatchMode OptionsHandler::stringToLiteralMatchMode(s
   }
 }
 
-void OptionsHandler::checkLiteralMatchMode(std::string option, theory::quantifiers::LiteralMatchMode mode) throw(OptionException) {
-
+void OptionsHandler::checkLiteralMatchMode(
+    std::string option, theory::quantifiers::LiteralMatchMode mode)
+{
 }
 
-theory::quantifiers::MbqiMode OptionsHandler::stringToMbqiMode(std::string option, std::string optarg) throw(OptionException) {
+theory::quantifiers::MbqiMode OptionsHandler::stringToMbqiMode(
+    std::string option, std::string optarg)
+{
   if(optarg == "gen-ev") {
     return theory::quantifiers::MBQI_GEN_EVAL;
   } else if(optarg == "none") {
     return theory::quantifiers::MBQI_NONE;
   } else if(optarg == "default" || optarg ==  "fmc") {
     return theory::quantifiers::MBQI_FMC;
-  } else if(optarg == "fmc-interval") {
-    return theory::quantifiers::MBQI_FMC_INTERVAL;
   } else if(optarg == "abs") {
     return theory::quantifiers::MBQI_ABS;
   } else if(optarg == "trust") {
@@ -626,11 +647,14 @@ theory::quantifiers::MbqiMode OptionsHandler::stringToMbqiMode(std::string optio
   }
 }
 
+void OptionsHandler::checkMbqiMode(std::string option,
+                                   theory::quantifiers::MbqiMode mode)
+{
+}
 
-void OptionsHandler::checkMbqiMode(std::string option, theory::quantifiers::MbqiMode mode) throw(OptionException) {}
-
-
-theory::quantifiers::QcfWhenMode OptionsHandler::stringToQcfWhenMode(std::string option, std::string optarg) throw(OptionException) {
+theory::quantifiers::QcfWhenMode OptionsHandler::stringToQcfWhenMode(
+    std::string option, std::string optarg)
+{
   if(optarg ==  "default") {
     return theory::quantifiers::QCF_WHEN_MODE_DEFAULT;
   } else if(optarg ==  "last-call") {
@@ -648,13 +672,13 @@ theory::quantifiers::QcfWhenMode OptionsHandler::stringToQcfWhenMode(std::string
   }
 }
 
-theory::quantifiers::QcfMode OptionsHandler::stringToQcfMode(std::string option, std::string optarg) throw(OptionException) {
+theory::quantifiers::QcfMode OptionsHandler::stringToQcfMode(std::string option,
+                                                             std::string optarg)
+{
   if(optarg ==  "conflict") {
     return theory::quantifiers::QCF_CONFLICT_ONLY;
   } else if(optarg ==  "default" || optarg == "prop-eq") {
     return theory::quantifiers::QCF_PROP_EQ;
-  } else if(optarg == "partial") {
-    return theory::quantifiers::QCF_PARTIAL;
   } else if(optarg ==  "help") {
     puts(s_qcfModeHelp.c_str());
     exit(1);
@@ -664,7 +688,9 @@ theory::quantifiers::QcfMode OptionsHandler::stringToQcfMode(std::string option,
   }
 }
 
-theory::quantifiers::UserPatMode OptionsHandler::stringToUserPatMode(std::string option, std::string optarg) throw(OptionException) {
+theory::quantifiers::UserPatMode OptionsHandler::stringToUserPatMode(
+    std::string option, std::string optarg)
+{
   if(optarg == "use") {
     return theory::quantifiers::USER_PAT_MODE_USE;
   } else if(optarg ==  "default" || optarg == "trust") {
@@ -684,7 +710,9 @@ theory::quantifiers::UserPatMode OptionsHandler::stringToUserPatMode(std::string
   }
 }
 
-theory::quantifiers::TriggerSelMode OptionsHandler::stringToTriggerSelMode(std::string option, std::string optarg) throw(OptionException) {
+theory::quantifiers::TriggerSelMode OptionsHandler::stringToTriggerSelMode(
+    std::string option, std::string optarg)
+{
   if(optarg ==  "default" || optarg == "min") {
     return theory::quantifiers::TRIGGER_SEL_MIN;
   } else if(optarg == "max") {
@@ -704,7 +732,10 @@ theory::quantifiers::TriggerSelMode OptionsHandler::stringToTriggerSelMode(std::
   }
 }
 
-theory::quantifiers::TriggerActiveSelMode OptionsHandler::stringToTriggerActiveSelMode(std::string option, std::string optarg) throw(OptionException) {
+theory::quantifiers::TriggerActiveSelMode
+OptionsHandler::stringToTriggerActiveSelMode(std::string option,
+                                             std::string optarg)
+{
   if(optarg ==  "default" || optarg == "all") {
     return theory::quantifiers::TRIGGER_ACTIVE_SEL_ALL;
   } else if(optarg == "min") {
@@ -720,7 +751,9 @@ theory::quantifiers::TriggerActiveSelMode OptionsHandler::stringToTriggerActiveS
   }
 }
 
-theory::quantifiers::PrenexQuantMode OptionsHandler::stringToPrenexQuantMode(std::string option, std::string optarg) throw(OptionException) {
+theory::quantifiers::PrenexQuantMode OptionsHandler::stringToPrenexQuantMode(
+    std::string option, std::string optarg)
+{
   if(optarg== "default" || optarg== "simple" ) {
     return theory::quantifiers::PRENEX_QUANT_SIMPLE;
   } else if(optarg == "none") {
@@ -738,7 +771,9 @@ theory::quantifiers::PrenexQuantMode OptionsHandler::stringToPrenexQuantMode(std
   }
 }
 
-theory::SygusFairMode OptionsHandler::stringToSygusFairMode(std::string option, std::string optarg) throw(OptionException) {
+theory::SygusFairMode OptionsHandler::stringToSygusFairMode(std::string option,
+                                                            std::string optarg)
+{
   if(optarg == "direct") {
     return theory::SYGUS_FAIR_DIRECT;
   } else if(optarg == "default" || optarg == "dt-size") {
@@ -758,7 +793,9 @@ theory::SygusFairMode OptionsHandler::stringToSygusFairMode(std::string option, 
   }
 }
 
-theory::quantifiers::TermDbMode OptionsHandler::stringToTermDbMode(std::string option, std::string optarg) throw(OptionException) {
+theory::quantifiers::TermDbMode OptionsHandler::stringToTermDbMode(
+    std::string option, std::string optarg)
+{
   if(optarg == "all" ) {
     return theory::quantifiers::TERM_DB_ALL;
   } else if(optarg == "relevant") {
@@ -772,7 +809,9 @@ theory::quantifiers::TermDbMode OptionsHandler::stringToTermDbMode(std::string o
   }
 }
 
-theory::quantifiers::IteLiftQuantMode OptionsHandler::stringToIteLiftQuantMode(std::string option, std::string optarg) throw(OptionException) {
+theory::quantifiers::IteLiftQuantMode OptionsHandler::stringToIteLiftQuantMode(
+    std::string option, std::string optarg)
+{
   if(optarg == "all" ) {
     return theory::quantifiers::ITE_LIFT_QUANT_MODE_ALL;
   } else if(optarg == "simple") {
@@ -789,7 +828,7 @@ theory::quantifiers::IteLiftQuantMode OptionsHandler::stringToIteLiftQuantMode(s
 }
 
 theory::quantifiers::CbqiBvIneqMode OptionsHandler::stringToCbqiBvIneqMode(
-    std::string option, std::string optarg) throw(OptionException)
+    std::string option, std::string optarg)
 {
   if (optarg == "eq-slack")
   {
@@ -816,13 +855,14 @@ theory::quantifiers::CbqiBvIneqMode OptionsHandler::stringToCbqiBvIneqMode(
   }
 }
 
-theory::quantifiers::CegqiSingleInvMode OptionsHandler::stringToCegqiSingleInvMode(std::string option, std::string optarg) throw(OptionException) {
+theory::quantifiers::CegqiSingleInvMode
+OptionsHandler::stringToCegqiSingleInvMode(std::string option,
+                                           std::string optarg)
+{
   if(optarg == "none" ) {
     return theory::quantifiers::CEGQI_SI_MODE_NONE;
   } else if(optarg == "use" || optarg == "default") {
     return theory::quantifiers::CEGQI_SI_MODE_USE;
-  } else if(optarg == "all-abort") {
-    return theory::quantifiers::CEGQI_SI_MODE_ALL_ABORT;
   } else if(optarg == "all") {
     return theory::quantifiers::CEGQI_SI_MODE_ALL;
   } else if(optarg ==  "help") {
@@ -834,7 +874,70 @@ theory::quantifiers::CegqiSingleInvMode OptionsHandler::stringToCegqiSingleInvMo
   }
 }
 
-theory::quantifiers::SygusInvTemplMode OptionsHandler::stringToSygusInvTemplMode(std::string option, std::string optarg) throw(OptionException) {
+theory::quantifiers::CegqiSingleInvRconsMode
+OptionsHandler::stringToCegqiSingleInvRconsMode(std::string option,
+                                                std::string optarg)
+{
+  if (optarg == "none")
+  {
+    return theory::quantifiers::CEGQI_SI_RCONS_MODE_NONE;
+  }
+  else if (optarg == "try")
+  {
+    return theory::quantifiers::CEGQI_SI_RCONS_MODE_TRY;
+  }
+  else if (optarg == "all")
+  {
+    return theory::quantifiers::CEGQI_SI_RCONS_MODE_ALL;
+  }
+  else if (optarg == "all-limit")
+  {
+    return theory::quantifiers::CEGQI_SI_RCONS_MODE_ALL_LIMIT;
+  }
+  else if (optarg == "help")
+  {
+    puts(s_cegqiSingleInvRconsHelp.c_str());
+    exit(1);
+  }
+  else
+  {
+    throw OptionException(std::string("unknown option for --cegqi-si-rcons: `")
+                          + optarg + "'.  Try --cegqi-si-rcons help.");
+  }
+}
+
+theory::quantifiers::CegisSampleMode OptionsHandler::stringToCegisSampleMode(
+    std::string option, std::string optarg)
+{
+  if (optarg == "none")
+  {
+    return theory::quantifiers::CEGIS_SAMPLE_NONE;
+  }
+  else if (optarg == "use")
+  {
+    return theory::quantifiers::CEGIS_SAMPLE_USE;
+  }
+  else if (optarg == "trust")
+  {
+    return theory::quantifiers::CEGIS_SAMPLE_TRUST;
+  }
+  else if (optarg == "help")
+  {
+    puts(s_cegisSampleHelp.c_str());
+    exit(1);
+  }
+  else
+  {
+    throw OptionException(std::string("unknown option for --cegis-sample: `")
+                          + optarg
+                          + "'.  Try --cegis-sample help.");
+  }
+}
+
+theory::quantifiers::SygusInvTemplMode
+OptionsHandler::stringToSygusInvTemplMode(std::string option,
+                                          std::string optarg)
+{
   if(optarg == "none" ) {
     return theory::quantifiers::SYGUS_INV_TEMPL_MODE_NONE;
   } else if(optarg == "pre") {
@@ -850,7 +953,9 @@ theory::quantifiers::SygusInvTemplMode OptionsHandler::stringToSygusInvTemplMode
   }
 }
 
-theory::quantifiers::MacrosQuantMode OptionsHandler::stringToMacrosQuantMode(std::string option, std::string optarg) throw(OptionException) {
+theory::quantifiers::MacrosQuantMode OptionsHandler::stringToMacrosQuantMode(
+    std::string option, std::string optarg)
+{
   if(optarg == "all" ) {
     return theory::quantifiers::MACROS_QUANT_MODE_ALL;
   } else if(optarg == "ground") {
@@ -866,7 +971,9 @@ theory::quantifiers::MacrosQuantMode OptionsHandler::stringToMacrosQuantMode(std
   }
 }
 
-theory::quantifiers::QuantDSplitMode OptionsHandler::stringToQuantDSplitMode(std::string option, std::string optarg) throw(OptionException) {
+theory::quantifiers::QuantDSplitMode OptionsHandler::stringToQuantDSplitMode(
+    std::string option, std::string optarg)
+{
   if(optarg == "none" ) {
     return theory::quantifiers::QUANT_DSPLIT_MODE_NONE;
   } else if(optarg == "default") {
@@ -882,7 +989,9 @@ theory::quantifiers::QuantDSplitMode OptionsHandler::stringToQuantDSplitMode(std
   }
 }
 
-theory::quantifiers::QuantRepMode OptionsHandler::stringToQuantRepMode(std::string option, std::string optarg) throw(OptionException) {
+theory::quantifiers::QuantRepMode OptionsHandler::stringToQuantRepMode(
+    std::string option, std::string optarg)
+{
   if(optarg == "none" ) {
     return theory::quantifiers::QUANT_REP_MODE_EE;
   } else if(optarg == "first" || optarg == "default") {
@@ -898,27 +1007,9 @@ theory::quantifiers::QuantRepMode OptionsHandler::stringToQuantRepMode(std::stri
   }
 }
 
-
-theory::quantifiers::FmfBoundMinMode OptionsHandler::stringToFmfBoundMinMode(std::string option, std::string optarg) throw(OptionException) {
-  if(optarg == "none" ) {
-    return theory::quantifiers::FMF_BOUND_MIN_NONE;
-  } else if(optarg == "int" || optarg == "default") {
-    return theory::quantifiers::FMF_BOUND_MIN_INT_RANGE;
-  } else if(optarg == "setc" || optarg == "default") {
-    return theory::quantifiers::FMF_BOUND_MIN_SET_CARD;
-  } else if(optarg == "all") {
-    return theory::quantifiers::FMF_BOUND_MIN_ALL;
-  } else if(optarg ==  "help") {
-    puts(s_fmfBoundMinModeModeHelp.c_str());
-    exit(1);
-  } else {
-    throw OptionException(std::string("unknown option for --fmf-bound-min-mode: `") +
-                          optarg + "'.  Try --fmf-bound-min-mode help.");
-  }
-}
-
 // theory/bv/options_handlers.h
-void OptionsHandler::abcEnabledBuild(std::string option, bool value) throw(OptionException) {
+void OptionsHandler::abcEnabledBuild(std::string option, bool value)
+{
 #ifndef CVC4_USE_ABC
   if(value) {
     std::stringstream ss;
@@ -928,7 +1019,8 @@ void OptionsHandler::abcEnabledBuild(std::string option, bool value) throw(Optio
 #endif /* CVC4_USE_ABC */
 }
 
-void OptionsHandler::abcEnabledBuild(std::string option, std::string value) throw(OptionException) {
+void OptionsHandler::abcEnabledBuild(std::string option, std::string value)
+{
 #ifndef CVC4_USE_ABC
   if(!value.empty()) {
     std::stringstream ss;
@@ -938,26 +1030,31 @@ void OptionsHandler::abcEnabledBuild(std::string option, std::string value) thro
 #endif /* CVC4_USE_ABC */
 }
 
-void OptionsHandler::satSolverEnabledBuild(std::string option,
-                                           bool value) throw(OptionException) {
-#ifndef CVC4_USE_CRYPTOMINISAT
-  if(value) {
+void OptionsHandler::satSolverEnabledBuild(std::string option, bool value)
+{
+#if !defined(CVC4_USE_CRYPTOMINISAT) && !defined(CVC4_USE_CADICAL)
+  if (value)
+  {
     std::stringstream ss;
-    ss << "option `" << option << "' requires an cryptominisat-enabled build of CVC4; this binary was not built with cryptominisat support";
+    ss << "option `" << option
+       << "' requires a CVC4 to be built with CryptoMiniSat or CaDiCaL";
     throw OptionException(ss.str());
   }
-#endif /* CVC4_USE_CRYPTOMINISAT */
+#endif
 }
 
 void OptionsHandler::satSolverEnabledBuild(std::string option,
-                                           std::string value) throw(OptionException) {
-#ifndef CVC4_USE_CRYPTOMINISAT
-  if(!value.empty()) {
+                                           std::string value)
+{
+#if !defined(CVC4_USE_CRYPTOMINISAT) && !defined(CVC4_USE_CADICAL)
+  if (!value.empty())
+  {
     std::stringstream ss;
-    ss << "option `" << option << "' requires an cryptominisat-enabled build of CVC4; this binary was not built with cryptominisat support";
+    ss << "option `" << option
+       << "' requires a CVC4 to be built with CryptoMiniSat or CaDiCaL";
     throw OptionException(ss.str());
   }
-#endif /* CVC4_USE_CRYPTOMINISAT */
+#endif
 }
 
 const std::string OptionsHandler::s_bvSatSolverHelp = "\
@@ -965,36 +1062,47 @@ Sat solvers currently supported by the --bv-sat-solver option:\n\
 \n\
 minisat (default)\n\
 \n\
+cadical\n\
+\n\
 cryptominisat\n\
 ";
 
 theory::bv::SatSolverMode OptionsHandler::stringToSatSolver(std::string option,
-                                                            std::string optarg) throw(OptionException) {
+                                                            std::string optarg)
+{
   if(optarg == "minisat") {
     return theory::bv::SAT_SOLVER_MINISAT;
   } else if(optarg == "cryptominisat") {
-    
-    if (options::incrementalSolving() &&
-        options::incrementalSolving.wasSetByUser()) {
-      throw OptionException(std::string("Cryptominsat does not support incremental mode. \n\
-                                         Try --bv-sat-solver=minisat"));
-    }
-
     if (options::bitblastMode() == theory::bv::BITBLAST_MODE_LAZY &&
         options::bitblastMode.wasSetByUser()) {
-      throw OptionException(std::string("Cryptominsat does not support lazy bit-blsating. \n\
-                                         Try --bv-sat-solver=minisat"));
+      throwLazyBBUnsupported(theory::bv::SAT_SOLVER_CRYPTOMINISAT);
     }
     if (!options::bitvectorToBool.wasSetByUser()) {
       options::bitvectorToBool.set(true);
     }
-
-    // if (!options::bvAbstraction.wasSetByUser() &&
-    //     !options::skolemizeArguments.wasSetByUser()) {
-    //   options::bvAbstraction.set(true);
-    //   options::skolemizeArguments.set(true); 
-    // }
     return theory::bv::SAT_SOLVER_CRYPTOMINISAT;
+  }
+  else if (optarg == "cadical")
+  {
+    if (options::incrementalSolving()
+        && options::incrementalSolving.wasSetByUser())
+    {
+      throw OptionException(
+          std::string("CaDiCaL does not support incremental mode. \n\
+                         Try --bv-sat-solver=cryptominisat or "
+                      "--bv-sat-solver=minisat"));
+    }
+
+    if (options::bitblastMode() == theory::bv::BITBLAST_MODE_LAZY
+        && options::bitblastMode.wasSetByUser())
+    {
+      throwLazyBBUnsupported(theory::bv::SAT_SOLVER_CADICAL);
+    }
+    if (!options::bitvectorToBool.wasSetByUser())
+    {
+      options::bitvectorToBool.set(true);
+    }
+    return theory::bv::SAT_SOLVER_CADICAL;
   } else if(optarg == "help") {
     puts(s_bvSatSolverHelp.c_str());
     exit(1);
@@ -1015,7 +1123,9 @@ eager\n\
 + Bitblast eagerly to bv SAT solver\n\
 ";
 
-theory::bv::BitblastMode OptionsHandler::stringToBitblastMode(std::string option, std::string optarg) throw(OptionException) {
+theory::bv::BitblastMode OptionsHandler::stringToBitblastMode(
+    std::string option, std::string optarg)
+{
   if(optarg == "lazy") {
     if (!options::bitvectorPropagate.wasSetByUser()) {
       options::bitvectorPropagate.set(true);
@@ -1038,14 +1148,12 @@ theory::bv::BitblastMode OptionsHandler::stringToBitblastMode(std::string option
     if (!options::bitvectorAlgebraicSolver.wasSetByUser()) {
       options::bitvectorAlgebraicSolver.set(true);
     }
+    if (options::bvSatSolver() != theory::bv::SAT_SOLVER_MINISAT)
+    {
+      throwLazyBBUnsupported(options::bvSatSolver());
+    }
     return theory::bv::BITBLAST_MODE_LAZY;
   } else if(optarg == "eager") {
-
-    if (options::incrementalSolving() &&
-        options::incrementalSolving.wasSetByUser()) {
-      throw OptionException(std::string("Eager bit-blasting does not currently support incremental mode. \n\
-                                         Try --bitblast=lazy"));
-    }
     if (!options::bitvectorToBool.wasSetByUser()) {
       options::bitvectorToBool.set(true);
     }
@@ -1078,7 +1186,9 @@ off\n\
 + Turn slicer off\n\
 ";
 
-theory::bv::BvSlicerMode OptionsHandler::stringToBvSlicerMode(std::string option, std::string optarg) throw(OptionException) {
+theory::bv::BvSlicerMode OptionsHandler::stringToBvSlicerMode(
+    std::string option, std::string optarg)
+{
   if(optarg == "auto") {
     return theory::bv::BITVECTOR_SLICER_AUTO;
   } else if(optarg == "on") {
@@ -1094,7 +1204,8 @@ theory::bv::BvSlicerMode OptionsHandler::stringToBvSlicerMode(std::string option
   }
 }
 
-void OptionsHandler::setBitblastAig(std::string option, bool arg) throw(OptionException) {
+void OptionsHandler::setBitblastAig(std::string option, bool arg)
+{
   if(arg) {
     if(options::bitblastMode.wasSetByUser()) {
       if(options::bitblastMode() != theory::bv::BITBLAST_MODE_EAGER) {
@@ -1125,7 +1236,9 @@ none \n\
 \n\
 ";
 
-theory::uf::UfssMode OptionsHandler::stringToUfssMode(std::string option, std::string optarg) throw(OptionException) {
+theory::uf::UfssMode OptionsHandler::stringToUfssMode(std::string option,
+                                                      std::string optarg)
+{
   if(optarg ==  "default" || optarg == "full" ) {
     return theory::uf::UF_SS_FULL;
   } else if(optarg == "no-minimal") {
@@ -1205,7 +1318,9 @@ szs\n\
 + Print instantiations as SZS compliant proof.\n\
 ";
 
-ModelFormatMode OptionsHandler::stringToModelFormatMode(std::string option, std::string optarg) throw(OptionException) {
+ModelFormatMode OptionsHandler::stringToModelFormatMode(std::string option,
+                                                        std::string optarg)
+{
   if(optarg == "default") {
     return MODEL_FORMAT_MODE_DEFAULT;
   } else if(optarg == "table") {
@@ -1219,7 +1334,9 @@ ModelFormatMode OptionsHandler::stringToModelFormatMode(std::string option, std:
   }
 }
 
-InstFormatMode OptionsHandler::stringToInstFormatMode(std::string option, std::string optarg) throw(OptionException) {
+InstFormatMode OptionsHandler::stringToInstFormatMode(std::string option,
+                                                      std::string optarg)
+{
   if(optarg == "default") {
     return INST_FORMAT_MODE_DEFAULT;
   } else if(optarg == "szs") {
@@ -1248,7 +1365,9 @@ justification-stoponly\n\
 + Use the justification heuristic only to stop early, not for decisions\n\
 ";
 
-decision::DecisionMode OptionsHandler::stringToDecisionMode(std::string option, std::string optarg) throw(OptionException) {
+decision::DecisionMode OptionsHandler::stringToDecisionMode(std::string option,
+                                                            std::string optarg)
+{
   options::decisionStopOnly.set(false);
 
   if(optarg == "internal") {
@@ -1267,7 +1386,9 @@ decision::DecisionMode OptionsHandler::stringToDecisionMode(std::string option, 
   }
 }
 
-decision::DecisionWeightInternal OptionsHandler::stringToDecisionWeightInternal(std::string option, std::string optarg) throw(OptionException) {
+decision::DecisionWeightInternal OptionsHandler::stringToDecisionWeightInternal(
+    std::string option, std::string optarg)
+{
   if(optarg == "off")
     return decision::DECISION_WEIGHT_INTERNAL_OFF;
   else if(optarg == "max")
@@ -1294,9 +1415,9 @@ none\n\
 + do not perform nonclausal simplification\n\
 ";
 
-
-
-SimplificationMode OptionsHandler::stringToSimplificationMode(std::string option, std::string optarg) throw(OptionException) {
+SimplificationMode OptionsHandler::stringToSimplificationMode(
+    std::string option, std::string optarg)
+{
   if(optarg == "batch") {
     return SIMPLIFICATION_MODE_BATCH;
   } else if(optarg == "none") {
@@ -1330,7 +1451,7 @@ sygus-standard \n\
 ";
 
 SygusSolutionOutMode OptionsHandler::stringToSygusSolutionOutMode(
-    std::string option, std::string optarg) throw(OptionException)
+    std::string option, std::string optarg)
 {
   if (optarg == "status")
   {
@@ -1361,13 +1482,14 @@ SygusSolutionOutMode OptionsHandler::stringToSygusSolutionOutMode(
   }
 }
 
-void OptionsHandler::setProduceAssertions(std::string option, bool value) throw() {
+void OptionsHandler::setProduceAssertions(std::string option, bool value)
+{
   options::produceAssertions.set(value);
   options::interactiveMode.set(value);
 }
 
-
-void OptionsHandler::proofEnabledBuild(std::string option, bool value) throw(OptionException) {
+void OptionsHandler::proofEnabledBuild(std::string option, bool value)
+{
 #ifndef CVC4_PROOF
   if(value) {
     std::stringstream ss;
@@ -1418,7 +1540,8 @@ void OptionsHandler::notifySetReplayLogFilename(std::string option) {
   d_options->d_setReplayFilenameListeners.notify();
 }
 
-void OptionsHandler::statsEnabledBuild(std::string option, bool value) throw(OptionException) {
+void OptionsHandler::statsEnabledBuild(std::string option, bool value)
+{
 #ifndef CVC4_STATISTICS_ON
   if(value) {
     std::stringstream ss;
@@ -1432,7 +1555,8 @@ void OptionsHandler::threadN(std::string option) {
   throw OptionException(option + " is not a real option by itself.  Use e.g. --thread0=\"--random-seed=10 --random-freq=0.02\" --thread1=\"--random-seed=20 --random-freq=0.05\"");
 }
 
-void OptionsHandler::notifyDumpMode(std::string option) throw(OptionException) {
+void OptionsHandler::notifyDumpMode(std::string option)
+{
   d_options->d_setDumpModeListeners.notify();
 }
 
@@ -1496,15 +1620,6 @@ void OptionsHandler::showConfiguration(std::string option) {
        << (Configuration::hasGitModifications() ? " (with modifications)" : "")
        << "]";
     print_config("scm", ss.str());
-  } else if(Configuration::isSubversionBuild()) {
-    std::stringstream ss;
-    ss << "svn ["
-       << Configuration::getSubversionBranchName() << " r"
-       << Configuration::getSubversionRevision()
-       << (Configuration::hasSubversionModifications()
-           ? " (with modifications)" : "")
-       << "]";
-    print_config("scm", ss.str());
   } else {
     print_config_cond("scm", false);
   }
@@ -1536,49 +1651,128 @@ void OptionsHandler::showConfiguration(std::string option) {
   print_config_cond("abc", Configuration::isBuiltWithAbc());
   print_config_cond("cln", Configuration::isBuiltWithCln());
   print_config_cond("glpk", Configuration::isBuiltWithGlpk());
+  print_config_cond("cadical", Configuration::isBuiltWithCadical());
   print_config_cond("cryptominisat", Configuration::isBuiltWithCryptominisat());
   print_config_cond("gmp", Configuration::isBuiltWithGmp());
   print_config_cond("lfsc", Configuration::isBuiltWithLfsc());
   print_config_cond("readline", Configuration::isBuiltWithReadline());
-  print_config_cond("tls", Configuration::isBuiltWithTlsSupport());
+  print_config_cond("symfpu", Configuration::isBuiltWithSymFPU());
   
   exit(0);
 }
 
-void OptionsHandler::showDebugTags(std::string option) {
-  if(Configuration::isDebugBuild() && Configuration::isTracingBuild()) {
-    std::cout << "available tags:";
-    unsigned ntags = Configuration::getNumDebugTags();
-    char const* const* tags = Configuration::getDebugTags();
-    for(unsigned i = 0; i < ntags; ++ i) {
-      std::cout << tags[i];
-    }
-    std::cout << std::endl;
-  } else if(! Configuration::isDebugBuild()) {
+static void printTags(unsigned ntags, char const* const* tags)
+{
+  std::cout << "available tags:";
+  for (unsigned i = 0; i < ntags; ++ i)
+  {
+    std::cout << "  " << tags[i] << std::endl;
+  }
+  std::cout << std::endl;
+}
+
+void OptionsHandler::showDebugTags(std::string option)
+{
+  if (!Configuration::isDebugBuild())
+  {
     throw OptionException("debug tags not available in non-debug builds");
-  } else {
+  }
+  else if (!Configuration::isTracingBuild())
+  {
     throw OptionException("debug tags not available in non-tracing builds");
   }
+  printTags(Configuration::getNumDebugTags(),Configuration::getDebugTags());
   exit(0);
 }
 
-void OptionsHandler::showTraceTags(std::string option) {
-  if(Configuration::isTracingBuild()) {
-    std::cout << "available tags:";
-    unsigned ntags = Configuration::getNumTraceTags();
-    char const* const* tags = Configuration::getTraceTags();
-    for (unsigned i = 0; i < ntags; ++ i) {
-      std::cout << tags[i];
-    }
-    std::cout << std::endl;
-  } else {
+void OptionsHandler::showTraceTags(std::string option)
+{
+  if (!Configuration::isTracingBuild())
+  {
     throw OptionException("trace tags not available in non-tracing build");
   }
+  printTags(Configuration::getNumTraceTags(), Configuration::getTraceTags());
   exit(0);
 }
 
+static std::string suggestTags(char const* const* validTags,
+                               std::string inputTag,
+                               char const* const* additionalTags)
+{
+  DidYouMean didYouMean;
 
-OutputLanguage OptionsHandler::stringToOutputLanguage(std::string option, std::string optarg) throw(OptionException) {
+  const char* opt;
+  for (size_t i = 0; (opt = validTags[i]) != nullptr; ++i)
+  {
+    didYouMean.addWord(validTags[i]);
+  }
+  if (additionalTags != nullptr)
+  {
+    for (size_t i = 0; (opt = additionalTags[i]) != nullptr; ++i)
+    {
+      didYouMean.addWord(additionalTags[i]);
+    }
+  }
+
+  return didYouMean.getMatchAsString(inputTag);
+}
+
+void OptionsHandler::enableTraceTag(std::string option, std::string optarg)
+{
+  if(!Configuration::isTracingBuild())
+  {
+    throw OptionException("trace tags not available in non-tracing builds");
+  }
+  else if(!Configuration::isTraceTag(optarg.c_str()))
+  {
+    if (optarg == "help")
+    {
+      printTags(
+          Configuration::getNumTraceTags(), Configuration::getTraceTags());
+      exit(0);
+    }
+
+    throw OptionException(
+        std::string("trace tag ") + optarg + std::string(" not available.")
+        + suggestTags(Configuration::getTraceTags(), optarg, nullptr));
+  }
+  Trace.on(optarg);
+}
+
+void OptionsHandler::enableDebugTag(std::string option, std::string optarg)
+{
+  if (!Configuration::isDebugBuild())
+  {
+    throw OptionException("debug tags not available in non-debug builds");
+  }
+  else if (!Configuration::isTracingBuild())
+  {
+    throw OptionException("debug tags not available in non-tracing builds");
+  }
+
+  if (!Configuration::isDebugTag(optarg.c_str())
+      && !Configuration::isTraceTag(optarg.c_str()))
+  {
+    if (optarg == "help")
+    {
+      printTags(
+          Configuration::getNumDebugTags(), Configuration::getDebugTags());
+      exit(0);
+    }
+
+    throw OptionException(std::string("debug tag ") + optarg
+                          + std::string(" not available.")
+                          + suggestTags(Configuration::getDebugTags(),
+                                        optarg,
+                                        Configuration::getTraceTags()));
+  }
+  Debug.on(optarg);
+  Trace.on(optarg);
+}
+
+OutputLanguage OptionsHandler::stringToOutputLanguage(std::string option,
+                                                      std::string optarg)
+{
   if(optarg == "help") {
     options::languageHelp.set(true);
     return language::output::LANG_AUTO;
@@ -1594,7 +1788,9 @@ OutputLanguage OptionsHandler::stringToOutputLanguage(std::string option, std::s
   Unreachable();
 }
 
-InputLanguage OptionsHandler::stringToInputLanguage(std::string option, std::string optarg) throw(OptionException) {
+InputLanguage OptionsHandler::stringToInputLanguage(std::string option,
+                                                    std::string optarg)
+{
   if(optarg == "help") {
     options::languageHelp.set(true);
     return language::input::LANG_AUTO;
@@ -1610,7 +1806,8 @@ InputLanguage OptionsHandler::stringToInputLanguage(std::string option, std::str
 }
 
 /* options/base_options_handlers.h */
-void OptionsHandler::setVerbosity(std::string option, int value) throw(OptionException) {
+void OptionsHandler::setVerbosity(std::string option, int value)
+{
   if(Configuration::isMuzzledBuild()) {
     DebugChannel.setStream(&CVC4::null_os);
     TraceChannel.setStream(&CVC4::null_os);
@@ -1648,84 +1845,6 @@ void OptionsHandler::decreaseVerbosity(std::string option) {
   options::verbosity.set(options::verbosity() - 1);
   setVerbosity(option, options::verbosity());
 }
-
-
-void OptionsHandler::addTraceTag(std::string option, std::string optarg) {
-  if(Configuration::isTracingBuild()) {
-    if(!Configuration::isTraceTag(optarg.c_str())) {
-
-      if(optarg == "help") {
-        std::cout << "available tags:";
-        unsigned ntags = Configuration::getNumTraceTags();
-        char const* const* tags = Configuration::getTraceTags();
-        for(unsigned i = 0; i < ntags; ++ i) {
-          std::cout << tags[i];
-        }
-        std::cout << std::endl;
-        exit(0);
-      }
-
-      throw OptionException(std::string("trace tag ") + optarg +
-                            std::string(" not available.") +
-                            suggestTags(Configuration::getTraceTags(), optarg) );
-    }
-  } else {
-    throw OptionException("trace tags not available in non-tracing builds");
-  }
-  Trace.on(optarg);
-}
-
-void OptionsHandler::addDebugTag(std::string option, std::string optarg) {
-  if(Configuration::isDebugBuild() && Configuration::isTracingBuild()) {
-    if(!Configuration::isDebugTag(optarg.c_str()) &&
-       !Configuration::isTraceTag(optarg.c_str())) {
-
-      if(optarg == "help") {
-        std::cout << "available tags:";
-        unsigned ntags = Configuration::getNumDebugTags();
-        char const* const* tags = Configuration::getDebugTags();
-        for(unsigned i = 0; i < ntags; ++ i) {
-          std::cout << tags[i];
-        }
-        std::cout << std::endl;
-        exit(0);
-      }
-
-      throw OptionException(std::string("debug tag ") + optarg +
-                            std::string(" not available.") +
-                            suggestTags(Configuration::getDebugTags(), optarg, Configuration::getTraceTags()) );
-    }
-  } else if(! Configuration::isDebugBuild()) {
-    throw OptionException("debug tags not available in non-debug builds");
-  } else {
-    throw OptionException("debug tags not available in non-tracing builds");
-  }
-  Debug.on(optarg);
-  Trace.on(optarg);
-}
-
-
-
-
-std::string OptionsHandler::suggestTags(char const* const* validTags, std::string inputTag,
-                                           char const* const* additionalTags)
-{
-  DidYouMean didYouMean;
-
-  const char* opt;
-  for(size_t i = 0; (opt = validTags[i]) != NULL; ++i) {
-    didYouMean.addWord(validTags[i]);
-  }
-  if(additionalTags != NULL) {
-    for(size_t i = 0; (opt = additionalTags[i]) != NULL; ++i) {
-      didYouMean.addWord(additionalTags[i]);
-    }
-  }
-
-  return  didYouMean.getMatchAsString(inputTag);
-}
-
-
 
 
 }/* CVC4::options namespace */

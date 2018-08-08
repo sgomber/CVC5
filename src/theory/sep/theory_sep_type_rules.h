@@ -2,9 +2,9 @@
 /*! \file theory_sep_type_rules.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Andrew Reynolds, Mathias Preiner
+ **   Andrew Reynolds, Tim King
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -26,7 +26,7 @@ namespace sep {
 class SepEmpTypeRule {
 public:
   inline static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check)
-    throw (TypeCheckingExceptionPrivate, AssertionException) {
+  {
     Assert(n.getKind() == kind::SEP_EMP);
     return nodeManager->booleanType();
   }
@@ -34,7 +34,7 @@ public:
 
 struct SepPtoTypeRule {
   inline static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check)
-    throw (TypeCheckingExceptionPrivate, AssertionException) {
+  {
     Assert(n.getKind() == kind::SEP_PTO);
     if( check ) {
       TypeNode refType = n[0].getType(check);
@@ -46,7 +46,7 @@ struct SepPtoTypeRule {
 
 struct SepStarTypeRule {
   inline static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check)
-    throw (TypeCheckingExceptionPrivate, AssertionException) {
+  {
     TypeNode btype = nodeManager->booleanType();
     Assert(n.getKind() == kind::SEP_STAR);
     if( check ){
@@ -63,7 +63,7 @@ struct SepStarTypeRule {
 
 struct SepWandTypeRule {
   inline static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check)
-    throw (TypeCheckingExceptionPrivate, AssertionException) {
+  {
     TypeNode btype = nodeManager->booleanType();
     Assert(n.getKind() == kind::SEP_WAND);
     if( check ){
@@ -80,7 +80,7 @@ struct SepWandTypeRule {
 
 struct SepLabelTypeRule {
   inline static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check)
-    throw (TypeCheckingExceptionPrivate, AssertionException) {
+  {
     TypeNode btype = nodeManager->booleanType();
     Assert(n.getKind() == kind::SEP_LABEL);
     if( check ){
@@ -99,7 +99,7 @@ struct SepLabelTypeRule {
 
 struct SepNilTypeRule {
   inline static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check)
-    throw (TypeCheckingExceptionPrivate, AssertionException) {
+  {
     Assert(n.getKind() == kind::SEP_NIL);
     Assert(check);
     TypeNode type = n.getType();

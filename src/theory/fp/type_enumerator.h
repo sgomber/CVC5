@@ -1,13 +1,14 @@
 /*********************                                                        */
 /*! \file type_enumerator.h
  ** \verbatim
- ** Original author: Morgan Deters
- ** Major contributors: Martin Brain
- ** Minor contributors (to current version): none
- ** This file is part of the CVC4 project.
+ ** Top contributors (to current version):
+ **   Tim King, Martin Brain
  ** Copyright (c) 2009-2015  New York University and The University of Iowa
- ** See the file COPYING in the top-level source directory for licensing
- ** information.\endverbatim
+ ** This file is part of the CVC4 project.
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
+ ** in the top-level source directory) and their institutional affiliations.
+ ** All rights reserved.  See the file COPYING in the top-level source
+ ** directory for licensing information.\endverbatim
  **
  ** \brief An enumerator for floating-point numbers.
  **
@@ -48,7 +49,7 @@ class FloatingPointEnumerator
     return NodeManager::currentNM()->mkConst(createFP());
   }
 
-  FloatingPointEnumerator& operator++() {
+  FloatingPointEnumerator& operator++() override {
     const FloatingPoint current(createFP());
     if (current.isNaN()) {
       d_enumerationComplete = true;
@@ -92,7 +93,7 @@ class RoundingModeEnumerator
     return NodeManager::currentNM()->mkConst(d_rm);
   }
 
-  RoundingModeEnumerator& operator++() {
+  RoundingModeEnumerator& operator++() override {
     switch (d_rm) {
       case roundNearestTiesToEven:
         d_rm = roundTowardPositive;

@@ -2,9 +2,9 @@
 /*! \file output_channel.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Morgan Deters, Liana Hadarean, Tim King
+ **   Morgan Deters, Tim King, Liana Hadarean
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -18,6 +18,8 @@
 
 #ifndef __CVC4__THEORY__OUTPUT_CHANNEL_H
 #define __CVC4__THEORY__OUTPUT_CHANNEL_H
+
+#include <memory>
 
 #include "base/cvc4_assert.h"
 #include "proof/proof_manager.h"
@@ -42,15 +44,13 @@ class LemmaStatus {
       : d_rewrittenLemma(rewrittenLemma), d_level(level) {}
 
   /** Get the T-rewritten form of the lemma. */
-  TNode getRewrittenLemma() const throw() { return d_rewrittenLemma; }
-
+  TNode getRewrittenLemma() const { return d_rewrittenLemma; }
   /**
    * Get the user-level at which the lemma resides.  After this user level
    * is popped, the lemma is un-asserted from the SAT layer.  This level
    * will be 0 if the lemma didn't reach the SAT layer at all.
    */
-  unsigned getLevel() const throw() { return d_level; }
-
+  unsigned getLevel() const { return d_level; }
  private:
   Node d_rewrittenLemma;
   unsigned d_level;
@@ -97,7 +97,7 @@ class OutputChannel {
    * @param pf - a proof of the conflict. This is only non-null if proofs
    * are enabled.
    */
-  virtual void conflict(TNode n, Proof* pf = nullptr) = 0;
+  virtual void conflict(TNode n, std::unique_ptr<Proof> pf = nullptr) = 0;
 
   /**
    * Propagate a theory literal.

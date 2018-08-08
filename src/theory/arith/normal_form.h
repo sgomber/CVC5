@@ -2,9 +2,9 @@
 /*! \file normal_form.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Tim King, Morgan Deters, Paul Meng
+ **   Tim King, Morgan Deters, Andrew Reynolds
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -245,6 +245,16 @@ public:
     case kind::SINE:
     case kind::COSINE:
     case kind::TANGENT:
+    case kind::COSECANT:
+    case kind::SECANT:
+    case kind::COTANGENT:
+    case kind::ARCSINE:
+    case kind::ARCCOSINE:
+    case kind::ARCTANGENT:
+    case kind::ARCCOSECANT:
+    case kind::ARCSECANT:
+    case kind::ARCCOTANGENT:
+    case kind::SQRT:
     case kind::PI:
       return isTranscendentalMember(n);      
     case kind::ABS:

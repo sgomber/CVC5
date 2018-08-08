@@ -2,9 +2,9 @@
 /*! \file theory_model_builder.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Clark Barrett, Andrew Reynolds, Morgan Deters
+ **   Andrew Reynolds
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -286,11 +286,15 @@ bool TheoryEngineModelBuilder::buildModel(Model* m)
 
   // mark as built
   tm->d_modelBuilt = true;
+  tm->d_modelBuiltSuccess = false;
 
   // Collect model info from the theories
   Trace("model-builder") << "TheoryEngineModelBuilder: Collect model info..."
                          << std::endl;
-  d_te->collectModelInfo(tm);
+  if (!d_te->collectModelInfo(tm))
+  {
+    return false;
+  }
 
   // model-builder specific initialization
   if (!preProcessBuildModel(tm))
@@ -350,11 +354,10 @@ bool TheoryEngineModelBuilder::buildModel(Model* m)
   }
   // AJR: build ordered list of types that ensures that base types are
   // enumerated first.
-  //   (I think) this is only strictly necessary for finite model finding +
-  //   parametric types
-  //   instantiated with uninterpreted sorts, but is probably a good idea to do
-  //   in general
-  //   since it leads to models with smaller term sizes.
+  // (I think) this is only strictly necessary for finite model finding +
+  // parametric types instantiated with uninterpreted sorts, but is probably
+  // a good idea to do in general since it leads to models with smaller term
+  // sizes.
   std::vector<TypeNode> type_list;
   eqcs_i = eq::EqClassesIterator(tm->d_equalityEngine);
   for (; !eqcs_i.isFinished(); ++eqcs_i)
@@ -396,7 +399,7 @@ bool TheoryEngineModelBuilder::buildModel(Model* m)
                                << std::endl;
       }
       // model-specific processing of the term
-      tm->addTerm(n);
+      tm->addTermInternal(n);
     }
 
     // Assign representative for this EC
@@ -663,7 +666,14 @@ bool TheoryEngineModelBuilder::buildModel(Model* m)
         if (assignable)
         {
           Assert(!evaluable || assignOne);
-          Assert(!t.isBoolean() || (*i2).getKind() == kind::APPLY_UF);
+          // this assertion ensures that if we are assigning to a term of
+          // Boolean type, then the term is either a variable or an APPLY_UF.
+          // Note we only assign to terms of Boolean type if the term occurs in
+          // a singleton equivalence class; otherwise the term would have been
+          // in the equivalence class of true or false and would not need
+          // assigning.
+          Assert(!t.isBoolean() || (*i2).isVar()
+                 || (*i2).getKind() == kind::APPLY_UF);
           Node n;
           if (t.getCardinality().isInfinite())
           {
@@ -800,6 +810,7 @@ bool TheoryEngineModelBuilder::buildModel(Model* m)
   }
   else
   {
+    tm->d_modelBuiltSuccess = true;
     return true;
   }
 }
@@ -926,7 +937,10 @@ bool TheoryEngineModelBuilder::preProcessBuildModel(TheoryModel* m)
 
 bool TheoryEngineModelBuilder::processBuildModel(TheoryModel* m)
 {
-  assignFunctions(m);
+  if (m->areFunctionValuesEnabled())
+  {
+    assignFunctions(m);
+  }
   return true;
 }
 
@@ -1094,6 +1108,10 @@ struct sortTypeSize
 
 void TheoryEngineModelBuilder::assignFunctions(TheoryModel* m)
 {
+  if (!options::assignFunctionValues())
+  {
+    return;
+  }
   Trace("model-builder") << "Assigning function values..." << std::endl;
   std::vector<Node> funcs_to_assign = m->getFunctionsToAssign();
 

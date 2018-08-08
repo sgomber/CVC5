@@ -2,9 +2,9 @@
 /*! \file term_util.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Andrew Reynolds
+ **   Andrew Reynolds, Mathias Preiner
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -34,9 +34,6 @@ typedef expr::Attribute<InstConstantAttributeId, Node> InstConstantAttribute;
 struct BoundVarAttributeId {};
 typedef expr::Attribute<BoundVarAttributeId, Node> BoundVarAttribute;
 
-struct InstLevelAttributeId {};
-typedef expr::Attribute<InstLevelAttributeId, uint64_t> InstLevelAttribute;
-
 struct InstVarNumAttributeId {};
 typedef expr::Attribute<InstVarNumAttributeId, uint64_t> InstVarNumAttribute;
 
@@ -62,10 +59,6 @@ typedef expr::Attribute<RrPriorityAttributeId, uint64_t> RrPriorityAttribute;
 struct LtePartialInstAttributeId {};
 typedef expr::Attribute< LtePartialInstAttributeId, bool > LtePartialInstAttribute;
 
-// attribute for sygus proxy variables
-struct SygusProxyAttributeId {};
-typedef expr::Attribute<SygusProxyAttributeId, Node> SygusProxyAttribute;
-
 // attribute for associating a synthesis function with a first order variable
 struct SygusSynthGrammarAttributeId {};
 typedef expr::Attribute<SygusSynthGrammarAttributeId, Node>
@@ -83,10 +76,6 @@ typedef expr::Attribute<AbsTypeFunDefAttributeId, bool> AbsTypeFunDefAttribute;
 struct QuantIdNumAttributeId {};
 typedef expr::Attribute< QuantIdNumAttributeId, uint64_t > QuantIdNumAttribute;
 
-/** sygus var num */
-struct SygusVarNumAttributeId {};
-typedef expr::Attribute<SygusVarNumAttributeId, uint64_t> SygusVarNumAttribute;
-
 /** Attribute to mark Skolems as virtual terms */
 struct VirtualTermSkolemAttributeId {};
 typedef expr::Attribute< VirtualTermSkolemAttributeId, bool > VirtualTermSkolemAttribute;
@@ -101,13 +90,16 @@ namespace inst{
 namespace quantifiers {
 
 class TermDatabase;
+class Instantiate;
 
 // TODO : #1216 split this class, most of the functions in this class should be dispersed to where they are used.
 class TermUtil : public QuantifiersUtil
 {
   // TODO : remove these
   friend class ::CVC4::theory::QuantifiersEngine;
-private:
+  friend class Instantiate;
+
+ private:
   /** reference to the quantifiers engine */
   QuantifiersEngine* d_quantEngine;
 public:
@@ -121,11 +113,11 @@ public:
   Node d_one;
 
   /** reset */
-  virtual bool reset(Theory::Effort e) override { return true; }
+  bool reset(Theory::Effort e) override { return true; }
   /** register quantifier */
-  virtual void registerQuantifier(Node q) override;
+  void registerQuantifier(Node q) override;
   /** identify */
-  virtual std::string identify() const override { return "TermUtil"; }
+  std::string identify() const override { return "TermUtil"; }
   // for inst constant
  private:
   /** map from universal quantifiers to the list of variables */
@@ -183,32 +175,29 @@ public:
   //quantified simplify (treat free variables in n as quantified and run rewriter)
   static Node getQuantSimplify( Node n );
 
-//for triggers
-private:
-  /** helper function for compute var contains */
-  static void computeVarContains2( Node n, Kind k, std::vector< Node >& varContains, std::map< Node, bool >& visited );
-  /** helper for is instance of */
-  static bool isUnifiableInstanceOf( Node n1, Node n2, std::map< Node, Node >& subs );
-  /** -1: n1 is an instance of n2, 1: n1 is an instance of n2 */
-  static int isInstanceOf2( Node n1, Node n2, std::vector< Node >& varContains1, std::vector< Node >& varContains2 );
-  /** -1: n1 is an instance of n2, 1: n1 is an instance of n2 */
-  static int isInstanceOf(Node n1, Node n2);
+ private:
+  /** adds the set of nodes of kind k in n to vars */
+  static void computeVarContainsInternal(Node n,
+                                         Kind k,
+                                         std::vector<Node>& vars);
 
  public:
-  /** compute var contains */
-  static void computeVarContains( Node n, std::vector< Node >& varContains );
-  /** get var contains for each of the patterns in pats */
-  static void getVarContains( Node f, std::vector< Node >& pats, std::map< Node, std::vector< Node > >& varContains );
-  /** get var contains for node n */
-  static void getVarContainsNode( Node f, Node n, std::vector< Node >& varContains );
-  /** compute quant contains */
-  static void computeQuantContains( Node n, std::vector< Node >& quantContains );
-  // TODO (#1216) : this should be in trigger.h
-  /** filter all nodes that have instances */
-  static void filterInstances( std::vector< Node >& nodes );
+  /** adds the set of nodes of kind INST_CONSTANT in n to ics */
+  static void computeInstConstContains(Node n, std::vector<Node>& ics);
+  /** adds the set of nodes of kind BOUND_VARIABLE in n to vars */
+  static void computeVarContains(Node n, std::vector<Node>& vars);
+  /** adds the set of (top-level) nodes of kind FORALL in n to quants */
+  static void computeQuantContains(Node n, std::vector<Node>& quants);
+  /**
+   * Adds the set of nodes of kind INST_CONSTANT in n that belong to quantified
+   * formula q to vars.
+   */
+  static void computeInstConstContainsForQuant(Node q,
+                                               Node n,
+                                               std::vector<Node>& vars);
 
-//for term ordering
-private:
+  // for term ordering
+ private:
   /** operator id count */
   int d_op_id_count;
   /** map from operators to id */
@@ -261,17 +250,35 @@ public:
   bool containsVtsInfinity( Node n, bool isFree = false );
   /** ensure type */
   static Node ensureType( Node n, TypeNode tn );
-  /** get relevancy condition */
-  static void getRelevancyCondition( Node n, std::vector< Node >& cond );
   
 //general utilities
-private:
+  // TODO #1216 : promote these?
+ private:
   //helper for contains term
-  static bool containsTerm2( Node n, Node t, std::map< Node, bool >& visited );
   static bool containsTerms2( Node n, std::vector< Node >& t, std::map< Node, bool >& visited );
-public:
-  /** simple check for whether n contains t as subterm */
-  static bool containsTerm( Node n, Node t );
+  /** cache for getTypeValue */
+  std::unordered_map<TypeNode,
+                     std::unordered_map<int, Node>,
+                     TypeNodeHashFunction>
+      d_type_value;
+  /** cache for getTypeMaxValue */
+  std::unordered_map<TypeNode, Node, TypeNodeHashFunction> d_type_max_value;
+  /** cache for getTypeValueOffset */
+  std::unordered_map<TypeNode,
+                     std::unordered_map<Node,
+                                        std::unordered_map<int, Node>,
+                                        NodeHashFunction>,
+                     TypeNodeHashFunction>
+      d_type_value_offset;
+  /** cache for status of getTypeValueOffset*/
+  std::unordered_map<TypeNode,
+                     std::unordered_map<Node,
+                                        std::unordered_map<int, int>,
+                                        NodeHashFunction>,
+                     TypeNodeHashFunction>
+      d_type_value_offset_status;
+
+ public:
   /** simple check for contains term, true if contains at least one term in t */
   static bool containsTerms( Node n, std::vector< Node >& t );
   /** contains uninterpreted constant */
@@ -280,19 +287,101 @@ public:
   static int getTermDepth( Node n );
   /** simple negate */
   static Node simpleNegate( Node n );
+  /** is the kind k a negation kind?
+   *
+   * A kind k is a negation kind if <k>( <k>( n ) ) = n.
+   */
+  static bool isNegate(Kind k);
+  /**
+   * Make negated term, returns the negation of n wrt Kind notk, eliminating
+   * double negation if applicable, e.g. mkNegate( ~, ~x ) ---> x.
+   */
+  static Node mkNegate(Kind notk, Node n);
   /** is assoc */
   static bool isAssoc( Kind k );
-  /** is comm */
+  /** is k commutative? */
   static bool isComm( Kind k );
-  /** ( x k ... ) k x = ( x k ... ) */
+
+  /** is k non-additive?
+   * Returns true if
+   *   <k>( <k>( T1, x, T2 ), x ) =
+   *   <k>( T1, x, T2 )
+   * always holds, where T1 and T2 are vectors.
+   */
   static bool isNonAdditive( Kind k );
-  /** is bool connective */
+  /** is k a bool connective? */
   static bool isBoolConnective( Kind k );
-  /** is bool connective term */
+  /** is n a bool connective term? */
   static bool isBoolConnectiveTerm( TNode n );
 
-//for higher-order
-private:
+  /** is the kind k antisymmetric?
+   * If so, return true and store its inverse kind in dk.
+   */
+  static bool isAntisymmetric(Kind k, Kind& dk);
+
+  /** has offset arg
+   * Returns true if there is a Kind ok and offset
+   * such that
+   *   <ik>( ... t_{arg-1}, n, t_{arg+1}... ) =
+   *   <ok>( ... t_{arg-1}, n+offset, t_{arg+1}...)
+   * always holds.
+   * If so, this function returns true and stores
+   * offset and ok in the respective fields.
+   */
+  static bool hasOffsetArg(Kind ik, int arg, int& offset, Kind& ok);
+
+  /** is idempotent arg
+   * Returns true if
+   *   <k>( ... t_{arg-1}, n, t_{arg+1}...) =
+   *   <k>( ... t_{arg-1}, t_{arg+1}...)
+   * always holds.
+   */
+  bool isIdempotentArg(Node n, Kind ik, int arg);
+
+  /** is singular arg
+   * Returns true if
+   *   <k>( ... t_{arg-1}, n, t_{arg+1}...) = n
+   * always holds.
+   */
+  Node isSingularArg(Node n, Kind ik, int arg);
+
+  /** get type value
+   * This gets the Node that represents value val for Type tn
+   * This is used to get simple values, e.g. -1,0,1,
+   * in a uniform way per type.
+   */
+  Node getTypeValue(TypeNode tn, int val);
+
+  /** get type value offset
+   * Returns the value of ( val + getTypeValue( tn, offset ) ),
+   * where + is the additive operator for the type.
+   * Stores the status (0: success, -1: failure) in status.
+   */
+  Node getTypeValueOffset(TypeNode tn, Node val, int offset, int& status);
+
+  /** get the "max" value for type tn
+   * For example,
+   *   the max value for Bool is true,
+   *   the max value for BitVector is 1..1.
+   */
+  Node getTypeMaxValue(TypeNode tn);
+
+  /** make value, static version of get value */
+  static Node mkTypeValue(TypeNode tn, int val);
+  /** make value offset, static version of get value offset */
+  static Node mkTypeValueOffset(TypeNode tn, Node val, int offset, int& status);
+  /** make max value, static version of get max value */
+  static Node mkTypeMaxValue(TypeNode tn);
+  /**
+   * Make const, returns pol ? mkTypeValue(tn,0) : mkTypeMaxValue(tn).
+   * In other words, this returns either the minimum element of tn if pol is
+   * true, and the maximum element in pol is false. The type tn should have
+   * minimum and maximum elements, for example tn is Bool or BitVector.
+   */
+  static Node mkTypeConst(TypeNode tn, bool pol);
+
+  // for higher-order
+ private:
   /** dummy predicate that states terms should be considered first-class members of equality engine */
   std::map< TypeNode, Node > d_ho_type_match_pred;
 public:

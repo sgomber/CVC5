@@ -2,9 +2,9 @@
 /*! \file cut_log.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Tim King, Morgan Deters, Paul Meng
+ **   Tim King
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -26,6 +26,7 @@
 #include "theory/arith/constraint.h"
 #include "theory/arith/cut_log.h"
 #include "theory/arith/normal_form.h"
+#include "util/ostream_util.h"
 
 using namespace std;
 
@@ -84,8 +85,9 @@ void PrimitiveVec::setup(int l){
 }
 void PrimitiveVec::print(std::ostream& out) const{
   Assert(initialized());
-  out << len << " ";
-  out.precision(15);
+  StreamFormatScope scope(out);
+
+  out << len << " " << std::setprecision(15);
   for(int i = 1; i <= len; ++i){
     out << "["<< inds[i] <<", " << coeffs[i]<<"]";
   }
