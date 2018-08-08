@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "Run count std::vector tests with options $@..."
+echo "Run count std::vector TNode tests with options $@..."
 
 ./perf_test_script 6 7 2 $@ 
 ./perf_test_script 6 7 3 $@
