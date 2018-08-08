@@ -52,6 +52,7 @@ void PerfTest::initializeVars( unsigned use_depth, double use_rf ) {
     if( r<use_rf || d_vars.empty() ){
       Node v = mkVar();
       d_vars.push_back( v );
+      d_tvars.push_back(v);
     }else{
       r = (double)(rand())/((double)(RAND_MAX));
       unsigned iuse = (unsigned)( (double(d_vars.size())*r ) );
@@ -59,6 +60,7 @@ void PerfTest::initializeVars( unsigned use_depth, double use_rf ) {
         iuse = d_vars.size()-1;        
       }
       d_vars.push_back(d_vars[iuse]);
+      d_tvars.push_back(d_vars[iuse]);
     }
   }
   double r = (double)(rand())/((double)(RAND_MAX));
@@ -81,6 +83,7 @@ Node PerfTest::mkRandom(unsigned depth, double rf ){
       ss << "t" << d_vars.size();
       Node v = mkVar();
       d_vars.push_back( v );
+      d_tvars.push_back(v);
     }else{
       r = (double)(rand())/((double)(RAND_MAX));
       iuse = (unsigned)( (double(d_vars.size())*r ) );

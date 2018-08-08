@@ -639,3 +639,67 @@ header = "options/smt_options.h"
   default    = "false"
   read_only  = true
   help       = "attempt to solve a pure real satisfiable problem as an integer problem (for non-linear)"
+
+[[option]]
+  name       = "doTests"
+  category   = "undocumented"
+  long       = "do-test"
+  type       = "bool"
+  default    = "false"
+  help       = "do tests"
+
+[[option]]
+  name       = "totalTests"
+  category   = "undocumented"
+  long       = "total-tests=N"
+  type       = "int"
+  default    = "10"
+  help       = "total tests"
+
+[[option]]
+  name       = "testDepth"
+  category   = "undocumented"
+  long       = "test-depth=N"
+  type       = "int"
+  default    = "3"
+  help       = "test depth"
+
+[[option]]
+  name       = "testType"
+  category   = "undocumented"
+  long       = "test-type=N"
+  type       = "int"
+  default    = "0"
+  help       = "test type"
+
+[[option]]
+  name       = "testFamily"
+  category   = "undocumented"
+  long       = "test-family=N"
+  type       = "int"
+  default    = "0"
+  help       = "test family"
+
+[[option]]
+  name       = "testTermReuseFreq"
+  category   = "undocumented"
+  long       = "test-term-reuse-freq=N"
+  type       = "int"
+  default    = "1"
+  help       = "divisor for term reuse"
+  
+[[option]]
+  name       = "useUnknown"
+  category   = "undocumented"
+  long       = "use-unk"
+  type       = "bool"
+  default    = "true"
+  help       = "use dummy unknown value"
+
+[[option]]
+  name       = "dummyUnknown"
+  category   = "undocumented"
+  long       = "dummy-unk"
+  type       = "bool"
+  default    = "false"
+  help       = "dummy unknown value"

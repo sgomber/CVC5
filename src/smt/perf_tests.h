@@ -32,6 +32,7 @@ private:
   unsigned d_totalTestsF;
   unsigned d_mkVarCount;
   std::vector< Node > d_vars;
+  std::vector< TNode > d_tvars;
   Node d_test_var;
   std::unordered_set< Node, NodeHashFunction > d_vars_test;
   bool d_unk;
