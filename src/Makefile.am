@@ -582,7 +582,11 @@ libcvc4_la_SOURCES = \
 	theory/uf/theory_uf_rewriter.h \
 	theory/uf/theory_uf_strong_solver.cpp \
 	theory/uf/theory_uf_strong_solver.h \
-	theory/uf/theory_uf_type_rules.h
+	theory/uf/theory_uf_type_rules.h \
+	theory/sample/theory_sample.h \
+	theory/sample/theory_sample.cpp \
+	theory/sample/theory_sample_rewriter.h \
+	theory/sample/theory_sample_type_rules.h
 
 nodist_libcvc4_la_SOURCES = \
 	theory/rewriter_tables.h \
@@ -683,7 +687,8 @@ EXTRA_DIST = \
 	theory/strings/kinds \
 	theory/theory_traits_template.h \
 	theory/type_enumerator_template.cpp \
-	theory/uf/kinds
+	theory/uf/kinds \
+	theory/sample/kinds
 
 git_versioninfo.cpp: gitinfo
 	$(AM_V_GEN)( \

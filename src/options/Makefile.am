@@ -9,6 +9,7 @@
 VPATH = $(if $(COVERAGE_ON), $(realpath @srcdir@), @srcdir@)
 
 OPTIONS_CONFIG_FILES = \
+	sample_options.toml \
 	arith_options.toml \
 	arrays_options.toml \
 	base_options.toml \

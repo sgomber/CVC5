@@ -1,0 +1,21 @@
+# kinds                                                               -*- sh -*-
+#
+# For documentation on this file format, please refer to
+# src/theory/builtin/kinds.
+#
+
+theory THEORY_SAMPLE ::CVC4::theory::sample::TheorySample "theory/sample/theory_sample.h"
+typechecker "theory/sample/theory_sample_type_rules.h"
+rewriter ::CVC4::theory::sample::TheorySampleRewriter "theory/sample/theory_sample_rewriter.h"
+
+properties check
+
+# Theory content goes here.
+
+# constants...
+
+# types...
+
+# operators...
+
+endtheory
