@@ -7,7 +7,7 @@ namespace CVC4 {
 namespace theory {
 namespace sample {
 
-class SampleTypeRule {
+class SampleRunOperatorTypeRule {
 public:
 
   /**
@@ -20,13 +20,47 @@ public:
   inline static TypeNode computeType(NodeManager* nodeManager, TNode n,
                                      bool check)
     throw (TypeCheckingExceptionPrivate) {
+    Assert( n.getKind()==kind::SAMPLE_RUN );
 
-    // TODO: implement me!
-    Unimplemented();
-
+    TypeNode tn = n[0].getType(check);
+    if( !tn.isDatatype() )
+    {
+      throw TypeCheckingExceptionPrivate(n, "argument of sample run should be a sample type");
+    }
+    const Datatype& dt = static_cast<DatatypeType>(tn.toType()).getDatatype();
+    if( !dt.isSygus() )
+    {
+      throw TypeCheckingExceptionPrivate(n, "argument of sample run should be a sample type, but got a datatype");
+    }
+    return TypeNode::fromType(dt.getSygusType());
   }
 
-};/* class SampleTypeRule */
+};/* class SampleRunOperatorTypeRule */
+
+class SampleCheckOperatorTypeRule {
+public:
+  /**
+   * Compute the type for (and optionally typecheck) a term belonging
+   * to the theory of sample.
+   *
+   * @param check if true, the node's type should be checked as well
+   * as computed.
+   */
+  inline static TypeNode computeType(NodeManager* nodeManager, TNode n,
+                                     bool check)
+    throw (TypeCheckingExceptionPrivate) {
+    Assert( n.getKind()==kind::SAMPLE_CHECK );
+
+    TypeNode tn = n[0].getType(check);
+    if( !tn.isBoolean() )
+    {
+      throw TypeCheckingExceptionPrivate(n, "argument of sample check should be Boolean");
+    }
+    return tn;
+  }
+
+};/* class SampleCheckOperatorTypeRule */
+
 
 }/* CVC4::theory::sample namespace */
 }/* CVC4::theory namespace */

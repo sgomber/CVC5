@@ -33,7 +33,8 @@ void TheorySample::check(Effort level) {
     switch(fact.getKind()) {
 
     /* cases for all the theory's kinds go here... */
-
+    case SAMPLE_CHECK:
+      break;
     default:
       Unhandled(fact.getKind());
     }
