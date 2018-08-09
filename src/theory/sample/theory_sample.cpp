@@ -1,6 +1,7 @@
 #include "theory/sample/theory_sample.h"
 
 using namespace std;
+using namespace CVC4::kind;
 
 namespace CVC4 {
 namespace theory {
