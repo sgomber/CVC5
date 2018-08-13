@@ -19,9 +19,9 @@ public:
                Valuation valuation,
                const LogicInfo& logicInfo);
 
-  void check(Effort);
+  void check(Effort) override;
 
-  std::string identify() const {
+  std::string identify() const override {
     return "THEORY_SAMPLE";
   }
 
