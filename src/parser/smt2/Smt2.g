@@ -667,15 +667,12 @@ sygusCommand [std::unique_ptr<CVC4::Command>* cmd]
             sortedVarNames.begin(), iend = sortedVarNames.end(); i != iend;
           ++i) {
         Expr v = PARSER_STATE->mkBoundVar((*i).first, (*i).second);
-        terms.push_back( v );
         sygus_vars.push_back( v );
       }
       Expr bvl;
-      if( !terms.empty() ){
-        bvl = MK_EXPR(kind::BOUND_VAR_LIST, terms);
+      if( !sygus_vars.empty() ){
+        bvl = MK_EXPR(kind::BOUND_VAR_LIST, sygus_vars);
       }
-      terms.clear();
-      terms.push_back(bvl);
       // associate this variable list with the synth fun
       std::vector< Expr > attr_val_bvl;
       attr_val_bvl.push_back( bvl );
@@ -684,7 +681,7 @@ sygusCommand [std::unique_ptr<CVC4::Command>* cmd]
       PARSER_STATE->preemptCommand(cattr_bvl);
     }
     ( 
-      sygusGrammar[sygus_sym_type, sygus_vars, terms, fun]
+      sygusGrammar[sygus_sym_type, sygus_vars, fun]
       { read_syntax = true; 
         //if( sorts[0]!=range ){
         //  PARSER_STATE->parseError(std::string("Bad return type in grammar for "
@@ -814,7 +811,7 @@ sygusCommand [std::unique_ptr<CVC4::Command>* cmd]
  //   }
   ;
   
-sygusGrammar[CVC4::Type& ret, std::vector<CVC4::Expr>& sygus_vars, std::vector<CVC4::Expr>& terms, std::string& fun]
+sygusGrammar[CVC4::Type& ret, std::vector<CVC4::Expr>& sygus_vars, std::string& fun]
 @declarations {
   Type t;
   std::string name;
@@ -891,6 +888,11 @@ sygusGrammar[CVC4::Type& ret, std::vector<CVC4::Expr>& sygus_vars, std::vector<C
                             << " has builtin sort " << sorts[i]
                             << std::endl;
     }
+    Expr bvl;
+    if( !sygus_vars.empty() )
+    {
+      bvl = MK_EXPR(kind::BOUND_VAR_LIST, sygus_vars);
+    }
     for( unsigned i=0; i<datatypes.size(); i++ ){
       Debug("parser-sygus") << "...make " << datatypes[i].getName()
                             << " with builtin sort " << sorts[i]
@@ -899,7 +901,7 @@ sygusGrammar[CVC4::Type& ret, std::vector<CVC4::Expr>& sygus_vars, std::vector<C
         PARSER_STATE->parseError("Internal error : could not infer "
                                   "builtin sort for nested gterm.");
       }
-      datatypes[i].setSygus( sorts[i], terms[0], allow_const[i], false );
+      datatypes[i].setSygus( sorts[i], bvl, allow_const[i], false );
       PARSER_STATE->mkSygusDatatype(
           datatypes[i], ops[i], cnames[i], cargs[i],
           unresolved_gterm_sym[i], sygus_to_builtin );
