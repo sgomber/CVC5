@@ -65,10 +65,9 @@ private:
   Node getBaseModelValue(Node n);
   /** cache of the above function */
   std::unordered_map< Node, Node, NodeHashFunction > d_bmv;
-
-  /** cache of all sampling terms */
+  /** base sampling terms for this round */
   std::vector< Node > d_base_sample_terms;
-  
+
   /** get sample value */
   Node getSampleValue(TypeNode tn);
   /** cache of the sampling */

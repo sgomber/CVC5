@@ -174,6 +174,8 @@ bool TheorySample::needsCheckLastEffort() {
 void TheorySample::checkLastCall()
 {
   d_bmv.clear();
+  d_base_sample_terms.clear();
+  
   std::vector< Node > asserts;
   Trace("sample-check") << "----- TheorySample::check" << std::endl;
   Trace("sample-check") << "Checking " << d_sample_checks.size() << " assertions : " << std::endl;
@@ -191,7 +193,7 @@ void TheorySample::checkLastCall()
     }
     else
     {
-      asserts.push_back( bmv );
+      asserts.push_back( n );
     }
   }
   Trace("sample-check") << "We have " << d_base_sample_terms.size() << " base sample terms : " << std::endl;
@@ -222,6 +224,16 @@ void TheorySample::checkLastCall()
     bool success = true;
     for( const Node& ba : asserts )
     {
+      std::vector< Node > vars;
+      std::vector< Node > subs;
+      AssertInfo& ai = d_ainfo[ba];
+      for( const Node& bast : ai.d_sample_terms )
+      {
+        Node babst = d_bmv[bast];
+        vars.push_back( babst );
+        subs.push_back( d_bst_to_values[babst][i] );
+      }
+      //Node baSubs = ba.substitute(vars.begin(),vars.end(),subs.begin(),subs.end());
       
     }
     if( success )
