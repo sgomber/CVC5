@@ -14,6 +14,8 @@
 
 #include "preprocessing/passes/sample_boundary.h"
 
+#include "theory/sample/theory_sample_rewriter.h"
+
 using namespace CVC4::kind;
 
 namespace CVC4 {
@@ -65,8 +67,7 @@ Node SampleBoundary::convert(TNode n, std::unordered_map<Node, Node, NodeHashFun
       if (cur.getMetaKind() == kind::metakind::PARAMETERIZED) {
         children.push_back(cur.getOperator());
       }
-      Kind curk = cur.getKind();
-      bool hasSample = curk==SAMPLE_RUN || curk==SAMPLE_INT_UNIF;
+      bool hasSample = theory::sample::TheorySampleRewriter::isSampleType(cur.getType());
       bool isBoolConnective = isBoolConnectiveTerm(cur);
       for (const Node& cn : cur) {
         it = cache.find(cn);
@@ -101,6 +102,11 @@ Node SampleBoundary::convert(TNode n, std::unordered_map<Node, Node, NodeHashFun
   } while (!visit.empty());
   Assert(cache.find(n) != cache.end());
   Assert(!cache.find(n)->second.isNull());
+  // top-level literal
+  if( hasSampling[n] )
+  {
+    cache[n] = nm->mkNode(SAMPLE_CHECK,n);
+  }
   return cache[n];
 }
 

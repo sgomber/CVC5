@@ -30,10 +30,50 @@ public:
 private:
   NodeSet d_not_elim;
   NodeSet d_sample_checks;
+  /** number of samples */
+  unsigned d_num_samples;
+  /** number of samples */
+  unsigned d_num_samples_sat;
+  /** whether a term is a sampling term */
+  std::map< Node, bool > d_isSample;
+  /** whether a term has sampling subterms */
+  std::map< Node, bool > d_hasSample;
+  /** assertion information */
+  class AssertInfo 
+  {
+  public:
+    /** free terms */
+    std::vector< Node > d_free_terms;
+    /** sample terms */
+    std::vector< Node > d_sample_terms;
+    /** init */
+    void init() {}
+  };
+  std::map< Node, AssertInfo > d_ainfo;
+  
+  /** register sample check constraint */
+  void registerSampleCheck(Node n);
+  
+  
+  /** register sample term */
+  void registerSampleType(TypeNode tn);
+
   /** check last call */
   void checkLastCall();
+  
   /** get model value */
-  //Node getModelValue(
+  Node getBaseModelValue(Node n);
+  /** cache of the above function */
+  std::unordered_map< Node, Node, NodeHashFunction > d_bmv;
+
+  /** cache of all sampling terms */
+  std::vector< Node > d_base_sample_terms;
+  
+  /** get sample value */
+  Node getSampleValue(TypeNode tn);
+  /** cache of the sampling */
+  std::map< Node, std::vector< Node > > d_bst_to_values;
+  
 };/* class TheorySample */
 
 }/* CVC4::theory::sample namespace */

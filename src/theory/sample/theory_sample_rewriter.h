@@ -76,7 +76,8 @@ public:
   static inline void shutdown() {
     // nothing to do
   }
-
+  /** is sample type */
+  static bool isSampleType(TypeNode tn);
 };/* class TheorySampleRewriter */
 
 }/* CVC4::theory::sample namespace */

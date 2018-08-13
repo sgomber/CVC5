@@ -585,8 +585,9 @@ libcvc4_la_SOURCES = \
 	theory/uf/theory_uf_strong_solver.cpp \
 	theory/uf/theory_uf_strong_solver.h \
 	theory/uf/theory_uf_type_rules.h \
-	theory/sample/theory_sample.h \
 	theory/sample/theory_sample.cpp \
+	theory/sample/theory_sample.h \
+	theory/sample/theory_sample_rewriter.cpp \
 	theory/sample/theory_sample_rewriter.h \
 	theory/sample/theory_sample_type_rules.h
 
