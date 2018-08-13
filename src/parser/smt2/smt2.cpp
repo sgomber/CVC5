@@ -1259,6 +1259,28 @@ const void Smt2::addSygusFunSymbol( Type t, Expr synth_fun ){
       new SetUserAttributeCommand("sygus-synth-grammar", synth_fun, attr_value);
   cattr->setMuted(true);
   preemptCommand(cattr);
+  
+  Type fType = synth_fun.getType();
+  if( fType.isFunction() )
+  {
+    fType = static_cast<FunctionType>(fType).getRangeType();
+  }
+  // if it is a sygus datatype, it should encode terms corresponding to range
+  Type sType = t;
+  if( t.isDatatype() )
+  {
+    const Datatype& dt = static_cast<DatatypeType>(t).getDatatype();
+    if( dt.isSygus() )
+    {
+      sType = dt.getSygusType();
+    }
+  }
+  if( fType!=sType )
+  {
+    std::stringstream ss;
+    ss << "Bad return type in grammar for SyGuS function " << synth_fun;
+    parseError(ss.str());
+  }
 }
 
 InputLanguage Smt2::getLanguage() const

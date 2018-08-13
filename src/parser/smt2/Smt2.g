@@ -607,11 +607,10 @@ sygusCommand [std::unique_ptr<CVC4::Command>* cmd]
   std::vector<std::pair<std::string, Type> > sortedVarNames;
   SExpr sexpr;
   std::unique_ptr<CVC4::CommandSequence> seq;
-  bool read_syntax = false;
   Type sygus_ret;
   int startIndex = -1;
   Expr synth_fun;
-  Type sygus_sym_type;
+  Type sygus_type;
 }
   : /* declare-var */
     DECLARE_VAR_TOK { PARSER_STATE->checkThatLogicIsSet(); }
@@ -679,23 +678,18 @@ sygusCommand [std::unique_ptr<CVC4::Command>* cmd]
       Command* cattr_bvl = new SetUserAttributeCommand("sygus-synth-fun-var-list", synth_fun, attr_val_bvl);
       cattr_bvl->setMuted(true);
       PARSER_STATE->preemptCommand(cattr_bvl);
+      // set the sygus type to be range by default, which is overwritten below
+      // if a grammar is provided
+      sygus_type = range;
     }
     ( 
-      sygusGrammar[sygus_sym_type, sygus_vars, fun]
-      { read_syntax = true; 
-        //if( sorts[0]!=range ){
-        //  PARSER_STATE->parseError(std::string("Bad return type in grammar for "
-        //                                        "SyGuS function ") + fun);
-        //}
-      }
+      // optional, read the sygus grammar
+      sygusGrammar[sygus_type, sygus_vars, fun]
     )?
     { // the sygus sym type specifies the required grammar for synth_fun, expressed as a type
-      if( !read_syntax ){
-        sygus_sym_type = range;
-        PARSER_STATE->popScope();
-      }
+      PARSER_STATE->popScope();
       // store a dummy variable which stands for second-order quantification, linked to synth fun by an attribute
-      PARSER_STATE->addSygusFunSymbol( sygus_sym_type, synth_fun );
+      PARSER_STATE->addSygusFunSymbol( sygus_type, synth_fun );
       cmd->reset(seq.release());
     }
   | /* constraint */
@@ -815,7 +809,7 @@ sygusGrammar[CVC4::Type& ret, std::vector<CVC4::Expr>& sygus_vars, std::string& 
 @declarations {
   Type t;
   std::string name;
-  unsigned startIndex;
+  unsigned startIndex = 0;
   std::vector< std::vector< CVC4::SygusGTerm > > sgts;
   std::vector< CVC4::Datatype > datatypes;
   std::vector<Type> sorts;
@@ -827,7 +821,7 @@ sygusGrammar[CVC4::Type& ret, std::vector<CVC4::Expr>& sygus_vars, std::string& 
   std::map< CVC4::Type, CVC4::Type > sygus_to_builtin;
   std::map< CVC4::Type, CVC4::Expr > sygus_to_builtin_expr;
 }
-  : LPAREN_TOK
+  : LPAREN_TOK { PARSER_STATE->pushScope(); }
     (
     LPAREN_TOK
     symbol[name,CHECK_NONE,SYM_VARIABLE] 
@@ -907,7 +901,6 @@ sygusGrammar[CVC4::Type& ret, std::vector<CVC4::Expr>& sygus_vars, std::string& 
           unresolved_gterm_sym[i], sygus_to_builtin );
     }
     PARSER_STATE->setSygusStartIndex(fun, startIndex, datatypes, sorts, ops);
-    //only care about datatypes/sorts/ops past here
     PARSER_STATE->popScope();
     Debug("parser-sygus") << "--- Make " << datatypes.size()
                           << " mutual datatypes..." << std::endl;
