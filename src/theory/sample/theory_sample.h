@@ -10,6 +10,7 @@ namespace theory {
 namespace sample {
 
 class TheorySample : public Theory {
+  typedef context::CDHashSet<Node, NodeHashFunction> NodeSet;
 public:
 
   /** Constructs a new instance of TheorySample w.r.t. the provided contexts. */
@@ -24,7 +25,15 @@ public:
   std::string identify() const override {
     return "THEORY_SAMPLE";
   }
-
+  /** needs check last effort */
+  bool needsCheckLastEffort() override;
+private:
+  NodeSet d_not_elim;
+  NodeSet d_sample_checks;
+  /** check last call */
+  void checkLastCall();
+  /** get model value */
+  //Node getModelValue(
 };/* class TheorySample */
 
 }/* CVC4::theory::sample namespace */

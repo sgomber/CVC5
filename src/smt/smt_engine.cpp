@@ -62,6 +62,7 @@
 #include "options/proof_options.h"
 #include "options/prop_options.h"
 #include "options/quantifiers_options.h"
+#include "options/sample_options.h"
 #include "options/sep_options.h"
 #include "options/set_language.h"
 #include "options/smt_options.h"
@@ -4333,6 +4334,10 @@ void SmtEnginePrivate::processAssertions() {
       }
     }
     Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : post-quant-preprocess" << endl;
+  }
+  if( options::sampling() )
+  {
+    d_preprocessingPassRegistry.getPass("sample-boundary")->apply(&d_assertions);
   }
 
   if( options::sortInference() || options::ufssFairnessMonotone() ){

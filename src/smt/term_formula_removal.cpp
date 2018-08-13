@@ -298,6 +298,7 @@ bool RemoveTermFormulas::hasNestedTermChildren( TNode node ) {
   return theory::kindToTheoryId(node.getKind())!=theory::THEORY_BOOL && 
          node.getKind()!=kind::EQUAL && node.getKind()!=kind::SEP_STAR && 
          node.getKind()!=kind::SEP_WAND && node.getKind()!=kind::SEP_LABEL && 
+         node.getKind()!=kind::SAMPLE_CHECK && 
          node.getKind()!=kind::BITVECTOR_EAGER_ATOM;
          // dont' worry about FORALL or EXISTS (handled separately)
 }

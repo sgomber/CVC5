@@ -1,0 +1,33 @@
+#
+# Option specification file for CVC4
+# See src/options/README for a description of this file format
+#
+
+id     = "SAMPLE"
+name   = "Sample"
+header = "options/sample_options.h"
+
+[[option]]
+  name       = "sampling"
+  category   = "regular"
+  long       = "sampling"
+  type       = "bool"
+  default    = "false"
+  read_only  = true
+  help       = "do satisfiability modulo sampling"
+  
+[[option]]
+  name       = "numSamples"
+  category   = "regular"
+  long       = "num-samples=N"
+  type       = "int"
+  default    = "1000"
+  help       = "number of samples"
+
+[[option]]
+  name       = "numSamplesSat"
+  category   = "regular"
+  long       = "num-samples-sat=N"
+  type       = "int"
+  default    = "500"
+  help       = "number of random samples that must be satisfied by the model"
