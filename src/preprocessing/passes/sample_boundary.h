@@ -38,6 +38,8 @@ class SampleBoundary : public PreprocessingPass
  protected:
   PreprocessingPassResult applyInternal(
       AssertionPipeline* assertionsToPreprocess) override;
+  /** process */
+  Node sampleBoundaryInternal(TNode n, std::unordered_map<Node, Node, NodeHashFunction>& cache, std::unordered_map<Node, bool, NodeHashFunction>& hasSampling);
 };
 
 }  // namespace passes

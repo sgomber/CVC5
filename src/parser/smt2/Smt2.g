@@ -1412,7 +1412,11 @@ extendedCommand[std::unique_ptr<CVC4::Command>* cmd]
     RPAREN_TOK
   | SAMPLE_SORT_TOK
     symbol[name,CHECK_UNDECLARED,SYM_SORT] 
-    sortSymbol[t,CHECK_DECLARED]
+    sygusGrammar[t,terms,name] {
+      // it has the same effect as define-sort
+      PARSER_STATE->defineType(name, t);
+      cmd->reset(new DefineTypeCommand(name, t));
+    }
   ;
 
 

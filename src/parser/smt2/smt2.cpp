@@ -311,6 +311,11 @@ void Smt2::addTheory(Theory theory) {
     addSepOperators();
     break;
     
+  case THEORY_SAMPLE:
+    addOperator(kind::SAMPLE_INT_UNIF, "sample.int.unif");
+    addOperator(kind::SAMPLE_RUN, "sample.run");
+    break;
+    
   default:
     std::stringstream ss;
     ss << "internal error: unsupported theory " << theory;
@@ -365,6 +370,8 @@ bool Smt2::isTheoryEnabled(Theory theory) const {
     return d_logic.isTheoryEnabled(theory::THEORY_FP);
   case THEORY_SEP:
     return d_logic.isTheoryEnabled(theory::THEORY_SEP);
+  case THEORY_SAMPLE:
+    return d_logic.isTheoryEnabled(theory::THEORY_SAMPLE);
   default:
     std::stringstream ss;
     ss << "internal error: unsupported theory " << theory;
@@ -534,6 +541,9 @@ void Smt2::setLogic(std::string name) {
     addTheory(THEORY_SEP);
   }
   
+  if (d_logic.isTheoryEnabled(theory::THEORY_SAMPLE)) {
+    addTheory(THEORY_SAMPLE);
+  }
 }/* Smt2::setLogic() */
 
 void Smt2::setInfo(const std::string& flag, const SExpr& sexpr) {

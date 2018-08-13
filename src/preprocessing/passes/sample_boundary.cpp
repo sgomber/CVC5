@@ -24,9 +24,20 @@ SampleBoundary::SampleBoundary(PreprocessingPassContext* preprocContext)
 PreprocessingPassResult SampleBoundary::applyInternal(
     AssertionPipeline* assertionsToPreprocess)
 {
-
-
+  std::unordered_map<Node, Node, NodeHashFunction> cache;
+  std::unordered_map<Node, bool, NodeHashFunction> hasSampling;
+  for (unsigned i = 0, size = assertionsToPreprocess->size(); i < size; ++i)
+  {
+    assertionsToPreprocess->replace(
+        i, sampleBoundaryInternal((*assertionsToPreprocess)[i], cache, hasSampling));
+  }
   return PreprocessingPassResult::NO_CONFLICT;
+}
+
+Node SampleBoundary::sampleBoundaryInternal(TNode n, std::unordered_map<Node, Node, NodeHashFunction>& cache, std::unordered_map<Node, bool, NodeHashFunction>& hasSampling)
+{
+  
+  return n;
 }
 
 }  // namespace passes

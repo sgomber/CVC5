@@ -7,6 +7,35 @@ namespace CVC4 {
 namespace theory {
 namespace sample {
 
+class SampleIntUnifTypeRule {
+public:
+  /**
+   * Compute the type for (and optionally typecheck) a term belonging
+   * to the theory of sample.
+   *
+   * @param check if true, the node's type should be checked as well
+   * as computed.
+   */
+  inline static TypeNode computeType(NodeManager* nodeManager, TNode n,
+                                     bool check)
+    throw (TypeCheckingExceptionPrivate) {
+    Assert( n.getKind()==kind::SAMPLE_INT_UNIF );
+    if( check )
+    {
+      for( unsigned i=0; i<2; i++ )
+      {
+        TypeNode tn = n[i].getType(check);
+        if( !tn.isInteger() )
+        {
+          throw TypeCheckingExceptionPrivate(n, "argument of uniform distribution should be an integer");
+        }
+      }
+    }
+    return NodeManager::currentNM()->integerType();
+  }
+
+};/* class SampleCheckOperatorTypeRule */
+  
 class SampleRunOperatorTypeRule {
 public:
 

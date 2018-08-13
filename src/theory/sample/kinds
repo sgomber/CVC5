@@ -18,9 +18,11 @@ properties check
 
 # operators...
 
+operator SAMPLE_INT_UNIF 2 "uniform random number generator"
 operator SAMPLE_RUN 1 "sample an expression from a grammar"
 operator SAMPLE_CHECK 1 "wrapper around literals that contain sample run"
 
+typerule SAMPLE_INT_UNIF ::CVC4::theory::sample::SampleIntUnifTypeRule
 typerule SAMPLE_RUN ::CVC4::theory::sample::SampleRunOperatorTypeRule
 typerule SAMPLE_CHECK ::CVC4::theory::sample::SampleCheckOperatorTypeRule
 
