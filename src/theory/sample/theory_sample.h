@@ -15,19 +15,18 @@ namespace sample {
  * theory solvers, which is based on the notion of a "sample run" as described
  * below.
  * 
- * This theory has a notion of "sample type". We associate sample types with a
- * context-free term grammar, which will determine the semantics of the type.
- * All other types we call ordindary types.
+ * First, this theory has a notion of "sample type". We associate sample types
+ * with a context-free term grammar, which will determine the semantics of the
+ * type. All other types we call ordindary types.
  * 
- * For example, consider a sample type SampleInt that is associated with the
- * grammar:
+ * For example, consider a sample type SampleInt that is associated with:
  *   SampleInt -> 0 | 1 | x | f( SampleInt )
- * Roughly, terms of type SampleInt are interpreted as either 0, 1, x,
- * f( SampleInt ), where x : Int and f : Int -> Int.
+ * Roughly, terms of type SampleInt are interpreted as either 0, 1, x, or
+ * f( u ) for some term u of type SampleInt, where x : Int and f : Int -> Int.
  * 
- * In detail, a "base sample term" is a term of the form (f c1 ... cn) whose
- * return type is a sample type, and c1...cn are constant terms whose type is
- * ordinary.
+ * In detail, a "base sample term" is a term of the form op(c1 ... cn) whose
+ * return type is a sample type, and c1, ..., cn are constant terms whose type
+ * is ordinary.
  *
  * Given an interpretation M for all functions whose return type is not a sample
  * type, a "sample run" for M is an extension of M where all base sample terms t
@@ -35,9 +34,9 @@ namespace sample {
  * free grammar associated with its sample type.
  * 
  * Consider the SampleInt example above, and an interpretation M where 
- * x^M = 7 and f^M = lambda y. 10. In a sample run of M, the value of s^M
- * is determined by generating a random term in the SampleInt grammar, 
- * say f( x ). Then s^M = f( x )^M = 10.
+ * x^M = 7 and f^M = lambda y. ite( y=7, 10, 0 ). In a sample run of M, the
+ * value of s^M is determined by generating a random term in the SampleInt
+ * grammar, say f( x ). Then s^M = f( x )^M = 10.
  * 
  * This theory solver is used in part to answer satisfiability checks that
  * are parameterized by:
@@ -46,7 +45,7 @@ namespace sample {
  * 
  * A formula F is satisfied by an interpretation M iff F evaluates to true
  * in at least #sat-runs out of #runs sample runs. Notice that this semantics is
- * non-deterministic: the same check may produce "sat" and "unsat" on different
+ * non-deterministic, the same check may produce "sat" and "unsat" on different
  * runs.
  * 
  * Notice the restriction that functions with sample return type cannot take
