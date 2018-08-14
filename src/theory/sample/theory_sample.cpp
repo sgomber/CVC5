@@ -463,32 +463,15 @@ bool TheorySample::runCheck()
       }
     }
   }
-  Trace("sample-check") << "We have " << d_base_sample_terms.size()
-                        << " base sample terms : " << std::endl;
-  //std::map<Node, std::vector<Node> >::iterator itv;
-  for (const Node& bst : d_base_sample_terms)
+  if( Trace.isOn("sample-check") )
   {
-    Trace("sample-check") << "  " << bst << std::endl;
-    /*
-    // will compute its sample values
-    itv = d_bst_to_terms.find(bst);
-    if (itv == d_bst_to_terms.end())
+    Trace("sample-check") << "We have " << d_base_sample_terms.size()
+                          << " base sample terms : " << std::endl;
+    //std::map<Node, std::vector<Node> >::iterator itv;
+    for (const Node& bst : d_base_sample_terms)
     {
-      d_bst_to_terms[bst].clear();
-      Trace("sample-run") << "Sample " << bst << " : [ ";
-      itv = d_bst_to_terms.find(bst);
-      TypeNode tn = bst.getType();
-      Assert(TheorySampleRewriter::isSampleType(tn));
-      for (unsigned i = 0; i < d_num_samples; i++)
-      {
-        Node sv = mkSampleValue(tn);
-        sv = Rewriter::rewrite(sv);
-        Trace("sample-run") << sv << " ";
-        itv->second.push_back(sv);
-      }
-      Trace("sample-run") << "]" << std::endl;
+      Trace("sample-check") << "  " << bst << std::endl;
     }
-    */
   }
   // now, compute the value of the conjunction of d_asserts
   std::map<Node, std::vector<Node> > base_term_var_map;
