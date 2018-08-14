@@ -27,6 +27,8 @@ public:
   }
   /** needs check last effort */
   bool needsCheckLastEffort() override;
+  /** finish init */
+  void finishInit() override;
 private:
   /** common nodes */
   Rational d_rmax;
@@ -83,8 +85,15 @@ private:
   void checkLastCall();
   /** check */
   bool runCheck();
+  /** the master equality engine (used for explainations */
+  eq::EqualityEngine * d_masterEe;
+  /** explain model value */
+  Node explainModelValue(Node n, std::vector< Node >& vec);
   
   //-------------------------per last call effort check
+  std::vector< Node > d_asserts;
+  std::vector< Node > d_basserts;
+  std::map< Node, std::map< unsigned, Node > > d_assert_to_value;
   /** get base model value 
    * 
    * This function returns a term where all non-sampling operators have been
@@ -96,7 +105,7 @@ private:
   /** base sampling terms for this round */
   std::vector< Node > d_base_sample_terms;
   /** conflict */
-  std::vector< Node > d_conflict;
+  std::unordered_set< Node, NodeHashFunction > d_conflict;
   //-------------------------end per last call effort check
 
   /** get sample value */

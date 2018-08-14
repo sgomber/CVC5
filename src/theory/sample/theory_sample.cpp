@@ -6,6 +6,7 @@
 #include "options/sample_options.h"
 #include "util/random.h"
 #include "theory/datatypes/datatypes_rewriter.h"
+#include "theory/quantifiers_engine.h"
 
 using namespace std;
 using namespace CVC4::kind;
@@ -22,10 +23,16 @@ TheorySample::TheorySample(context::Context* c,
                            const LogicInfo& logicInfo) :
     Theory(THEORY_SAMPLE, c, u, out, valuation, logicInfo),
     d_not_elim(u),
-    d_sample_checks(c)
+    d_sample_checks(c),
+    d_num_samples(0),
+    d_num_samples_nsat(0)
     {
   d_rmax = Rational(LONG_MAX);
   d_true = NodeManager::currentNM()->mkConst(true);
+}
+
+void TheorySample::finishInit()
+{
   d_num_samples = options::numSamples();
   unsigned num_samples_sat = options::numSamplesSat();
   if( num_samples_sat>d_num_samples )
@@ -40,8 +47,8 @@ TheorySample::TheorySample(context::Context* c,
   {
     d_num_samples_nsat = d_num_samples-num_samples_sat;
   }
-}/* TheorySample::TheorySample() */
-
+}
+  
 void TheorySample::check(Effort level) {
   if (done() && level<EFFORT_FULL) {
     return;
@@ -50,6 +57,7 @@ void TheorySample::check(Effort level) {
 
   if( level==EFFORT_LAST_CALL )
   {
+    // call the last call effort check
     return checkLastCall();
   }
   NodeManager * nm = NodeManager::currentNM();
@@ -290,32 +298,112 @@ void TheorySample::checkLastCall()
 {
   Trace("sample-check") << "----- TheorySample::check" << std::endl;
   bool success = runCheck();
-  if( !success )
-  {
-    // conflict 
-    // TODO
-    Trace("sample-check") << "...conflict : " << d_conflict << std::endl;
-  }
-  else
+  if( success )
   {
     Trace("sample-check") << "...no conflict" << std::endl;
-    
+    return;
   }
+  // conflict 
+  // get the master equality engine 
+  d_masterEe = getQuantifiersEngine()->getMasterEqualityEngine();
+  std::vector< Node > cvec;
+  Trace("sample-check-debug") << "...make conflict : " << std::endl;
+  // also must explain model value equalities
+  for( const Node& ca : d_conflict )
+  {
+    cvec.push_back(ca.negate());
+    Trace("sample-check-debug") << "  " << ca << std::endl;
+    AssertInfo& cai = d_ainfo[ca];
+    for( const Node& ft : cai.d_free_terms )
+    {
+      explainModelValue(ft,cvec);
+    }
+  }
+  Node conflictNode = cvec.size()==1 ? cvec[0] : NodeManager::currentNM()->mkNode(OR,cvec);
+  Trace("sample-lemma") << "TheorySample::lemma : conflict : " << conflictNode << std::endl;
+  d_out->lemma(conflictNode);
+}
+
+Node TheorySample::explainModelValue(Node n, std::vector< Node >& exp)
+{
+  if( n.isConst() )
+  {
+    return n;
+  }
+  
+  Node mn = getValuation().getModel()->getValue(n);
+  Node trivialExp = n.eqNode(mn).negate();
+  
+  // if we don't have the model value, its already hopeless
+  if( d_masterEe->hasTerm(mn) )
+  {
+    // does the master equality engine know about this term?
+    if( d_masterEe->hasTerm(n) )
+    {
+      // if so, the explanation is simple
+      exp.push_back(trivialExp);
+      return mn;
+    }
+    // otherwise, let's look at the children
+    std::vector< Node > childrenExp;
+    std::vector< Node > children;
+    bool childChanged = false;
+    bool success = true;
+    for( const Node& nc : n )
+    {
+      Node ncv = explainModelValue(nc,childrenExp);
+      if( ncv.isNull() )
+      {
+        success = false;
+        break;
+      }
+      children.push_back(ncv);
+      childChanged = childChanged || ncv!=nc;
+    }
+    if( success && childChanged )
+    {
+      if (n.getMetaKind() == metakind::PARAMETERIZED) 
+      {
+        children.insert(children.begin(),n.getOperator());
+      }
+      Node n2 = NodeManager::currentNM()->mkNode(n.getKind(),children);
+      // does the master equality engine know about the modified term?
+      if( d_masterEe->hasTerm(n2) )
+      {
+        // properly explained it, using the children
+        exp.insert(exp.end(),childrenExp.begin(),childrenExp.end());
+        exp.push_back(n2.eqNode(mn).negate());
+        return mn;
+      }
+    }
+  }
+  // can't explain it, just do model value equality
+  exp.push_back(trivialExp);
+  
+  // if the type is finite, we are okay
+  if( n.getType().isInterpretedFinite() )
+  {
+    return mn;
+  }
+  Trace("sample-warn") << "TheorySample: WARNING: cannot explain model value " << mn << " for " << n << std::endl;
+  return Node::null();
 }
   
 bool TheorySample::runCheck()
 {
+  d_asserts.clear();
+  d_basserts.clear();
+  d_assert_to_value.clear();
   d_bmv.clear();
   d_base_sample_terms.clear();
   d_conflict.clear();
   
-  std::vector< Node > asserts;
-  std::vector< Node > basserts;
+
   std::map< Node, unsigned > ba_to_index;
   Trace("sample-check") << "Checking " << d_sample_checks.size() << " assertions : " << std::endl;
   for( NodeSet::const_iterator it = d_sample_checks.begin(); it != d_sample_checks.end(); ++it ){
     Node n = *it;
-    Trace("sample-check") << "  (" << asserts.size() << ") " << n << std::endl;
+    Trace("sample-check") << "  (" << d_asserts.size() << ") " << n << std::endl;
     Node bmv = getBaseModelValue(n[0]);
     bmv = Rewriter::rewrite(bmv);
     Trace("sample-check") << "  ...mv: " << bmv << std::endl;
@@ -325,7 +413,7 @@ bool TheorySample::runCheck()
     {
       if( !bmv.getConst<bool>() )
       {
-        d_conflict.push_back(n);
+        d_conflict.insert(n);
         return false;
       }
     }
@@ -335,17 +423,17 @@ bool TheorySample::runCheck()
       if( itbi!=ba_to_index.end() )
       {
         // if we get a duplicate, we choose the assertion based on node ordering
-        Node dupAssert = asserts[itbi->second];
+        Node dupAssert = d_asserts[itbi->second];
         if( n<dupAssert )
         {
-          asserts[itbi->second] = n;
+          d_asserts[itbi->second] = n;
         }
       }
       else
       {
-        ba_to_index[bmv] = asserts.size();
-        asserts.push_back( n );
-        basserts.push_back(bmv);
+        ba_to_index[bmv] = d_asserts.size();
+        d_asserts.push_back( n );
+        d_basserts.push_back(bmv);
       }
     }
   }
@@ -375,10 +463,10 @@ bool TheorySample::runCheck()
       Trace("sample-run") << "]" << std::endl;
     }
   }
-  // now, compute the value of the conjunction of asserts
+  // now, compute the value of the conjunction of d_asserts
   std::map< Node, std::vector< Node > > base_term_var_map;
   std::map< Node, std::vector< Node > > base_term_sub_map;
-  for( const Node& a : asserts )
+  for( const Node& a : d_asserts )
   {
     AssertInfo& ai = d_ainfo[a];
     std::vector< Node >& vars = base_term_var_map[a];
@@ -391,20 +479,18 @@ bool TheorySample::runCheck()
     }
   }
   
-  // the valuation of asserts on each sample point
-  std::map< Node, std::map< unsigned, Node > > assert_to_value;
-  
+  // the valuation of d_asserts on each sample point
   unsigned nsat_count = 0;
-  Trace("sample-check") << "Check samples..." << std::endl;
+  Trace("sample-check-pt") << "Check samples..." << std::endl;
   for( unsigned i=0; i<d_num_samples; i++ )
   {
-    Trace("sample-check") << "  Point #" << i << " : ";
+    Trace("sample-check-pt") << "  Point #" << i << " : ";
     bool success = true;
     Node baSubs;
-    for( unsigned k=0, size=asserts.size(); k<size; k++ )
+    for( unsigned k=0, size=d_asserts.size(); k<size; k++ )
     {
-      Node a = asserts[k];
-      Node ba = basserts[k];
+      Node a = d_asserts[k];
+      Node ba = d_basserts[k];
       std::vector< Node >& bt_vars = base_term_var_map[a];
       std::vector< Node >& bt_subs = base_term_sub_map[a];
       for( unsigned j=0, nvars = bt_vars.size(); j<nvars; j++ )
@@ -413,15 +499,17 @@ bool TheorySample::runCheck()
       }
       Node baSubs = ba.substitute(bt_vars.begin(),bt_vars.end(),bt_subs.begin(),bt_subs.end());
       baSubs = Rewriter::rewrite(baSubs);
+      d_assert_to_value[a][k] = baSubs;
       Assert(baSubs.isConst());
-      Trace("sample-check") << baSubs << " ";
+      Trace("sample-check-pt") << baSubs << " ";
       if( baSubs!=d_true )
-      {
+      {        
+        d_conflict.insert(a);
         success = false;
         break;
       }
     }
-    Trace("sample-check") << std::endl;
+    Trace("sample-check-pt") << std::endl;
     if( !success )
     {
       nsat_count++;
