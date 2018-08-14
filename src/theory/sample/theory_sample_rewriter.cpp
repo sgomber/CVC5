@@ -16,11 +16,38 @@
 
 #include "expr/datatype.h"
 
+using namespace CVC4::kind;
+
 namespace CVC4 {
 namespace theory {
 namespace sample {
 
-/** is sample */
+RewriteResponse TheorySampleRewriter::postRewrite(TNode node) 
+{
+
+  return RewriteResponse(REWRITE_DONE, node);
+}
+
+
+RewriteResponse TheorySampleRewriter::preRewrite(TNode node) 
+{
+  if( node.getKind()==SAMPLE_CHECK )
+  {
+    if( node[0].isConst() )
+    {
+      return RewriteResponse(REWRITE_DONE, node[0]);
+    }
+  }
+  if( node.getKind()==SAMPLE_RUN )
+  {
+    if( node[0].isConst() )
+    {
+      return RewriteResponse(REWRITE_DONE, node[0]);
+    }
+  }
+  return RewriteResponse(REWRITE_DONE, node);
+}
+
 bool TheorySampleRewriter::isSampleType(TypeNode tn)
 {
   if( !tn.isDatatype() )

@@ -30,13 +30,14 @@ public:
 private:
   /** common nodes */
   Rational d_rmax;
+  Node d_true;
   
   NodeSet d_not_elim;
   NodeSet d_sample_checks;
   /** number of samples */
   unsigned d_num_samples;
-  /** number of samples */
-  unsigned d_num_samples_sat;
+  /** number of samples we allow to be not sat */
+  unsigned d_num_samples_nsat;
   /** whether a term is a sampling term */
   std::map< Node, bool > d_isSample;
   /** whether a term has sampling subterms */
@@ -80,13 +81,23 @@ private:
 
   /** check last call */
   void checkLastCall();
+  /** check */
+  bool runCheck();
   
-  /** get model value */
+  //-------------------------per last call effort check
+  /** get base model value 
+   * 
+   * This function returns a term where all non-sampling operators have been
+   * replaced by their value in the current model.
+   */
   Node getBaseModelValue(Node n);
   /** cache of the above function */
   std::unordered_map< Node, Node, NodeHashFunction > d_bmv;
   /** base sampling terms for this round */
   std::vector< Node > d_base_sample_terms;
+  /** conflict */
+  std::vector< Node > d_conflict;
+  //-------------------------end per last call effort check
 
   /** get sample value */
   Node getSampleValue(TypeNode tn);

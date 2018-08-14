@@ -25,8 +25,21 @@ TheorySample::TheorySample(context::Context* c,
     d_sample_checks(c)
     {
   d_rmax = Rational(LONG_MAX);
+  d_true = NodeManager::currentNM()->mkConst(true);
   d_num_samples = options::numSamples();
-  d_num_samples_sat = options::numSamplesSat();
+  unsigned num_samples_sat = options::numSamplesSat();
+  if( num_samples_sat>d_num_samples )
+  {
+    d_num_samples_nsat = 0;
+    // must have more samples than SAT samples
+    std::stringstream ss;
+    ss << "The number of SAT samples cannot be greater than the number of total samples: " << num_samples_sat << " SAT samples, " << d_num_samples << " total samples were indicated.";
+    throw LogicException(ss.str());
+  }
+  else
+  {
+    d_num_samples_nsat = d_num_samples-num_samples_sat;
+  }
 }/* TheorySample::TheorySample() */
 
 void TheorySample::check(Effort level) {
@@ -69,13 +82,13 @@ void TheorySample::check(Effort level) {
       break;
     case SAMPLE_CHECK:
       // if we need no samples to be SAT, we don't need to check
-      if( d_num_samples_sat>0 )
-      {
+      //if(d_num_samples==d_num_samples_nsat )
+      //{
         // add the sample check to the list of facts, we process these at last
         // call effort
         registerSampleCheck(fact);
         d_sample_checks.insert(fact);
-      }
+      //}
       break;
     default:
       Unhandled(fact.getKind());
@@ -275,16 +288,35 @@ bool TheorySample::needsCheckLastEffort() {
 
 void TheorySample::checkLastCall()
 {
+  Trace("sample-check") << "----- TheorySample::check" << std::endl;
+  bool success = runCheck();
+  if( !success )
+  {
+    // conflict 
+    // TODO
+    Trace("sample-check") << "...conflict : " << d_conflict << std::endl;
+  }
+  else
+  {
+    Trace("sample-check") << "...no conflict" << std::endl;
+    
+  }
+}
+  
+bool TheorySample::runCheck()
+{
   d_bmv.clear();
   d_base_sample_terms.clear();
+  d_conflict.clear();
   
   std::vector< Node > asserts;
-  Trace("sample-check") << "----- TheorySample::check" << std::endl;
+  std::vector< Node > basserts;
+  std::map< Node, unsigned > ba_to_index;
   Trace("sample-check") << "Checking " << d_sample_checks.size() << " assertions : " << std::endl;
   for( NodeSet::const_iterator it = d_sample_checks.begin(); it != d_sample_checks.end(); ++it ){
     Node n = *it;
-    Trace("sample-check") << "  " << n << std::endl;
-    Node bmv = getBaseModelValue(n);
+    Trace("sample-check") << "  (" << asserts.size() << ") " << n << std::endl;
+    Node bmv = getBaseModelValue(n[0]);
     bmv = Rewriter::rewrite(bmv);
     Trace("sample-check") << "  ...mv: " << bmv << std::endl;
     Trace("sample-check-debug") << "  ...free terms: " << d_ainfo[n].d_free_terms << std::endl;
@@ -293,12 +325,28 @@ void TheorySample::checkLastCall()
     {
       if( !bmv.getConst<bool>() )
       {
-        // TODO
+        d_conflict.push_back(n);
+        return false;
       }
     }
     else
     {
-      asserts.push_back( n );
+      std::map< Node, unsigned >::iterator itbi = ba_to_index.find(bmv);
+      if( itbi!=ba_to_index.end() )
+      {
+        // if we get a duplicate, we choose the assertion based on node ordering
+        Node dupAssert = asserts[itbi->second];
+        if( n<dupAssert )
+        {
+          asserts[itbi->second] = n;
+        }
+      }
+      else
+      {
+        ba_to_index[bmv] = asserts.size();
+        asserts.push_back( n );
+        basserts.push_back(bmv);
+      }
     }
   }
   Trace("sample-check") << "We have " << d_base_sample_terms.size() << " base sample terms : " << std::endl;
@@ -329,36 +377,62 @@ void TheorySample::checkLastCall()
   }
   // now, compute the value of the conjunction of asserts
   std::map< Node, std::vector< Node > > base_term_var_map;
-  for( const Node& ba : asserts )
+  std::map< Node, std::vector< Node > > base_term_sub_map;
+  for( const Node& a : asserts )
   {
-    AssertInfo& ai = d_ainfo[ba];
-    std::vector< Node >& vars = base_term_var_map[ba];
+    AssertInfo& ai = d_ainfo[a];
+    std::vector< Node >& vars = base_term_var_map[a];
+    std::vector< Node >& subs = base_term_sub_map[a];
     for( const Node& bast : ai.d_sample_terms )
     {
-      vars.push_back( d_bmv[bast] );
+      Node st = d_bmv[bast];
+      vars.push_back( st );
+      subs.push_back( st );
     }
   }
   
-  unsigned sat_count = 0;
+  // the valuation of asserts on each sample point
+  std::map< Node, std::map< unsigned, Node > > assert_to_value;
+  
+  unsigned nsat_count = 0;
+  Trace("sample-check") << "Check samples..." << std::endl;
   for( unsigned i=0; i<d_num_samples; i++ )
   {
+    Trace("sample-check") << "  Point #" << i << " : ";
     bool success = true;
-    for( const Node& ba : asserts )
+    Node baSubs;
+    for( unsigned k=0, size=asserts.size(); k<size; k++ )
     {
-      std::vector< Node >& bt_vars = base_term_var_map[ba];
-      std::vector< Node > bt_subs;
-      for( const Node& bast : bt_vars )
+      Node a = asserts[k];
+      Node ba = basserts[k];
+      std::vector< Node >& bt_vars = base_term_var_map[a];
+      std::vector< Node >& bt_subs = base_term_sub_map[a];
+      for( unsigned j=0, nvars = bt_vars.size(); j<nvars; j++ )
       {
-        bt_subs.push_back( d_bst_to_values[bast][i] );
+        bt_subs[j] = d_bst_to_values[bt_vars[j]][i];
       }
-      //Node baSubs = ba.substitute(bt_vars.begin(),bt_vars.end(),bt_subs.begin(),bt_subs.end());
-      
+      Node baSubs = ba.substitute(bt_vars.begin(),bt_vars.end(),bt_subs.begin(),bt_subs.end());
+      baSubs = Rewriter::rewrite(baSubs);
+      Assert(baSubs.isConst());
+      Trace("sample-check") << baSubs << " ";
+      if( baSubs!=d_true )
+      {
+        success = false;
+        break;
+      }
     }
-    if( success )
+    Trace("sample-check") << std::endl;
+    if( !success )
     {
-      sat_count++;
+      nsat_count++;
+      if( nsat_count>d_num_samples_nsat )
+      {
+        // conflict
+        return false;
+      }
     }
   }
+  return true;
 }
 
 
@@ -480,7 +554,8 @@ Node TheorySample::getSampleValue(TypeNode tn)
   // must get model value if not constant
   if( !ret.isConst() )
   {
-    
+    ret = getValuation().getModel()->getValue(ret);
+    Assert( ret.isConst() );
   }
   return ret;
 }
