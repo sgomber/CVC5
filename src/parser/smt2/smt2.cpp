@@ -310,12 +310,12 @@ void Smt2::addTheory(Theory theory) {
   case THEORY_SEP:
     addSepOperators();
     break;
-    
+
   case THEORY_SAMPLE:
     addOperator(kind::SAMPLE_INT_UNIF, "sample.int.unif");
     addOperator(kind::SAMPLE_RUN, "sample.run");
     break;
-    
+
   default:
     std::stringstream ss;
     ss << "internal error: unsupported theory " << theory;
@@ -370,8 +370,7 @@ bool Smt2::isTheoryEnabled(Theory theory) const {
     return d_logic.isTheoryEnabled(theory::THEORY_FP);
   case THEORY_SEP:
     return d_logic.isTheoryEnabled(theory::THEORY_SEP);
-  case THEORY_SAMPLE:
-    return d_logic.isTheoryEnabled(theory::THEORY_SAMPLE);
+  case THEORY_SAMPLE: return d_logic.isTheoryEnabled(theory::THEORY_SAMPLE);
   default:
     std::stringstream ss;
     ss << "internal error: unsupported theory " << theory;
@@ -540,8 +539,9 @@ void Smt2::setLogic(std::string name) {
   if (d_logic.isTheoryEnabled(theory::THEORY_SEP)) {
     addTheory(THEORY_SEP);
   }
-  
-  if (d_logic.isTheoryEnabled(theory::THEORY_SAMPLE)) {
+
+  if (d_logic.isTheoryEnabled(theory::THEORY_SAMPLE))
+  {
     addTheory(THEORY_SAMPLE);
   }
 }/* Smt2::setLogic() */
@@ -1269,23 +1269,23 @@ const void Smt2::addSygusFunSymbol( Type t, Expr synth_fun ){
       new SetUserAttributeCommand("sygus-synth-grammar", synth_fun, attr_value);
   cattr->setMuted(true);
   preemptCommand(cattr);
-  
+
   Type fType = synth_fun.getType();
-  if( fType.isFunction() )
+  if (fType.isFunction())
   {
     fType = static_cast<FunctionType>(fType).getRangeType();
   }
   // if it is a sygus datatype, it should encode terms corresponding to range
   Type sType = t;
-  if( t.isDatatype() )
+  if (t.isDatatype())
   {
     const Datatype& dt = static_cast<DatatypeType>(t).getDatatype();
-    if( dt.isSygus() )
+    if (dt.isSygus())
     {
       sType = dt.getSygusType();
     }
   }
-  if( fType!=sType )
+  if (fType != sType)
   {
     std::stringstream ss;
     ss << "Bad return type in grammar for SyGuS function " << synth_fun;

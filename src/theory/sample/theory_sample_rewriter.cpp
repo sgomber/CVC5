@@ -22,25 +22,23 @@ namespace CVC4 {
 namespace theory {
 namespace sample {
 
-RewriteResponse TheorySampleRewriter::postRewrite(TNode node) 
+RewriteResponse TheorySampleRewriter::postRewrite(TNode node)
 {
-
   return RewriteResponse(REWRITE_DONE, node);
 }
 
-
-RewriteResponse TheorySampleRewriter::preRewrite(TNode node) 
+RewriteResponse TheorySampleRewriter::preRewrite(TNode node)
 {
-  if( node.getKind()==SAMPLE_CHECK )
+  if (node.getKind() == SAMPLE_CHECK)
   {
-    if( node[0].isConst() )
+    if (node[0].isConst())
     {
       return RewriteResponse(REWRITE_DONE, node[0]);
     }
   }
-  if( node.getKind()==SAMPLE_RUN )
+  if (node.getKind() == SAMPLE_RUN)
   {
-    if( node[0].isConst() )
+    if (node[0].isConst())
     {
       return RewriteResponse(REWRITE_DONE, node[0]);
     }
@@ -50,20 +48,19 @@ RewriteResponse TheorySampleRewriter::preRewrite(TNode node)
 
 bool TheorySampleRewriter::isSampleType(TypeNode tn)
 {
-  if( !tn.isDatatype() )
+  if (!tn.isDatatype())
   {
     return false;
   }
   const Datatype& dt = static_cast<DatatypeType>(tn.toType()).getDatatype();
   // FIXME
-  if( !dt.isSygus() )
+  if (!dt.isSygus())
   {
     return false;
   }
   return true;
 }
 
-}/* CVC4::theory::sample namespace */
-}/* CVC4::theory namespace */
-}/* CVC4 namespace */
-
+}  // namespace sample
+}  // namespace theory
+}  // namespace CVC4

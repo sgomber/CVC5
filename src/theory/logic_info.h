@@ -73,8 +73,7 @@ class CVC4_PUBLIC LogicInfo {
     case theory::THEORY_BUILTIN:
     case theory::THEORY_BOOL:
     case theory::THEORY_QUANTIFIERS:
-    case theory::THEORY_SAMPLE:
-      return false;
+    case theory::THEORY_SAMPLE: return false;
     default:
       return true;
     }

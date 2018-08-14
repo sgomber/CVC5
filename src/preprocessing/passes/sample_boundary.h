@@ -28,7 +28,7 @@ namespace preprocessing {
 namespace passes {
 
 /**
- * This class 
+ * This class
  */
 class SampleBoundary : public PreprocessingPass
 {
@@ -39,11 +39,13 @@ class SampleBoundary : public PreprocessingPass
   PreprocessingPassResult applyInternal(
       AssertionPipeline* assertionsToPreprocess) override;
   /** process internal */
-  Node convert(TNode n, std::unordered_map<Node, Node, NodeHashFunction>& cache, std::unordered_map<Node, bool, NodeHashFunction>& hasSampling);
+  Node convert(TNode n,
+               std::unordered_map<Node, Node, NodeHashFunction>& cache,
+               std::unordered_map<Node, bool, NodeHashFunction>& hasSampling);
   /** is k a bool connective? */
-  static bool isBoolConnective( Kind k );
+  static bool isBoolConnective(Kind k);
   /** is n a bool connective term? */
-  static bool isBoolConnectiveTerm( TNode n );
+  static bool isBoolConnectiveTerm(TNode n);
 };
 
 }  // namespace passes

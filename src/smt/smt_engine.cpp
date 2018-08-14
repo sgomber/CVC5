@@ -2763,7 +2763,8 @@ void SmtEnginePrivate::finishInit()
                                            std::move(pbProc));
   d_preprocessingPassRegistry.registerPass("real-to-int", std::move(realToInt));
   d_preprocessingPassRegistry.registerPass("rewrite", std::move(rewrite));
-  d_preprocessingPassRegistry.registerPass("sample-boundary", std::move(sampleB));
+  d_preprocessingPassRegistry.registerPass("sample-boundary",
+                                           std::move(sampleB));
   d_preprocessingPassRegistry.registerPass("sep-skolem-emp",
                                            std::move(sepSkolemEmp));
   d_preprocessingPassRegistry.registerPass("static-learning", 
@@ -4335,9 +4336,10 @@ void SmtEnginePrivate::processAssertions() {
     }
     Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : post-quant-preprocess" << endl;
   }
-  if( options::sampling() )
+  if (options::sampling())
   {
-    d_preprocessingPassRegistry.getPass("sample-boundary")->apply(&d_assertions);
+    d_preprocessingPassRegistry.getPass("sample-boundary")
+        ->apply(&d_assertions);
   }
 
   if( options::sortInference() || options::ufssFairnessMonotone() ){

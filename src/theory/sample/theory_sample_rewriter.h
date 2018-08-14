@@ -9,9 +9,9 @@ namespace CVC4 {
 namespace theory {
 namespace sample {
 
-class TheorySampleRewriter {
-public:
-
+class TheorySampleRewriter
+{
+ public:
   /** post-rewrite */
   static RewriteResponse postRewrite(TNode node);
 
@@ -21,7 +21,8 @@ public:
   /**
    * Rewrite an equality, in case special handling is required.
    */
-  static Node rewriteEquality(TNode equality) {
+  static Node rewriteEquality(TNode equality)
+  {
     // often this will suffice
     return postRewrite(equality).node;
   }
@@ -29,22 +30,24 @@ public:
   /**
    * Initialize the rewriter.
    */
-  static inline void init() {
+  static inline void init()
+  {
     // nothing to do
   }
 
   /**
    * Shut down the rewriter.
    */
-  static inline void shutdown() {
+  static inline void shutdown()
+  {
     // nothing to do
   }
   /** is sample type */
   static bool isSampleType(TypeNode tn);
-};/* class TheorySampleRewriter */
+}; /* class TheorySampleRewriter */
 
-}/* CVC4::theory::sample namespace */
-}/* CVC4::theory namespace */
-}/* CVC4 namespace */
+}  // namespace sample
+}  // namespace theory
+}  // namespace CVC4
 
 #endif /* __CVC4__THEORY__SAMPLE__THEORY_SAMPLE_REWRITER_H */

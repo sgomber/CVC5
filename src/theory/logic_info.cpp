@@ -325,9 +325,10 @@ std::string LogicInfo::getLogicString() const {
         ss << "SEP";
         ++seen;
       }
-      if(d_theories[THEORY_SAMPLE]) {
+      if (d_theories[THEORY_SAMPLE])
+      {
         ++seen;
-      }   
+      }
       if(seen != d_sharingTheories) {
         Unhandled("can't extract a logic string from LogicInfo; at least one "
                   "active theory is unknown to LogicInfo::getLogicString() !");

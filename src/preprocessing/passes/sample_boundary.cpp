@@ -32,67 +32,79 @@ PreprocessingPassResult SampleBoundary::applyInternal(
   std::unordered_map<Node, bool, NodeHashFunction> hasSampling;
   for (unsigned i = 0, size = assertionsToPreprocess->size(); i < size; ++i)
   {
-    Trace("sample-boundary") << "Process sample boundary " << (*assertionsToPreprocess)[i] << "..." << std::endl;
-    Node aip = convert((*assertionsToPreprocess)[i], cache, hasSampling); 
+    Trace("sample-boundary")
+        << "Process sample boundary " << (*assertionsToPreprocess)[i] << "..."
+        << std::endl;
+    Node aip = convert((*assertionsToPreprocess)[i], cache, hasSampling);
     Trace("sample-boundary") << "...got : " << aip << std::endl;
-    assertionsToPreprocess->replace(
-        i, aip);
+    assertionsToPreprocess->replace(i, aip);
   }
   return PreprocessingPassResult::NO_CONFLICT;
 }
 
-Node SampleBoundary::convert(TNode n, std::unordered_map<Node, Node, NodeHashFunction>& cache, std::unordered_map<Node, bool, NodeHashFunction>& hasSampling)
+Node SampleBoundary::convert(
+    TNode n,
+    std::unordered_map<Node, Node, NodeHashFunction>& cache,
+    std::unordered_map<Node, bool, NodeHashFunction>& hasSampling)
 {
-  NodeManager * nm = NodeManager::currentNM();
+  NodeManager* nm = NodeManager::currentNM();
   std::unordered_map<Node, Node, TNodeHashFunction>::iterator it;
   std::unordered_map<Node, bool, TNodeHashFunction>::iterator iths;
   std::vector<TNode> visit;
   TNode cur;
   visit.push_back(n);
-  do {
+  do
+  {
     cur = visit.back();
     visit.pop_back();
     it = cache.find(cur);
 
-    if (it == cache.end()) {
+    if (it == cache.end())
+    {
       cache[cur] = Node::null();
       visit.push_back(cur);
-      for (const Node& cn : cur) {
+      for (const Node& cn : cur)
+      {
         visit.push_back(cn);
       }
-    } else if (it->second.isNull()) {
+    }
+    else if (it->second.isNull())
+    {
       Node ret = cur;
       bool childChanged = false;
       std::vector<Node> children;
-      if (cur.getMetaKind() == kind::metakind::PARAMETERIZED) {
+      if (cur.getMetaKind() == kind::metakind::PARAMETERIZED)
+      {
         children.push_back(cur.getOperator());
       }
-      bool hasSample = theory::sample::TheorySampleRewriter::isSampleType(cur.getType());
+      bool hasSample =
+          theory::sample::TheorySampleRewriter::isSampleType(cur.getType());
       bool isBoolConnective = isBoolConnectiveTerm(cur);
-      for (const Node& cn : cur) {
+      for (const Node& cn : cur)
+      {
         it = cache.find(cn);
         Assert(it != cache.end());
         Assert(!it->second.isNull());
         childChanged = childChanged || cn != it->second;
         // does the child have sampling?
         iths = hasSampling.find(cn);
-        Assert( iths != hasSampling.end() );
+        Assert(iths != hasSampling.end());
         // if we are a Boolean connective and the child has sampling, make the
         // child into a sample literal
-        if( isBoolConnective && iths->second )
+        if (isBoolConnective && iths->second)
         {
           childChanged = true;
-          Node scn = nm->mkNode(SAMPLE_CHECK,it->second);
+          Node scn = nm->mkNode(SAMPLE_CHECK, it->second);
           children.push_back(scn);
         }
         else
         {
-          // otherwise, track 
+          // otherwise, track
           children.push_back(it->second);
           hasSample = hasSample || iths->second;
         }
       }
-      if (childChanged) 
+      if (childChanged)
       {
         ret = nm->mkNode(cur.getKind(), children);
       }
@@ -103,23 +115,25 @@ Node SampleBoundary::convert(TNode n, std::unordered_map<Node, Node, NodeHashFun
   Assert(cache.find(n) != cache.end());
   Assert(!cache.find(n)->second.isNull());
   // top-level literal
-  if( hasSampling[n] )
+  if (hasSampling[n])
   {
-    cache[n] = nm->mkNode(SAMPLE_CHECK,n);
+    cache[n] = nm->mkNode(SAMPLE_CHECK, n);
   }
   return cache[n];
 }
 
-bool SampleBoundary::isBoolConnective( Kind k ) {
-  return k==OR || k==AND || k==EQUAL || k==ITE || k==NOT || k==IMPLIES || k==XOR;
+bool SampleBoundary::isBoolConnective(Kind k)
+{
+  return k == OR || k == AND || k == EQUAL || k == ITE || k == NOT
+         || k == IMPLIES || k == XOR;
 }
 
-bool SampleBoundary::isBoolConnectiveTerm( TNode n ) {
-  return isBoolConnective( n.getKind() ) &&
-         ( n.getKind()!=EQUAL || n[0].getType().isBoolean() ) && 
-         ( n.getKind()!=ITE || n.getType().isBoolean() );
+bool SampleBoundary::isBoolConnectiveTerm(TNode n)
+{
+  return isBoolConnective(n.getKind())
+         && (n.getKind() != EQUAL || n[0].getType().isBoolean())
+         && (n.getKind() != ITE || n.getType().isBoolean());
 }
-
 
 }  // namespace passes
 }  // namespace preprocessing
