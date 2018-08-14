@@ -151,8 +151,11 @@ void TheorySample::registerSampleCheck(Node n)
       if (TheorySampleRewriter::isSampleType(ctn))
       {
         registerSampleType(ctn);
-        d_isSample[cur] = true;
         hasSample = true;
+      }
+      if( cur.getKind()==SAMPLE_RUN )
+      {
+        d_isSample[cur] = true;
       }
       if (!hasSample)
       {
@@ -485,7 +488,7 @@ bool TheorySample::runCheck()
     {
       Node st = d_bmv[bast];
       vars.push_back(st);
-      subs.push_back(st);
+      subs.push_back(st[0]);
     }
   }
 
@@ -513,7 +516,9 @@ bool TheorySample::runCheck()
         itbvi = btvi.find(var);
         if( itbvi==btvi.end() )
         {
-          sub = mkSampleValue(bt_vars[j].getType());
+          Trace("sample-check-debug2") << "mkSampleValue " << i << " for " << var[0] << std::endl;
+          sub = mkSampleValue(var[0].getType());
+          Trace("sample-check-debug2") << "...got " << sub << std::endl;
           // cache the sample value
           d_bst_to_terms[i][var] = sub;
         }
@@ -524,12 +529,17 @@ bool TheorySample::runCheck()
         // if not constant, consult the model value
         if( !sub.isConst() )
         {
+          Trace("sample-check-debug2") << "Get model value for " << sub << std::endl;
           sub = tm->getValue(sub);
+          Trace("sample-check-debug2") << "...got " << sub << std::endl;
         }
         bt_subs[j] = sub;
       }
+      Trace("sample-check-debug2") << "In " << ba << std::endl;
+      Trace("sample-check-debug2") << "Substitute : " << bt_vars << " -> " << bt_subs << std::endl;
       Node baSubs = ba.substitute(
           bt_vars.begin(), bt_vars.end(), bt_subs.begin(), bt_subs.end());
+      Trace("sample-check-debug2") << "...got " << baSubs << std::endl;
       baSubs = Rewriter::rewrite(baSubs);
       d_assert_to_value[a][k] = baSubs;
       Assert(baSubs.isConst());
@@ -668,12 +678,12 @@ Node TheorySample::mkSampleValue(TypeNode tn)
       ret = NodeManager::currentNM()->mkNode(op, children);
     }
   }
+  else if (children.size() == 1 && ok == UNDEFINED_KIND)
+  {
+    ret = children[0];
+  }
   else
   {
-    if (children.size() == 1 && ok == UNDEFINED_KIND)
-    {
-      ret = children[0];
-    }
     ret = NodeManager::currentNM()->mkNode(ok, children);
   }
   Assert(!ret.isNull());

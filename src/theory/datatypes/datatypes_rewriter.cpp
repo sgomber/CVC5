@@ -212,7 +212,7 @@ Kind DatatypesRewriter::getOperatorKindForSygusBuiltin(Node op)
   {
     return APPLY_UF;
   }
-  return NodeManager::operatorToKind(op);
+  return UNDEFINED_KIND;
 }
 
 Node DatatypesRewriter::mkSygusTerm(const Datatype& dt,
