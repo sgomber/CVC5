@@ -52,6 +52,8 @@ class TheorySample : public Theory
     std::vector<Node> d_free_terms;
     /** sample terms */
     std::vector<Node> d_sample_terms;
+    /** sample terms */
+    std::vector<TypeNode> d_sample_term_types;
     /** init */
     void init() {}
   };
@@ -107,13 +109,17 @@ class TheorySample : public Theory
   std::unordered_set<Node, NodeHashFunction> d_conflict;
   //-------------------------end per last call effort check
 
-  /** get sample value */
-  Node getSampleValue(TypeNode tn);
-  /** make value */
-  Node mkValue(Node op, std::vector<Node>& children);
-  /** cache of the sampling */
-  std::map<Node, std::vector<Node> > d_bst_to_values;
-
+  /** get sample value 
+   * 
+   * Returns a random term, given sampling datatype type tn.
+   */
+  Node mkSampleValue(TypeNode tn);
+  /** cache of the sampling
+   * 
+   * Each entry d_bst_to_terms[i][ba] stores the result of the random term
+   * generator for base term ba on sample point i.
+   */
+  std::map<unsigned, std::map<Node, Node> > d_bst_to_terms;
 }; /* class TheorySample */
 
 }  // namespace sample

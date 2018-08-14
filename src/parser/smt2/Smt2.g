@@ -1242,6 +1242,7 @@ extendedCommand[std::unique_ptr<CVC4::Command>* cmd]
   std::vector<CVC4::Datatype> dts;
   Expr e, e2;
   Type t;
+  Type sygus_t;
   std::string name;
   std::vector<std::string> names;
   std::vector<Expr> terms;
@@ -1411,11 +1412,12 @@ extendedCommand[std::unique_ptr<CVC4::Command>* cmd]
     { cmd->reset(new EmptyCommand()); }
     RPAREN_TOK
   | SAMPLE_SORT_TOK
-    symbol[name,CHECK_UNDECLARED,SYM_SORT] 
-    sygusGrammar[t,terms,name] {
+    symbol[name,CHECK_UNDECLARED,SYM_SORT]
+    sortSymbol[t,CHECK_DECLARED]
+    sygusGrammar[sygus_t,terms,name] {
       // it has the same effect as define-sort
-      PARSER_STATE->defineType(name, t);
-      cmd->reset(new DefineTypeCommand(name, t));
+      PARSER_STATE->defineType(name, sygus_t);
+      cmd->reset(new DefineTypeCommand(name, sygus_t));
     }
   ;
 

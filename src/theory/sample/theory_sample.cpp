@@ -190,6 +190,7 @@ void TheorySample::registerSampleCheck(Node n)
       else if (d_isSample.find(cur) != d_isSample.end())
       {
         ai.d_sample_terms.push_back(cur);
+        ai.d_sample_term_types.push_back(cur.getType());
       }
       else
       {
@@ -464,30 +465,30 @@ bool TheorySample::runCheck()
   }
   Trace("sample-check") << "We have " << d_base_sample_terms.size()
                         << " base sample terms : " << std::endl;
-  std::map<Node, std::vector<Node> >::iterator itv;
+  //std::map<Node, std::vector<Node> >::iterator itv;
   for (const Node& bst : d_base_sample_terms)
   {
     Trace("sample-check") << "  " << bst << std::endl;
-
-    // compute its sample values
-    itv = d_bst_to_values.find(bst);
-    if (itv == d_bst_to_values.end())
+    /*
+    // will compute its sample values
+    itv = d_bst_to_terms.find(bst);
+    if (itv == d_bst_to_terms.end())
     {
-      d_bst_to_values[bst].clear();
+      d_bst_to_terms[bst].clear();
       Trace("sample-run") << "Sample " << bst << " : [ ";
-      itv = d_bst_to_values.find(bst);
+      itv = d_bst_to_terms.find(bst);
       TypeNode tn = bst.getType();
       Assert(TheorySampleRewriter::isSampleType(tn));
       for (unsigned i = 0; i < d_num_samples; i++)
       {
-        Node sv = getSampleValue(tn);
+        Node sv = mkSampleValue(tn);
         sv = Rewriter::rewrite(sv);
-        Assert(sv.isConst());
         Trace("sample-run") << sv << " ";
         itv->second.push_back(sv);
       }
       Trace("sample-run") << "]" << std::endl;
     }
+    */
   }
   // now, compute the value of the conjunction of d_asserts
   std::map<Node, std::vector<Node> > base_term_var_map;
@@ -507,10 +508,13 @@ bool TheorySample::runCheck()
 
   // the valuation of d_asserts on each sample point
   unsigned nsat_count = 0;
+  std::map< Node, Node >::iterator itbvi;
+  TheoryModel * tm = getValuation().getModel();
   Trace("sample-check-pt") << "Check samples..." << std::endl;
   for (unsigned i = 0; i < d_num_samples; i++)
   {
     Trace("sample-check-pt") << "  Point #" << i << " : ";
+    std::map<Node, Node>& btvi = d_bst_to_terms[i];
     bool success = true;
     Node baSubs;
     for (unsigned k = 0, size = d_asserts.size(); k < size; k++)
@@ -521,7 +525,25 @@ bool TheorySample::runCheck()
       std::vector<Node>& bt_subs = base_term_sub_map[a];
       for (unsigned j = 0, nvars = bt_vars.size(); j < nvars; j++)
       {
-        bt_subs[j] = d_bst_to_values[bt_vars[j]][i];
+        Node var = bt_vars[j];
+        Node sub;
+        itbvi = btvi.find(var);
+        if( itbvi==btvi.end() )
+        {
+          sub = mkSampleValue(bt_vars[j].getType());
+          // cache the sample value
+          d_bst_to_terms[i][var] = sub;
+        }
+        else
+        {
+          sub = itbvi->second;
+        }
+        // if not constant, consult the model value
+        if( !sub.isConst() )
+        {
+          sub = tm->getValue(sub);
+        }
+        bt_subs[j] = sub;
       }
       Node baSubs = ba.substitute(
           bt_vars.begin(), bt_vars.end(), bt_subs.begin(), bt_subs.end());
@@ -614,7 +636,7 @@ Node TheorySample::getBaseModelValue(Node n)
   return d_bmv[n];
 }
 
-Node TheorySample::getSampleValue(TypeNode tn)
+Node TheorySample::mkSampleValue(TypeNode tn)
 {
   Assert(d_tinfo.find(tn) != d_tinfo.end());
   TypeInfo& ti = d_tinfo[tn];
@@ -636,7 +658,7 @@ Node TheorySample::getSampleValue(TypeNode tn)
   }
   for (unsigned i = 0, nargs = argts.size(); i < nargs; i++)
   {
-    Node asv = getSampleValue(argts[i]);
+    Node asv = mkSampleValue(argts[i]);
     children.push_back(asv);
   }
   Kind ok = ti.d_kinds[opIndex];
@@ -673,12 +695,6 @@ Node TheorySample::getSampleValue(TypeNode tn)
   }
   Assert(!ret.isNull());
   ret = Rewriter::rewrite(ret);
-  // must get model value if not constant
-  if (!ret.isConst())
-  {
-    ret = getValuation().getModel()->getValue(ret);
-    Assert(ret.isConst());
-  }
   return ret;
 }
 
