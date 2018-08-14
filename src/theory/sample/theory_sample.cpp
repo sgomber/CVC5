@@ -4,6 +4,8 @@
 
 #include "theory/sample/theory_sample_rewriter.h"
 #include "options/sample_options.h"
+#include "util/random.h"
+#include "theory/datatypes/datatypes_rewriter.h"
 
 using namespace std;
 using namespace CVC4::kind;
@@ -22,6 +24,7 @@ TheorySample::TheorySample(context::Context* c,
     d_not_elim(u),
     d_sample_checks(c)
     {
+  d_rmax = Rational(LONG_MAX);
   d_num_samples = options::numSamples();
   d_num_samples_sat = options::numSamplesSat();
 }/* TheorySample::TheorySample() */
@@ -164,7 +167,106 @@ void TheorySample::registerSampleCheck(Node n)
 
 void TheorySample::registerSampleType(TypeNode tn)
 {
-  // TODO
+  if( d_tinfo.find(tn)!=d_tinfo.end() )
+  {
+    return;
+  }
+  d_tinfo[tn].init();
+  Trace("sample-type") << "Initialize sample type : " << tn << std::endl;
+  TypeInfo& ti = d_tinfo[tn];
+  Assert( TheorySampleRewriter::isSampleType(tn) );
+  
+  const Datatype& dt = static_cast<DatatypeType>(tn.toType()).getDatatype();
+  ti.d_ncons = dt.getNumConstructors();
+  bool valueValid = true;
+  for( unsigned i=0; i<ti.d_ncons; i++ )
+  {
+    Trace("sample-type") << "Constructor #" << i << std::endl;
+    Node op = Node::fromExpr( dt[i].getSygusOp() );
+    Trace("sample-type") << "  operator " << op << std::endl;
+    ti.d_ops.push_back( op );
+    Kind ok = UNDEFINED_KIND;
+    if( op.getKind()==BUILTIN )
+    {
+      ti.d_builtin.push_back( true );
+      ok = NodeManager::operatorToKind( op );
+      Trace("sample-type") << "  builtin, kind : " << ok << std::endl;
+    }
+    else
+    {
+      ti.d_builtin.push_back( false );
+      ok = datatypes::DatatypesRewriter::getOperatorKindForSygusBuiltin(op);
+      Trace("sample-type") << "  non-builtin, app-kind : " << ok << std::endl;
+    }
+    ti.d_kinds.push_back(ok);
+    std::vector< TypeNode > args;
+    for( unsigned j=0, nargs = dt[i].getNumArgs(); j<nargs; j++ )
+    {
+      TypeNode at = TypeNode::fromType( dt[i].getArgType(j) );
+      args.push_back( at );
+      // also register the subfield type
+      registerSampleType( at );
+    }
+    Trace("sample-type") << "  #args=" << args.size() << std::endl;
+    // is it a value?
+    if( args.empty() && op.isConst() )
+    {
+      if( valueValid )
+      {
+        if( ti.d_value.isNull() )
+        {
+          ti.d_value = op;
+        }
+        else
+        {
+          ti.d_value = Node::null();
+          valueValid = false;
+        }
+      }
+    }
+    else
+    {
+      valueValid = false;
+    }
+    unsigned rbounds[2] = { 0, 0 };
+    if( ok==SAMPLE_INT_UNIF )
+    {
+      Assert( args.size()==2 );
+      bool success = true;
+      // check if we can avoid full precision rationals
+      for( unsigned i=0; i<2; i++ )
+      {
+        success = false;
+        TypeNode at = args[i];
+        Assert(d_tinfo.find(at)!=d_tinfo.end());
+        TypeInfo& ati = d_tinfo[at];
+        if( !ati.d_value.isNull() )
+        {
+          Assert( ati.d_value.isConst() );
+          Rational rv = ati.d_value.getConst<Rational>();
+          if( rv<d_rmax )
+          {
+            rbounds[i] = rv.getNumerator().toUnsignedInt();
+            success = true;
+          }
+        }
+        if( !success )
+        {
+          // clean up
+          rbounds[0] = 0;
+          break;
+        }
+      }
+      if( success )
+      {
+        Trace("sample-type") << tn << " is " << ok << ", small bounds: [" << rbounds[0] << ", " << rbounds[1] << "]" << std::endl;
+        args.clear();
+      }
+    }
+    ti.d_args.push_back( args );
+    ti.d_rmin.push_back(rbounds[0]);
+    ti.d_rmax.push_back(rbounds[1]);
+  }
 }
 
 bool TheorySample::needsCheckLastEffort() {
@@ -189,7 +291,10 @@ void TheorySample::checkLastCall()
     Trace("sample-check-debug") << "  ...sample terms: " << d_ainfo[n].d_sample_terms << std::endl;
     if( bmv.isConst() )
     {
-      // TODO
+      if( !bmv.getConst<bool>() )
+      {
+        // TODO
+      }
     }
     else
     {
@@ -207,33 +312,46 @@ void TheorySample::checkLastCall()
     if( itv==d_bst_to_values.end() )
     {
       d_bst_to_values[bst].clear();
+      Trace("sample-run") << "Sample " << bst << " : [ ";
       itv = d_bst_to_values.find(bst);
       TypeNode tn = bst.getType();
       Assert( TheorySampleRewriter::isSampleType(tn) );
       for( unsigned i=0; i<d_num_samples; i++ )
       {
         Node sv = getSampleValue(tn);
+        sv = Rewriter::rewrite(sv);
+        Assert( sv.isConst() );
+        Trace("sample-run") << sv << " ";
         itv->second.push_back(sv);
       }
+      Trace("sample-run") << "]" << std::endl;
     }
   }
   // now, compute the value of the conjunction of asserts
+  std::map< Node, std::vector< Node > > base_term_var_map;
+  for( const Node& ba : asserts )
+  {
+    AssertInfo& ai = d_ainfo[ba];
+    std::vector< Node >& vars = base_term_var_map[ba];
+    for( const Node& bast : ai.d_sample_terms )
+    {
+      vars.push_back( d_bmv[bast] );
+    }
+  }
+  
   unsigned sat_count = 0;
   for( unsigned i=0; i<d_num_samples; i++ )
   {
     bool success = true;
     for( const Node& ba : asserts )
     {
-      std::vector< Node > vars;
-      std::vector< Node > subs;
-      AssertInfo& ai = d_ainfo[ba];
-      for( const Node& bast : ai.d_sample_terms )
+      std::vector< Node >& bt_vars = base_term_var_map[ba];
+      std::vector< Node > bt_subs;
+      for( const Node& bast : bt_vars )
       {
-        Node babst = d_bmv[bast];
-        vars.push_back( babst );
-        subs.push_back( d_bst_to_values[babst][i] );
+        bt_subs.push_back( d_bst_to_values[bast][i] );
       }
-      //Node baSubs = ba.substitute(vars.begin(),vars.end(),subs.begin(),subs.end());
+      //Node baSubs = ba.substitute(bt_vars.begin(),bt_vars.end(),bt_subs.begin(),bt_subs.end());
       
     }
     if( success )
@@ -303,9 +421,68 @@ Node TheorySample::getBaseModelValue(Node n)
 
 Node TheorySample::getSampleValue(TypeNode tn)
 {
-  
-  
-  return Node::null();
+  Assert( d_tinfo.find(tn)!=d_tinfo.end() );
+  TypeInfo& ti = d_tinfo[tn];
+  if( !ti.d_value.isNull() )
+  {
+    return ti.d_value;
+  }
+  Assert( ti.d_ncons>0 );
+  // get a random constructor index
+  uint64_t opIndex = Random::getRandom().pick(0,ti.d_ncons-1);
+  // get the information
+  Node op = ti.d_ops[opIndex];
+  bool isBuiltin = ti.d_builtin[opIndex];
+  std::vector< TypeNode >& argts = ti.d_args[opIndex];
+  std::vector< Node > children;
+  if( !isBuiltin )
+  {
+    children.push_back(op);
+  }
+  for( unsigned i = 0, nargs = argts.size(); i<nargs; i++ )
+  {
+    Node asv = getSampleValue(argts[i]);
+    children.push_back(asv);
+  }
+  Kind ok = ti.d_kinds[opIndex];
+  Node ret;
+  if( isBuiltin )
+  {
+    if( ok==SAMPLE_INT_UNIF )
+    {
+      if( !children.empty() )
+      {
+        // using full precision rationals
+      }
+      else
+      {
+        unsigned rmin = ti.d_rmin[opIndex];
+        unsigned rmax = ti.d_rmax[opIndex];
+        uint64_t rvalue = rmax>rmin ? Random::getRandom().pick(rmin,rmax) : rmin;
+        ret = NodeManager::currentNM()->mkConst(Rational(rvalue));
+      }
+    }
+    else
+    {
+      ret = NodeManager::currentNM()->mkNode(op, children);
+    }
+  }
+  else
+  {
+    if( children.size()==1 && ok==UNDEFINED_KIND )
+    {
+      ret = children[0];
+    }
+    ret = NodeManager::currentNM()->mkNode(ok, children);
+  }
+  Assert( !ret.isNull() );
+  ret = Rewriter::rewrite(ret);
+  // must get model value if not constant
+  if( !ret.isConst() )
+  {
+    
+  }
+  return ret;
 }
 
 }/* CVC4::theory::sample namespace */

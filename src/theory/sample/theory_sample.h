@@ -28,6 +28,9 @@ public:
   /** needs check last effort */
   bool needsCheckLastEffort() override;
 private:
+  /** common nodes */
+  Rational d_rmax;
+  
   NodeSet d_not_elim;
   NodeSet d_sample_checks;
   /** number of samples */
@@ -51,6 +54,23 @@ private:
   };
   std::map< Node, AssertInfo > d_ainfo;
   
+  class TypeInfo
+  {
+  public:
+    Node d_value;
+    unsigned d_ncons;
+    std::vector< bool > d_builtin;
+    std::vector< Node > d_ops;
+    std::vector< Kind > d_kinds;
+    std::vector< std::vector< TypeNode > > d_args;
+    /** for random calls */
+    std::vector< unsigned > d_rmin;
+    std::vector< unsigned > d_rmax;
+    /** init */
+    void init() {}
+  };
+  std::map<TypeNode, TypeInfo > d_tinfo;
+  
   /** register sample check constraint */
   void registerSampleCheck(Node n);
   
@@ -70,6 +90,8 @@ private:
 
   /** get sample value */
   Node getSampleValue(TypeNode tn);
+  /** make value */
+  Node mkValue(Node op, std::vector<Node>& children );
   /** cache of the sampling */
   std::map< Node, std::vector< Node > > d_bst_to_values;
   
