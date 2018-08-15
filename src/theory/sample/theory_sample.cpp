@@ -530,6 +530,7 @@ bool TheorySample::runCheck()
         if( !sub.isConst() )
         {
           Trace("sample-check-debug2") << "Get model value for " << sub << std::endl;
+          // FIXME : need to account for explanation
           sub = tm->getValue(sub);
           Trace("sample-check-debug2") << "...got " << sub << std::endl;
         }
