@@ -118,7 +118,26 @@ void PerfTest::runTestCountTNode()
       }
       tests++;
     }
+  }else if( d_testType==9 ){
+    while( tests<totalTests ){
+      for( TNode::const_iterator it = f.begin(); it != f.end(); ++it ){
+        if( testVar(*it) ){
+          count++;
+        }
+      }
+      tests++;
+    }
+  }else if( d_testType==10 ){
+    while( tests<totalTests ){
+      for( TNode::iterator it = f.begin(), end = f.end(); it != end; ++it ){
+        if( testVar(*it) ){
+          count++;
+        }
+      }
+      tests++;
+    }
   }else{
+    //for( TNode& v : f ) is compile error
     std::stringstream ss;
     ss << "Unknown test type " << d_testType << " for count node test";
     Unhandled(ss.str());
