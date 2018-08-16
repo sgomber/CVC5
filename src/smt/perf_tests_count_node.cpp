@@ -132,6 +132,16 @@ void PerfTest::runTestCountNode()
       }
       tests++;
     }
+  }else if( d_testType==11 ){
+    while( tests<totalTests ){
+      TNode tf = f;
+      for( TNode v : tf  ){
+        if( testVar(v) ){
+          count++;
+        }
+      }
+      tests++;
+    }
   }else{
     //for( Node& v : f ) is compile error
     std::stringstream ss;
