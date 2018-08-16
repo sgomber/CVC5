@@ -2,14 +2,17 @@
 
 echo "Run count Node tests with options $@..."
 
-./perf_test_script 2 6 2 $@ 
-./perf_test_script 2 6 3 $@
-./perf_test_script 2 6 4 $@
-./perf_test_script 2 6 5 $@
-./perf_test_script 2 6 6 $@
-./perf_test_script 2 6 7 $@
-./perf_test_script 2 6 8 $@
-./perf_test_script 2 6 9 $@
-./perf_test_script 2 6 10 $@
-./perf_test_script 2 6 11 $@
-./perf_test_script 2 6 12 $@
+# 2 denotes the Node test
+# 9 is the number of tests (the different ways we iterate)
+# 2...12 denotes the number of arguments of the TNode we are iterating over
+./perf_test_script 2 9 2 $@
+./perf_test_script 2 9 3 $@
+./perf_test_script 2 9 4 $@
+./perf_test_script 2 9 5 $@
+./perf_test_script 2 9 6 $@
+./perf_test_script 2 9 7 $@
+./perf_test_script 2 9 8 $@
+./perf_test_script 2 9 9 $@
+./perf_test_script 2 9 10 $@
+./perf_test_script 2 9 11 $@
+./perf_test_script 2 9 12 $@

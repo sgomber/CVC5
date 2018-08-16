@@ -30,6 +30,9 @@ void PerfTest::run()
     runTestCountDataStructures();
   }else if( d_testFamily==6 ){
     runTestCountTNode();
+  }else if( d_testFamily==7 ){
+    // TODO
+    //runTestCountTVector();
   }else{
     std::stringstream ss;
     ss << "Unknown test family " << d_testFamily;

@@ -12,6 +12,7 @@ function measure()
  #time $@ 2>/dev/null
   TYPE=$1
   shift
+  echo "run --do-test --test-family=$FAMILY --test-type=$TYPE --test-depth=$DEPTH $@"
   ulimit -t 5000;time cvc4 test.smt2 --do-test --test-family=$FAMILY --test-type=$TYPE --test-depth=$DEPTH $@ 2>/dev/null
 }
 
@@ -33,8 +34,10 @@ function do_tests()
 {
 
 echo -n "depth $DEPTH : "
-for (( i=0; i<$NUM; i++ )) do 
+echo ""
+for (( i=0; i<$NUM; i++ )) do
   do_one $i $@
+  echo ""
 done
 echo
 }

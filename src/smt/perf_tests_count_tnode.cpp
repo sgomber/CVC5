@@ -23,6 +23,7 @@ void PerfTest::runTestCountTNode()
   // 4 : const reference range iterator over TNode
   // 5 : auto range iterator over TNode
   Trace("ajr-test") << "----Test count (TNode version)..." << std::endl;
+  Trace("ajr-test") << "----number of variables is " << d_vars.size() << "..." << std::endl;
   std::vector< TypeNode > types;
   for( unsigned i=0; i<d_vars.size(); i++ ){
     types.push_back( d_vars[i].getType() );

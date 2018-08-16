@@ -2,14 +2,14 @@
 
 echo "Run count std::vector TNode tests with options $@..."
 
-./perf_test_script 6 7 2 $@ 
-./perf_test_script 6 7 3 $@
-./perf_test_script 6 7 4 $@
-./perf_test_script 6 7 5 $@
-./perf_test_script 6 7 6 $@
-./perf_test_script 6 7 7 $@
-./perf_test_script 6 7 8 $@
-./perf_test_script 6 7 9 $@
-./perf_test_script 6 7 10 $@
-./perf_test_script 6 7 11 $@
-./perf_test_script 6 7 12 $@
+./perf_test_script 7 7 2 $@ 
+./perf_test_script 7 7 3 $@
+./perf_test_script 7 7 4 $@
+./perf_test_script 7 7 5 $@
+./perf_test_script 7 7 6 $@
+./perf_test_script 7 7 7 $@
+./perf_test_script 7 7 8 $@
+./perf_test_script 7 7 9 $@
+./perf_test_script 7 7 10 $@
+./perf_test_script 7 7 11 $@
+./perf_test_script 7 7 12 $@
