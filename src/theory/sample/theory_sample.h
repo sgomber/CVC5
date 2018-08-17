@@ -83,8 +83,8 @@ class TheorySample : public Theory
   unsigned d_num_samples;
   /** number of samples we allow to be not sat */
   unsigned d_num_samples_nsat;
-  /** whether a term is a sampling term */
-  std::map<Node, bool> d_isSample;
+  /** the set of terms that are sampling terms */
+  std::unordered_set<Node, NodeHashFunction> d_isSample;
   /** whether a term has sampling subterms */
   std::map<Node, bool> d_hasSample;
   /** assertion information */
