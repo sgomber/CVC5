@@ -5,6 +5,8 @@
 
 #include "theory/theory.h"
 
+#include "theory/evaluator.h"
+
 namespace CVC4 {
 namespace theory {
 namespace sample {
@@ -76,6 +78,8 @@ class TheorySample : public Theory
   /** common nodes */
   Rational d_rmax;
   Node d_true;
+  /** an evaluator object */
+  Evaluator d_eval;
 
   NodeSet d_not_elim;
   NodeSet d_sample_checks;

@@ -618,11 +618,17 @@ bool TheorySample::runCheck()
         bt_subs[j] = sub;
       }
       Trace("sample-check-debug2") << "In " << ba << std::endl;
-      Trace("sample-check-debug2") << "Substitute : " << bt_vars << " -> " << bt_subs << std::endl;
-      Node baSubs = ba.substitute(
-          bt_vars.begin(), bt_vars.end(), bt_subs.begin(), bt_subs.end());
-      Trace("sample-check-debug2") << "...got " << baSubs << std::endl;
-      baSubs = Rewriter::rewrite(baSubs);
+      Trace("sample-check-debug2") << "Evaluate " << ba << "{" << bt_vars << " -> " << bt_subs << "}" << std::endl;
+      Node baSubs;
+      // use the evaluator 
+      baSubs = d_eval.eval(ba, bt_vars, bt_subs);
+      if( baSubs.isNull() )
+      {
+        Trace("sample-check-debug2") << "...requires substitution + rewriting" << std::endl;
+        baSubs = ba.substitute(
+            bt_vars.begin(), bt_vars.end(), bt_subs.begin(), bt_subs.end());
+        baSubs = Rewriter::rewrite(baSubs);
+      }
       d_assert_to_value[a][k] = baSubs;
       Assert(baSubs.isConst());
       Trace("sample-check-pt") << baSubs << " ";
