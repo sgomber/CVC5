@@ -70,7 +70,8 @@ class TheorySample : public Theory
   bool needsCheckLastEffort() override;
   /** finish init */
   void finishInit() override;
-
+  /** preregister term */
+  void preRegisterTerm(TNode n) override;
  private:
   /** common nodes */
   Rational d_rmax;
@@ -122,6 +123,9 @@ class TheorySample : public Theory
   void registerSampleCheck(Node n);
 
   /** register sample term */
+  void registerSampleTerm(Node n, std::vector< Node >& freeTerms, std::vector< Node >& sampleTerms);
+
+  /** register sample term */
   void registerSampleType(TypeNode tn);
 
   /** check last call */
@@ -134,7 +138,12 @@ class TheorySample : public Theory
   Node explainModelValue(Node n, std::vector<Node>& vec);
 
   //-------------------------per last call effort check
+  /** the assertions of kind SAMPLE_CHECK */
   std::vector<Node> d_asserts;
+  /** 
+   * The "base" assertion forms of each of the above assertions. This is a
+   * literal where each non-sample term is replaced by its model value.
+   */
   std::vector<Node> d_basserts;
   std::map<Node, std::map<unsigned, Node> > d_assert_to_value;
   /** get base model value
@@ -158,10 +167,21 @@ class TheorySample : public Theory
   Node mkSampleValue(TypeNode tn);
   /** cache of the sampling
    * 
-   * Each entry d_bst_to_terms[i][ba] stores the result of the random term
-   * generator for base sample term ba on sample point i.
+   * Each entry d_sample_bst_to_terms[i][ba] stores the result of the random
+   * termgenerator for base sample term ba on sample point i.
    */
-  std::map<unsigned, std::map<Node, Node> > d_bst_to_terms;
+  std::map<unsigned, std::map<Node, Node> > d_sample_bst_to_terms;
+  /** cache 
+   *
+   * Each entry d_bst_term_to_samples[ba][t] stores the sample indices
+   * j1...jn for which d_sample_bst_to_terms[ji][ba] = t.
+   */
+  std::map< Node, std::map< Node, std::vector< unsigned > > > d_bst_term_to_samples;
+  /** 
+   * Each d_bst_to_nconst_terms[ba] the list of non-constant terms t1...tk in
+   * the domain of d_bst_term_to_samples[ba].
+   */
+  std::map< Node, std::vector< Node > > d_bst_to_nconst_terms;
 }; /* class TheorySample */
 
 }  // namespace sample

@@ -52,6 +52,14 @@ void TheorySample::finishInit()
   }
 }
 
+void TheorySample::preRegisterTerm(TNode n) 
+{
+  if( n.getKind()==SAMPLE_CHECK )
+  {
+    // look for bad symbols
+  }
+}
+
 void TheorySample::check(Effort level)
 {
   if (done() && level < EFFORT_FULL)
@@ -121,6 +129,16 @@ void TheorySample::registerSampleCheck(Node n)
   }
   d_ainfo[n].init();
   AssertInfo& ai = d_ainfo[n];
+  registerSampleTerm(n,ai.d_free_terms,ai.d_sample_terms);
+  // also cache the types of the bodies of the sample terms
+  for( const Node& st : ai.d_sample_terms )
+  {
+    ai.d_sample_term_types.push_back( st[0].getType() );
+  }
+}
+
+void TheorySample::registerSampleTerm(Node n, std::vector< Node >& freeTerms, std::vector< Node >& sampleTerms)
+{
 
   Assert(d_hasSample.find(n) == d_hasSample.end());
 
@@ -188,12 +206,11 @@ void TheorySample::registerSampleCheck(Node n)
       visited.insert(cur);
       if (!d_hasSample[cur] && !cur.isConst())
       {
-        ai.d_free_terms.push_back(cur);
+        freeTerms.push_back(cur);
       }
       else if (d_isSample.find(cur) != d_isSample.end())
       {
-        ai.d_sample_terms.push_back(cur);
-        ai.d_sample_term_types.push_back(cur.getType());
+        sampleTerms.push_back(cur);
       }
       else
       {
@@ -478,16 +495,20 @@ bool TheorySample::runCheck()
   }
   // now, compute the value of the conjunction of d_asserts
   std::map<Node, std::vector<Node> > base_term_var_map;
+  std::map<Node, std::vector<TypeNode> > base_term_var_types_map;
   std::map<Node, std::vector<Node> > base_term_sub_map;
   for (const Node& a : d_asserts)
   {
     AssertInfo& ai = d_ainfo[a];
     std::vector<Node>& vars = base_term_var_map[a];
+    std::vector<TypeNode>& var_types = base_term_var_types_map[a];
     std::vector<Node>& subs = base_term_sub_map[a];
-    for (const Node& bast : ai.d_sample_terms)
+    for (unsigned i=0, size = ai.d_sample_terms.size(); i<size; i++ )
     {
+      Node bast = ai.d_sample_terms[i];
       Node st = d_bmv[bast];
       vars.push_back(st);
+      var_types.push_back(ai.d_sample_term_types[i]);
       subs.push_back(st[0]);
     }
   }
@@ -495,12 +516,11 @@ bool TheorySample::runCheck()
   // the valuation of d_asserts on each sample point
   unsigned nsat_count = 0;
   std::map< Node, Node >::iterator itbvi;
-  TheoryModel * tm = getValuation().getModel();
   Trace("sample-check-pt") << "Check samples..." << std::endl;
   for (unsigned i = 0; i < d_num_samples; i++)
   {
     Trace("sample-check-pt") << "  Point #" << i << " : ";
-    std::map<Node, Node>& btvi = d_bst_to_terms[i];
+    std::map<Node, Node>& sbtvi = d_sample_bst_to_terms[i];
     bool success = true;
     Node baSubs;
     for (unsigned k = 0, size = d_asserts.size(); k < size; k++)
@@ -508,32 +528,49 @@ bool TheorySample::runCheck()
       Node a = d_asserts[k];
       Node ba = d_basserts[k];
       std::vector<Node>& bt_vars = base_term_var_map[a];
+      std::vector<TypeNode>& bt_var_types = base_term_var_types_map[a];
       std::vector<Node>& bt_subs = base_term_sub_map[a];
       for (unsigned j = 0, nvars = bt_vars.size(); j < nvars; j++)
       {
         Node var = bt_vars[j];
         Node sub;
-        itbvi = btvi.find(var);
-        if( itbvi==btvi.end() )
+        // see if we have already computed the term for this sample value
+        itbvi = sbtvi.find(var);
+        if( itbvi==sbtvi.end() )
         {
           Trace("sample-check-debug2") << "mkSampleValue " << i << " for " << var[0] << std::endl;
-          sub = mkSampleValue(var[0].getType());
+          Assert( var[0].getType()==bt_var_types[j]);
+          sub = mkSampleValue(bt_var_types[j]);
           Trace("sample-check-debug2") << "...got " << sub << std::endl;
-          // cache the sample value
-          d_bst_to_terms[i][var] = sub;
+          d_sample_bst_to_terms[i][var] = sub;
+          d_bst_term_to_samples[var][sub].push_back(i);
+          // if this is the first occurrence of this term
+          if( d_bst_term_to_samples[var].size()==1 )
+          {
+            if( !sub.isConst() )
+            {
+              // add it to the list of non-constant values for this
+              d_bst_to_nconst_terms[var].push_back(sub);
+            }
+            // Ensure that we've computed its current model value.
+            // First, compute whether it is a sample term itself.
+            std::vector< Node > sampleTerms;
+            std::vector< Node > freeTerms;
+            registerSampleTerm(sub,freeTerms,sampleTerms);
+            
+            // for now, we only support non-sample terms 
+            AlwaysAssert( sampleTerms.empty() );
+            Assert( freeTerms.size()==1 && freeTerms[0]==sub );
+          }
         }
         else
         {
+          // look up in the model value cache
           sub = itbvi->second;
         }
-        // if not constant, consult the model value
-        if( !sub.isConst() )
-        {
-          Trace("sample-check-debug2") << "Get model value for " << sub << std::endl;
-          // FIXME : need to account for explanation
-          sub = tm->getValue(sub);
-          Trace("sample-check-debug2") << "...got " << sub << std::endl;
-        }
+        // must convert to model value
+        sub = getBaseModelValue(sub);
+        Assert( sub.isConst() );
         bt_subs[j] = sub;
       }
       Trace("sample-check-debug2") << "In " << ba << std::endl;
@@ -568,9 +605,14 @@ bool TheorySample::runCheck()
 
 Node TheorySample::getBaseModelValue(Node n)
 {
+  std::unordered_map<Node, Node, TNodeHashFunction>::iterator it;
+  if( it!=d_bmv.end() )
+  {
+    return it->second;
+  }
+  
   NodeManager* nm = NodeManager::currentNM();
   TheoryModel* tm = getValuation().getModel();
-  std::unordered_map<Node, Node, TNodeHashFunction>::iterator it;
   std::vector<TNode> visit;
   TNode cur;
   visit.push_back(n);
