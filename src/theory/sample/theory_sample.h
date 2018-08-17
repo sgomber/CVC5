@@ -135,7 +135,7 @@ class TheorySample : public Theory
   /** the master equality engine (used for explainations */
   eq::EqualityEngine* d_masterEe;
   /** explain model value */
-  Node explainModelValue(Node n, std::vector<Node>& vec);
+  Node explainModelValue(Node n, std::vector<Node>& vec, unsigned ind=0);
 
   //-------------------------per last call effort check
   /** the assertions of kind SAMPLE_CHECK */

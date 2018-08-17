@@ -355,7 +355,7 @@ void TheorySample::checkLastCall()
     {
       Trace("sample-conflict") << "    free term : " << ft << std::endl;
       std::vector< Node > cvecc;
-      explainModelValue(ft, cvecc);
+      explainModelValue(ft, cvecc,4);
       Trace("sample-conflict") << "    ... " << cvecc << std::endl;
       cvec.insert(cvec.end(),cvecc.begin(),cvecc.end());
     }
@@ -370,7 +370,7 @@ void TheorySample::checkLastCall()
       {
         Trace("sample-conflict") << "    sampled term : " << bstt << " from base term " << bst << std::endl;
         std::vector< Node > cvecc;
-        explainModelValue(bstt, cvecc);
+        explainModelValue(bstt, cvecc,4);
         Trace("sample-conflict") << "    ... " << cvecc << std::endl;
         cvec.insert(cvec.end(),cvecc.begin(),cvecc.end());
       }
@@ -384,7 +384,18 @@ void TheorySample::checkLastCall()
   d_out->lemma(conflictNode);
 }
 
-Node TheorySample::explainModelValue(Node n, std::vector<Node>& exp)
+void indent(const char * c, unsigned ind )
+{
+  if( Trace.isOn(c) )
+  {
+    for( unsigned i=0; i<ind; i++ )
+    {
+      Trace(c) << " ";
+    }
+  }
+}
+
+Node TheorySample::explainModelValue(Node n, std::vector<Node>& exp, unsigned ind)
 {
   if (n.isConst())
   {
@@ -393,7 +404,11 @@ Node TheorySample::explainModelValue(Node n, std::vector<Node>& exp)
 
   Node mn = getValuation().getModel()->getValue(n);
   Node trivialExp = n.eqNode(mn).negate();
-
+  if( Trace.isOn("sample-conflict-debug") )
+  {
+    indent("sample-conflict-debug",ind);
+    Trace("sample-conflict-debug") << "- explain " << n << " == " << mn << "..." << std::endl;
+  }
   // if we don't have the model value, its already hopeless
   if (d_masterEe->hasTerm(mn))
   {
@@ -402,6 +417,8 @@ Node TheorySample::explainModelValue(Node n, std::vector<Node>& exp)
     {
       // if so, the explanation is simple
       exp.push_back(trivialExp);
+      indent("sample-conflict-debug",ind);
+      Trace("sample-conflict-debug") << "-- trivial, ee has both terms." << std::endl;
       return mn;
     }
     // otherwise, let's look at the children
@@ -411,7 +428,7 @@ Node TheorySample::explainModelValue(Node n, std::vector<Node>& exp)
     bool success = true;
     for (const Node& nc : n)
     {
-      Node ncv = explainModelValue(nc, childrenExp);
+      Node ncv = explainModelValue(nc, childrenExp, ind+2);
       if (ncv.isNull())
       {
         success = false;
@@ -433,6 +450,8 @@ Node TheorySample::explainModelValue(Node n, std::vector<Node>& exp)
         // properly explained it, using the children
         exp.insert(exp.end(), childrenExp.begin(), childrenExp.end());
         exp.push_back(n2.eqNode(mn).negate());
+        indent("sample-conflict-debug",ind);
+        Trace("sample-conflict-debug") << "-- explained children and explanation via " << n2 << "." << std::endl;
         return mn;
       }
     }
@@ -443,8 +462,12 @@ Node TheorySample::explainModelValue(Node n, std::vector<Node>& exp)
   // if the type is finite, we are okay
   if (n.getType().isInterpretedFinite())
   {
+    indent("sample-conflict-debug",ind);
+    Trace("sample-conflict-debug") << "-- finite, allow value explanation." << std::endl;
     return mn;
   }
+  indent("sample-conflict-debug",ind);
+  Trace("sample-conflict-debug") << "-- cannot find explanation!" << std::endl;
   Trace("sample-warn") << "TheorySample: WARNING: cannot explain model value "
                        << mn << " for " << n << std::endl;
   return Node::null();
