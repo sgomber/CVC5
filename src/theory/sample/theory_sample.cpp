@@ -550,10 +550,10 @@ bool TheorySample::runCheck()
     for (unsigned i=0, size = ai.d_sample_terms.size(); i<size; i++ )
     {
       Node st = ai.d_sample_terms[i];
-      Node bst = d_bmv[st];
-      vars.push_back(bst);
+      Node bstfv = d_bmv[st];
+      vars.push_back(bstfv);
       var_types.push_back(ai.d_sample_term_types[i]);
-      subs.push_back(bst[0]);
+      subs.push_back(Node::null());
     }
   }
 
@@ -582,8 +582,8 @@ bool TheorySample::runCheck()
         itbvi = sbtvi.find(var);
         if( itbvi==sbtvi.end() )
         {
-          Trace("sample-check-debug2") << "mkSampleValue " << i << " for " << var[0] << std::endl;
-          Assert( var[0].getType()==bt_var_types[j]);
+          Trace("sample-check-debug2") << "mkSampleValue " << i << " for " << var << std::endl;
+          Assert( var.getType()==bt_var_types[j]);
           sub = mkSampleValue(bt_var_types[j]);
           Trace("sample-check-debug2") << "...got " << sub << std::endl;
           d_sample_bst_to_terms[i][var] = sub;
@@ -619,9 +619,12 @@ bool TheorySample::runCheck()
       }
       Trace("sample-check-debug2") << "In " << ba << std::endl;
       Trace("sample-check-debug2") << "Evaluate " << ba << "{" << bt_vars << " -> " << bt_subs << "}" << std::endl;
+      // use the evaluator first
       Node baSubs;
-      // use the evaluator  FIXME: requires term substitution
-      //baSubs = d_eval.eval(ba, bt_vars, bt_subs);
+      if( options::samplingUseEval() )
+      {
+        baSubs = d_eval.eval(ba, bt_vars, bt_subs);
+      }
       if( baSubs.isNull() )
       {
         Trace("sample-check-debug2") << "...requires substitution + rewriting" << std::endl;
@@ -710,11 +713,23 @@ Node TheorySample::getBaseModelValue(Node n)
       {
         ret = nm->mkNode(cur.getKind(), children);
       }
-      d_bmv[cur] = ret;
       if (d_isSample.find(cur) != d_isSample.end())
       {
         d_base_sample_terms.push_back(ret);
+        // replace by fresh variable
+        std::map< Node, Node >::iterator itf = d_bst_to_fv.find(ret);
+        if( itf==d_bst_to_fv.end() )
+        {
+          Node fv = nm->mkSkolem("_bst_fv",cur.getType());
+          d_bst_to_fv[ret] = fv;
+          ret = fv;
+        }
+        else
+        {
+          ret = itf->second;
+        }
       }
+      d_bmv[cur] = ret;
     }
   } while (!visit.empty());
   Assert(d_bmv.find(n) != d_bmv.end());

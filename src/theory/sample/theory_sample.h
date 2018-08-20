@@ -169,6 +169,8 @@ class TheorySample : public Theory
    * Returns a random term, given sampling datatype type tn.
    */
   Node mkSampleValue(TypeNode tn);
+  /** free variables for base sample terms */
+  std::map< Node, Node > d_bst_to_fv;
   /** cache of the sampling
    * 
    * Each entry d_sample_bst_to_terms[i][ba] stores the result of the random
