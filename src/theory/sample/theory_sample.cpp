@@ -620,8 +620,8 @@ bool TheorySample::runCheck()
       Trace("sample-check-debug2") << "In " << ba << std::endl;
       Trace("sample-check-debug2") << "Evaluate " << ba << "{" << bt_vars << " -> " << bt_subs << "}" << std::endl;
       Node baSubs;
-      // use the evaluator 
-      baSubs = d_eval.eval(ba, bt_vars, bt_subs);
+      // use the evaluator  FIXME: requires term substitution
+      //baSubs = d_eval.eval(ba, bt_vars, bt_subs);
       if( baSubs.isNull() )
       {
         Trace("sample-check-debug2") << "...requires substitution + rewriting" << std::endl;
