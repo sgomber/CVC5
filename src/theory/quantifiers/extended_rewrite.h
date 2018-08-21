@@ -4,7 +4,7 @@
  ** Top contributors (to current version):
  **   Andrew Reynolds
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -92,6 +92,9 @@ class ExtendedRewriter
    */
   Node extendedRewriteIte(Kind itek, Node n, bool full = true);
   /** Rewrite AND/OR
+   *
+   * This implements BCP, factoring, and equality resolution for the Boolean
+   * term n whose top symbolic is AND/OR.
    */
   Node extendedRewriteAndOr(Node n);
   /** Pull ITE, for example:
@@ -136,8 +139,12 @@ class ExtendedRewriter
       Kind andk, Kind ork, Kind notk, std::map<Kind, bool>& bcp_kinds, Node n);
   /** (type-independent) factoring, for example:
    *
+   *   ( A V B ) ^ ( A V C ) ----> A V ( B ^ C )
+   *   ( A ^ B ) V ( A ^ C ) ----> A ^ ( B V C )
+   *
+   * This function takes as arguments the kinds that specify AND, OR, NOT.
+   * We assume that the children of n do not contain duplicates.
    */
-
   Node extendedRewriteFactoring(Kind andk, Kind ork, Kind notk, Node n);
   /** (type-independent) equality resolution, for example:
    *
