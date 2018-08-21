@@ -468,11 +468,14 @@ Node ExtendedRewriter::extendedRewriteIte(Kind itek, Node n, bool full)
           TNode tv = n[i][0];
           for (unsigned j = 1; j <= 2; j++)
           {
-            // B => ~A implies ite( A, x, ite( B, y, z ) ) --> ite( B, y, ite(
-            // A, x, z ) ) ~B => ~A implies ite( A, x, ite( B, y, z ) ) --> ite(
-            // B, ite( A, x, y ), z ) B => A implies ite( A, ite( B, y, z ), x )
-            // --> ite( B, y, ite( A, z, x ) ) ~B => A implies ite( A, ite( B,
-            // y, z ), x ) --> ite( B, ite( A, y, x ), z )
+            // B => ~A implies 
+            //   ite( A, x, ite( B, y, z ) ) --> ite( B, y, ite( A, x, z ) ) 
+            // ~B => ~A implies 
+            //   ite( A, x, ite( B, y, z ) ) --> ite( B, ite( A, x, y ), z ) 
+            // B => A implies 
+            //   ite( A, ite( B, y, z ), x ) --> ite( B, y, ite( A, z, x ) ) 
+            // ~B => A implies 
+            //   ite( A, ite( B, y, z ), x ) --> ite( B, ite( A, y, x ), z )
             TNode ts = j == 1 ? d_false : d_true;
             Node cr = n[0].substitute(tv, ts);
             Node crr = Rewriter::rewrite(cr);
@@ -1371,173 +1374,6 @@ Node ExtendedRewriter::extendedRewriteEqChain(
           }
           break;
         }
-      }
-    }
-    else
-    {
-      bool pol = ck != notk;
-      Node ca = pol ? c : c[0];
-      atoms[c][ca] = pol;
-      alist[c].push_back(ca);
-    }
-    atom_count.push_back(std::pair<Node, unsigned>(c, alist[c].size()));
-  }
-  // check subsumptions
-  // sort by #atoms
-  std::sort(atom_count.begin(), atom_count.end(), sortPairSecond);
-  for (const std::pair<Node, unsigned>& ac : atom_count)
-  {
-    Trace("ext-rew-eqchain") << "  eqchain-simplify: " << ac.first << " has "
-                             << ac.second << " atoms." << std::endl;
-  }
-  Trace("ext-rew-eqchain") << "  eqchain-simplify: compute subsumptions...\n";
-  SimpSubsumeTrie sst;
-  for (std::pair<const Node, bool>& cp : cstatus)
-  {
-    if (!cp.second)
-    {
-      // already eliminated
-      continue;
-    }
-    Node c = cp.first;
-    Trace("ext-rew-eqchain")
-        << "  - add term " << c << " with atom list " << alist[c] << "...\n";
-    std::vector<Node> subsumes;
-    sst.addTerm(c, alist[c], subsumes);
-    for (const Node& cc : subsumes)
-    {
-      if (!cstatus[cc])
-      {
-        // subsumes a child that was already eliminated
-        continue;
-      }
-      Trace("ext-rew-eqchain")
-          << "  eqchain-simplify: " << c << " subsumes " << cc << std::endl;
-      // for each of the atoms in cc
-      std::map<Node, std::map<Node, bool> >::iterator itc = atoms.find(c);
-      Assert(itc != atoms.end());
-      std::map<Node, std::map<Node, bool> >::iterator itcc = atoms.find(cc);
-      Assert(itcc != atoms.end());
-      std::vector<Node> common_children;
-      std::vector<Node> diff_children;
-      for (const std::pair<const Node, bool>& ap : itcc->second)
-      {
-        // compare the polarity
-        Node a = ap.first;
-        bool polcc = ap.second;
-        Assert(itc->second.find(a) != itc->second.end());
-        bool polc = itc->second[a];
-        Trace("ext-rew-eqchain")
-            << "    eqchain-simplify: atom " << a
-            << " has polarities : " << polc << " " << polcc << "\n";
-        Node lit = polc ? a : TermUtil::mkNegate(notk, a);
-        if (polc != polcc)
-        {
-          diff_children.push_back(lit);
-        }
-        else
-        {
-          common_children.push_back(lit);
-        }
-      }
-      std::vector<Node> rem_children;
-      for (const std::pair<const Node, bool>& ap : itc->second)
-      {
-        Node a = ap.first;
-        if (atoms[cc].find(a) == atoms[cc].end())
-        {
-          bool polc = ap.second;
-          rem_children.push_back(polc ? a : TermUtil::mkNegate(notk, a));
-        }
-      }
-      Trace("ext-rew-eqchain")
-          << "    #common/diff/rem: " << common_children.size() << "/"
-          << diff_children.size() << "/" << rem_children.size() << "\n";
-      bool do_rewrite = false;
-      if (common_children.empty() && itc->second.size() == itcc->second.size()
-          && itcc->second.size() == 2)
-      {
-        // x | y = ~x | ~y ---> ~( x = y )
-        do_rewrite = true;
-        children.push_back(diff_children[0]);
-        children.push_back(diff_children[1]);
-        gpol = !gpol;
-        Trace("ext-rew-eqchain") << "    apply 2-child all-diff\n";
-      }
-      else if (common_children.empty() && diff_children.size() == 1)
-      {
-        do_rewrite = true;
-        // x = ( ~x | y ) ---> ~( ~x | ~y )
-        Node remn = rem_children.size() == 1 ? rem_children[0]
-                                             : nm->mkNode(ork, rem_children);
-        remn = TermUtil::mkNegate(notk, remn);
-        children.push_back(nm->mkNode(ork, diff_children[0], remn));
-        if (!isXor)
-        {
-          gpol = !gpol;
-        }
-        Trace("ext-rew-eqchain") << "    apply unit resolution\n";
-      }
-      else if (diff_children.size() == 1
-               && itc->second.size() == itcc->second.size())
-      {
-        // ( x | y | z ) = ( x | ~y | z ) ---> ( x | z )
-        do_rewrite = true;
-        Assert(!common_children.empty());
-        Node comn = common_children.size() == 1
-                        ? common_children[0]
-                        : nm->mkNode(ork, common_children);
-        children.push_back(comn);
-        if (isXor)
-        {
-          gpol = !gpol;
-        }
-        Trace("ext-rew-eqchain") << "    apply resolution\n";
-      }
-      else if (diff_children.empty())
-      {
-        do_rewrite = true;
-        if (rem_children.empty())
-        {
-          // x | y = x | y ---> true
-          // this can happen if we have ( ~x & ~y ) = ( x | y )
-          children.push_back(TermUtil::mkTypeMaxValue(tn));
-          if (isXor)
-          {
-            gpol = !gpol;
-          }
-          Trace("ext-rew-eqchain") << "    apply cancel\n";
-        }
-        else
-        {
-          // x | y = ( x | y | z ) ---> ( x | y | ~z )
-          Node remn = rem_children.size() == 1 ? rem_children[0]
-                                               : nm->mkNode(ork, rem_children);
-          remn = TermUtil::mkNegate(notk, remn);
-          Node comn = common_children.size() == 1
-                          ? common_children[0]
-                          : nm->mkNode(ork, common_children);
-          children.push_back(nm->mkNode(ork, comn, remn));
-          if (isXor)
-          {
-            gpol = !gpol;
-          }
-          Trace("ext-rew-eqchain") << "    apply subsume\n";
-        }
-      }
-      if (do_rewrite)
-      {
-        // eliminate the children, reverse polarity as needed
-        for (unsigned r = 0; r < 2; r++)
-        {
-          Node c_rem = r == 0 ? c : cc;
-          cstatus[c_rem] = false;
-          if (c_rem.getKind() == andk)
-          {
-            gpol = !gpol;
-          }
-        }
-        break;
       }
     }
     else
