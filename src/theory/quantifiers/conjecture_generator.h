@@ -70,10 +70,20 @@ class TermGenEnv;
 
 class TermGenerator
 {
-private:
+ private:
   unsigned calculateGeneralizationDepth( TermGenEnv * s, std::map< TypeNode, std::vector< int > >& fvs );
-public:
-  TermGenerator(){}
+
+ public:
+  TermGenerator()
+      : d_id(0),
+        d_status(0),
+        d_status_num(0),
+        d_status_child_num(0),
+        d_match_status(0),
+        d_match_status_child_num(0),
+        d_match_mode(0)
+  {
+  }
   TypeNode d_typ;
   unsigned d_id;
   //1 : consider as unique variable
@@ -277,6 +287,9 @@ private:
   };
   /** get or make eqc info */
   EqcInfo* getOrMakeEqcInfo( TNode n, bool doMake = false );
+  /** boolean terms */
+  Node d_true;
+  Node d_false;
   /** (universal) equaltity engine */
   eq::EqualityEngine d_uequalityEngine;
   /** pending adds */
@@ -378,7 +391,23 @@ private:
   std::map< TypeNode, Node > d_typ_pred;
   //get predicate for type
   Node getPredicateForType( TypeNode tn );
-  //
+  /** get enumerate uf term
+   *
+   * This function adds up to #num f-applications to terms, where f is
+   * n.getOperator(). These applications are enumerated in a fair manner based
+   * on an iterative deepening of the sum of indices of the arguments. For
+   * example, if f : U x U -> U, an the term enumerator for U gives t1, t2, t3
+   * ..., then we add f-applications to terms in this order:
+   *   f( t1, t1 )
+   *   f( t2, t1 )
+   *   f( t1, t2 )
+   *   f( t1, t3 )
+   *   f( t2, t2 )
+   *   f( t3, t1 )
+   *   ...
+   * This function may add fewer than #num terms to terms if the enumeration is
+   * exhausted, or if an internal error occurs.
+   */
   void getEnumerateUfTerm( Node n, unsigned num, std::vector< Node >& terms );
   //
   void getEnumeratePredUfTerm( Node n, unsigned num, std::vector< Node >& terms );

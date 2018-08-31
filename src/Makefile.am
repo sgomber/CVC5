@@ -34,7 +34,6 @@ libcvc4_la_LDFLAGS = \
 nodist_EXTRA_libcvc4_la_SOURCES = dummy.cpp
 libcvc4_la_SOURCES = \
 	git_versioninfo.cpp \
-	svn_versioninfo.cpp \
 	api/cvc4cpp.h \
 	api/cvc4cppkind.h \
 	api/cvc4cpp.cpp \
@@ -64,42 +63,72 @@ libcvc4_la_SOURCES = \
 	decision/justification_heuristic.h \
 	preprocessing/passes/apply_substs.cpp \
 	preprocessing/passes/apply_substs.h \
+	preprocessing/passes/apply_to_const.cpp \
+	preprocessing/passes/apply_to_const.h \
+	preprocessing/passes/bool_to_bv.cpp \
+	preprocessing/passes/bool_to_bv.h \
 	preprocessing/passes/bv_abstraction.cpp \
 	preprocessing/passes/bv_abstraction.h \
 	preprocessing/passes/bv_ackermann.cpp \
 	preprocessing/passes/bv_ackermann.h \
+	preprocessing/passes/bv_eager_atoms.cpp \
+	preprocessing/passes/bv_eager_atoms.h \
 	preprocessing/passes/bv_gauss.cpp \
 	preprocessing/passes/bv_gauss.h \
 	preprocessing/passes/bv_intro_pow2.cpp \
 	preprocessing/passes/bv_intro_pow2.h \
-	preprocessing/passes/int_to_bv.cpp \
-	preprocessing/passes/int_to_bv.h \
-	preprocessing/passes/pseudo_boolean_processor.cpp \
-	preprocessing/passes/pseudo_boolean_processor.h \
-	preprocessing/passes/bool_to_bv.cpp \
-	preprocessing/passes/bool_to_bv.h \
 	preprocessing/passes/bv_to_bool.cpp \
 	preprocessing/passes/bv_to_bool.h \
+	preprocessing/passes/extended_rewriter_pass.cpp \
+	preprocessing/passes/extended_rewriter_pass.h \
+	preprocessing/passes/global_negate.cpp \
+	preprocessing/passes/global_negate.h \
+	preprocessing/passes/int_to_bv.cpp \
+	preprocessing/passes/int_to_bv.h \
+	preprocessing/passes/ite_removal.cpp \
+	preprocessing/passes/ite_removal.h \
+	preprocessing/passes/ite_simp.cpp \
+	preprocessing/passes/ite_simp.h \
+	preprocessing/passes/nl_ext_purify.cpp \
+	preprocessing/passes/nl_ext_purify.h \
+	preprocessing/passes/pseudo_boolean_processor.cpp \
+	preprocessing/passes/pseudo_boolean_processor.h \
+	preprocessing/passes/miplib_trick.cpp \
+	preprocessing/passes/miplib_trick.h \
+	preprocessing/passes/quantifiers_preprocess.cpp \
+	preprocessing/passes/quantifiers_preprocess.h \
+	preprocessing/passes/quantifier_macros.cpp \
+	preprocessing/passes/quantifier_macros.h \
 	preprocessing/passes/real_to_int.cpp \
 	preprocessing/passes/real_to_int.h \
 	preprocessing/passes/rewrite.cpp \
 	preprocessing/passes/rewrite.h \
 	preprocessing/passes/sep_skolem_emp.cpp \
 	preprocessing/passes/sep_skolem_emp.h \
+	preprocessing/passes/sort_infer.cpp \
+	preprocessing/passes/sort_infer.h \
 	preprocessing/passes/static_learning.cpp \
 	preprocessing/passes/static_learning.h \
+	preprocessing/passes/sygus_inference.cpp \
+	preprocessing/passes/sygus_inference.h \
 	preprocessing/passes/symmetry_breaker.cpp \
 	preprocessing/passes/symmetry_breaker.h \
 	preprocessing/passes/symmetry_detect.cpp \
 	preprocessing/passes/symmetry_detect.h \
 	preprocessing/passes/synth_rew_rules.cpp \
 	preprocessing/passes/synth_rew_rules.h \
+	preprocessing/passes/theory_preprocess.cpp \
+	preprocessing/passes/theory_preprocess.h \
+	preprocessing/passes/unconstrained_simplifier.cpp \
+	preprocessing/passes/unconstrained_simplifier.h \
 	preprocessing/preprocessing_pass.cpp \
 	preprocessing/preprocessing_pass.h \
 	preprocessing/preprocessing_pass_context.cpp \
 	preprocessing/preprocessing_pass_context.h \
 	preprocessing/preprocessing_pass_registry.cpp \
 	preprocessing/preprocessing_pass_registry.h \
+	preprocessing/util/ite_utilities.cpp \
+	preprocessing/util/ite_utilities.h \
 	printer/dagification_visitor.cpp \
 	printer/dagification_visitor.h \
 	printer/printer.cpp \
@@ -125,6 +154,8 @@ libcvc4_la_SOURCES = \
 	proof/cnf_proof.h \
 	proof/lemma_proof.cpp \
 	proof/lemma_proof.h \
+	proof/lfsc_proof_printer.cpp \
+	proof/lfsc_proof_printer.h \
 	proof/proof.h \
 	proof/proof_manager.cpp \
 	proof/proof_manager.h \
@@ -190,8 +221,6 @@ libcvc4_la_SOURCES = \
 	theory/evaluator.cpp \
 	theory/evaluator.h \
 	theory/interrupted.h \
-	theory/ite_utilities.cpp \
-	theory/ite_utilities.h \
 	theory/logic_info.cpp \
 	theory/logic_info.h \
 	theory/output_channel.h \
@@ -223,8 +252,6 @@ libcvc4_la_SOURCES = \
 	theory/type_enumerator.h \
 	theory/type_set.cpp \
 	theory/type_set.h \
-	theory/unconstrained_simplifier.cpp \
-	theory/unconstrained_simplifier.h \
 	theory/valuation.cpp \
 	theory/valuation.h \
 	theory/arith/approx_simplex.cpp \
@@ -371,6 +398,8 @@ libcvc4_la_SOURCES = \
 	theory/datatypes/theory_datatypes_type_rules.h \
 	theory/datatypes/type_enumerator.cpp \
 	theory/datatypes/type_enumerator.h \
+	theory/datatypes/sygus_simple_sym.cpp \
+	theory/datatypes/sygus_simple_sym.h \
 	theory/ext_theory.cpp \
 	theory/ext_theory.h \
 	theory/fp/theory_fp.cpp \
@@ -447,8 +476,6 @@ libcvc4_la_SOURCES = \
 	theory/quantifiers/fmf/model_engine.h \
 	theory/quantifiers/fun_def_process.cpp \
 	theory/quantifiers/fun_def_process.h \
-	theory/quantifiers/global_negate.cpp \
-	theory/quantifiers/global_negate.h \
 	theory/quantifiers/instantiate.cpp \
 	theory/quantifiers/instantiate.h \
 	theory/quantifiers/inst_match.cpp \
@@ -463,8 +490,6 @@ libcvc4_la_SOURCES = \
 	theory/quantifiers/lazy_trie.h \
 	theory/quantifiers/local_theory_ext.cpp \
 	theory/quantifiers/local_theory_ext.h \
-	theory/quantifiers/macros.cpp \
-	theory/quantifiers/macros.h \
 	theory/quantifiers/quant_conflict_find.cpp \
 	theory/quantifiers/quant_conflict_find.h \
 	theory/quantifiers/quant_epr.cpp \
@@ -529,10 +554,10 @@ libcvc4_la_SOURCES = \
 	theory/quantifiers/sygus/sygus_unif_strat.h \
 	theory/quantifiers/sygus/term_database_sygus.cpp \
 	theory/quantifiers/sygus/term_database_sygus.h \
-	theory/quantifiers/sygus_inference.cpp \
-	theory/quantifiers/sygus_inference.h \
 	theory/quantifiers/sygus_sampler.cpp \
 	theory/quantifiers/sygus_sampler.h \
+	theory/quantifiers/term_canonize.cpp \
+	theory/quantifiers/term_canonize.h \
 	theory/quantifiers/term_database.cpp \
 	theory/quantifiers/term_database.h \
 	theory/quantifiers/term_enumeration.cpp \
@@ -559,6 +584,8 @@ libcvc4_la_SOURCES = \
 	theory/sets/theory_sets_rewriter.h \
 	theory/sets/theory_sets_type_enumerator.h \
 	theory/sets/theory_sets_type_rules.h \
+	theory/strings/regexp_elim.cpp \
+	theory/strings/regexp_elim.h \
 	theory/strings/regexp_operation.cpp \
 	theory/strings/regexp_operation.h \
 	theory/strings/theory_strings.cpp \
@@ -638,9 +665,6 @@ BUILT_SOURCES = \
 	$(top_builddir)/src/.subdirs
 
 CLEANFILES = \
-	svn_versioninfo.cpp \
-	svninfo.tmp \
-	svninfo \
 	git_versioninfo.cpp \
 	gitinfo.tmp \
 	gitinfo \
@@ -686,34 +710,6 @@ EXTRA_DIST = \
 	theory/theory_traits_template.h \
 	theory/type_enumerator_template.cpp \
 	theory/uf/kinds
-
-svn_versioninfo.cpp: svninfo
-	$(AM_V_GEN)( \
-	  if test -s svninfo; then \
-	    issvn=true; \
-	    branch=`grep '^URL: ' svninfo | sed 's,.*/cvc4/,,'`; \
-	    rev=`grep '^Revision: ' svninfo | awk '{print$$2}'`; \
-	    mods=`grep '^Modifications: ' svninfo | awk '{print$$2} END { if(!NR) print "false" }'`; \
-	  else \
-	    issvn=false; \
-	    branch=unknown; \
-	    rev=0; \
-	    mods=false; \
-	  fi; \
-	  echo "#include \"base/configuration.h\""; \
-	  echo "const bool ::CVC4::Configuration::IS_SUBVERSION_BUILD = $$issvn;"; \
-	  echo "const char* const ::CVC4::Configuration::SUBVERSION_BRANCH_NAME = \"$$branch\";"; \
-	  echo "const unsigned ::CVC4::Configuration::SUBVERSION_REVISION = $$rev;"; \
-	  echo "const bool ::CVC4::Configuration::SUBVERSION_HAS_MODIFICATIONS = $$mods;"; \
-	) >"$@"
-# This .tmp business is to keep from having to re-compile options.cpp
-# (and then re-link the libraries) if nothing has changed.
-svninfo: svninfo.tmp
-	$(AM_V_GEN)if diff -q svninfo.tmp svninfo &>/dev/null; then rm -f svninfo.tmp; else mv svninfo.tmp svninfo; fi
-# .PHONY ensures the .tmp version is always rebuilt (to check for any changes)
-.PHONY: svninfo.tmp
-svninfo.tmp:
-	$(AM_V_GEN)(cd "$(top_srcdir)" && svn info && echo "Modifications: `test -z \"\`svn status -q\`\" && echo false || echo true`") >"$@" 2>/dev/null || true
 
 git_versioninfo.cpp: gitinfo
 	$(AM_V_GEN)( \

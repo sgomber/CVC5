@@ -65,6 +65,9 @@ class ExtendedRewriter
    * may be applied as a preprocessing step.
    */
   bool d_aggr;
+  /** true/false nodes */
+  Node d_true;
+  Node d_false;
   /** cache that the extended rewritten form of n is ret */
   void setCache(Node n, Node ret);
   /** add to children
@@ -214,10 +217,13 @@ class ExtendedRewriter
    * (2) a variable y such that x < y based on an ordering,
    * then this method adds x to vars and y to subs and return true, otherwise
    * it returns false.
+   * If usePred is true, we may additionally add n -> true, or n[0] -> false
+   * is n is a negation.
    */
   bool inferSubstitution(Node n,
                          std::vector<Node>& vars,
-                         std::vector<Node>& subs);
+                         std::vector<Node>& subs,
+                         bool usePred = false);
   /** extended rewrite
    *
    * Prints debug information, indicating the rewrite n ---> ret was found.
