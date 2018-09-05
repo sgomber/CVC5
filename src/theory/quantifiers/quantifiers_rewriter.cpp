@@ -173,61 +173,7 @@ RewriteResponse QuantifiersRewriter::postRewrite(TNode in) {
       //compute attributes
       QAttributes qa;
       QuantAttributes::computeQuantAttributes( in, qa );
-      if (qa.isRewriteRule())
-      {
-        // do nothing
-      }
-      else if (qa.d_quant_expand)
-      {
-        NodeManager * nm = NodeManager::currentNM();
-        // try to initialize the representative set for each type
-        bool success = true;
-        RepSet rs;
-        for (unsigned i = 0, size = in [0].getNumChildren(); i < size; i++)
-        {
-          TypeNode tn = in[0][i].getType();
-          uint32_t maxCard = std::numeric_limits<uint32_t>::max();
-          if (!TermEnumeration::mayComplete(tn, maxCard))
-          {
-            success = false;
-            break;
-          }
-          else
-          {
-            rs.complete(tn);
-          }
-        }
-        if (success)
-        {
-          RepSetIterator riter(&rs);
-          if (riter.setQuantifier(in))
-          {
-            std::vector< Node > subs;
-            while( !riter.isFinished() )
-            {
-              subs.clear();
-              riter.getCurrentTerms(subs);
-              
-              riter.increment();
-            }
-          }
-          else
-          {
-            success = false;
-          }
-        }
-
-        if (!success)
-        {
-          // the annotation was invalid, remove it
-          if( in.getNumChildren()==3 )
-          {
-            in = nm->mkNode( FORALL, in[0], in[1] );
-            status = REWRITE_AGAIN_FULL;
-          }
-        }
-      }
-      else
+      if (!qa.isRewriteRule())
       {
         for( int op=0; op<COMPUTE_LAST; op++ ){
           if( doOperation( in, op, qa ) ){

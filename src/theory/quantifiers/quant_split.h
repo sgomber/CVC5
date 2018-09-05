@@ -17,6 +17,8 @@
 #ifndef __CVC4__THEORY__QUANT_SPLIT_H
 #define __CVC4__THEORY__QUANT_SPLIT_H
 
+#include <unordered_map>
+#include "expr/node.h"
 #include "theory/quantifiers_engine.h"
 #include "context/cdo.h"
 
@@ -24,15 +26,23 @@ namespace CVC4 {
 namespace theory {
 namespace quantifiers {
 
+/** Quantifiers dynamic splitter module
+ * 
+ * This class reduces quantified formulas based on, e.g. splitting on the
+ * construct type of quantified variables. For example, given datatype
+ *   List : cons( head:Int, tail:List ) | nil
+ * the quantified formula:
+ *   forall x:List. P( x )
+ * can be reduced to:
+ *   forall y:Int, z:List. P( cons( y, z ) ) ^ P(nil)
+ * 
+ * We call this dynamic splitting since it is done one variable at a time, 
+ * where notice above we can split on z.
+ */
 class QuantDSplit : public QuantifiersModule {
   typedef context::CDHashSet<Node, NodeHashFunction> NodeSet;
-private:
-  /** list of relevant quantifiers asserted in the current context */
-  std::map< Node, int > d_quant_to_reduce;
-  /** whether we have instantiated quantified formulas */
-  NodeSet d_added_split;
 public:
-  QuantDSplit( QuantifiersEngine * qe, context::Context* c );
+  QuantDSplit( QuantifiersEngine * qe );
   /** determine whether this quantified formula will be reduced */
   void checkOwnership(Node q) override;
 
@@ -46,6 +56,21 @@ public:
   bool checkCompleteFor(Node q) override;
   /** Identify this module (for debugging, dynamic configuration, etc..) */
   std::string identify() const override { return "QuantDSplit"; }
+private:
+  /** Set of all quantified formulas to reduce */
+  std::unordered_set< Node, NodeHashFunction > d_to_reduce;
+  /** Map from quantified formulas to their expanded form */
+  std::map< Node, Node > d_quant_to_expanded;
+  /** 
+   * Map from quantified formulas to the index of the variable we will split on. 
+   */
+  std::map< Node, unsigned > d_quant_to_split;
+  /** whether we have instantiated quantified formulas */
+  NodeSet d_reduced;
+  /** expand quantified formula 
+   * 
+   */
+  Node expand( Node q );
 };
 
 }
