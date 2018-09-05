@@ -239,6 +239,45 @@ public:
   virtual TNode getCongruentTerm( Node f, std::vector< TNode >& args ) = 0;
 };/* class EqualityQuery */
 
+/** Quantifiers reducer
+ * 
+ * A common pattern for quantifiers modules that are capable of applying a
+ * reduction to some class of quantified formulas. Examples of quantifiers
+ * reducers include the dynamic splitter module, and the eager expansion module.
+ */
+class QuantifiersReducer : public QuantifiersModule {
+  typedef context::CDHashSet<Node, NodeHashFunction> NodeSet;
+ public:
+  QuantifiersReducer( QuantifiersEngine * qe );
+  
+    /* whether this module needs to check this round */
+  bool needsCheck(Theory::Effort e) override;
+  /* Call during quantifier engine's check */
+  void check(Theory::Effort e, QEffort quant_e) override;
+  /* Called for new quantifiers */
+  bool checkCompleteFor(Node q) override;
+  /** 
+   * Check ownership, which corresponds to whether quantified formula q can be
+   * reduced by this module. 
+   */
+  void checkOwnership(Node q) override;
+  
+  //------------------------ interface for QuantifiersReducer 
+  /** Return true if this module has a way to reduce quantified formula q */
+  virtual bool shouldReduce( Node q ) = 0;
+  /** 
+   * Adds the proper lemmas on the output channel of d_quantEngine that
+   * suffice to reduce quantified formula q.
+   */
+  virtual void doReduce( Node q ) = 0;
+  //------------------------ end interface for QuantifiersReducer
+ protected:
+  /** list of reducable quantified formulas we have seen in checkOwnership */
+  std::unordered_set< Node, NodeHashFunction > d_to_reduce;
+  /** whether we have instantiated quantified formulas */
+  NodeSet d_reduced;
+};
+
 }
 }
 
