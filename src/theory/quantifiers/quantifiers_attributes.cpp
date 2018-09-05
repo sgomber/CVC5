@@ -389,6 +389,15 @@ bool QuantAttributes::isQuantElimPartial( Node q ) {
   }
 }
 
+bool QuantAttributes::isQuantExpand( Node q )
+{
+  std::map< Node, QAttributes >::iterator it = d_qattr.find( q );
+  if( it==d_qattr.end() ){
+    return false;
+  }
+  return it->second.d_quant_expand;
+}
+  
 int QuantAttributes::getQuantIdNum( Node q ) {
   std::map< Node, QAttributes >::iterator it = d_qattr.find( q );
   if( it!=d_qattr.end() ){

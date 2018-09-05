@@ -216,7 +216,7 @@ QuantifiersEngine::QuantifiersEngine(context::Context* c,
     d_modules.push_back(d_lte_part_inst.get());
   }
   if( options::quantDynamicSplit()!=quantifiers::QUANT_DSPLIT_MODE_NONE ){
-    d_qsplit.reset(new quantifiers::QuantDSplit(this, c));
+    d_qsplit.reset(new quantifiers::QuantDSplit(this));
     d_modules.push_back(d_qsplit.get());
   }
   if( options::quantAntiSkolem() ){
