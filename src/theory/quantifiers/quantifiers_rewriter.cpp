@@ -22,8 +22,8 @@
 #include "theory/quantifiers/quantifiers_attributes.h"
 #include "theory/quantifiers/skolemize.h"
 #include "theory/quantifiers/term_database.h"
-#include "theory/quantifiers/term_util.h"
 #include "theory/quantifiers/term_enumeration.h"
+#include "theory/quantifiers/term_util.h"
 #include "theory/rep_set.h"
 
 using namespace std;
@@ -173,20 +173,20 @@ RewriteResponse QuantifiersRewriter::postRewrite(TNode in) {
       //compute attributes
       QAttributes qa;
       QuantAttributes::computeQuantAttributes( in, qa );
-      if( qa.isRewriteRule() )
+      if (qa.isRewriteRule())
       {
         // do nothing
       }
-      else if( qa.d_quant_expand )
+      else if (qa.d_quant_expand)
       {
         // try to initialize the representative set for each type
         bool success = true;
         RepSet rs;
-        for( unsigned i=0, size = in[0].getNumChildren(); i<size; i++ )
+        for (unsigned i = 0, size = in [0].getNumChildren(); i < size; i++)
         {
           TypeNode tn = in[0][i].getType();
           uint32_t maxCard = std::numeric_limits<uint32_t>::max();
-          if( !TermEnumeration::mayComplete(tn,maxCard) )
+          if (!TermEnumeration::mayComplete(tn, maxCard))
           {
             success = false;
             break;
@@ -196,22 +196,20 @@ RewriteResponse QuantifiersRewriter::postRewrite(TNode in) {
             rs.complete(tn);
           }
         }
-        if( success )
+        if (success)
         {
           RepSetIterator riter(&rs);
-          if( riter.setQuantifier(in) )
+          if (riter.setQuantifier(in))
           {
-            
           }
           else
           {
             success = false;
           }
         }
-        
-        if( !success )
+
+        if (!success)
         {
-          
         }
       }
       else

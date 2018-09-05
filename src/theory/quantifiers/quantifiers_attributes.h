@@ -48,8 +48,10 @@ struct QuantElimPartialAttributeId {};
 typedef expr::Attribute< QuantElimPartialAttributeId, bool > QuantElimPartialAttribute;
 
 /** Attribute true for quantifiers that are eagerly expanded */
-struct QuantExpandAttributeId {};
-typedef expr::Attribute< QuantExpandAttributeId, bool > QuantExpandAttribute;
+struct QuantExpandAttributeId
+{
+};
+typedef expr::Attribute<QuantExpandAttributeId, bool> QuantExpandAttribute;
 
 /** Attribute true for quantifiers that are SyGus conjectures */
 struct SygusAttributeId {};

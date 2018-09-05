@@ -175,9 +175,9 @@ struct IsClosedEnumerableComputedTag
 typedef expr::Attribute<IsClosedEnumerableTag, bool> IsClosedEnumerableAttr;
 typedef expr::Attribute<IsClosedEnumerableComputedTag, bool>
     IsClosedEnumerableComputedAttr;
-    
+
 bool TypeNode::isClosedEnumerable()
-{  
+{
   // check it is already cached
   if (!getAttribute(IsClosedEnumerableComputedAttr()))
   {

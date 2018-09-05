@@ -51,6 +51,7 @@ class TermEnumeration
   bool mayComplete(TypeNode tn);
   /** Version of the above method where maximum cardinality is configurable. */
   static bool mayComplete(TypeNode tn, unsigned cardMax);
+
  private:
   /** ground terms enumerated for types */
   std::unordered_map<TypeNode, std::vector<Node>, TypeNodeHashFunction>

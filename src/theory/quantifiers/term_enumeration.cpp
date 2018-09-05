@@ -60,7 +60,7 @@ bool TermEnumeration::mayComplete(TypeNode tn)
   if (it == d_may_complete.end())
   {
     // cache
-    bool mc = mayComplete(tn,options::fmfTypeCompletionThresh());
+    bool mc = mayComplete(tn, options::fmfTypeCompletionThresh());
     d_may_complete[tn] = mc;
     return mc;
   }

@@ -428,7 +428,7 @@ public:
    *   are interpreted as finite.
    */
   bool isInterpretedFinite();
-  
+
   /** is closed enumerable type
    *
    * This returns true if this type has an enumerator that produces constants
@@ -441,7 +441,7 @@ public:
    * (5) parametric sorts involving any of the above.
    */
   bool isClosedEnumerable();
-  
+
   /**
    * Is this a first-class type?
    * First-class types are types for which:
