@@ -25,7 +25,7 @@ TheorySample::TheorySample(context::Context* c,
       d_not_elim(u),
       d_sample_checks(c),
       d_num_samples(0),
-      d_num_samples_nsat(0)
+      d_num_samples_nsat_allow(0)
 {
   d_rmax = Rational(LONG_MAX);
   d_true = NodeManager::currentNM()->mkConst(true);
@@ -37,7 +37,7 @@ void TheorySample::finishInit()
   unsigned num_samples_sat = options::numSamplesSat();
   if (num_samples_sat > d_num_samples)
   {
-    d_num_samples_nsat = 0;
+    d_num_samples_nsat_allow = 0;
     // must have more samples than SAT samples
     std::stringstream ss;
     ss << "The number of SAT samples cannot be greater than the number of "
@@ -48,7 +48,7 @@ void TheorySample::finishInit()
   }
   else
   {
-    d_num_samples_nsat = d_num_samples - num_samples_sat;
+    d_num_samples_nsat_allow = d_num_samples - num_samples_sat;
   }
 }
 
@@ -107,7 +107,7 @@ void TheorySample::check(Effort level)
         break;
       case SAMPLE_CHECK:
         // if we need no samples to be SAT, we don't need to check
-        // if(d_num_samples==d_num_samples_nsat )
+        // if(d_num_samples==d_num_samples_nsat_allow )
         //{
         // add the sample check to the list of facts, we process these at last
         // call effort
@@ -336,7 +336,7 @@ void TheorySample::checkLastCall()
   bool success = runCheck();
   if (success)
   {
-    Trace("sample-check") << "...no conflict" << std::endl;
+    Trace("sample-check") << "...no conflict, " << d_nsat_count << " samples were not SAT, out of " << d_num_samples_nsat_allow << " allowed." << std::endl;
     return;
   }
   // conflict
@@ -403,6 +403,8 @@ Node TheorySample::explainModelValue(Node n, std::vector<Node>& exp, unsigned in
   {
     return n;
   }
+  // may need a term index
+  computeTermIndex();
 
   Node mn = getValuation().getModel()->getValue(n);
   Node trivialExp = n.eqNode(mn).negate();
@@ -423,38 +425,51 @@ Node TheorySample::explainModelValue(Node n, std::vector<Node>& exp, unsigned in
       Trace("sample-conflict-debug") << "-- trivial, ee has both terms." << std::endl;
       return mn;
     }
-    // otherwise, let's look at the children
-    std::vector<Node> childrenExp;
-    std::vector<Node> children;
-    bool childChanged = false;
-    bool success = true;
-    for (const Node& nc : n)
+    if( n.getKind()==APPLY_UF )
     {
-      Node ncv = explainModelValue(nc, childrenExp, ind+2);
-      if (ncv.isNull())
+      // otherwise, let's look at the children
+      std::vector<Node> childrenExp;
+      std::vector<TNode> children;
+      std::vector< Node > childrenn;
+      bool childChanged = false;
+      bool success = true;
+      for (const Node& nc : n)
       {
-        success = false;
-        break;
+        Node ncv = explainModelValue(nc, childrenExp, ind+2);
+        if (ncv.isNull())
+        {
+          success = false;
+          break;
+        }
+        children.push_back(ncv);
+        childrenn.push_back(ncv);
+        childChanged = childChanged || ncv != nc;
       }
-      children.push_back(ncv);
-      childChanged = childChanged || ncv != nc;
-    }
-    if (success && childChanged)
-    {
-      if (n.getMetaKind() == metakind::PARAMETERIZED)
+      if (success && childChanged)
       {
-        children.insert(children.begin(), n.getOperator());
-      }
-      Node n2 = NodeManager::currentNM()->mkNode(n.getKind(), children);
-      // does the master equality engine know about the modified term?
-      if (d_masterEe->hasTerm(n2))
-      {
-        // properly explained it, using the children
-        exp.insert(exp.end(), childrenExp.begin(), childrenExp.end());
-        exp.push_back(n2.eqNode(mn).negate());
-        indent("sample-conflict-debug",ind);
-        Trace("sample-conflict-debug") << "-- explained children and explanation via " << n2 << "." << std::endl;
-        return mn;
+        // get congruent term
+        Node n2 = getCongruentTerm(n.getOperator(),children);
+        // does the master equality engine know about the modified term?
+        if (!n2.isNull())
+        {
+          // must explain equalities to arguments of n2
+          Assert( n2.getNumChildren()==children.size() );
+          Assert( n2.getOperator()==n.getOperator() );
+          for( unsigned i=0, size = children.size(); i<size; i++ )
+          {
+            if( children[i]!=n2[i] )
+            {
+              Assert( d_masterEe->areEqual( children[i], n2[i] ) );
+              exp.push_back(children[i].eqNode(n2[i]));
+            }
+          }
+          // properly explained it, using the children
+          exp.insert(exp.end(), childrenExp.begin(), childrenExp.end());
+          exp.push_back(n2.eqNode(mn).negate());
+          indent("sample-conflict-debug",ind);
+          Trace("sample-conflict-debug") << "-- explained children and explanation via " << n2 << "." << std::endl;
+          return n2;
+        }
       }
     }
   }
@@ -472,7 +487,40 @@ Node TheorySample::explainModelValue(Node n, std::vector<Node>& exp, unsigned in
   Trace("sample-conflict-debug") << "-- cannot find explanation!" << std::endl;
   Trace("sample-warn") << "TheorySample: WARNING: cannot explain model value "
                        << mn << " for " << n << std::endl;
+  AlwaysAssert(false);
   return Node::null();
+}
+
+
+void TheorySample::computeTermIndex()
+{
+  eq::EqualityEngine* ee = getQuantifiersEngine()->getMasterEqualityEngine();
+  eq::EqClassesIterator eqcs_i = eq::EqClassesIterator( ee );
+  while( !eqcs_i.isFinished() ){
+    TNode r = (*eqcs_i);
+    eq::EqClassIterator eqc_i = eq::EqClassIterator( r, ee );
+    while( !eqc_i.isFinished() ){
+      TNode n = (*eqc_i);
+      Trace("sample-tindex") << "TheorySample: term index: " << n << std::endl;
+      if( n.getKind()==APPLY_UF)
+      {
+        std::vector< TNode > args;
+        for( unsigned i=0, size = n.getNumChildren(); i<size; i++ )
+        {
+          args.push_back(ee->getRepresentative(n[i]));
+        }
+        Node op = n.getOperator();
+        d_tindex[op].addTerm( n, args );
+      }
+      Trace("sample-tindex") << "...finished." << std::endl;
+      ++eqc_i;
+    }
+    ++eqcs_i;
+  }
+}
+Node TheorySample::getCongruentTerm( Node op, std::vector< TNode >& args )
+{
+  return d_tindex[op].existsTerm(args);
 }
 
 bool TheorySample::runCheck()
@@ -483,6 +531,8 @@ bool TheorySample::runCheck()
   d_bmv.clear();
   d_base_sample_terms.clear();
   d_conflict.clear();
+  d_tindex.clear();
+  d_nsat_count = 0;
 
   std::map<Node, unsigned> ba_to_index;
   Trace("sample-check") << "Checking " << d_sample_checks.size()
@@ -506,6 +556,8 @@ bool TheorySample::runCheck()
       if (!bmv.getConst<bool>())
       {
         d_conflict.insert(n);
+        // all samples will be false
+        d_nsat_count = d_num_samples;
         return false;
       }
     }
@@ -560,7 +612,6 @@ bool TheorySample::runCheck()
   }
 
   // the valuation of d_asserts on each sample point
-  unsigned nsat_count = 0;
   std::map< Node, Node >::iterator itbvi;
   Trace("sample-check-pt") << "Check samples..." << std::endl;
   for (unsigned i = 0; i < d_num_samples; i++)
@@ -647,8 +698,8 @@ bool TheorySample::runCheck()
     Trace("sample-check-pt") << std::endl;
     if (!success)
     {
-      nsat_count++;
-      if (nsat_count > d_num_samples_nsat)
+      d_nsat_count++;
+      if (d_nsat_count > d_num_samples_nsat_allow)
       {
         // conflict
         return false;

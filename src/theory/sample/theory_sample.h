@@ -6,6 +6,7 @@
 #include "theory/theory.h"
 
 #include "theory/evaluator.h"
+#include "theory/quantifiers/term_database.h"
 
 namespace CVC4 {
 namespace theory {
@@ -86,7 +87,7 @@ class TheorySample : public Theory
   /** number of samples */
   unsigned d_num_samples;
   /** number of samples we allow to be not sat */
-  unsigned d_num_samples_nsat;
+  unsigned d_num_samples_nsat_allow;
   /** the set of terms that are sampling terms */
   std::unordered_set<Node, NodeHashFunction> d_isSample;
   /** whether a term has sampling subterms */
@@ -136,10 +137,20 @@ class TheorySample : public Theory
   void checkLastCall();
   /** check */
   bool runCheck();
+  /** number of samples that were not SAT */
+  unsigned d_nsat_count;
+  //-------------------------conflict explanation
+  /** term index (built at last call) */
+  std::map< Node, quantifiers::TermArgTrie > d_tindex;
+  /** compute the term index */
+  void computeTermIndex();  
+  /** get congruent term */
+  Node getCongruentTerm( Node op, std::vector< TNode >& args );
   /** the master equality engine (used for explainations */
   eq::EqualityEngine* d_masterEe;
   /** explain model value */
   Node explainModelValue(Node n, std::vector<Node>& vec, unsigned ind=0);
+  //-------------------------end conflict explanation
 
   //-------------------------per last call effort check
   /** the assertions of kind SAMPLE_CHECK */
