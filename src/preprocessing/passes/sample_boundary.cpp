@@ -36,7 +36,8 @@ PreprocessingPassResult SampleBoundary::applyInternal(
     Trace("sample-boundary")
         << "Process sample boundary " << (*assertionsToPreprocess)[i] << "..."
         << std::endl;
-    Node aip = convert((*assertionsToPreprocess)[i], cache, hasSampling, isFreeSampling);
+    Node aip = convert(
+        (*assertionsToPreprocess)[i], cache, hasSampling, isFreeSampling);
     Trace("sample-boundary") << "...got : " << aip << std::endl;
     assertionsToPreprocess->replace(i, aip);
   }
@@ -96,7 +97,7 @@ Node SampleBoundary::convert(
         // does the child have sampling?
         iths = hasSampling.find(cn);
         Assert(iths != hasSampling.end());
-        if( iths->second )
+        if (iths->second)
         {
           childHasSampleCount++;
         }
@@ -119,12 +120,12 @@ Node SampleBoundary::convert(
       {
         ret = nm->mkNode(cur.getKind(), children);
       }
-      hasSampling[cur] = childHasSampleCount>0 || isFreeSample;
+      hasSampling[cur] = childHasSampleCount > 0 || isFreeSample;
       isFreeSampling[cur] = isFreeSample;
       // If we are a Boolean connective that is not AND, then we can have
       // at most one child with sampling. If we have more than one, we make this
       // entire formula into a sampling formula.
-      if( childHasSampleCount>1 && cur.getKind()!=AND )
+      if (childHasSampleCount > 1 && cur.getKind() != AND)
       {
         ret = nm->mkNode(SAMPLE_CHECK, cur);
       }
