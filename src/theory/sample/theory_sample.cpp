@@ -379,6 +379,8 @@ void TheorySample::checkLastCall()
   Trace("sample-conflict") << "[[end make conflict]]" << std::endl;
   Node conflictNode =
       cvec.size() == 1 ? cvec[0] : NodeManager::currentNM()->mkNode(OR, cvec);
+  Trace("sample-conflict") << "TheorySample::conflict : " << conflictNode
+                        << std::endl;
   Trace("sample-lemma") << "TheorySample::lemma : conflict : " << conflictNode
                         << std::endl;
   d_out->lemma(conflictNode);
@@ -715,7 +717,10 @@ Node TheorySample::getBaseModelValue(Node n)
       }
       if (d_isSample.find(cur) != d_isSample.end())
       {
-        d_base_sample_terms.push_back(ret);
+        if( std::find(d_base_sample_terms.begin(),d_base_sample_terms.end(),ret)==d_base_sample_terms.end() )
+        {
+          d_base_sample_terms.push_back(ret);
+        }
         // replace by fresh variable
         std::map< Node, Node >::iterator itf = d_bst_to_fv.find(ret);
         if( itf==d_bst_to_fv.end() )

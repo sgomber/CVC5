@@ -1443,7 +1443,7 @@ extendedCommand[std::unique_ptr<CVC4::Command>* cmd]
     // We currently do nothing with the type information declared for the heap.
     { cmd->reset(new EmptyCommand()); }
     RPAREN_TOK
-  | SAMPLE_SORT_TOK
+  | DECLARE_SAMPLE_SORT_TOK
     symbol[name,CHECK_UNDECLARED,SYM_SORT]
     sortSymbol[t,CHECK_DECLARED]
     sygusGrammar[sygus_t,terms,name] {
@@ -3191,7 +3191,7 @@ SYGUS_INPUT_VARIABLE_TOK : { PARSER_STATE->sygus() }? 'InputVariable';
 SYGUS_LOCAL_VARIABLE_TOK : { PARSER_STATE->sygus() }? 'LocalVariable';
 
 // sample commands
-SAMPLE_SORT_TOK : 'sample-sort';
+DECLARE_SAMPLE_SORT_TOK : 'declare-sample-sort';
 
 // attributes
 ATTRIBUTE_PATTERN_TOK : ':pattern';
