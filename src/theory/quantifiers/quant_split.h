@@ -18,16 +18,16 @@
 #define __CVC4__THEORY__QUANT_SPLIT_H
 
 #include <unordered_map>
+#include "context/cdo.h"
 #include "expr/node.h"
 #include "theory/quantifiers_engine.h"
-#include "context/cdo.h"
 
 namespace CVC4 {
 namespace theory {
 namespace quantifiers {
 
 /** Quantifiers dynamic splitter module
- * 
+ *
  * This class reduces quantified formulas based on, e.g. splitting on the
  * construct type of quantified variables. For example, given datatype
  *   List : cons( head:Int, tail:List ) | nil
@@ -35,42 +35,43 @@ namespace quantifiers {
  *   forall x:List. P( x )
  * can be reduced to:
  *   forall y:Int, z:List. P( cons( y, z ) ) ^ P(nil)
- * 
- * We call this dynamic splitting since it is done one variable at a time, 
+ *
+ * We call this dynamic splitting since it is done one variable at a time,
  * where notice above we can split on z.
  */
 class QuantDSplit : public QuantifiersModule {
   typedef context::CDHashSet<Node, NodeHashFunction> NodeSet;
 public:
-  QuantDSplit( QuantifiersEngine * qe );
-  /** determine whether this quantified formula will be reduced */
-  void checkOwnership(Node q) override;
+ QuantDSplit(QuantifiersEngine* qe);
+ /** determine whether this quantified formula will be reduced */
+ void checkOwnership(Node q) override;
 
-  /* whether this module needs to check this round */
-  bool needsCheck(Theory::Effort e) override;
-  /* Call during quantifier engine's check */
-  void check(Theory::Effort e, QEffort quant_e) override;
-  /* Called for new quantifiers */
-  void registerQuantifier(Node q) override {}
-  void assertNode(Node n) override {}
-  bool checkCompleteFor(Node q) override;
-  /** Identify this module (for debugging, dynamic configuration, etc..) */
-  std::string identify() const override { return "QuantDSplit"; }
+ /* whether this module needs to check this round */
+ bool needsCheck(Theory::Effort e) override;
+ /* Call during quantifier engine's check */
+ void check(Theory::Effort e, QEffort quant_e) override;
+ /* Called for new quantifiers */
+ void registerQuantifier(Node q) override {}
+ void assertNode(Node n) override {}
+ bool checkCompleteFor(Node q) override;
+ /** Identify this module (for debugging, dynamic configuration, etc..) */
+ std::string identify() const override { return "QuantDSplit"; }
+
 private:
-  /** Set of all quantified formulas to reduce */
-  std::unordered_set< Node, NodeHashFunction > d_to_reduce;
-  /** Map from quantified formulas to their expanded form */
-  std::map< Node, Node > d_quant_to_expanded;
-  /** 
-   * Map from quantified formulas to the index of the variable we will split on. 
-   */
-  std::map< Node, unsigned > d_quant_to_split;
-  /** whether we have instantiated quantified formulas */
-  NodeSet d_reduced;
-  /** expand quantified formula 
-   * 
-   */
-  Node expand( Node q );
+ /** Set of all quantified formulas to reduce */
+ std::unordered_set<Node, NodeHashFunction> d_to_reduce;
+ /** Map from quantified formulas to their expanded form */
+ std::map<Node, Node> d_quant_to_expanded;
+ /**
+  * Map from quantified formulas to the index of the variable we will split on.
+  */
+ std::map<Node, unsigned> d_quant_to_split;
+ /** whether we have instantiated quantified formulas */
+ NodeSet d_reduced;
+ /** expand quantified formula
+  *
+  */
+ Node expand(Node q);
 };
 
 }

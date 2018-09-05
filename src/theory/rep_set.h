@@ -172,7 +172,7 @@ public:
  /** get the number of terms in the tuple we are considering */
  unsigned getNumTerms() const { return d_index_order.size(); }
  /** get current terms */
- void getCurrentTerms( std::vector< Node >& terms ) const;
+ void getCurrentTerms(std::vector<Node>& terms) const;
  /** get index order, returns var # */
  unsigned getIndexOrder(unsigned v) { return d_index_order[v]; }
  /** get variable order, returns index # */

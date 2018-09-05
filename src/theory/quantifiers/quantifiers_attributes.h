@@ -213,7 +213,7 @@ public:
   /** is quant elim partial */
   bool isQuantElimPartial( Node q );
   /** is quantifier to expand */
-  bool isQuantExpand( Node q );
+  bool isQuantExpand(Node q);
   /** get quant id num */
   int getQuantIdNum( Node q );
   /** get quant id num */

@@ -13,11 +13,11 @@
  **/
 
 #include "theory/quantifiers/quant_util.h"
+#include "theory/quantifiers/first_order_model.h"
 #include "theory/quantifiers/inst_match.h"
 #include "theory/quantifiers/term_database.h"
 #include "theory/quantifiers/term_util.h"
 #include "theory/quantifiers_engine.h"
-#include "theory/quantifiers/first_order_model.h"
 
 using namespace std;
 using namespace CVC4::kind;
@@ -164,33 +164,36 @@ void QuantPhaseReq::getEntailPolarity( Node n, int child, bool hasPol, bool pol,
   }
 }
 
-
-QuantifiersReducer::QuantifiersReducer( QuantifiersEngine * qe) :
-QuantifiersModule( qe ), d_reduced( qe->getUserContext() ){
-
+QuantifiersReducer::QuantifiersReducer(QuantifiersEngine* qe)
+    : QuantifiersModule(qe), d_reduced(qe->getUserContext())
+{
 }
 
-bool QuantifiersReducer::needsCheck( Theory::Effort e ) {
-  return e>=Theory::EFFORT_FULL && !d_to_reduce.empty();
+bool QuantifiersReducer::needsCheck(Theory::Effort e)
+{
+  return e >= Theory::EFFORT_FULL && !d_to_reduce.empty();
 }
 
-bool QuantifiersReducer::checkCompleteFor( Node q ) {
+bool QuantifiersReducer::checkCompleteFor(Node q)
+{
   // true if we reduced q
-  return d_reduced.find( q )!=d_reduced.end();
+  return d_reduced.find(q) != d_reduced.end();
 }
 
 void QuantifiersReducer::check(Theory::Effort e, QEffort quant_e)
 {
-  //add lemmas at conflict level (they are a reduction)
+  // add lemmas at conflict level (they are a reduction)
   if (quant_e != QEFFORT_CONFLICT)
   {
     return;
   }
-  quantifiers::FirstOrderModel * m = d_quantEngine->getModel();
-  for( const Node& q : d_to_reduce )
+  quantifiers::FirstOrderModel* m = d_quantEngine->getModel();
+  for (const Node& q : d_to_reduce)
   {
-    if( m->isQuantifierAsserted( q ) && m->isQuantifierActive( q ) && d_reduced.find( q )==d_reduced.end() ){
-      d_reduced.insert( q );
+    if (m->isQuantifierAsserted(q) && m->isQuantifierActive(q)
+        && d_reduced.find(q) == d_reduced.end())
+    {
+      d_reduced.insert(q);
       doReduce(q);
     }
   }
@@ -198,9 +201,9 @@ void QuantifiersReducer::check(Theory::Effort e, QEffort quant_e)
 
 void QuantifiersReducer::checkOwnership(Node q)
 {
-  if( shouldReduce(q) )
+  if (shouldReduce(q))
   {
-    d_quantEngine->setOwner(q,this);
+    d_quantEngine->setOwner(q, this);
   }
 }
 

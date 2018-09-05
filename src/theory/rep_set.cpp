@@ -422,9 +422,9 @@ Node RepSetIterator::getCurrentTerm(unsigned v, bool valTerm) const
   return t;
 }
 
-void RepSetIterator::getCurrentTerms( std::vector< Node >& terms ) const
+void RepSetIterator::getCurrentTerms(std::vector<Node>& terms) const
 {
-  for( unsigned i=0, size = d_index_order.size(); i<size; i++ )
+  for (unsigned i = 0, size = d_index_order.size(); i < size; i++)
   {
     terms.push_back(getCurrentTerm(i));
   }
