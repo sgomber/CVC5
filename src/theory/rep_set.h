@@ -148,7 +148,7 @@ public:
  };
 
 public:
- RepSetIterator(const RepSet* rs, RepBoundExt* rext);
+ RepSetIterator(const RepSet* rs, RepBoundExt* rext = nullptr);
  ~RepSetIterator() {}
  /** set that this iterator will be iterating over instantiations for a
   * quantifier */

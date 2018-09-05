@@ -51,6 +51,7 @@ TheoryQuantifiers::TheoryQuantifiers(Context* c, context::UserContext* u, Output
   out.handleUserAttribute( "rr-priority", this );
   out.handleUserAttribute( "quant-elim", this );
   out.handleUserAttribute( "quant-elim-partial", this );
+  out.handleUserAttribute( "quant-expand", this );
 }
 
 TheoryQuantifiers::~TheoryQuantifiers() {

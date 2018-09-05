@@ -95,6 +95,12 @@ void QuantAttributes::setUserAttribute( const std::string& attr, Node n, std::ve
     QuantElimPartialAttribute qepa;
     n.setAttribute( qepa, true );
   }
+  else if( attr=="quant-expand" )
+  {
+    Trace("quant-attr-debug") << "Set quantifier expand " << n << std::endl;
+    QuantExpandAttribute qepa;
+    n.setAttribute( qepa, true );
+  }
 }
 
 bool QuantAttributes::checkRewriteRule( Node q ) {
@@ -290,6 +296,11 @@ void QuantAttributes::computeQuantAttributes( Node q, QAttributes& qa ){
           qa.d_quant_elim = true;
           qa.d_quant_elim_partial = true;
           //don't set owner, should happen naturally
+        }
+        if( avar.getAttribute(QuantExpandAttribute()) )
+        {
+          Trace("quant-attr") << "Attribute : quantifier expand : " << q << std::endl;
+          qa.d_quant_expand = true;
         }
         if( avar.hasAttribute(QuantIdNumAttribute()) ){
           qa.d_qid_num = avar;

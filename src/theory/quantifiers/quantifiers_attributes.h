@@ -47,6 +47,10 @@ typedef expr::Attribute< QuantElimAttributeId, bool > QuantElimAttribute;
 struct QuantElimPartialAttributeId {};
 typedef expr::Attribute< QuantElimPartialAttributeId, bool > QuantElimPartialAttribute;
 
+/** Attribute true for quantifiers that are eagerly expanded */
+struct QuantExpandAttributeId {};
+typedef expr::Attribute< QuantExpandAttributeId, bool > QuantExpandAttribute;
+
 /** Attribute true for quantifiers that are SyGus conjectures */
 struct SygusAttributeId {};
 typedef expr::Attribute< SygusAttributeId, bool > SygusAttribute;
@@ -118,6 +122,8 @@ struct QAttributes
   bool d_quant_elim;
   /** is this formula marked for partial quantifier elimination? */
   bool d_quant_elim_partial;
+  /** is this formula marked for eager expansion? */
+  bool d_quant_expand;
   /** the instantiation pattern list for this quantified formula (its 3rd child)
    */
   Node d_ipl;

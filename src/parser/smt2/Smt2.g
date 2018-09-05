@@ -2466,7 +2466,7 @@ attribute[CVC4::Expr& expr, CVC4::Expr& retExpr, std::string& attr]
       }
       // do nothing
     }
-    else if (attr==":axiom" || attr==":conjecture" || attr==":fun-def")
+    else if (attr==":axiom" || attr==":conjecture" || attr==":fun-def" || attr==":quant-expand")
     {
       if(hasValue) {
         std::stringstream ss;
