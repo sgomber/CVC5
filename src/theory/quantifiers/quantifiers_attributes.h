@@ -97,7 +97,8 @@ struct QAttributes
         d_rr_priority(-1),
         d_qinstLevel(-1),
         d_quant_elim(false),
-        d_quant_elim_partial(false)
+        d_quant_elim_partial(false),
+        d_quant_expand(false)
   {
   }
   ~QAttributes(){}
