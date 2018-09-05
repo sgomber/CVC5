@@ -97,12 +97,13 @@ public:
    * module to get synthesis solutions.
    */
   void getSynthSolutions(std::map<Node, Node>& sol_map, bool singleInvocation);
-  /** get guard, this is "G" in Figure 3 of Reynolds et al CAV 2015 */
-  Node getGuard();
+  /**
+   * The feasible guard whose semantics are "this conjecture is feasiable".
+   * This is "G" in Figure 3 of Reynolds et al CAV 2015.
+   */
+  Node getGuard() const;
   /** is ground */
   bool isGround() { return d_inner_vars.empty(); }
-  /** does this conjecture correspond to a syntax-guided synthesis input */
-  bool isSyntaxGuided() const { return d_syntax_guided; }
   /** are we using single invocation techniques */
   bool isSingleInvocation() const;
   /** preregister conjecture 
@@ -134,6 +135,8 @@ public:
 private:
   /** reference to quantifier engine */
   QuantifiersEngine * d_qe;
+  /** The feasible guard. */
+  Node d_feasible_guard;
   /** single invocation utility */
   std::unique_ptr<CegConjectureSingleInv> d_ceg_si;
   /** utility for static preprocessing and analysis of conjectures */
@@ -259,14 +262,6 @@ private:
    */
   void printAndContinueStream();
   //-------------------------------- end sygus stream
-  //-------------------------------- non-syntax guided (deprecated)
-  /** Whether we are syntax-guided (e.g. was the input in SyGuS format).
-   * This includes SyGuS inputs where no syntactic restrictions are provided.
-   */
-  bool d_syntax_guided;
-  /** the guard for non-syntax-guided synthesis */
-  Node d_nsg_guard;
-  //-------------------------------- end non-syntax guided (deprecated)
   /** candidate rewrite objects for each program variable
    *
    * This is used for the sygusRewSynth() option to synthesize new candidate
