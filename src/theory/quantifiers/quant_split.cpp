@@ -35,6 +35,7 @@ QuantifiersModule( qe ), d_reduced( qe->getUserContext() ){
 
 void QuantDSplit::checkOwnership(Node q)
 {
+  Trace("quant-dsplit-debug") << "Check split quantified formula : " << q << std::endl;
   if( q.getNumChildren()==3 )
   {
     if( d_quantEngine->getQuantAttributes()->isQuantExpand(q) )
@@ -42,18 +43,18 @@ void QuantDSplit::checkOwnership(Node q)
       // we expand here, since we need to be informed immediately if the
       // expansion is invalid.
       Node exq = expand(q);
-      if( exq.isNull() )
+      if( !exq.isNull() )
       {
+        Trace("quant-dsplit-debug") << "...will expand." << std::endl;
         d_quant_to_expanded[q] = exq;
         d_to_reduce.insert(q);
         d_quantEngine->setOwner( q, this );
+        return;
       }
     }
-    return;
   }
   unsigned max_index;
   int max_score = -1;
-  Trace("quant-dsplit-debug") << "Check split quantified formula : " << q << std::endl;
   for( unsigned i=0; i<q[0].getNumChildren(); i++ ){
     TypeNode tn = q[0][i].getType();
     if( tn.isDatatype() ){
@@ -81,7 +82,7 @@ void QuantDSplit::checkOwnership(Node q)
   }
 
   if( max_score!=-1 ){
-    Trace("quant-dsplit-debug") << "Will split at index " << max_index << "." << std::endl;
+    Trace("quant-dsplit-debug") << "...will split at index " << max_index << "." << std::endl;
     d_quant_to_split[q] = max_index;
     d_to_reduce.insert(q);
     d_quantEngine->setOwner( q, this );
@@ -188,6 +189,7 @@ Node QuantDSplit::expand( Node q )
     uint32_t maxCard = std::numeric_limits<uint32_t>::max();
     if (!TermEnumeration::mayComplete(tn, maxCard))
     {
+      Trace("quant-dsplit") << "...cannot expand type " << tn << "." << std::endl;
       return Node::null();
     }
     else
@@ -216,6 +218,7 @@ Node QuantDSplit::expand( Node q )
   }
   else
   {
+    Trace("quant-dsplit") << "...failed to initialize quantifier." << std::endl;
     return Node::null();
   }
   
