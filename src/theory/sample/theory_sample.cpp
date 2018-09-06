@@ -338,7 +338,7 @@ void TheorySample::checkLastCall()
   bool success = runCheck();
   if (success)
   {
-    Trace("sample-check") << "...no conflict, " << d_nsat_count
+    Trace("sample-check") << "***** TheorySample:: no conflict, " << d_nsat_count
                           << " samples were not SAT, out of "
                           << d_num_samples_nsat_allow << " allowed."
                           << std::endl;
@@ -390,6 +390,7 @@ void TheorySample::checkLastCall()
                            << std::endl;
   Trace("sample-lemma") << "TheorySample::lemma : conflict : " << conflictNode
                         << std::endl;
+  Trace("sample-check") << "***** TheorySample:: conflict!" << std::endl;
   d_out->lemma(conflictNode);
 }
 
@@ -652,7 +653,7 @@ bool TheorySample::runCheck()
         {
           Trace("sample-check-debug2")
               << "mkSampleValue " << i << " for " << var << std::endl;
-          Assert(var.getType() == bt_var_types[j]);
+          Assert(var.getType() == TypeNode::fromType(bt_var_types[j].getDatatype().getSygusType()));
           sub = mkSampleValue(bt_var_types[j]);
           Trace("sample-check-debug2") << "...got " << sub << std::endl;
           d_sample_bst_to_terms[i][var] = sub;
@@ -673,7 +674,9 @@ bool TheorySample::runCheck()
 
             // for now, we only support non-sample terms
             AlwaysAssert(sampleTerms.empty());
-            Assert(freeTerms.size() == 1 && freeTerms[0] == sub);
+            Trace("sample-check-debug2") << "free terms of " << sub << " are " << freeTerms << std::endl;
+            Assert( freeTerms.empty() );
+            //Assert(freeTerms.size() == 1 && freeTerms[0] == sub);
           }
         }
         else

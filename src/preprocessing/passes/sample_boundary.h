@@ -38,12 +38,14 @@ class SampleBoundary : public PreprocessingPass
  protected:
   PreprocessingPassResult applyInternal(
       AssertionPipeline* assertionsToPreprocess) override;
-  /** process internal */
+  /** process internal 
+   * 
+   * 
+   */
   Node convert(
       TNode n,
-      std::unordered_map<Node, Node, NodeHashFunction>& cache,
-      std::unordered_map<Node, bool, NodeHashFunction>& hasSampling,
-      std::unordered_map<Node, bool, NodeHashFunction>& isFreeSampling);
+      std::unordered_map<Node, unsigned, NodeHashFunction>& hasSampling,
+      std::unordered_map<Node, bool, NodeHashFunction>& isSampling);
   /** is k a bool connective? */
   static bool isBoolConnective(Kind k);
   /** is n a bool connective term? */
