@@ -68,10 +68,6 @@ private:
  std::map<Node, unsigned> d_quant_to_split;
  /** whether we have instantiated quantified formulas */
  NodeSet d_reduced;
- /** expand quantified formula
-  *
-  */
- Node expand(Node q);
 };
 
 }

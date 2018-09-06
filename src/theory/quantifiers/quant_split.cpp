@@ -18,6 +18,7 @@
 #include "theory/quantifiers/quantifiers_attributes.h"
 #include "theory/quantifiers/term_database.h"
 #include "theory/quantifiers/term_enumeration.h"
+#include "theory/quantifiers/expand.h"
 #include "theory/quantifiers_engine.h"
 
 using namespace std;
@@ -41,7 +42,7 @@ void QuantDSplit::checkOwnership(Node q)
     {
       // we expand here, since we need to be informed immediately if the
       // expansion is invalid.
-      Node exq = expand(q);
+      Node exq = Expand::expand(q);
       if (!exq.isNull())
       {
         Trace("quant-dsplit-debug") << "...will expand." << std::endl;
@@ -185,53 +186,4 @@ void QuantDSplit::check(Theory::Effort e, QEffort quant_e)
       }
     }
   }
-}
-
-Node QuantDSplit::expand(Node q)
-{
-  NodeManager* nm = NodeManager::currentNM();
-  // try to initialize the representative set for each type
-  RepSet rs;
-  for (unsigned i = 0, size = q[0].getNumChildren(); i < size; i++)
-  {
-    TypeNode tn = q[0][i].getType();
-    uint32_t maxCard = std::numeric_limits<uint32_t>::max();
-    if (!TermEnumeration::mayComplete(tn, maxCard))
-    {
-      Trace("quant-dsplit")
-          << "...cannot expand type " << tn << "." << std::endl;
-      return Node::null();
-    }
-    else
-    {
-      rs.complete(tn);
-    }
-  }
-  std::vector<Node> conj;
-  std::vector<Node> vars;
-  for (const Node& v : q[0])
-  {
-    vars.push_back(v);
-  }
-  RepSetIterator riter(&rs);
-  if (riter.setQuantifier(q))
-  {
-    std::vector<Node> subs;
-    while (!riter.isFinished())
-    {
-      subs.clear();
-      riter.getCurrentTerms(subs);
-      Node inst =
-          q[1].substitute(vars.begin(), vars.end(), subs.begin(), subs.end());
-      conj.push_back(inst);
-      riter.increment();
-    }
-  }
-  else
-  {
-    Trace("quant-dsplit") << "...failed to initialize quantifier." << std::endl;
-    return Node::null();
-  }
-
-  return nm->mkNode(AND, conj);
 }

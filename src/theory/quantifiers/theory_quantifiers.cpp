@@ -66,6 +66,12 @@ void TheoryQuantifiers::finishInit()
   tm->setUnevaluatedKind(FORALL);
 }
 
+Node TheoryQuantifiers::expandDefinition(LogicRequest &logicRequest, Node node) {
+  // is it marked with expand?
+  
+  
+  return node;
+}
 void TheoryQuantifiers::preRegisterTerm(TNode n) {
   if (n.getKind() != FORALL)
   {
