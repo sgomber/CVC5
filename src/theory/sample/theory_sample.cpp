@@ -499,9 +499,10 @@ Node TheorySample::explainModelValue(Node n,
   }
   indent("sample-conflict-debug", ind);
   Trace("sample-conflict-debug") << "-- cannot find explanation!" << std::endl;
-  Trace("sample-warn") << "TheorySample: WARNING: cannot explain model value "
-                       << mn << " for " << n << std::endl;
-  AlwaysAssert(false);
+  std::stringstream ss;
+  ss << "TheorySample: WARNING: cannot explain model value "
+                       << mn << " for " << n;
+  AlwaysAssert(false,ss.str().c_str());
   return Node::null();
 }
 
