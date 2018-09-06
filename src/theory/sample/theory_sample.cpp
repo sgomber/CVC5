@@ -390,7 +390,6 @@ void TheorySample::checkLastCall()
                            << std::endl;
   Trace("sample-lemma") << "TheorySample::lemma : conflict : " << conflictNode
                         << std::endl;
-  Trace("sample-check") << "***** TheorySample:: conflict!" << std::endl;
   d_out->lemma(conflictNode);
 }
 
@@ -574,6 +573,7 @@ bool TheorySample::runCheck()
         d_conflict.insert(n);
         // all samples will be false
         d_nsat_count = d_num_samples;
+        Trace("sample-check") << "***** TheorySample:: conflict, due to false sample assertion " << n << std::endl;
         return false;
       }
     }
@@ -722,6 +722,7 @@ bool TheorySample::runCheck()
       d_nsat_count++;
       if (d_nsat_count > d_num_samples_nsat_allow)
       {
+        Trace("sample-check") << "***** TheorySample:: conflict after testing " << i << " samples!" << std::endl;
         // conflict
         return false;
       }
