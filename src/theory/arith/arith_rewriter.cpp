@@ -245,13 +245,14 @@ RewriteResponse ArithRewriter::postRewriteTerm(TNode t){
             }
           }
         }
-
+        /*
         // Todo improve the exception thrown
         std::stringstream ss;
         ss << "The POW(^) operator can only be used with a natural number ";
         ss << "in the exponent.  Exception occurred in:" << std::endl;
         ss << "  " << t;
         throw LogicException(ss.str());
+        */
       }
     case kind::PI:
       return RewriteResponse(REWRITE_DONE, t);
