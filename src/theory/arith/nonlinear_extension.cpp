@@ -629,7 +629,7 @@ bool NonlinearExtension::isTranscendentalKind(Kind k) {
   // many operators are eliminated during rewriting
   Assert(k != TANGENT && k != COSINE && k != COSECANT && k != SECANT
          && k != COTANGENT);
-  return k == EXPONENTIAL || k == SINE || k == PI;
+  return k == EXPONENTIAL || k == SINE || k == PI || k == POW;
 }
  
 Node NonlinearExtension::mkMonomialRemFactor(
@@ -1933,6 +1933,11 @@ int NonlinearExtension::checkLastCall(const std::vector<Node>& assertions,
     {
       needPi = true;
       d_tf_rep_map[ak][a] = a;
+    }
+    else if( ak==POW )
+    {
+      AlwaysAssert( false );
+      // TODO
     }
     else
     {

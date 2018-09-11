@@ -50,6 +50,7 @@ ArithCongruenceManager::ArithCongruenceManager(
   d_ee.addFunctionKind(kind::NONLINEAR_MULT);
   d_ee.addFunctionKind(kind::EXPONENTIAL);
   d_ee.addFunctionKind(kind::SINE);
+  d_ee.addFunctionKind(kind::POW);
   //module to infer additional equalities based on normalization
   if( options::sNormInferEq() ){
     d_eq_infer.reset(new quantifiers::EqualityInference(c, true));

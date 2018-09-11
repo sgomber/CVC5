@@ -91,6 +91,8 @@ bool Variable::isDivMember(Node n){
 
 bool Variable::isTranscendentalMember(Node n) {
   switch(n.getKind()){
+  case kind::POW:
+    return Polynomial::isMember(n[0]) && Polynomial::isMember(n[1]);
   case kind::EXPONENTIAL:
   case kind::SINE:
   case kind::COSINE:

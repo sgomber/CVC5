@@ -1490,7 +1490,7 @@ void TheoryArithPrivate::setupVariableList(const VarList& vl){
     markSetup(vlNode);
   }else{
     if( !options::nlExt() ){
-      if( vlNode.getKind()==kind::EXPONENTIAL || vlNode.getKind()==kind::SINE || 
+      if( vlNode.getKind()==kind::POW || vlNode.getKind()==kind::EXPONENTIAL || vlNode.getKind()==kind::SINE || 
           vlNode.getKind()==kind::COSINE || vlNode.getKind()==kind::TANGENT ){
         d_nlIncomplete = true;
       }
