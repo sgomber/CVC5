@@ -91,26 +91,24 @@ bool Variable::isDivMember(Node n){
 
 bool Variable::isTranscendentalMember(Node n) {
   switch(n.getKind()){
-  case kind::POW:
-    return Polynomial::isMember(n[0]) && Polynomial::isMember(n[1]);
-  case kind::EXPONENTIAL:
-  case kind::SINE:
-  case kind::COSINE:
-  case kind::TANGENT:
-  case kind::COSECANT:
-  case kind::SECANT:
-  case kind::COTANGENT:
-  case kind::ARCSINE:
-  case kind::ARCCOSINE:
-  case kind::ARCTANGENT:
-  case kind::ARCCOSECANT:
-  case kind::ARCSECANT:
-  case kind::ARCCOTANGENT:
-  case kind::SQRT: return Polynomial::isMember(n[0]);
-  case kind::PI:
-    return true;
-  default:
-    return false;
+    case kind::POW:
+      return Polynomial::isMember(n[0]) && Polynomial::isMember(n[1]);
+    case kind::EXPONENTIAL:
+    case kind::SINE:
+    case kind::COSINE:
+    case kind::TANGENT:
+    case kind::COSECANT:
+    case kind::SECANT:
+    case kind::COTANGENT:
+    case kind::ARCSINE:
+    case kind::ARCCOSINE:
+    case kind::ARCTANGENT:
+    case kind::ARCCOSECANT:
+    case kind::ARCSECANT:
+    case kind::ARCCOTANGENT:
+    case kind::SQRT: return Polynomial::isMember(n[0]);
+    case kind::PI: return true;
+    default: return false;
   }
 }
 

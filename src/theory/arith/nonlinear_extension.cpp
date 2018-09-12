@@ -883,7 +883,7 @@ bool NonlinearExtension::checkModel(const std::vector<Node>& assertions,
   // get model bounds for all transcendental functions
   Trace("nl-ext-cm-debug") << "  get bounds for transcendental functions..."
                            << std::endl;
-  for (std::pair<const Kind, std::vector< Node > >& tfs : d_tf_map)
+  for (std::pair<const Kind, std::vector<Node> >& tfs : d_tf_map)
   {
     Kind k = tfs.first;
     for (const Node& tf : tfs.second)
@@ -1824,27 +1824,28 @@ std::vector<Node> NonlinearExtension::checkSplitZero() {
     }
   }
   return lemmas;
-}  
+}
 
 /** An argument trie, for computing congruent terms */
-class ArgTrie 
+class ArgTrie
 {
-public:
+ public:
   /** children of this node */
-  std::map< Node, ArgTrie > d_children;
+  std::map<Node, ArgTrie> d_children;
   /** the data of this node */
   Node d_data;
-  /** 
+  /**
    * Set d as the data on the node whose path is [args], return either d if
-   * that node has no data, or the data that already occurs there. 
+   * that node has no data, or the data that already occurs there.
    */
-  Node add(Node d, const std::vector< Node >& args){
-    ArgTrie * at = this;
-    for( const Node& a : args )
+  Node add(Node d, const std::vector<Node>& args)
+  {
+    ArgTrie* at = this;
+    for (const Node& a : args)
     {
       at = &(at->d_children[a]);
     }
-    if( at->d_data.isNull() )
+    if (at->d_data.isNull())
     {
       at->d_data = d;
     }
@@ -1879,7 +1880,7 @@ int NonlinearExtension::checkLastCall(const std::vector<Node>& assertions,
   std::vector<Node> tr_no_base;
   bool needPi = false;
   // for computing congruence
-  std::map< Kind, ArgTrie > argTrie;
+  std::map<Kind, ArgTrie> argTrie;
   for (unsigned i = 0, xsize = xts.size(); i < xsize; i++)
   {
     Node a = xts[i];
@@ -1921,7 +1922,9 @@ int NonlinearExtension::checkLastCall(const std::vector<Node>& assertions,
         }
       }
       */
-    }else if( a.getNumChildren()>0 ){
+    }
+    else if (a.getNumChildren() > 0)
+    {
       if (ak == SINE)
       {
         needPi = true;
@@ -1937,41 +1940,42 @@ int NonlinearExtension::checkLastCall(const std::vector<Node>& assertions,
         }
         else
         {
-          for( const Node& ac : a )
+          for (const Node& ac : a)
           {
-            if( isTranscendentalKind(ac.getKind()) )
+            if (isTranscendentalKind(ac.getKind()))
             {
               consider = false;
               break;
             }
           }
-        } 
-        if( !consider )
+        }
+        if (!consider)
         {
           tr_no_base.push_back(a);
         }
       }
       if( consider ){
-        std::vector< Node > repList;
-        for( const Node& ac : a )
+        std::vector<Node> repList;
+        for (const Node& ac : a)
         {
-          Node r = d_containing.getValuation().getModel()->getRepresentative(a[0]);
+          Node r =
+              d_containing.getValuation().getModel()->getRepresentative(a[0]);
           repList.push_back(r);
         }
-        Node aa = argTrie[ak].add(a,repList);
-        if( aa!=a )
+        Node aa = argTrie[ak].add(a, repList);
+        if (aa != a)
         {
           // apply congruence to pairs of terms that are disequal and congruent
-          Assert( aa.getNumChildren()==a.getNumChildren() );
-          if( d_mv[1][a]!=d_mv[1][aa] )
+          Assert(aa.getNumChildren() == a.getNumChildren());
+          if (d_mv[1][a] != d_mv[1][aa])
           {
-            std::vector< Node > exp;
-            for( unsigned j=0, size = a.getNumChildren(); j<size; j++ )
+            std::vector<Node> exp;
+            for (unsigned j = 0, size = a.getNumChildren(); j < size; j++)
             {
-              exp.push_back( a[j].eqNode( aa[j] ) );
+              exp.push_back(a[j].eqNode(aa[j]));
             }
-            Node expn = exp.size()==1 ? exp[0] : nm->mkNode( AND, exp );
-            Node cong_lemma = nm->mkNode( OR, expn.negate(), a.eqNode(aa) );
+            Node expn = exp.size() == 1 ? exp[0] : nm->mkNode(AND, exp);
+            Node cong_lemma = nm->mkNode(OR, expn.negate(), a.eqNode(aa));
             lemmas.push_back( cong_lemma );
           }
         }
@@ -2077,12 +2081,12 @@ int NonlinearExtension::checkLastCall(const std::vector<Node>& assertions,
   {
     Trace("nl-ext-mv") << "Arguments of trancendental functions : "
                        << std::endl;
-    for (std::pair<const Kind, std::vector< Node > >& tfl : d_tf_map)
+    for (std::pair<const Kind, std::vector<Node> >& tfl : d_tf_map)
     {
       Kind k = tfl.first;
       if (k == SINE || k == EXPONENTIAL)
       {
-        for( const Node& tf : tfl.second )
+        for (const Node& tf : tfl.second)
         {
           Node v = tf[0];
           computeModelValue(v, 0);
@@ -3816,10 +3820,11 @@ std::vector<Node> NonlinearExtension::checkMonomialInferResBounds() {
 std::vector<Node> NonlinearExtension::checkTranscendentalInitialRefine() {
   std::vector< Node > lemmas;
   Trace("nl-ext") << "Get initial refinement lemmas for transcendental functions..." << std::endl;
-  for( std::pair< const Kind, std::vector< Node > >& tfl : d_tf_map )
+  for (std::pair<const Kind, std::vector<Node> >& tfl : d_tf_map)
   {
     Kind k = tfl.first;
-    for( const Node& t : tfl.second ){
+    for (const Node& t : tfl.second)
+    {
       Assert( d_mv[1].find( t )!=d_mv[1].end() );
       //initial refinements
       if( d_tf_initial_refine.find( t )==d_tf_initial_refine.end() ){
@@ -3925,12 +3930,13 @@ std::vector<Node> NonlinearExtension::checkTranscendentalMonotonic() {
   //sort arguments of all transcendentals
   std::map< Kind, std::vector< Node > > sorted_tf_args;
   std::map< Kind, std::map< Node, Node > > tf_arg_to_term;
-  
-  for( std::pair< const Kind, std::vector< Node > >& tfl : d_tf_map ){
+
+  for (std::pair<const Kind, std::vector<Node> >& tfl : d_tf_map)
+  {
     Kind k = tfl.first;
     if (k == EXPONENTIAL || k == SINE)
     {
-      for( const Node& tf : tfl.second )
+      for (const Node& tf : tfl.second)
       {
         Node a = tf[0];
         computeModelValue(a, 1);
@@ -3950,12 +3956,14 @@ std::vector<Node> NonlinearExtension::checkTranscendentalMonotonic() {
   //sort by concrete values
   smv.d_order_type = 0;
   smv.d_reverse_order = true;
-  for( std::pair< const Kind, std::vector< Node > >& tfl : d_tf_map ){
+  for (std::pair<const Kind, std::vector<Node> >& tfl : d_tf_map)
+  {
     Kind k = tfl.first;
     if( !sorted_tf_args[k].empty() ){
       std::sort( sorted_tf_args[k].begin(), sorted_tf_args[k].end(), smv );
       Trace("nl-ext-tf-mono") << "Sorted transcendental function list for " << k << " : " << std::endl;
-      for( unsigned i=0; i<sorted_tf_args[k].size(); i++ ){
+      for (unsigned i = 0; i < sorted_tf_args[k].size(); i++)
+      {
         Node targ = sorted_tf_args[k][i];
         Assert( d_mv[1].find( targ )!=d_mv[1].end() );
         Trace("nl-ext-tf-mono") << "  " << targ << " -> " << d_mv[1][targ] << std::endl;
@@ -3992,7 +4000,8 @@ std::vector<Node> NonlinearExtension::checkTranscendentalMonotonic() {
         int monotonic_dir = -1;
         Node mono_bounds[2];
         Node targ, targval, t, tval;
-        for( unsigned i=0, size = sorted_tf_args[k].size(); i<size; i++ ){
+        for (unsigned i = 0, size = sorted_tf_args[k].size(); i < size; i++)
+        {
           Node sarg = sorted_tf_args[k][i];
           Assert( d_mv[1].find( sarg )!=d_mv[1].end() );
           Node sargval = d_mv[1][sarg];
@@ -4084,7 +4093,7 @@ std::vector<Node> NonlinearExtension::checkTranscendentalTangentPlanes()
                   << std::endl;
   // this implements Figure 3 of "Satisfiaility Modulo Transcendental Functions
   // via Incremental Linearization" by Cimatti et al
-  for (std::pair<const Kind, std::vector< Node > >& tfs : d_tf_map)
+  for (std::pair<const Kind, std::vector<Node> >& tfs : d_tf_map)
   {
     Kind k = tfs.first;
     if (k == PI)
