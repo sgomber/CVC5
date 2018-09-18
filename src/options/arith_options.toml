@@ -527,3 +527,12 @@ header = "options/arith_options.h"
   default    = "true"
   read_only  = true
   help       = "whether to increment the precision for irrational function constraints"
+
+[[option]]
+  name       = "nlExtMvf"
+  category   = "regular"
+  long       = "nl-ext-mvf"
+  type       = "bool"
+  default    = "false"
+  read_only  = true
+  help       = "convert non-linear lemmas to symbolic model-value form"

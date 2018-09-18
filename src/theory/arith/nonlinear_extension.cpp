@@ -659,9 +659,14 @@ Node NonlinearExtension::mkMonomialRemFactor(
 int NonlinearExtension::flushLemma(Node lem) {
   Trace("nl-ext-lemma-debug")
       << "NonlinearExtension::Lemma pre-rewrite : " << lem << std::endl;
-  //lem = Rewriter::rewrite( lem );
-  lem = convertToModelValueForm( lem );
-  
+  if( options::nlExtMvf() )
+  {
+    lem = convertToModelValueForm( lem );
+  }
+  else
+  {
+    lem = Rewriter::rewrite( lem );
+  }
   
   if (Contains(d_lemmas, lem)) {
     Trace("nl-ext-lemma-debug")
