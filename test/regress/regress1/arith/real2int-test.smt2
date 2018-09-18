@@ -1,4 +1,4 @@
-; COMMAND-LINE: --solve-real-as-int --no-new-prop
+; COMMAND-LINE: --solve-real-as-int --no-new-prop --no-check-models
 ; EXPECT: sat
 (set-info :smt-lib-version 2.6)
 (set-logic QF_NRA)

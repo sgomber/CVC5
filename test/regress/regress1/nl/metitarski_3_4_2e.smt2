@@ -1,3 +1,4 @@
+AJR-BROKEN
 ; COMMAND-LINE: --nl-ext
 ; EXPECT: sat
 (set-logic QF_NRA)
