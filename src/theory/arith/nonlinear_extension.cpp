@@ -3712,7 +3712,7 @@ Node NonlinearExtension::convertToModelValueForm( Node lem )
       {
         Kind ck = cur.getKind();
         // should we purify?
-        bool do_purify = ( cur.getType().isReal() && ( ck!=PLUS && ck!=MULT && ck != NONLINEAR_MULT ) );
+        bool do_purify = ( cur.getType().isReal() && ( ck!=PLUS && ck!=MULT ) );
         if( do_purify )
         {
           ovars.push_back(cur);
