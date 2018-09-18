@@ -459,6 +459,14 @@ header = "options/arith_options.h"
   help       = "interleave tangent plane strategy for non-linear"
 
 [[option]]
+  name       = "nlExtTangentPlanesLimit"
+  category   = "regular"
+  long       = "nl-ext-tplanes-limit=N"
+  type       = "uint16_t"
+  default    = "3"
+  help       = "when tangent plane strategy is disabled, the max number of iterations of tangent plane inferences to apply per SAT context (default 3)"
+
+[[option]]
   name       = "nlExtTfTangentPlanes"
   category   = "regular"
   long       = "nl-ext-tf-tplanes"

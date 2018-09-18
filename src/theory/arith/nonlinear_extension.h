@@ -604,6 +604,8 @@ class NonlinearExtension {
                      std::map<unsigned, std::vector<Node> >,
                      NodeHashFunction>
       d_secant_points;
+  /** The number of times we have applied tangent planes in this context */
+  context::CDO<uint16_t> d_tplane_infer_count;
 
   /** get Taylor series of degree n for function fa centered around point fa[0].
    *

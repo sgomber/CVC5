@@ -161,6 +161,7 @@ NonlinearExtension::NonlinearExtension(TheoryArith& containing,
       d_zero_split(containing.getUserContext()),
       d_skolem_atoms(containing.getUserContext()),
       d_containing(containing),
+      d_tplane_infer_count(containing.getSatContext(), 0),
       d_ee(ee),
       d_needsLastCall(false)
 {
@@ -2179,7 +2180,8 @@ int NonlinearExtension::checkLastCall(const std::vector<Node>& assertions,
   // introduce new monomials
   lemmas_proc = flushLemmas(lemmas);
 
-  if (options::nlExtTangentPlanes() && options::nlExtTangentPlanesInterleave())
+  bool applyTangentPlanes = options::nlExtTangentPlanes() || d_tplane_infer_count.get()<options::nlExtTangentPlanesLimit();
+  if (applyTangentPlanes && options::nlExtTangentPlanesInterleave())
   {
     lemmas = checkTangentPlanes();
     lemmas_proc += flushLemmas(lemmas);
@@ -2222,7 +2224,7 @@ int NonlinearExtension::checkLastCall(const std::vector<Node>& assertions,
   }
   
   //------------------------------------tangent planes
-  if (options::nlExtTangentPlanes() && !options::nlExtTangentPlanesInterleave())
+  if (applyTangentPlanes && !options::nlExtTangentPlanesInterleave())
   {
     lemmas = checkTangentPlanes();
     d_waiting_lemmas.insert(
@@ -3234,6 +3236,8 @@ std::vector<Node> NonlinearExtension::checkMonomialMagnitude( unsigned c ) {
 }
 
 std::vector<Node> NonlinearExtension::checkTangentPlanes() {
+  // Increment the (SAT-context-dependent) counter of how many times tangent planes have been applied
+  d_tplane_infer_count = d_tplane_infer_count + 1;
   std::vector< Node > lemmas;
   Trace("nl-ext") << "Get monomial tangent plane lemmas..." << std::endl;
   unsigned kstart = d_ms_vars.size();
