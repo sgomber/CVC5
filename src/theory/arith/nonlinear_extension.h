@@ -155,6 +155,7 @@ class NonlinearExtension {
   void registerMonomialSubset(Node a, Node b);
 
   typedef context::CDHashSet<Node, NodeHashFunction> NodeSet;
+  typedef context::CDHashMap<Node, int, NodeHashFunction> NodeIntMap;
 
   // monomial information (context-independent)
   class MonomialIndex {
@@ -604,8 +605,10 @@ class NonlinearExtension {
                      std::map<unsigned, std::vector<Node> >,
                      NodeHashFunction>
       d_secant_points;
-  /** The number of times we have applied tangent planes in this context */
-  context::CDO<uint16_t> d_tplane_infer_count;
+  /** 
+   * The number of times we have applied tangent planes to each monomial in this user context. 
+   */
+  NodeIntMap d_tplane_mon_count;
 
   /** get Taylor series of degree n for function fa centered around point fa[0].
    *

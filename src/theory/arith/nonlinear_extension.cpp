@@ -161,9 +161,9 @@ NonlinearExtension::NonlinearExtension(TheoryArith& containing,
       d_zero_split(containing.getUserContext()),
       d_skolem_atoms(containing.getUserContext()),
       d_containing(containing),
-      d_tplane_infer_count(containing.getSatContext(), 0),
       d_ee(ee),
-      d_needsLastCall(false)
+      d_needsLastCall(false),
+      d_tplane_mon_count(containing.getUserContext())
 {
   d_true = NodeManager::currentNM()->mkConst(true);
   d_false = NodeManager::currentNM()->mkConst(false);
@@ -2182,7 +2182,7 @@ int NonlinearExtension::checkLastCall(const std::vector<Node>& assertions,
 
   bool applyTangentPlanes =
       options::nlExtTangentPlanes()
-      || d_tplane_infer_count.get() < options::nlExtTangentPlanesLimit();
+      || options::nlExtTangentPlanesLimit() > 0;
   if (applyTangentPlanes && options::nlExtTangentPlanesInterleave())
   {
     lemmas = checkTangentPlanes();
@@ -3238,17 +3238,21 @@ std::vector<Node> NonlinearExtension::checkMonomialMagnitude( unsigned c ) {
 }
 
 std::vector<Node> NonlinearExtension::checkTangentPlanes() {
-  // Increment the (SAT-context-dependent) counter of how many times tangent
-  // planes have been applied
-  d_tplane_infer_count = d_tplane_infer_count + 1;
   std::vector< Node > lemmas;
   Trace("nl-ext") << "Get monomial tangent plane lemmas..." << std::endl;
   unsigned kstart = d_ms_vars.size();
   for (unsigned k = kstart; k < d_mterms.size(); k++) {
     Node t = d_mterms[k];
     // if this term requires a refinement
-    if (d_tplane_refine.find(t) != d_tplane_refine.end())
+    if (d_tplane_refine.find(t) == d_tplane_refine.end())
     {
+      continue;
+    }
+    unsigned applyCount = d_tplane_mon_count[t];
+    if( options::nlExtTangentPlanes() || applyCount<options::nlExtTangentPlanesLimit() )
+    {
+      // increment the number of times we have applied tangent planes to this
+      d_tplane_mon_count[t] = applyCount + 1;
       Trace("nl-ext-tplanes")
           << "Look at monomial requiring refinement : " << t << std::endl;
       // get a decomposition
@@ -3430,10 +3434,8 @@ std::vector<Node> NonlinearExtension::checkMonomialInferBounds(
         }
         // compute if bound is not satisfied, and store what is required
         // for a possible refinement
-        if (options::nlExtTangentPlanes()) {
-          if (is_false_lit) {
-            d_tplane_refine.insert(x);
-          }
+        if (is_false_lit) {
+          d_tplane_refine.insert(x);
         }
       }
     }
