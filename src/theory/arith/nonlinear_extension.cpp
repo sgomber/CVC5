@@ -659,7 +659,10 @@ Node NonlinearExtension::mkMonomialRemFactor(
 int NonlinearExtension::flushLemma(Node lem) {
   Trace("nl-ext-lemma-debug")
       << "NonlinearExtension::Lemma pre-rewrite : " << lem << std::endl;
-  lem = Rewriter::rewrite(lem);
+  lem = Rewriter::rewrite( lem );
+  //lem = convertToModelValueForm( lem );
+  
+  
   if (Contains(d_lemmas, lem)) {
     Trace("nl-ext-lemma-debug")
         << "NonlinearExtension::Lemma duplicate : " << lem << std::endl;
@@ -867,6 +870,10 @@ bool NonlinearExtension::checkModel(const std::vector<Node>& assertions,
   std::vector<Node> passertions;
   for (const Node& a : assertions)
   {
+    if( d_skolem_atoms.find( a )!=d_skolem_atoms.end() )
+    {
+      continue;
+    }
     Node pa = a;
     if (!pvars.empty())
     {
@@ -2016,6 +2023,7 @@ int NonlinearExtension::checkLastCall(const std::vector<Node>& assertions,
     {
       Node y =
           nm->mkSkolem("y", nm->realType(), "phase shifted trigonometric arg");
+      d_mv_skolems.insert(y);
       Node new_a = nm->mkNode(a.getKind(), y);
       d_tr_is_base[new_a] = true;
       d_tr_base[a] = new_a;
@@ -3632,7 +3640,7 @@ std::vector<Node> NonlinearExtension::checkFactoring(
             sum = Rewriter::rewrite( sum );
             Trace("nl-ext-factor")
                 << "* Factored sum for " << x << " : " << sum << std::endl;
-            Node kf = getFactorSkolem( sum, lemmas ); 
+            Node kf = getModelValueSkolem( sum ); 
             std::vector< Node > poly;
             poly.push_back(NodeManager::currentNM()->mkNode(MULT, x, kf));
             std::map<Node, std::vector<Node> >::iterator itfo =
@@ -3669,20 +3677,81 @@ std::vector<Node> NonlinearExtension::checkFactoring(
   return lemmas;
 }
 
-Node NonlinearExtension::getFactorSkolem( Node n, std::vector< Node >& lemmas ) {
-  std::map< Node, Node >::iterator itf = d_factor_skolem.find( n );
-  if( itf==d_factor_skolem.end() ){
-    Node k = NodeManager::currentNM()->mkSkolem( "kf", n.getType() );
-    Node k_eq = Rewriter::rewrite( k.eqNode( n ) );
-    d_skolem_atoms.insert( k_eq );
-    lemmas.push_back( k_eq );
-    d_factor_skolem[n] = k;
-    return k;
-  }else{
-    return itf->second;
-  }  
+Node NonlinearExtension::getModelValueSkolem( Node n )
+{
+  std::map< Node, Node >::iterator itm = d_mv_skolem.find( n );
+  if( itm!=d_mv_skolem.end() )
+  {
+    return itm->second;
+  }
+  std::stringstream sn;
+  sn << "mv_" << n;
+  Node k = NodeManager::currentNM()->mkSkolem( sn.str().c_str(), n.getType() );
+  d_mv_skolems.insert(k);
+  Node eq = n.eqNode(k);
+  eq = Rewriter::rewrite(eq);
+  d_skolem_atoms.insert(eq);
+  d_containing.getOutputChannel().lemma(eq);
+  d_mv_skolem[n] = k;
+  return k;
 }
-                    
+
+Node NonlinearExtension::convertToModelValueForm( Node lem )
+{
+  // convert to model value symbolic form
+  std::vector< Node > ovars;
+  std::unordered_set<TNode, TNodeHashFunction> visited;
+  std::vector<TNode> visit;
+  TNode cur;
+  visit.push_back(lem);
+  do {
+    cur = visit.back();
+    visit.pop_back();
+    if (visited.find(cur) == visited.end()) {
+      visited.insert(cur);
+      if( cur.isVar() && d_mv_skolems.find(cur)==d_mv_skolems.end())
+      {
+        ovars.push_back(cur);
+      }
+      for (const Node& cn : cur ){
+        visit.push_back(cn);
+      }
+    }
+  } while (!visit.empty());
+  if( !ovars.empty() )
+  {
+    std::vector< Node > osubs;
+    for( TNode v : ovars )
+    {
+      Node mv = getModelValueSkolem(v);
+      osubs.push_back(mv);
+    }
+    lem = lem.substitute(ovars.begin(),ovars.end(),osubs.begin(),osubs.end());
+  }
+  lem = Rewriter::rewrite(lem);
+  // collect all literals in lem, these are marked as internal
+  visit.push_back(lem);
+  do {
+    cur = visit.back();
+    visit.pop_back();
+    if (visited.find(cur) == visited.end()) {
+      visited.insert(cur);
+      Kind ck = cur.getKind();
+      if( ck==AND || ck==IMPLIES || ck==OR || ck==ITE || ( ck==EQUAL && cur[0].getType().isBoolean() ) )
+      {
+        for (const Node& cn : cur ){
+          visit.push_back(cn);
+        }
+      }
+      else
+      {
+        d_skolem_atoms.insert(cur);
+      }
+    }
+  } while (!visit.empty());
+  return lem;
+}
+
 std::vector<Node> NonlinearExtension::checkMonomialInferResBounds() {            
   std::vector< Node > lemmas; 
   Trace("nl-ext") << "Get monomial resolution inferred bound lemmas..." << std::endl;

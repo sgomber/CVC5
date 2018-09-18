@@ -1,4 +1,4 @@
-; COMMAND-LINE: --no-check-models
+; COMMAND-LINE: --no-check-models --nl-ext-tplanes-limit=0
 ; EXPECT: sat
 (set-logic QF_NRA)
 (set-info :status sat)
