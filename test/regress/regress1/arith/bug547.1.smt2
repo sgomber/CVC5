@@ -1,4 +1,4 @@
-; COMMAND-LINE: --rewrite-divk
+; COMMAND-LINE: --rewrite-divk --nl-ext-tplanes-limit=0
 ; EXPECT: unknown
 (set-logic QF_NIA)
 (declare-fun x () Int)
