@@ -659,8 +659,8 @@ Node NonlinearExtension::mkMonomialRemFactor(
 int NonlinearExtension::flushLemma(Node lem) {
   Trace("nl-ext-lemma-debug")
       << "NonlinearExtension::Lemma pre-rewrite : " << lem << std::endl;
-  lem = Rewriter::rewrite( lem );
-  //lem = convertToModelValueForm( lem );
+  //lem = Rewriter::rewrite( lem );
+  lem = convertToModelValueForm( lem );
   
   
   if (Contains(d_lemmas, lem)) {
@@ -2023,7 +2023,6 @@ int NonlinearExtension::checkLastCall(const std::vector<Node>& assertions,
     {
       Node y =
           nm->mkSkolem("y", nm->realType(), "phase shifted trigonometric arg");
-      d_mv_skolems.insert(y);
       Node new_a = nm->mkNode(a.getKind(), y);
       d_tr_is_base[new_a] = true;
       d_tr_base[a] = new_a;
@@ -3709,12 +3708,21 @@ Node NonlinearExtension::convertToModelValueForm( Node lem )
     visit.pop_back();
     if (visited.find(cur) == visited.end()) {
       visited.insert(cur);
-      if( cur.isVar() && d_mv_skolems.find(cur)==d_mv_skolems.end())
+      if( d_mv_skolems.find(cur)==d_mv_skolems.end())
       {
-        ovars.push_back(cur);
-      }
-      for (const Node& cn : cur ){
-        visit.push_back(cn);
+        Kind ck = cur.getKind();
+        // should we purify?
+        bool do_purify = ( cur.getType().isReal() && ( ck!=PLUS && ck!=MULT && ck != NONLINEAR_MULT ) );
+        if( do_purify )
+        {
+          ovars.push_back(cur);
+        }
+        else
+        {
+          for (const Node& cn : cur ){
+            visit.push_back(cn);
+          }
+        }
       }
     }
   } while (!visit.empty());
