@@ -2181,8 +2181,7 @@ int NonlinearExtension::checkLastCall(const std::vector<Node>& assertions,
   lemmas_proc = flushLemmas(lemmas);
 
   bool applyTangentPlanes =
-      options::nlExtTangentPlanes()
-      || options::nlExtTangentPlanesLimit() > 0;
+      options::nlExtTangentPlanes() || options::nlExtTangentPlanesLimit() > 0;
   if (applyTangentPlanes && options::nlExtTangentPlanesInterleave())
   {
     lemmas = checkTangentPlanes();
@@ -3249,7 +3248,8 @@ std::vector<Node> NonlinearExtension::checkTangentPlanes() {
       continue;
     }
     unsigned applyCount = d_tplane_mon_count[t];
-    if( options::nlExtTangentPlanes() || applyCount<options::nlExtTangentPlanesLimit() )
+    if (options::nlExtTangentPlanes()
+        || applyCount < options::nlExtTangentPlanesLimit())
     {
       // increment the number of times we have applied tangent planes to this
       d_tplane_mon_count[t] = applyCount + 1;
@@ -3434,7 +3434,8 @@ std::vector<Node> NonlinearExtension::checkMonomialInferBounds(
         }
         // compute if bound is not satisfied, and store what is required
         // for a possible refinement
-        if (is_false_lit) {
+        if (is_false_lit)
+        {
           d_tplane_refine.insert(x);
         }
       }

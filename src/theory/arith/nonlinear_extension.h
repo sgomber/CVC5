@@ -605,8 +605,9 @@ class NonlinearExtension {
                      std::map<unsigned, std::vector<Node> >,
                      NodeHashFunction>
       d_secant_points;
-  /** 
-   * The number of times we have applied tangent planes to each monomial in this user context. 
+  /**
+   * The number of times we have applied tangent planes to each monomial in this
+   * user context.
    */
   NodeIntMap d_tplane_mon_count;
 
