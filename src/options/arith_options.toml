@@ -463,7 +463,7 @@ header = "options/arith_options.h"
   category   = "regular"
   long       = "nl-ext-tplanes-limit=N"
   type       = "uint16_t"
-  default    = "3"
+  default    = "0"
   help       = "when tangent plane strategy is disabled, the max number of iterations of tangent plane inferences to apply per monomial (default 3)"
 
 [[option]]

@@ -1,4 +1,3 @@
-AJR-BROKEN
 ; COMMAND-LINE: --nl-ext-tplanes
 ; EXPECT: unsat
 (set-logic ALL)
