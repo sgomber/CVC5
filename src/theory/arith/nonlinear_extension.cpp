@@ -875,10 +875,6 @@ bool NonlinearExtension::checkModel(const std::vector<Node>& assertions,
   std::vector<Node> passertions;
   for (const Node& a : assertions)
   {
-    if( d_skolem_atoms.find( a )!=d_skolem_atoms.end() )
-    {
-      continue;
-    }
     Node pa = a;
     if (!pvars.empty())
     {
@@ -1059,6 +1055,15 @@ void NonlinearExtension::addCheckModelSubstitution(TNode v, TNode s)
     Assert( false );
     return;
   }
+#ifdef CVC4_ASSERTIONS
+  // if we previously had an approximate bound, the exact bound should be in its range
+  std::map<Node, std::pair<Node, Node> >::iterator itb = d_check_model_bounds.find(v);
+  if (itb != d_check_model_bounds.end())
+  {
+    Assert( s.getConst<Rational>()>=itb->second.first.getConst<Rational>() );
+    Assert( s.getConst<Rational>()<=itb->second.second.getConst<Rational>() );
+  }
+#endif
   for (unsigned i = 0, size = d_check_model_subs.size(); i < size; i++)
   {
     Node ms = d_check_model_subs[i];
