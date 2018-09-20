@@ -1000,6 +1000,14 @@ header = "options/quantifiers_options.h"
   help       = "Do not try repeated solutions when using independent synthesis of conditions in unification-based function synthesis"
 
 [[option]]
+  name       = "sygusRlvVar"
+  category   = "regular"
+  long       = "sygus-rlv-var"
+  type       = "bool"
+  default    = "false"
+  help       = "Guide the sygus search dynamically based on relevant variable analysis"
+
+[[option]]
   name       = "sygusBoolIteReturnConst"
   category   = "regular"
   long       = "sygus-bool-ite-return-const"
