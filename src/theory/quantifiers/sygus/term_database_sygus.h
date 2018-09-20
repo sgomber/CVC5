@@ -69,6 +69,9 @@ class TermDbSygus {
    * (see d_enum_to_active_guard),
    * useSymbolicCons : whether we want model values for e to include symbolic
    * constructors like the "any constant" variable.
+   * useVarRelevancyLits : whether we want to allocate literals G_rlv_x whose
+   * semantics are "x may occur as a subterm of values of this enumerator",
+   * for each variable x in the sygus variable list of the type of e.
    *
    * Notice that enumerator e may not be one-to-one with f in
    * synthesis-through-unification approaches (e.g. decision tree construction
@@ -78,7 +81,9 @@ class TermDbSygus {
                           Node f,
                           SynthConjecture* conj,
                           bool mkActiveGuard = false,
-                          bool useSymbolicCons = false);
+                          bool useSymbolicCons = false,
+                          bool useVarRelevancyLits = false
+                         );
   /** is e an enumerator registered with this class? */
   bool isEnumerator(Node e) const;
   /** return the conjecture e is associated with */
@@ -339,6 +344,12 @@ class TermDbSygus {
    * has one.
    */
   std::map<TypeNode, unsigned> d_sym_cons_any_constant;
+  /** 
+   * For enumerator and variable, the literal whose semantics specify the
+   * variable is relevant and the decision strategy that enforces it.
+   */
+  std::map< Node, std::map< Node , Node > > d_var_rlv_lit;
+  std::map< Node, std::map< Node, std::unique_ptr<DecisionStrategySingleton> > > d_var_rlv_strat;
   /**
    * Whether any subterm of this type contains a symbolic constructor. This
    * corresponds to whether sygus repair techniques will ever have any effect

@@ -425,7 +425,8 @@ void TermDbSygus::registerEnumerator(Node e,
                                      Node f,
                                      SynthConjecture* conj,
                                      bool mkActiveGuard,
-                                     bool useSymbolicCons)
+                                     bool useSymbolicCons,
+                                     bool useVarRelevancyLits)
 {
   if (d_enum_to_conjecture.find(e) != d_enum_to_conjecture.end())
   {
@@ -441,15 +442,7 @@ void TermDbSygus::registerEnumerator(Node e,
   NodeManager* nm = NodeManager::currentNM();
   if( mkActiveGuard ){
     // make the guard
-    Node eg = Rewriter::rewrite(nm->mkSkolem("eG", nm->booleanType()));
-    eg = d_quantEngine->getValuation().ensureLiteral( eg );
-    AlwaysAssert( !eg.isNull() );
-    d_quantEngine->getOutputChannel().requirePhase( eg, true );
-    //add immediate lemma
-    Node lem = nm->mkNode(OR, eg, eg.negate());
-    Trace("cegqi-lemma") << "Cegqi::Lemma : enumerator : " << lem << std::endl;
-    d_quantEngine->getOutputChannel().lemma( lem );
-    d_enum_to_active_guard[e] = eg;
+    d_enum_to_active_guard[e] = nm->mkSkolem("eG", nm->booleanType());
   }
 
   Trace("sygus-db") << "  registering symmetry breaking clauses..."
@@ -459,40 +452,70 @@ void TermDbSygus::registerEnumerator(Node e,
   // breaking lemma templates for each relevant subtype of the grammar
   std::vector<TypeNode> sf_types;
   getSubfieldTypes(et, sf_types);
+  TheoryEngine * te = d_quantEngine->getTheoryEngine();
   // for each type of subfield type of this enumerator
   for (unsigned i = 0, ntypes = sf_types.size(); i < ntypes; i++)
   {
+    std::vector<Node> rm_guards;
     std::vector<unsigned> rm_indices;
     TypeNode stn = sf_types[i];
     Assert(stn.isDatatype());
-    const Datatype& dt = static_cast<DatatypeType>(stn.toType()).getDatatype();
-    std::map<TypeNode, unsigned>::iterator itsa =
-        d_sym_cons_any_constant.find(stn);
-    if (itsa != d_sym_cons_any_constant.end())
+    const Datatype& dt = stn.getDatatype();
+    int anyC = getAnyConstantConsNum(stn);
+    for (unsigned i = 0, ncons = dt.getNumConstructors(); i < ncons; i++)
     {
-      if (!useSymbolicCons)
+      Expr sop = dt[i].getSygusOp();
+      Assert( !sop.isNull() );
+      Node sopn = Node::fromExpr( sop );
+      // if it is a variable 
+      if( sopn.getKind()==BOUND_VARIABLE )
       {
-        // do not use the symbolic constructor
-        rm_indices.push_back(itsa->second);
-      }
-      else
-      {
-        // can remove all other concrete constant constructors
-        for (unsigned i = 0, ncons = dt.getNumConstructors(); i < ncons; i++)
+        Node rg;
+        std::map< Node, Node >::iterator itrlv = rlv_guards.find(sopn);
+        if( itrlv==rlv_guards.end() )
         {
-          if (i != itsa->second)
-          {
-            Node c_op = getConsNumConst(stn, i);
-            if (!c_op.isNull())
-            {
-              rm_indices.push_back(i);
-            }
-          }
+          // allocate the decision strategy for the relevant variable literal
+          std::stringstream ss;
+          ss << sopn << "_is_irrlv";
+          rg = nm->mkSkolem(ss.str(), nm->booleanType());
+          d_var_rlv_lit[e][sopn] = rg;
+          d_var_rlv_strat[e][sopn].reset(
+                  new DecisionStrategySingleton("sygus_var_irrlv",
+                                                rg,
+                                                d_quantEngine->getSatContext(),
+                                                d_quantEngine->getValuation()));
+          te->registerDecisionStrategy(DecisionManager::STRAT_QUANT_SYGUS_VAR_IRRELEVANT, d_var_rlv_strat[e][sopn].get());
+        }
+        else
+        {
+          rg = it->second;
+        }
+        rm_guards.push_back(rg);
+        rm_indices.push_back(i);
+      }
+      else if( anyC==i && !useSymbolicCons )
+      {
+        // if we are not using the any constant constructor
+        // do not use the symbolic constructor
+        rm_guards.push_back(Node::null());
+        rm_indices.push_back(i);
+      }
+      else if( anyC!=i && useSymbolicCons )
+      {
+        // if we are using the any constant constructor, do not use any
+        // concrete constant
+        Node c_op = getConsNumConst(stn, i);
+        if (!c_op.isNull())
+        {
+          rm_guards.push_back(Node::null());
+          rm_indices.push_back(i);
         }
       }
     }
-    for (unsigned& rindex : rm_indices)
+    for (unsigned i=0, rsize = rm_indices.size(); i<rsize; i++ )
     {
+      unsigned rindex = rm_indices[i];
+      Node rguard = rm_guards[i];
       // make the apply-constructor corresponding to an application of the
       // constant or "any constant" constructor
       // we call getInstCons since in the case of any constant constructors, it
@@ -506,6 +529,10 @@ void TermDbSygus::registerEnumerator(Node e,
                         << " == " << exc_val << std::endl;
       Node lem = getExplain()->getExplanationForEquality(x, exc_val);
       lem = lem.negate();
+      if( !rguard.isNull() )
+      {
+        lem = nm->mkNode( OR, rguard, lem );
+      }
       Trace("cegqi-lemma")
           << "Cegqi::Lemma : exclude symbolic cons lemma (template) : " << lem
           << std::endl;
