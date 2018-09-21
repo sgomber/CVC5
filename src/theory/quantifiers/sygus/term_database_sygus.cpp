@@ -24,6 +24,7 @@
 #include "theory/quantifiers/term_database.h"
 #include "theory/quantifiers/term_util.h"
 #include "theory/quantifiers_engine.h"
+#include "theory/theory_engine.h"
 
 using namespace CVC4::kind;
 
@@ -471,8 +472,8 @@ void TermDbSygus::registerEnumerator(Node e,
       if( sopn.getKind()==BOUND_VARIABLE )
       {
         Node rg;
-        std::map< Node, Node >::iterator itrlv = rlv_guards.find(sopn);
-        if( itrlv==rlv_guards.end() )
+        std::map< Node, Node >::iterator itrlv = d_var_rlv_lit[e].find(sopn);
+        if( itrlv==d_var_rlv_lit[e].end() )
         {
           // allocate the decision strategy for the relevant variable literal
           std::stringstream ss;
