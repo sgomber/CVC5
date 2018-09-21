@@ -472,28 +472,31 @@ void TermDbSygus::registerEnumerator(Node e,
       // if it is a variable 
       if( sopn.getKind()==BOUND_VARIABLE )
       {
-        Node rg;
-        std::map< Node, Node >::iterator itrlv = d_var_rlv_lit[e].find(sopn);
-        if( itrlv==d_var_rlv_lit[e].end() )
+        if( useVarRelevancyLits )
         {
-          // allocate the decision strategy for the relevant variable literal
-          std::stringstream ss;
-          ss << sopn << "_is_irrlv";
-          rg = nm->mkSkolem(ss.str(), nm->booleanType());
-          d_var_rlv_lit[e][sopn] = rg;
-          d_var_rlv_strat[e][sopn].reset(
-                  new DecisionStrategySingleton("sygus_var_irrlv",
-                                                rg,
-                                                d_quantEngine->getSatContext(),
-                                                d_quantEngine->getValuation()));
-          dm->registerStrategy(DecisionManager::STRAT_QUANT_SYGUS_VAR_IRRELEVANT, d_var_rlv_strat[e][sopn].get());
+          Node rg;
+          std::map< Node, Node >::iterator itrlv = d_var_rlv_lit[e].find(sopn);
+          if( itrlv==d_var_rlv_lit[e].end() )
+          {
+            // allocate the decision strategy for the relevant variable literal
+            std::stringstream ss;
+            ss << sopn << "_is_irrlv";
+            rg = nm->mkSkolem(ss.str(), nm->booleanType());
+            d_var_rlv_lit[e][sopn] = rg;
+            d_var_rlv_strat[e][sopn].reset(
+                    new DecisionStrategySingleton("sygus_var_irrlv",
+                                                  rg,
+                                                  d_quantEngine->getSatContext(),
+                                                  d_quantEngine->getValuation()));
+            dm->registerStrategy(DecisionManager::STRAT_QUANT_SYGUS_VAR_IRRELEVANT, d_var_rlv_strat[e][sopn].get());
+          }
+          else
+          {
+            rg = itrlv->second;
+          }
+          rm_guards.push_back(rg);
+          rm_indices.push_back(i);
         }
-        else
-        {
-          rg = itrlv->second;
-        }
-        rm_guards.push_back(rg);
-        rm_indices.push_back(i);
       }
       else if( isAnyC && !useSymbolicCons )
       {
@@ -502,7 +505,7 @@ void TermDbSygus::registerEnumerator(Node e,
         rm_guards.push_back(Node::null());
         rm_indices.push_back(i);
       }
-      else if( !isAnyC && useSymbolicCons )
+      else if( anyC!=-1 && !isAnyC && useSymbolicCons )
       {
         // if we are using the any constant constructor, do not use any
         // concrete constant
@@ -514,10 +517,10 @@ void TermDbSygus::registerEnumerator(Node e,
         }
       }
     }
-    for (unsigned i=0, rsize = rm_indices.size(); i<rsize; i++ )
+    for (unsigned j=0, rsize = rm_indices.size(); j<rsize; j++ )
     {
-      unsigned rindex = rm_indices[i];
-      Node rguard = rm_guards[i];
+      unsigned rindex = rm_indices[j];
+      Node rguard = rm_guards[j];
       // make the apply-constructor corresponding to an application of the
       // constant or "any constant" constructor
       // we call getInstCons since in the case of any constant constructors, it
