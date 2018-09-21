@@ -69,8 +69,8 @@ class TermDbSygus {
    * (see d_enum_to_active_guard),
    * useSymbolicCons : whether we want model values for e to include symbolic
    * constructors like the "any constant" variable.
-   * useVarRelevancyLits : whether we want to allocate literals G_rlv_x whose
-   * semantics are "x may occur as a subterm of values of this enumerator",
+   * useVarRelevancyLits : whether we want to allocate literals x_is_irrlv whose
+   * semantics are "x does not occur as a subterm of values of this enumerator",
    * for each variable x in the sygus variable list of the type of e.
    *
    * Notice that enumerator e may not be one-to-one with f in

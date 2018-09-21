@@ -453,7 +453,7 @@ void TermDbSygus::registerEnumerator(Node e,
   // breaking lemma templates for each relevant subtype of the grammar
   std::vector<TypeNode> sf_types;
   getSubfieldTypes(et, sf_types);
-  TheoryEngine * te = d_quantEngine->getTheoryEngine();
+  DecisionManager * dm = d_quantEngine->getTheoryEngine()->getDecisionManager();
   // for each type of subfield type of this enumerator
   for (unsigned i = 0, ntypes = sf_types.size(); i < ntypes; i++)
   {
@@ -467,6 +467,7 @@ void TermDbSygus::registerEnumerator(Node e,
     {
       Expr sop = dt[i].getSygusOp();
       Assert( !sop.isNull() );
+      bool isAnyC = static_cast<int>(i)==anyC;
       Node sopn = Node::fromExpr( sop );
       // if it is a variable 
       if( sopn.getKind()==BOUND_VARIABLE )
@@ -485,23 +486,23 @@ void TermDbSygus::registerEnumerator(Node e,
                                                 rg,
                                                 d_quantEngine->getSatContext(),
                                                 d_quantEngine->getValuation()));
-          te->registerDecisionStrategy(DecisionManager::STRAT_QUANT_SYGUS_VAR_IRRELEVANT, d_var_rlv_strat[e][sopn].get());
+          dm->registerStrategy(DecisionManager::STRAT_QUANT_SYGUS_VAR_IRRELEVANT, d_var_rlv_strat[e][sopn].get());
         }
         else
         {
-          rg = it->second;
+          rg = itrlv->second;
         }
         rm_guards.push_back(rg);
         rm_indices.push_back(i);
       }
-      else if( anyC==i && !useSymbolicCons )
+      else if( isAnyC && !useSymbolicCons )
       {
         // if we are not using the any constant constructor
         // do not use the symbolic constructor
         rm_guards.push_back(Node::null());
         rm_indices.push_back(i);
       }
-      else if( anyC!=i && useSymbolicCons )
+      else if( !isAnyC && useSymbolicCons )
       {
         // if we are using the any constant constructor, do not use any
         // concrete constant
@@ -532,7 +533,7 @@ void TermDbSygus::registerEnumerator(Node e,
       lem = lem.negate();
       if( !rguard.isNull() )
       {
-        lem = nm->mkNode( OR, rguard, lem );
+        lem = nm->mkNode( OR, rguard.negate(), lem );
       }
       Trace("cegqi-lemma")
           << "Cegqi::Lemma : exclude symbolic cons lemma (template) : " << lem
