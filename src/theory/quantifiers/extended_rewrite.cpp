@@ -20,6 +20,7 @@
 #include "theory/datatypes/datatypes_rewriter.h"
 #include "theory/quantifiers/term_util.h"
 #include "theory/rewriter.h"
+#include "theory/strings/theory_strings_rewriter.h"
 
 using namespace CVC4::kind;
 using namespace std;
@@ -210,6 +211,10 @@ Node ExtendedRewriter::extendedRewrite(Node n)
     else if (tid == THEORY_BV)
     {
       new_ret = extendedRewriteBv(ret);
+    }
+    else if (tid == THEORY_STRINGS)
+    {
+      new_ret = extendedRewriteStrings(ret);
     }
   }
   //----------------------end theory-specific post-rewriting
@@ -786,8 +791,8 @@ Node ExtendedRewriter::extendedRewriteBcp(
 
           // also, treat it as clause if possible
           if (cln.getNumChildren() > 0
-              & (bcp_kinds.empty()
-                 || bcp_kinds.find(cln.getKind()) != bcp_kinds.end()))
+              && (bcp_kinds.empty()
+                  || bcp_kinds.find(cln.getKind()) != bcp_kinds.end()))
           {
             if (std::find(clauses.begin(), clauses.end(), cn) == clauses.end()
                 && prop_clauses.find(cn) == prop_clauses.end())
@@ -3517,6 +3522,20 @@ Node ExtendedRewriter::extendBv(Node n, std::map<unsigned, Node>& ex_map)
   return children.size() == 1
              ? children[0]
              : NodeManager::currentNM()->mkNode(BITVECTOR_CONCAT, children);
+}
+
+Node ExtendedRewriter::extendedRewriteStrings(Node ret)
+{
+  Node new_ret;
+  Trace("q-ext-rewrite-debug")
+      << "Extended rewrite strings : " << ret << std::endl;
+
+  if (ret.getKind() == EQUAL)
+  {
+    new_ret = strings::TheoryStringsRewriter::rewriteEqualityExt(ret);
+  }
+
+  return new_ret;
 }
 
 void ExtendedRewriter::debugExtendedRewrite(Node n,

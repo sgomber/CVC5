@@ -232,10 +232,23 @@ class ExtendedRewriter
   //--------------------------------------end generic utilities
 
   //--------------------------------------theory-specific top-level calls
-  /** extended rewrite arith */
+  /** extended rewrite arith
+   *
+   * If this method returns a non-null node ret', then ret is equivalent to
+   * ret'.
+   */
   Node extendedRewriteArith(Node ret);
+<<<<<<< HEAD
   /** extended rewrite bv */
   Node extendedRewriteBv(Node ret);
+=======
+  /** extended rewrite strings
+   *
+   * If this method returns a non-null node ret', then ret is equivalent to
+   * ret'.
+   */
+  Node extendedRewriteStrings(Node ret);
+>>>>>>> 5a19b4d2d2fce73b0d29ff3d40d52c7ef1f4246b
   //--------------------------------------end theory-specific top-level calls
 
   //--------------------------------------bit-vectors
