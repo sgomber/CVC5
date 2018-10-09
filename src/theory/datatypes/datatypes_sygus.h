@@ -213,9 +213,17 @@ private:
    * This stores predicates (pre, post) whose semantics correspond to whether
    * a variable has occurred by a (pre, post) traversal of a symbolic term,
    * where index = 0 corresponds to pre, index = 1 corresponds to post. For
-   * details, see getTraversalPredicate below.
+   * details, see getTPredVarOrder below.
    */
-  std::map<TypeNode, std::map<Node, Node>> d_traversal_pred[2];
+  std::map<TypeNode, std::map<Node, Node>> d_tpred_vorder[2];
+  /** pre/post traversal predicate for each type, size
+   * 
+   * This stores predicates (pre, post) whose semantics correspond to whether
+   * the number of non-nullary constructors that have occurred by a (pre, post)
+   * traversal of a symbolic term is at most n, where index = 0 corresponds to
+   * pre, index = 1 corresponds to post.
+   */
+  std::map<TypeNode, std::map<unsigned, Node>> d_tpred_dtsize[2];
   /** traversal applications to Boolean variables
    *
    * This maps each application of a traversal predicate pre_x( t ) or
@@ -226,7 +234,7 @@ private:
    *
    * Get the predicates (pre, post) whose semantics correspond to whether
    * a variable has occurred by this point in a (pre, post) traversal of a term.
-   * The type of getTraversalPredicate(tn, n, _) is tn -> Bool.
+   * The type of getTPredVarOrder(tn, n, _) is tn -> Bool.
    *
    * For example, consider the term:
    *   f( x_1, g( x_2, x_3 ) )
@@ -274,7 +282,12 @@ private:
    * example, pre_{x_1}( z.1 ) { z -> e.2 } results in pre_{x_1}( e.2.1 ), which
    * after eliminateTraversalPredicates is V_pre_{x_1, e.2.1}.
    */
-  Node getTraversalPredicate(TypeNode tn, Node n, bool isPre);
+  Node getTPredVarOrder(TypeNode tn, Node n, bool isPre);
+  /** Implements a similar scheme as above for enforcing datatypes size
+   */
+  Node getTPredSize(TypeNode tn, unsigned dtSize, bool isPre);
+  /** make tpred */
+  Node mkTPred(TypeNode tn, bool isPre);
   /** eliminate traversal predicates
    *
    * This replaces all applications of traversal predicates P( x ) in n with

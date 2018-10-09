@@ -30,6 +30,8 @@ enum SygusFairMode {
   SYGUS_FAIR_DIRECT,
   /** enforce fairness by datatypes size */
   SYGUS_FAIR_DT_SIZE,
+  /** enforce fairness by size traversal predicates */
+  SYGUS_FAIR_DT_SIZE_TRAVERSAL_PRED,
   /** enforce fairness by datatypes height bound */
   SYGUS_FAIR_DT_HEIGHT_PRED,
   /** enforce fairness by datatypes size bound */

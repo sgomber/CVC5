@@ -777,6 +777,8 @@ theory::SygusFairMode OptionsHandler::stringToSygusFairMode(std::string option,
     return theory::SYGUS_FAIR_DIRECT;
   } else if(optarg == "default" || optarg == "dt-size") {
     return theory::SYGUS_FAIR_DT_SIZE;
+  } else if(optarg == "dt-size-tpred") {
+    return theory::SYGUS_FAIR_DT_SIZE_TRAVERSAL_PRED;
   } else if(optarg == "dt-height-bound" ){
     return theory::SYGUS_FAIR_DT_HEIGHT_PRED;
   } else if(optarg == "dt-size-bound" ){
