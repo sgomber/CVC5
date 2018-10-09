@@ -978,7 +978,7 @@ void SynthConjecture::printSynthSolution(std::ostream& out)
       f.erase(f.begin());
       SynthEngine* cei = d_qe->getSynthEngine();
       ++(cei->d_statistics.d_solutions);
-      if( options::sygusSolutionLimit()>=0 && cei->d_statistics.d_solutions>options::sygusSolutionLimit() )
+      if( options::sygusSolutionLimit()>=0 && cei->d_statistics.d_solutions.getValue().getIntegerValue().toUnsignedInt()>static_cast<unsigned>(options::sygusSolutionLimit() ))
       {
         std::stringstream ss;
         ss << "Maximum number of candidates (" << options::sygusSolutionLimit()
