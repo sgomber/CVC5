@@ -119,9 +119,10 @@ void SygusSymBreakNew::assertFact( Node n, bool polarity, std::vector< Node >& l
       // (SYGUS_BOUND m n) <=> postsize_n( m )
       unsigned val = n[1].getConst<Rational>().getNumerator().toUnsignedInt();
       Node postOp = getTPredSize( m.getType(), val, false );
-      Node post = nm->mkNode(APPLY_UF, m );
+      Node post = nm->mkNode(APPLY_UF, postOp, m );
       Node postProc = eliminateTraversalPredicates(post);
-      lemmas.push_back(postProc);
+      Node blem = n.eqNode(postProc);
+      lemmas.push_back(blem);
     }
     if( polarity ){
       unsigned s = n[1].getConst<Rational>().getNumerator().toUnsignedInt();
