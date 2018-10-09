@@ -391,14 +391,14 @@ norm \n\
 const std::string OptionsHandler::s_cegqiFairModeHelp = "\
 Modes for enforcing fairness for counterexample guided quantifier instantion, supported by --sygus-fair:\n\
 \n\
-uf-dt-size \n\
-+ Enforce fairness using an uninterpreted function for datatypes size.\n\
-\n\
 direct \n\
 + Enforce fairness using direct conflict lemmas.\n\
 \n\
 default | dt-size \n\
 + Default, enforce fairness using size operator.\n\
+\n\
+dt-size-tpred \n\
++ Default, enforce fairness based on size using traversal predicates.\n\
 \n\
 dt-height-bound \n\
 + Enforce fairness by height bound predicate.\n\
