@@ -978,6 +978,13 @@ void SynthConjecture::printSynthSolution(std::ostream& out)
       f.erase(f.begin());
       SynthEngine* cei = d_qe->getSynthEngine();
       ++(cei->d_statistics.d_solutions);
+      if( options::sygusSolutionLimit()>=0 && cei->d_statistics.d_solutions>options::sygusSolutionLimit() )
+      {
+        std::stringstream ss;
+        ss << "Maximum number of candidates (" << options::sygusSolutionLimit()
+          << ") for enumerative SyGuS exceeded.";
+        throw LogicException(ss.str());
+      }
 
       bool is_unique_term = true;
 
