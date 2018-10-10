@@ -25,7 +25,8 @@
 namespace CVC4 {
 namespace theory {
 
-enum SygusFairMode {
+enum SygusFairMode
+{
   /** enforce fairness by direct conflict lemmas */
   SYGUS_FAIR_DIRECT,
   /** enforce fairness by datatypes size */

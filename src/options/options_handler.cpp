@@ -388,7 +388,8 @@ norm \n\
 \n\
 ";
 
-const std::string OptionsHandler::s_cegqiFairModeHelp = "\
+const std::string OptionsHandler::s_cegqiFairModeHelp =
+    "\
 Modes for enforcing fairness for counterexample guided quantifier instantion, supported by --sygus-fair:\n\
 \n\
 direct \n\
@@ -792,7 +793,9 @@ theory::SygusFairMode OptionsHandler::stringToSygusFairMode(std::string option,
     return theory::SYGUS_FAIR_DIRECT;
   } else if(optarg == "default" || optarg == "dt-size") {
     return theory::SYGUS_FAIR_DT_SIZE;
-  } else if(optarg == "dt-size-tpred") {
+  }
+  else if (optarg == "dt-size-tpred")
+  {
     return theory::SYGUS_FAIR_DT_SIZE_TRAVERSAL_PRED;
   } else if(optarg == "dt-height-bound" ){
     return theory::SYGUS_FAIR_DT_HEIGHT_PRED;

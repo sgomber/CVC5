@@ -217,7 +217,7 @@ private:
    */
   std::map<TypeNode, std::map<Node, Node>> d_tpred_vorder[2];
   /** pre/post traversal predicate for each type, size
-   * 
+   *
    * This stores predicates (pre, post) whose semantics correspond to whether
    * the number of non-nullary constructors that have occurred by a (pre, post)
    * traversal of a symbolic term is at most n, where index = 0 corresponds to
@@ -542,7 +542,7 @@ private:
    * n2 while preserving satisfiability. By default, this is the predicate
    *   ( DT_SIZE n1 ) >= ( DT_SIZE n2 )
    */
-  Node getTermOrderPredicate( Node n1, Node n2, unsigned depth );
+  Node getTermOrderPredicate(Node n1, Node n2, unsigned depth);
 
  private:
   /**

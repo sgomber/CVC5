@@ -99,7 +99,7 @@ void SygusSymBreakNew::assertTester( int tindex, TNode n, Node exp, std::vector<
 }
 
 void SygusSymBreakNew::assertFact( Node n, bool polarity, std::vector< Node >& lemmas ) {
-  NodeManager * nm = NodeManager::currentNM();
+  NodeManager* nm = NodeManager::currentNM();
   if (n.getKind() == kind::DT_SYGUS_BOUND)
   {
     Node m = n[0];
@@ -111,15 +111,15 @@ void SygusSymBreakNew::assertFact( Node n, bool polarity, std::vector< Node >& l
       Assert( its!=d_szinfo.end() );
       Node mt = its->second->getOrMkMeasureValue(lemmas);
       //it relates the measure term to arithmetic
-      Node blem = n.eqNode( nm->mkNode( kind::LEQ, mt, n[1] ) );
+      Node blem = n.eqNode(nm->mkNode(kind::LEQ, mt, n[1]));
       lemmas.push_back( blem );
     }
-    else if( options::sygusFair()==SYGUS_FAIR_DT_SIZE_TRAVERSAL_PRED )
+    else if (options::sygusFair() == SYGUS_FAIR_DT_SIZE_TRAVERSAL_PRED)
     {
       // (SYGUS_BOUND m n) <=> postsize_n( m )
       unsigned val = n[1].getConst<Rational>().getNumerator().toUnsignedInt();
-      Node postOp = getTPredSize( m.getType(), val, false );
-      Node post = nm->mkNode(APPLY_UF, postOp, m );
+      Node postOp = getTPredSize(m.getType(), val, false);
+      Node post = nm->mkNode(APPLY_UF, postOp, m);
       Node postProc = eliminateTraversalPredicates(post);
       Node blem = n.eqNode(postProc);
       lemmas.push_back(blem);
@@ -134,23 +134,27 @@ void SygusSymBreakNew::assertFact( Node n, bool polarity, std::vector< Node >& l
   }
 }
 
-Node SygusSymBreakNew::getTermOrderPredicate( Node n1, Node n2, unsigned depth ) {
+Node SygusSymBreakNew::getTermOrderPredicate(Node n1, Node n2, unsigned depth)
+{
   NodeManager* nm = NodeManager::currentNM();
-  if( options::sygusFair()==SYGUS_FAIR_DT_SIZE && depth==1 ){
-    std::vector< Node > comm_disj;
+  if (options::sygusFair() == SYGUS_FAIR_DT_SIZE && depth == 1)
+  {
+    std::vector<Node> comm_disj;
     // (1) size of left is greater than size of right
     Node sz_less =
         nm->mkNode(GT, nm->mkNode(DT_SIZE, n1), nm->mkNode(DT_SIZE, n2));
-    comm_disj.push_back( sz_less );
+    comm_disj.push_back(sz_less);
     // (2) ...or sizes are equal and first child is less by term order
     std::vector<Node> sz_eq_cases;
     Node sz_eq =
         nm->mkNode(EQUAL, nm->mkNode(DT_SIZE, n1), nm->mkNode(DT_SIZE, n2));
-    sz_eq_cases.push_back( sz_eq );
-    if( options::sygusOpt1() ){
+    sz_eq_cases.push_back(sz_eq);
+    if (options::sygusOpt1())
+    {
       TypeNode tnc = n1.getType();
       const Datatype& cdt = ((DatatypeType)(tnc).toType()).getDatatype();
-      for( unsigned j=0; j<cdt.getNumConstructors(); j++ ){
+      for (unsigned j = 0; j < cdt.getNumConstructors(); j++)
+      {
         std::vector<Node> case_conj;
         for (unsigned k = 0; k < j; k++)
         {
@@ -169,13 +173,12 @@ Node SygusSymBreakNew::getTermOrderPredicate( Node n1, Node n2, unsigned depth )
     }
     Node sz_eqc = sz_eq_cases.size() == 1 ? sz_eq_cases[0]
                                           : nm->mkNode(kind::AND, sz_eq_cases);
-    comm_disj.push_back( sz_eqc );
+    comm_disj.push_back(sz_eqc);
 
     return nm->mkNode(kind::OR, comm_disj);
   }
   else
   {
-    
   }
   return Node::null();
 }
@@ -330,7 +333,8 @@ void SygusSymBreakNew::assertTesterInternal( int tindex, TNode n, Node exp, std:
       if (!ipred.isNull())
       {
         sb_lemmas.push_back(ipred);
-        if (options::sygusFair() == SYGUS_FAIR_DT_SIZE_TRAVERSAL_PRED || (ds == 0 && isVarAgnostic))
+        if (options::sygusFair() == SYGUS_FAIR_DT_SIZE_TRAVERSAL_PRED
+            || (ds == 0 && isVarAgnostic))
         {
           sb_elim_pred[ipred] = true;
         }
@@ -450,7 +454,7 @@ Node SygusSymBreakNew::getTPredVarOrder(TypeNode tn, Node n, bool isPre)
   {
     return itt->second;
   }
-  Node pred = mkTPred(tn,isPre);
+  Node pred = mkTPred(tn, isPre);
   d_tpred_vorder[index][tn][n] = pred;
   return pred;
 }
@@ -458,12 +462,13 @@ Node SygusSymBreakNew::getTPredVarOrder(TypeNode tn, Node n, bool isPre)
 Node SygusSymBreakNew::getTPredSize(TypeNode tn, unsigned dtSize, bool isPre)
 {
   unsigned index = isPre ? 0 : 1;
-  std::map<unsigned, Node>::iterator itt = d_tpred_dtsize[index][tn].find(dtSize);
+  std::map<unsigned, Node>::iterator itt =
+      d_tpred_dtsize[index][tn].find(dtSize);
   if (itt != d_tpred_dtsize[index][tn].end())
   {
     return itt->second;
   }
-  Node pred = mkTPred(tn,isPre);
+  Node pred = mkTPred(tn, isPre);
   d_tpred_dtsize[index][tn][dtSize] = pred;
   return pred;
 }
@@ -620,15 +625,15 @@ Node SygusSymBreakNew::getSimpleSymBreakPred(Node e,
     Assert(sel.getType().isDatatype());
     children.push_back(sel);
   }
-  
-  if( options::sygusFair() == SYGUS_FAIR_DT_SIZE_TRAVERSAL_PRED )
+
+  if (options::sygusFair() == SYGUS_FAIR_DT_SIZE_TRAVERSAL_PRED)
   {
     // we enforce presize_{d} and postsize_{d} on this call, for d = depth.
     // template z.
     //   for args a = 1...n
     //      // pre-definition
     //      presize_{d}( z.a ) = a=0 ? presize_{d}( z ) : postsize_{d}(z.{a-1})
-    //   postsize_{d}( z ) = 
+    //   postsize_{d}( z ) =
     //        [non-nullary?] : postsize_{d-1}( z ) : postsize_{d}( z )
 
     Node preParentOp = getTPredSize(tn, depth, true);
@@ -650,14 +655,14 @@ Node SygusSymBreakNew::getSimpleSymBreakPred(Node e,
     Node finish = nm->mkNode(APPLY_UF, postParent, n);
     unsigned weight = dt[tindex].getWeight();
     Node finishEq = prev;
-    if( weight>0 )
+    if (weight > 0)
     {
-      Assert( weight==1 );
-      if( depth>0 )
+      Assert(weight == 1);
+      if (depth > 0)
       {
         Node lastChild = children.back();
         TypeNode ctn = lastChild.getType();
-        Node postCurrOpMOne = getTPredSize(ctn, depth-1, false);
+        Node postCurrOpMOne = getTPredSize(ctn, depth - 1, false);
         finishEq = nm->mkNode(APPLY_UF, postCurrOpMOne, lastChild);
       }
       else
@@ -784,21 +789,22 @@ Node SygusSymBreakNew::getSimpleSymBreakPred(Node e,
         sbp_conj.push_back(DatatypesRewriter::mkTester(children[j], i, cdt));
       }
     }
-    
+
     // commutative operators
     if (nk != UNDEFINED_KIND && quantifiers::TermUtil::isComm(nk))
     {
       if (children.size() == 2
           && children[0].getType() == children[1].getType())
       {
-        Node order_pred = getTermOrderPredicate(children[0], children[1], depth);
-        if( !order_pred.isNull() )
+        Node order_pred =
+            getTermOrderPredicate(children[0], children[1], depth);
+        if (!order_pred.isNull())
         {
           sbp_conj.push_back(order_pred);
         }
       }
     }
-    
+
     // depth 1 symmetry breaking : talks about direct children
     if (depth == 1)
     {
@@ -997,7 +1003,7 @@ Node SygusSymBreakNew::getSimpleSymBreakPred(Node e,
             children[0]);
         Assert(child11.getType() == children[1].getType());
         Node torder = getTermOrderPredicate(child11, children[1], 1);
-        if( !torder.isNull() )
+        if (!torder.isNull())
         {
           Node order_pred_trans = nm->mkNode(
               OR,
@@ -1461,7 +1467,7 @@ void SygusSymBreakNew::registerSizeTerm( Node e, std::vector< Node >& lemmas ) {
   d_szinfo[m]->d_anchors.push_back(e);
   d_anchor_to_measure_term[e] = m;
   NodeManager* nm = NodeManager::currentNM();
-  std::vector< Node > traversalPredElimLem;
+  std::vector<Node> traversalPredElimLem;
   if (options::sygusFair() == SYGUS_FAIR_DT_SIZE)
   {
     // update constraints on the measure term
@@ -1479,11 +1485,11 @@ void SygusSymBreakNew::registerSizeTerm( Node e, std::vector< Node >& lemmas ) {
     Trace("sygus-sb") << "...size lemma : " << slem << std::endl;
     lemmas.push_back(slem);
   }
-  else if( options::sygusFair() == SYGUS_FAIR_DT_SIZE_TRAVERSAL_PRED )
+  else if (options::sygusFair() == SYGUS_FAIR_DT_SIZE_TRAVERSAL_PRED)
   {
-    //Node preRootOp = getTPredSize(etn,0, true);
-    //Node preRoot = nm->mkNode(APPLY_UF, preRootOp, e);
-    //traversalPredElimLem.push_back(preRoot);
+    // Node preRootOp = getTPredSize(etn,0, true);
+    // Node preRoot = nm->mkNode(APPLY_UF, preRootOp, e);
+    // traversalPredElimLem.push_back(preRoot);
   }
   if (d_tds->isVariableAgnosticEnumerator(e))
   {
@@ -1510,7 +1516,7 @@ void SygusSymBreakNew::registerSizeTerm( Node e, std::vector< Node >& lemmas ) {
       traversalPredElimLem.push_back(preNoVar);
     }
   }
-  for( const Node& teLem : traversalPredElimLem )
+  for (const Node& teLem : traversalPredElimLem)
   {
     Node teLemProc = eliminateTraversalPredicates(teLem);
     lemmas.push_back(teLemProc);
@@ -1660,26 +1666,28 @@ void SygusSymBreakNew::check( std::vector< Node >& lemmas ) {
       return;
     }
   }
-  //register any measured terms that we haven't encountered yet (should only be invoked on first call to check
+  // register any measured terms that we haven't encountered yet (should only be
+  // invoked on first call to check
   Trace("sygus-sb") << "Register size terms..." << std::endl;
-  std::vector< Node > mts;
+  std::vector<Node> mts;
   d_tds->getEnumerators(mts);
-  for( const Node& mt : mts ){
-    registerSizeTerm( mt, lemmas );
+  for (const Node& mt : mts)
+  {
+    registerSizeTerm(mt, lemmas);
   }
   Trace("sygus-sb") << " SygusSymBreakNew::check: finished." << std::endl;
 
   // register search values, add symmetry breaking lemmas if applicable
-  for( Node prog : mts )
+  for (Node prog : mts)
   {
-    Trace("dt-sygus-debug") << "Checking model value of " << prog << "..."
-                            << std::endl;
+    Trace("dt-sygus-debug")
+        << "Checking model value of " << prog << "..." << std::endl;
     Assert(prog.getType().isDatatype());
-    Node progv = d_td->getValuation().getModel()->getValue( prog );
+    Node progv = d_td->getValuation().getModel()->getValue(prog);
     if (Trace.isOn("dt-sygus"))
     {
       Trace("dt-sygus") << "* DT model : " << prog << " -> ";
-      quantifiers::TermDbSygus::toStreamSygus("dt-sygus",progv);
+      quantifiers::TermDbSygus::toStreamSygus("dt-sygus", progv);
       Trace("dt-sygus") << std::endl;
     }
     // first check that the value progv for prog is what we expected
@@ -1687,18 +1695,24 @@ void SygusSymBreakNew::check( std::vector< Node >& lemmas ) {
     if (checkValue(prog, progv, 0, lemmas))
     {
       isExc = false;
-      //debugging : ensure fairness was properly handled
-      if( options::sygusFair()==SYGUS_FAIR_DT_SIZE ){
-        NodeManager * nm = NodeManager::currentNM();
-        Node prog_sz = nm->mkNode( DT_SIZE, prog );
-        Node prog_szv = d_td->getValuation().getModel()->getValue( prog_sz );
-        Node progv_sz = nm->mkNode( DT_SIZE, progv );
-        Trace("sygus-sb") << "  Mv[" << prog << "] = " << progv << ", size = " << prog_szv << std::endl;
-        if( prog_szv.getConst<Rational>().getNumerator().toUnsignedInt() > getSearchSizeForAnchor( prog ) ){
-          AlwaysAssert( false );
-          Node szlem = nm->mkNode( OR, prog.eqNode( progv ).negate(),
-                                                                    prog_sz.eqNode( progv_sz ) );
-          Trace("sygus-sb-warn") << "SygusSymBreak : WARNING : adding size correction : " << szlem << std::endl;
+      // debugging : ensure fairness was properly handled
+      if (options::sygusFair() == SYGUS_FAIR_DT_SIZE)
+      {
+        NodeManager* nm = NodeManager::currentNM();
+        Node prog_sz = nm->mkNode(DT_SIZE, prog);
+        Node prog_szv = d_td->getValuation().getModel()->getValue(prog_sz);
+        Node progv_sz = nm->mkNode(DT_SIZE, progv);
+        Trace("sygus-sb") << "  Mv[" << prog << "] = " << progv
+                          << ", size = " << prog_szv << std::endl;
+        if (prog_szv.getConst<Rational>().getNumerator().toUnsignedInt()
+            > getSearchSizeForAnchor(prog))
+        {
+          AlwaysAssert(false);
+          Node szlem = nm->mkNode(
+              OR, prog.eqNode(progv).negate(), prog_sz.eqNode(progv_sz));
+          Trace("sygus-sb-warn")
+              << "SygusSymBreak : WARNING : adding size correction : " << szlem
+              << std::endl;
           lemmas.push_back(szlem);
           isExc = true;
         }
@@ -1716,7 +1730,9 @@ void SygusSymBreakNew::check( std::vector< Node >& lemmas ) {
         if (rsv.isNull())
         {
           isExc = true;
-          Trace("sygus-sb") << "  SygusSymBreakNew::check: ...added new symmetry breaking lemma for " << prog << "." << std::endl;
+          Trace("sygus-sb") << "  SygusSymBreakNew::check: ...added new "
+                               "symmetry breaking lemma for "
+                            << prog << "." << std::endl;
         }
         else
         {
