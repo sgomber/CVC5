@@ -542,7 +542,7 @@ private:
    * n2 while preserving satisfiability. By default, this is the predicate
    *   ( DT_SIZE n1 ) >= ( DT_SIZE n2 )
    */
-  Node getTermOrderPredicate( Node n1, Node n2 );
+  Node getTermOrderPredicate( Node n1, Node n2, unsigned depth );
 
  private:
   /**
