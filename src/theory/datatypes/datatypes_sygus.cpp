@@ -1704,8 +1704,8 @@ void SygusSymBreakNew::check( std::vector< Node >& lemmas ) {
           }
         }
       }
-      SygusSymBreakExcAttribute ssbea;
-      prog.setAttribute(ssbea, isExc);
+      SygusSymBreakOkAttribute ssbo;
+      prog.setAttribute(ssbo, !isExc);
     }
   }
   //register any measured terms that we haven't encountered yet (should only be invoked on first call to check
