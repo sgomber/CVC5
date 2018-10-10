@@ -1468,7 +1468,7 @@ void SygusSymBreakNew::registerSizeTerm( Node e, std::vector< Node >& lemmas ) {
   {
     //Node preRootOp = getTPredSize(etn,0, true);
     //Node preRoot = nm->mkNode(APPLY_UF, preRootOp, e);
-    //lemmas.push_back(preRoot);
+    //traversalPredElimLem.push_back(preRoot);
   }
   if (d_tds->isVariableAgnosticEnumerator(e))
   {
@@ -1645,77 +1645,73 @@ void SygusSymBreakNew::check( std::vector< Node >& lemmas ) {
       return;
     }
   }
-
-  // register search values, add symmetry breaking lemmas if applicable
-  for( std::map< Node, bool >::iterator it = d_register_st.begin(); it != d_register_st.end(); ++it ){
-    if( it->second ){
-      Node prog = it->first;
-      Trace("dt-sygus-debug") << "Checking model value of " << prog << "..."
-                              << std::endl;
-      Assert(prog.getType().isDatatype());
-      Node progv = d_td->getValuation().getModel()->getValue( prog );
-      if (Trace.isOn("dt-sygus"))
-      {
-        Trace("dt-sygus") << "* DT model : " << prog << " -> ";
-        std::stringstream ss;
-        Printer::getPrinter(options::outputLanguage())
-            ->toStreamSygus(ss, progv);
-        Trace("dt-sygus") << ss.str() << std::endl;
-      }
-      // first check that the value progv for prog is what we expected
-      bool isExc = true;
-      if (checkValue(prog, progv, 0, lemmas))
-      {
-        isExc = false;
-        //debugging : ensure fairness was properly handled
-        if( options::sygusFair()==SYGUS_FAIR_DT_SIZE ){  
-          Node prog_sz = NodeManager::currentNM()->mkNode( kind::DT_SIZE, prog );
-          Node prog_szv = d_td->getValuation().getModel()->getValue( prog_sz );
-          Node progv_sz = NodeManager::currentNM()->mkNode( kind::DT_SIZE, progv );
-            
-          Trace("sygus-sb") << "  Mv[" << prog << "] = " << progv << ", size = " << prog_szv << std::endl;
-          if( prog_szv.getConst<Rational>().getNumerator().toUnsignedInt() > getSearchSizeForAnchor( prog ) ){
-            AlwaysAssert( false );
-            Node szlem = NodeManager::currentNM()->mkNode( kind::OR, prog.eqNode( progv ).negate(),
-                                                                     prog_sz.eqNode( progv_sz ) );
-            Trace("sygus-sb-warn") << "SygusSymBreak : WARNING : adding size correction : " << szlem << std::endl;
-            lemmas.push_back(szlem);
-            isExc = true;
-          }
-        }
-
-        // register the search value ( prog -> progv ), this may invoke symmetry
-        // breaking
-        if (!isExc && options::sygusSymBreakDynamic())
-        {
-          bool isVarAgnostic = d_tds->isVariableAgnosticEnumerator(prog);
-          // check that it is unique up to theory-specific rewriting and
-          // conjecture-specific symmetry breaking.
-          Node rsv = registerSearchValue(
-              prog, prog, progv, 0, lemmas, isVarAgnostic, true);
-          if (rsv.isNull())
-          {
-            isExc = true;
-            Trace("sygus-sb") << "  SygusSymBreakNew::check: ...added new symmetry breaking lemma for " << prog << "." << std::endl;
-          }
-          else
-          {
-            Trace("dt-sygus") << "  ...success." << std::endl;
-          }
-        }
-      }
-      SygusSymBreakOkAttribute ssbo;
-      prog.setAttribute(ssbo, !isExc);
-    }
-  }
   //register any measured terms that we haven't encountered yet (should only be invoked on first call to check
   Trace("sygus-sb") << "Register size terms..." << std::endl;
   std::vector< Node > mts;
   d_tds->getEnumerators(mts);
-  for( unsigned i=0; i<mts.size(); i++ ){
-    registerSizeTerm( mts[i], lemmas );
+  for( const Node& mt : mts ){
+    registerSizeTerm( mt, lemmas );
   }
   Trace("sygus-sb") << " SygusSymBreakNew::check: finished." << std::endl;
+
+  // register search values, add symmetry breaking lemmas if applicable
+  for( Node prog : mts )
+  {
+    Trace("dt-sygus-debug") << "Checking model value of " << prog << "..."
+                            << std::endl;
+    Assert(prog.getType().isDatatype());
+    Node progv = d_td->getValuation().getModel()->getValue( prog );
+    if (Trace.isOn("dt-sygus"))
+    {
+      Trace("dt-sygus") << "* DT model : " << prog << " -> ";
+      quantifiers::TermDbSygus::toStreamSygus("dt-sygus",progv);
+      Trace("dt-sygus") << std::endl;
+    }
+    // first check that the value progv for prog is what we expected
+    bool isExc = true;
+    if (checkValue(prog, progv, 0, lemmas))
+    {
+      isExc = false;
+      //debugging : ensure fairness was properly handled
+      if( options::sygusFair()==SYGUS_FAIR_DT_SIZE ){
+        NodeManager * nm = NodeManager::currentNM();
+        Node prog_sz = nm->mkNode( DT_SIZE, prog );
+        Node prog_szv = d_td->getValuation().getModel()->getValue( prog_sz );
+        Node progv_sz = nm->mkNode( DT_SIZE, progv );
+        Trace("sygus-sb") << "  Mv[" << prog << "] = " << progv << ", size = " << prog_szv << std::endl;
+        if( prog_szv.getConst<Rational>().getNumerator().toUnsignedInt() > getSearchSizeForAnchor( prog ) ){
+          AlwaysAssert( false );
+          Node szlem = nm->mkNode( OR, prog.eqNode( progv ).negate(),
+                                                                    prog_sz.eqNode( progv_sz ) );
+          Trace("sygus-sb-warn") << "SygusSymBreak : WARNING : adding size correction : " << szlem << std::endl;
+          lemmas.push_back(szlem);
+          isExc = true;
+        }
+      }
+
+      // register the search value ( prog -> progv ), this may invoke symmetry
+      // breaking
+      if (!isExc && options::sygusSymBreakDynamic())
+      {
+        bool isVarAgnostic = d_tds->isVariableAgnosticEnumerator(prog);
+        // check that it is unique up to theory-specific rewriting and
+        // conjecture-specific symmetry breaking.
+        Node rsv = registerSearchValue(
+            prog, prog, progv, 0, lemmas, isVarAgnostic, true);
+        if (rsv.isNull())
+        {
+          isExc = true;
+          Trace("sygus-sb") << "  SygusSymBreakNew::check: ...added new symmetry breaking lemma for " << prog << "." << std::endl;
+        }
+        else
+        {
+          Trace("dt-sygus") << "  ...success." << std::endl;
+        }
+      }
+    }
+    SygusSymBreakOkAttribute ssbo;
+    prog.setAttribute(ssbo, !isExc);
+  }
 
   if (Trace.isOn("cegqi-engine") && !d_szinfo.empty())
   {
