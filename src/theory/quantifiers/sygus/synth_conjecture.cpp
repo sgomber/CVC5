@@ -710,6 +710,8 @@ class EnumValGeneratorBasic : public EnumValGenerator
     }
     if (d_cache.find(nextb) == d_cache.end())
     {
+      unsigned sz = d_tds->getSygusTermSize(next);
+      Trace("sygus-enum-basic") << "Size : " << sz << std::endl;
       d_cache.insert(nextb);
       return next;
     }
