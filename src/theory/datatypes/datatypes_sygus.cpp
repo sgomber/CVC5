@@ -134,53 +134,46 @@ void SygusSymBreakNew::assertFact( Node n, bool polarity, std::vector< Node >& l
   }
 }
 
-Node SygusSymBreakNew::getTermOrderPredicate(Node n1, Node n2, unsigned depth)
+Node SygusSymBreakNew::getTermOrderPredicate(Node n1, Node n2)
 {
   NodeManager* nm = NodeManager::currentNM();
-  if (options::sygusFair() == SYGUS_FAIR_DT_SIZE && depth == 1)
+  std::vector<Node> comm_disj;
+  // (1) size of left is greater than size of right
+  Node sz_less =
+      nm->mkNode(GT, nm->mkNode(DT_SIZE, n1), nm->mkNode(DT_SIZE, n2));
+  comm_disj.push_back(sz_less);
+  // (2) ...or sizes are equal and first child is less by term order
+  std::vector<Node> sz_eq_cases;
+  Node sz_eq =
+      nm->mkNode(EQUAL, nm->mkNode(DT_SIZE, n1), nm->mkNode(DT_SIZE, n2));
+  sz_eq_cases.push_back(sz_eq);
+  if (options::sygusOpt1())
   {
-    std::vector<Node> comm_disj;
-    // (1) size of left is greater than size of right
-    Node sz_less =
-        nm->mkNode(GT, nm->mkNode(DT_SIZE, n1), nm->mkNode(DT_SIZE, n2));
-    comm_disj.push_back(sz_less);
-    // (2) ...or sizes are equal and first child is less by term order
-    std::vector<Node> sz_eq_cases;
-    Node sz_eq =
-        nm->mkNode(EQUAL, nm->mkNode(DT_SIZE, n1), nm->mkNode(DT_SIZE, n2));
-    sz_eq_cases.push_back(sz_eq);
-    if (options::sygusOpt1())
+    TypeNode tnc = n1.getType();
+    const Datatype& cdt = ((DatatypeType)(tnc).toType()).getDatatype();
+    for (unsigned j = 0; j < cdt.getNumConstructors(); j++)
     {
-      TypeNode tnc = n1.getType();
-      const Datatype& cdt = ((DatatypeType)(tnc).toType()).getDatatype();
-      for (unsigned j = 0; j < cdt.getNumConstructors(); j++)
+      std::vector<Node> case_conj;
+      for (unsigned k = 0; k < j; k++)
       {
-        std::vector<Node> case_conj;
-        for (unsigned k = 0; k < j; k++)
-        {
-          case_conj.push_back(DatatypesRewriter::mkTester(n2, k, cdt).negate());
-        }
-        if (!case_conj.empty())
-        {
-          Node corder = nm->mkNode(
-              kind::OR,
-              DatatypesRewriter::mkTester(n1, j, cdt).negate(),
-              case_conj.size() == 1 ? case_conj[0]
-                                    : nm->mkNode(kind::AND, case_conj));
-          sz_eq_cases.push_back(corder);
-        }
+        case_conj.push_back(DatatypesRewriter::mkTester(n2, k, cdt).negate());
+      }
+      if (!case_conj.empty())
+      {
+        Node corder = nm->mkNode(
+            OR,
+            DatatypesRewriter::mkTester(n1, j, cdt).negate(),
+            case_conj.size() == 1 ? case_conj[0]
+                                  : nm->mkNode(AND, case_conj));
+        sz_eq_cases.push_back(corder);
       }
     }
-    Node sz_eqc = sz_eq_cases.size() == 1 ? sz_eq_cases[0]
-                                          : nm->mkNode(kind::AND, sz_eq_cases);
-    comm_disj.push_back(sz_eqc);
+  }
+  Node sz_eqc = sz_eq_cases.size() == 1 ? sz_eq_cases[0]
+                                        : nm->mkNode(AND, sz_eq_cases);
+  comm_disj.push_back(sz_eqc);
 
-    return nm->mkNode(kind::OR, comm_disj);
-  }
-  else
-  {
-  }
-  return Node::null();
+  return nm->mkNode(OR, comm_disj);
 }
 
 void SygusSymBreakNew::registerTerm( Node n, std::vector< Node >& lemmas ) {
@@ -796,11 +789,28 @@ Node SygusSymBreakNew::getSimpleSymBreakPred(Node e,
       if (children.size() == 2
           && children[0].getType() == children[1].getType())
       {
-        Node order_pred =
-            getTermOrderPredicate(children[0], children[1], depth);
-        if (!order_pred.isNull())
+        if (options::sygusFair() == SYGUS_FAIR_DT_SIZE && depth == 1)
         {
-          sbp_conj.push_back(order_pred);
+          Node order_pred =
+              getTermOrderPredicate(children[0], children[1]);
+          if (!order_pred.isNull())
+          {
+            sbp_conj.push_back(order_pred);
+          }
+        }
+        else if (options::sygusFair() == SYGUS_FAIR_DT_SIZE_TRAVERSAL_PRED )
+        {
+          if( depth>0 )
+          {
+            Node postParentOp = getTPredSize(tn, depth, false);
+            Node postParent = nm->mkNode(APPLY_UF, postParentOp, n);
+            // for parent size 1,2,3 we require the first child is > 0,0,1,..
+            unsigned cdepthReq = (depth-1)-(depth/2);
+            TypeNode ctn = children[0].getType();
+            Node postFirstChOp = getTPredSize(ctn, cdepthReq, false);
+            Node postFirstCh = nm->mkNode(APPLY_UF, postFirstChOp, children[0]);
+            sbp_conj.push_back(nm->mkNode(OR,postParent,postFirstCh.negate()));
+          }
         }
       }
     }
@@ -996,15 +1006,15 @@ Node SygusSymBreakNew::getSimpleSymBreakPred(Node e,
       if (quantifiers::TermUtil::isComm(nk) && children.size() == 2
           && children[0].getType() == tn && children[1].getType() == tn)
       {
-        // chainable
-        Node child11 = nm->mkNode(
-            APPLY_SELECTOR_TOTAL,
-            Node::fromExpr(dt[tindex].getSelectorInternal(tn.toType(), 1)),
-            children[0]);
-        Assert(child11.getType() == children[1].getType());
-        Node torder = getTermOrderPredicate(child11, children[1], 1);
-        if (!torder.isNull())
+        if (options::sygusFair() == SYGUS_FAIR_DT_SIZE )
         {
+          // chainable
+          Node child11 = nm->mkNode(
+              APPLY_SELECTOR_TOTAL,
+              Node::fromExpr(dt[tindex].getSelectorInternal(tn.toType(), 1)),
+              children[0]);
+          Assert(child11.getType() == children[1].getType());
+          Node torder = getTermOrderPredicate(child11, children[1]);
           Node order_pred_trans = nm->mkNode(
               OR,
               DatatypesRewriter::mkTester(children[0], tindex, dt).negate(),
