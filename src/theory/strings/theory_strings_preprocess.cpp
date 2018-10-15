@@ -457,13 +457,13 @@ Node StringsPreprocess::simplify( Node t, std::vector< Node > &new_nodes ) {
       Node ud =
           nm->mkSkolem("Ud", nm->mkFunctionType(argTypes, nm->stringType()));
 
-      std::vector< Node > concNeg;
-      Node lem = y.eqNode(nm->mkNode(APPLY_UF,us,d_zero));
+      std::vector<Node> concNeg;
+      Node lem = y.eqNode(nm->mkNode(APPLY_UF, us, d_zero));
       concNeg.push_back(lem);
-      
-      lem = d_empty_str.eqNode(nm->mkNode(APPLY_UF,us,leny));
+
+      lem = d_empty_str.eqNode(nm->mkNode(APPLY_UF, us, leny));
       concNeg.push_back(lem);
-      
+
       Node udx = nm->mkNode(APPLY_UF, ud, x);
       Node usx = nm->mkNode(APPLY_UF, us, x);
       Node usx1 = nm->mkNode(APPLY_UF, us, nm->mkNode(PLUS, x, d_one));
@@ -480,12 +480,12 @@ Node StringsPreprocess::simplify( Node t, std::vector< Node > &new_nodes ) {
       concNeg.push_back(lem);
 
       Node cv = nm->mkSkolem("ctn", nm->booleanType());
-      lem = nm->mkNode(ITE, cv, retNode, nm->mkNode(AND,concNeg));
+      lem = nm->mkNode(ITE, cv, retNode, nm->mkNode(AND, concNeg));
       new_nodes.push_back(lem);
 
       // if len( s ) = 1:
-      // 
-      // assert: 
+      //
+      // assert:
       // IF: cv
       // THEN:
       //   exists x. (0 <= x <= (len(y) - len(s))) ^ substr(y, x, len( s )) = s
