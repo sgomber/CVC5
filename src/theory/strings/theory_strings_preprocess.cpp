@@ -437,7 +437,6 @@ Node StringsPreprocess::simplify( Node t, std::vector< Node > &new_nodes ) {
     // processing term: str.contains( y, s )
     Node y = t[0];
     Node s = t[1];
-    //negative contains reduces to existential
     Node leny = nm->mkNode(STRING_LENGTH, y);
     Node lens = nm->mkNode(STRING_LENGTH, s);
     lens = Rewriter::rewrite(lens);
@@ -458,6 +457,13 @@ Node StringsPreprocess::simplify( Node t, std::vector< Node > &new_nodes ) {
       Node ud =
           nm->mkSkolem("Ud", nm->mkFunctionType(argTypes, nm->stringType()));
 
+      std::vector< Node > concNeg;
+      Node lem = y.eqNode(nm->mkNode(APPLY_UF,us,d_zero));
+      concNeg.push_back(lem);
+      
+      lem = d_empty_str.eqNode(nm->mkNode(APPLY_UF,us,leny));
+      concNeg.push_back(lem);
+      
       Node udx = nm->mkNode(APPLY_UF, ud, x);
       Node usx = nm->mkNode(APPLY_UF, us, x);
       Node usx1 = nm->mkNode(APPLY_UF, us, nm->mkNode(PLUS, x, d_one));
@@ -470,13 +476,26 @@ Node StringsPreprocess::simplify( Node t, std::vector< Node > &new_nodes ) {
                                 eqs,
                                 udx.eqNode(s).negate(),
                                 nm->mkNode(STRING_LENGTH, udx).eqNode(d_one)));
-
-      Node retNodeNeg = nm->mkNode(FORALL, xbv, body);
+      lem = nm->mkNode(FORALL, xbv, body);
+      concNeg.push_back(lem);
 
       Node cv = nm->mkSkolem("ctn", nm->booleanType());
-      Node lem = nm->mkNode(ITE, cv, retNode, retNodeNeg);
+      lem = nm->mkNode(ITE, cv, retNode, nm->mkNode(AND,concNeg));
       new_nodes.push_back(lem);
 
+      // if len( s ) = 1:
+      // 
+      // assert: 
+      // IF: cv
+      // THEN:
+      //   exists x. (0 <= x <= (len(y) - len(s))) ^ substr(y, x, len( s )) = s
+      // ELSE:
+      //   y = Us( 0 ) ^ Us( len( y ) ) = "" ^
+      //   forall x. (0 <= x <= (len(y) - len(s))) =>
+      //     Us( x+1 ) = Ud( x ) ++ Us( x ) ^
+      //     Ud( x ) != s
+      //     len( Ud( x ) ) = 1
+      // Thus, str.contains( y, s ) = cv
       retNode = cv;
     }
   }
