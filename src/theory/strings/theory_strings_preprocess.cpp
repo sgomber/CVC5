@@ -434,19 +434,46 @@ Node StringsPreprocess::simplify( Node t, std::vector< Node > &new_nodes ) {
     // Thus, replace( x, y, z ) = rpw.
     retNode = rpw;
   } else if( t.getKind() == kind::STRING_STRCTN ){
-    Node x = t[0];
+    // processing term: str.contains( y, s )
+    Node y = t[0];
     Node s = t[1];
     //negative contains reduces to existential
-    Node lenx = NodeManager::currentNM()->mkNode(kind::STRING_LENGTH, x);
-    Node lens = NodeManager::currentNM()->mkNode(kind::STRING_LENGTH, s);
-    Node b1 = NodeManager::currentNM()->mkBoundVar(NodeManager::currentNM()->integerType());
-    Node b1v = NodeManager::currentNM()->mkNode(kind::BOUND_VAR_LIST, b1);
-    Node body = NodeManager::currentNM()->mkNode( kind::AND, 
-                  NodeManager::currentNM()->mkNode( kind::LEQ, d_zero, b1 ),
-                  NodeManager::currentNM()->mkNode( kind::LEQ, b1, NodeManager::currentNM()->mkNode( kind::MINUS, lenx, lens ) ),
-                  NodeManager::currentNM()->mkNode( kind::EQUAL, NodeManager::currentNM()->mkNode(kind::STRING_SUBSTR, x, b1, lens), s )                
-                );
-    retNode = NodeManager::currentNM()->mkNode( kind::EXISTS, b1v, body );
+    Node leny = nm->mkNode(STRING_LENGTH, y);
+    Node lens = nm->mkNode(STRING_LENGTH, s);
+    lens = Rewriter::rewrite(lens);
+    Node x = nm->mkBoundVar(nm->integerType());
+    Node xbv = nm->mkNode(BOUND_VAR_LIST, x);
+    Node g = nm->mkNode( AND, nm->mkNode( LEQ, d_zero, x ),
+                    nm->mkNode( LEQ, x, nm->mkNode( MINUS, leny, lens ) ) );
+    Node body = nm->mkNode( AND, 
+                    g,
+                    nm->mkNode( EQUAL, nm->mkNode(STRING_SUBSTR, y, x, lens), s )                
+                  );
+    retNode = nm->mkNode( EXISTS, xbv, body );
+    if( lens==d_one )
+    {
+      std::vector< TypeNode > argTypes;
+      argTypes.push_back(nm->integerType());
+      Node us =
+          nm->mkSkolem("Us", nm->mkFunctionType(argTypes, nm->stringType()));
+      Node ud =
+          nm->mkSkolem("Ud", nm->mkFunctionType(argTypes, nm->stringType()));
+      
+      Node udx = nm->mkNode(APPLY_UF, ud, x);
+      Node usx = nm->mkNode(APPLY_UF, us, x);
+      Node usx1 = nm->mkNode(APPLY_UF, us, nm->mkNode(PLUS, x, d_one));
+      Node eqs = usx.eqNode(nm->mkNode(STRING_CONCAT, udx, usx1));
+      
+      body = nm->mkNode( OR, g.negate(), nm->mkNode(AND, eqs, udx.eqNode(s).negate(), nm->mkNode( STRING_LENGTH, udx ).eqNode(d_one) ) );
+      
+      Node retNodeNeg = nm->mkNode( FORALL, xbv, body );
+      
+      Node cv = nm->mkSkolem("ctn",nm->booleanType());
+      Node lem = nm->mkNode( ITE, cv, retNode, retNodeNeg );
+      new_nodes.push_back(lem);
+      
+      retNode = cv;
+    }
   }
   else if (t.getKind() == kind::STRING_LEQ)
   {
