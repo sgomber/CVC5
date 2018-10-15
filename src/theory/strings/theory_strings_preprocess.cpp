@@ -443,35 +443,40 @@ Node StringsPreprocess::simplify( Node t, std::vector< Node > &new_nodes ) {
     lens = Rewriter::rewrite(lens);
     Node x = nm->mkBoundVar(nm->integerType());
     Node xbv = nm->mkNode(BOUND_VAR_LIST, x);
-    Node g = nm->mkNode( AND, nm->mkNode( LEQ, d_zero, x ),
-                    nm->mkNode( LEQ, x, nm->mkNode( MINUS, leny, lens ) ) );
-    Node body = nm->mkNode( AND, 
-                    g,
-                    nm->mkNode( EQUAL, nm->mkNode(STRING_SUBSTR, y, x, lens), s )                
-                  );
-    retNode = nm->mkNode( EXISTS, xbv, body );
-    if( lens==d_one )
+    Node g = nm->mkNode(AND,
+                        nm->mkNode(LEQ, d_zero, x),
+                        nm->mkNode(LEQ, x, nm->mkNode(MINUS, leny, lens)));
+    Node body = nm->mkNode(
+        AND, g, nm->mkNode(EQUAL, nm->mkNode(STRING_SUBSTR, y, x, lens), s));
+    retNode = nm->mkNode(EXISTS, xbv, body);
+    if (lens == d_one)
     {
-      std::vector< TypeNode > argTypes;
+      std::vector<TypeNode> argTypes;
       argTypes.push_back(nm->integerType());
       Node us =
           nm->mkSkolem("Us", nm->mkFunctionType(argTypes, nm->stringType()));
       Node ud =
           nm->mkSkolem("Ud", nm->mkFunctionType(argTypes, nm->stringType()));
-      
+
       Node udx = nm->mkNode(APPLY_UF, ud, x);
       Node usx = nm->mkNode(APPLY_UF, us, x);
       Node usx1 = nm->mkNode(APPLY_UF, us, nm->mkNode(PLUS, x, d_one));
       Node eqs = usx.eqNode(nm->mkNode(STRING_CONCAT, udx, usx1));
-      
-      body = nm->mkNode( OR, g.negate(), nm->mkNode(AND, eqs, udx.eqNode(s).negate(), nm->mkNode( STRING_LENGTH, udx ).eqNode(d_one) ) );
-      
-      Node retNodeNeg = nm->mkNode( FORALL, xbv, body );
-      
-      Node cv = nm->mkSkolem("ctn",nm->booleanType());
-      Node lem = nm->mkNode( ITE, cv, retNode, retNodeNeg );
+
+      body =
+          nm->mkNode(OR,
+                     g.negate(),
+                     nm->mkNode(AND,
+                                eqs,
+                                udx.eqNode(s).negate(),
+                                nm->mkNode(STRING_LENGTH, udx).eqNode(d_one)));
+
+      Node retNodeNeg = nm->mkNode(FORALL, xbv, body);
+
+      Node cv = nm->mkSkolem("ctn", nm->booleanType());
+      Node lem = nm->mkNode(ITE, cv, retNode, retNodeNeg);
       new_nodes.push_back(lem);
-      
+
       retNode = cv;
     }
   }
