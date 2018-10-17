@@ -53,7 +53,73 @@ class ExtendedRewriter
   /** return the extended rewritten form of n */
   Node extendedRewrite(Node n);
 
+  
+  enum ExtRule
+  {
+    // shift normalization
+    ext_bv_rule_1_4_16_20_21,
+    ext_bv_rule_2_3,
+    ext_bv_rule_5,
+    ext_bv_rule_6,
+    ext_bv_rule_7_19,
+    ext_bv_rule_8,
+    // arithmetic normalization
+    ext_bv_rule_9_10_18,
+    ext_bv_rule_11,
+    ext_bv_rule_12,
+    ext_bv_rule_13_14,
+    ext_bv_rule_15,
+    ext_bv_rule_23,
+    ext_bv_rule_25,  
+    ext_bv_rule_26, 
+    ext_bv_rule_27, 
+    ext_bv_rule_28_29_30_31,
+    ext_bv_rule_32,
+    ext_bv_rule_33,
+    ext_bv_rule_34,
+    ext_bv_rule_35_36,
+    ext_bv_rule_37,
+    // xor normalization
+    ext_bv_rule_38_39_40_41_42,
+    ext_bv_rule_43_45,
+    ext_bv_rule_44_46,
+    ext_bv_rule_47,
+    ext_bv_rule_48,
+    ext_bv_rule_49,
+    ext_bv_rule_50,
+    ext_bv_rule_51
+  };
+  /** disable all rules in enumeration above */
+  void disableAll() 
+  {
+    d_isRevEnabled = true;
+    d_enabled.clear();
+  }
+  /** disable rule er */
+  void disable(ExtRule er) { enableInternal( er, false ); }
+  /** enable rule er */
+  void enable(ExtRule er) { enableInternal( er, true ); }
  private:
+  bool d_isRevEnabled;
+  std::unordered_set<unsigned> d_enabled;
+  void enableInternal(ExtRule er, bool pol )
+  {
+    if( d_isRevEnabled==pol )
+    {
+      d_enabled.insert(er);
+    }
+    else
+    {
+      if( d_enabled.find(er)!=d_enabled.end() )
+      {
+        d_enabled.erase(er);
+      }
+    }
+  }  
+  bool isEnabled(ExtRule er )
+  {
+    return (d_enabled.find(er)!=d_enabled.end())==d_isRevEnabled;
+  }
   /**
    * Whether this extended rewriter applies aggressive rewriting techniques,
    * which are more expensive. Examples of aggressive rewriting include:
