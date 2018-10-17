@@ -479,17 +479,16 @@ bool TheoryStrings::doReduction(int effort, Node n, bool& isCd)
     // not the right effort level to reduce
     return false;
   }
-  Trace("strings-process-debug")
-      << "Process reduction for " << n << std::endl;
+  Trace("strings-process-debug") << "Process reduction for " << n << std::endl;
   NodeManager* nm = NodeManager::currentNM();
   Assert(k == STRING_SUBSTR || k == STRING_STRCTN || k == STRING_STRIDOF
-          || k == STRING_ITOS || k == STRING_STOI || k == STRING_STRREPL
-          || k == STRING_LEQ);
+         || k == STRING_ITOS || k == STRING_STOI || k == STRING_STRREPL
+         || k == STRING_LEQ);
   std::vector<Node> new_nodes;
   Node res = d_preproc.simplify(n, new_nodes);
   Assert(res != n);
   Node resEq;
-  if( k==STRING_STRCTN )
+  if (k == STRING_STRCTN)
   {
     Node x = n[0];
     Node s = n[1];
@@ -499,7 +498,7 @@ bool TheoryStrings::doReduction(int effort, Node n, bool& isCd)
     Node sk2 =
         d_sk_cache.mkSkolemCached(x, s, SkolemCache::SK_FIRST_CTN_POST, "sc2");
     Node eq = x.eqNode(mkConcat(sk1, s, sk2));
-    resEq = nm->mkNode(ITE,n,eq,res.negate());
+    resEq = nm->mkNode(ITE, n, eq, res.negate());
   }
   else
   {
