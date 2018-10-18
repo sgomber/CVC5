@@ -252,7 +252,7 @@ bool SygusSampler::mkSamplePoint(std::vector<Node>& pt,
       pt.push_back(r);
     }
     // if it is
-    if (d_samples_trie.add(pt, false))
+    if (d_samples_trie.exists(pt))
     {
       return true;
     }
@@ -279,7 +279,7 @@ void SygusSampler::allocateSamplePoint(std::vector<Node>& pt)
   d_samples_trie.add(pt);
 }
 
-bool SygusSampler::PtTrie::add(std::vector<Node>& pt, bool doAdd)
+bool SygusSampler::PtTrie::add(std::vector<Node>& pt)
 {
   PtTrie* curr = this;
   for (unsigned i = 0, size = pt.size(); i < size; i++)
@@ -287,13 +287,26 @@ bool SygusSampler::PtTrie::add(std::vector<Node>& pt, bool doAdd)
     curr = &(curr->d_children[pt[i]]);
   }
   bool retVal = curr->d_children.empty();
-  if (doAdd)
-  {
-    // Data is simply whether the children map is non-empty, thus we
-    // initialize the null child to mark we are here.
-    curr = &(curr->d_children[Node::null()]);
-  }
+  // Data is simply whether the children map is non-empty, thus we
+  // initialize the null child to mark we are here.
+  curr = &(curr->d_children[Node::null()]);
   return retVal;
+}
+
+bool SygusSampler::PtTrie::exists(std::vector<Node>& pt) const
+{
+  const PtTrie* curr = this;
+  std::map<Node,PtTrie>::const_iterator itp;
+  for (unsigned i = 0, size = pt.size(); i < size; i++)
+  {
+    itp = curr->d_children.find(pt[i]);
+    if( itp==curr->d_children.end() )
+    {
+      return false;
+    }
+    curr = &(itp->second);
+  }
+  return !curr->d_children.empty();
 }
 
 Node SygusSampler::registerTerm(Node n, bool forceKeep)

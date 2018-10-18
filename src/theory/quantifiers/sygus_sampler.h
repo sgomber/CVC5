@@ -186,11 +186,10 @@ class SygusSampler : public LazyTrieEvaluator
   class PtTrie
   {
    public:
-    /**
-     * Returns true if pt is not a duplicate. If doAdd is true, then the point
-     * is added to the trie.
-     */
-    bool add(std::vector<Node>& pt, bool doAdd = true);
+    /** Add pt to trie, returns true if pt is not a duplicate.*/
+    bool add(std::vector<Node>& pt);
+    /** Returns true if the pt already exists in the trie */
+    bool exists(std::vector<Node>& pt) const;
 
    private:
     /** the children of this node */
