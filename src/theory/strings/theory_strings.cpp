@@ -485,8 +485,6 @@ bool TheoryStrings::doReduction(int effort, Node n, bool& isCd)
          || k == STRING_ITOS || k == STRING_STOI || k == STRING_STRREPL
          || k == STRING_LEQ);
   std::vector<Node> new_nodes;
-  Node res = d_preproc.simplify(n, new_nodes);
-  Assert(res != n);
   Node resEq;
   if (k == STRING_STRCTN)
   {
@@ -498,11 +496,23 @@ bool TheoryStrings::doReduction(int effort, Node n, bool& isCd)
     Node sk2 =
         d_sk_cache.mkSkolemCached(x, s, SkolemCache::SK_FIRST_CTN_POST, "sc2");
     Node eq = x.eqNode(mkConcat(sk1, s, sk2));
-    resEq = nm->mkNode(ITE, n, eq, res.negate());
+    resEq = nm->mkNode(OR, n.negate(), eq );
+    if( pol==1 )
+    {
+      isCd = true;
+    }
+    else
+    {
+      Node res = d_preproc.simplify(n, new_nodes);
+      resEq = nm->mkNode(AND, resEq, res.eqNode(n) );
+      isCd = false;
+    }
   }
   else
   {
+    Node res = d_preproc.simplify(n, new_nodes);
     resEq = res.eqNode(n);
+    isCd = false;
   }
   new_nodes.push_back(resEq);
   Node nnlem =
@@ -514,7 +524,6 @@ bool TheoryStrings::doReduction(int effort, Node n, bool& isCd)
   sendInference(d_empty_vec, nnlem, "Reduction", true);
   Trace("strings-extf-debug")
       << "  resolve extf : " << n << " based on reduction." << std::endl;
-  isCd = false;
   return true;
 }
 
