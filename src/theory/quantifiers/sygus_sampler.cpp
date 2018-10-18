@@ -296,11 +296,11 @@ bool SygusSampler::PtTrie::add(std::vector<Node>& pt)
 bool SygusSampler::PtTrie::exists(std::vector<Node>& pt) const
 {
   const PtTrie* curr = this;
-  std::map<Node,PtTrie>::const_iterator itp;
+  std::map<Node, PtTrie>::const_iterator itp;
   for (unsigned i = 0, size = pt.size(); i < size; i++)
   {
     itp = curr->d_children.find(pt[i]);
-    if( itp==curr->d_children.end() )
+    if (itp == curr->d_children.end())
     {
       return false;
     }
