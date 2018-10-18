@@ -28,7 +28,7 @@ namespace theory {
 namespace quantifiers {
 
 SygusSampler::SygusSampler()
-    : d_tds(nullptr), d_use_sygus_type(false), d_is_valid(false)
+    : d_tds(nullptr), d_lazyGenPoints(false), d_pointQuota(0), d_use_sygus_type(false), d_is_valid(false)
 {
 }
 
@@ -175,25 +175,35 @@ void SygusSampler::initializeSamples(unsigned nsamples)
   {
     TypeNode vt = v.getType();
     d_var_types.push_back(vt);
-    Trace("sygus-sample") << "  var #" << types.size() << " : " << v << " : "
+    Trace("sygus-sample") << "  var #" << d_var_types.size() << " : " << v << " : "
                           << vt << std::endl;
   }
-  // eager construction
-  unsigned duplicateThresh = nsamples*10;
-  for (unsigned i = 0; i < nsamples; i++)
+  if( options::sygusSampleLazy() )
   {
-    std::vector<Node> pt;
-    if( mkSamplePoint(pt, duplicateThresh) )
+    d_lazyGenPoints = true;
+    d_pointQuota = nsamples;
+  }
+  else
+  {
+    // eager construction
+    unsigned duplicateThresh = nsamples*10;
+    for (unsigned i = 0; i < nsamples; i++)
     {
-      allocateSamplePoint(pt);
+      std::vector<Node> pt;
+      if( mkSamplePoint(pt, duplicateThresh) )
+      {
+        allocateSamplePoint(pt);
+      }
+      else
+      {
+                Trace("sygus-sample")
+              << "...WARNING: excessive duplicates, cut off sampling at " << i
+              << "/" << nsamples << " points." << std::endl;
+              break;
+      }
     }
-    else
-    {
-              Trace("sygus-sample")
-            << "...WARNING: excessive duplicates, cut off sampling at " << i
-            << "/" << nsamples << " points." << std::endl;
-            break;
-    }
+    d_pointQuota = d_samples.size();
+    d_lazyGenPoints = false;
   }
 }
 
@@ -209,7 +219,7 @@ bool SygusSampler::mkSamplePoint(std::vector< Node >& pt, unsigned duplicateThre
       Node r;
       if (options::sygusSampleGrammar())
       {
-        std::map<Node, std::vector<TypeNode>::iterator its = d_var_sygus_types.find(v);
+        std::map<Node, std::vector<TypeNode> >::iterator its = d_var_sygus_types.find(v);
         // choose a random start sygus type, if possible
         if (its != d_var_sygus_types.end())
         {
@@ -252,7 +262,7 @@ void SygusSampler::allocateSamplePoint(std::vector< Node >& pt)
 {
   if (Trace.isOn("sygus-sample"))
   {
-    Trace("sygus-sample") << "Sample point #" << i << " : ";
+    Trace("sygus-sample") << "Sample point #" << d_samples.size() << " : ";
     for (const Node& r : pt)
     {
       Trace("sygus-sample") << r << " ";
@@ -295,7 +305,7 @@ Node SygusSampler::registerTerm(Node n, bool forceKeep)
       d_builtin_to_sygus[bn] = n;
     }
     Assert(bn.getType() == d_tn);
-    Node res = d_trie.add(bn, this, 0, d_samples.size(), forceKeep);
+    Node res = d_trie.add(bn, this, 0, d_pointQuota, forceKeep);
     if (d_use_sygus_type)
     {
       Assert(d_builtin_to_sygus.find(res) != d_builtin_to_sygus.end());
@@ -481,11 +491,23 @@ void SygusSampler::addSamplePoint(std::vector<Node>& pt)
 
 Node SygusSampler::evaluate(Node n, unsigned index)
 {
-  while( index< d_samples.size() )
+  if( d_lazyGenPoints )
   {
-    // allocate an arbitrary point
-    std::vector< Node > pt;
-    mkSamplePoint(pt);
+    unsigned duplicateThresh = d_pointQuota*10;
+    while( index<d_samples.size() )
+    {
+      // allocate an arbitrary point
+      std::vector< Node > pt;
+      if( mkSamplePoint(pt,duplicateThresh) )
+      {
+        allocateSamplePoint(pt);
+      }
+      else
+      {
+        d_lazyGenPoints = false;
+        return Node::null();
+      }
+    }
   }
   Assert(index < d_samples.size());
   // do beta-reductions in n first
@@ -505,20 +527,23 @@ Node SygusSampler::evaluate(Node n, unsigned index)
   ev = n.substitute(d_vars.begin(), d_vars.end(), pt.begin(), pt.end());
   ev = Rewriter::rewrite(ev);
   Trace("sygus-sample-ev") << ev << std::endl;
+  Assert( !ev.isNull() );
   return ev;
 }
 
-void SygusSampler::dualEvaluate(Node a, Node b, unsigned index, Node& ra, Node& rb)
+bool SygusSampler::dualEvaluate(Node a, Node b, unsigned index, Node& ra, Node& rb)
 {
   if( index<d_samples.size() )
   {
     // we don't have a choice on the point
     ra = evaluate( a, index );
     rb = evaluate( b, index );
-    return;
+    return true;
   }
   Assert( index==d_samples.size()-1 );
   // allocate a point
+  
+  return false;
 }
 
 int SygusSampler::getDiffSamplePointIndex(Node a, Node b)

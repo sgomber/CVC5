@@ -119,7 +119,7 @@ class SygusSampler : public LazyTrieEvaluator
    * Dual evaluate n on sample point index: we try to find a sample point that
    * makes them different.
    */
-  void dualEvaluate(Node a, Node b, unsigned index, Node& ra, Node& rb) override;
+  bool dualEvaluate(Node a, Node b, unsigned index, Node& ra, Node& rb) override;
   /**
    * Compute the variables from the domain of d_var_index that occur in n,
    * store these in the vector fvs.
@@ -196,8 +196,12 @@ class SygusSampler : public LazyTrieEvaluator
   };
   /** a trie for samples */
   PtTrie d_samples_trie;
+  /** are we actively generating points? */
+  bool d_lazyGenPoints;
+  /** the total number of sample points that we should allocate */
+  unsigned d_pointQuota;
   /** make sample point */
-  bool mkSamplePoint(std::vector<Node>& pt);
+  bool mkSamplePoint(std::vector<Node>& pt, unsigned duplicateThresh);
   /** allocate sample point */
   void allocateSamplePoint(std::vector<Node>& pt);
   //----------------------end information for (dynamically) constructing samples

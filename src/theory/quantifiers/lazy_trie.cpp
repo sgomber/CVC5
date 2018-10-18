@@ -23,7 +23,8 @@ bool LazyTrieEvaluator::dualEvaluate(Node a, Node b, unsigned index, Node& ra, N
 {
   ra = evaluate( a, index );
   rb = evaluate( b, index );
-  return true;
+  Assert( ra.isNull() == rb.isNull() );
+  return !ra.isNull() && !rb.isNull();
 }
   
 Node LazyTrie::add(Node n,

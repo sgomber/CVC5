@@ -1317,6 +1317,15 @@ header = "options/quantifiers_options.h"
   help       = "sample floating-point values uniformly instead of in a biased fashion"
 
 [[option]]
+  name       = "sygusSampleLazy"
+  category   = "regular"
+  long       = "sygus-sample-lazy"
+  type       = "bool"
+  default    = "true"
+  read_only  = true
+  help       = "lazily generate sample points"
+
+[[option]]
   name       = "sygusRewSynthAccel"
   category   = "regular"
   long       = "sygus-rr-synth-accel"
