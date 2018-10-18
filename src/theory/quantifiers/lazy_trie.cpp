@@ -23,6 +23,8 @@ bool LazyTrieEvaluator::dualEvaluate(Node a, Node b, unsigned index, Node& ra, N
 {
   ra = evaluate( a, index );
   rb = evaluate( b, index );
+  // if the point at index is invalid, then they both are null
+  // if the point at index is valid, then they both are non-null
   Assert( ra.isNull() == rb.isNull() );
   return !ra.isNull() && !rb.isNull();
 }

@@ -538,11 +538,39 @@ bool SygusSampler::dualEvaluate(Node a, Node b, unsigned index, Node& ra, Node& 
     // we don't have a choice on the point
     ra = evaluate( a, index );
     rb = evaluate( b, index );
+    Assert( !ra.isNull() && !rb.isNull() );
     return true;
   }
   Assert( index==d_samples.size()-1 );
-  // allocate a point
-  
+  // allocate a point by aggressively trying to find one where they are disequal
+  unsigned evEqThresh = d_pointQuota;
+  unsigned duplicateThresh = d_pointQuota*10;
+  std::vector< Node > pt;
+  unsigned evIndex = d_samples.size();
+  unsigned eqCount = 0;
+  while( eqCount<evEqThresh )
+  {
+    pt.clear();
+    if( mkSamplePoint(pt,duplicateThresh) )
+    {
+      // speculatively add
+      d_samples.push_back(pt);
+      ra = evaluate(a,evIndex);
+      rb = evaluate(b,evIndex);
+      if( ra!=rb )
+      {
+        return true;
+      }
+      d_samples.pop_back();
+    }
+    else
+    {
+      // cannot allocate a point
+      return false;
+    }
+    eqCount++;
+  }
+  // could not find a point to make them disequal, abort
   return false;
 }
 
