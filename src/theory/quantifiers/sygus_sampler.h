@@ -203,8 +203,6 @@ class SygusSampler : public LazyTrieEvaluator
   unsigned d_pointQuota;
   /** make sample point */
   bool mkSamplePoint(std::vector<Node>& pt, unsigned duplicateThresh);
-  /** allocate sample point */
-  void allocateSamplePoint(std::vector<Node>& pt);
   //----------------------end information for (dynamically) constructing samples
   /** type of nodes we will be registering with this class */
   TypeNode d_tn;

@@ -196,7 +196,7 @@ void SygusSampler::initializeSamples(unsigned nsamples)
       std::vector<Node> pt;
       if (mkSamplePoint(pt, duplicateThresh))
       {
-        allocateSamplePoint(pt);
+        addSamplePoint(pt);
       }
       else
       {
@@ -218,6 +218,7 @@ bool SygusSampler::mkSamplePoint(std::vector<Node>& pt,
   unsigned nduplicates = 0;
   while (nduplicates < duplicateThresh)
   {
+    pt.clear();
     for (unsigned j = 0, size = d_var_types.size(); j < size; j++)
     {
       Node v = d_vars[j];
@@ -251,8 +252,8 @@ bool SygusSampler::mkSamplePoint(std::vector<Node>& pt,
       }
       pt.push_back(r);
     }
-    // if it is
-    if (d_samples_trie.exists(pt))
+    // if it does not exist, it becomes a point
+    if (!d_samples_trie.exists(pt))
     {
       return true;
     }
@@ -262,21 +263,6 @@ bool SygusSampler::mkSamplePoint(std::vector<Node>& pt,
     }
   }
   return false;
-}
-
-void SygusSampler::allocateSamplePoint(std::vector<Node>& pt)
-{
-  if (Trace.isOn("sygus-sample"))
-  {
-    Trace("sygus-sample") << "Sample point #" << d_samples.size() << " : ";
-    for (const Node& r : pt)
-    {
-      Trace("sygus-sample") << r << " ";
-    }
-    Trace("sygus-sample") << std::endl;
-  }
-  d_samples.push_back(pt);
-  d_samples_trie.add(pt);
 }
 
 bool SygusSampler::PtTrie::add(std::vector<Node>& pt)
@@ -505,7 +491,21 @@ void SygusSampler::getSamplePoint(unsigned index,
 void SygusSampler::addSamplePoint(std::vector<Node>& pt)
 {
   Assert(pt.size() == d_vars.size());
+  if (Trace.isOn("sygus-sample"))
+  {
+    Trace("sygus-sample") << "Sample point #" << d_samples.size() << " : ";
+    for (const Node& r : pt)
+    {
+      Trace("sygus-sample") << r << " ";
+    }
+    Trace("sygus-sample") << std::endl;
+  }
   d_samples.push_back(pt);
+  d_samples_trie.add(pt);
+  if( d_pointQuota<d_samples.size() )
+  {
+    d_pointQuota = d_samples.size();
+  }
 }
 
 Node SygusSampler::evaluate(Node n, unsigned index)
@@ -519,7 +519,7 @@ Node SygusSampler::evaluate(Node n, unsigned index)
       std::vector<Node> pt;
       if (mkSamplePoint(pt, duplicateThresh))
       {
-        allocateSamplePoint(pt);
+        addSamplePoint(pt);
       }
       else
       {
