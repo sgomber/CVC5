@@ -115,11 +115,12 @@ class SygusSampler : public LazyTrieEvaluator
   void addSamplePoint(std::vector<Node>& pt);
   /** evaluate n on sample point index */
   Node evaluate(Node n, unsigned index) override;
-  /** 
+  /**
    * Dual evaluate n on sample point index: we try to find a sample point that
    * makes them different.
    */
-  bool dualEvaluate(Node a, Node b, unsigned index, Node& ra, Node& rb) override;
+  bool dualEvaluate(
+      Node a, Node b, unsigned index, Node& ra, Node& rb) override;
   /**
    * Compute the variables from the domain of d_var_index that occur in n,
    * store these in the vector fvs.
@@ -185,11 +186,12 @@ class SygusSampler : public LazyTrieEvaluator
   class PtTrie
   {
    public:
-    /** 
-     * Returns true if pt is not a duplicate. If doAdd is true, then the point 
+    /**
+     * Returns true if pt is not a duplicate. If doAdd is true, then the point
      * is added to the trie.
      */
     bool add(std::vector<Node>& pt, bool doAdd = true);
+
    private:
     /** the children of this node */
     std::map<Node, PtTrie> d_children;

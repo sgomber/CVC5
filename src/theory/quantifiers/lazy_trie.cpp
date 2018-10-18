@@ -18,17 +18,17 @@ namespace CVC4 {
 namespace theory {
 namespace quantifiers {
 
-  
-bool LazyTrieEvaluator::dualEvaluate(Node a, Node b, unsigned index, Node& ra, Node& rb)
+bool LazyTrieEvaluator::dualEvaluate(
+    Node a, Node b, unsigned index, Node& ra, Node& rb)
 {
-  ra = evaluate( a, index );
-  rb = evaluate( b, index );
+  ra = evaluate(a, index);
+  rb = evaluate(b, index);
   // if the point at index is invalid, then they both are null
   // if the point at index is valid, then they both are non-null
-  Assert( ra.isNull() == rb.isNull() );
+  Assert(ra.isNull() == rb.isNull());
   return !ra.isNull() && !rb.isNull();
 }
-  
+
 Node LazyTrie::add(Node n,
                    LazyTrieEvaluator* ev,
                    unsigned index,
@@ -58,7 +58,7 @@ Node LazyTrie::add(Node n,
       }
       // dual-evaluate n and the lazy child
       Node e_lc;
-      if( ev->dualEvaluate(n, lt->d_lazy_child, index, e, e_lc) )
+      if (ev->dualEvaluate(n, lt->d_lazy_child, index, e, e_lc))
       {
         // store lazy child at next level
         lt->d_children[e_lc].d_lazy_child = lt->d_lazy_child;

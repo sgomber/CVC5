@@ -28,7 +28,11 @@ namespace theory {
 namespace quantifiers {
 
 SygusSampler::SygusSampler()
-    : d_tds(nullptr), d_lazyGenPoints(false), d_pointQuota(0), d_use_sygus_type(false), d_is_valid(false)
+    : d_tds(nullptr),
+      d_lazyGenPoints(false),
+      d_pointQuota(0),
+      d_use_sygus_type(false),
+      d_is_valid(false)
 {
 }
 
@@ -175,10 +179,10 @@ void SygusSampler::initializeSamples(unsigned nsamples)
   {
     TypeNode vt = v.getType();
     d_var_types.push_back(vt);
-    Trace("sygus-sample") << "  var #" << d_var_types.size() << " : " << v << " : "
-                          << vt << std::endl;
+    Trace("sygus-sample") << "  var #" << d_var_types.size() << " : " << v
+                          << " : " << vt << std::endl;
   }
-  if( options::sygusSampleLazy() )
+  if (options::sygusSampleLazy())
   {
     d_lazyGenPoints = true;
     d_pointQuota = nsamples;
@@ -186,20 +190,20 @@ void SygusSampler::initializeSamples(unsigned nsamples)
   else
   {
     // eager construction
-    unsigned duplicateThresh = nsamples*10;
+    unsigned duplicateThresh = nsamples * 10;
     for (unsigned i = 0; i < nsamples; i++)
     {
       std::vector<Node> pt;
-      if( mkSamplePoint(pt, duplicateThresh) )
+      if (mkSamplePoint(pt, duplicateThresh))
       {
         allocateSamplePoint(pt);
       }
       else
       {
-                Trace("sygus-sample")
-              << "...WARNING: excessive duplicates, cut off sampling at " << i
-              << "/" << nsamples << " points." << std::endl;
-              break;
+        Trace("sygus-sample")
+            << "...WARNING: excessive duplicates, cut off sampling at " << i
+            << "/" << nsamples << " points." << std::endl;
+        break;
       }
     }
     d_pointQuota = d_samples.size();
@@ -207,11 +211,12 @@ void SygusSampler::initializeSamples(unsigned nsamples)
   }
 }
 
-bool SygusSampler::mkSamplePoint(std::vector< Node >& pt, unsigned duplicateThresh )
+bool SygusSampler::mkSamplePoint(std::vector<Node>& pt,
+                                 unsigned duplicateThresh)
 {
   // make tuple of random types
   unsigned nduplicates = 0;
-  while( nduplicates<duplicateThresh )
+  while (nduplicates < duplicateThresh)
   {
     for (unsigned j = 0, size = d_var_types.size(); j < size; j++)
     {
@@ -219,7 +224,8 @@ bool SygusSampler::mkSamplePoint(std::vector< Node >& pt, unsigned duplicateThre
       Node r;
       if (options::sygusSampleGrammar())
       {
-        std::map<Node, std::vector<TypeNode> >::iterator its = d_var_sygus_types.find(v);
+        std::map<Node, std::vector<TypeNode> >::iterator its =
+            d_var_sygus_types.find(v);
         // choose a random start sygus type, if possible
         if (its != d_var_sygus_types.end())
         {
@@ -245,7 +251,7 @@ bool SygusSampler::mkSamplePoint(std::vector< Node >& pt, unsigned duplicateThre
       }
       pt.push_back(r);
     }
-    // if it is 
+    // if it is
     if (d_samples_trie.add(pt, false))
     {
       return true;
@@ -258,7 +264,7 @@ bool SygusSampler::mkSamplePoint(std::vector< Node >& pt, unsigned duplicateThre
   return false;
 }
 
-void SygusSampler::allocateSamplePoint(std::vector< Node >& pt)
+void SygusSampler::allocateSamplePoint(std::vector<Node>& pt)
 {
   if (Trace.isOn("sygus-sample"))
   {
@@ -281,7 +287,7 @@ bool SygusSampler::PtTrie::add(std::vector<Node>& pt, bool doAdd)
     curr = &(curr->d_children[pt[i]]);
   }
   bool retVal = curr->d_children.empty();
-  if( doAdd )
+  if (doAdd)
   {
     // Data is simply whether the children map is non-empty, thus we
     // initialize the null child to mark we are here.
@@ -491,14 +497,14 @@ void SygusSampler::addSamplePoint(std::vector<Node>& pt)
 
 Node SygusSampler::evaluate(Node n, unsigned index)
 {
-  if( d_lazyGenPoints )
+  if (d_lazyGenPoints)
   {
-    unsigned duplicateThresh = d_pointQuota*10;
-    while( index<d_samples.size() )
+    unsigned duplicateThresh = d_pointQuota * 10;
+    while (index < d_samples.size())
     {
       // allocate an arbitrary point
-      std::vector< Node > pt;
-      if( mkSamplePoint(pt,duplicateThresh) )
+      std::vector<Node> pt;
+      if (mkSamplePoint(pt, duplicateThresh))
       {
         allocateSamplePoint(pt);
       }
@@ -527,37 +533,38 @@ Node SygusSampler::evaluate(Node n, unsigned index)
   ev = n.substitute(d_vars.begin(), d_vars.end(), pt.begin(), pt.end());
   ev = Rewriter::rewrite(ev);
   Trace("sygus-sample-ev") << ev << std::endl;
-  Assert( !ev.isNull() );
+  Assert(!ev.isNull());
   return ev;
 }
 
-bool SygusSampler::dualEvaluate(Node a, Node b, unsigned index, Node& ra, Node& rb)
+bool SygusSampler::dualEvaluate(
+    Node a, Node b, unsigned index, Node& ra, Node& rb)
 {
-  if( index<d_samples.size() )
+  if (index < d_samples.size())
   {
     // we don't have a choice on the point
-    ra = evaluate( a, index );
-    rb = evaluate( b, index );
-    Assert( !ra.isNull() && !rb.isNull() );
+    ra = evaluate(a, index);
+    rb = evaluate(b, index);
+    Assert(!ra.isNull() && !rb.isNull());
     return true;
   }
-  Assert( index==d_samples.size()-1 );
+  Assert(index == d_samples.size() - 1);
   // allocate a point by aggressively trying to find one where they are disequal
   unsigned evEqThresh = d_pointQuota;
-  unsigned duplicateThresh = d_pointQuota*10;
-  std::vector< Node > pt;
+  unsigned duplicateThresh = d_pointQuota * 10;
+  std::vector<Node> pt;
   unsigned evIndex = d_samples.size();
   unsigned eqCount = 0;
-  while( eqCount<evEqThresh )
+  while (eqCount < evEqThresh)
   {
     pt.clear();
-    if( mkSamplePoint(pt,duplicateThresh) )
+    if (mkSamplePoint(pt, duplicateThresh))
     {
       // speculatively add
       d_samples.push_back(pt);
-      ra = evaluate(a,evIndex);
-      rb = evaluate(b,evIndex);
-      if( ra!=rb )
+      ra = evaluate(a, evIndex);
+      rb = evaluate(b, evIndex);
+      if (ra != rb)
       {
         return true;
       }
