@@ -168,89 +168,102 @@ void SygusSampler::initializeSygus(TermDbSygus* tds,
 void SygusSampler::initializeSamples(unsigned nsamples)
 {
   d_samples.clear();
-  std::vector<TypeNode> types;
+  d_var_types.clear();
+  d_trie.clear();
+  // initialize d_var_types
   for (const Node& v : d_vars)
   {
     TypeNode vt = v.getType();
-    types.push_back(vt);
+    d_var_types.push_back(vt);
     Trace("sygus-sample") << "  var #" << types.size() << " : " << v << " : "
                           << vt << std::endl;
   }
-  std::map<unsigned, std::map<Node, std::vector<TypeNode> >::iterator> sts;
-  if (options::sygusSampleGrammar())
-  {
-    for (unsigned j = 0, size = types.size(); j < size; j++)
-    {
-      sts[j] = d_var_sygus_types.find(d_vars[j]);
-    }
-  }
-
-  unsigned nduplicates = 0;
+  // eager construction
+  unsigned duplicateThresh = nsamples*10;
   for (unsigned i = 0; i < nsamples; i++)
   {
-    std::vector<Node> sample_pt;
-    for (unsigned j = 0, size = types.size(); j < size; j++)
+    std::vector<Node> pt;
+    if( mkSamplePoint(pt, duplicateThresh) )
+    {
+      allocateSamplePoint(pt);
+    }
+    else
+    {
+              Trace("sygus-sample")
+            << "...WARNING: excessive duplicates, cut off sampling at " << i
+            << "/" << nsamples << " points." << std::endl;
+            break;
+    }
+  }
+}
+
+bool SygusSampler::mkSamplePoint(std::vector< Node >& pt, unsigned duplicateThresh )
+{
+  // make tuple of random types
+  unsigned nduplicates = 0;
+  while( nduplicates<duplicateThresh )
+  {
+    for (unsigned j = 0, size = d_var_types.size(); j < size; j++)
     {
       Node v = d_vars[j];
       Node r;
       if (options::sygusSampleGrammar())
       {
+        std::map<Node, std::vector<TypeNode>::iterator its = d_var_sygus_types.find(v);
         // choose a random start sygus type, if possible
-        if (sts[j] != d_var_sygus_types.end())
+        if (its != d_var_sygus_types.end())
         {
-          unsigned ntypes = sts[j]->second.size();
+          unsigned ntypes = its->second.size();
           if(ntypes > 0)
           {
             unsigned index = Random::getRandom().pick(0, ntypes - 1);
             if (index < ntypes)
             {
               // currently hard coded to 0.0, 0.5
-              r = getSygusRandomValue(sts[j]->second[index], 0.0, 0.5);
+              r = getSygusRandomValue(its->second[index], 0.0, 0.5);
             }
           }
         }
       }
       if (r.isNull())
       {
-        r = getRandomValue(types[j]);
+        r = getRandomValue(d_var_types[j]);
         if (r.isNull())
         {
           d_is_valid = false;
         }
       }
-      sample_pt.push_back(r);
+      pt.push_back(r);
     }
-    if (d_samples_trie.add(sample_pt))
+    // if it is 
+    if (d_samples_trie.add(pt, false))
     {
-      if (Trace.isOn("sygus-sample"))
-      {
-        Trace("sygus-sample") << "Sample point #" << i << " : ";
-        for (const Node& r : sample_pt)
-        {
-          Trace("sygus-sample") << r << " ";
-        }
-        Trace("sygus-sample") << std::endl;
-      }
-      d_samples.push_back(sample_pt);
+      return true;
     }
     else
     {
-      i--;
       nduplicates++;
-      if (nduplicates == nsamples * 10)
-      {
-        Trace("sygus-sample")
-            << "...WARNING: excessive duplicates, cut off sampling at " << i
-            << "/" << nsamples << " points." << std::endl;
-        break;
-      }
     }
   }
-
-  d_trie.clear();
+  return false;
 }
 
-bool SygusSampler::PtTrie::add(std::vector<Node>& pt)
+void SygusSampler::allocateSamplePoint(std::vector< Node >& pt)
+{
+  if (Trace.isOn("sygus-sample"))
+  {
+    Trace("sygus-sample") << "Sample point #" << i << " : ";
+    for (const Node& r : pt)
+    {
+      Trace("sygus-sample") << r << " ";
+    }
+    Trace("sygus-sample") << std::endl;
+  }
+  d_samples.push_back(pt);
+  d_samples_trie.add(pt);
+}
+
+bool SygusSampler::PtTrie::add(std::vector<Node>& pt, bool doAdd)
 {
   PtTrie* curr = this;
   for (unsigned i = 0, size = pt.size(); i < size; i++)
@@ -258,7 +271,12 @@ bool SygusSampler::PtTrie::add(std::vector<Node>& pt)
     curr = &(curr->d_children[pt[i]]);
   }
   bool retVal = curr->d_children.empty();
-  curr = &(curr->d_children[Node::null()]);
+  if( doAdd )
+  {
+    // Data is simply whether the children map is non-empty, thus we
+    // initialize the null child to mark we are here.
+    curr = &(curr->d_children[Node::null()]);
+  }
   return retVal;
 }
 
@@ -463,6 +481,12 @@ void SygusSampler::addSamplePoint(std::vector<Node>& pt)
 
 Node SygusSampler::evaluate(Node n, unsigned index)
 {
+  while( index< d_samples.size() )
+  {
+    // allocate an arbitrary point
+    std::vector< Node > pt;
+    mkSamplePoint(pt);
+  }
   Assert(index < d_samples.size());
   // do beta-reductions in n first
   n = Rewriter::rewrite(n);
@@ -482,6 +506,19 @@ Node SygusSampler::evaluate(Node n, unsigned index)
   ev = Rewriter::rewrite(ev);
   Trace("sygus-sample-ev") << ev << std::endl;
   return ev;
+}
+
+void SygusSampler::dualEvaluate(Node a, Node b, unsigned index, Node& ra, Node& rb)
+{
+  if( index<d_samples.size() )
+  {
+    // we don't have a choice on the point
+    ra = evaluate( a, index );
+    rb = evaluate( b, index );
+    return;
+  }
+  Assert( index==d_samples.size()-1 );
+  // allocate a point
 }
 
 int SygusSampler::getDiffSamplePointIndex(Node a, Node b)

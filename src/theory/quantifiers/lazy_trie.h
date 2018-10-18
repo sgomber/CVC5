@@ -30,6 +30,7 @@ class LazyTrieEvaluator
  public:
   virtual ~LazyTrieEvaluator() {}
   virtual Node evaluate(Node n, unsigned index) = 0;
+  virtual bool dualEvaluate(Node a, Node b, unsigned index, Node& ra, Node& rb);
 };
 
 /** LazyTrie

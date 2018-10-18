@@ -18,6 +18,14 @@ namespace CVC4 {
 namespace theory {
 namespace quantifiers {
 
+  
+bool LazyTrieEvaluator::dualEvaluate(Node a, Node b, unsigned index, Node& ra, Node& rb)
+{
+  ra = evaluate( a, index );
+  rb = evaluate( b, index );
+  return true;
+}
+  
 Node LazyTrie::add(Node n,
                    LazyTrieEvaluator* ev,
                    unsigned index,
@@ -36,6 +44,7 @@ Node LazyTrie::add(Node n,
       }
       return lt->d_lazy_child;
     }
+    Node e;
     if (lt->d_children.empty())
     {
       if (lt->d_lazy_child.isNull())
@@ -44,15 +53,25 @@ Node LazyTrie::add(Node n,
         lt->d_lazy_child = n;
         return lt->d_lazy_child;
       }
-      // evaluate the lazy child
-      Node e_lc = ev->evaluate(lt->d_lazy_child, index);
-      // store at next level
-      lt->d_children[e_lc].d_lazy_child = lt->d_lazy_child;
-      // replace
-      lt->d_lazy_child = Node::null();
+      // dual-evaluate n and the lazy child
+      Node e_lc;
+      if( ev->dualEvaluate(n, lt->d_lazy_child, index, e, e_lc) )
+      {
+        // store lazy child at next level
+        lt->d_children[e_lc].d_lazy_child = lt->d_lazy_child;
+        lt->d_lazy_child = Node::null();
+      }
+      else
+      {
+        // failed to dual-evaluate, return the lazy child
+        return lt->d_lazy_child;
+      }
+    }
+    else
+    {
+      e = ev->evaluate(n, index);
     }
     // recurse
-    Node e = ev->evaluate(n, index);
     lt = &lt->d_children[e];
     index = index + 1;
   }

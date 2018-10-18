@@ -115,6 +115,11 @@ class SygusSampler : public LazyTrieEvaluator
   void addSamplePoint(std::vector<Node>& pt);
   /** evaluate n on sample point index */
   Node evaluate(Node n, unsigned index) override;
+  /** 
+   * Dual evaluate n on sample point index: we try to find a sample point that
+   * makes them different.
+   */
+  void dualEvaluate(Node a, Node b, unsigned index, Node& ra, Node& rb) override;
   /**
    * Compute the variables from the domain of d_var_index that occur in n,
    * store these in the vector fvs.
@@ -173,21 +178,29 @@ class SygusSampler : public LazyTrieEvaluator
   TermEnumeration d_tenum;
   /** samples */
   std::vector<std::vector<Node> > d_samples;
+  //----------------------information for (dynamically) constructing samples
   /** evaluator class */
   Evaluator d_eval;
   /** data structure to check duplication of sample points */
   class PtTrie
   {
    public:
-    /** add pt to this trie, returns true if pt is not a duplicate. */
-    bool add(std::vector<Node>& pt);
-
+    /** 
+     * Returns true if pt is not a duplicate. If doAdd is true, then the point 
+     * is added to the trie.
+     */
+    bool add(std::vector<Node>& pt, bool doAdd = true);
    private:
     /** the children of this node */
     std::map<Node, PtTrie> d_children;
   };
   /** a trie for samples */
   PtTrie d_samples_trie;
+  /** make sample point */
+  bool mkSamplePoint(std::vector<Node>& pt);
+  /** allocate sample point */
+  void allocateSamplePoint(std::vector<Node>& pt);
+  //----------------------end information for (dynamically) constructing samples
   /** type of nodes we will be registering with this class */
   TypeNode d_tn;
   /** the sygus type for this sampler (if applicable). */
@@ -198,6 +211,8 @@ class SygusSampler : public LazyTrieEvaluator
   std::map<Node, Node> d_builtin_to_sygus;
   /** all variables we are sampling values for */
   std::vector<Node> d_vars;
+  /** the types of d_vars */
+  std::vector<TypeNode> d_var_types;
   /** type variables
    *
    * We group variables according to "type ids". Two variables have the same
