@@ -175,6 +175,8 @@ void SygusSampler::initializeSamples(unsigned nsamples)
   d_samples.clear();
   d_var_types.clear();
   d_trie.clear();
+  d_samples_trie.clear();
+  d_cd_samples_trie.clear();
   // initialize d_var_types
   for (const Node& v : d_vars)
   {
@@ -212,7 +214,7 @@ void SygusSampler::initializeSamples(unsigned nsamples)
   }
 }
 
-bool SygusSampler::mkSamplePoint(std::vector<Node>& pt)
+bool SygusSampler::mkSamplePoint(std::vector<Node>& pt, bool checkContext)
 {
   // number of times we can try a duplicate before giving up
   unsigned duplicateThresh = 10000;
@@ -257,14 +259,26 @@ bool SygusSampler::mkSamplePoint(std::vector<Node>& pt)
     // if it does not exist, it becomes a point
     if (!d_samples_trie.exists(pt))
     {
-      return true;
+      // if we are not checking the context, we're done
+      if( !checkContext )
+      {
+        return true;
+      }
+      // if we are checking the context, we must check whether we've already
+      // returned this point
+      if( d_cd_samples_trie.add(pt) )
+      {
+        return true;
+      }
     }
-    else
-    {
-      nduplicates++;
-    }
+    nduplicates++;
   }
   return false;
+}
+
+void SygusSampler::resetMkSamplePointContext()
+{
+  d_cd_samples_trie.clear();
 }
 
 bool SygusSampler::PtTrie::add(std::vector<Node>& pt)
@@ -295,6 +309,11 @@ bool SygusSampler::PtTrie::exists(std::vector<Node>& pt) const
     curr = &(itp->second);
   }
   return !curr->d_children.empty();
+}
+
+void SygusSampler::PtTrie::clear()
+{
+  d_children.clear();
 }
 
 Node SygusSampler::registerTerm(Node n, bool forceKeep)
@@ -558,10 +577,11 @@ bool SygusSampler::dualEvaluate(
   unsigned evEqThresh = d_origPointQuota;
   std::vector<Node> pt;
   unsigned eqCount = 0;
+  resetMkSamplePointContext();
   while (eqCount < evEqThresh)
   {
     pt.clear();
-    if (mkSamplePoint(pt))
+    if (mkSamplePoint(pt,true))
     {
       // speculatively add
       ra = evaluateOnPoint(a, pt);

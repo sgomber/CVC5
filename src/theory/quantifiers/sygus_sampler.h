@@ -111,8 +111,20 @@ class SygusSampler : public LazyTrieEvaluator
    */
   void getSamplePoint(unsigned index,
                       std::vector<Node>& pt);
-  /** make a random sample point */
-  bool mkSamplePoint(std::vector<Node>& pt);
+  /** make a random sample point 
+   * 
+   * If this method returns true, then pt is updated to a random point that is
+   * constructed based on the sampling technique of this sampler, and is unique
+   * from the points that are currently indexed by this class (those that are
+   * accessible by getSamplePoint above).
+   * 
+   * If checkContext is true, then pt is further guaranteed to be distinct 
+   * from all points returned by previous calls to this method since the last
+   * call to resetMkSamplePointContext.
+   */
+  bool mkSamplePoint(std::vector<Node>& pt, bool checkContext=false);
+  /** clears the context for mkSamplePoint. */
+  void resetMkSamplePointContext();
   /** Add pt to the set of sample points considered by this sampler */
   void addSamplePoint(std::vector<Node>& pt);
   /** evaluate n on sample point index */
@@ -194,13 +206,16 @@ class SygusSampler : public LazyTrieEvaluator
     bool add(std::vector<Node>& pt);
     /** Returns true if the pt already exists in the trie */
     bool exists(std::vector<Node>& pt) const;
-
+    /** clear */
+    void clear();
    private:
     /** the children of this node */
     std::map<Node, PtTrie> d_children;
   };
   /** a trie for samples */
   PtTrie d_samples_trie;
+  /** a temporary trie for samples */
+  PtTrie d_cd_samples_trie;
   /** are we actively generating points? */
   bool d_lazyGenPoints;
   /** the total number of sample points that we should allocate */

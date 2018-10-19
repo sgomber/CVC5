@@ -570,14 +570,15 @@ bool Cegis::sampleAddRefinementLemma(const std::vector<Node>& candidates,
 
   NodeManager* nm = NodeManager::currentNM();
   unsigned nsamples = options::sygusSamples();
+  d_cegis_sampler.resetMkSamplePointContext();
   for (unsigned i = 0; i < nsamples; i++)
   {
-    // Make a (new) random sample point. Notice we make fresh random values on
+    // Make a fresh random sample point. Notice we make fresh random values on
     // every call. This is preferred to remembering old points that failed to
     // refine a previous candidate, this those points are less interesting on
-    // average than a fresh random point.
+    // average than a fresh point.
     std::vector<Node> pt;
-    if (d_cegis_sampler.mkSamplePoint(pt))
+    if (d_cegis_sampler.mkSamplePoint(pt, true))
     {
       Node ev = d_cegis_sampler.evaluateOnPoint(sbody, pt);
       Trace("cegis-sample-debug")
