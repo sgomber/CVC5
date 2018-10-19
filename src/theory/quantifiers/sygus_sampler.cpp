@@ -260,13 +260,13 @@ bool SygusSampler::mkSamplePoint(std::vector<Node>& pt, bool checkContext)
     if (!d_samples_trie.exists(pt))
     {
       // if we are not checking the context, we're done
-      if( !checkContext )
+      if (!checkContext)
       {
         return true;
       }
       // if we are checking the context, we must check whether we've already
       // returned this point
-      if( d_cd_samples_trie.add(pt) )
+      if (d_cd_samples_trie.add(pt))
       {
         return true;
       }
@@ -276,10 +276,7 @@ bool SygusSampler::mkSamplePoint(std::vector<Node>& pt, bool checkContext)
   return false;
 }
 
-void SygusSampler::resetMkSamplePointContext()
-{
-  d_cd_samples_trie.clear();
-}
+void SygusSampler::resetMkSamplePointContext() { d_cd_samples_trie.clear(); }
 
 bool SygusSampler::PtTrie::add(std::vector<Node>& pt)
 {
@@ -311,10 +308,7 @@ bool SygusSampler::PtTrie::exists(std::vector<Node>& pt) const
   return !curr->d_children.empty();
 }
 
-void SygusSampler::PtTrie::clear()
-{
-  d_children.clear();
-}
+void SygusSampler::PtTrie::clear() { d_children.clear(); }
 
 Node SygusSampler::registerTerm(Node n, bool forceKeep)
 {
@@ -581,7 +575,7 @@ bool SygusSampler::dualEvaluate(
   while (eqCount < evEqThresh)
   {
     pt.clear();
-    if (mkSamplePoint(pt,true))
+    if (mkSamplePoint(pt, true))
     {
       // speculatively add
       ra = evaluateOnPoint(a, pt);
