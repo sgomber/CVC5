@@ -514,28 +514,8 @@ void SygusSampler::addSamplePointInternal(std::vector<Node>& pt)
 
 Node SygusSampler::evaluate(Node n, unsigned index)
 {
-  /*
-  if (d_lazyGenPoints)
-  {
-    unsigned duplicateThresh = d_origPointQuota * 10;
-    while (index >= d_samples.size())
-    {
-      // allocate an arbitrary point
-      std::vector<Node> pt;
-      if (mkSamplePoint(pt, duplicateThresh))
-      {
-        addSamplePointInternal(pt);
-      }
-      else
-      {
-        Trace("sygus-sample-ev") << "Failed to make point for " << n << std::endl;
-        d_lazyGenPoints = false;
-        return Node::null();
-      }
-    }
-  }
-  */
-  AlwaysAssert(index < d_samples.size());
+  // even in lazy mode, index should be in range
+  Assert(index < d_samples.size());
   // do beta-reductions in n first
   n = Rewriter::rewrite(n);
   // use efficient rewrite for substitution + rewrite
