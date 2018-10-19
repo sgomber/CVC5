@@ -201,8 +201,12 @@ class SygusSampler : public LazyTrieEvaluator
   bool d_lazyGenPoints;
   /** the total number of sample points that we should allocate */
   unsigned d_pointQuota;
+  /** the original total number of sample points that we should allocate */
+  unsigned d_origPointQuota;
   /** make sample point */
   bool mkSamplePoint(std::vector<Node>& pt, unsigned duplicateThresh);
+  /** Add pt to the set of sample points considered by this sampler */
+  void addSamplePointInternal(std::vector<Node>& pt);
   //----------------------end information for (dynamically) constructing samples
   /** type of nodes we will be registering with this class */
   TypeNode d_tn;

@@ -58,24 +58,24 @@ Node LazyTrie::add(Node n,
       }
       // dual-evaluate n and the lazy child
       Node e_lc;
-      Trace("ajr-temp") << "dual ev " << n << " " << lt->d_lazy_child << " " << index << std::endl;
       if (ev->dualEvaluate(n, lt->d_lazy_child, index, e, e_lc))
       {
-        Trace("ajr-temp") << "got " << e << " " << e_lc << std::endl;
         // store lazy child at next level
         lt->d_children[e_lc].d_lazy_child = lt->d_lazy_child;
         lt->d_lazy_child = Node::null();
       }
       else
       {
-        Trace("ajr-temp") << "fail!" << std::endl;
         // failed to dual-evaluate, return the lazy child
+        if( forceKeep )
+        {
+          lt->d_lazy_child = n;
+        }
         return lt->d_lazy_child;
       }
     }
     else
     {
-      Trace("ajr-temp") << "ev " << n << " " << index << std::endl;
       e = ev->evaluate(n, index);
     }
     // recurse

@@ -31,6 +31,7 @@ SygusSampler::SygusSampler()
     : d_tds(nullptr),
       d_lazyGenPoints(false),
       d_pointQuota(0),
+      d_origPointQuota(0),
       d_use_sygus_type(false),
       d_is_valid(false)
 {
@@ -182,6 +183,7 @@ void SygusSampler::initializeSamples(unsigned nsamples)
     Trace("sygus-sample") << "  var #" << d_var_types.size() << " : " << v
                           << " : " << vt << std::endl;
   }
+  d_origPointQuota = nsamples;
   if (options::sygusSampleLazy())
   {
     d_lazyGenPoints = true;
@@ -196,7 +198,7 @@ void SygusSampler::initializeSamples(unsigned nsamples)
       std::vector<Node> pt;
       if (mkSamplePoint(pt, duplicateThresh))
       {
-        addSamplePoint(pt);
+        addSamplePointInternal(pt);
       }
       else
       {
@@ -490,6 +492,12 @@ void SygusSampler::getSamplePoint(unsigned index,
 
 void SygusSampler::addSamplePoint(std::vector<Node>& pt)
 {
+  d_pointQuota++;
+  addSamplePointInternal(pt);
+}
+
+void SygusSampler::addSamplePointInternal(std::vector<Node>& pt)
+{
   Assert(pt.size() == d_vars.size());
   if (Trace.isOn("sygus-sample"))
   {
@@ -502,33 +510,32 @@ void SygusSampler::addSamplePoint(std::vector<Node>& pt)
   }
   d_samples.push_back(pt);
   d_samples_trie.add(pt);
-  if( d_pointQuota<d_samples.size() )
-  {
-    d_pointQuota = d_samples.size();
-  }
 }
 
 Node SygusSampler::evaluate(Node n, unsigned index)
 {
+  /*
   if (d_lazyGenPoints)
   {
-    unsigned duplicateThresh = d_pointQuota * 10;
-    while (index < d_samples.size())
+    unsigned duplicateThresh = d_origPointQuota * 10;
+    while (index >= d_samples.size())
     {
       // allocate an arbitrary point
       std::vector<Node> pt;
       if (mkSamplePoint(pt, duplicateThresh))
       {
-        addSamplePoint(pt);
+        addSamplePointInternal(pt);
       }
       else
       {
+        Trace("sygus-sample-ev") << "Failed to make point for " << n << std::endl;
         d_lazyGenPoints = false;
         return Node::null();
       }
     }
   }
-  Assert(index < d_samples.size());
+  */
+  AlwaysAssert(index < d_samples.size());
   // do beta-reductions in n first
   n = Rewriter::rewrite(n);
   // use efficient rewrite for substitution + rewrite
@@ -563,8 +570,8 @@ bool SygusSampler::dualEvaluate(
   }
   Assert(index == d_samples.size() - 1);
   // allocate a point by aggressively trying to find one where they are disequal
-  unsigned evEqThresh = d_pointQuota;
-  unsigned duplicateThresh = d_pointQuota * 10;
+  unsigned evEqThresh = d_origPointQuota;
+  unsigned duplicateThresh = d_origPointQuota * 10;
   std::vector<Node> pt;
   unsigned evIndex = d_samples.size();
   unsigned eqCount = 0;
@@ -577,15 +584,18 @@ bool SygusSampler::dualEvaluate(
       d_samples.push_back(pt);
       ra = evaluate(a, evIndex);
       rb = evaluate(b, evIndex);
+      d_samples.pop_back();
       if (ra != rb)
       {
+        Trace("sygus-sample-debug") << "Sample: found disequal point after " << eqCount << " equal." << std::endl;
+        addSamplePointInternal(pt);
         return true;
       }
-      d_samples.pop_back();
     }
     else
     {
       // cannot allocate a point
+      d_lazyGenPoints = false;
       return false;
     }
     eqCount++;

@@ -171,7 +171,7 @@ bool CandidateRewriteDatabase::addTerm(Node sol,
           // add the solution again
           // by construction of the above point, we should be unique now
           Node eq_sol_new = d_sampler->registerTerm(sol);
-          AlwaysAssert(eq_sol_new == sol);
+          Assert(eq_sol_new == sol);
         }
         else
         {
