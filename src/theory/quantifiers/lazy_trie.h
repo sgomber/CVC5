@@ -35,8 +35,8 @@ class LazyTrieEvaluator
    * Evaluate a, b at the index^th point, store the results of the evaluation
    * in ra, rb respectively. This method is called when a, b currently occur
    * on the same path in the lazy trie. The motivation for this function is that
-   * if points for indices are generated lazily, then we may proactive choose a
-   * point that separates a and b.
+   * if points for indices are generated lazily, then we may proactively try to
+   * choose a point that separates a and b.
    */
   virtual bool dualEvaluate(Node a, Node b, unsigned index, Node& ra, Node& rb);
 };
