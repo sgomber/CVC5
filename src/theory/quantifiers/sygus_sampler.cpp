@@ -214,7 +214,8 @@ void SygusSampler::initializeSamples(unsigned nsamples)
 
 bool SygusSampler::mkSamplePoint(std::vector<Node>& pt)
 {
-  unsigned duplicateThresh = d_origPointQuota * 10;
+  // number of times we can try a duplicate before giving up
+  unsigned duplicateThresh = 10000;
   // make tuple of random types
   unsigned nduplicates = 0;
   while (nduplicates < duplicateThresh)
@@ -515,11 +516,17 @@ Node SygusSampler::evaluate(Node n, unsigned index)
 {
   // even in lazy mode, index should be in range
   Assert(index < d_samples.size());
+  Trace("sygus-sample-ev") << "Evaluate ( " << index << " ) -> ";
+  return evaluateOnPoint(n, d_samples[index]);
+}
+
+Node SygusSampler::evaluateOnPoint(Node n, const std::vector< Node >& pt)
+{
   // do beta-reductions in n first
   n = Rewriter::rewrite(n);
+  Trace("sygus-sample-ev") << "Evaluate " << n << " -> ";
   // use efficient rewrite for substitution + rewrite
-  Node ev = d_eval.eval(n, d_vars, d_samples[index]);
-  Trace("sygus-sample-ev") << "Evaluate ( " << n << ", " << index << " ) -> ";
+  Node ev = d_eval.eval(n, d_vars, pt);
   if (!ev.isNull())
   {
     Trace("sygus-sample-ev") << ev << std::endl;
@@ -528,7 +535,6 @@ Node SygusSampler::evaluate(Node n, unsigned index)
   Trace("sygus-sample-ev") << "null" << std::endl;
   Trace("sygus-sample-ev") << "Rewrite -> ";
   // substitution + rewrite
-  std::vector<Node>& pt = d_samples[index];
   ev = n.substitute(d_vars.begin(), d_vars.end(), pt.begin(), pt.end());
   ev = Rewriter::rewrite(ev);
   Trace("sygus-sample-ev") << ev << std::endl;
@@ -551,7 +557,6 @@ bool SygusSampler::dualEvaluate(
   // allocate a point by aggressively trying to find one where they are disequal
   unsigned evEqThresh = d_origPointQuota;
   std::vector<Node> pt;
-  unsigned evIndex = d_samples.size();
   unsigned eqCount = 0;
   while (eqCount < evEqThresh)
   {
@@ -559,10 +564,8 @@ bool SygusSampler::dualEvaluate(
     if (mkSamplePoint(pt))
     {
       // speculatively add
-      d_samples.push_back(pt);
-      ra = evaluate(a, evIndex);
-      rb = evaluate(b, evIndex);
-      d_samples.pop_back();
+      ra = evaluateOnPoint(a, pt);
+      rb = evaluateOnPoint(b, pt);
       if (ra != rb)
       {
         Trace("sygus-sample-debug") << "Sample: found disequal point after " << eqCount << " equal." << std::endl;

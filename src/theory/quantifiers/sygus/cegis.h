@@ -187,12 +187,6 @@ class Cegis : public SygusModule
    * conjecture (d_base_vars).
    */
   SygusSampler d_cegis_sampler;
-  /** cegis sample refine points
-   *
-   * Stores the list of indices of sample points in d_cegis_sampler we have
-   * added as refinement lemmas.
-   */
-  std::unordered_set<unsigned> d_cegis_sample_refine;
 
   //---------------------------------for sygus repair
   /** are we using grammar-based repair?

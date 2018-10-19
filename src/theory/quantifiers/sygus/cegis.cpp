@@ -58,7 +58,7 @@ bool Cegis::initialize(Node n,
     Trace("cegis-sample") << "Initialize sampler for " << d_base_body << "..."
                           << std::endl;
     TypeNode bt = d_base_body.getType();
-    d_cegis_sampler.initialize(bt, d_base_vars, options::sygusSamples());
+    d_cegis_sampler.initialize(bt, d_base_vars, 0);
   }
   return processInitialize(n, candidates, lemmas);
 }
@@ -569,23 +569,27 @@ bool Cegis::sampleAddRefinementLemma(const std::vector<Node>& candidates,
   Trace("cegis-sample") << "Sample (after unfolding): " << sbody << std::endl;
 
   NodeManager* nm = NodeManager::currentNM();
-  for (unsigned i = 0, size = d_cegis_sampler.getNumSamplePoints(); i < size;
-       i++)
+  unsigned nsamples = options::sygusSamples();
+  for (unsigned i = 0; i < nsamples; i++)
   {
-    if (d_cegis_sample_refine.find(i) == d_cegis_sample_refine.end())
+    // Make a (new) random sample point. Notice we make fresh random values on
+    // every call. This is preferred to remembering old points that failed to
+    // refine a previous candidate, this those points are less interesting on
+    // average than a fresh random point.
+    std::vector<Node> pt;
+    if (d_cegis_sampler.mkSamplePoint(pt))
     {
-      Node ev = d_cegis_sampler.evaluate(sbody, i);
-      Trace("cegis-sample-debug") << "...evaluate point #" << i << " to " << ev
+      Node ev = d_cegis_sampler.evaluateOnPoint(sbody, pt);
+      Trace("cegis-sample-debug") << "...evaluate random point #" << i << " to " << ev
                                   << std::endl;
       Assert(ev.isConst());
       Assert(ev.getType().isBoolean());
       if (!ev.getConst<bool>())
       {
-        Trace("cegis-sample-debug") << "...false for point #" << i << std::endl;
+        Trace("cegis-sample-debug") << "...false for random point #" << i << std::endl;
+        // remember this point so we don't regenerate it
+        d_cegis_sampler.addSamplePoint(pt);
         // mark this as a CEGIS point (no longer sampled)
-        d_cegis_sample_refine.insert(i);
-        std::vector<Node> pt;
-        d_cegis_sampler.getSamplePoint(i, pt);
         Assert(d_base_vars.size() == pt.size());
         Node rlem = d_base_body.substitute(
             d_base_vars.begin(), d_base_vars.end(), pt.begin(), pt.end());
@@ -596,7 +600,7 @@ bool Cegis::sampleAddRefinementLemma(const std::vector<Node>& candidates,
         {
           if (Trace.isOn("cegis-sample"))
           {
-            Trace("cegis-sample") << "   false for point #" << i << " : ";
+            Trace("cegis-sample") << "   false for random point #" << i << " : ";
             for (const Node& cn : pt)
             {
               Trace("cegis-sample") << cn << " ";
@@ -618,6 +622,11 @@ bool Cegis::sampleAddRefinementLemma(const std::vector<Node>& candidates,
           Trace("cegis-sample-debug") << "...duplicate." << std::endl;
         }
       }
+    }
+    else
+    {
+      // sampler failed to find a non-duplicate point
+      break;
     }
   }
   return false;
