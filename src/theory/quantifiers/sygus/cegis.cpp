@@ -580,13 +580,14 @@ bool Cegis::sampleAddRefinementLemma(const std::vector<Node>& candidates,
     if (d_cegis_sampler.mkSamplePoint(pt))
     {
       Node ev = d_cegis_sampler.evaluateOnPoint(sbody, pt);
-      Trace("cegis-sample-debug") << "...evaluate random point #" << i << " to " << ev
-                                  << std::endl;
+      Trace("cegis-sample-debug")
+          << "...evaluate random point #" << i << " to " << ev << std::endl;
       Assert(ev.isConst());
       Assert(ev.getType().isBoolean());
       if (!ev.getConst<bool>())
       {
-        Trace("cegis-sample-debug") << "...false for random point #" << i << std::endl;
+        Trace("cegis-sample-debug")
+            << "...false for random point #" << i << std::endl;
         // remember this point so we don't regenerate it
         d_cegis_sampler.addSamplePoint(pt);
         // mark this as a CEGIS point (no longer sampled)
@@ -600,7 +601,8 @@ bool Cegis::sampleAddRefinementLemma(const std::vector<Node>& candidates,
         {
           if (Trace.isOn("cegis-sample"))
           {
-            Trace("cegis-sample") << "   false for random point #" << i << " : ";
+            Trace("cegis-sample")
+                << "   false for random point #" << i << " : ";
             for (const Node& cn : pt)
             {
               Trace("cegis-sample") << cn << " ";

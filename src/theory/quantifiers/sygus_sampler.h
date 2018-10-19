@@ -118,7 +118,7 @@ class SygusSampler : public LazyTrieEvaluator
   /** evaluate n on sample point index */
   Node evaluate(Node n, unsigned index) override;
   /** evaluate n on point pt */
-  Node evaluateOnPoint(Node n, const std::vector< Node >& pt);
+  Node evaluateOnPoint(Node n, const std::vector<Node>& pt);
   /**
    * Dual evaluate n on sample point index: we try to find a sample point that
    * makes them different.

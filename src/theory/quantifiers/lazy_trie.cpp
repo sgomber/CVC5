@@ -67,7 +67,7 @@ Node LazyTrie::add(Node n,
       else
       {
         // failed to dual-evaluate, return the lazy child
-        if( forceKeep )
+        if (forceKeep)
         {
           lt->d_lazy_child = n;
         }

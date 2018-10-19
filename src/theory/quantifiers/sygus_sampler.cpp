@@ -520,7 +520,7 @@ Node SygusSampler::evaluate(Node n, unsigned index)
   return evaluateOnPoint(n, d_samples[index]);
 }
 
-Node SygusSampler::evaluateOnPoint(Node n, const std::vector< Node >& pt)
+Node SygusSampler::evaluateOnPoint(Node n, const std::vector<Node>& pt)
 {
   // do beta-reductions in n first
   n = Rewriter::rewrite(n);
@@ -568,7 +568,8 @@ bool SygusSampler::dualEvaluate(
       rb = evaluateOnPoint(b, pt);
       if (ra != rb)
       {
-        Trace("sygus-sample-debug") << "Sample: found disequal point after " << eqCount << " equal." << std::endl;
+        Trace("sygus-sample-debug") << "Sample: found disequal point after "
+                                    << eqCount << " equal." << std::endl;
         addSamplePointInternal(pt);
         return true;
       }
