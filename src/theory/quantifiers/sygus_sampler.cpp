@@ -192,11 +192,10 @@ void SygusSampler::initializeSamples(unsigned nsamples)
   else
   {
     // eager construction
-    unsigned duplicateThresh = nsamples * 10;
     for (unsigned i = 0; i < nsamples; i++)
     {
       std::vector<Node> pt;
-      if (mkSamplePoint(pt, duplicateThresh))
+      if (mkSamplePoint(pt))
       {
         addSamplePointInternal(pt);
       }
@@ -213,9 +212,9 @@ void SygusSampler::initializeSamples(unsigned nsamples)
   }
 }
 
-bool SygusSampler::mkSamplePoint(std::vector<Node>& pt,
-                                 unsigned duplicateThresh)
+bool SygusSampler::mkSamplePoint(std::vector<Node>& pt)
 {
+  unsigned duplicateThresh = d_origPointQuota * 10;
   // make tuple of random types
   unsigned nduplicates = 0;
   while (nduplicates < duplicateThresh)
@@ -551,14 +550,13 @@ bool SygusSampler::dualEvaluate(
   Assert(index == d_samples.size() - 1);
   // allocate a point by aggressively trying to find one where they are disequal
   unsigned evEqThresh = d_origPointQuota;
-  unsigned duplicateThresh = d_origPointQuota * 10;
   std::vector<Node> pt;
   unsigned evIndex = d_samples.size();
   unsigned eqCount = 0;
   while (eqCount < evEqThresh)
   {
     pt.clear();
-    if (mkSamplePoint(pt, duplicateThresh))
+    if (mkSamplePoint(pt))
     {
       // speculatively add
       d_samples.push_back(pt);

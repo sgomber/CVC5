@@ -111,6 +111,8 @@ class SygusSampler : public LazyTrieEvaluator
    */
   void getSamplePoint(unsigned index,
                       std::vector<Node>& pt);
+  /** make a random sample point */
+  bool mkSamplePoint(std::vector<Node>& pt);
   /** Add pt to the set of sample points considered by this sampler */
   void addSamplePoint(std::vector<Node>& pt);
   /** evaluate n on sample point index */
