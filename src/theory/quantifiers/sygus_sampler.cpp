@@ -173,6 +173,7 @@ void SygusSampler::initializeSygus(TermDbSygus* tds,
 void SygusSampler::initializeSamples(unsigned nsamples)
 {
   d_samples.clear();
+  d_spValues.clear();
   d_var_types.clear();
   d_trie.clear();
   d_samples_trie.clear();
@@ -523,6 +524,19 @@ void SygusSampler::addSamplePointInternal(std::vector<Node>& pt)
   }
   d_samples.push_back(pt);
   d_samples_trie.add(pt);
+  if( options::sygusSampleFeedback() )
+  {
+    for (unsigned i=0, size=pt.size(); i<size; i++)
+    {
+      TypeNode t = d_var_types[i];
+      Assert( pt[i].getType()==t );
+      std::vector< Node >& spp = d_spValues[t];
+      if( std::find(spp.begin(),spp.end(),pt[i])==spp.end() )
+      {
+        spp.push_back(pt[i]);
+      }
+    }
+  }
 }
 
 Node SygusSampler::evaluate(Node n, unsigned index)
@@ -616,6 +630,16 @@ int SygusSampler::getDiffSamplePointIndex(Node a, Node b)
 
 Node SygusSampler::getRandomValue(TypeNode tn)
 {
+  if( options::sygusSampleFeedback() )
+  {
+    std::vector< Node >& spp = d_spValues[tn];
+    if(Random::getRandom().pickWithProb(0.5) && !spp.empty())
+    {
+      // select an interesting value from previous values
+      unsigned index = Random::getRandom().pick(0, spp.size() - 1);
+      return spp[index];
+    }
+  }
   NodeManager* nm = NodeManager::currentNM();
   if (tn.isBoolean())
   {

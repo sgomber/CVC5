@@ -1326,6 +1326,15 @@ header = "options/quantifiers_options.h"
   help       = "lazily generate sample points"
 
 [[option]]
+  name       = "sygusSampleFeedback"
+  category   = "regular"
+  long       = "sygus-sample-feedback"
+  type       = "bool"
+  default    = "false"
+  read_only  = true
+  help       = "feedback for generating sample points"
+
+[[option]]
   name       = "sygusRewSynthAccel"
   category   = "regular"
   long       = "sygus-rr-synth-accel"

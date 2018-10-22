@@ -335,6 +335,8 @@ class SygusSampler : public LazyTrieEvaluator
   std::map<Node, std::vector<TypeNode> > d_var_sygus_types;
   /** map from constants to sygus types that include them */
   std::map<Node, std::vector<TypeNode> > d_const_sygus_types;
+  /** union of all values that occur in at least one sample point */
+  std::map<TypeNode, std::vector<Node> > d_spValues;
   /** register sygus type, initializes the above two data structures */
   void registerSygusType(TypeNode tn);
 };
