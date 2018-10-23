@@ -74,6 +74,10 @@ Node applyInternalBv(theory::quantifiers::ExtendedRewriter& extr, Node n )
       {
         Trace("ext-rew-bv") << "Apply bv ext rew preprocess to " << ret << std::endl;
         new_ret = extr.extendedRewriteBv(ret);
+        if( new_ret.isNull() )
+        {
+          new_ret = ret;
+        }
       }
       visited[cur] = new_ret;
     }
