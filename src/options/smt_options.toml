@@ -280,6 +280,14 @@ header = "options/smt_options.h"
   help       = "do the ite simplification pass again if repeating simplification"
 
 [[option]]
+  name       = "extRewPrepBv"
+  category   = "regular"
+  long       = "ext-rew-prep-bv"
+  type       = "bool"
+  default    = "false"
+  help       = "use extended rewriter as a preprocessing pass for BV"
+
+[[option]]
   name       = "extRewPrep"
   category   = "regular"
   long       = "ext-rew-prep"

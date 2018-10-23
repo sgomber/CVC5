@@ -3127,7 +3127,7 @@ void SmtEnginePrivate::processAssertions() {
 
   bool noConflict = true;
 
-  if (options::extRewPrep())
+  if (options::extRewPrep() || options::extRewPrepBv())
   {
     d_passes["ext-rew-pre"]->apply(&d_assertions);
   }

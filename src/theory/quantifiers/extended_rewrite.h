@@ -99,6 +99,8 @@ class ExtendedRewriter
   void disable(ExtRule er) { enableInternal( er, false ); }
   /** enable rule er */
   void enable(ExtRule er) { enableInternal( er, true ); }
+  /** extended rewrite bv */
+  Node extendedRewriteBv(Node ret);
  private:
   bool d_isRevEnabled;
   std::unordered_set<unsigned> d_enabled;
@@ -304,8 +306,6 @@ class ExtendedRewriter
    * ret'.
    */
   Node extendedRewriteArith(Node ret);
-  /** extended rewrite bv */
-  Node extendedRewriteBv(Node ret);
   /** extended rewrite strings
    *
    * If this method returns a non-null node ret', then ret is equivalent to
