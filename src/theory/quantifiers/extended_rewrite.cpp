@@ -2672,11 +2672,11 @@ Node ExtendedRewriter::rewriteBvBool(Node ret)
 
 int ExtendedRewriter::bitVectorSubsume(Node a, Node b, bool strict, bool tryNot)
 {
+  Trace("q-ext-rewrite-debug2")
+      << "Subsume " << a << " " << b << "?" << std::endl;
   Assert(a.getType() == b.getType());
   int max_ret = strict ? 2 : 1;
   int curr_ret = 0;
-  Trace("q-ext-rewrite-debug2")
-      << "Subsume " << a << " " << b << "?" << std::endl;
   // simple cases : a=b, a=max, b=0
   if (a == b || isConstBv(a, true) || isConstBv(b, false))
   {
@@ -2765,7 +2765,7 @@ int ExtendedRewriter::bitVectorSubsume(Node a, Node b, bool strict, bool tryNot)
 
   //--------------recurse extract
   if (ak == BITVECTOR_EXTRACT && bk == BITVECTOR_EXTRACT
-      && a.getOperator() == b.getOperator())
+      && a.getOperator() == b.getOperator() && a[0].getType()==b[0].getType())
   {
     return bitVectorSubsume(a[0], b[0], strict);
   }
