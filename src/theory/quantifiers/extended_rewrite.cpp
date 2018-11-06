@@ -2698,7 +2698,8 @@ int ExtendedRewriter::bitVectorSubsume(Node a, Node b, bool strict, bool tryNot)
   {
     rec = b;
   }
-  if (!rec.isNull())
+  // do not recurse if not aggressive
+  if (!rec.isNull() && !d_aggr)
   {
     for (const Node& rc : rec)
     {
@@ -2726,7 +2727,8 @@ int ExtendedRewriter::bitVectorSubsume(Node a, Node b, bool strict, bool tryNot)
     rec = b;
     reca = false;
   }
-  if (!rec.isNull())
+  // do not recurse if not aggressive
+  if (!rec.isNull() && !d_aggr)
   {
     int r1 = bitVectorSubsume(reca ? a[1] : a, reca ? b : b[1], strict);
     if (r1 > curr_ret)
