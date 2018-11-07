@@ -58,6 +58,13 @@ public:
   static Node rewriteIndexof( Node n );
   static Node rewriteReplace( Node n );
   
+  /** rewrite str.code
+   * This is the entry point for post-rewriting terms n of the form
+   *   str.code( t )
+   * Returns the rewritten form of node.
+   */
+  static Node rewriteStringCode(Node node);
+  
   static void getConcat( Node n, std::vector< Node >& c );
   static Node mkConcat( Kind k, std::vector< Node >& c );
   static Node splitConstant( Node a, Node b, int& index, bool isRev );
