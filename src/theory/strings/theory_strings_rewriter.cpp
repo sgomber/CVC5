@@ -20,9 +20,11 @@
 #include <algorithm>
 
 #include "expr/node_builder.h"
+#include "options/quantifiers_options.h"
 #include "options/strings_options.h"
 #include "smt/logic_exception.h"
 #include "theory/arith/arith_msum.h"
+#include "theory/strings/theory_strings_rewriter_old.h"
 #include "theory/theory.h"
 #include "util/integer.h"
 #include "util/rational.h"
@@ -1377,6 +1379,12 @@ Node TheoryStringsRewriter::rewriteMembership(TNode node) {
 }
 
 RewriteResponse TheoryStringsRewriter::postRewrite(TNode node) {
+  if (!options::sygusExtRew())
+  {
+    // call the old rewriter
+    return TheoryStringsRewriterOld::postRewrite(node);
+  }
+
   Trace("strings-postrewrite") << "Strings::postRewrite start " << node << std::endl;
   NodeManager* nm = NodeManager::currentNM();
   Node retNode = node;
@@ -1550,6 +1558,12 @@ bool TheoryStringsRewriter::hasEpsilonNode(TNode node) {
 }
 
 RewriteResponse TheoryStringsRewriter::preRewrite(TNode node) {
+  if (!options::sygusExtRew())
+  {
+    // call the old rewriter
+    return TheoryStringsRewriterOld::preRewrite(node);
+  }
+
   return RewriteResponse(REWRITE_DONE, node);
 }
 
