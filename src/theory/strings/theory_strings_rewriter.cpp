@@ -2523,6 +2523,7 @@ Node TheoryStringsRewriter::rewriteReplace( Node node ) {
 
     // (str.replace x y x) ---> (str.replace x (str.++ y1 ... yn) x)
     // if 1 >= (str.len x) and (= y "") ---> (= y1 "") ... (= yn "")
+    /*
     if (checkEntailLengthOne(node[0]))
     {
       Node empty = nm->mkConst(String(""));
@@ -2545,6 +2546,7 @@ Node TheoryStringsRewriter::rewriteReplace( Node node ) {
         }
       }
     }
+    */
   }
 
   std::vector<Node> children1;
