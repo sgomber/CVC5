@@ -936,10 +936,6 @@ void TheoryStrings::check(Effort e) {
       d_strat_steps.find(e);
   if (!d_conflict && !d_valuation.needCheck() && itsr != d_strat_steps.end())
   {
-    if( options::stringAbortCheck() )
-    {
-      exit(71);
-    }
     Trace("strings-check") << "Theory of strings " << e << " effort check "
                            << std::endl;
     if(Trace.isOn("strings-eqc")) {

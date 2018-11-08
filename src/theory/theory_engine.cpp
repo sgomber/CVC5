@@ -509,7 +509,11 @@ void TheoryEngine::dumpAssertions(const char* tag) {
  */
 void TheoryEngine::check(Theory::Effort effort) {
   // spendResource();
-
+    if( options::abortCheck() )
+    {
+      exit(71);
+    }
+    
   // Reset the interrupt flag
   d_interrupted = false;
 

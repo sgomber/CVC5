@@ -147,15 +147,6 @@ header = "options/strings_options.h"
   help       = "abort when a looping word equation is encountered"
 
 [[option]]
-  name       = "stringAbortCheck"
-  category   = "regular"
-  long       = "strings-abort-check"
-  type       = "bool"
-  default    = "false"
-  read_only  = true
-  help       = "abort if asked to check"
-
-[[option]]
   name       = "stringInferAsLemmas"
   category   = "regular"
   long       = "strings-infer-as-lemmas"
