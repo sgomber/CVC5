@@ -186,7 +186,6 @@ void SygusSampler::initializeSamples(unsigned nsamples)
   }
 
   NodeManager * nm = NodeManager::currentNM();
-  AlwaysAssert(types.size()==2);
   unsigned nduplicates = 0;
   for (unsigned i = 0; i < nsamples; i++)
   {
