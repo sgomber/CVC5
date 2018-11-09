@@ -185,10 +185,38 @@ void SygusSampler::initializeSamples(unsigned nsamples)
     }
   }
 
+  NodeManager * nm = NodeManager::currentNM();
+  AlwaysAssert(types.size()==2);
   unsigned nduplicates = 0;
   for (unsigned i = 0; i < nsamples; i++)
   {
     std::vector<Node> sample_pt;
+    /*
+    if( i==0 )
+    {
+      sample_pt.push_back(nm->mkConst(BitVector("00000000000000000000000000000010")));
+      sample_pt.push_back(nm->mkConst(BitVector("01000000000000000000000000000111")));
+    }
+    else if( i==1 )
+    {
+      sample_pt.push_back(nm->mkConst(BitVector("00000000000000000000000000000011")));
+      sample_pt.push_back(nm->mkConst(BitVector("00000100011111111111111100000111")));
+      
+    }
+    else if( i==2 )
+    {
+      sample_pt.push_back(nm->mkConst(BitVector("00000100011111111111111100000111")));
+      sample_pt.push_back(nm->mkConst(BitVector("00000000000000000000000000000011")));
+      
+    }
+    else if( i==3 )
+    {
+      sample_pt.push_back(nm->mkConst(BitVector("00000000000000000000000000000001")));
+      sample_pt.push_back(nm->mkConst(BitVector("10000000000000000000000000000010")));
+    }
+    else
+    {
+*/
     for (unsigned j = 0, size = types.size(); j < size; j++)
     {
       Node v = d_vars[j];
@@ -220,6 +248,7 @@ void SygusSampler::initializeSamples(unsigned nsamples)
       }
       sample_pt.push_back(r);
     }
+    //}
     if (d_samples_trie.add(sample_pt))
     {
       if (Trace.isOn("sygus-sample"))
