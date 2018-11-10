@@ -808,9 +808,9 @@ void CegGrammarConstructor::mkSygusDefaultGrammar(
   // having only constant constructors
   if (ops.back().size() > consts.size())
   {
-    for (unsigned i = 0; i < 5; i++)
+    for (unsigned i = 0; i < 4; i++)
     {
-      Kind k = i == 0 ? NOT : (i == 1 ? AND : (i == 2 ? OR : ( i==3 ? EQUAL : ITE)));
+      Kind k = i == 0 ? NOT : (i == 1 ? AND : (i == 2 ? OR : ITE));
       // TODO #1935 ITEs are added to Boolean grammars so that we can infer
       // unification strategies. We can do away with this if we can infer
       // unification strategies from and/or/not
