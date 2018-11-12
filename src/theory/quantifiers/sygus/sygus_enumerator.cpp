@@ -97,9 +97,8 @@ void SygusEnumerator::initialize(Node e)
         // is prohibited in all subterm positions.
         Node var;
         Node veq;
-        if( TermDb::symBreakLemmaToDisequality(sbl, var, veq ) )
+        if (TermDb::symBreakLemmaToDisequality(sbl, var, veq))
         {
-          
         }
         // other symmetry breaking lemmas such as disjunctions are not used
       }
