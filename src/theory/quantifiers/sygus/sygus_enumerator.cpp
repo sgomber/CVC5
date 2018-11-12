@@ -38,7 +38,7 @@ void SygusEnumerator::initialize(Node e)
   Assert(d_etype.getDatatype().isSygus());
   d_tlEnum = getMasterEnumForType(d_etype);
   d_abortSize = options::sygusAbortSize();
-  // process the symmetry breaking lemmas
+  // process statically registered symmetry breaking lemmas
   processSymmetryBreakingLemmas();  
 }
 
@@ -63,61 +63,67 @@ void SygusEnumerator::processSymmetryBreakingLemmas()
   const Datatype& dt = d_etype.getDatatype();
   for (const Node& lem : sbl)
   {
-    if (!d_tds->isSymBreakLemmaTemplate(lem))
+    // substitute its active guard by true and rewrite
+    Node slem = lem.substitute(agt, truent);
+    slem = Rewriter::rewrite(slem);
+    // break into conjuncts
+    std::vector<Node> sblc;
+    if (slem.getKind() == AND)
     {
-      // substitute its active guard by true and rewrite
-      Node slem = lem.substitute(agt, truent);
-      slem = Rewriter::rewrite(slem);
-      // break into conjuncts
-      std::vector<Node> sblc;
-      if (slem.getKind() == AND)
+      for (const Node& slemc : slem)
       {
-        for (const Node& slemc : slem)
+        sblc.push_back(slemc);
+      }
+    }
+    else
+    {
+      sblc.push_back(slem);
+    }
+    for (const Node& sbl : sblc)
+    {
+      Trace("sygus-enum")
+          << "  symmetry breaking lemma : " << sbl << std::endl;
+
+      // it could specify a literal disequality, i.e. a particular term
+      // is prohibited in some or all subterm positions.
+      Node var;
+      Node veq;
+      if (TermDbSygus::symBreakLemmaToDisequality(sbl, var, veq))
+      {
+        Trace("sygus-enum") << "  process as disequality " << var << " != " << veq << std::endl;
+        // if var is the enumerator, it is a concrete disequality
+        if( var==d_enum )
         {
-          sblc.push_back(slemc);
+          Trace("sygus-enum") << "  applies top-level." << std::endl;
+          
+        }
+        // if var is a canonical free variable, it states that veq should not occur as a subterm of d_enum
+        TypeNode tnv = var.getType();
+        Node fv = d_tds->getFreeVar(tnv,0);
+        if( var==fv )
+        {
+          Trace("sygus-enum") << "  applies to any subterm." << std::endl;
         }
       }
-      else
+      else if (sbl.getKind() == NOT)
       {
-        sblc.push_back(slem);
-      }
-      for (const Node& sbl : sblc)
-      {
-        Trace("sygus-enum")
-            << "  symmetry breaking lemma : " << sbl << std::endl;
         // if its a negation of a unit top-level tester, then this specifies
         // that we should not enumerate terms whose top symbol is that
         // constructor
-        if (sbl.getKind() == NOT)
+        Node a;
+        int tst = datatypes::DatatypesRewriter::isTester(sbl[0], a);
+        if (tst >= 0)
         {
-          Node a;
-          int tst = datatypes::DatatypesRewriter::isTester(sbl[0], a);
-          if (tst >= 0)
+          if (a == d_enum)
           {
-            if (a == d_enum)
-            {
-              Node cons = Node::fromExpr(dt[tst].getConstructor());
-              Trace("sygus-enum") << "  ...unit exclude constructor #" << tst
-                                  << ", constructor " << cons << std::endl;
-              d_sbExcTlCons.insert(cons);
-            }
+            Node cons = Node::fromExpr(dt[tst].getConstructor());
+            Trace("sygus-enum") << "  ...unit exclude constructor #" << tst
+                                << ", constructor " << cons << std::endl;
+            d_sbExcTlCons.insert(cons);
           }
         }
-        // it could specify a literal disequality, i.e. a particular term
-        // is prohibited in all subterm positions.
-        Node var;
-        Node veq;
-        if (TermDbSygus::symBreakLemmaToDisequality(sbl, var, veq))
-        {
-          Trace("sygus-enum") << "Disequality " << var << " != " << veq << " is equivalent to registered lemma " << sbl << std::endl;
-          // if var is the enumerator, it is a concrete disequality
-          if( var==d_enum )
-          {
-          }
-          // if var is a canonical free variable, it states that veq should not occur as a subterm of d_enum
-        }
-        // other symmetry breaking lemmas are not used
       }
+      // other symmetry breaking lemmas are not used
     }
   }
 }
@@ -127,7 +133,14 @@ void SygusEnumerator::addValue(Node v)
   // do nothing
 }
 
-bool SygusEnumerator::increment() { return d_tlEnum->increment(); }
+bool SygusEnumerator::increment() 
+{ 
+  // process dynamically generated symmetry breaking lemmas
+  processSymmetryBreakingLemmas();
+  // increment the enumerator
+  return d_tlEnum->increment(); 
+}
+
 Node SygusEnumerator::getCurrent()
 {
   if (d_abortSize >= 0)

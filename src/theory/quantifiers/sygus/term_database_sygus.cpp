@@ -832,11 +832,14 @@ void TermDbSygus::clearSymBreakLemmas(Node e) { d_enum_to_sb_lemmas.erase(e); }
 bool TermDbSygus::symBreakLemmaToDisequality(Node lem, Node& var, Node& veq)
 {
   std::vector<Node> disj;
-  if (lem.getKind() == OR)
+  if (lem.getKind() == OR || ( lem.getKind()==NOT && lem[0].getKind()==AND) )
   {
-    for (const Node& lemc : lem)
+    Node base = lem.getKind()==NOT ? lem[0] : lem;
+    bool isNeg = lem.getKind()==NOT;
+    for (const Node& lemc : base)
     {
-      disj.push_back(lemc);
+      Node d = isNeg ? lemc.negate() : lemc;
+      disj.push_back(d);
     }
   }
   else
