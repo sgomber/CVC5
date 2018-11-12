@@ -129,7 +129,7 @@ class SygusEnumerator : public EnumValGenerator
      * on the redundancy criteria used by this class.
      */
     bool addTerm(Node n);
-    /** 
+    /**
      * Remove term from this cache.
      */
     bool removeTerm(Node n);
