@@ -193,6 +193,21 @@ class TermDbSygus {
   bool isSymBreakLemmaTemplate(Node lem) const;
   /** Clear information about symmetry breaking lemmas for enumerator e */
   void clearSymBreakLemmas(Node e);
+  /**
+   * If this method returns true, it updates var and veq such that
+   * lem is equivalent to var != veq. For example,
+   * ~is-+( e ) V ~is-x( e.1 ) V ~is-y( e.2 ) is equivalent to e != x+y
+   */
+  static bool symBreakLemmaToDisequality(Node lem, Node& var, Node& veq);
+  /** 
+   * Convert tester map to term. Argument tstm maps selector chains to a
+   * constructor number. If tstm constrains n to be a concrete term,
+   * this method returns that term. For example, if tstm is
+   *   e -> 0, e.1 -> 1, e.2 -> 2
+   * where +, x, y are constructors #0, 1, 2 of the types of e, e.1, e.2
+   * respectively, then this returns the term x+y.
+   */
+  static Node testerMapToTerm(Node n, std::map< Node, unsigned >& tstm);
   //------------------------------end enumerators
 
   //-----------------------------conversion from sygus to builtin

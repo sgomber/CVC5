@@ -93,6 +93,14 @@ void SygusEnumerator::initialize(Node e)
             }
           }
         }
+        // it could specify a literal disequality, i.e. a particular term
+        // is prohibited in all subterm positions.
+        Node var;
+        Node veq;
+        if( TermDb::symBreakLemmaToDisequality(sbl, var, veq ) )
+        {
+          
+        }
         // other symmetry breaking lemmas such as disjunctions are not used
       }
     }

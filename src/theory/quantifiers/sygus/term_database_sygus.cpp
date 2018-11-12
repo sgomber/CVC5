@@ -829,6 +829,79 @@ bool TermDbSygus::isSymBreakLemmaTemplate(Node lem) const
 
 void TermDbSygus::clearSymBreakLemmas(Node e) { d_enum_to_sb_lemmas.erase(e); }
 
+bool TermDbSygus::symBreakLemmaToDisequality(Node lem, Node& var, Node& veq)
+{
+  std::vector< Node > disj;
+  if( lem.getKind()==OR )
+  {
+    for( const Node& lemc : lem )
+    {
+      disj.push_back(lemc);
+    }
+  }
+  else
+  {
+    disj.push_back(lem);
+  }
+  std::map< Node, unsigned > aToTst;
+  for( const Node& d : disj )
+  {
+    if( d.getKind()!=NOT )
+    {
+      return false;
+    }
+    Node a;
+    int tst = datatypes::DatatypesRewriter::isTester(d[0], a);
+    if( tst<0 )
+    {
+      return false;
+    }
+    aToTst[a] = static_cast<unsigned>(tst);
+    if( a.isVar() )
+    {
+      var = a;
+    }
+  }
+  if( var.isNull() )
+  {
+    return false;
+  }
+  // invoke testerMapToTerm, must have a tester for each selector chain
+  veq = testerMapToTerm(var,aToTst);
+  if( !veq.isNull() )
+  {
+    return true;
+  }
+  var = Node::null();
+  return false;
+}
+
+Node TermDbSygus::testerMapToTerm(Node n, std::map< Node, unsigned >& tstm)
+{
+  std::map< Node, unsigned >::iterator it = tstm.find(n);
+  if( it==tstm.end() )
+  {
+    return Node::null();
+  }
+  TypeNode tn = n.getType();
+  const Datatype& dt = tn.getDatatype();
+  unsigned tindex = it->second;
+  Assert( tindex<dt.getNumConstructors() );
+  std::vector< Node > children;
+  children.push_back( Node::fromExpr( dt[tindex].getConstructor() ) );
+  NodeManager * nm = NodeManager::currentNM();
+  for( unsigned i=0, nargs = dt[tindex].getNumArgs(); i<nargs; i++ ){
+    Node sel = nm->mkNode( APPLY_SELECTOR_TOTAL, Node::fromExpr( dt[tindex].getSelectorInternal( tn.toType(), i ) ), n );
+    Node cc = testerMapToTerm( n, tstm );
+    if( cc.isNull() )
+    {
+      return cc;
+    }
+    children.push_back( cc );
+  }
+  return nm->mkNode( APPLY_CONSTRUCTOR, children );
+}
+
 bool TermDbSygus::isRegistered(TypeNode tn) const
 {
   return d_register.find( tn )!=d_register.end();
