@@ -859,6 +859,7 @@ bool TermDbSygus::symBreakLemmaToDisequality(Node lem, Node& var, Node& veq)
     aToTst[a] = static_cast<unsigned>(tst);
     if (a.isVar())
     {
+      // take the first variable we see (should only be one)
       var = a;
     }
   }

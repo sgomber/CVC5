@@ -38,13 +38,23 @@ void SygusEnumerator::initialize(Node e)
   Assert(d_etype.getDatatype().isSygus());
   d_tlEnum = getMasterEnumForType(d_etype);
   d_abortSize = options::sygusAbortSize();
+  // process the symmetry breaking lemmas
+  processSymmetryBreakingLemmas();  
+}
 
-  // Get the statically registered symmetry breaking clauses for e, see if they
+void SygusEnumerator::processSymmetryBreakingLemmas()
+{
+
+  std::vector<Node> sbl;
+  d_tds->getSymBreakLemmas(d_enum, sbl);
+  if (sbl.empty())
+  {
+    return;
+  }
+  // Get the registered symmetry breaking clauses for d_enum, see if they
   // can be used for speeding up the enumeration.
   NodeManager* nm = NodeManager::currentNM();
-  std::vector<Node> sbl;
-  d_tds->getSymBreakLemmas(e, sbl);
-  Node ag = d_tds->getActiveGuardForEnumerator(e);
+  Node ag = d_tds->getActiveGuardForEnumerator(d_enum);
   Node truen = nm->mkConst(true);
   // use TNode for substitute below
   TNode agt = ag;
@@ -84,7 +94,7 @@ void SygusEnumerator::initialize(Node e)
           int tst = datatypes::DatatypesRewriter::isTester(sbl[0], a);
           if (tst >= 0)
           {
-            if (a == e)
+            if (a == d_enum)
             {
               Node cons = Node::fromExpr(dt[tst].getConstructor());
               Trace("sygus-enum") << "  ...unit exclude constructor #" << tst
@@ -97,10 +107,16 @@ void SygusEnumerator::initialize(Node e)
         // is prohibited in all subterm positions.
         Node var;
         Node veq;
-        if (TermDb::symBreakLemmaToDisequality(sbl, var, veq))
+        if (TermDbSygus::symBreakLemmaToDisequality(sbl, var, veq))
         {
+          Trace("sygus-enum") << "Disequality " << var << " != " << veq << " is equivalent to registered lemma " << sbl << std::endl;
+          // if var is the enumerator, it is a concrete disequality
+          if( var==d_enum )
+          {
+          }
+          // if var is a canonical free variable, it states that veq should not occur as a subterm of d_enum
         }
-        // other symmetry breaking lemmas such as disjunctions are not used
+        // other symmetry breaking lemmas are not used
       }
     }
   }

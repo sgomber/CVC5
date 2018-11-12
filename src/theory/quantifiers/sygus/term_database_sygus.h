@@ -205,7 +205,7 @@ class TermDbSygus {
    * this method returns that term. For example, if tstm is
    *   e -> 0, e.1 -> 1, e.2 -> 2
    * where +, x, y are constructors #0, 1, 2 of the types of e, e.1, e.2
-   * respectively, then this returns the term x+y.
+   * respectively, then this method applied to (e,tstm) returns the term x+y.
    */
   static Node testerMapToTerm(Node n, std::map<Node, unsigned>& tstm);
   //------------------------------end enumerators
