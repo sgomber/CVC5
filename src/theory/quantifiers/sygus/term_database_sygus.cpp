@@ -897,7 +897,7 @@ Node TermDbSygus::testerMapToTerm(Node n, std::map<Node, unsigned>& tstm)
         APPLY_SELECTOR_TOTAL,
         Node::fromExpr(dt[tindex].getSelectorInternal(tn.toType(), i)),
         n);
-    Node cc = testerMapToTerm(n, tstm);
+    Node cc = testerMapToTerm(sel, tstm);
     if (cc.isNull())
     {
       return cc;
