@@ -50,6 +50,7 @@ void SygusEnumerator::processSymmetryBreakingLemmas()
   {
     return;
   }
+  d_tds->clearSymBreakLemmas(d_enum);
   // Get the registered symmetry breaking clauses for d_enum, see if they
   // can be used for speeding up the enumeration.
   NodeManager* nm = NodeManager::currentNM();
