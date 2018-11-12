@@ -39,12 +39,11 @@ void SygusEnumerator::initialize(Node e)
   d_tlEnum = getMasterEnumForType(d_etype);
   d_abortSize = options::sygusAbortSize();
   // process statically registered symmetry breaking lemmas
-  processSymmetryBreakingLemmas();  
+  processSymmetryBreakingLemmas();
 }
 
 void SygusEnumerator::processSymmetryBreakingLemmas()
 {
-
   std::vector<Node> sbl;
   d_tds->getSymBreakLemmas(d_enum, sbl);
   if (sbl.empty())
@@ -81,8 +80,7 @@ void SygusEnumerator::processSymmetryBreakingLemmas()
     }
     for (const Node& sbl : sblc)
     {
-      Trace("sygus-enum")
-          << "  symmetry breaking lemma : " << sbl << std::endl;
+      Trace("sygus-enum") << "  symmetry breaking lemma : " << sbl << std::endl;
 
       // it could specify a literal disequality, i.e. a particular term
       // is prohibited in some or all subterm positions.
@@ -90,17 +88,18 @@ void SygusEnumerator::processSymmetryBreakingLemmas()
       Node veq;
       if (TermDbSygus::symBreakLemmaToDisequality(sbl, var, veq))
       {
-        Trace("sygus-enum") << "  process as disequality " << var << " != " << veq << std::endl;
+        Trace("sygus-enum")
+            << "  process as disequality " << var << " != " << veq << std::endl;
         // if var is the enumerator, it is a concrete disequality
-        if( var==d_enum )
+        if (var == d_enum)
         {
           Trace("sygus-enum") << "  applies top-level." << std::endl;
-          
         }
-        // if var is a canonical free variable, it states that veq should not occur as a subterm of d_enum
+        // if var is a canonical free variable, it states that veq should not
+        // occur as a subterm of d_enum
         TypeNode tnv = var.getType();
-        Node fv = d_tds->getFreeVar(tnv,0);
-        if( var==fv )
+        Node fv = d_tds->getFreeVar(tnv, 0);
+        if (var == fv)
         {
           Trace("sygus-enum") << "  applies to any subterm." << std::endl;
         }
@@ -133,12 +132,12 @@ void SygusEnumerator::addValue(Node v)
   // do nothing
 }
 
-bool SygusEnumerator::increment() 
-{ 
+bool SygusEnumerator::increment()
+{
   // process dynamically generated symmetry breaking lemmas
   processSymmetryBreakingLemmas();
   // increment the enumerator
-  return d_tlEnum->increment(); 
+  return d_tlEnum->increment();
 }
 
 Node SygusEnumerator::getCurrent()

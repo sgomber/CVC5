@@ -61,7 +61,7 @@ class SygusEnumerator : public EnumValGenerator
   /** pointer to the synth conjecture that owns this enumerator */
   SynthConjecture* d_parent;
   /** process symmetry breaking lemmas
-   * 
+   *
    * This method polls the sygus term database to determine if there are any
    * new symmetry breaking lemmas for the enumerator of this class, and
    * processes them if it is possible to do so.
