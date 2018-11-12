@@ -102,6 +102,7 @@ void SygusEnumerator::processSymmetryBreakingLemmas()
         if (var == fv)
         {
           Trace("sygus-enum") << "  applies to any subterm." << std::endl;
+          d_tcache[tnv].removeTerm(veq);
         }
       }
       else if (sbl.getKind() == NOT)
@@ -373,6 +374,12 @@ bool SygusEnumerator::TermCache::addTerm(Node n)
   }
   d_terms.push_back(n);
   return true;
+}
+
+bool SygusEnumerator::TermCache::removeTerm(Node n)
+{
+  // TODO
+  return false;
 }
 void SygusEnumerator::TermCache::pushEnumSizeIndex()
 {
