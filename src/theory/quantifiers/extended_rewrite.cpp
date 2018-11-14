@@ -181,6 +181,19 @@ Node ExtendedRewriter::extendedRewrite(Node n)
   {
     new_ret = extendedRewriteEqChain(EQUAL, AND, OR, NOT, ret);
     debugExtendedRewrite(ret, new_ret, "Bool eq-chain simplify");
+    // recursive ITE pushing
+    if( new_ret.isNull() )
+    {
+      for( unsigned i=0; i<2; i++ )
+      {
+        if( ret[i].getKind()==ITE && ( ret[1-i].isVar() || ret[1-i].isConst() ) )
+        {
+          new_ret = extendedRewriteIteRecPush( ret[i], ret[1-i] );
+          debugExtendedRewrite(ret, new_ret, "ITE rec push");
+          break;
+        }
+      }
+    }
   }
   Assert(new_ret.isNull() || new_ret != ret);
   if (new_ret.isNull() && ret.getKind() != ITE)
@@ -512,6 +525,56 @@ Node ExtendedRewriter::extendedRewriteIte(Kind itek, Node n, bool full)
   }
 
   return new_ret;
+}
+
+
+Node ExtendedRewriter::extendedRewriteIteRecPush(Node n, Node v)
+{
+  NodeManager * nm = NodeManager::currentNM();
+  std::unordered_map<TNode, Node, TNodeHashFunction> visited;
+  std::unordered_map<TNode, Node, TNodeHashFunction>::iterator it;
+  std::vector<TNode> visit;
+  TNode cur;
+  visit.push_back(n);
+  do {
+    cur = visit.back();
+    visit.pop_back();
+    it = visited.find(cur);
+
+    if (it == visited.end()) {
+      if( cur.getKind()==ITE )
+      {
+        visited[cur] = Node::null();
+        visit.push_back(cur);
+        visit.push_back(cur[1]);
+        visit.push_back(cur[2]);
+      }
+      else
+      {
+        visited[cur] = cur.eqNode(v);
+      }
+    } else if (it->second.isNull()) {
+      Assert( cur.getKind()==ITE );
+      Node ret = cur;
+      bool childChanged = false;
+      std::vector<Node> children;
+      children.push_back(cur[0]);
+      for (unsigned i=1; i<=2; i++) {
+        it = visited.find(cur[i]);
+        Assert(it != visited.end());
+        Assert(!it->second.isNull());
+        childChanged = childChanged || cur[i] != it->second;
+        children.push_back(it->second);
+      }
+      if (childChanged) {
+        ret = nm->mkNode(ITE, children);
+      }
+      visited[cur] = ret;
+    }
+  } while (!visit.empty());
+  Assert(visited.find(n) != visited.end());
+  Assert(!visited.find(n)->second.isNull());
+  return visited[n];
 }
 
 Node ExtendedRewriter::extendedRewriteAndOr(Node n)
