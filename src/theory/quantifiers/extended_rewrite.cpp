@@ -183,12 +183,12 @@ Node ExtendedRewriter::extendedRewrite(Node n)
     debugExtendedRewrite(ret, new_ret, "Bool eq-chain simplify");
   }
   // recursive ITE pushing
-  if( new_ret.isNull() && ret.getNumChildren()==2 )
+  if( new_ret.isNull() && ret.getNumChildren()==2 && ret.getType().isBoolean() )
   {
     Kind k = ret.getKind();
     for( unsigned i=0; i<2; i++ )
     {
-      if( ret[i].getKind()==ITE && ( ret[1-i].isVar() || ret[1-i].isConst() ) )
+      if( ret[i].getKind()==ITE && !ret[i].getType().isBoolean() && ( ret[1-i].isVar() || ret[1-i].isConst() ) )
       {
         new_ret = extendedRewriteIteRecPush(k, i==1, ret[i], ret[1-i] );
         debugExtendedRewrite(ret, new_ret, "ITE rec push");
@@ -552,7 +552,7 @@ Node ExtendedRewriter::extendedRewriteIteRecPush(Kind k, bool pre, Node n, Node 
       }
       else
       {
-        visited[cur] = nm->mkNode( k, pre ? v : cur, pre ? cur : v );
+        visited[cur] = pre ? nm->mkNode( k, v, cur ) : nm->mkNode( k, cur, v );
       }
     } else if (it->second.isNull()) {
       Assert( cur.getKind()==ITE );
