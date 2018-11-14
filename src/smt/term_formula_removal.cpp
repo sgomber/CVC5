@@ -97,6 +97,7 @@ Node RemoveTermFormulas::run(TNode node, std::vector<Node>& output,
             nodeType,
             "a variable introduced due to term-level ITE removal");
         d_skolem_cache.insert(node, skolem);
+        Trace("ajr-temp") << "Skolem for " << node << std::endl;
 
         // The new assertion
         newAssertion = nodeManager->mkNode(

@@ -90,7 +90,7 @@ class ExtendedRewriter
    * strictly decrease the term size of n.
    */
   Node extendedRewriteIte(Kind itek, Node n, bool full = true);
-  Node extendedRewriteIteRecPush(Node n, Node v);
+  Node extendedRewriteIteRecPush(Kind k, bool pre, Node n, Node v);
   /** Rewrite AND/OR
    *
    * This implements BCP, factoring, and equality resolution for the Boolean

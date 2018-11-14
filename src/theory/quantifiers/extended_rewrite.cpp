@@ -181,17 +181,18 @@ Node ExtendedRewriter::extendedRewrite(Node n)
   {
     new_ret = extendedRewriteEqChain(EQUAL, AND, OR, NOT, ret);
     debugExtendedRewrite(ret, new_ret, "Bool eq-chain simplify");
-    // recursive ITE pushing
-    if( new_ret.isNull() )
+  }
+  // recursive ITE pushing
+  if( new_ret.isNull() && ret.getNumChildren()==2 )
+  {
+    Kind k = ret.getKind();
+    for( unsigned i=0; i<2; i++ )
     {
-      for( unsigned i=0; i<2; i++ )
+      if( ret[i].getKind()==ITE && ( ret[1-i].isVar() || ret[1-i].isConst() ) )
       {
-        if( ret[i].getKind()==ITE && ( ret[1-i].isVar() || ret[1-i].isConst() ) )
-        {
-          new_ret = extendedRewriteIteRecPush( ret[i], ret[1-i] );
-          debugExtendedRewrite(ret, new_ret, "ITE rec push");
-          break;
-        }
+        new_ret = extendedRewriteIteRecPush(k, i==1, ret[i], ret[1-i] );
+        debugExtendedRewrite(ret, new_ret, "ITE rec push");
+        break;
       }
     }
   }
@@ -528,7 +529,7 @@ Node ExtendedRewriter::extendedRewriteIte(Kind itek, Node n, bool full)
 }
 
 
-Node ExtendedRewriter::extendedRewriteIteRecPush(Node n, Node v)
+Node ExtendedRewriter::extendedRewriteIteRecPush(Kind k, bool pre, Node n, Node v)
 {
   NodeManager * nm = NodeManager::currentNM();
   std::unordered_map<TNode, Node, TNodeHashFunction> visited;
@@ -551,7 +552,7 @@ Node ExtendedRewriter::extendedRewriteIteRecPush(Node n, Node v)
       }
       else
       {
-        visited[cur] = cur.eqNode(v);
+        visited[cur] = nm->mkNode( k, pre ? v : cur, pre ? cur : v );
       }
     } else if (it->second.isNull()) {
       Assert( cur.getKind()==ITE );
