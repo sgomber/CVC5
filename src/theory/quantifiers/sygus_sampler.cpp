@@ -213,9 +213,14 @@ void SygusSampler::initializeSamples(unsigned nsamples)
       sample_pt.push_back(nm->mkConst(BitVector("00000000000000000000000000000001")));
       sample_pt.push_back(nm->mkConst(BitVector("10000000000000000000000000000010")));
     }
+    else if( i==4 )
+    {
+      sample_pt.push_back(nm->mkConst(BitVector("00000000000000000000000000000100")));
+      sample_pt.push_back(nm->mkConst(BitVector("11110000000000000000000000000001")));
+    }
     else
     {
-*/
+      */
     for (unsigned j = 0, size = types.size(); j < size; j++)
     {
       Node v = d_vars[j];
