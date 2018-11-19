@@ -29,6 +29,15 @@ GenIcPbe::GenIcPbe(PreprocessingPassContext* preprocContext)
 PreprocessingPassResult GenIcPbe::applyInternal(
       AssertionPipeline* assertionsToPreprocess)
 {
+  
+  static bool tryThis = true;
+  
+  if( !tryThis )
+  {
+    return PreprocessingPassResult::NO_CONFLICT;
+  }
+  tryThis  = false;
+  
   NodeManager * nm = NodeManager::currentNM();
 
   std::vector< Node >& asl = assertionsToPreprocess->ref();
@@ -41,7 +50,7 @@ PreprocessingPassResult GenIcPbe::applyInternal(
   AlwaysAssert(icCase.getNumChildren()>=2,  "GenIcPbe: bad arity for assertion");
   
   std::vector< Node > bvars;
-  Node funToSynthBvarOp;
+  Node funToSynthOp;
   Node funToSynthBvar;
   
   // match the lists
@@ -63,9 +72,7 @@ PreprocessingPassResult GenIcPbe::applyInternal(
       if( cur.getKind()==APPLY_UF )
       {
         AlwaysAssert(funToSynthBvar.isNull(), "GenIcPbe: multiple functions to synthesize");
-        std::stringstream sso;
-        sso << "f" << cur.getOperator();
-        funToSynthBvarOp = nm->mkBoundVar(sso.str(), cur.getOperator().getType());
+        funToSynthOp = cur.getOperator();
         std::stringstream ss;
         ss << "x";
         funToSynthBvar = nm->mkBoundVar(ss.str(), cur.getType());
@@ -136,17 +143,42 @@ PreprocessingPassResult GenIcPbe::applyInternal(
   
   TNode xt = funToSynthBvar;
   TNode xkt = xk;
-  Node icSkolem = icCase.substitute( xt, xkt );
+  Node resSkolem = res.substitute( xt, xkt );
+  
+  Options& nodeManagerOptions = NodeManager::currentNM()->getOptions();
+  std::ostream& out = *nodeManagerOptions.getOut();
   
   for( unsigned i=0, nsamples = ss.getNumSamplePoints(); i<nsamples; i++ )
   {
     std::vector< Node > samplePt;
     ss.getSamplePoint(i,samplePt);
     
-    Node icSkolemSubs = icSkolem.substitute(bvars.begin(),bvars.end(),samplePt.begin(),samplePt.end());
+    Node resSkolemSubs = resSkolem.substitute(bvars.begin(),bvars.end(),samplePt.begin(),samplePt.end());
+    
+    Trace("gen-ic-pbe") << i << ": generate I/O spec from " << resSkolemSubs << std::endl;
+    
+    SmtEngine smtSamplePt(nm->toExprManager());
+    smtSamplePt.setLogic(smt::currentSmtEngine()->getLogicInfo());
+    smtSamplePt.assertFormula(resSkolemSubs.toExpr());
+    Trace("gen-ic-pbe") << "*** Check sat..." << std::endl;
+    Result r = smtSamplePt.checkSat();
+    Trace("gen-ic-pbe") << "...result : " << r << std::endl;
+    out << "(constraint ";
+    if (r.asSatisfiabilityResult().isSat() == Result::UNSAT)
+    {
+      out << "(not ";
+    }
+    out << "(IC ";
+    for( const Node& sp : samplePt )
+    {
+      out << sp << " ";
+    }
+    if (r.asSatisfiabilityResult().isSat() == Result::UNSAT)
+    {
+      out << ")";
+    }
+    out << "))" << std::endl;
   }
-  
-  
   
   return PreprocessingPassResult::NO_CONFLICT;
 }

@@ -463,7 +463,9 @@ void SubsumeTrie::getLeaves(const std::vector<Node>& vals,
                             bool pol,
                             std::map<int, std::vector<Node> >& v)
 {
-  getLeavesInternal(vals, pol, v, 0, -2);
+  // if no points are active, then by convention assume all points are false,
+  // given by argument -1 below.
+  getLeavesInternal(vals, pol, v, 0, -1);
 }
 
 SygusUnifIo::SygusUnifIo()
@@ -945,7 +947,7 @@ Node SygusUnifIo::constructSol(
   EnumInfo& einfo = d_strategy[f].getEnumInfo(e);
 
   EnumCache& ecache = d_ecache[e];
-
+  
   Node ret_dt;
   if (nrole == role_equal)
   {
@@ -1218,11 +1220,11 @@ Node SygusUnifIo::constructSol(
             Assert(set_split_cond_res_index);
             Assert(split_cond_res_index < ecache_cond.d_enum_vals_res.size());
             prev = x.d_vals;
-            bool ret = x.updateContext(
+            CVC4_UNUSED bool ret = x.updateContext(
                 this,
                 ecache_cond.d_enum_vals_res[split_cond_res_index],
                 sc == 1);
-            AlwaysAssert(ret);
+            //AlwaysAssert(ret);
           }
 
           // recurse
@@ -1285,86 +1287,90 @@ Node SygusUnifIo::constructSol(
             std::map<int, std::vector<Node> > possible_cond;
             std::map<Node, int> solved_cond;  // stores branch
             ecache_child.d_term_trie.getLeaves(x.d_vals, true, possible_cond);
-
-            std::map<int, std::vector<Node> >::iterator itpc =
-                possible_cond.find(0);
-            if (itpc != possible_cond.end())
+            
+            // prefer distinguishable conditions, then we try true, false
+            for( unsigned d=0; d<3; d++ )
             {
-              if (Trace.isOn("sygus-sui-dt-debug"))
+              unsigned pcv = d==2 ? -1 : d;
+              std::map<int, std::vector<Node> >::iterator itpc =
+                  possible_cond.find(pcv);
+              if (itpc != possible_cond.end())
               {
-                indent("sygus-sui-dt-debug", ind + 1);
-                Trace("sygus-sui-dt-debug")
-                    << "PBE : We have " << itpc->second.size()
-                    << " distinguishable conditionals:" << std::endl;
-                for (Node& cond : itpc->second)
+                if (Trace.isOn("sygus-sui-dt-debug"))
                 {
-                  indent("sygus-sui-dt-debug", ind + 2);
+                  indent("sygus-sui-dt-debug", ind + 1);
                   Trace("sygus-sui-dt-debug")
-                      << d_tds->sygusToBuiltin(cond) << std::endl;
-                }
-              }
-
-              // static look ahead conditional : choose conditionals that have
-              // solved terms in at least one branch
-              //    only applicable if we have not modified the return value
-              std::map<int, std::vector<Node> > solved_cond;
-              if (!x.isReturnValueModified() && !x.d_uinfo[ce].empty())
-              {
-                int solve_max = 0;
-                for (Node& cond : itpc->second)
-                {
-                  std::map<Node, std::map<unsigned, Node> >::iterator itla =
-                      x.d_uinfo[ce].d_look_ahead_sols.find(cond);
-                  if (itla != x.d_uinfo[ce].d_look_ahead_sols.end())
+                      << "PBE : We have " << itpc->second.size()
+                      << " distinguishable conditionals:" << std::endl;
+                  for (Node& cond : itpc->second)
                   {
-                    int nsolved = itla->second.size();
-                    solve_max = nsolved > solve_max ? nsolved : solve_max;
-                    solved_cond[nsolved].push_back(cond);
+                    indent("sygus-sui-dt-debug", ind + 2);
+                    Trace("sygus-sui-dt-debug")
+                        << d_tds->sygusToBuiltin(cond) << std::endl;
                   }
                 }
-                int n = solve_max;
-                while (n > 0)
+
+                // static look ahead conditional : choose conditionals that have
+                // solved terms in at least one branch
+                //    only applicable if we have not modified the return value
+                std::map<int, std::vector<Node> > solved_cond;
+                if (!x.isReturnValueModified() && !x.d_uinfo[ce].empty())
                 {
-                  if (!solved_cond[n].empty())
+                  int solve_max = 0;
+                  for (Node& cond : itpc->second)
                   {
-                    rec_c = constructBestSolvedConditional(solved_cond[n]);
-                    indent("sygus-sui-dt", ind + 1);
-                    Trace("sygus-sui-dt")
-                        << "PBE: ITE strategy : choose solved conditional "
-                        << d_tds->sygusToBuiltin(rec_c) << " with " << n
-                        << " solved children..." << std::endl;
                     std::map<Node, std::map<unsigned, Node> >::iterator itla =
-                        x.d_uinfo[ce].d_look_ahead_sols.find(rec_c);
-                    Assert(itla != x.d_uinfo[ce].d_look_ahead_sols.end());
-                    for (std::pair<const unsigned, Node>& las : itla->second)
+                        x.d_uinfo[ce].d_look_ahead_sols.find(cond);
+                    if (itla != x.d_uinfo[ce].d_look_ahead_sols.end())
                     {
-                      look_ahead_solved_children[las.first] = las.second;
+                      int nsolved = itla->second.size();
+                      solve_max = nsolved > solve_max ? nsolved : solve_max;
+                      solved_cond[nsolved].push_back(cond);
                     }
-                    break;
                   }
-                  n--;
+                  int n = solve_max;
+                  while (n > 0)
+                  {
+                    if (!solved_cond[n].empty())
+                    {
+                      rec_c = constructBestSolvedConditional(solved_cond[n]);
+                      indent("sygus-sui-dt", ind + 1);
+                      Trace("sygus-sui-dt")
+                          << "PBE: ITE strategy : choose solved conditional "
+                          << d_tds->sygusToBuiltin(rec_c) << " with " << n
+                          << " solved children..." << std::endl;
+                      std::map<Node, std::map<unsigned, Node> >::iterator itla =
+                          x.d_uinfo[ce].d_look_ahead_sols.find(rec_c);
+                      Assert(itla != x.d_uinfo[ce].d_look_ahead_sols.end());
+                      for (std::pair<const unsigned, Node>& las : itla->second)
+                      {
+                        look_ahead_solved_children[las.first] = las.second;
+                      }
+                      break;
+                    }
+                    n--;
+                  }
                 }
-              }
 
-              // otherwise, guess a conditional
-              if (rec_c.isNull())
-              {
-                rec_c = constructBestConditional(itpc->second);
-                Assert(!rec_c.isNull());
-                indent("sygus-sui-dt", ind);
-                Trace("sygus-sui-dt")
-                    << "PBE: ITE strategy : choose random conditional "
-                    << d_tds->sygusToBuiltin(rec_c) << std::endl;
+                // otherwise, guess a conditional
+                if (rec_c.isNull())
+                {
+                  rec_c = constructBestConditional(itpc->second);
+                  Assert(!rec_c.isNull());
+                  indent("sygus-sui-dt", ind);
+                  Trace("sygus-sui-dt")
+                      << "PBE: ITE strategy : choose random conditional "
+                      << d_tds->sygusToBuiltin(rec_c) << std::endl;
+                }
+                break;
               }
-            }
-            else
-            {
-              // TODO (#1250) : degenerate case where children have different
-              // types?
-              indent("sygus-sui-dt", ind);
-              Trace("sygus-sui-dt") << "return PBE: failed ITE strategy, "
-                                       "cannot find a distinguishable condition"
-                                    << std::endl;
+              else
+              {
+                indent("sygus-sui-dt", ind);
+                Trace("sygus-sui-dt") << "return PBE: failed ITE strategy, "
+                                        "cannot find a distinguishable condition"
+                                      << std::endl;
+              }
             }
             if (!rec_c.isNull())
             {
@@ -1380,7 +1386,9 @@ Node SygusUnifIo::constructSol(
           else
           {
             did_recurse = true;
+            std::map<Node, std::map<NodeRole, bool>> pvr = x.d_visit_role;
             rec_c = constructSol(f, cenum.first, cenum.second, ind + 2, lemmas);
+            x.d_visit_role = pvr;
           }
 
           // undo update the context
