@@ -15,6 +15,7 @@
 #include "preprocessing/passes/gen_ic_pbe.h"
 
 #include "theory/quantifiers/sygus_sampler.h"
+#include "options/quantifiers_options.h"
 
 using namespace CVC4::kind;
 
@@ -40,7 +41,7 @@ PreprocessingPassResult GenIcPbe::applyInternal(
   AlwaysAssert(icCase.getNumChildren()>=2,  "GenIcPbe: bad arity for assertion");
   
   std::vector< Node > bvars;
-  std::vector< Node > children;
+  Node funToSynthBvarOp;
   Node funToSynthBvar;
   
   // match the lists
@@ -62,9 +63,12 @@ PreprocessingPassResult GenIcPbe::applyInternal(
       if( cur.getKind()==APPLY_UF )
       {
         AlwaysAssert(funToSynthBvar.isNull(), "GenIcPbe: multiple functions to synthesize");
+        std::stringstream sso;
+        sso << "f" << cur.getOperator();
+        funToSynthBvarOp = nm->mkBoundVar(sso.str(), cur.getOperator().getType());
         std::stringstream ss;
-        ss << "f" << cur.getOperator();
-        funToSynthBvar = nm->mkBoundVar(ss.str(), cur.getOperator().getType());
+        ss << "x";
+        funToSynthBvar = nm->mkBoundVar(ss.str(), cur.getType());
         for( const Node& a : cur )
         {
           funToSynthArgList.push_back(a);
@@ -123,8 +127,27 @@ PreprocessingPassResult GenIcPbe::applyInternal(
     AlwaysAssert(varList[i]==funToSynthArgList[i], "GenIcPbe: argument list does not match subterms in order");
   }
   
-  //SygusSampler ss;
-  //ss.initialize(
+  TypeNode frange = funToSynthBvar.getType();
+  
+  theory::quantifiers::SygusSampler ss;
+  ss.initialize(frange,bvars,options::sygusSamples());
+  
+  Node xk = nm->mkSkolem("x",frange);
+  
+  TNode xt = funToSynthBvar;
+  TNode xkt = xk;
+  Node icSkolem = icCase.substitute( xt, xkt );
+  
+  for( unsigned i=0, nsamples = ss.getNumSamplePoints(); i<nsamples; i++ )
+  {
+    std::vector< Node > samplePt;
+    ss.getSamplePoint(i,samplePt);
+    
+    Node icSkolemSubs = icSkolem.substitute(bvars.begin(),bvars.end(),samplePt.begin(),samplePt.end());
+  }
+  
+  
+  
   return PreprocessingPassResult::NO_CONFLICT;
 }
 
