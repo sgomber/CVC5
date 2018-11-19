@@ -33,6 +33,7 @@
 #include "preprocessing/passes/bv_intro_pow2.h"
 #include "preprocessing/passes/bv_to_bool.h"
 #include "preprocessing/passes/extended_rewriter_pass.h"
+#include "preprocessing/passes/gen_ic_pbe.h"
 #include "preprocessing/passes/global_negate.h"
 #include "preprocessing/passes/int_to_bv.h"
 #include "preprocessing/passes/ite_removal.h"
@@ -148,6 +149,7 @@ PreprocessingPassRegistry::PreprocessingPassRegistry()
   registerPassInfo("quantifier-macros", callCtor<QuantifierMacros>);
   registerPassInfo("nl-ext-purify", callCtor<NlExtPurify>);
   registerPassInfo("bool-to-bv", callCtor<BoolToBV>);
+  registerPassInfo("gen-ic-pbe", callCtor<GenIcPbe>);
 }
 
 }  // namespace preprocessing

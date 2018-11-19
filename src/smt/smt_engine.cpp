@@ -90,7 +90,6 @@
 #include "smt_util/boolean_simplification.h"
 #include "smt_util/nary_builder.h"
 #include "smt_util/node_visitor.h"
-#include "theory/gen_ic_pbe.h"
 #include "theory/booleans/circuit_propagator.h"
 #include "theory/bv/theory_bv_rewriter.h"
 #include "theory/logic_info.h"
@@ -3074,11 +3073,8 @@ void SmtEnginePrivate::processAssertions() {
 
   if (options::genIcPbe() )
   {
-    GenIcPbe gip;
-    gip.run();
-    exit(0);
+    d_passes["gen-ic-pbe"]->apply(&d_assertions);
   }
-      
       
   // Dump the assertions
   dumpAssertions("pre-everything", d_assertions);

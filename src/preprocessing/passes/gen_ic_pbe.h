@@ -14,27 +14,33 @@
 
 #include "cvc4_private.h"
 
-#ifndef __CVC4__THEORY__GEN_IC_PBE_H
-#define __CVC4__THEORY__GEN_IC_PBE_H
+#ifndef __CVC4__PREPROCESSING__PASSES__GEN_IC_PBE_H
+#define __CVC4__PREPROCESSING__PASSES__GEN_IC_PBE_H
 
-#include <map>
+#include "preprocessing/preprocessing_pass.h"
+#include "preprocessing/preprocessing_pass_context.h"
 
 namespace CVC4 {
-namespace theory {
+namespace preprocessing {
+namespace passes {
 
 /** GenIcPbe
  * 
  */
-class GenIcPbe 
+class GenIcPbe  : public PreprocessingPass
 {
 public:
-  GenIcPbe();
+  GenIcPbe(PreprocessingPassContext* preprocContext);
   ~GenIcPbe(){}
-  /** run */
-  void run();
+protected:
+  /**
+   */
+  PreprocessingPassResult applyInternal(
+      AssertionPipeline* assertionsToPreprocess) override;
 };
 
-} /* CVC4::theory namespace */
-} /* CVC4 namespace */
+}  // namespace passes
+}  // namespace preprocessing
+}  // namespace CVC4
 
-#endif /* __CVC4__THEORY__GEN_IC_PBE_H */
+#endif /* __CVC4__PREPROCESSING__PASSES__GEN_IC_PBE_H */

@@ -58,6 +58,8 @@ libcvc4_add_sources(
   preprocessing/passes/bv_to_bool.h
   preprocessing/passes/extended_rewriter_pass.cpp
   preprocessing/passes/extended_rewriter_pass.h
+  preprocessing/passes/gen_ic_pbe.cpp
+  preprocessing/passes/gen_ic_pbe.h
   preprocessing/passes/global_negate.cpp
   preprocessing/passes/global_negate.h
   preprocessing/passes/int_to_bv.cpp
@@ -406,8 +408,6 @@ libcvc4_add_sources(
   theory/fp/theory_fp_rewriter.h
   theory/fp/theory_fp_type_rules.h
   theory/fp/type_enumerator.h
-  theory/gen_ic_pbe.cpp
-  theory/gen_ic_pbe.h
   theory/idl/idl_assertion.cpp
   theory/idl/idl_assertion.h
   theory/idl/idl_assertion_db.cpp
