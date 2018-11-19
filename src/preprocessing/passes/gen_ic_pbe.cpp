@@ -15,6 +15,7 @@
 #include "preprocessing/passes/gen_ic_pbe.h"
 
 #include "options/quantifiers_options.h"
+#include "theory/quantifiers/term_enumeration.h"
 #include "theory/quantifiers/sygus_sampler.h"
 
 using namespace CVC4::kind;
@@ -151,8 +152,6 @@ PreprocessingPassResult GenIcPbe::applyInternal(
 
   TypeNode frange = funToSynthBvar.getType();
 
-  theory::quantifiers::SygusSampler ss;
-  ss.initialize(frange, bvars, options::sygusSamples());
 
   Node xk = nm->mkSkolem("x", frange);
 
@@ -162,11 +161,56 @@ PreprocessingPassResult GenIcPbe::applyInternal(
 
   Options& nodeManagerOptions = NodeManager::currentNM()->getOptions();
   std::ostream& out = *nodeManagerOptions.getOut();
+  
+  std::map< unsigned, std::vector< Node > > completeDom;
+  theory::quantifiers::SygusSampler ss;
+  theory::quantifiers::TermEnumeration tenum;
+  unsigned nsamples = 0;
+  if( options::genIcPbeFull() )
+  {
+    nsamples = bvars.empty() ? 0 : 1;
+    for( unsigned i=0, nvars = bvars.size(); i<nvars; i++ )
+    {
+      TypeNode tn = bvars[i].getType();
+      AlwaysAssert(tenum.mayComplete(tn),"GenIcPbe: expecting small finite type when gen-ic-pbe-full");
+      unsigned counter = 0;
+      Node curre;
+      do
+      {
+        curre = tenum.getEnumerateTerm(tn,counter);
+        counter++;
+        if( !curre.isNull() )
+        {
+          completeDom[i].push_back(curre);
+        }
+      }while(!curre.isNull());
+      nsamples = nsamples*completeDom[i].size();
+    }
+  }
+  else
+  {
+    ss.initialize(frange, bvars, options::sygusSamples());
+    nsamples = ss.getNumSamplePoints();
+  }
 
-  for (unsigned i = 0, nsamples = ss.getNumSamplePoints(); i < nsamples; i++)
+  for (unsigned i = 0; i < nsamples; i++)
   {
     std::vector<Node> samplePt;
-    ss.getSamplePoint(i, samplePt);
+    if( options::genIcPbeFull() )
+    {
+      unsigned ival = i;
+      for( unsigned j=0, nvars = bvars.size(); j<nvars; j++ )
+      {
+        unsigned domSize = completeDom[j].size();
+        unsigned currIndex = ival%domSize;
+        samplePt.push_back(completeDom[j][currIndex]);
+        ival = ival/domSize;
+      }
+    }
+    else
+    {
+      ss.getSamplePoint(i, samplePt);
+    }
 
     Node resSkolemSubs = resSkolem.substitute(
         bvars.begin(), bvars.end(), samplePt.begin(), samplePt.end());

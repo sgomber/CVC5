@@ -632,3 +632,12 @@ header = "options/smt_options.h"
   type       = "bool"
   default    = "false"
   help       = "generate PBE problem for invertibility conditions"
+  
+[[option]]
+  name       = "genIcPbeFull"
+  category   = "undocumented"
+  long       = "gen-ic-pbe-full"
+  type       = "bool"
+  default    = "false"
+  help       = "generate PBE problem for invertibility conditions"
+
