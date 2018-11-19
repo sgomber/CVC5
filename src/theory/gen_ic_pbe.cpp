@@ -14,6 +14,8 @@
 
 #include "theory/gen_ic_pbe.h"
 
+#include "theory/quantifiers/sygus_sampler.h"
+
 using namespace CVC4::kind;
 
 namespace CVC4 {
@@ -25,6 +27,19 @@ GenIcPbe::GenIcPbe() {
 
 void GenIcPbe::run()
 {
+  NodeManager * nm = NodeManager::currentNM();
+
+  TypeNode ftt = nm->mkFloatingPointType(4,5);
+  Node s = nm->mkBoundVar("s", ftt);
+  Node t = nm->mkBoundVar("t", ftt);
+  Node x = nm->mkBoundVar("x", ftt);
+  
+  std::vector< Node > vars;
+  vars.push_back(s);
+  vars.push_back(t);
+  
+  //Node icCase = nm->mkNode( EQUAL, nm->mkNode( FP
+  
   
 }
 

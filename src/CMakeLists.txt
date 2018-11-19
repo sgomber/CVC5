@@ -406,6 +406,7 @@ libcvc4_add_sources(
   theory/fp/theory_fp_rewriter.h
   theory/fp/theory_fp_type_rules.h
   theory/fp/type_enumerator.h
+  theory/gen_ic_pbe.cpp
   theory/gen_ic_pbe.h
   theory/idl/idl_assertion.cpp
   theory/idl/idl_assertion.h
