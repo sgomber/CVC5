@@ -376,7 +376,7 @@ bool SynthConjecture::doCheck(std::vector<Node>& lems)
       return !activeIncomplete;
     }
     // debug print
-    if( Trace.isOn("cegqi-engine") )
+    if (Trace.isOn("cegqi-engine"))
     {
       Trace("cegqi-engine") << "  * Value is : ";
       for (unsigned i = 0, size = terms.size(); i < size; i++)

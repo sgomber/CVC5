@@ -947,7 +947,7 @@ Node SygusUnifIo::constructSol(
   EnumInfo& einfo = d_strategy[f].getEnumInfo(e);
 
   EnumCache& ecache = d_ecache[e];
-  
+
   Node ret_dt;
   if (nrole == role_equal)
   {
@@ -1224,7 +1224,7 @@ Node SygusUnifIo::constructSol(
                 this,
                 ecache_cond.d_enum_vals_res[split_cond_res_index],
                 sc == 1);
-            //AlwaysAssert(ret);
+            // AlwaysAssert(ret);
           }
 
           // recurse
@@ -1287,12 +1287,12 @@ Node SygusUnifIo::constructSol(
             std::map<int, std::vector<Node> > possible_cond;
             std::map<Node, int> solved_cond;  // stores branch
             ecache_child.d_term_trie.getLeaves(x.d_vals, true, possible_cond);
-            
+
             // prefer distinguishable conditions, then we try true, false
-            for( unsigned d=0; d<3; d++ )
+            for (unsigned d = 0; d < 3; d++)
             {
-              unsigned pcv = d==2 ? -1 : d;
-              std::map<int, std::vector<Node> >::iterator itpc =
+              unsigned pcv = d == 2 ? -1 : d;
+              std::map<int, std::vector<Node>>::iterator itpc =
                   possible_cond.find(pcv);
               if (itpc != possible_cond.end())
               {
@@ -1313,13 +1313,13 @@ Node SygusUnifIo::constructSol(
                 // static look ahead conditional : choose conditionals that have
                 // solved terms in at least one branch
                 //    only applicable if we have not modified the return value
-                std::map<int, std::vector<Node> > solved_cond;
+                std::map<int, std::vector<Node>> solved_cond;
                 if (!x.isReturnValueModified() && !x.d_uinfo[ce].empty())
                 {
                   int solve_max = 0;
                   for (Node& cond : itpc->second)
                   {
-                    std::map<Node, std::map<unsigned, Node> >::iterator itla =
+                    std::map<Node, std::map<unsigned, Node>>::iterator itla =
                         x.d_uinfo[ce].d_look_ahead_sols.find(cond);
                     if (itla != x.d_uinfo[ce].d_look_ahead_sols.end())
                     {
@@ -1339,7 +1339,7 @@ Node SygusUnifIo::constructSol(
                           << "PBE: ITE strategy : choose solved conditional "
                           << d_tds->sygusToBuiltin(rec_c) << " with " << n
                           << " solved children..." << std::endl;
-                      std::map<Node, std::map<unsigned, Node> >::iterator itla =
+                      std::map<Node, std::map<unsigned, Node>>::iterator itla =
                           x.d_uinfo[ce].d_look_ahead_sols.find(rec_c);
                       Assert(itla != x.d_uinfo[ce].d_look_ahead_sols.end());
                       for (std::pair<const unsigned, Node>& las : itla->second)
@@ -1367,9 +1367,10 @@ Node SygusUnifIo::constructSol(
               else
               {
                 indent("sygus-sui-dt", ind);
-                Trace("sygus-sui-dt") << "return PBE: failed ITE strategy, "
-                                        "cannot find a distinguishable condition"
-                                      << std::endl;
+                Trace("sygus-sui-dt")
+                    << "return PBE: failed ITE strategy, "
+                       "cannot find a distinguishable condition"
+                    << std::endl;
               }
             }
             if (!rec_c.isNull())

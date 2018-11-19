@@ -14,8 +14,8 @@
 
 #include "preprocessing/passes/gen_ic_pbe.h"
 
-#include "theory/quantifiers/sygus_sampler.h"
 #include "options/quantifiers_options.h"
+#include "theory/quantifiers/sygus_sampler.h"
 
 using namespace CVC4::kind;
 
@@ -27,68 +27,73 @@ GenIcPbe::GenIcPbe(PreprocessingPassContext* preprocContext)
     : PreprocessingPass(preprocContext, "gen-ic-pbe"){};
 
 PreprocessingPassResult GenIcPbe::applyInternal(
-      AssertionPipeline* assertionsToPreprocess)
+    AssertionPipeline* assertionsToPreprocess)
 {
-  
   static bool tryThis = true;
-  
-  if( !tryThis )
+
+  if (!tryThis)
   {
     return PreprocessingPassResult::NO_CONFLICT;
   }
-  tryThis  = false;
-  
-  NodeManager * nm = NodeManager::currentNM();
+  tryThis = false;
 
-  std::vector< Node >& asl = assertionsToPreprocess->ref();
-  
-  AlwaysAssert( !asl.empty(), "GenIcPbe: no assertions" );
-  
+  NodeManager* nm = NodeManager::currentNM();
+
+  std::vector<Node>& asl = assertionsToPreprocess->ref();
+
+  AlwaysAssert(!asl.empty(), "GenIcPbe: no assertions");
+
   Node icCase = asl[0];
-  Trace("gen-ic-pbe") << "Generate PBE invertibility condition conjecture for case: " << icCase << std::endl;
-  
-  AlwaysAssert(icCase.getNumChildren()>=2,  "GenIcPbe: bad arity for assertion");
-  
-  std::vector< Node > bvars;
+  Trace("gen-ic-pbe")
+      << "Generate PBE invertibility condition conjecture for case: " << icCase
+      << std::endl;
+
+  AlwaysAssert(icCase.getNumChildren() >= 2,
+               "GenIcPbe: bad arity for assertion");
+
+  std::vector<Node> bvars;
   Node funToSynthOp;
   Node funToSynthBvar;
-  
+
   // match the lists
-  std::vector< Node > varList;
-  std::vector< Node > funToSynthArgList;
-  
+  std::vector<Node> varList;
+  std::vector<Node> funToSynthArgList;
+
   // convert the child to bound variable form
   std::unordered_map<TNode, Node, TNodeHashFunction> visited;
   std::unordered_map<TNode, Node, TNodeHashFunction>::iterator it;
   std::vector<TNode> visit;
   TNode cur;
   visit.push_back(icCase);
-  do {
+  do
+  {
     cur = visit.back();
     visit.pop_back();
     it = visited.find(cur);
 
-    if (it == visited.end()) {
-      if( cur.getKind()==APPLY_UF )
+    if (it == visited.end())
+    {
+      if (cur.getKind() == APPLY_UF)
       {
-        AlwaysAssert(funToSynthBvar.isNull(), "GenIcPbe: multiple functions to synthesize");
+        AlwaysAssert(funToSynthBvar.isNull(),
+                     "GenIcPbe: multiple functions to synthesize");
         funToSynthOp = cur.getOperator();
         std::stringstream ss;
         ss << "x";
         funToSynthBvar = nm->mkBoundVar(ss.str(), cur.getType());
-        for( const Node& a : cur )
+        for (const Node& a : cur)
         {
           funToSynthArgList.push_back(a);
         }
         visited[cur] = funToSynthBvar;
       }
-      else if( cur.isVar() )
+      else if (cur.isVar())
       {
         std::stringstream ss;
         ss << "v" << cur;
         Node bv = nm->mkBoundVar(ss.str(), cur.getType());
         bvars.push_back(bv);
-        varList.push_back(cur); 
+        varList.push_back(cur);
         visited[cur] = bv;
       }
       else
@@ -96,25 +101,31 @@ PreprocessingPassResult GenIcPbe::applyInternal(
         visited[cur] = Node::null();
         visit.push_back(cur);
         unsigned nchild = cur.getNumChildren();
-        for( unsigned i=0; i<nchild; i++ ){
-          visit.push_back(cur[(nchild-1)-i]);
+        for (unsigned i = 0; i < nchild; i++)
+        {
+          visit.push_back(cur[(nchild - 1) - i]);
         }
       }
-    } else if (it->second.isNull()) {
+    }
+    else if (it->second.isNull())
+    {
       Node ret = cur;
       bool childChanged = false;
       std::vector<Node> children;
-      if (cur.getMetaKind() == kind::metakind::PARAMETERIZED) {
+      if (cur.getMetaKind() == kind::metakind::PARAMETERIZED)
+      {
         children.push_back(cur.getOperator());
       }
-      for (const Node& cn : cur) {
+      for (const Node& cn : cur)
+      {
         it = visited.find(cn);
         Assert(it != visited.end());
         Assert(!it->second.isNull());
         childChanged = childChanged || cn != it->second;
         children.push_back(it->second);
       }
-      if (childChanged) {
+      if (childChanged)
+      {
         ret = nm->mkNode(cur.getKind(), children);
       }
       visited[cur] = ret;
@@ -124,39 +135,45 @@ PreprocessingPassResult GenIcPbe::applyInternal(
   Assert(!visited.find(icCase)->second.isNull());
   Node res = visited[icCase];
   Trace("gen-ic-pbe") << "Bound variable form : " << res << std::endl;
-  Trace("gen-ic-pbe-debug") << "...with : " << funToSynthBvar << " " << varList << " " << funToSynthArgList << std::endl;
+  Trace("gen-ic-pbe-debug") << "...with : " << funToSynthBvar << " " << varList
+                            << " " << funToSynthArgList << std::endl;
   // ensure the function type matches the computed type
-  AlwaysAssert( !funToSynthBvar.isNull(), "GenIcPbe: no functions to synthesize" );
-  AlwaysAssert( varList.size()==funToSynthArgList.size(), "GenIcPbe: function to synthesize has wrong arity");
+  AlwaysAssert(!funToSynthBvar.isNull(),
+               "GenIcPbe: no functions to synthesize");
+  AlwaysAssert(varList.size() == funToSynthArgList.size(),
+               "GenIcPbe: function to synthesize has wrong arity");
 
-  for( unsigned i=0, nvars = varList.size(); i<nvars; i++ )
+  for (unsigned i = 0, nvars = varList.size(); i < nvars; i++)
   {
-    AlwaysAssert(varList[i]==funToSynthArgList[i], "GenIcPbe: argument list does not match subterms in order");
+    AlwaysAssert(varList[i] == funToSynthArgList[i],
+                 "GenIcPbe: argument list does not match subterms in order");
   }
-  
+
   TypeNode frange = funToSynthBvar.getType();
-  
+
   theory::quantifiers::SygusSampler ss;
-  ss.initialize(frange,bvars,options::sygusSamples());
-  
-  Node xk = nm->mkSkolem("x",frange);
-  
+  ss.initialize(frange, bvars, options::sygusSamples());
+
+  Node xk = nm->mkSkolem("x", frange);
+
   TNode xt = funToSynthBvar;
   TNode xkt = xk;
-  Node resSkolem = res.substitute( xt, xkt );
-  
+  Node resSkolem = res.substitute(xt, xkt);
+
   Options& nodeManagerOptions = NodeManager::currentNM()->getOptions();
   std::ostream& out = *nodeManagerOptions.getOut();
-  
-  for( unsigned i=0, nsamples = ss.getNumSamplePoints(); i<nsamples; i++ )
+
+  for (unsigned i = 0, nsamples = ss.getNumSamplePoints(); i < nsamples; i++)
   {
-    std::vector< Node > samplePt;
-    ss.getSamplePoint(i,samplePt);
-    
-    Node resSkolemSubs = resSkolem.substitute(bvars.begin(),bvars.end(),samplePt.begin(),samplePt.end());
-    
-    Trace("gen-ic-pbe") << i << ": generate I/O spec from " << resSkolemSubs << std::endl;
-    
+    std::vector<Node> samplePt;
+    ss.getSamplePoint(i, samplePt);
+
+    Node resSkolemSubs = resSkolem.substitute(
+        bvars.begin(), bvars.end(), samplePt.begin(), samplePt.end());
+
+    Trace("gen-ic-pbe") << i << ": generate I/O spec from " << resSkolemSubs
+                        << std::endl;
+
     SmtEngine smtSamplePt(nm->toExprManager());
     smtSamplePt.setLogic(smt::currentSmtEngine()->getLogicInfo());
     smtSamplePt.assertFormula(resSkolemSubs.toExpr());
@@ -169,7 +186,7 @@ PreprocessingPassResult GenIcPbe::applyInternal(
       out << "(not ";
     }
     out << "(IC ";
-    for( const Node& sp : samplePt )
+    for (const Node& sp : samplePt)
     {
       out << sp << " ";
     }
@@ -179,7 +196,7 @@ PreprocessingPassResult GenIcPbe::applyInternal(
     }
     out << "))" << std::endl;
   }
-  
+
   return PreprocessingPassResult::NO_CONFLICT;
 }
 

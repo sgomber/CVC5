@@ -25,14 +25,15 @@ namespace preprocessing {
 namespace passes {
 
 /** GenIcPbe
- * 
+ *
  */
-class GenIcPbe  : public PreprocessingPass
+class GenIcPbe : public PreprocessingPass
 {
-public:
+ public:
   GenIcPbe(PreprocessingPassContext* preprocContext);
-  ~GenIcPbe(){}
-protected:
+  ~GenIcPbe() {}
+
+ protected:
   /**
    */
   PreprocessingPassResult applyInternal(
