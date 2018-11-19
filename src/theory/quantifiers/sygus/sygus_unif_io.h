@@ -210,7 +210,9 @@ class SubsumeTrie
                      bool pol,
                      std::vector<Node>& subsumed_by);
   /**
-  * Get the leaves of the trie, which we store in the map v.
+  * Get the leaves of the trie, which we store in the map v. We consider their
+  * evaluation on points such that (pol ? vals : !vals) is true.
+  *
   * v[-1] stores the children that always evaluate to !pol,
   * v[1] stores the children that always evaluate to pol,
   * v[0] stores the children that both evaluate to true and false for at least

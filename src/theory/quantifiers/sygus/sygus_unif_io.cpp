@@ -427,10 +427,13 @@ void SubsumeTrie::getLeavesInternal(const std::vector<Node>& vals,
 {
   if (index == vals.size())
   {
+    // by convention, if we did not test any points, then we consider the
+    // evaluation along the current path to be always false.
+    int rstatus = status==-2 ? -1 : status;
     Assert(!d_term.isNull());
-    Assert(std::find(v[status].begin(), v[status].end(), d_term)
-           == v[status].end());
-    v[status].push_back(d_term);
+    Assert(std::find(v[rstatus].begin(), v[rstatus].end(), d_term)
+           == v[rstatus].end());
+    v[rstatus].push_back(d_term);
   }
   else
   {
@@ -463,9 +466,7 @@ void SubsumeTrie::getLeaves(const std::vector<Node>& vals,
                             bool pol,
                             std::map<int, std::vector<Node> >& v)
 {
-  // if no points are active, then by convention assume all points are false,
-  // given by argument -1 below.
-  getLeavesInternal(vals, pol, v, 0, -1);
+  getLeavesInternal(vals, pol, v, 0, -2);
 }
 
 SygusUnifIo::SygusUnifIo()
@@ -1224,7 +1225,8 @@ Node SygusUnifIo::constructSol(
                 this,
                 ecache_cond.d_enum_vals_res[split_cond_res_index],
                 sc == 1);
-            // AlwaysAssert(ret);
+            // ret may be false in corner cases where we must choose
+            // a non-separating condition 
           }
 
           // recurse
@@ -1289,7 +1291,8 @@ Node SygusUnifIo::constructSol(
             ecache_child.d_term_trie.getLeaves(x.d_vals, true, possible_cond);
 
             // prefer distinguishable conditions, then we try true, false
-            for (unsigned d = 0; d < 3; d++)
+            //unsigned lastTest = 
+            for (unsigned d = 0; d < 1; d++)
             {
               unsigned pcv = d == 2 ? -1 : d;
               std::map<int, std::vector<Node>>::iterator itpc =
@@ -1387,9 +1390,11 @@ Node SygusUnifIo::constructSol(
           else
           {
             did_recurse = true;
-            std::map<Node, std::map<NodeRole, bool>> pvr = x.d_visit_role;
+            // Store the previous visit role, this ensures a strategy node can
+            // be visited on multiple paths in the solution in the same context.
+            //std::map<Node, std::map<NodeRole, bool>> pvr = x.d_visit_role;
             rec_c = constructSol(f, cenum.first, cenum.second, ind + 2, lemmas);
-            x.d_visit_role = pvr;
+            //x.d_visit_role = pvr;
           }
 
           // undo update the context
