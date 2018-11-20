@@ -776,8 +776,9 @@ Node SygusUnifIo::constructSolutionNode(std::vector<Node>& lemmas)
               || (!d_solution.isNull()
                   && d_tds->getSygusTermSize(vcc) < sol_term_size)))
       {
-        Trace("sygus-pbe") << "**** SygusUnif SOLVED : " << c << " = " << vcc
-                           << std::endl;
+        Trace("sygus-pbe") << "**** SygusUnif SOLVED : " << c << " = ";
+        TermDbSygus::toStreamSygus("sygus-pbe",vcc);
+        Trace("sygus-pbe") << std::endl;
         Trace("sygus-pbe") << "...solved at iteration " << i << std::endl;
         d_solution = vcc;
         sol_term_size = d_tds->getSygusTermSize(vcc);
@@ -948,11 +949,13 @@ Node SygusUnifIo::constructSol(
   EnumInfo& einfo = d_strategy[f].getEnumInfo(e);
 
   EnumCache& ecache = d_ecache[e];
+  
+  bool retValMod = x.isReturnValueModified();
 
   Node ret_dt;
   if (nrole == role_equal)
   {
-    if (!x.isReturnValueModified())
+    if (!retValMod)
     {
       if (ecache.isSolved())
       {
@@ -1026,11 +1029,66 @@ Node SygusUnifIo::constructSol(
         }
       }
     }
+    // maybe we can find one in the cache
+    if( ret_dt.isNull() && !retValMod )
+    {
+      bool firstTime = true;
+      std::unordered_set< Node, NodeHashFunction > intersection;
+      std::map< unsigned, std::unordered_set< Node, NodeHashFunction > >::iterator pit;
+      for( unsigned i=0, nvals = x.d_vals.size(); i<nvals; i++ )
+      {
+        if( x.d_vals[i].getConst<bool>() )
+        {
+          pit = d_psolutions.find(i);
+          if( pit==d_psolutions.end() )
+          {
+            // no cached solution
+            intersection.clear();
+            break;
+          }
+          if( firstTime )
+          {
+            intersection = pit->second;
+            firstTime = false;
+          }
+          else
+          {
+            std::vector< Node > rm;
+            for( const Node& a : intersection )
+            {
+              if( pit->second.find(a)==pit->second.end() )
+              {
+                rm.push_back( a );
+              }
+            }
+            for( const Node& a : rm )
+            {
+              intersection.erase(a);
+            }
+            if( intersection.empty() )
+            {
+              break;
+            }
+          }
+        }
+      }
+      if( !intersection.empty() )
+      {
+        ret_dt = *intersection.begin();
+        if( Trace.isOn("sygus-sui-dt") )
+        {
+          indent("sygus-sui-dt", ind);
+          Trace("sygus-sui-dt") << "ConstructPBE: found in cache: ";
+          TermDbSygus::toStreamSygus("sygus-sui-dt",ret_dt);
+          Trace("sygus-sui-dt") << std::endl;
+        }
+      }
+    }
   }
   else if (nrole == role_string_prefix || nrole == role_string_suffix)
   {
     // check if each return value is a prefix/suffix of all open examples
-    if (!x.isReturnValueModified() || x.getCurrentRole() == nrole)
+    if (!retValMod || x.getCurrentRole() == nrole)
     {
       std::map<Node, std::vector<unsigned> > incr;
       bool isPrefix = nrole == role_string_prefix;
@@ -1391,9 +1449,9 @@ Node SygusUnifIo::constructSol(
             did_recurse = true;
             // Store the previous visit role, this ensures a strategy node can
             // be visited on multiple paths in the solution in the same context.
-            // std::map<Node, std::map<NodeRole, bool>> pvr = x.d_visit_role;
+            //std::map<Node, std::map<NodeRole, bool>> pvr = x.d_visit_role;
             rec_c = constructSol(f, cenum.first, cenum.second, ind + 2, lemmas);
-            // x.d_visit_role = pvr;
+            //x.d_visit_role = pvr;
           }
 
           // undo update the context
@@ -1438,8 +1496,35 @@ Node SygusUnifIo::constructSol(
   }
 
   Assert(ret_dt.isNull() || ret_dt.getType() == e.getType());
-  indent("sygus-sui-dt", ind);
-  Trace("sygus-sui-dt") << "ConstructPBE: returned " << ret_dt << std::endl;
+  if( Trace.isOn("sygus-sui-dt") )
+  {
+    indent("sygus-sui-dt", ind);
+    Trace("sygus-sui-dt") << "ConstructPBE: returned ";
+    TermDbSygus::toStreamSygus("sygus-sui-dt",ret_dt);
+    Trace("sygus-sui-dt") << std::endl;
+  }
+  // remember the solution
+  if (nrole == role_equal)
+  {
+    if( !retValMod && !ret_dt.isNull())
+    {
+      for( unsigned i=0, nvals = x.d_vals.size(); i<nvals; i++ )
+      {
+        if( x.d_vals[i].getConst<bool>() )
+        {
+          if( Trace.isOn("sygus-sui-cache") )
+          {
+            indent("sygus-sui-cache", ind);
+            Trace("sygus-sui-cache") << "Cache solution (#" << i << ") : ";
+            TermDbSygus::toStreamSygus("sygus-sui-cache",ret_dt);
+            Trace("sygus-sui-cache") << std::endl;
+          }
+          d_psolutions[i].insert(ret_dt);
+        }
+      }
+    }
+  }
+  
   return ret_dt;
 }
 
