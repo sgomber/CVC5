@@ -455,6 +455,25 @@ class SygusUnifIo : public SygusUnif
                     NodeRole nrole,
                     int ind,
                     std::vector<Node>& lemmas) override;
+                    
+  class PbeTrie
+  {
+   public:
+    PbeTrie() {}
+    ~PbeTrie() {}
+    /** the children for this node in the trie */
+    std::map<Node, PbeTrie> d_children;
+    /** clear this trie */
+    void clear() { d_children.clear(); }
+    /**
+     * Add term b whose value on examples is exOut to the trie. Return
+     * the first term registered to this trie whose evaluation was exOut.
+     */
+    Node addTerm(Node b, std::vector<Node>& exOut);
+  };
+  std::map<Node, PbeTrie > d_pbe_trie;
+  void addSearchVal(Node e, Node v, std::vector< Node >& res );
+  bool existsSearchValSubset(Node e, Node v, std::vector< Node >& res, std::vector< bool >& ss );
 };
 
 } /* CVC4::theory::quantifiers namespace */

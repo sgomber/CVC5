@@ -896,15 +896,14 @@ bool SygusUnifIo::getExplanationForEnumeratorExclude(
     {
       if( allConditionalFail )
       {
-        /*
         // we may be equivalent-to-examples on those we are contained in
-        Node res = addSearchValSubset(e,cmpRes,results);
-        if( !res.isNull() )
+        bool res = existsSearchValSubset(e,v,results,cmpRes);
+        if( res )
         {
-          d_tds->getExplain()->getExplanationFor(e, v, exp);
+          // use basic non-generalized exclusion
+          d_tds->getExplain()->getExplanationForEquality(e, v, exp);
           return true;
         }
-        */
       }
       else
       {
@@ -923,7 +922,75 @@ bool SygusUnifIo::getExplanationForEnumeratorExclude(
         return true;
       }
     }
+    // if we're using it, we add it now
+    addSearchVal(e,v,results);
   }
+  return false;
+}
+
+void SygusUnifIo::addSearchVal(Node e, Node v, std::vector< Node >& res )
+{
+  PbeTrie* curr = &d_pbe_trie[e];
+  for (const Node& eo : res)
+  {
+    curr = &(curr->d_children[eo]);
+  }
+  if (curr->d_children.empty())
+  {
+    curr->d_children[v].clear();
+  }
+}
+
+bool SygusUnifIo::existsSearchValSubset(Node e, Node v, std::vector< Node >& res, std::vector< bool >& ss )
+{
+  Assert( res.size()==ss.size());
+  std::vector<PbeTrie*> visit;
+  std::vector<unsigned> visitIndex;
+  PbeTrie* cur = nullptr;
+  unsigned curIndex = 0;
+  visit.push_back(&d_pbe_trie[e]);
+  visitIndex.push_back(0);
+  std::map<Node, PbeTrie>::iterator cit;
+  do {
+    cur = visit.back();
+    visit.pop_back();
+    curIndex = visitIndex.back();
+    visitIndex.pop_back();
+    // follow required paths
+    bool success = true;
+    while( success && curIndex<res.size() && ss[curIndex] )
+    {
+      // must be the exact child
+      cit = cur->d_children.find(res[curIndex]);
+      if( cit!=cur->d_children.end() )
+      {
+        cur = &cit->second;
+        curIndex++;
+      }
+      else
+      {
+        success = false;
+      }
+    }
+    if( success )
+    {
+      if( curIndex==res.size() )
+      {
+        return true;
+      }
+      else
+      {
+        Assert( !ss[curIndex] );
+        // branch and look at all children 
+        for( cit = cur->d_children.begin(); cit != cur->d_children.end(); ++cit )
+        {
+          visit.push_back(&cit->second);
+          visitIndex.push_back(curIndex+1);
+        }
+      }
+    }
+  } while (!visit.empty());
+  
   return false;
 }
 
