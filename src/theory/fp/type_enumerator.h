@@ -39,7 +39,9 @@ class FloatingPointEnumerator
         d_e(type.getFloatingPointExponentSize()),
         d_s(type.getFloatingPointSignificandSize()),
         d_state(d_e + d_s, 0U),
-        d_enumerationComplete(false) {}
+        d_enumerationComplete(false),
+        d_doSigned(true),
+        d_currentNaN(false) {}
 
   /** Throws NoMoreValuesException if the enumeration is complete. */
   Node operator*() override {
@@ -50,11 +52,23 @@ class FloatingPointEnumerator
   }
 
   FloatingPointEnumerator& operator++() override {
-    const FloatingPoint current(createFP());
-    if (current.isNaN()) {
+    if (d_currentNaN) {
       d_enumerationComplete = true;
     } else {
       d_state = d_state + BitVector(d_state.getSize(), 1U);
+      const FloatingPoint next(createFP());
+      if( next.isNaN() )
+      {
+        if( d_doSigned )
+        {
+          d_doSigned = false;
+          d_state = BitVector(d_state.getSize(),Integer(2).pow(d_state.getSize()-1));
+        }
+        else
+        {
+          d_currentNaN = true;
+        }
+      }
     }
     return *this;
   }
@@ -75,6 +89,10 @@ class FloatingPointEnumerator
   const unsigned d_s;
   BitVector d_state;
   bool d_enumerationComplete;
+  /** do we still need to enumerate the negative values? */
+  bool d_doSigned;
+  /** does the current state correspond to NaN? */
+  bool d_currentNaN;
 }; /* FloatingPointEnumerator */
 
 class RoundingModeEnumerator
