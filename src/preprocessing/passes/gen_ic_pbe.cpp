@@ -208,7 +208,7 @@ PreprocessingPassResult GenIcPbe::applyInternal(
         unsigned currIndex = ival % domSize;
         samplePt.push_back(completeDom[j][currIndex]);
         ival = ival / domSize;
-        if( currIndex==0 && j==0 )
+        if (currIndex == 0 && j == 0)
         {
           out << std::endl;
         }
@@ -231,9 +231,9 @@ PreprocessingPassResult GenIcPbe::applyInternal(
     Trace("gen-ic-pbe") << "*** Check sat..." << std::endl;
     Result r = smtSamplePt.checkSat();
     Trace("gen-ic-pbe") << "...result : " << r << std::endl;
-    if(options::genIcPbeFull())
+    if (options::genIcPbeFull())
     {
-      out  << ( r.asSatisfiabilityResult().isSat() == Result::UNSAT ? "0" : "1" );
+      out << (r.asSatisfiabilityResult().isSat() == Result::UNSAT ? "0" : "1");
     }
     else
     {
@@ -254,7 +254,7 @@ PreprocessingPassResult GenIcPbe::applyInternal(
       out << "))" << std::endl;
     }
   }
-  if(options::genIcPbeFull())
+  if (options::genIcPbeFull())
   {
     out << std::endl;
   }

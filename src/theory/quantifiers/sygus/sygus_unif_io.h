@@ -317,10 +317,10 @@ class SygusUnifIo : public SygusUnif
   /** The solution for the function of this class, if one has been found */
   Node d_solution;
   /** partial solutions
-   * 
+   *
    * Maps indices for I/O points to a list of solutions for that point.
    */
-  std::map< unsigned, std::unordered_set< Node, NodeHashFunction > > d_psolutions;
+  std::map<unsigned, std::unordered_set<Node, NodeHashFunction>> d_psolutions;
   /**
    * This flag is set to true if the solution construction was
    * non-deterministic with respect to failure/success.
@@ -455,7 +455,7 @@ class SygusUnifIo : public SygusUnif
                     NodeRole nrole,
                     int ind,
                     std::vector<Node>& lemmas) override;
-                    
+
   class PbeTrie
   {
    public:
@@ -471,9 +471,12 @@ class SygusUnifIo : public SygusUnif
      */
     Node addTerm(Node b, std::vector<Node>& exOut);
   };
-  std::map<Node, PbeTrie > d_pbe_trie;
-  void addSearchVal(Node e, Node v, std::vector< Node >& res );
-  bool existsSearchValSubset(Node e, Node v, std::vector< Node >& res, std::vector< bool >& ss );
+  std::map<Node, PbeTrie> d_pbe_trie;
+  void addSearchVal(Node e, Node v, std::vector<Node>& res);
+  bool existsSearchValSubset(Node e,
+                             Node v,
+                             std::vector<Node>& res,
+                             std::vector<bool>& ss);
 };
 
 } /* CVC4::theory::quantifiers namespace */

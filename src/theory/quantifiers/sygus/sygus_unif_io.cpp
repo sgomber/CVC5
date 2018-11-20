@@ -777,7 +777,7 @@ Node SygusUnifIo::constructSolutionNode(std::vector<Node>& lemmas)
                   && d_tds->getSygusTermSize(vcc) < sol_term_size)))
       {
         Trace("sygus-pbe") << "**** SygusUnif SOLVED : " << c << " = ";
-        TermDbSygus::toStreamSygus("sygus-pbe",vcc);
+        TermDbSygus::toStreamSygus("sygus-pbe", vcc);
         Trace("sygus-pbe") << std::endl;
         Trace("sygus-pbe") << "...solved at iteration " << i << std::endl;
         d_solution = vcc;
@@ -866,7 +866,7 @@ bool SygusUnifIo::getExplanationForEnumeratorExclude(
         << "Check enumerator exclusion for " << e << " -> "
         << d_tds->sygusToBuiltin(v) << " based on str.contains." << std::endl;
     std::vector<unsigned> cmp_indices;
-    std::vector< bool > cmpRes;
+    std::vector<bool> cmpRes;
     bool allConditionalFail = false;
     for (unsigned i = 0, size = results.size(); i < size; i++)
     {
@@ -885,8 +885,8 @@ bool SygusUnifIo::getExplanationForEnumeratorExclude(
       else
       {
         cmpRes.push_back(true);
-        Trace("sygus-sui-cterm-debug") << "...contained." << std::endl;        
-        if( isConditional )
+        Trace("sygus-sui-cterm-debug") << "...contained." << std::endl;
+        if (isConditional)
         {
           allConditionalFail = true;
         }
@@ -894,11 +894,11 @@ bool SygusUnifIo::getExplanationForEnumeratorExclude(
     }
     if (!cmp_indices.empty())
     {
-      if( allConditionalFail )
+      if (allConditionalFail)
       {
         // we may be equivalent-to-examples on those we are contained in
-        bool res = existsSearchValSubset(e,v,results,cmpRes);
-        if( res )
+        bool res = existsSearchValSubset(e, v, results, cmpRes);
+        if (res)
         {
           // use basic non-generalized exclusion
           d_tds->getExplain()->getExplanationForEquality(e, v, exp);
@@ -909,7 +909,7 @@ bool SygusUnifIo::getExplanationForEnumeratorExclude(
       {
         // we check invariance with respect to a negative contains test
         NegContainsSygusInvarianceTest ncset;
-        if( isConditional )
+        if (isConditional)
         {
           ncset.setUniversal();
         }
@@ -923,12 +923,12 @@ bool SygusUnifIo::getExplanationForEnumeratorExclude(
       }
     }
     // if we're using it, we add it now
-    addSearchVal(e,v,results);
+    addSearchVal(e, v, results);
   }
   return false;
 }
 
-void SygusUnifIo::addSearchVal(Node e, Node v, std::vector< Node >& res )
+void SygusUnifIo::addSearchVal(Node e, Node v, std::vector<Node>& res)
 {
   PbeTrie* curr = &d_pbe_trie[e];
   for (const Node& eo : res)
@@ -941,9 +941,12 @@ void SygusUnifIo::addSearchVal(Node e, Node v, std::vector< Node >& res )
   }
 }
 
-bool SygusUnifIo::existsSearchValSubset(Node e, Node v, std::vector< Node >& res, std::vector< bool >& ss )
+bool SygusUnifIo::existsSearchValSubset(Node e,
+                                        Node v,
+                                        std::vector<Node>& res,
+                                        std::vector<bool>& ss)
 {
-  Assert( res.size()==ss.size());
+  Assert(res.size() == ss.size());
   std::vector<PbeTrie*> visit;
   std::vector<unsigned> visitIndex;
   PbeTrie* cur = nullptr;
@@ -951,18 +954,19 @@ bool SygusUnifIo::existsSearchValSubset(Node e, Node v, std::vector< Node >& res
   visit.push_back(&d_pbe_trie[e]);
   visitIndex.push_back(0);
   std::map<Node, PbeTrie>::iterator cit;
-  do {
+  do
+  {
     cur = visit.back();
     visit.pop_back();
     curIndex = visitIndex.back();
     visitIndex.pop_back();
     // follow required paths
     bool success = true;
-    while( success && curIndex<res.size() && ss[curIndex] )
+    while (success && curIndex < res.size() && ss[curIndex])
     {
       // must be the exact child
       cit = cur->d_children.find(res[curIndex]);
-      if( cit!=cur->d_children.end() )
+      if (cit != cur->d_children.end())
       {
         cur = &cit->second;
         curIndex++;
@@ -972,25 +976,25 @@ bool SygusUnifIo::existsSearchValSubset(Node e, Node v, std::vector< Node >& res
         success = false;
       }
     }
-    if( success )
+    if (success)
     {
-      if( curIndex==res.size() )
+      if (curIndex == res.size())
       {
         return true;
       }
       else
       {
-        Assert( !ss[curIndex] );
-        // branch and look at all children 
-        for( cit = cur->d_children.begin(); cit != cur->d_children.end(); ++cit )
+        Assert(!ss[curIndex]);
+        // branch and look at all children
+        for (cit = cur->d_children.begin(); cit != cur->d_children.end(); ++cit)
         {
           visit.push_back(&cit->second);
-          visitIndex.push_back(curIndex+1);
+          visitIndex.push_back(curIndex + 1);
         }
       }
     }
   } while (!visit.empty());
-  
+
   return false;
 }
 
@@ -1046,7 +1050,7 @@ Node SygusUnifIo::constructSol(
   EnumInfo& einfo = d_strategy[f].getEnumInfo(e);
 
   EnumCache& ecache = d_ecache[e];
-  
+
   bool retValMod = x.isReturnValueModified();
 
   Node ret_dt;
@@ -1127,56 +1131,57 @@ Node SygusUnifIo::constructSol(
       }
     }
     // maybe we can find one in the cache
-    if( ret_dt.isNull() && !retValMod )
+    if (ret_dt.isNull() && !retValMod)
     {
       bool firstTime = true;
-      std::unordered_set< Node, NodeHashFunction > intersection;
-      std::map< unsigned, std::unordered_set< Node, NodeHashFunction > >::iterator pit;
-      for( unsigned i=0, nvals = x.d_vals.size(); i<nvals; i++ )
+      std::unordered_set<Node, NodeHashFunction> intersection;
+      std::map<unsigned, std::unordered_set<Node, NodeHashFunction>>::iterator
+          pit;
+      for (unsigned i = 0, nvals = x.d_vals.size(); i < nvals; i++)
       {
-        if( x.d_vals[i].getConst<bool>() )
+        if (x.d_vals[i].getConst<bool>())
         {
           pit = d_psolutions.find(i);
-          if( pit==d_psolutions.end() )
+          if (pit == d_psolutions.end())
           {
             // no cached solution
             intersection.clear();
             break;
           }
-          if( firstTime )
+          if (firstTime)
           {
             intersection = pit->second;
             firstTime = false;
           }
           else
           {
-            std::vector< Node > rm;
-            for( const Node& a : intersection )
+            std::vector<Node> rm;
+            for (const Node& a : intersection)
             {
-              if( pit->second.find(a)==pit->second.end() )
+              if (pit->second.find(a) == pit->second.end())
               {
-                rm.push_back( a );
+                rm.push_back(a);
               }
             }
-            for( const Node& a : rm )
+            for (const Node& a : rm)
             {
               intersection.erase(a);
             }
-            if( intersection.empty() )
+            if (intersection.empty())
             {
               break;
             }
           }
         }
       }
-      if( !intersection.empty() )
+      if (!intersection.empty())
       {
         ret_dt = *intersection.begin();
-        if( Trace.isOn("sygus-sui-dt") )
+        if (Trace.isOn("sygus-sui-dt"))
         {
           indent("sygus-sui-dt", ind);
           Trace("sygus-sui-dt") << "ConstructPBE: found in cache: ";
-          TermDbSygus::toStreamSygus("sygus-sui-dt",ret_dt);
+          TermDbSygus::toStreamSygus("sygus-sui-dt", ret_dt);
           Trace("sygus-sui-dt") << std::endl;
         }
       }
@@ -1546,9 +1551,9 @@ Node SygusUnifIo::constructSol(
             did_recurse = true;
             // Store the previous visit role, this ensures a strategy node can
             // be visited on multiple paths in the solution in the same context.
-            //std::map<Node, std::map<NodeRole, bool>> pvr = x.d_visit_role;
+            // std::map<Node, std::map<NodeRole, bool>> pvr = x.d_visit_role;
             rec_c = constructSol(f, cenum.first, cenum.second, ind + 2, lemmas);
-            //x.d_visit_role = pvr;
+            // x.d_visit_role = pvr;
           }
 
           // undo update the context
@@ -1593,27 +1598,27 @@ Node SygusUnifIo::constructSol(
   }
 
   Assert(ret_dt.isNull() || ret_dt.getType() == e.getType());
-  if( Trace.isOn("sygus-sui-dt") )
+  if (Trace.isOn("sygus-sui-dt"))
   {
     indent("sygus-sui-dt", ind);
     Trace("sygus-sui-dt") << "ConstructPBE: returned ";
-    TermDbSygus::toStreamSygus("sygus-sui-dt",ret_dt);
+    TermDbSygus::toStreamSygus("sygus-sui-dt", ret_dt);
     Trace("sygus-sui-dt") << std::endl;
   }
   // remember the solution
   if (nrole == role_equal)
   {
-    if( !retValMod && !ret_dt.isNull())
+    if (!retValMod && !ret_dt.isNull())
     {
-      for( unsigned i=0, nvals = x.d_vals.size(); i<nvals; i++ )
+      for (unsigned i = 0, nvals = x.d_vals.size(); i < nvals; i++)
       {
-        if( x.d_vals[i].getConst<bool>() )
+        if (x.d_vals[i].getConst<bool>())
         {
-          if( Trace.isOn("sygus-sui-cache") )
+          if (Trace.isOn("sygus-sui-cache"))
           {
             indent("sygus-sui-cache", ind);
             Trace("sygus-sui-cache") << "Cache solution (#" << i << ") : ";
-            TermDbSygus::toStreamSygus("sygus-sui-cache",ret_dt);
+            TermDbSygus::toStreamSygus("sygus-sui-cache", ret_dt);
             Trace("sygus-sui-cache") << std::endl;
           }
           d_psolutions[i].insert(ret_dt);
@@ -1621,7 +1626,7 @@ Node SygusUnifIo::constructSol(
       }
     }
   }
-  
+
   return ret_dt;
 }
 

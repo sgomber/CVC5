@@ -218,22 +218,22 @@ bool NegContainsSygusInvarianceTest::invariant(TermDbSygus* tds,
           NodeManager::currentNM()->mkNode(kind::STRING_STRCTN, out, nbvre);
       Trace("sygus-pbe-cterm-debug") << "Check: " << cont << std::endl;
       Node contr = Rewriter::rewrite(cont);
-      if( !contr.isConst() )
+      if (!contr.isConst())
       {
-        if( d_isUniversal )
+        if (d_isUniversal)
         {
           return false;
         }
       }
-      else if (contr.getConst<bool>()==d_isUniversal)
+      else if (contr.getConst<bool>() == d_isUniversal)
       {
         if (Trace.isOn("sygus-pbe-cterm"))
         {
           Trace("sygus-pbe-cterm")
               << "PBE-cterm : enumerator : do not consider ";
-          Trace("sygus-pbe-cterm") << nbv << " for any "
-                                  << tds->sygusToBuiltin(x) << " since "
-                                  << std::endl;
+          Trace("sygus-pbe-cterm")
+              << nbv << " for any " << tds->sygusToBuiltin(x) << " since "
+              << std::endl;
           Trace("sygus-pbe-cterm") << "   PBE-cterm :    for input example : ";
           for (unsigned j = 0, size = d_ex[ii].size(); j < size; j++)
           {
