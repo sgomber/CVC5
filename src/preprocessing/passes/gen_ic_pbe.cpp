@@ -178,6 +178,7 @@ PreprocessingPassResult GenIcPbe::applyInternal(
       do
       {
         curre = tenum.getEnumerateTerm(tn,counter);
+        Trace("gen-ic-pbe-enum") << "Enum " << counter << " " << curre << std::endl;
         counter++;
         if( !curre.isNull() )
         {
