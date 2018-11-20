@@ -429,7 +429,7 @@ void SubsumeTrie::getLeavesInternal(const std::vector<Node>& vals,
   {
     // by convention, if we did not test any points, then we consider the
     // evaluation along the current path to be always false.
-    int rstatus = status==-2 ? -1 : status;
+    int rstatus = status == -2 ? -1 : status;
     Assert(!d_term.isNull());
     Assert(std::find(v[rstatus].begin(), v[rstatus].end(), d_term)
            == v[rstatus].end());
@@ -1221,10 +1221,9 @@ Node SygusUnifIo::constructSol(
             Assert(set_split_cond_res_index);
             Assert(split_cond_res_index < ecache_cond.d_enum_vals_res.size());
             prev = x.d_vals;
-            x.updateContext(
-                this,
-                ecache_cond.d_enum_vals_res[split_cond_res_index],
-                sc == 1);
+            x.updateContext(this,
+                            ecache_cond.d_enum_vals_res[split_cond_res_index],
+                            sc == 1);
             // ret may be false in corner cases where we must choose
             // a non-separating condition to traverse to another strategy node
           }
@@ -1291,7 +1290,7 @@ Node SygusUnifIo::constructSol(
             ecache_child.d_term_trie.getLeaves(x.d_vals, true, possible_cond);
 
             // prefer distinguishable conditions, then we try true, false
-            //unsigned lastTest = 
+            // unsigned lastTest =
             for (unsigned d = 0; d < 1; d++)
             {
               unsigned pcv = d == 2 ? -1 : d;
@@ -1392,9 +1391,9 @@ Node SygusUnifIo::constructSol(
             did_recurse = true;
             // Store the previous visit role, this ensures a strategy node can
             // be visited on multiple paths in the solution in the same context.
-            //std::map<Node, std::map<NodeRole, bool>> pvr = x.d_visit_role;
+            // std::map<Node, std::map<NodeRole, bool>> pvr = x.d_visit_role;
             rec_c = constructSol(f, cenum.first, cenum.second, ind + 2, lemmas);
-            //x.d_visit_role = pvr;
+            // x.d_visit_role = pvr;
           }
 
           // undo update the context

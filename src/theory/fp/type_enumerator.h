@@ -41,7 +41,9 @@ class FloatingPointEnumerator
         d_state(d_e + d_s, 0U),
         d_enumerationComplete(false),
         d_doSigned(true),
-        d_currentNaN(false) {}
+        d_currentNaN(false)
+  {
+  }
 
   /** Throws NoMoreValuesException if the enumeration is complete. */
   Node operator*() override {
@@ -52,17 +54,19 @@ class FloatingPointEnumerator
   }
 
   FloatingPointEnumerator& operator++() override {
-    if (d_currentNaN) {
+    if (d_currentNaN)
+    {
       d_enumerationComplete = true;
     } else {
       d_state = d_state + BitVector(d_state.getSize(), 1U);
       const FloatingPoint next(createFP());
-      if( next.isNaN() )
+      if (next.isNaN())
       {
-        if( d_doSigned )
+        if (d_doSigned)
         {
           d_doSigned = false;
-          d_state = BitVector(d_state.getSize(),Integer(2).pow(d_state.getSize()-1));
+          d_state = BitVector(d_state.getSize(),
+                              Integer(2).pow(d_state.getSize() - 1));
         }
         else
         {
