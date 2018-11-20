@@ -39,11 +39,7 @@ class FloatingPointEnumerator
         d_e(type.getFloatingPointExponentSize()),
         d_s(type.getFloatingPointSignificandSize()),
         d_state(d_e + d_s, 0U),
-        d_enumerationComplete(false),
-        d_doSigned(true),
-        d_currentNaN(false)
-  {
-  }
+        d_enumerationComplete(false) {}
 
   /** Throws NoMoreValuesException if the enumeration is complete. */
   Node operator*() override {
@@ -54,25 +50,11 @@ class FloatingPointEnumerator
   }
 
   FloatingPointEnumerator& operator++() override {
-    if (d_currentNaN)
-    {
+    const FloatingPoint current(createFP());
+    if (current.isNaN()) {
       d_enumerationComplete = true;
     } else {
       d_state = d_state + BitVector(d_state.getSize(), 1U);
-      const FloatingPoint next(createFP());
-      if (next.isNaN())
-      {
-        if (d_doSigned)
-        {
-          d_doSigned = false;
-          d_state = BitVector(d_state.getSize(),
-                              Integer(2).pow(d_state.getSize() - 1));
-        }
-        else
-        {
-          d_currentNaN = true;
-        }
-      }
     }
     return *this;
   }
@@ -82,8 +64,11 @@ class FloatingPointEnumerator
  protected:
   FloatingPoint createFP(void) const {
     // Rotate the LSB into the sign so that NaN is the last value
-    const BitVector value =
-        d_state.logicalRightShift(1) | d_state.leftShift(d_state.getSize() - 1);
+    uint64_t vone = 1;
+    uint64_t vmax = d_state.getSize() - 1;
+    BitVector bva = d_state.logicalRightShift(BitVector(d_state.getSize(),vone));
+    BitVector bvb = d_state.leftShift(BitVector(d_state.getSize(),vmax));
+    const BitVector value = (bva | bvb);
 
     return FloatingPoint(d_e, d_s, value);
   }
@@ -93,10 +78,6 @@ class FloatingPointEnumerator
   const unsigned d_s;
   BitVector d_state;
   bool d_enumerationComplete;
-  /** do we still need to enumerate the negative values? */
-  bool d_doSigned;
-  /** does the current state correspond to NaN? */
-  bool d_currentNaN;
 }; /* FloatingPointEnumerator */
 
 class RoundingModeEnumerator
