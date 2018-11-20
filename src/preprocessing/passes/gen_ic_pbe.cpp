@@ -208,6 +208,10 @@ PreprocessingPassResult GenIcPbe::applyInternal(
         unsigned currIndex = ival % domSize;
         samplePt.push_back(completeDom[j][currIndex]);
         ival = ival / domSize;
+        if( currIndex==0 && j==0 )
+        {
+          out << std::endl;
+        }
       }
     }
     else
@@ -227,21 +231,32 @@ PreprocessingPassResult GenIcPbe::applyInternal(
     Trace("gen-ic-pbe") << "*** Check sat..." << std::endl;
     Result r = smtSamplePt.checkSat();
     Trace("gen-ic-pbe") << "...result : " << r << std::endl;
-    out << "(constraint ";
-    if (r.asSatisfiabilityResult().isSat() == Result::UNSAT)
+    if(options::genIcPbeFull())
     {
-      out << "(not ";
+      out  << ( r.asSatisfiabilityResult().isSat() == Result::UNSAT ? "0" : "1" );
     }
-    out << "(IC ";
-    for (const Node& sp : samplePt)
+    else
     {
-      out << sp << " ";
+      out << "(constraint ";
+      if (r.asSatisfiabilityResult().isSat() == Result::UNSAT)
+      {
+        out << "(not ";
+      }
+      out << "(IC ";
+      for (const Node& sp : samplePt)
+      {
+        out << sp << " ";
+      }
+      if (r.asSatisfiabilityResult().isSat() == Result::UNSAT)
+      {
+        out << ")";
+      }
+      out << "))" << std::endl;
     }
-    if (r.asSatisfiabilityResult().isSat() == Result::UNSAT)
-    {
-      out << ")";
-    }
-    out << "))" << std::endl;
+  }
+  if(options::genIcPbeFull())
+  {
+    out << std::endl;
   }
 
   return PreprocessingPassResult::NO_CONFLICT;

@@ -440,6 +440,8 @@ class SygusUnifIo : public SygusUnif
   bool useStrContainsEnumeratorExclude(Node e);
   /** cache for the above function */
   std::map<Node, bool> d_use_str_contains_eexc;
+  /** cache for the above function */
+  std::map<Node, bool> d_use_str_contains_eexc_conditional;
 
   /** the unification context used within constructSolution */
   UnifContextIo d_context;

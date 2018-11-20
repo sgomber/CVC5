@@ -825,12 +825,12 @@ bool SygusUnifIo::useStrContainsEnumeratorExclude(Node e)
         d_use_str_contains_eexc[e] = false;
         return false;
       }
+      d_use_str_contains_eexc_conditional[e] = false;
       if (eis.isConditional())
       {
         Trace("sygus-sui-enum-debug")
             << "  conditional slave : " << sn << std::endl;
-        d_use_str_contains_eexc[e] = false;
-        return false;
+        d_use_str_contains_eexc_conditional[e] = true;
       }
     }
     Trace("sygus-sui-enum-debug")
@@ -853,6 +853,9 @@ bool SygusUnifIo::getExplanationForEnumeratorExclude(
     // the output for some input/output pair. If so, then this term is never
     // useful. We generalize its explanation below.
 
+    // if the enumerator is in a conditional context, then we are stricter
+    // about when to exclude
+    bool isConditional = d_use_str_contains_eexc_conditional[e];
     if (Trace.isOn("sygus-sui-cterm-debug"))
     {
       Trace("sygus-sui-enum") << std::endl;
@@ -863,6 +866,8 @@ bool SygusUnifIo::getExplanationForEnumeratorExclude(
         << "Check enumerator exclusion for " << e << " -> "
         << d_tds->sygusToBuiltin(v) << " based on str.contains." << std::endl;
     std::vector<unsigned> cmp_indices;
+    std::vector< bool > cmpRes;
+    bool allConditionalFail = false;
     for (unsigned i = 0, size = results.size(); i < size; i++)
     {
       Assert(results[i].isConst());
@@ -873,25 +878,50 @@ bool SygusUnifIo::getExplanationForEnumeratorExclude(
       Node contr = Rewriter::rewrite(cont);
       if (contr == d_false)
       {
+        cmpRes.push_back(false);
         cmp_indices.push_back(i);
         Trace("sygus-sui-cterm-debug") << "...not contained." << std::endl;
       }
       else
       {
-        Trace("sygus-sui-cterm-debug") << "...contained." << std::endl;
+        cmpRes.push_back(true);
+        Trace("sygus-sui-cterm-debug") << "...contained." << std::endl;        
+        if( isConditional )
+        {
+          allConditionalFail = true;
+        }
       }
     }
     if (!cmp_indices.empty())
     {
-      // we check invariance with respect to a negative contains test
-      NegContainsSygusInvarianceTest ncset;
-      ncset.init(e, d_examples, d_examples_out, cmp_indices);
-      // construct the generalized explanation
-      d_tds->getExplain()->getExplanationFor(e, v, exp, ncset);
-      Trace("sygus-sui-cterm")
-          << "PBE-cterm : enumerator exclude " << d_tds->sygusToBuiltin(v)
-          << " due to negative containment." << std::endl;
-      return true;
+      if( allConditionalFail )
+      {
+        /*
+        // we may be equivalent-to-examples on those we are contained in
+        Node res = addSearchValSubset(e,cmpRes,results);
+        if( !res.isNull() )
+        {
+          d_tds->getExplain()->getExplanationFor(e, v, exp);
+          return true;
+        }
+        */
+      }
+      else
+      {
+        // we check invariance with respect to a negative contains test
+        NegContainsSygusInvarianceTest ncset;
+        if( isConditional )
+        {
+          ncset.setUniversal();
+        }
+        ncset.init(e, d_examples, d_examples_out, cmp_indices);
+        // construct the generalized explanation
+        d_tds->getExplain()->getExplanationFor(e, v, exp, ncset);
+        Trace("sygus-sui-cterm")
+            << "PBE-cterm : enumerator exclude " << d_tds->sygusToBuiltin(v)
+            << " due to negative containment." << std::endl;
+        return true;
+      }
     }
   }
   return false;
