@@ -48,19 +48,22 @@ Node SygusUnif::constructBestSolvedTerm(Node e, const std::vector<Node>& solved)
   return solved[0];
 }
 
-Node SygusUnif::constructBestStringSolvedTerm(Node e, const std::vector<Node>& solved)
+Node SygusUnif::constructBestStringSolvedTerm(Node e,
+                                              const std::vector<Node>& solved)
 {
   Assert(!solved.empty());
   return solved[0];
 }
 
-Node SygusUnif::constructBestSolvedConditional(Node ce, const std::vector<Node>& solved)
+Node SygusUnif::constructBestSolvedConditional(Node ce,
+                                               const std::vector<Node>& solved)
 {
   Assert(!solved.empty());
   return solved[0];
 }
 
-Node SygusUnif::constructBestConditional(Node ce, const std::vector<Node>& conds)
+Node SygusUnif::constructBestConditional(Node ce,
+                                         const std::vector<Node>& conds)
 {
   Assert(!conds.empty());
   double r = Random::getRandom().pickDouble(0.0, 1.0);

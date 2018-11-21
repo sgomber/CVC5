@@ -1341,76 +1341,76 @@ Node SygusUnifIo::constructSol(
   return ret_dt;
 }
 
-
-
-Node SygusUnifIo::constructBestConditional(Node ce, const std::vector<Node>& solved) 
+Node SygusUnifIo::constructBestConditional(Node ce,
+                                           const std::vector<Node>& solved)
 {
   UnifContextIo& x = d_context;
-  // use information gain heuristic 
+  // use information gain heuristic
   Trace("sygus-sui-dt-igain") << "Best information gain in context ";
   print_val("sygus-sui-dt-igain", x.d_vals);
   Trace("sygus-sui-dt-igain") << std::endl;
-  std::vector< unsigned > activeIndices;
-  std::map< unsigned, std::map< Node, std::map< Node, unsigned > > > eval;
-  std::map< unsigned, std::map< Node, unsigned > > evalCount;
+  std::vector<unsigned> activeIndices;
+  std::map<unsigned, std::map<Node, std::map<Node, unsigned>>> eval;
+  std::map<unsigned, std::map<Node, unsigned>> evalCount;
   unsigned nsolved = solved.size();
   EnumCache& ecache = d_ecache[ce];
-  std::vector< unsigned > eindex;
-  for( unsigned j=0; j<nsolved; j++ )
+  std::vector<unsigned> eindex;
+  for (unsigned j = 0; j < nsolved; j++)
   {
     eindex.push_back(ecache.d_enum_val_to_index[solved[j]]);
   }
   unsigned activePoints = 0;
-  for( unsigned i=0, npoints=x.d_vals.size(); i<npoints; i++ )
+  for (unsigned i = 0, npoints = x.d_vals.size(); i < npoints; i++)
   {
-    if( x.d_vals[i].getConst<bool>() )
+    if (x.d_vals[i].getConst<bool>())
     {
       activePoints++;
       Node eo = d_examples_out[i];
-      for( unsigned j=0; j<nsolved; j++ )
+      for (unsigned j = 0; j < nsolved; j++)
       {
         Node resn = ecache.d_enum_vals_res[eindex[j]][i];
-        Assert( resn.isConst() );
+        Assert(resn.isConst());
         eval[j][resn][eo]++;
         evalCount[j][resn]++;
       }
     }
   }
-  AlwaysAssert(activePoints>0);
+  AlwaysAssert(activePoints > 0);
   double minEntropy = 2.0;
   unsigned bestIndex = 0;
-  for( unsigned j=0; j<nsolved; j++ )
+  for (unsigned j = 0; j < nsolved; j++)
   {
     double entropySum = 0.0;
     Trace("sygus-sui-dt-igain") << j << " : ";
-    for( std::pair< const Node, std::map< Node, unsigned > >& ej : eval[j] )
+    for (std::pair<const Node, std::map<Node, unsigned>>& ej : eval[j])
     {
       unsigned ecount = evalCount[j][ej.first];
-      if( ecount>0 )
+      if (ecount > 0)
       {
-        double probBranch = double(ecount)/double(activePoints);
+        double probBranch = double(ecount) / double(activePoints);
         Trace("sygus-sui-dt-igain") << ej.first << " -> ( ";
-        for( std::pair< const Node, unsigned >& eej : ej.second )
+        for (std::pair<const Node, unsigned>& eej : ej.second)
         {
-          if( eej.second>0 )
+          if (eej.second > 0)
           {
-            double probVal = double(eej.second)/double(ecount);
-            Trace("sygus-sui-dt-igain") << eej.first << ":" << eej.second << " ";
-            double factor = -probVal*log2(probVal);
-            entropySum += probBranch*factor;
+            double probVal = double(eej.second) / double(ecount);
+            Trace("sygus-sui-dt-igain")
+                << eej.first << ":" << eej.second << " ";
+            double factor = -probVal * log2(probVal);
+            entropySum += probBranch * factor;
           }
         }
         Trace("sygus-sui-dt-igain") << ") ";
       }
     }
     Trace("sygus-sui-dt-igain") << "..." << entropySum << std::endl;
-    if( entropySum<minEntropy )
+    if (entropySum < minEntropy)
     {
       minEntropy = entropySum;
       bestIndex = j;
     }
   }
-  
+
   Assert(!solved.empty());
   return solved[bestIndex];
 }

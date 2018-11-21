@@ -420,7 +420,8 @@ class SygusUnifIo : public SygusUnif
                     int ind,
                     std::vector<Node>& lemmas) override;
   /** construct best conditional */
-  Node constructBestConditional(Node ce, const std::vector<Node>& solved) override;
+  Node constructBestConditional(Node ce,
+                                const std::vector<Node>& solved) override;
 };
 
 } /* CVC4::theory::quantifiers namespace */

@@ -45,9 +45,8 @@ PreprocessingPassResult GenIcPbe::applyInternal(
   AlwaysAssert(!asl.empty(), "GenIcPbe: no assertions");
 
   Node icCase = asl[0];
-  Notice()
-      << "Generate PBE invertibility condition conjecture for case: " << icCase
-      << std::endl;
+  Notice() << "Generate PBE invertibility condition conjecture for case: "
+           << icCase << std::endl;
 
   AlwaysAssert(icCase.getNumChildren() >= 2,
                "GenIcPbe: bad arity for first assertion");
@@ -152,7 +151,6 @@ PreprocessingPassResult GenIcPbe::applyInternal(
 
   TypeNode frange = funToSynthBvar.getType();
 
-
   Options& nodeManagerOptions = NodeManager::currentNM()->getOptions();
   std::ostream& out = *nodeManagerOptions.getOut();
 
@@ -160,7 +158,7 @@ PreprocessingPassResult GenIcPbe::applyInternal(
   theory::quantifiers::SygusSampler ss;
   theory::quantifiers::TermEnumeration tenum;
   unsigned nsamples = 0;
-  bool isFull = ( options::genIcPbeFull() || options::testIcFull() );
+  bool isFull = (options::genIcPbeFull() || options::testIcFull());
   if (isFull)
   {
     nsamples = bvars.empty() ? 0 : 1;
@@ -194,23 +192,27 @@ PreprocessingPassResult GenIcPbe::applyInternal(
 
   // the formula we are testing
   Node testFormula;
-  
-  std::vector< BitVector > ioString;
-  if( options::testIcFull() )
+
+  std::vector<BitVector> ioString;
+  if (options::testIcFull())
   {
     // get the candidate
-    AlwaysAssert(asl.size()>=3, "GenIcPbe: expecting at least 3 assertions to test I/O");
-    testFormula = Node::fromExpr(smt::currentSmtEngine()->expandDefinitions(asl[1].toExpr()));
-    testFormula = testFormula.substitute(varList.begin(),varList.end(),bvars.begin(),bvars.end());
+    AlwaysAssert(asl.size() >= 3,
+                 "GenIcPbe: expecting at least 3 assertions to test I/O");
+    testFormula = Node::fromExpr(
+        smt::currentSmtEngine()->expandDefinitions(asl[1].toExpr()));
+    testFormula = testFormula.substitute(
+        varList.begin(), varList.end(), bvars.begin(), bvars.end());
     Notice() << "Test candidate IC " << testFormula << "..." << std::endl;
 
     unsigned assertIndex = 2;
     bool success = true;
-    while(success && assertIndex<asl.size())
+    while (success && assertIndex < asl.size())
     {
       success = false;
       Node ioDef = asl[assertIndex];
-      if(ioDef.getKind()==EQUAL && ioDef[1].isConst() && ioDef[1].getType().isBitVector())
+      if (ioDef.getKind() == EQUAL && ioDef[1].isConst()
+          && ioDef[1].getType().isBitVector())
       {
         ioString.push_back(ioDef[1].getConst<BitVector>());
         success = true;
@@ -227,22 +229,23 @@ PreprocessingPassResult GenIcPbe::applyInternal(
     testFormula = res.substitute(xt, xkt);
   }
   Notice() << "Test formula is " << testFormula << std::endl;
-  
+
   // for test-ic-full, these are the row/column we are looking in
   unsigned ioIndexRow = 0;
   unsigned ioIndexCol = 0;
   unsigned rowWidth = 0;
-  if( isFull )
+  if (isFull)
   {
-    rowWidth = nsamples/completeDom[0].size();
+    rowWidth = nsamples / completeDom[0].size();
     if (options::genIcPbeFull())
     {
-      out << "(declare-fun io () (Array Int (_ BitVec " << rowWidth << ")))" << std::endl;
+      out << "(declare-fun io () (Array Int (_ BitVec " << rowWidth << ")))"
+          << std::endl;
     }
   }
   unsigned numIncorrect = 0;
   unsigned numIncorrectUndef = 0;
-  std::map< bool, unsigned > numIncorrectRes;
+  std::map<bool, unsigned> numIncorrectRes;
   for (unsigned i = 0; i < nsamples; i++)
   {
     bool printConstraint = false;
@@ -260,17 +263,17 @@ PreprocessingPassResult GenIcPbe::applyInternal(
         if (j == 0)
         {
           ioIndexCol = currIndex;
-          if( currIndex == 0 )
+          if (currIndex == 0)
           {
-            if( ival>0 )
-            {       
-              ioIndexRow++;   
+            if (ival > 0)
+            {
+              ioIndexRow++;
               if (options::genIcPbeFull())
               {
                 out << "))";
               }
               out << std::endl;
-            } 
+            }
             if (options::genIcPbeFull())
             {
               out << "(assert (= (select io " << ioIndexRow << ") #b";
@@ -289,15 +292,15 @@ PreprocessingPassResult GenIcPbe::applyInternal(
     }
     Node testFormulaSubs = testFormula.substitute(
         bvars.begin(), bvars.end(), samplePt.begin(), samplePt.end());
-    if( options::testIcFull() )
+    if (options::testIcFull())
     {
       // test the I/O behavior
-      //std::cout << ioIndexRow << ", " << ioIndexCol << std::endl;
-      bool expect = ioString[ioIndexRow].isBitSet((rowWidth-1)-ioIndexCol);
+      // std::cout << ioIndexRow << ", " << ioIndexCol << std::endl;
+      bool expect = ioString[ioIndexRow].isBitSet((rowWidth - 1) - ioIndexCol);
       Trace("gen-ic-pbe-debug") << "Check " << testFormulaSubs << std::endl;
       Node resn = theory::Rewriter::rewrite(testFormulaSubs);
       Trace("gen-ic-pbe-debug") << "..got " << resn << std::endl;
-      if( !resn.isConst() )
+      if (!resn.isConst())
       {
         out << "?";
         numIncorrect++;
@@ -306,25 +309,25 @@ PreprocessingPassResult GenIcPbe::applyInternal(
       else
       {
         bool result = resn.getConst<bool>();
-        if( result!=expect )
+        if (result != expect)
         {
-          if( options::testIcFullGen() )
+          if (options::testIcFullGen())
           {
             printConstraint = true;
             printPol = expect;
           }
           else
           {
-            out << ( result ? "X" : "_" );
+            out << (result ? "X" : "_");
           }
           numIncorrect++;
           numIncorrectRes[result]++;
         }
         else
         {
-          if( !options::testIcFullGen() )
+          if (!options::testIcFullGen())
           {
-            out << (expect ? "1" : "0" );
+            out << (expect ? "1" : "0");
           }
         }
       }
@@ -342,7 +345,8 @@ PreprocessingPassResult GenIcPbe::applyInternal(
       Trace("gen-ic-pbe") << "...result : " << r << std::endl;
       if (options::genIcPbeFull())
       {
-        out << (r.asSatisfiabilityResult().isSat() == Result::UNSAT ? "0" : "1");
+        out << (r.asSatisfiabilityResult().isSat() == Result::UNSAT ? "0"
+                                                                    : "1");
       }
       else
       {
@@ -350,7 +354,7 @@ PreprocessingPassResult GenIcPbe::applyInternal(
         printPol = (r.asSatisfiabilityResult().isSat() != Result::UNSAT);
       }
     }
-    if( printConstraint )
+    if (printConstraint)
     {
       out << "(constraint ";
       if (!printPol)
@@ -377,16 +381,18 @@ PreprocessingPassResult GenIcPbe::applyInternal(
     }
     out << std::endl;
   }
-  if( options::testIcFull() )
+  if (options::testIcFull())
   {
     out << "       Total #incorrect : " << numIncorrect << std::endl;
-    for( std::pair< const bool, unsigned >& ri : numIncorrectRes )
+    for (std::pair<const bool, unsigned>& ri : numIncorrectRes)
     {
-      out << "    Total #incorrect[" << ri.first << "] : " << ri.second << std::endl;
+      out << "    Total #incorrect[" << ri.first << "] : " << ri.second
+          << std::endl;
     }
     out << "Total #incorrect[undef] : " << numIncorrectUndef << std::endl;
     out << "           Total #tests : " << nsamples << std::endl;
-    out << "              % correct : " << 1.0-(double(numIncorrect)/double(nsamples)) << std::endl;
+    out << "              % correct : "
+        << 1.0 - (double(numIncorrect) / double(nsamples)) << std::endl;
   }
 
   return PreprocessingPassResult::NO_CONFLICT;

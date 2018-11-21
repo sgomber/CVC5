@@ -1166,8 +1166,8 @@ void SmtEngine::setDefaults() {
   {
     is_sygus = true;
   }
-  
-  if( options::testIcFullGen() )
+
+  if (options::testIcFullGen())
   {
     options::testIcFull.set(true);
   }
@@ -3076,7 +3076,7 @@ void SmtEnginePrivate::processAssertions() {
   SubstitutionMap& top_level_substs =
       d_preprocessingPassContext->getTopLevelSubstitutions();
 
-  if (options::genIcPbe() || options::genIcPbeFull() || options::testIcFull() )
+  if (options::genIcPbe() || options::genIcPbeFull() || options::testIcFull())
   {
     d_passes["gen-ic-pbe"]->apply(&d_assertions);
   }
