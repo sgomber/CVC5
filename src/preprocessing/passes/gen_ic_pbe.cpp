@@ -245,6 +245,8 @@ PreprocessingPassResult GenIcPbe::applyInternal(
   std::map< bool, unsigned > numIncorrectRes;
   for (unsigned i = 0; i < nsamples; i++)
   {
+    bool printConstraint = false;
+    bool printPol = true;
     std::vector<Node> samplePt;
     if (isFull)
     {
@@ -273,6 +275,10 @@ PreprocessingPassResult GenIcPbe::applyInternal(
             {
               out << "(assert (= (select io " << ioIndexRow << ") #b";
             }
+            else
+            {
+              out << ioIndexRow << ": ";
+            }
           }
         }
       }
@@ -287,9 +293,10 @@ PreprocessingPassResult GenIcPbe::applyInternal(
     {
       // test the I/O behavior
       //std::cout << ioIndexRow << ", " << ioIndexCol << std::endl;
-      bool expect = ioString[ioIndexRow].isBitSet(ioIndexCol);
-      Trace("ajr-temp") << "Check " << testFormulaSubs << std::endl;
+      bool expect = ioString[ioIndexRow].isBitSet((rowWidth-1)-ioIndexCol);
+      Trace("gen-ic-pbe-debug") << "Check " << testFormulaSubs << std::endl;
       Node resn = theory::Rewriter::rewrite(testFormulaSubs);
+      Trace("gen-ic-pbe-debug") << "..got " << resn << std::endl;
       if( !resn.isConst() )
       {
         out << "?";
@@ -301,13 +308,24 @@ PreprocessingPassResult GenIcPbe::applyInternal(
         bool result = resn.getConst<bool>();
         if( result!=expect )
         {
-          out << ( result ? "X" : "_" );
+          if( options::testIcFullGen() )
+          {
+            printConstraint = true;
+            printPol = expect;
+          }
+          else
+          {
+            out << ( result ? "X" : "_" );
+          }
           numIncorrect++;
           numIncorrectRes[result]++;
         }
         else
         {
-          out << (expect ? "1" : "0" );
+          if( !options::testIcFullGen() )
+          {
+            out << (expect ? "1" : "0" );
+          }
         }
       }
     }
@@ -328,22 +346,27 @@ PreprocessingPassResult GenIcPbe::applyInternal(
       }
       else
       {
-        out << "(constraint ";
-        if (r.asSatisfiabilityResult().isSat() == Result::UNSAT)
-        {
-          out << "(not ";
-        }
-        out << "(IC ";
-        for (const Node& sp : samplePt)
-        {
-          out << sp << " ";
-        }
-        if (r.asSatisfiabilityResult().isSat() == Result::UNSAT)
-        {
-          out << ")";
-        }
-        out << "))" << std::endl;
+        printConstraint = true;
+        printPol = (r.asSatisfiabilityResult().isSat() != Result::UNSAT);
       }
+    }
+    if( printConstraint )
+    {
+      out << "(constraint ";
+      if (!printPol)
+      {
+        out << "(not ";
+      }
+      out << "(IC ";
+      for (const Node& sp : samplePt)
+      {
+        out << sp << " ";
+      }
+      if (!printPol)
+      {
+        out << ")";
+      }
+      out << "))" << std::endl;
     }
   }
   if (isFull)
