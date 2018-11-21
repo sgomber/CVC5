@@ -639,5 +639,13 @@ header = "options/smt_options.h"
   long       = "gen-ic-pbe-full"
   type       = "bool"
   default    = "false"
-  help       = "generate PBE problem for invertibility conditions"
+  help       = "generate full I/O bitstring for invertibility conditions"
+
+[[option]]
+  name       = "testIcFull"
+  category   = "undocumented"
+  long       = "test-ic-full"
+  type       = "bool"
+  default    = "false"
+  help       = "test candidate invertibility condition against I/O bitstring"
 

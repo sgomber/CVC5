@@ -45,12 +45,12 @@ PreprocessingPassResult GenIcPbe::applyInternal(
   AlwaysAssert(!asl.empty(), "GenIcPbe: no assertions");
 
   Node icCase = asl[0];
-  Trace("gen-ic-pbe")
+  Notice()
       << "Generate PBE invertibility condition conjecture for case: " << icCase
       << std::endl;
 
   AlwaysAssert(icCase.getNumChildren() >= 2,
-               "GenIcPbe: bad arity for assertion");
+               "GenIcPbe: bad arity for first assertion");
 
   std::vector<Node> bvars;
   Node funToSynthOp;
@@ -165,7 +165,8 @@ PreprocessingPassResult GenIcPbe::applyInternal(
   theory::quantifiers::SygusSampler ss;
   theory::quantifiers::TermEnumeration tenum;
   unsigned nsamples = 0;
-  if (options::genIcPbeFull())
+  bool isFull = ( options::genIcPbeFull() || options::testIcFull() );
+  if (isFull)
   {
     nsamples = bvars.empty() ? 0 : 1;
     for (unsigned i = 0, nvars = bvars.size(); i < nvars; i++)
@@ -196,10 +197,55 @@ PreprocessingPassResult GenIcPbe::applyInternal(
     nsamples = ss.getNumSamplePoints();
   }
 
+  Node candidateFunDef;
+  std::vector< BitVector > ioString;
+  if( options::testIcFull() )
+  {
+    // get the candidate
+    AlwaysAssert(asl.size()>=3, "GenIcPbe: expecting at least 3 assertions to test I/O");
+    Node funDef = asl[1];
+    AlwaysAssert(funDef.getKind()==EQUAL, "GenIcPbe: expecting function def as 2nd assertion");
+    std::vector< TypeNode > fArgs = funToSynthOp.getType().getArgTypes();
+    std::vector< TypeNode > icArgs = funDef[0].getType().getArgTypes();
+    AlwaysAssert(fArgs.size()==icArgs.size(), "GenIcPbe: mismatch arities for function def and ic");
+    for( unsigned i=0, nargs=fArgs.size(); i<nargs; i++ )
+    {
+      AlwaysAssert(fArgs[i]==icArgs[i], "GenIcPbe: mismatch argument types for function def and ic");
+    }
+    candidateFunDef = funDef[1];
+    Notice() << "Test candidate IC " << candidateFunDef[1] << "..." << std::endl;
+    unsigned assertIndex = 2;
+    bool success = true;
+    while(success && assertIndex<asl.size())
+    {
+      success = false;
+      Node ioDef = asl[assertIndex];
+      if(ioDef.getKind()==EQUAL && ioDef[1].isConst() && ioDef[1].getType().isBitVector())
+      {
+        ioString.push_back(ioDef[1].getConst<BitVector>());
+        success = true;
+      }
+      assertIndex++;
+    }
+    Notice() << "Testing " << ioString.size() << " inputs..." << std::endl;
+  }
+
+  // for test-ic-full, these are the row/column we are looking in
+  unsigned ioIndexRow = 0;
+  unsigned ioIndexCol = 0;
+  unsigned rowWidth = 0;
+  if( isFull )
+  {
+    rowWidth = nsamples/completeDom[0].size();
+    if (options::genIcPbeFull())
+    {
+      out << "(declare-fun io () (Array Int (_ BitVec " << rowWidth << ")))" << std::endl;
+    }
+  }
   for (unsigned i = 0; i < nsamples; i++)
   {
     std::vector<Node> samplePt;
-    if (options::genIcPbeFull())
+    if (isFull)
     {
       unsigned ival = i;
       for (unsigned j = 0, nvars = bvars.size(); j < nvars; j++)
@@ -208,9 +254,25 @@ PreprocessingPassResult GenIcPbe::applyInternal(
         unsigned currIndex = ival % domSize;
         samplePt.push_back(completeDom[j][currIndex]);
         ival = ival / domSize;
-        if (currIndex == 0 && j == 0)
+        if (j == 0)
         {
-          out << std::endl;
+          ioIndexCol = currIndex;
+          if( currIndex == 0 )
+          {
+            if( ival>0 )
+            {       
+              ioIndexRow++;   
+              if (options::genIcPbeFull())
+              {
+                out << "))";
+              }
+              out << std::endl;
+            } 
+            if (options::genIcPbeFull())
+            {
+              out << "(assert (= (select io " << ioIndexRow << ") #b";
+            }
+          }
         }
       }
     }
@@ -218,44 +280,59 @@ PreprocessingPassResult GenIcPbe::applyInternal(
     {
       ss.getSamplePoint(i, samplePt);
     }
-
-    Node resSkolemSubs = resSkolem.substitute(
-        bvars.begin(), bvars.end(), samplePt.begin(), samplePt.end());
-
-    Trace("gen-ic-pbe") << i << ": generate I/O spec from " << resSkolemSubs
-                        << std::endl;
-
-    SmtEngine smtSamplePt(nm->toExprManager());
-    smtSamplePt.setLogic(smt::currentSmtEngine()->getLogicInfo());
-    smtSamplePt.assertFormula(resSkolemSubs.toExpr());
-    Trace("gen-ic-pbe") << "*** Check sat..." << std::endl;
-    Result r = smtSamplePt.checkSat();
-    Trace("gen-ic-pbe") << "...result : " << r << std::endl;
-    if (options::genIcPbeFull())
+    if( options::testIcFull() )
     {
-      out << (r.asSatisfiabilityResult().isSat() == Result::UNSAT ? "0" : "1");
+      // test the I/O behavior
+      //std::cout << ioIndexRow << ", " << ioIndexCol << std::endl;
+      bool expect = ioString[ioIndexRow].isBitSet(ioIndexCol);
+      out << (expect ? "1" : "0" );
+      
     }
     else
     {
-      out << "(constraint ";
-      if (r.asSatisfiabilityResult().isSat() == Result::UNSAT)
+      // compute the I/O behavior 
+      Node resSkolemSubs = resSkolem.substitute(
+          bvars.begin(), bvars.end(), samplePt.begin(), samplePt.end());
+
+      Trace("gen-ic-pbe") << i << ": generate I/O spec from " << resSkolemSubs
+                          << std::endl;
+
+      SmtEngine smtSamplePt(nm->toExprManager());
+      smtSamplePt.setLogic(smt::currentSmtEngine()->getLogicInfo());
+      smtSamplePt.assertFormula(resSkolemSubs.toExpr());
+      Trace("gen-ic-pbe") << "*** Check sat..." << std::endl;
+      Result r = smtSamplePt.checkSat();
+      Trace("gen-ic-pbe") << "...result : " << r << std::endl;
+      if (options::genIcPbeFull())
       {
-        out << "(not ";
+        out << (r.asSatisfiabilityResult().isSat() == Result::UNSAT ? "0" : "1");
       }
-      out << "(IC ";
-      for (const Node& sp : samplePt)
+      else
       {
-        out << sp << " ";
+        out << "(constraint ";
+        if (r.asSatisfiabilityResult().isSat() == Result::UNSAT)
+        {
+          out << "(not ";
+        }
+        out << "(IC ";
+        for (const Node& sp : samplePt)
+        {
+          out << sp << " ";
+        }
+        if (r.asSatisfiabilityResult().isSat() == Result::UNSAT)
+        {
+          out << ")";
+        }
+        out << "))" << std::endl;
       }
-      if (r.asSatisfiabilityResult().isSat() == Result::UNSAT)
-      {
-        out << ")";
-      }
-      out << "))" << std::endl;
     }
   }
-  if (options::genIcPbeFull())
+  if (isFull)
   {
+    if (options::genIcPbeFull())
+    {
+      out << "))";
+    }
     out << std::endl;
   }
 
