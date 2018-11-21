@@ -152,11 +152,6 @@ PreprocessingPassResult GenIcPbe::applyInternal(
 
   TypeNode frange = funToSynthBvar.getType();
 
-  Node xk = nm->mkSkolem("x", frange);
-
-  TNode xt = funToSynthBvar;
-  TNode xkt = xk;
-  Node resSkolem = res.substitute(xt, xkt);
 
   Options& nodeManagerOptions = NodeManager::currentNM()->getOptions();
   std::ostream& out = *nodeManagerOptions.getOut();
@@ -197,23 +192,18 @@ PreprocessingPassResult GenIcPbe::applyInternal(
     nsamples = ss.getNumSamplePoints();
   }
 
-  Node candidateFunDef;
+  // the formula we are testing
+  Node testFormula;
+  
   std::vector< BitVector > ioString;
   if( options::testIcFull() )
   {
     // get the candidate
     AlwaysAssert(asl.size()>=3, "GenIcPbe: expecting at least 3 assertions to test I/O");
-    Node funDef = asl[1];
-    AlwaysAssert(funDef.getKind()==EQUAL, "GenIcPbe: expecting function def as 2nd assertion");
-    std::vector< TypeNode > fArgs = funToSynthOp.getType().getArgTypes();
-    std::vector< TypeNode > icArgs = funDef[0].getType().getArgTypes();
-    AlwaysAssert(fArgs.size()==icArgs.size(), "GenIcPbe: mismatch arities for function def and ic");
-    for( unsigned i=0, nargs=fArgs.size(); i<nargs; i++ )
-    {
-      AlwaysAssert(fArgs[i]==icArgs[i], "GenIcPbe: mismatch argument types for function def and ic");
-    }
-    candidateFunDef = funDef[1];
-    Notice() << "Test candidate IC " << candidateFunDef[1] << "..." << std::endl;
+    testFormula = Node::fromExpr(smt::currentSmtEngine()->expandDefinitions(asl[1].toExpr()));
+    testFormula = testFormula.substitute(varList.begin(),varList.end(),bvars.begin(),bvars.end());
+    Notice() << "Test candidate IC " << testFormula << "..." << std::endl;
+
     unsigned assertIndex = 2;
     bool success = true;
     while(success && assertIndex<asl.size())
@@ -229,7 +219,15 @@ PreprocessingPassResult GenIcPbe::applyInternal(
     }
     Notice() << "Testing " << ioString.size() << " inputs..." << std::endl;
   }
-
+  else
+  {
+    Node xk = nm->mkSkolem("x", frange);
+    TNode xt = funToSynthBvar;
+    TNode xkt = xk;
+    testFormula = res.substitute(xt, xkt);
+  }
+  Notice() << "Test formula is " << testFormula << std::endl;
+  
   // for test-ic-full, these are the row/column we are looking in
   unsigned ioIndexRow = 0;
   unsigned ioIndexCol = 0;
@@ -242,6 +240,9 @@ PreprocessingPassResult GenIcPbe::applyInternal(
       out << "(declare-fun io () (Array Int (_ BitVec " << rowWidth << ")))" << std::endl;
     }
   }
+  unsigned numIncorrect = 0;
+  unsigned numIncorrectUndef = 0;
+  std::map< bool, unsigned > numIncorrectRes;
   for (unsigned i = 0; i < nsamples; i++)
   {
     std::vector<Node> samplePt;
@@ -280,26 +281,44 @@ PreprocessingPassResult GenIcPbe::applyInternal(
     {
       ss.getSamplePoint(i, samplePt);
     }
+    Node testFormulaSubs = testFormula.substitute(
+        bvars.begin(), bvars.end(), samplePt.begin(), samplePt.end());
     if( options::testIcFull() )
     {
       // test the I/O behavior
       //std::cout << ioIndexRow << ", " << ioIndexCol << std::endl;
       bool expect = ioString[ioIndexRow].isBitSet(ioIndexCol);
-      out << (expect ? "1" : "0" );
-      
+      Trace("ajr-temp") << "Check " << testFormulaSubs << std::endl;
+      Node resn = theory::Rewriter::rewrite(testFormulaSubs);
+      if( !resn.isConst() )
+      {
+        out << "?";
+        numIncorrect++;
+        numIncorrectUndef++;
+      }
+      else
+      {
+        bool result = resn.getConst<bool>();
+        if( result!=expect )
+        {
+          out << ( result ? "X" : "_" );
+          numIncorrect++;
+          numIncorrectRes[result]++;
+        }
+        else
+        {
+          out << (expect ? "1" : "0" );
+        }
+      }
     }
     else
     {
-      // compute the I/O behavior 
-      Node resSkolemSubs = resSkolem.substitute(
-          bvars.begin(), bvars.end(), samplePt.begin(), samplePt.end());
-
-      Trace("gen-ic-pbe") << i << ": generate I/O spec from " << resSkolemSubs
+      // compute the I/O behavior: testFormulaSubs has free variable x
+      Trace("gen-ic-pbe") << i << ": generate I/O spec from " << testFormulaSubs
                           << std::endl;
-
       SmtEngine smtSamplePt(nm->toExprManager());
       smtSamplePt.setLogic(smt::currentSmtEngine()->getLogicInfo());
-      smtSamplePt.assertFormula(resSkolemSubs.toExpr());
+      smtSamplePt.assertFormula(testFormulaSubs.toExpr());
       Trace("gen-ic-pbe") << "*** Check sat..." << std::endl;
       Result r = smtSamplePt.checkSat();
       Trace("gen-ic-pbe") << "...result : " << r << std::endl;
@@ -334,6 +353,17 @@ PreprocessingPassResult GenIcPbe::applyInternal(
       out << "))";
     }
     out << std::endl;
+  }
+  if( options::testIcFull() )
+  {
+    out << "       Total #incorrect : " << numIncorrect << std::endl;
+    for( std::pair< const bool, unsigned >& ri : numIncorrectRes )
+    {
+      out << "    Total #incorrect[" << ri.first << "] : " << ri.second << std::endl;
+    }
+    out << "Total #incorrect[undef] : " << numIncorrectUndef << std::endl;
+    out << "           Total #tests : " << nsamples << std::endl;
+    out << "              % correct : " << 1.0-(double(numIncorrect)/double(nsamples)) << std::endl;
   }
 
   return PreprocessingPassResult::NO_CONFLICT;
