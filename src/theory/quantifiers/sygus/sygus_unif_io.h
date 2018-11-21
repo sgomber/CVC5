@@ -419,8 +419,8 @@ class SygusUnifIo : public SygusUnif
                     NodeRole nrole,
                     int ind,
                     std::vector<Node>& lemmas) override;
-  /** construct best solved conditional */
-  Node constructBestSolvedConditional(Node ce, const std::vector<Node>& solved) override;
+  /** construct best conditional */
+  Node constructBestConditional(Node ce, const std::vector<Node>& solved) override;
 };
 
 } /* CVC4::theory::quantifiers namespace */
