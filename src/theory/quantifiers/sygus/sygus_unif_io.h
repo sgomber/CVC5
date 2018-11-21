@@ -210,14 +210,12 @@ class SubsumeTrie
                      bool pol,
                      std::vector<Node>& subsumed_by);
   /**
-   * Get the leaves of the trie, which we store in the map v. We consider their
-   * evaluation on points such that (pol ? vals : !vals) is true.
-   *
-   * v[-1] stores the children that always evaluate to !pol,
-   * v[1] stores the children that always evaluate to pol,
-   * v[0] stores the children that both evaluate to true and false for at least
-   * one example.
-   */
+  * Get the leaves of the trie, which we store in the map v.
+  * v[-1] stores the children that always evaluate to !pol,
+  * v[1] stores the children that always evaluate to pol,
+  * v[0] stores the children that both evaluate to true and false for at least
+  * one example.
+  */
   void getLeaves(const std::vector<Node>& vals,
                  bool pol,
                  std::map<int, std::vector<Node>>& v);
@@ -316,11 +314,6 @@ class SygusUnifIo : public SygusUnif
   unsigned d_cond_count;
   /** The solution for the function of this class, if one has been found */
   Node d_solution;
-  /** partial solutions
-   *
-   * Maps indices for I/O points to a list of solutions for that point.
-   */
-  std::map<unsigned, std::unordered_set<Node, NodeHashFunction>> d_psolutions;
   /**
    * This flag is set to true if the solution construction was
    * non-deterministic with respect to failure/success.
@@ -440,8 +433,6 @@ class SygusUnifIo : public SygusUnif
   bool useStrContainsEnumeratorExclude(Node e);
   /** cache for the above function */
   std::map<Node, bool> d_use_str_contains_eexc;
-  /** cache for the above function */
-  std::map<Node, bool> d_use_str_contains_eexc_conditional;
 
   /** the unification context used within constructSolution */
   UnifContextIo d_context;
@@ -455,28 +446,9 @@ class SygusUnifIo : public SygusUnif
                     NodeRole nrole,
                     int ind,
                     std::vector<Node>& lemmas) override;
-
-  class PbeTrie
-  {
-   public:
-    PbeTrie() {}
-    ~PbeTrie() {}
-    /** the children for this node in the trie */
-    std::map<Node, PbeTrie> d_children;
-    /** clear this trie */
-    void clear() { d_children.clear(); }
-    /**
-     * Add term b whose value on examples is exOut to the trie. Return
-     * the first term registered to this trie whose evaluation was exOut.
-     */
-    Node addTerm(Node b, std::vector<Node>& exOut);
-  };
-  std::map<Node, PbeTrie> d_pbe_trie;
-  void addSearchVal(Node e, Node v, std::vector<Node>& res);
-  bool existsSearchValSubset(Node e,
-                             Node v,
-                             std::vector<Node>& res,
-                             std::vector<bool>& ss);
+  Node d_currCondEnum;
+  /** construct best solved conditional */
+  Node constructBestSolvedConditional(const std::vector<Node>& solved) override;
 };
 
 } /* CVC4::theory::quantifiers namespace */
