@@ -657,3 +657,11 @@ header = "options/smt_options.h"
   default    = "false"
   help       = "generate constraints from test ic"
 
+[[option]]
+  name       = "testIcRandom"
+  category   = "undocumented"
+  long       = "test-ic-random"
+  type       = "bool"
+  default    = "false"
+  help       = "test constraints from test ic, random order"
+

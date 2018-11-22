@@ -17,6 +17,7 @@
 #include "options/quantifiers_options.h"
 #include "theory/quantifiers/sygus_sampler.h"
 #include "theory/quantifiers/term_enumeration.h"
+#include "util/random.h"
 
 using namespace CVC4::kind;
 
@@ -248,12 +249,13 @@ PreprocessingPassResult GenIcPbe::applyInternal(
   std::map<bool, unsigned> numIncorrectRes;
   for (unsigned i = 0; i < nsamples; i++)
   {
+    unsigned ii = options::testIcRandom() ? Random::getRandom().pick(0,nsamples-1) : i;
     bool printConstraint = false;
     bool printPol = true;
     std::vector<Node> samplePt;
     if (isFull)
     {
-      unsigned ival = i;
+      unsigned ival = ii;
       for (unsigned j = 0, nvars = bvars.size(); j < nvars; j++)
       {
         unsigned domSize = completeDom[j].size();
@@ -263,11 +265,11 @@ PreprocessingPassResult GenIcPbe::applyInternal(
         if (j == 0)
         {
           ioIndexCol = currIndex;
+          ioIndexRow = ival;
           if (currIndex == 0)
           {
             if (ival > 0)
             {
-              ioIndexRow++;
               if (options::genIcPbeFull())
               {
                 out << "))";
@@ -295,7 +297,7 @@ PreprocessingPassResult GenIcPbe::applyInternal(
     if (options::testIcFull())
     {
       // test the I/O behavior
-      // std::cout << ioIndexRow << ", " << ioIndexCol << std::endl;
+      //std::cout << ioIndexRow << ", " << ioIndexCol << std::endl;
       bool expect = ioString[ioIndexRow].isBitSet((rowWidth - 1) - ioIndexCol);
       Trace("gen-ic-pbe-debug") << "Check " << testFormulaSubs << std::endl;
       Node resn = theory::Rewriter::rewrite(testFormulaSubs);

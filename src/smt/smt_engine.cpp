@@ -1167,9 +1167,13 @@ void SmtEngine::setDefaults() {
     is_sygus = true;
   }
 
-  if (options::testIcFullGen())
+  if (options::testIcFullGen() || options::testIcRandom())
   {
     options::testIcFull.set(true);
+  }
+  if( options::testIcFull() )
+  {
+    options::genIcPbeFull.set(false);
   }
 
   if (options::bitblastMode() == theory::bv::BITBLAST_MODE_EAGER)
