@@ -1171,7 +1171,7 @@ void SmtEngine::setDefaults() {
   {
     options::testIcFull.set(true);
   }
-  if( options::testIcFull() )
+  if (options::testIcFull())
   {
     options::genIcPbeFull.set(false);
   }

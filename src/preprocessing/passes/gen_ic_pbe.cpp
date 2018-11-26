@@ -46,10 +46,10 @@ PreprocessingPassResult GenIcPbe::applyInternal(
   AlwaysAssert(!asl.empty(), "GenIcPbe: no assertions");
 
   Node icCase = asl[0];
-  
+
   // may have a side condition
   Node sideCondition;
-  if( icCase.getKind()==IMPLIES )
+  if (icCase.getKind() == IMPLIES)
   {
     // if generating full spec, ignore the side condition
     if (!options::genIcPbeFull())
@@ -58,7 +58,7 @@ PreprocessingPassResult GenIcPbe::applyInternal(
     }
     icCase = icCase[1];
   }
-  
+
   Notice() << "Generate PBE invertibility condition conjecture for case: "
            << icCase << std::endl;
 
@@ -78,7 +78,7 @@ PreprocessingPassResult GenIcPbe::applyInternal(
   std::unordered_map<TNode, Node, TNodeHashFunction>::iterator it;
   std::vector<TNode> visit;
   TNode cur;
-  if( !sideCondition.isNull() )
+  if (!sideCondition.isNull())
   {
     visit.push_back(sideCondition);
   }
@@ -154,7 +154,7 @@ PreprocessingPassResult GenIcPbe::applyInternal(
   Node res = visited[icCase];
   Trace("gen-ic-pbe") << "Bound variable form : " << res << std::endl;
   Node scRes;
-  if( !sideCondition.isNull() )
+  if (!sideCondition.isNull())
   {
     scRes = visited[sideCondition];
     Trace("gen-ic-pbe") << "Side condition : " << scRes << std::endl;
@@ -267,12 +267,12 @@ PreprocessingPassResult GenIcPbe::applyInternal(
           << std::endl;
     }
   }
-  std::vector< unsigned > randIndex;
+  std::vector<unsigned> randIndex;
   for (unsigned i = 0; i < nsamples; i++)
   {
     randIndex.push_back(i);
   }
-  std::shuffle(randIndex.begin(),randIndex.end(),Random::getRandom());
+  std::shuffle(randIndex.begin(), randIndex.end(), Random::getRandom());
   unsigned numIncorrect = 0;
   unsigned numIncorrectUndef = 0;
   unsigned numTests = 0;
@@ -329,20 +329,22 @@ PreprocessingPassResult GenIcPbe::applyInternal(
         bvars.begin(), bvars.end(), samplePt.begin(), samplePt.end());
     bool failSc = false;
     // does it satisfy the side condition?
-    if( !scRes.isNull() )
+    if (!scRes.isNull())
     {
-      Node scResSubs = scRes.substitute(bvars.begin(), bvars.end(),samplePt.begin(), samplePt.end());
+      Node scResSubs = scRes.substitute(
+          bvars.begin(), bvars.end(), samplePt.begin(), samplePt.end());
       Node resn = theory::Rewriter::rewrite(scResSubs);
-      if( resn.isConst() && !resn.getConst<bool>() )
+      if (resn.isConst() && !resn.getConst<bool>())
       {
         failSc = true;
-        Trace("gen-ic-pbe-debug") << "Failed side condition: " << samplePt << std::endl;
+        Trace("gen-ic-pbe-debug")
+            << "Failed side condition: " << samplePt << std::endl;
       }
     }
     if (options::testIcFull())
     {
-      if( failSc )
-      {            
+      if (failSc)
+      {
         if (!options::testIcFullGen())
         {
           out << "~";
@@ -352,8 +354,9 @@ PreprocessingPassResult GenIcPbe::applyInternal(
       {
         numTests++;
         // test the I/O behavior
-        //std::cout << ioIndexRow << ", " << ioIndexCol << std::endl;
-        bool expect = ioString[ioIndexRow].isBitSet((rowWidth - 1) - ioIndexCol);
+        // std::cout << ioIndexRow << ", " << ioIndexCol << std::endl;
+        bool expect =
+            ioString[ioIndexRow].isBitSet((rowWidth - 1) - ioIndexCol);
         Trace("gen-ic-pbe-debug") << "Check " << testFormulaSubs << std::endl;
         Node resn = theory::Rewriter::rewrite(testFormulaSubs);
         Trace("gen-ic-pbe-debug") << "..got " << resn << std::endl;
@@ -393,7 +396,7 @@ PreprocessingPassResult GenIcPbe::applyInternal(
         }
       }
     }
-    else if( !failSc )
+    else if (!failSc)
     {
       // compute the I/O behavior: testFormulaSubs has free variable x
       Trace("gen-ic-pbe") << i << ": generate I/O spec from " << testFormulaSubs
@@ -415,7 +418,7 @@ PreprocessingPassResult GenIcPbe::applyInternal(
         printPol = (r.asSatisfiabilityResult().isSat() != Result::UNSAT);
       }
     }
-    if( printConstraint )
+    if (printConstraint)
     {
       out << "(constraint ";
       if (!printPol)
@@ -453,12 +456,12 @@ PreprocessingPassResult GenIcPbe::applyInternal(
       out << "    Total #incorrect[" << ri.first << "] : " << ri.second
           << std::endl;
     }
-    if( numIncorrectUndef>0 )
+    if (numIncorrectUndef > 0)
     {
       out << "Total #incorrect[undef] : " << numIncorrectUndef << std::endl;
     }
     out << "           Total #tests : " << numTests << std::endl;
-    if( numTests>0 )
+    if (numTests > 0)
     {
       out << "              % correct : "
           << 1.0 - (double(numIncorrect) / double(numTests)) << std::endl;
