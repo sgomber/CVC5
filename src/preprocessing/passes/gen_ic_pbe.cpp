@@ -42,6 +42,12 @@ PreprocessingPassResult GenIcPbe::applyInternal(
   NodeManager* nm = NodeManager::currentNM();
 
   std::vector<Node>& asl = assertionsToPreprocess->ref();
+  // must expand definitions
+  for( unsigned i=0, nassert = asl.size(); i<nassert; i++ )
+  {
+    asl[i] = Node::fromExpr(
+        smt::currentSmtEngine()->expandDefinitions(asl[i].toExpr()));
+  }
 
   AlwaysAssert(!asl.empty(), "GenIcPbe: no assertions");
 
@@ -223,9 +229,7 @@ PreprocessingPassResult GenIcPbe::applyInternal(
     // get the candidate
     AlwaysAssert(asl.size() >= 3,
                  "GenIcPbe: expecting at least 3 assertions to test I/O");
-    testFormula = Node::fromExpr(
-        smt::currentSmtEngine()->expandDefinitions(asl[1].toExpr()));
-    testFormula = testFormula.substitute(
+    testFormula = asl[1].substitute(
         varList.begin(), varList.end(), bvars.begin(), bvars.end());
     Notice() << "Test candidate IC " << testFormula << "..." << std::endl;
 
@@ -304,7 +308,7 @@ PreprocessingPassResult GenIcPbe::applyInternal(
               {
                 out << "))";
               }
-              else if (!options::testIcFullGen())
+              if (!options::testIcFullGen())
               {
                 out << std::endl;
               }
@@ -333,6 +337,7 @@ PreprocessingPassResult GenIcPbe::applyInternal(
     {
       Node scResSubs = scRes.substitute(
           bvars.begin(), bvars.end(), samplePt.begin(), samplePt.end());
+      Trace("gen-ic-pbe-debug") << "Check side condition " << scResSubs << std::endl;
       Node resn = theory::Rewriter::rewrite(scResSubs);
       if (resn.isConst() && !resn.getConst<bool>())
       {
@@ -354,7 +359,7 @@ PreprocessingPassResult GenIcPbe::applyInternal(
       {
         numTests++;
         // test the I/O behavior
-        // std::cout << ioIndexRow << ", " << ioIndexCol << std::endl;
+        Trace("gen-ic-pbe-debug2") << "Test point " << ioIndexRow << ", " << ioIndexCol << std::endl;
         bool expect =
             ioString[ioIndexRow].isBitSet((rowWidth - 1) - ioIndexCol);
         Trace("gen-ic-pbe-debug") << "Check " << testFormulaSubs << std::endl;
@@ -467,7 +472,11 @@ PreprocessingPassResult GenIcPbe::applyInternal(
           << 1.0 - (double(numIncorrect) / double(numTests)) << std::endl;
     }
   }
-
+  if (options::genIcPbeFull())
+  {
+    out << "(check-sat)" << std::endl;
+  }
+  exit(0);
   return PreprocessingPassResult::NO_CONFLICT;
 }
 
