@@ -62,7 +62,8 @@ class TermEnumeration
    * adds all domain elements of tn to dom and returns true. Otherwise, this
    * method returns false.
    */
-  bool getDomain(TypeNode tn, std::vector< Node >& dom);
+  bool getDomain(TypeNode tn, std::vector<Node>& dom);
+
  private:
   /** ground terms enumerated for types */
   std::unordered_map<TypeNode, std::vector<Node>, TypeNodeHashFunction>

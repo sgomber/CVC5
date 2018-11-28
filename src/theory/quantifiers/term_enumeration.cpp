@@ -87,9 +87,9 @@ bool TermEnumeration::mayComplete(TypeNode tn, unsigned maxCard)
   return mc;
 }
 
-bool TermEnumeration::getDomain(TypeNode tn, std::vector< Node >& dom)
+bool TermEnumeration::getDomain(TypeNode tn, std::vector<Node>& dom)
 {
-  if( !mayComplete(tn) )
+  if (!mayComplete(tn))
   {
     return false;
   }
