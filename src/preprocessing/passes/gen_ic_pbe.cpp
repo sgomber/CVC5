@@ -58,7 +58,7 @@ PreprocessingPassResult GenIcPbe::applyInternal(
   if (icCase.getKind() == IMPLIES)
   {
     // if generating full spec, ignore the side condition
-    if (!options::genIcPbeFull())
+    if (!options::genIcFull())
     {
       sideCondition = icCase[0];
     }
@@ -185,39 +185,26 @@ PreprocessingPassResult GenIcPbe::applyInternal(
   std::ostream& out = *nodeManagerOptions.getOut();
 
   std::map<unsigned, std::vector<Node> > completeDom;
-  theory::quantifiers::SygusSampler ss;
+  theory::quantifiers::SygusSampler samplerPt;
   theory::quantifiers::TermEnumeration tenum;
   unsigned nsamples = 0;
-  bool isFull = (options::genIcPbeFull() || options::testIcFull());
+  bool isFull = (options::genIcFull() || options::testIcFull());
   if (isFull)
   {
     nsamples = bvars.empty() ? 0 : 1;
     for (unsigned i = 0, nvars = bvars.size(); i < nvars; i++)
     {
       TypeNode tn = bvars[i].getType();
-      AlwaysAssert(
-          tenum.mayComplete(tn),
+      bool ret = tenum.getDomain(tn,completeDom[i]);
+      AlwaysAssert(ret,
           "GenIcPbe: expecting small finite type when gen-ic-pbe-full");
-      unsigned counter = 0;
-      Node curre;
-      do
-      {
-        curre = tenum.getEnumerateTerm(tn, counter);
-        Trace("gen-ic-pbe-enum")
-            << "Enum " << counter << " " << curre << std::endl;
-        counter++;
-        if (!curre.isNull())
-        {
-          completeDom[i].push_back(curre);
-        }
-      } while (!curre.isNull());
       nsamples = nsamples * completeDom[i].size();
     }
   }
   else
   {
-    ss.initialize(frange, bvars, options::sygusSamples());
-    nsamples = ss.getNumSamplePoints();
+    samplerPt.initialize(frange, bvars, options::sygusSamples());
+    nsamples = samplerPt.getNumSamplePoints();
   }
 
   // the formula we are testing
@@ -249,6 +236,11 @@ PreprocessingPassResult GenIcPbe::applyInternal(
     }
     Notice() << "Testing " << ioString.size() << " inputs..." << std::endl;
   }
+  else if( options::genIcUseEval() )
+  {
+    // nothing to do
+    testFormula = res;
+  }
   else
   {
     Node xk = nm->mkSkolem("x", frange);
@@ -265,25 +257,69 @@ PreprocessingPassResult GenIcPbe::applyInternal(
   if (isFull)
   {
     rowWidth = nsamples / completeDom[0].size();
-    if (options::genIcPbeFull())
+    if (options::genIcFull())
     {
       out << "(declare-fun io () (Array Int (_ BitVec " << rowWidth << ")))"
           << std::endl;
     }
   }
-  std::vector<unsigned> randIndex;
+  std::vector<unsigned> auxIndex;
   for (unsigned i = 0; i < nsamples; i++)
   {
-    randIndex.push_back(i);
+    auxIndex.push_back(i);
   }
-  std::shuffle(randIndex.begin(), randIndex.end(), Random::getRandom());
+  bool useAuxIndex = false;
+  if( options::testIcRandom() )
+  {
+    std::shuffle(auxIndex.begin(), auxIndex.end(), Random::getRandom());
+    useAuxIndex = true;
+  }
+  
+  // A list of evaluations for x, to use with --gen-ic-use-eval
+  std::vector<Node> xDomUseEval;
+  unsigned xdsize = 0;
+  if( options::genIcUseEval() )
+  {
+    // Organize an evaluation strategy:
+    // start with an interesting set of sample points
+    theory::quantifiers::SygusSampler samplerXDom;
+    std::vector< Node > xvars;
+    std::unordered_set< Node, NodeHashFunction > xvalsUsed;
+    xvars.push_back(funToSynthBvar);
+    samplerXDom.initialize(frange, xvars, options::sygusSamples());
+    for( unsigned i=0, nxsp=samplerXDom.getNumSamplePoints(); i<nxsp; i++ )
+    {
+      std::vector< Node > xval;
+      samplerXDom.getSamplePoint(i,xval);
+      Assert( xval.size()==1 );
+      Node xv = xval[0];
+      xDomUseEval.push_back(xv);
+      xvalsUsed.insert(xv);
+    }
+    // then, take the remainder, in random order
+    std::vector< Node > fullDomain;
+    bool ret = tenum.getDomain(frange,fullDomain);
+    std::vector< Node > remainder;
+    for( const Node& n : fullDomain )
+    {
+      if( xvalsUsed.find(n)==xvalsUsed.end() )
+      {
+        remainder.push_back(n);
+      }
+    }
+    std::shuffle(remainder.begin(), remainder.end(), Random::getRandom());
+    xDomUseEval.insert(xDomUseEval.end(),remainder.begin(),remainder.end());
+    xdsize = xDomUseEval.size();
+  }
+  
   unsigned numIncorrect = 0;
   unsigned numIncorrectUndef = 0;
   unsigned numTests = 0;
+  unsigned printConstraintCount = 0;
   std::map<bool, unsigned> numIncorrectRes;
   for (unsigned i = 0; i < nsamples; i++)
   {
-    unsigned ii = options::testIcRandom() ? randIndex[i] : i;
+    unsigned ii = useAuxIndex ? auxIndex[i] : i;
     bool printConstraint = false;
     bool printPol = true;
     std::vector<Node> samplePt;
@@ -304,7 +340,7 @@ PreprocessingPassResult GenIcPbe::applyInternal(
           {
             if (ival > 0)
             {
-              if (options::genIcPbeFull())
+              if (options::genIcFull())
               {
                 out << "))";
               }
@@ -313,7 +349,7 @@ PreprocessingPassResult GenIcPbe::applyInternal(
                 out << std::endl;
               }
             }
-            if (options::genIcPbeFull())
+            if (options::genIcFull())
             {
               out << "(assert (= (select io " << ioIndexRow << ") #b";
             }
@@ -327,7 +363,7 @@ PreprocessingPassResult GenIcPbe::applyInternal(
     }
     else
     {
-      ss.getSamplePoint(i, samplePt);
+      samplerPt.getSamplePoint(i, samplePt);
     }
     Node testFormulaSubs = testFormula.substitute(
         bvars.begin(), bvars.end(), samplePt.begin(), samplePt.end());
@@ -408,13 +444,50 @@ PreprocessingPassResult GenIcPbe::applyInternal(
       // compute the I/O behavior: testFormulaSubs has free variable x
       Trace("gen-ic-pbe") << i << ": generate I/O spec from " << testFormulaSubs
                           << std::endl;
-      SmtEngine smtSamplePt(nm->toExprManager());
-      smtSamplePt.setLogic(smt::currentSmtEngine()->getLogicInfo());
-      smtSamplePt.assertFormula(testFormulaSubs.toExpr());
-      Trace("gen-ic-pbe") << "*** Check sat..." << std::endl;
-      Result r = smtSamplePt.checkSat();
-      Trace("gen-ic-pbe") << "...result : " << r << std::endl;
-      if (options::genIcPbeFull())
+      Result r;
+      if( options::genIcUseEval() )
+      {
+        r = Result(Result::UNSAT);
+        TNode xt = funToSynthBvar;
+        Node testFormulaEval;
+        Trace("gen-ic-eval") << "*** Test by evaluation on " << xdsize << " points..." << std::endl;
+        for( unsigned k=0; k<xdsize; k++ )
+        {
+          TNode xvt = xDomUseEval[k];
+          testFormulaEval = testFormulaSubs.substitute(xt, xvt);
+          testFormulaEval = theory::Rewriter::rewrite(testFormulaEval);
+          if( testFormulaEval.isConst() )
+          {
+            if( testFormulaEval.getConst<bool>() )
+            {
+              r = Result(Result::SAT);
+              Trace("gen-ic-eval") << "...SAT after " << k << " iterations" << std::endl;
+              break;
+            }
+          }
+          else
+          {
+            // unknown 
+            r = Result(Result::SAT_UNKNOWN);
+            Trace("gen-ic-eval") << "...UNKNOWN after " << k << " iterations" << std::endl;
+            break;
+          }
+        }
+        if( r.asSatisfiabilityResult().isSat() == Result::UNSAT )
+        {
+          Trace("gen-ic-eval") << "...UNSAT" << std::endl;
+        }
+      }
+      else
+      {
+        SmtEngine smtSamplePt(nm->toExprManager());
+        smtSamplePt.setLogic(smt::currentSmtEngine()->getLogicInfo());
+        smtSamplePt.assertFormula(testFormulaSubs.toExpr());
+        Trace("gen-ic-pbe") << "*** Check sat..." << std::endl;
+        r = smtSamplePt.checkSat();
+        Trace("gen-ic-pbe") << "...result : " << r << std::endl;
+      }
+      if (options::genIcFull())
       {
         out << (r.asSatisfiabilityResult().isSat() == Result::UNSAT ? "0"
                                                                     : "1");
@@ -442,11 +515,16 @@ PreprocessingPassResult GenIcPbe::applyInternal(
         out << ")";
       }
       out << "))" << std::endl;
+      printConstraintCount++;
+      if( printConstraintCount==options::testIcPoints() )
+      {
+        exit(0);
+      }
     }
   }
   if (isFull)
   {
-    if (options::genIcPbeFull())
+    if (options::genIcFull())
     {
       out << "))";
     }
@@ -474,7 +552,7 @@ PreprocessingPassResult GenIcPbe::applyInternal(
           << 1.0 - (double(numIncorrect) / double(numTests)) << std::endl;
     }
   }
-  if (options::genIcPbeFull())
+  if (options::genIcFull())
   {
     out << "(check-sat)" << std::endl;
   }

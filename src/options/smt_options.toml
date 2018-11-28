@@ -634,12 +634,20 @@ header = "options/smt_options.h"
   help       = "generate PBE problem for invertibility conditions"
   
 [[option]]
-  name       = "genIcPbeFull"
+  name       = "genIcFull"
   category   = "undocumented"
-  long       = "gen-ic-pbe-full"
+  long       = "gen-ic-full"
   type       = "bool"
   default    = "false"
   help       = "generate full I/O bitstring for invertibility conditions"
+
+[[option]]
+  name       = "genIcUseEval"
+  category   = "undocumented"
+  long       = "gen-ic-use-eval"
+  type       = "bool"
+  default    = "false"
+  help       = "use evaluator to generate PBE problem for invertibility conditions"
 
 [[option]]
   name       = "testIcFull"
@@ -665,3 +673,10 @@ header = "options/smt_options.h"
   default    = "false"
   help       = "test constraints from test ic, random order"
 
+[[option]]
+  name       = "testIcPoints"
+  category   = "regular"
+  long       = "test-ic-samples=N"
+  type       = "unsigned"
+  default    = "10"
+  help       = "number of counterexample points to generate during test ic"
