@@ -308,7 +308,7 @@ PreprocessingPassResult GenIcPbe::applyInternal(
               {
                 out << "))";
               }
-              if (!options::testIcFullGen())
+              if (!options::testIcGen())
               {
                 out << std::endl;
               }
@@ -317,7 +317,7 @@ PreprocessingPassResult GenIcPbe::applyInternal(
             {
               out << "(assert (= (select io " << ioIndexRow << ") #b";
             }
-            else if (!options::testIcFullGen())
+            else if (!options::testIcGen())
             {
               out << ioIndexRow << ": ";
             }
@@ -350,7 +350,7 @@ PreprocessingPassResult GenIcPbe::applyInternal(
     {
       if (failSc)
       {
-        if (!options::testIcFullGen())
+        if (!options::testIcGen())
         {
           out << "~";
         }
@@ -367,7 +367,7 @@ PreprocessingPassResult GenIcPbe::applyInternal(
         Trace("gen-ic-pbe-debug") << "..got " << resn << std::endl;
         if (!resn.isConst())
         {
-          if (!options::testIcFullGen())
+          if (!options::testIcGen())
           {
             out << "?";
           }
@@ -379,7 +379,7 @@ PreprocessingPassResult GenIcPbe::applyInternal(
           bool result = resn.getConst<bool>();
           if (result != expect)
           {
-            if (options::testIcFullGen())
+            if (options::testIcGen())
             {
               printConstraint = true;
               printPol = expect;
@@ -393,7 +393,7 @@ PreprocessingPassResult GenIcPbe::applyInternal(
           }
           else
           {
-            if (!options::testIcFullGen())
+            if (!options::testIcGen())
             {
               out << (expect ? "1" : "0");
             }
@@ -448,7 +448,7 @@ PreprocessingPassResult GenIcPbe::applyInternal(
     {
       out << "))";
     }
-    if (!options::testIcFullGen())
+    if (!options::testIcGen())
     {
       out << std::endl;
     }

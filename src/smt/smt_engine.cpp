@@ -1167,7 +1167,7 @@ void SmtEngine::setDefaults() {
     is_sygus = true;
   }
 
-  if (options::testIcFullGen() || options::testIcRandom())
+  if (options::testIcGen() || options::testIcRandom())
   {
     options::testIcFull.set(true);
   }

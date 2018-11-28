@@ -650,9 +650,9 @@ header = "options/smt_options.h"
   help       = "test candidate invertibility condition against I/O bitstring"
 
 [[option]]
-  name       = "testIcFullGen"
+  name       = "testIcGen"
   category   = "undocumented"
-  long       = "test-ic-full-gen"
+  long       = "test-ic-gen"
   type       = "bool"
   default    = "false"
   help       = "generate constraints from test ic"
