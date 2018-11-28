@@ -1949,7 +1949,7 @@ void SmtEngine::setDefaults() {
       // static template inference for invariant synthesis.
       if (!options::sygusUnifPbe.wasSetByUser())
       {
-        options::sygusUnifPbe.set(false);       
+        options::sygusUnifPbe.set(false);
         // also disable PBE-specific symmetry breaking unless PBE was enabled
         if (!options::sygusSymBreakPbe.wasSetByUser())
         {

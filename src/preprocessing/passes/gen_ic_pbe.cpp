@@ -43,7 +43,7 @@ PreprocessingPassResult GenIcPbe::applyInternal(
 
   std::vector<Node>& asl = assertionsToPreprocess->ref();
   // must expand definitions
-  for( unsigned i=0, nassert = asl.size(); i<nassert; i++ )
+  for (unsigned i = 0, nassert = asl.size(); i < nassert; i++)
   {
     asl[i] = Node::fromExpr(
         smt::currentSmtEngine()->expandDefinitions(asl[i].toExpr()));
@@ -337,7 +337,8 @@ PreprocessingPassResult GenIcPbe::applyInternal(
     {
       Node scResSubs = scRes.substitute(
           bvars.begin(), bvars.end(), samplePt.begin(), samplePt.end());
-      Trace("gen-ic-pbe-debug") << "Check side condition " << scResSubs << std::endl;
+      Trace("gen-ic-pbe-debug")
+          << "Check side condition " << scResSubs << std::endl;
       Node resn = theory::Rewriter::rewrite(scResSubs);
       if (resn.isConst() && !resn.getConst<bool>())
       {
@@ -359,7 +360,8 @@ PreprocessingPassResult GenIcPbe::applyInternal(
       {
         numTests++;
         // test the I/O behavior
-        Trace("gen-ic-pbe-debug2") << "Test point " << ioIndexRow << ", " << ioIndexCol << std::endl;
+        Trace("gen-ic-pbe-debug2")
+            << "Test point " << ioIndexRow << ", " << ioIndexCol << std::endl;
         bool expect =
             ioString[ioIndexRow].isBitSet((rowWidth - 1) - ioIndexCol);
         Trace("gen-ic-pbe-debug") << "Check " << testFormulaSubs << std::endl;
