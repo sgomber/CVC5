@@ -238,11 +238,14 @@ Node SubsumeTrie::addTermInternal(Node t,
       if (!d_term.isNull())
       {
         subsumed.push_back(d_term);
-        if (!checkExistsOnly)
-        {
-          // remove it if checkExistsOnly = false
-          d_term = Node::null();
-        }
+        // If we are only interested in feasibility, we could set d_term to null
+        // here. However, d_term still could be useful, since it may be
+        // smaller than t and suffice as a solution under some condition.
+        // As a simple example, consider predicate synthesis and a case where we
+        // enumerate a C that is correct for all I/O points whose output is
+        // true. Then, C subsumes true. However, true may be preferred, e.g.
+        // to generate a solution ite( C, true, D ) instead of ite( C, C, D ),
+        // since true is conditionally correct under C, and is smaller than C.
       }
     }
     else
@@ -468,7 +471,11 @@ void SubsumeTrie::getLeaves(const std::vector<Node>& vals,
 }
 
 SygusUnifIo::SygusUnifIo()
-    : d_check_sol(false), d_cond_count(0), d_sol_cons_nondet(false)
+    : d_check_sol(false),
+      d_cond_count(0),
+      d_sol_term_size(0),
+      d_sol_cons_nondet(false),
+      d_solConsUsingInfoGain(false)
 {
   d_true = NodeManager::currentNM()->mkConst(true);
   d_false = NodeManager::currentNM()->mkConst(false);
@@ -768,7 +775,7 @@ bool SygusUnifIo::constructSolution(std::vector<Node>& sols,
 Node SygusUnifIo::constructSolutionNode(std::vector<Node>& lemmas)
 {
   Node c = d_candidate;
-  if (!d_solution.isNull())
+  if (!d_solution.isNull() && !options::sygusStream())
   {
     // already has a solution
     return d_solution;
@@ -779,9 +786,9 @@ Node SygusUnifIo::constructSolutionNode(std::vector<Node>& lemmas)
     Trace("sygus-pbe") << "Construct solution, #iterations = " << d_cond_count
                        << std::endl;
     d_check_sol = false;
+    Node newSolution;
     // try multiple times if we have done multiple conditions, due to
     // non-determinism
-    unsigned sol_term_size = 0;
     for (unsigned i = 0; i <= d_cond_count; i++)
     {
       Trace("sygus-pbe-dt") << "ConstructPBE for candidate: " << c << std::endl;
@@ -796,22 +803,35 @@ Node SygusUnifIo::constructSolutionNode(std::vector<Node>& lemmas)
       if (!vcc.isNull()
           && (d_solution.isNull()
               || (!d_solution.isNull()
-                  && d_tds->getSygusTermSize(vcc) < sol_term_size)))
+                  && d_tds->getSygusTermSize(vcc) < d_sol_term_size)))
       {
         Trace("sygus-pbe") << "**** SygusUnif SOLVED : " << c << " = " << vcc
                            << std::endl;
         Trace("sygus-pbe") << "...solved at iteration " << i << std::endl;
         d_solution = vcc;
-        sol_term_size = d_tds->getSygusTermSize(vcc);
+        newSolution = vcc;
+        d_sol_term_size = d_tds->getSygusTermSize(vcc);
+        Trace("sygus-pbe-sol")
+            << "PBE solution size: " << d_sol_term_size << std::endl;
+        // We've determined its feasible, now, enable information gain and
+        // retry. We do this since information gain comes with an overhead,
+        // and we want testing feasibility to be fast.
+        if (!d_solConsUsingInfoGain)
+        {
+          // we permanently enable information gain now
+          d_solConsUsingInfoGain = true;
+          d_enableMinimality = true;
+          i = 0;
+        }
       }
       else if (!d_sol_cons_nondet)
       {
         break;
       }
     }
-    if (!d_solution.isNull())
+    if (!newSolution.isNull())
     {
-      return d_solution;
+      return newSolution;
     }
     Trace("sygus-pbe") << "...failed to solve." << std::endl;
   }
@@ -1288,7 +1308,7 @@ Node SygusUnifIo::constructSol(
                 Assert(!rec_c.isNull());
                 indent("sygus-sui-dt", ind);
                 Trace("sygus-sui-dt")
-                    << "PBE: ITE strategy : choose random conditional "
+                    << "PBE: ITE strategy : choose best conditional "
                     << d_tds->sygusToBuiltin(rec_c) << std::endl;
               }
             }
@@ -1368,6 +1388,10 @@ Node SygusUnifIo::constructSol(
 Node SygusUnifIo::constructBestConditional(Node ce,
                                            const std::vector<Node>& solved)
 {
+  if (!d_solConsUsingInfoGain)
+  {
+    return SygusUnif::constructBestConditional(ce, solved);
+  }
   UnifContextIo& x = d_context;
   // use information gain heuristic
   Trace("sygus-sui-dt-igain") << "Best information gain in context ";
@@ -1402,6 +1426,7 @@ Node SygusUnifIo::constructBestConditional(Node ce,
   AlwaysAssert(activePoints > 0);
   double minEntropy = 2.0;
   unsigned bestIndex = 0;
+  int numEqual = 1;
   for (unsigned j = 0; j < nsolved; j++)
   {
     double entropySum = 0.0;
@@ -1428,7 +1453,22 @@ Node SygusUnifIo::constructBestConditional(Node ce,
       }
     }
     Trace("sygus-sui-dt-igain") << "..." << entropySum << std::endl;
-    if (entropySum < minEntropy)
+    // either less, or equal and coin flip passes
+    bool doSet = false;
+    if (entropySum == minEntropy)
+    {
+      numEqual++;
+      if (Random::getRandom().pickWithProb(double(1) / double(numEqual)))
+      {
+        doSet = true;
+      }
+    }
+    else if (entropySum < minEntropy)
+    {
+      doSet = true;
+      numEqual = 1;
+    }
+    if (doSet)
     {
       minEntropy = entropySum;
       bestIndex = j;

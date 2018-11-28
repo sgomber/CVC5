@@ -298,6 +298,8 @@ class SygusUnifIo : public SygusUnif
   unsigned d_cond_count;
   /** The solution for the function of this class, if one has been found */
   Node d_solution;
+  /** the term size of the above solution */
+  unsigned d_sol_term_size;
   /**
    * This flag is set to true if the solution construction was
    * non-deterministic with respect to failure/success.
@@ -319,6 +321,11 @@ class SygusUnifIo : public SygusUnif
    * which can be closed with "B", giving us (x ++ "B") as a solution.
    */
   bool d_sol_cons_nondet;
+  /**
+   * Whether we are using information gain heuristic during solution
+   * construction.
+   */
+  bool d_solConsUsingInfoGain;
   /** true and false nodes */
   Node d_true;
   Node d_false;
