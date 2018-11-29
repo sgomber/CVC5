@@ -32,6 +32,10 @@ PreprocessingPassResult GenIcPbe::applyInternal(
     AssertionPipeline* assertionsToPreprocess)
 {
   static bool tryThis = true;
+  
+  bool isFull = (options::genIcFull() || options::testIcFull() || options::genIcImage());
+  bool isGen = (options::genIcPbe() || options::genIcFull());
+  bool isGenImg = options::genIcImage();
 
   if (!tryThis)
   {
@@ -58,7 +62,7 @@ PreprocessingPassResult GenIcPbe::applyInternal(
   if (icCase.getKind() == IMPLIES)
   {
     // if generating full spec, ignore the side condition
-    if (!options::genIcFull())
+    if (!isFull && !isGen && !isGenImg)
     {
       sideCondition = icCase[0];
     }
@@ -188,7 +192,6 @@ PreprocessingPassResult GenIcPbe::applyInternal(
   theory::quantifiers::SygusSampler samplerPt;
   theory::quantifiers::TermEnumeration tenum;
   unsigned nsamples = 0;
-  bool isFull = (options::genIcFull() || options::testIcFull());
   if (isFull)
   {
     nsamples = bvars.empty() ? 0 : 1;
@@ -211,7 +214,7 @@ PreprocessingPassResult GenIcPbe::applyInternal(
   Node testFormula;
 
   std::vector<BitVector> ioString;
-  if (options::testIcFull())
+  if (options::testIcFull() || options::genIcImage())
   {
     // get the candidate
     AlwaysAssert(asl.size() >= 3,
@@ -312,6 +315,13 @@ PreprocessingPassResult GenIcPbe::applyInternal(
     xdsize = xDomUseEval.size();
   }
 
+  std::fstream imgOut;
+  if( isGenImg )
+  {
+    imgOut.open("imgOut.ppm", std::ios::out );
+    imgOut << "P3 483 483 256" << std::endl;
+  }
+  
   unsigned numIncorrect = 0;
   unsigned numIncorrectUndef = 0;
   unsigned numTests = 0;
@@ -338,24 +348,35 @@ PreprocessingPassResult GenIcPbe::applyInternal(
           ioIndexRow = ival;
           if (currIndex == 0)
           {
-            if (ival > 0)
+            // considering a new row
+            if( isGenImg )
+            {              
+              if (ival > 0)
+              {
+                imgOut << std::endl;
+              }
+            }
+            else
             {
+              if (ival > 0)
+              {
+                if (options::genIcFull())
+                {
+                  out << "))";
+                }
+                if (!options::testIcGen())
+                {
+                  out << std::endl;
+                }
+              }
               if (options::genIcFull())
               {
-                out << "))";
+                out << "(assert (= (select io " << ioIndexRow << ") #b";
               }
-              if (!options::testIcGen())
+              else if (!options::testIcGen())
               {
-                out << std::endl;
+                out << ioIndexRow << ": ";
               }
-            }
-            if (options::genIcFull())
-            {
-              out << "(assert (= (select io " << ioIndexRow << ") #b";
-            }
-            else if (!options::testIcGen())
-            {
-              out << ioIndexRow << ": ";
             }
           }
         }
@@ -439,67 +460,76 @@ PreprocessingPassResult GenIcPbe::applyInternal(
         }
       }
     }
-    else if (!failSc)
+    else if( isGen )
     {
-      // compute the I/O behavior: testFormulaSubs has free variable x
-      Trace("gen-ic-pbe") << i << ": generate I/O spec from " << testFormulaSubs
-                          << std::endl;
-      Result r;
-      if (options::genIcUseEval())
+      if (!failSc)
       {
-        r = Result(Result::UNSAT);
-        TNode xt = funToSynthBvar;
-        Node testFormulaEval;
-        Trace("gen-ic-eval") << "*** Test by evaluation on " << xdsize
-                             << " points..." << std::endl;
-        for (unsigned k = 0; k < xdsize; k++)
+        // compute the I/O behavior: testFormulaSubs has free variable x
+        Trace("gen-ic-pbe") << i << ": generate I/O spec from " << testFormulaSubs
+                            << std::endl;
+        Result r;
+        if (options::genIcUseEval())
         {
-          TNode xvt = xDomUseEval[k];
-          testFormulaEval = testFormulaSubs.substitute(xt, xvt);
-          testFormulaEval = theory::Rewriter::rewrite(testFormulaEval);
-          if (testFormulaEval.isConst())
+          r = Result(Result::UNSAT);
+          TNode xt = funToSynthBvar;
+          Node testFormulaEval;
+          Trace("gen-ic-eval") << "*** Test by evaluation on " << xdsize
+                              << " points..." << std::endl;
+          for (unsigned k = 0; k < xdsize; k++)
           {
-            if (testFormulaEval.getConst<bool>())
+            TNode xvt = xDomUseEval[k];
+            testFormulaEval = testFormulaSubs.substitute(xt, xvt);
+            testFormulaEval = theory::Rewriter::rewrite(testFormulaEval);
+            if (testFormulaEval.isConst())
             {
-              r = Result(Result::SAT);
+              if (testFormulaEval.getConst<bool>())
+              {
+                r = Result(Result::SAT);
+                Trace("gen-ic-eval")
+                    << "...SAT after " << k << " iterations" << std::endl;
+                break;
+              }
+            }
+            else
+            {
+              // unknown
+              r = Result(Result::SAT_UNKNOWN);
               Trace("gen-ic-eval")
-                  << "...SAT after " << k << " iterations" << std::endl;
+                  << "...UNKNOWN after " << k << " iterations" << std::endl;
               break;
             }
           }
-          else
+          if (r.asSatisfiabilityResult().isSat() == Result::UNSAT)
           {
-            // unknown
-            r = Result(Result::SAT_UNKNOWN);
-            Trace("gen-ic-eval")
-                << "...UNKNOWN after " << k << " iterations" << std::endl;
-            break;
+            Trace("gen-ic-eval") << "...UNSAT" << std::endl;
           }
         }
-        if (r.asSatisfiabilityResult().isSat() == Result::UNSAT)
+        else
         {
-          Trace("gen-ic-eval") << "...UNSAT" << std::endl;
+          SmtEngine smtSamplePt(nm->toExprManager());
+          smtSamplePt.setLogic(smt::currentSmtEngine()->getLogicInfo());
+          smtSamplePt.assertFormula(testFormulaSubs.toExpr());
+          Trace("gen-ic-pbe") << "*** Check sat..." << std::endl;
+          r = smtSamplePt.checkSat();
+          Trace("gen-ic-pbe") << "...result : " << r << std::endl;
+        }
+        if (options::genIcFull())
+        {
+          out << (r.asSatisfiabilityResult().isSat() == Result::UNSAT ? "0"
+                                                                      : "1");
+        }
+        else
+        {
+          printConstraint = true;
+          printPol = (r.asSatisfiabilityResult().isSat() != Result::UNSAT);
         }
       }
-      else
-      {
-        SmtEngine smtSamplePt(nm->toExprManager());
-        smtSamplePt.setLogic(smt::currentSmtEngine()->getLogicInfo());
-        smtSamplePt.assertFormula(testFormulaSubs.toExpr());
-        Trace("gen-ic-pbe") << "*** Check sat..." << std::endl;
-        r = smtSamplePt.checkSat();
-        Trace("gen-ic-pbe") << "...result : " << r << std::endl;
-      }
-      if (options::genIcFull())
-      {
-        out << (r.asSatisfiabilityResult().isSat() == Result::UNSAT ? "0"
-                                                                    : "1");
-      }
-      else
-      {
-        printConstraint = true;
-        printPol = (r.asSatisfiabilityResult().isSat() != Result::UNSAT);
-      }
+    }
+    else if( isGenImg )
+    {
+      bool expect =
+          ioString[ioIndexRow].isBitSet((rowWidth - 1) - ioIndexCol);
+      imgOut << (expect ? "0 0 0 " : "256 256 256 ");
     }
     if (printConstraint)
     {

@@ -680,3 +680,11 @@ header = "options/smt_options.h"
   type       = "unsigned"
   default    = "10"
   help       = "number of counterexample points to generate during test ic"
+
+[[option]]
+  name       = "genIcImage"
+  category   = "undocumented"
+  long       = "gen-ic-image"
+  type       = "bool"
+  default    = "false"
+  help       = "visualize image of full I/O bitstring"

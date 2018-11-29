@@ -1169,6 +1169,11 @@ void SmtEngine::setDefaults() {
   {
     options::genIcFull.set(false);
   }
+  if(options::genIcImage() )
+  {
+    options::testIcFull.set(false);
+    options::genIcFull.set(false);
+  }
 
   if (options::bitblastMode() == theory::bv::BITBLAST_MODE_EAGER)
   {
@@ -3083,7 +3088,7 @@ void SmtEnginePrivate::processAssertions() {
   SubstitutionMap& top_level_substs =
       d_preprocessingPassContext->getTopLevelSubstitutions();
 
-  if (options::genIcPbe() || options::genIcFull() || options::testIcFull())
+  if (options::genIcPbe() || options::genIcFull() || options::testIcFull() || options::genIcImage() )
   {
     d_passes["gen-ic-pbe"]->apply(&d_assertions);
   }
