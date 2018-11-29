@@ -688,3 +688,12 @@ header = "options/smt_options.h"
   type       = "bool"
   default    = "false"
   help       = "visualize image of full I/O bitstring"
+
+[[option]]
+  name       = "genIcUseSideCondition"
+  category   = "undocumented"
+  long       = "gen-ic-use-sc"
+  type       = "bool"
+  default    = "true"
+  help       = "use side condition for gen ic"
+

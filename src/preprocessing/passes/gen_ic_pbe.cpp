@@ -62,8 +62,7 @@ PreprocessingPassResult GenIcPbe::applyInternal(
   Node sideCondition;
   if (icCase.getKind() == IMPLIES)
   {
-    // if generating full spec, ignore the side condition
-    if (!isFull && !isGen)
+    if( options::genIcUseSideCondition() )
     {
       sideCondition = icCase[0];
     }
@@ -403,7 +402,34 @@ PreprocessingPassResult GenIcPbe::applyInternal(
             << "Failed side condition: " << samplePt << std::endl;
       }
     }
-    if (options::testIcFull())
+    if( isGenImg )
+    {
+      bool res = false;
+      bool resValid = true;
+      if( isTest )
+      {
+        Node resn = theory::Rewriter::rewrite(testFormulaSubs);
+        if( !resn.isConst() )
+        {
+          out << "256 0 0 ";
+          resValid = false;
+        }
+        else
+        {
+          res = resn.getConst<bool>();
+        }
+      }
+      else
+      {
+      res =
+          ioString[ioIndexRow].isBitSet((rowWidth - 1) - ioIndexCol);
+      }
+      if( resValid )
+      {
+        out << (res ? "256 256 256 " : "0 0 0 ");
+      }
+    }
+    else if (isTest)
     {
       if (failSc)
       {
@@ -522,33 +548,6 @@ PreprocessingPassResult GenIcPbe::applyInternal(
           printConstraint = true;
           printPol = (r.asSatisfiabilityResult().isSat() != Result::UNSAT);
         }
-      }
-    }
-    else if( isGenImg )
-    {
-      bool res = false;
-      bool resValid = true;
-      if( isTest )
-      {
-        Node resn = theory::Rewriter::rewrite(testFormulaSubs);
-        if( !resn.isConst() )
-        {
-          out << "256 0 0 ";
-          resValid = false;
-        }
-        else
-        {
-          res = resn.getConst<bool>();
-        }
-      }
-      else
-      {
-      res =
-          ioString[ioIndexRow].isBitSet((rowWidth - 1) - ioIndexCol);
-      }
-      if( resValid )
-      {
-        out << (res ? "0 0 0 " : "256 256 256 ");
       }
     }
     if (printConstraint)
