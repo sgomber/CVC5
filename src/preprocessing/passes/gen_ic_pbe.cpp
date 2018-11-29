@@ -36,6 +36,7 @@ PreprocessingPassResult GenIcPbe::applyInternal(
   bool isFull = (options::genIcFull() || options::testIcFull() || options::genIcImage());
   bool isGen = (options::genIcPbe() || options::genIcFull());
   bool isGenImg = options::genIcImage();
+  bool isTest = options::testIcFull();
 
   if (!tryThis)
   {
@@ -62,7 +63,7 @@ PreprocessingPassResult GenIcPbe::applyInternal(
   if (icCase.getKind() == IMPLIES)
   {
     // if generating full spec, ignore the side condition
-    if (!isFull && !isGen && !isGenImg)
+    if (!isFull && !isGen)
     {
       sideCondition = icCase[0];
     }
@@ -315,11 +316,9 @@ PreprocessingPassResult GenIcPbe::applyInternal(
     xdsize = xDomUseEval.size();
   }
 
-  std::fstream imgOut;
   if( isGenImg )
   {
-    imgOut.open("imgOut.ppm", std::ios::out );
-    imgOut << "P3 483 483 256" << std::endl;
+    out << "P3 483 483 256" << std::endl;
   }
   
   unsigned numIncorrect = 0;
@@ -353,7 +352,7 @@ PreprocessingPassResult GenIcPbe::applyInternal(
             {              
               if (ival > 0)
               {
-                imgOut << std::endl;
+                out << std::endl;
               }
             }
             else
@@ -527,9 +526,30 @@ PreprocessingPassResult GenIcPbe::applyInternal(
     }
     else if( isGenImg )
     {
-      bool expect =
+      bool res = false;
+      bool resValid = true;
+      if( isTest )
+      {
+        Node resn = theory::Rewriter::rewrite(testFormulaSubs);
+        if( !resn.isConst() )
+        {
+          out << "256 0 0 ";
+          resValid = false;
+        }
+        else
+        {
+          res = resn.getConst<bool>();
+        }
+      }
+      else
+      {
+      res =
           ioString[ioIndexRow].isBitSet((rowWidth - 1) - ioIndexCol);
-      imgOut << (expect ? "0 0 0 " : "256 256 256 ");
+      }
+      if( resValid )
+      {
+        out << (res ? "0 0 0 " : "256 256 256 ");
+      }
     }
     if (printConstraint)
     {
