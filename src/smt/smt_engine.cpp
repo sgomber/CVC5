@@ -1165,10 +1165,6 @@ void SmtEngine::setDefaults() {
   {
     options::testIcFull.set(true);
   }
-  if (options::testIcFull())
-  {
-    options::genIcFull.set(false);
-  }
 
   if (options::bitblastMode() == theory::bv::BITBLAST_MODE_EAGER)
   {

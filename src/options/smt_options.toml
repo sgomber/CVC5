@@ -697,3 +697,10 @@ header = "options/smt_options.h"
   default    = "true"
   help       = "use side condition for gen ic"
 
+[[option]]
+  name       = "genIcReadIoString"
+  category   = "undocumented"
+  long       = "gen-ic-read-io-string"
+  type       = "bool"
+  default    = "false"
+  help       = "read full I/O bitstring"
