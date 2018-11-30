@@ -1,0 +1,36 @@
+#!/bin/bash
+
+# ARGUMENT $1: A I/O string.
+
+# REQUIRES: input_problem.smt2
+
+# OUTPUTS: 
+#   The data for a *.ppm image corresponding to the I/O string.
+
+function mk_input_to_test_ic()
+{
+  echo "(set-logic ALL)"
+  cat $1
+  echo "(assert (input s t))"
+  cat $2
+  echo "(assert (IC s t))"
+  cat $3
+  echo "(check-sat)"
+}
+
+# make dummy candidate
+echo -n "(define-fun IC " > temp.smt2
+grep "__SIG" input_problem.smt2 | sed 's/;.*//' >> temp.smt2
+echo " true)" >> temp.smt2
+tr -d '\n' < temp.smt2 >> temp_candidate.smt2
+
+# generate the input problem for cvc4 to test a candidate IC
+mk_input_to_test_ic input_problem.smt2 temp_candidate.smt2 $1 > temp_input_to_vis_ic.smt2
+
+# evaluate the candidate
+pr-ajr-cvc4 --gen-ic-image --gen-ic-read-io-string --fmf-type-completion-thresh=2000 temp_input_to_vis_ic.smt2
+
+# clean up
+rm -f temp_input_to_vis_ic.smt2
+rm -f temp_candidate.smt2
+rm -f temp.smt2

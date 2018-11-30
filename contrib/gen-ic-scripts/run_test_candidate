@@ -1,0 +1,63 @@
+#!/bin/bash
+
+# REQUIRES: input_problem.smt2
+# REQUIRES: input_grammar.sy
+# REQUIRES: full_io_spec.smt2
+# REQUIRES: input_candidates.smt2
+
+# MODIFIES: pbe_example_set.sy
+
+
+# This generates a *.smt2 file that is used to test the correctness of the
+# candidate from $3 (built over the grammar in $2) on the invertibility
+# condition problem from $1, whose I/O specification has been cached in $4.
+function mk_input_to_test_ic()
+{
+  echo "(set-logic ALL)"
+  cat $1
+  echo "(assert (input s t))"
+  # must extract define-fun from the sygus grammar
+  grep "define-fun" $2
+  cat $3
+  echo "(assert (IC s t))"
+  cat $4
+  echo "(check-sat)"
+}
+
+if grep -q define-fun input_candidates.smt2;
+then
+  # make new candidate, which is the last from the list in input_candidates.smt2
+  tail -1 input_candidates.smt2 > temp_candidate.smt2
+
+  echo "Testing new candidate (under side condition):"
+  cat temp_candidate.smt2
+  echo
+
+  cat temp_candidate.smt2 >> candidate_log.smt2
+
+  # generate the input problem for cvc4 to test a candidate IC
+  mk_input_to_test_ic input_problem.smt2 input_grammar.sy temp_candidate.smt2 full_io_spec.smt2 > temp_input_to_test_ic.smt2
+
+  # test the candidate
+  pr-ajr-cvc4 --test-ic-full --test-ic-gen --test-ic-random --test-ic-samples=10 --gen-ic-read-io-string --fmf-type-completion-thresh=2000 temp_input_to_test_ic.smt2 > temp_pbe_example_set.sy
+
+  if grep -q constraint temp_pbe_example_set.sy;
+  then
+    echo "Generated new counterexamples:"
+    cat temp_pbe_example_set.sy
+    # add to new examples
+    cat temp_pbe_example_set.sy >> pbe_example_set.sy
+  elif grep -q VERIFIED temp_pbe_example_set.sy;
+  then
+    echo "Candidate was true on all inputs, given the side condition!!!"
+  else
+    echo "Internal error during testing."
+  fi
+
+  # clean up
+  rm -f temp_pbe_example_set.sy
+  rm -f temp_input_to_test_ic.smt2
+  rm -f temp_candidate.smt2
+else
+  echo "No candidate to test!"
+fi

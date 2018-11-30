@@ -1,0 +1,41 @@
+#!/bin/bash
+
+# REQUIRES: input_problem.smt2
+# REQUIRES: input_candidates.smt2
+
+# OUTPUTS: 
+#   An I/O string corresponding to the valuation of the invertibility
+#   condition stored in [input_candidates.smt2], which is a candidate for
+#   the invertibility condition problem [input_problem.smt2].
+
+# This generates a *.smt2 file corresponding to the invertibility condition
+# problem with a candidate.
+function mk_input_to_gen_ic()
+{
+  echo "(set-logic ALL)"
+  cat $1
+  echo "(assert (input s t))"
+  # must extract define-fun from the sygus grammar
+  grep "define-fun" $2
+  cat $3
+  echo "(assert (IC s t))"
+  echo "(check-sat)"
+}
+
+if grep -q define-fun input_candidates.smt2;
+then
+  # make new candidate, which is the last from the list in input_candidates.smt2
+  tail -1 input_candidates.smt2 > temp_candidate.smt2
+
+  # generate the input problem for cvc4 to generate a full I/O specification
+  mk_input_to_gen_ic input_problem.smt2 input_grammar.sy temp_candidate.smt2 > temp_input_to_gen_full_candidate.smt2
+
+  # generate the full I/O specification for the candidate
+  # notice we limit the generation of I/O tables for types whose cardinality is greater than 2000
+  pr-ajr-cvc4 --gen-ic-full --no-gen-ic-use-sc --test-ic-full --fmf-type-completion-thresh=2000 temp_input_to_gen_full_candidate.smt2 $@
+
+  # clean up
+  rm -f temp_input_to_gen_full_candidate.smt2
+else
+  echo "No candidate to test!"
+fi

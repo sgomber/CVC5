@@ -1,0 +1,38 @@
+#!/bin/bash
+
+# REQUIRES: input_problem.smt2
+
+# MODIFIES: pbe_example_set.sy
+# MODIFIES: candidate_log.smt2
+# MODIFIES: candidate_log_overall.smt2
+# MODIFIES: input_candidates.smt2
+
+
+# we do not delete full_io_spec.smt2
+
+rm -f pbe_example_set.sy
+
+# update the global candidate log 
+echo "; -----------------" >> candidate_log_overall.smt2
+# append the side condition we were using
+echo -n "; generated with side condition: " >> candidate_log_overall.smt2
+grep "__SC" input_problem.smt2 | sed 's/;.*//' >> candidate_log_overall.smt2
+cat candidate_log.smt2 >> candidate_log_overall.smt2
+rm -f candidate_log.smt2
+# start with dummy candidate 
+rm -f input_candidates.smt2
+echo -n "(define-fun IC " > temp.smt2
+grep "__SIG" input_problem.smt2 | sed 's/;.*//' >> temp.smt2
+echo " true)" >> temp.smt2
+tr -d '\n' < temp.smt2 >> input_candidates.smt2
+echo >> input_candidates.smt2
+
+# other files that should be cleaned up anyways
+rm -f temp_pbe_example_set.sy
+rm -f temp_input_to_gen_full_candidate.smt2
+rm -f temp_input_to_gen_full_spec.smt2
+rm -f temp_input_to_test_ic.smt2
+rm -f temp_input_to_eval_ic.smt2
+rm -f temp_input_to_vis_ic.smt2
+rm -f temp_input_to_synth_ic.sy
+rm -f temp.smt2

@@ -1,0 +1,28 @@
+#!/bin/bash
+
+# REQUIRES: input_problem.smt2
+
+# MODIFIES: full_io_spec.smt2
+
+
+
+# This generates a *.smt2 file corresponding to the invertibility condition
+# problem.
+function mk_input_to_gen_ic()
+{
+  echo "(set-logic ALL)"
+  cat $1
+  echo "(assert (input s t))"
+  echo "(check-sat)"
+}
+
+# generate the input problem for cvc4 to generate a full I/O specification
+mk_input_to_gen_ic input_problem.smt2 > temp_input_to_gen_full_spec.smt2
+
+# generate the full I/O specification (takes 2-3 hours)
+# should use --gen-ic-use-eval if the satisfiability queries are difficult (which then takes 5-6 hours)
+# notice we limit the generation of I/O tables for types whose cardinality is greater than 2000
+pr-ajr-cvc4 --gen-ic-full --no-gen-ic-use-sc --fmf-type-completion-thresh=2000 temp_input_to_gen_full_spec.smt2 $@ > full_io_spec.smt2
+
+# clean up
+rm -f temp_input_to_gen_full_spec.smt2
