@@ -341,7 +341,7 @@ PreprocessingPassResult GenIcPbe::applyInternal(
 
   if( isGenImg )
   {
-    out << "P3 483 483 256" << std::endl;
+    out << "P3 " << rowWidth << " " << rowWidth << " 256" << std::endl;
   }
   
   unsigned numIncorrect = 0;
@@ -616,23 +616,31 @@ PreprocessingPassResult GenIcPbe::applyInternal(
       out << std::endl;
     }
   }
-  if (options::testIcFull() && !options::testIcGen())
+  if (isTest && !isGen)
   {
-    out << "       Total #incorrect : " << numIncorrect << std::endl;
-    for (std::pair<const bool, unsigned>& ri : numIncorrectRes)
+    // if we're generating constraints, we may get here if we haven't reached the threshold of number of constraints generated (--test-ic-samples).
+    if( !options::testIcGen() )
     {
-      out << "    Total #incorrect[" << ri.first << "] : " << ri.second
-          << std::endl;
+      out << "       Total #incorrect : " << numIncorrect << std::endl;
+      for (std::pair<const bool, unsigned>& ri : numIncorrectRes)
+      {
+        out << "    Total #incorrect[" << ri.first << "] : " << ri.second
+            << std::endl;
+      }
+      if (numIncorrectUndef > 0)
+      {
+        out << "Total #incorrect[undef] : " << numIncorrectUndef << std::endl;
+      }
+      out << "           Total #tests : " << numTests << std::endl;
+      if (numTests > 0)
+      {
+        out << "              % correct : "
+            << 1.0 - (double(numIncorrect) / double(numTests)) << std::endl;
+      }
     }
-    if (numIncorrectUndef > 0)
+    if( numIncorrect==0 )
     {
-      out << "Total #incorrect[undef] : " << numIncorrectUndef << std::endl;
-    }
-    out << "           Total #tests : " << numTests << std::endl;
-    if (numTests > 0)
-    {
-      out << "              % correct : "
-          << 1.0 - (double(numIncorrect) / double(numTests)) << std::endl;
+      out << "----> FULLY VERIFIED!!!" << std::endl;
     }
   }
   exit(0);
