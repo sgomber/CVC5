@@ -1,0 +1,65 @@
+(set-logic FP)
+;   c - ( c - x ) ~ x
+(define-fun resSubSub ((x (_ FloatingPoint 4 5)) (c (_ FloatingPoint 4 5)) (r1 RoundingMode) (r2 RoundingMode)) (_ FloatingPoint 4 5) (fp.sub r1 c (fp.sub r2 c x)))
+;   c + ( x - c ) ~ x
+(define-fun resAddSub ((x (_ FloatingPoint 4 5)) (c (_ FloatingPoint 4 5)) (r1 RoundingMode) (r2 RoundingMode)) (_ FloatingPoint 4 5) (fp.add r1 c (fp.sub r2 x c)))
+;   c * ( x / c ) ~ x
+(define-fun resMulDiv ((x (_ FloatingPoint 4 5)) (c (_ FloatingPoint 4 5)) (r1 RoundingMode) (r2 RoundingMode)) (_ FloatingPoint 4 5) (fp.mul r1 c (fp.div r2 x c)))
+;   c / ( c / x ) ~ x
+(define-fun resDivDiv ((x (_ FloatingPoint 4 5)) (c (_ FloatingPoint 4 5)) (r1 RoundingMode) (r2 RoundingMode)) (_ FloatingPoint 4 5) (fp.div r1 c (fp.div r2 c x)))
+; FMA(x/c, c, -x) ~ 0
+(define-fun resFma ((x (_ FloatingPoint 4 5)) (c (_ FloatingPoint 4 5)) (r1 RoundingMode) (r2 RoundingMode)) (_ FloatingPoint 4 5) (fp.fma r1 (fp.div r2 x c) c (fp.neg x)))
+
+
+(synth-fun IC ((s (_ FloatingPoint 4 5)) (t (_ FloatingPoint 4 5))) Bool
+  ((Start Bool (
+     true
+     false
+     (not Start)
+
+     ;; equal
+     (= StartS StartT)
+     (= StartS StartS)
+     (= StartT StartT)
+     ;; less than
+     (fp.lt StartS StartS)
+     (fp.lt StartS StartT)
+     (fp.lt StartT StartS)
+     (fp.lt StartT StartT)
+     ;; less than or equal
+     (fp.leq StartS StartS)
+     (fp.leq StartT StartS)
+     (fp.leq StartS StartT)
+     (fp.leq StartT StartT)
+     ;; is normal
+     ;(fp.isNormal StartS)
+     ;(fp.isNormal StartT)
+     ;; is subnormal
+     ;(fp.isSubnormal StartS)
+     ;(fp.isSubnormal StartT)
+     ;; is zero
+     ;(fp.isZero StartS)
+     ;(fp.isZero StartT)
+     (fp.isZero StartZero)
+     
+     (ite Start Start Start)
+   ))
+   (StartZero (_ FloatingPoint 4 5) (
+     (resFma StartS StartT StartRM StartRM)
+     (resFma StartT StartS StartRM StartRM)
+   ))
+   (StartS (_ FloatingPoint 4 5) (
+     s
+     (resMulDiv StartS StartT StartRM StartRM)
+     (resDivDiv StartS StartT StartRM StartRM)
+   ))
+   (StartT (_ FloatingPoint 4 5) (
+     t
+     (resMulDiv StartT StartS StartRM StartRM)
+     (resDivDiv StartT StartS StartRM StartRM)
+   ))
+   (StartRM RoundingMode
+     (RNE RNA RTZ RTP RTN))
+))
+(declare-var s (_ FloatingPoint 4 5))
+(declare-var t (_ FloatingPoint 4 5))

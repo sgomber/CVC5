@@ -33,7 +33,7 @@ then
   echo "***** Testing new candidate:"
   cat temp_candidate.smt2
 
-  echo "; full test:" >> candidate_log.smt2
+  echo ";; full test:" >> candidate_log.smt2
   cat temp_candidate.smt2 >> candidate_log.smt2
 
   # generate the input problem for cvc4 to test a candidate IC
@@ -48,13 +48,16 @@ then
     cat temp_pbe_example_set.sy
     # add to new examples
     cat temp_pbe_example_set.sy >> pbe_example_set.sy
+    echo ";; failed" >> candidate_log.smt2
   elif grep -q VERIFIED temp_pbe_example_set.sy;
   then
     echo "***** Candidate was true on all inputs!!!"
     # copy to solution
     cp temp_candidate.smt2 solution.smt2
+    echo ";; Solved globally!!!" >> candidate_log.smt2
   else
     echo "***** Internal error during testing."
+    echo ";; failed (error)" >> candidate_log.smt2
   fi
 
   # clean up

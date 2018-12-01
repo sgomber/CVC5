@@ -31,7 +31,7 @@ then
   echo "***** Last candidate synthesized was:"
   tail -1 input_candidates.smt2
 else
-  echo "WARNING: no candidate synthesized"
+  echo "***** WARNING: no candidate synthesized!"
 fi
 
 # clean up
