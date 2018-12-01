@@ -1,0 +1,53 @@
+#!/bin/bash
+
+# ARGUMENT $1:
+#   
+# REQUIRES: input_problem.smt2
+# REQUIRES: input_grammar.sy
+
+
+# This generates a *.smt2 file that is used to test the correctness of the
+# candidate from $3 (built over the grammar in $2) on the invertibility
+# condition problem from $1, whose I/O specification has been cached in $4.
+function mk_input_to_expand()
+{
+  cat $1
+  # must extract definitions from the sygus grammar
+  grep "define" $2
+  cat $3
+  echo "(assert (IC s t))"
+  echo "(check-sat)"
+}
+
+function do_expand()
+{
+  if grep -q define-fun $1;
+  then
+    # get candidate, which is the last from the list in $1
+    tail -1 $1 > temp_candidate.smt2
+
+    # generate the input problem for cvc4 to test a candidate IC
+    mk_input_to_expand input_problem.smt2 input_grammar.sy temp_candidate.smt2 > temp.smt2
+
+    # test the candidate
+    pr-ajr-cvc4 --dump=assertions --preprocess-only temp.smt2 | grep assert
+    
+    # clean up
+    rm -f temp_candidate.smt2
+    rm -f temp.smt2
+  else
+    echo "No candidate to expand!"
+  fi
+}
+
+do_expand $1 > temp-exp.smt2
+
+echo -n "(define-fun IC " > temp.smt2
+grep "__SIG" input_problem.smt2 | sed 's/;.*//' >> temp.smt2
+head -1 temp-exp.smt2 | sed 's/.*assert//' >> temp.smt2
+tr -d '\n' < temp.smt2
+echo
+
+# clean up
+rm -f temp-exp.smt2
+rm -f temp.smt2
