@@ -29,7 +29,7 @@ then
   # make new candidate, which is the last from the list in input_candidates.smt2
   tail -1 input_candidates.smt2 > temp_candidate.smt2
 
-  echo "Testing new candidate (under side condition):"
+  echo "***** Testing new candidate (under side condition):"
   cat temp_candidate.smt2
   echo
 

@@ -30,7 +30,7 @@ then
   # make new candidate, which is the last from the list in input_candidates.smt2
   tail -1 input_candidates.smt2 > temp_candidate.smt2
 
-  echo "Testing new candidate:"
+  echo "***** Testing new candidate:"
   cat temp_candidate.smt2
 
   echo "; full test:" >> candidate_log.smt2
@@ -44,17 +44,17 @@ then
 
   if grep -q constraint temp_pbe_example_set.sy;
   then
-    echo "Generated new counterexamples:"
+    echo "***** Generated new counterexamples:"
     cat temp_pbe_example_set.sy
     # add to new examples
     cat temp_pbe_example_set.sy >> pbe_example_set.sy
   elif grep -q VERIFIED temp_pbe_example_set.sy;
   then
-    echo "Candidate was true on all inputs!!!"
+    echo "***** Candidate was true on all inputs!!!"
     # copy to solution
     cp temp_candidate.smt2 solution.smt2
   else
-    echo "Internal error during testing."
+    echo "***** Internal error during testing."
   fi
 
   # clean up
