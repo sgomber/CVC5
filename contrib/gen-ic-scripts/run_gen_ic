@@ -1,22 +1,13 @@
 #!/bin/bash
 
+# the number of PBE points to append to the current problem on failed candidates
 NUM_PBE_PTS=10
+# the maximal cardinality of a domain type of an invertibility condition
 MAX_CARDINALITY=2000
+# the copy of cvc4 we are using
+CVC4=pr-ajr-cvc4
 
-# This generates a *.smt2 file that is used to test the correctness of the
-# candidate from $3 (built over the grammar in $2) on the invertibility
-# condition problem from $1, whose I/O specification has been cached in $4.
-function mk_input_to_test_ic()
-{
-  cat $1
-  echo "(assert (input s t))"
-  # must extract definitions from the sygus grammar
-  grep "define" $2
-  cat $3
-  echo "(assert (IC s t))"
-  cat $4
-  echo "(check-sat)"
-}
+###############################################
 
 function get_candidate()
 {
@@ -28,54 +19,57 @@ function get_candidate()
     echo "No candidate found!"
   fi
 }
-  
-function generate_pbe_examples()
+
+function mk_dummy_candidate()
 {
-  CANDIDATE=$1;
-  shift;
-  # generate the input problem for cvc4 to test a candidate IC
-  mk_input_to_test_ic input_problem.smt2 input_grammar.sy $CANDIDATE full_io_spec.smt2 > temp_input_to_test_ic.smt2
-
-  # test the candidate
-  pr-ajr-cvc4 --test-ic-full --test-ic-gen --test-ic-random --test-ic-samples=$NUM_PBE_PTS --gen-ic-read-io-string --fmf-type-completion-thresh=$MAX_CARDINALITY $@ temp_input_to_test_ic.smt2
-
-  # clean up
-  rm -f temp_input_to_test_ic.smt2
-}
-
-function process_pbe_examples()
-{
-  cat $1 >> candidate_log.smt2
-  if grep -q constraint $1;
-  then
-    echo "***** Generated new counterexamples:"
-    cat $1
-    # add to new examples
-    cat $1 >> pbe_example_set.sy
-    echo "; failed" >> candidate_log.smt2
-  elif grep -q VERIFIED $1;
-  then
-    echo "***** No counterexamples for candidate!!!"
-    # copy to solution
-    cp $1 solution.smt2
-    echo "; solved!!!" >> candidate_log.smt2
-  else
-    echo "***** Internal error during testing."
-    echo "; failed (error)" >> candidate_log.smt2
-  fi
-}
-
-function test_candidate()
-{  
-  get_candidate input_candidates.smt2  > temp_candidate.smt2
-  # output the subject of the test
-  cat temp_candidate.smt2
+  echo -n "(define-fun IC " > temp.smt2
+  grep "__SIG" input_problem.smt2 | sed 's/;.*//' >> temp.smt2
+  echo " true)" >> temp.smt2
+  tr -d '\n' < temp.smt2
   echo
-  generate_pbe_examples temp_candidate.smt2 $@ > temp_pbe_example_set.sy
-  process_pbe_examples temp_pbe_example_set.sy
-  # clean up
-  rm -f temp_candidate.smt2
-  rm -f temp_pbe_example_set.sy
+  rm -f temp.smt2
+}
+
+###############################################
+
+# This generates a *.smt2 file corresponding to the invertibility condition problem.
+function mk_input_problem()
+{
+  # the definition of the input problem
+  cat $1
+  echo "(assert (input s t))"
+  echo "(check-sat)"
+}
+
+# This generates a *.smt2 file that is used to test the correctness of the
+# candidate from $3 (built over the grammar in $2) on the invertibility
+# condition problem from $1, whose I/O specification has been cached in $4.
+function mk_input_to_test_ic_cached()
+{
+  # the definition of the input problem
+  cat $1
+  echo "(assert (input s t))"
+  # extract definitions from the sygus grammar, which may appead in the candidate
+  grep "define" $2
+  # the candidate invertibility condition
+  cat $3
+  echo "(assert (IC s t))"
+  # the cached I/O specification
+  cat $4
+  echo "(check-sat)"
+}
+
+function mk_input_to_test_ic()
+{
+  # the definition of the input problem
+  cat $1
+  echo "(assert (input s t))"
+  # extract definitions from the sygus grammar, which may appead in the candidate
+  grep "define" $2
+  # the candidate invertibility condition
+  cat $3
+  echo "(assert (IC s t))"
+  echo "(check-sat)"
 }
 
 # This generates a *.sy problem that corresponds to synthesizing the
@@ -86,21 +80,108 @@ function mk_input_to_synth_ic()
   # must extract set-logic and sort definitions from the input problem
   grep "set-logic" $1
   grep "define-sort" $1
+  # the sygus grammar
   cat $2
+  # the PBE constraints
   cat $3
   echo "(check-synth)"
 }
 
+###############################################
+
+# should use --gen-ic-use-eval if the satisfiability queries are difficult (takes 5-6 hours for FP(4,5))
+function gen_full_io_spec()
+{
+  # generate the input problem for cvc4 to generate a full I/O specification
+  mk_input_problem input_problem.smt2 > temp_input_to_gen_full_spec.smt2
+
+  # generate the full I/O specification (takes 2-3 hours for FP(4,5))
+  # notice we limit the generation of I/O tables for types whose cardinality is greater than $MAX_CARDINALITY
+  $CVC4 --gen-ic-full --no-gen-ic-use-sc --fmf-type-completion-thresh=$MAX_CARDINALITY temp_input_to_gen_full_spec.smt2 $@
+
+  # clean up
+  rm -f temp_input_to_gen_full_spec.smt2
+}
+
+
+function gen_full_io()
+{
+  # make new candidate, which is the last from the list in $1
+  get_candidate $1 > temp_candidate.smt2
+  shift;
+
+  # generate the input problem for cvc4 to generate a full I/O specification
+  mk_input_to_test_ic input_problem.smt2 input_grammar.sy temp_candidate.smt2 > temp_input_to_gen_full_candidate.smt2
+
+  # generate the full I/O specification for the candidate
+  $CVC4 --gen-ic-full --no-gen-ic-use-sc --test-ic-full --fmf-type-completion-thresh=$MAX_CARDINALITY temp_input_to_gen_full_candidate.smt2 $@
+
+  # clean up
+  rm -f temp_input_to_gen_full_candidate.smt2
+  rm -f temp_candidate.smt2
+}
+
+function generate_pbe_examples()
+{
+  CANDIDATE=$1;
+  shift;
+  # generate the input problem for cvc4 to test a candidate IC
+  mk_input_to_test_ic_cached input_problem.smt2 input_grammar.sy $CANDIDATE full_io_spec.smt2 > temp_input_to_test_ic.smt2
+
+  # test the candidate
+  $CVC4 --test-ic-full --test-ic-gen --test-ic-random --test-ic-samples=$NUM_PBE_PTS --gen-ic-read-io-string --fmf-type-completion-thresh=$MAX_CARDINALITY $@ temp_input_to_test_ic.smt2
+
+  # clean up
+  rm -f temp_input_to_test_ic.smt2
+}
+
+function process_pbe_examples()
+{
+  # append the candidate we tried
+  cat $1 >> candidate_log.smt2
+  if grep -q constraint $2;
+  then
+    echo "***** Generated new counterexamples:"
+    cat $2
+    # add to new examples
+    cat $2 >> pbe_example_set.sy
+    echo "; __FAIL" >> candidate_log.smt2
+  elif grep -q VERIFIED $2;
+  then
+    echo "***** No counterexamples for candidate!!!"
+    # copy to solutions
+    cat $1 >> solutions.smt2
+    echo "; __VERIFY" >> candidate_log.smt2
+  else
+    echo "***** Internal error during testing."
+    echo "; __ERROR" >> candidate_log.smt2
+  fi
+}
+
+function test_candidate()
+{  
+  get_candidate input_candidates.smt2  > temp_candidate.smt2
+  
+  # output the subject of the test (for debugging)
+  cat temp_candidate.smt2
+  echo
+  
+  generate_pbe_examples temp_candidate.smt2 $@ > temp_pbe_example_set.sy
+  process_pbe_examples temp_candidate.smt2 temp_pbe_example_set.sy
+  # clean up
+  rm -f temp_candidate.smt2
+  rm -f temp_pbe_example_set.sy
+}
+
 function synth_candidate()
 {
-  echo "*** Synthesizing candidates..."
   # we generate better and better candidates over time, at some point we must quit
 
   # generate the input problem for cvc4 to test a candidate IC
   mk_input_to_synth_ic input_problem.smt2 input_grammar.sy pbe_example_set.sy > temp_input_to_synth_ic.sy
 
   # synthesize a new candidate
-  pr-ajr-cvc4 --sygus-stream --sygus-pbe $@ temp_input_to_synth_ic.sy 2>&1 | tee input_candidates.smt2
+  $CVC4 --sygus-stream --sygus-pbe $@ temp_input_to_synth_ic.sy 2>&1 | tee input_candidates.smt2
 
   # we do not clean up input_candidates.smt2
 
@@ -110,29 +191,7 @@ function synth_candidate()
 
 function reset()
 {
-  # we do not delete full_io_spec.smt2
-
-  echo > pbe_example_set.sy
-
-  # update the global candidate log if we tried any candidate
-  if grep -q define-fun candidate_log.smt2;
-  then
-    echo "; -----------------" >> candidate_log_overall.smt2
-    # append the side condition we were using
-    echo -n "; testing with side condition: " >> candidate_log_overall.smt2
-    grep "__SC" input_problem.smt2 | sed 's/;.*//' >> candidate_log_overall.smt2
-    cat candidate_log.smt2 >> candidate_logtemp_pbe_example_set.sy_overall.smt2
-  fi
-  echo > candidate_log.smt2
-  echo > input_candidates.smt2
-  # start with dummy candidate  (not needed due to synth below)
-  #echo -n "(define-fun IC " > temp.smt2
-  #grep "__SIG" input_problem.smt2 | sed 's/;.*//' >> temp.smt2
-  #echo " true)" >> temp.smt2
-  #tr -d '\n' < temp.smt2 >> input_candidates.smt2
-  #echo >> input_candidates.smt2
-
-  # other files that should be cleaned up anyways
+  # remove files that should be cleaned up anyways
   rm -f temp_pbe_example_set.sy
   rm -f temp_input_to_gen_full_candidate.smt2
   rm -f temp_input_to_gen_full_spec.smt2
@@ -142,16 +201,38 @@ function reset()
   rm -f temp_input_to_synth_ic.sy
   rm -f temp-exp.smt2
   rm -f temp.smt2
+
+  # append to the global candidate log if we tried any candidate
+  if grep -q define-fun candidate_log.smt2;
+  then
+    cat candidate_log.smt2 >> candidate_log_overall.smt2
+  fi
+  echo > candidate_log.smt2
+  # store debugging information in global candidate log
+  echo "; -----------------" >> candidate_log_overall.smt2
+  # append the side condition and type we were using
+  echo -n "; testing with type signature: " >> candidate_log_overall.smt2
+  grep "__SIG" input_problem.smt2 | sed 's/;.*//' >> candidate_log_overall.smt2
+  echo -n "; testing with side condition: " >> candidate_log_overall.smt2
+  grep "__SC" input_problem.smt2 | sed 's/;.*//' >> candidate_log_overall.smt2  
   
+  # intialize the input candidate and the pbe examples
+  echo > input_candidates.smt2
+  echo > pbe_example_set.sy
   # first two candidates are trivially true, false
   # thus, these should go quickly
-  synth_candidate --no-sygus-stream
+  echo "*** Synthesizing initial candidate 1..."
+  synth_candidate --no-sygus-stream --sygus-out=status-or-def
   echo "***** Testing initial candidate:"
   test_candidate
-  synth_candidate --no-sygus-stream
+  echo "*** Synthesizing initial candidate 2..."
+  synth_candidate --no-sygus-stream --sygus-out=status-or-def
   echo "***** Testing initial candidate:"
   test_candidate
 }
+
+
+###############################################
 
 
 if [ X$1 = X'-reset' ]; 
@@ -159,12 +240,13 @@ then
   shift;
   reset $@
   echo
-  echo "*** Problem initialized. Now, run alternating calls to:"
+  echo "*** Synthesis environment initialized. Now, run alternating calls to:"
   echo "  run_gen_ic -synth"
   echo "  run_gen_ic -test"
 elif [ X$1 = X'-synth' ]; 
 then
   shift;
+  echo "*** Synthesizing candidates..."
   synth_candidate $@
 elif [ X$1 = X'-test' ]; 
 then
@@ -174,7 +256,22 @@ then
 elif [ X$1 = X'-testfull' ]; 
 then
   shift;
-  echo ";; full test:" >> candidate_log.smt2
+  echo ";; full test" >> candidate_log.smt2
   echo "***** Testing candidate on all inputs:"
   test_candidate $@ --no-gen-ic-use-sc
+elif [ X$1 = X'-gen' ]; 
+then
+  # generate the full i/o behavior of the input argument
+  gen_full_io $@
+elif [ X$1 = X'-setup' ]; 
+then
+  # Note: only call -setup once per problem
+  if grep -q assert full_io_spec.smt2;
+  then
+    # We are very careful not to overwrite full_io_spec.smt2
+    echo "*** ABORT: full_io_spec.smt2 already exists, please remove it to continue."
+  else
+    echo "***** Compute full input/output specification for invertibility condition based on the input problem..."
+    gen_full_io_spec 2>&1 | tee full_io_spec.smt2
+  fi
 fi
