@@ -1,0 +1,14 @@
+#!/bin/bash
+
+echo "Make ../fpSynthImgDiff..."
+cp main-gen.cpp main.cpp
+sed -i 's/__DIFF/true/g' main.cpp
+sed -i 's/__VERIFY/false/g' main.cpp
+g++ main.cpp -o ../fpSynthImgDiff
+
+
+echo "Make ../fpSynthImgVerify..."
+cp main-gen.cpp main.cpp
+sed -i 's/__DIFF/false/g' main.cpp
+sed -i 's/__VERIFY/true/g' main.cpp
+g++ main.cpp -o ../fpSynthImgVerify

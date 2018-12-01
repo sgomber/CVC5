@@ -40,8 +40,8 @@ int main( int argc, char* argv[] )
     std::cout << "Input images have different sizes." << std::endl;
     return -1;
   }
-  bool imgDiff = true;
-  bool imgVerify = false;
+  bool imgDiff = __DIFF;
+  bool imgVerify = __VERIFY;
   if( imgDiff )
   {
     std::cout << "P3 " << width[0] << " " << height[0] << " 256" << std::endl;
