@@ -59,6 +59,7 @@ function mk_input_to_test_ic_cached()
   echo "(check-sat)"
 }
 
+# Same as above, without cached I/O.
 function mk_input_to_test_ic()
 {
   # the definition of the input problem
@@ -121,10 +122,29 @@ function gen_full_io()
   rm -f temp_candidate.smt2
 }
 
+function visual_full_io()
+{
+  FULL_IO_CANDIDATE=$1;
+  shift;
+
+  mk_dummy_candidate > temp_candidate.smt2
+
+  # generate the input problem for cvc4 to test a candidate IC
+  mk_input_to_test_ic_cached input_problem.smt2 input_grammar.sy temp_candidate.smt2 $FULL_IO_CANDIDATE > temp_input_to_vis_ic.smt2
+
+  # evaluate the candidate
+  $CVC4 --gen-ic-image --gen-ic-read-io-string --fmf-type-completion-thresh=$MAX_CARDINALITY $@ temp_input_to_vis_ic.smt2
+
+  # clean up
+  rm -f temp_input_to_vis_ic.smt2
+  rm -f temp_candidate.smt2
+}
+
 function generate_pbe_examples()
 {
   CANDIDATE=$1;
   shift;
+  
   # generate the input problem for cvc4 to test a candidate IC
   mk_input_to_test_ic_cached input_problem.smt2 input_grammar.sy $CANDIDATE full_io_spec.smt2 > temp_input_to_test_ic.smt2
 
@@ -166,8 +186,12 @@ function test_candidate()
   cat temp_candidate.smt2
   echo
   
+  # test the candidate, which should either generate new PBE constraints or outputs "VERIFIED"
   generate_pbe_examples temp_candidate.smt2 $@ > temp_pbe_example_set.sy
+  
+  # process the above output
   process_pbe_examples temp_candidate.smt2 temp_pbe_example_set.sy
+  
   # clean up
   rm -f temp_candidate.smt2
   rm -f temp_pbe_example_set.sy
@@ -175,8 +199,6 @@ function test_candidate()
 
 function synth_candidate()
 {
-  # we generate better and better candidates over time, at some point we must quit
-
   # generate the input problem for cvc4 to test a candidate IC
   mk_input_to_synth_ic input_problem.smt2 input_grammar.sy pbe_example_set.sy > temp_input_to_synth_ic.sy
 
@@ -263,6 +285,10 @@ elif [ X$1 = X'-gen' ];
 then
   # generate the full i/o behavior of the input argument
   gen_full_io $@
+elif [ X$1 = X'-visual' ]; 
+then
+  # visualize the full i/o behavior
+  visual_full_io $@
 elif [ X$1 = X'-setup' ]; 
 then
   # Note: only call -setup once per problem
