@@ -341,7 +341,7 @@ PreprocessingPassResult GenIcPbe::applyInternal(
 
   if( isGenImg )
   {
-    out << "P3 " << rowWidth << " " << rowWidth << " 256" << std::endl;
+    out << "P3 " << rowWidth << " " << (nsamples/rowWidth) << " 256" << std::endl;
   }
   
   unsigned numIncorrect = 0;

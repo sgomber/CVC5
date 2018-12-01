@@ -10,7 +10,6 @@
 # problem.
 function mk_input_to_gen_ic()
 {
-  echo "(set-logic ALL)"
   cat $1
   echo "(assert (input s t))"
   echo "(check-sat)"

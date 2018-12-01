@@ -6,14 +6,12 @@
 # REQUIRES: input_grammar.sy
 
 # OUTPUTS: 
-#   Statistics on how accurate the current candidate in file
-#   [input_candidates.smt2] is with respect to the IC problem given by
-#   [input_problem.smt2] whose I/O behavior is cached in file
-#   [full_io_spec.smt2].
+#   Statistics on how accurate the current candidate in file $1 is with respect
+#   to the IC problem given by [input_problem.smt2] whose I/O behavior is cached
+#   in file [full_io_spec.smt2].
 
 function mk_input_to_test_ic()
 {
-  echo "(set-logic ALL)"
   cat $1
   echo "(assert (input s t))"
   # must extract define-fun from the sygus grammar

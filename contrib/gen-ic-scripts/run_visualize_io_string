@@ -1,15 +1,15 @@
 #!/bin/bash
 
-# ARGUMENT $1: A I/O string.
-
+# ARGUMENT $1: 
+#   A set of array constraints corresponding to the full I/O behavior of a
+#   predicate whose type is __SIG from [input_problem.smt2].
 # REQUIRES: input_problem.smt2
 
 # OUTPUTS: 
-#   The data for a *.ppm image corresponding to the I/O string.
+#   The data for a *.ppm image corresponding to the full I/O behavior from $1.
 
 function mk_input_to_test_ic()
 {
-  echo "(set-logic ALL)"
   cat $1
   echo "(assert (input s t))"
   cat $2

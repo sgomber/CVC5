@@ -10,18 +10,18 @@
 
 # we do not delete full_io_spec.smt2
 
-rm -f pbe_example_set.sy
+echo > pbe_example_set.sy
 
 # update the global candidate log if we tried any candidate
 if grep -q define-fun candidate_log.smt2;
 then
   echo "; -----------------" >> candidate_log_overall.smt2
   # append the side condition we were using
-  echo -n "; generated with side condition: " >> candidate_log_overall.smt2
+  echo -n "; testing with side condition: " >> candidate_log_overall.smt2
   grep "__SC" input_problem.smt2 | sed 's/;.*//' >> candidate_log_overall.smt2
   cat candidate_log.smt2 >> candidate_log_overall.smt2
 fi
-rm -f candidate_log.smt2
+echo > candidate_log.smt2
 # start with dummy candidate 
 rm -f input_candidates.smt2
 echo -n "(define-fun IC " > temp.smt2
@@ -30,7 +30,7 @@ echo " true)" >> temp.smt2
 tr -d '\n' < temp.smt2 >> input_candidates.smt2
 echo >> input_candidates.smt2
 
-# first two candidates are trivially true, false
+# TODO: first two candidates are trivially true, false
 # run_synth_candidate --no-sygus-stream
 # run_test_candidate
 # run_synth_candidate --no-sygus-stream

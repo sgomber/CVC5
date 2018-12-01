@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# REQUIRES: input_problem.smt2
 # REQUIRES: input_grammar.sy
 # REQUIRES: pbe_example_set.sy
 
@@ -12,15 +13,18 @@
 # $2 using the grammar from $1.
 function mk_input_to_synth_ic()
 {
-  cat $1
+  # must extract set-logic and sort definitions from the input problem
+  grep "set-logic" $1
+  grep "define-sort" $1
   cat $2
+  cat $3
   echo "(check-synth)"
 }
 
 # we generate better and better candidates over time, at some point we must quit
 
 # generate the input problem for cvc4 to test a candidate IC
-mk_input_to_synth_ic input_grammar.sy pbe_example_set.sy > temp_input_to_synth_ic.sy
+mk_input_to_synth_ic input_problem.smt2 input_grammar.sy pbe_example_set.sy > temp_input_to_synth_ic.sy
 
 # synthesize a new candidate
 pr-ajr-cvc4 --sygus-stream --sygus-pbe $@ temp_input_to_synth_ic.sy > input_candidates.smt2

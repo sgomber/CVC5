@@ -14,11 +14,10 @@
 # condition problem from $1, whose I/O specification has been cached in $4.
 function mk_input_to_test_ic()
 {
-  echo "(set-logic ALL)"
   cat $1
   echo "(assert (input s t))"
-  # must extract define-fun from the sygus grammar
-  grep "define-fun" $2
+  # must extract definitions from the sygus grammar
+  grep "define" $2
   cat $3
   echo "(assert (IC s t))"
   cat $4
@@ -54,7 +53,7 @@ then
     echo "***** Candidate was true on all inputs!!!"
     # copy to solution
     cp temp_candidate.smt2 solution.smt2
-    echo ";; Solved globally!!!" >> candidate_log.smt2
+    echo ";; solved globally!!!" >> candidate_log.smt2
   else
     echo "***** Internal error during testing."
     echo ";; failed (error)" >> candidate_log.smt2
