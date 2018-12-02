@@ -203,7 +203,7 @@ function synth_candidate()
   mk_input_to_synth_ic input_problem.smt2 input_grammar.sy pbe_example_set.sy > temp_input_to_synth_ic.sy
 
   # synthesize a new candidate
-  $CVC4 --sygus-stream --sygus-pbe $@ temp_input_to_synth_ic.sy 2>&1 | tee input_candidates.smt2
+  $CVC4 --sygus-stream --sygus-pbe --output-lang=smt2 $@ temp_input_to_synth_ic.sy 2>&1 | tee input_candidates.smt2
 
   # we do not clean up input_candidates.smt2
 
@@ -278,24 +278,27 @@ then
 elif [ X$1 = X'-testfull' ]; 
 then
   shift;
-  echo ";; full test" >> candidate_log.smt2
   echo "***** Testing candidate on all inputs:"
   test_candidate $@ --no-gen-ic-use-sc
+  echo ";; __FULL" >> candidate_log.smt2
 elif [ X$1 = X'-gen' ]; 
 then
-  # generate the full i/o behavior of the input argument
+  shift;
+  # generate the full i/o behavior of $1, which a file containing define-fun.
   gen_full_io $@
 elif [ X$1 = X'-visual' ]; 
 then
-  # visualize the full i/o behavior
+  shift;
+  # visualize the full i/o behavior of $1, which is an I/O bitstring table.
   visual_full_io $@
 elif [ X$1 = X'-setup' ]; 
 then
+  shift;
   # Note: only call -setup once per problem
   if grep -q assert full_io_spec.smt2;
   then
     # We are very careful not to overwrite full_io_spec.smt2
-    echo "*** ABORT: full_io_spec.smt2 already exists, please remove it to continue."
+    echo "*** ABORT: full_io_spec.smt2 already exists, remove it to continue."
   else
     echo "***** Compute full input/output specification for invertibility condition based on the input problem..."
     gen_full_io_spec 2>&1 | tee full_io_spec.smt2
