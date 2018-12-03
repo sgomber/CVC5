@@ -301,6 +301,6 @@ then
     echo "*** ABORT: full_io_spec.smt2 already exists, remove it to continue."
   else
     echo "***** Compute full input/output specification for invertibility condition based on the input problem..."
-    gen_full_io_spec 2>&1 | tee full_io_spec.smt2
+    gen_full_io_spec $@ 2>&1 | tee full_io_spec.smt2
   fi
 fi
