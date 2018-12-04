@@ -349,7 +349,9 @@ PreprocessingPassResult GenIcPbe::applyInternal(
   unsigned numTests = 0;
   unsigned printConstraintCount = 0;
   std::map<bool, unsigned> numIncorrectRes;
-  for (unsigned i = 0; i < nsamples; i++)
+  unsigned startIndex = rowWidth*options::genIcR();
+  Trace("gen-ic-pbe") << "Start row is " << options::genIcR() << std::endl;
+  for (unsigned i = startIndex; i < nsamples; i++)
   {
     unsigned ii = useAuxIndex ? auxIndex[i] : i;
     bool printConstraint = false;
@@ -380,7 +382,7 @@ PreprocessingPassResult GenIcPbe::applyInternal(
             }
             else
             {
-              if (ival > 0)
+              if (i>startIndex)
               {
                 if (options::genIcFull())
                 {

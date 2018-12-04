@@ -704,3 +704,11 @@ header = "options/smt_options.h"
   type       = "bool"
   default    = "false"
   help       = "read full I/O bitstring"
+
+[[option]]
+  name       = "genIcR"
+  category   = "regular"
+  long       = "gen-ic-r=N"
+  type       = "unsigned"
+  default    = "0"
+  help       = "the start row for generating the spec"
