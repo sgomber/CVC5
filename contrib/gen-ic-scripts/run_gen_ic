@@ -3,7 +3,7 @@
 # the number of PBE points to append to the current problem on failed candidates
 NUM_PBE_PTS=10
 # the maximal cardinality of a domain type of an invertibility condition
-MAX_CARDINALITY=2000
+MAX_CARDINALITY=10000
 # the copy of cvc4 we are using
 CVC4=pr-ajr-cvc4
 
