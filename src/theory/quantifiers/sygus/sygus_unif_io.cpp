@@ -1479,7 +1479,7 @@ Node SygusUnifIo::constructSol(
     }
     else if (d_enableMinimality)
     {
-      Assert( ret_dt.getType()==cached_ret_dt.getType() );
+      Assert(ret_dt.getType() == cached_ret_dt.getType());
       // take the cached one if it is smaller
       std::vector<Node> retDts;
       retDts.push_back(cached_ret_dt);
