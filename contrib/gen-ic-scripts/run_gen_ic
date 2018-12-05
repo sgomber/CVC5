@@ -340,7 +340,7 @@ function synth_candidate()
   mk_input_to_synth_ic input_problem.smt2 input_grammar.sy pbe_example_set.sy > temp_input_to_synth_ic.sy
 
   # synthesize a new candidate
-  $CVC4 --sygus-stream --sygus-pbe --output-lang=smt2 $@ temp_input_to_synth_ic.sy 2>&1 | tee input_candidates.smt2
+  $CVC4 --sygus-stream --sygus-pbe --output-lang=smt2 --sygus-out=status-or-def $@ temp_input_to_synth_ic.sy 2>&1 | tee input_candidates.smt2
 
   # we do not clean up input_candidates.smt2
 
@@ -373,11 +373,11 @@ function reset()
   # first two candidates are trivially true, false
   # thus, these should go quickly
   echo "*** Synthesizing first initial candidate..."
-  synth_candidate --no-sygus-stream --sygus-out=status-or-def
+  synth_candidate --no-sygus-stream
   echo "***** Testing first initial candidate:"
   test_candidate
   echo "*** Synthesizing second initial candidate..."
-  synth_candidate --no-sygus-stream --sygus-out=status-or-def
+  synth_candidate --no-sygus-stream
   echo "***** Testing second initial candidate:"
   test_candidate
 }
@@ -465,6 +465,23 @@ then
     clean_full
     echo "***** Compute full input/output specification for invertibility condition based on the input problem..."
     gen_full_io_spec $@ 2>&1 | tee full_io_spec.smt2
+  fi
+elif [ X$1 = X'-run' ]; 
+then
+  shift;
+  if [ -e "solutions.smt2" ];
+  then
+    # We are very careful not to overwrite full_io_spec.smt2
+    echo "*** ABORT: solutions.smt2 already exists, remove it to continue."
+  else
+    reset
+    while [ ! -e  "solutions.smt2" ]
+    do
+      echo "*** Synthesizing candidates..."
+      synth_candidate --no-sygus-stream
+      echo "***** Testing candidate:"
+      test_candidate
+    done
   fi
 else
   echo "**** Unknown option."
