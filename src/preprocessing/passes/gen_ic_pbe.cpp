@@ -78,9 +78,6 @@ PreprocessingPassResult GenIcPbe::applyInternal(
   Notice() << "Generate PBE invertibility condition conjecture for case: "
            << icCase << std::endl;
 
-  AlwaysAssert(icCase.getNumChildren() >= 2,
-               "GenIcPbe: bad arity for first assertion");
-
   std::vector<Node> bvars;
   Node funToSynthOp;
   Node funToSynthBvar;
@@ -283,7 +280,7 @@ PreprocessingPassResult GenIcPbe::applyInternal(
   unsigned rowWidth = 0;
   if (isFull)
   {
-    rowWidth = nsamples / completeDom[0].size();
+    rowWidth = completeDom[completeDom.size()-1].size();
     if (options::genIcFull())
     {
       out << "(declare-fun io () (Array Int (_ BitVec " << rowWidth << ")))"
