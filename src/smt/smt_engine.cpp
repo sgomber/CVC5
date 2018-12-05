@@ -3079,7 +3079,8 @@ void SmtEnginePrivate::processAssertions() {
   SubstitutionMap& top_level_substs =
       d_preprocessingPassContext->getTopLevelSubstitutions();
 
-  if (options::genIcPbe() || options::genIcFull() || options::testIcFull() || options::genIcImage() )
+  if (options::genIcPbe() || options::genIcFull() || options::testIcFull()
+      || options::genIcImage())
   {
     d_passes["gen-ic-pbe"]->apply(&d_assertions);
   }

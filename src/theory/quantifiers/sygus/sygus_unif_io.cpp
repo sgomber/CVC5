@@ -1136,11 +1136,14 @@ Node SygusUnifIo::constructSol(
       }
       if (!intersection.empty())
       {
-        if( d_enableMinimality )
+        if (d_enableMinimality)
         {
-          // if we are enabling minimality, the minimal cached solution may still not be the best solution, thus we remember it and keep it if we don't construct a better one below
+          // if we are enabling minimality, the minimal cached solution may
+          // still not be the best solution, thus we remember it and keep it if
+          // we don't construct a better one below
           std::vector<Node> intervec;
-          intervec.insert(intervec.begin(),intersection.begin(),intersection.end());
+          intervec.insert(
+              intervec.begin(), intersection.begin(), intersection.end());
           cached_ret_dt = getMinimalTerm(intervec);
         }
         else
@@ -1467,17 +1470,17 @@ Node SygusUnifIo::constructSol(
   }
 
   // if there was a cached solution, process it now
-  if( cached_ret_dt!=ret_dt )
+  if (cached_ret_dt != ret_dt)
   {
-    if( ret_dt.isNull() )
+    if (ret_dt.isNull())
     {
       // take the cached one if it is the only one
       ret_dt = cached_ret_dt;
     }
-    else if( d_enableMinimality )
+    else if (d_enableMinimality)
     {
       // take the cached one if it is smaller
-      std::vector< Node > retDts;
+      std::vector<Node> retDts;
       retDts.push_back(cached_ret_dt);
       retDts.push_back(ret_dt);
       ret_dt = getMinimalTerm(retDts);

@@ -32,8 +32,9 @@ PreprocessingPassResult GenIcPbe::applyInternal(
     AssertionPipeline* assertionsToPreprocess)
 {
   static bool tryThis = true;
-  
-  bool isFull = (options::genIcFull() || options::testIcFull() || options::genIcImage());
+
+  bool isFull =
+      (options::genIcFull() || options::testIcFull() || options::genIcImage());
   bool isGen = (options::genIcPbe() || options::genIcFull());
   bool isGenImg = options::genIcImage();
   bool isTest = options::testIcFull();
@@ -42,7 +43,6 @@ PreprocessingPassResult GenIcPbe::applyInternal(
   Notice() << "     Gen: " << isGen << std::endl;
   Notice() << "  GenImg: " << isGenImg << std::endl;
   Notice() << "    Test: " << isTest << std::endl;
-
 
   if (!tryThis)
   {
@@ -68,7 +68,7 @@ PreprocessingPassResult GenIcPbe::applyInternal(
   Node sideCondition;
   if (icCase.getKind() == IMPLIES)
   {
-    if( options::genIcUseSideCondition() )
+    if (options::genIcUseSideCondition())
     {
       sideCondition = icCase[0];
     }
@@ -218,14 +218,15 @@ PreprocessingPassResult GenIcPbe::applyInternal(
   bool isTestSatQuery = false;
   if (isTest)
   {
-    AlwaysAssert(asl.size() >= 2,
-                 "GenIcPbe: expecting at least 2 assertions when reading candidate");
+    AlwaysAssert(
+        asl.size() >= 2,
+        "GenIcPbe: expecting at least 2 assertions when reading candidate");
     // test the candidate
     testFormula = asl[1].substitute(
         varList.begin(), varList.end(), bvars.begin(), bvars.end());
     Notice() << "Test candidate IC " << testFormula << "..." << std::endl;
   }
-  else 
+  else
   {
     // test the input problem
     if (options::genIcUseEval())
@@ -249,10 +250,11 @@ PreprocessingPassResult GenIcPbe::applyInternal(
 
   // the ios string
   std::vector<BitVector> ioString;
-  if( options::genIcReadIoString() )
+  if (options::genIcReadIoString())
   {
-    AlwaysAssert(asl.size() >= 3,
-                 "GenIcPbe: expecting at least 3 assertions when reading I/O string");
+    AlwaysAssert(
+        asl.size() >= 3,
+        "GenIcPbe: expecting at least 3 assertions when reading I/O string");
     unsigned assertIndex = 2;
     bool success = true;
     while (success && assertIndex < asl.size())
@@ -265,22 +267,23 @@ PreprocessingPassResult GenIcPbe::applyInternal(
         ioString.push_back(ioDef[1].getConst<BitVector>());
         success = true;
       }
-      else if( !ioDef.isConst() ) // maybe could have extraneous true assertion
+      else if (!ioDef.isConst())  // maybe could have extraneous true assertion
       {
-        AlwaysAssert(false,"Expecting bit-vector equality for I/O string");
+        AlwaysAssert(false, "Expecting bit-vector equality for I/O string");
       }
       assertIndex++;
     }
-    Notice() << "We have " << ioString.size() << " I/O string inputs..." << std::endl;
+    Notice() << "We have " << ioString.size() << " I/O string inputs..."
+             << std::endl;
   }
-  
+
   // for test-ic-full, these are the row/column we are looking in
   unsigned ioIndexRow = 0;
   unsigned ioIndexCol = 0;
   unsigned rowWidth = 0;
   if (isFull)
   {
-    rowWidth = completeDom[completeDom.size()-1].size();
+    rowWidth = completeDom[completeDom.size() - 1].size();
     if (options::genIcFull())
     {
       out << "(declare-fun io () (Array Int (_ BitVec " << rowWidth << ")))"
@@ -336,17 +339,18 @@ PreprocessingPassResult GenIcPbe::applyInternal(
     xdsize = xDomUseEval.size();
   }
 
-  if( isGenImg )
+  if (isGenImg)
   {
-    out << "P3 " << rowWidth << " " << (nsamples/rowWidth) << " 256" << std::endl;
+    out << "P3 " << rowWidth << " " << (nsamples / rowWidth) << " 256"
+        << std::endl;
   }
-  
+
   unsigned numIncorrect = 0;
   unsigned numIncorrectUndef = 0;
   unsigned numTests = 0;
   unsigned printConstraintCount = 0;
   std::map<bool, unsigned> numIncorrectRes;
-  unsigned startIndex = rowWidth*options::genIcR();
+  unsigned startIndex = rowWidth * options::genIcR();
   Trace("gen-ic-pbe") << "Start row is " << options::genIcR() << std::endl;
   for (unsigned i = startIndex; i < nsamples; i++)
   {
@@ -370,8 +374,8 @@ PreprocessingPassResult GenIcPbe::applyInternal(
           if (currIndex == 0)
           {
             // considering a new row
-            if( isGenImg )
-            {              
+            if (isGenImg)
+            {
               if (ival > 0)
               {
                 out << std::endl;
@@ -379,7 +383,7 @@ PreprocessingPassResult GenIcPbe::applyInternal(
             }
             else
             {
-              if (i>startIndex)
+              if (i > startIndex)
               {
                 if (options::genIcFull())
                 {
@@ -428,13 +432,13 @@ PreprocessingPassResult GenIcPbe::applyInternal(
             << "Failed side condition: " << samplePt << std::endl;
       }
     }
-    if( isGenImg )
+    if (isGenImg)
     {
       bool res = false;
       bool resValid = true;
-      if( isTest )
+      if (isTest)
       {
-        if( !resTest.isConst() )
+        if (!resTest.isConst())
         {
           out << "256 0 0 ";
           resValid = false;
@@ -446,36 +450,35 @@ PreprocessingPassResult GenIcPbe::applyInternal(
       }
       else
       {
-        res =
-            ioString[ioIndexRow].isBitSet((rowWidth - 1) - ioIndexCol);
+        res = ioString[ioIndexRow].isBitSet((rowWidth - 1) - ioIndexCol);
       }
-      if( resValid )
+      if (resValid)
       {
         out << (res ? "256 256 256 " : "0 0 0 ");
       }
     }
-    else if( isGen )
+    else if (isGen)
     {
       if (!failSc)
       {
         // compute the I/O behavior: testFormulaSubs has free variable x
-        Trace("gen-ic-pbe") << i << ": generate I/O spec from " << testFormulaSubs
-                            << std::endl;
+        Trace("gen-ic-pbe")
+            << i << ": generate I/O spec from " << testFormulaSubs << std::endl;
         Result r;
-        if( resTest.isConst() )
+        if (resTest.isConst())
         {
           r = Result(resTest.getConst<bool>() ? Result::SAT : Result::UNSAT);
         }
         else
         {
-          AlwaysAssert( isTestSatQuery );
+          AlwaysAssert(isTestSatQuery);
           if (options::genIcUseEval())
           {
             r = Result(Result::UNSAT);
             TNode xt = funToSynthBvar;
             Node testFormulaEval;
             Trace("gen-ic-eval") << "*** Test by evaluation on " << xdsize
-                                << " points..." << std::endl;
+                                 << " points..." << std::endl;
             for (unsigned k = 0; k < xdsize; k++)
             {
               TNode xvt = xDomUseEval[k];
@@ -617,8 +620,9 @@ PreprocessingPassResult GenIcPbe::applyInternal(
   }
   if (isTest && !isGen)
   {
-    // if we're generating constraints, we may get here if we haven't reached the threshold of number of constraints generated (--test-ic-samples).
-    if( !options::testIcGen() )
+    // if we're generating constraints, we may get here if we haven't reached
+    // the threshold of number of constraints generated (--test-ic-samples).
+    if (!options::testIcGen())
     {
       out << "       Total #incorrect : " << numIncorrect << std::endl;
       for (std::pair<const bool, unsigned>& ri : numIncorrectRes)
@@ -637,7 +641,7 @@ PreprocessingPassResult GenIcPbe::applyInternal(
             << 1.0 - (double(numIncorrect) / double(numTests)) << std::endl;
       }
     }
-    if( numIncorrect==0 )
+    if (numIncorrect == 0)
     {
       out << "----> FULLY VERIFIED!!!" << std::endl;
     }
