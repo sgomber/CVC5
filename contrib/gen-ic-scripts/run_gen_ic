@@ -23,6 +23,11 @@ function get_candidate()
   fi
 }
 
+function get_arg_list()
+{
+  grep "(declare-const" $1 | sed 's/(declare-const //; s/ .*/ /' 
+}
+
 # This makes a dummy candidate whose type matches the current signature,
 # i.e. the __SIG line from input_problem.smt2 
 function mk_dummy_candidate()
@@ -42,7 +47,9 @@ function mk_input_problem()
 {
   # the definition of the input problem
   cat $1
-  echo "(assert (input s t))"
+  echo "(assert (input "
+  get_arg_list $1
+  echo "))"
   echo "(check-sat)"
 }
 
@@ -53,12 +60,16 @@ function mk_input_to_test_ic_cached()
 {
   # the definition of the input problem
   cat $1
-  echo "(assert (input s t))"
+  echo "(assert (input "
+  get_arg_list $1
+  echo "))"
   # extract definitions from the sygus grammar, which may appead in the candidate
   grep "define" $2
   # the candidate invertibility condition
   cat $3
-  echo "(assert (IC s t))"
+  echo "(assert (IC "
+  get_arg_list $1
+  echo "))"
   # the cached I/O specification
   cat $4
   echo "(check-sat)"
@@ -69,12 +80,16 @@ function mk_input_to_test_ic()
 {
   # the definition of the input problem
   cat $1
-  echo "(assert (input s t))"
+  echo "(assert (input "
+  get_arg_list $1
+  echo "))"
   # extract definitions from the sygus grammar, which may appead in the candidate
   grep "define" $2
   # the candidate invertibility condition
   cat $3
-  echo "(assert (IC s t))"
+  echo "(assert (IC "
+  get_arg_list $1
+  echo "))"
   echo "(check-sat)"
 }
 
@@ -330,7 +345,7 @@ function synth_candidate()
   # we do not clean up input_candidates.smt2
 
   # clean up
-  rm -f temp_input_to_synth_ic.sy
+  #rm -f temp_input_to_synth_ic.sy
 }
 
 function reset()
@@ -433,6 +448,10 @@ then
   shift;
   # clear all auxiliary files except for full_io_spec.smt2
   clean_full
+elif [ X$1 = X'-arglist' ];
+then
+  shift;
+  get_arg_list $1
 elif [ X$1 = X'-setup' ]; 
 then
   shift;
