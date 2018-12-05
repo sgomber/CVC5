@@ -12,31 +12,40 @@ run_gen_ic -setup
 ;; optionally, debug the specification
 ( run_gen_ic -visual full_io_spec.smt2 )?
 (
-  (
-    ;; test the current candidate, given the current side condition
-    run_gen_ic -test
-    ( 
-      ;; if the test succeeded
-      run_gen_ic -testfull 
-      ;; if verified, we are finished.
-    | 
-      ;; if the test failed
-      ;; optionally, evaluate the current candidate
-      ( run_gen_ic -eval )?
-      ;; optionally, cache / visualize the current candidate
-      ( run_gen_ic -gen [CANDIDATE_FILE] > out.smt2; run_gen_ic -visual out.smt2 )?
-    )
-    ;; synthesize a new candidate
-    ;; (modify [input_grammar.sy])?
-    run_gen_ic -synth
-    ;; kill the above process when a reasonable candidate is generated
-  )*
-  ;; try another part of the search
+  ;; decide on a part of the search
   ;; (modify [input_grammar.sy])?
   ;; (modify [input_problem.smt2])?
   run_gen_ic -reset
+  (
+    ;; *** synthesize a new candidate
+    ;; decide on an input grammar, based on the perceived fitness of terms
+    ;; (modify [input_grammar.sy])?
+    run_gen_ic -synth
+    ;; kill the above process when a reasonable candidate is generated
+    
+    ;; *** test the current candidate
+    run_gen_ic -test
+    ( 
+      ;; if the test succeeded,
+      ;; test the current candidate for the entire specification
+      run_gen_ic -testfull 
+      ;; if verified, we are finished.
+    | 
+      ;; if the test failed,
+      ;; optionally, cache, evaluate, visualize the current candidate
+      ( 
+        run_gen_ic -eval;
+        run_gen_ic -gen [CANDIDATE_FILE] > out.smt2; 
+        run_gen_ic -visual out.smt2 
+      )?
+    )
+
+  )*
 )*
 ```
+This loop can also be automated via `run_gen_ic -run`. Notice that using this
+option will not necessarily lead to minimal solutions.
+
 The following describes the necessary files to set up for this workflow, and
 the intermediate files that are generated, and how they can be modified.
 
@@ -47,15 +56,27 @@ the intermediate files that are generated, and how they can be modified.
 
 The definition of the invertibility condition problem. This is, 
 in *.smt2 format, the definition of a predicate `input` of the form
-    (=> C (~ (op (f s t) s) t))
+    (=> C (~ (op s1 ... (f s1 ... sn t) ... sn) t))
 where C is a condition (or "case") of the invertibility condition that we
 are currently focusing on. The function application (f s t) is interpreted
-as the place for the function to synthesize, that is we interpret the above
-as C => exists x. (~ (op x s) t). 
+as the place for the function to synthesize. In other words, the above
+problem is interpreted as 
+
+"find an invertibility condition over s1...sn, t whose I/O behavior matches the
+satisfiability of exists x. (~ (op s1 ... x ... sn) t), when C is true."
+
 This file has several special markers used in steps of the procedure:
 `__SIG` should mark the unique line that specifies the type of `input`,
 `__SC` should mark the unique line that contains a definition of the side
-condition.
+condition, and `__PROBLEM` should mark the unique line that contains the
+definition of the literal of the invertibility condition. Each of these three
+lines can be modified as desired by the user.
+
+In practice, for BV and FP, `__SIG` should be a reasonable type that
+exercizes most of the behaviors of the invertibility condition in question.
+The side condition `__SC` is useful for narrowing the search space, for
+example, this can be used to ask the workflow to solve the case when
+s is always positive.
 
 
 [input_grammar.sy] 
