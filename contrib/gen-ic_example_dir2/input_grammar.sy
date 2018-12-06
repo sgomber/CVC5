@@ -36,11 +36,11 @@
      ;(fp.isSubnormal StartS)
      ;(fp.isSubnormal StartT)
      ;; is zero
-     ;(fp.isZero StartS)
-     ;(fp.isZero StartT)
+     (fp.isZero StartS)
+     (fp.isZero StartT)
      ;; is infinite
-     ;(fp.isInfinite StartS)
-     ;(fp.isInfinite StartT)
+     (fp.isInfinite StartS)
+     (fp.isInfinite StartT)
      ;; is not a number
      ;(fp.isNaN StartS)
      ;(fp.isNaN StartT)
@@ -55,7 +55,7 @@
    (StartT FP (
      t
      (resSubAdd StartT StartS StartRM StartRM)
-     ;(resSubSub StartT StartS StartRM StartRM)
+     (resSubSub StartT StartS StartRM StartRM)
    ))
    (StartRM RoundingMode
      (RNE RNA RTZ RTP RTN))

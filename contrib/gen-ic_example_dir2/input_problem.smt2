@@ -7,7 +7,7 @@
 ((s FP) (t FP)) Bool ; __SIG
 (=> 
 ;; the case of the IC we are currently solving:
-(fp.isNormal s) ; __SC
+(and (fp.isNormal s) (fp.isNormal t)) ; __SC
 ;; the invertibility condition problem we are solving:
 (= (fp.add RNE (f s t) s) t) ; __PROBLEM
 ))
