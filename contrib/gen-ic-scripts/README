@@ -22,7 +22,8 @@ run_gen_ic -setup [--gen-ic-use-eval]?
 ;; for input_problem.smt2 for fixed values of variables is hard. For example,
 ;; this is the case if input_problem.smt2 involves FP multiplication.
 
-;; Optionally, debug the specification
+;; Optionally, visualize the specification. *** This only is intended to work
+;; for two dimensional invertibility conditions.
 ( run_gen_ic -visual full_io_spec.smt2 )?
 
 (
