@@ -1,0 +1,62 @@
+;   c - ( c - x ) ~ x
+(define-fun resSubSub ((x FP) (c FP) (r1 RoundingMode) (r2 RoundingMode)) FP (fp.sub r1 c (fp.sub r2 c x)))
+;   ( x - c ) + c ~ x
+(define-fun resAddSub ((x FP) (c FP) (r1 RoundingMode) (r2 RoundingMode)) FP (fp.add r1 (fp.sub r2 x c) c))
+;   ( x - c ) + c ~ x
+(define-fun resSubAdd ((x FP) (c FP) (r1 RoundingMode) (r2 RoundingMode)) FP (fp.sub r1 (fp.add r2 x c) c))
+;   c * ( x / c ) ~ x
+(define-fun resMulDiv ((x FP) (c FP) (r1 RoundingMode) (r2 RoundingMode)) FP (fp.mul r1 c (fp.div r2 x c)))
+;   c * ( x / c ) ~ x
+(define-fun resDivMul ((x FP) (c FP) (r1 RoundingMode) (r2 RoundingMode)) FP (fp.div r1 (fp.mul r2 x c) c))
+;   c / ( c / x ) ~ x
+(define-fun resDivDiv ((x FP) (c FP) (r1 RoundingMode) (r2 RoundingMode)) FP (fp.div r1 c (fp.div r2 c x)))
+; FMA(x/c, c, -x) ~ 0
+(define-fun resFma ((x FP) (c FP) (r1 RoundingMode) (r2 RoundingMode)) FP (fp.fma r1 (fp.div r2 x c) c (fp.neg x)))
+;   abs(x) < abs(y)
+(define-fun absComp ((x FP) (y FP)) Bool (fp.leq (fp.abs x) (fp.abs y)))
+
+(synth-fun IC ((s FP) (t FP)) Bool
+  ((Start Bool (
+     true
+     false
+
+     ;; equal
+     (= StartS StartT)
+     ;(= StartS StartS)
+     (= StartT StartT)
+     ;; less than or equal
+     ;(fp.leq StartS StartS)
+     ;(fp.leq StartT StartS)
+     ;(fp.leq StartS StartT)
+     ;(fp.leq StartT StartT)
+     ;; is normal
+     ;(fp.isNormal StartS)
+     ;(fp.isNormal StartT)
+     ;; is subnormal
+     ;(fp.isSubnormal StartS)
+     ;(fp.isSubnormal StartT)
+     ;; is zero
+     ;(fp.isZero StartS)
+     ;(fp.isZero StartT)
+     ;; is infinite
+     ;(fp.isInfinite StartS)
+     ;(fp.isInfinite StartT)
+     ;; is not a number
+     ;(fp.isNaN StartS)
+     ;(fp.isNaN StartT)
+     
+     (ite Start Start Start)
+   ))
+   (StartS FP (
+     s
+     ;(resAddSub StartS StartT StartRM StartRM)
+     ;(resSubSub StartS StartT StartRM StartRM)
+   ))
+   (StartT FP (
+     t
+     (resSubAdd StartT StartS StartRM StartRM)
+     ;(resSubSub StartT StartS StartRM StartRM)
+   ))
+   (StartRM RoundingMode
+     (RNE RNA RTZ RTP RTN))
+))

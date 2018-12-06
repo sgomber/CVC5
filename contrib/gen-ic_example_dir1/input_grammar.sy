@@ -1,0 +1,41 @@
+(synth-fun IC ((s FP)) Bool
+  ((Start Bool (
+     true
+     false
+
+     (= StartFP StartFP)
+;     (fp.eq StartFP StartFP)
+     (fp.leq StartFP StartFP)
+     (fp.lt StartFP StartFP)
+
+     (fp.isNormal StartFP)
+     (fp.isSubnormal StartFP)
+     (fp.isZero StartFP)
+     (fp.isInfinite StartFP)
+     (fp.isNaN StartFP)
+     (fp.isNegative StartFP)
+     (fp.isPositive StartFP)
+     
+     (ite Start Start Start)
+   ))
+   (StartFP FP (
+     s
+
+;     (fp.abs StartFP)
+     (fp.neg StartFP)
+;     (fp.sqrt StartRM StartFP)
+     (fp.roundToIntegral StartRM StartFP)
+
+     (fp.add StartRM StartFP StartFP)
+     (fp.sub StartRM StartFP StartFP)
+     (fp.mul StartRM StartFP StartFP)
+     (fp.div StartRM StartFP StartFP)
+     (fp.fma StartRM StartFP StartFP StartFP)
+
+     (fp.rem StartFP StartFP)
+;     (fp.min StartFP StartFP)
+;     (fp.max StartFP StartFP)
+   ))
+   (StartRM RoundingMode
+     (RNE RNA RTZ RTP RTN))
+))
