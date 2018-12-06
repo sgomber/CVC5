@@ -1,44 +1,34 @@
-(set-logic FP)
-(synth-fun IC ((s (_ FloatingPoint 4 5)) (t (_ FloatingPoint 4 5))) Bool
+(synth-fun IC ((s FP) (t FP)) Bool
   ((Start Bool (
      true
      false
-     (not Start)
 
      (= StartFP StartFP)
-;     (fp.eq StartFP StartFP)
+     (fp.eq StartFP StartFP)
      (fp.leq StartFP StartFP)
      (fp.lt StartFP StartFP)
-;     (fp.geq StartFP StartFP)
-;     (fp.gt StartFP StartFP)
 
      (fp.isNormal StartFP)
      (fp.isSubnormal StartFP)
      (fp.isZero StartFP)
-;     (fp.isInfinite StartFP)
-;     (fp.isNaN StartFP)
+     (fp.isInfinite StartFP)
+     (fp.isNaN StartFP)
      (fp.isNegative StartFP)
      (fp.isPositive StartFP)
      
      (ite Start Start Start)
    ))
-   (StartFP (_ FloatingPoint 4 5) (
+   (StartFP FP (
      s
      t
 
-;     (_ NaN 4 5)
-;     (_ +oo 4 5)
-;     (_ -oo 4 5)
-;     (_ +zero 4 5)
-;     (_ -zero 4 5)
-
-;     (fp.abs StartFP)
+     (fp.abs StartFP)
      (fp.neg StartFP)
-;     (fp.sqrt StartRM StartFP)
+     (fp.sqrt StartRM StartFP)
      (fp.roundToIntegral StartRM StartFP)
 
-;     (fp.add StartRM StartFP StartFP)
-;     (fp.sub StartRM StartFP StartFP)
+     (fp.add StartRM StartFP StartFP)
+     (fp.sub StartRM StartFP StartFP)
      (fp.mul StartRM StartFP StartFP)
      (fp.div StartRM StartFP StartFP)
      (fp.fma StartRM StartFP StartFP StartFP)
@@ -50,5 +40,3 @@
    (StartRM RoundingMode
      (RNE RNA RTZ RTP RTN))
 ))
-(declare-var s (_ FloatingPoint 4 5))
-(declare-var t (_ FloatingPoint 4 5))

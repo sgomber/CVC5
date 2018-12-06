@@ -24,16 +24,11 @@
      (= StartS StartT)
      (= StartS StartS)
      (= StartT StartT)
-     ;; less than
-     (fp.lt StartS StartS)
-     (fp.lt StartS StartT)
-     (fp.lt StartT StartS)
-     (fp.lt StartT StartT)
      ;; less than or equal
-     (fp.leq StartS StartS)
-     (fp.leq StartT StartS)
-     (fp.leq StartS StartT)
-     (fp.leq StartT StartT)
+     ;(fp.leq StartS StartS)
+     ;(fp.leq StartT StartS)
+     ;(fp.leq StartS StartT)
+     ;(fp.leq StartT StartT)
      ;; is normal
      ;(fp.isNormal StartS)
      ;(fp.isNormal StartT)
@@ -43,7 +38,6 @@
      ;; is zero
      ;(fp.isZero StartS)
      ;(fp.isZero StartT)
-     (fp.isZero StartZero)
      ;; is infinite
      ;(fp.isInfinite StartS)
      ;(fp.isInfinite StartT)
@@ -53,19 +47,15 @@
      
      (ite Start Start Start)
    ))
-   (StartZero FP (
-     (resFma StartS StartT StartRM StartRM)
-     (resFma StartT StartS StartRM StartRM)
-   ))
    (StartS FP (
      s
-     (resMulDiv StartS StartT StartRM StartRM)
-     (resDivDiv StartS StartT StartRM StartRM)
+     ;(resAddSub StartS StartT StartRM StartRM)
+     ;(resSubSub StartS StartT StartRM StartRM)
    ))
    (StartT FP (
      t
-     (resMulDiv StartT StartS StartRM StartRM)
-     (resDivDiv StartT StartS StartRM StartRM)
+     (resSubAdd StartT StartS StartRM StartRM)
+     ;(resSubSub StartT StartS StartRM StartRM)
    ))
    (StartRM RoundingMode
      (RNE RNA RTZ RTP RTN))
