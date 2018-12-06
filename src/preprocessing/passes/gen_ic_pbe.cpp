@@ -351,8 +351,13 @@ PreprocessingPassResult GenIcPbe::applyInternal(
   unsigned printConstraintCount = 0;
   std::map<bool, unsigned> numIncorrectRes;
   unsigned startIndex = rowWidth * options::genIcR();
-  Trace("gen-ic-pbe") << "Start row is " << options::genIcR() << std::endl;
-  for (unsigned i = startIndex; i < nsamples; i++)
+  unsigned endIndex = options::genIcEndR()<=0 ? nsamples : rowWidth*options::genIcEndR();
+  if( endIndex>nsamples )
+  {
+    endIndex = nsamples;
+  }
+  Trace("gen-ic-pbe") << "Row boundaries are " << options::genIcR() << " " << options::genIcEndR() << std::endl;
+  for (unsigned i = startIndex; i < endIndex; i++)
   {
     unsigned ii = useAuxIndex ? auxIndex[i] : i;
     bool printConstraint = false;
