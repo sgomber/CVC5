@@ -23,6 +23,7 @@ function get_candidate()
   fi
 }
 
+# outputs the names of the declare-const variables in $1
 function get_arg_list()
 {
   grep "(declare-const" $1 | sed 's/(declare-const //; s/ .*/ /' 
@@ -140,7 +141,7 @@ function clean_temporary()
   rm -f temp.smt2
 }
 
-# Clean all files
+# Clean all files for the workflow (besides full_io_spec.smt2, which is done manually)
 function clean_full()
 {
   clean_temporary
@@ -156,6 +157,7 @@ function clean_full()
     echo > candidate_log.smt2
     echo > input_candidates.smt2
   fi
+  # TODO: remove all images?
 }
 
 function expand_candidate()
@@ -204,7 +206,7 @@ function gen_full_io_spec()
   $CVC4 --gen-ic-full --no-gen-ic-use-sc --fmf-type-completion-thresh=$MAX_CARDINALITY temp_input_to_gen_full_spec.smt2 $@
 
   # clean up
-  # rm -f temp_input_to_gen_full_spec.smt2
+  rm -f temp_input_to_gen_full_spec.smt2
 }
 
 
@@ -221,8 +223,8 @@ function gen_full_io()
   $CVC4 --gen-ic-full --no-gen-ic-use-sc --test-ic-full --fmf-type-completion-thresh=$MAX_CARDINALITY temp_input_to_gen_full_candidate.smt2 $@
 
   # clean up
-  #rm -f temp_input_to_gen_full_candidate.smt2
-  #rm -f temp_candidate.smt2
+  rm -f temp_input_to_gen_full_candidate.smt2
+  rm -f temp_candidate.smt2
 }
 
 function visual_full_io()
