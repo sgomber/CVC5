@@ -305,6 +305,7 @@ bool SygusEnumerator::TermCache::addTerm(Node n)
     Trace("sygus-enum-terms") << "tc(" << d_tn << "): term (builtin): " << n
                               << std::endl;
     d_terms.push_back(n);
+    d_sizeLast = d_sizeEnum;
     return true;
   }
   Assert(!n.isNull());
