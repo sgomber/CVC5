@@ -145,6 +145,7 @@ SygusEnumerator::TermCache::TermCache()
       d_isSygusType(false),
       d_numConClasses(0),
       d_sizeEnum(0),
+      d_sizeLast(0),
       d_isComplete(false)
 {
 }
@@ -337,6 +338,7 @@ bool SygusEnumerator::TermCache::addTerm(Node n)
     d_bterms.insert(bnr);
   }
   d_terms.push_back(n);
+  d_sizeLast = d_sizeEnum;
   return true;
 }
 void SygusEnumerator::TermCache::pushEnumSizeIndex()

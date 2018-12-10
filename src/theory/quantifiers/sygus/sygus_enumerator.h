@@ -129,6 +129,8 @@ class SygusEnumerator : public EnumValGenerator
     void pushEnumSizeIndex();
     /** Get the current size of terms that we are enumerating */
     unsigned getEnumSize() const;
+    /** Get the size of last term that we successfully enumerated */
+    unsigned getEnumSizeLast() const;
     /** get the index at which size s terms start, where s <= getEnumSize() */
     unsigned getIndexForSize(unsigned s) const;
     /** get the index^th term successfully added to this cache */
@@ -175,8 +177,10 @@ class SygusEnumerator : public EnumValGenerator
      * if it exists.
      */
     std::map<unsigned, unsigned> d_sizeStartIndex;
-    /** the maximum size of terms we have stored in this cache so far */
+    /** the current size of terms we are trying to enumerate */
     unsigned d_sizeEnum;
+    /** the size of the last term we successfully enumerated */
+    unsigned d_sizeLast;
     /** whether this term cache is complete */
     bool d_isComplete;
   };
