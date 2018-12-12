@@ -1,0 +1,151 @@
+(set-logic ALL)
+
+;;; ----- Agents (Nodes, Packets, Channels)
+
+(declare-datatype NodeMobile ((Rnode)))
+(declare-datatype NodeInfra ((Anode) (Bnode) (Cnode)))
+(declare-datatype NodeBase ((Dnode)))
+(declare-datatype Node ((mobile (mnode NodeMobile)) (infra (inode NodeInfra)) (base (bnode NodeBase))))
+
+(define-fun R () Node (mobile Rnode))
+(define-fun A () Node (infra Anode))
+(define-fun B () Node (infra Bnode))
+(define-fun C () Node (infra Cnode))
+(define-fun D () Node (base Dnode))
+
+(declare-datatype Packet ((P1) (P2)))
+
+(declare-datatype Channel ((Ch1) (Ch2) (Ch3)))
+
+
+;;; ----- Action, Conditionals
+
+(declare-datatype Action
+(
+(act_idle)
+(act_send (_dst Node) (_pck Packet) (_chn Channel))
+))
+
+(declare-datatype CAtom
+(
+(ctrue)
+(check_rcv (_rcv_pck Packet))
+(check_rcv_ack (_rcv_ack_node Node) (_rcv_ack_pck Packet))
+))
+
+;;; ----- State information
+
+(declare-datatype State
+(
+(mk_state
+  (_prcv (Set Packet))
+  (_prcv_ack (Set (Tuple Node Packet)))
+  (_energy Int)
+)
+))
+
+(define-sort GlobalState () (-> Node Int State))
+
+
+;;; ------ Axiomatization of conditions 
+
+(define-fun condition_holds ((c CAtom) (n Node) (t Int)) Bool
+  true
+;  (ite ((_ is check_rcv) c)
+;    (member (_rcv_pck c) (_prcv (g n t)))
+;  (ite ((_ is check_rcv_ack) c)
+;    (member (mkTuple (_rcv_ack_node c) (_rcv_ack_pck c)) (_prcv_ack (g n t)))
+;  (ite ((_ is ctrue) c) 
+;    true
+;    false)
+;  ))
+)
+
+(define-fun conditional_act ((c CAtom) (g GlobalState) (n Node) (x Action) (y Action) (t Int)) Action
+  (ite (condition_holds c n t) x y)
+)
+
+
+
+;;; ----- Policies
+
+(synth-fun policyR ((t Int) (g GlobalState)) Action (
+   (Start Action (
+        (conditional_act StartCondition StartGS R Start Start t)
+        act_idle
+        (act_send StartNode StartPacket StartChannel)
+   ))
+   (StartGS GlobalState (g))
+   (StartCondition CAtom (
+      (check_rcv StartPacket)
+      (check_rcv_ack StartNode StartPacket)
+   ))
+   (StartNode Node (R A B C D))
+   (StartPacket Packet (P1 P2))
+   (StartChannel Channel (Ch1 Ch2 Ch3))
+))
+
+(synth-fun policyA ((t Int) (g GlobalState)) Action (
+   (Start Action (
+        ;(conditional_act StartCondition A Start Start t g)
+        act_idle
+        (act_send StartNode StartPacket StartChannel)
+   ))
+   (StartCondition CAtom (
+      (check_rcv StartPacket)
+      (check_rcv_ack StartNode StartPacket)
+   ))
+   (StartNode Node (R A B C D))
+   (StartPacket Packet (P1 P2))
+   (StartChannel Channel (Ch1 Ch2 Ch3))
+))
+
+(synth-fun policyB ((t Int) (g GlobalState)) Action (
+   (Start Action (
+        ;(conditional_act StartCondition B Start Start t g)
+        act_idle
+        (act_send StartNode StartPacket StartChannel)
+   ))
+   (StartCondition CAtom (
+      (check_rcv StartPacket)
+      (check_rcv_ack StartNode StartPacket)
+   ))
+   (StartNode Node (R A B C D))
+   (StartPacket Packet (P1 P2))
+   (StartChannel Channel (Ch1 Ch2 Ch3))
+))
+
+(synth-fun policyC ((t Int) (g GlobalState)) Action (
+   (Start Action (
+        ;(conditional_act StartCondition C Start Start t g)
+        act_idle
+        (act_send StartNode StartPacket StartChannel)
+   ))
+   (StartCondition CAtom (
+      (check_rcv StartPacket)
+      (check_rcv_ack StartNode StartPacket)
+   ))
+   (StartNode Node (R A B C D))
+   (StartPacket Packet (P1 P2))
+   (StartChannel Channel (Ch1 Ch2 Ch3))
+))
+
+(synth-fun policyD ((t Int) (g GlobalState)) Action (
+   (Start Action (
+        ;(conditional_act StartCondition D Start Start t g)
+        act_idle
+        (act_send StartNode StartPacket StartChannel)
+   ))
+   (StartCondition CAtom (
+      (check_rcv StartPacket)
+      (check_rcv_ack StartNode StartPacket)
+   ))
+   (StartNode Node (R A B C D))
+   (StartPacket Packet (P1 P2))
+   (StartChannel Channel (Ch1 Ch2 Ch3))
+))
+
+
+
+
+(check-synth)

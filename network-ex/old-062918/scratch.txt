@@ -1,0 +1,21 @@
+;;; ----------------- assignment to channels
+
+
+(declare-datatype Channel ((Ch1) (Ch2) (Ch3)))
+
+(declare-datatype CellAssignMobile ((sleepm) (cam (cam_rule RuleMobile) (cam_ch Channel))))
+(declare-datatype CellAssignInfra ((sleepi) (cai (cai_rule RuleInfra) (cai_ch Channel))))
+ 
+; the global policy
+(declare-fun policy_mobile (Int NodeMobile) CellAssignMobile)
+(declare-fun policy_infra (Int NodeInfra) CellAssignInfra)
+
+;; channel access predicate
+; only one node can have access to a channel in a given time
+; we map ( Channel, time ) to a single node
+(declare-fun channel_access (Channel Int) Node)
+
+
+
+
+
