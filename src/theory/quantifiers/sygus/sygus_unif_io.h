@@ -300,11 +300,18 @@ class SygusUnifIo : public SygusUnif
   unsigned d_cond_count;
   /** The solution for the function of this class, if one has been found */
   Node d_solution;
+  /** the term size of the above solution */
+  unsigned d_sol_term_size;
   /** partial solutions
    *
-   * Maps indices for I/O points to a list of solutions for that point.
+   * Maps indices for I/O points to a list of solutions for that point, for each
+   * type. We may have more than one type for solutions, e.g. for grammar:
+   *   A -> ite( A, B, C ) | ...
+   * where terms of type B and C can both act as solutions.
    */
-  std::map<unsigned, std::unordered_set<Node, NodeHashFunction>> d_psolutions;
+  std::map<size_t,
+           std::map<TypeNode, std::unordered_set<Node, NodeHashFunction>>>
+      d_psolutions;
   /**
    * This flag is set to true if the solution construction was
    * non-deterministic with respect to failure/success.
@@ -432,7 +439,11 @@ class SygusUnifIo : public SygusUnif
   bool useStrContainsEnumeratorExclude(Node e);
   /** cache for the above function */
   std::map<Node, bool> d_use_str_contains_eexc;
-  /** cache for the above function */
+  /**
+   * cache for the above function, stores whether enumerators e are in
+   * a conditional context, e.g. used for enumerating the return values for
+   * leaves of ITE trees.
+   */
   std::map<Node, bool> d_use_str_contains_eexc_conditional;
 
   /** the unification context used within constructSolution */

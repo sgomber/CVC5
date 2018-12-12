@@ -238,11 +238,14 @@ Node SubsumeTrie::addTermInternal(Node t,
       if (!d_term.isNull())
       {
         subsumed.push_back(d_term);
-        if (!checkExistsOnly)
-        {
-          // remove it if checkExistsOnly = false
-          d_term = Node::null();
-        }
+        // If we are only interested in feasibility, we could set d_term to null
+        // here. However, d_term still could be useful, since it may be
+        // smaller than t and suffice as a solution under some condition.
+        // As a simple example, consider predicate synthesis and a case where we
+        // enumerate a C that is correct for all I/O points whose output is
+        // true. Then, C subsumes true. However, true may be preferred, e.g.
+        // to generate a solution ite( C, true, D ) instead of ite( C, C, D ),
+        // since true is conditionally correct under C, and is smaller than C.
       }
     }
     else
@@ -473,6 +476,7 @@ void SubsumeTrie::getLeaves(const std::vector<Node>& vals,
 SygusUnifIo::SygusUnifIo()
     : d_check_sol(false),
       d_cond_count(0),
+      d_sol_term_size(0),
       d_sol_cons_nondet(false),
       d_solConsUsingInfoGain(false)
 {
@@ -774,7 +778,7 @@ bool SygusUnifIo::constructSolution(std::vector<Node>& sols,
 Node SygusUnifIo::constructSolutionNode(std::vector<Node>& lemmas)
 {
   Node c = d_candidate;
-  if (!d_solution.isNull())
+  if (!d_solution.isNull() && !options::sygusStream())
   {
     // already has a solution
     return d_solution;
@@ -785,10 +789,10 @@ Node SygusUnifIo::constructSolutionNode(std::vector<Node>& lemmas)
     Trace("sygus-pbe") << "Construct solution, #iterations = " << d_cond_count
                        << std::endl;
     d_check_sol = false;
+    Node newSolution;
     d_solConsUsingInfoGain = false;
     // try multiple times if we have done multiple conditions, due to
     // non-determinism
-    unsigned sol_term_size = 0;
     for (unsigned i = 0; i <= d_cond_count; i++)
     {
       Trace("sygus-pbe-dt") << "ConstructPBE for candidate: " << c << std::endl;
@@ -803,20 +807,35 @@ Node SygusUnifIo::constructSolutionNode(std::vector<Node>& lemmas)
       if (!vcc.isNull()
           && (d_solution.isNull()
               || (!d_solution.isNull()
-                  && d_tds->getSygusTermSize(vcc) < sol_term_size)))
+                  && d_tds->getSygusTermSize(vcc) < d_sol_term_size)))
       {
+<<<<<<< HEAD
         Trace("sygus-pbe") << "**** SygusUnif SOLVED : " << c << " = ";
         TermDbSygus::toStreamSygus("sygus-pbe", vcc);
         Trace("sygus-pbe") << std::endl;
         Trace("sygus-pbe") << "...solved at iteration " << i << std::endl;
+=======
+        if (Trace.isOn("sygus-pbe"))
+        {
+          Trace("sygus-pbe") << "**** SygusUnif SOLVED : " << c << " = ";
+          TermDbSygus::toStreamSygus("sygus-pbe", vcc);
+          Trace("sygus-pbe") << std::endl;
+          Trace("sygus-pbe") << "...solved at iteration " << i << std::endl;
+        }
+>>>>>>> fb6bab97d8a9103a0d9c94ea9ba54cb04ed2a2a8
         d_solution = vcc;
-        sol_term_size = d_tds->getSygusTermSize(vcc);
+        newSolution = vcc;
+        d_sol_term_size = d_tds->getSygusTermSize(vcc);
+        Trace("sygus-pbe-sol")
+            << "PBE solution size: " << d_sol_term_size << std::endl;
         // We've determined its feasible, now, enable information gain and
         // retry. We do this since information gain comes with an overhead,
         // and we want testing feasibility to be fast.
         if (!d_solConsUsingInfoGain)
         {
+          // we permanently enable information gain and minimality now
           d_solConsUsingInfoGain = true;
+          d_enableMinimality = true;
           i = 0;
         }
       }
@@ -825,9 +844,9 @@ Node SygusUnifIo::constructSolutionNode(std::vector<Node>& lemmas)
         break;
       }
     }
-    if (!d_solution.isNull())
+    if (!newSolution.isNull())
     {
-      return d_solution;
+      return newSolution;
     }
     Trace("sygus-pbe") << "...failed to solve." << std::endl;
   }
@@ -925,12 +944,17 @@ bool SygusUnifIo::getExplanationForEnumeratorExclude(
         Trace("sygus-sui-cterm-debug") << "...contained." << std::endl;
         if (isConditional)
         {
+<<<<<<< HEAD
           allConditionalFail = true;
+=======
+          return false;
+>>>>>>> fb6bab97d8a9103a0d9c94ea9ba54cb04ed2a2a8
         }
       }
     }
     if (!cmp_indices.empty())
     {
+<<<<<<< HEAD
       if (allConditionalFail)
       {
         // we may be equivalent-to-examples on those we are contained in
@@ -958,6 +982,21 @@ bool SygusUnifIo::getExplanationForEnumeratorExclude(
             << " due to negative containment." << std::endl;
         return true;
       }
+=======
+      // we check invariance with respect to a negative contains test
+      NegContainsSygusInvarianceTest ncset;
+      if (isConditional)
+      {
+        ncset.setUniversal();
+      }
+      ncset.init(e, d_examples, d_examples_out, cmp_indices);
+      // construct the generalized explanation
+      d_tds->getExplain()->getExplanationFor(e, v, exp, ncset);
+      Trace("sygus-sui-cterm")
+          << "PBE-cterm : enumerator exclude " << d_tds->sygusToBuiltin(v)
+          << " due to negative containment." << std::endl;
+      return true;
+>>>>>>> fb6bab97d8a9103a0d9c94ea9ba54cb04ed2a2a8
     }
     // if we're using it, we add it now
     addSearchVal(e, v, results);
@@ -1091,6 +1130,7 @@ Node SygusUnifIo::constructSol(
   bool retValMod = x.isReturnValueModified();
 
   Node ret_dt;
+  Node cached_ret_dt;
   if (nrole == role_equal)
   {
     if (!retValMod)
@@ -1172,6 +1212,7 @@ Node SygusUnifIo::constructSol(
     {
       bool firstTime = true;
       std::unordered_set<Node, NodeHashFunction> intersection;
+<<<<<<< HEAD
       std::map<unsigned, std::unordered_set<Node, NodeHashFunction>>::iterator
           pit;
       for (unsigned i = 0, nvals = x.d_vals.size(); i < nvals; i++)
@@ -1180,6 +1221,16 @@ Node SygusUnifIo::constructSol(
         {
           pit = d_psolutions.find(i);
           if (pit == d_psolutions.end())
+=======
+      std::map<TypeNode, std::unordered_set<Node, NodeHashFunction>>::iterator
+          pit;
+      for (size_t i = 0, nvals = x.d_vals.size(); i < nvals; i++)
+      {
+        if (x.d_vals[i].getConst<bool>())
+        {
+          pit = d_psolutions[i].find(etn);
+          if (pit == d_psolutions[i].end())
+>>>>>>> fb6bab97d8a9103a0d9c94ea9ba54cb04ed2a2a8
           {
             // no cached solution
             intersection.clear();
@@ -1213,12 +1264,39 @@ Node SygusUnifIo::constructSol(
       }
       if (!intersection.empty())
       {
+<<<<<<< HEAD
         ret_dt = *intersection.begin();
+=======
+        if (d_enableMinimality)
+        {
+          // if we are enabling minimality, the minimal cached solution may
+          // still not be the best solution, thus we remember it and keep it if
+          // we don't construct a better one below
+          std::vector<Node> intervec;
+          intervec.insert(
+              intervec.begin(), intersection.begin(), intersection.end());
+          cached_ret_dt = getMinimalTerm(intervec);
+        }
+        else
+        {
+          ret_dt = *intersection.begin();
+        }
+>>>>>>> fb6bab97d8a9103a0d9c94ea9ba54cb04ed2a2a8
         if (Trace.isOn("sygus-sui-dt"))
         {
           indent("sygus-sui-dt", ind);
           Trace("sygus-sui-dt") << "ConstructPBE: found in cache: ";
+<<<<<<< HEAD
           TermDbSygus::toStreamSygus("sygus-sui-dt", ret_dt);
+=======
+          Node csol = ret_dt;
+          if (d_enableMinimality)
+          {
+            csol = cached_ret_dt;
+            Trace("sygus-sui-dt") << "(minimal) ";
+          }
+          TermDbSygus::toStreamSygus("sygus-sui-dt", csol);
+>>>>>>> fb6bab97d8a9103a0d9c94ea9ba54cb04ed2a2a8
           Trace("sygus-sui-dt") << std::endl;
         }
       }
@@ -1421,8 +1499,14 @@ Node SygusUnifIo::constructSol(
             x.updateContext(this,
                             ecache_cond.d_enum_vals_res[split_cond_res_index],
                             sc == 1);
+<<<<<<< HEAD
             // ret may be false in corner cases where we must choose
             // a non-separating condition to traverse to another strategy node
+=======
+            // return value of above call may be false in corner cases where we
+            // must choose a non-separating condition to traverse to another
+            // strategy node
+>>>>>>> fb6bab97d8a9103a0d9c94ea9ba54cb04ed2a2a8
           }
 
           // recurse
@@ -1438,9 +1522,15 @@ Node SygusUnifIo::constructSol(
             std::map<Node, int> solved_cond;  // stores branch
             ecache_child.d_term_trie.getLeaves(x.d_vals, true, possible_cond);
 
+<<<<<<< HEAD
             // prefer distinguishable conditions, then we try true, false
             // unsigned lastTest =
             for (unsigned d = 0; d < 1; d++)
+=======
+            std::map<int, std::vector<Node>>::iterator itpc =
+                possible_cond.find(0);
+            if (itpc != possible_cond.end())
+>>>>>>> fb6bab97d8a9103a0d9c94ea9ba54cb04ed2a2a8
             {
               unsigned pcv = d == 2 ? -1 : d;
               std::map<int, std::vector<Node>>::iterator itpc =
@@ -1460,6 +1550,7 @@ Node SygusUnifIo::constructSol(
                         << d_tds->sygusToBuiltin(cond) << std::endl;
                   }
                 }
+<<<<<<< HEAD
 
                 // otherwise, guess a conditional
                 if (rec_c.isNull())
@@ -1474,6 +1565,10 @@ Node SygusUnifIo::constructSol(
                 break;
               }
               else
+=======
+              }
+              if (rec_c.isNull())
+>>>>>>> fb6bab97d8a9103a0d9c94ea9ba54cb04ed2a2a8
               {
                 indent("sygus-sui-dt", ind);
                 Trace("sygus-sui-dt")
@@ -1544,6 +1639,24 @@ Node SygusUnifIo::constructSol(
     sindex++;
   }
 
+  // if there was a cached solution, process it now
+  if (!cached_ret_dt.isNull() && cached_ret_dt != ret_dt)
+  {
+    if (ret_dt.isNull())
+    {
+      // take the cached one if it is the only one
+      ret_dt = cached_ret_dt;
+    }
+    else if (d_enableMinimality)
+    {
+      Assert(ret_dt.getType() == cached_ret_dt.getType());
+      // take the cached one if it is smaller
+      std::vector<Node> retDts;
+      retDts.push_back(cached_ret_dt);
+      retDts.push_back(ret_dt);
+      ret_dt = getMinimalTerm(retDts);
+    }
+  }
   Assert(ret_dt.isNull() || ret_dt.getType() == e.getType());
   if (Trace.isOn("sygus-sui-dt"))
   {
@@ -1557,7 +1670,11 @@ Node SygusUnifIo::constructSol(
   {
     if (!retValMod && !ret_dt.isNull())
     {
+<<<<<<< HEAD
       for (unsigned i = 0, nvals = x.d_vals.size(); i < nvals; i++)
+=======
+      for (size_t i = 0, nvals = x.d_vals.size(); i < nvals; i++)
+>>>>>>> fb6bab97d8a9103a0d9c94ea9ba54cb04ed2a2a8
       {
         if (x.d_vals[i].getConst<bool>())
         {
@@ -1568,7 +1685,11 @@ Node SygusUnifIo::constructSol(
             TermDbSygus::toStreamSygus("sygus-sui-cache", ret_dt);
             Trace("sygus-sui-cache") << std::endl;
           }
+<<<<<<< HEAD
           d_psolutions[i].insert(ret_dt);
+=======
+          d_psolutions[i][etn].insert(ret_dt);
+>>>>>>> fb6bab97d8a9103a0d9c94ea9ba54cb04ed2a2a8
         }
       }
     }
@@ -1627,6 +1748,7 @@ Node SygusUnifIo::constructBestConditional(Node ce,
   // initially set minEntropy to > 1.0.
   double minEntropy = 2.0;
   unsigned bestIndex = 0;
+  int numEqual = 1;
   for (unsigned j = 0; j < nconds; j++)
   {
     // To compute the entropy for a condition C, for pair of terms (s, t), let
@@ -1660,7 +1782,22 @@ Node SygusUnifIo::constructBestConditional(Node ce,
       }
     }
     Trace("sygus-sui-dt-igain") << "..." << entropySum << std::endl;
-    if (entropySum < minEntropy)
+    // either less, or equal and coin flip passes
+    bool doSet = false;
+    if (entropySum == minEntropy)
+    {
+      numEqual++;
+      if (Random::getRandom().pickWithProb(double(1) / double(numEqual)))
+      {
+        doSet = true;
+      }
+    }
+    else if (entropySum < minEntropy)
+    {
+      doSet = true;
+      numEqual = 1;
+    }
+    if (doSet)
     {
       minEntropy = entropySum;
       bestIndex = j;
