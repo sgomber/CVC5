@@ -64,7 +64,7 @@ function mk_input_to_test_ic_cached()
   echo "(assert (input "
   get_arg_list $1
   echo "))"
-  # extract definitions from the sygus grammar, which may appead in the candidate
+  # extract definitions from the sygus grammar, which may appear in the candidate
   grep "define" $2
   # the candidate invertibility condition
   cat $3
@@ -84,7 +84,7 @@ function mk_input_to_test_ic()
   echo "(assert (input "
   get_arg_list $1
   echo "))"
-  # extract definitions from the sygus grammar, which may appead in the candidate
+  # extract definitions from the sygus grammar, which may appear in the candidate
   grep "define" $2
   # the candidate invertibility condition
   cat $3
@@ -113,14 +113,17 @@ function mk_input_to_synth_ic()
 # corresponding to testing the candidate invertibility condition $1.
 function mk_expand_candidate()
 {
+  CANDIDATE=$1
+  shift
+  
   # get candidate, which is the last from the list in $1
-  get_candidate $1 > temp_candidate.smt2
+  get_candidate $CANDIDATE > temp_candidate.smt2
 
   # generate the input problem for cvc4 to test a candidate IC
   mk_input_to_test_ic input_problem.smt2 input_grammar.sy temp_candidate.smt2 > temp.smt2
 
   # test the candidate
-  $CVC4 --dump=assertions --preprocess-only --default-dag-thresh=0 temp.smt2
+  $CVC4 --dump=assertions --preprocess-only --default-dag-thresh=0 $@ temp.smt2
   
   # clean up
   rm -f temp_candidate.smt2
@@ -162,7 +165,7 @@ function clean_full()
 
 function expand_candidate()
 {
-  mk_expand_candidate $1 > temp-exp.smt2
+  mk_expand_candidate $@ > temp-exp.smt2
 
   # get its type
   grep "define-fun IC" temp-exp.smt2 | sed 's/Bool.*/Bool/' > temp.smt2
@@ -440,6 +443,10 @@ elif [ X$1 = X'-expand' ];
 then
   shift;
   expand_candidate $@
+elif [ X$1 = X'-simplify' ]; 
+then
+  shift;
+  expand_candidate $@ --ext-rew-prep --ext-rew-prep-agg
 elif [ X$1 = X'-eval' ]; 
 then
   shift;
