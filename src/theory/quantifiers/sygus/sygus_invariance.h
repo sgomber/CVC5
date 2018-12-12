@@ -266,15 +266,11 @@ class NegContainsSygusInvarianceTest : public SygusInvarianceTest
             std::vector<std::vector<Node> >& ex,
             std::vector<Node>& exo,
             std::vector<unsigned>& ncind);
-<<<<<<< HEAD
-  /** set universal */
-=======
   /** set universal
    *
    * This updates the semantics of this check such that *all* instead of some
    * examples must fail the containment test.
    */
->>>>>>> fb6bab97d8a9103a0d9c94ea9ba54cb04ed2a2a8
   void setUniversal() { d_isUniversal = true; }
 
  protected:
