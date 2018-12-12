@@ -44,38 +44,35 @@
 )
 ))
 
-(define-sort GlobalState () (-> Node Int State))
+(define-sort GlobalState () (Array (Tuple Node Int) State))
 
 
 ;;; ------ Axiomatization of conditions 
 
-(define-fun condition_holds ((c CAtom) (n Node) (t Int)) Bool
-  true
-;  (ite ((_ is check_rcv) c)
-;    (member (_rcv_pck c) (_prcv (g n t)))
-;  (ite ((_ is check_rcv_ack) c)
-;    (member (mkTuple (_rcv_ack_node c) (_rcv_ack_pck c)) (_prcv_ack (g n t)))
-;  (ite ((_ is ctrue) c) 
-;    true
-;    false)
-;  ))
+(define-fun condition_holds ((c CAtom) (n Node) (t Int) (g GlobalState)) Bool
+  (ite ((_ is check_rcv) c)
+    (member (_rcv_pck c) (_prcv (select g (mkTuple n t))))
+  (ite ((_ is check_rcv_ack) c)
+    (member (mkTuple (_rcv_ack_node c) (_rcv_ack_pck c)) (_prcv_ack (select g (mkTuple n t))))
+  (ite ((_ is ctrue) c) 
+    true
+    false)
+  ))
 )
 
-(define-fun conditional_act ((c CAtom) (g GlobalState) (n Node) (x Action) (y Action) (t Int)) Action
-  (ite (condition_holds c n t) x y)
+(define-fun conditional_act ((c CAtom) (n Node) (x Action) (y Action) (t Int) (g GlobalState)) Action
+  (ite (condition_holds c n t g) x y)
 )
-
 
 
 ;;; ----- Policies
 
 (synth-fun policyR ((t Int) (g GlobalState)) Action (
    (Start Action (
-        (conditional_act StartCondition StartGS R Start Start t)
+        (conditional_act StartCondition R Start Start t g)
         act_idle
         (act_send StartNode StartPacket StartChannel)
    ))
-   (StartGS GlobalState (g))
    (StartCondition CAtom (
       (check_rcv StartPacket)
       (check_rcv_ack StartNode StartPacket)
@@ -144,6 +141,7 @@
    (StartPacket Packet (P1 P2))
    (StartChannel Channel (Ch1 Ch2 Ch3))
 ))
+
 
 
 
