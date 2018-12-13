@@ -74,22 +74,6 @@
   )
 )
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 ; --- 
 
 (define-fun get-precondition-for-action-holds ((a Action) (n Node) (t Int)) Bool
@@ -101,6 +85,10 @@
     ; otherwise no pre-condition
     true
 ))
+
+
+
+
 
 ;;; ----- Time
 

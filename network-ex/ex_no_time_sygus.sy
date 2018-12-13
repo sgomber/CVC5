@@ -86,6 +86,40 @@
   (ite (and (clit_holds c n t g) (precondition_for_action_holds a n t g)) a ae)
 )
 
+;;; ----- Connectivity
+
+; Real return value for chance of success
+; TODO: incorporate probabilities?
+(define-fun connectivity ((x Node) (y Node) (t Int)) Real
+  (ite (= x R)
+    (ite (= y A) 0.9
+    (ite (= y B) 0.5
+    (ite (= y C) 0.3
+      0.0)))
+  (ite (= x A) 
+    (ite (= y D) 0.1 0.0)
+  (ite (= x B) 
+    (ite (= y D) 0.9 0.0)
+  (ite (= x C) 
+    (ite (= y D) 0.8 0.0)
+    0.0))))
+)
+
+
+;;; ----- action success?
+
+(define-fun get-act-success ((a Action) (n Node) (t Int) (g GlobalState)) Real
+  (ite ((_ is act_send) a)
+    ; packet must have already been received by n
+    (ite (member (_pck a) (_prcv (select g (mkTuple n t))))
+      ; must be connected to destination at that time
+      (connectivity n (_dst a) t) 
+      0.0
+    )
+    1.0
+  )
+)
+
 
 ;;; ----- Policies
 
@@ -167,6 +201,12 @@
    (StartPacket Packet (P1 P2))
    (StartChannel Channel (Ch1 Ch2 Ch3))
 ))
+
+
+
+
+
+
 
 (declare-var g GlobalState)
 
