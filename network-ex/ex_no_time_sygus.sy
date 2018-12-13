@@ -107,20 +107,6 @@
 )
 
 
-;;; ----- is the action successful?
-
-(define-fun get-act-success ((a Action) (n Node) (t Int) (g GlobalState)) Real
-  (ite ((_ is act_send) a)
-    ; packet must have already been received by n
-    (ite (member (_pck a) (_prcv (select g (mkTuple n t))))
-      ; must be connected to destination at that time
-      (connectivity n (_dst a) t) 
-      0.0
-    )
-    1.0
-  )
-)
-
 ;;; ----- Policies
 
 (synth-fun policyR ((t Int) (g GlobalState)) Action (
@@ -202,12 +188,9 @@
    (StartChannel Channel (Ch1 Ch2 Ch3))
 ))
 
+;;;; --- processing actions
 
-
-;;;; --- transition relation 
-
-
-(define-fun get-action ((n Node) (t Int) (g GlobalState)) Action 
+(define-fun get-action-policy ((n Node) (t Int) (g GlobalState)) Action 
   (ite (= n R) (policyR t g)
   (ite (= n A) (policyA t g)
   (ite (= n B) (policyB t g)
@@ -216,16 +199,56 @@
     act_idle
 ))))))
 
+(define-fun get-act-success ((a Action) (n Node) (t Int) (g GlobalState)) Real
+  (ite ((_ is act_send) a)
+    ; packet must have already been received by n
+    (ite (member (_pck a) (_prcv (select g (mkTuple n t))))
+      ; must be connected to destination at that time
+      (connectivity n (_dst a) t) 
+      0.0
+    )
+    1.0
+  )
+)
+
+(declare-datatype OptionAction ((someAction (_sact Action)) (noAction)))
+
+(define-fun oa_isSend ((o OptionAction)) Bool (and ((_ is someAction) o) ((_ is act_send) (_sact o))))
+(define-fun oa_sendDst ((o OptionAction)) Node (_dst (_sact o)))
+(define-fun oa_sendPck ((o OptionAction)) Packet (_pck (_sact o)))
+(define-fun oa_sendChn ((o OptionAction)) Channel (_chn (_sact o)))
+
+(define-fun get-action ((n Node) (t Int) (g GlobalState)) OptionAction
+  (let ((a Action (get-action-policy n t g)))
+  (ite (> (get-act-success a n t g) 0.0)
+    (someAction a)
+    noAction
+  ))
+)
+
+(define-fun sendsTo ((x Node) (y Node) (t Int) (g GlobalState)) Bool
+  (and (oa_isSend (get-action x t g)) (= (oa_sendDst (get-action x t g)) y))
+)
+  
+;;;; --- transition relation 
 
 (define-fun TrN_prcv ((n Node) (t Int) (g GlobalState)) Bool
   (= (_prcv (select g (mkTuple n (+ t 1))))
      (union 
         (_prcv (select g (mkTuple n t)))
         ;; TODO
-        (ite true 
+        (ite (sendsTo R n t g)
+          (singleton (oa_sendPck (get-action R t g)))
+        (ite (sendsTo A n t g)
+          (singleton (oa_sendPck (get-action A t g)))
+        (ite (sendsTo B n t g)
+          (singleton (oa_sendPck (get-action B t g)))
+        (ite (sendsTo C n t g)
+          (singleton (oa_sendPck (get-action C t g)))
+        (ite (sendsTo D n t g)
+          (singleton (oa_sendPck (get-action D t g)))
           (as emptyset (Set Packet))
-          (as emptyset (Set Packet))
-        )
+        )))))
      )
   )
 ;    (forall ((p Packet))
@@ -243,10 +266,18 @@
      (union 
         (_prcv_ack (select g (mkTuple n t)))
         ;; TODO
-        (ite true 
+        (ite (sendsTo n R t g)
+          (singleton (mkTuple R (oa_sendPck (get-action n t g))))
+        (ite (sendsTo n A t g)
+          (singleton (mkTuple A (oa_sendPck (get-action n t g))))
+        (ite (sendsTo n B t g)
+          (singleton (mkTuple B (oa_sendPck (get-action n t g))))
+        (ite (sendsTo n C t g)
+          (singleton (mkTuple C (oa_sendPck (get-action n t g))))
+        (ite (sendsTo n D t g)
+          (singleton (mkTuple D (oa_sendPck (get-action n t g))))
           (as emptyset (Set (Tuple Node Packet)))
-          (as emptyset (Set (Tuple Node Packet)))
-        )
+        )))))
      )
   )
 ;    (forall ((y Node) (p Packet))
@@ -265,7 +296,7 @@
     (+ 
       (_energy (select g (mkTuple n t)))
       ;; energy consumption
-      (ite ((_ is act_send) (get-action n t g))
+      (ite (oa_isSend (get-action n t g))
         1.0
         0.05
       )
@@ -293,16 +324,15 @@
 
 (declare-var g GlobalState)
 
-;;; temporary
+;;; the max period  TODO: coordinate with Trans unfolding
 (define-fun _MAX_PERIOD () Int 3)
-;;; end temporary
-
 
 (constraint
 (=>
   ;; the global state we care about
   (and
-    ;;;   INITIAL STATE
+    ;;; FIX
+    ;;;   INITIAL STATE for global state
     ; packets received
     (= (_prcv (select g (mkTuple R 0))) (union (singleton P1) (singleton P2)))
     (= (_prcv (select g (mkTuple A 0))) (as emptyset (Set Packet)))
@@ -322,7 +352,7 @@
     (= (_energy (select g (mkTuple C 0))) 0.0)
     (= (_energy (select g (mkTuple D 0))) 0.0)
     
-    ;;;   TRANSITION RELATION
+    ;;;   TRANSITION RELATION for global state
     (Trans 0 g)
     (Trans 1 g)
     (Trans 2 g)
