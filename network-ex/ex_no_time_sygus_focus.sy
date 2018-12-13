@@ -1,0 +1,364 @@
+(set-logic ALL)
+
+;;; ----- Agents (Nodes, Packets, Channels)
+
+(declare-datatype NodeMobile ((Rnode)))
+(declare-datatype NodeInfra ((Anode) (Bnode) (Cnode)))
+(declare-datatype NodeBase ((Dnode)))
+(declare-datatype Node ((mobile (mnode NodeMobile)) (infra (inode NodeInfra)) (base (bnode NodeBase))))
+
+(define-fun R () Node (mobile Rnode))
+(define-fun A () Node (infra Anode))
+(define-fun B () Node (infra Bnode))
+(define-fun C () Node (infra Cnode))
+(define-fun D () Node (base Dnode))
+
+(declare-datatype Packet ((P1) (P2)))
+
+(declare-datatype Channel ((Ch1) (Ch2)))
+
+;;; ----- Action, Conditionals
+
+(declare-datatype Action
+(
+(act_idle)
+(act_send (_dst Node) (_pck Packet) (_chn Channel))
+))
+
+(declare-datatype CAtom
+(
+(ctrue)
+(check_rcv (_rcv_pck Packet))
+(check_rcv_ack (_rcv_ack_node Node) (_rcv_ack_pck Packet))
+))
+
+(declare-datatype CLit
+(
+(ca_pos (_ca_pos_arg CAtom))
+(ca_neg (_ca_neg_arg CAtom))
+))
+
+;;; ----- State information
+
+(declare-datatype State
+(
+(mk_state
+  (_prcv (Set Packet))
+  (_prcv_ack (Set (Tuple Node Packet)))
+  (_energy Real)
+)
+))
+
+; State for each Node at each time
+(define-sort GlobalState () (Array (Tuple Node Int) State))
+
+
+;;; ------ Axiomatization of conditions 
+
+(define-fun catom_holds ((c CAtom) (n Node) (t Int) (g GlobalState)) Bool
+  (ite ((_ is check_rcv) c)
+    (member (_rcv_pck c) (_prcv (select g (mkTuple n t))))
+  (ite ((_ is check_rcv_ack) c)
+    (member (mkTuple (_rcv_ack_node c) (_rcv_ack_pck c)) (_prcv_ack (select g (mkTuple n t))))
+  (ite ((_ is ctrue) c) 
+    true
+    false)
+  ))
+)
+
+(define-fun clit_holds ((c CLit) (n Node) (t Int) (g GlobalState)) Bool
+  (ite ((_ is ca_pos) c)
+    (catom_holds (_ca_pos_arg c) n t g)
+  (ite ((_ is ca_neg) c) 
+    (not (catom_holds (_ca_neg_arg c) n t g))
+    false)
+  )
+)
+
+(define-fun precondition_for_action_holds ((a Action) (n Node) (t Int) (g GlobalState)) Bool
+  (ite ((_ is act_send) a) 
+    (and
+      (not (catom_holds (check_rcv_ack (_dst a) (_pck a)) n t g))
+      (catom_holds (check_rcv (_pck a)) n t g))
+    true)
+)
+
+(define-fun conditional_act ((c CLit) (a Action) (ae Action) (n Node) (t Int) (g GlobalState)) Action
+  (ite (and (clit_holds c n t g) (precondition_for_action_holds a n t g)) a ae)
+)
+
+;;; ----- Connectivity
+
+; Real return value for chance of success
+; TODO: incorporate probabilities?
+(define-fun connectivity ((x Node) (y Node) (t Int)) Real
+  (ite (= x R)
+    (ite (= y A) 0.9
+    (ite (= y B) 0.5
+    (ite (= y C) 0.3
+      0.0)))
+  (ite (= x A) 
+    (ite (= y D) 0.1 0.0)
+  (ite (= x B) 
+    (ite (= y D) 0.9 0.0)
+  (ite (= x C) 
+    (ite (= y D) 0.8 0.0)
+    0.0))))
+)
+
+
+;;; ----- Policies
+
+(synth-fun policyR ((t Int) (g GlobalState)) Action (
+   (Start Action (
+      (conditional_act StartCLit StartActAtom Start R t g)
+      act_idle
+   ))
+   (StartActAtom Action (
+     (act_send StartNode StartPacket StartChannel)
+   ))
+   (StartCLit CLit (
+      (ca_pos StartCAtom)
+      (ca_neg StartCAtom)
+   ))
+   (StartCAtom CAtom (
+      (check_rcv StartPacket)
+      (check_rcv_ack StartNode StartPacket)
+      ctrue
+   ))
+   (StartNode Node (A B C))
+   (StartPacket Packet (P1 P2))
+   (StartChannel Channel (Ch1 Ch2))
+))
+
+(synth-fun policyA ((t Int) (g GlobalState)) Action (
+   (Start Action (
+      (conditional_act StartCLit StartActAtom Start R t g)
+      act_idle
+   ))
+   (StartActAtom Action (
+     (act_send StartNode StartPacket StartChannel)
+   ))
+   (StartCLit CLit (
+      (ca_pos StartCAtom)
+      (ca_neg StartCAtom)
+   ))
+   (StartCAtom CAtom (
+      (check_rcv StartPacket)
+      (check_rcv_ack StartNode StartPacket)
+      ctrue
+   ))
+   (StartNode Node (D))
+   (StartPacket Packet (P1 P2))
+   (StartChannel Channel (Ch1 Ch2))
+))
+
+(synth-fun policyB ((t Int) (g GlobalState)) Action (
+   (Start Action (
+      (conditional_act StartCLit StartActAtom Start R t g)
+      act_idle
+   ))
+   (StartActAtom Action (
+     (act_send StartNode StartPacket StartChannel)
+   ))
+   (StartCLit CLit (
+      (ca_pos StartCAtom)
+      (ca_neg StartCAtom)
+   ))
+   (StartCAtom CAtom (
+      (check_rcv StartPacket)
+      (check_rcv_ack StartNode StartPacket)
+      ctrue
+   ))
+   (StartNode Node (D))
+   (StartPacket Packet (P1 P2))
+   (StartChannel Channel (Ch1 Ch2))
+))
+
+(synth-fun policyC ((t Int) (g GlobalState)) Action (
+   (Start Action (
+      (conditional_act StartCLit StartActAtom Start R t g)
+      act_idle
+   ))
+   (StartActAtom Action (
+     (act_send StartNode StartPacket StartChannel)
+   ))
+   (StartCLit CLit (
+      (ca_pos StartCAtom)
+      (ca_neg StartCAtom)
+   ))
+   (StartCAtom CAtom (
+      (check_rcv StartPacket)
+      (check_rcv_ack StartNode StartPacket)
+      ctrue
+   ))
+   (StartNode Node (D))
+   (StartPacket Packet (P1 P2))
+   (StartChannel Channel (Ch1 Ch2))
+))
+
+(synth-fun policyD ((t Int) (g GlobalState)) Action (
+   (Start Action (
+        act_idle
+   ))
+))
+
+;;;; --- processing actions
+
+(define-fun get-action-policy ((n Node) (t Int) (g GlobalState)) Action 
+  (ite (= n R) (policyR t g)
+  (ite (= n A) (policyA t g)
+  (ite (= n B) (policyB t g)
+  (ite (= n C) (policyC t g)
+  (ite (= n D) (policyD t g)
+    act_idle
+))))))
+
+(define-fun get-act-success ((a Action) (n Node) (t Int) (g GlobalState)) Real
+  (ite ((_ is act_send) a)
+    ; packet must have already been received by n
+    (ite (member (_pck a) (_prcv (select g (mkTuple n t))))
+      ; must be connected to destination at that time
+      (connectivity n (_dst a) t) 
+      0.0
+    )
+    1.0
+  )
+)
+
+(declare-datatype OptionAction ((someAction (_sact Action)) (noAction)))
+
+(define-fun oa_isSend ((o OptionAction)) Bool (and ((_ is someAction) o) ((_ is act_send) (_sact o))))
+(define-fun oa_sendDst ((o OptionAction)) Node (_dst (_sact o)))
+(define-fun oa_sendPck ((o OptionAction)) Packet (_pck (_sact o)))
+(define-fun oa_sendChn ((o OptionAction)) Channel (_chn (_sact o)))
+
+; this filters the policy action through a judgement for success
+(define-fun get-action ((n Node) (t Int) (g GlobalState)) OptionAction
+  (ite (> (get-act-success (get-action-policy n t g) n t g) 0.0)
+    (someAction (get-action-policy n t g))
+    noAction
+  )
+)
+
+(define-fun sendsTo ((x Node) (y Node) (t Int) (g GlobalState)) Bool
+  (and (oa_isSend (get-action x t g)) (= (oa_sendDst (get-action x t g)) y))
+)
+  
+;;;; --- transition relation 
+
+(define-fun TrN_prcv ((n Node) (t Int) (g GlobalState)) Bool
+  (= (_prcv (select g (mkTuple n (+ t 1))))
+     (union 
+        (_prcv (select g (mkTuple n t)))
+        ;; if a node sends to us, we add it
+        (ite (sendsTo R n t g)
+          (singleton (oa_sendPck (get-action R t g)))
+        (ite (sendsTo A n t g)
+          (singleton (oa_sendPck (get-action A t g)))
+        (ite (sendsTo B n t g)
+          (singleton (oa_sendPck (get-action B t g)))
+        (ite (sendsTo C n t g)
+          (singleton (oa_sendPck (get-action C t g)))
+        (ite (sendsTo D n t g)
+          (singleton (oa_sendPck (get-action D t g)))
+          (as emptyset (Set Packet))
+        )))))
+     )
+  )
+)
+
+(define-fun TrN_prcv_ack ((n Node) (t Int) (g GlobalState)) Bool
+  (= (_prcv_ack (select g (mkTuple n (+ t 1))))
+     (union 
+        (_prcv_ack (select g (mkTuple n t)))
+        ;; if we send, we get an acknowledgement
+        (ite (sendsTo n R t g)
+          (singleton (mkTuple R (oa_sendPck (get-action n t g))))
+        (ite (sendsTo n A t g)
+          (singleton (mkTuple A (oa_sendPck (get-action n t g))))
+        (ite (sendsTo n B t g)
+          (singleton (mkTuple B (oa_sendPck (get-action n t g))))
+        (ite (sendsTo n C t g)
+          (singleton (mkTuple C (oa_sendPck (get-action n t g))))
+        (ite (sendsTo n D t g)
+          (singleton (mkTuple D (oa_sendPck (get-action n t g))))
+          (as emptyset (Set (Tuple Node Packet)))
+        )))))
+     )
+  )
+)
+
+(define-fun TrN_energy ((n Node) (t Int) (g GlobalState)) Bool
+  (=
+    (_energy (select g (mkTuple n (+ t 1))))
+    (+ 
+      (_energy (select g (mkTuple n t)))
+      ;; energy consumption
+      (ite (oa_isSend (get-action n t g))
+        1.0
+        0.05
+      )
+    )
+  )
+)
+
+; transition relation for Node n at time t
+(define-fun TrN ((n Node) (t Int) (g GlobalState)) Bool
+  (and 
+    (TrN_prcv n t g)
+    (TrN_prcv_ack n t g)
+    (TrN_energy n t g)
+  )
+)
+
+; transition relation for time t
+(define-fun Trans ((t Int) (g GlobalState)) Bool
+  (and 
+    (TrN R t g)
+    (TrN A t g)
+    (TrN B t g)
+    (TrN C t g)
+    (TrN D t g)
+  )
+)
+
+(declare-var g GlobalState)
+
+;;; the max period  TODO: coordinate with Trans unfolding
+(define-fun _MAX_PERIOD () Int 3)
+
+(constraint
+(=>
+  ;; the global state we care about
+  (and
+    ;;; FIX
+    ;;;   INITIAL STATE for global state
+    (= (select g (mkTuple R 0)) 
+          (mk_state 
+            ; packets received
+            (union (singleton P1) (singleton P2))
+            ; packets acknowledged
+            (union (singleton (mkTuple R P1)) (singleton (mkTuple R P2)))
+            ; energy consumed
+            0.0
+          )
+    )
+    (= (select g (mkTuple A 0)) (mk_state (as emptyset (Set Packet)) (as emptyset (Set (Tuple Node Packet))) 0.0))
+    (= (select g (mkTuple B 0)) (mk_state (as emptyset (Set Packet)) (as emptyset (Set (Tuple Node Packet))) 0.0))
+    (= (select g (mkTuple C 0)) (mk_state (as emptyset (Set Packet)) (as emptyset (Set (Tuple Node Packet))) 0.0))
+    (= (select g (mkTuple D 0)) (mk_state (as emptyset (Set Packet)) (as emptyset (Set (Tuple Node Packet))) 0.0))
+    
+    ;;;   TRANSITION RELATION for global state
+    (Trans 0 g)
+    (Trans 1 g)
+    (Trans 2 g)
+  )
+  ;; requirements
+  (and 
+    (member P1 (_prcv (select g (mkTuple D _MAX_PERIOD))))
+    (member P2 (_prcv (select g (mkTuple D _MAX_PERIOD))))
+  )
+))
+
+(check-synth)
