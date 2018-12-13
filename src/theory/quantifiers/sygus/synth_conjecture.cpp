@@ -574,11 +574,11 @@ bool SynthConjecture::doCheck(std::vector<Node>& lems)
       SmtEngine verifySmt(nm->toExprManager());
       verifySmt.setLogic(smt::currentSmtEngine()->getLogicInfo());
       verifySmt.assertFormula(query.toExpr());
-      Trace("cegqi-engine") << ";--------" << std::endl;
+      Trace("cegqi-verify") << ";--------" << std::endl;
       std::stringstream ssq;
       Printer::getPrinter(options::outputLanguage())->toStreamBenchmark(ssq,query);
-      Trace("cegqi-engine") << ssq.str();
-      Trace("cegqi-engine") << ";--------" << std::endl;
+      Trace("cegqi-verify") << ssq.str();
+      Trace("cegqi-verify") << ";--------" << std::endl;
       Result r = verifySmt.checkSat();
       Trace("cegqi-engine") << "  ...got " << r << std::endl;
       if (r.asSatisfiabilityResult().isSat() == Result::SAT)
@@ -599,10 +599,14 @@ bool SynthConjecture::doCheck(std::vector<Node>& lems)
                                        d_ce_sk_vars.end(),
                                        d_ce_sk_var_mvs.begin(),
                                        d_ce_sk_var_mvs.end());
-        Trace("cegqi-debug") << "...squery : " << squery << std::endl;
-        squery = Rewriter::rewrite(squery);
-        Trace("cegqi-debug") << "...rewrites to : " << squery << std::endl;
-        Assert(squery.isConst() && squery.getConst<bool>());
+        Trace("cegqi-verify") << "...squery : " << squery << std::endl;
+        // must expand definitions
+        Node squerye = Node::fromExpr(smt::currentSmtEngine()->expandDefinitions(squery.toExpr()));
+        Trace("cegqi-verify") << "...expands to : " << squerye << std::endl;
+        // rewrite
+        Node squeryer = Rewriter::rewrite(squerye);
+        Trace("cegqi-verify") << "...rewrites to : " << squeryer << std::endl;
+        Assert(squeryer.isConst() && squeryer.getConst<bool>());
 #endif
         return false;
       }
