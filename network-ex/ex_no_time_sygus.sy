@@ -49,6 +49,7 @@
 )
 ))
 
+; State for each Node at each time
 (define-sort GlobalState () (Array (Tuple Node Int) State))
 
 
@@ -106,7 +107,7 @@
 )
 
 
-;;; ----- action success?
+;;; ----- is the action successful?
 
 (define-fun get-act-success ((a Action) (n Node) (t Int) (g GlobalState)) Real
   (ite ((_ is act_send) a)
@@ -119,7 +120,6 @@
     1.0
   )
 )
-
 
 ;;; ----- Policies
 
@@ -206,8 +206,6 @@
 
 
 
-
-
 (declare-var g GlobalState)
 
 ;;; temporary
@@ -219,7 +217,29 @@
 (=>
   ;; the global state we care about
   false
-
+  (and
+    ; packets received
+    (= (_prcv (select g (mkTuple R 0))) (union (singleton P1) (singleton P2)))
+    (= (_prcv (select g (mkTuple A 0))) (as emptyset (Set Packet)))
+    (= (_prcv (select g (mkTuple B 0))) (as emptyset (Set Packet)))
+    (= (_prcv (select g (mkTuple C 0))) (as emptyset (Set Packet)))
+    (= (_prcv (select g (mkTuple D 0))) (as emptyset (Set Packet)))
+    ; packets acknowledged
+    (= (_prcv_ack (select g (mkTuple R 0))) (union (singleton (mkTuple R P1)) (singleton (mkTuple R P2))))
+    (= (_prcv_ack (select g (mkTuple A 0))) (as emptyset (Set (Tuple Node Packet))))
+    (= (_prcv_ack (select g (mkTuple B 0))) (as emptyset (Set (Tuple Node Packet))))
+    (= (_prcv_ack (select g (mkTuple C 0))) (as emptyset (Set (Tuple Node Packet))))
+    (= (_prcv_ack (select g (mkTuple D 0))) (as emptyset (Set (Tuple Node Packet))))
+    ; energy
+    (= (_energy (select g (mkTuple R 0))) 0.0)
+    (= (_energy (select g (mkTuple A 0))) 0.0)
+    (= (_energy (select g (mkTuple B 0))) 0.0)
+    (= (_energy (select g (mkTuple C 0))) 0.0)
+    (= (_energy (select g (mkTuple D 0))) 0.0)
+    
+    ; how global state updates
+    
+  )
   ;; requirements
   (and 
     (member P1 (_prcv (select g (mkTuple D _MAX_PERIOD))))

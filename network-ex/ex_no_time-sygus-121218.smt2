@@ -237,7 +237,7 @@
           (GlobalState_prcv x p t)
           (exists ((y Node)) (get-sends y x p t)))
       )
-    )    
+    )
     (forall ((y Node) (p Packet))
       (= 
         (GlobalState_prcv_ack x y p (+ t 1)) 
