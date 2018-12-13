@@ -15,7 +15,7 @@
 
 (declare-datatype Packet ((P1) (P2)))
 
-(declare-datatype Channel ((Ch1) (Ch2) (Ch3)))
+(declare-datatype Channel ((Ch1) (Ch2)))
 
 ;;; ----- Action, Conditionals
 
@@ -123,69 +123,85 @@
       (check_rcv StartPacket)
       (check_rcv_ack StartNode StartPacket)
    ))
-   (StartNode Node (R A B C D))
+   (StartNode Node (A B C D))
    (StartPacket Packet (P1 P2))
-   (StartChannel Channel (Ch1 Ch2 Ch3))
+   (StartChannel Channel (Ch1 Ch2))
 ))
 
 (synth-fun policyA ((t Int) (g GlobalState)) Action (
    (Start Action (
-        ;(conditional_act StartCondition A Start Start t g)
+        (conditional_act StartCLit Start Start A t g)
         act_idle
         (act_send StartNode StartPacket StartChannel)
    ))
-   (StartCondition CAtom (
+   (StartCLit CLit (
+      (ca_pos StartCAtom)
+      (ca_neg StartCAtom)
+   ))
+   (StartCAtom CAtom (
       (check_rcv StartPacket)
       (check_rcv_ack StartNode StartPacket)
    ))
-   (StartNode Node (R A B C D))
+   (StartNode Node (R B C D))
    (StartPacket Packet (P1 P2))
-   (StartChannel Channel (Ch1 Ch2 Ch3))
+   (StartChannel Channel (Ch1 Ch2))
 ))
 
 (synth-fun policyB ((t Int) (g GlobalState)) Action (
    (Start Action (
-        ;(conditional_act StartCondition B Start Start t g)
+        (conditional_act StartCLit Start Start B t g)
         act_idle
         (act_send StartNode StartPacket StartChannel)
    ))
-   (StartCondition CAtom (
+   (StartCLit CLit (
+      (ca_pos StartCAtom)
+      (ca_neg StartCAtom)
+   ))
+   (StartCAtom CAtom (
       (check_rcv StartPacket)
       (check_rcv_ack StartNode StartPacket)
    ))
-   (StartNode Node (R A B C D))
+   (StartNode Node (R A C D))
    (StartPacket Packet (P1 P2))
-   (StartChannel Channel (Ch1 Ch2 Ch3))
+   (StartChannel Channel (Ch1 Ch2))
 ))
 
 (synth-fun policyC ((t Int) (g GlobalState)) Action (
    (Start Action (
-        ;(conditional_act StartCondition C Start Start t g)
+        (conditional_act StartCLit Start Start C t g)
         act_idle
         (act_send StartNode StartPacket StartChannel)
    ))
-   (StartCondition CAtom (
+   (StartCLit CLit (
+      (ca_pos StartCAtom)
+      (ca_neg StartCAtom)
+   ))
+   (StartCAtom CAtom (
       (check_rcv StartPacket)
       (check_rcv_ack StartNode StartPacket)
    ))
-   (StartNode Node (R A B C D))
+   (StartNode Node (R A B D))
    (StartPacket Packet (P1 P2))
-   (StartChannel Channel (Ch1 Ch2 Ch3))
+   (StartChannel Channel (Ch1 Ch2))
 ))
 
 (synth-fun policyD ((t Int) (g GlobalState)) Action (
    (Start Action (
-        ;(conditional_act StartCondition D Start Start t g)
+        (conditional_act StartCLit Start Start D t g)
         act_idle
         (act_send StartNode StartPacket StartChannel)
    ))
-   (StartCondition CAtom (
+   (StartCLit CLit (
+      (ca_pos StartCAtom)
+      (ca_neg StartCAtom)
+   ))
+   (StartCAtom CAtom (
       (check_rcv StartPacket)
       (check_rcv_ack StartNode StartPacket)
    ))
-   (StartNode Node (R A B C D))
+   (StartNode Node (R A B C))
    (StartPacket Packet (P1 P2))
-   (StartChannel Channel (Ch1 Ch2 Ch3))
+   (StartChannel Channel (Ch1 Ch2))
 ))
 
 ;;;; --- processing actions
