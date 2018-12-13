@@ -24,6 +24,8 @@
 #include "printer/smt2/smt2_printer.h"
 #include "printer/tptp/tptp_printer.h"
 
+#include "expr/node_algorithm.h"
+
 using namespace std;
 
 namespace CVC4 {
@@ -81,6 +83,81 @@ void Printer::toStreamSygus(std::ostream& out, TNode n) const
   // no sygus-specific printing associated with this printer,
   // just print the original term
   toStream(out, n, -1, false, 1);
+}
+
+void Printer::toStreamBenchmark(std::ostream& out, TNode n) const
+{
+  // get the symbols 
+  std::unordered_set< Node, NodeHashFunction > syms;
+  expr::getSymbols(n,syms);
+
+  // get the types and datatypes
+  std::unordered_set< TypeNode, TypeNodeHashFunction > types;
+  std::unordered_set< Node, NodeHashFunction > symsPrint;
+  std::vector<DatatypeType> dts;
+  for( const Node& n : syms )
+  {
+    TypeNode tn = n.getType();
+    // datatype symbols are builtin to the datatype declaration, thus we
+    // print the datatype instead of the symbols.
+    if( !tn.isTester() && !tn.isSelector() && !tn.isConstructor() )
+    {
+      types.insert(n.getType());
+      symsPrint.insert(n);
+    }
+    else
+    {
+      const Datatype& dt = Datatype::datatypeOf(n.toExpr());
+      DatatypeType dtt = dt.getDatatypeType();
+      // tuples do not need to be printed
+      if( !dt.isTuple() )
+      {
+        dts.push_back(dtt);
+      }
+    }
+  }
+  
+  // print the type declarations
+  for( TypeNode tn : types )
+  {
+    if( tn.isSort() )
+    {
+      std::stringstream ss;
+      ss << tn;
+      DeclareTypeCommand dtc(ss.str(), 0, tn.toType());
+      toStream(out,&dtc,-1,false,1);
+      out << std::endl;
+    }
+  }
+  
+  // print the datatypes
+  if( !dts.empty() )
+  {
+    DatatypeDeclarationCommand ddc(dts);
+    toStream(out,&ddc,-1,false,1);
+    out << std::endl;
+  }
+  
+  // print the symbol declarations
+  for( const Node& n : symsPrint )
+  {
+    // if its not a constructor, selector or tester
+    std::stringstream ss;
+    ss << n;
+    DeclareFunctionCommand dfc(ss.str(),n.toExpr(),n.getType().toType());
+    toStream(out,&dfc,-1,false,1);
+    out << std::endl;
+  }
+  
+  // print the formula as an assertion
+  AssertCommand ac(n.toExpr());
+  toStream(out,&ac,-1,false,1);
+  out << std::endl;
+  
+  // check sat 
+  CheckSatCommand csc;
+  toStream(out,&csc,-1,false,1);
+  out << std::endl;
 }
 
 void Printer::toStream(std::ostream& out, const Model& m) const

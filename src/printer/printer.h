@@ -79,6 +79,17 @@ class Printer
    * methods stored in sygus datatype constructors.
    */
   virtual void toStreamSygus(std::ostream& out, TNode n) const;
+  /** 
+   * Write a benchmark corresponding to (formula) n. For example, the formula
+   * x+y > 0 will be printed by the Smt2 printer as:
+   * ```
+   * (declare-fun x () Int)
+   * (declare-fun y () Int)
+   * (assert (> (+ x y) 0))
+   * (check-sat)
+   * ```
+   */
+  virtual void toStreamBenchmark(std::ostream& out, TNode n) const;
 
  protected:
   /** Derived classes can construct, but no one else. */

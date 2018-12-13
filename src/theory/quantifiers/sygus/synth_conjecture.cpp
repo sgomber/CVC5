@@ -574,6 +574,11 @@ bool SynthConjecture::doCheck(std::vector<Node>& lems)
       SmtEngine verifySmt(nm->toExprManager());
       verifySmt.setLogic(smt::currentSmtEngine()->getLogicInfo());
       verifySmt.assertFormula(query.toExpr());
+      Trace("cegqi-engine") << ";--------" << std::endl;
+      std::stringstream ssq;
+      Printer::getPrinter(options::outputLanguage())->toStreamBenchmark(ssq,query);
+      Trace("cegqi-engine") << ssq.str();
+      Trace("cegqi-engine") << ";--------" << std::endl;
       Result r = verifySmt.checkSat();
       Trace("cegqi-engine") << "  ...got " << r << std::endl;
       if (r.asSatisfiabilityResult().isSat() == Result::SAT)
