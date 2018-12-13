@@ -73,6 +73,23 @@
     false)
   )
 )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ; --- 
 
 (define-fun get-precondition-for-action-holds ((a Action) (n Node) (t Int)) Bool

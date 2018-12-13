@@ -33,6 +33,12 @@
 (check_rcv_ack (_rcv_ack_node Node) (_rcv_ack_pck Packet))
 ))
 
+(declare-datatype CLit
+(
+(ca_pos (_ca_pos_arg CAtom))
+(ca_neg (_ca_neg_arg CAtom))
+))
+
 ;;; ----- State information
 
 (declare-datatype State
@@ -49,7 +55,7 @@
 
 ;;; ------ Axiomatization of conditions 
 
-(define-fun condition_holds ((c CAtom) (n Node) (t Int) (g GlobalState)) Bool
+(define-fun catom_holds ((c CAtom) (n Node) (t Int) (g GlobalState)) Bool
   (ite ((_ is check_rcv) c)
     (member (_rcv_pck c) (_prcv (select g (mkTuple n t))))
   (ite ((_ is check_rcv_ack) c)
@@ -60,8 +66,25 @@
   ))
 )
 
-(define-fun conditional_act ((c CAtom) (n Node) (x Action) (y Action) (t Int) (g GlobalState)) Action
-  (ite (condition_holds c n t g) x y)
+(define-fun clit_holds ((c CLit) (n Node) (t Int) (g GlobalState)) Bool
+  (ite ((_ is ca_pos) c)
+    (catom_holds (_ca_pos_arg c) n t g)
+  (ite ((_ is ca_neg) c) 
+    (not (catom_holds (_ca_neg_arg c) n t g))
+    false)
+  )
+)
+
+(define-fun get_precondition_for_action_holds ((a Action) (n Node) (t Int) (g GlobalState)) Bool
+  (ite ((_ is act_send) a) 
+    (and
+      (not (catom_holds (check_rcv_ack (_dst a) (_pck a)) n t g))
+      (catom_holds (check_rcv (_pck a)) n t g))
+    true)
+)
+
+(define-fun conditional_act ((c CLit) (n Node) (a Action) (ae Action) (t Int) (g GlobalState)) Action
+  (ite (clit_holds c n t g) a ae)
 )
 
 
@@ -69,11 +92,15 @@
 
 (synth-fun policyR ((t Int) (g GlobalState)) Action (
    (Start Action (
-        (conditional_act StartCondition R Start Start t g)
+        (conditional_act StartCLit R Start Start t g)
         act_idle
         (act_send StartNode StartPacket StartChannel)
    ))
-   (StartCondition CAtom (
+   (StartCLit CLit (
+      (ca_pos StartCAtom)
+      (ca_neg StartCAtom)
+   ))
+   (StartCAtom CAtom (
       (check_rcv StartPacket)
       (check_rcv_ack StartNode StartPacket)
    ))
@@ -142,8 +169,21 @@
    (StartChannel Channel (Ch1 Ch2 Ch3))
 ))
 
+(declare-var g GlobalState)
 
+;;; temporary
+(define-fun _MAX_PERIOD () Int 3)
 
+(constraint
+(=>
+  ;; the global state we care about
+  false
 
+  ;; requirements
+  (and 
+    (member P1 (_prcv (select g (mkTuple D _MAX_PERIOD))))
+    (member P2 (_prcv (select g (mkTuple D _MAX_PERIOD))))
+  )
+))
 
 (check-synth)
