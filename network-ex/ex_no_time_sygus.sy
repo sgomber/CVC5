@@ -17,7 +17,6 @@
 
 (declare-datatype Channel ((Ch1) (Ch2) (Ch3)))
 
-
 ;;; ----- Action, Conditionals
 
 (declare-datatype Action
@@ -75,7 +74,7 @@
   )
 )
 
-(define-fun get_precondition_for_action_holds ((a Action) (n Node) (t Int) (g GlobalState)) Bool
+(define-fun precondition_for_action_holds ((a Action) (n Node) (t Int) (g GlobalState)) Bool
   (ite ((_ is act_send) a) 
     (and
       (not (catom_holds (check_rcv_ack (_dst a) (_pck a)) n t g))
@@ -83,8 +82,8 @@
     true)
 )
 
-(define-fun conditional_act ((c CLit) (n Node) (a Action) (ae Action) (t Int) (g GlobalState)) Action
-  (ite (clit_holds c n t g) a ae)
+(define-fun conditional_act ((c CLit) (a Action) (ae Action) (n Node) (t Int) (g GlobalState)) Action
+  (ite (and (clit_holds c n t g) (precondition_for_action_holds a n t g)) a ae)
 )
 
 
@@ -92,7 +91,7 @@
 
 (synth-fun policyR ((t Int) (g GlobalState)) Action (
    (Start Action (
-        (conditional_act StartCLit R Start Start t g)
+        (conditional_act StartCLit Start Start R t g)
         act_idle
         (act_send StartNode StartPacket StartChannel)
    ))
@@ -173,6 +172,8 @@
 
 ;;; temporary
 (define-fun _MAX_PERIOD () Int 3)
+;;; end temporary
+
 
 (constraint
 (=>
