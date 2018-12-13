@@ -218,12 +218,12 @@
 (define-fun oa_sendPck ((o OptionAction)) Packet (_pck (_sact o)))
 (define-fun oa_sendChn ((o OptionAction)) Channel (_chn (_sact o)))
 
+; this filters the policy action through a judgement for success
 (define-fun get-action ((n Node) (t Int) (g GlobalState)) OptionAction
-  (let ((a Action (get-action-policy n t g)))
-  (ite (> (get-act-success a n t g) 0.0)
-    (someAction a)
+  (ite (> (get-act-success (get-action-policy n t g) n t g) 0.0)
+    (someAction (get-action-policy n t g))
     noAction
-  ))
+  )
 )
 
 (define-fun sendsTo ((x Node) (y Node) (t Int) (g GlobalState)) Bool
@@ -236,7 +236,7 @@
   (= (_prcv (select g (mkTuple n (+ t 1))))
      (union 
         (_prcv (select g (mkTuple n t)))
-        ;; TODO
+        ;; if a node sends to us, we add it
         (ite (sendsTo R n t g)
           (singleton (oa_sendPck (get-action R t g)))
         (ite (sendsTo A n t g)
@@ -251,21 +251,13 @@
         )))))
      )
   )
-;    (forall ((p Packet))
-;      (= 
-;        (GlobalState_prcv x p (+ t 1)) 
-;        (or 
-;          (GlobalState_prcv x p t)
-;          (exists ((y Node)) (get-sends y x p t)))
-;      )
-;    )
 )
 
 (define-fun TrN_prcv_ack ((n Node) (t Int) (g GlobalState)) Bool
   (= (_prcv_ack (select g (mkTuple n (+ t 1))))
      (union 
         (_prcv_ack (select g (mkTuple n t)))
-        ;; TODO
+        ;; if we send, we get an acknowledgement
         (ite (sendsTo n R t g)
           (singleton (mkTuple R (oa_sendPck (get-action n t g))))
         (ite (sendsTo n A t g)
@@ -280,14 +272,6 @@
         )))))
      )
   )
-;    (forall ((y Node) (p Packet))
-;      (= 
-;        (GlobalState_prcv_ack x y p (+ t 1)) 
-;        (or 
-;          (GlobalState_prcv_ack x y p t)
-;          (get-sends x y p t))
-;      )
-;    )
 )
 
 (define-fun TrN_energy ((n Node) (t Int) (g GlobalState)) Bool
