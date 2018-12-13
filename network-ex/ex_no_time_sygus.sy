@@ -217,15 +217,49 @@
 ))))))
 
 
-(define-fun Trans_prcv ((n Node) (t Int) (g GlobalState)) Bool
-  true
+(define-fun TrN_prcv ((n Node) (t Int) (g GlobalState)) Bool
+  (= (_prcv (select g (mkTuple n (+ t 1))))
+     (union 
+        (_prcv (select g (mkTuple n t)))
+        ;; TODO
+        (ite true 
+          (as emptyset (Set Packet))
+          (as emptyset (Set Packet))
+        )
+     )
+  )
+;    (forall ((p Packet))
+;      (= 
+;        (GlobalState_prcv x p (+ t 1)) 
+;        (or 
+;          (GlobalState_prcv x p t)
+;          (exists ((y Node)) (get-sends y x p t)))
+;      )
+;    )
 )
 
-(define-fun Trans_prcv_ack ((n Node) (t Int) (g GlobalState)) Bool
-  true
+(define-fun TrN_prcv_ack ((n Node) (t Int) (g GlobalState)) Bool
+  (= (_prcv_ack (select g (mkTuple n (+ t 1))))
+     (union 
+        (_prcv_ack (select g (mkTuple n t)))
+        ;; TODO
+        (ite true 
+          (as emptyset (Set (Tuple Node Packet)))
+          (as emptyset (Set (Tuple Node Packet)))
+        )
+     )
+  )
+;    (forall ((y Node) (p Packet))
+;      (= 
+;        (GlobalState_prcv_ack x y p (+ t 1)) 
+;        (or 
+;          (GlobalState_prcv_ack x y p t)
+;          (get-sends x y p t))
+;      )
+;    )
 )
 
-(define-fun Trans_energy ((n Node) (t Int) (g GlobalState)) Bool
+(define-fun TrN_energy ((n Node) (t Int) (g GlobalState)) Bool
   (=
     (_energy (select g (mkTuple n (+ t 1))))
     (+ 
@@ -239,15 +273,23 @@
   )
 )
 
-(define-fun Trans ((n Node) (t Int) (g GlobalState)) Bool
+(define-fun TrN ((n Node) (t Int) (g GlobalState)) Bool
   (and 
-    (Trans_prcv n t g)
-    (Trans_prcv_ack n t g)
-    (Trans_energy n t g)
+    (TrN_prcv n t g)
+    (TrN_prcv_ack n t g)
+    (TrN_energy n t g)
   )
 )
 
-
+(define-fun Trans ((t Int) (g GlobalState)) Bool
+  (and 
+    (TrN R t g)
+    (TrN A t g)
+    (TrN B t g)
+    (TrN C t g)
+    (TrN D t g)
+  )
+)
 
 (declare-var g GlobalState)
 
@@ -259,7 +301,6 @@
 (constraint
 (=>
   ;; the global state we care about
-  false
   (and
     ;;;   INITIAL STATE
     ; packets received
@@ -282,7 +323,10 @@
     (= (_energy (select g (mkTuple D 0))) 0.0)
     
     ;;;   TRANSITION RELATION
-    
+    (Trans 0 g)
+    (Trans 1 g)
+    (Trans 2 g)
+    (Trans 3 g)
   )
   ;; requirements
   (and 
