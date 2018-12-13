@@ -45,7 +45,7 @@
 (mk_state
   (_prcv (Set Packet))
   (_prcv_ack (Set (Tuple Node Packet)))
-  (_energy Int)
+  (_energy Real)
 )
 ))
 
@@ -288,6 +288,7 @@
   )
 )
 
+; transition relation for Node n at time t
 (define-fun TrN ((n Node) (t Int) (g GlobalState)) Bool
   (and 
     (TrN_prcv n t g)
@@ -296,6 +297,7 @@
   )
 )
 
+; transition relation for time t
 (define-fun Trans ((t Int) (g GlobalState)) Bool
   (and 
     (TrN R t g)
@@ -317,30 +319,25 @@
   (and
     ;;; FIX
     ;;;   INITIAL STATE for global state
-    ; packets received
-    (= (_prcv (select g (mkTuple R 0))) (union (singleton P1) (singleton P2)))
-    (= (_prcv (select g (mkTuple A 0))) (as emptyset (Set Packet)))
-    (= (_prcv (select g (mkTuple B 0))) (as emptyset (Set Packet)))
-    (= (_prcv (select g (mkTuple C 0))) (as emptyset (Set Packet)))
-    (= (_prcv (select g (mkTuple D 0))) (as emptyset (Set Packet)))
-    ; packets acknowledged
-    (= (_prcv_ack (select g (mkTuple R 0))) (union (singleton (mkTuple R P1)) (singleton (mkTuple R P2))))
-    (= (_prcv_ack (select g (mkTuple A 0))) (as emptyset (Set (Tuple Node Packet))))
-    (= (_prcv_ack (select g (mkTuple B 0))) (as emptyset (Set (Tuple Node Packet))))
-    (= (_prcv_ack (select g (mkTuple C 0))) (as emptyset (Set (Tuple Node Packet))))
-    (= (_prcv_ack (select g (mkTuple D 0))) (as emptyset (Set (Tuple Node Packet))))
-    ; energy
-    (= (_energy (select g (mkTuple R 0))) 0.0)
-    (= (_energy (select g (mkTuple A 0))) 0.0)
-    (= (_energy (select g (mkTuple B 0))) 0.0)
-    (= (_energy (select g (mkTuple C 0))) 0.0)
-    (= (_energy (select g (mkTuple D 0))) 0.0)
+    (= (select g (mkTuple R 0)) 
+          (mk_state 
+            ; packets received
+            (union (singleton P1) (singleton P2))
+            ; packets acknowledged
+            (union (singleton (mkTuple R P1)) (singleton (mkTuple R P2)))
+            ; energy consumed
+            0.0
+          )
+    )
+    (= (select g (mkTuple A 0)) (mk_state (as emptyset (Set Packet)) (as emptyset (Set (Tuple Node Packet))) 0.0))
+    (= (select g (mkTuple B 0)) (mk_state (as emptyset (Set Packet)) (as emptyset (Set (Tuple Node Packet))) 0.0))
+    (= (select g (mkTuple C 0)) (mk_state (as emptyset (Set Packet)) (as emptyset (Set (Tuple Node Packet))) 0.0))
+    (= (select g (mkTuple D 0)) (mk_state (as emptyset (Set Packet)) (as emptyset (Set (Tuple Node Packet))) 0.0))
     
     ;;;   TRANSITION RELATION for global state
     (Trans 0 g)
     (Trans 1 g)
     (Trans 2 g)
-    (Trans 3 g)
   )
   ;; requirements
   (and 
