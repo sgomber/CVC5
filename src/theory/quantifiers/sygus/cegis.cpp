@@ -425,7 +425,9 @@ void Cegis::registerRefinementLemma(const std::vector<Node>& vars,
                                     Node lem,
                                     std::vector<Node>& lems)
 {
+  Trace("cegis-rl") << "Add refinement lemma..." << std::endl;
   addRefinementLemma(lem);
+  Trace("cegis-rl") << "..finished add refinement lemma." << std::endl;
   // Make the refinement lemma and add it to lems.
   // This lemma is guarded by the parent's guard, which has the semantics
   // "this conjecture has a solution", hence this lemma states:
