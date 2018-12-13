@@ -120,7 +120,7 @@ Node ExtendedRewriter::extendedRewrite(Node n)
     bool childChanged = false;
     bool isNonAdditive = TermUtil::isNonAdditive(k);
     // We flatten associative operators below, which requires k to be n-ary.
-    bool isAssoc = TermUtil::isAssoc(k,true);
+    bool isAssoc = TermUtil::isAssoc(k, true);
     for (unsigned i = 0; i < n.getNumChildren(); i++)
     {
       Node nc = extendedRewrite(n[i]);

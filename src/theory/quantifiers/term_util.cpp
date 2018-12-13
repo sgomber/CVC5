@@ -654,10 +654,11 @@ bool TermUtil::isNegate(Kind k)
   return k == NOT || k == BITVECTOR_NOT || k == BITVECTOR_NEG || k == UMINUS;
 }
 
-bool TermUtil::isAssoc( Kind k, bool reqNAry ) {
-  if( reqNAry )
+bool TermUtil::isAssoc(Kind k, bool reqNAry)
+{
+  if (reqNAry)
   {
-    if( k == UNION || k == INTERSECTION )
+    if (k == UNION || k == INTERSECTION)
     {
       return false;
     }
@@ -670,10 +671,11 @@ bool TermUtil::isAssoc( Kind k, bool reqNAry ) {
          || k == SEP_STAR;
 }
 
-bool TermUtil::isComm( Kind k, bool reqNAry ) {
-  if( reqNAry )
+bool TermUtil::isComm(Kind k, bool reqNAry)
+{
+  if (reqNAry)
   {
-    if( k == UNION || k == INTERSECTION )
+    if (k == UNION || k == INTERSECTION)
     {
       return false;
     }
