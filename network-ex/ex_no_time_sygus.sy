@@ -204,6 +204,49 @@
 
 
 
+;;;; --- transition relation 
+
+
+(define-fun get-action ((n Node) (t Int) (g GlobalState)) Action 
+  (ite (= n R) (policyR t g)
+  (ite (= n A) (policyA t g)
+  (ite (= n B) (policyB t g)
+  (ite (= n C) (policyC t g)
+  (ite (= n D) (policyD t g)
+    act_idle
+))))))
+
+
+(define-fun Trans_prcv ((n Node) (t Int) (g GlobalState)) Bool
+  true
+)
+
+(define-fun Trans_prcv_ack ((n Node) (t Int) (g GlobalState)) Bool
+  true
+)
+
+(define-fun Trans_energy ((n Node) (t Int) (g GlobalState)) Bool
+  (=
+    (_energy (select g (mkTuple n (+ t 1))))
+    (+ 
+      (_energy (select g (mkTuple n t)))
+      ;; energy consumption
+      (ite ((_ is act_send) (get-action n t g))
+        1.0
+        0.05
+      )
+    )
+  )
+)
+
+(define-fun Trans ((n Node) (t Int) (g GlobalState)) Bool
+  (and 
+    (Trans_prcv n t g)
+    (Trans_prcv_ack n t g)
+    (Trans_energy n t g)
+  )
+)
+
 
 
 (declare-var g GlobalState)
@@ -218,6 +261,7 @@
   ;; the global state we care about
   false
   (and
+    ;;;   INITIAL STATE
     ; packets received
     (= (_prcv (select g (mkTuple R 0))) (union (singleton P1) (singleton P2)))
     (= (_prcv (select g (mkTuple A 0))) (as emptyset (Set Packet)))
@@ -237,7 +281,7 @@
     (= (_energy (select g (mkTuple C 0))) 0.0)
     (= (_energy (select g (mkTuple D 0))) 0.0)
     
-    ; how global state updates
+    ;;;   TRANSITION RELATION
     
   )
   ;; requirements
