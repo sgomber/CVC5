@@ -1,0 +1,6 @@
+(synth-fun IC () Bool
+  ((Start Bool (
+     true
+     false
+   ))
+))
