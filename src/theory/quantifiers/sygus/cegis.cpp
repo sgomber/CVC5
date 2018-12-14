@@ -509,6 +509,23 @@ bool Cegis::getRefinementEvalLemmas(const std::vector<Node>& vs,
           Trace("sygus-cref-eval2-debug")
               << "updated term : " << msu[k] << std::endl;
         }
+        if( Trace.isOn("cegis-gen") )
+        {
+          Trace("cegis-gen") << "  --- CEGIS with generalization: " << std::endl;
+          for (unsigned i = 0, size = vs.size(); i < size; i++)
+          {
+            Trace("cegis-gen") << "    " << vs[i] << " -> ";
+            TermDbSygus::toStreamSygus("cegis-gen", msu[i] );
+            Trace("cegis-gen") << std::endl;
+            if( msu[i]!=ms[i] )
+            {
+              Trace("cegis-gen") << "      *** from ";
+              TermDbSygus::toStreamSygus("cegis-gen", ms[i]);
+              Trace("cegis-gen") << std::endl;
+            }
+          }
+          Trace("cegis-gen") << "  ------" << std::endl;
+        }
         if (!mexp.empty())
         {
           Node en = mexp.size() == 1 ? mexp[0] : nm->mkNode(kind::AND, mexp);

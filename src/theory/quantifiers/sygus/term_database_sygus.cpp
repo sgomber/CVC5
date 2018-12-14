@@ -99,15 +99,8 @@ TNode TermDbSygus::getFreeVar( TypeNode tn, int i, bool useSygusType ) {
     }
   }
   while( i>=(int)d_fv[sindex][tn].size() ){
-    std::stringstream ss;
-    if( tn.isDatatype() ){
-      const Datatype& dt = ((DatatypeType)(tn).toType()).getDatatype();
-      ss << "fv_" << dt.getName() << "_" << i;
-    }else{
-      ss << "fv_" << tn << "_" << i;
-    }
     Assert( !vtn.isNull() );
-    Node v = NodeManager::currentNM()->mkSkolem( ss.str(), vtn, "for sygus normal form testing" );
+    Node v = NodeManager::currentNM()->mkSkolem( "_", vtn, "for sygus normal form testing", NodeManager::SKOLEM_EXACT_NAME );
     d_fv_stype[v] = tn;
     d_fv_num[v] = i;
     d_fv[sindex][tn].push_back( v );

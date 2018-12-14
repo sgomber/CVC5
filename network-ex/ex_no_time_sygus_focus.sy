@@ -119,21 +119,21 @@
    ))
    (StartCLit CLit (
       (ca_pos StartCAtom)
-      (ca_neg StartCAtom)
+      ;(ca_neg StartCAtom)
    ))
    (StartCAtom CAtom (
-      (check_rcv StartPacket)
-      (check_rcv_ack StartNode StartPacket)
+      ;(check_rcv StartPacket)
+      ;(check_rcv_ack StartNode StartPacket)
       ctrue
    ))
-   (StartNode Node (A B C))
+   (StartNode Node (A B))
    (StartPacket Packet (P1 P2))
    (StartChannel Channel (Ch1 Ch2))
 ))
 
 (synth-fun policyA ((t Int) (g GlobalState)) Action (
    (Start Action (
-      (conditional_act StartCLit StartActAtom Start R t g)
+      (conditional_act StartCLit StartActAtom Start A t g)
       act_idle
    ))
    (StartActAtom Action (
@@ -141,21 +141,21 @@
    ))
    (StartCLit CLit (
       (ca_pos StartCAtom)
-      (ca_neg StartCAtom)
+      ;(ca_neg StartCAtom)
    ))
    (StartCAtom CAtom (
-      (check_rcv StartPacket)
-      (check_rcv_ack StartNode StartPacket)
+      ;(check_rcv StartPacket)
+      ;(check_rcv_ack StartNode StartPacket)
       ctrue
    ))
    (StartNode Node (D))
-   (StartPacket Packet (P1 P2))
+   (StartPacket Packet (P1))
    (StartChannel Channel (Ch1 Ch2))
 ))
 
 (synth-fun policyB ((t Int) (g GlobalState)) Action (
    (Start Action (
-      (conditional_act StartCLit StartActAtom Start R t g)
+      (conditional_act StartCLit StartActAtom Start B t g)
       act_idle
    ))
    (StartActAtom Action (
@@ -163,21 +163,21 @@
    ))
    (StartCLit CLit (
       (ca_pos StartCAtom)
-      (ca_neg StartCAtom)
+      ;(ca_neg StartCAtom)
    ))
    (StartCAtom CAtom (
-      (check_rcv StartPacket)
-      (check_rcv_ack StartNode StartPacket)
+      ;(check_rcv StartPacket)
+      ;(check_rcv_ack StartNode StartPacket)
       ctrue
    ))
    (StartNode Node (D))
-   (StartPacket Packet (P1 P2))
+   (StartPacket Packet (P2))
    (StartChannel Channel (Ch1 Ch2))
 ))
 
 (synth-fun policyC ((t Int) (g GlobalState)) Action (
    (Start Action (
-      (conditional_act StartCLit StartActAtom Start R t g)
+      (conditional_act StartCLit StartActAtom Start C t g)
       act_idle
    ))
    (StartActAtom Action (
@@ -185,11 +185,11 @@
    ))
    (StartCLit CLit (
       (ca_pos StartCAtom)
-      (ca_neg StartCAtom)
+      ;(ca_neg StartCAtom)
    ))
    (StartCAtom CAtom (
-      (check_rcv StartPacket)
-      (check_rcv_ack StartNode StartPacket)
+      ;(check_rcv StartPacket)
+      ;(check_rcv_ack StartNode StartPacket)
       ctrue
    ))
    (StartNode Node (D))
@@ -360,5 +360,7 @@
     (member P2 (_prcv (select g (mkTuple D _MAX_PERIOD))))
   )
 ))
+
+
 
 (check-synth)
