@@ -174,6 +174,16 @@ PreprocessingPassResult GenIcPbe::applyInternal(
   }
   Trace("gen-ic-pbe-debug") << "...with : " << funToSynthBvar << " " << varList
                             << " " << funToSynthArgList << std::endl;
+  if( funToSynthBvar.isNull() )
+  {
+    if( varList.size()==1 )
+    {
+      // 0-dimensional case: trivial
+      funToSynthBvar = varList[0];
+      varList.clear();
+      bvars.clear();
+    }
+  }
   // ensure the function type matches the computed type
   AlwaysAssert(!funToSynthBvar.isNull(),
                "GenIcPbe: no functions to synthesize");
@@ -197,7 +207,7 @@ PreprocessingPassResult GenIcPbe::applyInternal(
   unsigned nsamples = 0;
   if (isFull)
   {
-    nsamples = bvars.empty() ? 0 : 1;
+    nsamples = 1;
     for (unsigned i = 0, nvars = bvars.size(); i < nvars; i++)
     {
       TypeNode tn = bvars[i].getType();
@@ -222,8 +232,12 @@ PreprocessingPassResult GenIcPbe::applyInternal(
         asl.size() >= 2,
         "GenIcPbe: expecting at least 2 assertions when reading candidate");
     // test the candidate
-    testFormula = asl[1].substitute(
-        varList.begin(), varList.end(), bvars.begin(), bvars.end());
+    testFormula = asl[1];
+    if( !varList.empty() )
+    {
+      testFormula = testFormula.substitute(
+          varList.begin(), varList.end(), bvars.begin(), bvars.end());
+    }
     Notice() << "Test candidate IC " << testFormula << "..." << std::endl;
   }
   else
@@ -283,7 +297,7 @@ PreprocessingPassResult GenIcPbe::applyInternal(
   unsigned rowWidth = 0;
   if (isFull)
   {
-    rowWidth = completeDom[completeDom.size() - 1].size();
+    rowWidth = completeDom.empty() ? 1 : completeDom[completeDom.size() - 1].size();
     if (options::genIcFull())
     {
       out << "(declare-fun io () (Array Int (_ BitVec " << rowWidth << ")))"
@@ -366,11 +380,15 @@ PreprocessingPassResult GenIcPbe::applyInternal(
     if (isFull)
     {
       unsigned ival = ii;
-      for (unsigned j = 0, nvars = bvars.size(); j < nvars; j++)
+      unsigned nvars = bvars.empty() ? 1 : bvars.size();
+      for (unsigned j = 0; j < nvars; j++)
       {
-        unsigned domSize = completeDom[j].size();
+        unsigned domSize = completeDom.empty() ? 1 : completeDom[j].size();
         unsigned currIndex = ival % domSize;
-        samplePt.push_back(completeDom[j][currIndex]);
+        if( j<bvars.size() )
+        {
+          samplePt.push_back(completeDom[j][currIndex]);
+        }
         ival = ival / domSize;
         if (j == 0)
         {

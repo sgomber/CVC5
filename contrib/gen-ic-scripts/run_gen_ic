@@ -43,14 +43,36 @@ function mk_dummy_candidate()
 
 ###############################################
 
+function mk_input_assertion()
+{
+  if grep -q declare-const $1;
+  then
+    echo "(assert (input "
+    get_arg_list $1
+    echo "))"
+  else
+    echo "(assert input)"
+  fi
+}
+
+function mk_ic_assertion()
+{
+  if grep -q declare-const $1;
+  then
+    echo "(assert (IC "
+    get_arg_list $1
+    echo "))"
+  else
+    echo "(assert IC)"
+  fi
+}
+
 # This generates a *.smt2 file corresponding to the invertibility condition problem.
 function mk_input_problem()
 {
   # the definition of the input problem
   cat $1
-  echo "(assert (input "
-  get_arg_list $1
-  echo "))"
+  mk_input_assertion $1
   echo "(check-sat)"
 }
 
@@ -61,16 +83,12 @@ function mk_input_to_test_ic_cached()
 {
   # the definition of the input problem
   cat $1
-  echo "(assert (input "
-  get_arg_list $1
-  echo "))"
+  mk_input_assertion $1
   # extract definitions from the sygus grammar, which may appear in the candidate
   grep "define" $2
   # the candidate invertibility condition
   cat $3
-  echo "(assert (IC "
-  get_arg_list $1
-  echo "))"
+  mk_ic_assertion $1
   # the cached I/O specification
   cat $4
   echo "(check-sat)"
@@ -81,16 +99,12 @@ function mk_input_to_test_ic()
 {
   # the definition of the input problem
   cat $1
-  echo "(assert (input "
-  get_arg_list $1
-  echo "))"
+  mk_input_assertion $1
   # extract definitions from the sygus grammar, which may appear in the candidate
   grep "define" $2
   # the candidate invertibility condition
   cat $3
-  echo "(assert (IC "
-  get_arg_list $1
-  echo "))"
+  mk_ic_assertion $1
   echo "(check-sat)"
 }
 
