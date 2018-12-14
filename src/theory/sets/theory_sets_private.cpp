@@ -1611,15 +1611,7 @@ Node TheorySetsPrivate::getProxy( Node n ) {
       Node k = NodeManager::currentNM()->mkSkolem( "sp", n.getType(), "proxy for set" );
       d_proxy[n] = k;
       d_proxy_to_term[k] = n;
-      Node eq = k.eqNode( n );
-      Trace("sets-lemma") << "Sets::Lemma : " << eq << " by proxy" << std::endl;
-      d_external.d_out->lemma( eq );
-      if( n.getKind()==kind::SINGLETON ){
-        Node slem = NodeManager::currentNM()->mkNode( kind::MEMBER, n[0], k );
-        Trace("sets-lemma") << "Sets::Lemma : " << slem << " by singleton" << std::endl;
-        d_external.d_out->lemma( slem );
-        d_sentLemma = true;
-      }
+      Trace("sets-proxy") << "Proxy: " << n << " -> " << k << std::endl;
       return k;
     }else{
       return (*it).second;
@@ -2004,7 +1996,7 @@ bool TheorySetsPrivate::collectModelInfo(TheoryModel* m)
             Trace("sets-model") << "No slack elements for " << eqc << std::endl;
           }
         }else{
-          Trace("sets-model") << "Build value for " << eqc << " based on normal form, size = " << d_nf[eqc].size() << std::endl;
+          Trace("sets-model") << "Build value for " << eqc << " based on normal form, size = " << d_nf[eqc] << std::endl;
           //it is union of venn regions
           for( unsigned j=0; j<d_nf[eqc].size(); j++ ){
             Assert( mvals.find( d_nf[eqc][j] )!=mvals.end() );
@@ -2188,14 +2180,35 @@ void TheorySetsPrivate::preRegisterTerm(TNode node)
     d_equalityEngine.addTriggerPredicate(node);
     break;
   case kind::CARD:
-    d_equalityEngine.addTriggerTerm(node, THEORY_SETS);
+  {
+    d_equalityEngine.addTriggerTerm(node, THEORY_SETS);    
+    // must send proxy lemma
+    NodeMap::const_iterator it = d_proxy_to_term.find( node[0] );
+    if( it!=d_proxy_to_term.end() ){
+      Node k = (*it).second;
+      Node eq = node[0].eqNode(k);
+      Trace("sets-lemma") << "Sets::Lemma : " << eq << " by proxy" << std::endl;
+      d_external.d_out->lemma( eq );
+    }
+  }
     break;
   default:
-    //if( node.getType().isSet() ){
-    //  d_equalityEngine.addTriggerTerm(node, THEORY_SETS);
-    //}else{
+    // add term to equality engine
     d_equalityEngine.addTerm(node);
-    //}
+    // assign equal to proxy
+    if( node.getType().isSet() ){
+      Node k = getProxy(node);
+      if( k!=node )
+      {
+        Node eq = Rewriter::rewrite(node.eqNode(k));
+        d_equalityEngine.assertEquality(eq,true,d_true);      
+        if( node.getKind()==kind::SINGLETON ){
+          Node mk = NodeManager::currentNM()->mkNode( kind::MEMBER, node[0], k );
+          mk = Rewriter::rewrite(mk);
+          d_equalityEngine.assertPredicate(mk, true,d_true);
+        }
+      }
+    }
     break;
   }
 }
