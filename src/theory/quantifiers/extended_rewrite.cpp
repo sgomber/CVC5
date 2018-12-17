@@ -1623,9 +1623,39 @@ bool ExtendedRewriter::inferSubstitution(Node n,
   }
   if (usePred)
   {
+    NodeManager * nm = NodeManager::currentNM();
     bool negated = n.getKind() == NOT;
-    vars.push_back(negated ? n[0] : n);
+    Node lit = negated ? n[0] : n;
+    vars.push_back(lit);
     subs.push_back(negated ? d_false : d_true);
+    
+    Kind litk = lit.getKind();
+    // floating point classifiers
+    std::vector< Kind > fpcs;
+    fpcs.push_back(FLOATINGPOINT_ISN);
+    fpcs.push_back(FLOATINGPOINT_ISSN);
+    fpcs.push_back(FLOATINGPOINT_ISZ);
+    fpcs.push_back(FLOATINGPOINT_ISINF);
+    fpcs.push_back(FLOATINGPOINT_ISNAN);
+    
+    // if positive application of a kind in the above list
+    if( !negated && std::find( fpcs.begin(), fpcs.end(), litk )!=fpcs.end() )
+    {
+      // all applications of the other kinds for the same argument are false
+      for( unsigned i=0, size=fpcs.size(); i<size; i++ )
+      {
+        Kind fk = fpcs[i];
+        if( fk!=litk )
+        {
+          Node fca = nm->mkNode(fk,lit[0]);
+          vars.push_back(fca);
+          subs.push_back(d_false);
+        }
+      }
+    }
+    
+    // datatype tester?
+    
     return true;
   }
   return false;
