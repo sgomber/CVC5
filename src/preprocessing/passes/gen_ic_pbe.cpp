@@ -179,7 +179,7 @@ PreprocessingPassResult GenIcPbe::applyInternal(
     if( varList.size()==1 )
     {
       // 0-dimensional case: trivial
-      funToSynthBvar = varList[0];
+      funToSynthBvar = visited[varList[0]];
       varList.clear();
       bvars.clear();
     }
@@ -505,6 +505,7 @@ PreprocessingPassResult GenIcPbe::applyInternal(
             for (unsigned k = 0; k < xdsize; k++)
             {
               TNode xvt = xDomUseEval[k];
+              Trace("gen-ic-eval") << "Test " << resTest  << " * { " << xt << " -> " << xvt << " } " << std::endl;
               testFormulaEval = resTest.substitute(xt, xvt);
               testFormulaEval = theory::Rewriter::rewrite(testFormulaEval);
               if (testFormulaEval.isConst())
