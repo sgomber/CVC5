@@ -614,16 +614,22 @@ PreprocessingPassResult GenIcPbe::applyInternal(
       {
         out << "(not ";
       }
-      out << "(IC ";
+      if( !samplePt.empty() ){
+        out << "(";
+      }
+      out << "IC ";
       for (const Node& sp : samplePt)
       {
         out << sp << " ";
+      }
+      if( !samplePt.empty() ){
+        out << ")";
       }
       if (!printPol)
       {
         out << ")";
       }
-      out << "))" << std::endl;
+      out << ")" << std::endl;
       printConstraintCount++;
       if (printConstraintCount == options::testIcPoints())
       {

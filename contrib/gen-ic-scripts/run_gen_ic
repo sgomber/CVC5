@@ -17,7 +17,9 @@ function get_candidate()
   if grep -q define-fun $CANDIDATE;
   then
     # make new candidate, which is the last from the list in $CANDIDATE
-    tail -1 $CANDIDATE
+    grep "define-fun" $CANDIDATE > temp.txt
+    tail -1 temp.txt
+    rm temp.txt
   else
     echo "No candidate found!"
   fi
