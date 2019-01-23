@@ -1775,3 +1775,11 @@ header = "options/quantifiers_options.h"
   type       = "bool"
   default    = "false"
   help       = "track instantiation lemmas (for proofs, unsat cores, qe and synthesis minimization)"
+
+[[option]]
+  name       = "fpIcPre"
+  category   = "regular"
+  long       = "fp-ic-pre"
+  type       = "bool"
+  default    = "false"
+  help       = "preprocess to add relevant instantiations based on invertibility conditions for FP"
