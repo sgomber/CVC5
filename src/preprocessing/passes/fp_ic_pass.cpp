@@ -176,13 +176,14 @@ void instantiate( Node q, std::vector< Node >& vars, std::vector< Node >& subs,
       Node sic = ic.substitute(vars.begin(), vars.end(), subs.begin(), subs.end());
       ilemmas.insert(sic);
     }
-    Node inst = q[1].substitute
-    
+    Node inst = q[1].substitute(vars.begin(), vars.end(), subs.begin(), subs.end());
+    Node ilem = NodeManager::currentNM()->mkNode( OR, q, inst );
+    ilemmas.insert(ilem);
     return;
   }
-  for( std::pair< unsigned, FpInst >& p : fpMap[i] )
+  for( const std::pair< unsigned, FpInst >& p : fpMap[i] )
   {
-    FpInst& fi = p.second;
+    const FpInst& fi = p.second;
     if( !fi.d_res.isNull() ){
       subs.push_back(fi.d_res);
       for( const Node ic : fi.d_ics ){
@@ -253,6 +254,9 @@ PreprocessingPassResult FpIcPre::applyInternal(
     std::vector< Node > subs;
     std::vector< Node > ics;
     instantiate( q, vars, subs, ics, ilemmas, fpMap );
+    for( const Node& lem : ilemmas ){
+      Trace("fp-ic") << "Generated lemma: " << lem << std::endl;
+    }
   }
   
   return PreprocessingPassResult::NO_CONFLICT;
