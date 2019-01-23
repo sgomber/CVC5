@@ -75,8 +75,8 @@ Node FpIcPre::solve( Node x, Node p, std::vector< Node >& ics, int ctnIndex ){
   }
   if( tx==x ){
     Node t = p[1-ctnIndex];
-    if( pk==EQUAL || pk==FLOATINGPOINT_LEQ || pk==FLOATINGPOINT_GEQ ){
-    Trace("fp-ic-solve") << "....success: " << t << std::endl;
+    if( pk==EQUAL ){
+      Trace("fp-ic-solve") << "....success: " << t << std::endl;
       return t;
     }else{
       //Node k = nm->mkSkolem("k_strict", t.getType());
@@ -111,10 +111,10 @@ Node FpIcPre::solve( Node x, Node p, std::vector< Node >& ics, int ctnIndex ){
     }else if( txk==FLOATINGPOINT_DIV && tCtnIndex==1 ){
       Node s = tx[3-tCtnIndex];
       //(define-fun IC ((s FP) (t FP)) Bool (or (= t (fp.div R (fp.mul RTP s t) s)) (= t (fp.div R (fp.mul RTN s t) s)) (ite (fp.isInfinite s) (fp.isZero t) (and (fp.isInfinite t) (fp.isZero s)))))
-      Node eq1 = t.eqNode( nm->mkNode( FLOATINGPOINT_DIV, tx[0], s, 
-                             nm->mkNode( FLOATINGPOINT_MULT, nm->mkConst<RoundingMode>(roundTowardPositive), t, s ) ) );
-      Node eq2 = t.eqNode( nm->mkNode( FLOATINGPOINT_DIV, tx[0], s, 
-                             nm->mkNode( FLOATINGPOINT_MULT, nm->mkConst<RoundingMode>(roundTowardNegative), t, s ) ) );
+      Node eq1 = t.eqNode( nm->mkNode( FLOATINGPOINT_DIV, tx[0], 
+                             nm->mkNode( FLOATINGPOINT_MULT, nm->mkConst<RoundingMode>(roundTowardPositive), s, t ), s ) );
+      Node eq2 = t.eqNode( nm->mkNode( FLOATINGPOINT_DIV, tx[0], 
+                             nm->mkNode( FLOATINGPOINT_MULT, nm->mkConst<RoundingMode>(roundTowardNegative), s, t ), s ) );
       Node sc = nm->mkNode( ITE, nm->mkNode( FLOATINGPOINT_ISINF, s ), nm->mkNode( FLOATINGPOINT_ISZ, t ), 
                                  nm->mkNode( AND,  nm->mkNode( FLOATINGPOINT_ISINF, t ), nm->mkNode( FLOATINGPOINT_ISZ, s ) ) );
       ic = nm->mkNode( OR, eq1, eq2, sc );
@@ -177,7 +177,7 @@ void instantiate( Node q, std::vector< Node >& vars, std::vector< Node >& subs,
       ilemmas.insert(sic);
     }
     Node inst = q[1].substitute(vars.begin(), vars.end(), subs.begin(), subs.end());
-    Node ilem = NodeManager::currentNM()->mkNode( OR, q, inst );
+    Node ilem = NodeManager::currentNM()->mkNode( OR, q.negate(), inst );
     ilemmas.insert(ilem);
     return;
   }
@@ -226,6 +226,7 @@ PreprocessingPassResult FpIcPre::applyInternal(
     } while (!visit.empty());
   }
   
+  std::unordered_set< Node, NodeHashFunction > ilemmas;
   for( const Node& q : quants )
   {
     Trace("fp-ic") << "FP-IC: Quantified formula : " << q << std::endl;
@@ -242,11 +243,10 @@ PreprocessingPassResult FpIcPre::applyInternal(
       Node ql = qlits[i];
       Trace("fp-ic") << "- literal to solve: " << ql << std::endl;
       for( unsigned j=0; j<q[0].getNumChildren(); j++ ){
-        fpMap[i][j].d_res = solve( q[0][j], ql, fpMap[i][j].d_ics );
+        fpMap[j][i].d_res = solve( q[0][j], ql, fpMap[j][i].d_ics );
       }
     }
     // add product of instantiations
-    std::unordered_set< Node, NodeHashFunction > ilemmas;
     std::vector< Node > vars;
     for( const Node& v : q[0] ){
       vars.push_back(v);
@@ -254,11 +254,19 @@ PreprocessingPassResult FpIcPre::applyInternal(
     std::vector< Node > subs;
     std::vector< Node > ics;
     instantiate( q, vars, subs, ics, ilemmas, fpMap );
-    for( const Node& lem : ilemmas ){
-      Trace("fp-ic") << "Generated lemma: " << lem << std::endl;
-    }
   }
-  
+  if( !ilemmas.empty() ){
+    std::vector< Node > newAssertions;
+    newAssertions.push_back((*assertionsToPreprocess)[0]);
+    for( const Node& lem : ilemmas ){
+      Trace("fp-ic") << "**** Generated lemma: " << lem << std::endl;
+      newAssertions.push_back(lem);
+    }
+    Node newA = NodeManager::currentNM()->mkNode( AND, newAssertions);
+    Trace("fp-ic") << "Replace : " << (*assertionsToPreprocess)[0] << std::endl;
+    Trace("fp-ic") << "With: " << newA << std::endl;
+    assertionsToPreprocess->replace(0, newA);
+  }
   return PreprocessingPassResult::NO_CONFLICT;
 }
 
