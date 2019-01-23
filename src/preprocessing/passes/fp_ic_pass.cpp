@@ -53,6 +53,7 @@ Node FpIcPre::solve( Node x, Node p, std::vector< Node >& ics, int ctnIndex ){
               ( pck==FLOATINGPOINT_GT ? FLOATINGPOINT_LEQ :
               ( pck==FLOATINGPOINT_LT ? FLOATINGPOINT_GEQ : UNDEFINED_KIND ) ) );
     if( fk==UNDEFINED_KIND ){
+      Trace("fp-ic-solve") << " ....failed to handle negation." << std::endl;
       return Node::null();
     }else{
       Node pf = nm->mkNode( fk, p[0][0], p[0][1] );
@@ -68,21 +69,46 @@ Node FpIcPre::solve( Node x, Node p, std::vector< Node >& ics, int ctnIndex ){
     }
   }
   Node tx = p[ctnIndex];
+  if( tx.getKind()==FLOATINGPOINT_NEG && pk==EQUAL ){
+    Node eq = tx[0].eqNode(nm->mkNode(FLOATINGPOINT_NEG,p[1-ctnIndex]));
+    return solve(x,eq,ics,0);
+  }
   if( tx==x ){
     Node s = p[1-ctnIndex];
     if( pk==EQUAL || pk==FLOATINGPOINT_LEQ || pk==FLOATINGPOINT_GEQ ){
     Trace("fp-ic-solve") << "....success: " << s << std::endl;
       return s;
     }else{
-      Node k = nm->mkSkolem("k_strict", s.getType());
-    Trace("fp-ic-solve") << "....success: " << k << std::endl;
-      return k;
+      //Node k = nm->mkSkolem("k_strict", s.getType());
+      //Trace("fp-ic-solve") << "....success: " << k << std::endl;
+      Trace("fp-ic-solve") << " ....unknown predicate " << pk << std::endl;
+      return Node::null();
     }
   }
   int tCtnIndex = getCtnIndex(x,tx);
-  Trace("fp-ic-req") << "REQUIRES: " << p.getKind() << "/" << tx.getKind() << ", index : " << ctnIndex << "/" << tCtnIndex << std::endl;
+  if( tCtnIndex==-1 ){
+      Trace("fp-ic-solve") << " ....failed to find contains index in term." << std::endl;
+    return Node::null();
+  }
   Node k = nm->mkSkolem("k", tx[tCtnIndex].getType());
   Node eq = tx[tCtnIndex].eqNode(k);
+  
+  bool proc = false;
+  Kind txk = tx.getKind();
+  if( pk==EQUAL ){
+    if( txk==FLOATINGPOINT_MULT ){
+      proc = true;
+    }else if( txk==FLOATINGPOINT_DIV && tCtnIndex==1 ){
+      proc = true;
+    }else if( txk==FLOATINGPOINT_PLUS ){
+      proc = true;
+    }
+  }
+  if( proc ){
+    Trace("fp-ic-req") << "CHOICE: " << pk << "/" << txk << ", index : " << ctnIndex << "/" << tCtnIndex << std::endl;
+  }else{
+    Trace("fp-ic-req") << "REQUIRES: " << pk << "/" << txk << ", index : " << ctnIndex << "/" << tCtnIndex << std::endl;
+  }
   return solve(x,eq,ics,0);
 }
     
