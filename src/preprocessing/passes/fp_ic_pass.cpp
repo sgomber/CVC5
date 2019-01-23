@@ -74,12 +74,12 @@ Node FpIcPre::solve( Node x, Node p, std::vector< Node >& ics, int ctnIndex ){
     return solve(x,eq,ics,0);
   }
   if( tx==x ){
-    Node s = p[1-ctnIndex];
+    Node t = p[1-ctnIndex];
     if( pk==EQUAL || pk==FLOATINGPOINT_LEQ || pk==FLOATINGPOINT_GEQ ){
-    Trace("fp-ic-solve") << "....success: " << s << std::endl;
-      return s;
+    Trace("fp-ic-solve") << "....success: " << t << std::endl;
+      return t;
     }else{
-      //Node k = nm->mkSkolem("k_strict", s.getType());
+      //Node k = nm->mkSkolem("k_strict", t.getType());
       //Trace("fp-ic-solve") << "....success: " << k << std::endl;
       Trace("fp-ic-solve") << " ....unknown predicate " << pk << std::endl;
       return Node::null();
@@ -93,25 +93,110 @@ Node FpIcPre::solve( Node x, Node p, std::vector< Node >& ics, int ctnIndex ){
   Node k = nm->mkSkolem("k", tx[tCtnIndex].getType());
   Node eq = tx[tCtnIndex].eqNode(k);
   
-  bool proc = false;
   Kind txk = tx.getKind();
+  Node ic;
   if( pk==EQUAL ){
+    Node t = p[1-ctnIndex];
     if( txk==FLOATINGPOINT_MULT ){
-      proc = true;
+      Node s = tx[3-tCtnIndex];
+      //(define-fun IC ((s FP) (t FP)) Bool (or (= t (fp.mul R s (fp.div RTP t s))) (= t (fp.mul R s (fp.div RTN t s))) (and (fp.isInfinite s) (fp.isInfinite t)) (and (fp.isZero s) (fp.isZero t))))
+      Node eq1 = t.eqNode( nm->mkNode( FLOATINGPOINT_MULT, tx[0], s, 
+                             nm->mkNode( FLOATINGPOINT_DIV, nm->mkConst<RoundingMode>(roundTowardPositive), t, s ) ) );
+      Node eq2 = t.eqNode( nm->mkNode( FLOATINGPOINT_MULT, tx[0], s, 
+                             nm->mkNode( FLOATINGPOINT_DIV, nm->mkConst<RoundingMode>(roundTowardNegative), t, s ) ) );
+      Node sc1 = nm->mkNode( AND, nm->mkNode( FLOATINGPOINT_ISINF, t ), nm->mkNode( FLOATINGPOINT_ISINF, s ) );
+      Node sc2 = nm->mkNode( AND, nm->mkNode( FLOATINGPOINT_ISZ, t ), nm->mkNode( FLOATINGPOINT_ISZ, s ) );
+      ic = nm->mkNode( OR, eq1, eq2, sc1, sc2 );
+      ic = nm->mkNode( IMPLIES, ic, nm->mkNode( FLOATINGPOINT_MULT, tx[0], k, s ).eqNode(t) );
     }else if( txk==FLOATINGPOINT_DIV && tCtnIndex==1 ){
-      proc = true;
+      Node s = tx[3-tCtnIndex];
+      //(define-fun IC ((s FP) (t FP)) Bool (or (= t (fp.div R (fp.mul RTP s t) s)) (= t (fp.div R (fp.mul RTN s t) s)) (ite (fp.isInfinite s) (fp.isZero t) (and (fp.isInfinite t) (fp.isZero s)))))
+      Node eq1 = t.eqNode( nm->mkNode( FLOATINGPOINT_DIV, tx[0], s, 
+                             nm->mkNode( FLOATINGPOINT_MULT, nm->mkConst<RoundingMode>(roundTowardPositive), t, s ) ) );
+      Node eq2 = t.eqNode( nm->mkNode( FLOATINGPOINT_DIV, tx[0], s, 
+                             nm->mkNode( FLOATINGPOINT_MULT, nm->mkConst<RoundingMode>(roundTowardNegative), t, s ) ) );
+      Node sc = nm->mkNode( ITE, nm->mkNode( FLOATINGPOINT_ISINF, s ), nm->mkNode( FLOATINGPOINT_ISZ, t ), 
+                                 nm->mkNode( AND,  nm->mkNode( FLOATINGPOINT_ISINF, t ), nm->mkNode( FLOATINGPOINT_ISZ, s ) ) );
+      ic = nm->mkNode( OR, eq1, eq2, sc );
+      ic = nm->mkNode( IMPLIES, ic, nm->mkNode( FLOATINGPOINT_DIV, tx[0], k, s ).eqNode(t) );
+    }else if( txk==FLOATINGPOINT_DIV && tCtnIndex==2 ){
+      Node s = tx[3-tCtnIndex];
+      //(define-fun IC ((s FP) (t FP)) Bool (or (= t (fp.div R s (fp.div RTP s t))) (= t (fp.div R s (fp.div RTN s t))) (and (fp.isInfinite s) (fp.isInfinite t)) (and (fp.isZero s) (fp.isZero t))))
+      Node eq1 = t.eqNode( nm->mkNode( FLOATINGPOINT_DIV, tx[0], s, 
+                             nm->mkNode( FLOATINGPOINT_DIV, nm->mkConst<RoundingMode>(roundTowardPositive), t, s ) ) );
+      Node eq2 = t.eqNode( nm->mkNode( FLOATINGPOINT_DIV, tx[0], s, 
+                             nm->mkNode( FLOATINGPOINT_DIV, nm->mkConst<RoundingMode>(roundTowardNegative), t, s ) ) );
+      Node sc1 = nm->mkNode( AND, nm->mkNode( FLOATINGPOINT_ISINF, t ), nm->mkNode( FLOATINGPOINT_ISINF, s ) );
+      Node sc2 = nm->mkNode( AND, nm->mkNode( FLOATINGPOINT_ISZ, t ), nm->mkNode( FLOATINGPOINT_ISZ, s ) );
+      ic = nm->mkNode( OR, eq1, eq2, sc1, sc2 );
+      ic = nm->mkNode( IMPLIES, ic, nm->mkNode( FLOATINGPOINT_DIV, tx[0], s, k ).eqNode(t) );
     }else if( txk==FLOATINGPOINT_PLUS ){
-      proc = true;
+      Node s = tx[3-tCtnIndex];
+      //(define-fun IC ((s FP) (t FP)) Bool (or (= t (fp.add R s (fp.sub RTP t s))) (= t (fp.add R s (fp.sub RTN t s))) (= s t)))
+      Node eq1 = t.eqNode( nm->mkNode( FLOATINGPOINT_PLUS, tx[0], s, 
+                             nm->mkNode( FLOATINGPOINT_SUB, nm->mkConst<RoundingMode>(roundTowardPositive), t, s ) ) );
+      Node eq2 = t.eqNode( nm->mkNode( FLOATINGPOINT_PLUS, tx[0], s, 
+                             nm->mkNode( FLOATINGPOINT_SUB, nm->mkConst<RoundingMode>(roundTowardNegative), t, s ) ) );
+      Node sc = t.eqNode(s);
+      ic = nm->mkNode( OR, eq1, eq2, sc );
+      ic = nm->mkNode( IMPLIES, ic, nm->mkNode( FLOATINGPOINT_PLUS, tx[0], s, k ).eqNode(t) );
+    }
+  }else if( pk==LEQ ){
+    if( txk==FLOATINGPOINT_PLUS ){
+      //proc = true;
+      // TODO
     }
   }
-  if( proc ){
+  if( !ic.isNull() ){
     Trace("fp-ic-req") << "CHOICE: " << pk << "/" << txk << ", index : " << ctnIndex << "/" << tCtnIndex << std::endl;
+    Trace("fp-ic-req") << "...IC: " << ic << std::endl;
+    ics.push_back(ic);
+    return solve(x,eq,ics,0);
   }else{
     Trace("fp-ic-req") << "REQUIRES: " << pk << "/" << txk << ", index : " << ctnIndex << "/" << tCtnIndex << std::endl;
+    return Node::null();
   }
-  return solve(x,eq,ics,0);
 }
+
+class FpInst 
+{
+public:
+  std::vector< Node > d_ics;
+  Node d_res;
+};
+
+void instantiate( Node q, std::vector< Node >& vars, std::vector< Node >& subs, 
+                  std::vector< Node >& ics, std::unordered_set< Node, NodeHashFunction >& ilemmas, 
+                  std::map< unsigned, std::map< unsigned, FpInst > >& fpMap )
+{
+  unsigned i = subs.size();
+  if( i==q[0].getNumChildren() ){
+    for( const Node& ic : ics )
+    {
+      Node sic = ic.substitute(vars.begin(), vars.end(), subs.begin(), subs.end());
+      ilemmas.insert(sic);
+    }
+    Node inst = q[1].substitute
     
+    return;
+  }
+  for( std::pair< unsigned, FpInst >& p : fpMap[i] )
+  {
+    FpInst& fi = p.second;
+    if( !fi.d_res.isNull() ){
+      subs.push_back(fi.d_res);
+      for( const Node ic : fi.d_ics ){
+        ics.push_back(ic);
+      }
+      instantiate(q,vars,subs,ics,ilemmas, fpMap);
+      for( const Node ic : fi.d_ics ){
+        ics.pop_back();
+      }
+      subs.pop_back();
+    }
+  }
+}
+
 PreprocessingPassResult FpIcPre::applyInternal(
     AssertionPipeline* assertionsToPreprocess)
 {
@@ -151,15 +236,23 @@ PreprocessingPassResult FpIcPre::applyInternal(
     }else{
       qlits.push_back(q[1].negate());
     }
-    std::vector< Node > ics;
-    for( const Node& ql : qlits ){
+    std::map< unsigned, std::map< unsigned, FpInst > > fpMap;
+    for( unsigned i=0; i<qlits.size(); i++ ){
+      Node ql = qlits[i];
       Trace("fp-ic") << "- literal to solve: " << ql << std::endl;
       for( unsigned j=0; j<q[0].getNumChildren(); j++ ){
-        Node res = solve( q[0][j], ql, ics );
-        if( !res.isNull() ){
-        }
+        fpMap[i][j].d_res = solve( q[0][j], ql, fpMap[i][j].d_ics );
       }
     }
+    // add product of instantiations
+    std::unordered_set< Node, NodeHashFunction > ilemmas;
+    std::vector< Node > vars;
+    for( const Node& v : q[0] ){
+      vars.push_back(v);
+    }
+    std::vector< Node > subs;
+    std::vector< Node > ics;
+    instantiate( q, vars, subs, ics, ilemmas, fpMap );
   }
   
   return PreprocessingPassResult::NO_CONFLICT;
