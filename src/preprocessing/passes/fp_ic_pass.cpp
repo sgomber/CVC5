@@ -268,7 +268,7 @@ PreprocessingPassResult FpIcPre::applyInternal(
       Node ql = qlits[i];
       Trace("fp-ic") << "- literal to solve: " << ql << std::endl;
       for( unsigned j=0; j<q[0].getNumChildren(); j++ ){
-        fpMap[j][i].d_res = solve( q[0][j], ql, fpMap[j][i].d_ics, options::fpIcPreIc() );
+        fpMap[j][i].d_res = solve( q[0][j], ql, fpMap[j][i].d_ics, -1, options::fpIcPreIc() );
       }
     }
     // add product of instantiations
