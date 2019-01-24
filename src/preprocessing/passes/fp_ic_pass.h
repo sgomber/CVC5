@@ -32,7 +32,7 @@ class FpIcPre : public PreprocessingPass
 
  protected:
   int getCtnIndex( Node x, Node n);
-  Node solve( Node x, Node p, std::vector< Node >& ics, int ctnIndex=-1 );
+  Node solve( Node x, Node p, std::vector< Node >& ics, int ctnIndex=-1, bool useIc=true );
   PreprocessingPassResult applyInternal(
       AssertionPipeline* assertionsToPreprocess) override;
 };
