@@ -285,6 +285,7 @@ PreprocessingPassResult FpIcPre::applyInternal(
     newAssertions.push_back((*assertionsToPreprocess)[0]);
     for( const Node& lem : ilemmas ){
       Trace("fp-ic") << "**** Generated lemma: " << lem << std::endl;
+      Trace("fp-ic-lemma") << "(assert " << lem << ")" << std::endl;
       newAssertions.push_back(lem);
     }
     Node newA = NodeManager::currentNM()->mkNode( AND, newAssertions);
