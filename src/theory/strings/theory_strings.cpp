@@ -131,6 +131,7 @@ TheoryStrings::TheoryStrings(context::Context* c,
       d_processed_memberships(c),
       d_regexp_ant(c),
       d_input_vars(u),
+      d_input_vars_len_ubound(u),
       d_input_var_lsum(u),
       d_cardinality_lits(u),
       d_curr_cardinality(c, 0),
@@ -544,8 +545,14 @@ void TheoryStrings::presolve() {
          itr != d_input_vars.end();
          ++itr)
     {
-      inputVars.push_back(*itr);
+      Node v = *itr;
+      // if we have inferred an upper bound on the length for v, then don't bother adding it here.
+      if( d_input_vars_len_ubound.find(v)==d_input_vars_len_ubound.end() )
+      {
+        inputVars.push_back(*itr);
+      }
     }
+    Trace("strings-fmf-vars") << "*** INITIALIZE fmf with vars " << inputVars << std::endl;
     d_sslds->initialize(inputVars);
     getDecisionManager()->registerStrategy(
         DecisionManager::STRAT_STRINGS_SUM_LENGTHS, d_sslds.get());
@@ -870,9 +877,7 @@ void TheoryStrings::preRegisterTerm(TNode n) {
           // then we minimize the length of this term if it is a variable
           // but not an internally generated Skolem, or a term that does
           // not belong to this theory.
-          if (options::stringFMF()
-              && (n.isVar() ? !d_sk_cache.isSkolem(n)
-                            : kindToTheoryId(k) != THEORY_STRINGS))
+          if (options::stringFMF() && isFmfInputVariable(n))
           {
             d_input_vars.insert(n);
             Trace("strings-dstrat-reg") << "input variable: " << n << std::endl;
@@ -907,6 +912,7 @@ Theory::PPAssertStatus TheoryStrings::ppAssert(TNode in, SubstitutionMap& outSub
   Theory::PPAssertStatus status = Theory::ppAssert(in,outSubstitutions);
   if( status==PP_ASSERT_STATUS_UNSOLVED )
   {
+    // check if we can infer a bound
     
   }
   return status;
@@ -4653,6 +4659,11 @@ Node TheoryStrings::StringSumLengthDecisionStrategy::mkLiteral(unsigned i)
 std::string TheoryStrings::StringSumLengthDecisionStrategy::identify() const
 {
   return std::string("string_sum_len");
+}
+
+bool TheoryStrings::isFmfInputVariable(Node n)
+{
+  return n.isVar() ? !d_sk_cache.isSkolem(n) : kindToTheoryId(n.getKind()) != THEORY_STRINGS;
 }
 
 Node TheoryStrings::ppRewrite(TNode atom) {

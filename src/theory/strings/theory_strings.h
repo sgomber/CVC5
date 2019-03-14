@@ -748,7 +748,18 @@ private:
 
   // Finite Model Finding
  private:
+  /** 
+   * The set of variables are relevant for bounding the length for FMF. Notice
+   * this set may contain terms that are applications of symbols that do not
+   * belong to strings, e.g. uninterpreted functions whose return type is a
+   * string.
+   */
   NodeSet d_input_vars;
+  /** 
+   * A map from terms in the above set to an arithmetic term denoting an upper
+   * bound on their length. This is computed statically during ppAssert.
+   */
+  NodeNodeMap d_input_vars_len_ubound;
   context::CDO< Node > d_input_var_lsum;
   context::CDHashMap< int, Node > d_cardinality_lits;
   context::CDO< int > d_curr_cardinality;
@@ -774,7 +785,6 @@ private:
     bool isInitialized();
     /** initialize */
     void initialize(const std::vector<Node>& vars);
-
     /*
      * Do not hide the zero-argument version of initialize() inherited from the
      * base class
@@ -790,6 +800,11 @@ private:
   };
   /** an instance of the above class */
   std::unique_ptr<StringSumLengthDecisionStrategy> d_sslds;
+  /** 
+   * Return true if n a finite model finding input variable, i.e. one whose
+   * length should be bound by the strategy above.
+   */
+  bool isFmfInputVariable(Node n);
 
  public:
   // ppRewrite
