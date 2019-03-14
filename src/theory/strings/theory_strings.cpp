@@ -901,6 +901,17 @@ Node TheoryStrings::expandDefinition(LogicRequest &logicRequest, Node node) {
   return node;
 }
 
+Theory::PPAssertStatus TheoryStrings::ppAssert(TNode in, SubstitutionMap& outSubstitutions) 
+{
+  Trace("strings-pp-assert") << "TheoryStrings::ppAssert : " << in << std::endl;
+  Theory::PPAssertStatus status = Theory::ppAssert(in,outSubstitutions);
+  if( status==PP_ASSERT_STATUS_UNSOLVED )
+  {
+    
+  }
+  return status;
+}
+
 void TheoryStrings::check(Effort e) {
   if (done() && e<EFFORT_FULL) {
     return;

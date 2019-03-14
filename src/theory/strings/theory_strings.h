@@ -587,6 +587,8 @@ private:
   void preRegisterTerm(TNode n) override;
   /** Expand definition */
   Node expandDefinition(LogicRequest& logicRequest, Node n) override;
+  /** preprocess assert */
+  PPAssertStatus ppAssert(TNode in, SubstitutionMap& outSubstitutions) override;
   /** Check at effort e */
   void check(Effort e) override;
   /** needs check last effort */
