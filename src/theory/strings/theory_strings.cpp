@@ -922,18 +922,21 @@ Theory::PPAssertStatus TheoryStrings::ppAssert(
       // check if we can infer a bound
       if( in.getKind()==STRING_STRCTN )
       {
-        bounds[in[0]] = nm->mkNode( STRING_LENGTH, in[1] );
+        bounds[in[1]] = nm->mkNode( STRING_LENGTH, in[0] );
       }
       for( const std::pair< Node, Node >& b : bounds )
       {
         Node x = Rewriter::rewrite( b.first );
-        Node ub = Rewriter::rewrite( b.second );
-        // set it if not yet set
-        NodeNodeMap::const_iterator it = d_input_vars_len_ubound.find(x);
-        if( it == d_input_vars_len_ubound.end() )
+        if( !x.isConst() )
         {
-          Trace("strings-pp-assert") << "- length " << x << " bound to " << ub << std::endl;
-          d_input_vars_len_ubound[x] = ub;
+          Node ub = Rewriter::rewrite( b.second );
+          // set it if not yet set
+          NodeNodeMap::const_iterator it = d_input_vars_len_ubound.find(x);
+          if( it == d_input_vars_len_ubound.end() )
+          {
+            Trace("strings-pp-assert") << "- length " << x << " bound to " << ub << std::endl;
+            d_input_vars_len_ubound[x] = ub;
+          }
         }
       }
     }
