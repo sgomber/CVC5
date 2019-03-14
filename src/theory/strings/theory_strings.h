@@ -748,14 +748,14 @@ private:
 
   // Finite Model Finding
  private:
-  /** 
+  /**
    * The set of variables are relevant for bounding the length for FMF. Notice
    * this set may contain terms that are applications of symbols that do not
    * belong to strings, e.g. uninterpreted functions whose return type is a
    * string.
    */
   NodeSet d_input_vars;
-  /** 
+  /**
    * A map from terms in the above set to an arithmetic term denoting an upper
    * bound on their length. This is computed statically during ppAssert.
    */
@@ -800,7 +800,7 @@ private:
   };
   /** an instance of the above class */
   std::unique_ptr<StringSumLengthDecisionStrategy> d_sslds;
-  /** 
+  /**
    * Return true if n a finite model finding input variable, i.e. one whose
    * length should be bound by the strategy above.
    */

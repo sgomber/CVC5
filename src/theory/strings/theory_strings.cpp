@@ -546,13 +546,15 @@ void TheoryStrings::presolve() {
          ++itr)
     {
       Node v = *itr;
-      // if we have inferred an upper bound on the length for v, then don't bother adding it here.
-      if( d_input_vars_len_ubound.find(v)==d_input_vars_len_ubound.end() )
+      // if we have inferred an upper bound on the length for v, then don't
+      // bother adding it here.
+      if (d_input_vars_len_ubound.find(v) == d_input_vars_len_ubound.end())
       {
         inputVars.push_back(*itr);
       }
     }
-    Trace("strings-fmf-vars") << "*** INITIALIZE fmf with vars " << inputVars << std::endl;
+    Trace("strings-fmf-vars")
+        << "*** INITIALIZE fmf with vars " << inputVars << std::endl;
     d_sslds->initialize(inputVars);
     getDecisionManager()->registerStrategy(
         DecisionManager::STRAT_STRINGS_SUM_LENGTHS, d_sslds.get());
@@ -906,14 +908,14 @@ Node TheoryStrings::expandDefinition(LogicRequest &logicRequest, Node node) {
   return node;
 }
 
-Theory::PPAssertStatus TheoryStrings::ppAssert(TNode in, SubstitutionMap& outSubstitutions) 
+Theory::PPAssertStatus TheoryStrings::ppAssert(
+    TNode in, SubstitutionMap& outSubstitutions)
 {
   Trace("strings-pp-assert") << "TheoryStrings::ppAssert : " << in << std::endl;
-  Theory::PPAssertStatus status = Theory::ppAssert(in,outSubstitutions);
-  if( status==PP_ASSERT_STATUS_UNSOLVED )
+  Theory::PPAssertStatus status = Theory::ppAssert(in, outSubstitutions);
+  if (status == PP_ASSERT_STATUS_UNSOLVED)
   {
     // check if we can infer a bound
-    
   }
   return status;
 }
@@ -4663,7 +4665,8 @@ std::string TheoryStrings::StringSumLengthDecisionStrategy::identify() const
 
 bool TheoryStrings::isFmfInputVariable(Node n)
 {
-  return n.isVar() ? !d_sk_cache.isSkolem(n) : kindToTheoryId(n.getKind()) != THEORY_STRINGS;
+  return n.isVar() ? !d_sk_cache.isSkolem(n)
+                   : kindToTheoryId(n.getKind()) != THEORY_STRINGS;
 }
 
 Node TheoryStrings::ppRewrite(TNode atom) {
