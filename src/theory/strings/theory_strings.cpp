@@ -915,7 +915,28 @@ Theory::PPAssertStatus TheoryStrings::ppAssert(
   Theory::PPAssertStatus status = Theory::ppAssert(in, outSubstitutions);
   if (status == PP_ASSERT_STATUS_UNSOLVED)
   {
-    // check if we can infer a bound
+    if( options::stringFMFMinVars() )
+    {
+      NodeManager * nm = NodeManager::currentNM();
+      std::map< Node, Node > bounds;
+      // check if we can infer a bound
+      if( in.getKind()==STRING_STRCTN )
+      {
+        bounds[in[0]] = nm->mkNode( STRING_LENGTH, in[1] );
+      }
+      for( const std::pair< Node, Node >& b : bounds )
+      {
+        Node x = Rewriter::rewrite( b.first );
+        Node ub = Rewriter::rewrite( b.second );
+        // set it if not yet set
+        NodeNodeMap::const_iterator it = d_input_vars_len_ubound.find(x);
+        if( it == d_input_vars_len_ubound.end() )
+        {
+          Trace("strings-pp-assert") << "- length " << x << " bound to " << ub << std::endl;
+          d_input_vars_len_ubound[x] = ub;
+        }
+      }
+    }
   }
   return status;
 }
@@ -4665,6 +4686,9 @@ std::string TheoryStrings::StringSumLengthDecisionStrategy::identify() const
 
 bool TheoryStrings::isFmfInputVariable(Node n)
 {
+  // we should bound the length of n if it is an external variable (not
+  // introduced as a skolem by this class), or if it is an external term of
+  // string type.
   return n.isVar() ? !d_sk_cache.isSkolem(n)
                    : kindToTheoryId(n.getKind()) != THEORY_STRINGS;
 }

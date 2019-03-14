@@ -39,6 +39,14 @@ header = "options/strings_options.h"
   help       = "the finite model finding used by the theory of strings"
 
 [[option]]
+  name       = "stringFMFMinVars"
+  category   = "regular"
+  long       = "strings-fmf-min-vars"
+  type       = "bool"
+  default    = "false"
+  help       = "minimize the variables bound by the finite model finding strategy in strings"
+
+[[option]]
   name       = "stringEager"
   category   = "regular"
   long       = "strings-eager"
