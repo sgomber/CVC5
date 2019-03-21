@@ -819,7 +819,7 @@ bool FullModelChecker::exhaustiveInstantiate(FirstOrderModelFmc * fm, Node f, No
       Trace("fmc-exh-debug") << "Incremented index " << index << std::endl;
       if( !riter.isFinished() ){
         if (index>=0 && riter.d_index[index]>0 && addedLemmas>0 && riter.d_enum_type[index]==RepSetIterator::ENUM_BOUND_INT ) {
-          Trace("fmc-exh-debug") << "Since this is a range enumeration, skip to the next..." << std::endl;
+          Trace("fmc-exh-debug") << "Since this is a range enumeration, skip to the next?..." << std::endl;
           riter.incrementAtIndex(index - 1);
         }
       }

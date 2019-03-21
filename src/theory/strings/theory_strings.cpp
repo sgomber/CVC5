@@ -4705,6 +4705,17 @@ bool TheoryStrings::isFmfInputVariable(Node n)
 
 Node TheoryStrings::ppRewrite(TNode atom) {
   Trace("strings-ppr") << "TheoryStrings::ppRewrite " << atom << std::endl;
+  if( atom.getKind()==EQUAL )
+  {
+    Node ret = TheoryStringsRewriter::rewriteEqualityExt(atom);
+    if( ret!=atom )
+    {
+      Trace("strings-ppr") << "  rewrote " << atom << " -> " << ret
+                           << " via extended equality rewriting."
+                           << std::endl;
+      return ret;
+    }
+  }
   Node atomElim;
   if (options::regExpElim() && atom.getKind() == STRING_IN_REGEXP)
   {
