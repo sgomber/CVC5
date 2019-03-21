@@ -293,6 +293,8 @@ private:
   std::vector< Node > d_empty_vec;
   //
   NodeList d_ee_disequalities;
+  /** the set of learned literals called via ppAssert. */
+  NodeNodeMap d_ppAssertMap;
 private:
   NodeSet d_congruent;
   /**

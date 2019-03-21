@@ -115,6 +115,7 @@ TheoryStrings::TheoryStrings(context::Context* c,
       d_extf_infer_cache(c),
       d_extf_infer_cache_u(u),
       d_ee_disequalities(c),
+      d_ppAssertMap(u),
       d_congruent(c),
       d_proxy_var(u),
       d_proxy_var_to_length(u),
@@ -922,12 +923,35 @@ Theory::PPAssertStatus TheoryStrings::ppAssert(
   Theory::PPAssertStatus status = Theory::ppAssert(in, outSubstitutions);
   if (status == PP_ASSERT_STATUS_UNSOLVED)
   {
+    NodeManager * nm = NodeManager::currentNM();
+    Kind k = in.getKind();
+    if( k==STRING_IN_REGEXP )
+    {
+      if( in[1].getKind()==REGEXP_CONCAT )
+      {
+        TypeNode stn = in[0].getType();
+        // t in re.++( R1, ..., Rn ) -->
+        // t = t1 ++ ... ++ tn ^ t1 in R1 ^ ... ^ tn in Rn
+        std::vector< Node > tchild;
+        std::vector< Node > conc;
+        for( const Node& ri : in[1] )
+        {
+          Node ti = nm->mkSkolem("tr",stn);
+          tchild.push_back(ti);
+          Node memi = nm->mkNode(STRING_IN_REGEXP,ti,ri);
+          conc.push_back(memi);
+        }
+        Node tc = nm->mkNode(STRING_CONCAT,tchild);
+        conc.push_back(in[0].eqNode(tc));
+        Node res = nm->mkNode(AND,conc);
+        d_ppAssertMap[in] = res;
+      }
+    }
     if( options::stringFMFMinVars() )
     {
-      NodeManager * nm = NodeManager::currentNM();
       std::map< Node, Node > bounds;
       // check if we can infer a bound
-      if( in.getKind()==STRING_STRCTN )
+      if( k==STRING_STRCTN )
       {
         bounds[in[1]] = nm->mkNode( STRING_LENGTH, in[0] );
       }
@@ -4716,17 +4740,25 @@ Node TheoryStrings::ppRewrite(TNode atom) {
       return ret;
     }
   }
-  Node atomElim;
+  NodeNodeMap::const_iterator itp = d_ppAssertMap.find(atom);
+  if( itp!=d_ppAssertMap.end() )
+  {
+    Node ret = (*itp).second;
+    Trace("strings-ppr") << "  rewrote " << atom << " -> " << ret
+                          << " from ppAssert."
+                          << std::endl;
+    return ret;
+  }
   if (options::regExpElim() && atom.getKind() == STRING_IN_REGEXP)
   {
     // aggressive elimination of regular expression membership
-    atomElim = d_regexp_elim.eliminate(atom);
-    if (!atomElim.isNull())
+    Node ret = d_regexp_elim.eliminate(atom);
+    if (!ret.isNull())
     {
-      Trace("strings-ppr") << "  rewrote " << atom << " -> " << atomElim
+      Trace("strings-ppr") << "  rewrote " << atom << " -> " << ret
                            << " via regular expression elimination."
                            << std::endl;
-      atom = atomElim;
+      return ret;
     }
   }
   if( !options::stringLazyPreproc() ){
