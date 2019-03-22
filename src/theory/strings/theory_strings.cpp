@@ -4740,17 +4740,17 @@ Node TheoryStrings::ppRewrite(TNode atom) {
       return ret;
     }
   }
-  NodeNodeMap::const_iterator itp = d_ppAssertMap.find(atom);
-  if( itp!=d_ppAssertMap.end() )
-  {
-    Node ret = (*itp).second;
-    Trace("strings-ppr") << "  rewrote " << atom << " -> " << ret
-                          << " from ppAssert."
-                          << std::endl;
-    return ret;
-  }
   if (options::regExpElim() && atom.getKind() == STRING_IN_REGEXP)
   {
+    NodeNodeMap::const_iterator itp = d_ppAssertMap.find(atom);
+    if( itp!=d_ppAssertMap.end() )
+    {
+      Node ret = (*itp).second;
+      Trace("strings-ppr") << "  rewrote " << atom << " -> " << ret
+                            << " from ppAssert."
+                            << std::endl;
+      return ret;
+    }
     // aggressive elimination of regular expression membership
     Node ret = d_regexp_elim.eliminate(atom);
     if (!ret.isNull())
