@@ -2524,6 +2524,25 @@ void NonlinearExtension::check(Theory::Effort e) {
           Trace("nl-ext-lemma-model") << "Assert : " << pred << std::endl;
           d_containing.getOutputChannel().lemma(pred);
         }
+        bool err = false;
+        for (Theory::assertions_iterator it = d_containing.facts_begin();
+            it != d_containing.facts_end();
+            ++it)
+        {
+          const Assertion& assertion = *it;
+          Node lit = assertion.assertion;
+          Node slit = lit.substitute(d_check_model_vars.begin(),d_check_model_vars.end(),d_check_model_subs.begin(),d_check_model_subs.end());
+          slit = Rewriter::rewrite(slit);
+          if( slit.isConst() && slit.getConst<bool>())
+          {
+          }
+          else
+          {
+            Trace("ajr-temp") << "DID NOT SATISFY " << lit << " " << (d_skolem_atoms.find(lit)!=d_skolem_atoms.end()) << std::endl;
+            err = true;
+          }
+        }
+        AlwaysAssert( !err );
         d_builtModel = mg;
       }
 
