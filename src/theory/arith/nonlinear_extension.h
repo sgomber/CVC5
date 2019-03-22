@@ -366,7 +366,7 @@ class NonlinearExtension {
    */
   bool hasCheckModelAssignment(Node v) const;
   /** have we successfully built the model in this SAT context? */
-  context::CDO<bool> d_builtModel;
+  context::CDO<Node> d_builtModel;
   //---------------------------end check model
 
   /** In the following functions, status states a relationship

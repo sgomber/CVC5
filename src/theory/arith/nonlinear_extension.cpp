@@ -156,7 +156,7 @@ bool hasNewMonomials(Node n, const std::vector<Node>& existing) {
 
 NonlinearExtension::NonlinearExtension(TheoryArith& containing,
                                        eq::EqualityEngine* ee)
-    : d_builtModel(containing.getSatContext(), false),
+    : d_builtModel(containing.getSatContext()),
       d_lemmas(containing.getUserContext()),
       d_zero_split(containing.getUserContext()),
       d_skolem_atoms(containing.getUserContext()),
@@ -2273,29 +2273,34 @@ int NonlinearExtension::checkLastCall(const std::vector<Node>& assertions,
 void NonlinearExtension::check(Theory::Effort e) {
   Trace("nl-ext") << std::endl;
   Trace("nl-ext") << "NonlinearExtension::check, effort = " << e << std::endl;
-  if (d_builtModel.get())
+  if (!d_builtModel.get().isNull())
   {
-    if (e == Theory::EFFORT_FULL)
+    Node mgv = d_containing.getValuation().getModel()->getValue(d_builtModel.get());
+    Assert( mgv.isConst() );
+    if( mgv.getConst<bool>() )
     {
+      if (e == Theory::EFFORT_FULL)
+      {
+        return;
+      }
+      // now, record the approximations we used
+      NodeManager* nm = NodeManager::currentNM();
+      for (const std::pair<const Node, std::pair<Node, Node> >& cb :
+          d_check_model_bounds)
+      {
+        Node l = cb.second.first;
+        Node u = cb.second.second;
+        if (l != u)
+        {
+          Node v = cb.first;
+          Node pred =
+              nm->mkNode(AND, nm->mkNode(GEQ, v, l), nm->mkNode(GEQ, u, v));
+          pred = Rewriter::rewrite(pred);
+          d_containing.getValuation().getModel()->recordApproximation(v, pred);
+        }
+      }
       return;
     }
-    // now, record the approximations we used
-    NodeManager* nm = NodeManager::currentNM();
-    for (const std::pair<const Node, std::pair<Node, Node> >& cb :
-         d_check_model_bounds)
-    {
-      Node l = cb.second.first;
-      Node u = cb.second.second;
-      if (l != u)
-      {
-        Node v = cb.first;
-        Node pred =
-            nm->mkNode(AND, nm->mkNode(GEQ, v, l), nm->mkNode(GEQ, u, v));
-        pred = Rewriter::rewrite(pred);
-        d_containing.getValuation().getModel()->recordApproximation(v, pred);
-      }
-    }
-    return;
   }
   if (e == Theory::EFFORT_FULL) {
     d_containing.getExtTheory()->clearCache();
@@ -2519,7 +2524,7 @@ void NonlinearExtension::check(Theory::Effort e) {
           Trace("nl-ext-lemma-model") << "Assert : " << pred << std::endl;
           d_containing.getOutputChannel().lemma(pred);
         }
-        d_builtModel = true;
+        d_builtModel = mg;
       }
 
     } while (needsRecheck);
