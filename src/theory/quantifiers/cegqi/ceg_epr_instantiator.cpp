@@ -14,6 +14,7 @@
 
 #include "theory/quantifiers/cegqi/ceg_epr_instantiator.h"
 
+#include "expr/node_algorithm.h"
 #include "options/quantifiers_options.h"
 #include "theory/quantifiers/ematching/trigger.h"
 #include "theory/quantifiers/term_database.h"
@@ -32,6 +33,14 @@ void EprInstantiator::reset(CegInstantiator* ci,
                             CegInstEffort effort)
 {
   d_equal_terms.clear();
+}
+
+bool EprInstantiator::hasProcessEqualTerm(CegInstantiator* ci,
+                                          SolvedForm& sf,
+                                          Node pv,
+                                          CegInstEffort effort)
+{
+  return true;
 }
 
 bool EprInstantiator::processEqualTerm(CegInstantiator* ci,
@@ -98,14 +107,14 @@ void EprInstantiator::computeMatchScore(CegInstantiator* ci,
                                         Node pv,
                                         Node catom,
                                         std::vector<Node>& arg_reps,
-                                        TermArgTrie* tat,
+                                        TNodeTrie* tat,
                                         unsigned index,
                                         std::map<Node, int>& match_score)
 {
   if (index == catom.getNumChildren())
   {
-    Assert(tat->hasNodeData());
-    Node gcatom = tat->getNodeData();
+    Assert(tat->hasData());
+    Node gcatom = tat->getData();
     Trace("cegqi-epr") << "Matched : " << catom << " and " << gcatom
                        << std::endl;
     for (unsigned i = 0, nchild = catom.getNumChildren(); i < nchild; i++)
@@ -123,7 +132,7 @@ void EprInstantiator::computeMatchScore(CegInstantiator* ci,
     }
     return;
   }
-  std::map<TNode, TermArgTrie>::iterator it = tat->d_data.find(arg_reps[index]);
+  std::map<TNode, TNodeTrie>::iterator it = tat->d_data.find(arg_reps[index]);
   if (it != tat->d_data.end())
   {
     computeMatchScore(
@@ -137,7 +146,7 @@ void EprInstantiator::computeMatchScore(CegInstantiator* ci,
                                         Node eqc,
                                         std::map<Node, int>& match_score)
 {
-  if (!inst::Trigger::isAtomicTrigger(catom) || !catom.hasSubterm(pv))
+  if (!inst::Trigger::isAtomicTrigger(catom) || !expr::hasSubterm(catom, pv))
   {
     return;
   }
@@ -156,7 +165,7 @@ void EprInstantiator::computeMatchScore(CegInstantiator* ci,
   TermDb* tdb = ci->getQuantifiersEngine()->getTermDatabase();
   Node rep = ee->getRepresentative(eqc);
   Node op = tdb->getMatchOperator(catom);
-  TermArgTrie* tat = tdb->getTermArgTrie(rep, op);
+  TNodeTrie* tat = tdb->getTermArgTrie(rep, op);
   Trace("cegqi-epr") << "EPR instantiation match term : " << catom
                      << ", check ground terms=" << (tat != NULL) << std::endl;
   if (tat)

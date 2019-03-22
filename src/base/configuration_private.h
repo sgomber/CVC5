@@ -126,6 +126,12 @@ namespace CVC4 {
 #  define IS_CRYPTOMINISAT_BUILD false
 #endif /* CVC4_USE_CRYPTOMINISAT */
 
+#if CVC4_USE_DRAT2ER
+#  define IS_DRAT2ER_BUILD true
+#else /* CVC4_USE_DRAT2ER */
+#  define IS_DRAT2ER_BUILD false
+#endif /* CVC4_USE_DRAT2ER */
+
 #if CVC4_USE_LFSC
 #define IS_LFSC_BUILD true
 #else /* CVC4_USE_LFSC */
@@ -150,11 +156,21 @@ namespace CVC4 {
 #  define IS_GPL_BUILD false
 #endif /* CVC4_GPL_DEPS */
 
-#ifdef TLS
-#  define USING_TLS true
-#else /* TLS */
-#  define USING_TLS false
-#endif /* TLS */
+#define IS_ASAN_BUILD false
+
+// GCC test
+#if defined(__SANITIZE_ADDRESS__)
+#  undef IS_ASAN_BUILD
+#  define IS_ASAN_BUILD true
+#endif /* defined(__SANITIZE_ADDRESS__) */
+
+// Clang test
+#if defined(__has_feature)
+#  if __has_feature(address_sanitizer)
+#    undef IS_ASAN_BUILD
+#    define IS_ASAN_BUILD true
+#  endif /* __has_feature(address_sanitizer) */
+#endif /* defined(__has_feature) */
 
 }/* CVC4 namespace */
 

@@ -24,7 +24,7 @@ namespace CVC4 {
 namespace theory {
 namespace quantifiers {
 
-class CegConjecture;
+class SynthConjecture;
 
 /** utility for constructing datatypes that correspond to syntactic restrictions,
 * and applying the deep embedding from Section 4 of Reynolds et al CAV 2015.
@@ -32,7 +32,7 @@ class CegConjecture;
 class CegGrammarConstructor
 {
 public:
- CegGrammarConstructor(QuantifiersEngine* qe, CegConjecture* p);
+ CegGrammarConstructor(QuantifiersEngine* qe, SynthConjecture* p);
  ~CegGrammarConstructor() {}
  /** process
   *
@@ -62,8 +62,6 @@ public:
               const std::vector<Node>& ebvl);
  /** is the syntax restricted? */
  bool isSyntaxRestricted() { return d_is_syntax_restricted; }
- /** does the syntax allow ITE expressions? */
- bool hasSyntaxITE() { return d_has_ite; }
  /** make the default sygus datatype type corresponding to builtin type range
  *   bvl is the set of free variables to include in the grammar
  *   fun is for naming
@@ -110,28 +108,44 @@ public:
    * functions-to-synthesize of sygus conjecture q.
    */
   static bool hasSyntaxRestrictions(Node q);
+  /**
+   * Make the builtin constants for type "type" that should be included in a
+   * sygus grammar, add them to vector ops.
+   */
+  static void mkSygusConstantsForType(TypeNode type, std::vector<Node>& ops);
+  /**
+   * Convert node n based on deep embedding, see Section 4 of Reynolds et al
+   * CAV 2015.
+   *
+   * This returns the result of converting n to its deep embedding based on
+   * the mapping from functions to datatype variables, stored in
+   * d_synth_fun_vars. This method should be called only after calling process
+   * above.
+   */
+  Node convertToEmbedding(Node n);
+
  private:
   /** reference to quantifier engine */
   QuantifiersEngine * d_qe;
   /** parent conjecture
   * This contains global information about the synthesis conjecture.
   */
-  CegConjecture* d_parent;
+  SynthConjecture* d_parent;
+  /**
+   * Maps each synthesis function to its corresponding (first-order) sygus
+   * datatype variable. This map is initialized by the process methods.
+   */
+  std::map<Node, Node> d_synth_fun_vars;
   /** is the syntax restricted? */
   bool d_is_syntax_restricted;
-  /** does the syntax allow ITE expressions? */
-  bool d_has_ite;
   /** collect terms */
   void collectTerms( Node n, std::map< TypeNode, std::vector< Node > >& consts );
-  /** convert node n based on deep embedding (Section 4 of Reynolds et al CAV 2015) */
-  Node convertToEmbedding( Node n, std::map< Node, Node >& synth_fun_vars );
   //---------------- grammar construction
   // helper for mkSygusDefaultGrammar (makes unresolved type for mutually recursive datatype construction)
   static TypeNode mkUnresolvedType(const std::string& name, std::set<Type>& unres);
-  // make the builtin constants for type type that should be included in a sygus grammar
-  static void mkSygusConstantsForType( TypeNode type, std::vector<CVC4::Node>& ops );
   // collect the list of types that depend on type range
-  static void collectSygusGrammarTypesFor( TypeNode range, std::vector< TypeNode >& types, std::map< TypeNode, std::vector< DatatypeConstructorArg > >& sels );
+  static void collectSygusGrammarTypesFor(TypeNode range,
+                                          std::vector<TypeNode>& types);
   /** helper function for function mkSygusDefaultType
   * Collects a set of mutually recursive datatypes "datatypes" corresponding to
   * encoding type "range" to SyGuS.

@@ -29,7 +29,6 @@
 #include "base/modal_exception.h"
 #include "base/output.h"
 #include "lib/strtok_r.h"
-#include "gmp.h"
 #include "options/arith_heuristic_pivot_rule.h"
 #include "options/arith_propagation_mode.h"
 #include "options/arith_unate_lemma_mode.h"
@@ -43,8 +42,6 @@
 #include "options/language.h"
 #include "options/option_exception.h"
 #include "options/printer_modes.h"
-#include "options/quantifiers_modes.h"
-#include "options/simplification_mode.h"
 #include "options/smt_options.h"
 #include "options/theory_options.h"
 #include "options/theoryof_mode.h"
@@ -52,6 +49,28 @@
 
 namespace CVC4 {
 namespace options {
+
+// helper functions
+namespace {
+
+void throwLazyBBUnsupported(theory::bv::SatSolverMode m)
+{
+  std::string sat_solver;
+  if (m == theory::bv::SAT_SOLVER_CADICAL)
+  {
+    sat_solver = "CaDiCaL";
+  }
+  else
+  {
+    Assert(m == theory::bv::SAT_SOLVER_CRYPTOMINISAT);
+    sat_solver = "CryptoMiniSat";
+  }
+  std::string indent(25, ' ');
+  throw OptionException(sat_solver + " does not support lazy bit-blasting.\n"
+                        + indent + "Try --bv-sat-solver=minisat");
+}
+
+}  // namespace
 
 OptionsHandler::OptionsHandler(Options* options) : d_options(options) { }
 
@@ -65,8 +84,7 @@ void OptionsHandler::notifyBeforeSearch(const std::string& option)
     d_options->d_beforeSearchListeners.notify();
   } catch (ModalException&){
     std::stringstream ss;
-    ss << "cannot change option `" << option
-       << "' after final initialization (i.e., after logic has been set)";
+    ss << "cannot change option `" << option << "' after final initialization";
     throw ModalException(ss.str());
   }
 }
@@ -88,54 +106,18 @@ void OptionsHandler::notifyRlimitPer(const std::string& option) {
   d_options->d_rlimitPerListeners.notify();
 }
 
-unsigned long OptionsHandler::tlimitHandler(std::string option,
-                                            std::string optarg)
+unsigned long OptionsHandler::limitHandler(std::string option,
+                                           std::string optarg)
 {
   unsigned long ms;
   std::istringstream convert(optarg);
-  if (!(convert >> ms)) {
-    throw OptionException("option `"+option+"` requires a number as an argument");
+  if (!(convert >> ms))
+  {
+    throw OptionException("option `" + option
+                          + "` requires a number as an argument");
   }
   return ms;
 }
-
-unsigned long OptionsHandler::tlimitPerHandler(std::string option,
-                                               std::string optarg)
-{
-  unsigned long ms;
-
-  std::istringstream convert(optarg);
-  if (!(convert >> ms)) {
-    throw OptionException("option `"+option+"` requires a number as an argument");
-  }
-  return ms;
-}
-
-unsigned long OptionsHandler::rlimitHandler(std::string option,
-                                            std::string optarg)
-{
-  unsigned long ms;
-
-  std::istringstream convert(optarg);
-  if (!(convert >> ms)) {
-    throw OptionException("option `"+option+"` requires a number as an argument");
-  }
-  return ms;
-}
-
-unsigned long OptionsHandler::rlimitPerHandler(std::string option,
-                                               std::string optarg)
-{
-  unsigned long ms;
-
-  std::istringstream convert(optarg);
-  if (!(convert >> ms)) {
-    throw OptionException("option `"+option+"` requires a number as an argument");
-  }
-
-  return ms;
-}
-
 
 /* options/base_options_handlers.h */
 void OptionsHandler::notifyPrintSuccess(std::string option) {
@@ -285,7 +267,8 @@ agg \n\
 \n\
 ";
 
-const std::string OptionsHandler::s_mbqiModeHelp = "\
+const std::string OptionsHandler::s_mbqiModeHelp =
+    "\
 Model-based quantifier instantiation modes currently supported by the --mbqi option:\n\
 \n\
 default \n\
@@ -295,12 +278,8 @@ default \n\
 none \n\
 + Disable model-based quantifier instantiation.\n\
 \n\
-gen-ev \n\
-+ Use model-based quantifier instantiation algorithm from CADE 24 finite\n\
-  model finding paper based on generalizing evaluations.\n\
-\n\
-abs \n\
-+ Use abstract MBQI algorithm (uses disjoint sets). \n\
+trust \n\
++ Do not instantiate quantified formulas (incomplete technique).\n\
 \n\
 ";
 
@@ -330,12 +309,6 @@ prop-eq \n\
 \n\
 conflict \n\
 + Apply QCF algorithm to find conflicts only.\n\
-\n\
-partial \n\
-+ Apply QCF algorithm to instantiate heuristically as well. \n\
-\n\
-mc \n\
-+ Apply QCF algorithm in a complete way, so that a model is ensured when it fails. \n\
 \n\
 ";
 
@@ -489,6 +462,30 @@ all \n\
 \n\
 ";
 
+const std::string OptionsHandler::s_cegqiSingleInvRconsHelp =
+    "\
+Modes for reconstruction solutions while using single invocation techniques,\
+supported by --cegqi-si-rcons:\n\
+\n\
+none \n\
++ Do not try to reconstruct solutions in the original (user-provided) grammar\
+  when using single invocation techniques. In this mode, solutions produced by\
+  CVC4 may violate grammar restrictions.\n\
+\n\
+try \n\
++ Try to reconstruct solutions in the original grammar when using single\
+  invocation techniques in an incomplete (fail-fast) manner.\n\
+\n\
+all-limit \n\
++ Try to reconstruct solutions in the original grammar, but termintate if a\
+  maximum number of rounds for reconstruction is exceeded.\n\
+\n\
+all \n\
++ Try to reconstruct solutions in the original grammar. In this mode,\
+  we do not terminate until a solution is successfully reconstructed. \n\
+\n\
+";
+
 const std::string OptionsHandler::s_cegisSampleHelp =
     "\
 Modes for sampling with counterexample-guided inductive synthesis (CEGIS),\
@@ -508,6 +505,21 @@ trust  \n\
 \n\
 ";
 
+const std::string OptionsHandler::s_sygusFilterSolHelp =
+    "\
+Modes for filtering sygus solutions supported by --sygus-filter-sol:\n\
+\n\
+none (default) \n\
++ Do not filter sygus solutions.\n\
+\n\
+strong \n\
++ Filter solutions that are logically stronger than others.\n\
+\n\
+weak \n\
++ Filter solutions that are logically weaker than others.\n\
+\n\
+";
+
 const std::string OptionsHandler::s_sygusInvTemplHelp = "\
 Template modes for sygus invariant synthesis, supported by --sygus-inv-templ:\n\
 \n\
@@ -519,6 +531,27 @@ pre  \n\
 \n\
 post \n\
 + Synthesize invariant based on strengthening of postcondition. \n\
+\n\
+";
+
+const std::string OptionsHandler::s_sygusActiveGenHelp =
+    "\
+Modes for actively-generated sygus enumerators, supported by --sygus-active-gen:\n\
+\n\
+none  \n\
++ Do not use actively-generated sygus enumerators.\n\
+\n\
+basic  \n\
++ Use basic type enumerator for actively-generated sygus enumerators.\n\
+\n\
+enum  \n\
++ Use optimized enumerator for actively-generated sygus enumerators.\n\
+\n\
+var-agnostic \n\
++ Use sygus solver to enumerate terms that are agnostic to variables. \n\
+\n\
+auto (default) \n\
++ Internally decide the best policy for each enumerator. \n\
 \n\
 ";
 
@@ -561,23 +594,6 @@ first (default) \n\
 \n\
 depth \n\
 + Choose terms that are of minimal depth.\n\
-\n\
-";
-
-const std::string OptionsHandler::s_fmfBoundMinModeModeHelp = "\
-Modes for finite model finding bound minimization, supported by --fmf-bound-min-mode:\n\
-\n\
-none \n\
-+ Do not minimize inferred bounds.\n\
-\n\
-int (default) \n\
-+ Minimize integer ranges only.\n\
-\n\
-setc \n\
-+ Minimize cardinality of set membership ranges only.\n\
-\n\
-all \n\
-+ Minimize all inferred bounds.\n\
 \n\
 ";
 
@@ -641,14 +657,11 @@ void OptionsHandler::checkLiteralMatchMode(
 theory::quantifiers::MbqiMode OptionsHandler::stringToMbqiMode(
     std::string option, std::string optarg)
 {
-  if(optarg == "gen-ev") {
-    return theory::quantifiers::MBQI_GEN_EVAL;
-  } else if(optarg == "none") {
+  if (optarg == "none")
+  {
     return theory::quantifiers::MBQI_NONE;
   } else if(optarg == "default" || optarg ==  "fmc") {
     return theory::quantifiers::MBQI_FMC;
-  } else if(optarg == "abs") {
-    return theory::quantifiers::MBQI_ABS;
   } else if(optarg == "trust") {
     return theory::quantifiers::MBQI_TRUST;
   } else if(optarg == "help") {
@@ -692,8 +705,6 @@ theory::quantifiers::QcfMode OptionsHandler::stringToQcfMode(std::string option,
     return theory::quantifiers::QCF_CONFLICT_ONLY;
   } else if(optarg ==  "default" || optarg == "prop-eq") {
     return theory::quantifiers::QCF_PROP_EQ;
-  } else if(optarg == "partial") {
-    return theory::quantifiers::QCF_PARTIAL;
   } else if(optarg ==  "help") {
     puts(s_qcfModeHelp.c_str());
     exit(1);
@@ -878,8 +889,6 @@ OptionsHandler::stringToCegqiSingleInvMode(std::string option,
     return theory::quantifiers::CEGQI_SI_MODE_NONE;
   } else if(optarg == "use" || optarg == "default") {
     return theory::quantifiers::CEGQI_SI_MODE_USE;
-  } else if(optarg == "all-abort") {
-    return theory::quantifiers::CEGQI_SI_MODE_ALL_ABORT;
   } else if(optarg == "all") {
     return theory::quantifiers::CEGQI_SI_MODE_ALL;
   } else if(optarg ==  "help") {
@@ -888,6 +897,38 @@ OptionsHandler::stringToCegqiSingleInvMode(std::string option,
   } else {
     throw OptionException(std::string("unknown option for --cegqi-si: `") +
                           optarg + "'.  Try --cegqi-si help.");
+  }
+}
+
+theory::quantifiers::CegqiSingleInvRconsMode
+OptionsHandler::stringToCegqiSingleInvRconsMode(std::string option,
+                                                std::string optarg)
+{
+  if (optarg == "none")
+  {
+    return theory::quantifiers::CEGQI_SI_RCONS_MODE_NONE;
+  }
+  else if (optarg == "try")
+  {
+    return theory::quantifiers::CEGQI_SI_RCONS_MODE_TRY;
+  }
+  else if (optarg == "all")
+  {
+    return theory::quantifiers::CEGQI_SI_RCONS_MODE_ALL;
+  }
+  else if (optarg == "all-limit")
+  {
+    return theory::quantifiers::CEGQI_SI_RCONS_MODE_ALL_LIMIT;
+  }
+  else if (optarg == "help")
+  {
+    puts(s_cegqiSingleInvRconsHelp.c_str());
+    exit(1);
+  }
+  else
+  {
+    throw OptionException(std::string("unknown option for --cegqi-si-rcons: `")
+                          + optarg + "'.  Try --cegqi-si-rcons help.");
   }
 }
 
@@ -919,6 +960,35 @@ theory::quantifiers::CegisSampleMode OptionsHandler::stringToCegisSampleMode(
   }
 }
 
+theory::quantifiers::SygusFilterSolMode
+OptionsHandler::stringToSygusFilterSolMode(std::string option,
+                                           std::string optarg)
+{
+  if (optarg == "none")
+  {
+    return theory::quantifiers::SYGUS_FILTER_SOL_NONE;
+  }
+  else if (optarg == "strong")
+  {
+    return theory::quantifiers::SYGUS_FILTER_SOL_STRONG;
+  }
+  else if (optarg == "weak")
+  {
+    return theory::quantifiers::SYGUS_FILTER_SOL_WEAK;
+  }
+  else if (optarg == "help")
+  {
+    puts(s_cegisSampleHelp.c_str());
+    exit(1);
+  }
+  else
+  {
+    throw OptionException(
+        std::string("unknown option for --sygus-filter-sol: `") + optarg
+        + "'.  Try --sygus-filter-sol help.");
+  }
+}
+
 theory::quantifiers::SygusInvTemplMode
 OptionsHandler::stringToSygusInvTemplMode(std::string option,
                                           std::string optarg)
@@ -935,6 +1005,42 @@ OptionsHandler::stringToSygusInvTemplMode(std::string option,
   } else {
     throw OptionException(std::string("unknown option for --sygus-inv-templ: `") +
                           optarg + "'.  Try --sygus-inv-templ help.");
+  }
+}
+
+theory::quantifiers::SygusActiveGenMode
+OptionsHandler::stringToSygusActiveGenMode(std::string option,
+                                           std::string optarg)
+{
+  if (optarg == "none")
+  {
+    return theory::quantifiers::SYGUS_ACTIVE_GEN_NONE;
+  }
+  else if (optarg == "basic")
+  {
+    return theory::quantifiers::SYGUS_ACTIVE_GEN_ENUM_BASIC;
+  }
+  else if (optarg == "enum")
+  {
+    return theory::quantifiers::SYGUS_ACTIVE_GEN_ENUM;
+  }
+  else if (optarg == "var-agnostic")
+  {
+    return theory::quantifiers::SYGUS_ACTIVE_GEN_VAR_AGNOSTIC;
+  }
+  else if (optarg == "auto")
+  {
+    return theory::quantifiers::SYGUS_ACTIVE_GEN_AUTO;
+  }
+  else if (optarg == "help")
+  {
+    puts(s_sygusActiveGenHelp.c_str());
+    exit(1);
+  }
+  else
+  {
+    throw OptionException(std::string("unknown option for --sygus-inv-templ: `")
+                          + optarg + "'.  Try --sygus-inv-templ help.");
   }
 }
 
@@ -989,26 +1095,6 @@ theory::quantifiers::QuantRepMode OptionsHandler::stringToQuantRepMode(
   } else {
     throw OptionException(std::string("unknown option for --quant-rep-mode: `") +
                           optarg + "'.  Try --quant-rep-mode help.");
-  }
-}
-
-theory::quantifiers::FmfBoundMinMode OptionsHandler::stringToFmfBoundMinMode(
-    std::string option, std::string optarg)
-{
-  if(optarg == "none" ) {
-    return theory::quantifiers::FMF_BOUND_MIN_NONE;
-  } else if(optarg == "int" || optarg == "default") {
-    return theory::quantifiers::FMF_BOUND_MIN_INT_RANGE;
-  } else if(optarg == "setc" || optarg == "default") {
-    return theory::quantifiers::FMF_BOUND_MIN_SET_CARD;
-  } else if(optarg == "all") {
-    return theory::quantifiers::FMF_BOUND_MIN_ALL;
-  } else if(optarg ==  "help") {
-    puts(s_fmfBoundMinModeModeHelp.c_str());
-    exit(1);
-  } else {
-    throw OptionException(std::string("unknown option for --fmf-bound-min-mode: `") +
-                          optarg + "'.  Try --fmf-bound-min-mode help.");
   }
 }
 
@@ -1078,28 +1164,13 @@ theory::bv::SatSolverMode OptionsHandler::stringToSatSolver(std::string option,
   if(optarg == "minisat") {
     return theory::bv::SAT_SOLVER_MINISAT;
   } else if(optarg == "cryptominisat") {
-    
-    if (options::incrementalSolving() &&
-        options::incrementalSolving.wasSetByUser()) {
-      throw OptionException(std::string("CryptoMinSat does not support incremental mode. \n\
-                                         Try --bv-sat-solver=minisat"));
-    }
-
     if (options::bitblastMode() == theory::bv::BITBLAST_MODE_LAZY &&
         options::bitblastMode.wasSetByUser()) {
-      throw OptionException(
-          std::string("CryptoMiniSat does not support lazy bit-blasting. \n\
-                                         Try --bv-sat-solver=minisat"));
+      throwLazyBBUnsupported(theory::bv::SAT_SOLVER_CRYPTOMINISAT);
     }
     if (!options::bitvectorToBool.wasSetByUser()) {
       options::bitvectorToBool.set(true);
     }
-
-    // if (!options::bvAbstraction.wasSetByUser() &&
-    //     !options::skolemizeArguments.wasSetByUser()) {
-    //   options::bvAbstraction.set(true);
-    //   options::skolemizeArguments.set(true); 
-    // }
     return theory::bv::SAT_SOLVER_CRYPTOMINISAT;
   }
   else if (optarg == "cadical")
@@ -1109,15 +1180,14 @@ theory::bv::SatSolverMode OptionsHandler::stringToSatSolver(std::string option,
     {
       throw OptionException(
           std::string("CaDiCaL does not support incremental mode. \n\
-                                         Try --bv-sat-solver=minisat"));
+                         Try --bv-sat-solver=cryptominisat or "
+                      "--bv-sat-solver=minisat"));
     }
 
     if (options::bitblastMode() == theory::bv::BITBLAST_MODE_LAZY
         && options::bitblastMode.wasSetByUser())
     {
-      throw OptionException(
-          std::string("CaDiCaL does not support lazy bit-blasting. \n\
-                                         Try --bv-sat-solver=minisat"));
+      throwLazyBBUnsupported(theory::bv::SAT_SOLVER_CADICAL);
     }
     if (!options::bitvectorToBool.wasSetByUser())
     {
@@ -1130,6 +1200,48 @@ theory::bv::SatSolverMode OptionsHandler::stringToSatSolver(std::string option,
   } else {
     throw OptionException(std::string("unknown option for --bv-sat-solver: `") +
                           optarg + "'.  Try --bv-sat-solver=help.");
+  }
+}
+
+const std::string OptionsHandler::s_bvProofFormatHelp =
+    "\
+Proof formats currently supported by the --bv-proof-format option:\n\
+\n\
+  lrat : DRAT with unit propagation hints to accelerate checking (default)\n\
+\n\
+  drat : Deletion and Resolution Asymmetric Tautology Additions \n\
+\n\
+  er : Extended Resolution, i.e. resolution with new variable definitions\n\
+\n\
+This option controls which underlying UNSAT proof format is used in BV proofs.\n\
+\n\
+Note: Currently this option does nothing. BV proofs are a work in progress!\
+";
+
+theory::bv::BvProofFormat OptionsHandler::stringToBvProofFormat(
+    std::string option, std::string optarg)
+{
+  if (optarg == "er")
+  {
+    return theory::bv::BITVECTOR_PROOF_ER;
+  }
+  else if (optarg == "lrat")
+  {
+    return theory::bv::BITVECTOR_PROOF_LRAT;
+  }
+  else if (optarg == "drat")
+  {
+    return theory::bv::BITVECTOR_PROOF_DRAT;
+  }
+  else if (optarg == "help")
+  {
+    puts(s_bvProofFormatHelp.c_str());
+    exit(1);
+  }
+  else
+  {
+    throw OptionException(std::string("unknown option for --bv-proof-format: `")
+                          + optarg + "'.  Try --bv-proof-format=help.");
   }
 }
 
@@ -1169,14 +1281,12 @@ theory::bv::BitblastMode OptionsHandler::stringToBitblastMode(
     if (!options::bitvectorAlgebraicSolver.wasSetByUser()) {
       options::bitvectorAlgebraicSolver.set(true);
     }
+    if (options::bvSatSolver() != theory::bv::SAT_SOLVER_MINISAT)
+    {
+      throwLazyBBUnsupported(options::bvSatSolver());
+    }
     return theory::bv::BITBLAST_MODE_LAZY;
   } else if(optarg == "eager") {
-
-    if (options::incrementalSolving() &&
-        options::incrementalSolving.wasSetByUser()) {
-      throw OptionException(std::string("Eager bit-blasting does not currently support incremental mode. \n\
-                                         Try --bitblast=lazy"));
-    }
     if (!options::bitvectorToBool.wasSetByUser()) {
       options::bitvectorToBool.set(true);
     }
@@ -1224,6 +1334,105 @@ theory::bv::BvSlicerMode OptionsHandler::stringToBvSlicerMode(
   } else {
     throw OptionException(std::string("unknown option for --bv-eq-slicer: `") +
                           optarg + "'.  Try --bv-eq-slicer=help.");
+  }
+}
+
+const std::string OptionsHandler::s_stringToStringsProcessLoopModeHelp =
+    "Loop processing modes supported by the --strings-process-loop-mode "
+    "option:\n"
+    "\n"
+    "full (default)\n"
+    "+ Perform full processing of looping word equations\n"
+    "\n"
+    "simple (default with --strings-fmf)\n"
+    "+ Omit normal loop breaking\n"
+    "\n"
+    "simple-abort\n"
+    "+ Abort when normal loop breaking is required\n"
+    "\n"
+    "none\n"
+    "+ Omit loop processing\n"
+    "\n"
+    "abort\n"
+    "+ Abort if looping word equations are encountered\n";
+
+theory::strings::ProcessLoopMode OptionsHandler::stringToStringsProcessLoopMode(
+    std::string option, std::string optarg)
+{
+  if (optarg == "full")
+  {
+    return theory::strings::ProcessLoopMode::FULL;
+  }
+  else if (optarg == "simple")
+  {
+    return theory::strings::ProcessLoopMode::SIMPLE;
+  }
+  else if (optarg == "simple-abort")
+  {
+    return theory::strings::ProcessLoopMode::SIMPLE_ABORT;
+  }
+  else if (optarg == "none")
+  {
+    return theory::strings::ProcessLoopMode::NONE;
+  }
+  else if (optarg == "abort")
+  {
+    return theory::strings::ProcessLoopMode::ABORT;
+  }
+  else if (optarg == "help")
+  {
+    puts(s_stringToStringsProcessLoopModeHelp.c_str());
+    exit(1);
+  }
+  else
+  {
+    throw OptionException(
+        std::string("unknown option for --strings-process-loop-mode: `")
+        + optarg + "'.  Try --strings-process-loop-mode=help.");
+  }
+}
+
+const std::string OptionsHandler::s_boolToBVModeHelp =
+    "\
+BoolToBV pass modes supported by the --bool-to-bv option:\n\
+\n\
+off (default)\n\
++ Don't push any booleans to width one bit-vectors\n\
+\n\
+ite\n\
++ Try to turn ITEs into BITVECTOR_ITE when possible. It can fail per-formula \n\
+  if not all sub-formulas can be turned to bit-vectors\n\
+\n\
+all\n\
++ Force all booleans to be bit-vectors of width one except at the top level.\n\
+  Most aggressive mode\n\
+";
+
+preprocessing::passes::BoolToBVMode OptionsHandler::stringToBoolToBVMode(
+    std::string option, std::string optarg)
+{
+  if (optarg == "off")
+  {
+    return preprocessing::passes::BOOL_TO_BV_OFF;
+  }
+  else if (optarg == "ite")
+  {
+    return preprocessing::passes::BOOL_TO_BV_ITE;
+  }
+  else if (optarg == "all")
+  {
+    return preprocessing::passes::BOOL_TO_BV_ALL;
+  }
+  else if (optarg == "help")
+  {
+    puts(s_boolToBVModeHelp.c_str());
+    exit(1);
+  }
+  else
+  {
+    throw OptionException(std::string("unknown option for --bool-to-bv: `")
+                          + optarg
+                          + "'. Try --bool-to-bv=help");
   }
 }
 
@@ -1454,6 +1663,51 @@ SimplificationMode OptionsHandler::stringToSimplificationMode(
   }
 }
 
+const std::string OptionsHandler::s_modelCoresHelp =
+    "\
+Model cores modes currently supported by the --simplification option:\n\
+\n\
+none (default) \n\
++ do not compute model cores\n\
+\n\
+simple\n\
++ only include a subset of variables whose values are sufficient to show the\n\
+input formula is satisfied by the given model\n\
+\n\
+non-implied\n\
++ only include a subset of variables whose values, in addition to the values\n\
+of variables whose values are implied, are sufficient to show the input\n\
+formula is satisfied by the given model\n\
+\n\
+";
+
+ModelCoresMode OptionsHandler::stringToModelCoresMode(std::string option,
+                                                      std::string optarg)
+{
+  if (optarg == "none")
+  {
+    return MODEL_CORES_NONE;
+  }
+  else if (optarg == "simple")
+  {
+    return MODEL_CORES_SIMPLE;
+  }
+  else if (optarg == "non-implied")
+  {
+    return MODEL_CORES_NON_IMPLIED;
+  }
+  else if (optarg == "help")
+  {
+    puts(s_modelCoresHelp.c_str());
+    exit(1);
+  }
+  else
+  {
+    throw OptionException(std::string("unknown option for --model-cores: `")
+                          + optarg + "'.  Try --model-cores help.");
+  }
+}
+
 const std::string OptionsHandler::s_sygusSolutionOutModeHelp =
     "\
 Modes for finite model finding bound minimization, supported by --sygus-out:\n\
@@ -1513,7 +1767,15 @@ void OptionsHandler::setProduceAssertions(std::string option, bool value)
 
 void OptionsHandler::proofEnabledBuild(std::string option, bool value)
 {
-#ifndef CVC4_PROOF
+#ifdef CVC4_PROOF
+  if (value && options::bitblastMode() == theory::bv::BITBLAST_MODE_EAGER
+      && options::bvSatSolver() != theory::bv::SAT_SOLVER_MINISAT
+      && options::bvSatSolver() != theory::bv::SAT_SOLVER_CRYPTOMINISAT)
+  {
+    throw OptionException(
+        "Eager BV proofs only supported when MiniSat or CryptoMiniSat is used");
+  }
+#else
   if(value) {
     std::stringstream ss;
     ss << "option `" << option << "' requires a proofs-enabled build of CVC4; this binary was not built with proof support";
@@ -1643,15 +1905,6 @@ void OptionsHandler::showConfiguration(std::string option) {
        << (Configuration::hasGitModifications() ? " (with modifications)" : "")
        << "]";
     print_config("scm", ss.str());
-  } else if(Configuration::isSubversionBuild()) {
-    std::stringstream ss;
-    ss << "svn ["
-       << Configuration::getSubversionBranchName() << " r"
-       << Configuration::getSubversionRevision()
-       << (Configuration::hasSubversionModifications()
-           ? " (with modifications)" : "")
-       << "]";
-    print_config("scm", ss.str());
   } else {
     print_config_cond("scm", false);
   }
@@ -1676,6 +1929,7 @@ void OptionsHandler::showConfiguration(std::string option) {
   print_config_cond("proof", Configuration::isProofBuild());
   print_config_cond("coverage", Configuration::isCoverageBuild());
   print_config_cond("profiling", Configuration::isProfilingBuild());
+  print_config_cond("asan", Configuration::isAsanBuild());
   print_config_cond("competition", Configuration::isCompetitionBuild());
   
   std::cout << std::endl;
@@ -1685,11 +1939,11 @@ void OptionsHandler::showConfiguration(std::string option) {
   print_config_cond("glpk", Configuration::isBuiltWithGlpk());
   print_config_cond("cadical", Configuration::isBuiltWithCadical());
   print_config_cond("cryptominisat", Configuration::isBuiltWithCryptominisat());
+  print_config_cond("drat2er", Configuration::isBuiltWithDrat2Er());
   print_config_cond("gmp", Configuration::isBuiltWithGmp());
   print_config_cond("lfsc", Configuration::isBuiltWithLfsc());
   print_config_cond("readline", Configuration::isBuiltWithReadline());
   print_config_cond("symfpu", Configuration::isBuiltWithSymFPU());
-  print_config_cond("tls", Configuration::isBuiltWithTlsSupport());
   
   exit(0);
 }

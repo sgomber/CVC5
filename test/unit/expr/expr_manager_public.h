@@ -61,19 +61,19 @@ private:
     return vars;
   }
 
+ public:
+  void setUp() override { d_exprManager = new ExprManager; }
 
-public:
-  void setUp() {
-    d_exprManager = new ExprManager;
-  }
-
-
-  void tearDown() {
-    try {
+  void tearDown() override
+  {
+    try
+    {
       delete d_exprManager;
-    } catch(Exception e) {
+    }
+    catch (Exception& e)
+    {
       cerr << "Exception during tearDown():" << endl << e;
-      throw ;
+      throw;
     }
   }
 
@@ -118,12 +118,14 @@ public:
 
   void testMkAssociativeTooFew() {
     std::vector<Expr> vars = mkVars(d_exprManager->booleanType(), 1);
-    TS_ASSERT_THROWS( d_exprManager->mkAssociative(AND,vars), IllegalArgumentException);
+    TS_ASSERT_THROWS(d_exprManager->mkAssociative(AND, vars),
+                     IllegalArgumentException&);
   }
 
   void testMkAssociativeBadKind() {
     std::vector<Expr> vars = mkVars(d_exprManager->integerType(), 10);
-    TS_ASSERT_THROWS( d_exprManager->mkAssociative(LEQ,vars), IllegalArgumentException);
+    TS_ASSERT_THROWS(d_exprManager->mkAssociative(LEQ, vars),
+                     IllegalArgumentException&);
   }
 
 };

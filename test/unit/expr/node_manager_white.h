@@ -30,14 +30,15 @@ class NodeManagerWhite : public CxxTest::TestSuite {
   NodeManager* d_nm;
   NodeManagerScope* d_scope;
 
-public:
-
-  void setUp() {
+ public:
+  void setUp() override
+  {
     d_nm = new NodeManager(NULL);
     d_scope = new NodeManagerScope(d_nm);
   }
 
-  void tearDown() {
+  void tearDown() override
+  {
     delete d_scope;
     delete d_nm;
   }
@@ -56,7 +57,7 @@ public:
     TS_ASSERT_THROWS_NOTHING(nb.realloc(25));
     TS_ASSERT_THROWS_NOTHING(nb.realloc(256));
 #ifdef CVC4_ASSERTIONS
-    TS_ASSERT_THROWS(nb.realloc(100), AssertionException);
+    TS_ASSERT_THROWS(nb.realloc(100), AssertionException&);
 #endif /* CVC4_ASSERTIONS */
     TS_ASSERT_THROWS_NOTHING(nb.realloc(257));
     TS_ASSERT_THROWS_NOTHING(nb.realloc(4000));
@@ -66,7 +67,7 @@ public:
     TS_ASSERT_THROWS_NOTHING(nb.realloc(65536));
     TS_ASSERT_THROWS_NOTHING(nb.realloc(67108863));
 #ifdef CVC4_ASSERTIONS
-    TS_ASSERT_THROWS(nb.realloc(67108863), AssertionException);
+    TS_ASSERT_THROWS(nb.realloc(67108863), AssertionException&);
 #endif /* CVC4_ASSERTIONS */
   }
 };

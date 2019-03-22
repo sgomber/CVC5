@@ -34,14 +34,15 @@ class NodeManagerBlack : public CxxTest::TestSuite {
   NodeManager* d_nodeManager;
   NodeManagerScope* d_scope;
 
-public:
-
-  void setUp() {
+ public:
+  void setUp() override
+  {
     d_nodeManager = new NodeManager(NULL);
     d_scope = new NodeManagerScope(d_nodeManager);
   }
 
-  void tearDown() {
+  void tearDown() override
+  {
     delete d_scope;
     delete d_nodeManager;
   }
@@ -299,7 +300,7 @@ public:
   void testMkNodeTooFew() {
 #ifdef CVC4_ASSERTIONS
     Node x = d_nodeManager->mkSkolem( "x", d_nodeManager->booleanType() );
-    TS_ASSERT_THROWS( d_nodeManager->mkNode(AND, x), AssertionException );
+    TS_ASSERT_THROWS(d_nodeManager->mkNode(AND, x), AssertionException&);
 #endif
   }
 
@@ -318,7 +319,7 @@ public:
       vars.push_back(skolem_j);
       vars.push_back(orNode);
     }
-    TS_ASSERT_THROWS(d_nodeManager->mkNode(AND, vars), AssertionException);
+    TS_ASSERT_THROWS(d_nodeManager->mkNode(AND, vars), AssertionException&);
 #endif
   }
 };

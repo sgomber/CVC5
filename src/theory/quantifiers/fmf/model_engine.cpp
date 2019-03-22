@@ -15,7 +15,6 @@
 #include "theory/quantifiers/fmf/model_engine.h"
 
 #include "options/quantifiers_options.h"
-#include "theory/quantifiers/fmf/ambqi_builder.h"
 #include "theory/quantifiers/first_order_model.h"
 #include "theory/quantifiers/fmf/full_model_check.h"
 #include "theory/quantifiers/instantiate.h"
@@ -136,7 +135,8 @@ void ModelEngine::registerQuantifier( Node f ){
     for( unsigned i=0; i<f[0].getNumChildren(); i++ ){
       TypeNode tn = f[0][i].getType();
       if( !tn.isSort() ){
-        if( !tn.getCardinality().isFinite() ){
+        if (!tn.isInterpretedFinite())
+        {
           if( tn.isInteger() ){
             if( !options::fmfBound() ){
               canHandle = false;
@@ -164,11 +164,6 @@ bool ModelEngine::optOneQuantPerRound(){
 
 int ModelEngine::checkModel(){
   FirstOrderModel* fm = d_quantEngine->getModel();
-
-  //flatten the representatives
-  //Trace("model-engine-debug") << "Flattening representatives...." << std::endl;
-  // d_quantEngine->getEqualityQuery()->flattenRepresentatives(
-  // fm->getRepSet()->d_type_reps );
 
   //for debugging, setup
   for (std::map<TypeNode, std::vector<Node> >::iterator it =
@@ -271,7 +266,8 @@ void ModelEngine::exhaustiveInstantiate( Node f, int effort ){
     }
     d_triedLemmas += mb->getNumTriedLemmas()-prev_tlem;
     d_addedLemmas += mb->getNumAddedLemmas()-prev_alem;
-    d_quantEngine->d_statistics.d_instantiations_fmf_mbqi += mb->getNumAddedLemmas();
+    d_quantEngine->d_statistics.d_instantiations_fmf_mbqi +=
+        (mb->getNumAddedLemmas() - prev_alem);
   }else{
     if( Trace.isOn("fmf-exh-inst-debug") ){
       Trace("fmf-exh-inst-debug") << "   Instantiation Constants: ";

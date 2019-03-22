@@ -48,7 +48,6 @@ extern int optreset;
 #include <sstream>
 #include <limits>
 
-#include "base/tls.h"
 #include "base/cvc4_assert.h"
 #include "base/exception.h"
 #include "base/output.h"
@@ -73,7 +72,7 @@ using namespace CVC4::options;
 
 namespace CVC4 {
 
-CVC4_THREAD_LOCAL Options* Options::s_current = NULL;
+thread_local Options* Options::s_current = NULL;
 
 
 
@@ -113,7 +112,7 @@ struct OptionHandler<T, true, true> {
 
       if(!success){
         throw OptionException(option + ": failed to parse "+ optionarg +
-                              " as an integer of the appropraite type.");
+                              " as an integer of the appropriate type.");
       }
 
       // Depending in the platform unsigned numbers with '-' signs may parse.
@@ -266,7 +265,20 @@ ListenerCollection::Registration* Options::registerAndNotify(
   ListenerCollection::Registration* registration =
       collection.registerListener(listener);
   if(notify) {
-    listener->notify();
+    try
+    {
+      listener->notify();
+    }
+    catch (OptionException& e)
+    {
+      // It can happen that listener->notify() throws an OptionException. In
+      // that case, we have to make sure that we delete the registration of our
+      // listener before rethrowing the exception. Otherwise the
+      // ListenerCollection deconstructor will complain that not all
+      // registrations have been removed before invoking the deconstructor.
+      delete registration;
+      throw OptionException(e.getRawMessage());
+    }
   }
   return registration;
 }
@@ -434,7 +446,7 @@ Languages currently supported as arguments to the -L / --lang option:\n\
   smt2.5 | smtlib2.5             SMT-LIB format 2.5\n\
   smt2.6 | smtlib2.6             SMT-LIB format 2.6\n\
   smt2.6.1 | smtlib2.6.1         SMT-LIB format 2.6 with support for the strings standard\n\
-  tptp                           TPTP format (cnf and fof)\n\
+  tptp                           TPTP format (cnf, fof and tff)\n\
   sygus                          SyGuS format\n\
 \n\
 Languages currently supported as arguments to the --output-lang option:\n\

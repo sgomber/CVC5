@@ -24,9 +24,9 @@
 #include <unordered_map>
 #include <unordered_set>
 
-#include "expr/node.h"
-#include "context/cdhashset.h"
 #include "context/cdhashmap.h"
+#include "context/cdhashset.h"
+#include "expr/node.h"
 #include "proof/clause_id.h"
 #include "proof/proof.h"
 #include "proof/proof_utils.h"
@@ -34,7 +34,7 @@
 #include "theory/logic_info.h"
 #include "theory/substitutions.h"
 #include "util/proof.h"
-
+#include "util/statistics_registry.h"
 
 namespace CVC4 {
 
@@ -69,15 +69,17 @@ class TheoryProof;
 class UFProof;
 class ArithProof;
 class ArrayProof;
-class BitVectorProof;
+
+namespace proof {
+class ResolutionBitVectorProof;
+}
 
 template <class Solver> class LFSCSatProof;
-typedef LFSCSatProof< CVC4::Minisat::Solver> LFSCCoreSatProof;
+typedef TSatProof<CVC4::Minisat::Solver> CoreSatProof;
 
 class LFSCCnfProof;
 class LFSCTheoryProofEngine;
 class LFSCUFProof;
-class LFSCBitVectorProof;
 class LFSCRewriterProof;
 
 namespace prop {
@@ -189,7 +191,7 @@ public:
   static TheoryProofEngine* getTheoryProofEngine();
   static TheoryProof* getTheoryProof( theory::TheoryId id );
   static UFProof* getUfProof();
-  static BitVectorProof* getBitVectorProof();
+  static proof::ResolutionBitVectorProof* getBitVectorProof();
   static ArrayProof* getArrayProof();
   static ArithProof* getArithProof();
 
@@ -238,6 +240,12 @@ public:
 
   // for SMT variable names that have spaces and other things
   static std::string sanitize(TNode var);
+
+  // wrap term with (p_app ... ) if the term is printed as a boolean, and print
+  // used for "trust" assertions
+  static void printTrustedTerm(Node term,
+                               std::ostream& os,
+                               ProofLetMap& globalLetMap);
 
   /** Add proof assertion - unlike addCoreAssertion this is post definition expansion **/
   void addAssertion(Expr formula);
@@ -290,16 +298,33 @@ public:
                          std::ostream& out,
                          std::ostringstream& paren);
 
-private:
+  TimerStat* getProofProductionTime() { return &d_stats.d_proofProductionTime; }
+
+ private:
   void constructSatProof();
   std::set<Node> satClauseToNodeSet(prop::SatClause* clause);
+
+  struct ProofManagerStatistics
+  {
+    ProofManagerStatistics();
+    ~ProofManagerStatistics();
+
+    /**
+     * Time spent producing proofs (i.e. generating the proof from the logging
+     * information)
+     */
+    TimerStat d_proofProductionTime;
+  }; /* struct ProofManagerStatistics */
+
+  ProofManagerStatistics d_stats;
+
 };/* class ProofManager */
 
 class LFSCProof : public Proof
 {
  public:
   LFSCProof(SmtEngine* smtEngine,
-            LFSCCoreSatProof* sat,
+            CoreSatProof* sat,
             LFSCCnfProof* cnf,
             LFSCTheoryProofEngine* theory);
   ~LFSCProof() override {}
@@ -315,7 +340,7 @@ class LFSCProof : public Proof
 
   void checkUnrewrittenAssertion(const NodeSet& assertions) const;
 
-  LFSCCoreSatProof* d_satProof;
+  CoreSatProof* d_satProof;
   LFSCCnfProof* d_cnfProof;
   LFSCTheoryProofEngine* d_theoryProof;
   SmtEngine* d_smtEngine;

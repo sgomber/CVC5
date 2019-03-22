@@ -19,6 +19,7 @@
 #ifndef __CVC4__THEORY__ARRAYS__THEORY_ARRAYS_H
 #define __CVC4__THEORY__ARRAYS__THEORY_ARRAYS_H
 
+#include <tuple>
 #include <unordered_map>
 
 #include "context/cdhashmap.h"
@@ -248,8 +249,6 @@ class TheoryArrays : public Theory {
   // NOTIFICATIONS
   /////////////////////////////////////////////////////////////////////////////
 
- public:
-  Node getNextDecisionRequest(unsigned& priority) override;
 
   void presolve() override;
   void shutdown() override {}
@@ -369,7 +368,7 @@ class TheoryArrays : public Theory {
 
   bool d_mergeInProgress;
 
-  typedef quad<TNode, TNode, TNode, TNode> RowLemmaType;
+  using RowLemmaType = std::tuple<TNode, TNode, TNode, TNode>;
 
   context::CDQueue<RowLemmaType> d_RowQueue;
   context::CDHashSet<RowLemmaType, RowLemmaTypeHashFunction > d_RowAlreadyAdded;
@@ -453,6 +452,35 @@ class TheoryArrays : public Theory {
 
   /** An equality-engine callback for proof reconstruction */
   ArrayProofReconstruction d_proofReconstruction;
+
+  /**
+   * The decision strategy for the theory of arrays, which calls the
+   * getNextDecisionEngineRequest function below.
+   */
+  class TheoryArraysDecisionStrategy : public DecisionStrategy
+  {
+   public:
+    TheoryArraysDecisionStrategy(TheoryArrays* ta);
+    /** initialize */
+    void initialize() override;
+    /** get next decision request */
+    Node getNextDecisionRequest() override;
+    /** identify */
+    std::string identify() const override;
+
+   private:
+    /** pointer to the theory of arrays */
+    TheoryArrays* d_ta;
+  };
+  /** an instance of the above decision strategy */
+  std::unique_ptr<TheoryArraysDecisionStrategy> d_dstrat;
+  /** get the next decision request
+   *
+   * If the "arrays-eager-index" option is enabled, then whenever a
+   * read-over-write lemma is generated, a decision request is also generated
+   * for the comparison between the indexes that appears in the lemma.
+   */
+  Node getNextDecisionRequest();
 
  public:
   eq::EqualityEngine* getEqualityEngine() override { return &d_equalityEngine; }

@@ -22,7 +22,7 @@
 
 #include "context/cdhashmap.h"
 #include "context/cdlist.h"
-#include "theory/quantifiers/term_database.h"
+#include "expr/node_trie.h"
 #include "theory/quantifiers_engine.h"
 
 namespace CVC4 {
@@ -45,8 +45,8 @@ private:
   MatchGen * getChild( int i ) { return &d_children[d_children_order[i]]; }
   //MatchGen * getChild( int i ) { return &d_children[i]; }
   //current matching information
-  std::vector< TermArgTrie * > d_qn;
-  std::vector< std::map< TNode, TermArgTrie >::iterator > d_qni;
+  std::vector<TNodeTrie*> d_qn;
+  std::vector<std::map<TNode, TNodeTrie>::iterator> d_qni;
   bool doMatching( QuantConflictFind * p, QuantInfo * qi );
   //for matching : each index is either a variable or a ground term
   unsigned d_qni_size;
@@ -75,7 +75,6 @@ public:
     typ_eq,
     typ_formula,
     typ_var,
-    typ_ite_var,
     typ_bool_var,
     typ_tconstraint,
     typ_tsym,
@@ -91,11 +90,15 @@ public:
   std::vector< MatchGen > d_children;
   short d_type;
   bool d_type_not;
-  void reset_round( QuantConflictFind * p );
+  /** reset round
+   *
+   * Called once at the beginning of each full/last-call effort, prior to
+   * processing this match generator. This method returns false if the reset
+   * failed, e.g. if a conflict was encountered during term indexing.
+   */
+  bool reset_round(QuantConflictFind* p);
   void reset( QuantConflictFind * p, bool tgt, QuantInfo * qi );
   bool getNextMatch( QuantConflictFind * p, QuantInfo * qi );
-  bool getExplanation( QuantConflictFind * p, QuantInfo * qi, std::vector< Node >& exp );
-  Node getExplanationTerm( QuantConflictFind * p, QuantInfo * qi, Node t, std::vector< Node >& exp );
   bool isValid() { return d_type!=typ_invalid; }
   void setInvalid();
 
@@ -138,7 +141,6 @@ public:
   std::map< TNode, int > d_var_num;
   std::vector< int > d_tsym_vars;
   std::map< TNode, bool > d_inMatchConstraint;
-  std::map< int, std::vector< Node > > d_var_constraint[2];
   int getVarNum( TNode v ) { return d_var_num.find( v )!=d_var_num.end() ? d_var_num[v] : -1; }
   bool isVar( TNode v ) { return d_var_num.find( v )!=d_var_num.end(); }
   int getNumVars() { return (int)d_vars.size(); }
@@ -205,7 +207,6 @@ private:
 private:
   std::map< Node, Node > d_op_node;
   std::map< Node, int > d_fid;
-  Node mkEqNode( Node a, Node b );
 public:  //for ground terms
   Node d_true;
   Node d_false;
@@ -241,14 +242,6 @@ public:
   void registerQuantifier(Node q) override;
 
  public:
-  /** assert quantifier */
-  void assertNode(Node q) override;
-  /** new node */
-  void newEqClass( Node n );
-  /** merge */
-  void merge( Node a, Node b );
-  /** assert disequal */
-  void assertDisequal( Node a, Node b );
   /** needs check */
   bool needsCheck(Theory::Effort level) override;
   /** reset round */

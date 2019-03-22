@@ -34,10 +34,6 @@ private:
   Configuration();
 
   // these constants are filled in by the build system
-  static const bool IS_SUBVERSION_BUILD;
-  static const char* const SUBVERSION_BRANCH_NAME;
-  static const unsigned SUBVERSION_REVISION;
-  static const bool SUBVERSION_HAS_MODIFICATIONS;
   static const bool IS_GIT_BUILD;
   static const char* const GIT_BRANCH_NAME;
   static const char* const GIT_COMMIT;
@@ -66,6 +62,8 @@ public:
   static bool isCoverageBuild();
 
   static bool isProfilingBuild();
+
+  static bool isAsanBuild();
 
   static bool isCompetitionBuild();
 
@@ -99,9 +97,9 @@ public:
 
   static bool isBuiltWithCryptominisat();
 
-  static bool isBuiltWithReadline();
+  static bool isBuiltWithDrat2Er();
 
-  static bool isBuiltWithTlsSupport();
+  static bool isBuiltWithReadline();
 
   static bool isBuiltWithLfsc();
 
@@ -126,12 +124,6 @@ public:
   static const char* getGitCommit();
   static bool hasGitModifications();
   static std::string getGitId();
-
-  static bool isSubversionBuild();
-  static const char* getSubversionBranchName();
-  static unsigned getSubversionRevision();
-  static bool hasSubversionModifications();
-  static std::string getSubversionId();
 
   static std::string getCompiler();
   static std::string getCompiledDateTime();

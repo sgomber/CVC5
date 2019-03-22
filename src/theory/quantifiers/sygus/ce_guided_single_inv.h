@@ -20,7 +20,7 @@
 #include "context/cdlist.h"
 #include "theory/quantifiers/sygus/ce_guided_single_inv_sol.h"
 #include "theory/quantifiers/inst_match_trie.h"
-#include "theory/quantifiers/cegqi/inst_strategy_cbqi.h"
+#include "theory/quantifiers/cegqi/inst_strategy_cegqi.h"
 #include "theory/quantifiers/single_inv_partition.h"
 #include "theory/quantifiers_engine.h"
 
@@ -28,18 +28,17 @@ namespace CVC4 {
 namespace theory {
 namespace quantifiers {
 
-class CegConjecture;
-class CegConjectureSingleInv;
-class CegEntailmentInfer;
+class SynthConjecture;
+class CegSingleInv;
 
 class CegqiOutputSingleInv : public CegqiOutput {
-public:
-  CegqiOutputSingleInv( CegConjectureSingleInv * out ) : d_out( out ){}
-  virtual ~CegqiOutputSingleInv() {}
-  CegConjectureSingleInv * d_out;
-  bool doAddInstantiation(std::vector<Node>& subs) override;
-  bool isEligibleForInstantiation(Node n) override;
-  bool addLemma(Node lem) override;
+ public:
+ CegqiOutputSingleInv(CegSingleInv* out) : d_out(out) {}
+ virtual ~CegqiOutputSingleInv() {}
+ CegSingleInv* d_out;
+ bool doAddInstantiation(std::vector<Node>& subs) override;
+ bool isEligibleForInstantiation(Node n) override;
+ bool addLemma(Node lem) override;
 };
 
 class DetTrace {
@@ -59,15 +58,79 @@ public:
   void print( const char* c );
 };
 
+/**
+ * This class is used for inferring that an arbitrary synthesis conjecture
+ * corresponds to an invariant synthesis problem for some predicate (d_func).
+ *
+ * The invariant-to-synthesize can either be explicitly given, via a call
+ * to initialize( f, vars ), or otherwise inferred if this method is not called.
+ */
 class TransitionInference {
-private:
-  bool processDisjunct( Node n, std::map< bool, Node >& terms, std::vector< Node >& disjuncts, std::map< Node, bool >& visited, bool topLevel );
+ private:
+  /** process disjunct
+   *
+   * The purpose of this function is to infer pre/post/transition conditions
+   * for a (possibly unknown) invariant-to-synthesis, given a conjunct from
+   * an arbitrary synthesis conjecture.
+   *
+   * Assume our negated synthesis conjecture is of the form:
+   *    forall f. exists x. (and (or F11 ... F1{m_1}) ... (or Fn1 ... Fn{m_n}))
+   * This method is called on each (or Fi1 ... Fi{m_i}), where topLevel is true
+   * for each of Fi1...F1{m_i} and false otherwise. It adds each of Fi1..Fi{m_i}
+   * to disjuncts.
+   *
+   * If this method returns true, then (1) all applications of free function
+   * symbols have operator d_func. Note this function may set d_func to a
+   * function symbol in n if d_func was null prior to this call. In other words,
+   * this method may infer the subject of the invariant synthesis problem;
+   * (2) all occurrences of d_func are "top-level", that is, each Fij may be
+   * of the form (not) <d_func>( tj ), but otherwise d_func does not occur in
+   * (or Fi1 ... Fi{m_i}); (3) there exists at most one occurrence of
+   * <d_func>( tj ), and (not <d_func>( tk )).
+   *
+   * If the above conditions are met, then terms[true] is set to <d_func>( tj )
+   * if Fij is <d_func>( tj ) for some j, and likewise terms[false]
+   * is set to <d_func>( tk ) if Fik is (not <d_func>( tk )) for some k.
+   *
+   * The argument visited caches the results of this function for (topLevel, n).
+   */
+  bool processDisjunct(Node n,
+                       std::map<bool, Node>& terms,
+                       std::vector<Node>& disjuncts,
+                       std::map<bool, std::map<Node, bool> >& visited,
+                       bool topLevel);
   void getConstantSubstitution( std::vector< Node >& vars, std::vector< Node >& disjuncts, std::vector< Node >& const_var, std::vector< Node >& const_subs, bool reqPol );
   bool d_complete;
-public:
+  /** get normalized substitution
+   *
+   * This method takes as input a node curr of the form I( t1, ..., tn ) and
+   * a vector of variables pvars, where pvars.size()=n. For each ti that is
+   * a variable, it adds ti to vars, and pvars[i] to subs. For each ti that is
+   * not a variable, it adds the disequality ti != pvars[i] to disjuncts.
+   *
+   * This function is used for instance to normalize an arbitrary application of
+   * I so that is over arguments pvars. For instance if curr is I(3,5,y) and
+   * pvars = { x1,x2,x3 }, then the formula:
+   *   I(3,5,y) ^ P(y)
+   * is equivalent to:
+   *   x1 != 3 V x2 != 5 V I(x1,x2,x3) V P( y ) { y -> x3 }
+   * Here, we add y and x3 to vars and subs respectively, and x1!=3 and x2!=5
+   * to disjuncts.
+   */
+  void getNormalizedSubstitution(Node curr,
+                                 const std::vector<Node>& pvars,
+                                 std::vector<Node>& vars,
+                                 std::vector<Node>& subs,
+                                 std::vector<Node>& disjuncts);
+
+ public:
   TransitionInference() : d_complete( false ) {}
   std::vector< Node > d_vars;
   std::vector< Node > d_prime_vars;
+  /**
+   * The function (predicate) that is the subject of the invariant synthesis
+   * problem we are inferring.
+   */
   Node d_func;
   
   class Component {
@@ -101,7 +164,8 @@ public:
 // (2) inferring whether the conjecture corresponds to a deterministic transistion system (by utility d_ti).
 // For these techniques, we may generate a template (d_templ) which specifies a restricted
 // solution space. We may in turn embed this template as a SyGuS grammar.
-class CegConjectureSingleInv {
+class CegSingleInv
+{
  private:
   friend class CegqiOutputSingleInv;
   //presolve
@@ -116,18 +180,20 @@ class CegConjectureSingleInv {
                          unsigned index, std::map<Node, Node>& weak_imp);
   Node postProcessSolution(Node n);
  private:
+  /** pointer to the quantifiers engine */
   QuantifiersEngine* d_qe;
-  CegConjecture* d_parent;
+  /** the parent of this class */
+  SynthConjecture* d_parent;
   // single invocation inference utility
   SingleInvocationPartition* d_sip;
   // transition inference module for each function to synthesize
   std::map< Node, TransitionInference > d_ti;
   // solution reconstruction
-  CegConjectureSingleInvSol* d_sol;
+  CegSingleInvSol* d_sol;
   // the instantiator's output channel
   CegqiOutputSingleInv* d_cosi;
   // the instantiator
-  CegInstantiator* d_cinst;
+  std::unique_ptr<CegInstantiator> d_cinst;
 
   // list of skolems for each argument of programs
   std::vector<Node> d_single_inv_arg_sk;
@@ -146,9 +212,6 @@ class CegConjectureSingleInv {
   Node d_orig_solution;
   Node d_solution;
   Node d_sygus_solution;
-  // whether the grammar for our solution allows ITEs, this tells us when reconstruction is infeasible
-  bool d_has_ites;
-
  public:
   // lemmas produced
   std::vector<Node> d_lemmas_produced;
@@ -169,7 +232,6 @@ class CegConjectureSingleInv {
   bool d_single_invocation;
   // single invocation portion of quantified formula
   Node d_single_inv;
-  Node d_si_guard;
   // transition relation version per program
   std::map< Node, Node > d_trans_pre;
   std::map< Node, Node > d_trans_post;
@@ -179,22 +241,31 @@ class CegConjectureSingleInv {
   std::map< Node, Node > d_templ_arg;
   
  public:
-  CegConjectureSingleInv( QuantifiersEngine * qe, CegConjecture * p );
-  ~CegConjectureSingleInv();
+  CegSingleInv(QuantifiersEngine* qe, SynthConjecture* p);
+  ~CegSingleInv();
 
   // get simplified conjecture
   Node getSimplifiedConjecture() { return d_simp_quant; }
-  // get single invocation guard
-  Node getGuard() { return d_si_guard; }
  public:
-  //get the single invocation lemma(s)
-  void getInitialSingleInvLemma( std::vector< Node >& lems );
+  /** get the single invocation lemma(s)
+   *
+   * This adds lemmas to lem that initializes this class for doing
+   * counterexample-guided instantiation for the synthesis conjecture. These
+   * lemmas correspond to the negation of the body of the (anti-skolemized)
+   * form of the conjecture for fresh skolems.
+   *
+   * Argument g is guard, for which all the above lemmas are guarded.
+   */
+  void getInitialSingleInvLemma(Node g, std::vector<Node>& lems);
   // initialize this class for synthesis conjecture q
   void initialize( Node q );
-  // finish initialize, sets up final decisions about whether to use single invocation techniques
-  //  syntaxRestricted is whether the syntax for solutions for the initialized conjecture is restricted
-  //  hasItes is whether the syntax for solutions for the initialized conjecture allows ITEs
-  void finishInit( bool syntaxRestricted, bool hasItes );
+  /** finish initialize
+   *
+   * This method sets up final decisions about whether to use single invocation
+   * techniques. The argument syntaxRestricted is whether the syntax for
+   * solutions for the initialized conjecture is restricted.
+   */
+  void finishInit(bool syntaxRestricted);
   //check
   bool check( std::vector< Node >& lems );
   //get solution
@@ -202,12 +273,8 @@ class CegConjectureSingleInv {
   //reconstruct to syntax
   Node reconstructToSyntax( Node s, TypeNode stn, int& reconstructed,
                             bool rconsSygus = true );
-  // has ites
-  bool hasITEs() { return d_has_ites; }
   // is single invocation
   bool isSingleInvocation() const { return !d_single_inv.isNull(); }
-  //needs check
-  bool needsCheck();
   /** preregister conjecture */
   void preregisterConjecture( Node q );
 

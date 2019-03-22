@@ -17,14 +17,9 @@
 #ifndef __CVC4__PARSER__ANTLR_INPUT_H
 #define __CVC4__PARSER__ANTLR_INPUT_H
 
-// These headers must be included first. See the documentation
-// in parser/antlr_undefines.h for an explanation.
-// Also while unusual this must also be within the #ifdef guard.
-#include <antlr3.h>
-#include "parser/antlr_undefines.h"
-
 #include "cvc4parser_private.h"
 
+#include <antlr3.h>
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
@@ -69,11 +64,10 @@ private:
                    LineBuffer* line_buffer);
 
   /* This is private and unimplemented, because you should never use it. */
-  AntlrInputStream(const AntlrInputStream& inputStream) CVC4_UNDEFINED;
+  AntlrInputStream(const AntlrInputStream& inputStream) = delete;
 
   /* This is private and unimplemented, because you should never use it. */
-  AntlrInputStream& operator=(const AntlrInputStream& inputStream)
-    CVC4_UNDEFINED;
+  AntlrInputStream& operator=(const AntlrInputStream& inputStream) = delete;
 
 public:
 

@@ -26,7 +26,10 @@ namespace CVC4 {
 namespace theory {
 namespace quantifiers {
 
-SygusUnif::SygusUnif() : d_qe(nullptr), d_tds(nullptr) {}
+SygusUnif::SygusUnif()
+    : d_qe(nullptr), d_tds(nullptr), d_enableMinimality(false)
+{
+}
 SygusUnif::~SygusUnif() {}
 
 void SygusUnif::initializeCandidate(
@@ -42,46 +45,45 @@ void SygusUnif::initializeCandidate(
   d_strategy[f].initialize(qe, f, enums);
 }
 
-bool SygusUnif::constructSolution(std::vector<Node>& sols,
-                                  std::vector<Node>& lemmas)
+Node SygusUnif::getMinimalTerm(const std::vector<Node>& terms)
 {
-  // initialize a call to construct solution
-  initializeConstructSol();
-  for (const Node& f : d_candidates)
+  unsigned minSize = 0;
+  Node minTerm;
+  std::map<Node, unsigned>::iterator it;
+  for (const Node& n : terms)
   {
-    // initialize a call to construct solution for function f
-    initializeConstructSolFor(f);
-    // call the virtual construct solution method
-    Node e = d_strategy[f].getRootEnumerator();
-    Node sol = constructSol(f, e, role_equal, 1, lemmas);
-    if (sol.isNull())
+    it = d_termToSize.find(n);
+    unsigned ssize = 0;
+    if (it == d_termToSize.end())
     {
-      return false;
+      ssize = d_tds->getSygusTermSize(n);
+      d_termToSize[n] = ssize;
     }
-    sols.push_back(sol);
+    else
+    {
+      ssize = it->second;
+    }
+    if (minTerm.isNull() || ssize < minSize)
+    {
+      minTerm = n;
+      minSize = ssize;
+    }
   }
-  return true;
+  return minTerm;
 }
 
-Node SygusUnif::constructBestSolvedTerm(const std::vector<Node>& solved)
+Node SygusUnif::constructBestSolvedTerm(Node e, const std::vector<Node>& solved)
 {
   Assert(!solved.empty());
+  if (d_enableMinimality)
+  {
+    return getMinimalTerm(solved);
+  }
   return solved[0];
 }
 
-Node SygusUnif::constructBestStringSolvedTerm(const std::vector<Node>& solved)
-{
-  Assert(!solved.empty());
-  return solved[0];
-}
-
-Node SygusUnif::constructBestSolvedConditional(const std::vector<Node>& solved)
-{
-  Assert(!solved.empty());
-  return solved[0];
-}
-
-Node SygusUnif::constructBestConditional(const std::vector<Node>& conds)
+Node SygusUnif::constructBestConditional(Node ce,
+                                         const std::vector<Node>& conds)
 {
   Assert(!conds.empty());
   double r = Random::getRandom().pickDouble(0.0, 1.0);
@@ -100,7 +102,7 @@ Node SygusUnif::constructBestStringToConcat(
 {
   Assert(!strs.empty());
   std::vector<Node> strs_tmp = strs;
-  std::random_shuffle(strs_tmp.begin(), strs_tmp.end());
+  std::shuffle(strs_tmp.begin(), strs_tmp.end(), Random::getRandom());
   // prefer one that has incremented by more than 0
   for (const Node& ns : strs_tmp)
   {

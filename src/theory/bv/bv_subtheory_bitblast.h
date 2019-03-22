@@ -23,6 +23,11 @@
 #include "theory/bv/bv_subtheory.h"
 
 namespace CVC4 {
+
+namespace proof {
+class ResolutionBitVectorProof;
+}
+
 namespace theory {
 namespace bv {
 
@@ -42,7 +47,7 @@ class BitblastSolver : public SubtheorySolver {
     ~Statistics();
   };
   /** Bitblaster */
-  TLazyBitblaster* d_bitblaster;
+  std::unique_ptr<TLazyBitblaster> d_bitblaster;
 
   /** Nodes that still need to be bit-blasted */
   context::CDQueue<TNode> d_bitblastQueue;
@@ -56,8 +61,8 @@ class BitblastSolver : public SubtheorySolver {
   context::CDQueue<TNode> d_lemmaAtomsQueue;
   bool  d_useSatPropagation;
   AbstractionModule* d_abstractionModule;
-  BVQuickCheck* d_quickCheck;
-  QuickXPlain* d_quickXplain;
+  std::unique_ptr<BVQuickCheck> d_quickCheck;
+  std::unique_ptr<QuickXPlain> d_quickXplain;
   //  Node getModelValueRec(TNode node);
   void setConflict(TNode conflict);
 public:
@@ -74,7 +79,7 @@ public:
   void bitblastQueue();
   void setAbstraction(AbstractionModule* module);
   uint64_t computeAtomWeight(TNode atom);
-  void setProofLog(BitVectorProof* bvp) override;
+  void setProofLog(proof::BitVectorProof* bvp) override;
 };
 
 } /* namespace CVC4::theory::bv */

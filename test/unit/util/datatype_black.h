@@ -31,16 +31,17 @@ class DatatypeBlack : public CxxTest::TestSuite {
   ExprManager* d_em;
   ExprManagerScope* d_scope;
 
-public:
-
-  void setUp() {
+ public:
+  void setUp() override
+  {
     d_em = new ExprManager();
     d_scope = new ExprManagerScope(*d_em);
     Debug.on("datatypes");
     Debug.on("groundterms");
   }
 
-  void tearDown() {
+  void tearDown() override
+  {
     delete d_scope;
     delete d_em;
   }
@@ -69,8 +70,9 @@ public:
     const Datatype& colorsDT = colorsType.getDatatype();
     TS_ASSERT(colorsDT.getConstructor("blue") == ctor);
     TS_ASSERT(colorsDT["blue"].getConstructor() == ctor);
-    TS_ASSERT_THROWS(colorsDT["blue"].getSelector("foo"), IllegalArgumentException);
-    TS_ASSERT_THROWS(colorsDT["blue"]["foo"], IllegalArgumentException);
+    TS_ASSERT_THROWS(colorsDT["blue"].getSelector("foo"),
+                     IllegalArgumentException&);
+    TS_ASSERT_THROWS(colorsDT["blue"]["foo"], IllegalArgumentException&);
 
     TS_ASSERT(! colorsType.getDatatype().isParametric());
     TS_ASSERT(colorsType.getDatatype().isFinite());
@@ -129,7 +131,8 @@ public:
     Expr ctor = treeType.getDatatype()[1].getConstructor();
     TS_ASSERT(treeType.getConstructor("leaf") == ctor);
     TS_ASSERT(treeType.getConstructor("leaf") == ctor);
-    TS_ASSERT_THROWS(treeType.getConstructor("leff"), IllegalArgumentException);
+    TS_ASSERT_THROWS(treeType.getConstructor("leff"),
+                     IllegalArgumentException&);
 
     TS_ASSERT(! treeType.getDatatype().isParametric());
     TS_ASSERT(! treeType.getDatatype().isFinite());

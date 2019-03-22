@@ -27,27 +27,23 @@ class CDMapWhite : public CxxTest::TestSuite {
 
   Context* d_context;
 
-public:
+ public:
+  void setUp() override { d_context = new Context; }
 
-  void setUp() {
-    d_context = new Context;
-  }
+  void tearDown() override { delete d_context; }
 
-  void tearDown() {
-    delete d_context;
-  }
-
-  void testUnreachableSaveAndRestore() {
+  void testUnreachableSaveAndRestore()
+  {
     CDHashMap<int, int> map(d_context);
 
     TS_ASSERT_THROWS_NOTHING(map.makeCurrent());
 
-    TS_ASSERT_THROWS(map.update(), UnreachableCodeException);
+    TS_ASSERT_THROWS(map.update(), UnreachableCodeException&);
 
-    TS_ASSERT_THROWS(map.save(d_context->getCMM()), UnreachableCodeException);
-    TS_ASSERT_THROWS(map.restore(&map), UnreachableCodeException);
+    TS_ASSERT_THROWS(map.save(d_context->getCMM()), UnreachableCodeException&);
+    TS_ASSERT_THROWS(map.restore(&map), UnreachableCodeException&);
 
     d_context->push();
-    TS_ASSERT_THROWS(map.makeCurrent(), UnreachableCodeException);
+    TS_ASSERT_THROWS(map.makeCurrent(), UnreachableCodeException&);
   }
 };

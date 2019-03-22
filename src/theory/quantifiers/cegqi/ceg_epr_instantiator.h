@@ -19,13 +19,12 @@
 
 #include <map>
 #include <vector>
+#include "expr/node_trie.h"
 #include "theory/quantifiers/cegqi/ceg_instantiator.h"
 
 namespace CVC4 {
 namespace theory {
 namespace quantifiers {
-
-class TermArgTrie;
 
 /** Effectively Propositional (EPR) Instantiator
  *
@@ -41,6 +40,11 @@ class EprInstantiator : public Instantiator
              SolvedForm& sf,
              Node pv,
              CegInstEffort effort) override;
+  /** this instantiator implements hasProcessEqualTerm */
+  bool hasProcessEqualTerm(CegInstantiator* ci,
+                           SolvedForm& sf,
+                           Node pv,
+                           CegInstEffort effort) override;
   /** process equal terms
    *
    * This adds n to the set of equal terms d_equal_terms if matching heuristics
@@ -88,7 +92,7 @@ class EprInstantiator : public Instantiator
                          Node pv,
                          Node catom,
                          std::vector<Node>& arg_reps,
-                         TermArgTrie* tat,
+                         TNodeTrie* tat,
                          unsigned index,
                          std::map<Node, int>& match_score);
   void computeMatchScore(CegInstantiator* ci,

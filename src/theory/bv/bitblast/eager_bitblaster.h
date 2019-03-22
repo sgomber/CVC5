@@ -23,6 +23,8 @@
 
 #include "theory/bv/bitblast/bitblaster.h"
 
+#include "proof/bitvector_proof.h"
+#include "proof/resolution_bitvector_proof.h"
 #include "prop/cnf_stream.h"
 #include "prop/sat_solver.h"
 
@@ -36,7 +38,7 @@ class TheoryBV;
 class EagerBitblaster : public TBitblaster<Node>
 {
  public:
-  EagerBitblaster(TheoryBV* theory_bv);
+  EagerBitblaster(TheoryBV* theory_bv, context::Context* context);
   ~EagerBitblaster();
 
   void addAtom(TNode atom);
@@ -51,17 +53,15 @@ class EagerBitblaster : public TBitblaster<Node>
 
   bool assertToSat(TNode node, bool propagate = true);
   bool solve();
+  bool solve(const std::vector<Node>& assumptions);
   bool collectModelInfo(TheoryModel* m, bool fullModel);
-  void setProofLog(BitVectorProof* bvp);
 
  private:
-  std::unique_ptr<context::Context> d_nullContext;
+  context::Context* d_context;
 
   typedef std::unordered_set<TNode, TNodeHashFunction> TNodeSet;
-  // sat solver used for bitblasting and associated CnfStream
   std::unique_ptr<prop::SatSolver> d_satSolver;
   std::unique_ptr<BitblastingRegistrar> d_bitblastingRegistrar;
-  std::unique_ptr<prop::CnfStream> d_cnfStream;
 
   TheoryBV* d_bv;
   TNodeSet d_bbAtoms;
@@ -71,6 +71,7 @@ class EagerBitblaster : public TBitblaster<Node>
   std::unique_ptr<MinisatEmptyNotify> d_notify;
 
   Node getModelFromSatSolver(TNode a, bool fullModel) override;
+  prop::SatSolver* getSatSolver() override { return d_satSolver.get(); }
   bool isSharedTerm(TNode node);
 };
 

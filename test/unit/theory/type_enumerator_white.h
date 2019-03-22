@@ -38,15 +38,16 @@ class TypeEnumeratorWhite : public CxxTest::TestSuite {
   NodeManager* d_nm;
   NodeManagerScope* d_scope;
 
-public:
-
-  void setUp() {
+ public:
+  void setUp() override
+  {
     d_em = new ExprManager();
     d_nm = NodeManager::fromExprManager(d_em);
     d_scope = new NodeManagerScope(d_nm);
   }
 
-  void tearDown() {
+  void tearDown() override
+  {
     delete d_scope;
     delete d_em;
   }
@@ -58,11 +59,11 @@ public:
     TS_ASSERT( ! te.isFinished() );
     TS_ASSERT_EQUALS(*++te, d_nm->mkConst(true));
     TS_ASSERT( ! te.isFinished() );
-    TS_ASSERT_THROWS(*++te, NoMoreValuesException);
+    TS_ASSERT_THROWS(*++te, NoMoreValuesException&);
     TS_ASSERT( te.isFinished() );
-    TS_ASSERT_THROWS(*++te, NoMoreValuesException);
+    TS_ASSERT_THROWS(*++te, NoMoreValuesException&);
     TS_ASSERT( te.isFinished() );
-    TS_ASSERT_THROWS(*++te, NoMoreValuesException);
+    TS_ASSERT_THROWS(*++te, NoMoreValuesException&);
     TS_ASSERT( te.isFinished() );
   }
 
@@ -160,9 +161,9 @@ public:
     TS_ASSERT_EQUALS(*++te, d_nm->mkNode(APPLY_CONSTRUCTOR, DatatypeType(datatype.toType()).getDatatype().getConstructor("green")));
     TS_ASSERT_EQUALS(*++te, d_nm->mkNode(APPLY_CONSTRUCTOR, DatatypeType(datatype.toType()).getDatatype().getConstructor("blue")));
     TS_ASSERT_EQUALS(*++te, d_nm->mkNode(APPLY_CONSTRUCTOR, DatatypeType(datatype.toType()).getDatatype().getConstructor("violet")));
-    TS_ASSERT_THROWS(*++te, NoMoreValuesException);
-    TS_ASSERT_THROWS(*++te, NoMoreValuesException);
-    TS_ASSERT_THROWS(*++te, NoMoreValuesException);
+    TS_ASSERT_THROWS(*++te, NoMoreValuesException&);
+    TS_ASSERT_THROWS(*++te, NoMoreValuesException&);
+    TS_ASSERT_THROWS(*++te, NoMoreValuesException&);
   }
 
   void testDatatypesInfinite1() {
@@ -266,9 +267,9 @@ public:
     TS_ASSERT_EQUALS(*++te, d_nm->mkConst(BitVector(3u, 5u)));
     TS_ASSERT_EQUALS(*++te, d_nm->mkConst(BitVector(3u, 6u)));
     TS_ASSERT_EQUALS(*++te, d_nm->mkConst(BitVector(3u, 7u)));
-    TS_ASSERT_THROWS(*++te, NoMoreValuesException);
-    TS_ASSERT_THROWS(*++te, NoMoreValuesException);
-    TS_ASSERT_THROWS(*++te, NoMoreValuesException);
+    TS_ASSERT_THROWS(*++te, NoMoreValuesException&);
+    TS_ASSERT_THROWS(*++te, NoMoreValuesException&);
+    TS_ASSERT_THROWS(*++te, NoMoreValuesException&);
   }
 
 };/* class TypeEnumeratorWhite */

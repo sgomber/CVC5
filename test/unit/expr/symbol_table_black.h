@@ -37,21 +37,27 @@ private:
 
   ExprManager* d_exprManager;
 
-public:
-
-  void setUp() {
-    try {
+ public:
+  void setUp() override
+  {
+    try
+    {
       d_exprManager = new ExprManager;
-    } catch(Exception e) {
+    }
+    catch (Exception& e)
+    {
       cerr << "Exception during setUp():" << endl << e;
       throw;
     }
   }
 
-  void tearDown() {
+  void tearDown() override
+  {
     try {
       delete d_exprManager;
-    } catch(Exception e) {
+    }
+    catch (Exception& e)
+    {
       cerr << "Exception during tearDown():" << endl << e;
       throw;
     }
@@ -156,6 +162,6 @@ public:
   void testBadPop() {
     SymbolTable symtab;
     // TODO: What kind of exception gets thrown here?
-    TS_ASSERT_THROWS( symtab.popScope(), ScopeException );
+    TS_ASSERT_THROWS(symtab.popScope(), ScopeException&);
   }
 };/* class SymbolTableBlack */

@@ -24,19 +24,19 @@ namespace CVC4 {
 namespace theory {
 namespace quantifiers {
 
+class CegSingleInv;
 
-class CegConjectureSingleInv;
-
-/** CegConjectureSingleInvSol
+/** CegSingleInvSol
  *
  * This function implements Figure 5 of "Counterexample-Guided Quantifier
  * Instantiation for Synthesis in SMT", Reynolds et al CAV 2015.
  *
  */
-class CegConjectureSingleInvSol
+class CegSingleInvSol
 {
-  friend class CegConjectureSingleInv;
-private:
+  friend class CegSingleInv;
+
+ private:
   QuantifiersEngine * d_qe;
   std::vector< Node > d_varList;
   std::map< Node, int > d_dterm_size;
@@ -55,7 +55,7 @@ private:
                              std::vector< Node >& vars, std::vector< Node >& subs, int status );
 
  public:
-  CegConjectureSingleInvSol(QuantifiersEngine* qe);
+  CegSingleInvSol(QuantifiersEngine* qe);
   /** simplify solution
    *
    * Returns the simplified version of node sol whose syntax is restricted by
@@ -68,8 +68,16 @@ private:
    * matches the grammar corresponding to sygus datatype stn.
    * The value reconstructed is set to 1 if we successfully return a node,
    * otherwise it is set to -1.
+   *
+   * This method quickly tries to match sol to the grammar induced by stn. If
+   * this fails, we use enumerative techniques to try to repair the solution.
+   * The number of iterations for this enumeration is bounded by the argument
+   * enumLimit if it is positive, and unbounded otherwise.
    */
-  Node reconstructSolution(Node sol, TypeNode stn, int& reconstructed);
+  Node reconstructSolution(Node sol,
+                           TypeNode stn,
+                           int& reconstructed,
+                           int enumLimit);
   /** preregister conjecture
    *
    * q : the synthesis conjecture this class is for.

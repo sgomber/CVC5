@@ -27,6 +27,7 @@
 #include "options/arith_propagation_mode.h"
 #include "options/arith_unate_lemma_mode.h"
 #include "options/base_handlers.h"
+#include "options/bool_to_bv_mode.h"
 #include "options/bv_bitblast_mode.h"
 #include "options/datatypes_modes.h"
 #include "options/decision_mode.h"
@@ -35,7 +36,8 @@
 #include "options/options.h"
 #include "options/printer_modes.h"
 #include "options/quantifiers_modes.h"
-#include "options/simplification_mode.h"
+#include "options/smt_modes.h"
+#include "options/strings_process_loop_mode.h"
 #include "options/sygus_out_mode.h"
 #include "options/theoryof_mode.h"
 #include "options/ufss_mode.h"
@@ -108,9 +110,15 @@ public:
       std::string option, std::string optarg);
   theory::quantifiers::CegqiSingleInvMode stringToCegqiSingleInvMode(
       std::string option, std::string optarg);
+  theory::quantifiers::CegqiSingleInvRconsMode stringToCegqiSingleInvRconsMode(
+      std::string option, std::string optarg);
   theory::quantifiers::CegisSampleMode stringToCegisSampleMode(
       std::string option, std::string optarg);
+  theory::quantifiers::SygusFilterSolMode stringToSygusFilterSolMode(
+      std::string option, std::string optarg);
   theory::quantifiers::SygusInvTemplMode stringToSygusInvTemplMode(
+      std::string option, std::string optarg);
+  theory::quantifiers::SygusActiveGenMode stringToSygusActiveGenMode(
       std::string option, std::string optarg);
   theory::quantifiers::MacrosQuantMode stringToMacrosQuantMode(
       std::string option, std::string optarg);
@@ -118,8 +126,6 @@ public:
       std::string option, std::string optarg);
   theory::quantifiers::QuantRepMode stringToQuantRepMode(std::string option,
                                                          std::string optarg);
-  theory::quantifiers::FmfBoundMinMode stringToFmfBoundMinMode(
-      std::string option, std::string optarg);
   theory::SygusFairMode stringToSygusFairMode(std::string option,
                                               std::string optarg);
 
@@ -133,10 +139,18 @@ public:
                                                 std::string optarg);
   theory::bv::BvSlicerMode stringToBvSlicerMode(std::string option,
                                                 std::string optarg);
+  preprocessing::passes::BoolToBVMode stringToBoolToBVMode(std::string option,
+                                                           std::string optarg);
   void setBitblastAig(std::string option, bool arg);
 
   theory::bv::SatSolverMode stringToSatSolver(std::string option,
                                               std::string optarg);
+
+  theory::bv::BvProofFormat stringToBvProofFormat(std::string option,
+                                                  std::string optarg);
+
+  theory::strings::ProcessLoopMode stringToStringsProcessLoopMode(
+      std::string option, std::string optarg);
 
   // theory/uf/options_handlers.h
   theory::uf::UfssMode stringToUfssMode(std::string option, std::string optarg);
@@ -169,6 +183,7 @@ public:
   void notifyDumpMode(std::string option);
   SimplificationMode stringToSimplificationMode(std::string option,
                                                 std::string optarg);
+  ModelCoresMode stringToModelCoresMode(std::string option, std::string optarg);
   SygusSolutionOutMode stringToSygusSolutionOutMode(std::string option,
                                                     std::string optarg);
   void setProduceAssertions(std::string option, bool value);
@@ -182,10 +197,7 @@ public:
 
   void statsEnabledBuild(std::string option, bool value);
 
-  unsigned long tlimitHandler(std::string option, std::string optarg);
-  unsigned long tlimitPerHandler(std::string option, std::string optarg);
-  unsigned long rlimitHandler(std::string option, std::string optarg);
-  unsigned long rlimitPerHandler(std::string option, std::string optarg);
+  unsigned long limitHandler(std::string option, std::string optarg);
 
   void notifyTlimit(const std::string& option);
   void notifyTlimitPer(const std::string& option);
@@ -225,8 +237,11 @@ public:
   /* Help strings */
   static const std::string s_bitblastingModeHelp;
   static const std::string s_bvSatSolverHelp;
+  static const std::string s_bvProofFormatHelp;
   static const std::string s_booleanTermConversionModeHelp;
   static const std::string s_bvSlicerModeHelp;
+  static const std::string s_stringToStringsProcessLoopModeHelp;
+  static const std::string s_boolToBVModeHelp;
   static const std::string s_cegqiFairModeHelp;
   static const std::string s_decisionModeHelp;
   static const std::string s_instFormatHelp ;
@@ -242,11 +257,15 @@ public:
   static const std::string s_qcfModeHelp;
   static const std::string s_qcfWhenModeHelp;
   static const std::string s_simplificationHelp;
+  static const std::string s_modelCoresHelp;
   static const std::string s_sygusSolutionOutModeHelp;
   static const std::string s_cbqiBvIneqModeHelp;
   static const std::string s_cegqiSingleInvHelp;
+  static const std::string s_cegqiSingleInvRconsHelp;
   static const std::string s_cegisSampleHelp;
+  static const std::string s_sygusFilterSolHelp;
   static const std::string s_sygusInvTemplHelp;
+  static const std::string s_sygusActiveGenHelp;
   static const std::string s_termDbModeHelp;
   static const std::string s_theoryOfModeHelp;
   static const std::string s_triggerSelModeHelp;

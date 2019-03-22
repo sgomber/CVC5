@@ -174,8 +174,24 @@ void InstMatchGenerator::initialize( Node q, QuantifiersEngine* qe, std::vector<
 
     //create candidate generator
     if( Trigger::isAtomicTrigger( d_match_pattern ) ){
-      //we will be scanning lists trying to find d_match_pattern.getOperator()
-      d_cg = new inst::CandidateGeneratorQE( qe, d_match_pattern );
+      if (d_match_pattern.getKind() == APPLY_CONSTRUCTOR)
+      {
+        // 1-constructors have a trivial way of generating candidates in a
+        // given equivalence class
+        const Datatype& dt =
+            static_cast<DatatypeType>(d_match_pattern.getType().toType())
+                .getDatatype();
+        if (dt.getNumConstructors() == 1)
+        {
+          d_cg = new inst::CandidateGeneratorConsExpand(qe, d_match_pattern);
+        }
+      }
+      if (d_cg == nullptr)
+      {
+        // we will be scanning lists trying to find
+        // d_match_pattern.getOperator()
+        d_cg = new inst::CandidateGeneratorQE(qe, d_match_pattern);
+      }
       //if matching on disequality, inform the candidate generator not to match on eqc
       if( d_pattern.getKind()==NOT && d_pattern[0].getKind()==EQUAL ){
         ((inst::CandidateGeneratorQE*)d_cg)->excludeEqc( d_eq_class_rel );
@@ -196,13 +212,9 @@ void InstMatchGenerator::initialize( Node q, QuantifiersEngine* qe, std::vector<
     }else if( d_match_pattern.getKind()==EQUAL &&
               d_match_pattern[0].getKind()==INST_CONSTANT && d_match_pattern[1].getKind()==INST_CONSTANT ){
       //we will be producing candidates via literal matching heuristics
-      if( d_pattern.getKind()!=NOT ){
-        //candidates will be all equalities
-        d_cg = new inst::CandidateGeneratorQELitEq( qe, d_match_pattern );
-      }else{
-        //candidates will be all disequalities
-        d_cg = new inst::CandidateGeneratorQELitDeq( qe, d_match_pattern );
-      }
+      Assert(d_pattern.getKind() == NOT);
+      // candidates will be all disequalities
+      d_cg = new inst::CandidateGeneratorQELitDeq(qe, d_match_pattern);
     }else{
       Trace("inst-match-gen-warn") << "(?) Unknown matching pattern is " << d_match_pattern << std::endl;
     }
@@ -372,6 +384,11 @@ void InstMatchGenerator::resetInstantiationRound( QuantifiersEngine* qe ){
 }
 
 bool InstMatchGenerator::reset( Node eqc, QuantifiersEngine* qe ){
+  if (d_cg == nullptr)
+  {
+    // we did not properly initialize the candidate generator, thus we fail
+    return false;
+  }
   eqc = qe->getEqualityQuery()->getRepresentative( eqc );
   Trace("matching-debug2") << this << " reset " << eqc << "." << std::endl;
   if( !d_eq_class_rel.isNull() && d_eq_class_rel.getKind()!=INST_CONSTANT ){
@@ -414,6 +431,7 @@ int InstMatchGenerator::getNextMatch(Node f,
   Node t = d_curr_first_candidate;
   do{
     Trace("matching-debug2") << "Matching candidate : " << t << std::endl;
+    Assert(!qe->inConflict());
     //if t not null, try to fit it into match m
     if( !t.isNull() ){
       if( d_curr_exclude_match.find( t )==d_curr_exclude_match.end() ){
@@ -427,7 +445,7 @@ int InstMatchGenerator::getNextMatch(Node f,
       }
       //get the next candidate term t
       if( success<0 ){
-        t = d_cg->getNextCandidate();
+        t = qe->inConflict() ? Node::null() : d_cg->getNextCandidate();
       }else{
         d_curr_first_candidate = d_cg->getNextCandidate();
       }
@@ -615,7 +633,8 @@ InstMatchGeneratorMultiLinear::InstMatchGeneratorMultiLinear( Node q, std::vecto
     // score is lexographic ( bound vars, shared vars )
     int score_max_1 = -1;
     int score_max_2 = -1;
-    int score_index = -1;
+    unsigned score_index = 0;
+    bool set_score_index = false;
     for( unsigned i=0; i<pats.size(); i++ ){
       Node p = pats[i];
       if( std::find( pats_ordered.begin(), pats_ordered.end(), p )==pats_ordered.end() ){
@@ -629,13 +648,17 @@ InstMatchGeneratorMultiLinear::InstMatchGeneratorMultiLinear( Node q, std::vecto
             score_2++;
           }
         }
-        if( score_index==-1 || score_1>score_max_1 || ( score_1==score_max_1 && score_2>score_max_2 ) ){
+        if (!set_score_index || score_1 > score_max_1
+            || (score_1 == score_max_1 && score_2 > score_max_2))
+        {
           score_index = i;
+          set_score_index = true;
           score_max_1 = score_1;
           score_max_2 = score_2;
         }
       }
     }
+    Assert(set_score_index);
     //update the variable bounds
     Node mp = pats[score_index];
     for( unsigned i=0; i<var_contains[mp].size(); i++ ){
@@ -1005,32 +1028,36 @@ int InstMatchGeneratorSimple::addInstantiations(Node q,
                                                 Trigger* tparent)
 {
   int addedLemmas = 0;
-  quantifiers::TermArgTrie* tat;
+  TNodeTrie* tat;
   if( d_eqc.isNull() ){
     tat = qe->getTermDatabase()->getTermArgTrie( d_op );
   }else{
     if( d_pol ){
       tat = qe->getTermDatabase()->getTermArgTrie( d_eqc, d_op );
     }else{
-      Node r = qe->getEqualityQuery()->getRepresentative( d_eqc );
       //iterate over all classes except r
       tat = qe->getTermDatabase()->getTermArgTrie( Node::null(), d_op );
-      if( tat ){
-        for( std::map< TNode, quantifiers::TermArgTrie >::iterator it = tat->d_data.begin(); it != tat->d_data.end(); ++it ){
-          if( it->first!=r ){
+      if (tat && !qe->inConflict())
+      {
+        Node r = qe->getEqualityQuery()->getRepresentative(d_eqc);
+        for (std::pair<const TNode, TNodeTrie>& t : tat->d_data)
+        {
+          if (t.first != r)
+          {
             InstMatch m( q );
-            addInstantiations( m, qe, addedLemmas, 0, &(it->second) );
+            addInstantiations(m, qe, addedLemmas, 0, &(t.second));
             if( qe->inConflict() ){
               break;
             }
           }
         }
-        tat = NULL;
       }
+      tat = nullptr;
     }
   }
   Debug("simple-trigger-debug") << "Adding instantiations based on " << tat << " from " << d_op << " " << d_eqc << std::endl;
-  if( tat ){
+  if (tat && !qe->inConflict())
+  {
     InstMatch m( q );
     addInstantiations( m, qe, addedLemmas, 0, tat );
   }
@@ -1041,13 +1068,13 @@ void InstMatchGeneratorSimple::addInstantiations(InstMatch& m,
                                                  QuantifiersEngine* qe,
                                                  int& addedLemmas,
                                                  unsigned argIndex,
-                                                 quantifiers::TermArgTrie* tat)
+                                                 TNodeTrie* tat)
 {
   Debug("simple-trigger-debug") << "Add inst " << argIndex << " " << d_match_pattern << std::endl;
   if (argIndex == d_match_pattern.getNumChildren())
   {
     Assert( !tat->d_data.empty() );
-    TNode t = tat->getNodeData();
+    TNode t = tat->getData();
     Debug("simple-trigger") << "Actual term is " << t << std::endl;
     //convert to actual used terms
     for (std::map<unsigned, int>::iterator it = d_var_num.begin();
@@ -1071,14 +1098,15 @@ void InstMatchGeneratorSimple::addInstantiations(InstMatch& m,
     if( d_match_pattern[argIndex].getKind()==INST_CONSTANT ){
       int v = d_var_num[argIndex];
       if( v!=-1 ){
-        for( std::map< TNode, quantifiers::TermArgTrie >::iterator it = tat->d_data.begin(); it != tat->d_data.end(); ++it ){
-          Node t = it->first;
+        for (std::pair<const TNode, TNodeTrie>& tt : tat->d_data)
+        {
+          Node t = tt.first;
           Node prev = m.get( v );
           //using representatives, just check if equal
           Assert( t.getType().isComparableTo( d_match_pattern_arg_types[argIndex] ) );
           if( prev.isNull() || prev==t ){
             m.setValue( v, t);
-            addInstantiations( m, qe, addedLemmas, argIndex+1, &(it->second) );
+            addInstantiations(m, qe, addedLemmas, argIndex + 1, &(tt.second));
             m.setValue( v, prev);
             if( qe->inConflict() ){
               break;
@@ -1090,7 +1118,7 @@ void InstMatchGeneratorSimple::addInstantiations(InstMatch& m,
       //inst constant from another quantified formula, treat as ground term  TODO: remove this?
     }
     Node r = qe->getEqualityQuery()->getRepresentative( d_match_pattern[argIndex] );
-    std::map< TNode, quantifiers::TermArgTrie >::iterator it = tat->d_data.find( r );
+    std::map<TNode, TNodeTrie>::iterator it = tat->d_data.find(r);
     if( it!=tat->d_data.end() ){
       addInstantiations( m, qe, addedLemmas, argIndex+1, &(it->second) );
     }

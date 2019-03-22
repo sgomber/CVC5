@@ -16,6 +16,7 @@
 
 #include <iostream>
 
+//#include <cvc4/cvc4.h> // use this after CVC4 is properly installed
 #include "api/cvc4cpp.h"
 
 using namespace CVC4::api;
@@ -23,7 +24,7 @@ using namespace CVC4::api;
 int main()
 {
   Solver slv;
-  Term helloworld = slv.mkVar("Hello World!", slv.getBooleanSort());
+  Term helloworld = slv.mkVar(slv.getBooleanSort(), "Hello World!");
   std::cout << helloworld << " is " << slv.checkValidAssuming(helloworld)
             << std::endl;
   return 0;

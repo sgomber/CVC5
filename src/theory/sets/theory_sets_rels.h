@@ -185,9 +185,10 @@ private:
   bool areEqual( Node a, Node b );
   Node getRepresentative( Node t );
   bool exists( std::vector<Node>&, Node );
-  Node mkAnd( std::vector< TNode >& assumptions );
   inline void addToMembershipDB( Node, Node, Node  );
-  void printNodeMap(char* fst, char* snd, NodeMap map);
+  static void printNodeMap(const char* fst,
+                           const char* snd,
+                           const NodeMap& map);
   inline Node constructPair(Node tc_rep, Node a, Node b);
   void addToMap( std::map< Node, std::vector<Node> >&, Node, Node );
   bool safelyAddToMap( std::map< Node, std::vector<Node> >&, Node, Node );

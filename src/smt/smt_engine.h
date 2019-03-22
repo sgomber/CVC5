@@ -209,6 +209,9 @@ class CVC4_PUBLIC SmtEngine {
    */
   Options d_originalOptions;
 
+  /** whether this is an internal subsolver */
+  bool d_isInternalSubsolver;
+
   /**
    * Number of internal pops that have been deferred.
    */
@@ -217,8 +220,8 @@ class CVC4_PUBLIC SmtEngine {
   /**
    * Whether or not this SmtEngine is fully initialized (post-construction).
    * This post-construction initialization is automatically triggered by the
-   * use of the SmtEngine; e.g. when setLogic() is called, or the first
-   * assertion is made, etc.
+   * use of the SmtEngine; e.g. when the first formula is asserted, a call
+   * to simplify() is issued, a scope is pushed, etc.
    */
   bool d_fullyInited;
 
@@ -260,7 +263,7 @@ class CVC4_PUBLIC SmtEngine {
   Result d_status;
 
   /**
-   * The name of the input (if any).
+   * The input file name (if any) or the name set through setInfo (if any)
    */
   std::string d_filename;
 
@@ -282,6 +285,14 @@ class CVC4_PUBLIC SmtEngine {
    * Check that a generated proof (via getProof()) checks.
    */
   void checkProof();
+
+  /**
+   * Internal method to get an unsatisfiable core (only if immediately preceded
+   * by an UNSAT or VALID query). Only permitted if CVC4 was built with
+   * unsat-core support and produce-unsat-cores is on. Does not dump the
+   * command.
+   */
+  UnsatCore getUnsatCoreInternal();
 
   /**
    * Check that an unsatisfiable core is indeed unsatisfiable.
@@ -402,8 +413,8 @@ class CVC4_PUBLIC SmtEngine {
   void addToModelCommandAndDump(const Command& c, uint32_t flags = 0, bool userVisible = true, const char* dumpTag = "declarations");
 
   // disallow copy/assignment
-  SmtEngine(const SmtEngine&) CVC4_UNDEFINED;
-  SmtEngine& operator=(const SmtEngine&) CVC4_UNDEFINED;
+  SmtEngine(const SmtEngine&) = delete;
+  SmtEngine& operator=(const SmtEngine&) = delete;
 
   //check satisfiability (for query and check-sat)
   Result checkSatisfiability(const Expr& assumption,
@@ -429,6 +440,13 @@ class CVC4_PUBLIC SmtEngine {
                               const std::vector<Expr>& formals,
                               Expr func);
 
+  /**
+   * Helper method to obtain both the heap and nil from the solver. Returns a
+   * std::pair where the first element is the heap expression and the second
+   * element is the nil expression.
+   */
+  std::pair<Expr, Expr> getSepHeapAndNilExpr();
+
  public:
 
   /**
@@ -440,6 +458,14 @@ class CVC4_PUBLIC SmtEngine {
    * Destruct the SMT engine.
    */
   ~SmtEngine();
+
+  /**
+   * Return true if this SmtEngine is fully initialized (post-construction).
+   * This post-construction initialization is automatically triggered by the
+   * use of the SmtEngine; e.g. when the first formula is asserted, a call
+   * to simplify() is issued, a scope is pushed, etc.
+   */
+  bool isFullyInited() { return d_fullyInited; }
 
   /**
    * Set the logic of the script.
@@ -479,12 +505,35 @@ class CVC4_PUBLIC SmtEngine {
   void setOption(const std::string& key, const CVC4::SExpr& value)
       /* throw(OptionException, ModalException) */;
 
+  /** Set is internal subsolver.
+   *
+   * This function is called on SmtEngine objects that are created internally.
+   * It is used to mark that this SmtEngine should not perform preprocessing
+   * passes that rephrase the input, such as --sygus-rr-synth-input or
+   * --sygus-abduct.
+   */
+  void setIsInternalSubsolver();
+
+  /** sets the input name */
+  void setFilename(std::string filename);
+  /** return the input name (if any) */
+  std::string getFilename() const;
   /**
    * Get the model (only if immediately preceded by a SAT
    * or INVALID query).  Only permitted if CVC4 was built with model
    * support and produce-models is on.
    */
   Model* getModel();
+
+  /**
+   * When using separation logic, obtain the expression for the heap.
+   */
+  Expr getSepHeapExpr();
+
+  /**
+   * When using separation logic, obtain the expression for nil.
+   */
+  Expr getSepNilExpr();
 
   /**
    * Get an aspect of the current SMT execution environment.
@@ -579,11 +628,86 @@ class CVC4_PUBLIC SmtEngine {
    */
   std::vector<Expr> getUnsatAssumptions(void);
 
+  /*------------------- sygus commands  ------------------*/
+
+  /** adds a variable declaration
+   *
+   * Declared SyGuS variables may be used in SyGuS constraints, in which they
+   * are assumed to be universally quantified.
+   */
+  void declareSygusVar(const std::string& id, Expr var, Type type);
+  /** stores information for debugging sygus invariants setup
+   *
+   * Since in SyGuS the commands "declare-primed-var" are not necessary for
+   * building invariant constraints, we only use them to check that the number
+   * of variables declared corresponds to the number of arguments of the
+   * invariant-to-synthesize.
+   */
+  void declareSygusPrimedVar(const std::string& id, Type type);
+  /** adds a function variable declaration
+   *
+   * Is SyGuS semantics declared functions are treated in the same manner as
+   * declared variables, i.e. as universally quantified (function) variables
+   * which can occur in the SyGuS constraints that compose the conjecture to
+   * which a function is being synthesized.
+   */
+  void declareSygusFunctionVar(const std::string& id, Expr var, Type type);
+  /** adds a function-to-synthesize declaration
+   *
+   * The given type may not correspond to the actual function type but to a
+   * datatype encoding the syntax restrictions for the
+   * function-to-synthesize. In this case this information is stored to be used
+   * during solving.
+   *
+   * vars contains the arguments of the function-to-synthesize. These variables
+   * are also stored to be used during solving.
+   *
+   * isInv determines whether the function-to-synthesize is actually an
+   * invariant. This information is necessary if we are dumping a command
+   * corresponding to this declaration, so that it can be properly printed.
+   */
+  void declareSynthFun(const std::string& id,
+                       Expr func,
+                       Type type,
+                       bool isInv,
+                       const std::vector<Expr>& vars);
+  /** adds a regular sygus constraint */
+  void assertSygusConstraint(Expr constraint);
+  /** adds an invariant constraint
+   *
+   * Invariant constraints are not explicitly declared: they are given in terms
+   * of the invariant-to-synthesize, the pre condition, transition relation and
+   * post condition. The actual constraint is built based on the inputs of these
+   * place holder predicates :
+   *
+   * PRE(x) -> INV(x)
+   * INV() ^ TRANS(x, x') -> INV(x')
+   * INV(x) -> POST(x)
+   *
+   * The regular and primed variables are retrieved from the declaration of the
+   * invariant-to-synthesize.
+   */
+  void assertSygusInvConstraint(const Expr& inv,
+                                const Expr& pre,
+                                const Expr& trans,
+                                const Expr& post);
   /**
    * Assert a synthesis conjecture to the current context and call
    * check().  Returns sat, unsat, or unknown result.
+   *
+   * The actual synthesis conjecture is built based on the previously
+   * communicated information to this module (universal variables, defined
+   * functions, functions-to-synthesize, and which constraints compose it). The
+   * built conjecture is a higher-order formula of the form
+   *
+   * exists f1...fn . forall v1...vm . F
+   *
+   * in which f1...fn are the functions-to-synthesize, v1...vm are the declared
+   * universal variables and F is the set of declared constraints.
    */
-  Result checkSynth(const Expr& e) /* throw(Exception) */;
+  Result checkSynth() /* throw(Exception) */;
+
+  /*------------------- end of sygus commands-------------*/
 
   /**
    * Simplify a formula without doing "much" work.  Does not involve

@@ -57,10 +57,22 @@ unsigned getSignExtendAmount(TNode node)
 
 /* ------------------------------------------------------------------------- */
 
+bool isOnes(TNode node)
+{
+  if (!node.isConst()) return false;
+  return node == mkOnes(getSize(node));
+}
+
 bool isZero(TNode node)
 {
   if (!node.isConst()) return false;
   return node == mkZero(getSize(node));
+}
+
+bool isOne(TNode node)
+{
+  if (!node.isConst()) return false;
+  return node == mkOne(getSize(node));
 }
 
 unsigned isPow2Const(TNode node, bool& isNeg)
@@ -89,7 +101,9 @@ unsigned isPow2Const(TNode node, bool& isNeg)
 
 bool isBvConstTerm(TNode node)
 {
-  if (node.getNumChildren() == 0) { return node.isConst();
+  if (node.getNumChildren() == 0)
+  {
+    return node.isConst();
   }
 
   for (const TNode& n : node)

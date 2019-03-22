@@ -28,6 +28,7 @@
 extern "C" {
 #include "base/abc/abc.h"
 #include "base/main/main.h"
+#include "prop/cnf_stream.h"
 #include "sat/cnf/cnf.h"
 
 extern Aig_Man_t* Abc_NtkToDar(Abc_Ntk_t* pNtk, int fExors, int fRegisters);
@@ -116,7 +117,7 @@ Abc_Obj_t* mkIte<Abc_Obj_t*>(Abc_Obj_t* cond, Abc_Obj_t* a, Abc_Obj_t* b) {
   return Abc_AigMux(AigBitblaster::currentAigM(), cond, a, b); 
 }
 
-CVC4_THREAD_LOCAL Abc_Ntk_t* AigBitblaster::s_abcAigNetwork = nullptr;
+thread_local Abc_Ntk_t* AigBitblaster::s_abcAigNetwork = nullptr;
 
 Abc_Ntk_t* AigBitblaster::currentAigNtk() {
   if (!AigBitblaster::s_abcAigNetwork) {

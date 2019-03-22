@@ -21,6 +21,7 @@
 
 #ifdef CVC4_USE_CRYPTOMINISAT
 
+#include "proof/clausal_bitvector_proof.h"
 #include "prop/sat_solver.h"
 
 // Cryptominisat has name clashes with the other Minisat implementations since
@@ -39,6 +40,7 @@ class CryptoMinisatSolver : public SatSolver {
 
 private:
   std::unique_ptr<CMSat::SATSolver> d_solver;
+  proof::ClausalBitVectorProof* d_bvp;
   unsigned d_numVariables;
   bool d_okay;
   SatVariable d_true;
@@ -64,11 +66,14 @@ public:
   
   SatValue solve() override;
   SatValue solve(long unsigned int&) override;
+  SatValue solve(const std::vector<SatLiteral>& assumptions) override;
+
   bool ok() const override;
   SatValue value(SatLiteral l) override;
   SatValue modelValue(SatLiteral l) override;
 
   unsigned getAssertionLevel() const override;
+  void setClausalProofLog(proof::ClausalBitVectorProof* bvp) override;
 
   class Statistics {
   public:
