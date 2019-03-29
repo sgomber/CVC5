@@ -149,19 +149,19 @@ class TermDb : public QuantifiersUtil {
   * If n has a kind that we do not index (like PLUS),
   * then this function returns Node::null().
   */
-  Node getMatchOperator(Node n);
+  TNode getMatchOperator(TNode n);
   /** get term arg index for all f-applications in the current context */
-  TNodeTrie* getTermArgTrie(Node f);
+  TNodeTrie* getTermArgTrie(TNode f);
   /** get the term arg trie for f-applications in the equivalence class of eqc.
    */
-  TNodeTrie* getTermArgTrie(Node eqc, Node f);
+  TNodeTrie* getTermArgTrie(TNode eqc, TNode f);
   /** get congruent term
   * If possible, returns a term t such that:
   * (1) t is a term that is currently indexed by this database,
   * (2) t is of the form f( t1, ..., tk ) and n is of the form f( s1, ..., sk ),
   *     where ti is in the equivalence class of si for i=1...k.
   */
-  TNode getCongruentTerm(Node f, Node n);
+  TNode getCongruentTerm(TNode f, TNode n);
   /** get congruent term
   * If possible, returns a term t such that:
   * (1) t is a term that is currently indexed by this database,
@@ -282,30 +282,30 @@ class TermDb : public QuantifiersUtil {
   Node d_true;
   Node d_false;
   /** list of all operators */
-  std::vector<Node> d_ops;
+  std::vector<TNode> d_ops;
   /** map from operators to ground terms for that operator */
-  std::map< Node, std::vector< Node > > d_op_map;
+  std::map< TNode, std::vector< TNode > > d_op_map;
   /** map from type nodes to terms of that type */
-  std::map< TypeNode, std::vector< Node > > d_type_map;
+  std::map< TypeNode, std::vector< TNode > > d_type_map;
   /** map from type nodes to a fresh variable we introduced */
   std::unordered_map<TypeNode, Node, TypeNodeHashFunction> d_type_fv;
   /** inactive map */
   NodeBoolMap d_inactive_map;
   /** count of the number of non-redundant ground terms per operator */
-  std::map< Node, int > d_op_nonred_count;
+  std::map< TNode, int > d_op_nonred_count;
   /** mapping from terms to representatives of their arguments */
   std::map< TNode, std::vector< TNode > > d_arg_reps;
   /** map from operators to trie */
-  std::map<Node, TNodeTrie> d_func_map_trie;
-  std::map<Node, TNodeTrie> d_func_map_eqc_trie;
+  std::map<TNode, TNodeTrie> d_func_map_trie;
+  std::map<TNode, TNodeTrie> d_func_map_eqc_trie;
   /** mapping from operators to their representative relevant domains */
-  std::map< Node, std::map< unsigned, std::vector< Node > > > d_func_map_rel_dom;
+  std::map< TNode, std::map< unsigned, std::vector< TNode > > > d_func_map_rel_dom;
   /** has map */
-  std::map< Node, bool > d_has_map;
+  std::map< TNode, bool > d_has_map;
   /** map from reps to a term in eqc in d_has_map */
-  std::map< Node, Node > d_term_elig_eqc;  
+  std::map< TNode, TNode > d_term_elig_eqc;  
   /** set has term */
-  void setHasTerm( Node n );
+  void setHasTerm( TNode n );
   /** helper for evaluate term */
   Node evaluateTerm2( TNode n, std::map< TNode, Node >& visited, EqualityQuery * qy, bool useEntailmentTests );
   /** helper for get entailed term */

@@ -63,7 +63,7 @@ Node TermDb::getOperator(unsigned i)
 /** ground terms */
 unsigned TermDb::getNumGroundTerms(Node f) const
 {
-  std::map<Node, std::vector<Node> >::const_iterator it = d_op_map.find(f);
+  std::map<TNode, std::vector<TNode> >::const_iterator it = d_op_map.find(f);
   if( it!=d_op_map.end() ){
     return it->second.size();
   }else{
@@ -73,7 +73,7 @@ unsigned TermDb::getNumGroundTerms(Node f) const
 
 Node TermDb::getGroundTerm(Node f, unsigned i) const
 {
-  std::map<Node, std::vector<Node> >::const_iterator it = d_op_map.find(f);
+  std::map<TNode, std::vector<TNode> >::const_iterator it = d_op_map.find(f);
   if (it != d_op_map.end())
   {
     Assert(i < it->second.size());
@@ -88,7 +88,7 @@ Node TermDb::getGroundTerm(Node f, unsigned i) const
 
 unsigned TermDb::getNumTypeGroundTerms(TypeNode tn) const
 {
-  std::map<TypeNode, std::vector<Node> >::const_iterator it =
+  std::map<TypeNode, std::vector<TNode> >::const_iterator it =
       d_type_map.find(tn);
   if( it!=d_type_map.end() ){
     return it->second.size();
@@ -99,7 +99,7 @@ unsigned TermDb::getNumTypeGroundTerms(TypeNode tn) const
 
 Node TermDb::getTypeGroundTerm(TypeNode tn, unsigned i) const
 {
-  std::map<TypeNode, std::vector<Node> >::const_iterator it =
+  std::map<TypeNode, std::vector<TNode> >::const_iterator it =
       d_type_map.find(tn);
   if (it != d_type_map.end())
   {
@@ -115,7 +115,7 @@ Node TermDb::getTypeGroundTerm(TypeNode tn, unsigned i) const
 
 Node TermDb::getOrMakeTypeGroundTerm(TypeNode tn)
 {
-  std::map<TypeNode, std::vector<Node> >::const_iterator it =
+  std::map<TypeNode, std::vector<TNode> >::const_iterator it =
       d_type_map.find(tn);
   if (it != d_type_map.end())
   {
@@ -154,14 +154,14 @@ Node TermDb::getOrMakeTypeFreshVariable(TypeNode tn)
   }
 }
 
-Node TermDb::getMatchOperator( Node n ) {
+TNode TermDb::getMatchOperator( TNode n ) {
   Kind k = n.getKind();
   //datatype operators may be parametric, always assume they are
   if( k==SELECT || k==STORE || k==UNION || k==INTERSECTION || k==SUBSET || k==SETMINUS || k==MEMBER || k==SINGLETON || 
       k==APPLY_SELECTOR_TOTAL || k==APPLY_TESTER || k==SEP_PTO || k==HO_APPLY ){
     //since it is parametric, use a particular one as op
     TypeNode tn = n[0].getType();
-    Node op = n.getOperator();
+    TNode op = n.getOperator();
     std::map< Node, std::map< TypeNode, Node > >::iterator ito = d_par_op_map.find( op );
     if( ito!=d_par_op_map.end() ){
       std::map< TypeNode, Node >::iterator it = ito->second.find( tn );
@@ -175,7 +175,7 @@ Node TermDb::getMatchOperator( Node n ) {
   }else if( inst::Trigger::isAtomicTriggerKind( k ) ){
     return n.getOperator();
   }else{
-    return Node::null();
+    return TNode::null();
   }
 }
 
@@ -201,7 +201,7 @@ void TermDb::addTerm(Node n,
       {
         Trace("term-db") << "register term in db " << n << std::endl;
 
-        Node op = getMatchOperator(n);
+        TNode op = getMatchOperator(n);
         Trace("term-db-debug") << "  match operator is : " << op << std::endl;
         if (d_op_map.find(op) == d_op_map.end())
         {
@@ -300,16 +300,16 @@ void TermDb::computeUfTerms( TNode f ) {
   unsigned relevantCount = 0;
   eq::EqualityEngine* ee = d_quantEngine->getActiveEqualityEngine();
   NodeManager* nm = NodeManager::currentNM();
-  for (const Node& ff : ops)
+  for (TNode ff : ops)
   {
-    std::map<Node, std::vector<Node> >::iterator it = d_op_map.find(ff);
+    std::map<TNode, std::vector<TNode> >::iterator it = d_op_map.find(ff);
     if (it == d_op_map.end())
     {
       // no terms for this operator
       continue;
     }
     Trace("term-db-debug") << "Adding terms for operator " << ff << std::endl;
-    for (const Node& n : it->second)
+    for (TNode n : it->second)
     {
       // to be added to term index, term must be relevant, and exist in EE
       if (!hasTermCurrent(n) || !ee->hasTerm(n))
@@ -343,7 +343,7 @@ void TermDb::computeUfTerms( TNode f ) {
       Assert(ee->hasTerm(n));
       Trace("term-db-debug") << "  and value : " << ee->getRepresentative(n)
                              << std::endl;
-      Node at = d_func_map_trie[f].addOrGetTerm(n, d_arg_reps[n]);
+      TNode at = d_func_map_trie[f].addOrGetTerm(n, d_arg_reps[n]);
       Assert(ee->hasTerm(at));
       Trace("term-db-debug2") << "...add term returned " << at << std::endl;
       if (at != n && ee->areEqual(at, n))
@@ -363,8 +363,8 @@ void TermDb::computeUfTerms( TNode f ) {
           // operators might be disequal
           if (ops.size() > 1)
           {
-            Node atf = getMatchOperator(at);
-            Node nf = getMatchOperator(n);
+            TNode atf = getMatchOperator(at);
+            TNode nf = getMatchOperator(n);
             if (atf != nf)
             {
               if (at.getKind() == APPLY_UF && n.getKind() == APPLY_UF)
@@ -496,9 +496,9 @@ bool TermDb::inRelevantDomain( TNode f, unsigned i, TNode r ) {
   computeUfTerms( f );
   Assert( !d_quantEngine->getActiveEqualityEngine()->hasTerm( r ) || 
           d_quantEngine->getActiveEqualityEngine()->getRepresentative( r )==r );
-  std::map< Node, std::map< unsigned, std::vector< Node > > >::iterator it = d_func_map_rel_dom.find( f );
+  std::map< TNode, std::map< unsigned, std::vector< TNode > > >::iterator it = d_func_map_rel_dom.find( f );
   if( it != d_func_map_rel_dom.end() ){
-    std::map< unsigned, std::vector< Node > >::iterator it2 = it->second.find( i );
+    std::map< unsigned, std::vector< TNode > >::iterator it2 = it->second.find( i );
     if( it2!=it->second.end() ){
       return std::find( it2->second.begin(), it2->second.end(), r )!=it2->second.end();
     }else{
@@ -815,7 +815,7 @@ Node TermDb::getEligibleTermInEqc( TNode r ) {
   if( isTermEligibleForInstantiation( r, TNode::null() ) ){
     return r;
   }else{
-    std::map< Node, Node >::iterator it = d_term_elig_eqc.find( r );
+    std::map< TNode, TNode >::iterator it = d_term_elig_eqc.find( r );
     if( it==d_term_elig_eqc.end() ){
       Node h;
       eq::EqualityEngine* ee = d_quantEngine->getActiveEqualityEngine();
@@ -839,7 +839,7 @@ bool TermDb::isInstClosure( Node r ) {
   return d_iclosure_processed.find( r )!=d_iclosure_processed.end();
 }
 
-void TermDb::setHasTerm( Node n ) {
+void TermDb::setHasTerm( TNode n ) {
   Trace("term-db-debug2") << "hasTerm : " << n  << std::endl;
   //if( inst::Trigger::isAtomicTrigger( n ) ){
   if( d_has_map.find( n )==d_has_map.end() ){
@@ -1013,13 +1013,13 @@ bool TermDb::reset( Theory::Effort effort ){
   return true;
 }
 
-TNodeTrie* TermDb::getTermArgTrie(Node f)
+TNodeTrie* TermDb::getTermArgTrie(TNode f)
 {
   if( options::ufHo() ){
     f = getOperatorRepresentative( f );
   }
   computeUfTerms( f );
-  std::map<Node, TNodeTrie>::iterator itut = d_func_map_trie.find(f);
+  std::map<TNode, TNodeTrie>::iterator itut = d_func_map_trie.find(f);
   if( itut!=d_func_map_trie.end() ){
     return &itut->second;
   }else{
@@ -1027,13 +1027,13 @@ TNodeTrie* TermDb::getTermArgTrie(Node f)
   }
 }
 
-TNodeTrie* TermDb::getTermArgTrie(Node eqc, Node f)
+TNodeTrie* TermDb::getTermArgTrie(TNode eqc, TNode f)
 {
   if( options::ufHo() ){
     f = getOperatorRepresentative( f );
   }
   computeUfEqcTerms( f );
-  std::map<Node, TNodeTrie>::iterator itut = d_func_map_eqc_trie.find(f);
+  std::map<TNode, TNodeTrie>::iterator itut = d_func_map_eqc_trie.find(f);
   if( itut==d_func_map_eqc_trie.end() ){
     return NULL;
   }else{
@@ -1051,12 +1051,12 @@ TNodeTrie* TermDb::getTermArgTrie(Node eqc, Node f)
   }
 }
 
-TNode TermDb::getCongruentTerm( Node f, Node n ) {
+TNode TermDb::getCongruentTerm( TNode f, TNode n ) {
   if( options::ufHo() ){
     f = getOperatorRepresentative( f );
   }
   computeUfTerms( f );
-  std::map<Node, TNodeTrie>::iterator itut = d_func_map_trie.find(f);
+  std::map<TNode, TNodeTrie>::iterator itut = d_func_map_trie.find(f);
   if( itut!=d_func_map_trie.end() ){
     computeArgReps( n );
     return itut->second.existsTerm( d_arg_reps[n] );

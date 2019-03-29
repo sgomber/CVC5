@@ -1782,7 +1782,7 @@ void TermGenEnv::collectSignatureInformation() {
   d_func_kind.clear();
   d_func_args.clear();
   TypeNode tnull;
-  for( std::map< Node, std::vector< Node > >::iterator it = getTermDatabase()->d_op_map.begin(); it != getTermDatabase()->d_op_map.end(); ++it ){
+  for( std::map< TNode, std::vector< TNode > >::iterator it = getTermDatabase()->d_op_map.begin(); it != getTermDatabase()->d_op_map.end(); ++it ){
     if( !it->second.empty() ){
       Node nn = it->second[0];
       Trace("sg-rel-sig-debug") << "Check in signature : " << nn << std::endl;
