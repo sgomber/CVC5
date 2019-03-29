@@ -220,11 +220,11 @@ class TermDb : public QuantifiersUtil {
   * equality information qy.
   * Returns true if the entailment can be successfully shown.
   */
-  bool isEntailed(TNode n, bool pol, 
-                  std::vector< Node >& exp,
+  bool isEntailed(TNode n,
+                  bool pol,
+                  std::vector<Node>& exp,
                   EqualityQuery* qy = NULL);
-  bool isEntailed(TNode n, bool pol, 
-                  EqualityQuery* qy = NULL);
+  bool isEntailed(TNode n, bool pol, EqualityQuery* qy = NULL);
   /** is entailed
    *
   * Checks whether the current context entails ( n * subs ) with polarity pol,
@@ -237,7 +237,7 @@ class TermDb : public QuantifiersUtil {
                   std::map<TNode, TNode>& subs,
                   bool subsRep,
                   bool pol,
-                  std::vector< Node >& exp,
+                  std::vector<Node>& exp,
                   EqualityQuery* qy = NULL);
   bool isEntailed(TNode n,
                   std::map<TNode, TNode>& subs,
@@ -319,10 +319,22 @@ class TermDb : public QuantifiersUtil {
   /** helper for evaluate term */
   Node evaluateTerm2( TNode n, std::map< TNode, Node >& visited, EqualityQuery * qy, bool useEntailmentTests );
   /** helper for get entailed term */
-  TNode getEntailedTerm2( TNode n, std::map< TNode, TNode >& subs, bool subsRep, bool hasSubs, std::vector< Node >& exp, EqualityQuery * qy, bool computeExp = false );
+  TNode getEntailedTerm2(TNode n,
+                         std::map<TNode, TNode>& subs,
+                         bool subsRep,
+                         bool hasSubs,
+                         std::vector<Node>& exp,
+                         EqualityQuery* qy,
+                         bool computeExp = false);
   /** helper for is entailed */
-  bool isEntailed2( TNode n, std::map< TNode, TNode >& subs, bool subsRep, bool hasSubs, bool pol, 
-                  std::vector< Node >& exp, EqualityQuery * qy, bool computeExp = false );
+  bool isEntailed2(TNode n,
+                   std::map<TNode, TNode>& subs,
+                   bool subsRep,
+                   bool hasSubs,
+                   bool pol,
+                   std::vector<Node>& exp,
+                   EqualityQuery* qy,
+                   bool computeExp = false);
   /** compute uf eqc terms :
   * Ensure entries for f are in d_func_map_eqc_trie for all equivalence classes
   */
