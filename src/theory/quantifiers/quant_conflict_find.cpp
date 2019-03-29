@@ -577,8 +577,8 @@ bool QuantInfo::isTConstraintSpurious( QuantConflictFind * p, std::vector< Node 
         Trace("qcf-instance-check") << "  " << d_extra_var[i] << " -> " << n << std::endl;
         subs[d_extra_var[i]] = n;
       }
-      std::vector<Node> exp;
-      if (!p->getTermDatabase()->isEntailed(d_q[1], subs, false, false, exp))
+      //std::vector<Node> exp;
+      if (!p->getTermDatabase()->isEntailed(d_q[1], subs, false, false))
       {
         Trace("qcf-instance-check") << "...not entailed to be false." << std::endl;
         return true;
