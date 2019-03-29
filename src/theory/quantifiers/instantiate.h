@@ -370,7 +370,7 @@ class Instantiate : public QuantifiersUtil
 
   /** explicitly recorded instantiations
    *
-   * Sometimes an insInstantiate::tantiation is recorded internally but not sent out as a
+   * Sometimes an instantiation is recorded internally but not sent out as a
    * lemma, for instance, for partial quantifier elimination. This is a map
    * of these instantiations, for each quantified formula.
    */

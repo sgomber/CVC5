@@ -24,6 +24,37 @@ namespace CVC4 {
 namespace theory {
 namespace quantifiers {
 
+bool EqualityExplainerEe::explain(Node lit, std::vector<TNode>& assumptions)
+{
+  Node atom = lit.getKind()==NOT ? lit[0] : lit;
+  bool pol = lit.getKind()!=NOT;
+  
+  if( atom.getKind()==EQUAL )
+  {
+    if( d_ee->hasTerm(atom[0]) && d_ee->hasTerm(atom[1]) )
+    {
+      if( pol )
+      {
+        if( !d_ee->areEqual(atom[0],atom[1]) )
+        {
+          return false;
+        }
+      }
+      else if( !d_ee->areDisequal(atom[0],atom[1],true) )
+      {
+        return false;
+      }
+      d_ee->explainEquality(atom[0], atom[1], pol, assumptions);
+      return true;
+    }
+  }
+  else if( d_ee->hasTerm(atom) )
+  {
+    d_ee->explainPredicate(atom, pol, assumptions);
+  }
+  return false;
+}
+  
 InstExplainDb::InstExplainDb()
 {
   d_false = NodeManager::currentNM()->mkConst(false);
@@ -99,7 +130,7 @@ InstExplain& InstExplainDb::getInstExplain( Node lit )
   return d_lit_explains[lit]; 
 }
 
-void InstExplainDb::explain( std::vector< Node >& exp )
+void InstExplainDb::explain( std::vector< Node >& exp, EqExplainer * eqe )
 {
   std::map< Node, bool > proc;
   Trace("qcf-conflict-exp") << "Explanation is: " << std::endl;

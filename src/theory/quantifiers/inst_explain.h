@@ -20,6 +20,7 @@
 #include <map>
 #include <vector>
 #include "expr/node.h"
+#include "theory/uf/equality_engine.h"
 
 namespace CVC4 {
 namespace theory {
@@ -32,6 +33,24 @@ public:
   std::vector< Node > d_insts;
 };
 
+class EqExplainer
+{
+public:
+  EqExplainer(){}
+  virtual ~EqExplainer(){}
+  virtual bool explain(Node lit, std::vector<TNode>& assumptions) = 0;
+};
+
+class EqualityExplainerEe : public EqExplainer
+{
+public:
+  EqualityExplainerEe() : d_ee(nullptr){}
+  virtual ~EqualityExplainerEe(){}
+  /** the equality engine */
+  eq::EqualityEngine * d_ee;
+  /** explain */
+  bool explain(Node lit, std::vector<TNode>& assumptions) override;
+};
 
 class InstExplainDb
 {
@@ -42,7 +61,7 @@ public:
   /** get instantiation explain */
   InstExplain& getInstExplain( Node lit );
   /** explain */
-  void explain( std::vector< Node >& exp );
+  void explain( std::vector< Node >& exp, EqExplainer * eqe );
 private:
   /** common constants */
   Node d_false;
