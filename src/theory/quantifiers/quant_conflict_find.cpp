@@ -582,13 +582,37 @@ bool QuantInfo::isTConstraintSpurious( QuantConflictFind * p, std::vector< Node 
         Trace("qcf-instance-check") << "...not entailed to be false." << std::endl;
         return true;
       }
-      Trace("qcf-instance-check") << "Explanation is: " << std::endl;
+      if( Trace.isOn("qcf-conflict-exp") )
+      {
+        Trace("qcf-conflict-exp") << "Conflict instance for " << d_q << " : " << std::endl;
+        for( const Node& t : terms ){
+          Trace("qcf-instance-check") << "  " << t << std::endl;
+        }
+      }
+      std::map< Node, bool > proc;
+      Instantiate* inst = p->d_quantEngine->getInstantiate();
+      Trace("qcf-conflict-exp") << "Explanation is: " << std::endl;
+      bool hasExp = false;
       for (const Node& e : exp)
       {
-        Trace("qcf-instance-check") << "  " << e << std::endl;
+        Node er = Rewriter::rewrite(e);
+        if( proc.find(er)==proc.end() )
+        {
+          proc[er] = true;
+          Trace("qcf-conflict-exp") << "  " << er << std::endl;
+          InstExplain& ie = inst->getInstExplain(er);
+          for( const Node& iexp : ie.d_insts )
+          {
+            Trace("qcf-conflict-exp") << "    explanable by " << iexp << std::endl;
+            hasExp = true;
+          }
+        }
       }
-      Trace("qcf-instance-check") << std::endl;
-      exit(1);
+      Trace("qcf-conflict-exp") << std::endl;
+      if( hasExp )
+      {
+        //exit(1);
+      }
     }else{
       Node inst =
           p->d_quantEngine->getInstantiate()->getInstantiation(d_q, terms);

@@ -67,6 +67,12 @@ class InstantiationNotify
   virtual void filterInstantiations() = 0;
 };
 
+class InstExplain
+{
+public:
+  std::vector< Node > d_insts;
+};
+
 /** Instantiate
  *
  * This class is used for generating instantiation lemmas.  It maintains an
@@ -298,6 +304,7 @@ class Instantiate : public QuantifiersUtil
                                    std::map<Node, std::vector<Node> >& tvec);
   //--------------------------------------end user-level interface utilities
 
+  InstExplain& getInstExplain( Node lit );
   /** statistics class
    *
    * This tracks statistics on the number of instantiations successfully
@@ -316,7 +323,7 @@ class Instantiate : public QuantifiersUtil
     ~Statistics();
   }; /* class Instantiate::Statistics */
   Statistics d_statistics;
-
+  
  private:
   /** record instantiation, return true if it was not a duplicate
    *
@@ -368,6 +375,11 @@ class Instantiate : public QuantifiersUtil
    * of these instantiations, for each quantified formula.
    */
   std::vector<std::pair<Node, std::vector<Node> > > d_recorded_inst;
+  
+  /** register explanations */
+  void registerExplanation(Node ilem, Node n);
+  /** map from literal to possible explanations */
+  std::map< Node, InstExplain > d_lit_explains;
 };
 
 } /* CVC4::theory::quantifiers namespace */
