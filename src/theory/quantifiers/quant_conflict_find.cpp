@@ -23,6 +23,7 @@
 #include "theory/quantifiers/ematching/trigger.h"
 #include "theory/quantifiers/first_order_model.h"
 #include "theory/quantifiers/instantiate.h"
+#include "theory/quantifiers/inst_explain.h"
 #include "theory/quantifiers/quant_util.h"
 #include "theory/quantifiers/term_database.h"
 #include "theory/quantifiers/term_util.h"
@@ -589,30 +590,9 @@ bool QuantInfo::isTConstraintSpurious( QuantConflictFind * p, std::vector< Node 
           Trace("qcf-instance-check") << "  " << t << std::endl;
         }
       }
-      std::map< Node, bool > proc;
-      Instantiate* inst = p->d_quantEngine->getInstantiate();
-      Trace("qcf-conflict-exp") << "Explanation is: " << std::endl;
-      bool hasExp = false;
-      for (const Node& e : exp)
-      {
-        Node er = Rewriter::rewrite(e);
-        if( proc.find(er)==proc.end() )
-        {
-          proc[er] = true;
-          Trace("qcf-conflict-exp") << "  " << er << std::endl;
-          InstExplain& ie = inst->getInstExplain(er);
-          for( const Node& iexp : ie.d_insts )
-          {
-            Trace("qcf-conflict-exp") << "    explanable by " << iexp << std::endl;
-            hasExp = true;
-          }
-        }
-      }
-      Trace("qcf-conflict-exp") << std::endl;
-      if( hasExp )
-      {
-        //exit(1);
-      }
+      // explain it?
+      //Instantiate* inst = p->d_quantEngine->getInstantiate();
+      //inst->getExplainDb().explain(exp);
     }else{
       Node inst =
           p->d_quantEngine->getInstantiate()->getInstantiation(d_q, terms);

@@ -21,6 +21,7 @@
 
 #include "expr/node.h"
 #include "theory/quantifiers/inst_match_trie.h"
+#include "theory/quantifiers/inst_explain.h"
 #include "theory/quantifiers/quant_util.h"
 #include "theory/quantifiers_engine.h"
 #include "util/statistics_registry.h"
@@ -65,12 +66,6 @@ class InstantiationNotify
    * to remove instantiations that should not be sent on the output channel.
    */
   virtual void filterInstantiations() = 0;
-};
-
-class InstExplain
-{
-public:
-  std::vector< Node > d_insts;
 };
 
 /** Instantiate
@@ -303,8 +298,13 @@ class Instantiate : public QuantifiersUtil
                                    std::map<Node, Node>& quant,
                                    std::map<Node, std::vector<Node> >& tvec);
   //--------------------------------------end user-level interface utilities
+  
+  //-------------------------------------explaination utility 
+  /** return the explanation utility */
+  InstExplainDb& getExplainDb();
+  //-------------------------------------end explaination utility 
+  
 
-  InstExplain& getInstExplain( Node lit );
   /** statistics class
    *
    * This tracks statistics on the number of instantiations successfully
@@ -370,16 +370,14 @@ class Instantiate : public QuantifiersUtil
 
   /** explicitly recorded instantiations
    *
-   * Sometimes an instantiation is recorded internally but not sent out as a
+   * Sometimes an insInstantiate::tantiation is recorded internally but not sent out as a
    * lemma, for instance, for partial quantifier elimination. This is a map
    * of these instantiations, for each quantified formula.
    */
   std::vector<std::pair<Node, std::vector<Node> > > d_recorded_inst;
   
-  /** register explanations */
-  void registerExplanation(Node ilem, Node n);
-  /** map from literal to possible explanations */
-  std::map< Node, InstExplain > d_lit_explains;
+  /** explanation database */
+  InstExplainDb d_iedb;
 };
 
 } /* CVC4::theory::quantifiers namespace */

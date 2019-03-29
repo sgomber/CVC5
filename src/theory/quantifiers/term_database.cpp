@@ -648,7 +648,13 @@ TNode TermDb::getEntailedTerm2(TNode n,
           args.push_back(cr);
           if (computeExp && c != cr)
           {
-            exp.push_back(c.eqNode(cr));
+            //exp.push_back(c.eqNode(cr));
+            std::vector<TNode> assumptions;
+            qy->getEngine()->explainEquality(c,cr,true,assumptions);
+            for( TNode a : assumptions )
+            {
+              exp.push_back(a);
+            }
           }
         }
         TNode nn = qy->getCongruentTerm( f, args );
@@ -710,14 +716,20 @@ bool TermDb::isEntailed2(TNode n,
           Assert( qy->getEngine()->hasTerm( n1 ) );
           Assert( qy->getEngine()->hasTerm( n2 ) );
           bool success = pol ? qy->getEngine()->areEqual(n1, n2)
-                             : qy->getEngine()->areDisequal(n1, n2, false);
+                             : qy->getEngine()->areDisequal(n1, n2, computeExp);
           if (success)
           {
             if (computeExp)
             {
-              Node eq = n1.eqNode(n2);
-              eq = pol ? eq : eq.negate();
-              exp.push_back(eq);
+              //Node eq = n1.eqNode(n2);
+              //eq = pol ? eq : eq.negate();
+              //exp.push_back(eq);
+              std::vector<TNode> assumptions;
+              qy->getEngine()->explainEquality(n1,n2,pol,assumptions);
+              for( TNode a : assumptions )
+              {
+                exp.push_back(a);
+              }
             }
             return true;
           }

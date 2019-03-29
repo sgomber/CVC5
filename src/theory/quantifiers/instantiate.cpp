@@ -271,7 +271,6 @@ bool Instantiate::addInstantiation(
   Node bodyr = Rewriter::rewrite(body);
   Node lem = NodeManager::currentNM()->mkNode(kind::OR, q.negate(), bodyr);
   lem = Rewriter::rewrite(lem);
-  registerExplanation(lem,bodyr);
   
   // check for lemma duplication
   if (!d_qe->addLemma(lem, true, false))
@@ -280,6 +279,8 @@ bool Instantiate::addInstantiation(
     ++(d_statistics.d_inst_duplicate);
     return false;
   }
+  
+  d_iedb.registerExplanation(lem,bodyr);
 
   d_total_inst_debug[q]++;
   d_temp_inst_debug[q]++;
@@ -674,6 +675,12 @@ void Instantiate::getExplanationForInstLemmas(
   Assert(false);
 }
 
+
+InstExplainDb& Instantiate::getExplainDb()
+{
+  return d_iedb;
+}
+
 void Instantiate::getInstantiations(std::map<Node, std::vector<Node> >& insts)
 {
   bool useUnsatCore = false;
@@ -777,77 +784,6 @@ void Instantiate::debugPrintModel()
                               << std::endl;
     }
   }
-}
-
-
-void Instantiate::registerExplanation(Node inst, Node n)
-{
-  Trace("inst-explain") << "Get literals that are explanable by " << inst << std::endl;
-  std::map< bool, std::unordered_set<TNode, TNodeHashFunction> > visited;
-  std::vector<bool> visit_hasPol;
-  std::vector<TNode> visit;
-  bool hasPol;
-  TNode cur;
-  visit_hasPol.push_back(true);
-  visit.push_back(n);
-  do {
-    hasPol = visit_hasPol.back();
-    cur = visit.back();
-    visit.pop_back();
-    if (visited[hasPol].find(cur) == visited[hasPol].end()) {
-      visited[hasPol].insert(cur);
-      
-      TNode atom = cur.getKind()==NOT ? cur[0] : cur;
-      bool pol = cur.getKind()!=NOT;
-      Kind k = atom.getKind();
-      if( k==AND || k==OR )
-      {
-        for( const Node& ac : atom )
-        {
-          Node acp = pol ? ac : ac.negate();
-          visit_hasPol.push_back(hasPol);
-          visit.push_back(acp);
-        }
-      }
-      else if( k==ITE )
-      {
-        for( unsigned i=0; i<2; i++ )
-        {
-          Node ac = atom[i+1];
-          Node acp = pol ? ac : ac.negate();
-          visit_hasPol.push_back(hasPol);
-          visit.push_back(acp);
-        }
-        visit_hasPol.push_back(false);
-        visit.push_back(atom[0]);
-      }
-      else if( k==EQUAL && atom[0].getType().isBoolean() )
-      {
-        for( unsigned i=0; i<2; i++ )
-        {
-          visit_hasPol.push_back(false);
-          visit.push_back(atom[i]);
-        }
-      }
-      else
-      {
-        d_lit_explains[cur].d_insts.push_back(inst);
-        Trace("inst-explain") << "  -> " << cur << std::endl;
-        if( !hasPol )
-        {
-          Node curn = cur.negate();
-          d_lit_explains[curn].d_insts.push_back(inst);
-        Trace("inst-explain") << "  -> " << curn << std::endl;
-        }
-      }
-    }
-  }while (!visit.empty());
-}
-
-
-InstExplain& Instantiate::getInstExplain( Node lit )
-{ 
-  return d_lit_explains[lit]; 
 }
 
 Instantiate::Statistics::Statistics()
