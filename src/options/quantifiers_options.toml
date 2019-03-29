@@ -715,6 +715,14 @@ header = "options/quantifiers_options.h"
   help       = "internal propagation for instantiations for selecting relevant instances"
 
 [[option]]
+  name       = "instExplain"
+  category   = "regular"
+  long       = "inst-exp"
+  type       = "bool"
+  default    = "false"
+  help       = "do explanation techniques for instantiation lemmas"
+
+[[option]]
   name       = "qcfEagerTest"
   category   = "regular"
   long       = "qcf-eager-test"

@@ -280,7 +280,10 @@ bool Instantiate::addInstantiation(
     return false;
   }
   
-  d_iedb.registerExplanation(lem,bodyr);
+  if( options::instExplain() )
+  {
+    d_iedb.registerExplanation(lem,bodyr);
+  }
 
   d_total_inst_debug[q]++;
   d_temp_inst_debug[q]++;
