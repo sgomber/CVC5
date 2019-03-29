@@ -576,10 +576,18 @@ bool QuantInfo::isTConstraintSpurious( QuantConflictFind * p, std::vector< Node 
         Trace("qcf-instance-check") << "  " << d_extra_var[i] << " -> " << n << std::endl;
         subs[d_extra_var[i]] = n;
       }
-      if( !p->getTermDatabase()->isEntailed( d_q[1], subs, false, false ) ){
+      std::vector< Node > exp;
+      if( !p->getTermDatabase()->isEntailed( d_q[1], subs, false, false, exp ) ){
         Trace("qcf-instance-check") << "...not entailed to be false." << std::endl;
         return true;
       }
+      Trace("qcf-instance-check") << "Explanation is: " << std::endl;
+      for( const Node& e : exp )
+      {
+        Trace("qcf-instance-check") << "  " << e << std::endl;
+      }
+      Trace("qcf-instance-check") << std::endl;
+      exit(1);
     }else{
       Node inst =
           p->d_quantEngine->getInstantiate()->getInstantiation(d_q, terms);
