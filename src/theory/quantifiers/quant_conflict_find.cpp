@@ -572,13 +572,23 @@ bool QuantInfo::isTConstraintSpurious( QuantConflictFind * p, std::vector< Node 
         Trace("qcf-instance-check") << "  " << terms[i] << std::endl;
         subs[d_q[0][i]] = terms[i];
       }
+      TermDb * tdb = p->getTermDatabase();
       for( unsigned i=0; i<d_extra_var.size(); i++ ){
         Node n = getCurrentExpValue( d_extra_var[i] );
         Trace("qcf-instance-check") << "  " << d_extra_var[i] << " -> " << n << std::endl;
         subs[d_extra_var[i]] = n;
       }
-      //std::vector<Node> exp;
-      if (!p->getTermDatabase()->isEntailed(d_q[1], subs, false, false))
+      std::vector<Node> exp;
+      bool entFalse = false;
+      if( options::instExplain() )
+      {
+        entFalse = tdb->isEntailed(d_q[1], subs, false, false, exp);
+      }
+      else
+      {
+        entFalse = tdb->isEntailed(d_q[1], subs, false, false);
+      }
+      if (!entFalse)
       {
         Trace("qcf-instance-check") << "...not entailed to be false." << std::endl;
         return true;
@@ -591,8 +601,12 @@ bool QuantInfo::isTConstraintSpurious( QuantConflictFind * p, std::vector< Node 
         }
       }
       // explain it?
-      //Instantiate* inst = p->d_quantEngine->getInstantiate();
-      //inst->getExplainDb().explain(exp);
+      if( options::instExplain() )
+      {
+        EqExplainer * eqe = p->getEqualityExplainer();
+        InstExplainDb* ied = p->d_quantEngine->getInstantiate()->getExplainDb();
+        ied.explain(exp,eqe,"qcf");
+      }
     }else{
       Node inst =
           p->d_quantEngine->getInstantiate()->getInstantiation(d_q, terms);
@@ -1854,7 +1868,13 @@ QuantConflictFind::QuantConflictFind(QuantifiersEngine* qe, context::Context* c)
       d_true(NodeManager::currentNM()->mkConst<bool>(true)),
       d_false(NodeManager::currentNM()->mkConst<bool>(false)),
       d_effort(EFFORT_INVALID),
-      d_needs_computeRelEqr() {}
+      d_needs_computeRelEqr(),
+      d_eqe(nullptr) {
+  if( options::instExplain() )
+  {
+    // FIXME
+  }
+}
 
 //-------------------------------------------------- registration
 

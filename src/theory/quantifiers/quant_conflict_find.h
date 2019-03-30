@@ -24,6 +24,7 @@
 #include "context/cdlist.h"
 #include "expr/node_trie.h"
 #include "theory/quantifiers_engine.h"
+#include "theory/quantifiers/inst_explain.h"
 
 namespace CVC4 {
 namespace theory {
@@ -272,6 +273,11 @@ public:
   Statistics d_statistics;
   /** Identify this module */
   std::string identify() const override { return "QcfEngine"; }
+  /** get equality explainer */
+  EqExplainer * getEqualityExplainer() { return d_eqe; }
+private:
+  /** equality explainer */
+  EqExplainer * d_eqe;
 };
 
 std::ostream& operator<<(std::ostream& os, const QuantConflictFind::Effort& e);

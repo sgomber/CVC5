@@ -130,25 +130,46 @@ InstExplain& InstExplainDb::getInstExplain( Node lit )
   return d_lit_explains[lit]; 
 }
 
-void InstExplainDb::explain( std::vector< Node >& exp, EqExplainer * eqe )
+void InstExplainDb::explain( std::vector< Node >& exp, EqExplainer * eqe, const char * ctx )
 {
   std::map< Node, bool > proc;
-  Trace("qcf-conflict-exp") << "Explanation is: " << std::endl;
+  Trace("ied-conflict") << "Conflict in context " << ctx << " : " << std::endl;
   for (const Node& e : exp)
   {
     Node er = Rewriter::rewrite(e);
     if( proc.find(er)==proc.end() )
     {
       proc[er] = true;
-      Trace("qcf-conflict-exp") << "  " << er << std::endl;
-      TNode ert = er;
-      TNode ft = d_false;
-      InstExplain& ie = getInstExplain(er);
-      for( const Node& iexp : ie.d_insts )
+      Trace("ied-conflict") << "* " << er << std::endl;
+      std::vector< TNode > assumptions;
+      bool regressExp = false;
+      if( eqe )
       {
-        Node iexps = iexp.substitute(ert,ft);
-        iexps = Rewriter::rewrite(iexps);
-        Trace("qcf-conflict-exp-debug") << "    inst-explanable by " << iexps << std::endl;
+        if( eqe->explain(er,assumptions) )
+        {
+          regressExp = true;
+          Trace("ied-conflict") << "  ...regressed to " << assumptions << std::endl;
+        }
+      }
+      if( !regressExp )
+      {
+        assumptions.push_back(er);
+      }
+      for( TNode ert : assumptions )
+      {
+        if( proc.find(ert)==proc.end() )
+        {
+          proc[ert] = true;
+          Trace("ied-conflict") << "*** " << ert << std::endl;
+          TNode ft = d_false;
+          InstExplain& ie = getInstExplain(er);
+          for( const Node& iexp : ie.d_insts )
+          {
+            Node iexps = iexp.substitute(ert,ft);
+            iexps = Rewriter::rewrite(iexps);
+            Trace("ied-conflict") << "    inst-explanable by " << iexps << std::endl;
+          }
+        }
       }
     }
   }

@@ -61,7 +61,7 @@ public:
   /** get instantiation explain */
   InstExplain& getInstExplain( Node lit );
   /** explain */
-  void explain( std::vector< Node >& exp, EqExplainer * eqe );
+  void explain( std::vector< Node >& exp, EqExplainer * eqe, const char * ctx );
 private:
   /** common constants */
   Node d_false;

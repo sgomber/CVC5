@@ -432,23 +432,47 @@ void TheoryEngine::preRegister(TNode preprocessed) {
   }
 }
 
+
 void TheoryEngine::printAssertions(const char* tag) {
   if (Trace.isOn(tag)) {
-
+    static std::map< TheoryId, std::map< Node, bool > > prevMap;
+    std::map< TheoryId, std::map< Node, bool > > currMap;
     for (TheoryId theoryId = THEORY_FIRST; theoryId < THEORY_LAST; ++theoryId) {
       Theory* theory = d_theoryTable[theoryId];
       if (theory && d_logicInfo.isTheoryEnabled(theoryId)) {
         Trace(tag) << "--------------------------------------------" << endl;
-        Trace(tag) << "Assertions of " << theory->getId() << ": " << endl;
+        Trace(tag) << "Assertions of " << theory->getId() << ": " << theory->numAssertions() << endl;
+        
         context::CDList<Assertion>::const_iterator it = theory->facts_begin(), it_end = theory->facts_end();
+        unsigned gained = 0;
         for (unsigned i = 0; it != it_end; ++ it, ++i) {
+          /*
             if ((*it).isPreregistered) {
               Trace(tag) << "[" << i << "]: ";
             } else {
               Trace(tag) << "(" << i << "): ";
             }
             Trace(tag) << (*it).assertion << endl;
+            */
+            TNode fact = (*it).assertion;
+            currMap[theoryId][fact] = true;
+            if( prevMap[theoryId].find(fact)==prevMap[theoryId].end() )
+            {
+              gained++;
+              Trace(tag) << " ++ " << fact << std::endl;
+            }
         }
+        Trace(tag) << "  gained: " << gained << std::endl;
+        gained = 0;
+        for( const std::pair< Node, bool >& p : prevMap[theoryId] )
+        {
+          if( currMap[theoryId].find(p.first)==currMap[theoryId].end() )
+          {
+            gained++;
+            Trace(tag) << " -- " << p.first << std::endl;
+          }
+        }
+        Trace(tag) << "  lost: " << gained << std::endl;
 
         if (d_logicInfo.isSharingEnabled()) {
           Trace(tag) << "Shared terms of " << theory->getId() << ": " << endl;
@@ -459,6 +483,7 @@ void TheoryEngine::printAssertions(const char* tag) {
         }
       }
     }
+    prevMap = currMap;
   }
 }
 

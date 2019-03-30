@@ -31,6 +31,8 @@
 #include "theory/type_enumerator.h"
 #include "theory/uf/theory_uf_rewriter.h"
 #include "theory/uf/theory_uf_strong_solver.h"
+#include "theory/quantifiers/instantiate.h"
+#include "theory/quantifiers/inst_explain.h"
 
 using namespace std;
 
@@ -335,6 +337,7 @@ bool TheoryUF::propagate(TNode literal) {
   bool ok = d_out->propagate(literal);
   if (!ok) {
     d_conflict = true;
+    Trace("ajr-temp") << "Prop conflict: " << literal << std::endl;
   }
   return ok;
 }/* TheoryUF::propagate(TNode) */
@@ -374,6 +377,16 @@ Node TheoryUF::explain(TNode literal, eq::EqProof* pf) {
   Debug("uf") << "TheoryUF::explain(" << literal << ")" << std::endl;
   std::vector<TNode> assumptions;
   explain(literal, assumptions, pf);
+  if( options::instExplain() )
+  {
+    std::vector< Node > exp;
+    for( TNode a : assumptions )
+    {
+      exp.push_back(a);
+    }
+    quantifiers::InstExplainDb * ied = getQuantifiersEngine()->getInstantiate()->getExplainDb();
+    ied.explain(exp,nullptr, "uf");
+  }
   return mkAnd(assumptions);
 }
 
