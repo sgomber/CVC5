@@ -62,8 +62,12 @@ bool EqExplainerEe::explain(Node lit, std::vector<TNode>& assumptions)
   
 bool EqExplainerTe::explain(Node lit, std::vector<TNode>& assumptions)
 {
-  //FIXME
-  //return explainEe(ee,lit,assumptions);
+  Theory * t = d_te->theoryOf(THEORY_UF);
+  eq::EqualityEngine * ee = t->getEqualityEngine();
+  if( ee )
+  {
+    return explainEe(ee,lit,assumptions);
+  }
   return false;
 }
 
