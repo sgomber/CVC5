@@ -27,12 +27,12 @@
 #include "proof/proof_manager.h"
 #include "proof/theory_proof.h"
 #include "proof/uf_proof.h"
+#include "theory/quantifiers/inst_explain.h"
+#include "theory/quantifiers/instantiate.h"
 #include "theory/theory_model.h"
 #include "theory/type_enumerator.h"
 #include "theory/uf/theory_uf_rewriter.h"
 #include "theory/uf/theory_uf_strong_solver.h"
-#include "theory/quantifiers/instantiate.h"
-#include "theory/quantifiers/inst_explain.h"
 
 using namespace std;
 
@@ -385,9 +385,9 @@ Node TheoryUF::explain(TNode literal, eq::EqProof* pf) {
     {
       exp.push_back(a);
     }
-    quantifiers::InstExplainDb& ied = getQuantifiersEngine()->getInstantiate()->getExplainDb();
-    std::vector< Node > rexp;
-    ied.explain(exp,nullptr,rexp,"uf");
+    quantifiers::InstExplainDb& ied =
+  getQuantifiersEngine()->getInstantiate()->getExplainDb(); std::vector< Node >
+  rexp; ied.explain(exp,nullptr,rexp,"uf");
   }
   */
   return mkAnd(assumptions);

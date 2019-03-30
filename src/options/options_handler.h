@@ -93,7 +93,7 @@ public:
   theory::quantifiers::QcfWhenMode stringToQcfWhenMode(std::string option,
                                                        std::string optarg);
   theory::quantifiers::QcfExpMode stringToQcfExpMode(std::string option,
-                                                       std::string optarg);
+                                                     std::string optarg);
   theory::quantifiers::QcfMode stringToQcfMode(std::string option,
                                                std::string optarg);
   theory::quantifiers::UserPatMode stringToUserPatMode(std::string option,

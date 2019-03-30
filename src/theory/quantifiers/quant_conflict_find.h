@@ -23,8 +23,8 @@
 #include "context/cdhashmap.h"
 #include "context/cdlist.h"
 #include "expr/node_trie.h"
-#include "theory/quantifiers_engine.h"
 #include "theory/quantifiers/inst_explain.h"
+#include "theory/quantifiers_engine.h"
 
 namespace CVC4 {
 namespace theory {
@@ -274,10 +274,11 @@ public:
   /** Identify this module */
   std::string identify() const override { return "QcfEngine"; }
   /** get equality explainer */
-  EqExplainer * getEqualityExplainer() { return d_eqe; }
-private:
+  EqExplainer* getEqualityExplainer() { return d_eqe; }
+
+ private:
   /** equality explainer */
-  EqExplainer * d_eqe;
+  EqExplainer* d_eqe;
 };
 
 std::ostream& operator<<(std::ostream& os, const QuantConflictFind::Effort& e);

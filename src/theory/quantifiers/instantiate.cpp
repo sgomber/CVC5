@@ -271,7 +271,7 @@ bool Instantiate::addInstantiation(
   Node bodyr = Rewriter::rewrite(body);
   Node lem = NodeManager::currentNM()->mkNode(kind::OR, q.negate(), bodyr);
   lem = Rewriter::rewrite(lem);
-  
+
   // check for lemma duplication
   if (!d_qe->addLemma(lem, true, false))
   {
@@ -279,10 +279,10 @@ bool Instantiate::addInstantiation(
     ++(d_statistics.d_inst_duplicate);
     return false;
   }
-  
-  if( options::instExplain() )
+
+  if (options::instExplain())
   {
-    d_iedb.registerExplanation(lem,bodyr);
+    d_iedb.registerExplanation(lem, bodyr);
   }
 
   d_total_inst_debug[q]++;
@@ -678,11 +678,7 @@ void Instantiate::getExplanationForInstLemmas(
   Assert(false);
 }
 
-
-InstExplainDb& Instantiate::getExplainDb()
-{
-  return d_iedb;
-}
+InstExplainDb& Instantiate::getExplainDb() { return d_iedb; }
 
 void Instantiate::getInstantiations(std::map<Node, std::vector<Node> >& insts)
 {

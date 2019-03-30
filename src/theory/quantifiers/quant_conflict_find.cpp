@@ -22,8 +22,8 @@
 #include "smt/smt_statistics_registry.h"
 #include "theory/quantifiers/ematching/trigger.h"
 #include "theory/quantifiers/first_order_model.h"
-#include "theory/quantifiers/instantiate.h"
 #include "theory/quantifiers/inst_explain.h"
+#include "theory/quantifiers/instantiate.h"
 #include "theory/quantifiers/quant_util.h"
 #include "theory/quantifiers/term_database.h"
 #include "theory/quantifiers/term_util.h"
@@ -572,7 +572,7 @@ bool QuantInfo::isTConstraintSpurious( QuantConflictFind * p, std::vector< Node 
         Trace("qcf-instance-check") << "  " << terms[i] << std::endl;
         subs[d_q[0][i]] = terms[i];
       }
-      TermDb * tdb = p->getTermDatabase();
+      TermDb* tdb = p->getTermDatabase();
       for( unsigned i=0; i<d_extra_var.size(); i++ ){
         Node n = getCurrentExpValue( d_extra_var[i] );
         Trace("qcf-instance-check") << "  " << d_extra_var[i] << " -> " << n << std::endl;
@@ -580,8 +580,9 @@ bool QuantInfo::isTConstraintSpurious( QuantConflictFind * p, std::vector< Node 
       }
       std::vector<Node> exp;
       bool entFalse = false;
-      bool genConflict = options::qcfExpMode()!=quantifiers::QCF_EXP_CINSTANCE;
-      if( genConflict )
+      bool genConflict =
+          options::qcfExpMode() != quantifiers::QCF_EXP_CINSTANCE;
+      if (genConflict)
       {
         entFalse = tdb->isEntailed(d_q[1], subs, false, false, exp);
       }
@@ -594,28 +595,32 @@ bool QuantInfo::isTConstraintSpurious( QuantConflictFind * p, std::vector< Node 
         Trace("qcf-instance-check") << "...not entailed to be false." << std::endl;
         return true;
       }
-      if( Trace.isOn("qcf-conflict-exp") )
+      if (Trace.isOn("qcf-conflict-exp"))
       {
-        Trace("qcf-conflict-exp") << "Conflict instance for " << d_q << " : " << std::endl;
-        for( const Node& t : terms ){
+        Trace("qcf-conflict-exp")
+            << "Conflict instance for " << d_q << " : " << std::endl;
+        for (const Node& t : terms)
+        {
           Trace("qcf-instance-check") << "  " << t << std::endl;
         }
       }
       // explain it and generate the conflict clause
-      if( genConflict )
+      if (genConflict)
       {
         // the quantified formula is part of the conflict
         exp.push_back(d_q);
-        EqExplainer * eqe = p->getEqualityExplainer();
+        EqExplainer* eqe = p->getEqualityExplainer();
         InstExplainDb& ied = p->d_quantEngine->getInstantiate()->getExplainDb();
-        std::vector< Node > rexp;
-        ied.explain(exp,eqe,rexp,"qcf");
-        std::vector< Node > lemc;
-        for( const Node& re : rexp )
+        std::vector<Node> rexp;
+        ied.explain(exp, eqe, rexp, "qcf");
+        std::vector<Node> lemc;
+        for (const Node& re : rexp)
         {
           lemc.push_back(re.negate());
         }
-        Node lem = rexp.size()==1 ? rexp[0] : NodeManager::currentNM()->mkNode(OR,rexp);
+        Node lem = rexp.size() == 1
+                       ? rexp[0]
+                       : NodeManager::currentNM()->mkNode(OR, rexp);
         p->d_quantEngine->addLemma(lem);
       }
     }else{
@@ -1880,8 +1885,9 @@ QuantConflictFind::QuantConflictFind(QuantifiersEngine* qe, context::Context* c)
       d_false(NodeManager::currentNM()->mkConst<bool>(false)),
       d_effort(EFFORT_INVALID),
       d_needs_computeRelEqr(),
-      d_eqe(nullptr) {
-  if( options::instExplain() )
+      d_eqe(nullptr)
+{
+  if (options::instExplain())
   {
     d_eqe = new EqExplainerTe(qe->getTheoryEngine());
   }
@@ -2064,14 +2070,15 @@ void QuantConflictFind::check(Theory::Effort level, QEffort quant_e)
                                    e > EFFORT_CONFLICT);
                           }
                           bool processed = false;
-                          if (e == EFFORT_CONFLICT && options::qcfExpMode()==QCF_EXP_CONFLICT)
+                          if (e == EFFORT_CONFLICT
+                              && options::qcfExpMode() == QCF_EXP_CONFLICT)
                           {
                             processed = true;
                           }
                           else
                           {
-                            processed = d_quantEngine->getInstantiate()->addInstantiation(
-                                  q, terms);
+                            processed = d_quantEngine->getInstantiate()
+                                            ->addInstantiation(q, terms);
                           }
                           if (processed)
                           {

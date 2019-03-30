@@ -20,8 +20,8 @@
 #include <map>
 
 #include "expr/node.h"
-#include "theory/quantifiers/inst_match_trie.h"
 #include "theory/quantifiers/inst_explain.h"
+#include "theory/quantifiers/inst_match_trie.h"
 #include "theory/quantifiers/quant_util.h"
 #include "theory/quantifiers_engine.h"
 #include "util/statistics_registry.h"
@@ -298,12 +298,11 @@ class Instantiate : public QuantifiersUtil
                                    std::map<Node, Node>& quant,
                                    std::map<Node, std::vector<Node> >& tvec);
   //--------------------------------------end user-level interface utilities
-  
-  //-------------------------------------explaination utility 
+
+  //-------------------------------------explaination utility
   /** return the explanation utility */
   InstExplainDb& getExplainDb();
-  //-------------------------------------end explaination utility 
-  
+  //-------------------------------------end explaination utility
 
   /** statistics class
    *
@@ -323,7 +322,7 @@ class Instantiate : public QuantifiersUtil
     ~Statistics();
   }; /* class Instantiate::Statistics */
   Statistics d_statistics;
-  
+
  private:
   /** record instantiation, return true if it was not a duplicate
    *
@@ -375,7 +374,7 @@ class Instantiate : public QuantifiersUtil
    * of these instantiations, for each quantified formula.
    */
   std::vector<std::pair<Node, std::vector<Node> > > d_recorded_inst;
-  
+
   /** explanation database */
   InstExplainDb d_iedb;
 };

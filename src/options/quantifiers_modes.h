@@ -72,7 +72,8 @@ enum QcfWhenMode {
   QCF_WHEN_MODE_STD_H,
 };
 
-enum QcfExpMode {
+enum QcfExpMode
+{
   /** generate instantiation lemmas for conflicting instances */
   QCF_EXP_CINSTANCE,
   /** generate conflict clauses for conflicting instances */

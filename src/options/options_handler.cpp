@@ -301,7 +301,8 @@ std-h \n\
 \n\
 ";
 
-const std::string OptionsHandler::s_qcfExpModeHelp = "\
+const std::string OptionsHandler::s_qcfExpModeHelp =
+    "\
 Quantifier conflict find explanation modes currently supported by the --qcf-exp option:\n\
 \n\
 cinstance (default) \n\
@@ -713,22 +714,30 @@ theory::quantifiers::QcfWhenMode OptionsHandler::stringToQcfWhenMode(
   }
 }
 
-
 theory::quantifiers::QcfExpMode OptionsHandler::stringToQcfExpMode(
     std::string option, std::string optarg)
 {
-  if(optarg ==  "cinstance") {
+  if (optarg == "cinstance")
+  {
     return theory::quantifiers::QCF_EXP_CINSTANCE;
-  } else if(optarg ==  "conflict") {
+  }
+  else if (optarg == "conflict")
+  {
     return theory::quantifiers::QCF_EXP_CONFLICT;
-  } else if(optarg ==  "both") {
+  }
+  else if (optarg == "both")
+  {
     return theory::quantifiers::QCF_EXP_BOTH;
-  } else if(optarg ==  "help") {
+  }
+  else if (optarg == "help")
+  {
     puts(s_qcfExpModeHelp.c_str());
     exit(1);
-  } else {
-    throw OptionException(std::string("unknown option for --qcf-exp: `") +
-                          optarg + "'.  Try --qcf-exp help.");
+  }
+  else
+  {
+    throw OptionException(std::string("unknown option for --qcf-exp: `")
+                          + optarg + "'.  Try --qcf-exp help.");
   }
 }
 
