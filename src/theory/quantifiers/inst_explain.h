@@ -74,6 +74,12 @@ class EqExplainerTe : public EqExplainer
   TheoryEngine* d_te;
 };
 
+enum ExplainStatus 
+{
+  EXP_STATUS_FULL,
+  EXP_STATUS_INCOMPLETE
+};
+  
 class InstExplainDb
 {
  public:
@@ -82,8 +88,9 @@ class InstExplainDb
   void registerExplanation(Node ilem, Node n);
   /** get instantiation explain */
   InstExplain& getInstExplain(Node lit);
+  
   /** explain */
-  void explain(const std::vector<Node>& exp,
+  ExplainStatus explain(const std::vector<Node>& exp,
                EqExplainer* eqe,
                std::vector<Node>& rexp,
                const char* ctx);

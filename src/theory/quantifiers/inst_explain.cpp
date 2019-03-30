@@ -73,6 +73,8 @@ bool EqExplainerEe::explain(Node lit, std::vector<TNode>& assumptions)
 
 bool EqExplainerTe::explain(Node lit, std::vector<TNode>& assumptions)
 {
+  // currently we use a very simple heuristic here: we try to explain
+  // using UF's equality engine only.
   Theory* t = d_te->theoryOf(THEORY_UF);
   eq::EqualityEngine* ee = t->getEqualityEngine();
   if (ee)
@@ -167,11 +169,12 @@ InstExplain& InstExplainDb::getInstExplain(Node lit)
   return d_lit_explains[lit];
 }
 
-void InstExplainDb::explain(const std::vector<Node>& exp,
+ExplainStatus InstExplainDb::explain(const std::vector<Node>& exp,
                             EqExplainer* eqe,
                             std::vector<Node>& rexp,
                             const char* ctx)
 {
+  ExplainStatus ret = EXP_STATUS_FULL;
   std::map<Node, bool> proc_pre;
   std::map<Node, bool> proc;
   std::map<Node, bool> expres;
@@ -290,12 +293,13 @@ void InstExplainDb::explain(const std::vector<Node>& exp,
     }
     processList = newProcessList;
   }
-
   Trace("ied-conflict") << "Result of inst explain : " << std::endl;
   for (const std::pair<Node, bool>& ep : expresAtom)
   {
+    rexp.push_back(ep.first);
     Trace("ied-conflict") << "* " << ep.first << std::endl;
   }
+  return ret;
 }
 void InstExplainDb::insertExpResult(Node exp,
                                     std::map<Node, bool>& expres,
