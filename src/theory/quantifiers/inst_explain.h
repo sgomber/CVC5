@@ -30,9 +30,14 @@ namespace quantifiers {
 class InstExplain
 {
  public:
-  std::vector<Node> d_insts;
+   InstExplain(){}
+  std::vector<Node> d_active_insts;
   /** add inst explanation */
   void addInstExplanation(Node inst);
+  /** activate */
+  void activate(QuantifiersEngine * qe);
+protected:
+  std::vector< Node > d_insts;
 };
 
 class EqExplainer
@@ -84,6 +89,8 @@ class InstExplainDb
 {
  public:
   InstExplainDb(QuantifiersEngine * qe);
+  /** reset */
+  void reset(Theory::Effort e);
   /** register explanations */
   void registerExplanation(Node ilem, Node n);
   /** get instantiation explain */
@@ -103,6 +110,10 @@ class InstExplainDb
   Node d_false;
   /** map from literal to possible explanations */
   std::map<Node, InstExplain> d_lit_explains;
+  /** activated */
+  std::map< Node, bool > d_active_lexp;
+  
+  void activate(Node lit);
 
   /** add exp result */
   void insertExpResult(Node exp,

@@ -17,6 +17,8 @@
 #include "options/quantifiers_options.h"
 #include "smt/smt_statistics_registry.h"
 #include "theory/quantifiers/term_util.h"
+#include "theory/quantifiers/term_database.h"
+#include "theory/quantifiers_engine.h"
 #include "theory/rewriter.h"
 
 using namespace CVC4::kind;
@@ -25,6 +27,19 @@ namespace CVC4 {
 namespace theory {
 namespace quantifiers {
 
+void InstExplain::activate(QuantifiersEngine * qe)
+{
+  d_active_insts.clear();
+  TermDb * tdb = qe->getTermDatabase();
+  for( const Node& inst : d_insts )
+  {
+    if( tdb->isEntailed(inst,true) )
+    {
+      d_active_insts.push_back(inst);
+    }
+  }
+}
+  
 void InstExplain::addInstExplanation(Node inst)
 {
   if (std::find(d_insts.begin(), d_insts.end(), inst) == d_insts.end())
@@ -91,6 +106,21 @@ InstExplainDb::InstExplainDb(QuantifiersEngine * qe) : d_qe(qe)
 {
   d_false = NodeManager::currentNM()->mkConst(false);
   d_true = NodeManager::currentNM()->mkConst(true);
+}
+
+void InstExplainDb::reset(Theory::Effort e)
+{
+  d_active_lexp.clear();
+}
+void InstExplainDb::activate(Node lit)
+{
+  if( d_active_lexp.find(lit)==d_active_lexp.end() )
+  {
+    d_active_lexp[lit] = true;
+    std::map< Node, InstExplain >::iterator itl = d_lit_explains.find(lit);
+    Assert( itl!=d_lit_explains.end() );
+    itl->second.activate(d_qe);
+  }
 }
 
 void InstExplainDb::registerExplanation(Node inst, Node n)
@@ -227,26 +257,34 @@ ExplainStatus InstExplainDb::explain(const std::vector<Node>& exp,
           proc[ert] = true;
           Trace("ied-conflict-debug") << "*** " << ert << std::endl;
           TNode ft = d_false;
-          InstExplain& ie = getInstExplain(ert);
-          if (ie.d_insts.empty())
+          std::map<Node, InstExplain>::iterator itle = d_lit_explains.find(ert);
+          bool explained = false;
+          if( itle!=d_lit_explains.end() )
+          {
+            activate(ert);
+            std::vector< Node >& iei = itle->second.d_active_insts;
+            if (iei.size() == 1)
+            {
+              Trace("ied-conflict-debug")
+                  << "    inst-explanable by " << iei[0] << std::endl;
+              insertExpResult(iei[0], expres, expresAtom);
+              explained = true;
+            }
+            else if( !iei.empty() )
+            {
+              Trace("ied-conflict-debug")
+                  << "    inst-explanable in " << iei.size() << " ways"
+                  << std::endl;
+              // otherwise we have a choice
+              processList[ert] = true;
+              explained = true;
+            }
+          }
+          if( !explained )
           {
             Trace("ied-conflict-debug")
                 << "    NOT inst-explanable" << std::endl;
-            insertExpResult(ert, expres, expresAtom);
-          }
-          else if (ie.d_insts.size() == 1)
-          {
-            Trace("ied-conflict-debug")
-                << "    inst-explanable by " << ie.d_insts[0] << std::endl;
-            insertExpResult(ie.d_insts[0], expres, expresAtom);
-          }
-          else
-          {
-            Trace("ied-conflict-debug")
-                << "    inst-explanable in " << ie.d_insts.size() << " ways"
-                << std::endl;
-            // otherwise we have a choice
-            processList[ert] = true;
+            insertExpResult(ert, expres, expresAtom);   
           }
         }
       }
@@ -262,8 +300,9 @@ ExplainStatus InstExplainDb::explain(const std::vector<Node>& exp,
     {
       Node ert = p.first;
       InstExplain& ie = getInstExplain(ert);
+      std::vector< Node >& iei = ie.d_active_insts;
       bool alreadyProc = false;
-      for (const Node& iexp : ie.d_insts)
+      for (const Node& iexp : iei)
       {
         if (expres.find(iexp) != expres.end())
         {
@@ -273,7 +312,7 @@ ExplainStatus InstExplainDb::explain(const std::vector<Node>& exp,
       }
       if (!alreadyProc)
       {
-        for (const Node& iexp : ie.d_insts)
+        for (const Node& iexp : iei)
         {
           expToLit[iexp].push_back(ert);
         }
