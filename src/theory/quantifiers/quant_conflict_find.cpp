@@ -609,6 +609,13 @@ bool QuantInfo::isTConstraintSpurious( QuantConflictFind * p, std::vector< Node 
         InstExplainDb& ied = p->d_quantEngine->getInstantiate()->getExplainDb();
         std::vector< Node > rexp;
         ied.explain(exp,eqe,rexp,"qcf");
+        std::vector< Node > lemc;
+        for( const Node& re : rexp )
+        {
+          lemc.push_back(re.negate());
+        }
+        Node lem = rexp.size()==1 ? rexp[0] : NodeManager::currentNM()->mkNode(OR,rexp);
+        p->d_quantEngine->addLemma(lem);
       }
     }else{
       Node inst =
