@@ -618,9 +618,9 @@ bool QuantInfo::isTConstraintSpurious( QuantConflictFind * p, std::vector< Node 
         {
           lemc.push_back(re.negate());
         }
-        Node lem = rexp.size() == 1
-                       ? rexp[0]
-                       : NodeManager::currentNM()->mkNode(OR, rexp);
+        Node lem = lemc.size() == 1
+                       ? lemc[0]
+                       : NodeManager::currentNM()->mkNode(OR, lemc);
         p->d_quantEngine->addLemma(lem);
       }
     }else{
