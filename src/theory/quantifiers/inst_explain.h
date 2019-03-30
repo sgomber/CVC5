@@ -32,6 +32,8 @@ class InstExplain
 {
 public:
   std::vector< Node > d_insts;
+  /** add inst explanation */
+  void addInstExplanation( Node inst );
 };
 
 class EqExplainer
@@ -77,12 +79,16 @@ public:
   /** get instantiation explain */
   InstExplain& getInstExplain( Node lit );
   /** explain */
-  void explain( std::vector< Node >& exp, EqExplainer * eqe, const char * ctx );
+  void explain( const std::vector< Node >& exp, EqExplainer * eqe, std::vector< Node >& rexp, const char * ctx );
 private:
   /** common constants */
+  Node d_true;
   Node d_false;
   /** map from literal to possible explanations */
   std::map< Node, InstExplain > d_lit_explains;
+  
+  /** add exp result */
+  void insertExpResult( Node exp, std::map< Node, bool >& expres, std::map< Node, bool >& expresAtom );
 };
 
 } /* CVC4::theory::quantifiers namespace */

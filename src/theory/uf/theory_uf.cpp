@@ -385,7 +385,8 @@ Node TheoryUF::explain(TNode literal, eq::EqProof* pf) {
       exp.push_back(a);
     }
     quantifiers::InstExplainDb& ied = getQuantifiersEngine()->getInstantiate()->getExplainDb();
-    ied.explain(exp,nullptr, "uf");
+    std::vector< Node > rexp;
+    ied.explain(exp,nullptr,rexp,"uf");
   }
   return mkAnd(assumptions);
 }

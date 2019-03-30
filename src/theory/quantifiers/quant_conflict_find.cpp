@@ -603,9 +603,12 @@ bool QuantInfo::isTConstraintSpurious( QuantConflictFind * p, std::vector< Node 
       // explain it?
       if( options::instExplain() )
       {
+        // the quantified formula is part of the conflict
+        exp.push_back(d_q);
         EqExplainer * eqe = p->getEqualityExplainer();
         InstExplainDb& ied = p->d_quantEngine->getInstantiate()->getExplainDb();
-        ied.explain(exp,eqe,"qcf");
+        std::vector< Node > rexp;
+        ied.explain(exp,eqe,rexp,"qcf");
       }
     }else{
       Node inst =
