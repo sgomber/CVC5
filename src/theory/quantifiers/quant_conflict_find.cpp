@@ -604,7 +604,7 @@ bool QuantInfo::isTConstraintSpurious( QuantConflictFind * p, std::vector< Node 
       if( options::instExplain() )
       {
         EqExplainer * eqe = p->getEqualityExplainer();
-        InstExplainDb* ied = p->d_quantEngine->getInstantiate()->getExplainDb();
+        InstExplainDb ied = p->d_quantEngine->getInstantiate()->getExplainDb();
         ied.explain(exp,eqe,"qcf");
       }
     }else{
@@ -1872,7 +1872,7 @@ QuantConflictFind::QuantConflictFind(QuantifiersEngine* qe, context::Context* c)
       d_eqe(nullptr) {
   if( options::instExplain() )
   {
-    // FIXME
+    d_eqe = new EqExplainerTe(qe->getTheoryEngine());
   }
 }
 

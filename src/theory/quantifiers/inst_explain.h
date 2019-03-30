@@ -21,6 +21,7 @@
 #include <vector>
 #include "expr/node.h"
 #include "theory/uf/equality_engine.h"
+#include "theory/theory_engine.h"
 
 namespace CVC4 {
 namespace theory {
@@ -39,17 +40,32 @@ public:
   EqExplainer(){}
   virtual ~EqExplainer(){}
   virtual bool explain(Node lit, std::vector<TNode>& assumptions) = 0;
+protected:
+  bool explainEe(eq::EqualityEngine * ee, Node lit, std::vector<TNode>& assumptions);
 };
 
-class EqualityExplainerEe : public EqExplainer
+class EqExplainerEe : public EqExplainer
 {
 public:
-  EqualityExplainerEe() : d_ee(nullptr){}
-  virtual ~EqualityExplainerEe(){}
-  /** the equality engine */
-  eq::EqualityEngine * d_ee;
+  EqExplainerEe(eq::EqualityEngine * ee) : d_ee(ee){}
+  virtual ~EqExplainerEe(){}
   /** explain */
   bool explain(Node lit, std::vector<TNode>& assumptions) override;
+private:
+  /** the equality engine */
+  eq::EqualityEngine * d_ee;
+};
+
+class EqExplainerTe : public EqExplainer
+{
+public:
+  EqExplainerTe(TheoryEngine * te) : d_te(te) {}
+  virtual ~EqExplainerTe(){}
+  /** explain */
+  bool explain(Node lit, std::vector<TNode>& assumptions) override;
+private:
+  /** the theory engine */
+  TheoryEngine * d_te;
 };
 
 class InstExplainDb
