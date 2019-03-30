@@ -764,29 +764,31 @@ bool TermDb::isEntailed2(TNode n,
         return false;
       }
     }
-  }else if( n.getKind()==APPLY_UF ){
-    TNode n1 = getEntailedTerm2(n, subs, subsRep, hasSubs, exp, qy, computeExp);
-    if( !n1.isNull() ){
-      Assert( qy->hasTerm( n1 ) );
-      if( n1==d_true ){
-        return pol;
-      }else if( n1==d_false ){
-        return !pol;
-      }else{
-        if (qy->getEngine()->getRepresentative(n1) == (pol ? d_true : d_false))
+  }else if( n.getKind()==FORALL && !pol ){
+    if( isEntailed2(n[1], subs, subsRep, hasSubs, pol, exp, qy, computeExp) )
+    {
+      return true;
+    }
+  }
+  TNode n1 = getEntailedTerm2(n, subs, subsRep, hasSubs, exp, qy, computeExp);
+  if( !n1.isNull() ){
+    Assert( qy->hasTerm( n1 ) );
+    if( n1==d_true ){
+      return pol;
+    }else if( n1==d_false ){
+      return !pol;
+    }else{
+      if (qy->getEngine()->getRepresentative(n1) == (pol ? d_true : d_false))
+      {
+        if (computeExp)
         {
-          if (computeExp)
-          {
-            Node pred = n1;
-            exp.push_back(pol ? pred : pred.negate());
-          }
-          return true;
+          Node pred = n1;
+          exp.push_back(pol ? pred : pred.negate());
         }
+        return true;
       }
     }
-  }else if( n.getKind()==FORALL && !pol ){
-    return isEntailed2(n[1], subs, subsRep, hasSubs, pol, exp, qy, computeExp);
-  }
+  }  
   return false;
 }
 

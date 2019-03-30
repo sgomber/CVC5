@@ -38,6 +38,7 @@ void InstExplain::activate(QuantifiersEngine * qe)
       d_active_insts.push_back(inst);
     }
   }
+  Trace("iexp") << d_active_insts.size() << "/" << d_insts.size() << " active instantiation explanations" << std::endl;
 }
   
 void InstExplain::addInstExplanation(Node inst)
