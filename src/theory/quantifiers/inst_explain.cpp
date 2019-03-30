@@ -39,7 +39,6 @@ bool EqExplainer::explainEe(eq::EqualityEngine* ee,
 {
   Node atom = lit.getKind() == NOT ? lit[0] : lit;
   bool pol = lit.getKind() != NOT;
-
   if (atom.getKind() == EQUAL)
   {
     if (ee->hasTerm(atom[0]) && ee->hasTerm(atom[1]))
@@ -55,13 +54,17 @@ bool EqExplainer::explainEe(eq::EqualityEngine* ee,
       {
         return false;
       }
+      Trace("eq-explain") << "explain eq" << atom << " " << pol << std::endl;
       ee->explainEquality(atom[0], atom[1], pol, assumptions);
+      Trace("eq-explain") << "finished explain eq " << assumptions.size() << std::endl;
       return true;
     }
   }
   else if (ee->hasTerm(atom))
   {
+    Trace("eq-explain") << "explain pred" << atom << " " << pol << std::endl;
     ee->explainPredicate(atom, pol, assumptions);
+    Trace("eq-explain") << "finished explain pred " << assumptions.size() << std::endl;
   }
   return false;
 }
@@ -84,7 +87,7 @@ bool EqExplainerTe::explain(Node lit, std::vector<TNode>& assumptions)
   return false;
 }
 
-InstExplainDb::InstExplainDb()
+InstExplainDb::InstExplainDb(QuantifiersEngine * qe) : d_qe(qe)
 {
   d_false = NodeManager::currentNM()->mkConst(false);
   d_true = NodeManager::currentNM()->mkConst(true);
@@ -193,16 +196,27 @@ ExplainStatus InstExplainDb::explain(const std::vector<Node>& exp,
       bool regressExp = false;
       if (eqe)
       {
+        Trace("ied-conflict-debug") << "Explain: " << er << std::endl;
         if (eqe->explain(er, assumptions))
         {
           regressExp = true;
           Trace("ied-conflict-debug")
               << "  ...regressed to " << assumptions << std::endl;
         }
+        else
+        {
+          Trace("ied-conflict-debug")
+              << "  ...failed to regress" << std::endl;
+        }
       }
       if (!regressExp)
       {
         assumptions.push_back(er);
+        // if we did not explain it, then we need to set the status
+        // however, we could still hope that this assertion simply holds in the
+        // current context.
+        
+        ret = EXP_STATUS_INCOMPLETE;
       }
       for (TNode ert : assumptions)
       {

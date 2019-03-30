@@ -36,7 +36,8 @@ Instantiate::Instantiate(QuantifiersEngine* qe, context::UserContext* u)
       d_term_db(nullptr),
       d_term_util(nullptr),
       d_total_inst_count_debug(0),
-      d_c_inst_match_trie_dom(u)
+      d_c_inst_match_trie_dom(u),
+      d_iedb(qe)
 {
 }
 

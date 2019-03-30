@@ -83,7 +83,7 @@ enum ExplainStatus
 class InstExplainDb
 {
  public:
-  InstExplainDb();
+  InstExplainDb(QuantifiersEngine * qe);
   /** register explanations */
   void registerExplanation(Node ilem, Node n);
   /** get instantiation explain */
@@ -96,6 +96,8 @@ class InstExplainDb
                const char* ctx);
 
  private:
+  /** pointer to the quantifiers engine */
+  QuantifiersEngine* d_qe;
   /** common constants */
   Node d_true;
   Node d_false;
