@@ -580,7 +580,8 @@ bool QuantInfo::isTConstraintSpurious( QuantConflictFind * p, std::vector< Node 
       }
       std::vector<Node> exp;
       bool entFalse = false;
-      if( options::instExplain() )
+      bool genConflict = options::qcfExpMode()!=quantifiers::QCF_EXP_CINSTANCE;
+      if( genConflict )
       {
         entFalse = tdb->isEntailed(d_q[1], subs, false, false, exp);
       }
@@ -600,8 +601,8 @@ bool QuantInfo::isTConstraintSpurious( QuantConflictFind * p, std::vector< Node 
           Trace("qcf-instance-check") << "  " << t << std::endl;
         }
       }
-      // explain it?
-      if( options::instExplain() )
+      // explain it and generate the conflict clause
+      if( genConflict )
       {
         // the quantified formula is part of the conflict
         exp.push_back(d_q);
@@ -2062,8 +2063,17 @@ void QuantConflictFind::check(Theory::Effort level, QEffort quant_e)
                             Assert(getTermDatabase()->isEntailed(inst, false) ||
                                    e > EFFORT_CONFLICT);
                           }
-                          if (d_quantEngine->getInstantiate()->addInstantiation(
-                                  q, terms))
+                          bool processed = false;
+                          if (e == EFFORT_CONFLICT && options::qcfExpMode()==QCF_EXP_CONFLICT)
+                          {
+                            processed = true;
+                          }
+                          else
+                          {
+                            processed = d_quantEngine->getInstantiate()->addInstantiation(
+                                  q, terms);
+                          }
+                          if (processed)
                           {
                             Trace("qcf-check") << "   ... Added instantiation" << std::endl;
                             Trace("qcf-inst") << "*** Was from effort " << e << " : " << std::endl;

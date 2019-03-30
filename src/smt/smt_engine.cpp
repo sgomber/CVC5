@@ -2104,6 +2104,11 @@ void SmtEngine::setDefaults() {
   if( options::qcfMode.wasSetByUser() || options::qcfTConstraint() ){
     options::quantConflictFind.set( true );
   }
+  if( options::qcfExpMode()==quantifiers::QCF_EXP_CONFLICT || options::qcfExpMode()==quantifiers::QCF_EXP_BOTH )
+  {
+    // requires instantiation explanations
+    options::instExplain.set(true);
+  }
   if( options::cbqiNestedQE() ){
     options::prenexQuantUser.set( true );
     if( !options::preSkolemQuant.wasSetByUser() ){

@@ -377,6 +377,7 @@ Node TheoryUF::explain(TNode literal, eq::EqProof* pf) {
   Debug("uf") << "TheoryUF::explain(" << literal << ")" << std::endl;
   std::vector<TNode> assumptions;
   explain(literal, assumptions, pf);
+  /*
   if( options::instExplain() )
   {
     std::vector< Node > exp;
@@ -388,6 +389,7 @@ Node TheoryUF::explain(TNode literal, eq::EqProof* pf) {
     std::vector< Node > rexp;
     ied.explain(exp,nullptr,rexp,"uf");
   }
+  */
   return mkAnd(assumptions);
 }
 

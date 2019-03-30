@@ -691,6 +691,17 @@ header = "options/quantifiers_options.h"
   help       = "qcf experimental variable ordering"
 
 [[option]]
+  name       = "qcfExpMode"
+  category   = "regular"
+  long       = "quant-exp=MODE"
+  type       = "CVC4::theory::quantifiers::QcfExpMode"
+  default    = "CVC4::theory::quantifiers::QCF_EXP_CINSTANCE"
+  handler    = "stringToQcfExpMode"
+  includes   = ["options/quantifiers_modes.h"]
+  read_only  = true
+  help       = "what kind of lemmas to add when a conflicting instance is discovered"
+
+[[option]]
   name       = "instNoEntail"
   category   = "regular"
   long       = "inst-no-entail"

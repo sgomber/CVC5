@@ -301,6 +301,21 @@ std-h \n\
 \n\
 ";
 
+const std::string OptionsHandler::s_qcfExpModeHelp = "\
+Quantifier conflict find explanation modes currently supported by the --qcf-exp option:\n\
+\n\
+cinstance (default) \n\
++ Generate instantiation lemma corresponding to conflicting instance.\n\
+\n\
+conflict \n\
++ When possible, generate conflict clauses that explain conflicting \n\
+instances.\n\
+\n\
+both \n\
++ Generate the conflicting instance and when possible, the conflict clause.\n\
+\n\
+";
+
 const std::string OptionsHandler::s_qcfModeHelp = "\
 Quantifier conflict find modes currently supported by the --quant-cf option:\n\
 \n\
@@ -695,6 +710,25 @@ theory::quantifiers::QcfWhenMode OptionsHandler::stringToQcfWhenMode(
   } else {
     throw OptionException(std::string("unknown option for --quant-cf-when: `") +
                           optarg + "'.  Try --quant-cf-when help.");
+  }
+}
+
+
+theory::quantifiers::QcfExpMode OptionsHandler::stringToQcfExpMode(
+    std::string option, std::string optarg)
+{
+  if(optarg ==  "cinstance") {
+    return theory::quantifiers::QCF_EXP_CINSTANCE;
+  } else if(optarg ==  "conflict") {
+    return theory::quantifiers::QCF_EXP_CONFLICT;
+  } else if(optarg ==  "both") {
+    return theory::quantifiers::QCF_EXP_BOTH;
+  } else if(optarg ==  "help") {
+    puts(s_qcfExpModeHelp.c_str());
+    exit(1);
+  } else {
+    throw OptionException(std::string("unknown option for --qcf-exp: `") +
+                          optarg + "'.  Try --qcf-exp help.");
   }
 }
 
