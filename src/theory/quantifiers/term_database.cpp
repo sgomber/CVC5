@@ -760,6 +760,8 @@ bool TermDb::isEntailed2(TNode n,
           }
           return true;
         }
+        // it won't be entailed the other direction
+        return false;
       }
     }
   }else if( n.getKind()==APPLY_UF ){
