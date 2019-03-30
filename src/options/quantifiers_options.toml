@@ -693,7 +693,7 @@ header = "options/quantifiers_options.h"
 [[option]]
   name       = "qcfExpMode"
   category   = "regular"
-  long       = "quant-exp=MODE"
+  long       = "qcf-exp=MODE"
   type       = "CVC4::theory::quantifiers::QcfExpMode"
   default    = "CVC4::theory::quantifiers::QCF_EXP_CINSTANCE"
   handler    = "stringToQcfExpMode"
