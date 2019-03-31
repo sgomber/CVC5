@@ -81,6 +81,7 @@ bool EqExplainer::explainEe(eq::EqualityEngine* ee,
     Trace("eq-explain") << "explain pred" << atom << " " << pol << std::endl;
     ee->explainPredicate(atom, pol, assumptions);
     Trace("eq-explain") << "finished explain pred " << assumptions.size() << std::endl;
+    return true;
   }
   return false;
 }

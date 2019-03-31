@@ -729,7 +729,7 @@ bool TermDb::isEntailed2(TNode n,
   }else if( n.getKind()==OR || n.getKind()==AND ){
     bool simPol = ( pol && n.getKind()==OR ) || ( !pol && n.getKind()==AND );
     for( unsigned i=0; i<n.getNumChildren(); i++ ){
-      if (isEntailed2(n[i], subs, subsRep, hasSubs, pol, exp, qy))
+      if (isEntailed2(n[i], subs, subsRep, hasSubs, pol, exp, qy, computeExp))
       {
         if( simPol ){
           return true;
