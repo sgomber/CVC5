@@ -147,16 +147,13 @@ void InstExplainDb::registerExplanation(Node inst, Node n)
 {
   Trace("inst-explain") << "Get literals that are explanable by " << inst
                         << std::endl;
-  inst = TermUtil::simpleNegate(inst);
-  std::map<bool, std::unordered_set<TNode, TNodeHashFunction> > visited;
+  std::map<bool, std::unordered_set<Node, NodeHashFunction> > visited;
   std::vector<bool> visit_hasPol;
-  std::vector<TNode> visit;
+  std::vector<Node> visit;
   bool hasPol;
   TNode cur;
   visit_hasPol.push_back(true);
   visit.push_back(n);
-  TNode ft = d_false;
-  TNode tt = d_true;
   do
   {
     hasPol = visit_hasPol.back();

@@ -59,8 +59,105 @@ void InstExplainInst::initialize(Node inst)
 void InstExplainInst::propagate( QuantifiersEngine * qe, std::vector< Node >& propLits )
 {
   // if possible, propagate the literal in the clause that must be true
+  std::unordered_set<Node, NodeHashFunction> visited;
+  std::vector<Node> visit;
+  std::map< Node, bool > ecache;
+  Node cur;
+  visit.push_back(d_this);
+  do
+  {
+    cur = visit.back();
+    visit.pop_back();
+    // cur should hold in the current context
+    Assert( evaluate(cur,ecache,qe) );
+    if (visited.find(cur) == visited.end())
+    {
+      visited.insert(cur);
+      TNode atom = cur.getKind() == NOT ? cur[0] : cur;
+      bool pol = cur.getKind() != NOT;
+      Kind k = atom.getKind();
+      if (k == AND || k==OR)
+      {
+        if( (k==AND)==pol )
+        {
+          for( const Node& nc : cur )
+          {
+            visit.push_back(pol ? nc : nc.negate());
+          }
+        }
+        else
+        {
+          // propagate the one if all others are false
+          Node trueLit;
+          for( const Node& nc : cur )
+          {
+            if( evaluate(nc,ecache,qe)==pol )
+            {
+              if( trueLit.isNull() )
+              {
+                trueLit = nc;
+              }
+              else
+              {
+                trueLit = Node::null();
+                break;
+              }
+            }
+          }
+          if( !trueLit.isNull() )
+          {
+            visit.push_back(trueLit);
+          }
+        }
+      }
+      else if (k == ITE)
+      {
+        // get polarity of the head
+        //   T  T F ----> ~2 propagate B, 1
+        //   T  F T ----> ~1 propagate B, 2
+        //   T  T T ----> nothing
+        for( unsigned i=0; i<2; i++ )
+        {
+          if( evaluate(cur[i+1],ecache,qe)!=pol )
+          {
+            visit.push_back(pol ? cur[2-i] : cur[2-i].negate());
+            visit.push_back(i==0 ? cur[0].negate() : cur[0] );
+          }
+        }
+      }
+      else if (k == EQUAL && atom[0].getType().isBoolean())
+      {
+        //   T T ---> 1 propagate 2  +  2 propagate 1
+        // ????
+      }
+      else
+      {
+        // propagates
+        propLits.push_back(cur);
+      }
+    }
+  } while (!visit.empty());
+}
+
+bool InstExplainInst::evaluate( Node n, std::map< Node, bool >& ecache, QuantifiersEngine * qe )
+{
   
-  
+  /*
+  std::vector<TNode> visit;
+  visit.push_back(n);
+  TNode cur;
+  do
+  {
+    cur = visit.back();
+    visit.pop_back();
+    if( ecache.find(n)==ecache.end() )
+    {
+      
+    }
+  }while( !visit.empty() );
+  return ecache[n];
+  */
+  return true;
 }
 
 }  // namespace quantifiers
