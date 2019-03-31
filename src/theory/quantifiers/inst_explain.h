@@ -129,8 +129,11 @@ class InstExplainDb
   std::map<Node, InstExplainInst> d_inst_explains;
   /** activated */
   std::map< Node, bool > d_active_lexp;
+  /** activated instantiations */
+  std::map< Node, bool > d_active_inst;
   
-  void activate(Node lit);
+  void activateLit(Node lit);
+  void activateInst(Node inst);
 
   /** add exp result */
   void insertExpResult(Node exp,

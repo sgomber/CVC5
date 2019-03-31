@@ -27,21 +27,6 @@ namespace CVC4 {
 namespace theory {
 namespace quantifiers {
 
-  /*
-void InstExplainLit::activate(QuantifiersEngine * qe)
-{
-  d_active_insts.clear();
-  TermDb * tdb = qe->getTermDatabase();
-  for( const Node& inst : d_insts )
-  {
-    if( tdb->isEntailed(inst,true) )
-    {
-      d_active_insts.push_back(inst);
-    }
-  }
-  Trace("iexp") << d_active_insts.size() << "/" << d_insts.size() << " active instantiation explanations" << std::endl;
-}
-*/
 void InstExplainLit::initialize(Node inst)
 {
   d_this = inst;
@@ -133,16 +118,30 @@ InstExplainDb::InstExplainDb(QuantifiersEngine * qe) : d_qe(qe)
 void InstExplainDb::reset(Theory::Effort e)
 {
   d_active_lexp.clear();
+  d_active_inst.clear();
 }
-void InstExplainDb::activate(Node lit)
+void InstExplainDb::activateLit(Node lit)
 {
   if( d_active_lexp.find(lit)==d_active_lexp.end() )
   {
     d_active_lexp[lit] = true;
     std::map< Node, InstExplainLit >::iterator itl = d_lit_explains.find(lit);
     Assert( itl!=d_lit_explains.end() );
-    //itl->second.activate(d_qe);
-    // TODO : propagate for all insts
+    // propagate for all insts
+    for( const Node& i : itl->second.d_insts )
+    {
+      activateInst(i);
+    }
+  }
+}
+
+void InstExplainDb::activateInst(Node inst)
+{
+  if( d_active_inst.find(inst)==d_active_inst.end() )
+  {
+    d_active_inst[inst] = true;
+    
+    // TODO
   }
 }
 
@@ -203,16 +202,14 @@ void InstExplainDb::registerExplanation(Node inst, Node n)
       }
       else
       {
-        Node sinst = inst.substitute(atom, pol ? ft : tt);
-        sinst = Rewriter::rewrite(sinst);
-        d_lit_explains[cur].addInstExplanation(inst);
+        InstExplainLit& iel = getInstExplainLit(cur);
+        iel.addInstExplanation(inst);
         Trace("inst-explain") << "  -> " << cur << std::endl;
         if (!hasPol)
         {
-          sinst = inst.substitute(atom, pol ? tt : ft);
-          sinst = Rewriter::rewrite(sinst);
           Node curn = cur.negate();
-          d_lit_explains[curn].addInstExplanation(sinst);
+          InstExplainLit& ieln = getInstExplainLit(curn);
+          ieln.addInstExplanation(inst);
           Trace("inst-explain") << "  -> " << curn << std::endl;
         }
       }
@@ -222,7 +219,13 @@ void InstExplainDb::registerExplanation(Node inst, Node n)
 
 InstExplainLit& InstExplainDb::getInstExplainLit(Node lit)
 {
-  return d_lit_explains[lit];
+  std::map<Node, InstExplainLit>::iterator itl = d_lit_explains.find(lit);
+  if( itl==d_lit_explains.end() )
+  {
+    d_lit_explains[lit].initialize(lit);
+    return d_lit_explains[lit];
+  }
+  return itl->second;
 }
 
 ExplainStatus InstExplainDb::explain(const std::vector<Node>& exp,
@@ -287,7 +290,7 @@ ExplainStatus InstExplainDb::explain(const std::vector<Node>& exp,
           bool explained = false;
           if( itle!=d_lit_explains.end() )
           {
-            activate(ert);
+            activateLit(ert);
             std::vector< Node >& iei = itle->second.d_active_insts;
             if (iei.size() == 1)
             {
