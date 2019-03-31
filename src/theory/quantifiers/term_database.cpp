@@ -636,6 +636,7 @@ TNode TermDb::getEntailedTerm2(TNode n,
       TNode f = getMatchOperator( n );
       if( !f.isNull() ){
         std::vector< TNode > args;
+        std::vector< TNode > argst;
         for( unsigned i=0; i<n.getNumChildren(); i++ ){
           TNode c = getEntailedTerm2(
               n[i], subs, subsRep, hasSubs, exp, qy, computeExp);
@@ -646,13 +647,27 @@ TNode TermDb::getEntailedTerm2(TNode n,
           Trace("term-db-entail")
               << "  child " << i << " : " << cr << std::endl;
           args.push_back(cr);
-          if (computeExp && c != cr)
+          if (computeExp)
           {
-            exp.push_back(c.eqNode(cr));
+            argst.push_back(c);
           }
         }
         TNode nn = qy->getCongruentTerm( f, args );
         Trace("term-db-entail") << "  got congruent term " << nn << " for " << n << std::endl;
+        if( computeExp )
+        {
+          if( !nn.isNull() )
+          {
+            Assert( nn.getNumChildren()==argst.size() );
+            for( unsigned i=0, size = nn.getNumChildren(); i<size; i++ )
+            {
+              if( argst[i]!=nn[i] )
+              {
+                exp.push_back(argst[i].eqNode(nn[i]));
+              }
+            }
+          }
+        }
         return nn;
       }
     }

@@ -27,17 +27,32 @@ namespace CVC4 {
 namespace theory {
 namespace quantifiers {
 
-class InstExplain
+class InstExplainLit
 {
  public:
-   InstExplain(){}
-  std::vector<Node> d_active_insts;
+   InstExplainLit(){}
+  /** initialize */
+  void initialize(Node inst);
   /** add inst explanation */
   void addInstExplanation(Node inst);
-  /** activate */
-  void activate(QuantifiersEngine * qe);
-protected:
+  /** the list of possible instantiation lemmas that may propagate this literal */
   std::vector< Node > d_insts;
+private:
+  /** the literal this object is for */
+  Node d_this;
+};
+
+class InstExplainDb;
+
+class InstExplainInst
+{
+public:
+  /** initialize */
+  void initialize(Node inst);
+  /** propagate */
+  void propagate( InstExplainDb& ied, QuantifiersEngine * qe );
+private:
+  Node d_this;
 };
 
 class EqExplainer
@@ -94,7 +109,7 @@ class InstExplainDb
   /** register explanations */
   void registerExplanation(Node ilem, Node n);
   /** get instantiation explain */
-  InstExplain& getInstExplain(Node lit);
+  InstExplainLit& getInstExplainLit(Node lit);
   
   /** explain */
   ExplainStatus explain(const std::vector<Node>& exp,
@@ -109,7 +124,9 @@ class InstExplainDb
   Node d_true;
   Node d_false;
   /** map from literal to possible explanations */
-  std::map<Node, InstExplain> d_lit_explains;
+  std::map<Node, InstExplainLit> d_lit_explains;
+  /** map from instantiate lemma to explanation objects */
+  std::map<Node, InstExplainInst> d_inst_explains;
   /** activated */
   std::map< Node, bool > d_active_lexp;
   

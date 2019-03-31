@@ -27,7 +27,8 @@ namespace CVC4 {
 namespace theory {
 namespace quantifiers {
 
-void InstExplain::activate(QuantifiersEngine * qe)
+  /*
+void InstExplainLit::activate(QuantifiersEngine * qe)
 {
   d_active_insts.clear();
   TermDb * tdb = qe->getTermDatabase();
@@ -40,13 +41,32 @@ void InstExplain::activate(QuantifiersEngine * qe)
   }
   Trace("iexp") << d_active_insts.size() << "/" << d_insts.size() << " active instantiation explanations" << std::endl;
 }
+*/
+void InstExplainLit::initialize(Node inst)
+{
+  d_this = inst;
+}
   
-void InstExplain::addInstExplanation(Node inst)
+void InstExplainLit::addInstExplanation(Node inst)
 {
   if (std::find(d_insts.begin(), d_insts.end(), inst) == d_insts.end())
   {
     d_insts.push_back(inst);
+    // TODO: store the explanation
+    
   }
+}
+
+void InstExplainInst::initialize(Node inst)
+{
+  d_this = inst;
+}
+
+void InstExplainInst::propagate( InstExplainDb& ied, QuantifiersEngine * qe )
+{
+  // if possible, propagate the literal in the clause that must be true
+  
+  
 }
 
 bool EqExplainer::explainEe(eq::EqualityEngine* ee,
@@ -119,9 +139,10 @@ void InstExplainDb::activate(Node lit)
   if( d_active_lexp.find(lit)==d_active_lexp.end() )
   {
     d_active_lexp[lit] = true;
-    std::map< Node, InstExplain >::iterator itl = d_lit_explains.find(lit);
+    std::map< Node, InstExplainLit >::iterator itl = d_lit_explains.find(lit);
     Assert( itl!=d_lit_explains.end() );
-    itl->second.activate(d_qe);
+    //itl->second.activate(d_qe);
+    // TODO : propagate for all insts
   }
 }
 
@@ -184,7 +205,7 @@ void InstExplainDb::registerExplanation(Node inst, Node n)
       {
         Node sinst = inst.substitute(atom, pol ? ft : tt);
         sinst = Rewriter::rewrite(sinst);
-        d_lit_explains[cur].addInstExplanation(sinst);
+        d_lit_explains[cur].addInstExplanation(inst);
         Trace("inst-explain") << "  -> " << cur << std::endl;
         if (!hasPol)
         {
@@ -199,7 +220,7 @@ void InstExplainDb::registerExplanation(Node inst, Node n)
   } while (!visit.empty());
 }
 
-InstExplain& InstExplainDb::getInstExplain(Node lit)
+InstExplainLit& InstExplainDb::getInstExplainLit(Node lit)
 {
   return d_lit_explains[lit];
 }
@@ -296,6 +317,7 @@ ExplainStatus InstExplainDb::explain(const std::vector<Node>& exp,
       }
     }
   }
+#if 0
   // now, go back and process atoms that are explainable in multiple ways
   // this is an optimization for constructing smaller explanations
   while (!processList.empty())
@@ -305,7 +327,7 @@ ExplainStatus InstExplainDb::explain(const std::vector<Node>& exp,
     for (const std::pair<Node, bool>& p : processList)
     {
       Node ert = p.first;
-      InstExplain& ie = getInstExplain(ert);
+      InstExplainLit& ie = getInstExplainLit(ert);
       std::vector< Node >& iei = ie.d_active_insts;
       bool alreadyProc = false;
       for (const Node& iexp : iei)
@@ -352,6 +374,7 @@ ExplainStatus InstExplainDb::explain(const std::vector<Node>& exp,
     }
     processList = newProcessList;
   }
+#endif
   Trace("ied-conflict") << "Result of inst explain : " << std::endl;
   for (const std::pair<Node, bool>& ep : expresAtom)
   {
