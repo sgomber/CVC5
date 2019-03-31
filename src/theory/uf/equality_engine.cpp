@@ -940,10 +940,9 @@ void EqualityEngine::explainEquality(TNode t1, TNode t2, bool polarity,
   EqualityNodeId t1Id = getNodeId(t1);
   EqualityNodeId t2Id = getNodeId(t2);
 
-  std::map< EqualityEdgeId, std::vector< EqualityEdgeId > > cache;
+  std::map< EqualityNodeId, std::vector< EqualityNodeId > > cache;
   if (polarity) {
     // Get the explanation
-    
     getExplanation(t1Id, t2Id, equalities, cache, eqp);
   } else {
     if (eqp) {
@@ -1026,7 +1025,7 @@ void EqualityEngine::explainPredicate(TNode p, bool polarity,
                     << std::endl;
   // Must have the term
   Assert(hasTerm(p));
-  std::map< EqualityEdgeId, std::vector< EqualityEdgeId > > cache;
+  std::map< EqualityNodeId, std::vector< EqualityNodeId > > cache;
   // Get the explanation
   getExplanation(getNodeId(p), polarity ? d_trueId : d_falseId, assertions, cache,
                  eqp);
@@ -1034,15 +1033,18 @@ void EqualityEngine::explainPredicate(TNode p, bool polarity,
 
 void EqualityEngine::getExplanation(EqualityNodeId t1Id, EqualityNodeId t2Id,
                                     std::vector<TNode>& equalities,
-                                    std::map< EqualityEdgeId, std::vector< EqualityEdgeId > >& cache,
+                                    std::map< EqualityNodeId, std::vector< EqualityNodeId > >& cache,
                                     EqProof* eqp) const {
-  if( std::find( cache[t1Id].begin(), cache[t1Id].begin(), t2Id )!=cache[t1Id].end() )
-  {
-    return;
-  }
   Trace("eq-exp") << d_name << "::eq::getExplanation(" << d_nodes[t1Id] << "," << d_nodes[t2Id] << ")" << std::endl;
-  cache[t1Id].push_back(t2Id);
-  cache[t2Id].push_back(t1Id);
+  if( !eqp )
+  {
+    if( std::find( cache[t1Id].begin(), cache[t1Id].end(), t2Id )!=cache[t1Id].end() )
+    {
+      return;
+    }
+    cache[t1Id].push_back(t2Id);
+    cache[t2Id].push_back(t1Id);
+  }
   
   // We can only explain the nodes that got merged
 #ifdef CVC4_ASSERTIONS
@@ -1265,7 +1267,6 @@ void EqualityEngine::getExplanation(EqualityNodeId t1Id, EqualityNodeId t2Id,
                 }
                 eqpc->d_id = reasonType;
               }
-
               equalities.push_back(reason);
               break;
             }
