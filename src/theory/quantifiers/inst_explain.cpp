@@ -257,6 +257,9 @@ ExplainStatus InstExplainDb::explain(const std::vector<Node>& exp,
         {
           proc[ert] = true;
           Trace("ied-conflict-debug") << "*** " << ert << std::endl;
+#if 1
+          insertExpResult(ert, expres, expresAtom); 
+#else     
           TNode ft = d_false;
           std::map<Node, InstExplain>::iterator itle = d_lit_explains.find(ert);
           bool explained = false;
@@ -287,6 +290,7 @@ ExplainStatus InstExplainDb::explain(const std::vector<Node>& exp,
                 << "    NOT inst-explanable" << std::endl;
             insertExpResult(ert, expres, expresAtom);   
           }
+#endif
         }
       }
     }
