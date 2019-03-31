@@ -33,10 +33,16 @@ class InstExplainLit
    InstExplainLit(){}
   /** initialize */
   void initialize(Node inst);
+  /** reset */
+  void reset();
   /** add inst explanation */
   void addInstExplanation(Node inst);
+  /** add propagating instantiation */
+  void setPropagating(Node inst);
   /** the list of possible instantiation lemmas that may propagate this literal */
   std::vector< Node > d_insts;
+  /** the list of instantiation lemmas that actually currently propagate this literal */
+  std::vector< Node > d_curr_prop_insts;
 private:
   /** the literal this object is for */
   Node d_this;
@@ -50,8 +56,9 @@ public:
   /** initialize */
   void initialize(Node inst);
   /** propagate */
-  void propagate( InstExplainDb& ied, QuantifiersEngine * qe );
+  void propagate( QuantifiersEngine * qe, std::vector< Node >& lits );
 private:
+  /** the instantiation lemma */
   Node d_this;
 };
 
@@ -110,6 +117,7 @@ class InstExplainDb
   void registerExplanation(Node ilem, Node n);
   /** get instantiation explain */
   InstExplainLit& getInstExplainLit(Node lit);
+  InstExplainInst& getInstExplainInst(Node inst);
   
   /** explain */
   ExplainStatus explain(const std::vector<Node>& exp,
@@ -129,11 +137,16 @@ class InstExplainDb
   std::map<Node, InstExplainInst> d_inst_explains;
   /** activated */
   std::map< Node, bool > d_active_lexp;
+  /** waiting list 
+   * 
+   * Maps literals to the instantiation lemmas that currently propagate them.
+   */
+  std::map< Node, std::vector< Node > > d_waiting_prop;
   /** activated instantiations */
   std::map< Node, bool > d_active_inst;
   
   void activateLit(Node lit);
-  void activateInst(Node inst);
+  void activateInst(Node inst, Node srcLit, InstExplainLit& src);
 
   /** add exp result */
   void insertExpResult(Node exp,

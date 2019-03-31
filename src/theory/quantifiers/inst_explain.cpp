@@ -31,15 +31,24 @@ void InstExplainLit::initialize(Node inst)
 {
   d_this = inst;
 }
-  
+void InstExplainLit::reset()
+{
+  d_curr_prop_insts.clear();
+}
 void InstExplainLit::addInstExplanation(Node inst)
 {
   if (std::find(d_insts.begin(), d_insts.end(), inst) == d_insts.end())
   {
-    d_insts.push_back(inst);
-    // TODO: store the explanation
-    
+    d_insts.push_back(inst);    
   }
+}
+
+void InstExplainLit::setPropagating(Node inst)
+{
+  Assert( std::find(d_curr_prop_insts.begin(),d_curr_prop_insts.end(),inst)==d_curr_prop_insts.end() );
+  Assert( std::find(d_inst.begin(),d_inst.end(),inst)!=d_inst.end());
+  d_curr_prop_insts.push_back(inst);
+  // TODO: get the explanation?
 }
 
 void InstExplainInst::initialize(Node inst)
@@ -47,7 +56,7 @@ void InstExplainInst::initialize(Node inst)
   d_this = inst;
 }
 
-void InstExplainInst::propagate( InstExplainDb& ied, QuantifiersEngine * qe )
+void InstExplainInst::propagate( QuantifiersEngine * qe, std::vector< Node >& propLits )
 {
   // if possible, propagate the literal in the clause that must be true
   
@@ -119,7 +128,9 @@ void InstExplainDb::reset(Theory::Effort e)
 {
   d_active_lexp.clear();
   d_active_inst.clear();
+  d_waiting_prop.clear();
 }
+
 void InstExplainDb::activateLit(Node lit)
 {
   if( d_active_lexp.find(lit)==d_active_lexp.end() )
@@ -127,21 +138,44 @@ void InstExplainDb::activateLit(Node lit)
     d_active_lexp[lit] = true;
     std::map< Node, InstExplainLit >::iterator itl = d_lit_explains.find(lit);
     Assert( itl!=d_lit_explains.end() );
-    // propagate for all insts
+    itl->second.reset();
+    // add the wait list
+    std::map< Node, std::vector< Node > >::iterator itw = d_waiting_prop.find(lit);
+    if( itw!=d_waiting_prop.end() )
+    {
+      for( const Node& wl : itw->second )
+      {
+        itl->second.setPropagating(wl);
+      }
+      d_waiting_prop.erase(lit);
+    }
+    // propagate for all instantiate lemmas that might propagate this literal
     for( const Node& i : itl->second.d_insts )
     {
-      activateInst(i);
+      activateInst(i, lit, itl->second);
     }
   }
 }
 
-void InstExplainDb::activateInst(Node inst)
+void InstExplainDb::activateInst(Node inst, Node srcLit, InstExplainLit& src)
 {
   if( d_active_inst.find(inst)==d_active_inst.end() )
   {
     d_active_inst[inst] = true;
-    
-    // TODO
+    InstExplainInst& iei = getInstExplainInst(inst);
+    std::vector< Node > propLits;
+    iei.propagate(d_qe, propLits);
+    for( const Node& l : propLits )
+    {
+      if( l==srcLit )
+      {
+        src.setPropagating(inst);
+      }
+      else
+      {
+        d_waiting_prop[l].push_back(inst);
+      }
+    }
   }
 }
 
@@ -222,10 +256,23 @@ InstExplainLit& InstExplainDb::getInstExplainLit(Node lit)
   std::map<Node, InstExplainLit>::iterator itl = d_lit_explains.find(lit);
   if( itl==d_lit_explains.end() )
   {
-    d_lit_explains[lit].initialize(lit);
-    return d_lit_explains[lit];
+    InstExplainLit& iel = d_lit_explains[lit];
+    iel.initialize(lit);
+    return iel;
   }
   return itl->second;
+}
+
+InstExplainInst& InstExplainDb::getInstExplainInst(Node inst)
+{
+  std::map<Node, InstExplainInst>::iterator iti = d_inst_explains.find(inst);
+  if( iti==d_inst_explains.end() )
+  {
+    InstExplainInst& iei = d_inst_explains[inst];
+    iei.initialize(inst);
+    return iei;
+  }
+  return iti->second;
 }
 
 ExplainStatus InstExplainDb::explain(const std::vector<Node>& exp,
