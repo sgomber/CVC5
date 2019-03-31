@@ -73,14 +73,14 @@ void InstExplainInst::propagate( QuantifiersEngine * qe, std::vector< Node >& pr
     if (visited.find(cur) == visited.end())
     {
       visited.insert(cur);
-      TNode atom = cur.getKind() == NOT ? cur[0] : cur;
+      Node atom = cur.getKind() == NOT ? cur[0] : cur;
       bool pol = cur.getKind() != NOT;
       Kind k = atom.getKind();
       if (k == AND || k==OR)
       {
         if( (k==AND)==pol )
         {
-          for( const Node& nc : cur )
+          for( const Node& nc : atom )
           {
             visit.push_back(pol ? nc : nc.negate());
           }
@@ -89,7 +89,7 @@ void InstExplainInst::propagate( QuantifiersEngine * qe, std::vector< Node >& pr
         {
           // propagate the one if all others are false
           Node trueLit;
-          for( const Node& nc : cur )
+          for( const Node& nc : atom )
           {
             if( evaluate(nc,ecache,qe)==pol )
             {
@@ -118,10 +118,10 @@ void InstExplainInst::propagate( QuantifiersEngine * qe, std::vector< Node >& pr
         //   T  T T ----> nothing
         for( unsigned i=0; i<2; i++ )
         {
-          if( evaluate(cur[i+1],ecache,qe)!=pol )
+          if( evaluate(atom[i+1],ecache,qe)!=pol )
           {
-            visit.push_back(pol ? cur[2-i] : cur[2-i].negate());
-            visit.push_back(i==0 ? cur[0].negate() : cur[0] );
+            visit.push_back(pol ? atom[2-i] : atom[2-i].negate());
+            visit.push_back(i==0 ? atom[0].negate() : atom[0] );
           }
         }
       }
@@ -129,6 +129,9 @@ void InstExplainInst::propagate( QuantifiersEngine * qe, std::vector< Node >& pr
       {
         //   T T ---> 1 propagate 2  +  2 propagate 1
         // ????
+        bool res = evaluate( atom[0], ecache, qe );
+        visit.push_back(res ? atom[0] : atom[0].negate());
+        visit.push_back(res==pol ? atom[1] : atom[1].negate());
       }
       else
       {
