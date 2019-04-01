@@ -27,7 +27,7 @@ namespace theory {
 namespace quantifiers {
 
 /** instantiation explain literal
- * 
+ *
  * This class manages all instantiation lemma explanations for a single literal
  * L. In particular, it stores all instantiation lemmas that may propagate L,
  * and the explanation of why they propagate L.
@@ -35,35 +35,36 @@ namespace quantifiers {
 class InstExplainLit
 {
  public:
-   InstExplainLit(){}
+  InstExplainLit() {}
   /** Initialize this object for literal lit. */
   void initialize(Node lit);
   /** Reset, called at the beginning of instantiation rounds. */
   void reset();
-  /** 
+  /**
    * Set that instantiation lemma inst may propagate the literal of this object.
    */
   void addInstExplanation(Node inst);
-  /** 
+  /**
    * Set that instantiation lemma inst currently propagates the literal of this
    * object. This is called by InstExplainDb.
-   * 
+   *
    * inst should be an instantiation lemma occurring as an argument to a
    * previous call to addInstExplanation.
    */
   void setPropagating(Node inst);
-  /** 
+  /**
    * The list of current explanations that explain this literal via
    * instantiation lemmas. These are formulas in the range of d_inst_to_exp
    * below.
    */
-  std::vector< Node > d_curr_prop_exps;
+  std::vector<Node> d_curr_prop_exps;
   /** The list of instantiation lemmas that may propagate d_this. */
-  std::vector< Node > d_insts;
-private:
+  std::vector<Node> d_insts;
+
+ private:
   /** The literal of this object. */
   Node d_this;
-  /** 
+  /**
    * Maps instantiation lemmas to their explanation for this literal.
    * Let C[L] be a clause containing literal L. The explanation for C with
    * respect to L is ~C[false]. For example:
@@ -72,24 +73,23 @@ private:
    *   (forall x. P(x)) ^ ~Q(c)
    * which notice suffices to show that P(c) much be true.
    */
-  std::map< Node, Node > d_inst_to_exp;
+  std::map<Node, Node> d_inst_to_exp;
 };
-
 
 class InstExplainInst
 {
-public:
+ public:
   /** initialize */
   void initialize(Node inst);
   /** propagate */
-  void propagate( QuantifiersEngine * qe, std::vector< Node >& lits );
-private:
+  void propagate(QuantifiersEngine* qe, std::vector<Node>& lits);
+
+ private:
   /** the instantiation lemma */
   Node d_this;
   /** evaluate */
-  bool evaluate( TNode n, std::map< TNode, bool >& ecache, QuantifiersEngine * qe );
+  bool evaluate(TNode n, std::map<TNode, bool>& ecache, QuantifiersEngine* qe);
 };
-
 
 }  // namespace quantifiers
 }  // namespace theory

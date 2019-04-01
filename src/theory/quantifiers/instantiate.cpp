@@ -65,7 +65,7 @@ bool Instantiate::reset(Theory::Effort e)
   }
   d_term_db = d_qe->getTermDatabase();
   d_term_util = d_qe->getTermUtil();
-  if( options::instExplain() )
+  if (options::instExplain())
   {
     d_iedb.reset(e);
   }

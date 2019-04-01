@@ -625,7 +625,8 @@ TNode TermDb::getEntailedTerm2(TNode n,
     }
   }else if( n.getKind()==ITE ){
     for( unsigned i=0; i<2; i++ ){
-      if (isEntailed2(n[0], subs, subsRep, hasSubs, i == 0, exp, qy, computeExp))
+      if (isEntailed2(
+              n[0], subs, subsRep, hasSubs, i == 0, exp, qy, computeExp))
       {
         return getEntailedTerm2(
             n[i == 0 ? 1 : 2], subs, subsRep, hasSubs, exp, qy, computeExp);
@@ -636,7 +637,7 @@ TNode TermDb::getEntailedTerm2(TNode n,
       TNode f = getMatchOperator( n );
       if( !f.isNull() ){
         std::vector< TNode > args;
-        std::vector< TNode > argst;
+        std::vector<TNode> argst;
         for( unsigned i=0; i<n.getNumChildren(); i++ ){
           TNode c = getEntailedTerm2(
               n[i], subs, subsRep, hasSubs, exp, qy, computeExp);
@@ -654,14 +655,14 @@ TNode TermDb::getEntailedTerm2(TNode n,
         }
         TNode nn = qy->getCongruentTerm( f, args );
         Trace("term-db-entail") << "  got congruent term " << nn << " for " << n << std::endl;
-        if( computeExp )
+        if (computeExp)
         {
-          if( !nn.isNull() )
+          if (!nn.isNull())
           {
-            Assert( nn.getNumChildren()==argst.size() );
-            for( unsigned i=0, size = nn.getNumChildren(); i<size; i++ )
+            Assert(nn.getNumChildren() == argst.size());
+            for (unsigned i = 0, size = nn.getNumChildren(); i < size; i++)
             {
-              if( argst[i]!=nn[i] )
+              if (argst[i] != nn[i])
               {
                 exp.push_back(argst[i].eqNode(nn[i]));
               }
@@ -780,19 +781,25 @@ bool TermDb::isEntailed2(TNode n,
       }
     }
   }else if( n.getKind()==FORALL && !pol ){
-    if( isEntailed2(n[1], subs, subsRep, hasSubs, pol, exp, qy, computeExp) )
+    if (isEntailed2(n[1], subs, subsRep, hasSubs, pol, exp, qy, computeExp))
     {
       return true;
     }
   }
   TNode n1 = getEntailedTerm2(n, subs, subsRep, hasSubs, exp, qy, computeExp);
-  if( !n1.isNull() ){
-    Assert( qy->hasTerm( n1 ) );
-    if( n1==d_true ){
+  if (!n1.isNull())
+  {
+    Assert(qy->hasTerm(n1));
+    if (n1 == d_true)
+    {
       return pol;
-    }else if( n1==d_false ){
+    }
+    else if (n1 == d_false)
+    {
       return !pol;
-    }else{
+    }
+    else
+    {
       if (qy->getEngine()->getRepresentative(n1) == (pol ? d_true : d_false))
       {
         if (computeExp)
@@ -803,7 +810,7 @@ bool TermDb::isEntailed2(TNode n,
         return true;
       }
     }
-  }  
+  }
   return false;
 }
 

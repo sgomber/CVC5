@@ -20,10 +20,10 @@
 #include <map>
 #include <vector>
 #include "expr/node.h"
-#include "theory/theory_engine.h"
-#include "theory/uf/equality_engine.h"
 #include "theory/quantifiers/inst_explain.h"
 #include "theory/quantifiers_engine.h"
+#include "theory/theory_engine.h"
+#include "theory/uf/equality_engine.h"
 
 namespace CVC4 {
 namespace theory {
@@ -68,16 +68,16 @@ class EqExplainerTe : public EqExplainer
   TheoryEngine* d_te;
 };
 
-enum ExplainStatus 
+enum ExplainStatus
 {
   EXP_STATUS_FULL,
   EXP_STATUS_INCOMPLETE
 };
-  
+
 class InstExplainDb
 {
  public:
-  InstExplainDb(QuantifiersEngine * qe);
+  InstExplainDb(QuantifiersEngine* qe);
   /** reset */
   void reset(Theory::Effort e);
   /** register explanations */
@@ -85,13 +85,13 @@ class InstExplainDb
   /** get instantiation explain */
   InstExplainLit& getInstExplainLit(Node lit);
   InstExplainInst& getInstExplainInst(Node inst);
-  
+
   /** explain */
   ExplainStatus explain(const std::vector<Node>& exp,
-               EqExplainer* eqe,
-               std::vector<Node>& rexp,
-               bool regressInst,
-               const char* ctx);
+                        EqExplainer* eqe,
+                        std::vector<Node>& rexp,
+                        bool regressInst,
+                        const char* ctx);
 
  private:
   /** pointer to the quantifiers engine */
@@ -104,35 +104,33 @@ class InstExplainDb
   /** map from instantiate lemma to explanation objects */
   std::map<Node, InstExplainInst> d_inst_explains;
   /** activated */
-  std::map< Node, bool > d_active_lexp;
-  /** waiting list 
-   * 
+  std::map<Node, bool> d_active_lexp;
+  /** waiting list
+   *
    * Maps literals to the instantiation lemmas that currently propagate them.
    */
-  std::map< Node, std::vector< Node > > d_waiting_prop;
+  std::map<Node, std::vector<Node> > d_waiting_prop;
   /** activated instantiations */
-  std::map< Node, bool > d_active_inst;
-  
+  std::map<Node, bool> d_active_inst;
+
   void activateLit(Node lit);
   void activateInst(Node inst, Node srcLit, InstExplainLit& src);
 
   /** add exp result */
   void insertExplainResult(Node exp,
-                       std::map<Node, bool>& expres,
-                       std::map<Node, bool>& expresAtom);
+                           std::map<Node, bool>& expres,
+                           std::map<Node, bool>& expresAtom);
   /** instantiate explain */
   void instLitExplain(Node lit,
-                       std::map<Node, bool>& expres,
-                       std::map<Node, bool>& expresAtom,
-                       std::map<Node, bool>& processList,
-               bool regressInst
-                         ); 
+                      std::map<Node, bool>& expres,
+                      std::map<Node, bool>& expresAtom,
+                      std::map<Node, bool>& processList,
+                      bool regressInst);
   void instExplain(Node n,
-                       std::map<Node, bool>& expres,
-                       std::map<Node, bool>& expresAtom,
-                       std::map<Node, bool>& processList,
-               bool regressInst
-                         ); 
+                   std::map<Node, bool>& expres,
+                   std::map<Node, bool>& expresAtom,
+                   std::map<Node, bool>& processList,
+                   bool regressInst);
 };
 
 }  // namespace quantifiers

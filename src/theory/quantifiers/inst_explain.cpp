@@ -15,8 +15,8 @@
 #include "theory/quantifiers/inst_explain.h"
 
 #include "theory/quantifiers/term_util.h"
-#include "theory/valuation.h"
 #include "theory/rewriter.h"
+#include "theory/valuation.h"
 
 using namespace CVC4::kind;
 
@@ -24,34 +24,28 @@ namespace CVC4 {
 namespace theory {
 namespace quantifiers {
 
-void InstExplainLit::initialize(Node inst)
-{
-  d_this = inst;
-}
-void InstExplainLit::reset()
-{
-  d_curr_prop_exps.clear();
-}
+void InstExplainLit::initialize(Node inst) { d_this = inst; }
+void InstExplainLit::reset() { d_curr_prop_exps.clear(); }
 void InstExplainLit::addInstExplanation(Node inst)
 {
   if (std::find(d_insts.begin(), d_insts.end(), inst) == d_insts.end())
   {
-    d_insts.push_back(inst);    
+    d_insts.push_back(inst);
   }
 }
 
 void InstExplainLit::setPropagating(Node inst)
 {
-  Assert( std::find(d_insts.begin(),d_insts.end(),inst)!=d_insts.end());
+  Assert(std::find(d_insts.begin(), d_insts.end(), inst) != d_insts.end());
   //  get the explanation
-  std::map< Node, Node >::iterator it = d_inst_to_exp.find(inst);
-  if( it==d_inst_to_exp.end() )
+  std::map<Node, Node>::iterator it = d_inst_to_exp.find(inst);
+  if (it == d_inst_to_exp.end())
   {
-    bool pol = d_this.getKind()!=NOT;
+    bool pol = d_this.getKind() != NOT;
     TNode atomt = pol ? d_this : d_this[0];
     TNode constt = NodeManager::currentNM()->mkConst(!pol);
     Node instn = TermUtil::simpleNegate(inst);
-    Node instns = instn.substitute(atomt,constt);
+    Node instns = instn.substitute(atomt, constt);
     instns = Rewriter::rewrite(instns);
     d_inst_to_exp[inst] = instns;
     d_curr_prop_exps.push_back(instns);
@@ -62,17 +56,15 @@ void InstExplainLit::setPropagating(Node inst)
   }
 }
 
-void InstExplainInst::initialize(Node inst)
-{
-  d_this = inst;
-}
+void InstExplainInst::initialize(Node inst) { d_this = inst; }
 
-void InstExplainInst::propagate( QuantifiersEngine * qe, std::vector< Node >& propLits )
+void InstExplainInst::propagate(QuantifiersEngine* qe,
+                                std::vector<Node>& propLits)
 {
   // if possible, propagate the literal in the clause that must be true
   std::unordered_set<Node, NodeHashFunction> visited;
   std::vector<Node> visit;
-  std::map< TNode, bool > ecache;
+  std::map<TNode, bool> ecache;
   Node cur;
   visit.push_back(d_this);
   do
@@ -80,19 +72,19 @@ void InstExplainInst::propagate( QuantifiersEngine * qe, std::vector< Node >& pr
     cur = visit.back();
     visit.pop_back();
     // cur should hold in the current context
-    Assert( evaluate(cur,ecache,qe) );
+    Assert(evaluate(cur, ecache, qe));
     if (visited.find(cur) == visited.end())
     {
       visited.insert(cur);
       Node atom = cur.getKind() == NOT ? cur[0] : cur;
       bool pol = cur.getKind() != NOT;
       Kind k = atom.getKind();
-      if (k == AND || k==OR)
+      if (k == AND || k == OR)
       {
-        if( (k==AND)==pol )
+        if ((k == AND) == pol)
         {
           // they all propagate
-          for( const Node& nc : atom )
+          for (const Node& nc : atom)
           {
             visit.push_back(pol ? nc : nc.negate());
           }
@@ -101,11 +93,11 @@ void InstExplainInst::propagate( QuantifiersEngine * qe, std::vector< Node >& pr
         {
           // propagate one if all others are false
           Node trueLit;
-          for( const Node& nc : atom )
+          for (const Node& nc : atom)
           {
-            if( evaluate(nc,ecache,qe)==pol )
+            if (evaluate(nc, ecache, qe) == pol)
             {
-              if( trueLit.isNull() )
+              if (trueLit.isNull())
               {
                 trueLit = nc;
               }
@@ -116,7 +108,7 @@ void InstExplainInst::propagate( QuantifiersEngine * qe, std::vector< Node >& pr
               }
             }
           }
-          if( !trueLit.isNull() )
+          if (!trueLit.isNull())
           {
             visit.push_back(pol ? trueLit : trueLit.negate());
           }
@@ -128,12 +120,12 @@ void InstExplainInst::propagate( QuantifiersEngine * qe, std::vector< Node >& pr
         //   T  T F ----> ~2 propagate B, 1
         //   T  F T ----> ~1 propagate ~B, 2
         //   T  T T ----> nothing
-        for( unsigned i=0; i<2; i++ )
+        for (unsigned i = 0; i < 2; i++)
         {
-          if( evaluate(atom[i+1],ecache,qe)!=pol )
+          if (evaluate(atom[i + 1], ecache, qe) != pol)
           {
-            visit.push_back(pol ? atom[2-i] : atom[2-i].negate());
-            visit.push_back(i==0 ? atom[0].negate() : atom[0] );
+            visit.push_back(pol ? atom[2 - i] : atom[2 - i].negate());
+            visit.push_back(i == 0 ? atom[0].negate() : atom[0]);
           }
         }
       }
@@ -141,9 +133,9 @@ void InstExplainInst::propagate( QuantifiersEngine * qe, std::vector< Node >& pr
       {
         //   T T ---> 1 propagate 2  +  2 propagate 1
         //   F F ---> ~1 propagate ~2  +  ~2 propagate ~1
-        bool res = evaluate( atom[0], ecache, qe );
+        bool res = evaluate(atom[0], ecache, qe);
         visit.push_back(res ? atom[0] : atom[0].negate());
-        visit.push_back(res==pol ? atom[1] : atom[1].negate());
+        visit.push_back(res == pol ? atom[1] : atom[1].negate());
       }
       else
       {
@@ -154,25 +146,27 @@ void InstExplainInst::propagate( QuantifiersEngine * qe, std::vector< Node >& pr
   } while (!visit.empty());
 }
 
-bool InstExplainInst::evaluate( TNode n, std::map< TNode, bool >& ecache, QuantifiersEngine * qe )
+bool InstExplainInst::evaluate(TNode n,
+                               std::map<TNode, bool>& ecache,
+                               QuantifiersEngine* qe)
 {
-  std::map< TNode, bool >::iterator it = ecache.find(n);
-  if( it!=ecache.end() )
+  std::map<TNode, bool>::iterator it = ecache.find(n);
+  if (it != ecache.end())
   {
     return it->second;
   }
   Kind k = n.getKind();
-  if( k==NOT )
+  if (k == NOT)
   {
-    return !evaluate(n[0],ecache,qe);
+    return !evaluate(n[0], ecache, qe);
   }
   bool res = false;
-  if( k==AND || k==OR )
+  if (k == AND || k == OR)
   {
-    bool expv = (k==OR);
-    for( TNode nc : n )
+    bool expv = (k == OR);
+    for (TNode nc : n)
     {
-      if( evaluate(nc,ecache,qe)==expv )
+      if (evaluate(nc, ecache, qe) == expv)
       {
         ecache[n] = expv;
         return expv;
@@ -180,20 +174,20 @@ bool InstExplainInst::evaluate( TNode n, std::map< TNode, bool >& ecache, Quanti
     }
     res = !expv;
   }
-  else if( k==ITE )
+  else if (k == ITE)
   {
-    unsigned checkIndex = evaluate(n[0],ecache,qe) ? 1 : 2;
-    res = evaluate(n[checkIndex],ecache,qe);
+    unsigned checkIndex = evaluate(n[0], ecache, qe) ? 1 : 2;
+    res = evaluate(n[checkIndex], ecache, qe);
   }
   else if (k == EQUAL && n[0].getType().isBoolean())
   {
-    res = evaluate(n[0],ecache,qe)==evaluate(n[1],ecache,qe);
+    res = evaluate(n[0], ecache, qe) == evaluate(n[1], ecache, qe);
   }
   else
   {
     // lookup the value in the valuation
     Valuation& v = qe->getValuation();
-    if( !v.hasSatValue(n,res) )
+    if (!v.hasSatValue(n, res))
     {
       AlwaysAssert(false);
     }

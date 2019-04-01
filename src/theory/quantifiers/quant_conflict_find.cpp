@@ -621,7 +621,7 @@ bool QuantInfo::isTConstraintSpurious( QuantConflictFind * p, std::vector< Node 
         Node lem = lemc.size() == 1
                        ? lemc[0]
                        : NodeManager::currentNM()->mkNode(OR, lemc);
-        if( !p->d_quantEngine->addLemma(lem) )
+        if (!p->d_quantEngine->addLemma(lem))
         {
           AlwaysAssert(false);
         }

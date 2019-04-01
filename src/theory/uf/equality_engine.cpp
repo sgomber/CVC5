@@ -940,7 +940,7 @@ void EqualityEngine::explainEquality(TNode t1, TNode t2, bool polarity,
   EqualityNodeId t1Id = getNodeId(t1);
   EqualityNodeId t2Id = getNodeId(t2);
 
-  std::map< EqualityNodeId, std::vector< EqualityNodeId > > cache;
+  std::map<EqualityNodeId, std::vector<EqualityNodeId>> cache;
   if (polarity) {
     // Get the explanation
     getExplanation(t1Id, t2Id, equalities, cache, eqp);
@@ -965,7 +965,8 @@ void EqualityEngine::explainEquality(TNode t1, TNode t2, bool polarity,
         eqpc = std::make_shared<EqProof>();
       }
 
-      getExplanation(toExplain.first, toExplain.second, equalities, cache, eqpc.get());
+      getExplanation(
+          toExplain.first, toExplain.second, equalities, cache, eqpc.get());
 
       if (eqpc) {
         Debug("pf::ee") << "Child proof is:" << std::endl;
@@ -1025,27 +1026,32 @@ void EqualityEngine::explainPredicate(TNode p, bool polarity,
                     << std::endl;
   // Must have the term
   Assert(hasTerm(p));
-  std::map< EqualityNodeId, std::vector< EqualityNodeId > > cache;
+  std::map<EqualityNodeId, std::vector<EqualityNodeId>> cache;
   // Get the explanation
-  getExplanation(getNodeId(p), polarity ? d_trueId : d_falseId, assertions, cache,
-                 eqp);
+  getExplanation(
+      getNodeId(p), polarity ? d_trueId : d_falseId, assertions, cache, eqp);
 }
 
-void EqualityEngine::getExplanation(EqualityNodeId t1Id, EqualityNodeId t2Id,
-                                    std::vector<TNode>& equalities,
-                                    std::map< EqualityNodeId, std::vector< EqualityNodeId > >& cache,
-                                    EqProof* eqp) const {
-  Trace("eq-exp") << d_name << "::eq::getExplanation(" << d_nodes[t1Id] << "," << d_nodes[t2Id] << ")" << std::endl;
-  if( !eqp )
+void EqualityEngine::getExplanation(
+    EqualityNodeId t1Id,
+    EqualityNodeId t2Id,
+    std::vector<TNode>& equalities,
+    std::map<EqualityNodeId, std::vector<EqualityNodeId>>& cache,
+    EqProof* eqp) const
+{
+  Trace("eq-exp") << d_name << "::eq::getExplanation(" << d_nodes[t1Id] << ","
+                  << d_nodes[t2Id] << ")" << std::endl;
+  if (!eqp)
   {
-    if( std::find( cache[t1Id].begin(), cache[t1Id].end(), t2Id )!=cache[t1Id].end() )
+    if (std::find(cache[t1Id].begin(), cache[t1Id].end(), t2Id)
+        != cache[t1Id].end())
     {
       return;
     }
     cache[t1Id].push_back(t2Id);
     cache[t2Id].push_back(t1Id);
   }
-  
+
   // We can only explain the nodes that got merged
 #ifdef CVC4_ASSERTIONS
   bool canExplain = getEqualityNode(t1Id).getFind() == getEqualityNode(t2Id).getFind()
@@ -1223,8 +1229,11 @@ void EqualityEngine::getExplanation(EqualityNodeId t1Id, EqualityNodeId t2Id,
                 Assert(isConstant(childId));
                 std::shared_ptr<EqProof> eqpcc =
                     eqpc ? std::make_shared<EqProof>() : nullptr;
-                getExplanation(childId, getEqualityNode(childId).getFind(),
-                               equalities, cache, eqpcc.get());
+                getExplanation(childId,
+                               getEqualityNode(childId).getFind(),
+                               equalities,
+                               cache,
+                               eqpcc.get());
                 if( eqpc ) {
                   eqpc->d_children.push_back( eqpcc );
 
