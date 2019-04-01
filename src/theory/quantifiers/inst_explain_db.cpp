@@ -216,14 +216,16 @@ void InstExplainDb::registerExplanation(Node inst, Node n, Node on)
       }
       else
       {
-        InstExplainLit& iel = getInstExplainLit(curi);
-        iel.addInstExplanation(inst, cur);
+        Node curir = Rewriter::rewrite(curi);
+        InstExplainLit& iel = getInstExplainLit(curir);
+        iel.addInstExplanation(inst, curi, cur);
         Trace("inst-explain") << "  -> " << curi << std::endl;
         if (!hasPol)
         {
           Node curin = curi.negate();
-          InstExplainLit& ieln = getInstExplainLit(curin);
-          ieln.addInstExplanation(inst, cur.negate());
+          Node curinr = Rewriter::rewrite(curin);
+          InstExplainLit& ieln = getInstExplainLit(curinr);
+          ieln.addInstExplanation(inst, curin, cur.negate());
           Trace("inst-explain") << "  -> " << curin << std::endl;
         }
       }

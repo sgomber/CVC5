@@ -76,11 +76,13 @@ int IeEvaluator::evaluate(Node n)
 
 void InstExplainLit::initialize(Node inst) { d_this = inst; }
 void InstExplainLit::reset() { d_curr_prop_exps.clear(); }
-void InstExplainLit::addInstExplanation(Node inst, Node origLit)
+void InstExplainLit::addInstExplanation(Node inst, Node origILit, Node origLit)
 {
   if (std::find(d_insts.begin(), d_insts.end(), inst) == d_insts.end())
   {
     d_insts.push_back(inst);
+    d_orig_ilit[inst] = origILit;
+    d_orig_ilit[inst] = origLit;
   }
 }
 

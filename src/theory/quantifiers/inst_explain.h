@@ -59,7 +59,7 @@ class InstExplainLit
   /**
    * Set that instantiation lemma inst may propagate the literal of this object.
    */
-  void addInstExplanation(Node inst, Node origLit);
+  void addInstExplanation(Node inst, Node origILit, Node origLit);
   /**
    * Set that instantiation lemma inst currently propagates the literal of this
    * object. This is called by InstExplainDb.
@@ -81,6 +81,7 @@ class InstExplainLit
   /** The literal of this object. */
   Node d_this;
   /** the original literal, for each instantiation */
+  std::map< Node, Node > d_orig_ilit;
   std::map< Node, Node > d_orig_lit;
   /**
    * Maps instantiation lemmas to their explanation for this literal.
