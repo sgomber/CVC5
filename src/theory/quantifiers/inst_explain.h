@@ -60,7 +60,7 @@ private:
   /** the instantiation lemma */
   Node d_this;
   /** evaluate */
-  bool evaluate( Node n, std::map< Node, bool >& ecache, QuantifiersEngine * qe );
+  bool evaluate( TNode n, std::map< TNode, bool >& ecache, QuantifiersEngine * qe );
 };
 
 

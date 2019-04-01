@@ -46,7 +46,7 @@ void InstExplainLit::addInstExplanation(Node inst)
 void InstExplainLit::setPropagating(Node inst)
 {
   Assert( std::find(d_curr_prop_insts.begin(),d_curr_prop_insts.end(),inst)==d_curr_prop_insts.end() );
-  Assert( std::find(d_inst.begin(),d_inst.end(),inst)!=d_inst.end());
+  Assert( std::find(d_insts.begin(),d_insts.end(),inst)!=d_insts.end());
   d_curr_prop_insts.push_back(inst);
   // TODO: get the explanation?
 }
@@ -61,7 +61,7 @@ void InstExplainInst::propagate( QuantifiersEngine * qe, std::vector< Node >& pr
   // if possible, propagate the literal in the clause that must be true
   std::unordered_set<Node, NodeHashFunction> visited;
   std::vector<Node> visit;
-  std::map< Node, bool > ecache;
+  std::map< TNode, bool > ecache;
   Node cur;
   visit.push_back(d_this);
   do
@@ -80,6 +80,7 @@ void InstExplainInst::propagate( QuantifiersEngine * qe, std::vector< Node >& pr
       {
         if( (k==AND)==pol )
         {
+          // they all propagate
           for( const Node& nc : atom )
           {
             visit.push_back(pol ? nc : nc.negate());
@@ -87,7 +88,7 @@ void InstExplainInst::propagate( QuantifiersEngine * qe, std::vector< Node >& pr
         }
         else
         {
-          // propagate the one if all others are false
+          // propagate one if all others are false
           Node trueLit;
           for( const Node& nc : atom )
           {
@@ -142,25 +143,52 @@ void InstExplainInst::propagate( QuantifiersEngine * qe, std::vector< Node >& pr
   } while (!visit.empty());
 }
 
-bool InstExplainInst::evaluate( Node n, std::map< Node, bool >& ecache, QuantifiersEngine * qe )
+bool InstExplainInst::evaluate( TNode n, std::map< TNode, bool >& ecache, QuantifiersEngine * qe )
 {
-  
-  /*
-  std::vector<TNode> visit;
-  visit.push_back(n);
-  TNode cur;
-  do
+  std::map< TNode, bool >::iterator it = ecache.find(n);
+  if( it!=ecache.end() )
   {
-    cur = visit.back();
-    visit.pop_back();
-    if( ecache.find(n)==ecache.end() )
+    return it->second;
+  }
+  Kind k = n.getKind();
+  if( k==NOT )
+  {
+    return !evaluate(n[0],ecache,qe);
+  }
+  bool res = false;
+  if( k==AND || k==OR )
+  {
+    bool expv = (k==OR);
+    for( TNode nc : n )
     {
-      
+      if( evaluate(nc,ecache,qe)==expv )
+      {
+        ecache[n] = expv;
+        return expv;
+      }
     }
-  }while( !visit.empty() );
-  return ecache[n];
-  */
-  return true;
+    res = !expv;
+  }
+  else if( k==ITE )
+  {
+    unsigned checkIndex = evaluate(n[0],ecache,qe) ? 1 : 2;
+    res = evaluate(n[checkIndex],ecache,qe);
+  }
+  else if (k == EQUAL && n[0].getType().isBoolean())
+  {
+    res = evaluate(n[0],ecache,qe)==evaluate(n[1],ecache,qe);
+  }
+  else
+  {
+    // lookup the value in the valuation
+    Valuation& v = qe->getValuation();
+    if( !v.hasSatValue(n,res) )
+    {
+      AlwaysAssert(false);
+    }
+  }
+  ecache[n] = res;
+  return res;
 }
 
 }  // namespace quantifiers
