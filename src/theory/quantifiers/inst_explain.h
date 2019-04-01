@@ -28,19 +28,20 @@ namespace quantifiers {
 
 class IeEvaluator
 {
-public:
-  IeEvaluator(Valuation& v) : d_valuation(v){}
+ public:
+  IeEvaluator(Valuation& v) : d_valuation(v) {}
   /** reset */
   void reset();
   /** evaluate */
   int evaluate(Node n);
-private:
+
+ private:
   /** valuation */
   Valuation& d_valuation;
   /** cache */
   std::map<Node, int> d_ecache;
 };
-  
+
 /** instantiation explain literal
  *
  * This class manages all instantiation lemma explanations for a single literal
@@ -98,6 +99,7 @@ class InstExplainInst
   void initialize(Node inst);
   /** propagate */
   void propagate(IeEvaluator& v, std::vector<Node>& lits);
+
  private:
   /** the instantiation lemma */
   Node d_this;

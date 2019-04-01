@@ -22,11 +22,8 @@ using namespace CVC4::kind;
 namespace CVC4 {
 namespace theory {
 namespace quantifiers {
-  
-void IeEvaluator::reset()
-{
-  d_ecache.clear();
-}
+
+void IeEvaluator::reset() { d_ecache.clear(); }
 
 int IeEvaluator::evaluate(Node n)
 {
@@ -47,7 +44,7 @@ int IeEvaluator::evaluate(Node n)
     for (TNode nc : n)
     {
       int cres = evaluate(nc);
-      if (cres == expv || cres==0)
+      if (cres == expv || cres == 0)
       {
         d_ecache[n] = expv;
         return expv;
@@ -111,8 +108,7 @@ void InstExplainLit::setPropagating(Node inst)
 
 void InstExplainInst::initialize(Node inst) { d_this = inst; }
 
-void InstExplainInst::propagate(IeEvaluator& v,
-                                std::vector<Node>& propLits)
+void InstExplainInst::propagate(IeEvaluator& v, std::vector<Node>& propLits)
 {
   // if possible, propagate the literal in the clause that must be true
   std::unordered_set<Node, NodeHashFunction> visited;
@@ -124,7 +120,7 @@ void InstExplainInst::propagate(IeEvaluator& v,
     cur = visit.back();
     visit.pop_back();
     // cur should hold in the current context
-    Assert(v.evaluate(cur)==1);
+    Assert(v.evaluate(cur) == 1);
     if (visited.find(cur) == visited.end())
     {
       visited.insert(cur);
@@ -148,13 +144,13 @@ void InstExplainInst::propagate(IeEvaluator& v,
           for (const Node& nc : atom)
           {
             int cres = v.evaluate(nc);
-            if( cres==0 )
+            if (cres == 0)
             {
               // if one child is unknown, then there are no propagations
               trueLit = Node::null();
               break;
             }
-            else if ((cres>0) == pol)
+            else if ((cres > 0) == pol)
             {
               if (trueLit.isNull())
               {
@@ -184,17 +180,17 @@ void InstExplainInst::propagate(IeEvaluator& v,
         //   ....
         int cbres = v.evaluate(atom[0]);
         // only propagation if branch evaluates to true
-        if( cbres!=0 )
+        if (cbres != 0)
         {
           for (unsigned i = 0; i < 2; i++)
           {
             int cres = v.evaluate(atom[i + 1]);
-            if( cres==0 )
+            if (cres == 0)
             {
               // if one child is unknown, there are no propagations
               break;
             }
-            else if ((cres>0) != pol)
+            else if ((cres > 0) != pol)
             {
               visit.push_back(pol ? atom[2 - i] : atom[2 - i].negate());
               visit.push_back(i == 0 ? atom[0].negate() : atom[0]);
@@ -209,9 +205,9 @@ void InstExplainInst::propagate(IeEvaluator& v,
         //   F F ---> ~1 propagate ~2  +  ~2 propagate ~1
         int cres = v.evaluate(atom[0]);
         // they must both have values
-        Assert( cres!=0 );
-        visit.push_back(cres>0 ? atom[0] : atom[0].negate());
-        visit.push_back((cres>0) == pol ? atom[1] : atom[1].negate());
+        Assert(cres != 0);
+        visit.push_back(cres > 0 ? atom[0] : atom[0].negate());
+        visit.push_back((cres > 0) == pol ? atom[1] : atom[1].negate());
       }
       else
       {

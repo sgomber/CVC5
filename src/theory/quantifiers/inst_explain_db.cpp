@@ -84,7 +84,8 @@ bool EqExplainerTe::explain(Node lit, std::vector<TNode>& assumptions)
   return false;
 }
 
-InstExplainDb::InstExplainDb(QuantifiersEngine* qe) : d_qe(qe), d_ev(d_qe->getValuation())
+InstExplainDb::InstExplainDb(QuantifiersEngine* qe)
+    : d_qe(qe), d_ev(d_qe->getValuation())
 {
   d_false = NodeManager::currentNM()->mkConst(false);
   d_true = NodeManager::currentNM()->mkConst(true);
@@ -315,7 +316,7 @@ ExplainStatus InstExplainDb::explain(const std::vector<Node>& exp,
     {
       Node ert = p.first;
       InstExplainLit& ie = getInstExplainLit(ert);
-      std::vector< Node >& cexp = ie.d_curr_prop_exps;
+      std::vector<Node>& cexp = ie.d_curr_prop_exps;
       // first check if this literal is already explained, if so, drop it.
       bool alreadyProc = false;
       for (const Node& iexp : cexp)
@@ -353,10 +354,10 @@ ExplainStatus InstExplainDb::explain(const std::vector<Node>& exp,
         }
       }
       Assert(!maxExp.isNull());
-      instExplain(maxExp, expres, expresAtom,newProcessList,regressInst);
+      instExplain(maxExp, expres, expresAtom, newProcessList, regressInst);
       Trace("ied-conflict-debug")
-          << "--- add inst-explain " << maxExp << " covering " << max << " literals"
-          << std::endl;
+          << "--- add inst-explain " << maxExp << " covering " << max
+          << " literals" << std::endl;
       Assert(!expToLit[maxExp].empty());
       // update the process list to remove the literals
       for (const Node& lit : expToLit[maxExp])
@@ -394,8 +395,7 @@ void InstExplainDb::instLitExplain(Node lit,
       std::vector<Node>& cexp = itl->second.d_curr_prop_exps;
       if (cexp.size() == 1)
       {
-        Trace("ied-conflict-debug")
-            << " by " << cexp[0] << std::endl;
+        Trace("ied-conflict-debug") << " by " << cexp[0] << std::endl;
         // Since it's not necessary a literal, go to explain
         instExplain(cexp[0], expres, expresAtom, processList, regressInst);
         return;
@@ -434,30 +434,30 @@ void InstExplainDb::instExplain(Node n,
     return;
   }
   expres[n] = true;
-  Assert( d_ev.evaluate(n)==1 );
+  Assert(d_ev.evaluate(n) == 1);
   // must justify why n is true
   TNode atom = n.getKind() == NOT ? n[0] : n;
   bool pol = n.getKind() != NOT;
   Kind k = n.getKind();
   if (k == AND || k == OR)
   {
-    if( (k==AND)==pol )
+    if ((k == AND) == pol)
     {
-      for( const Node& nc : atom )
+      for (const Node& nc : atom)
       {
         Node ncp = pol ? nc : nc.negate();
-        instExplain(ncp,expres,expresAtom,processList,regressInst);
+        instExplain(ncp, expres, expresAtom, processList, regressInst);
       }
     }
     else
     {
       // choose one that evaluates to true
-      for( const Node& nc : atom )
+      for (const Node& nc : atom)
       {
-        if( d_ev.evaluate(nc)==(pol ? 1 : -1) )
+        if (d_ev.evaluate(nc) == (pol ? 1 : -1))
         {
           Node ncp = pol ? nc : nc.negate();
-          instExplain(ncp,expres,expresAtom,processList,regressInst);
+          instExplain(ncp, expres, expresAtom, processList, regressInst);
           return;
         }
       }
@@ -467,25 +467,26 @@ void InstExplainDb::instExplain(Node n,
   else if (k == ITE)
   {
     int cbres = d_ev.evaluate(atom[0]);
-    if( cbres==0 )
+    if (cbres == 0)
     {
       // branch is unknown, must do both
-      instExplain(atom[1],expres,expresAtom,processList,regressInst);
-      instExplain(atom[2],expres,expresAtom,processList,regressInst);
+      instExplain(atom[1], expres, expresAtom, processList, regressInst);
+      instExplain(atom[2], expres, expresAtom, processList, regressInst);
     }
     else
     {
       // branch is known, do relevant child
-      unsigned checkIndex = cbres>0 ? 1 : 2;
-      instExplain(atom[0],expres,expresAtom,processList,regressInst);
-      instExplain(atom[checkIndex],expres,expresAtom,processList,regressInst);
+      unsigned checkIndex = cbres > 0 ? 1 : 2;
+      instExplain(atom[0], expres, expresAtom, processList, regressInst);
+      instExplain(
+          atom[checkIndex], expres, expresAtom, processList, regressInst);
     }
   }
   else if (k == EQUAL && n[0].getType().isBoolean())
   {
     // must always do both
-    instExplain(atom[0],expres,expresAtom,processList,regressInst);
-    instExplain(atom[1],expres,expresAtom,processList,regressInst);
+    instExplain(atom[0], expres, expresAtom, processList, regressInst);
+    instExplain(atom[1], expres, expresAtom, processList, regressInst);
   }
   else
   {

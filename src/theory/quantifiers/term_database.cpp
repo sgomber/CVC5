@@ -780,7 +780,9 @@ bool TermDb::isEntailed2(TNode n,
         return false;
       }
     }
-  }else if( n.getKind()==FORALL && !pol ){
+  }
+  else if (n.getKind() == FORALL && !pol)
+  {
     if (isEntailed2(n[1], subs, subsRep, hasSubs, pol, exp, qy, computeExp))
     {
       return true;
