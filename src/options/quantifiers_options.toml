@@ -702,6 +702,14 @@ header = "options/quantifiers_options.h"
   help       = "what kind of lemmas to add when a conflicting instance is discovered"
 
 [[option]]
+  name       = "qcfExpRegressInst"
+  category   = "regular"
+  long       = "qcf-rexpi"
+  type       = "bool"
+  default    = "false"
+  help       = "regress explanations based on instantiation lemmas"
+
+[[option]]
   name       = "instNoEntail"
   category   = "regular"
   long       = "inst-no-entail"
