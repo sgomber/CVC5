@@ -14,11 +14,8 @@
 
 #include "theory/quantifiers/inst_explain.h"
 
-#include "options/quantifiers_options.h"
-#include "smt/smt_statistics_registry.h"
 #include "theory/quantifiers/term_util.h"
-#include "theory/quantifiers/term_database.h"
-#include "theory/quantifiers_engine.h"
+#include "theory/valuation.h"
 #include "theory/rewriter.h"
 
 using namespace CVC4::kind;

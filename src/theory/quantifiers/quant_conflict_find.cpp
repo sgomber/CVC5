@@ -612,7 +612,7 @@ bool QuantInfo::isTConstraintSpurious( QuantConflictFind * p, std::vector< Node 
         EqExplainer* eqe = p->getEqualityExplainer();
         InstExplainDb& ied = p->d_quantEngine->getInstantiate()->getExplainDb();
         std::vector<Node> rexp;
-        ied.explain(exp, eqe, rexp, "qcf");
+        ied.explain(exp, eqe, rexp, false, "qcf");
         std::vector<Node> lemc;
         for (const Node& re : rexp)
         {

@@ -239,6 +239,7 @@ InstExplainInst& InstExplainDb::getInstExplainInst(Node inst)
 ExplainStatus InstExplainDb::explain(const std::vector<Node>& exp,
                             EqExplainer* eqe,
                             std::vector<Node>& rexp,
+                            bool regressInst,
                             const char* ctx)
 {
   ExplainStatus ret = EXP_STATUS_FULL;
@@ -278,52 +279,26 @@ ExplainStatus InstExplainDb::explain(const std::vector<Node>& exp,
         assumptions.push_back(er);
         // if we did not explain it, then we need to set the status
         // however, we could still hope that this assertion simply holds in the
-        // current context.
-        
+        // current context
         ret = EXP_STATUS_INCOMPLETE;
       }
       for (TNode ert : assumptions)
       {
         // now, regress the equality in terms of instantiation lemmas
         Assert(Rewriter::rewrite(ert) == ert);
-        if (proc.find(ert) == proc.end())
+        if (proc.find(ert) != proc.end())
         {
-          proc[ert] = true;
-          Trace("ied-conflict-debug") << "*** " << ert << std::endl;
-#if 1
-          insertExpResult(ert, expres, expresAtom); 
-#else     
-          TNode ft = d_false;
-          std::map<Node, InstExplain>::iterator itle = d_lit_explains.find(ert);
-          bool explained = false;
-          if( itle!=d_lit_explains.end() )
-          {
-            activateLit(ert);
-            std::vector< Node >& iei = itle->second.d_active_insts;
-            if (iei.size() == 1)
-            {
-              Trace("ied-conflict-debug")
-                  << "    inst-explanable by " << iei[0] << std::endl;
-              insertExpResult(iei[0], expres, expresAtom);
-              explained = true;
-            }
-            else if( !iei.empty() )
-            {
-              Trace("ied-conflict-debug")
-                  << "    inst-explanable in " << iei.size() << " ways"
-                  << std::endl;
-              // otherwise we have a choice
-              processList[ert] = true;
-              explained = true;
-            }
-          }
-          if( !explained )
-          {
-            Trace("ied-conflict-debug")
-                << "    NOT inst-explanable" << std::endl;
-            insertExpResult(ert, expres, expresAtom);   
-          }
-#endif
+          continue;
+        }
+        proc[ert] = true;
+        Trace("ied-conflict-debug") << "*** " << ert << std::endl;
+        if( regressInst )
+        {
+          instExplain(ert,expres, expresAtom, processList, regressInst);
+        }
+        else
+        {
+          expresAtom[ert] = true;
         }
       }
     }
@@ -339,9 +314,9 @@ ExplainStatus InstExplainDb::explain(const std::vector<Node>& exp,
     {
       Node ert = p.first;
       InstExplainLit& ie = getInstExplainLit(ert);
-      std::vector< Node >& iei = ie.d_active_insts;
+      std::vector< Node >& cexp = ie.d_curr_prop_exps;
       bool alreadyProc = false;
-      for (const Node& iexp : iei)
+      for (const Node& iexp : cexp)
       {
         if (expres.find(iexp) != expres.end())
         {
@@ -351,7 +326,7 @@ ExplainStatus InstExplainDb::explain(const std::vector<Node>& exp,
       }
       if (!alreadyProc)
       {
-        for (const Node& iexp : iei)
+        for (const Node& iexp : cexp)
         {
           expToLit[iexp].push_back(ert);
         }
@@ -394,23 +369,76 @@ ExplainStatus InstExplainDb::explain(const std::vector<Node>& exp,
   }
   return ret;
 }
-void InstExplainDb::insertExpResult(Node exp,
-                                    std::map<Node, bool>& expres,
-                                    std::map<Node, bool>& expresAtom)
+
+void InstExplainDb::instLitExplain(Node lit,
+                      std::map<Node, bool>& expres,
+                      std::map<Node, bool>& expresAtom,
+                       std::map<Node, bool>& processList,
+               bool regressInst)
 {
-  expres[exp] = true;
-  if (exp.getKind() == AND)
+  if( expres.find(lit)!=expres.end() )
   {
-    for (const Node& e : exp)
+    return;
+  }
+  expres[lit] = true;
+  if( regressInst )
+  {
+    std::map<Node, InstExplainLit>::iterator itl = d_lit_explains.find(lit);
+    if( itl!=d_lit_explains.end() )
     {
-      expresAtom[e] = true;
+      // activate the literal
+      activateLit(lit);
+      std::vector< Node >& cexp = itl->second.d_curr_prop_exps;
+      if (cexp.size() == 1)
+      {
+        Trace("ied-conflict-debug")
+            << "    inst-explanable by " << cexp[0] << std::endl;
+        // it's not necessary a literal, go to explain
+        instExplain(cexp[0],expres,expresAtom,processList, regressInst);
+      }
+      else if( !cexp.empty() )
+      {
+        Trace("ied-conflict-debug")
+            << "    inst-explanable in " << cexp.size() << " ways"
+            << std::endl;
+        // otherwise we have a choice
+        processList[lit] = true;
+        return;
+      }
     }
   }
-  else
-  {
-    expresAtom[exp] = true;
-  }
+  // cannot explain it via instantiations, add it now
+  Trace("ied-conflict-debug")
+      << "    NOT inst-explanable" << std::endl;
+  expresAtom[lit] = true;
 }
+
+void InstExplainDb::instExplain(Node n,
+                      std::map<Node, bool>& expres,
+                      std::map<Node, bool>& expresAtom,
+                      std::map<Node, bool>& processList,
+               bool regressInst
+                        )
+{
+  if( expres.find(n)!=expres.end() )
+  {
+    return;
+  }
+  expres[n] = true;
+
+  TNode atom = n.getKind() == NOT ? n[0] : n;
+  bool pol = n.getKind() != NOT;
+  Kind k = n.getKind();
+  
+  if (k == AND || k == OR)
+  {
+    //bool easy
+  }
+  
+  
+  instLitExplain(n,expres,expresAtom,processList,regressInst);
+}
+  
 
 }  // namespace quantifiers
 }  // namespace theory

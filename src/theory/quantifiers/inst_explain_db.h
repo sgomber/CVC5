@@ -90,6 +90,7 @@ class InstExplainDb
   ExplainStatus explain(const std::vector<Node>& exp,
                EqExplainer* eqe,
                std::vector<Node>& rexp,
+               bool regressInst,
                const char* ctx);
 
  private:
@@ -116,9 +117,22 @@ class InstExplainDb
   void activateInst(Node inst, Node srcLit, InstExplainLit& src);
 
   /** add exp result */
-  void insertExpResult(Node exp,
+  void insertExplainResult(Node exp,
                        std::map<Node, bool>& expres,
                        std::map<Node, bool>& expresAtom);
+  /** instantiate explain */
+  void instLitExplain(Node lit,
+                       std::map<Node, bool>& expres,
+                       std::map<Node, bool>& expresAtom,
+                       std::map<Node, bool>& processList,
+               bool regressInst
+                         ); 
+  void instExplain(Node n,
+                       std::map<Node, bool>& expres,
+                       std::map<Node, bool>& expresAtom,
+                       std::map<Node, bool>& processList,
+               bool regressInst
+                         ); 
 };
 
 }  // namespace quantifiers

@@ -625,7 +625,7 @@ TNode TermDb::getEntailedTerm2(TNode n,
     }
   }else if( n.getKind()==ITE ){
     for( unsigned i=0; i<2; i++ ){
-      if (isEntailed2(n[0], subs, subsRep, hasSubs, i == 0, exp, qy))
+      if (isEntailed2(n[0], subs, subsRep, hasSubs, i == 0, exp, qy, computeExp))
       {
         return getEntailedTerm2(
             n[i == 0 ? 1 : 2], subs, subsRep, hasSubs, exp, qy, computeExp);

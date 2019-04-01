@@ -75,7 +75,6 @@ private:
   std::map< Node, Node > d_inst_to_exp;
 };
 
-class InstExplainDb;
 
 class InstExplainInst
 {
