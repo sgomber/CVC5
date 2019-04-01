@@ -325,7 +325,7 @@ class TermDb : public QuantifiersUtil {
                          bool hasSubs,
                          std::vector<Node>& exp,
                          EqualityQuery* qy,
-                         bool computeExp = false);
+                         bool computeExp);
   /** helper for is entailed */
   bool isEntailed2(TNode n,
                    std::map<TNode, TNode>& subs,
@@ -334,7 +334,7 @@ class TermDb : public QuantifiersUtil {
                    bool pol,
                    std::vector<Node>& exp,
                    EqualityQuery* qy,
-                   bool computeExp = false);
+                   bool computeExp);
   /** compute uf eqc terms :
   * Ensure entries for f are in d_func_map_eqc_trie for all equivalence classes
   */
