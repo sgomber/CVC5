@@ -434,7 +434,7 @@ void InstExplainDb::instExplain(Node n,
     return;
   }
   expres[n] = true;
-  Assert( d_ev.evaluate(n) );
+  Assert( d_ev.evaluate(n)==1 );
   // must justify why n is true
   TNode atom = n.getKind() == NOT ? n[0] : n;
   bool pol = n.getKind() != NOT;
@@ -454,7 +454,7 @@ void InstExplainDb::instExplain(Node n,
       // choose one that evaluates to true
       for( const Node& nc : atom )
       {
-        if( d_ev.evaluate(nc)==pol )
+        if( d_ev.evaluate(nc)==(pol ? 1 : -1) )
         {
           Node ncp = pol ? nc : nc.negate();
           instExplain(ncp,expres,expresAtom,processList,regressInst);
@@ -466,12 +466,24 @@ void InstExplainDb::instExplain(Node n,
   }
   else if (k == ITE)
   {
-    unsigned checkIndex = d_ev.evaluate(atom[0]) ? 1 : 2;
-    instExplain(atom[0],expres,expresAtom,processList,regressInst);
-    instExplain(atom[checkIndex],expres,expresAtom,processList,regressInst);
+    int cbres = d_ev.evaluate(atom[0]);
+    if( cbres==0 )
+    {
+      // branch is unknown, must do both
+      instExplain(atom[1],expres,expresAtom,processList,regressInst);
+      instExplain(atom[2],expres,expresAtom,processList,regressInst);
+    }
+    else
+    {
+      // branch is known, do relevant child
+      unsigned checkIndex = cbres>0 ? 1 : 2;
+      instExplain(atom[0],expres,expresAtom,processList,regressInst);
+      instExplain(atom[checkIndex],expres,expresAtom,processList,regressInst);
+    }
   }
   else if (k == EQUAL && n[0].getType().isBoolean())
   {
+    // must always do both
     instExplain(atom[0],expres,expresAtom,processList,regressInst);
     instExplain(atom[1],expres,expresAtom,processList,regressInst);
   }

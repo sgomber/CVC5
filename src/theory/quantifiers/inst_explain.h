@@ -33,12 +33,12 @@ public:
   /** reset */
   void reset();
   /** evaluate */
-  bool evaluate(Node n);
+  int evaluate(Node n);
 private:
   /** valuation */
   Valuation& d_valuation;
   /** cache */
-  std::map<Node, bool> d_ecache;
+  std::map<Node, int> d_ecache;
 };
   
 /** instantiation explain literal
