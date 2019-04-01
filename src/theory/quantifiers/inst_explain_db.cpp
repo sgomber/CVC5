@@ -171,7 +171,7 @@ void InstExplainDb::registerExplanation(Node inst, Node n, Node on)
     if (visited[hasPol].find(cur) == visited[hasPol].end())
     {
       visited[hasPol].insert(cur);
-      Assert( cur.getKind()==curi.getKind() );
+      Assert(cur.getKind() == curi.getKind());
 
       bool pol = cur.getKind() != NOT;
       TNode atom = pol ? cur : cur[0];
@@ -180,14 +180,14 @@ void InstExplainDb::registerExplanation(Node inst, Node n, Node on)
       if (k == AND || k == OR)
       {
         for (const Node& ac : atom)
-        for( unsigned i=0, size = atom.getNumChildren(); i<size; i++ )
-        {
-          Node ac = atom[i];
-          Node aci = atom[i];
-          visit_hasPol.push_back(hasPol);
-          visit.push_back(pol ? ac : ac.negate());
-          visiti.push_back(pol ? aci : aci.negate());
-        }
+          for (unsigned i = 0, size = atom.getNumChildren(); i < size; i++)
+          {
+            Node ac = atom[i];
+            Node aci = atom[i];
+            visit_hasPol.push_back(hasPol);
+            visit.push_back(pol ? ac : ac.negate());
+            visiti.push_back(pol ? aci : aci.negate());
+          }
       }
       else if (k == ITE)
       {
@@ -420,7 +420,8 @@ void InstExplainDb::instLitExplain(Node lit,
       else
       {
         Trace("ied-conflict-debug")
-            << " in " << cexp.size() << "/" << itl->second.d_insts.size() << " ways" << std::endl;
+            << " in " << cexp.size() << "/" << itl->second.d_insts.size()
+            << " ways" << std::endl;
         if (!cexp.empty())
         {
           // otherwise we have a choice, add to process list

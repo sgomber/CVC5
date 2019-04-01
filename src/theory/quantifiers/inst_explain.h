@@ -81,8 +81,8 @@ class InstExplainLit
   /** The literal of this object. */
   Node d_this;
   /** the original literal, for each instantiation */
-  std::map< Node, Node > d_orig_ilit;
-  std::map< Node, Node > d_orig_lit;
+  std::map<Node, Node> d_orig_ilit;
+  std::map<Node, Node> d_orig_lit;
   /**
    * Maps instantiation lemmas to their explanation for this literal.
    * Let C[L] be a clause containing literal L. The explanation for C with
