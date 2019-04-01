@@ -601,7 +601,7 @@ bool QuantInfo::isTConstraintSpurious( QuantConflictFind * p, std::vector< Node 
             << "Conflict instance for " << d_q << " : " << std::endl;
         for (const Node& t : terms)
         {
-          Trace("qcf-instance-check") << "  " << t << std::endl;
+          Trace("qcf-conflict-exp") << "  " << t << std::endl;
         }
       }
       // explain it and generate the conflict clause

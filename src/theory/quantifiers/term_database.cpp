@@ -664,7 +664,9 @@ TNode TermDb::getEntailedTerm2(TNode n,
             {
               if (argst[i] != nn[i])
               {
-                exp.push_back(argst[i].eqNode(nn[i]));
+                Node eq =argst[i].eqNode(nn[i]);
+                exp.push_back(eq);
+                Trace("term-db-entail-exp") << "*** explain " << eq << std::endl;
               }
             }
           }
@@ -733,6 +735,7 @@ bool TermDb::isEntailed2(TNode n,
             {
               Node eq = n1.eqNode(n2);
               eq = pol ? eq : eq.negate();
+                Trace("term-db-entail-exp") << "*** explain " << eq << std::endl;
               exp.push_back(eq);
             }
             return true;
@@ -807,6 +810,7 @@ bool TermDb::isEntailed2(TNode n,
         if (computeExp)
         {
           Node pred = n1;
+                Trace("term-db-entail-exp") << "*** explain " << pred << std::endl;
           exp.push_back(pol ? pred : pred.negate());
         }
         return true;

@@ -147,36 +147,46 @@ void InstExplainDb::activateInst(Node inst, Node srcLit, InstExplainLit& src)
   }
 }
 
-void InstExplainDb::registerExplanation(Node inst, Node n)
+void InstExplainDb::registerExplanation(Node inst, Node n, Node on)
 {
   Trace("inst-explain") << "Get literals that are explanable by " << inst
                         << std::endl;
   std::map<bool, std::unordered_set<Node, NodeHashFunction> > visited;
   std::vector<bool> visit_hasPol;
   std::vector<Node> visit;
+  std::vector<Node> visiti;
   bool hasPol;
   TNode cur;
+  TNode curi;
   visit_hasPol.push_back(true);
-  visit.push_back(n);
+  visit.push_back(on);
+  visiti.push_back(n);
   do
   {
     hasPol = visit_hasPol.back();
     cur = visit.back();
     visit.pop_back();
+    curi = visiti.back();
+    visiti.pop_back();
     if (visited[hasPol].find(cur) == visited[hasPol].end())
     {
       visited[hasPol].insert(cur);
+      Assert( cur.getKind()==curi.getKind() );
 
-      TNode atom = cur.getKind() == NOT ? cur[0] : cur;
       bool pol = cur.getKind() != NOT;
+      TNode atom = pol ? cur : cur[0];
+      TNode atomi = pol ? curi : curi[0];
       Kind k = atom.getKind();
       if (k == AND || k == OR)
       {
         for (const Node& ac : atom)
+        for( unsigned i=0, size = atom.getNumChildren(); i<size; i++ )
         {
-          Node acp = pol ? ac : ac.negate();
+          Node ac = atom[i];
+          Node aci = atom[i];
           visit_hasPol.push_back(hasPol);
-          visit.push_back(acp);
+          visit.push_back(pol ? ac : ac.negate());
+          visiti.push_back(pol ? aci : aci.negate());
         }
       }
       else if (k == ITE)
@@ -185,11 +195,15 @@ void InstExplainDb::registerExplanation(Node inst, Node n)
         {
           Node ac = atom[i + 1];
           Node acp = pol ? ac : ac.negate();
+          Node aci = atomi[i + 1];
+          Node acpi = pol ? aci : aci.negate();
           visit_hasPol.push_back(hasPol);
           visit.push_back(acp);
+          visiti.push_back(acpi);
         }
         visit_hasPol.push_back(false);
         visit.push_back(atom[0]);
+        visiti.push_back(atomi[0]);
       }
       else if (k == EQUAL && atom[0].getType().isBoolean())
       {
@@ -197,19 +211,20 @@ void InstExplainDb::registerExplanation(Node inst, Node n)
         {
           visit_hasPol.push_back(false);
           visit.push_back(atom[i]);
+          visiti.push_back(atomi[i]);
         }
       }
       else
       {
-        InstExplainLit& iel = getInstExplainLit(cur);
-        iel.addInstExplanation(inst);
-        Trace("inst-explain") << "  -> " << cur << std::endl;
+        InstExplainLit& iel = getInstExplainLit(curi);
+        iel.addInstExplanation(inst, cur);
+        Trace("inst-explain") << "  -> " << curi << std::endl;
         if (!hasPol)
         {
-          Node curn = cur.negate();
-          InstExplainLit& ieln = getInstExplainLit(curn);
-          ieln.addInstExplanation(inst);
-          Trace("inst-explain") << "  -> " << curn << std::endl;
+          Node curin = curi.negate();
+          InstExplainLit& ieln = getInstExplainLit(curin);
+          ieln.addInstExplanation(inst, cur.negate());
+          Trace("inst-explain") << "  -> " << curin << std::endl;
         }
       }
     }
@@ -403,7 +418,7 @@ void InstExplainDb::instLitExplain(Node lit,
       else
       {
         Trace("ied-conflict-debug")
-            << " in " << cexp.size() << " ways" << std::endl;
+            << " in " << cexp.size() << "/" << itl->second.d_insts.size() << " ways" << std::endl;
         if (!cexp.empty())
         {
           // otherwise we have a choice, add to process list

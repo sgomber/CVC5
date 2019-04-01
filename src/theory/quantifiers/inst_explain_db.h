@@ -81,7 +81,7 @@ class InstExplainDb
   /** reset */
   void reset(Theory::Effort e);
   /** register explanations */
-  void registerExplanation(Node ilem, Node n);
+  void registerExplanation(Node ilem, Node n, Node on);
   /** get instantiation explain */
   InstExplainLit& getInstExplainLit(Node lit);
   InstExplainInst& getInstExplainInst(Node inst);

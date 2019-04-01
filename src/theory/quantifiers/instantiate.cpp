@@ -273,8 +273,7 @@ bool Instantiate::addInstantiation(
     }
   }
 
-  Node bodyr = Rewriter::rewrite(body);
-  Node lem = NodeManager::currentNM()->mkNode(kind::OR, q.negate(), bodyr);
+  Node lem = NodeManager::currentNM()->mkNode(kind::OR, q.negate(), body);
   lem = Rewriter::rewrite(lem);
 
   // check for lemma duplication
@@ -283,11 +282,6 @@ bool Instantiate::addInstantiation(
     Trace("inst-add-debug") << " --> Lemma already exists." << std::endl;
     ++(d_statistics.d_inst_duplicate);
     return false;
-  }
-
-  if (options::instExplain())
-  {
-    d_iedb.registerExplanation(lem, bodyr);
   }
 
   d_total_inst_debug[q]++;
@@ -309,6 +303,10 @@ bool Instantiate::addInstantiation(
         Trace("inst") << std::endl;
       }
     }
+  }
+  if (options::instExplain())
+  {
+    d_iedb.registerExplanation(lem, orig_body,q[1]);
   }
   if (options::instMaxLevel() != -1)
   {
