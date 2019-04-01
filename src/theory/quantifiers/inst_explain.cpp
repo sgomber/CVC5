@@ -106,7 +106,7 @@ void InstExplainInst::propagate( QuantifiersEngine * qe, std::vector< Node >& pr
           }
           if( !trueLit.isNull() )
           {
-            visit.push_back(trueLit);
+            visit.push_back(pol ? trueLit : trueLit.negate());
           }
         }
       }
@@ -114,7 +114,7 @@ void InstExplainInst::propagate( QuantifiersEngine * qe, std::vector< Node >& pr
       {
         // get polarity of the head
         //   T  T F ----> ~2 propagate B, 1
-        //   T  F T ----> ~1 propagate B, 2
+        //   T  F T ----> ~1 propagate ~B, 2
         //   T  T T ----> nothing
         for( unsigned i=0; i<2; i++ )
         {
@@ -128,7 +128,7 @@ void InstExplainInst::propagate( QuantifiersEngine * qe, std::vector< Node >& pr
       else if (k == EQUAL && atom[0].getType().isBoolean())
       {
         //   T T ---> 1 propagate 2  +  2 propagate 1
-        // ????
+        //   F F ---> ~1 propagate ~2  +  ~2 propagate ~1
         bool res = evaluate( atom[0], ecache, qe );
         visit.push_back(res ? atom[0] : atom[0].negate());
         visit.push_back(res==pol ? atom[1] : atom[1].negate());
