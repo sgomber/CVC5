@@ -96,6 +96,8 @@ class InstExplainDb
  private:
   /** pointer to the quantifiers engine */
   QuantifiersEngine* d_qe;
+  /** evaluator utility */
+  IeEvaluator d_ev;
   /** common constants */
   Node d_true;
   Node d_false;

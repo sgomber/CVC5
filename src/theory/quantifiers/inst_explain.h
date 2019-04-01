@@ -20,12 +20,27 @@
 #include <map>
 #include <vector>
 #include "expr/node.h"
-#include "theory/quantifiers_engine.h"
+#include "theory/valuation.h"
 
 namespace CVC4 {
 namespace theory {
 namespace quantifiers {
 
+class IeEvaluator
+{
+public:
+  IeEvaluator(Valuation& v) : d_valuation(v){}
+  /** reset */
+  void reset();
+  /** evaluate */
+  bool evaluate(Node n);
+private:
+  /** valuation */
+  Valuation& d_valuation;
+  /** cache */
+  std::map<Node, bool> d_ecache;
+};
+  
 /** instantiation explain literal
  *
  * This class manages all instantiation lemma explanations for a single literal
@@ -82,13 +97,10 @@ class InstExplainInst
   /** initialize */
   void initialize(Node inst);
   /** propagate */
-  void propagate(QuantifiersEngine* qe, std::vector<Node>& lits);
-
+  void propagate(IeEvaluator& v, std::vector<Node>& lits);
  private:
   /** the instantiation lemma */
   Node d_this;
-  /** evaluate */
-  bool evaluate(TNode n, std::map<TNode, bool>& ecache, QuantifiersEngine* qe);
 };
 
 }  // namespace quantifiers

@@ -84,7 +84,7 @@ bool EqExplainerTe::explain(Node lit, std::vector<TNode>& assumptions)
   return false;
 }
 
-InstExplainDb::InstExplainDb(QuantifiersEngine* qe) : d_qe(qe)
+InstExplainDb::InstExplainDb(QuantifiersEngine* qe) : d_qe(qe), d_ev(d_qe->getValuation())
 {
   d_false = NodeManager::currentNM()->mkConst(false);
   d_true = NodeManager::currentNM()->mkConst(true);
@@ -92,6 +92,7 @@ InstExplainDb::InstExplainDb(QuantifiersEngine* qe) : d_qe(qe)
 
 void InstExplainDb::reset(Theory::Effort e)
 {
+  d_ev.reset();
   d_active_lexp.clear();
   d_active_inst.clear();
   d_waiting_prop.clear();
@@ -130,7 +131,7 @@ void InstExplainDb::activateInst(Node inst, Node srcLit, InstExplainLit& src)
     d_active_inst[inst] = true;
     InstExplainInst& iei = getInstExplainInst(inst);
     std::vector<Node> propLits;
-    iei.propagate(d_qe, propLits);
+    iei.propagate(d_ev, propLits);
     for (const Node& l : propLits)
     {
       if (l == srcLit)
@@ -348,7 +349,7 @@ ExplainStatus InstExplainDb::explain(const std::vector<Node>& exp,
         }
       }
       Assert(!maxExp.isNull());
-      insertExpResult(maxExp, expres, expresAtom);
+      instExplain(maxExp, expres, expresAtom,processList,regressInst);
       Trace("ied-conflict-debug")
           << "Add inst-explain " << maxExp << " covering " << max << " literals"
           << std::endl;
@@ -407,7 +408,9 @@ void InstExplainDb::instLitExplain(Node lit,
       }
     }
   }
-  // cannot explain it via instantiations, add it now
+  // Cannot explain it via instantiations, add it now
+  // Notice that all literals at this point should be SAT literals, hence
+  // we do not need to regress them from the theory.
   Trace("ied-conflict-debug") << "    NOT inst-explanable" << std::endl;
   expresAtom[lit] = true;
 }
@@ -427,12 +430,18 @@ void InstExplainDb::instExplain(Node n,
   TNode atom = n.getKind() == NOT ? n[0] : n;
   bool pol = n.getKind() != NOT;
   Kind k = n.getKind();
-
   if (k == AND || k == OR)
   {
-    // bool easy
+    
   }
-
+  else if (k == ITE)
+  {
+  }
+  else if (k == EQUAL && n[0].getType().isBoolean())
+  {
+    
+  }
+  
   instLitExplain(n, expres, expresAtom, processList, regressInst);
 }
 
