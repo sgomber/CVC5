@@ -349,7 +349,7 @@ ExplainStatus InstExplainDb::explain(const std::vector<Node>& exp,
         }
       }
       Assert(!maxExp.isNull());
-      instExplain(maxExp, expres, expresAtom,processList,regressInst);
+      instExplain(maxExp, expres, expresAtom,newProcessList,regressInst);
       Trace("ied-conflict-debug")
           << "Add inst-explain " << maxExp << " covering " << max << " literals"
           << std::endl;
@@ -378,40 +378,44 @@ void InstExplainDb::instLitExplain(Node lit,
                                    std::map<Node, bool>& processList,
                                    bool regressInst)
 {
-  if (expres.find(lit) != expres.end())
-  {
-    return;
-  }
-  expres[lit] = true;
   if (regressInst)
   {
+    Trace("ied-conflict-debug") << "--- " << lit;
     std::map<Node, InstExplainLit>::iterator itl = d_lit_explains.find(lit);
     if (itl != d_lit_explains.end())
     {
       // activate the literal
       activateLit(lit);
+      Trace("ied-conflict-debug") << " inst-explanable ";
       std::vector<Node>& cexp = itl->second.d_curr_prop_exps;
       if (cexp.size() == 1)
       {
         Trace("ied-conflict-debug")
-            << "    inst-explanable by " << cexp[0] << std::endl;
-        // it's not necessary a literal, go to explain
+            << " by " << cexp[0] << std::endl;
+        // Since it's not necessary a literal, go to explain
         instExplain(cexp[0], expres, expresAtom, processList, regressInst);
-      }
-      else if (!cexp.empty())
-      {
-        Trace("ied-conflict-debug")
-            << "    inst-explanable in " << cexp.size() << " ways" << std::endl;
-        // otherwise we have a choice
-        processList[lit] = true;
         return;
       }
+      else
+      {
+        Trace("ied-conflict-debug")
+            << " in " << cexp.size() << " ways" << std::endl;
+        if (!cexp.empty())
+        {
+          // otherwise we have a choice, add to process list
+          processList[lit] = true;
+          return;
+        }
+      }
+    }
+    else
+    {
+      Trace("ied-conflict-debug") << " NOT inst-explanable" << std::endl;
     }
   }
   // Cannot explain it via instantiations, add it now
   // Notice that all literals at this point should be SAT literals, hence
-  // we do not need to regress them from the theory.
-  Trace("ied-conflict-debug") << "    NOT inst-explanable" << std::endl;
+  // we do not need to regress them from the theory here.
   expresAtom[lit] = true;
 }
 
@@ -426,23 +430,51 @@ void InstExplainDb::instExplain(Node n,
     return;
   }
   expres[n] = true;
-
+  Assert( d_ev.evaluate(n) );
+  // must justify why n is true
   TNode atom = n.getKind() == NOT ? n[0] : n;
   bool pol = n.getKind() != NOT;
   Kind k = n.getKind();
   if (k == AND || k == OR)
   {
-    
+    if( (k==AND)==pol )
+    {
+      for( const Node& nc : atom )
+      {
+        Node ncp = pol ? nc : nc.negate();
+        instExplain(ncp,expres,expresAtom,processList,regressInst);
+      }
+    }
+    else
+    {
+      // choose one that evaluates to true
+      for( const Node& nc : atom )
+      {
+        if( d_ev.evaluate(nc)==pol )
+        {
+          Node ncp = pol ? nc : nc.negate();
+          instExplain(ncp,expres,expresAtom,processList,regressInst);
+          return;
+        }
+      }
+      AlwaysAssert(false);
+    }
   }
   else if (k == ITE)
   {
+    unsigned checkIndex = d_ev.evaluate(atom[0]) ? 1 : 2;
+    instExplain(atom[0],expres,expresAtom,processList,regressInst);
+    instExplain(atom[checkIndex],expres,expresAtom,processList,regressInst);
   }
   else if (k == EQUAL && n[0].getType().isBoolean())
   {
-    
+    instExplain(atom[0],expres,expresAtom,processList,regressInst);
+    instExplain(atom[1],expres,expresAtom,processList,regressInst);
   }
-  
-  instLitExplain(n, expres, expresAtom, processList, regressInst);
+  else
+  {
+    instLitExplain(n, expres, expresAtom, processList, regressInst);
+  }
 }
 
 }  // namespace quantifiers
