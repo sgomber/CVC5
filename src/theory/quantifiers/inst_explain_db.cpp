@@ -305,9 +305,8 @@ ExplainStatus InstExplainDb::explain(const std::vector<Node>& exp,
       }
     }
   }
-#if 0
-  // now, go back and process atoms that are explainable in multiple ways
-  // this is an optimization for constructing smaller explanations
+  // Now, go back and process atoms that are explainable in multiple ways.
+  // This is an optimization for constructing smaller explanations.
   while (!processList.empty())
   {
     std::map<Node, bool> newProcessList;
@@ -317,6 +316,7 @@ ExplainStatus InstExplainDb::explain(const std::vector<Node>& exp,
       Node ert = p.first;
       InstExplainLit& ie = getInstExplainLit(ert);
       std::vector< Node >& cexp = ie.d_curr_prop_exps;
+      // first check if this literal is already explained, if so, drop it.
       bool alreadyProc = false;
       for (const Node& iexp : cexp)
       {
@@ -328,6 +328,8 @@ ExplainStatus InstExplainDb::explain(const std::vector<Node>& exp,
       }
       if (!alreadyProc)
       {
+        // If not already explained, add this literal to the list of literals
+        // for each of its explanation. We choose the best explanation below.
         for (const Node& iexp : cexp)
         {
           expToLit[iexp].push_back(ert);
@@ -337,7 +339,9 @@ ExplainStatus InstExplainDb::explain(const std::vector<Node>& exp,
     }
     if (!expToLit.empty())
     {
-      // must decide to add one (choose max)
+      // Must decide to explain one literal. We choose the instantiation
+      // explanation that covers the maximum number of literals in the process
+      // list.
       unsigned max = 0;
       Node maxExp;
       for (const std::pair<Node, std::vector<Node> >& e : expToLit)
@@ -351,9 +355,10 @@ ExplainStatus InstExplainDb::explain(const std::vector<Node>& exp,
       Assert(!maxExp.isNull());
       instExplain(maxExp, expres, expresAtom,newProcessList,regressInst);
       Trace("ied-conflict-debug")
-          << "Add inst-explain " << maxExp << " covering " << max << " literals"
+          << "--- add inst-explain " << maxExp << " covering " << max << " literals"
           << std::endl;
       Assert(!expToLit[maxExp].empty());
+      // update the process list to remove the literals
       for (const Node& lit : expToLit[maxExp])
       {
         Assert(newProcessList.find(lit) != newProcessList.end());
@@ -362,7 +367,6 @@ ExplainStatus InstExplainDb::explain(const std::vector<Node>& exp,
     }
     processList = newProcessList;
   }
-#endif
   Trace("ied-conflict") << "Result of inst explain : " << std::endl;
   for (const std::pair<Node, bool>& ep : expresAtom)
   {
