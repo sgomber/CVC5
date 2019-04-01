@@ -26,25 +26,53 @@ namespace CVC4 {
 namespace theory {
 namespace quantifiers {
 
+/** instantiation explain literal
+ * 
+ * This class manages all instantiation lemma explanations for a single literal
+ * L. In particular, it stores all instantiation lemmas that may propagate L,
+ * and the explanation of why they propagate L.
+ */
 class InstExplainLit
 {
  public:
    InstExplainLit(){}
-  /** initialize */
-  void initialize(Node inst);
-  /** reset */
+  /** Initialize this object for literal lit. */
+  void initialize(Node lit);
+  /** Reset, called at the beginning of instantiation rounds. */
   void reset();
-  /** add inst explanation */
+  /** 
+   * Set that instantiation lemma inst may propagate the literal of this object.
+   */
   void addInstExplanation(Node inst);
-  /** add propagating instantiation */
+  /** 
+   * Set that instantiation lemma inst currently propagates the literal of this
+   * object. This is called by InstExplainDb.
+   * 
+   * inst should be an instantiation lemma occurring as an argument to a
+   * previous call to addInstExplanation.
+   */
   void setPropagating(Node inst);
-  /** the list of possible instantiation lemmas that may propagate this literal */
+  /** 
+   * The list of current explanations that explain this literal via
+   * instantiation lemmas. These are formulas in the range of d_inst_to_exp
+   * below.
+   */
+  std::vector< Node > d_curr_prop_exps;
+  /** The list of instantiation lemmas that may propagate d_this. */
   std::vector< Node > d_insts;
-  /** the list of instantiation lemmas that actually currently propagate this literal */
-  std::vector< Node > d_curr_prop_insts;
 private:
-  /** the literal this object is for */
+  /** The literal of this object. */
   Node d_this;
+  /** 
+   * Maps instantiation lemmas to their explanation for this literal.
+   * Let C[L] be a clause containing literal L. The explanation for C with
+   * respect to L is ~C[false]. For example:
+   *    ~(forall x. P(x) V Q(x)) V P(c) V Q(c)
+   * the explanation for ~forall x. P(x) V P(c) V Q(c) with respect to P(c) is
+   *   (forall x. P(x)) ^ ~Q(c)
+   * which notice suffices to show that P(c) much be true.
+   */
+  std::map< Node, Node > d_inst_to_exp;
 };
 
 class InstExplainDb;

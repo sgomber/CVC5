@@ -33,7 +33,7 @@ void InstExplainLit::initialize(Node inst)
 }
 void InstExplainLit::reset()
 {
-  d_curr_prop_insts.clear();
+  d_curr_prop_exps.clear();
 }
 void InstExplainLit::addInstExplanation(Node inst)
 {
@@ -45,10 +45,24 @@ void InstExplainLit::addInstExplanation(Node inst)
 
 void InstExplainLit::setPropagating(Node inst)
 {
-  Assert( std::find(d_curr_prop_insts.begin(),d_curr_prop_insts.end(),inst)==d_curr_prop_insts.end() );
   Assert( std::find(d_insts.begin(),d_insts.end(),inst)!=d_insts.end());
-  d_curr_prop_insts.push_back(inst);
-  // TODO: get the explanation?
+  //  get the explanation
+  std::map< Node, Node >::iterator it = d_inst_to_exp.find(inst);
+  if( it==d_inst_to_exp.end() )
+  {
+    bool pol = d_this.getKind()!=NOT;
+    TNode atomt = pol ? d_this : d_this[0];
+    TNode constt = NodeManager::currentNM()->mkConst(!pol);
+    Node instn = TermUtil::simpleNegate(inst);
+    Node instns = instn.substitute(atomt,constt);
+    instns = Rewriter::rewrite(instns);
+    d_inst_to_exp[inst] = instns;
+    d_curr_prop_exps.push_back(instns);
+  }
+  else
+  {
+    d_curr_prop_exps.push_back(it->second);
+  }
 }
 
 void InstExplainInst::initialize(Node inst)
