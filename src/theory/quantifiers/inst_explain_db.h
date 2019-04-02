@@ -94,7 +94,8 @@ class InstExplainDb
   InstExplainInst& getInstExplainInst(Node inst);
 
   /** explain */
-  ExplainStatus explain(const std::vector<Node>& exp,
+  ExplainStatus explain(Node q,
+                        const std::vector<Node>& exp,
                         const std::vector<Node>& gexp,
                         const std::map<TNode, TNode>& subs,
                         EqExplainer* eqe,

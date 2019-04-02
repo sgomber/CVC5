@@ -262,7 +262,8 @@ InstExplainInst& InstExplainDb::getInstExplainInst(Node inst)
   return iti->second;
 }
 
-ExplainStatus InstExplainDb::explain(const std::vector<Node>& exp,
+ExplainStatus InstExplainDb::explain(Node q,
+                                     const std::vector<Node>& exp,
                                      const std::vector<Node>& gexp,
                                      const std::map<TNode, TNode>& subs,
                                      EqExplainer* eqe,
@@ -272,65 +273,97 @@ ExplainStatus InstExplainDb::explain(const std::vector<Node>& exp,
 {
   ExplainStatus ret = EXP_STATUS_FULL;
   std::map<Node, bool> proc_pre;
-  std::map<Node, bool> proc;
   std::map<Node, bool> expres;
   std::map<Node, bool> expresAtom;
   std::map<Node, bool> processList;
   Trace("ied-conflict") << "Conflict in context " << ctx << " : " << std::endl;
-  for (const Node& e : exp)
+  Assert( exp.size()==gexp.size() );
+  for (unsigned i=0, esize = exp.size(); i<esize; i++ )
   {
+    Node e = exp[i];
+    Node ge = gexp[i];
     Node er = Rewriter::rewrite(e);
-    if (proc_pre.find(er) == proc_pre.end())
+    if (proc_pre.find(er) != proc_pre.end())
     {
-      proc_pre[er] = true;
-      Trace("ied-conflict") << "* " << er << std::endl;
-      // first, regress the explanation using the eqe utility
-      std::vector<TNode> assumptions;
-      bool regressExp = false;
-      std::shared_ptr<eq::EqProof> pf = nullptr;
-      if (eqe)
+      continue;
+    }
+    proc_pre[er] = true;
+    
+    // Compute the rewritten generalization: ensure that matching is maintained
+    Node ger;
+    if( e==er )
+    {
+      ger = ge;
+    }
+    else
+    {
+      bool erpol = er.getKind()!=NOT;
+      Node erAtom = erpol ? er : er[0];
+      // may have flipped via symmetry
+      if( erAtom.getKind()==EQUAL )
       {
-        pf = std::make_shared<eq::EqProof>();
-        Trace("ied-conflict-debug") << "Explain: " << er << std::endl;
-        if (eqe->explain(er, assumptions, pf.get()))
+        if( er[0]==e[1] && er[1]==e[0] )
         {
-          regressExp = true;
-          Trace("ied-conflict-debug")
-              << "  ...regressed to " << assumptions << std::endl;
-        }
-        else
-        {
-          Trace("ied-conflict-debug") << "  ...failed to regress" << std::endl;
-        }
-      }
-      if (!regressExp)
-      {
-        assumptions.push_back(er);
-        // if we did not explain it, then we need to set the status
-        // however, we could still hope that this assertion simply holds in the
-        // current context
-        ret = EXP_STATUS_INCOMPLETE;
-      }
-      for (TNode ert : assumptions)
-      {
-        // now, regress the equality in terms of instantiation lemmas
-        Assert(Rewriter::rewrite(ert) == ert);
-        if (proc.find(ert) != proc.end())
-        {
-          continue;
-        }
-        proc[ert] = true;
-        Trace("ied-conflict-debug") << "*** " << ert << std::endl;
-        if (regressInst)
-        {
-          instExplain(ert, expres, expresAtom, processList, regressInst);
-        }
-        else
-        {
-          expresAtom[ert] = true;
+          ger = ge[1].eqNode(ge[0]);
+          ger = erpol ? ger : ger.negate();
         }
       }
     }
+    Trace("ied-conflict") << "* " << er << std::endl;
+    // first, regress the explanation using the eqe utility
+    std::vector<TNode> assumptions;
+    // Possible generalized assumptions
+    // Each of these should be such that:
+    //    for all j: gassumptions[i][j] * subs = assumptions[i]
+    // And be such that:
+    //    g_1 ^ ... ^ g_n => ge
+    // where g_j in gassumptions[i][j] for j = 1, ... n.
+    // In other words, these represent a generalization of the proof of:
+    //    assumptions[i] ^ ... ^ assumptions[i] => e
+    std::map<TNode, std::vector< Node > > gassumptions;
+    bool regressExp = false;
+    std::shared_ptr<eq::EqProof> pf = nullptr;
+    if (eqe)
+    {
+      pf = std::make_shared<eq::EqProof>();
+      Trace("ied-conflict-debug") << "Explain: " << er << std::endl;
+      if (eqe->explain(er, assumptions, pf.get()))
+      {
+        regressExp = true;
+        Trace("ied-conflict-debug")
+            << "  ...regressed to " << assumptions << std::endl;
+        // TODO: compute the generalized assumptions
+      }
+      else
+      {
+        Trace("ied-conflict-debug") << "  ...failed to regress" << std::endl;
+      }
+    }
+    if (!regressExp)
+    {
+      assumptions.push_back(er);
+      // if we did not explain it, then we need to set the status
+      // however, we could still hope that this assertion simply holds in the
+      // current context
+      ret = EXP_STATUS_INCOMPLETE;
+    }
+    //for (TNode ert : assumptions)
+    for (unsigned i=0, asize = assumptions.size(); i<asize; i++ )
+    {
+      Node a = assumptions[i];
+      // now, regress the equality in terms of instantiation lemmas
+      Assert(Rewriter::rewrite(a) == a);
+      Trace("ied-conflict-debug") << "*** " << a << std::endl;
+      if (regressInst)
+      {
+        instExplain(a, expres, expresAtom, processList, regressInst);
+      }
+      else
+      {
+        expresAtom[a] = true;
+      }
+    }
+    
   }
   // Now, go back and process atoms that are explainable in multiple ways.
   // This is an optimization for constructing smaller explanations.
