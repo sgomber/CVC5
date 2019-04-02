@@ -572,6 +572,7 @@ Node TermDb::evaluateTerm2(TNode n,
         {
           ret = c;
           ret_set = true;
+          reqHasTerm = false;
           break;
         }
         else if (k == ITE && i == 0)
@@ -584,6 +585,7 @@ Node TermDb::evaluateTerm2(TNode n,
                               computeExp,
                               reqHasTerm);
           ret_set = true;
+          reqHasTerm = false;
           break;
         }
       }
@@ -628,6 +630,7 @@ Node TermDb::evaluateTerm2(TNode n,
           ret = qy->getRepresentative(nn);
           Trace("term-db-eval") << "return rep" << std::endl;
           ret_set = true;
+          reqHasTerm = false;
           Assert(!ret.isNull());
           if (computeExp)
           {
@@ -636,7 +639,6 @@ Node TermDb::evaluateTerm2(TNode n,
               exp.push_back(nn.eqNode(ret));
             }
           }
-          reqHasTerm = false;
         }
       }
       if( !ret_set ){
@@ -680,11 +682,18 @@ Node TermDb::evaluateTerm2(TNode n,
     }
   }
   // must have the term
-  if (reqHasTerm && !ret.isNull() && !qy->hasTerm(ret))
+  if (reqHasTerm && !ret.isNull())
   {
-    ret = Node::null();
+    Kind k = ret.getKind();
+    if (k!=OR && k!=AND && k!=EQUAL && k!=ITE && k!=NOT)
+    {
+      if( !qy->hasTerm(ret) )
+      {
+        ret = Node::null();
+      }
+    }
   }
-  Trace("term-db-eval") << "evaluated term : " << n << ", got : " << ret << std::endl;
+  Trace("term-db-eval") << "evaluated term : " << n << ", got : " << ret << ", reqHasTerm = " << reqHasTerm << std::endl;
   // clear the explanation if failed
   if (computeExp && ret.isNull())
   {
@@ -940,6 +949,10 @@ bool TermDb::isEntailed2(TNode n,
   bool ret;
   if (d_quantEngine->getValuation().hasSatValue(n, ret))
   {
+    if( ret )
+    {
+      AlwaysAssert(false);
+    }
     return ret;
   }
   return false;

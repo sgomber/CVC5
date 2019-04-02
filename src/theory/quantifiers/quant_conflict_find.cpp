@@ -632,8 +632,9 @@ bool QuantInfo::isTConstraintSpurious(QuantConflictFind* p,
     }else{
       Node inst =
           p->d_quantEngine->getInstantiate()->getInstantiation(d_q, terms);
+      inst = Rewriter::rewrite(inst);
       Node inst_eval = p->getTermDatabase()->evaluateTerm(
-          inst, NULL, options::qcfTConstraint(), true);
+          inst, nullptr, options::qcfTConstraint(), true);
       if( Trace.isOn("qcf-instance-check") ){
         Trace("qcf-instance-check") << "Possible propagating instance for " << d_q << " : " << std::endl;
         for( unsigned i=0; i<terms.size(); i++ ){
@@ -2271,10 +2272,6 @@ std::ostream& operator<<(std::ostream& os, const QuantConflictFind::Effort& e) {
 
 bool QuantConflictFind::isPropagatingInstance(Node n)
 {
-  if (n.getKind() == FORALL)
-  {
-    return false;
-  }
   std::map<Node, bool>::iterator it = d_prop_inst_cache.find(n);
   if (it != d_prop_inst_cache.end())
   {
@@ -2299,6 +2296,7 @@ bool QuantConflictFind::isPropagatingInstance(Node n)
         << "...not propagating instance because of " << n << std::endl;
     ret = false;
   }
+  Trace("qcf-instance-check-debug") << "isPropagatingInstance " << n << " returns " << ret << std::endl;
   d_prop_inst_cache[n] = ret;
   return ret;
 }
