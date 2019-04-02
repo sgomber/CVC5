@@ -263,8 +263,8 @@ InstExplainInst& InstExplainDb::getInstExplainInst(Node inst)
 }
 
 ExplainStatus InstExplainDb::explain(const std::vector<Node>& exp,
-                        const std::vector<Node>& gexp,
-                        const std::map<TNode, TNode >& subs,
+                                     const std::vector<Node>& gexp,
+                                     const std::map<TNode, TNode>& subs,
                                      EqExplainer* eqe,
                                      std::vector<Node>& rexp,
                                      bool regressInst,

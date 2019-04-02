@@ -179,20 +179,21 @@ Node TermDb::getMatchOperator( Node n ) {
   }
 }
 
-Node TermDb::mkMatchOperatorApp( Node f, std::vector< Node >& args )
+Node TermDb::mkMatchOperatorApp(Node f, std::vector<Node>& args)
 {
-  std::map< Node, std::vector< Node > >::iterator it = d_op_map.find(f);
-  if( it==d_op_map.end() )
+  std::map<Node, std::vector<Node> >::iterator it = d_op_map.find(f);
+  if (it == d_op_map.end())
   {
-    Assert( false );
+    Assert(false);
     return Node::null();
   }
   Node exn = it->second[0];
   Kind k = exn.getKind();
-  if( exn.getMetaKind() == kind::metakind::PARAMETERIZED ){
-    args.insert( args.begin(), exn.getOperator() );
+  if (exn.getMetaKind() == kind::metakind::PARAMETERIZED)
+  {
+    args.insert(args.begin(), exn.getOperator());
   }
-  return NodeManager::currentNM()->mkNode(k,args);
+  return NodeManager::currentNM()->mkNode(k, args);
 }
 
 void TermDb::addTerm(Node n,
@@ -701,15 +702,16 @@ Node TermDb::evaluateTerm2(TNode n,
   if (reqHasTerm && !ret.isNull())
   {
     Kind k = ret.getKind();
-    if (k!=OR && k!=AND && k!=EQUAL && k!=ITE && k!=NOT)
+    if (k != OR && k != AND && k != EQUAL && k != ITE && k != NOT)
     {
-      if( !qy->hasTerm(ret) )
+      if (!qy->hasTerm(ret))
       {
         ret = Node::null();
       }
     }
   }
-  Trace("term-db-eval") << "evaluated term : " << n << ", got : " << ret << ", reqHasTerm = " << reqHasTerm << std::endl;
+  Trace("term-db-eval") << "evaluated term : " << n << ", got : " << ret
+                        << ", reqHasTerm = " << reqHasTerm << std::endl;
   // clear the explanation if failed
   if (computeExp && ret.isNull())
   {
@@ -731,7 +733,8 @@ TNode TermDb::getEntailedTerm2(TNode n,
 {
   Assert( !qy->extendsEngine() );
   Trace("term-db-entail") << "get entailed term : " << n << std::endl;
-  if( n.getKind()==BOUND_VARIABLE ){
+  if (n.getKind() == BOUND_VARIABLE)
+  {
     if( hasSubs ){
       std::map< TNode, TNode >::iterator it = subs.find( n );
       if( it!=subs.end() ){
@@ -739,22 +742,29 @@ TNode TermDb::getEntailedTerm2(TNode n,
         if( subsRep ){
           Assert( qy->getEngine()->hasTerm( it->second ) );
           Assert( qy->getEngine()->getRepresentative( it->second )==it->second );
-          if( computeExp )
+          if (computeExp)
           {
             gnode = n;
           }
           return it->second;
         }else{
-          Node entt = getEntailedTerm2(
-              it->second, subs, subsRep, hasSubs, exp, gexp, gnode, qy, computeExp);
-          if( computeExp )
+          Node entt = getEntailedTerm2(it->second,
+                                       subs,
+                                       subsRep,
+                                       hasSubs,
+                                       exp,
+                                       gexp,
+                                       gnode,
+                                       qy,
+                                       computeExp);
+          if (computeExp)
           {
             // This condition should rarely be false. If it is false, then we
             // substituted to a term that doesn't exist in the equality engine
             // but is entailed to be equal to one that does exist by congruence.
             // If this is not the case, then the generalization node can be
             // set equal to the variable, since the substitution is preserved.
-            if( entt==it->second )
+            if (entt == it->second)
             {
               gnode = n;
             }
@@ -763,9 +773,11 @@ TNode TermDb::getEntailedTerm2(TNode n,
         }
       }
     }
-  }else if( qy->getEngine()->hasTerm( n ) ){
+  }
+  else if (qy->getEngine()->hasTerm(n))
+  {
     Trace("term-db-entail") << "...exists in ee, return rep " << std::endl;
-    if( computeExp )
+    if (computeExp)
     {
       gnode = n;
     }
@@ -775,8 +787,15 @@ TNode TermDb::getEntailedTerm2(TNode n,
       if (isEntailed2(
               n[0], subs, subsRep, hasSubs, i == 0, exp, gexp, qy, computeExp))
       {
-        return getEntailedTerm2(
-            n[i == 0 ? 1 : 2], subs, subsRep, hasSubs, exp, gexp, gnode, qy, computeExp);
+        return getEntailedTerm2(n[i == 0 ? 1 : 2],
+                                subs,
+                                subsRep,
+                                hasSubs,
+                                exp,
+                                gexp,
+                                gnode,
+                                qy,
+                                computeExp);
       }
     }
   }else{
@@ -800,7 +819,7 @@ TNode TermDb::getEntailedTerm2(TNode n,
           if (computeExp)
           {
             argst.push_back(c);
-            if( hasSubs )
+            if (hasSubs)
             {
               gncs.push_back(gnc);
             }
@@ -819,7 +838,7 @@ TNode TermDb::getEntailedTerm2(TNode n,
               {
                 Node eq = argst[i].eqNode(nn[i]);
                 exp.push_back(eq);
-                if( hasSubs )
+                if (hasSubs)
                 {
                   Node eqg = gncs[i].eqNode(nn[i]);
                   gexp.push_back(eq);
@@ -830,9 +849,9 @@ TNode TermDb::getEntailedTerm2(TNode n,
                     << "***... add explain " << eq << std::endl;
               }
             }
-            if( hasSubs )
+            if (hasSubs)
             {
-              gnode = mkMatchOperatorApp(f,gncs);
+              gnode = mkMatchOperatorApp(f, gncs);
             }
           }
         }
@@ -899,7 +918,7 @@ bool TermDb::isEntailed2(TNode n,
                          bool hasSubs,
                          bool pol,
                          std::vector<Node>& exp,
-                         std::vector< Node >& gexp,
+                         std::vector<Node>& gexp,
                          EqualityQuery* qy,
                          bool computeExp)
 {
@@ -908,12 +927,12 @@ bool TermDb::isEntailed2(TNode n,
   Assert( n.getType().isBoolean() );
   if( n.getKind()==EQUAL && !n[0].getType().isBoolean() ){
     Node gn1;
-    TNode n1 =
-        getEntailedTerm2(n[0], subs, subsRep, hasSubs, exp, gexp, gn1, qy, computeExp);
+    TNode n1 = getEntailedTerm2(
+        n[0], subs, subsRep, hasSubs, exp, gexp, gn1, qy, computeExp);
     if( !n1.isNull() ){
       Node gn2;
-      TNode n2 =
-          getEntailedTerm2(n[1], subs, subsRep, hasSubs, exp, gexp, gn2, qy, computeExp);
+      TNode n2 = getEntailedTerm2(
+          n[1], subs, subsRep, hasSubs, exp, gexp, gn2, qy, computeExp);
       if( !n2.isNull() ){
         if( n1==n2 ){
           return pol;
@@ -928,11 +947,12 @@ bool TermDb::isEntailed2(TNode n,
             {
               Node eq = n1.eqNode(n2);
               eq = pol ? eq : eq.negate();
-              Trace("term-db-entail-exp") << "***... add explain " << eq << std::endl;
+              Trace("term-db-entail-exp")
+                  << "***... add explain " << eq << std::endl;
               exp.push_back(eq);
-              if( hasSubs )
+              if (hasSubs)
               {
-                Assert( !gn1.isNull() && !gn2.isNull() );
+                Assert(!gn1.isNull() && !gn2.isNull());
                 Node eqg = gn1.eqNode(gn2);
                 eqg = pol ? eqg : eqg.negate();
                 gexp.push_back(eqg);
@@ -944,11 +964,13 @@ bool TermDb::isEntailed2(TNode n,
       }
     }
   }else if( n.getKind()==NOT ){
-    return isEntailed2(n[0], subs, subsRep, hasSubs, !pol, exp, gexp, qy, computeExp);
+    return isEntailed2(
+        n[0], subs, subsRep, hasSubs, !pol, exp, gexp, qy, computeExp);
   }else if( n.getKind()==OR || n.getKind()==AND ){
     bool simPol = ( pol && n.getKind()==OR ) || ( !pol && n.getKind()==AND );
     for( unsigned i=0; i<n.getNumChildren(); i++ ){
-      if (isEntailed2(n[i], subs, subsRep, hasSubs, pol, exp, gexp, qy, computeExp))
+      if (isEntailed2(
+              n[i], subs, subsRep, hasSubs, pol, exp, gexp, qy, computeExp))
       {
         if( simPol ){
           return true;
@@ -967,13 +989,27 @@ bool TermDb::isEntailed2(TNode n,
     for( unsigned i=0; i<2; i++ ){
       tempExp.clear();
       tempGExp.clear();
-      if (isEntailed2(
-              n[0], subs, subsRep, hasSubs, i == 0, tempExp, tempGExp, qy, computeExp))
+      if (isEntailed2(n[0],
+                      subs,
+                      subsRep,
+                      hasSubs,
+                      i == 0,
+                      tempExp,
+                      tempGExp,
+                      qy,
+                      computeExp))
       {
         unsigned ch = ( n.getKind()==EQUAL || i==0 ) ? 1 : 2;
         bool reqPol = ( n.getKind()==ITE || i==0 ) ? pol : !pol;
-        if (isEntailed2(
-                n[ch], subs, subsRep, hasSubs, reqPol, tempExp, tempGExp, qy, computeExp))
+        if (isEntailed2(n[ch],
+                        subs,
+                        subsRep,
+                        hasSubs,
+                        reqPol,
+                        tempExp,
+                        tempGExp,
+                        qy,
+                        computeExp))
         {
           if (computeExp)
           {
@@ -989,13 +1025,15 @@ bool TermDb::isEntailed2(TNode n,
   }
   else if (n.getKind() == FORALL && !pol)
   {
-    if (isEntailed2(n[1], subs, subsRep, hasSubs, pol, exp, gexp, qy, computeExp))
+    if (isEntailed2(
+            n[1], subs, subsRep, hasSubs, pol, exp, gexp, qy, computeExp))
     {
       return true;
     }
   }
   Node gpred;
-  TNode n1 = getEntailedTerm2(n, subs, subsRep, hasSubs, exp, gexp, gpred, qy, computeExp);
+  TNode n1 = getEntailedTerm2(
+      n, subs, subsRep, hasSubs, exp, gexp, gpred, qy, computeExp);
   if (!n1.isNull())
   {
     Assert(qy->hasTerm(n1));
@@ -1013,11 +1051,12 @@ bool TermDb::isEntailed2(TNode n,
       if (computeExp)
       {
         Node pred = n1;
-        Trace("term-db-entail-exp") << "***... add explain " << pred << std::endl;
+        Trace("term-db-entail-exp")
+            << "***... add explain " << pred << std::endl;
         exp.push_back(pol ? pred : pred.negate());
-        if( hasSubs )
+        if (hasSubs)
         {
-          Assert( !gpred.isNull() );
+          Assert(!gpred.isNull());
           gexp.push_back(pol ? gpred : gpred.negate());
         }
       }
@@ -1025,12 +1064,12 @@ bool TermDb::isEntailed2(TNode n,
     }
   }
   // maybe it is asserted?
-  if( !hasSubs )
+  if (!hasSubs)
   {
     bool ret;
     if (d_quantEngine->getValuation().hasSatValue(n, ret))
     {
-      if( ret )
+      if (ret)
       {
         AlwaysAssert(false);
       }
@@ -1063,7 +1102,7 @@ bool TermDb::isEntailed(TNode n,
     qy = d_quantEngine->getEqualityQuery();
   }
   std::map<TNode, TNode> subs;
-  std::vector< Node > gexp;
+  std::vector<Node> gexp;
   return isEntailed2(n, subs, false, false, pol, exp, gexp, qy, true);
 }
 

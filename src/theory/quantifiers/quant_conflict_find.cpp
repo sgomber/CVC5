@@ -617,7 +617,8 @@ bool QuantInfo::isTConstraintSpurious(QuantConflictFind* p,
         EqExplainer* eqe = p->getEqualityExplainer();
         InstExplainDb& ied = p->d_quantEngine->getInstantiate()->getExplainDb();
         std::vector<Node> rexp;
-        ied.explain(exp, gexp, subs, eqe, rexp, options::qcfExpRegressInst(), "qcf");
+        ied.explain(
+            exp, gexp, subs, eqe, rexp, options::qcfExpRegressInst(), "qcf");
         if (options::qcfExpMode() != quantifiers::QCF_EXP_CINSTANCE_ANALYZE)
         {
           std::vector<Node> lemc;
@@ -2298,7 +2299,8 @@ bool QuantConflictFind::isPropagatingInstance(Node n)
         << "...not propagating instance because of " << n << std::endl;
     ret = false;
   }
-  Trace("qcf-instance-check-debug") << "isPropagatingInstance " << n << " returns " << ret << std::endl;
+  Trace("qcf-instance-check-debug")
+      << "isPropagatingInstance " << n << " returns " << ret << std::endl;
   d_prop_inst_cache[n] = ret;
   return ret;
 }

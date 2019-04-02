@@ -151,7 +151,7 @@ class TermDb : public QuantifiersUtil {
   */
   Node getMatchOperator(Node n);
   /** make match operator app */
-  Node mkMatchOperatorApp( Node f, std::vector< Node >& args );
+  Node mkMatchOperatorApp(Node f, std::vector<Node>& args);
   /** get term arg index for all f-applications in the current context */
   TNodeTrie* getTermArgTrie(Node f);
   /** get the term arg trie for f-applications in the equivalence class of eqc.
@@ -180,22 +180,22 @@ class TermDb : public QuantifiersUtil {
   bool inRelevantDomain(TNode f, unsigned i, TNode r);
   /** evaluate term
    *
-  * Returns a term n' such that n = n' is entailed based on the equality
-  * information qy.  This function may generate new terms. In particular,
-  * we typically rewrite maximal subterms of n to terms that exist in the
-  * equality engine specified by qy.
-  *
-  * useEntailmentTests is whether to use the theory engine's entailmentCheck
-  * call, for increased precision. This is not frequently used.
-  * 
-  * The vector exp stores the explanation for why n evaluates to that term,
-  * that is, if this call returns a non-null node n', then:
-  *   exp => n = n'
-  * 
-  * If reqHasTerm, then we require that the returned term is a Boolean
-  * combination of terms that exist in the equality engine used by this call.
-  * If no such term is constructable, this call returns null.
-  */
+   * Returns a term n' such that n = n' is entailed based on the equality
+   * information qy.  This function may generate new terms. In particular,
+   * we typically rewrite maximal subterms of n to terms that exist in the
+   * equality engine specified by qy.
+   *
+   * useEntailmentTests is whether to use the theory engine's entailmentCheck
+   * call, for increased precision. This is not frequently used.
+   *
+   * The vector exp stores the explanation for why n evaluates to that term,
+   * that is, if this call returns a non-null node n', then:
+   *   exp => n = n'
+   *
+   * If reqHasTerm, then we require that the returned term is a Boolean
+   * combination of terms that exist in the equality engine used by this call.
+   * If no such term is constructable, this call returns null.
+   */
   Node evaluateTerm(TNode n,
                     std::vector<Node>& exp,
                     EqualityQuery* qy = NULL,
@@ -233,14 +233,14 @@ class TermDb : public QuantifiersUtil {
                         bool subsRep,
                         EqualityQuery* qy = NULL);
   /** is entailed
-  * Checks whether the current context entails n with polarity pol, based on the
-  * equality information qy.
-  * Returns true if the entailment can be successfully shown.
-  * 
-  * If this function returns true, then exp contains an explanation for why
-  * n is entailed with polarity pol. That is:
-  *   exp => ( pol ? n : ~n )
-  */
+   * Checks whether the current context entails n with polarity pol, based on
+   * the equality information qy. Returns true if the entailment can be
+   * successfully shown.
+   *
+   * If this function returns true, then exp contains an explanation for why
+   * n is entailed with polarity pol. That is:
+   *   exp => ( pol ? n : ~n )
+   */
   bool isEntailed(TNode n,
                   bool pol,
                   std::vector<Node>& exp,
@@ -249,21 +249,21 @@ class TermDb : public QuantifiersUtil {
   bool isEntailed(TNode n, bool pol, EqualityQuery* qy = NULL);
   /** is entailed
    *
-  * Checks whether the current context entails ( n * subs ) with polarity pol,
-  * based on the equality information qy, where * denotes substitution
-  * application.
-  * 
-  * subsRep is whether the substitution maps to terms that are representatives
-  * according to qy.
-  * 
-  * If this function returns true, then exp contains an explanation for why
-  * n is entailed with polarity pol. That is:
-  *   exp => ( pol ? n : ~n ) * subs
-  * 
-  * If this function returns true, then gexp contains a generalized explanation
-  * for why n is entailed with polarity pol. That is:
-  *   ( gexp * subs ) => ( pol ? n : ~n ) * subs
-  */
+   * Checks whether the current context entails ( n * subs ) with polarity pol,
+   * based on the equality information qy, where * denotes substitution
+   * application.
+   *
+   * subsRep is whether the substitution maps to terms that are representatives
+   * according to qy.
+   *
+   * If this function returns true, then exp contains an explanation for why
+   * n is entailed with polarity pol. That is:
+   *   exp => ( pol ? n : ~n ) * subs
+   *
+   * If this function returns true, then gexp contains a generalized explanation
+   * for why n is entailed with polarity pol. That is:
+   *   ( gexp * subs ) => ( pol ? n : ~n ) * subs
+   */
   bool isEntailed(TNode n,
                   std::map<TNode, TNode>& subs,
                   bool subsRep,
@@ -363,7 +363,7 @@ class TermDb : public QuantifiersUtil {
                          bool subsRep,
                          bool hasSubs,
                          std::vector<Node>& exp,
-                         std::vector< Node >& gexp,
+                         std::vector<Node>& gexp,
                          Node& gnode,
                          EqualityQuery* qy,
                          bool computeExp);
@@ -374,7 +374,7 @@ class TermDb : public QuantifiersUtil {
                    bool hasSubs,
                    bool pol,
                    std::vector<Node>& exp,
-                   std::vector< Node >& gexp,
+                   std::vector<Node>& gexp,
                    EqualityQuery* qy,
                    bool computeExp);
   /** compute uf eqc terms :
