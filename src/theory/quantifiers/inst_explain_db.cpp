@@ -277,8 +277,8 @@ ExplainStatus InstExplainDb::explain(Node q,
   std::map<Node, bool> expresAtom;
   std::map<Node, bool> processList;
   Trace("ied-conflict") << "Conflict in context " << ctx << " : " << std::endl;
-  Assert( exp.size()==gexp.size() );
-  for (unsigned i=0, esize = exp.size(); i<esize; i++ )
+  Assert(exp.size() == gexp.size());
+  for (unsigned i = 0, esize = exp.size(); i < esize; i++)
   {
     Node e = exp[i];
     Node ge = gexp[i];
@@ -288,21 +288,21 @@ ExplainStatus InstExplainDb::explain(Node q,
       continue;
     }
     proc_pre[er] = true;
-    
+
     // Compute the rewritten generalization: ensure that matching is maintained
     Node ger;
-    if( e==er )
+    if (e == er)
     {
       ger = ge;
     }
     else
     {
-      bool erpol = er.getKind()!=NOT;
+      bool erpol = er.getKind() != NOT;
       Node erAtom = erpol ? er : er[0];
       // may have flipped via symmetry
-      if( erAtom.getKind()==EQUAL )
+      if (erAtom.getKind() == EQUAL)
       {
-        if( er[0]==e[1] && er[1]==e[0] )
+        if (er[0] == e[1] && er[1] == e[0])
         {
           ger = ge[1].eqNode(ge[0]);
           ger = erpol ? ger : ger.negate();
@@ -320,7 +320,7 @@ ExplainStatus InstExplainDb::explain(Node q,
     // where g_j in gassumptions[i][j] for j = 1, ... n.
     // In other words, these represent a generalization of the proof of:
     //    assumptions[i] ^ ... ^ assumptions[i] => e
-    std::map<TNode, std::vector< Node > > gassumptions;
+    std::map<TNode, std::vector<Node> > gassumptions;
     bool regressExp = false;
     std::shared_ptr<eq::EqProof> pf = nullptr;
     if (eqe)
@@ -347,8 +347,8 @@ ExplainStatus InstExplainDb::explain(Node q,
       // current context
       ret = EXP_STATUS_INCOMPLETE;
     }
-    //for (TNode ert : assumptions)
-    for (unsigned i=0, asize = assumptions.size(); i<asize; i++ )
+    // for (TNode ert : assumptions)
+    for (unsigned i = 0, asize = assumptions.size(); i < asize; i++)
     {
       Node a = assumptions[i];
       // now, regress the equality in terms of instantiation lemmas
@@ -363,7 +363,6 @@ ExplainStatus InstExplainDb::explain(Node q,
         expresAtom[a] = true;
       }
     }
-    
   }
   // Now, go back and process atoms that are explainable in multiple ways.
   // This is an optimization for constructing smaller explanations.
