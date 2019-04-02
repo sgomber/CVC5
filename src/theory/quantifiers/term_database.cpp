@@ -511,8 +511,14 @@ bool TermDb::inRelevantDomain( TNode f, unsigned i, TNode r ) {
 
 //return a term n' equivalent to n
 //  maximal subterms of n' are representatives in the equality engine qy
-Node TermDb::evaluateTerm2( TNode n, std::map< TNode, Node >& visited, std::vector< Node >& exp, EqualityQuery * qy, bool useEntailmentTests, bool computeExp,
-                    bool reqHasTerm ) {
+Node TermDb::evaluateTerm2(TNode n,
+                           std::map<TNode, Node>& visited,
+                           std::vector<Node>& exp,
+                           EqualityQuery* qy,
+                           bool useEntailmentTests,
+                           bool computeExp,
+                           bool reqHasTerm)
+{
   std::map< TNode, Node >::iterator itv = visited.find( n );
   if( itv != visited.end() ){
     return itv->second;
@@ -522,84 +528,112 @@ Node TermDb::evaluateTerm2( TNode n, std::map< TNode, Node >& visited, std::vect
   Node ret = n;
   if( n.getKind()==FORALL || n.getKind()==BOUND_VARIABLE ){
     //do nothing
-  }else if( qy->hasTerm( n ) ){
+  }
+  else if (qy->hasTerm(n))
+  {
     Trace("term-db-eval") << "...exists in ee, return rep" << std::endl;
-    ret = qy->getRepresentative( n );   
-    if( computeExp )
+    ret = qy->getRepresentative(n);
+    if (computeExp)
     {
-      if( n!=ret )
+      if (n != ret)
       {
-        exp.push_back( n.eqNode(ret) );
+        exp.push_back(n.eqNode(ret));
       }
     }
     reqHasTerm = false;
-  //term is not known to be equal to a representative in equality engine, evaluate it
-  }else if( n.hasOperator() ){
-    std::vector< TNode > args;
+    // term is not known to be equal to a representative in equality engine,
+    // evaluate it
+  }
+  else if (n.hasOperator())
+  {
+    std::vector<TNode> args;
     bool ret_set = false;
     Kind k = n.getKind();
-    std::vector< Node > tempExp;
-    for( unsigned i=0, nchild = n.getNumChildren(); i<nchild; i++ ){
-      TNode c = evaluateTerm2( n[i], visited, tempExp, qy, useEntailmentTests, computeExp, reqHasTerm );
-      if( c.isNull() ){
+    std::vector<Node> tempExp;
+    for (unsigned i = 0, nchild = n.getNumChildren(); i < nchild; i++)
+    {
+      TNode c = evaluateTerm2(n[i],
+                              visited,
+                              tempExp,
+                              qy,
+                              useEntailmentTests,
+                              computeExp,
+                              reqHasTerm);
+      if (c.isNull())
+      {
         ret = Node::null();
         ret_set = true;
         break;
-      }else if( c==d_true || c==d_false ){
-        //short-circuiting
-        if( ( k==AND && c==d_false ) || ( k==OR && c==d_true ) ){
+      }
+      else if (c == d_true || c == d_false)
+      {
+        // short-circuiting
+        if ((k == AND && c == d_false) || (k == OR && c == d_true))
+        {
           ret = c;
           ret_set = true;
           break;
-        }else if( k==ITE && i==0 ){
-          ret = evaluateTerm2( n[ c==d_true ? 1 : 2], visited, tempExp, qy, useEntailmentTests, computeExp, reqHasTerm ); 
+        }
+        else if (k == ITE && i == 0)
+        {
+          ret = evaluateTerm2(n[c == d_true ? 1 : 2],
+                              visited,
+                              tempExp,
+                              qy,
+                              useEntailmentTests,
+                              computeExp,
+                              reqHasTerm);
           ret_set = true;
           break;
         }
       }
-      if( computeExp )
+      if (computeExp)
       {
-        exp.insert(exp.end(),tempExp.begin(),tempExp.end());
+        exp.insert(exp.end(), tempExp.begin(), tempExp.end());
       }
       Trace("term-db-eval") << "  child " << i << " : " << c << std::endl;
-      args.push_back( c );
+      args.push_back(c);
     }
-    if( ret_set ){
+    if (ret_set)
+    {
       // if we short circuited
-      if( computeExp )
+      if (computeExp)
       {
         exp.clear();
-        exp.insert(exp.end(),tempExp.begin(),tempExp.end());
+        exp.insert(exp.end(), tempExp.begin(), tempExp.end());
       }
     }
     else
     {
-      TNode f = getMatchOperator( n );
-      //if it is an indexed term, return the congruent term
-      if( !f.isNull() ){
-        TNode nn = qy->getCongruentTerm( f, args );
-        Trace("term-db-eval") << "  got congruent term " << nn << " from DB for " << n << std::endl;
-        if( !nn.isNull() ){
-          if( computeExp )
+      TNode f = getMatchOperator(n);
+      // if it is an indexed term, return the congruent term
+      if (!f.isNull())
+      {
+        TNode nn = qy->getCongruentTerm(f, args);
+        Trace("term-db-eval") << "  got congruent term " << nn
+                              << " from DB for " << n << std::endl;
+        if (!nn.isNull())
+        {
+          if (computeExp)
           {
-            Assert( nn.getNumChildren()==n.getNumChildren() );
-            for( unsigned i=0, nchild=nn.getNumChildren(); i<nchild; i++ )
+            Assert(nn.getNumChildren() == n.getNumChildren());
+            for (unsigned i = 0, nchild = nn.getNumChildren(); i < nchild; i++)
             {
-              if( nn[i]!=n[i] )
+              if (nn[i] != n[i])
               {
-                exp.push_back( nn[i].eqNode( n[i] ) );
+                exp.push_back(nn[i].eqNode(n[i]));
               }
             }
           }
-          ret = qy->getRepresentative( nn );
+          ret = qy->getRepresentative(nn);
           Trace("term-db-eval") << "return rep" << std::endl;
           ret_set = true;
-          Assert( !ret.isNull() );
-          if( computeExp )
+          Assert(!ret.isNull());
+          if (computeExp)
           {
-            if( n!=ret )
+            if (n != ret)
             {
-              exp.push_back( nn.eqNode(ret) );
+              exp.push_back(nn.eqNode(ret));
             }
           }
           reqHasTerm = false;
@@ -607,43 +641,52 @@ Node TermDb::evaluateTerm2( TNode n, std::map< TNode, Node >& visited, std::vect
       }
       if( !ret_set ){
         Trace("term-db-eval") << "return rewrite" << std::endl;
-        //a theory symbol or a new UF term
-        if( n.getMetaKind() == metakind::PARAMETERIZED ){
-          args.insert( args.begin(), n.getOperator() );
+        // a theory symbol or a new UF term
+        if (n.getMetaKind() == metakind::PARAMETERIZED)
+        {
+          args.insert(args.begin(), n.getOperator());
         }
-        ret = NodeManager::currentNM()->mkNode( n.getKind(), args );
-        ret = Rewriter::rewrite( ret );
-        if( ret.getKind()==EQUAL ){
-          if( qy->areDisequal( ret[0], ret[1] ) ){
+        ret = NodeManager::currentNM()->mkNode(n.getKind(), args);
+        ret = Rewriter::rewrite(ret);
+        if (ret.getKind() == EQUAL)
+        {
+          if (qy->areDisequal(ret[0], ret[1]))
+          {
             ret = d_false;
           }
         }
-        if( useEntailmentTests ){
-          if( ret.getKind()==EQUAL || ret.getKind()==GEQ ){
-            TheoryEngine * te = d_quantEngine->getTheoryEngine();
-            for( unsigned j=0; j<2; j++ ){
-              std::pair<bool, Node> et = te->entailmentCheck(THEORY_OF_TYPE_BASED, j==0 ? ret : ret.negate() );
-              if( et.first ){
-                ret = j==0 ? d_true : d_false;
-                if( computeExp )
+        if (useEntailmentTests)
+        {
+          if (ret.getKind() == EQUAL || ret.getKind() == GEQ)
+          {
+            TheoryEngine* te = d_quantEngine->getTheoryEngine();
+            for (unsigned j = 0; j < 2; j++)
+            {
+              std::pair<bool, Node> et = te->entailmentCheck(
+                  THEORY_OF_TYPE_BASED, j == 0 ? ret : ret.negate());
+              if (et.first)
+              {
+                ret = j == 0 ? d_true : d_false;
+                if (computeExp)
                 {
-                  exp.push_back( et.second );
+                  exp.push_back(et.second);
                 }
                 break;
               }
             }
           }
-        }   
+        }
       }
     }
   }
   // must have the term
-  if( reqHasTerm && !ret.isNull() && !qy->hasTerm( ret ) ){
-    ret = Node::null();          
+  if (reqHasTerm && !ret.isNull() && !qy->hasTerm(ret))
+  {
+    ret = Node::null();
   }
   Trace("term-db-eval") << "evaluated term : " << n << ", got : " << ret << std::endl;
   // clear the explanation if failed
-  if( computeExp && ret.isNull() )
+  if (computeExp && ret.isNull())
   {
     exp.resize(prevSize);
   }
@@ -735,23 +778,33 @@ TNode TermDb::getEntailedTerm2(TNode n,
   return TNode::null();
 }
 
-Node TermDb::evaluateTerm( TNode n, EqualityQuery * qy, bool useEntailmentTests,
-                    bool reqHasTerm ) {
+Node TermDb::evaluateTerm(TNode n,
+                          EqualityQuery* qy,
+                          bool useEntailmentTests,
+                          bool reqHasTerm)
+{
   if( qy==NULL ){
     qy = d_quantEngine->getEqualityQuery();
   }
   std::map< TNode, Node > visited;
-  std::vector< Node > exp;
-  return evaluateTerm2( n, visited, exp, qy, useEntailmentTests, false, reqHasTerm );
+  std::vector<Node> exp;
+  return evaluateTerm2(
+      n, visited, exp, qy, useEntailmentTests, false, reqHasTerm);
 }
 
-Node TermDb::evaluateTerm( TNode n, std::vector< Node >& exp, EqualityQuery * qy, bool useEntailmentTests,
-                    bool reqHasTerm ) {
-  if( qy==NULL ){
+Node TermDb::evaluateTerm(TNode n,
+                          std::vector<Node>& exp,
+                          EqualityQuery* qy,
+                          bool useEntailmentTests,
+                          bool reqHasTerm)
+{
+  if (qy == NULL)
+  {
     qy = d_quantEngine->getEqualityQuery();
   }
-  std::map< TNode, Node > visited;
-  return evaluateTerm2( n, visited, exp, qy, useEntailmentTests, true, reqHasTerm );
+  std::map<TNode, Node> visited;
+  return evaluateTerm2(
+      n, visited, exp, qy, useEntailmentTests, true, reqHasTerm);
 }
 
 TNode TermDb::getEntailedTerm( TNode n, std::map< TNode, TNode >& subs, bool subsRep, EqualityQuery * qy ) {
@@ -885,7 +938,7 @@ bool TermDb::isEntailed2(TNode n,
   }
   // maybe it is asserted
   bool ret;
-  if( d_quantEngine->getValuation().hasSatValue(n, ret) )
+  if (d_quantEngine->getValuation().hasSatValue(n, ret))
   {
     return ret;
   }

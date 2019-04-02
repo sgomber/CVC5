@@ -177,7 +177,9 @@ public:
   bool setMatch( QuantConflictFind * p, int v, TNode n, bool isGroundRep, bool isGround );
   void unsetMatch( QuantConflictFind * p, int v );
   bool isMatchSpurious( QuantConflictFind * p );
-  bool isTConstraintSpurious( QuantConflictFind * p, std::vector< Node >& terms, std::vector< Node >& lems );
+  bool isTConstraintSpurious(QuantConflictFind* p,
+                             std::vector<Node>& terms,
+                             std::vector<Node>& lems);
   bool entailmentTest( QuantConflictFind * p, Node lit, bool chEnt = true );
   bool completeMatch( QuantConflictFind * p, std::vector< int >& assigned, bool doContinue = false );
   void revertMatch( QuantConflictFind * p, std::vector< int >& assigned );
@@ -273,12 +275,13 @@ public:
   /** get equality explainer */
   EqExplainer* getEqualityExplainer() { return d_eqe; }
   /** is n a propagating instance? */
-  bool isPropagatingInstance( Node n );
+  bool isPropagatingInstance(Node n);
+
  private:
   /** equality explainer */
   EqExplainer* d_eqe;
   /** propagating instance cache */
-  std::map< Node, bool > d_prop_inst_cache;
+  std::map<Node, bool> d_prop_inst_cache;
 };
 
 std::ostream& operator<<(std::ostream& os, const QuantConflictFind::Effort& e);

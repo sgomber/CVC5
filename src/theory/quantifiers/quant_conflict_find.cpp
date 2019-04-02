@@ -562,7 +562,10 @@ bool QuantInfo::isMatchSpurious( QuantConflictFind * p ) {
   return false;
 }
 
-bool QuantInfo::isTConstraintSpurious( QuantConflictFind * p, std::vector< Node >& terms, std::vector< Node >& lems ) {
+bool QuantInfo::isTConstraintSpurious(QuantConflictFind* p,
+                                      std::vector<Node>& terms,
+                                      std::vector<Node>& lems)
+{
   if( options::qcfEagerTest() ){
     //check whether the instantiation evaluates as expected
     if (p->atConflictEffort()) {
@@ -613,7 +616,7 @@ bool QuantInfo::isTConstraintSpurious( QuantConflictFind * p, std::vector< Node 
         InstExplainDb& ied = p->d_quantEngine->getInstantiate()->getExplainDb();
         std::vector<Node> rexp;
         ied.explain(exp, eqe, rexp, options::qcfExpRegressInst(), "qcf");
-        if( options::qcfExpMode()!= quantifiers::QCF_EXP_CINSTANCE_ANALYZE )
+        if (options::qcfExpMode() != quantifiers::QCF_EXP_CINSTANCE_ANALYZE)
         {
           std::vector<Node> lemc;
           for (const Node& re : rexp)
@@ -621,15 +624,16 @@ bool QuantInfo::isTConstraintSpurious( QuantConflictFind * p, std::vector< Node 
             lemc.push_back(re.negate());
           }
           Node lem = lemc.size() == 1
-                        ? lemc[0]
-                        : NodeManager::currentNM()->mkNode(OR, lemc);
+                         ? lemc[0]
+                         : NodeManager::currentNM()->mkNode(OR, lemc);
           lems.push_back(lem);
         }
       }
     }else{
       Node inst =
           p->d_quantEngine->getInstantiate()->getInstantiation(d_q, terms);
-      Node inst_eval = p->getTermDatabase()->evaluateTerm( inst, NULL, options::qcfTConstraint(), true );
+      Node inst_eval = p->getTermDatabase()->evaluateTerm(
+          inst, NULL, options::qcfTConstraint(), true);
       if( Trace.isOn("qcf-instance-check") ){
         Trace("qcf-instance-check") << "Possible propagating instance for " << d_q << " : " << std::endl;
         for( unsigned i=0; i<terms.size(); i++ ){
@@ -637,11 +641,12 @@ bool QuantInfo::isTConstraintSpurious( QuantConflictFind * p, std::vector< Node 
         }
         Trace("qcf-instance-check") << "...evaluates to " << inst_eval << std::endl;
       }
-      if( inst_eval.isNull() || inst_eval==p->getTermUtil()->d_true ){
+      if (inst_eval.isNull() || inst_eval == p->getTermUtil()->d_true)
+      {
         Trace("qcf-instance-check") << "...spurious." << std::endl;
         return true;
       }else{
-        AlwaysAssert( p->isPropagatingInstance( inst_eval ) );
+        AlwaysAssert(p->isPropagatingInstance(inst_eval));
         Trace("qcf-instance-check") << "...not spurious." << std::endl;
       }
     }
@@ -1997,7 +2002,7 @@ void QuantConflictFind::check(Theory::Effort level, QEffort quant_e)
         Trace("qcf-engine") << "---Conflict Find Engine Round, effort = " << level << "---" << std::endl;
       }
       computeRelevantEqr();
-      
+
       // reset the round-specific information
       d_irr_func.clear();
       d_irr_quant.clear();
@@ -2041,8 +2046,8 @@ void QuantConflictFind::check(Theory::Effort level, QEffort quant_e)
                       if( qi->completeMatch( this, assigned ) ){
                         std::vector< Node > terms;
                         qi->getMatch( terms );
-                        std::vector< Node > lems;
-                        bool tcs = qi->isTConstraintSpurious( this, terms, lems );
+                        std::vector<Node> lems;
+                        bool tcs = qi->isTConstraintSpurious(this, terms, lems);
                         if( !tcs ){
                           //for debugging
                           if( Debug.isOn("qcf-check-inst") ){
@@ -2054,18 +2059,20 @@ void QuantConflictFind::check(Theory::Effort level, QEffort quant_e)
                                    e > EFFORT_CONFLICT);
                           }
                           bool processed = false;
-                          if (lems.empty() || options::qcfExpMode()==QCF_EXP_BOTH)
+                          if (lems.empty()
+                              || options::qcfExpMode() == QCF_EXP_BOTH)
                           {
                             processed = d_quantEngine->getInstantiate()
                                             ->addInstantiation(q, terms);
                           }
-                          if( !lems.empty() )
+                          if (!lems.empty())
                           {
-                            for( const Node& l : lems )
+                            for (const Node& l : lems)
                             {
-                              if( !d_quantEngine->addLemma(l) )
+                              if (!d_quantEngine->addLemma(l))
                               {
-                                // only way this would be duplicate lemma is if we processed it as an instantiation
+                                // only way this would be duplicate lemma is if
+                                // we processed it as an instantiation
                                 AlwaysAssert(processed);
                               }
                             }
@@ -2262,26 +2269,34 @@ std::ostream& operator<<(std::ostream& os, const QuantConflictFind::Effort& e) {
   return os;
 }
 
-bool QuantConflictFind::isPropagatingInstance( Node n ) {
-  if( n.getKind()==FORALL ){
+bool QuantConflictFind::isPropagatingInstance(Node n)
+{
+  if (n.getKind() == FORALL)
+  {
     return false;
   }
-  std::map< Node, bool >::iterator it = d_prop_inst_cache.find(n);
-  if( it!=d_prop_inst_cache.end() )
+  std::map<Node, bool>::iterator it = d_prop_inst_cache.find(n);
+  if (it != d_prop_inst_cache.end())
   {
     return it->second;
   }
   bool ret = true;
-  if( n.getKind()==NOT || n.getKind()==AND || n.getKind()==OR || n.getKind()==EQUAL || n.getKind()==ITE ){
-    for( const Node& nc : n )
+  if (n.getKind() == NOT || n.getKind() == AND || n.getKind() == OR
+      || n.getKind() == EQUAL || n.getKind() == ITE)
+  {
+    for (const Node& nc : n)
     {
-      if( !isPropagatingInstance( nc ) ){
+      if (!isPropagatingInstance(nc))
+      {
         ret = false;
         break;
       }
     }
-  }else if( !getEqualityEngine()->hasTerm( n ) ){
-    Trace("qcf-instance-check-debug") << "...not propagating instance because of " << n << std::endl;
+  }
+  else if (!getEqualityEngine()->hasTerm(n))
+  {
+    Trace("qcf-instance-check-debug")
+        << "...not propagating instance because of " << n << std::endl;
     ret = false;
   }
   d_prop_inst_cache[n] = ret;

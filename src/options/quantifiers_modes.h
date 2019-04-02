@@ -76,7 +76,7 @@ enum QcfExpMode
 {
   /** generate instantiation lemmas for conflicting instances */
   QCF_EXP_CINSTANCE,
-  /** 
+  /**
    * Generate instantiation lemmas + additional lemmas based on conflict
    * analysis.
    */

@@ -30,7 +30,7 @@ namespace quantifiers {
 bool EqExplainer::explainEe(eq::EqualityEngine* ee,
                             Node lit,
                             std::vector<TNode>& assumptions,
-                       eq::EqProof* eqp)
+                            eq::EqProof* eqp)
 {
   Node atom = lit.getKind() == NOT ? lit[0] : lit;
   bool pol = lit.getKind() != NOT;
@@ -67,14 +67,16 @@ bool EqExplainer::explainEe(eq::EqualityEngine* ee,
   return false;
 }
 
-bool EqExplainerEe::explain(Node lit, std::vector<TNode>& assumptions,
-                       eq::EqProof* eqp)
+bool EqExplainerEe::explain(Node lit,
+                            std::vector<TNode>& assumptions,
+                            eq::EqProof* eqp)
 {
   return explainEe(d_ee, lit, assumptions, eqp);
 }
 
-bool EqExplainerTe::explain(Node lit, std::vector<TNode>& assumptions,
-                       eq::EqProof* eqp)
+bool EqExplainerTe::explain(Node lit,
+                            std::vector<TNode>& assumptions,
+                            eq::EqProof* eqp)
 {
   // currently we use a very simple heuristic here: we try to explain
   // using UF's equality engine only.

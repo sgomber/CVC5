@@ -34,14 +34,15 @@ class EqExplainer
  public:
   EqExplainer() {}
   virtual ~EqExplainer() {}
-  virtual bool explain(Node lit, std::vector<TNode>& assumptions,
+  virtual bool explain(Node lit,
+                       std::vector<TNode>& assumptions,
                        eq::EqProof* eqp = nullptr) = 0;
 
  protected:
   bool explainEe(eq::EqualityEngine* ee,
                  Node lit,
                  std::vector<TNode>& assumptions,
-                       eq::EqProof* eqp);
+                 eq::EqProof* eqp);
 };
 
 class EqExplainerEe : public EqExplainer
@@ -50,8 +51,9 @@ class EqExplainerEe : public EqExplainer
   EqExplainerEe(eq::EqualityEngine* ee) : d_ee(ee) {}
   virtual ~EqExplainerEe() {}
   /** explain */
-  bool explain(Node lit, std::vector<TNode>& assumptions,
-                       eq::EqProof* eqp = nullptr) override;
+  bool explain(Node lit,
+               std::vector<TNode>& assumptions,
+               eq::EqProof* eqp = nullptr) override;
 
  private:
   /** the equality engine */
@@ -64,8 +66,9 @@ class EqExplainerTe : public EqExplainer
   EqExplainerTe(TheoryEngine* te) : d_te(te) {}
   virtual ~EqExplainerTe() {}
   /** explain */
-  bool explain(Node lit, std::vector<TNode>& assumptions,
-                       eq::EqProof* eqp = nullptr) override;
+  bool explain(Node lit,
+               std::vector<TNode>& assumptions,
+               eq::EqProof* eqp = nullptr) override;
 
  private:
   /** the theory engine */
