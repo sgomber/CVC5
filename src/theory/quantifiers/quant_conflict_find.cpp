@@ -647,7 +647,7 @@ bool QuantInfo::isTConstraintSpurious(QuantConflictFind* p,
         Trace("qcf-instance-check") << "...spurious." << std::endl;
         return true;
       }else{
-        AlwaysAssert(p->isPropagatingInstance(inst_eval));
+        Assert(p->isPropagatingInstance(inst_eval));
         Trace("qcf-instance-check") << "...not spurious." << std::endl;
       }
     }
