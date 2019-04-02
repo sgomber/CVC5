@@ -150,6 +150,8 @@ class TermDb : public QuantifiersUtil {
   * then this function returns Node::null().
   */
   Node getMatchOperator(Node n);
+  /** make match operator app */
+  Node mkMatchOperatorApp( Node f, std::vector< Node >& args );
   /** get term arg index for all f-applications in the current context */
   TNodeTrie* getTermArgTrie(Node f);
   /** get the term arg trie for f-applications in the equivalence class of eqc.
@@ -257,12 +259,17 @@ class TermDb : public QuantifiersUtil {
   * If this function returns true, then exp contains an explanation for why
   * n is entailed with polarity pol. That is:
   *   exp => ( pol ? n : ~n ) * subs
+  * 
+  * If this function returns true, then gexp contains a generalized explanation
+  * for why n is entailed with polarity pol. That is:
+  *   ( gexp * subs ) => ( pol ? n : ~n ) * subs
   */
   bool isEntailed(TNode n,
                   std::map<TNode, TNode>& subs,
                   bool subsRep,
                   bool pol,
                   std::vector<Node>& exp,
+                  std::vector<Node>& gexp,
                   EqualityQuery* qy = NULL);
   /** same as above, without exp */
   bool isEntailed(TNode n,
@@ -356,6 +363,8 @@ class TermDb : public QuantifiersUtil {
                          bool subsRep,
                          bool hasSubs,
                          std::vector<Node>& exp,
+                         std::vector< Node >& gexp,
+                         Node& gnode,
                          EqualityQuery* qy,
                          bool computeExp);
   /** helper for is entailed */
@@ -365,6 +374,7 @@ class TermDb : public QuantifiersUtil {
                    bool hasSubs,
                    bool pol,
                    std::vector<Node>& exp,
+                   std::vector< Node >& gexp,
                    EqualityQuery* qy,
                    bool computeExp);
   /** compute uf eqc terms :

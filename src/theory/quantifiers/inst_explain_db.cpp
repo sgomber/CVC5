@@ -263,6 +263,8 @@ InstExplainInst& InstExplainDb::getInstExplainInst(Node inst)
 }
 
 ExplainStatus InstExplainDb::explain(const std::vector<Node>& exp,
+                        const std::vector<Node>& gexp,
+                        const std::map<TNode, TNode >& subs,
                                      EqExplainer* eqe,
                                      std::vector<Node>& rexp,
                                      bool regressInst,
@@ -285,10 +287,12 @@ ExplainStatus InstExplainDb::explain(const std::vector<Node>& exp,
       // first, regress the explanation using the eqe utility
       std::vector<TNode> assumptions;
       bool regressExp = false;
+      std::shared_ptr<eq::EqProof> pf = nullptr;
       if (eqe)
       {
+        pf = std::make_shared<eq::EqProof>();
         Trace("ied-conflict-debug") << "Explain: " << er << std::endl;
-        if (eqe->explain(er, assumptions))
+        if (eqe->explain(er, assumptions, pf.get()))
         {
           regressExp = true;
           Trace("ied-conflict-debug")

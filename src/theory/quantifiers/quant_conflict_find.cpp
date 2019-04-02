@@ -581,13 +581,15 @@ bool QuantInfo::isTConstraintSpurious(QuantConflictFind* p,
         Trace("qcf-instance-check") << "  " << d_extra_var[i] << " -> " << n << std::endl;
         subs[d_extra_var[i]] = n;
       }
+      // the explanation/generalized explanation
       std::vector<Node> exp;
+      std::vector<Node> gexp;
       bool entFalse = false;
       bool genConflict =
           options::qcfExpMode() != quantifiers::QCF_EXP_CINSTANCE;
       if (genConflict)
       {
-        entFalse = tdb->isEntailed(d_q[1], subs, false, false, exp);
+        entFalse = tdb->isEntailed(d_q[1], subs, false, false, exp, gexp);
       }
       else
       {
@@ -615,7 +617,7 @@ bool QuantInfo::isTConstraintSpurious(QuantConflictFind* p,
         EqExplainer* eqe = p->getEqualityExplainer();
         InstExplainDb& ied = p->d_quantEngine->getInstantiate()->getExplainDb();
         std::vector<Node> rexp;
-        ied.explain(exp, eqe, rexp, options::qcfExpRegressInst(), "qcf");
+        ied.explain(exp, gexp, subs, eqe, rexp, options::qcfExpRegressInst(), "qcf");
         if (options::qcfExpMode() != quantifiers::QCF_EXP_CINSTANCE_ANALYZE)
         {
           std::vector<Node> lemc;
