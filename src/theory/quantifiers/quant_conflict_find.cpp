@@ -629,7 +629,7 @@ bool QuantInfo::isTConstraintSpurious( QuantConflictFind * p, std::vector< Node 
     }else{
       Node inst =
           p->d_quantEngine->getInstantiate()->getInstantiation(d_q, terms);
-      Node inst_eval = p->getTermDatabase()->evaluateTerm( inst, NULL, options::qcfTConstraint() );
+      Node inst_eval = p->getTermDatabase()->evaluateTerm( inst, NULL, options::qcfTConstraint(), true );
       if( Trace.isOn("qcf-instance-check") ){
         Trace("qcf-instance-check") << "Possible propagating instance for " << d_q << " : " << std::endl;
         for( unsigned i=0; i<terms.size(); i++ ){
@@ -637,10 +637,11 @@ bool QuantInfo::isTConstraintSpurious( QuantConflictFind * p, std::vector< Node 
         }
         Trace("qcf-instance-check") << "...evaluates to " << inst_eval << std::endl;
       }
-      if( inst_eval.isNull() || inst_eval==p->getTermUtil()->d_true || !isPropagatingInstance( p, inst_eval ) ){
+      if( inst_eval.isNull() || inst_eval==p->getTermUtil()->d_true ){
         Trace("qcf-instance-check") << "...spurious." << std::endl;
         return true;
       }else{
+        AlwaysAssert( p->isPropagatingInstance( inst_eval ) );
         Trace("qcf-instance-check") << "...not spurious." << std::endl;
       }
     }
@@ -659,27 +660,6 @@ bool QuantInfo::isTConstraintSpurious( QuantConflictFind * p, std::vector< Node 
   }
   // spurious if quantifiers engine is in conflict
   return p->d_quantEngine->inConflict();
-}
-
-bool QuantInfo::isPropagatingInstance( QuantConflictFind * p, Node n ) {
-  if( n.getKind()==FORALL ){
-    //TODO?
-    return true;
-  }else if( n.getKind()==NOT || n.getKind()==AND || n.getKind()==OR || n.getKind()==EQUAL || n.getKind()==ITE || 
-            ( n.getKind()==EQUAL && n[0].getType().isBoolean() ) ){
-    for( unsigned i=0; i<n.getNumChildren(); i++ ){
-      if( !isPropagatingInstance( p, n[i] ) ){
-        return false;
-      }
-    }
-    return true;
-  }else{
-    if( p->getEqualityEngine()->hasTerm( n ) || isGroundSubterm( n ) ){
-      return true;
-    }
-  }
-  Trace("qcf-instance-check-debug") << "...not propagating instance because of " << n << std::endl;
-  return false;
 }
 
 bool QuantInfo::entailmentTest( QuantConflictFind * p, Node lit, bool chEnt ) {
@@ -1093,7 +1073,6 @@ MatchGen::MatchGen( QuantInfo * qi, Node n, bool isVar )
             else
             {
               d_qni_gterm[i] = d_n[i];
-              qi->setGroundSubterm(d_n[i]);
             }
           }
           d_type = d_n.getKind() == EQUAL ? typ_eq : typ_tconstraint;
@@ -1104,7 +1083,6 @@ MatchGen::MatchGen( QuantInfo * qi, Node n, bool isVar )
       //we will just evaluate
       d_n = n;
       d_type = typ_ground;
-      qi->setGroundSubterm( d_n );
     }
   }
   Trace("qcf-qregister-debug")  << "Done make match gen " << n << ", type = ";
@@ -2019,9 +1997,11 @@ void QuantConflictFind::check(Theory::Effort level, QEffort quant_e)
         Trace("qcf-engine") << "---Conflict Find Engine Round, effort = " << level << "---" << std::endl;
       }
       computeRelevantEqr();
-
+      
+      // reset the round-specific information
       d_irr_func.clear();
       d_irr_quant.clear();
+      d_prop_inst_cache.clear();
 
       if( Trace.isOn("qcf-debug") ){
         Trace("qcf-debug") << std::endl;
@@ -2280,6 +2260,32 @@ std::ostream& operator<<(std::ostream& os, const QuantConflictFind::Effort& e) {
       break;
   }
   return os;
+}
+
+bool QuantConflictFind::isPropagatingInstance( Node n ) {
+  if( n.getKind()==FORALL ){
+    return false;
+  }
+  std::map< Node, bool >::iterator it = d_prop_inst_cache.find(n);
+  if( it!=d_prop_inst_cache.end() )
+  {
+    return it->second;
+  }
+  bool ret = true;
+  if( n.getKind()==NOT || n.getKind()==AND || n.getKind()==OR || n.getKind()==EQUAL || n.getKind()==ITE ){
+    for( const Node& nc : n )
+    {
+      if( !isPropagatingInstance( nc ) ){
+        ret = false;
+        break;
+      }
+    }
+  }else if( !getEqualityEngine()->hasTerm( n ) ){
+    Trace("qcf-instance-check-debug") << "...not propagating instance because of " << n << std::endl;
+    ret = false;
+  }
+  d_prop_inst_cache[n] = ret;
+  return ret;
 }
 
 } /* namespace CVC4::theory::quantifiers */

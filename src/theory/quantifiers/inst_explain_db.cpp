@@ -29,7 +29,8 @@ namespace quantifiers {
 
 bool EqExplainer::explainEe(eq::EqualityEngine* ee,
                             Node lit,
-                            std::vector<TNode>& assumptions)
+                            std::vector<TNode>& assumptions,
+                       eq::EqProof* eqp)
 {
   Node atom = lit.getKind() == NOT ? lit[0] : lit;
   bool pol = lit.getKind() != NOT;
@@ -49,7 +50,7 @@ bool EqExplainer::explainEe(eq::EqualityEngine* ee,
         return false;
       }
       Trace("eq-explain") << "explain eq" << atom << " " << pol << std::endl;
-      ee->explainEquality(atom[0], atom[1], pol, assumptions);
+      ee->explainEquality(atom[0], atom[1], pol, assumptions, eqp);
       Trace("eq-explain") << "finished explain eq " << assumptions.size()
                           << std::endl;
       return true;
@@ -58,7 +59,7 @@ bool EqExplainer::explainEe(eq::EqualityEngine* ee,
   else if (ee->hasTerm(atom))
   {
     Trace("eq-explain") << "explain pred" << atom << " " << pol << std::endl;
-    ee->explainPredicate(atom, pol, assumptions);
+    ee->explainPredicate(atom, pol, assumptions, eqp);
     Trace("eq-explain") << "finished explain pred " << assumptions.size()
                         << std::endl;
     return true;
@@ -66,12 +67,14 @@ bool EqExplainer::explainEe(eq::EqualityEngine* ee,
   return false;
 }
 
-bool EqExplainerEe::explain(Node lit, std::vector<TNode>& assumptions)
+bool EqExplainerEe::explain(Node lit, std::vector<TNode>& assumptions,
+                       eq::EqProof* eqp)
 {
-  return explainEe(d_ee, lit, assumptions);
+  return explainEe(d_ee, lit, assumptions, eqp);
 }
 
-bool EqExplainerTe::explain(Node lit, std::vector<TNode>& assumptions)
+bool EqExplainerTe::explain(Node lit, std::vector<TNode>& assumptions,
+                       eq::EqProof* eqp)
 {
   // currently we use a very simple heuristic here: we try to explain
   // using UF's equality engine only.
@@ -79,7 +82,7 @@ bool EqExplainerTe::explain(Node lit, std::vector<TNode>& assumptions)
   eq::EqualityEngine* ee = t->getEqualityEngine();
   if (ee)
   {
-    return explainEe(ee, lit, assumptions);
+    return explainEe(ee, lit, assumptions, eqp);
   }
   return false;
 }

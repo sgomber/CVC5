@@ -130,10 +130,7 @@ private: //for completing match
   std::map< Node, bool > d_ground_terms;
   std::vector< Node > d_extra_var;
 public:
-  void setGroundSubterm( Node t ) { d_ground_terms[t] = true; }
-  bool isGroundSubterm( Node t ) { return d_ground_terms.find( t )!=d_ground_terms.end(); }
   bool isBaseMatchComplete();
-  bool isPropagatingInstance( QuantConflictFind * p, Node n );
 public:
   QuantInfo();
   ~QuantInfo();
@@ -275,10 +272,13 @@ public:
   std::string identify() const override { return "QcfEngine"; }
   /** get equality explainer */
   EqExplainer* getEqualityExplainer() { return d_eqe; }
-
+  /** is n a propagating instance? */
+  bool isPropagatingInstance( Node n );
  private:
   /** equality explainer */
   EqExplainer* d_eqe;
+  /** propagating instance cache */
+  std::map< Node, bool > d_prop_inst_cache;
 };
 
 std::ostream& operator<<(std::ostream& os, const QuantConflictFind::Effort& e);

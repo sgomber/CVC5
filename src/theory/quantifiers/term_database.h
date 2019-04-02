@@ -188,7 +188,14 @@ class TermDb : public QuantifiersUtil {
   */
   Node evaluateTerm(TNode n,
                     EqualityQuery* qy = NULL,
-                    bool useEntailmentTests = false);
+                    bool useEntailmentTests = false,
+                    bool reqHasTerm = false
+                   );
+  Node evaluateTerm(TNode n,
+                    std::vector< Node >& exp,
+                    EqualityQuery* qy = NULL,
+                    bool useEntailmentTests = false,
+                    bool reqHasTerm = false);
   /** get entailed term
    *
   * If possible, returns a term n' such that:
@@ -317,7 +324,9 @@ class TermDb : public QuantifiersUtil {
   /** set has term */
   void setHasTerm( Node n );
   /** helper for evaluate term */
-  Node evaluateTerm2( TNode n, std::map< TNode, Node >& visited, EqualityQuery * qy, bool useEntailmentTests );
+  Node evaluateTerm2( TNode n, std::map< TNode, Node >& visited,
+                   std::vector<Node>& exp, EqualityQuery * qy, bool useEntailmentTests, bool computeExp,
+                    bool reqHasTerm );
   /** helper for get entailed term */
   TNode getEntailedTerm2(TNode n,
                          std::map<TNode, TNode>& subs,
