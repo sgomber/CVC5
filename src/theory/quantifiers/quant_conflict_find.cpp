@@ -562,7 +562,7 @@ bool QuantInfo::isMatchSpurious( QuantConflictFind * p ) {
   return false;
 }
 
-bool QuantInfo::isTConstraintSpurious( QuantConflictFind * p, std::vector< Node >& terms ) {
+bool QuantInfo::isTConstraintSpurious( QuantConflictFind * p, std::vector< Node >& terms, std::vector< Node >& lems ) {
   if( options::qcfEagerTest() ){
     //check whether the instantiation evaluates as expected
     if (p->atConflictEffort()) {
@@ -613,17 +613,17 @@ bool QuantInfo::isTConstraintSpurious( QuantConflictFind * p, std::vector< Node 
         InstExplainDb& ied = p->d_quantEngine->getInstantiate()->getExplainDb();
         std::vector<Node> rexp;
         ied.explain(exp, eqe, rexp, options::qcfExpRegressInst(), "qcf");
-        std::vector<Node> lemc;
-        for (const Node& re : rexp)
+        if( options::qcfExpMode()!= quantifiers::QCF_EXP_CINSTANCE_ANALYZE )
         {
-          lemc.push_back(re.negate());
-        }
-        Node lem = lemc.size() == 1
-                       ? lemc[0]
-                       : NodeManager::currentNM()->mkNode(OR, lemc);
-        if (!p->d_quantEngine->addLemma(lem))
-        {
-          AlwaysAssert(false);
+          std::vector<Node> lemc;
+          for (const Node& re : rexp)
+          {
+            lemc.push_back(re.negate());
+          }
+          Node lem = lemc.size() == 1
+                        ? lemc[0]
+                        : NodeManager::currentNM()->mkNode(OR, lemc);
+          lems.push_back(lem);
         }
       }
     }else{
@@ -2061,7 +2061,8 @@ void QuantConflictFind::check(Theory::Effort level, QEffort quant_e)
                       if( qi->completeMatch( this, assigned ) ){
                         std::vector< Node > terms;
                         qi->getMatch( terms );
-                        bool tcs = qi->isTConstraintSpurious( this, terms );
+                        std::vector< Node > lems;
+                        bool tcs = qi->isTConstraintSpurious( this, terms, lems );
                         if( !tcs ){
                           //for debugging
                           if( Debug.isOn("qcf-check-inst") ){
@@ -2073,15 +2074,22 @@ void QuantConflictFind::check(Theory::Effort level, QEffort quant_e)
                                    e > EFFORT_CONFLICT);
                           }
                           bool processed = false;
-                          if (e == EFFORT_CONFLICT
-                              && options::qcfExpMode() == QCF_EXP_CONFLICT)
-                          {
-                            processed = true;
-                          }
-                          else
+                          if (lems.empty() || options::qcfExpMode()==QCF_EXP_BOTH)
                           {
                             processed = d_quantEngine->getInstantiate()
                                             ->addInstantiation(q, terms);
+                          }
+                          if( !lems.empty() )
+                          {
+                            for( const Node& l : lems )
+                            {
+                              if( !d_quantEngine->addLemma(l) )
+                              {
+                                // only way this would be duplicate lemma is if we processed it as an instantiation
+                                AlwaysAssert(processed);
+                              }
+                            }
+                            processed = true;
                           }
                           if (processed)
                           {

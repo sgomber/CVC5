@@ -308,6 +308,10 @@ Quantifier conflict find explanation modes currently supported by the --qcf-exp 
 cinstance (default) \n\
 + Generate instantiation lemma corresponding to conflicting instance.\n\
 \n\
+cinstance-analyze \n\
++ Generate instantiation lemma corresponding to conflicting instance plus\n\
+additional lemmas based on (first-order) conflict analysis\n\
+\n\
 conflict \n\
 + When possible, generate conflict clauses that explain conflicting \n\
 instances.\n\
@@ -720,6 +724,10 @@ theory::quantifiers::QcfExpMode OptionsHandler::stringToQcfExpMode(
   if (optarg == "cinstance")
   {
     return theory::quantifiers::QCF_EXP_CINSTANCE;
+  }
+  else if (optarg == "cinstance-analyze")
+  {
+    return theory::quantifiers::QCF_EXP_CINSTANCE_ANALYZE;
   }
   else if (optarg == "conflict")
   {

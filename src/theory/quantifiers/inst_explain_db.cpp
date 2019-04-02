@@ -183,7 +183,7 @@ void InstExplainDb::registerExplanation(Node inst, Node n, Node on)
           for (unsigned i = 0, size = atom.getNumChildren(); i < size; i++)
           {
             Node ac = atom[i];
-            Node aci = atom[i];
+            Node aci = atomi[i];
             visit_hasPol.push_back(hasPol);
             visit.push_back(pol ? ac : ac.negate());
             visiti.push_back(pol ? aci : aci.negate());
@@ -219,14 +219,14 @@ void InstExplainDb::registerExplanation(Node inst, Node n, Node on)
         Node curir = Rewriter::rewrite(curi);
         InstExplainLit& iel = getInstExplainLit(curir);
         iel.addInstExplanation(inst, curi, cur);
-        Trace("inst-explain") << "  -> " << curi << std::endl;
+        Trace("inst-explain") << "  -> " << curir << std::endl;
         if (!hasPol)
         {
           Node curin = curi.negate();
           Node curinr = Rewriter::rewrite(curin);
           InstExplainLit& ieln = getInstExplainLit(curinr);
           ieln.addInstExplanation(inst, curin, cur.negate());
-          Trace("inst-explain") << "  -> " << curin << std::endl;
+          Trace("inst-explain") << "  -> " << curinr << std::endl;
         }
       }
     }
