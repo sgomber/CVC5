@@ -21,6 +21,7 @@
 #include <vector>
 #include "expr/node.h"
 #include "theory/quantifiers/inst_explain.h"
+#include "theory/quantifiers/gen_lit_info.h"
 #include "theory/quantifiers_engine.h"
 #include "theory/theory_engine.h"
 #include "theory/uf/equality_engine.h"
@@ -80,31 +81,6 @@ enum ExplainStatus
   EXP_STATUS_FULL,
   EXP_STATUS_INCOMPLETE,
   EXP_STATUS_FAIL
-};
-
-/** generalized literal information
- *
- * This stores the state of a generalized literal.
- */
-class GLitInfo
-{
- public:
-  GLitInfo() : d_iei(nullptr) {}
-  InstExplainInst* d_iei;
-  std::map<TNode, Node> d_subs_modify;
-  /** initialize this information */
-  void initialize(InstExplainInst* iei);
-  /** initialize to the result of merging the generalizations of a and b
-   *
-   * It should be the case that ( a * subs(ga.d_iei) ) = ( b * subs(gb.d_iei) ).
-   *
-   * For example:
-   */
-  bool initialize(TNode a, const GLitInfo& ga, TNode b, const GLitInfo& gb);
-  
-  bool merge(TNode a, TNode b, const GLitInfo& gb);
-  
-  bool drop(TNode b);
 };
 
 class InstExplainDb
