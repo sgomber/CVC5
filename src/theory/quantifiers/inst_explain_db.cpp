@@ -347,7 +347,10 @@ ExplainStatus InstExplainDb::explain(Node q,
           Debug("ied-proof") << "-----------end proof" << std::endl;
         }
         // compute the generalized assumptions
-        generalize(er,ger,pf.get(),assumptions,gassumptions);
+        Node cg;
+        std::map< eq::EqProof *, Node > concs;
+        std::map< eq::EqProof *, Node > concsg;
+        generalize(er,ger,pf.get(),concs,concsg, cg);
       }
       else
       {
@@ -568,99 +571,26 @@ void InstExplainDb::instExplain(Node n,
   }
 }
 
-void InstExplainDb::generalize(Node e, Node ge, eq::EqProof * eqp,
-                std::vector< TNode >& assumptions,
-                std::map<TNode, std::vector<Node> >& gassumptions )
-{
-  Trace("ied-gen") << "Generalize" << std::endl;
-  Trace("ied-gen") << "  " << e << std::endl;
-  Trace("ied-gen") << "  " << ge << std::endl;
-  
-  if( ge.isNull() )
-  {
-    return;
-  }
-  
-  Assert( e.getKind()==ge.getKind() );
-  Assert( e.getNumChildren()==ge.getNumChildren() );
-  
-  
-  
-  // what kind of proof?
-  unsigned id = eqp->d_id;
-  if( id==eq::MERGED_THROUGH_CONGRUENCE )
-  {
-    if( e.getKind()!=EQUAL || !e[0].hasOperator() || !e[1].hasOperator() || e[0].getOperator()!=e[1].getOperator() || e[0].getNumChildren()!=e[1].getNumChildren())
-    {
-      Debug("ied-gen-error") << "Unexpected (cong):" << std::endl;
-      eqp->debug_print("ied-gen-error",1);
-      return;
-    }
-    unsigned nchild = e[0].getNumChildren();
-    // get child proofs 
-    std::vector< eq::EqProof* > childProofs;
-    eq::EqProof * curr = eqp;
-    do
-    {
-      Assert( curr->d_children.size()==2 );
-      childProofs.push_back(curr->d_children[1].get());
-      curr = curr->d_children[0].get();
-    }while( curr->d_id==eq::MERGED_THROUGH_CONGRUENCE );
-    
-    if( childProofs.size()==e[0].getNumChildren() )
-    {
-      for( unsigned i=0; i<nchild; i++ )
-      {
-        Node ec = e[0][i].eqNode(e[1][i]);
-        Node gec = ge[0][i].eqNode(ge[1][i]);
-        generalize(ec,gec,childProofs[i],assumptions,gassumptions);
-      }
-    }
-    else
-    {
-      Debug("ied-gen-error") << "Unexpected (cong children):" << std::endl;
-      eqp->debug_print("ied-gen-error",1);
-      return;
-    }
-  }
-  else if( id==eq::MERGED_THROUGH_EQUALITY )
-  {
-    // an assumption
-    Node eq = eqp->d_node;
-    Assert( std::find( assumptions.begin(), assumptions.end(), eq )!=assumptions.end() );
-    // process the assumption
-    
-  }
-  else if( id==eq::MERGED_THROUGH_REFLEXIVITY )
-  {
-    // do nothing
-  }
-  else if( id==eq::MERGED_THROUGH_CONSTANTS )
-  {
-    //???
-  }
-  else if( id==eq::MERGED_THROUGH_TRANS )
-  {
-    for( unsigned i=0, nproofs = eqp->d_children.size(); i<nproofs; i++ )
-    {
-      eq::EqProof * epi = eqp->d_children[i].get();
-      
-    }
-  }
-}
-
-Node InstExplainDb::computeConclusions(eq::EqProof * eqp, std::map< eq::EqProof *, Node >& concs )
+Node InstExplainDb::generalize(Node e, Node ge, eq::EqProof * eqp,
+                  std::map< eq::EqProof *, Node >& concs,
+                  std::map< eq::EqProof *, Node >& concsg,
+                  Node& cg)
 {
   std::map< eq::EqProof *, Node >::iterator itc = concs.find(eqp);
   if( itc!=concs.end() )
   {
+    Assert( concsg.find(eqp)!=concsg.end() );
+    cg = concsg[eqp];
     return itc->second;
   }
   // what kind of proof?
   Node ret;
+  Node retg;
   unsigned id = eqp->d_id;
   if( id==eq::MERGED_THROUGH_CONGRUENCE )
   {
+    Assert( e.isNull() );
+    Assert( ge.isNull() );
     Node cnode = eqp->d_node;
     // get child proofs 
     std::vector< eq::EqProof* > childProofs;
@@ -680,9 +610,12 @@ Node InstExplainDb::computeConclusions(eq::EqProof * eqp, std::map< eq::EqProof 
       {
         rhsArgs.push_back(cnode.getOperator());
       }
+      Node retcg;
+      Node retc;
       for( unsigned i=0; i<nchild; i++ )
       {
-        Node retc = computeConclusions(childProofs[i],concs);
+        // FIXME: must move up
+        retc = generalize(d_null,d_null,childProofs[i],concs,concsg, retcg);
         unsigned matchIndex;
         if( getMatchIndex(retc,cnode[i],matchIndex) )
         {
@@ -711,7 +644,7 @@ Node InstExplainDb::computeConclusions(eq::EqProof * eqp, std::map< eq::EqProof 
   {
     // an assumption
     ret = eqp->d_node;
-    
+    retg = eqp->d_node;
     // try to generalize here?
     
   }
@@ -720,6 +653,7 @@ Node InstExplainDb::computeConclusions(eq::EqProof * eqp, std::map< eq::EqProof 
     // do nothing
     Node n = eqp->d_node;
     ret = n.eqNode(n);
+    retg = n.eqNode(n);
   }
   else if( id==eq::MERGED_THROUGH_CONSTANTS )
   {
@@ -727,17 +661,23 @@ Node InstExplainDb::computeConclusions(eq::EqProof * eqp, std::map< eq::EqProof 
   }
   else if( id==eq::MERGED_THROUGH_TRANS )
   {
-    Node retc = computeConclusions(eqp->d_children[0].get(),concs);
+    // FIXME: must move up
+    Node retcg;
+    Node retc = generalize(d_null,d_null,eqp->d_children[0].get(),concs, concsg, retcg);
     if( !retc.isNull() )
     {
       Node r1 = retc[0];
       Node r2 = retc[1];
+      Node r1g = r1;
+      Node r2g = r2;
+      // TODO: take generalization
+      
       std::vector< unsigned > orderedIndex;
       bool success = true;
       for( unsigned i=1, nproofs = eqp->d_children.size(); i<nproofs; i++ )
       {
         eq::EqProof * epi = eqp->d_children[i].get();
-        retc = computeConclusions(epi,concs);
+        retc = generalize(d_null,d_null,epi,concs, concsg, retcg);
         unsigned matchIndex;
         if( getMatchIndex(retc, r1, matchIndex ) )
         {
@@ -761,6 +701,7 @@ Node InstExplainDb::computeConclusions(eq::EqProof * eqp, std::map< eq::EqProof 
   }
   Assert( ret.getKind()==EQUAL );
   concs[eqp] = ret;
+  concsg[eqp] = retg;
   return ret;
 }
 

@@ -143,12 +143,12 @@ class InstExplainDb
                    std::map<Node, bool>& expresAtom,
                    std::map<Node, bool>& processList,
                    bool regressInst);
-  
-  void generalize(Node e, Node ge, eq::EqProof * eqp,
-                  std::vector< TNode >& assumptions,
-                  std::map<TNode, std::vector<Node> >& gassumptions
+  Node d_null;
+  Node generalize(Node e, Node ge, eq::EqProof * eqp,
+                  std::map< eq::EqProof *, Node >& concs,
+                  std::map< eq::EqProof *, Node >& concsg,
+                  Node& cg
                  );
-  Node computeConclusions(eq::EqProof * eqp, std::map< eq::EqProof *, Node >& concs );
   bool getMatchIndex( Node eq, Node n, unsigned& index );
 };
 
