@@ -769,6 +769,7 @@ TNode TermDb::getEntailedTerm2(TNode n,
               gnode = n;
             }
           }
+          Trace("term-db-entail") << "Return " << entt << "/" << gnode << std::endl;
           return entt;
         }
       }
@@ -776,7 +777,7 @@ TNode TermDb::getEntailedTerm2(TNode n,
   }
   else if (qy->getEngine()->hasTerm(n))
   {
-    Trace("term-db-entail") << "...exists in ee, return rep " << std::endl;
+    Trace("term-db-entail") << "...exists in ee, return self" << std::endl;
     if (computeExp)
     {
       gnode = n;
@@ -798,68 +799,67 @@ TNode TermDb::getEntailedTerm2(TNode n,
                                 computeExp);
       }
     }
-  }else{
-    if( n.hasOperator() ){
-      TNode f = getMatchOperator( n );
-      if( !f.isNull() ){
-        std::vector< TNode > args;
-        std::vector<TNode> argst;
-        std::vector<Node> gncs;
-        for( unsigned i=0; i<n.getNumChildren(); i++ ){
-          Node gnc;
-          TNode c = getEntailedTerm2(
-              n[i], subs, subsRep, hasSubs, exp, gexp, gnc, qy, computeExp);
-          if( c.isNull() ){
-            return TNode::null();
-          }
-          TNode cr = qy->getEngine()->getRepresentative(c);
-          Trace("term-db-entail")
-              << "  child " << i << " : " << cr << std::endl;
-          args.push_back(cr);
-          if (computeExp)
-          {
-            argst.push_back(c);
-            if (hasSubs)
-            {
-              gncs.push_back(gnc);
-            }
-          }
-        }
-        TNode nn = qy->getCongruentTerm( f, args );
-        Trace("term-db-entail") << "  got congruent term " << nn << " for " << n << std::endl;
-        if (computeExp)
-        {
-          if (!nn.isNull())
-          {
-            Assert(nn.getNumChildren() == argst.size());
-            for (unsigned i = 0, size = nn.getNumChildren(); i < size; i++)
-            {
-              if (argst[i] != nn[i])
-              {
-                Node eq = argst[i].eqNode(nn[i]);
-                exp.push_back(eq);
-                if (hasSubs)
-                {
-                  Node eqg = gncs[i].eqNode(nn[i]);
-                  gexp.push_back(eq);
-                  // the generalized node below now if nn[i]
-                  gncs[i] = nn[i];
-                }
-                Trace("term-db-entail-exp")
-                    << "***... add explain " << eq << std::endl;
-              }
-            }
-            if (hasSubs)
-            {
-              gnode = mkMatchOperatorApp(f, gncs);
-            }
-          }
-        }
-        return nn;
+  }else if( !n.hasOperator() ){
+    return Node::null();
+  }
+  TNode f = getMatchOperator( n );
+  if( f.isNull() ){
+    return Node::null();
+  }
+  std::vector< TNode > args;
+  std::vector<TNode> argst;
+  std::vector<Node> gncs;
+  for( unsigned i=0, nchild = n.getNumChildren(); i<nchild; i++ ){
+    Node gnc;
+    TNode c = getEntailedTerm2(
+        n[i], subs, subsRep, hasSubs, exp, gexp, gnc, qy, computeExp);
+    if( c.isNull() ){
+      return TNode::null();
+    }
+    TNode cr = qy->getEngine()->getRepresentative(c);
+    Trace("term-db-entail")
+        << "  child " << i << " : " << c << "/" << gnc << std::endl;
+    args.push_back(cr);
+    if (computeExp)
+    {
+      argst.push_back(c);
+      if (hasSubs)
+      {
+        gncs.push_back(gnc);
       }
     }
   }
-  return TNode::null();
+  TNode nn = qy->getCongruentTerm( f, args );
+  Trace("term-db-entail") << "  got congruent term " << nn << " for " << n << std::endl;
+  if (computeExp)
+  {
+    if (!nn.isNull())
+    {
+      Assert(nn.getNumChildren() == argst.size());
+      for (unsigned i = 0, size = nn.getNumChildren(); i < size; i++)
+      {
+        if (argst[i] != nn[i])
+        {
+          Node eq = argst[i].eqNode(nn[i]);
+          exp.push_back(eq);
+          if (hasSubs)
+          {
+            Node eqg = gncs[i].eqNode(nn[i]);
+            gexp.push_back(eqg);
+            // the generalized node below now if nn[i]
+            gncs[i] = nn[i];
+          }
+          Trace("term-db-entail-exp")
+              << "***... add explain " << eq << std::endl;
+        }
+      }
+      if (hasSubs)
+      {
+        gnode = mkMatchOperatorApp(f, gncs);
+      }
+    }
+  }
+  return nn;
 }
 
 Node TermDb::evaluateTerm(TNode n,

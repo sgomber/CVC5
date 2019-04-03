@@ -634,6 +634,7 @@ bool QuantInfo::isTConstraintSpurious(QuantConflictFind* p,
                          ? lemc[0]
                          : NodeManager::currentNM()->mkNode(OR, lemc);
           lems.push_back(lem);
+          exit(1);
         }
       }
     }else{

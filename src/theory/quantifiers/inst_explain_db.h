@@ -143,6 +143,10 @@ class InstExplainDb
                    std::map<Node, bool>& expresAtom,
                    std::map<Node, bool>& processList,
                    bool regressInst);
+  
+  void generalize(Node e, Node ge, eq::EqProof * eqp,
+                  std::vector< TNode >& assumptions,
+                  std::map<TNode, std::vector<Node> >& gassumptions );
 };
 
 }  // namespace quantifiers

@@ -325,6 +325,8 @@ ExplainStatus InstExplainDb::explain(Node q,
     std::shared_ptr<eq::EqProof> pf = nullptr;
     if (eqe)
     {
+      // TODO: shortcut case where trivially holds via SAT value?
+      
       pf = std::make_shared<eq::EqProof>();
       Trace("ied-conflict-debug") << "Explain: " << er << std::endl;
       if (eqe->explain(er, assumptions, pf.get()))
@@ -332,7 +334,14 @@ ExplainStatus InstExplainDb::explain(Node q,
         regressExp = true;
         Trace("ied-conflict-debug")
             << "  ...regressed to " << assumptions << std::endl;
-        // TODO: compute the generalized assumptions
+        if( Debug.isOn("ied-proof") )
+        {
+          Debug("ied-proof") << "-----------proof of " << er << std::endl;
+          pf->debug_print("ied-proof",1);
+          Debug("ied-proof") << "-----------end proof" << std::endl;
+        }
+        // compute the generalized assumptions
+        generalize(er,ger,pf.get(),assumptions,gassumptions);
       }
       else
       {
@@ -553,6 +562,21 @@ void InstExplainDb::instExplain(Node n,
   }
 }
 
+void InstExplainDb::generalize(Node e, Node ge, eq::EqProof * eqp,
+                std::vector< TNode >& assumptions,
+                std::map<TNode, std::vector<Node> >& gassumptions )
+{
+  Trace("ied-gen") << "Generalize" << std::endl;
+  Trace("ied-gen") << "  " << e << std::endl;
+  Trace("ied-gen") << "  " << ge << std::endl;
+  
+  if( ge.isNull() )
+  {
+    return;
+  }
+  
+}
+  
 }  // namespace quantifiers
 }  // namespace theory
 }  // namespace CVC4
