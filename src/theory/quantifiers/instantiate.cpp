@@ -306,7 +306,7 @@ bool Instantiate::addInstantiation(
   }
   if (options::instExplain())
   {
-    d_iedb.registerExplanation(lem, orig_body, q[1]);
+    d_iedb.registerExplanation(lem, orig_body, q, terms);
   }
   if (options::instMaxLevel() != -1)
   {

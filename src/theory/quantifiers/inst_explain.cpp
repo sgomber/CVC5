@@ -74,22 +74,26 @@ int IeEvaluator::evaluate(Node n)
   return res;
 }
 
-void InstExplainLit::initialize(Node inst) { d_this = inst; }
-void InstExplainLit::reset() { d_curr_prop_exps.clear(); }
+void InstExplainLit::initialize(Node lit) { 
+  d_this = lit;
+}
+void InstExplainLit::reset() { d_curr_prop_exps.clear(); 
+  d_curr_insts.clear();
+}
 void InstExplainLit::addInstExplanation(Node inst, Node origILit, Node origLit)
 {
   if (std::find(d_insts.begin(), d_insts.end(), inst) == d_insts.end())
   {
     d_insts.push_back(inst);
     d_orig_ilit[inst] = origILit;
-    d_orig_ilit[inst] = origLit;
+    d_orig_lit[inst] = origLit;
   }
 }
 
 void InstExplainLit::setPropagating(Node inst)
 {
   Assert(std::find(d_insts.begin(), d_insts.end(), inst) != d_insts.end());
-  //  get the explanation
+  // generate the explanation
   std::map<Node, Node>::iterator it = d_inst_to_exp.find(inst);
   if (it == d_inst_to_exp.end())
   {
@@ -106,9 +110,27 @@ void InstExplainLit::setPropagating(Node inst)
   {
     d_curr_prop_exps.push_back(it->second);
   }
+  d_curr_insts.push_back(inst);
 }
 
-void InstExplainInst::initialize(Node inst) { d_this = inst; }
+Node InstExplainLit::getOriginalLit(Node inst) const
+{
+  std::map<Node, Node>::const_iterator it = d_orig_lit.find(inst);
+  Assert( it!=d_orig_lit.end() );
+  return it->second;
+}
+
+void InstExplainInst::initialize(Node inst, Node q, std::vector< Node >& ts) { 
+  d_this = inst; 
+  Assert( q.getKind()==FORALL );
+  Assert( ts.size()==q[0].getNumChildren() );
+  d_this = inst; 
+  d_quant = q;
+  for( unsigned i=0, nchild = ts.size(); i<nchild; i++ )
+  {
+    d_subs[q[i]] = Rewriter::rewrite( ts[i] );
+  }
+}
 
 void InstExplainInst::propagate(IeEvaluator& v, std::vector<Node>& propLits)
 {

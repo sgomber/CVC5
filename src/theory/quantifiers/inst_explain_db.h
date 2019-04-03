@@ -78,7 +78,29 @@ class EqExplainerTe : public EqExplainer
 enum ExplainStatus
 {
   EXP_STATUS_FULL,
-  EXP_STATUS_INCOMPLETE
+  EXP_STATUS_INCOMPLETE,
+  EXP_STATUS_FAIL
+};
+
+/** generalized literal information 
+ * 
+ * This stores the state of a generalized literal.
+ */
+class GLitInfo
+{
+public:
+  GLitInfo() : d_iei(nullptr){}
+  InstExplainInst* d_iei;
+  std::map< TNode, Node > d_subs_modify;
+  /** initialize this information */
+  void initialize(InstExplainInst* iei );
+  /** initialize to the result of merging the generalizations of a and b
+   * 
+   * It should be the case that ( a * subs(ga.d_iei) ) = ( b * subs(gb.d_iei) ).
+   * 
+   * For example:
+   */
+  bool initialize(Node a, GLitInfo& ga, Node b, GLitInfo& gb );
 };
 
 class InstExplainDb
@@ -87,8 +109,18 @@ class InstExplainDb
   InstExplainDb(QuantifiersEngine* qe);
   /** reset */
   void reset(Theory::Effort e);
-  /** register explanations */
-  void registerExplanation(Node ilem, Node n, Node on);
+  /** register explanations
+   * 
+   * This initializes all explanation information relevant for the instantiation
+   * lemma ilem.
+   * 
+   * ilem is the rewritten form of ( ~q V n ),
+   * n is the substituted body of the quantified formula such that
+   *  ( n * { q.vars -> ts } ) = q[1],
+   * q is the quantified formula formula,
+   * ts are the terms we have instantiated with.
+   */
+  void registerExplanation(Node ilem, Node n, Node q, std::vector< Node >& ts);
   /** get instantiation explain */
   InstExplainLit& getInstExplainLit(Node lit);
   InstExplainInst& getInstExplainInst(Node inst);
@@ -111,6 +143,8 @@ class InstExplainDb
   /** common constants */
   Node d_true;
   Node d_false;
+  // FIXME TEMPORARY
+  bool d_doExit;
   /** map from literal to possible explanations */
   std::map<Node, InstExplainLit> d_lit_explains;
   /** map from instantiate lemma to explanation objects */
@@ -128,28 +162,26 @@ class InstExplainDb
   void activateLit(Node lit);
   void activateInst(Node inst, Node srcLit, InstExplainLit& src);
 
-  /** add exp result */
-  void insertExplainResult(Node exp,
-                           std::map<Node, bool>& expres,
-                           std::map<Node, bool>& expresAtom);
   /** instantiate explain */
   void instLitExplain(Node lit,
                       std::map<Node, bool>& expres,
                       std::map<Node, bool>& expresAtom,
-                      std::map<Node, bool>& processList,
                       bool regressInst);
   void instExplain(Node n,
                    std::map<Node, bool>& expres,
                    std::map<Node, bool>& expresAtom,
-                   std::map<Node, bool>& processList,
                    bool regressInst);
   Node d_null;
   Node generalize(Node e, Node ge, eq::EqProof * eqp,
                   std::map< eq::EqProof *, Node >& concs,
-                  std::map< eq::EqProof *, Node >& concsg,
-                  Node& cg
+                  std::map< eq::EqProof *, std::map< Node, GLitInfo > >& concsg,
+                  unsigned tb=0
                  );
   bool getMatchIndex( Node eq, Node n, unsigned& index );
+  /** convert to equality from arbitrary predicate n */
+  Node convertEq(Node n);
+  
+  static void indent( const char * c, unsigned tb);
 };
 
 }  // namespace quantifiers

@@ -90,8 +90,19 @@ bool EqExplainerTe::explain(Node lit,
   return false;
 }
 
+void GLitInfo::initialize(InstExplainInst* iei )
+{
+  d_iei = iei;
+}
+
+bool GLitInfo::initialize(Node a, GLitInfo& ga, Node b, GLitInfo& gb )
+{
+
+  return false;
+}
+
 InstExplainDb::InstExplainDb(QuantifiersEngine* qe)
-    : d_qe(qe), d_ev(d_qe->getValuation())
+    : d_qe(qe), d_ev(d_qe->getValuation()), d_doExit(false)
 {
   d_false = NodeManager::currentNM()->mkConst(false);
   d_true = NodeManager::currentNM()->mkConst(true);
@@ -153,10 +164,13 @@ void InstExplainDb::activateInst(Node inst, Node srcLit, InstExplainLit& src)
   }
 }
 
-void InstExplainDb::registerExplanation(Node inst, Node n, Node on)
+void InstExplainDb::registerExplanation(Node inst, Node n, Node q, std::vector< Node >& ts)
 {
   Trace("inst-explain") << "Get literals that are explanable by " << inst
                         << std::endl;
+  Assert( d_inst_explains.find(inst)==d_inst_explains.end() );
+  InstExplainInst& iei = d_inst_explains[inst];
+  iei.initialize(inst, q, ts);
   std::map<bool, std::unordered_set<Node, NodeHashFunction> > visited;
   std::vector<bool> visit_hasPol;
   std::vector<Node> visit;
@@ -165,7 +179,7 @@ void InstExplainDb::registerExplanation(Node inst, Node n, Node on)
   TNode cur;
   TNode curi;
   visit_hasPol.push_back(true);
-  visit.push_back(on);
+  visit.push_back(q[1]);
   visiti.push_back(n);
   do
   {
@@ -254,12 +268,7 @@ InstExplainLit& InstExplainDb::getInstExplainLit(Node lit)
 InstExplainInst& InstExplainDb::getInstExplainInst(Node inst)
 {
   std::map<Node, InstExplainInst>::iterator iti = d_inst_explains.find(inst);
-  if (iti == d_inst_explains.end())
-  {
-    InstExplainInst& iei = d_inst_explains[inst];
-    iei.initialize(inst);
-    return iei;
-  }
+  Assert (iti != d_inst_explains.end());
   return iti->second;
 }
 
@@ -272,11 +281,10 @@ ExplainStatus InstExplainDb::explain(Node q,
                                      bool regressInst,
                                      const char* ctx)
 {
-  ExplainStatus ret = EXP_STATUS_FULL;
+  ExplainStatus ret = EXP_STATUS_FAIL;
   std::map<Node, bool> proc_pre;
   std::map<Node, bool> expres;
   std::map<Node, bool> expresAtom;
-  std::map<Node, bool> processList;
   Trace("ied-conflict") << "Conflict in context " << ctx << " : " << std::endl;
   Assert(exp.size() == gexp.size());
   for (unsigned i = 0, esize = exp.size(); i < esize; i++)
@@ -335,22 +343,27 @@ ExplainStatus InstExplainDb::explain(Node q,
         regressExp = true;
         Trace("ied-conflict-debug")
             << "  ...regressed to " << assumptions << std::endl;
-        if( Debug.isOn("ied-proof") )
+        if( Trace.isOn("ied-proof") )
         {
-          Debug("ied-proof") << "-----------proof of " << er << std::endl;
-          pf->debug_print("ied-proof",1);
+          Trace("ied-proof") << "-----------proof of " << er << std::endl;
+          std::stringstream ss;
+          pf->debug_print(ss,1);
+          Trace("ied-proof") << ss.str();
+          /*
           Debug("ied-proof") << "LFSC:" << std::endl;
           std::stringstream ss;
           ProofUF * pfu = new ProofUF(pf);
           pfu->toStream(ss);
           Debug("ied-proof") << ss.str();
-          Debug("ied-proof") << "-----------end proof" << std::endl;
+          */
+          Trace("ied-proof") << "-----------end proof" << std::endl;
         }
         // compute the generalized assumptions
-        Node cg;
+        Trace("ied-gen") << "ied-pf: generalize: " << er << std::endl;
+        Trace("ied-gen") << "ied-pf:     target: " << ger << std::endl;
         std::map< eq::EqProof *, Node > concs;
-        std::map< eq::EqProof *, Node > concsg;
-        generalize(er,ger,pf.get(),concs,concsg, cg);
+        std::map< eq::EqProof *, std::map< Node, GLitInfo > > concsg;
+        generalize(er,ger,pf.get(),concs, concsg, 1);
       }
       else
       {
@@ -363,7 +376,7 @@ ExplainStatus InstExplainDb::explain(Node q,
       // if we did not explain it, then we need to set the status
       // however, we could still hope that this assertion simply holds in the
       // current context
-      ret = EXP_STATUS_INCOMPLETE;
+      //ret = EXP_STATUS_INCOMPLETE;
     }
     // for (TNode ert : assumptions)
     for (unsigned i = 0, asize = assumptions.size(); i < asize; i++)
@@ -374,7 +387,7 @@ ExplainStatus InstExplainDb::explain(Node q,
       Trace("ied-conflict-debug") << "*** " << a << std::endl;
       if (regressInst)
       {
-        instExplain(a, expres, expresAtom, processList, regressInst);
+        instExplain(a, expres, expresAtom, regressInst);
       }
       else
       {
@@ -382,73 +395,17 @@ ExplainStatus InstExplainDb::explain(Node q,
       }
     }
   }
-  // Now, go back and process atoms that are explainable in multiple ways.
-  // This is an optimization for constructing smaller explanations.
-  while (!processList.empty())
-  {
-    std::map<Node, bool> newProcessList;
-    std::map<Node, std::vector<Node> > expToLit;
-    for (const std::pair<Node, bool>& p : processList)
-    {
-      Node ert = p.first;
-      InstExplainLit& ie = getInstExplainLit(ert);
-      std::vector<Node>& cexp = ie.d_curr_prop_exps;
-      // first check if this literal is already explained, if so, drop it.
-      bool alreadyProc = false;
-      for (const Node& iexp : cexp)
-      {
-        if (expres.find(iexp) != expres.end())
-        {
-          alreadyProc = true;
-          break;
-        }
-      }
-      if (!alreadyProc)
-      {
-        // If not already explained, add this literal to the list of literals
-        // for each of its explanation. We choose the best explanation below.
-        for (const Node& iexp : cexp)
-        {
-          expToLit[iexp].push_back(ert);
-        }
-        newProcessList[ert] = true;
-      }
-    }
-    if (!expToLit.empty())
-    {
-      // Must decide to explain one literal. We choose the instantiation
-      // explanation that covers the maximum number of literals in the process
-      // list.
-      unsigned max = 0;
-      Node maxExp;
-      for (const std::pair<Node, std::vector<Node> >& e : expToLit)
-      {
-        if (e.second.size() > max)
-        {
-          maxExp = e.first;
-          max = e.second.size();
-        }
-      }
-      Assert(!maxExp.isNull());
-      instExplain(maxExp, expres, expresAtom, newProcessList, regressInst);
-      Trace("ied-conflict-debug")
-          << "--- add inst-explain " << maxExp << " covering " << max
-          << " literals" << std::endl;
-      Assert(!expToLit[maxExp].empty());
-      // update the process list to remove the literals
-      for (const Node& lit : expToLit[maxExp])
-      {
-        Assert(newProcessList.find(lit) != newProcessList.end());
-        newProcessList.erase(lit);
-      }
-    }
-    processList = newProcessList;
-  }
+
   Trace("ied-conflict") << "Result of inst explain : " << std::endl;
   for (const std::pair<Node, bool>& ep : expresAtom)
   {
     rexp.push_back(ep.first);
     Trace("ied-conflict") << "* " << ep.first << std::endl;
+  }
+  // TEMPORARY FIXME
+  if( d_doExit )
+  {
+    exit(1);
   }
   return ret;
 }
@@ -456,7 +413,6 @@ ExplainStatus InstExplainDb::explain(Node q,
 void InstExplainDb::instLitExplain(Node lit,
                                    std::map<Node, bool>& expres,
                                    std::map<Node, bool>& expresAtom,
-                                   std::map<Node, bool>& processList,
                                    bool regressInst)
 {
   if (regressInst)
@@ -469,24 +425,12 @@ void InstExplainDb::instLitExplain(Node lit,
       activateLit(lit);
       Trace("ied-conflict-debug") << " inst-explanable ";
       std::vector<Node>& cexp = itl->second.d_curr_prop_exps;
-      if (cexp.size() == 1)
+      if (!cexp.empty())
       {
         Trace("ied-conflict-debug") << " by " << cexp[0] << std::endl;
         // Since it's not necessary a literal, go to explain
-        instExplain(cexp[0], expres, expresAtom, processList, regressInst);
+        instExplain(cexp[0], expres, expresAtom, regressInst);
         return;
-      }
-      else
-      {
-        Trace("ied-conflict-debug")
-            << " in " << cexp.size() << "/" << itl->second.d_insts.size()
-            << " ways" << std::endl;
-        if (!cexp.empty())
-        {
-          // otherwise we have a choice, add to process list
-          processList[lit] = true;
-          return;
-        }
       }
     }
     else
@@ -503,7 +447,6 @@ void InstExplainDb::instLitExplain(Node lit,
 void InstExplainDb::instExplain(Node n,
                                 std::map<Node, bool>& expres,
                                 std::map<Node, bool>& expresAtom,
-                                std::map<Node, bool>& processList,
                                 bool regressInst)
 {
   if (expres.find(n) != expres.end())
@@ -523,7 +466,7 @@ void InstExplainDb::instExplain(Node n,
       for (const Node& nc : atom)
       {
         Node ncp = pol ? nc : nc.negate();
-        instExplain(ncp, expres, expresAtom, processList, regressInst);
+        instExplain(ncp, expres, expresAtom, regressInst);
       }
     }
     else
@@ -534,7 +477,7 @@ void InstExplainDb::instExplain(Node n,
         if (d_ev.evaluate(nc) == (pol ? 1 : -1))
         {
           Node ncp = pol ? nc : nc.negate();
-          instExplain(ncp, expres, expresAtom, processList, regressInst);
+          instExplain(ncp, expres, expresAtom, regressInst);
           return;
         }
       }
@@ -547,51 +490,63 @@ void InstExplainDb::instExplain(Node n,
     if (cbres == 0)
     {
       // branch is unknown, must do both
-      instExplain(atom[1], expres, expresAtom, processList, regressInst);
-      instExplain(atom[2], expres, expresAtom, processList, regressInst);
+      instExplain(atom[1], expres, expresAtom, regressInst);
+      instExplain(atom[2], expres, expresAtom, regressInst);
     }
     else
     {
       // branch is known, do relevant child
       unsigned checkIndex = cbres > 0 ? 1 : 2;
-      instExplain(atom[0], expres, expresAtom, processList, regressInst);
+      instExplain(atom[0], expres, expresAtom, regressInst);
       instExplain(
-          atom[checkIndex], expres, expresAtom, processList, regressInst);
+          atom[checkIndex], expres, expresAtom, regressInst);
     }
   }
   else if (k == EQUAL && n[0].getType().isBoolean())
   {
     // must always do both
-    instExplain(atom[0], expres, expresAtom, processList, regressInst);
-    instExplain(atom[1], expres, expresAtom, processList, regressInst);
+    instExplain(atom[0], expres, expresAtom, regressInst);
+    instExplain(atom[1], expres, expresAtom, regressInst);
   }
   else
   {
-    instLitExplain(n, expres, expresAtom, processList, regressInst);
+    instLitExplain(n, expres, expresAtom, regressInst);
   }
 }
 
+void InstExplainDb::indent(const char * c, unsigned tb )
+{
+
+  for( unsigned i=0; i<tb; i++ )
+  {
+    Trace(c) << " ";
+  }
+}
 Node InstExplainDb::generalize(Node e, Node ge, eq::EqProof * eqp,
                   std::map< eq::EqProof *, Node >& concs,
-                  std::map< eq::EqProof *, Node >& concsg,
-                  Node& cg)
+                  std::map< eq::EqProof *, std::map< Node, GLitInfo > >& concsg,
+                  unsigned tb)
 {
   std::map< eq::EqProof *, Node >::iterator itc = concs.find(eqp);
   if( itc!=concs.end() )
   {
-    Assert( concsg.find(eqp)!=concsg.end() );
-    cg = concsg[eqp];
     return itc->second;
   }
+  NodeManager * nm = NodeManager::currentNM();
   // what kind of proof?
   Node ret;
-  Node retg;
+  if( Trace.isOn("ied-gen") )
+  {
+    indent("ied-gen",tb);
+  }
   unsigned id = eqp->d_id;
   if( id==eq::MERGED_THROUGH_CONGRUENCE )
   {
+    d_doExit = true;
     Assert( e.isNull() );
     Assert( ge.isNull() );
     Node cnode = eqp->d_node;
+    Trace("ied-gen") << "ied-pf: congruence " << cnode << std::endl; 
     // get child proofs 
     std::vector< eq::EqProof* > childProofs;
     eq::EqProof * curr = eqp;
@@ -610,12 +565,11 @@ Node InstExplainDb::generalize(Node e, Node ge, eq::EqProof * eqp,
       {
         rhsArgs.push_back(cnode.getOperator());
       }
-      Node retcg;
       Node retc;
       for( unsigned i=0; i<nchild; i++ )
       {
         // FIXME: must move up
-        retc = generalize(d_null,d_null,childProofs[i],concs,concsg, retcg);
+        retc = generalize(d_null,d_null,childProofs[i],concs,concsg, tb+1);
         unsigned matchIndex;
         if( getMatchIndex(retc,cnode[i],matchIndex) )
         {
@@ -630,7 +584,7 @@ Node InstExplainDb::generalize(Node e, Node ge, eq::EqProof * eqp,
       if( success )
       {
         Kind k = cnode.getKind();
-        Node cnodeEq = NodeManager::currentNM()->mkNode(k,rhsArgs);
+        Node cnodeEq = nm->mkNode(k,rhsArgs);
         ret = cnode.eqNode(cnodeEq);
       }
     }
@@ -644,40 +598,69 @@ Node InstExplainDb::generalize(Node e, Node ge, eq::EqProof * eqp,
   {
     // an assumption
     ret = eqp->d_node;
-    retg = eqp->d_node;
-    // try to generalize here?
-    
+    Trace("ied-gen") << "ied-pf: equality " << ret << std::endl; 
+    // try to generalize here
+    std::map<Node, InstExplainLit>::iterator itl = d_lit_explains.find(ret);
+    if (itl != d_lit_explains.end())
+    {
+      InstExplainLit& iel = itl->second;
+      // activate the literal
+      activateLit(ret);
+      std::vector<Node>& cexp = iel.d_curr_insts;
+      for( const Node& pinst : cexp )
+      {
+        // get the original literal
+        Node olit = iel.getOriginalLit(pinst);
+        Node colit = convertEq(olit);
+        // initialize the generalization with the backwards mapping to its concretization
+        concsg[eqp][colit].initialize( &getInstExplainInst(pinst) );
+        if( Trace.isOn("ied-gen") )
+        {
+          indent("ied-gen",tb+1);
+          Trace("ied-gen") << "ied-pf: gen-equality " << olit << " (from " << pinst << ")" << std::endl;
+        }
+      }
+    }
+    if( Trace.isOn("ied-gen") )
+    {
+      if( concsg.find(eqp)==concsg.end() )
+      {
+        indent("ied-gen",tb+1);
+        Trace("ied-gen") << "ied-pf: no generalizations (tried " << itl->second.d_curr_insts.size() << ")" << std::endl;
+      }
+    }
+    ret = convertEq(ret);
   }
   else if( id==eq::MERGED_THROUGH_REFLEXIVITY )
   {
     // do nothing
     Node n = eqp->d_node;
     ret = n.eqNode(n);
-    retg = n.eqNode(n);
+    // we do not care about generalizations here
   }
   else if( id==eq::MERGED_THROUGH_CONSTANTS )
   {
     //???
+    AlwaysAssert(false);
   }
   else if( id==eq::MERGED_THROUGH_TRANS )
   {
-    // FIXME: must move up
-    Node retcg;
-    Node retc = generalize(d_null,d_null,eqp->d_children[0].get(),concs, concsg, retcg);
-    if( !retc.isNull() )
+    d_doExit = true;
+    bool success = true;
+    Node retc;
+    Node r1, r2;
+    for( unsigned i=0, nproofs = eqp->d_children.size(); i<nproofs; i++ )
     {
-      Node r1 = retc[0];
-      Node r2 = retc[1];
-      Node r1g = r1;
-      Node r2g = r2;
-      // TODO: take generalization
-      
-      std::vector< unsigned > orderedIndex;
-      bool success = true;
-      for( unsigned i=1, nproofs = eqp->d_children.size(); i<nproofs; i++ )
+      eq::EqProof * epi = eqp->d_children[i].get();
+      // FIXME: must move up
+      retc = generalize(d_null,d_null,epi,concs, concsg, tb+1);
+      if( i==0 )
       {
-        eq::EqProof * epi = eqp->d_children[i].get();
-        retc = generalize(d_null,d_null,epi,concs, concsg, retcg);
+        r1 = retc[0];
+        r2 = retc[1];
+      }
+      else
+      {
         unsigned matchIndex;
         if( getMatchIndex(retc, r1, matchIndex ) )
         {
@@ -693,15 +676,25 @@ Node InstExplainDb::generalize(Node e, Node ge, eq::EqProof * eqp,
           break;
         }
       }
-      if( success )
-      {
-        ret = r1.eqNode(r2);
-      }
+    }
+    if( success )
+    {
+      ret = r1.eqNode(r2);
     }
   }
   Assert( ret.getKind()==EQUAL );
   concs[eqp] = ret;
-  concsg[eqp] = retg;
+  if( Trace.isOn("ied-gen") )
+  {
+    indent("ied-gen",tb);
+    Trace("ied-gen") << "...proves " << ret;
+    std::map< eq::EqProof *, std::map< Node, GLitInfo > >::iterator itg = concsg.find(eqp);
+    if( itg!=concsg.end() )
+    {
+      Trace("ied-gen") << ", with " << itg->second.size() << " generalizations";
+    }
+    Trace("ied-gen") << std::endl;
+  }
   return ret;
 }
 
@@ -721,6 +714,21 @@ bool InstExplainDb::getMatchIndex( Node eq, Node n, unsigned& index )
   }
   
   return false;
+}
+
+Node InstExplainDb::convertEq(Node n)
+{
+  Kind k = n.getKind();
+  if( k==EQUAL )
+  {
+    return n;
+  }
+  else if( k==NOT )
+  {
+    return n.eqNode(d_false);
+  }
+  Assert( n.getType().isBoolean() );
+  return n.eqNode(d_true);
 }
   
 }  // namespace quantifiers

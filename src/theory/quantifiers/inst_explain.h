@@ -73,10 +73,12 @@ class InstExplainLit
    * instantiation lemmas. These are formulas in the range of d_inst_to_exp
    * below.
    */
+  std::vector<Node> d_curr_insts;
   std::vector<Node> d_curr_prop_exps;
   /** The list of instantiation lemmas that may propagate d_this. */
   std::vector<Node> d_insts;
-
+  /** get original lit for instantiation */
+  Node getOriginalLit(Node inst) const;
  private:
   /** The literal of this object. */
   Node d_this;
@@ -99,13 +101,17 @@ class InstExplainInst
 {
  public:
   /** initialize */
-  void initialize(Node inst);
+  void initialize(Node inst, Node q, std::vector< Node >& ts);
   /** propagate */
   void propagate(IeEvaluator& v, std::vector<Node>& lits);
 
  private:
   /** the instantiation lemma */
   Node d_this;
+  /** the quantified formula */
+  Node d_quant;
+  /** the substitution for this instantiation */
+  std::map< TNode, TNode > d_subs;
 };
 
 }  // namespace quantifiers

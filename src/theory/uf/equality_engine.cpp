@@ -2260,27 +2260,35 @@ bool EqClassIterator::isFinished() const {
 }
 
 void EqProof::debug_print(const char* c, unsigned tb, PrettyPrinter* prettyPrinter) const {
-  for(unsigned i=0; i<tb; i++) { Debug( c ) << "  "; }
+  std::stringstream ss;
+  debug_print(ss,tb,prettyPrinter);
+  Debug( c ) << ss.str();
+}
+void EqProof::debug_print(std::ostream& os, unsigned tb,
+                  PrettyPrinter* prettyPrinter) const
+{
+  for(unsigned i=0; i<tb; i++) { os << "  "; }
 
-  if (prettyPrinter)
-    Debug( c ) << prettyPrinter->printTag(d_id);
-  else
-    Debug( c ) << d_id;
+  if (prettyPrinter){
+    os << prettyPrinter->printTag(d_id);
+  }else{
+    os << d_id;
+  }
 
-  Debug( c ) << "(";
+  os << "(";
   if( !d_children.empty() || !d_node.isNull() ){
     if( !d_node.isNull() ){
-      Debug( c ) << std::endl;
-      for( unsigned i=0; i<tb+1; i++ ) { Debug( c ) << "  "; }
-      Debug( c ) << d_node;
+      os << std::endl;
+      for( unsigned i=0; i<tb+1; i++ ) { os << "  "; }
+      os << d_node;
     }
     for( unsigned i=0; i<d_children.size(); i++ ){
-      if( i>0 || !d_node.isNull() ) Debug( c ) << ",";
-      Debug( c ) << std::endl;
-      d_children[i]->debug_print( c, tb+1, prettyPrinter );
+      if( i>0 || !d_node.isNull() ){ os << ","; }
+      os << std::endl;
+      d_children[i]->debug_print( os, tb+1, prettyPrinter );
     }
   }
-  Debug( c ) << ")" << std::endl;
+  os << ")" << std::endl;
 }
 
 } // Namespace uf

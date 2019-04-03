@@ -948,6 +948,8 @@ public:
   std::vector<std::shared_ptr<EqProof>> d_children;
   void debug_print(const char* c, unsigned tb = 0,
                    PrettyPrinter* prettyPrinter = nullptr) const;
+  void debug_print(std::ostream& os, unsigned tb = 0,
+                   PrettyPrinter* prettyPrinter = nullptr) const;
 };/* class EqProof */
 
 } // Namespace eq
