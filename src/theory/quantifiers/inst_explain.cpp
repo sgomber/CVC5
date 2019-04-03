@@ -120,17 +120,14 @@ Node InstExplainLit::getOriginalLit(Node inst) const
   return it->second;
 }
 
-void InstExplainInst::initialize(Node inst, Node q, std::vector<Node>& ts)
+void InstExplainInst::initialize(Node inst, Node q, const std::vector<Node>& ts)
 {
-  d_this = inst;
   Assert(q.getKind() == FORALL);
   Assert(ts.size() == q[0].getNumChildren());
+  Assert(d_terms.empty());
   d_this = inst;
   d_quant = q;
-  for (unsigned i = 0, nchild = ts.size(); i < nchild; i++)
-  {
-    d_subs[q[i]] = Rewriter::rewrite(ts[i]);
-  }
+  d_terms.insert(d_terms.end(),ts.begin(),ts.end());
 }
 
 void InstExplainInst::propagate(IeEvaluator& v, std::vector<Node>& propLits)

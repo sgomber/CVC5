@@ -100,7 +100,11 @@ class GLitInfo
    *
    * For example:
    */
-  bool initialize(Node a, GLitInfo& ga, Node b, GLitInfo& gb);
+  bool initialize(TNode a, const GLitInfo& ga, TNode b, const GLitInfo& gb);
+  
+  bool merge(TNode a, TNode b, const GLitInfo& gb);
+  
+  bool drop(TNode b);
 };
 
 class InstExplainDb
@@ -127,9 +131,9 @@ class InstExplainDb
 
   /** explain */
   ExplainStatus explain(Node q,
+                        const std::vector< Node >& terms,
                         const std::vector<Node>& exp,
                         const std::vector<Node>& gexp,
-                        const std::map<TNode, TNode>& subs,
                         EqExplainer* eqe,
                         std::vector<Node>& rexp,
                         bool regressInst,
@@ -181,8 +185,12 @@ class InstExplainDb
   bool getMatchIndex(Node eq, Node n, unsigned& index);
   /** convert to equality from arbitrary predicate n */
   Node convertEq(Node n);
+  /** convert to non-equality (inverse of above for rewritten nodes) */
+  Node convertRmEq(Node n);
 
   static void indent(const char* c, unsigned tb);
+  
+  static bool isGeneralization(Node n, Node gn );
 };
 
 }  // namespace quantifiers

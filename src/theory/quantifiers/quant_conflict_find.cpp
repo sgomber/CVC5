@@ -616,9 +616,9 @@ bool QuantInfo::isTConstraintSpurious(QuantConflictFind* p,
         InstExplainDb& ied = p->d_quantEngine->getInstantiate()->getExplainDb();
         std::vector<Node> rexp;
         ExplainStatus status = ied.explain(d_q,
+                                           terms,
                                            exp,
                                            gexp,
-                                           subs,
                                            eqe,
                                            rexp,
                                            options::qcfExpRegressInst(),
