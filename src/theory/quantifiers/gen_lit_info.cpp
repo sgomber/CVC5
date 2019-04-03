@@ -32,6 +32,8 @@ bool GLitInfo::initialize(TNode a, const GLitInfo& ga, TNode b, const GLitInfo& 
 
 bool GLitInfo::merge(TNode a, TNode b, const GLitInfo& gb)
 {
+  // bound variables (in case we decide to cleanup)
+  std::vector< TNode > bound_avars;
   Trace("ied-ginfo") << "GLitInfo::merge, a : " << a << std::endl;
   Trace("ied-ginfo") << "GLitInfo::merge, b : " << b << std::endl;
   // the visit cache and indicates unifier information
@@ -44,6 +46,7 @@ bool GLitInfo::merge(TNode a, TNode b, const GLitInfo& gb)
   bvisit.push_back(b);
   TNode cura;
   TNode curb;
+  bool matchSuccess = true;
   do {
     cura = avisit.back();
     avisit.pop_back();
@@ -80,7 +83,7 @@ bool GLitInfo::merge(TNode a, TNode b, const GLitInfo& gb)
       }
       if( abv )
       {
-        // two bound variables
+        // two variables
         if( bbv )
         {
           // store reversed to ensure that we bind cura if curb becomes bound later
@@ -88,20 +91,25 @@ bool GLitInfo::merge(TNode a, TNode b, const GLitInfo& gb)
           if( visited[curb].size()>1 )
           {
             Trace("ied-ginfo") << "GLitInfo::merge: Fail: induced equality on " << curb << std::endl;
-            return false;
+            matchSuccess = false;
+            break;
           }
         }
         else
         {
-          // bind a
+          // An a-variable is bound, simple.
+          // FIXME:
+          // P(x) { x -> f(b) } matching P(f(y)) { y -> b }, drop to x -> f(b)
           Trace("ied-ginfo") << "GLitInfo::merge: bind " << cura << " -> " << bv << std::endl;
           d_subs_modify[cura] = bv;
+          bound_avars.push_back(cura);
         }
       }
       else
       {
         if( bbv )
         {
+          // A b-variable was bound.
           // must go back and bind all occurrences it was equal to
           itv = visited.find(curb);
           if( itv!=visited.end() )
@@ -113,13 +121,18 @@ bool GLitInfo::merge(TNode a, TNode b, const GLitInfo& gb)
                 // bound to different things, fail?
                 Trace("ied-ginfo") << "GLitInfo::merge: Fail: " << cura << " == " << curb << ", where " << curb << " == " << x << std::endl;
                 Trace("ied-ginfo") << "GLitInfo::merge: which contradicts ( " << d_subs_modify[x] << " == ) " << x << " == " << curb << "( == " << bv << " ) " << std::endl;
-                return false;
+                matchSuccess = false;
+                break;
               }
               else
               {
                 Trace("ied-ginfo") << "GLitInfo::merge: bind (backwards) " << x << " -> " << av << std::endl;
                 d_subs_modify[x] = av;
               }
+            }
+            if( !matchSuccess )
+            {
+              break;
             }
           }
         }
@@ -133,7 +146,8 @@ bool GLitInfo::merge(TNode a, TNode b, const GLitInfo& gb)
               Trace("ied-ginfo") << "GLitInfo::merge: Fail: clash ( " << av << " == ) " << cura << " == " << curb << "( == " << bv << " ) " << std::endl;
               // wrong operators, should only happen if we within a substitution
               Assert( cura.getKind()==BOUND_VARIABLE || curb.getKind()==BOUND_VARIABLE );
-              return false;
+              matchSuccess = false;
+              break;
             }
             for( unsigned i=0, nchild=cura.getNumChildren(); i<nchild; i++ )
             {
@@ -155,6 +169,16 @@ bool GLitInfo::merge(TNode a, TNode b, const GLitInfo& gb)
     }
   } while (!avisit.empty());
   
+  if( !matchSuccess )
+  {
+    // revert the bound variables
+    for( TNode avb : bound_avars )
+    {
+      Assert( d_subs_modify.find(avb)!=d_subs_modify.end() );
+      d_subs_modify.erase(avb);
+    }
+    return false;
+  }
   Trace("ied-ginfo") << "GLitInfo::merge: Success!" << std::endl;
   return true;
 }

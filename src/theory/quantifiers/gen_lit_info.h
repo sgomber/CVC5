@@ -36,6 +36,15 @@ class GLitInfo
   GLitInfo() : d_iei(nullptr) {}
   InstExplainInst* d_iei;
   std::map<TNode, Node> d_subs_modify;
+  /** required instantiation explains 
+   * 
+   * Each element in the domain of this map is a literal L.
+   * Each element in the range of this map d_reqInstExplains[L] is an
+   * instantiation lemma that currently propagates L.
+   *
+   * The generalized conclusion requires inst-explaining L. 
+   */
+  std::map< TNode, TNode > d_reqInstExplains;
   /** initialize this information */
   void initialize(InstExplainInst* iei);
   /** initialize to the result of merging the generalizations of a and b

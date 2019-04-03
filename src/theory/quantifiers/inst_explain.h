@@ -105,7 +105,8 @@ class InstExplainInst
   void initialize(Node inst, Node q, const std::vector<Node>& ts);
   /** propagate */
   void propagate(IeEvaluator& v, std::vector<Node>& lits);
-
+  /** get substitution */
+  Node getSubstitution( TNode v ) const;
  private:
   /** the instantiation lemma */
   Node d_this;

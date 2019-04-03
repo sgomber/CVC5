@@ -277,7 +277,15 @@ ExplainStatus InstExplainDb::explain(Node q,
   std::map<Node, bool> proc_pre;
   std::map<Node, bool> expres;
   std::map<Node, bool> expresAtom;
-  Trace("ied-conflict") << "Conflict in context " << ctx << " : " << std::endl;
+  if( Trace.isOn("ied-conflict") )
+  {
+    Trace("ied-conflict") << "Conflict in context " << ctx << " : " << std::endl;
+    for (unsigned i = 0, esize = exp.size(); i < esize; i++)
+    {
+      Trace("ied-conflict") << "  [" << i << "] " << exp[i] << std::endl;
+      Trace("ied-conflict") << "  GEN " << gexp[i] << std::endl;
+    }
+  }
   Assert(exp.size() == gexp.size());
   // the virtual instantiation lemma
   InstExplainInst conflict;
@@ -285,6 +293,16 @@ ExplainStatus InstExplainDb::explain(Node q,
   // the generalization information across all literals
   GLitInfo genInfo;
   genInfo.initialize(&conflict);
+  std::vector<TNode> assumptions;
+  // Possible generalized assumptions
+  // Each of these should be such that:
+  //    for all i: gassumptions[i] * subs = assumptions[i]
+  // And be such that:
+  //    g_1 ^ ... ^ g_n => ge
+  // where g_j in gassumptions[i][j] for j = 1, ... n.
+  // In other words, these represent a generalization of the proof of:
+  //    assumptions[i] ^ ... ^ assumptions[i] => e
+  std::map<TNode, TNode > gassumptions;
   for (unsigned i = 0, esize = exp.size(); i < esize; i++)
   {
     Node e = exp[i];
@@ -327,32 +345,22 @@ ExplainStatus InstExplainDb::explain(Node q,
       continue;
     }
     Assert( isGeneralization(er,ger) );
-    Trace("ied-conflict") << "* " << er << std::endl;
-    // first, regress the explanation using the eqe utility
-    std::vector<TNode> assumptions;
-    // Possible generalized assumptions
-    // Each of these should be such that:
-    //    for all j: gassumptions[i][j] * subs = assumptions[i]
-    // And be such that:
-    //    g_1 ^ ... ^ g_n => ge
-    // where g_j in gassumptions[i][j] for j = 1, ... n.
-    // In other words, these represent a generalization of the proof of:
-    //    assumptions[i] ^ ... ^ assumptions[i] => e
-    std::map<TNode, std::vector<Node> > gassumptions;
     bool regressExp = false;
     std::shared_ptr<eq::EqProof> pf = nullptr;
-    bool processedGenExp = false;
+    bool processedGenExp = false;  
+    std::vector< TNode > currAssumptions;
+    // first, regress the explanation using the eqe utility
     if (eqe)
     {
       // TODO: shortcut case where trivially holds via SAT value?
 
       pf = std::make_shared<eq::EqProof>();
       Trace("ied-conflict-debug") << "Explain: " << er << std::endl;
-      if (eqe->explain(er, assumptions, pf.get()))
+      if (eqe->explain(er, currAssumptions, pf.get()))
       {
         regressExp = true;
         Trace("ied-conflict-debug")
-            << "  ...regressed to " << assumptions << std::endl;
+            << "  ...regressed to " << currAssumptions << std::endl;
         if (Trace.isOn("ied-proof"))
         {
           Trace("ied-proof") << "-----------proof of " << er << std::endl;
@@ -381,11 +389,19 @@ ExplainStatus InstExplainDb::explain(Node q,
           for( const std::pair< Node, GLitInfo >& gen : itg->second ) 
           {
             Node genConc = convertRmEq(gen.first);
+            Trace("ied-gen") << "ied-pf: gen-result: " << genConc << std::endl;
             // merge the generalizations based on matching
-            genInfo.merge( ger, genConc, gen.second );
-            // just take the first 
-            processedGenExp = true;
-            break;
+            if( genInfo.merge( ger, genConc, gen.second ) )
+            {
+              // just take the first that works
+              processedGenExp = true;
+              // copy to gassumptions
+              for( const std::pair< TNode, TNode >& gp : gen.second.d_reqInstExplains )
+              {
+                gassumptions[gp.first] = gp.second;
+              }
+              break;
+            }
           }
         }
       }
@@ -401,12 +417,18 @@ ExplainStatus InstExplainDb::explain(Node q,
     }
     if (!regressExp)
     {
-      assumptions.push_back(er);
+      currAssumptions.push_back(er);
+      // it might be inst-explainable?
+      
       // if we did not explain it, then we need to set the status
       // however, we could still hope that this assertion simply holds in the
       // current context
       // ret = EXP_STATUS_INCOMPLETE;
     }
+    // carry the assumptions 
+    assumptions.insert(assumptions.end(),currAssumptions.begin(),currAssumptions.end());
+  }
+/*
     // for (TNode ert : assumptions)
     for (unsigned i = 0, asize = assumptions.size(); i < asize; i++)
     {
@@ -423,8 +445,19 @@ ExplainStatus InstExplainDb::explain(Node q,
         expresAtom[a] = true;
       }
     }
+*/
+  // now, we go back and inst-explain those that we generalized
+  std::map<TNode, TNode >::iterator itg;
+  for( TNode a : assumptions )
+  {
+    itg = gassumptions.find(a);
+    if(itg!=gassumptions.end() )
+    {
+      Trace("ied-conflict") << "INST-explain assumption: " << a << std::endl;
+      Trace("ied-conflict") << "INST-explain from:       " << itg->second << std::endl;
+    }
   }
-
+  
   Trace("ied-conflict") << "Result of inst explain : " << std::endl;
   for (const std::pair<Node, bool>& ep : expresAtom)
   {
@@ -629,6 +662,7 @@ Node InstExplainDb::generalize(
   {
     // an assumption
     ret = eqp->d_node;
+    Assert( ret==Rewriter::rewrite(ret) );
     Trace("ied-gen") << "ied-pf: equality " << ret << std::endl;
     // try to generalize here
     std::map<Node, InstExplainLit>::iterator itl = d_lit_explains.find(ret);
@@ -645,7 +679,9 @@ Node InstExplainDb::generalize(
         Node colit = convertEq(olit);
         // initialize the generalization with the backwards mapping to its
         // concretization
-        concsg[eqp][colit].initialize(&getInstExplainInst(pinst));
+        GLitInfo& gli = concsg[eqp][colit];
+        gli.initialize(&getInstExplainInst(pinst));
+        gli.d_reqInstExplains[ret] = pinst;
         if (Trace.isOn("ied-gen"))
         {
           indent("ied-gen", tb + 1);
@@ -709,6 +745,7 @@ Node InstExplainDb::generalize(
           success = false;
           break;
         }
+        // FIXME: merge generalizations
       }
     }
     if (success)
