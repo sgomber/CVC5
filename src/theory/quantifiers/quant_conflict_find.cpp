@@ -616,15 +616,15 @@ bool QuantInfo::isTConstraintSpurious(QuantConflictFind* p,
         InstExplainDb& ied = p->d_quantEngine->getInstantiate()->getExplainDb();
         std::vector<Node> rexp;
         ExplainStatus status = ied.explain(d_q,
-                    exp,
-                    gexp,
-                    subs,
-                    eqe,
-                    rexp,
-                    options::qcfExpRegressInst(),
-                    "qcf");
-        if (status==EXP_STATUS_FULL &&
-          options::qcfExpMode() != quantifiers::QCF_EXP_CINSTANCE_ANALYZE)
+                                           exp,
+                                           gexp,
+                                           subs,
+                                           eqe,
+                                           rexp,
+                                           options::qcfExpRegressInst(),
+                                           "qcf");
+        if (status == EXP_STATUS_FULL
+            && options::qcfExpMode() != quantifiers::QCF_EXP_CINSTANCE_ANALYZE)
         {
           std::vector<Node> lemc;
           for (const Node& re : rexp)

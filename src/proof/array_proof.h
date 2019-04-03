@@ -24,8 +24,8 @@
 
 #include "expr/expr.h"
 #include "proof/proof_manager.h"
-#include "proof/theory_proof.h"
 #include "proof/rectify_eq_proof.h"
+#include "proof/theory_proof.h"
 #include "theory/arrays/theory_arrays.h"
 #include "theory/uf/equality_engine.h"
 

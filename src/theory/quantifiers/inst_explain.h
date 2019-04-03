@@ -79,6 +79,7 @@ class InstExplainLit
   std::vector<Node> d_insts;
   /** get original lit for instantiation */
   Node getOriginalLit(Node inst) const;
+
  private:
   /** The literal of this object. */
   Node d_this;
@@ -101,7 +102,7 @@ class InstExplainInst
 {
  public:
   /** initialize */
-  void initialize(Node inst, Node q, std::vector< Node >& ts);
+  void initialize(Node inst, Node q, std::vector<Node>& ts);
   /** propagate */
   void propagate(IeEvaluator& v, std::vector<Node>& lits);
 
@@ -111,7 +112,7 @@ class InstExplainInst
   /** the quantified formula */
   Node d_quant;
   /** the substitution for this instantiation */
-  std::map< TNode, TNode > d_subs;
+  std::map<TNode, TNode> d_subs;
 };
 
 }  // namespace quantifiers

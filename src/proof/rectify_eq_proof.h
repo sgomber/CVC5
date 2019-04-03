@@ -24,15 +24,18 @@
 
 namespace CVC4 {
 
-/** Rectifiable equality proof 
- * 
+/** Rectifiable equality proof
+ *
  * This class stores a EqProof object and manages its rectification via
  * a call to rectify below.
  */
 class RectifiableEqProof
 {
-public:
-  RectifiableEqProof(std::shared_ptr<theory::eq::EqProof> pf) : d_proof(pf), d_negStatus(0) {}
+ public:
+  RectifiableEqProof(std::shared_ptr<theory::eq::EqProof> pf)
+      : d_proof(pf), d_negStatus(0)
+  {
+  }
   /**
    * Helper function for ProofUF::toStreamRecLFSC and
    * ProofArray::toStreamRecLFSC
@@ -47,16 +50,17 @@ public:
       theory::TheoryId theoryId,
       const theory::eq::EqProof& pf,
       std::shared_ptr<theory::eq::EqProof> subTrans,
-      theory::eq::EqProof::PrettyPrinter* pPrettyPrinter = nullptr);  
+      theory::eq::EqProof::PrettyPrinter* pPrettyPrinter = nullptr);
   /** rectify this proof, if not already done so */
   void rectify(theory::TheoryId theoryId);
   /** get proof */
-  theory::eq::EqProof * getProof() const;
+  theory::eq::EqProof* getProof() const;
   /** get sub transitivity proof */
-  theory::eq::EqProof * getSubTransProof() const;
+  theory::eq::EqProof* getSubTransProof() const;
   /** get negation status */
   int getNegationStatus() const;
-private:
+
+ private:
   /** the input of this object */
   std::shared_ptr<theory::eq::EqProof> d_proof;
   /**  */
@@ -65,6 +69,6 @@ private:
   int d_negStatus;
 };
 
-} /* CVC4 namespace */
+}  // namespace CVC4
 
 #endif /* __CVC4__THEORY_RECTIFY_EQ_PROOF_H */

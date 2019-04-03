@@ -82,25 +82,25 @@ enum ExplainStatus
   EXP_STATUS_FAIL
 };
 
-/** generalized literal information 
- * 
+/** generalized literal information
+ *
  * This stores the state of a generalized literal.
  */
 class GLitInfo
 {
-public:
-  GLitInfo() : d_iei(nullptr){}
+ public:
+  GLitInfo() : d_iei(nullptr) {}
   InstExplainInst* d_iei;
-  std::map< TNode, Node > d_subs_modify;
+  std::map<TNode, Node> d_subs_modify;
   /** initialize this information */
-  void initialize(InstExplainInst* iei );
+  void initialize(InstExplainInst* iei);
   /** initialize to the result of merging the generalizations of a and b
-   * 
+   *
    * It should be the case that ( a * subs(ga.d_iei) ) = ( b * subs(gb.d_iei) ).
-   * 
+   *
    * For example:
    */
-  bool initialize(Node a, GLitInfo& ga, Node b, GLitInfo& gb );
+  bool initialize(Node a, GLitInfo& ga, Node b, GLitInfo& gb);
 };
 
 class InstExplainDb
@@ -110,17 +110,17 @@ class InstExplainDb
   /** reset */
   void reset(Theory::Effort e);
   /** register explanations
-   * 
+   *
    * This initializes all explanation information relevant for the instantiation
    * lemma ilem.
-   * 
+   *
    * ilem is the rewritten form of ( ~q V n ),
    * n is the substituted body of the quantified formula such that
    *  ( n * { q.vars -> ts } ) = q[1],
    * q is the quantified formula formula,
    * ts are the terms we have instantiated with.
    */
-  void registerExplanation(Node ilem, Node n, Node q, std::vector< Node >& ts);
+  void registerExplanation(Node ilem, Node n, Node q, std::vector<Node>& ts);
   /** get instantiation explain */
   InstExplainLit& getInstExplainLit(Node lit);
   InstExplainInst& getInstExplainInst(Node inst);
@@ -172,16 +172,17 @@ class InstExplainDb
                    std::map<Node, bool>& expresAtom,
                    bool regressInst);
   Node d_null;
-  Node generalize(Node e, Node ge, eq::EqProof * eqp,
-                  std::map< eq::EqProof *, Node >& concs,
-                  std::map< eq::EqProof *, std::map< Node, GLitInfo > >& concsg,
-                  unsigned tb=0
-                 );
-  bool getMatchIndex( Node eq, Node n, unsigned& index );
+  Node generalize(Node e,
+                  Node ge,
+                  eq::EqProof* eqp,
+                  std::map<eq::EqProof*, Node>& concs,
+                  std::map<eq::EqProof*, std::map<Node, GLitInfo> >& concsg,
+                  unsigned tb = 0);
+  bool getMatchIndex(Node eq, Node n, unsigned& index);
   /** convert to equality from arbitrary predicate n */
   Node convertEq(Node n);
-  
-  static void indent( const char * c, unsigned tb);
+
+  static void indent(const char* c, unsigned tb);
 };
 
 }  // namespace quantifiers

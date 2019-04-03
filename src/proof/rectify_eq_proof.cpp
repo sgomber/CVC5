@@ -16,8 +16,8 @@
  **/
 #include "proof/rectify_eq_proof.h"
 
-#include "proof/theory_proof.h"
 #include "proof/simplify_boolean_node.h"
+#include "proof/theory_proof.h"
 
 namespace CVC4 {
 
@@ -64,15 +64,15 @@ int RectifiableEqProof::rectify(
     else if (pf.d_children[i]->d_id == theory::eq::MERGED_THROUGH_CONGRUENCE
              && pf.d_children[i]->d_node.isNull())
     {
-      Debug("pf::" + theoryName) << "Handling congruence over equalities"
-                                 << std::endl;
+      Debug("pf::" + theoryName)
+          << "Handling congruence over equalities" << std::endl;
 
       // Gather the sequence of consecutive congruence closures.
       std::vector<std::shared_ptr<const theory::eq::EqProof>>
           congruenceClosures;
       unsigned count;
-      Debug("pf::" + theoryName) << "Collecting congruence sequence"
-                                 << std::endl;
+      Debug("pf::" + theoryName)
+          << "Collecting congruence sequence" << std::endl;
       for (count = 0; i + count < pf.d_children.size()
                       && pf.d_children[i + count]->d_id
                              == theory::eq::MERGED_THROUGH_CONGRUENCE
@@ -96,8 +96,8 @@ int RectifiableEqProof::rectify(
 
       if ((i == 0) || (i == 1 && neg == 0))
       {
-        Debug("pf::" + theoryName) << "Target does not appear before"
-                                   << std::endl;
+        Debug("pf::" + theoryName)
+            << "Target does not appear before" << std::endl;
         targetAppearsBefore = false;
       }
 
@@ -105,8 +105,8 @@ int RectifiableEqProof::rectify(
           || (!pf.d_children[i + count]->d_node.isNull()
               && pf.d_children[i + count]->d_node.getKind() == kind::NOT))
       {
-        Debug("pf::" + theoryName) << "Target does not appear after"
-                                   << std::endl;
+        Debug("pf::" + theoryName)
+            << "Target does not appear after" << std::endl;
         targetAppearsAfter = false;
       }
 
@@ -210,26 +210,22 @@ int RectifiableEqProof::rectify(
     Assert(pf.d_node[0].isConst() && pf.d_node[1].isConst());
   }
   return neg;
-}  
-theory::eq::EqProof * RectifiableEqProof::getProof() const
+}
+theory::eq::EqProof* RectifiableEqProof::getProof() const
 {
   return d_proof.get();
 }
-theory::eq::EqProof * RectifiableEqProof::getSubTransProof() const
+theory::eq::EqProof* RectifiableEqProof::getSubTransProof() const
 {
   return d_subTrans.get();
 }
-int RectifiableEqProof::getNegationStatus() const
-{
-  return d_negStatus;
-}
+int RectifiableEqProof::getNegationStatus() const { return d_negStatus; }
 
 void RectifiableEqProof::rectify(theory::TheoryId theoryId)
 {
-  if( !d_subTrans )
+  if (!d_subTrans)
   {
-    d_subTrans =
-        std::make_shared<theory::eq::EqProof>();
+    d_subTrans = std::make_shared<theory::eq::EqProof>();
     d_negStatus = rectify(theoryId, *d_proof, d_subTrans);
   }
 }

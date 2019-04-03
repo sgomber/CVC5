@@ -769,7 +769,8 @@ TNode TermDb::getEntailedTerm2(TNode n,
               gnode = n;
             }
           }
-          Trace("term-db-entail") << "Return " << entt << "/" << gnode << std::endl;
+          Trace("term-db-entail")
+              << "Return " << entt << "/" << gnode << std::endl;
           return entt;
         }
       }
@@ -799,21 +800,26 @@ TNode TermDb::getEntailedTerm2(TNode n,
                                 computeExp);
       }
     }
-  }else if( !n.hasOperator() ){
+  }
+  else if (!n.hasOperator())
+  {
     return Node::null();
   }
-  TNode f = getMatchOperator( n );
-  if( f.isNull() ){
+  TNode f = getMatchOperator(n);
+  if (f.isNull())
+  {
     return Node::null();
   }
-  std::vector< TNode > args;
+  std::vector<TNode> args;
   std::vector<TNode> argst;
   std::vector<Node> gncs;
-  for( unsigned i=0, nchild = n.getNumChildren(); i<nchild; i++ ){
+  for (unsigned i = 0, nchild = n.getNumChildren(); i < nchild; i++)
+  {
     Node gnc;
     TNode c = getEntailedTerm2(
         n[i], subs, subsRep, hasSubs, exp, gexp, gnc, qy, computeExp);
-    if( c.isNull() ){
+    if (c.isNull())
+    {
       return TNode::null();
     }
     TNode cr = qy->getEngine()->getRepresentative(c);
@@ -829,8 +835,9 @@ TNode TermDb::getEntailedTerm2(TNode n,
       }
     }
   }
-  TNode nn = qy->getCongruentTerm( f, args );
-  Trace("term-db-entail") << "  got congruent term " << nn << " for " << n << std::endl;
+  TNode nn = qy->getCongruentTerm(f, args);
+  Trace("term-db-entail") << "  got congruent term " << nn << " for " << n
+                          << std::endl;
   if (computeExp)
   {
     if (!nn.isNull())

@@ -74,10 +74,10 @@ int IeEvaluator::evaluate(Node n)
   return res;
 }
 
-void InstExplainLit::initialize(Node lit) { 
-  d_this = lit;
-}
-void InstExplainLit::reset() { d_curr_prop_exps.clear(); 
+void InstExplainLit::initialize(Node lit) { d_this = lit; }
+void InstExplainLit::reset()
+{
+  d_curr_prop_exps.clear();
   d_curr_insts.clear();
 }
 void InstExplainLit::addInstExplanation(Node inst, Node origILit, Node origLit)
@@ -116,19 +116,20 @@ void InstExplainLit::setPropagating(Node inst)
 Node InstExplainLit::getOriginalLit(Node inst) const
 {
   std::map<Node, Node>::const_iterator it = d_orig_lit.find(inst);
-  Assert( it!=d_orig_lit.end() );
+  Assert(it != d_orig_lit.end());
   return it->second;
 }
 
-void InstExplainInst::initialize(Node inst, Node q, std::vector< Node >& ts) { 
-  d_this = inst; 
-  Assert( q.getKind()==FORALL );
-  Assert( ts.size()==q[0].getNumChildren() );
-  d_this = inst; 
+void InstExplainInst::initialize(Node inst, Node q, std::vector<Node>& ts)
+{
+  d_this = inst;
+  Assert(q.getKind() == FORALL);
+  Assert(ts.size() == q[0].getNumChildren());
+  d_this = inst;
   d_quant = q;
-  for( unsigned i=0, nchild = ts.size(); i<nchild; i++ )
+  for (unsigned i = 0, nchild = ts.size(); i < nchild; i++)
   {
-    d_subs[q[i]] = Rewriter::rewrite( ts[i] );
+    d_subs[q[i]] = Rewriter::rewrite(ts[i]);
   }
 }
 

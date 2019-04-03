@@ -15,12 +15,12 @@
 #include "theory/quantifiers/inst_explain_db.h"
 
 #include "options/quantifiers_options.h"
+#include "proof/uf_proof.h"
 #include "smt/smt_statistics_registry.h"
 #include "theory/quantifiers/term_database.h"
 #include "theory/quantifiers/term_util.h"
 #include "theory/quantifiers_engine.h"
 #include "theory/rewriter.h"
-#include "proof/uf_proof.h"
 
 using namespace CVC4::kind;
 
@@ -90,14 +90,10 @@ bool EqExplainerTe::explain(Node lit,
   return false;
 }
 
-void GLitInfo::initialize(InstExplainInst* iei )
-{
-  d_iei = iei;
-}
+void GLitInfo::initialize(InstExplainInst* iei) { d_iei = iei; }
 
-bool GLitInfo::initialize(Node a, GLitInfo& ga, Node b, GLitInfo& gb )
+bool GLitInfo::initialize(Node a, GLitInfo& ga, Node b, GLitInfo& gb)
 {
-
   return false;
 }
 
@@ -164,11 +160,14 @@ void InstExplainDb::activateInst(Node inst, Node srcLit, InstExplainLit& src)
   }
 }
 
-void InstExplainDb::registerExplanation(Node inst, Node n, Node q, std::vector< Node >& ts)
+void InstExplainDb::registerExplanation(Node inst,
+                                        Node n,
+                                        Node q,
+                                        std::vector<Node>& ts)
 {
   Trace("inst-explain") << "Get literals that are explanable by " << inst
                         << std::endl;
-  Assert( d_inst_explains.find(inst)==d_inst_explains.end() );
+  Assert(d_inst_explains.find(inst) == d_inst_explains.end());
   InstExplainInst& iei = d_inst_explains[inst];
   iei.initialize(inst, q, ts);
   std::map<bool, std::unordered_set<Node, NodeHashFunction> > visited;
@@ -268,7 +267,7 @@ InstExplainLit& InstExplainDb::getInstExplainLit(Node lit)
 InstExplainInst& InstExplainDb::getInstExplainInst(Node inst)
 {
   std::map<Node, InstExplainInst>::iterator iti = d_inst_explains.find(inst);
-  Assert (iti != d_inst_explains.end());
+  Assert(iti != d_inst_explains.end());
   return iti->second;
 }
 
@@ -335,7 +334,7 @@ ExplainStatus InstExplainDb::explain(Node q,
     if (eqe)
     {
       // TODO: shortcut case where trivially holds via SAT value?
-      
+
       pf = std::make_shared<eq::EqProof>();
       Trace("ied-conflict-debug") << "Explain: " << er << std::endl;
       if (eqe->explain(er, assumptions, pf.get()))
@@ -343,11 +342,11 @@ ExplainStatus InstExplainDb::explain(Node q,
         regressExp = true;
         Trace("ied-conflict-debug")
             << "  ...regressed to " << assumptions << std::endl;
-        if( Trace.isOn("ied-proof") )
+        if (Trace.isOn("ied-proof"))
         {
           Trace("ied-proof") << "-----------proof of " << er << std::endl;
           std::stringstream ss;
-          pf->debug_print(ss,1);
+          pf->debug_print(ss, 1);
           Trace("ied-proof") << ss.str();
           /*
           Debug("ied-proof") << "LFSC:" << std::endl;
@@ -361,9 +360,9 @@ ExplainStatus InstExplainDb::explain(Node q,
         // compute the generalized assumptions
         Trace("ied-gen") << "ied-pf: generalize: " << er << std::endl;
         Trace("ied-gen") << "ied-pf:     target: " << ger << std::endl;
-        std::map< eq::EqProof *, Node > concs;
-        std::map< eq::EqProof *, std::map< Node, GLitInfo > > concsg;
-        generalize(er,ger,pf.get(),concs, concsg, 1);
+        std::map<eq::EqProof*, Node> concs;
+        std::map<eq::EqProof*, std::map<Node, GLitInfo> > concsg;
+        generalize(er, ger, pf.get(), concs, concsg, 1);
       }
       else
       {
@@ -376,7 +375,7 @@ ExplainStatus InstExplainDb::explain(Node q,
       // if we did not explain it, then we need to set the status
       // however, we could still hope that this assertion simply holds in the
       // current context
-      //ret = EXP_STATUS_INCOMPLETE;
+      // ret = EXP_STATUS_INCOMPLETE;
     }
     // for (TNode ert : assumptions)
     for (unsigned i = 0, asize = assumptions.size(); i < asize; i++)
@@ -403,7 +402,7 @@ ExplainStatus InstExplainDb::explain(Node q,
     Trace("ied-conflict") << "* " << ep.first << std::endl;
   }
   // TEMPORARY FIXME
-  if( d_doExit )
+  if (d_doExit)
   {
     exit(1);
   }
@@ -498,8 +497,7 @@ void InstExplainDb::instExplain(Node n,
       // branch is known, do relevant child
       unsigned checkIndex = cbres > 0 ? 1 : 2;
       instExplain(atom[0], expres, expresAtom, regressInst);
-      instExplain(
-          atom[checkIndex], expres, expresAtom, regressInst);
+      instExplain(atom[checkIndex], expres, expresAtom, regressInst);
     }
   }
   else if (k == EQUAL && n[0].getType().isBoolean())
@@ -514,66 +512,69 @@ void InstExplainDb::instExplain(Node n,
   }
 }
 
-void InstExplainDb::indent(const char * c, unsigned tb )
+void InstExplainDb::indent(const char* c, unsigned tb)
 {
-
-  for( unsigned i=0; i<tb; i++ )
+  for (unsigned i = 0; i < tb; i++)
   {
     Trace(c) << " ";
   }
 }
-Node InstExplainDb::generalize(Node e, Node ge, eq::EqProof * eqp,
-                  std::map< eq::EqProof *, Node >& concs,
-                  std::map< eq::EqProof *, std::map< Node, GLitInfo > >& concsg,
-                  unsigned tb)
+Node InstExplainDb::generalize(
+    Node e,
+    Node ge,
+    eq::EqProof* eqp,
+    std::map<eq::EqProof*, Node>& concs,
+    std::map<eq::EqProof*, std::map<Node, GLitInfo> >& concsg,
+    unsigned tb)
 {
-  std::map< eq::EqProof *, Node >::iterator itc = concs.find(eqp);
-  if( itc!=concs.end() )
+  std::map<eq::EqProof*, Node>::iterator itc = concs.find(eqp);
+  if (itc != concs.end())
   {
     return itc->second;
   }
-  NodeManager * nm = NodeManager::currentNM();
+  NodeManager* nm = NodeManager::currentNM();
   // what kind of proof?
   Node ret;
-  if( Trace.isOn("ied-gen") )
+  if (Trace.isOn("ied-gen"))
   {
-    indent("ied-gen",tb);
+    indent("ied-gen", tb);
   }
   unsigned id = eqp->d_id;
-  if( id==eq::MERGED_THROUGH_CONGRUENCE )
+  if (id == eq::MERGED_THROUGH_CONGRUENCE)
   {
     d_doExit = true;
-    Assert( e.isNull() );
-    Assert( ge.isNull() );
+    Assert(e.isNull());
+    Assert(ge.isNull());
     Node cnode = eqp->d_node;
-    Trace("ied-gen") << "ied-pf: congruence " << cnode << std::endl; 
-    // get child proofs 
-    std::vector< eq::EqProof* > childProofs;
-    eq::EqProof * curr = eqp;
+    Trace("ied-gen") << "ied-pf: congruence " << cnode << std::endl;
+    // get child proofs
+    std::vector<eq::EqProof*> childProofs;
+    eq::EqProof* curr = eqp;
     do
     {
-      Assert( curr->d_children.size()==2 );
+      Assert(curr->d_children.size() == 2);
       childProofs.push_back(curr->d_children[1].get());
       curr = curr->d_children[0].get();
-    }while( curr->d_id==eq::MERGED_THROUGH_CONGRUENCE );
+    } while (curr->d_id == eq::MERGED_THROUGH_CONGRUENCE);
     unsigned nchild = cnode.getNumChildren();
-    if( childProofs.size()==nchild )
+    if (childProofs.size() == nchild)
     {
       bool success = true;
-      std::vector< Node > rhsArgs;        
-      if( cnode.getMetaKind()== metakind::PARAMETERIZED)
+      std::vector<Node> rhsArgs;
+      if (cnode.getMetaKind() == metakind::PARAMETERIZED)
       {
         rhsArgs.push_back(cnode.getOperator());
       }
       Node retc;
-      for( unsigned i=0; i<nchild; i++ )
+      for (unsigned i = 0; i < nchild; i++)
       {
         // FIXME: must move up
-        retc = generalize(d_null,d_null,childProofs[i],concs,concsg, tb+1);
+        retc =
+            generalize(d_null, d_null, childProofs[i], concs, concsg, tb + 1);
         unsigned matchIndex;
-        if( getMatchIndex(retc,cnode[i],matchIndex) )
+        if (getMatchIndex(retc, cnode[i], matchIndex))
         {
-          rhsArgs.push_back(retc[1-matchIndex]);
+          rhsArgs.push_back(retc[1 - matchIndex]);
         }
         else
         {
@@ -581,24 +582,24 @@ Node InstExplainDb::generalize(Node e, Node ge, eq::EqProof * eqp,
           break;
         }
       }
-      if( success )
+      if (success)
       {
         Kind k = cnode.getKind();
-        Node cnodeEq = nm->mkNode(k,rhsArgs);
+        Node cnodeEq = nm->mkNode(k, rhsArgs);
         ret = cnode.eqNode(cnodeEq);
       }
     }
     else
     {
       Debug("ied-gen-error") << "Unexpected (cong children):" << std::endl;
-      eqp->debug_print("ied-gen-error",1);
+      eqp->debug_print("ied-gen-error", 1);
     }
   }
-  else if( id==eq::MERGED_THROUGH_EQUALITY )
+  else if (id == eq::MERGED_THROUGH_EQUALITY)
   {
     // an assumption
     ret = eqp->d_node;
-    Trace("ied-gen") << "ied-pf: equality " << ret << std::endl; 
+    Trace("ied-gen") << "ied-pf: equality " << ret << std::endl;
     // try to generalize here
     std::map<Node, InstExplainLit>::iterator itl = d_lit_explains.find(ret);
     if (itl != d_lit_explains.end())
@@ -607,54 +608,57 @@ Node InstExplainDb::generalize(Node e, Node ge, eq::EqProof * eqp,
       // activate the literal
       activateLit(ret);
       std::vector<Node>& cexp = iel.d_curr_insts;
-      for( const Node& pinst : cexp )
+      for (const Node& pinst : cexp)
       {
         // get the original literal
         Node olit = iel.getOriginalLit(pinst);
         Node colit = convertEq(olit);
-        // initialize the generalization with the backwards mapping to its concretization
-        concsg[eqp][colit].initialize( &getInstExplainInst(pinst) );
-        if( Trace.isOn("ied-gen") )
+        // initialize the generalization with the backwards mapping to its
+        // concretization
+        concsg[eqp][colit].initialize(&getInstExplainInst(pinst));
+        if (Trace.isOn("ied-gen"))
         {
-          indent("ied-gen",tb+1);
-          Trace("ied-gen") << "ied-pf: gen-equality " << olit << " (from " << pinst << ")" << std::endl;
+          indent("ied-gen", tb + 1);
+          Trace("ied-gen") << "ied-pf: gen-equality " << olit << " (from "
+                           << pinst << ")" << std::endl;
         }
       }
     }
-    if( Trace.isOn("ied-gen") )
+    if (Trace.isOn("ied-gen"))
     {
-      if( concsg.find(eqp)==concsg.end() )
+      if (concsg.find(eqp) == concsg.end())
       {
-        indent("ied-gen",tb+1);
-        Trace("ied-gen") << "ied-pf: no generalizations (tried " << itl->second.d_curr_insts.size() << ")" << std::endl;
+        indent("ied-gen", tb + 1);
+        Trace("ied-gen") << "ied-pf: no generalizations (tried "
+                         << itl->second.d_curr_insts.size() << ")" << std::endl;
       }
     }
     ret = convertEq(ret);
   }
-  else if( id==eq::MERGED_THROUGH_REFLEXIVITY )
+  else if (id == eq::MERGED_THROUGH_REFLEXIVITY)
   {
     // do nothing
     Node n = eqp->d_node;
     ret = n.eqNode(n);
     // we do not care about generalizations here
   }
-  else if( id==eq::MERGED_THROUGH_CONSTANTS )
+  else if (id == eq::MERGED_THROUGH_CONSTANTS)
   {
     //???
     AlwaysAssert(false);
   }
-  else if( id==eq::MERGED_THROUGH_TRANS )
+  else if (id == eq::MERGED_THROUGH_TRANS)
   {
     d_doExit = true;
     bool success = true;
     Node retc;
     Node r1, r2;
-    for( unsigned i=0, nproofs = eqp->d_children.size(); i<nproofs; i++ )
+    for (unsigned i = 0, nproofs = eqp->d_children.size(); i < nproofs; i++)
     {
-      eq::EqProof * epi = eqp->d_children[i].get();
+      eq::EqProof* epi = eqp->d_children[i].get();
       // FIXME: must move up
-      retc = generalize(d_null,d_null,epi,concs, concsg, tb+1);
-      if( i==0 )
+      retc = generalize(d_null, d_null, epi, concs, concsg, tb + 1);
+      if (i == 0)
       {
         r1 = retc[0];
         r2 = retc[1];
@@ -662,34 +666,35 @@ Node InstExplainDb::generalize(Node e, Node ge, eq::EqProof * eqp,
       else
       {
         unsigned matchIndex;
-        if( getMatchIndex(retc, r1, matchIndex ) )
+        if (getMatchIndex(retc, r1, matchIndex))
         {
-          r1 = retc[1-matchIndex];
+          r1 = retc[1 - matchIndex];
         }
-        else if( getMatchIndex(retc, r2, matchIndex ) )
+        else if (getMatchIndex(retc, r2, matchIndex))
         {
-          r2 = retc[1-matchIndex];
+          r2 = retc[1 - matchIndex];
         }
-        else 
+        else
         {
           success = false;
           break;
         }
       }
     }
-    if( success )
+    if (success)
     {
       ret = r1.eqNode(r2);
     }
   }
-  Assert( ret.getKind()==EQUAL );
+  Assert(ret.getKind() == EQUAL);
   concs[eqp] = ret;
-  if( Trace.isOn("ied-gen") )
+  if (Trace.isOn("ied-gen"))
   {
-    indent("ied-gen",tb);
+    indent("ied-gen", tb);
     Trace("ied-gen") << "...proves " << ret;
-    std::map< eq::EqProof *, std::map< Node, GLitInfo > >::iterator itg = concsg.find(eqp);
-    if( itg!=concsg.end() )
+    std::map<eq::EqProof*, std::map<Node, GLitInfo> >::iterator itg =
+        concsg.find(eqp);
+    if (itg != concsg.end())
     {
       Trace("ied-gen") << ", with " << itg->second.size() << " generalizations";
     }
@@ -698,39 +703,40 @@ Node InstExplainDb::generalize(Node e, Node ge, eq::EqProof * eqp,
   return ret;
 }
 
-bool InstExplainDb::getMatchIndex( Node eq, Node n, unsigned& index )
+bool InstExplainDb::getMatchIndex(Node eq, Node n, unsigned& index)
 {
-  if( eq.isNull() )
+  if (eq.isNull())
   {
     return false;
   }
-  Assert( eq.getKind()==EQUAL );
-  for( unsigned i=0; i<2; i++ ){
-    if( eq[i]==n )
+  Assert(eq.getKind() == EQUAL);
+  for (unsigned i = 0; i < 2; i++)
+  {
+    if (eq[i] == n)
     {
       index = i;
       return true;
     }
   }
-  
+
   return false;
 }
 
 Node InstExplainDb::convertEq(Node n)
 {
   Kind k = n.getKind();
-  if( k==EQUAL )
+  if (k == EQUAL)
   {
     return n;
   }
-  else if( k==NOT )
+  else if (k == NOT)
   {
     return n.eqNode(d_false);
   }
-  Assert( n.getType().isBoolean() );
+  Assert(n.getType().isBoolean());
   return n.eqNode(d_true);
 }
-  
+
 }  // namespace quantifiers
 }  // namespace theory
 }  // namespace CVC4

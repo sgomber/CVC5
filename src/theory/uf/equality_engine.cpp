@@ -930,8 +930,8 @@ void EqualityEngine::explainEquality(TNode t1, TNode t2, bool polarity,
                                      std::vector<TNode>& equalities,
                                      EqProof* eqp) const {
   Debug("pf::ee") << d_name << "::eq::explainEquality(" << t1 << ", " << t2
-                    << ", " << (polarity ? "true" : "false") << ")"
-                    << ", proof = " << (eqp ? "ON" : "OFF") << std::endl;
+                  << ", " << (polarity ? "true" : "false") << ")"
+                  << ", proof = " << (eqp ? "ON" : "OFF") << std::endl;
 
   // The terms must be there already
   Assert(hasTerm(t1) && hasTerm(t2));;
@@ -1043,11 +1043,12 @@ void EqualityEngine::getExplanation(
                   << d_nodes[t2Id] << ")" << std::endl;
   if (!eqp)
   {
-    std::map<EqualityNodeId, std::map<EqualityNodeId, EqProof*>>::iterator it1 = cache.find(t1Id);
-    if( it1!=cache.end() )
+    std::map<EqualityNodeId, std::map<EqualityNodeId, EqProof*>>::iterator it1 =
+        cache.find(t1Id);
+    if (it1 != cache.end())
     {
       std::map<EqualityNodeId, EqProof*>::iterator it2 = it1->second.find(t2Id);
-      if( it2!=it1->second.end() )
+      if (it2 != it1->second.end())
       {
         return;
       }
@@ -2261,17 +2262,24 @@ bool EqClassIterator::isFinished() const {
 
 void EqProof::debug_print(const char* c, unsigned tb, PrettyPrinter* prettyPrinter) const {
   std::stringstream ss;
-  debug_print(ss,tb,prettyPrinter);
-  Debug( c ) << ss.str();
+  debug_print(ss, tb, prettyPrinter);
+  Debug(c) << ss.str();
 }
-void EqProof::debug_print(std::ostream& os, unsigned tb,
-                  PrettyPrinter* prettyPrinter) const
+void EqProof::debug_print(std::ostream& os,
+                          unsigned tb,
+                          PrettyPrinter* prettyPrinter) const
 {
-  for(unsigned i=0; i<tb; i++) { os << "  "; }
+  for (unsigned i = 0; i < tb; i++)
+  {
+    os << "  ";
+  }
 
-  if (prettyPrinter){
+  if (prettyPrinter)
+  {
     os << prettyPrinter->printTag(d_id);
-  }else{
+  }
+  else
+  {
     os << d_id;
   }
 
@@ -2279,13 +2287,19 @@ void EqProof::debug_print(std::ostream& os, unsigned tb,
   if( !d_children.empty() || !d_node.isNull() ){
     if( !d_node.isNull() ){
       os << std::endl;
-      for( unsigned i=0; i<tb+1; i++ ) { os << "  "; }
+      for (unsigned i = 0; i < tb + 1; i++)
+      {
+        os << "  ";
+      }
       os << d_node;
     }
     for( unsigned i=0; i<d_children.size(); i++ ){
-      if( i>0 || !d_node.isNull() ){ os << ","; }
+      if (i > 0 || !d_node.isNull())
+      {
+        os << ",";
+      }
       os << std::endl;
-      d_children[i]->debug_print( os, tb+1, prettyPrinter );
+      d_children[i]->debug_print(os, tb + 1, prettyPrinter);
     }
   }
   os << ")" << std::endl;
