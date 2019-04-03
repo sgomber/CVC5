@@ -20,6 +20,7 @@
 #include "theory/quantifiers/term_util.h"
 #include "theory/quantifiers_engine.h"
 #include "theory/rewriter.h"
+#include "proof/uf_proof.h"
 
 using namespace CVC4::kind;
 
@@ -338,6 +339,11 @@ ExplainStatus InstExplainDb::explain(Node q,
         {
           Debug("ied-proof") << "-----------proof of " << er << std::endl;
           pf->debug_print("ied-proof",1);
+          Debug("ied-proof") << "LFSC:" << std::endl;
+          std::stringstream ss;
+          ProofUF * pfu = new ProofUF(pf);
+          pfu->toStream(ss);
+          Debug("ied-proof") << ss.str();
           Debug("ied-proof") << "-----------end proof" << std::endl;
         }
         // compute the generalized assumptions
@@ -575,6 +581,43 @@ void InstExplainDb::generalize(Node e, Node ge, eq::EqProof * eqp,
     return;
   }
   
+  
+  
+  
+  // what kind of proof?
+  unsigned id = eqp->d_id;
+  if( id==eq::MERGED_THROUGH_CONGRUENCE )
+  {
+    
+    /*
+    Node congn = eqp->d_node;
+    EqProof * eqpc = eqp;
+    do
+    {
+      Assert( eqpc->d_children.size()==2 );
+      
+    }while( eqpc->d_id==eq::MERGED_THROUGH_CONGRUENCE );
+    */
+  }
+  else if( id==eq::MERGED_THROUGH_EQUALITY )
+  {
+    // an assumption
+    Node eq = eqp->d_node;
+    Assert( std::find( assumptions.begin(), assumptions.end(), eq )!=assumptions.end() );
+    
+  }
+  else if( id==eq::MERGED_THROUGH_REFLEXIVITY )
+  {
+    // do nothing
+  }
+  else if( id==eq::MERGED_THROUGH_CONSTANTS )
+  {
+    //???
+  }
+  else if( id==eq::MERGED_THROUGH_TRANS )
+  {
+    
+  }
 }
   
 }  // namespace quantifiers

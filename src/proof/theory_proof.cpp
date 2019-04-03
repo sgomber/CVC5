@@ -1380,13 +1380,12 @@ bool TheoryProof::match(TNode n1, TNode n2)
   return true;
 }
 
-int TheoryProof::assertAndPrint(
+int TheoryProof::rectify(
+    theory::TheoryId theoryId,
     const theory::eq::EqProof& pf,
-    const ProofLetMap& map,
     std::shared_ptr<theory::eq::EqProof> subTrans,
     theory::eq::EqProof::PrettyPrinter* pPrettyPrinter)
 {
-  theory::TheoryId theoryId = getTheoryId();
   int neg = -1;
   Assert(theoryId == theory::THEORY_UF || theoryId == theory::THEORY_ARRAYS);
   bool ufProof = (theoryId == theory::THEORY_UF);

@@ -207,7 +207,6 @@ protected:
   // Pointer to the theory for this proof
   theory::Theory* d_theory;
   TheoryProofEngine* d_proofEngine;
-  virtual theory::TheoryId getTheoryId() = 0;
 
  public:
   TheoryProof(theory::Theory* th, TheoryProofEngine* proofEngine)
@@ -215,6 +214,7 @@ protected:
     , d_proofEngine(proofEngine)
   {}
   virtual ~TheoryProof() {};
+  virtual theory::TheoryId getTheoryId() = 0;
   /**
    * Print a term belonging some theory, not necessarily this one.
    *
@@ -249,15 +249,14 @@ protected:
    * ProofArray::toStreamRecLFSC
    * Inputs:
    *    - pf: equality engine proof
-   *    - map: A map for the let-expressions in the proof
    *    - subTrans: main transitivity proof part
    *    - pPrettyPrinter: optional pretty printer for sub-proofs
    * returns:
    *    - the index of the contradicting node in pf.
    *    */
-  int assertAndPrint(
+  static int rectify(
+      theory::TheoryId theoryId,
       const theory::eq::EqProof& pf,
-      const ProofLetMap& map,
       std::shared_ptr<theory::eq::EqProof> subTrans,
       theory::eq::EqProof::PrettyPrinter* pPrettyPrinter = nullptr);
 
