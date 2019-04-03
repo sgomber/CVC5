@@ -929,7 +929,7 @@ std::string EqualityEngine::edgesToString(EqualityEdgeId edgeId) const {
 void EqualityEngine::explainEquality(TNode t1, TNode t2, bool polarity,
                                      std::vector<TNode>& equalities,
                                      EqProof* eqp) const {
-  Debug("equality") << d_name << "::eq::explainEquality(" << t1 << ", " << t2
+  Debug("pf::ee") << d_name << "::eq::explainEquality(" << t1 << ", " << t2
                     << ", " << (polarity ? "true" : "false") << ")"
                     << ", proof = " << (eqp ? "ON" : "OFF") << std::endl;
 

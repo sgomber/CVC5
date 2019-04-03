@@ -51,7 +51,11 @@ public:
   /** rectify this proof, if not already done so */
   void rectify(theory::TheoryId theoryId);
   /** get proof */
-  
+  theory::eq::EqProof * getProof() const;
+  /** get sub transitivity proof */
+  theory::eq::EqProof * getSubTransProof() const;
+  /** get negation status */
+  int getNegationStatus() const;
 private:
   /** the input of this object */
   std::shared_ptr<theory::eq::EqProof> d_proof;

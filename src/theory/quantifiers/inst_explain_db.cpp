@@ -581,6 +581,8 @@ void InstExplainDb::generalize(Node e, Node ge, eq::EqProof * eqp,
     return;
   }
   
+  Assert( e.getKind()==ge.getKind() );
+  Assert( e.getNumChildren()==ge.getNumChildren() );
   
   
   
@@ -588,22 +590,45 @@ void InstExplainDb::generalize(Node e, Node ge, eq::EqProof * eqp,
   unsigned id = eqp->d_id;
   if( id==eq::MERGED_THROUGH_CONGRUENCE )
   {
-    
-    /*
-    Node congn = eqp->d_node;
-    EqProof * eqpc = eqp;
+    if( e.getKind()!=EQUAL || !e[0].hasOperator() || !e[1].hasOperator() || e[0].getOperator()!=e[1].getOperator() || e[0].getNumChildren()!=e[1].getNumChildren())
+    {
+      Debug("ied-gen-error") << "Unexpected (cong):" << std::endl;
+      eqp->debug_print("ied-gen-error",1);
+      return;
+    }
+    unsigned nchild = e[0].getNumChildren();
+    // get child proofs 
+    std::vector< eq::EqProof* > childProofs;
+    eq::EqProof * curr = eqp;
     do
     {
-      Assert( eqpc->d_children.size()==2 );
-      
-    }while( eqpc->d_id==eq::MERGED_THROUGH_CONGRUENCE );
-    */
+      Assert( curr->d_children.size()==2 );
+      childProofs.push_back(curr->d_children[1].get());
+      curr = curr->d_children[0].get();
+    }while( curr->d_id==eq::MERGED_THROUGH_CONGRUENCE );
+    
+    if( childProofs.size()==e[0].getNumChildren() )
+    {
+      for( unsigned i=0; i<nchild; i++ )
+      {
+        Node ec = e[0][i].eqNode(e[1][i]);
+        Node gec = ge[0][i].eqNode(ge[1][i]);
+        generalize(ec,gec,childProofs[i],assumptions,gassumptions);
+      }
+    }
+    else
+    {
+      Debug("ied-gen-error") << "Unexpected (cong children):" << std::endl;
+      eqp->debug_print("ied-gen-error",1);
+      return;
+    }
   }
   else if( id==eq::MERGED_THROUGH_EQUALITY )
   {
     // an assumption
     Node eq = eqp->d_node;
     Assert( std::find( assumptions.begin(), assumptions.end(), eq )!=assumptions.end() );
+    // process the assumption
     
   }
   else if( id==eq::MERGED_THROUGH_REFLEXIVITY )
@@ -616,8 +641,145 @@ void InstExplainDb::generalize(Node e, Node ge, eq::EqProof * eqp,
   }
   else if( id==eq::MERGED_THROUGH_TRANS )
   {
+    for( unsigned i=0, nproofs = eqp->d_children.size(); i<nproofs; i++ )
+    {
+      eq::EqProof * epi = eqp->d_children[i].get();
+      
+    }
+  }
+}
+
+Node InstExplainDb::computeConclusions(eq::EqProof * eqp, std::map< eq::EqProof *, Node >& concs )
+{
+  std::map< eq::EqProof *, Node >::iterator itc = concs.find(eqp);
+  if( itc!=concs.end() )
+  {
+    return itc->second;
+  }
+  // what kind of proof?
+  Node ret;
+  unsigned id = eqp->d_id;
+  if( id==eq::MERGED_THROUGH_CONGRUENCE )
+  {
+    Node cnode = eqp->d_node;
+    // get child proofs 
+    std::vector< eq::EqProof* > childProofs;
+    eq::EqProof * curr = eqp;
+    do
+    {
+      Assert( curr->d_children.size()==2 );
+      childProofs.push_back(curr->d_children[1].get());
+      curr = curr->d_children[0].get();
+    }while( curr->d_id==eq::MERGED_THROUGH_CONGRUENCE );
+    unsigned nchild = cnode.getNumChildren();
+    if( childProofs.size()==nchild )
+    {
+      bool success = true;
+      std::vector< Node > rhsArgs;        
+      if( cnode.getMetaKind()== metakind::PARAMETERIZED)
+      {
+        rhsArgs.push_back(cnode.getOperator());
+      }
+      for( unsigned i=0; i<nchild; i++ )
+      {
+        Node retc = computeConclusions(childProofs[i],concs);
+        unsigned matchIndex;
+        if( getMatchIndex(retc,cnode[i],matchIndex) )
+        {
+          rhsArgs.push_back(retc[1-matchIndex]);
+        }
+        else
+        {
+          success = false;
+          break;
+        }
+      }
+      if( success )
+      {
+        Kind k = cnode.getKind();
+        Node cnodeEq = NodeManager::currentNM()->mkNode(k,rhsArgs);
+        ret = cnode.eqNode(cnodeEq);
+      }
+    }
+    else
+    {
+      Debug("ied-gen-error") << "Unexpected (cong children):" << std::endl;
+      eqp->debug_print("ied-gen-error",1);
+    }
+  }
+  else if( id==eq::MERGED_THROUGH_EQUALITY )
+  {
+    // an assumption
+    ret = eqp->d_node;
+    
+    // try to generalize here?
     
   }
+  else if( id==eq::MERGED_THROUGH_REFLEXIVITY )
+  {
+    // do nothing
+    Node n = eqp->d_node;
+    ret = n.eqNode(n);
+  }
+  else if( id==eq::MERGED_THROUGH_CONSTANTS )
+  {
+    //???
+  }
+  else if( id==eq::MERGED_THROUGH_TRANS )
+  {
+    Node retc = computeConclusions(eqp->d_children[0].get(),concs);
+    if( !retc.isNull() )
+    {
+      Node r1 = retc[0];
+      Node r2 = retc[1];
+      std::vector< unsigned > orderedIndex;
+      bool success = true;
+      for( unsigned i=1, nproofs = eqp->d_children.size(); i<nproofs; i++ )
+      {
+        eq::EqProof * epi = eqp->d_children[i].get();
+        retc = computeConclusions(epi,concs);
+        unsigned matchIndex;
+        if( getMatchIndex(retc, r1, matchIndex ) )
+        {
+          r1 = retc[1-matchIndex];
+        }
+        else if( getMatchIndex(retc, r2, matchIndex ) )
+        {
+          r2 = retc[1-matchIndex];
+        }
+        else 
+        {
+          success = false;
+          break;
+        }
+      }
+      if( success )
+      {
+        ret = r1.eqNode(r2);
+      }
+    }
+  }
+  Assert( ret.getKind()==EQUAL );
+  concs[eqp] = ret;
+  return ret;
+}
+
+bool InstExplainDb::getMatchIndex( Node eq, Node n, unsigned& index )
+{
+  if( eq.isNull() )
+  {
+    return false;
+  }
+  Assert( eq.getKind()==EQUAL );
+  for( unsigned i=0; i<2; i++ ){
+    if( eq[i]==n )
+    {
+      index = i;
+      return true;
+    }
+  }
+  
+  return false;
 }
   
 }  // namespace quantifiers

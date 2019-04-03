@@ -146,7 +146,10 @@ class InstExplainDb
   
   void generalize(Node e, Node ge, eq::EqProof * eqp,
                   std::vector< TNode >& assumptions,
-                  std::map<TNode, std::vector<Node> >& gassumptions );
+                  std::map<TNode, std::vector<Node> >& gassumptions
+                 );
+  Node computeConclusions(eq::EqProof * eqp, std::map< eq::EqProof *, Node >& concs );
+  bool getMatchIndex( Node eq, Node n, unsigned& index );
 };
 
 }  // namespace quantifiers

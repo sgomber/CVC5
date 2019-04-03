@@ -189,7 +189,7 @@ Node TermDb::mkMatchOperatorApp(Node f, std::vector<Node>& args)
   }
   Node exn = it->second[0];
   Kind k = exn.getKind();
-  if (exn.getMetaKind() == kind::metakind::PARAMETERIZED)
+  if (exn.getMetaKind() == metakind::PARAMETERIZED)
   {
     args.insert(args.begin(), exn.getOperator());
   }

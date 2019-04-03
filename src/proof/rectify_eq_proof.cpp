@@ -211,7 +211,19 @@ int RectifiableEqProof::rectify(
   }
   return neg;
 }  
-  
+theory::eq::EqProof * RectifiableEqProof::getProof() const
+{
+  return d_proof.get();
+}
+theory::eq::EqProof * RectifiableEqProof::getSubTransProof() const
+{
+  return d_subTrans.get();
+}
+int RectifiableEqProof::getNegationStatus() const
+{
+  return d_negStatus;
+}
+
 void RectifiableEqProof::rectify(theory::TheoryId theoryId)
 {
   if( !d_subTrans )
