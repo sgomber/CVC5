@@ -248,22 +248,6 @@ protected:
    * Helper function for ProofUF::toStreamRecLFSC and
    * ProofArray::toStreamRecLFSC
    * Inputs:
-   *    - pf: equality engine proof
-   *    - subTrans: main transitivity proof part
-   *    - pPrettyPrinter: optional pretty printer for sub-proofs
-   * returns:
-   *    - the index of the contradicting node in pf.
-   *    */
-  static int rectify(
-      theory::TheoryId theoryId,
-      const theory::eq::EqProof& pf,
-      std::shared_ptr<theory::eq::EqProof> subTrans,
-      theory::eq::EqProof::PrettyPrinter* pPrettyPrinter = nullptr);
-
-  /**
-   * Helper function for ProofUF::toStreamRecLFSC and
-   * ProofArray::toStreamRecLFSC
-   * Inputs:
    *    - evenLengthSequence: true iff the length of the sequence
    *                          of the identical equalities is even.
    *    - sequenceOver: have we reached the last equality of this sequence?

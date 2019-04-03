@@ -27,12 +27,27 @@ namespace CVC4 {
 /** Rectifiable equality proof 
  * 
  * This class stores a EqProof object and manages its rectification via
- * TheoryProof::rectify.
+ * a call to rectify below.
  */
 class RectifiableEqProof
 {
 public:
   RectifiableEqProof(std::shared_ptr<theory::eq::EqProof> pf) : d_proof(pf), d_negStatus(0) {}
+  /**
+   * Helper function for ProofUF::toStreamRecLFSC and
+   * ProofArray::toStreamRecLFSC
+   * Inputs:
+   *    - pf: equality engine proof
+   *    - subTrans: main transitivity proof part
+   *    - pPrettyPrinter: optional pretty printer for sub-proofs
+   * returns:
+   *    - the index of the contradicting node in pf.
+   *    */
+  static int rectify(
+      theory::TheoryId theoryId,
+      const theory::eq::EqProof& pf,
+      std::shared_ptr<theory::eq::EqProof> subTrans,
+      theory::eq::EqProof::PrettyPrinter* pPrettyPrinter = nullptr);  
   /** rectify this proof, if not already done so */
   void rectify(theory::TheoryId theoryId);
   /** get proof */
