@@ -374,7 +374,6 @@ ExplainStatus InstExplainDb::explain(Node q,
         }
         else
         {
-          Assert( propGenPf );
           // we use the generalization here
           litGeneralization[elit] = propGen;
           // elit is the literal that has the generalized propagation
@@ -395,6 +394,7 @@ ExplainStatus InstExplainDb::explain(Node q,
   finalAssumptions.push_back(q);
   Node concQuant;
   std::vector< Node > finalConclusions;
+  InstExplainInst* finalInfo = nullptr;
   for (std::map<Node, eq::EqProof>::iterator itp = expPf.begin();
       itp != expPf.end();
       ++itp)
@@ -414,11 +414,20 @@ ExplainStatus InstExplainDb::explain(Node q,
       GLitInfo& ginfo = itg->second;
       if( !ginfo.d_conclusions.empty() )
       {
-        // not purely general, set conclusion
+        // not purely general, set conclusions
         for( const std::pair<Node, std::map<Node, GLitInfo> >& cs : ginfo.d_conclusions )
         {
           for( const std::pair<Node, GLitInfo>& cc : cs.second )
           {
+            finalConclusions.push_back(cc.first);
+            // get the instantiation lemma information about the level of the propagation
+            const GLitInfo& gli = cc.second;
+            InstExplainInst* glii = gli.d_iei;
+            Assert( glii );
+            Node qg = glii->getQuantifiedFormula();
+            Assert( concQuant.isNull() || concQuant==qg );
+            concQuant = qg;
+            finalInfo = glii;
           }
         }
       }
@@ -430,8 +439,62 @@ ExplainStatus InstExplainDb::explain(Node q,
       Assert( concQuant.isNull() || concQuant==q );
       concQuant = q;
       finalConclusions.push_back(elit);
+      finalInfo = &conflict;
     }
   }
+  // debug print the inference
+  Assert( !finalAssumptions.empty() );
+  if( Trace.isOn("ied-conflict") )
+  {
+    Trace("ied-conflict") << "Conflict explanation:" << std::endl;
+    Trace("ied-conflict") << "ASSUMPTIONS:" << std::endl;
+    for( const Node& fa : finalAssumptions )
+    {
+      Trace("ied-conflict") << "  " << fa << std::endl;
+    }
+    if( !finalConclusions.empty() )
+    {
+      Trace("ied-conflict") << "CONCLUSIONS: (from" << concQuant<< ")" << ":" << std::endl;
+      for( const Node& fc : finalConclusions )
+      {
+        Trace("ied-conflict") << "  " << fc << std::endl;
+      }
+    }
+    else
+    {
+      Trace("ied-conflict") << "CONCLUSION: false!" << std::endl;
+    }
+  }
+  NodeManager * nm = NodeManager::currentNM();
+  Node antec = d_true;
+  if( !finalAssumptions.empty() )
+  {
+    antec = finalAssumptions.size()==1 ? finalAssumptions[0] : nm->mkNode(AND,finalAssumptions);
+  }
+  Node lem;
+  if( !finalConclusions.empty() )
+  {
+    Node conc = finalConclusions.size()==1 ? finalConclusions[0] : nm->mkNode(OR,finalConclusions);
+    Assert( !concQuant.isNull() )
+    std::vector< Node > oldVars;
+    std::vector< Node > newVars;
+    for( const Node& bv : concQuant[0] )
+    {
+      oldVars.push_back(bv);
+      Node bvn = nm->mkBoundVar(bv.getType());
+      newVars.push_back(bvn);
+    }
+    Node concs = conc.substitute(oldVars.begin(),oldVars.end(),newVars.begin(),newVars.end());
+    Node bvl = nm->mkNode(BOUND_VAR_LIST,newVars);
+    conc = nm->mkNode( FORALL, bvl, concs );
+    lem = nm->mkNode( OR, antec.negate(), conc );
+  }
+  else
+  {
+    lem = antec.negate();
+  }
+  Trace("ied-conflict") << "LEMMA:" << std::endl;
+  Trace("ied-conflict") << "  " << lem << std::endl;
 
   return ret;
 }
