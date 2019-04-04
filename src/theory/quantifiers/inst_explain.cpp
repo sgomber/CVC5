@@ -74,6 +74,92 @@ int IeEvaluator::evaluate(Node n)
   return res;
 }
 
+
+bool IeEvaluator::propagate(Node n,
+                                    std::map<Node, bool>& expres,
+                                    std::vector<Node>& lits)
+{
+  std::map<Node, bool>::iterator it = expres.find(n);
+  if (it != expres.end())
+  {
+    return it->second;
+  }
+  expres[n] = true;
+  Assert(evaluate(n) == 1);
+  // must justify why n is true
+  TNode atom = n.getKind() == NOT ? n[0] : n;
+  bool pol = n.getKind() != NOT;
+  Kind k = n.getKind();
+  if (k == AND || k == OR)
+  {
+    if ((k == AND) == pol)
+    {
+      for (const Node& nc : atom)
+      {
+        Node ncp = pol ? nc : nc.negate();
+        if (!propagate(ncp, expres, lits))
+        {
+          expres[n] = false;
+          return false;
+        }
+      }
+    }
+    // choose one that evaluates to true
+    for (const Node& nc : atom)
+    {
+      if (evaluate(nc) == (pol ? 1 : -1))
+      {
+        Node ncp = pol ? nc : nc.negate();
+        propagate(ncp, expres, lits);
+        return true;
+      }
+    }
+    expres[n] = false;
+    return false;
+  }
+  else if (k == ITE)
+  {
+    int cbres = evaluate(atom[0]);
+    if (cbres == 0)
+    {
+      // branch is unknown, must do both
+      if (!propagate(atom[1], expres, lits)
+          || !propagate(atom[2], expres, lits))
+      {
+        expres[n] = false;
+        return false;
+      }
+    }
+    else
+    {
+      // branch is known, do relevant child
+      unsigned checkIndex = cbres > 0 ? 1 : 2;
+      if (!propagate(atom[0], expres, lits)
+          || !propagate(atom[checkIndex], expres, lits))
+      {
+        expres[n] = false;
+        return false;
+      }
+    }
+  }
+  else if (k == EQUAL && n[0].getType().isBoolean())
+  {
+    // must always do both
+    if (!propagate(atom[0], expres, lits)
+        || !propagate(atom[1], expres, lits))
+    {
+      expres[n] = false;
+      return false;
+    }
+  }
+  else
+  {
+    lits.push_back(n);
+  }
+  return true;
+}
+
+
 void InstExplainLit::initialize(Node lit) { d_this = lit; }
 void InstExplainLit::reset() { d_curr_insts.clear(); }
 void InstExplainLit::addInstExplanation(Node inst,

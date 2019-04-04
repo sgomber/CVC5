@@ -32,9 +32,31 @@ class IeEvaluator
   IeEvaluator(Valuation& v) : d_valuation(v) {}
   /** reset */
   void reset();
-  /** evaluate */
+  /** evaluate
+   * 
+   * Returns the value of n in the current SAT context where
+   * 1 : n is true in the SAT context,
+   * -1 : n is false in the SAT context,
+   * 0 : the value of n is unknown in the current SAT context.
+   * 
+   * Notice that n may contain literals that do not have values in the SAT
+   * context. The value of n can still be determined in some cases in the
+   * case these literals are irrelevant.
+   */
   int evaluate(Node n);
-
+  /** get the propagating literals for n
+   *
+   * If this method returns true, then lits contains a set of literals over the
+   * atoms of n that propositionally entail n and are true in the current SAT
+   * context.
+   * If this method returns false, then n is not true in the current SAT
+   * context.
+   * 
+   * The processed nodes are cached in cache.
+   */
+  bool propagate(Node n,
+                       std::map<Node, bool>& cache,
+                       std::vector<Node>& lits);
  private:
   /** valuation */
   Valuation& d_valuation;

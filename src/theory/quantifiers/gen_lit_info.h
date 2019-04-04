@@ -98,10 +98,11 @@ class GLitInfo
    */
   unsigned getScore() const;
 
-  void debugPrint(const char* c) const;
-
+  void debugPrint(const char* c, unsigned tb=0) const;
  private:
   bool mergeInternal(TNode a, TNode b, const GLitInfo& gb, bool allowBind);
+  /** indent tb tabulations on trace c */ 
+  void indent(const char * c, unsigned tb) const;
 };
 
 }  // namespace quantifiers

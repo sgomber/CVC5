@@ -93,19 +93,6 @@ class InstExplainDb
 
   void activateLit(Node lit);
   void activateInst(Node inst, Node srcLit, InstExplainLit& src);
-
-  /** instantiate explain */
-  void instLitExplain(Node lit,
-                      std::map<Node, bool>& expres,
-                      std::map<Node, bool>& expresAtom,
-                      bool regressInst);
-  /** get the propagating literals for n
-   *
-   *
-   */
-  bool instBoolExplain(Node n,
-                       std::map<Node, bool>& expres,
-                       std::vector<Node>& lits);
   Node d_null;
   /**
    * Regress the explanation of proof sketch eqp using eqe.

@@ -246,7 +246,60 @@ bool GLitInfo::drop(TNode b)
 
 unsigned GLitInfo::getScore() const { return d_conclusions.size(); }
 
-void GLitInfo::debugPrint(const char* c) const {}
+void GLitInfo::indent(const char* c, unsigned tb) const
+{
+  for (unsigned i = 0; i < tb; i++)
+  {
+    Trace(c) << " ";
+  }
+}
+void GLitInfo::debugPrint(const char* c, unsigned tb) const {
+  if( Trace.isOn(c) )
+  {
+    indent(c,tb);
+    Trace(c) << "MATCH_INFO" << std::endl;
+    indent(c,tb+1);
+    Trace(c) << "substitution:" << std::endl;
+    if( d_subs_modify.empty() )
+    {
+      indent(c,tb+2);
+      Trace(c) << "(empty)" << std::endl;
+    }
+    indent(c,tb+1);
+    Trace(c) << "assumptions:" << std::endl;
+    if( d_assumptions.empty() )
+    {
+      indent(c,tb+2);
+      Trace(c) << "(empty)" << std::endl;
+    }
+    else
+    {
+      for( const Node& a : d_assumptions )
+      {
+        indent(c,tb+2);
+        Trace(c) << a << std::endl;
+      }
+    }
+    indent(c,tb+1);
+    Trace(c) << "conclusions:" << std::endl;
+    if( d_conclusions.empty() )
+    {
+      indent(c,tb+2);
+      Trace(c) << "(empty)" << std::endl;
+    }
+    else
+    {
+      for( const std::pair<Node, std::map<Node, GLitInfo> >& cs : d_conclusions )
+      {
+        for( const std::pair<Node, GLitInfo>& cc : cs.second )
+        {
+          indent(c,tb+2);
+          Trace(c) << cc.first << std::endl;
+        }
+      }
+    }
+  }
+}
 
 }  // namespace quantifiers
 }  // namespace theory
