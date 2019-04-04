@@ -20,106 +20,118 @@ namespace CVC4 {
 namespace theory {
 namespace quantifiers {
 
-void GLitInfo::initialize(InstExplainInst* iei) { 
-  d_iei = iei; 
+void GLitInfo::initialize(InstExplainInst* iei)
+{
+  d_iei = iei;
   d_subs_modify.clear();
   d_assumptions.clear();
   d_conclusions.clear();
 }
 
-bool GLitInfo::initialize(TNode a, const GLitInfo& ga, TNode b, const GLitInfo& gb)
+bool GLitInfo::initialize(TNode a,
+                          const GLitInfo& ga,
+                          TNode b,
+                          const GLitInfo& gb)
 {
   // copy info from ga
   d_iei = ga.d_iei;
   d_subs_modify = ga.d_subs_modify;
-  return merge(a,b,gb);
+  return merge(a, b, gb);
 }
 
 bool GLitInfo::merge(TNode a, TNode b, const GLitInfo& gb)
 {
-  return mergeInternal( a, b, gb, true );
+  return mergeInternal(a, b, gb, true);
 }
 bool GLitInfo::checkCompatible(TNode a, TNode b, const GLitInfo& gb)
 {
-  return mergeInternal( a, b, gb, false );
+  return mergeInternal(a, b, gb, false);
 }
 bool GLitInfo::checkCompatible(TNode a, TNode b)
 {
   GLitInfo gb;
-  return mergeInternal( a, b, gb, false );
+  return mergeInternal(a, b, gb, false);
 }
-  
-bool GLitInfo::mergeInternal(TNode a, TNode b, const GLitInfo& gb, bool allowBind)
+
+bool GLitInfo::mergeInternal(TNode a,
+                             TNode b,
+                             const GLitInfo& gb,
+                             bool allowBind)
 {
   // bound variables (in case we decide to cleanup)
-  std::vector< TNode > bound_avars;
+  std::vector<TNode> bound_avars;
   Trace("ied-ginfo") << "GLitInfo::merge, a : " << a << std::endl;
   Trace("ied-ginfo") << "GLitInfo::merge, b : " << b << std::endl;
   // the visit cache and indicates unifier information
-  std::map< Node, std::unordered_set< Node, NodeHashFunction > > visited;
-  std::vector< Node > avisit;
-  std::vector< Node > bvisit;
+  std::map<Node, std::unordered_set<Node, NodeHashFunction> > visited;
+  std::vector<Node> avisit;
+  std::vector<Node> bvisit;
   std::map<TNode, Node>::const_iterator it;
-  std::map< Node, std::unordered_set< Node, NodeHashFunction > >::iterator itv;
+  std::map<Node, std::unordered_set<Node, NodeHashFunction> >::iterator itv;
   avisit.push_back(a);
   bvisit.push_back(b);
   TNode cura;
   TNode curb;
   bool matchSuccess = true;
-  do {
+  do
+  {
     cura = avisit.back();
     avisit.pop_back();
     curb = bvisit.back();
     bvisit.pop_back();
-    std::unordered_set< Node, NodeHashFunction >& va = visited[cura];
-    if (va.find(curb) == va.end()) {
+    std::unordered_set<Node, NodeHashFunction>& va = visited[cura];
+    if (va.find(curb) == va.end())
+    {
       va.insert(curb);
       Trace("ied-ginfo-debug") << "Match a:" << cura << std::endl;
       Trace("ied-ginfo-debug") << "Match b:" << curb << std::endl;
-      bool abv = cura.getKind()==BOUND_VARIABLE;
-      bool bbv = curb.getKind()==BOUND_VARIABLE;
+      bool abv = cura.getKind() == BOUND_VARIABLE;
+      bool bbv = curb.getKind() == BOUND_VARIABLE;
       // TODO: check that it is bound by the quantified formula
 
       TNode av = cura;
-      if( abv )
+      if (abv)
       {
         it = d_subs_modify.find(cura);
-        if( it!=d_subs_modify.end() )
+        if (it != d_subs_modify.end())
         {
           av = it->second;
           abv = false;
         }
       }
       TNode bv = curb;
-      if( bbv )
+      if (bbv)
       {
         it = gb.d_subs_modify.find(curb);
-        if( it!=gb.d_subs_modify.end() )
+        if (it != gb.d_subs_modify.end())
         {
           bv = it->second;
           bbv = false;
         }
       }
-      if( abv )
+      if (abv)
       {
         // two variables
-        if( bbv )
+        if (bbv)
         {
-          // store reversed to ensure that we bind cura if curb becomes bound later
+          // store reversed to ensure that we bind cura if curb becomes bound
+          // later
           visited[curb].insert(cura);
-          if( visited[curb].size()>1 )
+          if (visited[curb].size() > 1)
           {
-            Trace("ied-ginfo") << "GLitInfo::merge: Fail: induced equality on " << curb << std::endl;
+            Trace("ied-ginfo") << "GLitInfo::merge: Fail: induced equality on "
+                               << curb << std::endl;
             matchSuccess = false;
             break;
           }
         }
-        else if( allowBind )
+        else if (allowBind)
         {
           // An a-variable is bound, simple.
           // FIXME:
           // P(x) { x -> f(b) } matching P(f(y)) { y -> b }, drop to x -> f(b)
-          Trace("ied-ginfo") << "GLitInfo::merge: bind " << cura << " -> " << bv << std::endl;
+          Trace("ied-ginfo")
+              << "GLitInfo::merge: bind " << cura << " -> " << bv << std::endl;
           d_subs_modify[cura] = bv;
           bound_avars.push_back(cura);
         }
@@ -130,55 +142,66 @@ bool GLitInfo::mergeInternal(TNode a, TNode b, const GLitInfo& gb, bool allowBin
       }
       else
       {
-        if( bbv )
+        if (bbv)
         {
           // A b-variable was bound.
           // must go back and bind all occurrences it was equal to
           itv = visited.find(curb);
-          if( itv!=visited.end() )
+          if (itv != visited.end())
           {
-            if( !allowBind )
+            if (!allowBind)
             {
               return false;
             }
-            for( TNode x : itv->second )
+            for (TNode x : itv->second)
             {
-              if( d_subs_modify.find(x)!=d_subs_modify.end() )
+              if (d_subs_modify.find(x) != d_subs_modify.end())
               {
                 // bound to different things, fail?
-                Trace("ied-ginfo") << "GLitInfo::merge: Fail: " << cura << " == " << curb << ", where " << curb << " == " << x << std::endl;
-                Trace("ied-ginfo") << "GLitInfo::merge: which contradicts ( " << d_subs_modify[x] << " == ) " << x << " == " << curb << "( == " << bv << " ) " << std::endl;
+                Trace("ied-ginfo")
+                    << "GLitInfo::merge: Fail: " << cura << " == " << curb
+                    << ", where " << curb << " == " << x << std::endl;
+                Trace("ied-ginfo")
+                    << "GLitInfo::merge: which contradicts ( "
+                    << d_subs_modify[x] << " == ) " << x << " == " << curb
+                    << "( == " << bv << " ) " << std::endl;
                 matchSuccess = false;
                 break;
               }
               else
               {
-                Trace("ied-ginfo") << "GLitInfo::merge: bind (backwards) " << x << " -> " << av << std::endl;
+                Trace("ied-ginfo") << "GLitInfo::merge: bind (backwards) " << x
+                                   << " -> " << av << std::endl;
                 d_subs_modify[x] = av;
               }
             }
-            if( !matchSuccess )
+            if (!matchSuccess)
             {
               break;
             }
           }
         }
-        else if( av!=bv )
-        {        
+        else if (av != bv)
+        {
           // recurse
-          if( av.hasOperator() )
+          if (av.hasOperator())
           {
-            if( !bv.hasOperator() || bv.getOperator()!=av.getOperator() || bv.getNumChildren()!=av.getNumChildren() )
+            if (!bv.hasOperator() || bv.getOperator() != av.getOperator()
+                || bv.getNumChildren() != av.getNumChildren())
             {
-              Trace("ied-ginfo") << "GLitInfo::merge: Fail: clash ( " << av << " == ) " << cura << " == " << curb << "( == " << bv << " ) " << std::endl;
+              Trace("ied-ginfo")
+                  << "GLitInfo::merge: Fail: clash ( " << av << " == ) " << cura
+                  << " == " << curb << "( == " << bv << " ) " << std::endl;
               // wrong operators, should only happen if we within a substitution
-              Assert( cura.getKind()==BOUND_VARIABLE || curb.getKind()==BOUND_VARIABLE );
+              Assert(cura.getKind() == BOUND_VARIABLE
+                     || curb.getKind() == BOUND_VARIABLE);
               matchSuccess = false;
               break;
             }
-            for( unsigned i=0, nchild=cura.getNumChildren(); i<nchild; i++ )
+            for (unsigned i = 0, nchild = cura.getNumChildren(); i < nchild;
+                 i++)
             {
-              if( a[i]!=b[i] )
+              if (a[i] != b[i])
               {
                 avisit.push_back(a[i]);
                 bvisit.push_back(b[i]);
@@ -187,7 +210,9 @@ bool GLitInfo::mergeInternal(TNode a, TNode b, const GLitInfo& gb, bool allowBin
           }
           else
           {
-            Trace("ied-ginfo") << "GLitInfo::merge: Fail: operator ( " << av << " == ) " << cura << " == " << curb << "( == " << bv << " ) " << std::endl;
+            Trace("ied-ginfo") << "GLitInfo::merge: Fail: operator ( " << av
+                               << " == ) " << cura << " == " << curb
+                               << "( == " << bv << " ) " << std::endl;
             // not equal and a is a variable, fail
             return false;
           }
@@ -195,19 +220,20 @@ bool GLitInfo::mergeInternal(TNode a, TNode b, const GLitInfo& gb, bool allowBin
       }
     }
   } while (!avisit.empty());
-  
-  if( !matchSuccess )
+
+  if (!matchSuccess)
   {
     // revert the bound variables
-    for( TNode avb : bound_avars )
+    for (TNode avb : bound_avars)
     {
-      Assert( d_subs_modify.find(avb)!=d_subs_modify.end() );
+      Assert(d_subs_modify.find(avb) != d_subs_modify.end());
       d_subs_modify.erase(avb);
     }
     return false;
   }
   // carry the assumptions/conclusions
-  d_assumptions.insert(d_assumptions.end(),gb.d_assumptions.begin(),gb.d_assumptions.end());
+  d_assumptions.insert(
+      d_assumptions.end(), gb.d_assumptions.begin(), gb.d_assumptions.end());
   Trace("ied-ginfo") << "GLitInfo::merge: Success!" << std::endl;
   return true;
 }
@@ -218,15 +244,9 @@ bool GLitInfo::drop(TNode b)
   return true;
 }
 
-unsigned GLitInfo::getScore() const
-{
-  return d_conclusions.size();
-}
+unsigned GLitInfo::getScore() const { return d_conclusions.size(); }
 
-void GLitInfo::debugPrint(const char * c ) const
-{
-  
-}
+void GLitInfo::debugPrint(const char* c) const {}
 
 }  // namespace quantifiers
 }  // namespace theory

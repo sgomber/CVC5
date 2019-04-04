@@ -45,7 +45,7 @@ class IeEvaluator
 /** instantiation explain literal
  *
  * This class manages all instantiation lemma explanations for a single ground
- * literal L. In particular, it stores all instantiation lemmas that contain 
+ * literal L. In particular, it stores all instantiation lemmas that contain
  * and may propagate L.
  */
 class InstExplainLit
@@ -58,11 +58,11 @@ class InstExplainLit
   void reset();
   /**
    * Set that instantiation lemma inst contains this literal.
-   * 
+   *
    * If isPropagating is true, then it is possible that inst may propagate
    * this literal. This impacts whether we add inst to the vector d_insts below.
    */
-  void addInstExplanation(Node inst, Node origLit, bool isPropagating=true);
+  void addInstExplanation(Node inst, Node origLit, bool isPropagating = true);
   /**
    * Set that instantiation lemma inst currently propagates the literal of this
    * object. This is called by InstExplainDb.
@@ -72,7 +72,7 @@ class InstExplainLit
    */
   void setPropagating(Node inst);
   /**
-   * The list of current instantiation lemmas that explain this literal. 
+   * The list of current instantiation lemmas that explain this literal.
    * These are formulas are a subset of d_insts.
    */
   std::vector<Node> d_curr_insts;
@@ -97,11 +97,12 @@ class InstExplainInst
   /** propagate */
   void propagate(IeEvaluator& v, std::vector<Node>& lits);
   /** get substitution */
-  Node getSubstitution( unsigned index ) const;
+  Node getSubstitution(unsigned index) const;
   /** get explanation */
-  Node getExplanationFor( Node lit );
+  Node getExplanationFor(Node lit);
   /** get quantified formula */
   Node getQuantifiedFormula() const;
+
  private:
   /** the instantiation lemma */
   Node d_this;
@@ -116,7 +117,7 @@ class InstExplainInst
    *    ~(forall x. P(x) V Q(x)) V P(c) V Q(c)
    * the explanation for ~forall x. P(x) V P(c) V Q(c) with respect to P(c) is
    *   (forall x. P(x)) ^ ~Q(c)
-   * which notice suffices to show that P(c) much be true. 
+   * which notice suffices to show that P(c) much be true.
    * We map L to ~C[false] in this vector.
    */
   std::map<Node, Node> d_lit_to_exp;

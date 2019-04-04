@@ -32,7 +32,7 @@ namespace quantifiers {
  * (1) A substitution,
  * (2) A set of assumptions,
  * (3) A set of conclusions.
- * 
+ *
  * The meaning of this information is dependent upon the pointer d_iei,
  * which stores information pertaining to an instantiation lemma. Let Q
  * be the quantified formula of this instantation lemma. For an instance of this
@@ -40,15 +40,15 @@ namespace quantifiers {
  *   SUBS_GROUND(G)
  * to denote the substitution associated with the instantiation lemma of
  * G.d_iei.
- * 
+ *
  * Notice a literal itself is not stored in this class. Instead, this class
  * is a way of interpretting a class of literals whose free variables are a
  * subset of the variables bound by the quantified formula Q.
- * 
+ *
  * The substitution is represented using the pointer d_iei plus the map
  * d_subs_modify. Let:
  *    SUBS(G) = { x -> d_subs_modify[x] | x in domain(d_subs_modify) }
- * 
+ *
  * A literal L may be interpreted as a generalized literal via an instance of
  * this class G in the following way. An instance of G says that the following
  * entailment holds:
@@ -61,14 +61,15 @@ class GLitInfo
   GLitInfo() : d_iei(nullptr) {}
   /** the instantiation lemma that this generalization is based on */
   InstExplainInst* d_iei;
-  /** matching constraints regarding "how general" the literal is, initially empty. */
+  /** matching constraints regarding "how general" the literal is, initially
+   * empty. */
   std::map<TNode, Node> d_subs_modify;
   /** required assumptions */
-  std::vector< Node > d_assumptions;
+  std::vector<Node> d_assumptions;
   /** required conclusions, which are themselves generalized literals */
-  std::map< Node, std::map< Node, GLitInfo > > d_conclusions;
-  /** initialize this information 
-   * 
+  std::map<Node, std::map<Node, GLitInfo> > d_conclusions;
+  /** initialize this information
+   *
    * This sets d_iei to iei and clears the above vectors.
    */
   void initialize(InstExplainInst* iei);
@@ -79,27 +80,27 @@ class GLitInfo
    * For example:
    */
   bool initialize(TNode a, const GLitInfo& ga, TNode b, const GLitInfo& gb);
-  
-  
+
   bool merge(TNode a, TNode b, const GLitInfo& gb);
-  /** 
+  /**
    * Check whether ( b * SUBS(gb) ) is a generalization of a.
    */
   bool checkCompatible(TNode a, TNode b, const GLitInfo& gb);
-  /** 
+  /**
    * Check whether b is a generalization of a.
    */
   bool checkCompatible(TNode a, TNode b);
-  
+
   bool drop(TNode b);
-  /** get score 
-   * 
+  /** get score
+   *
    * This is a heuristic value, the smaller the value, the more general it is.
    */
   unsigned getScore() const;
-  
-  void debugPrint(const char * c ) const;
-private:
+
+  void debugPrint(const char* c) const;
+
+ private:
   bool mergeInternal(TNode a, TNode b, const GLitInfo& gb, bool allowBind);
 };
 

@@ -216,7 +216,8 @@ class TermDb : public QuantifiersUtil {
   * thus is less aggressive.
   */
   TNode getEntailedTerm(TNode n,
-                        eq::EqProof * p = nullptr, EqualityQuery* qy = nullptr);
+                        eq::EqProof* p = nullptr,
+                        EqualityQuery* qy = nullptr);
   /** get entailed term
    *
   * If possible, returns a term n' such that:
@@ -232,9 +233,8 @@ class TermDb : public QuantifiersUtil {
   TNode getEntailedTerm(TNode n,
                         std::map<TNode, TNode>& subs,
                         bool subsRep,
-                        eq::EqProof * p = nullptr,
-                        EqualityQuery* qy = nullptr
-                       );
+                        eq::EqProof* p = nullptr,
+                        EqualityQuery* qy = nullptr);
   /** is entailed
    * Checks whether the current context entails n with polarity pol, based on
    * the equality information qy. Returns true if the entailment can be
@@ -246,7 +246,7 @@ class TermDb : public QuantifiersUtil {
    */
   bool isEntailed(TNode n,
                   bool pol,
-                  std::map< Node, eq::EqProof >& exp,
+                  std::map<Node, eq::EqProof>& exp,
                   bool computePf = true,
                   EqualityQuery* qy = nullptr);
   /** same as above, without exp */
@@ -272,7 +272,7 @@ class TermDb : public QuantifiersUtil {
                   std::map<TNode, TNode>& subs,
                   bool subsRep,
                   bool pol,
-                  std::map< Node, eq::EqProof >& exp,
+                  std::map<Node, eq::EqProof>& exp,
                   bool computePf = true,
                   EqualityQuery* qy = nullptr);
   /** same as above, without exp */
@@ -353,8 +353,8 @@ class TermDb : public QuantifiersUtil {
   std::map< Node, Node > d_term_elig_eqc;  
   /** set has term */
   void setHasTerm( Node n );
-  /** Explain modes 
-   * 
+  /** Explain modes
+   *
    * TODO
    */
   enum ExpMode
@@ -377,20 +377,19 @@ class TermDb : public QuantifiersUtil {
                          std::map<TNode, TNode>& subs,
                          bool subsRep,
                          bool hasSubs,
-                         std::map< Node, eq::EqProof >& exp,
-                         eq::EqProof * p,
+                         std::map<Node, eq::EqProof>& exp,
+                         eq::EqProof* p,
                          EqualityQuery* qy,
-                   ExpMode emode);
+                         ExpMode emode);
   /** helper for is entailed */
   bool isEntailed2(TNode n,
                    std::map<TNode, TNode>& subs,
                    bool subsRep,
                    bool hasSubs,
                    bool pol,
-                   std::map< Node, eq::EqProof >& exp,
+                   std::map<Node, eq::EqProof>& exp,
                    EqualityQuery* qy,
-                   ExpMode emode
-                  );
+                   ExpMode emode);
   /** compute uf eqc terms :
   * Ensure entries for f are in d_func_map_eqc_trie for all equivalence classes
   */

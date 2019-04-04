@@ -82,7 +82,6 @@ bool EqExplainerTe::explain(Node lit,
   return false;
 }
 
-
 }  // namespace quantifiers
 }  // namespace theory
 }  // namespace CVC4

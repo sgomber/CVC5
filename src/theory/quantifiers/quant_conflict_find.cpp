@@ -582,7 +582,7 @@ bool QuantInfo::isTConstraintSpurious(QuantConflictFind* p,
         subs[d_extra_var[i]] = n;
       }
       // the explanation/generalized explanation
-      std::map< Node, eq::EqProof > exp;
+      std::map<Node, eq::EqProof> exp;
       bool entFalse = false;
       bool genConflict =
           options::qcfExpMode() != quantifiers::QCF_EXP_CINSTANCE;
@@ -605,45 +605,44 @@ bool QuantInfo::isTConstraintSpurious(QuantConflictFind* p,
       {
         if (Trace.isOn("qcf-conflict-exp"))
         {
-          Trace("qcf-conflict-exp")
-              << "Explain conflicting instance for " << d_q << " : " << std::endl;
+          Trace("qcf-conflict-exp") << "Explain conflicting instance for "
+                                    << d_q << " : " << std::endl;
           for (const Node& t : terms)
           {
             Trace("qcf-conflict-exp") << "  " << t << std::endl;
           }
           Trace("qcf-conflict-exp") << "Entailed literals:" << std::endl;
-          for( const std::pair< Node, eq::EqProof >& lit : exp )
+          for (const std::pair<Node, eq::EqProof>& lit : exp)
           {
             Trace("qcf-conflict-exp") << "  " << lit.first << std::endl;
-          }          
+          }
         }
         // Prove the entailments again, now with proof explanation
         bool successPf = true;
-        for( const std::pair< Node, eq::EqProof >& lit : exp )
+        for (const std::pair<Node, eq::EqProof>& lit : exp)
         {
           // polarity is now true
-          if( !tdb->isEntailed(lit.first,subs,false,true,exp,true) )
+          if (!tdb->isEntailed(lit.first, subs, false, true, exp, true))
           {
             successPf = false;
-            Trace("qcf-conflict-exp") << "...failed to prove " << lit.first << "!" << std::endl;
+            Trace("qcf-conflict-exp")
+                << "...failed to prove " << lit.first << "!" << std::endl;
             break;
           }
         }
-        if( successPf )
+        if (successPf)
         {
-          Trace("qcf-conflict-exp") << "...succeeded generating proof sketch." << std::endl;
+          Trace("qcf-conflict-exp")
+              << "...succeeded generating proof sketch." << std::endl;
           EqExplainer* eqe = p->getEqualityExplainer();
-          InstExplainDb& ied = p->d_quantEngine->getInstantiate()->getExplainDb();
+          InstExplainDb& ied =
+              p->d_quantEngine->getInstantiate()->getExplainDb();
           std::vector<Node> rexp;
-          ExplainStatus status = ied.explain(d_q,
-                                            terms,
-                                            exp,
-                                            eqe,
-                                            rexp,
-                                            options::qcfExpRegressInst(),
-                                            "qcf");
+          ExplainStatus status = ied.explain(
+              d_q, terms, exp, eqe, rexp, options::qcfExpRegressInst(), "qcf");
           if (status == EXP_STATUS_FULL
-              && options::qcfExpMode() != quantifiers::QCF_EXP_CINSTANCE_ANALYZE)
+              && options::qcfExpMode()
+                     != quantifiers::QCF_EXP_CINSTANCE_ANALYZE)
           {
             std::vector<Node> lemc;
             for (const Node& re : rexp)
@@ -651,8 +650,8 @@ bool QuantInfo::isTConstraintSpurious(QuantConflictFind* p,
               lemc.push_back(re.negate());
             }
             Node lem = lemc.size() == 1
-                          ? lemc[0]
-                          : NodeManager::currentNM()->mkNode(OR, lemc);
+                           ? lemc[0]
+                           : NodeManager::currentNM()->mkNode(OR, lemc);
             lems.push_back(lem);
           }
         }
@@ -2306,12 +2305,12 @@ bool QuantConflictFind::isPropagatingInstance(Node n)
     return it->second;
   }
   bool ret = true;
-  if( n.getKind() == FORALL )
+  if (n.getKind() == FORALL)
   {
     // do nothing
   }
   else if (n.getKind() == NOT || n.getKind() == AND || n.getKind() == OR
-      || n.getKind() == EQUAL || n.getKind() == ITE)
+           || n.getKind() == EQUAL || n.getKind() == ITE)
   {
     for (const Node& nc : n)
     {

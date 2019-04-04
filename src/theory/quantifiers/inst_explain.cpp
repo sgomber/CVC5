@@ -75,14 +75,13 @@ int IeEvaluator::evaluate(Node n)
 }
 
 void InstExplainLit::initialize(Node lit) { d_this = lit; }
-void InstExplainLit::reset()
-{
-  d_curr_insts.clear();
-}
-void InstExplainLit::addInstExplanation(Node inst, Node origLit, bool isPropagating)
+void InstExplainLit::reset() { d_curr_insts.clear(); }
+void InstExplainLit::addInstExplanation(Node inst,
+                                        Node origLit,
+                                        bool isPropagating)
 {
   Assert(std::find(d_insts.begin(), d_insts.end(), inst) == d_insts.end());
-  if( isPropagating )
+  if (isPropagating)
   {
     d_insts.push_back(inst);
   }
@@ -98,7 +97,7 @@ void InstExplainLit::setPropagating(Node inst)
 Node InstExplainLit::getOriginalLit(Node inst) const
 {
   std::map<Node, Node>::const_iterator it = d_orig_lit.find(inst);
-  if(it != d_orig_lit.end())
+  if (it != d_orig_lit.end())
   {
     return it->second;
   }
@@ -112,10 +111,11 @@ void InstExplainInst::initialize(Node inst, Node q, const std::vector<Node>& ts)
   Assert(q.getKind() == FORALL);
   Assert(ts.size() == q[0].getNumChildren());
   Assert(d_terms.empty());
-  // notice that inst may be null (in the case we haven't explicitly constructed the instantiation)
+  // notice that inst may be null (in the case we haven't explicitly constructed
+  // the instantiation)
   d_this = inst;
   d_quant = q;
-  d_terms.insert(d_terms.end(),ts.begin(),ts.end());
+  d_terms.insert(d_terms.end(), ts.begin(), ts.end());
 }
 
 void InstExplainInst::propagate(IeEvaluator& v, std::vector<Node>& propLits)
@@ -228,12 +228,12 @@ void InstExplainInst::propagate(IeEvaluator& v, std::vector<Node>& propLits)
   } while (!visit.empty());
 }
 
-Node InstExplainInst::getSubstitution( unsigned index ) const
+Node InstExplainInst::getSubstitution(unsigned index) const
 {
   return d_terms[index];
 }
 
-Node InstExplainInst::getExplanationFor( Node lit )
+Node InstExplainInst::getExplanationFor(Node lit)
 {
   // generate the explanation
   std::map<Node, Node>::iterator it = d_lit_to_exp.find(lit);
@@ -250,10 +250,7 @@ Node InstExplainInst::getExplanationFor( Node lit )
   }
   return it->second;
 }
-Node InstExplainInst::getQuantifiedFormula() const
-{
-  return d_quant;
-}
+Node InstExplainInst::getQuantifiedFormula() const { return d_quant; }
 
 }  // namespace quantifiers
 }  // namespace theory

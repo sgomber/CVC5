@@ -20,10 +20,10 @@
 #include <map>
 #include <vector>
 #include "expr/node.h"
-#include "theory/quantifiers/inst_explain.h"
-#include "theory/quantifiers/gen_lit_info.h"
-#include "theory/quantifiers_engine.h"
 #include "theory/quantifiers/equality_explain.h"
+#include "theory/quantifiers/gen_lit_info.h"
+#include "theory/quantifiers/inst_explain.h"
+#include "theory/quantifiers_engine.h"
 
 namespace CVC4 {
 namespace theory {
@@ -60,8 +60,8 @@ class InstExplainDb
 
   /** explain */
   ExplainStatus explain(Node q,
-                        const std::vector< Node >& terms,
-                        std::map< Node, eq::EqProof >& expPf,
+                        const std::vector<Node>& terms,
+                        std::map<Node, eq::EqProof>& expPf,
                         EqExplainer* eqe,
                         std::vector<Node>& rexp,
                         bool regressInst,
@@ -100,28 +100,30 @@ class InstExplainDb
                       std::map<Node, bool>& expresAtom,
                       bool regressInst);
   /** get the propagating literals for n
-   * 
-   * 
+   *
+   *
    */
   bool instBoolExplain(Node n,
-                   std::map<Node, bool>& expres,
-                   std::vector< Node >& lits);
+                       std::map<Node, bool>& expres,
+                       std::vector<Node>& lits);
   Node d_null;
-  /** 
+  /**
    * Regress the explanation of proof sketch eqp using eqe.
-   * 
+   *
    * The leaves of eqp (those with id MERGED_THROUGH_EQUALITY) are expected to
    * be explanable by the explainer utility eqe.
-   * 
+   *
    * This method recursively updates proof eqp so that its leaves are input
    * literals with respect to eqe. If successful, it returns true and adds all
    * assumptions to the vector assumptions.
-   * 
+   *
    * For example, if eqe is based on the equality engine of TheoryUF,
    * then if this method returns true, then the leaves of eqp are input literals
    * belonging to TheoryUF.
    */
-  bool regressExplain(EqExplainer* eqe, std::vector< TNode >& assumptions, eq::EqProof * eqp);
+  bool regressExplain(EqExplainer* eqe,
+                      std::vector<TNode>& assumptions,
+                      eq::EqProof* eqp);
   Node generalize(eq::EqProof* eqp,
                   std::map<eq::EqProof*, Node>& concs,
                   std::map<eq::EqProof*, std::map<Node, GLitInfo> >& concsg,
@@ -132,12 +134,12 @@ class InstExplainDb
   /** convert to non-equality (inverse of above for rewritten nodes) */
   Node convertRmEq(Node n);
 
-  /** Instantiation explanation 
-   * 
+  /** Instantiation explanation
+   *
    * This is called when the instantiation lemma inst currently propagates the
    * ground literal lit. This method attempts to lift the explanation of lit
    * to a universal conclusion.
-   * 
+   *
    * In detail:
    *   lit is an instance of a literal in quantified formula Q,
    *   inst is an inst lemma Q[x] => Q[c] that is currently propagating lit,
@@ -145,7 +147,7 @@ class InstExplainDb
    * If this method returns true, then:
    *   assumptions => forall x. olit
    * and assumptions are SAT literals that currently hold in the SAT context.
-   * 
+   *
    * For example if:
    *   olit is P( x )
    *   lit is P( c )
@@ -159,14 +161,15 @@ class InstExplainDb
    * in the SAT solver and hence propagates ~Q(c).
    * This corresponds to the (first-order resolution) inference:
    *   forall x. P( x ) V Q( x ) ^ forall x. ~Q( x ) => forall x. P( x ).
-   * 
+   *
    * c is the name of a Trace, and tb is number of tabs (for debug printing).
    */
-  bool instExplain(GLitInfo& g, Node olit, Node lit, Node inst, const char * c, unsigned tb);
+  bool instExplain(
+      GLitInfo& g, Node olit, Node lit, Node inst, const char* c, unsigned tb);
   /** indent tb tabulations on trace c. */
   static void indent(const char* c, unsigned tb);
-  
-  static bool isGeneralization(Node n, Node gn );
+
+  static bool isGeneralization(Node n, Node gn);
 };
 
 }  // namespace quantifiers

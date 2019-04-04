@@ -73,7 +73,6 @@ class EqExplainerTe : public EqExplainer
   TheoryEngine* d_te;
 };
 
-
 }  // namespace quantifiers
 }  // namespace theory
 }  // namespace CVC4
