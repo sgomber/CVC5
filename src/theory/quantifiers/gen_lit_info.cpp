@@ -39,25 +39,30 @@ bool GLitInfo::initialize(TNode a,
   return merge(a, b, gb);
 }
 
-bool GLitInfo::merge(TNode a, TNode b, const GLitInfo& gb)
+bool GLitInfo::merge(TNode a, TNode b, const GLitInfo& gb, bool allowBind)
 {
-  return mergeInternal(a, b, gb, true);
+  return mergeInternal(a, b, gb, true, allowBind);
 }
 bool GLitInfo::checkCompatible(TNode a, TNode b, const GLitInfo& gb)
 {
-  return mergeInternal(a, b, gb, false);
+  return mergeInternal(a, b, gb, false, false);
 }
 bool GLitInfo::checkCompatible(TNode a, TNode b)
 {
   GLitInfo gb;
-  return mergeInternal(a, b, gb, false);
+  return mergeInternal(a, b, gb, false, false);
 }
 
 bool GLitInfo::mergeInternal(TNode a,
                              TNode b,
-                             const GLitInfo& gb,
+                             const GLitInfo& gb, bool doMerge,
                              bool allowBind)
 {
+  // cannot carry conclusions currently
+  if( doMerge && !gb.d_conclusions.empty() )
+  {
+    return false;
+  }
   // bound variables (in case we decide to cleanup)
   std::vector<TNode> bound_avars;
   Trace("ied-ginfo") << "GLitInfo::merge, a : " << a << std::endl;
@@ -231,9 +236,12 @@ bool GLitInfo::mergeInternal(TNode a,
     }
     return false;
   }
-  // carry the assumptions/conclusions
-  d_assumptions.insert(
-      d_assumptions.end(), gb.d_assumptions.begin(), gb.d_assumptions.end());
+  if( doMerge )
+  {
+    // carry the assumptions
+    d_assumptions.insert(
+        d_assumptions.end(), gb.d_assumptions.begin(), gb.d_assumptions.end());
+  }
   Trace("ied-ginfo") << "GLitInfo::merge: Success!" << std::endl;
   return true;
 }
@@ -294,7 +302,7 @@ void GLitInfo::debugPrint(const char* c, unsigned tb) const {
         for( const std::pair<Node, GLitInfo>& cc : cs.second )
         {
           indent(c,tb+2);
-          Trace(c) << cc.first << std::endl;
+          Trace(c) << cs.first << " / " << cc.first << std::endl;
         }
       }
     }

@@ -81,7 +81,7 @@ class GLitInfo
    */
   bool initialize(TNode a, const GLitInfo& ga, TNode b, const GLitInfo& gb);
 
-  bool merge(TNode a, TNode b, const GLitInfo& gb);
+  bool merge(TNode a, TNode b, const GLitInfo& gb, bool allowBind=true);
   /**
    * Check whether ( b * SUBS(gb) ) is a generalization of a.
    */
@@ -100,7 +100,7 @@ class GLitInfo
 
   void debugPrint(const char* c, unsigned tb=0) const;
  private:
-  bool mergeInternal(TNode a, TNode b, const GLitInfo& gb, bool allowBind);
+  bool mergeInternal(TNode a, TNode b, const GLitInfo& gb, bool doMerge, bool allowBind);
   /** indent tb tabulations on trace c */ 
   void indent(const char * c, unsigned tb) const;
 };

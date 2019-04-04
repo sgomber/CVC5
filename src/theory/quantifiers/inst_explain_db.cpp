@@ -291,12 +291,19 @@ ExplainStatus InstExplainDb::explain(Node q,
 
   // now, process the generalized proofs
   // the literals whose proofs were fully generalized
-  std::map<Node, bool> litFullRegress;
+  std::map<Node, Node> litGeneralization;
+  Node litGenProp;
+  bool litGenPropIsBase = false;
+  bool success = true;
   for (std::map<Node, eq::EqProof>::iterator itp = expPf.begin();
        itp != expPf.end();
        ++itp)
   {
     Node elit = itp->first;
+    // the propagating generalization, which begins as elit itself
+    Node propGen = elit;
+    // whether the proof of this literal was fully generalized
+        bool pureGeneral = false;
     Trace("ied-gen") << "----------------- match generalized proof " << elit
                       << std::endl;
     if (regressPfFail.find(elit) == regressPfFail.end())
@@ -309,18 +316,28 @@ ExplainStatus InstExplainDb::explain(Node q,
         for (const std::pair<Node, GLitInfo>& gen : itg->second)
         {
           Node genConc = convertRmEq(gen.first);
-          Trace("ied-gen") << "ied-gen-match: Try " << genConc << std::endl;
+          Trace("ied-gen") << "ied-gen-match: generalizes to " << genConc << std::endl;
           // Currently, we only check whether genConc is strictly more general
           // than elit.
           if (genInfo.checkCompatible(elit, genConc, gen.second))
           {
-            Trace("ied-gen") << "ied-gen-match: SUCCESS" << std::endl;
+            Trace("ied-gen") << "....success with" << std::endl;
+            gen.second.debugPrint("ied-gen");
             if( gen.second.d_conclusions.empty() )
             {
-              Trace("ied-gen") << "ied-gen-match: FULLY REGRESSED " << elit << std::endl;
-              litFullRegress[elit] = true;
+              Trace("ied-gen") << "PURE, finished" << std::endl;
+              litGeneralization[elit] = genConc;
+              pureGeneral = true;
+              break;
             }
-            break;
+            else if( propGen.isNull() )
+            {
+              propGen = genConc;
+            }
+          }
+          else
+          {
+            Trace("ied-gen") << "...incompatible" << std::endl;
           }
         }
       }
@@ -336,18 +353,84 @@ ExplainStatus InstExplainDb::explain(Node q,
     }
         Trace("ied-gen") << "----------------- end match generalized proof "
                          << std::endl;
-  }
-  
-  
-  /*
 
-    Trace("ied-conflict") << "Result of inst explain : " << std::endl;
-    for (const std::pair<Node, bool>& ep : expresAtom)
+    // use as the propagating generalization if available
+    if( !pureGeneral ) 
     {
-      rexp.push_back(ep.first);
-      Trace("ied-conflict") << "* " << ep.first << std::endl;
+      // Set the propagating generalization if it is available.
+      // Otherwise, if the propagating generalization is not at the base level,
+      // we undo the generalization of that literal.
+      if( litGenProp.isNull() || ( !litGenPropIsBase && elit==propGen ) )
+      {
+        Trace("ied-gen") << "PROPAGATE-GENERAL " << propGen << std::endl;
+        if( elit==propGen )
+        {
+          if( !litGenPropIsBase )
+          {
+            Assert( !litGenProp.isNull() );
+            // undo the previous generalized propagation
+            litGeneralization.erase(litGenProp);
+          }
+        }
+        else
+        {
+          Assert( propGenPf );
+          // we use the generalization here
+          litGeneralization[elit] = propGen;
+          // elit is the literal that has the generalized propagation
+          litGenProp = elit;
+        }
+        // the generalized propagation is in the base proof if elit is propGen
+        litGenPropIsBase = (elit==propGen);
+      }
     }
-  */
+  }
+  // if we don't have useful generalizations, we fail
+  if( litGeneralization.empty() )
+  {
+    return EXP_STATUS_FAIL;
+  }
+  // now construct the inference if we have any useful generalization
+  std::vector< Node > finalAssumptions;
+  finalAssumptions.push_back(q);
+  Node concQuant;
+  std::vector< Node > finalConclusions;
+  for (std::map<Node, eq::EqProof>::iterator itp = expPf.begin();
+      itp != expPf.end();
+      ++itp)
+  {
+    Node elit = itp->first;
+    std::map<Node, Node>::iterator it = litGeneralization.find(elit);
+    if( it!=litGeneralization.end() )
+    {
+      eq::EqProof* pfp = &itp->second;
+      // we generalized it, now must look up its information
+      std::map<eq::EqProof*, std::map<Node, GLitInfo> >::iterator itgp =
+          concsg.find(pfp);
+      Assert(itgp != concsg.end());
+      Node gelit = it->second;
+      std::map< Node, GLitInfo>::iterator itg = itgp->second.find(gelit);
+      Assert( itg!=itgp->second.end() );
+      GLitInfo& ginfo = itg->second;
+      if( !ginfo.d_conclusions.empty() )
+      {
+        // not purely general, set conclusion
+        for( const std::pair<Node, std::map<Node, GLitInfo> >& cs : ginfo.d_conclusions )
+        {
+          for( const std::pair<Node, GLitInfo>& cc : cs.second )
+          {
+          }
+        }
+      }
+      // carry all assumptions
+    }
+    else
+    {
+      Assert( concQuant.isNull() || concQuant==q );
+      concQuant = q;
+      finalConclusions.push_back(elit);
+    }
+  }
 
   return ret;
 }
@@ -578,9 +661,13 @@ Node InstExplainDb::generalize(
         concsg.find(eqp);
     if (itg != concsg.end())
     {
-      Trace("ied-gen") << ", with " << itg->second.size() << " generalizations";
+      Trace("ied-gen") << ", with " << itg->second.size() << " generalizations:" << std::endl;
+      for( const std::pair< Node, GLitInfo >& p : itg->second )
+      {
+        indent("ied-gen", tb);
+        Trace("ied-gen") << p.first << std::endl;
+      }
     }
-    Trace("ied-gen") << std::endl;
   }
   return ret;
 }
@@ -654,6 +741,8 @@ bool InstExplainDb::instExplain(
           indent(c, tb + 1);
           Trace(c) << "          and generalizes to " << opl << std::endl;
         }
+        // populate choices for generalization, which we store in 
+        // g.d_conclusions[pl]
         for (const Node& instpl : cexppl)
         {
           // the instantiation lemma that propagates pl should not be the same
@@ -684,43 +773,57 @@ bool InstExplainDb::instExplain(
             if (!instExplain(
                     g.d_conclusions[pl][opli], opli, pl, instpl, c, tb + 3))
             {
+              // undo
               g.d_conclusions[pl].erase(opli);
             }
           }
         }
-        // now, take the best generalization
-        Node best;
-        unsigned score = 0;
-        std::vector<Node> notBest;
-        for (const std::pair<Node, GLitInfo>& gl : g.d_conclusions[pl])
+        // now, take the best generalization if there are any available
+        if( !g.d_conclusions[pl].empty() )
         {
-          unsigned gscore = gl.second.getScore();
-          if (best.isNull() || gscore > score)
+          Node best;
+          unsigned score = 0;
+          for (const std::pair<Node, GLitInfo>& gl : g.d_conclusions[pl])
           {
-            if (!best.isNull())
+            unsigned gscore = gl.second.getScore();
+            if (best.isNull() || gscore > score)
             {
-              notBest.push_back(best);
+              best = gl.first;
+              score = gscore;
             }
-            best = gl.first;
-            score = gscore;
+          }
+          if (Trace.isOn(c))
+          {
+            indent(c, tb + 1);
+            Trace(c) << "inst-exp: requires CHOOSE to merge " << best << std::endl;
+            indent(c, tb + 1);
+          }
+          // merge the current with the child
+          bool mergeSuccess = g.merge(opl, best, g.d_conclusions[pl][best]);
+          // remove the conclusions
+          g.d_conclusions.erase(pl);
+          if (mergeSuccess)
+          {
+            Trace(c) << "...success" << std::endl;
           }
           else
           {
-            notBest.push_back(gl.first);
+            Trace(c) << "...failed to merge choice" << std::endl;
+            // we revert to the generalized form at the current level
+            g.d_conclusions[pl][opl].initialize(&iei);
           }
+          processed = true;
         }
-        // remove all but the best
-        for (const Node& n : notBest)
+        else if( Trace.isOn(c) )
         {
-          g.d_conclusions[pl].erase(n);
+          indent(c, tb + 1);
+          Trace(c) << "inst-exp: requires failed to generalize" << std::endl;
+          indent(c, tb + 1);
         }
-        if (!best.isNull())
-        {
-          if (g.merge(opl, best, g.d_conclusions[pl][best]))
-          {
-            processed = true;
-          }
-        }
+      }
+      else if( Trace.isOn(c) )
+      {
+        indent(c, tb + 1);
       }
     }
     if (!processed)
@@ -729,7 +832,7 @@ bool InstExplainDb::instExplain(
       {
         // if it is not a quantified formula, then it must be part of the
         // overall conclusion
-        Trace(c) << "          ...which no inst-explanations, it must be a "
+        Trace(c) << "          ...which has no inst-explanations, it must be a "
                     "conclusion"
                  << std::endl;
         // we did not generalize it at all
