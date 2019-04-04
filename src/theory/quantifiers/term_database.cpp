@@ -725,11 +725,10 @@ TNode TermDb::getEntailedTerm2(TNode n,
                                std::map<TNode, TNode>& subs,
                                bool subsRep,
                                bool hasSubs,
-                               std::vector<Node>& exp,
-                               std::vector<Node>& gexp,
-                               Node& gnode,
+                               std::map< Node, eq::EqProof >& exp,
+                               eq::EqProof * p,
                                EqualityQuery* qy,
-                               bool computeExp)
+                   ExpMode emode)
 {
   Assert( !qy->extendsEngine() );
   Trace("term-db-entail") << "get entailed term : " << n << std::endl;
@@ -742,36 +741,22 @@ TNode TermDb::getEntailedTerm2(TNode n,
         if( subsRep ){
           Assert( qy->getEngine()->hasTerm( it->second ) );
           Assert( qy->getEngine()->getRepresentative( it->second )==it->second );
-          if (computeExp)
+          if( p )
           {
-            gnode = n;
+            Assert( p->d_id==eq::MERGED_THROUGH_REFLEXIVITY );
+            p->d_node = it->second;
           }
           return it->second;
         }else{
-          Node entt = getEntailedTerm2(it->second,
+          return getEntailedTerm2(it->second,
                                        subs,
                                        subsRep,
                                        hasSubs,
                                        exp,
-                                       gexp,
-                                       gnode,
+                                       p,
                                        qy,
-                                       computeExp);
-          if (computeExp)
-          {
-            // This condition should rarely be false. If it is false, then we
-            // substituted to a term that doesn't exist in the equality engine
-            // but is entailed to be equal to one that does exist by congruence.
-            // If this is not the case, then the generalization node can be
-            // set equal to the variable, since the substitution is preserved.
-            if (entt == it->second)
-            {
-              gnode = n;
-            }
-          }
-          Trace("term-db-entail")
-              << "Return " << entt << "/" << gnode << std::endl;
-          return entt;
+                                       emode
+                                      );
         }
       }
     }
@@ -779,25 +764,30 @@ TNode TermDb::getEntailedTerm2(TNode n,
   else if (qy->getEngine()->hasTerm(n))
   {
     Trace("term-db-entail") << "...exists in ee, return self" << std::endl;
-    if (computeExp)
+    if( p )
     {
-      gnode = n;
+      Assert( p->d_id==eq::MERGED_THROUGH_REFLEXIVITY );
+      p->d_node = n;
     }
     return n;
   }else if( n.getKind()==ITE ){
+    // if we are looking for a self-contained literal proof, we fail here
+    if( emode==EXP_MODE_PROOF_LIT )
+    {
+      return Node::null();
+    }
     for( unsigned i=0; i<2; i++ ){
       if (isEntailed2(
-              n[0], subs, subsRep, hasSubs, i == 0, exp, gexp, qy, computeExp))
+              n[0], subs, subsRep, hasSubs, i == 0, exp, qy, emode))
       {
         return getEntailedTerm2(n[i == 0 ? 1 : 2],
                                 subs,
                                 subsRep,
                                 hasSubs,
                                 exp,
-                                gexp,
-                                gnode,
+                                p,
                                 qy,
-                                computeExp);
+                                emode);
       }
     }
   }
@@ -811,13 +801,24 @@ TNode TermDb::getEntailedTerm2(TNode n,
     return Node::null();
   }
   std::vector<TNode> args;
+  // Remember the arguments that were entailed, prior to taking them to
+  // representatives. This shortens the explanations below since we do not
+  // need to take the explanation through the representative (see explanation
+  // of proof below).
   std::vector<TNode> argst;
-  std::vector<Node> gncs;
-  for (unsigned i = 0, nchild = n.getNumChildren(); i < nchild; i++)
+  std::shared_ptr<eq::EqProof> pc;
+  std::vector<std::shared_ptr<eq::EqProof>> child_pfs;
+  unsigned nchild = n.getNumChildren();
+  for (unsigned i = 0; i < nchild; i++)
   {
+    if( p )
+    {
+      pc = std::make_shared<eq::EqProof>();
+      child_pfs.push_back(pc);
+    }
     Node gnc;
     TNode c = getEntailedTerm2(
-        n[i], subs, subsRep, hasSubs, exp, gexp, gnc, qy, computeExp);
+        n[i], subs, subsRep, hasSubs, exp, pc.get(), qy, emode);
     if (c.isNull())
     {
       return TNode::null();
@@ -826,45 +827,84 @@ TNode TermDb::getEntailedTerm2(TNode n,
     Trace("term-db-entail")
         << "  child " << i << " : " << c << "/" << gnc << std::endl;
     args.push_back(cr);
-    if (computeExp)
+    if (p)
     {
       argst.push_back(c);
-      if (hasSubs)
-      {
-        gncs.push_back(gnc);
-      }
     }
   }
   TNode nn = qy->getCongruentTerm(f, args);
   Trace("term-db-entail") << "  got congruent term " << nn << " for " << n
                           << std::endl;
-  if (computeExp)
+
+  if( p )
   {
-    if (!nn.isNull())
+    // The vector child_pfs contain proofs of 
+    //   n[0] * subs = argst[0], ..., n[k] * subs = argst[k]
+    // We have that nn is congruent to f( args[0], ..., args[k] ) via
+    // the call to getCongruentTerm above, based on our term indices.
+    // Since by construction above, 
+    //   args[0] = argst[0] ^ ... ^ args[k] = argst[k] 
+    // thus, nn is congruent to f( argst[0], ..., argst[k] ), and thus:
+    //   argst[0] = nn[0] ^ ... ^ argst[k] = nn[k]
+    //
+    // We require that p is a proof of n * subs = nn.
+    // We use a congruence proof whose children are transitivity proofs:
+    //   n[0] * subs = argst[0] = nn[0], ..., n[k] * subs = argst[k] = nn[k]
+    //
+    // We thus generate a congruence proof below, appending equalities
+    // argst[i] = nn[i] to child_pfs wherever necessary.
+    eq::EqProof * curr = p;
+    for( unsigned i=0; i<nchild; i++ )
     {
-      Assert(nn.getNumChildren() == argst.size());
-      for (unsigned i = 0, size = nn.getNumChildren(); i < size; i++)
+      // children are processed in reverse order since congruence proofs
+      // should be left associative
+      unsigned ii = nchild-(i+1);
+      if (argst[ii] != nn[ii])
       {
-        if (argst[i] != nn[i])
+        eq::EqProof * mainEq = nullptr;
+        // modify the child proof
+        if( child_pfs[ii]->d_id==eq::MERGED_THROUGH_REFLEXIVITY )
         {
-          Node eq = argst[i].eqNode(nn[i]);
-          exp.push_back(eq);
-          if (hasSubs)
-          {
-            Node eqg = gncs[i].eqNode(nn[i]);
-            gexp.push_back(eqg);
-            // the generalized node below now if nn[i]
-            gncs[i] = nn[i];
-          }
-          Trace("term-db-entail-exp")
-              << "***... add explain " << eq << std::endl;
+          // child was trivial proof, overwrite it (below)
+          mainEq = child_pfs[ii].get();
         }
+        else
+        {
+          std::shared_ptr<eq::EqProof> pt;
+          pt = std::make_shared<eq::EqProof>();
+          pt->d_id = eq::MERGED_THROUGH_TRANS;
+          // the LHS of the node is unsubstituted 
+          pt->d_node = n[ii].eqNode(nn[ii]);
+          // add the existing child proof
+          pt->d_children.push_back(child_pfs[ii]);
+          // add the main equality
+          std::shared_ptr<eq::EqProof> ptm;
+          ptm = std::make_shared<eq::EqProof>();
+          pt->d_children.push_back(ptm);
+          child_pfs[ii] = pt;
+          mainEq = ptm.get();
+        }
+        mainEq->d_id = eq::MERGED_THROUGH_EQUALITY;
+        mainEq->d_node = argst[i].eqNode(nn[i]);
       }
-      if (hasSubs)
+      curr->d_id = eq::MERGED_THROUGH_CONGRUENCE;
+      // we don't care about the node on intermediate (curried) proofs.
+      if( i==0 )
       {
-        gnode = mkMatchOperatorApp(f, gncs);
+        curr->d_node = nn;
       }
+      // add to congruence
+      std::shared_ptr<eq::EqProof> newCong;
+      newCong = std::make_shared<eq::EqProof>();
+      curr->d_children.push_back(newCong);
+      curr->d_children.push_back(child_pfs[ii]);
+      // now working on the congruence of function head
+      curr = newCong.get();
     }
+    // last is a trivial reflexivity of operator
+    // this is not strictly necessary but may help debugging
+    Assert( curr->d_id==eq::MERGED_THROUGH_REFLEXIVITY );
+    curr->d_node = f;
   }
   return nn;
 }
@@ -898,25 +938,25 @@ Node TermDb::evaluateTerm(TNode n,
       n, visited, exp, qy, useEntailmentTests, true, reqHasTerm);
 }
 
-TNode TermDb::getEntailedTerm( TNode n, std::map< TNode, TNode >& subs, bool subsRep, EqualityQuery * qy ) {
+TNode TermDb::getEntailedTerm( TNode n, std::map< TNode, TNode >& subs, bool subsRep,
+                        eq::EqProof * p, EqualityQuery * qy ) {
   if( qy==NULL ){
     qy = d_quantEngine->getEqualityQuery();
   }
-  std::vector<Node> exp;
-  std::vector<Node> gexp;
-  Node gnode;
-  return getEntailedTerm2(n, subs, subsRep, true, exp, gexp, gnode, qy, false);
+  std::map< Node, eq::EqProof > exp;
+  ExpMode emode = p ? EXP_MODE_PROOF_LIT : EXP_MODE_NONE;
+  return getEntailedTerm2(n, subs, subsRep, true, exp, p, qy, emode);
 }
 
-TNode TermDb::getEntailedTerm( TNode n, EqualityQuery * qy ) {
+TNode TermDb::getEntailedTerm( TNode n,
+                        eq::EqProof * p, EqualityQuery * qy) {
   if( qy==NULL ){
     qy = d_quantEngine->getEqualityQuery();
   }
   std::map< TNode, TNode > subs;
-  std::vector<Node> exp;
-  std::vector<Node> gexp;
-  Node gnode;
-  return getEntailedTerm2(n, subs, false, false, exp, gexp, gnode, qy, false);
+  std::map< Node, eq::EqProof > exp;
+  ExpMode emode = p ? EXP_MODE_PROOF_LIT : EXP_MODE_NONE;
+  return getEntailedTerm2(n, subs, false, false, exp, p, qy, emode);
 }
 
 bool TermDb::isEntailed2(TNode n,
@@ -924,61 +964,102 @@ bool TermDb::isEntailed2(TNode n,
                          bool subsRep,
                          bool hasSubs,
                          bool pol,
-                         std::vector<Node>& exp,
-                         std::vector<Node>& gexp,
+                         std::map< Node, eq::EqProof >& exp,
                          EqualityQuery* qy,
-                         bool computeExp)
+                         ExpMode emode)
 {
   Assert( !qy->extendsEngine() );
+  Assert( emode!=EXP_MODE_PROOF_LIT );
   Trace("term-db-entail") << "Check entailed : " << n << ", pol = " << pol << std::endl;
   Assert( n.getType().isBoolean() );
   if( n.getKind()==EQUAL && !n[0].getType().isBoolean() ){
-    Node gn1;
+    std::shared_ptr<eq::EqProof> pc1;
+    if( emode==EXP_MODE_PROOF )
+    {
+      pc1 = std::make_shared<eq::EqProof>();
+    }
     TNode n1 = getEntailedTerm2(
-        n[0], subs, subsRep, hasSubs, exp, gexp, gn1, qy, computeExp);
+        n[0], subs, subsRep, hasSubs, exp, pc1.get(), qy, emode);
     if( !n1.isNull() ){
-      Node gn2;
+      std::shared_ptr<eq::EqProof> pc2;
+      if( emode==EXP_MODE_PROOF )
+      {
+        pc2 = std::make_shared<eq::EqProof>();
+      }
       TNode n2 = getEntailedTerm2(
-          n[1], subs, subsRep, hasSubs, exp, gexp, gn2, qy, computeExp);
+          n[1], subs, subsRep, hasSubs, exp, pc2.get(), qy, emode);
       if( !n2.isNull() ){
+        bool success = false;
         if( n1==n2 ){
-          return pol;
+          success = pol;
         }else{
           Assert( qy->getEngine()->hasTerm( n1 ) );
           Assert( qy->getEngine()->hasTerm( n2 ) );
-          bool success = pol ? qy->getEngine()->areEqual(n1, n2)
-                             : qy->getEngine()->areDisequal(n1, n2, computeExp);
-          if (success)
+          success = pol ? qy->getEngine()->areEqual(n1, n2)
+                          : qy->getEngine()->areDisequal(n1, n2, emode);
+        }
+        if (success)
+        {
+          if (emode!=EXP_MODE_NONE)
           {
-            if (computeExp)
+            Node nn = n;
+            nn = pol ? nn : nn.negate();
+            Trace("term-db-entail-exp")
+                << "***... add explain " << nn << std::endl;
+            eq::EqProof& p = exp[nn];
+            if( emode==EXP_MODE_PROOF )
             {
-              Node eq = n1.eqNode(n2);
-              eq = pol ? eq : eq.negate();
-              Trace("term-db-entail-exp")
-                  << "***... add explain " << eq << std::endl;
-              exp.push_back(eq);
-              if (hasSubs)
+              eq::EqProof * mainEq = nullptr;
+              if( n1==n[0] && n2==n[1] )
               {
-                Assert(!gn1.isNull() && !gn2.isNull());
-                Node eqg = gn1.eqNode(gn2);
-                eqg = pol ? eqg : eqg.negate();
-                gexp.push_back(eqg);
+                mainEq = &p;
+                Assert( n1!=n2 );
+              }
+              else
+              {
+                p.d_id = eq::MERGED_THROUGH_TRANS;
+                // we store the unsubstituted node here
+                p.d_node = nn;
+                if( n1!=n[0] )
+                {
+                  p.d_children.push_back(pc1);
+                }
+                if( n1!=n2 )
+                {
+                  std::shared_ptr<eq::EqProof> pca;
+                  pca = std::make_shared<eq::EqProof>();
+                  mainEq = pca.get();
+                  p.d_children.push_back(pca);
+                }
+                if( n2!=n[1] )
+                {
+                  p.d_children.push_back(pc2);
+                }
+              }
+              if( mainEq )
+              {
+                Assert( n1!=n2 );
+                Node eq = n1.eqNode(n2);
+                eq = pol ? eq : eq.negate();
+                mainEq->d_id = eq::MERGED_THROUGH_EQUALITY;
+                mainEq->d_node = eq;
               }
             }
           }
-          return success;
         }
+        return success;
       }
     }
     return false;
   }else if( n.getKind()==NOT ){
     return isEntailed2(
-        n[0], subs, subsRep, hasSubs, !pol, exp, gexp, qy, computeExp);
+        n[0], subs, subsRep, hasSubs, !pol, exp, qy, emode);
   }else if( n.getKind()==OR || n.getKind()==AND ){
+    Assert( emode!=EXP_MODE_PROOF );
     bool simPol = ( pol && n.getKind()==OR ) || ( !pol && n.getKind()==AND );
     for( unsigned i=0; i<n.getNumChildren(); i++ ){
       if (isEntailed2(
-              n[i], subs, subsRep, hasSubs, pol, exp, gexp, qy, computeExp))
+              n[i], subs, subsRep, hasSubs, pol, exp, qy, emode))
       {
         if( simPol ){
           return true;
@@ -992,20 +1073,18 @@ bool TermDb::isEntailed2(TNode n,
     return !simPol;
   //Boolean equality here
   }else if( n.getKind()==EQUAL || n.getKind()==ITE ){
-    std::vector<Node> tempExp;
-    std::vector<Node> tempGExp;
+    Assert( emode!=EXP_MODE_PROOF );
+    std::map< Node, eq::EqProof > tempExp;
     for( unsigned i=0; i<2; i++ ){
       tempExp.clear();
-      tempGExp.clear();
       if (isEntailed2(n[0],
                       subs,
                       subsRep,
                       hasSubs,
                       i == 0,
                       tempExp,
-                      tempGExp,
                       qy,
-                      computeExp))
+                      emode))
       {
         unsigned ch = ( n.getKind()==EQUAL || i==0 ) ? 1 : 2;
         bool reqPol = ( n.getKind()==ITE || i==0 ) ? pol : !pol;
@@ -1015,14 +1094,16 @@ bool TermDb::isEntailed2(TNode n,
                         hasSubs,
                         reqPol,
                         tempExp,
-                        tempGExp,
                         qy,
-                        computeExp))
+                        emode))
         {
-          if (computeExp)
+          if (emode==EXP_MODE_ENTAIL)
           {
-            exp.insert(exp.end(), tempExp.begin(), tempExp.end());
-            gexp.insert(gexp.end(), tempGExp.begin(), tempGExp.end());
+            // copy the referenced literals, initialize the (empty) proofs
+            for( const std::pair< Node, eq::EqProof >& p : tempExp )
+            {
+              exp[p.first].d_id = eq::MERGED_THROUGH_REFLEXIVITY;
+            }
           }
           return true;
         }
@@ -1033,41 +1114,81 @@ bool TermDb::isEntailed2(TNode n,
   }
   else if (n.getKind() == FORALL && !pol)
   {
-    if (isEntailed2(
-            n[1], subs, subsRep, hasSubs, pol, exp, gexp, qy, computeExp))
+    // explanations may get strange here, so don't try
+    if (emode==EXP_MODE_NONE && isEntailed2(
+            n[1], subs, subsRep, hasSubs, pol, exp, qy, emode))
     {
       return true;
     }
   }
-  Node gpred;
+  std::shared_ptr<eq::EqProof> ppred;
+  if( emode==EXP_MODE_PROOF )
+  {
+    ppred = std::make_shared<eq::EqProof>();
+  }
   TNode n1 = getEntailedTerm2(
-      n, subs, subsRep, hasSubs, exp, gexp, gpred, qy, computeExp);
+      n, subs, subsRep, hasSubs, exp, ppred.get(), qy, emode);
   if (!n1.isNull())
   {
     Assert(qy->hasTerm(n1));
+    bool success = false;
     if (n1 == d_true)
     {
-      return pol;
+      success = pol;
     }
     else if (n1 == d_false)
     {
-      return !pol;
+      success = !pol;
     }
-
-    if (qy->getEngine()->getRepresentative(n1) == (pol ? d_true : d_false))
+    else
     {
-      if (computeExp)
+      TNode rep = qy->getEngine()->getRepresentative(n1);
+      success = rep == (pol ? d_true : d_false);
+    }
+    if (success)
+    {
+      if (emode!=EXP_MODE_NONE)
       {
-        Node pred = n1;
+        Node nn = n;
+        nn = pol ? nn : nn.negate();
+        eq::EqProof& p = exp[nn];
         Trace("term-db-entail-exp")
-            << "***... add explain " << pred << std::endl;
-        exp.push_back(pol ? pred : pred.negate());
-        if (hasSubs)
+            << "***... add explain " << nn << std::endl;
+        if( emode==EXP_MODE_PROOF )
         {
-          Assert(!gpred.isNull());
-          gexp.push_back(pol ? gpred : gpred.negate());
+          eq::EqProof * mainEq = nullptr;
+          // transitivity proof
+          if( n1==n )
+          {
+            // proof was trivial, compress
+            mainEq = &p;
+          }
+          else
+          {
+            p.d_id = eq::MERGED_THROUGH_TRANS;
+            // we store the (un)substituted node here
+            p.d_node = nn;
+            p.d_children.push_back(ppred);
+            std::shared_ptr<eq::EqProof> pca;
+            pca = std::make_shared<eq::EqProof>();
+            mainEq = pca.get();
+            p.d_children.push_back(pca);
+          }
+          if( mainEq )
+          {
+            // notice this also is called in the case where n1 is constant,
+            // in which case the proof is trivial, and pred is true.
+            Node pred = n1;
+            pred = pol ? pred : pred.negate();
+            Assert( !pred.isConst() || pred.getConst<bool>());
+            mainEq->d_id = eq::MERGED_THROUGH_EQUALITY;
+            mainEq->d_node = pred;
+          }
         }
       }
+    }
+    if( success )
+    {
       return true;
     }
   }
@@ -1078,7 +1199,15 @@ bool TermDb::isEntailed2(TNode n,
     if (d_quantEngine->getValuation().hasSatValue(n, ret))
     {
       Trace("term-db-entail-sat") << "SAT entail: " << n << " = " << ret << std::endl;
-      return ret==pol;
+      if( ret==pol )
+      {
+        if( emode!=EXP_MODE_NONE )
+        {
+          // TODO?
+          return false;
+        }
+        return true;
+      }
     }
   }
   return false;
@@ -1090,16 +1219,17 @@ bool TermDb::isEntailed(TNode n, bool pol, EqualityQuery* qy)
     Assert( d_consistent_ee );
     qy = d_quantEngine->getEqualityQuery();
   }
-  std::vector<Node> exp;
-  std::vector<Node> gexp;
+  std::map< Node, eq::EqProof > exp;
   std::map< TNode, TNode > subs;
-  return isEntailed2(n, subs, false, false, pol, exp, gexp, qy, false);
+  return isEntailed2(n, subs, false, false, pol, exp, qy, EXP_MODE_NONE);
 }
 
 bool TermDb::isEntailed(TNode n,
                         bool pol,
-                        std::vector<Node>& exp,
-                        EqualityQuery* qy)
+                        std::map< Node, eq::EqProof >& exp,
+                        bool computePf,
+                        EqualityQuery* qy
+                       )
 {
   if (qy == NULL)
   {
@@ -1107,24 +1237,24 @@ bool TermDb::isEntailed(TNode n,
     qy = d_quantEngine->getEqualityQuery();
   }
   std::map<TNode, TNode> subs;
-  std::vector<Node> gexp;
-  return isEntailed2(n, subs, false, false, pol, exp, gexp, qy, true);
+  return isEntailed2(n, subs, false, false, pol, exp,  qy, computePf ? EXP_MODE_PROOF : EXP_MODE_ENTAIL);
 }
 
 bool TermDb::isEntailed(TNode n,
                         std::map<TNode, TNode>& subs,
                         bool subsRep,
                         bool pol,
-                        std::vector<Node>& exp,
-                        std::vector<Node>& gexp,
-                        EqualityQuery* qy)
+                        std::map< Node, eq::EqProof >& exp,
+                        bool computePf,
+                        EqualityQuery* qy
+                       )
 {
   if (qy == NULL)
   {
     Assert(d_consistent_ee);
     qy = d_quantEngine->getEqualityQuery();
   }
-  return isEntailed2(n, subs, subsRep, true, pol, exp, gexp, qy, true);
+  return isEntailed2(n, subs, subsRep, true, pol, exp, qy, computePf ? EXP_MODE_PROOF : EXP_MODE_ENTAIL);
 }
 
 bool TermDb::isEntailed(TNode n,
@@ -1137,9 +1267,8 @@ bool TermDb::isEntailed(TNode n,
     Assert( d_consistent_ee );
     qy = d_quantEngine->getEqualityQuery();
   }
-  std::vector<Node> exp;
-  std::vector<Node> gexp;
-  return isEntailed2(n, subs, subsRep, true, pol, exp, gexp, qy, false);
+  std::map< Node, eq::EqProof > exp;
+  return isEntailed2(n, subs, subsRep, true, pol, exp, qy, EXP_MODE_NONE);
 }
 
 bool TermDb::isTermActive( Node n ) {

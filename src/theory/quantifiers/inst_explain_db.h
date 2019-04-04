@@ -61,8 +61,7 @@ class InstExplainDb
   /** explain */
   ExplainStatus explain(Node q,
                         const std::vector< Node >& terms,
-                        const std::vector<Node>& exp,
-                        const std::vector<Node>& gexp,
+                        std::map< Node, eq::EqProof >& expPf,
                         EqExplainer* eqe,
                         std::vector<Node>& rexp,
                         bool regressInst,
@@ -104,13 +103,30 @@ class InstExplainDb
                    std::map<Node, bool>& expres,
                    std::map<Node, bool>& expresAtom,
                    bool regressInst);
-  void instBoolExplain(Node n,
+  /** get the propagating literals for n
+   * 
+   * 
+   */
+  bool instBoolExplain(Node n,
                    std::map<Node, bool>& expres,
                    std::vector< Node >& lits);
   Node d_null;
-  Node generalize(Node e,
-                  Node ge,
-                  eq::EqProof* eqp,
+  /** 
+   * Regress the explanation of proof sketch eqp using eqe.
+   * 
+   * The leaves of eqp (those with id MERGED_THROUGH_EQUALITY) are expected to
+   * be explanable by the explainer utility eqe.
+   * 
+   * This method recursively updates proof eqp so that its leaves are input
+   * literals with respect to eqe. If successful, it returns true and adds all
+   * assumptions to the vector assumptions.
+   * 
+   * For example, if eqe is based on the equality engine of TheoryUF,
+   * then if this method returns true, then the leaves of eqp are input literals
+   * belonging to TheoryUF.
+   */
+  bool regressExplain(EqExplainer* eqe, std::vector< TNode >& assumptions, eq::EqProof * eqp);
+  Node generalize(eq::EqProof* eqp,
                   std::map<eq::EqProof*, Node>& concs,
                   std::map<eq::EqProof*, std::map<Node, GLitInfo> >& concsg,
                   unsigned tb = 0);
@@ -120,6 +136,28 @@ class InstExplainDb
   /** convert to non-equality (inverse of above for rewritten nodes) */
   Node convertRmEq(Node n);
 
+  /**
+   * Currently, the instantiation lemma inst propagates the ground literal
+   * lit. This method populates the generalized literal info g
+   * 
+   * In detail:
+   *   lit[c] is an instance of a literal in quantified formula Q[x].
+   *   inst is an inst lemma Q[x] => Q[c] that is currently propagating lit[c].
+   * If this method returns true, then:
+   *   assumptions => forall x. lit[x]
+   * and assumptions are SAT literals that currently hold in the SAT context.
+   * 
+   * For example if:
+   *   lit is P( c )
+   *   inst is (forall x. P( x ) V Q( x )) => P(c) V Q(c)
+   * Assume ~Q(c) and forall x. ~Q(x) are asserted in the current SAT context. 
+   * Then, this method may return true and update assumptions to:
+   *   { forall x. P( x ) V Q( x ), forall x. ~Q( x ) }
+   * 
+   * tb is number of tabs (for debug printing).
+   */
+  bool runInstExplain(GLitInfo& g, Node lit, Node inst, unsigned tb);
+  /** indent tb tabulations on trace c. */
   static void indent(const char* c, unsigned tb);
   
   static bool isGeneralization(Node n, Node gn );

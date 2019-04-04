@@ -77,7 +77,6 @@ int IeEvaluator::evaluate(Node n)
 void InstExplainLit::initialize(Node lit) { d_this = lit; }
 void InstExplainLit::reset()
 {
-  d_curr_prop_exps.clear();
   d_curr_insts.clear();
 }
 void InstExplainLit::addInstExplanation(Node inst, Node origILit, Node origLit)
@@ -93,23 +92,6 @@ void InstExplainLit::addInstExplanation(Node inst, Node origILit, Node origLit)
 void InstExplainLit::setPropagating(Node inst)
 {
   Assert(std::find(d_insts.begin(), d_insts.end(), inst) != d_insts.end());
-  // generate the explanation
-  std::map<Node, Node>::iterator it = d_inst_to_exp.find(inst);
-  if (it == d_inst_to_exp.end())
-  {
-    bool pol = d_this.getKind() != NOT;
-    TNode atomt = pol ? d_this : d_this[0];
-    TNode constt = NodeManager::currentNM()->mkConst(!pol);
-    Node instn = TermUtil::simpleNegate(inst);
-    Node instns = instn.substitute(atomt, constt);
-    instns = Rewriter::rewrite(instns);
-    d_inst_to_exp[inst] = instns;
-    d_curr_prop_exps.push_back(instns);
-  }
-  else
-  {
-    d_curr_prop_exps.push_back(it->second);
-  }
   d_curr_insts.push_back(inst);
 }
 
@@ -243,6 +225,24 @@ void InstExplainInst::propagate(IeEvaluator& v, std::vector<Node>& propLits)
 Node InstExplainInst::getSubstitution( unsigned index ) const
 {
   return d_terms[index];
+}
+
+Node InstExplainInst::getExplanationFor( Node lit )
+{
+  // generate the explanation
+  std::map<Node, Node>::iterator it = d_lit_to_exp.find(lit);
+  if (it == d_lit_to_exp.end())
+  {
+    bool pol = lit.getKind() != NOT;
+    TNode atomt = pol ? lit : lit[0];
+    TNode constt = NodeManager::currentNM()->mkConst(!pol);
+    Node instn = TermUtil::simpleNegate(d_this);
+    Node instns = instn.substitute(atomt, constt);
+    instns = Rewriter::rewrite(instns);
+    d_lit_to_exp[lit] = instns;
+    return instns;
+  }
+  return it->second;
 }
 
 }  // namespace quantifiers

@@ -69,12 +69,10 @@ class InstExplainLit
    */
   void setPropagating(Node inst);
   /**
-   * The list of current explanations that explain this literal via
-   * instantiation lemmas. These are formulas in the range of d_inst_to_exp
-   * below.
+   * The list of current instantiation lemmas that explain this literal. 
+   * These are formulas are a subset of d_insts.
    */
   std::vector<Node> d_curr_insts;
-  std::vector<Node> d_curr_prop_exps;
   /** The list of instantiation lemmas that may propagate d_this. */
   std::vector<Node> d_insts;
   /** get original lit for instantiation */
@@ -86,16 +84,6 @@ class InstExplainLit
   /** the original literal, for each instantiation */
   std::map<Node, Node> d_orig_ilit;
   std::map<Node, Node> d_orig_lit;
-  /**
-   * Maps instantiation lemmas to their explanation for this literal.
-   * Let C[L] be a clause containing literal L. The explanation for C with
-   * respect to L is ~C[false]. For example:
-   *    ~(forall x. P(x) V Q(x)) V P(c) V Q(c)
-   * the explanation for ~forall x. P(x) V P(c) V Q(c) with respect to P(c) is
-   *   (forall x. P(x)) ^ ~Q(c)
-   * which notice suffices to show that P(c) much be true.
-   */
-  std::map<Node, Node> d_inst_to_exp;
 };
 
 class InstExplainInst
@@ -107,6 +95,8 @@ class InstExplainInst
   void propagate(IeEvaluator& v, std::vector<Node>& lits);
   /** get substitution */
   Node getSubstitution( unsigned index ) const;
+  /** get explanation */
+  Node getExplanationFor( Node lit );
  private:
   /** the instantiation lemma */
   Node d_this;
@@ -114,6 +104,17 @@ class InstExplainInst
   Node d_quant;
   /** the substitution for this instantiation */
   std::vector<Node> d_terms;
+  /**
+   * Maps literals to their explanation via this instantiation.
+   * Let C[L] be a clause containing literal L. The explanation for C with
+   * respect to L is ~C[false]. For example:
+   *    ~(forall x. P(x) V Q(x)) V P(c) V Q(c)
+   * the explanation for ~forall x. P(x) V P(c) V Q(c) with respect to P(c) is
+   *   (forall x. P(x)) ^ ~Q(c)
+   * which notice suffices to show that P(c) much be true. 
+   * We map L to ~C[false] in this vector.
+   */
+  std::map<Node, Node> d_lit_to_exp;
 };
 
 }  // namespace quantifiers

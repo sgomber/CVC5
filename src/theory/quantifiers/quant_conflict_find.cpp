@@ -582,14 +582,14 @@ bool QuantInfo::isTConstraintSpurious(QuantConflictFind* p,
         subs[d_extra_var[i]] = n;
       }
       // the explanation/generalized explanation
-      std::vector<Node> exp;
-      std::vector<Node> gexp;
+      std::map< Node, eq::EqProof > exp;
       bool entFalse = false;
       bool genConflict =
           options::qcfExpMode() != quantifiers::QCF_EXP_CINSTANCE;
       if (genConflict)
       {
-        entFalse = tdb->isEntailed(d_q[1], subs, false, false, exp, gexp);
+        // do not eagerly generate proofs
+        entFalse = tdb->isEntailed(d_q[1], subs, false, false, exp, false);
       }
       else
       {
@@ -610,31 +610,45 @@ bool QuantInfo::isTConstraintSpurious(QuantConflictFind* p,
         }
       }
       // explain it and generate the conflict clause
-      if (genConflict)
+      if (options::qcfExpMode() != quantifiers::QCF_EXP_CINSTANCE)
       {
-        EqExplainer* eqe = p->getEqualityExplainer();
-        InstExplainDb& ied = p->d_quantEngine->getInstantiate()->getExplainDb();
-        std::vector<Node> rexp;
-        ExplainStatus status = ied.explain(d_q,
-                                           terms,
-                                           exp,
-                                           gexp,
-                                           eqe,
-                                           rexp,
-                                           options::qcfExpRegressInst(),
-                                           "qcf");
-        if (status == EXP_STATUS_FULL
-            && options::qcfExpMode() != quantifiers::QCF_EXP_CINSTANCE_ANALYZE)
+        // reprove the entailment, now with proof explanation
+        //std::map< Node, eq::EqProof > exp;
+        //entFalse = tdb->isEntailed(d_q[1], subs, false, false, exp);
+        // go back and fill in proofs
+        bool successPf = true;
+        for( const std::pair< Node, eq::EqProof >& lit : exp )
         {
-          std::vector<Node> lemc;
-          for (const Node& re : rexp)
+          if( !tdb->isEntailed(lit.first,subs,false,false,exp,true) )
           {
-            lemc.push_back(re.negate());
+            successPf = false;
           }
-          Node lem = lemc.size() == 1
-                         ? lemc[0]
-                         : NodeManager::currentNM()->mkNode(OR, lemc);
-          lems.push_back(lem);
+        }
+        if( successPf )
+        {
+          EqExplainer* eqe = p->getEqualityExplainer();
+          InstExplainDb& ied = p->d_quantEngine->getInstantiate()->getExplainDb();
+          std::vector<Node> rexp;
+          ExplainStatus status = ied.explain(d_q,
+                                            terms,
+                                            exp,
+                                            eqe,
+                                            rexp,
+                                            options::qcfExpRegressInst(),
+                                            "qcf");
+          if (status == EXP_STATUS_FULL
+              && options::qcfExpMode() != quantifiers::QCF_EXP_CINSTANCE_ANALYZE)
+          {
+            std::vector<Node> lemc;
+            for (const Node& re : rexp)
+            {
+              lemc.push_back(re.negate());
+            }
+            Node lem = lemc.size() == 1
+                          ? lemc[0]
+                          : NodeManager::currentNM()->mkNode(OR, lemc);
+            lems.push_back(lem);
+          }
         }
       }
     }else{
