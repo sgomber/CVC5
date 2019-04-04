@@ -511,7 +511,18 @@ void InstExplainDb::instExplain(Node n,
                                 std::map<Node, bool>& expresAtom,
                                 bool regressInst)
 {
-  if (expres.find(n) != expres.end())
+  std::vector< Node > lits;
+  instBoolExplain(n,expres,lits);
+  for( const Node& lit : lits )
+  {
+    instLitExplain(lit,expres,expresAtom,regressInst);
+  }
+}
+void InstExplainDb::instBoolExplain(Node n,
+                  std::map<Node, bool>& expres,
+                  std::vector< Node >& lits)
+{
+ if (expres.find(n) != expres.end())
   {
     return;
   }
@@ -528,7 +539,7 @@ void InstExplainDb::instExplain(Node n,
       for (const Node& nc : atom)
       {
         Node ncp = pol ? nc : nc.negate();
-        instExplain(ncp, expres, expresAtom, regressInst);
+        instBoolExplain(ncp, expres, lits);
       }
     }
     else
@@ -539,7 +550,7 @@ void InstExplainDb::instExplain(Node n,
         if (d_ev.evaluate(nc) == (pol ? 1 : -1))
         {
           Node ncp = pol ? nc : nc.negate();
-          instExplain(ncp, expres, expresAtom, regressInst);
+          instBoolExplain(ncp, expres, lits);
           return;
         }
       }
@@ -552,26 +563,26 @@ void InstExplainDb::instExplain(Node n,
     if (cbres == 0)
     {
       // branch is unknown, must do both
-      instExplain(atom[1], expres, expresAtom, regressInst);
-      instExplain(atom[2], expres, expresAtom, regressInst);
+      instBoolExplain(atom[1], expres, lits);
+      instBoolExplain(atom[2], expres, lits);
     }
     else
     {
       // branch is known, do relevant child
       unsigned checkIndex = cbres > 0 ? 1 : 2;
-      instExplain(atom[0], expres, expresAtom, regressInst);
-      instExplain(atom[checkIndex], expres, expresAtom, regressInst);
+      instBoolExplain(atom[0], expres, lits);
+      instBoolExplain(atom[checkIndex], expres, lits);
     }
   }
   else if (k == EQUAL && n[0].getType().isBoolean())
   {
     // must always do both
-    instExplain(atom[0], expres, expresAtom, regressInst);
-    instExplain(atom[1], expres, expresAtom, regressInst);
+    instBoolExplain(atom[0], expres, lits);
+    instBoolExplain(atom[1], expres, lits);
   }
   else
   {
-    instLitExplain(n, expres, expresAtom, regressInst);
+    lits.push_back(n);
   }
 }
 

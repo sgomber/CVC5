@@ -151,6 +151,9 @@ class InstExplainDb
                    std::map<Node, bool>& expres,
                    std::map<Node, bool>& expresAtom,
                    bool regressInst);
+  void instBoolExplain(Node n,
+                   std::map<Node, bool>& expres,
+                   std::vector< Node >& lits);
   Node d_null;
   Node generalize(Node e,
                   Node ge,

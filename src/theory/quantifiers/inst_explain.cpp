@@ -240,10 +240,8 @@ void InstExplainInst::propagate(IeEvaluator& v, std::vector<Node>& propLits)
   } while (!visit.empty());
 }
 
-Node InstExplainInst::getSubstitution( TNode v ) const
+Node InstExplainInst::getSubstitution( unsigned index ) const
 {
-  unsigned index = 0;
-  // FIXME
   return d_terms[index];
 }
 

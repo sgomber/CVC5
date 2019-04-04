@@ -2286,7 +2286,11 @@ bool QuantConflictFind::isPropagatingInstance(Node n)
     return it->second;
   }
   bool ret = true;
-  if (n.getKind() == NOT || n.getKind() == AND || n.getKind() == OR
+  if( n.getKind() == FORALL )
+  {
+    // do nothing
+  }
+  else if (n.getKind() == NOT || n.getKind() == AND || n.getKind() == OR
       || n.getKind() == EQUAL || n.getKind() == ITE)
   {
     for (const Node& nc : n)

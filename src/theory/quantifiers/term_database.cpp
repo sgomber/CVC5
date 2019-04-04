@@ -702,7 +702,7 @@ Node TermDb::evaluateTerm2(TNode n,
   if (reqHasTerm && !ret.isNull())
   {
     Kind k = ret.getKind();
-    if (k != OR && k != AND && k != EQUAL && k != ITE && k != NOT)
+    if (k != OR && k != AND && k != EQUAL && k != ITE && k != NOT && k != FORALL)
     {
       if (!qy->hasTerm(ret))
       {
@@ -965,11 +965,12 @@ bool TermDb::isEntailed2(TNode n,
                 gexp.push_back(eqg);
               }
             }
-            return true;
           }
+          return success;
         }
       }
     }
+    return false;
   }else if( n.getKind()==NOT ){
     return isEntailed2(
         n[0], subs, subsRep, hasSubs, !pol, exp, gexp, qy, computeExp);
@@ -1076,11 +1077,8 @@ bool TermDb::isEntailed2(TNode n,
     bool ret;
     if (d_quantEngine->getValuation().hasSatValue(n, ret))
     {
-      if (ret)
-      {
-        AlwaysAssert(false);
-      }
-      return ret;
+      Trace("term-db-entail-sat") << "SAT entail: " << n << " = " << ret << std::endl;
+      return ret==pol;
     }
   }
   return false;
