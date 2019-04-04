@@ -297,15 +297,15 @@ ExplainStatus InstExplainDb::explain(Node q,
        ++itp)
   {
     Node elit = itp->first;
-    if (regressPfFail.find(elit) != regressPfFail.end())
+    Trace("ied-gen") << "----------------- match generalized proof " << elit
+                      << std::endl;
+    if (regressPfFail.find(elit) == regressPfFail.end())
     {
       eq::EqProof* pfp = &itp->second;
       std::map<eq::EqProof*, std::map<Node, GLitInfo> >::iterator itg =
           concsg.find(pfp);
       if (itg != concsg.end())
       {
-        Trace("ied-gen") << "----------------- match generalized proof " << elit
-                         << std::endl;
         for (const std::pair<Node, GLitInfo>& gen : itg->second)
         {
           Node genConc = convertRmEq(gen.first);
@@ -319,21 +319,19 @@ ExplainStatus InstExplainDb::explain(Node q,
             break;
           }
         }
-        Trace("ied-gen") << "----------------- end match generalized proof "
-                         << std::endl;
       }
       else
       {
-        Trace("ied-gen") << "----------------- cannot match generalized proof "
-                         << elit << ", since no generalizations were computed"
+        Trace("ied-gen") << "cannot match generalized proof, since no generalizations were computed"
                          << std::endl;
       }
     }
     else
     {
-      Trace("ied-gen") << "----------------- cannot match generalized proof "
-                       << elit << std::endl;
+      Trace("ied-gen") << "cannot match generalized proof since it was not regressed" << std::endl;
     }
+        Trace("ied-gen") << "----------------- end match generalized proof "
+                         << std::endl;
   }
 
   /*
