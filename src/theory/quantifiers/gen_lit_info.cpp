@@ -32,6 +32,15 @@ bool GLitInfo::initialize(TNode a, const GLitInfo& ga, TNode b, const GLitInfo& 
 
 bool GLitInfo::merge(TNode a, TNode b, const GLitInfo& gb)
 {
+  return mergeInternal( a, b, gb, true );
+}
+bool GLitInfo::checkCompatible(TNode a, TNode b, const GLitInfo& gb)
+{
+  return mergeInternal( a, b, gb, false );
+}
+  
+bool GLitInfo::mergeInternal(TNode a, TNode b, const GLitInfo& gb, bool allowBind)
+{
   // bound variables (in case we decide to cleanup)
   std::vector< TNode > bound_avars;
   Trace("ied-ginfo") << "GLitInfo::merge, a : " << a << std::endl;
@@ -95,7 +104,7 @@ bool GLitInfo::merge(TNode a, TNode b, const GLitInfo& gb)
             break;
           }
         }
-        else
+        else if( allowBind )
         {
           // An a-variable is bound, simple.
           // FIXME:
@@ -103,6 +112,10 @@ bool GLitInfo::merge(TNode a, TNode b, const GLitInfo& gb)
           Trace("ied-ginfo") << "GLitInfo::merge: bind " << cura << " -> " << bv << std::endl;
           d_subs_modify[cura] = bv;
           bound_avars.push_back(cura);
+        }
+        else
+        {
+          return false;
         }
       }
       else
@@ -114,6 +127,10 @@ bool GLitInfo::merge(TNode a, TNode b, const GLitInfo& gb)
           itv = visited.find(curb);
           if( itv!=visited.end() )
           {
+            if( !allowBind )
+            {
+              return false;
+            }
             for( TNode x : itv->second )
             {
               if( d_subs_modify.find(x)!=d_subs_modify.end() )

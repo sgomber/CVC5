@@ -55,9 +55,13 @@ class GLitInfo
    */
   bool initialize(TNode a, const GLitInfo& ga, TNode b, const GLitInfo& gb);
   
+  
   bool merge(TNode a, TNode b, const GLitInfo& gb);
+  bool checkCompatible(TNode a, TNode b, const GLitInfo& gb);
   
   bool drop(TNode b);
+private:
+  bool mergeInternal(TNode a, TNode b, const GLitInfo& gb, bool allowBind);
 };
 
 }  // namespace quantifiers
