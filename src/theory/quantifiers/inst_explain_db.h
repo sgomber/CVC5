@@ -23,58 +23,11 @@
 #include "theory/quantifiers/inst_explain.h"
 #include "theory/quantifiers/gen_lit_info.h"
 #include "theory/quantifiers_engine.h"
-#include "theory/theory_engine.h"
-#include "theory/uf/equality_engine.h"
+#include "theory/quantifiers/equality_explain.h"
 
 namespace CVC4 {
 namespace theory {
 namespace quantifiers {
-
-class EqExplainer
-{
- public:
-  EqExplainer() {}
-  virtual ~EqExplainer() {}
-  virtual bool explain(Node lit,
-                       std::vector<TNode>& assumptions,
-                       eq::EqProof* eqp = nullptr) = 0;
-
- protected:
-  bool explainEe(eq::EqualityEngine* ee,
-                 Node lit,
-                 std::vector<TNode>& assumptions,
-                 eq::EqProof* eqp);
-};
-
-class EqExplainerEe : public EqExplainer
-{
- public:
-  EqExplainerEe(eq::EqualityEngine* ee) : d_ee(ee) {}
-  virtual ~EqExplainerEe() {}
-  /** explain */
-  bool explain(Node lit,
-               std::vector<TNode>& assumptions,
-               eq::EqProof* eqp = nullptr) override;
-
- private:
-  /** the equality engine */
-  eq::EqualityEngine* d_ee;
-};
-
-class EqExplainerTe : public EqExplainer
-{
- public:
-  EqExplainerTe(TheoryEngine* te) : d_te(te) {}
-  virtual ~EqExplainerTe() {}
-  /** explain */
-  bool explain(Node lit,
-               std::vector<TNode>& assumptions,
-               eq::EqProof* eqp = nullptr) override;
-
- private:
-  /** the theory engine */
-  TheoryEngine* d_te;
-};
 
 enum ExplainStatus
 {

@@ -478,6 +478,8 @@ libcvc4_add_sources(
   theory/quantifiers/ematching/instantiation_engine.h
   theory/quantifiers/ematching/trigger.cpp
   theory/quantifiers/ematching/trigger.h
+  theory/quantifiers/equality_explain.cpp
+  theory/quantifiers/equality_explain.h
   theory/quantifiers/equality_infer.cpp
   theory/quantifiers/equality_infer.h
   theory/quantifiers/equality_query.cpp
