@@ -20,7 +20,12 @@ namespace CVC4 {
 namespace theory {
 namespace quantifiers {
 
-void GLitInfo::initialize(InstExplainInst* iei) { d_iei = iei; }
+void GLitInfo::initialize(InstExplainInst* iei) { 
+  d_iei = iei; 
+  d_subs_modify.clear();
+  d_assumptions.clear();
+  d_conclusions.clear();
+}
 
 bool GLitInfo::initialize(TNode a, const GLitInfo& ga, TNode b, const GLitInfo& gb)
 {
@@ -36,6 +41,11 @@ bool GLitInfo::merge(TNode a, TNode b, const GLitInfo& gb)
 }
 bool GLitInfo::checkCompatible(TNode a, TNode b, const GLitInfo& gb)
 {
+  return mergeInternal( a, b, gb, false );
+}
+bool GLitInfo::checkCompatible(TNode a, TNode b)
+{
+  GLitInfo gb;
   return mergeInternal( a, b, gb, false );
 }
   
@@ -196,6 +206,8 @@ bool GLitInfo::mergeInternal(TNode a, TNode b, const GLitInfo& gb, bool allowBin
     }
     return false;
   }
+  // carry the assumptions/conclusions
+  d_assumptions.insert(d_assumptions.end(),gb.d_assumptions.begin(),gb.d_assumptions.end());
   Trace("ied-ginfo") << "GLitInfo::merge: Success!" << std::endl;
   return true;
 }
@@ -204,6 +216,16 @@ bool GLitInfo::drop(TNode b)
 {
   // drop free variables
   return true;
+}
+
+unsigned GLitInfo::getScore() const
+{
+  return d_conclusions.size();
+}
+
+void GLitInfo::debugPrint(const char * c ) const
+{
+  
 }
 
 }  // namespace quantifiers

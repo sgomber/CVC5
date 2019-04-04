@@ -168,16 +168,17 @@ void InstExplainDb::registerExplanation(Node inst,
       {
         Node curir = Rewriter::rewrite(curi);
         InstExplainLit& iel = getInstExplainLit(curir);
-        iel.addInstExplanation(inst, curi, cur);
+        iel.addInstExplanation(inst, cur);
         Trace("inst-explain") << "  -> " << curir << std::endl;
-        if (!hasPol)
-        {
-          Node curin = curi.negate();
-          Node curinr = Rewriter::rewrite(curin);
-          InstExplainLit& ieln = getInstExplainLit(curinr);
-          ieln.addInstExplanation(inst, curin, cur.negate());
-          Trace("inst-explain") << "  -> " << curinr << std::endl;
-        }
+        // Store the opposite direction as well, but if hasPol is true,
+        // then we know that we will never propagate with this polarity.
+        // Thus, we pass false to addInstExplanation. However, we must
+        // remember where curinr came from for the purposes of explanations.
+        Node curin = curi.negate();
+        Node curinr = Rewriter::rewrite(curin);
+        InstExplainLit& ieln = getInstExplainLit(curinr);
+        ieln.addInstExplanation(inst, cur.negate(), !hasPol);
+        Trace("inst-explain") << "  -> " << curinr << std::endl;
       }
     }
   } while (!visit.empty());
@@ -230,15 +231,19 @@ ExplainStatus InstExplainDb::explain(Node q,
     }
     if( !regressExplain(eqe, assumptions[elit],&itp->second) )
     {
+      Trace("ied-proof") << "...failed to regress proof" << std::endl;
       regressPfFail[elit] = true;
     }
-    if( Trace.isOn("ied-proof") )
+    else
     {
-      Trace("ied-proof") << "-----------proof " << elit << std::endl;
-      std::stringstream ss;
-      itp->second.debug_print(ss, 1);
-      Trace("ied-proof") << ss.str();
-      Trace("ied-proof") << "-----------end proof" << std::endl;
+      if( Trace.isOn("ied-proof") )
+      {
+        Trace("ied-proof") << "-----------proof " << elit << std::endl;
+        std::stringstream ss;
+        itp->second.debug_print(ss, 1);
+        Trace("ied-proof") << ss.str();
+        Trace("ied-proof") << "-----------end proof" << std::endl;
+      }
     }
   }
 
@@ -249,10 +254,10 @@ ExplainStatus InstExplainDb::explain(Node q,
   for( std::map< Node, eq::EqProof >::iterator itp = expPf.begin(); itp != expPf.end(); ++itp )
   {
     Node elit = itp->first;
-    if( regressPfFail.find(elit)!=regressPfFail.end() )
+    Trace("ied-gen") << "----------------- generalize proof " << elit << std::endl;
+    if( regressPfFail.find(elit)==regressPfFail.end() )
     {
       eq::EqProof * pfp = &itp->second;
-      Trace("ied-gen") << "----------------- generalize proof " << elit << std::endl;
       generalize(pfp, concs, concsg, 1);
       if( Trace.isOn("ied-gen") )
       {
@@ -261,18 +266,18 @@ ExplainStatus InstExplainDb::explain(Node q,
         {
           // TODO
         }
-        Trace("ied-gen") << "----------------- end generalize proof" << std::endl;
       }
     }
     else
     {
-      Trace("ied-gen") << "----------------- cannot generalize proof " << elit << ", which failed to be regressed" << std::endl;
+      Trace("ied-gen") << "...failed to be regressed" << std::endl;
     }
+    Trace("ied-gen") << "----------------- end generalize proof" << std::endl;
   }
   
   // the virtual instantiation lemma
   InstExplainInst conflict;
-  conflict.initialize(q,Node::null(),terms);
+  conflict.initialize(Node::null(),q,terms);
   // the generalization information across all literals
   GLitInfo genInfo;
   genInfo.initialize(&conflict);
@@ -457,33 +462,6 @@ ExplainStatus InstExplainDb::explain(Node q,
   }
   */
 /*
-    // for (TNode ert : assumptions)
-    for (unsigned i = 0, asize = assumptions.size(); i < asize; i++)
-    {
-      Node a = assumptions[i];
-      // now, regress the equality in terms of instantiation lemmas
-      Assert(Rewriter::rewrite(a) == a);
-      Trace("ied-conflict-debug") << "*** " << a << std::endl;
-      if (regressInst)
-      {
-        instExplain(a, expres, expresAtom, regressInst);
-      }
-      else
-      {
-        expresAtom[a] = true;
-      }
-    }
-  // now, we go back and inst-explain those that we generalized
-  std::map<TNode, TNode >::iterator itg;
-  for( TNode a : assumptions )
-  {
-    itg = gassumptions.find(a);
-    if(itg!=gassumptions.end() )
-    {
-      Trace("ied-conflict") << "INST-explain assumption: " << a << std::endl;
-      Trace("ied-conflict") << "INST-explain from:       " << itg->second << std::endl;
-    }
-  }
   
   Trace("ied-conflict") << "Result of inst explain : " << std::endl;
   for (const std::pair<Node, bool>& ep : expresAtom)
@@ -492,11 +470,7 @@ ExplainStatus InstExplainDb::explain(Node q,
     Trace("ied-conflict") << "* " << ep.first << std::endl;
   }
 */
-  // TEMPORARY FIXME
-  if (d_doExit)
-  {
-    exit(1);
-  }
+
   return ret;
 }
 
@@ -536,18 +510,6 @@ void InstExplainDb::instLitExplain(Node lit,
   */
 }
 
-void InstExplainDb::instExplain(Node n,
-                                std::map<Node, bool>& expres,
-                                std::map<Node, bool>& expresAtom,
-                                bool regressInst)
-{
-  std::vector< Node > lits;
-  instBoolExplain(n,expres,lits);
-  for( const Node& lit : lits )
-  {
-    instLitExplain(lit,expres,expresAtom,regressInst);
-  }
-}
 bool InstExplainDb::instBoolExplain(Node n,
                   std::map<Node, bool>& expres,
                   std::vector< Node >& lits)
@@ -640,8 +602,13 @@ bool InstExplainDb::regressExplain(EqExplainer* eqe, std::vector< TNode >& assum
     if (eqe)
     {
       Assert( !eqp->d_node.isNull() );
-      Trace("ied-conflict-debug") << "Explain: " << eqp->d_node << std::endl;
-      return eqe->explain(eqp->d_node, assumptions, eqp);
+      Trace("ied-proof-debug") << "Explain: " << eqp->d_node << std::endl;
+      if( !eqe->explain(eqp->d_node, assumptions, eqp) )
+      {
+        Trace("ied-proof-debug") << "FAILED to explain " << eqp->d_node;
+        return false;
+      }
+      return true;
     }
     return false;
   }
@@ -676,9 +643,8 @@ Node InstExplainDb::generalize(
   unsigned id = eqp->d_id;
   if (id == eq::MERGED_THROUGH_CONGRUENCE)
   {
-    d_doExit = true;
     Node cnode = eqp->d_node;
-    Trace("ied-gen") << "ied-pf: congruence " << cnode << std::endl;
+    Trace("ied-gen") << "ied-pf: congruence node(" << cnode << ")" << std::endl;
     // get child proofs
     std::vector<eq::EqProof*> childProofs;
     eq::EqProof* curr = eqp;
@@ -754,12 +720,12 @@ Node InstExplainDb::generalize(
         if (Trace.isOn("ied-gen"))
         {
           indent("ied-gen", tb + 1);
-          Trace("ied-gen") << "ied-pf: inst-explain equality " << olit << " (from "
-                          << pinst << ")" << std::endl;
+          Trace("ied-gen") << "ied-pf: inst-explain equality " << olit << std::endl;
           indent("ied-gen", tb + 1);
+          Trace("ied-gen") << "        from " << pinst << std::endl;
         }
         // we must inst-explain it now
-        if( !runInstExplain(gli, ret, pinst, tb+2) )
+        if( !instExplain(gli, olit, ret, pinst, "ied-gen", tb+2) )
         {
           concsg[eqp].erase(colit);
           Trace("ied-gen") << "...failed" << std::endl;
@@ -786,16 +752,18 @@ Node InstExplainDb::generalize(
     // do nothing
     Node n = eqp->d_node;
     ret = n.eqNode(n);
+    Trace("ied-gen") << "ied-pf: refl node(" << n << ")" << std::endl;
     // we do not care about generalizations here
   }
   else if (id == eq::MERGED_THROUGH_CONSTANTS)
   {
     //???
+    Trace("ied-gen") << "ied-pf: constants ???" << std::endl;
     AlwaysAssert(false);
   }
   else if (id == eq::MERGED_THROUGH_TRANS)
   {
-    d_doExit = true;
+    Trace("ied-gen") << "ied-pf: transitivity" << std::endl;
     bool success = true;
     Node retc;
     Node r1, r2;
@@ -849,8 +817,15 @@ Node InstExplainDb::generalize(
   return ret;
 }
 
-bool InstExplainDb::runInstExplain(GLitInfo& g, Node lit, Node inst, unsigned tb)
+bool InstExplainDb::instExplain(GLitInfo& g, Node olit, Node lit, Node inst, const char * c, unsigned tb)
 {
+  if( Trace.isOn(c) )
+  {
+    indent(c,tb);
+    Trace(c) << "INST-EXPLAIN: " << lit << " / " << olit << std::endl;
+    indent(c,tb);
+    Trace(c) << "         from " << inst << std::endl;
+  }
   InstExplainInst& iei = getInstExplainInst(inst);
   // Since the instantiation lemma inst is propagating lit, we have that:
   //   inst { lit -> false }
@@ -864,41 +839,138 @@ bool InstExplainDb::runInstExplain(GLitInfo& g, Node lit, Node inst, unsigned tb
   std::map<Node, bool> cache;
   if( !instBoolExplain(instExp,cache,plits) )
   {
+    if( Trace.isOn(c) )
+    {
+      indent(c,tb);
+      Trace(c) << "INST-EXPLAIN FAIL: (error) could not compute Boolean propagation based on " << instExp << std::endl;
+    }
+    // if this fails, our computation of what Boolean propagates was wrong
     Assert( false );
     return false;
   }
 
   // For each literal in plits, we must either regress it further, or add it to
   // the assumptions of g.
+  Node q = iei.getQuantifiedFormula();
   for( const Node& pl : plits )
   {
     Assert( pl==Rewriter::rewrite(pl));
+    if( Trace.isOn(c) )
+    {
+      indent(c,tb+1);
+      Trace(c) << "inst-exp: requires " << pl << std::endl;
+      indent(c,tb+1);
+    }
     // maybe it is inst-explainable
     std::map<Node, InstExplainLit>::iterator itl = d_lit_explains.find(pl);
+    bool processed = false;
     if (itl != d_lit_explains.end())
     {
       InstExplainLit& iel = itl->second;
       // activate the literal
       activateLit(pl);
-      std::vector<Node>& cexp = iel.d_curr_insts;
-      for (const Node& pinstc : cexp)
+      std::vector<Node>& cexppl = iel.d_curr_insts;
+      Trace(c) << "          ...which has " << cexppl.size() << " possible inst-explanations" << std::endl;
+      if( !cexppl.empty() )
       {
-        Node olit = iel.getOriginalLit(pinstc);
-        // check if this is compatible 
-        
-        //GLitInfo gc;
-        
+        // Get the generalization of pl with respect to the instantiation lemma
+        // inst.
+        Node opl = iel.getOriginalLit(inst);
+        AlwaysAssert( !opl.isNull() );
+        if( Trace.isOn(c) )
+        {
+          indent(c,tb+1);
+          Trace(c) << "          and generalizes to " << opl << std::endl;
+        }
+        for (const Node& instpl : cexppl)
+        {
+          // the instantiation lemma that propagates pl should not be the same as the one that propagates lit
+          Assert( instpl!=inst );
+          
+          // check the matching constraints on opli against the original literal in the quantified formula here.
+          Node opli = iel.getOriginalLit(instpl);
+          AlwaysAssert(!opli.isNull() );
+          if( Trace.isOn(c) )
+          {
+            indent(c,tb+2);
+            Trace(c) << "inst-exp: try " << opli << "..." << std::endl;
+            indent(c,tb+2);
+          }
+          // currently: we avoid matching constraints altogether by only pursuing
+          // generalizations that are fully compatible with the current.
+          if( !g.checkCompatible(opl, opli) )
+          {
+            Trace(c) << "          ...incompatible!" << std::endl;
+          }
+          else
+          {
+            Trace(c) << "          ...compatible, recurse" << std::endl;
+            // recurse
+            if( !instExplain( g.d_conclusions[pl][opli], opli, pl, instpl, c, tb+3 ) )
+            {
+              g.d_conclusions[pl].erase(opli);
+            }
+          }
+        }
+        // now, take the best generalization
+        Node best;
+        unsigned score = 0;
+        std::vector< Node > notBest;
+        for( const std::pair< Node, GLitInfo >& gl : g.d_conclusions[pl] )
+        {
+          unsigned gscore = gl.second.getScore();
+          if( best.isNull() || gscore>score )
+          {
+            if( !best.isNull() )
+            {
+              notBest.push_back(best);
+            }
+            best = gl.first;
+            score = gscore;
+          }
+          else
+          {
+            notBest.push_back(gl.first);
+          }
+        }
+        // remove all but the best
+        for( const Node& n : notBest )
+        {
+          g.d_conclusions[pl].erase(n);
+        }
+        if( !best.isNull() )
+        {
+          if( g.merge(opl,best,g.d_conclusions[pl][best]) )
+          {
+            processed = true;
+          }
+        }
       }
     }
-    else
+    if( !processed )
     {
-      g.d_assumptions.push_back(pl);
-      // we must drop this literal from g TODO
-      
+      if( pl!=q )
+      {
+        // if it is not a quantified formula, then it must be part of the overall conclusion
+        Trace(c) << "          ...which no inst-explanations, it must be a conclusion" << std::endl;
+        // we did not generalize it at all
+        g.d_conclusions[pl][pl].initialize(nullptr);
+      }
+      else
+      {
+        // if pl is the quantified formula for inst, we add it to assumptions
+        Trace(c) << "          ...which is the quantified formula, add to assumptions" << std::endl;
+        g.d_assumptions.push_back(pl);
+      }
     }
   }
-  // FIXME
-  return false;
+  if( Trace.isOn(c) )
+  {
+    indent(c,tb);
+    Trace(c) << "INST-EXPLAIN SUCCESS with:" << std::endl;
+    g.debugPrint(c);
+  }
+  return true;
 }
 
 bool InstExplainDb::getMatchIndex(Node eq, Node n, unsigned& index)

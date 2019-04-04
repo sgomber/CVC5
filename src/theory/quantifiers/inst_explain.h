@@ -44,9 +44,9 @@ class IeEvaluator
 
 /** instantiation explain literal
  *
- * This class manages all instantiation lemma explanations for a single literal
- * L. In particular, it stores all instantiation lemmas that may propagate L,
- * and the explanation of why they propagate L.
+ * This class manages all instantiation lemma explanations for a single ground
+ * literal L. In particular, it stores all instantiation lemmas that contain 
+ * and may propagate L.
  */
 class InstExplainLit
 {
@@ -57,9 +57,12 @@ class InstExplainLit
   /** Reset, called at the beginning of instantiation rounds. */
   void reset();
   /**
-   * Set that instantiation lemma inst may propagate the literal of this object.
+   * Set that instantiation lemma inst contains this literal.
+   * 
+   * If isPropagating is true, then it is possible that inst may propagate
+   * this literal. This impacts whether we add inst to the vector d_insts below.
    */
-  void addInstExplanation(Node inst, Node origILit, Node origLit);
+  void addInstExplanation(Node inst, Node origLit, bool isPropagating=true);
   /**
    * Set that instantiation lemma inst currently propagates the literal of this
    * object. This is called by InstExplainDb.
@@ -97,6 +100,8 @@ class InstExplainInst
   Node getSubstitution( unsigned index ) const;
   /** get explanation */
   Node getExplanationFor( Node lit );
+  /** get quantified formula */
+  Node getQuantifiedFormula() const;
  private:
   /** the instantiation lemma */
   Node d_this;

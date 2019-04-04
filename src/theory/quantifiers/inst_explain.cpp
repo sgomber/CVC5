@@ -79,14 +79,14 @@ void InstExplainLit::reset()
 {
   d_curr_insts.clear();
 }
-void InstExplainLit::addInstExplanation(Node inst, Node origILit, Node origLit)
+void InstExplainLit::addInstExplanation(Node inst, Node origLit, bool isPropagating)
 {
-  if (std::find(d_insts.begin(), d_insts.end(), inst) == d_insts.end())
+  Assert(std::find(d_insts.begin(), d_insts.end(), inst) == d_insts.end());
+  if( isPropagating )
   {
     d_insts.push_back(inst);
-    d_orig_ilit[inst] = origILit;
-    d_orig_lit[inst] = origLit;
   }
+  d_orig_lit[inst] = origLit;
 }
 
 void InstExplainLit::setPropagating(Node inst)
@@ -98,15 +98,21 @@ void InstExplainLit::setPropagating(Node inst)
 Node InstExplainLit::getOriginalLit(Node inst) const
 {
   std::map<Node, Node>::const_iterator it = d_orig_lit.find(inst);
-  Assert(it != d_orig_lit.end());
-  return it->second;
+  if(it != d_orig_lit.end())
+  {
+    return it->second;
+  }
+  return Node::null();
 }
 
 void InstExplainInst::initialize(Node inst, Node q, const std::vector<Node>& ts)
 {
+  Trace("ajr-temp") << "Initialize inst: " << inst << " " << q << std::endl;
+  Assert(!q.isNull());
   Assert(q.getKind() == FORALL);
   Assert(ts.size() == q[0].getNumChildren());
   Assert(d_terms.empty());
+  // notice that inst may be null (in the case we haven't explicitly constructed the instantiation)
   d_this = inst;
   d_quant = q;
   d_terms.insert(d_terms.end(),ts.begin(),ts.end());
@@ -243,6 +249,10 @@ Node InstExplainInst::getExplanationFor( Node lit )
     return instns;
   }
   return it->second;
+}
+Node InstExplainInst::getQuantifiedFormula() const
+{
+  return d_quant;
 }
 
 }  // namespace quantifiers

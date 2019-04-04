@@ -99,10 +99,6 @@ class InstExplainDb
                       std::map<Node, bool>& expres,
                       std::map<Node, bool>& expresAtom,
                       bool regressInst);
-  void instExplain(Node n,
-                   std::map<Node, bool>& expres,
-                   std::map<Node, bool>& expresAtom,
-                   bool regressInst);
   /** get the propagating literals for n
    * 
    * 
@@ -136,27 +132,37 @@ class InstExplainDb
   /** convert to non-equality (inverse of above for rewritten nodes) */
   Node convertRmEq(Node n);
 
-  /**
-   * Currently, the instantiation lemma inst propagates the ground literal
-   * lit. This method populates the generalized literal info g
+  /** Instantiation explanation 
+   * 
+   * This is called when the instantiation lemma inst currently propagates the
+   * ground literal lit. This method attempts to lift the explanation of lit
+   * to a universal conclusion.
    * 
    * In detail:
-   *   lit[c] is an instance of a literal in quantified formula Q[x].
-   *   inst is an inst lemma Q[x] => Q[c] that is currently propagating lit[c].
+   *   lit is an instance of a literal in quantified formula Q,
+   *   inst is an inst lemma Q[x] => Q[c] that is currently propagating lit,
+   *   olit is the uninstantiated form of lit, i.e. olit { x -> c } = lit.
    * If this method returns true, then:
-   *   assumptions => forall x. lit[x]
+   *   assumptions => forall x. olit
    * and assumptions are SAT literals that currently hold in the SAT context.
    * 
    * For example if:
+   *   olit is P( x )
    *   lit is P( c )
    *   inst is (forall x. P( x ) V Q( x )) => P(c) V Q(c)
-   * Assume ~Q(c) and forall x. ~Q(x) are asserted in the current SAT context. 
-   * Then, this method may return true and update assumptions to:
+   * Assume ~Q(c) and forall x. ~Q(x) are asserted in the current SAT context.
+   * Thus, the lemma inst propagates P(c).
+   * This method may return true and updates the assumptions of g to:
    *   { forall x. P( x ) V Q( x ), forall x. ~Q( x ) }
+   * This can be computed via recursive calls to instExplain, say in the case
+   * that an instantiation lemma (forall x. ~Q(x) => ~Q(c)) occurs as a clause
+   * in the SAT solver and hence propagates ~Q(c).
+   * This corresponds to the (first-order resolution) inference:
+   *   forall x. P( x ) V Q( x ) ^ forall x. ~Q( x ) => forall x. P( x ).
    * 
-   * tb is number of tabs (for debug printing).
+   * c is the name of a Trace, and tb is number of tabs (for debug printing).
    */
-  bool runInstExplain(GLitInfo& g, Node lit, Node inst, unsigned tb);
+  bool instExplain(GLitInfo& g, Node olit, Node lit, Node inst, const char * c, unsigned tb);
   /** indent tb tabulations on trace c. */
   static void indent(const char* c, unsigned tb);
   

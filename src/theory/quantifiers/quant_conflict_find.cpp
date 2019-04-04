@@ -600,32 +600,38 @@ bool QuantInfo::isTConstraintSpurious(QuantConflictFind* p,
         Trace("qcf-instance-check") << "...not entailed to be false." << std::endl;
         return true;
       }
-      if (Trace.isOn("qcf-conflict-exp"))
-      {
-        Trace("qcf-conflict-exp")
-            << "Conflict instance for " << d_q << " : " << std::endl;
-        for (const Node& t : terms)
-        {
-          Trace("qcf-conflict-exp") << "  " << t << std::endl;
-        }
-      }
       // explain it and generate the conflict clause
       if (options::qcfExpMode() != quantifiers::QCF_EXP_CINSTANCE)
       {
-        // reprove the entailment, now with proof explanation
-        //std::map< Node, eq::EqProof > exp;
-        //entFalse = tdb->isEntailed(d_q[1], subs, false, false, exp);
-        // go back and fill in proofs
+        if (Trace.isOn("qcf-conflict-exp"))
+        {
+          Trace("qcf-conflict-exp")
+              << "Explain conflicting instance for " << d_q << " : " << std::endl;
+          for (const Node& t : terms)
+          {
+            Trace("qcf-conflict-exp") << "  " << t << std::endl;
+          }
+          Trace("qcf-conflict-exp") << "Entailed literals:" << std::endl;
+          for( const std::pair< Node, eq::EqProof >& lit : exp )
+          {
+            Trace("qcf-conflict-exp") << "  " << lit.first << std::endl;
+          }          
+        }
+        // Prove the entailments again, now with proof explanation
         bool successPf = true;
         for( const std::pair< Node, eq::EqProof >& lit : exp )
         {
-          if( !tdb->isEntailed(lit.first,subs,false,false,exp,true) )
+          // polarity is now true
+          if( !tdb->isEntailed(lit.first,subs,false,true,exp,true) )
           {
             successPf = false;
+            Trace("qcf-conflict-exp") << "...failed to prove " << lit.first << "!" << std::endl;
+            break;
           }
         }
         if( successPf )
         {
+          Trace("qcf-conflict-exp") << "...succeeded generating proof sketch." << std::endl;
           EqExplainer* eqe = p->getEqualityExplainer();
           InstExplainDb& ied = p->d_quantEngine->getInstantiate()->getExplainDb();
           std::vector<Node> rexp;

@@ -838,73 +838,96 @@ TNode TermDb::getEntailedTerm2(TNode n,
 
   if( p )
   {
-    // The vector child_pfs contain proofs of 
-    //   n[0] * subs = argst[0], ..., n[k] * subs = argst[k]
-    // We have that nn is congruent to f( args[0], ..., args[k] ) via
-    // the call to getCongruentTerm above, based on our term indices.
-    // Since by construction above, 
-    //   args[0] = argst[0] ^ ... ^ args[k] = argst[k] 
-    // thus, nn is congruent to f( argst[0], ..., argst[k] ), and thus:
-    //   argst[0] = nn[0] ^ ... ^ argst[k] = nn[k]
-    //
-    // We require that p is a proof of n * subs = nn.
-    // We use a congruence proof whose children are transitivity proofs:
-    //   n[0] * subs = argst[0] = nn[0], ..., n[k] * subs = argst[k] = nn[k]
-    //
-    // We thus generate a congruence proof below, appending equalities
-    // argst[i] = nn[i] to child_pfs wherever necessary.
-    eq::EqProof * curr = p;
+    // check whether the entire proof is trivial
+    bool trivial = true;
     for( unsigned i=0; i<nchild; i++ )
     {
-      // children are processed in reverse order since congruence proofs
-      // should be left associative
-      unsigned ii = nchild-(i+1);
-      if (argst[ii] != nn[ii])
+      if (argst[i] != nn[i] || child_pfs[i]->d_id!=eq::MERGED_THROUGH_REFLEXIVITY )
       {
-        eq::EqProof * mainEq = nullptr;
-        // modify the child proof
-        if( child_pfs[ii]->d_id==eq::MERGED_THROUGH_REFLEXIVITY )
-        {
-          // child was trivial proof, overwrite it (below)
-          mainEq = child_pfs[ii].get();
-        }
-        else
-        {
-          std::shared_ptr<eq::EqProof> pt;
-          pt = std::make_shared<eq::EqProof>();
-          pt->d_id = eq::MERGED_THROUGH_TRANS;
-          // the LHS of the node is unsubstituted 
-          pt->d_node = n[ii].eqNode(nn[ii]);
-          // add the existing child proof
-          pt->d_children.push_back(child_pfs[ii]);
-          // add the main equality
-          std::shared_ptr<eq::EqProof> ptm;
-          ptm = std::make_shared<eq::EqProof>();
-          pt->d_children.push_back(ptm);
-          child_pfs[ii] = pt;
-          mainEq = ptm.get();
-        }
-        mainEq->d_id = eq::MERGED_THROUGH_EQUALITY;
-        mainEq->d_node = argst[i].eqNode(nn[i]);
+        trivial = false;
       }
-      curr->d_id = eq::MERGED_THROUGH_CONGRUENCE;
-      // we don't care about the node on intermediate (curried) proofs.
-      if( i==0 )
-      {
-        curr->d_node = nn;
-      }
-      // add to congruence
-      std::shared_ptr<eq::EqProof> newCong;
-      newCong = std::make_shared<eq::EqProof>();
-      curr->d_children.push_back(newCong);
-      curr->d_children.push_back(child_pfs[ii]);
-      // now working on the congruence of function head
-      curr = newCong.get();
     }
-    // last is a trivial reflexivity of operator
-    // this is not strictly necessary but may help debugging
-    Assert( curr->d_id==eq::MERGED_THROUGH_REFLEXIVITY );
-    curr->d_node = f;
+    if( trivial )
+    {
+      // skip the congruence proof: nothing was needed
+      Assert( p->d_id==eq::MERGED_THROUGH_REFLEXIVITY );
+      p->d_node = nn;
+    }
+    else
+    {
+      // The vector child_pfs contain proofs of 
+      //   n[0] * subs = argst[0], ..., n[k] * subs = argst[k]
+      // We have that nn is congruent to f( args[0], ..., args[k] ) via
+      // the call to getCongruentTerm above, based on our term indices.
+      // Since by construction above, 
+      //   args[0] = argst[0] ^ ... ^ args[k] = argst[k] 
+      // thus, nn is congruent to f( argst[0], ..., argst[k] ), and thus:
+      //   argst[0] = nn[0] ^ ... ^ argst[k] = nn[k]
+      //
+      // We require that p is a proof of n * subs = nn.
+      // We use a congruence proof whose children are transitivity proofs:
+      //   n[0] * subs = argst[0] = nn[0], ..., n[k] * subs = argst[k] = nn[k]
+      //
+      // We thus generate a congruence proof below, appending equalities
+      // argst[i] = nn[i] to child_pfs wherever necessary.
+      eq::EqProof * curr = p;
+      for( unsigned i=0; i<nchild; i++ )
+      {
+        // children are processed in reverse order since congruence proofs
+        // should be left associative
+        unsigned ii = nchild-(i+1);
+        if (argst[ii] != nn[ii])
+        {
+          trivial = false;
+          eq::EqProof * mainEq = nullptr;
+          // modify the child proof
+          if( child_pfs[ii]->d_id==eq::MERGED_THROUGH_REFLEXIVITY )
+          {
+            // child was trivial proof, overwrite it (below)
+            mainEq = child_pfs[ii].get();
+          }
+          else
+          {
+            std::shared_ptr<eq::EqProof> pt;
+            pt = std::make_shared<eq::EqProof>();
+            pt->d_id = eq::MERGED_THROUGH_TRANS;
+            // the LHS of the node is unsubstituted 
+            pt->d_node = n[ii].eqNode(nn[ii]);
+            // add the existing child proof
+            pt->d_children.push_back(child_pfs[ii]);
+            // add the main equality
+            std::shared_ptr<eq::EqProof> ptm;
+            ptm = std::make_shared<eq::EqProof>();
+            pt->d_children.push_back(ptm);
+            child_pfs[ii] = pt;
+            mainEq = ptm.get();
+          }
+          mainEq->d_id = eq::MERGED_THROUGH_EQUALITY;
+          mainEq->d_node = argst[i].eqNode(nn[i]);
+        }
+        else if( child_pfs[ii]->d_id!=eq::MERGED_THROUGH_REFLEXIVITY )
+        {
+          trivial = false;
+        }
+        curr->d_id = eq::MERGED_THROUGH_CONGRUENCE;
+        // we don't care about the node on intermediate (curried) proofs.
+        if( i==0 )
+        {
+          curr->d_node = nn;
+        }
+        // add to congruence
+        std::shared_ptr<eq::EqProof> newCong;
+        newCong = std::make_shared<eq::EqProof>();
+        curr->d_children.push_back(newCong);
+        curr->d_children.push_back(child_pfs[ii]);
+        // now working on the congruence of function head
+        curr = newCong.get();
+      }
+      // last is a trivial reflexivity of operator
+      // this is not strictly necessary but may help debugging
+      Assert( curr->d_id==eq::MERGED_THROUGH_REFLEXIVITY );
+      curr->d_node = f;
+    }
   }
   return nn;
 }
@@ -990,9 +1013,12 @@ bool TermDb::isEntailed2(TNode n,
           n[1], subs, subsRep, hasSubs, exp, pc2.get(), qy, emode);
       if( !n2.isNull() ){
         bool success = false;
-        if( n1==n2 ){
+        if( n1==n2 )
+        {
           success = pol;
-        }else{
+        }
+        else
+        {
           Assert( qy->getEngine()->hasTerm( n1 ) );
           Assert( qy->getEngine()->hasTerm( n2 ) );
           success = pol ? qy->getEngine()->areEqual(n1, n2)
@@ -1010,17 +1036,24 @@ bool TermDb::isEntailed2(TNode n,
             if( emode==EXP_MODE_PROOF )
             {
               eq::EqProof * mainEq = nullptr;
-              if( n1==n[0] && n2==n[1] )
+              // First, check if the subproofs were trivial
+              // notice we have to check the proofs instead of comparing
+              // n[0] <> n1 and n[1] <> n2, since n[0] may be non-ground 
+              // and n1 is ground.
+              bool p1r = pc1->d_id==eq::MERGED_THROUGH_REFLEXIVITY;
+              bool p2r = pc2->d_id==eq::MERGED_THROUGH_REFLEXIVITY;
+              if( p1r && p2r)
               {
+                // subproofs are trivial, just use this
                 mainEq = &p;
                 Assert( n1!=n2 );
               }
               else
               {
                 p.d_id = eq::MERGED_THROUGH_TRANS;
-                // we store the unsubstituted node here
+                // we store the (possibly non-ground) node here
                 p.d_node = nn;
-                if( n1!=n[0] )
+                if( !p1r )
                 {
                   p.d_children.push_back(pc1);
                 }
@@ -1031,7 +1064,7 @@ bool TermDb::isEntailed2(TNode n,
                   mainEq = pca.get();
                   p.d_children.push_back(pca);
                 }
-                if( n2!=n[1] )
+                if( !p2r )
                 {
                   p.d_children.push_back(pc2);
                 }
@@ -1044,6 +1077,8 @@ bool TermDb::isEntailed2(TNode n,
                 mainEq->d_id = eq::MERGED_THROUGH_EQUALITY;
                 mainEq->d_node = eq;
               }
+              // we may have a transitivity proof with only one child here
+              // this could be improved if it matters
             }
           }
         }
@@ -1158,9 +1193,9 @@ bool TermDb::isEntailed2(TNode n,
         {
           eq::EqProof * mainEq = nullptr;
           // transitivity proof
-          if( n1==n )
+          if( ppred->d_id==eq::MERGED_THROUGH_REFLEXIVITY )
           {
-            // proof was trivial, compress
+            // subproof was trivial, compress
             mainEq = &p;
           }
           else
