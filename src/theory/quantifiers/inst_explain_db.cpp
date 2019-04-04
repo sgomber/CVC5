@@ -423,6 +423,7 @@ ExplainStatus InstExplainDb::explain(Node q,
         }
       }
       // carry all assumptions
+      finalAssumptions.insert(finalAssumptions.end(),ginfo.d_assumptions.begin(),ginfo.d_assumptions.end());
     }
     else
     {
