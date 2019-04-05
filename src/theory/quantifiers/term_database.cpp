@@ -558,8 +558,6 @@ Node TermDb::evaluateTerm2(TNode n,
       }
     }
     reqHasTerm = false;
-    // term is not known to be equal to a representative in equality engine,
-    // evaluate it
   }
   else if (n.hasOperator())
   {
