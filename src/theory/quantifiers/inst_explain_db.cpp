@@ -284,39 +284,92 @@ ExplainStatus InstExplainDb::explain(Node q,
   // comprise the (ground) conflicting instance. Our goal is now to see if these
   // generalizations lead to a useful (quantified) inference.
   //
+  // In detail, given a conflicting instance, the input to this method is a
+  // set of proofs of ground literals that entail a conflicting instance.
+  // For example:
+  //   forall x. ~P(x) V Q(f(x,y), y)      P(a)      ~Q(f(a,b),b)
+  //   ----------------------------------------------------------
+  //                      false
+  // where expPf contains (UF) proofs of literals P(a), ~Q(f(a,b),b), which are
+  //    P(x) * sigma and ~Q(f(x,y),y) * sigma 
+  // where 
+  //    sigma is { x -> a, y -> b }
+  // We call P(a), ~Q(f(a,b),b) the "ground conflicting literal set" with
+  // respect to forall x. ~P(x) V Q(f(x,y), y).
+  //
+  // The goal of proof generalization is to transform these proofs so that they
+  // prove generalizations of these literals (that is, P(x) and ~Q(f(x,y),y)
+  // with a subset of the substitution sigma. We say a proof is purely
+  // general if it proves its literal for the empty substitution.
+  // Proofs are generalized by recognizing when assumptions of these proofs
+  // are propagated (at the Boolean level) by instantiation lemmas.
+  //
+  // We write e.g. "P(a) / P(x)" to denote a node in a proof tree whose 
+  // original conclusion was P(a) and whose generalized conclusion is P(x).
   // 
+  // Given proofs for all literals in a ground conflicting literal set,
+  // our criteria for what consitutes a useful quantified inference is described
+  // in the following, 
+  //
+  // First, if all proofs are purely general, then we may use the generalized
+  // assumptions to show false. An example would be showing that:
+  //   forall x. P(x) V Q(x) ^ forall x. ~P(x) ^ forall x. ~Q(x) => false
+  // when we have found conflicting instance
+  //   forall x. P(x) V Q(x) => P(a) V Q(a)
+  // where
+  //   forall x. ~P(x), forall x. ~P(x) => ~P(a)
+  //   forall x. ~Q(x), forall x. ~Q(x) => ~Q(a)
+  // are asserted in the current context. This can be seen as a straightforward
+  // generalization of the ground conflict for { x -> a }.
+  //
+  // Second, if there is a unique portion of the proof that is not
+  // generalized and is a strict subset of the literals that comprise an
+  // Inst-Explain inference, then we learn the generalization of this portion.
+  // We call this a (unique) propagated generalization.
   // 
-  // We introduce the following terminology.
-  // 
-  // Given a (set of) generalized proofs, the "propagated generalization" is a 
+  // Given a (set of) generalized proofs, a "propagated generalization" is a 
   // disjunction of literals corresponding to the portion of an instantiation
-  // lemma that we have not explained. Here is an example:
+  // lemma that we have not generalized. Here is an example:
   // 
+  //                                                  ---------------
   //                                                  forall z. ~Q(z)
-  //                    --------------------------   ----------------
-  // ---------------    forall y. Q(y) V P(y) V R(y)   ~Q(a) / ~Q(z)  ~R(a) / ?
-  // forall x.          --------------------------------------------------------
+  //                    --------------------------    --------------IEX
+  // ---------------    forall y. Q(y) V P(y) V R(y)   ~Q(a) / ~Q(z)   ~R(a) / ?
+  // forall x.          -----------------------------------------------------IEX
   //  ( ~P(x) V ... )                    P(a) / P(x)               ...
-  // ---------------------------------------------------------------
+  // --------------------------------------------------------------IEX
   //                false
-  // In the above proof, ~R(a) / ~R(y) is the propagated generalization. 
-  // Assuming that the remainder of the proof "..." is closed by assumptions A,
+  //
+  // Above, IEX denotes "Inst-Explain". 
+  // For example, P(a) is a conclusion of IEX since is (Boolean) propagated by
+  // an instantiation lemma:
+  //    forall y. Q(y) V P(y) V R(y) => Q(a) V P(a) V R(a)
+  // when ~Q(a), ~R(a) are also asserted in the current SAT context.
+  //
+  // The proof of ~Q(a) is purely generalized.
+  //
+  // On the other hand, we did not generalize the proof of ~R(a).  We say that
+  // ~R(a) / ~R(y) is a propagated generalization, since it is a strict subset
+  // of the instantiation lemma above.
+  // 
+  // Assuming that the proof "..." above is closed by assumptions A, we have
+  // that ~R(a) is the *unique* propagated generalization. Unique propagated
+  // generalizations lead to useful (quantified) inferences. In particular,
   // we have that:
   //   forall x. ~P(x) ^ forall y. Q(y) V P(y) V R(y) ^ forall z. ~Q(z) ^ A
   // implies:
   //   forall w. R( w )
   // where notice the propagated generalization is negated.
   // 
-  // If the overall proof contains exactly one propagated generalization, then
+  // If the overall proof contains a unique propagated generalization, then
   // the output of this method is a first-order hyper-resolution (as given by
   // the implication above). This additionally has the important property
-  // that the quantifier on the same line as the propagated generalization is
-  // subsumed by it. Above, notice that:
+  // that the quantified formula on the same line as the propagated
+  // generalization is subsumed by the negation of its closure.
+  // Above, note that:
   //   forall w. R( w )
   // subsumes
   //   forall y. Q(y) V P(y) V R(y)
-  // We mark an attribute on the conclusion to forall w. R( w ) to indicate
-  // that forall y. Q(y) V P(y) V R(y) is subsumed whenever it is asserted.
   //
   // Furthermore, a conflicting instance can be generated for the propagated
   // generalization. We call this the "generalized conflicting instance". In
@@ -550,6 +603,8 @@ ExplainStatus InstExplainDb::explain(Node q,
     Trace("ied-conflict") << "InstExplainDb::explain: auto-subsume: " << std::endl;
     Trace("ied-conflict") << "  " << conc << " subsumes" << std::endl;
     Trace("ied-conflict") << "  " << concQuant << std::endl;
+    // We mark an attribute on the conclusion to indicate that it subsumes
+    // the original quantified formula whenever it is asserted.
     Assert( finalInfo );
     Assert( finalInfo->getQuantifiedFormula()==concQuant );
     Assert( finalInfo->d_terms.size()==newVars.size() );
