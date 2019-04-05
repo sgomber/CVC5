@@ -87,7 +87,7 @@ class InstExplainDb
    *
    * Maps literals to the instantiation lemmas that currently propagate them.
    */
-  std::map<Node, std::vector<Node> > d_waiting_prop;
+  std::map<Node, std::vector<std::pair<Node,Node>> > d_waiting_prop;
   /** activated instantiations */
   std::map<Node, bool> d_active_inst;
   /** activate the literal lit
@@ -186,6 +186,14 @@ class InstExplainDb
   static void indent(const char* c, unsigned tb);
   /** returns true if gn is a generalization of n */
   static bool isGeneralization(Node n, Node gn);
+  
+  /** the subsumption map 
+   * 
+   * TODO
+   */
+  std::map< Node, std::vector< Node > > d_subsumes;
+  /** the inverse of the above map */
+  std::map< Node, std::vector< Node > > d_subsumed_by;
 };
 
 }  // namespace quantifiers

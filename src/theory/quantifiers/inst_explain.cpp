@@ -27,6 +27,7 @@ void IeEvaluator::reset() { d_ecache.clear(); }
 
 int IeEvaluator::evaluate(Node n)
 {
+  n = Rewriter::rewrite(n);
   std::map<Node, int>::iterator it = d_ecache.find(n);
   if (it != d_ecache.end())
   {
@@ -74,126 +75,33 @@ int IeEvaluator::evaluate(Node n)
   return res;
 }
 
-bool IeEvaluator::propagate(Node n,
-                            std::map<Node, bool>& expres,
-                            std::vector<Node>& lits)
-{
-  std::map<Node, bool>::iterator it = expres.find(n);
-  if (it != expres.end())
-  {
-    return it->second;
-  }
-  expres[n] = true;
-  Assert(evaluate(n) == 1);
-  // must justify why n is true
-  TNode atom = n.getKind() == NOT ? n[0] : n;
-  bool pol = n.getKind() != NOT;
-  Kind k = n.getKind();
-  if (k == AND || k == OR)
-  {
-    if ((k == AND) == pol)
-    {
-      for (const Node& nc : atom)
-      {
-        Node ncp = pol ? nc : nc.negate();
-        if (!propagate(ncp, expres, lits))
-        {
-          expres[n] = false;
-          return false;
-        }
-      }
-    }
-    // choose one that evaluates to true
-    for (const Node& nc : atom)
-    {
-      if (evaluate(nc) == (pol ? 1 : -1))
-      {
-        Node ncp = pol ? nc : nc.negate();
-        propagate(ncp, expres, lits);
-        return true;
-      }
-    }
-    expres[n] = false;
-    return false;
-  }
-  else if (k == ITE)
-  {
-    int cbres = evaluate(atom[0]);
-    if (cbres == 0)
-    {
-      // branch is unknown, must do both
-      if (!propagate(atom[1], expres, lits)
-          || !propagate(atom[2], expres, lits))
-      {
-        expres[n] = false;
-        return false;
-      }
-    }
-    else
-    {
-      // branch is known, do relevant child
-      unsigned checkIndex = cbres > 0 ? 1 : 2;
-      if (!propagate(atom[0], expres, lits)
-          || !propagate(atom[checkIndex], expres, lits))
-      {
-        expres[n] = false;
-        return false;
-      }
-    }
-  }
-  else if (k == EQUAL && n[0].getType().isBoolean())
-  {
-    // must always do both
-    if (!propagate(atom[0], expres, lits) || !propagate(atom[1], expres, lits))
-    {
-      expres[n] = false;
-      return false;
-    }
-  }
-  else
-  {
-    lits.push_back(n);
-  }
-  return true;
-}
-
 void InstExplainLit::initialize(Node lit) { d_this = lit; }
 void InstExplainLit::reset() { d_curr_insts.clear(); }
-void InstExplainLit::addInstExplanation(Node inst,
-                                        Node origLit,
-                                        bool isPropagating)
+void InstExplainLit::addInstExplanation(Node inst)
 {
-  Assert(std::find(d_insts.begin(), d_insts.end(), inst) == d_insts.end());
-  if (isPropagating)
+  // Add to instantiations if not already there.
+  if( std::find(d_insts.begin(), d_insts.end(), inst) == d_insts.end() )
   {
     d_insts.push_back(inst);
   }
-  d_orig_lit[inst] = origLit;
 }
 
-void InstExplainLit::setPropagating(Node inst)
+void InstExplainLit::setPropagating(Node inst, Node olit)
 {
   Assert(std::find(d_insts.begin(), d_insts.end(), inst) != d_insts.end());
   d_curr_insts.push_back(inst);
+  d_curr_olits.push_back(olit);
 }
 
-Node InstExplainLit::getOriginalLit(Node inst) const
-{
-  std::map<Node, Node>::const_iterator it = d_orig_lit.find(inst);
-  if (it != d_orig_lit.end())
-  {
-    return it->second;
-  }
-  return Node::null();
-}
 
-void InstExplainInst::initialize(Node inst, Node q, const std::vector<Node>& ts)
+void InstExplainInst::initialize(Node inst, Node body, Node q, const std::vector<Node>& ts)
 {
   Trace("ajr-temp") << "Initialize inst: " << inst << " " << q << std::endl;
   Assert(!q.isNull());
   Assert(q.getKind() == FORALL);
   Assert(ts.size() == q[0].getNumChildren());
   Assert(d_terms.empty());
+  d_body = body;
   // notice that inst may be null (in the case we haven't explicitly constructed
   // the instantiation)
   d_this = inst;
@@ -201,58 +109,94 @@ void InstExplainInst::initialize(Node inst, Node q, const std::vector<Node>& ts)
   d_terms.insert(d_terms.end(), ts.begin(), ts.end());
 }
 
-void InstExplainInst::propagate(IeEvaluator& v, std::vector<Node>& propLits)
+void InstExplainInst::propagate(IeEvaluator& v, std::vector<Node>& lits, std::vector< Node >& olits)
+{
+  propagateInternal(d_body,d_quant[1],v,lits,olits);
+}
+
+bool InstExplainInst::revPropagate(IeEvaluator& v, Node olit, std::vector<Node>& lits, std::vector< Node >& olits)
+{
+  Node bn = d_body;
+  Node instExp = getExplanationFor(olit);
+  std::map<Node, std::map< bool, bool > > cache;
+  // now, explain why the remainder was false
+  if( revPropagateInternal(bn,instExp,false,v,cache,lits,olits) )
+  {
+    // the quantified formula is always a part of the explanation
+    lits.push_back(d_quant);
+    olits.push_back(d_quant);
+    return true;
+  }
+  return false;
+}
+
+void InstExplainInst::propagateInternal(Node n, Node on, IeEvaluator& v, std::vector<Node>& lits, std::vector< Node >& olits)
 {
   // if possible, propagate the literal in the clause that must be true
   std::unordered_set<Node, NodeHashFunction> visited;
   std::vector<Node> visit;
+  std::vector<Node> visito;
   Node cur;
-  visit.push_back(d_this);
+  Node curo;
+  visit.push_back(n);
+  visito.push_back(on);
   do
   {
     cur = visit.back();
     visit.pop_back();
+    curo = visito.back();
+    visito.pop_back();
     // cur should hold in the current context
     Assert(v.evaluate(cur) == 1);
-    if (visited.find(cur) == visited.end())
+    // only safe to cache on the original, not the instance
+    if (visited.find(curo) == visited.end())
     {
-      visited.insert(cur);
-      Node atom = cur.getKind() == NOT ? cur[0] : cur;
+      visited.insert(curo);
+      Assert( cur.getKind()==curo.getKind() );
       bool pol = cur.getKind() != NOT;
+      Node atom = pol ? cur : cur[0];
+      Node atomo = pol ? curo : curo[0];
+      Assert( atom.getKind()==atomo.getKind() );
       Kind k = atom.getKind();
       if (k == AND || k == OR)
       {
+        Assert( atom.getNumChildren()==atomo.getNumChildren() );
         if ((k == AND) == pol)
         {
           // they all propagate
-          for (const Node& nc : atom)
+          for( unsigned i=0, nchild=atom.getNumChildren(); i<nchild; i++ )
           {
-            visit.push_back(pol ? nc : nc.negate());
+            visit.push_back(pol ? atom[i] : atom[i].negate());
+            visito.push_back(pol ? atomo[i] : atomo[i].negate());
           }
         }
         else
         {
           // propagate one if all others are false
           Node trueLit;
-          for (const Node& nc : atom)
+          Node trueLito;
+          for( unsigned i=0, nchild=atom.getNumChildren(); i<nchild; i++ )
           {
-            int cres = v.evaluate(nc);
+            int cres = v.evaluate(atom[i]);
             if (cres == 0)
             {
               // if one child is unknown, then there are no propagations
               trueLit = Node::null();
+              trueLito = Node::null();
               break;
             }
             else if ((cres > 0) == pol)
             {
               if (trueLit.isNull())
               {
-                trueLit = nc;
+                trueLit = atom[i];
+                trueLito = atomo[i];
               }
               else
               {
                 // two literals are true, no propagations
                 trueLit = Node::null();
+                trueLito = Node::null();
                 break;
               }
             }
@@ -260,6 +204,7 @@ void InstExplainInst::propagate(IeEvaluator& v, std::vector<Node>& propLits)
           if (!trueLit.isNull())
           {
             visit.push_back(pol ? trueLit : trueLit.negate());
+            visito.push_back(pol ? trueLito : trueLito.negate());
           }
         }
       }
@@ -286,7 +231,9 @@ void InstExplainInst::propagate(IeEvaluator& v, std::vector<Node>& propLits)
             else if ((cres > 0) != pol)
             {
               visit.push_back(pol ? atom[2 - i] : atom[2 - i].negate());
+              visito.push_back(pol ? atomo[2 - i] : atomo[2 - i].negate());
               visit.push_back(i == 0 ? atom[0].negate() : atom[0]);
+              visito.push_back(i == 0 ? atomo[0].negate() : atomo[0]);
               break;
             }
           }
@@ -300,31 +247,150 @@ void InstExplainInst::propagate(IeEvaluator& v, std::vector<Node>& propLits)
         // they must both have values
         Assert(cres != 0);
         visit.push_back(cres > 0 ? atom[0] : atom[0].negate());
+        visito.push_back(cres > 0 ? atomo[0] : atomo[0].negate());
         visit.push_back((cres > 0) == pol ? atom[1] : atom[1].negate());
+        visito.push_back((cres > 0) == pol ? atomo[1] : atomo[1].negate());
       }
       else
       {
-        // propagates
-        propLits.push_back(cur);
+        // propagates, now go ahead and rewrite cur
+        lits.push_back(Rewriter::rewrite(cur));
+        olits.push_back(curo);
       }
     }
   } while (!visit.empty());
 }
 
-Node InstExplainInst::getExplanationFor(Node lit)
+
+bool InstExplainInst::revPropagateInternal(TNode n,
+                                           TNode on,
+                                           bool pol,
+                                           IeEvaluator& v,
+                                           std::map<Node, std::map< bool, bool > >& cache,
+                                           std::vector<Node>& lits,
+                                           std::vector<Node>& olits)
+{
+  Trace("iex-debug") << "revPropagateInternal: " << std::endl;
+  Trace("iex-debug") << "  " << n << std::endl;
+  Trace("iex-debug") << "  " << on << std::endl;
+  // If on is false, then this is the "target" position of the propagation.
+  if( on.isConst() )
+  {
+    // successful if the constant matches the polarity
+    return on.getConst<bool>()==pol;
+  }
+  // only safe to cache wrt on
+  std::map<bool, bool>::iterator it = cache[on].find(pol);
+  if (it != cache[on].end())
+  {
+    return it->second;
+  }
+  // must justify why n evaluates to pol
+  Assert( n.getKind()==on.getKind() );
+  Assert(v.evaluate(n) == (pol ? 1 : -1));
+  if( n.getKind()==NOT )
+  {
+    return revPropagateInternal(n[0],on[0],!pol,v,cache,lits,olits);
+  }
+  cache[on][pol] = true;
+  Kind k = n.getKind();
+  if (k == AND || k == OR)
+  {
+    Assert( n.getNumChildren()==on.getNumChildren() );
+    if ((k == AND) == pol)
+    {
+      // must explain all of them
+      for( unsigned i=0, nchild=n.getNumChildren(); i<nchild; i++ )
+      {
+        if (!revPropagateInternal(n[i], on[i], pol, v, cache, lits, olits))
+        {
+          cache[on][pol] = false;
+          return false;
+        }
+      }
+    }
+    // must explain one that evaluates to true
+    for( unsigned i=0, nchild=n.getNumChildren(); i<nchild; i++ )
+    {
+      if (v.evaluate(n[i]) == (pol ? 1 : -1))
+      {
+        if( revPropagateInternal(n[i], on[i], pol, v, cache, lits, olits) )
+        {
+          return true;
+        }
+      }
+    }
+    cache[on][pol] = false;
+    return false;
+  }
+  else if (k == ITE)
+  {
+    int cbres = v.evaluate(n[0]);
+    if (cbres == 0)
+    {
+      // branch is unknown, must do both
+      if (!revPropagateInternal(n[1], on[1], pol, v, cache, lits, olits)
+          || !revPropagateInternal(n[2], on[2], pol, v, cache, lits, olits))
+      {
+        cache[on][pol] = false;
+        return false;
+      }
+    }
+    else
+    {
+      // branch is known, do relevant child
+      unsigned checkIndex = cbres > 0 ? 1 : 2;
+      if (!revPropagateInternal(n[0], on[0], cbres==1, v, cache, lits, olits)
+          || !revPropagateInternal(n[checkIndex], on[checkIndex], pol, v, cache, lits, olits))
+      {
+        cache[on][pol] = false;
+        return false;
+      }
+    }
+  }
+  else if (k == EQUAL && n[0].getType().isBoolean())
+  {
+    int cbres = v.evaluate(n[0]);
+    if( cbres==0 )
+    {
+      cache[on][pol] = false;
+      return false;
+    }
+    // must always do both
+    if (!revPropagateInternal(n[0], on[0], cbres==1, v, cache, lits, olits) || !revPropagateInternal(n[1], on[1], cbres==1, v, cache, lits, olits))
+    {
+      cache[on][pol] = false;
+      return false;
+    }
+  }
+  else
+  {
+    // must get rewritten version of nn
+    Node nn = n;
+    nn = Rewriter::rewrite( pol ? nn : nn.negate() );
+    Node onn = on;
+    onn = pol ? onn : onn.negate();
+    lits.push_back(nn);
+    olits.push_back(onn);
+  }
+  return true;
+}
+
+Node InstExplainInst::getExplanationFor(Node olit)
 {
   // generate the explanation
-  std::map<Node, Node>::iterator it = d_lit_to_exp.find(lit);
+  std::map<Node, Node>::iterator it = d_lit_to_exp.find(olit);
   if (it == d_lit_to_exp.end())
   {
-    bool pol = lit.getKind() != NOT;
-    TNode atomt = pol ? lit : lit[0];
+    bool pol = olit.getKind() != NOT;
+    TNode atomt = pol ? olit : olit[0];
     TNode constt = NodeManager::currentNM()->mkConst(!pol);
-    Node instn = TermUtil::simpleNegate(d_this);
-    Node instns = instn.substitute(atomt, constt);
-    instns = Rewriter::rewrite(instns);
-    d_lit_to_exp[lit] = instns;
-    return instns;
+    // we substitute into the original (non-rewritten) instantiated body, since
+    // we must ensure that the explanation is (apart from this substitution)
+    // matches the body of our quantified formula.
+    Node exp = d_quant[1].substitute(atomt,constt);
+    d_lit_to_exp[olit] = exp;
+    return exp;
   }
   return it->second;
 }

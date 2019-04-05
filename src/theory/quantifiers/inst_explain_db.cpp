@@ -21,6 +21,7 @@
 #include "theory/quantifiers/term_util.h"
 #include "theory/quantifiers_engine.h"
 #include "theory/rewriter.h"
+#include "theory/quantifiers/alpha_equivalence.h"  //TODO: use
 
 using namespace CVC4::kind;
 
@@ -52,12 +53,12 @@ void InstExplainDb::activateLit(Node lit)
     Assert(itl != d_lit_explains.end());
     itl->second.reset();
     // add the wait list
-    std::map<Node, std::vector<Node> >::iterator itw = d_waiting_prop.find(lit);
+    std::map<Node, std::vector<std::pair<Node,Node>> >::iterator itw = d_waiting_prop.find(lit);
     if (itw != d_waiting_prop.end())
     {
-      for (const Node& wl : itw->second)
+      for (const std::pair< Node, Node >& wl : itw->second)
       {
-        itl->second.setPropagating(wl);
+        itl->second.setPropagating(wl.first, wl.second);
       }
       d_waiting_prop.erase(lit);
     }
@@ -75,17 +76,21 @@ void InstExplainDb::activateInst(Node inst, Node srcLit, InstExplainLit& src)
   {
     d_active_inst[inst] = true;
     InstExplainInst& iei = getInstExplainInst(inst);
-    std::vector<Node> propLits;
-    iei.propagate(d_ev, propLits);
-    for (const Node& l : propLits)
+    std::vector<Node> lits;
+    std::vector<Node> olits;
+    iei.propagate(d_ev, lits, olits);
+    Assert( lits.size()==olits.size() );
+    for( unsigned i=0, size = lits.size(); i<size; i++ )
     {
+      Node l = lits[i];
+      Node ol = olits[i];
       if (l == srcLit)
       {
-        src.setPropagating(inst);
+        src.setPropagating(inst, ol);
       }
       else
       {
-        d_waiting_prop[l].push_back(inst);
+        d_waiting_prop[l].push_back(std::pair<Node, Node>(inst,ol));
       }
     }
   }
@@ -100,7 +105,7 @@ void InstExplainDb::registerExplanation(Node inst,
                         << std::endl;
   Assert(d_inst_explains.find(inst) == d_inst_explains.end());
   InstExplainInst& iei = d_inst_explains[inst];
-  iei.initialize(inst, q, ts);
+  iei.initialize(inst, n, q, ts);
   std::map<bool, std::unordered_set<Node, NodeHashFunction> > visited;
   std::vector<bool> visit_hasPol;
   std::vector<Node> visit;
@@ -168,17 +173,18 @@ void InstExplainDb::registerExplanation(Node inst,
       {
         Node curir = Rewriter::rewrite(curi);
         InstExplainLit& iel = getInstExplainLit(curir);
-        iel.addInstExplanation(inst, cur);
+        iel.addInstExplanation(inst);
         Trace("inst-explain") << "  -> " << curir << std::endl;
-        // Store the opposite direction as well, but if hasPol is true,
-        // then we know that we will never propagate with this polarity.
-        // Thus, we pass false to addInstExplanation. However, we must
-        // remember where curinr came from for the purposes of explanations.
-        Node curin = curi.negate();
-        Node curinr = Rewriter::rewrite(curin);
-        InstExplainLit& ieln = getInstExplainLit(curinr);
-        ieln.addInstExplanation(inst, cur.negate(), !hasPol);
-        Trace("inst-explain") << "  -> " << curinr << std::endl;
+        if( !hasPol )
+        {
+          // Store the opposite direction as well if hasPol is false,
+          // since it may propagate in either polarity.
+          Node curin = curi.negate();
+          Node curinr = Rewriter::rewrite(curin);
+          InstExplainLit& ieln = getInstExplainLit(curinr);
+          ieln.addInstExplanation(inst);
+          Trace("inst-explain") << "  -> " << curinr << std::endl;
+        }
       }
     }
   } while (!visit.empty());
@@ -416,7 +422,7 @@ ExplainStatus InstExplainDb::explain(Node q,
   // regarding the conflicting instance (the base line of the proof), which
   // notice does not correspond to a registered instantiation lemma.
   InstExplainInst conflict;
-  conflict.initialize(Node::null(), q, terms);
+  conflict.initialize(Node::null(), Node::null(), q, terms);
   // the generalization information across the conflicting literal set
   GLitInfo genInfo;
   genInfo.initialize(&conflict);
@@ -657,6 +663,8 @@ ExplainStatus InstExplainDb::explain(Node q,
                           << std::endl;
     Trace("ied-conflict-debug") << "  " << conc << " subsumes" << std::endl;
     Trace("ied-conflict-debug") << "  " << concQuant << std::endl;
+    d_subsumes[conc].push_back(concQuant);
+    d_subsumes[concQuant].push_back(conc);
     // We mark an attribute on the conclusion to indicate that it subsumes
     // the original quantified formula whenever it is asserted.
     Assert(finalInfo);
@@ -816,10 +824,13 @@ Node InstExplainDb::generalize(
       // activate the literal
       activateLit(ret);
       std::vector<Node>& cexp = iel.d_curr_insts;
-      for (const Node& pinst : cexp)
+      std::vector<Node>& colits = iel.d_curr_olits;
+      Assert( cexp.size()==colits.size() );
+      for( unsigned i=0, size = cexp.size(); i<size; i++ )
       {
+        Node pinst = cexp[i];
         // get the original literal
-        Node olit = iel.getOriginalLit(pinst);
+        Node olit = colits[i];
         Node colit = convertEq(olit);
         // initialize the generalization with the backwards mapping to its
         // concretization
@@ -955,32 +966,35 @@ bool InstExplainDb::instExplain(
   // Since the instantiation lemma inst is propagating lit, we have that:
   //   inst { lit -> false }
   // must evaluate to false in the current context.
-  Node instExp = iei.getExplanationFor(lit);
+  //Node instExp = iei.getExplanationFor(lit);
 
   std::vector<Node> plits;
+  std::vector<Node> plitso;
   // Second, get the SAT literals from inst that are propagating lit.
   // These literals are such that the propositional entailment holds:
   //   inst ^ plits[0] ^ ... ^ plits[k] |= lit
-  std::map<Node, bool> cache;
-  if (!d_ev.propagate(instExp, cache, plits))
+  if (!iei.revPropagate(d_ev, olit, plits, plitso))
   {
     if (Trace.isOn(c))
     {
       indent(c, tb);
       Trace(c) << "INST-EXPLAIN FAIL: (error) could not compute Boolean "
-                  "propagation based on "
-               << instExp << std::endl;
+                  "propagation for "
+               << lit << std::endl;
     }
     // if this fails, our computation of what Boolean propagates was wrong
     Assert(false);
     return false;
   }
+  Assert( plits.size()==plitso.size() );
 
   // For each literal in plits, we must either regress it further, or add it to
   // the assumptions of g.
   Node q = iei.getQuantifiedFormula();
-  for (const Node& pl : plits)
+  for( unsigned k=0, plsize = plits.size(); k<plsize; k++ )
   {
+    Node pl = plits[k];
+    Node opl = plitso[k];
     Assert(pl == Rewriter::rewrite(pl));
     if (Trace.isOn(c))
     {
@@ -988,43 +1002,39 @@ bool InstExplainDb::instExplain(
       Trace(c) << "inst-exp: requires " << pl << std::endl;
       indent(c, tb + 1);
     }
-    // The generalization of pl with respect to inst, which is just pl
-    // for now if it is not registered as an explainable literal.
-    Node opl = pl;
     // maybe it is inst-explainable
     std::map<Node, InstExplainLit>::iterator itl = d_lit_explains.find(pl);
     bool processed = false;
     if (itl != d_lit_explains.end())
     {
       InstExplainLit& iel = itl->second;
-      // Get the generalization of pl with respect to inst
-      opl = iel.getOriginalLit(inst);
-      AlwaysAssert(!opl.isNull());
       if (Trace.isOn(c))
       {
         indent(c, tb + 1);
-        Trace(c) << "          generalizes to " << opl << std::endl;
+        Trace(c) << "  generalizes to " << opl << std::endl;
       }
       // Activate the literal. This computes whether any instantiation lemmas
       // are currently propagating it.
       activateLit(pl);
       std::vector<Node>& cexppl = iel.d_curr_insts;
-      Trace(c) << "          and has " << cexppl.size()
+      std::vector<Node>& olitspl = iel.d_curr_olits;
+      Assert( cexppl.size()==olitspl.size() );
+      Trace(c) << "  and has " << cexppl.size()
                << " possible inst-explanations" << std::endl;
       if (!cexppl.empty())
       {
         // populate choices for generalization, which we store in
         // g.d_conclusions[pl]
-        for (const Node& instpl : cexppl)
+        for( unsigned j=0, cexpsize = cexppl.size(); j<cexpsize; j++ )
         {
+          Node instpl = cexppl[j];
+          Node opli = olitspl[j];
           // the instantiation lemma that propagates pl should not be the same
           // as the one that propagates lit
           Assert(instpl != inst);
 
           // check the matching constraints on opli against the original literal
           // in the quantified formula here.
-          Node opli = iel.getOriginalLit(instpl);
-          AlwaysAssert(!opli.isNull());
           if (Trace.isOn(c))
           {
             indent(c, tb + 2);
@@ -1036,11 +1046,11 @@ bool InstExplainDb::instExplain(
           // current.
           if (!g.checkCompatible(opl, opli))
           {
-            Trace(c) << "          ...incompatible!" << std::endl;
+            Trace(c) << "  ...incompatible!" << std::endl;
           }
           else
           {
-            Trace(c) << "          ...compatible, recurse" << std::endl;
+            Trace(c) << "  ...compatible, recurse" << std::endl;
             // recurse
             if (!instExplain(
                     g.d_conclusions[pl][opli], opli, pl, instpl, c, tb + 3))
@@ -1079,9 +1089,10 @@ bool InstExplainDb::instExplain(
             Trace(c) << "...success" << std::endl;
             processed = true;
           }
-          else
+          else if (Trace.isOn(c))
           {
             Trace(c) << "...failed to merge choice" << std::endl;
+            indent(c, tb + 1);
           }
         }
         else if (Trace.isOn(c))

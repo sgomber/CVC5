@@ -44,17 +44,6 @@ class IeEvaluator
    * case these literals are irrelevant.
    */
   int evaluate(Node n);
-  /** get the propagating literals for n
-   *
-   * If this method returns true, then lits contains a set of literals over the
-   * atoms of n that propositionally entail n and are true in the current SAT
-   * context.
-   * If this method returns false, then n is not true in the current SAT
-   * context.
-   *
-   * The processed nodes are cached in cache.
-   */
-  bool propagate(Node n, std::map<Node, bool>& cache, std::vector<Node>& lits);
 
  private:
   /** valuation */
@@ -78,12 +67,9 @@ class InstExplainLit
   /** Reset, called at the beginning of instantiation rounds. */
   void reset();
   /**
-   * Set that instantiation lemma inst contains this literal.
-   *
-   * If isPropagating is true, then it is possible that inst may propagate
-   * this literal. This impacts whether we add inst to the vector d_insts below.
+   * Set that instantiation lemma inst may propagate thils literal.
    */
-  void addInstExplanation(Node inst, Node origLit, bool isPropagating = true);
+  void addInstExplanation(Node inst);
   /**
    * Set that instantiation lemma inst currently propagates the literal of this
    * object. This is called by InstExplainDb.
@@ -91,32 +77,53 @@ class InstExplainLit
    * inst should be an instantiation lemma occurring as an argument to a
    * previous call to addInstExplanation.
    */
-  void setPropagating(Node inst);
+  void setPropagating(Node inst, Node olit);
   /**
    * The list of current instantiation lemmas that explain this literal.
    * These are formulas are a subset of d_insts.
    */
   std::vector<Node> d_curr_insts;
+  /** 
+   * Original literals  FIXME
+   */
+  std::vector<Node> d_curr_olits;
   /** The list of instantiation lemmas that may propagate d_this. */
   std::vector<Node> d_insts;
-  /** get original lit for instantiation */
-  Node getOriginalLit(Node inst) const;
-
  private:
   /** The literal of this object. */
   Node d_this;
-  /** the original literal, for each instantiation */
-  std::map<Node, Node> d_orig_ilit;
-  std::map<Node, Node> d_orig_lit;
 };
 
 class InstExplainInst
 {
  public:
-  /** initialize */
-  void initialize(Node inst, Node q, const std::vector<Node>& ts);
-  /** propagate */
-  void propagate(IeEvaluator& v, std::vector<Node>& lits);
+  /** initialize 
+   * 
+   * inst: the (rewritten) instantiation lemma,
+   * body: the substituted form of the body (alpha-equivalent to q[1]),
+   * q: the quantified formula,
+   * ts: the terms we substituted into q[1] to obtain body.
+   */
+  void initialize(Node inst, Node body, Node q, const std::vector<Node>& ts);
+  /** propagate
+   * 
+   * This returns a set of ground literals lits that are currently propagated by
+   * this instantiation lemma. For each lits[i], olits[i] is corresponding
+   * formula in the body of q at the same position. This is motivated by the
+   * follwoing observation: a ground literal may occur in multiple positions in
+   * an instantiation lemma. For example, body of the instantiation lemma
+   *    forall x. P( x, y ) V P( a, x ) for { x -> a, y -> a }
+   * has two occurrences of P( a, a ). It is important to track this
+   * information, since it impacts how certain explanations are constructed.
+   */
+  void propagate(IeEvaluator& v, std::vector<Node>& lits, std::vector< Node >& olits);
+  /** reverse propagate 
+   * 
+   * This returns a set of literals that are current the reason for propagating
+   * the literal olit.
+   */
+  bool revPropagate(IeEvaluator& v, Node olit, std::vector<Node>& lits, std::vector< Node >& olits);
+  
   /** get explanation */
   Node getExplanationFor(Node lit);
   /** get quantified formula */
@@ -125,8 +132,14 @@ class InstExplainInst
   std::vector<Node> d_terms;
 
  private:
-  /** the instantiation lemma */
+  /** the (rewritten) instantiation lemma */
   Node d_this;
+  /** 
+   * The instantiation (non-rewritten) body. This must be matchable with 
+   * d_quant, since we do parallel traversals of this node with the body of
+   * d_quant.
+   */
+  Node d_body;
   /** the quantified formula */
   Node d_quant;
   /**
@@ -140,6 +153,31 @@ class InstExplainInst
    * We map L to ~C[false] in this vector.
    */
   std::map<Node, Node> d_lit_to_exp;
+  /** propagate internal
+   * 
+   * n is a formula that is matchable with on, and holds in the current SAT
+   * context (as witnessable by the evaluator utility v).
+   * 
+   * This function does a parallel traversal of n and on and adds a set of
+   * literals to lits such that each L can be inferred by Boolean propagation.
+   * That is, assuming a model M assigning truth values to the atoms of n,
+   * we add L to lits if it is the case that the propositional entailment holds:
+   *   n, ( M \ atom(L) ) |= L
+   * We additionally add the (original) versions of lits to olits.
+   */
+  void propagateInternal(Node n, Node on, IeEvaluator& v, std::vector<Node>& lits, std::vector< Node >& olits);
+
+  /** get the propagating literals for n
+   *
+   * If this method returns true, then lits contains a set of literals over the
+   * atoms of n that propositionally entail n and are true in the current SAT
+   * context.
+   * If this method returns false, then n is not true in the current SAT
+   * context.
+   *
+   * The processed nodes are cached in cache.
+   */
+  bool revPropagateInternal(TNode n, TNode on, bool pol, IeEvaluator& v,std::map<Node, std::map< bool, bool > >& cache, std::vector<Node>& lits, std::vector< Node >& olits);
 };
 
 }  // namespace quantifiers
