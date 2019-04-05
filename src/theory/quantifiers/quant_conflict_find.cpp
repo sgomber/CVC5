@@ -2024,7 +2024,6 @@ void QuantConflictFind::check(Theory::Effort level, QEffort quant_e)
       // reset the round-specific information
       d_irr_func.clear();
       d_irr_quant.clear();
-      d_prop_inst_cache.clear();
 
       if( Trace.isOn("qcf-debug") ){
         Trace("qcf-debug") << std::endl;
@@ -2289,38 +2288,39 @@ std::ostream& operator<<(std::ostream& os, const QuantConflictFind::Effort& e) {
 
 bool QuantConflictFind::isPropagatingInstance(Node n)
 {
-  std::map<Node, bool>::iterator it = d_prop_inst_cache.find(n);
-  if (it != d_prop_inst_cache.end())
-  {
-    return it->second;
-  }
-  bool ret = true;
-  if (n.getKind() == FORALL)
-  {
-    // do nothing
-  }
-  else if (n.getKind() == NOT || n.getKind() == AND || n.getKind() == OR
-           || n.getKind() == EQUAL || n.getKind() == ITE)
-  {
-    for (const Node& nc : n)
-    {
-      if (!isPropagatingInstance(nc))
+  std::unordered_set<TNode, TNodeHashFunction> visited;
+  std::vector<TNode> visit;
+  TNode cur;
+  visit.push_back(n);
+  do {
+    cur = visit.back();
+    visit.pop_back();
+    if (visited.find(cur) == visited.end()) {
+      visited.insert(cur);
+      Kind ck = cur.getKind();
+      if (ck == FORALL)
       {
-        ret = false;
-        break;
+        // do nothing
+      }
+      else if (TermUtil::isBoolConnective(ck))
+      {
+        for (TNode cc : cur)
+        {
+          visit.push_back(cc);
+        }
+      }
+      else if (!getEqualityEngine()->hasTerm(cur))
+      {
+        Trace("qcf-instance-check-debug")
+            << "...not propagating instance because of " << n << std::endl;
+        return false;
+      }
+      for (const Node& cn : cur ){
+        visit.push_back(cn);
       }
     }
-  }
-  else if (!getEqualityEngine()->hasTerm(n))
-  {
-    Trace("qcf-instance-check-debug")
-        << "...not propagating instance because of " << n << std::endl;
-    ret = false;
-  }
-  Trace("qcf-instance-check-debug")
-      << "isPropagatingInstance " << n << " returns " << ret << std::endl;
-  d_prop_inst_cache[n] = ret;
-  return ret;
+  } while (!visit.empty());
+  return true;
 }
 
 } /* namespace CVC4::theory::quantifiers */
