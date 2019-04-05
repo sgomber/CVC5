@@ -744,6 +744,8 @@ Node InstExplainDb::generalize(
   unsigned id = eqp->d_id;
   if (id == eq::MERGED_THROUGH_CONGRUENCE)
   {
+    // FIXME
+    return Node::null();
     Node cnode = eqp->d_node;
     Trace("ied-gen") << "ied-pf: congruence node(" << cnode << ")" << std::endl;
     // get child proofs
@@ -869,6 +871,8 @@ Node InstExplainDb::generalize(
   }
   else if (id == eq::MERGED_THROUGH_TRANS)
   {
+    // FIXME
+    return Node::null();
     Trace("ied-gen") << "ied-pf: transitivity" << std::endl;
     bool success = true;
     Node retc;
