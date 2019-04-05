@@ -119,8 +119,25 @@ class InstExplainInst
   void propagate(IeEvaluator& v, std::vector<Node>& lits, std::vector< Node >& olits);
   /** reverse propagate 
    * 
-   * This returns a set of literals that are current the reason for propagating
-   * the literal olit.
+   * This returns a set of literals lits (and their generalizations, in olits)
+   * that are current the reason for the instantiation lemma of this class 
+   * propagating the ground form of literal olit.
+   * 
+   * For example, given instantiation lemma:
+   *    forall x. P( x ) V Q( x ) => P( a ) V Q( a )
+   * If forall x. P( x ) V Q( x ), and ~Q( a ) are asserted, then this
+   * instantiation lemma propagates P( a ). The generalized form of P( a ) is
+   * the formula at the same position in the quantified formula: P( x ).
+   * Calling this method on olit will return true with:
+   *   lits = { forall x. P( x ) V Q( x ), ~Q( a ) }
+   *   olits = { forall x. P( x ) V Q( x ), ~Q( x ) }
+   * Notice that the quantified formula itself appears in both lits/olits.
+   * 
+   * We compute lits and olits based on the following observation:
+   * If the instantiation lemma above (call it C) propagates P( a ), then
+   * C { P( a ) -> false } must evaluate to false in the current context.
+   * Thus, we compute lits and olits by justifying why C { P( a ) -> false }
+   * evaluates to false in the current context, as witnessed by v.
    */
   bool revPropagate(IeEvaluator& v, Node olit, std::vector<Node>& lits, std::vector< Node >& olits);
   
@@ -144,13 +161,14 @@ class InstExplainInst
   Node d_quant;
   /**
    * Maps literals to their explanation via this instantiation.
-   * Let C[L] be a clause containing literal L. The explanation for C with
-   * respect to L is ~C[false]. For example:
+   * Let C[L] be a clause containing literal L. The explanation for L with
+   * respect to C is C[false]. For example:
    *    ~(forall x. P(x) V Q(x)) V P(c) V Q(c)
-   * the explanation for ~forall x. P(x) V P(c) V Q(c) with respect to P(c) is
-   *   (forall x. P(x)) ^ ~Q(c)
-   * which notice suffices to show that P(c) much be true.
-   * We map L to ~C[false] in this vector.
+   * the explanation for P(c) with respect to this instantiation lemma is
+   *   ~(forall x. P(x) V Q(x)) V false V Q(c) 
+   * The negation of this formula plus the original instantiation lemma
+   * suffices to show that P(c) must be true.
+   * We map L to C[false] in this vector.
    */
   std::map<Node, Node> d_lit_to_exp;
   /** propagate internal
@@ -168,12 +186,17 @@ class InstExplainInst
   void propagateInternal(Node n, Node on, IeEvaluator& v, std::vector<Node>& lits, std::vector< Node >& olits);
 
   /** get the propagating literals for n
+   * 
+   * This method computes a justification for a ground formula n, while
+   * tracking its generalized form on.
    *
    * If this method returns true, then lits contains a set of literals over the
-   * atoms of n that propositionally entail n and are true in the current SAT
-   * context.
-   * If this method returns false, then n is not true in the current SAT
-   * context.
+   * atoms of n that propositionally entail ( pol ? n : ~n ) and are true in the
+   * current SAT context. If this method returns false, then ( pol ? n : ~n ) is
+   * not entailed to be true in the current SAT context.
+   * 
+   * We do a parallel traversal of n and on, where on is matchable with n and
+   * add the formulas into olits at the same position as those added to lits.
    *
    * The processed nodes are cached in cache.
    */
