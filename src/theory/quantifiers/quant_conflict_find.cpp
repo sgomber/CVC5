@@ -2292,10 +2292,12 @@ bool QuantConflictFind::isPropagatingInstance(Node n)
   std::vector<TNode> visit;
   TNode cur;
   visit.push_back(n);
-  do {
+  do
+  {
     cur = visit.back();
     visit.pop_back();
-    if (visited.find(cur) == visited.end()) {
+    if (visited.find(cur) == visited.end())
+    {
       visited.insert(cur);
       Kind ck = cur.getKind();
       if (ck == FORALL)
@@ -2315,7 +2317,8 @@ bool QuantConflictFind::isPropagatingInstance(Node n)
             << "...not propagating instance because of " << n << std::endl;
         return false;
       }
-      for (const Node& cn : cur ){
+      for (const Node& cn : cur)
+      {
         visit.push_back(cn);
       }
     }

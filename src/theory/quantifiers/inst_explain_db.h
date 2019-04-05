@@ -90,15 +90,15 @@ class InstExplainDb
   std::map<Node, std::vector<Node> > d_waiting_prop;
   /** activated instantiations */
   std::map<Node, bool> d_active_inst;
-  /** activate the literal lit 
-   * 
+  /** activate the literal lit
+   *
    * This computes the set of instantiation lemmas that currently propagate it.
    * It does so by calling activateInst for each instantiation lemma that may
    * propagate it.
    */
   void activateLit(Node lit);
   /** activate instantiation lemma
-   * 
+   *
    * This computes the literals that instantiation lemma inst currently
    * propagates. The literal srcLit is the literal that was interested in
    * whether inst propagated it.
@@ -122,19 +122,19 @@ class InstExplainDb
                       std::vector<TNode>& assumptions,
                       eq::EqProof* eqp);
   /** Generalize
-   * 
+   *
    * This recursively computes a generalization of proof eqp.
-   * 
+   *
    * The map concs stores the concrete conclusion computed for each proof
    * node visited in recursive calls.
-   * 
+   *
    * The map concsg stores (a set of) generalized conclusions for each proof
    * node visited in recursive class. It is the case that each node in the
    * domain of concsg[p] is a generalization of concs[p]. The information
    * in the range of concsg[p][L] for each L contains the "generalized
    * literal information", which contains the necessary information for
    * interpretting L.
-   * 
+   *
    * tb is the tabulation level (for debugging).
    */
   Node generalize(eq::EqProof* eqp,
@@ -142,7 +142,7 @@ class InstExplainDb
                   std::map<eq::EqProof*, std::map<Node, GLitInfo> >& concsg,
                   unsigned tb = 0);
   /**
-   * If this method returns true, then eq is an equality such that eq[index]=n. 
+   * If this method returns true, then eq is an equality such that eq[index]=n.
    */
   static bool getMatchIndex(Node eq, Node n, unsigned& index);
   /** convert to equality from arbitrary predicate n */
