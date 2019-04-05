@@ -54,9 +54,6 @@ class InstExplainDb
    * ts are the terms we have instantiated with.
    */
   void registerExplanation(Node ilem, Node n, Node q, std::vector<Node>& ts);
-  /** get instantiation explain */
-  InstExplainLit& getInstExplainLit(Node lit);
-  InstExplainInst& getInstExplainInst(Node inst);
 
   /** explain */
   ExplainStatus explain(Node q,
@@ -75,8 +72,11 @@ class InstExplainDb
   /** common constants */
   Node d_true;
   Node d_false;
-  // FIXME TEMPORARY
-  bool d_doExit;
+  Node d_null;
+  /** get explain information for literal lit */
+  InstExplainLit& getInstExplainLit(Node lit);
+  /** get explain information for instantiation lemma inst */
+  InstExplainInst& getInstExplainInst(Node inst);
   /** map from literal to possible explanations */
   std::map<Node, InstExplainLit> d_lit_explains;
   /** map from instantiate lemma to explanation objects */
@@ -90,10 +90,20 @@ class InstExplainDb
   std::map<Node, std::vector<Node> > d_waiting_prop;
   /** activated instantiations */
   std::map<Node, bool> d_active_inst;
-
+  /** activate the literal lit 
+   * 
+   * This computes the set of instantiation lemmas that currently propagate it.
+   * It does so by calling activateInst for each instantiation lemma that may
+   * propagate it.
+   */
   void activateLit(Node lit);
+  /** activate instantiation lemma
+   * 
+   * This computes the literals that instantiation lemma inst currently
+   * propagates. The literal srcLit is the literal that was interested in
+   * whether inst propagated it.
+   */
   void activateInst(Node inst, Node srcLit, InstExplainLit& src);
-  Node d_null;
   /**
    * Regress the explanation of proof sketch eqp using eqe.
    *
@@ -111,15 +121,34 @@ class InstExplainDb
   bool regressExplain(EqExplainer* eqe,
                       std::vector<TNode>& assumptions,
                       eq::EqProof* eqp);
+  /** Generalize
+   * 
+   * This recursively computes a generalization of proof eqp.
+   * 
+   * The map concs stores the concrete conclusion computed for each proof
+   * node visited in recursive calls.
+   * 
+   * The map concsg stores (a set of) generalized conclusions for each proof
+   * node visited in recursive class. It is the case that each node in the
+   * domain of concsg[p] is a generalization of concs[p]. The information
+   * in the range of concsg[p][L] for each L contains the "generalized
+   * literal information", which contains the necessary information for
+   * interpretting L.
+   * 
+   * tb is the tabulation level (for debugging).
+   */
   Node generalize(eq::EqProof* eqp,
                   std::map<eq::EqProof*, Node>& concs,
                   std::map<eq::EqProof*, std::map<Node, GLitInfo> >& concsg,
                   unsigned tb = 0);
-  bool getMatchIndex(Node eq, Node n, unsigned& index);
+  /**
+   * If this method returns true, then eq is an equality such that eq[index]=n. 
+   */
+  static bool getMatchIndex(Node eq, Node n, unsigned& index);
   /** convert to equality from arbitrary predicate n */
-  Node convertEq(Node n);
+  static Node convertEq(Node n);
   /** convert to non-equality (inverse of above for rewritten nodes) */
-  Node convertRmEq(Node n);
+  static Node convertRmEq(Node n);
 
   /** Instantiation explanation
    *
@@ -155,7 +184,7 @@ class InstExplainDb
       GLitInfo& g, Node olit, Node lit, Node inst, const char* c, unsigned tb);
   /** indent tb tabulations on trace c. */
   static void indent(const char* c, unsigned tb);
-
+  /** returns true if gn is a generalization of n */
   static bool isGeneralization(Node n, Node gn);
 };
 

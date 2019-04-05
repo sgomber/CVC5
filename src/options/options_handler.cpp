@@ -308,12 +308,11 @@ Quantifier conflict find explanation modes currently supported by the --qcf-exp 
 cinstance (default) \n\
 + Generate instantiation lemma corresponding to conflicting instance.\n\
 \n\
-cinstance-analyze \n\
-+ Generate instantiation lemma corresponding to conflicting instance plus\n\
-additional lemmas based on (first-order) conflict analysis\n\
+gen \n\
++ Generate generalized lemma based on (first-order) conflict analysis.\n\
 \n\
 conflict \n\
-+ When possible, generate conflict clauses that explain conflicting \n\
++ When possible, generate conflict clauses that explain conflicting.\n\
 instances.\n\
 \n\
 both \n\
