@@ -973,7 +973,7 @@ bool InstExplainDb::instExplain(
   // Second, get the SAT literals from inst that are propagating lit.
   // These literals are such that the propositional entailment holds:
   //   inst ^ plits[0] ^ ... ^ plits[k] |= lit
-  if (!iei.revPropagate(d_ev, olit, plits, plitso))
+  if (!iei.revPropagate(d_ev, lit, plits, plitso))
   {
     if (Trace.isOn(c))
     {
@@ -1008,19 +1008,20 @@ bool InstExplainDb::instExplain(
     if (itl != d_lit_explains.end())
     {
       InstExplainLit& iel = itl->second;
-      if (Trace.isOn(c))
-      {
-        indent(c, tb + 1);
-        Trace(c) << "  generalizes to " << opl << std::endl;
-      }
       // Activate the literal. This computes whether any instantiation lemmas
       // are currently propagating it.
       activateLit(pl);
       std::vector<Node>& cexppl = iel.d_curr_insts;
       std::vector<Node>& olitspl = iel.d_curr_olits;
       Assert( cexppl.size()==olitspl.size() );
-      Trace(c) << "  and has " << cexppl.size()
-               << " possible inst-explanations" << std::endl;
+      if (Trace.isOn(c))
+      {
+        indent(c, tb + 1);
+        Trace(c) << "  generalizes to " << opl << std::endl;
+        indent(c, tb + 1);
+        Trace(c) << "  and has " << cexppl.size()
+                << " possible inst-explanations" << std::endl;
+      }
       if (!cexppl.empty())
       {
         // populate choices for generalization, which we store in

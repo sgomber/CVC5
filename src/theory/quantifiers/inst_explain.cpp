@@ -28,15 +28,25 @@ void IeEvaluator::reset() { d_ecache.clear(); }
 int IeEvaluator::evaluate(Node n)
 {
   n = Rewriter::rewrite(n);
-  std::map<Node, int>::iterator it = d_ecache.find(n);
-  if (it != d_ecache.end())
+  return evaluateInternal(n, d_ecache);
+}
+int IeEvaluator::evaluateWithAssumptions(Node n, std::map< Node, int >& assumptions )
+{
+  n = Rewriter::rewrite(n);
+  return evaluateInternal(n, assumptions);
+}
+  
+int IeEvaluator::evaluateInternal(Node n, std::map< Node, int >& cache )
+{
+  std::map<Node, int>::iterator it = cache.find(n);
+  if (it != cache.end())
   {
     return it->second;
   }
   Kind k = n.getKind();
   if (k == NOT)
   {
-    return -evaluate(n[0]);
+    return -evaluateInternal(n[0], cache);
   }
   int res = 0;
   if (k == AND || k == OR)
@@ -44,10 +54,10 @@ int IeEvaluator::evaluate(Node n)
     int expv = (k == OR) ? 1 : -1;
     for (TNode nc : n)
     {
-      int cres = evaluate(nc);
+      int cres = evaluateInternal(nc, cache);
       if (cres == expv || cres == 0)
       {
-        d_ecache[n] = expv;
+        cache[n] = expv;
         return expv;
       }
     }
@@ -55,12 +65,12 @@ int IeEvaluator::evaluate(Node n)
   }
   else if (k == ITE)
   {
-    unsigned checkIndex = evaluate(n[0]) ? 1 : 2;
-    res = evaluate(n[checkIndex]);
+    unsigned checkIndex = evaluateInternal(n[0], cache) ? 1 : 2;
+    res = evaluateInternal(n[checkIndex], cache);
   }
   else if (k == EQUAL && n[0].getType().isBoolean())
   {
-    res = evaluate(n[0]) == evaluate(n[1]);
+    res = evaluateInternal(n[0], cache) == evaluateInternal(n[1], cache);
   }
   else
   {
@@ -71,7 +81,7 @@ int IeEvaluator::evaluate(Node n)
       res = bres ? 1 : -1;
     }
   }
-  d_ecache[n] = res;
+  cache[n] = res;
   return res;
 }
 
@@ -114,13 +124,15 @@ void InstExplainInst::propagate(IeEvaluator& v, std::vector<Node>& lits, std::ve
   propagateInternal(d_body,d_quant[1],v,lits,olits);
 }
 
-bool InstExplainInst::revPropagate(IeEvaluator& v, Node olit, std::vector<Node>& lits, std::vector< Node >& olits)
+bool InstExplainInst::revPropagate(IeEvaluator& v, Node lit, std::vector<Node>& lits, std::vector< Node >& olits)
 {
-  Node bn = d_body;
-  Node instExp = getExplanationFor(olit);
   std::map<Node, std::map< bool, bool > > cache;
+  // we assume that lit is false
+  Assert( lit==Rewriter::rewrite(lit) );
+  std::map<Node, int > assumptions;
+  assumptions[lit] = -1;
   // now, explain why the remainder was false
-  if( revPropagateInternal(bn,instExp,false,v,cache,lits,olits) )
+  if( revPropagateInternal(d_body,d_quant[1],false,v,assumptions,cache,lits,olits) )
   {
     // the quantified formula is always a part of the explanation
     lits.push_back(d_quant);
@@ -265,7 +277,7 @@ void InstExplainInst::propagateInternal(Node n, Node on, IeEvaluator& v, std::ve
 bool InstExplainInst::revPropagateInternal(TNode n,
                                            TNode on,
                                            bool pol,
-                                           IeEvaluator& v,
+                                           IeEvaluator& v,std::map< Node, int >& assumptions, 
                                            std::map<Node, std::map< bool, bool > >& cache,
                                            std::vector<Node>& lits,
                                            std::vector<Node>& olits)
@@ -273,12 +285,6 @@ bool InstExplainInst::revPropagateInternal(TNode n,
   Trace("iex-debug") << "revPropagateInternal: " << std::endl;
   Trace("iex-debug") << "  " << n << std::endl;
   Trace("iex-debug") << "  " << on << std::endl;
-  // If on is false, then this is the "target" position of the propagation.
-  if( on.isConst() )
-  {
-    // successful if the constant matches the polarity
-    return on.getConst<bool>()==pol;
-  }
   // only safe to cache wrt on
   std::map<bool, bool>::iterator it = cache[on].find(pol);
   if (it != cache[on].end())
@@ -287,10 +293,10 @@ bool InstExplainInst::revPropagateInternal(TNode n,
   }
   // must justify why n evaluates to pol
   Assert( n.getKind()==on.getKind() );
-  Assert(v.evaluate(n) == (pol ? 1 : -1));
+  Assert(v.evaluateWithAssumptions(n,assumptions) == (pol ? 1 : -1));
   if( n.getKind()==NOT )
   {
-    return revPropagateInternal(n[0],on[0],!pol,v,cache,lits,olits);
+    return revPropagateInternal(n[0],on[0],!pol,v,assumptions,cache,lits,olits);
   }
   cache[on][pol] = true;
   Kind k = n.getKind();
@@ -302,7 +308,7 @@ bool InstExplainInst::revPropagateInternal(TNode n,
       // must explain all of them
       for( unsigned i=0, nchild=n.getNumChildren(); i<nchild; i++ )
       {
-        if (!revPropagateInternal(n[i], on[i], pol, v, cache, lits, olits))
+        if (!revPropagateInternal(n[i], on[i], pol, v, assumptions, cache, lits, olits))
         {
           cache[on][pol] = false;
           return false;
@@ -312,9 +318,9 @@ bool InstExplainInst::revPropagateInternal(TNode n,
     // must explain one that evaluates to true
     for( unsigned i=0, nchild=n.getNumChildren(); i<nchild; i++ )
     {
-      if (v.evaluate(n[i]) == (pol ? 1 : -1))
+      if (v.evaluateWithAssumptions(n[i],assumptions) == (pol ? 1 : -1))
       {
-        if( revPropagateInternal(n[i], on[i], pol, v, cache, lits, olits) )
+        if( revPropagateInternal(n[i], on[i], pol, v, assumptions, cache, lits, olits) )
         {
           return true;
         }
@@ -325,12 +331,12 @@ bool InstExplainInst::revPropagateInternal(TNode n,
   }
   else if (k == ITE)
   {
-    int cbres = v.evaluate(n[0]);
+    int cbres = v.evaluateWithAssumptions(n[0],assumptions);
     if (cbres == 0)
     {
       // branch is unknown, must do both
-      if (!revPropagateInternal(n[1], on[1], pol, v, cache, lits, olits)
-          || !revPropagateInternal(n[2], on[2], pol, v, cache, lits, olits))
+      if (!revPropagateInternal(n[1], on[1], pol, v,assumptions, cache, lits, olits)
+          || !revPropagateInternal(n[2], on[2], pol, v, assumptions,cache, lits, olits))
       {
         cache[on][pol] = false;
         return false;
@@ -340,8 +346,8 @@ bool InstExplainInst::revPropagateInternal(TNode n,
     {
       // branch is known, do relevant child
       unsigned checkIndex = cbres > 0 ? 1 : 2;
-      if (!revPropagateInternal(n[0], on[0], cbres==1, v, cache, lits, olits)
-          || !revPropagateInternal(n[checkIndex], on[checkIndex], pol, v, cache, lits, olits))
+      if (!revPropagateInternal(n[0], on[0], cbres==1, v, assumptions, cache, lits, olits)
+          || !revPropagateInternal(n[checkIndex], on[checkIndex], pol, v, assumptions, cache, lits, olits))
       {
         cache[on][pol] = false;
         return false;
@@ -350,14 +356,14 @@ bool InstExplainInst::revPropagateInternal(TNode n,
   }
   else if (k == EQUAL && n[0].getType().isBoolean())
   {
-    int cbres = v.evaluate(n[0]);
+    int cbres = v.evaluateWithAssumptions(n[0],assumptions);
     if( cbres==0 )
     {
       cache[on][pol] = false;
       return false;
     }
     // must always do both
-    if (!revPropagateInternal(n[0], on[0], cbres==1, v, cache, lits, olits) || !revPropagateInternal(n[1], on[1], cbres==1, v, cache, lits, olits))
+    if (!revPropagateInternal(n[0], on[0], cbres==1, v, assumptions, cache, lits, olits) || !revPropagateInternal(n[1], on[1], cbres==1, v, assumptions, cache, lits, olits))
     {
       cache[on][pol] = false;
       return false;
@@ -376,24 +382,6 @@ bool InstExplainInst::revPropagateInternal(TNode n,
   return true;
 }
 
-Node InstExplainInst::getExplanationFor(Node olit)
-{
-  // generate the explanation
-  std::map<Node, Node>::iterator it = d_lit_to_exp.find(olit);
-  if (it == d_lit_to_exp.end())
-  {
-    bool pol = olit.getKind() != NOT;
-    TNode atomt = pol ? olit : olit[0];
-    TNode constt = NodeManager::currentNM()->mkConst(!pol);
-    // we substitute into the original (non-rewritten) instantiated body, since
-    // we must ensure that the explanation is (apart from this substitution)
-    // matches the body of our quantified formula.
-    Node exp = d_quant[1].substitute(atomt,constt);
-    d_lit_to_exp[olit] = exp;
-    return exp;
-  }
-  return it->second;
-}
 Node InstExplainInst::getQuantifiedFormula() const { return d_quant; }
 
 }  // namespace quantifiers

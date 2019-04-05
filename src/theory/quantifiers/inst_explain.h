@@ -44,12 +44,14 @@ class IeEvaluator
    * case these literals are irrelevant.
    */
   int evaluate(Node n);
+  int evaluateWithAssumptions(Node, std::map< Node, int >& assumptions );
 
  private:
   /** valuation */
   Valuation& d_valuation;
   /** cache */
   std::map<Node, int> d_ecache;
+  int evaluateInternal(Node, std::map< Node, int >& assumptions );
 };
 
 /** instantiation explain literal
@@ -139,10 +141,8 @@ class InstExplainInst
    * Thus, we compute lits and olits by justifying why C { P( a ) -> false }
    * evaluates to false in the current context, as witnessed by v.
    */
-  bool revPropagate(IeEvaluator& v, Node olit, std::vector<Node>& lits, std::vector< Node >& olits);
+  bool revPropagate(IeEvaluator& v, Node lit, std::vector<Node>& lits, std::vector< Node >& olits);
   
-  /** get explanation */
-  Node getExplanationFor(Node lit);
   /** get quantified formula */
   Node getQuantifiedFormula() const;
   /** the substitution for this instantiation */
@@ -160,17 +160,19 @@ class InstExplainInst
   /** the quantified formula */
   Node d_quant;
   /**
+   * FIXME move doc
    * Maps literals to their explanation via this instantiation.
    * Let C[L] be a clause containing literal L. The explanation for L with
    * respect to C is C[false]. For example:
    *    ~(forall x. P(x) V Q(x)) V P(c) V Q(c)
    * the explanation for P(c) with respect to this instantiation lemma is
-   *   ~(forall x. P(x) V Q(x)) V false V Q(c) 
-   * The negation of this formula plus the original instantiation lemma
-   * suffices to show that P(c) must be true.
+   *   false V Q(c) 
+   * The negation of this formula plus the quantified formula and the original
+   * instantiation lemma suffice to show that P(c) must be true.
    * We map L to C[false] in this vector.
    */
-  std::map<Node, Node> d_lit_to_exp;
+  
+  
   /** propagate internal
    * 
    * n is a formula that is matchable with on, and holds in the current SAT
@@ -200,7 +202,7 @@ class InstExplainInst
    *
    * The processed nodes are cached in cache.
    */
-  bool revPropagateInternal(TNode n, TNode on, bool pol, IeEvaluator& v,std::map<Node, std::map< bool, bool > >& cache, std::vector<Node>& lits, std::vector< Node >& olits);
+  bool revPropagateInternal(TNode n, TNode on, bool pol, IeEvaluator& v, std::map< Node, int >& assumptions, std::map<Node, std::map< bool, bool > >& cache, std::vector<Node>& lits, std::vector< Node >& olits);
 };
 
 }  // namespace quantifiers
