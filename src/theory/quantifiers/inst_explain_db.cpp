@@ -472,10 +472,9 @@ ExplainStatus InstExplainDb::explain(Node q,
         Trace("ied-gen") << "PROPAGATE-GENERAL " << propGen << " for " << elit << std::endl;
         if( elit==propGen )
         {
-          if( !litGenPropIsBase )
+          if( !litGenProp.isNull() && !litGenPropIsBase )
           {
             Trace("ied-gen") << "...undo generalization" << std::endl;
-            Assert( !litGenProp.isNull() );
             // undo the previous generalized propagation
             litGeneralization.erase(litGenProp);
           }
@@ -501,6 +500,7 @@ ExplainStatus InstExplainDb::explain(Node q,
     Trace("ied-conflict") << "InstExplainDb::explain: No generalizations, fail." << std::endl;
     return EXP_STATUS_FAIL;
   }
+  Trace("ied-conflict") << "...using " << litGeneralization.size() << " generalizations, a literal with propagated generalization is " << litGenProp << std::endl;
   
   // Now construct the inference if we have any useful generalization.
   std::vector< Node > finalAssumptions;
@@ -916,28 +916,31 @@ bool InstExplainDb::instExplain(
       Trace(c) << "inst-exp: requires " << pl << std::endl;
       indent(c, tb + 1);
     }
+    // The generalization of pl with respect to inst, which is just pl
+    // for now if it is not registered as an explainable literal.
+    Node opl = pl;
     // maybe it is inst-explainable
     std::map<Node, InstExplainLit>::iterator itl = d_lit_explains.find(pl);
     bool processed = false;
     if (itl != d_lit_explains.end())
     {
       InstExplainLit& iel = itl->second;
-      // activate the literal
+      // Get the generalization of pl with respect to inst
+      opl = iel.getOriginalLit(inst);
+      AlwaysAssert(!opl.isNull());
+      if (Trace.isOn(c))
+      {
+        indent(c, tb + 1);
+        Trace(c) << "          generalizes to " << opl << std::endl;
+      }
+      // Activate the literal. This computes whether any instantiation lemmas
+      // are currently propagating it.
       activateLit(pl);
       std::vector<Node>& cexppl = iel.d_curr_insts;
-      Trace(c) << "          ...which has " << cexppl.size()
+      Trace(c) << "          and has " << cexppl.size()
                << " possible inst-explanations" << std::endl;
       if (!cexppl.empty())
       {
-        // Get the generalization of pl with respect to the instantiation lemma
-        // inst.
-        Node opl = iel.getOriginalLit(inst);
-        AlwaysAssert(!opl.isNull());
-        if (Trace.isOn(c))
-        {
-          indent(c, tb + 1);
-          Trace(c) << "          and generalizes to " << opl << std::endl;
-        }
         // populate choices for generalization, which we store in 
         // g.d_conclusions[pl]
         for (const Node& instpl : cexppl)
@@ -992,7 +995,7 @@ bool InstExplainDb::instExplain(
           if (Trace.isOn(c))
           {
             indent(c, tb + 1);
-            Trace(c) << "inst-exp: requires CHOOSE to merge " << best << std::endl;
+            Trace(c) << "-> CHOOSE to merge " << best << std::endl;
             indent(c, tb + 1);
           }
           // merge the current with the child
@@ -1002,19 +1005,17 @@ bool InstExplainDb::instExplain(
           if (mergeSuccess)
           {
             Trace(c) << "...success" << std::endl;
+            processed = true;
           }
           else
           {
             Trace(c) << "...failed to merge choice" << std::endl;
-            // we revert to the generalized form at the current level
-            g.d_conclusions[pl][opl].initialize(&iei);
           }
-          processed = true;
         }
         else if( Trace.isOn(c) )
         {
           indent(c, tb + 1);
-          Trace(c) << "inst-exp: requires failed to generalize" << std::endl;
+          Trace(c) << "-> failed to generalize" << std::endl;
           indent(c, tb + 1);
         }
       }
@@ -1029,16 +1030,16 @@ bool InstExplainDb::instExplain(
       {
         // if it is not a quantified formula, then it must be part of the
         // overall conclusion
-        Trace(c) << "          ...which has no inst-explanations, it must be a "
+        Trace(c) << "-> which has no inst-explanations, it must be a "
                     "conclusion"
                  << std::endl;
         // we did not generalize it at all
-        g.d_conclusions[pl][pl].initialize(nullptr);
+        g.d_conclusions[pl][opl].initialize(&iei);
       }
       else
       {
         // if pl is the quantified formula for inst, we add it to assumptions
-        Trace(c) << "          ...which is the quantified formula, add to "
+        Trace(c) << "-> which is the quantified formula, add to "
                     "assumptions"
                  << std::endl;
         g.d_assumptions.push_back(pl);
