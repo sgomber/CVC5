@@ -771,6 +771,11 @@ Node InstExplainDb::generalize(
         // are left associative.
         unsigned ii = nchild - (i + 1);
         retc = generalize(childProofs[ii], concs, concsg, tb + 1);
+        if( retc.isNull() )
+        {
+          success = false;
+          break;
+        }
         unsigned matchIndex;
         if (getMatchIndex(retc, cnode[i], matchIndex))
         {
@@ -872,7 +877,12 @@ Node InstExplainDb::generalize(
     {
       eq::EqProof* epi = eqp->d_children[i].get();
       retc = generalize(epi, concs, concsg, tb + 1);
-      if (i == 0)
+      if( retc.isNull() )
+      {
+        success = false;
+        break;
+      }
+      else if (i == 0)
       {
         r1 = retc[0];
         r2 = retc[1];
