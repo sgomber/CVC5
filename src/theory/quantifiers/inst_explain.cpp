@@ -74,10 +74,9 @@ int IeEvaluator::evaluate(Node n)
   return res;
 }
 
-
 bool IeEvaluator::propagate(Node n,
-                                    std::map<Node, bool>& expres,
-                                    std::vector<Node>& lits)
+                            std::map<Node, bool>& expres,
+                            std::vector<Node>& lits)
 {
   std::map<Node, bool>::iterator it = expres.find(n);
   if (it != expres.end())
@@ -145,8 +144,7 @@ bool IeEvaluator::propagate(Node n,
   else if (k == EQUAL && n[0].getType().isBoolean())
   {
     // must always do both
-    if (!propagate(atom[0], expres, lits)
-        || !propagate(atom[1], expres, lits))
+    if (!propagate(atom[0], expres, lits) || !propagate(atom[1], expres, lits))
     {
       expres[n] = false;
       return false;
@@ -158,7 +156,6 @@ bool IeEvaluator::propagate(Node n,
   }
   return true;
 }
-
 
 void InstExplainLit::initialize(Node lit) { d_this = lit; }
 void InstExplainLit::reset() { d_curr_insts.clear(); }

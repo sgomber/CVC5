@@ -33,12 +33,12 @@ class IeEvaluator
   /** reset */
   void reset();
   /** evaluate
-   * 
+   *
    * Returns the value of n in the current SAT context where
    * 1 : n is true in the SAT context,
    * -1 : n is false in the SAT context,
    * 0 : the value of n is unknown in the current SAT context.
-   * 
+   *
    * Notice that n may contain literals that do not have values in the SAT
    * context. The value of n can still be determined in some cases in the
    * case these literals are irrelevant.
@@ -51,12 +51,11 @@ class IeEvaluator
    * context.
    * If this method returns false, then n is not true in the current SAT
    * context.
-   * 
+   *
    * The processed nodes are cached in cache.
    */
-  bool propagate(Node n,
-                       std::map<Node, bool>& cache,
-                       std::vector<Node>& lits);
+  bool propagate(Node n, std::map<Node, bool>& cache, std::vector<Node>& lits);
+
  private:
   /** valuation */
   Valuation& d_valuation;
@@ -124,6 +123,7 @@ class InstExplainInst
   Node getQuantifiedFormula() const;
   /** the substitution for this instantiation */
   std::vector<Node> d_terms;
+
  private:
   /** the instantiation lemma */
   Node d_this;

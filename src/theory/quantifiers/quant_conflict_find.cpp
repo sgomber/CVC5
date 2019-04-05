@@ -643,7 +643,8 @@ bool QuantInfo::isTConstraintSpurious(QuantConflictFind* p,
               && options::qcfExpMode()
                      != quantifiers::QCF_EXP_CINSTANCE_ANALYZE)
           {
-            Trace("qcf-conflict-exp") << "...succeeded with " << lems.size() << " lemmas" << std::endl;
+            Trace("qcf-conflict-exp") << "...succeeded with " << lems.size()
+                                      << " lemmas" << std::endl;
           }
         }
       }

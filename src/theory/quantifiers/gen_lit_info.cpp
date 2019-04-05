@@ -53,13 +53,11 @@ bool GLitInfo::checkCompatible(TNode a, TNode b)
   return mergeInternal(a, b, gb, false, false);
 }
 
-bool GLitInfo::mergeInternal(TNode a,
-                             TNode b,
-                             const GLitInfo& gb, bool doMerge,
-                             bool allowBind)
+bool GLitInfo::mergeInternal(
+    TNode a, TNode b, const GLitInfo& gb, bool doMerge, bool allowBind)
 {
   // cannot carry conclusions currently
-  if( doMerge && !gb.d_conclusions.empty() )
+  if (doMerge && !gb.d_conclusions.empty())
   {
     return false;
   }
@@ -236,7 +234,7 @@ bool GLitInfo::mergeInternal(TNode a,
     }
     return false;
   }
-  if( doMerge )
+  if (doMerge)
   {
     // carry the assumptions
     d_assumptions.insert(
@@ -261,47 +259,48 @@ void GLitInfo::indent(const char* c, unsigned tb) const
     Trace(c) << " ";
   }
 }
-void GLitInfo::debugPrint(const char* c, unsigned tb) const {
-  if( Trace.isOn(c) )
+void GLitInfo::debugPrint(const char* c, unsigned tb) const
+{
+  if (Trace.isOn(c))
   {
-    indent(c,tb);
+    indent(c, tb);
     Trace(c) << "MATCH_INFO" << std::endl;
-    indent(c,tb+1);
+    indent(c, tb + 1);
     Trace(c) << "substitution:" << std::endl;
-    if( d_subs_modify.empty() )
+    if (d_subs_modify.empty())
     {
-      indent(c,tb+2);
+      indent(c, tb + 2);
       Trace(c) << "(empty)" << std::endl;
     }
-    indent(c,tb+1);
+    indent(c, tb + 1);
     Trace(c) << "assumptions:" << std::endl;
-    if( d_assumptions.empty() )
+    if (d_assumptions.empty())
     {
-      indent(c,tb+2);
+      indent(c, tb + 2);
       Trace(c) << "(empty)" << std::endl;
     }
     else
     {
-      for( const Node& a : d_assumptions )
+      for (const Node& a : d_assumptions)
       {
-        indent(c,tb+2);
+        indent(c, tb + 2);
         Trace(c) << a << std::endl;
       }
     }
-    indent(c,tb+1);
+    indent(c, tb + 1);
     Trace(c) << "conclusions:" << std::endl;
-    if( d_conclusions.empty() )
+    if (d_conclusions.empty())
     {
-      indent(c,tb+2);
+      indent(c, tb + 2);
       Trace(c) << "(empty)" << std::endl;
     }
     else
     {
-      for( const std::pair<Node, std::map<Node, GLitInfo> >& cs : d_conclusions )
+      for (const std::pair<Node, std::map<Node, GLitInfo> >& cs : d_conclusions)
       {
-        for( const std::pair<Node, GLitInfo>& cc : cs.second )
+        for (const std::pair<Node, GLitInfo>& cc : cs.second)
         {
-          indent(c,tb+2);
+          indent(c, tb + 2);
           Trace(c) << cs.first << " / " << cc.first << std::endl;
         }
       }
