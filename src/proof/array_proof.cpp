@@ -110,8 +110,7 @@ Node ProofArray::toStreamRecLFSC(std::ostream& out,
     std::shared_ptr<theory::eq::EqProof> subTrans =
         std::make_shared<theory::eq::EqProof>();
 
-    int neg = RectifiableEqProof::rectify(
-        tp->getTheoryId(), pf, subTrans, &proofPrinter);
+    int neg = tp->assertAndPrint(pf, map, subTrans, &proofPrinter);
 
     Node n1;
     std::stringstream ss, ss2;
