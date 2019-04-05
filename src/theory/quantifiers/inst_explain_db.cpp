@@ -891,6 +891,10 @@ Node InstExplainDb::generalize(
         Trace("ied-gen") << p.first << std::endl;
       }
     }
+    else
+    {
+      Trace("ied-gen") << std::endl;
+    }
   }
   return ret;
 }
