@@ -653,10 +653,10 @@ ExplainStatus InstExplainDb::explain(Node q,
     conc = Rewriter::rewrite(conc);
     lem = nm->mkNode(OR, antec.negate(), conc);
     // mark the propagating generalization
-    Trace("ied-conflict") << "InstExplainDb::explain: auto-subsume: "
+    Trace("ied-conflict-debug") << "auto-subsume: "
                           << std::endl;
-    Trace("ied-conflict") << "  " << conc << " subsumes" << std::endl;
-    Trace("ied-conflict") << "  " << concQuant << std::endl;
+    Trace("ied-conflict-debug") << "  " << conc << " subsumes" << std::endl;
+    Trace("ied-conflict-debug") << "  " << concQuant << std::endl;
     // We mark an attribute on the conclusion to indicate that it subsumes
     // the original quantified formula whenever it is asserted.
     Assert(finalInfo);
@@ -668,21 +668,18 @@ ExplainStatus InstExplainDb::explain(Node q,
                                    finalInfo->d_terms.begin(),
                                    finalInfo->d_terms.end());
     Node cig = nm->mkNode(OR, conc.negate(), concsi);
-    Trace("ied-conflict")
-        << "InstExplainDb::explain: LEMMA: (generalized conflicting instance):"
-        << std::endl;
-    Trace("ied-conflict") << "  " << cig << std::endl;
     cig = Rewriter::rewrite(cig);
     // already register the explanation
     registerExplanation(cig, concsi, conc, finalInfo->d_terms);
     lems.push_back(cig);
+    Trace("ied-lemma") << "InstExplainDb::lemma (GEN-CINST): " << cig << std::endl;
   }
   else
   {
     lem = antec.negate();
   }
-  Trace("ied-conflict") << "InstExplainDb::explain: LEMMA:" << std::endl;
-  Trace("ied-conflict") << "  " << lem << std::endl;
+  Trace("ied-conflict") << "InstExplainDb::explain: generated generalized resolution inference" << std::endl;
+  Trace("ied-lemma") << "InstExplainDb::lemma (GEN-RES): " << lem << std::endl;
   lems.push_back(lem);
   return EXP_STATUS_FULL;
 }
@@ -708,11 +705,12 @@ bool InstExplainDb::regressExplain(EqExplainer* eqe,
       Trace("ied-proof-debug") << "Explain: " << eqp->d_node << std::endl;
       if (!eqe->explain(eqp->d_node, assumptions, eqp))
       {
-        Trace("ied-proof-debug") << "FAILED to explain " << eqp->d_node;
+        Trace("ied-proof-debug") << "FAILED to explain " << eqp->d_node << std::endl;
         return false;
       }
       return true;
     }
+    Trace("ied-proof-debug") << "FAILED to explain " << eqp->d_node << " (no explainer)" << std::endl;
     return false;
   }
   for (unsigned i = 0, nchild = eqp->d_children.size(); i < nchild; i++)
