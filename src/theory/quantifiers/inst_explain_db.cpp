@@ -29,7 +29,7 @@ namespace theory {
 namespace quantifiers {
 
 InstExplainDb::InstExplainDb(QuantifiersEngine* qe)
-    : d_qe(qe), d_ev(d_qe->getValuation()), d_doExit(false)
+    : d_qe(qe), d_ev(d_qe->getValuation())
 {
   d_false = NodeManager::currentNM()->mkConst(false);
   d_true = NodeManager::currentNM()->mkConst(true);
@@ -251,11 +251,12 @@ ExplainStatus InstExplainDb::explain(Node q,
   }
   if( options::qcfExpMode()!=QCF_EXP_GENERALIZE )
   {
+    NodeManager* nm = NodeManager::currentNM();
     // we just return the conflict
     if( regressPfFail.empty() )
     {
       std::vector< TNode > allAssumptions;
-      for( const std::map<Node, std::vector<TNode> >& a : assumptions )
+      for( const std::pair<Node, std::vector<TNode> >& a : assumptions )
       {
         allAssumptions.insert(allAssumptions.end(),a.second.begin(),a.second.end());
       }
@@ -1129,7 +1130,7 @@ bool InstExplainDb::getMatchIndex(Node eq, Node n, unsigned& index)
   return false;
 }
 
-Node InstExplainDb::convertEq(Node n)
+Node InstExplainDb::convertEq(Node n) const
 {
   Kind k = n.getKind();
   if (k == EQUAL)
@@ -1144,7 +1145,7 @@ Node InstExplainDb::convertEq(Node n)
   return n.eqNode(d_true);
 }
 
-Node InstExplainDb::convertRmEq(Node n)
+Node InstExplainDb::convertRmEq(Node n) const
 {
   Assert(n.getKind() == EQUAL);
   if (n[1] == d_true)

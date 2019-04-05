@@ -146,9 +146,9 @@ class InstExplainDb
    */
   static bool getMatchIndex(Node eq, Node n, unsigned& index);
   /** convert to equality from arbitrary predicate n */
-  static Node convertEq(Node n);
+  Node convertEq(Node n) const;
   /** convert to non-equality (inverse of above for rewritten nodes) */
-  static Node convertRmEq(Node n);
+  Node convertRmEq(Node n) const;
 
   /** Instantiation explanation
    *
