@@ -2286,7 +2286,7 @@ std::ostream& operator<<(std::ostream& os, const QuantConflictFind::Effort& e) {
   return os;
 }
 
-bool QuantConflictFind::isPropagatingInstance(Node n)
+bool QuantConflictFind::isPropagatingInstance(Node n) const
 {
   std::unordered_set<TNode, TNodeHashFunction> visited;
   std::vector<TNode> visit;
