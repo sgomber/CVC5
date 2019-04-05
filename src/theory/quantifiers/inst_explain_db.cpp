@@ -358,11 +358,11 @@ ExplainStatus InstExplainDb::explain(Node q,
   // disjunction of literals corresponding to the portion of an instantiation
   // lemma that we have not generalized. Here is an example:
   //
-  //                                                  ---------------
-  //                                                  forall z. ~Q(z)
-  //                    --------------------------    --------------IEX
-  // ---------------    forall y. Q(y) V P(y) V R(y)   ~Q(a) / ~Q(z)   ~R(a) / ?
-  // forall x.          -----------------------------------------------------IEX
+  //                                                 ---------------
+  //                                                 forall z. ~Q(z)
+  //                   --------------------------    --------------IEX
+  // ---------------   forall y. Q(y) V P(y) V R(y)   ~Q(a) / ~Q(z)   ~R(a) / ?
+  // forall x.         -----------------------------------------------------IEX
   //  ( ~P(x) V ... )                    P(a) / P(x)               ...
   // --------------------------------------------------------------IEX
   //                false
@@ -377,8 +377,9 @@ ExplainStatus InstExplainDb::explain(Node q,
   // The proof of ~Q(a) is purely generalized via a (unit) instance of IEX.
   //
   // On the other hand, we did not generalize the proof of ~R(a).  We say that
-  // ~R(a) / ~R(y) is a propagated generalization, since it is a strict subset
-  // of the instantiation lemma above.
+  // ~R(a) / ~R(y) is a propagated generalization, since its proof was not
+  // generalized and its literal is a strict subset of the instantiation lemma
+  // above.
   //
   // Assuming that the proof "..." above is closed by assumptions A, we have
   // that ~R(a) is the *unique* propagated generalization in this proof.
