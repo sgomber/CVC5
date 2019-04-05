@@ -639,9 +639,7 @@ bool QuantInfo::isTConstraintSpurious(QuantConflictFind* p,
               p->d_quantEngine->getInstantiate()->getExplainDb();
           ExplainStatus status = ied.explain(
               d_q, terms, exp, eqe, lems, options::qcfExpRegressInst(), "qcf");
-          if (status == EXP_STATUS_FULL
-              && options::qcfExpMode()
-                     != quantifiers::QCF_EXP_CINSTANCE_ANALYZE)
+          if (status == EXP_STATUS_FULL)
           {
             Trace("qcf-conflict-exp") << "...succeeded with " << lems.size()
                                       << " lemmas" << std::endl;

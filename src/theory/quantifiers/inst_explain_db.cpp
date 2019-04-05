@@ -249,6 +249,31 @@ ExplainStatus InstExplainDb::explain(Node q,
       }
     }
   }
+  if( options::qcfExpMode()!=QCF_EXP_GENERALIZE )
+  {
+    // we just return the conflict
+    if( regressPfFail.empty() )
+    {
+      std::vector< TNode > allAssumptions;
+      for( const std::map<Node, std::vector<TNode> >& a : assumptions )
+      {
+        allAssumptions.insert(allAssumptions.end(),a.second.begin(),a.second.end());
+      }
+      Assert( !allAssumptions.empty() );
+      allAssumptions.push_back(q);
+      Node lem = nm->mkNode(AND,allAssumptions).negate();
+      lems.push_back(lem);
+      Trace("ied-conflict") << "InstExplainDb::explain: LEMMA regressed conflict " << lem
+                            << std::endl;
+      return EXP_STATUS_FULL;
+    }
+    else
+    {
+      Trace("ied-conflict") << "InstExplainDb::explain: a proof failed to regress, fail."
+                            << std::endl;
+      return EXP_STATUS_FAIL;
+    }
+  }
 
   // generalized proof information
   std::map<eq::EqProof*, Node> concs;

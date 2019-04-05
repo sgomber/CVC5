@@ -725,9 +725,9 @@ theory::quantifiers::QcfExpMode OptionsHandler::stringToQcfExpMode(
   {
     return theory::quantifiers::QCF_EXP_CINSTANCE;
   }
-  else if (optarg == "cinstance-analyze")
+  else if (optarg == "gen")
   {
-    return theory::quantifiers::QCF_EXP_CINSTANCE_ANALYZE;
+    return theory::quantifiers::QCF_EXP_GENERALIZE;
   }
   else if (optarg == "conflict")
   {
