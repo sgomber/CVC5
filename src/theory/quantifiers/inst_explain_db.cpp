@@ -207,7 +207,7 @@ ExplainStatus InstExplainDb::explain(Node q,
                                      const std::vector<Node>& terms,
                                      std::map<Node, eq::EqProof>& expPf,
                                      EqExplainer* eqe,
-                                     std::vector<Node>& rexp,
+                                     std::vector<Node>& lems,
                                      bool regressInst,
                                      const char* ctx)
 {
@@ -340,26 +340,27 @@ ExplainStatus InstExplainDb::explain(Node q,
   // --------------------------------------------------------------IEX
   //                false
   //
-  // Above, IEX denotes "Inst-Explain". 
+  // Above, IEX denotes an "Inst-Explain" inference. 
   // For example, P(a) is a conclusion of IEX since is (Boolean) propagated by
   // an instantiation lemma:
   //    forall y. Q(y) V P(y) V R(y) => Q(a) V P(a) V R(a)
-  // when ~Q(a), ~R(a) are also asserted in the current SAT context.
+  // when the above quantified formula, ~Q(a), ~R(a) are asserted in the current
+  // SAT context.
   //
-  // The proof of ~Q(a) is purely generalized.
+  // The proof of ~Q(a) is purely generalized via a (unit) instance of IEX.
   //
   // On the other hand, we did not generalize the proof of ~R(a).  We say that
   // ~R(a) / ~R(y) is a propagated generalization, since it is a strict subset
   // of the instantiation lemma above.
   // 
   // Assuming that the proof "..." above is closed by assumptions A, we have
-  // that ~R(a) is the *unique* propagated generalization. Unique propagated
-  // generalizations lead to useful (quantified) inferences. In particular,
-  // we have that:
+  // that ~R(a) is the *unique* propagated generalization in this proof. 
+  // Unique propagated generalizations lead to useful (quantified) inferences. 
+  // In particular, we have that:
   //   forall x. ~P(x) ^ forall y. Q(y) V P(y) V R(y) ^ forall z. ~Q(z) ^ A
   // implies:
   //   forall w. R( w )
-  // where notice the propagated generalization is negated.
+  // where notice the propagated generalization is negated and closed.
   // 
   // If the overall proof contains a unique propagated generalization, then
   // the output of this method is a first-order hyper-resolution (as given by
@@ -377,26 +378,28 @@ ExplainStatus InstExplainDb::explain(Node q,
   //   forall w. R( w ) => R( a )
   // We prefer this instance to the original conflicting instance:
   //   forall x. (~P(x) V ... ) => ( ~P(a) V ... )
+  // (Generalized) conflicting instances are important because they suffice
+  // to rule out the current ground model.
   
-  
-  // the virtual instantiation lemma
+  // The virtual instantiation lemma information. This manages the information
+  // regarding the conflicting instance (the base line of the proof), which 
+  // notice does not correspond to a registered instantiation lemma.
   InstExplainInst conflict;
   conflict.initialize(Node::null(), q, terms);
-  // the generalization information across all literals
+  // the generalization information across the conflicting literal set
   GLitInfo genInfo;
   genInfo.initialize(&conflict);
-  // Now, process the generalized proofs
   
   // Maps literals in the domain of our original explanation expPf to a
-  // generalized conclusion (when applicable).
+  // generalized conclusion that we are using (when applicable).
   std::map<Node, Node> litGeneralization;
   
   // A literal whose proof includes the "propagated generalization".
-  // In the above example (EX 1), we may set litGenProp to P(x), since its proof
+  // In the above example, we may set litGenProp to P(x), since its proof
   // contains the propagated generalization.
   Node litGenProp;
   
-  // Does the propagated generalization occur in the bottom level of the proof?
+  // Does the propagated generalization occur in the base level of the proof?
   bool litGenPropIsBase = false;
   
   for (std::map<Node, eq::EqProof>::iterator itp = expPf.begin();
@@ -498,7 +501,8 @@ ExplainStatus InstExplainDb::explain(Node q,
     Trace("ied-conflict") << "InstExplainDb::explain: No generalizations, fail." << std::endl;
     return EXP_STATUS_FAIL;
   }
-  // now construct the inference if we have any useful generalization
+  
+  // Now construct the inference if we have any useful generalization.
   std::vector< Node > finalAssumptions;
   finalAssumptions.push_back(q);
   Node concQuant;
@@ -613,7 +617,10 @@ ExplainStatus InstExplainDb::explain(Node q,
     Node cig = nm->mkNode( OR, conc.negate(), concsi );
     Trace("ied-conflict") << "InstExplainDb::explain: LEMMA: (generalized conflicting instance):" << std::endl;
     Trace("ied-conflict") << "  " << cig << std::endl;
-    rexp.push_back(cig);
+    cig = Rewriter::rewrite(cig);
+    // already register the explanation
+    registerExplanation(cig,concsi,conc,finalInfo->d_terms);
+    lems.push_back(cig);
   }
   else
   {
@@ -621,9 +628,8 @@ ExplainStatus InstExplainDb::explain(Node q,
   }
   Trace("ied-conflict") << "InstExplainDb::explain: LEMMA:" << std::endl;
   Trace("ied-conflict") << "  " << lem << std::endl;
-  rexp.push_back(lem);
-  // FIXME
-  return EXP_STATUS_FAIL;
+  lems.push_back(lem);
+  return EXP_STATUS_FULL;
 }
 
 void InstExplainDb::indent(const char* c, unsigned tb)

@@ -63,7 +63,7 @@ class InstExplainDb
                         const std::vector<Node>& terms,
                         std::map<Node, eq::EqProof>& expPf,
                         EqExplainer* eqe,
-                        std::vector<Node>& rexp,
+                        std::vector<Node>& lems,
                         bool regressInst,
                         const char* ctx);
 
