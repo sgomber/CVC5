@@ -118,20 +118,17 @@ class InstExplainInst
   void initialize(Node inst, Node q, const std::vector<Node>& ts);
   /** propagate */
   void propagate(IeEvaluator& v, std::vector<Node>& lits);
-  /** get substitution */
-  Node getSubstitution(unsigned index) const;
   /** get explanation */
   Node getExplanationFor(Node lit);
   /** get quantified formula */
   Node getQuantifiedFormula() const;
-
+  /** the substitution for this instantiation */
+  std::vector<Node> d_terms;
  private:
   /** the instantiation lemma */
   Node d_this;
   /** the quantified formula */
   Node d_quant;
-  /** the substitution for this instantiation */
-  std::vector<Node> d_terms;
   /**
    * Maps literals to their explanation via this instantiation.
    * Let C[L] be a clause containing literal L. The explanation for C with

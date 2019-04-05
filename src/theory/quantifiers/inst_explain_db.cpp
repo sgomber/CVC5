@@ -211,8 +211,7 @@ ExplainStatus InstExplainDb::explain(Node q,
                                      bool regressInst,
                                      const char* ctx)
 {
-  ExplainStatus ret = EXP_STATUS_FAIL;
-  Trace("ied-conflict") << "Conflict in context " << ctx << " : " << std::endl;
+  Trace("ied-conflict") << "InstExplainDb::explain: Conflict in context " << ctx << " : " << std::endl;
   Trace("ied-conflict") << "  quantified formula: " << q << std::endl;
   // we first regress the explanation of proofs
   std::map<Node, bool> regressPfFail;
@@ -281,26 +280,78 @@ ExplainStatus InstExplainDb::explain(Node q,
     }
     Trace("ied-gen") << "----------------- end generalize proof" << std::endl;
   }
-
+  // We have now constructed generalizations of the proofs of all literals that
+  // comprise the (ground) conflicting instance. Our goal is now to see if these
+  // generalizations lead to a useful (quantified) inference.
+  //
+  // 
+  // 
+  // We introduce the following terminology.
+  // 
+  // Given a (set of) generalized proofs, the "propagated generalization" is a 
+  // disjunction of literals corresponding to the portion of an instantiation
+  // lemma that we have not explained. Here is an example:
+  // 
+  //                                                  forall z. ~Q(z)
+  //                    --------------------------   ----------------
+  // ---------------    forall y. Q(y) V P(y) V R(y)   ~Q(a) / ~Q(z)  ~R(a) / ?
+  // forall x.          --------------------------------------------------------
+  //  ( ~P(x) V ... )                    P(a) / P(x)               ...
+  // ---------------------------------------------------------------
+  //                false
+  // In the above proof, ~R(a) / ~R(y) is the propagated generalization. 
+  // Assuming that the remainder of the proof "..." is closed by assumptions A,
+  // we have that:
+  //   forall x. ~P(x) ^ forall y. Q(y) V P(y) V R(y) ^ forall z. ~Q(z) ^ A
+  // implies:
+  //   forall w. R( w )
+  // where notice the propagated generalization is negated.
+  // 
+  // If the overall proof contains exactly one propagated generalization, then
+  // the output of this method is a first-order hyper-resolution (as given by
+  // the implication above). This additionally has the important property
+  // that the quantifier on the same line as the propagated generalization is
+  // subsumed by it. Above, notice that:
+  //   forall w. R( w )
+  // subsumes
+  //   forall y. Q(y) V P(y) V R(y)
+  // We mark an attribute on the conclusion to forall w. R( w ) to indicate
+  // that forall y. Q(y) V P(y) V R(y) is subsumed whenever it is asserted.
+  //
+  // Furthermore, a conflicting instance can be generated for the propagated
+  // generalization. We call this the "generalized conflicting instance". In
+  // the above example, this is:
+  //   forall w. R( w ) => R( a )
+  // We prefer this instance to the original conflicting instance:
+  //   forall x. (~P(x) V ... ) => ( ~P(a) V ... )
+  
+  
   // the virtual instantiation lemma
   InstExplainInst conflict;
   conflict.initialize(Node::null(), q, terms);
   // the generalization information across all literals
   GLitInfo genInfo;
   genInfo.initialize(&conflict);
-
-  // now, process the generalized proofs
-  // the literals whose proofs were fully generalized
+  // Now, process the generalized proofs
+  
+  // Maps literals in the domain of our original explanation expPf to a
+  // generalized conclusion (when applicable).
   std::map<Node, Node> litGeneralization;
+  
+  // A literal whose proof includes the "propagated generalization".
+  // In the above example (EX 1), we may set litGenProp to P(x), since its proof
+  // contains the propagated generalization.
   Node litGenProp;
+  
+  // Does the propagated generalization occur in the bottom level of the proof?
   bool litGenPropIsBase = false;
-  bool success = true;
+  
   for (std::map<Node, eq::EqProof>::iterator itp = expPf.begin();
        itp != expPf.end();
        ++itp)
   {
     Node elit = itp->first;
-    // the propagating generalization, which begins as elit itself
+    // the propagated generalization, which begins as elit itself
     Node propGen = elit;
     // whether the proof of this literal was fully generalized
         bool pureGeneral = false;
@@ -325,14 +376,16 @@ ExplainStatus InstExplainDb::explain(Node q,
             gen.second.debugPrint("ied-gen");
             if( gen.second.d_conclusions.empty() )
             {
+              // it is a purely generalized proof (only assumptions)
               Trace("ied-gen") << "PURE, finished" << std::endl;
-              litGeneralization[elit] = genConc;
+              litGeneralization[elit] = gen.first;
               pureGeneral = true;
               break;
             }
-            else if( propGen.isNull() )
+            else if( propGen==elit )
             {
-              propGen = genConc;
+              // set that we have a propagating generalization
+              propGen = gen.first;
             }
           }
           else
@@ -351,8 +404,6 @@ ExplainStatus InstExplainDb::explain(Node q,
     {
       Trace("ied-gen") << "cannot match generalized proof since it was not regressed" << std::endl;
     }
-        Trace("ied-gen") << "----------------- end match generalized proof "
-                         << std::endl;
 
     // use as the propagating generalization if available
     if( !pureGeneral ) 
@@ -362,11 +413,12 @@ ExplainStatus InstExplainDb::explain(Node q,
       // we undo the generalization of that literal.
       if( litGenProp.isNull() || ( !litGenPropIsBase && elit==propGen ) )
       {
-        Trace("ied-gen") << "PROPAGATE-GENERAL " << propGen << std::endl;
+        Trace("ied-gen") << "PROPAGATE-GENERAL " << propGen << " for " << elit << std::endl;
         if( elit==propGen )
         {
           if( !litGenPropIsBase )
           {
+            Trace("ied-gen") << "...undo generalization" << std::endl;
             Assert( !litGenProp.isNull() );
             // undo the previous generalized propagation
             litGeneralization.erase(litGenProp);
@@ -374,6 +426,7 @@ ExplainStatus InstExplainDb::explain(Node q,
         }
         else
         {
+          Trace("ied-gen") << "...add to generalization" << std::endl;
           // we use the generalization here
           litGeneralization[elit] = propGen;
           // elit is the literal that has the generalized propagation
@@ -383,10 +436,13 @@ ExplainStatus InstExplainDb::explain(Node q,
         litGenPropIsBase = (elit==propGen);
       }
     }
+        Trace("ied-gen") << "----------------- end match generalized proof, gen size = " << litGeneralization.size() 
+                         << std::endl;
   }
   // if we don't have useful generalizations, we fail
   if( litGeneralization.empty() )
   {
+    Trace("ied-conflict") << "InstExplainDb::explain: No generalizations, fail." << std::endl;
     return EXP_STATUS_FAIL;
   }
   // now construct the inference if we have any useful generalization
@@ -419,7 +475,7 @@ ExplainStatus InstExplainDb::explain(Node q,
         {
           for( const std::pair<Node, GLitInfo>& cc : cs.second )
           {
-            finalConclusions.push_back(cc.first);
+            finalConclusions.push_back(cc.first.negate());
             // get the instantiation lemma information about the level of the propagation
             const GLitInfo& gli = cc.second;
             InstExplainInst* glii = gli.d_iei;
@@ -438,7 +494,7 @@ ExplainStatus InstExplainDb::explain(Node q,
     {
       Assert( concQuant.isNull() || concQuant==q );
       concQuant = q;
-      finalConclusions.push_back(elit);
+      finalConclusions.push_back(elit.negate());
       finalInfo = &conflict;
     }
   }
@@ -454,7 +510,7 @@ ExplainStatus InstExplainDb::explain(Node q,
     }
     if( !finalConclusions.empty() )
     {
-      Trace("ied-conflict") << "CONCLUSIONS: (from" << concQuant<< ")" << ":" << std::endl;
+      Trace("ied-conflict") << "CONCLUSIONS: (from " << concQuant<< ")" << ":" << std::endl;
       for( const Node& fc : finalConclusions )
       {
         Trace("ied-conflict") << "  " << fc << std::endl;
@@ -475,7 +531,7 @@ ExplainStatus InstExplainDb::explain(Node q,
   if( !finalConclusions.empty() )
   {
     Node conc = finalConclusions.size()==1 ? finalConclusions[0] : nm->mkNode(OR,finalConclusions);
-    Assert( !concQuant.isNull() )
+    Assert( !concQuant.isNull() );
     std::vector< Node > oldVars;
     std::vector< Node > newVars;
     for( const Node& bv : concQuant[0] )
@@ -485,18 +541,34 @@ ExplainStatus InstExplainDb::explain(Node q,
       newVars.push_back(bvn);
     }
     Node concs = conc.substitute(oldVars.begin(),oldVars.end(),newVars.begin(),newVars.end());
+    concs = Rewriter::rewrite(concs);
     Node bvl = nm->mkNode(BOUND_VAR_LIST,newVars);
     conc = nm->mkNode( FORALL, bvl, concs );
+    conc = Rewriter::rewrite(conc);
     lem = nm->mkNode( OR, antec.negate(), conc );
+    // mark the propagating generalization
+    Trace("ied-conflict") << "InstExplainDb::explain: auto-subsume: " << std::endl;
+    Trace("ied-conflict") << "  " << conc << " subsumes" << std::endl;
+    Trace("ied-conflict") << "  " << concQuant << std::endl;
+    Assert( finalInfo );
+    Assert( finalInfo->getQuantifiedFormula()==concQuant );
+    Assert( finalInfo->d_terms.size()==newVars.size() );
+    // construct the generalized conflicting instance
+    Node concsi = concs.substitute(newVars.begin(),newVars.end(),finalInfo->d_terms.begin(), finalInfo->d_terms.end() );
+    Node cig = nm->mkNode( OR, conc.negate(), concsi );
+    Trace("ied-conflict") << "InstExplainDb::explain: LEMMA: (generalized conflicting instance):" << std::endl;
+    Trace("ied-conflict") << "  " << cig << std::endl;
+    rexp.push_back(cig);
   }
   else
   {
     lem = antec.negate();
   }
-  Trace("ied-conflict") << "LEMMA:" << std::endl;
+  Trace("ied-conflict") << "InstExplainDb::explain: LEMMA:" << std::endl;
   Trace("ied-conflict") << "  " << lem << std::endl;
-
-  return ret;
+  rexp.push_back(lem);
+  // FIXME
+  return EXP_STATUS_FAIL;
 }
 
 void InstExplainDb::indent(const char* c, unsigned tb)

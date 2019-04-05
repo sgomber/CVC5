@@ -314,11 +314,6 @@ void InstExplainInst::propagate(IeEvaluator& v, std::vector<Node>& propLits)
   } while (!visit.empty());
 }
 
-Node InstExplainInst::getSubstitution(unsigned index) const
-{
-  return d_terms[index];
-}
-
 Node InstExplainInst::getExplanationFor(Node lit)
 {
   // generate the explanation
