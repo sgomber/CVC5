@@ -202,6 +202,11 @@ InstExplainLit& InstExplainDb::getInstExplainLit(Node lit)
   }
   return itl->second;
 }
+bool InstExplainDb::findInstExplainLit( Node lit, std::map<Node,InstExplainLit >::iterator& itl )
+{
+  itl = d_lit_explains.find(lit);
+  return itl != d_lit_explains.end();
+}
 
 InstExplainInst& InstExplainDb::getInstExplainInst(Node inst)
 {
