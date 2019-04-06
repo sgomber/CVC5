@@ -124,7 +124,7 @@ void InstExplainInst::propagate(IeEvaluator& v, std::vector<Node>& lits, std::ve
   propagateInternal(d_body,d_quant[1],v,lits,olits);
 }
 
-bool InstExplainInst::revPropagate(IeEvaluator& v, Node lit, std::vector<Node>& lits, std::vector< Node >& olits)
+bool InstExplainInst::justify(IeEvaluator& v, Node lit, Node olit, std::vector<Node>& lits, std::vector< Node >& olits)
 {
   std::map<Node, std::map< bool, bool > > cache;
   // we assume that lit is false
@@ -132,7 +132,7 @@ bool InstExplainInst::revPropagate(IeEvaluator& v, Node lit, std::vector<Node>& 
   std::map<Node, int > assumptions;
   assumptions[lit] = -1;
   // now, explain why the remainder was false
-  if( revPropagateInternal(d_body,d_quant[1],false,v,assumptions,cache,lits,olits) )
+  if( justifyInternal(d_body,d_quant[1],false,olit,v,assumptions,cache,lits,olits) )
   {
     // the quantified formula is always a part of the explanation
     lits.push_back(d_quant);
@@ -274,17 +274,22 @@ void InstExplainInst::propagateInternal(Node n, Node on, IeEvaluator& v, std::ve
 }
 
 
-bool InstExplainInst::revPropagateInternal(TNode n,
+bool InstExplainInst::justifyInternal(TNode n,
                                            TNode on,
                                            bool pol,
+                                           Node olitProp,
                                            IeEvaluator& v,std::map< Node, int >& assumptions, 
                                            std::map<Node, std::map< bool, bool > >& cache,
                                            std::vector<Node>& lits,
                                            std::vector<Node>& olits)
 {
-  Trace("iex-debug") << "revPropagateInternal: " << std::endl;
+  Trace("iex-debug") << "justifyInternal: " << std::endl;
   Trace("iex-debug") << "  " << n << std::endl;
   Trace("iex-debug") << "  " << on << std::endl;
+  if( on==olitProp )
+  {
+    return true;
+  }
   // only safe to cache wrt on
   std::map<bool, bool>::iterator it = cache[on].find(pol);
   if (it != cache[on].end())
@@ -296,7 +301,7 @@ bool InstExplainInst::revPropagateInternal(TNode n,
   Assert(v.evaluateWithAssumptions(n,assumptions) == (pol ? 1 : -1));
   if( n.getKind()==NOT )
   {
-    return revPropagateInternal(n[0],on[0],!pol,v,assumptions,cache,lits,olits);
+    return justifyInternal(n[0],on[0],!pol,olitProp,v,assumptions,cache,lits,olits);
   }
   cache[on][pol] = true;
   Kind k = n.getKind();
@@ -308,7 +313,7 @@ bool InstExplainInst::revPropagateInternal(TNode n,
       // must explain all of them
       for( unsigned i=0, nchild=n.getNumChildren(); i<nchild; i++ )
       {
-        if (!revPropagateInternal(n[i], on[i], pol, v, assumptions, cache, lits, olits))
+        if (!justifyInternal(n[i], on[i], pol, olitProp,v, assumptions, cache, lits, olits))
         {
           cache[on][pol] = false;
           return false;
@@ -320,7 +325,7 @@ bool InstExplainInst::revPropagateInternal(TNode n,
     {
       if (v.evaluateWithAssumptions(n[i],assumptions) == (pol ? 1 : -1))
       {
-        if( revPropagateInternal(n[i], on[i], pol, v, assumptions, cache, lits, olits) )
+        if( justifyInternal(n[i], on[i], pol,olitProp, v, assumptions, cache, lits, olits) )
         {
           return true;
         }
@@ -335,8 +340,8 @@ bool InstExplainInst::revPropagateInternal(TNode n,
     if (cbres == 0)
     {
       // branch is unknown, must do both
-      if (!revPropagateInternal(n[1], on[1], pol, v,assumptions, cache, lits, olits)
-          || !revPropagateInternal(n[2], on[2], pol, v, assumptions,cache, lits, olits))
+      if (!justifyInternal(n[1], on[1], pol, olitProp,v,assumptions, cache, lits, olits)
+          || !justifyInternal(n[2], on[2], pol, olitProp,v, assumptions,cache, lits, olits))
       {
         cache[on][pol] = false;
         return false;
@@ -346,8 +351,8 @@ bool InstExplainInst::revPropagateInternal(TNode n,
     {
       // branch is known, do relevant child
       unsigned checkIndex = cbres > 0 ? 1 : 2;
-      if (!revPropagateInternal(n[0], on[0], cbres==1, v, assumptions, cache, lits, olits)
-          || !revPropagateInternal(n[checkIndex], on[checkIndex], pol, v, assumptions, cache, lits, olits))
+      if (!justifyInternal(n[0], on[0], cbres==1, olitProp,v, assumptions, cache, lits, olits)
+          || !justifyInternal(n[checkIndex], on[checkIndex], pol, olitProp,v, assumptions, cache, lits, olits))
       {
         cache[on][pol] = false;
         return false;
@@ -363,7 +368,8 @@ bool InstExplainInst::revPropagateInternal(TNode n,
       return false;
     }
     // must always do both
-    if (!revPropagateInternal(n[0], on[0], cbres==1, v, assumptions, cache, lits, olits) || !revPropagateInternal(n[1], on[1], cbres==1, v, assumptions, cache, lits, olits))
+    if (!justifyInternal(n[0], on[0], cbres==1, olitProp,v, assumptions, cache, lits, olits) ||
+      !justifyInternal(n[1], on[1], cbres==1, olitProp,v, assumptions, cache, lits, olits))
     {
       cache[on][pol] = false;
       return false;

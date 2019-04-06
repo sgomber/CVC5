@@ -141,7 +141,7 @@ class InstExplainInst
    * Thus, we compute lits and olits by justifying why C { P( a ) -> false }
    * evaluates to false in the current context, as witnessed by v.
    */
-  bool revPropagate(IeEvaluator& v, Node lit, std::vector<Node>& lits, std::vector< Node >& olits);
+  bool justify(IeEvaluator& v, Node lit, Node olit, std::vector<Node>& lits, std::vector< Node >& olits);
   
   /** get quantified formula */
   Node getQuantifiedFormula() const;
@@ -202,7 +202,7 @@ class InstExplainInst
    *
    * The processed nodes are cached in cache.
    */
-  bool revPropagateInternal(TNode n, TNode on, bool pol, IeEvaluator& v, std::map< Node, int >& assumptions, std::map<Node, std::map< bool, bool > >& cache, std::vector<Node>& lits, std::vector< Node >& olits);
+  bool justifyInternal(TNode n, TNode on, bool pol, Node olitProp, IeEvaluator& v, std::map< Node, int >& assumptions, std::map<Node, std::map< bool, bool > >& cache, std::vector<Node>& lits, std::vector< Node >& olits);
 };
 
 }  // namespace quantifiers

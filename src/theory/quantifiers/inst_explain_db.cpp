@@ -537,7 +537,11 @@ ExplainStatus InstExplainDb::explain(Node q,
         << "----------------- end match generalized proof, gen size = "
         << litGeneralization.size() << std::endl;
   }
-  // if we don't have useful generalizations, we fail
+  // if we don't have useful generalizations, we fail.
+  // This happens if and only if the propagated generalization is identical
+  // to the conflicting literal set, where the conclusion of the overall
+  // inference is tautological (the conflicting quantified formula implies
+  // itself).
   if (litGeneralization.empty())
   {
     Trace("ied-conflict") << "InstExplainDb::explain: No generalizations, fail."
@@ -973,7 +977,7 @@ bool InstExplainDb::instExplain(
   // Second, get the SAT literals from inst that are propagating lit.
   // These literals are such that the propositional entailment holds:
   //   inst ^ plits[0] ^ ... ^ plits[k] |= lit
-  if (!iei.revPropagate(d_ev, lit, plits, plitso))
+  if (!iei.justify(d_ev, lit, olit, plits, plitso))
   {
     if (Trace.isOn(c))
     {
