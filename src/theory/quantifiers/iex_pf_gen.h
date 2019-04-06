@@ -34,7 +34,7 @@ class InstExplainDb;
 class InstExplainPfGen
 {
  public:
-  InstExplainPfGen(QuantifiersEngine * qe, InstExplainDb& parent);
+  InstExplainPfGen(InstExplainDb& parent, QuantifiersEngine * qe);
   /** Generalize
    *
    * This recursively computes a generalization of proof eqp.
@@ -82,7 +82,7 @@ class InstExplainPfGen
   /** pointer to the quantifiers engine */
   QuantifiersEngine* d_qe;
   /** evaluator utility */
-  IeEvaluator d_ev;
+  IeEvaluator& d_ev;
   /** common constants */
   Node d_true;
   Node d_false;

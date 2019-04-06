@@ -28,8 +28,8 @@ namespace CVC4 {
 namespace theory {
 namespace quantifiers {
 
-InstExplainPfGen::InstExplainPfGen(QuantifiersEngine * qe, InstExplainDb& parent)
-    : d_ied(parent), d_qe(qe), d_ev(d_qe->getValuation())
+InstExplainPfGen::InstExplainPfGen(InstExplainDb& parent,QuantifiersEngine * qe)
+    : d_ied(parent), d_qe(qe), d_ev(parent.d_ev)
 {
   d_false = NodeManager::currentNM()->mkConst(false);
   d_true = NodeManager::currentNM()->mkConst(true);
@@ -37,7 +37,7 @@ InstExplainPfGen::InstExplainPfGen(QuantifiersEngine * qe, InstExplainDb& parent
 
 void InstExplainPfGen::reset(Theory::Effort e)
 {
-  d_ev.reset();
+  // do nothing
 }
 
 void InstExplainPfGen::indent(const char* c, unsigned tb)
