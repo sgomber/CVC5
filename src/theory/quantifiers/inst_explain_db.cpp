@@ -30,7 +30,7 @@ namespace theory {
 namespace quantifiers {
 
 InstExplainDb::InstExplainDb(QuantifiersEngine* qe)
-    : d_qe(qe), d_ev(d_qe->getValuation()),d_iexpfg(*this,qe)
+    : d_qe(qe), d_ev(d_qe->getValuation()), d_iexpfg(*this, qe)
 {
   d_false = NodeManager::currentNM()->mkConst(false);
   d_true = NodeManager::currentNM()->mkConst(true);
@@ -203,7 +203,8 @@ InstExplainLit& InstExplainDb::getInstExplainLit(Node lit)
   }
   return itl->second;
 }
-bool InstExplainDb::findInstExplainLit( Node lit, std::map<Node,InstExplainLit >::iterator& itl )
+bool InstExplainDb::findInstExplainLit(
+    Node lit, std::map<Node, InstExplainLit>::iterator& itl)
 {
   itl = d_lit_explains.find(lit);
   return itl != d_lit_explains.end();

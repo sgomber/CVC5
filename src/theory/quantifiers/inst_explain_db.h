@@ -22,9 +22,9 @@
 #include "expr/node.h"
 #include "theory/quantifiers/equality_explain.h"
 #include "theory/quantifiers/gen_lit_info.h"
+#include "theory/quantifiers/iex_pf_gen.h"
 #include "theory/quantifiers/inst_explain.h"
 #include "theory/quantifiers_engine.h"
-#include "theory/quantifiers/iex_pf_gen.h"
 
 namespace CVC4 {
 namespace theory {
@@ -40,6 +40,7 @@ enum ExplainStatus
 class InstExplainDb
 {
   friend class InstExplainPfGen;
+
  public:
   InstExplainDb(QuantifiersEngine* qe);
   /** reset */
@@ -65,6 +66,7 @@ class InstExplainDb
                         std::vector<Node>& lems,
                         bool regressInst,
                         const char* ctx);
+
  private:
   /** pointer to the quantifiers engine */
   QuantifiersEngine* d_qe;
@@ -92,11 +94,12 @@ class InstExplainDb
   /** get explain information for literal lit */
   InstExplainLit& getInstExplainLit(Node lit);
   /** find explain information for literal lit
-   * 
+   *
    * Returns true if its information exists in this class and updates the
    * iterator, returns false otherwise.
    */
-  bool findInstExplainLit( Node lit, std::map<Node,InstExplainLit >::iterator& itl );
+  bool findInstExplainLit(Node lit,
+                          std::map<Node, InstExplainLit>::iterator& itl);
   /** get explain information for instantiation lemma inst */
   InstExplainInst& getInstExplainInst(Node inst);
   /** activate the literal lit
@@ -134,8 +137,6 @@ class InstExplainDb
   std::map<Node, std::vector<Node>> d_subsumes;
   /** the inverse of the above map */
   std::map<Node, std::vector<Node>> d_subsumed_by;
-  
-  
 };
 
 }  // namespace quantifiers

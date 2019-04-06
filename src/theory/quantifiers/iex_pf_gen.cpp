@@ -14,9 +14,9 @@
 
 #include "theory/quantifiers/iex_pf_gen.h"
 
-#include "theory/quantifiers/inst_explain_db.h"
 #include "options/quantifiers_options.h"
 #include "proof/uf_proof.h"
+#include "theory/quantifiers/inst_explain_db.h"
 #include "theory/quantifiers/term_database.h"
 #include "theory/quantifiers/term_util.h"
 #include "theory/quantifiers_engine.h"
@@ -28,7 +28,7 @@ namespace CVC4 {
 namespace theory {
 namespace quantifiers {
 
-InstExplainPfGen::InstExplainPfGen(InstExplainDb& parent,QuantifiersEngine * qe)
+InstExplainPfGen::InstExplainPfGen(InstExplainDb& parent, QuantifiersEngine* qe)
     : d_ied(parent), d_qe(qe), d_ev(parent.d_ev)
 {
   d_false = NodeManager::currentNM()->mkConst(false);
@@ -49,8 +49,8 @@ void InstExplainPfGen::indent(const char* c, unsigned tb)
 }
 
 bool InstExplainPfGen::regressExplain(EqExplainer* eqe,
-                                   std::vector<TNode>& assumptions,
-                                   eq::EqProof* eqp)
+                                      std::vector<TNode>& assumptions,
+                                      eq::EqProof* eqp)
 {
   if (eqp->d_id == eq::MERGED_THROUGH_EQUALITY)
   {
@@ -65,8 +65,7 @@ bool InstExplainPfGen::regressExplain(EqExplainer* eqe,
             << "FAILED to explain " << eqp->d_node << std::endl;
         return false;
       }
-        Trace("ied-proof-debug")
-            << "...success" << std::endl;
+      Trace("ied-proof-debug") << "...success" << std::endl;
       return true;
     }
     Trace("ied-proof-debug") << "FAILED to explain " << eqp->d_node
@@ -170,7 +169,7 @@ Node InstExplainPfGen::generalize(
     Trace("ied-gen") << "ied-pf: equality " << ret << std::endl;
     // try to generalize here
     std::map<Node, InstExplainLit>::iterator itl;
-    if (d_ied.findInstExplainLit(ret,itl))
+    if (d_ied.findInstExplainLit(ret, itl))
     {
       InstExplainLit& iel = itl->second;
       // activate the literal
@@ -357,7 +356,7 @@ bool InstExplainPfGen::instExplain(
     // maybe it is inst-explainable
     bool processed = false;
     std::map<Node, InstExplainLit>::iterator itl;
-    if (d_ied.findInstExplainLit(pl,itl))
+    if (d_ied.findInstExplainLit(pl, itl))
     {
       InstExplainLit& iel = itl->second;
       // Activate the literal. This computes whether any instantiation lemmas

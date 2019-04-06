@@ -34,7 +34,7 @@ class InstExplainDb;
 class InstExplainPfGen
 {
  public:
-  InstExplainPfGen(InstExplainDb& parent, QuantifiersEngine * qe);
+  InstExplainPfGen(InstExplainDb& parent, QuantifiersEngine* qe);
   /** Generalize
    *
    * This recursively computes a generalization of proof eqp.
@@ -72,7 +72,7 @@ class InstExplainPfGen
   bool regressExplain(EqExplainer* eqe,
                       std::vector<TNode>& assumptions,
                       eq::EqProof* eqp);
-  
+
   /** reset */
   void reset(Theory::Effort e);
 
