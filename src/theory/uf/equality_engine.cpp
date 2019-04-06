@@ -1050,8 +1050,11 @@ void EqualityEngine::getExplanation(
     if (it2 != it1->second.end())
     {
       // copy one level
-      eqp->d_id = it2->second->d_id;
-      eqp->d_children.insert(eqp->d_children.end(),it2->second->d_children.begin(),it2->second->d_children.end());
+      if( eqp )
+      {
+        eqp->d_id = it2->second->d_id;
+        eqp->d_children.insert(eqp->d_children.end(),it2->second->d_children.begin(),it2->second->d_children.end());
+      }
       return;
     }
   }
