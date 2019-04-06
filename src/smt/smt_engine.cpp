@@ -2104,7 +2104,8 @@ void SmtEngine::setDefaults() {
   if( options::qcfMode.wasSetByUser() || options::qcfTConstraint() ){
     options::quantConflictFind.set( true );
   }
-  if (options::quantConflictFind() && options::qcfExpMode() != quantifiers::QCF_EXP_CINSTANCE)
+  if (options::quantConflictFind()
+      && options::qcfExpMode() != quantifiers::QCF_EXP_CINSTANCE)
   {
     // requires instantiation explanations
     options::instExplain.set(true);

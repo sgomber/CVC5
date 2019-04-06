@@ -30,13 +30,14 @@ int IeEvaluator::evaluate(Node n)
   n = Rewriter::rewrite(n);
   return evaluateInternal(n, d_ecache);
 }
-int IeEvaluator::evaluateWithAssumptions(Node n, std::map< Node, int >& assumptions )
+int IeEvaluator::evaluateWithAssumptions(Node n,
+                                         std::map<Node, int>& assumptions)
 {
   n = Rewriter::rewrite(n);
   return evaluateInternal(n, assumptions);
 }
-  
-int IeEvaluator::evaluateInternal(Node n, std::map< Node, int >& cache )
+
+int IeEvaluator::evaluateInternal(Node n, std::map<Node, int>& cache)
 {
   std::map<Node, int>::iterator it = cache.find(n);
   if (it != cache.end())
@@ -90,7 +91,7 @@ void InstExplainLit::reset() { d_curr_insts.clear(); }
 void InstExplainLit::addInstExplanation(Node inst)
 {
   // Add to instantiations if not already there.
-  if( std::find(d_insts.begin(), d_insts.end(), inst) == d_insts.end() )
+  if (std::find(d_insts.begin(), d_insts.end(), inst) == d_insts.end())
   {
     d_insts.push_back(inst);
   }
@@ -103,8 +104,10 @@ void InstExplainLit::setPropagating(Node inst, Node olit)
   d_curr_olits.push_back(olit);
 }
 
-
-void InstExplainInst::initialize(Node inst, Node body, Node q, const std::vector<Node>& ts)
+void InstExplainInst::initialize(Node inst,
+                                 Node body,
+                                 Node q,
+                                 const std::vector<Node>& ts)
 {
   Trace("ajr-temp") << "Initialize inst: " << inst << " " << q << std::endl;
   Assert(!q.isNull());
@@ -119,20 +122,27 @@ void InstExplainInst::initialize(Node inst, Node body, Node q, const std::vector
   d_terms.insert(d_terms.end(), ts.begin(), ts.end());
 }
 
-void InstExplainInst::propagate(IeEvaluator& v, std::vector<Node>& lits, std::vector< Node >& olits)
+void InstExplainInst::propagate(IeEvaluator& v,
+                                std::vector<Node>& lits,
+                                std::vector<Node>& olits)
 {
-  propagateInternal(d_body,d_quant[1],v,lits,olits);
+  propagateInternal(d_body, d_quant[1], v, lits, olits);
 }
 
-bool InstExplainInst::justify(IeEvaluator& v, Node lit, Node olit, std::vector<Node>& lits, std::vector< Node >& olits)
+bool InstExplainInst::justify(IeEvaluator& v,
+                              Node lit,
+                              Node olit,
+                              std::vector<Node>& lits,
+                              std::vector<Node>& olits)
 {
-  std::map<Node, std::map< bool, bool > > cache;
+  std::map<Node, std::map<bool, bool> > cache;
   // we assume that lit is false
-  Assert( lit==Rewriter::rewrite(lit) );
-  std::map<Node, int > assumptions;
+  Assert(lit == Rewriter::rewrite(lit));
+  std::map<Node, int> assumptions;
   assumptions[lit] = -1;
   // now, explain why the remainder was false
-  if( justifyInternal(d_body,d_quant[1],false,olit,v,assumptions,cache,lits,olits) )
+  if (justifyInternal(
+          d_body, d_quant[1], false, olit, v, assumptions, cache, lits, olits))
   {
     // the quantified formula is always a part of the explanation
     lits.push_back(d_quant);
@@ -142,7 +152,11 @@ bool InstExplainInst::justify(IeEvaluator& v, Node lit, Node olit, std::vector<N
   return false;
 }
 
-void InstExplainInst::propagateInternal(Node n, Node on, IeEvaluator& v, std::vector<Node>& lits, std::vector< Node >& olits)
+void InstExplainInst::propagateInternal(Node n,
+                                        Node on,
+                                        IeEvaluator& v,
+                                        std::vector<Node>& lits,
+                                        std::vector<Node>& olits)
 {
   // if possible, propagate the literal in the clause that must be true
   std::unordered_set<Node, NodeHashFunction> visited;
@@ -164,19 +178,19 @@ void InstExplainInst::propagateInternal(Node n, Node on, IeEvaluator& v, std::ve
     if (visited.find(curo) == visited.end())
     {
       visited.insert(curo);
-      Assert( cur.getKind()==curo.getKind() );
+      Assert(cur.getKind() == curo.getKind());
       bool pol = cur.getKind() != NOT;
       Node atom = pol ? cur : cur[0];
       Node atomo = pol ? curo : curo[0];
-      Assert( atom.getKind()==atomo.getKind() );
+      Assert(atom.getKind() == atomo.getKind());
       Kind k = atom.getKind();
       if (k == AND || k == OR)
       {
-        Assert( atom.getNumChildren()==atomo.getNumChildren() );
+        Assert(atom.getNumChildren() == atomo.getNumChildren());
         if ((k == AND) == pol)
         {
           // they all propagate
-          for( unsigned i=0, nchild=atom.getNumChildren(); i<nchild; i++ )
+          for (unsigned i = 0, nchild = atom.getNumChildren(); i < nchild; i++)
           {
             visit.push_back(pol ? atom[i] : atom[i].negate());
             visito.push_back(pol ? atomo[i] : atomo[i].negate());
@@ -187,7 +201,7 @@ void InstExplainInst::propagateInternal(Node n, Node on, IeEvaluator& v, std::ve
           // propagate one if all others are false
           Node trueLit;
           Node trueLito;
-          for( unsigned i=0, nchild=atom.getNumChildren(); i<nchild; i++ )
+          for (unsigned i = 0, nchild = atom.getNumChildren(); i < nchild; i++)
           {
             int cres = v.evaluate(atom[i]);
             if (cres == 0)
@@ -273,20 +287,21 @@ void InstExplainInst::propagateInternal(Node n, Node on, IeEvaluator& v, std::ve
   } while (!visit.empty());
 }
 
-
-bool InstExplainInst::justifyInternal(TNode n,
-                                           TNode on,
-                                           bool pol,
-                                           Node olitProp,
-                                           IeEvaluator& v,std::map< Node, int >& assumptions, 
-                                           std::map<Node, std::map< bool, bool > >& cache,
-                                           std::vector<Node>& lits,
-                                           std::vector<Node>& olits)
+bool InstExplainInst::justifyInternal(
+    TNode n,
+    TNode on,
+    bool pol,
+    Node olitProp,
+    IeEvaluator& v,
+    std::map<Node, int>& assumptions,
+    std::map<Node, std::map<bool, bool> >& cache,
+    std::vector<Node>& lits,
+    std::vector<Node>& olits)
 {
   Trace("iex-debug") << "justifyInternal: " << std::endl;
   Trace("iex-debug") << "  " << n << std::endl;
   Trace("iex-debug") << "  " << on << std::endl;
-  if( on==olitProp )
+  if (on == olitProp)
   {
     return true;
   }
@@ -297,23 +312,25 @@ bool InstExplainInst::justifyInternal(TNode n,
     return it->second;
   }
   // must justify why n evaluates to pol
-  Assert( n.getKind()==on.getKind() );
-  Assert(v.evaluateWithAssumptions(n,assumptions) == (pol ? 1 : -1));
-  if( n.getKind()==NOT )
+  Assert(n.getKind() == on.getKind());
+  Assert(v.evaluateWithAssumptions(n, assumptions) == (pol ? 1 : -1));
+  if (n.getKind() == NOT)
   {
-    return justifyInternal(n[0],on[0],!pol,olitProp,v,assumptions,cache,lits,olits);
+    return justifyInternal(
+        n[0], on[0], !pol, olitProp, v, assumptions, cache, lits, olits);
   }
   cache[on][pol] = true;
   Kind k = n.getKind();
   if (k == AND || k == OR)
   {
-    Assert( n.getNumChildren()==on.getNumChildren() );
+    Assert(n.getNumChildren() == on.getNumChildren());
     if ((k == AND) == pol)
     {
       // must explain all of them
-      for( unsigned i=0, nchild=n.getNumChildren(); i<nchild; i++ )
+      for (unsigned i = 0, nchild = n.getNumChildren(); i < nchild; i++)
       {
-        if (!justifyInternal(n[i], on[i], pol, olitProp,v, assumptions, cache, lits, olits))
+        if (!justifyInternal(
+                n[i], on[i], pol, olitProp, v, assumptions, cache, lits, olits))
         {
           cache[on][pol] = false;
           return false;
@@ -321,11 +338,12 @@ bool InstExplainInst::justifyInternal(TNode n,
       }
     }
     // must explain one that evaluates to true
-    for( unsigned i=0, nchild=n.getNumChildren(); i<nchild; i++ )
+    for (unsigned i = 0, nchild = n.getNumChildren(); i < nchild; i++)
     {
-      if (v.evaluateWithAssumptions(n[i],assumptions) == (pol ? 1 : -1))
+      if (v.evaluateWithAssumptions(n[i], assumptions) == (pol ? 1 : -1))
       {
-        if( justifyInternal(n[i], on[i], pol,olitProp, v, assumptions, cache, lits, olits) )
+        if (justifyInternal(
+                n[i], on[i], pol, olitProp, v, assumptions, cache, lits, olits))
         {
           return true;
         }
@@ -336,12 +354,21 @@ bool InstExplainInst::justifyInternal(TNode n,
   }
   else if (k == ITE)
   {
-    int cbres = v.evaluateWithAssumptions(n[0],assumptions);
+    int cbres = v.evaluateWithAssumptions(n[0], assumptions);
     if (cbres == 0)
     {
       // branch is unknown, must do both
-      if (!justifyInternal(n[1], on[1], pol, olitProp,v,assumptions, cache, lits, olits)
-          || !justifyInternal(n[2], on[2], pol, olitProp,v, assumptions,cache, lits, olits))
+      if (!justifyInternal(
+              n[1], on[1], pol, olitProp, v, assumptions, cache, lits, olits)
+          || !justifyInternal(n[2],
+                              on[2],
+                              pol,
+                              olitProp,
+                              v,
+                              assumptions,
+                              cache,
+                              lits,
+                              olits))
       {
         cache[on][pol] = false;
         return false;
@@ -351,8 +378,24 @@ bool InstExplainInst::justifyInternal(TNode n,
     {
       // branch is known, do relevant child
       unsigned checkIndex = cbres > 0 ? 1 : 2;
-      if (!justifyInternal(n[0], on[0], cbres==1, olitProp,v, assumptions, cache, lits, olits)
-          || !justifyInternal(n[checkIndex], on[checkIndex], pol, olitProp,v, assumptions, cache, lits, olits))
+      if (!justifyInternal(n[0],
+                           on[0],
+                           cbres == 1,
+                           olitProp,
+                           v,
+                           assumptions,
+                           cache,
+                           lits,
+                           olits)
+          || !justifyInternal(n[checkIndex],
+                              on[checkIndex],
+                              pol,
+                              olitProp,
+                              v,
+                              assumptions,
+                              cache,
+                              lits,
+                              olits))
       {
         cache[on][pol] = false;
         return false;
@@ -361,15 +404,31 @@ bool InstExplainInst::justifyInternal(TNode n,
   }
   else if (k == EQUAL && n[0].getType().isBoolean())
   {
-    int cbres = v.evaluateWithAssumptions(n[0],assumptions);
-    if( cbres==0 )
+    int cbres = v.evaluateWithAssumptions(n[0], assumptions);
+    if (cbres == 0)
     {
       cache[on][pol] = false;
       return false;
     }
     // must always do both
-    if (!justifyInternal(n[0], on[0], cbres==1, olitProp,v, assumptions, cache, lits, olits) ||
-      !justifyInternal(n[1], on[1], cbres==1, olitProp,v, assumptions, cache, lits, olits))
+    if (!justifyInternal(n[0],
+                         on[0],
+                         cbres == 1,
+                         olitProp,
+                         v,
+                         assumptions,
+                         cache,
+                         lits,
+                         olits)
+        || !justifyInternal(n[1],
+                            on[1],
+                            cbres == 1,
+                            olitProp,
+                            v,
+                            assumptions,
+                            cache,
+                            lits,
+                            olits))
     {
       cache[on][pol] = false;
       return false;
@@ -379,7 +438,7 @@ bool InstExplainInst::justifyInternal(TNode n,
   {
     // must get rewritten version of nn
     Node nn = n;
-    nn = Rewriter::rewrite( pol ? nn : nn.negate() );
+    nn = Rewriter::rewrite(pol ? nn : nn.negate());
     Node onn = on;
     onn = pol ? onn : onn.negate();
     lits.push_back(nn);

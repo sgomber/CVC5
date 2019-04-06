@@ -17,11 +17,11 @@
 #include "options/quantifiers_options.h"
 #include "proof/uf_proof.h"
 #include "smt/smt_statistics_registry.h"
+#include "theory/quantifiers/alpha_equivalence.h"  //TODO: use
 #include "theory/quantifiers/term_database.h"
 #include "theory/quantifiers/term_util.h"
 #include "theory/quantifiers_engine.h"
 #include "theory/rewriter.h"
-#include "theory/quantifiers/alpha_equivalence.h"  //TODO: use
 
 using namespace CVC4::kind;
 
@@ -53,10 +53,11 @@ void InstExplainDb::activateLit(Node lit)
     Assert(itl != d_lit_explains.end());
     itl->second.reset();
     // add the wait list
-    std::map<Node, std::vector<std::pair<Node,Node>> >::iterator itw = d_waiting_prop.find(lit);
+    std::map<Node, std::vector<std::pair<Node, Node>>>::iterator itw =
+        d_waiting_prop.find(lit);
     if (itw != d_waiting_prop.end())
     {
-      for (const std::pair< Node, Node >& wl : itw->second)
+      for (const std::pair<Node, Node>& wl : itw->second)
       {
         itl->second.setPropagating(wl.first, wl.second);
       }
@@ -79,8 +80,8 @@ void InstExplainDb::activateInst(Node inst, Node srcLit, InstExplainLit& src)
     std::vector<Node> lits;
     std::vector<Node> olits;
     iei.propagate(d_ev, lits, olits);
-    Assert( lits.size()==olits.size() );
-    for( unsigned i=0, size = lits.size(); i<size; i++ )
+    Assert(lits.size() == olits.size());
+    for (unsigned i = 0, size = lits.size(); i < size; i++)
     {
       Node l = lits[i];
       Node ol = olits[i];
@@ -90,7 +91,7 @@ void InstExplainDb::activateInst(Node inst, Node srcLit, InstExplainLit& src)
       }
       else
       {
-        d_waiting_prop[l].push_back(std::pair<Node, Node>(inst,ol));
+        d_waiting_prop[l].push_back(std::pair<Node, Node>(inst, ol));
       }
     }
   }
@@ -106,7 +107,7 @@ void InstExplainDb::registerExplanation(Node inst,
   Assert(d_inst_explains.find(inst) == d_inst_explains.end());
   InstExplainInst& iei = d_inst_explains[inst];
   iei.initialize(inst, n, q, ts);
-  std::map<bool, std::unordered_set<Node, NodeHashFunction> > visited;
+  std::map<bool, std::unordered_set<Node, NodeHashFunction>> visited;
   std::vector<bool> visit_hasPol;
   std::vector<Node> visit;
   std::vector<Node> visiti;
@@ -175,7 +176,7 @@ void InstExplainDb::registerExplanation(Node inst,
         InstExplainLit& iel = getInstExplainLit(curir);
         iel.addInstExplanation(inst);
         Trace("inst-explain") << "  -> " << curir << std::endl;
-        if( !hasPol )
+        if (!hasPol)
         {
           // Store the opposite direction as well if hasPol is false,
           // since it may propagate in either polarity.
@@ -222,7 +223,7 @@ ExplainStatus InstExplainDb::explain(Node q,
   Trace("ied-conflict") << "  quantified formula: " << q << std::endl;
   // we first regress the explanation of proofs
   std::map<Node, bool> regressPfFail;
-  std::map<Node, std::vector<TNode> > assumptions;
+  std::map<Node, std::vector<TNode>> assumptions;
   for (std::map<Node, eq::EqProof>::iterator itp = expPf.begin();
        itp != expPf.end();
        ++itp)
@@ -262,7 +263,7 @@ ExplainStatus InstExplainDb::explain(Node q,
     if (regressPfFail.empty())
     {
       std::vector<TNode> allAssumptions;
-      for (const std::pair<Node, std::vector<TNode> >& a : assumptions)
+      for (const std::pair<Node, std::vector<TNode>>& a : assumptions)
       {
         allAssumptions.insert(
             allAssumptions.end(), a.second.begin(), a.second.end());
@@ -287,7 +288,7 @@ ExplainStatus InstExplainDb::explain(Node q,
 
   // generalized proof information
   std::map<eq::EqProof*, Node> concs;
-  std::map<eq::EqProof*, std::map<Node, GLitInfo> > concsg;
+  std::map<eq::EqProof*, std::map<Node, GLitInfo>> concsg;
   // now go back and see if proofs can be generalized
   for (std::map<Node, eq::EqProof>::iterator itp = expPf.begin();
        itp != expPf.end();
@@ -302,7 +303,7 @@ ExplainStatus InstExplainDb::explain(Node q,
       generalize(pfp, concs, concsg, 1);
       if (Trace.isOn("ied-gen"))
       {
-        std::map<eq::EqProof*, std::map<Node, GLitInfo> >::iterator itg =
+        std::map<eq::EqProof*, std::map<Node, GLitInfo>>::iterator itg =
             concsg.find(pfp);
         if (itg != concsg.end())
         {
@@ -453,7 +454,7 @@ ExplainStatus InstExplainDb::explain(Node q,
     if (regressPfFail.find(elit) == regressPfFail.end())
     {
       eq::EqProof* pfp = &itp->second;
-      std::map<eq::EqProof*, std::map<Node, GLitInfo> >::iterator itg =
+      std::map<eq::EqProof*, std::map<Node, GLitInfo>>::iterator itg =
           concsg.find(pfp);
       if (itg != concsg.end())
       {
@@ -569,7 +570,7 @@ ExplainStatus InstExplainDb::explain(Node q,
     {
       eq::EqProof* pfp = &itp->second;
       // we generalized it, now must look up its information
-      std::map<eq::EqProof*, std::map<Node, GLitInfo> >::iterator itgp =
+      std::map<eq::EqProof*, std::map<Node, GLitInfo>>::iterator itgp =
           concsg.find(pfp);
       Assert(itgp != concsg.end());
       Node gelit = it->second;
@@ -579,7 +580,7 @@ ExplainStatus InstExplainDb::explain(Node q,
       if (!ginfo.d_conclusions.empty())
       {
         // not purely general, set conclusions
-        for (const std::pair<Node, std::map<Node, GLitInfo> >& cs :
+        for (const std::pair<Node, std::map<Node, GLitInfo>>& cs :
              ginfo.d_conclusions)
         {
           for (const std::pair<Node, GLitInfo>& cc : cs.second)
@@ -663,8 +664,7 @@ ExplainStatus InstExplainDb::explain(Node q,
     conc = Rewriter::rewrite(conc);
     lem = nm->mkNode(OR, antec.negate(), conc);
     // mark the propagating generalization
-    Trace("ied-conflict-debug") << "auto-subsume: "
-                          << std::endl;
+    Trace("ied-conflict-debug") << "auto-subsume: " << std::endl;
     Trace("ied-conflict-debug") << "  " << conc << " subsumes" << std::endl;
     Trace("ied-conflict-debug") << "  " << concQuant << std::endl;
     d_subsumes[conc].push_back(concQuant);
@@ -684,13 +684,16 @@ ExplainStatus InstExplainDb::explain(Node q,
     // already register the explanation
     registerExplanation(cig, concsi, conc, finalInfo->d_terms);
     lems.push_back(cig);
-    Trace("ied-lemma") << "InstExplainDb::lemma (GEN-CINST): " << cig << std::endl;
+    Trace("ied-lemma") << "InstExplainDb::lemma (GEN-CINST): " << cig
+                       << std::endl;
   }
   else
   {
     lem = antec.negate();
   }
-  Trace("ied-conflict") << "InstExplainDb::explain: generated generalized resolution inference" << std::endl;
+  Trace("ied-conflict")
+      << "InstExplainDb::explain: generated generalized resolution inference"
+      << std::endl;
   Trace("ied-lemma") << "InstExplainDb::lemma (GEN-RES): " << lem << std::endl;
   lems.push_back(lem);
   return EXP_STATUS_FULL;
@@ -717,12 +720,14 @@ bool InstExplainDb::regressExplain(EqExplainer* eqe,
       Trace("ied-proof-debug") << "Explain: " << eqp->d_node << std::endl;
       if (!eqe->explain(eqp->d_node, assumptions, eqp))
       {
-        Trace("ied-proof-debug") << "FAILED to explain " << eqp->d_node << std::endl;
+        Trace("ied-proof-debug")
+            << "FAILED to explain " << eqp->d_node << std::endl;
         return false;
       }
       return true;
     }
-    Trace("ied-proof-debug") << "FAILED to explain " << eqp->d_node << " (no explainer)" << std::endl;
+    Trace("ied-proof-debug") << "FAILED to explain " << eqp->d_node
+                             << " (no explainer)" << std::endl;
     return false;
   }
   for (unsigned i = 0, nchild = eqp->d_children.size(); i < nchild; i++)
@@ -738,7 +743,7 @@ bool InstExplainDb::regressExplain(EqExplainer* eqe,
 Node InstExplainDb::generalize(
     eq::EqProof* eqp,
     std::map<eq::EqProof*, Node>& concs,
-    std::map<eq::EqProof*, std::map<Node, GLitInfo> >& concsg,
+    std::map<eq::EqProof*, std::map<Node, GLitInfo>>& concsg,
     unsigned tb)
 {
   std::map<eq::EqProof*, Node>::iterator itc = concs.find(eqp);
@@ -785,7 +790,7 @@ Node InstExplainDb::generalize(
         // are left associative.
         unsigned ii = nchild - (i + 1);
         retc = generalize(childProofs[ii], concs, concsg, tb + 1);
-        if( retc.isNull() )
+        if (retc.isNull())
         {
           success = false;
           break;
@@ -829,8 +834,8 @@ Node InstExplainDb::generalize(
       activateLit(ret);
       std::vector<Node>& cexp = iel.d_curr_insts;
       std::vector<Node>& colits = iel.d_curr_olits;
-      Assert( cexp.size()==colits.size() );
-      for( unsigned i=0, size = cexp.size(); i<size; i++ )
+      Assert(cexp.size() == colits.size());
+      for (unsigned i = 0, size = cexp.size(); i < size; i++)
       {
         Node pinst = cexp[i];
         // get the original literal
@@ -896,7 +901,7 @@ Node InstExplainDb::generalize(
     {
       eq::EqProof* epi = eqp->d_children[i].get();
       retc = generalize(epi, concs, concsg, tb + 1);
-      if( retc.isNull() )
+      if (retc.isNull())
       {
         success = false;
         break;
@@ -936,7 +941,7 @@ Node InstExplainDb::generalize(
   {
     indent("ied-gen", tb);
     Trace("ied-gen") << "...proves " << ret;
-    std::map<eq::EqProof*, std::map<Node, GLitInfo> >::iterator itg =
+    std::map<eq::EqProof*, std::map<Node, GLitInfo>>::iterator itg =
         concsg.find(eqp);
     if (itg != concsg.end())
     {
@@ -970,7 +975,7 @@ bool InstExplainDb::instExplain(
   // Since the instantiation lemma inst is propagating lit, we have that:
   //   inst { lit -> false }
   // must evaluate to false in the current context.
-  //Node instExp = iei.getExplanationFor(lit);
+  // Node instExp = iei.getExplanationFor(lit);
 
   std::vector<Node> plits;
   std::vector<Node> plitso;
@@ -990,12 +995,12 @@ bool InstExplainDb::instExplain(
     Assert(false);
     return false;
   }
-  Assert( plits.size()==plitso.size() );
+  Assert(plits.size() == plitso.size());
 
   // For each literal in plits, we must either regress it further, or add it to
   // the assumptions of g.
   Node q = iei.getQuantifiedFormula();
-  for( unsigned k=0, plsize = plits.size(); k<plsize; k++ )
+  for (unsigned k = 0, plsize = plits.size(); k < plsize; k++)
   {
     Node pl = plits[k];
     Node opl = plitso[k];
@@ -1017,20 +1022,20 @@ bool InstExplainDb::instExplain(
       activateLit(pl);
       std::vector<Node>& cexppl = iel.d_curr_insts;
       std::vector<Node>& olitspl = iel.d_curr_olits;
-      Assert( cexppl.size()==olitspl.size() );
+      Assert(cexppl.size() == olitspl.size());
       if (Trace.isOn(c))
       {
         indent(c, tb + 1);
         Trace(c) << "  generalizes to " << opl << std::endl;
         indent(c, tb + 1);
         Trace(c) << "  and has " << cexppl.size()
-                << " possible inst-explanations" << std::endl;
+                 << " possible inst-explanations" << std::endl;
       }
       if (!cexppl.empty())
       {
         // populate choices for generalization, which we store in
         // g.d_conclusions[pl]
-        for( unsigned j=0, cexpsize = cexppl.size(); j<cexpsize; j++ )
+        for (unsigned j = 0, cexpsize = cexppl.size(); j < cexpsize; j++)
         {
           Node instpl = cexppl[j];
           Node opli = olitspl[j];

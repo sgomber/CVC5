@@ -44,14 +44,14 @@ class IeEvaluator
    * case these literals are irrelevant.
    */
   int evaluate(Node n);
-  int evaluateWithAssumptions(Node, std::map< Node, int >& assumptions );
+  int evaluateWithAssumptions(Node, std::map<Node, int>& assumptions);
 
  private:
   /** valuation */
   Valuation& d_valuation;
   /** cache */
   std::map<Node, int> d_ecache;
-  int evaluateInternal(Node, std::map< Node, int >& assumptions );
+  int evaluateInternal(Node, std::map<Node, int>& assumptions);
 };
 
 /** instantiation explain literal
@@ -85,12 +85,13 @@ class InstExplainLit
    * These are formulas are a subset of d_insts.
    */
   std::vector<Node> d_curr_insts;
-  /** 
+  /**
    * Original literals  FIXME
    */
   std::vector<Node> d_curr_olits;
   /** The list of instantiation lemmas that may propagate d_this. */
   std::vector<Node> d_insts;
+
  private:
   /** The literal of this object. */
   Node d_this;
@@ -99,8 +100,8 @@ class InstExplainLit
 class InstExplainInst
 {
  public:
-  /** initialize 
-   * 
+  /** initialize
+   *
    * inst: the (rewritten) instantiation lemma,
    * body: the substituted form of the body (alpha-equivalent to q[1]),
    * q: the quantified formula,
@@ -108,7 +109,7 @@ class InstExplainInst
    */
   void initialize(Node inst, Node body, Node q, const std::vector<Node>& ts);
   /** propagate
-   * 
+   *
    * This returns a set of ground literals lits that are currently propagated by
    * this instantiation lemma. For each lits[i], olits[i] is corresponding
    * formula in the body of q at the same position. This is motivated by the
@@ -118,13 +119,15 @@ class InstExplainInst
    * has two occurrences of P( a, a ). It is important to track this
    * information, since it impacts how certain explanations are constructed.
    */
-  void propagate(IeEvaluator& v, std::vector<Node>& lits, std::vector< Node >& olits);
-  /** reverse propagate 
-   * 
+  void propagate(IeEvaluator& v,
+                 std::vector<Node>& lits,
+                 std::vector<Node>& olits);
+  /** reverse propagate
+   *
    * This returns a set of literals lits (and their generalizations, in olits)
-   * that are current the reason for the instantiation lemma of this class 
+   * that are current the reason for the instantiation lemma of this class
    * propagating the ground form of literal olit.
-   * 
+   *
    * For example, given instantiation lemma:
    *    forall x. P( x ) V Q( x ) => P( a ) V Q( a )
    * If forall x. P( x ) V Q( x ), and ~Q( a ) are asserted, then this
@@ -134,15 +137,19 @@ class InstExplainInst
    *   lits = { forall x. P( x ) V Q( x ), ~Q( a ) }
    *   olits = { forall x. P( x ) V Q( x ), ~Q( x ) }
    * Notice that the quantified formula itself appears in both lits/olits.
-   * 
+   *
    * We compute lits and olits based on the following observation:
    * If the instantiation lemma above (call it C) propagates P( a ), then
    * C { P( a ) -> false } must evaluate to false in the current context.
    * Thus, we compute lits and olits by justifying why C { P( a ) -> false }
    * evaluates to false in the current context, as witnessed by v.
    */
-  bool justify(IeEvaluator& v, Node lit, Node olit, std::vector<Node>& lits, std::vector< Node >& olits);
-  
+  bool justify(IeEvaluator& v,
+               Node lit,
+               Node olit,
+               std::vector<Node>& lits,
+               std::vector<Node>& olits);
+
   /** get quantified formula */
   Node getQuantifiedFormula() const;
   /** the substitution for this instantiation */
@@ -151,8 +158,8 @@ class InstExplainInst
  private:
   /** the (rewritten) instantiation lemma */
   Node d_this;
-  /** 
-   * The instantiation (non-rewritten) body. This must be matchable with 
+  /**
+   * The instantiation (non-rewritten) body. This must be matchable with
    * d_quant, since we do parallel traversals of this node with the body of
    * d_quant.
    */
@@ -166,18 +173,17 @@ class InstExplainInst
    * respect to C is C[false]. For example:
    *    ~(forall x. P(x) V Q(x)) V P(c) V Q(c)
    * the explanation for P(c) with respect to this instantiation lemma is
-   *   false V Q(c) 
+   *   false V Q(c)
    * The negation of this formula plus the quantified formula and the original
    * instantiation lemma suffice to show that P(c) must be true.
    * We map L to C[false] in this vector.
    */
-  
-  
+
   /** propagate internal
-   * 
+   *
    * n is a formula that is matchable with on, and holds in the current SAT
    * context (as witnessable by the evaluator utility v).
-   * 
+   *
    * This function does a parallel traversal of n and on and adds a set of
    * literals to lits such that each L can be inferred by Boolean propagation.
    * That is, assuming a model M assigning truth values to the atoms of n,
@@ -185,10 +191,14 @@ class InstExplainInst
    *   n, ( M \ atom(L) ) |= L
    * We additionally add the (original) versions of lits to olits.
    */
-  void propagateInternal(Node n, Node on, IeEvaluator& v, std::vector<Node>& lits, std::vector< Node >& olits);
+  void propagateInternal(Node n,
+                         Node on,
+                         IeEvaluator& v,
+                         std::vector<Node>& lits,
+                         std::vector<Node>& olits);
 
   /** get the propagating literals for n
-   * 
+   *
    * This method computes a justification for a ground formula n, while
    * tracking its generalized form on.
    *
@@ -196,13 +206,21 @@ class InstExplainInst
    * atoms of n that propositionally entail ( pol ? n : ~n ) and are true in the
    * current SAT context. If this method returns false, then ( pol ? n : ~n ) is
    * not entailed to be true in the current SAT context.
-   * 
+   *
    * We do a parallel traversal of n and on, where on is matchable with n and
    * add the formulas into olits at the same position as those added to lits.
    *
    * The processed nodes are cached in cache.
    */
-  bool justifyInternal(TNode n, TNode on, bool pol, Node olitProp, IeEvaluator& v, std::map< Node, int >& assumptions, std::map<Node, std::map< bool, bool > >& cache, std::vector<Node>& lits, std::vector< Node >& olits);
+  bool justifyInternal(TNode n,
+                       TNode on,
+                       bool pol,
+                       Node olitProp,
+                       IeEvaluator& v,
+                       std::map<Node, int>& assumptions,
+                       std::map<Node, std::map<bool, bool> >& cache,
+                       std::vector<Node>& lits,
+                       std::vector<Node>& olits);
 };
 
 }  // namespace quantifiers
