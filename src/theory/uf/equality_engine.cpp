@@ -1040,22 +1040,23 @@ void EqualityEngine::getExplanation(
     EqProof* eqp) const
 {
   Trace("eq-exp") << d_name << "::eq::getExplanation(" << d_nodes[t1Id] << ","
-                  << d_nodes[t2Id] << ")" << std::endl;
-  if (!eqp)
+                  << d_nodes[t2Id] << ") size = " << cache.size() << std::endl;
+
+  std::map<EqualityNodeId, std::map<EqualityNodeId, EqProof*>>::iterator it1 =
+      cache.find(t1Id);
+  if (it1 != cache.end())
   {
-    std::map<EqualityNodeId, std::map<EqualityNodeId, EqProof*>>::iterator it1 =
-        cache.find(t1Id);
-    if (it1 != cache.end())
+    std::map<EqualityNodeId, EqProof*>::iterator it2 = it1->second.find(t2Id);
+    if (it2 != it1->second.end())
     {
-      std::map<EqualityNodeId, EqProof*>::iterator it2 = it1->second.find(t2Id);
-      if (it2 != it1->second.end())
-      {
-        return;
-      }
+      // copy one level
+      eqp->d_id = it2->second->d_id;
+      eqp->d_children.insert(eqp->d_children.end(),it2->second->d_children.begin(),it2->second->d_children.end());
+      return;
     }
-    cache[t1Id][t2Id] = nullptr;
-    cache[t2Id][t1Id] = nullptr;
   }
+  cache[t1Id][t2Id] = eqp;
+  cache[t2Id][t1Id] = eqp;
 
   // We can only explain the nodes that got merged
 #ifdef CVC4_ASSERTIONS

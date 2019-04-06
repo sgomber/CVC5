@@ -724,6 +724,8 @@ bool InstExplainDb::regressExplain(EqExplainer* eqe,
             << "FAILED to explain " << eqp->d_node << std::endl;
         return false;
       }
+        Trace("ied-proof-debug")
+            << "...success" << std::endl;
       return true;
     }
     Trace("ied-proof-debug") << "FAILED to explain " << eqp->d_node
