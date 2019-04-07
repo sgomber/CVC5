@@ -30,7 +30,10 @@ namespace theory {
 namespace quantifiers {
 
 InstExplainDb::InstExplainDb(QuantifiersEngine* qe)
-    : d_qe(qe), d_tdb(d_qe->getTermDatabase()), d_ev(d_qe->getValuation()), d_iexpfg(*this, qe)
+    : d_qe(qe),
+      d_tdb(d_qe->getTermDatabase()),
+      d_ev(d_qe->getValuation()),
+      d_iexpfg(*this, qe)
 {
   d_false = NodeManager::currentNM()->mkConst(false);
   d_true = NodeManager::currentNM()->mkConst(true);
@@ -113,7 +116,7 @@ void InstExplainDb::registerExplanation(Node inst,
   std::vector<Node> visit;
   std::vector<Node> visiti;
   bool newQuant = false;
-  if( d_quants.find(q)==d_quants.end() )
+  if (d_quants.find(q) == d_quants.end())
   {
     newQuant = true;
     d_quants[q] = true;
@@ -185,9 +188,9 @@ void InstExplainDb::registerExplanation(Node inst,
         Trace("inst-explain") << "  -> " << curir << std::endl;
         // also store original literals in data structure for finding
         // virtual propagating instantiations
-        if( newQuant )
+        if (newQuant)
         {
-          registerPropagatingLiteral(cur,q);
+          registerPropagatingLiteral(cur, q);
         }
         if (!hasPol)
         {
@@ -197,10 +200,10 @@ void InstExplainDb::registerExplanation(Node inst,
           InstExplainLit& ieln = getInstExplainLit(curinr);
           ieln.addInstExplanation(inst);
           Trace("inst-explain") << "  -> " << curinr << std::endl;
-          if( newQuant )
+          if (newQuant)
           {
             Node curn = cur.negate();
-            registerPropagatingLiteral(curn,q);
+            registerPropagatingLiteral(curn, q);
           }
         }
       }
@@ -788,7 +791,7 @@ void InstExplainDb::registerPropagatingLiteral(Node olit, Node q)
 {
   bool pol;
   Node f, g;
-  if( !getLitSymbolIndex(olit,f,g, pol))
+  if (!getLitSymbolIndex(olit, f, g, pol))
   {
     // the literal is not indexable
     return;
@@ -796,37 +799,37 @@ void InstExplainDb::registerPropagatingLiteral(Node olit, Node q)
   // otherwise, add to database
   d_plit_map[f][g][pol].push_back(olit);
 }
-bool InstExplainDb::getLitSymbolIndex(Node n, Node& f, Node& g, bool& pol ) const
+bool InstExplainDb::getLitSymbolIndex(Node n, Node& f, Node& g, bool& pol) const
 {
-  pol = n.getKind()==NOT;
-  TNode atom = pol ? n : n[0];  
+  pol = n.getKind() == NOT;
+  TNode atom = pol ? n : n[0];
   // we index by the equality f(t[x]) = g(s[x]) that this is equivalent to,
   // where f <= g by node comparison
-  if( atom.getKind()!=EQUAL )
-  {    
+  if (atom.getKind() != EQUAL)
+  {
     f = d_tdb->getMatchOperator(atom);
-    if( f.isNull() )
+    if (f.isNull())
     {
       return false;
     }
     return true;
   }
-  for( unsigned i=0; i<2; i++ )
+  for (unsigned i = 0; i < 2; i++)
   {
     Node op;
-    if( atom[i].getKind()!=BOUND_VARIABLE )
+    if (atom[i].getKind() != BOUND_VARIABLE)
     {
       op = d_tdb->getMatchOperator(atom[i]);
-      if( op.isNull() )
+      if (op.isNull())
       {
         return false;
       }
     }
-    if( i==0 )
+    if (i == 0)
     {
       f = op;
     }
-    else if( op<f )
+    else if (op < f)
     {
       // if node comparison, swap
       g = f;

@@ -22,9 +22,9 @@
 #include "expr/node.h"
 #include "theory/quantifiers/equality_explain.h"
 #include "theory/quantifiers/gen_lit_info.h"
-#include "theory/quantifiers/term_database.h"
 #include "theory/quantifiers/iex_pf_gen.h"
 #include "theory/quantifiers/inst_explain.h"
+#include "theory/quantifiers/term_database.h"
 #include "theory/quantifiers_engine.h"
 
 namespace CVC4 {
@@ -82,7 +82,7 @@ class InstExplainDb
   Node d_false;
   Node d_null;
   /** have we seen an instantiation of this quantified formula? */
-  std::map< Node, bool > d_quants;
+  std::map<Node, bool> d_quants;
   /** map from literal to possible explanations */
   std::map<Node, InstExplainLit> d_lit_explains;
   /** map from instantiate lemma to explanation objects */
@@ -142,16 +142,16 @@ class InstExplainDb
   std::map<Node, std::vector<Node>> d_subsumes;
   /** the inverse of the above map */
   std::map<Node, std::vector<Node>> d_subsumed_by;
-  
+
   /** Register propagating literal
-   * 
+   *
    * TODO
    */
   void registerPropagatingLiteral(Node olit, Node q);
   /** get symbol index */
-  bool getLitSymbolIndex(Node n, Node& f, Node& g, bool& pol ) const;
+  bool getLitSymbolIndex(Node n, Node& f, Node& g, bool& pol) const;
   /** propagating literal cache */
-  std::map< Node, std::map< Node, std::map< bool, std::vector< Node > > > > d_plit_map;
+  std::map<Node, std::map<Node, std::map<bool, std::vector<Node>>>> d_plit_map;
 };
 
 }  // namespace quantifiers

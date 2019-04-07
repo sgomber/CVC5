@@ -354,7 +354,7 @@ bool InstExplainPfGen::instExplain(
       indent(c, tb + 1);
     }
     // maybe it is inst-explainable
-    if (!instExplainFind(g,opl,pl,inst,c,tb))
+    if (!instExplainFind(g, opl, pl, inst, c, tb))
     {
       if (pl != q)
       {
@@ -405,8 +405,8 @@ bool InstExplainPfGen::instExplainFind(
     indent(c, tb + 1);
     Trace(c) << "  generalizes to " << opl << std::endl;
     indent(c, tb + 1);
-    Trace(c) << "  and has " << cexppl.size()
-              << " possible inst-explanations" << std::endl;
+    Trace(c) << "  and has " << cexppl.size() << " possible inst-explanations"
+             << std::endl;
   }
   if (cexppl.empty())
   {
@@ -443,8 +443,7 @@ bool InstExplainPfGen::instExplainFind(
     {
       Trace(c) << "  ...compatible, recurse" << std::endl;
       // recurse
-      if (!instExplain(
-              g.d_conclusions[pl][opli], opli, pl, instpl, c, tb + 3))
+      if (!instExplain(g.d_conclusions[pl][opli], opli, pl, instpl, c, tb + 3))
       {
         // undo
         g.d_conclusions[pl].erase(opli);
@@ -490,7 +489,7 @@ bool InstExplainPfGen::instExplainFind(
     {
       Trace(c) << "...failed to merge choice" << std::endl;
       indent(c, tb + 1);
-    }    
+    }
     return false;
   }
   Trace(c) << "...success" << std::endl;
