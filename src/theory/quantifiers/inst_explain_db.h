@@ -78,6 +78,8 @@ class InstExplainDb
   Node d_true;
   Node d_false;
   Node d_null;
+  /** have we seen an instantiation of this quantified formula? */
+  std::map< Node, bool > d_quants;
   /** map from literal to possible explanations */
   std::map<Node, InstExplainLit> d_lit_explains;
   /** map from instantiate lemma to explanation objects */
@@ -137,6 +139,12 @@ class InstExplainDb
   std::map<Node, std::vector<Node>> d_subsumes;
   /** the inverse of the above map */
   std::map<Node, std::vector<Node>> d_subsumed_by;
+  
+  /** Register propagating literal
+   * 
+   * TODO
+   */
+  void registerPropagatingLiteral(Node olit, Node q);
 };
 
 }  // namespace quantifiers

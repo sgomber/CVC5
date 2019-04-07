@@ -112,6 +112,12 @@ void InstExplainDb::registerExplanation(Node inst,
   std::vector<bool> visit_hasPol;
   std::vector<Node> visit;
   std::vector<Node> visiti;
+  bool newQuant = false;
+  if( d_quants.find(q)==d_quants.end() )
+  {
+    newQuant = true;
+    d_quants[q] = true;
+  }
   bool hasPol;
   TNode cur;
   TNode curi;
@@ -177,15 +183,25 @@ void InstExplainDb::registerExplanation(Node inst,
         InstExplainLit& iel = getInstExplainLit(curir);
         iel.addInstExplanation(inst);
         Trace("inst-explain") << "  -> " << curir << std::endl;
+        // also store original literals in data structure for finding
+        // virtual propagating instantiations
+        if( newQuant )
+        {
+          registerPropagatingLiteral(cur,q);
+        }
         if (!hasPol)
         {
           // Store the opposite direction as well if hasPol is false,
           // since it may propagate in either polarity.
-          Node curin = curi.negate();
-          Node curinr = Rewriter::rewrite(curin);
+          Node curinr = Rewriter::rewrite(curi.negate());
           InstExplainLit& ieln = getInstExplainLit(curinr);
           ieln.addInstExplanation(inst);
           Trace("inst-explain") << "  -> " << curinr << std::endl;
+          if( newQuant )
+          {
+            Node curn = cur.negate();
+            registerPropagatingLiteral(curn,q);
+          }
         }
       }
     }
@@ -766,6 +782,11 @@ bool InstExplainDb::isGeneralization(Node n, Node gn)
 {
   // TODO
   return true;
+}
+
+void InstExplainDb::registerPropagatingLiteral(Node olit, Node q)
+{
+  
 }
 
 }  // namespace quantifiers
