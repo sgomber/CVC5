@@ -353,27 +353,25 @@ bool InstExplainPfGen::instExplain(
       Trace(c) << "inst-exp: requires " << pl << std::endl;
       indent(c, tb + 1);
     }
-    // maybe it is inst-explainable
-    if (!instExplainFind(g, opl, pl, inst, c, tb))
+    // Now, regress the proof of pl / opl. It is either:
+    // - the quantified formula itself, in which case it is an assumption,
+    // - it is inst-explanable via a successful call to instExplainFind,
+    // - it is an open leaf via a failed call to instExplainFind, in which
+    // case it must be a conclusion.
+    if( pl==q )
     {
-      if (pl != q)
-      {
-        // if it is not a quantified formula, then it must be part of the
-        // overall conclusion
-        Trace(c) << "-> which has no inst-explanations, it must be a "
-                    "conclusion"
-                 << std::endl;
-        // we did not generalize it at all
-        g.d_conclusions[pl][opl].initialize(&iei);
-      }
-      else
-      {
-        // if pl is the quantified formula for inst, we add it to assumptions
-        Trace(c) << "-> which is the quantified formula, add to "
-                    "assumptions"
-                 << std::endl;
-        g.d_assumptions.push_back(pl);
-      }
+      // if pl is the quantified formula for inst, we add it to assumptions
+      Trace(c) << "-> which is the quantified formula, add to assumptions"
+                << std::endl;
+      g.d_assumptions.push_back(pl);
+    }    
+    // If its not the quantified formula, we try to find an inst-explanation
+    else if (!instExplainFind(g, opl, pl, inst, c, tb))
+    {
+      // if we didn't find one, we must carry it must be a conclusion
+      Trace(c) << "-> which has no inst-explanations, it must be a conclusion"
+                << std::endl;
+      g.d_conclusions[pl][opl].initialize(&iei);
     }
   }
   if (Trace.isOn(c))
@@ -413,8 +411,11 @@ bool InstExplainPfGen::instExplainFind(
     indent(c, tb + 1);
     return false;
   }
-  // populate choices for generalization, which we store in
+  // populate choices for the proof regression, which we store in
   // g.d_conclusions[pl]
+  std::map< Node, GLitInfo >& pconcs = g.d_conclusions[pl];
+  // the current best explanation
+  Node best;
   for (unsigned j = 0, cexpsize = cexppl.size(); j < cexpsize; j++)
   {
     Node instpl = cexppl[j];
@@ -443,15 +444,30 @@ bool InstExplainPfGen::instExplainFind(
     {
       Trace(c) << "  ...compatible, recurse" << std::endl;
       // recurse
-      if (!instExplain(g.d_conclusions[pl][opli], opli, pl, instpl, c, tb + 3))
+      if (instExplain(pconcs[opli], opli, pl, instpl, c, tb + 3))
+      {
+        // if it is purely general, we are done
+        if( pconcs[opli].d_conclusions.empty() )
+        {
+          best = opli;
+          break;
+        }
+        else
+        {
+          // otherwise, it has a propagating generalization, take it.
+          // we may carry this forward if all siblings are purely general.
+          best = opli;
+        }
+      }
+      else
       {
         // undo
-        g.d_conclusions[pl].erase(opli);
+        pconcs.erase(opli);
       }
     }
   }
   // now, take the best generalization if there are any available
-  if (g.d_conclusions[pl].empty())
+  if (pconcs.empty())
   {
     g.d_conclusions.erase(pl);
     if (Trace.isOn(c))
@@ -462,17 +478,8 @@ bool InstExplainPfGen::instExplainFind(
     }
     return false;
   }
-  Node best;
-  unsigned score = 0;
-  for (const std::pair<Node, GLitInfo>& gl : g.d_conclusions[pl])
-  {
-    unsigned gscore = gl.second.getScore();
-    if (best.isNull() || gscore > score)
-    {
-      best = gl.first;
-      score = gscore;
-    }
-  }
+  Assert( !best.isNull() );
+  Assert( pconcs.find(best)!=pconcs.end() );
   if (Trace.isOn(c))
   {
     indent(c, tb + 1);
@@ -480,7 +487,7 @@ bool InstExplainPfGen::instExplainFind(
     indent(c, tb + 1);
   }
   // merge the current with the child
-  bool mergeSuccess = g.merge(opl, best, g.d_conclusions[pl][best]);
+  bool mergeSuccess = g.merge(opl, best, pconcs[best]);
   // remove the conclusions
   g.d_conclusions.erase(pl);
   if (!mergeSuccess)
