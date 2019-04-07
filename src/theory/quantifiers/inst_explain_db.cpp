@@ -30,7 +30,7 @@ namespace theory {
 namespace quantifiers {
 
 InstExplainDb::InstExplainDb(QuantifiersEngine* qe)
-    : d_qe(qe), d_ev(d_qe->getValuation()), d_iexpfg(*this, qe)
+    : d_qe(qe), d_tdb(d_qe->getTermDatabase()), d_ev(d_qe->getValuation()), d_iexpfg(*this, qe)
 {
   d_false = NodeManager::currentNM()->mkConst(false);
   d_true = NodeManager::currentNM()->mkConst(true);
@@ -786,7 +786,58 @@ bool InstExplainDb::isGeneralization(Node n, Node gn)
 
 void InstExplainDb::registerPropagatingLiteral(Node olit, Node q)
 {
-  
+  bool pol;
+  Node f, g;
+  if( !getLitSymbolIndex(olit,f,g, pol))
+  {
+    // the literal is not indexable
+    return;
+  }
+  // otherwise, add to database
+  d_plit_map[f][g][pol].push_back(olit);
+}
+bool InstExplainDb::getLitSymbolIndex(Node n, Node& f, Node& g, bool& pol ) const
+{
+  pol = n.getKind()==NOT;
+  TNode atom = pol ? n : n[0];  
+  // we index by the equality f(t[x]) = g(s[x]) that this is equivalent to,
+  // where f <= g by node comparison
+  if( atom.getKind()!=EQUAL )
+  {    
+    f = d_tdb->getMatchOperator(atom);
+    if( f.isNull() )
+    {
+      return false;
+    }
+    return true;
+  }
+  for( unsigned i=0; i<2; i++ )
+  {
+    Node op;
+    if( atom[i].getKind()!=BOUND_VARIABLE )
+    {
+      op = d_tdb->getMatchOperator(atom[i]);
+      if( op.isNull() )
+      {
+        return false;
+      }
+    }
+    if( i==0 )
+    {
+      f = op;
+    }
+    else if( op<f )
+    {
+      // if node comparison, swap
+      g = f;
+      f = op;
+    }
+    else
+    {
+      g = op;
+    }
+  }
+  return true;
 }
 
 }  // namespace quantifiers

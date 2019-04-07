@@ -354,112 +354,7 @@ bool InstExplainPfGen::instExplain(
       indent(c, tb + 1);
     }
     // maybe it is inst-explainable
-    bool processed = false;
-    std::map<Node, InstExplainLit>::iterator itl;
-    if (d_ied.findInstExplainLit(pl, itl))
-    {
-      InstExplainLit& iel = itl->second;
-      // Activate the literal. This computes whether any instantiation lemmas
-      // are currently propagating it.
-      d_ied.activateLit(pl);
-      std::vector<Node>& cexppl = iel.d_curr_insts;
-      std::vector<Node>& olitspl = iel.d_curr_olits;
-      Assert(cexppl.size() == olitspl.size());
-      if (Trace.isOn(c))
-      {
-        indent(c, tb + 1);
-        Trace(c) << "  generalizes to " << opl << std::endl;
-        indent(c, tb + 1);
-        Trace(c) << "  and has " << cexppl.size()
-                 << " possible inst-explanations" << std::endl;
-      }
-      if (!cexppl.empty())
-      {
-        // populate choices for generalization, which we store in
-        // g.d_conclusions[pl]
-        for (unsigned j = 0, cexpsize = cexppl.size(); j < cexpsize; j++)
-        {
-          Node instpl = cexppl[j];
-          Node opli = olitspl[j];
-          // the instantiation lemma that propagates pl should not be the same
-          // as the one that propagates lit
-          Assert(instpl != inst);
-
-          // check the matching constraints on opli against the original literal
-          // in the quantified formula here.
-          if (Trace.isOn(c))
-          {
-            indent(c, tb + 2);
-            Trace(c) << "inst-exp: try " << opli << "..." << std::endl;
-            indent(c, tb + 2);
-          }
-          // currently: we avoid matching constraints altogether by only
-          // pursuing generalizations that are fully compatible with the
-          // current.
-          if (!g.checkCompatible(opl, opli))
-          {
-            Trace(c) << "  ...incompatible!" << std::endl;
-          }
-          else
-          {
-            Trace(c) << "  ...compatible, recurse" << std::endl;
-            // recurse
-            if (!instExplain(
-                    g.d_conclusions[pl][opli], opli, pl, instpl, c, tb + 3))
-            {
-              // undo
-              g.d_conclusions[pl].erase(opli);
-            }
-          }
-        }
-        // now, take the best generalization if there are any available
-        if (!g.d_conclusions[pl].empty())
-        {
-          Node best;
-          unsigned score = 0;
-          for (const std::pair<Node, GLitInfo>& gl : g.d_conclusions[pl])
-          {
-            unsigned gscore = gl.second.getScore();
-            if (best.isNull() || gscore > score)
-            {
-              best = gl.first;
-              score = gscore;
-            }
-          }
-          if (Trace.isOn(c))
-          {
-            indent(c, tb + 1);
-            Trace(c) << "-> CHOOSE to merge " << best << std::endl;
-            indent(c, tb + 1);
-          }
-          // merge the current with the child
-          bool mergeSuccess = g.merge(opl, best, g.d_conclusions[pl][best]);
-          // remove the conclusions
-          g.d_conclusions.erase(pl);
-          if (mergeSuccess)
-          {
-            Trace(c) << "...success" << std::endl;
-            processed = true;
-          }
-          else if (Trace.isOn(c))
-          {
-            Trace(c) << "...failed to merge choice" << std::endl;
-            indent(c, tb + 1);
-          }
-        }
-        else if (Trace.isOn(c))
-        {
-          indent(c, tb + 1);
-          Trace(c) << "-> failed to generalize" << std::endl;
-          indent(c, tb + 1);
-        }
-      }
-      else if (Trace.isOn(c))
-      {
-        indent(c, tb + 1);
-      }
-    }
-    if (!processed)
+    if (!instExplainFind(g,opl,pl,inst,c,tb))
     {
       if (pl != q)
       {
@@ -487,6 +382,118 @@ bool InstExplainPfGen::instExplain(
     Trace(c) << "INST-EXPLAIN SUCCESS with:" << std::endl;
     g.debugPrint(c, tb + 1);
   }
+  return true;
+}
+
+bool InstExplainPfGen::instExplainFind(
+    GLitInfo& g, Node opl, Node pl, Node instSrc, const char* c, unsigned tb)
+{
+  std::map<Node, InstExplainLit>::iterator itl;
+  if (!d_ied.findInstExplainLit(pl, itl))
+  {
+    return false;
+  }
+  InstExplainLit& iel = itl->second;
+  // Activate the literal. This computes whether any instantiation lemmas
+  // are currently propagating it.
+  d_ied.activateLit(pl);
+  std::vector<Node>& cexppl = iel.d_curr_insts;
+  std::vector<Node>& olitspl = iel.d_curr_olits;
+  Assert(cexppl.size() == olitspl.size());
+  if (Trace.isOn(c))
+  {
+    indent(c, tb + 1);
+    Trace(c) << "  generalizes to " << opl << std::endl;
+    indent(c, tb + 1);
+    Trace(c) << "  and has " << cexppl.size()
+              << " possible inst-explanations" << std::endl;
+  }
+  if (cexppl.empty())
+  {
+    indent(c, tb + 1);
+    return false;
+  }
+  // populate choices for generalization, which we store in
+  // g.d_conclusions[pl]
+  for (unsigned j = 0, cexpsize = cexppl.size(); j < cexpsize; j++)
+  {
+    Node instpl = cexppl[j];
+    Node opli = olitspl[j];
+    // The instantiation lemma that propagates pl should not be the same
+    // as the one that propagates lit. Otherwise our computation of
+    // Boolean propagation was wrong.
+    Assert(instpl != instSrc);
+
+    // check the matching constraints on opli against the original literal
+    // in the quantified formula here.
+    if (Trace.isOn(c))
+    {
+      indent(c, tb + 2);
+      Trace(c) << "inst-exp: try " << opli << "..." << std::endl;
+      indent(c, tb + 2);
+    }
+    // currently: we avoid matching constraints altogether by only
+    // pursuing generalizations that are fully compatible with the
+    // current.
+    if (!g.checkCompatible(opl, opli))
+    {
+      Trace(c) << "  ...incompatible!" << std::endl;
+    }
+    else
+    {
+      Trace(c) << "  ...compatible, recurse" << std::endl;
+      // recurse
+      if (!instExplain(
+              g.d_conclusions[pl][opli], opli, pl, instpl, c, tb + 3))
+      {
+        // undo
+        g.d_conclusions[pl].erase(opli);
+      }
+    }
+  }
+  // now, take the best generalization if there are any available
+  if (g.d_conclusions[pl].empty())
+  {
+    g.d_conclusions.erase(pl);
+    if (Trace.isOn(c))
+    {
+      indent(c, tb + 1);
+      Trace(c) << "-> failed to generalize" << std::endl;
+      indent(c, tb + 1);
+    }
+    return false;
+  }
+  Node best;
+  unsigned score = 0;
+  for (const std::pair<Node, GLitInfo>& gl : g.d_conclusions[pl])
+  {
+    unsigned gscore = gl.second.getScore();
+    if (best.isNull() || gscore > score)
+    {
+      best = gl.first;
+      score = gscore;
+    }
+  }
+  if (Trace.isOn(c))
+  {
+    indent(c, tb + 1);
+    Trace(c) << "-> CHOOSE to merge " << best << std::endl;
+    indent(c, tb + 1);
+  }
+  // merge the current with the child
+  bool mergeSuccess = g.merge(opl, best, g.d_conclusions[pl][best]);
+  // remove the conclusions
+  g.d_conclusions.erase(pl);
+  if (!mergeSuccess)
+  {
+    if (Trace.isOn(c))
+    {
+      Trace(c) << "...failed to merge choice" << std::endl;
+      indent(c, tb + 1);
+    }    
+    return false;
+  }
+  Trace(c) << "...success" << std::endl;
   return true;
 }
 

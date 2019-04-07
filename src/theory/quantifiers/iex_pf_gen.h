@@ -129,6 +129,11 @@ class InstExplainPfGen
    */
   bool instExplain(
       GLitInfo& g, Node olit, Node lit, Node inst, const char* c, unsigned tb);
+  /** find instantiation explanation for opl/pl
+   */
+  bool instExplainFind(
+      GLitInfo& g, Node opl, Node pl, Node instSrc, const char* c, unsigned tb);
+  
   /** indent tb tabulations on trace c. */
   static void indent(const char* c, unsigned tb);
   /** returns true if gn is a generalization of n */

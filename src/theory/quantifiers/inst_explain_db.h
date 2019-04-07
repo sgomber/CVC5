@@ -22,6 +22,7 @@
 #include "expr/node.h"
 #include "theory/quantifiers/equality_explain.h"
 #include "theory/quantifiers/gen_lit_info.h"
+#include "theory/quantifiers/term_database.h"
 #include "theory/quantifiers/iex_pf_gen.h"
 #include "theory/quantifiers/inst_explain.h"
 #include "theory/quantifiers_engine.h"
@@ -70,6 +71,8 @@ class InstExplainDb
  private:
   /** pointer to the quantifiers engine */
   QuantifiersEngine* d_qe;
+  /** the term database of d_qe */
+  TermDb* d_tdb;
   /** evaluator utility */
   IeEvaluator d_ev;
   /** the instantiate explain proof generalization utility */
@@ -145,6 +148,10 @@ class InstExplainDb
    * TODO
    */
   void registerPropagatingLiteral(Node olit, Node q);
+  /** get symbol index */
+  bool getLitSymbolIndex(Node n, Node& f, Node& g, bool& pol ) const;
+  /** propagating literal cache */
+  std::map< Node, std::map< Node, std::map< bool, std::vector< Node > > > > d_plit_map;
 };
 
 }  // namespace quantifiers
