@@ -2042,10 +2042,10 @@ void QuantConflictFind::check(Theory::Effort level, QEffort quant_e)
   }
   bool isConflict = false;
   unsigned nquant = d_quantEngine->getModel()->getNumAssertedQuantifiers();
-  // for each effort level
+  // for each effort level (find conflict, find propagating)
   for (unsigned e = QcfEffortStart(), end = QcfEffortEnd(); e <= end; ++e)
   {
-    // set the effort (data member for convience of access)
+    // set the effort (data member for convienence of access)
     d_effort = static_cast<Effort>(e);
     Trace("qcf-check") << "Checking quantified formulas at effort " << e
                        << "..." << std::endl;
@@ -2126,7 +2126,7 @@ void QuantConflictFind::checkQuantifiedFormula(Node q,
     // database) was discovered if we fail here.
     return;
   }
-  // try to make a matches making the body false
+  // try to make a matches making the body false or propagating
   Trace("qcf-check-debug") << "Get next match..." << std::endl;
   Instantiate* qinst = d_quantEngine->getInstantiate();
   while (qi->getNextMatch(this))
@@ -2146,27 +2146,34 @@ void QuantConflictFind::checkQuantifiedFormula(Node q,
       qi->debugPrintMatch("qcf-inst");
       Trace("qcf-inst") << std::endl;
     }
+    // check whether internal match constraints are satisfied
     if (qi->isMatchSpurious(this))
     {
-      Trace("qcf-inst")
-          << "   ... Spurious instantiation (match is inconsistent)"
+      Trace("qcf-inst") << "   ... Spurious (match is inconsistent)"
           << std::endl;
       continue;
     }
+    // check whether match can be completed
     std::vector<int> assigned;
     if (!qi->completeMatch(this, assigned))
     {
-      Trace("qcf-inst") << "   ... Spurious instantiation (cannot assign "
-                           "unassigned variables)"
+      Trace("qcf-inst") << "   ... Spurious (cannot assign unassigned vars)"
                         << std::endl;
       continue;
     }
+    // check whether the match is spurious according to (T-)entailment checks
     std::vector<Node> terms;
     qi->getMatch(terms);
     std::vector<Node> lems;
     bool tcs = qi->isTConstraintSpurious(this, terms, lems);
-    if (!tcs)
+    if (tcs)
     {
+      Trace("qcf-inst") << "   ... Spurious (match is T-inconsistent)"
+          << std::endl;
+    }
+    else
+    {
+      // otherwise, we have a conflict/propagating instance
       // for debugging
       if (Debug.isOn("qcf-check-inst"))
       {
@@ -2239,12 +2246,6 @@ void QuantConflictFind::checkQuantifiedFormula(Node q,
         ++(d_quantEngine->d_statistics.d_instantiations_qcf);
       }
     }
-    else
-    {
-      Trace("qcf-inst")
-          << "   ... Spurious instantiation (match is T-inconsistent)"
-          << std::endl;
-    }
     // clean up assigned
     qi->revertMatch(this, assigned);
     d_tempCache.clear();
@@ -2272,9 +2273,7 @@ void QuantConflictFind::computeRelevantEqr() {
   }
 }
 
-
 //-------------------------------------------------- debugging
-
 
 void QuantConflictFind::debugPrint( const char * c ) {
   //print the equivalance classes
