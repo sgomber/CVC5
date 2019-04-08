@@ -223,33 +223,34 @@ bool FirstOrderModel::checkNeeded() {
 
 void FirstOrderModel::reset_round() {
   d_quant_active.clear();
-  
+
   // compute subsumptions
-  Assert( d_subsume );
+  Assert(d_subsume);
   // compute which quantified formulas are asserted if necessary
-  std::map< Node, bool > qassert;
-  if( !d_subsume->empty() || !d_forall_rlv_vec.empty() )
+  std::map<Node, bool> qassert;
+  if (!d_subsume->empty() || !d_forall_rlv_vec.empty())
   {
-    Trace("fm-relevant-debug") << "Mark asserted quantified formulas..." << std::endl;
-    for( const Node& q : d_forall_asserts )
+    Trace("fm-relevant-debug")
+        << "Mark asserted quantified formulas..." << std::endl;
+    for (const Node& q : d_forall_asserts)
     {
       qassert[q] = true;
     }
   }
-  if( !d_subsume->empty() )
+  if (!d_subsume->empty())
   {
-    std::map< Node, std::vector< Node > >::iterator its;
-    for( const Node& q : d_forall_asserts )
+    std::map<Node, std::vector<Node> >::iterator its;
+    for (const Node& q : d_forall_asserts)
     {
-      if( d_subsume->getSubsumedBy(q,its) )
+      if (d_subsume->getSubsumedBy(q, its))
       {
         // check whether any quantified formula that subsumes it is currently
         // asserted
-        for( const Node& sq : its->second )
+        for (const Node& sq : its->second)
         {
-          if( qassert.find(sq)!=qassert.end() )
+          if (qassert.find(sq) != qassert.end())
           {
-            setQuantifierActive(q,false);
+            setQuantifierActive(q, false);
             break;
           }
         }
@@ -261,20 +262,23 @@ void FirstOrderModel::reset_round() {
   if( !d_forall_rlv_vec.empty() ){
     Trace("fm-relevant") << "Build sorted relevant list..." << std::endl;
     Trace("fm-relevant-debug") << "Add relevant asserted formulas..." << std::endl;
-    std::map< Node, bool >::iterator ita;
+    std::map<Node, bool>::iterator ita;
     for( int i=(int)(d_forall_rlv_vec.size()-1); i>=0; i-- ){
       Node q = d_forall_rlv_vec[i];
-      ita = qassert.find( q );
-      if( ita!=qassert.end() ){
+      ita = qassert.find(q);
+      if (ita != qassert.end())
+      {
         Trace("fm-relevant") << "   " << q << std::endl;
         d_forall_rlv_assert.push_back( q );
         qassert.erase(ita);
       }
     }
     Trace("fm-relevant-debug") << "Add remaining asserted formulas..." << std::endl;
-    for( const Node& q : d_forall_asserts ){
+    for (const Node& q : d_forall_asserts)
+    {
       // if we didn't include it above
-      if( qassert.find(q)!=qassert.end() ){
+      if (qassert.find(q) != qassert.end())
+      {
         d_forall_rlv_assert.push_back( q );
       }else{
         Trace("fm-relevant-debug") << "...already included " << q << std::endl;
@@ -294,11 +298,13 @@ void FirstOrderModel::markRelevant( Node q ) {
   // If we were the last quantifier marked relevant, this is a no-op, return.
   if( q!=d_last_forall_rlv ){
     Trace("fm-relevant") << "Mark relevant : " << q << std::endl;
-    std::vector< Node >::iterator itr = std::find( d_forall_rlv_vec.begin(), d_forall_rlv_vec.end(), q );
-    if( itr!=d_forall_rlv_vec.end() ){
-      d_forall_rlv_vec.erase(itr,itr+1);
+    std::vector<Node>::iterator itr =
+        std::find(d_forall_rlv_vec.begin(), d_forall_rlv_vec.end(), q);
+    if (itr != d_forall_rlv_vec.end())
+    {
+      d_forall_rlv_vec.erase(itr, itr + 1);
     }
-    d_forall_rlv_vec.push_back( q );
+    d_forall_rlv_vec.push_back(q);
     d_last_forall_rlv = q;
   }
 }

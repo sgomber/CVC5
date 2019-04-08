@@ -41,9 +41,10 @@ class Subsume
    */
   void setSubsumes(Node q, Node qsubsumed);
   /** get subsumes */
-  bool getSubsumes( Node q, std::map< Node, std::vector< Node > >::iterator& it );
+  bool getSubsumes(Node q, std::map<Node, std::vector<Node>>::iterator& it);
   /** get subsumed by */
-  bool getSubsumedBy( Node q, std::map< Node, std::vector< Node > >::iterator& it );
+  bool getSubsumedBy(Node q, std::map<Node, std::vector<Node>>::iterator& it);
+
  private:
   /** map quantified formulas to those they subsume */
   std::map<Node, std::vector<Node>> d_subsumes;

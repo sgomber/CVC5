@@ -676,7 +676,7 @@ ExplainStatus InstExplainDb::explain(Node q,
     Trace("ied-conflict-debug") << "auto-subsume: " << std::endl;
     Trace("ied-conflict-debug") << "  " << conc << " subsumes" << std::endl;
     Trace("ied-conflict-debug") << "  " << concQuant << std::endl;
-    Assert( d_subsume );
+    Assert(d_subsume);
     d_subsume->setSubsumes(conc, concQuant);
     // We mark an attribute on the conclusion to indicate that it subsumes
     // the original quantified formula whenever it is asserted.

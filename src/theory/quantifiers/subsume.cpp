@@ -24,10 +24,7 @@ namespace quantifiers {
 
 Subsume::Subsume(QuantifiersEngine* qe) {}
 
-bool Subsume::empty() const
-{
-  return d_subsumes.empty();
-}
+bool Subsume::empty() const { return d_subsumes.empty(); }
 
 void Subsume::setSubsumes(Node q, Node qsubsumed)
 {
@@ -35,16 +32,18 @@ void Subsume::setSubsumes(Node q, Node qsubsumed)
   d_subsumed_by[qsubsumed].push_back(q);
 }
 
-bool Subsume::getSubsumes( Node q, std::map< Node, std::vector< Node > >::iterator& it )
+bool Subsume::getSubsumes(Node q,
+                          std::map<Node, std::vector<Node> >::iterator& it)
 {
   it = d_subsumes.find(q);
-  return it!=d_subsumes.end();
+  return it != d_subsumes.end();
 }
 
-bool Subsume::getSubsumedBy( Node q, std::map< Node, std::vector< Node > >::iterator& it )
+bool Subsume::getSubsumedBy(Node q,
+                            std::map<Node, std::vector<Node> >::iterator& it)
 {
   it = d_subsumed_by.find(q);
-  return it!=d_subsumed_by.end();
+  return it != d_subsumed_by.end();
 }
 
 }  // namespace quantifiers
