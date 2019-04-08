@@ -1052,11 +1052,20 @@ void EqualityEngine::getExplanation(
       // copy one level
       if (eqp)
       {
-        eqp->d_node = it2->second->d_node;
-        eqp->d_id = it2->second->d_id;
-        eqp->d_children.insert(eqp->d_children.end(),
-                               it2->second->d_children.begin(),
-                               it2->second->d_children.end());
+        if( it2->second )
+        {
+          eqp->d_node = it2->second->d_node;
+          eqp->d_id = it2->second->d_id;
+          eqp->d_children.insert(eqp->d_children.end(),
+                                it2->second->d_children.begin(),
+                                it2->second->d_children.end());
+        }
+        else
+        {
+          Assert( d_nodes[t1Id]==d_nodes[t2Id] );
+          Assert( eqp->d_id==MERGED_THROUGH_REFLEXIVITY );
+          eqp->d_node =  d_nodes[t1Id];
+        }
       }
       return;
     }
