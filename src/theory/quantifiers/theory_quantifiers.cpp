@@ -133,7 +133,7 @@ void TheoryQuantifiers::check(Effort e) {
     Trace("quantifiers-assert") << "quantifiers::assert(): " << assertion << std::endl;
     switch(assertion.getKind()) {
     case kind::FORALL:
-      getQuantifiersEngine()->assertQuantifier( assertion, true );
+      getQuantifiersEngine()->assertQuantifier(assertion, true);
       break;
     case kind::INST_CLOSURE:
       getQuantifiersEngine()->addTermToDatabase( assertion[0], false, true );
@@ -148,7 +148,7 @@ void TheoryQuantifiers::check(Effort e) {
       {
         switch( assertion[0].getKind()) {
         case kind::FORALL:
-          getQuantifiersEngine()->assertQuantifier( assertion[0], false );
+          getQuantifiersEngine()->assertQuantifier(assertion[0], false);
           break;
         case kind::EQUAL:
           //do nothing
