@@ -24,9 +24,9 @@
 #include "theory/quantifiers/gen_lit_info.h"
 #include "theory/quantifiers/iex_pf_gen.h"
 #include "theory/quantifiers/inst_explain.h"
+#include "theory/quantifiers/subsume.h"
 #include "theory/quantifiers/term_database.h"
 #include "theory/quantifiers_engine.h"
-#include "theory/quantifiers/subsume.h"
 
 namespace CVC4 {
 namespace theory {
@@ -75,7 +75,7 @@ class InstExplainDb
   /** the term database of d_qe */
   TermDb* d_tdb;
   /** the subsume utility of d_qe */
-  Subsume * d_subsume;
+  Subsume* d_subsume;
   /** evaluator utility */
   IeEvaluator d_ev;
   /** the instantiate explain proof generalization utility */

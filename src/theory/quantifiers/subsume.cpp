@@ -22,17 +22,14 @@ namespace CVC4 {
 namespace theory {
 namespace quantifiers {
 
-Subsume::Subsume(QuantifiersEngine* qe)
-{
-  
-}
-  
-void Subsume::setSubsumes( Node q, Node qsubsumed )
+Subsume::Subsume(QuantifiersEngine* qe) {}
+
+void Subsume::setSubsumes(Node q, Node qsubsumed)
 {
   d_subsumes[q].push_back(qsubsumed);
   d_subsumes[qsubsumed].push_back(q);
 }
 
-}
-}
-}
+}  // namespace quantifiers
+}  // namespace theory
+}  // namespace CVC4

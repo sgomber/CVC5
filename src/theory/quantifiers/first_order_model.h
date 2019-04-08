@@ -17,11 +17,11 @@
 #ifndef __CVC4__FIRST_ORDER_MODEL_H
 #define __CVC4__FIRST_ORDER_MODEL_H
 
+#include "expr/attribute.h"
+#include "theory/quantifiers/subsume.h"
+#include "theory/quantifiers_engine.h"
 #include "theory/theory_model.h"
 #include "theory/uf/theory_uf_model.h"
-#include "expr/attribute.h"
-#include "theory/quantifiers_engine.h"
-#include "theory/quantifiers/subsume.h"
 
 namespace CVC4 {
 namespace theory {
@@ -169,7 +169,7 @@ class FirstOrderModel : public TheoryModel
   /** quant engine */
   QuantifiersEngine* d_qe;
   /** the subsume utility of d_qe */
-  Subsume * d_subsume;
+  Subsume* d_subsume;
   /** list of quantifiers asserted in the current context */
   context::CDList<Node> d_forall_asserts;
   /** quantified formulas marked as relevant */

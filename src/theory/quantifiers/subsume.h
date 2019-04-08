@@ -17,7 +17,6 @@
 #ifndef __CVC4__THEORY__QUANTIFIERS__SUBSUME_H
 #define __CVC4__THEORY__QUANTIFIERS__SUBSUME_H
 
-
 #include "theory/quantifiers_engine.h"
 
 namespace CVC4 {
@@ -32,22 +31,23 @@ class Subsume
 {
  public:
   Subsume(QuantifiersEngine* qe);
-  ~Subsume(){}
-  /** set subsumes 
-   * 
+  ~Subsume() {}
+  /** set subsumes
+   *
    * This indicates that q subsumes qsubsumed. This call is legal if:
    *   q |= qsubsumed.
    */
-  void setSubsumes( Node q, Node qsubsumed );
-private:
+  void setSubsumes(Node q, Node qsubsumed);
+
+ private:
   /** map quantified formulas to those they subsume */
   std::map<Node, std::vector<Node>> d_subsumes;
   /** map quantified formulas to those they are subsumed by */
   std::map<Node, std::vector<Node>> d_subsumed_by;
 };
 
-}
-}
-}
+}  // namespace quantifiers
+}  // namespace theory
+}  // namespace CVC4
 
 #endif
