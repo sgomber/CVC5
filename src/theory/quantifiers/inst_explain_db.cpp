@@ -327,10 +327,7 @@ ExplainStatus InstExplainDb::explain(Node q,
     if (regressPfFail.find(elit) == regressPfFail.end())
     {
       eq::EqProof* pfp = &itp->second;
-      std::map<Node, bool> genPath;
-      d_iexpfg.generalize(pfp, concs, concsg, genPath, 1);
-      // should have cleaned up
-      Assert(genPath.empty());
+      d_iexpfg.generalize(elit,pfp, concs, concsg,1);
       if (Trace.isOn("ied-gen"))
       {
         std::map<eq::EqProof*, std::map<Node, GLitInfo>>::iterator itg =

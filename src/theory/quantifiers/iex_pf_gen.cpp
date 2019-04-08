@@ -81,8 +81,19 @@ bool InstExplainPfGen::regressExplain(EqExplainer* eqe,
   }
   return true;
 }
-
 Node InstExplainPfGen::generalize(
+      Node tgtLit,
+    eq::EqProof* eqp,
+    std::map<eq::EqProof*, Node>& concs,
+    std::map<eq::EqProof*, std::map<Node, GLitInfo>>& concsg,
+    unsigned tb)
+{
+  std::map<Node, bool> genPath;
+  return generalizeInternal(tgtLit,eqp,concs,concsg,genPath,tb);
+}
+  
+Node InstExplainPfGen::generalizeInternal(
+      Node tgtLit,
     eq::EqProof* eqp,
     std::map<eq::EqProof*, Node>& concs,
     std::map<eq::EqProof*, std::map<Node, GLitInfo>>& concsg,
@@ -132,7 +143,7 @@ Node InstExplainPfGen::generalize(
         // child proofs are stored in reverse order since congruence proofs
         // are left associative.
         unsigned ii = nchild - (i + 1);
-        retc = generalize(childProofs[ii], concs, concsg, genPath, tb + 1);
+        retc = generalizeInternal(d_null,childProofs[ii], concs, concsg, genPath, tb + 1);
         if (retc.isNull())
         {
           success = false;
@@ -244,7 +255,9 @@ Node InstExplainPfGen::generalize(
     for (unsigned i = 0, nproofs = eqp->d_children.size(); i < nproofs; i++)
     {
       eq::EqProof* epi = eqp->d_children[i].get();
-      retc = generalize(epi, concs, concsg, genPath, tb + 1);
+      // target literal is unknown if non-trivial
+      Node tgtLitc = nproofs==1 ? tgtLit : d_null;
+      retc = generalizeInternal(tgtLitc,epi, concs, concsg, genPath, tb + 1);
       if (retc.isNull())
       {
         success = false;
@@ -516,11 +529,13 @@ bool InstExplainPfGen::instExplainFind(GLitInfo& g,
       indent(c, tb + 2);
     }
     // check the matching constraints on opli against the original literal
-    // in the quantified formula here.
+    // in the quantified formula opl here.
     // currently: we avoid matching constraints altogether by only
     // pursuing generalizations that are fully compatible with the
     // current.
-    if (!g.checkCompatible(opl, opli))
+    // opl may not be available in the case where we are looking to establish
+    // a generalization of a literal in UF proof with no inferrable target.
+    if (!opl.isNull() && !g.checkCompatible(opl, opli))
     {
       Trace(c) << "  ...incompatible!" << std::endl;
     }

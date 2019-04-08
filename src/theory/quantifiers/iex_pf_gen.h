@@ -54,10 +54,10 @@ class InstExplainPfGen
    *
    * tb is the tabulation level (for debugging).
    */
-  Node generalize(eq::EqProof* eqp,
+  Node generalize(Node tgtLit,
+                  eq::EqProof* eqp,
                   std::map<eq::EqProof*, Node>& concs,
                   std::map<eq::EqProof*, std::map<Node, GLitInfo>>& concsg,
-                  std::map<Node, bool>& genPath,
                   unsigned tb = 0);
   /**
    * Regress the explanation of proof sketch eqp using eqe.
@@ -100,7 +100,14 @@ class InstExplainPfGen
   Node convertEq(Node n) const;
   /** convert to non-equality (inverse of above for rewritten nodes) */
   Node convertRmEq(Node n) const;
-
+  /** generalize internal */
+  Node generalizeInternal(
+      Node tgtLit,
+      eq::EqProof* eqp,
+      std::map<eq::EqProof*, Node>& concs,
+      std::map<eq::EqProof*, std::map<Node, GLitInfo>>& concsg,
+      std::map<Node, bool>& genPath,
+      unsigned tb);
   /** Instantiation explanation
    *
    * This is called when the instantiation lemma inst currently propagates the
