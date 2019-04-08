@@ -603,10 +603,11 @@ ExplainStatus InstExplainDb::explain(Node q,
       std::map<Node, GLitInfo>::iterator itg = itgp->second.find(gelit);
       Assert(itg != itgp->second.end());
       // get the UPG information from this
-      InstExplainInst* iei = itg->second.getUPG(finalConclusions,concQuant,finalAssumptions);
-      if( iei )
+      InstExplainInst* iei =
+          itg->second.getUPG(finalConclusions, concQuant, finalAssumptions);
+      if (iei)
       {
-        Assert( !finalInfo );
+        Assert(!finalInfo);
         finalInfo = iei;
       }
     }

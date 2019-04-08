@@ -48,22 +48,24 @@ bool GLitInfo::merge(TNode a, TNode b, const GLitInfo& gb, bool allowBind)
 
 bool GLitInfo::setConclusion(Node pl, Node opl)
 {
-  std::map<Node, std::map<Node, GLitInfo> >::iterator it = d_conclusions.find(pl);
-  if( it==d_conclusions.end() )
+  std::map<Node, std::map<Node, GLitInfo>>::iterator it =
+      d_conclusions.find(pl);
+  if (it == d_conclusions.end())
   {
     return false;
   }
   std::map<Node, GLitInfo>::iterator it2 = it->second.find(opl);
-  if( it2==it->second.end() )
+  if (it2 == it->second.end())
   {
     return false;
   }
   // if child is purely general, we can compress and remove this
-  if( it2->second.d_conclusions.empty() )
+  if (it2->second.d_conclusions.empty())
   {
     // take its assumptions
-    d_assumptions.insert(
-        d_assumptions.end(), it2->second.d_assumptions.begin(), it2->second.d_assumptions.end());    
+    d_assumptions.insert(d_assumptions.end(),
+                         it2->second.d_assumptions.begin(),
+                         it2->second.d_assumptions.end());
     d_conclusions.erase(pl);
   }
   return true;
@@ -92,11 +94,11 @@ bool GLitInfo::mergeInternal(
   Trace("ied-ginfo") << "GLitInfo::merge, a : " << a << std::endl;
   Trace("ied-ginfo") << "GLitInfo::merge, b : " << b << std::endl;
   // the visit cache and indicates unifier information
-  std::map<Node, std::unordered_set<Node, NodeHashFunction> > visited;
+  std::map<Node, std::unordered_set<Node, NodeHashFunction>> visited;
   std::vector<Node> avisit;
   std::vector<Node> bvisit;
   std::map<TNode, Node>::const_iterator it;
-  std::map<Node, std::unordered_set<Node, NodeHashFunction> >::iterator itv;
+  std::map<Node, std::unordered_set<Node, NodeHashFunction>>::iterator itv;
   avisit.push_back(a);
   bvisit.push_back(b);
   TNode cura;
@@ -276,36 +278,33 @@ bool GLitInfo::drop(TNode b)
   return true;
 }
 
-bool GLitInfo::isPurelyGeneral() const
-{
-  return d_conclusions.empty();
-}
+bool GLitInfo::isPurelyGeneral() const { return d_conclusions.empty(); }
 
 bool GLitInfo::isOpen(Node lit) const
 {
-  return d_conclusions.find(lit)!=d_conclusions.end();
-}
-  
-bool GLitInfo::hasUPG() const
-{
-  return true;
+  return d_conclusions.find(lit) != d_conclusions.end();
 }
 
-InstExplainInst* GLitInfo::getUPG( std::vector< Node >& concs, Node& quant, std::vector< Node >& assumptions ) const
+bool GLitInfo::hasUPG() const { return true; }
+
+InstExplainInst* GLitInfo::getUPG(std::vector<Node>& concs,
+                                  Node& quant,
+                                  std::vector<Node>& assumptions) const
 {
   InstExplainInst* ret = d_iei;
   // add assumptions here
-  assumptions.insert(assumptions.end(),d_assumptions.begin(),d_assumptions.end());
+  assumptions.insert(
+      assumptions.end(), d_assumptions.begin(), d_assumptions.end());
   for (const std::pair<Node, std::map<Node, GLitInfo>>& cs : d_conclusions)
   {
     for (const std::pair<Node, GLitInfo>& cc : cs.second)
     {
       InstExplainInst* cret = nullptr;
       // are we a leaf? if so, we must add to conclusions
-      if( cc.second.d_conclusions.empty() )
+      if (cc.second.d_conclusions.empty())
       {
         // note the negation here
-        concs.push_back( cc.first.negate() );
+        concs.push_back(cc.first.negate());
         // we should have an instantiation information here
         cret = cc.second.d_iei;
         Assert(cret);
@@ -316,11 +315,11 @@ InstExplainInst* GLitInfo::getUPG( std::vector< Node >& concs, Node& quant, std:
       else
       {
         // recurse
-        cret = cc.second.getUPG(concs,quant,assumptions);
+        cret = cc.second.getUPG(concs, quant, assumptions);
       }
-      if( cret )
+      if (cret)
       {
-        Assert( !ret || cret==ret );
+        Assert(!ret || cret == ret);
         ret = cret;
       }
     }
@@ -374,7 +373,7 @@ void GLitInfo::debugPrint(const char* c, unsigned tb) const
     }
     else
     {
-      for (const std::pair<Node, std::map<Node, GLitInfo> >& cs : d_conclusions)
+      for (const std::pair<Node, std::map<Node, GLitInfo>>& cs : d_conclusions)
       {
         for (const std::pair<Node, GLitInfo>& cc : cs.second)
         {

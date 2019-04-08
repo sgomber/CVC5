@@ -87,7 +87,11 @@ int IeEvaluator::evaluateInternal(Node n, std::map<Node, int>& cache)
 }
 
 void InstExplainLit::initialize(Node lit) { d_this = lit; }
-void InstExplainLit::reset() { d_curr_insts.clear(); d_curr_olits.clear(); }
+void InstExplainLit::reset()
+{
+  d_curr_insts.clear();
+  d_curr_olits.clear();
+}
 void InstExplainLit::addInstExplanation(Node inst)
 {
   // Add to instantiations if not already there.
