@@ -112,28 +112,28 @@ class FirstOrderModel : public TheoryModel
   void markRelevant( Node q );
   /** get relevance value */
   int getRelevanceValue( Node q );
-  /** set quantified formula active/inactive 
-   * 
+  /** set quantified formula active/inactive
+   *
    * This indicates that quantified formula is "inactive", that is, it need
    * not be considered during this instantiation round.
-   * 
+   *
    * A quantified formula may be set inactive if for instance:
    *   - It is entailed by other quantified formulas, or
    *   - All of its instances are known to be true in the current model.
-   * 
+   *
    * This method should be called after a call to FirstOrderModel::reset_round,
    * and before calls to QuantifiersModule check calls. A common place to call
    * this method is during QuantifiersModule reset_round calls.
    */
   void setQuantifierActive( TNode q, bool active );
-  /** is quantified formula active? 
-   * 
+  /** is quantified formula active?
+   *
    * Returns false if there has been a call to setQuantifierActive( q, false )
    * during this instantiation round.
    */
-  bool isQuantifierActive( TNode q ) const;
+  bool isQuantifierActive(TNode q) const;
   /** is quantified formula asserted */
-  bool isQuantifierAsserted( TNode q ) const;
+  bool isQuantifierAsserted(TNode q) const;
   /** get model basis term */
   Node getModelBasisTerm(TypeNode tn);
   /** is model basis term */

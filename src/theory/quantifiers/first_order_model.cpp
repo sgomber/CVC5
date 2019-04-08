@@ -297,15 +297,17 @@ void FirstOrderModel::setQuantifierActive( TNode q, bool active ) {
   d_quant_active[q] = active;
 }
 
-bool FirstOrderModel::isQuantifierActive( TNode q ) const {
-  std::map< TNode, bool >::const_iterator it = d_quant_active.find( q );
+bool FirstOrderModel::isQuantifierActive(TNode q) const
+{
+  std::map<TNode, bool>::const_iterator it = d_quant_active.find(q);
   if( it==d_quant_active.end() ){
     return true;
   }
   return it->second;
 }
 
-bool FirstOrderModel::isQuantifierAsserted( TNode q ) const {
+bool FirstOrderModel::isQuantifierAsserted(TNode q) const
+{
   Assert( d_forall_rlv_assert.size()==d_forall_asserts.size() );
   return std::find( d_forall_rlv_assert.begin(), d_forall_rlv_assert.end(), q )!=d_forall_rlv_assert.end();
 }

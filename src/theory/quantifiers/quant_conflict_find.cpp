@@ -2150,7 +2150,7 @@ void QuantConflictFind::checkQuantifiedFormula(Node q,
     if (qi->isMatchSpurious(this))
     {
       Trace("qcf-inst") << "   ... Spurious (match is inconsistent)"
-          << std::endl;
+                        << std::endl;
       continue;
     }
     // check whether match can be completed
@@ -2169,7 +2169,7 @@ void QuantConflictFind::checkQuantifiedFormula(Node q,
     if (tcs)
     {
       Trace("qcf-inst") << "   ... Spurious (match is T-inconsistent)"
-          << std::endl;
+                        << std::endl;
     }
     else
     {
