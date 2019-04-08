@@ -124,7 +124,8 @@ bool QRepBoundExt::getVariableOrder(Node owner, std::vector<unsigned>& varOrder)
 
 FirstOrderModel::FirstOrderModel(QuantifiersEngine * qe, context::Context* c, std::string name ) :
 TheoryModel( c, name, true ),
-d_qe( qe ), d_forall_asserts( c ){
+d_qe( qe ), d_subsume(qe->getSubsume()),
+d_forall_asserts( c ){
   d_rlv_count = 0;
 }
 

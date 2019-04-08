@@ -20,6 +20,7 @@
 #include "theory/arrays/theory_arrays.h"
 #include "theory/datatypes/theory_datatypes.h"
 #include "theory/quantifiers/alpha_equivalence.h"
+#include "theory/quantifiers/subsume.h"
 #include "theory/quantifiers/anti_skolem.h"
 #include "theory/quantifiers/bv_inverter.h"
 #include "theory/quantifiers/cegqi/inst_strategy_cegqi.h"
@@ -87,6 +88,7 @@ QuantifiersEngine::QuantifiersEngine(context::Context* c,
       d_quant_attr(new quantifiers::QuantAttributes(this)),
       d_instantiate(new quantifiers::Instantiate(this, u)),
       d_skolemize(new quantifiers::Skolemize(this, u)),
+      d_subsume(new quantifiers::Subsume(this)),
       d_term_enum(new quantifiers::TermEnumeration),
       d_alpha_equiv(nullptr),
       d_inst_engine(nullptr),
@@ -345,6 +347,10 @@ quantifiers::Instantiate* QuantifiersEngine::getInstantiate() const
 quantifiers::Skolemize* QuantifiersEngine::getSkolemize() const
 {
   return d_skolemize.get();
+}
+quantifiers::Subsume* QuantifiersEngine::getSubsume() const
+{
+  return d_subsume.get();
 }
 quantifiers::TermEnumeration* QuantifiersEngine::getTermEnumeration() const
 {

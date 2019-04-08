@@ -26,6 +26,7 @@
 #include "theory/quantifiers/inst_explain.h"
 #include "theory/quantifiers/term_database.h"
 #include "theory/quantifiers_engine.h"
+#include "theory/quantifiers/subsume.h"
 
 namespace CVC4 {
 namespace theory {
@@ -73,6 +74,8 @@ class InstExplainDb
   QuantifiersEngine* d_qe;
   /** the term database of d_qe */
   TermDb* d_tdb;
+  /** the subsume utility of d_qe */
+  Subsume * d_subsume;
   /** evaluator utility */
   IeEvaluator d_ev;
   /** the instantiate explain proof generalization utility */
@@ -134,14 +137,6 @@ class InstExplainDb
   static void indent(const char* c, unsigned tb);
   /** returns true if gn is a generalization of n */
   static bool isGeneralization(Node n, Node gn);
-
-  /** the subsumption map
-   *
-   * TODO
-   */
-  std::map<Node, std::vector<Node>> d_subsumes;
-  /** the inverse of the above map */
-  std::map<Node, std::vector<Node>> d_subsumed_by;
 
   /** Register propagating literal
    *

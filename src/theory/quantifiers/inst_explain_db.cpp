@@ -32,6 +32,7 @@ namespace quantifiers {
 InstExplainDb::InstExplainDb(QuantifiersEngine* qe)
     : d_qe(qe),
       d_tdb(d_qe->getTermDatabase()),
+      d_subsume(d_qe->getSubsume()),
       d_ev(d_qe->getValuation()),
       d_iexpfg(*this, qe)
 {
@@ -675,8 +676,7 @@ ExplainStatus InstExplainDb::explain(Node q,
     Trace("ied-conflict-debug") << "auto-subsume: " << std::endl;
     Trace("ied-conflict-debug") << "  " << conc << " subsumes" << std::endl;
     Trace("ied-conflict-debug") << "  " << concQuant << std::endl;
-    d_subsumes[conc].push_back(concQuant);
-    d_subsumes[concQuant].push_back(conc);
+    d_subsume->setSubsumes(conc,concQuant);
     // We mark an attribute on the conclusion to indicate that it subsumes
     // the original quantified formula whenever it is asserted.
     Assert(finalInfo);

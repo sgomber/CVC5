@@ -50,6 +50,7 @@ namespace quantifiers {
   class TermCanonize;
   class Instantiate;
   class Skolemize;
+  class Subsume;
   class TermEnumeration;
   class FirstOrderModel;
   class QuantAttributes;
@@ -137,6 +138,8 @@ public:
   quantifiers::Instantiate* getInstantiate() const;
   /** get skolemize utility */
   quantifiers::Skolemize* getSkolemize() const;
+  /** get subsume utility */
+  quantifiers::Subsume* getSubsume() const;
   /** get term enumeration utility */
   quantifiers::TermEnumeration* getTermEnumeration() const;
   /** get trigger database */
@@ -356,6 +359,8 @@ public:
   std::unique_ptr<quantifiers::Instantiate> d_instantiate;
   /** skolemize utility */
   std::unique_ptr<quantifiers::Skolemize> d_skolemize;
+  /** subsumption */
+  std::unique_ptr<quantifiers::Subsume> d_subsume;
   /** term enumeration utility */
   std::unique_ptr<quantifiers::TermEnumeration> d_term_enum;
   //------------- end quantifiers utilities

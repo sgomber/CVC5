@@ -20,6 +20,8 @@
 #include "theory/theory_model.h"
 #include "theory/uf/theory_uf_model.h"
 #include "expr/attribute.h"
+#include "theory/quantifiers_engine.h"
+#include "theory/quantifiers/subsume.h"
 
 namespace CVC4 {
 namespace theory {
@@ -166,6 +168,8 @@ class FirstOrderModel : public TheoryModel
  protected:
   /** quant engine */
   QuantifiersEngine* d_qe;
+  /** the subsume utility of d_qe */
+  Subsume * d_subsume;
   /** list of quantifiers asserted in the current context */
   context::CDList<Node> d_forall_asserts;
   /** quantified formulas marked as relevant */
