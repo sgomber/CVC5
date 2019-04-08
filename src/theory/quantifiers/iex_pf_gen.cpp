@@ -86,7 +86,7 @@ Node InstExplainPfGen::generalize(
     eq::EqProof* eqp,
     std::map<eq::EqProof*, Node>& concs,
     std::map<eq::EqProof*, std::map<Node, GLitInfo>>& concsg,
-                  std::map<Node, bool >& genPath,
+    std::map<Node, bool>& genPath,
     unsigned tb)
 {
   std::map<eq::EqProof*, Node>::iterator itc = concs.find(eqp);
@@ -244,7 +244,7 @@ Node InstExplainPfGen::generalize(
     for (unsigned i = 0, nproofs = eqp->d_children.size(); i < nproofs; i++)
     {
       eq::EqProof* epi = eqp->d_children[i].get();
-      retc = generalize(epi, concs, concsg, genPath,tb + 1);
+      retc = generalize(epi, concs, concsg, genPath, tb + 1);
       if (retc.isNull())
       {
         success = false;
@@ -305,9 +305,13 @@ Node InstExplainPfGen::generalize(
   return ret;
 }
 
-bool InstExplainPfGen::instExplain(
-    GLitInfo& g, Node olit, Node lit, Node inst,
-                  std::map<Node, bool >& genPath, const char* c, unsigned tb)
+bool InstExplainPfGen::instExplain(GLitInfo& g,
+                                   Node olit,
+                                   Node lit,
+                                   Node inst,
+                                   std::map<Node, bool>& genPath,
+                                   const char* c,
+                                   unsigned tb)
 {
   if (Trace.isOn(c))
   {
@@ -341,21 +345,22 @@ bool InstExplainPfGen::instExplain(
     return false;
   }
   Assert(plits.size() == plitso.size());
-  
+
   // If any literal is already being explored on this path, we have a cyclic
   // proof. We abort here since a cyclic proof cannot contribute to the
   // overall strength of the generalization, since its open leaves are
   // at least as weak as its root.
-  for( const Node& pl : plits )
+  for (const Node& pl : plits)
   {
-    if( genPath.find(pl)!=genPath.end() || pl==lit )
+    if (genPath.find(pl) != genPath.end() || pl == lit)
     {
-      Trace(c) << "INST-EXPLAIN FAIL: cycle found for premise " << pl << std::endl;
+      Trace(c) << "INST-EXPLAIN FAIL: cycle found for premise " << pl
+               << std::endl;
       return false;
     }
   }
   // indicate that we are exploring the generalized proof of lit.
-  Assert( genPath.find(lit)==genPath.end() );
+  Assert(genPath.find(lit) == genPath.end());
   genPath[lit] = true;
 
   // For each literal in plits, we must either regress it further, or add it to
@@ -459,9 +464,13 @@ bool InstExplainPfGen::instExplain(
   return true;
 }
 
-bool InstExplainPfGen::instExplainFind(
-    GLitInfo& g, Node opl, Node pl, Node inst,
-                  std::map<Node, bool >& genPath, const char* c, unsigned tb)
+bool InstExplainPfGen::instExplainFind(GLitInfo& g,
+                                       Node opl,
+                                       Node pl,
+                                       Node inst,
+                                       std::map<Node, bool>& genPath,
+                                       const char* c,
+                                       unsigned tb)
 {
   std::map<Node, InstExplainLit>::iterator itl;
   if (!d_ied.findInstExplainLit(pl, itl))
@@ -551,7 +560,7 @@ bool InstExplainPfGen::instExplainFind(
     }
   }
   // TODO: search for instantiations that would have propagated this??
-  
+
   // now, take the best generalization if there are any available
   if (pconcs.empty())
   {

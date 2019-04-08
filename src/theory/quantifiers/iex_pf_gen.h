@@ -48,7 +48,7 @@ class InstExplainPfGen
    * in the range of concsg[p][L] for each L contains the "generalized
    * literal information", which contains the necessary information for
    * interpretting L.
-   * 
+   *
    * genPath is the current (ground) literals that are parents of our current
    * path in the proof tree.
    *
@@ -57,7 +57,7 @@ class InstExplainPfGen
   Node generalize(eq::EqProof* eqp,
                   std::map<eq::EqProof*, Node>& concs,
                   std::map<eq::EqProof*, std::map<Node, GLitInfo>>& concsg,
-                  std::map<Node, bool >& genPath,
+                  std::map<Node, bool>& genPath,
                   unsigned tb = 0);
   /**
    * Regress the explanation of proof sketch eqp using eqe.
@@ -131,14 +131,22 @@ class InstExplainPfGen
    *
    * c is the name of a Trace, and tb is number of tabs (for debug printing).
    */
-  bool instExplain(
-      GLitInfo& g, Node olit, Node lit, Node inst,
-                  std::map<Node, bool >& genPath, const char* c, unsigned tb);
+  bool instExplain(GLitInfo& g,
+                   Node olit,
+                   Node lit,
+                   Node inst,
+                   std::map<Node, bool>& genPath,
+                   const char* c,
+                   unsigned tb);
   /** find instantiation explanation for opl/pl
    */
-  bool instExplainFind(
-      GLitInfo& g, Node opl, Node pl, Node inst,
-                  std::map<Node, bool >& genPath, const char* c, unsigned tb);
+  bool instExplainFind(GLitInfo& g,
+                       Node opl,
+                       Node pl,
+                       Node inst,
+                       std::map<Node, bool>& genPath,
+                       const char* c,
+                       unsigned tb);
 
   /** indent tb tabulations on trace c. */
   static void indent(const char* c, unsigned tb);
