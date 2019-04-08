@@ -179,6 +179,13 @@ Node InstExplainPfGen::generalizeInternal(
     ret = eqp->d_node;
     Assert(ret == Rewriter::rewrite(ret));
     Trace("ied-gen") << "ied-pf: equality " << ret << std::endl;
+    /*
+    if( !instExplainFind(concsg[eqp],tgtLit,ret,Node::null(),genPath,"ied-gen",tb+2) )
+    {
+      
+    }
+    */
+    
     // try to generalize here
     // TODO: may be able to do instExplainFind?
     std::map<Node, InstExplainLit>::iterator itl;
@@ -509,6 +516,7 @@ bool InstExplainPfGen::instExplainFind(GLitInfo& g,
   {
     return false;
   }
+  Assert( !opl.isNull() );
   // populate choices for the proof regression, which we store in
   // g.d_conclusions[pl]
   std::map<Node, GLitInfo>& pconcs = g.d_conclusions[pl];
@@ -546,9 +554,16 @@ bool InstExplainPfGen::instExplainFind(GLitInfo& g,
       bool setBest = false;
       if (instExplain(pconcs[opli], opli, pl, instpl, genPath, c, tb + 3))
       {
-        // if it is purely general, we are done
-        if (pconcs[opli].d_conclusions.empty())
+        if( opl.isNull() )
         {
+          // Don't have criteria to judge what is best, due to incomparable
+          // matching.
+          // TODO: could do subsumption to prune here
+          setBest = true;
+        }
+        else if (pconcs[opli].d_conclusions.empty())
+        {
+          // if it is purely general, we are done
           if (!best.isNull())
           {
             // Clean up the previous best. This happens when we found a non
@@ -590,16 +605,23 @@ bool InstExplainPfGen::instExplainFind(GLitInfo& g,
   }
   Assert(!best.isNull());
   Assert(pconcs.find(best) != pconcs.end());
+  if( opl.isNull() )
+  {
+    // we leave multiple possible conclusions here
+    return true;
+  }
   if (Trace.isOn(c))
   {
     indent(c, tb + 1);
     Trace(c) << "CHOOSE to set conclusion " << best << std::endl;
     indent(c, tb + 1);
   }
-  // merge the current with the child
+  // Set the conclusion to the one on child "best". 
+  // This will merge it into the parent if it has no open leaves.
   bool setSuccess = g.setConclusion(pl, best);
   if (!setSuccess)
   {
+    // should never happen: pl / best should be a child in g.
     Assert(false);
     // remove it
     g.d_conclusions.erase(pl);
