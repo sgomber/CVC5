@@ -144,14 +144,19 @@ bool InstExplainInst::justify(IeEvaluator& v,
   Assert(lit == Rewriter::rewrite(lit));
   std::map<Node, int> assumptions;
   assumptions[lit] = -1;
-  // now, explain why the remainder was false
-  if (justifyInternal(
-          d_body, d_quant[1], false, olit, v, assumptions, cache, lits, olits))
+  // the quantified formula must hold in the current context. If it does, it
+  // is always a part of the explanation below.
+  if( v.evaluate(d_quant)==1 )
   {
-    // the quantified formula is always a part of the explanation
-    lits.push_back(d_quant);
-    olits.push_back(d_quant);
-    return true;
+    // now, explain why the remainder was false
+    if (justifyInternal(
+            d_body, d_quant[1], false, olit, v, assumptions, cache, lits, olits))
+    {
+      // the quantified formula is always a part of the explanation
+      lits.push_back(d_quant);
+      olits.push_back(d_quant);
+      return true;
+    }
   }
   return false;
 }
