@@ -247,7 +247,7 @@ ExplainStatus InstExplainDb::explain(Node q,
 {
   Trace("ied-conflict") << "InstExplainDb::explain: Conflict in context " << ctx
                         << " : " << std::endl;
-  Trace("ied-conflict") << "  quantified formula: " << q << std::endl;
+  Trace("ied-conflict") << "  [QUANT] " << q << std::endl;
   // we first regress the explanation of proofs
   std::map<Node, bool> regressPfFail;
   std::map<Node, std::vector<TNode>> assumptions;
@@ -313,37 +313,7 @@ ExplainStatus InstExplainDb::explain(Node q,
     }
   }
 
-  // generalized proof information
-  std::map<eq::EqProof*, Node> concs;
-  std::map<eq::EqProof*, std::map<Node, GLitInfo>> concsg;
-  // now go back and see if proofs can be generalized
-  for (std::map<Node, eq::EqProof>::iterator itp = expPf.begin();
-       itp != expPf.end();
-       ++itp)
-  {
-    Node elit = itp->first;
-    Trace("ied-gen") << "----------------- generalize proof " << elit
-                     << std::endl;
-    if (regressPfFail.find(elit) == regressPfFail.end())
-    {
-      eq::EqProof* pfp = &itp->second;
-      d_iexpfg.generalize(elit,pfp, concs, concsg,1);
-      if (Trace.isOn("ied-gen"))
-      {
-        std::map<eq::EqProof*, std::map<Node, GLitInfo>>::iterator itg =
-            concsg.find(pfp);
-        if (itg != concsg.end())
-        {
-          // TODO
-        }
-      }
-    }
-    else
-    {
-      Trace("ied-gen") << "...failed to be regressed" << std::endl;
-    }
-    Trace("ied-gen") << "----------------- end generalize proof" << std::endl;
-  }
+  
   // We have now constructed generalizations of the proofs of all literals that
   // comprise the (ground) conflicting instance. Our goal is now to see if these
   // generalizations lead to a useful (quantified) inference.
@@ -457,7 +427,7 @@ ExplainStatus InstExplainDb::explain(Node q,
 
   // Maps literals in the domain of our original explanation expPf to a
   // generalized conclusion that we are using (when applicable).
-  std::map<Node, Node> litGeneralization;
+  std::map<Node, bool> litGeneralization;
 
   // A literal whose proof includes the "propagated generalization".
   // In the above example, we may set litGenProp to P(x), since its proof
@@ -466,54 +436,45 @@ ExplainStatus InstExplainDb::explain(Node q,
 
   // Does the propagated generalization occur in the base level of the proof?
   bool litGenPropIsBase = false;
-
+  
+  
+  // generalized proof information
+  std::map<eq::EqProof*, Node> concs;
+  std::map<eq::EqProof*, GLitInfo> concsg;
+  // now go back and see if proofs can be generalized
   for (std::map<Node, eq::EqProof>::iterator itp = expPf.begin();
        itp != expPf.end();
        ++itp)
   {
     Node elit = itp->first;
     // the propagated generalization, which begins as elit itself
-    Node propGen = elit;
+    bool propIsBase = true;
     // whether the proof of this literal was fully generalized
     bool pureGeneral = false;
-    Trace("ied-gen") << "----------------- match generalized proof " << elit
+    Trace("ied-gen") << "----------------- generalize proof " << elit
                      << std::endl;
     if (regressPfFail.find(elit) == regressPfFail.end())
     {
       eq::EqProof* pfp = &itp->second;
-      std::map<eq::EqProof*, std::map<Node, GLitInfo>>::iterator itg =
+      d_iexpfg.generalize(elit,pfp, concs, concsg,1);
+      // did we generalize the proof?
+      std::map<eq::EqProof*, GLitInfo>::iterator itg =
           concsg.find(pfp);
       if (itg != concsg.end())
       {
-        for (const std::pair<Node, GLitInfo>& gen : itg->second)
+        Trace("ied-gen") << "....success with" << std::endl;
+        itg->second.debugPrint("ied-gen");
+        if (itg->second.d_conclusions.empty())
         {
-          Node genConc = convertRmEq(gen.first);
-          Trace("ied-gen") << "ied-gen-match: generalizes to " << genConc
-                           << std::endl;
-          // Currently, we only check whether genConc is strictly more general
-          // than elit.
-          if (genInfo.checkCompatible(elit, genConc, gen.second))
-          {
-            Trace("ied-gen") << "....success with" << std::endl;
-            gen.second.debugPrint("ied-gen");
-            if (gen.second.d_conclusions.empty())
-            {
-              // it is a purely generalized proof (only assumptions)
-              Trace("ied-gen") << "PURE, finished" << std::endl;
-              litGeneralization[elit] = gen.first;
-              pureGeneral = true;
-              break;
-            }
-            else if (propGen == elit)
-            {
-              // set that we have a propagating generalization
-              propGen = gen.first;
-            }
-          }
-          else
-          {
-            Trace("ied-gen") << "...incompatible" << std::endl;
-          }
+          // it is a purely generalized proof (only assumptions)
+          Trace("ied-gen") << "PURE, finished" << std::endl;
+          litGeneralization[elit] = true;
+          pureGeneral = true;
+          break;
+        }
+        else
+        {
+          propIsBase = false;
         }
       }
       else
@@ -525,22 +486,19 @@ ExplainStatus InstExplainDb::explain(Node q,
     }
     else
     {
-      Trace("ied-gen")
-          << "cannot match generalized proof since it was not regressed"
-          << std::endl;
+      Trace("ied-gen") << "...failed to be regressed" << std::endl;
     }
-
+    
     // use as the propagating generalization if available
     if (!pureGeneral)
     {
       // Set the propagating generalization if it is available.
       // Otherwise, if the propagating generalization is not at the base level,
       // we undo the generalization of that literal.
-      if (litGenProp.isNull() || (!litGenPropIsBase && elit == propGen))
+      if (litGenProp.isNull() || (!litGenPropIsBase && propIsBase))
       {
-        Trace("ied-gen") << "PROPAGATE-GENERAL " << propGen << " for " << elit
-                         << std::endl;
-        if (elit == propGen)
+        Trace("ied-gen-debug") << "set PROPAGATE-GENERAL " << elit << std::endl;
+        if (propIsBase)
         {
           if (!litGenProp.isNull() && !litGenPropIsBase)
           {
@@ -553,18 +511,17 @@ ExplainStatus InstExplainDb::explain(Node q,
         {
           Trace("ied-gen") << "...add to generalization" << std::endl;
           // we use the generalization here
-          litGeneralization[elit] = propGen;
+          litGeneralization[elit] = true;
           // elit is the literal that has the generalized propagation
           litGenProp = elit;
         }
         // the generalized propagation is in the base proof if elit is propGen
-        litGenPropIsBase = (elit == propGen);
+        litGenPropIsBase = propIsBase;
       }
     }
-    Trace("ied-gen")
-        << "----------------- end match generalized proof, gen size = "
-        << litGeneralization.size() << std::endl;
+    Trace("ied-gen") << "----------------- end generalize proof" << std::endl;
   }
+
   // if we don't have useful generalizations, we fail.
   // This happens if and only if the propagated generalization is identical
   // to the conflicting literal set, where the conclusion of the overall
@@ -576,6 +533,7 @@ ExplainStatus InstExplainDb::explain(Node q,
                           << std::endl;
     return EXP_STATUS_FAIL;
   }
+  
   Trace("ied-conflict")
       << "...using " << litGeneralization.size()
       << " generalizations, a literal with propagated generalization is "
@@ -592,20 +550,17 @@ ExplainStatus InstExplainDb::explain(Node q,
        ++itp)
   {
     Node elit = itp->first;
-    std::map<Node, Node>::iterator it = litGeneralization.find(elit);
+    std::map<Node, bool>::iterator it = litGeneralization.find(elit);
     if (it != litGeneralization.end())
     {
       eq::EqProof* pfp = &itp->second;
       // we generalized it, now must look up its information
-      std::map<eq::EqProof*, std::map<Node, GLitInfo>>::iterator itgp =
+      std::map<eq::EqProof*, GLitInfo>::iterator itgp =
           concsg.find(pfp);
       Assert(itgp != concsg.end());
-      Node gelit = it->second;
-      std::map<Node, GLitInfo>::iterator itg = itgp->second.find(gelit);
-      Assert(itg != itgp->second.end());
       // get the UPG information from this
       InstExplainInst* iei =
-          itg->second.getUPG(finalConclusions, concQuant, finalAssumptions);
+          itgp->second.getUPG(finalConclusions, concQuant, finalAssumptions);
       if (iei)
       {
         Assert(!finalInfo);

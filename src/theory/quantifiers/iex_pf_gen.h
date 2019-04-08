@@ -57,7 +57,7 @@ class InstExplainPfGen
   Node generalize(Node tgtLit,
                   eq::EqProof* eqp,
                   std::map<eq::EqProof*, Node>& concs,
-                  std::map<eq::EqProof*, std::map<Node, GLitInfo>>& concsg,
+                  std::map<eq::EqProof*, GLitInfo>& concsg,
                   unsigned tb = 0);
   /**
    * Regress the explanation of proof sketch eqp using eqe.
@@ -105,7 +105,7 @@ class InstExplainPfGen
       Node tgtLit,
       eq::EqProof* eqp,
       std::map<eq::EqProof*, Node>& concs,
-      std::map<eq::EqProof*, std::map<Node, GLitInfo>>& concsg,
+      std::map<eq::EqProof*, GLitInfo>& concsg,
       std::map<Node, bool>& genPath,
       unsigned tb);
   /** Instantiation explanation

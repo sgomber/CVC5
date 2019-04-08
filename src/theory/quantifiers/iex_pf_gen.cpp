@@ -85,7 +85,7 @@ Node InstExplainPfGen::generalize(
       Node tgtLit,
     eq::EqProof* eqp,
     std::map<eq::EqProof*, Node>& concs,
-    std::map<eq::EqProof*, std::map<Node, GLitInfo>>& concsg,
+    std::map<eq::EqProof*, GLitInfo>& concsg,
     unsigned tb)
 {
   std::map<Node, bool> genPath;
@@ -96,7 +96,7 @@ Node InstExplainPfGen::generalizeInternal(
       Node tgtLit,
     eq::EqProof* eqp,
     std::map<eq::EqProof*, Node>& concs,
-    std::map<eq::EqProof*, std::map<Node, GLitInfo>>& concsg,
+    std::map<eq::EqProof*, GLitInfo>& concsg,
     std::map<Node, bool>& genPath,
     unsigned tb)
 {
@@ -178,62 +178,25 @@ Node InstExplainPfGen::generalizeInternal(
     // an assumption
     ret = eqp->d_node;
     Assert(ret == Rewriter::rewrite(ret));
-    Trace("ied-gen") << "ied-pf: equality " << ret << std::endl;
-    /*
-    if( !instExplainFind(concsg[eqp],tgtLit,ret,Node::null(),genPath,"ied-gen",tb+2) )
+    if( Trace.isOn("ied-gen") )
     {
-      
+      Trace("ied-gen") << "ied-pf: equality " << ret << std::endl;
+      indent("ied-gen", tb);
+      Trace("ied-gen") << "INST-EXPLAIN find (UF leaf): " << ret << " / " << tgtLit << std::endl;
     }
-    */
-    
-    // try to generalize here
-    // TODO: may be able to do instExplainFind?
-    std::map<Node, InstExplainLit>::iterator itl;
-    if (d_ied.findInstExplainLit(ret, itl))
+    bool recSuccess = instExplainFind(concsg[eqp],tgtLit,ret,Node::null(),genPath,"ied-gen",tb+2);
+    if( Trace.isOn("ied-gen") )
     {
-      InstExplainLit& iel = itl->second;
-      // activate the literal
-      d_ied.activateLit(ret);
-      std::vector<Node>& cexp = iel.d_curr_insts;
-      std::vector<Node>& colits = iel.d_curr_olits;
-      Assert(cexp.size() == colits.size());
-      for (unsigned i = 0, size = cexp.size(); i < size; i++)
-      {
-        Node pinst = cexp[i];
-        // get the original literal
-        Node olit = colits[i];
-        Node colit = convertEq(olit);
-        // initialize the generalization with the backwards mapping to its
-        // concretization
-        GLitInfo& gli = concsg[eqp][colit];
-        if (Trace.isOn("ied-gen"))
-        {
-          indent("ied-gen", tb + 1);
-          Trace("ied-gen") << "ied-pf: inst-explain equality " << olit
-                           << std::endl;
-          indent("ied-gen", tb + 1);
-          Trace("ied-gen") << "from " << pinst << std::endl;
-        }
-        // we must inst-explain it now
-        if (!instExplain(gli, olit, ret, pinst, genPath, "ied-gen", tb + 2))
-        {
-          concsg[eqp].erase(colit);
-          Trace("ied-gen") << "...failed" << std::endl;
-        }
-        else
-        {
-          Trace("ied-gen") << "...success!" << std::endl;
-        }
-      }
+      indent("ied-gen", tb);
     }
-    if (Trace.isOn("ied-gen"))
+    if( recSuccess )
     {
-      if (concsg.find(eqp) == concsg.end())
-      {
-        indent("ied-gen", tb + 1);
-        Trace("ied-gen") << "ied-pf: no generalizations (tried "
-                         << itl->second.d_curr_insts.size() << ")" << std::endl;
-      }
+      Trace("ied-gen") << "...success!" << std::endl;
+    }
+    else
+    {
+      concsg.erase(eqp);
+      Trace("ied-gen") << "...failed to IEX UF leaf " << ret << " / " << tgtLit << std::endl;
     }
     ret = convertEq(ret);
   }
@@ -304,8 +267,9 @@ Node InstExplainPfGen::generalizeInternal(
   if (Trace.isOn("ied-gen"))
   {
     indent("ied-gen", tb);
-    Trace("ied-gen") << "...proves " << ret;
-    std::map<eq::EqProof*, std::map<Node, GLitInfo>>::iterator itg =
+    Trace("ied-gen") << "...proves " << ret << std::endl;
+    /*
+    std::map<eq::EqProof*, GLitInfo>::iterator itg =
         concsg.find(eqp);
     if (itg != concsg.end())
     {
@@ -321,6 +285,7 @@ Node InstExplainPfGen::generalizeInternal(
     {
       Trace("ied-gen") << std::endl;
     }
+    */
   }
   return ret;
 }
