@@ -134,12 +134,12 @@ public:
   quantifiers::TermCanonize* getTermCanonize() const;
   /** get quantifiers attributes */
   quantifiers::QuantAttributes* getQuantAttributes() const;
+  /** get subsume utility */
+  quantifiers::Subsume* getSubsume() const;
   /** get instantiate utility */
   quantifiers::Instantiate* getInstantiate() const;
   /** get skolemize utility */
   quantifiers::Skolemize* getSkolemize() const;
-  /** get subsume utility */
-  quantifiers::Subsume* getSubsume() const;
   /** get term enumeration utility */
   quantifiers::TermEnumeration* getTermEnumeration() const;
   /** get trigger database */
@@ -355,12 +355,12 @@ public:
   std::unique_ptr<quantifiers::TermDbSygus> d_sygus_tdb;
   /** quantifiers attributes */
   std::unique_ptr<quantifiers::QuantAttributes> d_quant_attr;
+  /** subsumption */
+  std::unique_ptr<quantifiers::Subsume> d_subsume;
   /** instantiate utility */
   std::unique_ptr<quantifiers::Instantiate> d_instantiate;
   /** skolemize utility */
   std::unique_ptr<quantifiers::Skolemize> d_skolemize;
-  /** subsumption */
-  std::unique_ptr<quantifiers::Subsume> d_subsume;
   /** term enumeration utility */
   std::unique_ptr<quantifiers::TermEnumeration> d_term_enum;
   //------------- end quantifiers utilities
