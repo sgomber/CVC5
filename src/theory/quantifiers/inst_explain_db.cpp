@@ -659,6 +659,11 @@ ExplainStatus InstExplainDb::explain(Node q,
       << std::endl;
   Trace("ied-lemma") << "InstExplainDb::lemma (GEN-RES): " << lem << std::endl;
   lems.push_back(lem);
+  // TEMPORARY FIXME
+  if( options::qcfExpGenAbort() )
+  {
+    exit(77);
+  }
   return EXP_STATUS_FULL;
 }
 

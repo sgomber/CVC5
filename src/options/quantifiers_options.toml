@@ -702,6 +702,15 @@ header = "options/quantifiers_options.h"
   help       = "what kind of lemmas to add when a conflicting instance is discovered"
 
 [[option]]
+  name       = "qcfExpGenAbort"
+  category   = "regular"
+  long       = "qcf-exp-gen-abort"
+  type       = "bool"
+  default    = "false"
+  read_only  = true
+  help       = "qcf experimental variable ordering"
+
+[[option]]
   name       = "qcfExpRegressInst"
   category   = "regular"
   long       = "qcf-rexpi"
