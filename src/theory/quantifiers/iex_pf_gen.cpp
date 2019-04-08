@@ -192,7 +192,7 @@ Node InstExplainPfGen::generalize(
           Trace("ied-gen") << "ied-pf: inst-explain equality " << olit
                            << std::endl;
           indent("ied-gen", tb + 1);
-          Trace("ied-gen") << "        from " << pinst << std::endl;
+          Trace("ied-gen") << "from " << pinst << std::endl;
         }
         // we must inst-explain it now
         if (!instExplain(gli, olit, ret, pinst, "ied-gen", tb + 2))
@@ -311,7 +311,7 @@ bool InstExplainPfGen::instExplain(
     indent(c, tb);
     Trace(c) << "INST-EXPLAIN: " << lit << " / " << olit << std::endl;
     indent(c, tb);
-    Trace(c) << "         from " << inst << std::endl;
+    Trace(c) << "from " << inst << std::endl;
   }
   InstExplainInst& iei = d_ied.getInstExplainInst(inst);
   // Since the instantiation lemma inst is propagating lit, we have that:
@@ -342,6 +342,9 @@ bool InstExplainPfGen::instExplain(
   // For each literal in plits, we must either regress it further, or add it to
   // the assumptions of g.
   Node q = iei.getQuantifiedFormula();
+  // the child with the UPG
+  Node upgLit;
+  Node upgOLit;
   for (unsigned k = 0, plsize = plits.size(); k < plsize; k++)
   {
     Node pl = plits[k];
@@ -350,28 +353,79 @@ bool InstExplainPfGen::instExplain(
     if (Trace.isOn(c))
     {
       indent(c, tb + 1);
-      Trace(c) << "inst-exp: requires " << pl << std::endl;
-      indent(c, tb + 1);
+      Trace(c) << "Premise #" << (k+1) << ": " <<  pl << std::endl;
     }
     // Now, regress the proof of pl / opl. It is either:
     // - the quantified formula itself, in which case it is an assumption,
     // - it is inst-explanable via a successful call to instExplainFind,
     // - it is an open leaf via a failed call to instExplainFind, in which
     // case it must be a conclusion.
+    bool isOpen = true;
     if( pl==q )
     {
       // if pl is the quantified formula for inst, we add it to assumptions
-      Trace(c) << "-> which is the quantified formula, add to assumptions"
-                << std::endl;
+      if( Trace.isOn(c) )
+      {
+        indent(c, tb + 1);
+        Trace(c) << "-> quantified formula, add to assumptions"
+                  << std::endl;
+      }
       g.d_assumptions.push_back(pl);
+      isOpen = false;
     }    
     // If its not the quantified formula, we try to find an inst-explanation
-    else if (!instExplainFind(g, opl, pl, inst, c, tb))
+    else if (instExplainFind(g, opl, pl, inst, c, tb))
     {
+      if( Trace.isOn(c) )
+      {
+        indent(c, tb + 1);
+      }
+      // if we succeeded, then check if we are purely general
+      if( g.isOpen(pl) )
+      {
+        // if not, then we set the upgLit if we are the unique open branch
+        if( g.d_conclusions.size()==1 )
+        {
+          Trace(c) << "-> inst-explained containing UPG" << std::endl;
+          upgLit = pl;
+          upgOLit = opl;
+          isOpen = false;
+        }
+        else
+        {
+          Trace(c) << "-> inst-explained containing propagating generalization, but not unique:" << std::endl;
+          g.debugPrint(c, tb + 1);
+          // already have another open branch, discard the generalization
+          g.d_conclusions.erase(pl);
+        }
+      }
+      else
+      {
+        Trace(c) << "-> inst-explained, fully general" << std::endl;
+        isOpen = false;
+      }
+    }
+    else if( Trace.isOn(c) )
+    {
+      indent(c, tb + 1);
+      Trace(c) << "-> no inst-explanations" << std::endl;
+    }
+    if( isOpen )
+    {
+      Assert( g.d_conclusions.find(pl)==g.d_conclusions.end() );
       // if we didn't find one, we must carry it must be a conclusion
-      Trace(c) << "-> which has no inst-explanations, it must be a conclusion"
-                << std::endl;
       g.d_conclusions[pl][opl].initialize(&iei);
+      // if we already had a UPG, discard it now and move here
+      if( !upgLit.isNull() )
+      {
+        g.d_conclusions.erase(upgLit);
+        g.d_conclusions[upgLit][upgOLit].initialize(&iei);
+        if (Trace.isOn(c))
+        {
+          indent(c, tb + 1);
+          Trace(c) << "-> revert UPG " << upgLit << std::endl;
+        }
+      }
     }
   }
   if (Trace.isOn(c))
@@ -401,14 +455,13 @@ bool InstExplainPfGen::instExplainFind(
   if (Trace.isOn(c))
   {
     indent(c, tb + 1);
-    Trace(c) << "  generalizes to " << opl << std::endl;
+    Trace(c) << "generalizes to " << opl << std::endl;
     indent(c, tb + 1);
-    Trace(c) << "  and has " << cexppl.size() << " possible inst-explanations"
+    Trace(c) << "and has " << cexppl.size() << " possible inst-explanations"
              << std::endl;
   }
   if (cexppl.empty())
   {
-    indent(c, tb + 1);
     return false;
   }
   // populate choices for the proof regression, which we store in
@@ -424,15 +477,14 @@ bool InstExplainPfGen::instExplainFind(
     // as the one that propagates lit. Otherwise our computation of
     // Boolean propagation was wrong.
     Assert(instpl != instSrc);
-
-    // check the matching constraints on opli against the original literal
-    // in the quantified formula here.
     if (Trace.isOn(c))
     {
       indent(c, tb + 2);
       Trace(c) << "inst-exp: try " << opli << "..." << std::endl;
       indent(c, tb + 2);
     }
+    // check the matching constraints on opli against the original literal
+    // in the quantified formula here.
     // currently: we avoid matching constraints altogether by only
     // pursuing generalizations that are fully compatible with the
     // current.
@@ -443,25 +495,34 @@ bool InstExplainPfGen::instExplainFind(
     else
     {
       Trace(c) << "  ...compatible, recurse" << std::endl;
-      // recurse
+      // recurse now
+      bool setBest = false;
       if (instExplain(pconcs[opli], opli, pl, instpl, c, tb + 3))
       {
         // if it is purely general, we are done
         if( pconcs[opli].d_conclusions.empty() )
         {
+          if( !best.isNull() )
+          {
+            // Clean up the previous best. This happens when we found a non
+            // purely general option for IEX-ing the current ground literal
+            // and then this attempt is purely general.
+            pconcs.erase(best);
+          }
           best = opli;
           break;
         }
-        else
+        else if( best.isNull() )
         {
           // otherwise, it has a propagating generalization, take it.
           // we may carry this forward if all siblings are purely general.
           best = opli;
+          setBest = true;
         }
       }
-      else
+      if( !setBest )
       {
-        // undo
+        // undo this conclusion
         pconcs.erase(opli);
       }
     }
@@ -469,12 +530,12 @@ bool InstExplainPfGen::instExplainFind(
   // now, take the best generalization if there are any available
   if (pconcs.empty())
   {
+    // we no longer have a valid conclusion, remove it
     g.d_conclusions.erase(pl);
     if (Trace.isOn(c))
     {
       indent(c, tb + 1);
       Trace(c) << "-> failed to generalize" << std::endl;
-      indent(c, tb + 1);
     }
     return false;
   }
@@ -483,22 +544,25 @@ bool InstExplainPfGen::instExplainFind(
   if (Trace.isOn(c))
   {
     indent(c, tb + 1);
-    Trace(c) << "-> CHOOSE to merge " << best << std::endl;
+    Trace(c) << "CHOOSE to set conclusion " << best << std::endl;
     indent(c, tb + 1);
   }
   // merge the current with the child
-  bool mergeSuccess = g.merge(opl, best, pconcs[best]);
-  // remove the conclusions
-  g.d_conclusions.erase(pl);
-  if (!mergeSuccess)
+  bool setSuccess = g.setConclusion(pl,best);
+  if (!setSuccess)
   {
+    Assert(false);
+    // remove it
+    g.d_conclusions.erase(pl);
     if (Trace.isOn(c))
     {
-      Trace(c) << "...failed to merge choice" << std::endl;
+      Trace(c) << "-> failed to set conclusion" << std::endl;
       indent(c, tb + 1);
     }
     return false;
   }
+  // either purely general or has a UPG under pl
+  Assert( !g.isOpen(pl) || g.d_conclusions[pl].size()==1 );
   Trace(c) << "...success" << std::endl;
   return true;
 }

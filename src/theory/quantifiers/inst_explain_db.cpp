@@ -602,32 +602,13 @@ ExplainStatus InstExplainDb::explain(Node q,
       Node gelit = it->second;
       std::map<Node, GLitInfo>::iterator itg = itgp->second.find(gelit);
       Assert(itg != itgp->second.end());
-      GLitInfo& ginfo = itg->second;
-      if (!ginfo.d_conclusions.empty())
+      // get the UPG information from this
+      InstExplainInst* iei = itg->second.getUPG(finalConclusions,concQuant,finalAssumptions);
+      if( iei )
       {
-        // not purely general, set conclusions
-        for (const std::pair<Node, std::map<Node, GLitInfo>>& cs :
-             ginfo.d_conclusions)
-        {
-          for (const std::pair<Node, GLitInfo>& cc : cs.second)
-          {
-            finalConclusions.push_back(cc.first.negate());
-            // get the instantiation lemma information about the level of the
-            // propagation
-            const GLitInfo& gli = cc.second;
-            InstExplainInst* glii = gli.d_iei;
-            Assert(glii);
-            Node qg = glii->getQuantifiedFormula();
-            Assert(concQuant.isNull() || concQuant == qg);
-            concQuant = qg;
-            finalInfo = glii;
-          }
-        }
+        Assert( !finalInfo );
+        finalInfo = iei;
       }
-      // carry all assumptions
-      finalAssumptions.insert(finalAssumptions.end(),
-                              ginfo.d_assumptions.begin(),
-                              ginfo.d_assumptions.end());
     }
     else
     {

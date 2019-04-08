@@ -79,9 +79,12 @@ class GLitInfo
    *
    * For example:
    */
-  bool initialize(TNode a, const GLitInfo& ga, TNode b, const GLitInfo& gb);
+  //bool initialize(TNode a, const GLitInfo& ga, TNode b, const GLitInfo& gb);
 
-  bool merge(TNode a, TNode b, const GLitInfo& gb, bool allowBind = true);
+  //bool merge(TNode a, TNode b, const GLitInfo& gb, bool allowBind = true);
+  /** merge conclusions
+   */
+  bool setConclusion(Node pl, Node opl);
   /**
    * Check whether ( b * SUBS(gb) ) is a generalization of a.
    */
@@ -92,6 +95,7 @@ class GLitInfo
   bool checkCompatible(TNode a, TNode b);
 
   bool drop(TNode b);
+  
   /** get score
    *
    * This is a heuristic value, the smaller the value, the more general it is.
@@ -100,6 +104,11 @@ class GLitInfo
 
   void debugPrint(const char* c, unsigned tb = 0) const;
 
+  bool isPurelyGeneral() const;
+  /** is the proof of lit open? */
+  bool isOpen(Node lit) const;
+  bool hasUPG() const;
+  InstExplainInst* getUPG( std::vector< Node >& concs, Node& quant, std::vector< Node >& assumptions ) const;
  private:
   bool mergeInternal(
       TNode a, TNode b, const GLitInfo& gb, bool doMerge, bool allowBind);
