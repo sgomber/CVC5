@@ -112,8 +112,6 @@ class FirstOrderModel : public TheoryModel
   void reset_round();
   /** mark quantified formula relevant */
   void markRelevant( Node q );
-  /** get relevance value */
-  int getRelevanceValue( Node q );
   /** set quantified formula active/inactive
    *
    * This indicates that quantified formula is "inactive", that is, it need
@@ -173,8 +171,6 @@ class FirstOrderModel : public TheoryModel
   /** list of quantifiers asserted in the current context */
   context::CDList<Node> d_forall_asserts;
   /** quantified formulas marked as relevant */
-  unsigned d_rlv_count;
-  std::map<Node, unsigned> d_forall_rlv;
   std::vector<Node> d_forall_rlv_vec;
   Node d_last_forall_rlv;
   std::vector<Node> d_forall_rlv_assert;

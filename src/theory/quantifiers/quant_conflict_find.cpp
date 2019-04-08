@@ -2041,7 +2041,8 @@ void QuantConflictFind::check(Theory::Effort level, QEffort quant_e)
     Trace("qcf-debug") << std::endl;
   }
   bool isConflict = false;
-  unsigned nquant = d_quantEngine->getModel()->getNumAssertedQuantifiers();
+  FirstOrderModel * fm = d_quantEngine->getModel();
+  unsigned nquant = fm->getNumAssertedQuantifiers();
   // for each effort level (find conflict, find propagating)
   for (unsigned e = QcfEffortStart(), end = QcfEffortEnd(); e <= end; ++e)
   {
@@ -2052,9 +2053,11 @@ void QuantConflictFind::check(Theory::Effort level, QEffort quant_e)
     // for each quantified formula
     for (unsigned i = 0; i < nquant; i++)
     {
-      Node q = d_quantEngine->getModel()->getAssertedQuantifier(i, true);
+      Node q = fm->getAssertedQuantifier(i, true);
       if (d_quantEngine->hasOwnership(q, this)
-          && d_irr_quant.find(q) == d_irr_quant.end())
+          && d_irr_quant.find(q) == d_irr_quant.end() &&
+          fm->isQuantifierActive(q)
+         )
       {
         // check this quantified formula
         checkQuantifiedFormula(q, isConflict, addedLemmas);

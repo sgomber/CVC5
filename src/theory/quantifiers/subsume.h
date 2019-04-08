@@ -32,13 +32,18 @@ class Subsume
  public:
   Subsume(QuantifiersEngine* qe);
   ~Subsume() {}
+  /** is empty */
+  bool empty() const;
   /** set subsumes
    *
    * This indicates that q subsumes qsubsumed. This call is legal if:
    *   q |= qsubsumed.
    */
   void setSubsumes(Node q, Node qsubsumed);
-
+  /** get subsumes */
+  bool getSubsumes( Node q, std::map< Node, std::vector< Node > >::iterator& it );
+  /** get subsumed by */
+  bool getSubsumedBy( Node q, std::map< Node, std::vector< Node > >::iterator& it );
  private:
   /** map quantified formulas to those they subsume */
   std::map<Node, std::vector<Node>> d_subsumes;
