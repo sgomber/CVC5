@@ -313,8 +313,7 @@ ExplainStatus InstExplainDb::explain(Node q,
     }
   }
 
-  
-  // We have now constructed generalizations of the proofs of all literals that
+  // We now construct generalizations of the proofs of all literals that
   // comprise the (ground) conflicting instance. Our goal is now to see if these
   // generalizations lead to a useful (quantified) inference.
   //
@@ -334,7 +333,8 @@ ExplainStatus InstExplainDb::explain(Node q,
   // The goal of proof generalization is to transform these proofs so that they
   // prove generalizations of these literals (that is, P(x) and ~Q(f(x,y),y)
   // with a subset of the substitution sigma. We say a proof is purely
-  // general if it proves its literal for the empty substitution.
+  // general if it proves its literal for the empty substitution and has no
+  // open leaves.
   // Proofs are generalized by recognizing when assumptions of these proofs
   // are propagated (at the Boolean level) by instantiation lemmas.
   //
@@ -381,7 +381,7 @@ ExplainStatus InstExplainDb::explain(Node q,
   // when the above quantified formula, ~Q(a), ~R(a) are asserted in the current
   // SAT context.
   //
-  // The proof of ~Q(a) is purely generalized via a (unit) instance of IEX.
+  // The proof of ~Q(a) is purely general via a (unit) instance of IEX.
   //
   // On the other hand, we did not generalize the proof of ~R(a).  We say that
   // ~R(a) / ~R(y) is a propagated generalization, since its proof was not
@@ -430,14 +430,13 @@ ExplainStatus InstExplainDb::explain(Node q,
   std::map<Node, bool> litGeneralization;
 
   // A literal whose proof includes the "propagated generalization".
-  // In the above example, we may set litGenProp to P(x), since its proof
+  // In the above example, we may set litPropGen to P(x), since its proof
   // contains the propagated generalization.
-  Node litGenProp;
+  Node litPropGen;
 
   // Does the propagated generalization occur in the base level of the proof?
-  bool litGenPropIsBase = false;
-  
-  
+  bool propGenIsBase = false;
+
   // generalized proof information
   std::map<eq::EqProof*, Node> concs;
   std::map<eq::EqProof*, GLitInfo> concsg;
@@ -447,8 +446,8 @@ ExplainStatus InstExplainDb::explain(Node q,
        ++itp)
   {
     Node elit = itp->first;
-    // the propagated generalization, which begins as elit itself
-    bool propIsBase = true;
+    //  whether the conclusion of this leaf is on the base line of the proof
+    bool concIsBase = true;
     // whether the proof of this literal was fully generalized
     bool pureGeneral = false;
     Trace("ied-gen") << "----------------- generalize proof " << elit
@@ -474,7 +473,7 @@ ExplainStatus InstExplainDb::explain(Node q,
         }
         else
         {
-          propIsBase = false;
+          concIsBase = false;
         }
       }
       else
@@ -495,16 +494,16 @@ ExplainStatus InstExplainDb::explain(Node q,
       // Set the propagating generalization if it is available.
       // Otherwise, if the propagating generalization is not at the base level,
       // we undo the generalization of that literal.
-      if (litGenProp.isNull() || (!litGenPropIsBase && propIsBase))
+      if (litPropGen.isNull() || (!propGenIsBase && concIsBase))
       {
-        Trace("ied-gen-debug") << "set PROPAGATE-GENERAL " << elit << std::endl;
-        if (propIsBase)
+        Trace("ied-gen-debug") << "set literal with propagated generalization to " << elit << std::endl;
+        if (concIsBase)
         {
-          if (!litGenProp.isNull() && !litGenPropIsBase)
+          if (!litPropGen.isNull() && !propGenIsBase)
           {
             Trace("ied-gen") << "...undo generalization" << std::endl;
             // undo the previous generalized propagation
-            litGeneralization.erase(litGenProp);
+            litGeneralization.erase(litPropGen);
           }
         }
         else
@@ -513,10 +512,10 @@ ExplainStatus InstExplainDb::explain(Node q,
           // we use the generalization here
           litGeneralization[elit] = true;
           // elit is the literal that has the generalized propagation
-          litGenProp = elit;
+          litPropGen = elit;
         }
         // the generalized propagation is in the base proof if elit is propGen
-        litGenPropIsBase = propIsBase;
+        propGenIsBase = concIsBase;
       }
     }
     Trace("ied-gen") << "----------------- end generalize proof" << std::endl;
@@ -537,7 +536,7 @@ ExplainStatus InstExplainDb::explain(Node q,
   Trace("ied-conflict")
       << "...using " << litGeneralization.size()
       << " generalizations, a literal with propagated generalization is "
-      << litGenProp << std::endl;
+      << litPropGen << ", base=" << propGenIsBase << std::endl;
 
   // Now construct the inference if we have any useful generalization.
   std::vector<Node> finalAssumptions;
