@@ -232,10 +232,10 @@ bool GLitInfo::mergeInternal(
             for (unsigned i = 0, nchild = cura.getNumChildren(); i < nchild;
                  i++)
             {
-              if (a[i] != b[i])
+              if (cura[i] != curb[i])
               {
-                avisit.push_back(a[i]);
-                bvisit.push_back(b[i]);
+                avisit.push_back(cura[i]);
+                bvisit.push_back(curb[i]);
               }
             }
           }
