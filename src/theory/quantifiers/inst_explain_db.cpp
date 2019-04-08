@@ -116,6 +116,8 @@ void InstExplainDb::registerExplanation(Node inst,
   std::vector<bool> visit_hasPol;
   std::vector<Node> visit;
   std::vector<Node> visiti;
+  // TODO: this can be simplified to not do a parallel traversal if newQuant is
+  // false.
   bool newQuant = false;
   if (d_quants.find(q) == d_quants.end())
   {
@@ -497,7 +499,7 @@ ExplainStatus InstExplainDb::explain(Node q,
       {
         Trace("ied-gen-debug")
             << "set literal with propagated generalization to " << elit
-            << std::endl;
+            << ", isBase=" << concIsBase << std::endl;
         if (concIsBase)
         {
           if (!litPropGen.isNull() && !propGenIsBase)
@@ -512,9 +514,9 @@ ExplainStatus InstExplainDb::explain(Node q,
           Trace("ied-gen") << "...add to generalization" << std::endl;
           // we use the generalization here
           litGeneralization[elit] = true;
-          // elit is the literal that has the generalized propagation
-          litPropGen = elit;
         }
+        // elit is the literal that has the generalized propagation
+        litPropGen = elit;
         // the generalized propagation is in the base proof if elit is propGen
         propGenIsBase = concIsBase;
       }
