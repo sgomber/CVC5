@@ -86,6 +86,7 @@ Node InstExplainPfGen::generalize(
     eq::EqProof* eqp,
     std::map<eq::EqProof*, Node>& concs,
     std::map<eq::EqProof*, std::map<Node, GLitInfo>>& concsg,
+                  std::map<Node, bool >& genPath,
     unsigned tb)
 {
   std::map<eq::EqProof*, Node>::iterator itc = concs.find(eqp);
@@ -131,7 +132,7 @@ Node InstExplainPfGen::generalize(
         // child proofs are stored in reverse order since congruence proofs
         // are left associative.
         unsigned ii = nchild - (i + 1);
-        retc = generalize(childProofs[ii], concs, concsg, tb + 1);
+        retc = generalize(childProofs[ii], concs, concsg, genPath, tb + 1);
         if (retc.isNull())
         {
           success = false;
@@ -168,6 +169,7 @@ Node InstExplainPfGen::generalize(
     Assert(ret == Rewriter::rewrite(ret));
     Trace("ied-gen") << "ied-pf: equality " << ret << std::endl;
     // try to generalize here
+    // TODO: may be able to do instExplainFind?
     std::map<Node, InstExplainLit>::iterator itl;
     if (d_ied.findInstExplainLit(ret, itl))
     {
@@ -195,7 +197,7 @@ Node InstExplainPfGen::generalize(
           Trace("ied-gen") << "from " << pinst << std::endl;
         }
         // we must inst-explain it now
-        if (!instExplain(gli, olit, ret, pinst, "ied-gen", tb + 2))
+        if (!instExplain(gli, olit, ret, pinst, genPath, "ied-gen", tb + 2))
         {
           concsg[eqp].erase(colit);
           Trace("ied-gen") << "...failed" << std::endl;
@@ -242,7 +244,7 @@ Node InstExplainPfGen::generalize(
     for (unsigned i = 0, nproofs = eqp->d_children.size(); i < nproofs; i++)
     {
       eq::EqProof* epi = eqp->d_children[i].get();
-      retc = generalize(epi, concs, concsg, tb + 1);
+      retc = generalize(epi, concs, concsg, genPath,tb + 1);
       if (retc.isNull())
       {
         success = false;
@@ -304,7 +306,8 @@ Node InstExplainPfGen::generalize(
 }
 
 bool InstExplainPfGen::instExplain(
-    GLitInfo& g, Node olit, Node lit, Node inst, const char* c, unsigned tb)
+    GLitInfo& g, Node olit, Node lit, Node inst,
+                  std::map<Node, bool >& genPath, const char* c, unsigned tb)
 {
   if (Trace.isOn(c))
   {
@@ -338,6 +341,22 @@ bool InstExplainPfGen::instExplain(
     return false;
   }
   Assert(plits.size() == plitso.size());
+  
+  // If any literal is already being explored on this path, we have a cyclic
+  // proof. We abort here since a cyclic proof cannot contribute to the
+  // overall strength of the generalization, since its open leaves are
+  // at least as weak as its root.
+  for( const Node& pl : plits )
+  {
+    if( genPath.find(pl)!=genPath.end() || pl==lit )
+    {
+      Trace(c) << "INST-EXPLAIN FAIL: cycle found for premise " << pl << std::endl;
+      return false;
+    }
+  }
+  // indicate that we are exploring the generalized proof of lit.
+  Assert( genPath.find(lit)==genPath.end() );
+  genPath[lit] = true;
 
   // For each literal in plits, we must either regress it further, or add it to
   // the assumptions of g.
@@ -373,7 +392,7 @@ bool InstExplainPfGen::instExplain(
       isOpen = false;
     }
     // If its not the quantified formula, we try to find an inst-explanation
-    else if (instExplainFind(g, opl, pl, inst, c, tb))
+    else if (instExplainFind(g, opl, pl, inst, genPath, c, tb))
     {
       if (Trace.isOn(c))
       {
@@ -435,11 +454,14 @@ bool InstExplainPfGen::instExplain(
     Trace(c) << "INST-EXPLAIN SUCCESS with:" << std::endl;
     g.debugPrint(c, tb + 1);
   }
+  // clean up the path
+  genPath.erase(lit);
   return true;
 }
 
 bool InstExplainPfGen::instExplainFind(
-    GLitInfo& g, Node opl, Node pl, Node instSrc, const char* c, unsigned tb)
+    GLitInfo& g, Node opl, Node pl, Node inst,
+                  std::map<Node, bool >& genPath, const char* c, unsigned tb)
 {
   std::map<Node, InstExplainLit>::iterator itl;
   if (!d_ied.findInstExplainLit(pl, itl))
@@ -477,7 +499,7 @@ bool InstExplainPfGen::instExplainFind(
     // The instantiation lemma that propagates pl should not be the same
     // as the one that propagates lit. Otherwise our computation of
     // Boolean propagation was wrong.
-    Assert(instpl != instSrc);
+    Assert(instpl != inst);
     if (Trace.isOn(c))
     {
       indent(c, tb + 2);
@@ -498,7 +520,7 @@ bool InstExplainPfGen::instExplainFind(
       Trace(c) << "  ...compatible, recurse" << std::endl;
       // recurse now
       bool setBest = false;
-      if (instExplain(pconcs[opli], opli, pl, instpl, c, tb + 3))
+      if (instExplain(pconcs[opli], opli, pl, instpl, genPath, c, tb + 3))
       {
         // if it is purely general, we are done
         if (pconcs[opli].d_conclusions.empty())
@@ -528,6 +550,8 @@ bool InstExplainPfGen::instExplainFind(
       }
     }
   }
+  // TODO: search for instantiations that would have propagated this??
+  
   // now, take the best generalization if there are any available
   if (pconcs.empty())
   {
