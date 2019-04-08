@@ -101,13 +101,12 @@ class InstExplainPfGen
   /** convert to non-equality (inverse of above for rewritten nodes) */
   Node convertRmEq(Node n) const;
   /** generalize internal */
-  Node generalizeInternal(
-      Node tgtLit,
-      eq::EqProof* eqp,
-      std::map<eq::EqProof*, Node>& concs,
-      std::map<eq::EqProof*, GLitInfo>& concsg,
-      std::map<Node, bool>& genPath,
-      unsigned tb);
+  Node generalizeInternal(Node tgtLit,
+                          eq::EqProof* eqp,
+                          std::map<eq::EqProof*, Node>& concs,
+                          std::map<eq::EqProof*, GLitInfo>& concsg,
+                          std::map<Node, bool>& genPath,
+                          unsigned tb);
   /** Instantiation explanation
    *
    * This is called when the instantiation lemma inst currently propagates the

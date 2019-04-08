@@ -81,19 +81,18 @@ bool InstExplainPfGen::regressExplain(EqExplainer* eqe,
   }
   return true;
 }
-Node InstExplainPfGen::generalize(
-      Node tgtLit,
-    eq::EqProof* eqp,
-    std::map<eq::EqProof*, Node>& concs,
-    std::map<eq::EqProof*, GLitInfo>& concsg,
-    unsigned tb)
+Node InstExplainPfGen::generalize(Node tgtLit,
+                                  eq::EqProof* eqp,
+                                  std::map<eq::EqProof*, Node>& concs,
+                                  std::map<eq::EqProof*, GLitInfo>& concsg,
+                                  unsigned tb)
 {
   std::map<Node, bool> genPath;
-  return generalizeInternal(tgtLit,eqp,concs,concsg,genPath,tb);
+  return generalizeInternal(tgtLit, eqp, concs, concsg, genPath, tb);
 }
-  
+
 Node InstExplainPfGen::generalizeInternal(
-      Node tgtLit,
+    Node tgtLit,
     eq::EqProof* eqp,
     std::map<eq::EqProof*, Node>& concs,
     std::map<eq::EqProof*, GLitInfo>& concsg,
@@ -143,7 +142,8 @@ Node InstExplainPfGen::generalizeInternal(
         // child proofs are stored in reverse order since congruence proofs
         // are left associative.
         unsigned ii = nchild - (i + 1);
-        retc = generalizeInternal(d_null,childProofs[ii], concs, concsg, genPath, tb + 1);
+        retc = generalizeInternal(
+            d_null, childProofs[ii], concs, concsg, genPath, tb + 1);
         if (retc.isNull())
         {
           success = false;
@@ -178,25 +178,28 @@ Node InstExplainPfGen::generalizeInternal(
     // an assumption
     ret = eqp->d_node;
     Assert(ret == Rewriter::rewrite(ret));
-    if( Trace.isOn("ied-gen") )
+    if (Trace.isOn("ied-gen"))
     {
       Trace("ied-gen") << "ied-pf: equality " << ret << std::endl;
       indent("ied-gen", tb);
-      Trace("ied-gen") << "INST-EXPLAIN find (UF leaf): " << ret << " / " << tgtLit << std::endl;
+      Trace("ied-gen") << "INST-EXPLAIN find (UF leaf): " << ret << " / "
+                       << tgtLit << std::endl;
     }
-    bool recSuccess = instExplainFind(concsg[eqp],tgtLit,ret,Node::null(),genPath,"ied-gen",tb+2);
-    if( Trace.isOn("ied-gen") )
+    bool recSuccess = instExplainFind(
+        concsg[eqp], tgtLit, ret, Node::null(), genPath, "ied-gen", tb + 2);
+    if (Trace.isOn("ied-gen"))
     {
       indent("ied-gen", tb);
     }
-    if( recSuccess )
+    if (recSuccess)
     {
       Trace("ied-gen") << "...success!" << std::endl;
     }
     else
     {
       concsg.erase(eqp);
-      Trace("ied-gen") << "...failed to IEX UF leaf " << ret << " / " << tgtLit << std::endl;
+      Trace("ied-gen") << "...failed to IEX UF leaf " << ret << " / " << tgtLit
+                       << std::endl;
     }
     ret = convertEq(ret);
   }
@@ -226,8 +229,8 @@ Node InstExplainPfGen::generalizeInternal(
     {
       eq::EqProof* epi = eqp->d_children[i].get();
       // target literal is unknown if non-trivial
-      Node tgtLitc = nproofs==1 ? tgtLit : d_null;
-      retc = generalizeInternal(tgtLitc,epi, concs, concsg, genPath, tb + 1);
+      Node tgtLitc = nproofs == 1 ? tgtLit : d_null;
+      retc = generalizeInternal(tgtLitc, epi, concs, concsg, genPath, tb + 1);
       if (retc.isNull())
       {
         success = false;
@@ -481,7 +484,7 @@ bool InstExplainPfGen::instExplainFind(GLitInfo& g,
   {
     return false;
   }
-  Assert( !opl.isNull() );
+  Assert(!opl.isNull());
   // populate choices for the proof regression, which we store in
   // g.d_conclusions[pl]
   std::map<Node, GLitInfo>& pconcs = g.d_conclusions[pl];
@@ -519,7 +522,7 @@ bool InstExplainPfGen::instExplainFind(GLitInfo& g,
       bool setBest = false;
       if (instExplain(pconcs[opli], opli, pl, instpl, genPath, c, tb + 3))
       {
-        if( opl.isNull() )
+        if (opl.isNull())
         {
           // Don't have criteria to judge what is best, due to incomparable
           // matching.
@@ -570,7 +573,7 @@ bool InstExplainPfGen::instExplainFind(GLitInfo& g,
   }
   Assert(!best.isNull());
   Assert(pconcs.find(best) != pconcs.end());
-  if( opl.isNull() )
+  if (opl.isNull())
   {
     // we leave multiple possible conclusions here
     return true;
@@ -581,7 +584,7 @@ bool InstExplainPfGen::instExplainFind(GLitInfo& g,
     Trace(c) << "CHOOSE to set conclusion " << best << std::endl;
     indent(c, tb + 1);
   }
-  // Set the conclusion to the one on child "best". 
+  // Set the conclusion to the one on child "best".
   // This will merge it into the parent if it has no open leaves.
   bool setSuccess = g.setConclusion(pl, best);
   if (!setSuccess)

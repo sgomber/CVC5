@@ -455,10 +455,9 @@ ExplainStatus InstExplainDb::explain(Node q,
     if (regressPfFail.find(elit) == regressPfFail.end())
     {
       eq::EqProof* pfp = &itp->second;
-      d_iexpfg.generalize(elit,pfp, concs, concsg,1);
+      d_iexpfg.generalize(elit, pfp, concs, concsg, 1);
       // did we generalize the proof?
-      std::map<eq::EqProof*, GLitInfo>::iterator itg =
-          concsg.find(pfp);
+      std::map<eq::EqProof*, GLitInfo>::iterator itg = concsg.find(pfp);
       if (itg != concsg.end())
       {
         Trace("ied-gen") << "....success with" << std::endl;
@@ -487,7 +486,7 @@ ExplainStatus InstExplainDb::explain(Node q,
     {
       Trace("ied-gen") << "...failed to be regressed" << std::endl;
     }
-    
+
     // use as the propagating generalization if available
     if (!pureGeneral)
     {
@@ -496,7 +495,9 @@ ExplainStatus InstExplainDb::explain(Node q,
       // we undo the generalization of that literal.
       if (litPropGen.isNull() || (!propGenIsBase && concIsBase))
       {
-        Trace("ied-gen-debug") << "set literal with propagated generalization to " << elit << std::endl;
+        Trace("ied-gen-debug")
+            << "set literal with propagated generalization to " << elit
+            << std::endl;
         if (concIsBase)
         {
           if (!litPropGen.isNull() && !propGenIsBase)
@@ -532,7 +533,7 @@ ExplainStatus InstExplainDb::explain(Node q,
                           << std::endl;
     return EXP_STATUS_FAIL;
   }
-  
+
   Trace("ied-conflict")
       << "...using " << litGeneralization.size()
       << " generalizations, a literal with propagated generalization is "
@@ -554,8 +555,7 @@ ExplainStatus InstExplainDb::explain(Node q,
     {
       eq::EqProof* pfp = &itp->second;
       // we generalized it, now must look up its information
-      std::map<eq::EqProof*, GLitInfo>::iterator itgp =
-          concsg.find(pfp);
+      std::map<eq::EqProof*, GLitInfo>::iterator itgp = concsg.find(pfp);
       Assert(itgp != concsg.end());
       // get the UPG information from this
       InstExplainInst* iei =
