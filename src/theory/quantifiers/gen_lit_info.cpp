@@ -311,7 +311,7 @@ InstExplainInst* GLitInfo::getUPG(std::vector<Node>& concs,
                                   Node& quant,
                                   std::vector<Node>& assumptions) const
 {
-  InstExplainInst* ret = d_iei;
+  InstExplainInst* ret = nullptr;
   // add assumptions here
   assumptions.insert(
       assumptions.end(), d_assumptions.begin(), d_assumptions.end());
@@ -368,19 +368,17 @@ void GLitInfo::processUPG(Node currConc,
       concs.push_back(cc.first.negate());
     }
   }
+  assumptions.insert(
+      assumptions.end(), d_assumptions.begin(), d_assumptions.end());
   // If at least one part of the proof is purely general, we infer a lemma
   // that subsumes this quantified formula.
-  if (!assumptions.empty() || currConc.isNull())
+  if (assumptions.size()>1)
   {
     if (!currConc.isNull())
     {
       // if we are carrying an open conclusion, add it now
       concs.push_back(currConc);
     }
-    // we generalized this, we will conclude a lemma here
-    assumptions.insert(
-        assumptions.end(), d_assumptions.begin(), d_assumptions.end());
-
     // add this quantified formula to assumptions if we are recursing
     if (gupg)
     {
