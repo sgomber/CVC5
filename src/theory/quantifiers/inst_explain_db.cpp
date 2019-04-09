@@ -456,8 +456,8 @@ ExplainStatus InstExplainDb::explain(Node q,
     bool concIsBase = true;
     // whether the proof of this literal was fully generalized
     bool pureGeneral = false;
-    Trace("ied-gen") << "----------------- generalize proof #" << pfNum[elit] << "/" << pfCounter << ": " << elit
-                     << std::endl;
+    Trace("ied-gen") << "----------------- generalize proof #" << pfNum[elit]
+                     << "/" << pfCounter << ": " << elit << std::endl;
     if (regressPfFail.find(elit) == regressPfFail.end())
     {
       eq::EqProof* pfp = &itp->second;
@@ -507,14 +507,14 @@ ExplainStatus InstExplainDb::explain(Node q,
         // if we already set a UPG, we can't use this
         concIsBase = true;
       }
-      Trace("ied-gen")
-          << "...set literal with propagated generalization to " << elit
-          << ", isBase=" << concIsBase << std::endl;
+      Trace("ied-gen") << "...set literal with propagated generalization to "
+                       << elit << ", isBase=" << concIsBase << std::endl;
       if (concIsBase)
       {
         if (!litPropGen.isNull() && !propGenIsBase)
         {
-          Trace("ied-gen") << "...undo generalization of " << litPropGen << std::endl;
+          Trace("ied-gen") << "...undo generalization of " << litPropGen
+                           << std::endl;
           // undo the previous generalized propagation
           litGeneralization.erase(litPropGen);
         }

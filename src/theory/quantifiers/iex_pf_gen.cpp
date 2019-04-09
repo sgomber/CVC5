@@ -347,7 +347,7 @@ bool InstExplainPfGen::instExplain(GLitInfo& g,
       {
         indent(c, tb);
         Trace(c) << "INST-EXPLAIN FAIL: cycle found for premise " << pl
-                << std::endl;
+                 << std::endl;
       }
       return false;
     }
@@ -538,7 +538,8 @@ bool InstExplainPfGen::instExplainFind(GLitInfo& g,
       }
       if (doRec)
       {
-        Trace(c) << "  ...compatible, recurse, phase=" << ( r==0 ? "assume" : "conclude" ) << std::endl;
+        Trace(c) << "  ...compatible, recurse, phase="
+                 << (r == 0 ? "assume" : "conclude") << std::endl;
         // recurse now
         bool undoOpli = true;
         if (instExplain(pconcs[opli], opli, pl, instpl, genPath, c, tb + 3))
