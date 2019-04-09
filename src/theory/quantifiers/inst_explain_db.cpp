@@ -78,26 +78,34 @@ void InstExplainDb::activateLit(Node lit)
 
 void InstExplainDb::activateInst(Node inst, Node srcLit, InstExplainLit& src)
 {
-  if (d_active_inst.find(inst) == d_active_inst.end())
+  // check if already activated
+  if (d_active_inst.find(inst) != d_active_inst.end())
   {
-    d_active_inst[inst] = true;
-    InstExplainInst& iei = getInstExplainInst(inst);
-    std::vector<Node> lits;
-    std::vector<Node> olits;
-    iei.propagate(d_ev, lits, olits);
-    Assert(lits.size() == olits.size());
-    for (unsigned i = 0, size = lits.size(); i < size; i++)
+    return;
+  }
+  d_active_inst[inst] = true;
+  InstExplainInst& iei = getInstExplainInst(inst);
+  // it must be asserted
+  if( d_ev.evaluate(iei.getQuantifiedFormula())!=1 )
+  {
+    return;
+  }
+  // check subsumed, if so, can use TODO
+  std::vector<Node> lits;
+  std::vector<Node> olits;
+  iei.propagate(d_ev, lits, olits);
+  Assert(lits.size() == olits.size());
+  for (unsigned i = 0, size = lits.size(); i < size; i++)
+  {
+    Node l = lits[i];
+    Node ol = olits[i];
+    if (l == srcLit)
     {
-      Node l = lits[i];
-      Node ol = olits[i];
-      if (l == srcLit)
-      {
-        src.setPropagating(inst, ol);
-      }
-      else
-      {
-        d_waiting_prop[l].push_back(std::pair<Node, Node>(inst, ol));
-      }
+      src.setPropagating(inst, ol);
+    }
+    else
+    {
+      d_waiting_prop[l].push_back(std::pair<Node, Node>(inst, ol));
     }
   }
 }
@@ -624,44 +632,63 @@ ExplainStatus InstExplainDb::explain(Node q,
   Node lem;
   if (!finalConclusions.empty())
   {
-    Node conc = finalConclusions.size() == 1 ? finalConclusions[0]
+    Node concBody = finalConclusions.size() == 1 ? finalConclusions[0]
                                              : nm->mkNode(OR, finalConclusions);
+    Node conc;
     Trace("ied-conflict-debug")
         << "(original) conclusion: " << conc << std::endl;
-    // FIXME: debugging
-    AlwaysAssert(d_lemma_cache[antec].find(conc) == d_lemma_cache[antec].end());
-    d_lemma_cache[antec][conc] = true;
-
-    Assert(!concQuant.isNull());
-    std::vector<Node> oldVars;
-    std::vector<Node> newVars;
-    for (const Node& bv : concQuant[0])
+    // check if we've already concluded this
+    std::map<Node, Node>::iterator itpv = d_conc_cache[antec].find(concBody);
+    if(itpv != d_conc_cache[antec].end())
     {
-      oldVars.push_back(bv);
-      Node bvn = nm->mkBoundVar(bv.getType());
-      newVars.push_back(bvn);
+      Trace("ied-conflict-debug") << "InstExplainDb::WARNING: repeated conclusion" << std::endl;
+      // this can happen if a conflicting instance produces the same
+      // generalization as a previous round, whereas the quantified conclusion
+      // of that round did not generate the conflicting instance it could have.
+      conc = itpv->second;
     }
-    Node concs = conc.substitute(
-        oldVars.begin(), oldVars.end(), newVars.begin(), newVars.end());
-    concs = Rewriter::rewrite(concs);
-    Node bvl = nm->mkNode(BOUND_VAR_LIST, newVars);
-    conc = nm->mkNode(FORALL, bvl, concs);
-    conc = Rewriter::rewrite(conc);
-    lem = nm->mkNode(OR, antec.negate(), conc);
-    // mark the propagating generalization
-    Trace("ied-conflict-debug") << "auto-subsume: " << std::endl;
-    Trace("ied-conflict-debug") << "  " << conc << " subsumes" << std::endl;
-    Trace("ied-conflict-debug") << "  " << concQuant << std::endl;
-    Assert(d_subsume);
-    d_subsume->setSubsumes(conc, concQuant);
-    // We mark an attribute on the conclusion to indicate that it subsumes
-    // the original quantified formula whenever it is asserted.
+    Assert(!concQuant.isNull());
+    std::vector<Node> vars;
+    if( conc.isNull() )
+    {
+      std::vector<Node> newVars;
+      for (const Node& bv : concQuant[0])
+      {
+        vars.push_back(bv);
+        Node bvn = nm->mkBoundVar(bv.getType());
+        newVars.push_back(bvn);
+      }
+      Node concs = concBody.substitute(
+          vars.begin(), vars.end(), newVars.begin(), newVars.end());
+      concs = Rewriter::rewrite(concs);
+      Node bvl = nm->mkNode(BOUND_VAR_LIST, newVars);
+      conc = nm->mkNode(FORALL, bvl, concs);
+      conc = Rewriter::rewrite(conc);
+      lem = nm->mkNode(OR, antec.negate(), conc);
+      // mark the propagating generalization
+      Trace("ied-conflict-debug") << "auto-subsume: " << std::endl;
+      Trace("ied-conflict-debug") << "  " << conc << " subsumes" << std::endl;
+      Trace("ied-conflict-debug") << "  " << concQuant << std::endl;
+      Assert(d_subsume);
+      // We are guaranteed that conc subsumes concQuant.
+      // We mark the conclusion to indicate that it deactivates
+      // the original quantified formula whenever it is asserted.
+      d_subsume->setSubsumes(conc, concQuant);
+      d_conc_cache[antec][concBody] = conc;
+    }
+    else
+    {
+      for (const Node& bv : concQuant[0])
+      {
+        vars.push_back(bv);
+      }
+    }
     Assert(finalInfo);
     Assert(finalInfo->getQuantifiedFormula() == concQuant);
     Assert(finalInfo->d_terms.size() == newVars.size());
     // construct the generalized conflicting instance
-    Node concsi = concs.substitute(newVars.begin(),
-                                   newVars.end(),
+    Node concsi = concBody.substitute(vars.begin(),
+                                   vars.end(),
                                    finalInfo->d_terms.begin(),
                                    finalInfo->d_terms.end());
     Node cig = nm->mkNode(OR, conc.negate(), concsi);
@@ -682,11 +709,14 @@ ExplainStatus InstExplainDb::explain(Node q,
   {
     lem = antec.negate();
   }
-  Trace("ied-conflict")
-      << "InstExplainDb::explain: generated generalized resolution inference"
-      << std::endl;
-  Trace("ied-lemma") << "InstExplainDb::lemma (GEN-RES): " << lem << std::endl;
-  lems.push_back(lem);
+  if( !lem.isNull() )
+  {
+    Trace("ied-conflict")
+        << "InstExplainDb::explain: generated generalized resolution inference"
+        << std::endl;
+    Trace("ied-lemma") << "InstExplainDb::lemma (GEN-RES): " << lem << std::endl;
+    lems.push_back(lem);
+  }
   // TEMPORARY FIXME
   if (options::qcfExpGenAbort())
   {

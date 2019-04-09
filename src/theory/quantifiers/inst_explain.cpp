@@ -113,7 +113,7 @@ void InstExplainInst::initialize(Node inst,
                                  Node q,
                                  const std::vector<Node>& ts)
 {
-  Trace("ajr-temp") << "Initialize inst: " << inst << " " << q << std::endl;
+  Trace("iex-init") << "Initialize inst: " << inst << " " << q << std::endl;
   Assert(!q.isNull());
   Assert(q.getKind() == FORALL);
   Assert(ts.size() == q[0].getNumChildren());
@@ -130,6 +130,8 @@ void InstExplainInst::propagate(IeEvaluator& v,
                                 std::vector<Node>& lits,
                                 std::vector<Node>& olits)
 {
+  // this quantified formula must evaluate to true
+  Assert( v.evaluate(d_quant)==1 );
   propagateInternal(d_body, d_quant[1], v, lits, olits);
 }
 
@@ -142,29 +144,37 @@ bool InstExplainInst::justify(IeEvaluator& v,
   std::map<Node, std::map<bool, bool> > cache;
   // we assume that lit is false
   Assert(lit == Rewriter::rewrite(lit));
+  Trace("iex-debug") << "InstExplainInst::justify: " << lit << " in " << d_body << std::endl;
   std::map<Node, int> assumptions;
   assumptions[lit] = -1;
   // the quantified formula must hold in the current context. If it does, it
   // is always a part of the explanation below.
-  if (v.evaluate(d_quant) == 1)
+  int evq = v.evaluate(d_quant);
+  // we should always evaluate to true if we get here
+  Assert( evq==1 );
+  if (evq != 1)
   {
-    // now, explain why the remainder was false
-    if (justifyInternal(d_body,
-                        d_quant[1],
-                        false,
-                        olit,
-                        v,
-                        assumptions,
-                        cache,
-                        lits,
-                        olits))
-    {
-      // the quantified formula is always a part of the explanation
-      lits.push_back(d_quant);
-      olits.push_back(d_quant);
-      return true;
-    }
+    Trace("iex-debug") << "InstExplainInst::justify: fail, quantified formula " << d_quant << " evaluates to " << evq << std::endl;
+    return false;
   }
+  // now, explain why the remainder was false
+  if (justifyInternal(d_body,
+                      d_quant[1],
+                      false,
+                      olit,
+                      v,
+                      assumptions,
+                      cache,
+                      lits,
+                      olits))
+  {
+    // the quantified formula is always a part of the explanation
+    lits.push_back(d_quant);
+    olits.push_back(d_quant);
+    Trace("iex-debug") << "InstExplainInst::justify: success" << std::endl;
+    return true;
+  }
+  Trace("iex-debug") << "InstExplainInst::justify: fail" << std::endl;
   return false;
 }
 

@@ -148,8 +148,22 @@ class InstExplainDb
   /** propagating literal cache */
   std::map<Node, std::map<Node, std::map<bool, std::vector<Node>>>> d_plit_map;
 
-  // FIXME debugging
-  std::map<Node, std::map<Node, bool>> d_lemma_cache;
+  /** conclusion cache
+   * 
+   * Maps (antecendants, conclusion bodys) to the quantified conclusion of
+   * a generalized resolution (GEN-RES) step.
+   * 
+   * This cache ensures that we do not infer alpha-equivalent quantified
+   * formulas in the case where we repeat the same proof generalization.
+   * 
+   * Notice that repeated proof generalizations ideally don't happen, since
+   * the quantified conclusion of the previous generalization could have
+   * directly generated a conflicting instance itself. Regardless, we guard
+   * this case and do not do a GEN-RES step, and instead do the generalized
+   * conflicting instance only using the existing quantified formula stored
+   * here.
+   */
+  std::map<Node, std::map<Node, Node>> d_conc_cache;
 };
 
 }  // namespace quantifiers
