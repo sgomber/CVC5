@@ -253,12 +253,16 @@ ExplainStatus InstExplainDb::explain(Node q,
   // we first regress the explanation of proofs
   std::map<Node, bool> regressPfFail;
   std::map<Node, std::vector<TNode>> assumptions;
+  unsigned pfCounter = 0;
+  std::map<Node, unsigned> pfNum;
   for (std::map<Node, eq::EqProof>::iterator itp = expPf.begin();
        itp != expPf.end();
        ++itp)
   {
+    pfCounter++;
     Node elit = itp->first;
-    Trace("ied-conflict") << "  " << elit << std::endl;
+    pfNum[elit] = pfCounter;
+    Trace("ied-conflict") << "  [" << pfCounter << "]" << elit << std::endl;
     if (Trace.isOn("ied-proof-debug"))
     {
       Trace("ied-proof-debug")
@@ -452,7 +456,7 @@ ExplainStatus InstExplainDb::explain(Node q,
     bool concIsBase = true;
     // whether the proof of this literal was fully generalized
     bool pureGeneral = false;
-    Trace("ied-gen") << "----------------- generalize proof " << elit
+    Trace("ied-gen") << "----------------- generalize proof #" << pfNum[elit] << "/" << pfCounter << ": " << elit
                      << std::endl;
     if (regressPfFail.find(elit) == regressPfFail.end())
     {
@@ -467,7 +471,6 @@ ExplainStatus InstExplainDb::explain(Node q,
         if (itg->second.d_conclusions.empty())
         {
           // it is a purely generalized proof (only assumptions)
-          Trace("ied-gen") << "PURE, finished" << std::endl;
           litGeneralization[elit] = true;
           pureGeneral = true;
           break;
@@ -488,38 +491,44 @@ ExplainStatus InstExplainDb::explain(Node q,
     {
       Trace("ied-gen") << "...failed to be regressed" << std::endl;
     }
-
+    Trace("ied-gen") << "=== Compute UPG..." << std::endl;
     // use as the propagating generalization if available
-    if (!pureGeneral)
+    if (pureGeneral)
+    {
+      Trace("ied-gen") << "...purely general." << std::endl;
+    }
+    else
     {
       // Set the propagating generalization if it is available.
       // Otherwise, if the propagating generalization is not at the base level,
       // we undo the generalization of that literal.
-      if (litPropGen.isNull() || (!propGenIsBase && concIsBase))
+      if (!litPropGen.isNull())
       {
-        Trace("ied-gen-debug")
-            << "set literal with propagated generalization to " << elit
-            << ", isBase=" << concIsBase << std::endl;
-        if (concIsBase)
-        {
-          if (!litPropGen.isNull() && !propGenIsBase)
-          {
-            Trace("ied-gen") << "...undo generalization" << std::endl;
-            // undo the previous generalized propagation
-            litGeneralization.erase(litPropGen);
-          }
-        }
-        else
-        {
-          Trace("ied-gen") << "...add to generalization" << std::endl;
-          // we use the generalization here
-          litGeneralization[elit] = true;
-        }
-        // elit is the literal that has the generalized propagation
-        litPropGen = elit;
-        // the generalized propagation is in the base proof if elit is propGen
-        propGenIsBase = concIsBase;
+        // if we already set a UPG, we can't use this
+        concIsBase = true;
       }
+      Trace("ied-gen")
+          << "...set literal with propagated generalization to " << elit
+          << ", isBase=" << concIsBase << std::endl;
+      if (concIsBase)
+      {
+        if (!litPropGen.isNull() && !propGenIsBase)
+        {
+          Trace("ied-gen") << "...undo generalization of " << litPropGen << std::endl;
+          // undo the previous generalized propagation
+          litGeneralization.erase(litPropGen);
+        }
+      }
+      else
+      {
+        Trace("ied-gen") << "...add to generalization" << std::endl;
+        // we use the generalization here
+        litGeneralization[elit] = true;
+      }
+      // elit is the literal that has the generalized propagation
+      litPropGen = elit;
+      // the generalized propagation is in the base proof if elit is propGen
+      propGenIsBase = concIsBase;
     }
     Trace("ied-gen") << "----------------- end generalize proof" << std::endl;
   }
@@ -612,6 +621,7 @@ ExplainStatus InstExplainDb::explain(Node q,
   {
     Node conc = finalConclusions.size() == 1 ? finalConclusions[0]
                                              : nm->mkNode(OR, finalConclusions);
+
     Assert(!concQuant.isNull());
     std::vector<Node> oldVars;
     std::vector<Node> newVars;

@@ -293,6 +293,7 @@ Node InstExplainPfGen::generalizeInternal(
   return ret;
 }
 
+// TODO: can focus assume vs conclusion
 bool InstExplainPfGen::instExplain(GLitInfo& g,
                                    Node olit,
                                    Node lit,
@@ -342,8 +343,12 @@ bool InstExplainPfGen::instExplain(GLitInfo& g,
   {
     if (genPath.find(pl) != genPath.end() || pl == lit)
     {
-      Trace(c) << "INST-EXPLAIN FAIL: cycle found for premise " << pl
-               << std::endl;
+      if (Trace.isOn(c))
+      {
+        indent(c, tb);
+        Trace(c) << "INST-EXPLAIN FAIL: cycle found for premise " << pl
+                << std::endl;
+      }
       return false;
     }
   }
@@ -408,7 +413,8 @@ bool InstExplainPfGen::instExplain(GLitInfo& g,
                       "generalization, but not unique:"
                    << std::endl;
           g.debugPrint(c, tb + 1);
-          // already have another open branch, discard the generalization
+          // Already have another open branch, discard the generalization.
+          // We reset this to a basic open leaf under "isOpen".
           g.d_conclusions.erase(pl);
         }
       }
@@ -524,17 +530,15 @@ bool InstExplainPfGen::instExplainFind(GLitInfo& g,
       bool doRec = false;
       if (opl.isNull())
       {
-        Trace(c) << "  ...incompatible!" << std::endl;
         doRec = (r == 1);
       }
       else
       {
-        Trace(c) << "  ...compatible, recurse" << std::endl;
         doRec = g.checkCompatible(r == 0 ? opl : opli, r == 0 ? opli : opl);
       }
       if (doRec)
       {
-        Trace(c) << "  ...compatible, recurse" << std::endl;
+        Trace(c) << "  ...compatible, recurse, phase=" << ( r==0 ? "assume" : "conclude" ) << std::endl;
         // recurse now
         bool undoOpli = true;
         if (instExplain(pconcs[opli], opli, pl, instpl, genPath, c, tb + 3))
@@ -568,6 +572,10 @@ bool InstExplainPfGen::instExplainFind(GLitInfo& g,
           // undo this conclusion
           pconcs.erase(opli);
         }
+      }
+      else
+      {
+        Trace(c) << "  ...incompatible" << std::endl;
       }
     }
     // found one that met the criteria
