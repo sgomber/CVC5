@@ -105,6 +105,7 @@ class GLitInfo
   void debugPrint(const char* c, unsigned tb = 0) const;
 
   bool isPurelyGeneral() const;
+  Node getAssumptions() const;
   /** is the proof of lit open? */
   bool isOpen(Node lit) const;
   bool hasUPG() const;

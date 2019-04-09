@@ -147,6 +147,9 @@ class InstExplainDb
   bool getLitSymbolIndex(Node n, Node& f, Node& g, bool& pol) const;
   /** propagating literal cache */
   std::map<Node, std::map<Node, std::map<bool, std::vector<Node>>>> d_plit_map;
+  
+  // FIXME debugging 
+  std::map< Node, std::map< Node, bool > > d_lemma_cache;
 };
 
 }  // namespace quantifiers

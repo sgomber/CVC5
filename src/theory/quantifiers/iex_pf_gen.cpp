@@ -37,7 +37,7 @@ InstExplainPfGen::InstExplainPfGen(InstExplainDb& parent, QuantifiersEngine* qe)
 
 void InstExplainPfGen::reset(Theory::Effort e)
 {
-  // do nothing
+  d_instFindPure.clear();
 }
 
 void InstExplainPfGen::indent(const char* c, unsigned tb)
@@ -320,10 +320,27 @@ bool InstExplainPfGen::instExplain(GLitInfo& g,
   if (Trace.isOn(c))
   {
     indent(c, tb);
-    Trace(c) << "INST-EXPLAIN: " << lit << " / " << olit << std::endl;
+    Trace(c) << "INST-EXPLAIN: " << lit << " / " << olit << (reqPureGen ? " (PURE)" : "" ) << std::endl;
     indent(c, tb);
     Trace(c) << "from " << inst << std::endl;
   }
+  // check if cached
+  std::map< Node, Node >::iterator itp = d_instFindPure.find(olit);
+  if( itp!=d_instFindPure.end() )
+  {
+    if( !itp->second.isNull() )
+    {
+      g.d_assumptions.push_back( itp->second );
+      return true;
+    }
+    else if( reqPureGen )
+    {
+      // we only fail if we indeed require purely general here
+      return false;
+    }
+  }
+  
+  
   InstExplainInst& iei = d_ied.getInstExplainInst(inst);
   // Since the instantiation lemma inst is propagating lit, we have that:
   //   inst { lit -> false }
@@ -404,8 +421,9 @@ bool InstExplainPfGen::instExplain(GLitInfo& g,
       g.d_assumptions.push_back(pl);
       isOpen = false;
     }
-    // If its not the quantified formula, we try to find an inst-explanation
-    else if (instExplainFind(g, opl, pl, inst, genPath, reqPureGen, c, tb))
+    // If its not the quantified formula, we try to find an inst-explanation.
+    // We require a pure generalization if we already set a propagating generalization.
+    else if (instExplainFind(g, opl, pl, inst, genPath, reqPureGen || !upgLit.isNull(), c, tb))
     {
       if (Trace.isOn(c))
       {
@@ -447,6 +465,19 @@ bool InstExplainPfGen::instExplain(GLitInfo& g,
     }
     if (isOpen)
     {
+      if( reqPureGen )
+      {
+        if (Trace.isOn(c))
+        {
+          indent(c, tb);
+          Trace(c) << "INST-EXPLAIN FAIL (PURE): no purely general proof for " << pl
+                  << std::endl;
+        }
+        d_instFindPure[olit] = Node::null();
+        // clean up path
+        genPath.erase(lit);
+        return false;
+      }
       Assert(g.d_conclusions.find(pl) == g.d_conclusions.end());
       // if we didn't find one, we must carry it must be a conclusion
       g.d_conclusions[pl][opl].initialize(&iei);
@@ -466,8 +497,18 @@ bool InstExplainPfGen::instExplain(GLitInfo& g,
   if (Trace.isOn(c))
   {
     indent(c, tb);
-    Trace(c) << "INST-EXPLAIN SUCCESS with:" << std::endl;
+    Trace(c) << "INST-EXPLAIN SUCCESS " << ( reqPureGen ? "(PURE)" : "") << " with:" << std::endl;
     g.debugPrint(c, tb + 1);
+  }
+  if( reqPureGen )
+  {
+    Assert( g.isPurelyGeneral() );
+    d_instFindPure[olit] = g.getAssumptions();
+    // was this non-trivial? If so, we compress the proof and remember the lemma.
+    if( !plits.empty() )
+    {
+      Trace(c) << "INST-EXPLAIN: LOCAL RESOLUTION COMPRESSION" << std::endl;
+    }
   }
   // clean up the path
   genPath.erase(lit);
@@ -576,14 +617,13 @@ bool InstExplainPfGen::instExplainFind(GLitInfo& g,
           else if (pconcs[opli].d_conclusions.empty())
           {
             // if it is purely general, we are done
-            if (r == 0)
-            {
-              best = opli;
-              break;
-            }
+            best = opli;
+            break;
           }
-          else if (r == 1)
+          else
           {
+            // if it wasn't purely general, we must not have required it to be
+            Assert( r==1 );
             // otherwise, it has a propagating generalization, take it.
             // we may carry this forward if all siblings are purely general.
             best = opli;
