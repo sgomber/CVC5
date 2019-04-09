@@ -149,13 +149,13 @@ class InstExplainDb
   std::map<Node, std::map<Node, std::map<bool, std::vector<Node>>>> d_plit_map;
 
   /** conclusion cache
-   * 
+   *
    * Maps (antecendants, conclusion bodys) to the quantified conclusion of
    * a generalized resolution (GEN-RES) step.
-   * 
+   *
    * This cache ensures that we do not infer alpha-equivalent quantified
    * formulas in the case where we repeat the same proof generalization.
-   * 
+   *
    * Notice that repeated proof generalizations ideally don't happen, since
    * the quantified conclusion of the previous generalization could have
    * directly generated a conflicting instance itself. Regardless, we guard

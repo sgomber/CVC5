@@ -323,23 +323,23 @@ InstExplainInst* GLitInfo::getUPG(std::vector<Node>& concs,
       // are we a leaf? if so, we must add to conclusions
       if (cc.second.d_conclusions.empty())
       {
-        Assert( !ret );
+        Assert(!ret);
         // note the negation here
         concs.push_back(cc.first.negate());
         addedConc = true;
       }
       else
       {
-        Assert( !ret );
-        Assert( !addedConc );
+        Assert(!ret);
+        Assert(!addedConc);
         // recurse
         ret = cc.second.getUPG(concs, quant, assumptions);
       }
     }
   }
-  if( addedConc )
+  if (addedConc)
   {
-    Assert( d_iei );
+    Assert(d_iei);
     ret = d_iei;
     Node qg = ret->getQuantifiedFormula();
     Assert(quant.isNull() || quant == qg);
@@ -348,14 +348,13 @@ InstExplainInst* GLitInfo::getUPG(std::vector<Node>& concs,
   return ret;
 }
 void GLitInfo::processUPG(Node currConc,
-                std::vector<Node>& assumptions,
-                std::vector< Node >& lemmas,
-                std::map< Node, Node >& subsumptions
-                ) const
+                          std::vector<Node>& assumptions,
+                          std::vector<Node>& lemmas,
+                          std::map<Node, Node>& subsumptions) const
 {
-  std::vector< Node > concs;
+  std::vector<Node> concs;
   Node upgLit;
-  const GLitInfo * gupg = nullptr;
+  const GLitInfo* gupg = nullptr;
   for (const std::pair<Node, std::map<Node, GLitInfo>>& cs : d_conclusions)
   {
     for (const std::pair<Node, GLitInfo>& cc : cs.second)
@@ -371,9 +370,9 @@ void GLitInfo::processUPG(Node currConc,
   }
   // If at least one part of the proof is purely general, we infer a lemma
   // that subsumes this quantified formula.
-  if( !assumptions.empty() || currConc.isNull() )
+  if (!assumptions.empty() || currConc.isNull())
   {
-    if( !currConc.isNull() )
+    if (!currConc.isNull())
     {
       // if we are carrying an open conclusion, add it now
       concs.push_back(currConc);
@@ -381,20 +380,18 @@ void GLitInfo::processUPG(Node currConc,
     // we generalized this, we will conclude a lemma here
     assumptions.insert(
         assumptions.end(), d_assumptions.begin(), d_assumptions.end());
-    
+
     // add this quantified formula to assumptions if we are recursing
-    if( gupg )
+    if (gupg)
     {
-      
     }
   }
-  if( gupg )
+  if (gupg)
   {
-    gupg->processUPG(Node::null(),assumptions,lemmas,subsumptions);
+    gupg->processUPG(Node::null(), assumptions, lemmas, subsumptions);
   }
 }
-                  
-                  
+
 unsigned GLitInfo::getScore() const { return d_conclusions.size(); }
 
 void GLitInfo::indent(const char* c, unsigned tb) const

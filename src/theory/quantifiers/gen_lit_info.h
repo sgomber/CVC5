@@ -119,9 +119,9 @@ class GLitInfo
    */
   void processUPG(Node currConc,
                   std::vector<Node>& assumptions,
-                  std::vector< Node >& lemmas,
-                  std::map< Node, Node >& subsumptions
-                  ) const;
+                  std::vector<Node>& lemmas,
+                  std::map<Node, Node>& subsumptions) const;
+
  private:
   bool mergeInternal(
       TNode a, TNode b, const GLitInfo& gb, bool doMerge, bool allowBind);

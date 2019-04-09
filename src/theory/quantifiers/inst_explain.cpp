@@ -131,7 +131,7 @@ void InstExplainInst::propagate(IeEvaluator& v,
                                 std::vector<Node>& olits)
 {
   // this quantified formula must evaluate to true
-  Assert( v.evaluate(d_quant)==1 );
+  Assert(v.evaluate(d_quant) == 1);
   propagateInternal(d_body, d_quant[1], v, lits, olits);
 }
 
@@ -144,29 +144,24 @@ bool InstExplainInst::justify(IeEvaluator& v,
   std::map<Node, std::map<bool, bool> > cache;
   // we assume that lit is false
   Assert(lit == Rewriter::rewrite(lit));
-  Trace("iex-debug") << "InstExplainInst::justify: " << lit << " in " << d_body << std::endl;
+  Trace("iex-debug") << "InstExplainInst::justify: " << lit << " in " << d_body
+                     << std::endl;
   std::map<Node, int> assumptions;
   assumptions[lit] = -1;
   // the quantified formula must hold in the current context. If it does, it
   // is always a part of the explanation below.
   int evq = v.evaluate(d_quant);
   // we should always evaluate to true if we get here
-  Assert( evq==1 );
+  Assert(evq == 1);
   if (evq != 1)
   {
-    Trace("iex-debug") << "InstExplainInst::justify: fail, quantified formula " << d_quant << " evaluates to " << evq << std::endl;
+    Trace("iex-debug") << "InstExplainInst::justify: fail, quantified formula "
+                       << d_quant << " evaluates to " << evq << std::endl;
     return false;
   }
   // now, explain why the remainder was false
-  if (justifyInternal(d_body,
-                      d_quant[1],
-                      false,
-                      olit,
-                      v,
-                      assumptions,
-                      cache,
-                      lits,
-                      olits))
+  if (justifyInternal(
+          d_body, d_quant[1], false, olit, v, assumptions, cache, lits, olits))
   {
     // the quantified formula is always a part of the explanation
     lits.push_back(d_quant);

@@ -86,7 +86,7 @@ void InstExplainDb::activateInst(Node inst, Node srcLit, InstExplainLit& src)
   d_active_inst[inst] = true;
   InstExplainInst& iei = getInstExplainInst(inst);
   // it must be asserted
-  if( d_ev.evaluate(iei.getQuantifiedFormula())!=1 )
+  if (d_ev.evaluate(iei.getQuantifiedFormula()) != 1)
   {
     return;
   }
@@ -632,16 +632,18 @@ ExplainStatus InstExplainDb::explain(Node q,
   Node lem;
   if (!finalConclusions.empty())
   {
-    Node concBody = finalConclusions.size() == 1 ? finalConclusions[0]
-                                             : nm->mkNode(OR, finalConclusions);
+    Node concBody = finalConclusions.size() == 1
+                        ? finalConclusions[0]
+                        : nm->mkNode(OR, finalConclusions);
     Node conc;
     Trace("ied-conflict-debug")
         << "(original) conclusion: " << conc << std::endl;
     // check if we've already concluded this
     std::map<Node, Node>::iterator itpv = d_conc_cache[antec].find(concBody);
-    if(itpv != d_conc_cache[antec].end())
+    if (itpv != d_conc_cache[antec].end())
     {
-      Trace("ied-conflict-debug") << "InstExplainDb::WARNING: repeated conclusion" << std::endl;
+      Trace("ied-conflict-debug")
+          << "InstExplainDb::WARNING: repeated conclusion" << std::endl;
       // this can happen if a conflicting instance produces the same
       // generalization as a previous round, whereas the quantified conclusion
       // of that round did not generate the conflicting instance it could have.
@@ -649,7 +651,7 @@ ExplainStatus InstExplainDb::explain(Node q,
     }
     Assert(!concQuant.isNull());
     std::vector<Node> vars;
-    if( conc.isNull() )
+    if (conc.isNull())
     {
       std::vector<Node> newVars;
       for (const Node& bv : concQuant[0])
@@ -690,9 +692,9 @@ ExplainStatus InstExplainDb::explain(Node q,
     // notice that this bypasses the Instantiate module in QuantifiersEngine.
     // TODO: revisit this (may want to register the instantiation there)
     Node concsi = concBody.substitute(vars.begin(),
-                                   vars.end(),
-                                   finalInfo->d_terms.begin(),
-                                   finalInfo->d_terms.end());
+                                      vars.end(),
+                                      finalInfo->d_terms.begin(),
+                                      finalInfo->d_terms.end());
     Node cig = nm->mkNode(OR, conc.negate(), concsi);
     cig = Rewriter::rewrite(cig);
     // already register the explanation
@@ -711,12 +713,13 @@ ExplainStatus InstExplainDb::explain(Node q,
   {
     lem = antec.negate();
   }
-  if( !lem.isNull() )
+  if (!lem.isNull())
   {
     Trace("ied-conflict")
         << "InstExplainDb::explain: generated generalized resolution inference"
         << std::endl;
-    Trace("ied-lemma") << "InstExplainDb::lemma (GEN-RES): " << lem << std::endl;
+    Trace("ied-lemma") << "InstExplainDb::lemma (GEN-RES): " << lem
+                       << std::endl;
     lems.push_back(lem);
   }
   // TEMPORARY FIXME
