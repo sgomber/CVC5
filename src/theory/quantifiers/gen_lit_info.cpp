@@ -186,7 +186,7 @@ bool GLitInfo::mergeInternal(
             }
             for (TNode x : itv->second)
             {
-              if( x!=av && x.getKind()!=BOUND_VARIABLE )
+              if (x != av && x.getKind() != BOUND_VARIABLE)
               {
                 // b-variable bound to two non-variable terms
                 return false;
@@ -291,14 +291,15 @@ bool GLitInfo::isPurelyGeneral() const { return d_conclusions.empty(); }
 
 Node GLitInfo::getAssumptions() const
 {
-  NodeManager * nm = NodeManager::currentNM();
-  if( d_assumptions.empty() )
+  NodeManager* nm = NodeManager::currentNM();
+  if (d_assumptions.empty())
   {
     return nm->mkConst(true);
   }
-  return d_assumptions.size()==1 ? d_assumptions[0] : nm->mkNode( AND,d_assumptions );
+  return d_assumptions.size() == 1 ? d_assumptions[0]
+                                   : nm->mkNode(AND, d_assumptions);
 }
-  
+
 bool GLitInfo::isOpen(Node lit) const
 {
   return d_conclusions.find(lit) != d_conclusions.end();

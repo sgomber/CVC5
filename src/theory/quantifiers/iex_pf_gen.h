@@ -162,9 +162,9 @@ class InstExplainPfGen
   static void indent(const char* c, unsigned tb);
   /** returns true if gn is a generalization of n */
   static bool isGeneralization(Node n, Node gn);
-  
+
   /** cache of instExplainFind */
-  std::map< Node, Node > d_instFindPure;
+  std::map<Node, Node> d_instFindPure;
 };
 
 }  // namespace quantifiers

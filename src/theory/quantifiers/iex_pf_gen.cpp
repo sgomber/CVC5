@@ -35,10 +35,7 @@ InstExplainPfGen::InstExplainPfGen(InstExplainDb& parent, QuantifiersEngine* qe)
   d_true = NodeManager::currentNM()->mkConst(true);
 }
 
-void InstExplainPfGen::reset(Theory::Effort e)
-{
-  d_instFindPure.clear();
-}
+void InstExplainPfGen::reset(Theory::Effort e) { d_instFindPure.clear(); }
 
 void InstExplainPfGen::indent(const char* c, unsigned tb)
 {
@@ -320,27 +317,27 @@ bool InstExplainPfGen::instExplain(GLitInfo& g,
   if (Trace.isOn(c))
   {
     indent(c, tb);
-    Trace(c) << "INST-EXPLAIN: " << lit << " / " << olit << (reqPureGen ? " (PURE)" : "" ) << std::endl;
+    Trace(c) << "INST-EXPLAIN: " << lit << " / " << olit
+             << (reqPureGen ? " (PURE)" : "") << std::endl;
     indent(c, tb);
     Trace(c) << "from " << inst << std::endl;
   }
   // check if cached
-  std::map< Node, Node >::iterator itp = d_instFindPure.find(olit);
-  if( itp!=d_instFindPure.end() )
+  std::map<Node, Node>::iterator itp = d_instFindPure.find(olit);
+  if (itp != d_instFindPure.end())
   {
-    if( !itp->second.isNull() )
+    if (!itp->second.isNull())
     {
-      g.d_assumptions.push_back( itp->second );
+      g.d_assumptions.push_back(itp->second);
       return true;
     }
-    else if( reqPureGen )
+    else if (reqPureGen)
     {
       // we only fail if we indeed require purely general here
       return false;
     }
   }
-  
-  
+
   InstExplainInst& iei = d_ied.getInstExplainInst(inst);
   // Since the instantiation lemma inst is propagating lit, we have that:
   //   inst { lit -> false }
@@ -422,8 +419,16 @@ bool InstExplainPfGen::instExplain(GLitInfo& g,
       isOpen = false;
     }
     // If its not the quantified formula, we try to find an inst-explanation.
-    // We require a pure generalization if we already set a propagating generalization.
-    else if (instExplainFind(g, opl, pl, inst, genPath, reqPureGen || !upgLit.isNull(), c, tb))
+    // We require a pure generalization if we already set a propagating
+    // generalization.
+    else if (instExplainFind(g,
+                             opl,
+                             pl,
+                             inst,
+                             genPath,
+                             reqPureGen || !upgLit.isNull(),
+                             c,
+                             tb))
     {
       if (Trace.isOn(c))
       {
@@ -465,13 +470,13 @@ bool InstExplainPfGen::instExplain(GLitInfo& g,
     }
     if (isOpen)
     {
-      if( reqPureGen )
+      if (reqPureGen)
       {
         if (Trace.isOn(c))
         {
           indent(c, tb);
-          Trace(c) << "INST-EXPLAIN FAIL (PURE): no purely general proof for " << pl
-                  << std::endl;
+          Trace(c) << "INST-EXPLAIN FAIL (PURE): no purely general proof for "
+                   << pl << std::endl;
         }
         d_instFindPure[olit] = Node::null();
         // clean up path
@@ -497,15 +502,17 @@ bool InstExplainPfGen::instExplain(GLitInfo& g,
   if (Trace.isOn(c))
   {
     indent(c, tb);
-    Trace(c) << "INST-EXPLAIN SUCCESS " << ( reqPureGen ? "(PURE)" : "") << " with:" << std::endl;
+    Trace(c) << "INST-EXPLAIN SUCCESS " << (reqPureGen ? "(PURE)" : "")
+             << " with:" << std::endl;
     g.debugPrint(c, tb + 1);
   }
-  if( reqPureGen )
+  if (reqPureGen)
   {
-    Assert( g.isPurelyGeneral() );
+    Assert(g.isPurelyGeneral());
     d_instFindPure[olit] = g.getAssumptions();
-    // was this non-trivial? If so, we compress the proof and remember the lemma.
-    if( !plits.empty() )
+    // was this non-trivial? If so, we compress the proof and remember the
+    // lemma.
+    if (!plits.empty())
     {
       Trace(c) << "INST-EXPLAIN: LOCAL RESOLUTION COMPRESSION" << std::endl;
     }
@@ -623,7 +630,7 @@ bool InstExplainPfGen::instExplainFind(GLitInfo& g,
           else
           {
             // if it wasn't purely general, we must not have required it to be
-            Assert( r==1 );
+            Assert(r == 1);
             // otherwise, it has a propagating generalization, take it.
             // we may carry this forward if all siblings are purely general.
             best = opli;

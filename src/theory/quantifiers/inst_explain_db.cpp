@@ -107,7 +107,7 @@ void InstExplainDb::registerExplanation(Node inst,
                                         Node q,
                                         std::vector<Node>& ts)
 {
-  Assert( q.getKind()==FORALL );
+  Assert(q.getKind() == FORALL);
   Trace("inst-explain") << "Get literals that are explanable by " << inst
                         << std::endl;
   Assert(d_inst_explains.find(inst) == d_inst_explains.end());
@@ -251,7 +251,7 @@ ExplainStatus InstExplainDb::explain(Node q,
   Trace("ied-conflict") << "InstExplainDb::explain: Conflict in context " << ctx
                         << " : " << std::endl;
   Trace("ied-conflict") << "  [QUANT] " << q << std::endl;
-  Assert( q.getKind()==FORALL );
+  Assert(q.getKind() == FORALL);
   // we first regress the explanation of proofs
   std::map<Node, bool> regressPfFail;
   std::map<Node, std::vector<TNode>> assumptions;
@@ -626,11 +626,12 @@ ExplainStatus InstExplainDb::explain(Node q,
   {
     Node conc = finalConclusions.size() == 1 ? finalConclusions[0]
                                              : nm->mkNode(OR, finalConclusions);
-    Trace("ied-conflict-debug") << "(original) conclusion: " << conc << std::endl;
+    Trace("ied-conflict-debug")
+        << "(original) conclusion: " << conc << std::endl;
     // FIXME: debugging
-    AlwaysAssert(d_lemma_cache[antec].find(conc)==d_lemma_cache[antec].end());
+    AlwaysAssert(d_lemma_cache[antec].find(conc) == d_lemma_cache[antec].end());
     d_lemma_cache[antec][conc] = true;
-    
+
     Assert(!concQuant.isNull());
     std::vector<Node> oldVars;
     std::vector<Node> newVars;
@@ -666,7 +667,7 @@ ExplainStatus InstExplainDb::explain(Node q,
     Node cig = nm->mkNode(OR, conc.negate(), concsi);
     cig = Rewriter::rewrite(cig);
     // already register the explanation
-    if( conc.getKind()==FORALL )
+    if (conc.getKind() == FORALL)
     {
       // we guard whether conc is a FORALL for the rare case where conc is
       // rewritten to a non-quantifier (e.g. via miniscoping or variable
