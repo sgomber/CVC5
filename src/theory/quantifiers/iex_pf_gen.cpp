@@ -490,17 +490,17 @@ bool InstExplainPfGen::instExplainFind(GLitInfo& g,
   std::map<Node, GLitInfo>& pconcs = g.d_conclusions[pl];
   // the (generalized) literal whose proof was the best
   Node best;
-  // we proceed into two phases: 
+  // we proceed into two phases:
   // (1) Find an IEX inference whose generalized literal (opli below)
   // generalizes our target (opl), and whose proof is purely general,
   // (2) If not possible, find an IEX inference whose generalized literal
   // is generalized by opl and whose proof contains a UPG.
   //
   // opl may be null in the case where we are looking to establish
-  // a generalization of a literal in UF proof with no inferrable target.  
+  // a generalization of a literal in UF proof with no inferrable target.
   // In this case, we take all IEX inferences regardless of whether
   // they are purely general.
-  for( unsigned r=0; r<2; r++ )
+  for (unsigned r = 0; r < 2; r++)
   {
     for (unsigned j = 0, cexpsize = cexppl.size(); j < cexpsize; j++)
     {
@@ -525,14 +525,14 @@ bool InstExplainPfGen::instExplainFind(GLitInfo& g,
       if (opl.isNull())
       {
         Trace(c) << "  ...incompatible!" << std::endl;
-        doRec = (r==1);
+        doRec = (r == 1);
       }
       else
       {
         Trace(c) << "  ...compatible, recurse" << std::endl;
-        doRec = g.checkCompatible(r==0 ? opl : opli, r==0 ? opli : opl);
+        doRec = g.checkCompatible(r == 0 ? opl : opli, r == 0 ? opli : opl);
       }
-      if( doRec )
+      if (doRec)
       {
         Trace(c) << "  ...compatible, recurse" << std::endl;
         // recurse now
@@ -549,13 +549,13 @@ bool InstExplainPfGen::instExplainFind(GLitInfo& g,
           else if (pconcs[opli].d_conclusions.empty())
           {
             // if it is purely general, we are done
-            if( r==0 )
+            if (r == 0)
             {
               best = opli;
               break;
             }
           }
-          else if( r==1 )
+          else if (r == 1)
           {
             // otherwise, it has a propagating generalization, take it.
             // we may carry this forward if all siblings are purely general.
@@ -563,7 +563,7 @@ bool InstExplainPfGen::instExplainFind(GLitInfo& g,
             break;
           }
         }
-        if( undoOpli )
+        if (undoOpli)
         {
           // undo this conclusion
           pconcs.erase(opli);
@@ -571,7 +571,7 @@ bool InstExplainPfGen::instExplainFind(GLitInfo& g,
       }
     }
     // found one that met the criteria
-    if( !best.isNull() )
+    if (!best.isNull())
     {
       break;
     }

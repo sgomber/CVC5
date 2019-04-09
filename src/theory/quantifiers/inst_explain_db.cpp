@@ -662,7 +662,7 @@ ExplainStatus InstExplainDb::explain(Node q,
   Trace("ied-lemma") << "InstExplainDb::lemma (GEN-RES): " << lem << std::endl;
   lems.push_back(lem);
   // TEMPORARY FIXME
-  if( options::qcfExpGenAbort() )
+  if (options::qcfExpGenAbort())
   {
     exit(77);
   }

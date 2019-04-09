@@ -146,11 +146,18 @@ bool InstExplainInst::justify(IeEvaluator& v,
   assumptions[lit] = -1;
   // the quantified formula must hold in the current context. If it does, it
   // is always a part of the explanation below.
-  if( v.evaluate(d_quant)==1 )
+  if (v.evaluate(d_quant) == 1)
   {
     // now, explain why the remainder was false
-    if (justifyInternal(
-            d_body, d_quant[1], false, olit, v, assumptions, cache, lits, olits))
+    if (justifyInternal(d_body,
+                        d_quant[1],
+                        false,
+                        olit,
+                        v,
+                        assumptions,
+                        cache,
+                        lits,
+                        olits))
     {
       // the quantified formula is always a part of the explanation
       lits.push_back(d_quant);
