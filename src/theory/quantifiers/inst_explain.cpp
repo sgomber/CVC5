@@ -113,7 +113,6 @@ void InstExplainInst::initialize(Node inst,
                                  Node q,
                                  const std::vector<Node>& ts)
 {
-  Trace("ajr-temp") << "Initialize inst: " << inst << " " << q << std::endl;
   Assert(!q.isNull());
   Assert(q.getKind() == FORALL);
   Assert(ts.size() == q[0].getNumChildren());

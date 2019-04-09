@@ -85,10 +85,11 @@ Node InstExplainPfGen::generalize(Node tgtLit,
                                   eq::EqProof* eqp,
                                   std::map<eq::EqProof*, Node>& concs,
                                   std::map<eq::EqProof*, GLitInfo>& concsg,
+                                  bool reqPureGen,
                                   unsigned tb)
 {
   std::map<Node, bool> genPath;
-  return generalizeInternal(tgtLit, eqp, concs, concsg, genPath, tb);
+  return generalizeInternal(tgtLit, eqp, concs, concsg, genPath, reqPureGen, tb);
 }
 
 Node InstExplainPfGen::generalizeInternal(
@@ -97,6 +98,7 @@ Node InstExplainPfGen::generalizeInternal(
     std::map<eq::EqProof*, Node>& concs,
     std::map<eq::EqProof*, GLitInfo>& concsg,
     std::map<Node, bool>& genPath,
+    bool reqPureGen,
     unsigned tb)
 {
   std::map<eq::EqProof*, Node>::iterator itc = concs.find(eqp);
@@ -143,7 +145,7 @@ Node InstExplainPfGen::generalizeInternal(
         // are left associative.
         unsigned ii = nchild - (i + 1);
         retc = generalizeInternal(
-            d_null, childProofs[ii], concs, concsg, genPath, tb + 1);
+            d_null, childProofs[ii], concs, concsg, genPath, reqPureGen, tb + 1);
         if (retc.isNull())
         {
           success = false;
@@ -186,7 +188,7 @@ Node InstExplainPfGen::generalizeInternal(
                        << tgtLit << std::endl;
     }
     bool recSuccess = instExplainFind(
-        concsg[eqp], tgtLit, ret, Node::null(), genPath, "ied-gen", tb + 2);
+        concsg[eqp], tgtLit, ret, Node::null(), genPath, reqPureGen, "ied-gen", tb + 2);
     if (Trace.isOn("ied-gen"))
     {
       indent("ied-gen", tb);
@@ -230,7 +232,7 @@ Node InstExplainPfGen::generalizeInternal(
       eq::EqProof* epi = eqp->d_children[i].get();
       // target literal is unknown if non-trivial
       Node tgtLitc = nproofs == 1 ? tgtLit : d_null;
-      retc = generalizeInternal(tgtLitc, epi, concs, concsg, genPath, tb + 1);
+      retc = generalizeInternal(tgtLitc, epi, concs, concsg, genPath, reqPureGen, tb + 1);
       if (retc.isNull())
       {
         success = false;
@@ -293,12 +295,12 @@ Node InstExplainPfGen::generalizeInternal(
   return ret;
 }
 
-// TODO: can focus assume vs conclusion
 bool InstExplainPfGen::instExplain(GLitInfo& g,
                                    Node olit,
                                    Node lit,
                                    Node inst,
                                    std::map<Node, bool>& genPath,
+                                   bool reqPureGen,
                                    const char* c,
                                    unsigned tb)
 {
@@ -390,7 +392,7 @@ bool InstExplainPfGen::instExplain(GLitInfo& g,
       isOpen = false;
     }
     // If its not the quantified formula, we try to find an inst-explanation
-    else if (instExplainFind(g, opl, pl, inst, genPath, c, tb))
+    else if (instExplainFind(g, opl, pl, inst, genPath, reqPureGen, c, tb))
     {
       if (Trace.isOn(c))
       {
@@ -399,6 +401,7 @@ bool InstExplainPfGen::instExplain(GLitInfo& g,
       // if we succeeded, then check if we are purely general
       if (g.isOpen(pl))
       {
+        Assert( !reqPureGen );
         // if not, then we set the upgLit if we are the unique open branch
         if (g.d_conclusions.size() == 1)
         {
@@ -463,6 +466,7 @@ bool InstExplainPfGen::instExplainFind(GLitInfo& g,
                                        Node pl,
                                        Node inst,
                                        std::map<Node, bool>& genPath,
+                                       bool reqPureGen,
                                        const char* c,
                                        unsigned tb)
 {
@@ -506,7 +510,9 @@ bool InstExplainPfGen::instExplainFind(GLitInfo& g,
   // a generalization of a literal in UF proof with no inferrable target.
   // In this case, we take all IEX inferences regardless of whether
   // they are purely general.
-  for (unsigned r = 0; r < 2; r++)
+  unsigned rstart = ( opl.isNull() && !reqPureGen ) ? 1 : 0;
+  unsigned rend = reqPureGen ? 1 : 2;
+  for (unsigned r = rstart; r < rend; r++)
   {
     for (unsigned j = 0, cexpsize = cexppl.size(); j < cexpsize; j++)
     {
@@ -527,12 +533,8 @@ bool InstExplainPfGen::instExplainFind(GLitInfo& g,
       // currently: we avoid matching constraints altogether by only
       // pursuing generalizations that are fully compatible with the
       // current.
-      bool doRec = false;
-      if (opl.isNull())
-      {
-        doRec = (r == 1);
-      }
-      else
+      bool doRec = true;
+      if (!opl.isNull())
       {
         doRec = g.checkCompatible(r == 0 ? opl : opli, r == 0 ? opli : opl);
       }
@@ -542,7 +544,7 @@ bool InstExplainPfGen::instExplainFind(GLitInfo& g,
                  << (r == 0 ? "assume" : "conclude") << std::endl;
         // recurse now
         bool undoOpli = true;
-        if (instExplain(pconcs[opli], opli, pl, instpl, genPath, c, tb + 3))
+        if (instExplain(pconcs[opli], opli, pl, instpl, genPath, reqPureGen || r==0, c, tb + 3))
         {
           if (opl.isNull())
           {

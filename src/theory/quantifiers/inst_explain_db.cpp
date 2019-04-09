@@ -461,7 +461,10 @@ ExplainStatus InstExplainDb::explain(Node q,
     if (regressPfFail.find(elit) == regressPfFail.end())
     {
       eq::EqProof* pfp = &itp->second;
-      d_iexpfg.generalize(elit, pfp, concs, concsg, 1);
+      // we can only use purely general proofs if we already have a proagating
+      // generalization.
+      bool reqPureGen = !litPropGen.isNull();
+      d_iexpfg.generalize(elit, pfp, concs, concsg, reqPureGen, 1);
       // did we generalize the proof?
       std::map<eq::EqProof*, GLitInfo>::iterator itg = concsg.find(pfp);
       if (itg != concsg.end())

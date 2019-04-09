@@ -58,6 +58,7 @@ class InstExplainPfGen
                   eq::EqProof* eqp,
                   std::map<eq::EqProof*, Node>& concs,
                   std::map<eq::EqProof*, GLitInfo>& concsg,
+                  bool reqPureGen,
                   unsigned tb = 0);
   /**
    * Regress the explanation of proof sketch eqp using eqe.
@@ -106,6 +107,7 @@ class InstExplainPfGen
                           std::map<eq::EqProof*, Node>& concs,
                           std::map<eq::EqProof*, GLitInfo>& concsg,
                           std::map<Node, bool>& genPath,
+                          bool reqPureGen,
                           unsigned tb);
   /** Instantiation explanation
    *
@@ -142,6 +144,7 @@ class InstExplainPfGen
                    Node lit,
                    Node inst,
                    std::map<Node, bool>& genPath,
+                   bool reqPureGen,
                    const char* c,
                    unsigned tb);
   /** find instantiation explanation for opl/pl
@@ -151,6 +154,7 @@ class InstExplainPfGen
                        Node pl,
                        Node inst,
                        std::map<Node, bool>& genPath,
+                   bool reqPureGen,
                        const char* c,
                        unsigned tb);
 

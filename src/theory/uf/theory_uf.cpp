@@ -741,6 +741,7 @@ void TheoryUF::conflict(TNode a, TNode b) {
   std::unique_ptr<ProofUF> puf(d_proofsEnabled ? new ProofUF(pf) : nullptr);
   d_out->conflict(d_conflictNode, std::move(puf));
   d_conflict = true;
+  Trace("ajr-temp") << "UF conflict: " << d_conflictNode << std::endl;
 }
 
 void TheoryUF::eqNotifyNewClass(TNode t) {
