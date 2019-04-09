@@ -488,73 +488,92 @@ bool InstExplainPfGen::instExplainFind(GLitInfo& g,
   // populate choices for the proof regression, which we store in
   // g.d_conclusions[pl]
   std::map<Node, GLitInfo>& pconcs = g.d_conclusions[pl];
-  // the current best explanation
+  // the (generalized) literal whose proof was the best
   Node best;
-  for (unsigned j = 0, cexpsize = cexppl.size(); j < cexpsize; j++)
+  // we proceed into two phases: 
+  // (1) Find an IEX inference whose generalized literal (opli below)
+  // generalizes our target (opl), and whose proof is purely general,
+  // (2) If not possible, find an IEX inference whose generalized literal
+  // is generalized by opl and whose proof contains a UPG.
+  //
+  // opl may be null in the case where we are looking to establish
+  // a generalization of a literal in UF proof with no inferrable target.  
+  // In this case, we take all IEX inferences regardless of whether
+  // they are purely general.
+  for( unsigned r=0; r<2; r++ )
   {
-    Node instpl = cexppl[j];
-    Node opli = olitspl[j];
-    // The instantiation lemma that propagates pl should not be the same
-    // as the one that propagates lit. Otherwise our computation of
-    // Boolean propagation was wrong.
-    Assert(instpl != inst);
-    if (Trace.isOn(c))
+    for (unsigned j = 0, cexpsize = cexppl.size(); j < cexpsize; j++)
     {
-      indent(c, tb + 2);
-      Trace(c) << "inst-exp: try " << opli << "..." << std::endl;
-      indent(c, tb + 2);
-    }
-    // check the matching constraints on opli against the original literal
-    // in the quantified formula opl here.
-    // currently: we avoid matching constraints altogether by only
-    // pursuing generalizations that are fully compatible with the
-    // current.
-    // opl may not be available in the case where we are looking to establish
-    // a generalization of a literal in UF proof with no inferrable target.
-    if (!opl.isNull() && !g.checkCompatible(opl, opli))
-    {
-      Trace(c) << "  ...incompatible!" << std::endl;
-    }
-    else
-    {
-      Trace(c) << "  ...compatible, recurse" << std::endl;
-      // recurse now
-      bool setBest = false;
-      if (instExplain(pconcs[opli], opli, pl, instpl, genPath, c, tb + 3))
+      Node instpl = cexppl[j];
+      Node opli = olitspl[j];
+      // The instantiation lemma that propagates pl should not be the same
+      // as the one that propagates lit. Otherwise our computation of
+      // Boolean propagation was wrong.
+      Assert(instpl != inst);
+      if (Trace.isOn(c))
       {
-        if (opl.isNull())
+        indent(c, tb + 2);
+        Trace(c) << "inst-exp: try " << opli << "..." << std::endl;
+        indent(c, tb + 2);
+      }
+      // check the matching constraints on opli against the original literal
+      // in the quantified formula opl here.
+      // currently: we avoid matching constraints altogether by only
+      // pursuing generalizations that are fully compatible with the
+      // current.
+      bool doRec = false;
+      if (opl.isNull())
+      {
+        Trace(c) << "  ...incompatible!" << std::endl;
+        doRec = (r==1);
+      }
+      else
+      {
+        Trace(c) << "  ...compatible, recurse" << std::endl;
+        doRec = g.checkCompatible(r==0 ? opl : opli, r==0 ? opli : opl);
+      }
+      if( doRec )
+      {
+        Trace(c) << "  ...compatible, recurse" << std::endl;
+        // recurse now
+        bool undoOpli = true;
+        if (instExplain(pconcs[opli], opli, pl, instpl, genPath, c, tb + 3))
         {
-          // Don't have criteria to judge what is best, due to incomparable
-          // matching.
-          // TODO: could do subsumption to prune here
-          setBest = true;
-        }
-        else if (pconcs[opli].d_conclusions.empty())
-        {
-          // if it is purely general, we are done
-          if (!best.isNull())
+          if (opl.isNull())
           {
-            // Clean up the previous best. This happens when we found a non
-            // purely general option for IEX-ing the current ground literal
-            // and then this attempt is purely general.
-            pconcs.erase(best);
+            // Don't have criteria to judge what is best, due to incomparable
+            // matching.
+            // TODO: could do subsumption to prune here
+            undoOpli = false;
           }
-          best = opli;
-          break;
+          else if (pconcs[opli].d_conclusions.empty())
+          {
+            // if it is purely general, we are done
+            if( r==0 )
+            {
+              best = opli;
+              break;
+            }
+          }
+          else if( r==1 )
+          {
+            // otherwise, it has a propagating generalization, take it.
+            // we may carry this forward if all siblings are purely general.
+            best = opli;
+            break;
+          }
         }
-        else if (best.isNull())
+        if( undoOpli )
         {
-          // otherwise, it has a propagating generalization, take it.
-          // we may carry this forward if all siblings are purely general.
-          best = opli;
-          setBest = true;
+          // undo this conclusion
+          pconcs.erase(opli);
         }
       }
-      if (!setBest)
-      {
-        // undo this conclusion
-        pconcs.erase(opli);
-      }
+    }
+    // found one that met the criteria
+    if( !best.isNull() )
+    {
+      break;
     }
   }
   // TODO: search for instantiations that would have propagated this??
