@@ -154,7 +154,7 @@ class InstExplainPfGen
                        Node pl,
                        Node inst,
                        std::map<Node, bool>& genPath,
-                   bool reqPureGen,
+                       bool reqPureGen,
                        const char* c,
                        unsigned tb);
 
