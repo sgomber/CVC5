@@ -14,6 +14,8 @@
 
 #include "theory/quantifiers/gen_lit_info.h"
 
+#include "theory/quantifiers/inst_explain_db.h"
+
 using namespace CVC4::kind;
 
 namespace CVC4 {
@@ -347,7 +349,8 @@ InstExplainInst* GLitInfo::getUPG(std::vector<Node>& concs,
   }
   return ret;
 }
-void GLitInfo::processUPG(Node currConc,
+void GLitInfo::processUPG(InstExplainDb& ied,
+                          Node currConc,
                           std::vector<Node>& assumptions,
                           std::vector<Node>& lemmas,
                           std::map<Node, Node>& subsumptions) const
@@ -379,14 +382,17 @@ void GLitInfo::processUPG(Node currConc,
       // if we are carrying an open conclusion, add it now
       concs.push_back(currConc);
     }
+    Assert( d_iei );
+    Node genConc = ied.getGeneralizedConclusion(d_iei,assumptions,concs,lemmas);
     // add this quantified formula to assumptions if we are recursing
     if (gupg)
     {
+      assumptions.push_back(genConc);
     }
   }
   if (gupg)
   {
-    gupg->processUPG(Node::null(), assumptions, lemmas, subsumptions);
+    gupg->processUPG(ied, Node::null(), assumptions, lemmas, subsumptions);
   }
 }
 

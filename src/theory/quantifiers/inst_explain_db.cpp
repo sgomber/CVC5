@@ -622,20 +622,32 @@ ExplainStatus InstExplainDb::explain(Node q,
       Trace("ied-conflict") << "CONCLUSION: false!" << std::endl;
     }
   }
+  getGeneralizedConclusion(finalInfo, finalAssumptions, finalConclusions, lems);
+  // TEMPORARY FIXME
+  if (options::qcfExpGenAbort())
+  {
+    exit(77);
+  }
+  return EXP_STATUS_FULL;
+}
+
+Node InstExplainDb::getGeneralizedConclusion(InstExplainInst* iei, const std::vector< Node >& assumps, const std::vector< Node >& concs, std::vector< Node >& lemmas )
+{
   NodeManager* nm = NodeManager::currentNM();
   Node antec = d_true;
-  if (!finalAssumptions.empty())
+  if (!assumps.empty())
   {
-    antec = finalAssumptions.size() == 1 ? finalAssumptions[0]
-                                         : nm->mkNode(AND, finalAssumptions);
-  }
+    antec = assumps.size() == 1 ? assumps[0]
+                                         : nm->mkNode(AND, assumps);
+  }  
   Node lem;
-  if (!finalConclusions.empty())
+  Node conc;
+  Assert( iei );
+  if (!concs.empty())
   {
-    Node concBody = finalConclusions.size() == 1
-                        ? finalConclusions[0]
-                        : nm->mkNode(OR, finalConclusions);
-    Node conc;
+    Node concBody = concs.size() == 1
+                        ? concs[0]
+                        : nm->mkNode(OR, concs);
     Trace("ied-conflict-debug")
         << "(original) conclusion: " << conc << std::endl;
     // check if we've already concluded this
@@ -649,52 +661,52 @@ ExplainStatus InstExplainDb::explain(Node q,
       // of that round did not generate the conflicting instance it could have.
       conc = itpv->second;
     }
-    Assert(!concQuant.isNull());
+    Node q = iei->getQuantifiedFormula();
+    Assert(!q.isNull());
     std::vector<Node> vars;
     if (conc.isNull())
     {
       std::vector<Node> newVars;
-      for (const Node& bv : concQuant[0])
+      for (const Node& bv : q[0])
       {
         vars.push_back(bv);
         Node bvn = nm->mkBoundVar(bv.getType());
         newVars.push_back(bvn);
       }
-      Node concs = concBody.substitute(
+      Node concsubs = concBody.substitute(
           vars.begin(), vars.end(), newVars.begin(), newVars.end());
-      concs = Rewriter::rewrite(concs);
+      concsubs = Rewriter::rewrite(concsubs);
       Node bvl = nm->mkNode(BOUND_VAR_LIST, newVars);
-      conc = nm->mkNode(FORALL, bvl, concs);
+      conc = nm->mkNode(FORALL, bvl, concsubs);
       conc = Rewriter::rewrite(conc);
       lem = nm->mkNode(OR, antec.negate(), conc);
       // mark the propagating generalization
       Trace("ied-conflict-debug") << "auto-subsume: " << std::endl;
       Trace("ied-conflict-debug") << "  " << conc << " subsumes" << std::endl;
-      Trace("ied-conflict-debug") << "  " << concQuant << std::endl;
+      Trace("ied-conflict-debug") << "  " << q << std::endl;
       Assert(d_subsume);
-      // We are guaranteed that conc subsumes concQuant.
+      // We are guaranteed that conc subsumes q.
       // We mark the conclusion to indicate that it deactivates
       // the original quantified formula whenever it is asserted.
-      d_subsume->setSubsumes(conc, concQuant);
+      d_subsume->setSubsumes(conc, q);
       d_conc_cache[antec][concBody] = conc;
     }
     else
     {
-      for (const Node& bv : concQuant[0])
+      for (const Node& bv : q[0])
       {
         vars.push_back(bv);
       }
     }
-    Assert(finalInfo);
-    Assert(finalInfo->getQuantifiedFormula() == concQuant);
-    Assert(finalInfo->d_terms.size() == vars.size());
+    Assert(iei);
+    Assert(iei->d_terms.size() == vars.size());
     // construct the generalized conflicting instance
     // notice that this bypasses the Instantiate module in QuantifiersEngine.
     // TODO: revisit this (may want to register the instantiation there)
     Node concsi = concBody.substitute(vars.begin(),
                                       vars.end(),
-                                      finalInfo->d_terms.begin(),
-                                      finalInfo->d_terms.end());
+                                      iei->d_terms.begin(),
+                                      iei->d_terms.end());
     Node cig = nm->mkNode(OR, conc.negate(), concsi);
     cig = Rewriter::rewrite(cig);
     // already register the explanation
@@ -703,15 +715,16 @@ ExplainStatus InstExplainDb::explain(Node q,
       // we guard whether conc is a FORALL for the rare case where conc is
       // rewritten to a non-quantifier (e.g. via miniscoping or variable
       // elimination).
-      registerExplanation(cig, concsi, conc, finalInfo->d_terms);
+      registerExplanation(cig, concsi, conc, iei->d_terms);
     }
-    lems.push_back(cig);
+    lemmas.push_back(cig);
     Trace("ied-lemma") << "InstExplainDb::lemma (GEN-CINST): " << cig
                        << std::endl;
   }
   else
   {
     lem = antec.negate();
+    conc = d_false;
   }
   if (!lem.isNull())
   {
@@ -720,14 +733,9 @@ ExplainStatus InstExplainDb::explain(Node q,
         << std::endl;
     Trace("ied-lemma") << "InstExplainDb::lemma (GEN-RES): " << lem
                        << std::endl;
-    lems.push_back(lem);
+    lemmas.push_back(lem);
   }
-  // TEMPORARY FIXME
-  if (options::qcfExpGenAbort())
-  {
-    exit(77);
-  }
-  return EXP_STATUS_FULL;
+  return conc;
 }
 
 void InstExplainDb::indent(const char* c, unsigned tb)
