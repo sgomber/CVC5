@@ -685,8 +685,10 @@ ExplainStatus InstExplainDb::explain(Node q,
     }
     Assert(finalInfo);
     Assert(finalInfo->getQuantifiedFormula() == concQuant);
-    Assert(finalInfo->d_terms.size() == newVars.size());
+    Assert(finalInfo->d_terms.size() == vars.size());
     // construct the generalized conflicting instance
+    // notice that this bypasses the Instantiate module in QuantifiersEngine.
+    // TODO: revisit this (may want to register the instantiation there)
     Node concsi = concBody.substitute(vars.begin(),
                                    vars.end(),
                                    finalInfo->d_terms.begin(),

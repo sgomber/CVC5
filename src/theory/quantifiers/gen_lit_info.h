@@ -109,10 +109,19 @@ class GLitInfo
   /** is the proof of lit open? */
   bool isOpen(Node lit) const;
   bool hasUPG() const;
+  /** get the UPG
+   */
   InstExplainInst* getUPG(std::vector<Node>& concs,
                           Node& quant,
                           std::vector<Node>& assumptions) const;
 
+  /** get the UPG
+   */
+  void processUPG(Node currConc,
+                  std::vector<Node>& assumptions,
+                  std::vector< Node >& lemmas,
+                  std::map< Node, Node >& subsumptions
+                  ) const;
  private:
   bool mergeInternal(
       TNode a, TNode b, const GLitInfo& gb, bool doMerge, bool allowBind);

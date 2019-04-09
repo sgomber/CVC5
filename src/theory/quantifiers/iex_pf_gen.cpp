@@ -339,6 +339,7 @@ bool InstExplainPfGen::instExplain(GLitInfo& g,
   }
 
   InstExplainInst& iei = d_ied.getInstExplainInst(inst);
+  g.d_iei = &iei;
   // Since the instantiation lemma inst is propagating lit, we have that:
   //   inst { lit -> false }
   // must evaluate to false in the current context.
@@ -485,12 +486,12 @@ bool InstExplainPfGen::instExplain(GLitInfo& g,
       }
       Assert(g.d_conclusions.find(pl) == g.d_conclusions.end());
       // if we didn't find one, we must carry it must be a conclusion
-      g.d_conclusions[pl][opl].initialize(&iei);
+      g.d_conclusions[pl][opl].initialize(nullptr);
       // if we already had a UPG, discard it now and move here
       if (!upgLit.isNull())
       {
         g.d_conclusions.erase(upgLit);
-        g.d_conclusions[upgLit][upgOLit].initialize(&iei);
+        g.d_conclusions[upgLit][upgOLit].initialize(nullptr);
         if (Trace.isOn(c))
         {
           indent(c, tb + 1);
