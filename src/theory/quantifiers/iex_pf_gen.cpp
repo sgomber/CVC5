@@ -300,7 +300,7 @@ bool InstExplainPfGen::instExplain(GLitInfo& g,
                                    const char* c,
                                    unsigned tb)
 {
-  Assert( g.empty() );
+  Assert(g.empty());
   if (Trace.isOn(c))
   {
     indent(c, tb);
@@ -326,7 +326,7 @@ bool InstExplainPfGen::instExplain(GLitInfo& g,
   }
 
   InstExplainInst& iei = d_ied.getInstExplainInst(inst);
-  g.initialize( &iei );
+  g.initialize(&iei);
   // Since the instantiation lemma inst is propagating lit, we have that:
   //   inst { lit -> false }
   // must evaluate to false in the current context.
@@ -387,7 +387,8 @@ bool InstExplainPfGen::instExplain(GLitInfo& g,
     if (Trace.isOn(c))
     {
       indent(c, tb + 1);
-      Trace(c) << "Premise #" << (k + 1) << ": " << pl << " for " << olit << std::endl;
+      Trace(c) << "Premise #" << (k + 1) << ": " << pl << " for " << olit
+               << std::endl;
     }
     // Now, regress the proof of pl / opl. It is either:
     // - the quantified formula itself, in which case it is an assumption,
@@ -439,7 +440,7 @@ bool InstExplainPfGen::instExplain(GLitInfo& g,
         // clean up path
         genPath.erase(lit);
         // clear everything since we failed (not necessary)
-        //g.initialize(nullptr);
+        // g.initialize(nullptr);
         return false;
       }
     }
@@ -447,8 +448,8 @@ bool InstExplainPfGen::instExplain(GLitInfo& g,
   if (Trace.isOn(c))
   {
     indent(c, tb);
-    Trace(c) << "INST-EXPLAIN SUCCESS " << olit << " " <<  (reqPureGen ? "(PURE)" : "")
-             << " with:" << std::endl;
+    Trace(c) << "INST-EXPLAIN SUCCESS " << olit << " "
+             << (reqPureGen ? "(PURE)" : "") << " with:" << std::endl;
     g.debugPrint(c, tb + 1);
   }
   if (reqPureGen)
@@ -457,7 +458,7 @@ bool InstExplainPfGen::instExplain(GLitInfo& g,
     d_instFindPure[olit] = g.getAssumptions();
     // was this non-trivial? If so, we compress the proof and remember the
     // lemma.
-    //if (!plits.empty())
+    // if (!plits.empty())
     //{
     //  Trace(c) << "INST-EXPLAIN: LOCAL RESOLUTION COMPRESSION" << std::endl;
     //}

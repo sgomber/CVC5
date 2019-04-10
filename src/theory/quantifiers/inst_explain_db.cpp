@@ -468,8 +468,9 @@ ExplainStatus InstExplainDb::explain(Node q,
       GLitInfo& glc = genRoot.d_conclusions[elitg][elit];
       if (d_iexpfg.generalize(elit, pfp, glc, reqPureGen, 1))
       {
-        Trace("ied-gen") << "....success generalize, open=" << genRoot.isOpen(elit) << std::endl;
-        //glc.debugPrint("ied-gen");
+        Trace("ied-gen") << "....success generalize, open="
+                         << genRoot.isOpen(elit) << std::endl;
+        // glc.debugPrint("ied-gen");
         // Finalize the conclusion in the root. This either removes the proof
         // of elitg / elit and pushes its assumptions to the root, or otherwise
         // does nothing.
@@ -494,7 +495,7 @@ ExplainStatus InstExplainDb::explain(Node q,
     }
     Trace("ied-gen") << "----------------- end generalize proof" << std::endl;
   }
-  if( !genRoot.isUPGTrivial() )
+  if (!genRoot.isUPGTrivial())
   {
     litGeneralization[genRoot.getUPGLit()] = true;
   }
@@ -510,12 +511,12 @@ ExplainStatus InstExplainDb::explain(Node q,
                           << std::endl;
     return EXP_STATUS_FAIL;
   }
-/*
-  Trace("ied-conflict")
-      << "...using " << litGeneralization.size()
-      << " generalizations, a literal with propagated generalization is "
-      << litPropGen << ", base=" << propGenIsBase << std::endl;
-*/
+  /*
+    Trace("ied-conflict")
+        << "...using " << litGeneralization.size()
+        << " generalizations, a literal with propagated generalization is "
+        << litPropGen << ", base=" << propGenIsBase << std::endl;
+  */
   // Now construct the inference if we have any useful generalization.
   Trace("ied-upg") << "=== Compute UPG" << std::endl;
   std::vector<Node> finalAssumptions;
@@ -536,13 +537,13 @@ ExplainStatus InstExplainDb::explain(Node q,
       Node elitg = elit;
       if (genRoot.isOpen(elitg))
       {
-        Assert( genRoot.getUPGLit()==elit );
+        Assert(genRoot.getUPGLit() == elit);
         // we generalized it, now must look up its information
         std::map<Node, GLitInfo>::iterator itgp =
             genRoot.d_conclusions[elitg].find(elit);
         Assert(itgp != genRoot.d_conclusions[elitg].end());
         Trace("ied-upg") << "* Get UPG from " << elit << ":" << std::endl;
-        itgp->second.debugPrint("ied-upg",2);
+        itgp->second.debugPrint("ied-upg", 2);
         // get the UPG information from this
         InstExplainInst* iei =
             itgp->second.getUPG(finalConclusions, concQuant, finalAssumptions);
@@ -555,7 +556,6 @@ ExplainStatus InstExplainDb::explain(Node q,
       else
       {
         Trace("ied-upg") << "* Purely general " << elit << std::endl;
-        
       }
     }
     else

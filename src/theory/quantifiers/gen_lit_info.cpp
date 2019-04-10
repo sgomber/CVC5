@@ -24,7 +24,8 @@ namespace quantifiers {
 
 bool GLitInfo::empty() const
 {
-  return !d_iei && d_subs_modify.empty() && d_assumptions.empty() && d_conclusions.empty();
+  return !d_iei && d_subs_modify.empty() && d_assumptions.empty()
+         && d_conclusions.empty();
 }
 void GLitInfo::initialize(InstExplainInst* iei)
 {
@@ -56,11 +57,11 @@ void GLitInfo::setConclusion(Node pl, Node opl)
 {
   std::map<Node, std::map<Node, GLitInfo>>::iterator it =
       d_conclusions.find(pl);
-  Assert (it != d_conclusions.end());
+  Assert(it != d_conclusions.end());
   // should have cleaned up all others if we are here
-  Assert( it->second.size()==1 );
+  Assert(it->second.size() == 1);
   std::map<Node, GLitInfo>::iterator it2 = it->second.find(opl);
-  Assert (it2 != it->second.end());
+  Assert(it2 != it->second.end());
   // if child is purely general, we can compress and remove this
   if (it2->second.isPurelyGeneral())
   {
@@ -91,27 +92,27 @@ void GLitInfo::setOpenConclusionInternal(Node pl, Node opl)
 
 void GLitInfo::notifyOpenConclusion(Node pl, Node opl, bool isTriv)
 {
-  Assert( !opl.isNull() );
+  Assert(!opl.isNull());
   // if we had a non-trivial UPG
-  if( !d_upgTriv )
+  if (!d_upgTriv)
   {
-    Assert( !d_upgLit.isNull() );
+    Assert(!d_upgLit.isNull());
     // clear the previous non-trivial UPG
     setOpenConclusionInternal(d_upgLit, d_upgOLit);
     // it is now trivial
     d_upgTriv = true;
   }
   // if the upg literal is available, set it.
-  if( d_upgLit.isNull() )
+  if (d_upgLit.isNull())
   {
     d_upgLit = pl;
     d_upgOLit = opl;
     d_upgTriv = isTriv;
   }
-  else if( !isTriv )
+  else if (!isTriv)
   {
     // otherwise, have to clear the current one if its non-trivial
-    setOpenConclusionInternal(pl,opl);
+    setOpenConclusionInternal(pl, opl);
     isTriv = true;
   }
 }
@@ -408,7 +409,7 @@ void GLitInfo::processUPG(InstExplainDb& ied,
       if (!cc.second.d_conclusions.empty())
       {
         // should have only one UPG
-        Assert( !gupg );
+        Assert(!gupg);
         gupg = &(cc.second);
         upgLit = cc.first;
       }
@@ -503,7 +504,7 @@ void GLitInfo::debugPrint(const char* c, unsigned tb) const
         {
           indent(c, tb + 2);
           Trace(c) << cs.first << " / " << cc.first << ":" << std::endl;
-          cc.second.debugPrint(c,tb+4);
+          cc.second.debugPrint(c, tb + 4);
         }
       }
     }

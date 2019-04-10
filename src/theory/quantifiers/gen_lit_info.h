@@ -78,15 +78,15 @@ class GLitInfo
    */
   void initialize(InstExplainInst* iei);
   /** set conclusion
-   * 
+   *
    * This indicates that we have decided to justify the premise (pl/opl) with
    * the proof stored at d_conclusions[pl][opl].
-   * 
+   *
    * There are two cases:
    * (1) The proof d_conclusions[pl][opl] is purely general. In this case,
    * we take the assumptions from this proof and remove it from d_conclusions,
    * i.e. we compress its proof,
-   * (2) The proof d_conclusions[pl][opl] contains a UPG. 
+   * (2) The proof d_conclusions[pl][opl] contains a UPG.
    *   (A) If proofs of all premises registered by previous calls have been
    *   purely general, then we leave d_conclusions[pl][opl] unchanged, and set
    *   the UPG literal (d_upgLit/d_upgOLit) to (pl/opl),
@@ -99,10 +99,10 @@ class GLitInfo
    *   is made an open leaf.
    */
   void setConclusion(Node pl, Node opl);
-  /** 
+  /**
    * This indicates that we cannot justify the premise (pl/opl). Hence it
    * becomes an open leaf.
-   * 
+   *
    * If we contain a proof of a premise (pl'/opl') that has a UPG, it is
    * discarded and (pl'/opl') becomes an open leaf.
    */
@@ -149,12 +149,13 @@ class GLitInfo
   Node getUPGLit() const { return d_upgLit; }
   /** is upg trivial */
   bool isUPGTrivial() const { return d_upgTriv; }
+
  private:
   bool mergeInternal(
       TNode a, TNode b, const GLitInfo& gb, bool doMerge, bool allowBind);
   /** indent tb tabulations on trace c */
   void indent(const char* c, unsigned tb) const;
-  /** 
+  /**
    * A ground/generalized literals whose proof contains a UPG, or a premise
    * that is part of the UPG itself.
    */
@@ -163,26 +164,26 @@ class GLitInfo
   /** Are the above literals part of the UPG itself? */
   bool d_upgTriv;
   /** set open conclusion internal
-   * 
+   *
    * This makes pl/opl an open leaf of this proof.
    */
   void setOpenConclusionInternal(Node pl, Node opl);
   /** notify open conclusion
-   * 
+   *
    * Notify that (pl/opl) is justified by a proof that is not purely general.
    * The flag isTriv is true if (pl/opl) is an open leaf.
-   * 
+   *
    * This call ensures that this proof has a unique propagating generalization
    * by the following steps:
-   * 
+   *
    * 1. (Undo previous UPG if one exists)
    * If d_upgTriv is false, this indicates that a proof of the premise
    * (d_upgLit/d_upgOLit) contains a propagating generalization. We discard
    * its generalization.
-   * 
+   *
    * 2. (Set UPG if available)
    * If d_upgLit is null, then we set the UPG literal to pl/opl.
-   * 
+   *
    * 3. (Undo UPG in current literal if UPG is not available)
    * If pl/opl has a non-trivial UPG, it must be discarded if there was already
    * a UPG literal.
