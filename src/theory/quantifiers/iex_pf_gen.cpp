@@ -300,6 +300,7 @@ bool InstExplainPfGen::instExplain(GLitInfo& g,
                                    const char* c,
                                    unsigned tb)
 {
+  Assert( g.empty() );
   if (Trace.isOn(c))
   {
     indent(c, tb);
@@ -325,7 +326,7 @@ bool InstExplainPfGen::instExplain(GLitInfo& g,
   }
 
   InstExplainInst& iei = d_ied.getInstExplainInst(inst);
-  g.d_iei = &iei;
+  g.initialize( &iei );
   // Since the instantiation lemma inst is propagating lit, we have that:
   //   inst { lit -> false }
   // must evaluate to false in the current context.
@@ -386,7 +387,7 @@ bool InstExplainPfGen::instExplain(GLitInfo& g,
     if (Trace.isOn(c))
     {
       indent(c, tb + 1);
-      Trace(c) << "Premise #" << (k + 1) << ": " << pl << std::endl;
+      Trace(c) << "Premise #" << (k + 1) << ": " << pl << " for " << olit << std::endl;
     }
     // Now, regress the proof of pl / opl. It is either:
     // - the quantified formula itself, in which case it is an assumption,
@@ -417,42 +418,7 @@ bool InstExplainPfGen::instExplain(GLitInfo& g,
                              c,
                              tb))
     {
-
-      if (Trace.isOn(c))
-      {
-        indent(c, tb + 1);
-      }
       isOpen = g.isOpen(pl);
-      /*
-      // if we succeeded, then check if we are purely general
-      if (g.isOpen(pl))
-      {
-        Assert(!reqPureGen);
-        // if not, then we set the upgLit if we are the unique open branch
-        if (g.d_conclusions.size() == 1)
-        {
-          Trace(c) << "-> inst-explained containing UPG" << std::endl;
-          upgLit = pl;
-          upgOLit = opl;
-          isOpen = false;
-        }
-        else
-        {
-          Trace(c) << "-> inst-explained containing propagating "
-                      "generalization, but not unique:"
-                   << std::endl;
-          g.debugPrint(c, tb + 1);
-          // Already have another open branch, discard the generalization.
-          // We reset this to a basic open leaf under "isOpen".
-          g.d_conclusions.erase(pl);
-        }
-      }
-      else
-      {
-        Trace(c) << "-> inst-explained, fully general" << std::endl;
-        isOpen = false;
-      }
-      */
     }
     else if (Trace.isOn(c))
     {
@@ -472,26 +438,10 @@ bool InstExplainPfGen::instExplain(GLitInfo& g,
         d_instFindPure[olit] = Node::null();
         // clean up path
         genPath.erase(lit);
-        // clear everything?
+        // clear everything since we failed (not necessary)
         //g.initialize(nullptr);
         return false;
       }
-      /*
-      Assert(g.d_conclusions.find(pl) == g.d_conclusions.end());
-      // if we didn't find one, we must carry it must be a conclusion
-      g.d_conclusions[pl][opl].initialize(nullptr);
-      // if we already had a UPG, discard it now and move here
-      if (!upgLit.isNull())
-      {
-        g.d_conclusions.erase(upgLit);
-        g.d_conclusions[upgLit][upgOLit].initialize(nullptr);
-        if (Trace.isOn(c))
-        {
-          indent(c, tb + 1);
-          Trace(c) << "-> revert UPG " << upgLit << std::endl;
-        }
-      }
-      */
     }
   }
   if (Trace.isOn(c))
@@ -529,7 +479,8 @@ bool InstExplainPfGen::instExplainFind(GLitInfo& g,
   std::map<Node, InstExplainLit>::iterator itl;
   if (!d_ied.findInstExplainLit(pl, itl))
   {
-    g.setOpenConclusion(pl);
+    // no instantiation information for ground literal, we fail
+    g.setOpenConclusion(pl, opl);
     return false;
   }
   InstExplainLit& iel = itl->second;
@@ -549,7 +500,7 @@ bool InstExplainPfGen::instExplainFind(GLitInfo& g,
   }
   if (cexppl.empty())
   {
-    g.setOpenConclusion(pl);
+    g.setOpenConclusion(pl, opl);
     return false;
   }
   Assert(!opl.isNull());
@@ -642,7 +593,8 @@ bool InstExplainPfGen::instExplainFind(GLitInfo& g,
       }
       else
       {
-        Trace(c) << "  ...incompatible" << std::endl;
+        Trace(c) << "  ...incompatible, phase="
+                 << (r == 0 ? "assume" : "conclude") << std::endl;
       }
     }
     // found one that met the criteria
@@ -662,16 +614,16 @@ bool InstExplainPfGen::instExplainFind(GLitInfo& g,
       indent(c, tb + 1);
       Trace(c) << "-> failed to generalize" << std::endl;
     }
-    g.setOpenConclusion(pl);
+    g.setOpenConclusion(pl, opl);
     return false;
   }
-  Assert(!best.isNull());
-  Assert(pconcs.find(best) != pconcs.end());
   if (opl.isNull())
   {
     // we leave multiple possible conclusions here
     return true;
   }
+  Assert(!best.isNull());
+  Assert(pconcs.find(best) != pconcs.end());
   if (Trace.isOn(c))
   {
     indent(c, tb + 1);
@@ -681,8 +633,6 @@ bool InstExplainPfGen::instExplainFind(GLitInfo& g,
   // Set the conclusion to the one on child "best".
   // This will merge it into the parent if it has no open leaves.
   g.setConclusion(pl, best);
-  // either purely general or has a UPG under pl
-  Assert(!g.isOpen(pl) || g.d_conclusions[pl].size() == 1);
   Trace(c) << "...success" << std::endl;
   return true;
 }

@@ -61,6 +61,8 @@ class GLitInfo
 {
  public:
   GLitInfo() : d_iei(nullptr), d_upgTriv(true) {}
+  /** is empty */
+  bool empty() const;
   /** the instantiation lemma that this generalization is based on */
   InstExplainInst* d_iei;
   /** matching constraints regarding "how general" the literal is, initially
@@ -87,7 +89,7 @@ class GLitInfo
   /** set conclusion
    */
   void setConclusion(Node pl, Node opl);
-  void setOpenConclusion(Node pl);
+  void setOpenConclusion(Node pl, Node opl);
   /**
    * Check whether ( b * SUBS(gb) ) is a generalization of a.
    */
@@ -135,13 +137,18 @@ class GLitInfo
       TNode a, TNode b, const GLitInfo& gb, bool doMerge, bool allowBind);
   /** indent tb tabulations on trace c */
   void indent(const char* c, unsigned tb) const;
-  /** upg literal */
+  /** 
+   * A ground literal whose generalized proof contains the UPG, or a ground
+   * literal that was not generalizable.
+   */
   Node d_upgLit;
-  /** is upg literal non-trivial? */
+  /** the generalization of the above literal */
+  Node d_upgOLit;
+  /** is the proof of the upg literal non-trivial? */
   bool d_upgTriv;
   
-  void setOpenConclusionInternal(Node opl);
-  void notifyOpenConclusion(Node opl, bool isTriv);
+  void setOpenConclusionInternal(Node pl, Node opl);
+  void notifyOpenConclusion(Node pl, Node opl, bool isTriv);
 };
 
 }  // namespace quantifiers

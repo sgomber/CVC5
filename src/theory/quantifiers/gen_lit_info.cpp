@@ -22,6 +22,10 @@ namespace CVC4 {
 namespace theory {
 namespace quantifiers {
 
+bool GLitInfo::empty() const
+{
+  return !d_iei && d_subs_modify.empty() && d_assumptions.empty() && d_conclusions.empty();
+}
 void GLitInfo::initialize(InstExplainInst* iei)
 {
   d_iei = iei;
@@ -53,10 +57,12 @@ void GLitInfo::setConclusion(Node pl, Node opl)
   std::map<Node, std::map<Node, GLitInfo>>::iterator it =
       d_conclusions.find(pl);
   Assert (it != d_conclusions.end());
+  // should have cleaned up all others if we are here
+  Assert( it->second.size()==1 );
   std::map<Node, GLitInfo>::iterator it2 = it->second.find(opl);
   Assert (it2 != it->second.end());
   // if child is purely general, we can compress and remove this
-  if (it2->second.d_conclusions.empty())
+  if (it2->second.isPurelyGeneral())
   {
     // take its assumptions and remove it
     d_assumptions.insert(d_assumptions.end(),
@@ -67,23 +73,23 @@ void GLitInfo::setConclusion(Node pl, Node opl)
   else
   {
     // it is an open conclusion, must register it as UPG if possible
-    notifyOpenConclusion(opl, false);
+    notifyOpenConclusion(pl, opl, false);
   }
 }
-void GLitInfo::setOpenConclusion(Node pl)
+void GLitInfo::setOpenConclusion(Node pl, Node opl)
 {
   // it is an open conclusion, clear its proof
-  setOpenConclusionInternal(pl);
+  setOpenConclusionInternal(pl, opl);
   // must register it as UPG
-  notifyOpenConclusion(pl, true);
+  notifyOpenConclusion(pl, opl, true);
 }
-void GLitInfo::setOpenConclusionInternal(Node opl)
+void GLitInfo::setOpenConclusionInternal(Node pl, Node opl)
 {
   d_conclusions.erase(opl);
-  d_conclusions[opl][opl].initialize(nullptr);
+  d_conclusions[pl][opl].initialize(nullptr);
 }
 
-void GLitInfo::notifyOpenConclusion(Node opl, bool isTriv)
+void GLitInfo::notifyOpenConclusion(Node pl, Node opl, bool isTriv)
 {
   Assert( !opl.isNull() );
   if( !d_upgLit.isNull() )
@@ -91,20 +97,21 @@ void GLitInfo::notifyOpenConclusion(Node opl, bool isTriv)
     if( !d_upgTriv )
     {
       // clear the previous non-trivial UPG
-      setOpenConclusionInternal(d_upgLit);
+      setOpenConclusionInternal(d_upgLit, d_upgOLit);
       d_upgLit = Node::null();
     }
     if( !isTriv )
     {
       // have to make the current one trivial if its non-trivial
-      setOpenConclusionInternal(opl);
+      setOpenConclusionInternal(pl,opl);
       isTriv = true;
     }
   }
   // if the upg literal is available, set it.
   if( d_upgLit.isNull() )
   {
-    d_upgLit = opl;
+    d_upgLit = pl;
+    d_upgOLit = opl;
     d_upgTriv = isTriv;
   }
 }
@@ -447,7 +454,7 @@ void GLitInfo::debugPrint(const char* c, unsigned tb) const
   if (Trace.isOn(c))
   {
     indent(c, tb);
-    Trace(c) << "MATCH_INFO" << std::endl;
+    Trace(c) << "NODE" << std::endl;
     indent(c, tb + 1);
     Trace(c) << "substitution:" << std::endl;
     if (d_subs_modify.empty())
@@ -484,7 +491,8 @@ void GLitInfo::debugPrint(const char* c, unsigned tb) const
         for (const std::pair<Node, GLitInfo>& cc : cs.second)
         {
           indent(c, tb + 2);
-          Trace(c) << cs.first << " / " << cc.first << std::endl;
+          Trace(c) << cs.first << " / " << cc.first << ":" << std::endl;
+          cc.second.debugPrint(c,tb+4);
         }
       }
     }

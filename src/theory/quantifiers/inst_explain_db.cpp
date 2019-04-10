@@ -447,14 +447,6 @@ ExplainStatus InstExplainDb::explain(Node q,
   // generalized conclusion that we are using (when applicable).
   std::map<Node, bool> litGeneralization;
 
-  // A literal whose proof includes the "propagated generalization".
-  // In the above example, we may set litPropGen to P(x), since its proof
-  // contains the propagated generalization.
-  //Node litPropGen;
-
-  // Does the propagated generalization occur in the base level of the proof?
-  //bool propGenIsBase = false;
-
   // generalized proof information
   // now go back and see if proofs can be generalized
   for (std::map<Node, eq::EqProof>::iterator itp = expPf.begin();
@@ -462,10 +454,6 @@ ExplainStatus InstExplainDb::explain(Node q,
        ++itp)
   {
     Node elit = itp->first;
-    //  whether the conclusion of this leaf is on the base line of the proof
-    //bool concIsBase = true;
-    // whether the proof of this literal was fully generalized
-    //bool pureGeneral = false;
     Trace("ied-gen") << "----------------- generalize proof #" << pfNum[elit]
                      << "/" << pfCounter << ": " << elit << std::endl;
     if (regressPfFail.find(elit) == regressPfFail.end())
@@ -480,8 +468,8 @@ ExplainStatus InstExplainDb::explain(Node q,
       GLitInfo& glc = genRoot.d_conclusions[elitg][elit];
       if (d_iexpfg.generalize(elit, pfp, glc, reqPureGen, 1))
       {
-        Trace("ied-gen") << "....success generalize with" << std::endl;
-        glc.debugPrint("ied-gen");
+        Trace("ied-gen") << "....success generalize, open=" << genRoot.isOpen(elit) << std::endl;
+        //glc.debugPrint("ied-gen");
         // Finalize the conclusion in the root. This either removes the proof
         // of elitg / elit and pushes its assumptions to the root, or otherwise
         // does nothing.
@@ -491,63 +479,19 @@ ExplainStatus InstExplainDb::explain(Node q,
         {
           // it is a purely generalized proof (only assumptions)
           litGeneralization[elit] = true;
-          //pureGeneral = true;
         }
       }
       else
       {
-        genRoot.setOpenConclusion(elit);
+        // set that elitg / elit is an open leaf of the root
+        genRoot.setOpenConclusion(elitg, elit);
         Trace("ied-gen") << "...failed generalize" << std::endl;
-        // add it back with no generalization
-        //genRoot.d_conclusions.erase(elitg);
-        //genRoot.d_conclusions[elitg][elit].initialize(nullptr);
       }
     }
     else
     {
       Trace("ied-gen") << "...failed to be regressed" << std::endl;
     }
-    //Trace("ied-gen") << "=== Compute UPG..." << std::endl;
-    // use as the propagating generalization if available
-    /*
-    if (pureGeneral)
-    {
-      Trace("ied-gen") << "...purely general." << std::endl;
-    }
-    else
-    {
-      // Set the propagating generalization if it is available.
-      // Otherwise, if the propagating generalization is not at the base level,
-      // we undo the generalization of that literal.
-      if (!litPropGen.isNull())
-      {
-        // if we already set a UPG, we can't use this
-        concIsBase = true;
-      }
-      Trace("ied-gen") << "...set literal with propagated generalization to "
-                       << elit << ", isBase=" << concIsBase << std::endl;
-      if (concIsBase)
-      {
-        if (!litPropGen.isNull() && !propGenIsBase)
-        {
-          Trace("ied-gen") << "...undo generalization of " << litPropGen
-                           << std::endl;
-          // undo the previous generalized propagation
-          litGeneralization.erase(litPropGen);
-        }
-      }
-      else
-      {
-        Trace("ied-gen") << "...add to generalization" << std::endl;
-        // we use the generalization here
-        litGeneralization[elit] = true;
-      }
-      // elit is the literal that has the generalized propagation
-      litPropGen = elit;
-      // the generalized propagation is in the base proof if elit is propGen
-      propGenIsBase = concIsBase;
-    }
-    */
     Trace("ied-gen") << "----------------- end generalize proof" << std::endl;
   }
   if( !genRoot.isUPGTrivial() )
@@ -573,6 +517,7 @@ ExplainStatus InstExplainDb::explain(Node q,
       << litPropGen << ", base=" << propGenIsBase << std::endl;
 */
   // Now construct the inference if we have any useful generalization.
+  Trace("ied-upg") << "=== Compute UPG" << std::endl;
   std::vector<Node> finalAssumptions;
   finalAssumptions.insert(finalAssumptions.end(),
                           genRoot.d_assumptions.begin(),
@@ -591,10 +536,13 @@ ExplainStatus InstExplainDb::explain(Node q,
       Node elitg = elit;
       if (genRoot.isOpen(elitg))
       {
+        Assert( genRoot.getUPGLit()==elit );
         // we generalized it, now must look up its information
         std::map<Node, GLitInfo>::iterator itgp =
             genRoot.d_conclusions[elitg].find(elit);
         Assert(itgp != genRoot.d_conclusions[elitg].end());
+        Trace("ied-upg") << "* Get UPG from " << elit << ":" << std::endl;
+        itgp->second.debugPrint("ied-upg",2);
         // get the UPG information from this
         InstExplainInst* iei =
             itgp->second.getUPG(finalConclusions, concQuant, finalAssumptions);
@@ -604,15 +552,22 @@ ExplainStatus InstExplainDb::explain(Node q,
           finalInfo = iei;
         }
       }
+      else
+      {
+        Trace("ied-upg") << "* Purely general " << elit << std::endl;
+        
+      }
     }
     else
     {
+      Trace("ied-upg") << "* Add to base UPG " << elit << std::endl;
       Assert(concQuant.isNull() || concQuant == q);
       concQuant = q;
       finalConclusions.push_back(elit.negate());
       finalInfo = &conflict;
     }
   }
+  Trace("ied-upg") << "=== End compute UPG" << std::endl;
   // debug print the inference
   Assert(!finalAssumptions.empty());
   if (Trace.isOn("ied-conflict"))
