@@ -48,19 +48,13 @@ bool GLitInfo::merge(TNode a, TNode b, const GLitInfo& gb, bool allowBind)
 }
 */
 
-bool GLitInfo::setConclusion(Node pl, Node opl)
+void GLitInfo::setConclusion(Node pl, Node opl)
 {
   std::map<Node, std::map<Node, GLitInfo>>::iterator it =
       d_conclusions.find(pl);
-  if (it == d_conclusions.end())
-  {
-    return false;
-  }
+  Assert (it != d_conclusions.end());
   std::map<Node, GLitInfo>::iterator it2 = it->second.find(opl);
-  if (it2 == it->second.end())
-  {
-    return false;
-  }
+  Assert (it2 != it->second.end());
   // if child is purely general, we can compress and remove this
   if (it2->second.d_conclusions.empty())
   {
@@ -70,7 +64,35 @@ bool GLitInfo::setConclusion(Node pl, Node opl)
                          it2->second.d_assumptions.end());
     d_conclusions.erase(pl);
   }
-  return true;
+  else
+  {
+    notifyOpenConclusion(pl, opl);
+  }
+}
+void GLitInfo::setOpenConclusion(Node pl)
+{
+  d_conclusions.erase(pl);
+  d_conclusions[pl][pl].initialize(nullptr);
+  notifyOpenConclusion(pl,pl);
+}
+
+void GLitInfo::notifyOpenConclusion(Node pl, Node opl)
+{
+  /*
+  if( d_upgLit.isNull() )
+  {
+    // clear the previous UPG
+    if( !d_upgTriv )
+    {
+      setOpenConclusion(d_upgLit);
+    }
+  }
+  if( d_upgLit.isNull() || !d_upgTriv )
+  {
+    d_upgLit = opl;
+    d_upgTriv = (pl==opl);
+  }
+  */
 }
 
 bool GLitInfo::checkCompatible(TNode a, TNode b, const GLitInfo& gb)

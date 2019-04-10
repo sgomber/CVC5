@@ -60,7 +60,7 @@ class InstExplainDb;
 class GLitInfo
 {
  public:
-  GLitInfo() : d_iei(nullptr) {}
+  GLitInfo() : d_iei(nullptr), d_upgTriv(true) {}
   /** the instantiation lemma that this generalization is based on */
   InstExplainInst* d_iei;
   /** matching constraints regarding "how general" the literal is, initially
@@ -84,9 +84,10 @@ class GLitInfo
   // bool initialize(TNode a, const GLitInfo& ga, TNode b, const GLitInfo& gb);
 
   // bool merge(TNode a, TNode b, const GLitInfo& gb, bool allowBind = true);
-  /** merge conclusions
+  /** set conclusion
    */
-  bool setConclusion(Node pl, Node opl);
+  void setConclusion(Node pl, Node opl);
+  void setOpenConclusion(Node pl);
   /**
    * Check whether ( b * SUBS(gb) ) is a generalization of a.
    */
@@ -130,6 +131,12 @@ class GLitInfo
       TNode a, TNode b, const GLitInfo& gb, bool doMerge, bool allowBind);
   /** indent tb tabulations on trace c */
   void indent(const char* c, unsigned tb) const;
+  /** upg literal */
+  Node d_upgLit;
+  /** is upg literal non-trivial? */
+  bool d_upgTriv;
+  
+  void notifyOpenConclusion(Node pl, Node opl);
 };
 
 }  // namespace quantifiers

@@ -417,6 +417,7 @@ bool InstExplainPfGen::instExplain(GLitInfo& g,
                              c,
                              tb))
     {
+
       if (Trace.isOn(c))
       {
         indent(c, tb + 1);
@@ -521,6 +522,7 @@ bool InstExplainPfGen::instExplainFind(GLitInfo& g,
   std::map<Node, InstExplainLit>::iterator itl;
   if (!d_ied.findInstExplainLit(pl, itl))
   {
+    //g.setOpenConclusion(pl);
     return false;
   }
   InstExplainLit& iel = itl->second;
@@ -540,6 +542,7 @@ bool InstExplainPfGen::instExplainFind(GLitInfo& g,
   }
   if (cexppl.empty())
   {
+    //g.setOpenConclusion(pl);
     return false;
   }
   Assert(!opl.isNull());
@@ -647,12 +650,12 @@ bool InstExplainPfGen::instExplainFind(GLitInfo& g,
   if (pconcs.empty())
   {
     // we no longer have a valid conclusion, remove it
-    g.d_conclusions.erase(pl);
     if (Trace.isOn(c))
     {
       indent(c, tb + 1);
       Trace(c) << "-> failed to generalize" << std::endl;
     }
+    //g.setOpenConclusion(pl);
     return false;
   }
   Assert(!best.isNull());
@@ -670,20 +673,7 @@ bool InstExplainPfGen::instExplainFind(GLitInfo& g,
   }
   // Set the conclusion to the one on child "best".
   // This will merge it into the parent if it has no open leaves.
-  bool setSuccess = g.setConclusion(pl, best);
-  if (!setSuccess)
-  {
-    // should never happen: pl / best should be a child in g.
-    Assert(false);
-    // remove it
-    g.d_conclusions.erase(pl);
-    if (Trace.isOn(c))
-    {
-      Trace(c) << "-> failed to set conclusion" << std::endl;
-      indent(c, tb + 1);
-    }
-    return false;
-  }
+  g.setConclusion(pl, best);
   // either purely general or has a UPG under pl
   Assert(!g.isOpen(pl) || g.d_conclusions[pl].size() == 1);
   Trace(c) << "...success" << std::endl;

@@ -485,8 +485,7 @@ ExplainStatus InstExplainDb::explain(Node q,
         // Finalize the conclusion in the root. This either removes the proof
         // of elitg / elit and pushes its assumptions to the root, or otherwise
         // does nothing.
-        bool setSuccess = genRoot.setConclusion(elitg, elit);
-        AlwaysAssert(setSuccess);
+        genRoot.setConclusion(elitg, elit);
         // did we purely generalize the proof?
         if (!genRoot.isOpen(elit))
         {
