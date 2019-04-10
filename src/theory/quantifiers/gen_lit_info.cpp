@@ -394,21 +394,17 @@ InstExplainInst* GLitInfo::getUPG(std::vector<Node>& concs,
   }
   return ret;
 }
-void GLitInfo::processUPG(InstExplainDb& ied,
-                          Node currConc,
-                          std::vector<Node>& lemmas,
-                          std::map<Node, Node>& subsumed_by) const
+void GLitInfo::processUPG(IexOutput& iout,
+                          Node currConc) const
 {
   // start with no assumptions
   std::vector<Node> assumptions;
-  processUPGInternal(ied,currConc,assumptions,lemmas,subsumed_by);
+  processUPGInternal(iout,currConc,assumptions);
 }
 
-void GLitInfo::processUPGInternal(InstExplainDb& ied,
+void GLitInfo::processUPGInternal(IexOutput& iout,
                           Node currConc,
-                          std::vector<Node>& assumptions,
-                          std::vector<Node>& lemmas,
-                          std::map<Node, Node>& subsumed_by) const
+                          std::vector<Node>& assumptions) const
 {
   Trace("ied-process-upg") << "Process UPG, #assumps=" << assumptions.size()
                            << std::endl;
@@ -444,7 +440,7 @@ void GLitInfo::processUPGInternal(InstExplainDb& ied,
             concs.push_back(cc.first.negate());
             // we do not do the generalized conflict instance in this call
             // we prefer generalized conflicting instances from the UPG.
-            Node genConc = ied.getGeneralizedConclusion(cc.second.d_iei, assumptions, concs, lemmas, subsumed_by,false);
+            Node genConc = iout.reportConclusion(cc.second.d_iei, assumptions, concs, false);
             // we close the open conclusion
             assumptions.clear();
             assumptions.push_back(genConc);
@@ -455,7 +451,7 @@ void GLitInfo::processUPGInternal(InstExplainDb& ied,
         if( currConc.isNull() )
         {
           Trace("ied-process-upg") << "...follow " << cc.first << std::endl;
-          cc.second.processUPGInternal(ied, currConc, assumptions, lemmas, subsumed_by);
+          cc.second.processUPGInternal(iout, currConc, assumptions);
         }
       }
       else
@@ -470,8 +466,8 @@ void GLitInfo::processUPGInternal(InstExplainDb& ied,
   if (!recUPG && assumptions.size() > 1 && !concs.empty())
   {
     // conclude the UPG
-    ied.getGeneralizedConclusion(
-        d_iei, assumptions, concs, lemmas, subsumed_by,false);
+    iout.reportConclusion(
+        d_iei, assumptions, concs, false);
   }
 }
 

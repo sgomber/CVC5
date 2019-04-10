@@ -507,7 +507,7 @@ ExplainStatus InstExplainDb::explain(Node q,
   genRoot.debugPrint("ied-conflict-debug", 2);
   Trace("ied-conflict-debug") << "=== END FINAL PROOF" << std::endl;
   // we start with d_null since the root proof is of false.
-  genRoot.processUPG(*this, d_null, iout.d_lemmas, iout.d_subsumed_by);
+  genRoot.processUPG(iout,d_null);
 
   for (const std::pair<Node, Node>& sp : iout.d_subsumed_by)
   {

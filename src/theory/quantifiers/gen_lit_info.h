@@ -167,10 +167,8 @@ class GLitInfo
    * 
    * This adds lemmas to FIXME
    */
-  void processUPG(InstExplainDb& ied,
-                  Node currConc,
-                  std::vector<Node>& lemmas,
-                  std::map<Node, Node>& subsumed_by) const;
+  void processUPG(IexOutput& iout,
+                  Node currConc) const;
  private:
   bool mergeInternal(
       TNode a, TNode b, const GLitInfo& gb, bool doMerge, bool allowBind);
@@ -214,11 +212,9 @@ class GLitInfo
    * 
    * This adds
    */
-  void processUPGInternal(InstExplainDb& ied,
+  void processUPGInternal(IexOutput& iout,
                   Node currConc,
-                  std::vector<Node>& assumptions,
-                  std::vector<Node>& lemmas,
-                  std::map<Node, Node>& subsumed_by) const;
+                  std::vector<Node>& assumptions) const;
 };
 
 }  // namespace quantifiers
