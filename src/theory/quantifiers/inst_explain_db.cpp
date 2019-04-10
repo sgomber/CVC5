@@ -512,15 +512,15 @@ ExplainStatus InstExplainDb::explain(Node q,
                           << std::endl;
     return EXP_STATUS_FAIL;
   }
-  std::map< Node, Node > subsumed_by;
+  std::map<Node, Node> subsumed_by;
   std::vector<Node> finalAssumptions;
 #if 1
   Trace("ied-conflict-debug") << "=== FINAL PROOF:" << std::endl;
-  genRoot.debugPrint("ied-conflict-debug",2);
+  genRoot.debugPrint("ied-conflict-debug", 2);
   Trace("ied-conflict-debug") << "=== END FINAL PROOF" << std::endl;
   // we start with d_null since the root proof is of false.
-  genRoot.processUPG(*this,d_null,finalAssumptions,lems,subsumed_by);
-  Assert( !lems.empty() );
+  genRoot.processUPG(*this, d_null, finalAssumptions, lems, subsumed_by);
+  Assert(!lems.empty());
 #else
   // Now construct the inference if we have any useful generalization.
   Trace("ied-upg") << "=== Compute UPG" << std::endl;
@@ -596,11 +596,12 @@ ExplainStatus InstExplainDb::explain(Node q,
       Trace("ied-conflict") << "CONCLUSION: false!" << std::endl;
     }
   }
-  getGeneralizedConclusion(finalInfo, finalAssumptions, finalConclusions, lems,subsumed_by);
+  getGeneralizedConclusion(
+      finalInfo, finalAssumptions, finalConclusions, lems, subsumed_by);
 #endif
-  for( const std::pair< Node, Node >& sp : subsumed_by )
+  for (const std::pair<Node, Node>& sp : subsumed_by)
   {
-      d_subsume->setSubsumes(sp.second, sp.first);
+    d_subsume->setSubsumes(sp.second, sp.first);
   }
   // TEMPORARY FIXME
   if (options::qcfExpGenAbort())
@@ -614,7 +615,7 @@ Node InstExplainDb::getGeneralizedConclusion(InstExplainInst* iei,
                                              const std::vector<Node>& assumps,
                                              const std::vector<Node>& concs,
                                              std::vector<Node>& lemmas,
-                  std::map<Node, Node>& subsumed_by)
+                                             std::map<Node, Node>& subsumed_by)
 {
   NodeManager* nm = NodeManager::currentNM();
   Node antec = d_true;

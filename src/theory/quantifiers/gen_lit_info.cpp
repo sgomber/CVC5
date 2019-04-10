@@ -399,7 +399,8 @@ void GLitInfo::processUPG(InstExplainDb& ied,
                           std::vector<Node>& lemmas,
                           std::map<Node, Node>& subsumed_by) const
 {
-  Trace("ied-process-upg") << "Process UPG, #assumps=" << assumptions.size() << std::endl;
+  Trace("ied-process-upg") << "Process UPG, #assumps=" << assumptions.size()
+                           << std::endl;
   // take assumptions from sibling proofs now
   assumptions.insert(
       assumptions.end(), d_assumptions.begin(), d_assumptions.end());
@@ -416,62 +417,63 @@ void GLitInfo::processUPG(InstExplainDb& ied,
       {
         // should have only one UPG
         Assert(concs.empty());
-        AlwaysAssert( !recUPG );
+        AlwaysAssert(!recUPG);
         recUPG = true;
         // proof compress if applicable
 #if 0
-        
+
 #endif
-        cc.second.processUPG(ied,currConc,assumptions,lemmas,subsumed_by);
+        cc.second.processUPG(ied, currConc, assumptions, lemmas, subsumed_by);
         Trace("ied-process-upg") << "...follow " << cc.first << std::endl;
       }
       else
       {
-        Assert( !cc.first.isNull() );
+        Assert(!cc.first.isNull());
         // if we are open, then we must add to conclusions for this
         concs.push_back(cc.first.negate());
       }
     }
   }
   // non-trivial proofs must have >1 assumptions.
-  if( assumptions.size() > 1 && !concs.empty() )
+  if (assumptions.size() > 1 && !concs.empty())
   {
     // conclude the UPG
-    ied.getGeneralizedConclusion(d_iei, assumptions, concs, lemmas, subsumed_by);
+    ied.getGeneralizedConclusion(
+        d_iei, assumptions, concs, lemmas, subsumed_by);
   }
-  
-  
-  //Trace("ied-process-upg") << "Have upg=" << (gupg!=nullptr) << ", #concs=" << concs.size() << std::endl;
+
+  // Trace("ied-process-upg") << "Have upg=" << (gupg!=nullptr) << ", #concs="
+  // << concs.size() << std::endl;
   // should not have a non-trivial UPG will open leaves at this level
-  //Assert( !gupg || concs.size()==1 );
+  // Assert( !gupg || concs.size()==1 );
   // If at least one part of the proof is purely general, we infer a lemma
   // that subsumes this quantified formula.
-      /*
-  if (assumptions.size() > 1)
+  /*
+if (assumptions.size() > 1)
+{
+// we conclude only at the UPG
+bool processPf = !gupg;
+if( processPf )
+{
+  if (!currConc.isNull())
   {
-    // we conclude only at the UPG
-    bool processPf = !gupg;
-    if( processPf )
-    {
-      if (!currConc.isNull())
-      {
-        // if we are carrying an open conclusion, add it now
-        concs.push_back(currConc);
-        // we've processed/closed it now
-        currConc = Node::null();
-      }
-      Assert(d_iei);
-      Node genConc =
-          ied.getGeneralizedConclusion(d_iei, assumptions, concs, lemmas, subsumed_by);
-      Assert( !genConc.isNull() );
-      // add this quantified formula to assumptions if we are recursing
-      if (gupg)
-      {
-        assumptions.push_back(genConc);
-      }
-    }
+    // if we are carrying an open conclusion, add it now
+    concs.push_back(currConc);
+    // we've processed/closed it now
+    currConc = Node::null();
   }
-  */
+  Assert(d_iei);
+  Node genConc =
+      ied.getGeneralizedConclusion(d_iei, assumptions, concs, lemmas,
+subsumed_by); Assert( !genConc.isNull() );
+  // add this quantified formula to assumptions if we are recursing
+  if (gupg)
+  {
+    assumptions.push_back(genConc);
+  }
+}
+}
+*/
   /*
   if (gupg)
   {

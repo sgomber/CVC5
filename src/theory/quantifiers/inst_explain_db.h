@@ -74,7 +74,7 @@ class InstExplainDb
                                 const std::vector<Node>& assumps,
                                 const std::vector<Node>& concs,
                                 std::vector<Node>& lemmas,
-                  std::map<Node, Node>& subsumed_by);
+                                std::map<Node, Node>& subsumed_by);
 
  private:
   /** pointer to the quantifiers engine */
