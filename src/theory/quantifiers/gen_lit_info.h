@@ -28,6 +28,27 @@ namespace quantifiers {
 
 class InstExplainDb;
 
+class IexOutput
+{
+public:
+  IexOutput(InstExplainDb& i) : d_iexd(i){}
+  /** report conclusion
+   */
+  Node reportConclusion(InstExplainInst* iei,
+                                const std::vector<Node>& assumps,
+                                const std::vector<Node>& concs,
+                                bool doGenCInst=true
+                               );
+  /** is the content of this output empty? */
+  bool empty() const;
+  /** reference to the explanation database. */
+  InstExplainDb& d_iexd;
+  /** the lemmas generated using this output */
+  std::vector< Node > d_lemmas;
+  /** the subsumptions from using this output */
+  std::map< Node, Node > d_subsumed_by;
+};
+
 /** generalized literal information
  *
  * This stores the state of a generalized literal. This consists of three parts:
@@ -137,19 +158,19 @@ class GLitInfo
                           Node& quant,
                           std::vector<Node>& assumptions) const;
 
-  /** process the UPG
-   */
-  void processUPG(InstExplainDb& ied,
-                  Node currConc,
-                  std::vector<Node>& assumptions,
-                  std::vector<Node>& lemmas,
-                  std::map<Node, Node>& subsumed_by) const;
-
   /** get upg lit */
   Node getUPGLit() const { return d_upgLit; }
   /** is upg trivial */
   bool isUPGTrivial() const { return d_upgTriv; }
 
+  /** process UPG
+   * 
+   * This adds lemmas to FIXME
+   */
+  void processUPG(InstExplainDb& ied,
+                  Node currConc,
+                  std::vector<Node>& lemmas,
+                  std::map<Node, Node>& subsumed_by) const;
  private:
   bool mergeInternal(
       TNode a, TNode b, const GLitInfo& gb, bool doMerge, bool allowBind);
@@ -189,6 +210,15 @@ class GLitInfo
    * a UPG literal.
    */
   void notifyOpenConclusion(Node pl, Node opl, bool isTriv);
+  /** process UPG internal
+   * 
+   * This adds
+   */
+  void processUPGInternal(InstExplainDb& ied,
+                  Node currConc,
+                  std::vector<Node>& assumptions,
+                  std::vector<Node>& lemmas,
+                  std::map<Node, Node>& subsumed_by) const;
 };
 
 }  // namespace quantifiers

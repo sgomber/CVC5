@@ -23,6 +23,19 @@ namespace CVC4 {
 namespace theory {
 namespace quantifiers {
 
+Node IexOutput::reportConclusion(InstExplainInst* iei,
+                              const std::vector<Node>& assumps,
+                              const std::vector<Node>& concs,
+                              bool doGenCInst
+                              )
+{
+  return d_iexd.getGeneralizedConclusion(iei,assumps,concs,d_lemmas,d_subsumed_by,doGenCInst);
+}
+bool IexOutput::empty() const
+{
+  return d_lemmas.empty() && d_subsumed_by.empty();
+}
+  
 bool GLitInfo::empty() const
 {
   return !d_iei && d_subs_modify.empty() && d_assumptions.empty()
@@ -76,11 +89,14 @@ void GLitInfo::setOpenConclusionInternal(Node pl, Node opl)
 
 void GLitInfo::notifyOpenConclusion(Node pl, Node opl, bool isTriv)
 {
+  std::vector< Node > lemmas;
   Assert(!opl.isNull());
   // if we had a non-trivial UPG
   if (!d_upgTriv)
   {
     Assert(!d_upgLit.isNull());
+    //
+    //d_conclusions[d_upgLit][d_upgOLit].processUPG(d_upgOLit);
     // clear the previous non-trivial UPG
     setOpenConclusionInternal(d_upgLit, d_upgOLit);
     // it is now trivial
@@ -95,6 +111,8 @@ void GLitInfo::notifyOpenConclusion(Node pl, Node opl, bool isTriv)
   }
   else if (!isTriv)
   {
+    //
+    //d_conclusions[d_upgLit][d_upgOLit].processUPG(d_upgOLit);
     // otherwise, have to clear the current one if its non-trivial
     setOpenConclusionInternal(pl, opl);
   }
@@ -378,6 +396,16 @@ InstExplainInst* GLitInfo::getUPG(std::vector<Node>& concs,
 }
 void GLitInfo::processUPG(InstExplainDb& ied,
                           Node currConc,
+                          std::vector<Node>& lemmas,
+                          std::map<Node, Node>& subsumed_by) const
+{
+  // start with no assumptions
+  std::vector<Node> assumptions;
+  processUPGInternal(ied,currConc,assumptions,lemmas,subsumed_by);
+}
+
+void GLitInfo::processUPGInternal(InstExplainDb& ied,
+                          Node currConc,
                           std::vector<Node>& assumptions,
                           std::vector<Node>& lemmas,
                           std::map<Node, Node>& subsumed_by) const
@@ -427,7 +455,7 @@ void GLitInfo::processUPG(InstExplainDb& ied,
         if( currConc.isNull() )
         {
           Trace("ied-process-upg") << "...follow " << cc.first << std::endl;
-          cc.second.processUPG(ied, currConc, assumptions, lemmas, subsumed_by);
+          cc.second.processUPGInternal(ied, currConc, assumptions, lemmas, subsumed_by);
         }
       }
       else

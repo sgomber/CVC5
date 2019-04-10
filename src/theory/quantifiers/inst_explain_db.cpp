@@ -449,6 +449,10 @@ ExplainStatus InstExplainDb::explain(Node q,
   // it has the conflicting quantified formula as an assumption always.
   // This is necessarily manual since genRoot is not built via an IEX inference.
   genRoot.d_assumptions.push_back(q);
+  
+  // output utility, which manages which lemmas are generated during the proof
+  // generalization.
+  IexOutput iout(*this);
 
   // generalized proof information
   // now go back and see if proofs can be generalized
@@ -498,33 +502,34 @@ ExplainStatus InstExplainDb::explain(Node q,
     Trace("ied-gen") << "----------------- end generalize proof" << std::endl;
   }
   
-  std::map<Node, Node> subsumed_by;
-  std::vector<Node> finalAssumptions;
   // now, added lemmas
   Trace("ied-conflict-debug") << "=== FINAL PROOF:" << std::endl;
   genRoot.debugPrint("ied-conflict-debug", 2);
   Trace("ied-conflict-debug") << "=== END FINAL PROOF" << std::endl;
   // we start with d_null since the root proof is of false.
-  genRoot.processUPG(*this, d_null, finalAssumptions, lems, subsumed_by);
+  genRoot.processUPG(*this, d_null, iout.d_lemmas, iout.d_subsumed_by);
 
-  for (const std::pair<Node, Node>& sp : subsumed_by)
+  for (const std::pair<Node, Node>& sp : iout.d_subsumed_by)
   {
+    Trace("ied-subsume") << "InstExplainDb::subsume: " << sp.second << " => " << sp.first << std::endl;
     d_subsume->setSubsumes(sp.second, sp.first);
   }
   // TEMPORARY FIXME
   if (options::qcfExpGenAbort())
   {
-    if( !lems.empty() || !subsumed_by.empty() )
+    if( !iout.empty() )
     {
       exit(77);
     }
   }
-  if( lems.empty() )
+  if( iout.d_lemmas.empty() )
   {
     Trace("ied-conflict") << "InstExplainDb::explain: No lemmas, fail."
                           << std::endl;
     return EXP_STATUS_FAIL;
   }
+  // add to lemmas
+  lems.insert(lems.end(),iout.d_lemmas.begin(),iout.d_lemmas.end());
   return EXP_STATUS_FULL;
 }
 
