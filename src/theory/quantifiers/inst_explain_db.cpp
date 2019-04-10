@@ -486,7 +486,6 @@ ExplainStatus InstExplainDb::explain(Node q,
           // it is a purely generalized proof (only assumptions)
           litGeneralization[elit] = true;
           pureGeneral = true;
-          break;
         }
         else
         {
