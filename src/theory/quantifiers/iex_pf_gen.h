@@ -91,31 +91,31 @@ class InstExplainPfGen
   Node convertEq(Node n) const;
   /** convert to non-equality (inverse of above for rewritten nodes) */
   Node convertRmEq(Node n) const;
-  /** generalize internal 
-   * 
+  /** generalize internal
+   *
    * A helper function for generalize. This computes a proof generalization
    * for eqp. We return the node corresponding to the (ground) conclusion of
-   * eqp. 
-   * 
-   * tgtLit: The target generalized conclusion we wish to generalize the proof 
+   * eqp.
+   *
+   * tgtLit: The target generalized conclusion we wish to generalize the proof
    * eqp to prove. This may be null if we do not know what we are generalizing.
-   * 
+   *
    * eqp: The (ground UF) proof we are generalizing.
-   * 
+   *
    * g: The generalized proof we are constructing.
-   * 
+   *
    * concs: caches the concrete conclusion computed for each proof
    * node visited in recursive calls.
-   * 
+   *
    * reqPureGen: if this flag is true, we require that the generalized proof
    * of tgtLit is purely general.
-   * 
+   *
    * genPath: the current (ground) literals that are parents of our current
    * path in the proof tree.
-   * 
+   *
    * genSuccess: We set this flag to true if we succeeded in generalizing the
    * proof of eqp to prove tgtLit, or if tgtLit is null.
-   * 
+   *
    * tb is the tabulation level (for debugging).
    */
   Node generalizeInternal(Node tgtLit,
@@ -165,10 +165,10 @@ class InstExplainPfGen
                    const char* c,
                    unsigned tb);
   /** find instantiation explanation for opl/pl
-   * 
+   *
    * This finds a generalizing proof of opl, possibly with a UPG (a unique open
    * leaf) if reqPureGen is false.
-   * 
+   *
    * The outcome of this call is one of three cases:
    * 1. (PURELY GENERAL) The assumptions of g are appended with sufficient
    * assumptions for showing a purely general proof of opl. Return true.

@@ -25,8 +25,8 @@
 namespace CVC4 {
 namespace theory {
 namespace quantifiers {
-  
-  class InstExplainDb;
+
+class InstExplainDb;
 
 /** generalized literal information
  *
@@ -120,7 +120,7 @@ class GLitInfo
   /** get the UPG
    */
   void processUPG(InstExplainDb& ied,
-Node currConc,
+                  Node currConc,
                   std::vector<Node>& assumptions,
                   std::vector<Node>& lemmas,
                   std::map<Node, Node>& subsumptions) const;

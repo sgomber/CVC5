@@ -478,17 +478,17 @@ ExplainStatus InstExplainDb::explain(Node q,
       // Notice that we don't know what this proof proves currently. FIXME
       Node elitg = elit;
       GLitInfo& glc = genRoot.d_conclusions[elitg][elit];
-      if( d_iexpfg.generalize(elit, pfp, glc, reqPureGen, 1) )
+      if (d_iexpfg.generalize(elit, pfp, glc, reqPureGen, 1))
       {
         Trace("ied-gen") << "....success generalize with" << std::endl;
         glc.debugPrint("ied-gen");
         // Finalize the conclusion in the root. This either removes the proof
         // of elitg / elit and pushes its assumptions to the root, or otherwise
         // does nothing.
-        bool setSuccess = genRoot.setConclusion(elitg,elit);
-        AlwaysAssert( setSuccess );
+        bool setSuccess = genRoot.setConclusion(elitg, elit);
+        AlwaysAssert(setSuccess);
         // did we purely generalize the proof?
-        if( !genRoot.isOpen(elit))
+        if (!genRoot.isOpen(elit))
         {
           // it is a purely generalized proof (only assumptions)
           litGeneralization[elit] = true;
@@ -573,7 +573,9 @@ ExplainStatus InstExplainDb::explain(Node q,
 
   // Now construct the inference if we have any useful generalization.
   std::vector<Node> finalAssumptions;
-  finalAssumptions.insert(finalAssumptions.end(),genRoot.d_assumptions.begin(),genRoot.d_assumptions.end());
+  finalAssumptions.insert(finalAssumptions.end(),
+                          genRoot.d_assumptions.begin(),
+                          genRoot.d_assumptions.end());
   Node concQuant;
   std::vector<Node> finalConclusions;
   InstExplainInst* finalInfo = nullptr;
@@ -586,10 +588,11 @@ ExplainStatus InstExplainDb::explain(Node q,
     if (it != litGeneralization.end())
     {
       Node elitg = elit;
-      if( genRoot.isOpen(elitg) )
+      if (genRoot.isOpen(elitg))
       {
         // we generalized it, now must look up its information
-        std::map<Node, GLitInfo>::iterator itgp = genRoot.d_conclusions[elitg].find(elit);
+        std::map<Node, GLitInfo>::iterator itgp =
+            genRoot.d_conclusions[elitg].find(elit);
         Assert(itgp != genRoot.d_conclusions[elitg].end());
         // get the UPG information from this
         InstExplainInst* iei =
@@ -642,23 +645,23 @@ ExplainStatus InstExplainDb::explain(Node q,
   return EXP_STATUS_FULL;
 }
 
-Node InstExplainDb::getGeneralizedConclusion(InstExplainInst* iei, const std::vector< Node >& assumps, const std::vector< Node >& concs, std::vector< Node >& lemmas )
+Node InstExplainDb::getGeneralizedConclusion(InstExplainInst* iei,
+                                             const std::vector<Node>& assumps,
+                                             const std::vector<Node>& concs,
+                                             std::vector<Node>& lemmas)
 {
   NodeManager* nm = NodeManager::currentNM();
   Node antec = d_true;
   if (!assumps.empty())
   {
-    antec = assumps.size() == 1 ? assumps[0]
-                                         : nm->mkNode(AND, assumps);
-  }  
+    antec = assumps.size() == 1 ? assumps[0] : nm->mkNode(AND, assumps);
+  }
   Node lem;
   Node conc;
-  Assert( iei );
+  Assert(iei);
   if (!concs.empty())
   {
-    Node concBody = concs.size() == 1
-                        ? concs[0]
-                        : nm->mkNode(OR, concs);
+    Node concBody = concs.size() == 1 ? concs[0] : nm->mkNode(OR, concs);
     Trace("ied-conflict-debug")
         << "(original) conclusion: " << conc << std::endl;
     // check if we've already concluded this
@@ -714,10 +717,8 @@ Node InstExplainDb::getGeneralizedConclusion(InstExplainInst* iei, const std::ve
     // construct the generalized conflicting instance
     // notice that this bypasses the Instantiate module in QuantifiersEngine.
     // TODO: revisit this (may want to register the instantiation there)
-    Node concsi = concBody.substitute(vars.begin(),
-                                      vars.end(),
-                                      iei->d_terms.begin(),
-                                      iei->d_terms.end());
+    Node concsi = concBody.substitute(
+        vars.begin(), vars.end(), iei->d_terms.begin(), iei->d_terms.end());
     Node cig = nm->mkNode(OR, conc.negate(), concsi);
     cig = Rewriter::rewrite(cig);
     // already register the explanation

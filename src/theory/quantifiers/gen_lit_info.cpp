@@ -375,15 +375,16 @@ void GLitInfo::processUPG(InstExplainDb& ied,
       assumptions.end(), d_assumptions.begin(), d_assumptions.end());
   // If at least one part of the proof is purely general, we infer a lemma
   // that subsumes this quantified formula.
-  if (assumptions.size()>1)
+  if (assumptions.size() > 1)
   {
     if (!currConc.isNull())
     {
       // if we are carrying an open conclusion, add it now
       concs.push_back(currConc);
     }
-    Assert( d_iei );
-    Node genConc = ied.getGeneralizedConclusion(d_iei,assumptions,concs,lemmas);
+    Assert(d_iei);
+    Node genConc =
+        ied.getGeneralizedConclusion(d_iei, assumptions, concs, lemmas);
     // add this quantified formula to assumptions if we are recursing
     if (gupg)
     {
