@@ -35,21 +35,6 @@ class InstExplainPfGen
 {
  public:
   InstExplainPfGen(InstExplainDb& parent, QuantifiersEngine* qe);
-  /** Generalize
-   *
-   * This recursively computes a generalization of proof eqp, stored in g, so
-   * that it is a proof of tgtLit. This method returns true if we succeeded.
-   *
-   * reqPureGen: if this flag is true, we require that g is a purely general,
-   * that is, a proof with no open leaves.
-   *
-   * tb is the tabulation level (for debugging).
-   */
-  bool generalize(Node tgtLit,
-                  eq::EqProof* eqp,
-                  GLitInfo& g,
-                  bool reqPureGen,
-                  unsigned tb = 0);
   /**
    * Regress the explanation of proof sketch eqp using eqe.
    *
@@ -67,6 +52,22 @@ class InstExplainPfGen
   bool regressExplain(EqExplainer* eqe,
                       std::vector<TNode>& assumptions,
                       eq::EqProof* eqp);
+  /** Generalize
+   *
+   * This recursively computes a generalization of proof eqp, stored in g, so
+   * that it is a proof of tgtLit. This method returns true if we succeeded.
+   *
+   * reqPureGen: if this flag is true, we require that g is a purely general,
+   * that is, a proof with no open leaves.
+   *
+   * tb is the tabulation level (for debugging).
+   */
+  bool generalize(IexOutput& iout,
+                  Node tgtLit,
+                  eq::EqProof* eqp,
+                  GLitInfo& g,
+                  bool reqPureGen,
+                  unsigned tb = 0);
 
   /** reset */
   void reset(Theory::Effort e);
@@ -118,7 +119,8 @@ class InstExplainPfGen
    *
    * tb is the tabulation level (for debugging).
    */
-  Node generalizeInternal(Node tgtLit,
+  Node generalizeInternal(IexOutput& iout,
+                          Node tgtLit,
                           eq::EqProof* eqp,
                           GLitInfo& g,
                           std::map<eq::EqProof*, Node>& concs,
@@ -156,7 +158,8 @@ class InstExplainPfGen
    *
    * c is the name of a Trace, and tb is number of tabs (for debug printing).
    */
-  bool instExplain(GLitInfo& g,
+  bool instExplain(IexOutput& iout,
+                   GLitInfo& g,
                    Node olit,
                    Node lit,
                    Node inst,
@@ -176,7 +179,8 @@ class InstExplainPfGen
    * a UPG whose conclusion is opl. Return true.
    * 3. (FAIL) g is unmodified. Return false.
    */
-  bool instExplainFind(GLitInfo& g,
+  bool instExplainFind(IexOutput& iout,
+                       GLitInfo& g,
                        Node opl,
                        Node pl,
                        Node inst,

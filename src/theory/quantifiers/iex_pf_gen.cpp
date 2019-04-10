@@ -79,17 +79,18 @@ bool InstExplainPfGen::regressExplain(EqExplainer* eqe,
   return true;
 }
 bool InstExplainPfGen::generalize(
-    Node tgtLit, eq::EqProof* eqp, GLitInfo& g, bool reqPureGen, unsigned tb)
+    IexOutput& iout, Node tgtLit, eq::EqProof* eqp, GLitInfo& g, bool reqPureGen, unsigned tb)
 {
   bool genSuccess = false;
   std::map<Node, bool> genPath;
   std::map<eq::EqProof*, Node> concs;
   generalizeInternal(
-      tgtLit, eqp, g, concs, reqPureGen, genPath, genSuccess, tb);
+      iout, tgtLit, eqp, g, concs, reqPureGen, genPath, genSuccess, tb);
   return genSuccess;
 }
 
-Node InstExplainPfGen::generalizeInternal(Node tgtLit,
+Node InstExplainPfGen::generalizeInternal(IexOutput& iout,
+                                          Node tgtLit,
                                           eq::EqProof* eqp,
                                           GLitInfo& g,
                                           std::map<eq::EqProof*, Node>& concs,
@@ -142,7 +143,8 @@ Node InstExplainPfGen::generalizeInternal(Node tgtLit,
         // child proofs are stored in reverse order since congruence proofs
         // are left associative.
         unsigned ii = nchild - (i + 1);
-        retc = generalizeInternal(d_null,
+        retc = generalizeInternal(iout, 
+                                  d_null,
                                   childProofs[ii],
                                   g,  // FIXME
                                   concs,
@@ -192,7 +194,7 @@ Node InstExplainPfGen::generalizeInternal(Node tgtLit,
                        << tgtLit << std::endl;
     }
     genSuccess = instExplainFind(
-        g, tgtLit, ret, Node::null(), genPath, reqPureGen, "ied-gen", tb + 2);
+        iout, g, tgtLit, ret, Node::null(), genPath, reqPureGen, "ied-gen", tb + 2);
     if (Trace.isOn("ied-gen"))
     {
       indent("ied-gen", tb);
@@ -236,7 +238,7 @@ Node InstExplainPfGen::generalizeInternal(Node tgtLit,
       // target literal is unknown if non-trivial
       Node tgtLitc = nproofs == 1 ? tgtLit : d_null;
       retc = generalizeInternal(
-          tgtLitc, epi, g, concs, reqPureGen, genPath, genSuccess, tb + 1);
+          iout, tgtLitc, epi, g, concs, reqPureGen, genPath, genSuccess, tb + 1);
       if (retc.isNull())
       {
         success = false;
@@ -291,7 +293,8 @@ Node InstExplainPfGen::generalizeInternal(Node tgtLit,
   return ret;
 }
 
-bool InstExplainPfGen::instExplain(GLitInfo& g,
+bool InstExplainPfGen::instExplain(IexOutput& iout,
+                                   GLitInfo& g,
                                    Node olit,
                                    Node lit,
                                    Node inst,
@@ -410,7 +413,8 @@ bool InstExplainPfGen::instExplain(GLitInfo& g,
     // If its not the quantified formula, we try to find an inst-explanation.
     // We require a pure generalization if we already set a propagating
     // generalization.
-    else if (instExplainFind(g,
+    else if (instExplainFind(iout,
+      g,
                              opl,
                              pl,
                              inst,
@@ -468,7 +472,8 @@ bool InstExplainPfGen::instExplain(GLitInfo& g,
   return true;
 }
 
-bool InstExplainPfGen::instExplainFind(GLitInfo& g,
+bool InstExplainPfGen::instExplainFind(IexOutput& iout,
+                                       GLitInfo& g,
                                        Node opl,
                                        Node pl,
                                        Node inst,
@@ -554,7 +559,8 @@ bool InstExplainPfGen::instExplainFind(GLitInfo& g,
                  << (r == 0 ? "assume" : "conclude") << std::endl;
         // recurse now
         bool undoOpli = true;
-        if (instExplain(pconcs[opli],
+        if (instExplain(iout,
+          pconcs[opli],
                         opli,
                         pl,
                         instpl,

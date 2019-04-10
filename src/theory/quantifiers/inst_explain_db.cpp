@@ -478,7 +478,7 @@ ExplainStatus InstExplainDb::explain(Node q,
       Node elitg = elit;
       // We will fill the proof glc.
       GLitInfo& glc = genRoot.d_conclusions[elitg][elit];
-      if (d_iexpfg.generalize(elit, pfp, glc, reqPureGen, 1))
+      if (d_iexpfg.generalize(iout,elit, pfp, glc, reqPureGen, 1))
       {
         Trace("ied-gen") << "....success generalize, open="
                          << genRoot.isOpen(elit) << std::endl;
