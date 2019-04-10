@@ -78,16 +78,19 @@ bool InstExplainPfGen::regressExplain(EqExplainer* eqe,
   }
   return true;
 }
-Node InstExplainPfGen::generalize(Node tgtLit,
+bool InstExplainPfGen::generalize(Node tgtLit,
                                   eq::EqProof* eqp,
                                   std::map<eq::EqProof*, Node>& concs,
                                   std::map<eq::EqProof*, GLitInfo>& concsg,
+                          GLitInfo& g,
                                   bool reqPureGen,
                                   unsigned tb)
 {
+  bool genSuccess = false;
   std::map<Node, bool> genPath;
-  return generalizeInternal(
-      tgtLit, eqp, concs, concsg, genPath, reqPureGen, tb);
+  generalizeInternal(
+      tgtLit, eqp, concs, concsg, g, reqPureGen, genPath, genSuccess, tb);
+  return genSuccess;
 }
 
 Node InstExplainPfGen::generalizeInternal(
@@ -95,8 +98,10 @@ Node InstExplainPfGen::generalizeInternal(
     eq::EqProof* eqp,
     std::map<eq::EqProof*, Node>& concs,
     std::map<eq::EqProof*, GLitInfo>& concsg,
-    std::map<Node, bool>& genPath,
+                          GLitInfo& g,
     bool reqPureGen,
+    std::map<Node, bool>& genPath,
+    bool& genSuccess,
     unsigned tb)
 {
   std::map<eq::EqProof*, Node>::iterator itc = concs.find(eqp);
@@ -146,8 +151,10 @@ Node InstExplainPfGen::generalizeInternal(
                                   childProofs[ii],
                                   concs,
                                   concsg,
-                                  genPath,
+                                  g,  //FIXME
                                   reqPureGen,
+                                  genPath,
+                                  genSuccess,
                                   tb + 1);
         if (retc.isNull())
         {
@@ -190,7 +197,7 @@ Node InstExplainPfGen::generalizeInternal(
       Trace("ied-gen") << "INST-EXPLAIN find (UF leaf): " << ret << " / "
                        << tgtLit << std::endl;
     }
-    bool recSuccess = instExplainFind(concsg[eqp],
+    genSuccess = instExplainFind(g,
                                       tgtLit,
                                       ret,
                                       Node::null(),
@@ -202,13 +209,12 @@ Node InstExplainPfGen::generalizeInternal(
     {
       indent("ied-gen", tb);
     }
-    if (recSuccess)
+    if (genSuccess)
     {
       Trace("ied-gen") << "...success!" << std::endl;
     }
     else
     {
-      concsg.erase(eqp);
       Trace("ied-gen") << "...failed to IEX UF leaf " << ret << " / " << tgtLit
                        << std::endl;
     }
@@ -242,7 +248,7 @@ Node InstExplainPfGen::generalizeInternal(
       // target literal is unknown if non-trivial
       Node tgtLitc = nproofs == 1 ? tgtLit : d_null;
       retc = generalizeInternal(
-          tgtLitc, epi, concs, concsg, genPath, reqPureGen, tb + 1);
+          tgtLitc, epi, concs, concsg, g, reqPureGen, genPath, genSuccess, tb + 1);
       if (retc.isNull())
       {
         success = false;

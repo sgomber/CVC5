@@ -120,7 +120,7 @@ class GLitInfo
   /** get the UPG
    */
   void processUPG(InstExplainDb& ied,
-                  Node currConc,
+Node currConc,
                   std::vector<Node>& assumptions,
                   std::vector<Node>& lemmas,
                   std::map<Node, Node>& subsumptions) const;

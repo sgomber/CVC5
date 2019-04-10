@@ -54,10 +54,11 @@ class InstExplainPfGen
    *
    * tb is the tabulation level (for debugging).
    */
-  Node generalize(Node tgtLit,
+  bool generalize(Node tgtLit,
                   eq::EqProof* eqp,
                   std::map<eq::EqProof*, Node>& concs,
                   std::map<eq::EqProof*, GLitInfo>& concsg,
+                  GLitInfo& g,
                   bool reqPureGen,
                   unsigned tb = 0);
   /**
@@ -106,8 +107,10 @@ class InstExplainPfGen
                           eq::EqProof* eqp,
                           std::map<eq::EqProof*, Node>& concs,
                           std::map<eq::EqProof*, GLitInfo>& concsg,
-                          std::map<Node, bool>& genPath,
+                          GLitInfo& g,
                           bool reqPureGen,
+                          std::map<Node, bool>& genPath,
+                          bool& genSuccess,
                           unsigned tb);
   /** Instantiation explanation
    *
@@ -148,6 +151,16 @@ class InstExplainPfGen
                    const char* c,
                    unsigned tb);
   /** find instantiation explanation for opl/pl
+   * 
+   * This finds a generalizing proof of opl, possibly with a UPG (a unique open
+   * leaf) if reqPureGen is false.
+   * 
+   * The outcome of this call is one of three cases:
+   * 1. (PURELY GENERAL) The assumptions of g are appended with sufficient
+   * assumptions for showing a purely general proof of opl. Return true.
+   * 2. (UPG) The subproof g.d_conclusions[pl][opl] is populated with one with
+   * a UPG whose conclusion is opl. Return true.
+   * 3. (FAIL) g is unmodified. Return false.
    */
   bool instExplainFind(GLitInfo& g,
                        Node opl,

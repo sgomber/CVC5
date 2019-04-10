@@ -438,8 +438,10 @@ ExplainStatus InstExplainDb::explain(Node q,
   InstExplainInst conflict;
   conflict.initialize(Node::null(), Node::null(), q, terms);
   // the generalization information across the conflicting literal set
-  GLitInfo genInfo;
-  genInfo.initialize(&conflict);
+  GLitInfo genRoot;
+  genRoot.initialize(&conflict);
+  // it has the conflicting quantified formula as an assumption always
+  genRoot.d_assumptions.push_back(q);
 
   // Maps literals in the domain of our original explanation expPf to a
   // generalized conclusion that we are using (when applicable).
@@ -474,14 +476,21 @@ ExplainStatus InstExplainDb::explain(Node q,
       // we can only use purely general proofs if we already have a proagating
       // generalization.
       bool reqPureGen = !litPropGen.isNull();
-      d_iexpfg.generalize(elit, pfp, concs, concsg, reqPureGen, 1);
-      // did we generalize the proof?
-      std::map<eq::EqProof*, GLitInfo>::iterator itg = concsg.find(pfp);
-      if (itg != concsg.end())
+      // We will fill the proof glc.
+      // Notice that we don't know what this proof proves currently. FIXME
+      Node elitg = elit;
+      GLitInfo& glc = genRoot.d_conclusions[elitg][elit];
+      if( d_iexpfg.generalize(elit, pfp, concs, concsg, glc, reqPureGen, 1) )
       {
-        Trace("ied-gen") << "....success with" << std::endl;
-        itg->second.debugPrint("ied-gen");
-        if (itg->second.d_conclusions.empty())
+        Trace("ied-gen") << "....success generalize with" << std::endl;
+        glc.debugPrint("ied-gen");
+        // Finalize the conclusion in the root. This either removes the proof
+        // of elitg / elit and pushes its assumptions to the root, or otherwise
+        // does nothing.
+        bool setSuccess = genRoot.setConclusion(elitg,elit);
+        AlwaysAssert( setSuccess );
+        // did we purely generalize the proof?
+        if( !genRoot.isOpen(elit))
         {
           // it is a purely generalized proof (only assumptions)
           litGeneralization[elit] = true;
@@ -489,14 +498,16 @@ ExplainStatus InstExplainDb::explain(Node q,
         }
         else
         {
+          // it is a proof with a UPG
           concIsBase = false;
         }
       }
       else
       {
-        Trace("ied-gen") << "cannot match generalized proof, since no "
-                            "generalizations were computed"
-                         << std::endl;
+        Trace("ied-gen") << "...failed generalize" << std::endl;
+        // add it back with no generalization
+        genRoot.d_conclusions.erase(elitg);
+        genRoot.d_conclusions[elitg][elit].initialize(nullptr);
       }
     }
     else
@@ -564,7 +575,7 @@ ExplainStatus InstExplainDb::explain(Node q,
 
   // Now construct the inference if we have any useful generalization.
   std::vector<Node> finalAssumptions;
-  finalAssumptions.push_back(q);
+  finalAssumptions.insert(finalAssumptions.end(),genRoot.d_assumptions.begin(),genRoot.d_assumptions.end());
   Node concQuant;
   std::vector<Node> finalConclusions;
   InstExplainInst* finalInfo = nullptr;
@@ -576,17 +587,20 @@ ExplainStatus InstExplainDb::explain(Node q,
     std::map<Node, bool>::iterator it = litGeneralization.find(elit);
     if (it != litGeneralization.end())
     {
-      eq::EqProof* pfp = &itp->second;
-      // we generalized it, now must look up its information
-      std::map<eq::EqProof*, GLitInfo>::iterator itgp = concsg.find(pfp);
-      Assert(itgp != concsg.end());
-      // get the UPG information from this
-      InstExplainInst* iei =
-          itgp->second.getUPG(finalConclusions, concQuant, finalAssumptions);
-      if (iei)
+      Node elitg = elit;
+      if( genRoot.isOpen(elitg) )
       {
-        Assert(!finalInfo);
-        finalInfo = iei;
+        // we generalized it, now must look up its information
+        std::map<Node, GLitInfo>::iterator itgp = genRoot.d_conclusions[elitg].find(elit);
+        Assert(itgp != genRoot.d_conclusions[elitg].end());
+        // get the UPG information from this
+        InstExplainInst* iei =
+            itgp->second.getUPG(finalConclusions, concQuant, finalAssumptions);
+        if (iei)
+        {
+          Assert(!finalInfo);
+          finalInfo = iei;
+        }
       }
     }
     else
