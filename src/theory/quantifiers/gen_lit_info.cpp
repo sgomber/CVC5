@@ -14,8 +14,8 @@
 
 #include "theory/quantifiers/gen_lit_info.h"
 
-#include "theory/quantifiers/inst_explain_db.h"
 #include "options/quantifiers_options.h"
+#include "theory/quantifiers/inst_explain_db.h"
 
 using namespace CVC4::kind;
 
@@ -24,18 +24,18 @@ namespace theory {
 namespace quantifiers {
 
 Node IexOutput::reportConclusion(InstExplainInst* iei,
-                              const std::vector<Node>& assumps,
-                              const std::vector<Node>& concs,
-                              bool doGenCInst
-                              )
+                                 const std::vector<Node>& assumps,
+                                 const std::vector<Node>& concs,
+                                 bool doGenCInst)
 {
-  return d_iexd.getGeneralizedConclusion(iei,assumps,concs,d_lemmas,d_subsumed_by,doGenCInst);
+  return d_iexd.getGeneralizedConclusion(
+      iei, assumps, concs, d_lemmas, d_subsumed_by, doGenCInst);
 }
 bool IexOutput::empty() const
 {
   return d_lemmas.empty() && d_subsumed_by.empty();
 }
-  
+
 bool GLitInfo::empty() const
 {
   return !d_iei && d_subs_modify.empty() && d_assumptions.empty()
@@ -82,21 +82,20 @@ void GLitInfo::setOpenConclusion(Node pl, Node opl)
 }
 void GLitInfo::setOpenConclusionInternal(Node pl, Node opl)
 {
-  
   d_conclusions.erase(opl);
   d_conclusions[pl][opl].initialize(nullptr);
 }
 
 void GLitInfo::notifyOpenConclusion(Node pl, Node opl, bool isTriv)
 {
-  std::vector< Node > lemmas;
+  std::vector<Node> lemmas;
   Assert(!opl.isNull());
   // if we had a non-trivial UPG
   if (!d_upgTriv)
   {
     Assert(!d_upgLit.isNull());
     //
-    //d_conclusions[d_upgLit][d_upgOLit].processUPG(d_upgOLit);
+    // d_conclusions[d_upgLit][d_upgOLit].processUPG(d_upgOLit);
     // clear the previous non-trivial UPG
     setOpenConclusionInternal(d_upgLit, d_upgOLit);
     // it is now trivial
@@ -112,7 +111,7 @@ void GLitInfo::notifyOpenConclusion(Node pl, Node opl, bool isTriv)
   else if (!isTriv)
   {
     //
-    //d_conclusions[d_upgLit][d_upgOLit].processUPG(d_upgOLit);
+    // d_conclusions[d_upgLit][d_upgOLit].processUPG(d_upgOLit);
     // otherwise, have to clear the current one if its non-trivial
     setOpenConclusionInternal(pl, opl);
   }
@@ -394,17 +393,16 @@ InstExplainInst* GLitInfo::getUPG(std::vector<Node>& concs,
   }
   return ret;
 }
-void GLitInfo::processUPG(IexOutput& iout,
-                          Node currConc) const
+void GLitInfo::processUPG(IexOutput& iout, Node currConc) const
 {
   // start with no assumptions
   std::vector<Node> assumptions;
-  processUPGInternal(iout,currConc,assumptions);
+  processUPGInternal(iout, currConc, assumptions);
 }
 
 void GLitInfo::processUPGInternal(IexOutput& iout,
-                          Node currConc,
-                          std::vector<Node>& assumptions) const
+                                  Node currConc,
+                                  std::vector<Node>& assumptions) const
 {
   Trace("ied-process-upg") << "Process UPG, #assumps=" << assumptions.size()
                            << std::endl;
@@ -425,13 +423,13 @@ void GLitInfo::processUPGInternal(IexOutput& iout,
         AlwaysAssert(!recUPG);
         recUPG = true;
         // cut the proof if applicable
-        if( options::iexUPGCompress() )
+        if (options::iexUPGCompress())
         {
           // we have a subsumption of the current quantified formula if there
           // is a sibling we generalized.
-          if( assumptions.size()>1 )
+          if (assumptions.size() > 1)
           {
-            Assert( d_iei );
+            Assert(d_iei);
             if (!currConc.isNull())
             {
               concs.push_back(currConc);
@@ -440,7 +438,8 @@ void GLitInfo::processUPGInternal(IexOutput& iout,
             concs.push_back(cc.first.negate());
             // we do not do the generalized conflict instance in this call
             // we prefer generalized conflicting instances from the UPG.
-            Node genConc = iout.reportConclusion(cc.second.d_iei, assumptions, concs, false);
+            Node genConc = iout.reportConclusion(
+                cc.second.d_iei, assumptions, concs, false);
             // we close the open conclusion
             assumptions.clear();
             assumptions.push_back(genConc);
@@ -448,7 +447,7 @@ void GLitInfo::processUPGInternal(IexOutput& iout,
           currConc = Node::null();
         }
         // can only recurse if we closed the open conclusion
-        if( currConc.isNull() )
+        if (currConc.isNull())
         {
           Trace("ied-process-upg") << "...follow " << cc.first << std::endl;
           cc.second.processUPGInternal(iout, currConc, assumptions);
@@ -466,8 +465,7 @@ void GLitInfo::processUPGInternal(IexOutput& iout,
   if (!recUPG && assumptions.size() > 1 && !concs.empty())
   {
     // conclude the UPG
-    iout.reportConclusion(
-        d_iei, assumptions, concs, false);
+    iout.reportConclusion(d_iei, assumptions, concs, false);
   }
 }
 
@@ -525,7 +523,7 @@ void GLitInfo::debugPrint(const char* c, unsigned tb, bool rec) const
         {
           indent(c, tb + 2);
           Trace(c) << cs.first << " / " << cc.first;
-          if( rec )
+          if (rec)
           {
             Trace(c) << ":" << std::endl;
             cc.second.debugPrint(c, tb + 4, rec);

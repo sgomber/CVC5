@@ -74,8 +74,7 @@ class InstExplainDb
                                 const std::vector<Node>& concs,
                                 std::vector<Node>& lemmas,
                                 std::map<Node, Node>& subsumed_by,
-                                bool doGenCInst=true
-                               );
+                                bool doGenCInst = true);
 
  private:
   /** pointer to the quantifiers engine */

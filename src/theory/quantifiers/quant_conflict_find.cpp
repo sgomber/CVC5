@@ -637,8 +637,7 @@ bool QuantInfo::isTConstraintSpurious(QuantConflictFind* p,
           EqExplainer* eqe = p->getEqualityExplainer();
           InstExplainDb& ied =
               p->d_quantEngine->getInstantiate()->getExplainDb();
-          ExplainStatus status = ied.explain(
-              d_q, terms, exp, eqe, lems, "qcf");
+          ExplainStatus status = ied.explain(d_q, terms, exp, eqe, lems, "qcf");
           if (status == EXP_STATUS_FULL)
           {
             Trace("qcf-conflict-exp") << "...succeeded with " << lems.size()
@@ -2189,7 +2188,8 @@ void QuantConflictFind::checkQuantifiedFormula(Node q,
       // Process the lemma: either add an instantiation or specific lemmas
       // constructed during the isTConstraintSpurious call, or both.
       bool processed = false;
-      if (lems.empty() || options::qcfExpMode() == QCF_EXP_BOTH || options::qcfExpMode()==QCF_EXP_GENERALIZE)
+      if (lems.empty() || options::qcfExpMode() == QCF_EXP_BOTH
+          || options::qcfExpMode() == QCF_EXP_GENERALIZE)
       {
         // add the instantiation
         processed = qinst->addInstantiation(q, terms);

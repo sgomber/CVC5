@@ -449,7 +449,7 @@ ExplainStatus InstExplainDb::explain(Node q,
   // it has the conflicting quantified formula as an assumption always.
   // This is necessarily manual since genRoot is not built via an IEX inference.
   genRoot.d_assumptions.push_back(q);
-  
+
   // output utility, which manages which lemmas are generated during the proof
   // generalization.
   IexOutput iout(*this);
@@ -470,7 +470,7 @@ ExplainStatus InstExplainDb::explain(Node q,
       // generalization.
       bool reqPureGen = !genRoot.getUPGLit().isNull();
       // Below, elitg represents the ground literal appearing in the conflicting
-      // literal set. Technically, elitg in fact should be set to 
+      // literal set. Technically, elitg in fact should be set to
       //    ( elit { q[0] -> terms } )
       // but we don't bother computing this since it is not needed: we already
       // know that pfp is a proof of this literal. This term may not even appear
@@ -478,7 +478,7 @@ ExplainStatus InstExplainDb::explain(Node q,
       Node elitg = elit;
       // We will fill the proof glc.
       GLitInfo& glc = genRoot.d_conclusions[elitg][elit];
-      if (d_iexpfg.generalize(iout,elit, pfp, glc, reqPureGen, 1))
+      if (d_iexpfg.generalize(iout, elit, pfp, glc, reqPureGen, 1))
       {
         Trace("ied-gen") << "....success generalize, open="
                          << genRoot.isOpen(elit) << std::endl;
@@ -501,35 +501,36 @@ ExplainStatus InstExplainDb::explain(Node q,
     }
     Trace("ied-gen") << "----------------- end generalize proof" << std::endl;
   }
-  
+
   // now, added lemmas
   Trace("ied-conflict-debug") << "=== FINAL PROOF:" << std::endl;
   genRoot.debugPrint("ied-conflict-debug", 2);
   Trace("ied-conflict-debug") << "=== END FINAL PROOF" << std::endl;
   // we start with d_null since the root proof is of false.
-  genRoot.processUPG(iout,d_null);
+  genRoot.processUPG(iout, d_null);
 
   for (const std::pair<Node, Node>& sp : iout.d_subsumed_by)
   {
-    Trace("ied-subsume") << "InstExplainDb::subsume: " << sp.second << " => " << sp.first << std::endl;
+    Trace("ied-subsume") << "InstExplainDb::subsume: " << sp.second << " => "
+                         << sp.first << std::endl;
     d_subsume->setSubsumes(sp.second, sp.first);
   }
   // TEMPORARY FIXME
   if (options::qcfExpGenAbort())
   {
-    if( !iout.empty() )
+    if (!iout.empty())
     {
       exit(77);
     }
   }
-  if( iout.d_lemmas.empty() )
+  if (iout.d_lemmas.empty())
   {
     Trace("ied-conflict") << "InstExplainDb::explain: No lemmas, fail."
                           << std::endl;
     return EXP_STATUS_FAIL;
   }
   // add to lemmas
-  lems.insert(lems.end(),iout.d_lemmas.begin(),iout.d_lemmas.end());
+  lems.insert(lems.end(), iout.d_lemmas.begin(), iout.d_lemmas.end());
   return EXP_STATUS_FULL;
 }
 
@@ -538,7 +539,7 @@ Node InstExplainDb::getGeneralizedConclusion(InstExplainInst* iei,
                                              const std::vector<Node>& concs,
                                              std::vector<Node>& lemmas,
                                              std::map<Node, Node>& subsumed_by,
-                                bool doGenCInst)
+                                             bool doGenCInst)
 {
   NodeManager* nm = NodeManager::currentNM();
   Node antec = d_true;
@@ -603,7 +604,7 @@ Node InstExplainDb::getGeneralizedConclusion(InstExplainInst* iei,
         vars.push_back(bv);
       }
     }
-    if( doGenCInst )
+    if (doGenCInst)
     {
       Assert(iei);
       Assert(iei->d_terms.size() == vars.size());
@@ -624,7 +625,7 @@ Node InstExplainDb::getGeneralizedConclusion(InstExplainInst* iei,
       }
       lemmas.push_back(cig);
       Trace("ied-lemma") << "InstExplainDb::lemma (GEN-CINST): " << cig
-                        << std::endl;
+                         << std::endl;
     }
   }
   else
@@ -637,10 +638,10 @@ Node InstExplainDb::getGeneralizedConclusion(InstExplainInst* iei,
     Trace("ied-conflict")
         << "InstExplainDb::explain: generated generalized resolution inference"
         << std::endl;
-    if( Trace.isOn("ied-lemma") )
+    if (Trace.isOn("ied-lemma"))
     {
       Trace("ied-lemma") << "InstExplainDb::lemma (GEN-RES): " << lem
-                        << std::endl;
+                         << std::endl;
       Trace("ied-lemma") << "---------------------------------" << std::endl;
       Trace("ied-lemma") << "assumptions:" << std::endl;
       if (assumps.empty())
@@ -651,7 +652,7 @@ Node InstExplainDb::getGeneralizedConclusion(InstExplainInst* iei,
       {
         for (const Node& a : assumps)
         {
-          Trace("ied-lemma") << "  " <<  a << std::endl;
+          Trace("ied-lemma") << "  " << a << std::endl;
         }
       }
       Trace("ied-lemma") << "conclusions:" << std::endl;
@@ -663,7 +664,7 @@ Node InstExplainDb::getGeneralizedConclusion(InstExplainInst* iei,
       {
         for (const Node& c : concs)
         {
-          Trace("ied-lemma") << "  " <<  c << std::endl;
+          Trace("ied-lemma") << "  " << c << std::endl;
         }
       }
       Trace("ied-lemma") << "---------------------------------" << std::endl;

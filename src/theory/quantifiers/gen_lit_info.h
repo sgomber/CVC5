@@ -30,23 +30,22 @@ class InstExplainDb;
 
 class IexOutput
 {
-public:
-  IexOutput(InstExplainDb& i) : d_iexd(i){}
+ public:
+  IexOutput(InstExplainDb& i) : d_iexd(i) {}
   /** report conclusion
    */
   Node reportConclusion(InstExplainInst* iei,
-                                const std::vector<Node>& assumps,
-                                const std::vector<Node>& concs,
-                                bool doGenCInst=true
-                               );
+                        const std::vector<Node>& assumps,
+                        const std::vector<Node>& concs,
+                        bool doGenCInst = true);
   /** is the content of this output empty? */
   bool empty() const;
   /** reference to the explanation database. */
   InstExplainDb& d_iexd;
   /** the lemmas generated using this output */
-  std::vector< Node > d_lemmas;
+  std::vector<Node> d_lemmas;
   /** the subsumptions from using this output */
-  std::map< Node, Node > d_subsumed_by;
+  std::map<Node, Node> d_subsumed_by;
 };
 
 /** generalized literal information
@@ -145,7 +144,7 @@ class GLitInfo
    */
   unsigned getScore() const;
 
-  void debugPrint(const char* c, unsigned tb = 0, bool rec=true) const;
+  void debugPrint(const char* c, unsigned tb = 0, bool rec = true) const;
 
   bool isPurelyGeneral() const;
   Node getAssumptions() const;
@@ -164,11 +163,11 @@ class GLitInfo
   bool isUPGTrivial() const { return d_upgTriv; }
 
   /** process UPG
-   * 
+   *
    * This adds lemmas to FIXME
    */
-  void processUPG(IexOutput& iout,
-                  Node currConc) const;
+  void processUPG(IexOutput& iout, Node currConc) const;
+
  private:
   bool mergeInternal(
       TNode a, TNode b, const GLitInfo& gb, bool doMerge, bool allowBind);
@@ -209,12 +208,12 @@ class GLitInfo
    */
   void notifyOpenConclusion(Node pl, Node opl, bool isTriv);
   /** process UPG internal
-   * 
+   *
    * This adds
    */
   void processUPGInternal(IexOutput& iout,
-                  Node currConc,
-                  std::vector<Node>& assumptions) const;
+                          Node currConc,
+                          std::vector<Node>& assumptions) const;
 };
 
 }  // namespace quantifiers
