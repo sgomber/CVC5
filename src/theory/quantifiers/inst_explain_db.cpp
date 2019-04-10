@@ -440,7 +440,8 @@ ExplainStatus InstExplainDb::explain(Node q,
   // the generalization information across the conflicting literal set
   GLitInfo genRoot;
   genRoot.initialize(&conflict);
-  // it has the conflicting quantified formula as an assumption always
+  // it has the conflicting quantified formula as an assumption always.
+  // This is necessarily manual since genRoot is not built via an IEX inference.
   genRoot.d_assumptions.push_back(q);
 
   // Maps literals in the domain of our original explanation expPf to a
@@ -511,15 +512,18 @@ ExplainStatus InstExplainDb::explain(Node q,
                           << std::endl;
     return EXP_STATUS_FAIL;
   }
-  /*
-    Trace("ied-conflict")
-        << "...using " << litGeneralization.size()
-        << " generalizations, a literal with propagated generalization is "
-        << litPropGen << ", base=" << propGenIsBase << std::endl;
-  */
+  std::map< Node, Node > subsumed_by;
+  std::vector<Node> finalAssumptions;
+#if 1
+  Trace("ied-conflict-debug") << "=== FINAL PROOF:" << std::endl;
+  genRoot.debugPrint("ied-conflict-debug",2);
+  Trace("ied-conflict-debug") << "=== END FINAL PROOF" << std::endl;
+  // we start with d_null since the root proof is of false.
+  genRoot.processUPG(*this,d_null,finalAssumptions,lems,subsumed_by);
+  Assert( !lems.empty() );
+#else
   // Now construct the inference if we have any useful generalization.
   Trace("ied-upg") << "=== Compute UPG" << std::endl;
-  std::vector<Node> finalAssumptions;
   finalAssumptions.insert(finalAssumptions.end(),
                           genRoot.d_assumptions.begin(),
                           genRoot.d_assumptions.end());
@@ -592,7 +596,12 @@ ExplainStatus InstExplainDb::explain(Node q,
       Trace("ied-conflict") << "CONCLUSION: false!" << std::endl;
     }
   }
-  getGeneralizedConclusion(finalInfo, finalAssumptions, finalConclusions, lems);
+  getGeneralizedConclusion(finalInfo, finalAssumptions, finalConclusions, lems,subsumed_by);
+#endif
+  for( const std::pair< Node, Node >& sp : subsumed_by )
+  {
+      d_subsume->setSubsumes(sp.second, sp.first);
+  }
   // TEMPORARY FIXME
   if (options::qcfExpGenAbort())
   {
@@ -604,7 +613,8 @@ ExplainStatus InstExplainDb::explain(Node q,
 Node InstExplainDb::getGeneralizedConclusion(InstExplainInst* iei,
                                              const std::vector<Node>& assumps,
                                              const std::vector<Node>& concs,
-                                             std::vector<Node>& lemmas)
+                                             std::vector<Node>& lemmas,
+                  std::map<Node, Node>& subsumed_by)
 {
   NodeManager* nm = NodeManager::currentNM();
   Node antec = d_true;
@@ -658,7 +668,8 @@ Node InstExplainDb::getGeneralizedConclusion(InstExplainInst* iei,
       // We are guaranteed that conc subsumes q.
       // We mark the conclusion to indicate that it deactivates
       // the original quantified formula whenever it is asserted.
-      d_subsume->setSubsumes(conc, q);
+      subsumed_by[q] = conc;
+      // remember that this generalization used this quantified formula
       d_conc_cache[antec][concBody] = conc;
     }
     else

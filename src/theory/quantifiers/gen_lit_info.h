@@ -137,13 +137,13 @@ class GLitInfo
                           Node& quant,
                           std::vector<Node>& assumptions) const;
 
-  /** get the UPG
+  /** process the UPG
    */
   void processUPG(InstExplainDb& ied,
                   Node currConc,
                   std::vector<Node>& assumptions,
                   std::vector<Node>& lemmas,
-                  std::map<Node, Node>& subsumptions) const;
+                  std::map<Node, Node>& subsumed_by) const;
 
   /** get upg lit */
   Node getUPGLit() const { return d_upgLit; }

@@ -397,59 +397,88 @@ void GLitInfo::processUPG(InstExplainDb& ied,
                           Node currConc,
                           std::vector<Node>& assumptions,
                           std::vector<Node>& lemmas,
-                          std::map<Node, Node>& subsumptions) const
+                          std::map<Node, Node>& subsumed_by) const
 {
+  Trace("ied-process-upg") << "Process UPG, #assumps=" << assumptions.size() << std::endl;
+  // take assumptions from sibling proofs now
+  assumptions.insert(
+      assumptions.end(), d_assumptions.begin(), d_assumptions.end());
   std::vector<Node> concs;
-  Node upgLit;
-  const GLitInfo* gupg = nullptr;
+  bool recUPG = false;
   for (const std::pair<Node, std::map<Node, GLitInfo>>& cs : d_conclusions)
   {
+    Trace("ied-process-upg") << "...g-follow " << cs.first << std::endl;
     for (const std::pair<Node, GLitInfo>& cc : cs.second)
     {
+      Trace("ied-process-upg") << "...o-check " << cc.first << std::endl;
+      // if the proof is not a leaf
       if (!cc.second.d_conclusions.empty())
       {
         // should have only one UPG
-        Assert(!gupg);
-        gupg = &(cc.second);
-        upgLit = cc.first;
+        Assert(concs.empty());
+        AlwaysAssert( !recUPG );
+        recUPG = true;
+        // proof compress if applicable
+#if 0
+        
+#endif
+        cc.second.processUPG(ied,currConc,assumptions,lemmas,subsumed_by);
+        Trace("ied-process-upg") << "...follow " << cc.first << std::endl;
       }
-      // if we are open, then we must add to conclusions for this
-      concs.push_back(cc.first.negate());
+      else
+      {
+        Assert( !cc.first.isNull() );
+        // if we are open, then we must add to conclusions for this
+        concs.push_back(cc.first.negate());
+      }
     }
   }
-  assumptions.insert(
-      assumptions.end(), d_assumptions.begin(), d_assumptions.end());
+  // non-trivial proofs must have >1 assumptions.
+  if( assumptions.size() > 1 && !concs.empty() )
+  {
+    // conclude the UPG
+    ied.getGeneralizedConclusion(d_iei, assumptions, concs, lemmas, subsumed_by);
+  }
+  
+  
+  //Trace("ied-process-upg") << "Have upg=" << (gupg!=nullptr) << ", #concs=" << concs.size() << std::endl;
+  // should not have a non-trivial UPG will open leaves at this level
+  //Assert( !gupg || concs.size()==1 );
   // If at least one part of the proof is purely general, we infer a lemma
   // that subsumes this quantified formula.
+      /*
   if (assumptions.size() > 1)
   {
-    if (!currConc.isNull())
+    // we conclude only at the UPG
+    bool processPf = !gupg;
+    if( processPf )
     {
-      // if we are carrying an open conclusion, add it now
-      concs.push_back(currConc);
+      if (!currConc.isNull())
+      {
+        // if we are carrying an open conclusion, add it now
+        concs.push_back(currConc);
+        // we've processed/closed it now
+        currConc = Node::null();
+      }
+      Assert(d_iei);
+      Node genConc =
+          ied.getGeneralizedConclusion(d_iei, assumptions, concs, lemmas, subsumed_by);
+      Assert( !genConc.isNull() );
+      // add this quantified formula to assumptions if we are recursing
+      if (gupg)
+      {
+        assumptions.push_back(genConc);
+      }
     }
-    Assert(d_iei);
-    /*
-    Node genConc =
-        ied.getGeneralizedConclusion(d_iei, assumptions, concs, lemmas);
-    // add this quantified formula to assumptions if we are recursing TODO
-    if (gupg)
-    {
-      assumptions.push_back(genConc);
-    }
-    */
   }
+  */
+  /*
   if (gupg)
   {
-    gupg->processUPG(ied, Node::null(), assumptions, lemmas, subsumptions);
+    // We proceed towards the conclusion.
+    gupg->processUPG(ied, currConc, assumptions, lemmas, subsumed_by);
   }
-  else
-  {
-    // add quantified formula at leaf here
-    Node genConc =
-        ied.getGeneralizedConclusion(d_iei, assumptions, concs, lemmas);
-    AlwaysAssert(!genConc.isNull());
-  }
+  */
 }
 
 unsigned GLitInfo::getScore() const { return d_conclusions.size(); }
@@ -466,7 +495,8 @@ void GLitInfo::debugPrint(const char* c, unsigned tb) const
   if (Trace.isOn(c))
   {
     indent(c, tb);
-    Trace(c) << "NODE" << std::endl;
+    Trace(c) << "IEX" << std::endl;
+    /*
     indent(c, tb + 1);
     Trace(c) << "substitution:" << std::endl;
     if (d_subs_modify.empty())
@@ -474,6 +504,7 @@ void GLitInfo::debugPrint(const char* c, unsigned tb) const
       indent(c, tb + 2);
       Trace(c) << "(empty)" << std::endl;
     }
+    */
     indent(c, tb + 1);
     Trace(c) << "assumptions:" << std::endl;
     if (d_assumptions.empty())
