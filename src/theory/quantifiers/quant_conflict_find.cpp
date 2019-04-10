@@ -2189,7 +2189,7 @@ void QuantConflictFind::checkQuantifiedFormula(Node q,
       // Process the lemma: either add an instantiation or specific lemmas
       // constructed during the isTConstraintSpurious call, or both.
       bool processed = false;
-      if (lems.empty() || options::qcfExpMode() == QCF_EXP_BOTH)
+      if (lems.empty() || options::qcfExpMode() == QCF_EXP_BOTH || options::qcfExpMode()==QCF_EXP_GENERALIZE)
       {
         // add the instantiation
         processed = qinst->addInstantiation(q, terms);

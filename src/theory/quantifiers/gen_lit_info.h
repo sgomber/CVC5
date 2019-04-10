@@ -124,7 +124,7 @@ class GLitInfo
    */
   unsigned getScore() const;
 
-  void debugPrint(const char* c, unsigned tb = 0) const;
+  void debugPrint(const char* c, unsigned tb = 0, bool rec=true) const;
 
   bool isPurelyGeneral() const;
   Node getAssumptions() const;

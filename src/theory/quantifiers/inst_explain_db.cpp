@@ -548,7 +548,7 @@ Node InstExplainDb::getGeneralizedConclusion(InstExplainInst* iei,
   {
     Node concBody = concs.size() == 1 ? concs[0] : nm->mkNode(OR, concs);
     Trace("ied-conflict-debug")
-        << "(original) conclusion: " << conc << std::endl;
+        << "(original) conclusion: " << concBody << std::endl;
     // check if we've already concluded this
     std::map<Node, Node>::iterator itpv = d_conc_cache[antec].find(concBody);
     if (itpv != d_conc_cache[antec].end())
@@ -632,8 +632,37 @@ Node InstExplainDb::getGeneralizedConclusion(InstExplainInst* iei,
     Trace("ied-conflict")
         << "InstExplainDb::explain: generated generalized resolution inference"
         << std::endl;
-    Trace("ied-lemma") << "InstExplainDb::lemma (GEN-RES): " << lem
-                       << std::endl;
+    if( Trace.isOn("ied-lemma") )
+    {
+      Trace("ied-lemma") << "InstExplainDb::lemma (GEN-RES): " << lem
+                        << std::endl;
+      Trace("ied-lemma") << "---------------------------------" << std::endl;
+      Trace("ied-lemma") << "assumptions:" << std::endl;
+      if (assumps.empty())
+      {
+        Trace("ied-lemma") << "  (empty)" << std::endl;
+      }
+      else
+      {
+        for (const Node& a : assumps)
+        {
+          Trace("ied-lemma") << "  " <<  a << std::endl;
+        }
+      }
+      Trace("ied-lemma") << "conclusions:" << std::endl;
+      if (concs.empty())
+      {
+        Trace("ied-lemma") << "  (empty)" << std::endl;
+      }
+      else
+      {
+        for (const Node& c : concs)
+        {
+          Trace("ied-lemma") << "  " <<  c << std::endl;
+        }
+      }
+      Trace("ied-lemma") << "---------------------------------" << std::endl;
+    }
     lemmas.push_back(lem);
   }
   return conc;

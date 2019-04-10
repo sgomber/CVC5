@@ -416,7 +416,7 @@ void GLitInfo::processUPG(InstExplainDb& ied,
             concs.push_back(cc.first.negate());
             // we do not do the generalized conflict instance in this call
             // we prefer generalized conflicting instances from the UPG.
-            Node genConc = ied.getGeneralizedConclusion(d_iei, assumptions, concs, lemmas, subsumed_by,false);
+            Node genConc = ied.getGeneralizedConclusion(cc.second.d_iei, assumptions, concs, lemmas, subsumed_by,false);
             // we close the open conclusion
             assumptions.clear();
             assumptions.push_back(genConc);
@@ -443,7 +443,7 @@ void GLitInfo::processUPG(InstExplainDb& ied,
   {
     // conclude the UPG
     ied.getGeneralizedConclusion(
-        d_iei, assumptions, concs, lemmas, subsumed_by);
+        d_iei, assumptions, concs, lemmas, subsumed_by,false);
   }
 }
 
@@ -456,7 +456,7 @@ void GLitInfo::indent(const char* c, unsigned tb) const
     Trace(c) << " ";
   }
 }
-void GLitInfo::debugPrint(const char* c, unsigned tb) const
+void GLitInfo::debugPrint(const char* c, unsigned tb, bool rec) const
 {
   if (Trace.isOn(c))
   {
@@ -500,8 +500,16 @@ void GLitInfo::debugPrint(const char* c, unsigned tb) const
         for (const std::pair<Node, GLitInfo>& cc : cs.second)
         {
           indent(c, tb + 2);
-          Trace(c) << cs.first << " / " << cc.first << ":" << std::endl;
-          cc.second.debugPrint(c, tb + 4);
+          Trace(c) << cs.first << " / " << cc.first;
+          if( rec )
+          {
+            Trace(c) << ":" << std::endl;
+            cc.second.debugPrint(c, tb + 4, rec);
+          }
+          else
+          {
+            Trace(c) << std::endl;
+          }
         }
       }
     }
