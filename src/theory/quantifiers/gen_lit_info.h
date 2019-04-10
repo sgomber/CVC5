@@ -74,21 +74,38 @@ class GLitInfo
   std::map<Node, std::map<Node, GLitInfo> > d_conclusions;
   /** initialize this information
    *
-   * This sets d_iei to iei and clears the above vectors.
+   * This sets d_iei to iei and clears everything else.
    */
   void initialize(InstExplainInst* iei);
-  /** initialize to the result of merging the generalizations of a and b
-   *
-   * It should be the case that ( a * SUBS(ga) ) = ( b * SUBS(gb) ).
-   *
-   * For example:
-   */
-  // bool initialize(TNode a, const GLitInfo& ga, TNode b, const GLitInfo& gb);
-
-  // bool merge(TNode a, TNode b, const GLitInfo& gb, bool allowBind = true);
   /** set conclusion
+   * 
+   * This indicates that we have decided to justify the premise (pl/opl) with
+   * the proof stored at d_conclusions[pl][opl].
+   * 
+   * There are two cases:
+   * (1) The proof d_conclusions[pl][opl] is purely general. In this case,
+   * we take the assumptions from this proof and remove it from d_conclusions,
+   * i.e. we compress its proof,
+   * (2) The proof d_conclusions[pl][opl] contains a UPG. 
+   *   (A) If proofs of all premises registered by previous calls have been
+   *   purely general, then we leave d_conclusions[pl][opl] unchanged, and set
+   *   the UPG literal (d_upgLit/d_upgOLit) to (pl/opl),
+   *   (B) If we already have a propagating generalization in the proof of
+   *   another premise (pl'/opl'), then we discard the propagating
+   *   generalizations in both proofs and make both (pl/opl) and (pl'/opl')
+   *   to be open leaves,
+   *   (C) If we already have open leaves (pl_1/opl_1) ... (pl_n/opl_n), then
+   *   we discard the UPG from the proof of d_conclusions[pl][opl] and (pl/opl)
+   *   is made an open leaf.
    */
   void setConclusion(Node pl, Node opl);
+  /** 
+   * This indicates that we cannot justify the premise (pl/opl). Hence it
+   * becomes an open leaf.
+   * 
+   * If we contain a proof of a premise (pl'/opl') that has a UPG, it is
+   * discarded and (pl'/opl') becomes an open leaf.
+   */
   void setOpenConclusion(Node pl, Node opl);
   /**
    * Check whether ( b * SUBS(gb) ) is a generalization of a.
@@ -138,16 +155,38 @@ class GLitInfo
   /** indent tb tabulations on trace c */
   void indent(const char* c, unsigned tb) const;
   /** 
-   * A ground literal whose generalized proof contains the UPG, or a ground
-   * literal that was not generalizable.
+   * A ground/generalized literals whose proof contains a UPG, or a premise
+   * that is part of the UPG itself.
    */
   Node d_upgLit;
-  /** the generalization of the above literal */
   Node d_upgOLit;
-  /** is the proof of the upg literal non-trivial? */
+  /** Are the above literals part of the UPG itself? */
   bool d_upgTriv;
-  
+  /** set open conclusion internal
+   * 
+   * This makes pl/opl an open leaf of this proof.
+   */
   void setOpenConclusionInternal(Node pl, Node opl);
+  /** notify open conclusion
+   * 
+   * Notify that (pl/opl) is justified by a proof that is not purely general.
+   * The flag isTriv is true if (pl/opl) is an open leaf.
+   * 
+   * This call ensures that this proof has a unique propagating generalization
+   * by the following steps:
+   * 
+   * 1. (Undo previous UPG if one exists)
+   * If d_upgTriv is false, this indicates that a proof of the premise
+   * (d_upgLit/d_upgOLit) contains a propagating generalization. We discard
+   * its generalization.
+   * 
+   * 2. (Set UPG if available)
+   * If d_upgLit is null, then we set the UPG literal to pl/opl.
+   * 
+   * 3. (Undo UPG in current literal if UPG is not available)
+   * If pl/opl has a non-trivial UPG, it must be discarded if there was already
+   * a UPG literal.
+   */
   void notifyOpenConclusion(Node pl, Node opl, bool isTriv);
 };
 

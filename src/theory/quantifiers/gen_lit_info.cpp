@@ -92,20 +92,14 @@ void GLitInfo::setOpenConclusionInternal(Node pl, Node opl)
 void GLitInfo::notifyOpenConclusion(Node pl, Node opl, bool isTriv)
 {
   Assert( !opl.isNull() );
-  if( !d_upgLit.isNull() )
+  // if we had a non-trivial UPG
+  if( !d_upgTriv )
   {
-    if( !d_upgTriv )
-    {
-      // clear the previous non-trivial UPG
-      setOpenConclusionInternal(d_upgLit, d_upgOLit);
-      d_upgLit = Node::null();
-    }
-    if( !isTriv )
-    {
-      // have to make the current one trivial if its non-trivial
-      setOpenConclusionInternal(pl,opl);
-      isTriv = true;
-    }
+    Assert( !d_upgLit.isNull() );
+    // clear the previous non-trivial UPG
+    setOpenConclusionInternal(d_upgLit, d_upgOLit);
+    // it is now trivial
+    d_upgTriv = true;
   }
   // if the upg literal is available, set it.
   if( d_upgLit.isNull() )
@@ -113,6 +107,12 @@ void GLitInfo::notifyOpenConclusion(Node pl, Node opl, bool isTriv)
     d_upgLit = pl;
     d_upgOLit = opl;
     d_upgTriv = isTriv;
+  }
+  else if( !isTriv )
+  {
+    // otherwise, have to clear the current one if its non-trivial
+    setOpenConclusionInternal(pl,opl);
+    isTriv = true;
   }
 }
 
@@ -407,6 +407,8 @@ void GLitInfo::processUPG(InstExplainDb& ied,
     {
       if (!cc.second.d_conclusions.empty())
       {
+        // should have only one UPG
+        Assert( !gupg );
         gupg = &(cc.second);
         upgLit = cc.first;
       }
@@ -426,17 +428,26 @@ void GLitInfo::processUPG(InstExplainDb& ied,
       concs.push_back(currConc);
     }
     Assert(d_iei);
+    /*
     Node genConc =
         ied.getGeneralizedConclusion(d_iei, assumptions, concs, lemmas);
-    // add this quantified formula to assumptions if we are recursing
+    // add this quantified formula to assumptions if we are recursing TODO
     if (gupg)
     {
       assumptions.push_back(genConc);
     }
+    */
   }
   if (gupg)
   {
     gupg->processUPG(ied, Node::null(), assumptions, lemmas, subsumptions);
+  }
+  else
+  {
+    // add quantified formula at leaf here
+    Node genConc =
+        ied.getGeneralizedConclusion(d_iei, assumptions, concs, lemmas);
+    AlwaysAssert(!genConc.isNull());
   }
 }
 
