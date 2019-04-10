@@ -37,27 +37,16 @@ class InstExplainPfGen
   InstExplainPfGen(InstExplainDb& parent, QuantifiersEngine* qe);
   /** Generalize
    *
-   * This recursively computes a generalization of proof eqp.
+   * This recursively computes a generalization of proof eqp, stored in g, so
+   * that it is a proof of tgtLit. This method returns true if we succeeded.
    *
-   * The map concs stores the concrete conclusion computed for each proof
-   * node visited in recursive calls.
-   *
-   * The map concsg stores (a set of) generalized conclusions for each proof
-   * node visited in recursive class. It is the case that each node in the
-   * domain of concsg[p] is a generalization of concs[p]. The information
-   * in the range of concsg[p][L] for each L contains the "generalized
-   * literal information", which contains the necessary information for
-   * interpretting L.
-   *
-   * genPath is the current (ground) literals that are parents of our current
-   * path in the proof tree.
+   * reqPureGen: if this flag is true, we require that g is a purely general,
+   * that is, a proof with no open leaves.
    *
    * tb is the tabulation level (for debugging).
    */
   bool generalize(Node tgtLit,
                   eq::EqProof* eqp,
-                  std::map<eq::EqProof*, Node>& concs,
-                  std::map<eq::EqProof*, GLitInfo>& concsg,
                   GLitInfo& g,
                   bool reqPureGen,
                   unsigned tb = 0);
@@ -102,12 +91,37 @@ class InstExplainPfGen
   Node convertEq(Node n) const;
   /** convert to non-equality (inverse of above for rewritten nodes) */
   Node convertRmEq(Node n) const;
-  /** generalize internal */
+  /** generalize internal 
+   * 
+   * A helper function for generalize. This computes a proof generalization
+   * for eqp. We return the node corresponding to the (ground) conclusion of
+   * eqp. 
+   * 
+   * tgtLit: The target generalized conclusion we wish to generalize the proof 
+   * eqp to prove. This may be null if we do not know what we are generalizing.
+   * 
+   * eqp: The (ground UF) proof we are generalizing.
+   * 
+   * g: The generalized proof we are constructing.
+   * 
+   * concs: caches the concrete conclusion computed for each proof
+   * node visited in recursive calls.
+   * 
+   * reqPureGen: if this flag is true, we require that the generalized proof
+   * of tgtLit is purely general.
+   * 
+   * genPath: the current (ground) literals that are parents of our current
+   * path in the proof tree.
+   * 
+   * genSuccess: We set this flag to true if we succeeded in generalizing the
+   * proof of eqp to prove tgtLit, or if tgtLit is null.
+   * 
+   * tb is the tabulation level (for debugging).
+   */
   Node generalizeInternal(Node tgtLit,
                           eq::EqProof* eqp,
-                          std::map<eq::EqProof*, Node>& concs,
-                          std::map<eq::EqProof*, GLitInfo>& concsg,
                           GLitInfo& g,
+                          std::map<eq::EqProof*, Node>& concs,
                           bool reqPureGen,
                           std::map<Node, bool>& genPath,
                           bool& genSuccess,

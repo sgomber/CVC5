@@ -456,8 +456,6 @@ ExplainStatus InstExplainDb::explain(Node q,
   bool propGenIsBase = false;
 
   // generalized proof information
-  std::map<eq::EqProof*, Node> concs;
-  std::map<eq::EqProof*, GLitInfo> concsg;
   // now go back and see if proofs can be generalized
   for (std::map<Node, eq::EqProof>::iterator itp = expPf.begin();
        itp != expPf.end();
@@ -480,7 +478,7 @@ ExplainStatus InstExplainDb::explain(Node q,
       // Notice that we don't know what this proof proves currently. FIXME
       Node elitg = elit;
       GLitInfo& glc = genRoot.d_conclusions[elitg][elit];
-      if( d_iexpfg.generalize(elit, pfp, concs, concsg, glc, reqPureGen, 1) )
+      if( d_iexpfg.generalize(elit, pfp, glc, reqPureGen, 1) )
       {
         Trace("ied-gen") << "....success generalize with" << std::endl;
         glc.debugPrint("ied-gen");

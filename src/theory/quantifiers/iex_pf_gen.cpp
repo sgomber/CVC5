@@ -80,25 +80,23 @@ bool InstExplainPfGen::regressExplain(EqExplainer* eqe,
 }
 bool InstExplainPfGen::generalize(Node tgtLit,
                                   eq::EqProof* eqp,
-                                  std::map<eq::EqProof*, Node>& concs,
-                                  std::map<eq::EqProof*, GLitInfo>& concsg,
                           GLitInfo& g,
                                   bool reqPureGen,
                                   unsigned tb)
 {
   bool genSuccess = false;
   std::map<Node, bool> genPath;
+  std::map<eq::EqProof*, Node> concs;
   generalizeInternal(
-      tgtLit, eqp, concs, concsg, g, reqPureGen, genPath, genSuccess, tb);
+      tgtLit, eqp, g, concs, reqPureGen, genPath, genSuccess, tb);
   return genSuccess;
 }
 
 Node InstExplainPfGen::generalizeInternal(
     Node tgtLit,
     eq::EqProof* eqp,
-    std::map<eq::EqProof*, Node>& concs,
-    std::map<eq::EqProof*, GLitInfo>& concsg,
                           GLitInfo& g,
+    std::map<eq::EqProof*, Node>& concs,
     bool reqPureGen,
     std::map<Node, bool>& genPath,
     bool& genSuccess,
@@ -107,6 +105,7 @@ Node InstExplainPfGen::generalizeInternal(
   std::map<eq::EqProof*, Node>::iterator itc = concs.find(eqp);
   if (itc != concs.end())
   {
+    // TODO: carry generalized proof?
     return itc->second;
   }
   NodeManager* nm = NodeManager::currentNM();
@@ -149,9 +148,8 @@ Node InstExplainPfGen::generalizeInternal(
         unsigned ii = nchild - (i + 1);
         retc = generalizeInternal(d_null,
                                   childProofs[ii],
-                                  concs,
-                                  concsg,
                                   g,  //FIXME
+                                  concs,
                                   reqPureGen,
                                   genPath,
                                   genSuccess,
@@ -248,7 +246,7 @@ Node InstExplainPfGen::generalizeInternal(
       // target literal is unknown if non-trivial
       Node tgtLitc = nproofs == 1 ? tgtLit : d_null;
       retc = generalizeInternal(
-          tgtLitc, epi, concs, concsg, g, reqPureGen, genPath, genSuccess, tb + 1);
+          tgtLitc, epi, g, concs, reqPureGen, genPath, genSuccess, tb + 1);
       if (retc.isNull())
       {
         success = false;
@@ -288,25 +286,17 @@ Node InstExplainPfGen::generalizeInternal(
   if (Trace.isOn("ied-gen"))
   {
     indent("ied-gen", tb);
-    Trace("ied-gen") << "...proves " << ret << std::endl;
-    /*
-    std::map<eq::EqProof*, GLitInfo>::iterator itg =
-        concsg.find(eqp);
-    if (itg != concsg.end())
+    Trace("ied-gen") << "...proves " << ret;
+    if( tgtLit.isNull() )
     {
-      Trace("ied-gen") << ", with " << itg->second.size()
-                       << " generalizations:" << std::endl;
-      for (const std::pair<Node, GLitInfo>& p : itg->second)
-      {
-        indent("ied-gen", tb);
-        Trace("ied-gen") << p.first << std::endl;
-      }
+      Trace("ied-gen") << " with no target.";
     }
     else
     {
-      Trace("ied-gen") << std::endl;
+      Trace("ied-gen") << " with target " << tgtLit << ", generalize success=";
+      Trace("ied-gen") << genSuccess;
     }
-    */
+    Trace("ied-gen") << std::endl;
   }
   return ret;
 }
