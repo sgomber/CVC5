@@ -126,6 +126,10 @@ class GLitInfo
                   std::vector<Node>& lemmas,
                   std::map<Node, Node>& subsumptions) const;
 
+  /** get upg lit */
+  Node getUPGLit() const { return d_upgLit; }
+  /** is upg trivial */
+  bool isUPGTrivial() const { return d_upgTriv; }
  private:
   bool mergeInternal(
       TNode a, TNode b, const GLitInfo& gb, bool doMerge, bool allowBind);
@@ -136,7 +140,8 @@ class GLitInfo
   /** is upg literal non-trivial? */
   bool d_upgTriv;
   
-  void notifyOpenConclusion(Node pl, Node opl);
+  void setOpenConclusionInternal(Node opl);
+  void notifyOpenConclusion(Node opl, bool isTriv);
 };
 
 }  // namespace quantifiers

@@ -422,6 +422,8 @@ bool InstExplainPfGen::instExplain(GLitInfo& g,
       {
         indent(c, tb + 1);
       }
+      isOpen = g.isOpen(pl);
+      /*
       // if we succeeded, then check if we are purely general
       if (g.isOpen(pl))
       {
@@ -450,6 +452,7 @@ bool InstExplainPfGen::instExplain(GLitInfo& g,
         Trace(c) << "-> inst-explained, fully general" << std::endl;
         isOpen = false;
       }
+      */
     }
     else if (Trace.isOn(c))
     {
@@ -469,8 +472,11 @@ bool InstExplainPfGen::instExplain(GLitInfo& g,
         d_instFindPure[olit] = Node::null();
         // clean up path
         genPath.erase(lit);
+        // clear everything?
+        //g.initialize(nullptr);
         return false;
       }
+      /*
       Assert(g.d_conclusions.find(pl) == g.d_conclusions.end());
       // if we didn't find one, we must carry it must be a conclusion
       g.d_conclusions[pl][opl].initialize(nullptr);
@@ -485,12 +491,13 @@ bool InstExplainPfGen::instExplain(GLitInfo& g,
           Trace(c) << "-> revert UPG " << upgLit << std::endl;
         }
       }
+      */
     }
   }
   if (Trace.isOn(c))
   {
     indent(c, tb);
-    Trace(c) << "INST-EXPLAIN SUCCESS " << (reqPureGen ? "(PURE)" : "")
+    Trace(c) << "INST-EXPLAIN SUCCESS " << olit << " " <<  (reqPureGen ? "(PURE)" : "")
              << " with:" << std::endl;
     g.debugPrint(c, tb + 1);
   }
@@ -500,10 +507,10 @@ bool InstExplainPfGen::instExplain(GLitInfo& g,
     d_instFindPure[olit] = g.getAssumptions();
     // was this non-trivial? If so, we compress the proof and remember the
     // lemma.
-    if (!plits.empty())
-    {
-      Trace(c) << "INST-EXPLAIN: LOCAL RESOLUTION COMPRESSION" << std::endl;
-    }
+    //if (!plits.empty())
+    //{
+    //  Trace(c) << "INST-EXPLAIN: LOCAL RESOLUTION COMPRESSION" << std::endl;
+    //}
   }
   // clean up the path
   genPath.erase(lit);
@@ -522,7 +529,7 @@ bool InstExplainPfGen::instExplainFind(GLitInfo& g,
   std::map<Node, InstExplainLit>::iterator itl;
   if (!d_ied.findInstExplainLit(pl, itl))
   {
-    //g.setOpenConclusion(pl);
+    g.setOpenConclusion(pl);
     return false;
   }
   InstExplainLit& iel = itl->second;
@@ -542,7 +549,7 @@ bool InstExplainPfGen::instExplainFind(GLitInfo& g,
   }
   if (cexppl.empty())
   {
-    //g.setOpenConclusion(pl);
+    g.setOpenConclusion(pl);
     return false;
   }
   Assert(!opl.isNull());
@@ -611,7 +618,7 @@ bool InstExplainPfGen::instExplainFind(GLitInfo& g,
             // TODO: could do subsumption to prune here
             undoOpli = false;
           }
-          else if (pconcs[opli].d_conclusions.empty())
+          else if (pconcs[opli].isPurelyGeneral())
           {
             // if it is purely general, we are done
             best = opli;
@@ -655,7 +662,7 @@ bool InstExplainPfGen::instExplainFind(GLitInfo& g,
       indent(c, tb + 1);
       Trace(c) << "-> failed to generalize" << std::endl;
     }
-    //g.setOpenConclusion(pl);
+    g.setOpenConclusion(pl);
     return false;
   }
   Assert(!best.isNull());

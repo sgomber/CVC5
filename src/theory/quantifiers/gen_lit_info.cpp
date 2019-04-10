@@ -58,7 +58,7 @@ void GLitInfo::setConclusion(Node pl, Node opl)
   // if child is purely general, we can compress and remove this
   if (it2->second.d_conclusions.empty())
   {
-    // take its assumptions
+    // take its assumptions and remove it
     d_assumptions.insert(d_assumptions.end(),
                          it2->second.d_assumptions.begin(),
                          it2->second.d_assumptions.end());
@@ -66,33 +66,47 @@ void GLitInfo::setConclusion(Node pl, Node opl)
   }
   else
   {
-    notifyOpenConclusion(pl, opl);
+    // it is an open conclusion, must register it as UPG if possible
+    notifyOpenConclusion(opl, false);
   }
 }
 void GLitInfo::setOpenConclusion(Node pl)
 {
-  d_conclusions.erase(pl);
-  d_conclusions[pl][pl].initialize(nullptr);
-  notifyOpenConclusion(pl,pl);
+  // it is an open conclusion, clear its proof
+  setOpenConclusionInternal(pl);
+  // must register it as UPG
+  notifyOpenConclusion(pl, true);
+}
+void GLitInfo::setOpenConclusionInternal(Node opl)
+{
+  d_conclusions.erase(opl);
+  d_conclusions[opl][opl].initialize(nullptr);
 }
 
-void GLitInfo::notifyOpenConclusion(Node pl, Node opl)
+void GLitInfo::notifyOpenConclusion(Node opl, bool isTriv)
 {
-  /*
-  if( d_upgLit.isNull() )
+  Assert( !opl.isNull() );
+  if( !d_upgLit.isNull() )
   {
-    // clear the previous UPG
     if( !d_upgTriv )
     {
-      setOpenConclusion(d_upgLit);
+      // clear the previous non-trivial UPG
+      setOpenConclusionInternal(d_upgLit);
+      d_upgLit = Node::null();
+    }
+    if( !isTriv )
+    {
+      // have to make the current one trivial if its non-trivial
+      setOpenConclusionInternal(opl);
+      isTriv = true;
     }
   }
-  if( d_upgLit.isNull() || !d_upgTriv )
+  // if the upg literal is available, set it.
+  if( d_upgLit.isNull() )
   {
     d_upgLit = opl;
-    d_upgTriv = (pl==opl);
+    d_upgTriv = isTriv;
   }
-  */
 }
 
 bool GLitInfo::checkCompatible(TNode a, TNode b, const GLitInfo& gb)
