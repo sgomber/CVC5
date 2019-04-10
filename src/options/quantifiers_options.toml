@@ -711,12 +711,12 @@ header = "options/quantifiers_options.h"
   help       = "qcf experimental variable ordering"
 
 [[option]]
-  name       = "qcfExpRegressInst"
+  name       = "iexUPGCompress"
   category   = "regular"
-  long       = "qcf-rexpi"
+  long       = "iex-upg-compress"
   type       = "bool"
   default    = "false"
-  help       = "regress explanations based on instantiation lemmas"
+  help       = "compress path to UPG in instantiation explanation proofs"
 
 [[option]]
   name       = "instNoEntail"

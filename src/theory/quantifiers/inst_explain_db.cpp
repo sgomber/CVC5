@@ -253,14 +253,15 @@ ExplainStatus InstExplainDb::explain(Node q,
                                      std::map<Node, eq::EqProof>& expPf,
                                      EqExplainer* eqe,
                                      std::vector<Node>& lems,
-                                     bool regressInst,
                                      const char* ctx)
 {
   Trace("ied-conflict") << "InstExplainDb::explain: Conflict in context " << ctx
                         << " : " << std::endl;
   Trace("ied-conflict") << "  [QUANT] " << q << std::endl;
   Assert(q.getKind() == FORALL);
-  // we first regress the explanation of proofs
+  // we have that the proofs in the range of expPf are "proof sketches", i.e.
+  // EqProofs whose leaves are equalities that are explanable by eqe.
+  // We first regress the explanation of proofs here.
   std::map<Node, bool> regressPfFail;
   std::map<Node, std::vector<TNode>> assumptions;
   unsigned pfCounter = 0;
@@ -302,7 +303,9 @@ ExplainStatus InstExplainDb::explain(Node q,
   if (options::qcfExpMode() != QCF_EXP_GENERALIZE)
   {
     NodeManager* nm = NodeManager::currentNM();
-    // we just return the conflict
+    // If the conflict mode is not set to generalize, we just return the
+    // conflict clause, which should be a Boolean conflict in the current
+    // context.
     if (regressPfFail.empty())
     {
       std::vector<TNode> allAssumptions;
@@ -335,27 +338,30 @@ ExplainStatus InstExplainDb::explain(Node q,
   //
   // In detail, given a conflicting instance, the input to this method is a
   // set of proofs of ground literals that entail a conflicting instance.
-  // For example:
+  // For example, say we found a conflicting instance justified by:
+  //
   //   forall x. ~P(x) V Q(f(x,y), y)      P(a)      ~Q(f(a,b),b)
   //   ----------------------------------------------------------
   //                      false
-  // where expPf contains (UF) proofs of literals P(a), ~Q(f(a,b),b), which are
+  // In this call, expPf now contains (UF) proofs of literals P(a),
+  // ~Q(f(a,b),b), which are:
   //    P(x) * sigma and ~Q(f(x,y),y) * sigma
   // where
   //    sigma is { x -> a, y -> b }
-  // We call P(a), ~Q(f(a,b),b) the "ground conflicting literal set" with
-  // respect to forall x. ~P(x) V Q(f(x,y), y).
+  // We call P(a), ~Q(f(a,b),b) the "ground conflicting literal set".
   //
   // The goal of proof generalization is to transform these proofs so that they
   // prove generalizations of these literals (that is, P(x) and ~Q(f(x,y),y)
   // with a subset of the substitution sigma. We say a proof is purely
   // general if it proves its literal for the empty substitution and has no
   // open leaves.
+  //
   // Proofs are generalized by recognizing when assumptions of these proofs
   // are propagated (at the Boolean level) by instantiation lemmas.
   //
   // We write e.g. "P(a) / P(x)" to denote a node in a proof tree whose
-  // original conclusion was P(a) and whose generalized conclusion is P(x).
+  // original conclusion was P(a) and whose generalized conclusion is P(x)
+  // for free (universal) variable x.
   //
   // Given proofs for all literals in a ground conflicting literal set,
   // our criteria for what consitutes a useful quantified inference is described
@@ -370,16 +376,16 @@ ExplainStatus InstExplainDb::explain(Node q,
   //   forall x. ~P(x), forall x. ~P(x) => ~P(a)
   //   forall x. ~Q(x), forall x. ~Q(x) => ~Q(a)
   // are asserted in the current context. This can be seen as a straightforward
-  // generalization of the ground conflict for { x -> a }.
+  // generalization of the ground conflicting instance for { x -> a }.
   //
   // Second, if there is a unique portion of the proof that is not
   // generalized and is a strict subset of the literals that comprise an
-  // Inst-Explain inference, then we learn the generalization of this portion.
-  // We call this a (unique) propagated generalization.
+  // Inst-Explain inference (described below), then we learn the generalization
+  // of this portion. We call this a (unique) propagated generalization (UPG).
   //
   // Given a (set of) generalized proofs, a "propagated generalization" is a
   // disjunction of literals corresponding to the portion of an instantiation
-  // lemma that we have not generalized. Here is an example:
+  // lemma that we have not generalized. For example:
   //
   //                                                 ---------------
   //                                                 forall z. ~Q(z)
@@ -411,13 +417,14 @@ ExplainStatus InstExplainDb::explain(Node q,
   //   forall x. ~P(x) ^ forall y. Q(y) V P(y) V R(y) ^ forall z. ~Q(z) ^ A
   // implies:
   //   forall w. R( w )
-  // where notice the propagated generalization is negated and closed.
+  // where notice the propagated generalization is negated and closed in the
+  // conclusion.
   //
   // If the overall proof contains a unique propagated generalization, then
-  // the output of this method is a first-order hyper-resolution (as given by
+  // the output of this method is a first-order hyper-resolution (for example,
   // the implication above). This additionally has the important property
   // that the quantified formula on the same line as the propagated
-  // generalization is subsumed by the negation of its closure.
+  // generalization is subsumed by the conclusion.
   // Above, note that:
   //   forall w. R( w )
   // subsumes
@@ -427,10 +434,9 @@ ExplainStatus InstExplainDb::explain(Node q,
   // generalization. We call this the "generalized conflicting instance". In
   // the above example, this is:
   //   forall w. R( w ) => R( a )
-  // We prefer this instance to the original conflicting instance:
-  //   forall x. (~P(x) V ... ) => ( ~P(a) V ... )
-  // (Generalized) conflicting instances are important because they suffice
-  // to rule out the current ground model.
+  // We prefer this instance to the original conflicting instance given as the
+  // input to this method. (Generalized) conflicting instances are important
+  // because they suffice to rule out the current ground model.
 
   // The virtual instantiation lemma information. This manages the information
   // regarding the conflicting instance (the base line of the proof), which
@@ -443,10 +449,6 @@ ExplainStatus InstExplainDb::explain(Node q,
   // it has the conflicting quantified formula as an assumption always.
   // This is necessarily manual since genRoot is not built via an IEX inference.
   genRoot.d_assumptions.push_back(q);
-
-  // Maps literals in the domain of our original explanation expPf to a
-  // generalized conclusion that we are using (when applicable).
-  std::map<Node, bool> litGeneralization;
 
   // generalized proof information
   // now go back and see if proofs can be generalized
@@ -463,9 +465,14 @@ ExplainStatus InstExplainDb::explain(Node q,
       // we can only use purely general proofs if we already have a proagating
       // generalization.
       bool reqPureGen = !genRoot.getUPGLit().isNull();
-      // We will fill the proof glc.
-      // Notice that we don't know what this proof proves currently. FIXME
+      // Below, elitg represents the ground literal appearing in the conflicting
+      // literal set. Technically, elitg in fact should be set to 
+      //    ( elit { q[0] -> terms } )
+      // but we don't bother computing this since it is not needed: we already
+      // know that pfp is a proof of this literal. This term may not even appear
+      // in the current context.
       Node elitg = elit;
+      // We will fill the proof glc.
       GLitInfo& glc = genRoot.d_conclusions[elitg][elit];
       if (d_iexpfg.generalize(elit, pfp, glc, reqPureGen, 1))
       {
@@ -476,12 +483,6 @@ ExplainStatus InstExplainDb::explain(Node q,
         // of elitg / elit and pushes its assumptions to the root, or otherwise
         // does nothing.
         genRoot.setConclusion(elitg, elit);
-        // did we purely generalize the proof?
-        if (!genRoot.isOpen(elit))
-        {
-          // it is a purely generalized proof (only assumptions)
-          litGeneralization[elit] = true;
-        }
       }
       else
       {
@@ -496,109 +497,16 @@ ExplainStatus InstExplainDb::explain(Node q,
     }
     Trace("ied-gen") << "----------------- end generalize proof" << std::endl;
   }
-  if (!genRoot.isUPGTrivial())
-  {
-    litGeneralization[genRoot.getUPGLit()] = true;
-  }
-
-  // if we don't have useful generalizations, we fail.
-  // This happens if and only if the propagated generalization is identical
-  // to the conflicting literal set, where the conclusion of the overall
-  // inference is tautological (the conflicting quantified formula implies
-  // itself).
-  if (litGeneralization.empty())
-  {
-    Trace("ied-conflict") << "InstExplainDb::explain: No generalizations, fail."
-                          << std::endl;
-    return EXP_STATUS_FAIL;
-  }
+  
   std::map<Node, Node> subsumed_by;
   std::vector<Node> finalAssumptions;
-#if 1
+  // now, added lemmas
   Trace("ied-conflict-debug") << "=== FINAL PROOF:" << std::endl;
   genRoot.debugPrint("ied-conflict-debug", 2);
   Trace("ied-conflict-debug") << "=== END FINAL PROOF" << std::endl;
   // we start with d_null since the root proof is of false.
   genRoot.processUPG(*this, d_null, finalAssumptions, lems, subsumed_by);
-  Assert(!lems.empty());
-#else
-  // Now construct the inference if we have any useful generalization.
-  Trace("ied-upg") << "=== Compute UPG" << std::endl;
-  finalAssumptions.insert(finalAssumptions.end(),
-                          genRoot.d_assumptions.begin(),
-                          genRoot.d_assumptions.end());
-  Node concQuant;
-  std::vector<Node> finalConclusions;
-  InstExplainInst* finalInfo = nullptr;
-  for (std::map<Node, eq::EqProof>::iterator itp = expPf.begin();
-       itp != expPf.end();
-       ++itp)
-  {
-    Node elit = itp->first;
-    std::map<Node, bool>::iterator it = litGeneralization.find(elit);
-    if (it != litGeneralization.end())
-    {
-      Node elitg = elit;
-      if (genRoot.isOpen(elitg))
-      {
-        Assert(genRoot.getUPGLit() == elit);
-        // we generalized it, now must look up its information
-        std::map<Node, GLitInfo>::iterator itgp =
-            genRoot.d_conclusions[elitg].find(elit);
-        Assert(itgp != genRoot.d_conclusions[elitg].end());
-        Trace("ied-upg") << "* Get UPG from " << elit << ":" << std::endl;
-        itgp->second.debugPrint("ied-upg", 2);
-        // get the UPG information from this
-        InstExplainInst* iei =
-            itgp->second.getUPG(finalConclusions, concQuant, finalAssumptions);
-        if (iei)
-        {
-          Assert(!finalInfo);
-          finalInfo = iei;
-        }
-      }
-      else
-      {
-        Trace("ied-upg") << "* Purely general " << elit << std::endl;
-      }
-    }
-    else
-    {
-      Trace("ied-upg") << "* Add to base UPG " << elit << std::endl;
-      Assert(concQuant.isNull() || concQuant == q);
-      concQuant = q;
-      finalConclusions.push_back(elit.negate());
-      finalInfo = &conflict;
-    }
-  }
-  Trace("ied-upg") << "=== End compute UPG" << std::endl;
-  // debug print the inference
-  Assert(!finalAssumptions.empty());
-  if (Trace.isOn("ied-conflict"))
-  {
-    Trace("ied-conflict") << "Conflict explanation:" << std::endl;
-    Trace("ied-conflict") << "ASSUMPTIONS:" << std::endl;
-    for (const Node& fa : finalAssumptions)
-    {
-      Trace("ied-conflict") << "  " << fa << std::endl;
-    }
-    if (!finalConclusions.empty())
-    {
-      Trace("ied-conflict") << "CONCLUSIONS: (from " << concQuant << ")"
-                            << ":" << std::endl;
-      for (const Node& fc : finalConclusions)
-      {
-        Trace("ied-conflict") << "  " << fc << std::endl;
-      }
-    }
-    else
-    {
-      Trace("ied-conflict") << "CONCLUSION: false!" << std::endl;
-    }
-  }
-  getGeneralizedConclusion(
-      finalInfo, finalAssumptions, finalConclusions, lems, subsumed_by);
-#endif
+
   for (const std::pair<Node, Node>& sp : subsumed_by)
   {
     d_subsume->setSubsumes(sp.second, sp.first);
@@ -606,7 +514,16 @@ ExplainStatus InstExplainDb::explain(Node q,
   // TEMPORARY FIXME
   if (options::qcfExpGenAbort())
   {
-    exit(77);
+    if( !lems.empty() || !subsumed_by.empty() )
+    {
+      exit(77);
+    }
+  }
+  if( lems.empty() )
+  {
+    Trace("ied-conflict") << "InstExplainDb::explain: No lemmas, fail."
+                          << std::endl;
+    return EXP_STATUS_FAIL;
   }
   return EXP_STATUS_FULL;
 }
@@ -615,7 +532,8 @@ Node InstExplainDb::getGeneralizedConclusion(InstExplainInst* iei,
                                              const std::vector<Node>& assumps,
                                              const std::vector<Node>& concs,
                                              std::vector<Node>& lemmas,
-                                             std::map<Node, Node>& subsumed_by)
+                                             std::map<Node, Node>& subsumed_by,
+                                bool doGenCInst)
 {
   NodeManager* nm = NodeManager::currentNM();
   Node antec = d_true;
@@ -680,26 +598,29 @@ Node InstExplainDb::getGeneralizedConclusion(InstExplainInst* iei,
         vars.push_back(bv);
       }
     }
-    Assert(iei);
-    Assert(iei->d_terms.size() == vars.size());
-    // construct the generalized conflicting instance
-    // notice that this bypasses the Instantiate module in QuantifiersEngine.
-    // TODO: revisit this (may want to register the instantiation there)
-    Node concsi = concBody.substitute(
-        vars.begin(), vars.end(), iei->d_terms.begin(), iei->d_terms.end());
-    Node cig = nm->mkNode(OR, conc.negate(), concsi);
-    cig = Rewriter::rewrite(cig);
-    // already register the explanation
-    if (conc.getKind() == FORALL)
+    if( doGenCInst )
     {
-      // we guard whether conc is a FORALL for the rare case where conc is
-      // rewritten to a non-quantifier (e.g. via miniscoping or variable
-      // elimination).
-      registerExplanation(cig, concsi, conc, iei->d_terms);
+      Assert(iei);
+      Assert(iei->d_terms.size() == vars.size());
+      // construct the generalized conflicting instance
+      // notice that this bypasses the Instantiate module in QuantifiersEngine.
+      // TODO: revisit this (may want to register the instantiation there)
+      Node concsi = concBody.substitute(
+          vars.begin(), vars.end(), iei->d_terms.begin(), iei->d_terms.end());
+      Node cig = nm->mkNode(OR, conc.negate(), concsi);
+      cig = Rewriter::rewrite(cig);
+      // already register the explanation
+      if (conc.getKind() == FORALL)
+      {
+        // we guard whether conc is a FORALL for the rare case where conc is
+        // rewritten to a non-quantifier (e.g. via miniscoping or variable
+        // elimination).
+        registerExplanation(cig, concsi, conc, iei->d_terms);
+      }
+      lemmas.push_back(cig);
+      Trace("ied-lemma") << "InstExplainDb::lemma (GEN-CINST): " << cig
+                        << std::endl;
     }
-    lemmas.push_back(cig);
-    Trace("ied-lemma") << "InstExplainDb::lemma (GEN-CINST): " << cig
-                       << std::endl;
   }
   else
   {

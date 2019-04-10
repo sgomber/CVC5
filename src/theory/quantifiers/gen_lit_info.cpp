@@ -15,6 +15,7 @@
 #include "theory/quantifiers/gen_lit_info.h"
 
 #include "theory/quantifiers/inst_explain_db.h"
+#include "options/quantifiers_options.h"
 
 using namespace CVC4::kind;
 
@@ -34,24 +35,6 @@ void GLitInfo::initialize(InstExplainInst* iei)
   d_assumptions.clear();
   d_conclusions.clear();
 }
-
-/*
-bool GLitInfo::initialize(TNode a,
-                          const GLitInfo& ga,
-                          TNode b,
-                          const GLitInfo& gb)
-{
-  // copy info from ga
-  d_iei = ga.d_iei;
-  d_subs_modify = ga.d_subs_modify;
-  return merge(a, b, gb);
-}
-
-bool GLitInfo::merge(TNode a, TNode b, const GLitInfo& gb, bool allowBind)
-{
-  return mergeInternal(a, b, gb, true, allowBind);
-}
-*/
 
 void GLitInfo::setConclusion(Node pl, Node opl)
 {
@@ -86,6 +69,7 @@ void GLitInfo::setOpenConclusion(Node pl, Node opl)
 }
 void GLitInfo::setOpenConclusionInternal(Node pl, Node opl)
 {
+  
   d_conclusions.erase(opl);
   d_conclusions[pl][opl].initialize(nullptr);
 }
@@ -113,7 +97,6 @@ void GLitInfo::notifyOpenConclusion(Node pl, Node opl, bool isTriv)
   {
     // otherwise, have to clear the current one if its non-trivial
     setOpenConclusionInternal(pl, opl);
-    isTriv = true;
   }
 }
 
@@ -408,10 +391,8 @@ void GLitInfo::processUPG(InstExplainDb& ied,
   bool recUPG = false;
   for (const std::pair<Node, std::map<Node, GLitInfo>>& cs : d_conclusions)
   {
-    Trace("ied-process-upg") << "...g-follow " << cs.first << std::endl;
     for (const std::pair<Node, GLitInfo>& cc : cs.second)
     {
-      Trace("ied-process-upg") << "...o-check " << cc.first << std::endl;
       // if the proof is not a leaf
       if (!cc.second.d_conclusions.empty())
       {
@@ -419,12 +400,35 @@ void GLitInfo::processUPG(InstExplainDb& ied,
         Assert(concs.empty());
         AlwaysAssert(!recUPG);
         recUPG = true;
-        // proof compress if applicable
-#if 0
-
-#endif
-        cc.second.processUPG(ied, currConc, assumptions, lemmas, subsumed_by);
-        Trace("ied-process-upg") << "...follow " << cc.first << std::endl;
+        // cut the proof if applicable
+        if( options::iexUPGCompress() )
+        {
+          // we have a subsumption of the current quantified formula if there
+          // is a sibling we generalized.
+          if( assumptions.size()>1 )
+          {
+            Assert( d_iei );
+            if (!currConc.isNull())
+            {
+              concs.push_back(currConc);
+            }
+            Assert(!cc.first.isNull());
+            concs.push_back(cc.first.negate());
+            // we do not do the generalized conflict instance in this call
+            // we prefer generalized conflicting instances from the UPG.
+            Node genConc = ied.getGeneralizedConclusion(d_iei, assumptions, concs, lemmas, subsumed_by,false);
+            // we close the open conclusion
+            assumptions.clear();
+            assumptions.push_back(genConc);
+          }
+          currConc = Node::null();
+        }
+        // can only recurse if we closed the open conclusion
+        if( currConc.isNull() )
+        {
+          Trace("ied-process-upg") << "...follow " << cc.first << std::endl;
+          cc.second.processUPG(ied, currConc, assumptions, lemmas, subsumed_by);
+        }
       }
       else
       {
@@ -435,52 +439,12 @@ void GLitInfo::processUPG(InstExplainDb& ied,
     }
   }
   // non-trivial proofs must have >1 assumptions.
-  if (assumptions.size() > 1 && !concs.empty())
+  if (!recUPG && assumptions.size() > 1 && !concs.empty())
   {
     // conclude the UPG
     ied.getGeneralizedConclusion(
         d_iei, assumptions, concs, lemmas, subsumed_by);
   }
-
-  // Trace("ied-process-upg") << "Have upg=" << (gupg!=nullptr) << ", #concs="
-  // << concs.size() << std::endl;
-  // should not have a non-trivial UPG will open leaves at this level
-  // Assert( !gupg || concs.size()==1 );
-  // If at least one part of the proof is purely general, we infer a lemma
-  // that subsumes this quantified formula.
-  /*
-if (assumptions.size() > 1)
-{
-// we conclude only at the UPG
-bool processPf = !gupg;
-if( processPf )
-{
-  if (!currConc.isNull())
-  {
-    // if we are carrying an open conclusion, add it now
-    concs.push_back(currConc);
-    // we've processed/closed it now
-    currConc = Node::null();
-  }
-  Assert(d_iei);
-  Node genConc =
-      ied.getGeneralizedConclusion(d_iei, assumptions, concs, lemmas,
-subsumed_by); Assert( !genConc.isNull() );
-  // add this quantified formula to assumptions if we are recursing
-  if (gupg)
-  {
-    assumptions.push_back(genConc);
-  }
-}
-}
-*/
-  /*
-  if (gupg)
-  {
-    // We proceed towards the conclusion.
-    gupg->processUPG(ied, currConc, assumptions, lemmas, subsumed_by);
-  }
-  */
 }
 
 unsigned GLitInfo::getScore() const { return d_conclusions.size(); }
