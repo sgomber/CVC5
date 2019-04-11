@@ -137,8 +137,8 @@ bool GLitInfo::mergeInternal(
   }
   // bound variables (in case we decide to cleanup)
   std::vector<TNode> bound_avars;
-  Trace("ied-ginfo") << "GLitInfo::merge, a : " << a << std::endl;
-  Trace("ied-ginfo") << "GLitInfo::merge, b : " << b << std::endl;
+  Trace("iex-pf") << "GLitInfo::merge, a : " << a << std::endl;
+  Trace("iex-pf") << "GLitInfo::merge, b : " << b << std::endl;
   // the visit cache and indicates unifier information
   std::map<Node, std::unordered_set<Node, NodeHashFunction>> visited;
   std::vector<Node> avisit;
@@ -160,8 +160,8 @@ bool GLitInfo::mergeInternal(
     if (va.find(curb) == va.end())
     {
       va.insert(curb);
-      Trace("ied-ginfo-debug") << "Match a:" << cura << std::endl;
-      Trace("ied-ginfo-debug") << "Match b:" << curb << std::endl;
+      Trace("iex-pf-debug") << "Match a:" << cura << std::endl;
+      Trace("iex-pf-debug") << "Match b:" << curb << std::endl;
       bool abv = cura.getKind() == BOUND_VARIABLE;
       bool bbv = curb.getKind() == BOUND_VARIABLE;
       // TODO: check that it is bound by the quantified formula
@@ -196,7 +196,7 @@ bool GLitInfo::mergeInternal(
           visited[curb].insert(cura);
           if (visited[curb].size() > 1)
           {
-            Trace("ied-ginfo") << "GLitInfo::merge: Fail: induced equality on "
+            Trace("iex-pf") << "GLitInfo::merge: Fail: induced equality on "
                                << curb << std::endl;
             matchSuccess = false;
             break;
@@ -207,7 +207,7 @@ bool GLitInfo::mergeInternal(
           // An a-variable is bound, simple.
           // FIXME:
           // P(x) { x -> f(b) } matching P(f(y)) { y -> b }, drop to x -> f(b)
-          Trace("ied-ginfo")
+          Trace("iex-pf")
               << "GLitInfo::merge: bind " << cura << " -> " << bv << std::endl;
           d_subs_modify[cura] = bv;
           bound_avars.push_back(cura);
@@ -240,10 +240,10 @@ bool GLitInfo::mergeInternal(
               if (d_subs_modify.find(x) != d_subs_modify.end())
               {
                 // bound to different things, fail?
-                Trace("ied-ginfo")
+                Trace("iex-pf")
                     << "GLitInfo::merge: Fail: " << cura << " == " << curb
                     << ", where " << curb << " == " << x << std::endl;
-                Trace("ied-ginfo")
+                Trace("iex-pf")
                     << "GLitInfo::merge: which contradicts ( "
                     << d_subs_modify[x] << " == ) " << x << " == " << curb
                     << "( == " << bv << " ) " << std::endl;
@@ -252,7 +252,7 @@ bool GLitInfo::mergeInternal(
               }
               else
               {
-                Trace("ied-ginfo") << "GLitInfo::merge: bind (backwards) " << x
+                Trace("iex-pf") << "GLitInfo::merge: bind (backwards) " << x
                                    << " -> " << av << std::endl;
                 d_subs_modify[x] = av;
               }
@@ -275,7 +275,7 @@ bool GLitInfo::mergeInternal(
             if (!bv.hasOperator() || bv.getOperator() != av.getOperator()
                 || bv.getNumChildren() != av.getNumChildren())
             {
-              Trace("ied-ginfo")
+              Trace("iex-pf")
                   << "GLitInfo::merge: Fail: clash ( " << av << " == ) " << cura
                   << " == " << curb << "( == " << bv << " ) " << std::endl;
               // wrong operators, should only happen if we within a substitution
@@ -296,7 +296,7 @@ bool GLitInfo::mergeInternal(
           }
           else
           {
-            Trace("ied-ginfo") << "GLitInfo::merge: Fail: operator ( " << av
+            Trace("iex-pf") << "GLitInfo::merge: Fail: operator ( " << av
                                << " == ) " << cura << " == " << curb
                                << "( == " << bv << " ) " << std::endl;
             // not equal and a is a variable, fail
@@ -323,7 +323,7 @@ bool GLitInfo::mergeInternal(
     d_assumptions.insert(
         d_assumptions.end(), gb.d_assumptions.begin(), gb.d_assumptions.end());
   }
-  Trace("ied-ginfo") << "GLitInfo::merge: Success!" << std::endl;
+  Trace("iex-pf") << "GLitInfo::merge: Success!" << std::endl;
   return true;
 }
 

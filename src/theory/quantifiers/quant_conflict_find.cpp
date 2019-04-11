@@ -2204,6 +2204,10 @@ void QuantConflictFind::checkQuantifiedFormula(Node q,
             // we processed it as an instantiation
             AlwaysAssert(processed);
           }
+          else
+          {
+            addedLemmas++;
+          }
         }
         processed = true;
       }

@@ -255,9 +255,9 @@ ExplainStatus InstExplainDb::explain(Node q,
                                      std::vector<Node>& lems,
                                      const char* ctx)
 {
-  Trace("ied-conflict") << "InstExplainDb::explain: Conflict in context " << ctx
+  Trace("iex") << "InstExplainDb::explain: Conflict in context " << ctx
                         << " : " << std::endl;
-  Trace("ied-conflict") << "  [QUANT] " << q << std::endl;
+  Trace("iex") << "  [QUANT] " << q << std::endl;
   Assert(q.getKind() == FORALL);
   // we have that the proofs in the range of expPf are "proof sketches", i.e.
   // EqProofs whose leaves are equalities that are explanable by eqe.
@@ -273,7 +273,7 @@ ExplainStatus InstExplainDb::explain(Node q,
     pfCounter++;
     Node elit = itp->first;
     pfNum[elit] = pfCounter;
-    Trace("ied-conflict") << "  [" << pfCounter << "]" << elit << std::endl;
+    Trace("iex") << "  [" << pfCounter << "] " << elit << std::endl;
     if (Trace.isOn("ied-proof-debug"))
     {
       Trace("ied-proof-debug")
@@ -318,14 +318,14 @@ ExplainStatus InstExplainDb::explain(Node q,
       allAssumptions.push_back(q);
       Node lem = nm->mkNode(AND, allAssumptions).negate();
       lems.push_back(lem);
-      Trace("ied-conflict")
+      Trace("iex")
           << "InstExplainDb::explain: LEMMA regressed conflict " << lem
           << std::endl;
       return EXP_STATUS_FULL;
     }
     else
     {
-      Trace("ied-conflict")
+      Trace("iex")
           << "InstExplainDb::explain: a proof failed to regress, fail."
           << std::endl;
       return EXP_STATUS_FAIL;
@@ -482,6 +482,10 @@ ExplainStatus InstExplainDb::explain(Node q,
       {
         Trace("ied-gen") << "....success generalize, open="
                          << genRoot.isOpen(elit) << std::endl;
+        if( Trace.isOn("ied-gen-debug") )
+        {
+          glc.debugPrint("ied-gen-debug",2);
+        }
         // glc.debugPrint("ied-gen");
         // Finalize the conclusion in the root. This either removes the proof
         // of elitg / elit and pushes its assumptions to the root, or otherwise
@@ -503,9 +507,9 @@ ExplainStatus InstExplainDb::explain(Node q,
   }
 
   // now, added lemmas
-  Trace("ied-conflict-debug") << "=== FINAL PROOF:" << std::endl;
-  genRoot.debugPrint("ied-conflict-debug", 2);
-  Trace("ied-conflict-debug") << "=== END FINAL PROOF" << std::endl;
+  Trace("iex-debug") << "=== FINAL PROOF:" << std::endl;
+  genRoot.debugPrint("iex-debug", 2);
+  Trace("iex-debug") << "=== END FINAL PROOF" << std::endl;
   // we start with d_null since the root proof is of false.
   genRoot.processUPG(iout, d_null);
 
@@ -525,12 +529,13 @@ ExplainStatus InstExplainDb::explain(Node q,
   }
   if (iout.d_lemmas.empty())
   {
-    Trace("ied-conflict") << "InstExplainDb::explain: No lemmas, fail."
+    Trace("iex") << "InstExplainDb::explain: No lemmas, fail."
                           << std::endl;
     return EXP_STATUS_FAIL;
   }
   // add to lemmas
   lems.insert(lems.end(), iout.d_lemmas.begin(), iout.d_lemmas.end());
+  Trace("iex") << "InstExplainDb::explain: generated " << lems.size() << " lemmas." << std::endl;
   return EXP_STATUS_FULL;
 }
 
@@ -553,13 +558,13 @@ Node InstExplainDb::getGeneralizedConclusion(InstExplainInst* iei,
   if (!concs.empty())
   {
     Node concBody = concs.size() == 1 ? concs[0] : nm->mkNode(OR, concs);
-    Trace("ied-conflict-debug")
+    Trace("iex-debug")
         << "(original) conclusion: " << concBody << std::endl;
     // check if we've already concluded this
     std::map<Node, Node>::iterator itpv = d_conc_cache[antec].find(concBody);
     if (itpv != d_conc_cache[antec].end())
     {
-      Trace("ied-conflict-debug")
+      Trace("iex-debug")
           << "InstExplainDb::WARNING: repeated conclusion" << std::endl;
       // this can happen if a conflicting instance produces the same
       // generalization as a previous round, whereas the quantified conclusion
@@ -586,9 +591,9 @@ Node InstExplainDb::getGeneralizedConclusion(InstExplainInst* iei,
       conc = Rewriter::rewrite(conc);
       lem = nm->mkNode(OR, antec.negate(), conc);
       // mark the propagating generalization
-      Trace("ied-conflict-debug") << "auto-subsume: " << std::endl;
-      Trace("ied-conflict-debug") << "  " << conc << " subsumes" << std::endl;
-      Trace("ied-conflict-debug") << "  " << q << std::endl;
+      Trace("iex-debug") << "auto-subsume: " << std::endl;
+      Trace("iex-debug") << "  " << conc << " subsumes" << std::endl;
+      Trace("iex-debug") << "  " << q << std::endl;
       Assert(d_subsume);
       // We are guaranteed that conc subsumes q.
       // We mark the conclusion to indicate that it deactivates
@@ -635,7 +640,7 @@ Node InstExplainDb::getGeneralizedConclusion(InstExplainInst* iei,
   }
   if (!lem.isNull())
   {
-    Trace("ied-conflict")
+    Trace("iex")
         << "InstExplainDb::explain: generated generalized resolution inference"
         << std::endl;
     if (Trace.isOn("ied-lemma"))

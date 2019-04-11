@@ -602,10 +602,20 @@ bool InstExplainPfGen::instExplainFind(IexOutput& iout,
           {
             // if it is purely general, we are done if r==0, otherwise,
             // we mistakenly found a purely general proof of something where
-            // we wanted an open conclusion.
+            // we needed an open conclusion.
+            best = opli;
             if( r==0 )
             {
-              best = opli;
+              break;
+            }
+            else
+            {
+              // should have already found this when r was 0
+              Assert( !g.checkCompatible(opl, opli) );
+              // if we needed an open conclusion, we explicitly add "true"
+              // as the open conclusion, which will become the UPG.
+              Node t = NodeManager::currentNM()->mkConst(true);
+              pconcs[opli].setOpenConclusion(t,t);
               break;
             }
           }
