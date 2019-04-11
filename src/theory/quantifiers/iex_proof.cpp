@@ -197,7 +197,7 @@ bool IexProof::mergeInternal(
           if (visited[curb].size() > 1)
           {
             Trace("iex-pf") << "IexProof::merge: Fail: induced equality on "
-                               << curb << std::endl;
+                            << curb << std::endl;
             matchSuccess = false;
             break;
           }
@@ -207,8 +207,8 @@ bool IexProof::mergeInternal(
           // An a-variable is bound, simple.
           // FIXME:
           // P(x) { x -> f(b) } matching P(f(y)) { y -> b }, drop to x -> f(b)
-          Trace("iex-pf")
-              << "IexProof::merge: bind " << cura << " -> " << bv << std::endl;
+          Trace("iex-pf") << "IexProof::merge: bind " << cura << " -> " << bv
+                          << std::endl;
           d_subs_modify[cura] = bv;
           bound_avars.push_back(cura);
         }
@@ -253,7 +253,7 @@ bool IexProof::mergeInternal(
               else
               {
                 Trace("iex-pf") << "IexProof::merge: bind (backwards) " << x
-                                   << " -> " << av << std::endl;
+                                << " -> " << av << std::endl;
                 d_subs_modify[x] = av;
               }
             }
@@ -297,8 +297,8 @@ bool IexProof::mergeInternal(
           else
           {
             Trace("iex-pf") << "IexProof::merge: Fail: operator ( " << av
-                               << " == ) " << cura << " == " << curb
-                               << "( == " << bv << " ) " << std::endl;
+                            << " == ) " << cura << " == " << curb
+                            << "( == " << bv << " ) " << std::endl;
             // not equal and a is a variable, fail
             return false;
           }

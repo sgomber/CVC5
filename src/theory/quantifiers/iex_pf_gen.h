@@ -32,10 +32,10 @@ namespace quantifiers {
 class InstExplainDb;
 
 /** Instantiation explain proof generator
- * 
+ *
  * This class implements the main algorithms of the instiation explantaion
  * inference system.
- * 
+ *
  */
 class InstExplainPfGen
 {

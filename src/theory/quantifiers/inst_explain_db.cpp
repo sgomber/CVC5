@@ -14,6 +14,7 @@
 
 #include "theory/quantifiers/inst_explain_db.h"
 
+#include "expr/node_algorithm.h"
 #include "options/quantifiers_options.h"
 #include "proof/uf_proof.h"
 #include "smt/smt_statistics_registry.h"
@@ -22,7 +23,6 @@
 #include "theory/quantifiers/term_util.h"
 #include "theory/quantifiers_engine.h"
 #include "theory/rewriter.h"
-#include "expr/node_algorithm.h"
 
 using namespace CVC4::kind;
 
@@ -256,8 +256,8 @@ ExplainStatus InstExplainDb::explain(Node q,
                                      std::vector<Node>& lems,
                                      const char* ctx)
 {
-  Trace("iex") << "InstExplainDb::explain: Conflict in context " << ctx
-                        << " : " << std::endl;
+  Trace("iex") << "InstExplainDb::explain: Conflict in context " << ctx << " : "
+               << std::endl;
   Trace("iex") << "  [QUANT] " << q << std::endl;
   Assert(q.getKind() == FORALL);
   // we have that the proofs in the range of expPf are "proof sketches", i.e.
@@ -319,16 +319,14 @@ ExplainStatus InstExplainDb::explain(Node q,
       allAssumptions.push_back(q);
       Node lem = nm->mkNode(AND, allAssumptions).negate();
       lems.push_back(lem);
-      Trace("iex")
-          << "InstExplainDb::explain: LEMMA regressed conflict " << lem
-          << std::endl;
+      Trace("iex") << "InstExplainDb::explain: LEMMA regressed conflict " << lem
+                   << std::endl;
       return EXP_STATUS_FULL;
     }
     else
     {
-      Trace("iex")
-          << "InstExplainDb::explain: a proof failed to regress, fail."
-          << std::endl;
+      Trace("iex") << "InstExplainDb::explain: a proof failed to regress, fail."
+                   << std::endl;
       return EXP_STATUS_FAIL;
     }
   }
@@ -483,9 +481,9 @@ ExplainStatus InstExplainDb::explain(Node q,
       {
         Trace("ied-gen") << "....success generalize, open="
                          << genRoot.isOpen(elit) << std::endl;
-        if( Trace.isOn("ied-gen-debug") )
+        if (Trace.isOn("ied-gen-debug"))
         {
-          glc.debugPrint("ied-gen-debug",2);
+          glc.debugPrint("ied-gen-debug", 2);
         }
         // glc.debugPrint("ied-gen");
         // Finalize the conclusion in the root. This either removes the proof
@@ -530,13 +528,13 @@ ExplainStatus InstExplainDb::explain(Node q,
   }
   if (iout.d_lemmas.empty())
   {
-    Trace("iex") << "InstExplainDb::explain: No lemmas, fail."
-                          << std::endl;
+    Trace("iex") << "InstExplainDb::explain: No lemmas, fail." << std::endl;
     return EXP_STATUS_FAIL;
   }
   // add to lemmas
   lems.insert(lems.end(), iout.d_lemmas.begin(), iout.d_lemmas.end());
-  Trace("iex") << "InstExplainDb::explain: generated " << lems.size() << " lemmas." << std::endl;
+  Trace("iex") << "InstExplainDb::explain: generated " << lems.size()
+               << " lemmas." << std::endl;
   return EXP_STATUS_FULL;
 }
 
@@ -558,14 +556,13 @@ Node InstExplainDb::getGeneralizedConclusion(InstExplainInst* iei,
   if (!concs.empty())
   {
     Node concBody = concs.size() == 1 ? concs[0] : nm->mkNode(OR, concs);
-    Trace("iex-debug")
-        << "(original) conclusion: " << concBody << std::endl;
+    Trace("iex-debug") << "(original) conclusion: " << concBody << std::endl;
     // check if we've already concluded this
     std::map<Node, Node>::iterator itpv = d_conc_cache[antec].find(concBody);
     if (itpv != d_conc_cache[antec].end())
     {
-      Trace("iex-debug")
-          << "InstExplainDb::WARNING: repeated conclusion" << std::endl;
+      Trace("iex-debug") << "InstExplainDb::WARNING: repeated conclusion"
+                         << std::endl;
       // this can happen if a conflicting instance produces the same
       // generalization as a previous round, whereas the quantified conclusion
       // of that round did not generate the conflicting instance it could have.
@@ -573,7 +570,7 @@ Node InstExplainDb::getGeneralizedConclusion(InstExplainInst* iei,
     }
     Node q;
     // get the quantified formula if we have an InstExplainInst reference
-    if( iei )
+    if (iei)
     {
       q = iei->getQuantifiedFormula();
       Assert(!q.isNull());
@@ -581,7 +578,7 @@ Node InstExplainDb::getGeneralizedConclusion(InstExplainInst* iei,
     std::vector<Node> vars;
     if (conc.isNull())
     {
-      if( q.isNull() )
+      if (q.isNull())
       {
         conc = concBody;
       }
@@ -602,7 +599,7 @@ Node InstExplainDb::getGeneralizedConclusion(InstExplainInst* iei,
         conc = Rewriter::rewrite(conc);
       }
       // should not have free variables, otherwise we likely have the wrong q.
-      Assert( !expr::hasFreeVar(conc) );
+      Assert(!expr::hasFreeVar(conc));
       lem = nm->mkNode(OR, antec.negate(), conc);
       // mark the propagating generalization
       Trace("iex-debug") << "auto-subsume: " << std::endl;
@@ -616,7 +613,7 @@ Node InstExplainDb::getGeneralizedConclusion(InstExplainInst* iei,
       // remember that this generalization used this quantified formula
       d_conc_cache[antec][concBody] = conc;
     }
-    else if( !q.isNull() )
+    else if (!q.isNull())
     {
       for (const Node& bv : q[0])
       {

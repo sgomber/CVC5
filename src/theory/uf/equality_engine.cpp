@@ -969,7 +969,7 @@ void EqualityEngine::explainEquality(TNode t1, TNode t2, bool polarity,
           toExplain.first, toExplain.second, equalities, cache, eqpc.get());
 
       if (eqpc) {
-        if( Debug.isOn("pf::ee") )
+        if (Debug.isOn("pf::ee"))
         {
           Debug("pf::ee") << "Child proof is:" << std::endl;
           eqpc->debug_print("pf::ee", 1);
@@ -991,9 +991,11 @@ void EqualityEngine::explainEquality(TNode t1, TNode t2, bool polarity,
 
           if (nullCongruenceFound) {
             eqpc->d_children = orderedChildren;
-            if( Debug.isOn("pf::ee") )
+            if (Debug.isOn("pf::ee"))
             {
-              Debug("pf::ee") << "Child proof's children have been reordered. It is now:" << std::endl;
+              Debug("pf::ee")
+                  << "Child proof's children have been reordered. It is now:"
+                  << std::endl;
               eqpc->debug_print("pf::ee", 1);
             }
           }
@@ -1018,7 +1020,7 @@ void EqualityEngine::explainEquality(TNode t1, TNode t2, bool polarity,
         *eqp = *temp;
       }
 
-      if( Debug.isOn("pf::ee") )
+      if (Debug.isOn("pf::ee"))
       {
         Debug("pf::ee") << "Disequality explanation final proof: " << std::endl;
         eqp->debug_print("pf::ee", 1);
@@ -1265,9 +1267,11 @@ void EqualityEngine::getExplanation(
                                eqpcc.get());
                 if( eqpc ) {
                   eqpc->d_children.push_back( eqpcc );
-                  if( Debug.isOn("pf::ee") )
+                  if (Debug.isOn("pf::ee"))
                   {
-                    Debug("pf::ee") << "MERGED_THROUGH_CONSTANTS. Dumping the child proof" << std::endl;
+                    Debug("pf::ee")
+                        << "MERGED_THROUGH_CONSTANTS. Dumping the child proof"
+                        << std::endl;
                     eqpc->debug_print("pf::ee", 1);
                   }
                 }
@@ -1339,7 +1343,7 @@ void EqualityEngine::getExplanation(
               eqp->d_children.insert( eqp->d_children.end(), eqp_trans.begin(), eqp_trans.end() );
               eqp->d_node = NodeManager::currentNM()->mkNode(kind::EQUAL, d_nodes[t1Id], d_nodes[t2Id]);
             }
-            if( Debug.isOn("pf::ee" ) )
+            if (Debug.isOn("pf::ee"))
             {
               eqp->debug_print("pf::ee", 1);
             }
