@@ -31,6 +31,12 @@ namespace quantifiers {
 
 class InstExplainDb;
 
+/** Instantiation explain proof generator
+ * 
+ * This class implements the main algorithms of the instiation explantaion
+ * inference system.
+ * 
+ */
 class InstExplainPfGen
 {
  public:
@@ -65,7 +71,7 @@ class InstExplainPfGen
   bool generalize(IexOutput& iout,
                   Node tgtLit,
                   eq::EqProof* eqp,
-                  GLitInfo& g,
+                  IexProof& g,
                   bool reqPureGen,
                   unsigned tb = 0);
 
@@ -122,7 +128,7 @@ class InstExplainPfGen
   Node generalizeInternal(IexOutput& iout,
                           Node tgtLit,
                           eq::EqProof* eqp,
-                          GLitInfo& g,
+                          IexProof& g,
                           std::map<eq::EqProof*, Node>& concs,
                           bool reqPureGen,
                           std::map<Node, bool>& genPath,
@@ -159,7 +165,7 @@ class InstExplainPfGen
    * c is the name of a Trace, and tb is number of tabs (for debug printing).
    */
   bool instExplain(IexOutput& iout,
-                   GLitInfo& g,
+                   IexProof& g,
                    Node olit,
                    Node lit,
                    Node inst,
@@ -180,7 +186,7 @@ class InstExplainPfGen
    * 3. (FAIL) g is unmodified. Return false.
    */
   bool instExplainFind(IexOutput& iout,
-                       GLitInfo& g,
+                       IexProof& g,
                        Node opl,
                        Node pl,
                        Node inst,

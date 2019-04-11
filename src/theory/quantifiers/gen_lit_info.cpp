@@ -36,12 +36,12 @@ bool IexOutput::empty() const
   return d_lemmas.empty() && d_subsumed_by.empty();
 }
 
-bool GLitInfo::empty() const
+bool IexProof::empty() const
 {
   return d_subs_modify.empty() && d_assumptions.empty()
          && d_conclusions.empty();
 }
-void GLitInfo::initialize(InstExplainInst* iei)
+void IexProof::initialize(InstExplainInst* iei)
 {
   d_iei = iei;
   d_subs_modify.clear();
@@ -49,14 +49,14 @@ void GLitInfo::initialize(InstExplainInst* iei)
   d_conclusions.clear();
 }
 
-void GLitInfo::setConclusion(Node pl, Node opl)
+void IexProof::setConclusion(Node pl, Node opl)
 {
-  std::map<Node, std::map<Node, GLitInfo>>::iterator it =
+  std::map<Node, std::map<Node, IexProof>>::iterator it =
       d_conclusions.find(pl);
   Assert(it != d_conclusions.end());
   // should have cleaned up all others if we are here
   Assert(it->second.size() == 1);
-  std::map<Node, GLitInfo>::iterator it2 = it->second.find(opl);
+  std::map<Node, IexProof>::iterator it2 = it->second.find(opl);
   Assert(it2 != it->second.end());
   // if child is purely general, we can compress and remove this
   if (it2->second.isPurelyGeneral())
@@ -73,20 +73,20 @@ void GLitInfo::setConclusion(Node pl, Node opl)
     notifyOpenConclusion(pl, opl, false);
   }
 }
-void GLitInfo::setOpenConclusion(Node pl, Node opl)
+void IexProof::setOpenConclusion(Node pl, Node opl)
 {
   // it is an open conclusion, clear its proof
   setOpenConclusionInternal(pl, opl);
   // must register it as UPG
   notifyOpenConclusion(pl, opl, true);
 }
-void GLitInfo::setOpenConclusionInternal(Node pl, Node opl)
+void IexProof::setOpenConclusionInternal(Node pl, Node opl)
 {
   d_conclusions.erase(opl);
   d_conclusions[pl][opl].initialize(nullptr);
 }
 
-void GLitInfo::notifyOpenConclusion(Node pl, Node opl, bool isTriv)
+void IexProof::notifyOpenConclusion(Node pl, Node opl, bool isTriv)
 {
   std::vector<Node> lemmas;
   Assert(!opl.isNull());
@@ -117,18 +117,18 @@ void GLitInfo::notifyOpenConclusion(Node pl, Node opl, bool isTriv)
   }
 }
 
-bool GLitInfo::checkCompatible(TNode a, TNode b, const GLitInfo& gb)
+bool IexProof::checkCompatible(TNode a, TNode b, const IexProof& gb)
 {
   return mergeInternal(a, b, gb, false, false);
 }
-bool GLitInfo::checkCompatible(TNode a, TNode b)
+bool IexProof::checkCompatible(TNode a, TNode b)
 {
-  GLitInfo gb;
+  IexProof gb;
   return mergeInternal(a, b, gb, false, false);
 }
 
-bool GLitInfo::mergeInternal(
-    TNode a, TNode b, const GLitInfo& gb, bool doMerge, bool allowBind)
+bool IexProof::mergeInternal(
+    TNode a, TNode b, const IexProof& gb, bool doMerge, bool allowBind)
 {
   // cannot carry conclusions currently
   if (doMerge && !gb.d_conclusions.empty())
@@ -137,8 +137,8 @@ bool GLitInfo::mergeInternal(
   }
   // bound variables (in case we decide to cleanup)
   std::vector<TNode> bound_avars;
-  Trace("iex-pf") << "GLitInfo::merge, a : " << a << std::endl;
-  Trace("iex-pf") << "GLitInfo::merge, b : " << b << std::endl;
+  Trace("iex-pf") << "IexProof::merge, a : " << a << std::endl;
+  Trace("iex-pf") << "IexProof::merge, b : " << b << std::endl;
   // the visit cache and indicates unifier information
   std::map<Node, std::unordered_set<Node, NodeHashFunction>> visited;
   std::vector<Node> avisit;
@@ -196,7 +196,7 @@ bool GLitInfo::mergeInternal(
           visited[curb].insert(cura);
           if (visited[curb].size() > 1)
           {
-            Trace("iex-pf") << "GLitInfo::merge: Fail: induced equality on "
+            Trace("iex-pf") << "IexProof::merge: Fail: induced equality on "
                                << curb << std::endl;
             matchSuccess = false;
             break;
@@ -208,7 +208,7 @@ bool GLitInfo::mergeInternal(
           // FIXME:
           // P(x) { x -> f(b) } matching P(f(y)) { y -> b }, drop to x -> f(b)
           Trace("iex-pf")
-              << "GLitInfo::merge: bind " << cura << " -> " << bv << std::endl;
+              << "IexProof::merge: bind " << cura << " -> " << bv << std::endl;
           d_subs_modify[cura] = bv;
           bound_avars.push_back(cura);
         }
@@ -241,10 +241,10 @@ bool GLitInfo::mergeInternal(
               {
                 // bound to different things, fail?
                 Trace("iex-pf")
-                    << "GLitInfo::merge: Fail: " << cura << " == " << curb
+                    << "IexProof::merge: Fail: " << cura << " == " << curb
                     << ", where " << curb << " == " << x << std::endl;
                 Trace("iex-pf")
-                    << "GLitInfo::merge: which contradicts ( "
+                    << "IexProof::merge: which contradicts ( "
                     << d_subs_modify[x] << " == ) " << x << " == " << curb
                     << "( == " << bv << " ) " << std::endl;
                 matchSuccess = false;
@@ -252,7 +252,7 @@ bool GLitInfo::mergeInternal(
               }
               else
               {
-                Trace("iex-pf") << "GLitInfo::merge: bind (backwards) " << x
+                Trace("iex-pf") << "IexProof::merge: bind (backwards) " << x
                                    << " -> " << av << std::endl;
                 d_subs_modify[x] = av;
               }
@@ -276,7 +276,7 @@ bool GLitInfo::mergeInternal(
                 || bv.getNumChildren() != av.getNumChildren())
             {
               Trace("iex-pf")
-                  << "GLitInfo::merge: Fail: clash ( " << av << " == ) " << cura
+                  << "IexProof::merge: Fail: clash ( " << av << " == ) " << cura
                   << " == " << curb << "( == " << bv << " ) " << std::endl;
               // wrong operators, should only happen if we within a substitution
               Assert(cura.getKind() == BOUND_VARIABLE
@@ -296,7 +296,7 @@ bool GLitInfo::mergeInternal(
           }
           else
           {
-            Trace("iex-pf") << "GLitInfo::merge: Fail: operator ( " << av
+            Trace("iex-pf") << "IexProof::merge: Fail: operator ( " << av
                                << " == ) " << cura << " == " << curb
                                << "( == " << bv << " ) " << std::endl;
             // not equal and a is a variable, fail
@@ -323,19 +323,19 @@ bool GLitInfo::mergeInternal(
     d_assumptions.insert(
         d_assumptions.end(), gb.d_assumptions.begin(), gb.d_assumptions.end());
   }
-  Trace("iex-pf") << "GLitInfo::merge: Success!" << std::endl;
+  Trace("iex-pf") << "IexProof::merge: Success!" << std::endl;
   return true;
 }
 
-bool GLitInfo::drop(TNode b)
+bool IexProof::drop(TNode b)
 {
   // drop free variables
   return true;
 }
 
-bool GLitInfo::isPurelyGeneral() const { return d_conclusions.empty(); }
+bool IexProof::isPurelyGeneral() const { return d_conclusions.empty(); }
 
-Node GLitInfo::getAssumptions() const
+Node IexProof::getAssumptions() const
 {
   NodeManager* nm = NodeManager::currentNM();
   if (d_assumptions.empty())
@@ -346,14 +346,14 @@ Node GLitInfo::getAssumptions() const
                                    : nm->mkNode(AND, d_assumptions);
 }
 
-bool GLitInfo::isOpen(Node lit) const
+bool IexProof::isOpen(Node lit) const
 {
   return d_conclusions.find(lit) != d_conclusions.end();
 }
 
-bool GLitInfo::hasUPG() const { return true; }
+bool IexProof::hasUPG() const { return true; }
 
-InstExplainInst* GLitInfo::getUPG(std::vector<Node>& concs,
+InstExplainInst* IexProof::getUPG(std::vector<Node>& concs,
                                   Node& quant,
                                   std::vector<Node>& assumptions) const
 {
@@ -362,9 +362,9 @@ InstExplainInst* GLitInfo::getUPG(std::vector<Node>& concs,
   assumptions.insert(
       assumptions.end(), d_assumptions.begin(), d_assumptions.end());
   bool addedConc = false;
-  for (const std::pair<Node, std::map<Node, GLitInfo>>& cs : d_conclusions)
+  for (const std::pair<Node, std::map<Node, IexProof>>& cs : d_conclusions)
   {
-    for (const std::pair<Node, GLitInfo>& cc : cs.second)
+    for (const std::pair<Node, IexProof>& cc : cs.second)
     {
       // are we a leaf? if so, we must add to conclusions
       if (cc.second.d_conclusions.empty())
@@ -393,14 +393,14 @@ InstExplainInst* GLitInfo::getUPG(std::vector<Node>& concs,
   }
   return ret;
 }
-void GLitInfo::processUPG(IexOutput& iout, Node currConc) const
+void IexProof::processUPG(IexOutput& iout, Node currConc) const
 {
   // start with no assumptions
   std::vector<Node> assumptions;
   processUPGInternal(iout, currConc, assumptions);
 }
 
-void GLitInfo::processUPGInternal(IexOutput& iout,
+void IexProof::processUPGInternal(IexOutput& iout,
                                   Node currConc,
                                   std::vector<Node>& assumptions) const
 {
@@ -411,9 +411,9 @@ void GLitInfo::processUPGInternal(IexOutput& iout,
       assumptions.end(), d_assumptions.begin(), d_assumptions.end());
   std::vector<Node> concs;
   bool recUPG = false;
-  for (const std::pair<Node, std::map<Node, GLitInfo>>& cs : d_conclusions)
+  for (const std::pair<Node, std::map<Node, IexProof>>& cs : d_conclusions)
   {
-    for (const std::pair<Node, GLitInfo>& cc : cs.second)
+    for (const std::pair<Node, IexProof>& cc : cs.second)
     {
       // if the proof is not a leaf
       if (!cc.second.d_conclusions.empty())
@@ -469,16 +469,16 @@ void GLitInfo::processUPGInternal(IexOutput& iout,
   }
 }
 
-unsigned GLitInfo::getScore() const { return d_conclusions.size(); }
+unsigned IexProof::getScore() const { return d_conclusions.size(); }
 
-void GLitInfo::indent(const char* c, unsigned tb) const
+void IexProof::indent(const char* c, unsigned tb) const
 {
   for (unsigned i = 0; i < tb; i++)
   {
     Trace(c) << " ";
   }
 }
-void GLitInfo::debugPrint(const char* c, unsigned tb, bool rec) const
+void IexProof::debugPrint(const char* c, unsigned tb, bool rec) const
 {
   if (Trace.isOn(c))
   {
@@ -517,9 +517,9 @@ void GLitInfo::debugPrint(const char* c, unsigned tb, bool rec) const
     }
     else
     {
-      for (const std::pair<Node, std::map<Node, GLitInfo>>& cs : d_conclusions)
+      for (const std::pair<Node, std::map<Node, IexProof>>& cs : d_conclusions)
       {
-        for (const std::pair<Node, GLitInfo>& cc : cs.second)
+        for (const std::pair<Node, IexProof>& cc : cs.second)
         {
           indent(c, tb + 2);
           Trace(c) << cs.first << " / " << cc.first;

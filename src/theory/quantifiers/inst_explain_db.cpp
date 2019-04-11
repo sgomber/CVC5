@@ -444,7 +444,7 @@ ExplainStatus InstExplainDb::explain(Node q,
   InstExplainInst conflict;
   conflict.initialize(Node::null(), Node::null(), q, terms);
   // the generalization information across the conflicting literal set
-  GLitInfo genRoot;
+  IexProof genRoot;
   genRoot.initialize(&conflict);
   // it has the conflicting quantified formula as an assumption always.
   // This is necessarily manual since genRoot is not built via an IEX inference.
@@ -477,7 +477,7 @@ ExplainStatus InstExplainDb::explain(Node q,
       // in the current context.
       Node elitg = elit;
       // We will fill the proof glc.
-      GLitInfo& glc = genRoot.d_conclusions[elitg][elit];
+      IexProof& glc = genRoot.d_conclusions[elitg][elit];
       if (d_iexpfg.generalize(iout, elit, pfp, glc, reqPureGen, 1))
       {
         Trace("ied-gen") << "....success generalize, open="
@@ -554,7 +554,6 @@ Node InstExplainDb::getGeneralizedConclusion(InstExplainInst* iei,
   }
   Node lem;
   Node conc;
-  Assert(iei);
   if (!concs.empty())
   {
     Node concBody = concs.size() == 1 ? concs[0] : nm->mkNode(OR, concs);
@@ -571,24 +570,38 @@ Node InstExplainDb::getGeneralizedConclusion(InstExplainInst* iei,
       // of that round did not generate the conflicting instance it could have.
       conc = itpv->second;
     }
-    Node q = iei->getQuantifiedFormula();
-    Assert(!q.isNull());
+    Node q;
+    // get the quantified formula if we have an InstExplainInst reference
+    if( iei )
+    {
+      q = iei->getQuantifiedFormula();
+      Assert(!q.isNull());
+    }
     std::vector<Node> vars;
     if (conc.isNull())
     {
-      std::vector<Node> newVars;
-      for (const Node& bv : q[0])
+      if( q.isNull() )
       {
-        vars.push_back(bv);
-        Node bvn = nm->mkBoundVar(bv.getType());
-        newVars.push_back(bvn);
+        conc = concBody;
       }
-      Node concsubs = concBody.substitute(
-          vars.begin(), vars.end(), newVars.begin(), newVars.end());
-      concsubs = Rewriter::rewrite(concsubs);
-      Node bvl = nm->mkNode(BOUND_VAR_LIST, newVars);
-      conc = nm->mkNode(FORALL, bvl, concsubs);
-      conc = Rewriter::rewrite(conc);
+      else
+      {
+        std::vector<Node> newVars;
+        for (const Node& bv : q[0])
+        {
+          vars.push_back(bv);
+          Node bvn = nm->mkBoundVar(bv.getType());
+          newVars.push_back(bvn);
+        }
+        Node concsubs = concBody.substitute(
+            vars.begin(), vars.end(), newVars.begin(), newVars.end());
+        concsubs = Rewriter::rewrite(concsubs);
+        Node bvl = nm->mkNode(BOUND_VAR_LIST, newVars);
+        conc = nm->mkNode(FORALL, bvl, concsubs);
+        conc = Rewriter::rewrite(conc);
+      }
+      // should not have free variables, otherwise we likely have the wrong q.
+      Assert( !expr::hasFreeVar(conc) );
       lem = nm->mkNode(OR, antec.negate(), conc);
       // mark the propagating generalization
       Trace("iex-debug") << "auto-subsume: " << std::endl;
@@ -602,16 +615,15 @@ Node InstExplainDb::getGeneralizedConclusion(InstExplainInst* iei,
       // remember that this generalization used this quantified formula
       d_conc_cache[antec][concBody] = conc;
     }
-    else
+    else if( !q.isNull() )
     {
       for (const Node& bv : q[0])
       {
         vars.push_back(bv);
       }
     }
-    if (doGenCInst)
+    if (doGenCInst && iei)
     {
-      Assert(iei);
       Assert(iei->d_terms.size() == vars.size());
       // construct the generalized conflicting instance
       // notice that this bypasses the Instantiate module in QuantifiersEngine.

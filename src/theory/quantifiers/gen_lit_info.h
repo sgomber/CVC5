@@ -48,7 +48,7 @@ class IexOutput
   std::map<Node, Node> d_subsumed_by;
 };
 
-/** generalized literal information
+/** instantiation explain proof
  *
  * This stores the state of a generalized literal. This consists of three parts:
  * (1) A substitution,
@@ -77,10 +77,10 @@ class IexOutput
  *   assumptions |= forall x. ( L * SUBS(G) ) V conclusions
  * where x are the free variables of L * SUBS(G), conclusions.
  */
-class GLitInfo
+class IexProof
 {
  public:
-  GLitInfo() : d_iei(nullptr), d_upgTriv(true) {}
+  IexProof() : d_iei(nullptr), d_upgTriv(true) {}
   /** is empty */
   bool empty() const;
   /** the instantiation lemma that this generalization is based on */
@@ -91,7 +91,7 @@ class GLitInfo
   /** required assumptions */
   std::vector<Node> d_assumptions;
   /** required conclusions, which are themselves generalized literals */
-  std::map<Node, std::map<Node, GLitInfo> > d_conclusions;
+  std::map<Node, std::map<Node, IexProof> > d_conclusions;
   /** initialize this information
    *
    * This sets d_iei to iei and clears everything else.
@@ -130,7 +130,7 @@ class GLitInfo
   /**
    * Check whether ( b * SUBS(gb) ) is a generalization of a.
    */
-  bool checkCompatible(TNode a, TNode b, const GLitInfo& gb);
+  bool checkCompatible(TNode a, TNode b, const IexProof& gb);
   /**
    * Check whether b is a generalization of a.
    */
@@ -170,7 +170,7 @@ class GLitInfo
 
  private:
   bool mergeInternal(
-      TNode a, TNode b, const GLitInfo& gb, bool doMerge, bool allowBind);
+      TNode a, TNode b, const IexProof& gb, bool doMerge, bool allowBind);
   /** indent tb tabulations on trace c */
   void indent(const char* c, unsigned tb) const;
   /**

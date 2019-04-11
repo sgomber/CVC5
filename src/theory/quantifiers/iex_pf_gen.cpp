@@ -81,7 +81,7 @@ bool InstExplainPfGen::regressExplain(EqExplainer* eqe,
 bool InstExplainPfGen::generalize(IexOutput& iout,
                                   Node tgtLit,
                                   eq::EqProof* eqp,
-                                  GLitInfo& g,
+                                  IexProof& g,
                                   bool reqPureGen,
                                   unsigned tb)
 {
@@ -96,7 +96,7 @@ bool InstExplainPfGen::generalize(IexOutput& iout,
 Node InstExplainPfGen::generalizeInternal(IexOutput& iout,
                                           Node tgtLit,
                                           eq::EqProof* eqp,
-                                          GLitInfo& g,
+                                          IexProof& g,
                                           std::map<eq::EqProof*, Node>& concs,
                                           bool reqPureGen,
                                           std::map<Node, bool>& genPath,
@@ -314,7 +314,7 @@ Node InstExplainPfGen::generalizeInternal(IexOutput& iout,
 }
 
 bool InstExplainPfGen::instExplain(IexOutput& iout,
-                                   GLitInfo& g,
+                                   IexProof& g,
                                    Node olit,
                                    Node lit,
                                    Node inst,
@@ -493,7 +493,7 @@ bool InstExplainPfGen::instExplain(IexOutput& iout,
 }
 
 bool InstExplainPfGen::instExplainFind(IexOutput& iout,
-                                       GLitInfo& g,
+                                       IexProof& g,
                                        Node opl,
                                        Node pl,
                                        Node inst,
@@ -532,7 +532,7 @@ bool InstExplainPfGen::instExplainFind(IexOutput& iout,
   Assert(!opl.isNull());
   // populate choices for the proof regression, which we store in
   // g.d_conclusions[opl]
-  std::map<Node, GLitInfo>& pconcs = g.d_conclusions[opl];
+  std::map<Node, IexProof>& pconcs = g.d_conclusions[opl];
   Assert(pconcs.empty());
   // the (generalized) literal whose proof was the best
   Node best;
