@@ -533,7 +533,7 @@ bool InstExplainPfGen::instExplainFind(IexOutput& iout,
   // populate choices for the proof regression, which we store in
   // g.d_conclusions[opl]
   std::map<Node, GLitInfo>& pconcs = g.d_conclusions[opl];
-  Assert( pconcs.empty() );
+  Assert(pconcs.empty());
   // the (generalized) literal whose proof was the best
   Node best;
   // we proceed into two phases:
@@ -579,7 +579,7 @@ bool InstExplainPfGen::instExplainFind(IexOutput& iout,
         Trace(c) << "  ...compatible, recurse, phase="
                  << (r == 0 ? "assume" : "conclude") << std::endl;
         // recurse now
-        Assert( opl.isNull() || pconcs.find(opli)==pconcs.end() );
+        Assert(opl.isNull() || pconcs.find(opli) == pconcs.end());
         bool undoOpli = true;
         if (instExplain(iout,
                         pconcs[opli],
