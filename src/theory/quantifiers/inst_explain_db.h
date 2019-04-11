@@ -21,7 +21,6 @@
 #include <vector>
 #include "expr/node.h"
 #include "theory/quantifiers/equality_explain.h"
-#include "theory/quantifiers/gen_lit_info.h"
 #include "theory/quantifiers/iex_pf_gen.h"
 #include "theory/quantifiers/inst_explain.h"
 #include "theory/quantifiers/subsume.h"

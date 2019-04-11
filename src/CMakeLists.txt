@@ -500,10 +500,10 @@ libcvc4_add_sources(
   theory/quantifiers/fmf/model_engine.h
   theory/quantifiers/fun_def_process.cpp
   theory/quantifiers/fun_def_process.h
-  theory/quantifiers/gen_lit_info.cpp
-  theory/quantifiers/gen_lit_info.h
   theory/quantifiers/iex_pf_gen.cpp
   theory/quantifiers/iex_pf_gen.h
+  theory/quantifiers/iex_proof.cpp
+  theory/quantifiers/iex_proof.h
   theory/quantifiers/inst_explain.cpp
   theory/quantifiers/inst_explain.h
   theory/quantifiers/inst_explain_db.cpp

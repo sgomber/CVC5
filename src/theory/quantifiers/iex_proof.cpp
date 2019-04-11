@@ -1,5 +1,5 @@
 /*********************                                                        */
-/*! \file gen_lit_info.cpp
+/*! \file iex_proof.cpp
  ** \verbatim
  ** Top contributors (to current version):
  **   Andrew Reynolds
@@ -9,10 +9,10 @@
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
- ** \brief Generalized literal info
+ ** \brief Implementation of instantiation explain proof class
  **/
 
-#include "theory/quantifiers/gen_lit_info.h"
+#include "theory/quantifiers/iex_proof.h"
 
 #include "options/quantifiers_options.h"
 #include "theory/quantifiers/inst_explain_db.h"

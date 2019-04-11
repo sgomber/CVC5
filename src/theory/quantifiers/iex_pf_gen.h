@@ -21,7 +21,7 @@
 #include <vector>
 #include "expr/node.h"
 #include "theory/quantifiers/equality_explain.h"
-#include "theory/quantifiers/gen_lit_info.h"
+#include "theory/quantifiers/iex_proof.h"
 #include "theory/quantifiers/inst_explain.h"
 #include "theory/quantifiers_engine.h"
 

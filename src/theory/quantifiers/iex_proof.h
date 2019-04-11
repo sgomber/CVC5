@@ -1,5 +1,5 @@
 /*********************                                                        */
-/*! \file gen_lit_info.h
+/*! \file iex_proof.h
  ** \verbatim
  ** Top contributors (to current version):
  **   Andrew Reynolds
@@ -9,13 +9,13 @@
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
- ** \brief Generalized literal info
+ ** \brief Instantiation explain proof class
  **/
 
 #include "cvc4_private.h"
 
-#ifndef __CVC4__THEORY__QUANTIFIERS__GEN_LIT_INFO_H
-#define __CVC4__THEORY__QUANTIFIERS__GEN_LIT_INFO_H
+#ifndef __CVC4__THEORY__QUANTIFIERS__IEX_PROOF_H
+#define __CVC4__THEORY__QUANTIFIERS__IEX_PROOF_H
 
 #include <map>
 #include <vector>
@@ -220,4 +220,4 @@ class IexProof
 }  // namespace theory
 }  // namespace CVC4
 
-#endif /* __CVC4__THEORY__QUANTIFIERS__GEN_LIT_INFO_H */
+#endif /* __CVC4__THEORY__QUANTIFIERS__IEX_PROOF_H */
