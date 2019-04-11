@@ -231,6 +231,8 @@ Node InstExplainPfGen::generalizeInternal(IexOutput& iout,
   }
   else if (id == eq::MERGED_THROUGH_CONSTANTS)
   {
+    // FIXME
+    return Node::null();
     //???
     Trace("ied-gen") << "ied-pf: constants ???" << std::endl;
     AlwaysAssert(false);
@@ -504,7 +506,7 @@ bool InstExplainPfGen::instExplainFind(IexOutput& iout,
   if (!d_ied.findInstExplainLit(pl, itl))
   {
     // no instantiation information for ground literal, we fail
-    g.setOpenConclusion(pl, opl);
+    g.setOpenConclusion(opl, opl);
     return false;
   }
   InstExplainLit& iel = itl->second;
@@ -524,13 +526,14 @@ bool InstExplainPfGen::instExplainFind(IexOutput& iout,
   }
   if (cexppl.empty())
   {
-    g.setOpenConclusion(pl, opl);
+    g.setOpenConclusion(opl, opl);
     return false;
   }
   Assert(!opl.isNull());
   // populate choices for the proof regression, which we store in
-  // g.d_conclusions[pl]
-  std::map<Node, GLitInfo>& pconcs = g.d_conclusions[pl];
+  // g.d_conclusions[opl]
+  std::map<Node, GLitInfo>& pconcs = g.d_conclusions[opl];
+  Assert( pconcs.empty() );
   // the (generalized) literal whose proof was the best
   Node best;
   // we proceed into two phases:
@@ -576,6 +579,7 @@ bool InstExplainPfGen::instExplainFind(IexOutput& iout,
         Trace(c) << "  ...compatible, recurse, phase="
                  << (r == 0 ? "assume" : "conclude") << std::endl;
         // recurse now
+        Assert( opl.isNull() || pconcs.find(opli)==pconcs.end() );
         bool undoOpli = true;
         if (instExplain(iout,
                         pconcs[opli],
@@ -639,7 +643,7 @@ bool InstExplainPfGen::instExplainFind(IexOutput& iout,
       indent(c, tb + 1);
       Trace(c) << "-> failed to generalize" << std::endl;
     }
-    g.setOpenConclusion(pl, opl);
+    g.setOpenConclusion(opl, opl);
     return false;
   }
   if (opl.isNull())
@@ -657,7 +661,7 @@ bool InstExplainPfGen::instExplainFind(IexOutput& iout,
   }
   // Set the conclusion to the one on child "best".
   // This will merge it into the parent if it has no open leaves.
-  g.setConclusion(pl, best);
+  g.setConclusion(opl, best);
   Trace(c) << "...success" << std::endl;
   return true;
 }

@@ -38,7 +38,7 @@ bool IexOutput::empty() const
 
 bool GLitInfo::empty() const
 {
-  return !d_iei && d_subs_modify.empty() && d_assumptions.empty()
+  return d_subs_modify.empty() && d_assumptions.empty()
          && d_conclusions.empty();
 }
 void GLitInfo::initialize(InstExplainInst* iei)
