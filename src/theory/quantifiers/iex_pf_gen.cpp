@@ -600,9 +600,14 @@ bool InstExplainPfGen::instExplainFind(IexOutput& iout,
           }
           else if (pconcs[opli].isPurelyGeneral())
           {
-            // if it is purely general, we are done
-            best = opli;
-            break;
+            // if it is purely general, we are done if r==0, otherwise,
+            // we mistakenly found a purely general proof of something where
+            // we wanted an open conclusion.
+            if( r==0 )
+            {
+              best = opli;
+              break;
+            }
           }
           else
           {
