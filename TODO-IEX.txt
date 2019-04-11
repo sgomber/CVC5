@@ -1,0 +1,8 @@
+(1) IEX inferences should not use instantiation lemmas from currently subsumed quantifiers? Or alternatively, they could be automatically tightened by the subsuming quantified formula. 
+(2) IEX inferences could search for instantiation lemmas that don't exist that could have propagated a ground literal
+(3) Propagating instances can be inputs to the IEX procedure.
+(4) We should catch other forms of conflicts:  ground UF conflicts? Boolean conflicts? One idea: on E-matching rounds, calculate the (SAT/ground UF) conflict before sending out the instantiations?
+(5) Make a fast subsumption module for finding subsumptions.
+(6) Locally process parts of IEX proofs that are useful but not in the overall proof.
+(7) ground UF proof generalization
+(8) compress path to UPG (subsume all quantified formulas on the path).  (IMPLEMENTED, not enabled by default)
