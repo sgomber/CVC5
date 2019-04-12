@@ -159,12 +159,12 @@ bool InstExplainInst::justify(IeEvaluator& v,
   }
   std::map<Node, int> assumptions;
   assumptions[lit] = -1;
-  if(v.evaluateWithAssumptions(d_body, assumptions) != -1)
+  if (v.evaluateWithAssumptions(d_body, assumptions) != -1)
   {
     // this can happen if we have a circular explanation, e.g.
     // P(a) V ~P(a) V Q(a) propagates P(a) if P(a) = true, Q(a) = false,
     // but after setting P(a) -> false, we get:
-    // false V ~false V Q(a) 
+    // false V ~false V Q(a)
     // which is true. This case occurs when instantiation lemmas are
     // tautological.
     return false;
@@ -453,7 +453,7 @@ bool InstExplainInst::justifyInternal(
                          olits)
         || !justifyInternal(n[1],
                             on[1],
-                            (cbres == 1)==pol,
+                            (cbres == 1) == pol,
                             olitProp,
                             v,
                             assumptions,

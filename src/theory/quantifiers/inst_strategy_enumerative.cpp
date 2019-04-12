@@ -79,12 +79,12 @@ void InstStrategyEnum::check(Theory::Effort e, QEffort quant_e)
   {
     clSet = double(clock()) / double(CLOCKS_PER_SEC);
     Trace("fs-engine") << "---Full Saturation Round, effort = " << e << "---"
-                        << std::endl;
+                       << std::endl;
   }
   unsigned rstart = options::fullSaturateQuantRd() ? 0 : 1;
   unsigned rend = fullEffort ? 1 : rstart;
   unsigned addedLemmas = 0;
-  FirstOrderModel * fm = d_quantEngine->getModel();
+  FirstOrderModel* fm = d_quantEngine->getModel();
   RelevantDomain* rd = d_quantEngine->getRelevantDomain();
   unsigned nquant = fm->getNumAssertedQuantifiers();
   for (unsigned r = rstart; r <= rend; r++)
@@ -93,26 +93,21 @@ void InstStrategyEnum::check(Theory::Effort e, QEffort quant_e)
     {
       if (r == 0)
       {
-        Trace("inst-alg") << "-> Relevant domain instantiate..."
-                          << std::endl;
+        Trace("inst-alg") << "-> Relevant domain instantiate..." << std::endl;
         Trace("inst-alg-debug") << "Compute relevant domain..." << std::endl;
         rd->compute();
         Trace("inst-alg-debug") << "...finished" << std::endl;
       }
       else
       {
-        Trace("inst-alg") << "-> Ground term instantiate..."
-                          << std::endl;
+        Trace("inst-alg") << "-> Ground term instantiate..." << std::endl;
       }
-      for (unsigned i = 0;
-          i < nquant;
-          i++)
+      for (unsigned i = 0; i < nquant; i++)
       {
         Node q = fm->getAssertedQuantifier(i, true);
-        if (d_quantEngine->hasOwnership(q, this)
-            && fm->isQuantifierActive(q))
+        if (d_quantEngine->hasOwnership(q, this) && fm->isQuantifierActive(q))
         {
-          if (process(q, fullEffort,r))
+          if (process(q, fullEffort, r))
           {
             // added lemma
             addedLemmas++;
@@ -123,7 +118,7 @@ void InstStrategyEnum::check(Theory::Effort e, QEffort quant_e)
           }
         }
       }
-      if( addedLemmas>0 )
+      if (addedLemmas > 0)
       {
         break;
       }
@@ -134,7 +129,7 @@ void InstStrategyEnum::check(Theory::Effort e, QEffort quant_e)
     Trace("fs-engine") << "Added lemmas = " << addedLemmas << std::endl;
     double clSet2 = double(clock()) / double(CLOCKS_PER_SEC);
     Trace("fs-engine") << "Finished full saturation engine, time = "
-                        << (clSet2 - clSet) << std::endl;
+                       << (clSet2 - clSet) << std::endl;
   }
 }
 
@@ -174,13 +169,11 @@ bool InstStrategyEnum::process(Node f, bool fullEffort, unsigned r)
         std::map<Node, Node> reps_found;
         for (unsigned j = 0; j < ts; j++)
         {
-          Node gt = d_quantEngine->getTermDatabase()->getTypeGroundTerm(
-              ftypes[i], j);
-          if (!options::cbqi()
-              || !quantifiers::TermUtil::hasInstConstAttr(gt))
+          Node gt =
+              d_quantEngine->getTermDatabase()->getTypeGroundTerm(ftypes[i], j);
+          if (!options::cbqi() || !quantifiers::TermUtil::hasInstConstAttr(gt))
           {
-            Node rep =
-                d_quantEngine->getEqualityQuery()->getRepresentative(gt);
+            Node rep = d_quantEngine->getEqualityQuery()->getRepresentative(gt);
             if (reps_found.find(rep) == reps_found.end())
             {
               reps_found[rep] = gt;
@@ -199,7 +192,7 @@ bool InstStrategyEnum::process(Node f, bool fullEffort, unsigned r)
     max_zero.push_back(fullEffort && ts == 0);
     ts = (fullEffort && ts == 0) ? 1 : ts;
     Trace("inst-alg-rd") << "Variable " << i << " has " << ts
-                          << " in relevant domain." << std::endl;
+                         << " in relevant domain." << std::endl;
     if (ts == 0)
     {
       has_zero = true;
@@ -217,7 +210,7 @@ bool InstStrategyEnum::process(Node f, bool fullEffort, unsigned r)
   if (!has_zero)
   {
     Trace("inst-alg-rd") << "Will do " << final_max_i
-                          << " stages of instantiation." << std::endl;
+                         << " stages of instantiation." << std::endl;
     unsigned max_i = 0;
     bool success;
     while (max_i <= final_max_i)
@@ -279,9 +272,9 @@ bool InstStrategyEnum::process(Node f, bool fullEffort, unsigned r)
             {
               Assert(childIndex[i] < term_db_list[ftypes[i]].size());
               terms.push_back(term_db_list[ftypes[i]][childIndex[i]]);
-              Trace("inst-alg-rd") << "  "
-                                    << term_db_list[ftypes[i]][childIndex[i]]
-                                    << std::endl;
+              Trace("inst-alg-rd")
+                  << "  " << term_db_list[ftypes[i]][childIndex[i]]
+                  << std::endl;
             }
           }
           if (d_quantEngine->getInstantiate()->addInstantiation(f, terms))

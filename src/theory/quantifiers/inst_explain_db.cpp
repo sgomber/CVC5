@@ -594,7 +594,8 @@ Node InstExplainDb::getGeneralizedConclusion(InstExplainInst* iei,
       if (q.isNull())
       {
         conc = concBody;
-        Trace("iex-debug") << "construct conclusion no q: " << conc << std::endl;
+        Trace("iex-debug") << "construct conclusion no q: " << conc
+                           << std::endl;
       }
       else
       {
@@ -612,7 +613,8 @@ Node InstExplainDb::getGeneralizedConclusion(InstExplainInst* iei,
         conc = nm->mkNode(FORALL, bvl, concsubs);
         Trace("iex-debug") << "construct conclusion: " << conc << std::endl;
         conc = Rewriter::rewrite(conc);
-        Trace("iex-debug") << "construct conclusion post-rewrite: " << conc << std::endl;
+        Trace("iex-debug") << "construct conclusion post-rewrite: " << conc
+                           << std::endl;
       }
       // should not have free variables, otherwise we likely have the wrong q.
       Assert(!expr::hasFreeVar(conc));
