@@ -93,7 +93,7 @@ class InstStrategyEnum : public QuantifiersModule
    * This handles corner cases where there are no well-typed
    * ground terms in the current context to instantiate with.
    */
-  bool process(Node q, bool fullEffort);
+  bool process(Node q, bool fullEffort, unsigned r);
 }; /* class InstStrategyEnum */
 
 } /* CVC4::theory::quantifiers namespace */
