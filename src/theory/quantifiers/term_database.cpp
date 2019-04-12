@@ -889,7 +889,7 @@ TNode TermDb::getEntailedTerm2(TNode n,
             mainEq = ptm.get();
           }
           mainEq->d_id = eq::MERGED_THROUGH_EQUALITY;
-          mainEq->d_node = argst[i].eqNode(nn[i]);
+          mainEq->d_node = argst[ii].eqNode(nn[ii]);
         }
         else if (child_pfs[ii]->d_id != eq::MERGED_THROUGH_REFLEXIVITY)
         {
@@ -1036,6 +1036,8 @@ bool TermDb::isEntailed2(TNode n,
               {
                 // subproofs are trivial, just use this
                 mainEq = &p;
+                // n1 must be different than n2 or else we would have had a
+                // reflexive equality that would have been rewritten to true.
                 Assert(n1 != n2);
               }
               else
