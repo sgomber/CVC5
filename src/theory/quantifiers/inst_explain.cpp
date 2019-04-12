@@ -443,7 +443,7 @@ bool InstExplainInst::justifyInternal(
                          olits)
         || !justifyInternal(n[1],
                             on[1],
-                            cbres == 1,
+                            (cbres == 1)==pol,
                             olitProp,
                             v,
                             assumptions,
@@ -462,6 +462,7 @@ bool InstExplainInst::justifyInternal(
     nn = Rewriter::rewrite(pol ? nn : nn.negate());
     Node onn = on;
     onn = pol ? onn : onn.negate();
+    Trace("iex-debug") << "* justify : " << nn << " / " << onn << std::endl;
     lits.push_back(nn);
     olits.push_back(onn);
   }
