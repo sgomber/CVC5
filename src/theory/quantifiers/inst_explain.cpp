@@ -146,8 +146,6 @@ bool InstExplainInst::justify(IeEvaluator& v,
   Assert(lit == Rewriter::rewrite(lit));
   Trace("iex-debug") << "InstExplainInst::justify: " << lit << " in " << d_body
                      << std::endl;
-  std::map<Node, int> assumptions;
-  assumptions[lit] = -1;
   // the quantified formula must hold in the current context. If it does, it
   // is always a part of the explanation below.
   int evq = v.evaluate(d_quant);
@@ -157,6 +155,18 @@ bool InstExplainInst::justify(IeEvaluator& v,
   {
     Trace("iex-debug") << "InstExplainInst::justify: fail, quantified formula "
                        << d_quant << " evaluates to " << evq << std::endl;
+    return false;
+  }
+  std::map<Node, int> assumptions;
+  assumptions[lit] = -1;
+  if(v.evaluateWithAssumptions(d_body, assumptions) != -1)
+  {
+    // this can happen if we have a circular explanation, e.g.
+    // P(a) V ~P(a) V Q(a) propagates P(a) if P(a) = true, Q(a) = false,
+    // but after setting P(a) -> false, we get:
+    // false V ~false V Q(a) 
+    // which is true. This case occurs when instantiation lemmas are
+    // tautological.
     return false;
   }
   // now, explain why the remainder was false

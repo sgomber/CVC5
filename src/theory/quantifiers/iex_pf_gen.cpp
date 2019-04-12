@@ -55,17 +55,17 @@ bool InstExplainPfGen::regressExplain(EqExplainer* eqe,
     if (eqe)
     {
       Assert(!eqp->d_node.isNull());
-      Trace("ied-proof-debug") << "Explain: " << eqp->d_node << std::endl;
+      Trace("iex-proof-debug") << "Explain: " << eqp->d_node << std::endl;
       if (!eqe->explain(eqp->d_node, assumptions, eqp))
       {
-        Trace("ied-proof-debug")
+        Trace("iex-proof-debug")
             << "FAILED to explain " << eqp->d_node << std::endl;
         return false;
       }
-      Trace("ied-proof-debug") << "...success" << std::endl;
+      Trace("iex-proof-debug") << "...success" << std::endl;
       return true;
     }
-    Trace("ied-proof-debug") << "FAILED to explain " << eqp->d_node
+    Trace("iex-proof-debug") << "FAILED to explain " << eqp->d_node
                              << " (no explainer)" << std::endl;
     return false;
   }
@@ -112,9 +112,9 @@ Node InstExplainPfGen::generalizeInternal(IexOutput& iout,
   NodeManager* nm = NodeManager::currentNM();
   // what kind of proof?
   Node ret;
-  if (Trace.isOn("ied-gen"))
+  if (Trace.isOn("iex-gen"))
   {
-    indent("ied-gen", tb);
+    indent("iex-gen", tb);
   }
   unsigned id = eqp->d_id;
   if (id == eq::MERGED_THROUGH_CONGRUENCE)
@@ -122,7 +122,7 @@ Node InstExplainPfGen::generalizeInternal(IexOutput& iout,
     // FIXME
     return Node::null();
     Node cnode = eqp->d_node;
-    Trace("ied-gen") << "ied-pf: congruence node(" << cnode << ")" << std::endl;
+    Trace("iex-gen") << "iex-pf: congruence node(" << cnode << ")" << std::endl;
     // get child proofs
     std::vector<eq::EqProof*> childProofs;
     eq::EqProof* curr = eqp;
@@ -181,8 +181,8 @@ Node InstExplainPfGen::generalizeInternal(IexOutput& iout,
     }
     else
     {
-      Debug("ied-gen-error") << "Unexpected (cong children):" << std::endl;
-      eqp->debug_print("ied-gen-error", 1);
+      Debug("iex-gen-error") << "Unexpected (cong children):" << std::endl;
+      eqp->debug_print("iex-gen-error", 1);
     }
   }
   else if (id == eq::MERGED_THROUGH_EQUALITY)
@@ -190,11 +190,11 @@ Node InstExplainPfGen::generalizeInternal(IexOutput& iout,
     // an assumption
     ret = eqp->d_node;
     Assert(ret == Rewriter::rewrite(ret));
-    if (Trace.isOn("ied-gen"))
+    if (Trace.isOn("iex-gen"))
     {
-      Trace("ied-gen") << "ied-pf: equality " << ret << std::endl;
-      indent("ied-gen", tb);
-      Trace("ied-gen") << "INST-EXPLAIN find (UF leaf): " << ret << " / "
+      Trace("iex-gen") << "iex-pf: equality " << ret << std::endl;
+      indent("iex-gen", tb);
+      Trace("iex-gen") << "INST-EXPLAIN find (UF leaf): " << ret << " / "
                        << tgtLit << std::endl;
     }
     genSuccess = instExplainFind(iout,
@@ -204,19 +204,19 @@ Node InstExplainPfGen::generalizeInternal(IexOutput& iout,
                                  Node::null(),
                                  genPath,
                                  reqPureGen,
-                                 "ied-gen",
+                                 "iex-gen",
                                  tb + 2);
-    if (Trace.isOn("ied-gen"))
+    if (Trace.isOn("iex-gen"))
     {
-      indent("ied-gen", tb);
+      indent("iex-gen", tb);
     }
     if (genSuccess)
     {
-      Trace("ied-gen") << "...success!" << std::endl;
+      Trace("iex-gen") << "...success!" << std::endl;
     }
     else
     {
-      Trace("ied-gen") << "...failed to IEX UF leaf " << ret << " / " << tgtLit
+      Trace("iex-gen") << "...failed to IEX UF leaf " << ret << " / " << tgtLit
                        << std::endl;
     }
     ret = convertEq(ret);
@@ -226,7 +226,7 @@ Node InstExplainPfGen::generalizeInternal(IexOutput& iout,
     // do nothing
     Node n = eqp->d_node;
     ret = n.eqNode(n);
-    Trace("ied-gen") << "ied-pf: refl node(" << n << ")" << std::endl;
+    Trace("iex-gen") << "iex-pf: refl node(" << n << ")" << std::endl;
     // we do not care about generalizations here
   }
   else if (id == eq::MERGED_THROUGH_CONSTANTS)
@@ -234,14 +234,14 @@ Node InstExplainPfGen::generalizeInternal(IexOutput& iout,
     // FIXME
     return Node::null();
     //???
-    Trace("ied-gen") << "ied-pf: constants ???" << std::endl;
+    Trace("iex-gen") << "iex-pf: constants ???" << std::endl;
     AlwaysAssert(false);
   }
   else if (id == eq::MERGED_THROUGH_TRANS)
   {
     // FIXME
     return Node::null();
-    Trace("ied-gen") << "ied-pf: transitivity" << std::endl;
+    Trace("iex-gen") << "iex-pf: transitivity" << std::endl;
     bool success = true;
     Node retc;
     Node r1, r2;
@@ -295,20 +295,20 @@ Node InstExplainPfGen::generalizeInternal(IexOutput& iout,
   }
   Assert(ret.getKind() == EQUAL);
   concs[eqp] = ret;
-  if (Trace.isOn("ied-gen"))
+  if (Trace.isOn("iex-gen"))
   {
-    indent("ied-gen", tb);
-    Trace("ied-gen") << "...proves " << ret;
+    indent("iex-gen", tb);
+    Trace("iex-gen") << "...proves " << ret;
     if (tgtLit.isNull())
     {
-      Trace("ied-gen") << " with no target.";
+      Trace("iex-gen") << " with no target.";
     }
     else
     {
-      Trace("ied-gen") << " with target " << tgtLit << ", generalize success=";
-      Trace("ied-gen") << genSuccess;
+      Trace("iex-gen") << " with target " << tgtLit << ", generalize success=";
+      Trace("iex-gen") << genSuccess;
     }
-    Trace("ied-gen") << std::endl;
+    Trace("iex-gen") << std::endl;
   }
   return ret;
 }
@@ -369,8 +369,8 @@ bool InstExplainPfGen::instExplain(IexOutput& iout,
                   "propagation for "
                << lit << std::endl;
     }
-    // if this fails, our computation of what Boolean propagates was wrong
-    Assert(false);
+    // if this fails, we may have had a "circular explanation" of a propagation.
+    // this can occur if we are using a tautological instantiation lemma.
     return false;
   }
   Assert(plits.size() == plitso.size());

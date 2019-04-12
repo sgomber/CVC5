@@ -107,7 +107,8 @@ void IexProof::setOpenConclusionInternal(IexOutput& iout, Node pl, Node opl)
     Trace("iex-proof-debug") << "=== END PROCESS " << std::endl;
   }
   d_conclusions.erase(pl);
-  d_conclusions[pl][opl].initialize(nullptr);
+  // we now must use pl/pl instead of pl/opl
+  d_conclusions[pl][pl].initialize(nullptr);
 }
 
 void IexProof::notifyOpenConclusion(IexOutput& iout,
@@ -429,7 +430,7 @@ Node IexProof::processUPGInternal(IexOutput& iout,
                                   Node currConc,
                                   std::vector<Node>& assumptions) const
 {
-  Trace("ied-process-upg") << "Process UPG, #assumps=" << assumptions.size()
+  Trace("iex-process-upg") << "Process UPG, #assumps=" << assumptions.size()
                            << std::endl;
   // take assumptions from sibling proofs now
   assumptions.insert(
@@ -482,7 +483,7 @@ Node IexProof::processUPGInternal(IexOutput& iout,
         {
           currConc = cc.first;
         }
-        Trace("ied-process-upg") << "...follow " << cc.first << std::endl;
+        Trace("iex-process-upg") << "...follow " << cc.first << std::endl;
         ret = cc.second.processUPGInternal(iout, currConc, assumptions);
       }
       else

@@ -285,29 +285,29 @@ ExplainStatus InstExplainDb::explain(Node q,
     Node elit = itp->first;
     pfNum[elit] = pfCounter;
     Trace("iex") << "  [" << pfCounter << "] " << elit << std::endl;
-    if (Trace.isOn("ied-proof-debug"))
+    if (Trace.isOn("iex-proof-debug"))
     {
-      Trace("ied-proof-debug")
+      Trace("iex-proof-debug")
           << "-----------proof (pre-regress) " << elit << std::endl;
       std::stringstream ss;
       itp->second.debug_print(ss, 1);
-      Trace("ied-proof-debug") << ss.str();
-      Trace("ied-proof-debug") << "-----------end proof" << std::endl;
+      Trace("iex-proof-debug") << ss.str();
+      Trace("iex-proof-debug") << "-----------end proof" << std::endl;
     }
     if (!d_iexpfg.regressExplain(eqe, assumptions[elit], &itp->second))
     {
-      Trace("ied-proof") << "...failed to regress proof" << std::endl;
+      Trace("iex-proof") << "...failed to regress proof" << std::endl;
       regressPfFail[elit] = true;
     }
     else
     {
-      if (Trace.isOn("ied-proof"))
+      if (Trace.isOn("iex-proof"))
       {
-        Trace("ied-proof") << "-----------proof " << elit << std::endl;
+        Trace("iex-proof") << "-----------proof " << elit << std::endl;
         std::stringstream ss;
         itp->second.debug_print(ss, 1);
-        Trace("ied-proof") << ss.str();
-        Trace("ied-proof") << "-----------end proof" << std::endl;
+        Trace("iex-proof") << ss.str();
+        Trace("iex-proof") << "-----------end proof" << std::endl;
       }
     }
   }
@@ -470,7 +470,7 @@ ExplainStatus InstExplainDb::explain(Node q,
        ++itp)
   {
     Node elit = itp->first;
-    Trace("ied-gen") << "----------------- generalize proof #" << pfNum[elit]
+    Trace("iex-gen") << "----------------- generalize proof #" << pfNum[elit]
                      << "/" << pfCounter << ": " << elit << std::endl;
     if (regressPfFail.find(elit) == regressPfFail.end())
     {
@@ -489,13 +489,13 @@ ExplainStatus InstExplainDb::explain(Node q,
       IexProof& glc = genRoot.d_conclusions[elitg][elit];
       if (d_iexpfg.generalize(iout, elit, pfp, glc, reqPureGen, 1))
       {
-        Trace("ied-gen") << "....success generalize, open="
+        Trace("iex-gen") << "....success generalize, open="
                          << genRoot.isOpen(elit) << std::endl;
-        if (Trace.isOn("ied-gen-debug"))
+        if (Trace.isOn("iex-gen-debug"))
         {
-          glc.debugPrint("ied-gen-debug", 2);
+          glc.debugPrint("iex-gen-debug", 2);
         }
-        // glc.debugPrint("ied-gen");
+        // glc.debugPrint("iex-gen");
         // Finalize the conclusion in the root. This either removes the proof
         // of elitg / elit and pushes its assumptions to the root, or otherwise
         // does nothing.
@@ -505,14 +505,14 @@ ExplainStatus InstExplainDb::explain(Node q,
       {
         // set that elitg / elit is an open leaf of the root
         genRoot.setOpenConclusion(iout, elitg, elit);
-        Trace("ied-gen") << "...failed generalize" << std::endl;
+        Trace("iex-gen") << "...failed generalize" << std::endl;
       }
     }
     else
     {
-      Trace("ied-gen") << "...failed to be regressed" << std::endl;
+      Trace("iex-gen") << "...failed to be regressed" << std::endl;
     }
-    Trace("ied-gen") << "----------------- end generalize proof" << std::endl;
+    Trace("iex-gen") << "----------------- end generalize proof" << std::endl;
   }
 
   // now, added lemmas
@@ -527,7 +527,7 @@ ExplainStatus InstExplainDb::explain(Node q,
 
   for (const std::pair<Node, Node>& sp : iout.d_subsumed_by)
   {
-    Trace("ied-subsume") << "InstExplainDb::subsume: " << sp.second << " => "
+    Trace("iex-subsume") << "InstExplainDb::subsume: " << sp.second << " => "
                          << sp.first << std::endl;
     d_subsume->setSubsumes(sp.second, sp.first);
   }
@@ -594,6 +594,7 @@ Node InstExplainDb::getGeneralizedConclusion(InstExplainInst* iei,
       if (q.isNull())
       {
         conc = concBody;
+        Trace("iex-debug") << "construct conclusion no q: " << conc << std::endl;
       }
       else
       {
@@ -609,7 +610,9 @@ Node InstExplainDb::getGeneralizedConclusion(InstExplainInst* iei,
         concsubs = Rewriter::rewrite(concsubs);
         Node bvl = nm->mkNode(BOUND_VAR_LIST, newVars);
         conc = nm->mkNode(FORALL, bvl, concsubs);
+        Trace("iex-debug") << "construct conclusion: " << conc << std::endl;
         conc = Rewriter::rewrite(conc);
+        Trace("iex-debug") << "construct conclusion post-rewrite: " << conc << std::endl;
       }
       // should not have free variables, otherwise we likely have the wrong q.
       Assert(!expr::hasFreeVar(conc));
@@ -652,7 +655,7 @@ Node InstExplainDb::getGeneralizedConclusion(InstExplainInst* iei,
         registerExplanation(cig, concsi, conc, iei->d_terms);
       }
       lemmas.push_back(cig);
-      Trace("ied-lemma") << "InstExplainDb::lemma (GEN-CINST): " << cig
+      Trace("iex-lemma") << "InstExplainDb::lemma (GEN-CINST): " << cig
                          << std::endl;
     }
   }
@@ -666,36 +669,36 @@ Node InstExplainDb::getGeneralizedConclusion(InstExplainInst* iei,
     Trace("iex")
         << "InstExplainDb::explain: generated generalized resolution inference"
         << std::endl;
-    if (Trace.isOn("ied-lemma"))
+    if (Trace.isOn("iex-lemma"))
     {
-      Trace("ied-lemma") << "InstExplainDb::lemma (GEN-RES): " << lem
+      Trace("iex-lemma") << "InstExplainDb::lemma (GEN-RES): " << lem
                          << std::endl;
-      Trace("ied-lemma") << "---------------------------------" << std::endl;
-      Trace("ied-lemma") << "assumptions:" << std::endl;
+      Trace("iex-lemma") << "---------------------------------" << std::endl;
+      Trace("iex-lemma") << "assumptions:" << std::endl;
       if (assumps.empty())
       {
-        Trace("ied-lemma") << "  (empty)" << std::endl;
+        Trace("iex-lemma") << "  (empty)" << std::endl;
       }
       else
       {
         for (const Node& a : assumps)
         {
-          Trace("ied-lemma") << "  " << a << std::endl;
+          Trace("iex-lemma") << "  " << a << std::endl;
         }
       }
-      Trace("ied-lemma") << "conclusions:" << std::endl;
+      Trace("iex-lemma") << "conclusions:" << std::endl;
       if (concs.empty())
       {
-        Trace("ied-lemma") << "  (empty)" << std::endl;
+        Trace("iex-lemma") << "  (empty)" << std::endl;
       }
       else
       {
         for (const Node& c : concs)
         {
-          Trace("ied-lemma") << "  " << c << std::endl;
+          Trace("iex-lemma") << "  " << c << std::endl;
         }
       }
-      Trace("ied-lemma") << "---------------------------------" << std::endl;
+      Trace("iex-lemma") << "---------------------------------" << std::endl;
     }
     lemmas.push_back(lem);
   }
