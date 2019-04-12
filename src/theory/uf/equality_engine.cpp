@@ -940,7 +940,7 @@ void EqualityEngine::explainEquality(TNode t1, TNode t2, bool polarity,
   EqualityNodeId t1Id = getNodeId(t1);
   EqualityNodeId t2Id = getNodeId(t2);
 
-  std::map<std::pair<EqualityNodeId,EqualityNodeId>, EqProof*> cache;
+  std::map<std::pair<EqualityNodeId, EqualityNodeId>, EqProof*> cache;
   if (polarity) {
     // Get the explanation
     getExplanation(t1Id, t2Id, equalities, cache, eqp);
@@ -1054,7 +1054,7 @@ void EqualityEngine::getExplanation(
 
   // We order the ids, since explaining t1 = t2 is the same as explaining
   // t2 = t1.
-  std::pair<EqualityNodeId, EqualityNodeId> cacheKey = std::minmax(t1Id,t2Id);
+  std::pair<EqualityNodeId, EqualityNodeId> cacheKey = std::minmax(t1Id, t2Id);
   std::map<std::pair<EqualityNodeId, EqualityNodeId>, EqProof*>::iterator it =
       cache.find(cacheKey);
   if (it != cache.end())
@@ -1067,8 +1067,8 @@ void EqualityEngine::getExplanation(
         eqp->d_node = it->second->d_node;
         eqp->d_id = it->second->d_id;
         eqp->d_children.insert(eqp->d_children.end(),
-                                it->second->d_children.begin(),
-                                it->second->d_children.end());
+                               it->second->d_children.begin(),
+                               it->second->d_children.end());
       }
       else
       {

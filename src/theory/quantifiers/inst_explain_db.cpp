@@ -93,11 +93,11 @@ void InstExplainDb::activateInst(Node inst, Node srcLit, InstExplainLit& src)
   {
     return;
   }
-  if( !options::iexRegressSubsume() )
+  if (!options::iexRegressSubsume())
   {
     // do not look at this quantified formula if it is subsumed
     // TODO: get the subsuming quantified formula.
-    if( !d_qe->getModel()->isQuantifierActive(q) )
+    if (!d_qe->getModel()->isQuantifierActive(q))
     {
       return;
     }
@@ -516,7 +516,7 @@ ExplainStatus InstExplainDb::explain(Node q,
   }
 
   // now, added lemmas
-  if( Trace.isOn("iex-proof") )
+  if (Trace.isOn("iex-proof"))
   {
     Trace("iex-proof") << "=== FINAL PROOF:" << std::endl;
     genRoot.debugPrint("iex-proof", 2);

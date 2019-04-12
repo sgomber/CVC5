@@ -62,15 +62,15 @@ void IexProof::setConclusion(IexOutput& iout, Node pl, Node opl)
   if (it2->second.isPurelyGeneral())
   {
     // we may be able to create a subsuming resolution here
-    if( options::iexLocalCompress() )
+    if (options::iexLocalCompress())
     {
-      if( Trace.isOn("iex-proof-debug") )
+      if (Trace.isOn("iex-proof-debug"))
       {
         Trace("iex-proof-debug") << "=== Process local proof:" << std::endl;
         it2->second.debugPrint("iex-proof-debug");
         Trace("iex-proof-debug") << "=== with " << opl << std::endl;
       }
-      it2->second.processUPG(iout,opl);
+      it2->second.processUPG(iout, opl);
       Trace("iex-proof-debug") << "=== END PROCESS " << std::endl;
     }
     // take its assumptions and remove it
@@ -94,22 +94,26 @@ void IexProof::setOpenConclusion(IexOutput& iout, Node pl, Node opl)
 }
 void IexProof::setOpenConclusionInternal(IexOutput& iout, Node pl, Node opl)
 {
-  if( options::iexLocalCompress() )
+  if (options::iexLocalCompress())
   {
-    if( Trace.isOn("iex-proof-debug") )
+    if (Trace.isOn("iex-proof-debug"))
     {
-      Trace("iex-proof-debug") << "=== Process local proof (open):" << std::endl;
+      Trace("iex-proof-debug")
+          << "=== Process local proof (open):" << std::endl;
       d_conclusions[pl][opl].debugPrint("iex-proof-debug");
       Trace("iex-proof-debug") << "=== with " << opl << std::endl;
     }
-    d_conclusions[pl][opl].processUPG(iout,opl);
+    d_conclusions[pl][opl].processUPG(iout, opl);
     Trace("iex-proof-debug") << "=== END PROCESS " << std::endl;
   }
   d_conclusions.erase(pl);
   d_conclusions[pl][opl].initialize(nullptr);
 }
 
-void IexProof::notifyOpenConclusion(IexOutput& iout, Node pl, Node opl, bool isTriv)
+void IexProof::notifyOpenConclusion(IexOutput& iout,
+                                    Node pl,
+                                    Node opl,
+                                    bool isTriv)
 {
   std::vector<Node> lemmas;
   Assert(!opl.isNull());
@@ -150,8 +154,10 @@ bool IexProof::checkCompatible(TNode a, TNode b)
   return mergeInternal(a, b, gb, false);
 }
 
-bool IexProof::mergeInternal(
-    TNode a, TNode b, const IexProof& gb, bool allowBind)
+bool IexProof::mergeInternal(TNode a,
+                             TNode b,
+                             const IexProof& gb,
+                             bool allowBind)
 {
   // bound variables (in case we decide to cleanup)
   std::vector<TNode> bound_avars;
@@ -410,7 +416,7 @@ void IexProof::processUPG(IexOutput& iout, Node currConc)
   // start with no assumptions
   std::vector<Node> assumptions;
   Node upgConc = processUPGInternal(iout, currConc, assumptions);
-  if( !upgConc.isNull() )
+  if (!upgConc.isNull())
   {
     // compress assumptions
     d_assumptions.clear();
@@ -463,7 +469,7 @@ Node IexProof::processUPGInternal(IexOutput& iout,
             // we close the open conclusion
             assumptions.clear();
             // we become a premise only if we are not carrying a conclusion
-            if( currConc.isNull() )
+            if (currConc.isNull())
             {
               assumptions.push_back(genConc);
             }
@@ -496,7 +502,8 @@ Node IexProof::processUPGInternal(IexOutput& iout,
       concs.push_back(currConc);
     }
     // conclude the UPG
-    return iout.reportConclusion(d_iei, assumptions, concs, options::iexGenCInst());
+    return iout.reportConclusion(
+        d_iei, assumptions, concs, options::iexGenCInst());
   }
   return ret;
 }

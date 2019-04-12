@@ -169,8 +169,7 @@ class IexProof
   void processUPG(IexOutput& iout, Node currConc);
 
  private:
-  bool mergeInternal(
-      TNode a, TNode b, const IexProof& gb, bool allowBind);
+  bool mergeInternal(TNode a, TNode b, const IexProof& gb, bool allowBind);
   /** indent tb tabulations on trace c */
   void indent(const char* c, unsigned tb) const;
   /**
@@ -211,10 +210,10 @@ class IexProof
    *
    * This adds lemmas on the output utility iout corresponding to the open
    * conclusion of this proof.
-   * 
+   *
    * currConc: if non-null, the current open conclusion that was not justified.
    * assumptions: the premises that justify the conclusions of this proof.
-   * 
+   *
    * FIXME
    */
   Node processUPGInternal(IexOutput& iout,
