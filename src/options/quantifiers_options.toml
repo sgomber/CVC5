@@ -735,12 +735,12 @@ header = "options/quantifiers_options.h"
   help       = "use generalized conflicting instances"
 
 [[option]]
-  name       = "iexRegressNoSubsume"
+  name       = "iexRegressSubsume"
   category   = "regular"
-  long       = "iex-regress-no-subsume"
+  long       = "iex-regress-subsume"
   type       = "bool"
-  default    = "false"
-  help       = "use generalized conflicting instances"
+  default    = "true"
+  help       = "regress subsumed quantified formulas"
 
 [[option]]
   name       = "instNoEntail"

@@ -93,7 +93,7 @@ void InstExplainDb::activateInst(Node inst, Node srcLit, InstExplainLit& src)
   {
     return;
   }
-  if( options::iexRegressNoSubsume() )
+  if( !options::iexRegressSubsume() )
   {
     // do not look at this quantified formula if it is subsumed
     // TODO: get the subsuming quantified formula.

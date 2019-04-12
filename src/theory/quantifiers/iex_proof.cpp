@@ -64,9 +64,12 @@ void IexProof::setConclusion(IexOutput& iout, Node pl, Node opl)
     // we may be able to create a subsuming resolution here
     if( options::iexLocalCompress() )
     {
-      Trace("iex-proof-debug") << "=== Process local proof:" << std::endl;
-      it2->second.debugPrint("iex-proof-debug");
-      Trace("iex-proof-debug") << "=== with " << opl << std::endl;
+      if( Trace.isOn("iex-proof-debug") )
+      {
+        Trace("iex-proof-debug") << "=== Process local proof:" << std::endl;
+        it2->second.debugPrint("iex-proof-debug");
+        Trace("iex-proof-debug") << "=== with " << opl << std::endl;
+      }
       it2->second.processUPG(iout,opl);
       Trace("iex-proof-debug") << "=== END PROCESS " << std::endl;
     }
@@ -93,8 +96,14 @@ void IexProof::setOpenConclusionInternal(IexOutput& iout, Node pl, Node opl)
 {
   if( options::iexLocalCompress() )
   {
-    
+    if( Trace.isOn("iex-proof-debug") )
+    {
+      Trace("iex-proof-debug") << "=== Process local proof (open):" << std::endl;
+      d_conclusions[pl][opl].debugPrint("iex-proof-debug");
+      Trace("iex-proof-debug") << "=== with " << opl << std::endl;
+    }
     d_conclusions[pl][opl].processUPG(iout,opl);
+    Trace("iex-proof-debug") << "=== END PROCESS " << std::endl;
   }
   d_conclusions.erase(pl);
   d_conclusions[pl][opl].initialize(nullptr);
@@ -444,7 +453,6 @@ Node IexProof::processUPGInternal(IexOutput& iout,
             if (!currConc.isNull())
             {
               concs.push_back(currConc);
-              currConc = Node::null();
             }
             Assert(!cc.first.isNull());
             concs.push_back(cc.first.negate());
@@ -454,15 +462,22 @@ Node IexProof::processUPGInternal(IexOutput& iout,
                 cc.second.d_iei, assumptions, concs, options::iexGenCInst());
             // we close the open conclusion
             assumptions.clear();
-            assumptions.push_back(genConc);
+            // we become a premise only if we are not carrying a conclusion
+            if( currConc.isNull() )
+            {
+              assumptions.push_back(genConc);
+            }
           }
         }
-        // can only recurse if we closed the open conclusion
-        if (currConc.isNull())
+        // If we have an open conclusion, then the node we recurse on
+        // is the new open conclusion. It is not negated since its polarity
+        // is already flipped via the fact it is a conclusion.
+        if (!currConc.isNull())
         {
-          Trace("ied-process-upg") << "...follow " << cc.first << std::endl;
-          ret = cc.second.processUPGInternal(iout, currConc, assumptions);
+          currConc = cc.first;
         }
+        Trace("ied-process-upg") << "...follow " << cc.first << std::endl;
+        ret = cc.second.processUPGInternal(iout, currConc, assumptions);
       }
       else
       {
@@ -479,7 +494,6 @@ Node IexProof::processUPGInternal(IexOutput& iout,
     if (!currConc.isNull())
     {
       concs.push_back(currConc);
-      currConc = Node::null();
     }
     // conclude the UPG
     return iout.reportConclusion(d_iei, assumptions, concs, options::iexGenCInst());

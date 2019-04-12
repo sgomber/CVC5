@@ -209,7 +209,13 @@ class IexProof
   void notifyOpenConclusion(IexOutput& iout, Node pl, Node opl, bool isTriv);
   /** process UPG internal
    *
-   * This adds
+   * This adds lemmas on the output utility iout corresponding to the open
+   * conclusion of this proof.
+   * 
+   * currConc: if non-null, the current open conclusion that was not justified.
+   * assumptions: the premises that justify the conclusions of this proof.
+   * 
+   * FIXME
    */
   Node processUPGInternal(IexOutput& iout,
                           Node currConc,
