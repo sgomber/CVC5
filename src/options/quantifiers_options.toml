@@ -719,6 +719,30 @@ header = "options/quantifiers_options.h"
   help       = "compress path to UPG in instantiation explanation proofs"
 
 [[option]]
+  name       = "iexLocalCompress"
+  category   = "regular"
+  long       = "iex-local-compress"
+  type       = "bool"
+  default    = "true"
+  help       = "compress local proofs in IEX proof generation"
+
+[[option]]
+  name       = "iexGenCInst"
+  category   = "regular"
+  long       = "iex-gen-cinst"
+  type       = "bool"
+  default    = "false"
+  help       = "use generalized conflicting instances"
+
+[[option]]
+  name       = "iexRegressNoSubsume"
+  category   = "regular"
+  long       = "iex-regress-no-subsume"
+  type       = "bool"
+  default    = "false"
+  help       = "use generalized conflicting instances"
+
+[[option]]
   name       = "instNoEntail"
   category   = "regular"
   long       = "inst-no-entail"

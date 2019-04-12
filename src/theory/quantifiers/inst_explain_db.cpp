@@ -19,6 +19,7 @@
 #include "proof/uf_proof.h"
 #include "smt/smt_statistics_registry.h"
 #include "theory/quantifiers/alpha_equivalence.h"  //TODO: use
+#include "theory/quantifiers/first_order_model.h"
 #include "theory/quantifiers/term_database.h"
 #include "theory/quantifiers/term_util.h"
 #include "theory/quantifiers_engine.h"
@@ -87,11 +88,20 @@ void InstExplainDb::activateInst(Node inst, Node srcLit, InstExplainLit& src)
   d_active_inst[inst] = true;
   InstExplainInst& iei = getInstExplainInst(inst);
   // it must be asserted
-  if (d_ev.evaluate(iei.getQuantifiedFormula()) != 1)
+  Node q = iei.getQuantifiedFormula();
+  if (d_ev.evaluate(q) != 1)
   {
     return;
   }
-  // check subsumed, if so, can use TODO
+  if( options::iexRegressNoSubsume() )
+  {
+    // do not look at this quantified formula if it is subsumed
+    // TODO: get the subsuming quantified formula.
+    if( !d_qe->getModel()->isQuantifierActive(q) )
+    {
+      return;
+    }
+  }
   std::vector<Node> lits;
   std::vector<Node> olits;
   iei.propagate(d_ev, lits, olits);
@@ -489,12 +499,12 @@ ExplainStatus InstExplainDb::explain(Node q,
         // Finalize the conclusion in the root. This either removes the proof
         // of elitg / elit and pushes its assumptions to the root, or otherwise
         // does nothing.
-        genRoot.setConclusion(elitg, elit);
+        genRoot.setConclusion(iout, elitg, elit);
       }
       else
       {
         // set that elitg / elit is an open leaf of the root
-        genRoot.setOpenConclusion(elitg, elit);
+        genRoot.setOpenConclusion(iout, elitg, elit);
         Trace("ied-gen") << "...failed generalize" << std::endl;
       }
     }
@@ -506,9 +516,12 @@ ExplainStatus InstExplainDb::explain(Node q,
   }
 
   // now, added lemmas
-  Trace("iex-debug") << "=== FINAL PROOF:" << std::endl;
-  genRoot.debugPrint("iex-debug", 2);
-  Trace("iex-debug") << "=== END FINAL PROOF" << std::endl;
+  if( Trace.isOn("iex-proof") )
+  {
+    Trace("iex-proof") << "=== FINAL PROOF:" << std::endl;
+    genRoot.debugPrint("iex-proof", 2);
+    Trace("iex-proof") << "=== END FINAL PROOF" << std::endl;
+  }
   // we start with d_null since the root proof is of false.
   genRoot.processUPG(iout, d_null);
 

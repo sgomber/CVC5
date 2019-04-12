@@ -506,7 +506,7 @@ bool InstExplainPfGen::instExplainFind(IexOutput& iout,
   if (!d_ied.findInstExplainLit(pl, itl))
   {
     // no instantiation information for ground literal, we fail
-    g.setOpenConclusion(opl, opl);
+    g.setOpenConclusion(iout, opl, opl);
     return false;
   }
   InstExplainLit& iel = itl->second;
@@ -526,7 +526,7 @@ bool InstExplainPfGen::instExplainFind(IexOutput& iout,
   }
   if (cexppl.empty())
   {
-    g.setOpenConclusion(opl, opl);
+    g.setOpenConclusion(iout, opl, opl);
     return false;
   }
   Assert(!opl.isNull());
@@ -615,7 +615,7 @@ bool InstExplainPfGen::instExplainFind(IexOutput& iout,
               // if we needed an open conclusion, we explicitly add "true"
               // as the open conclusion, which will become the UPG.
               Node t = NodeManager::currentNM()->mkConst(true);
-              pconcs[opli].setOpenConclusion(t, t);
+              pconcs[opli].setOpenConclusion(iout, t, t);
               break;
             }
           }
@@ -658,7 +658,7 @@ bool InstExplainPfGen::instExplainFind(IexOutput& iout,
       indent(c, tb + 1);
       Trace(c) << "-> failed to generalize" << std::endl;
     }
-    g.setOpenConclusion(opl, opl);
+    g.setOpenConclusion(iout, opl, opl);
     return false;
   }
   if (opl.isNull())
@@ -676,7 +676,7 @@ bool InstExplainPfGen::instExplainFind(IexOutput& iout,
   }
   // Set the conclusion to the one on child "best".
   // This will merge it into the parent if it has no open leaves.
-  g.setConclusion(opl, best);
+  g.setConclusion(iout, opl, best);
   Trace(c) << "...success" << std::endl;
   return true;
 }

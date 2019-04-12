@@ -118,7 +118,7 @@ class IexProof
    *   we discard the UPG from the proof of d_conclusions[pl][opl] and (pl/opl)
    *   is made an open leaf.
    */
-  void setConclusion(Node pl, Node opl);
+  void setConclusion(IexOutput& iout, Node pl, Node opl);
   /**
    * This indicates that we cannot justify the premise (pl/opl). Hence it
    * becomes an open leaf.
@@ -126,7 +126,7 @@ class IexProof
    * If we contain a proof of a premise (pl'/opl') that has a UPG, it is
    * discarded and (pl'/opl') becomes an open leaf.
    */
-  void setOpenConclusion(Node pl, Node opl);
+  void setOpenConclusion(IexOutput& iout, Node pl, Node opl);
   /**
    * Check whether ( b * SUBS(gb) ) is a generalization of a.
    */
@@ -166,11 +166,11 @@ class IexProof
    *
    * This adds lemmas to FIXME
    */
-  void processUPG(IexOutput& iout, Node currConc) const;
+  void processUPG(IexOutput& iout, Node currConc);
 
  private:
   bool mergeInternal(
-      TNode a, TNode b, const IexProof& gb, bool doMerge, bool allowBind);
+      TNode a, TNode b, const IexProof& gb, bool allowBind);
   /** indent tb tabulations on trace c */
   void indent(const char* c, unsigned tb) const;
   /**
@@ -185,7 +185,7 @@ class IexProof
    *
    * This makes pl/opl an open leaf of this proof.
    */
-  void setOpenConclusionInternal(Node pl, Node opl);
+  void setOpenConclusionInternal(IexOutput& iout, Node pl, Node opl);
   /** notify open conclusion
    *
    * Notify that (pl/opl) is justified by a proof that is not purely general.
@@ -206,12 +206,12 @@ class IexProof
    * If pl/opl has a non-trivial UPG, it must be discarded if there was already
    * a UPG literal.
    */
-  void notifyOpenConclusion(Node pl, Node opl, bool isTriv);
+  void notifyOpenConclusion(IexOutput& iout, Node pl, Node opl, bool isTriv);
   /** process UPG internal
    *
    * This adds
    */
-  void processUPGInternal(IexOutput& iout,
+  Node processUPGInternal(IexOutput& iout,
                           Node currConc,
                           std::vector<Node>& assumptions) const;
 };
