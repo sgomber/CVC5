@@ -67,25 +67,25 @@ int IeEvaluator::evaluateInternal(Node n, std::map<Node, int>& cache)
   else if (k == ITE)
   {
     int cres = evaluateInternal(n[0], cache);
-    if( cres==0 )
+    if (cres == 0)
     {
       int cres1 = evaluateInternal(n[1], cache);
       int cres2 = evaluateInternal(n[2], cache);
-      res = cres1==cres2 ? cres1 : 0;
+      res = cres1 == cres2 ? cres1 : 0;
     }
     else
     {
-      unsigned checkIndex = cres==1 ? 1 : 2;
+      unsigned checkIndex = cres == 1 ? 1 : 2;
       res = evaluateInternal(n[checkIndex], cache);
     }
   }
   else if (k == EQUAL && n[0].getType().isBoolean())
   {
     int cres1 = evaluateInternal(n[0], cache);
-    if( cres1!=0 )
+    if (cres1 != 0)
     {
       int cres2 = evaluateInternal(n[1], cache);
-      res = cres2==cres1 ? 1 : ( cres2==0 ? 0 : -1 );
+      res = cres2 == cres1 ? 1 : (cres2 == 0 ? 0 : -1);
     }
   }
   else
@@ -97,7 +97,8 @@ int IeEvaluator::evaluateInternal(Node n, std::map<Node, int>& cache)
       res = bres ? 1 : -1;
     }
   }
-  Trace("iex-debug2") << "IeEvaluator::evaluateInternal: " << n << " evaluates to " << res << std::endl;
+  Trace("iex-debug2") << "IeEvaluator::evaluateInternal: " << n
+                      << " evaluates to " << res << std::endl;
   cache[n] = res;
   return res;
 }
@@ -148,8 +149,8 @@ void InstExplainInst::propagate(IeEvaluator& v,
 {
   // this quantified formula must evaluate to true
   Assert(v.evaluate(d_quant) == 1);
-  Trace("iex-debug") << "InstExplainInst::propagate: " << d_body << " / " << d_quant[1]
-                     << std::endl;
+  Trace("iex-debug") << "InstExplainInst::propagate: " << d_body << " / "
+                     << d_quant[1] << std::endl;
   propagateInternal(d_body, d_quant[1], v, lits, olits);
 }
 
@@ -162,8 +163,8 @@ bool InstExplainInst::justify(IeEvaluator& v,
   std::map<Node, std::map<bool, bool> > cache;
   // we assume that lit is false
   Assert(lit == Rewriter::rewrite(lit));
-  Trace("iex-debug") << "InstExplainInst::justify: " << lit << " / " << olit << " in " << d_body
-                     << std::endl;
+  Trace("iex-debug") << "InstExplainInst::justify: " << lit << " / " << olit
+                     << " in " << d_body << std::endl;
   // the quantified formula must hold in the current context. If it does, it
   // is always a part of the explanation below.
   int evq = v.evaluate(d_quant);
@@ -175,11 +176,11 @@ bool InstExplainInst::justify(IeEvaluator& v,
                        << d_quant << " evaluates to " << evq << std::endl;
     return false;
   }
-  int atomVal = lit.getKind()==NOT ? 1 : -1;
-  Node atom = atomVal==1 ? lit[0] : lit;
+  int atomVal = lit.getKind() == NOT ? 1 : -1;
+  Node atom = atomVal == 1 ? lit[0] : lit;
   std::map<Node, int> assumptions;
   assumptions[atom] = atomVal;
-  int evil = v.evaluateWithAssumptions(d_body, assumptions); 
+  int evil = v.evaluateWithAssumptions(d_body, assumptions);
   if (evil != -1)
   {
     // this can happen if we have a circular explanation, e.g.
@@ -188,10 +189,12 @@ bool InstExplainInst::justify(IeEvaluator& v,
     // false V ~false V Q(a)
     // which is true. This case occurs when instantiation lemmas are
     // tautological.
-    Trace("iex-debug") << "InstExplainInst::justify: fail, instantiation lemma evaluates to " << evil << " under assumption." << std::endl;
+    Trace("iex-debug")
+        << "InstExplainInst::justify: fail, instantiation lemma evaluates to "
+        << evil << " under assumption." << std::endl;
     return false;
   }
-  Node oatom = atomVal==1 ? olit[0] : olit;
+  Node oatom = atomVal == 1 ? olit[0] : olit;
   // now, explain why the remainder was false
   if (justifyInternal(
           d_body, d_quant[1], false, oatom, v, assumptions, cache, lits, olits))
@@ -333,7 +336,8 @@ void InstExplainInst::propagateInternal(Node n,
       }
       else
       {
-        Trace("iex-debug") << "* propagates : " << cur << " / " << curo << std::endl;
+        Trace("iex-debug") << "* propagates : " << cur << " / " << curo
+                           << std::endl;
         // propagates, now go ahead and rewrite cur
         lits.push_back(Rewriter::rewrite(cur));
         olits.push_back(curo);

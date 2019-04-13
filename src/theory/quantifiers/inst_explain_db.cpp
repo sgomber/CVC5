@@ -143,9 +143,8 @@ void InstExplainDb::registerExplanation(Node inst,
     d_quants[q] = true;
   }
   // TODO
-  //std::map<Node, eq::EqProof> expPf;
-  
-  
+  // std::map<Node, eq::EqProof> expPf;
+
   int pol;
   TNode cur;
   TNode curi;
@@ -165,7 +164,7 @@ void InstExplainDb::registerExplanation(Node inst,
       Assert(cur.getKind() == curi.getKind());
 
       Kind k = cur.getKind();
-      if( k==NOT )
+      if (k == NOT)
       {
         visitPol.push_back(-pol);
         visit.push_back(cur[0]);
@@ -205,7 +204,7 @@ void InstExplainDb::registerExplanation(Node inst,
       {
         // a literal
         Node curir = curi;
-        curir = Rewriter::rewrite(pol==-1 ? curir.negate() : curir);
+        curir = Rewriter::rewrite(pol == -1 ? curir.negate() : curir);
         InstExplainLit& iel = getInstExplainLit(curir);
         iel.addInstExplanation(inst);
         Trace("inst-explain") << "  -> " << curir << std::endl;
@@ -215,7 +214,7 @@ void InstExplainDb::registerExplanation(Node inst,
         {
           registerPropagatingLiteral(cur, q);
         }
-        if (pol==0)
+        if (pol == 0)
         {
           // Store the opposite direction as well if hasPol is false,
           // since it may propagate in either polarity.
@@ -269,7 +268,7 @@ ExplainStatus InstExplainDb::explain(Node q,
   Trace("iex") << "InstExplainDb::explain: Conflict in context " << ctx << " : "
                << std::endl;
   Trace("iex") << "  [QUANT] " << q << std::endl;
-  
+
   // The virtual instantiation lemma information. This manages the information
   // regarding the conflicting instance (the base line of the proof), which
   // notice does not correspond to a registered instantiation lemma.
@@ -285,8 +284,7 @@ ExplainStatus InstExplainDb::explain(Node q,
   // output utility, which manages which lemmas are generated during the proof
   // generalization.
   IexOutput iout(*this);
-  
-  
+
   Assert(q.getKind() == FORALL);
   // we have that the proofs in the range of expPf are "proof sketches", i.e.
   // EqProofs whose leaves are equalities that are explanable by eqe.
@@ -313,19 +311,19 @@ ExplainStatus InstExplainDb::explain(Node q,
       Trace("iex-proof-debug") << "-----------end proof" << std::endl;
     }
     // it may have an empty proof
-    if( itp->second.d_node.isNull() )
+    if (itp->second.d_node.isNull())
     {
       Trace("iex-proof") << "...failed to get proof" << std::endl;
       regressPfFail[elit] = true;
       // elit must be open in the generalized proof
-      genRoot.setOpenConclusion(iout,elit,elit);
+      genRoot.setOpenConclusion(iout, elit, elit);
     }
     else if (!d_iexpfg.regressExplain(eqe, assumptions[elit], &itp->second))
     {
       Trace("iex-proof") << "...failed to regress proof" << std::endl;
       regressPfFail[elit] = true;
       // elit must be open in the generalized proof
-      genRoot.setOpenConclusion(iout,elit,elit);
+      genRoot.setOpenConclusion(iout, elit, elit);
     }
     else
     {
@@ -474,7 +472,7 @@ ExplainStatus InstExplainDb::explain(Node q,
   // We prefer this instance to the original conflicting instance given as the
   // input to this method. (Generalized) conflicting instances are important
   // because they suffice to rule out the current ground model.
-  
+
   // now go back and see if proofs can be generalized
   for (std::map<Node, eq::EqProof>::iterator itp = expPf.begin();
        itp != expPf.end();

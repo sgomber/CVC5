@@ -74,7 +74,7 @@ bool EqExplainerTe::explain(Node lit,
   // currently we use a very simple heuristic here: we try to explain
   // using UF's equality engine only.
   Theory* t = d_te->theoryOf(THEORY_UF);
-  if( t )
+  if (t)
   {
     eq::EqualityEngine* ee = t->getEqualityEngine();
     if (ee)
