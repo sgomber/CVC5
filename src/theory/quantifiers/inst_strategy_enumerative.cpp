@@ -114,7 +114,7 @@ void InstStrategyEnum::check(Theory::Effort e, QEffort quant_e)
         Node q = fm->getAssertedQuantifier(i, true);
         if (d_quantEngine->hasOwnership(q, this) && fm->isQuantifierActive(q))
         {
-          if (process(q, fullEffort, r==0))
+          if (process(q, fullEffort, r == 0))
           {
             // added lemma
             addedLemmas++;

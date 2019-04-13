@@ -653,7 +653,8 @@ bool InstExplainPfGen::instExplainFind(IexOutput& iout,
     bool pol;
     if( d_ied.getLitSymbolIndex(opl, f,g,pol) )
     {
-      Trace(c) << "(has " << d_ied.d_plit_map[f][g][pol].size() << " possible propagating literals)" << std::endl;
+      Trace(c) << "(has " << d_ied.d_plit_map[f][g][pol].size() << " possible
+    propagating literals)" << std::endl;
     }
     else
     {

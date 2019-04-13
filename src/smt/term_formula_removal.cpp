@@ -84,7 +84,8 @@ Node RemoveTermFormulas::run(TNode node, std::vector<Node>& output,
   TypeNode nodeType = node.getType();
   Node skolem;
   Node newAssertion;
-  if(node.getKind() == kind::ITE) {
+  if (node.getKind() == kind::ITE)
+  {
     // If an ITE, replace it
     if (!nodeType.isBoolean() && (!inQuant || !expr::hasBoundVar(node)))
     {
