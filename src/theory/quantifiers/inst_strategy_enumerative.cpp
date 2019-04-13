@@ -84,6 +84,13 @@ void InstStrategyEnum::check(Theory::Effort e, QEffort quant_e)
   unsigned rstart = options::fullSaturateQuantRd() ? 0 : 1;
   unsigned rend = fullEffort ? 1 : rstart;
   unsigned addedLemmas = 0;
+  // First try in relevant domain of all quantified formulas, if no
+  // instantiations exist, try arbitrary ground terms.
+  // Notice that this stratification of effort levels makes it so that some
+  // quantified formulas may not be instantiated (if they have no instances
+  // at effort level r=0 but another quantified formula does). We prefer
+  // this stratification since effort level r=1 may be highly expensive in the
+  // case where we have a quantified formula with many entailed instances.
   FirstOrderModel* fm = d_quantEngine->getModel();
   RelevantDomain* rd = d_quantEngine->getRelevantDomain();
   unsigned nquant = fm->getNumAssertedQuantifiers();
@@ -107,7 +114,7 @@ void InstStrategyEnum::check(Theory::Effort e, QEffort quant_e)
         Node q = fm->getAssertedQuantifier(i, true);
         if (d_quantEngine->hasOwnership(q, this) && fm->isQuantifierActive(q))
         {
-          if (process(q, fullEffort, r))
+          if (process(q, fullEffort, r==0))
           {
             // added lemma
             addedLemmas++;
@@ -120,6 +127,7 @@ void InstStrategyEnum::check(Theory::Effort e, QEffort quant_e)
       }
       if (addedLemmas > 0)
       {
+        // we break if we added any lemma at this effort level
         break;
       }
     }
@@ -133,7 +141,7 @@ void InstStrategyEnum::check(Theory::Effort e, QEffort quant_e)
   }
 }
 
-bool InstStrategyEnum::process(Node f, bool fullEffort, unsigned r)
+bool InstStrategyEnum::process(Node f, bool fullEffort, bool isRd)
 {
   // ignore if constant true (rare case of non-standard quantifier whose body is
   // rewritten to true)
@@ -141,7 +149,6 @@ bool InstStrategyEnum::process(Node f, bool fullEffort, unsigned r)
   {
     return false;
   }
-  // first, try from relevant domain
   RelevantDomain* rd = d_quantEngine->getRelevantDomain();
   unsigned final_max_i = 0;
   std::vector<unsigned> maxs;
@@ -155,7 +162,7 @@ bool InstStrategyEnum::process(Node f, bool fullEffort, unsigned r)
     TypeNode tn = f[0][i].getType();
     ftypes.push_back(tn);
     unsigned ts;
-    if (r == 0)
+    if (isRd)
     {
       ts = rd->getRDomain(f, i)->d_terms.size();
     }
@@ -261,7 +268,7 @@ bool InstStrategyEnum::process(Node f, bool fullEffort, unsigned r)
               terms.push_back(Node::null());
               Trace("inst-alg-rd") << "  null" << std::endl;
             }
-            else if (r == 0)
+            else if (isRd)
             {
               terms.push_back(rd->getRDomain(f, i)->d_terms[childIndex[i]]);
               Trace("inst-alg-rd")
