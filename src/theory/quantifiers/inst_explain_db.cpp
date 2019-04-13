@@ -132,79 +132,80 @@ void InstExplainDb::registerExplanation(Node inst,
   Assert(d_inst_explains.find(inst) == d_inst_explains.end());
   InstExplainInst& iei = d_inst_explains[inst];
   iei.initialize(inst, n, q, ts);
-  std::map<bool, std::unordered_set<Node, NodeHashFunction>> visited;
-  std::vector<bool> visit_hasPol;
-  std::vector<Node> visit;
-  std::vector<Node> visiti;
-  // TODO: this can be simplified to not do a parallel traversal if newQuant is
-  // false.
+  std::map<int, std::unordered_set<TNode, NodeHashFunction>> visited;
+  std::vector<int> visitPol;
+  std::vector<TNode> visit;
+  std::vector<TNode> visiti;
   bool newQuant = false;
   if (d_quants.find(q) == d_quants.end())
   {
     newQuant = true;
     d_quants[q] = true;
   }
-  bool hasPol;
+  // TODO
+  //std::map<Node, eq::EqProof> expPf;
+  
+  
+  int pol;
   TNode cur;
   TNode curi;
-  visit_hasPol.push_back(true);
+  visitPol.push_back(1);
   visit.push_back(q[1]);
   visiti.push_back(n);
   do
   {
-    hasPol = visit_hasPol.back();
+    pol = visitPol.back();
     cur = visit.back();
     visit.pop_back();
     curi = visiti.back();
     visiti.pop_back();
-    if (visited[hasPol].find(cur) == visited[hasPol].end())
+    if (visited[pol].find(cur) == visited[pol].end())
     {
-      visited[hasPol].insert(cur);
+      visited[pol].insert(cur);
       Assert(cur.getKind() == curi.getKind());
 
-      bool pol = cur.getKind() != NOT;
-      TNode atom = pol ? cur : cur[0];
-      TNode atomi = pol ? curi : curi[0];
-      Kind k = atom.getKind();
-      if (k == AND || k == OR)
+      Kind k = cur.getKind();
+      if( k==NOT )
       {
-        for (unsigned i = 0, size = atom.getNumChildren(); i < size; i++)
+        visitPol.push_back(-pol);
+        visit.push_back(cur[0]);
+        visiti.push_back(curi[0]);
+      }
+      else if (k == AND || k == OR)
+      {
+        for (unsigned i = 0, size = cur.getNumChildren(); i < size; i++)
         {
-          Node ac = atom[i];
-          Node aci = atomi[i];
-          visit_hasPol.push_back(hasPol);
-          visit.push_back(pol ? ac : ac.negate());
-          visiti.push_back(pol ? aci : aci.negate());
+          visitPol.push_back(pol);
+          visit.push_back(cur[i]);
+          visiti.push_back(curi[i]);
         }
       }
       else if (k == ITE)
       {
         for (unsigned i = 0; i < 2; i++)
         {
-          Node ac = atom[i + 1];
-          Node acp = pol ? ac : ac.negate();
-          Node aci = atomi[i + 1];
-          Node acpi = pol ? aci : aci.negate();
-          visit_hasPol.push_back(hasPol);
-          visit.push_back(acp);
-          visiti.push_back(acpi);
+          visitPol.push_back(pol);
+          visit.push_back(cur[i + 1]);
+          visiti.push_back(curi[i + 1]);
         }
-        visit_hasPol.push_back(false);
-        visit.push_back(atom[0]);
-        visiti.push_back(atomi[0]);
+        visitPol.push_back(0);
+        visit.push_back(cur[0]);
+        visiti.push_back(curi[0]);
       }
-      else if (k == EQUAL && atom[0].getType().isBoolean())
+      else if (k == EQUAL && cur[0].getType().isBoolean())
       {
         for (unsigned i = 0; i < 2; i++)
         {
-          visit_hasPol.push_back(false);
-          visit.push_back(atom[i]);
-          visiti.push_back(atomi[i]);
+          visitPol.push_back(0);
+          visit.push_back(cur[i]);
+          visiti.push_back(curi[i]);
         }
       }
       else
       {
-        Node curir = Rewriter::rewrite(curi);
+        // a literal
+        Node curir = curi;
+        curir = Rewriter::rewrite(pol==-1 ? curir.negate() : curir);
         InstExplainLit& iel = getInstExplainLit(curir);
         iel.addInstExplanation(inst);
         Trace("inst-explain") << "  -> " << curir << std::endl;
@@ -214,7 +215,7 @@ void InstExplainDb::registerExplanation(Node inst,
         {
           registerPropagatingLiteral(cur, q);
         }
-        if (!hasPol)
+        if (pol==0)
         {
           // Store the opposite direction as well if hasPol is false,
           // since it may propagate in either polarity.
