@@ -130,19 +130,8 @@ class InstExplainDb
    * whether inst propagated it.
    */
   void activateInst(Node inst, Node srcLit, InstExplainLit& src);
-  /**
-   * If this method returns true, then eq is an equality such that eq[index]=n.
-   */
-  static bool getMatchIndex(Node eq, Node n, unsigned& index);
-  /** convert to equality from arbitrary predicate n */
-  Node convertEq(Node n) const;
-  /** convert to non-equality (inverse of above for rewritten nodes) */
-  Node convertRmEq(Node n) const;
-
   /** indent tb tabulations on trace c. */
   static void indent(const char* c, unsigned tb);
-  /** returns true if gn is a generalization of n */
-  static bool isGeneralization(Node n, Node gn);
 
   /** Register propagating literal
    *

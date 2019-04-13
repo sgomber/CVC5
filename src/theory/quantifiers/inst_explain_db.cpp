@@ -715,60 +715,6 @@ void InstExplainDb::indent(const char* c, unsigned tb)
   }
 }
 
-bool InstExplainDb::getMatchIndex(Node eq, Node n, unsigned& index)
-{
-  if (eq.isNull())
-  {
-    return false;
-  }
-  Assert(eq.getKind() == EQUAL);
-  for (unsigned i = 0; i < 2; i++)
-  {
-    if (eq[i] == n)
-    {
-      index = i;
-      return true;
-    }
-  }
-
-  return false;
-}
-
-Node InstExplainDb::convertEq(Node n) const
-{
-  Kind k = n.getKind();
-  if (k == EQUAL)
-  {
-    return n;
-  }
-  else if (k == NOT)
-  {
-    return n.eqNode(d_false);
-  }
-  Assert(n.getType().isBoolean());
-  return n.eqNode(d_true);
-}
-
-Node InstExplainDb::convertRmEq(Node n) const
-{
-  Assert(n.getKind() == EQUAL);
-  if (n[1] == d_true)
-  {
-    return n[0];
-  }
-  else if (n[1] == d_false)
-  {
-    n[0].negate();
-  }
-  return n;
-}
-
-bool InstExplainDb::isGeneralization(Node n, Node gn)
-{
-  // TODO
-  return true;
-}
-
 void InstExplainDb::registerPropagatingLiteral(Node olit, Node q)
 {
   bool pol;
@@ -783,7 +729,7 @@ void InstExplainDb::registerPropagatingLiteral(Node olit, Node q)
 }
 bool InstExplainDb::getLitSymbolIndex(Node n, Node& f, Node& g, bool& pol) const
 {
-  pol = n.getKind() == NOT;
+  pol = n.getKind() != NOT;
   TNode atom = pol ? n : n[0];
   // we index by the equality f(t[x]) = g(s[x]) that this is equivalent to,
   // where f <= g by node comparison
