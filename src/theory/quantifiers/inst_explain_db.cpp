@@ -168,15 +168,14 @@ void InstExplainDb::registerExplanation(Node inst,
       Kind k = atom.getKind();
       if (k == AND || k == OR)
       {
-        for (const Node& ac : atom)
-          for (unsigned i = 0, size = atom.getNumChildren(); i < size; i++)
-          {
-            Node ac = atom[i];
-            Node aci = atomi[i];
-            visit_hasPol.push_back(hasPol);
-            visit.push_back(pol ? ac : ac.negate());
-            visiti.push_back(pol ? aci : aci.negate());
-          }
+        for (unsigned i = 0, size = atom.getNumChildren(); i < size; i++)
+        {
+          Node ac = atom[i];
+          Node aci = atomi[i];
+          visit_hasPol.push_back(hasPol);
+          visit.push_back(pol ? ac : ac.negate());
+          visiti.push_back(pol ? aci : aci.negate());
+        }
       }
       else if (k == ITE)
       {
@@ -269,6 +268,24 @@ ExplainStatus InstExplainDb::explain(Node q,
   Trace("iex") << "InstExplainDb::explain: Conflict in context " << ctx << " : "
                << std::endl;
   Trace("iex") << "  [QUANT] " << q << std::endl;
+  
+  // The virtual instantiation lemma information. This manages the information
+  // regarding the conflicting instance (the base line of the proof), which
+  // notice does not correspond to a registered instantiation lemma.
+  InstExplainInst conflict;
+  conflict.initialize(Node::null(), Node::null(), q, terms);
+  // the generalization information across the conflicting literal set
+  IexProof genRoot;
+  genRoot.initialize(&conflict);
+  // it has the conflicting quantified formula as an assumption always.
+  // This is necessarily manual since genRoot is not built via an IEX inference.
+  genRoot.d_assumptions.push_back(q);
+
+  // output utility, which manages which lemmas are generated during the proof
+  // generalization.
+  IexOutput iout(*this);
+  
+  
   Assert(q.getKind() == FORALL);
   // we have that the proofs in the range of expPf are "proof sketches", i.e.
   // EqProofs whose leaves are equalities that are explanable by eqe.
@@ -294,10 +311,20 @@ ExplainStatus InstExplainDb::explain(Node q,
       Trace("iex-proof-debug") << ss.str();
       Trace("iex-proof-debug") << "-----------end proof" << std::endl;
     }
-    if (!d_iexpfg.regressExplain(eqe, assumptions[elit], &itp->second))
+    // it may have an empty proof
+    if( itp->second.d_node.isNull() )
+    {
+      Trace("iex-proof") << "...failed to get proof" << std::endl;
+      regressPfFail[elit] = true;
+      // elit must be open in the generalized proof
+      genRoot.setOpenConclusion(iout,elit,elit);
+    }
+    else if (!d_iexpfg.regressExplain(eqe, assumptions[elit], &itp->second))
     {
       Trace("iex-proof") << "...failed to regress proof" << std::endl;
       regressPfFail[elit] = true;
+      // elit must be open in the generalized proof
+      genRoot.setOpenConclusion(iout,elit,elit);
     }
     else
     {
@@ -446,24 +473,7 @@ ExplainStatus InstExplainDb::explain(Node q,
   // We prefer this instance to the original conflicting instance given as the
   // input to this method. (Generalized) conflicting instances are important
   // because they suffice to rule out the current ground model.
-
-  // The virtual instantiation lemma information. This manages the information
-  // regarding the conflicting instance (the base line of the proof), which
-  // notice does not correspond to a registered instantiation lemma.
-  InstExplainInst conflict;
-  conflict.initialize(Node::null(), Node::null(), q, terms);
-  // the generalization information across the conflicting literal set
-  IexProof genRoot;
-  genRoot.initialize(&conflict);
-  // it has the conflicting quantified formula as an assumption always.
-  // This is necessarily manual since genRoot is not built via an IEX inference.
-  genRoot.d_assumptions.push_back(q);
-
-  // output utility, which manages which lemmas are generated during the proof
-  // generalization.
-  IexOutput iout(*this);
-
-  // generalized proof information
+  
   // now go back and see if proofs can be generalized
   for (std::map<Node, eq::EqProof>::iterator itp = expPf.begin();
        itp != expPf.end();
