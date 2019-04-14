@@ -46,6 +46,8 @@ class InstExplainDb
   InstExplainDb(QuantifiersEngine* qe);
   /** reset */
   void reset(Theory::Effort e);
+  /** register candidate instantiation */
+  Node registerCandidateInstantiation(Node q, std::vector<Node>& ts);
   /** register explanations
    *
    * This initializes all explanation information relevant for the instantiation

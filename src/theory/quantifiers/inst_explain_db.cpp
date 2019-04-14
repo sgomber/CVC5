@@ -123,6 +123,62 @@ void InstExplainDb::activateInst(Node inst, Node srcLit, InstExplainLit& src)
   }
 }
 
+Node InstExplainDb::registerCandidateInstantiation(Node q, std::vector<Node>& ts)
+{
+  // virtual proof of refutation of this instance
+  std::map<Node, eq::EqProof> vrPf;
+  std::vector<Node> vrPfFails;
+  // make the substitution
+  std::map<TNode, TNode> subs;
+  for (unsigned i = 0, size = ts.size(); i < size; i++)
+  {
+    subs[q[0][i]] = ts[i];
+  }
+  TermDb* tdb = d_qe->getTermDatabase();
+  bool entFalse =
+      tdb->isEntailed(q[1], subs, false, false, vrPf, vrPfFails, true, false);
+  // if we have all entailments, then we are a conflicting instance
+  Trace("iex-setup") << "Instantiation led to " << vrPf.size() << " / "
+                     << (vrPf.size() + vrPfFails.size()) << " entailments."
+                     << std::endl;
+  // TODO: can be more aggressive here
+  if (vrPf.empty() || !vrPfFails.empty())
+  {
+    return d_null;;
+  }
+  // go back and fill in all the proofs
+  bool successPf = true;
+  for (const std::pair<Node, eq::EqProof>& lit : vrPf)
+  {
+    // polarity is now true
+    if (!tdb->isEntailed(lit.first, subs, false, true, vrPf, true))
+    {
+      successPf = false;
+      Trace("iex-setup") << "...failed to reprove " << lit.first << "!"
+                          << std::endl;
+      break;
+    }
+  }
+  if (successPf)
+  {
+    Trace("iex-setup") << "...successfully filled in proofs." << std::endl;
+    // empty proofs for the failures
+    for (const Node& nc : vrPfFails)
+    {
+      vrPf[nc].d_node = d_null;
+    }
+    
+    // run the proof generalization procedure 
+    std::vector<Node> lemmas;
+    explain(q, ts, vrPf, d_eqe, lemmas, "iex-db");
+    for (const Node& lem : lemmas)
+    {
+      d_qe->addLemma(lem);
+    }
+  }
+  return d_null;
+}
+
 void InstExplainDb::registerExplanation(Node inst,
                                         Node n,
                                         Node q,
@@ -237,57 +293,6 @@ void InstExplainDb::registerExplanation(Node inst,
       }
     }
   } while (!visit.empty());
-
-  // virtual proof of refutation of this instance
-  std::map<Node, eq::EqProof> vrPf;
-  std::vector<Node> vrPfFails;
-  // make the substitution
-  std::map<TNode, TNode> subs;
-  for (unsigned i = 0, size = ts.size(); i < size; i++)
-  {
-    subs[q[0][i]] = ts[i];
-  }
-  TermDb* tdb = d_qe->getTermDatabase();
-  bool entFalse =
-      tdb->isEntailed(q[1], subs, false, false, vrPf, vrPfFails, true, false);
-  // if we have all entailments, then we are a conflicting instance
-  Trace("iex-setup") << "Instantiation led to " << vrPf.size() << " / "
-                     << (vrPf.size() + vrPfFails.size()) << " entailments."
-                     << std::endl;
-  // TODO: can be more aggressive here
-  if (!vrPf.empty() && vrPfFails.empty())
-  {
-    // go back and fill in all the proofs
-    bool successPf = true;
-    for (const std::pair<Node, eq::EqProof>& lit : vrPf)
-    {
-      // polarity is now true
-      if (!tdb->isEntailed(lit.first, subs, false, true, vrPf, true))
-      {
-        successPf = false;
-        Trace("iex-setup") << "...failed to reprove " << lit.first << "!"
-                           << std::endl;
-        break;
-      }
-    }
-    if (successPf)
-    {
-      Trace("iex-setup") << "...successfully filled in proofs." << std::endl;
-      // empty proofs for the failures
-      for (const Node& nc : vrPfFails)
-      {
-        vrPf[nc].d_node = d_null;
-      }
-      std::vector<Node> lemmas;
-      explain(q, ts, vrPf, d_eqe, lemmas, "iex-db");
-      for (const Node& lem : lemmas)
-      {
-        d_qe->addLemma(lem);
-      }
-    }
-
-    // run the proof generalization procedure
-  }
 
   // now, propagate for future instantiations
 }
