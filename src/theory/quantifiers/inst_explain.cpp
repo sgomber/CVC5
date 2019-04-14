@@ -298,7 +298,7 @@ void InstExplainInst::propagateInternal(Node n,
         //   T  T T ----> nothing
         //   T  T ? ----> nothing
         //   T  F T ----> ~1 propagate ~B, 2
-        //   ....
+        //   ... similarly for false
         int cbres = v.evaluate(atom[0]);
         // only propagation if branch evaluates to true
         if (cbres != 0)

@@ -45,7 +45,7 @@ class IexOutput
   /** the lemmas generated using this output */
   std::vector<Node> d_lemmas;
   /** the subsumptions from using this output */
-  std::map<Node, Node> d_subsumed_by;
+  std::map<Node, std::vector<Node> > d_subsumed_by;
 };
 
 /** instantiation explain proof
@@ -90,6 +90,8 @@ class IexProof
   std::map<TNode, Node> d_subs_modify;
   /** required assumptions */
   std::vector<Node> d_assumptions;
+  /** closed premises */
+  std::vector<Node> d_closedPremises;
   /** required conclusions, which are themselves generalized literals */
   std::map<Node, std::map<Node, IexProof> > d_conclusions;
   /** initialize this information

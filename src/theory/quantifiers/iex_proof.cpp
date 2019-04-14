@@ -46,6 +46,7 @@ void IexProof::initialize(InstExplainInst* iei)
   d_iei = iei;
   d_subs_modify.clear();
   d_assumptions.clear();
+  d_closedPremises.clear();
   d_conclusions.clear();
 }
 
@@ -73,6 +74,7 @@ void IexProof::setConclusion(IexOutput& iout, Node pl, Node opl)
       it2->second.processUPG(iout, opl);
       Trace("iex-proof-debug") << "=== END PROCESS " << std::endl;
     }
+    d_closedPremises.push_back(opl);
     // take its assumptions and remove it
     d_assumptions.insert(d_assumptions.end(),
                          it2->second.d_assumptions.begin(),
@@ -421,6 +423,7 @@ void IexProof::processUPG(IexOutput& iout, Node currConc)
   {
     // compress assumptions
     d_assumptions.clear();
+    d_closedPremises.clear();
     d_conclusions.clear();
     d_assumptions.push_back(upgConc);
   }

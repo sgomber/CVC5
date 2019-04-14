@@ -136,7 +136,6 @@ void InstExplainDb::registerExplanation(Node inst,
   iei.initialize(inst, n, q, ts);
   std::map<int, std::unordered_set<TNode, NodeHashFunction>> visited;
   std::vector<int> visitPol;
-  //std::vector<int> justifyPfVisitPol;
   std::vector<TNode> visit;
   std::vector<TNode> visiti;
   /*
@@ -153,15 +152,12 @@ void InstExplainDb::registerExplanation(Node inst,
   TNode cur;
   TNode curi;
   visitPol.push_back(1);
-  //justifyPfVisitPol.push_back(-1);
   visit.push_back(q[1]);
   visiti.push_back(n);
   do
   {
     pol = visitPol.back();
     visitPol.pop_back();
-    //jppol = justifyPfVisitPol.back();
-    //justifyPfVisitPol.pop_back();
     cur = visit.back();
     visit.pop_back();
     curi = visiti.back();
@@ -175,50 +171,14 @@ void InstExplainDb::registerExplanation(Node inst,
       if (k == NOT)
       {
         visitPol.push_back(-pol);
-        //justifyPfVisitPol.push_back(-jppol);
         visit.push_back(cur[0]);
         visiti.push_back(curi[0]);
       }
       else if (k == AND || k == OR)
       {
-        // if simple to justify, we only need to justify one child
-        /*
-        int jIndex = 0;
-        bool simPol = false;
-        if( jppol!=0 && (k==AND)==(jppol==-1) )
-        {
-          simPol = true;
-          // Prefer one that is actually entailed, since this will give us
-          // a proof that may be generalized
-          std::vector< unsigned > unkIndex;
-          for (unsigned i = 0, size = cur.getNumChildren(); i < size; i++)
-          {
-            int cres = d_ev.evaluate(cur[i]);
-            if( cres==jppol )
-            {
-              unkIndex.clear();
-              jIndex = i;
-              break;
-            }
-            else if( cres==0 )
-            {
-              unkIndex.push_back(i);
-            }
-          }
-          if( !unkIndex.empty() )
-          {
-            // see if any index is entailed TODO
-            for( unsigned i=0, usize=unkIndex.size(); i<usize; i++ )
-            {
-              
-            }
-          }
-        }
-        */
         for (unsigned i = 0, size = cur.getNumChildren(); i < size; i++)
         {
           visitPol.push_back(pol);
-          //justifyPfVisitPol.push_back(simPol ? ( i==jIndex ? jppol : 0 ) : jppol );
           visit.push_back(cur[i]);
           visiti.push_back(curi[i]);
         }
@@ -274,27 +234,6 @@ void InstExplainDb::registerExplanation(Node inst,
           //  registerPropagatingLiteral(curn, q);
           //}
         }
-        // If its value must be justified in the refutation. This is used for
-        // calculating whether the current instantiation lemma can be
-        // strengthened.
-        /*
-        if( jppol!=0 )
-        {
-          if( d_tdb->isEntailed(cur,subs,false,jppol==1,vrPf ) )
-          {
-            // at least one literal was entailed, the proof is now non-trivial
-            vrPfTrivial = false;
-          }
-          else
-          {
-            // Initialize to an empty proof. This node will be treated
-            // like an open leaf.
-            Node jlit = cur;
-            jlit = jppol==-1 ? jlit.negate() : jlit;
-            vrPf[jlit].d_node = d_null;
-          }
-        }
-        */
       }
     }
   } while (!visit.empty());
@@ -651,11 +590,14 @@ ExplainStatus InstExplainDb::explain(Node q,
   // we start with d_null since the root proof is of false.
   genRoot.processUPG(iout, d_null);
 
-  for (const std::pair<Node, Node>& sp : iout.d_subsumed_by)
+  for (const std::pair<Node, std::vector<Node>>& sp : iout.d_subsumed_by)
   {
-    Trace("iex-subsume") << "InstExplainDb::subsume: " << sp.second << " => "
-                         << sp.first << std::endl;
-    d_subsume->setSubsumes(sp.second, sp.first);
+    for( const Node& spq : sp.second )
+    {
+      Trace("iex-subsume") << "InstExplainDb::subsume: " << spq << " => "
+                          << sp.first << std::endl;
+      d_subsume->setSubsumes(spq, sp.first);
+    }
   }
   // TEMPORARY FIXME
   if (options::qcfExpGenAbort())
@@ -681,7 +623,7 @@ Node InstExplainDb::getGeneralizedConclusion(InstExplainInst* iei,
                                              const std::vector<Node>& assumps,
                                              const std::vector<Node>& concs,
                                              std::vector<Node>& lemmas,
-                                             std::map<Node, Node>& subsumed_by,
+                                             std::map<Node, std::vector<Node>>& subsumed_by,
                                              bool doGenCInst)
 {
   NodeManager* nm = NodeManager::currentNM();
@@ -694,6 +636,8 @@ Node InstExplainDb::getGeneralizedConclusion(InstExplainInst* iei,
   Node conc;
   if (!concs.empty())
   {
+    // FIXME: this can be a substitution of the body instead of disjunction
+    // This makes the conclusion even stronger.
     Node concBody = concs.size() == 1 ? concs[0] : nm->mkNode(OR, concs);
     Trace("iex-debug") << "(original) conclusion: " << concBody << std::endl;
     // check if we've already concluded this
@@ -745,15 +689,36 @@ Node InstExplainDb::getGeneralizedConclusion(InstExplainInst* iei,
       // should not have free variables, otherwise we likely have the wrong q.
       Assert(!expr::hasFreeVar(conc));
       lem = nm->mkNode(OR, antec.negate(), conc);
-      // mark the propagating generalization
-      Trace("iex-debug") << "auto-subsume: " << std::endl;
-      Trace("iex-debug") << "  " << conc << " subsumes" << std::endl;
-      Trace("iex-debug") << "  " << q << std::endl;
-      Assert(d_subsume);
-      // We are guaranteed that conc subsumes q.
-      // We mark the conclusion to indicate that it deactivates
-      // the original quantified formula whenever it is asserted.
-      subsumed_by[q] = conc;
+      std::vector< Node > casserts;
+      if( conc.getKind()==OR )
+      {
+        // optimization: all quantified formulas in a disjunction subsume
+        // if it became miniscoped after strengthening.
+        for( const Node& cc : conc )
+        {
+          casserts.push_back(cc);
+        }
+      }
+      else
+      {
+        casserts.push_back(conc);
+      }
+      // FIXME: could also do other subsumptions (both asserted -> subsume)
+      for( const Node& cc : casserts )
+      {
+        if( cc.getKind()==FORALL )
+        {
+          // mark the subsumption
+          Trace("iex-debug") << "auto-subsume: " << std::endl;
+          Trace("iex-debug") << "  " << cc << " subsumes" << std::endl;
+          Trace("iex-debug") << "  " << q << std::endl;
+          Assert(d_subsume);
+          // We are guaranteed that cc subsumes q.
+          // We mark the conclusion to indicate that it deactivates
+          // the original quantified formula whenever it is asserted.
+          subsumed_by[q].push_back(cc);
+        }
+      }
       // remember that this generalization used this quantified formula
       d_conc_cache[antec][concBody] = conc;
     }

@@ -72,7 +72,7 @@ class InstExplainDb
                                 const std::vector<Node>& assumps,
                                 const std::vector<Node>& concs,
                                 std::vector<Node>& lemmas,
-                                std::map<Node, Node>& subsumed_by,
+                                std::map<Node, std::vector<Node>>& subsumed_by,
                                 bool doGenCInst = true);
 
  private:
