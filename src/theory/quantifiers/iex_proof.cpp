@@ -470,7 +470,7 @@ Node IexProof::processUPGInternal(IexOutput& iout,
                 d_iei, assumptions, ccps, options::iexGenCInst());
             // we close the open conclusion
             assumptions.clear();
-            // we become a premise only if we are not carrying a conclusion
+            // we become a premise only if the proof below us was closed
             if (!currClosedPremise.isNull())
             {
               assumptions.push_back(genConc);

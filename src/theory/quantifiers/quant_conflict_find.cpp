@@ -563,8 +563,7 @@ bool QuantInfo::isMatchSpurious( QuantConflictFind * p ) {
 }
 
 bool QuantInfo::isTConstraintSpurious(QuantConflictFind* p,
-                                      std::vector<Node>& terms,
-                                      std::vector<Node>& lems)
+                                      std::vector<Node>& terms)
 {
   if( options::qcfEagerTest() ){
     //check whether the instantiation evaluates as expected
@@ -581,69 +580,10 @@ bool QuantInfo::isTConstraintSpurious(QuantConflictFind* p,
         Trace("qcf-instance-check") << "  " << d_extra_var[i] << " -> " << n << std::endl;
         subs[d_extra_var[i]] = n;
       }
-      // the explanation/generalized explanation
-      std::map<Node, eq::EqProof> exp;
-      bool entFalse = false;
-      bool genConflict = false;
-      // options::qcfExpMode() != quantifiers::QCF_EXP_CINSTANCE;
-      if (genConflict)
-      {
-        // do not eagerly generate proofs
-        entFalse = tdb->isEntailed(d_q[1], subs, false, false, exp, false);
-      }
-      else
-      {
-        entFalse = tdb->isEntailed(d_q[1], subs, false, false);
-      }
-      if (!entFalse)
+      if (!tdb->isEntailed(d_q[1], subs, false, false))
       {
         Trace("qcf-instance-check") << "...not entailed to be false." << std::endl;
         return true;
-      }
-      // explain it and generate the conflict clause
-      if (options::qcfExpMode() != quantifiers::QCF_EXP_CINSTANCE)
-      {
-        if (Trace.isOn("qcf-conflict-exp"))
-        {
-          Trace("qcf-conflict-exp") << "Explain conflicting instance for "
-                                    << d_q << " : " << std::endl;
-          for (const Node& t : terms)
-          {
-            Trace("qcf-conflict-exp") << "  " << t << std::endl;
-          }
-          Trace("qcf-conflict-exp") << "Entailed literals:" << std::endl;
-          for (const std::pair<Node, eq::EqProof>& lit : exp)
-          {
-            Trace("qcf-conflict-exp") << "  " << lit.first << std::endl;
-          }
-        }
-        // Prove the entailments again, now with proof explanation
-        bool successPf = true;
-        for (const std::pair<Node, eq::EqProof>& lit : exp)
-        {
-          // polarity is now true
-          if (!tdb->isEntailed(lit.first, subs, false, true, exp, true))
-          {
-            successPf = false;
-            Trace("qcf-conflict-exp")
-                << "...failed to prove " << lit.first << "!" << std::endl;
-            break;
-          }
-        }
-        if (successPf)
-        {
-          Trace("qcf-conflict-exp")
-              << "...succeeded generating proof sketch." << std::endl;
-          EqExplainer* eqe = p->getEqualityExplainer();
-          InstExplainDb& ied =
-              p->d_quantEngine->getInstantiate()->getExplainDb();
-          ExplainStatus status = ied.explain(d_q, terms, exp, eqe, lems, "qcf");
-          if (status == EXP_STATUS_FULL)
-          {
-            Trace("qcf-conflict-exp") << "...succeeded with " << lems.size()
-                                      << " lemmas" << std::endl;
-          }
-        }
       }
     }else{
       Node inst =
@@ -2165,8 +2105,7 @@ void QuantConflictFind::checkQuantifiedFormula(Node q,
     // check whether the match is spurious according to (T-)entailment checks
     std::vector<Node> terms;
     qi->getMatch(terms);
-    std::vector<Node> lems;
-    bool tcs = qi->isTConstraintSpurious(this, terms, lems);
+    bool tcs = qi->isTConstraintSpurious(this, terms);
     if (tcs)
     {
       Trace("qcf-inst") << "   ... Spurious (match is T-inconsistent)"
@@ -2187,31 +2126,7 @@ void QuantConflictFind::checkQuantifiedFormula(Node q,
       }
       // Process the lemma: either add an instantiation or specific lemmas
       // constructed during the isTConstraintSpurious call, or both.
-      bool processed = false;
-      if (lems.empty() || options::qcfExpMode() == QCF_EXP_BOTH
-          || options::qcfExpMode() == QCF_EXP_GENERALIZE)
-      {
-        // add the instantiation
-        processed = qinst->addInstantiation(q, terms);
-      }
-      if (!lems.empty())
-      {
-        for (const Node& l : lems)
-        {
-          if (!d_quantEngine->addLemma(l))
-          {
-            // only way this would be duplicate lemma is if
-            // we processed it as an instantiation
-            AlwaysAssert(processed);
-          }
-          else
-          {
-            addedLemmas++;
-          }
-        }
-        processed = true;
-      }
-      if (!processed)
+      if (!qinst->addInstantiation(q, terms))
       {
         Trace("qcf-inst") << "   ... Failed to add instantiation" << std::endl;
         // This should only happen if the algorithm generates the same
