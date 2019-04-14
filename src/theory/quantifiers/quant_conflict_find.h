@@ -290,8 +290,6 @@ public:
   Statistics d_statistics;
   /** Identify this module */
   std::string identify() const override { return "QcfEngine"; }
-  /** get equality explainer */
-  EqExplainer* getEqualityExplainer() { return d_eqe; }
   /** is n a propagating instance?
    *
    * A propagating instance is any formula that consists of Boolean connectives,
