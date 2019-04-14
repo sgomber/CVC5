@@ -26,6 +26,42 @@ Subsume::Subsume(QuantifiersEngine* qe) {}
 
 bool Subsume::empty() const { return d_subsumes.empty(); }
 
+void Subsume::reset_round()
+{
+  d_curr_subumed_by.clear();
+}
+
+bool Subsume::computeCurrentSubsumedBy( Node q, std::map< Node, bool >& qassert )
+{
+  Assert( d_curr_subumed_by.find(q)==d_curr_subumed_by.end() );
+  std::map<Node, std::vector<Node> >::iterator its = d_subsumes.find(q);
+  if( its!=d_subsumes.end() )
+  {
+    // check whether any quantified formula that subsumes it is currently
+    // asserted
+    for (const Node& sq : its->second)
+    {
+      if (qassert.find(sq) != qassert.end())
+      {
+        // store it
+        d_curr_subumed_by[q] = sq;
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+Node Subsume::getCurrentlySubsumedBy( Node q ) const
+{
+  std::map< Node, Node >::const_iterator it = d_curr_subumed_by.find(q);
+  if( it!=d_curr_subumed_by.end() )
+  {
+    return it->second;
+  }
+  return Node::null();
+}
+  
 void Subsume::setSubsumes(Node q, Node qsubsumed)
 {
   d_subsumes[q].push_back(qsubsumed);

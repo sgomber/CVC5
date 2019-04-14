@@ -34,6 +34,12 @@ class Subsume
   ~Subsume() {}
   /** is empty */
   bool empty() const;
+  /** reset round */
+  void reset_round();
+  /** get currently subsumed */
+  bool computeCurrentSubsumedBy( Node q, std::map< Node, bool >& qassert );
+  /** get currently subsumed */
+  Node getCurrentlySubsumedBy( Node q ) const;
   /** set subsumes
    *
    * This indicates that q subsumes qsubsumed. This call is legal if:
@@ -50,6 +56,8 @@ class Subsume
   std::map<Node, std::vector<Node>> d_subsumes;
   /** map quantified formulas to those they are subsumed by */
   std::map<Node, std::vector<Node>> d_subsumed_by;
+  /** currently subsuming */
+  std::map< Node, Node > d_curr_subumed_by;
 };
 
 }  // namespace quantifiers

@@ -230,6 +230,7 @@ void FirstOrderModel::reset_round() {
   std::map<Node, bool> qassert;
   if (!d_subsume->empty() || !d_forall_rlv_vec.empty())
   {
+    d_subsume->reset_round();
     Trace("fm-relevant-debug")
         << "Mark asserted quantified formulas..." << std::endl;
     for (const Node& q : d_forall_asserts)
@@ -239,21 +240,11 @@ void FirstOrderModel::reset_round() {
   }
   if (!d_subsume->empty())
   {
-    std::map<Node, std::vector<Node> >::iterator its;
     for (const Node& q : d_forall_asserts)
     {
-      if (d_subsume->getSubsumedBy(q, its))
+      if (d_subsume->computeCurrentSubsumedBy(q, qassert))
       {
-        // check whether any quantified formula that subsumes it is currently
-        // asserted
-        for (const Node& sq : its->second)
-        {
-          if (qassert.find(sq) != qassert.end())
-          {
-            setQuantifierActive(q, false);
-            break;
-          }
-        }
+        setQuantifierActive(q, false);
       }
     }
   }
