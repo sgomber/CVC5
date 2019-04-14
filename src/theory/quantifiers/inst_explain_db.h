@@ -70,7 +70,6 @@ class InstExplainDb
   /** get generalized conclusion */
   Node getGeneralizedConclusion(InstExplainInst* iei,
                                 const std::vector<Node>& assumps,
-                                const std::vector<Node>& concs,
                                 const std::vector<Node>& closedPremises,
                                 std::vector<Node>& lemmas,
                                 std::map<Node, std::vector<Node>>& subsumed_by,

@@ -36,7 +36,6 @@ class IexOutput
    */
   Node reportConclusion(InstExplainInst* iei,
                         const std::vector<Node>& assumps,
-                        const std::vector<Node>& concs,
                         const std::vector<Node>& closedPremises,
                         bool doGenCInst = true);
   /** is the content of this output empty? */
@@ -169,7 +168,7 @@ class IexProof
    *
    * This adds lemmas to FIXME
    */
-  void processUPG(IexOutput& iout, Node currConc,
+  void processUPG(IexOutput& iout,
                           Node currClosedPremise);
 
  private:
@@ -215,13 +214,20 @@ class IexProof
    * This adds lemmas on the output utility iout corresponding to the open
    * conclusion of this proof.
    *
-   * currConc: if non-null, the current open conclusion that was not justified.
-   * assumptions: the premises that justify the conclusions of this proof.
-   *
-   * FIXME
+    * currClosedPremise: if non-null, the current closed premise that was
+    * justified by the proof below this inference. For example:
+    *                   ----------------------   
+    *                    forall y. Q(y) V P(y)      ~Q(a) 
+    * ----------------  ----------------------------------IEX
+    * forall x. ~P(x)                    P(a) / P(y)        
+    * ---------------------------------------------------IEX
+    *                false
+    * 
+    * When processing the UPG in the upper inference, the current closed
+    * premise is P(y), since it is justified by the fact that the remainder
+    * of the proof is closed.
    */
   Node processUPGInternal(IexOutput& iout,
-                          Node currConc,
                           Node currClosedPremise,
                           std::vector<Node>& assumptions) const;
 };

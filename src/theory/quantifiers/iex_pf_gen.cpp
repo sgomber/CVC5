@@ -480,12 +480,6 @@ bool InstExplainPfGen::instExplain(IexOutput& iout,
   {
     Assert(g.isPurelyGeneral());
     d_instFindPure[olit] = g.getAssumptions();
-    // was this non-trivial? If so, we compress the proof and remember the
-    // lemma.
-    // if (!plits.empty())
-    //{
-    //  Trace(c) << "INST-EXPLAIN: LOCAL RESOLUTION COMPRESSION" << std::endl;
-    //}
   }
   // clean up the path
   genPath.erase(lit);

@@ -589,7 +589,7 @@ ExplainStatus InstExplainDb::explain(Node q,
   }
   // we start with d_null since the root proof is of false.
   // we denote that the proof is closed by d_false.
-  genRoot.processUPG(iout, d_null, d_false);
+  genRoot.processUPG(iout, d_false);
 
   for (const std::pair<Node, std::vector<Node>>& sp : iout.d_subsumed_by)
   {
@@ -622,7 +622,6 @@ ExplainStatus InstExplainDb::explain(Node q,
 
 Node InstExplainDb::getGeneralizedConclusion(InstExplainInst* iei,
                                              const std::vector<Node>& assumps,
-                                             const std::vector<Node>& concs,
                                              const std::vector<Node>& closedPremises,
                                              std::vector<Node>& lemmas,
                                              std::map<Node, std::vector<Node>>& subsumed_by,
@@ -636,20 +635,26 @@ Node InstExplainDb::getGeneralizedConclusion(InstExplainInst* iei,
   }
   Node lem;
   Node conc;
-  if (!concs.empty())
+  if (iei)
   {
-    // FIXME: this can be a substitution of the body instead of disjunction
-    // This makes the conclusion even stronger.
-    Node concBody = concs.size() == 1 ? concs[0] : nm->mkNode(OR, concs);
+    Assert( !closedPremises.empty() );
+    // Notice our conclusion is the quantified formula with the closed
+    // premises substituted to their polarity. This may make the conclusion
+    // stronger than taking the UPG.
+    // For example:
+    //                                  forall x. ~P(x)
+    //   --------------------------     -------------IEX
+    //  forall x P(x) V (Q(x) ^ R(x))        ~P(x)          ~Q(x)
+    //   ---------------------------------------------------------
+    //                  false
+    // We conclude 
+    //   forall x false V (Q(x) ^ R(x)) which rewrites to forall x. Q(x) ^ R(x)
+    // instead of of the UPG:
+    //   forall x. Q(x)
     
-    Node q;
-    // get the quantified formula if we have an InstExplainInst reference
-    if (iei)
-    {
-      q = iei->getQuantifiedFormula();
-      Assert(!q.isNull());
-    }    
-    
+    // get the quantified formula
+    Node q = iei->getQuantifiedFormula();
+    Assert(!q.isNull());
     Trace("iex-lemma-debug") << "Closed premises: " << std::endl;
     std::vector< Node > premiseVar;
     std::vector< Node > premiseSubs;
@@ -662,6 +667,10 @@ Node InstExplainDb::getGeneralizedConclusion(InstExplainInst* iei,
       premiseSubs.push_back(pol ? d_true : d_false);
     }
     Trace("iex-lemma-debug") << "in " << (q.isNull() ? d_null : q[1]) << std::endl;
+    Node concBody = q[1].substitute(premiseVar.begin(),premiseVar.end(),premiseSubs.begin(),premiseSubs.end());
+    concBody = Rewriter::rewrite(concBody);
+    // must be non-trivial
+    Assert( concBody!=q[1] );
     
     Trace("iex-lemma-debug") << "(original) conclusion: " << concBody << std::endl;
     // check if we've already concluded this
@@ -796,18 +805,8 @@ Node InstExplainDb::getGeneralizedConclusion(InstExplainInst* iei,
           Trace("iex-lemma") << "  " << a << std::endl;
         }
       }
-      Trace("iex-lemma") << "conclusions:" << std::endl;
-      if (concs.empty())
-      {
-        Trace("iex-lemma") << "  (empty)" << std::endl;
-      }
-      else
-      {
-        for (const Node& c : concs)
-        {
-          Trace("iex-lemma") << "  " << c << std::endl;
-        }
-      }
+      Trace("iex-lemma") << "conclusion:" << std::endl;
+      Trace("iex-lemma") << "  " << conc << std::endl;
       Trace("iex-lemma") << "---------------------------------" << std::endl;
     }
     lemmas.push_back(lem);
