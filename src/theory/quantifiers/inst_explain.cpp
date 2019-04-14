@@ -145,13 +145,14 @@ void InstExplainInst::initialize(Node inst,
 
 void InstExplainInst::propagate(IeEvaluator& v,
                                 std::vector<Node>& lits,
-                                std::vector<Node>& olits)
+                                std::vector<Node>& olits,
+                 bool allowUnk)
 {
   // this quantified formula must evaluate to true
   Assert(v.evaluate(d_quant) == 1);
   Trace("iex-debug") << "InstExplainInst::propagate: " << d_body << " / "
                      << d_quant[1] << std::endl;
-  propagateInternal(d_body, d_quant[1], v, lits, olits);
+  propagateInternal(d_body, d_quant[1], v, lits, olits, allowUnk);
 }
 
 bool InstExplainInst::justify(IeEvaluator& v,
@@ -213,7 +214,8 @@ void InstExplainInst::propagateInternal(Node n,
                                         Node on,
                                         IeEvaluator& v,
                                         std::vector<Node>& lits,
-                                        std::vector<Node>& olits)
+                                        std::vector<Node>& olits,
+                                        bool allowUnk)
 {
   // if possible, propagate the literal in the clause that must be true
   std::unordered_set<Node, NodeHashFunction> visited;

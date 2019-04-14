@@ -308,10 +308,6 @@ public:
    * algorithm performed by this class.
    */
   bool isPropagatingInstance(Node n) const;
-
- private:
-  /** equality explainer */
-  EqExplainer* d_eqe;
 };
 
 std::ostream& operator<<(std::ostream& os, const QuantConflictFind::Effort& e);

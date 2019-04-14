@@ -144,7 +144,7 @@ Node InstExplainDb::registerCandidateInstantiation(Node q, std::vector<Node>& ts
   // TODO: can be more aggressive here
   if (vrPf.empty() || !vrPfFails.empty())
   {
-    return d_null;;
+    return d_null;
   }
   // go back and fill in all the proofs
   bool successPf = true;
@@ -175,6 +175,10 @@ Node InstExplainDb::registerCandidateInstantiation(Node q, std::vector<Node>& ts
     {
       d_qe->addLemma(lem);
     }
+  }
+  if( vrPfFails.empty() )
+  {
+    // it is a conflicting instance.
   }
   return d_null;
 }
@@ -294,7 +298,7 @@ void InstExplainDb::registerExplanation(Node inst,
     }
   } while (!visit.empty());
 
-  // now, propagate for future instantiations
+  // now, propagate
 }
 
 InstExplainLit& InstExplainDb::getInstExplainLit(Node lit)

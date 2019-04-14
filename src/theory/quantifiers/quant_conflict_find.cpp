@@ -1827,13 +1827,8 @@ QuantConflictFind::QuantConflictFind(QuantifiersEngine* qe, context::Context* c)
       d_true(NodeManager::currentNM()->mkConst<bool>(true)),
       d_false(NodeManager::currentNM()->mkConst<bool>(false)),
       d_effort(EFFORT_INVALID),
-      d_needs_computeRelEqr(),
-      d_eqe(nullptr)
+      d_needs_computeRelEqr()
 {
-  if (options::instExplain())
-  {
-    d_eqe = new EqExplainerTe(qe->getTheoryEngine());
-  }
 }
 
 //-------------------------------------------------- registration

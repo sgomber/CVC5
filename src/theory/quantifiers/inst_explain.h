@@ -127,7 +127,9 @@ class InstExplainInst
    */
   void propagate(IeEvaluator& v,
                  std::vector<Node>& lits,
-                 std::vector<Node>& olits);
+                 std::vector<Node>& olits,
+                 bool allowUnk=false
+                );
   /** reverse propagate
    *
    * This returns a set of literals lits (and their generalizations, in olits)
@@ -201,7 +203,8 @@ class InstExplainInst
                          Node on,
                          IeEvaluator& v,
                          std::vector<Node>& lits,
-                         std::vector<Node>& olits);
+                         std::vector<Node>& olits,
+                         bool allowUnk);
 
   /** get the propagating literals for n
    *
