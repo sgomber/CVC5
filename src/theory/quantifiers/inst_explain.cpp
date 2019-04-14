@@ -23,68 +23,81 @@ namespace CVC4 {
 namespace theory {
 namespace quantifiers {
 
-void IeEvaluator::reset() { d_ecache.clear(); }
+void IeEvaluator::reset() { 
+  d_ecache.clear(); 
+}
 
-int IeEvaluator::evaluate(Node n)
+int IeEvaluator::evaluate(Node n, bool cacheUnk)
 {
   n = Rewriter::rewrite(n);
-  return evaluateInternal(n, d_ecache);
+  std::unordered_set< Node, NodeHashFunction > ucache;
+  return evaluateInternal(n, d_ecache, ucache, cacheUnk);
 }
 int IeEvaluator::evaluateWithAssumptions(Node n,
-                                         std::map<Node, int>& assumptions)
+                                         std::map<Node, int>& assumptions, bool cacheUnk)
 {
   n = Rewriter::rewrite(n);
-  return evaluateInternal(n, assumptions);
+  std::unordered_set< Node, NodeHashFunction > ucache;
+  return evaluateInternal(n, assumptions, ucache, cacheUnk);
 }
 
-int IeEvaluator::evaluateInternal(Node n, std::map<Node, int>& cache)
+int IeEvaluator::evaluateInternal(Node n, std::map<Node, int>& cache, std::unordered_set< Node, NodeHashFunction >& ucache, bool cacheUnk)
 {
   std::map<Node, int>::iterator it = cache.find(n);
   if (it != cache.end())
   {
     return it->second;
   }
+  std::unordered_set< Node, NodeHashFunction >::iterator itu = ucache.find(n);
+  if( itu!=ucache.end() )
+  {
+    return 0;
+  }
   Kind k = n.getKind();
   if (k == NOT)
   {
-    return -evaluateInternal(n[0], cache);
+    return -evaluateInternal(n[0], cache, ucache, cacheUnk);
   }
   int res = 0;
   if (k == AND || k == OR)
   {
-    int expv = (k == OR) ? 1 : -1;
+    int expv = (k == OR) ? -1 : 1;
+    res = expv;
     for (TNode nc : n)
     {
-      int cres = evaluateInternal(nc, cache);
-      if (cres == expv || cres == 0)
+      int cres = evaluateInternal(nc, cache, ucache, cacheUnk);
+      if (cres == -expv )
       {
-        cache[n] = expv;
-        return expv;
+        res = cres;
+        break;
+      }
+      else if (cres==0)
+      {
+        res = 0;
       }
     }
-    res = -expv;
   }
   else if (k == ITE)
   {
-    int cres = evaluateInternal(n[0], cache);
+    int cres = evaluateInternal(n[0], cache, ucache, cacheUnk);
     if (cres == 0)
     {
-      int cres1 = evaluateInternal(n[1], cache);
-      int cres2 = evaluateInternal(n[2], cache);
+      int cres1 = evaluateInternal(n[1], cache, ucache, cacheUnk);
+      int cres2 = evaluateInternal(n[2], cache, ucache, cacheUnk);
       res = cres1 == cres2 ? cres1 : 0;
     }
     else
     {
       unsigned checkIndex = cres == 1 ? 1 : 2;
-      res = evaluateInternal(n[checkIndex], cache);
+      res = evaluateInternal(n[checkIndex], cache, ucache, cacheUnk);
     }
   }
   else if (k == EQUAL && n[0].getType().isBoolean())
   {
-    int cres1 = evaluateInternal(n[0], cache);
+    int cres1 = evaluateInternal(n[0], cache, ucache, cacheUnk);
     if (cres1 != 0)
     {
-      int cres2 = evaluateInternal(n[1], cache);
+      int cres2 = evaluateInternal(n[1], cache, ucache, cacheUnk);
       res = cres2 == cres1 ? 1 : (cres2 == 0 ? 0 : -1);
     }
   }
@@ -99,7 +112,14 @@ int IeEvaluator::evaluateInternal(Node n, std::map<Node, int>& cache)
   }
   Trace("iex-debug2") << "IeEvaluator::evaluateInternal: " << n
                       << " evaluates to " << res << std::endl;
-  cache[n] = res;
+  if( res==0 && !cacheUnk )
+  {
+    ucache.insert(n);
+  }
+  else
+  {
+    cache[n] = res;
+  }
   return res;
 }
 
@@ -145,14 +165,13 @@ void InstExplainInst::initialize(Node inst,
 
 void InstExplainInst::propagate(IeEvaluator& v,
                                 std::vector<Node>& lits,
-                                std::vector<Node>& olits,
-                 bool allowUnk)
+                                std::vector<Node>& olits)
 {
   // this quantified formula must evaluate to true
   Assert(v.evaluate(d_quant) == 1);
   Trace("iex-debug") << "InstExplainInst::propagate: " << d_body << " / "
                      << d_quant[1] << std::endl;
-  propagateInternal(d_body, d_quant[1], v, lits, olits, allowUnk);
+  propagateInternal(d_body, d_quant[1], v, lits, olits);
 }
 
 bool InstExplainInst::justify(IeEvaluator& v,
@@ -214,8 +233,7 @@ void InstExplainInst::propagateInternal(Node n,
                                         Node on,
                                         IeEvaluator& v,
                                         std::vector<Node>& lits,
-                                        std::vector<Node>& olits,
-                                        bool allowUnk)
+                                        std::vector<Node>& olits)
 {
   // if possible, propagate the literal in the clause that must be true
   std::unordered_set<Node, NodeHashFunction> visited;

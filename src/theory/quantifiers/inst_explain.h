@@ -43,21 +43,28 @@ class IeEvaluator
    * context. The value of n can still be determined in some cases in the
    * case these literals are irrelevant.
    */
-  int evaluate(Node n);
+  int evaluate(Node n, bool cacheUnk=true);
   /**
    * Evaluate, starting with a custom set of assumptions instead of using
    * d_ecache. The values in assumptions can be thought of as overriding the
    * model values for the given formula.
    */
-  int evaluateWithAssumptions(Node, std::map<Node, int>& assumptions);
+  int evaluateWithAssumptions(Node, std::map<Node, int>& assumptions, bool cacheUnk=true);
 
  private:
   /** valuation */
   Valuation& d_valuation;
   /** cache */
   std::map<Node, int> d_ecache;
-  /** evaluate n given cache assumptions. */
-  int evaluateInternal(Node n, std::map<Node, int>& assumptions);
+  /** 
+   * evaluate n given cache assumptions. 
+   * 
+   * ucache stores the nodes whose return value is 0 if cacheUnk is false.
+   * In this configuration, we only cache the value of nodes in assumptions
+   * whose value is known. This is useful if we want to decide on the truth
+   * value of literals later.
+   */
+  int evaluateInternal(Node n, std::map<Node, int>& assumptions, std::unordered_set< Node, NodeHashFunction >& ucache, bool cacheUnk);
 };
 
 /** instantiation explain literal
@@ -127,8 +134,7 @@ class InstExplainInst
    */
   void propagate(IeEvaluator& v,
                  std::vector<Node>& lits,
-                 std::vector<Node>& olits,
-                 bool allowUnk=false
+                 std::vector<Node>& olits
                 );
   /** reverse propagate
    *
@@ -203,8 +209,7 @@ class InstExplainInst
                          Node on,
                          IeEvaluator& v,
                          std::vector<Node>& lits,
-                         std::vector<Node>& olits,
-                         bool allowUnk);
+                         std::vector<Node>& olits);
 
   /** get the propagating literals for n
    *

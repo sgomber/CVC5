@@ -125,6 +125,8 @@ void InstExplainDb::activateInst(Node inst, Node srcLit, InstExplainLit& src)
 
 Node InstExplainDb::registerCandidateInstantiation(Node q, std::vector<Node>& ts)
 {
+  // the quantified formula we will return
+  Node retq;
   // virtual proof of refutation of this instance
   std::map<Node, eq::EqProof> vrPf;
   std::vector<Node> vrPfFails;
@@ -191,6 +193,10 @@ Node InstExplainDb::registerCandidateInstantiation(Node q, std::vector<Node>& ts
           Trace("iex-subsume") << "InstExplainDb::subsume: " << spq << " => "
                               << sp.first << std::endl;
           d_subsume->setSubsumes(spq, sp.first);
+          if( sp.first==q )
+          {
+            retq = q;
+          }
         }
       }
     }
@@ -200,7 +206,7 @@ Node InstExplainDb::registerCandidateInstantiation(Node q, std::vector<Node>& ts
     // it is a conflicting instance.
     AlwaysAssert(entFalse);
   }
-  return d_null;
+  return retq;
 }
 
 void InstExplainDb::registerExplanation(Node inst,
@@ -318,10 +324,14 @@ void InstExplainDb::registerExplanation(Node inst,
     }
   } while (!visit.empty());
 
-  // now, propagate
   if( !d_qe->inConflict() )
   {
+    // decide to satisfy
     
+    
+    // now, propagate
+    std::vector< Node > lits;
+    std::vector< Node > olits;
   }
 }
 
