@@ -169,16 +169,36 @@ Node InstExplainDb::registerCandidateInstantiation(Node q, std::vector<Node>& ts
     }
     
     // run the proof generalization procedure 
-    std::vector<Node> lemmas;
-    explain(q, ts, vrPf, d_eqe, lemmas, "iex-db");
-    for (const Node& lem : lemmas)
+    // output utility, which manages which lemmas are generated during the proof
+    // generalization.
+    IexOutput iout(*this);    
+    explain(q, ts, vrPf, d_eqe, iout, "iex-db");
+    if( !iout.d_lemmas.empty() )
     {
-      d_qe->addLemma(lem);
+      Trace("iex-engine") << "...IEX adding " << iout.d_lemmas.size() << " lemmas." << std::endl;
+      for (const Node& lem : iout.d_lemmas)
+      {
+        d_qe->addLemma(lem);
+      }
+    }
+    if( !iout.d_subsumed_by.empty() )
+    {
+      Trace("iex-engine") << "...IEX found subsumptions for " << iout.d_subsumed_by.size() << " quantified formulas." << std::endl;
+      for (const std::pair<Node, std::vector<Node>>& sp : iout.d_subsumed_by)
+      {
+        for (const Node& spq : sp.second)
+        {
+          Trace("iex-subsume") << "InstExplainDb::subsume: " << spq << " => "
+                              << sp.first << std::endl;
+          d_subsume->setSubsumes(spq, sp.first);
+        }
+      }
     }
   }
   if( vrPfFails.empty() )
   {
     // it is a conflicting instance.
+    AlwaysAssert(entFalse);
   }
   return d_null;
 }
@@ -299,6 +319,10 @@ void InstExplainDb::registerExplanation(Node inst,
   } while (!visit.empty());
 
   // now, propagate
+  if( !d_qe->inConflict() )
+  {
+    
+  }
 }
 
 InstExplainLit& InstExplainDb::getInstExplainLit(Node lit)
@@ -330,7 +354,7 @@ ExplainStatus InstExplainDb::explain(Node q,
                                      const std::vector<Node>& terms,
                                      std::map<Node, eq::EqProof>& expPf,
                                      EqExplainer* eqe,
-                                     std::vector<Node>& lems,
+                                    IexOutput& iout,
                                      const char* ctx)
 {
   Trace("iex") << "InstExplainDb::explain: Conflict in context " << ctx << " : "
@@ -348,10 +372,6 @@ ExplainStatus InstExplainDb::explain(Node q,
   // it has the conflicting quantified formula as an assumption always.
   // This is necessarily manual since genRoot is not built via an IEX inference.
   genRoot.d_assumptions.push_back(q);
-
-  // output utility, which manages which lemmas are generated during the proof
-  // generalization.
-  IexOutput iout(*this);
 
   Assert(q.getKind() == FORALL);
   // we have that the proofs in the range of expPf are "proof sketches", i.e.
@@ -422,7 +442,7 @@ ExplainStatus InstExplainDb::explain(Node q,
       Assert(!allAssumptions.empty());
       allAssumptions.push_back(q);
       Node lem = nm->mkNode(AND, allAssumptions).negate();
-      lems.push_back(lem);
+      iout.d_lemmas.push_back(lem);
       Trace("iex") << "InstExplainDb::explain: LEMMA regressed conflict " << lem
                    << std::endl;
       return EXP_STATUS_FULL;
@@ -603,15 +623,6 @@ ExplainStatus InstExplainDb::explain(Node q,
   // we denote that the proof is closed by d_false.
   genRoot.processUPG(iout, d_false);
 
-  for (const std::pair<Node, std::vector<Node>>& sp : iout.d_subsumed_by)
-  {
-    for (const Node& spq : sp.second)
-    {
-      Trace("iex-subsume") << "InstExplainDb::subsume: " << spq << " => "
-                           << sp.first << std::endl;
-      d_subsume->setSubsumes(spq, sp.first);
-    }
-  }
   // TEMPORARY FIXME
   if (options::qcfExpGenAbort())
   {
@@ -625,9 +636,7 @@ ExplainStatus InstExplainDb::explain(Node q,
     Trace("iex") << "InstExplainDb::explain: No lemmas, fail." << std::endl;
     return EXP_STATUS_FAIL;
   }
-  // add to lemmas
-  lems.insert(lems.end(), iout.d_lemmas.begin(), iout.d_lemmas.end());
-  Trace("iex") << "InstExplainDb::explain: generated " << lems.size()
+  Trace("iex") << "InstExplainDb::explain: generated " << iout.d_lemmas.size()
                << " lemmas." << std::endl;
   return EXP_STATUS_FULL;
 }

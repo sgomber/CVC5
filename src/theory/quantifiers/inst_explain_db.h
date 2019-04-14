@@ -66,7 +66,7 @@ class InstExplainDb
                         const std::vector<Node>& terms,
                         std::map<Node, eq::EqProof>& expPf,
                         EqExplainer* eqe,
-                        std::vector<Node>& lems,
+                        IexOutput& iout,
                         const char* ctx);
 
   /** get generalized conclusion */
