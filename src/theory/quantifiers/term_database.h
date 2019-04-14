@@ -247,6 +247,13 @@ class TermDb : public QuantifiersUtil {
   bool isEntailed(TNode n,
                   bool pol,
                   std::map<Node, eq::EqProof>& exp,
+                  std::vector<Node>& fails,
+                  bool computeFail,
+                  bool computePf = true,
+                  EqualityQuery* qy = nullptr);
+  bool isEntailed(TNode n,
+                  bool pol,
+                  std::map<Node, eq::EqProof>& exp,
                   bool computePf = true,
                   EqualityQuery* qy = nullptr);
   /** same as above, without exp */
@@ -268,6 +275,15 @@ class TermDb : public QuantifiersUtil {
    * for why n is entailed with polarity pol. That is:
    *   ( gexp * subs ) => ( pol ? n : ~n ) * subs
    */
+  bool isEntailed(TNode n,
+                  std::map<TNode, TNode>& subs,
+                  bool subsRep,
+                  bool pol,
+                  std::map<Node, eq::EqProof>& exp,
+                  std::vector<Node>& fails,
+                  bool computeFail,
+                  bool computePf = true,
+                  EqualityQuery* qy = nullptr);
   bool isEntailed(TNode n,
                   std::map<TNode, TNode>& subs,
                   bool subsRep,
@@ -389,7 +405,10 @@ class TermDb : public QuantifiersUtil {
                    bool pol,
                    std::map<Node, eq::EqProof>& exp,
                    EqualityQuery* qy,
-                   ExpMode emode);
+                   ExpMode emode,
+                   std::vector<Node>& fails,
+                   bool computeFail
+                  );
   /** compute uf eqc terms :
   * Ensure entries for f are in d_func_map_eqc_trie for all equivalence classes
   */

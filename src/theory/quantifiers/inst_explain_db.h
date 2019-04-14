@@ -86,6 +86,8 @@ class InstExplainDb
   IeEvaluator d_ev;
   /** the instantiate explain proof generalization utility */
   InstExplainPfGen d_iexpfg;
+  /** equality explainer utility */
+  EqExplainer* d_eqe;
   /** common constants */
   Node d_true;
   Node d_false;

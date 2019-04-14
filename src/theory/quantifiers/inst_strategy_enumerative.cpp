@@ -94,6 +94,7 @@ void InstStrategyEnum::check(Theory::Effort e, QEffort quant_e)
   FirstOrderModel* fm = d_quantEngine->getModel();
   RelevantDomain* rd = d_quantEngine->getRelevantDomain();
   unsigned nquant = fm->getNumAssertedQuantifiers();
+  std::map<Node, bool> needsGInst;
   for (unsigned r = rstart; r <= rend; r++)
   {
     if (rd || r > 0)
@@ -112,7 +113,16 @@ void InstStrategyEnum::check(Theory::Effort e, QEffort quant_e)
       for (unsigned i = 0; i < nquant; i++)
       {
         Node q = fm->getAssertedQuantifier(i, true);
-        if (d_quantEngine->hasOwnership(q, this) && fm->isQuantifierActive(q))
+        bool doProcess = false;
+        if( r==0 )
+        {
+          doProcess = d_quantEngine->hasOwnership(q, this) && fm->isQuantifierActive(q);
+        }
+        else
+        {
+          doProcess = needsGInst.find(q)!=needsGInst.end();
+        }
+        if (doProcess)
         {
           if (process(q, fullEffort, r == 0))
           {
@@ -123,11 +133,16 @@ void InstStrategyEnum::check(Theory::Effort e, QEffort quant_e)
               break;
             }
           }
+          else if( options::fullSaturateStratify() )
+          {
+            needsGInst[q] = true;
+          }
         }
       }
-      if (addedLemmas > 0)
+      if (d_quantEngine->inConflict() || ( addedLemmas > 0 && options::fullSaturateStratify()))
       {
-        // we break if we added any lemma at this effort level
+        // we break if we are in conflict, or if we added any lemma at this
+        // effort level and we stratify effort levels.
         break;
       }
     }

@@ -36,10 +36,12 @@ InstExplainDb::InstExplainDb(QuantifiersEngine* qe)
       d_tdb(d_qe->getTermDatabase()),
       d_subsume(d_qe->getSubsume()),
       d_ev(d_qe->getValuation()),
-      d_iexpfg(*this, qe)
+      d_iexpfg(*this, qe),
+      d_eqe(nullptr)
 {
   d_false = NodeManager::currentNM()->mkConst(false);
   d_true = NodeManager::currentNM()->mkConst(true);
+  d_eqe = new EqExplainerTe(qe->getTheoryEngine());
 }
 
 void InstExplainDb::reset(Theory::Effort e)
@@ -134,26 +136,32 @@ void InstExplainDb::registerExplanation(Node inst,
   iei.initialize(inst, n, q, ts);
   std::map<int, std::unordered_set<TNode, NodeHashFunction>> visited;
   std::vector<int> visitPol;
+  //std::vector<int> justifyPfVisitPol;
   std::vector<TNode> visit;
   std::vector<TNode> visiti;
+  /*
   bool newQuant = false;
   if (d_quants.find(q) == d_quants.end())
   {
     newQuant = true;
     d_quants[q] = true;
   }
-  // TODO
-  // std::map<Node, eq::EqProof> expPf;
+  */
 
   int pol;
+  //int jppol;
   TNode cur;
   TNode curi;
   visitPol.push_back(1);
+  //justifyPfVisitPol.push_back(-1);
   visit.push_back(q[1]);
   visiti.push_back(n);
   do
   {
     pol = visitPol.back();
+    visitPol.pop_back();
+    //jppol = justifyPfVisitPol.back();
+    //justifyPfVisitPol.pop_back();
     cur = visit.back();
     visit.pop_back();
     curi = visiti.back();
@@ -167,14 +175,50 @@ void InstExplainDb::registerExplanation(Node inst,
       if (k == NOT)
       {
         visitPol.push_back(-pol);
+        //justifyPfVisitPol.push_back(-jppol);
         visit.push_back(cur[0]);
         visiti.push_back(curi[0]);
       }
       else if (k == AND || k == OR)
       {
+        // if simple to justify, we only need to justify one child
+        /*
+        int jIndex = 0;
+        bool simPol = false;
+        if( jppol!=0 && (k==AND)==(jppol==-1) )
+        {
+          simPol = true;
+          // Prefer one that is actually entailed, since this will give us
+          // a proof that may be generalized
+          std::vector< unsigned > unkIndex;
+          for (unsigned i = 0, size = cur.getNumChildren(); i < size; i++)
+          {
+            int cres = d_ev.evaluate(cur[i]);
+            if( cres==jppol )
+            {
+              unkIndex.clear();
+              jIndex = i;
+              break;
+            }
+            else if( cres==0 )
+            {
+              unkIndex.push_back(i);
+            }
+          }
+          if( !unkIndex.empty() )
+          {
+            // see if any index is entailed TODO
+            for( unsigned i=0, usize=unkIndex.size(); i<usize; i++ )
+            {
+              
+            }
+          }
+        }
+        */
         for (unsigned i = 0, size = cur.getNumChildren(); i < size; i++)
         {
           visitPol.push_back(pol);
+          //justifyPfVisitPol.push_back(simPol ? ( i==jIndex ? jppol : 0 ) : jppol );
           visit.push_back(cur[i]);
           visiti.push_back(curi[i]);
         }
@@ -203,17 +247,19 @@ void InstExplainDb::registerExplanation(Node inst,
       else
       {
         // a literal
+        // Register the instantiation explanation information, which is used
+        // to determine when this instantiation lemma will propagate.
         Node curir = curi;
         curir = Rewriter::rewrite(pol == -1 ? curir.negate() : curir);
         InstExplainLit& iel = getInstExplainLit(curir);
         iel.addInstExplanation(inst);
         Trace("inst-explain") << "  -> " << curir << std::endl;
-        // also store original literals in data structure for finding
+        // also store original literals in data structure for finding TODO
         // virtual propagating instantiations
-        if (newQuant)
-        {
-          registerPropagatingLiteral(cur, q);
-        }
+        //if (newQuant)
+        //{
+        //  registerPropagatingLiteral(cur, q);
+        //}
         if (pol == 0)
         {
           // Store the opposite direction as well if hasPol is false,
@@ -222,15 +268,86 @@ void InstExplainDb::registerExplanation(Node inst,
           InstExplainLit& ieln = getInstExplainLit(curinr);
           ieln.addInstExplanation(inst);
           Trace("inst-explain") << "  -> " << curinr << std::endl;
-          if (newQuant)
+          //if (newQuant)
+          //{
+          //  Node curn = cur.negate();
+          //  registerPropagatingLiteral(curn, q);
+          //}
+        }
+        // If its value must be justified in the refutation. This is used for
+        // calculating whether the current instantiation lemma can be
+        // strengthened.
+        /*
+        if( jppol!=0 )
+        {
+          if( d_tdb->isEntailed(cur,subs,false,jppol==1,vrPf ) )
           {
-            Node curn = cur.negate();
-            registerPropagatingLiteral(curn, q);
+            // at least one literal was entailed, the proof is now non-trivial
+            vrPfTrivial = false;
+          }
+          else
+          {
+            // Initialize to an empty proof. This node will be treated
+            // like an open leaf.
+            Node jlit = cur;
+            jlit = jppol==-1 ? jlit.negate() : jlit;
+            vrPf[jlit].d_node = d_null;
           }
         }
+        */
       }
     }
   } while (!visit.empty());
+  
+  // virtual proof of refutation of this instance
+  std::map<Node, eq::EqProof> vrPf;
+  std::vector< Node > vrPfFails;
+  // make the substitution
+  std::map< TNode, TNode > subs;
+  for( unsigned i=0, size = ts.size(); i<size; i++ )
+  {
+    subs[q[0][i]] = ts[i];
+  }
+  TermDb * tdb = d_qe->getTermDatabase();
+  bool entFalse = tdb->isEntailed(q[1], subs, false, false, vrPf, vrPfFails, true, false);
+  // if we have all entailments, then we are a conflicting instance
+  Trace("iex-setup") << "Instantiation led to " << vrPf.size() << " / " << (vrPf.size()+vrPfFails.size()) << " entailments." << std::endl;
+  // TODO: can be more aggressive here
+  if( !vrPf.empty() && vrPfFails.empty())
+  {
+    // go back and fill in all the proofs
+    bool successPf = true;
+    for (const std::pair<Node, eq::EqProof>& lit : vrPf)
+    {
+      // polarity is now true
+      if (!tdb->isEntailed(lit.first, subs, false, true, vrPf, true))
+      {
+        successPf = false;
+        Trace("iex-setup")
+            << "...failed to reprove " << lit.first << "!" << std::endl;
+        break;
+      }
+    }
+    if( successPf )
+    {
+      Trace("iex-setup") << "...successfully filled in proofs." << std::endl;
+      // empty proofs for the failures
+      for( const Node& nc : vrPfFails )
+      {
+        vrPf[nc].d_node = d_null;
+      }
+      std::vector< Node > lemmas;
+      explain(q,ts,vrPf,d_eqe,lemmas,"iex-db");
+      for( const Node& lem : lemmas )
+      {
+        d_qe->addLemma(lem);
+      }
+    }
+    
+    // run the proof generalization procedure 
+  }
+
+  // now, propagate for future instantiations
 }
 
 InstExplainLit& InstExplainDb::getInstExplainLit(Node lit)

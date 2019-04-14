@@ -44,6 +44,11 @@ class IeEvaluator
    * case these literals are irrelevant.
    */
   int evaluate(Node n);
+  /** 
+   * Evaluate, starting with a custom set of assumptions instead of using
+   * d_ecache. The values in assumptions can be thought of as overriding the
+   * model values for the given formula.
+   */
   int evaluateWithAssumptions(Node, std::map<Node, int>& assumptions);
 
  private:
@@ -51,7 +56,8 @@ class IeEvaluator
   Valuation& d_valuation;
   /** cache */
   std::map<Node, int> d_ecache;
-  int evaluateInternal(Node, std::map<Node, int>& assumptions);
+  /** evaluate n given cache assumptions. */
+  int evaluateInternal(Node n, std::map<Node, int>& assumptions);
 };
 
 /** instantiation explain literal

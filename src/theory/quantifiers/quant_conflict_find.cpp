@@ -584,8 +584,8 @@ bool QuantInfo::isTConstraintSpurious(QuantConflictFind* p,
       // the explanation/generalized explanation
       std::map<Node, eq::EqProof> exp;
       bool entFalse = false;
-      bool genConflict =
-          options::qcfExpMode() != quantifiers::QCF_EXP_CINSTANCE;
+      bool genConflict = false;
+          //options::qcfExpMode() != quantifiers::QCF_EXP_CINSTANCE;
       if (genConflict)
       {
         // do not eagerly generate proofs
