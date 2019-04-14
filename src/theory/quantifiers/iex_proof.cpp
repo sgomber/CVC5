@@ -26,10 +26,11 @@ namespace quantifiers {
 Node IexOutput::reportConclusion(InstExplainInst* iei,
                                  const std::vector<Node>& assumps,
                                  const std::vector<Node>& concs,
+                                 const std::vector<Node>& closedPremises,
                                  bool doGenCInst)
 {
   return d_iexd.getGeneralizedConclusion(
-      iei, assumps, concs, d_lemmas, d_subsumed_by, doGenCInst);
+      iei, assumps, concs, closedPremises, d_lemmas, d_subsumed_by, doGenCInst);
 }
 bool IexOutput::empty() const
 {
@@ -71,7 +72,7 @@ void IexProof::setConclusion(IexOutput& iout, Node pl, Node opl)
         it2->second.debugPrint("iex-proof-debug");
         Trace("iex-proof-debug") << "=== with " << opl << std::endl;
       }
-      it2->second.processUPG(iout, opl);
+      it2->second.processUPG(iout, opl, opl);
       Trace("iex-proof-debug") << "=== END PROCESS " << std::endl;
     }
     d_closedPremises.push_back(opl);
@@ -105,7 +106,7 @@ void IexProof::setOpenConclusionInternal(IexOutput& iout, Node pl, Node opl)
       d_conclusions[pl][opl].debugPrint("iex-proof-debug");
       Trace("iex-proof-debug") << "=== with " << opl << std::endl;
     }
-    d_conclusions[pl][opl].processUPG(iout, opl);
+    d_conclusions[pl][opl].processUPG(iout, opl, opl);
     Trace("iex-proof-debug") << "=== END PROCESS " << std::endl;
   }
   d_conclusions.erase(pl);
@@ -124,8 +125,6 @@ void IexProof::notifyOpenConclusion(IexOutput& iout,
   if (!d_upgTriv)
   {
     Assert(!d_upgLit.isNull());
-    //
-    // d_conclusions[d_upgLit][d_upgOLit].processUPG(d_upgOLit);
     // clear the previous non-trivial UPG
     setOpenConclusionInternal(iout, d_upgLit, d_upgOLit);
     // it is now trivial
@@ -140,8 +139,6 @@ void IexProof::notifyOpenConclusion(IexOutput& iout,
   }
   else if (!isTriv)
   {
-    //
-    // d_conclusions[d_upgLit][d_upgOLit].processUPG(d_upgOLit);
     // otherwise, have to clear the current one if its non-trivial
     setOpenConclusionInternal(iout, pl, opl);
   }
@@ -414,11 +411,12 @@ InstExplainInst* IexProof::getUPG(std::vector<Node>& concs,
   }
   return ret;
 }
-void IexProof::processUPG(IexOutput& iout, Node currConc)
+void IexProof::processUPG(IexOutput& iout, Node currConc,
+                          Node currClosedPremise)
 {
   // start with no assumptions
   std::vector<Node> assumptions;
-  Node upgConc = processUPGInternal(iout, currConc, assumptions);
+  Node upgConc = processUPGInternal(iout, currConc, currClosedPremise, assumptions);
   if (!upgConc.isNull())
   {
     // compress assumptions
@@ -431,6 +429,7 @@ void IexProof::processUPG(IexOutput& iout, Node currConc)
 
 Node IexProof::processUPGInternal(IexOutput& iout,
                                   Node currConc,
+                                  Node currClosedPremise,
                                   std::vector<Node>& assumptions) const
 {
   Trace("iex-process-upg") << "Process UPG, #assumps=" << assumptions.size()
@@ -465,11 +464,17 @@ Node IexProof::processUPGInternal(IexOutput& iout,
               concs.push_back(currConc);
             }
             Assert(!cc.first.isNull());
-            concs.push_back(cc.first.negate());
+            concs.push_back(cs.first.negate());
             // we do not do the generalized conflict instance in this call
             // we prefer generalized conflicting instances from the UPG.
+            std::vector< Node > ccps;
+            ccps.insert(ccps.end(),d_closedPremises.begin(),d_closedPremises.end());
+            if( !currClosedPremise.isNull() )
+            {
+              ccps.push_back(currClosedPremise);
+            }
             Node genConc = iout.reportConclusion(
-                cc.second.d_iei, assumptions, concs, options::iexGenCInst());
+                d_iei, assumptions, concs, ccps, options::iexGenCInst());
             // we close the open conclusion
             assumptions.clear();
             // we become a premise only if we are not carrying a conclusion
@@ -487,7 +492,8 @@ Node IexProof::processUPGInternal(IexOutput& iout,
           currConc = cc.first;
         }
         Trace("iex-process-upg") << "...follow " << cc.first << std::endl;
-        ret = cc.second.processUPGInternal(iout, currConc, assumptions);
+        // if we have no open premise, then the proof is closed
+        ret = cc.second.processUPGInternal(iout, currConc, currClosedPremise.isNull() ? currClosedPremise : cc.first.negate(), assumptions);
       }
       else
       {
@@ -505,9 +511,15 @@ Node IexProof::processUPGInternal(IexOutput& iout,
     {
       concs.push_back(currConc);
     }
+    std::vector< Node > ccps;
+    ccps.insert(ccps.end(),d_closedPremises.begin(),d_closedPremises.end());
+    if( !currClosedPremise.isNull() )
+    {
+      ccps.push_back(currClosedPremise);
+    }
     // conclude the UPG
     return iout.reportConclusion(
-        d_iei, assumptions, concs, options::iexGenCInst());
+        d_iei, assumptions, concs, ccps, options::iexGenCInst());
   }
   return ret;
 }

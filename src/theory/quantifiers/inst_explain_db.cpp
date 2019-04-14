@@ -588,7 +588,8 @@ ExplainStatus InstExplainDb::explain(Node q,
     Trace("iex-proof") << "=== END FINAL PROOF" << std::endl;
   }
   // we start with d_null since the root proof is of false.
-  genRoot.processUPG(iout, d_null);
+  // we denote that the proof is closed by d_false.
+  genRoot.processUPG(iout, d_null, d_false);
 
   for (const std::pair<Node, std::vector<Node>>& sp : iout.d_subsumed_by)
   {
@@ -622,6 +623,7 @@ ExplainStatus InstExplainDb::explain(Node q,
 Node InstExplainDb::getGeneralizedConclusion(InstExplainInst* iei,
                                              const std::vector<Node>& assumps,
                                              const std::vector<Node>& concs,
+                                             const std::vector<Node>& closedPremises,
                                              std::vector<Node>& lemmas,
                                              std::map<Node, std::vector<Node>>& subsumed_by,
                                              bool doGenCInst)
@@ -639,24 +641,39 @@ Node InstExplainDb::getGeneralizedConclusion(InstExplainInst* iei,
     // FIXME: this can be a substitution of the body instead of disjunction
     // This makes the conclusion even stronger.
     Node concBody = concs.size() == 1 ? concs[0] : nm->mkNode(OR, concs);
-    Trace("iex-debug") << "(original) conclusion: " << concBody << std::endl;
-    // check if we've already concluded this
-    std::map<Node, Node>::iterator itpv = d_conc_cache[antec].find(concBody);
-    if (itpv != d_conc_cache[antec].end())
-    {
-      Trace("iex-debug") << "InstExplainDb::WARNING: repeated conclusion"
-                         << std::endl;
-      // this can happen if a conflicting instance produces the same
-      // generalization as a previous round, whereas the quantified conclusion
-      // of that round did not generate the conflicting instance it could have.
-      conc = itpv->second;
-    }
+    
     Node q;
     // get the quantified formula if we have an InstExplainInst reference
     if (iei)
     {
       q = iei->getQuantifiedFormula();
       Assert(!q.isNull());
+    }    
+    
+    Trace("iex-lemma-debug") << "Closed premises: " << std::endl;
+    std::vector< Node > premiseVar;
+    std::vector< Node > premiseSubs;
+    for( const Node& cp : closedPremises )
+    {
+      bool pol = cp.getKind()!=NOT;
+      Trace("iex-lemma-debug") << "  " << (pol ? cp : cp[0]) << " -> " << pol << std::endl;
+      premiseVar.push_back(pol ? cp : cp[0]);
+      // flip
+      premiseSubs.push_back(pol ? d_true : d_false);
+    }
+    Trace("iex-lemma-debug") << "in " << (q.isNull() ? d_null : q[1]) << std::endl;
+    
+    Trace("iex-lemma-debug") << "(original) conclusion: " << concBody << std::endl;
+    // check if we've already concluded this
+    std::map<Node, Node>::iterator itpv = d_conc_cache[antec].find(concBody);
+    if (itpv != d_conc_cache[antec].end())
+    {
+      Trace("iex-lemma-debug") << "InstExplainDb::WARNING: repeated conclusion"
+                         << std::endl;
+      // this can happen if a conflicting instance produces the same
+      // generalization as a previous round, whereas the quantified conclusion
+      // of that round did not generate the conflicting instance it could have.
+      conc = itpv->second;
     }
     std::vector<Node> vars;
     if (conc.isNull())
@@ -664,7 +681,7 @@ Node InstExplainDb::getGeneralizedConclusion(InstExplainInst* iei,
       if (q.isNull())
       {
         conc = concBody;
-        Trace("iex-debug") << "construct conclusion no q: " << conc
+        Trace("iex-lemma-debug") << "construct conclusion no q: " << conc
                            << std::endl;
       }
       else
@@ -681,9 +698,9 @@ Node InstExplainDb::getGeneralizedConclusion(InstExplainInst* iei,
         concsubs = Rewriter::rewrite(concsubs);
         Node bvl = nm->mkNode(BOUND_VAR_LIST, newVars);
         conc = nm->mkNode(FORALL, bvl, concsubs);
-        Trace("iex-debug") << "construct conclusion: " << conc << std::endl;
+        Trace("iex-lemma-debug") << "construct conclusion: " << conc << std::endl;
         conc = Rewriter::rewrite(conc);
-        Trace("iex-debug") << "construct conclusion post-rewrite: " << conc
+        Trace("iex-lemma-debug") << "construct conclusion post-rewrite: " << conc
                            << std::endl;
       }
       // should not have free variables, otherwise we likely have the wrong q.
@@ -709,9 +726,9 @@ Node InstExplainDb::getGeneralizedConclusion(InstExplainInst* iei,
         if( cc.getKind()==FORALL )
         {
           // mark the subsumption
-          Trace("iex-debug") << "auto-subsume: " << std::endl;
-          Trace("iex-debug") << "  " << cc << " subsumes" << std::endl;
-          Trace("iex-debug") << "  " << q << std::endl;
+          Trace("iex-lemma-debug") << "auto-subsume: " << std::endl;
+          Trace("iex-lemma-debug") << "  " << cc << " subsumes" << std::endl;
+          Trace("iex-lemma-debug") << "  " << q << std::endl;
           Assert(d_subsume);
           // We are guaranteed that cc subsumes q.
           // We mark the conclusion to indicate that it deactivates

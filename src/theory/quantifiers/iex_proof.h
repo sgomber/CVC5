@@ -37,6 +37,7 @@ class IexOutput
   Node reportConclusion(InstExplainInst* iei,
                         const std::vector<Node>& assumps,
                         const std::vector<Node>& concs,
+                        const std::vector<Node>& closedPremises,
                         bool doGenCInst = true);
   /** is the content of this output empty? */
   bool empty() const;
@@ -168,7 +169,8 @@ class IexProof
    *
    * This adds lemmas to FIXME
    */
-  void processUPG(IexOutput& iout, Node currConc);
+  void processUPG(IexOutput& iout, Node currConc,
+                          Node currClosedPremise);
 
  private:
   bool mergeInternal(TNode a, TNode b, const IexProof& gb, bool allowBind);
@@ -220,6 +222,7 @@ class IexProof
    */
   Node processUPGInternal(IexOutput& iout,
                           Node currConc,
+                          Node currClosedPremise,
                           std::vector<Node>& assumptions) const;
 };
 
