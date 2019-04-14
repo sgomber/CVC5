@@ -772,9 +772,18 @@ TNode TermDb::getEntailedTerm2(TNode n,
     // that this term is equivalent to a known one. Notice that the failure
     // vector in this case is worthless, since we will fail at a higher level.
     // Hence, we do not compute failures here.
-    std::vector< Node > failsUnused;
+    std::vector<Node> failsUnused;
     for( unsigned i=0; i<2; i++ ){
-      if (isEntailed2(n[0], subs, subsRep, hasSubs, i == 0, exp, qy, emode, failsUnused, false))
+      if (isEntailed2(n[0],
+                      subs,
+                      subsRep,
+                      hasSubs,
+                      i == 0,
+                      exp,
+                      qy,
+                      emode,
+                      failsUnused,
+                      false))
       {
         return getEntailedTerm2(
             n[i == 0 ? 1 : 2], subs, subsRep, hasSubs, exp, p, qy, emode);
@@ -988,13 +997,14 @@ bool TermDb::isEntailed2(TNode n,
                          std::vector<Node>& fails,
                          bool computeFail)
 {
-  Assert( fails.empty() );
+  Assert(fails.empty());
   Assert( !qy->extendsEngine() );
   Assert(emode != EXP_MODE_PROOF_LIT);
   Trace("term-db-entail") << "Check entailed : " << n << ", pol = " << pol << std::endl;
   Assert( n.getType().isBoolean() );
   Kind nk = n.getKind();
-  if( nk==EQUAL && !n[0].getType().isBoolean() ){
+  if (nk == EQUAL && !n[0].getType().isBoolean())
+  {
     std::shared_ptr<eq::EqProof> pc1;
     if (emode == EXP_MODE_PROOF)
     {
@@ -1083,73 +1093,107 @@ bool TermDb::isEntailed2(TNode n,
             }
           }
         }
-        if( success )
+        if (success)
         {
           return true;
         }
       }
     }
-  }else if( nk==NOT ){
-    return isEntailed2(n[0], subs, subsRep, hasSubs, !pol, exp, qy, emode, fails, computeFail);
-  }else if( nk==OR || nk==AND ){
+  }
+  else if (nk == NOT)
+  {
+    return isEntailed2(
+        n[0], subs, subsRep, hasSubs, !pol, exp, qy, emode, fails, computeFail);
+  }
+  else if (nk == OR || nk == AND)
+  {
     // proofs should be called on literals only
     Assert(emode != EXP_MODE_PROOF);
-    bool easyPol = ( pol && nk==OR ) || ( !pol && nk==AND );
-    std::vector< Node > tempFails;
-    for( const Node& nc : n ){
-      if (isEntailed2(nc, subs, subsRep, hasSubs, pol, exp, qy, emode, tempFails, computeFail))
+    bool easyPol = (pol && nk == OR) || (!pol && nk == AND);
+    std::vector<Node> tempFails;
+    for (const Node& nc : n)
+    {
+      if (isEntailed2(nc,
+                      subs,
+                      subsRep,
+                      hasSubs,
+                      pol,
+                      exp,
+                      qy,
+                      emode,
+                      tempFails,
+                      computeFail))
       {
-        Assert( tempFails.empty() );
-        if( easyPol )
+        Assert(tempFails.empty());
+        if (easyPol)
         {
           // we are justified
           fails.clear();
           return true;
         }
       }
-      else if( computeFail )
+      else if (computeFail)
       {
-        Assert( !tempFails.empty() );
+        Assert(!tempFails.empty());
         // we add to fails if it is empty or if we are not in the easy case.
-        if( fails.empty() || !easyPol )
+        if (fails.empty() || !easyPol)
         {
-          fails.insert(fails.end(),tempFails.begin(),tempFails.end());
+          fails.insert(fails.end(), tempFails.begin(), tempFails.end());
         }
         tempFails.clear();
       }
-      else if( !easyPol )
+      else if (!easyPol)
       {
         // if we are not computing failures and not easy, we fail now
         return false;
       }
     }
-    if( easyPol )
+    if (easyPol)
     {
       // Did not find any literal to justify this, we fail.
       // We should have at least one failing literal.
-      Assert( !computeFail || !fails.empty() );
+      Assert(!computeFail || !fails.empty());
       return false;
     }
     // only succeeded if we did not add to fails
     return fails.empty();
-  //Boolean equality here
-  }else if( nk==EQUAL || nk==ITE ){
+    // Boolean equality here
+  }
+  else if (nk == EQUAL || nk == ITE)
+  {
     Assert(emode != EXP_MODE_PROOF);
     std::map<Node, eq::EqProof> tempExp;
-    std::vector< Node > tempFails;
+    std::vector<Node> tempFails;
     for( unsigned i=0; i<2; i++ ){
-      bool esuccess = isEntailed2(n[0], subs, subsRep, hasSubs, i == 0, tempExp, qy, emode, tempFails, computeFail);
-      if (esuccess || (i==1 && computeFail))
+      bool esuccess = isEntailed2(n[0],
+                                  subs,
+                                  subsRep,
+                                  hasSubs,
+                                  i == 0,
+                                  tempExp,
+                                  qy,
+                                  emode,
+                                  tempFails,
+                                  computeFail);
+      if (esuccess || (i == 1 && computeFail))
       {
-        if( computeFail )
+        if (computeFail)
         {
-          fails.insert(fails.end(),tempFails.begin(),tempFails.end());
+          fails.insert(fails.end(), tempFails.begin(), tempFails.end());
           tempFails.clear();
         }
-        unsigned ch = ( nk==EQUAL || i==0 ) ? 1 : 2;
-        bool reqPol = ( nk==ITE || i==0 ) ? pol : !pol;
-        bool esuccess2 = isEntailed2(
-                n[ch], subs, subsRep, hasSubs, reqPol, tempExp, qy, emode, tempFails, computeFail);
+        unsigned ch = (nk == EQUAL || i == 0) ? 1 : 2;
+        bool reqPol = (nk == ITE || i == 0) ? pol : !pol;
+        bool esuccess2 = isEntailed2(n[ch],
+                                     subs,
+                                     subsRep,
+                                     hasSubs,
+                                     reqPol,
+                                     tempExp,
+                                     qy,
+                                     emode,
+                                     tempFails,
+                                     computeFail);
         if (esuccess2 || computeFail)
         {
           if (emode == EXP_MODE_ENTAIL)
@@ -1160,11 +1204,11 @@ bool TermDb::isEntailed2(TNode n,
               exp[p.first].d_id = eq::MERGED_THROUGH_REFLEXIVITY;
             }
           }
-          if( computeFail )
+          if (computeFail)
           {
-            fails.insert(fails.end(),tempFails.begin(),tempFails.end());
+            fails.insert(fails.end(), tempFails.begin(), tempFails.end());
           }
-          Assert( fails.empty()==( esuccess && esuccess2 ) );
+          Assert(fails.empty() == (esuccess && esuccess2));
           return fails.empty();
         }
         // it won't be entailed the other direction
@@ -1182,11 +1226,20 @@ bool TermDb::isEntailed2(TNode n,
   else if (nk == FORALL)
   {
     // explanations may get strange here, so don't try
-    std::vector< Node > tempFails;
+    std::vector<Node> tempFails;
     if (!pol && emode == EXP_MODE_NONE
-        && isEntailed2(n[1], subs, subsRep, hasSubs, pol, exp, qy, emode, tempFails, computeFail))
+        && isEntailed2(n[1],
+                       subs,
+                       subsRep,
+                       hasSubs,
+                       pol,
+                       exp,
+                       qy,
+                       emode,
+                       tempFails,
+                       computeFail))
     {
-      Assert( tempFails.empty() );
+      Assert(tempFails.empty());
       return true;
     }
   }
@@ -1197,8 +1250,8 @@ bool TermDb::isEntailed2(TNode n,
     {
       ppred = std::make_shared<eq::EqProof>();
     }
-    TNode n1 =
-        getEntailedTerm2(n, subs, subsRep, hasSubs, exp, ppred.get(), qy, emode);
+    TNode n1 = getEntailedTerm2(
+        n, subs, subsRep, hasSubs, exp, ppred.get(), qy, emode);
     if (!n1.isNull())
     {
       Assert(qy->hasTerm(n1));
@@ -1223,7 +1276,8 @@ bool TermDb::isEntailed2(TNode n,
           Node nn = n;
           nn = pol ? nn : nn.negate();
           eq::EqProof& p = exp[nn];
-          Trace("term-db-entail-exp") << "***... add explain " << nn << std::endl;
+          Trace("term-db-entail-exp")
+              << "***... add explain " << nn << std::endl;
           if (emode == EXP_MODE_PROOF)
           {
             eq::EqProof* mainEq = nullptr;
@@ -1281,7 +1335,7 @@ bool TermDb::isEntailed2(TNode n,
       }
     }
   }
-  if( computeFail )
+  if (computeFail)
   {
     Node nn = n;
     fails.push_back(pol ? nn : nn.negate());
@@ -1297,16 +1351,16 @@ bool TermDb::isEntailed(TNode n, bool pol, EqualityQuery* qy)
   }
   std::map<Node, eq::EqProof> exp;
   std::map< TNode, TNode > subs;
-  std::vector< Node > fails;
-  return isEntailed2(n, subs, false, false, pol, exp, qy, EXP_MODE_NONE, fails, false);
+  std::vector<Node> fails;
+  return isEntailed2(
+      n, subs, false, false, pol, exp, qy, EXP_MODE_NONE, fails, false);
 }
 
 bool TermDb::isEntailed(TNode n,
                         bool pol,
                         std::map<Node, eq::EqProof>& exp,
                         bool computePf,
-                        EqualityQuery* qy
-                       )
+                        EqualityQuery* qy)
 {
   if (qy == NULL)
   {
@@ -1314,7 +1368,7 @@ bool TermDb::isEntailed(TNode n,
     qy = d_quantEngine->getEqualityQuery();
   }
   std::map<TNode, TNode> subs;
-  std::vector< Node > fails;
+  std::vector<Node> fails;
   return isEntailed2(n,
                      subs,
                      false,
@@ -1322,17 +1376,18 @@ bool TermDb::isEntailed(TNode n,
                      pol,
                      exp,
                      qy,
-                     computePf ? EXP_MODE_PROOF : EXP_MODE_ENTAIL, fails, false);
+                     computePf ? EXP_MODE_PROOF : EXP_MODE_ENTAIL,
+                     fails,
+                     false);
 }
 
 bool TermDb::isEntailed(TNode n,
                         bool pol,
                         std::map<Node, eq::EqProof>& exp,
-  std::vector< Node >& fails,
-  bool computeFails,
+                        std::vector<Node>& fails,
+                        bool computeFails,
                         bool computePf,
-                        EqualityQuery* qy
-                       )
+                        EqualityQuery* qy)
 {
   if (qy == NULL)
   {
@@ -1347,7 +1402,9 @@ bool TermDb::isEntailed(TNode n,
                      pol,
                      exp,
                      qy,
-                     computePf ? EXP_MODE_PROOF : EXP_MODE_ENTAIL, fails, computeFails);
+                     computePf ? EXP_MODE_PROOF : EXP_MODE_ENTAIL,
+                     fails,
+                     computeFails);
 }
 
 bool TermDb::isEntailed(TNode n,
@@ -1363,7 +1420,7 @@ bool TermDb::isEntailed(TNode n,
     Assert(d_consistent_ee);
     qy = d_quantEngine->getEqualityQuery();
   }
-  std::vector< Node > fails;
+  std::vector<Node> fails;
   return isEntailed2(n,
                      subs,
                      subsRep,
@@ -1371,7 +1428,9 @@ bool TermDb::isEntailed(TNode n,
                      pol,
                      exp,
                      qy,
-                     computePf ? EXP_MODE_PROOF : EXP_MODE_ENTAIL, fails, false);
+                     computePf ? EXP_MODE_PROOF : EXP_MODE_ENTAIL,
+                     fails,
+                     false);
 }
 
 bool TermDb::isEntailed(TNode n,
@@ -1379,8 +1438,8 @@ bool TermDb::isEntailed(TNode n,
                         bool subsRep,
                         bool pol,
                         std::map<Node, eq::EqProof>& exp,
-  std::vector< Node >& fails,
-  bool computeFails,
+                        std::vector<Node>& fails,
+                        bool computeFails,
                         bool computePf,
                         EqualityQuery* qy)
 {
@@ -1396,7 +1455,9 @@ bool TermDb::isEntailed(TNode n,
                      pol,
                      exp,
                      qy,
-                     computePf ? EXP_MODE_PROOF : EXP_MODE_ENTAIL, fails, computeFails);
+                     computePf ? EXP_MODE_PROOF : EXP_MODE_ENTAIL,
+                     fails,
+                     computeFails);
 }
 
 bool TermDb::isEntailed(TNode n,
@@ -1410,8 +1471,9 @@ bool TermDb::isEntailed(TNode n,
     qy = d_quantEngine->getEqualityQuery();
   }
   std::map<Node, eq::EqProof> exp;
-  std::vector< Node > fails;
-  return isEntailed2(n, subs, subsRep, true, pol, exp, qy, EXP_MODE_NONE, fails, false);
+  std::vector<Node> fails;
+  return isEntailed2(
+      n, subs, subsRep, true, pol, exp, qy, EXP_MODE_NONE, fails, false);
 }
 
 bool TermDb::isTermActive( Node n ) {

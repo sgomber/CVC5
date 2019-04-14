@@ -114,13 +114,14 @@ void InstStrategyEnum::check(Theory::Effort e, QEffort quant_e)
       {
         Node q = fm->getAssertedQuantifier(i, true);
         bool doProcess = false;
-        if( r==0 )
+        if (r == 0)
         {
-          doProcess = d_quantEngine->hasOwnership(q, this) && fm->isQuantifierActive(q);
+          doProcess =
+              d_quantEngine->hasOwnership(q, this) && fm->isQuantifierActive(q);
         }
         else
         {
-          doProcess = needsGInst.find(q)!=needsGInst.end();
+          doProcess = needsGInst.find(q) != needsGInst.end();
         }
         if (doProcess)
         {
@@ -133,13 +134,14 @@ void InstStrategyEnum::check(Theory::Effort e, QEffort quant_e)
               break;
             }
           }
-          else if( options::fullSaturateStratify() )
+          else if (options::fullSaturateStratify())
           {
             needsGInst[q] = true;
           }
         }
       }
-      if (d_quantEngine->inConflict() || ( addedLemmas > 0 && options::fullSaturateStratify()))
+      if (d_quantEngine->inConflict()
+          || (addedLemmas > 0 && options::fullSaturateStratify()))
       {
         // we break if we are in conflict, or if we added any lemma at this
         // effort level and we stratify effort levels.

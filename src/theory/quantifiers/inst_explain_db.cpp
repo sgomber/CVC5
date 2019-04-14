@@ -148,7 +148,7 @@ void InstExplainDb::registerExplanation(Node inst,
   */
 
   int pol;
-  //int jppol;
+  // int jppol;
   TNode cur;
   TNode curi;
   visitPol.push_back(1);
@@ -216,7 +216,7 @@ void InstExplainDb::registerExplanation(Node inst,
         Trace("inst-explain") << "  -> " << curir << std::endl;
         // also store original literals in data structure for finding TODO
         // virtual propagating instantiations
-        //if (newQuant)
+        // if (newQuant)
         //{
         //  registerPropagatingLiteral(cur, q);
         //}
@@ -228,7 +228,7 @@ void InstExplainDb::registerExplanation(Node inst,
           InstExplainLit& ieln = getInstExplainLit(curinr);
           ieln.addInstExplanation(inst);
           Trace("inst-explain") << "  -> " << curinr << std::endl;
-          //if (newQuant)
+          // if (newQuant)
           //{
           //  Node curn = cur.negate();
           //  registerPropagatingLiteral(curn, q);
@@ -237,22 +237,25 @@ void InstExplainDb::registerExplanation(Node inst,
       }
     }
   } while (!visit.empty());
-  
+
   // virtual proof of refutation of this instance
   std::map<Node, eq::EqProof> vrPf;
-  std::vector< Node > vrPfFails;
+  std::vector<Node> vrPfFails;
   // make the substitution
-  std::map< TNode, TNode > subs;
-  for( unsigned i=0, size = ts.size(); i<size; i++ )
+  std::map<TNode, TNode> subs;
+  for (unsigned i = 0, size = ts.size(); i < size; i++)
   {
     subs[q[0][i]] = ts[i];
   }
-  TermDb * tdb = d_qe->getTermDatabase();
-  bool entFalse = tdb->isEntailed(q[1], subs, false, false, vrPf, vrPfFails, true, false);
+  TermDb* tdb = d_qe->getTermDatabase();
+  bool entFalse =
+      tdb->isEntailed(q[1], subs, false, false, vrPf, vrPfFails, true, false);
   // if we have all entailments, then we are a conflicting instance
-  Trace("iex-setup") << "Instantiation led to " << vrPf.size() << " / " << (vrPf.size()+vrPfFails.size()) << " entailments." << std::endl;
+  Trace("iex-setup") << "Instantiation led to " << vrPf.size() << " / "
+                     << (vrPf.size() + vrPfFails.size()) << " entailments."
+                     << std::endl;
   // TODO: can be more aggressive here
-  if( !vrPf.empty() && vrPfFails.empty())
+  if (!vrPf.empty() && vrPfFails.empty())
   {
     // go back and fill in all the proofs
     bool successPf = true;
@@ -262,28 +265,28 @@ void InstExplainDb::registerExplanation(Node inst,
       if (!tdb->isEntailed(lit.first, subs, false, true, vrPf, true))
       {
         successPf = false;
-        Trace("iex-setup")
-            << "...failed to reprove " << lit.first << "!" << std::endl;
+        Trace("iex-setup") << "...failed to reprove " << lit.first << "!"
+                           << std::endl;
         break;
       }
     }
-    if( successPf )
+    if (successPf)
     {
       Trace("iex-setup") << "...successfully filled in proofs." << std::endl;
       // empty proofs for the failures
-      for( const Node& nc : vrPfFails )
+      for (const Node& nc : vrPfFails)
       {
         vrPf[nc].d_node = d_null;
       }
-      std::vector< Node > lemmas;
-      explain(q,ts,vrPf,d_eqe,lemmas,"iex-db");
-      for( const Node& lem : lemmas )
+      std::vector<Node> lemmas;
+      explain(q, ts, vrPf, d_eqe, lemmas, "iex-db");
+      for (const Node& lem : lemmas)
       {
         d_qe->addLemma(lem);
       }
     }
-    
-    // run the proof generalization procedure 
+
+    // run the proof generalization procedure
   }
 
   // now, propagate for future instantiations
@@ -593,10 +596,10 @@ ExplainStatus InstExplainDb::explain(Node q,
 
   for (const std::pair<Node, std::vector<Node>>& sp : iout.d_subsumed_by)
   {
-    for( const Node& spq : sp.second )
+    for (const Node& spq : sp.second)
     {
       Trace("iex-subsume") << "InstExplainDb::subsume: " << spq << " => "
-                          << sp.first << std::endl;
+                           << sp.first << std::endl;
       d_subsume->setSubsumes(spq, sp.first);
     }
   }
@@ -620,12 +623,13 @@ ExplainStatus InstExplainDb::explain(Node q,
   return EXP_STATUS_FULL;
 }
 
-Node InstExplainDb::getGeneralizedConclusion(InstExplainInst* iei,
-                                             const std::vector<Node>& assumps,
-                                             const std::vector<Node>& closedPremises,
-                                             std::vector<Node>& lemmas,
-                                             std::map<Node, std::vector<Node>>& subsumed_by,
-                                             bool doGenCInst)
+Node InstExplainDb::getGeneralizedConclusion(
+    InstExplainInst* iei,
+    const std::vector<Node>& assumps,
+    const std::vector<Node>& closedPremises,
+    std::vector<Node>& lemmas,
+    std::map<Node, std::vector<Node>>& subsumed_by,
+    bool doGenCInst)
 {
   NodeManager* nm = NodeManager::currentNM();
   Node antec = d_true;
@@ -637,7 +641,7 @@ Node InstExplainDb::getGeneralizedConclusion(InstExplainInst* iei,
   Node conc;
   if (iei)
   {
-    Assert( !closedPremises.empty() );
+    Assert(!closedPremises.empty());
     // Notice our conclusion is the quantified formula with the closed
     // premises substituted to their polarity. This may make the conclusion
     // stronger than taking the UPG.
@@ -647,38 +651,44 @@ Node InstExplainDb::getGeneralizedConclusion(InstExplainInst* iei,
     //  forall x P(x) V (Q(x) ^ R(x))        ~P(x)          ~Q(x)
     //   ---------------------------------------------------------
     //                  false
-    // We conclude 
+    // We conclude
     //   forall x false V (Q(x) ^ R(x)) which rewrites to forall x. Q(x) ^ R(x)
     // instead of of the UPG:
     //   forall x. Q(x)
-    
+
     // get the quantified formula
     Node q = iei->getQuantifiedFormula();
     Assert(!q.isNull());
     Trace("iex-lemma-debug") << "Closed premises: " << std::endl;
-    std::vector< Node > premiseVar;
-    std::vector< Node > premiseSubs;
-    for( const Node& cp : closedPremises )
+    std::vector<Node> premiseVar;
+    std::vector<Node> premiseSubs;
+    for (const Node& cp : closedPremises)
     {
-      bool pol = cp.getKind()!=NOT;
-      Trace("iex-lemma-debug") << "  " << (pol ? cp : cp[0]) << " -> " << pol << std::endl;
+      bool pol = cp.getKind() != NOT;
+      Trace("iex-lemma-debug")
+          << "  " << (pol ? cp : cp[0]) << " -> " << pol << std::endl;
       premiseVar.push_back(pol ? cp : cp[0]);
       // flip
       premiseSubs.push_back(pol ? d_true : d_false);
     }
-    Trace("iex-lemma-debug") << "in " << (q.isNull() ? d_null : q[1]) << std::endl;
-    Node concBody = q[1].substitute(premiseVar.begin(),premiseVar.end(),premiseSubs.begin(),premiseSubs.end());
+    Trace("iex-lemma-debug")
+        << "in " << (q.isNull() ? d_null : q[1]) << std::endl;
+    Node concBody = q[1].substitute(premiseVar.begin(),
+                                    premiseVar.end(),
+                                    premiseSubs.begin(),
+                                    premiseSubs.end());
     concBody = Rewriter::rewrite(concBody);
     // must be non-trivial
-    Assert( concBody!=q[1] );
-    
-    Trace("iex-lemma-debug") << "(original) conclusion: " << concBody << std::endl;
+    Assert(concBody != q[1]);
+
+    Trace("iex-lemma-debug")
+        << "(original) conclusion: " << concBody << std::endl;
     // check if we've already concluded this
     std::map<Node, Node>::iterator itpv = d_conc_cache[antec].find(concBody);
     if (itpv != d_conc_cache[antec].end())
     {
-      Trace("iex-lemma-debug") << "InstExplainDb::WARNING: repeated conclusion"
-                         << std::endl;
+      Trace("iex-lemma-debug")
+          << "InstExplainDb::WARNING: repeated conclusion" << std::endl;
       // this can happen if a conflicting instance produces the same
       // generalization as a previous round, whereas the quantified conclusion
       // of that round did not generate the conflicting instance it could have.
@@ -690,8 +700,8 @@ Node InstExplainDb::getGeneralizedConclusion(InstExplainInst* iei,
       if (q.isNull())
       {
         conc = concBody;
-        Trace("iex-lemma-debug") << "construct conclusion no q: " << conc
-                           << std::endl;
+        Trace("iex-lemma-debug")
+            << "construct conclusion no q: " << conc << std::endl;
       }
       else
       {
@@ -707,20 +717,21 @@ Node InstExplainDb::getGeneralizedConclusion(InstExplainInst* iei,
         concsubs = Rewriter::rewrite(concsubs);
         Node bvl = nm->mkNode(BOUND_VAR_LIST, newVars);
         conc = nm->mkNode(FORALL, bvl, concsubs);
-        Trace("iex-lemma-debug") << "construct conclusion: " << conc << std::endl;
+        Trace("iex-lemma-debug")
+            << "construct conclusion: " << conc << std::endl;
         conc = Rewriter::rewrite(conc);
-        Trace("iex-lemma-debug") << "construct conclusion post-rewrite: " << conc
-                           << std::endl;
+        Trace("iex-lemma-debug")
+            << "construct conclusion post-rewrite: " << conc << std::endl;
       }
       // should not have free variables, otherwise we likely have the wrong q.
       Assert(!expr::hasFreeVar(conc));
       lem = nm->mkNode(OR, antec.negate(), conc);
-      std::vector< Node > casserts;
-      if( conc.getKind()==OR )
+      std::vector<Node> casserts;
+      if (conc.getKind() == OR)
       {
         // optimization: all quantified formulas in a disjunction subsume
         // if it became miniscoped after strengthening.
-        for( const Node& cc : conc )
+        for (const Node& cc : conc)
         {
           casserts.push_back(cc);
         }
@@ -730,9 +741,9 @@ Node InstExplainDb::getGeneralizedConclusion(InstExplainInst* iei,
         casserts.push_back(conc);
       }
       // FIXME: could also do other subsumptions (both asserted -> subsume)
-      for( const Node& cc : casserts )
+      for (const Node& cc : casserts)
       {
-        if( cc.getKind()==FORALL )
+        if (cc.getKind() == FORALL)
         {
           // mark the subsumption
           Trace("iex-lemma-debug") << "auto-subsume: " << std::endl;

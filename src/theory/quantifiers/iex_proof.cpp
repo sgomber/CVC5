@@ -412,8 +412,7 @@ InstExplainInst* IexProof::getUPG(std::vector<Node>& concs,
   }
   return ret;
 }
-void IexProof::processUPG(IexOutput& iout,
-                          Node currClosedPremise)
+void IexProof::processUPG(IexOutput& iout, Node currClosedPremise)
 {
   // start with no assumptions
   std::vector<Node> assumptions;
@@ -460,9 +459,10 @@ Node IexProof::processUPGInternal(IexOutput& iout,
             Assert(!cc.first.isNull());
             // we do not do the generalized conflict instance in this call
             // we prefer generalized conflicting instances from the UPG.
-            std::vector< Node > ccps;
-            ccps.insert(ccps.end(),d_closedPremises.begin(),d_closedPremises.end());
-            if( !currClosedPremise.isNull() )
+            std::vector<Node> ccps;
+            ccps.insert(
+                ccps.end(), d_closedPremises.begin(), d_closedPremises.end());
+            if (!currClosedPremise.isNull())
             {
               ccps.push_back(currClosedPremise);
             }
@@ -483,7 +483,8 @@ Node IexProof::processUPGInternal(IexOutput& iout,
         // fully justify the proof below the recursive call in this case.
         // In this case, the new closed premise is the negation of the current
         // premise cc.first.
-        Node cpr = currClosedPremise.isNull() ? currClosedPremise : cc.first.negate();
+        Node cpr =
+            currClosedPremise.isNull() ? currClosedPremise : cc.first.negate();
         ret = cc.second.processUPGInternal(iout, cpr, assumptions);
       }
       else
@@ -496,9 +497,9 @@ Node IexProof::processUPGInternal(IexOutput& iout,
   if (!recUPG && assumptions.size() > 1)
   {
     // add the closed premise if it exists
-    std::vector< Node > ccps;
-    ccps.insert(ccps.end(),d_closedPremises.begin(),d_closedPremises.end());
-    if( !currClosedPremise.isNull() )
+    std::vector<Node> ccps;
+    ccps.insert(ccps.end(), d_closedPremises.begin(), d_closedPremises.end());
+    if (!currClosedPremise.isNull())
     {
       ccps.push_back(currClosedPremise);
     }

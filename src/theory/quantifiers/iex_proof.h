@@ -168,8 +168,7 @@ class IexProof
    *
    * This adds lemmas to FIXME
    */
-  void processUPG(IexOutput& iout,
-                          Node currClosedPremise);
+  void processUPG(IexOutput& iout, Node currClosedPremise);
 
  private:
   bool mergeInternal(TNode a, TNode b, const IexProof& gb, bool allowBind);
@@ -214,18 +213,18 @@ class IexProof
    * This adds lemmas on the output utility iout corresponding to the open
    * conclusion of this proof.
    *
-    * currClosedPremise: if non-null, the current closed premise that was
-    * justified by the proof below this inference. For example:
-    *                   ----------------------   
-    *                    forall y. Q(y) V P(y)      ~Q(a) 
-    * ----------------  ----------------------------------IEX
-    * forall x. ~P(x)                    P(a) / P(y)        
-    * ---------------------------------------------------IEX
-    *                false
-    * 
-    * When processing the UPG in the upper inference, the current closed
-    * premise is P(y), since it is justified by the fact that the remainder
-    * of the proof is closed.
+   * currClosedPremise: if non-null, the current closed premise that was
+   * justified by the proof below this inference. For example:
+   *                   ----------------------
+   *                    forall y. Q(y) V P(y)      ~Q(a)
+   * ----------------  ----------------------------------IEX
+   * forall x. ~P(x)                    P(a) / P(y)
+   * ---------------------------------------------------IEX
+   *                false
+   *
+   * When processing the UPG in the upper inference, the current closed
+   * premise is P(y), since it is justified by the fact that the remainder
+   * of the proof is closed.
    */
   Node processUPGInternal(IexOutput& iout,
                           Node currClosedPremise,

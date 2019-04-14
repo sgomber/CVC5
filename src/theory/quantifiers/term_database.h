@@ -407,8 +407,7 @@ class TermDb : public QuantifiersUtil {
                    EqualityQuery* qy,
                    ExpMode emode,
                    std::vector<Node>& fails,
-                   bool computeFail
-                  );
+                   bool computeFail);
   /** compute uf eqc terms :
   * Ensure entries for f are in d_func_map_eqc_trie for all equivalence classes
   */

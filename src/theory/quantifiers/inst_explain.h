@@ -44,7 +44,7 @@ class IeEvaluator
    * case these literals are irrelevant.
    */
   int evaluate(Node n);
-  /** 
+  /**
    * Evaluate, starting with a custom set of assumptions instead of using
    * d_ecache. The values in assumptions can be thought of as overriding the
    * model values for the given formula.
