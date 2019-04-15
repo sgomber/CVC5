@@ -360,10 +360,10 @@ void IexProof::processUPG(IexOutput& iout, Node currClosedPremise)
 {
   if (Trace.isOn("iex-proof-debug"))
   {
-    Trace("iex-proof-debug")
-        << "=== Process UPG in:" << std::endl;
+    Trace("iex-proof-debug") << "=== Process UPG in:" << std::endl;
     debugPrint("iex-proof-debug");
-    Trace("iex-proof-debug") << "=== with closed premise " << currClosedPremise << std::endl;
+    Trace("iex-proof-debug")
+        << "=== with closed premise " << currClosedPremise << std::endl;
   }
   // start with no assumptions
   std::vector<Node> assumptions;
@@ -418,7 +418,8 @@ Node IexProof::processUPGInternal(IexOutput& iout,
             {
               ccps.push_back(currClosedPremise);
             }
-            Trace("iex-process-upg") << "compress UPG at " << cc.first << std::endl;
+            Trace("iex-process-upg")
+                << "compress UPG at " << cc.first << std::endl;
             Node genConc = iout.reportConclusion(
                 d_iei, assumptions, ccps, options::iexGenCInst());
             // we close the open conclusion
@@ -437,7 +438,7 @@ Node IexProof::processUPGInternal(IexOutput& iout,
         else
         {
           // we don't have assumptions if we are open
-          if( currClosedPremise.isNull() )
+          if (currClosedPremise.isNull())
           {
             assumptions.clear();
           }

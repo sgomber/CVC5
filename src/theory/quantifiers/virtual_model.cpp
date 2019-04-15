@@ -216,7 +216,8 @@ bool VirtualModel::ensureValue(Node n,
     visit.pop_back();
     curReq = visitE.back();
     visitE.pop_back();
-    Trace("vmodel-debug") << "  require " << cur << " = " << curReq << std::endl;
+    Trace("vmodel-debug") << "  require " << cur << " = " << curReq
+                          << std::endl;
     int evCur = evaluateInternal(cur, d_ecache, ucache, useEntailment);
     Trace("vmodel-debug") << "  value is " << evCur << std::endl;
     if (evCur != 0)
@@ -232,9 +233,9 @@ bool VirtualModel::ensureValue(Node n,
     else if (visited[curReq].find(cur) == visited[curReq].end())
     {
       visited[curReq].insert(cur);
-      if( cur==n )
+      if (cur == n)
       {
-        if( !allowDec )
+        if (!allowDec)
         {
           // overall ensure we add a dummy value to set assertions
           setAssumps[n] = isTrue ? 1 : -1;
@@ -266,7 +267,7 @@ bool VirtualModel::ensureValue(Node n,
             int cres = evaluateInternal(cc, d_ecache, ucache, useEntailment);
             if (cres == 0)
             {
-              if( !recc.isNull() )
+              if (!recc.isNull())
               {
                 // if more than one child is unknown, then we fail
                 recc = TNode::null();
@@ -274,21 +275,21 @@ bool VirtualModel::ensureValue(Node n,
               }
               // if exactly child is unknown, then we use it
               recc = cc;
-              if( allowDec )
+              if (allowDec)
               {
                 // stop now if we don't require that this is a propagation
                 break;
               }
             }
           }
-          if( !recc.isNull() )
+          if (!recc.isNull())
           {
             visit.push_back(recc);
             visitE.push_back(curReq);
           }
           else
           {
-            Assert( !allowDec );
+            Assert(!allowDec);
             // didn't find a usable child
             Trace("vmodel-debug") << "  ...fail and/or!" << std::endl;
           }
@@ -314,15 +315,15 @@ bool VirtualModel::ensureValue(Node n,
             int evi = evaluateInternal(cur[i], d_ecache, ucache, useEntailment);
             if (evi == 0 || (evi == 1) == curReq)
             {
-              if( allowDec )
+              if (allowDec)
               {
                 // prefer using branch that is already justified if we have
                 // (ite ? T ?) = T.
-                if( evi!=0 || processIndex==-1 )
+                if (evi != 0 || processIndex == -1)
                 {
                   processIndex = i;
                 }
-                if( evi!=0 )
+                if (evi != 0)
                 {
                   break;
                 }
@@ -333,11 +334,11 @@ bool VirtualModel::ensureValue(Node n,
               // We evaluated to the wrong value. Thus, it must be the other
               // branch. Moreover, we are propagating in this case, and thus
               // can set if allowDec is false.
-              processIndex = 3-i;
+              processIndex = 3 - i;
               break;
             }
           }
-          if( processIndex!=-1 )
+          if (processIndex != -1)
           {
             visit.push_back(cur[0]);
             visitE.push_back(processIndex == 1);
@@ -357,7 +358,7 @@ bool VirtualModel::ensureValue(Node n,
           {
             // make both true
             // we only do this if we are allowed decisions
-            if( allowDec ) 
+            if (allowDec)
             {
               visit.push_back(cur[0]);
               visitE.push_back(true);
@@ -386,7 +387,7 @@ bool VirtualModel::ensureValue(Node n,
       }
     }
   } while (!visit.empty());
-  
+
   return true;
 }
 
