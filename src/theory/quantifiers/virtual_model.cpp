@@ -83,26 +83,28 @@ bool VirtualModel::registerAssertion(Node ilem)
   return true;
 }
 
-int VirtualModel::evaluate(Node n, bool cacheUnk)
+int VirtualModel::evaluate(Node n, bool useEntailment)
 {
   n = Rewriter::rewrite(n);
   std::unordered_set<Node, NodeHashFunction> ucache;
-  return evaluateInternal(n, d_ecache, ucache, cacheUnk);
+  return evaluateInternal(n, d_ecache, ucache, useEntailment);
 }
 int VirtualModel::evaluateWithAssumptions(Node n,
                                           std::map<Node, int>& assumptions,
-                                          bool cacheUnk)
+                                          bool useEntailment
+                                         )
 {
   n = Rewriter::rewrite(n);
   std::unordered_set<Node, NodeHashFunction> ucache;
-  return evaluateInternal(n, assumptions, ucache, cacheUnk);
+  return evaluateInternal(n, assumptions, ucache, useEntailment);
 }
 
 int VirtualModel::evaluateInternal(
     Node n,
     std::map<Node, int>& cache,
     std::unordered_set<Node, NodeHashFunction>& ucache,
-    bool cacheUnk)
+    bool useEntailment
+                                  )
 {
   std::map<Node, int>::iterator it = cache.find(n);
   if (it != cache.end())
@@ -117,7 +119,7 @@ int VirtualModel::evaluateInternal(
   Kind k = n.getKind();
   if (k == NOT)
   {
-    return -evaluateInternal(n[0], cache, ucache, cacheUnk);
+    return -evaluateInternal(n[0], cache, ucache, useEntailment);
   }
   int res = 0;
   if (k == AND || k == OR)
@@ -126,7 +128,7 @@ int VirtualModel::evaluateInternal(
     res = expv;
     for (TNode nc : n)
     {
-      int cres = evaluateInternal(nc, cache, ucache, cacheUnk);
+      int cres = evaluateInternal(nc, cache, ucache, useEntailment);
       if (cres == -expv)
       {
         res = cres;
@@ -140,25 +142,25 @@ int VirtualModel::evaluateInternal(
   }
   else if (k == ITE)
   {
-    int cres = evaluateInternal(n[0], cache, ucache, cacheUnk);
+    int cres = evaluateInternal(n[0], cache, ucache, useEntailment);
     if (cres == 0)
     {
-      int cres1 = evaluateInternal(n[1], cache, ucache, cacheUnk);
-      int cres2 = evaluateInternal(n[2], cache, ucache, cacheUnk);
+      int cres1 = evaluateInternal(n[1], cache, ucache, useEntailment);
+      int cres2 = evaluateInternal(n[2], cache, ucache, useEntailment);
       res = cres1 == cres2 ? cres1 : 0;
     }
     else
     {
       unsigned checkIndex = cres == 1 ? 1 : 2;
-      res = evaluateInternal(n[checkIndex], cache, ucache, cacheUnk);
+      res = evaluateInternal(n[checkIndex], cache, ucache, useEntailment);
     }
   }
   else if (k == EQUAL && n[0].getType().isBoolean())
   {
-    int cres1 = evaluateInternal(n[0], cache, ucache, cacheUnk);
+    int cres1 = evaluateInternal(n[0], cache, ucache, useEntailment);
     if (cres1 != 0)
     {
-      int cres2 = evaluateInternal(n[1], cache, ucache, cacheUnk);
+      int cres2 = evaluateInternal(n[1], cache, ucache, useEntailment);
       res = cres2 == cres1 ? 1 : (cres2 == 0 ? 0 : -1);
     }
   }
@@ -170,10 +172,21 @@ int VirtualModel::evaluateInternal(
     {
       res = bres ? 1 : -1;
     }
+    else if( useEntailment )
+    {
+      for( unsigned r=0; r<2; r++ )
+      {
+        if( d_tdb->isEntailed(n,r==0) )
+        {
+          res = r==0 ? 1 : -1;
+          break;
+        }
+      }
+    }
   }
   Trace("iex-debug2") << "VirtualModel::evaluateInternal: " << n
                       << " evaluates to " << res << std::endl;
-  if (res == 0 && !cacheUnk)
+  if (res == 0)
   {
     ucache.insert(n);
   }
@@ -186,7 +199,8 @@ int VirtualModel::evaluateInternal(
 
 bool VirtualModel::ensureValue(Node n,
                                bool isTrue,
-                               std::map<Node, int>& setAssumps)
+                               std::map<Node, int>& setAssumps,
+                              bool useEntailment)
 {
   std::unordered_set<Node, NodeHashFunction> ucache;
   // if possible, propagate the literal in the clause that must be true
@@ -203,7 +217,7 @@ bool VirtualModel::ensureValue(Node n,
     visit.pop_back();
     curReq = visitE.back();
     visitE.pop_back();
-    int evCur = evaluateInternal(cur, d_ecache, ucache, false);
+    int evCur = evaluateInternal(cur, d_ecache, ucache, useEntailment);
     if (evCur != 0)
     {
       if ((evCur == 1) != curReq)
@@ -238,7 +252,7 @@ bool VirtualModel::ensureValue(Node n,
           // find one whose value is unknown
           for (TNode cc : cur)
           {
-            int cres = evaluateInternal(cc, d_ecache, ucache, false);
+            int cres = evaluateInternal(cc, d_ecache, ucache, useEntailment);
             if (cres == 0)
             {
               // if one child is unknown, then we use it
@@ -251,7 +265,7 @@ bool VirtualModel::ensureValue(Node n,
       }
       else if (k == ITE || (k == EQUAL && cur[0].getType().isBoolean()))
       {
-        int ev0 = evaluateInternal(cur[0], d_ecache, ucache, false);
+        int ev0 = evaluateInternal(cur[0], d_ecache, ucache, useEntailment);
         if (ev0 != 0)
         {
           // implies a single requirement
@@ -268,7 +282,7 @@ bool VirtualModel::ensureValue(Node n,
           bool processIndexUnk = false;
           for (unsigned i = 1; i <= 2; i++)
           {
-            int evi = evaluateInternal(cur[i], d_ecache, ucache, false);
+            int evi = evaluateInternal(cur[i], d_ecache, ucache, useEntailment);
             if ((evi == 1) == curReq)
             {
               processIndex = i;
@@ -292,7 +306,7 @@ bool VirtualModel::ensureValue(Node n,
         else
         {
           // ? = ev1
-          int ev1 = evaluateInternal(cur[1], d_ecache, ucache, false);
+          int ev1 = evaluateInternal(cur[1], d_ecache, ucache, useEntailment);
           if (ev1 == 0)
           {
             // make both true
