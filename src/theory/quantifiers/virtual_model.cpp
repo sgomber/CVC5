@@ -25,7 +25,7 @@ namespace theory {
 namespace quantifiers {
 
 VirtualModel::VirtualModel(QuantifiersEngine* qe)
-    : d_qe(qe), d_valuation(qe->getValuation())
+    : d_qe(qe), d_tdb(d_qe->getTermDatabase()), d_valuation(qe->getValuation())
 {
 }
 
