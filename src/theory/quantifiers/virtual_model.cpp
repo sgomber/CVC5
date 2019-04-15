@@ -1,5 +1,5 @@
 /*********************                                                        */
-/*! \file formula_evaluator.cpp
+/*! \file virtual_model.cpp
  ** \verbatim
  ** Top contributors (to current version):
  **   Andrew Reynolds
@@ -9,13 +9,14 @@
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
- ** \brief Implementation of formula evaluator.
+ ** \brief Implementation of virtual model.
  **/
 
-#include "theory/quantifiers/formula_evaluator.h"
+#include "theory/quantifiers/virtual_model.h"
 
 #include "theory/quantifiers/term_util.h"
 #include "theory/rewriter.h"
+#include "options/quantifiers_options.h"
 
 using namespace CVC4::kind;
 
@@ -23,17 +24,67 @@ namespace CVC4 {
 namespace theory {
 namespace quantifiers {
 
-FormulaEvaluator::FormulaEvaluator(QuantifiersEngine * qe) : d_qe(qe), d_valuation(qe->getValuation()) {}
+VirtualModel::VirtualModel(QuantifiersEngine * qe) : d_qe(qe), d_valuation(qe->getValuation()) {}
   
-void FormulaEvaluator::reset() { d_ecache.clear(); }
+bool VirtualModel::reset(Theory::Effort e) { 
+  // reset the cache
+  d_ecache.clear();
+  Trace("vmodel") << "VModel: reset, effort=" << e << std::endl;
+  return true;
+}
 
-int FormulaEvaluator::evaluate(Node n, bool cacheUnk)
+void VirtualModel::registerQuantifier(Node q)
+{
+  // do nothing
+}
+
+bool VirtualModel::registerAssertion(Node ilem)
+{
+  Trace("vmodel-inst") << "VModel: registerAssertion "  << ilem << std::endl;
+  Assert( options::quantVirtualModel() );
+  std::map<Node,int> setAssumps;
+  if( ensureValue(ilem,true,setAssumps) )
+  {
+    if( setAssumps.empty() )
+    {
+      Trace("vmodel-inst") << "...already satisfied!" << std::endl;
+      if( options::instNoVirtualSat() )
+      {
+        Trace("vmodel") << "VirtualModel: discarded an assertion." << std::endl;
+        // if was already satisfied, we will discard this instantiation
+        return false;
+      }
+    }
+    else if( Trace.isOn("vmodel") )
+    {
+      Trace("vmodel-inst") << "...satisfiable via: " << std::endl;
+      for( const std::pair<Node,int>& sa : setAssumps )
+      {
+        Trace("vmodel-inst") << "  " << sa.first << " -> " << (sa.second==1) << std::endl;
+      }
+    }
+  }
+  else
+  {
+    Trace("vmodel-inst") << "...unsatisfiable!" << std::endl;
+    // we have a conflict in our virtual model
+    if( options::instVirtualConflict() )
+    {
+      // treat it as a real conflict if necessary
+      Trace("vmodel") << "VirtualModel: set conflict." << std::endl;
+      d_qe->setConflict();
+    }
+  }
+  return true;
+}
+
+int VirtualModel::evaluate(Node n, bool cacheUnk)
 {
   n = Rewriter::rewrite(n);
   std::unordered_set<Node, NodeHashFunction> ucache;
   return evaluateInternal(n, d_ecache, ucache, cacheUnk);
 }
-int FormulaEvaluator::evaluateWithAssumptions(Node n,
+int VirtualModel::evaluateWithAssumptions(Node n,
                                          std::map<Node, int>& assumptions,
                                          bool cacheUnk)
 {
@@ -42,7 +93,7 @@ int FormulaEvaluator::evaluateWithAssumptions(Node n,
   return evaluateInternal(n, assumptions, ucache, cacheUnk);
 }
 
-int FormulaEvaluator::evaluateInternal(
+int VirtualModel::evaluateInternal(
     Node n,
     std::map<Node, int>& cache,
     std::unordered_set<Node, NodeHashFunction>& ucache,
@@ -115,7 +166,7 @@ int FormulaEvaluator::evaluateInternal(
       res = bres ? 1 : -1;
     }
   }
-  Trace("iex-debug2") << "FormulaEvaluator::evaluateInternal: " << n
+  Trace("iex-debug2") << "VirtualModel::evaluateInternal: " << n
                       << " evaluates to " << res << std::endl;
   if (res == 0 && !cacheUnk)
   {
@@ -128,7 +179,7 @@ int FormulaEvaluator::evaluateInternal(
   return res;
 }
 
-bool FormulaEvaluator::ensureValue(Node n, bool isTrue, std::map<Node,int>& setAssumps)
+bool VirtualModel::ensureValue(Node n, bool isTrue, std::map<Node,int>& setAssumps)
 {
   std::unordered_set<Node, NodeHashFunction> ucache;
   // if possible, propagate the literal in the clause that must be true
@@ -262,7 +313,7 @@ bool FormulaEvaluator::ensureValue(Node n, bool isTrue, std::map<Node,int>& setA
   } while (!visit.empty());
   
   
-  return false;
+  return true;
 }
 
 }  // namespace quantifiers

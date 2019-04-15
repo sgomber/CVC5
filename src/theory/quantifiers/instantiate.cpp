@@ -38,7 +38,8 @@ Instantiate::Instantiate(QuantifiersEngine* qe, context::UserContext* u)
       d_total_inst_count_debug(0),
       d_c_inst_match_trie_dom(u),
       d_iedb(qe),
-      d_usingIedb(false)
+      d_usingIedb(false),
+      d_vmodel(qe->getVirtualModel())
 {
 }
 
@@ -291,21 +292,20 @@ bool Instantiate::addInstantiation(
   Node lem = NodeManager::currentNM()->mkNode(kind::OR, q.negate(), body);
   lem = Rewriter::rewrite(lem);
 
-  // check for lemma duplication
-  if (!d_qe->addLemma(lem, true, false))
+  // we decide to satisfy this instantiation
+  if( options::quantVirtualModel() )
   {
-    Trace("inst-add-debug") << " --> Lemma already exists." << std::endl;
-    ++(d_statistics.d_inst_duplicate);
-    return false;
+    if( !d_vmodel->registerAssertion(lem) )
+    {
+      Trace("inst-add-debug") << " --> Already true in virtual model." << std::endl;
+      ++(d_statistics.d_inst_duplicate_vsat);
+      return false;
+    }
   }
   
   if (d_usingIedb)
   {
-    if( !d_iedb.registerInstLemma(lem, orig_body, q, terms) )
-    {
-      Trace("inst-add-debug") << " --> Lemma already exists." << std::endl;
-      return false;
-    }
+    d_iedb.registerInstLemma(lem, orig_body, q, terms);
   }
   
   // record the instantiation
@@ -319,6 +319,14 @@ bool Instantiate::addInstantiation(
     Assert(false);
     Trace("inst-add-debug") << " --> Already exists (no record)." << std::endl;
     ++(d_statistics.d_inst_duplicate_eq);
+    return false;
+  }
+  
+  // check for lemma duplication
+  if (!d_qe->addLemma(lem, true, false))
+  {
+    Trace("inst-add-debug") << " --> Lemma already exists." << std::endl;
+    ++(d_statistics.d_inst_duplicate);
     return false;
   }
   
@@ -829,13 +837,15 @@ Instantiate::Statistics::Statistics()
       d_inst_duplicate("Instantiate::Duplicate_Inst", 0),
       d_inst_duplicate_eq("Instantiate::Duplicate_Inst_Eq", 0),
       d_inst_duplicate_ent("Instantiate::Duplicate_Inst_Entailed", 0),
-      d_inst_duplicate_model_true("Instantiate::Duplicate_Inst_Model_True", 0)
+      d_inst_duplicate_model_true("Instantiate::Duplicate_Inst_Model_True", 0),
+      d_inst_duplicate_vsat("Instantiate::Duplicate_Inst_Virtual_Model_Sat", 0)
 {
   smtStatisticsRegistry()->registerStat(&d_instantiations);
   smtStatisticsRegistry()->registerStat(&d_inst_duplicate);
   smtStatisticsRegistry()->registerStat(&d_inst_duplicate_eq);
   smtStatisticsRegistry()->registerStat(&d_inst_duplicate_ent);
   smtStatisticsRegistry()->registerStat(&d_inst_duplicate_model_true);
+  smtStatisticsRegistry()->registerStat(&d_inst_duplicate_vsat);
 }
 
 Instantiate::Statistics::~Statistics()
@@ -845,6 +855,7 @@ Instantiate::Statistics::~Statistics()
   smtStatisticsRegistry()->unregisterStat(&d_inst_duplicate_eq);
   smtStatisticsRegistry()->unregisterStat(&d_inst_duplicate_ent);
   smtStatisticsRegistry()->unregisterStat(&d_inst_duplicate_model_true);
+  smtStatisticsRegistry()->unregisterStat(&d_inst_duplicate_vsat);
 }
 
 } /* CVC4::theory::quantifiers namespace */

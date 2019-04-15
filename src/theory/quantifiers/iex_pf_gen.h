@@ -83,8 +83,8 @@ class InstExplainPfGen
   InstExplainDb& d_ied;
   /** pointer to the quantifiers engine */
   QuantifiersEngine* d_qe;
-  /** formula evaluator utility */
-  FormulaEvaluator& d_ev;
+  /** virtual model utility */
+  VirtualModel* d_vmodel;
   /** common constants */
   Node d_true;
   Node d_false;

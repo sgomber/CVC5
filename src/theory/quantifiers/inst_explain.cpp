@@ -63,18 +63,18 @@ void InstExplainInst::initialize(Node inst,
   d_terms.insert(d_terms.end(), ts.begin(), ts.end());
 }
 
-void InstExplainInst::propagate(FormulaEvaluator& v,
+void InstExplainInst::propagate(VirtualModel* v,
                                 std::vector<Node>& lits,
                                 std::vector<Node>& olits)
 {
   // this quantified formula must evaluate to true
-  Assert(v.evaluate(d_quant) == 1);
+  Assert(v->evaluate(d_quant) == 1);
   Trace("iex-debug") << "InstExplainInst::propagate: " << d_body << " / "
                      << d_quant[1] << std::endl;
   propagateInternal(d_body, d_quant[1], v, lits, olits);
 }
 
-bool InstExplainInst::justify(FormulaEvaluator& v,
+bool InstExplainInst::justify(VirtualModel* v,
                               Node lit,
                               Node olit,
                               std::vector<Node>& lits,
@@ -87,7 +87,7 @@ bool InstExplainInst::justify(FormulaEvaluator& v,
                      << " in " << d_body << std::endl;
   // the quantified formula must hold in the current context. If it does, it
   // is always a part of the explanation below.
-  int evq = v.evaluate(d_quant);
+  int evq = v->evaluate(d_quant);
   // we should always evaluate to true if we get here
   Assert(evq == 1);
   if (evq != 1)
@@ -100,7 +100,7 @@ bool InstExplainInst::justify(FormulaEvaluator& v,
   Node atom = atomVal == 1 ? lit[0] : lit;
   std::map<Node, int> assumptions;
   assumptions[atom] = atomVal;
-  int evil = v.evaluateWithAssumptions(d_body, assumptions);
+  int evil = v->evaluateWithAssumptions(d_body, assumptions);
   if (evil != -1)
   {
     // this can happen if we have a circular explanation, e.g.
@@ -131,7 +131,7 @@ bool InstExplainInst::justify(FormulaEvaluator& v,
 
 void InstExplainInst::propagateInternal(Node n,
                                         Node on,
-                                        FormulaEvaluator& v,
+                                        VirtualModel* v,
                                         std::vector<Node>& lits,
                                         std::vector<Node>& olits)
 {
@@ -150,7 +150,7 @@ void InstExplainInst::propagateInternal(Node n,
     curo = visito.back();
     visito.pop_back();
     // cur should hold in the current context
-    Assert(v.evaluate(cur) == 1);
+    Assert(v->evaluate(cur) == 1);
     // only safe to cache on the original, not the instance
     if (visited.find(curo) == visited.end())
     {
@@ -180,7 +180,7 @@ void InstExplainInst::propagateInternal(Node n,
           Node trueLito;
           for (unsigned i = 0, nchild = atom.getNumChildren(); i < nchild; i++)
           {
-            int cres = v.evaluate(atom[i]);
+            int cres = v->evaluate(atom[i]);
             if (cres == 0)
             {
               // if one child is unknown, then there are no propagations
@@ -219,13 +219,13 @@ void InstExplainInst::propagateInternal(Node n,
         //   T  T ? ----> nothing
         //   T  F T ----> ~1 propagate ~B, 2
         //   ... similarly for false
-        int cbres = v.evaluate(atom[0]);
+        int cbres = v->evaluate(atom[0]);
         // only propagation if branch evaluates to true
         if (cbres != 0)
         {
           for (unsigned i = 0; i < 2; i++)
           {
-            int cres = v.evaluate(atom[i + 1]);
+            int cres = v->evaluate(atom[i + 1]);
             if (cres == 0)
             {
               // if one child is unknown, there are no propagations
@@ -246,7 +246,7 @@ void InstExplainInst::propagateInternal(Node n,
       {
         //   T T ---> 1 propagate 2  +  2 propagate 1
         //   F F ---> ~1 propagate ~2  +  ~2 propagate ~1
-        int cres = v.evaluate(atom[0]);
+        int cres = v->evaluate(atom[0]);
         // they must both have values
         Assert(cres != 0);
         visit.push_back(cres > 0 ? atom[0] : atom[0].negate());
@@ -271,7 +271,7 @@ bool InstExplainInst::justifyInternal(
     TNode on,
     bool pol,
     Node olitProp,
-    FormulaEvaluator& v,
+    VirtualModel* v,
     std::map<Node, int>& assumptions,
     std::map<Node, std::map<bool, bool> >& cache,
     std::vector<Node>& lits,
@@ -293,7 +293,7 @@ bool InstExplainInst::justifyInternal(
   }
   // must justify why n evaluates to pol
   Assert(n.getKind() == on.getKind());
-  Assert(v.evaluateWithAssumptions(n, assumptions) == (pol ? 1 : -1));
+  Assert(v->evaluateWithAssumptions(n, assumptions) == (pol ? 1 : -1));
   if (n.getKind() == NOT)
   {
     return justifyInternal(
@@ -320,7 +320,7 @@ bool InstExplainInst::justifyInternal(
     // must explain one that evaluates to true
     for (unsigned i = 0, nchild = n.getNumChildren(); i < nchild; i++)
     {
-      if (v.evaluateWithAssumptions(n[i], assumptions) == (pol ? 1 : -1))
+      if (v->evaluateWithAssumptions(n[i], assumptions) == (pol ? 1 : -1))
       {
         if (justifyInternal(
                 n[i], on[i], pol, olitProp, v, assumptions, cache, lits, olits))
@@ -334,7 +334,7 @@ bool InstExplainInst::justifyInternal(
   }
   else if (k == ITE)
   {
-    int cbres = v.evaluateWithAssumptions(n[0], assumptions);
+    int cbres = v->evaluateWithAssumptions(n[0], assumptions);
     if (cbres == 0)
     {
       // branch is unknown, must do both
@@ -384,7 +384,7 @@ bool InstExplainInst::justifyInternal(
   }
   else if (k == EQUAL && n[0].getType().isBoolean())
   {
-    int cbres = v.evaluateWithAssumptions(n[0], assumptions);
+    int cbres = v->evaluateWithAssumptions(n[0], assumptions);
     if (cbres == 0)
     {
       cache[on][pol] = false;

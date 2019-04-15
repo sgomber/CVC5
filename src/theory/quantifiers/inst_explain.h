@@ -20,7 +20,7 @@
 #include <map>
 #include <vector>
 #include "expr/node.h"
-#include "theory/quantifiers/formula_evaluator.h"
+#include "theory/quantifiers/virtual_model.h"
 
 namespace CVC4 {
 namespace theory {
@@ -91,7 +91,7 @@ class InstExplainInst
    * has two occurrences of P( a, a ). It is important to track this
    * information, since it impacts how certain explanations are constructed.
    */
-  void propagate(FormulaEvaluator& v,
+  void propagate(VirtualModel* v,
                  std::vector<Node>& lits,
                  std::vector<Node>& olits);
   /** reverse propagate
@@ -116,7 +116,7 @@ class InstExplainInst
    * Thus, we compute lits and olits by justifying why C { P( a ) -> false }
    * evaluates to false in the current context, as witnessed by v.
    */
-  bool justify(FormulaEvaluator& v,
+  bool justify(VirtualModel* v,
                Node lit,
                Node olit,
                std::vector<Node>& lits,
@@ -165,7 +165,7 @@ class InstExplainInst
    */
   void propagateInternal(Node n,
                          Node on,
-                         FormulaEvaluator& v,
+                         VirtualModel* v,
                          std::vector<Node>& lits,
                          std::vector<Node>& olits);
 
@@ -188,7 +188,7 @@ class InstExplainInst
                        TNode on,
                        bool pol,
                        Node olitProp,
-                       FormulaEvaluator& v,
+                       VirtualModel* v,
                        std::map<Node, int>& assumptions,
                        std::map<Node, std::map<bool, bool> >& cache,
                        std::vector<Node>& lits,

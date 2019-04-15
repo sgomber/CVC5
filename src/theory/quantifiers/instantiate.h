@@ -318,6 +318,7 @@ class Instantiate : public QuantifiersUtil
     IntStat d_inst_duplicate_eq;
     IntStat d_inst_duplicate_ent;
     IntStat d_inst_duplicate_model_true;
+    IntStat d_inst_duplicate_vsat;
     Statistics();
     ~Statistics();
   }; /* class Instantiate::Statistics */
@@ -379,6 +380,8 @@ class Instantiate : public QuantifiersUtil
   InstExplainDb d_iedb;
   /** are we using instantiation explanations? */
   bool d_usingIedb;
+  /** the virtual model of the quantifiers engine */
+  VirtualModel * d_vmodel;
 };
 
 } /* CVC4::theory::quantifiers namespace */

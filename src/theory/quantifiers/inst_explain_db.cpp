@@ -35,7 +35,7 @@ InstExplainDb::InstExplainDb(QuantifiersEngine* qe)
     : d_qe(qe),
       d_tdb(d_qe->getTermDatabase()),
       d_subsume(d_qe->getSubsume()),
-      d_ev(qe),
+      d_vmodel(qe->getVirtualModel()),
       d_iexpfg(*this, qe),
       d_eqe(nullptr)
 {
@@ -46,7 +46,6 @@ InstExplainDb::InstExplainDb(QuantifiersEngine* qe)
 
 void InstExplainDb::reset(Theory::Effort e)
 {
-  d_ev.reset();
   d_iexpfg.reset(e);
   d_active_lexp.clear();
   d_active_inst.clear();
@@ -91,7 +90,7 @@ void InstExplainDb::activateInst(Node inst, Node srcLit, InstExplainLit& src)
   InstExplainInst& iei = getInstExplainInst(inst);
   // it must be asserted
   Node q = iei.getQuantifiedFormula();
-  if (d_ev.evaluate(q) != 1)
+  if (d_vmodel->evaluate(q) != 1)
   {
     return;
   }
@@ -106,7 +105,7 @@ void InstExplainDb::activateInst(Node inst, Node srcLit, InstExplainLit& src)
   }
   std::vector<Node> lits;
   std::vector<Node> olits;
-  iei.propagate(d_ev, lits, olits);
+  iei.propagate(d_vmodel, lits, olits);
   Assert(lits.size() == olits.size());
   for (unsigned i = 0, size = lits.size(); i < size; i++)
   {
@@ -235,39 +234,18 @@ Node InstExplainDb::runIexProofGen(Node q, std::vector<Node>& ts)
   return retq;
 }
 
-bool InstExplainDb::registerInstLemma(Node inst,
+void InstExplainDb::registerInstLemma(Node inst,
                                         Node n,
                                         Node q,
                                         std::vector<Node>& ts)
 {
   //Assert(!d_qe->inConflict());
-  // we decide to satisfy this instantiation
-  if( options::iexVirtualModel() )
-  {
-    std::map<Node,int> setAssumps;
-    if( d_ev.ensureValue(inst,true,setAssumps) )
-    {
-      if( options::instNoIexVirtualSat() && setAssumps.empty() )
-      {
-        // if was already satisfied, we will discard this instantiation
-        return false;
-      }
-    }
-    else
-    {
-      // we have a conflict in our virtual model
-      if( options::instIexVirtualConflict() )
-      {
-        d_qe->setConflict();
-      }
-    }
-  }
   
   if( options::iexMode()==IEX_NONE )
   {
     // We aren't running the proof procedure, thus we don't care about
     // registering any of the information below.
-    return true;
+    return;
   }
   Assert(q.getKind() == FORALL);
   Trace("inst-explain") << "Get literals that are explanable by " << inst
@@ -377,7 +355,6 @@ bool InstExplainDb::registerInstLemma(Node inst,
       }
     }
   } while (!visit.empty());
-  return true;
 }
 
 InstExplainLit& InstExplainDb::getInstExplainLit(Node lit)

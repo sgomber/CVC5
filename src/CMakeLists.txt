@@ -498,8 +498,6 @@ libcvc4_add_sources(
   theory/quantifiers/fmf/model_builder.h
   theory/quantifiers/fmf/model_engine.cpp
   theory/quantifiers/fmf/model_engine.h
-  theory/quantifiers/formula_evaluator.cpp
-  theory/quantifiers/formula_evaluator.h
   theory/quantifiers/fun_def_process.cpp
   theory/quantifiers/fun_def_process.h
   theory/quantifiers/iex_pf_gen.cpp
@@ -611,6 +609,8 @@ libcvc4_add_sources(
   theory/quantifiers/theory_quantifiers.cpp
   theory/quantifiers/theory_quantifiers.h
   theory/quantifiers/theory_quantifiers_type_rules.h
+  theory/quantifiers/virtual_model.cpp
+  theory/quantifiers/virtual_model.h
   theory/quantifiers_engine.cpp
   theory/quantifiers_engine.h
   theory/rep_set.cpp

@@ -29,7 +29,7 @@ namespace theory {
 namespace quantifiers {
 
 InstExplainPfGen::InstExplainPfGen(InstExplainDb& parent, QuantifiersEngine* qe)
-    : d_ied(parent), d_qe(qe), d_ev(parent.d_ev)
+    : d_ied(parent), d_qe(qe), d_vmodel(parent.d_vmodel)
 {
   d_false = NodeManager::currentNM()->mkConst(false);
   d_true = NodeManager::currentNM()->mkConst(true);
@@ -360,7 +360,7 @@ bool InstExplainPfGen::instExplain(IexOutput& iout,
   // Second, get the SAT literals from inst that are propagating lit.
   // These literals are such that the propositional entailment holds:
   //   inst ^ plits[0] ^ ... ^ plits[k] |= lit
-  if (!iei.justify(d_ev, lit, olit, plits, plitso))
+  if (!iei.justify(d_vmodel, lit, olit, plits, plitso))
   {
     if (Trace.isOn(c))
     {

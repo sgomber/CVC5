@@ -9,32 +9,39 @@
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
- ** \brief Instantiate explain utility
+ ** \brief Virtual model utility.
  **/
 
 #include "cvc4_private.h"
 
-#ifndef __CVC4__THEORY__QUANTIFIERS__FORMULA_EVALUATOR_H
-#define __CVC4__THEORY__QUANTIFIERS__FORMULA_EVALUATOR_H
+#ifndef __CVC4__THEORY__QUANTIFIERS__VIRTUAL_MODEL_H
+#define __CVC4__THEORY__QUANTIFIERS__VIRTUAL_MODEL_H
 
 #include <map>
 #include <vector>
 #include "expr/node.h"
 #include "theory/valuation.h"
 #include "theory/quantifiers_engine.h"
+#include "theory/quantifiers/quant_util.h"
 
 namespace CVC4 {
 namespace theory {
 namespace quantifiers {
 
-/** Formula evaluator
+/** Virtual model
  */
-class FormulaEvaluator
+class VirtualModel : public QuantifiersUtil
 {
  public:
-  FormulaEvaluator(QuantifiersEngine * qe);
+  VirtualModel(QuantifiersEngine * qe);
   /** reset */
-  void reset();
+  bool reset(Theory::Effort e) override;
+  /* Called for new quantifiers */
+  void registerQuantifier(Node q) override;
+  /** Identify this module*/
+  std::string identify() const override { return "VirtualModel"; }
+  /** register assertion */
+  bool registerAssertion(Node ilem);
   /** evaluate
    *
    * Returns the value of n in the current SAT context where

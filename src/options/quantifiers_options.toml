@@ -771,25 +771,25 @@ header = "options/quantifiers_options.h"
   help       = "strengthen instantiation lemmas based on instantiation explanations"
 
 [[option]]
-  name       = "iexVirtualModel"
+  name       = "quantVirtualModel"
   category   = "regular"
-  long       = "iex-vmodel"
+  long       = "quant-vmodel"
   type       = "bool"
   default    = "false"
   help       = "maintain a virtual model during an instantiation round"
 
 [[option]]
-  name       = "instNoIexVirtualSat"
+  name       = "instNoVirtualSat"
   category   = "regular"
-  long       = "inst-no-iex-vsat"
+  long       = "inst-no-vsat"
   type       = "bool"
   default    = "false"
   help       = "do not consider instances of quantified formulas that are currently satisfied by a virtual model"
 
 [[option]]
-  name       = "instIexVirtualConflict"
+  name       = "instVirtualConflict"
   category   = "regular"
-  long       = "inst-iex-vconflict"
+  long       = "inst-vconflict"
   type       = "bool"
   default    = "false"
   help       = "abort instantiation rounds when we have a conflict in our virtual model"

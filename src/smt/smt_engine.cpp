@@ -2111,9 +2111,9 @@ void SmtEngine::setDefaults() {
     }
   }
   // for IEX
-  if( options::instNoIexVirtualSat() || options::instIexVirtualConflict() )
+  if( options::instNoVirtualSat() || options::instVirtualConflict() )
   {
-    options::iexVirtualModel.set(true);
+    options::quantVirtualModel.set(true);
   }
   //for induction techniques
   if( options::quantInduction() ){

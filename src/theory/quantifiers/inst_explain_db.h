@@ -62,7 +62,7 @@ class InstExplainDb
    * q is the quantified formula formula,
    * ts are the terms we have instantiated with.
    */
-  bool registerInstLemma(Node ilem, Node n, Node q, std::vector<Node>& ts);
+  void registerInstLemma(Node ilem, Node n, Node q, std::vector<Node>& ts);
 
   /** explain */
   ExplainStatus explain(Node q,
@@ -87,8 +87,8 @@ class InstExplainDb
   TermDb* d_tdb;
   /** the subsume utility of d_qe */
   Subsume* d_subsume;
-  /** evaluator utility */
-  FormulaEvaluator d_ev;
+  /** virtual model utility */
+  VirtualModel * d_vmodel;
   /** the instantiate explain proof generalization utility */
   InstExplainPfGen d_iexpfg;
   /** equality explainer utility */
