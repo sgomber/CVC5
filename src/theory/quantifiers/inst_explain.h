@@ -25,7 +25,7 @@
 namespace CVC4 {
 namespace theory {
 namespace quantifiers {
-  
+
 /** instantiation explain literal
  *
  * This class manages all instantiation lemma explanations for a single ground

@@ -298,7 +298,8 @@ conflict \n\
 \n\
 ";
 
-const std::string OptionsHandler::s_qcfWhenModeHelp = "\
+const std::string OptionsHandler::s_qcfWhenModeHelp =
+    "\
 Instantiation explanation when modes currently supported by the --quant-cf-when option:\n\
 \n\
 default \n\
@@ -728,8 +729,8 @@ theory::quantifiers::QcfWhenMode OptionsHandler::stringToQcfWhenMode(
   }
 }
 
-theory::quantifiers::IexMode OptionsHandler::stringToIexMode(
-    std::string option, std::string optarg)
+theory::quantifiers::IexMode OptionsHandler::stringToIexMode(std::string option,
+                                                             std::string optarg)
 {
   if (optarg == "none")
   {
@@ -750,8 +751,8 @@ theory::quantifiers::IexMode OptionsHandler::stringToIexMode(
   }
   else
   {
-    throw OptionException(std::string("unknown option for --iex: `")
-                          + optarg + "'.  Try --iex help.");
+    throw OptionException(std::string("unknown option for --iex: `") + optarg
+                          + "'.  Try --iex help.");
   }
 }
 

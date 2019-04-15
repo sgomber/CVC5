@@ -46,9 +46,9 @@ class InstExplainDb
   InstExplainDb(QuantifiersEngine* qe);
   /** reset */
   void reset(Theory::Effort e);
-  /** register candidate instantiation 
-   * 
-   * 
+  /** register candidate instantiation
+   *
+   *
    */
   Node registerCandidateInstantiation(Node q, std::vector<Node>& ts);
   /** register instantiation lemma
@@ -88,7 +88,7 @@ class InstExplainDb
   /** the subsume utility of d_qe */
   Subsume* d_subsume;
   /** virtual model utility */
-  VirtualModel * d_vmodel;
+  VirtualModel* d_vmodel;
   /** the instantiate explain proof generalization utility */
   InstExplainPfGen d_iexpfg;
   /** equality explainer utility */

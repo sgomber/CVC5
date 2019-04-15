@@ -14,9 +14,9 @@
 
 #include "theory/quantifiers/virtual_model.h"
 
+#include "options/quantifiers_options.h"
 #include "theory/quantifiers/term_util.h"
 #include "theory/rewriter.h"
-#include "options/quantifiers_options.h"
 
 using namespace CVC4::kind;
 
@@ -24,9 +24,13 @@ namespace CVC4 {
 namespace theory {
 namespace quantifiers {
 
-VirtualModel::VirtualModel(QuantifiersEngine * qe) : d_qe(qe), d_valuation(qe->getValuation()) {}
-  
-bool VirtualModel::reset(Theory::Effort e) { 
+VirtualModel::VirtualModel(QuantifiersEngine* qe)
+    : d_qe(qe), d_valuation(qe->getValuation())
+{
+}
+
+bool VirtualModel::reset(Theory::Effort e)
+{
   // reset the cache
   d_ecache.clear();
   Trace("vmodel") << "VModel: reset, effort=" << e << std::endl;
@@ -40,27 +44,28 @@ void VirtualModel::registerQuantifier(Node q)
 
 bool VirtualModel::registerAssertion(Node ilem)
 {
-  Trace("vmodel-inst") << "VModel: registerAssertion "  << ilem << std::endl;
-  Assert( options::quantVirtualModel() );
-  std::map<Node,int> setAssumps;
-  if( ensureValue(ilem,true,setAssumps) )
+  Trace("vmodel-inst") << "VModel: registerAssertion " << ilem << std::endl;
+  Assert(options::quantVirtualModel());
+  std::map<Node, int> setAssumps;
+  if (ensureValue(ilem, true, setAssumps))
   {
-    if( setAssumps.empty() )
+    if (setAssumps.empty())
     {
       Trace("vmodel-inst") << "...already satisfied!" << std::endl;
-      if( options::instNoVirtualSat() )
+      if (options::instNoVirtualSat())
       {
         Trace("vmodel") << "VirtualModel: discarded an assertion." << std::endl;
         // if was already satisfied, we will discard this instantiation
         return false;
       }
     }
-    else if( Trace.isOn("vmodel") )
+    else if (Trace.isOn("vmodel"))
     {
       Trace("vmodel-inst") << "...satisfiable via: " << std::endl;
-      for( const std::pair<Node,int>& sa : setAssumps )
+      for (const std::pair<Node, int>& sa : setAssumps)
       {
-        Trace("vmodel-inst") << "  " << sa.first << " -> " << (sa.second==1) << std::endl;
+        Trace("vmodel-inst")
+            << "  " << sa.first << " -> " << (sa.second == 1) << std::endl;
       }
     }
   }
@@ -68,7 +73,7 @@ bool VirtualModel::registerAssertion(Node ilem)
   {
     Trace("vmodel-inst") << "...unsatisfiable!" << std::endl;
     // we have a conflict in our virtual model
-    if( options::instVirtualConflict() )
+    if (options::instVirtualConflict())
     {
       // treat it as a real conflict if necessary
       Trace("vmodel") << "VirtualModel: set conflict." << std::endl;
@@ -85,8 +90,8 @@ int VirtualModel::evaluate(Node n, bool cacheUnk)
   return evaluateInternal(n, d_ecache, ucache, cacheUnk);
 }
 int VirtualModel::evaluateWithAssumptions(Node n,
-                                         std::map<Node, int>& assumptions,
-                                         bool cacheUnk)
+                                          std::map<Node, int>& assumptions,
+                                          bool cacheUnk)
 {
   n = Rewriter::rewrite(n);
   std::unordered_set<Node, NodeHashFunction> ucache;
@@ -179,11 +184,13 @@ int VirtualModel::evaluateInternal(
   return res;
 }
 
-bool VirtualModel::ensureValue(Node n, bool isTrue, std::map<Node,int>& setAssumps)
+bool VirtualModel::ensureValue(Node n,
+                               bool isTrue,
+                               std::map<Node, int>& setAssumps)
 {
   std::unordered_set<Node, NodeHashFunction> ucache;
   // if possible, propagate the literal in the clause that must be true
-  std::map< bool, std::unordered_set<Node, NodeHashFunction> > visited;
+  std::map<bool, std::unordered_set<Node, NodeHashFunction> > visited;
   std::vector<TNode> visit;
   std::vector<bool> visitE;
   TNode cur;
@@ -196,10 +203,10 @@ bool VirtualModel::ensureValue(Node n, bool isTrue, std::map<Node,int>& setAssum
     visit.pop_back();
     curReq = visitE.back();
     visitE.pop_back();
-    int evCur = evaluateInternal(cur,d_ecache,ucache,false);
-    if( evCur!=0 )
+    int evCur = evaluateInternal(cur, d_ecache, ucache, false);
+    if (evCur != 0)
     {
-      if( (evCur==1)!=curReq )
+      if ((evCur == 1) != curReq)
       {
         // already wrong, we fail
         return false;
@@ -210,7 +217,7 @@ bool VirtualModel::ensureValue(Node n, bool isTrue, std::map<Node,int>& setAssum
     {
       visited[curReq].insert(cur);
       Kind k = cur.getKind();
-      if( k==NOT )
+      if (k == NOT)
       {
         visit.push_back(cur[0]);
         visitE.push_back(!curReq);
@@ -220,7 +227,7 @@ bool VirtualModel::ensureValue(Node n, bool isTrue, std::map<Node,int>& setAssum
         if ((k == AND) == curReq)
         {
           // all are required
-          for(TNode cc : cur)
+          for (TNode cc : cur)
           {
             visit.push_back(cc);
             visitE.push_back(curReq);
@@ -229,9 +236,9 @@ bool VirtualModel::ensureValue(Node n, bool isTrue, std::map<Node,int>& setAssum
         else
         {
           // find one whose value is unknown
-          for(TNode cc : cur)
+          for (TNode cc : cur)
           {
-            int cres = evaluateInternal(cc,d_ecache,ucache,false);
+            int cres = evaluateInternal(cc, d_ecache, ucache, false);
             if (cres == 0)
             {
               // if one child is unknown, then we use it
@@ -244,39 +251,39 @@ bool VirtualModel::ensureValue(Node n, bool isTrue, std::map<Node,int>& setAssum
       }
       else if (k == ITE || (k == EQUAL && cur[0].getType().isBoolean()))
       {
-        int ev0 = evaluateInternal(cur[0],d_ecache,ucache,false);
-        if( ev0!=0 )
+        int ev0 = evaluateInternal(cur[0], d_ecache, ucache, false);
+        if (ev0 != 0)
         {
           // implies a single requirement
-          int index = (k==ITE && ev0==-1) ? 2 : 1;
-          bool reqc = (k!=ITE && ev0==-1) ? !curReq : curReq;
+          int index = (k == ITE && ev0 == -1) ? 2 : 1;
+          bool reqc = (k != ITE && ev0 == -1) ? !curReq : curReq;
           visit.push_back(cur[index]);
           visitE.push_back(reqc);
         }
-        else if( k==ITE )
+        else if (k == ITE)
         {
           // (ite ? ev1 ev2)
           // find a branch that does not have a wrong value
           int processIndex = -1;
           bool processIndexUnk = false;
-          for( unsigned i=1; i<=2; i++ )
+          for (unsigned i = 1; i <= 2; i++)
           {
-            int evi = evaluateInternal(cur[i],d_ecache,ucache,false);
-            if( (evi==1)==curReq )
+            int evi = evaluateInternal(cur[i], d_ecache, ucache, false);
+            if ((evi == 1) == curReq)
             {
               processIndex = i;
               processIndexUnk = false;
               break;
             }
-            else if( evi==0 )
+            else if (evi == 0)
             {
               processIndex = i;
               processIndexUnk = true;
             }
           }
           visit.push_back(cur[0]);
-          visitE.push_back(processIndex==1);
-          if( processIndexUnk )
+          visitE.push_back(processIndex == 1);
+          if (processIndexUnk)
           {
             visit.push_back(cur[processIndex]);
             visitE.push_back(curReq);
@@ -285,8 +292,8 @@ bool VirtualModel::ensureValue(Node n, bool isTrue, std::map<Node,int>& setAssum
         else
         {
           // ? = ev1
-          int ev1 = evaluateInternal(cur[1],d_ecache,ucache,false);
-          if( ev1==0 )
+          int ev1 = evaluateInternal(cur[1], d_ecache, ucache, false);
+          if (ev1 == 0)
           {
             // make both true
             visit.push_back(cur[0]);
@@ -298,7 +305,7 @@ bool VirtualModel::ensureValue(Node n, bool isTrue, std::map<Node,int>& setAssum
           {
             // make match
             visit.push_back(cur[0]);
-            visitE.push_back((ev1==1)==curReq);
+            visitE.push_back((ev1 == 1) == curReq);
           }
         }
       }
@@ -311,8 +318,7 @@ bool VirtualModel::ensureValue(Node n, bool isTrue, std::map<Node,int>& setAssum
       }
     }
   } while (!visit.empty());
-  
-  
+
   return true;
 }
 

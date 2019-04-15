@@ -125,14 +125,14 @@ void InstExplainDb::activateInst(Node inst, Node srcLit, InstExplainLit& src)
 Node InstExplainDb::registerCandidateInstantiation(Node q,
                                                    std::vector<Node>& ts)
 {
-  Node retq = runIexProofGen(q,ts);
+  Node retq = runIexProofGen(q, ts);
   return retq;
 }
 
 Node InstExplainDb::runIexProofGen(Node q, std::vector<Node>& ts)
 {
   // if we don't care about lemmas, don't do anything
-  if( options::iexMode()==IEX_NONE )
+  if (options::iexMode() == IEX_NONE)
   {
     return q;
   }
@@ -157,11 +157,11 @@ Node InstExplainDb::runIexProofGen(Node q, std::vector<Node>& ts)
     // there is nothing interesting, we are done
     return q;
   }
-  if( !vrPfFails.empty() )
+  if (!vrPfFails.empty())
   {
     // we are not a conflicting instance.
     // we don't do generalization if the mode says not to.
-    if( options::iexWhenMode()==IEX_WHEN_CINST )
+    if (options::iexWhenMode() == IEX_WHEN_CINST)
     {
       return q;
     }
@@ -235,13 +235,13 @@ Node InstExplainDb::runIexProofGen(Node q, std::vector<Node>& ts)
 }
 
 void InstExplainDb::registerInstLemma(Node inst,
-                                        Node n,
-                                        Node q,
-                                        std::vector<Node>& ts)
+                                      Node n,
+                                      Node q,
+                                      std::vector<Node>& ts)
 {
-  //Assert(!d_qe->inConflict());
-  
-  if( options::iexMode()==IEX_NONE )
+  // Assert(!d_qe->inConflict());
+
+  if (options::iexMode() == IEX_NONE)
   {
     // We aren't running the proof procedure, thus we don't care about
     // registering any of the information below.

@@ -381,7 +381,7 @@ class Instantiate : public QuantifiersUtil
   /** are we using instantiation explanations? */
   bool d_usingIedb;
   /** the virtual model of the quantifiers engine */
-  VirtualModel * d_vmodel;
+  VirtualModel* d_vmodel;
 };
 
 } /* CVC4::theory::quantifiers namespace */

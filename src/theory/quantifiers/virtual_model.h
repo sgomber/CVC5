@@ -20,9 +20,9 @@
 #include <map>
 #include <vector>
 #include "expr/node.h"
-#include "theory/valuation.h"
-#include "theory/quantifiers_engine.h"
 #include "theory/quantifiers/quant_util.h"
+#include "theory/quantifiers_engine.h"
+#include "theory/valuation.h"
 
 namespace CVC4 {
 namespace theory {
@@ -33,7 +33,7 @@ namespace quantifiers {
 class VirtualModel : public QuantifiersUtil
 {
  public:
-  VirtualModel(QuantifiersEngine * qe);
+  VirtualModel(QuantifiersEngine* qe);
   /** reset */
   bool reset(Theory::Effort e) override;
   /* Called for new quantifiers */
@@ -63,10 +63,11 @@ class VirtualModel : public QuantifiersUtil
                               std::map<Node, int>& assumptions,
                               bool cacheUnk = false);
   /** ensure value */
-  bool ensureValue(Node n, bool isTrue, std::map<Node,int>& setAssumps);
+  bool ensureValue(Node n, bool isTrue, std::map<Node, int>& setAssumps);
+
  private:
   /** quantifiers engine */
-  QuantifiersEngine * d_qe;
+  QuantifiersEngine* d_qe;
   /** valuation */
   Valuation& d_valuation;
   /** cache */
@@ -84,7 +85,6 @@ class VirtualModel : public QuantifiersUtil
                        std::unordered_set<Node, NodeHashFunction>& ucache,
                        bool cacheUnk);
 };
-
 
 }  // namespace quantifiers
 }  // namespace theory

@@ -67,7 +67,7 @@ bool Instantiate::reset(Theory::Effort e)
   }
   d_term_db = d_qe->getTermDatabase();
   d_term_util = d_qe->getTermUtil();
-  if (options::iexWhenMode()!=IEX_WHEN_NONE)
+  if (options::iexWhenMode() != IEX_WHEN_NONE)
   {
     d_iedb.reset(e);
     d_usingIedb = true;
@@ -248,7 +248,7 @@ bool Instantiate::addInstantiation(
   if (d_usingIedb)
   {
     Node qq = d_iedb.registerCandidateInstantiation(q, terms);
-    if (options::iexStrongInst() && qq!=q)
+    if (options::iexStrongInst() && qq != q)
     {
       // the instantiation explanation module found a stronger quantified
       // formula, use it.
@@ -293,21 +293,22 @@ bool Instantiate::addInstantiation(
   lem = Rewriter::rewrite(lem);
 
   // we decide to satisfy this instantiation
-  if( options::quantVirtualModel() )
+  if (options::quantVirtualModel())
   {
-    if( !d_vmodel->registerAssertion(lem) )
+    if (!d_vmodel->registerAssertion(lem))
     {
-      Trace("inst-add-debug") << " --> Already true in virtual model." << std::endl;
+      Trace("inst-add-debug")
+          << " --> Already true in virtual model." << std::endl;
       ++(d_statistics.d_inst_duplicate_vsat);
       return false;
     }
   }
-  
+
   if (d_usingIedb)
   {
     d_iedb.registerInstLemma(lem, orig_body, q, terms);
   }
-  
+
   // record the instantiation
   bool recorded = recordInstantiationInternal(q, terms, modEq);
   if (!recorded)
@@ -321,7 +322,7 @@ bool Instantiate::addInstantiation(
     ++(d_statistics.d_inst_duplicate_eq);
     return false;
   }
-  
+
   // check for lemma duplication
   if (!d_qe->addLemma(lem, true, false))
   {
@@ -329,9 +330,9 @@ bool Instantiate::addInstantiation(
     ++(d_statistics.d_inst_duplicate);
     return false;
   }
-  
+
   // *** Below here we are guaranteed that the instantiation will be added.
-  
+
   d_total_inst_debug[q]++;
   d_temp_inst_debug[q]++;
   d_total_inst_count_debug++;

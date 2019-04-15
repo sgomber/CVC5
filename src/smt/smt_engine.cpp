@@ -2111,7 +2111,7 @@ void SmtEngine::setDefaults() {
     }
   }
   // for IEX
-  if( options::instNoVirtualSat() || options::instVirtualConflict() )
+  if (options::instNoVirtualSat() || options::instVirtualConflict())
   {
     options::quantVirtualModel.set(true);
   }
