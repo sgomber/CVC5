@@ -74,6 +74,8 @@ enum QcfWhenMode {
 
 enum IexMode
 {
+  /** do not generate lemmas based on instantiation explanation */
+  IEX_NONE,
   /** do generalized resolutions */
   IEX_GEN_RES,
   /** do conflict clauses (when applicable) */

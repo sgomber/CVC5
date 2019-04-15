@@ -21,6 +21,7 @@
 #include <vector>
 #include "expr/node.h"
 #include "theory/valuation.h"
+#include "theory/quantifiers_engine.h"
 
 namespace CVC4 {
 namespace theory {
@@ -31,7 +32,7 @@ namespace quantifiers {
 class FormulaEvaluator
 {
  public:
-  FormulaEvaluator(Valuation& v) : d_valuation(v) {}
+  FormulaEvaluator(QuantifiersEngine * qe);
   /** reset */
   void reset();
   /** evaluate
@@ -45,7 +46,7 @@ class FormulaEvaluator
    * context. The value of n can still be determined in some cases in the
    * case these literals are irrelevant.
    */
-  int evaluate(Node n, bool cacheUnk = true);
+  int evaluate(Node n, bool cacheUnk = false);
   /**
    * Evaluate, starting with a custom set of assumptions instead of using
    * d_ecache. The values in assumptions can be thought of as overriding the
@@ -53,10 +54,12 @@ class FormulaEvaluator
    */
   int evaluateWithAssumptions(Node n,
                               std::map<Node, int>& assumptions,
-                              bool cacheUnk = true);
+                              bool cacheUnk = false);
   /** ensure value */
   bool ensureValue(Node n, bool isTrue, std::map<Node,int>& setAssumps);
  private:
+  /** quantifiers engine */
+  QuantifiersEngine * d_qe;
   /** valuation */
   Valuation& d_valuation;
   /** cache */

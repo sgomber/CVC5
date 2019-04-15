@@ -23,6 +23,8 @@ namespace CVC4 {
 namespace theory {
 namespace quantifiers {
 
+FormulaEvaluator::FormulaEvaluator(QuantifiersEngine * qe) : d_qe(qe), d_valuation(qe->getValuation()) {}
+  
 void FormulaEvaluator::reset() { d_ecache.clear(); }
 
 int FormulaEvaluator::evaluate(Node n, bool cacheUnk)

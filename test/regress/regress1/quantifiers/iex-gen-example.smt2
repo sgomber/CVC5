@@ -1,4 +1,4 @@
-; COMMAND-LINE: --qcf-exp=gen
+; COMMAND-LINE: --iex-when=cinst
 ; EXPECT: unsat
 (set-logic UFLIA)
 

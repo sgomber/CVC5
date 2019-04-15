@@ -283,8 +283,23 @@ trust \n\
 \n\
 ";
 
+const std::string OptionsHandler::s_iexModeHelp =
+    "\
+Instantiation explanation lemma modes currently supported by the --iex option:\n\
+\n\
+none \n\
++ Do not generate lemmas.\n\
+\n\
+gen-res (default) \n\
++ Generate first-order subsuming resolutions.\n\
+\n\
+conflict \n\
++ Generate Boolean conflicting clauses.\n\
+\n\
+";
+
 const std::string OptionsHandler::s_qcfWhenModeHelp = "\
-Quantifier conflict find modes currently supported by the --quant-cf-when option:\n\
+Instantiation explanation when modes currently supported by the --quant-cf-when option:\n\
 \n\
 default \n\
 + Default, apply conflict finding at full effort.\n\
@@ -298,18 +313,6 @@ std \n\
 \n\
 std-h \n\
 + Apply conflict finding at standard effort when heuristic says to. \n\
-\n\
-";
-
-const std::string OptionsHandler::s_iexModeHelp =
-    "\
-Quantifier conflict find explanation modes currently supported by the --iex option:\n\
-\n\
-gen-res (default) \n\
-+ Generate first-order subsuming resolutions.\n\
-\n\
-conflict \n\
-+ Generate Boolean conflicting clauses.\n\
 \n\
 ";
 
@@ -728,7 +731,11 @@ theory::quantifiers::QcfWhenMode OptionsHandler::stringToQcfWhenMode(
 theory::quantifiers::IexMode OptionsHandler::stringToIexMode(
     std::string option, std::string optarg)
 {
-  if (optarg == "gen-res")
+  if (optarg == "none")
+  {
+    return theory::quantifiers::IEX_NONE;
+  }
+  else if (optarg == "gen-res")
   {
     return theory::quantifiers::IEX_GEN_RES;
   }

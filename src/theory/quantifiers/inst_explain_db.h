@@ -46,9 +46,12 @@ class InstExplainDb
   InstExplainDb(QuantifiersEngine* qe);
   /** reset */
   void reset(Theory::Effort e);
-  /** register candidate instantiation */
+  /** register candidate instantiation 
+   * 
+   * 
+   */
   Node registerCandidateInstantiation(Node q, std::vector<Node>& ts);
-  /** register explanations
+  /** register instantiation lemma
    *
    * This initializes all explanation information relevant for the instantiation
    * lemma ilem.
@@ -59,7 +62,7 @@ class InstExplainDb
    * q is the quantified formula formula,
    * ts are the terms we have instantiated with.
    */
-  void registerExplanation(Node ilem, Node n, Node q, std::vector<Node>& ts);
+  bool registerInstLemma(Node ilem, Node n, Node q, std::vector<Node>& ts);
 
   /** explain */
   ExplainStatus explain(Node q,
@@ -163,6 +166,8 @@ class InstExplainDb
    * here.
    */
   std::map<Node, std::map<Node, Node>> d_conc_cache;
+  /** run proof generalization */
+  Node runIexProofGen(Node q, std::vector<Node>& ts);
 };
 
 }  // namespace quantifiers

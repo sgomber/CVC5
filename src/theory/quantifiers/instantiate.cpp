@@ -206,14 +206,11 @@ bool Instantiate::addInstantiation(
   // lead to very small gains).
 
   // We do proactively check if d_usingIedb is true.
-  if (d_usingIedb)
+  if (existsInstantiation(q, terms))
   {
-    if (existsInstantiation(q, terms))
-    {
-      Trace("inst-add-debug") << " --> Already exists." << std::endl;
-      ++(d_statistics.d_inst_duplicate_eq);
-      return false;
-    }
+    Trace("inst-add-debug") << " --> Already exists." << std::endl;
+    ++(d_statistics.d_inst_duplicate_eq);
+    return false;
   }
 
   // check for positive entailment
@@ -260,15 +257,6 @@ bool Instantiate::addInstantiation(
     }
   }
 
-  // record the instantiation
-  bool recorded = recordInstantiationInternal(q, terms, modEq);
-  if (!recorded)
-  {
-    Trace("inst-add-debug") << " --> Already exists (no record)." << std::endl;
-    ++(d_statistics.d_inst_duplicate_eq);
-    return false;
-  }
-
   // construct the instantiation
   Trace("inst-add-debug") << "Constructing instantiation..." << std::endl;
   Assert(d_term_util->d_vars[q].size() == terms.size());
@@ -310,7 +298,32 @@ bool Instantiate::addInstantiation(
     ++(d_statistics.d_inst_duplicate);
     return false;
   }
-
+  
+  if (d_usingIedb)
+  {
+    if( !d_iedb.registerInstLemma(lem, orig_body, q, terms) )
+    {
+      Trace("inst-add-debug") << " --> Lemma already exists." << std::endl;
+      return false;
+    }
+  }
+  
+  // record the instantiation
+  bool recorded = recordInstantiationInternal(q, terms, modEq);
+  if (!recorded)
+  {
+    // this should never happen since we check for existence above; any
+    // intermediate modifications (e.g. to change the quantified formula we are
+    // instantiating) should preserve the fact that we haven't instantiated
+    // this yet.
+    Assert(false);
+    Trace("inst-add-debug") << " --> Already exists (no record)." << std::endl;
+    ++(d_statistics.d_inst_duplicate_eq);
+    return false;
+  }
+  
+  // *** Below here we are guaranteed that the instantiation will be added.
+  
   d_total_inst_debug[q]++;
   d_temp_inst_debug[q]++;
   d_total_inst_count_debug++;
@@ -330,10 +343,6 @@ bool Instantiate::addInstantiation(
         Trace("inst") << std::endl;
       }
     }
-  }
-  if (d_usingIedb)
-  {
-    d_iedb.registerExplanation(lem, orig_body, q, terms);
   }
   if (options::instMaxLevel() != -1)
   {

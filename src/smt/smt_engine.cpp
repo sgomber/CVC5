@@ -2110,6 +2110,11 @@ void SmtEngine::setDefaults() {
       options::preSkolemQuant.set( true );
     }
   }
+  // for IEX
+  if( options::instNoIexVirtualSat() || options::instIexVirtualConflict() )
+  {
+    options::iexVirtualModel.set(true);
+  }
   //for induction techniques
   if( options::quantInduction() ){
     if( !options::dtStcInduction.wasSetByUser() ){

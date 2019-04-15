@@ -13,10 +13,14 @@
 (7) ground UF proof generalization
 -> BRAINSTORMING
 (8) compress path to UPG (subsume all quantified formulas on the path).  
--> IMPLEMENTED, not enabled by default.
+-> IMPLEMENTED.
 (9) factoring: close assertions that are subsumed by another open leaf
 ->
 (10) automatic computed propagations from arbitrary instantiations, plug back into entailment tests
-->
+-> IN PROGRESS, via the virtual model.
 (11) immediately strengthen instantiation lemmas
-
+-> IMPLEMENTED, not enabled by default.
+(12) discard instantiations that are satisfied in the virtual model
+-> IMPLEMENTED, not enabled by default.
+(12) abort when we have a conflict in the virtual model
+-> IMPLEMENTED, not enabled by default.

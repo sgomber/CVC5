@@ -35,7 +35,7 @@ InstExplainDb::InstExplainDb(QuantifiersEngine* qe)
     : d_qe(qe),
       d_tdb(d_qe->getTermDatabase()),
       d_subsume(d_qe->getSubsume()),
-      d_ev(d_qe->getValuation()),
+      d_ev(qe),
       d_iexpfg(*this, qe),
       d_eqe(nullptr)
 {
@@ -126,10 +126,17 @@ void InstExplainDb::activateInst(Node inst, Node srcLit, InstExplainLit& src)
 Node InstExplainDb::registerCandidateInstantiation(Node q,
                                                    std::vector<Node>& ts)
 {
-  // the quantified formula we will return, which is a quantified formula
-  // that implies our input. It may be stronger than q if we find a subsuming
-  // resolution.
-  Node retq = q;
+  Node retq = runIexProofGen(q,ts);
+  return retq;
+}
+
+Node InstExplainDb::runIexProofGen(Node q, std::vector<Node>& ts)
+{
+  // if we don't care about lemmas, don't do anything
+  if( options::iexMode()==IEX_NONE )
+  {
+    return q;
+  }
   // virtual proof of refutation of this instance
   std::map<Node, eq::EqProof> vrPf;
   std::vector<Node> vrPfFails;
@@ -146,11 +153,24 @@ Node InstExplainDb::registerCandidateInstantiation(Node q,
   Trace("iex-setup") << "Instantiation led to " << vrPf.size() << " / "
                      << (vrPf.size() + vrPfFails.size()) << " entailments."
                      << std::endl;
-  // TODO: can be more aggressive here
-  if (vrPf.empty() || !vrPfFails.empty())
+  if (vrPf.empty())
   {
-    return d_null;
+    // there is nothing interesting, we are done
+    return q;
   }
+  if( !vrPfFails.empty() )
+  {
+    // we are not a conflicting instance.
+    // we don't do generalization if the mode says not to.
+    if( options::iexWhenMode()==IEX_WHEN_CINST )
+    {
+      return q;
+    }
+  }
+  // the quantified formula we will return, which is a quantified formula
+  // that implies our input. It may be stronger than q if we find a subsuming
+  // resolution.
+  Node retq = q;
   // go back and fill in all the proofs
   bool successPf = true;
   for (const std::pair<Node, eq::EqProof>& lit : vrPf)
@@ -209,17 +229,46 @@ Node InstExplainDb::registerCandidateInstantiation(Node q,
   }
   if (vrPfFails.empty())
   {
-    // it is a conflicting instance.
+    // it is a conflicting instance, should report it
     AlwaysAssert(entFalse);
   }
   return retq;
 }
 
-void InstExplainDb::registerExplanation(Node inst,
+bool InstExplainDb::registerInstLemma(Node inst,
                                         Node n,
                                         Node q,
                                         std::vector<Node>& ts)
 {
+  //Assert(!d_qe->inConflict());
+  // we decide to satisfy this instantiation
+  if( options::iexVirtualModel() )
+  {
+    std::map<Node,int> setAssumps;
+    if( d_ev.ensureValue(inst,true,setAssumps) )
+    {
+      if( options::instNoIexVirtualSat() && setAssumps.empty() )
+      {
+        // if was already satisfied, we will discard this instantiation
+        return false;
+      }
+    }
+    else
+    {
+      // we have a conflict in our virtual model
+      if( options::instIexVirtualConflict() )
+      {
+        d_qe->setConflict();
+      }
+    }
+  }
+  
+  if( options::iexMode()==IEX_NONE )
+  {
+    // We aren't running the proof procedure, thus we don't care about
+    // registering any of the information below.
+    return true;
+  }
   Assert(q.getKind() == FORALL);
   Trace("inst-explain") << "Get literals that are explanable by " << inst
                         << std::endl;
@@ -240,7 +289,6 @@ void InstExplainDb::registerExplanation(Node inst,
   */
 
   int pol;
-  // int jppol;
   TNode cur;
   TNode curi;
   visitPol.push_back(1);
@@ -329,15 +377,7 @@ void InstExplainDb::registerExplanation(Node inst,
       }
     }
   } while (!visit.empty());
-
-  if (!d_qe->inConflict())
-  {
-    // decide to satisfy
-
-    // now, propagate
-    std::vector<Node> lits;
-    std::vector<Node> olits;
-  }
+  return true;
 }
 
 InstExplainLit& InstExplainDb::getInstExplainLit(Node lit)
@@ -804,6 +844,7 @@ Node InstExplainDb::getGeneralizedConclusion(
       // construct the generalized conflicting instance
       // notice that this bypasses the Instantiate module in QuantifiersEngine.
       // TODO: revisit this (may want to register the instantiation there)
+      /*
       Node concsi = concBody.substitute(
           vars.begin(), vars.end(), iei->d_terms.begin(), iei->d_terms.end());
       Node cig = nm->mkNode(OR, conc.negate(), concsi);
@@ -819,6 +860,8 @@ Node InstExplainDb::getGeneralizedConclusion(
       lemmas.push_back(cig);
       Trace("iex-lemma") << "InstExplainDb::lemma (GEN-CINST): " << cig
                          << std::endl;
+                         */
+      // FIXME: do instantiation
     }
   }
   else
