@@ -599,6 +599,8 @@ libcvc4_add_sources(
   theory/quantifiers/theory_quantifiers_type_rules.h
   theory/quantifiers_engine.cpp
   theory/quantifiers_engine.h
+  theory/quantifiers/virtual_model.cpp
+  theory/quantifiers/virtual_model.h
   theory/rep_set.cpp
   theory/rep_set.h
   theory/rewriter.cpp
