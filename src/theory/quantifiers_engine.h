@@ -134,8 +134,6 @@ public:
   quantifiers::TermCanonize* getTermCanonize() const;
   /** get quantifiers attributes */
   quantifiers::QuantAttributes* getQuantAttributes() const;
-  /** get subsume utility */
-  quantifiers::Subsume* getSubsume() const;
   /** get virtual model utility */
   quantifiers::VirtualModel* getVirtualModel() const;
   /** get instantiate utility */
