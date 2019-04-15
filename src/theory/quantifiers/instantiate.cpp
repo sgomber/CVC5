@@ -36,7 +36,8 @@ Instantiate::Instantiate(QuantifiersEngine* qe, context::UserContext* u)
       d_term_db(nullptr),
       d_term_util(nullptr),
       d_total_inst_count_debug(0),
-      d_c_inst_match_trie_dom(u)
+      d_c_inst_match_trie_dom(u),
+      d_vmodel(qe->getVirtualModel())
 {
 }
 
@@ -228,15 +229,6 @@ bool Instantiate::addInstantiation(
     }
   }
 
-  // record the instantiation
-  bool recorded = recordInstantiationInternal(q, terms, modEq);
-  if (!recorded)
-  {
-    Trace("inst-add-debug") << " --> Already exists (no record)." << std::endl;
-    ++(d_statistics.d_inst_duplicate_eq);
-    return false;
-  }
-
   // construct the instantiation
   Trace("inst-add-debug") << "Constructing instantiation..." << std::endl;
   Assert(d_term_util->d_vars[q].size() == terms.size());
@@ -270,7 +262,33 @@ bool Instantiate::addInstantiation(
 
   Node lem = NodeManager::currentNM()->mkNode(kind::OR, q.negate(), body);
   lem = Rewriter::rewrite(lem);
-
+  
+  // we decide to satisfy this instantiation
+  if (options::quantVirtualModel())
+  {
+    if (!d_vmodel->registerAssertion(lem))
+    {
+      Trace("inst-add-debug")
+          << " --> Already true in virtual model." << std::endl;
+      ++(d_statistics.d_inst_duplicate_vsat);
+      return false;
+    }
+  }
+  
+  // *** These two steps must be the last steps that can fail. This is because
+  // these steps commit to adding the instantiation. That is, if they succeed,
+  // then they store information that indicates that we have definitely added
+  // the instantiation lemma.
+  
+  // record the instantiation
+  bool recorded = recordInstantiationInternal(q, terms, modEq);
+  if (!recorded)
+  {
+    Trace("inst-add-debug") << " --> Already exists (no record)." << std::endl;
+    ++(d_statistics.d_inst_duplicate_eq);
+    return false;
+  }
+  
   // check for lemma duplication
   if (!d_qe->addLemma(lem, true, false))
   {
@@ -278,6 +296,9 @@ bool Instantiate::addInstantiation(
     ++(d_statistics.d_inst_duplicate);
     return false;
   }
+  
+  // *** Below here we are guaranteed that the instantiation will be added
+  // as a lemma on the output channel.
 
   d_total_inst_debug[q]++;
   d_temp_inst_debug[q]++;

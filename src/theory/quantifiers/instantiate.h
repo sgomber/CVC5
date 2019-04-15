@@ -20,6 +20,7 @@
 #include <map>
 
 #include "expr/node.h"
+#include "theory/quantifiers/inst_explain_db.h"
 #include "theory/quantifiers/inst_match_trie.h"
 #include "theory/quantifiers/quant_util.h"
 #include "theory/quantifiers_engine.h"
@@ -298,6 +299,11 @@ class Instantiate : public QuantifiersUtil
                                    std::map<Node, std::vector<Node> >& tvec);
   //--------------------------------------end user-level interface utilities
 
+  //-------------------------------------explaination utility
+  /** return the explanation utility */
+  InstExplainDb& getExplainDb();
+  //-------------------------------------end explaination utility
+
   /** statistics class
    *
    * This tracks statistics on the number of instantiations successfully
@@ -312,6 +318,7 @@ class Instantiate : public QuantifiersUtil
     IntStat d_inst_duplicate_eq;
     IntStat d_inst_duplicate_ent;
     IntStat d_inst_duplicate_model_true;
+    IntStat d_inst_duplicate_vsat;
     Statistics();
     ~Statistics();
   }; /* class Instantiate::Statistics */
@@ -368,6 +375,9 @@ class Instantiate : public QuantifiersUtil
    * of these instantiations, for each quantified formula.
    */
   std::vector<std::pair<Node, std::vector<Node> > > d_recorded_inst;
+
+  /** the virtual model of the quantifiers engine */
+  VirtualModel* d_vmodel;
 };
 
 } /* CVC4::theory::quantifiers namespace */

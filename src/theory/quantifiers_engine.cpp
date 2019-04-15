@@ -46,6 +46,7 @@
 #include "theory/quantifiers/relevant_domain.h"
 #include "theory/quantifiers/rewrite_engine.h"
 #include "theory/quantifiers/skolemize.h"
+#include "theory/quantifiers/subsume.h"
 #include "theory/quantifiers/sygus/sygus_eval_unfold.h"
 #include "theory/quantifiers/sygus/synth_engine.h"
 #include "theory/quantifiers/sygus/term_database_sygus.h"
@@ -85,6 +86,7 @@ QuantifiersEngine::QuantifiersEngine(context::Context* c,
       d_term_db(new quantifiers::TermDb(c, u, this)),
       d_sygus_tdb(nullptr),
       d_quant_attr(new quantifiers::QuantAttributes(this)),
+      d_vmodel(new quantifiers::VirtualModel(this)),
       d_instantiate(new quantifiers::Instantiate(this, u)),
       d_skolemize(new quantifiers::Skolemize(this, u)),
       d_term_enum(new quantifiers::TermEnumeration),
@@ -121,6 +123,7 @@ QuantifiersEngine::QuantifiersEngine(context::Context* c,
   // term util must come before the other utilities
   d_util.push_back(d_term_util.get());
   d_util.push_back(d_term_db.get());
+  d_util.push_back(d_vmodel.get());
 
   if (options::ceGuidedInst()) {
     d_sygus_tdb.reset(new quantifiers::TermDbSygus(c, this));
@@ -341,6 +344,10 @@ quantifiers::QuantAttributes* QuantifiersEngine::getQuantAttributes() const
 quantifiers::Instantiate* QuantifiersEngine::getInstantiate() const
 {
   return d_instantiate.get();
+}
+quantifiers::VirtualModel* QuantifiersEngine::getVirtualModel() const
+{
+  return d_vmodel.get();
 }
 quantifiers::Skolemize* QuantifiersEngine::getSkolemize() const
 {

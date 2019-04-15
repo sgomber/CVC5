@@ -60,6 +60,7 @@ namespace quantifiers {
   class InstPropagator;
   class EqualityInference;
   class EqualityQueryQuantifiersEngine;
+  class VirtualModel;
   //modules, these are "subsolvers" of the quantifiers theory.
   class InstantiationEngine;
   class ModelEngine;
@@ -133,6 +134,10 @@ public:
   quantifiers::TermCanonize* getTermCanonize() const;
   /** get quantifiers attributes */
   quantifiers::QuantAttributes* getQuantAttributes() const;
+  /** get subsume utility */
+  quantifiers::Subsume* getSubsume() const;
+  /** get virtual model utility */
+  quantifiers::VirtualModel* getVirtualModel() const;
   /** get instantiate utility */
   quantifiers::Instantiate* getInstantiate() const;
   /** get skolemize utility */
@@ -352,6 +357,8 @@ public:
   std::unique_ptr<quantifiers::TermDbSygus> d_sygus_tdb;
   /** quantifiers attributes */
   std::unique_ptr<quantifiers::QuantAttributes> d_quant_attr;
+  /** virtual model utility */
+  std::unique_ptr<quantifiers::VirtualModel> d_vmodel;
   /** instantiate utility */
   std::unique_ptr<quantifiers::Instantiate> d_instantiate;
   /** skolemize utility */
