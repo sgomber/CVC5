@@ -312,7 +312,7 @@ bool Instantiate::addInstantiation(
   // these steps commit to adding the instantiation. That is, if they succeed,
   // then they store information that indicates that we have definitely added
   // the instantiation lemma.
-  
+
   // record the instantiation
   bool recorded = recordInstantiationInternal(q, terms, modEq);
   if (!recorded)
@@ -326,7 +326,7 @@ bool Instantiate::addInstantiation(
     ++(d_statistics.d_inst_duplicate_eq);
     return false;
   }
-  
+
   // check for lemma duplication
   if (!d_qe->addLemma(lem, true, false))
   {
@@ -334,7 +334,7 @@ bool Instantiate::addInstantiation(
     ++(d_statistics.d_inst_duplicate);
     return false;
   }
-  
+
   // *** Below here we are guaranteed that the instantiation will be added
   // as a lemma on the output channel.
 

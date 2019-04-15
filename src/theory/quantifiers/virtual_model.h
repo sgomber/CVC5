@@ -21,8 +21,8 @@
 #include <vector>
 #include "expr/node.h"
 #include "theory/quantifiers/quant_util.h"
-#include "theory/quantifiers_engine.h"
 #include "theory/quantifiers/term_database.h"
+#include "theory/quantifiers_engine.h"
 #include "theory/valuation.h"
 
 namespace CVC4 {
@@ -64,8 +64,10 @@ class VirtualModel : public QuantifiersUtil
                               std::map<Node, int>& assumptions,
                               bool useEntailment = false);
   /** ensure value */
-  bool ensureValue(Node n, bool isTrue, std::map<Node, int>& setAssumps,
-                              bool useEntailment = true);
+  bool ensureValue(Node n,
+                   bool isTrue,
+                   std::map<Node, int>& setAssumps,
+                   bool useEntailment = true);
 
  private:
   /** quantifiers engine */
@@ -82,15 +84,14 @@ class VirtualModel : public QuantifiersUtil
    * ucache stores the nodes whose return value is 0. We only cache the value of
    * nodes in assumptions whose value is known. This is useful if we want to
    * decide on the truth value of literals later.
-   * 
+   *
    * if useEntailment is true, we use the entailmentCheck method of d_tdb on
    * literals whose value is unknown to determine their value.
    */
   int evaluateInternal(Node n,
                        std::map<Node, int>& assumptions,
                        std::unordered_set<Node, NodeHashFunction>& ucache,
-                       bool useEntailment
-                      );
+                       bool useEntailment);
 };
 
 }  // namespace quantifiers

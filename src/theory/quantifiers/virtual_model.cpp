@@ -91,8 +91,7 @@ int VirtualModel::evaluate(Node n, bool useEntailment)
 }
 int VirtualModel::evaluateWithAssumptions(Node n,
                                           std::map<Node, int>& assumptions,
-                                          bool useEntailment
-                                         )
+                                          bool useEntailment)
 {
   n = Rewriter::rewrite(n);
   std::unordered_set<Node, NodeHashFunction> ucache;
@@ -103,8 +102,7 @@ int VirtualModel::evaluateInternal(
     Node n,
     std::map<Node, int>& cache,
     std::unordered_set<Node, NodeHashFunction>& ucache,
-    bool useEntailment
-                                  )
+    bool useEntailment)
 {
   std::map<Node, int>::iterator it = cache.find(n);
   if (it != cache.end())
@@ -172,13 +170,13 @@ int VirtualModel::evaluateInternal(
     {
       res = bres ? 1 : -1;
     }
-    else if( useEntailment )
+    else if (useEntailment)
     {
-      for( unsigned r=0; r<2; r++ )
+      for (unsigned r = 0; r < 2; r++)
       {
-        if( d_tdb->isEntailed(n,r==0) )
+        if (d_tdb->isEntailed(n, r == 0))
         {
-          res = r==0 ? 1 : -1;
+          res = r == 0 ? 1 : -1;
           break;
         }
       }
@@ -200,7 +198,7 @@ int VirtualModel::evaluateInternal(
 bool VirtualModel::ensureValue(Node n,
                                bool isTrue,
                                std::map<Node, int>& setAssumps,
-                              bool useEntailment)
+                               bool useEntailment)
 {
   std::unordered_set<Node, NodeHashFunction> ucache;
   // if possible, propagate the literal in the clause that must be true
