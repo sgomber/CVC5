@@ -25,7 +25,7 @@ namespace theory {
 namespace quantifiers {
 
 VirtualModel::VirtualModel(QuantifiersEngine* qe)
-    : d_qe(qe), d_tdb(d_qe->getTermDatabase()), d_valuation(qe->getValuation())
+    : d_qe(qe), d_tdb(d_qe->getTermDatabase()), d_valuation(qe->getValuation()),d_effort(Theory::EFFORT_LAST_CALL)
 {
 }
 
@@ -33,6 +33,7 @@ bool VirtualModel::reset(Theory::Effort e)
 {
   // reset the cache
   d_ecache.clear();
+  d_effort = e;
   Trace("vmodel") << "VModel: reset, effort=" << e << std::endl;
   return true;
 }
@@ -47,7 +48,7 @@ bool VirtualModel::registerAssertion(Node ilem)
   Trace("vmodel-inst") << "VModel: registerAssertion " << ilem << std::endl;
   Assert(options::quantVirtualModel());
   std::map<Node, int> setAssumps;
-  if (ensureValue(ilem, true, setAssumps, true, true))
+  if (ensureValue(ilem, true, setAssumps, false, true))
   {
     if (setAssumps.empty())
     {

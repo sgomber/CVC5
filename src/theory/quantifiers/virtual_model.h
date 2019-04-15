@@ -79,6 +79,8 @@ class VirtualModel : public QuantifiersUtil
   Valuation& d_valuation;
   /** cache */
   std::map<Node, int> d_ecache;
+  /** current effort */
+  Theory::Effort d_effort;
   /**
    * evaluate n given cache assumptions.
    *
