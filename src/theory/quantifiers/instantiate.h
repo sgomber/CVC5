@@ -377,6 +377,8 @@ class Instantiate : public QuantifiersUtil
 
   /** explanation database */
   InstExplainDb d_iedb;
+  /** are we using instantiation explanations? */
+  bool d_usingIedb;
 };
 
 } /* CVC4::theory::quantifiers namespace */

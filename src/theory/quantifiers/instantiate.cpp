@@ -37,7 +37,8 @@ Instantiate::Instantiate(QuantifiersEngine* qe, context::UserContext* u)
       d_term_util(nullptr),
       d_total_inst_count_debug(0),
       d_c_inst_match_trie_dom(u),
-      d_iedb(qe)
+      d_iedb(qe),
+      d_usingIedb(false)
 {
 }
 
@@ -65,9 +66,10 @@ bool Instantiate::reset(Theory::Effort e)
   }
   d_term_db = d_qe->getTermDatabase();
   d_term_util = d_qe->getTermUtil();
-  if (options::instExplain())
+  if (options::iexWhenMode()!=IEX_WHEN_NONE)
   {
     d_iedb.reset(e);
+    d_usingIedb = true;
   }
   return true;
 }
@@ -203,8 +205,8 @@ bool Instantiate::addInstantiation(
   // simplicity, we do not pursue this option (as it would likely only
   // lead to very small gains).
 
-  // We do proactively check if instExplain is true.
-  if (options::instExplain())
+  // We do proactively check if d_usingIedb is true.
+  if (d_usingIedb)
   {
     if (existsInstantiation(q, terms))
     {
@@ -245,14 +247,16 @@ bool Instantiate::addInstantiation(
   }
 
   // do instantiation explanation
-  if (options::instExplain())
+  if (d_usingIedb)
   {
     Node qq = d_iedb.registerCandidateInstantiation(q, terms);
-    if (!qq.isNull())
+    if (options::iexStrongInst() && qq!=q)
     {
       // the instantiation explanation module found a stronger quantified
       // formula, use it.
-      // q = qq;
+      q = qq;
+      // must register it now
+      d_term_util->registerQuantifier(q);
     }
   }
 
@@ -327,7 +331,7 @@ bool Instantiate::addInstantiation(
       }
     }
   }
-  if (options::instExplain())
+  if (d_usingIedb)
   {
     d_iedb.registerExplanation(lem, orig_body, q, terms);
   }

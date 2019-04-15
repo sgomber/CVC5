@@ -92,7 +92,9 @@ public:
   void checkMbqiMode(std::string option, theory::quantifiers::MbqiMode mode);
   theory::quantifiers::QcfWhenMode stringToQcfWhenMode(std::string option,
                                                        std::string optarg);
-  theory::quantifiers::QcfExpMode stringToQcfExpMode(std::string option,
+  theory::quantifiers::IexMode stringToIexMode(std::string option,
+                                                     std::string optarg);
+  theory::quantifiers::IexWhenMode stringToIexWhenMode(std::string option,
                                                      std::string optarg);
   theory::quantifiers::QcfMode stringToQcfMode(std::string option,
                                                std::string optarg);
@@ -258,7 +260,8 @@ public:
   static const std::string s_prenexQuantModeHelp;
   static const std::string s_qcfModeHelp;
   static const std::string s_qcfWhenModeHelp;
-  static const std::string s_qcfExpModeHelp;
+  static const std::string s_iexModeHelp;
+  static const std::string s_iexWhenModeHelp;
   static const std::string s_simplificationHelp;
   static const std::string s_modelCoresHelp;
   static const std::string s_sygusSolutionOutModeHelp;

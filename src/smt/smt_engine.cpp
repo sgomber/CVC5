@@ -2104,12 +2104,6 @@ void SmtEngine::setDefaults() {
   if( options::qcfMode.wasSetByUser() || options::qcfTConstraint() ){
     options::quantConflictFind.set( true );
   }
-  if (options::quantConflictFind()
-      && options::qcfExpMode() != quantifiers::QCF_EXP_CINSTANCE)
-  {
-    // requires instantiation explanations
-    options::instExplain.set(true);
-  }
   if( options::cbqiNestedQE() ){
     options::prenexQuantUser.set( true );
     if( !options::preSkolemQuant.wasSetByUser() ){

@@ -700,20 +700,31 @@ header = "options/quantifiers_options.h"
   help       = "qcf experimental variable ordering"
 
 [[option]]
-  name       = "qcfExpMode"
+  name       = "iexMode"
   category   = "regular"
-  long       = "qcf-exp=MODE"
-  type       = "CVC4::theory::quantifiers::QcfExpMode"
-  default    = "CVC4::theory::quantifiers::QCF_EXP_CINSTANCE"
-  handler    = "stringToQcfExpMode"
+  long       = "iex=MODE"
+  type       = "CVC4::theory::quantifiers::IexMode"
+  default    = "CVC4::theory::quantifiers::IEX_GEN_RES"
+  handler    = "stringToIexMode"
   includes   = ["options/quantifiers_modes.h"]
   read_only  = true
-  help       = "what kind of lemmas to add when a conflicting instance is discovered"
+  help       = "what kind of lemmas to add based on instantiation explanation analysis"
 
 [[option]]
-  name       = "qcfExpGenAbort"
+  name       = "iexWhenMode"
   category   = "regular"
-  long       = "qcf-exp-gen-abort"
+  long       = "iex-when=MODE"
+  type       = "CVC4::theory::quantifiers::IexWhenMode"
+  default    = "CVC4::theory::quantifiers::IEX_WHEN_NONE"
+  handler    = "stringToIexWhenMode"
+  includes   = ["options/quantifiers_modes.h"]
+  read_only  = true
+  help       = "when to add lemmas based on instantiation explanation analysis"
+
+[[option]]
+  name       = "iexAbort"
+  category   = "regular"
+  long       = "iex-abort"
   type       = "bool"
   default    = "false"
   read_only  = true
@@ -752,6 +763,14 @@ header = "options/quantifiers_options.h"
   help       = "regress subsumed quantified formulas"
 
 [[option]]
+  name       = "iexStrongInst"
+  category   = "regular"
+  long       = "iex-strong-inst"
+  type       = "bool"
+  default    = "true"
+  help       = "strengthen instantiation lemmas based on instantiation explanations"
+
+[[option]]
   name       = "instNoEntail"
   category   = "regular"
   long       = "inst-no-entail"
@@ -774,14 +793,6 @@ header = "options/quantifiers_options.h"
   type       = "bool"
   default    = "false"
   help       = "internal propagation for instantiations for selecting relevant instances"
-
-[[option]]
-  name       = "instExplain"
-  category   = "regular"
-  long       = "inst-exp"
-  type       = "bool"
-  default    = "false"
-  help       = "do explanation techniques for instantiation lemmas"
 
 [[option]]
   name       = "qcfEagerTest"

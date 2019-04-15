@@ -301,22 +301,30 @@ std-h \n\
 \n\
 ";
 
-const std::string OptionsHandler::s_qcfExpModeHelp =
+const std::string OptionsHandler::s_iexModeHelp =
     "\
-Quantifier conflict find explanation modes currently supported by the --qcf-exp option:\n\
+Quantifier conflict find explanation modes currently supported by the --iex option:\n\
 \n\
-cinstance (default) \n\
-+ Generate instantiation lemma corresponding to conflicting instance.\n\
-\n\
-gen \n\
-+ Generate generalized lemma based on (first-order) conflict analysis.\n\
+gen-res (default) \n\
++ Generate first-order subsuming resolutions.\n\
 \n\
 conflict \n\
-+ When possible, generate conflict clauses that explain conflicting.\n\
-instances.\n\
++ Generate Boolean conflicting clauses.\n\
 \n\
-both \n\
-+ Generate the conflicting instance and when possible, the conflict clause.\n\
+";
+
+const std::string OptionsHandler::s_iexWhenModeHelp =
+    "\
+Quantifier conflict find explanation modes currently supported by the --iex-when option:\n\
+\n\
+none (default) \n\
++ Do not apply conflict analysis based on instantiation explanations.\n\
+\n\
+inst \n\
++ Apply conflict analysis to all instantiation lemmas.\n\
+\n\
+cinst \n\
++ Apply conflict analysis to all conflicting instantiation lemmas.\n\
 \n\
 ";
 
@@ -717,37 +725,55 @@ theory::quantifiers::QcfWhenMode OptionsHandler::stringToQcfWhenMode(
   }
 }
 
-theory::quantifiers::QcfExpMode OptionsHandler::stringToQcfExpMode(
+theory::quantifiers::IexMode OptionsHandler::stringToIexMode(
     std::string option, std::string optarg)
 {
-  if (optarg == "cinstance")
+  if (optarg == "gen-res")
   {
-    return theory::quantifiers::QCF_EXP_CINSTANCE;
-  }
-  else if (optarg == "gen")
-  {
-    return theory::quantifiers::QCF_EXP_GENERALIZE;
+    return theory::quantifiers::IEX_GEN_RES;
   }
   else if (optarg == "conflict")
   {
-    return theory::quantifiers::QCF_EXP_CONFLICT;
-  }
-  else if (optarg == "both")
-  {
-    return theory::quantifiers::QCF_EXP_BOTH;
+    return theory::quantifiers::IEX_CONFLICT_CLAUSE;
   }
   else if (optarg == "help")
   {
-    puts(s_qcfExpModeHelp.c_str());
+    puts(s_iexModeHelp.c_str());
     exit(1);
   }
   else
   {
-    throw OptionException(std::string("unknown option for --qcf-exp: `")
-                          + optarg + "'.  Try --qcf-exp help.");
+    throw OptionException(std::string("unknown option for --iex: `")
+                          + optarg + "'.  Try --iex help.");
   }
 }
 
+theory::quantifiers::IexWhenMode OptionsHandler::stringToIexWhenMode(
+    std::string option, std::string optarg)
+{
+  if (optarg == "none")
+  {
+    return theory::quantifiers::IEX_WHEN_NONE;
+  }
+  else if (optarg == "inst")
+  {
+    return theory::quantifiers::IEX_WHEN_INST;
+  }
+  else if (optarg == "cinst")
+  {
+    return theory::quantifiers::IEX_WHEN_CINST;
+  }
+  else if (optarg == "help")
+  {
+    puts(s_iexWhenModeHelp.c_str());
+    exit(1);
+  }
+  else
+  {
+    throw OptionException(std::string("unknown option for --iex-when: `")
+                          + optarg + "'.  Try --iex-when help.");
+  }
+}
 theory::quantifiers::QcfMode OptionsHandler::stringToQcfMode(std::string option,
                                                              std::string optarg)
 {

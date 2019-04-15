@@ -126,8 +126,10 @@ void InstExplainDb::activateInst(Node inst, Node srcLit, InstExplainLit& src)
 Node InstExplainDb::registerCandidateInstantiation(Node q,
                                                    std::vector<Node>& ts)
 {
-  // the quantified formula we will return
-  Node retq;
+  // the quantified formula we will return, which is a quantified formula
+  // that implies our input. It may be stronger than q if we find a subsuming
+  // resolution.
+  Node retq = q;
   // virtual proof of refutation of this instance
   std::map<Node, eq::EqProof> vrPf;
   std::vector<Node> vrPfFails;
@@ -438,12 +440,11 @@ ExplainStatus InstExplainDb::explain(Node q,
       }
     }
   }
-  if (options::qcfExpMode() != QCF_EXP_GENERALIZE)
+  if (options::iexMode() == IEX_CONFLICT_CLAUSE)
   {
     NodeManager* nm = NodeManager::currentNM();
-    // If the conflict mode is not set to generalize, we just return the
-    // conflict clause, which should be a Boolean conflict in the current
-    // context.
+    // If the IEX mode is set to conflict, we just return the conflict clause,
+    // which should be a Boolean conflict in the current context.
     if (regressPfFail.empty())
     {
       std::vector<TNode> allAssumptions;
@@ -637,7 +638,7 @@ ExplainStatus InstExplainDb::explain(Node q,
   genRoot.processUPG(iout, d_false);
 
   // TEMPORARY FIXME
-  if (options::qcfExpGenAbort())
+  if (options::iexAbort())
   {
     if (!iout.empty())
     {

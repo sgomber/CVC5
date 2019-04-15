@@ -72,16 +72,22 @@ enum QcfWhenMode {
   QCF_WHEN_MODE_STD_H,
 };
 
-enum QcfExpMode
+enum IexMode
 {
-  /** generate instantiation lemmas for conflicting instances */
-  QCF_EXP_CINSTANCE,
-  /** generate generalized conflict. */
-  QCF_EXP_GENERALIZE,
-  /** generate conflict clauses for conflicting instances */
-  QCF_EXP_CONFLICT,
-  /** generate both instantiation lemmas and conflict clauses */
-  QCF_EXP_BOTH,
+  /** do generalized resolutions */
+  IEX_GEN_RES,
+  /** do conflict clauses (when applicable) */
+  IEX_CONFLICT_CLAUSE,
+};
+
+enum IexWhenMode
+{
+  /** do not do instantiation explanation analysis */
+  IEX_WHEN_NONE,
+  /** do instantiation explanation analysis for all instantiations */
+  IEX_WHEN_INST,
+  /** do instantiation explanation analysis for conflicting instantiations */
+  IEX_WHEN_CINST,
 };
 
 enum QcfMode {
