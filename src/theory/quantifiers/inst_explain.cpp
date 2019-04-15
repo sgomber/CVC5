@@ -202,7 +202,8 @@ bool IeEvaluator::ensureValue(Node n, bool isTrue, std::map<Node,int>& setAssump
         }
         else if( k==ITE )
         {
-          // find a branch that is not wrong
+          // (ite ? ev1 ev2)
+          // find a branch that does not have a wrong value
           int processIndex = -1;
           bool processIndexUnk = false;
           for( unsigned i=1; i<=2; i++ )
@@ -230,6 +231,7 @@ bool IeEvaluator::ensureValue(Node n, bool isTrue, std::map<Node,int>& setAssump
         }
         else
         {
+          // ? = ev1
           int ev1 = evaluateInternal(cur[1],d_ecache,ucache,false);
           if( ev1==0 )
           {
