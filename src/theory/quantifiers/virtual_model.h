@@ -67,6 +67,7 @@ class VirtualModel : public QuantifiersUtil
   bool ensureValue(Node n,
                    bool isTrue,
                    std::map<Node, int>& setAssumps,
+                   bool allowDec=false,
                    bool useEntailment = true);
 
  private:

@@ -152,12 +152,6 @@ class IexProof
   Node getAssumptions() const;
   /** is the proof of lit open? */
   bool isOpen(Node lit) const;
-  bool hasUPG() const;
-  /** get the UPG
-   */
-  InstExplainInst* getUPG(std::vector<Node>& concs,
-                          Node& quant,
-                          std::vector<Node>& assumptions) const;
 
   /** get upg lit */
   Node getUPGLit() const { return d_upgLit; }
