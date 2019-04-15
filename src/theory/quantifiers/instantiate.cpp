@@ -206,7 +206,6 @@ bool Instantiate::addInstantiation(
   // simplicity, we do not pursue this option (as it would likely only
   // lead to very small gains).
 
-  // We do proactively check if d_usingIedb is true.
   if (existsInstantiation(q, terms))
   {
     Trace("inst-add-debug") << " --> Already exists." << std::endl;
@@ -309,6 +308,11 @@ bool Instantiate::addInstantiation(
     d_iedb.registerInstLemma(lem, orig_body, q, terms);
   }
 
+  // *** These two steps must be the last steps that can fail. This is because
+  // these steps commit to adding the instantiation. That is, if they succeed,
+  // then they store information that indicates that we have definitely added
+  // the instantiation lemma.
+  
   // record the instantiation
   bool recorded = recordInstantiationInternal(q, terms, modEq);
   if (!recorded)
@@ -322,7 +326,7 @@ bool Instantiate::addInstantiation(
     ++(d_statistics.d_inst_duplicate_eq);
     return false;
   }
-
+  
   // check for lemma duplication
   if (!d_qe->addLemma(lem, true, false))
   {
@@ -330,8 +334,9 @@ bool Instantiate::addInstantiation(
     ++(d_statistics.d_inst_duplicate);
     return false;
   }
-
-  // *** Below here we are guaranteed that the instantiation will be added.
+  
+  // *** Below here we are guaranteed that the instantiation will be added
+  // as a lemma on the output channel.
 
   d_total_inst_debug[q]++;
   d_temp_inst_debug[q]++;
