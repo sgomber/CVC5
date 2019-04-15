@@ -126,6 +126,12 @@ int IeEvaluator::evaluateInternal(
   return res;
 }
 
+bool IeEvaluator::ensureValue(Node n, bool isTrue, std::map<Node,int>& setAssumps)
+{
+  
+  return false;
+}
+
 void InstExplainLit::initialize(Node lit) { d_this = lit; }
 void InstExplainLit::reset()
 {

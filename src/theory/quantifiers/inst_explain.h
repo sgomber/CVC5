@@ -49,10 +49,11 @@ class IeEvaluator
    * d_ecache. The values in assumptions can be thought of as overriding the
    * model values for the given formula.
    */
-  int evaluateWithAssumptions(Node,
+  int evaluateWithAssumptions(Node n,
                               std::map<Node, int>& assumptions,
                               bool cacheUnk = true);
-
+  /** ensure value */
+  bool ensureValue(Node n, bool isTrue, std::map<Node,int>& setAssumps);
  private:
   /** valuation */
   Valuation& d_valuation;
