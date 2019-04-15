@@ -20,7 +20,7 @@
 #include <map>
 
 #include "expr/node.h"
-#include "theory/quantifiers/inst_explain_db.h"
+#include "theory/quantifiers/virtual_model.h"
 #include "theory/quantifiers/inst_match_trie.h"
 #include "theory/quantifiers/quant_util.h"
 #include "theory/quantifiers_engine.h"
@@ -298,11 +298,6 @@ class Instantiate : public QuantifiersUtil
                                    std::map<Node, Node>& quant,
                                    std::map<Node, std::vector<Node> >& tvec);
   //--------------------------------------end user-level interface utilities
-
-  //-------------------------------------explaination utility
-  /** return the explanation utility */
-  InstExplainDb& getExplainDb();
-  //-------------------------------------end explaination utility
 
   /** statistics class
    *

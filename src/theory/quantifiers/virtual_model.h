@@ -21,6 +21,7 @@
 #include <vector>
 #include "expr/node.h"
 #include "theory/quantifiers/quant_util.h"
+#include "theory/quantifiers/term_database.h"
 #include "theory/quantifiers_engine.h"
 #include "theory/valuation.h"
 
@@ -53,7 +54,7 @@ class VirtualModel : public QuantifiersUtil
    * context. The value of n can still be determined in some cases in the
    * case these literals are irrelevant.
    */
-  int evaluate(Node n, bool cacheUnk = false);
+  int evaluate(Node n, bool useEntailment = false);
   /**
    * Evaluate, starting with a custom set of assumptions instead of using
    * d_ecache. The values in assumptions can be thought of as overriding the
@@ -61,13 +62,18 @@ class VirtualModel : public QuantifiersUtil
    */
   int evaluateWithAssumptions(Node n,
                               std::map<Node, int>& assumptions,
-                              bool cacheUnk = false);
+                              bool useEntailment = false);
   /** ensure value */
-  bool ensureValue(Node n, bool isTrue, std::map<Node, int>& setAssumps);
+  bool ensureValue(Node n,
+                   bool isTrue,
+                   std::map<Node, int>& setAssumps,
+                   bool useEntailment = true);
 
  private:
   /** quantifiers engine */
   QuantifiersEngine* d_qe;
+  /** term database of quantifiers engine */
+  TermDb* d_tdb;
   /** valuation */
   Valuation& d_valuation;
   /** cache */
@@ -75,15 +81,17 @@ class VirtualModel : public QuantifiersUtil
   /**
    * evaluate n given cache assumptions.
    *
-   * ucache stores the nodes whose return value is 0 if cacheUnk is false.
-   * In this configuration, we only cache the value of nodes in assumptions
-   * whose value is known. This is useful if we want to decide on the truth
-   * value of literals later.
+   * ucache stores the nodes whose return value is 0. We only cache the value of
+   * nodes in assumptions whose value is known. This is useful if we want to
+   * decide on the truth value of literals later.
+   *
+   * if useEntailment is true, we use the entailmentCheck method of d_tdb on
+   * literals whose value is unknown to determine their value.
    */
   int evaluateInternal(Node n,
                        std::map<Node, int>& assumptions,
                        std::unordered_set<Node, NodeHashFunction>& ucache,
-                       bool cacheUnk);
+                       bool useEntailment);
 };
 
 }  // namespace quantifiers

@@ -803,13 +803,15 @@ Instantiate::Statistics::Statistics()
       d_inst_duplicate("Instantiate::Duplicate_Inst", 0),
       d_inst_duplicate_eq("Instantiate::Duplicate_Inst_Eq", 0),
       d_inst_duplicate_ent("Instantiate::Duplicate_Inst_Entailed", 0),
-      d_inst_duplicate_model_true("Instantiate::Duplicate_Inst_Model_True", 0)
+      d_inst_duplicate_model_true("Instantiate::Duplicate_Inst_Model_True", 0),
+      d_inst_duplicate_vsat("Instantiate::Duplicate_Inst_Virtual_Model_Sat", 0)
 {
   smtStatisticsRegistry()->registerStat(&d_instantiations);
   smtStatisticsRegistry()->registerStat(&d_inst_duplicate);
   smtStatisticsRegistry()->registerStat(&d_inst_duplicate_eq);
   smtStatisticsRegistry()->registerStat(&d_inst_duplicate_ent);
   smtStatisticsRegistry()->registerStat(&d_inst_duplicate_model_true);
+  smtStatisticsRegistry()->registerStat(&d_inst_duplicate_vsat);
 }
 
 Instantiate::Statistics::~Statistics()
@@ -819,6 +821,7 @@ Instantiate::Statistics::~Statistics()
   smtStatisticsRegistry()->unregisterStat(&d_inst_duplicate_eq);
   smtStatisticsRegistry()->unregisterStat(&d_inst_duplicate_ent);
   smtStatisticsRegistry()->unregisterStat(&d_inst_duplicate_model_true);
+  smtStatisticsRegistry()->unregisterStat(&d_inst_duplicate_vsat);
 }
 
 } /* CVC4::theory::quantifiers namespace */
