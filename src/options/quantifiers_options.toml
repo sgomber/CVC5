@@ -724,7 +724,7 @@ header = "options/quantifiers_options.h"
   category   = "regular"
   long       = "iex-upg-compress"
   type       = "bool"
-  default    = "false"
+  default    = "true"
   help       = "compress path to UPG in instantiation explanation proofs"
 
 [[option]]

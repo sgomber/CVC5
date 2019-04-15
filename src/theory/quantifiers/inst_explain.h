@@ -20,59 +20,12 @@
 #include <map>
 #include <vector>
 #include "expr/node.h"
-#include "theory/valuation.h"
+#include "theory/quantifiers/formula_evaluator.h"
 
 namespace CVC4 {
 namespace theory {
 namespace quantifiers {
-
-class IeEvaluator
-{
- public:
-  IeEvaluator(Valuation& v) : d_valuation(v) {}
-  /** reset */
-  void reset();
-  /** evaluate
-   *
-   * Returns the value of n in the current SAT context where
-   * 1 : n is true in the SAT context,
-   * -1 : n is false in the SAT context,
-   * 0 : the value of n is unknown in the current SAT context.
-   *
-   * Notice that n may contain literals that do not have values in the SAT
-   * context. The value of n can still be determined in some cases in the
-   * case these literals are irrelevant.
-   */
-  int evaluate(Node n, bool cacheUnk = true);
-  /**
-   * Evaluate, starting with a custom set of assumptions instead of using
-   * d_ecache. The values in assumptions can be thought of as overriding the
-   * model values for the given formula.
-   */
-  int evaluateWithAssumptions(Node n,
-                              std::map<Node, int>& assumptions,
-                              bool cacheUnk = true);
-  /** ensure value */
-  bool ensureValue(Node n, bool isTrue, std::map<Node,int>& setAssumps);
- private:
-  /** valuation */
-  Valuation& d_valuation;
-  /** cache */
-  std::map<Node, int> d_ecache;
-  /**
-   * evaluate n given cache assumptions.
-   *
-   * ucache stores the nodes whose return value is 0 if cacheUnk is false.
-   * In this configuration, we only cache the value of nodes in assumptions
-   * whose value is known. This is useful if we want to decide on the truth
-   * value of literals later.
-   */
-  int evaluateInternal(Node n,
-                       std::map<Node, int>& assumptions,
-                       std::unordered_set<Node, NodeHashFunction>& ucache,
-                       bool cacheUnk);
-};
-
+  
 /** instantiation explain literal
  *
  * This class manages all instantiation lemma explanations for a single ground
@@ -138,7 +91,7 @@ class InstExplainInst
    * has two occurrences of P( a, a ). It is important to track this
    * information, since it impacts how certain explanations are constructed.
    */
-  void propagate(IeEvaluator& v,
+  void propagate(FormulaEvaluator& v,
                  std::vector<Node>& lits,
                  std::vector<Node>& olits);
   /** reverse propagate
@@ -163,7 +116,7 @@ class InstExplainInst
    * Thus, we compute lits and olits by justifying why C { P( a ) -> false }
    * evaluates to false in the current context, as witnessed by v.
    */
-  bool justify(IeEvaluator& v,
+  bool justify(FormulaEvaluator& v,
                Node lit,
                Node olit,
                std::vector<Node>& lits,
@@ -212,7 +165,7 @@ class InstExplainInst
    */
   void propagateInternal(Node n,
                          Node on,
-                         IeEvaluator& v,
+                         FormulaEvaluator& v,
                          std::vector<Node>& lits,
                          std::vector<Node>& olits);
 
@@ -235,7 +188,7 @@ class InstExplainInst
                        TNode on,
                        bool pol,
                        Node olitProp,
-                       IeEvaluator& v,
+                       FormulaEvaluator& v,
                        std::map<Node, int>& assumptions,
                        std::map<Node, std::map<bool, bool> >& cache,
                        std::vector<Node>& lits,

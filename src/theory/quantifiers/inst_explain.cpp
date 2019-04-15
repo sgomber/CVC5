@@ -23,243 +23,6 @@ namespace CVC4 {
 namespace theory {
 namespace quantifiers {
 
-void IeEvaluator::reset() { d_ecache.clear(); }
-
-int IeEvaluator::evaluate(Node n, bool cacheUnk)
-{
-  n = Rewriter::rewrite(n);
-  std::unordered_set<Node, NodeHashFunction> ucache;
-  return evaluateInternal(n, d_ecache, ucache, cacheUnk);
-}
-int IeEvaluator::evaluateWithAssumptions(Node n,
-                                         std::map<Node, int>& assumptions,
-                                         bool cacheUnk)
-{
-  n = Rewriter::rewrite(n);
-  std::unordered_set<Node, NodeHashFunction> ucache;
-  return evaluateInternal(n, assumptions, ucache, cacheUnk);
-}
-
-int IeEvaluator::evaluateInternal(
-    Node n,
-    std::map<Node, int>& cache,
-    std::unordered_set<Node, NodeHashFunction>& ucache,
-    bool cacheUnk)
-{
-  std::map<Node, int>::iterator it = cache.find(n);
-  if (it != cache.end())
-  {
-    return it->second;
-  }
-  std::unordered_set<Node, NodeHashFunction>::iterator itu = ucache.find(n);
-  if (itu != ucache.end())
-  {
-    return 0;
-  }
-  Kind k = n.getKind();
-  if (k == NOT)
-  {
-    return -evaluateInternal(n[0], cache, ucache, cacheUnk);
-  }
-  int res = 0;
-  if (k == AND || k == OR)
-  {
-    int expv = (k == OR) ? -1 : 1;
-    res = expv;
-    for (TNode nc : n)
-    {
-      int cres = evaluateInternal(nc, cache, ucache, cacheUnk);
-      if (cres == -expv)
-      {
-        res = cres;
-        break;
-      }
-      else if (cres == 0)
-      {
-        res = 0;
-      }
-    }
-  }
-  else if (k == ITE)
-  {
-    int cres = evaluateInternal(n[0], cache, ucache, cacheUnk);
-    if (cres == 0)
-    {
-      int cres1 = evaluateInternal(n[1], cache, ucache, cacheUnk);
-      int cres2 = evaluateInternal(n[2], cache, ucache, cacheUnk);
-      res = cres1 == cres2 ? cres1 : 0;
-    }
-    else
-    {
-      unsigned checkIndex = cres == 1 ? 1 : 2;
-      res = evaluateInternal(n[checkIndex], cache, ucache, cacheUnk);
-    }
-  }
-  else if (k == EQUAL && n[0].getType().isBoolean())
-  {
-    int cres1 = evaluateInternal(n[0], cache, ucache, cacheUnk);
-    if (cres1 != 0)
-    {
-      int cres2 = evaluateInternal(n[1], cache, ucache, cacheUnk);
-      res = cres2 == cres1 ? 1 : (cres2 == 0 ? 0 : -1);
-    }
-  }
-  else
-  {
-    // lookup the value in the valuation
-    bool bres;
-    if (d_valuation.hasSatValue(n, bres))
-    {
-      res = bres ? 1 : -1;
-    }
-  }
-  Trace("iex-debug2") << "IeEvaluator::evaluateInternal: " << n
-                      << " evaluates to " << res << std::endl;
-  if (res == 0 && !cacheUnk)
-  {
-    ucache.insert(n);
-  }
-  else
-  {
-    cache[n] = res;
-  }
-  return res;
-}
-
-bool IeEvaluator::ensureValue(Node n, bool isTrue, std::map<Node,int>& setAssumps)
-{
-  std::unordered_set<Node, NodeHashFunction> ucache;
-  // if possible, propagate the literal in the clause that must be true
-  std::map< bool, std::unordered_set<Node, NodeHashFunction> > visited;
-  std::vector<TNode> visit;
-  std::vector<bool> visitE;
-  TNode cur;
-  bool curReq;
-  visit.push_back(n);
-  visitE.push_back(isTrue);
-  do
-  {
-    cur = visit.back();
-    visit.pop_back();
-    curReq = visitE.back();
-    visitE.pop_back();
-    int evCur = evaluateInternal(cur,d_ecache,ucache,false);
-    if( evCur!=0 )
-    {
-      if( (evCur==1)!=curReq )
-      {
-        // already wrong, we fail
-        return false;
-      }
-      // already correct, nothing to do
-    }
-    else if (visited[curReq].find(cur) == visited[curReq].end())
-    {
-      visited[curReq].insert(cur);
-      Kind k = cur.getKind();
-      if( k==NOT )
-      {
-        visit.push_back(cur[0]);
-        visitE.push_back(!curReq);
-      }
-      else if (k == AND || k == OR)
-      {
-        if ((k == AND) == curReq)
-        {
-          // all are required
-          for(TNode cc : cur)
-          {
-            visit.push_back(cc);
-            visitE.push_back(curReq);
-          }
-        }
-        else
-        {
-          // find one whose value is unknown
-          for(TNode cc : cur)
-          {
-            int cres = evaluateInternal(cc,d_ecache,ucache,false);
-            if (cres == 0)
-            {
-              // if one child is unknown, then we use it
-              visit.push_back(cc);
-              visitE.push_back(curReq);
-              break;
-            }
-          }
-        }
-      }
-      else if (k == ITE || (k == EQUAL && cur[0].getType().isBoolean()))
-      {
-        int ev0 = evaluateInternal(cur[0],d_ecache,ucache,false);
-        if( ev0!=0 )
-        {
-          // implies a single requirement
-          int index = (k==ITE && ev0==-1) ? 2 : 1;
-          bool reqc = (k!=ITE && ev0==-1) ? !curReq : curReq;
-          visit.push_back(cur[index]);
-          visitE.push_back(reqc);
-        }
-        else if( k==ITE )
-        {
-          // (ite ? ev1 ev2)
-          // find a branch that does not have a wrong value
-          int processIndex = -1;
-          bool processIndexUnk = false;
-          for( unsigned i=1; i<=2; i++ )
-          {
-            int evi = evaluateInternal(cur[i],d_ecache,ucache,false);
-            if( (evi==1)==curReq )
-            {
-              processIndex = i;
-              processIndexUnk = false;
-              break;
-            }
-            else if( evi==0 )
-            {
-              processIndex = i;
-              processIndexUnk = true;
-            }
-          }
-          visit.push_back(cur[0]);
-          visitE.push_back(processIndex==1);
-          if( processIndexUnk )
-          {
-            visit.push_back(cur[processIndex]);
-            visitE.push_back(curReq);
-          }
-        }
-        else
-        {
-          // ? = ev1
-          int ev1 = evaluateInternal(cur[1],d_ecache,ucache,false);
-          if( ev1==0 )
-          {
-            // make both true
-            visit.push_back(cur[0]);
-            visitE.push_back(true);
-            visit.push_back(cur[1]);
-            visitE.push_back(true);
-          }
-          else
-          {
-            // make match
-            visit.push_back(cur[0]);
-            visitE.push_back((ev1==1)==curReq);
-          }
-        }
-      }
-      else
-      {
-        setAssumps[cur] = curReq ? 1 : -1;
-      }
-    }
-  } while (!visit.empty());
-  
-  
-  return false;
-}
-
 void InstExplainLit::initialize(Node lit) { d_this = lit; }
 void InstExplainLit::reset()
 {
@@ -300,7 +63,7 @@ void InstExplainInst::initialize(Node inst,
   d_terms.insert(d_terms.end(), ts.begin(), ts.end());
 }
 
-void InstExplainInst::propagate(IeEvaluator& v,
+void InstExplainInst::propagate(FormulaEvaluator& v,
                                 std::vector<Node>& lits,
                                 std::vector<Node>& olits)
 {
@@ -311,7 +74,7 @@ void InstExplainInst::propagate(IeEvaluator& v,
   propagateInternal(d_body, d_quant[1], v, lits, olits);
 }
 
-bool InstExplainInst::justify(IeEvaluator& v,
+bool InstExplainInst::justify(FormulaEvaluator& v,
                               Node lit,
                               Node olit,
                               std::vector<Node>& lits,
@@ -368,7 +131,7 @@ bool InstExplainInst::justify(IeEvaluator& v,
 
 void InstExplainInst::propagateInternal(Node n,
                                         Node on,
-                                        IeEvaluator& v,
+                                        FormulaEvaluator& v,
                                         std::vector<Node>& lits,
                                         std::vector<Node>& olits)
 {
@@ -508,7 +271,7 @@ bool InstExplainInst::justifyInternal(
     TNode on,
     bool pol,
     Node olitProp,
-    IeEvaluator& v,
+    FormulaEvaluator& v,
     std::map<Node, int>& assumptions,
     std::map<Node, std::map<bool, bool> >& cache,
     std::vector<Node>& lits,

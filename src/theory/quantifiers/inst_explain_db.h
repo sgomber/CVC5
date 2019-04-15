@@ -85,7 +85,7 @@ class InstExplainDb
   /** the subsume utility of d_qe */
   Subsume* d_subsume;
   /** evaluator utility */
-  IeEvaluator d_ev;
+  FormulaEvaluator d_ev;
   /** the instantiate explain proof generalization utility */
   InstExplainPfGen d_iexpfg;
   /** equality explainer utility */
