@@ -123,7 +123,8 @@ void InstExplainDb::activateInst(Node inst, Node srcLit, InstExplainLit& src)
   }
 }
 
-Node InstExplainDb::registerCandidateInstantiation(Node q, std::vector<Node>& ts)
+Node InstExplainDb::registerCandidateInstantiation(Node q,
+                                                   std::vector<Node>& ts)
 {
   // the quantified formula we will return
   Node retq;
@@ -157,7 +158,7 @@ Node InstExplainDb::registerCandidateInstantiation(Node q, std::vector<Node>& ts
     {
       successPf = false;
       Trace("iex-setup") << "...failed to reprove " << lit.first << "!"
-                          << std::endl;
+                         << std::endl;
       break;
     }
   }
@@ -169,31 +170,34 @@ Node InstExplainDb::registerCandidateInstantiation(Node q, std::vector<Node>& ts
     {
       vrPf[nc].d_node = d_null;
     }
-    
-    // run the proof generalization procedure 
+
+    // run the proof generalization procedure
     // output utility, which manages which lemmas are generated during the proof
     // generalization.
-    IexOutput iout(*this);    
+    IexOutput iout(*this);
     explain(q, ts, vrPf, d_eqe, iout, "iex-db");
-    if( !iout.d_lemmas.empty() )
+    if (!iout.d_lemmas.empty())
     {
-      Trace("iex-engine") << "...IEX adding " << iout.d_lemmas.size() << " lemmas." << std::endl;
+      Trace("iex-engine") << "...IEX adding " << iout.d_lemmas.size()
+                          << " lemmas." << std::endl;
       for (const Node& lem : iout.d_lemmas)
       {
         d_qe->addLemma(lem);
       }
     }
-    if( !iout.d_subsumed_by.empty() )
+    if (!iout.d_subsumed_by.empty())
     {
-      Trace("iex-engine") << "...IEX found subsumptions for " << iout.d_subsumed_by.size() << " quantified formulas." << std::endl;
+      Trace("iex-engine") << "...IEX found subsumptions for "
+                          << iout.d_subsumed_by.size()
+                          << " quantified formulas." << std::endl;
       for (const std::pair<Node, std::vector<Node>>& sp : iout.d_subsumed_by)
       {
         for (const Node& spq : sp.second)
         {
           Trace("iex-subsume") << "InstExplainDb::subsume: " << spq << " => "
-                              << sp.first << std::endl;
+                               << sp.first << std::endl;
           d_subsume->setSubsumes(spq, sp.first);
-          if( sp.first==q )
+          if (sp.first == q)
           {
             retq = q;
           }
@@ -201,7 +205,7 @@ Node InstExplainDb::registerCandidateInstantiation(Node q, std::vector<Node>& ts
       }
     }
   }
-  if( vrPfFails.empty() )
+  if (vrPfFails.empty())
   {
     // it is a conflicting instance.
     AlwaysAssert(entFalse);
@@ -324,14 +328,13 @@ void InstExplainDb::registerExplanation(Node inst,
     }
   } while (!visit.empty());
 
-  if( !d_qe->inConflict() )
+  if (!d_qe->inConflict())
   {
     // decide to satisfy
-    
-    
+
     // now, propagate
-    std::vector< Node > lits;
-    std::vector< Node > olits;
+    std::vector<Node> lits;
+    std::vector<Node> olits;
   }
 }
 
@@ -364,7 +367,7 @@ ExplainStatus InstExplainDb::explain(Node q,
                                      const std::vector<Node>& terms,
                                      std::map<Node, eq::EqProof>& expPf,
                                      EqExplainer* eqe,
-                                    IexOutput& iout,
+                                     IexOutput& iout,
                                      const char* ctx)
 {
   Trace("iex") << "InstExplainDb::explain: Conflict in context " << ctx << " : "

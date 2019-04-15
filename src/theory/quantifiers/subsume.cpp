@@ -32,12 +32,12 @@ void Subsume::reset_round()
   Trace("subsume-debug") << "Subsume::reset_round" << std::endl;
 }
 
-bool Subsume::computeCurrentSubsumedBy( Node q, std::map< Node, bool >& qassert )
+bool Subsume::computeCurrentSubsumedBy(Node q, std::map<Node, bool>& qassert)
 {
   // should not have computed already
-  Assert( d_curr_subumed_by.find(q)==d_curr_subumed_by.end() );
+  Assert(d_curr_subumed_by.find(q) == d_curr_subumed_by.end());
   std::map<Node, std::vector<Node> >::iterator its = d_subsumed_by.find(q);
-  if( its!=d_subsumed_by.end() )
+  if (its != d_subsumed_by.end())
   {
     // check whether any quantified formula that subsumes it is currently
     // asserted
@@ -45,7 +45,8 @@ bool Subsume::computeCurrentSubsumedBy( Node q, std::map< Node, bool >& qassert 
     {
       if (qassert.find(sq) != qassert.end())
       {
-        Trace("subsume-debug") << "* " << q << " subsumed by " << sq << std::endl;
+        Trace("subsume-debug")
+            << "* " << q << " subsumed by " << sq << std::endl;
         // store it
         d_curr_subumed_by[q] = sq;
         return true;
@@ -55,16 +56,16 @@ bool Subsume::computeCurrentSubsumedBy( Node q, std::map< Node, bool >& qassert 
   return false;
 }
 
-Node Subsume::getCurrentlySubsumedBy( Node q ) const
+Node Subsume::getCurrentlySubsumedBy(Node q) const
 {
-  std::map< Node, Node >::const_iterator it = d_curr_subumed_by.find(q);
-  if( it!=d_curr_subumed_by.end() )
+  std::map<Node, Node>::const_iterator it = d_curr_subumed_by.find(q);
+  if (it != d_curr_subumed_by.end())
   {
     return it->second;
   }
   return Node::null();
 }
-  
+
 void Subsume::setSubsumes(Node q, Node qsubsumed)
 {
   d_subsumes[q].push_back(qsubsumed);

@@ -23,33 +23,36 @@ namespace CVC4 {
 namespace theory {
 namespace quantifiers {
 
-void IeEvaluator::reset() { 
-  d_ecache.clear(); 
-}
+void IeEvaluator::reset() { d_ecache.clear(); }
 
 int IeEvaluator::evaluate(Node n, bool cacheUnk)
 {
   n = Rewriter::rewrite(n);
-  std::unordered_set< Node, NodeHashFunction > ucache;
+  std::unordered_set<Node, NodeHashFunction> ucache;
   return evaluateInternal(n, d_ecache, ucache, cacheUnk);
 }
 int IeEvaluator::evaluateWithAssumptions(Node n,
-                                         std::map<Node, int>& assumptions, bool cacheUnk)
+                                         std::map<Node, int>& assumptions,
+                                         bool cacheUnk)
 {
   n = Rewriter::rewrite(n);
-  std::unordered_set< Node, NodeHashFunction > ucache;
+  std::unordered_set<Node, NodeHashFunction> ucache;
   return evaluateInternal(n, assumptions, ucache, cacheUnk);
 }
 
-int IeEvaluator::evaluateInternal(Node n, std::map<Node, int>& cache, std::unordered_set< Node, NodeHashFunction >& ucache, bool cacheUnk)
+int IeEvaluator::evaluateInternal(
+    Node n,
+    std::map<Node, int>& cache,
+    std::unordered_set<Node, NodeHashFunction>& ucache,
+    bool cacheUnk)
 {
   std::map<Node, int>::iterator it = cache.find(n);
   if (it != cache.end())
   {
     return it->second;
   }
-  std::unordered_set< Node, NodeHashFunction >::iterator itu = ucache.find(n);
-  if( itu!=ucache.end() )
+  std::unordered_set<Node, NodeHashFunction>::iterator itu = ucache.find(n);
+  if (itu != ucache.end())
   {
     return 0;
   }
@@ -66,12 +69,12 @@ int IeEvaluator::evaluateInternal(Node n, std::map<Node, int>& cache, std::unord
     for (TNode nc : n)
     {
       int cres = evaluateInternal(nc, cache, ucache, cacheUnk);
-      if (cres == -expv )
+      if (cres == -expv)
       {
         res = cres;
         break;
       }
-      else if (cres==0)
+      else if (cres == 0)
       {
         res = 0;
       }
@@ -112,7 +115,7 @@ int IeEvaluator::evaluateInternal(Node n, std::map<Node, int>& cache, std::unord
   }
   Trace("iex-debug2") << "IeEvaluator::evaluateInternal: " << n
                       << " evaluates to " << res << std::endl;
-  if( res==0 && !cacheUnk )
+  if (res == 0 && !cacheUnk)
   {
     ucache.insert(n);
   }

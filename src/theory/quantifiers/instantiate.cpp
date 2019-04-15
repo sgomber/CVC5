@@ -202,18 +202,18 @@ bool Instantiate::addInstantiation(
   // continue from that point in recordInstantiation below. However, for
   // simplicity, we do not pursue this option (as it would likely only
   // lead to very small gains).
-  
+
   // We do proactively check if instExplain is true.
-  if( options::instExplain() )
+  if (options::instExplain())
   {
-    if( existsInstantiation(q,terms) )
+    if (existsInstantiation(q, terms))
     {
       Trace("inst-add-debug") << " --> Already exists." << std::endl;
       ++(d_statistics.d_inst_duplicate_eq);
       return false;
     }
   }
-  
+
   // check for positive entailment
   if (options::instNoEntail())
   {
@@ -243,16 +243,16 @@ bool Instantiate::addInstantiation(
       }
     }
   }
-  
+
   // do instantiation explanation
-  if( options::instExplain() )
+  if (options::instExplain())
   {
-    Node qq = d_iedb.registerCandidateInstantiation(q,terms);
-    if( !qq.isNull() )
+    Node qq = d_iedb.registerCandidateInstantiation(q, terms);
+    if (!qq.isNull())
     {
       // the instantiation explanation module found a stronger quantified
       // formula, use it.
-      //q = qq;
+      // q = qq;
     }
   }
 
