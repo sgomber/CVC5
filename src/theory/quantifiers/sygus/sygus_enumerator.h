@@ -175,7 +175,7 @@ class SygusEnumerator : public EnumValGenerator
      * if it exists.
      */
     std::map<unsigned, unsigned> d_sizeStartIndex;
-    /** the current size of terms we are trying to enumerate */
+    /** the maximum size of terms we have stored in this cache so far */
     unsigned d_sizeEnum;
     /** whether this term cache is complete */
     bool d_isComplete;
