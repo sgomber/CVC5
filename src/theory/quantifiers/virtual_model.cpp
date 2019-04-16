@@ -53,7 +53,8 @@ bool VirtualModel::registerAssertion(Node ilem)
   Trace("vmodel-inst") << "VModel: registerAssertion " << ilem << std::endl;
   Assert(options::quantVirtualModel());
   std::map<Node, int> setAssumps;
-  if (ensureValue(ilem, true, setAssumps, false, true))
+  bool allowDec = false;
+  if (ensureValue(ilem, true, setAssumps, allowDec, true))
   {
     // this makes it so that we propagate only
     //setAssumps.erase(ilem);
