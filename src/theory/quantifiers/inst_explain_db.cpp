@@ -54,8 +54,8 @@ void InstExplainDb::reset(Theory::Effort e)
 
 void InstExplainDb::registerQuantifier(Node q)
 {
-  std::vector< Node > emptyVec;
-  registerInternal(d_null,d_null,q,emptyVec);
+  std::vector<Node> emptyVec;
+  registerInternal(d_null, d_null, q, emptyVec);
 }
 
 void InstExplainDb::activateLit(Node lit)
@@ -246,12 +246,12 @@ void InstExplainDb::registerInstLemma(Node inst,
                                       Node q,
                                       std::vector<Node>& ts)
 {
-  registerInternal(inst,n,q,ts);
+  registerInternal(inst, n, q, ts);
 }
 void InstExplainDb::registerInternal(Node inst,
-                                      Node n,
-                                      Node q,
-                                      std::vector<Node>& ts)
+                                     Node n,
+                                     Node q,
+                                     std::vector<Node>& ts)
 {
   // Assert(!d_qe->inConflict());
 
@@ -262,23 +262,22 @@ void InstExplainDb::registerInternal(Node inst,
     return;
   }
   Assert(q.getKind() == FORALL);
-  
 
   std::map<int, std::unordered_set<TNode, NodeHashFunction>> visited;
   std::vector<int> visitPol;
   std::vector<TNode> visit;
   visitPol.push_back(1);
-  
+
   // we use this function for two purposes:
   // (1) to register instantiation lemmas (when inst is not null),
   // (2) to register quantifier bodies (when inst is null).
-  if( !inst.isNull() )
+  if (!inst.isNull())
   {
     Trace("inst-explain") << "Get literals that are explanable by " << inst
                           << std::endl;
     Assert(d_inst_explains.find(inst) == d_inst_explains.end());
-    Assert( !n.isNull() );
-    Assert( ts.size()==q[0].getNumChildren());
+    Assert(!n.isNull());
+    Assert(ts.size() == q[0].getNumChildren());
     InstExplainInst& iei = d_inst_explains[inst];
     iei.initialize(inst, n, q, ts);
     visit.push_back(n);
@@ -288,7 +287,7 @@ void InstExplainDb::registerInternal(Node inst,
     Trace("inst-explain") << "Register quantified formula " << q << std::endl;
     visit.push_back(q[1]);
   }
-  
+
   int pol;
   TNode cur;
   do
@@ -309,7 +308,7 @@ void InstExplainDb::registerInternal(Node inst,
       }
       else if (k == AND || k == OR)
       {
-        for( TNode cc : cur )
+        for (TNode cc : cur)
         {
           visitPol.push_back(pol);
           visit.push_back(cc);
@@ -327,7 +326,7 @@ void InstExplainDb::registerInternal(Node inst,
       }
       else if (k == EQUAL && cur[0].getType().isBoolean())
       {
-        for( TNode cc : cur )
+        for (TNode cc : cur)
         {
           visitPol.push_back(0);
           visit.push_back(cc);
@@ -336,12 +335,12 @@ void InstExplainDb::registerInternal(Node inst,
       else
       {
         // a literal
-        int rend = (pol==0 ? 2 : 1);
-        for( unsigned r=0; r<rend; r++ )
+        int rend = (pol == 0 ? 2 : 1);
+        for (unsigned r = 0; r < rend; r++)
         {
           Node curr = cur;
-          curr = Rewriter::rewrite(pol == -1 || r==1 ? curr.negate() : curr);
-          if( inst.isNull() )
+          curr = Rewriter::rewrite(pol == -1 || r == 1 ? curr.negate() : curr);
+          if (inst.isNull())
           {
             // store original literals in data structure for finding
             // propagating instantiations

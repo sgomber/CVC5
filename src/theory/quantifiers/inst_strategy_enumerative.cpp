@@ -263,10 +263,10 @@ bool InstStrategyEnum::process(Node f, bool fullEffort, bool isRd)
         success = index >= 0;
         if (success)
         {
-          if( Trace.isOn("inst-alg-rd") )
+          if (Trace.isOn("inst-alg-rd"))
           {
             Trace("inst-alg-rd") << "Try instantiation { ";
-            for( unsigned i : childIndex )
+            for (unsigned i : childIndex)
             {
               Trace("inst-alg-rd") << i << " ";
             }

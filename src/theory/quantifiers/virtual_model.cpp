@@ -25,7 +25,10 @@ namespace theory {
 namespace quantifiers {
 
 VirtualModel::VirtualModel(QuantifiersEngine* qe)
-    : d_qe(qe), d_tdb(d_qe->getTermDatabase()), d_valuation(qe->getValuation()),d_effort(Theory::EFFORT_LAST_CALL)
+    : d_qe(qe),
+      d_tdb(d_qe->getTermDatabase()),
+      d_valuation(qe->getValuation()),
+      d_effort(Theory::EFFORT_LAST_CALL)
 {
   d_rcounter = 0;
 }
@@ -54,7 +57,8 @@ bool VirtualModel::registerAssertion(Node ilem)
   {
     if (setAssumps.empty())
     {
-      bool isPartialRound = d_effort != Theory::EFFORT_LAST_CALL && d_rcounter%4!=0; 
+      bool isPartialRound =
+          d_effort != Theory::EFFORT_LAST_CALL && d_rcounter % 4 != 0;
       Trace("vmodel-inst") << "...already satisfied!" << std::endl;
       if (isPartialRound && options::instNoVirtualSat())
       {
