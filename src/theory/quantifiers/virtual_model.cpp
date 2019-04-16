@@ -25,7 +25,7 @@ namespace theory {
 namespace quantifiers {
 
 VirtualModel::VirtualModel(QuantifiersEngine* qe)
-    : d_qe(qe), d_tdb(d_qe->getTermDatabase()), d_valuation(qe->getValuation())
+    : d_qe(qe), d_tdb(d_qe->getTermDatabase()), d_valuation(qe->getValuation()),d_effort(Theory::EFFORT_LAST_CALL)
 {
 }
 
@@ -33,6 +33,7 @@ bool VirtualModel::reset(Theory::Effort e)
 {
   // reset the cache
   d_ecache.clear();
+  d_effort = e;
   Trace("vmodel") << "VModel: reset, effort=" << e << std::endl;
   return true;
 }
@@ -47,7 +48,7 @@ bool VirtualModel::registerAssertion(Node ilem)
   Trace("vmodel-inst") << "VModel: registerAssertion " << ilem << std::endl;
   Assert(options::quantVirtualModel());
   std::map<Node, int> setAssumps;
-  if (ensureValue(ilem, true, setAssumps))
+  if (ensureValue(ilem, true, setAssumps, false, true))
   {
     if (setAssumps.empty())
     {
@@ -59,7 +60,7 @@ bool VirtualModel::registerAssertion(Node ilem)
         return false;
       }
     }
-    else if (Trace.isOn("vmodel"))
+    else if (Trace.isOn("vmodel-inst"))
     {
       Trace("vmodel-inst") << "...satisfiable via: " << std::endl;
       for (const std::pair<Node, int>& sa : setAssumps)
@@ -198,6 +199,7 @@ int VirtualModel::evaluateInternal(
 bool VirtualModel::ensureValue(Node n,
                                bool isTrue,
                                std::map<Node, int>& setAssumps,
+                               bool allowDec,
                                bool useEntailment)
 {
   std::unordered_set<Node, NodeHashFunction> ucache;
@@ -215,11 +217,15 @@ bool VirtualModel::ensureValue(Node n,
     visit.pop_back();
     curReq = visitE.back();
     visitE.pop_back();
+    Trace("vmodel-debug") << "  require " << cur << " = " << curReq
+                          << std::endl;
     int evCur = evaluateInternal(cur, d_ecache, ucache, useEntailment);
+    Trace("vmodel-debug") << "  value is " << evCur << std::endl;
     if (evCur != 0)
     {
       if ((evCur == 1) != curReq)
       {
+        Trace("vmodel-debug") << "  ...fail evaluation!" << std::endl;
         // already wrong, we fail
         return false;
       }
@@ -228,6 +234,14 @@ bool VirtualModel::ensureValue(Node n,
     else if (visited[curReq].find(cur) == visited[curReq].end())
     {
       visited[curReq].insert(cur);
+      if (cur == n)
+      {
+        if (!allowDec)
+        {
+          // overall ensure we add a dummy value to set assertions
+          setAssumps[n] = isTrue ? 1 : -1;
+        }
+      }
       Kind k = cur.getKind();
       if (k == NOT)
       {
@@ -247,17 +261,38 @@ bool VirtualModel::ensureValue(Node n,
         }
         else
         {
+          TNode recc;
           // find one whose value is unknown
           for (TNode cc : cur)
           {
             int cres = evaluateInternal(cc, d_ecache, ucache, useEntailment);
             if (cres == 0)
             {
-              // if one child is unknown, then we use it
-              visit.push_back(cc);
-              visitE.push_back(curReq);
-              break;
+              if (!recc.isNull())
+              {
+                // if more than one child is unknown, then we fail
+                recc = TNode::null();
+                break;
+              }
+              // if exactly child is unknown, then we use it
+              recc = cc;
+              if (allowDec)
+              {
+                // stop now if we don't require that this is a propagation
+                break;
+              }
             }
+          }
+          if (!recc.isNull())
+          {
+            visit.push_back(recc);
+            visitE.push_back(curReq);
+          }
+          else
+          {
+            Assert(!allowDec);
+            // didn't find a usable child
+            Trace("vmodel-debug") << "  ...fail and/or!" << std::endl;
           }
         }
       }
@@ -275,30 +310,45 @@ bool VirtualModel::ensureValue(Node n,
         else if (k == ITE)
         {
           // (ite ? ev1 ev2)
-          // find a branch that does not have a wrong value
           int processIndex = -1;
-          bool processIndexUnk = false;
           for (unsigned i = 1; i <= 2; i++)
           {
             int evi = evaluateInternal(cur[i], d_ecache, ucache, useEntailment);
-            if ((evi == 1) == curReq)
+            if (evi == 0 || (evi == 1) == curReq)
             {
-              processIndex = i;
-              processIndexUnk = false;
+              if (allowDec)
+              {
+                // prefer using branch that is already justified if we have
+                // (ite ? T ?) = T.
+                if (evi != 0 || processIndex == -1)
+                {
+                  processIndex = i;
+                }
+                if (evi != 0)
+                {
+                  break;
+                }
+              }
+            }
+            else
+            {
+              // We evaluated to the wrong value. Thus, it must be the other
+              // branch. Moreover, we are propagating in this case, and thus
+              // can set if allowDec is false.
+              processIndex = 3 - i;
               break;
             }
-            else if (evi == 0)
-            {
-              processIndex = i;
-              processIndexUnk = true;
-            }
           }
-          visit.push_back(cur[0]);
-          visitE.push_back(processIndex == 1);
-          if (processIndexUnk)
+          if (processIndex != -1)
           {
+            visit.push_back(cur[0]);
+            visitE.push_back(processIndex == 1);
             visit.push_back(cur[processIndex]);
             visitE.push_back(curReq);
+          }
+          else
+          {
+            Trace("vmodel-debug") << "  ...fail ITE!" << std::endl;
           }
         }
         else
@@ -308,14 +358,22 @@ bool VirtualModel::ensureValue(Node n,
           if (ev1 == 0)
           {
             // make both true
-            visit.push_back(cur[0]);
-            visitE.push_back(true);
-            visit.push_back(cur[1]);
-            visitE.push_back(true);
+            // we only do this if we are allowed decisions
+            if (allowDec)
+            {
+              visit.push_back(cur[0]);
+              visitE.push_back(true);
+              visit.push_back(cur[1]);
+              visitE.push_back(true);
+            }
+            else
+            {
+              Trace("vmodel-debug") << "  ...fail IFF!" << std::endl;
+            }
           }
           else
           {
-            // make match
+            // make the first child's value match the intended value
             visit.push_back(cur[0]);
             visitE.push_back((ev1 == 1) == curReq);
           }

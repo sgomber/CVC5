@@ -67,6 +67,7 @@ class VirtualModel : public QuantifiersUtil
   bool ensureValue(Node n,
                    bool isTrue,
                    std::map<Node, int>& setAssumps,
+                   bool allowDec = false,
                    bool useEntailment = true);
 
  private:
@@ -78,6 +79,8 @@ class VirtualModel : public QuantifiersUtil
   Valuation& d_valuation;
   /** cache */
   std::map<Node, int> d_ecache;
+  /** current effort */
+  Theory::Effort d_effort;
   /**
    * evaluate n given cache assumptions.
    *
