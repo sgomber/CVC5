@@ -167,6 +167,8 @@ bool InstStrategyEnum::process(Node f, bool fullEffort, bool isRd)
   bool has_zero = false;
   std::map<TypeNode, std::vector<Node> > term_db_list;
   std::vector<TypeNode> ftypes;
+  TermDb * tdb = d_quantEngine->getTermDatabase();
+  EqualityQuery * qy = d_quantEngine->getEqualityQuery();
   // iterate over substitutions for variables
   for (unsigned i = 0; i < f[0].getNumChildren(); i++)
   {
@@ -179,7 +181,7 @@ bool InstStrategyEnum::process(Node f, bool fullEffort, bool isRd)
     }
     else
     {
-      ts = d_quantEngine->getTermDatabase()->getNumTypeGroundTerms(tn);
+      ts = tdb->getNumTypeGroundTerms(tn);
       std::map<TypeNode, std::vector<Node> >::iterator ittd =
           term_db_list.find(tn);
       if (ittd == term_db_list.end())
@@ -188,10 +190,10 @@ bool InstStrategyEnum::process(Node f, bool fullEffort, bool isRd)
         for (unsigned j = 0; j < ts; j++)
         {
           Node gt =
-              d_quantEngine->getTermDatabase()->getTypeGroundTerm(ftypes[i], j);
+              tdb->getTypeGroundTerm(ftypes[i], j);
           if (!options::cbqi() || !quantifiers::TermUtil::hasInstConstAttr(gt))
           {
-            Node rep = d_quantEngine->getEqualityQuery()->getRepresentative(gt);
+            Node rep = qy->getRepresentative(gt);
             if (reps_found.find(rep) == reps_found.end())
             {
               reps_found[rep] = gt;
@@ -216,13 +218,10 @@ bool InstStrategyEnum::process(Node f, bool fullEffort, bool isRd)
       has_zero = true;
       break;
     }
-    else
+    maxs.push_back(ts);
+    if (ts > final_max_i)
     {
-      maxs.push_back(ts);
-      if (ts > final_max_i)
-      {
-        final_max_i = ts;
-      }
+      final_max_i = ts;
     }
   }
   if (!has_zero)

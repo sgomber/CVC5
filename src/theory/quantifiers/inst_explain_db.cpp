@@ -335,7 +335,7 @@ void InstExplainDb::registerInternal(Node inst,
       else
       {
         // a literal
-        int rend = (pol == 0 ? 2 : 1);
+        unsigned rend = (pol == 0 ? 2 : 1);
         for (unsigned r = 0; r < rend; r++)
         {
           Node curr = cur;
