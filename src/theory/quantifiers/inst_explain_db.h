@@ -46,6 +46,8 @@ class InstExplainDb
   InstExplainDb(QuantifiersEngine* qe);
   /** reset */
   void reset(Theory::Effort e);
+  /** register quantifier */
+  void registerQuantifier(Node q);
   /** register candidate instantiation
    *
    *
@@ -139,7 +141,16 @@ class InstExplainDb
   void activateInst(Node inst, Node srcLit, InstExplainLit& src);
   /** indent tb tabulations on trace c. */
   static void indent(const char* c, unsigned tb);
-
+  /** 
+   * Register instantiation lemma or quantifier body.
+   * 
+   * If inst is non-null, then we are registering instantiation lemma inst,
+   * substituted (unrewritten) body n, where ts were the instantiating terms.
+   * 
+   * If inst is null, we are registering the quantifier body q[1], where q has
+   * kind FORALL.
+   */
+  void registerInternal(Node inst, Node n, Node q, std::vector<Node>& ts);
   /** Register propagating literal
    *
    * TODO

@@ -81,6 +81,8 @@ class VirtualModel : public QuantifiersUtil
   std::map<Node, int> d_ecache;
   /** current effort */
   Theory::Effort d_effort;
+  /** round counter */
+  unsigned d_rcounter;
   /**
    * evaluate n given cache assumptions.
    *

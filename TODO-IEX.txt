@@ -1,4 +1,4 @@
-(1) IEX inferences should not use instantiation lemmas from currently subsumed quantifiers? Or alternatively, they could be automatically tightened by the subsuming quantified formula. '
+(1) IEX inferences should not use instantiation lemmas from currently subsumed quantifiers? Or alternatively, they could be automatically tightened by the subsuming quantified formula.
 ->
 (2) IEX inferences could search for instantiation lemmas that don't exist that could have propagated a ground literal
 -> POSSIBLY NOT A GOOD IDEA. This abandons being purely "conflict driven". It is akin to trying to do arbitrary first-order resolution (i.e. selected literals).
@@ -9,17 +9,17 @@
 (5) Make a fast subsumption module for finding subsumptions.
 -> 
 (6) Locally process parts of IEX proofs that are useful but not in the overall proof.
--> CLOSED: IMPLEMENTED.
+-> CLOSED: IMPLEMENTED (--iex-local-compress).
 (7) ground UF proof generalization
--> BRAINSTORMING
+-> BRAINSTORMING, needs term ordering?
 (8) compress path to UPG (subsume all quantified formulas on the path).  
--> CLOSED: IMPLEMENTED.
+-> CLOSED: IMPLEMENTED (--iex-upg-compress).
 (9) factoring: close assertions that are subsumed by another open leaf
 ->
 (10) automatic computed propagations from arbitrary instantiations, plug back into entailment tests
 -> IMPLEMENTED, via the virtual model, not enabled by default (--quant-vmodel).
 (11) immediately strengthen instantiation lemmas
--> IMPLEMENTED, not enabled by default (--iex-strong-inst).
+-> CLOSED: IMPLEMENTED (--iex-strong-inst).
 (12) discard instantiations that are satisfied in the virtual model
 -> IMPLEMENTED, not enabled by default (--inst-no-vsat).
 (12) abort when we have a conflict in the virtual model

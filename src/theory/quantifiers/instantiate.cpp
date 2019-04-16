@@ -75,7 +75,9 @@ bool Instantiate::reset(Theory::Effort e)
   return true;
 }
 
-void Instantiate::registerQuantifier(Node q) {}
+void Instantiate::registerQuantifier(Node q) {
+  d_iedb.registerQuantifier(q);
+}
 bool Instantiate::checkComplete()
 {
   if (!d_recorded_inst.empty())

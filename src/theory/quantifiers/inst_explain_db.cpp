@@ -52,6 +52,12 @@ void InstExplainDb::reset(Theory::Effort e)
   d_waiting_prop.clear();
 }
 
+void InstExplainDb::registerQuantifier(Node q)
+{
+  std::vector< Node > emptyVec;
+  registerInternal(d_null,d_null,q,emptyVec);
+}
+
 void InstExplainDb::activateLit(Node lit)
 {
   if (d_active_lexp.find(lit) == d_active_lexp.end())
@@ -220,7 +226,8 @@ Node InstExplainDb::runIexProofGen(Node q, std::vector<Node>& ts)
           d_subsume->setSubsumes(spq, sp.first);
           if (sp.first == q)
           {
-            retq = q;
+            // take it
+            retq = spq;
           }
         }
       }
@@ -239,6 +246,13 @@ void InstExplainDb::registerInstLemma(Node inst,
                                       Node q,
                                       std::vector<Node>& ts)
 {
+  registerInternal(inst,n,q,ts);
+}
+void InstExplainDb::registerInternal(Node inst,
+                                      Node n,
+                                      Node q,
+                                      std::vector<Node>& ts)
+{
   // Assert(!d_qe->inConflict());
 
   if (options::iexMode() == IEX_NONE)
@@ -248,38 +262,42 @@ void InstExplainDb::registerInstLemma(Node inst,
     return;
   }
   Assert(q.getKind() == FORALL);
-  Trace("inst-explain") << "Get literals that are explanable by " << inst
-                        << std::endl;
-  Assert(d_inst_explains.find(inst) == d_inst_explains.end());
-  InstExplainInst& iei = d_inst_explains[inst];
-  iei.initialize(inst, n, q, ts);
+  
+
   std::map<int, std::unordered_set<TNode, NodeHashFunction>> visited;
   std::vector<int> visitPol;
   std::vector<TNode> visit;
-  std::vector<TNode> visiti;
-  /*
-  bool newQuant = false;
-  if (d_quants.find(q) == d_quants.end())
+  visitPol.push_back(1);
+  
+  // we use this function for two purposes:
+  // (1) to register instantiation lemmas (when inst is not null),
+  // (2) to register quantifier bodies (when inst is null).
+  if( !inst.isNull() )
   {
-    newQuant = true;
-    d_quants[q] = true;
+    Trace("inst-explain") << "Get literals that are explanable by " << inst
+                          << std::endl;
+    Assert(d_inst_explains.find(inst) == d_inst_explains.end());
+    Assert( !n.isNull() );
+    Assert( ts.size()==q[0].getNumChildren());
+    InstExplainInst& iei = d_inst_explains[inst];
+    iei.initialize(inst, n, q, ts);
+    visit.push_back(n);
   }
-  */
-
+  else
+  {
+    Trace("inst-explain") << "Register quantified formula " << q << std::endl;
+    visit.push_back(q[1]);
+  }
+  
   int pol;
   TNode cur;
   TNode curi;
-  visitPol.push_back(1);
-  visit.push_back(q[1]);
-  visiti.push_back(n);
   do
   {
     pol = visitPol.back();
     visitPol.pop_back();
     cur = visit.back();
     visit.pop_back();
-    curi = visiti.back();
-    visiti.pop_back();
     if (visited[pol].find(cur) == visited[pol].end())
     {
       visited[pol].insert(cur);
@@ -290,15 +308,13 @@ void InstExplainDb::registerInstLemma(Node inst,
       {
         visitPol.push_back(-pol);
         visit.push_back(cur[0]);
-        visiti.push_back(curi[0]);
       }
       else if (k == AND || k == OR)
       {
-        for (unsigned i = 0, size = cur.getNumChildren(); i < size; i++)
+        for( TNode cc : cur )
         {
           visitPol.push_back(pol);
-          visit.push_back(cur[i]);
-          visiti.push_back(curi[i]);
+          visit.push_back(cc);
         }
       }
       else if (k == ITE)
@@ -307,50 +323,40 @@ void InstExplainDb::registerInstLemma(Node inst,
         {
           visitPol.push_back(pol);
           visit.push_back(cur[i + 1]);
-          visiti.push_back(curi[i + 1]);
         }
         visitPol.push_back(0);
         visit.push_back(cur[0]);
-        visiti.push_back(curi[0]);
       }
       else if (k == EQUAL && cur[0].getType().isBoolean())
       {
-        for (unsigned i = 0; i < 2; i++)
+        for( TNode cc : cur )
         {
           visitPol.push_back(0);
-          visit.push_back(cur[i]);
-          visiti.push_back(curi[i]);
+          visit.push_back(cc);
         }
       }
       else
       {
         // a literal
-        // Register the instantiation explanation information, which is used
-        // to determine when this instantiation lemma will propagate.
-        Node curir = curi;
-        curir = Rewriter::rewrite(pol == -1 ? curir.negate() : curir);
-        InstExplainLit& iel = getInstExplainLit(curir);
-        iel.addInstExplanation(inst);
-        Trace("inst-explain") << "  -> " << curir << std::endl;
-        // also store original literals in data structure for finding TODO
-        // virtual propagating instantiations
-        // if (newQuant)
-        //{
-        //  registerPropagatingLiteral(cur, q);
-        //}
-        if (pol == 0)
+        int rend = (pol==0 ? 2 : 1);
+        for( unsigned r=0; r<rend; r++ )
         {
-          // Store the opposite direction as well if hasPol is false,
-          // since it may propagate in either polarity.
-          Node curinr = Rewriter::rewrite(curi.negate());
-          InstExplainLit& ieln = getInstExplainLit(curinr);
-          ieln.addInstExplanation(inst);
-          Trace("inst-explain") << "  -> " << curinr << std::endl;
-          // if (newQuant)
-          //{
-          //  Node curn = cur.negate();
-          //  registerPropagatingLiteral(curn, q);
-          //}
+          Node curr = cur;
+          curr = Rewriter::rewrite(pol == -1 || r==1 ? curr.negate() : curr);
+          if( inst.isNull() )
+          {
+            // store original literals in data structure for finding
+            // propagating instantiations
+            registerPropagatingLiteral(curr, q);
+          }
+          else
+          {
+            // Register the instantiation explanation information, which is used
+            // to determine when this instantiation lemma will propagate.
+            InstExplainLit& iel = getInstExplainLit(curr);
+            iel.addInstExplanation(inst);
+            Trace("inst-explain") << "  -> " << curr << std::endl;
+          }
         }
       }
     }
