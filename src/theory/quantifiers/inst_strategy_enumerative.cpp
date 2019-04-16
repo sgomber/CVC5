@@ -229,7 +229,7 @@ bool InstStrategyEnum::process(Node f, bool fullEffort, bool isRd)
                          << " stages of instantiation." << std::endl;
     unsigned max_i = 0;
     bool success;
-    Instantiate * ie = d_quantEngine->getInstantiate();
+    Instantiate* ie = d_quantEngine->getInstantiate();
     while (max_i <= final_max_i)
     {
       Trace("inst-alg-rd") << "Try stage " << max_i << "..." << std::endl;
