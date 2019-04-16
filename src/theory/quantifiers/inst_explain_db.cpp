@@ -291,7 +291,6 @@ void InstExplainDb::registerInternal(Node inst,
   
   int pol;
   TNode cur;
-  TNode curi;
   do
   {
     pol = visitPol.back();
@@ -301,7 +300,6 @@ void InstExplainDb::registerInternal(Node inst,
     if (visited[pol].find(cur) == visited[pol].end())
     {
       visited[pol].insert(cur);
-      Assert(cur.getKind() == curi.getKind());
 
       Kind k = cur.getKind();
       if (k == NOT)
