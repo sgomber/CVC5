@@ -167,8 +167,8 @@ bool InstStrategyEnum::process(Node f, bool fullEffort, bool isRd)
   bool has_zero = false;
   std::map<TypeNode, std::vector<Node> > term_db_list;
   std::vector<TypeNode> ftypes;
-  TermDb * tdb = d_quantEngine->getTermDatabase();
-  EqualityQuery * qy = d_quantEngine->getEqualityQuery();
+  TermDb* tdb = d_quantEngine->getTermDatabase();
+  EqualityQuery* qy = d_quantEngine->getEqualityQuery();
   // iterate over substitutions for variables
   for (unsigned i = 0; i < f[0].getNumChildren(); i++)
   {
@@ -189,8 +189,7 @@ bool InstStrategyEnum::process(Node f, bool fullEffort, bool isRd)
         std::map<Node, Node> reps_found;
         for (unsigned j = 0; j < ts; j++)
         {
-          Node gt =
-              tdb->getTypeGroundTerm(ftypes[i], j);
+          Node gt = tdb->getTypeGroundTerm(ftypes[i], j);
           if (!options::cbqi() || !quantifiers::TermUtil::hasInstConstAttr(gt))
           {
             Node rep = qy->getRepresentative(gt);
@@ -230,6 +229,7 @@ bool InstStrategyEnum::process(Node f, bool fullEffort, bool isRd)
                          << " stages of instantiation." << std::endl;
     unsigned max_i = 0;
     bool success;
+    Instantiate * ie = d_quantEngine->getInstantiate();
     while (max_i <= final_max_i)
     {
       Trace("inst-alg-rd") << "Try stage " << max_i << "..." << std::endl;
@@ -297,7 +297,7 @@ bool InstStrategyEnum::process(Node f, bool fullEffort, bool isRd)
                   << std::endl;
             }
           }
-          if (d_quantEngine->getInstantiate()->addInstantiation(f, terms))
+          if (ie->addInstantiation(f, terms))
           {
             Trace("inst-alg-rd") << "Success!" << std::endl;
             ++(d_quantEngine->d_statistics.d_instantiations_guess);
