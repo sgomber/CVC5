@@ -244,7 +244,7 @@ bool Instantiate::addInstantiation(
   }
 
   // do instantiation explanation
-  if (d_usingIedb)
+  if (d_usingIedb && !doVts)
   {
     Node qq = d_iedb.registerCandidateInstantiation(q, terms);
     if (options::iexStrongInst() && qq != q)
@@ -303,7 +303,7 @@ bool Instantiate::addInstantiation(
     }
   }
 
-  if (d_usingIedb)
+  if (d_usingIedb && !doVts)
   {
     d_iedb.registerInstLemma(lem, orig_body, q, terms);
   }
