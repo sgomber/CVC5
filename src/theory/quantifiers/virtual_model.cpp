@@ -55,6 +55,8 @@ bool VirtualModel::registerAssertion(Node ilem)
   std::map<Node, int> setAssumps;
   if (ensureValue(ilem, true, setAssumps, false, true))
   {
+    // this makes it so that we propagate only
+    //setAssumps.erase(ilem);
     if (setAssumps.empty())
     {
       bool isPartialRound =

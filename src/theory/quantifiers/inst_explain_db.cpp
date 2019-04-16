@@ -392,9 +392,9 @@ ExplainStatus InstExplainDb::explain(Node q,
                                      IexOutput& iout,
                                      const char* ctx)
 {
-  Trace("iex") << "InstExplainDb::explain: Conflict in context " << ctx << " : "
+  Trace("iex-summary") << "InstExplainDb::explain: context " << ctx << " : "
                << std::endl;
-  Trace("iex") << "  [QUANT] " << q << std::endl;
+  Trace("iex-summary") << "  [QUANT] " << q << std::endl;
 
   // The virtual instantiation lemma information. This manages the information
   // regarding the conflicting instance (the base line of the proof), which
@@ -412,6 +412,9 @@ ExplainStatus InstExplainDb::explain(Node q,
   // we have that the proofs in the range of expPf are "proof sketches", i.e.
   // EqProofs whose leaves are equalities that are explanable by eqe.
   // We first regress the explanation of proofs here.
+
+  // The proofs that we failed to regress, false means the proof was invalid
+  // to begin with.
   std::map<Node, bool> regressPfFail;
   std::map<Node, std::vector<TNode>> assumptions;
   unsigned pfCounter = 0;
@@ -423,7 +426,7 @@ ExplainStatus InstExplainDb::explain(Node q,
     pfCounter++;
     Node elit = itp->first;
     pfNum[elit] = pfCounter;
-    Trace("iex") << "  [" << pfCounter << "] " << elit << std::endl;
+    Trace("iex-summary") << "  [" << pfCounter << "] " << elit << std::endl;
     if (Trace.isOn("iex-proof-debug"))
     {
       Trace("iex-proof-debug")
@@ -437,7 +440,7 @@ ExplainStatus InstExplainDb::explain(Node q,
     if (itp->second.d_node.isNull())
     {
       Trace("iex-proof") << "...failed to get proof" << std::endl;
-      regressPfFail[elit] = true;
+      regressPfFail[elit] = false;
       // elit must be open in the generalized proof
       genRoot.setOpenConclusion(iout, elit, elit);
     }
@@ -477,13 +480,13 @@ ExplainStatus InstExplainDb::explain(Node q,
       allAssumptions.push_back(q);
       Node lem = nm->mkNode(AND, allAssumptions).negate();
       iout.d_lemmas.push_back(lem);
-      Trace("iex") << "InstExplainDb::explain: LEMMA regressed conflict " << lem
+      Trace("iex-summary") << "---> LEMMA regressed conflict " << lem
                    << std::endl;
       return EXP_STATUS_FULL;
     }
     else
     {
-      Trace("iex") << "InstExplainDb::explain: a proof failed to regress, fail."
+      Trace("iex-summary") << "---> a proof failed to regress, fail."
                    << std::endl;
       return EXP_STATUS_FAIL;
     }
@@ -596,14 +599,17 @@ ExplainStatus InstExplainDb::explain(Node q,
   // because they suffice to rule out the current ground model.
 
   // now go back and see if proofs can be generalized
+  Trace("iex-summary") << "----------------- process proofs" << std::endl;
+  std::map< Node, bool >::iterator itr;
   for (std::map<Node, eq::EqProof>::iterator itp = expPf.begin();
        itp != expPf.end();
        ++itp)
   {
     Node elit = itp->first;
-    Trace("iex-gen") << "----------------- generalize proof #" << pfNum[elit]
+    Trace("iex-summary") << "----------------- generalize proof #" << pfNum[elit]
                      << "/" << pfCounter << ": " << elit << std::endl;
-    if (regressPfFail.find(elit) == regressPfFail.end())
+                     itr = regressPfFail.find(elit);
+    if (itr == regressPfFail.end())
     {
       eq::EqProof* pfp = &itp->second;
       // we can only use purely general proofs if we already have a proagating
@@ -620,7 +626,7 @@ ExplainStatus InstExplainDb::explain(Node q,
       IexProof& glc = genRoot.d_conclusions[elitg][elit];
       if (d_iexpfg.generalize(iout, elit, pfp, glc, reqPureGen, 1))
       {
-        Trace("iex-gen") << "....success generalize, open="
+        Trace("iex-summary") << "....success generalize, open="
                          << genRoot.isOpen(elit) << std::endl;
         if (Trace.isOn("iex-gen-debug"))
         {
@@ -636,15 +642,15 @@ ExplainStatus InstExplainDb::explain(Node q,
       {
         // set that elitg / elit is an open leaf of the root
         genRoot.setOpenConclusion(iout, elitg, elit);
-        Trace("iex-gen") << "...failed generalize" << std::endl;
+        Trace("iex-summary") << "...failed generalize" << std::endl;
       }
     }
     else
     {
-      Trace("iex-gen") << "...failed to be regressed" << std::endl;
+      Trace("iex-summary") << "...failed to be " << (itr->second ? "regressed" : "proven" ) << std::endl;
     }
-    Trace("iex-gen") << "----------------- end generalize proof" << std::endl;
   }
+  Trace("iex-summary") << "----------------- end process proof" << std::endl;
 
   // now, added lemmas
   if (Trace.isOn("iex-proof"))
@@ -667,10 +673,10 @@ ExplainStatus InstExplainDb::explain(Node q,
   }
   if (iout.d_lemmas.empty())
   {
-    Trace("iex") << "InstExplainDb::explain: No lemmas, fail." << std::endl;
+    Trace("iex-summary") << "---> No lemmas, fail." << std::endl;
     return EXP_STATUS_FAIL;
   }
-  Trace("iex") << "InstExplainDb::explain: generated " << iout.d_lemmas.size()
+  Trace("iex-summary") << "---> Generated " << iout.d_lemmas.size()
                << " lemmas." << std::endl;
   return EXP_STATUS_FULL;
 }

@@ -641,20 +641,17 @@ bool InstExplainPfGen::instExplainFind(IexOutput& iout,
       break;
     }
     // search for instantiations that would have propagated this
-    /*
     Node f;
     Node g;
     bool pol;
     if( d_ied.getLitSymbolIndex(opl, f,g,pol) )
     {
-      Trace(c) << "(has " << d_ied.d_plit_map[f][g][pol].size() << " possible
-    propagating literals)" << std::endl;
+      Trace(c) << "(has " << d_ied.d_plit_map[f][g][pol].size() << " possible propagating literals from " << f << "/" << g << "/" << pol << ")" << std::endl;
     }
     else
     {
       Trace(c) << "...could not get symbol index for " << opl << std::endl;
     }
-    */
   }
   // TODO: search for instantiations that would have propagated this??
 
