@@ -245,7 +245,7 @@ void TermDb::addTerm(Node n,
     d_iclosure_processed.insert(n);
     rec = true;
   }
-  if (rec && n.getKind() != FORALL)
+  if (rec && !n.isClosure())
   {
     for (const Node& nc : n)
     {
