@@ -1902,14 +1902,17 @@ void QuantConflictFind::reset_round( Theory::Effort level ) {
   Trace("qcf-check") << "Compute relevant equivalence classes..." << std::endl;
   d_eqcs.clear();
 
-  eq::EqClassesIterator eqcs_i = eq::EqClassesIterator( getEqualityEngine() );
-  TermDb * tdb = getTermDatabase();
-  while( !eqcs_i.isFinished() ){
+  eq::EqClassesIterator eqcs_i = eq::EqClassesIterator(getEqualityEngine());
+  TermDb* tdb = getTermDatabase();
+  while (!eqcs_i.isFinished())
+  {
     Node r = (*eqcs_i);
-    if( tdb->hasTermCurrent( r ) ){
+    if (tdb->hasTermCurrent(r))
+    {
       TypeNode rtn = r.getType();
-      if( !options::cbqi() || !TermUtil::hasInstConstAttr( r ) ){
-        d_eqcs[rtn].push_back( r );
+      if (!options::cbqi() || !TermUtil::hasInstConstAttr(r))
+      {
+        d_eqcs[rtn].push_back(r);
       }
     }
     ++eqcs_i;

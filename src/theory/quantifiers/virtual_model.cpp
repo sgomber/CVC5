@@ -57,7 +57,7 @@ bool VirtualModel::registerAssertion(Node ilem)
   if (ensureValue(ilem, true, setAssumps, allowDec, true))
   {
     // this makes it so that we propagate only
-    //setAssumps.erase(ilem);
+    // setAssumps.erase(ilem);
     if (setAssumps.empty())
     {
       bool isPartialRound =

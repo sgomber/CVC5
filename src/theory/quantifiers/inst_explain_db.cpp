@@ -393,7 +393,7 @@ ExplainStatus InstExplainDb::explain(Node q,
                                      const char* ctx)
 {
   Trace("iex-summary") << "InstExplainDb::explain: context " << ctx << " : "
-               << std::endl;
+                       << std::endl;
   Trace("iex-summary") << "  [QUANT] " << q << std::endl;
 
   // The virtual instantiation lemma information. This manages the information
@@ -481,13 +481,13 @@ ExplainStatus InstExplainDb::explain(Node q,
       Node lem = nm->mkNode(AND, allAssumptions).negate();
       iout.d_lemmas.push_back(lem);
       Trace("iex-summary") << "---> LEMMA regressed conflict " << lem
-                   << std::endl;
+                           << std::endl;
       return EXP_STATUS_FULL;
     }
     else
     {
       Trace("iex-summary") << "---> a proof failed to regress, fail."
-                   << std::endl;
+                           << std::endl;
       return EXP_STATUS_FAIL;
     }
   }
@@ -600,15 +600,16 @@ ExplainStatus InstExplainDb::explain(Node q,
 
   // now go back and see if proofs can be generalized
   Trace("iex-summary") << "----------------- process proofs" << std::endl;
-  std::map< Node, bool >::iterator itr;
+  std::map<Node, bool>::iterator itr;
   for (std::map<Node, eq::EqProof>::iterator itp = expPf.begin();
        itp != expPf.end();
        ++itp)
   {
     Node elit = itp->first;
-    Trace("iex-summary") << "----------------- generalize proof #" << pfNum[elit]
-                     << "/" << pfCounter << ": " << elit << std::endl;
-                     itr = regressPfFail.find(elit);
+    Trace("iex-summary") << "----------------- generalize proof #"
+                         << pfNum[elit] << "/" << pfCounter << ": " << elit
+                         << std::endl;
+    itr = regressPfFail.find(elit);
     if (itr == regressPfFail.end())
     {
       eq::EqProof* pfp = &itp->second;
@@ -626,8 +627,9 @@ ExplainStatus InstExplainDb::explain(Node q,
       IexProof& glc = genRoot.d_conclusions[elitg][elit];
       if (d_iexpfg.generalize(iout, elit, pfp, glc, reqPureGen, 1))
       {
-        Trace("iex-summary") << "....success generalize, open="
-                         << genRoot.isOpen(elit) << std::endl;
+        Trace("iex-summary")
+            << "....success generalize, open=" << genRoot.isOpen(elit)
+            << std::endl;
         if (Trace.isOn("iex-gen-debug"))
         {
           glc.debugPrint("iex-gen-debug", 2);
@@ -647,7 +649,9 @@ ExplainStatus InstExplainDb::explain(Node q,
     }
     else
     {
-      Trace("iex-summary") << "...failed to be " << (itr->second ? "regressed" : "proven" ) << std::endl;
+      Trace("iex-summary") << "...failed to be "
+                           << (itr->second ? "regressed" : "proven")
+                           << std::endl;
     }
   }
   Trace("iex-summary") << "----------------- end process proof" << std::endl;
@@ -677,7 +681,7 @@ ExplainStatus InstExplainDb::explain(Node q,
     return EXP_STATUS_FAIL;
   }
   Trace("iex-summary") << "---> Generated " << iout.d_lemmas.size()
-               << " lemmas." << std::endl;
+                       << " lemmas." << std::endl;
   return EXP_STATUS_FULL;
 }
 
