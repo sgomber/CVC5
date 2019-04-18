@@ -913,6 +913,62 @@ Command* CheckSynthCommand::clone() const { return new CheckSynthCommand(); }
 
 std::string CheckSynthCommand::getCommandName() const { return "check-synth"; }
 
+
+GetInvertibilityCondition::GetInvertibilityCondition(
+                                             Expr func,
+                                             const std::vector<Expr>& formals,
+                                             Expr formula)
+    : Command(),
+      d_func(func),
+      d_formals(formals),
+      d_formula(formula)
+{
+}
+
+Expr GetInvertibilityCondition::getFunction() const { return d_func; }
+const std::vector<Expr>& GetInvertibilityCondition::getFormals() const
+{
+  return d_formals;
+}
+
+Expr GetInvertibilityCondition::getFormula() const { return d_formula; }
+void GetInvertibilityCondition::invoke(SmtEngine* smtEngine)
+{
+  try
+  {
+    smtEngine->checkSat();
+    d_commandStatus = CommandSuccess::instance();
+  }
+  catch (exception& e)
+  {
+    d_commandStatus = new CommandFailure(e.what());
+  }
+}
+
+Command* GetInvertibilityCondition::exportTo(ExprManager* exprManager,
+                                         ExprManagerMapCollection& variableMap)
+{
+  Expr func = d_func.exportTo(
+      exprManager, variableMap, /* flags = */ ExprManager::VAR_FLAG_DEFINED);
+  vector<Expr> formals;
+  transform(d_formals.begin(),
+            d_formals.end(),
+            back_inserter(formals),
+            ExportTransformer(exprManager, variableMap));
+  Expr formula = d_formula.exportTo(exprManager, variableMap);
+  return new GetInvertibilityCondition(func, formals, formula);
+}
+
+Command* GetInvertibilityCondition::clone() const
+{
+  return new GetInvertibilityCondition(d_func, d_formals, d_formula);
+}
+
+std::string GetInvertibilityCondition::getCommandName() const
+{
+  return "get-invertibility-condition";
+}
+
 /* -------------------------------------------------------------------------- */
 /* class ResetCommand                                                         */
 /* -------------------------------------------------------------------------- */

@@ -1208,6 +1208,7 @@ extendedCommand[std::unique_ptr<CVC4::Command>* cmd]
   std::vector<Type> sorts;
   std::vector<std::pair<std::string, Type> > sortedVarNames;
   std::unique_ptr<CVC4::CommandSequence> seq;
+  Expr icf;
 }
     /* Extended SMT-LIB set of commands syntax, not permitted in
      * --smtlib2 compliance mode. */
@@ -1368,6 +1369,30 @@ extendedCommand[std::unique_ptr<CVC4::Command>* cmd]
     // We currently do nothing with the type information declared for the heap.
     { cmd->reset(new EmptyCommand()); }
     RPAREN_TOK
+  | /* get-invertibility-condition */
+    GET_INVERTIBILITY_CONDITION_TOK
+    symbol[name,CHECK_UNDECLARED,SYM_VARIABLE]
+    LPAREN_TOK sortedVarList[sortedVarNames] RPAREN_TOK
+    sortSymbol[t,CHECK_DECLARED]
+    {
+      if( sortedVarNames.size() > 0 ) {
+        std::vector<CVC4::Type> sorts;
+        sorts.reserve(sortedVarNames.size());
+        for(std::vector<std::pair<std::string, CVC4::Type> >::const_iterator
+              i = sortedVarNames.begin(), iend = sortedVarNames.end();
+            i != iend; ++i) {
+          sorts.push_back((*i).second);
+          terms.push_back(PARSER_STATE->mkBoundVar((*i).first, (*i).second));
+        }
+        t = EXPR_MANAGER->mkFunctionType(sorts, t);
+      }
+      // define it now (may appear in body)
+      icf = PARSER_STATE->mkFunction(name, t, ExprManager::VAR_FLAG_DEFINED);
+    }
+    term[e,e2]
+    {
+      cmd->reset(new GetInvertibilityCondition(icf,terms,e));
+    }
   ;
 
 
@@ -3094,6 +3119,7 @@ GET_QE_TOK : 'get-qe';
 GET_QE_DISJUNCT_TOK : 'get-qe-disjunct';
 DECLARE_HEAP : 'declare-heap';
 EMP_TOK : 'emp';
+GET_INVERTIBILITY_CONDITION_TOK : 'get-invertibility-condition';
 
 // SyGuS commands
 SYNTH_FUN_TOK : 'synth-fun';
