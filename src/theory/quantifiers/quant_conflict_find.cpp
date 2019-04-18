@@ -598,7 +598,8 @@ bool QuantInfo::isTConstraintSpurious(QuantConflictFind* p,
         }
         Trace("qcf-instance-check") << "...evaluates to " << inst_eval << std::endl;
       }
-      if (inst_eval.isNull() || inst_eval == p->getTermUtil()->d_true)
+      if (inst_eval.isNull()
+          || (inst_eval.isConst() && inst_eval.getConst<bool>()))
       {
         Trace("qcf-instance-check") << "...spurious." << std::endl;
         return true;
