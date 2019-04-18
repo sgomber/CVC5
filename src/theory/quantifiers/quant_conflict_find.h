@@ -176,7 +176,7 @@ public:
   bool setMatch( QuantConflictFind * p, int v, TNode n, bool isGroundRep, bool isGround );
   void unsetMatch( QuantConflictFind * p, int v );
   bool isMatchSpurious( QuantConflictFind * p );
-  bool isTConstraintSpurious(QuantConflictFind* p, std::vector<Node>& terms);
+  bool isTConstraintSpurious( QuantConflictFind* p, std::vector<Node>& terms );
   bool entailmentTest( QuantConflictFind * p, Node lit, bool chEnt = true );
   bool completeMatch( QuantConflictFind * p, std::vector< int >& assigned, bool doContinue = false );
   void revertMatch( QuantConflictFind * p, std::vector< int >& assigned );
@@ -251,11 +251,7 @@ public:
    */
   void check(Theory::Effort level, QEffort quant_e) override;
 
-  /** compute relevant equivalence classes */
-  void computeRelevantEqr();
-
  private:
-  bool d_needs_computeRelEqr;
   /** check quantified formula
    *
    * This method is called by the above check method for each quantified
