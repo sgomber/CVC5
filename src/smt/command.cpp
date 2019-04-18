@@ -915,17 +915,16 @@ std::string CheckSynthCommand::getCommandName() const { return "check-synth"; }
 
 
 GetInvertibilityCondition::GetInvertibilityCondition(
-                                             Expr func,
                                              const std::vector<Expr>& formals,
+                                             Expr sc,
                                              Expr formula)
     : Command(),
-      d_func(func),
       d_formals(formals),
+      d_sc(sc),
       d_formula(formula)
 {
 }
 
-Expr GetInvertibilityCondition::getFunction() const { return d_func; }
 const std::vector<Expr>& GetInvertibilityCondition::getFormals() const
 {
   return d_formals;
@@ -936,6 +935,24 @@ void GetInvertibilityCondition::invoke(SmtEngine* smtEngine)
 {
   try
   {
+    ExprManager * em = d_formula.getExprManager();
+    std::vector< Type > types;
+    for( unsigned i=0, size=d_formals.size(); i<size; i++ )
+    {
+      types.push_back(d_formals[i].getType());
+    }
+    Expr def = d_formula;
+    if( !d_sc.isNull() )
+    {
+      def = em->mkExpr(kind::IMPLIES,d_sc,d_formula);
+    }
+    Type ft = em->booleanType();
+    if( !types.empty() )
+    {
+      ft = em->mkFunctionType(types,ft);
+    }
+    Expr icpred = d_formula.getExprManager()->mkVar("input",ft,ExprManager::VAR_FLAG_DEFINED);
+    smtEngine->defineFunction(icpred, d_formals, def);
     smtEngine->checkSat();
     d_commandStatus = CommandSuccess::instance();
   }
@@ -948,20 +965,19 @@ void GetInvertibilityCondition::invoke(SmtEngine* smtEngine)
 Command* GetInvertibilityCondition::exportTo(ExprManager* exprManager,
                                          ExprManagerMapCollection& variableMap)
 {
-  Expr func = d_func.exportTo(
-      exprManager, variableMap, /* flags = */ ExprManager::VAR_FLAG_DEFINED);
   vector<Expr> formals;
   transform(d_formals.begin(),
             d_formals.end(),
             back_inserter(formals),
             ExportTransformer(exprManager, variableMap));
+  Expr sc = d_formula.exportTo(exprManager, variableMap);
   Expr formula = d_formula.exportTo(exprManager, variableMap);
-  return new GetInvertibilityCondition(func, formals, formula);
+  return new GetInvertibilityCondition(formals, sc, formula);
 }
 
 Command* GetInvertibilityCondition::clone() const
 {
-  return new GetInvertibilityCondition(d_func, d_formals, d_formula);
+  return new GetInvertibilityCondition(d_formals, d_sc, d_formula);
 }
 
 std::string GetInvertibilityCondition::getCommandName() const

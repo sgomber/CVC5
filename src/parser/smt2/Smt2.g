@@ -1208,7 +1208,7 @@ extendedCommand[std::unique_ptr<CVC4::Command>* cmd]
   std::vector<Type> sorts;
   std::vector<std::pair<std::string, Type> > sortedVarNames;
   std::unique_ptr<CVC4::CommandSequence> seq;
-  Expr icf;
+  Expr icf, icsc;
 }
     /* Extended SMT-LIB set of commands syntax, not permitted in
      * --smtlib2 compliance mode. */
@@ -1371,27 +1371,18 @@ extendedCommand[std::unique_ptr<CVC4::Command>* cmd]
     RPAREN_TOK
   | /* get-invertibility-condition */
     GET_INVERTIBILITY_CONDITION_TOK
-    symbol[name,CHECK_UNDECLARED,SYM_VARIABLE]
     LPAREN_TOK sortedVarList[sortedVarNames] RPAREN_TOK
-    sortSymbol[t,CHECK_DECLARED]
     {
-      if( sortedVarNames.size() > 0 ) {
-        std::vector<CVC4::Type> sorts;
-        sorts.reserve(sortedVarNames.size());
-        for(std::vector<std::pair<std::string, CVC4::Type> >::const_iterator
-              i = sortedVarNames.begin(), iend = sortedVarNames.end();
-            i != iend; ++i) {
-          sorts.push_back((*i).second);
-          terms.push_back(PARSER_STATE->mkBoundVar((*i).first, (*i).second));
-        }
-        t = EXPR_MANAGER->mkFunctionType(sorts, t);
+      for(std::vector<std::pair<std::string, CVC4::Type> >::const_iterator
+            i = sortedVarNames.begin(), iend = sortedVarNames.end();
+          i != iend; ++i) {
+        terms.push_back(PARSER_STATE->mkBoundVar((*i).first, (*i).second));
       }
-      // define it now (may appear in body)
-      icf = PARSER_STATE->mkFunction(name, t, ExprManager::VAR_FLAG_DEFINED);
     }
+    term[icsc,e2]
     term[e,e2]
     {
-      cmd->reset(new GetInvertibilityCondition(icf,terms,e));
+      cmd->reset(new GetInvertibilityCondition(terms,icsc,e));
     }
   ;
 

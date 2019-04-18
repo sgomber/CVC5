@@ -865,12 +865,12 @@ class CVC4_PUBLIC CheckSynthCommand : public Command
 class CVC4_PUBLIC GetInvertibilityCondition : public Command
 {
  public:
-  GetInvertibilityCondition(Expr func,
-                            const std::vector<Expr>& formals,
+  GetInvertibilityCondition(const std::vector<Expr>& formals,
+                            Expr sc,
                             Expr formula);
 
-  Expr getFunction() const;
   const std::vector<Expr>& getFormals() const;
+  Expr getSideCondition() const;
   Expr getFormula() const;
 
   void invoke(SmtEngine* smtEngine) override;
@@ -879,8 +879,8 @@ class CVC4_PUBLIC GetInvertibilityCondition : public Command
   Command* clone() const override;
   std::string getCommandName() const override;
  protected:
-  Expr d_func;
   std::vector<Expr> d_formals;
+  Expr d_sc;
   Expr d_formula;
 }; /* class DefineFunctionCommand */
 
