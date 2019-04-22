@@ -1208,7 +1208,6 @@ extendedCommand[std::unique_ptr<CVC4::Command>* cmd]
   std::vector<Type> sorts;
   std::vector<std::pair<std::string, Type> > sortedVarNames;
   std::unique_ptr<CVC4::CommandSequence> seq;
-  Expr icf, icsc;
 }
     /* Extended SMT-LIB set of commands syntax, not permitted in
      * --smtlib2 compliance mode. */
@@ -1369,21 +1368,6 @@ extendedCommand[std::unique_ptr<CVC4::Command>* cmd]
     // We currently do nothing with the type information declared for the heap.
     { cmd->reset(new EmptyCommand()); }
     RPAREN_TOK
-  | /* get-invertibility-condition */
-    GET_INVERTIBILITY_CONDITION_TOK
-    LPAREN_TOK sortedVarList[sortedVarNames] RPAREN_TOK
-    {
-      for(std::vector<std::pair<std::string, CVC4::Type> >::const_iterator
-            i = sortedVarNames.begin(), iend = sortedVarNames.end();
-          i != iend; ++i) {
-        terms.push_back(PARSER_STATE->mkBoundVar((*i).first, (*i).second));
-      }
-    }
-    term[icsc,e2]
-    term[e,e2]
-    {
-      cmd->reset(new GetInvertibilityCondition(terms,icsc,e));
-    }
   ;
 
 
@@ -3110,7 +3094,6 @@ GET_QE_TOK : 'get-qe';
 GET_QE_DISJUNCT_TOK : 'get-qe-disjunct';
 DECLARE_HEAP : 'declare-heap';
 EMP_TOK : 'emp';
-GET_INVERTIBILITY_CONDITION_TOK : 'get-invertibility-condition';
 
 // SyGuS commands
 SYNTH_FUN_TOK : 'synth-fun';

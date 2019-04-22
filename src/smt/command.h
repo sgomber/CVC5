@@ -861,30 +861,6 @@ class CVC4_PUBLIC CheckSynthCommand : public Command
   std::stringstream d_solution;
 };
 
-/** Indicates that we are solving to find an invertibility condition */
-class CVC4_PUBLIC GetInvertibilityCondition : public Command
-{
- public:
-  GetInvertibilityCondition(const std::vector<Expr>& formals,
-                            Expr sc,
-                            Expr formula);
-
-  const std::vector<Expr>& getFormals() const;
-  Expr getSideCondition() const;
-  Expr getFormula() const;
-
-  void invoke(SmtEngine* smtEngine) override;
-  Command* exportTo(ExprManager* exprManager,
-                    ExprManagerMapCollection& variableMap) override;
-  Command* clone() const override;
-  std::string getCommandName() const override;
-
- protected:
-  std::vector<Expr> d_formals;
-  Expr d_sc;
-  Expr d_formula;
-}; /* class DefineFunctionCommand */
-
 /* ------------------- sygus commands  ------------------ */
 
 // this is TRANSFORM in the CVC presentation language
