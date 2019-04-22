@@ -31,8 +31,6 @@ GenIcPbe::GenIcPbe(PreprocessingPassContext* preprocContext)
 PreprocessingPassResult GenIcPbe::applyInternal(
     AssertionPipeline* assertionsToPreprocess)
 {
-  static bool tryThis = true;
-
   bool isFull =
       (options::genIcFull() || options::testIcFull() || options::genIcImage());
   bool isGen = (options::genIcPbe() || options::genIcFull());
@@ -44,26 +42,28 @@ PreprocessingPassResult GenIcPbe::applyInternal(
   Notice() << "  GenImg: " << isGenImg << std::endl;
   Notice() << "    Test: " << isTest << std::endl;
 
-  if (!tryThis)
-  {
-    return PreprocessingPassResult::NO_CONFLICT;
-  }
-  tryThis = false;
-
   NodeManager* nm = NodeManager::currentNM();
 
   std::vector<Node>& asl = assertionsToPreprocess->ref();
-  // must expand definitions
-  for (unsigned i = 0, nassert = asl.size(); i < nassert; i++)
-  {
-    asl[i] = Node::fromExpr(
-        smt::currentSmtEngine()->expandDefinitions(asl[i].toExpr()));
-  }
 
   AlwaysAssert(!asl.empty(), "GenIcPbe: no assertions");
 
   Node icCase = asl[0];
-
+  // must expand definitions
+  icCase =  Node::fromExpr(
+        smt::currentSmtEngine()->expandDefinitions(icCase.toExpr()));
+  Trace("gen-ic-pbe") << "GenIcPbe::applyInternal: initial assertion: " << icCase << std::endl;
+  
+  std::vector<Node> bvars;
+  if( icCase.getKind()==FORALL )
+  {
+    for( const Node& v : icCase[0] )
+    {
+      bvars.push_back(v);
+    }
+    icCase = icCase[1];
+  }
+  
   // may have a side condition
   Node sideCondition;
   if (icCase.getKind() == IMPLIES)
@@ -77,124 +77,27 @@ PreprocessingPassResult GenIcPbe::applyInternal(
 
   Notice() << "Generate PBE invertibility condition conjecture for case: "
            << icCase << std::endl;
-
-  std::vector<Node> bvars;
-  Node funToSynthOp;
-  Node funToSynthBvar;
-
-  // match the lists
-  std::vector<Node> varList;
-  std::vector<Node> funToSynthArgList;
-
-  // convert the child to bound variable form
-  std::unordered_map<TNode, Node, TNodeHashFunction> visited;
-  std::unordered_map<TNode, Node, TNodeHashFunction>::iterator it;
-  std::vector<TNode> visit;
-  TNode cur;
-  if (!sideCondition.isNull())
-  {
-    visit.push_back(sideCondition);
-  }
-  visit.push_back(icCase);
-  do
-  {
-    cur = visit.back();
-    visit.pop_back();
-    it = visited.find(cur);
-
-    if (it == visited.end())
-    {
-      if (cur.getKind() == APPLY_UF)
-      {
-        AlwaysAssert(funToSynthBvar.isNull(),
-                     "GenIcPbe: multiple functions to synthesize");
-        funToSynthOp = cur.getOperator();
-        std::stringstream ss;
-        ss << "x";
-        funToSynthBvar = nm->mkBoundVar(ss.str(), cur.getType());
-        for (const Node& a : cur)
-        {
-          funToSynthArgList.push_back(a);
-        }
-        visited[cur] = funToSynthBvar;
-      }
-      else if (cur.isVar())
-      {
-        std::stringstream ss;
-        ss << "v" << cur;
-        Node bv = nm->mkBoundVar(ss.str(), cur.getType());
-        bvars.push_back(bv);
-        varList.push_back(cur);
-        visited[cur] = bv;
-      }
-      else
-      {
-        visited[cur] = Node::null();
-        visit.push_back(cur);
-        unsigned nchild = cur.getNumChildren();
-        for (unsigned i = 0; i < nchild; i++)
-        {
-          visit.push_back(cur[(nchild - 1) - i]);
-        }
-      }
-    }
-    else if (it->second.isNull())
-    {
-      Node ret = cur;
-      bool childChanged = false;
-      std::vector<Node> children;
-      if (cur.getMetaKind() == kind::metakind::PARAMETERIZED)
-      {
-        children.push_back(cur.getOperator());
-      }
-      for (const Node& cn : cur)
-      {
-        it = visited.find(cn);
-        Assert(it != visited.end());
-        Assert(!it->second.isNull());
-        childChanged = childChanged || cn != it->second;
-        children.push_back(it->second);
-      }
-      if (childChanged)
-      {
-        ret = nm->mkNode(cur.getKind(), children);
-      }
-      visited[cur] = ret;
-    }
-  } while (!visit.empty());
-  Assert(visited.find(icCase) != visited.end());
-  Assert(!visited.find(icCase)->second.isNull());
-  Node res = visited[icCase];
-  Trace("gen-ic-pbe") << "Bound variable form : " << res << std::endl;
-  Node scRes;
-  if (!sideCondition.isNull())
-  {
-    scRes = visited[sideCondition];
-    Trace("gen-ic-pbe") << "Side condition : " << scRes << std::endl;
-  }
-  Trace("gen-ic-pbe-debug") << "...with : " << funToSynthBvar << " " << varList
-                            << " " << funToSynthArgList << std::endl;
-  if( funToSynthBvar.isNull() )
-  {
-    if( varList.size()==1 )
-    {
-      // 0-dimensional case: trivial
-      funToSynthBvar = visited[varList[0]];
-      varList.clear();
-      bvars.clear();
-    }
-  }
+           
+  Node testFormula;
+  AlwaysAssert(icCase.getKind()==EQUAL,
+                "GenIcPbe: expected an equivalence between IC predicate application and input problem.");
+  testFormula = icCase[0];
+  AlwaysAssert(testFormula.getType().isBoolean(),
+                "GenIcPbe: expected an IC of Boolean type.");
+  icCase = icCase[1];
+  
+  AlwaysAssert( icCase.getKind()==EXISTS,
+                 "GenIcPbe: expected an existential." );
+  AlwaysAssert(icCase[0].getNumChildren()==1,
+                "GenIcPbe: expected an inner existential with only one variable.");
+  Node funToSynthBvar = icCase[0][0];
+  icCase = icCase[1];
+  
+  Trace("gen-ic-pbe") << "invertibility condition problem : " << icCase << std::endl;
+  Trace("gen-ic-pbe-debug") << "...with variable-to-solve : " << funToSynthBvar << std::endl;
   // ensure the function type matches the computed type
   AlwaysAssert(!funToSynthBvar.isNull(),
                "GenIcPbe: no functions to synthesize");
-  AlwaysAssert(varList.size() == funToSynthArgList.size(),
-               "GenIcPbe: function to synthesize has wrong arity");
-
-  for (unsigned i = 0, nvars = varList.size(); i < nvars; i++)
-  {
-    AlwaysAssert(varList[i] == funToSynthArgList[i],
-                 "GenIcPbe: argument list does not match subterms in order");
-  }
 
   TypeNode frange = funToSynthBvar.getType();
 
@@ -224,37 +127,17 @@ PreprocessingPassResult GenIcPbe::applyInternal(
   }
 
   // the formula we are testing
-  Node testFormula;
   bool isTestSatQuery = false;
-  if (isTest)
-  {
-    AlwaysAssert(
-        asl.size() >= 2,
-        "GenIcPbe: expecting at least 2 assertions when reading candidate");
-    // test the candidate
-    testFormula = asl[1];
-    if( !varList.empty() )
-    {
-      testFormula = testFormula.substitute(
-          varList.begin(), varList.end(), bvars.begin(), bvars.end());
-    }
-    Notice() << "Test candidate IC " << testFormula << "..." << std::endl;
-  }
-  else
+  if (!isTest)
   {
     // test the input problem
-    if (options::genIcUseEval())
-    {
-      // nothing to do: we will do substitutions on x
-      testFormula = res;
-    }
-    else
+    if (!options::genIcUseEval())
     {
       // we are doing satisfiability queries, witness x now
       Node xk = nm->mkSkolem("x", frange);
       TNode xt = funToSynthBvar;
       TNode xkt = xk;
-      testFormula = res.substitute(xt, xkt);
+      testFormula = icCase.substitute(xt, xkt);
     }
     // To test, it is a satisfiability problem. We either use enumerative
     // evaluation if --gen-ic-use-eval is enabled, or satisfiability checking.
@@ -267,9 +150,9 @@ PreprocessingPassResult GenIcPbe::applyInternal(
   if (options::genIcReadIoString())
   {
     AlwaysAssert(
-        asl.size() >= 3,
-        "GenIcPbe: expecting at least 3 assertions when reading I/O string");
-    unsigned assertIndex = 2;
+        asl.size() >= 2,
+        "GenIcPbe: expecting at least 2 assertions when reading I/O string");
+    unsigned assertIndex = 1;
     bool success = true;
     while (success && assertIndex < asl.size())
     {
@@ -300,6 +183,7 @@ PreprocessingPassResult GenIcPbe::applyInternal(
     rowWidth = completeDom.empty() ? 1 : completeDom[completeDom.size() - 1].size();
     if (options::genIcFull())
     {
+      out << "; Full I/O specification for " << icCase << std::endl;
       out << "(declare-fun io () (Array Int (_ BitVec " << rowWidth << ")))"
           << std::endl;
     }
@@ -340,6 +224,7 @@ PreprocessingPassResult GenIcPbe::applyInternal(
     // then, take the remainder, in random order
     std::vector<Node> fullDomain;
     bool ret = tenum.getDomain(frange, fullDomain);
+    AlwaysAssert(ret);
     std::vector<Node> remainder;
     for (const Node& n : fullDomain)
     {
@@ -441,9 +326,9 @@ PreprocessingPassResult GenIcPbe::applyInternal(
     Trace("gen-ic-pbe-debug") << "..got " << resTest << std::endl;
     bool failSc = false;
     // does it satisfy the side condition?
-    if (!scRes.isNull())
+    if (!sideCondition.isNull())
     {
-      Node scResSubs = scRes.substitute(
+      Node scResSubs = sideCondition.substitute(
           bvars.begin(), bvars.end(), samplePt.begin(), samplePt.end());
       Trace("gen-ic-pbe-debug")
           << "Check side condition " << scResSubs << std::endl;
@@ -537,6 +422,7 @@ PreprocessingPassResult GenIcPbe::applyInternal(
             SmtEngine smtSamplePt(nm->toExprManager());
             smtSamplePt.setLogic(smt::currentSmtEngine()->getLogicInfo());
             smtSamplePt.assertFormula(resTest.toExpr());
+            smtSamplePt.setIsInternalSubsolver();
             Trace("gen-ic-pbe") << "*** Check sat..." << std::endl;
             r = smtSamplePt.checkSat();
             Trace("gen-ic-pbe") << "...result : " << r << std::endl;
@@ -569,6 +455,7 @@ PreprocessingPassResult GenIcPbe::applyInternal(
         // test the I/O behavior
         Trace("gen-ic-pbe-debug2")
             << "Test point " << ioIndexRow << ", " << ioIndexCol << std::endl;
+        Assert(ioIndexRow<ioString.size());
         bool expect =
             ioString[ioIndexRow].isBitSet((rowWidth - 1) - ioIndexCol);
         if (!resTest.isConst())
@@ -676,6 +563,7 @@ PreprocessingPassResult GenIcPbe::applyInternal(
       out << "----> FULLY VERIFIED!!!" << std::endl;
     }
   }
+  // FIXME
   exit(0);
   return PreprocessingPassResult::NO_CONFLICT;
 }

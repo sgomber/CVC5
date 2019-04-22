@@ -25,48 +25,15 @@ function get_candidate()
   fi
 }
 
-# outputs the names of the declare-const variables in $1
-function get_arg_list()
-{
-  grep "(declare-const" $1 | sed 's/(declare-const //; s/ .*/ /' 
-}
-
-# This makes a dummy candidate whose type matches the current signature,
-# i.e. the __SIG line from input_problem.smt2 
-function mk_dummy_candidate()
-{
-  echo -n "(define-fun IC " > temp.smt2
-  grep "__SIG" input_problem.smt2 | sed 's/;.*//' >> temp.smt2
-  echo " true)" >> temp.smt2
-  tr -d '\n' < temp.smt2
-  echo
-  rm -f temp.smt2
-}
-
 ###############################################
 
-function mk_input_assertion()
+function sanitize()
 {
-  if grep -q declare-const $1;
-  then
-    echo "(assert (input "
-    get_arg_list $1
-    echo "))"
-  else
-    echo "(assert input)"
-  fi
-}
-
-function mk_ic_assertion()
-{
-  if grep -q declare-const $1;
-  then
-    echo "(assert (IC "
-    get_arg_list $1
-    echo "))"
-  else
-    echo "(assert IC)"
-  fi
+  cat $1 > temp-$1
+  echo $2 >> temp-$1
+  # remove the "unknown" printed at the end, and the text added in $2
+  $CVC4 --dump=raw-benchmark --preprocess-only --output-lang=smt2 temp-$1 | sed "s/unknown//g; s/$2//g"
+  rm -rf temp-$1
 }
 
 # This generates a *.smt2 file corresponding to the invertibility condition problem.
@@ -74,7 +41,19 @@ function mk_input_problem()
 {
   # the definition of the input problem
   cat $1
-  mk_input_assertion $1
+  # finish
+  echo "(check-sat)"
+}
+
+# Makes a problem input that is an invertibility condition problem concatenated
+# with a cached full I/O specification.
+function mk_problem_cached()
+{
+  # the definition of the input problem, with the declared IC replaced by the definition
+  cat $1
+  # the cached I/O specification
+  cat $2
+  # finish
   echo "(check-sat)"
 }
 
@@ -83,30 +62,14 @@ function mk_input_problem()
 # condition problem from $1, whose I/O specification has been cached in $4.
 function mk_input_to_test_ic_cached()
 {
-  # the definition of the input problem
-  cat $1
-  mk_input_assertion $1
+  CANDIDATE=`cat $3`
+  # the definition of the input problem, with the declared IC replaced by the definition
+  cat $1 | sed "s/(declare-fun IC.*/$CANDIDATE/g"
   # extract definitions from the sygus grammar, which may appear in the candidate
   grep "define" $2
-  # the candidate invertibility condition
-  cat $3
-  mk_ic_assertion $1
   # the cached I/O specification
   cat $4
-  echo "(check-sat)"
-}
-
-# Same as above, without cached I/O.
-function mk_input_to_test_ic()
-{
-  # the definition of the input problem
-  cat $1
-  mk_input_assertion $1
-  # extract definitions from the sygus grammar, which may appear in the candidate
-  grep "define" $2
-  # the candidate invertibility condition
-  cat $3
-  mk_ic_assertion $1
+  # finish
   echo "(check-sat)"
 }
 
@@ -115,7 +78,7 @@ function mk_input_to_test_ic()
 # $2 using the grammar from $1.
 function mk_input_to_synth_ic()
 {
-  # must extract set-logic and sort definitions from the input problem
+  # must extract set-logic and sort definitions from the input problem 
   grep "set-logic" $1
   grep "define-sort" $1
   # the sygus grammar
@@ -123,6 +86,41 @@ function mk_input_to_synth_ic()
   # the PBE constraints
   cat $3
   echo "(check-synth)"
+}
+# unconstrained version of above
+function mk_input_to_synth_ic_unc()
+{
+  echo "" > temp.smt2
+  mk_input_to_synth_ic $1 $2 temp.smt2
+  rm -rf temp.smt2
+}
+
+function smk_input_to_test_ic_cached()
+{
+  # santize the input problem
+  sanitize $1 "(check-sat)" > temp_input_problem.smt2
+  # make the synthesis problem
+  # notice we don't use the santized version of input_problem.smt2 here, since
+  # CVC4's dumping features don't print defined sorts.
+  mk_input_to_synth_ic_unc input_problem.smt2 $2 > temp_input_grammar.sy
+  # now, sanitize it
+  sanitize temp_input_grammar.sy "(check-synth)" > temp_input_grammar2.sy
+  # now ready to call
+  mk_input_to_test_ic_cached temp_input_problem.smt2 temp_input_grammar2.sy $3 $4
+  # clean up
+  rm -rf temp_input_problem.smt2
+  rm -rf temp_input_grammar.sy
+  rm -rf temp_input_grammar2.sy
+}
+
+function smk_input_to_test_ic()
+{
+  # empty
+  echo "" > temp_full_io.smt2
+  # now ready to call
+  smk_input_to_test_ic_cached $1 $2 $3 temp_full_io.smt2
+  # cleanup
+  rm -rf temp_full_io.smt2
 }
 
 # Generate an *.smt2 corresponding to the (expanded) form of assertions
@@ -136,8 +134,7 @@ function mk_expand_candidate()
   get_candidate $CANDIDATE > temp_candidate.smt2
 
   # generate the input problem for cvc4 to test a candidate IC
-  # FIXME: second argument must be sanitized
-  mk_input_to_test_ic input_problem.smt2 input_grammar.sy temp_candidate.smt2 > temp.smt2
+  smk_input_to_test_ic input_problem.smt2 input_grammar.sy temp_candidate.smt2 > temp.smt2
 
   # test the candidate
   $CVC4 --dump=assertions --preprocess-only --default-dag-thresh=0 $@ temp.smt2
@@ -145,6 +142,7 @@ function mk_expand_candidate()
   # clean up
   rm -f temp_candidate.smt2
   rm -f temp.smt2
+  rm -f temp_input_problem.smt2
 }
 
 # Remove all temporary files generated by the workflow
@@ -196,28 +194,11 @@ function expand_candidate()
   rm -f temp.smt2
 }
 
-function get_signature()
-{
-  # make a dummy candidate
-  mk_dummy_candidate > temp_sig.smt2
-  
-  # expand it and extract its type
-  expand_candidate temp_sig.smt2 | sed 's/(define-fun IC //; s/Bool.*//'
-  
-  # clean up
-  rm -f temp_sig.smt2
-}
-
 ###############################################
 
 # should use --gen-ic-use-eval if the satisfiability queries are difficult (takes 5-6 hours for FP(4,5))
 function gen_full_io_spec()
 {
-  echo -n "; Full IO specification for "
-  grep "__PROBLEM" input_problem.smt2 | sed 's/;.*//'
-  echo -n "; with type "
-  get_signature
-
   # generate the input problem for cvc4 to generate a full I/O specification
   mk_input_problem input_problem.smt2 > temp_input_to_gen_full_spec.smt2
 
@@ -237,8 +218,7 @@ function gen_full_io()
   shift;
 
   # generate the input problem for cvc4 to generate a full I/O specification
-  # FIXME: second argument must be sanitized
-  mk_input_to_test_ic input_problem.smt2 input_grammar.sy temp_candidate.smt2 > temp_input_to_gen_full_candidate.smt2
+  smk_input_to_test_ic input_problem.smt2 input_grammar.sy temp_candidate.smt2 > temp_input_to_gen_full_candidate.smt2
 
   # generate the full I/O specification for the candidate
   $CVC4 --gen-ic-full --no-gen-ic-use-sc --test-ic-full --fmf-type-completion-thresh=$MAX_CARDINALITY temp_input_to_gen_full_candidate.smt2 $@
@@ -253,11 +233,8 @@ function visual_full_io()
   FULL_IO_CANDIDATE=$1;
   shift;
 
-  mk_dummy_candidate > temp_candidate.smt2
-
   # generate the input problem for cvc4 to test a candidate IC
-  # FIXME: second argument must be sanitized
-  mk_input_to_test_ic_cached input_problem.smt2 input_grammar.sy temp_candidate.smt2 $FULL_IO_CANDIDATE > temp_input_to_vis_ic.smt2
+  mk_problem_cached input_problem.smt2 $FULL_IO_CANDIDATE > temp_input_to_vis_ic.smt2
 
   # evaluate the candidate
   $CVC4 --gen-ic-image --gen-ic-read-io-string --fmf-type-completion-thresh=$MAX_CARDINALITY $@ temp_input_to_vis_ic.smt2
@@ -273,14 +250,13 @@ function generate_pbe_examples()
   shift;
   
   # generate the input problem for cvc4 to test a candidate IC
-  # FIXME: second argument must be sanitized
-  mk_input_to_test_ic_cached input_problem.smt2 input_grammar.sy $CANDIDATE full_io_spec.smt2 > temp_input_to_test_ic.smt2
+  smk_input_to_test_ic_cached input_problem.smt2 input_grammar.sy $CANDIDATE full_io_spec.smt2 > temp_input_to_test_ic.smt2
 
   # test the candidate
   $CVC4 --test-ic-full --test-ic-gen --test-ic-random --test-ic-samples=$NUM_PBE_PTS --gen-ic-read-io-string --fmf-type-completion-thresh=$MAX_CARDINALITY $@ temp_input_to_test_ic.smt2
 
   # clean up
-  rm -f temp_input_to_test_ic.smt2
+  #rm -f temp_input_to_test_ic.smt2
 }
 
 function process_pbe_examples()
@@ -334,8 +310,7 @@ function eval_candidate()
   echo  
   
   # generate the input problem for cvc4 to test a candidate IC
-  # FIXME: second argument must be sanitized
-  mk_input_to_test_ic_cached input_problem.smt2 input_grammar.sy temp_candidate.smt2 full_io_spec.smt2 > temp_input_to_eval_ic.smt2
+  smk_input_to_test_ic_cached input_problem.smt2 input_grammar.sy temp_candidate.smt2 full_io_spec.smt2 > temp_input_to_eval_ic.smt2
 
   # evaluate the candidate
   $CVC4 --test-ic-full --no-gen-ic-use-sc --gen-ic-read-io-string --fmf-type-completion-thresh=2000 temp_input_to_eval_ic.smt2
@@ -363,7 +338,6 @@ function quick_test_candidate()
 function synth_candidate()
 {
   # generate the input problem for cvc4 to test a candidate IC
-  # FIXME: first argument must be sanitized
   mk_input_to_synth_ic input_problem.smt2 input_grammar.sy pbe_example_set.sy > temp_input_to_synth_ic.sy
 
   # synthesize a new candidate
@@ -388,11 +362,6 @@ function reset()
   echo > candidate_log.smt2
   # store debugging information in global candidate log
   echo "; -----------------" >> candidate_log_overall.smt2
-  # append the side condition and type we were using
-  echo -n "; testing with type signature: " >> candidate_log_overall.smt2
-  get_signature >> candidate_log_overall.smt2
-  echo -n "; testing with side condition: " >> candidate_log_overall.smt2
-  grep "__SC" input_problem.smt2 | sed 's/;.*//' >> candidate_log_overall.smt2  
   
   # intialize the input candidate and the pbe examples
   echo > input_candidates.smt2
@@ -479,10 +448,6 @@ then
   shift;
   # clear all auxiliary files except for full_io_spec.smt2
   clean_full
-elif [ X$1 = X'-arglist' ];
-then
-  shift;
-  get_arg_list $1
 elif [ X$1 = X'-setup' ]; 
 then
   shift;
