@@ -144,6 +144,10 @@ PreprocessingPassResult GenIcPbe::applyInternal(
       TNode xkt = xk;
       testFormula = icCase.substitute(xt, xkt);
     }
+    else
+    {
+      testFormula = icCase;
+    }
     // To test, it is a satisfiability problem. We either use enumerative
     // evaluation if --gen-ic-use-eval is enabled, or satisfiability checking.
     isTestSatQuery = true;
