@@ -913,15 +913,9 @@ Command* CheckSynthCommand::clone() const { return new CheckSynthCommand(); }
 
 std::string CheckSynthCommand::getCommandName() const { return "check-synth"; }
 
-
 GetInvertibilityCondition::GetInvertibilityCondition(
-                                             const std::vector<Expr>& formals,
-                                             Expr sc,
-                                             Expr formula)
-    : Command(),
-      d_formals(formals),
-      d_sc(sc),
-      d_formula(formula)
+    const std::vector<Expr>& formals, Expr sc, Expr formula)
+    : Command(), d_formals(formals), d_sc(sc), d_formula(formula)
 {
 }
 
@@ -935,23 +929,24 @@ void GetInvertibilityCondition::invoke(SmtEngine* smtEngine)
 {
   try
   {
-    ExprManager * em = d_formula.getExprManager();
-    std::vector< Type > types;
-    for( unsigned i=0, size=d_formals.size(); i<size; i++ )
+    ExprManager* em = d_formula.getExprManager();
+    std::vector<Type> types;
+    for (unsigned i = 0, size = d_formals.size(); i < size; i++)
     {
       types.push_back(d_formals[i].getType());
     }
     Expr def = d_formula;
-    if( !d_sc.isNull() )
+    if (!d_sc.isNull())
     {
-      def = em->mkExpr(kind::IMPLIES,d_sc,d_formula);
+      def = em->mkExpr(kind::IMPLIES, d_sc, d_formula);
     }
     Type ft = em->booleanType();
-    if( !types.empty() )
+    if (!types.empty())
     {
-      ft = em->mkFunctionType(types,ft);
+      ft = em->mkFunctionType(types, ft);
     }
-    Expr icpred = d_formula.getExprManager()->mkVar("input",ft,ExprManager::VAR_FLAG_DEFINED);
+    Expr icpred = d_formula.getExprManager()->mkVar(
+        "input", ft, ExprManager::VAR_FLAG_DEFINED);
     smtEngine->defineFunction(icpred, d_formals, def);
     smtEngine->checkSat();
     d_commandStatus = CommandSuccess::instance();
@@ -962,8 +957,8 @@ void GetInvertibilityCondition::invoke(SmtEngine* smtEngine)
   }
 }
 
-Command* GetInvertibilityCondition::exportTo(ExprManager* exprManager,
-                                         ExprManagerMapCollection& variableMap)
+Command* GetInvertibilityCondition::exportTo(
+    ExprManager* exprManager, ExprManagerMapCollection& variableMap)
 {
   vector<Expr> formals;
   transform(d_formals.begin(),

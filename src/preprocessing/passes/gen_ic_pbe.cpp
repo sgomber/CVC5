@@ -50,20 +50,21 @@ PreprocessingPassResult GenIcPbe::applyInternal(
 
   Node icCase = asl[0];
   // must expand definitions
-  icCase =  Node::fromExpr(
-        smt::currentSmtEngine()->expandDefinitions(icCase.toExpr()));
-  Trace("gen-ic-pbe") << "GenIcPbe::applyInternal: initial assertion: " << icCase << std::endl;
-  
+  icCase = Node::fromExpr(
+      smt::currentSmtEngine()->expandDefinitions(icCase.toExpr()));
+  Trace("gen-ic-pbe") << "GenIcPbe::applyInternal: initial assertion: "
+                      << icCase << std::endl;
+
   std::vector<Node> bvars;
-  if( icCase.getKind()==FORALL )
+  if (icCase.getKind() == FORALL)
   {
-    for( const Node& v : icCase[0] )
+    for (const Node& v : icCase[0])
     {
       bvars.push_back(v);
     }
     icCase = icCase[1];
   }
-  
+
   // may have a side condition
   Node sideCondition;
   if (icCase.getKind() == IMPLIES)
@@ -77,24 +78,28 @@ PreprocessingPassResult GenIcPbe::applyInternal(
 
   Notice() << "Generate PBE invertibility condition conjecture for case: "
            << icCase << std::endl;
-           
+
   Node testFormula;
-  AlwaysAssert(icCase.getKind()==EQUAL,
-                "GenIcPbe: expected an equivalence between IC predicate application and input problem.");
+  AlwaysAssert(icCase.getKind() == EQUAL,
+               "GenIcPbe: expected an equivalence between IC predicate "
+               "application and input problem.");
   testFormula = icCase[0];
   AlwaysAssert(testFormula.getType().isBoolean(),
-                "GenIcPbe: expected an IC of Boolean type.");
+               "GenIcPbe: expected an IC of Boolean type.");
   icCase = icCase[1];
-  
-  AlwaysAssert( icCase.getKind()==EXISTS,
-                 "GenIcPbe: expected an existential." );
-  AlwaysAssert(icCase[0].getNumChildren()==1,
-                "GenIcPbe: expected an inner existential with only one variable.");
+
+  AlwaysAssert(icCase.getKind() == EXISTS,
+               "GenIcPbe: expected an existential.");
+  AlwaysAssert(
+      icCase[0].getNumChildren() == 1,
+      "GenIcPbe: expected an inner existential with only one variable.");
   Node funToSynthBvar = icCase[0][0];
   icCase = icCase[1];
-  
-  Trace("gen-ic-pbe") << "invertibility condition problem : " << icCase << std::endl;
-  Trace("gen-ic-pbe-debug") << "...with variable-to-solve : " << funToSynthBvar << std::endl;
+
+  Trace("gen-ic-pbe") << "invertibility condition problem : " << icCase
+                      << std::endl;
+  Trace("gen-ic-pbe-debug")
+      << "...with variable-to-solve : " << funToSynthBvar << std::endl;
   // ensure the function type matches the computed type
   AlwaysAssert(!funToSynthBvar.isNull(),
                "GenIcPbe: no functions to synthesize");
@@ -180,7 +185,8 @@ PreprocessingPassResult GenIcPbe::applyInternal(
   unsigned rowWidth = 0;
   if (isFull)
   {
-    rowWidth = completeDom.empty() ? 1 : completeDom[completeDom.size() - 1].size();
+    rowWidth =
+        completeDom.empty() ? 1 : completeDom[completeDom.size() - 1].size();
     if (options::genIcFull())
     {
       out << "; Full I/O specification for " << icCase << std::endl;
@@ -250,12 +256,14 @@ PreprocessingPassResult GenIcPbe::applyInternal(
   unsigned printConstraintCount = 0;
   std::map<bool, unsigned> numIncorrectRes;
   unsigned startIndex = rowWidth * options::genIcR();
-  unsigned endIndex = options::genIcEndR()<=0 ? nsamples : rowWidth*options::genIcEndR();
-  if( endIndex>nsamples )
+  unsigned endIndex =
+      options::genIcEndR() <= 0 ? nsamples : rowWidth * options::genIcEndR();
+  if (endIndex > nsamples)
   {
     endIndex = nsamples;
   }
-  Trace("gen-ic-pbe") << "Row boundaries are " << options::genIcR() << " " << options::genIcEndR() << std::endl;
+  Trace("gen-ic-pbe") << "Row boundaries are " << options::genIcR() << " "
+                      << options::genIcEndR() << std::endl;
   for (unsigned i = startIndex; i < endIndex; i++)
   {
     unsigned ii = useAuxIndex ? auxIndex[i] : i;
@@ -270,7 +278,7 @@ PreprocessingPassResult GenIcPbe::applyInternal(
       {
         unsigned domSize = completeDom.empty() ? 1 : completeDom[j].size();
         unsigned currIndex = ival % domSize;
-        if( j<bvars.size() )
+        if (j < bvars.size())
         {
           samplePt.push_back(completeDom[j][currIndex]);
         }
@@ -390,7 +398,8 @@ PreprocessingPassResult GenIcPbe::applyInternal(
             for (unsigned k = 0; k < xdsize; k++)
             {
               TNode xvt = xDomUseEval[k];
-              Trace("gen-ic-eval") << "Test " << resTest  << " * { " << xt << " -> " << xvt << " } " << std::endl;
+              Trace("gen-ic-eval") << "Test " << resTest << " * { " << xt
+                                   << " -> " << xvt << " } " << std::endl;
               testFormulaEval = resTest.substitute(xt, xvt);
               testFormulaEval = theory::Rewriter::rewrite(testFormulaEval);
               if (testFormulaEval.isConst())
@@ -455,7 +464,7 @@ PreprocessingPassResult GenIcPbe::applyInternal(
         // test the I/O behavior
         Trace("gen-ic-pbe-debug2")
             << "Test point " << ioIndexRow << ", " << ioIndexCol << std::endl;
-        Assert(ioIndexRow<ioString.size());
+        Assert(ioIndexRow < ioString.size());
         bool expect =
             ioString[ioIndexRow].isBitSet((rowWidth - 1) - ioIndexCol);
         if (!resTest.isConst())
@@ -501,7 +510,8 @@ PreprocessingPassResult GenIcPbe::applyInternal(
       {
         out << "(not ";
       }
-      if( !samplePt.empty() ){
+      if (!samplePt.empty())
+      {
         out << "(";
       }
       out << "IC ";
@@ -509,7 +519,8 @@ PreprocessingPassResult GenIcPbe::applyInternal(
       {
         out << sp << " ";
       }
-      if( !samplePt.empty() ){
+      if (!samplePt.empty())
+      {
         out << ")";
       }
       if (!printPol)

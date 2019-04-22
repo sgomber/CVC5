@@ -878,6 +878,7 @@ class CVC4_PUBLIC GetInvertibilityCondition : public Command
                     ExprManagerMapCollection& variableMap) override;
   Command* clone() const override;
   std::string getCommandName() const override;
+
  protected:
   std::vector<Expr> d_formals;
   Expr d_sc;
