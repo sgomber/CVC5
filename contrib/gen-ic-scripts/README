@@ -86,35 +86,45 @@ the intermediate files that are generated, and how they can be modified.
 [input_problem.smt2] 
 
 The definition of the invertibility condition problem. This is, 
-in *.smt2 format, the definition of a predicate `input` of the form
-    (=> C (~ (op s1 ... (f s1 ... sn t) ... sn) t))
-where C is a condition (or "case") of the invertibility condition that we
-are currently focusing on. The function application (f s t) is interpreted
-as the place for the function to synthesize. In other words, the above
-problem is interpreted as 
+in *.smt2 format, an assertion that corresponds to an invertibility condition
+problem. Here is an example:
 
-"find an invertibility condition over s1...sn, t whose I/O behavior matches the
-satisfiability of exists x. (~ (op s1 ... x ... sn) t), when C is true."
+1 (set-logic FP)
+2 (define-sort FP () (_ FloatingPoint 3 5))
+3 (declare-fun IC (FP FP) Bool)
+4 (assert (forall ((s FP) (t FP))
+5   (=>
+6    (and (fp.isNormal s) (fp.isNormal t))
+7    (= (IC s t) (exists ((x FP)) (= (fp.add RNE x s) t)))
+8  )))
 
-This file has several special markers used in steps of the procedure:
-`__SIG` should mark the unique line that specifies the type of `input`,
-`__SC` should mark the unique line that contains a definition of the side
-condition, and `__PROBLEM` should mark the unique line that contains the
-definition of the literal of the invertibility condition. Each of these three
-lines can be modified as desired by the user.
+After declaring a logic and a sort FP, we define the invertibility condition
+predicate `IC` on line 3. Notice that the name `IC` is a keyword in this
+setting.
 
-In practice, for BV and FP, `__SIG` should be a reasonable type that
+On line 4, we give a universal assertion over two floating point variables
+s and t. The body of this assertion is an implication. On line 6, we provide
+a "side condition" and on line 7 we provide an equivalence between an
+application of IC and an existential on line 8.
+
+Overall, the invertibility condition problem asks to find a predicate IC that
+holds exactly when the existential formula holds in cases where the side
+condition is true. In the above example, we are looking for a predicate that
+holds when there exists a solution to x +^RNE s = t, when limited to the
+domain of normal floating point values of s and t.
+
+In practice, for BV and FP, the type of IC should be a reasonable type that
 exercizes most of the behaviors of the invertibility condition in question.
-The side condition `__SC` is useful for narrowing the search space, for
-example, this can be used to ask the workflow to solve the case when
-s is always positive.
+The side condition is useful for narrowing the search space, for example, this
+can be used to ask the workflow to solve the case when s is a normal
+floating point value.
 
 
 [input_grammar.sy] 
 
 The input grammar for solving the invertibility condition. This
 is a *.sy definition of a synth-fun command for predicate `IC`.
-The type of `IC` should match the type of `input` from [input_problem.smt2].
+The type of `IC` should match the type of `IC` from [input_problem.smt2].
 This grammar should be focused on the invertibility condition problem. In
 other words, it contains the guess of a class of expressions that contains the
 invertibility condition.
