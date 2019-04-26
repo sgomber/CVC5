@@ -21,7 +21,10 @@ function get_candidate()
     tail -1 temp.txt
     rm -f temp.txt
   else
-    echo "No candidate found!"
+    echo "No candidate found in file:"
+    echo "*** CANDIDATE FILE"
+    cat $CANDIDATE
+    echo "*** END"
   fi
 }
 
