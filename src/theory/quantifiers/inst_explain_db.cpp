@@ -24,6 +24,7 @@
 #include "theory/quantifiers/term_util.h"
 #include "theory/quantifiers_engine.h"
 #include "theory/rewriter.h"
+#include "theory/quantifiers/instantiate.h"
 
 using namespace CVC4::kind;
 
@@ -158,6 +159,8 @@ Node InstExplainDb::runIexProofGen(Node q, std::vector<Node>& ts)
   Trace("iex-setup") << "Instantiation led to " << vrPf.size() << " / "
                      << (vrPf.size() + vrPfFails.size()) << " entailments."
                      << std::endl;
+  d_qe->getInstantiate()->recordStat(q,ts,1,vrPf.size());
+  d_qe->getInstantiate()->recordStat(q,ts,2,vrPfFails.size());
   if (vrPf.empty())
   {
     // there is nothing interesting, we are done

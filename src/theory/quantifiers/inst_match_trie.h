@@ -162,14 +162,15 @@ class InstMatchTrie
   /** clear the data of this class */
   void clear() { d_data.clear(); }
   /** print this class */
-  void print(std::ostream& out,
+  void print(QuantifiersEngine* qe,
+             std::ostream& out,
              Node q,
              bool& firstTime,
              bool useActive,
              std::vector<Node>& active) const
   {
     std::vector<TNode> terms;
-    print(out, q, terms, firstTime, useActive, active);
+    print(qe, out, q, terms, firstTime, useActive, active);
   }
   /** the data */
   std::map<Node, InstMatchTrie> d_data;
@@ -178,7 +179,8 @@ class InstMatchTrie
   /** helper for print
    * terms accumulates the path we are on in the trie.
    */
-  void print(std::ostream& out,
+  void print(QuantifiersEngine* qe,
+             std::ostream& out,
              Node q,
              std::vector<TNode>& terms,
              bool& firstTime,

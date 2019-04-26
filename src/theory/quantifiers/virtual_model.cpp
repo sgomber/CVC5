@@ -16,6 +16,7 @@
 
 #include "options/quantifiers_options.h"
 #include "theory/quantifiers/term_util.h"
+#include "theory/quantifiers/instantiate.h"
 #include "theory/rewriter.h"
 
 using namespace CVC4::kind;
@@ -48,20 +49,21 @@ void VirtualModel::registerQuantifier(Node q)
   // do nothing
 }
 
-bool VirtualModel::registerAssertion(Node ilem)
+bool VirtualModel::registerAssertion(Node ilem, Node q, std::vector< Node >& ts)
 {
   Trace("vmodel-inst") << "VModel: registerAssertion " << ilem << std::endl;
   Assert(options::quantVirtualModel());
   std::map<Node, int> setAssumps;
-  bool allowDec = false;
+  bool allowDec = true;
   if (ensureValue(ilem, true, setAssumps, allowDec, true))
   {
     // this makes it so that we propagate only
     // setAssumps.erase(ilem);
     if (setAssumps.empty())
     {
-      bool isPartialRound =
-          d_effort != Theory::EFFORT_LAST_CALL && d_rcounter % 4 != 0;
+      d_qe->getInstantiate()->recordStat(q,ts,3,0);
+      bool isPartialRound = true;
+      //    d_effort != Theory::EFFORT_LAST_CALL && d_rcounter % 4 != 0;
       Trace("vmodel-inst") << "...already satisfied!" << std::endl;
       if (isPartialRound && options::instNoVirtualSat())
       {
@@ -70,14 +72,18 @@ bool VirtualModel::registerAssertion(Node ilem)
         return false;
       }
     }
-    else if (Trace.isOn("vmodel-inst"))
+    else
     {
-      Trace("vmodel-inst") << "...satisfiable via: " << std::endl;
-      for (const std::pair<Node, int>& sa : setAssumps)
+      if (Trace.isOn("vmodel-inst"))
       {
-        Trace("vmodel-inst")
-            << "  " << sa.first << " -> " << (sa.second == 1) << std::endl;
+        Trace("vmodel-inst") << "...satisfiable via: " << std::endl;
+        for (const std::pair<Node, int>& sa : setAssumps)
+        {
+          Trace("vmodel-inst")
+              << "  " << sa.first << " -> " << (sa.second == 1) << std::endl;
+        }
       }
+      d_qe->getInstantiate()->recordStat(q,ts,3,1);
     }
   }
   else
@@ -90,6 +96,7 @@ bool VirtualModel::registerAssertion(Node ilem)
       Trace("vmodel") << "VirtualModel: set conflict." << std::endl;
       d_qe->setConflict();
     }
+    d_qe->getInstantiate()->recordStat(q,ts,3,2);
   }
   return true;
 }

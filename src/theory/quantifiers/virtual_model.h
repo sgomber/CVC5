@@ -42,7 +42,7 @@ class VirtualModel : public QuantifiersUtil
   /** Identify this module*/
   std::string identify() const override { return "VirtualModel"; }
   /** register assertion */
-  bool registerAssertion(Node ilem);
+  bool registerAssertion(Node ilem, Node q, std::vector< Node >& ts);
   /** evaluate
    *
    * Returns the value of n in the current SAT context where

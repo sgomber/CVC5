@@ -294,7 +294,7 @@ bool Instantiate::addInstantiation(
   // we decide to satisfy this instantiation
   if (options::quantVirtualModel())
   {
-    if (!d_vmodel->registerAssertion(lem))
+    if (!d_vmodel->registerAssertion(lem,q,terms))
     {
       Trace("inst-add-debug")
           << " --> Already true in virtual model." << std::endl;
@@ -584,7 +584,7 @@ bool Instantiate::printInstantiations(std::ostream& out)
     for (std::pair<const Node, inst::InstMatchTrie>& t : d_inst_match_trie)
     {
       bool firstTime = true;
-      t.second.print(out, t.first, firstTime, useUnsatCore, active_lemmas);
+      t.second.print(d_qe,out, t.first, firstTime, useUnsatCore, active_lemmas);
       if (!firstTime)
       {
         out << ")" << std::endl;
@@ -862,6 +862,45 @@ Instantiate::Statistics::~Statistics()
   smtStatisticsRegistry()->unregisterStat(&d_inst_duplicate_ent);
   smtStatisticsRegistry()->unregisterStat(&d_inst_duplicate_model_true);
   smtStatisticsRegistry()->unregisterStat(&d_inst_duplicate_vsat);
+}
+
+void Instantiate::recordStat(Node q, std::vector< Node >& ts, int statType, int value)
+{
+  StatTrie* curr = &d_trie[q][statType];
+  for( const Node& t : ts )
+  {
+    curr = &(curr->d_children[t]);
+  }
+  curr->d_value = value;
+}
+void Instantiate::notifyPrint(Node q, std::vector< TNode >& ts)
+{
+  std::map< int, StatTrie >& stats = d_trie[q];
+  Trace("inst-stat") << "Stats: ";
+  for( const std::pair< int, StatTrie >& s : stats )
+  {
+    const StatTrie* curr = &s.second;
+    std::map< Node, StatTrie >::const_iterator its;
+    for( const Node& t : ts )
+    {
+      its = curr->d_children.find(t);
+      if( its==curr->d_children.end() )
+      {
+        curr = nullptr;
+        break;
+      }
+      curr = &its->second;
+    }
+    if( curr )
+    {
+      Trace("inst-stat") << " " << curr->d_value;
+    }
+    else
+    {
+      Trace("inst-stat") << " ?";
+    }
+  }
+  Trace("inst-stat") << std::endl;
 }
 
 } /* CVC4::theory::quantifiers namespace */

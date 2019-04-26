@@ -128,7 +128,8 @@ bool InstMatchTrie::recordInstLemma(Node q,
   return false;
 }
 
-void InstMatchTrie::print(std::ostream& out,
+void InstMatchTrie::print(QuantifiersEngine* qe,
+                          std::ostream& out,
                           Node q,
                           std::vector<TNode>& terms,
                           bool& firstTime,
@@ -171,6 +172,7 @@ void InstMatchTrie::print(std::ostream& out,
         out << terms[i];
       }
       out << " )" << std::endl;
+      qe->getInstantiate()->notifyPrint(q,terms);
     }
   }
   else
@@ -178,7 +180,7 @@ void InstMatchTrie::print(std::ostream& out,
     for (const std::pair<const Node, InstMatchTrie>& d : d_data)
     {
       terms.push_back(d.first);
-      d.second.print(out, q, terms, firstTime, useActive, active);
+      d.second.print(qe,out, q, terms, firstTime, useActive, active);
       terms.pop_back();
     }
   }

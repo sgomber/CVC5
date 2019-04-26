@@ -324,6 +324,18 @@ class Instantiate : public QuantifiersUtil
   }; /* class Instantiate::Statistics */
   Statistics d_statistics;
 
+  
+  void recordStat(Node q, std::vector< Node >& ts, int statType, int value);
+  void notifyPrint(Node q, std::vector< TNode >& ts);
+  
+  class StatTrie
+  {
+  public:
+    StatTrie() : d_value(0){}
+    std::map< Node, StatTrie > d_children;
+    int d_value;
+  };
+  std::map< Node, std::map< int, StatTrie > > d_trie;
  private:
   /** record instantiation, return true if it was not a duplicate
    *
