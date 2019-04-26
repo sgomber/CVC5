@@ -5,7 +5,7 @@ NUM_PBE_PTS=10
 # the maximal cardinality of a domain type of an invertibility condition
 MAX_CARDINALITY=10000
 # the copy of cvc4 we are using
-CVC4=ajr-cvc4
+CVC4=pr-ajr-cvc4
 
 ###############################################
 
@@ -277,6 +277,9 @@ function process_pbe_examples()
     echo "; __VERIFY" >> candidate_log.smt2
   else
     echo "***** Internal error during testing."
+    echo "***** ERROR"
+    cat $2
+    echo "***** END"
     echo "; __ERROR" >> candidate_log.smt2
   fi
 }
