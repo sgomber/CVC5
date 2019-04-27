@@ -14,8 +14,8 @@
 
 #include "cvc4_private.h"
 
-#ifndef __CVC4__FIRST_ORDER_MODEL_H
-#define __CVC4__FIRST_ORDER_MODEL_H
+#ifndef CVC4__FIRST_ORDER_MODEL_H
+#define CVC4__FIRST_ORDER_MODEL_H
 
 #include "expr/attribute.h"
 #include "theory/quantifiers/subsume.h"
@@ -231,4 +231,4 @@ class FirstOrderModelFmc : public FirstOrderModel
 }/* CVC4::theory namespace */
 }/* CVC4 namespace */
 
-#endif /* __CVC4__FIRST_ORDER_MODEL_H */
+#endif /* CVC4__FIRST_ORDER_MODEL_H */
