@@ -17,6 +17,7 @@
 #include "options/quantifiers_options.h"
 #include "theory/quantifiers/sygus_sampler.h"
 #include "theory/quantifiers/term_enumeration.h"
+#include "theory/bv/theory_bv_utils.h"
 #include "util/random.h"
 
 using namespace CVC4::kind;
@@ -24,6 +25,60 @@ using namespace CVC4::kind;
 namespace CVC4 {
 namespace preprocessing {
 namespace passes {
+  
+  
+/*
+; return r such that s*r=t
+find_bvmul_inverse(s,t)
+{
+  return one of the following:
+    find_bvmul_inverse_rec(s,t)
+    find_bvmul_inverse_rec(-s,-t)
+    -find_bvmul_inverse_rec(-s,t)
+    -find_bvmul_inverse_rec(s,-t)
+}
+find_bvmul_inverse_rec(s,t)
+{
+  if s divides t
+    return t/s
+  else
+    let s0 = -(-1/s)
+    let s1 = 1 + (-1/s)
+    ;; invariant : 2*s*s0 <=_u s OR 2*s*s1 <=_u s
+    return one of the following:
+      s0*find_bvmul_inverse(t,s*s0)
+      s1*find_bvmul_inverse(t,s*s1)
+}
+
+*/
+void symInverses( Node s, Node t, std::vector< Node >& symInv, unsigned depth )
+{
+  NodeManager * nm = NodeManager::currentNM();
+  Node sn = nm->mkNode(BITVECTOR_NEG,s);
+  Node tn = nm->mkNode(BITVECTOR_NEG,t);
+  if( depth==0 )
+  {
+    Node r = nm->mkNode(BITVECTOR_UDIV, t, s);
+    symInv.push_back(r);
+    return;
+  }
+  TypeNode ttt = s.getType();
+  Node maxc = theory::bv::utils::mkOnes(ttt.getBitVectorSize());
+  Node onec = theory::bv::utils::mkOne(ttt.getBitVectorSize());
+  for( unsigned i=0; i<2; i++ )
+  {
+    Node sp = nm->mkNode(BITVECTOR_UDIV, maxc, s);
+    sp = i==0 ? nm->mkNode(BITVECTOR_NEG,sp) : nm->mkNode(BITVECTOR_PLUS, onec, sp);
+    Node sr = nm->mkNode(BITVECTOR_MULT, s, sp);
+    std::vector< Node > symInvC;
+    symInverses(sr,t,symInvC,depth-1);
+    for( const Node& si : symInvC )
+    {
+      Node r = nm->mkNode(BITVECTOR_MULT, sp, si);
+      symInv.push_back(r);
+    }
+  }
+}
 
 GenIcPbe::GenIcPbe(PreprocessingPassContext* preprocContext)
     : PreprocessingPass(preprocContext, "gen-ic-pbe"){};
@@ -41,8 +96,61 @@ PreprocessingPassResult GenIcPbe::applyInternal(
   Notice() << "     Gen: " << isGen << std::endl;
   Notice() << "  GenImg: " << isGenImg << std::endl;
   Notice() << "    Test: " << isTest << std::endl;
+  
 
   NodeManager* nm = NodeManager::currentNM();
+  
+  TypeNode btn = nm->mkBitVectorType(8);
+  Node s = nm->mkSkolem("s",btn,"testing",NodeManager::SKOLEM_EXACT_NAME);
+  Node t = nm->mkSkolem("t",btn,"testing",NodeManager::SKOLEM_EXACT_NAME);
+  Node sn = nm->mkNode(BITVECTOR_NEG,s);
+  Node tn = nm->mkNode(BITVECTOR_NEG,t);
+  // 0...1
+  for( unsigned r=1; r<=1; r++ )
+  {
+    unsigned counter = 0;
+    std::vector< Node > eqs;
+    // 0...8
+    for( unsigned depth=0; depth<=2; depth++ )
+    {
+      std::vector< Node > symInv;
+      if( r==0 )
+      {
+        symInv.push_back(nm->mkConst(BitVector(8,depth)));
+      }
+      else
+      {
+        // 0...4
+        for( unsigned i=0; i<=3; i++ )
+        {
+          // do combinations of flipping at the outermost level
+          Node ss = i%2==0 ? s : sn;
+          Node ts = i<=1 ? t : tn;
+          std::vector< Node > symInvC;
+          symInverses(ss,ts,symInvC,depth);
+          for( const Node& si : symInvC )
+          {
+            Node r = ( i==1 || i==2 ) ? nm->mkNode( BITVECTOR_NEG, si ) : si;
+            symInv.push_back(r);
+            //break;
+          }
+          //break;
+        }
+      }
+      for( const Node& si : symInv )
+      {
+        counter++;
+        Node smsi = nm->mkNode( BITVECTOR_MULT, s, si);
+        Node eq = smsi.eqNode(t);
+        eqs.push_back(eq);
+        //Trace("ajr-temp") << "(define-fun IC ((s (_ BitVec 8)) (t (_ BitVec 8))) Bool " << eq << ") ;" << counter << ";" << std::endl;
+      }
+      counter++;
+      Node eqOr = eqs.size()==1 ? eqs[0] : nm->mkNode(OR,eqs);
+      Trace("ajr-temp") << "(define-fun IC ((s (_ BitVec 8)) (t (_ BitVec 8))) Bool " << eqOr << ") ;" << counter << ";" << std::endl;
+    }
+  }
+  exit(1);
 
   std::vector<Node>& asl = assertionsToPreprocess->ref();
 
@@ -95,7 +203,10 @@ PreprocessingPassResult GenIcPbe::applyInternal(
       "GenIcPbe: expected an inner existential with only one variable.");
   Node funToSynthBvar = icCase[0][0];
   icCase = icCase[1];
-
+  // Must do rewriting here.
+  // We do this to eliminate partial operators like bvudiv, or
+  // otherwise some of the techniques based on evaluation below will not work.
+  icCase = theory::Rewriter::rewrite(icCase);
   Trace("gen-ic-pbe") << "invertibility condition problem : " << icCase
                       << std::endl;
   Trace("gen-ic-pbe-debug")
@@ -152,7 +263,9 @@ PreprocessingPassResult GenIcPbe::applyInternal(
     // evaluation if --gen-ic-use-eval is enabled, or satisfiability checking.
     isTestSatQuery = true;
   }
-  Notice() << "Test formula is " << testFormula << std::endl;
+  // For same reasons as above, must do rewriting here.
+  testFormula = theory::Rewriter::rewrite(testFormula);
+  Trace("gen-ic-pbe") << "Test formula is " << testFormula << std::endl;
 
   // the ios string
   std::vector<BitVector> ioString;

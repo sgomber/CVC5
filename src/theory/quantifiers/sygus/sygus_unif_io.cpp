@@ -661,6 +661,7 @@ void SygusUnifIo::notifyEnumeration(Node e, Node v, std::vector<Node>& lemmas)
       std::map<Node, bool> cond_vals;
       std::map<Node, std::vector<Node>>::iterator itsr = srmap.find(xs);
       Assert(itsr != srmap.end());
+      unsigned tcounter = 0;
       for (unsigned j = 0, size = itsr->second.size(); j < size; j++)
       {
         Node res = itsr->second[j];
@@ -707,6 +708,10 @@ void SygusUnifIo::notifyEnumeration(Node e, Node v, std::vector<Node>& lemmas)
             Trace("sygus-sui-enum") << "?";
           }
         }
+        if( resb == d_true )
+        {
+          tcounter++;
+        }
       }
       bool keep = false;
       if (eiv.getRole() == enum_io)
@@ -738,6 +743,7 @@ void SygusUnifIo::notifyEnumeration(Node e, Node v, std::vector<Node>& lemmas)
             if (val == v)
             {
               Trace("sygus-sui-enum") << "  ...success";
+              Trace("ajr-temp") << "#: " << tcounter << " --- " << d_tds->sygusToBuiltin(v) << std::endl;
               if (!subsume.empty())
               {
                 ecv.d_enum_subsume.insert(
