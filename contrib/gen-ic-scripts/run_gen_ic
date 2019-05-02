@@ -61,17 +61,15 @@ function mk_problem_cached()
 }
 
 # This generates a *.smt2 file that is used to test the correctness of the
-# candidate from $3 (built over the grammar in $2) on the invertibility
+# candidate from $2 (built over the grammar in $2) on the invertibility
 # condition problem from $1, whose I/O specification has been cached in $4.
 function mk_input_to_test_ic_cached()
 {
-  CANDIDATE=`cat $3`
+  CANDIDATE=`cat $2`
   # the definition of the input problem, with the declared IC replaced by the definition
   cat $1 | sed "s/(declare-fun IC.*/$CANDIDATE/g"
-  # extract definitions from the sygus grammar, which may appear in the candidate
-  grep "define" $2
   # the cached I/O specification
-  cat $4
+  cat $3
   # finish
   echo "(check-sat)"
 }
@@ -95,7 +93,7 @@ function mk_input_to_synth_ic_unc()
 {
   echo "" > temp.smt2
   mk_input_to_synth_ic $1 $2 temp.smt2
-  rm -rf temp.smt2
+  rm -f temp.smt2
 }
 
 function smk_input_to_test_ic_cached()
@@ -108,12 +106,23 @@ function smk_input_to_test_ic_cached()
   mk_input_to_synth_ic_unc input_problem.smt2 $2 > temp_input_grammar.sy
   # now, sanitize it
   sanitize temp_input_grammar.sy "(check-synth)" > temp_input_grammar2.sy
+  
+  # make the candidate
+  # must get the definitions for the grammar
+  grep "define" temp_input_grammar2.sy > temp-ic.smt2
+  # get the candidate definition
+  cat $3 >> temp-ic.smt2
+  # remove newlines
+  tr -d '\n' < temp-ic.smt2 > temp-ic2.smt2
+  
   # now ready to call
-  mk_input_to_test_ic_cached temp_input_problem.smt2 temp_input_grammar2.sy $3 $4
+  mk_input_to_test_ic_cached temp_input_problem.smt2 temp-ic2.smt2 $4
   # clean up
-  rm -rf temp_input_problem.smt2
-  rm -rf temp_input_grammar.sy
-  rm -rf temp_input_grammar2.sy
+  rm -f temp_input_problem.smt2
+  rm -f temp_input_grammar.sy
+  rm -f temp_input_grammar2.sy
+  rm -f temp-ic.smt2
+  rm -f temp-ic2.smt2
 }
 
 function smk_input_to_test_ic()
@@ -123,7 +132,7 @@ function smk_input_to_test_ic()
   # now ready to call
   smk_input_to_test_ic_cached $1 $2 $3 temp_full_io.smt2
   # cleanup
-  rm -rf temp_full_io.smt2
+  rm -f temp_full_io.smt2
 }
 
 # Generate an *.smt2 corresponding to the (expanded) form of assertions
@@ -258,11 +267,16 @@ function generate_pbe_examples()
   $CVC4 --test-ic-full --test-ic-gen --test-ic-random --test-ic-samples=$NUM_PBE_PTS --gen-ic-read-io-string --fmf-type-completion-thresh=$MAX_CARDINALITY $@ temp_input_to_test_ic.smt2
 
   # clean up
-  #rm -f temp_input_to_test_ic.smt2
+  rm -f temp_input_to_test_ic.smt2
 }
 
 function process_pbe_examples()
 {
+  # ensure candidate log is initialized
+  if [ ! -e "candidate_log.smt2" ];
+  then
+    echo "" > candidate_log.smt2
+  fi
   # append the candidate we tried
   cat $1 >> candidate_log.smt2
   if grep -q constraint $2;
@@ -351,7 +365,7 @@ function synth_candidate()
   # we do not clean up input_candidates.smt2
 
   # clean up
-  #rm -f temp_input_to_synth_ic.sy
+  rm -f temp_input_to_synth_ic.sy
 }
 
 function reset()
