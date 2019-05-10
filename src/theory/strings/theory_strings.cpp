@@ -116,6 +116,9 @@ TheoryStrings::TheoryStrings(context::Context* c,
       d_extf_infer_cache_u(u),
       d_ee_disequalities(c),
       d_congruent(c),
+      d_ctermToActiveIndex(c),
+      d_ctermToActiveIndexR(c),
+      d_ctermInactive(c),
       d_proxy_var(u),
       d_proxy_var_to_length(u),
       d_functionsTerms(c),
@@ -970,8 +973,10 @@ void TheoryStrings::check(Effort e) {
     //assert pending fact
     assertPendingFact( atom, polarity, fact );
   }
-  doPendingFacts();
-
+  while( !d_pending.empty() || !d_lemma_cache.empty() ){
+    doPendingFacts();
+    doPendingLemmas();
+  }
   Assert(d_strategy_init);
   std::map<Effort, std::pair<unsigned, unsigned> >::iterator itsr =
       d_strat_steps.find(e);
@@ -1104,7 +1109,12 @@ TheoryStrings::EqcInfo::EqcInfo(context::Context* c)
     : d_length_term(c),
       d_code_term(c),
       d_cardinality_lem_k(c),
-      d_normalized_length(c)
+      d_normalized_length(c),
+      d_constVal(c),
+      d_constValExp(c),
+      d_constValR(c),
+      d_constValExpR(c),
+      d_fullConstVal(false,c)
 {
 }
 
@@ -1138,6 +1148,7 @@ void TheoryStrings::conflict(TNode a, TNode b){
 
 /** called when a new equivalance class is created */
 void TheoryStrings::eqNotifyNewClass(TNode t){
+  Trace("strings-eager") << "new class: " << t << std::endl;
   Kind k = t.getKind();
   if (k == kind::STRING_LENGTH || k == kind::STRING_CODE)
   {
@@ -1154,16 +1165,299 @@ void TheoryStrings::eqNotifyNewClass(TNode t){
     }
     //we care about the length of this string
     registerTerm( t[0], 1 );
-  }else{
-    //getExtTheory()->registerTerm( t );
+  }
+  else if( k==STRING_CONCAT )
+  {
+    // initialize the constant prefix/suffix for this concat term
+    updateCTerm(t,d_null,d_null);
+  }
+  else if( k==CONST_STRING )
+  {
+    // remember it has a constant
+    EqcInfo * ei = getOrMakeEqcInfo( t, true );
+    ei->d_constVal = t;
+    ei->d_constValExp = t;
+    ei->d_fullConstVal = true;
+  }
+  Trace("strings-eager") << "finish new class" << std::endl;
+}
+
+
+bool TheoryStrings::isEqcConstant(Node r)
+{
+  EqcInfo * ei = getOrMakeEqcInfo( r, false );
+  return ei && ei->d_fullConstVal;
+}
+
+Node TheoryStrings::getEqcConstant(Node r)
+{
+  EqcInfo * ei = getOrMakeEqcInfo( r, false );
+  if( ei && ei->d_fullConstVal )
+  {
+    return ei->d_constVal;
+  }
+  return d_null;
+}
+  
+void TheoryStrings::notifyEqcIsConstant( EqcInfo * ei, Node r, Node t, Node c, bool isFull, bool isRev )
+{
+  Trace("strings-eager") << "Eqc [" << r << "] is constant due to " << t << " == " << c << ", full/rev=" << isFull << "/" << isRev << std::endl;
+  Assert( !isFull || !isRev );
+  // if we care about the equivalence class information
+  if( ei )
+  {
+    for( unsigned r=0; r<2; r++ )
+    {
+      // if the current value applies to this case
+      if( isFull || isRev==(r==1) )
+      {
+        Node cmpVal = r==0 ? ei->d_constVal : ei->d_constValR;
+        // check if we have a conflict
+        bool update = true;
+        if( !cmpVal.isNull() )
+        {
+          // do not update 
+        }
+        // update the value
+        if( update )
+        {
+          if( r==0 )
+          {
+            ei->d_constVal = c;
+            ei->d_constValExp = t;
+          }
+          else
+          {
+            ei->d_constValR = c;
+            ei->d_constValExpR = t;
+          }
+        }
+      }
+    }
+    ei->d_fullConstVal = ei->d_fullConstVal || isFull;
+  }
+  Assert( !isFull || isEqcConstant( r ) );
+  // now, notify all terms in the equivalence class
+  if( isFull )
+  {
+    eq::EqClassIterator eqc_i = eq::EqClassIterator( r, &d_equalityEngine );
+    while( !eqc_i.isFinished() ) {
+      Node n = *eqc_i;
+      if( n.getKind()!=STRING_CONCAT )
+      {
+        notifyTermIsConstant(n,c);
+        if( d_conflict )
+        {
+          return;
+        }
+      }
+      ++eqc_i;
+    }    
+  }
+}
+
+void TheoryStrings::notifyTermIsConstant( Node t, Node c )
+{
+  Assert( t.getKind()!=STRING_CONCAT );
+  Trace("strings-eager") << "Term " << t << " is constant " << c << std::endl;
+  // for each concat term that t is a component of
+  std::map< Node, std::vector< Node > >::iterator it = d_concatComponents.find(t);
+  if( it!=d_concatComponents.end() )
+  {
+    for( const Node& ct : it->second )
+    {
+      Trace("strings-eager") << "...notify " << ct << ", which has " << t << " as a component." << std::endl;
+      updateCTerm(ct,t,c);
+      if( d_conflict )
+      {
+        return;
+      }
+    }
+  }
+}
+
+Node TheoryStrings::explainConstPrefix( Node ct, bool isRev, std::vector< Node >& exp )
+{
+  Assert( ct.getKind()==STRING_CONCAT );
+  // infer the equality
+  std::vector< Node > cchildren;
+  unsigned index = 0;
+  Node ccc;
+  do
+  {
+    Node ctc = ct[isRev ? (ct.getNumChildren()-1)-index : index];
+    if( ctc.isConst() )
+    {
+      ccc = ctc;
+      cchildren.push_back(ccc);
+    }
+    else
+    {
+      Node r = getRepresentative(ctc);
+      ccc = getEqcConstant(r);
+      if( !ccc.isNull() )
+      {
+        exp.push_back(ctc.eqNode(ccc));
+        cchildren.push_back(ccc);
+      }
+    }
+    index++;
+  }
+  while( !ccc.isNull() && index<ct.getNumChildren() );
+  if( !cchildren.empty() )
+  {
+    if( isRev )
+    {
+      std::reverse(cchildren.begin(),cchildren.end());
+    }  
+    return mkConcat(cchildren);
+  }
+  return d_null;
+}
+
+void TheoryStrings::updateCTerm( Node ct, Node t, Node c )
+{
+  Assert( ct.getKind()==STRING_CONCAT );
+  if( d_ctermInactive.find(ct)!=d_ctermInactive.end() )
+  {
+    // already inferred equal to constant
+    return;
+  }
+  NodeUIntMap::const_iterator it = d_ctermToActiveIndex.find(ct);
+  unsigned indexBegin, indexEnd;
+  if( it!=d_ctermToActiveIndex.end() )
+  {
+    indexBegin = (*it).second;
+    Assert( d_ctermToActiveIndexR.find(ct)!=d_ctermToActiveIndexR.end() );
+    indexEnd = d_ctermToActiveIndexR[ct];
+  }
+  else
+  {
+    indexBegin = 0;
+    indexEnd = ct.getNumChildren()-1;
+    d_ctermToActiveIndex[ct] = indexBegin;
+    d_ctermToActiveIndexR[ct] = indexEnd;
+  }
+  // look in both directions
+  for( unsigned r=0; r<2; r++ )
+  {
+    bool updated = false;
+    bool isFull = false;
+    unsigned index = r==0 ? indexBegin : indexEnd;
+    bool success;
+    do
+    {
+      success = false;
+      // if the current active component is now constant
+      Assert( index < ct.getNumChildren() );
+      bool isComConstant = false;
+      if( ct[index].isConst() )
+      {
+        isComConstant = true;
+      }
+      else if( ct[index]==t )
+      {
+        // the component that we were watching was set to constant
+        isComConstant = true;
+      }
+      else if( t.isNull() || updated )
+      {
+        // Check if representative of component is constant. We check this only
+        // if we already updated this round, or if we are initializing (when 
+        // t is null).
+        Node r = getRepresentative(ct[index]);
+        isComConstant = isEqcConstant(r);
+      }
+      if( isComConstant )
+      {
+        updated = true;
+        unsigned oindex = r==0 ? indexEnd : indexBegin;
+        if( index==oindex )
+        {
+          // its now fully constant, we will finish
+          d_ctermInactive.insert(ct);
+          isFull = true;
+        }
+        else
+        {
+          // we don't go negative
+          Assert( r==0 || index>0 );
+          success = true;
+          index = index + (r==0 ? 1 : -1);
+        }
+      }
+    }while(success);
+    // If updated, we notify the equivalence class of this, or the equality
+    // engine.
+    if( updated )
+    {
+      // infer the equality
+      std::vector< Node > exp;
+      Node c = explainConstPrefix(ct,r==1,exp);
+      if( isFull && hasTerm(c) )
+      {
+        if( !areEqual(ct,c) )
+        {
+          // infer the equality, may be a merge operation
+          Node conc = ct.eqNode(c);
+          sendInference(exp,conc,"EAGER_I_CONST_MERGE");
+        }
+      }
+      else
+      {
+        Node ctr = getRepresentative(ct);
+        // Update the information in the equivalence class of this. This may
+        // trigger a conflict
+        EqcInfo * ei = getOrMakeEqcInfo( ctr, true );
+        notifyEqcIsConstant(ei,ctr,ct,c,isFull,r==1);
+        if( d_conflict )
+        {
+          return;
+        }
+      }
+      if( isFull )
+      {
+        // done all we can do
+        break;
+      }
+      else
+      {
+        // update the index
+        if( r==0 )
+        {
+          d_ctermToActiveIndex[ct] = index;
+        }
+        else
+        {
+          d_ctermToActiveIndexR[ct] = index;
+        }
+        // if there is only one non-constant index, and all others are empty, 
+        // then infer the singular normalization
+        if( indexEnd==indexBegin )
+        {
+          if( c==d_emptyString && !areEqual(ct,ct[indexBegin]) )
+          {
+            Node cr = explainConstPrefix(ct,r==0,exp);
+            if( cr==d_emptyString )
+            {
+              Node conc = ct.eqNode(ct[indexBegin]);
+              sendInference(exp,conc,"EAGER_I_NORM_S");
+            }
+          }
+          // regardless, we already checked it so we are done
+          break;
+        }
+      }
+    }
   }
 }
 
 /** called when two equivalance classes will merge */
 void TheoryStrings::eqNotifyPreMerge(TNode t1, TNode t2){
   EqcInfo * e2 = getOrMakeEqcInfo(t2, false);
+  EqcInfo * e1;
   if( e2 ){
-    EqcInfo * e1 = getOrMakeEqcInfo( t1 );
+    e1 = getOrMakeEqcInfo( t1 );
     //add information from e2 to e1
     if( !e2->d_length_term.get().isNull() ){
       e1->d_length_term.set( e2->d_length_term );
@@ -1179,6 +1473,31 @@ void TheoryStrings::eqNotifyPreMerge(TNode t1, TNode t2){
       e1->d_normalized_length.set( e2->d_normalized_length );
     }
   }
+  else
+  {
+    e1 = getOrMakeEqcInfo( t1, false );
+  }
+  // update the constant values
+  Trace("strings-eager") << "merge: " << t1 << " " << t2 << std::endl;
+  for( unsigned r=0; r<2; r++ )
+  {
+    EqcInfo * esrc = r==0 ? e1 : e2;
+    EqcInfo * etgt = r==0 ? e2 : e1;
+    Node rsrc = r==0 ? t1 : t2;
+    Node rtgt = r==0 ? t2 : t1;
+    // if source has a complete constant, notify the other class
+    if( esrc && esrc->d_fullConstVal )
+    {
+      notifyEqcIsConstant(etgt,rtgt,esrc->d_constVal,esrc->d_constValExp, true, false);
+      if( d_conflict )
+      {
+        return;
+      }
+    }
+  }
+  // if we don't have a full constant, do both sides
+  // TODO
+  Trace("strings-eager") << "finish merge" << std::endl;
 }
 
 /** called when two equivalance classes have merged */
@@ -3933,6 +4252,7 @@ bool TheoryStrings::isNormalFormPair2( Node n1, Node n2 ) {
 void TheoryStrings::registerTerm( Node n, int effort ) {
   TypeNode tn = n.getType();
   bool do_register = true;
+  Kind nk = n.getKind();
   if (!tn.isString())
   {
     if (options::stringEagerLen())
@@ -3941,7 +4261,7 @@ void TheoryStrings::registerTerm( Node n, int effort ) {
     }
     else
     {
-      do_register = effort > 0 || n.getKind() != STRING_CONCAT;
+      do_register = effort > 0 || nk != STRING_CONCAT;
     }
   }
   if (!do_register)
@@ -3958,11 +4278,19 @@ void TheoryStrings::registerTerm( Node n, int effort ) {
                             << ", effort = " << effort << std::endl;
   if (tn.isString())
   {
+    if( nk==STRING_CONCAT )
+    {
+      // make the concatenation components mapping
+      for( const Node& cc : n )
+      {
+        d_concatComponents[cc].push_back(n);
+      }
+    }
     // register length information:
     //  for variables, split on empty vs positive length
     //  for concat/const/replace, introduce proxy var and state length relation
     Node lsum;
-    if (n.getKind() != STRING_CONCAT && n.getKind() != CONST_STRING)
+    if (nk != STRING_CONCAT && nk != CONST_STRING)
     {
       Node lsumb = nm->mkNode(STRING_LENGTH, n);
       lsum = Rewriter::rewrite(lsumb);
@@ -3983,7 +4311,7 @@ void TheoryStrings::registerTerm( Node n, int effort ) {
     // If we are introducing a proxy for a constant or concat term, we do not
     // need to send lemmas about its length, since its length is already
     // implied.
-    if (n.isConst() || n.getKind() == STRING_CONCAT)
+    if (n.isConst() || nk == STRING_CONCAT)
     {
       // add to length lemma cache, i.e. do not send length lemma for sk.
       d_length_lemma_terms_cache.insert(sk);
@@ -3991,7 +4319,7 @@ void TheoryStrings::registerTerm( Node n, int effort ) {
     Trace("strings-assert") << "(assert " << eq << ")" << std::endl;
     d_out->lemma(eq);
     Node skl = nm->mkNode(STRING_LENGTH, sk);
-    if (n.getKind() == STRING_CONCAT)
+    if (nk == STRING_CONCAT)
     {
       std::vector<Node> node_vec;
       for (unsigned i = 0; i < n.getNumChildren(); i++)
@@ -4011,7 +4339,7 @@ void TheoryStrings::registerTerm( Node n, int effort ) {
       lsum = nm->mkNode(PLUS, node_vec);
       lsum = Rewriter::rewrite(lsum);
     }
-    else if (n.getKind() == CONST_STRING)
+    else if (nk == CONST_STRING)
     {
       lsum = nm->mkConst(Rational(n.getConst<String>().size()));
     }

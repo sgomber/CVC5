@@ -138,6 +138,7 @@ class TheoryStrings : public Theory {
   typedef context::CDList<Node> NodeList;
   typedef context::CDHashMap<Node, bool, NodeHashFunction> NodeBoolMap;
   typedef context::CDHashMap<Node, int, NodeHashFunction> NodeIntMap;
+  typedef context::CDHashMap<Node, unsigned, NodeHashFunction> NodeUIntMap;
   typedef context::CDHashMap<Node, Node, NodeHashFunction> NodeNodeMap;
   typedef context::CDHashSet<Node, NodeHashFunction> NodeSet;
 
@@ -292,6 +293,7 @@ class TheoryStrings : public Theory {
   Node d_zero;
   Node d_one;
   Node d_neg_one;
+  Node d_null;
   /** the cardinality of the alphabet */
   unsigned d_card_size;
   /** The notify class */
@@ -412,9 +414,52 @@ private:
     context::CDO<Node> d_code_term;
     context::CDO< unsigned > d_cardinality_lem_k;
     context::CDO< Node > d_normalized_length;
+    /** constant prefix/suffix
+     * 
+     * If d_constVal is non-null, then it is a string constant c such that this
+     * equivalence class has c as a prefix. Similarly, if d_constValR is
+     * non-null, then it is a string constant c' such that the equivalence
+     * class has c' as a suffix.
+     * 
+     * If d_fullConstVal is true, then d_constVal = d_constValR, and the
+     * equivalence class is equal to d_constVal.
+     */
+    context::CDO<Node> d_constVal;
+    context::CDO<Node> d_constValExp;
+    context::CDO<Node> d_constValR;
+    context::CDO<Node> d_constValExpR;
+    context::CDO<bool> d_fullConstVal;
   };
   /** map from representatives to information necessary for equivalence classes */
   std::map< Node, EqcInfo* > d_eqc_info;
+  
+  /** term to active index 
+   * 
+   * TODO
+   */
+  NodeUIntMap d_ctermToActiveIndex;
+  NodeUIntMap d_ctermToActiveIndexR;
+  NodeSet d_ctermInactive;
+  /** map terms to concatenation terms it contains */
+  std::map< Node, std::vector< Node > > d_concatComponents;
+  
+  bool isEqcConstant(Node r);
+  Node getEqcConstant(Node r);
+  void notifyEqcIsConstant( EqcInfo * ei, Node r, Node t, Node c, bool isFull, bool isRev );
+  void notifyTermIsConstant( Node t, Node c );
+  
+  Node explainConstPrefix( Node ct, bool isRev, std::vector< Node >& exp );
+  
+  /** 
+   * If t is non-null:
+   * Called when t is inferred to be equal to constant c, and ct is a
+   * concatenation term that contains component t.
+   * 
+   * If t is null:
+   * Called when ct is registered as a term.
+   */
+  void updateCTerm( Node ct, Node t, Node c);
+  
   /**
    * Get the above information for equivalence class eqc. If doMake is true,
    * we construct a new information class if one does not exist. The term eqc
