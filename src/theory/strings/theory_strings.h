@@ -445,10 +445,12 @@ private:
   
   bool isEqcConstant(Node r);
   Node getEqcConstant(Node r);
-  void notifyEqcIsConstant( EqcInfo * ei, Node r, Node t, Node c, bool isFull, bool isRev );
+  void notifyEqcIsConstant( EqcInfo * ei, Node r, Node t, Node c, bool isFull, bool isRev, bool isInit );
   void notifyTermIsConstant( Node t, Node c );
   
   Node explainConstPrefix( Node ct, bool isRev, std::vector< Node >& exp );
+  
+  bool updateCTermIndex( unsigned d, unsigned& index, unsigned oindex, Node ct, Node t, Node c, bool& isFull );
   
   /** 
    * If t is non-null:
@@ -458,7 +460,7 @@ private:
    * If t is null:
    * Called when ct is registered as a term.
    */
-  void updateCTerm( Node ct, Node t, Node c);
+  void updateCTerm( Node ctr, Node ct, Node t, Node c);
   
   /**
    * Get the above information for equivalence class eqc. If doMake is true,

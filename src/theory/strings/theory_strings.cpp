@@ -576,6 +576,7 @@ void TheoryStrings::presolve() {
     getDecisionManager()->registerStrategy(
         DecisionManager::STRAT_STRINGS_SUM_LENGTHS, d_sslds.get());
   }
+  d_concatComponents.clear();
 }
 
 
@@ -1169,7 +1170,7 @@ void TheoryStrings::eqNotifyNewClass(TNode t){
   else if( k==STRING_CONCAT )
   {
     // initialize the constant prefix/suffix for this concat term
-    updateCTerm(t,d_null,d_null);
+    updateCTerm(t,t,d_null,d_null);
   }
   else if( k==CONST_STRING )
   {
@@ -1199,19 +1200,18 @@ Node TheoryStrings::getEqcConstant(Node r)
   return d_null;
 }
   
-void TheoryStrings::notifyEqcIsConstant( EqcInfo * ei, Node r, Node t, Node c, bool isFull, bool isRev )
+void TheoryStrings::notifyEqcIsConstant( EqcInfo * ei, Node r, Node t, Node c, bool isFull, bool isRev, bool isInit )
 {
-  Trace("strings-eager") << "Eqc [" << r << "] is constant due to " << t << " == " << c << ", full/rev=" << isFull << "/" << isRev << std::endl;
-  Assert( !isFull || !isRev );
+  Trace("strings-eager") << "Eqc [" << r << "] is constant due to " << t << " == " << c << ", full/rev/init=" << isFull << "/" << isRev << "/" << isInit << std::endl;
   // if we care about the equivalence class information
   if( ei )
   {
-    for( unsigned r=0; r<2; r++ )
+    for( unsigned d=0; d<2; d++ )
     {
       // if the current value applies to this case
-      if( isFull || isRev==(r==1) )
+      if( isFull || isRev==(d==1) )
       {
-        Node cmpVal = r==0 ? ei->d_constVal : ei->d_constValR;
+        Node cmpVal = d==0 ? ei->d_constVal : ei->d_constValR;
         // check if we have a conflict
         bool update = true;
         if( !cmpVal.isNull() )
@@ -1221,7 +1221,7 @@ void TheoryStrings::notifyEqcIsConstant( EqcInfo * ei, Node r, Node t, Node c, b
         // update the value
         if( update )
         {
-          if( r==0 )
+          if( d==0 )
           {
             ei->d_constVal = c;
             ei->d_constValExp = t;
@@ -1235,10 +1235,10 @@ void TheoryStrings::notifyEqcIsConstant( EqcInfo * ei, Node r, Node t, Node c, b
       }
     }
     ei->d_fullConstVal = ei->d_fullConstVal || isFull;
+    Assert( !isFull || isEqcConstant( r ) );
   }
-  Assert( !isFull || isEqcConstant( r ) );
   // now, notify all terms in the equivalence class
-  if( isFull )
+  if( isFull && !isInit )
   {
     eq::EqClassIterator eqc_i = eq::EqClassIterator( r, &d_equalityEngine );
     while( !eqc_i.isFinished() ) {
@@ -1258,8 +1258,8 @@ void TheoryStrings::notifyEqcIsConstant( EqcInfo * ei, Node r, Node t, Node c, b
 
 void TheoryStrings::notifyTermIsConstant( Node t, Node c )
 {
-  Assert( t.getKind()!=STRING_CONCAT );
   Trace("strings-eager") << "Term " << t << " is constant " << c << std::endl;
+  Assert( t.getKind()!=STRING_CONCAT );
   // for each concat term that t is a component of
   std::map< Node, std::vector< Node > >::iterator it = d_concatComponents.find(t);
   if( it!=d_concatComponents.end() )
@@ -1267,7 +1267,7 @@ void TheoryStrings::notifyTermIsConstant( Node t, Node c )
     for( const Node& ct : it->second )
     {
       Trace("strings-eager") << "...notify " << ct << ", which has " << t << " as a component." << std::endl;
-      updateCTerm(ct,t,c);
+      updateCTerm(d_null,ct,t,c);
       if( d_conflict )
       {
         return;
@@ -1315,17 +1315,69 @@ Node TheoryStrings::explainConstPrefix( Node ct, bool isRev, std::vector< Node >
   return d_null;
 }
 
-void TheoryStrings::updateCTerm( Node ct, Node t, Node c )
+bool TheoryStrings::updateCTermIndex( unsigned d, unsigned& index, unsigned oindex, Node ct, Node t, Node c, bool& isFull )
 {
+  bool updated = false;
+  bool success;
+  do
+  {
+    success = false;
+    Trace("strings-eager-debug") << "check index " << index << ", direction " << d << std::endl;
+    // if the current active component is now constant
+    Assert( index < ct.getNumChildren() );
+    bool isComConstant = false;
+    if( ct[index].isConst() )
+    {
+      isComConstant = true;
+    }
+    else if( ct[index]==t )
+    {
+      // the component that we were watching was set to constant
+      isComConstant = true;
+    }
+    else if( t.isNull() || updated )
+    {
+      // Check if representative of component is constant. We check this only
+      // if we already updated this round, or if we are initializing (when 
+      // t is null).
+      Node d = getRepresentative(ct[index]);
+      isComConstant = isEqcConstant(d);
+    }
+    if( isComConstant )
+    {
+      Trace("strings-eager-debug") << "index " << index << " is constant " << ct[index] << std::endl;
+      updated = true;
+      if( index==oindex )
+      {
+        // its now fully constant, we will finish
+        d_ctermInactive.insert(ct);
+        isFull = true;
+      }
+      else
+      {
+        // we don't go negative
+        Assert( d==0 || index>0 );
+        success = true;
+        index = index + (d==0 ? 1 : -1);
+      }
+    }
+  }while(success);
+  return updated;
+}
+  
+void TheoryStrings::updateCTerm( Node ctr, Node ct, Node t, Node c )
+{
+  Trace("strings-eager") << "updateCTerm " << ct << ", " << t << " == " << c << std::endl;
   Assert( ct.getKind()==STRING_CONCAT );
   if( d_ctermInactive.find(ct)!=d_ctermInactive.end() )
   {
     // already inferred equal to constant
     return;
   }
-  NodeUIntMap::const_iterator it = d_ctermToActiveIndex.find(ct);
+  bool isInit = t.isNull();
   unsigned indexBegin, indexEnd;
-  if( it!=d_ctermToActiveIndex.end() )
+  NodeUIntMap::const_iterator it = d_ctermToActiveIndex.find(ct);
+  if( d_ctermToActiveIndex.find(ct)!=d_ctermToActiveIndex.end() )
   {
     indexBegin = (*it).second;
     Assert( d_ctermToActiveIndexR.find(ct)!=d_ctermToActiveIndexR.end() );
@@ -1339,77 +1391,38 @@ void TheoryStrings::updateCTerm( Node ct, Node t, Node c )
     d_ctermToActiveIndexR[ct] = indexEnd;
   }
   // look in both directions
-  for( unsigned r=0; r<2; r++ )
+  for( unsigned d=0; d<2; d++ )
   {
-    bool updated = false;
     bool isFull = false;
-    unsigned index = r==0 ? indexBegin : indexEnd;
-    bool success;
-    do
-    {
-      success = false;
-      // if the current active component is now constant
-      Assert( index < ct.getNumChildren() );
-      bool isComConstant = false;
-      if( ct[index].isConst() )
-      {
-        isComConstant = true;
-      }
-      else if( ct[index]==t )
-      {
-        // the component that we were watching was set to constant
-        isComConstant = true;
-      }
-      else if( t.isNull() || updated )
-      {
-        // Check if representative of component is constant. We check this only
-        // if we already updated this round, or if we are initializing (when 
-        // t is null).
-        Node r = getRepresentative(ct[index]);
-        isComConstant = isEqcConstant(r);
-      }
-      if( isComConstant )
-      {
-        updated = true;
-        unsigned oindex = r==0 ? indexEnd : indexBegin;
-        if( index==oindex )
-        {
-          // its now fully constant, we will finish
-          d_ctermInactive.insert(ct);
-          isFull = true;
-        }
-        else
-        {
-          // we don't go negative
-          Assert( r==0 || index>0 );
-          success = true;
-          index = index + (r==0 ? 1 : -1);
-        }
-      }
-    }while(success);
+    unsigned index = d==0 ? indexBegin : indexEnd;
+    unsigned oindex = d==0 ? indexBegin : indexEnd;
     // If updated, we notify the equivalence class of this, or the equality
     // engine.
-    if( updated )
+    if( updateCTermIndex(d,index,oindex,ct,t,c, isFull) )
     {
       // infer the equality
       std::vector< Node > exp;
-      Node c = explainConstPrefix(ct,r==1,exp);
+      Node c = explainConstPrefix(ct,d==1,exp);
       if( isFull && hasTerm(c) )
       {
-        if( !areEqual(ct,c) )
+        if( isInit || !areEqual(ct,c) )
         {
           // infer the equality, may be a merge operation
           Node conc = ct.eqNode(c);
-          sendInference(exp,conc,"EAGER_I_CONST_MERGE");
+          //sendInference(exp,conc,"EAGER_I_CONST_MERGE");
         }
       }
       else
       {
-        Node ctr = getRepresentative(ct);
+        // get the representative if necessary
+        if( ctr.isNull() )
+        {
+          ctr = getRepresentative(ct);
+        }
         // Update the information in the equivalence class of this. This may
         // trigger a conflict
         EqcInfo * ei = getOrMakeEqcInfo( ctr, true );
-        notifyEqcIsConstant(ei,ctr,ct,c,isFull,r==1);
+        notifyEqcIsConstant(ei,ctr,ct,c,isFull,d==1, isInit);
         if( d_conflict )
         {
           return;
@@ -1423,7 +1436,7 @@ void TheoryStrings::updateCTerm( Node ct, Node t, Node c )
       else
       {
         // update the index
-        if( r==0 )
+        if( d==0 )
         {
           d_ctermToActiveIndex[ct] = index;
         }
@@ -1435,13 +1448,14 @@ void TheoryStrings::updateCTerm( Node ct, Node t, Node c )
         // then infer the singular normalization
         if( indexEnd==indexBegin )
         {
-          if( c==d_emptyString && !areEqual(ct,ct[indexBegin]) )
+          if( c==d_emptyString && ( isInit || !areEqual(ct,ct[indexBegin]) ) )
           {
-            Node cr = explainConstPrefix(ct,r==0,exp);
+            // explain the other direction
+            Node cr = explainConstPrefix(ct,d==0,exp);
             if( cr==d_emptyString )
             {
               Node conc = ct.eqNode(ct[indexBegin]);
-              sendInference(exp,conc,"EAGER_I_NORM_S");
+              //sendInference(exp,conc,"EAGER_I_NORM_S");
             }
           }
           // regardless, we already checked it so we are done
@@ -1450,6 +1464,7 @@ void TheoryStrings::updateCTerm( Node ct, Node t, Node c )
       }
     }
   }
+  Trace("strings-eager") << "finish updateCTerm " << ct << ", " << t << " == " << c << std::endl;
 }
 
 /** called when two equivalance classes will merge */
@@ -1488,7 +1503,7 @@ void TheoryStrings::eqNotifyPreMerge(TNode t1, TNode t2){
     // if source has a complete constant, notify the other class
     if( esrc && esrc->d_fullConstVal )
     {
-      notifyEqcIsConstant(etgt,rtgt,esrc->d_constVal,esrc->d_constValExp, true, false);
+      notifyEqcIsConstant(etgt,rtgt,esrc->d_constVal,esrc->d_constValExp, true, false, false);
       if( d_conflict )
       {
         return;
