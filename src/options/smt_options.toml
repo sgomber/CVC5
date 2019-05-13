@@ -720,3 +720,11 @@ header = "options/smt_options.h"
   type       = "unsigned"
   default    = "0"
   help       = "the end row for generating the spec (<=0 means use the real end)"
+
+[[option]]
+  name       = "genIcSimplify"
+  category   = "undocumented"
+  long       = "gen-ic-simplify"
+  type       = "bool"
+  default    = "false"
+  help       = "print the result of simplifying the candidate invertibility condition"

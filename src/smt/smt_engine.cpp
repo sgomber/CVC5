@@ -3142,7 +3142,7 @@ void SmtEnginePrivate::processAssertions() {
   if (!d_smt.d_isInternalSubsolver)
   {
     if (options::genIcPbe() || options::genIcFull() || options::testIcFull()
-        || options::genIcImage())
+        || options::genIcImage() || options::genIcSimplify())
     {
       d_passes["gen-ic-pbe"]->apply(&d_assertions);
     }

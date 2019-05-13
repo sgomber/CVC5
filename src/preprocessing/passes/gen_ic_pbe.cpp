@@ -18,6 +18,7 @@
 #include "theory/quantifiers/sygus_sampler.h"
 #include "theory/quantifiers/term_enumeration.h"
 #include "util/random.h"
+#include "options/base_options.h"
 
 using namespace CVC4::kind;
 
@@ -153,6 +154,14 @@ PreprocessingPassResult GenIcPbe::applyInternal(
     isTestSatQuery = true;
   }
   Notice() << "Test formula is " << testFormula << std::endl;
+  // we are just going to invoke preprocessing on this
+  if( options::genIcSimplify() )
+  {
+    theory::quantifiers::ExtendedRewriter extr(options::extRewPrepAgg());
+    Node res = extr.extendedRewrite(testFormula);
+    out << res << std::endl;
+    return PreprocessingPassResult::NO_CONFLICT;
+  }
 
   // the ios string
   std::vector<BitVector> ioString;
