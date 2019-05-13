@@ -425,8 +425,10 @@ private:
      * equivalence class is equal to d_constVal.
      */
     context::CDO<Node> d_constVal;
+    context::CDO<Node> d_constValBase;
     context::CDO<Node> d_constValExp;
     context::CDO<Node> d_constValR;
+    context::CDO<Node> d_constValBaseR;
     context::CDO<Node> d_constValExpR;
     context::CDO<bool> d_fullConstVal;
   };
@@ -448,7 +450,7 @@ private:
   void notifyEqcIsConstant( EqcInfo * ei, Node r, Node t, Node c, bool isFull, bool isRev, bool isInit );
   void notifyTermIsConstant( Node t, Node c );
   
-  Node explainConstPrefix( Node ct, bool isRev, std::vector< Node >& exp );
+  Node explainConstPrefix( Node ct, bool isRev, std::vector< Node >& exp, bool isFull );
   
   bool updateCTermIndex( unsigned d, unsigned& index, unsigned oindex, Node ct, Node t, Node c, bool& isFull );
   

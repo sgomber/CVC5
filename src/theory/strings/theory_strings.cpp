@@ -1112,8 +1112,10 @@ TheoryStrings::EqcInfo::EqcInfo(context::Context* c)
       d_cardinality_lem_k(c),
       d_normalized_length(c),
       d_constVal(c),
+      d_constValBase(c),
       d_constValExp(c),
       d_constValR(c),
+      d_constValBaseR(c),
       d_constValExpR(c),
       d_fullConstVal(false,c)
 {
@@ -1177,7 +1179,7 @@ void TheoryStrings::eqNotifyNewClass(TNode t){
     // remember it has a constant
     EqcInfo * ei = getOrMakeEqcInfo( t, true );
     ei->d_constVal = t;
-    ei->d_constValExp = t;
+    ei->d_constValBase = t;
     ei->d_fullConstVal = true;
   }
   Trace("strings-eager") << "finish new class" << std::endl;
@@ -1224,12 +1226,12 @@ void TheoryStrings::notifyEqcIsConstant( EqcInfo * ei, Node r, Node t, Node c, b
           if( d==0 )
           {
             ei->d_constVal = c;
-            ei->d_constValExp = t;
+            ei->d_constValBase = t;
           }
           else
           {
             ei->d_constValR = c;
-            ei->d_constValExpR = t;
+            ei->d_constValBaseR = t;
           }
         }
       }
@@ -1276,7 +1278,7 @@ void TheoryStrings::notifyTermIsConstant( Node t, Node c )
   }
 }
 
-Node TheoryStrings::explainConstPrefix( Node ct, bool isRev, std::vector< Node >& exp )
+Node TheoryStrings::explainConstPrefix( Node ct, bool isRev, std::vector< Node >& exp, bool isFull )
 {
   Assert( ct.getKind()==STRING_CONCAT );
   // infer the equality
@@ -1297,13 +1299,25 @@ Node TheoryStrings::explainConstPrefix( Node ct, bool isRev, std::vector< Node >
       ccc = getEqcConstant(r);
       if( !ccc.isNull() )
       {
-        exp.push_back(ctc.eqNode(ccc));
+        if( hasTerm(ccc) )
+        {
+          exp.push_back(ctc.eqNode(ccc));
+        }
+        else
+        {
+          //explainConstPrefix(
+        }
         cchildren.push_back(ccc);
+      }
+      else
+      {
+        Assert( !isFull );
       }
     }
     index++;
   }
   while( !ccc.isNull() && index<ct.getNumChildren() );
+  Trace("strings-eager") << "Explain constant prefix: " << exp << " => const " << ct << std::endl;
   if( !cchildren.empty() )
   {
     if( isRev )
@@ -1395,14 +1409,18 @@ void TheoryStrings::updateCTerm( Node ctr, Node ct, Node t, Node c )
   {
     bool isFull = false;
     unsigned index = d==0 ? indexBegin : indexEnd;
-    unsigned oindex = d==0 ? indexBegin : indexEnd;
+    unsigned oindex = d==0 ? indexEnd : indexBegin;
     // If updated, we notify the equivalence class of this, or the equality
     // engine.
     if( updateCTermIndex(d,index,oindex,ct,t,c, isFull) )
     {
       // infer the equality
       std::vector< Node > exp;
-      Node c = explainConstPrefix(ct,d==1,exp);
+      if( !t.isNull() )
+      {
+        exp.push_back( t.eqNode(c) );
+      }
+      Node c = explainConstPrefix(ct,d==1,exp, isFull);
       if( isFull && hasTerm(c) )
       {
         if( isInit || !areEqual(ct,c) )
@@ -1448,10 +1466,11 @@ void TheoryStrings::updateCTerm( Node ctr, Node ct, Node t, Node c )
         // then infer the singular normalization
         if( indexEnd==indexBegin )
         {
+          Assert( !isFull );
           if( c==d_emptyString && ( isInit || !areEqual(ct,ct[indexBegin]) ) )
           {
             // explain the other direction
-            Node cr = explainConstPrefix(ct,d==0,exp);
+            Node cr = explainConstPrefix(ct,d==0,exp,false);
             if( cr==d_emptyString )
             {
               Node conc = ct.eqNode(ct[indexBegin]);
@@ -1503,7 +1522,7 @@ void TheoryStrings::eqNotifyPreMerge(TNode t1, TNode t2){
     // if source has a complete constant, notify the other class
     if( esrc && esrc->d_fullConstVal )
     {
-      notifyEqcIsConstant(etgt,rtgt,esrc->d_constVal,esrc->d_constValExp, true, false, false);
+      notifyEqcIsConstant(etgt,rtgt,esrc->d_constVal,esrc->d_constValBase, true, false, false);
       if( d_conflict )
       {
         return;
