@@ -44,6 +44,8 @@ PreprocessingPassResult GenIcPbe::applyInternal(
   Notice() << "    Test: " << isTest << std::endl;
 
   NodeManager* nm = NodeManager::currentNM();
+  Options& nodeManagerOptions = nm->getOptions();
+  std::ostream& out = *nodeManagerOptions.getOut();
 
   std::vector<Node>& asl = assertionsToPreprocess->ref();
 
@@ -85,6 +87,16 @@ PreprocessingPassResult GenIcPbe::applyInternal(
                "GenIcPbe: expected an equivalence between IC predicate "
                "application and input problem.");
   testFormula = icCase[0];
+  // we are just going to invoke preprocessing on this
+  if( options::genIcSimplify() )
+  {
+    theory::quantifiers::ExtendedRewriter extr(options::extRewPrepAgg());
+    Node res = extr.extendedRewrite(testFormula);
+    out << res << std::endl;
+    exit(1);
+    return PreprocessingPassResult::NO_CONFLICT;
+  }
+  
   AlwaysAssert(testFormula.getType().isBoolean(),
                "GenIcPbe: expected an IC of Boolean type.");
   icCase = icCase[1];
@@ -106,9 +118,6 @@ PreprocessingPassResult GenIcPbe::applyInternal(
                "GenIcPbe: no functions to synthesize");
 
   TypeNode frange = funToSynthBvar.getType();
-
-  Options& nodeManagerOptions = NodeManager::currentNM()->getOptions();
-  std::ostream& out = *nodeManagerOptions.getOut();
 
   std::map<unsigned, std::vector<Node> > completeDom;
   theory::quantifiers::SygusSampler samplerPt;
@@ -154,14 +163,6 @@ PreprocessingPassResult GenIcPbe::applyInternal(
     isTestSatQuery = true;
   }
   Notice() << "Test formula is " << testFormula << std::endl;
-  // we are just going to invoke preprocessing on this
-  if( options::genIcSimplify() )
-  {
-    theory::quantifiers::ExtendedRewriter extr(options::extRewPrepAgg());
-    Node res = extr.extendedRewrite(testFormula);
-    out << res << std::endl;
-    return PreprocessingPassResult::NO_CONFLICT;
-  }
 
   // the ios string
   std::vector<BitVector> ioString;
