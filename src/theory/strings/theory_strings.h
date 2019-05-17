@@ -446,7 +446,6 @@ private:
   std::map< Node, std::vector< Node > > d_concatComponents;
   
   bool isEqcConstant(Node r);
-  Node getEqcConstant(Node r);
   void notifyEqcIsConstant( EqcInfo * ei, Node r, Node t, Node c, bool isFull, bool isRev, bool isInit );
   void notifyTermIsConstant( Node t, Node c );
   

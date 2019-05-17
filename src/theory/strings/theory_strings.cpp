@@ -1191,16 +1191,6 @@ bool TheoryStrings::isEqcConstant(Node r)
   EqcInfo * ei = getOrMakeEqcInfo( r, false );
   return ei && ei->d_fullConstVal;
 }
-
-Node TheoryStrings::getEqcConstant(Node r)
-{
-  EqcInfo * ei = getOrMakeEqcInfo( r, false );
-  if( ei && ei->d_fullConstVal )
-  {
-    return ei->d_constVal;
-  }
-  return d_null;
-}
   
 void TheoryStrings::notifyEqcIsConstant( EqcInfo * ei, Node r, Node t, Node c, bool isFull, bool isRev, bool isInit )
 {
@@ -1218,7 +1208,9 @@ void TheoryStrings::notifyEqcIsConstant( EqcInfo * ei, Node r, Node t, Node c, b
         bool update = true;
         if( !cmpVal.isNull() )
         {
-          // do not update 
+          // conflict if not the same prefix/suffix
+          
+          // do not update if the new constants length is smaller
         }
         // update the value
         if( update )
@@ -1296,16 +1288,19 @@ Node TheoryStrings::explainConstPrefix( Node ct, bool isRev, std::vector< Node >
     else
     {
       Node r = getRepresentative(ctc);
-      ccc = getEqcConstant(r);
-      if( !ccc.isNull() )
+      EqcInfo * ei = getOrMakeEqcInfo( r, false );
+      if( ei && ei->d_fullConstVal )
       {
+        ccc = ei->d_constVal;
         if( hasTerm(ccc) )
         {
           exp.push_back(ctc.eqNode(ccc));
         }
         else
         {
-          //explainConstPrefix(
+          // explain recursively
+          explainConstPrefix(ei->d_constValBase,false,exp,true);
+          exp.push_back(ctc.eqNode(ei->d_constValBase.get()));
         }
         cchildren.push_back(ccc);
       }
@@ -1416,10 +1411,6 @@ void TheoryStrings::updateCTerm( Node ctr, Node ct, Node t, Node c )
     {
       // infer the equality
       std::vector< Node > exp;
-      if( !t.isNull() )
-      {
-        exp.push_back( t.eqNode(c) );
-      }
       Node c = explainConstPrefix(ct,d==1,exp, isFull);
       if( isFull && hasTerm(c) )
       {
