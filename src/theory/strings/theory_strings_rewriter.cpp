@@ -1283,12 +1283,25 @@ Node TheoryStringsRewriter::rewriteMembership(TNode node) {
         retNode = nm->mkNode(allSigmaStrict ? EQUAL : GEQ, lenx, num);
         return returnRewrite(node, retNode, "re-concat-pure-allchar");
       }
-      else if (allSigmaMinSize == 0 && nchildren >= 3 && constIdx != 0
-               && constIdx != nchildren - 1)
+      else if (allSigmaMinSize == 0 )
       {
-        // x in re.++(_*, "abc", _*) ---> str.contains(x, "abc")
-        retNode = nm->mkNode(STRING_STRCTN, x, constStr);
-        return returnRewrite(node, retNode, "re-concat-to-contains");
+        if( nchildren >= 3 && constIdx != 0
+               && constIdx != nchildren - 1)
+        {
+          // x in re.++(_*, "abc", _*) ---> str.contains(x, "abc")
+          retNode = nm->mkNode(STRING_STRCTN, x, constStr);
+          return returnRewrite(node, retNode, "re-concat-to-contains");
+        }
+        else if( nchildren==2 && !constStr.isNull() )
+        {
+          // x in re.++( "abc", _* ) ---> str.substr(x,0,3)="abc"
+          Node lenc = nm->mkConst(Rational(constStr.getConst<String>().size()));
+          Node lenx = nm->mkNode(STRING_LENGTH, x);
+          Node start = constIdx==0 ? nm->mkConst(Rational(0)) : nm->mkNode(MINUS,lenx,lenc);
+          Node xss = nm->mkNode(STRING_SUBSTR,x,start,lenc);
+          Node retNode = xss.eqNode(constStr);
+          return returnRewrite(node, retNode, "re-concat-to-substr-eq");
+        }
       }
     }
   }else if( r.getKind()==kind::REGEXP_INTER || r.getKind()==kind::REGEXP_UNION ){
