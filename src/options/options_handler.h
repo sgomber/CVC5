@@ -178,9 +178,6 @@ public:
   decision::DecisionWeightInternal stringToDecisionWeightInternal(
       std::string option, std::string optarg);
 
-  /* smt/options_handlers.h */
-  void notifyForceLogic(const std::string& option);
-
   /**
    * Throws a ModalException if this option is being set after final
    * initialization.

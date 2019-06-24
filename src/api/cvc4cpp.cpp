@@ -52,8 +52,6 @@ const static std::unordered_map<Kind, CVC4::Kind, KindHashFunction> s_kinds{
     /* Builtin ------------------------------------------------------------- */
     {UNINTERPRETED_CONSTANT, CVC4::Kind::UNINTERPRETED_CONSTANT},
     {ABSTRACT_VALUE, CVC4::Kind::ABSTRACT_VALUE},
-    {FUNCTION, CVC4::Kind::FUNCTION},
-    {APPLY, CVC4::Kind::APPLY},
     {EQUAL, CVC4::Kind::EQUAL},
     {DISTINCT, CVC4::Kind::DISTINCT},
     {CONSTANT, CVC4::Kind::VARIABLE},
@@ -300,8 +298,6 @@ const static std::unordered_map<CVC4::Kind, Kind, CVC4::kind::KindHashFunction>
         /* Builtin --------------------------------------------------------- */
         {CVC4::Kind::UNINTERPRETED_CONSTANT, UNINTERPRETED_CONSTANT},
         {CVC4::Kind::ABSTRACT_VALUE, ABSTRACT_VALUE},
-        {CVC4::Kind::FUNCTION, FUNCTION},
-        {CVC4::Kind::APPLY, APPLY},
         {CVC4::Kind::EQUAL, EQUAL},
         {CVC4::Kind::DISTINCT, DISTINCT},
         {CVC4::Kind::VARIABLE, CONSTANT},
@@ -3393,41 +3389,23 @@ void Solver::setLogicHelper(const std::string& logic) const
  */
 void Solver::setInfo(const std::string& keyword, const std::string& value) const
 {
-  bool is_cvc4_keyword = false;
-
-  /* Check for CVC4-specific info keys (prefixed with "cvc4-" or "cvc4_") */
-  if (keyword.length() > 5)
-  {
-    std::string prefix = keyword.substr(0, 5);
-    if (prefix == "cvc4-" || prefix == "cvc4_")
-    {
-      is_cvc4_keyword = true;
-      std::string cvc4key = keyword.substr(5);
-      CVC4_API_ARG_CHECK_EXPECTED(cvc4key == "logic", keyword)
-          << "keyword 'cvc4-logic'";
-      setLogicHelper(value);
-    }
-  }
-  if (!is_cvc4_keyword)
-  {
-    CVC4_API_ARG_CHECK_EXPECTED(
-        keyword == "source" || keyword == "category" || keyword == "difficulty"
-            || keyword == "filename" || keyword == "license"
-            || keyword == "name" || keyword == "notes"
-            || keyword == "smt-lib-version" || keyword == "status",
-        keyword)
-        << "'source', 'category', 'difficulty', 'filename', 'license', 'name', "
-           "'notes', 'smt-lib-version' or 'status'";
-    CVC4_API_ARG_CHECK_EXPECTED(keyword != "smt-lib-version" || value == "2"
-                                    || value == "2.0" || value == "2.5"
-                                    || value == "2.6" || value == "2.6.1",
-                                value)
-        << "'2.0', '2.5', '2.6' or '2.6.1'";
-    CVC4_API_ARG_CHECK_EXPECTED(keyword != "status" || value == "sat"
-                                    || value == "unsat" || value == "unknown",
-                                value)
-        << "'sat', 'unsat' or 'unknown'";
-  }
+  CVC4_API_ARG_CHECK_EXPECTED(
+      keyword == "source" || keyword == "category" || keyword == "difficulty"
+          || keyword == "filename" || keyword == "license" || keyword == "name"
+          || keyword == "notes" || keyword == "smt-lib-version"
+          || keyword == "status",
+      keyword)
+      << "'source', 'category', 'difficulty', 'filename', 'license', 'name', "
+         "'notes', 'smt-lib-version' or 'status'";
+  CVC4_API_ARG_CHECK_EXPECTED(keyword != "smt-lib-version" || value == "2"
+                                  || value == "2.0" || value == "2.5"
+                                  || value == "2.6" || value == "2.6.1",
+                              value)
+      << "'2.0', '2.5', '2.6' or '2.6.1'";
+  CVC4_API_ARG_CHECK_EXPECTED(keyword != "status" || value == "sat"
+                                  || value == "unsat" || value == "unknown",
+                              value)
+      << "'sat', 'unsat' or 'unknown'";
 
   d_smtEngine->setInfo(keyword, value);
 }

@@ -1964,7 +1964,6 @@ void QuantConflictFind::check(Theory::Effort level, QEffort quant_e)
     if (level >= Theory::EFFORT_FULL)
     {
       Trace("qcf-warn") << "ALREADY IN CONFLICT? " << level << std::endl;
-      // Assert( false );
     }
     return;
   }
