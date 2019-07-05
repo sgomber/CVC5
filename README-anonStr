@@ -3,8 +3,9 @@ To anonymize a benchmark, call CVC4 with `--strings-exp
 output).
 
 To dump the benchmark that was generated to actually perform the 
-anonymization, you can use `--strings-exp --anonymize-strings -qq 
---dump anonymization-benchmark`.
+anonymization, you can use
+
+--strings-exp --anonymize-strings -qq --dump anonymization-benchmark
 
 By default, the anonymizer will preserve the length of the different 
 string literals. This can be disabled with 

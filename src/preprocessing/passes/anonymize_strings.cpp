@@ -71,26 +71,37 @@ public:
 void addToGraph( Node l, 
                  CtnNode& cl,
                   std::map< Node, CtnNode >& graph,
-                  std::vector< Node >& toProcess,
+                  std::unordered_set<Node, NodeHashFunction>& toProcess,
                   unsigned dir,
                   std::unordered_set<Node, NodeHashFunction>& processed,
                   std::unordered_set<Node, NodeHashFunction>& transCtn
               )
 {
-  std::vector< Node > nextToProcess;
+  std::unordered_set<Node, NodeHashFunction> nextToProcess;
   do
   {
     for( const Node& lp : toProcess )
     {
-      if( processed.find(lp)==processed.end() )
+      if( l==lp )
       {
+        // ignore self
+        continue;
+      }
+      if( processed.find(lp)!=processed.end() )
+      {
+        // already processed
         continue;
       }
       processed.insert(lp);
+      Trace("str-anon-graph-debug") << "- check " << l << " <> " << lp << ", dir=" << dir << std::endl;
       bool isEdge = false;
       if( dir==1 )
       {
-        if( transCtn.find(lp)==transCtn.end() )
+        if( transCtn.find(lp)!=transCtn.end() )
+        {
+          Trace("str-anon-graph-debug") << "...already descendant!" << std::endl;
+        }
+        else
         {
           // only check if we don't contain it, since contains is antisymmetric
           isEdge = (lp.getConst<String>().find(l.getConst<String>())
@@ -106,6 +117,7 @@ void addToGraph( Node l,
       CtnNode& clp = graph[lp];
       if( isEdge )
       {
+        Trace("str-anon-graph-debug") << "...edge!" << std::endl;
         // add edge to graph
         cl.d_edges[dir].insert(lp);
         clp.d_edges[1-dir].insert(l);
@@ -127,6 +139,7 @@ void addToGraph( Node l,
           {
             if( lpc.find(lc)!=lpc.end() )
             {
+              Trace("str-anon-graph-debug") << "--- Detransify " << l << ", " << lp << " << " << lc << std::endl;
               // they have a common child, remove edge from parent to the
               // common child
               lpc.erase(lc);
@@ -142,11 +155,12 @@ void addToGraph( Node l,
       {
         // add next to processed
         std::unordered_set<Node, NodeHashFunction>& lpp = clp.d_edges[dir];
-        nextToProcess.insert( nextToProcess.end(), lpp.begin(), lpp.end() );
+        Trace("str-anon-graph-debug") << "...not edge!" << std::endl;
+        nextToProcess.insert(lpp.begin(), lpp.end() );
       }
     }
     toProcess.clear();
-    toProcess.insert(toProcess.end(),nextToProcess.begin(),nextToProcess.end());
+    toProcess.insert(nextToProcess.begin(),nextToProcess.end());
     nextToProcess.clear();
   }while(!toProcess.empty());
 }
@@ -167,7 +181,7 @@ bool solveAnonStrGraph(
   // construct the graph
   
   // maximal children, parents
-  std::vector< Node > baseNodes[2];
+  std::unordered_set<Node, NodeHashFunction> baseNodes[2];
   std::map< Node, CtnNode > graph;
   
   for( const Node& l : litSet )
@@ -181,15 +195,31 @@ bool solveAnonStrGraph(
     {
       std::unordered_set<Node, NodeHashFunction> processed;
       // add to graph
-      addToGraph( l, cl, graph, baseNodes[1-dir], dir, processed, transCtn );
+      std::unordered_set< Node, NodeHashFunction > toProcess = baseNodes[1-dir];
+      addToGraph( l, cl, graph, toProcess, dir, processed, transCtn );
       // if dir=0, if it has no children, it is a maximal child
       // if dir=1, if it has no parents, it is a maximal parent
-      if( cl.d_edges[dir].empty() )
+      std::unordered_set<Node, NodeHashFunction>& edges = cl.d_edges[dir];
+      if( edges.empty() )
       {
-        baseNodes[dir].push_back(l);
-        Trace("str-anon-graph") << "...it is a base node, dir=" << dir << std::endl;
+        baseNodes[dir].insert(l);
+        Trace("str-anon-graph-debug") << "*** it is a base node, dir=" << dir << std::endl;
+      }
+      else
+      {
+        Trace("str-anon-graph-debug") << "*** it has " << edges.size() << " edges with dir=" << dir << std::endl;
+        // update base nodes
+        for( const Node& e : edges )
+        {
+          if( baseNodes[1-dir].find(e)!=baseNodes[1-dir].end() )
+          {
+            Trace("str-anon-graph-debug") << "--- " << e << " is no long base node dir=" << (1-dir) << std::endl;
+            baseNodes[1-dir].erase(e);
+          }
+        }
       }
     }
+    Trace("str-anon-graph-debug") << std::endl;
   }
   // print
   if( Trace.isOn("str-anon-graph") )
@@ -506,7 +536,7 @@ PreprocessingPassResult AnonymizeStrings::applyInternal(
 
   
   std::unordered_map<Node, Node, NodeHashFunction> substs;
-  if( !solveAnonStrQuery( lits, substs ) )
+  if( !solveAnonStrGraph( lits, substs ) )
   {
     return PreprocessingPassResult::NO_CONFLICT;
   }
