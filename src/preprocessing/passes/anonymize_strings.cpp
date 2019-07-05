@@ -105,20 +105,20 @@ void addToGraph(Node l,
       // To be ready, we need for each of its parents/children to have been
       // processed. This ensures we process only "maximal" nodes with respect
       // to the set of nodes that are unprocessed, which in turn means we don't
-      // add edges to nodes that we later could find to be implied by 
+      // add edges to nodes that we later could find to be implied by
       // transitivity.
       Assert(graph.find(lp) != graph.end());
       CtnNode& clp = graph[lp];
       bool ready = true;
-      for( const Node& cp : clp.d_edges[1-dir] )
+      for (const Node& cp : clp.d_edges[1 - dir])
       {
-        if( processed.find( cp )==processed.end() )
+        if (processed.find(cp) == processed.end())
         {
           ready = false;
           break;
         }
       }
-      if( !ready )
+      if (!ready)
       {
         // not ready to process, we wait.
         nextToProcess.insert(lp);
@@ -230,49 +230,50 @@ Node randomLiteral(unsigned base, unsigned l)
   return NodeManager::currentNM()->mkConst(String(vec));
 }
 
-void approxSolveGraph(std::map<Node, CtnNode>& graph,
-                      const std::unordered_set<Node, NodeHashFunction>& baseChild,
-                      std::map<Node, Node>& sol)
+void approxSolveGraph(
+    std::map<Node, CtnNode>& graph,
+    const std::unordered_set<Node, NodeHashFunction>& baseChild,
+    std::map<Node, Node>& sol)
 {
   Trace("str-anon-graph") << "Approximately solve graph..." << std::endl;
   unsigned base = 26;
-  NodeManager * nm = NodeManager::currentNM();
+  NodeManager* nm = NodeManager::currentNM();
   // get the unprocessed nodes
   std::unordered_set<Node, NodeHashFunction> nextToProcess;
   std::unordered_set<Node, NodeHashFunction> toProcess = baseChild;
   do
   {
-    for( const Node& l : toProcess )
+    for (const Node& l : toProcess)
     {
-      if( sol.find(l)!=sol.end() )
+      if (sol.find(l) != sol.end())
       {
         // already processed
         continue;
       }
       Assert(graph.find(l) != graph.end());
-      CtnNode& cl = graph[l];      
+      CtnNode& cl = graph[l];
       // Are we ready to process this? Must be that all children are processed.
       bool ready = true;
-      std::vector< Node > fitSet;
+      std::vector<Node> fitSet;
       unsigned fitSetLenSum = 0;
-      std::map< Node, Node >::iterator itf;
-      for( const Node& cp : cl.d_edges[0] )
+      std::map<Node, Node>::iterator itf;
+      for (const Node& cp : cl.d_edges[0])
       {
-        itf = sol.find( cp );
-        if( itf==sol.end() )
+        itf = sol.find(cp);
+        if (itf == sol.end())
         {
           ready = false;
           break;
         }
         Node cps = itf->second;
         // add if not duplicate
-        if( std::find( fitSet.begin(), fitSet.end(), cps )==fitSet.end() )
+        if (std::find(fitSet.begin(), fitSet.end(), cps) == fitSet.end())
         {
           fitSet.push_back(cps);
           fitSetLenSum += cps.getConst<String>().size();
         }
       }
-      if( !ready )
+      if (!ready)
       {
         // not ready to process, we wait.
         nextToProcess.insert(l);
@@ -280,26 +281,26 @@ void approxSolveGraph(std::map<Node, CtnNode>& graph,
       }
       // otherwise, the parents of this may be next to process
       std::unordered_set<Node, NodeHashFunction>& clp = cl.d_edges[1];
-      nextToProcess.insert(clp.begin(),clp.end());
-      
+      nextToProcess.insert(clp.begin(), clp.end());
+
       // construct the solution for the current string
       Node lSol;
-      Assert( l.isConst() );
+      Assert(l.isConst());
       unsigned len = l.getConst<String>().size();
       // try to pack the fit set into the string's length
-      if( fitSet.empty() )
+      if (fitSet.empty())
       {
         // base case, it is a random value
         lSol = randomLiteral(base, len);
       }
       else
       {
-        if( fitSetLenSum<=len )
+        if (fitSetLenSum <= len)
         {
           // simple case, add slack and randomly arrange
-          for( unsigned i=0; i<(len-fitSetLenSum); i++ )
+          for (unsigned i = 0; i < (len - fitSetLenSum); i++)
           {
-            Node randChar = randomLiteral(base,1);
+            Node randChar = randomLiteral(base, 1);
             fitSet.push_back(randChar);
           }
           std::shuffle(fitSet.begin(), fitSet.end(), Random::getRandom());
@@ -307,32 +308,33 @@ void approxSolveGraph(std::map<Node, CtnNode>& graph,
         else
         {
           // try to fit based on overlaps TODO
-          Trace("str-anon-graph") << "********* Need fit for " << l << std::endl;
+          Trace("str-anon-graph")
+              << "********* Need fit for " << l << std::endl;
           // first, randomize
           std::shuffle(fitSet.begin(), fitSet.end(), Random::getRandom());
           // now, compute overlaps
-          
         }
-        std::vector< unsigned > vec;
-        for( const Node& f : fitSet )
+        std::vector<unsigned> vec;
+        for (const Node& f : fitSet)
         {
-          const std::vector< unsigned >& fvec = f.getConst<String>().getVec();
-          vec.insert(vec.end(),fvec.begin(),fvec.end());
+          const std::vector<unsigned>& fvec = f.getConst<String>().getVec();
+          vec.insert(vec.end(), fvec.begin(), fvec.end());
         }
         // TODO: remove
-        if( vec.size()>len )
+        if (vec.size() > len)
         {
-          vec.erase( vec.begin()+len, vec.end());
+          vec.erase(vec.begin() + len, vec.end());
         }
         lSol = nm->mkConst(String(vec));
       }
       sol[l] = lSol;
-      Trace("str-anon-graph") << "  Assign: " << l << " -> " << lSol << std::endl;
+      Trace("str-anon-graph")
+          << "  Assign: " << l << " -> " << lSol << std::endl;
     }
     toProcess.clear();
-    toProcess.insert(nextToProcess.begin(),nextToProcess.end());
+    toProcess.insert(nextToProcess.begin(), nextToProcess.end());
     nextToProcess.clear();
-  }while( !toProcess.empty() );
+  } while (!toProcess.empty());
 }
 
 bool solveAnonStrGraph(
@@ -412,19 +414,18 @@ bool solveAnonStrGraph(
     approxSolveGraph(graph, baseNodes[0], sol);
     // TODO
     bool isBest = true;
-    
-    if( isBest )
+
+    if (isBest)
     {
       bestSol = sol;
     }
   }
-  
+
   // copy to substitution
-  for( const std::pair< const Node, Node >& bs : bestSol )
+  for (const std::pair<const Node, Node>& bs : bestSol)
   {
     substs[bs.first] = bs.second;
   }
-  
 
   return true;
 }
