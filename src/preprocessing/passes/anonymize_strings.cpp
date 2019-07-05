@@ -18,6 +18,7 @@
 
 #include <unordered_map>
 #include <unordered_set>
+#include "util/random.h"
 
 #include "options/strings_options.h"
 
@@ -65,6 +66,16 @@ class CtnNode
       Trace(c) << std::endl;
     }
   }
+  
+  void removeEdge( std::map<Node, CtnNode>& graph, Node c, unsigned dir )
+  {
+    Assert( d_edges[dir].find(c)!=d_edges[dir].end() );
+    d_edges[dir].erase(c);
+    Assert( graph.find(c)!=graph.end() );
+    CtnNode& cc = graph[c];
+    Assert( cc.d_edges[1-dir].find(d_this)!=cc.d_edges[1-dir].end());
+    cc.d_edges[1-dir].erase(d_this);
+  }
 };
 
 void addToGraph(Node l,
@@ -92,7 +103,7 @@ void addToGraph(Node l,
       }
       processed.insert(lp);
       Trace("str-anon-graph-debug")
-          << "- check " << l << " <> " << lp << ", dir=" << dir << std::endl;
+          << "- check " << l << (dir==0 ? " << " : " >> ") << lp << std::endl;
       bool isEdge = false;
       if (dir == 1)
       {
@@ -133,21 +144,38 @@ void addToGraph(Node l,
         }
         else
         {
-          // if they have common children, we de-transify it
-          std::unordered_set<Node, NodeHashFunction>& lpc = clp.d_edges[0];
-          for (const Node& lc : cl.d_edges[0])
+          // if they have common children/parent, we de-transify it
+          for( unsigned dirl = 0; dirl<=1; dirl++ )
           {
-            if (lpc.find(lc) != lpc.end())
+            std::unordered_set<Node, NodeHashFunction>& lpc = clp.d_edges[dirl];
+            std::vector< Node > toErase;
+            for (const Node& lc : cl.d_edges[dirl])
             {
-              Trace("str-anon-graph-debug") << "--- Detransify " << l << ", "
-                                            << lp << " << " << lc << std::endl;
-              // they have a common child, remove edge from parent to the
-              // common child
-              lpc.erase(lc);
-              Assert(graph.find(lc) != graph.end());
-              CtnNode& clc = graph[lc];
-              Assert(clc.d_edges[1].find(lp) != clc.d_edges[1].end());
-              clc.d_edges[1].erase(lp);
+              if (lpc.find(lc) != lpc.end())
+              {
+                Trace("str-anon-graph-debug") << "--- Detransify " << l << ", "
+                                              << lp << (dirl==0 ? " << " : " >> ") << lc << std::endl;
+                // they have a common child/parent, remove transitive edge
+                Assert(graph.find(lc) != graph.end());
+                CtnNode& clc = graph[lc];
+                if( dirl==0 )
+                {
+                  lpc.erase(lc);
+                  Assert(clc.d_edges[1-dirl].find(lp) != clc.d_edges[1-dirl].end());
+                  clc.d_edges[1-dirl].erase(lp);
+                }
+                else
+                {
+                  toErase.push_back(lc);                  
+                  Assert(clc.d_edges[1-dirl].find(l) != clc.d_edges[1-dirl].end());
+                  clc.d_edges[1-dirl].erase(l);
+                }
+              }
+            }
+            // now out of the loop, erase
+            for( const Node& lc : toErase )
+            {
+              cl.d_edges[dirl].erase(lc);
             }
           }
         }
@@ -166,19 +194,45 @@ void addToGraph(Node l,
   } while (!toProcess.empty());
 }
 
+Node randomLiteral( unsigned base, unsigned l ){
+  std::vector<unsigned> vec;
+  for( unsigned i=0; i<l; i++ )
+  {
+    // add a digit
+    unsigned digit = Random::getRandom().pick(0, base - 1);
+    vec.push_back(digit);
+  }
+  return NodeManager::currentNM()->mkConst(String(vec));
+}
+
+void approxSolveGraph( std::map<Node, CtnNode>& graph, std::unordered_set<Node, NodeHashFunction>& baseChild, std::map< Node, Node >& sol )
+{
+  unsigned base = 26;
+  // first assign random values to the base children
+  for( const Node& b : baseChild )
+  {
+    sol[b] = randomLiteral(base,b.getConst<String>().size());
+  }
+  
+  // get the unprocessed nodes
+  
+  
+  
+}
+
 bool solveAnonStrGraph(
     const std::unordered_map<Node, Node, NodeHashFunction>& lits,
     std::unordered_map<Node, Node, NodeHashFunction>& substs)
 {
-  std::unordered_set<Node, NodeHashFunction> litSet;
+  std::vector<Node> litSet;
   for (const std::pair<const Node, Node>& ls : lits)
   {
-    litSet.insert(ls.first);
+    litSet.push_back(ls.first);
   }
 
   Trace("str-anon-graph") << "String literals: " << lits << std::endl;
 
-  // construct the graph
+  // ------------ construct the graph
 
   // maximal children, parents
   std::unordered_set<Node, NodeHashFunction> baseNodes[2];
@@ -234,7 +288,14 @@ bool solveAnonStrGraph(
     }
   }
 
-  // now solve
+  // ------------ solve for the graph
+  
+  for( unsigned r=0; r<1; r++ )
+  {
+    std::map< Node, Node > sol;
+    approxSolveGraph( graph, baseNodes[0], sol );
+  }
+  
 
   return false;
 }
@@ -266,7 +327,7 @@ void collectLits(Node n, std::unordered_map<Node, Node, NodeHashFunction>* lits)
     }
     else if (!it->second)
     {
-      if (cur.getKind() == kind::CONST_STRING)
+      if (cur.getKind() == kind::CONST_STRING && cur.getConst<String>().size()>0)
       {
         if (lits->find(cur) == lits->end())
         {
