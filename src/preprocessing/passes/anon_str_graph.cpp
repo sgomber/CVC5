@@ -74,7 +74,7 @@ void Graph::build(const std::vector<Node>& litSet,
   {
     add(l, valMap);
   }
-  // print
+  // debug print
   if (Trace.isOn("str-anon-graph"))
   {
     for (const std::pair<const Node, CtnNode>& c : d_graph)

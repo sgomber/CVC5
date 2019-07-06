@@ -180,7 +180,7 @@ unsigned analyzeSolutionNode(Node l,
   return 0;
 }
 
-void approxSolveGraph(Graph& graph, std::map<Node, Node>& sol)
+void approxSolveGraph(Graph& graph, Graph& graphCheck,std::map<Node, Node>& sol)
 {
   unsigned areps = 1;
   Trace("str-anon-graph") << "Approximately solve graph..." << std::endl;
@@ -248,6 +248,7 @@ void approxSolveGraph(Graph& graph, std::map<Node, Node>& sol)
         }
       }
       sol[l] = lSol;
+      graphCheck.add(l,sol);
       Trace("str-anon-graph")
           << "  Assign: " << l << " -> " << lSol << std::endl;
     }
@@ -259,11 +260,10 @@ void approxSolveGraph(Graph& graph, std::map<Node, Node>& sol)
 
 unsigned analyzeSolution(const std::vector<Node>& litSet,
                          const std::map<Node, Node>& sol,
-                         const Graph& graph)
+                         const Graph& graph,
+                         const Graph& graphCheck
+                        )
 {
-  Graph graphCheck;
-  graphCheck.build(litSet, sol);
-
   unsigned falseCtn[2] = {0, 0};
 
   // check graph vs graphCheck
@@ -339,11 +339,12 @@ bool solveAnonStrGraph(
   for (unsigned r = 0; r < nreps; r++)
   {
     Trace("str-anon-solve") << "Solve: Solve #" << r << "..." << std::endl;
+    Graph graphCheck;
     std::map<Node, Node> sol;
-    approxSolveGraph(graph, sol);
+    approxSolveGraph(graph, graphCheck, sol);
 
     Trace("str-anon-solve") << "Solve: Analyze #" << r << "..." << std::endl;
-    unsigned score = analyzeSolution(litSet, sol, graph);
+    unsigned score = analyzeSolution(litSet, sol, graph, graphCheck);
     Trace("str-anon-solve") << "Solve: ...score=" << score << std::endl;
     if (r == 0 || score < bestScore)
     {
