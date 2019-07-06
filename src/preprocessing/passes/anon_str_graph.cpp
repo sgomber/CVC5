@@ -72,7 +72,7 @@ void Graph::build(const std::vector<Node>& litSet,
 {
   for (const Node& l : litSet)
   {
-    add(l);
+    add(l, valMap);
   }
   // print
   if (Trace.isOn("str-anon-graph"))
@@ -136,7 +136,7 @@ void Graph::addInternal(Node l,
       // to the set of nodes that are unprocessed, which in turn means we don't
       // add edges to nodes that we later could find to be implied by
       // transitivity.
-      Assert(d_find(lp) != d_end());
+      Assert(d_graph.find(lp) != d_graph.end());
       CtnNode& clp = d_graph[lp];
       bool ready = true;
       for (const Node& cp : clp.d_edges[1 - dir])
@@ -214,7 +214,7 @@ void Graph::addInternal(Node l,
                     << "--- Detransify " << l << ", " << lp
                     << (dirl == 0 ? " << " : " >> ") << lc << std::endl;
                 // they have a common child/parent, remove transitive edge
-                Assert(d_find(lc) != d_end());
+                Assert(d_graph.find(lc) != d_graph.end());
                 CtnNode& clc = d_graph[lc];
                 if (dirl == 0)
                 {
