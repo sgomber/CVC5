@@ -19,6 +19,22 @@ header = "options/strings_options.h"
   help       = "preserve lengths when anonymizing strings"
 
 [[option]]
+  name       = "anonymizeStringsPreserveCtn"
+  category   = "regular"
+  long       = "anonymize-strings-preserve-ctn"
+  type       = "bool"
+  default    = "true"
+  help       = "preserve containment relationships when anonymizing strings"
+
+[[option]]
+  name       = "anonymizeStringsPreservePrefix"
+  category   = "regular"
+  long       = "anonymize-strings-preserve-prefix"
+  type       = "bool"
+  default    = "true"
+  help       = "preserve prefix/suffix relationships when anonymizing strings"
+
+[[option]]
   name       = "anonymizeStringsUseDistinct"
   category   = "regular"
   long       = "anonymize-strings-use-distinct"

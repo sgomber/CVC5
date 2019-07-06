@@ -30,6 +30,26 @@ using namespace CVC4::theory;
 
 namespace {
 
+/*  
+class NodeFunction
+{
+public:
+  virtual Node run(Node n) = 0:
+};
+
+class NodeFunctionId : public NodeFunction
+{
+public:
+  Node run(Node n) override { return n; }
+};
+
+class NodeFunctionId : public NodeFunction
+{
+public:
+  Node run(Node n) override { return n; }
+};
+*/
+  
 class CtnNode
 {
  public:
@@ -84,8 +104,14 @@ void addToGraph(Node l,
                 std::unordered_set<Node, NodeHashFunction>& toProcess,
                 unsigned dir,
                 std::unordered_set<Node, NodeHashFunction>& processed,
-                std::unordered_set<Node, NodeHashFunction>& transCtn)
+                std::unordered_set<Node, NodeHashFunction>& transCtn, const std::map< Node, Node >& valMap)
 {
+  Node lv = l;
+  std::map< Node, Node >::const_iterator itv = valMap.find(l);
+  if( itv!=valMap.end() )
+  {
+    lv = itv->second;
+  }
   std::unordered_set<Node, NodeHashFunction> nextToProcess;
   do
   {
@@ -128,6 +154,13 @@ void addToGraph(Node l,
       Trace("str-anon-graph-debug")
           << "- check " << l << (dir == 0 ? " << " : " >> ") << lp << std::endl;
       bool isEdge = false;
+      // get the value for lp
+      Node lpv = lp;
+      itv = valMap.find(lp);
+      if( itv!=valMap.end() )
+      {
+        lpv = itv->second;
+      }      
       if (dir == 1)
       {
         if (transCtn.find(lp) != transCtn.end())
@@ -138,13 +171,13 @@ void addToGraph(Node l,
         else
         {
           // only check if we don't contain it, since contains is antisymmetric
-          isEdge = (lp.getConst<String>().find(l.getConst<String>())
+          isEdge = (lpv.getConst<String>().find(lv.getConst<String>())
                     != std::string::npos);
         }
       }
       else
       {
-        isEdge = (l.getConst<String>().find(lp.getConst<String>())
+        isEdge = (lv.getConst<String>().find(lpv.getConst<String>())
                   != std::string::npos);
       }
       if (isEdge)
@@ -216,6 +249,62 @@ void addToGraph(Node l,
     toProcess.insert(nextToProcess.begin(), nextToProcess.end());
     nextToProcess.clear();
   } while (!toProcess.empty());
+}
+
+void buildGraph(std::vector<Node>& litSet, std::map<Node, CtnNode>& graph, std::unordered_set<Node, NodeHashFunction>& baseChildren, const std::map< Node, Node >& valMap)
+{
+  std::unordered_set<Node, NodeHashFunction> baseNodes[2];
+  for (const Node& l : litSet)
+  {
+    Trace("str-anon-graph") << "Process literal " << l << std::endl;
+    CtnNode& cl = graph[l];
+    cl.d_this = l;
+    std::unordered_set<Node, NodeHashFunction> transCtn;
+    // process downward, upward
+    for (unsigned dir = 0; dir <= 1; dir++)
+    {
+      std::unordered_set<Node, NodeHashFunction> processed;
+      // add to graph
+      std::unordered_set<Node, NodeHashFunction> toProcess = baseNodes[1 - dir];
+      addToGraph(l, cl, graph, toProcess, dir, processed, transCtn,valMap);
+      // if dir=0, if it has no children, it is a maximal child
+      // if dir=1, if it has no parents, it is a maximal parent
+      std::unordered_set<Node, NodeHashFunction>& edges = cl.d_edges[dir];
+      if (edges.empty())
+      {
+        baseNodes[dir].insert(l);
+        Trace("str-anon-graph-debug")
+            << "*** it is a base node, dir=" << dir << std::endl;
+      }
+      else
+      {
+        Trace("str-anon-graph-debug") << "*** it has " << edges.size()
+                                      << " edges with dir=" << dir << std::endl;
+        // update base nodes
+        for (const Node& e : edges)
+        {
+          if (baseNodes[1 - dir].find(e) != baseNodes[1 - dir].end())
+          {
+            Trace("str-anon-graph-debug")
+                << "--- " << e << " is no long base node dir=" << (1 - dir)
+                << std::endl;
+            baseNodes[1 - dir].erase(e);
+          }
+        }
+      }
+    }
+    Trace("str-anon-graph-debug") << std::endl;
+  }
+  // print
+  if (Trace.isOn("str-anon-graph"))
+  {
+    for (const std::pair<const Node, CtnNode>& c : graph)
+    {
+      c.second.debugPrint("str-anon-graph");
+    }
+  }
+  // copy base children 
+  baseChildren = baseNodes[0];
 }
 
 Node randomLiteral(unsigned base, unsigned l)
@@ -295,6 +384,85 @@ void approxSolveGraph(
       }
       else
       {
+        // 
+        if (fitSetLenSum > len)
+        {
+          // try to fit based on overlaps TODO
+          Trace("str-anon-graph")
+              << "********* Need fit for " << l << " (" << fitSetLenSum << "/" << len << ")" << std::endl;
+          // first, randomize
+          std::vector< Node > fitSetM = fitSet;
+          fitSet.clear();
+          std::shuffle(fitSetM.begin(), fitSetM.end(), Random::getRandom());
+          // now, compute overlaps
+          std::unordered_set< unsigned > rm;
+          for( const Node& f : fitSetM )
+          {
+            // find the best index to merge
+            std::size_t maxOverlap = 0;
+            bool maxOverlapRev = false;
+            unsigned maxOverlapIndex = 0;
+            // only if we still need to
+            if( fitSetLenSum > len )
+            {
+              String fs = f.getConst<String>();
+              for( unsigned j=0, fsize = fitSet.size(); j<fsize; j++ )
+              {
+                Node fo = fitSet[j];
+                Trace("str-anon-graph-debug") << "Overlaps of " << f << " " << fo << "..." << std::endl;
+                String fos = fo.getConst<String>();
+                for( unsigned d=0; d<2; d++ )
+                {
+                  std::size_t oVal = d==0 ? fos.overlap(fs) : fos.roverlap(fs);
+                  Trace("str-anon-graph-debug") << "  overlap " << d << " is " << oVal << std::endl;
+                  // for randomization, do not always choose the maximal
+                  if( oVal>maxOverlap && ( maxOverlap==0 || Random::getRandom().pickWithProb(0.75)) )
+                  {
+                    maxOverlap = oVal;
+                    maxOverlapRev = (d==1);
+                    maxOverlapIndex = j;
+                    Trace("str-anon-graph-debug") << "Max overlap " << maxOverlap << " at index " << j << std::endl;
+                  }
+                }
+              }
+            }
+            Trace("str-anon-graph-debug") << "Finish, max overlap is " << maxOverlap << std::endl;
+            if( maxOverlap>0 )
+            {
+              fitSetLenSum -= maxOverlap;
+              // merge the two strings
+              std::vector< unsigned > mVec;
+              for( unsigned m=0; m<2; m++ )
+              {
+                Node sm = (m==0)==maxOverlapRev ? f : fitSet[maxOverlapIndex];
+                const std::vector< unsigned >& smVec = sm.getConst<String>().getVec();
+                // compute the size to keep
+                Assert( maxOverlap<smVec.size() );
+                unsigned nmsSize = smVec.size()-maxOverlap;
+                if( m==0 )
+                {
+                  mVec.insert(mVec.end(),smVec.begin(),smVec.begin()+nmsSize);
+                }
+                else
+                {
+                  mVec.insert(mVec.end(),smVec.begin()+nmsSize,smVec.end());
+                }
+              }
+              Node merged = nm->mkConst(String(mVec));
+              Trace("str-anon-graph") << "*** merge " << f << " and " << fitSet[maxOverlapIndex] << " by " << maxOverlap << " characters to generate " << merged << std::endl;
+              fitSet[maxOverlapIndex] = merged;
+            }
+            else
+            {
+              fitSet.push_back(f);
+            }
+          }
+          if (fitSetLenSum > len)
+          {
+            Trace("str-anon-graph") << "**** could not merge " << fitSet << " to " << len << std::endl;
+          }
+        }
+        // now, add if 
         if (fitSetLenSum <= len)
         {
           // simple case, add slack and randomly arrange
@@ -305,23 +473,14 @@ void approxSolveGraph(
           }
           std::shuffle(fitSet.begin(), fitSet.end(), Random::getRandom());
         }
-        else
-        {
-          // try to fit based on overlaps TODO
-          Trace("str-anon-graph")
-              << "********* Need fit for " << l << std::endl;
-          // first, randomize
-          std::shuffle(fitSet.begin(), fitSet.end(), Random::getRandom());
-          // now, compute overlaps
-        }
         std::vector<unsigned> vec;
         for (const Node& f : fitSet)
         {
           const std::vector<unsigned>& fvec = f.getConst<String>().getVec();
           vec.insert(vec.end(), fvec.begin(), fvec.end());
         }
-        // TODO: remove
-        if (vec.size() > len)
+        // remove a suffix if we failed to shrink
+        if (vec.size() > len && options::anonymizeStringsPreserveLengths())
         {
           vec.erase(vec.begin() + len, vec.end());
         }
@@ -352,58 +511,10 @@ bool solveAnonStrGraph(
   // ------------ construct the graph
 
   // maximal children, parents
-  std::unordered_set<Node, NodeHashFunction> baseNodes[2];
   std::map<Node, CtnNode> graph;
-
-  for (const Node& l : litSet)
-  {
-    Trace("str-anon-graph") << "Process literal " << l << std::endl;
-    CtnNode& cl = graph[l];
-    cl.d_this = l;
-    std::unordered_set<Node, NodeHashFunction> transCtn;
-    // process downward, upward
-    for (unsigned dir = 0; dir <= 1; dir++)
-    {
-      std::unordered_set<Node, NodeHashFunction> processed;
-      // add to graph
-      std::unordered_set<Node, NodeHashFunction> toProcess = baseNodes[1 - dir];
-      addToGraph(l, cl, graph, toProcess, dir, processed, transCtn);
-      // if dir=0, if it has no children, it is a maximal child
-      // if dir=1, if it has no parents, it is a maximal parent
-      std::unordered_set<Node, NodeHashFunction>& edges = cl.d_edges[dir];
-      if (edges.empty())
-      {
-        baseNodes[dir].insert(l);
-        Trace("str-anon-graph-debug")
-            << "*** it is a base node, dir=" << dir << std::endl;
-      }
-      else
-      {
-        Trace("str-anon-graph-debug") << "*** it has " << edges.size()
-                                      << " edges with dir=" << dir << std::endl;
-        // update base nodes
-        for (const Node& e : edges)
-        {
-          if (baseNodes[1 - dir].find(e) != baseNodes[1 - dir].end())
-          {
-            Trace("str-anon-graph-debug")
-                << "--- " << e << " is no long base node dir=" << (1 - dir)
-                << std::endl;
-            baseNodes[1 - dir].erase(e);
-          }
-        }
-      }
-    }
-    Trace("str-anon-graph-debug") << std::endl;
-  }
-  // print
-  if (Trace.isOn("str-anon-graph"))
-  {
-    for (const std::pair<const Node, CtnNode>& c : graph)
-    {
-      c.second.debugPrint("str-anon-graph");
-    }
-  }
+  std::unordered_set<Node, NodeHashFunction> baseChildren;
+  std::map<Node, Node > emptyMap;
+  buildGraph(litSet,graph,baseChildren,emptyMap);
 
   // ------------ solve for the graph
   unsigned nreps = 1;
@@ -411,7 +522,7 @@ bool solveAnonStrGraph(
   for (unsigned r = 0; r < nreps; r++)
   {
     std::map<Node, Node> sol;
-    approxSolveGraph(graph, baseNodes[0], sol);
+    approxSolveGraph(graph, baseChildren, sol);
     // TODO
     bool isBest = true;
 
@@ -432,7 +543,7 @@ bool solveAnonStrGraph(
 
 /// ---------------------------------------------------------------
 
-void collectLits(Node n, std::unordered_map<Node, Node, NodeHashFunction>* lits)
+void collectLits(Node n, std::unordered_map<Node, Node, NodeHashFunction>* lits, std::unordered_set<Node, NodeHashFunction>* reranges)
 {
   NodeManager* nm = NodeManager::currentNM();
   std::unordered_map<TNode, bool, TNodeHashFunction> visited;
@@ -457,13 +568,19 @@ void collectLits(Node n, std::unordered_map<Node, Node, NodeHashFunction>* lits)
     }
     else if (!it->second)
     {
-      if (cur.getKind() == kind::CONST_STRING
-          && cur.getConst<String>().size() > 0)
+      if (cur.getKind() == kind::CONST_STRING)
       {
-        if (lits->find(cur) == lits->end())
+        if( cur.getConst<String>().size() > 0 )
         {
-          (*lits)[cur] = nm->mkSkolem("s", nm->stringType());
+          if (lits->find(cur) == lits->end())
+          {
+            (*lits)[cur] = nm->mkSkolem("s", nm->stringType());
+          }
         }
+      }
+      else if( cur.getKind()==kind::REGEXP_RANGE )
+      {
+        reranges->insert(cur);
       }
       visited[cur] = true;
     }
@@ -725,33 +842,74 @@ PreprocessingPassResult AnonymizeStrings::applyInternal(
     AssertionPipeline* assertionsToPreprocess)
 {
   std::unordered_map<Node, Node, NodeHashFunction> lits;
+  std::unordered_set<Node, NodeHashFunction> reranges;
   for (size_t i = 0, size = assertionsToPreprocess->size(); i < size; ++i)
   {
-    collectLits((*assertionsToPreprocess)[i], &lits);
+    collectLits((*assertionsToPreprocess)[i], &lits, &reranges);
   }
 
   Trace("anonymize-strings")
       << "String literal skolem map: " << lits << std::endl;
 
   std::unordered_map<Node, Node, NodeHashFunction> substs;
+  //if (!solveAnonStrQuery(lits, substs))
   if (!solveAnonStrGraph(lits, substs))
   {
     return PreprocessingPassResult::NO_CONFLICT;
   }
 
-  std::unordered_map<TNode, TNode, TNodeHashFunction> cache;
+  NodeManager * nm = NodeManager::currentNM();
+  std::unordered_map<TNode, TNode, TNodeHashFunction> cache;  
+  std::unordered_map<TNode, TNode, TNodeHashFunction> rcache;  
+  //fix the re ranges as a second substitution
+  std::unordered_map<Node, Node, NodeHashFunction> rerangeSubsts;
+  for( const Node& rr : reranges )
+  {
+    Node nrr = rr.substitute(substs.begin(), substs.end(), cache);
+    String rr0s = rr[0].getConst<String>();
+    String rr1s = rr[1].getConst<String>();
+    Assert( rr1s.getVec()[0]>rr0s.getVec()[0]);
+    unsigned rdiff = rr1s.getVec()[0] - rr0s.getVec()[0];
+    // try to go the direction that doesn't cause out of bounds
+    Node nrr0 = nrr[0];
+    Node nrr1 = nrr[1];
+    String nrr0s = nrr0.getConst<String>();
+    String nrr1s = nrr1.getConst<String>();
+    if( nrr0s.getVec()[0]+rdiff<String::num_codes() )
+    {
+      std::vector< unsigned > vec;
+      vec.push_back(nrr0s.getVec()[0]+rdiff);
+      nrr1 = nm->mkConst(String(vec));
+    }
+    else if( nrr1s.getVec()[0]>rdiff )
+    {
+      std::vector< unsigned > vec;
+      vec.push_back(nrr1s.getVec()[0]-rdiff);
+      nrr0 = nm->mkConst(String(vec));
+    }
+    // otherwise don't bother fixing
+    Node nrrf = nm->mkNode(kind::REGEXP_RANGE, nrr0, nrr1 );
+    Trace("anon-str") << "*** Fix RE range: " << nrr << " -> " << nrrf << ", from " << rr << std::endl;
+    rerangeSubsts[nrr] = nrrf;
+  }
+
   for (size_t i = 0, size = assertionsToPreprocess->size(); i < size; ++i)
   {
-    assertionsToPreprocess->replace(i,
-                                    (*assertionsToPreprocess)[i].substitute(
-                                        substs.begin(), substs.end(), cache));
+    Node currA = (*assertionsToPreprocess)[i];
+    Node newA = currA.substitute(substs.begin(), substs.end(), cache);
+    if( !rerangeSubsts.empty() )
+    {
+      newA = newA.substitute(rerangeSubsts.begin(),rerangeSubsts.end(),rcache);
+    }
+    assertionsToPreprocess->replace(i,newA);
 
+    
     // HACK!!!!
     std::cout << "(assert " << (*assertionsToPreprocess)[i] << ")" << std::endl;
   }
 
   // HACK!!!!
-  std::cout << "(check-sat)" << std::endl;
+  //std::cout << "(check-sat)" << std::endl;
 
   return PreprocessingPassResult::NO_CONFLICT;
 }
