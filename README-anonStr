@@ -1,14 +1,24 @@
-To anonymize a benchmark, call CVC4 with `--strings-exp 
---anonymize-strings -qq` (the `-qq` just suppresses a spurious "sat" 
-output).
+To anonymize a benchmark, call CVC4 with:
+
+--strings-exp --anon-str -qq
+
+The `-qq` just suppresses a spurious "sat" output.
+
+
+By default, the anonymizer will preserve the length of the different 
+string literals. This can be disabled with:
+
+--no-anon-str-preserve-lengths
+
+
+=============================================================================
+
+If you wish for CVC4 to strictly preserve the relationships that are required
+during anonymization, use:
+
+--strings-exp --anon-str-query --anon-str -qq
 
 To dump the benchmark that was generated to actually perform the 
 anonymization, you can use
 
---strings-exp --anonymize-strings -qq --dump anonymization-benchmark
-
-By default, the anonymizer will preserve the length of the different 
-string literals. This can be disabled with 
-`--no-anonymize-strings-preserve-lengths`. It also preserves negative 
-containment relationships, which can be disabled using 
-`--no-anonymize-strings-use-distinct`.
+--strings-exp --anon-str-query --anon-str -qq --dump anonymization-benchmark
