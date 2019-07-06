@@ -268,7 +268,7 @@ unsigned analyzeSolution(const std::vector<Node>& litSet,
 
 void approxSolveGraph(Graph& graph, Graph& graphCheck,std::map<Node, Node>& sol)
 {
-  unsigned areps = 1;
+  unsigned areps = options::anonymizeStringsEffortLocal();
   Trace("str-anon-graph") << "Approximately solve graph..." << std::endl;
   // get the unprocessed nodes
   std::unordered_set<Node, NodeHashFunction> nextToProcess;
@@ -323,14 +323,28 @@ void approxSolveGraph(Graph& graph, Graph& graphCheck,std::map<Node, Node>& sol)
       // construct the solution for the current string
       Node lSol;
       unsigned bestScore = 0;
+      std::unordered_set< Node, NodeHashFunction > lscProc;
+      Trace("str-anon-solve-local") << "Try assign " << l << std::endl;
       for (unsigned r = 0; r < areps; r++)
       {
         Node lsc = approxSolveNode(l, cl, fitSet, fitSetLenSum);
+        if( lscProc.find(lsc)!=lscProc.end() )
+        {
+          // already tried
+          continue;
+        }
+        lscProc.insert(lsc);
         unsigned score = areps==1 ? 0 : analyzeSolutionNode(l, cl, lsc, graphCheck, sol);
+        Trace("str-anon-solve-local") << "  Score " << lsc << " is " << score << std::endl;
         if (r == 0 || score < bestScore)
         {
           bestScore = score;
           lSol = lsc;
+          if( score==0 )
+          {
+            // cannot improve
+            break;
+          }
         }
       }
       sol[l] = lSol;
@@ -381,6 +395,11 @@ bool solveAnonStrGraph(
       Trace("str-anon-solve") << "Solve: new best!" << std::endl;
       bestScore = score;
       bestSol = sol;
+      if( score==0 )
+      {
+        // cannot improve
+        break;
+      }
     }
   }
 

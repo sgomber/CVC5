@@ -51,6 +51,14 @@ header = "options/strings_options.h"
   help       = "effort multiplier for strings anonymization"
 
 [[option]]
+  name       = "anonymizeStringsEffortLocal"
+  category   = "regular"
+  long       = "anon-str-effort-local=N"
+  type       = "int"
+  default    = "1"
+  help       = "local effort multiplier for strings anonymization"
+
+[[option]]
   name       = "anonymizeStringsQuery"
   category   = "regular"
   long       = "anon-str-query"
