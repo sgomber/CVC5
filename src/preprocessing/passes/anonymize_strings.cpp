@@ -173,9 +173,17 @@ Node approxSolveNode(Node l,
 unsigned analyzeSolutionNode(Node l,
                              CtnNode& cl,
                              Node lSol,
+                             const Graph& graphCheck,
                              const std::map<Node, Node>& sol)
 {
-  // TODO
+  for( unsigned r=0; r<2; r++ )
+  {
+    // check the base nodes of the graph check
+    for( const Node& lc : graphCheck.d_baseNodes[r] )
+    {
+      
+    }
+  }
 
   return 0;
 }
@@ -240,7 +248,7 @@ void approxSolveGraph(Graph& graph, Graph& graphCheck,std::map<Node, Node>& sol)
       for (unsigned r = 0; r < areps; r++)
       {
         Node lsc = approxSolveNode(l, cl, fitSet, fitSetLenSum);
-        unsigned score = analyzeSolutionNode(l, cl, lsc, sol);
+        unsigned score = analyzeSolutionNode(l, cl, lsc, graphCheck, sol);
         if (r == 0 || score < bestScore)
         {
           bestScore = score;
