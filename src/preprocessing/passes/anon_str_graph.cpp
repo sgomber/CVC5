@@ -22,10 +22,8 @@ namespace passes {
 
 using namespace CVC4::theory;
 
-
-void CtnNode::getTransitiveClosure(Graph& graph,
-                          std::unordered_set<Node, NodeHashFunction>& t,
-                          unsigned dir)
+void CtnNode::getTransitiveClosure(
+    Graph& graph, std::unordered_set<Node, NodeHashFunction>& t, unsigned dir)
 {
   if (t.find(d_this) != t.end())
   {
@@ -63,14 +61,14 @@ void CtnNode::removeEdge(Graph& graph, Node c, unsigned dir)
   cc.d_edges[1 - dir].erase(d_this);
 }
 
-std::map< Node, Node > Graph::d_emptyMap;
+std::map<Node, Node> Graph::d_emptyMap;
 
 void Graph::build(const std::vector<Node>& litSet)
 {
-  build(litSet,d_emptyMap);
+  build(litSet, d_emptyMap);
 }
 void Graph::build(const std::vector<Node>& litSet,
-                const std::map<Node, Node>& valMap)
+                  const std::map<Node, Node>& valMap)
 {
   for (const Node& l : litSet)
   {
@@ -85,12 +83,8 @@ void Graph::build(const std::vector<Node>& litSet,
     }
   }
 }
-void Graph::add(Node l)
-{
-  add(l,d_emptyMap);
-}
-void Graph::add(Node l,
-                const std::map<Node, Node>& valMap)
+void Graph::add(Node l) { add(l, d_emptyMap); }
+void Graph::add(Node l, const std::map<Node, Node>& valMap)
 {
   Trace("str-anon-graph") << "Add literal " << l << std::endl;
   CtnNode& cl = d_graph[l];
@@ -108,12 +102,12 @@ void Graph::add(Node l,
 }
 
 void Graph::addInternal(Node l,
-                CtnNode& cl,
-                std::unordered_set<Node, NodeHashFunction>& toProcess,
-                unsigned dir,
-                std::unordered_set<Node, NodeHashFunction>& processed,
-                std::unordered_set<Node, NodeHashFunction>& transCtn,
-                const std::map<Node, Node>& valMap)
+                        CtnNode& cl,
+                        std::unordered_set<Node, NodeHashFunction>& toProcess,
+                        unsigned dir,
+                        std::unordered_set<Node, NodeHashFunction>& processed,
+                        std::unordered_set<Node, NodeHashFunction>& transCtn,
+                        const std::map<Node, Node>& valMap)
 {
   Node lv = l;
   std::map<Node, Node>::const_iterator itv = valMap.find(l);
@@ -258,7 +252,7 @@ void Graph::addInternal(Node l,
     toProcess.insert(nextToProcess.begin(), nextToProcess.end());
     nextToProcess.clear();
   } while (!toProcess.empty());
-  
+
   // if dir=0, if it has no children, it is a maximal child
   // if dir=1, if it has no parents, it is a maximal parent
   std::unordered_set<Node, NodeHashFunction>& edges = cl.d_edges[dir];

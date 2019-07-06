@@ -176,17 +176,11 @@ unsigned analyzeSolutionNode(Node l,
                              const std::map<Node, Node>& sol)
 {
   // TODO
-  
-  
-  
-  
-  
+
   return 0;
 }
 
-void approxSolveGraph(
-    Graph& graph,
-    std::map<Node, Node>& sol)
+void approxSolveGraph(Graph& graph, std::map<Node, Node>& sol)
 {
   unsigned areps = 1;
   Trace("str-anon-graph") << "Approximately solve graph..." << std::endl;
