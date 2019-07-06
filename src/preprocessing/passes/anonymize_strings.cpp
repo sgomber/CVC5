@@ -176,16 +176,94 @@ unsigned analyzeSolutionNode(Node l,
                              const Graph& graphCheck,
                              const std::map<Node, Node>& sol)
 {
+  unsigned falseCtn[2] = {0, 0};
+  String ls = l.getConst<String>();
+  String sls = lSol.getConst<String>();
   for( unsigned r=0; r<2; r++ )
   {
     // check the base nodes of the graph check
     for( const Node& lc : graphCheck.d_baseNodes[r] )
     {
-      
+      String lcs = lc.getConst<String>();
+      std::map< Node, Node >::const_iterator its = sol.find(lc);
+      Assert( its!=sol.end() );
+      String slcs = its->second.getConst<String>();
+      bool origRel = false;
+      bool solRel = false;
+      if( r==0 )
+      {
+        origRel = ls.find(lcs)!=std::string::npos; 
+        solRel = sls.find(slcs)!=std::string::npos; 
+      }
+      else
+      {
+        origRel = lcs.find(ls)!=std::string::npos; 
+        solRel = slcs.find(sls)!=std::string::npos; 
+      }
+      if( origRel!=solRel )
+      {
+        falseCtn[r]++;
+      }
     }
   }
+  
+  return falseCtn[0] + falseCtn[1];
+}
 
-  return 0;
+unsigned analyzeSolution(const std::vector<Node>& litSet,
+                         const std::map<Node, Node>& sol,
+                         const Graph& graph,
+                         const Graph& graphCheck
+                        )
+{
+  unsigned falseCtn[2] = {0, 0};
+
+  // check graph vs graphCheck
+  for (const Node& l : litSet)
+  {
+    std::map<Node, CtnNode>::const_iterator itl = graph.d_graph.find(l);
+    Assert(itl != graph.d_graph.end());
+    std::map<Node, CtnNode>::const_iterator itlc = graphCheck.d_graph.find(l);
+    Assert(itlc != graphCheck.d_graph.end());
+    const std::unordered_set<Node, NodeHashFunction>& c =
+        itl->second.d_edges[0];
+    const std::unordered_set<Node, NodeHashFunction>& cc =
+        itlc->second.d_edges[0];
+    for (unsigned e = 0; e < 2; e++)
+    {
+      const std::unordered_set<Node, NodeHashFunction>& chc = e == 0 ? c : cc;
+      const std::unordered_set<Node, NodeHashFunction>& chco = e == 0 ? cc : c;
+      bool hasError = false;
+      for (const Node& lc : chc)
+      {
+        if (std::find(chco.begin(), chco.end(), lc) == chco.end())
+        {
+          hasError = true;
+          falseCtn[e]++;
+          if (Trace.isOn("str-anon-solve-debug"))
+          {
+            Trace("str-anon-solve-debug")
+                << "  * Warn: " << l << (e == 0 ? " >> " : " << ") << lc
+                << " but values do not respect this relationship:" << std::endl;
+            std::map<Node, Node>::const_iterator itsl = sol.find(l);
+            Assert(itsl != sol.end());
+            std::map<Node, Node>::const_iterator itslc = sol.find(lc);
+            Assert(itslc != sol.end());
+            Trace("str-anon-solve-debug") << "    " << itsl->second << " <> "
+                                          << itslc->second << std::endl;
+          }
+        }
+      }
+      // no need to check opposite if they are the same size and first is subset
+      if (e == 0 && !hasError && c.size() == cc.size())
+      {
+        break;
+      }
+    }
+  }
+  Trace("str-anon-solve") << "Solve:  Analyze false ctn: " << falseCtn[0]
+                          << ", " << falseCtn[1] << std::endl;
+  return falseCtn[0] + falseCtn[1];
 }
 
 void approxSolveGraph(Graph& graph, Graph& graphCheck,std::map<Node, Node>& sol)
@@ -248,7 +326,7 @@ void approxSolveGraph(Graph& graph, Graph& graphCheck,std::map<Node, Node>& sol)
       for (unsigned r = 0; r < areps; r++)
       {
         Node lsc = approxSolveNode(l, cl, fitSet, fitSetLenSum);
-        unsigned score = analyzeSolutionNode(l, cl, lsc, graphCheck, sol);
+        unsigned score = areps==1 ? 0 : analyzeSolutionNode(l, cl, lsc, graphCheck, sol);
         if (r == 0 || score < bestScore)
         {
           bestScore = score;
@@ -264,62 +342,6 @@ void approxSolveGraph(Graph& graph, Graph& graphCheck,std::map<Node, Node>& sol)
     toProcess.insert(nextToProcess.begin(), nextToProcess.end());
     nextToProcess.clear();
   } while (!toProcess.empty());
-}
-
-unsigned analyzeSolution(const std::vector<Node>& litSet,
-                         const std::map<Node, Node>& sol,
-                         const Graph& graph,
-                         const Graph& graphCheck
-                        )
-{
-  unsigned falseCtn[2] = {0, 0};
-
-  // check graph vs graphCheck
-  for (const Node& l : litSet)
-  {
-    std::map<Node, CtnNode>::const_iterator itl = graph.d_graph.find(l);
-    Assert(itl != graph.d_graph.end());
-    std::map<Node, CtnNode>::const_iterator itlc = graphCheck.d_graph.find(l);
-    Assert(itlc != graphCheck.d_graph.end());
-    const std::unordered_set<Node, NodeHashFunction>& c =
-        itl->second.d_edges[0];
-    const std::unordered_set<Node, NodeHashFunction>& cc =
-        itlc->second.d_edges[0];
-    for (unsigned e = 0; e < 2; e++)
-    {
-      const std::unordered_set<Node, NodeHashFunction>& chc = e == 0 ? c : cc;
-      const std::unordered_set<Node, NodeHashFunction>& chco = e == 0 ? cc : c;
-      bool hasError = false;
-      for (const Node& lc : chc)
-      {
-        if (std::find(chco.begin(), chco.end(), lc) == chco.end())
-        {
-          hasError = true;
-          falseCtn[e]++;
-          if (Trace.isOn("str-anon-solve-debug"))
-          {
-            Trace("str-anon-solve-debug")
-                << "  * Warn: " << l << (e == 0 ? " >> " : " << ") << lc
-                << " but values do not respect this relationship:" << std::endl;
-            std::map<Node, Node>::const_iterator itsl = sol.find(l);
-            Assert(itsl != sol.end());
-            std::map<Node, Node>::const_iterator itslc = sol.find(lc);
-            Assert(itslc != sol.end());
-            Trace("str-anon-solve-debug") << "    " << itsl->second << " <> "
-                                          << itslc->second << std::endl;
-          }
-        }
-      }
-      // no need to check opposite if they are the same size and first is subset
-      if (e == 0 && !hasError && c.size() == cc.size())
-      {
-        break;
-      }
-    }
-  }
-  Trace("str-anon-solve") << "Solve:  Analyze false ctn: " << falseCtn[0]
-                          << ", " << falseCtn[1] << std::endl;
-  return falseCtn[0] + falseCtn[1];
 }
 
 bool solveAnonStrGraph(

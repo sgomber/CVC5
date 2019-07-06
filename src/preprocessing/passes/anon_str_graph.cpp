@@ -115,6 +115,8 @@ void Graph::addInternal(Node l,
   {
     lv = itv->second;
   }
+  Assert( lv.isConst() );
+  String lvs = lv.getConst<String>();
   std::unordered_set<Node, NodeHashFunction> nextToProcess;
   do
   {
@@ -164,6 +166,7 @@ void Graph::addInternal(Node l,
       {
         lpv = itv->second;
       }
+      String lpvs = lpv.getConst<String>();
       if (dir == 1)
       {
         if (transCtn.find(lp) != transCtn.end())
@@ -174,13 +177,13 @@ void Graph::addInternal(Node l,
         else
         {
           // only check if we don't contain it, since contains is antisymmetric
-          isEdge = (lpv.getConst<String>().find(lv.getConst<String>())
+          isEdge = (lpvs.find(lvs)
                     != std::string::npos);
         }
       }
       else
       {
-        isEdge = (lv.getConst<String>().find(lpv.getConst<String>())
+        isEdge = (lvs.find(lpvs)
                   != std::string::npos);
       }
       if (isEdge)
