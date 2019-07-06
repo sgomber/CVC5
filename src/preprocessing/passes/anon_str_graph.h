@@ -50,6 +50,22 @@ class Graph
 public:
   std::map<Node, CtnNode> d_graph;
   std::unordered_set<Node, NodeHashFunction> d_baseNodes[2];
+  
+  void build(const std::vector<Node>& litSet);
+  void build(const std::vector<Node>& litSet,
+                  const std::map<Node, Node>& valMap);
+  void add(Node l);
+  void add(Node l,
+                  const std::map<Node, Node>& valMap);
+private:
+  static std::map< Node, Node > d_emptyMap;
+  void addInternal(Node l,
+                CtnNode& cl,
+                std::unordered_set<Node, NodeHashFunction>& toProcess,
+                unsigned dir,
+                std::unordered_set<Node, NodeHashFunction>& processed,
+                std::unordered_set<Node, NodeHashFunction>& transCtn,
+                const std::map<Node, Node>& valMap);
 };
 }  // namespace passes
 }  // namespace preprocessing
