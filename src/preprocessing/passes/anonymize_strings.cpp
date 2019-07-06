@@ -21,6 +21,7 @@
 #include "util/random.h"
 
 #include "options/strings_options.h"
+#include "preprocessing/passes/anon_str_graph.h"
 
 namespace CVC4 {
 namespace preprocessing {
@@ -30,77 +31,9 @@ using namespace CVC4::theory;
 
 namespace {
 
-/*
-class NodeFunction
-{
-public:
-  virtual Node run(Node n) = 0:
-};
-
-class NodeFunctionId : public NodeFunction
-{
-public:
-  Node run(Node n) override { return n; }
-};
-
-class NodeFunctionId : public NodeFunction
-{
-public:
-  Node run(Node n) override { return n; }
-};
-*/
-
-class CtnNode
-{
- public:
-  Node d_this;
-  /** 0:children, 1:parents */
-  std::unordered_set<Node, NodeHashFunction> d_edges[2];
-
-  void getTransitiveClosure(std::map<Node, CtnNode>& graph,
-                            std::unordered_set<Node, NodeHashFunction>& t,
-                            unsigned dir)
-  {
-    if (t.find(d_this) != t.end())
-    {
-      // already processed
-      return;
-    }
-    t.insert(d_this);
-    for (const Node& c : d_edges[dir])
-    {
-      Assert(graph.find(c) != graph.end());
-      graph[c].getTransitiveClosure(graph, t, dir);
-    }
-  }
-  void debugPrint(const char* c) const
-  {
-    Trace(c) << "Node(" << d_this << "):" << std::endl;
-    for (unsigned dir = 0; dir <= 1; dir++)
-    {
-      Trace(c) << "  " << (dir == 0 ? "children:" : "parent:") << " ";
-      for (const Node& e : d_edges[dir])
-      {
-        Trace(c) << e << " ";
-      }
-      Trace(c) << std::endl;
-    }
-  }
-
-  void removeEdge(std::map<Node, CtnNode>& graph, Node c, unsigned dir)
-  {
-    Assert(d_edges[dir].find(c) != d_edges[dir].end());
-    d_edges[dir].erase(c);
-    Assert(graph.find(c) != graph.end());
-    CtnNode& cc = graph[c];
-    Assert(cc.d_edges[1 - dir].find(d_this) != cc.d_edges[1 - dir].end());
-    cc.d_edges[1 - dir].erase(d_this);
-  }
-};
-
 void addToGraph(Node l,
                 CtnNode& cl,
-                std::map<Node, CtnNode>& graph,
+                Graph& graph,
                 std::unordered_set<Node, NodeHashFunction>& toProcess,
                 unsigned dir,
                 std::unordered_set<Node, NodeHashFunction>& processed,
@@ -134,8 +67,8 @@ void addToGraph(Node l,
       // to the set of nodes that are unprocessed, which in turn means we don't
       // add edges to nodes that we later could find to be implied by
       // transitivity.
-      Assert(graph.find(lp) != graph.end());
-      CtnNode& clp = graph[lp];
+      Assert(graph.d_graph.find(lp) != graph.d_graph.end());
+      CtnNode& clp = graph.d_graph[lp];
       bool ready = true;
       for (const Node& cp : clp.d_edges[1 - dir])
       {
@@ -212,8 +145,8 @@ void addToGraph(Node l,
                     << "--- Detransify " << l << ", " << lp
                     << (dirl == 0 ? " << " : " >> ") << lc << std::endl;
                 // they have a common child/parent, remove transitive edge
-                Assert(graph.find(lc) != graph.end());
-                CtnNode& clc = graph[lc];
+                Assert(graph.d_graph.find(lc) != graph.d_graph.end());
+                CtnNode& clc = graph.d_graph[lc];
                 if (dirl == 0)
                 {
                   lpc.erase(lc);
@@ -253,15 +186,13 @@ void addToGraph(Node l,
 }
 
 void buildGraph(const std::vector<Node>& litSet,
-                std::map<Node, CtnNode>& graph,
-                std::unordered_set<Node, NodeHashFunction>& baseChildren,
+                Graph& graph,
                 const std::map<Node, Node>& valMap)
 {
-  std::unordered_set<Node, NodeHashFunction> baseNodes[2];
   for (const Node& l : litSet)
   {
     Trace("str-anon-graph") << "Process literal " << l << std::endl;
-    CtnNode& cl = graph[l];
+    CtnNode& cl = graph.d_graph[l];
     cl.d_this = l;
     std::unordered_set<Node, NodeHashFunction> transCtn;
     // process downward, upward
@@ -269,14 +200,14 @@ void buildGraph(const std::vector<Node>& litSet,
     {
       std::unordered_set<Node, NodeHashFunction> processed;
       // add to graph
-      std::unordered_set<Node, NodeHashFunction> toProcess = baseNodes[1 - dir];
+      std::unordered_set<Node, NodeHashFunction> toProcess = graph.d_baseNodes[1 - dir];
       addToGraph(l, cl, graph, toProcess, dir, processed, transCtn, valMap);
       // if dir=0, if it has no children, it is a maximal child
       // if dir=1, if it has no parents, it is a maximal parent
       std::unordered_set<Node, NodeHashFunction>& edges = cl.d_edges[dir];
       if (edges.empty())
       {
-        baseNodes[dir].insert(l);
+        graph.d_baseNodes[dir].insert(l);
         Trace("str-anon-graph-debug")
             << "*** it is a base node, dir=" << dir << std::endl;
       }
@@ -287,12 +218,12 @@ void buildGraph(const std::vector<Node>& litSet,
         // update base nodes
         for (const Node& e : edges)
         {
-          if (baseNodes[1 - dir].find(e) != baseNodes[1 - dir].end())
+          if (graph.d_baseNodes[1 - dir].find(e) != graph.d_baseNodes[1 - dir].end())
           {
             Trace("str-anon-graph-debug")
                 << "--- " << e << " is no long base node dir=" << (1 - dir)
                 << std::endl;
-            baseNodes[1 - dir].erase(e);
+            graph.d_baseNodes[1 - dir].erase(e);
           }
         }
       }
@@ -302,13 +233,11 @@ void buildGraph(const std::vector<Node>& litSet,
   // print
   if (Trace.isOn("str-anon-graph"))
   {
-    for (const std::pair<const Node, CtnNode>& c : graph)
+    for (const std::pair<const Node, CtnNode>& c : graph.d_graph)
     {
       c.second.debugPrint("str-anon-graph");
     }
   }
-  // copy base children
-  baseChildren = baseNodes[0];
 }
 
 Node randomLiteral(unsigned base, unsigned l)
@@ -456,19 +385,23 @@ unsigned analyzeSolutionNode(Node l,
                              const std::map<Node, Node>& sol)
 {
   // TODO
+  
+  
+  
+  
+  
   return 0;
 }
 
 void approxSolveGraph(
-    std::map<Node, CtnNode>& graph,
-    const std::unordered_set<Node, NodeHashFunction>& baseChild,
+    Graph& graph,
     std::map<Node, Node>& sol)
 {
   unsigned areps = 1;
   Trace("str-anon-graph") << "Approximately solve graph..." << std::endl;
   // get the unprocessed nodes
   std::unordered_set<Node, NodeHashFunction> nextToProcess;
-  std::unordered_set<Node, NodeHashFunction> toProcess = baseChild;
+  std::unordered_set<Node, NodeHashFunction> toProcess = graph.d_baseNodes[0];
   do
   {
     for (const Node& l : toProcess)
@@ -478,8 +411,8 @@ void approxSolveGraph(
         // already processed
         continue;
       }
-      Assert(graph.find(l) != graph.end());
-      CtnNode& cl = graph[l];
+      Assert(graph.d_graph.find(l) != graph.d_graph.end());
+      CtnNode& cl = graph.d_graph[l];
       // Are we ready to process this? Must be that all children are processed.
       bool ready = true;
       std::vector<Node> fitSet;
@@ -541,21 +474,20 @@ void approxSolveGraph(
 
 unsigned analyzeSolution(const std::vector<Node>& litSet,
                          const std::map<Node, Node>& sol,
-                         const std::map<Node, CtnNode>& graph)
+                         const Graph& graph)
 {
-  std::map<Node, CtnNode> graphCheck;
-  std::unordered_set<Node, NodeHashFunction> baseChildrenCheck;
-  buildGraph(litSet, graphCheck, baseChildrenCheck, sol);
+  Graph graphCheck;
+  buildGraph(litSet, graphCheck, sol);
 
   unsigned falseCtn[2] = {0, 0};
 
   // check graph vs graphCheck
   for (const Node& l : litSet)
   {
-    std::map<Node, CtnNode>::const_iterator itl = graph.find(l);
-    Assert(itl != graph.end());
-    std::map<Node, CtnNode>::const_iterator itlc = graphCheck.find(l);
-    Assert(itlc != graphCheck.end());
+    std::map<Node, CtnNode>::const_iterator itl = graph.d_graph.find(l);
+    Assert(itl != graph.d_graph.end());
+    std::map<Node, CtnNode>::const_iterator itlc = graphCheck.d_graph.find(l);
+    Assert(itlc != graphCheck.d_graph.end());
     const std::unordered_set<Node, NodeHashFunction>& c =
         itl->second.d_edges[0];
     const std::unordered_set<Node, NodeHashFunction>& cc =
@@ -612,10 +544,9 @@ bool solveAnonStrGraph(
   // ------------ construct the graph
 
   // maximal children, parents
-  std::map<Node, CtnNode> graph;
-  std::unordered_set<Node, NodeHashFunction> baseChildren;
+  Graph graph;
   std::map<Node, Node> emptyMap;
-  buildGraph(litSet, graph, baseChildren, emptyMap);
+  buildGraph(litSet, graph, emptyMap);
 
   // ------------ solve for the graph
   unsigned nreps = options::anonymizeStringsEffort();
@@ -625,7 +556,7 @@ bool solveAnonStrGraph(
   {
     Trace("str-anon-solve") << "Solve: Solve #" << r << "..." << std::endl;
     std::map<Node, Node> sol;
-    approxSolveGraph(graph, baseChildren, sol);
+    approxSolveGraph(graph, sol);
 
     Trace("str-anon-solve") << "Solve: Analyze #" << r << "..." << std::endl;
     unsigned score = analyzeSolution(litSet, sol, graph);
