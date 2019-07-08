@@ -177,6 +177,7 @@ unsigned analyzeSolutionNode(Node l,
                              const std::map<Node, Node>& sol)
 {
   unsigned falseCtn[2] = {0, 0};
+  unsigned trueCtn[2] = {0, 0};
   String ls = l.getConst<String>();
   String sls = lSol.getConst<String>();
   for( unsigned r=0; r<2; r++ )
@@ -204,6 +205,10 @@ unsigned analyzeSolutionNode(Node l,
       {
         falseCtn[r]++;
       }
+      else
+      {
+        trueCtn[r]++;
+      }
     }
   }
   
@@ -217,6 +222,7 @@ unsigned analyzeSolution(const std::vector<Node>& litSet,
                         )
 {
   unsigned falseCtn[2] = {0, 0};
+  unsigned trueCtn[2] = {0, 0};
 
   // check graph vs graphCheck
   for (const Node& l : litSet)
@@ -253,16 +259,24 @@ unsigned analyzeSolution(const std::vector<Node>& litSet,
                                           << itslc->second << std::endl;
           }
         }
+        else
+        {
+          trueCtn[e]++;
+        }
       }
       // no need to check opposite if they are the same size and first is subset
       if (e == 0 && !hasError && c.size() == cc.size())
       {
+        trueCtn[1] += c.size();
         break;
       }
     }
   }
   Trace("str-anon-solve") << "Solve:  Analyze false ctn: " << falseCtn[0]
-                          << ", " << falseCtn[1] << std::endl;
+                          << " / " << (trueCtn[0]+falseCtn[0]) << std::endl;
+  Trace("str-anon-solve") << "Solve:  Analyze false non-ctn: " << falseCtn[1]
+                          << " / " << (trueCtn[1]+falseCtn[1]) << std::endl;
+  
   return falseCtn[0] + falseCtn[1];
 }
 

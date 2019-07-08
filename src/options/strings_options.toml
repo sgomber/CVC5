@@ -55,7 +55,7 @@ header = "options/strings_options.h"
   category   = "regular"
   long       = "anon-str-effort-local=N"
   type       = "int"
-  default    = "1"
+  default    = "20"
   help       = "local effort multiplier for strings anonymization"
 
 [[option]]
