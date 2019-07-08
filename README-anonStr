@@ -2,19 +2,32 @@ To anonymize a benchmark, call CVC4 with:
 
 --strings-exp --anon-str -qq
 
-The `-qq` just suppresses a spurious "sat" output.
+By default, the anonymizer will preserve the length of all string literals,
+as well as containment relationships between them.
 
-
-By default, the anonymizer will preserve the length of the different 
-string literals. This can be disabled with:
+Length preservation can be disabled with:
 
 --no-anon-str-preserve-lengths
 
+=============================================================================
+
+The preservation of all the above properties are approximate.
+
+To make CVC4 put more time/effort into preserving properties, try:
+
+--anon-str-effort=N (default 1)
+--anon-str-effort-local=N (default 20)
+
+The N above is a multiplier on how many iterations of steps of the algorithm
+to run. The first makes the algorithm run N times and takes the best
+solution. The second makes the algorithm consider N solutions per string
+literal during the course of a run.
 
 =============================================================================
 
 If you wish for CVC4 to strictly preserve the relationships that are required
-during anonymization, use:
+during anonymization, this branch supports an alternative implementation that
+generates smt2 string queries. To do this, use:
 
 --strings-exp --anon-str-query --anon-str -qq
 
@@ -22,3 +35,6 @@ To dump the benchmark that was generated to actually perform the
 anonymization, you can use
 
 --strings-exp --anon-str-query --anon-str -qq --dump anonymization-benchmark
+
+However, notice that this alternative is typically much slower than the default
+configuration.
