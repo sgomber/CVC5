@@ -15,14 +15,15 @@
 
 #include "cvc4_private.h"
 
-#ifndef __CVC4__THEORY__STRINGS__REGEXP_SOLVER_H
-#define __CVC4__THEORY__STRINGS__REGEXP_SOLVER_H
+#ifndef CVC4__THEORY__STRINGS__REGEXP_SOLVER_H
+#define CVC4__THEORY__STRINGS__REGEXP_SOLVER_H
 
 #include <map>
 #include "context/cdhashset.h"
 #include "context/cdlist.h"
 #include "context/context.h"
 #include "expr/node.h"
+#include "theory/strings/inference_manager.h"
 #include "theory/strings/regexp_operation.h"
 #include "util/regexp.h"
 
@@ -42,7 +43,10 @@ class RegExpSolver
   typedef context::CDHashSet<Node, NodeHashFunction> NodeSet;
 
  public:
-  RegExpSolver(TheoryStrings& p, context::Context* c, context::UserContext* u);
+  RegExpSolver(TheoryStrings& p,
+               InferenceManager& im,
+               context::Context* c,
+               context::UserContext* u);
   ~RegExpSolver() {}
 
   /** add membership
@@ -69,6 +73,8 @@ class RegExpSolver
   Node d_false;
   /** the parent of this object */
   TheoryStrings& d_parent;
+  /** the output channel of the parent of this object */
+  InferenceManager& d_im;
   // check membership constraints
   Node mkAnd(Node c1, Node c2);
   bool checkPDerivative(
@@ -103,4 +109,4 @@ class RegExpSolver
 }  // namespace theory
 }  // namespace CVC4
 
-#endif /* __CVC4__THEORY__STRINGS__THEORY_STRINGS_H */
+#endif /* CVC4__THEORY__STRINGS__THEORY_STRINGS_H */
