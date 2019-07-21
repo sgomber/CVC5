@@ -180,28 +180,28 @@ unsigned analyzeSolutionNode(Node l,
   unsigned trueCtn[2] = {0, 0};
   String ls = l.getConst<String>();
   String sls = lSol.getConst<String>();
-  for( unsigned r=0; r<2; r++ )
+  for (unsigned r = 0; r < 2; r++)
   {
     // check the base nodes of the graph check
-    for( const Node& lc : graphCheck.d_baseNodes[r] )
+    for (const Node& lc : graphCheck.d_baseNodes[r])
     {
       String lcs = lc.getConst<String>();
-      std::map< Node, Node >::const_iterator its = sol.find(lc);
-      Assert( its!=sol.end() );
+      std::map<Node, Node>::const_iterator its = sol.find(lc);
+      Assert(its != sol.end());
       String slcs = its->second.getConst<String>();
       bool origRel = false;
       bool solRel = false;
-      if( r==0 )
+      if (r == 0)
       {
-        origRel = ls.find(lcs)!=std::string::npos; 
-        solRel = sls.find(slcs)!=std::string::npos; 
+        origRel = ls.find(lcs) != std::string::npos;
+        solRel = sls.find(slcs) != std::string::npos;
       }
       else
       {
-        origRel = lcs.find(ls)!=std::string::npos; 
-        solRel = slcs.find(sls)!=std::string::npos; 
+        origRel = lcs.find(ls) != std::string::npos;
+        solRel = slcs.find(sls) != std::string::npos;
       }
-      if( origRel!=solRel )
+      if (origRel != solRel)
       {
         falseCtn[r]++;
       }
@@ -211,15 +211,14 @@ unsigned analyzeSolutionNode(Node l,
       }
     }
   }
-  
+
   return falseCtn[0] + falseCtn[1];
 }
 
 unsigned analyzeSolution(const std::vector<Node>& litSet,
                          const std::map<Node, Node>& sol,
                          const Graph& graph,
-                         const Graph& graphCheck
-                        )
+                         const Graph& graphCheck)
 {
   unsigned falseCtn[2] = {0, 0};
   unsigned trueCtn[2] = {0, 0};
@@ -273,14 +272,16 @@ unsigned analyzeSolution(const std::vector<Node>& litSet,
     }
   }
   Trace("str-anon-solve") << "Solve:  Analyze false ctn: " << falseCtn[0]
-                          << " / " << (trueCtn[0]+falseCtn[0]) << std::endl;
+                          << " / " << (trueCtn[0] + falseCtn[0]) << std::endl;
   Trace("str-anon-solve") << "Solve:  Analyze false non-ctn: " << falseCtn[1]
-                          << " / " << (trueCtn[1]+falseCtn[1]) << std::endl;
-  
+                          << " / " << (trueCtn[1] + falseCtn[1]) << std::endl;
+
   return falseCtn[0] + falseCtn[1];
 }
 
-void approxSolveGraph(Graph& graph, Graph& graphCheck,std::map<Node, Node>& sol)
+void approxSolveGraph(Graph& graph,
+                      Graph& graphCheck,
+                      std::map<Node, Node>& sol)
 {
   unsigned areps = options::anonymizeStringsEffortLocal();
   Trace("str-anon-graph") << "Approximately solve graph..." << std::endl;
@@ -337,24 +338,26 @@ void approxSolveGraph(Graph& graph, Graph& graphCheck,std::map<Node, Node>& sol)
       // construct the solution for the current string
       Node lSol;
       unsigned bestScore = 0;
-      std::unordered_set< Node, NodeHashFunction > lscProc;
+      std::unordered_set<Node, NodeHashFunction> lscProc;
       Trace("str-anon-solve-local") << "Try assign " << l << std::endl;
       for (unsigned r = 0; r < areps; r++)
       {
         Node lsc = approxSolveNode(l, cl, fitSet, fitSetLenSum);
-        if( lscProc.find(lsc)!=lscProc.end() )
+        if (lscProc.find(lsc) != lscProc.end())
         {
           // already tried
           continue;
         }
         lscProc.insert(lsc);
-        unsigned score = areps==1 ? 0 : analyzeSolutionNode(l, cl, lsc, graphCheck, sol);
-        Trace("str-anon-solve-local") << "  Score " << lsc << " is " << score << std::endl;
+        unsigned score =
+            areps == 1 ? 0 : analyzeSolutionNode(l, cl, lsc, graphCheck, sol);
+        Trace("str-anon-solve-local")
+            << "  Score " << lsc << " is " << score << std::endl;
         if (r == 0 || score < bestScore)
         {
           bestScore = score;
           lSol = lsc;
-          if( score==0 )
+          if (score == 0)
           {
             // cannot improve
             break;
@@ -362,7 +365,7 @@ void approxSolveGraph(Graph& graph, Graph& graphCheck,std::map<Node, Node>& sol)
         }
       }
       sol[l] = lSol;
-      graphCheck.add(l,sol);
+      graphCheck.add(l, sol);
       Trace("str-anon-graph")
           << "  Assign: " << l << " -> " << lSol << std::endl;
     }
@@ -409,7 +412,7 @@ bool solveAnonStrGraph(
       Trace("str-anon-solve") << "Solve: new best!" << std::endl;
       bestScore = score;
       bestSol = sol;
-      if( score==0 )
+      if (score == 0)
       {
         // cannot improve
         break;
@@ -428,31 +431,32 @@ bool solveAnonStrGraph(
 
 /// ---------------------------------------------------------------
 
-Node collectLits( Node n,
+Node collectLits(Node n,
                  std::unordered_map<Node, Node, NodeHashFunction>* lits,
-                 std::unordered_set<Node, NodeHashFunction>* reranges ){
-  NodeManager * nm = NodeManager::currentNM();
+                 std::unordered_set<Node, NodeHashFunction>* reranges)
+{
+  NodeManager* nm = NodeManager::currentNM();
   std::unordered_map<TNode, Node, TNodeHashFunction> visited;
   std::unordered_map<TNode, Node, TNodeHashFunction>::iterator it;
   std::vector<TNode> visit;
   TNode cur;
   visit.push_back(n);
-  do 
+  do
   {
     cur = visit.back();
     visit.pop_back();
     it = visited.find(cur);
 
-    if (it == visited.end()) 
+    if (it == visited.end())
     {
       visited[cur] = Node::null();
       visit.push_back(cur);
-      for (const Node& cn : cur )
+      for (const Node& cn : cur)
       {
         visit.push_back(cn);
       }
-    } 
-    else if (it->second.isNull()) 
+    }
+    else if (it->second.isNull())
     {
       Node ret = cur;
       if (cur.getKind() == kind::CONST_STRING)
@@ -471,10 +475,11 @@ Node collectLits( Node n,
       }
       bool childChanged = false;
       std::vector<Node> children;
-      if (cur.getMetaKind() == kind::metakind::PARAMETERIZED) {
+      if (cur.getMetaKind() == kind::metakind::PARAMETERIZED)
+      {
         children.push_back(cur.getOperator());
       }
-      for (const Node& cn : cur )
+      for (const Node& cn : cur)
       {
         it = visited.find(cn);
         Assert(it != visited.end());
@@ -482,7 +487,7 @@ Node collectLits( Node n,
         childChanged = childChanged || cn != it->second;
         children.push_back(it->second);
       }
-      if (childChanged) 
+      if (childChanged)
       {
         ret = nm->mkNode(cur.getKind(), children);
       }
@@ -493,7 +498,6 @@ Node collectLits( Node n,
   Assert(!visited.find(n)->second.isNull());
   return visited[n];
 }
-
 
 std::unordered_map<Node, std::vector<Node>, NodeHashFunction>
 computeContainsRels(
