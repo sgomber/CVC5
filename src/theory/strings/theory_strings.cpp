@@ -2439,16 +2439,20 @@ void TheoryStrings::checkNormalFormsEq()
   std::map<Node, Node> nf_to_eqc;
   std::map<Node, Node> eqc_to_nf;
   std::map<Node, Node> eqc_to_exp;
+  std::vector<InferInfo> pinfer;
   for (const Node& eqc : d_strings_eqc)
   {
     Trace("strings-process-debug") << "- Verify normal forms are the same for "
                                    << eqc << std::endl;
-    normalizeEquivalenceClass(eqc);
-    Trace("strings-debug") << "Finished normalizing eqc..." << std::endl;
-    if (d_im.hasProcessed())
+    if( !normalizeEquivalenceClass(eqc, pinfer) )
     {
-      return;
+      if (d_im.hasProcessed())
+      {
+        return;
+      }
+      continue;
     }
+    Trace("strings-debug") << "Finished normalizing eqc..." << std::endl;
     NormalForm& nfe = getNormalForm(eqc);
     Node nf_term = mkConcat(nfe.d_nf);
     std::map<Node, Node>::iterator itn = nf_to_eqc.find(nf_term);
@@ -2475,6 +2479,12 @@ void TheoryStrings::checkNormalFormsEq()
     Trace("strings-process-debug")
         << "Done verifying normal forms are the same for " << eqc << std::endl;
   }
+  if( options::stringSplitMultiEqc() && !pinfer.empty() )
+  {
+    doBestInferInfo(pinfer);
+    return;
+  }  
+  Assert( pinfer.empty() );
   if (Trace.isOn("strings-nf"))
   {
     Trace("strings-nf") << "**** Normal forms are : " << std::endl;
@@ -2565,7 +2575,8 @@ void TheoryStrings::checkCodes()
 }
 
 //compute d_normal_forms_(base,exp,exp_depend)[eqc]
-void TheoryStrings::normalizeEquivalenceClass( Node eqc ) {
+bool TheoryStrings::normalizeEquivalenceClass( Node eqc, 
+  std::vector< InferInfo >& pinfer ) {
   Trace("strings-process-debug") << "Process equivalence class " << eqc << std::endl;
   if( areEqual( eqc, d_emptyString ) ) {
 #ifdef CVC4_ASSERTIONS
@@ -2579,6 +2590,7 @@ void TheoryStrings::normalizeEquivalenceClass( Node eqc ) {
     //do nothing
     Trace("strings-process-debug") << "Return process equivalence class " << eqc << " : empty." << std::endl;
     d_normal_form[eqc].init(d_emptyString);
+    return true;
   } else {
     // should not have computed the normal form of this equivalence class yet
     Assert(d_normal_form.find(eqc) == d_normal_form.end());
@@ -2587,16 +2599,20 @@ void TheoryStrings::normalizeEquivalenceClass( Node eqc ) {
     // map each term to its index in the above vector
     std::map<Node, unsigned> term_to_nf_index;
     // get the normal forms
-    getNormalForms(eqc, normal_forms, term_to_nf_index);
+    if( !getNormalForms(eqc, normal_forms, term_to_nf_index ) )
+    {
+      return false;
+    }
     if (d_im.hasProcessed())
     {
-      return;
+      return false;
     }
     // process the normal forms
-    processNEqc(normal_forms);
-    if (d_im.hasProcessed())
+    unsigned pinferSz = pinfer.size();
+    processNEqc(normal_forms, pinfer);
+    if (d_im.hasProcessed() || pinfer.size()>pinferSz)
     {
-      return;
+      return false;
     }
     // debugPrintNormalForms( "strings-solve", eqc, normal_forms );
 
@@ -2616,6 +2632,7 @@ void TheoryStrings::normalizeEquivalenceClass( Node eqc ) {
         << "Return process equivalence class " << eqc
         << " : returned, size = " << d_normal_form[eqc].d_nf.size()
         << std::endl;
+    return true;
   }
 }
 
@@ -2635,7 +2652,7 @@ NormalForm& TheoryStrings::getNormalForm(Node n)
   return itn->second;
 }
 
-void TheoryStrings::getNormalForms(Node eqc,
+bool TheoryStrings::getNormalForms(Node eqc,
                                    std::vector<NormalForm>& normal_forms,
                                    std::map<Node, unsigned>& term_to_nf_index)
 {
@@ -2662,6 +2679,10 @@ void TheoryStrings::getNormalForms(Node eqc,
           for( unsigned i=0; i<n.getNumChildren(); i++ ) {
             Node nr = d_equalityEngine.getRepresentative( n[i] );
             // get the normal form for the component
+            if (d_normal_form.find(nr) == d_normal_form.end())
+            {
+              return false;
+            }
             NormalForm& nfr = getNormalForm(nr);
             std::vector<Node>& nfrv = nfr.d_nf;
             Trace("strings-process-debug") << "Normalizing subterm " << n[i] << " = "  << nr << std::endl;
@@ -2855,12 +2876,12 @@ void TheoryStrings::getNormalForms(Node eqc,
       }
     }
   }
+  return true;
 }
 
-void TheoryStrings::processNEqc(std::vector<NormalForm>& normal_forms)
+void TheoryStrings::processNEqc(std::vector<NormalForm>& normal_forms, 
+  std::vector< InferInfo >& pinfer)
 {
-  //the possible inferences
-  std::vector< InferInfo > pinfer;
   // loop over all pairs 
   for(unsigned i=0; i<normal_forms.size()-1; i++) {
     //unify each normalform[j] with normal_forms[i]
@@ -2904,6 +2925,15 @@ void TheoryStrings::processNEqc(std::vector<NormalForm>& normal_forms)
       }
     }
   }
+  if( !options::stringSplitMultiEqc() )
+  {
+    doBestInferInfo(pinfer);
+    pinfer.clear();
+  }
+}
+
+void TheoryStrings::doBestInferInfo(const std::vector<InferInfo>& pinfer)
+{
   if (pinfer.empty())
   {
     return;

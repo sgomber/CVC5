@@ -216,3 +216,12 @@ header = "options/strings_options.h"
   default    = "true"
   read_only  = true
   help       = "do flat form inferences"
+
+[[option]]
+  name       = "stringSplitMultiEqc"
+  category   = "regular"
+  long       = "strings-split-meqc"
+  type       = "bool"
+  default    = "false"
+  read_only  = true
+  help       = "look at multiple equivalence classes when considering splits"
