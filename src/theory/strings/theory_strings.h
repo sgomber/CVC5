@@ -515,7 +515,7 @@ private:
    * If it is not, then we add an inference via sendInference and abort the
    * call.
    */
-  bool normalizeEquivalenceClass( Node n, std::vector< InferInfo >& pinfer );
+  bool normalizeEquivalenceClass(Node n, std::vector<InferInfo>& pinfer);
   /**
    * For each term in the equivalence class of eqc, this adds data regarding its
    * normal form to normal_forms. The map term_to_nf_index maps terms to the
@@ -537,8 +537,8 @@ private:
    * directions. Once all possible inferences are recorded, it executes the
    * one with highest priority based on the enumeration type Inference.
    */
-  void processNEqc(std::vector<NormalForm>& normal_forms, 
-  std::vector< InferInfo >& pinfer);
+  void processNEqc(std::vector<NormalForm>& normal_forms,
+                   std::vector<InferInfo>& pinfer);
   /** process simple normal equality
    *
    * This method is called when two equal terms have normal forms nfi and nfj.
@@ -660,7 +660,7 @@ private:
    * of atom, including calls to registerTerm.
    */
   void assertPendingFact(Node atom, bool polarity, Node exp);
-  /** 
+  /**
    * Do the best possible inference from the vector pinfer.
    */
   void doBestInferInfo(const std::vector<InferInfo>& pinfer);
