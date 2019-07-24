@@ -31,20 +31,68 @@ void ProofDb::registerRules(const std::map< Node, std::string >& rules)
   }
 }
 
-bool ProofDb::existsRule( Node eq, unsigned& index )
+bool ProofDb::existsRule( Node a, Node b, unsigned& index )
+{
+  if( a==b )
+  {
+    // reflexivity
+    return true;
+  }
+  if( b.isConst() )
+  {
+    // nullary symbols should not rewrite to constants
+    Assert( a.getNumChildren()!=0 );
+    bool allConst = true;
+    for( const Node& ac : a )
+    {
+      if( !ac.isConst() )
+      {
+        allConst = false;
+      }
+    }
+    if( allConst )
+    {
+      // evaluation
+      return true;
+    }
+  }
+  Kind ak = a.getKind();
+  Kind bk = b.getKind();
+  if( ak==EQUAL && bk==EQUAL )
+  {
+    if( a[0]==b[1] && b[0]==a[1] )
+    {
+      // symmetry of equality 
+      return true;
+    }
+  }
+  return false;
+}
+
+bool ProofDb::existsRule( Node a, Node b)
+{
+  unsigned index = 0;
+  return existsRule(a,b,index);
+}
+
+bool ProofDb::proveRule( Node a, Node b )
 {
   return false;
 }
 
-bool ProofDb::proveRule( Node eq )
+void ProofDb::notify( Node a, Node b)
 {
-  return false;
+  Options& nodeManagerOptions = NodeManager::currentNM()->getOptions();
+  notify(a,b,*nodeManagerOptions.getOut());
 }
-
-bool ProofDb::notify( Node a, Node b )
+void ProofDb::notify( Node a, Node b, std::ostream& out )
 {
- 
-  
+  if( existsRule(a,b) )
+  {
+    // already exists
+    return;
+  }
+  out << "(trusted (= " << a << " " << b << "))" << std::endl;
 }
 
 }  // namespace theory

@@ -41,11 +41,13 @@ class ProofDb
    */
   void registerRules(const std::map< Node, std::string >& rules);
   /** Exists rule? */
-  bool existsRule( Node eq, unsigned& index );
+  bool existsRule( Node a, Node b, unsigned& index );
+  bool existsRule( Node a, Node b);
   /** Prove rule */
-  bool proveRule( Node eq );
+  bool proveRule( Node a, Node b );
   /** Notify */
-  bool notify( Node a, Node b );
+  void notify( Node a, Node b, std::ostream& out );
+  void notify( Node a, Node b);
 private:
   // TODO
 };
