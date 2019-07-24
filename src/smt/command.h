@@ -922,6 +922,23 @@ class CVC4_PUBLIC GetValueCommand : public Command
   std::string getCommandName() const override;
 }; /* class GetValueCommand */
 
+
+class CVC4_PUBLIC ProofDbCommand : public Command
+{
+ protected:
+  std::map<Expr, std::string> d_rules;
+
+ public:
+  ProofDbCommand(const std::map<Expr, std::string>& rules);
+
+  const std::map<Expr, std::string>& getRules() const;
+  void invoke(SmtEngine* smtEngine) override;
+  Command* exportTo(ExprManager* exprManager,
+                    ExprManagerMapCollection& variableMap) override;
+  Command* clone() const override;
+  std::string getCommandName() const override;
+}; /* class ProofDbCommand */
+
 class CVC4_PUBLIC GetAssignmentCommand : public Command
 {
  protected:

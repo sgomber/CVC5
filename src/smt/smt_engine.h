@@ -747,6 +747,11 @@ class CVC4_PUBLIC SmtEngine {
       ;
 
   /**
+   * Register proof rules
+   */
+  void registerProofRules(const std::map< Expr, std::string >& rules) const;
+      
+  /**
    * Add a function to the set of expressions whose value is to be
    * later returned by a call to getAssignment().  The expression
    * should be a Boolean zero-ary defined function or a Boolean

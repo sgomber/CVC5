@@ -1736,6 +1736,58 @@ Command* GetValueCommand::clone() const
 
 std::string GetValueCommand::getCommandName() const { return "get-value"; }
 
+
+
+ProofDbCommand::ProofDbCommand(const std::map<Expr, std::string>& rules)
+    : d_rules(rules)
+{
+}
+const std::map<Expr, std::string>& ProofDbCommand::getRules() const { return d_rules; }
+void ProofDbCommand::invoke(SmtEngine* smtEngine)
+{
+  try
+  {
+    smt::SmtScope scope(smtEngine);
+    smtEngine->registerProofRules(d_rules);
+    d_commandStatus = CommandSuccess::instance();
+  }
+  catch (RecoverableModalException& e)
+  {
+    d_commandStatus = new CommandRecoverableFailure(e.what());
+  }
+  catch (UnsafeInterruptException& e)
+  {
+    d_commandStatus = new CommandInterrupted();
+  }
+  catch (exception& e)
+  {
+    d_commandStatus = new CommandFailure(e.what());
+  }
+}
+
+Command* ProofDbCommand::exportTo(ExprManager* exprManager,
+                                   ExprManagerMapCollection& variableMap)
+{
+  std::map<Expr, std::string> exportedRules;
+  for (std::map<Expr, std::string>::const_iterator i = d_rules.begin();
+       i != d_rules.end();
+       ++i)
+  {
+    Expr newExpr = (i->first).exportTo(exprManager, variableMap);
+    exportedRules[newExpr] = i->second;
+  }
+  ProofDbCommand* c = new ProofDbCommand(exportedRules);
+  return c;
+}
+
+Command* ProofDbCommand::clone() const
+{
+  ProofDbCommand* c = new ProofDbCommand(d_rules);
+  return c;
+}
+
+std::string ProofDbCommand::getCommandName() const { return "proof-db"; }
+
 /* -------------------------------------------------------------------------- */
 /* class GetAssignmentCommand                                                 */
 /* -------------------------------------------------------------------------- */

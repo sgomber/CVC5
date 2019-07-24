@@ -293,6 +293,7 @@ TheoryEngine::TheoryEngine(context::Context* context,
       d_masterEENotify(*this),
       d_quantEngine(nullptr),
       d_decManager(new DecisionManager(context)),
+      d_proofDb(new ProofDb()),
       d_curr_model(nullptr),
       d_aloc_curr_model(false),
       d_curr_model_builder(nullptr),
@@ -905,6 +906,12 @@ TheoryModel* TheoryEngine::getBuiltModel()
     d_curr_model_builder->buildModel(d_curr_model);
   }
   return d_curr_model;
+}
+
+
+void TheoryEngine::registerProofRules(const std::map< Node, std::string >& rules)
+{
+  d_proofDb->registerRules(rules);
 }
 
 void TheoryEngine::getSynthSolutions(std::map<Node, Node>& sol_map)

@@ -36,6 +36,7 @@
 #include "smt_util/lemma_channels.h"
 #include "theory/atom_requests.h"
 #include "theory/decision_manager.h"
+#include "theory/proof_db.h"
 #include "theory/interrupted.h"
 #include "theory/rewriter.h"
 #include "theory/shared_terms_database.h"
@@ -203,6 +204,10 @@ class TheoryEngine {
    * The decision manager
    */
   std::unique_ptr<theory::DecisionManager> d_decManager;
+  /**
+   * The proof database
+   */
+  std::unique_ptr<theory::ProofDb> d_proofDb;
 
   /**
    * Default model object
@@ -545,6 +550,13 @@ public:
   {
     return d_decManager.get();
   }
+  /**
+   * Get a pointer to the underlying proof database
+   */
+  theory::ProofDb* getProofDatabase() const
+  {
+    return d_proofDb.get();
+  }
 
  private:
   /**
@@ -764,6 +776,9 @@ public:
    * TODO (#2648): revisit this.
    */
   void setEagerModelBuilding() { d_eager_model_building = true; }
+  
+  /** register proof rules */
+  void registerProofRules(const std::map< Node, std::string >& rules);
 
   /** get synth solutions
    *

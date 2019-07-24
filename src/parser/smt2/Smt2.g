@@ -1372,9 +1372,11 @@ extendedCommand[std::unique_ptr<CVC4::Command>* cmd]
   std::string name;
   std::vector<std::string> names;
   std::vector<Expr> terms;
+  std::vector<Expr> terms2;
   std::vector<Type> sorts;
   std::vector<std::pair<std::string, Type> > sortedVarNames;
   std::unique_ptr<CVC4::CommandSequence> seq;
+  std::map<Expr, std::string> rules;
 }
     /* Extended SMT-LIB set of commands syntax, not permitted in
      * --smtlib2 compliance mode. */
@@ -1534,6 +1536,12 @@ extendedCommand[std::unique_ptr<CVC4::Command>* cmd]
     sortSymbol[t, CHECK_DECLARED]
     // We currently do nothing with the type information declared for the heap.
     { cmd->reset(new EmptyCommand()); }
+    RPAREN_TOK
+  | PROOF_DB_TOK LPAREN_TOK
+    ( symbol[name,CHECK_NONE,SYM_VARIABLE] term[e,e2]
+      { rules[e] = name; }
+    )*
+    { cmd->reset(new ProofDbCommand(rules)); }
     RPAREN_TOK
   ;
 
@@ -3056,6 +3064,8 @@ INCLUDE_TOK : 'include';
 GET_QE_TOK : 'get-qe';
 GET_QE_DISJUNCT_TOK : 'get-qe-disjunct';
 DECLARE_HEAP : 'declare-heap';
+
+PROOF_DB_TOK : 'proof-db';
 
 // SyGuS commands
 SYNTH_FUN_V1_TOK : { PARSER_STATE->sygus_v1() }?'synth-fun';

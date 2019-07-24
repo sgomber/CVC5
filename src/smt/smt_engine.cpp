@@ -4188,6 +4188,18 @@ Expr SmtEngine::getValue(const Expr& ex) const
   return resultNode.toExpr();
 }
 
+
+void SmtEngine::registerProofRules(const std::map< Expr, std::string >& rules) const
+{
+  std::map< Node, std::string > nodeRules;
+  for( std::map< Expr, std::string >::const_iterator it = rules.begin(); it != rules.end(); ++it )
+  {
+    Node n = Node::fromExpr(it->first);
+    nodeRules[n] = it->second;
+  }
+  d_theoryEngine->registerProofRules(nodeRules);
+}
+
 bool SmtEngine::addToAssignment(const Expr& ex) {
   SmtScope smts(this);
   finalOptionsAreSet();
