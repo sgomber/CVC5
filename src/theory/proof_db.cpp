@@ -19,61 +19,64 @@ using namespace CVC4::kind;
 namespace CVC4 {
 namespace theory {
 
-void ProofDbRule::init(const std::string& name, Node cond, Node eq)
+void ProofDbRule::init( const std::string& name, Node cond, Node eq )
 {
   d_name = name;
   d_cond = cond;
   d_eq = eq;
 }
-
-ProofDb::ProofDb() : d_idCounter(1), d_notify(*this) {}
-
-void ProofDb::registerRules(const std::map<Node, std::string>& rules)
+  
+ProofDb::ProofDb() : d_idCounter(1), d_notify(*this)
 {
-  // TODO
-  for (const std::pair<const Node, std::string>& rr : rules)
+  
+}
+
+void ProofDb::registerRules(const std::map< Node, std::string >& rules)
+{
+  // add each of the rules to the database
+  for( const std::pair< const Node, std::string >& rr : rules )
   {
     Node r = rr.first;
-    AlwaysAssert(r.getKind() == IMPLIES);
-
+    AlwaysAssert( r.getKind()==IMPLIES );
+    
     // must canonize
     Trace("proof-db") << "Add rule " << r[1] << std::endl;
     Node cr = d_canon.getCanonicalTerm(r);
-
+    
     Node cond = cr[0];
     Node eq = cr[1];
-
+    
     // add to discrimination tree
     Trace("proof-db-debug") << "Add (Canonical) rule " << eq << std::endl;
     d_mt.addTerm(eq);
-
+    
     // remember rules
     d_ids[eq].push_back(d_idCounter);
-    d_proofDbRule[d_idCounter].init(rr.second, cond, eq);
+    d_proofDbRule[d_idCounter].init(rr.second,cond,eq);
     d_idCounter++;
   }
 }
 
-bool ProofDb::existsRule(Node a, Node b, unsigned& index)
+bool ProofDb::existsRule( Node a, Node b, unsigned& index )
 {
-  if (a == b)
+  if( a==b )
   {
     // reflexivity
     return true;
   }
-  if (b.isConst())
+  if( b.isConst() )
   {
     // nullary symbols should not rewrite to constants
-    Assert(a.getNumChildren() != 0);
+    Assert( a.getNumChildren()!=0 );
     bool allConst = true;
-    for (const Node& ac : a)
+    for( const Node& ac : a )
     {
-      if (!ac.isConst())
+      if( !ac.isConst() )
       {
         allConst = false;
       }
     }
-    if (allConst)
+    if( allConst )
     {
       // evaluation
       return true;
@@ -81,53 +84,53 @@ bool ProofDb::existsRule(Node a, Node b, unsigned& index)
   }
   Kind ak = a.getKind();
   Kind bk = b.getKind();
-  if (ak == EQUAL && a[0] == a[1])
+  if( ak==EQUAL && a[0]==a[1] )
   {
-    Assert(b.isConst() && b.getConst<bool>());
+    Assert( b.isConst() && b.getConst<bool>() );
     // rewriting reflexive equality to true
     return true;
   }
-  if (ak == EQUAL && bk == EQUAL)
+  if( ak==EQUAL && bk==EQUAL )
   {
-    if (a[0] == b[1] && b[0] == a[1])
+    if( a[0]==b[1] && b[0]==a[1] )
     {
-      // symmetry of equality
+      // symmetry of equality 
       return true;
     }
   }
   Node eq = a.eqNode(b);
   // is an instance of existing rule?
-  if (!d_mt.getMatches(eq, &d_notify))
+  if( !d_mt.getMatches(eq,&d_notify) )
   {
     return true;
   }
-
+  
   return false;
 }
 
-bool ProofDb::existsRule(Node a, Node b)
+bool ProofDb::existsRule( Node a, Node b)
 {
   unsigned index = 0;
-  return existsRule(a, b, index);
+  return existsRule(a,b,index);
 }
 
-bool ProofDb::proveRule(Node a, Node b)
+bool ProofDb::proveRule( Node a, Node b )
 {
-  Assert(!existsRule(a, b));
+  Assert( !existsRule(a,b) );
   // trusted reduction, try to prove
-
+  
   return false;
 }
 
-void ProofDb::notify(Node a, Node b)
+void ProofDb::notify( Node a, Node b)
 {
   Options& nodeManagerOptions = NodeManager::currentNM()->getOptions();
-  notify(a, b, *nodeManagerOptions.getOut());
+  notify(a,b,*nodeManagerOptions.getOut());
 }
 
-void ProofDb::notify(Node a, Node b, std::ostream& out)
+void ProofDb::notify( Node a, Node b, std::ostream& out )
 {
-  if (existsRule(a, b))
+  if( existsRule(a,b) )
   {
     // already exists
     return;
@@ -136,15 +139,24 @@ void ProofDb::notify(Node a, Node b, std::ostream& out)
 }
 
 bool ProofDb::notifyMatch(Node s,
-                          Node n,
-                          std::vector<Node>& vars,
-                          std::vector<Node>& subs)
+                  Node n,
+                  std::vector<Node>& vars,
+                  std::vector<Node>& subs)
 {
-  Trace("proof-db-infer") << "ProofDb::notifyMatch: " << s
-                          << " is instance of existing rule:" << std::endl;
+  Trace("proof-db-infer") << "ProofDb::notifyMatch: " << s << " is instance of existing rule:" << std::endl;
   Trace("proof-db-infer") << "  " << n << std::endl;
-  Trace("proof-db-infer") << "  substitution: " << vars << " -> " << subs
-                          << std::endl;
+  Trace("proof-db-infer") << "  substitution: " << vars << " -> " << subs << std::endl;
+  Assert( d_ids.find(n)!=d_ids.end() );
+  // check each rule instance
+  for( unsigned ruleId : d_ids[n] )
+  {
+    Assert(d_proofDbRule.find(ruleId)!=d_proofDbRule.end());
+    // get the proof rule
+    ProofDbRule& pr = d_proofDbRule[ruleId];
+    // does the side condition hold?
+  }
+  
+  
   return true;
 }
 
