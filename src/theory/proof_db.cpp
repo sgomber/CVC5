@@ -58,6 +58,12 @@ bool ProofDb::existsRule( Node a, Node b, unsigned& index )
   }
   Kind ak = a.getKind();
   Kind bk = b.getKind();
+  if( ak==EQUAL && a[0]==a[1] )
+  {
+    Assert( b.isConst() && b.getConst<bool>() );
+    // rewriting reflexive equality to true
+    return true;
+  }
   if( ak==EQUAL && bk==EQUAL )
   {
     if( a[0]==b[1] && b[0]==a[1] )
@@ -66,6 +72,9 @@ bool ProofDb::existsRule( Node a, Node b, unsigned& index )
       return true;
     }
   }
+  // trusted reduction
+  
+  
   return false;
 }
 
@@ -85,6 +94,7 @@ void ProofDb::notify( Node a, Node b)
   Options& nodeManagerOptions = NodeManager::currentNM()->getOptions();
   notify(a,b,*nodeManagerOptions.getOut());
 }
+
 void ProofDb::notify( Node a, Node b, std::ostream& out )
 {
   if( existsRule(a,b) )

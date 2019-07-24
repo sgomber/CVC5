@@ -1,0 +1,17 @@
+#!/bin/bash
+
+CVC4=pr-ajr-cvc4
+
+cp $1 __tmp-proof_db.smt2
+shift;
+sed -i 's/(check-sat)//g' __tmp-proof_db.smt2
+cat $1 >>  __tmp-proof_db.smt2
+shift;
+echo "(check-sat)" >> __tmp-proof_db.smt2
+
+
+echo "Call $CVC4 __tmp-proof_db.smt2 --notify-pf-rules $@"
+$CVC4 __tmp-proof_db.smt2 --notify-pf-rules $@
+
+
+#rm -f  __tmp-proof_db.smt2
