@@ -19,6 +19,8 @@
 
 #include <map>
 #include "expr/node.h"
+#include "theory/quantifiers/term_canonize.h"
+#include "theory/quantifiers/candidate_rewrite_filter.h"
 
 namespace CVC4 {
 namespace theory {
@@ -29,13 +31,17 @@ public:
   std::string d_name;
   Node d_cond;
   Node d_eq;
+  
+  void init( const std::string& name, Node cond, Node eq );
 };
+
   
 /** ProofDb
  */
 class ProofDb
 {
  public:
+   ProofDb();
   /**
    * Register rules
    */
@@ -48,8 +54,36 @@ class ProofDb
   /** Notify */
   void notify( Node a, Node b, std::ostream& out );
   void notify( Node a, Node b);
+  
 private:
-  // TODO
+  /** currently allocating id */
+  unsigned d_idCounter;
+  /** map conclusions to proof ids */
+  std::map< Node, std::vector< unsigned > > d_ids;
+  /** map ids to proof rule information */
+  std::map< unsigned, ProofDbRule > d_proofDbRule;
+  
+  quantifiers::TermCanonize d_canon;
+  class ProofDbMatchTrieNotify : public quantifiers::NotifyMatch
+  {
+  public:
+    ProofDbMatchTrieNotify(ProofDb& p) : d_parent(p){}
+    ProofDb& d_parent;
+
+    bool notify(Node s,
+                      Node n,
+                      std::vector<Node>& vars,
+                      std::vector<Node>& subs) override
+    {
+      return d_parent.notifyMatch(s,n,vars,subs);
+    }
+  };
+  ProofDbMatchTrieNotify d_notify;
+  quantifiers::MatchTrie d_mt;
+  bool notifyMatch(Node s,
+                    Node n,
+                    std::vector<Node>& vars,
+                    std::vector<Node>& subs);
 };
 
 }  // namespace theory

@@ -19,6 +19,18 @@ using namespace CVC4::kind;
 namespace CVC4 {
 namespace theory {
 
+void ProofDbRule::init( const std::string& name, Node cond, Node eq )
+{
+  d_name = name;
+  d_cond = cond;
+  d_eq = eq;
+}
+  
+ProofDb::ProofDb() : d_idCounter(1), d_notify(*this)
+{
+  
+}
+
 void ProofDb::registerRules(const std::map< Node, std::string >& rules)
 {
   // TODO
@@ -27,7 +39,21 @@ void ProofDb::registerRules(const std::map< Node, std::string >& rules)
     Node r = rr.first;
     AlwaysAssert( r.getKind()==IMPLIES );
     
+    // must canonize
+    Trace("proof-db") << "Add rule " << r[1] << std::endl;
+    Node cr = d_canon.getCanonicalTerm(r);
+    
+    Node cond = cr[0];
+    Node eq = cr[1];
+    
     // add to discrimination tree
+    Trace("proof-db-debug") << "Add (Canonical) rule " << eq << std::endl;
+    d_mt.addTerm(eq);
+    
+    // remember rules
+    d_ids[eq].push_back(d_idCounter);
+    d_proofDbRule[d_idCounter].init(rr.second,cond,eq);
+    d_idCounter++;
   }
 }
 
@@ -72,8 +98,12 @@ bool ProofDb::existsRule( Node a, Node b, unsigned& index )
       return true;
     }
   }
-  // trusted reduction
-  
+  Node eq = a.eqNode(b);
+  // is an instance of existing rule?
+  if( !d_mt.getMatches(eq,&d_notify) )
+  {
+    return true;
+  }
   
   return false;
 }
@@ -86,6 +116,9 @@ bool ProofDb::existsRule( Node a, Node b)
 
 bool ProofDb::proveRule( Node a, Node b )
 {
+  Assert( !existsRule(a,b) );
+  // trusted reduction, try to prove
+  
   return false;
 }
 
@@ -103,6 +136,17 @@ void ProofDb::notify( Node a, Node b, std::ostream& out )
     return;
   }
   out << "(trusted (= " << a << " " << b << "))" << std::endl;
+}
+
+bool ProofDb::notifyMatch(Node s,
+                  Node n,
+                  std::vector<Node>& vars,
+                  std::vector<Node>& subs)
+{
+  Trace("proof-db-infer") << "ProofDb::notifyMatch: " << s << " is instance of existing rule:" << std::endl;
+  Trace("proof-db-infer") << "  " << n << std::endl;
+  Trace("proof-db-infer") << "  substitution: " << vars << " -> " << subs << std::endl;
+  return true;
 }
 
 }  // namespace theory

@@ -1537,11 +1537,25 @@ extendedCommand[std::unique_ptr<CVC4::Command>* cmd]
     // We currently do nothing with the type information declared for the heap.
     { cmd->reset(new EmptyCommand()); }
     RPAREN_TOK
-  | PROOF_DB_TOK LPAREN_TOK
+  | PROOF_DB_TOK sortedVarList[sortedVarNames]
+    {
+      PARSER_STATE->pushScope(true);
+      // We add bound variables here for parsing, but we do not need to remember
+      // them, since proof rules are canonicalized internally
+      for(std::vector<std::pair<std::string, CVC4::Type> >::const_iterator i =
+            sortedVarNames.begin(), iend = sortedVarNames.end(); i != iend;
+          ++i) {
+        PARSER_STATE->mkBoundVar((*i).first, (*i).second);
+      }
+    }
+    LPAREN_TOK
     ( symbol[name,CHECK_NONE,SYM_VARIABLE] term[e,e2]
       { rules[e] = name; }
     )*
-    { cmd->reset(new ProofDbCommand(rules)); }
+    { 
+      cmd->reset(new ProofDbCommand(rules));
+      PARSER_STATE->popScope();
+    }
     RPAREN_TOK
   ;
 
