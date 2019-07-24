@@ -908,8 +908,7 @@ TheoryModel* TheoryEngine::getBuiltModel()
   return d_curr_model;
 }
 
-
-void TheoryEngine::registerProofRules(const std::map< Node, std::string >& rules)
+void TheoryEngine::registerProofRules(const std::map<Node, std::string>& rules)
 {
   d_proofDb->registerRules(rules);
 }

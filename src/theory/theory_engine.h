@@ -36,8 +36,8 @@
 #include "smt_util/lemma_channels.h"
 #include "theory/atom_requests.h"
 #include "theory/decision_manager.h"
-#include "theory/proof_db.h"
 #include "theory/interrupted.h"
+#include "theory/proof_db.h"
 #include "theory/rewriter.h"
 #include "theory/shared_terms_database.h"
 #include "theory/sort_inference.h"
@@ -553,10 +553,7 @@ public:
   /**
    * Get a pointer to the underlying proof database
    */
-  theory::ProofDb* getProofDatabase() const
-  {
-    return d_proofDb.get();
-  }
+  theory::ProofDb* getProofDatabase() const { return d_proofDb.get(); }
 
  private:
   /**
@@ -778,9 +775,8 @@ public:
   void setEagerModelBuilding() { d_eager_model_building = true; }
 
   /** register proof rules */
-  void registerProofRules(const std::map< Node, std::string >& rules);
+  void registerProofRules(const std::map<Node, std::string>& rules);
 
-  
   /** get synth solutions
    *
    * This function adds entries to sol_map that map functions-to-synthesize with

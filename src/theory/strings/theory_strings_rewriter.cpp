@@ -21,16 +21,16 @@
 
 #include "expr/node_builder.h"
 #include "options/strings_options.h"
+#include "options/theory_options.h"
 #include "smt/logic_exception.h"
+#include "smt/smt_engine.h"
+#include "smt/smt_engine_scope.h"
 #include "theory/arith/arith_msum.h"
+#include "theory/proof_db.h"
 #include "theory/strings/theory_strings_utils.h"
 #include "theory/theory.h"
 #include "util/integer.h"
 #include "util/rational.h"
-#include "smt/smt_engine_scope.h"
-#include "smt/smt_engine.h"
-#include "theory/proof_db.h"
-#include "options/theory_options.h"
 
 using namespace std;
 using namespace CVC4;
@@ -1577,9 +1577,9 @@ RewriteResponse TheoryStringsRewriter::postRewrite(TNode node) {
 
   Trace("strings-postrewrite") << "Strings::postRewrite returning " << retNode << std::endl;
   if( orig!=retNode ){
-    if( options::notifyPfRules() )
+    if (options::notifyPfRules())
     {
-      smt::currentSmtEngine()->getProofDatabase()->notify(orig,retNode);
+      smt::currentSmtEngine()->getProofDatabase()->notify(orig, retNode);
     }
     Trace("strings-rewrite-debug") << "Strings: post-rewrite " << orig << " to " << retNode << std::endl;
   }

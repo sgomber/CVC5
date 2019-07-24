@@ -1736,13 +1736,14 @@ Command* GetValueCommand::clone() const
 
 std::string GetValueCommand::getCommandName() const { return "get-value"; }
 
-
-
 ProofDbCommand::ProofDbCommand(const std::map<Expr, std::string>& rules)
     : d_rules(rules)
 {
 }
-const std::map<Expr, std::string>& ProofDbCommand::getRules() const { return d_rules; }
+const std::map<Expr, std::string>& ProofDbCommand::getRules() const
+{
+  return d_rules;
+}
 void ProofDbCommand::invoke(SmtEngine* smtEngine)
 {
   try
@@ -1766,7 +1767,7 @@ void ProofDbCommand::invoke(SmtEngine* smtEngine)
 }
 
 Command* ProofDbCommand::exportTo(ExprManager* exprManager,
-                                   ExprManagerMapCollection& variableMap)
+                                  ExprManagerMapCollection& variableMap)
 {
   std::map<Expr, std::string> exportedRules;
   for (std::map<Expr, std::string>::const_iterator i = d_rules.begin();

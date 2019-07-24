@@ -750,8 +750,8 @@ class CVC4_PUBLIC SmtEngine {
   /**
    * Register proof rules
    */
-  void registerProofRules(const std::map< Expr, std::string >& rules) const;
-      
+  void registerProofRules(const std::map<Expr, std::string>& rules) const;
+
   /**
    * Add a function to the set of expressions whose value is to be
    * later returned by a call to getAssignment().  The expression
@@ -779,11 +779,11 @@ class CVC4_PUBLIC SmtEngine {
    * destroyed.
    */
   const Proof& getProof();
-  
-  /** 
-   * Get proof database 
+
+  /**
+   * Get proof database
    */
-  theory::ProofDb * getProofDatabase() const;
+  theory::ProofDb* getProofDatabase() const;
 
   /**
    * Print all instantiations made by the quantifiers module.

@@ -922,7 +922,6 @@ class CVC4_PUBLIC GetValueCommand : public Command
   std::string getCommandName() const override;
 }; /* class GetValueCommand */
 
-
 class CVC4_PUBLIC ProofDbCommand : public Command
 {
  protected:

@@ -4188,11 +4188,13 @@ Expr SmtEngine::getValue(const Expr& ex) const
   return resultNode.toExpr();
 }
 
-
-void SmtEngine::registerProofRules(const std::map< Expr, std::string >& rules) const
+void SmtEngine::registerProofRules(
+    const std::map<Expr, std::string>& rules) const
 {
-  std::map< Node, std::string > nodeRules;
-  for( std::map< Expr, std::string >::const_iterator it = rules.begin(); it != rules.end(); ++it )
+  std::map<Node, std::string> nodeRules;
+  for (std::map<Expr, std::string>::const_iterator it = rules.begin();
+       it != rules.end();
+       ++it)
   {
     Node n = Node::fromExpr(it->first);
     nodeRules[n] = it->second;
@@ -4868,11 +4870,11 @@ const Proof& SmtEngine::getProof()
 #endif /* IS_PROOFS_BUILD */
 }
 
-theory::ProofDb * SmtEngine::getProofDatabase() const
+theory::ProofDb* SmtEngine::getProofDatabase() const
 {
   return d_theoryEngine->getProofDatabase();
 }
-  
+
 void SmtEngine::printInstantiations( std::ostream& out ) {
   SmtScope smts(this);
   finalOptionsAreSet();
