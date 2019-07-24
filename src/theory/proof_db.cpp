@@ -41,5 +41,11 @@ bool ProofDb::proveRule( Node eq )
   return false;
 }
 
+bool ProofDb::notify( Node a, Node b )
+{
+ 
+  
+}
+
 }  // namespace theory
 }  // namespace CVC4

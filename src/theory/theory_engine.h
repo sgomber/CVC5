@@ -776,10 +776,11 @@ public:
    * TODO (#2648): revisit this.
    */
   void setEagerModelBuilding() { d_eager_model_building = true; }
-  
+
   /** register proof rules */
   void registerProofRules(const std::map< Node, std::string >& rules);
 
+  
   /** get synth solutions
    *
    * This function adds entries to sol_map that map functions-to-synthesize with

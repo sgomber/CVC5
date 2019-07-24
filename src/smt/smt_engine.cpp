@@ -4868,6 +4868,11 @@ const Proof& SmtEngine::getProof()
 #endif /* IS_PROOFS_BUILD */
 }
 
+theory::ProofDb * SmtEngine::getProofDatabase() const
+{
+  return d_theoryEngine->getProofDatabase();
+}
+  
 void SmtEngine::printInstantiations( std::ostream& out ) {
   SmtScope smts(this);
   finalOptionsAreSet();

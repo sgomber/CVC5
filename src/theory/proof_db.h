@@ -44,6 +44,8 @@ class ProofDb
   bool existsRule( Node eq, unsigned& index );
   /** Prove rule */
   bool proveRule( Node eq );
+  /** Notify */
+  bool notify( Node a, Node b );
 private:
   // TODO
 };

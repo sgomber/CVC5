@@ -100,6 +100,7 @@ namespace smt {
 
 namespace theory {
   class TheoryModel;
+  class ProofDb;
 }/* CVC4::theory namespace */
 
 // TODO: SAT layer (esp. CNF- versus non-clausal solvers under the
@@ -778,6 +779,11 @@ class CVC4_PUBLIC SmtEngine {
    * destroyed.
    */
   const Proof& getProof();
+  
+  /** 
+   * Get proof database 
+   */
+  theory::ProofDb * getProofDatabase() const;
 
   /**
    * Print all instantiations made by the quantifiers module.
