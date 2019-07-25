@@ -439,6 +439,8 @@ libcvc4_add_sources(
   theory/output_channel.h
   theory/proof_db.cpp
   theory/proof_db.h
+  theory/proof_db_term_process.cpp
+  theory/proof_db_term_process.h
   theory/quantifiers/alpha_equivalence.cpp
   theory/quantifiers/alpha_equivalence.h
   theory/quantifiers/anti_skolem.cpp
