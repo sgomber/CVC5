@@ -28,11 +28,13 @@ void ProofDb::registerRules(const std::map<Node, std::string>& rules)
   for (const std::pair<const Node, std::string>& rr : rules)
   {
     Node r = rr.first;
+    // convert to internal
+    Node ri = d_pdtp.toInternal(r); 
     AlwaysAssert(r.getKind() == IMPLIES);
 
     // must canonize
     Trace("proof-db") << "Add rule " << r[1] << std::endl;
-    Node cr = d_canon.getCanonicalTerm(r);
+    Node cr = d_canon.getCanonicalTerm(ri);
 
     Node cond = cr[0];
     std::vector<Node> conds;
@@ -200,7 +202,7 @@ bool ProofDb::notifyMatch(Node s,
       condSuccess = false;
       Node sc =
           cond.substitute(vars.begin(), vars.end(), subs.begin(), subs.end());
-      Trace("proof-db-infer-debug") << "Check condition: " << sc << std::endl;
+      Trace("proof-db-infer-sc") << "Check condition: " << sc << std::endl;
       Kind sck = sc.getKind();
       if (sck == EQUAL)
       {
@@ -208,7 +210,9 @@ bool ProofDb::notifyMatch(Node s,
         {
           // a computational side condition, call sc utility
           Node res = d_sceval.evaluate(sc[0]);
-          condSuccess = res == sc[1];
+          Trace("proof-db-infer-sc") << "... returned " << res << std::endl;
+          Trace("proof-db-infer-sc") << "... expected " << sc[1] << std::endl;
+          condSuccess = (res == sc[1]);
         }
       }
       if (!condSuccess)

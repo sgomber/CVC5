@@ -156,14 +156,19 @@ Node ProofDbScEval::evaluateApp(Node op, const std::vector<Node>& args)
   // ----------------------------- specific lookup into side conditions
   Trace("proof-db-sc") << "Run side condition " << it->second << " with args "
                        << args << std::endl;
+  Node ret;
   if (it->second == sc_flatten)
   {
     Assert(args.size() == 1);
-    return flatten(args[0]);
+    ret = flatten(args[0]);
   }
-  Warning() << "Unknown side condition id " << it->second << " for operator "
+  else
+  {
+    Warning() << "Unknown side condition id " << it->second << " for operator "
             << op << std::endl;
-  return Node::null();
+  }
+  Trace("proof-db-sc") << "Side condition returned " << ret << std::endl;
+  return ret;
 }
 
 bool ProofDbScEval::isSideConditionOp(Node op) const
@@ -173,11 +178,27 @@ bool ProofDbScEval::isSideConditionOp(Node op) const
 
 ////// side conditions
 
+Node flattenCollect( Kind k, Node n, Node acc )
+{
+  if( n.getKind()==k )
+  {
+    Node ret = flattenCollect(k,n[1],acc);
+    return flattenCollect(k,n[0],ret);
+  }
+  else if( acc.isNull() )
+  {
+    return n;
+  }
+  else
+  {
+    return NodeManager::currentNM()->mkNode(k,n,acc);
+  }
+}
 Node ProofDbScEval::flatten(Node n)
 {
   Assert(n.getNumChildren() == 2);
-  Node op = n.getOperator();
-  return n;
+  Node acc;
+  return flattenCollect(n.getKind(),n,acc);
 }
 
 }  // namespace theory
