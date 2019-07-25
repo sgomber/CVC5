@@ -156,6 +156,7 @@ set(gen_java_files
   ${CMAKE_CURRENT_BINARY_DIR}/PopCommand.java
   ${CMAKE_CURRENT_BINARY_DIR}/PrettySExprs.java
   ${CMAKE_CURRENT_BINARY_DIR}/Proof.java
+  ${CMAKE_CURRENT_BINARY_DIR}/ProofDbCommand.java
   ${CMAKE_CURRENT_BINARY_DIR}/PropagateRuleCommand.java
   ${CMAKE_CURRENT_BINARY_DIR}/PushCommand.java
   ${CMAKE_CURRENT_BINARY_DIR}/QueryCommand.java
