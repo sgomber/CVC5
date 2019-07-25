@@ -20,16 +20,6 @@ using namespace CVC4::kind;
 namespace CVC4 {
 namespace theory {
 
-void ProofDbRule::init(const std::string& name,
-                       const std::vector<Node>& cond,
-                       Node eq)
-{
-  d_name = name;
-  d_cond.clear();
-  d_cond.insert(d_cond.end(), cond.begin(), cond.end());
-  d_eq = eq;
-}
-
 ProofDb::ProofDb() : d_idCounter(1), d_notify(*this) {}
 
 void ProofDb::registerRules(const std::map<Node, std::string>& rules)
@@ -63,6 +53,12 @@ void ProofDb::registerRules(const std::map<Node, std::string>& rules)
     {
       // skip those with false condition
       continue;
+    }
+    
+    // register with side condition utility
+    for( const Node& c : conds )
+    {
+      d_sceval.registerSideCondition(c);
     }
 
     Node eq = cr[1];
@@ -201,11 +197,24 @@ bool ProofDb::notifyMatch(Node s,
     for (const Node& cond : pr.d_cond)
     {
       // check whether condition holds?
+      condSuccess = false;
       Node sc =
           cond.substitute(vars.begin(), vars.end(), subs.begin(), subs.end());
       Trace("proof-db-infer-debug") << "Check condition: " << sc << std::endl;
-      condSuccess = false;
-      break;
+      Kind sck = sc.getKind();
+      if( sck==EQUAL )
+      {
+        if( sc[0].getKind()==APPLY_UF )
+        {
+          // a computational side condition, call sc utility
+          Node res = d_sceval.evaluate(sc[0]);
+          condSuccess = res==sc[1];
+        }
+      }
+      if( !condSuccess )
+      {
+        break;
+      }
     }
     if (condSuccess)
     {

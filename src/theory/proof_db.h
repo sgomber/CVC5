@@ -57,6 +57,8 @@ class ProofDb
   std::map<unsigned, ProofDbRule> d_proofDbRule;
   /** the term process utility */
   ProofDbTermProcess d_pdtp;
+  /** the side condition utility */
+  ProofDbScEval d_sceval;
   /** the term canonization utility */
   quantifiers::TermCanonize d_canon;
   /** The match trie */

@@ -24,16 +24,30 @@
 namespace CVC4 {
 namespace theory {
 
-class ProofDbSideCondition
+class ProofDbScEval
 {
  public:
+   ProofDbScEval();
+  void registerSideCondition(Node sc);
   Node evaluate(Node n);
 
+  bool isSideConditionOp( Node op ) const;
  private:
-  Node run(const std::string& fname, std::vector<Node>& args);
+  enum SideConditionId
+  {
+    sc_INVALID,
+    sc_flatten,
+  };
+  std::map< std::string, SideConditionId > d_symTable;
+  std::map< Node, SideConditionId > d_opTable;
+  /** build operator table 
+   */
+  void buildOperatorTable( Node n );
+  
+  Node evaluateApp(Node op, const std::vector< Node >& args);
+
   /** specific side conditions */
   Node flatten(Node n);
-  Node flatten2(Node op, Node n, Node nacc);
 };
 
 }  // namespace theory
