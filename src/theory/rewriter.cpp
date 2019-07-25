@@ -142,9 +142,12 @@ Node Rewriter::rewriteTo(theory::TheoryId theoryId, Node node) {
           // Perform the pre-rewrite
           RewriteResponse response = Rewriter::callPreRewrite((TheoryId) rewriteStackTop.theoryId, rewriteStackTop.node);
           // if producing proofs, notify
-          if (options::notifyPfRules())
+          if( rewriteStackTop.node!=response.node )
           {
-            smt::currentSmtEngine()->getProofDatabase()->notify(rewriteStackTop.node, response.node);
+            if (options::notifyPfRules())
+            {
+              smt::currentSmtEngine()->getProofDatabase()->notify(rewriteStackTop.node, response.node);
+            }
           }
           // Put the rewritten node to the top of the stack
           rewriteStackTop.node = response.node;
@@ -208,6 +211,14 @@ Node Rewriter::rewriteTo(theory::TheoryId theoryId, Node node) {
       for(;;) {
         // Do the post-rewrite
         RewriteResponse response = Rewriter::callPostRewrite((TheoryId) rewriteStackTop.theoryId, rewriteStackTop.node);
+        // if producing proofs, notify
+        if( rewriteStackTop.node!=response.node )
+        {
+          if (options::notifyPfRules())
+          {
+            smt::currentSmtEngine()->getProofDatabase()->notify(rewriteStackTop.node, response.node);
+          }
+        }
         // We continue with the response we got
         TheoryId newTheoryId = theoryOf(response.node);
         if (newTheoryId != (TheoryId) rewriteStackTop.theoryId || response.status == REWRITE_AGAIN_FULL) {
