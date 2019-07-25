@@ -1,5 +1,5 @@
 /*********************                                                        */
-/*! \file proof_db.cpp
+/*! \file proof_db_term_process.cpp
  ** \verbatim
  ** Top contributors (to current version):
  **   Andrew Reynolds
@@ -12,8 +12,7 @@
  ** \brief Implementation of Proof db.
  **/
 
-#include "theory/proof_db.h"
-#include "theory/theory.h"
+#include "theory/proof_db_term_process.h"
 
 using namespace CVC4::kind;
 
@@ -22,36 +21,29 @@ namespace theory {
 
 Node ProofDbTermProcess::toInternal(Node n)
 {
-  NodeManager* nm = NodeManager::currentNM();
+  NodeManager * nm = NodeManager::currentNM();
   std::unordered_map<Node, Node, NodeHashFunction>::iterator it;
   std::vector<TNode> visit;
   TNode cur;
   visit.push_back(n);
-  do
-  {
+  do {
     cur = visit.back();
     visit.pop_back();
     it = d_internal.find(cur);
 
-    if (it == d_internal.end())
-    {
+    if (it == d_internal.end()) {
       d_internal[cur] = Node::null();
       visit.push_back(cur);
-      for (const Node& cn : cur)
-      {
+      for (const Node& cn : cur) {
         visit.push_back(cn);
       }
-    }
-    else if (it->second.isNull())
-    {
+    } else if (it->second.isNull()) {
       bool childChanged = false;
       std::vector<Node> children;
-      if (cur.getMetaKind() == kind::metakind::PARAMETERIZED)
-      {
+      if (cur.getMetaKind() == kind::metakind::PARAMETERIZED) {
         children.push_back(cur.getOperator());
       }
-      for (const Node& cn : cur)
-      {
+      for (const Node& cn : cur) {
         it = d_internal.find(cn);
         Assert(it != d_internal.end());
         Assert(!it->second.isNull());
@@ -60,42 +52,42 @@ Node ProofDbTermProcess::toInternal(Node n)
       }
       Node ret;
       Kind ck = cur.getKind();
-      if (ck == CONST_STRING)
+      if( ck==CONST_STRING )
       {
         // "ABC" is (str.++ "A" (str.++ "B" "C"))
-        const std::vector<unsigned>& vec = cur.getConst<String>().getVec();
-        if (vec.size() <= 1)
+        const std::vector< unsigned >& vec = cur.getConst<String>().getVec();
+        if( vec.size()<=1 )
         {
           ret = cur;
         }
         else
         {
-          std::vector<unsigned> v(vec.begin(), vec.end());
-          std::reverse(v.begin(), v.end());
-          std::vector<unsigned> tmp;
+          std::vector< unsigned > v( vec.begin(), vec.end() );
+          std::reverse(v.begin(),v.end());
+          std::vector< unsigned > tmp;
           tmp.push_back(v[0]);
           ret = nm->mkConst(String(tmp));
           tmp.pop_back();
-          for (unsigned i = 1, size = v.size(); i < size; i++)
+          for( unsigned i=1, size=v.size(); i<size; i++ )
           {
             tmp.push_back(v[i]);
-            ret = nm->mkNode(STRING_CONCAT, nm->mkConst(String(tmp)), ret);
+            ret = nm->mkNode(STRING_CONCAT,nm->mkConst(String(tmp)), ret);
             tmp.pop_back();
           }
         }
       }
-      else if (isAssociativeNary(ck) && children.size() > 2)
+      else if( isAssociativeNary(ck) && children.size()>2 )
       {
-        Assert(cur.getMetaKind() != kind::metakind::PARAMETERIZED);
+        Assert(cur.getMetaKind() != kind::metakind::PARAMETERIZED );
         // convert to binary
-        std::reverse(children.begin(), children.end());
+        std::reverse(children.begin(),children.end());
         ret = children[0];
-        for (unsigned i = 1, nchild = children.size(); i < nchild; i++)
+        for( unsigned i=1, nchild = children.size(); i<nchild; i++ )
         {
-          ret = nm->mkNode(ck, children[i], ret);
+          ret = nm->mkNode( ck, children[i], ret );
         }
       }
-      else if (childChanged)
+      else if( childChanged )
       {
         ret = nm->mkNode(ck, children);
       }
@@ -113,36 +105,29 @@ Node ProofDbTermProcess::toInternal(Node n)
 
 Node ProofDbTermProcess::toExternal(Node n)
 {
-  NodeManager* nm = NodeManager::currentNM();
+  NodeManager * nm = NodeManager::currentNM();
   std::unordered_map<Node, Node, NodeHashFunction>::iterator it;
   std::vector<TNode> visit;
   TNode cur;
   visit.push_back(n);
-  do
-  {
+  do {
     cur = visit.back();
     visit.pop_back();
     it = d_internal.find(cur);
 
-    if (it == d_internal.end())
-    {
+    if (it == d_internal.end()) {
       d_internal[cur] = Node::null();
       visit.push_back(cur);
-      for (const Node& cn : cur)
-      {
+      for (const Node& cn : cur) {
         visit.push_back(cn);
       }
-    }
-    else if (it->second.isNull())
-    {
+    } else if (it->second.isNull()) {
       bool childChanged = false;
       std::vector<Node> children;
-      if (cur.getMetaKind() == kind::metakind::PARAMETERIZED)
-      {
+      if (cur.getMetaKind() == kind::metakind::PARAMETERIZED) {
         children.push_back(cur.getOperator());
       }
-      for (const Node& cn : cur)
-      {
+      for (const Node& cn : cur) {
         it = d_internal.find(cn);
         Assert(it != d_internal.end());
         Assert(!it->second.isNull());
@@ -151,42 +136,39 @@ Node ProofDbTermProcess::toExternal(Node n)
       }
       Node ret;
       Kind ck = cur.getKind();
-      if (isAssociativeNary(ck))
+      if( isAssociativeNary(ck) )
       {
-        Assert(children.size() == 2);
-        if (children[1].getKind() == ck)
+        Assert( children.size()==2 );
+        if( children[1].getKind()==ck )
         {
           // flatten to n-ary
           Node cc = children[1];
           children.pop_back();
-          for (const Node& ccc : cc)
+          for( const Node& ccc : cc )
           {
             children.push_back(ccc);
           }
-          ret = nm->mkNode(ck, children);
+          ret = nm->mkNode(ck, children );
         }
-        else if (children[1].getKind() == CONST_STRING
-                 && children[0].getKind() == CONST_STRING)
+        else if( children[1].getKind()==CONST_STRING && children[0].getKind()==CONST_STRING )
         {
           // flatten (non-empty) constants
-          const std::vector<unsigned>& v0 =
-              children[0].getConst<String>().getVec();
-          const std::vector<unsigned>& v1 =
-              children[1].getConst<String>().getVec();
-          if (v0.size() == 1 && !v1.empty())
+          const std::vector< unsigned >& v0 = children[0].getConst<String>().getVec();
+          const std::vector< unsigned >& v1 = children[1].getConst<String>().getVec();
+          if( v0.size()==1 && !v1.empty() )
           {
-            std::vector<unsigned> vres;
+            std::vector< unsigned > vres;
             vres.push_back(v0[0]);
-            vres.insert(vres.end(), v1.begin(), v1.end());
+            vres.insert(vres.end(),v1.begin(),v1.end());
             ret = nm->mkConst(String(vres));
           }
         }
       }
-      else if (childChanged)
+      else if( childChanged )
       {
         ret = nm->mkNode(ck, children);
       }
-      if (ret.isNull())
+      if( ret.isNull() )
       {
         ret = cur;
       }
@@ -197,20 +179,10 @@ Node ProofDbTermProcess::toExternal(Node n)
   Assert(!d_internal.find(n)->second.isNull());
   return d_internal[n];
 }
-
+  
 bool ProofDbTermProcess::isAssociativeNary(Kind k)
 {
-  return k == AND || k == OR || k == STRING_CONCAT;
-}
-
-void ProofDbRule::init(const std::string& name,
-                       const std::vector<Node>& cond,
-                       Node eq)
-{
-  d_name = name;
-  d_cond.clear();
-  d_cond.insert(d_cond.end(), cond.begin(), cond.end());
-  d_eq = eq;
+  return k==AND || k==OR || k==STRING_CONCAT;
 }
 
 }  // namespace theory
