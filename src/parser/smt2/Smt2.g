@@ -1537,7 +1537,7 @@ extendedCommand[std::unique_ptr<CVC4::Command>* cmd]
     // We currently do nothing with the type information declared for the heap.
     { cmd->reset(new EmptyCommand()); }
     RPAREN_TOK
-  | PROOF_DB_TOK sortedVarList[sortedVarNames]
+  | PROOF_DB_TOK LPAREN_TOK sortedVarList[sortedVarNames] RPAREN_TOK
     {
       PARSER_STATE->pushScope(true);
       // We add bound variables here for parsing, but we do not need to remember

@@ -140,10 +140,10 @@ bool ProofDb::notifyMatch(Node s,
                           std::vector<Node>& vars,
                           std::vector<Node>& subs)
 {
-  Trace("proof-db-infer") << "ProofDb::notifyMatch: " << s
+  Trace("proof-db-infer-debug") << "ProofDb::notifyMatch: " << s
                           << " is instance of existing rule:" << std::endl;
-  Trace("proof-db-infer") << "  " << n << std::endl;
-  Trace("proof-db-infer") << "  substitution: " << vars << " -> " << subs
+  Trace("proof-db-infer-debug") << "  " << n << std::endl;
+  Trace("proof-db-infer-debug") << "  substitution: " << vars << " -> " << subs
                           << std::endl;
   Assert(d_ids.find(n) != d_ids.end());
   // check each rule instance
@@ -153,6 +153,13 @@ bool ProofDb::notifyMatch(Node s,
     // get the proof rule
     ProofDbRule& pr = d_proofDbRule[ruleId];
     // does the side condition hold?
+    Node cond = pr.d_cond;
+    if( cond.isConst() && cond.getConst<bool>() )
+    {
+      // successfully found instance of rule
+      Trace("proof-db-infer") << "INFER " << s << " by " << pr.d_name << std::endl;
+      return false;
+    }
   }
 
   return true;
