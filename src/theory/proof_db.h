@@ -18,24 +18,16 @@
 #define CVC4__THEORY__PROOF_DB__H
 
 #include <map>
-#include <unordered_map>
+#include <vector>
 #include "expr/node.h"
 #include "theory/proof_db_term_process.h"
+#include "theory/proof_db_pf.h"
+#include "theory/proof_db_sc.h"
 #include "theory/quantifiers/candidate_rewrite_filter.h"
 #include "theory/quantifiers/term_canonize.h"
 
 namespace CVC4 {
 namespace theory {
-
-class ProofDbRule
-{
- public:
-  std::string d_name;
-  std::vector<Node> d_cond;
-  Node d_eq;
-
-  void init(const std::string& name, const std::vector<Node>& cond, Node eq);
-};
 
 /** ProofDb
  */
@@ -65,8 +57,11 @@ class ProofDb
   std::map<unsigned, ProofDbRule> d_proofDbRule;
   /** the term process utility */
   ProofDbTermProcess d_pdtp;
-
+  /** the term canonization utility */
   quantifiers::TermCanonize d_canon;
+  /** The match trie */
+  quantifiers::MatchTrie d_mt;
+  /** Notify class for the match trie */
   class ProofDbMatchTrieNotify : public quantifiers::NotifyMatch
   {
    public:
@@ -82,7 +77,11 @@ class ProofDb
     }
   };
   ProofDbMatchTrieNotify d_notify;
-  quantifiers::MatchTrie d_mt;
+  /** 
+   * Called during a call to d_mt.getMatches(s).
+   * This call is called by the notify class for each term added to d_mt that
+   * matches s under some substitution.
+   */
   bool notifyMatch(Node s,
                    Node n,
                    std::vector<Node>& vars,

@@ -20,8 +20,6 @@
 #include <map>
 #include <unordered_map>
 #include "expr/node.h"
-#include "theory/quantifiers/candidate_rewrite_filter.h"
-#include "theory/quantifiers/term_canonize.h"
 
 namespace CVC4 {
 namespace theory {
