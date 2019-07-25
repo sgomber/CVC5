@@ -19,12 +19,14 @@ using namespace CVC4::kind;
 
 namespace CVC4 {
 namespace theory {
-  
-void ProofDbRule::init(const std::string& name, const std::vector<Node>& cond, Node eq)
+
+void ProofDbRule::init(const std::string& name,
+                       const std::vector<Node>& cond,
+                       Node eq)
 {
   d_name = name;
   d_cond.clear();
-  d_cond.insert(d_cond.end(),cond.begin(),cond.end());
+  d_cond.insert(d_cond.end(), cond.begin(), cond.end());
   d_eq = eq;
 }
 
@@ -43,26 +45,26 @@ void ProofDb::registerRules(const std::map<Node, std::string>& rules)
     Node cr = d_canon.getCanonicalTerm(r);
 
     Node cond = cr[0];
-    std::vector< Node > conds;
-    if( cond.getKind()==AND )
+    std::vector<Node> conds;
+    if (cond.getKind() == AND)
     {
-      for( const Node& c : cond )
+      for (const Node& c : cond)
       {
         // should flatten in proof inference listing
-        Assert( c.getKind()!=AND );
+        Assert(c.getKind() != AND);
         conds.push_back(c);
       }
     }
-    else if( !cond.isConst() )
+    else if (!cond.isConst())
     {
       conds.push_back(cond);
     }
-    else if( !cond.getConst<bool>() )
+    else if (!cond.getConst<bool>())
     {
       // skip those with false condition
       continue;
     }
-    
+
     Node eq = cr[1];
 
     // add to discrimination tree
@@ -121,12 +123,12 @@ bool ProofDb::existsRule(Node a, Node b, unsigned& index)
     }
   }
   TheoryId at = Theory::theoryOf(a);
-  if( at==THEORY_ARITH )
+  if (at == THEORY_ARITH)
   {
     // normalization?
     return true;
   }
-  if( at==THEORY_BOOL )
+  if (at == THEORY_BOOL)
   {
     // normalization? ignore for now
     return true;
@@ -196,18 +198,19 @@ bool ProofDb::notifyMatch(Node s,
     ProofDbRule& pr = d_proofDbRule[ruleId];
     // does the side condition hold?
     bool condSuccess = true;
-    for( const Node& cond : pr.d_cond )
+    for (const Node& cond : pr.d_cond)
     {
       // check whether condition holds?
-      Node sc = cond.substitute(vars.begin(),vars.end(),subs.begin(),subs.end());
+      Node sc =
+          cond.substitute(vars.begin(), vars.end(), subs.begin(), subs.end());
       Trace("proof-db-infer-debug") << "Check condition: " << sc << std::endl;
       condSuccess = false;
       break;
     }
-    if( condSuccess )
+    if (condSuccess)
     {
       // successfully found instance of rule
-      if( Trace.isOn("proof-db-infer") )
+      if (Trace.isOn("proof-db-infer"))
       {
         Node se = d_pdtp.toExternal(s);
         Trace("proof-db-infer")

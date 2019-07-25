@@ -20,9 +20,9 @@
 #include <map>
 #include <unordered_map>
 #include "expr/node.h"
+#include "theory/proof_db_term_process.h"
 #include "theory/quantifiers/candidate_rewrite_filter.h"
 #include "theory/quantifiers/term_canonize.h"
-#include "theory/proof_db_term_process.h"
 
 namespace CVC4 {
 namespace theory {
@@ -31,10 +31,10 @@ class ProofDbRule
 {
  public:
   std::string d_name;
-  std::vector< Node > d_cond;
+  std::vector<Node> d_cond;
   Node d_eq;
 
-  void init(const std::string& name, const std::vector< Node >& cond, Node eq);
+  void init(const std::string& name, const std::vector<Node>& cond, Node eq);
 };
 
 /** ProofDb

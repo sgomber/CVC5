@@ -17,13 +17,13 @@
 
 #include "theory/rewriter.h"
 
-#include "theory/theory.h"
+#include "smt/smt_engine.h"
 #include "smt/smt_engine_scope.h"
 #include "smt/smt_statistics_registry.h"
-#include "theory/rewriter_tables.h"
-#include "util/resource_manager.h"
-#include "smt/smt_engine.h"
 #include "theory/proof_db.h"
+#include "theory/rewriter_tables.h"
+#include "theory/theory.h"
+#include "util/resource_manager.h"
 
 using namespace std;
 
@@ -142,11 +142,12 @@ Node Rewriter::rewriteTo(theory::TheoryId theoryId, Node node) {
           // Perform the pre-rewrite
           RewriteResponse response = Rewriter::callPreRewrite((TheoryId) rewriteStackTop.theoryId, rewriteStackTop.node);
           // if producing proofs, notify
-          if( rewriteStackTop.node!=response.node )
+          if (rewriteStackTop.node != response.node)
           {
             if (options::notifyPfRules())
             {
-              smt::currentSmtEngine()->getProofDatabase()->notify(rewriteStackTop.node, response.node);
+              smt::currentSmtEngine()->getProofDatabase()->notify(
+                  rewriteStackTop.node, response.node);
             }
           }
           // Put the rewritten node to the top of the stack
@@ -212,11 +213,12 @@ Node Rewriter::rewriteTo(theory::TheoryId theoryId, Node node) {
         // Do the post-rewrite
         RewriteResponse response = Rewriter::callPostRewrite((TheoryId) rewriteStackTop.theoryId, rewriteStackTop.node);
         // if producing proofs, notify
-        if( rewriteStackTop.node!=response.node )
+        if (rewriteStackTop.node != response.node)
         {
           if (options::notifyPfRules())
           {
-            smt::currentSmtEngine()->getProofDatabase()->notify(rewriteStackTop.node, response.node);
+            smt::currentSmtEngine()->getProofDatabase()->notify(
+                rewriteStackTop.node, response.node);
           }
         }
         // We continue with the response we got
