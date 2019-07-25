@@ -22,6 +22,8 @@
 #include "smt/smt_statistics_registry.h"
 #include "theory/rewriter_tables.h"
 #include "util/resource_manager.h"
+#include "smt/smt_engine.h"
+#include "theory/proof_db.h"
 
 using namespace std;
 
@@ -139,6 +141,11 @@ Node Rewriter::rewriteTo(theory::TheoryId theoryId, Node node) {
         for(;;) {
           // Perform the pre-rewrite
           RewriteResponse response = Rewriter::callPreRewrite((TheoryId) rewriteStackTop.theoryId, rewriteStackTop.node);
+          // if producing proofs, notify
+          if (options::notifyPfRules())
+          {
+            smt::currentSmtEngine()->getProofDatabase()->notify(rewriteStackTop.node, response.node);
+          }
           // Put the rewritten node to the top of the stack
           rewriteStackTop.node = response.node;
           TheoryId newTheory = theoryOf(rewriteStackTop.node);
