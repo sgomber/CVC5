@@ -37,7 +37,6 @@
 #include "theory/atom_requests.h"
 #include "theory/decision_manager.h"
 #include "theory/interrupted.h"
-#include "theory/proof_db.h"
 #include "theory/rewriter.h"
 #include "theory/shared_terms_database.h"
 #include "theory/sort_inference.h"
@@ -86,6 +85,7 @@ struct NodeTheoryPairHashFunction {
 namespace theory {
   class TheoryModel;
   class TheoryEngineModelBuilder;
+  class ProofDb;
 
   namespace eq {
     class EqualityEngine;

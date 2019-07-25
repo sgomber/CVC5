@@ -51,6 +51,7 @@
 #include "theory/theory_traits.h"
 #include "theory/uf/equality_engine.h"
 #include "util/resource_manager.h"
+#include "theory/proof_db.h"
 
 using namespace std;
 

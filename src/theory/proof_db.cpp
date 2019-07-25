@@ -228,14 +228,15 @@ bool ProofDb::existsRule(Node a, Node b, unsigned& index)
     // reflexivity
     return true;
   }
-  if (b.isConst())
+  Node be = d_pdtp.toExternal(b);
+  if (be.isConst())
   {
+    Node ae = d_pdtp.toExternal(a);
     // nullary symbols should not rewrite to constants
     Assert(a.getNumChildren() != 0);
     bool allConst = true;
-    for (const Node& ac : a)
+    for (const Node& ace : ae)
     {
-      Node ace = d_pdtp.toExternal(ac);
       if (!ace.isConst())
       {
         allConst = false;
