@@ -27,24 +27,25 @@ namespace theory {
 class ProofDbScEval
 {
  public:
-   ProofDbScEval();
+  ProofDbScEval();
   void registerSideCondition(Node sc);
   Node evaluate(Node n);
 
-  bool isSideConditionOp( Node op ) const;
+  bool isSideConditionOp(Node op) const;
+
  private:
   enum SideConditionId
   {
     sc_INVALID,
     sc_flatten,
   };
-  std::map< std::string, SideConditionId > d_symTable;
-  std::map< Node, SideConditionId > d_opTable;
-  /** build operator table 
+  std::map<std::string, SideConditionId> d_symTable;
+  std::map<Node, SideConditionId> d_opTable;
+  /** build operator table
    */
-  void buildOperatorTable( Node n );
-  
-  Node evaluateApp(Node op, const std::vector< Node >& args);
+  void buildOperatorTable(Node n);
+
+  Node evaluateApp(Node op, const std::vector<Node>& args);
 
   /** specific side conditions */
   Node flatten(Node n);

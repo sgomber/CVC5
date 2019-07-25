@@ -26,48 +26,56 @@ ProofDbScEval::ProofDbScEval()
 
 void ProofDbScEval::registerSideCondition(Node sc)
 {
-  if( sc.getKind()==EQUAL )
+  if (sc.getKind() == EQUAL)
   {
     buildOperatorTable(sc[0]);
   }
 }
 
-void ProofDbScEval::buildOperatorTable( Node n ){
+void ProofDbScEval::buildOperatorTable(Node n)
+{
   std::unordered_set<TNode, TNodeHashFunction> visited;
   std::vector<TNode> visit;
   TNode cur;
   visit.push_back(n);
-  do {
+  do
+  {
     cur = visit.back();
     visit.pop_back();
-    if (visited.find(cur) == visited.end()) {
+    if (visited.find(cur) == visited.end())
+    {
       visited.insert(cur);
       // if it is APPLY_UF, we check if it is a side condition
-      if( cur.getKind()==APPLY_UF )
+      if (cur.getKind() == APPLY_UF)
       {
         Node op = cur.getOperator();
-        std::map< Node, SideConditionId >::iterator ito = d_opTable.find(op);
+        std::map<Node, SideConditionId>::iterator ito = d_opTable.find(op);
         // if not already processed
-        if( ito==d_opTable.end() )
+        if (ito == d_opTable.end())
         {
           std::stringstream ss;
           ss << op;
-          Trace("proof-db-sc-init") << "Initialize side condition symbol " << ss.str() << "..." << std::endl;
-          std::map< std::string, SideConditionId >::iterator it = d_symTable.find(ss.str());
-          if( it!=d_symTable.end() )
+          Trace("proof-db-sc-init") << "Initialize side condition symbol "
+                                    << ss.str() << "..." << std::endl;
+          std::map<std::string, SideConditionId>::iterator it =
+              d_symTable.find(ss.str());
+          if (it != d_symTable.end())
           {
-            Trace("proof-db-sc-init") << "*** Associate " << op << " / " << it->second << std::endl;
+            Trace("proof-db-sc-init")
+                << "*** Associate " << op << " / " << it->second << std::endl;
             d_opTable[op] = it->second;
           }
           else
           {
-            Warning() << "Could not find side condition for operator " << op << std::endl;
+            Warning() << "Could not find side condition for operator " << op
+                      << std::endl;
             AlwaysAssert(false);
           }
         }
       }
       // can be nested
-      for (const Node& cn : cur ){
+      for (const Node& cn : cur)
+      {
         visit.push_back(cn);
       }
     }
@@ -76,47 +84,54 @@ void ProofDbScEval::buildOperatorTable( Node n ){
 
 Node ProofDbScEval::evaluate(Node n)
 {
-  NodeManager * nm = NodeManager::currentNM();
+  NodeManager* nm = NodeManager::currentNM();
   std::unordered_map<TNode, Node, TNodeHashFunction> visited;
   std::unordered_map<TNode, Node, TNodeHashFunction>::iterator it;
   std::vector<TNode> visit;
   TNode cur;
   visit.push_back(n);
-  do {
+  do
+  {
     cur = visit.back();
     visit.pop_back();
     it = visited.find(cur);
 
-    if (it == visited.end()) {
+    if (it == visited.end())
+    {
       visited[cur] = Node::null();
       visit.push_back(cur);
-      for (const Node& cn : cur) {
+      for (const Node& cn : cur)
+      {
         visit.push_back(cn);
       }
-    } else if (it->second.isNull()) {
+    }
+    else if (it->second.isNull())
+    {
       Node ret = cur;
       bool childChanged = false;
       std::vector<Node> children;
-      for (const Node& cn : cur) {
+      for (const Node& cn : cur)
+      {
         it = visited.find(cn);
         Assert(it != visited.end());
         Assert(!it->second.isNull());
         childChanged = childChanged || cn != it->second;
         children.push_back(it->second);
       }
-      if( cur.getKind()==APPLY_UF )
+      if (cur.getKind() == APPLY_UF)
       {
-        ret = evaluateApp(cur.getOperator(),children);
-        if( ret.isNull() )
+        ret = evaluateApp(cur.getOperator(), children);
+        if (ret.isNull())
         {
           // failed side condition
           return ret;
         }
       }
-      else if (childChanged) 
+      else if (childChanged)
       {
-        if (cur.getMetaKind() == metakind::PARAMETERIZED) {
-          children.insert(children.begin(),cur.getOperator());
+        if (cur.getMetaKind() == metakind::PARAMETERIZED)
+        {
+          children.insert(children.begin(), cur.getOperator());
         }
         ret = nm->mkNode(cur.getKind(), children);
       }
@@ -127,36 +142,40 @@ Node ProofDbScEval::evaluate(Node n)
   Assert(!visited.find(n)->second.isNull());
   return visited[n];
 }
-  
-Node ProofDbScEval::evaluateApp(Node op, const std::vector< Node >& args) {
-  std::map< Node, SideConditionId >::iterator it = d_opTable.find(op);
-  if( it==d_opTable.end() )
+
+Node ProofDbScEval::evaluateApp(Node op, const std::vector<Node>& args)
+{
+  std::map<Node, SideConditionId>::iterator it = d_opTable.find(op);
+  if (it == d_opTable.end())
   {
-    Warning() << "Could not find side condition for operator " << op << " during evaluation" << std::endl;
+    Warning() << "Could not find side condition for operator " << op
+              << " during evaluation" << std::endl;
     AlwaysAssert(false);
     return Node::null();
   }
   // ----------------------------- specific lookup into side conditions
-  Trace("proof-db-sc") << "Run side condition " << it->second << " with args " << args << std::endl;
-  if( it->second==sc_flatten )
+  Trace("proof-db-sc") << "Run side condition " << it->second << " with args "
+                       << args << std::endl;
+  if (it->second == sc_flatten)
   {
-    Assert( args.size()==1 );
+    Assert(args.size() == 1);
     return flatten(args[0]);
   }
-  Warning() << "Unknown side condition id " << it->second << " for operator " << op << std::endl;
+  Warning() << "Unknown side condition id " << it->second << " for operator "
+            << op << std::endl;
   return Node::null();
 }
 
-bool ProofDbScEval::isSideConditionOp( Node op ) const
+bool ProofDbScEval::isSideConditionOp(Node op) const
 {
-  return d_opTable.find(op)!=d_opTable.end();
+  return d_opTable.find(op) != d_opTable.end();
 }
 
 ////// side conditions
 
-Node ProofDbScEval::flatten(Node n) 
+Node ProofDbScEval::flatten(Node n)
 {
-  Assert( n.getNumChildren()==2 );
+  Assert(n.getNumChildren() == 2);
   Node op = n.getOperator();
   return n;
 }

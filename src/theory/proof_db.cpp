@@ -54,9 +54,9 @@ void ProofDb::registerRules(const std::map<Node, std::string>& rules)
       // skip those with false condition
       continue;
     }
-    
+
     // register with side condition utility
-    for( const Node& c : conds )
+    for (const Node& c : conds)
     {
       d_sceval.registerSideCondition(c);
     }
@@ -202,16 +202,16 @@ bool ProofDb::notifyMatch(Node s,
           cond.substitute(vars.begin(), vars.end(), subs.begin(), subs.end());
       Trace("proof-db-infer-debug") << "Check condition: " << sc << std::endl;
       Kind sck = sc.getKind();
-      if( sck==EQUAL )
+      if (sck == EQUAL)
       {
-        if( sc[0].getKind()==APPLY_UF )
+        if (sc[0].getKind() == APPLY_UF)
         {
           // a computational side condition, call sc utility
           Node res = d_sceval.evaluate(sc[0]);
-          condSuccess = res==sc[1];
+          condSuccess = res == sc[1];
         }
       }
-      if( !condSuccess )
+      if (!condSuccess)
       {
         break;
       }
