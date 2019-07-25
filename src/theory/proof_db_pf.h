@@ -17,8 +17,8 @@
 #ifndef CVC4__THEORY__PROOF_DB_PF__H
 #define CVC4__THEORY__PROOF_DB_PF__H
 
-#include <vector>
 #include <string>
+#include <vector>
 #include "expr/node.h"
 
 namespace CVC4 {

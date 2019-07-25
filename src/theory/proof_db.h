@@ -20,9 +20,9 @@
 #include <map>
 #include <vector>
 #include "expr/node.h"
-#include "theory/proof_db_term_process.h"
 #include "theory/proof_db_pf.h"
 #include "theory/proof_db_sc.h"
+#include "theory/proof_db_term_process.h"
 #include "theory/quantifiers/candidate_rewrite_filter.h"
 #include "theory/quantifiers/term_canonize.h"
 
@@ -77,7 +77,7 @@ class ProofDb
     }
   };
   ProofDbMatchTrieNotify d_notify;
-  /** 
+  /**
    * Called during a call to d_mt.getMatches(s).
    * This call is called by the notify class for each term added to d_mt that
    * matches s under some substitution.

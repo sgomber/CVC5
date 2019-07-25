@@ -17,8 +17,8 @@
 #ifndef CVC4__THEORY__PROOF_DB_SC__H
 #define CVC4__THEORY__PROOF_DB_SC__H
 
-#include <vector>
 #include <string>
+#include <vector>
 #include "expr/node.h"
 
 namespace CVC4 {
@@ -27,15 +27,14 @@ namespace theory {
 class ProofDbSideCondition
 {
  public:
-   Node evaluate(Node n);
+  Node evaluate(Node n);
+
  private:
-   Node run(const std::string& fname, std::vector< Node >& args );
-   /** specific side conditions */
-   Node flatten(Node n);
-   Node flatten2(Node op, Node n, Node nacc);
+  Node run(const std::string& fname, std::vector<Node>& args);
+  /** specific side conditions */
+  Node flatten(Node n);
+  Node flatten2(Node op, Node n, Node nacc);
 };
-
-
 
 }  // namespace theory
 }  // namespace CVC4

@@ -18,12 +18,14 @@ using namespace CVC4::kind;
 
 namespace CVC4 {
 namespace theory {
-  
-void ProofDbRule::init(const std::string& name, const std::vector<Node>& cond, Node eq)
+
+void ProofDbRule::init(const std::string& name,
+                       const std::vector<Node>& cond,
+                       Node eq)
 {
   d_name = name;
   d_cond.clear();
-  d_cond.insert(d_cond.end(),cond.begin(),cond.end());
+  d_cond.insert(d_cond.end(), cond.begin(), cond.end());
   d_eq = eq;
 }
 

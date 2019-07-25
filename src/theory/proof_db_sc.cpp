@@ -18,21 +18,16 @@ using namespace CVC4::kind;
 
 namespace CVC4 {
 namespace theory {
-  
-Node ProofDbSideCondition::evaluate(Node n)
+
+Node ProofDbSideCondition::evaluate(Node n) { return Node::null(); }
+
+Node ProofDbSideCondition::run(const std::string& fname,
+                               std::vector<Node>& args)
 {
   return Node::null();
 }
 
-Node ProofDbSideCondition::run(const std::string& fname, std::vector< Node >& args )
-{
-  return Node::null();
-}
-
-Node ProofDbSideCondition::flatten(Node n)
-{
-  return Node::null();
-}
+Node ProofDbSideCondition::flatten(Node n) { return Node::null(); }
 
 Node ProofDbSideCondition::flatten2(Node op, Node n, Node nacc)
 {
