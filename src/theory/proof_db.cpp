@@ -33,7 +33,7 @@ void ProofDb::registerRules(const std::map<Node, std::string>& rules)
     AlwaysAssert(r.getKind() == IMPLIES);
 
     // must canonize
-    Trace("proof-db") << "Add rule " << r[1] << std::endl;
+    Trace("proof-db") << "Add rule " << rr.second << ": " << r[1] << std::endl;
     Node cr = d_canon.getCanonicalTerm(ri, false, false);
 
     Node cond = cr[0];
@@ -78,6 +78,7 @@ void ProofDb::registerRules(const std::map<Node, std::string>& rules)
 
 bool ProofDb::existsRule(Node a, Node b, unsigned& index)
 {
+  Trace("proof-db-debug") << "ProofDb::existsRule " << a << "==" << b << std::endl;
   if (a == b)
   {
     // reflexivity
@@ -92,6 +93,7 @@ bool ProofDb::existsRule(Node a, Node b, unsigned& index)
     Node aev = d_eval.eval(ae,d_emptyVec,d_emptyVec);
     if( !aev.isNull() )
     {
+      Trace("proof-db-debug") << "Return evaluation " << (aev==be) << std::endl;
       // must check to see if it matches
       return aev==be;
     }
@@ -101,14 +103,15 @@ bool ProofDb::existsRule(Node a, Node b, unsigned& index)
   Kind bk = b.getKind();
   if (ak == EQUAL && a[0] == a[1])
   {
-    Assert(b.isConst() && b.getConst<bool>());
+    Trace("proof-db-debug") << "By equality reflexivity" << std::endl;
     // rewriting reflexive equality to true
-    return true;
+    return b.isConst() && b.getConst<bool>();
   }
   if (ak == EQUAL && bk == EQUAL)
   {
     if (a[0] == b[1] && b[0] == a[1])
     {
+      Trace("proof-db-debug") << "By equality symmetry" << std::endl;
       // symmetry of equality
       return true;
     }
@@ -119,21 +122,24 @@ bool ProofDb::existsRule(Node a, Node b, unsigned& index)
     if( a.getType().isReal() )
     {
       // normalization?
+      Trace("proof-db-debug") << "By arith normalization?" << std::endl;
       return true;
     }
   }
   if (at == THEORY_BOOL)
   {
     // normalization? ignore for now
+    Trace("proof-db-debug") << "By Bool normalization?" << std::endl;
     return true;
   }
   Node eq = a.eqNode(b);
   // is an instance of existing rule?
   if (!d_mt.getMatches(eq, &d_notify))
   {
+    Trace("proof-db-debug") << "By rule" << std::endl;
     return true;
   }
-
+  Trace("proof-db-debug") << "FAIL: no proof rule" << std::endl;
   return false;
 }
 
