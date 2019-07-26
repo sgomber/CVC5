@@ -1087,8 +1087,9 @@ NodeManager::mkFunctionType(const std::vector<TypeNode>& sorts) {
   Assert(sorts.size() >= 2);
   std::vector<TypeNode> sortNodes;
   for (unsigned i = 0; i < sorts.size(); ++ i) {
-    //CheckArgument(sorts[i].isFirstClass(), sorts,
-    //              "cannot create function types for argument types that are not first-class");
+    // CheckArgument(sorts[i].isFirstClass(), sorts,
+    //              "cannot create function types for argument types that are
+    //              not first-class");
     sortNodes.push_back(sorts[i]);
   }
   CheckArgument(!sorts[sorts.size()-1].isFunction(), sorts[sorts.size()-1],
@@ -1101,8 +1102,9 @@ NodeManager::mkPredicateType(const std::vector<TypeNode>& sorts) {
   Assert(sorts.size() >= 1);
   std::vector<TypeNode> sortNodes;
   for (unsigned i = 0; i < sorts.size(); ++ i) {
-    //CheckArgument(sorts[i].isFirstClass(), sorts,
-    //              "cannot create predicate types for argument types that are not first-class");
+    // CheckArgument(sorts[i].isFirstClass(), sorts,
+    //              "cannot create predicate types for argument types that are
+    //              not first-class");
     sortNodes.push_back(sorts[i]);
   }
   sortNodes.push_back(booleanType());
@@ -1135,9 +1137,9 @@ inline TypeNode NodeManager::mkArrayType(TypeNode indexType,
                 "unexpected NULL index type");
   CheckArgument(!constituentType.isNull(), constituentType,
                 "unexpected NULL constituent type");
-  //CheckArgument(indexType.isFirstClass(), indexType,
+  // CheckArgument(indexType.isFirstClass(), indexType,
   //              "cannot index arrays by types that are not first-class");
-  //CheckArgument(constituentType.isFirstClass(), constituentType,
+  // CheckArgument(constituentType.isFirstClass(), constituentType,
   //              "cannot store types that are not first-class in arrays");
   Debug("arrays") << "making array type " << indexType << " "
                   << constituentType << std::endl;
@@ -1147,7 +1149,7 @@ inline TypeNode NodeManager::mkArrayType(TypeNode indexType,
 inline TypeNode NodeManager::mkSetType(TypeNode elementType) {
   CheckArgument(!elementType.isNull(), elementType,
                 "unexpected NULL element type");
-  //CheckArgument(elementType.isFirstClass(), elementType,
+  // CheckArgument(elementType.isFirstClass(), elementType,
   //              "cannot store types that are not first-class in sets");
   Debug("sets") << "making sets type " << elementType << std::endl;
   return mkTypeNode(kind::SET_TYPE, elementType);
@@ -1156,7 +1158,7 @@ inline TypeNode NodeManager::mkSetType(TypeNode elementType) {
 inline TypeNode NodeManager::mkSelectorType(TypeNode domain, TypeNode range) {
   CheckArgument(domain.isDatatype(), domain,
                 "cannot create non-datatype selector type");
-  //CheckArgument(range.isFirstClass(), range,
+  // CheckArgument(range.isFirstClass(), range,
   //              "cannot have selector fields that are not first-class types");
   return mkTypeNode(kind::SELECTOR_TYPE, domain, range);
 }

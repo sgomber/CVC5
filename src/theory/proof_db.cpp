@@ -29,7 +29,7 @@ void ProofDb::registerRules(const std::map<Node, std::string>& rules)
   {
     Node r = rr.first;
     // convert to internal
-    Node ri = d_pdtp.toInternal(r); 
+    Node ri = d_pdtp.toInternal(r);
     AlwaysAssert(r.getKind() == IMPLIES);
 
     // must canonize

@@ -63,7 +63,9 @@ class TermCanonize
    * of a bound variable for type T is the first canonical free variable for T,
    * the second leftmost is the second, and so on, for each type T.
    */
-  Node getCanonicalTerm(TNode n, bool apply_torder = false, bool doHoVar=true);
+  Node getCanonicalTerm(TNode n,
+                        bool apply_torder = false,
+                        bool doHoVar = true);
 
  private:
   /** the number of ids we have allocated for operators */
@@ -83,7 +85,8 @@ class TermCanonize
    * and a cache of visited nodes (visited).
    */
   Node getCanonicalTerm(TNode n,
-                        bool apply_torder, bool doHoVar,
+                        bool apply_torder,
+                        bool doHoVar,
                         std::map<TypeNode, unsigned>& var_count,
                         std::map<TNode, Node>& visited);
 };

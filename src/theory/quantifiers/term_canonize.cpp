@@ -121,7 +121,8 @@ struct sortTermOrder
 };
 
 Node TermCanonize::getCanonicalTerm(TNode n,
-                                    bool apply_torder, bool doHoVar,
+                                    bool apply_torder,
+                                    bool doHoVar,
                                     std::map<TypeNode, unsigned>& var_count,
                                     std::map<TNode, Node>& visited)
 {
@@ -165,13 +166,13 @@ Node TermCanonize::getCanonicalTerm(TNode n,
     Trace("canon-term-debug") << "Make canonical children" << std::endl;
     for (unsigned i = 0, size = cchildren.size(); i < size; i++)
     {
-      cchildren[i] =
-          getCanonicalTerm(cchildren[i], apply_torder, doHoVar, var_count, visited);
+      cchildren[i] = getCanonicalTerm(
+          cchildren[i], apply_torder, doHoVar, var_count, visited);
     }
     if (n.getMetaKind() == metakind::PARAMETERIZED)
     {
       Node op = n.getOperator();
-      if( doHoVar )
+      if (doHoVar)
       {
         op = getCanonicalTerm(op, apply_torder, doHoVar, var_count, visited);
       }

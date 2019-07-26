@@ -171,7 +171,7 @@ Node ProofDbScEval::evaluateApp(Node op, const std::vector<Node>& args)
   else
   {
     Warning() << "Unknown side condition id " << it->second << " for operator "
-            << op << std::endl;
+              << op << std::endl;
   }
   Trace("proof-db-sc") << "Side condition returned " << ret << std::endl;
   return ret;
@@ -184,33 +184,30 @@ bool ProofDbScEval::isSideConditionOp(Node op) const
 
 ////// side conditions
 
-Node flattenCollect( Kind k, Node n, Node acc )
+Node flattenCollect(Kind k, Node n, Node acc)
 {
-  if( n.getKind()==k )
+  if (n.getKind() == k)
   {
-    Node ret = flattenCollect(k,n[1],acc);
-    return flattenCollect(k,n[0],ret);
+    Node ret = flattenCollect(k, n[1], acc);
+    return flattenCollect(k, n[0], ret);
   }
-  else if( acc.isNull() )
+  else if (acc.isNull())
   {
     return n;
   }
   else
   {
-    return NodeManager::currentNM()->mkNode(k,n,acc);
+    return NodeManager::currentNM()->mkNode(k, n, acc);
   }
 }
 Node ProofDbScEval::flatten(Node n)
 {
   Assert(n.getNumChildren() == 2);
   Node acc;
-  return flattenCollect(n.getKind(),n,acc);
+  return flattenCollect(n.getKind(), n, acc);
 }
 
-Node ProofDbScEval::reLoopElim(Node n)
-{
-  return n;
-}
+Node ProofDbScEval::reLoopElim(Node n) { return n; }
 
 }  // namespace theory
 }  // namespace CVC4

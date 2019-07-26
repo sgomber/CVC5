@@ -4188,8 +4188,7 @@ Expr SmtEngine::getValue(const Expr& ex) const
   return resultNode.toExpr();
 }
 
-void SmtEngine::registerProofRules(
-    const std::map<Expr, std::string>& rules)
+void SmtEngine::registerProofRules(const std::map<Expr, std::string>& rules)
 {
   SmtScope smts(this);
   finalOptionsAreSet();
