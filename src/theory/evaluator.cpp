@@ -277,6 +277,27 @@ EvalResult Evaluator::evalInternal(TNode n,
           results[currNode] = EvalResult(x >= y);
           break;
         }
+        case kind::LEQ:
+        {
+          const Rational& x = results[currNode[0]].d_rat;
+          const Rational& y = results[currNode[1]].d_rat;
+          results[currNode] = EvalResult(x <= y);
+          break;
+        }
+        case kind::GT:
+        {
+          const Rational& x = results[currNode[0]].d_rat;
+          const Rational& y = results[currNode[1]].d_rat;
+          results[currNode] = EvalResult(x > y);
+          break;
+        }
+        case kind::LT:
+        {
+          const Rational& x = results[currNode[0]].d_rat;
+          const Rational& y = results[currNode[1]].d_rat;
+          results[currNode] = EvalResult(x < y);
+          break;
+        }
 
         case kind::CONST_STRING:
           results[currNode] = EvalResult(currNodeVal.getConst<String>());

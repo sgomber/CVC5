@@ -25,6 +25,7 @@
 #include "theory/proof_db_term_process.h"
 #include "theory/quantifiers/candidate_rewrite_filter.h"
 #include "theory/quantifiers/term_canonize.h"
+#include "theory/evaluator.h"
 
 namespace CVC4 {
 namespace theory {
@@ -59,6 +60,10 @@ class ProofDb
   ProofDbTermProcess d_pdtp;
   /** the side condition utility */
   ProofDbScEval d_sceval;
+  /** the evaluator utility */
+  Evaluator d_eval;
+  /** empty vector */
+  std::vector< Node > d_emptyVec;
   /** the term canonization utility */
   quantifiers::TermCanonize d_canon;
   /** The match trie */

@@ -87,22 +87,15 @@ bool ProofDb::existsRule(Node a, Node b, unsigned& index)
   if (be.isConst())
   {
     Node ae = d_pdtp.toExternal(a);
-    // nullary symbols should not rewrite to constants
-    Assert(a.getNumChildren() != 0);
-    bool allConst = true;
-    for (const Node& ace : ae)
+    Trace("proof-db-debug") << "Check eval " << ae << std::endl;
+    // evaluate it
+    Node aev = d_eval.eval(ae,d_emptyVec,d_emptyVec);
+    if( !aev.isNull() )
     {
-      if (!ace.isConst())
-      {
-        allConst = false;
-        break;
-      }
+      // must check to see if it matches
+      return aev==be;
     }
-    if (allConst)
-    {
-      // evaluation
-      return true;
-    }
+    Trace("proof-db-debug") << "Could not evaluate " << ae << std::endl;
   }
   Kind ak = a.getKind();
   Kind bk = b.getKind();
@@ -123,8 +116,11 @@ bool ProofDb::existsRule(Node a, Node b, unsigned& index)
   TheoryId at = Theory::theoryOf(a);
   if (at == THEORY_ARITH)
   {
-    // normalization?
-    return true;
+    if( a.getType().isReal() )
+    {
+      // normalization?
+      return true;
+    }
   }
   if (at == THEORY_BOOL)
   {
@@ -196,6 +192,7 @@ bool ProofDb::notifyMatch(Node s,
     ProofDbRule& pr = d_proofDbRule[ruleId];
     // does the side condition hold?
     bool condSuccess = true;
+    Trace("proof-db-rules") << "Check rule " << pr.d_name << std::endl;
     for (const Node& cond : pr.d_cond)
     {
       // check whether condition holds?
@@ -214,9 +211,24 @@ bool ProofDb::notifyMatch(Node s,
           Trace("proof-db-infer-sc") << "... expected " << sc[1] << std::endl;
           condSuccess = (res == sc[1]);
         }
+        else if( existsRule(sc[0],sc[1]) )
+        {
+          // recursed, found
+          condSuccess = true;
+        }
       }
       if (!condSuccess)
       {
+        if( Trace.isOn("proof-db-req") )
+        {
+          // see if it was a provable fact that we failed to show
+          // cannot invoke rewriter here
+          //Node scr = Rewriter::rewrite(sc);
+          //if( scr.isConst() && scr.getConst<bool>() )
+          //{
+          Trace("proof-db-req") << "required: " << sc << " for " << pr.d_name << std::endl;
+          //}
+        }
         break;
       }
     }

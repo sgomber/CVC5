@@ -121,11 +121,11 @@ Node ProofDbTermProcess::toExternal(Node n)
   {
     cur = visit.back();
     visit.pop_back();
-    it = d_internal.find(cur);
+    it = d_external.find(cur);
 
-    if (it == d_internal.end())
+    if (it == d_external.end())
     {
-      d_internal[cur] = Node::null();
+      d_external[cur] = Node::null();
       visit.push_back(cur);
       for (const Node& cn : cur)
       {
@@ -142,8 +142,8 @@ Node ProofDbTermProcess::toExternal(Node n)
       }
       for (const Node& cn : cur)
       {
-        it = d_internal.find(cn);
-        Assert(it != d_internal.end());
+        it = d_external.find(cn);
+        Assert(it != d_external.end());
         Assert(!it->second.isNull());
         childChanged = childChanged || cn != it->second;
         children.push_back(it->second);
@@ -189,12 +189,12 @@ Node ProofDbTermProcess::toExternal(Node n)
       {
         ret = cur;
       }
-      d_internal[cur] = ret;
+      d_external[cur] = ret;
     }
   } while (!visit.empty());
-  Assert(d_internal.find(n) != d_internal.end());
-  Assert(!d_internal.find(n)->second.isNull());
-  return d_internal[n];
+  Assert(d_external.find(n) != d_external.end());
+  Assert(!d_external.find(n)->second.isNull());
+  return d_external[n];
 }
 
 bool ProofDbTermProcess::isAssociativeNary(Kind k)
