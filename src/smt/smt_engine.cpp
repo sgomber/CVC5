@@ -4189,8 +4189,10 @@ Expr SmtEngine::getValue(const Expr& ex) const
 }
 
 void SmtEngine::registerProofRules(
-    const std::map<Expr, std::string>& rules) const
+    const std::map<Expr, std::string>& rules)
 {
+  SmtScope smts(this);
+  finalOptionsAreSet();
   std::map<Node, std::string> nodeRules;
   for (std::map<Expr, std::string>::const_iterator it = rules.begin();
        it != rules.end();

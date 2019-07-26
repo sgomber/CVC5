@@ -750,7 +750,7 @@ class CVC4_PUBLIC SmtEngine {
   /**
    * Register proof rules
    */
-  void registerProofRules(const std::map<Expr, std::string>& rules) const;
+  void registerProofRules(const std::map<Expr, std::string>& rules);
 
   /**
    * Add a function to the set of expressions whose value is to be
