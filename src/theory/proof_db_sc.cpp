@@ -22,6 +22,7 @@ namespace theory {
 ProofDbScEval::ProofDbScEval()
 {
   d_symTable[std::string("flatten")] = sc_flatten;
+  d_symTable[std::string("re_loop_elim")] = sc_re_loop_elim;
 }
 
 void ProofDbScEval::registerSideCondition(Node sc)
@@ -162,6 +163,11 @@ Node ProofDbScEval::evaluateApp(Node op, const std::vector<Node>& args)
     Assert(args.size() == 1);
     ret = flatten(args[0]);
   }
+  else if (it->second == sc_re_loop_elim)
+  {
+    Assert(args.size() == 1);
+    ret = reLoopElim(args[0]);
+  }
   else
   {
     Warning() << "Unknown side condition id " << it->second << " for operator "
@@ -199,6 +205,11 @@ Node ProofDbScEval::flatten(Node n)
   Assert(n.getNumChildren() == 2);
   Node acc;
   return flattenCollect(n.getKind(),n,acc);
+}
+
+Node ProofDbScEval::reLoopElim(Node n)
+{
+  return n;
 }
 
 }  // namespace theory

@@ -38,6 +38,8 @@ class ProofDbScEval
   {
     sc_INVALID,
     sc_flatten,
+    sc_re_loop_elim,
+    sc_LAST,
   };
   std::map<std::string, SideConditionId> d_symTable;
   std::map<Node, SideConditionId> d_opTable;
@@ -49,6 +51,7 @@ class ProofDbScEval
 
   /** specific side conditions */
   Node flatten(Node n);
+  Node reLoopElim(Node n);
 };
 
 }  // namespace theory
