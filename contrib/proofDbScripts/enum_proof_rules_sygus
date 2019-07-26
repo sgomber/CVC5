@@ -1,0 +1,17 @@
+#!/bin/bash
+
+CVC4=pr-ajr-cvc4
+
+cp $1 __tmp-proof_db.sy
+shift;
+sed -i 's/(check-synth)//g' __tmp-proof_db.sy
+cat $1 >>  __tmp-proof_db.sy
+shift;
+echo "(check-synth)" >> __tmp-proof_db.sy
+
+
+echo "Call $CVC4 __tmp-proof_db.smt2 --notify-pf-rules --sygus-stream $@"
+$CVC4 __tmp-proof_db.sy --notify-pf-rules --sygus-stream  $@
+
+
+#rm -f  __tmp-proof_db.sy

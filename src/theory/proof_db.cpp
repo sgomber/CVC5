@@ -34,7 +34,7 @@ void ProofDb::registerRules(const std::map<Node, std::string>& rules)
 
     // must canonize
     Trace("proof-db") << "Add rule " << r[1] << std::endl;
-    Node cr = d_canon.getCanonicalTerm(ri);
+    Node cr = d_canon.getCanonicalTerm(ri, false, false);
 
     Node cond = cr[0];
     std::vector<Node> conds;

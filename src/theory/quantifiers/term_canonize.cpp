@@ -121,7 +121,7 @@ struct sortTermOrder
 };
 
 Node TermCanonize::getCanonicalTerm(TNode n,
-                                    bool apply_torder,
+                                    bool apply_torder, bool doHoVar,
                                     std::map<TypeNode, unsigned>& var_count,
                                     std::map<TNode, Node>& visited)
 {
@@ -166,12 +166,15 @@ Node TermCanonize::getCanonicalTerm(TNode n,
     for (unsigned i = 0, size = cchildren.size(); i < size; i++)
     {
       cchildren[i] =
-          getCanonicalTerm(cchildren[i], apply_torder, var_count, visited);
+          getCanonicalTerm(cchildren[i], apply_torder, doHoVar, var_count, visited);
     }
     if (n.getMetaKind() == metakind::PARAMETERIZED)
     {
       Node op = n.getOperator();
-      op = getCanonicalTerm(op, apply_torder, var_count, visited);
+      if( doHoVar )
+      {
+        op = getCanonicalTerm(op, apply_torder, doHoVar, var_count, visited);
+      }
       Trace("canon-term-debug") << "Insert operator " << op << std::endl;
       cchildren.insert(cchildren.begin(), op);
     }
@@ -187,11 +190,11 @@ Node TermCanonize::getCanonicalTerm(TNode n,
   return n;
 }
 
-Node TermCanonize::getCanonicalTerm(TNode n, bool apply_torder)
+Node TermCanonize::getCanonicalTerm(TNode n, bool apply_torder, bool doHoVar)
 {
   std::map<TypeNode, unsigned> var_count;
   std::map<TNode, Node> visited;
-  return getCanonicalTerm(n, apply_torder, var_count, visited);
+  return getCanonicalTerm(n, apply_torder, doHoVar, var_count, visited);
 }
 
 }  // namespace quantifiers
