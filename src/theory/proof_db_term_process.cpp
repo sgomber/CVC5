@@ -83,9 +83,9 @@ Node ProofDbTermProcess::toInternal(Node n)
           }
         }
       }
-      else if( ck==UMINUS )
+      else if (ck == UMINUS)
       {
-        if( children[0].isConst() )
+        if (children[0].isConst())
         {
           ret = nm->mkConst(-children[0].getConst<Rational>());
         }
@@ -101,7 +101,7 @@ Node ProofDbTermProcess::toInternal(Node n)
           ret = nm->mkNode(ck, children[i], ret);
         }
       }
-      if( ret.isNull() )
+      if (ret.isNull())
       {
         if (childChanged)
         {
@@ -209,7 +209,8 @@ Node ProofDbTermProcess::toExternal(Node n)
 
 bool ProofDbTermProcess::isAssociativeNary(Kind k)
 {
-  return k == AND || k == OR || k == STRING_CONCAT || k == REGEXP_CONCAT || k == PLUS || k == MULT;
+  return k == AND || k == OR || k == STRING_CONCAT || k == REGEXP_CONCAT
+         || k == PLUS || k == MULT;
 }
 
 }  // namespace theory

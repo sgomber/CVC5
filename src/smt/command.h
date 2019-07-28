@@ -927,8 +927,10 @@ class CVC4_PUBLIC ProofDbCommand : public Command
  protected:
   std::vector<Expr> d_rules;
   std::vector<std::string> d_names;
+
  public:
-  ProofDbCommand(const std::vector<Expr >& rules, const std::vector<std::string>& rnames);
+  ProofDbCommand(const std::vector<Expr>& rules,
+                 const std::vector<std::string>& rnames);
 
   const std::vector<Expr>& getRules() const;
   const std::vector<std::string>& getRuleNames() const;

@@ -24,7 +24,7 @@ ProofDbScEval::ProofDbScEval()
   d_zero = NodeManager::currentNM()->mkConst(Rational(0));
   d_one = NodeManager::currentNM()->mkConst(Rational(1));
   d_negOne = NodeManager::currentNM()->mkConst(Rational(-1));
-  
+
   d_symTable[std::string("flatten")] = sc_flatten;
   d_symTable[std::string("re_loop_elim")] = sc_re_loop_elim;
   d_symTable[std::string("arith_norm_term")] = sc_arith_norm_term;
@@ -211,14 +211,14 @@ Node ProofDbScEval::h_flattenCollect(Kind k, Node n, Node acc)
   }
   // is zero element?
   bool isZeroElement = false;
-  if( nk==CONST_STRING )
+  if (nk == CONST_STRING)
   {
-    if( n.getConst<String>().size()==0 )
+    if (n.getConst<String>().size() == 0)
     {
       isZeroElement = true;
     }
   }
-  if( isZeroElement )
+  if (isZeroElement)
   {
     return acc;
   }
@@ -238,33 +238,34 @@ Node ProofDbScEval::flatten(Node n)
   return h_flattenCollect(n.getKind(), n, acc);
 }
 
-Node ProofDbScEval::re_loop_elim(Node n) { 
-// TODO
-  return n; 
+Node ProofDbScEval::re_loop_elim(Node n)
+{
+  // TODO
+  return n;
 }
 
-void ProofDbScEval::h_termToMsum( Node n, std::map< Node, Node >& msum )
+void ProofDbScEval::h_termToMsum(Node n, std::map<Node, Node>& msum)
 {
-  Assert( msum.empty() );
+  Assert(msum.empty());
   NodeManager* nm = NodeManager::currentNM();
   Kind nk = n.getKind();
-  if( nk==PLUS || nk==MINUS )
+  if (nk == PLUS || nk == MINUS)
   {
     Assert(n.getNumChildren() == 2);
-    h_termToMsum(n[0],msum);
-    std::map< Node, Node > msumOp;
-    h_termToMsum(n[1],msumOp);
-    std::map< Node, Node >::iterator it;
-    for( std::pair< const Node, Node >& m : msumOp )
+    h_termToMsum(n[0], msum);
+    std::map<Node, Node> msumOp;
+    h_termToMsum(n[1], msumOp);
+    std::map<Node, Node>::iterator it;
+    for (std::pair<const Node, Node>& m : msumOp)
     {
       Node x = m.first;
       it = msum.find(x);
       Rational r2 = m.second.getConst<Rational>();
-      if( nk==MINUS )
+      if (nk == MINUS)
       {
         r2 = -r2;
       }
-      if( it==msum.end() )
+      if (it == msum.end())
       {
         msum[x] = nm->mkConst(r2);
         continue;
@@ -273,41 +274,41 @@ void ProofDbScEval::h_termToMsum( Node n, std::map< Node, Node >& msum )
       msum[x] = nm->mkConst(r1 + r2);
     }
   }
-  else if( nk==UMINUS )
+  else if (nk == UMINUS)
   {
-    h_termToMsum(n[0],msum);
-    for( std::pair< const Node, Node >& m : msum )
+    h_termToMsum(n[0], msum);
+    for (std::pair<const Node, Node>& m : msum)
     {
       msum[m.first] = nm->mkConst(-m.second.getConst<Rational>());
     }
   }
-  else if( nk==MULT )
+  else if (nk == MULT)
   {
     Node c;
-    if( n[0].isConst() )
+    if (n[0].isConst())
     {
       c = n[0];
-      h_termToMsum(n[1],msum);
+      h_termToMsum(n[1], msum);
     }
-    else if( n[1].isConst() )
+    else if (n[1].isConst())
     {
       c = n[1];
-      h_termToMsum(n[1],msum);
+      h_termToMsum(n[1], msum);
     }
     else
     {
       msum[n] = d_one;
     }
-    if( !c.isNull() )
+    if (!c.isNull())
     {
       Rational cr = c.getConst<Rational>();
-      for( std::pair< const Node, Node >& m : msum )
+      for (std::pair<const Node, Node>& m : msum)
       {
-        msum[m.first] = nm->mkConst( m.second.getConst<Rational>()*cr);
+        msum[m.first] = nm->mkConst(m.second.getConst<Rational>() * cr);
       }
     }
   }
-  else if( nk==CONST_RATIONAL )
+  else if (nk == CONST_RATIONAL)
   {
     msum[d_one] = n;
   }
@@ -317,57 +318,58 @@ void ProofDbScEval::h_termToMsum( Node n, std::map< Node, Node >& msum )
   }
 }
 
-Node ProofDbScEval::h_msumToTerm( std::map< Node, Node >& msum, bool posLeadingCoeff )
+Node ProofDbScEval::h_msumToTerm(std::map<Node, Node>& msum,
+                                 bool posLeadingCoeff)
 {
-  NodeManager * nm = NodeManager::currentNM();
-  std::vector< Node > sums;
+  NodeManager* nm = NodeManager::currentNM();
+  std::vector<Node> sums;
   bool isNeg = false;
   Node curr;
-  for( std::pair< const Node, Node >& m : msum )
+  for (std::pair<const Node, Node>& m : msum)
   {
     // zero, ignore
-    if( m.second==d_zero )
+    if (m.second == d_zero)
     {
       continue;
     }
     Node x = m.first;
     // process positive leading coefficient requirement
-    if( posLeadingCoeff && m.second.getConst<Rational>().sgn()<0 )
+    if (posLeadingCoeff && m.second.getConst<Rational>().sgn() < 0)
     {
       isNeg = true;
     }
     posLeadingCoeff = false;
     // if it is negated
     Node c = m.second;
-    Assert( c.getKind()==CONST_RATIONAL );
-    if( isNeg )
+    Assert(c.getKind() == CONST_RATIONAL);
+    if (isNeg)
     {
       c = nm->mkConst(-c.getConst<Rational>());
     }
     // process
     Node t;
-    if( c==d_one )
+    if (c == d_one)
     {
       t = x;
     }
-    else if( x==d_one )
+    else if (x == d_one)
     {
       t = c;
     }
     else
     {
-      t = nm->mkNode( MULT, c, x );
+      t = nm->mkNode(MULT, c, x);
     }
-    if( curr.isNull() )
+    if (curr.isNull())
     {
       curr = t;
     }
     else
     {
-      curr = nm->mkNode( PLUS, t, curr );
+      curr = nm->mkNode(PLUS, t, curr);
     }
   }
-  if( curr.isNull() )
+  if (curr.isNull())
   {
     return d_zero;
   }
@@ -377,8 +379,8 @@ Node ProofDbScEval::h_msumToTerm( std::map< Node, Node >& msum, bool posLeadingC
 Node ProofDbScEval::arith_norm_term(Node n)
 {
   // convert to monomial sum
-  std::map< Node, Node > msum;
-  h_termToMsum(n,msum);
+  std::map<Node, Node> msum;
+  h_termToMsum(n, msum);
   // then, back to term
   return h_msumToTerm(msum);
 }
@@ -386,11 +388,11 @@ Node ProofDbScEval::arith_norm_term(Node n)
 Node ProofDbScEval::arith_norm_term_abs(Node n)
 {
   // convert to monomial sum
-  std::map< Node, Node > msum;
-  h_termToMsum( n, msum );
+  std::map<Node, Node> msum;
+  h_termToMsum(n, msum);
   // flip sign if leading coefficient is negative
-  return h_msumToTerm(msum,true);
+  return h_msumToTerm(msum, true);
 }
-  
+
 }  // namespace theory
 }  // namespace CVC4

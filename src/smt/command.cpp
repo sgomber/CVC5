@@ -1736,17 +1736,14 @@ Command* GetValueCommand::clone() const
 
 std::string GetValueCommand::getCommandName() const { return "get-value"; }
 
-ProofDbCommand::ProofDbCommand(const std::vector<Expr >& rules, const std::vector<std::string>& rnames)
-: d_rules(rules), d_names(rnames)
+ProofDbCommand::ProofDbCommand(const std::vector<Expr>& rules,
+                               const std::vector<std::string>& rnames)
+    : d_rules(rules), d_names(rnames)
 {
-
-  PrettyCheckArgument(
-      rules.size()==rnames.size(), "arity mismatch for ProofDbCommand");
+  PrettyCheckArgument(rules.size() == rnames.size(),
+                      "arity mismatch for ProofDbCommand");
 }
-const std::vector<Expr>& ProofDbCommand::getRules() const
-{
-  return d_rules;
-}
+const std::vector<Expr>& ProofDbCommand::getRules() const { return d_rules; }
 const std::vector<std::string>& ProofDbCommand::getRuleNames() const
 {
   return d_names;
@@ -1756,7 +1753,7 @@ void ProofDbCommand::invoke(SmtEngine* smtEngine)
   try
   {
     std::map<Expr, std::string> prules;
-    for( unsigned i=0, size=d_rules.size(); i<size; i++ )
+    for (unsigned i = 0, size = d_rules.size(); i < size; i++)
     {
       prules[d_rules[i]] = d_names[i];
     }
@@ -1782,18 +1779,18 @@ Command* ProofDbCommand::exportTo(ExprManager* exprManager,
                                   ExprManagerMapCollection& variableMap)
 {
   std::vector<Expr> exportedRules;
-  for( const Expr& r : d_rules)
+  for (const Expr& r : d_rules)
   {
     Expr newExpr = r.exportTo(exprManager, variableMap);
     exportedRules.push_back(newExpr);
   }
-  ProofDbCommand* c = new ProofDbCommand(exportedRules,d_names);
+  ProofDbCommand* c = new ProofDbCommand(exportedRules, d_names);
   return c;
 }
 
 Command* ProofDbCommand::clone() const
 {
-  ProofDbCommand* c = new ProofDbCommand(d_rules,d_names);
+  ProofDbCommand* c = new ProofDbCommand(d_rules, d_names);
   return c;
 }
 

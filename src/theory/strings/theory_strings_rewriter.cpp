@@ -2460,13 +2460,13 @@ Node TheoryStringsRewriter::rewriteReplace( Node node ) {
       String s1 = s.substr(0, (int)p);
       String s3 = s.substr((int)p + (int)t.size());
       std::vector<Node> children;
-      if( s1.size()>0 )
+      if (s1.size() > 0)
       {
         Node ns1 = nm->mkConst(String(s1));
         children.push_back(ns1);
       }
       children.push_back(node[2]);
-      if( s3.size()>0 )
+      if (s3.size() > 0)
       {
         Node ns3 = nm->mkConst(String(s3));
         children.push_back(ns3);

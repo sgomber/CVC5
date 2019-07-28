@@ -20,7 +20,8 @@ using namespace CVC4::kind;
 namespace CVC4 {
 namespace theory {
 
-ProofDb::ProofDb() : d_idCounter(1), d_notify(*this) {
+ProofDb::ProofDb() : d_idCounter(1), d_notify(*this)
+{
   d_true = NodeManager::currentNM()->mkConst(true);
   d_false = NodeManager::currentNM()->mkConst(false);
 }
@@ -63,7 +64,7 @@ void ProofDb::registerRules(const std::map<Node, std::string>& rules)
     // register with side condition utility
     for (const Node& c : conds)
     {
-      if( d_sceval.registerSideCondition(c) )
+      if (d_sceval.registerSideCondition(c))
       {
         d_hasSc.insert(c);
       }
@@ -84,7 +85,8 @@ void ProofDb::registerRules(const std::map<Node, std::string>& rules)
 
 bool ProofDb::existsRule(Node a, Node b, unsigned& index)
 {
-  Trace("proof-db-debug") << "ProofDb::existsRule " << a << "==" << b << std::endl;
+  Trace("proof-db-debug") << "ProofDb::existsRule " << a << "==" << b
+                          << std::endl;
   if (a == b)
   {
     // reflexivity
@@ -96,12 +98,13 @@ bool ProofDb::existsRule(Node a, Node b, unsigned& index)
     Node ae = d_pdtp.toExternal(a);
     Trace("proof-db-debug") << "Check eval " << ae << std::endl;
     // evaluate it
-    Node aev = d_eval.eval(ae,d_emptyVec,d_emptyVec);
-    if( !aev.isNull() )
+    Node aev = d_eval.eval(ae, d_emptyVec, d_emptyVec);
+    if (!aev.isNull())
     {
-      Trace("proof-db-debug") << "Return evaluation " << (aev==be) << std::endl;
+      Trace("proof-db-debug")
+          << "Return evaluation " << (aev == be) << std::endl;
       // must check to see if it matches
-      return aev==be;
+      return aev == be;
     }
     Trace("proof-db-debug") << "Could not evaluate " << ae << std::endl;
   }
@@ -125,7 +128,7 @@ bool ProofDb::existsRule(Node a, Node b, unsigned& index)
   TheoryId at = Theory::theoryOf(a);
   if (at == THEORY_ARITH)
   {
-    if( a.getType().isReal() )
+    if (a.getType().isReal())
     {
       // normalization?
       Trace("proof-db-debug") << "By arith normalization?" << std::endl;
@@ -196,10 +199,10 @@ bool ProofDb::notifyMatch(Node s,
   Trace("proof-db-infer-debug")
       << "  substitution: " << vars << " -> " << subs << std::endl;
 #ifdef CVC4_ASSERTIONS
-  Assert( vars.size()==subs.size() );
-  for( unsigned i=0, size = vars.size(); i<size; i++ )
+  Assert(vars.size() == subs.size());
+  for (unsigned i = 0, size = vars.size(); i < size; i++)
   {
-    Assert( vars[i].getType().isComparableTo(subs[i].getType()));
+    Assert(vars[i].getType().isComparableTo(subs[i].getType()));
   }
   Assert(d_ids.find(n) != d_ids.end());
 #endif
@@ -220,38 +223,42 @@ bool ProofDb::notifyMatch(Node s,
           cond.substitute(vars.begin(), vars.end(), subs.begin(), subs.end());
       Trace("proof-db-infer-sc") << "Check condition: " << sc << std::endl;
       // if i have side conditions, first evaluate
-      if( d_hasSc.find(cond)!=d_hasSc.end() )
+      if (d_hasSc.find(cond) != d_hasSc.end())
       {
-        Trace("proof-db-infer-sc") << "..." << pr.d_name << " eliminate side conditions in " << sc << std::endl;
+        Trace("proof-db-infer-sc")
+            << "..." << pr.d_name << " eliminate side conditions in " << sc
+            << std::endl;
         sc = d_sceval.evaluate(sc);
-        Trace("proof-db-infer-sc") << "..." << pr.d_name << " returned " << sc << std::endl;
+        Trace("proof-db-infer-sc")
+            << "..." << pr.d_name << " returned " << sc << std::endl;
         // we do not recurse in this case?
-        condSuccess = sc.getKind()==EQUAL && sc[0]==sc[1];
+        condSuccess = sc.getKind() == EQUAL && sc[0] == sc[1];
       }
       else
       {
-        Assert( sc.getType().isBoolean() );
+        Assert(sc.getType().isBoolean());
         // now check whether it is true
         Kind sck = sc.getKind();
         if (sck == EQUAL)
         {
-          condSuccess = existsRule(sc[0],sc[1]);
+          condSuccess = existsRule(sc[0], sc[1]);
         }
         else
         {
-          //condSuccess = existsRule(sc,d_true);
+          // condSuccess = existsRule(sc,d_true);
         }
       }
       if (!condSuccess)
       {
-        if( Trace.isOn("proof-db-req") )
+        if (Trace.isOn("proof-db-req"))
         {
           // see if it was a provable fact that we failed to show
           // cannot invoke rewriter here
-          //Node scr = Rewriter::rewrite(sc);
-          //if( scr.isConst() && scr.getConst<bool>() )
+          // Node scr = Rewriter::rewrite(sc);
+          // if( scr.isConst() && scr.getConst<bool>() )
           //{
-          Trace("proof-db-req") << "required: " << sc << " for " << pr.d_name << std::endl;
+          Trace("proof-db-req")
+              << "required: " << sc << " for " << pr.d_name << std::endl;
           //}
         }
         break;

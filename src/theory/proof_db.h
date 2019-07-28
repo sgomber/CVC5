@@ -20,12 +20,12 @@
 #include <map>
 #include <vector>
 #include "expr/node.h"
+#include "theory/evaluator.h"
 #include "theory/proof_db_pf.h"
 #include "theory/proof_db_sc.h"
 #include "theory/proof_db_term_process.h"
 #include "theory/quantifiers/candidate_rewrite_filter.h"
 #include "theory/quantifiers/term_canonize.h"
-#include "theory/evaluator.h"
 
 namespace CVC4 {
 namespace theory {
@@ -60,7 +60,7 @@ class ProofDb
   /** map ids to proof rule information */
   std::map<unsigned, ProofDbRule> d_proofDbRule;
   /** map whether each condition has side conditions */
-  std::unordered_set< Node, NodeHashFunction > d_hasSc;
+  std::unordered_set<Node, NodeHashFunction> d_hasSc;
   /** the term process utility */
   ProofDbTermProcess d_pdtp;
   /** the side condition utility */
@@ -68,7 +68,7 @@ class ProofDb
   /** the evaluator utility */
   Evaluator d_eval;
   /** empty vector */
-  std::vector< Node > d_emptyVec;
+  std::vector<Node> d_emptyVec;
   /** the term canonization utility */
   quantifiers::TermCanonize d_canon;
   /** The match trie */

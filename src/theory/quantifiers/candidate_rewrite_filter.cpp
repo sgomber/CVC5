@@ -135,7 +135,7 @@ bool MatchTrie::getMatches(Node n, NotifyMatch* ntm)
               recurse = false;
             }
           }
-          else if( !var.getType().isSubtypeOf(cn.getType()) )
+          else if (!var.getType().isSubtypeOf(cn.getType()))
           {
             recurse = false;
           }
