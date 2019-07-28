@@ -22,7 +22,7 @@
   re-concat-nctn (=> (= (>= (str.len y) (+ (str.len x) 1)) true) (= (str.in.re x (re.++ (str.to.re y) s)) false))
   ; recursion builtin
   re-union (=> (= (str.in.re x s) b) (= (str.in.re x (re.union r s)) (or (str.in.re x r) b)))
-  re-inter (=> (= (str.in.re x s) b) (= (str.in.re x (re.inter r s)) (or (str.in.re x r) b)))
+  re-inter (=> (= (str.in.re x s) b) (= (str.in.re x (re.inter r s)) (and (str.in.re x r) b)))
   re-consume (=> (= (str.in.re y r) b) (= (str.in.re (str.++ x y) (re.++ (str.to.re x) r)) b))
   re-consume-find (=> true (= (str.in.re x (re.++ (str.to.re x) r)) true))
   re-star-skip (=> (= (str.in.re x s) true) (= (str.in.re x (re.++ (re.* r) s)) true))
