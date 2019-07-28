@@ -195,7 +195,14 @@ bool ProofDb::notifyMatch(Node s,
   Trace("proof-db-infer-debug") << "  " << n << std::endl;
   Trace("proof-db-infer-debug")
       << "  substitution: " << vars << " -> " << subs << std::endl;
+#ifdef CVC4_ASSERTIONS
+  Assert( vars.size()==subs.size() );
+  for( unsigned i=0, size = vars.size(); i<size; i++ )
+  {
+    Assert( vars[i].getType().isComparableTo(subs[i].getType()));
+  }
   Assert(d_ids.find(n) != d_ids.end());
+#endif
   // check each rule instance
   for (unsigned ruleId : d_ids[n])
   {

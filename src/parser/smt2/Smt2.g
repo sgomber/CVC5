@@ -1376,7 +1376,6 @@ extendedCommand[std::unique_ptr<CVC4::Command>* cmd]
   std::vector<Type> sorts;
   std::vector<std::pair<std::string, Type> > sortedVarNames;
   std::unique_ptr<CVC4::CommandSequence> seq;
-  std::map<Expr, std::string> rules;
 }
     /* Extended SMT-LIB set of commands syntax, not permitted in
      * --smtlib2 compliance mode. */
@@ -1550,10 +1549,10 @@ extendedCommand[std::unique_ptr<CVC4::Command>* cmd]
     }
     LPAREN_TOK
     ( symbol[name,CHECK_NONE,SYM_VARIABLE] term[e,e2]
-      { rules[e] = name; }
+      { names.push_back(name); terms.push_back(e); }
     )*
     { 
-      cmd->reset(new ProofDbCommand(rules));
+      cmd->reset(new ProofDbCommand(terms,names));
       PARSER_STATE->popScope();
     }
     RPAREN_TOK

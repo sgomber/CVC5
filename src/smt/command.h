@@ -925,12 +925,13 @@ class CVC4_PUBLIC GetValueCommand : public Command
 class CVC4_PUBLIC ProofDbCommand : public Command
 {
  protected:
-  std::map<Expr, std::string> d_rules;
-
+  std::vector<Expr> d_rules;
+  std::vector<std::string> d_names;
  public:
-  ProofDbCommand(const std::map<Expr, std::string>& rules);
+  ProofDbCommand(const std::vector<Expr >& rules, const std::vector<std::string>& rnames);
 
-  const std::map<Expr, std::string>& getRules() const;
+  const std::vector<Expr>& getRules() const;
+  const std::vector<std::string>& getRuleNames() const;
   void invoke(SmtEngine* smtEngine) override;
   Command* exportTo(ExprManager* exprManager,
                     ExprManagerMapCollection& variableMap) override;

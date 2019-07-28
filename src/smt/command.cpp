@@ -1736,11 +1736,18 @@ Command* GetValueCommand::clone() const
 
 std::string GetValueCommand::getCommandName() const { return "get-value"; }
 
-ProofDbCommand::ProofDbCommand(const std::map<Expr, std::string>& rules)
-    : d_rules(rules)
+ProofDbCommand::ProofDbCommand(const std::vector<Expr >& rules, const std::vector<std::string>& rnames)
+: d_rules(rules), d_names(rnames)
 {
+
+  PrettyCheckArgument(
+      rules.size()==rnames.size(), "arity mismatch for ProofDbCommand");
 }
-const std::map<Expr, std::string>& ProofDbCommand::getRules() const
+const std::vector<Expr>& ProofDbCommand::getRules() const
+{
+  return d_rules;
+}
+const std::vector<std::string>& ProofDbCommand::getRuleNames() const
 {
   return d_rules;
 }
@@ -1748,8 +1755,13 @@ void ProofDbCommand::invoke(SmtEngine* smtEngine)
 {
   try
   {
+    std::map<Expr, std::string> prules;
+    for( unsigned i=0, size=d_rules.size(); i<size; i++ )
+    {
+      prules[d_rules[i]] = d_names[i];
+    }
     smt::SmtScope scope(smtEngine);
-    smtEngine->registerProofRules(d_rules);
+    smtEngine->registerProofRules(prules);
     d_commandStatus = CommandSuccess::instance();
   }
   catch (RecoverableModalException& e)
@@ -1769,21 +1781,19 @@ void ProofDbCommand::invoke(SmtEngine* smtEngine)
 Command* ProofDbCommand::exportTo(ExprManager* exprManager,
                                   ExprManagerMapCollection& variableMap)
 {
-  std::map<Expr, std::string> exportedRules;
-  for (std::map<Expr, std::string>::const_iterator i = d_rules.begin();
-       i != d_rules.end();
-       ++i)
+  std::vector<Expr> exportedRules;
+  for( const Expr& r : d_rules)
   {
-    Expr newExpr = (i->first).exportTo(exprManager, variableMap);
-    exportedRules[newExpr] = i->second;
+    Expr newExpr = r.exportTo(exprManager, variableMap);
+    exportedRules.push_back(newExpr);
   }
-  ProofDbCommand* c = new ProofDbCommand(exportedRules);
+  ProofDbCommand* c = new ProofDbCommand(exportedRules,d_names);
   return c;
 }
 
 Command* ProofDbCommand::clone() const
 {
-  ProofDbCommand* c = new ProofDbCommand(d_rules);
+  ProofDbCommand* c = new ProofDbCommand(d_rules,d_names);
   return c;
 }
 

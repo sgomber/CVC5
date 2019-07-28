@@ -203,12 +203,26 @@ bool ProofDbScEval::isSideConditionOp(Node op) const
 
 Node ProofDbScEval::h_flattenCollect(Kind k, Node n, Node acc)
 {
-  if (n.getKind() == k)
+  Kind nk = n.getKind();
+  if (nk == k)
   {
     Node ret = h_flattenCollect(k, n[1], acc);
     return h_flattenCollect(k, n[0], ret);
   }
-  else if (acc.isNull())
+  // is zero element?
+  bool isZeroElement = false;
+  if( nk==CONST_STRING )
+  {
+    if( n.getConst<String>().size()==0 )
+    {
+      isZeroElement = true;
+    }
+  }
+  if( isZeroElement )
+  {
+    return acc;
+  }
+  if (acc.isNull())
   {
     return n;
   }
@@ -308,6 +322,7 @@ Node ProofDbScEval::h_msumToTerm( std::map< Node, Node >& msum, bool posLeadingC
   NodeManager * nm = NodeManager::currentNM();
   std::vector< Node > sums;
   bool isNeg = false;
+  Node curr;
   for( std::pair< const Node, Node >& m : msum )
   {
     // zero, ignore
@@ -330,28 +345,33 @@ Node ProofDbScEval::h_msumToTerm( std::map< Node, Node >& msum, bool posLeadingC
       c = nm->mkConst(-c.getConst<Rational>());
     }
     // process
+    Node t;
     if( c==d_one )
     {
-      sums.push_back( x );
+      t = x;
     }
     else if( x==d_one )
     {
-      sums.push_back( c );
+      t = c;
     }
     else
     {
-      sums.push_back( nm->mkNode( MULT, c, x ) );
+      t = nm->mkNode( MULT, c, x );
+    }
+    if( curr.isNull() )
+    {
+      curr = t;
+    }
+    else
+    {
+      curr = nm->mkNode( PLUS, t, curr );
     }
   }
-  if( sums.empty() )
+  if( curr.isNull() )
   {
     return d_zero;
   }
-  else if( sums.size()==1 )
-  {
-    return sums[0];
-  }
-  return nm->mkNode( PLUS, sums );
+  return curr;
 }
 
 Node ProofDbScEval::arith_norm_term(Node n)
