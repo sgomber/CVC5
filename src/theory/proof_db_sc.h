@@ -41,7 +41,7 @@ class ProofDbScEval
     sc_flatten,
     sc_re_loop_elim,
     sc_arith_norm_term,
-    sc_arith_norm_eq,
+    sc_arith_norm_term_abs,
     sc_LAST,
   };
   std::map<std::string, SideConditionId> d_symTable;
@@ -64,7 +64,7 @@ class ProofDbScEval
   Node flatten(Node n);
   Node re_loop_elim(Node n);
   Node arith_norm_term(Node n);
-  Node arith_norm_eq(Node n);
+  Node arith_norm_term_abs(Node n);
   
   /** Helpers */
   Node h_flattenCollect(Kind k, Node n, Node acc);

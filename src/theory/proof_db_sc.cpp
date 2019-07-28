@@ -28,7 +28,7 @@ ProofDbScEval::ProofDbScEval()
   d_symTable[std::string("flatten")] = sc_flatten;
   d_symTable[std::string("re_loop_elim")] = sc_re_loop_elim;
   d_symTable[std::string("arith_norm_term")] = sc_arith_norm_term;
-  d_symTable[std::string("arith_norm_eq")] = sc_arith_norm_eq;
+  d_symTable[std::string("arith_norm_term_abs")] = sc_arith_norm_term_abs;
 }
 
 bool ProofDbScEval::registerSideCondition(Node sc)
@@ -180,10 +180,10 @@ Node ProofDbScEval::evaluateApp(Node op, const std::vector<Node>& args)
     Assert(args.size() == 1);
     ret = arith_norm_term(args[0]);
   }
-  else if (sid == sc_arith_norm_eq)
+  else if (sid == sc_arith_norm_term_abs)
   {
     Assert(args.size() == 1);
-    ret = arith_norm_eq(args[0]);
+    ret = arith_norm_term_abs(args[0]);
   }
   else
   {
@@ -310,6 +310,11 @@ Node ProofDbScEval::h_msumToTerm( std::map< Node, Node >& msum, bool posLeadingC
   bool isNeg = false;
   for( std::pair< const Node, Node >& m : msum )
   {
+    // zero, ignore
+    if( m.second==d_zero )
+    {
+      continue;
+    }
     Node x = m.first;
     // process positive leading coefficient requirement
     if( posLeadingCoeff && m.second.getConst<Rational>().sgn()<0 )
@@ -317,15 +322,6 @@ Node ProofDbScEval::h_msumToTerm( std::map< Node, Node >& msum, bool posLeadingC
       isNeg = true;
     }
     posLeadingCoeff = false;
-    if( m.second==d_one )
-    {
-      sums.push_back( x );
-      continue;
-    }
-    else if( m.second==d_zero )
-    {
-      continue;
-    }
     // if it is negated
     Node c = m.second;
     Assert( c.getKind()==CONST_RATIONAL );
@@ -333,6 +329,7 @@ Node ProofDbScEval::h_msumToTerm( std::map< Node, Node >& msum, bool posLeadingC
     {
       c = nm->mkConst(-c.getConst<Rational>());
     }
+    // process
     if( c==d_one )
     {
       sums.push_back( x );
@@ -366,16 +363,13 @@ Node ProofDbScEval::arith_norm_term(Node n)
   return h_msumToTerm(msum);
 }
 
-Node ProofDbScEval::arith_norm_eq(Node n)
+Node ProofDbScEval::arith_norm_term_abs(Node n)
 {
-  Assert( n.getKind()==EQUAL );
   // convert to monomial sum
-  NodeManager * nm = NodeManager::currentNM();
   std::map< Node, Node > msum;
-  h_termToMsum( nm->mkNode( MINUS, n[0], n[1] ), msum );
+  h_termToMsum( n, msum );
   // flip sign if leading coefficient is negative
-  Node p = h_msumToTerm(msum,true);
-  return p.eqNode(d_zero);
+  return h_msumToTerm(msum,true);
 }
   
 }  // namespace theory
