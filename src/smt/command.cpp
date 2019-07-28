@@ -1749,7 +1749,7 @@ const std::vector<Expr>& ProofDbCommand::getRules() const
 }
 const std::vector<std::string>& ProofDbCommand::getRuleNames() const
 {
-  return d_rules;
+  return d_names;
 }
 void ProofDbCommand::invoke(SmtEngine* smtEngine)
 {
