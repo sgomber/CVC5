@@ -209,7 +209,7 @@ Node ProofDbTermProcess::toExternal(Node n)
 
 bool ProofDbTermProcess::isAssociativeNary(Kind k)
 {
-  return k == AND || k == OR || k == STRING_CONCAT || k == REGEXP_CONCAT;
+  return k == AND || k == OR || k == STRING_CONCAT || k == REGEXP_CONCAT || k == PLUS || k == MULT;
 }
 
 }  // namespace theory

@@ -50,12 +50,17 @@ class ProofDb
   void notify(Node a, Node b);
 
  private:
+  /** common constants */
+  Node d_true;
+  Node d_false;
   /** currently allocating id */
   unsigned d_idCounter;
   /** map conclusions to proof ids */
   std::map<Node, std::vector<unsigned> > d_ids;
   /** map ids to proof rule information */
   std::map<unsigned, ProofDbRule> d_proofDbRule;
+  /** map whether each condition has side conditions */
+  std::unordered_set< Node, NodeHashFunction > d_hasSc;
   /** the term process utility */
   ProofDbTermProcess d_pdtp;
   /** the side condition utility */

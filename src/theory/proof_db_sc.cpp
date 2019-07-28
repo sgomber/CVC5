@@ -21,20 +21,24 @@ namespace theory {
 
 ProofDbScEval::ProofDbScEval()
 {
+  d_zero = NodeManager::currentNM()->mkConst(Rational(0));
+  d_one = NodeManager::currentNM()->mkConst(Rational(1));
+  d_negOne = NodeManager::currentNM()->mkConst(Rational(-1));
+  
   d_symTable[std::string("flatten")] = sc_flatten;
   d_symTable[std::string("re_loop_elim")] = sc_re_loop_elim;
+  d_symTable[std::string("arith_norm_term")] = sc_arith_norm_term;
+  d_symTable[std::string("arith_norm_eq")] = sc_arith_norm_eq;
 }
 
-void ProofDbScEval::registerSideCondition(Node sc)
+bool ProofDbScEval::registerSideCondition(Node sc)
 {
-  if (sc.getKind() == EQUAL)
-  {
-    buildOperatorTable(sc[0]);
-  }
+  return buildOperatorTable(sc);
 }
 
-void ProofDbScEval::buildOperatorTable(Node n)
+bool ProofDbScEval::buildOperatorTable(Node n)
 {
+  bool ret = false;
   std::unordered_set<TNode, TNodeHashFunction> visited;
   std::vector<TNode> visit;
   TNode cur;
@@ -49,6 +53,7 @@ void ProofDbScEval::buildOperatorTable(Node n)
       // if it is APPLY_UF, we check if it is a side condition
       if (cur.getKind() == APPLY_UF)
       {
+        ret = true;
         Node op = cur.getOperator();
         std::map<Node, SideConditionId>::iterator ito = d_opTable.find(op);
         // if not already processed
@@ -81,6 +86,7 @@ void ProofDbScEval::buildOperatorTable(Node n)
       }
     }
   } while (!visit.empty());
+  return ret;
 }
 
 Node ProofDbScEval::evaluate(Node n)
@@ -195,12 +201,12 @@ bool ProofDbScEval::isSideConditionOp(Node op) const
 
 ////// side conditions
 
-Node flattenCollect(Kind k, Node n, Node acc)
+Node ProofDbScEval::h_flattenCollect(Kind k, Node n, Node acc)
 {
   if (n.getKind() == k)
   {
-    Node ret = flattenCollect(k, n[1], acc);
-    return flattenCollect(k, n[0], ret);
+    Node ret = h_flattenCollect(k, n[1], acc);
+    return h_flattenCollect(k, n[0], ret);
   }
   else if (acc.isNull())
   {
@@ -215,7 +221,7 @@ Node ProofDbScEval::flatten(Node n)
 {
   Assert(n.getNumChildren() == 2);
   Node acc;
-  return flattenCollect(n.getKind(), n, acc);
+  return h_flattenCollect(n.getKind(), n, acc);
 }
 
 Node ProofDbScEval::re_loop_elim(Node n) { 
@@ -223,17 +229,153 @@ Node ProofDbScEval::re_loop_elim(Node n) {
   return n; 
 }
 
+void ProofDbScEval::h_termToMsum( Node n, std::map< Node, Node >& msum )
+{
+  Assert( msum.empty() );
+  NodeManager* nm = NodeManager::currentNM();
+  Kind nk = n.getKind();
+  if( nk==PLUS || nk==MINUS )
+  {
+    Assert(n.getNumChildren() == 2);
+    h_termToMsum(n[0],msum);
+    std::map< Node, Node > msumOp;
+    h_termToMsum(n[1],msumOp);
+    std::map< Node, Node >::iterator it;
+    for( std::pair< const Node, Node >& m : msumOp )
+    {
+      Node x = m.first;
+      it = msum.find(x);
+      Rational r2 = m.second.getConst<Rational>();
+      if( nk==MINUS )
+      {
+        r2 = -r2;
+      }
+      if( it==msum.end() )
+      {
+        msum[x] = nm->mkConst(r2);
+        continue;
+      }
+      Rational r1 = it->second.getConst<Rational>();
+      msum[x] = nm->mkConst(r1 + r2);
+    }
+  }
+  else if( nk==UMINUS )
+  {
+    h_termToMsum(n[0],msum);
+    for( std::pair< const Node, Node >& m : msum )
+    {
+      msum[m.first] = nm->mkConst(-m.second.getConst<Rational>());
+    }
+  }
+  else if( nk==MULT )
+  {
+    Node c;
+    if( n[0].isConst() )
+    {
+      c = n[0];
+      h_termToMsum(n[1],msum);
+    }
+    else if( n[1].isConst() )
+    {
+      c = n[1];
+      h_termToMsum(n[1],msum);
+    }
+    else
+    {
+      msum[n] = d_one;
+    }
+    if( !c.isNull() )
+    {
+      Rational cr = c.getConst<Rational>();
+      for( std::pair< const Node, Node >& m : msum )
+      {
+        msum[m.first] = nm->mkConst( m.second.getConst<Rational>()*cr);
+      }
+    }
+  }
+  else if( nk==CONST_RATIONAL )
+  {
+    msum[d_one] = n;
+  }
+  else
+  {
+    msum[n] = d_one;
+  }
+}
+
+Node ProofDbScEval::h_msumToTerm( std::map< Node, Node >& msum, bool posLeadingCoeff )
+{
+  NodeManager * nm = NodeManager::currentNM();
+  std::vector< Node > sums;
+  bool isNeg = false;
+  for( std::pair< const Node, Node >& m : msum )
+  {
+    Node x = m.first;
+    // process positive leading coefficient requirement
+    if( posLeadingCoeff && m.second.getConst<Rational>().sgn()<0 )
+    {
+      isNeg = true;
+    }
+    posLeadingCoeff = false;
+    if( m.second==d_one )
+    {
+      sums.push_back( x );
+      continue;
+    }
+    else if( m.second==d_zero )
+    {
+      continue;
+    }
+    // if it is negated
+    Node c = m.second;
+    Assert( c.getKind()==CONST_RATIONAL );
+    if( isNeg )
+    {
+      c = nm->mkConst(-c.getConst<Rational>());
+    }
+    if( c==d_one )
+    {
+      sums.push_back( x );
+    }
+    else if( x==d_one )
+    {
+      sums.push_back( c );
+    }
+    else
+    {
+      sums.push_back( nm->mkNode( MULT, c, x ) );
+    }
+  }
+  if( sums.empty() )
+  {
+    return d_zero;
+  }
+  else if( sums.size()==1 )
+  {
+    return sums[0];
+  }
+  return nm->mkNode( PLUS, sums );
+}
+
 Node ProofDbScEval::arith_norm_term(Node n)
 {
-// TODO
-  return n;
+  // convert to monomial sum
+  std::map< Node, Node > msum;
+  h_termToMsum(n,msum);
+  // then, back to term
+  return h_msumToTerm(msum);
 }
 
 Node ProofDbScEval::arith_norm_eq(Node n)
 {
-// TODO
-  
-  return n;
+  Assert( n.getKind()==EQUAL );
+  // convert to monomial sum
+  NodeManager * nm = NodeManager::currentNM();
+  std::map< Node, Node > msum;
+  h_termToMsum( nm->mkNode( MINUS, n[0], n[1] ), msum );
+  // flip sign if leading coefficient is negative
+  Node p = h_msumToTerm(msum,true);
+  return p.eqNode(d_zero);
 }
   
 }  // namespace theory

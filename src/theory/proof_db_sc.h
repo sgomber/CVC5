@@ -28,9 +28,10 @@ class ProofDbScEval
 {
  public:
   ProofDbScEval();
-  void registerSideCondition(Node sc);
+  /** returns true if there is at least one side condition in sc */
+  bool registerSideCondition(Node sc);
   Node evaluate(Node n);
-
+  
   bool isSideConditionOp(Node op) const;
 
  private:
@@ -46,16 +47,29 @@ class ProofDbScEval
   std::map<std::string, SideConditionId> d_symTable;
   std::map<Node, SideConditionId> d_opTable;
   /** build operator table
+   * 
+   * 
+   * Returns true if there is at least one side condition in n
    */
-  void buildOperatorTable(Node n);
+  bool buildOperatorTable(Node n);
 
   Node evaluateApp(Node op, const std::vector<Node>& args);
 
+  /** common constants */
+  Node d_zero;
+  Node d_one;
+  Node d_negOne;
+  
   /** specific side conditions */
   Node flatten(Node n);
   Node re_loop_elim(Node n);
   Node arith_norm_term(Node n);
   Node arith_norm_eq(Node n);
+  
+  /** Helpers */
+  Node h_flattenCollect(Kind k, Node n, Node acc);
+  void h_termToMsum( Node n, std::map< Node, Node >& msum );
+  Node h_msumToTerm( std::map< Node, Node >& msum, bool posLeadingCoeff=false );
 };
 
 }  // namespace theory

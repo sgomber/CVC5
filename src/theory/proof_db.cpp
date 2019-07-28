@@ -20,7 +20,10 @@ using namespace CVC4::kind;
 namespace CVC4 {
 namespace theory {
 
-ProofDb::ProofDb() : d_idCounter(1), d_notify(*this) {}
+ProofDb::ProofDb() : d_idCounter(1), d_notify(*this) {
+  d_true = NodeManager::currentNM()->mkConst(true);
+  d_false = NodeManager::currentNM()->mkConst(false);
+}
 
 void ProofDb::registerRules(const std::map<Node, std::string>& rules)
 {
@@ -60,7 +63,10 @@ void ProofDb::registerRules(const std::map<Node, std::string>& rules)
     // register with side condition utility
     for (const Node& c : conds)
     {
-      d_sceval.registerSideCondition(c);
+      if( d_sceval.registerSideCondition(c) )
+      {
+        d_hasSc.insert(c);
+      }
     }
 
     Node eq = cr[1];
@@ -206,21 +212,27 @@ bool ProofDb::notifyMatch(Node s,
       Node sc =
           cond.substitute(vars.begin(), vars.end(), subs.begin(), subs.end());
       Trace("proof-db-infer-sc") << "Check condition: " << sc << std::endl;
-      Kind sck = sc.getKind();
-      if (sck == EQUAL)
+      // if i have side conditions, first evaluate
+      if( d_hasSc.find(cond)!=d_hasSc.end() )
       {
-        if (sc[0].getKind() == APPLY_UF)
+        Trace("proof-db-infer-sc") << "..." << pr.d_name << " eliminate side conditions in " << sc << std::endl;
+        sc = d_sceval.evaluate(sc);
+        Trace("proof-db-infer-sc") << "..." << pr.d_name << " returned " << sc << std::endl;
+        // we do not recurse in this case?
+        condSuccess = sc.getKind()==EQUAL && sc[0]==sc[1];
+      }
+      else
+      {
+        Assert( sc.getType().isBoolean() );
+        // now check whether it is true
+        Kind sck = sc.getKind();
+        if (sck == EQUAL)
         {
-          // a computational side condition, call sc utility
-          Node res = d_sceval.evaluate(sc[0]);
-          Trace("proof-db-infer-sc") << "... returned " << res << std::endl;
-          Trace("proof-db-infer-sc") << "... expected " << sc[1] << std::endl;
-          condSuccess = (res == sc[1]);
+          condSuccess = existsRule(sc[0],sc[1]);
         }
-        else if( existsRule(sc[0],sc[1]) )
+        else
         {
-          // recursed, found
-          condSuccess = true;
+          //condSuccess = existsRule(sc,d_true);
         }
       }
       if (!condSuccess)
