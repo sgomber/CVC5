@@ -83,6 +83,13 @@ Node ProofDbTermProcess::toInternal(Node n)
           }
         }
       }
+      else if( ck==UMINUS )
+      {
+        if( children[0].isConst() )
+        {
+          ret = nm->mkConst(-children[0].getConst<Rational>());
+        }
+      }
       else if (isAssociativeNary(ck) && children.size() > 2)
       {
         Assert(cur.getMetaKind() != kind::metakind::PARAMETERIZED);
@@ -94,13 +101,16 @@ Node ProofDbTermProcess::toInternal(Node n)
           ret = nm->mkNode(ck, children[i], ret);
         }
       }
-      else if (childChanged)
+      if( ret.isNull() )
       {
-        ret = nm->mkNode(ck, children);
-      }
-      else
-      {
-        ret = cur;
+        if (childChanged)
+        {
+          ret = nm->mkNode(ck, children);
+        }
+        else
+        {
+          ret = cur;
+        }
       }
       d_internal[cur] = ret;
     }

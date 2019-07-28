@@ -39,6 +39,8 @@ class ProofDbScEval
     sc_INVALID,
     sc_flatten,
     sc_re_loop_elim,
+    sc_arith_norm_term,
+    sc_arith_norm_eq,
     sc_LAST,
   };
   std::map<std::string, SideConditionId> d_symTable;
@@ -51,7 +53,9 @@ class ProofDbScEval
 
   /** specific side conditions */
   Node flatten(Node n);
-  Node reLoopElim(Node n);
+  Node re_loop_elim(Node n);
+  Node arith_norm_term(Node n);
+  Node arith_norm_eq(Node n);
 };
 
 }  // namespace theory

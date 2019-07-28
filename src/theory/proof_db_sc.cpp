@@ -157,16 +157,27 @@ Node ProofDbScEval::evaluateApp(Node op, const std::vector<Node>& args)
   // ----------------------------- specific lookup into side conditions
   Trace("proof-db-sc") << "Run side condition " << it->second << " with args "
                        << args << std::endl;
+  SideConditionId sid = it->second;
   Node ret;
-  if (it->second == sc_flatten)
+  if (sid == sc_flatten)
   {
     Assert(args.size() == 1);
     ret = flatten(args[0]);
   }
-  else if (it->second == sc_re_loop_elim)
+  else if (sid == sc_re_loop_elim)
   {
     Assert(args.size() == 1);
-    ret = reLoopElim(args[0]);
+    ret = re_loop_elim(args[0]);
+  }
+  else if (sid == sc_arith_norm_term)
+  {
+    Assert(args.size() == 1);
+    ret = arith_norm_term(args[0]);
+  }
+  else if (sid == sc_arith_norm_eq)
+  {
+    Assert(args.size() == 1);
+    ret = arith_norm_eq(args[0]);
   }
   else
   {
@@ -207,7 +218,23 @@ Node ProofDbScEval::flatten(Node n)
   return flattenCollect(n.getKind(), n, acc);
 }
 
-Node ProofDbScEval::reLoopElim(Node n) { return n; }
+Node ProofDbScEval::re_loop_elim(Node n) { 
+// TODO
+  return n; 
+}
 
+Node ProofDbScEval::arith_norm_term(Node n)
+{
+// TODO
+  return n;
+}
+
+Node ProofDbScEval::arith_norm_eq(Node n)
+{
+// TODO
+  
+  return n;
+}
+  
 }  // namespace theory
 }  // namespace CVC4
