@@ -5150,8 +5150,7 @@ bool SmtEngine::getNextAbduct(std::string& aname, Expr& abd)
   if (d_subsolver == nullptr)
   {
     std::stringstream ss;
-    ss << "Cannot " << c
-       << " unless immediately preceded by successful call to get-abduct.";
+    ss << "Cannot get next abduct unless immediately preceded by successful call to get-abduct.";
     throw RecoverableModalException(ss.str().c_str());
   }
   // TODO
