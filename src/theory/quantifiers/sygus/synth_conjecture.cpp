@@ -607,7 +607,7 @@ bool SynthConjecture::doCheck(std::vector<Node>& lems)
       {
         // if the result in the subcall was unsatisfiable, we avoid
         // rechecking, hence we drop "query" from the verification lemma
-        lem = d_quant.negate();
+        lem = Node::null();//d_quant.negate();
         // we can short circuit adding the lemma (for sygus stream)
         success = true;
       }
@@ -623,8 +623,11 @@ bool SynthConjecture::doCheck(std::vector<Node>& lems)
     printAndContinueStream();
     return false;
   }
-  lem = getStreamGuardedLemma(lem);
-  lems.push_back(lem);
+  if( !lem.isNull() )
+  {
+    lem = getStreamGuardedLemma(lem);
+    lems.push_back(lem);
+  }
   return true;
 }
 

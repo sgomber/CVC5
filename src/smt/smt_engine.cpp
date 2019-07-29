@@ -5099,10 +5099,16 @@ bool SmtEngine::getAbduct(const std::string& aname,
   d_subsolver->setLogic(l);
   // assert the abduction query
   d_subsolver->assertFormula(aconj.toExpr());
+  return getAbductInternal(abd);
+}
+
+bool SmtEngine::getAbductInternal(Expr& abd)
+{
+  Assert( d_subsolver!=nullptr );
   Trace("sygus-abduct") << "  SmtEngine::getAbduct check sat..." << std::endl;
   Result r = d_subsolver->checkSat();
   Trace("sygus-abduct") << "  SmtEngine::getAbduct result: " << r << std::endl;
-  if (r.asSatisfiabilityResult().isSat() == Result::UNSAT)
+  if (true || r.asSatisfiabilityResult().isSat() == Result::UNSAT)
   {
     // get the synthesis solution
     std::map<Expr, Expr> sols;
@@ -5111,13 +5117,14 @@ bool SmtEngine::getAbduct(const std::string& aname,
     std::map<Expr, Expr>::iterator its = sols.find(d_sssf);
     if (its != sols.end())
     {
-      Node abdn = Node::fromExpr(its->second);
       Trace("sygus-abduct")
-          << "SmtEngine::getAbduct: solution is " << abdn << std::endl;
+          << "SmtEngine::getAbduct: solution is " << its->second << std::endl;
+      Node abdn = Node::fromExpr(its->second);
       if (abdn.getKind() == kind::LAMBDA)
       {
         abdn = abdn[1];
       }
+      Assert( d_sssfVarlist.size()==d_sssfSyms.size() );
       // convert back to original
       // must replace formal arguments of abd with the free variables in the
       // input problem that they correspond to.
@@ -5128,7 +5135,6 @@ bool SmtEngine::getAbduct(const std::string& aname,
 
       // convert to expression
       abd = abdn.toExpr();
-
       return true;
     }
     Trace("sygus-abduct") << "SmtEngine::getAbduct: could not find solution!"
@@ -5146,18 +5152,20 @@ bool SmtEngine::getAbduct(const std::string& aname, const Expr& conj, Expr& abd)
 
 bool SmtEngine::getNextAbduct(std::string& aname, Expr& abd)
 {
+  SmtScope smts(this);
+  Trace("sygus-abduct") << "SmtEngine::getNextAbduct" << std::endl;
   // TODO: proper check
   if (d_subsolver == nullptr)
   {
     std::stringstream ss;
     ss << "Cannot get next abduct unless immediately preceded by successful call to get-abduct.";
     throw RecoverableModalException(ss.str().c_str());
+    return false;
   }
-  // TODO
   std::stringstream ssa;
   ssa << d_sssf;
   aname = ssa.str();
-  return false;
+  return getAbductInternal(abd);
 }
 
 void SmtEngine::getInstantiatedQuantifiedFormulas( std::vector< Expr >& qs ) {
