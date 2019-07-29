@@ -24,11 +24,14 @@ ProofDbScEval::ProofDbScEval()
   d_zero = NodeManager::currentNM()->mkConst(Rational(0));
   d_one = NodeManager::currentNM()->mkConst(Rational(1));
   d_negOne = NodeManager::currentNM()->mkConst(Rational(-1));
+  d_true = NodeManager::currentNM()->mkConst(true);
+  d_false = NodeManager::currentNM()->mkConst(false);
 
-  d_symTable[std::string("flatten")] = sc_flatten;
+  d_symTable[std::string("flatten_string")] = sc_flatten_string;
   d_symTable[std::string("re_loop_elim")] = sc_re_loop_elim;
   d_symTable[std::string("arith_norm_term")] = sc_arith_norm_term;
   d_symTable[std::string("arith_norm_term_abs")] = sc_arith_norm_term_abs;
+  d_symTable[std::string("flatten_bool")] = sc_flatten_bool;
 }
 
 bool ProofDbScEval::registerSideCondition(Node sc)
@@ -165,10 +168,10 @@ Node ProofDbScEval::evaluateApp(Node op, const std::vector<Node>& args)
                        << args << std::endl;
   SideConditionId sid = it->second;
   Node ret;
-  if (sid == sc_flatten)
+  if (sid == sc_flatten_string)
   {
     Assert(args.size() == 1);
-    ret = flatten(args[0]);
+    ret = flatten_string(args[0]);
   }
   else if (sid == sc_re_loop_elim)
   {
@@ -184,6 +187,11 @@ Node ProofDbScEval::evaluateApp(Node op, const std::vector<Node>& args)
   {
     Assert(args.size() == 1);
     ret = arith_norm_term_abs(args[0]);
+  }
+  else if (sid == sc_flatten_bool)
+  {
+    Assert(args.size() == 1);
+    ret = flatten_bool(args[0]);
   }
   else
   {
@@ -211,12 +219,17 @@ Node ProofDbScEval::h_flattenCollect(Kind k, Node n, Node acc)
   }
   // is zero element?
   bool isZeroElement = false;
-  if (nk == CONST_STRING)
+  if (k==STRING_CONCAT)
   {
-    if (n.getConst<String>().size() == 0)
-    {
-      isZeroElement = true;
-    }
+    isZeroElement = (nk == CONST_STRING && n.getConst<String>().size() == 0);
+  }
+  else if( k==AND )
+  {
+    isZeroElement = (n==d_true);
+  }
+  else if( k==OR )
+  {
+    isZeroElement = (n==d_false);
   }
   if (isZeroElement)
   {
@@ -231,7 +244,13 @@ Node ProofDbScEval::h_flattenCollect(Kind k, Node n, Node acc)
     return NodeManager::currentNM()->mkNode(k, n, acc);
   }
 }
-Node ProofDbScEval::flatten(Node n)
+Node ProofDbScEval::flatten_string(Node n)
+{
+  Assert(n.getNumChildren() == 2);
+  Node acc;
+  return h_flattenCollect(n.getKind(), n, acc);
+}
+Node ProofDbScEval::flatten_bool(Node n)
 {
   Assert(n.getNumChildren() == 2);
   Node acc;

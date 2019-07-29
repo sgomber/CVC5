@@ -50,6 +50,8 @@ class ProofDb
   void notify(Node a, Node b);
 
  private:
+  /** exists builtin rule */
+  bool existsBuiltinRule(Node a, Node b, unsigned& index);
   /** common constants */
   Node d_true;
   Node d_false;

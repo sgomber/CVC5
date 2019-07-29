@@ -83,10 +83,8 @@ void ProofDb::registerRules(const std::map<Node, std::string>& rules)
   }
 }
 
-bool ProofDb::existsRule(Node a, Node b, unsigned& index)
+bool ProofDb::existsBuiltinRule(Node a, Node b, unsigned& index)
 {
-  Trace("proof-db-debug") << "ProofDb::existsRule " << a << "==" << b
-                          << std::endl;
   if (a == b)
   {
     // reflexivity
@@ -125,6 +123,18 @@ bool ProofDb::existsRule(Node a, Node b, unsigned& index)
       return true;
     }
   }
+  return false;
+}
+
+bool ProofDb::existsRule(Node a, Node b, unsigned& index)
+{
+  Trace("proof-db-debug") << "ProofDb::existsRule " << a << "==" << b
+                          << std::endl;
+  if( existsBuiltinRule(a,b,index) )
+  {
+    return true;
+  }
+  /*  
   TheoryId at = Theory::theoryOf(a);
   if (at == THEORY_ARITH)
   {
@@ -141,6 +151,7 @@ bool ProofDb::existsRule(Node a, Node b, unsigned& index)
     Trace("proof-db-debug") << "By Bool normalization?" << std::endl;
     return true;
   }
+  */
   Node eq = a.eqNode(b);
   // is an instance of existing rule?
   if (!d_mt.getMatches(eq, &d_notify))
@@ -232,7 +243,8 @@ bool ProofDb::notifyMatch(Node s,
         Trace("proof-db-infer-sc")
             << "..." << pr.d_name << " returned " << sc << std::endl;
         // we do not recurse in this case?
-        condSuccess = sc.getKind() == EQUAL && sc[0] == sc[1];
+        unsigned index;
+        condSuccess = sc.getKind() == EQUAL && existsBuiltinRule(sc[0],sc[1],index);
       }
       else
       {
@@ -245,7 +257,7 @@ bool ProofDb::notifyMatch(Node s,
         }
         else
         {
-          // condSuccess = existsRule(sc,d_true);
+          condSuccess = existsRule(sc,d_true);
         }
       }
       if (!condSuccess)

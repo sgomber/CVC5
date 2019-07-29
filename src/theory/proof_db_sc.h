@@ -38,10 +38,11 @@ class ProofDbScEval
   enum SideConditionId
   {
     sc_INVALID,
-    sc_flatten,
+    sc_flatten_string,
     sc_re_loop_elim,
     sc_arith_norm_term,
     sc_arith_norm_term_abs,
+    sc_flatten_bool,
     sc_LAST,
   };
   std::map<std::string, SideConditionId> d_symTable;
@@ -59,12 +60,15 @@ class ProofDbScEval
   Node d_zero;
   Node d_one;
   Node d_negOne;
+  Node d_true;
+  Node d_false;
 
   /** specific side conditions */
-  Node flatten(Node n);
+  Node flatten_string(Node n);
   Node re_loop_elim(Node n);
   Node arith_norm_term(Node n);
   Node arith_norm_term_abs(Node n);
+  Node flatten_bool(Node n);
 
   /** Helpers */
   Node h_flattenCollect(Kind k, Node n, Node acc);

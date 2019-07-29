@@ -259,6 +259,12 @@ EvalResult Evaluator::evalInternal(TNode n,
           break;
         }
 
+        case kind::UMINUS:
+        {
+          const Rational& x = results[currNode[0]].d_rat;
+          results[currNode] = EvalResult(-x);
+        }
+          break;
         case kind::MULT:
         {
           Rational res = results[currNode[0]].d_rat;
