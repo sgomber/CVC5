@@ -1550,6 +1550,18 @@ extendedCommand[std::unique_ptr<CVC4::Command>* cmd]
     // We currently do nothing with the type information declared for the heap.
     { cmd->reset(new EmptyCommand()); }
     RPAREN_TOK
+  | BLOCK_MODEL_TOK { PARSER_STATE->checkThatLogicIsSet(); }
+    { cmd->reset(new BlockModelCommand()); }
+
+  | BLOCK_MODEL_VALUES_TOK { PARSER_STATE->checkThatLogicIsSet(); }
+    ( LPAREN_TOK termList[terms,e] RPAREN_TOK
+      { cmd->reset(new BlockModelValuesCommand(terms)); }
+    | ~LPAREN_TOK
+      { PARSER_STATE->parseError("The block-model-value command expects a list "
+                                 "of terms.  Perhaps you forgot a pair of "
+                                 "parentheses?");
+      }
+    )
   ;
 
 
@@ -3056,6 +3068,8 @@ PAR_TOK : { PARSER_STATE->v2_6() }?'par';
 TESTER_TOK : { ( PARSER_STATE->v2_6() || PARSER_STATE->sygus() ) && PARSER_STATE->isTheoryEnabled(Smt2::THEORY_DATATYPES) }?'is';
 MATCH_TOK : { ( PARSER_STATE->v2_6() || PARSER_STATE->sygus() ) && PARSER_STATE->isTheoryEnabled(Smt2::THEORY_DATATYPES) }?'match';
 GET_MODEL_TOK : 'get-model';
+BLOCK_MODEL_TOK : 'block-model';
+BLOCK_MODEL_VALUES_TOK : 'block-model-values';
 ECHO_TOK : 'echo';
 REWRITE_RULE_TOK : 'assert-rewrite';
 REDUCTION_RULE_TOK : 'assert-reduction';
@@ -3071,7 +3085,10 @@ INCLUDE_TOK : 'include';
 GET_QE_TOK : 'get-qe';
 GET_QE_DISJUNCT_TOK : 'get-qe-disjunct';
 GET_ABDUCT_TOK : 'get-abduct';
+<<<<<<< HEAD
 GET_NEXT_ABDUCT_TOK : 'get-next-abduct';
+=======
+>>>>>>> f71a719b8000e901af141a326ac12bce59a6153d
 DECLARE_HEAP : 'declare-heap';
 
 // SyGuS commands
