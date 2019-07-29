@@ -103,8 +103,8 @@ bool ProofDb::existsRuleInternal(Node a, Node b, unsigned& index, bool doRec)
   {
     return it->second;
   }
-  Trace("proof-db-debug") << "ProofDb::existsRule " << a << "==" << b
-                          << std::endl;
+  Trace("proof-db") << "ProofDb::existsRule " << a << "==" << b
+                          << "?" << std::endl;
   if (a == b)
   {
     Trace("proof-db-debug") << "By reflexivity" << std::endl;
@@ -119,6 +119,7 @@ bool ProofDb::existsRuleInternal(Node a, Node b, unsigned& index, bool doRec)
     Trace("proof-db-debug") << "Check eval " << ae << std::endl;
     // evaluate it
     Node aev = d_eval.eval(ae, d_emptyVec, d_emptyVec);
+    Trace("proof-db-eval") << "Eval [[" << ae << "]] = " << aev << std::endl;
     if (!aev.isNull())
     {
       Trace("proof-db-debug")
@@ -152,6 +153,8 @@ bool ProofDb::existsRuleInternal(Node a, Node b, unsigned& index, bool doRec)
   }
   if( doRec )
   {
+    // prevent infinite loops
+    d_erCache[eq] = false;
     // is an instance of existing rule?
     if (!d_mt.getMatches(eq, &d_notify))
     {
@@ -160,6 +163,8 @@ bool ProofDb::existsRuleInternal(Node a, Node b, unsigned& index, bool doRec)
       return true;
     }    
   }
+  // congruence? TODO
+  
   Trace("proof-db-debug") << "FAIL: no proof rule" << std::endl;
   d_erCache[eq] = false;
   return false;
@@ -247,7 +252,7 @@ bool ProofDb::notifyMatch(Node s,
     ProofDbRule& pr = d_proofDbRule[ruleId];
     // does the side condition hold?
     bool condSuccess = true;
-    Trace("proof-db-rules") << "Check rule " << pr.d_name << std::endl;
+    Trace("proof-db") << "Check rule " << pr.d_name << std::endl;
     for (const Node& cond : pr.d_cond)
     {
       // check whether condition holds?
@@ -264,9 +269,7 @@ bool ProofDb::notifyMatch(Node s,
         sc = d_sceval.evaluate(sc);
         Trace("proof-db-infer-sc")
             << "..." << pr.d_name << " returned " << sc << std::endl;
-        // we do not do general recursion in this case
-        unsigned index;
-        condSuccess = existsRuleInternal(sc,index,false);
+        condSuccess = existsRule(sc);
       }
       else
       {
@@ -276,14 +279,14 @@ bool ProofDb::notifyMatch(Node s,
       }
       if (!condSuccess)
       {
-        if (Trace.isOn("proof-db-req"))
+        if (Trace.isOn("proof-db"))
         {
           // see if it was a provable fact that we failed to show
           // cannot invoke rewriter here
           // Node scr = Rewriter::rewrite(sc);
           // if( scr.isConst() && scr.getConst<bool>() )
           //{
-          Trace("proof-db-req")
+          Trace("proof-db")
               << "required: " << sc << " for " << pr.d_name << std::endl;
           //}
         }
