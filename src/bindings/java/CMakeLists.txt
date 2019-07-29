@@ -119,6 +119,7 @@ set(gen_java_files
   ${CMAKE_CURRENT_BINARY_DIR}/GetInfoCommand.java
   ${CMAKE_CURRENT_BINARY_DIR}/GetInstantiationsCommand.java
   ${CMAKE_CURRENT_BINARY_DIR}/GetModelCommand.java
+  ${CMAKE_CURRENT_BINARY_DIR}/GetNextAbductCommand.java
   ${CMAKE_CURRENT_BINARY_DIR}/GetOptionCommand.java
   ${CMAKE_CURRENT_BINARY_DIR}/GetQuantifierEliminationCommand.java
   ${CMAKE_CURRENT_BINARY_DIR}/GetSynthSolutionCommand.java
