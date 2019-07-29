@@ -90,7 +90,7 @@ Node ProofDbTermProcess::toInternal(Node n)
           ret = nm->mkConst(-children[0].getConst<Rational>());
         }
       }
-      else if (isAssociativeNary(ck) && children.size() > 2)
+      else if (isAssociativeNary(ck) && children.size() >= 2)
       {
         Assert(cur.getMetaKind() != kind::metakind::PARAMETERIZED);
         // convert to binary
@@ -98,6 +98,27 @@ Node ProofDbTermProcess::toInternal(Node n)
         ret = children[0];
         for (unsigned i = 1, nchild = children.size(); i < nchild; i++)
         {
+          /*
+          bool needProc = true;
+          // (str.++ "AB" x) is (str.++ "A" (str.++ "B" x))
+          if( cur[(nchild-1)-i].getKind()==CONST_STRING )
+          {
+            const std::vector<unsigned>& vec = cur[(nchild-1)-i].getConst<String>().getVec();
+            if( vec.size()>1 )
+            {
+              std::vector<unsigned> v(vec.begin(), vec.end());
+              std::reverse(v.begin(), v.end());
+              std::vector<unsigned> tmp;
+              for (unsigned i = 0, size = v.size(); i < size; i++)
+              {
+                tmp.push_back(v[i]);
+                ret = nm->mkNode(STRING_CONCAT, nm->mkConst(String(tmp)), ret);
+                tmp.pop_back();
+              }
+              needProc = false;
+            }
+          }
+          */
           ret = nm->mkNode(ck, children[i], ret);
         }
       }

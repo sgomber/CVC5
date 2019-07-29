@@ -14,6 +14,8 @@
 
 #include "theory/proof_db_sc.h"
 
+#include "theory/proof_db_term_process.h"
+
 using namespace CVC4::kind;
 
 namespace CVC4 {
@@ -32,7 +34,7 @@ ProofDbScEval::ProofDbScEval()
   d_symTable[std::string("re_loop_elim")] = sc_re_loop_elim;
   d_symTable[std::string("arith_norm_term")] = sc_arith_norm_term;
   d_symTable[std::string("arith_norm_term_abs")] = sc_arith_norm_term_abs;
-  d_symTable[std::string("flatten_bool")] = sc_flatten_bool;
+  d_symTable[std::string("sort_bool")] = sc_sort_bool;
 }
 
 bool ProofDbScEval::registerSideCondition(Node sc)
@@ -194,10 +196,10 @@ Node ProofDbScEval::evaluateApp(Node op, const std::vector<Node>& args)
     Assert(args.size() == 1);
     ret = arith_norm_term_abs(args[0]);
   }
-  else if (sid == sc_flatten_bool)
+  else if (sid == sc_sort_bool)
   {
     Assert(args.size() == 1);
-    ret = flatten_bool(args[0]);
+    ret = sort_bool(args[0]);
   }
   else
   {
@@ -233,14 +235,6 @@ Node ProofDbScEval::h_flattenCollect(Kind k, Node n, Node acc)
   {
     isZeroElement = (nk==STRING_TO_REGEXP && n[0].getKind()==CONST_STRING && n[0].getConst<String>().size()==0);
   }
-  else if( k==AND )
-  {
-    isZeroElement = (n==d_true);
-  }
-  else if( k==OR )
-  {
-    isZeroElement = (n==d_false);
-  }
   if (isZeroElement)
   {
     return acc;
@@ -249,28 +243,75 @@ Node ProofDbScEval::h_flattenCollect(Kind k, Node n, Node acc)
   {
     return n;
   }
-  else
-  {
-    return NodeManager::currentNM()->mkNode(k, n, acc);
-  }
+  return NodeManager::currentNM()->mkNode(k, n, acc);
 }
 Node ProofDbScEval::flatten_string(Node n)
 {
+  Kind nk = n.getKind();
+  if( !ProofDbTermProcess::isAssociativeNary(nk) )
+  {
+    return n;
+  }
   Assert(n.getNumChildren() == 2);
   Node acc;
-  return h_flattenCollect(n.getKind(), n, acc);
+  return h_flattenCollect(nk, n, acc);
 }
 Node ProofDbScEval::flatten_regexp(Node n)
 {
+  Kind nk = n.getKind();
+  if( !ProofDbTermProcess::isAssociativeNary(nk) )
+  {
+    return n;
+  }
   Assert(n.getNumChildren() == 2);
   Node acc;
-  return h_flattenCollect(n.getKind(), n, acc);
+  return h_flattenCollect(nk, n, acc);
 }
-Node ProofDbScEval::flatten_bool(Node n)
+
+void ProofDbScEval::h_termToVec(Kind k, Node n, std::vector< Node >& terms)
 {
+  Kind nk = n.getKind();
+  if (nk == k)
+  {
+    // should be internal format
+    Assert( n.getNumChildren()==2 );
+    h_termToVec(k, n[1], terms);
+    h_termToVec(k, n[0], terms);
+    return;
+  }
+  if( (k==AND && n==d_true ) || ( k==OR && n==d_false) )
+  {
+    return;
+  }
+  if( std::find( terms.begin(), terms.end(), n )==terms.end() )
+  {
+    terms.push_back(n);
+  }
+}
+  
+Node ProofDbScEval::sort_bool(Node n)
+{
+  Kind nk = n.getKind();
+  if( !ProofDbTermProcess::isAssociativeNary(nk) )
+  {
+    return n;
+  }
+  Assert(n.getKind()==AND || n.getKind()==OR);
   Assert(n.getNumChildren() == 2);
-  Node acc;
-  return h_flattenCollect(n.getKind(), n, acc);
+  std::vector< Node > children;
+  h_termToVec(nk, n, children);
+  std::sort( children.begin(), children.end() );
+  if( children.size()==0 )
+  {
+    return n.getKind()==AND ? d_true : d_false;
+  }
+  NodeManager * nm = NodeManager::currentNM();
+  Node ret = children[0];
+  for( unsigned i=1, nchild=children.size(); i<nchild; i++ )
+  {
+    ret = nm->mkNode(nk,children[i],ret);
+  }
+  return ret;
 }
 
 Node ProofDbScEval::re_loop_elim(Node n)

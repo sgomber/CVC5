@@ -1,5 +1,5 @@
 (declare-fun flatten_string (String) String)
-(declare-fun flatten_bool (Bool) Bool)
+(declare-fun sort_bool (Bool) Bool)
 (declare-fun flatten_regexp (RegLan) RegLan)
 (declare-fun arith_norm_term (Int) Int)
 (declare-fun arith_norm_term_abs (Int) Int)
@@ -27,8 +27,8 @@
   re-union (=> (= (str.in.re x s) b) (= (str.in.re x (re.union r s)) (or (str.in.re x r) b)))
   re-inter (=> (= (str.in.re x s) b) (= (str.in.re x (re.inter r s)) (and (str.in.re x r) b)))
   
-  re-concat-find (=> (and (= (str.in.re x r) true) (= (str.in.re "" s) true)) (= (str.in.re x (re.++ r s)) true))
-  re-concat-skip (=> (and (= (str.in.re "" r) true) (= (str.in.re x s) true)) (= (str.in.re x (re.++ r s)) true))
+  re-concat-find-sing (=> (and (= (str.in.re x r) true) (= (str.in.re "" s) true)) (= (str.in.re x (re.++ r s)) true))
+  re-concat-skip-sing (=> (and (= (str.in.re "" r) true) (= (str.in.re x s) true)) (= (str.in.re x (re.++ r s)) true))
   re-concat (=> (and (= (str.in.re x r) true) (= (str.in.re y s) true)) (= (str.in.re (str.++ x y) (re.++ r s)) true))
   re-consume (=> (= (str.in.re y (re.++ (str.to.re z) r)) b) (= (str.in.re (str.++ x y) (re.++ (str.to.re (str.++ x z)) r)) b))
   re-consume-sing (=> (= (str.in.re y r) b) (= (str.in.re (str.++ x y) (re.++ (str.to.re x) r)) b))
@@ -49,13 +49,19 @@
   
   re-concat-flatten (=> (= (flatten_regexp (re.++ r s)) t) (= (re.++ r s) t))
   
-  ;empty-concat (=> true (= (str.++ "" x) x))
-  concat-flatten (=> (= (flatten_string (str.++ x y)) z) (= (str.++ x y) z))
+  re-all-char-elim (=> true (= (str.in.re x re.allchar) (= 1 (str.len x))))
+  re-all-char (=> (= 1 (str.len x)) (= (str.in.re x re.allchar) true))
+  
+  re-to-ctn (=> true (= (str.in.re x (re.++ (re.* re.allchar) (str.to.re y) (re.* re.allchar))) (str.contains x y)))
+  
+  concat-flatten (=> (= (flatten_string (str.++ x y)) (flatten_string z)) (= (str.++ x y) z))
+  
   repl-id (=> true (= (str.replace x x y) y))
   repl-idem (=> true (= (str.replace x y y) x))
   repl-no (=> (= (str.contains x y) false) (= (str.replace x y z) x))
   repl-empty (=> true (= (str.replace x "" y) (str.++ y x)))
   repl-empty-inv (=> true (= (str.replace "" x "") ""))
+  
   substr-emp (=> true (= (str.substr "" n m) ""))
   substr-id (=> (= n (str.len x)) (= (str.substr x 0 n) x))
   substr-neg (=> (= (>= 0 (+ n 1)) true) (= (str.substr x n m) ""))
@@ -64,6 +70,14 @@
   
   substr-concat-ctn (=> (= (>= (str.len x) (+ n m)) true) (= (str.substr (str.++ x y) n m) (str.substr x n m)))
   substr-concat-nctn (=> (and (= (>= n (str.len x)) true) (= (- n (str.len x)) o)) (= (str.substr (str.++ x y) n m) (str.substr y o m)))
+  
+  ctn-clash (=> (and (= (= (str.len x) (str.len y)) true) (= (= x y) false)) (= (str.contains x (str.++ y z)) false))
+  ctn-concat-f1 (=> (= (str.contains x y) false) (= (str.contains x (str.++ y z)) false))
+  ctn-concat-f2 (=> (= (str.contains x z) false) (= (str.contains x (str.++ y z)) false))
+  ctn-concat-t1 (=> (= (str.contains x z) true) (= (str.contains (str.++ x y) z) true))
+  ctn-concat-t2 (=> (= (str.contains y z) true) (= (str.contains (str.++ x y) z) true))
+  ctn-id (=> true (= (str.contains x x) true))
+  
   
   ctn-empty (=> true (= (str.contains x "") true))
   ctn-to-eq-e (=> true (= (str.contains "" x) (= "" x)))
@@ -77,6 +91,10 @@
   indexof-oob (=> (= (> n (str.len x)) true) (= (str.indexof x y n) (- 1)))
   indexof-pos (=> true (= (> 0 (str.indexof x y n)) false))
   indexof-id (=> true (= (str.indexof x x n) (str.indexof "" "" n)))
+  
+  
+  stoi-concat-ndigit1 (=> (= (str.to.int x) (- 1)) (= (str.to.int (str.++ x y)) (- 1)))
+  stoi-concat-ndigit2 (=> (= (str.to.int y) (- 1)) (= (str.to.int (str.++ x y)) (- 1)))
   
   
   index-lb (=> true (= (>= (str.indexof x y n) (- 1)) true))
@@ -101,12 +119,15 @@
   
   
   not-not-elim (=> true (= (not (not b)) b))
-  and-flatten (=> (= (flatten_bool (and b c)) d) (= (and b c) d))
-  or-flatten (=> (= (flatten_bool (and b c)) d) (= (or b c) d))
+  and-sort (=> (= (sort_bool (and b c)) (sort_bool d)) (= (and b c) d))
+  or-sort (=> (= (sort_bool (and b c)) (sort_bool d)) (= (or b c) d))
   iff-true (=> true (= (= b true) b))
   iff-false (=> true (= (= b false) (not b)))
   iff-true2 (=> true (= (= true b) b))
   iff-false2 (=> true (= (= false b) (not b)))
+  
+  ite-true (=> true (= (ite true b c) b))
+  ite-false (=> true (= (ite false b c) c))
   
   ; re-loop-elim (exists ((r RegLen)) (re.loop r n m))
   ; re-loop-elim (re.loop r (const n) (const m)) ----> t[r]
