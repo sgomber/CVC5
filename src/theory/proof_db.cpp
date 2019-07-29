@@ -83,10 +83,13 @@ void ProofDb::registerRules(const std::map<Node, std::string>& rules)
   }
 }
 
-bool ProofDb::existsBuiltinRule(Node a, Node b, unsigned& index)
+bool ProofDb::existsRuleInternal(Node a, Node b, unsigned& index, bool doRec)
 {
+  Trace("proof-db-debug") << "ProofDb::existsRule " << a << "==" << b
+                          << std::endl;
   if (a == b)
   {
+    Trace("proof-db-debug") << "By reflexivity" << std::endl;
     // reflexivity
     return true;
   }
@@ -123,50 +126,43 @@ bool ProofDb::existsBuiltinRule(Node a, Node b, unsigned& index)
       return true;
     }
   }
-  return false;
-}
-
-bool ProofDb::existsRule(Node a, Node b, unsigned& index)
-{
-  Trace("proof-db-debug") << "ProofDb::existsRule " << a << "==" << b
-                          << std::endl;
-  if( existsBuiltinRule(a,b,index) )
+  if( doRec )
   {
-    return true;
-  }
-  /*  
-  TheoryId at = Theory::theoryOf(a);
-  if (at == THEORY_ARITH)
-  {
-    if (a.getType().isReal())
+    Node eq = a.eqNode(b);
+    // is an instance of existing rule?
+    if (!d_mt.getMatches(eq, &d_notify))
     {
-      // normalization?
-      Trace("proof-db-debug") << "By arith normalization?" << std::endl;
+      Trace("proof-db-debug") << "By rule" << std::endl;
       return true;
-    }
-  }
-  if (at == THEORY_BOOL)
-  {
-    // normalization? ignore for now
-    Trace("proof-db-debug") << "By Bool normalization?" << std::endl;
-    return true;
-  }
-  */
-  Node eq = a.eqNode(b);
-  // is an instance of existing rule?
-  if (!d_mt.getMatches(eq, &d_notify))
-  {
-    Trace("proof-db-debug") << "By rule" << std::endl;
-    return true;
+    }    
   }
   Trace("proof-db-debug") << "FAIL: no proof rule" << std::endl;
   return false;
 }
 
+bool ProofDb::existsRuleInternal(Node p, unsigned& index, bool doRec)
+{
+  if( p.getKind()==EQUAL )
+  {
+    return existsRuleInternal(p[0],p[1],index,doRec);
+  }
+  return existsRuleInternal(p,d_true,index,doRec);
+}
+
+bool ProofDb::existsRule(Node a, Node b, unsigned& index)
+{
+  return existsRuleInternal(a,b,index,true);
+}
+
 bool ProofDb::existsRule(Node a, Node b)
 {
   unsigned index = 0;
-  return existsRule(a, b, index);
+  return existsRuleInternal(a, b, index,true);
+}
+bool ProofDb::existsRule(Node p)
+{
+  unsigned index = 0;
+  return existsRuleInternal(p,index,true);
 }
 
 bool ProofDb::proveRule(Node a, Node b)
@@ -242,23 +238,15 @@ bool ProofDb::notifyMatch(Node s,
         sc = d_sceval.evaluate(sc);
         Trace("proof-db-infer-sc")
             << "..." << pr.d_name << " returned " << sc << std::endl;
-        // we do not recurse in this case?
+        // we do not do general recursion in this case
         unsigned index;
-        condSuccess = sc.getKind() == EQUAL && existsBuiltinRule(sc[0],sc[1],index);
+        condSuccess = existsRuleInternal(sc,index,false);
       }
       else
       {
         Assert(sc.getType().isBoolean());
         // now check whether it is true
-        Kind sck = sc.getKind();
-        if (sck == EQUAL)
-        {
-          condSuccess = existsRule(sc[0], sc[1]);
-        }
-        else
-        {
-          condSuccess = existsRule(sc,d_true);
-        }
+        condSuccess = existsRule(sc);
       }
       if (!condSuccess)
       {

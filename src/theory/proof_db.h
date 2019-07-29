@@ -43,6 +43,7 @@ class ProofDb
   /** Exists rule? */
   bool existsRule(Node a, Node b, unsigned& index);
   bool existsRule(Node a, Node b);
+  bool existsRule(Node p);
   /** Prove rule */
   bool proveRule(Node a, Node b);
   /** Notify */
@@ -51,7 +52,8 @@ class ProofDb
 
  private:
   /** exists builtin rule */
-  bool existsBuiltinRule(Node a, Node b, unsigned& index);
+  bool existsRuleInternal(Node a, Node b, unsigned& index, bool doRec);
+  bool existsRuleInternal(Node p, unsigned& index, bool doRec);
   /** common constants */
   Node d_true;
   Node d_false;
