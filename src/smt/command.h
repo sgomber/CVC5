@@ -1115,7 +1115,6 @@ class CVC4_PUBLIC GetNextAbductCommand : public Command
   Expr d_result;
 }; /* class GetNextAbductCommand */
 
-
 class CVC4_PUBLIC GetQuantifierEliminationCommand : public Command
 {
  protected:

@@ -2121,16 +2121,11 @@ Command* GetAbductCommand::clone() const
 
 std::string GetAbductCommand::getCommandName() const { return "get-abduct"; }
 
-
 /* -------------------------------------------------------------------------- */
 /* class GetNextAbductCommand                                              */
 /* -------------------------------------------------------------------------- */
 
-
-GetNextAbductCommand::GetNextAbductCommand()
-    : d_resultStatus(false)
-{
-}
+GetNextAbductCommand::GetNextAbductCommand() : d_resultStatus(false) {}
 
 Expr GetNextAbductCommand::getResult() const { return d_result; }
 
@@ -2147,7 +2142,8 @@ void GetNextAbductCommand::invoke(SmtEngine* smtEngine)
   }
 }
 
-void GetNextAbductCommand::printResult(std::ostream& out, uint32_t verbosity) const
+void GetNextAbductCommand::printResult(std::ostream& out,
+                                       uint32_t verbosity) const
 {
   if (!ok())
   {
@@ -2171,10 +2167,9 @@ void GetNextAbductCommand::printResult(std::ostream& out, uint32_t verbosity) co
 }
 
 Command* GetNextAbductCommand::exportTo(ExprManager* exprManager,
-                                    ExprManagerMapCollection& variableMap)
+                                        ExprManagerMapCollection& variableMap)
 {
-  GetNextAbductCommand* c =
-      new GetNextAbductCommand;
+  GetNextAbductCommand* c = new GetNextAbductCommand;
   c->d_result = d_result.exportTo(exprManager, variableMap);
   c->d_resultStatus = d_resultStatus;
   return c;
@@ -2188,7 +2183,10 @@ Command* GetNextAbductCommand::clone() const
   return c;
 }
 
-std::string GetNextAbductCommand::getCommandName() const { return "get-next-abduct"; }
+std::string GetNextAbductCommand::getCommandName() const
+{
+  return "get-next-abduct";
+}
 
 /* -------------------------------------------------------------------------- */
 /* class GetQuantifierEliminationCommand                                      */
