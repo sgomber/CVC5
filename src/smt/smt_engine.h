@@ -935,9 +935,15 @@ class CVC4_PUBLIC SmtEngine {
    * This method invokes a separate copy of the SMT engine for solving the
    * corresponding sygus problem for generating such a solution.
    */
-  bool getAbduct(const Expr& conj, const Type& grammarType, Expr& abd);
+  bool getAbduct(const std::string& aname, const Expr& conj, const Type& grammarType, Expr& abd);
   /** Same as above, but without user-provided grammar restrictions */
-  bool getAbduct(const Expr& conj, Expr& abd);
+  bool getAbduct(const std::string& aname, const Expr& conj, Expr& abd);
+  /**
+   * This method asks the SMT engine to find the next abduct with respect to
+   * the previous call to getAbduct above. It is only valid immediately after
+   * a successful call to getAbduct.
+   */
+  bool getNextAbduct(std::string& aname, Expr& abd);
 
   /**
    * Get list of quantified formulas that were instantiated

@@ -5052,7 +5052,7 @@ Expr SmtEngine::doQuantifierElimination(const Expr& e, bool doFull, bool strict)
   }
 }
 
-bool SmtEngine::getAbduct(const Expr& conj, const Type& grammarType, Expr& abd)
+bool SmtEngine::getAbduct(const std::string& aname, const Expr& conj, const Type& grammarType, Expr& abd)
 {
   SmtScope smts(this);
 
@@ -5073,9 +5073,8 @@ bool SmtEngine::getAbduct(const Expr& conj, const Type& grammarType, Expr& abd)
   asserts.push_back(Node::fromExpr(conj));
   d_sssfVarlist.clear();
   d_sssfSyms.clear();
-  std::string name("A");
   Node aconj = theory::quantifiers::SygusAbduct::mkAbductionConjecture(
-      name,
+      aname,
       asserts,
       axioms,
       TypeNode::fromType(grammarType),
@@ -5136,10 +5135,27 @@ bool SmtEngine::getAbduct(const Expr& conj, const Type& grammarType, Expr& abd)
   return false;
 }
 
-bool SmtEngine::getAbduct(const Expr& conj, Expr& abd)
+bool SmtEngine::getAbduct(const std::string& aname, const Expr& conj, Expr& abd)
 {
   Type grammarType;
-  return getAbduct(conj, grammarType, abd);
+  return getAbduct(aname, conj, grammarType, abd);
+}
+
+bool SmtEngine::getNextAbduct(std::string& aname, Expr& abd)
+{
+  // TODO: proper check
+  if( d_subsolver==nullptr )
+  {
+    std::stringstream ss;
+    ss << "Cannot " << c
+       << " unless immediately preceded by successful call to get-abduct.";
+    throw RecoverableModalException(ss.str().c_str());
+  }
+  // TODO
+  std::stringstream ssa;
+  ssa << d_sssf;
+  aname = ssa.str();
+  return false;
 }
 
 void SmtEngine::getInstantiatedQuantifiedFormulas( std::vector< Expr >& qs ) {

@@ -1109,6 +1109,8 @@ class CVC4_PUBLIC GetNextAbductCommand : public Command
   std::string getCommandName() const override;
 
  protected:
+  /** The result name of the abduction predicate */
+  std::string d_resultName;
   /** the return status of the command */
   bool d_resultStatus;
   /** the return expression of the command */

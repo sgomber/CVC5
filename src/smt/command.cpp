@@ -2167,12 +2167,12 @@ void GetAbductCommand::invoke(SmtEngine* smtEngine)
   {
     if (d_sygus_grammar_type.isNull())
     {
-      d_resultStatus = smtEngine->getAbduct(d_conj, d_result);
+      d_resultStatus = smtEngine->getAbduct(d_name,d_conj, d_result);
     }
     else
     {
       d_resultStatus =
-          smtEngine->getAbduct(d_conj, d_sygus_grammar_type, d_result);
+          smtEngine->getAbduct(d_name,d_conj, d_sygus_grammar_type, d_result);
     }
     d_commandStatus = CommandSuccess::instance();
   }
@@ -2243,7 +2243,7 @@ void GetNextAbductCommand::invoke(SmtEngine* smtEngine)
 {
   try
   {
-    //d_resultStatus = smtEngine->getNextAbduct(d_result);
+    d_resultStatus = smtEngine->getNextAbduct(d_resultName, d_result);
     d_commandStatus = CommandSuccess::instance();
   }
   catch (exception& e)
@@ -2263,9 +2263,7 @@ void GetNextAbductCommand::printResult(std::ostream& out, uint32_t verbosity) co
     expr::ExprDag::Scope scope(out, false);
     if (d_resultStatus)
     {
-      // FIXME
-      std::string name("A");
-      out << "(define-fun " << name << " () Bool " << d_result << ")"
+      out << "(define-fun " << d_resultName << " () Bool " << d_result << ")"
           << std::endl;
     }
     else
@@ -2280,6 +2278,7 @@ Command* GetNextAbductCommand::exportTo(ExprManager* exprManager,
 {
   GetNextAbductCommand* c =
       new GetNextAbductCommand;
+  c->d_resultName = d_resultName;
   c->d_result = d_result.exportTo(exprManager, variableMap);
   c->d_resultStatus = d_resultStatus;
   return c;
@@ -2288,6 +2287,7 @@ Command* GetNextAbductCommand::exportTo(ExprManager* exprManager,
 Command* GetNextAbductCommand::clone() const
 {
   GetNextAbductCommand* c = new GetNextAbductCommand;
+  c->d_resultName = d_resultName;
   c->d_result = d_result;
   c->d_resultStatus = d_resultStatus;
   return c;
