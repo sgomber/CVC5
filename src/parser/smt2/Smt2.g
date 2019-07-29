@@ -3085,10 +3085,7 @@ INCLUDE_TOK : 'include';
 GET_QE_TOK : 'get-qe';
 GET_QE_DISJUNCT_TOK : 'get-qe-disjunct';
 GET_ABDUCT_TOK : 'get-abduct';
-<<<<<<< HEAD
 GET_NEXT_ABDUCT_TOK : 'get-next-abduct';
-=======
->>>>>>> f71a719b8000e901af141a326ac12bce59a6153d
 DECLARE_HEAP : 'declare-heap';
 
 // SyGuS commands
