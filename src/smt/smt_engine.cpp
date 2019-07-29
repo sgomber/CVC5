@@ -5052,7 +5052,10 @@ Expr SmtEngine::doQuantifierElimination(const Expr& e, bool doFull, bool strict)
   }
 }
 
-bool SmtEngine::getAbduct(const std::string& aname, const Expr& conj, const Type& grammarType, Expr& abd)
+bool SmtEngine::getAbduct(const std::string& aname,
+                          const Expr& conj,
+                          const Type& grammarType,
+                          Expr& abd)
 {
   SmtScope smts(this);
 
@@ -5144,7 +5147,7 @@ bool SmtEngine::getAbduct(const std::string& aname, const Expr& conj, Expr& abd)
 bool SmtEngine::getNextAbduct(std::string& aname, Expr& abd)
 {
   // TODO: proper check
-  if( d_subsolver==nullptr )
+  if (d_subsolver == nullptr)
   {
     std::stringstream ss;
     ss << "Cannot " << c

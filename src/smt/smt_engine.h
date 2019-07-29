@@ -935,7 +935,10 @@ class CVC4_PUBLIC SmtEngine {
    * This method invokes a separate copy of the SMT engine for solving the
    * corresponding sygus problem for generating such a solution.
    */
-  bool getAbduct(const std::string& aname, const Expr& conj, const Type& grammarType, Expr& abd);
+  bool getAbduct(const std::string& aname,
+                 const Expr& conj,
+                 const Type& grammarType,
+                 Expr& abd);
   /** Same as above, but without user-provided grammar restrictions */
   bool getAbduct(const std::string& aname, const Expr& conj, Expr& abd);
   /**

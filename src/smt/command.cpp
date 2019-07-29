@@ -2167,12 +2167,12 @@ void GetAbductCommand::invoke(SmtEngine* smtEngine)
   {
     if (d_sygus_grammar_type.isNull())
     {
-      d_resultStatus = smtEngine->getAbduct(d_name,d_conj, d_result);
+      d_resultStatus = smtEngine->getAbduct(d_name, d_conj, d_result);
     }
     else
     {
       d_resultStatus =
-          smtEngine->getAbduct(d_name,d_conj, d_sygus_grammar_type, d_result);
+          smtEngine->getAbduct(d_name, d_conj, d_sygus_grammar_type, d_result);
     }
     d_commandStatus = CommandSuccess::instance();
   }
@@ -2226,16 +2226,11 @@ Command* GetAbductCommand::clone() const
 
 std::string GetAbductCommand::getCommandName() const { return "get-abduct"; }
 
-
 /* -------------------------------------------------------------------------- */
 /* class GetNextAbductCommand                                              */
 /* -------------------------------------------------------------------------- */
 
-
-GetNextAbductCommand::GetNextAbductCommand()
-    : d_resultStatus(false)
-{
-}
+GetNextAbductCommand::GetNextAbductCommand() : d_resultStatus(false) {}
 
 Expr GetNextAbductCommand::getResult() const { return d_result; }
 
@@ -2252,7 +2247,8 @@ void GetNextAbductCommand::invoke(SmtEngine* smtEngine)
   }
 }
 
-void GetNextAbductCommand::printResult(std::ostream& out, uint32_t verbosity) const
+void GetNextAbductCommand::printResult(std::ostream& out,
+                                       uint32_t verbosity) const
 {
   if (!ok())
   {
@@ -2274,10 +2270,9 @@ void GetNextAbductCommand::printResult(std::ostream& out, uint32_t verbosity) co
 }
 
 Command* GetNextAbductCommand::exportTo(ExprManager* exprManager,
-                                    ExprManagerMapCollection& variableMap)
+                                        ExprManagerMapCollection& variableMap)
 {
-  GetNextAbductCommand* c =
-      new GetNextAbductCommand;
+  GetNextAbductCommand* c = new GetNextAbductCommand;
   c->d_resultName = d_resultName;
   c->d_result = d_result.exportTo(exprManager, variableMap);
   c->d_resultStatus = d_resultStatus;
@@ -2293,7 +2288,10 @@ Command* GetNextAbductCommand::clone() const
   return c;
 }
 
-std::string GetNextAbductCommand::getCommandName() const { return "get-next-abduct"; }
+std::string GetNextAbductCommand::getCommandName() const
+{
+  return "get-next-abduct";
+}
 
 /* -------------------------------------------------------------------------- */
 /* class GetQuantifierEliminationCommand                                      */
