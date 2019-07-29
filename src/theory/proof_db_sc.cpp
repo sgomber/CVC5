@@ -28,6 +28,7 @@ ProofDbScEval::ProofDbScEval()
   d_false = NodeManager::currentNM()->mkConst(false);
 
   d_symTable[std::string("flatten_string")] = sc_flatten_string;
+  d_symTable[std::string("flatten_regexp")] = sc_flatten_regexp;
   d_symTable[std::string("re_loop_elim")] = sc_re_loop_elim;
   d_symTable[std::string("arith_norm_term")] = sc_arith_norm_term;
   d_symTable[std::string("arith_norm_term_abs")] = sc_arith_norm_term_abs;
@@ -173,6 +174,11 @@ Node ProofDbScEval::evaluateApp(Node op, const std::vector<Node>& args)
     Assert(args.size() == 1);
     ret = flatten_string(args[0]);
   }
+  else if (sid == sc_flatten_regexp)
+  {
+    Assert(args.size() == 1);
+    ret = flatten_regexp(args[0]);
+  }
   else if (sid == sc_re_loop_elim)
   {
     Assert(args.size() == 1);
@@ -223,6 +229,10 @@ Node ProofDbScEval::h_flattenCollect(Kind k, Node n, Node acc)
   {
     isZeroElement = (nk == CONST_STRING && n.getConst<String>().size() == 0);
   }
+  else if( k==REGEXP_CONCAT )
+  {
+    isZeroElement = (nk==STRING_TO_REGEXP && n[0].getKind()==CONST_STRING && n[0].getConst<String>().size()==0);
+  }
   else if( k==AND )
   {
     isZeroElement = (n==d_true);
@@ -245,6 +255,12 @@ Node ProofDbScEval::h_flattenCollect(Kind k, Node n, Node acc)
   }
 }
 Node ProofDbScEval::flatten_string(Node n)
+{
+  Assert(n.getNumChildren() == 2);
+  Node acc;
+  return h_flattenCollect(n.getKind(), n, acc);
+}
+Node ProofDbScEval::flatten_regexp(Node n)
 {
   Assert(n.getNumChildren() == 2);
   Node acc;
@@ -312,7 +328,7 @@ void ProofDbScEval::h_termToMsum(Node n, std::map<Node, Node>& msum)
     else if (n[1].isConst())
     {
       c = n[1];
-      h_termToMsum(n[1], msum);
+      h_termToMsum(n[0], msum);
     }
     else
     {

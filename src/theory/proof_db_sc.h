@@ -39,6 +39,7 @@ class ProofDbScEval
   {
     sc_INVALID,
     sc_flatten_string,
+    sc_flatten_regexp,
     sc_re_loop_elim,
     sc_arith_norm_term,
     sc_arith_norm_term_abs,
@@ -65,6 +66,7 @@ class ProofDbScEval
 
   /** specific side conditions */
   Node flatten_string(Node n);
+  Node flatten_regexp(Node n);
   Node re_loop_elim(Node n);
   Node arith_norm_term(Node n);
   Node arith_norm_term_abs(Node n);

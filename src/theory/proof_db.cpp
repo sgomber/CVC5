@@ -85,12 +85,19 @@ void ProofDb::registerRules(const std::map<Node, std::string>& rules)
 
 bool ProofDb::existsRuleInternal(Node a, Node b, unsigned& index, bool doRec)
 {
+  Node eq = a.eqNode(b);
+  std::unordered_map< Node, bool, NodeHashFunction >::iterator it = d_erCache.find(eq);
+  if( it!=d_erCache.end() )
+  {
+    return it->second;
+  }
   Trace("proof-db-debug") << "ProofDb::existsRule " << a << "==" << b
                           << std::endl;
   if (a == b)
   {
     Trace("proof-db-debug") << "By reflexivity" << std::endl;
     // reflexivity
+    d_erCache[eq] = true;
     return true;
   }
   Node be = d_pdtp.toExternal(b);
@@ -105,7 +112,9 @@ bool ProofDb::existsRuleInternal(Node a, Node b, unsigned& index, bool doRec)
       Trace("proof-db-debug")
           << "Return evaluation " << (aev == be) << std::endl;
       // must check to see if it matches
-      return aev == be;
+      bool ret = (aev == be);
+      d_erCache[eq] = ret;
+      return ret;
     }
     Trace("proof-db-debug") << "Could not evaluate " << ae << std::endl;
   }
@@ -115,7 +124,9 @@ bool ProofDb::existsRuleInternal(Node a, Node b, unsigned& index, bool doRec)
   {
     Trace("proof-db-debug") << "By equality reflexivity" << std::endl;
     // rewriting reflexive equality to true
-    return b.isConst() && b.getConst<bool>();
+    bool ret = ( b.isConst() && b.getConst<bool>());
+    d_erCache[eq] = ret;
+    return ret;
   }
   if (ak == EQUAL && bk == EQUAL)
   {
@@ -123,20 +134,22 @@ bool ProofDb::existsRuleInternal(Node a, Node b, unsigned& index, bool doRec)
     {
       Trace("proof-db-debug") << "By equality symmetry" << std::endl;
       // symmetry of equality
+      d_erCache[eq] = true;
       return true;
     }
   }
   if( doRec )
   {
-    Node eq = a.eqNode(b);
     // is an instance of existing rule?
     if (!d_mt.getMatches(eq, &d_notify))
     {
       Trace("proof-db-debug") << "By rule" << std::endl;
+      d_erCache[eq] = true;
       return true;
     }    
   }
   Trace("proof-db-debug") << "FAIL: no proof rule" << std::endl;
+  d_erCache[eq] = false;
   return false;
 }
 
@@ -192,6 +205,7 @@ void ProofDb::notify(Node a, Node b, std::ostream& out)
     return;
   }
   out << "(trusted (= " << a << " " << b << "))" << std::endl;
+  //out << "(trusted-debug (= " << ai << " " << bi << "))" << std::endl;
 }
 
 bool ProofDb::notifyMatch(Node s,

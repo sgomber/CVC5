@@ -54,6 +54,8 @@ class ProofDb
   /** exists builtin rule */
   bool existsRuleInternal(Node a, Node b, unsigned& index, bool doRec);
   bool existsRuleInternal(Node p, unsigned& index, bool doRec);
+  /** cache for exists rule */
+  std::unordered_map< Node, bool, NodeHashFunction > d_erCache;
   /** common constants */
   Node d_true;
   Node d_false;
