@@ -9,7 +9,6 @@
   (r RegLan) (s RegLan) (t RegLan)
   (b Bool) (c Bool) (d Bool)
 ) (
-  ;len-concat (=> true (= (str.len (str.++ x y)) (+ (str.len x) (str.len y))))
   ; general form needed since rewriter takes "shortcuts" like (str.len (str.++ x "A")) ---> (+ (str.len x) 1)
   len-concat-gen (=> (and (= (str.len x) n) (= (str.len y) m)) (= (str.len (str.++ x y)) (+ n m)))
   
@@ -27,12 +26,19 @@
   re-union (=> (= (str.in.re x s) b) (= (str.in.re x (re.union r s)) (or (str.in.re x r) b)))
   re-inter (=> (= (str.in.re x s) b) (= (str.in.re x (re.inter r s)) (and (str.in.re x r) b)))
   
-  re-concat-find-sing (=> (and (= (str.in.re x r) true) (= (str.in.re "" s) true)) (= (str.in.re x (re.++ r s)) true))
-  re-concat-skip-sing (=> (and (= (str.in.re "" r) true) (= (str.in.re x s) true)) (= (str.in.re x (re.++ r s)) true))
-  re-concat (=> (and (= (str.in.re x r) true) (= (str.in.re y s) true)) (= (str.in.re (str.++ x y) (re.++ r s)) true))
+  re-concat-find-sing (=> (and (str.in.re x r) (str.in.re "" s)) (= (str.in.re x (re.++ r s)) true))
+  re-concat-skip-sing (=> (and (str.in.re "" r) (str.in.re x s)) (= (str.in.re x (re.++ r s)) true))
+  re-concat (=> (and (str.in.re x r) (str.in.re y s)) (= (str.in.re (str.++ x y) (re.++ r s)) true))
   re-consume (=> (= (str.in.re y (re.++ (str.to.re z) r)) b) (= (str.in.re (str.++ x y) (re.++ (str.to.re (str.++ x z)) r)) b))
   re-consume-sing (=> (= (str.in.re y r) b) (= (str.in.re (str.++ x y) (re.++ (str.to.re x) r)) b))
   re-consume-sing-sing (=> (= (str.in.re "" r) b) (= (str.in.re x (re.++ (str.to.re x) r)) b))
+  
+  ; needs recursion
+  ;re-consume-match (=> (= (flatten_string x) (str.++ y w)) (= (str.in.re x (re.++ (str.to.re (str.++ y z)) r)) (str.in.re w (re.++ (str.to.re z) r))))
+  ;re-consume-match (=> 
+  ; (and (= (flatten_string x) (str.++ y w)) (= (str.in.re w (re.++ (str.to.re z) r)) b))
+  ; (= (str.in.re x (re.++ (str.to.re (str.++ y z)) r)) b))
+  
   
   re-clash (=> (and (= (= (str.len x) (str.len y)) true) (= (= x y) false)) (= (str.in.re (str.++ x z) (re.++ (str.to.re (str.++ y w)) r)) false))
   
@@ -50,7 +56,7 @@
   re-concat-flatten (=> (= (flatten_regexp (re.++ r s)) t) (= (re.++ r s) t))
   
   re-all-char-elim (=> true (= (str.in.re x re.allchar) (= 1 (str.len x))))
-  re-all-char (=> (= 1 (str.len x)) (= (str.in.re x re.allchar) true))
+  re-all-char (=> (= (= 1 (str.len x)) true) (= (str.in.re x re.allchar) true))
   
   re-to-ctn (=> true (= (str.in.re x (re.++ (re.* re.allchar) (str.to.re y) (re.* re.allchar))) (str.contains x y)))
   
@@ -65,7 +71,7 @@
   substr-emp (=> true (= (str.substr "" n m) ""))
   substr-id (=> (= n (str.len x)) (= (str.substr x 0 n) x))
   substr-neg (=> (= (>= 0 (+ n 1)) true) (= (str.substr x n m) ""))
-  substr-range (=> (= (>= 0 m) true) (= (str.substr x n m) ""))
+  substr-range (=> (>= 0 m) (= (str.substr x n m) ""))
   substr-oob (=> (= (>= n (str.len x)) true) (= (str.substr x n m) ""))
   
   substr-concat-ctn (=> (= (>= (str.len x) (+ n m)) true) (= (str.substr (str.++ x y) n m) (str.substr x n m)))
@@ -120,7 +126,11 @@
   
   not-not-elim (=> true (= (not (not b)) b))
   and-sort (=> (= (sort_bool (and b c)) (sort_bool d)) (= (and b c) d))
+  and-false1 (=> (= b false) (= (and b c) false))
+  and-false2 (=> (= c false) (= (and b c) false))
   or-sort (=> (= (sort_bool (and b c)) (sort_bool d)) (= (or b c) d))
+  or-true1 (=> b (= (or b c) true))
+  or-true2 (=> c (= (or b c) true))
   iff-true (=> true (= (= b true) b))
   iff-false (=> true (= (= b false) (not b)))
   iff-true2 (=> true (= (= true b) b))
@@ -128,6 +138,10 @@
   
   ite-true (=> true (= (ite true b c) b))
   ite-false (=> true (= (ite false b c) c))
+  
+  
+  
+  
   
   ; re-loop-elim (exists ((r RegLen)) (re.loop r n m))
   ; re-loop-elim (re.loop r (const n) (const m)) ----> t[r]
