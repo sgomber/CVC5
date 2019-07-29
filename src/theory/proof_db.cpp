@@ -60,7 +60,19 @@ void ProofDb::registerRules(const std::map<Node, std::string>& rules)
       // skip those with false condition
       continue;
     }
-
+    // make as expected matching: top symbol of all conditions is equality
+    // this means (not p) becomes (= p false), p becomes (= p true)
+    for (unsigned i=0, nconds = conds.size(); i<nconds; i++ )
+    {
+      if( conds[i].getKind()==NOT )
+      {
+        conds[i] = conds[i][0].eqNode(d_false);
+      }
+      else if( conds[i].getKind()!=EQUAL )
+      {
+        conds[i] = conds[i].eqNode(d_true);
+      }
+    }
     // register with side condition utility
     for (const Node& c : conds)
     {
