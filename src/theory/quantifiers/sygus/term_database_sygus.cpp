@@ -605,13 +605,13 @@ void TermDbSygus::registerEnumerator(Node e,
         // have ITE and is not Boolean. Experimentally, it is better to
         // use passive generation for these cases since it enables useful
         // search space pruning techniques, e.g. evaluation unfolding,
-        // conjecture-specific symmetry breaking. Also, if sygus-stream is
-        // enabled, we always use active generation, since the use cases of
-        // sygus stream are to find many solutions to an easy problem, where
+        // conjecture-specific symmetry breaking. Also, if sygus-stream or
+        // incremental mode is enabled, we always use active generation, since
+        // these use cases often find many solutions to an easy problem, where
         // the bottleneck often becomes the large number of "exclude the current
         // solution" clauses.
         const Datatype& dt = et.getDatatype();
-        if (options::sygusStream()
+        if (options::sygusStream() || options::incrementalSolving()
             || (!hasIte(et) && !dt.getSygusType().isBoolean()))
         {
           isActiveGen = true;
