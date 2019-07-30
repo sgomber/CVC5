@@ -4279,16 +4279,17 @@ bool SmtEngine::addToAssignment(const Expr& ex)
   Expr e = d_private->substituteAbstractValues(Node::fromExpr(ex)).toExpr();
   Type type = e.getType(options::typeChecking());
   // must be Boolean
-  PrettyCheckArgument(type.isBoolean(),
-                      e,
-                      "expected Boolean-typed variable or function application "
-                      "in addToAssignment()");
+  PrettyCheckArgument(
+      type.isBoolean(),
+      e,
+      "expected Boolean-typed variable or function application "
+      "in addToAssignment()");
   Node n = e.getNode();
   // must be a defined constant, or a variable
   PrettyCheckArgument(
       (((d_definedFunctions->find(n) != d_definedFunctions->end())
         && n.getNumChildren() == 0)
-       || n.isVar()),
+        || n.isVar()),
       e,
       "expected variable or defined-function application "
       "in addToAssignment(),\ngot %s",
@@ -4323,12 +4324,7 @@ vector<pair<Expr, Expr>> SmtEngine::getAssignment()
         "produce-assignments option is off.";
     throw ModalException(msg);
   }
-<<<<<<< HEAD
-  if (d_status.isNull() || d_status.asSatisfiabilityResult() == Result::UNSAT
-      || d_problemExtended)
-=======
   if (d_smtMode != SMT_MODE_SAT)
->>>>>>> 49853e244323fa1964d69621506aa5daf8177a9c
   {
     const char* msg =
         "Cannot get the current assignment unless immediately "
@@ -4342,9 +4338,9 @@ vector<pair<Expr, Expr>> SmtEngine::getAssignment()
     TypeNode boolType = d_nodeManager->booleanType();
     TheoryModel* m = d_theoryEngine->getBuiltModel();
     for (AssignmentSet::key_iterator i = d_assignments->key_begin(),
-                                     iend = d_assignments->key_end();
-         i != iend;
-         ++i)
+                                      iend = d_assignments->key_end();
+          i != iend;
+          ++i)
     {
       Node as = *i;
       Assert(as.getType() == boolType);
@@ -4376,10 +4372,8 @@ vector<pair<Expr, Expr>> SmtEngine::getAssignment()
   return res;
 }
 
-void SmtEngine::addToModelCommandAndDump(const Command& c,
-                                         uint32_t flags,
-                                         bool userVisible,
-                                         const char* dumpTag)
+void SmtEngine::addToModelCommandAndDump(
+    const Command& c, uint32_t flags, bool userVisible, const char* dumpTag)
 {
   Trace("smt") << "SMT addToModelCommandAndDump(" << c << ")" << endl;
   SmtScope smts(this);
@@ -4398,9 +4392,7 @@ void SmtEngine::addToModelCommandAndDump(const Command& c,
     if (flags & ExprManager::VAR_FLAG_GLOBAL)
     {
       d_modelGlobalCommands.push_back(c.clone());
-    }
-    else
-    {
+    } else {
       d_modelCommands->push_back(c.clone());
     }
   }
@@ -5284,6 +5276,7 @@ void SmtEngine::push()
     throw ModalException("Cannot push when not solving incrementally (use --incremental)");
   }
 
+
   // The problem isn't really "extended" yet, but this disallows
   // get-model after a push, simplifying our lives somewhat and
   // staying symmetric with pop.
@@ -5618,4 +5611,4 @@ void SmtEngine::setExpressionName(Expr e, const std::string& name) {
   d_private->setExpressionName(e,name);
 }
 
-}  // namespace CVC4
+} /* CVC4 namespace */
