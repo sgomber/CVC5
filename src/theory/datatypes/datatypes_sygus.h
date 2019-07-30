@@ -76,6 +76,11 @@ class SygusSymBreakNew
                    QuantifiersEngine* qe,
                    context::Context* c);
   ~SygusSymBreakNew();
+  /** presolve method
+   * 
+   * Called during a call to TheoryDatatypes::presolve().
+   */
+  void presolve();
   /**
    * Notify this class that tester for constructor tindex has been asserted for
    * n. Exp is the literal corresponding to this tester. This method may add

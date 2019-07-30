@@ -43,7 +43,7 @@ SynthEngine::~SynthEngine() {}
 
 void SynthEngine::presolve()
 {
-  Trace("cegqi-engine") << "--- Presolve" << std::endl;
+  Trace("cegqi-engine") << "SynthEngine::presolve" << std::endl;
   for (unsigned i = 0, size = d_conjs.size(); i < size; i++)
   {
     d_conjs[i]->presolve();
@@ -139,7 +139,7 @@ void SynthEngine::check(Theory::Effort e, QEffort quant_e)
 
 void SynthEngine::assignConjecture(Node q)
 {
-  Trace("cegqi-engine") << "--- Assign conjecture " << q << std::endl;
+  Trace("cegqi-engine") << "SynthEngine::assignConjecture " << q << std::endl;
   if (options::sygusQePreproc())
   {
     // the following does quantifier elimination as a preprocess step

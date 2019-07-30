@@ -60,7 +60,11 @@ class SynthEngine : public QuantifiersModule
  public:
   SynthEngine(QuantifiersEngine* qe, context::Context* c);
   ~SynthEngine();
-  /** presolve */
+  /** presolve
+   *
+   * Called at the beginning of each call to solve a synthesis problem, which
+   * may be e.g. a check-synth or get-abduct call.
+   */
   void presolve() override;
   /** needs check, return true if e is last call */
   bool needsCheck(Theory::Effort e) override;

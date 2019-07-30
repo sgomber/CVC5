@@ -73,16 +73,16 @@ SynthConjecture::~SynthConjecture() {}
 
 void SynthConjecture::presolve()
 {
-  if (d_quant.isNull())
+  if( d_quant.isNull() )
   {
     // not assigned, nothing to do
     return;
   }
   // initialize user-context dependent information
-
-  Assert(!d_feasible_guard.isNull());
+  
+  Assert( !d_feasible_guard.isNull() );
   // register the decision strategy
-  if (d_feasible_strategy == nullptr)
+  if( d_feasible_strategy==nullptr )
   {
     d_feasible_strategy.reset(
         new DecisionStrategySingleton("sygus_feasible",
@@ -314,15 +314,15 @@ bool SynthConjecture::doCheck(std::vector<Node>& lems)
 {
   Assert(d_master != nullptr);
 
-  // if we have a waiting exclusion lemma, send it now
-  if (!d_waitingExcludeLem.get().isNull())
+  // if we have a waiting exclusion lemma, send it now 
+  if( !d_waitingExcludeLem.get().isNull() )
   {
     d_waitingExcludeLem = Node::null();
     lems.push_back(d_waitingExcludeLem.get());
     // we have a lemma that excludes the current candidate, we are done
     return true;
   }
-
+  
   // process the sygus streaming guard
   if (options::sygusStream())
   {
@@ -642,14 +642,14 @@ bool SynthConjecture::doCheck(std::vector<Node>& lems)
   }
   if (success)
   {
-    if (options::sygusStream())
+    if( options::sygusStream() )
     {
       // if we were successful, we immediately print the current solution.
       // this saves us from introducing a verification lemma and a new guard.
       printAndContinueStream();
       return false;
     }
-    else if (options::incrementalSolving())
+    else if( options::incrementalSolving() )
     {
       // if incremental, we choose not to send the lemma (which would make the
       // context UNSAT). Instead, we remember that we were successful and send
@@ -657,10 +657,10 @@ bool SynthConjecture::doCheck(std::vector<Node>& lems)
       // We additionally set the waiting exclude lemma to exclude the current
       // solution, since it should not be returned in the future.
       lem = Node::null();
-      d_waitingExcludeLem = getExcludeCurrentSolutionLemma();
+      d_waitingExcludeLem = excludeCurrentSolution(false);
     }
   }
-  if (!lem.isNull())
+  if( !lem.isNull() )
   {
     lem = getStreamGuardedLemma(lem);
     lems.push_back(lem);
@@ -1057,9 +1057,17 @@ void SynthConjecture::printAndContinueStream()
   printSynthSolution(*nodeManagerOptions.getOut());
   excludeCurrentSolution();
 }
-
-Node SynthConjecture::getExcludeCurrentSolutionLemma()
+  
+Node SynthConjecture::excludeCurrentSolution(bool sendLemma)
 {
+  // We will not refine the current candidate solution since it is a solution
+  // thus, we clear information regarding the current refinement
+  d_set_ce_sk_vars = false;
+  d_ce_sk_vars.clear();
+  d_ce_sk_var_mvs.clear();
+  // However, we need to exclude the current solution using an explicit
+  // blocking clause, so that we proceed to the next solution. We do this only
+  // for passively-generated enumerators (TermDbSygus::isPassiveEnumerator).
   std::vector<Node> terms;
   d_master->getTermList(d_candidates, terms);
   std::vector<Node> exp;
@@ -1088,28 +1096,16 @@ Node SynthConjecture::getExcludeCurrentSolutionLemma()
                        ? exp[0]
                        : NodeManager::currentNM()->mkNode(kind::AND, exp);
     exc_lem = exc_lem.negate();
-    return exc_lem;
+    if( !sendLemma )
+    {
+      // return lemma if we are not sending it
+      return exc_lem;
+    }
+    Trace("cegqi-lemma") << "Cegqi::Lemma : stream exclude current solution : "
+                         << exc_lem << std::endl;
+    d_qe->getOutputChannel().lemma(exc_lem);
   }
   return Node::null();
-}
-
-void SynthConjecture::excludeCurrentSolution()
-{
-  // We will not refine the current candidate solution since it is a solution
-  // thus, we clear information regarding the current refinement
-  d_set_ce_sk_vars = false;
-  d_ce_sk_vars.clear();
-  d_ce_sk_var_mvs.clear();
-  // However, we need to exclude the current solution using an explicit
-  // blocking clause, so that we proceed to the next solution. We do this only
-  // for passively-generated enumerators (TermDbSygus::isPassiveEnumerator).
-  Node excLem = getExcludeCurrentSolutionLemma();
-  if (!excLem.isNull())
-  {
-    Trace("cegqi-lemma") << "Cegqi::Lemma : stream exclude current solution : "
-                         << excLem << std::endl;
-    d_qe->getOutputChannel().lemma(excLem);
-  }
 }
 
 void SynthConjecture::printSynthSolution(std::ostream& out)
