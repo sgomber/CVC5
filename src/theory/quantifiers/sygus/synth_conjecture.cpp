@@ -44,7 +44,7 @@ namespace quantifiers {
 SynthConjecture::SynthConjecture(QuantifiersEngine* qe)
     : d_qe(qe),
       d_tds(qe->getTermDatabaseSygus()),
-      d_initSolving(false,qe->getUserContext()),
+      d_initSolving(false, qe->getUserContext()),
       d_ceg_si(new CegSingleInv(qe, this)),
       d_ceg_proc(new SynthConjectureProcess(qe)),
       d_ceg_gc(new CegGrammarConstructor(qe, this)),
@@ -88,13 +88,13 @@ void SynthConjecture::initSolving()
     return;
   }
   // initialize user-context dependent information
-  if( d_initSolving )
+  if (d_initSolving)
   {
     // already initialized
     return;
   }
   d_initSolving = true;
-  
+
   Assert(!d_feasible_guard.isNull());
   // register the decision strategy
   if (d_feasible_strategy == nullptr)
@@ -113,9 +113,9 @@ void SynthConjecture::initSolving()
   d_qe->getOutputChannel().requirePhase(d_feasible_guard, true);
 }
 
-bool SynthConjecture::checkCompleteFor( Node q )
+bool SynthConjecture::checkCompleteFor(Node q)
 {
-  if( d_quant!=q )
+  if (d_quant != q)
   {
     // not assigned this quantified formula
     return false;
@@ -227,7 +227,7 @@ void SynthConjecture::assign(Node q)
       }
     }
   }
-  
+
   // initialize solving now
   initSolving();
 

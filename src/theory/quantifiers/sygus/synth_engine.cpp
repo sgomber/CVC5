@@ -137,7 +137,7 @@ void SynthEngine::check(Theory::Effort e, QEffort quant_e)
       << "Finished Counterexample Guided Instantiation engine." << std::endl;
 }
 
-bool SynthEngine::checkCompleteFor( Node q )
+bool SynthEngine::checkCompleteFor(Node q)
 {
   for (unsigned i = 0, size = d_conjs.size(); i < size; i++)
   {

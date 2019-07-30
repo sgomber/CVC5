@@ -74,7 +74,7 @@ class SynthConjecture
   /** presolve */
   void presolve();
   /** Is this module complete for quantified formula q? */
-  bool checkCompleteFor( Node q );
+  bool checkCompleteFor(Node q);
   /** get original version of conjecture */
   Node getConjecture() { return d_quant; }
   /** get deep embedding version of conjecture */
@@ -182,8 +182,8 @@ class SynthConjecture
   std::unique_ptr<CegGrammarConstructor> d_ceg_gc;
   /** repair constant utility */
   std::unique_ptr<SygusRepairConst> d_sygus_rconst;
-  /** initialize solving in this user context 
-   * 
+  /** initialize solving in this user context
+   *
    * This ensures decision strategies have been set up for this synthesis
    * conjecture.
    */
