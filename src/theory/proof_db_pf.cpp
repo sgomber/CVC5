@@ -14,6 +14,8 @@
 
 #include "theory/proof_db_pf.h"
 
+#include "expr/node_algorithm.h"
+
 using namespace CVC4::kind;
 
 namespace CVC4 {
@@ -27,6 +29,29 @@ void ProofDbRule::init(const std::string& name,
   d_cond.clear();
   d_cond.insert(d_cond.end(), cond.begin(), cond.end());
   d_eq = eq;
+  
+  std::unordered_set<Node, NodeHashFunction> fvs;
+  expr::getFreeVariables(eq,fvs);
+  if( Trace.isOn("proof-db-to-lfsc") )
+  {
+    // TODO: incorporate side conditions
+    std::stringstream rparens;
+    Trace("proof-db-to-lfsc") << "(declare " << d_name << std::endl;
+    for( const Node& v : fvs )
+    {
+      Trace("proof-db-to-lfsc") << "  (! " << v << " " << v.getType() << std::endl;
+    }
+    unsigned counter = 1;
+    for( const Node& c : cond )
+    {
+      Trace("proof-db-to-lfsc") << "  (! h" << counter << " (holds " << c << ")" << std::endl;
+      rparens << ")";
+      counter++;
+    }
+    Trace("proof-db-to-lfsc") << "    (holds " << eq << ")" << rparens.str() << std::endl;
+    Trace("proof-db-to-lfsc") << std::endl;
+  }
+  d_numFv = fvs.size();
 }
 
 }  // namespace theory

@@ -15,17 +15,16 @@
 #include "theory/proof_db.h"
 #include "theory/theory.h"
 
-#include "expr/node_algorithm.h"
-
 using namespace CVC4::kind;
 
 namespace CVC4 {
 namespace theory {
 
-ProofDb::ProofDb() : d_idCounter(1), d_notify(*this)
+ProofDb::ProofDb() : d_notify(*this)
 {
   d_true = NodeManager::currentNM()->mkConst(true);
   d_false = NodeManager::currentNM()->mkConst(false);
+  d_idCounter = static_cast<unsigned>(pf_rule_user);
 }
 
 void ProofDb::registerRules(const std::map<Node, std::string>& rules)
@@ -94,40 +93,22 @@ void ProofDb::registerRules(const std::map<Node, std::string>& rules)
     d_ids[eq].push_back(d_idCounter);
     d_proofDbRule[d_idCounter].init(rr.second, conds, eq);
     d_idCounter++;
-    if (Trace.isOn("proof-db-to-lfsc"))
-    {
-      std::stringstream rparens;
-      Trace("proof-db-to-lfsc") << "(declare " << rr.second << std::endl;
-      std::unordered_set<Node, NodeHashFunction> fvs;
-      expr::getFreeVariables(eq, fvs);
-      for (const Node& v : fvs)
-      {
-        Trace("proof-db-to-lfsc")
-            << "  (! " << v << " " << v.getType() << std::endl;
-      }
-      unsigned counter = 1;
-      for (const Node& c : conds)
-      {
-        Trace("proof-db-to-lfsc")
-            << "  (! h" << counter << " (holds " << c << ")" << std::endl;
-        rparens << ")";
-        counter++;
-      }
-      Trace("proof-db-to-lfsc")
-          << "    (holds " << eq << ")" << rparens.str() << std::endl;
-      Trace("proof-db-to-lfsc") << std::endl;
-    }
   }
 }
 
 bool ProofDb::existsRuleInternal(Node a, Node b, unsigned& index, bool doRec)
 {
   Node eq = a.eqNode(b);
-  std::unordered_map<Node, bool, NodeHashFunction>::iterator it =
+  std::unordered_map<Node, unsigned, NodeHashFunction>::iterator it =
       d_erCache.find(eq);
   if (it != d_erCache.end())
   {
-    return it->second;
+    if( it->second==pf_rule_invalid )
+    {
+      return false;
+    }
+    index = it->second;
+    return true;
   }
   Trace("proof-db") << "ProofDb::existsRule " << a << "==" << b << "?"
                     << std::endl;
@@ -135,7 +116,8 @@ bool ProofDb::existsRuleInternal(Node a, Node b, unsigned& index, bool doRec)
   {
     Trace("proof-db-debug") << "By reflexivity" << std::endl;
     // reflexivity
-    d_erCache[eq] = true;
+    index = pf_rule_refl;
+    d_erCache[eq] = index;
     return true;
   }
   Node be = d_pdtp.toExternal(b);
@@ -152,7 +134,8 @@ bool ProofDb::existsRuleInternal(Node a, Node b, unsigned& index, bool doRec)
           << "Return evaluation " << (aev == be) << std::endl;
       // must check to see if it matches
       bool ret = (aev == be);
-      d_erCache[eq] = ret;
+      index = ret ? pf_rule_eval : pf_rule_invalid;
+      d_erCache[eq] = index;
       return ret;
     }
     Trace("proof-db-debug") << "Could not evaluate " << ae << std::endl;
@@ -164,7 +147,8 @@ bool ProofDb::existsRuleInternal(Node a, Node b, unsigned& index, bool doRec)
     Trace("proof-db-debug") << "By equality reflexivity" << std::endl;
     // rewriting reflexive equality to true
     bool ret = (b.isConst() && b.getConst<bool>());
-    d_erCache[eq] = ret;
+    index = ret ? pf_rule_eq_refl : pf_rule_invalid;
+    d_erCache[eq] = index;
     return ret;
   }
   if (ak == EQUAL && bk == EQUAL)
@@ -173,7 +157,8 @@ bool ProofDb::existsRuleInternal(Node a, Node b, unsigned& index, bool doRec)
     {
       Trace("proof-db-debug") << "By equality symmetry" << std::endl;
       // symmetry of equality
-      d_erCache[eq] = true;
+      index = pf_rule_eq_sym;
+      d_erCache[eq] = index;
       return true;
     }
   }
@@ -184,41 +169,41 @@ bool ProofDb::existsRuleInternal(Node a, Node b, unsigned& index, bool doRec)
     // is an instance of existing rule?
     if (!d_mt.getMatches(eq, &d_notify))
     {
+      Assert( d_erCache.find(eq)!=d_erCache.end() );
+      index = d_erCache[eq];
       Trace("proof-db-debug") << "By rule" << std::endl;
-      d_erCache[eq] = true;
       return true;
     }
   }
   // congruence? TODO
 
   Trace("proof-db-debug") << "FAIL: no proof rule" << std::endl;
-  d_erCache[eq] = false;
+  index = pf_rule_invalid;
+  d_erCache[eq] = index;
   return false;
-}
-
-bool ProofDb::existsRuleInternal(Node p, unsigned& index, bool doRec)
-{
-  if (p.getKind() == EQUAL)
-  {
-    return existsRuleInternal(p[0], p[1], index, doRec);
-  }
-  return existsRuleInternal(p, d_true, index, doRec);
 }
 
 bool ProofDb::existsRule(Node a, Node b, unsigned& index)
 {
-  return existsRuleInternal(a, b, index, true);
+  if( existsRuleInternal(a, b, index, true) )
+  {
+    return true;
+  }
+  return false;
 }
 
 bool ProofDb::existsRule(Node a, Node b)
 {
   unsigned index = 0;
-  return existsRuleInternal(a, b, index, true);
+  return existsRule(a, b, index);
 }
 bool ProofDb::existsRule(Node p)
 {
-  unsigned index = 0;
-  return existsRuleInternal(p, index, true);
+  if (p.getKind() == EQUAL)
+  {
+    return existsRule(p[0], p[1]);
+  }
+  return existsRule(p, d_true);
 }
 
 bool ProofDb::proveRule(Node a, Node b)
@@ -328,6 +313,7 @@ bool ProofDb::notifyMatch(Node s,
         Trace("proof-db-infer")
             << "INFER " << se << " by " << pr.d_name << std::endl;
       }
+      d_erCache[s] = ruleId;
       return false;
     }
   }

@@ -4,7 +4,7 @@
 (declare-fun arith_norm_term (Int) Int)
 (declare-fun arith_norm_term_abs (Int) Int)
 (proof-db (
-  (x String) (y String) (z String) (w String)
+  (x String) (y String) (z String) (w String) (v String)
   (n Int) (m Int) (o Int) (p Int) 
   (r RegLan) (s RegLan) (t RegLan)
   (b Bool) (c Bool) (d Bool)
@@ -45,6 +45,7 @@
   
   
   re-clash (=> (and (= (= (str.len x) (str.len y)) true) (= (= x y) false)) (= (str.in.re (str.++ x z) (re.++ (str.to.re (str.++ y w)) r)) false))
+  re-clash-nested (=> (and (= (= (str.len x) (str.len w)) true) (= (= x w) false)) (= (str.in.re (str.++ (str.++ x y) z) (re.++ (str.to.re (str.++ w v)) r)) false))
   
   re-str-to-re-true (=> true (= (str.in.re x (str.to.re x)) true))
   re-str-to-re-eq (=> true (= (str.in.re x (str.to.re y)) (= x y)))

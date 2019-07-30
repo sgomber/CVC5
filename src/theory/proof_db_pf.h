@@ -24,6 +24,16 @@
 namespace CVC4 {
 namespace theory {
 
+enum ProofDbRuleId
+{
+  pf_rule_invalid,
+  pf_rule_refl,
+  pf_rule_eval,
+  pf_rule_eq_refl,
+  pf_rule_eq_sym,
+  pf_rule_user
+};
+  
 class ProofDbRule
 {
  public:
@@ -33,6 +43,8 @@ class ProofDbRule
   std::vector<Node> d_cond;
   /** The conclusion of the rule (an equality) */
   Node d_eq;
+  /** number of free variables */
+  unsigned d_numFv;
   /** initialize this rule */
   void init(const std::string& name, const std::vector<Node>& cond, Node eq);
 };
