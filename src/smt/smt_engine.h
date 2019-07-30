@@ -287,8 +287,8 @@ class CVC4_PUBLIC SmtEngine {
    * The expected status of the next satisfiability check.
    */
   Result d_expectedStatus;
-  
-  /** 
+
+  /**
    * The current mode of the solver, see Figure 4.1 on page 52 of the
    * SMT-LIB version 2.6 standard
    * http://smtlib.cs.uiowa.edu/papers/smt-lib-reference-v2.6-r2017-07-18.pdf

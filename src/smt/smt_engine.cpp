@@ -3066,7 +3066,7 @@ theory::TheoryModel* SmtEngine::getAvailableModel(const char* c) const
     throw RecoverableModalException(ss.str().c_str());
   }
 
-  if (d_smtMode!=SMT_MODE_SAT)
+  if (d_smtMode != SMT_MODE_SAT)
   {
     std::stringstream ss;
     ss << "Cannot " << c
@@ -3757,7 +3757,7 @@ Result SmtEngine::checkSatisfiability(const vector<Expr>& assumptions,
     {
       internalPop();
     }
-    
+
     // Remember the status
     d_status = r;
     // Check against expected status
@@ -3768,16 +3768,16 @@ Result SmtEngine::checkSatisfiability(const vector<Expr>& assumptions,
                    << d_status;
     }
     d_expectedStatus = Result();
-    if(d_status.asSatisfiabilityResult().isSat() == Result::UNSAT) {
+    if (d_status.asSatisfiabilityResult().isSat() == Result::UNSAT)
+    {
       d_smtMode = SMT_MODE_UNSAT;
     }
     else
     {
       // Notice that unknown response moves to sat mode, since the same set
-      // of commands (get-model, get-value) are applicable to this case. 
+      // of commands (get-model, get-value) are applicable to this case.
       d_smtMode = SMT_MODE_SAT;
     }
-
 
     Trace("smt") << "SmtEngine::" << (isQuery ? "query" : "checkSat") << "("
                  << assumptions << ") => " << r << endl;
@@ -3829,7 +3829,7 @@ vector<Expr> SmtEngine::getUnsatAssumptions(void)
         "Cannot get unsat assumptions when produce-unsat-assumptions option "
         "is off.");
   }
-  if (d_smtMode!=SMT_MODE_UNSAT)
+  if (d_smtMode != SMT_MODE_UNSAT)
   {
     throw RecoverableModalException(
         "Cannot get unsat assumptions unless immediately preceded by "
@@ -4171,7 +4171,8 @@ Expr SmtEngine::getValue(const Expr& ex) const
       "Cannot get value when produce-models options is off.";
     throw ModalException(msg);
   }
-  if(d_smtMode!=SMT_MODE_SAT) {
+  if (d_smtMode != SMT_MODE_SAT)
+  {
     const char* msg =
       "Cannot get value unless immediately preceded by SAT/INVALID or UNKNOWN response.";
     throw RecoverableModalException(msg);
@@ -4292,7 +4293,8 @@ vector<pair<Expr, Expr>> SmtEngine::getAssignment()
       "produce-assignments option is off.";
     throw ModalException(msg);
   }
-  if(d_smtMode!=SMT_MODE_SAT) {
+  if (d_smtMode != SMT_MODE_SAT)
+  {
     const char* msg =
       "Cannot get the current assignment unless immediately "
       "preceded by SAT/INVALID or UNKNOWN response.";
@@ -4544,7 +4546,7 @@ UnsatCore SmtEngine::getUnsatCoreInternal()
     throw ModalException(
         "Cannot get an unsat core when produce-unsat-cores option is off.");
   }
-  if (d_smtMode!=SMT_MODE_UNSAT)
+  if (d_smtMode != SMT_MODE_UNSAT)
   {
     throw RecoverableModalException(
         "Cannot get an unsat core unless immediately preceded by UNSAT/VALID "
@@ -4934,7 +4936,8 @@ const Proof& SmtEngine::getProof()
   if(!options::proof()) {
     throw ModalException("Cannot get a proof when produce-proofs option is off.");
   }
-  if(d_smtMode!=SMT_MODE_UNSAT) {
+  if (d_smtMode != SMT_MODE_UNSAT)
+  {
     throw RecoverableModalException(
         "Cannot get a proof unless immediately preceded by UNSAT/VALID "
         "response.");
@@ -5098,7 +5101,7 @@ bool SmtEngine::getAbduct(const std::string& aname,
   d_subsolver->setLogic(l);
   // assert the abduction query
   d_subsolver->assertFormula(aconj.toExpr());
-  if( getAbductInternal(abd) )
+  if (getAbductInternal(abd))
   {
     d_smtMode = SMT_MODE_ABDUCT;
     return true;
