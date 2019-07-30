@@ -74,7 +74,7 @@ class ProofDbScEval
 
   /** Helpers */
   Node h_flattenCollect(Kind k, Node n, Node acc);
-  void h_termToVec(Kind k, Node n, std::vector< Node >& terms);
+  void h_termToVec(Kind k, Node n, std::vector<Node>& terms);
   void h_termToMsum(Node n, std::map<Node, Node>& msum);
   Node h_msumToTerm(std::map<Node, Node>& msum, bool posLeadingCoeff = false);
 };

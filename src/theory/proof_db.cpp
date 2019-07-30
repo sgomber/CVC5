@@ -62,13 +62,13 @@ void ProofDb::registerRules(const std::map<Node, std::string>& rules)
     }
     // make as expected matching: top symbol of all conditions is equality
     // this means (not p) becomes (= p false), p becomes (= p true)
-    for (unsigned i=0, nconds = conds.size(); i<nconds; i++ )
+    for (unsigned i = 0, nconds = conds.size(); i < nconds; i++)
     {
-      if( conds[i].getKind()==NOT )
+      if (conds[i].getKind() == NOT)
       {
         conds[i] = conds[i][0].eqNode(d_false);
       }
-      else if( conds[i].getKind()!=EQUAL )
+      else if (conds[i].getKind() != EQUAL)
       {
         conds[i] = conds[i].eqNode(d_true);
       }
@@ -98,13 +98,14 @@ void ProofDb::registerRules(const std::map<Node, std::string>& rules)
 bool ProofDb::existsRuleInternal(Node a, Node b, unsigned& index, bool doRec)
 {
   Node eq = a.eqNode(b);
-  std::unordered_map< Node, bool, NodeHashFunction >::iterator it = d_erCache.find(eq);
-  if( it!=d_erCache.end() )
+  std::unordered_map<Node, bool, NodeHashFunction>::iterator it =
+      d_erCache.find(eq);
+  if (it != d_erCache.end())
   {
     return it->second;
   }
-  Trace("proof-db") << "ProofDb::existsRule " << a << "==" << b
-                          << "?" << std::endl;
+  Trace("proof-db") << "ProofDb::existsRule " << a << "==" << b << "?"
+                    << std::endl;
   if (a == b)
   {
     Trace("proof-db-debug") << "By reflexivity" << std::endl;
@@ -137,7 +138,7 @@ bool ProofDb::existsRuleInternal(Node a, Node b, unsigned& index, bool doRec)
   {
     Trace("proof-db-debug") << "By equality reflexivity" << std::endl;
     // rewriting reflexive equality to true
-    bool ret = ( b.isConst() && b.getConst<bool>());
+    bool ret = (b.isConst() && b.getConst<bool>());
     d_erCache[eq] = ret;
     return ret;
   }
@@ -151,7 +152,7 @@ bool ProofDb::existsRuleInternal(Node a, Node b, unsigned& index, bool doRec)
       return true;
     }
   }
-  if( doRec )
+  if (doRec)
   {
     // prevent infinite loops
     d_erCache[eq] = false;
@@ -161,10 +162,10 @@ bool ProofDb::existsRuleInternal(Node a, Node b, unsigned& index, bool doRec)
       Trace("proof-db-debug") << "By rule" << std::endl;
       d_erCache[eq] = true;
       return true;
-    }    
+    }
   }
   // congruence? TODO
-  
+
   Trace("proof-db-debug") << "FAIL: no proof rule" << std::endl;
   d_erCache[eq] = false;
   return false;
@@ -172,27 +173,27 @@ bool ProofDb::existsRuleInternal(Node a, Node b, unsigned& index, bool doRec)
 
 bool ProofDb::existsRuleInternal(Node p, unsigned& index, bool doRec)
 {
-  if( p.getKind()==EQUAL )
+  if (p.getKind() == EQUAL)
   {
-    return existsRuleInternal(p[0],p[1],index,doRec);
+    return existsRuleInternal(p[0], p[1], index, doRec);
   }
-  return existsRuleInternal(p,d_true,index,doRec);
+  return existsRuleInternal(p, d_true, index, doRec);
 }
 
 bool ProofDb::existsRule(Node a, Node b, unsigned& index)
 {
-  return existsRuleInternal(a,b,index,true);
+  return existsRuleInternal(a, b, index, true);
 }
 
 bool ProofDb::existsRule(Node a, Node b)
 {
   unsigned index = 0;
-  return existsRuleInternal(a, b, index,true);
+  return existsRuleInternal(a, b, index, true);
 }
 bool ProofDb::existsRule(Node p)
 {
   unsigned index = 0;
-  return existsRuleInternal(p,index,true);
+  return existsRuleInternal(p, index, true);
 }
 
 bool ProofDb::proveRule(Node a, Node b)
@@ -222,7 +223,7 @@ void ProofDb::notify(Node a, Node b, std::ostream& out)
     return;
   }
   out << "(trusted (= " << a << " " << b << "))" << std::endl;
-  //out << "(trusted-debug (= " << ai << " " << bi << "))" << std::endl;
+  // out << "(trusted-debug (= " << ai << " " << bi << "))" << std::endl;
 }
 
 bool ProofDb::notifyMatch(Node s,

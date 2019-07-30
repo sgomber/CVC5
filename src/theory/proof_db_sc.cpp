@@ -227,13 +227,14 @@ Node ProofDbScEval::h_flattenCollect(Kind k, Node n, Node acc)
   }
   // is zero element?
   bool isZeroElement = false;
-  if (k==STRING_CONCAT)
+  if (k == STRING_CONCAT)
   {
     isZeroElement = (nk == CONST_STRING && n.getConst<String>().size() == 0);
   }
-  else if( k==REGEXP_CONCAT )
+  else if (k == REGEXP_CONCAT)
   {
-    isZeroElement = (nk==STRING_TO_REGEXP && n[0].getKind()==CONST_STRING && n[0].getConst<String>().size()==0);
+    isZeroElement = (nk == STRING_TO_REGEXP && n[0].getKind() == CONST_STRING
+                     && n[0].getConst<String>().size() == 0);
   }
   if (isZeroElement)
   {
@@ -248,7 +249,7 @@ Node ProofDbScEval::h_flattenCollect(Kind k, Node n, Node acc)
 Node ProofDbScEval::flatten_string(Node n)
 {
   Kind nk = n.getKind();
-  if( !ProofDbTermProcess::isAssociativeNary(nk) )
+  if (!ProofDbTermProcess::isAssociativeNary(nk))
   {
     return n;
   }
@@ -259,7 +260,7 @@ Node ProofDbScEval::flatten_string(Node n)
 Node ProofDbScEval::flatten_regexp(Node n)
 {
   Kind nk = n.getKind();
-  if( !ProofDbTermProcess::isAssociativeNary(nk) )
+  if (!ProofDbTermProcess::isAssociativeNary(nk))
   {
     return n;
   }
@@ -268,48 +269,48 @@ Node ProofDbScEval::flatten_regexp(Node n)
   return h_flattenCollect(nk, n, acc);
 }
 
-void ProofDbScEval::h_termToVec(Kind k, Node n, std::vector< Node >& terms)
+void ProofDbScEval::h_termToVec(Kind k, Node n, std::vector<Node>& terms)
 {
   Kind nk = n.getKind();
   if (nk == k)
   {
     // should be internal format
-    Assert( n.getNumChildren()==2 );
+    Assert(n.getNumChildren() == 2);
     h_termToVec(k, n[1], terms);
     h_termToVec(k, n[0], terms);
     return;
   }
-  if( (k==AND && n==d_true ) || ( k==OR && n==d_false) )
+  if ((k == AND && n == d_true) || (k == OR && n == d_false))
   {
     return;
   }
-  if( std::find( terms.begin(), terms.end(), n )==terms.end() )
+  if (std::find(terms.begin(), terms.end(), n) == terms.end())
   {
     terms.push_back(n);
   }
 }
-  
+
 Node ProofDbScEval::sort_bool(Node n)
 {
   Kind nk = n.getKind();
-  if( !ProofDbTermProcess::isAssociativeNary(nk) )
+  if (!ProofDbTermProcess::isAssociativeNary(nk))
   {
     return n;
   }
-  Assert(n.getKind()==AND || n.getKind()==OR);
+  Assert(n.getKind() == AND || n.getKind() == OR);
   Assert(n.getNumChildren() == 2);
-  std::vector< Node > children;
+  std::vector<Node> children;
   h_termToVec(nk, n, children);
-  std::sort( children.begin(), children.end() );
-  if( children.size()==0 )
+  std::sort(children.begin(), children.end());
+  if (children.size() == 0)
   {
-    return n.getKind()==AND ? d_true : d_false;
+    return n.getKind() == AND ? d_true : d_false;
   }
-  NodeManager * nm = NodeManager::currentNM();
+  NodeManager* nm = NodeManager::currentNM();
   Node ret = children[0];
-  for( unsigned i=1, nchild=children.size(); i<nchild; i++ )
+  for (unsigned i = 1, nchild = children.size(); i < nchild; i++)
   {
-    ret = nm->mkNode(nk,children[i],ret);
+    ret = nm->mkNode(nk, children[i], ret);
   }
   return ret;
 }

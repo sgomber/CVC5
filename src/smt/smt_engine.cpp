@@ -4253,131 +4253,141 @@ void SmtEngine::registerProofRules(const std::map<Expr, std::string>& rules)
     nodeRules[n] = it->second;
   }
   d_theoryEngine->registerProofRules(nodeRules);
-  
-vector<Expr> SmtEngine::getValues(const vector<Expr>& exprs)
-{
-  vector<Expr> result;
-  for (const Expr& e : exprs)
+
+  vector<Expr> SmtEngine::getValues(const vector<Expr>& exprs)
   {
-    result.push_back(getValue(e));
-  }
-  return result;
-}
-
-bool SmtEngine::addToAssignment(const Expr& ex) {
-  SmtScope smts(this);
-  finalOptionsAreSet();
-  doPendingPops();
-  // Substitute out any abstract values in ex
-  Expr e = d_private->substituteAbstractValues(Node::fromExpr(ex)).toExpr();
-  Type type = e.getType(options::typeChecking());
-  // must be Boolean
-  PrettyCheckArgument(
-      type.isBoolean(), e,
-      "expected Boolean-typed variable or function application "
-      "in addToAssignment()" );
-  Node n = e.getNode();
-  // must be a defined constant, or a variable
-  PrettyCheckArgument(
-      (((d_definedFunctions->find(n) != d_definedFunctions->end())
-        && n.getNumChildren() == 0)
-       || n.isVar()),
-      e,
-      "expected variable or defined-function application "
-      "in addToAssignment(),\ngot %s",
-      e.toString().c_str());
-  if(!options::produceAssignments()) {
-    return false;
-  }
-  if(d_assignments == NULL) {
-    d_assignments = new(true) AssignmentSet(d_context);
-  }
-  d_assignments->insert(n);
-
-  return true;
-}
-
-// TODO(#1108): Simplify the error reporting of this method.
-vector<pair<Expr, Expr>> SmtEngine::getAssignment()
-{
-  Trace("smt") << "SMT getAssignment()" << endl;
-  SmtScope smts(this);
-  finalOptionsAreSet();
-  if(Dump.isOn("benchmark")) {
-    Dump("benchmark") << GetAssignmentCommand();
-  }
-  if(!options::produceAssignments()) {
-    const char* msg =
-      "Cannot get the current assignment when "
-      "produce-assignments option is off.";
-    throw ModalException(msg);
-  }
-  if(d_status.isNull() ||
-     d_status.asSatisfiabilityResult() == Result::UNSAT  ||
-     d_problemExtended) {
-    const char* msg =
-      "Cannot get the current assignment unless immediately "
-      "preceded by SAT/INVALID or UNKNOWN response.";
-    throw RecoverableModalException(msg);
-  }
-
-  vector<pair<Expr,Expr>> res;
-  if (d_assignments != nullptr)
-  {
-    TypeNode boolType = d_nodeManager->booleanType();
-    TheoryModel* m = d_theoryEngine->getBuiltModel();
-    for (AssignmentSet::key_iterator i = d_assignments->key_begin(),
-                                     iend = d_assignments->key_end();
-         i != iend;
-         ++i)
+    vector<Expr> result;
+    for (const Expr& e : exprs)
     {
-      Node as = *i;
-      Assert(as.getType() == boolType);
-
-      Trace("smt") << "--- getting value of " << as << endl;
-
-      // Expand, then normalize
-      unordered_map<Node, Node, NodeHashFunction> cache;
-      Node n = d_private->expandDefinitions(as, cache);
-      n = Rewriter::rewrite(n);
-
-      Trace("smt") << "--- getting value of " << n << endl;
-      Node resultNode;
-      if (m != nullptr)
-      {
-        resultNode = m->getValue(n);
-      }
-
-      // type-check the result we got
-      Assert(resultNode.isNull() || resultNode.getType() == boolType);
-
-      // ensure it's a constant
-      Assert(resultNode.isConst());
-
-      Assert(as.isVar());
-      res.emplace_back(as.toExpr(), resultNode.toExpr());
+      result.push_back(getValue(e));
     }
+    return result;
   }
-  return res;
-}
 
-void SmtEngine::addToModelCommandAndDump(const Command& c, uint32_t flags, bool userVisible, const char* dumpTag) {
-  Trace("smt") << "SMT addToModelCommandAndDump(" << c << ")" << endl;
-  SmtScope smts(this);
-  // If we aren't yet fully inited, the user might still turn on
-  // produce-models.  So let's keep any commands around just in
-  // case.  This is useful in two cases: (1) SMT-LIBv1 auto-declares
-  // sort "U" in QF_UF before setLogic() is run and we still want to
-  // support finding card(U) with --finite-model-find, and (2) to
-  // decouple SmtEngine and ExprManager if the user does a few
-  // ExprManager::mkSort() before SmtEngine::setOption("produce-models")
-  // and expects to find their cardinalities in the model.
-  if(/* userVisible && */
-     (!d_fullyInited || options::produceModels()) &&
-     (flags & ExprManager::VAR_FLAG_DEFINED) == 0) {
-    if(flags & ExprManager::VAR_FLAG_GLOBAL) {
-      d_modelGlobalCommands.push_back(c.clone());
-    } else {
+  bool SmtEngine::addToAssignment(const Expr& ex)
+  {
+    SmtScope smts(this);
+    finalOptionsAreSet();
+    doPendingPops();
+    // Substitute out any abstract values in ex
+    Expr e = d_private->substituteAbstractValues(Node::fromExpr(ex)).toExpr();
+    Type type = e.getType(options::typeChecking());
+    // must be Boolean
+    PrettyCheckArgument(
+        type.isBoolean(),
+        e,
+        "expected Boolean-typed variable or function application "
+        "in addToAssignment()");
+    Node n = e.getNode();
+    // must be a defined constant, or a variable
+    PrettyCheckArgument(
+        (((d_definedFunctions->find(n) != d_definedFunctions->end())
+          && n.getNumChildren() == 0)
+         || n.isVar()),
+        e,
+        "expected variable or defined-function application "
+        "in addToAssignment(),\ngot %s",
+        e.toString().c_str());
+    if (!options::produceAssignments())
+    {
+      return false;
+    }
+    if (d_assignments == NULL)
+    {
+      d_assignments = new (true) AssignmentSet(d_context);
+    }
+    d_assignments->insert(n);
+
+    return true;
+  }
+
+  // TODO(#1108): Simplify the error reporting of this method.
+  vector<pair<Expr, Expr>> SmtEngine::getAssignment()
+  {
+    Trace("smt") << "SMT getAssignment()" << endl;
+    SmtScope smts(this);
+    finalOptionsAreSet();
+    if (Dump.isOn("benchmark"))
+    {
+      Dump("benchmark") << GetAssignmentCommand();
+    }
+    if (!options::produceAssignments())
+    {
+      const char* msg =
+          "Cannot get the current assignment when "
+          "produce-assignments option is off.";
+      throw ModalException(msg);
+    }
+    if (d_status.isNull() || d_status.asSatisfiabilityResult() == Result::UNSAT
+        || d_problemExtended)
+    {
+      const char* msg =
+          "Cannot get the current assignment unless immediately "
+          "preceded by SAT/INVALID or UNKNOWN response.";
+      throw RecoverableModalException(msg);
+    }
+
+    vector<pair<Expr, Expr>> res;
+    if (d_assignments != nullptr)
+    {
+      TypeNode boolType = d_nodeManager->booleanType();
+      TheoryModel* m = d_theoryEngine->getBuiltModel();
+      for (AssignmentSet::key_iterator i = d_assignments->key_begin(),
+                                       iend = d_assignments->key_end();
+           i != iend;
+           ++i)
+      {
+        Node as = *i;
+        Assert(as.getType() == boolType);
+
+        Trace("smt") << "--- getting value of " << as << endl;
+
+        // Expand, then normalize
+        unordered_map<Node, Node, NodeHashFunction> cache;
+        Node n = d_private->expandDefinitions(as, cache);
+        n = Rewriter::rewrite(n);
+
+        Trace("smt") << "--- getting value of " << n << endl;
+        Node resultNode;
+        if (m != nullptr)
+        {
+          resultNode = m->getValue(n);
+        }
+
+        // type-check the result we got
+        Assert(resultNode.isNull() || resultNode.getType() == boolType);
+
+        // ensure it's a constant
+        Assert(resultNode.isConst());
+
+        Assert(as.isVar());
+        res.emplace_back(as.toExpr(), resultNode.toExpr());
+      }
+    }
+    return res;
+  }
+
+  void SmtEngine::addToModelCommandAndDump(
+      const Command& c, uint32_t flags, bool userVisible, const char* dumpTag)
+  {
+    Trace("smt") << "SMT addToModelCommandAndDump(" << c << ")" << endl;
+    SmtScope smts(this);
+    // If we aren't yet fully inited, the user might still turn on
+    // produce-models.  So let's keep any commands around just in
+    // case.  This is useful in two cases: (1) SMT-LIBv1 auto-declares
+    // sort "U" in QF_UF before setLogic() is run and we still want to
+    // support finding card(U) with --finite-model-find, and (2) to
+    // decouple SmtEngine and ExprManager if the user does a few
+    // ExprManager::mkSort() before SmtEngine::setOption("produce-models")
+    // and expects to find their cardinalities in the model.
+    if (/* userVisible && */
+        (!d_fullyInited || options::produceModels())
+        && (flags & ExprManager::VAR_FLAG_DEFINED) == 0)
+    {
+      if (flags & ExprManager::VAR_FLAG_GLOBAL)
+      {
+        d_modelGlobalCommands.push_back(c.clone());
+      } else {
       d_modelCommands->push_back(c.clone());
     }
   }
@@ -5583,4 +5593,4 @@ void SmtEngine::setExpressionName(Expr e, const std::string& name) {
   d_private->setExpressionName(e,name);
 }
 
-}/* CVC4 namespace */
+} /* CVC4 namespace */

@@ -103,8 +103,8 @@ Node ProofDbTermProcess::toInternal(Node n)
           // (str.++ "AB" x) is (str.++ "A" (str.++ "B" x))
           if( cur[(nchild-1)-i].getKind()==CONST_STRING )
           {
-            const std::vector<unsigned>& vec = cur[(nchild-1)-i].getConst<String>().getVec();
-            if( vec.size()>1 )
+            const std::vector<unsigned>& vec =
+          cur[(nchild-1)-i].getConst<String>().getVec(); if( vec.size()>1 )
             {
               std::vector<unsigned> v(vec.begin(), vec.end());
               std::reverse(v.begin(), v.end());
@@ -230,8 +230,8 @@ Node ProofDbTermProcess::toExternal(Node n)
 
 bool ProofDbTermProcess::isAssociativeNary(Kind k)
 {
-  return k == AND || k == OR || k == STRING_CONCAT || k == REGEXP_CONCAT  || k==REGEXP_UNION || k==REGEXP_INTER
-         || k == PLUS || k == MULT;
+  return k == AND || k == OR || k == STRING_CONCAT || k == REGEXP_CONCAT
+         || k == REGEXP_UNION || k == REGEXP_INTER || k == PLUS || k == MULT;
 }
 
 }  // namespace theory
