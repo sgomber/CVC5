@@ -15,6 +15,8 @@
 #include "theory/proof_db.h"
 #include "theory/theory.h"
 
+#include "expr/node_algorithm.h"
+
 using namespace CVC4::kind;
 
 namespace CVC4 {
@@ -92,6 +94,26 @@ void ProofDb::registerRules(const std::map<Node, std::string>& rules)
     d_ids[eq].push_back(d_idCounter);
     d_proofDbRule[d_idCounter].init(rr.second, conds, eq);
     d_idCounter++;
+    if( Trace.isOn("proof-db-to-lfsc") )
+    {
+      std::stringstream rparens;
+      Trace("proof-db-to-lfsc") << "(declare " << rr.second << std::endl;
+      std::unordered_set<Node, NodeHashFunction> fvs;
+      expr::getFreeVariables(eq,fvs);
+      for( const Node& v : fvs )
+      {
+        Trace("proof-db-to-lfsc") << "  (! " << v << " " << v.getType() << std::endl;
+      }
+      unsigned counter = 1;
+      for( const Node& c : conds )
+      {
+        Trace("proof-db-to-lfsc") << "  (! h" << counter << " (holds " << c << ")" << std::endl;
+        rparens << ")";
+        counter++;
+      }
+      Trace("proof-db-to-lfsc") << "    (holds " << eq << ")" << rparens.str() << std::endl;
+      Trace("proof-db-to-lfsc") << std::endl;
+    }
   }
 }
 
