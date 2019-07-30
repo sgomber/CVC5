@@ -77,7 +77,7 @@ class SygusSymBreakNew
                    context::Context* c);
   ~SygusSymBreakNew();
   /** presolve method
-   * 
+   *
    * Called during a call to TheoryDatatypes::presolve().
    */
   void presolve();

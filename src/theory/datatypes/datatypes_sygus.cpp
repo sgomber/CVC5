@@ -54,21 +54,22 @@ SygusSymBreakNew::~SygusSymBreakNew() {
 
 void SygusSymBreakNew::presolve()
 {
-  DecisionManager * dm = d_td->getDecisionManager();
+  DecisionManager* dm = d_td->getDecisionManager();
   // register the decision strategies we previously initialized
-  for( std::pair<const Node, std::unique_ptr<DecisionStrategy>>& s : d_anchor_to_ag_strategy )
+  for (std::pair<const Node, std::unique_ptr<DecisionStrategy>>& s :
+       d_anchor_to_ag_strategy)
   {
-    dm->registerStrategy(
-        DecisionManager::STRAT_DT_SYGUS_ENUM_SIZE, s.second.get());
-    
+    dm->registerStrategy(DecisionManager::STRAT_DT_SYGUS_ENUM_SIZE,
+                         s.second.get());
   }
-  for( std::pair<const Node, std::unique_ptr<SygusSizeDecisionStrategy>>& s : d_szinfo )
+  for (std::pair<const Node, std::unique_ptr<SygusSizeDecisionStrategy>>& s :
+       d_szinfo)
   {
-    dm->registerStrategy(
-        DecisionManager::STRAT_DT_SYGUS_ENUM_SIZE, s.second.get());
+    dm->registerStrategy(DecisionManager::STRAT_DT_SYGUS_ENUM_SIZE,
+                         s.second.get());
   }
 }
-  
+
 /** add tester */
 void SygusSymBreakNew::assertTester( int tindex, TNode n, Node exp, std::vector< Node >& lemmas ) {
   registerTerm( n, lemmas );

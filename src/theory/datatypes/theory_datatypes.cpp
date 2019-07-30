@@ -670,7 +670,7 @@ Node TheoryDatatypes::expandDefinition(LogicRequest &logicRequest, Node n) {
 void TheoryDatatypes::presolve()
 {
   Debug("datatypes") << "TheoryDatatypes::presolve()" << endl;
-  if( d_sygus_sym_break )
+  if (d_sygus_sym_break)
   {
     d_sygus_sym_break->presolve();
   }
