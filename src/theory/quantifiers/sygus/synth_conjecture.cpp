@@ -44,6 +44,7 @@ namespace quantifiers {
 SynthConjecture::SynthConjecture(QuantifiersEngine* qe)
     : d_qe(qe),
       d_tds(qe->getTermDatabaseSygus()),
+      d_initSolving(false,qe->getUserContext()),
       d_ceg_si(new CegSingleInv(qe, this)),
       d_ceg_proc(new SynthConjectureProcess(qe)),
       d_ceg_gc(new CegGrammarConstructor(qe, this)),
@@ -73,13 +74,27 @@ SynthConjecture::~SynthConjecture() {}
 
 void SynthConjecture::presolve()
 {
+  // initialize solving, reset the flag since we know we have not initialized
+  // in this context yet
+  d_initSolving = false;
+  initSolving();
+}
+
+void SynthConjecture::initSolving()
+{
   if (d_quant.isNull())
   {
     // not assigned, nothing to do
     return;
   }
   // initialize user-context dependent information
-
+  if( d_initSolving )
+  {
+    // already initialized
+    return;
+  }
+  d_initSolving = true;
+  
   Assert(!d_feasible_guard.isNull());
   // register the decision strategy
   if (d_feasible_strategy == nullptr)
@@ -212,6 +227,9 @@ void SynthConjecture::assign(Node q)
       }
     }
   }
+  
+  // initialize solving now
+  initSolving();
 
   // register this term with sygus database and other utilities that impact
   // the enumerative sygus search

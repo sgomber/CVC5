@@ -168,6 +168,8 @@ class SynthConjecture
   QuantifiersEngine* d_qe;
   /** term database sygus of d_qe */
   TermDbSygus* d_tds;
+  /** have we initialized solving in this user context? */
+  context::CDO<bool> d_initSolving;
   /** The feasible guard. */
   Node d_feasible_guard;
   /** the decision strategy for the feasible guard */
@@ -180,6 +182,12 @@ class SynthConjecture
   std::unique_ptr<CegGrammarConstructor> d_ceg_gc;
   /** repair constant utility */
   std::unique_ptr<SygusRepairConst> d_sygus_rconst;
+  /** initialize solving in this user context 
+   * 
+   * This ensures decision strategies have been set up for this synthesis
+   * conjecture.
+   */
+  void initSolving();
 
   //------------------------modules
   /** program by examples module */
