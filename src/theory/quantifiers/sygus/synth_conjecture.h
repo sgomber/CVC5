@@ -370,12 +370,21 @@ class SynthConjecture
   void printAndContinueStream();
   /** exclude the current solution */
   void excludeCurrentSolution();
+  /** get the lemma that would exclude the current solution */
+  Node getExcludeCurrentSolutionLemma();
   /**
    * Whether we have guarded a stream exclusion lemma when using sygusStream.
    * This is an optimization that allows us to guard only the first stream
    * exclusion lemma.
    */
   bool d_guarded_stream_exc;
+  /** 
+   * The (user-context-dependent) waiting exclusion lemma, used for incremental
+   * sygus.
+   *
+   *  
+   */
+  context::CDO<Node> d_waitingExcludeLem;
   //-------------------------------- end sygus stream
   /** expression miner managers for each function-to-synthesize
    *
