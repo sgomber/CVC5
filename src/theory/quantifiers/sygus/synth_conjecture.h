@@ -73,6 +73,8 @@ class SynthConjecture
   ~SynthConjecture();
   /** presolve */
   void presolve();
+  /** Is this module complete for quantified formula q? */
+  bool checkCompleteFor( Node q );
   /** get original version of conjecture */
   Node getConjecture() { return d_quant; }
   /** get deep embedding version of conjecture */

@@ -98,6 +98,17 @@ void SynthConjecture::presolve()
   d_qe->getOutputChannel().requirePhase(d_feasible_guard, true);
 }
 
+bool SynthConjecture::checkCompleteFor( Node q )
+{
+  if( d_quant!=q )
+  {
+    // not assigned this quantified formula
+    return false;
+  }
+  // TODO
+  return false;
+}
+
 void SynthConjecture::assign(Node q)
 {
   Assert(d_embed_quant.isNull());

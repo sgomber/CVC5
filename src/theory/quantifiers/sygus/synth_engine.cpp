@@ -137,6 +137,18 @@ void SynthEngine::check(Theory::Effort e, QEffort quant_e)
       << "Finished Counterexample Guided Instantiation engine." << std::endl;
 }
 
+bool SynthEngine::checkCompleteFor( Node q )
+{
+  for (unsigned i = 0, size = d_conjs.size(); i < size; i++)
+  {
+    if (d_conjs[i]->checkCompleteFor(q))
+    {
+      return true;
+    }
+  }
+  return false;
+}
+
 void SynthEngine::assignConjecture(Node q)
 {
   Trace("cegqi-engine") << "SynthEngine::assignConjecture " << q << std::endl;
