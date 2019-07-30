@@ -60,8 +60,11 @@ class SynthEngine : public QuantifiersModule
  public:
   SynthEngine(QuantifiersEngine* qe, context::Context* c);
   ~SynthEngine();
-
+  /** presolve */
+  void presolve() override;
+  /** needs check, return true if e is last call */
   bool needsCheck(Theory::Effort e) override;
+  /** always needs model at effort QEFFORT_MODEL */
   QEffort needsModel(Theory::Effort e) override;
   /* Call during quantifier engine's check */
   void check(Theory::Effort e, QEffort quant_e) override;

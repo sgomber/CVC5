@@ -40,6 +40,16 @@ SynthEngine::SynthEngine(QuantifiersEngine* qe, context::Context* c)
 }
 
 SynthEngine::~SynthEngine() {}
+
+void SynthEngine::presolve()
+{
+  Trace("cegqi-engine") << "--- Presolve" << std::endl;
+  for (unsigned i = 0, size = d_conjs.size(); i < size; i++)
+  {
+    d_conjs[i]->presolve();
+  }
+}
+
 bool SynthEngine::needsCheck(Theory::Effort e)
 {
   return e >= Theory::EFFORT_LAST_CALL;

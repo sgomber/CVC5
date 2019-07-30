@@ -71,6 +71,33 @@ SynthConjecture::SynthConjecture(QuantifiersEngine* qe)
 
 SynthConjecture::~SynthConjecture() {}
 
+void SynthConjecture::presolve()
+{
+  if( d_quant.isNull() )
+  {
+    // not assigned, nothing to do
+    return;
+  }
+  // initialize user-context dependent information
+  
+  Assert( !d_feasible_guard.isNull() );
+  // register the decision strategy
+  if( d_feasible_strategy==nullptr )
+  {
+    d_feasible_strategy.reset(
+        new DecisionStrategySingleton("sygus_feasible",
+                                      d_feasible_guard,
+                                      d_qe->getSatContext(),
+                                      d_qe->getValuation()));
+  }
+  d_qe->getTheoryEngine()->getDecisionManager()->registerStrategy(
+      DecisionManager::STRAT_QUANT_SYGUS_FEASIBLE, d_feasible_strategy.get());
+  // this must be called, both to ensure that the feasible guard is
+  // decided on with true polariy, but also to ensure that output channel
+  // has been used on this call to check.
+  d_qe->getOutputChannel().requirePhase(d_feasible_guard, true);
+}
+
 void SynthConjecture::assign(Node q)
 {
   Assert(d_embed_quant.isNull());
@@ -202,19 +229,6 @@ void SynthConjecture::assign(Node q)
     }
   }
 
-  // register the strategy
-  d_feasible_strategy.reset(
-      new DecisionStrategySingleton("sygus_feasible",
-                                    d_feasible_guard,
-                                    d_qe->getSatContext(),
-                                    d_qe->getValuation()));
-  d_qe->getTheoryEngine()->getDecisionManager()->registerStrategy(
-      DecisionManager::STRAT_QUANT_SYGUS_FEASIBLE, d_feasible_strategy.get());
-  // this must be called, both to ensure that the feasible guard is
-  // decided on with true polariy, but also to ensure that output channel
-  // has been used on this call to check.
-  d_qe->getOutputChannel().requirePhase(d_feasible_guard, true);
-
   if (isSingleInvocation())
   {
     std::vector<Node> lems;
@@ -300,6 +314,15 @@ bool SynthConjecture::doCheck(std::vector<Node>& lems)
 {
   Assert(d_master != nullptr);
 
+  // if we have a waiting exclusion lemma, send it now 
+  if( !d_waitingExcludeLem.get().isNull() )
+  {
+    d_waitingExcludeLem = Node::null();
+    lems.push_back(d_waitingExcludeLem.get());
+    // we have a lemma that excludes the current candidate, we are done
+    return true;
+  }
+  
   // process the sygus streaming guard
   if (options::sygusStream())
   {

@@ -1983,10 +1983,10 @@ void SmtEngine::setDefaults() {
       // rewrite rule synthesis implies that sygus stream must be true
       options::sygusStream.set(true);
     }
-    if (options::sygusStream())
+    if (options::sygusStream() || options::incrementalSolving())
     {
-      // Streaming is incompatible with techniques that focus the search towards
-      // finding a single solution.
+      // Streaming and incremental mode are incompatible with techniques that
+      // focus the search towards finding a single solution.
       reqBasicSygus = true;
     }
     // Now, disable options for non-basic sygus algorithms, if necessary.

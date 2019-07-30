@@ -71,6 +71,8 @@ class SynthConjecture
  public:
   SynthConjecture(QuantifiersEngine* qe);
   ~SynthConjecture();
+  /** presolve */
+  void presolve();
   /** get original version of conjecture */
   Node getConjecture() { return d_quant; }
   /** get deep embedding version of conjecture */
