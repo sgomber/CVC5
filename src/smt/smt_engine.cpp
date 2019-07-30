@@ -1838,6 +1838,11 @@ void SmtEngine::setDefaults() {
     if( options::mbqiMode()!=quantifiers::MBQI_NONE ){
       options::mbqiMode.set( quantifiers::MBQI_NONE );
     }
+    if (!options::hoElimStoreAx.wasSetByUser())
+    {
+      // by default, use store axioms only if --ho-elim is set
+      options::hoElimStoreAx.set(options::hoElim());
+    }
   }
   if( options::fmfFunWellDefinedRelevant() ){
     if( !options::fmfFunWellDefined.wasSetByUser() ){
@@ -3485,6 +3490,11 @@ void SmtEnginePrivate::processAssertions() {
   if (options::rewriteApplyToConst())
   {
     d_passes["apply-to-const"]->apply(&d_assertions);
+  }
+
+  if (options::ufHo())
+  {
+    d_passes["ho-elim"]->apply(&d_assertions);
   }
 
   // begin: INVARIANT to maintain: no reordering of assertions or
@@ -5260,7 +5270,7 @@ void SmtEngine::push()
 
   // The problem isn't really "extended" yet, but this disallows
   // get-model after a push, simplifying our lives somewhat and
-  // staying symmtric with pop.
+  // staying symmetric with pop.
   setProblemExtended();
 
   d_userLevels.push_back(d_userContext->getLevel());
