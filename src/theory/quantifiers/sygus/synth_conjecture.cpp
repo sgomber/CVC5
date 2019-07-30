@@ -317,8 +317,8 @@ bool SynthConjecture::doCheck(std::vector<Node>& lems)
   // if we have a waiting exclusion lemma, send it now
   if (!d_waitingExcludeLem.get().isNull())
   {
-    d_waitingExcludeLem = Node::null();
     lems.push_back(d_waitingExcludeLem.get());
+    d_waitingExcludeLem = Node::null();
     // we have a lemma that excludes the current candidate, we are done
     return true;
   }

@@ -393,7 +393,9 @@ class SynthConjecture
    * The (user-context-dependent) waiting exclusion lemma, used for incremental
    * sygus.
    *
-   *
+   * If this node is non-null, then it is a lemma that blocks the solution
+   * return by the last call to check-synth in the current user context. We add
+   * this lemma before proceeding with trying to find any new solution.
    */
   context::CDO<Node> d_waitingExcludeLem;
   //-------------------------------- end sygus stream
