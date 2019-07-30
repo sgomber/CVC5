@@ -482,11 +482,11 @@ class CVC4_PUBLIC SmtEngine {
   void debugCheckFunctionBody(Expr formula,
                               const std::vector<Expr>& formals,
                               Expr func);
-  /** get abduct internal 
-   * 
+  /** get abduct internal
+   *
    * Gets the next abduct from the internal subsolver d_subsolver. If
    * successful, this method returns true and sets abd to that abduct.
-   * 
+   *
    * This method assumes d_subsolver has been initialized to do abduction
    * problems.
    */

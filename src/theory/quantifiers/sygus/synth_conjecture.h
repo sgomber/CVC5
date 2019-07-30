@@ -380,11 +380,11 @@ class SynthConjecture
    * exclusion lemma.
    */
   bool d_guarded_stream_exc;
-  /** 
+  /**
    * The (user-context-dependent) waiting exclusion lemma, used for incremental
    * sygus.
    *
-   *  
+   *
    */
   context::CDO<Node> d_waitingExcludeLem;
   //-------------------------------- end sygus stream

@@ -5104,7 +5104,7 @@ bool SmtEngine::getAbduct(const std::string& aname,
 
 bool SmtEngine::getAbductInternal(Expr& abd)
 {
-  Assert( d_subsolver!=nullptr );
+  Assert(d_subsolver != nullptr);
   Trace("sygus-abduct") << "  SmtEngine::getAbduct check sat..." << std::endl;
   Result r = d_subsolver->checkSat();
   Trace("sygus-abduct") << "  SmtEngine::getAbduct result: " << r << std::endl;
@@ -5124,7 +5124,7 @@ bool SmtEngine::getAbductInternal(Expr& abd)
       {
         abdn = abdn[1];
       }
-      Assert( d_sssfVarlist.size()==d_sssfSyms.size() );
+      Assert(d_sssfVarlist.size() == d_sssfSyms.size());
       // convert back to original
       // must replace formal arguments of abd with the free variables in the
       // input problem that they correspond to.
@@ -5158,7 +5158,8 @@ bool SmtEngine::getNextAbduct(std::string& aname, Expr& abd)
   if (d_subsolver == nullptr)
   {
     std::stringstream ss;
-    ss << "Cannot get next abduct unless immediately preceded by successful call to get-abduct.";
+    ss << "Cannot get next abduct unless immediately preceded by successful "
+          "call to get-abduct.";
     throw RecoverableModalException(ss.str().c_str());
     return false;
   }
