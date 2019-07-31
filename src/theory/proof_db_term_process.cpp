@@ -229,14 +229,14 @@ void ProofDbTermProcess::printLFSCTerm( Node n, std::ostream& os )
     else
     {
       Assert( s.size()==1 );
-      os << "(a_char " << String::convertUnsignedIntToCode(s.getVec()[0]) << ")";
+      os << "(c_String " << String::convertUnsignedIntToCode(s.getVec()[0]) << ")";
     }
   }
   else if( nk==CONST_RATIONAL )
   {
     Rational r = n.getConst<Rational>();
     std::stringstream rparen;
-    os << "(a_" << (r.isIntegral() ? "int" : "real");
+    os << "(c_" << (r.isIntegral() ? "Int" : "Real");
     os << " ";
     rparen << ")";
     if( r.sgn()<0 )
@@ -267,13 +267,14 @@ void ProofDbTermProcess::printLFSCTerm( Node n, std::ostream& os )
     }
     else if (n.getKind()==UMINUS )
     {
+      // must disambiguate unary minus vs normal minus
       os << "u-";
     }
     if( !printed )
     {
       os << printer::smt2::Smt2Printer::smtKindString(nk);
     }
-    // parametric kinds
+    // parametric kinds need a hole
     if( nk==EQUAL || nk==ITE )
     {
       os << " _";
