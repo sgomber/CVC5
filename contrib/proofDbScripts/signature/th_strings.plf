@@ -33,3 +33,9 @@
 (declare re.loop (! x (term RegLan) (! n (term Int) (! m (term Int) (term RegLan)))))
 
 (declare str.in.re (! x (term String) (! y (term RegLan) (term Bool))))
+
+
+; side conditions FIXME
+(declare flatten_string (! x (term String) (term String)))
+(declare flatten_regexp (! x (term RegLan) (term RegLan)))
+(declare sort_regexp (! x (term RegLan) (term RegLan)))

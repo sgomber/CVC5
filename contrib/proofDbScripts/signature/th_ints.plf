@@ -14,3 +14,7 @@
 (declare /_Int (! x (term Int) (! y (term Int) (term Int))))
 (declare div_Int (! x (term Int) (! y (term Int) (term Int))))
 (declare mod_Int (! x (term Int) (! y (term Int) (term Int))))
+
+; side conditions FIXME
+(declare arith_norm_term (! x (term Int) (term Int)))
+(declare arith_norm_term_abs (! x (term Int) (term Int)))

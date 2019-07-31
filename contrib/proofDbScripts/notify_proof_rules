@@ -2,10 +2,10 @@
 
 CVC4=pr-ajr-cvc4
 
-cp $1 __tmp-proof_db.smt2
-shift;
+cp $2 __tmp-proof_db.smt2
 sed -i 's/(check-sat)//g' __tmp-proof_db.smt2
 cat $1 >>  __tmp-proof_db.smt2
+shift;
 shift;
 echo "(check-sat)" >> __tmp-proof_db.smt2
 

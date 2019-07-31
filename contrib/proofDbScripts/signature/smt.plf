@@ -31,7 +31,8 @@
 ; standard judgement for "a formula holds"
 (declare th_holds (! f (term Bool) type))
 
-(declare eq_true 
-  (! f (term Bool)
-  (! u (th_holds f)
-    (th_holds (= Bool f true)))))
+
+(declare eq_true (! f (term Bool) (! u (th_holds f) (th_holds (= Bool f true)))))
+
+; side conditions FIXME
+(declare sort_bool (! x (term Bool) (term Bool)))

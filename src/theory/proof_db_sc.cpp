@@ -205,7 +205,7 @@ Node ProofDbScEval::purifySideConditions(Node n, std::vector<Node>& scs)
       if (cur.getKind() == APPLY_UF)
       {
         std::stringstream ss;
-        ss << "u" << (scs.size() + 1);
+        ss << "k" << (scs.size() + 1);
         Node k = nm->mkSkolem(ss.str(),
                               cur.getType(),
                               "side condition purify variable",

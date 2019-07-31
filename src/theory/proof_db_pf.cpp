@@ -78,7 +78,9 @@ void ProofDbRule::init(const std::string& name,
       ProofDbTermProcess::printLFSCType(sc[1].getType(), pfrule);
       pfrule << std::endl;
       rparens << ")";
-      pfrule << "  (! u" << scounter << " (^ ";
+      //pfrule << "  (! u" << scounter << " (^ ";
+      //FIXME
+      pfrule << "  (! u" << scounter << " (RUN _ ";
       ProofDbTermProcess::printLFSCTerm(sc[0], pfrule);
       pfrule << " ";
       ProofDbTermProcess::printLFSCTerm(sc[1], pfrule);

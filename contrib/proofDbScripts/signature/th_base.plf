@@ -67,3 +67,10 @@
   (! y (term s)
   (! e (^ (evaluate_cmp x y) tt)
     (th_holds (= s x y)))))))
+    
+;; FIXME
+(declare RUN
+  (! s sort
+  (! x (term s)
+  (! y (term s)
+     type))))
