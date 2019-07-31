@@ -14,6 +14,8 @@
 
 #include "theory/proof_db_term_process.h"
 
+#include "printer/smt2/smt2_printer.h"
+
 using namespace CVC4::kind;
 
 namespace CVC4 {
@@ -98,27 +100,6 @@ Node ProofDbTermProcess::toInternal(Node n)
         ret = children[0];
         for (unsigned i = 1, nchild = children.size(); i < nchild; i++)
         {
-          /*
-          bool needProc = true;
-          // (str.++ "AB" x) is (str.++ "A" (str.++ "B" x))
-          if( cur[(nchild-1)-i].getKind()==CONST_STRING )
-          {
-            const std::vector<unsigned>& vec =
-          cur[(nchild-1)-i].getConst<String>().getVec(); if( vec.size()>1 )
-            {
-              std::vector<unsigned> v(vec.begin(), vec.end());
-              std::reverse(v.begin(), v.end());
-              std::vector<unsigned> tmp;
-              for (unsigned i = 0, size = v.size(); i < size; i++)
-              {
-                tmp.push_back(v[i]);
-                ret = nm->mkNode(STRING_CONCAT, nm->mkConst(String(tmp)), ret);
-                tmp.pop_back();
-              }
-              needProc = false;
-            }
-          }
-          */
           ret = nm->mkNode(ck, children[i], ret);
         }
       }
@@ -232,6 +213,104 @@ bool ProofDbTermProcess::isAssociativeNary(Kind k)
 {
   return k == AND || k == OR || k == STRING_CONCAT || k == REGEXP_CONCAT
          || k == REGEXP_UNION || k == REGEXP_INTER || k == PLUS || k == MULT;
+}
+
+void ProofDbTermProcess::printLFSCTerm( Node n, std::ostream& os )
+{
+  //os << n;
+  Kind nk = n.getKind();
+  if( nk==CONST_STRING )
+  {
+    String s = n.getConst<String>();
+    if( s.empty() )
+    {
+      os << "emptystr";
+    }
+    else
+    {
+      Assert( s.size()==1 );
+      os << "(a_char " << String::convertUnsignedIntToCode(s.getVec()[0]) << ")";
+    }
+  }
+  else if( nk==CONST_RATIONAL )
+  {
+    Rational r = n.getConst<Rational>();
+    std::stringstream rparen;
+    os << "(a_" << (r.isIntegral() ? "int" : "real");
+    os << " ";
+    rparen << ")";
+    if( r.sgn()<0 )
+    {
+      os << "(~ ";
+      r = -r;
+      rparen << ")";
+    }
+    if (r.isIntegral() )
+    {
+      os << r;
+    }
+    else
+    {
+      os << r.getNumerator() << "/" << r.getDenominator();
+    }
+    os << rparen.str();
+  }
+  // to real
+  else if( n.getNumChildren()>0 )
+  {
+    os << "(";
+    bool printed = false;
+    if (n.getMetaKind() == kind::metakind::PARAMETERIZED)
+    {
+      os << n.getOperator();
+      printed = true;
+    }
+    else if (n.getKind()==UMINUS )
+    {
+      os << "u-";
+    }
+    if( !printed )
+    {
+      os << printer::smt2::Smt2Printer::smtKindString(nk);
+    }
+    // parametric kinds
+    if( nk==EQUAL || nk==ITE )
+    {
+      os << " _";
+    }
+    // if we must disambiguate Int/Real
+    TheoryId tid = kindToTheoryId(nk);
+    if (tid==THEORY_ARITH)
+    {
+      TypeNode tn = n[0].getType();
+      if( tn.isInteger() )
+      {
+        os << "_Int";
+      }
+      else
+      {
+        os << "_Real";
+      }
+    }
+    
+    for( const Node& nc : n )
+    {
+      os << " ";
+      printLFSCTerm(nc,os);
+    }
+    os << ")";
+  }
+  else
+  {
+    os << n;
+  }
+}
+
+void ProofDbTermProcess::printLFSCType( TypeNode tn, std::ostream& os )
+{
+  os << "(term ";
+  os << tn;
+  os << ")";
 }
 
 }  // namespace theory

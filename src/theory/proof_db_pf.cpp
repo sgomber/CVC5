@@ -15,6 +15,7 @@
 #include "theory/proof_db_pf.h"
 
 #include "theory/proof_db_sc.h"
+#include "theory/proof_db_term_process.h"
 
 #include "expr/node_algorithm.h"
 
@@ -42,9 +43,6 @@ void ProofDbRule::init(const std::string& name,
   {
     expr::getFreeVariables(c, fvsCond);
   }
-  std::stringstream rparens;
-  Trace("proof-db-to-lfsc") << "(declare " << d_name << std::endl;
-  unsigned vcounter = 0;
   for (const Node& v : fvs)
   {
     d_fvs.push_back(v);
@@ -52,8 +50,16 @@ void ProofDbRule::init(const std::string& name,
     {
       d_noOccVars[v] = true;
     }
-    Trace("proof-db-to-lfsc")
-        << "  (! " << v << " " << v.getType() << std::endl;
+  }
+  
+  std::stringstream pfrule;
+  std::stringstream rparens;
+  pfrule << "(declare " << d_name << std::endl;
+  for (const Node& v : d_fvs)
+  {
+    pfrule << "  (! " << v << " ";
+    ProofDbTermProcess::printLFSCType(v.getType(),pfrule);
+    pfrule << std::endl;
   }
   unsigned scounter = 1;
   std::vector<Node> pureconds;
@@ -65,11 +71,16 @@ void ProofDbRule::init(const std::string& name,
     pureconds.push_back(cpure);
     for (const Node& sc : scs)
     {
-      Trace("proof-db-to-lfsc")
-          << "  (! " << sc[1] << " " << sc[1].getType() << std::endl;
+      Assert( sc.getKind()==EQUAL );
+      pfrule << "  (! " << sc[1] << " ";
+      ProofDbTermProcess::printLFSCType(sc[1].getType(),pfrule);
+      pfrule << std::endl;
       rparens << ")";
-      Trace("proof-db-to-lfsc") << "  (! u" << scounter << " (^ " << sc[0]
-                                << " " << sc[1] << ")" << std::endl;
+      pfrule << "  (! u" << scounter << " (^ ";
+      ProofDbTermProcess::printLFSCTerm(sc[0],pfrule);
+      pfrule << " ";
+      ProofDbTermProcess::printLFSCTerm(sc[1],pfrule);
+      pfrule << ")" << std::endl;
       rparens << ")";
       scounter++;
       d_numFv++;
@@ -78,14 +89,18 @@ void ProofDbRule::init(const std::string& name,
   unsigned counter = 1;
   for (const Node& c : pureconds)
   {
-    Trace("proof-db-to-lfsc")
-        << "  (! h" << counter << " (holds " << c << ")" << std::endl;
+    pfrule << "  (! h" << counter << " (holds ";
+    ProofDbTermProcess::printLFSCTerm(c,pfrule);
+    pfrule << ")" << std::endl;
     rparens << ")";
     counter++;
   }
-  Trace("proof-db-to-lfsc")
-      << "    (holds " << eq << ")" << rparens.str() << std::endl;
-  Trace("proof-db-to-lfsc") << std::endl;
+  pfrule << "    (holds ";
+  ProofDbTermProcess::printLFSCTerm(eq,pfrule);
+  pfrule << ")" << rparens.str() << std::endl;
+  pfrule << std::endl;
+  
+  Trace("proof-db-to-lfsc") << pfrule.str();
 }
 
 }  // namespace theory

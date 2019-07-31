@@ -271,7 +271,14 @@ void ProofDb::notify(Node a, Node b, std::ostream& out)
       AlwaysAssert(ret);
       Trace("proof-db-pf") << "; proof of (= " << a << " " << b << ")"
                            << std::endl;
+      std::stringstream holdsStream;
+      holdsStream << "(check ";
+      holdsStream << "(: (holds ";
+      ProofDbTermProcess::printLFSCTerm(ai.eqNode(bi),holdsStream);
+      holdsStream << ")";
+      Trace("proof-db-pf") << holdsStream.str() << std::endl;
       Trace("proof-db-pf") << d_pfStream.str() << std::endl;
+      Trace("proof-db-pf") << "))" << std::endl;
       d_proofPrinting = false;
     }
     // already exists
@@ -327,11 +334,12 @@ bool ProofDb::notifyMatch(Node s,
       {
         smap[vars[i]] = subs[i];
       }
-      d_pfStream << "(" << pr.d_name << " ";
+      d_pfStream << "(" << pr.d_name;
       // cycle through the variables
       std::map<Node, Node>::iterator itsm;
       for (const Node& v : pr.d_fvs)
       {
+        d_pfStream << " ";
         // does it need to be displayed?
         if (pr.d_noOccVars.find(v) != pr.d_noOccVars.end())
         {
@@ -339,7 +347,7 @@ bool ProofDb::notifyMatch(Node s,
           Assert(itsm != smap.end());
           if (itsm != smap.end())
           {
-            d_pfStream << itsm->second;
+            ProofDbTermProcess::printLFSCTerm(itsm->second,d_pfStream);
           }
           else
           {
@@ -351,7 +359,6 @@ bool ProofDb::notifyMatch(Node s,
           // can display a hole
           d_pfStream << "_";
         }
-        d_pfStream << " ";
       }
     }
     // does the side condition hold?
@@ -359,6 +366,7 @@ bool ProofDb::notifyMatch(Node s,
     Trace("proof-db") << "Check rule " << pr.d_name << std::endl;
     for (const Node& cond : pr.d_cond)
     {
+      d_pfStream << " ";
       // check whether condition holds?
       condSuccess = false;
       Node sc =

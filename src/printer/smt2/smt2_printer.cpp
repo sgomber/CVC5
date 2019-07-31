@@ -966,7 +966,7 @@ void Smt2Printer::toStream(std::ostream& out,
   }
 }/* Smt2Printer::toStream(TNode) */
 
-static string smtKindString(Kind k, Variant v)
+std::string Smt2Printer::smtKindString(Kind k, Variant v)
 {
   switch(k) {
     // builtin theory

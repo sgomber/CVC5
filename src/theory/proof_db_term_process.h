@@ -52,6 +52,8 @@ class ProofDbTermProcess
   /** is associative */
   static bool isAssociativeNary(Kind k);
 
+  static void printLFSCTerm( Node n, std::ostream& os );
+  static void printLFSCType( TypeNode tn, std::ostream& os );
  private:
   /** Map from nodes to their internal representation */
   std::unordered_map<Node, Node, NodeHashFunction> d_internal;
