@@ -24,6 +24,7 @@
 #include "theory/proof_db_pf.h"
 #include "theory/proof_db_sc.h"
 #include "theory/proof_db_term_process.h"
+#include "theory/proof_db_rule_check.h"
 #include "theory/quantifiers/candidate_rewrite_filter.h"
 #include "theory/quantifiers/term_canonize.h"
 
@@ -64,6 +65,8 @@ class ProofDb
   std::map<unsigned, ProofDbRule> d_proofDbRule;
   /** map whether each condition has side conditions */
   std::unordered_set<Node, NodeHashFunction> d_hasSc;
+  /** the rule checker utility */
+  ProofDbRuleCheck d_ruleCheck;
   /** the term process utility */
   ProofDbTermProcess d_pdtp;
   /** the side condition utility */

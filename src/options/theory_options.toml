@@ -49,3 +49,12 @@ header = "options/theory_options.h"
   default    = "false"
   read_only  = true
   help       = "notify missing proof rules"
+
+[[option]]
+  name       = "quickCheckPfRules"
+  category   = "regular"
+  long       = "quick-check-pf-rules"
+  type       = "bool"
+  default    = "true"
+  read_only  = true
+  help       = "quick check registered proof rules"

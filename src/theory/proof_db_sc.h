@@ -34,6 +34,7 @@ class ProofDbScEval
 
   bool isSideConditionOp(Node op) const;
 
+  static bool hasSideCondition(Node n);
   static Node purifySideConditions(Node n, std::vector<Node>& scs);
 
  private:

@@ -29,6 +29,10 @@ ProofDb::ProofDb() : d_notify(*this), d_proofPrinting(false)
 
 void ProofDb::registerRules(const std::map<Node, std::string>& rules)
 {
+  if( options::quickCheckPfRules() )
+  {
+    d_ruleCheck.quickCheckRules(rules);
+  }
   NodeManager* nm = NodeManager::currentNM();
   // add each of the rules to the database
   for (const std::pair<const Node, std::string>& rr : rules)

@@ -161,6 +161,29 @@ Node ProofDbScEval::evaluate(Node n)
   return visited[n];
 }
 
+bool ProofDbScEval::hasSideCondition(Node n)
+{
+  std::unordered_set<TNode, TNodeHashFunction> visited;
+  std::vector<TNode> visit;
+  TNode cur;
+  visit.push_back(n);
+  do {
+    cur = visit.back();
+    visit.pop_back();
+
+    if (visited.find(cur) == visited.end()) {
+      visited.insert(cur);
+      if( cur.getKind()==APPLY_UF ){
+        return true;
+      }
+      for (const Node& cc : cur ){
+        visit.push_back(cc);
+      }
+    }
+  } while (!visit.empty());
+  return false;
+}
+
 Node ProofDbScEval::purifySideConditions(Node n, std::vector<Node>& scs)
 {
   NodeManager* nm = NodeManager::currentNM();

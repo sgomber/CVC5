@@ -91,7 +91,7 @@
   
   substr-concat-len-ctn (=> (and (>= (str.len x) (+ n m)) (= (str.substr x n m) z)) (= (str.substr (str.++ x y) n m) z))
   substr-concat-len-nctn (=> (and (= (>= n (str.len x)) true) (= (- n (str.len x)) o)) (= (str.substr (str.++ x y) n m) (str.substr y o m)))
-  substr-concat-len-in (=> (and (>= (- n (str.len x)) 0) (= (str.substr x 0 (- n (str.len x))) z)) (= (str.substr (str.++ x y) 0 n) (str.++ x z)))
+  substr-concat-len-in (=> (and (>= (- n (str.len x)) 0) (= (str.substr y 0 (- n (str.len x))) z)) (= (str.substr (str.++ x y) 0 n) (str.++ x z)))
   
   ctn-clash (=> (and (= (= (str.len x) (str.len y)) true) (= (= x y) false)) (= (str.contains x (str.++ y z)) false))
   ctn-concat-f1 (=> (= (str.contains x y) false) (= (str.contains x (str.++ y z)) false))
@@ -113,12 +113,12 @@
   indexof-nctn (=> (= (str.contains x y) false) (= (str.indexof x y n) (- 1)))
   indexof-neg (=> (> 0 n) (= (str.indexof x y n) (- 1)))
   indexof-oob (=> (> n (str.len x)) (= (str.indexof x y n) (- 1)))
-  indexof-pos (=> true (= (> 0 (str.indexof x y n)) false))
+  indexof-pos (=> true (= (>= (- 2) (str.indexof x y n)) false))
   indexof-id (=> true (= (str.indexof x x n) (str.indexof "" "" n)))
   
   
-  stoi-concat-ndigit1 (=> (= (str.to.int x) (- 1)) (= (str.to.int (str.++ x y)) (- 1)))
-  stoi-concat-ndigit2 (=> (= (str.to.int y) (- 1)) (= (str.to.int (str.++ x y)) (- 1)))
+  ;stoi-concat-ndigit1 (=> (= (str.to.int x) (- 1)) (= (str.to.int (str.++ x y)) (- 1)))
+  ;stoi-concat-ndigit2 (=> (= (str.to.int y) (- 1)) (= (str.to.int (str.++ x y)) (- 1)))
   
   
   index-lb (=> true (= (>= (str.indexof x y n) (- 1)) true))
