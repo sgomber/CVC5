@@ -132,7 +132,9 @@ bool ProofDb::existsRuleInternal(Node a, Node b, unsigned& index, bool doRec)
     index = pf_rule_refl;
     if (d_proofPrinting)
     {
-      d_pfStream << "(refl " << a << ")";
+      d_pfStream << "(refl _ ";
+      ProofDbTermProcess::printLFSCTerm(a, d_pfStream);
+      d_pfStream << ")";
       return true;
     }
     d_erCache[eq] = index;
