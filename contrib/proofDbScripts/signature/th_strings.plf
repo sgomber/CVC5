@@ -9,6 +9,7 @@
 
 (declare emptystr (term String))
 (declare c_String (! x mpq (term String)))
+(declare str.len (! x (term String) (term Int)))
 (declare str.++ (! x (term String) (! y (term String) (term String))))
 (declare str.contains (! x (term String) (! y (term String) (term Bool))))
 (declare str.substr (! x (term String) (! n (term Int) (! m (term Int) (term String)))))

@@ -10,7 +10,7 @@ shift;
 echo "(check-sat)" >> __tmp-proof_db.smt2
 
 
-echo "Call $CVC4 __tmp-proof_db.smt2 --notify-pf-rules $@"
+#echo "Call $CVC4 __tmp-proof_db.smt2 --notify-pf-rules $@"
 $CVC4 __tmp-proof_db.smt2 --notify-pf-rules $@
 
 

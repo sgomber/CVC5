@@ -55,11 +55,13 @@ void ProofDbRule::init(const std::string& name,
   std::stringstream pfrule;
   std::stringstream rparens;
   pfrule << "(declare " << d_name << std::endl;
+  rparens << ")";
   for (const Node& v : d_fvs)
   {
     pfrule << "  (! " << v << " ";
     ProofDbTermProcess::printLFSCType(v.getType(),pfrule);
     pfrule << std::endl;
+    rparens << ")";
   }
   unsigned scounter = 1;
   std::vector<Node> pureconds;
@@ -97,7 +99,7 @@ void ProofDbRule::init(const std::string& name,
   }
   pfrule << "    (th_holds ";
   ProofDbTermProcess::printLFSCTerm(eq,pfrule);
-  pfrule << ")" << rparens.str() << std::endl;
+  pfrule << rparens.str() << std::endl;
   pfrule << std::endl;
   
   Trace("proof-db-to-lfsc") << pfrule.str();

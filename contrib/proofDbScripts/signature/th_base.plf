@@ -57,7 +57,7 @@
 
 
 ;; TODO
-(program evaluate ((x term)) bool
+(program evaluate_cmp ((x term) (y term)) bool
   tt)
 
 ; if two terms evaluate to the same thing, they are equal
@@ -65,5 +65,5 @@
   (! s sort
   (! x (term s)
   (! y (term s)
-  (! e (^ (ifequal (evaluate x) (evaluate y) true false) true)
+  (! e (^ (evaluate_cmp x y) tt)
     (th_holds (= s x y)))))))

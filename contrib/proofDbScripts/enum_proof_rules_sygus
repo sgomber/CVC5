@@ -10,7 +10,7 @@ shift;
 echo "(check-synth)" >> __tmp-proof_db.sy
 
 
-echo "Call $CVC4 __tmp-proof_db.smt2 --notify-pf-rules --sygus-stream $@"
+#echo "Call $CVC4 __tmp-proof_db.smt2 --notify-pf-rules --sygus-stream $@"
 $CVC4 __tmp-proof_db.sy --notify-pf-rules --sygus-stream  $@
 
 
