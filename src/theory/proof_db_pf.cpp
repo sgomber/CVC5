@@ -99,6 +99,7 @@ void ProofDbRule::init(const std::string& name,
   }
   pfrule << "    (th_holds ";
   ProofDbTermProcess::printLFSCTerm(eq,pfrule);
+  pfrule << ")";
   pfrule << rparens.str() << std::endl;
   pfrule << std::endl;
   

@@ -16,6 +16,7 @@
 (declare str.indexof (! x (term String) (! y (term String) (! n (term Int) (term Int)))))
 (declare str.replace (! x (term String) (! y (term String) (! z (term String) (term String)))))
 
+(declare str.at (! x (term String) (! n (term Int) (term String))))
 (declare str.prefixof (! x (term String) (! y (term String) (term Bool))))
 (declare str.suffixof (! x (term String) (! y (term String) (term Bool))))
 
