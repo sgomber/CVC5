@@ -215,37 +215,38 @@ bool ProofDbTermProcess::isAssociativeNary(Kind k)
          || k == REGEXP_UNION || k == REGEXP_INTER || k == PLUS || k == MULT;
 }
 
-void ProofDbTermProcess::printLFSCTerm( Node n, std::ostream& os )
+void ProofDbTermProcess::printLFSCTerm(Node n, std::ostream& os)
 {
-  //os << n;
+  // os << n;
   Kind nk = n.getKind();
-  if( nk==CONST_STRING )
+  if (nk == CONST_STRING)
   {
     String s = n.getConst<String>();
-    if( s.empty() )
+    if (s.empty())
     {
       os << "emptystr";
     }
     else
     {
-      Assert( s.size()==1 );
-      os << "(c_String " << String::convertUnsignedIntToCode(s.getVec()[0]) << ")";
+      Assert(s.size() == 1);
+      os << "(c_String " << String::convertUnsignedIntToCode(s.getVec()[0])
+         << ")";
     }
   }
-  else if( nk==CONST_RATIONAL )
+  else if (nk == CONST_RATIONAL)
   {
     Rational r = n.getConst<Rational>();
     std::stringstream rparen;
     os << "(c_" << (r.isIntegral() ? "Int" : "Real");
     os << " ";
     rparen << ")";
-    if( r.sgn()<0 )
+    if (r.sgn() < 0)
     {
       os << "(~ ";
       r = -r;
       rparen << ")";
     }
-    if (r.isIntegral() )
+    if (r.isIntegral())
     {
       os << r;
     }
@@ -256,7 +257,7 @@ void ProofDbTermProcess::printLFSCTerm( Node n, std::ostream& os )
     os << rparen.str();
   }
   // to real
-  else if( n.getNumChildren()>0 )
+  else if (n.getNumChildren() > 0)
   {
     os << "(";
     bool printed = false;
@@ -265,26 +266,26 @@ void ProofDbTermProcess::printLFSCTerm( Node n, std::ostream& os )
       os << n.getOperator();
       printed = true;
     }
-    else if (n.getKind()==UMINUS )
+    else if (n.getKind() == UMINUS)
     {
       // must disambiguate unary minus vs normal minus
       os << "u-";
     }
-    if( !printed )
+    if (!printed)
     {
       os << printer::smt2::Smt2Printer::smtKindString(nk);
     }
     // parametric kinds need a hole
-    if( nk==EQUAL || nk==ITE )
+    if (nk == EQUAL || nk == ITE)
     {
       os << " _";
     }
     // if we must disambiguate Int/Real
     TheoryId tid = kindToTheoryId(nk);
-    if (tid==THEORY_ARITH)
+    if (tid == THEORY_ARITH)
     {
       TypeNode tn = n[0].getType();
-      if( tn.isInteger() )
+      if (tn.isInteger())
       {
         os << "_Int";
       }
@@ -293,11 +294,11 @@ void ProofDbTermProcess::printLFSCTerm( Node n, std::ostream& os )
         os << "_Real";
       }
     }
-    
-    for( const Node& nc : n )
+
+    for (const Node& nc : n)
     {
       os << " ";
-      printLFSCTerm(nc,os);
+      printLFSCTerm(nc, os);
     }
     os << ")";
   }
@@ -307,7 +308,7 @@ void ProofDbTermProcess::printLFSCTerm( Node n, std::ostream& os )
   }
 }
 
-void ProofDbTermProcess::printLFSCType( TypeNode tn, std::ostream& os )
+void ProofDbTermProcess::printLFSCType(TypeNode tn, std::ostream& os)
 {
   os << "(term ";
   os << tn;

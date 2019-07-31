@@ -67,7 +67,8 @@ class Smt2Printer : public CVC4::Printer {
   /**
    * Print the kind in the smt2 format.
    */
-  static std::string smtKindString(Kind k, Variant v  = no_variant);
+  static std::string smtKindString(Kind k, Variant v = no_variant);
+
  private:
   void toStream(
       std::ostream& out, TNode n, int toDepth, bool types, TypeNode nt) const;

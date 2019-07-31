@@ -153,9 +153,9 @@ bool ProofDb::existsRuleInternal(Node a, Node b, unsigned& index, bool doRec)
     if (d_proofPrinting)
     {
       d_pfStream << "(eval _ ";
-      ProofDbTermProcess::printLFSCTerm(a,d_pfStream);
+      ProofDbTermProcess::printLFSCTerm(a, d_pfStream);
       d_pfStream << " ";
-      ProofDbTermProcess::printLFSCTerm(b,d_pfStream);
+      ProofDbTermProcess::printLFSCTerm(b, d_pfStream);
       d_pfStream << ")";
       return true;
     }
@@ -174,7 +174,7 @@ bool ProofDb::existsRuleInternal(Node a, Node b, unsigned& index, bool doRec)
     if (d_proofPrinting)
     {
       d_pfStream << "(eq_true _ (refl _ ";
-      ProofDbTermProcess::printLFSCTerm(a[0],d_pfStream);
+      ProofDbTermProcess::printLFSCTerm(a[0], d_pfStream);
       d_pfStream << "))";
       return true;
     }
@@ -194,9 +194,9 @@ bool ProofDb::existsRuleInternal(Node a, Node b, unsigned& index, bool doRec)
       if (d_proofPrinting)
       {
         d_pfStream << "(symm _ ";
-        ProofDbTermProcess::printLFSCTerm(a[0],d_pfStream);
-        d_pfStream<< " ";
-        ProofDbTermProcess::printLFSCTerm(a[1],d_pfStream);
+        ProofDbTermProcess::printLFSCTerm(a[0], d_pfStream);
+        d_pfStream << " ";
+        ProofDbTermProcess::printLFSCTerm(a[1], d_pfStream);
         d_pfStream << ")";
         return true;
       }
@@ -284,7 +284,7 @@ void ProofDb::notify(Node a, Node b, std::ostream& out)
       std::stringstream holdsStream;
       holdsStream << "(check ";
       holdsStream << "(: (th_holds ";
-      ProofDbTermProcess::printLFSCTerm(ai.eqNode(bi),holdsStream);
+      ProofDbTermProcess::printLFSCTerm(ai.eqNode(bi), holdsStream);
       holdsStream << ")";
       Trace("proof-db-pf") << holdsStream.str() << std::endl;
       Trace("proof-db-pf") << d_pfStream.str() << std::endl;
@@ -357,7 +357,7 @@ bool ProofDb::notifyMatch(Node s,
           Assert(itsm != smap.end());
           if (itsm != smap.end())
           {
-            ProofDbTermProcess::printLFSCTerm(itsm->second,d_pfStream);
+            ProofDbTermProcess::printLFSCTerm(itsm->second, d_pfStream);
           }
           else
           {

@@ -51,7 +51,7 @@ void ProofDbRule::init(const std::string& name,
       d_noOccVars[v] = true;
     }
   }
-  
+
   std::stringstream pfrule;
   std::stringstream rparens;
   pfrule << "(declare " << d_name << std::endl;
@@ -59,7 +59,7 @@ void ProofDbRule::init(const std::string& name,
   for (const Node& v : d_fvs)
   {
     pfrule << "  (! " << v << " ";
-    ProofDbTermProcess::printLFSCType(v.getType(),pfrule);
+    ProofDbTermProcess::printLFSCType(v.getType(), pfrule);
     pfrule << std::endl;
     rparens << ")";
   }
@@ -73,15 +73,15 @@ void ProofDbRule::init(const std::string& name,
     pureconds.push_back(cpure);
     for (const Node& sc : scs)
     {
-      Assert( sc.getKind()==EQUAL );
+      Assert(sc.getKind() == EQUAL);
       pfrule << "  (! " << sc[1] << " ";
-      ProofDbTermProcess::printLFSCType(sc[1].getType(),pfrule);
+      ProofDbTermProcess::printLFSCType(sc[1].getType(), pfrule);
       pfrule << std::endl;
       rparens << ")";
       pfrule << "  (! u" << scounter << " (^ ";
-      ProofDbTermProcess::printLFSCTerm(sc[0],pfrule);
+      ProofDbTermProcess::printLFSCTerm(sc[0], pfrule);
       pfrule << " ";
-      ProofDbTermProcess::printLFSCTerm(sc[1],pfrule);
+      ProofDbTermProcess::printLFSCTerm(sc[1], pfrule);
       pfrule << ")" << std::endl;
       rparens << ")";
       scounter++;
@@ -92,17 +92,17 @@ void ProofDbRule::init(const std::string& name,
   for (const Node& c : pureconds)
   {
     pfrule << "  (! h" << counter << " (th_holds ";
-    ProofDbTermProcess::printLFSCTerm(c,pfrule);
+    ProofDbTermProcess::printLFSCTerm(c, pfrule);
     pfrule << ")" << std::endl;
     rparens << ")";
     counter++;
   }
   pfrule << "    (th_holds ";
-  ProofDbTermProcess::printLFSCTerm(eq,pfrule);
+  ProofDbTermProcess::printLFSCTerm(eq, pfrule);
   pfrule << ")";
   pfrule << rparens.str() << std::endl;
   pfrule << std::endl;
-  
+
   Trace("proof-db-to-lfsc") << pfrule.str();
 }
 
