@@ -1,0 +1,542 @@
+(declare len-concat-gen
+  (! S0 (term String)
+  (! S1 (term String)
+  (! I1 (term Int)
+  (! I0 (term Int)
+  (! h1 (th_holds (= _ (str.len S0) I0))
+  (! h2 (th_holds (= _ (str.len S1) I1))
+    (th_holds (= _ (str.len (str.++ S0 S1)) (+_Int I0 I1))))))))))
+
+(declare len-repl-inv
+  (! S0 (term String)
+  (! S1 (term String)
+  (! S2 (term String)
+  (! h1 (th_holds (= _ (str.len S1) (str.len S2)))
+    (th_holds (= _ (str.len (str.replace S0 S1 S2)) (str.len S0))))))))
+
+(declare prefixof-elim
+  (! S1 (term String)
+  (! S0 (term String)
+    (th_holds (= _ (str.prefixof S0 S1) (= _ S0 (str.substr S1 (c_Int 0) (str.len S0))))))))
+
+(declare suffixof-elim
+  (! S1 (term String)
+  (! S0 (term String)
+    (th_holds (= _ (str.suffixof S0 S1) (= _ S0 (str.substr S1 (-_Int (str.len S1) (str.len S0)) (str.len S0))))))))
+
+(declare str.at-elim
+  (! S0 (term String)
+  (! I0 (term Int)
+    (th_holds (= _ (str.at S0 I0) (str.substr S0 I0 (c_Int 1)))))))
+
+(declare re-str-to-re-eq
+  (! S0 (term String)
+  (! S1 (term String)
+    (th_holds (= _ (str.in.re S0 (str.to.re S1)) (= _ S0 S1))))))
+
+(declare re-star-all-char
+  (! S0 (term String)
+    (th_holds (= _ (str.in.re S0 (re.* re.allchar )) true))))
+
+(declare re-concat-nctn
+  (! S0 (term String)
+  (! R0 (term RegLan)
+  (! S1 (term String)
+  (! h1 (th_holds (= _ (>=_Int (str.len S1) (+_Int (str.len S0) (c_Int 1))) true))
+    (th_holds (= _ (str.in.re S0 (re.++ (str.to.re S1) R0)) false)))))))
+
+(declare re-union-elim
+  (! R1 (term RegLan)
+  (! S0 (term String)
+  (! B0 (term Bool)
+  (! R0 (term RegLan)
+  (! h1 (th_holds (= _ (str.in.re S0 R1) B0))
+    (th_holds (= _ (str.in.re S0 (re.union R0 R1)) (or (str.in.re S0 R0) B0)))))))))
+
+(declare re-inter-elim
+  (! R1 (term RegLan)
+  (! S0 (term String)
+  (! B0 (term Bool)
+  (! R0 (term RegLan)
+  (! h1 (th_holds (= _ (str.in.re S0 R1) B0))
+    (th_holds (= _ (str.in.re S0 (re.inter R0 R1)) (and (str.in.re S0 R0) B0)))))))))
+
+(declare re-concat-find-sing
+  (! S0 (term String)
+  (! R1 (term RegLan)
+  (! R0 (term RegLan)
+  (! h1 (th_holds (= _ (str.in.re S0 R0) true))
+  (! h2 (th_holds (= _ (str.in.re emptystr R1) true))
+    (th_holds (= _ (str.in.re S0 (re.++ R0 R1)) true))))))))
+
+(declare re-concat-skip-sing
+  (! S0 (term String)
+  (! R1 (term RegLan)
+  (! R0 (term RegLan)
+  (! h1 (th_holds (= _ (str.in.re emptystr R0) true))
+  (! h2 (th_holds (= _ (str.in.re S0 R1) true))
+    (th_holds (= _ (str.in.re S0 (re.++ R0 R1)) true))))))))
+
+(declare re-concat
+  (! S0 (term String)
+  (! S1 (term String)
+  (! R1 (term RegLan)
+  (! R0 (term RegLan)
+  (! h1 (th_holds (= _ (str.in.re S0 R0) true))
+  (! h2 (th_holds (= _ (str.in.re S1 R1) true))
+    (th_holds (= _ (str.in.re (str.++ S0 S1) (re.++ R0 R1)) true)))))))))
+
+(declare re-consume
+  (! S0 (term String)
+  (! S1 (term String)
+  (! S2 (term String)
+  (! B0 (term Bool)
+  (! R0 (term RegLan)
+  (! h1 (th_holds (= _ (str.in.re S1 (re.++ (str.to.re S2) R0)) B0))
+    (th_holds (= _ (str.in.re (str.++ S0 S1) (re.++ (str.to.re (str.++ S0 S2)) R0)) B0)))))))))
+
+(declare re-consume-sing
+  (! S0 (term String)
+  (! S1 (term String)
+  (! B0 (term Bool)
+  (! R0 (term RegLan)
+  (! h1 (th_holds (= _ (str.in.re S1 R0) B0))
+    (th_holds (= _ (str.in.re (str.++ S0 S1) (re.++ (str.to.re S0) R0)) B0))))))))
+
+(declare re-consume-sing-sing
+  (! S0 (term String)
+  (! B0 (term Bool)
+  (! R0 (term RegLan)
+  (! h1 (th_holds (= _ (str.in.re emptystr R0) B0))
+    (th_holds (= _ (str.in.re S0 (re.++ (str.to.re S0) R0)) B0)))))))
+
+(declare re-consume-nested
+  (! S0 (term String)
+  (! S3 (term String)
+  (! S1 (term String)
+  (! S2 (term String)
+  (! B0 (term Bool)
+  (! R0 (term RegLan)
+  (! h1 (th_holds (= _ (str.in.re (str.++ S1 S2) (re.++ (str.to.re S3) R0)) B0))
+    (th_holds (= _ (str.in.re (str.++ (str.++ S0 S1) S2) (re.++ (str.to.re (str.++ S0 S3)) R0)) B0))))))))))
+
+(declare re-consume-nested-sing
+  (! S0 (term String)
+  (! S1 (term String)
+  (! S2 (term String)
+  (! B0 (term Bool)
+  (! R0 (term RegLan)
+  (! h1 (th_holds (= _ (str.in.re (str.++ S1 S2) R0) B0))
+    (th_holds (= _ (str.in.re (str.++ (str.++ S0 S1) S2) (re.++ (str.to.re S0) R0)) B0)))))))))
+
+(declare re-clash
+  (! S0 (term String)
+  (! S1 (term String)
+  (! S2 (term String)
+  (! R0 (term RegLan)
+  (! S3 (term String)
+  (! h1 (th_holds (= _ (= _ (str.len S0) (str.len S2)) true))
+  (! h2 (th_holds (= _ (= _ S0 S2) false))
+    (th_holds (= _ (str.in.re (str.++ S0 S1) (re.++ (str.to.re (str.++ S2 S3)) R0)) false))))))))))
+
+(declare re-clash-nested
+  (! S0 (term String)
+  (! S3 (term String)
+  (! R0 (term RegLan)
+  (! S1 (term String)
+  (! S2 (term String)
+  (! S4 (term String)
+  (! h1 (th_holds (= _ (= _ (str.len S0) (str.len S3)) true))
+  (! h2 (th_holds (= _ (= _ S0 S3) false))
+    (th_holds (= _ (str.in.re (str.++ (str.++ S0 S1) S2) (re.++ (str.to.re (str.++ S3 S4)) R0)) false)))))))))))
+
+(declare re-str-to-re-true
+  (! S0 (term String)
+    (th_holds (= _ (str.in.re S0 (str.to.re S0)) true))))
+
+(declare re-union1
+  (! S0 (term String)
+  (! R1 (term RegLan)
+  (! R0 (term RegLan)
+  (! h1 (th_holds (= _ (str.in.re S0 R0) true))
+    (th_holds (= _ (str.in.re S0 (re.union R0 R1)) true)))))))
+
+(declare re-union2
+  (! S0 (term String)
+  (! R1 (term RegLan)
+  (! R0 (term RegLan)
+  (! h1 (th_holds (= _ (str.in.re S0 R1) true))
+    (th_holds (= _ (str.in.re S0 (re.union R0 R1)) true)))))))
+
+(declare re-inter1
+  (! S0 (term String)
+  (! R1 (term RegLan)
+  (! R0 (term RegLan)
+  (! h1 (th_holds (= _ (str.in.re S0 R0) false))
+    (th_holds (= _ (str.in.re S0 (re.inter R0 R1)) false)))))))
+
+(declare re-inter2
+  (! S0 (term String)
+  (! R1 (term RegLan)
+  (! R0 (term RegLan)
+  (! h1 (th_holds (= _ (str.in.re S0 R1) false))
+    (th_holds (= _ (str.in.re S0 (re.inter R0 R1)) false)))))))
+
+(declare re-emp-in-star
+  (! R0 (term RegLan)
+    (th_holds (= _ (str.in.re emptystr (re.* R0)) true))))
+
+(declare re-concat-nostr
+  (! R0 (term RegLan)
+    (th_holds (= _ (re.++ R0 re.nostr ) re.nostr ))))
+
+(declare re-concat-nostr2
+  (! R0 (term RegLan)
+    (th_holds (= _ (re.++ re.nostr  R0) re.nostr ))))
+
+(declare re-star-nostr
+    (th_holds (= _ (re.* re.nostr ) (str.to.re emptystr))))
+
+(declare re-all-char-elim
+  (! S0 (term String)
+    (th_holds (= _ (str.in.re S0 re.allchar ) (= _ (c_Int 1) (str.len S0))))))
+
+(declare re-all-char
+  (! S0 (term String)
+  (! h1 (th_holds (= _ (c_Int 1) (str.len S0)))
+    (th_holds (= _ (str.in.re S0 re.allchar ) true)))))
+
+(declare re-to-ctn
+  (! S0 (term String)
+  (! S1 (term String)
+    (th_holds (= _ (str.in.re S0 (re.++ (re.* re.allchar ) (re.++ (str.to.re S1) (re.* re.allchar )))) (str.contains S0 S1))))))
+
+(declare re-star-emp
+    (th_holds (= _ (re.* (str.to.re emptystr)) (str.to.re emptystr))))
+
+(declare re-union-all1
+  (! R0 (term RegLan)
+  (! R1 (term RegLan)
+  (! h1 (th_holds (= _ R0 (re.* re.allchar )))
+    (th_holds (= _ (re.union R0 R1) (re.* re.allchar )))))))
+
+(declare re-union-all2
+  (! R0 (term RegLan)
+  (! R1 (term RegLan)
+  (! h1 (th_holds (= _ R1 (re.* re.allchar )))
+    (th_holds (= _ (re.union R0 R1) (re.* re.allchar )))))))
+
+(declare re-inter-emp1
+  (! R0 (term RegLan)
+  (! R1 (term RegLan)
+  (! h1 (th_holds (= _ R0 (re.* re.allchar )))
+    (th_holds (= _ (re.inter R0 R1) (re.* re.allchar )))))))
+
+(declare re-inter-emp2
+  (! R0 (term RegLan)
+  (! R1 (term RegLan)
+  (! h1 (th_holds (= _ R1 (re.* re.allchar )))
+    (th_holds (= _ (re.inter R0 R1) (re.* re.allchar )))))))
+
+(declare repl-id
+  (! S0 (term String)
+  (! S1 (term String)
+    (th_holds (= _ (str.replace S0 S0 S1) S1)))))
+
+(declare repl-idem
+  (! S1 (term String)
+  (! S0 (term String)
+    (th_holds (= _ (str.replace S0 S1 S1) S0)))))
+
+(declare repl-no
+  (! S0 (term String)
+  (! S1 (term String)
+  (! S2 (term String)
+  (! h1 (th_holds (= _ (str.contains S0 S1) false))
+    (th_holds (= _ (str.replace S0 S1 S2) S0)))))))
+
+(declare repl-empty
+  (! S1 (term String)
+  (! S0 (term String)
+    (th_holds (= _ (str.replace S0 emptystr S1) (str.++ S1 S0))))))
+
+(declare repl-empty-inv
+  (! S0 (term String)
+    (th_holds (= _ (str.replace emptystr S0 emptystr) emptystr))))
+
+(declare substr-emp
+  (! I0 (term Int)
+  (! I1 (term Int)
+    (th_holds (= _ (str.substr emptystr I0 I1) emptystr)))))
+
+(declare substr-id
+  (! I0 (term Int)
+  (! S0 (term String)
+  (! h1 (th_holds (= _ (>=_Int I0 (str.len S0)) true))
+    (th_holds (= _ (str.substr S0 (c_Int 0) I0) S0))))))
+
+(declare substr-neg
+  (! S0 (term String)
+  (! I1 (term Int)
+  (! I0 (term Int)
+  (! h1 (th_holds (= _ (>=_Int (c_Int 0) (+_Int I0 (c_Int 1))) true))
+    (th_holds (= _ (str.substr S0 I0 I1) emptystr)))))))
+
+(declare substr-range
+  (! S0 (term String)
+  (! I1 (term Int)
+  (! I0 (term Int)
+  (! h1 (th_holds (= _ (>=_Int (c_Int 0) I1) true))
+    (th_holds (= _ (str.substr S0 I0 I1) emptystr)))))))
+
+(declare substr-oob
+  (! S0 (term String)
+  (! I1 (term Int)
+  (! I0 (term Int)
+  (! h1 (th_holds (= _ (>=_Int I0 (str.len S0)) true))
+    (th_holds (= _ (str.substr S0 I0 I1) emptystr)))))))
+
+(declare substr-concat-len-ctn
+  (! S0 (term String)
+  (! I0 (term Int)
+  (! S1 (term String)
+  (! S2 (term String)
+  (! I1 (term Int)
+  (! h1 (th_holds (= _ (>=_Int (str.len S0) (+_Int I0 I1)) true))
+  (! h2 (th_holds (= _ (str.substr S0 I0 I1) S2))
+    (th_holds (= _ (str.substr (str.++ S0 S1) I0 I1) S2))))))))))
+
+(declare substr-concat-len-nctn
+  (! S0 (term String)
+  (! I0 (term Int)
+  (! S1 (term String)
+  (! I1 (term Int)
+  (! I2 (term Int)
+  (! h1 (th_holds (= _ (>=_Int I0 (str.len S0)) true))
+  (! h2 (th_holds (= _ (-_Int I0 (str.len S0)) I2))
+    (th_holds (= _ (str.substr (str.++ S0 S1) I0 I1) (str.substr S1 I2 I1)))))))))))
+
+(declare substr-concat-len-in
+  (! I0 (term Int)
+  (! S1 (term String)
+  (! S2 (term String)
+  (! S0 (term String)
+  (! h1 (th_holds (= _ (>=_Int (-_Int I0 (str.len S0)) (c_Int 0)) true))
+  (! h2 (th_holds (= _ (str.substr S0 (c_Int 0) (-_Int I0 (str.len S0))) S2))
+    (th_holds (= _ (str.substr (str.++ S0 S1) (c_Int 0) I0) (str.++ S0 S2))))))))))
+
+(declare ctn-clash
+  (! S0 (term String)
+  (! S2 (term String)
+  (! S1 (term String)
+  (! h1 (th_holds (= _ (= _ (str.len S0) (str.len S1)) true))
+  (! h2 (th_holds (= _ (= _ S0 S1) false))
+    (th_holds (= _ (str.contains S0 (str.++ S1 S2)) false))))))))
+
+(declare ctn-concat-f1
+  (! S0 (term String)
+  (! S2 (term String)
+  (! S1 (term String)
+  (! h1 (th_holds (= _ (str.contains S0 S1) false))
+    (th_holds (= _ (str.contains S0 (str.++ S1 S2)) false)))))))
+
+(declare ctn-concat-f2
+  (! S0 (term String)
+  (! S2 (term String)
+  (! S1 (term String)
+  (! h1 (th_holds (= _ (str.contains S0 S2) false))
+    (th_holds (= _ (str.contains S0 (str.++ S1 S2)) false)))))))
+
+(declare ctn-concat-t1
+  (! S0 (term String)
+  (! S2 (term String)
+  (! S1 (term String)
+  (! h1 (th_holds (= _ (str.contains S0 S2) true))
+    (th_holds (= _ (str.contains (str.++ S0 S1) S2) true)))))))
+
+(declare ctn-concat-t2
+  (! S0 (term String)
+  (! S2 (term String)
+  (! S1 (term String)
+  (! h1 (th_holds (= _ (str.contains S1 S2) true))
+    (th_holds (= _ (str.contains (str.++ S0 S1) S2) true)))))))
+
+(declare ctn-id
+  (! S0 (term String)
+    (th_holds (= _ (str.contains S0 S0) true))))
+
+(declare ctn-repl-emp
+  (! S0 (term String)
+  (! S2 (term String)
+  (! S1 (term String)
+  (! h1 (th_holds (= _ (str.contains S1 S2) false))
+    (th_holds (= _ (str.contains (str.replace emptystr S0 S1) S2) false)))))))
+
+(declare ctn-empty
+  (! S0 (term String)
+    (th_holds (= _ (str.contains S0 emptystr) true))))
+
+(declare ctn-to-eq-e
+  (! S0 (term String)
+    (th_holds (= _ (str.contains emptystr S0) (= _ emptystr S0)))))
+
+(declare ctn-to-eq
+  (! S0 (term String)
+  (! S1 (term String)
+  (! h1 (th_holds (= _ (>=_Int (str.len S1) (str.len S0)) true))
+    (th_holds (= _ (str.contains S0 S1) (= _ S0 S1)))))))
+
+(declare ctn-len
+  (! S0 (term String)
+  (! S1 (term String)
+  (! h1 (th_holds (= _ (>=_Int (str.len S1) (+_Int (str.len S0) (c_Int 1))) true))
+    (th_holds (= _ (str.contains S0 S1) false))))))
+
+(declare indexof-find
+  (! S1 (term String)
+  (! S0 (term String)
+    (th_holds (= _ (str.indexof (str.++ S0 S1) S0 (c_Int 0)) (c_Int 0))))))
+
+(declare indexof-find-sing
+  (! S0 (term String)
+    (th_holds (= _ (str.indexof S0 S0 (c_Int 0)) (c_Int 0)))))
+
+(declare indexof-nctn
+  (! S0 (term String)
+  (! I0 (term Int)
+  (! S1 (term String)
+  (! h1 (th_holds (= _ (str.contains S0 S1) false))
+    (th_holds (= _ (str.indexof S0 S1 I0) (c_Int (~ 1)))))))))
+
+(declare indexof-neg
+  (! S0 (term String)
+  (! I0 (term Int)
+  (! S1 (term String)
+  (! h1 (th_holds (= _ (>_Int (c_Int 0) I0) true))
+    (th_holds (= _ (str.indexof S0 S1 I0) (c_Int (~ 1)))))))))
+
+(declare indexof-oob
+  (! S0 (term String)
+  (! I0 (term Int)
+  (! S1 (term String)
+  (! h1 (th_holds (= _ (>_Int I0 (str.len S0)) true))
+    (th_holds (= _ (str.indexof S0 S1 I0) (c_Int (~ 1)))))))))
+
+(declare indexof-pos
+  (! S0 (term String)
+  (! I0 (term Int)
+  (! S1 (term String)
+    (th_holds (= _ (>_Int (c_Int 0) (str.indexof S0 S1 I0)) false))))))
+
+(declare indexof-id
+  (! S0 (term String)
+  (! I0 (term Int)
+    (th_holds (= _ (str.indexof S0 S0 I0) (str.indexof emptystr emptystr I0))))))
+
+(declare stoi-concat-ndigit1
+  (! S0 (term String)
+  (! S1 (term String)
+  (! h1 (th_holds (= _ (str.to.int S0) (c_Int (~ 1))))
+    (th_holds (= _ (str.to.int (str.++ S0 S1)) (c_Int (~ 1))))))))
+
+(declare stoi-concat-ndigit2
+  (! S0 (term String)
+  (! S1 (term String)
+  (! h1 (th_holds (= _ (str.to.int S1) (c_Int (~ 1))))
+    (th_holds (= _ (str.to.int (str.++ S0 S1)) (c_Int (~ 1))))))))
+
+(declare index-lb
+  (! S0 (term String)
+  (! I0 (term Int)
+  (! S1 (term String)
+    (th_holds (= _ (>=_Int (str.indexof S0 S1 I0) (c_Int (~ 1))) true))))))
+
+(declare index-ub
+  (! I0 (term Int)
+  (! S0 (term String)
+  (! I1 (term Int)
+  (! S1 (term String)
+  (! h1 (th_holds (= _ (str.len S0) I0))
+    (th_holds (= _ (>=_Int I0 (str.indexof S0 S1 I1)) true))))))))
+
+(declare len-lb
+  (! S0 (term String)
+    (th_holds (= _ (>=_Int (str.len S0) (c_Int 0)) true))))
+
+(declare arith-elim-lt
+  (! I0 (term Int)
+  (! I1 (term Int)
+    (th_holds (= _ (<_Int I0 I1) (not (>=_Int I0 I1)))))))
+
+(declare arith-elim-gt
+  (! I0 (term Int)
+  (! I1 (term Int)
+    (th_holds (= _ (>_Int I0 I1) (not (<=_Int I0 I1)))))))
+
+(declare arith-norm-geq-true
+  (! I0 (term Int)
+    (th_holds (= _ (>=_Int I0 I0) true))))
+
+(declare arith-norm-leq-true
+  (! I0 (term Int)
+    (th_holds (= _ (<=_Int I0 I0) true))))
+
+(declare not-not-elim
+  (! B0 (term Bool)
+    (th_holds (= _ (not (not B0)) B0))))
+
+(declare and-false1
+  (! B0 (term Bool)
+  (! B1 (term Bool)
+  (! h1 (th_holds (= _ B0 false))
+    (th_holds (= _ (and B0 B1) false))))))
+
+(declare and-false2
+  (! B0 (term Bool)
+  (! B1 (term Bool)
+  (! h1 (th_holds (= _ B1 false))
+    (th_holds (= _ (and B0 B1) false))))))
+
+(declare or-true1
+  (! B0 (term Bool)
+  (! B1 (term Bool)
+  (! h1 (th_holds (= _ B0 true))
+    (th_holds (= _ (or B0 B1) true))))))
+
+(declare or-true2
+  (! B0 (term Bool)
+  (! B1 (term Bool)
+  (! h1 (th_holds (= _ B1 true))
+    (th_holds (= _ (or B0 B1) true))))))
+
+(declare iff-true
+  (! B0 (term Bool)
+    (th_holds (= _ (= _ B0 true) B0))))
+
+(declare iff-false
+  (! B0 (term Bool)
+    (th_holds (= _ (= _ B0 false) (not B0)))))
+
+(declare iff-true2
+  (! B0 (term Bool)
+    (th_holds (= _ (= _ true B0) B0))))
+
+(declare iff-false2
+  (! B0 (term Bool)
+    (th_holds (= _ (= _ false B0) (not B0)))))
+
+(declare ite-true
+  (! B1 (term Bool)
+  (! B0 (term Bool)
+    (th_holds (= _ (ite _ true B0 B1) B0)))))
+
+(declare ite-false
+  (! B0 (term Bool)
+  (! B1 (term Bool)
+    (th_holds (= _ (ite _ false B0 B1) B1)))))
+
+; proof of (= (str.in.re "wizfoofarbaz/" (re.++ (str.to.re "wiz") (re.* re.allchar ) (str.to.re "foo") re.allchar  (str.to.re "ar") (re.* re.allchar ) (str.to.re "baz/") (re.* re.allchar ))) true)
+(check (: (th_holds (= _ (str.in.re (str.++ (c_String 119) (str.++ (c_String 105) (str.++ (c_String 122) (str.++ (c_String 102) (str.++ (c_String 111) (str.++ (c_String 111) (str.++ (c_String 102) (str.++ (c_String 97) (str.++ (c_String 114) (str.++ (c_String 98) (str.++ (c_String 97) (str.++ (c_String 122) (c_String 47))))))))))))) (re.++ (str.to.re (str.++ (c_String 119) (str.++ (c_String 105) (c_String 122)))) (re.++ (re.* re.allchar ) (re.++ (str.to.re (str.++ (c_String 102) (str.++ (c_String 111) (c_String 111)))) (re.++ re.allchar  (re.++ (str.to.re (str.++ (c_String 97) (c_String 114))) (re.++ (re.* re.allchar ) (re.++ (str.to.re (str.++ (c_String 98) (str.++ (c_String 97) (str.++ (c_String 122) (c_String 47))))) (re.* re.allchar ))))))))) true))
+(re-consume (c_String 119) _ _ _ _ (re-consume (c_String 105) _ _ _ _ (re-concat _ _ _ _ (re-str-to-re-true (c_String 122)) (re-concat-skip-sing _ _ _ (re-star-all-char emptystr) (re-consume (c_String 102) _ _ _ _ (re-consume (c_String 111) _ _ _ _ (re-concat _ _ _ _ (re-str-to-re-true (c_String 111)) (re-concat _ _ _ _ (re-all-char _ (eval _ (c_Int 1) (str.len (c_String 102)))) (re-consume (c_String 97) _ _ _ _ (re-concat _ _ _ _ (re-str-to-re-true (c_String 114)) (re-concat-skip-sing _ _ _ (re-star-all-char emptystr) (re-concat-find-sing _ _ _ (re-str-to-re-true (str.++ (c_String 98) (str.++ (c_String 97) (str.++ (c_String 122) (c_String 47))))) (re-star-all-char emptystr)))))))))))))
+))
+
