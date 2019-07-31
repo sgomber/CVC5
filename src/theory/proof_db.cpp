@@ -270,9 +270,8 @@ void ProofDb::notify(Node a, Node b, std::ostream& out)
       unsigned index = 0;
       bool ret = existsRule(ai,bi);
       AlwaysAssert( ret );
-      Trace("proof-db-pf") << "(proof (= " << a << " " << b << ")" << std::endl;
+      Trace("proof-db-pf") << "; proof of (= " << a << " " << b << ")" << std::endl;
       Trace("proof-db-pf") << d_pfStream.str() << std::endl;
-      Trace("proof-db-pf") << ")" << std::endl;
       d_proofPrinting = false;
     }
     // already exists
