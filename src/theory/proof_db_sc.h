@@ -40,6 +40,7 @@ class ProofDbScEval
     sc_INVALID,
     sc_flatten_string,
     sc_flatten_regexp,
+    sc_sort_regexp,
     sc_re_loop_elim,
     sc_arith_norm_term,
     sc_arith_norm_term_abs,
@@ -63,10 +64,13 @@ class ProofDbScEval
   Node d_negOne;
   Node d_true;
   Node d_false;
+  Node d_reEmp;
+  Node d_reAll;
 
   /** specific side conditions */
   Node flatten_string(Node n);
   Node flatten_regexp(Node n);
+  Node sort_regexp(Node n);
   Node re_loop_elim(Node n);
   Node arith_norm_term(Node n);
   Node arith_norm_term_abs(Node n);
@@ -75,6 +79,7 @@ class ProofDbScEval
   /** Helpers */
   Node h_flattenCollect(Kind k, Node n, Node acc);
   void h_termToVec(Kind k, Node n, std::vector<Node>& terms);
+  Node h_vecToTerm(Kind k, const std::vector<Node>& terms);
   void h_termToMsum(Node n, std::map<Node, Node>& msum);
   Node h_msumToTerm(std::map<Node, Node>& msum, bool posLeadingCoeff = false);
 };

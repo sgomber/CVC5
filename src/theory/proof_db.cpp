@@ -29,19 +29,23 @@ ProofDb::ProofDb() : d_notify(*this)
 
 void ProofDb::registerRules(const std::map<Node, std::string>& rules)
 {
+  NodeManager * nm = NodeManager::currentNM();
   // add each of the rules to the database
   for (const std::pair<const Node, std::string>& rr : rules)
   {
     Node r = rr.first;
-    // convert to internal
-    Node ri = d_pdtp.toInternal(r);
     AlwaysAssert(r.getKind() == IMPLIES);
+    // we canonize left-to-right, hence we should traverse in the opposite
+    // order, since we index based on conclusion
+    Node tmp = nm->mkNode(IMPLIES,r[1],r[0]);
+    // convert to internal
+    Node tmpi = d_pdtp.toInternal(tmp);
 
     // must canonize
     Trace("proof-db") << "Add rule " << rr.second << ": " << r[1] << std::endl;
-    Node cr = d_canon.getCanonicalTerm(ri, false, false);
+    Node cr = d_canon.getCanonicalTerm(tmpi, false, false);
 
-    Node cond = cr[0];
+    Node cond = cr[1];
     std::vector<Node> conds;
     if (cond.getKind() == AND)
     {
@@ -83,7 +87,7 @@ void ProofDb::registerRules(const std::map<Node, std::string>& rules)
       }
     }
 
-    Node eq = cr[1];
+    Node eq = cr[0];
 
     // add to discrimination tree
     Trace("proof-db-debug") << "Add (Canonical) rule " << eq << std::endl;

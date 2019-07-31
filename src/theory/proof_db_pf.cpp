@@ -32,25 +32,34 @@ void ProofDbRule::init(const std::string& name,
   
   std::unordered_set<Node, NodeHashFunction> fvs;
   expr::getFreeVariables(eq,fvs);
-  if( Trace.isOn("proof-db-to-lfsc") )
+  std::unordered_set<Node, NodeHashFunction> fvsCond;
+  for( const Node& c : d_cond )
   {
-    // TODO: incorporate side conditions
-    std::stringstream rparens;
-    Trace("proof-db-to-lfsc") << "(declare " << d_name << std::endl;
-    for( const Node& v : fvs )
-    {
-      Trace("proof-db-to-lfsc") << "  (! " << v << " " << v.getType() << std::endl;
-    }
-    unsigned counter = 1;
-    for( const Node& c : cond )
-    {
-      Trace("proof-db-to-lfsc") << "  (! h" << counter << " (holds " << c << ")" << std::endl;
-      rparens << ")";
-      counter++;
-    }
-    Trace("proof-db-to-lfsc") << "    (holds " << eq << ")" << rparens.str() << std::endl;
-    Trace("proof-db-to-lfsc") << std::endl;
+    expr::getFreeVariables(c,fvsCond);
   }
+  // TODO: incorporate side conditions
+  std::stringstream rparens;
+  Trace("proof-db-to-lfsc") << "(declare " << d_name << std::endl;
+  unsigned vcounter = 0;
+  for( const Node& v : fvs )
+  {
+    Trace("proof-db-to-lfsc") << "  (! " << v << " " << v.getType() << std::endl;
+    if( fvsCond.find(v)==fvsCond.end() )
+    {
+      d_noOccVars[vcounter] = true;
+    }
+    vcounter++;
+  }
+  unsigned counter = 1;
+  for( const Node& c : cond )
+  {
+    Trace("proof-db-to-lfsc") << "  (! h" << counter << " (holds " << c << ")" << std::endl;
+    rparens << ")";
+    counter++;
+  }
+  Trace("proof-db-to-lfsc") << "    (holds " << eq << ")" << rparens.str() << std::endl;
+  Trace("proof-db-to-lfsc") << std::endl;
+
   d_numFv = fvs.size();
 }
 

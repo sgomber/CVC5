@@ -1,6 +1,7 @@
 (declare-fun flatten_string (String) String)
 (declare-fun sort_bool (Bool) Bool)
 (declare-fun flatten_regexp (RegLan) RegLan)
+(declare-fun sort_regexp (RegLan) RegLan)
 (declare-fun arith_norm_term (Int) Int)
 (declare-fun arith_norm_term_abs (Int) Int)
 (proof-db (
@@ -20,7 +21,7 @@
   
   re-in-const-str (=> true (= (str.in.re x (str.to.re y)) (= x y)))
   re-all-char (=> true (= (str.in.re x (re.* re.allchar)) true))
-  re-concat-nctn (=> (= (>= (str.len y) (+ (str.len x) 1)) true) (= (str.in.re x (re.++ (str.to.re y) s)) false))
+  re-concat-nctn (=> (>= (str.len y) (+ (str.len x) 1)) (= (str.in.re x (re.++ (str.to.re y) s)) false))
   
   ; recursion builtin
   re-union-elim (=> (= (str.in.re x s) b) (= (str.in.re x (re.union r s)) (or (str.in.re x r) b)))
@@ -42,7 +43,6 @@
   ;re-consume-match (=> 
   ; (and (= (flatten_string x) (str.++ y w)) (= (str.in.re w (re.++ (str.to.re z) r)) b))
   ; (= (str.in.re x (re.++ (str.to.re (str.++ y z)) r)) b))
-  
   
   re-clash (=> (and (= (= (str.len x) (str.len y)) true) (= (= x y) false)) (= (str.in.re (str.++ x z) (re.++ (str.to.re (str.++ y w)) r)) false))
   re-clash-nested (=> (and (= (= (str.len x) (str.len w)) true) (= (= x w) false)) (= (str.in.re (str.++ (str.++ x y) z) (re.++ (str.to.re (str.++ w v)) r)) false))
@@ -66,6 +66,14 @@
   re-all-char (=> (= (= 1 (str.len x)) true) (= (str.in.re x re.allchar) true))
   
   re-to-ctn (=> true (= (str.in.re x (re.++ (re.* re.allchar) (str.to.re y) (re.* re.allchar))) (str.contains x y)))
+  
+  re-star-emp (=> true (= (re.* (str.to.re "")) (str.to.re "")))
+  re-union-sort (=> (= (sort_regexp (re.union r s)) (sort_regexp t)) (= (re.union r s) t))
+  re-inter-sort (=> (= (sort_regexp (re.inter r s)) (sort_regexp t)) (= (re.inter r s) t))
+  re-union-all1 (=> (= r (re.* re.allchar)) (= (re.union r s) (re.* re.allchar)))
+  re-union-all2 (=> (= s (re.* re.allchar)) (= (re.union r s) (re.* re.allchar)))
+  re-inter-emp1 (=> (= r (re.* re.allchar)) (= (re.inter r s) (re.* re.allchar)))
+  re-inter-emp2 (=> (= s (re.* re.allchar)) (= (re.inter r s) (re.* re.allchar)))
   
   concat-flatten (=> (= (flatten_string (str.++ x y)) (flatten_string z)) (= (str.++ x y) z))
   

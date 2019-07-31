@@ -23,14 +23,19 @@ namespace theory {
 
 ProofDbScEval::ProofDbScEval()
 {
-  d_zero = NodeManager::currentNM()->mkConst(Rational(0));
-  d_one = NodeManager::currentNM()->mkConst(Rational(1));
-  d_negOne = NodeManager::currentNM()->mkConst(Rational(-1));
-  d_true = NodeManager::currentNM()->mkConst(true);
-  d_false = NodeManager::currentNM()->mkConst(false);
+  NodeManager * nm = NodeManager::currentNM();
+  d_zero = nm->mkConst(Rational(0));
+  d_one = nm->mkConst(Rational(1));
+  d_negOne = nm->mkConst(Rational(-1));
+  d_true = nm->mkConst(true);
+  d_false = nm->mkConst(false);
+  std::vector<Node> nvec;
+  d_reEmp = nm->mkNode(REGEXP_EMPTY, nvec);
+  d_reAll = nm->mkNode(REGEXP_STAR, nm->mkNode( REGEXP_SIGMA, nvec) );
 
   d_symTable[std::string("flatten_string")] = sc_flatten_string;
   d_symTable[std::string("flatten_regexp")] = sc_flatten_regexp;
+  d_symTable[std::string("sort_regexp")] = sc_sort_regexp;
   d_symTable[std::string("re_loop_elim")] = sc_re_loop_elim;
   d_symTable[std::string("arith_norm_term")] = sc_arith_norm_term;
   d_symTable[std::string("arith_norm_term_abs")] = sc_arith_norm_term_abs;
@@ -181,6 +186,11 @@ Node ProofDbScEval::evaluateApp(Node op, const std::vector<Node>& args)
     Assert(args.size() == 1);
     ret = flatten_regexp(args[0]);
   }
+  else if (sid == sc_sort_regexp)
+  {
+    Assert(args.size() == 1);
+    ret = sort_regexp(args[0]);
+  }
   else if (sid == sc_re_loop_elim)
   {
     Assert(args.size() == 1);
@@ -246,6 +256,7 @@ Node ProofDbScEval::h_flattenCollect(Kind k, Node n, Node acc)
   }
   return NodeManager::currentNM()->mkNode(k, n, acc);
 }
+
 Node ProofDbScEval::flatten_string(Node n)
 {
   Kind nk = n.getKind();
@@ -257,6 +268,7 @@ Node ProofDbScEval::flatten_string(Node n)
   Node acc;
   return h_flattenCollect(nk, n, acc);
 }
+
 Node ProofDbScEval::flatten_regexp(Node n)
 {
   Kind nk = n.getKind();
@@ -267,6 +279,21 @@ Node ProofDbScEval::flatten_regexp(Node n)
   Assert(n.getNumChildren() == 2);
   Node acc;
   return h_flattenCollect(nk, n, acc);
+}
+
+Node ProofDbScEval::sort_regexp(Node n)
+{
+  Kind nk = n.getKind();
+  if (!ProofDbTermProcess::isAssociativeNary(nk))
+  {
+    return n;
+  }
+  Assert(n.getKind() == REGEXP_UNION || n.getKind() == REGEXP_INTER);
+  Assert(n.getNumChildren() == 2);
+  std::vector<Node> children;
+  h_termToVec(nk, n, children);
+  std::sort(children.begin(), children.end());
+  return h_vecToTerm(nk,children);
 }
 
 void ProofDbScEval::h_termToVec(Kind k, Node n, std::vector<Node>& terms)
@@ -280,7 +307,7 @@ void ProofDbScEval::h_termToVec(Kind k, Node n, std::vector<Node>& terms)
     h_termToVec(k, n[0], terms);
     return;
   }
-  if ((k == AND && n == d_true) || (k == OR && n == d_false))
+  if ((k == AND && n == d_true) || (k == OR && n == d_false) || (k==REGEXP_UNION && n==d_reEmp) || (k==REGEXP_INTER && n==d_reAll))
   {
     return;
   }
@@ -288,6 +315,34 @@ void ProofDbScEval::h_termToVec(Kind k, Node n, std::vector<Node>& terms)
   {
     terms.push_back(n);
   }
+}
+Node ProofDbScEval::h_vecToTerm(Kind k, const std::vector<Node>& terms)
+{
+  NodeManager* nm = NodeManager::currentNM();
+  if (terms.size() == 0)
+  {
+    if( k == AND )
+    {
+      return d_true;
+    }else if( k==OR )
+    {
+      return d_false;
+    }
+    else if( k==REGEXP_UNION )
+    {
+      return d_reEmp;
+    }
+    else if( k==REGEXP_INTER )
+    {
+      return d_reAll;
+    }
+  }
+  Node ret = terms[0];
+  for (unsigned i = 1, nterms = terms.size(); i < nterms; i++)
+  {
+    ret = nm->mkNode(k, terms[i], ret);
+  }
+  return ret;
 }
 
 Node ProofDbScEval::sort_bool(Node n)
@@ -302,17 +357,7 @@ Node ProofDbScEval::sort_bool(Node n)
   std::vector<Node> children;
   h_termToVec(nk, n, children);
   std::sort(children.begin(), children.end());
-  if (children.size() == 0)
-  {
-    return n.getKind() == AND ? d_true : d_false;
-  }
-  NodeManager* nm = NodeManager::currentNM();
-  Node ret = children[0];
-  for (unsigned i = 1, nchild = children.size(); i < nchild; i++)
-  {
-    ret = nm->mkNode(nk, children[i], ret);
-  }
-  return ret;
+  return h_vecToTerm(nk,children);
 }
 
 Node ProofDbScEval::re_loop_elim(Node n)
