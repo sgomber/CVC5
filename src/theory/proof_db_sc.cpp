@@ -23,7 +23,7 @@ namespace theory {
 
 ProofDbScEval::ProofDbScEval()
 {
-  NodeManager * nm = NodeManager::currentNM();
+  NodeManager* nm = NodeManager::currentNM();
   d_zero = nm->mkConst(Rational(0));
   d_one = nm->mkConst(Rational(1));
   d_negOne = nm->mkConst(Rational(-1));
@@ -31,7 +31,7 @@ ProofDbScEval::ProofDbScEval()
   d_false = nm->mkConst(false);
   std::vector<Node> nvec;
   d_reEmp = nm->mkNode(REGEXP_EMPTY, nvec);
-  d_reAll = nm->mkNode(REGEXP_STAR, nm->mkNode( REGEXP_SIGMA, nvec) );
+  d_reAll = nm->mkNode(REGEXP_STAR, nm->mkNode(REGEXP_SIGMA, nvec));
 
   d_symTable[std::string("flatten_string")] = sc_flatten_string;
   d_symTable[std::string("flatten_regexp")] = sc_flatten_regexp;
@@ -161,7 +161,7 @@ Node ProofDbScEval::evaluate(Node n)
   return visited[n];
 }
 
-Node ProofDbScEval::purifySideConditions(Node n, std::vector< Node >& scs)
+Node ProofDbScEval::purifySideConditions(Node n, std::vector<Node>& scs)
 {
   NodeManager* nm = NodeManager::currentNM();
   std::unordered_map<TNode, Node, TNodeHashFunction> visited;
@@ -179,7 +179,7 @@ Node ProofDbScEval::purifySideConditions(Node n, std::vector< Node >& scs)
     {
       visited[cur] = Node::null();
       visit.push_back(cur);
-      visit.insert(visit.end(),cur.begin(),cur.end());
+      visit.insert(visit.end(), cur.begin(), cur.end());
     }
     else if (it->second.isNull())
     {
@@ -205,8 +205,11 @@ Node ProofDbScEval::purifySideConditions(Node n, std::vector< Node >& scs)
       if (cur.getKind() == APPLY_UF)
       {
         std::stringstream ss;
-        ss << "u" << (scs.size()+1);
-        Node k = nm->mkSkolem(ss.str(),cur.getType(),"side condition purify variable",NodeManager::SKOLEM_EXACT_NAME);
+        ss << "u" << (scs.size() + 1);
+        Node k = nm->mkSkolem(ss.str(),
+                              cur.getType(),
+                              "side condition purify variable",
+                              NodeManager::SKOLEM_EXACT_NAME);
         Node scEq = cur.eqNode(k);
         scs.push_back(scEq);
         ret = k;
@@ -351,7 +354,7 @@ Node ProofDbScEval::sort_regexp(Node n)
   std::vector<Node> children;
   h_termToVec(nk, n, children);
   std::sort(children.begin(), children.end());
-  return h_vecToTerm(nk,children);
+  return h_vecToTerm(nk, children);
 }
 
 void ProofDbScEval::h_termToVec(Kind k, Node n, std::vector<Node>& terms)
@@ -365,7 +368,9 @@ void ProofDbScEval::h_termToVec(Kind k, Node n, std::vector<Node>& terms)
     h_termToVec(k, n[0], terms);
     return;
   }
-  if ((k == AND && n == d_true) || (k == OR && n == d_false) || (k==REGEXP_UNION && n==d_reEmp) || (k==REGEXP_INTER && n==d_reAll))
+  if ((k == AND && n == d_true) || (k == OR && n == d_false)
+      || (k == REGEXP_UNION && n == d_reEmp)
+      || (k == REGEXP_INTER && n == d_reAll))
   {
     return;
   }
@@ -379,18 +384,19 @@ Node ProofDbScEval::h_vecToTerm(Kind k, const std::vector<Node>& terms)
   NodeManager* nm = NodeManager::currentNM();
   if (terms.size() == 0)
   {
-    if( k == AND )
+    if (k == AND)
     {
       return d_true;
-    }else if( k==OR )
+    }
+    else if (k == OR)
     {
       return d_false;
     }
-    else if( k==REGEXP_UNION )
+    else if (k == REGEXP_UNION)
     {
       return d_reEmp;
     }
-    else if( k==REGEXP_INTER )
+    else if (k == REGEXP_INTER)
     {
       return d_reAll;
     }
@@ -415,7 +421,7 @@ Node ProofDbScEval::sort_bool(Node n)
   std::vector<Node> children;
   h_termToVec(nk, n, children);
   std::sort(children.begin(), children.end());
-  return h_vecToTerm(nk,children);
+  return h_vecToTerm(nk, children);
 }
 
 Node ProofDbScEval::re_loop_elim(Node n)

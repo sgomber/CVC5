@@ -5266,7 +5266,6 @@ void SmtEngine::push()
     throw ModalException("Cannot push when not solving incrementally (use --incremental)");
   }
 
-
   // The problem isn't really "extended" yet, but this disallows
   // get-model after a push, simplifying our lives somewhat and
   // staying symmetric with pop.

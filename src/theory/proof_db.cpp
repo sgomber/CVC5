@@ -29,7 +29,7 @@ ProofDb::ProofDb() : d_notify(*this), d_proofPrinting(false)
 
 void ProofDb::registerRules(const std::map<Node, std::string>& rules)
 {
-  NodeManager * nm = NodeManager::currentNM();
+  NodeManager* nm = NodeManager::currentNM();
   // add each of the rules to the database
   for (const std::pair<const Node, std::string>& rr : rules)
   {
@@ -37,7 +37,7 @@ void ProofDb::registerRules(const std::map<Node, std::string>& rules)
     AlwaysAssert(r.getKind() == IMPLIES);
     // we canonize left-to-right, hence we should traverse in the opposite
     // order, since we index based on conclusion
-    Node tmp = nm->mkNode(IMPLIES,r[1],r[0]);
+    Node tmp = nm->mkNode(IMPLIES, r[1], r[0]);
     // convert to internal
     Node tmpi = d_pdtp.toInternal(tmp);
 
@@ -107,12 +107,12 @@ bool ProofDb::existsRuleInternal(Node a, Node b, unsigned& index, bool doRec)
       d_erCache.find(eq);
   if (it != d_erCache.end())
   {
-    if( it->second==pf_rule_invalid )
+    if (it->second == pf_rule_invalid)
     {
-      Assert( !d_proofPrinting );
+      Assert(!d_proofPrinting);
       return false;
     }
-    else if( !d_proofPrinting )
+    else if (!d_proofPrinting)
     {
       index = it->second;
       return true;
@@ -121,7 +121,7 @@ bool ProofDb::existsRuleInternal(Node a, Node b, unsigned& index, bool doRec)
   else
   {
     // should have already computed the proof
-    Assert( !d_proofPrinting );
+    Assert(!d_proofPrinting);
   }
   Trace("proof-db") << "ProofDb::existsRule " << a << "==" << b << "?"
                     << std::endl;
@@ -130,7 +130,7 @@ bool ProofDb::existsRuleInternal(Node a, Node b, unsigned& index, bool doRec)
     Trace("proof-db-debug") << "By reflexivity" << std::endl;
     // reflexivity
     index = pf_rule_refl;
-    if( d_proofPrinting )
+    if (d_proofPrinting)
     {
       d_pfStream << "(refl " << a << ")";
       return true;
@@ -150,7 +150,7 @@ bool ProofDb::existsRuleInternal(Node a, Node b, unsigned& index, bool doRec)
   {
     Trace("proof-db-debug")
         << "Return evaluation " << (aev == bev) << std::endl;
-    if( d_proofPrinting )
+    if (d_proofPrinting)
     {
       d_pfStream << "(eval " << a << " " << b << ")";
       return true;
@@ -167,7 +167,7 @@ bool ProofDb::existsRuleInternal(Node a, Node b, unsigned& index, bool doRec)
   if (ak == EQUAL && a[0] == a[1])
   {
     Trace("proof-db-debug") << "By equality reflexivity" << std::endl;
-    if( d_proofPrinting )
+    if (d_proofPrinting)
     {
       d_pfStream << "(eq-refl " << a[0] << ")";
       return true;
@@ -185,7 +185,7 @@ bool ProofDb::existsRuleInternal(Node a, Node b, unsigned& index, bool doRec)
       Trace("proof-db-debug") << "By equality symmetry" << std::endl;
       // symmetry of equality
       index = pf_rule_eq_sym;
-      if( d_proofPrinting )
+      if (d_proofPrinting)
       {
         d_pfStream << "(eq-sym " << a[0] << " " << a[1] << ")";
         return true;
@@ -197,7 +197,7 @@ bool ProofDb::existsRuleInternal(Node a, Node b, unsigned& index, bool doRec)
   if (doRec)
   {
     // prevent infinite loops
-    if( !d_proofPrinting )
+    if (!d_proofPrinting)
     {
       d_erCache[eq] = 0;
     }
@@ -205,8 +205,8 @@ bool ProofDb::existsRuleInternal(Node a, Node b, unsigned& index, bool doRec)
     if (!d_mt.getMatches(eq, &d_notify))
     {
       Trace("proof-db-debug") << "By rule" << std::endl;
-      Assert( d_erCache.find(eq)!=d_erCache.end() );
-      if( !d_proofPrinting )
+      Assert(d_erCache.find(eq) != d_erCache.end());
+      if (!d_proofPrinting)
       {
         index = d_erCache[eq];
       }
@@ -214,7 +214,7 @@ bool ProofDb::existsRuleInternal(Node a, Node b, unsigned& index, bool doRec)
     }
   }
   // congruence? TODO
-  Assert( !d_proofPrinting );
+  Assert(!d_proofPrinting);
   Trace("proof-db-debug") << "FAIL: no proof rule" << std::endl;
   index = pf_rule_invalid;
   d_erCache[eq] = index;
@@ -223,13 +223,12 @@ bool ProofDb::existsRuleInternal(Node a, Node b, unsigned& index, bool doRec)
 
 bool ProofDb::existsRule(Node a, Node b, unsigned& index)
 {
-  if( existsRuleInternal(a, b, index, true) )
+  if (existsRuleInternal(a, b, index, true))
   {
     return true;
   }
   return false;
 }
-
 
 bool ProofDb::existsRule(Node a, Node b)
 {
@@ -254,7 +253,7 @@ void ProofDb::notify(Node a, Node b)
 
 void ProofDb::notify(Node a, Node b, std::ostream& out)
 {
-  AlwaysAssert( !d_proofPrinting );
+  AlwaysAssert(!d_proofPrinting);
   Trace("proof-db-debug") << "Notify " << a << " " << b << std::endl;
   // must convert to internal
   Node ai = d_pdtp.toInternal(a);
@@ -262,15 +261,16 @@ void ProofDb::notify(Node a, Node b, std::ostream& out)
   Trace("proof-db-debug") << "Notify internal " << ai << " " << bi << std::endl;
   if (existsRule(ai, bi))
   {
-    // print the proof? 
-    if( Trace.isOn("proof-db-pf") )
+    // print the proof?
+    if (Trace.isOn("proof-db-pf"))
     {
       d_pfStream.str("");
       d_proofPrinting = true;
       unsigned index = 0;
-      bool ret = existsRule(ai,bi);
-      AlwaysAssert( ret );
-      Trace("proof-db-pf") << "; proof of (= " << a << " " << b << ")" << std::endl;
+      bool ret = existsRule(ai, bi);
+      AlwaysAssert(ret);
+      Trace("proof-db-pf") << "; proof of (= " << a << " " << b << ")"
+                           << std::endl;
       Trace("proof-db-pf") << d_pfStream.str() << std::endl;
       d_proofPrinting = false;
     }
@@ -279,7 +279,6 @@ void ProofDb::notify(Node a, Node b, std::ostream& out)
   }
   out << "(trusted (= " << a << " " << b << "))" << std::endl;
   // out << "(trusted-debug (= " << ai << " " << bi << "))" << std::endl;
-
 }
 
 bool ProofDb::notifyMatch(Node s,
@@ -302,17 +301,17 @@ bool ProofDb::notifyMatch(Node s,
   Assert(d_ids.find(n) != d_ids.end());
 #endif
   unsigned knownRule = 0;
-  if( d_proofPrinting )
+  if (d_proofPrinting)
   {
-    Assert( d_erCache.find(s)!=d_erCache.end() );
+    Assert(d_erCache.find(s) != d_erCache.end());
     knownRule = d_erCache[s];
   }
   // check each rule instance
   for (unsigned ruleId : d_ids[n])
   {
-    if (d_proofPrinting )
+    if (d_proofPrinting)
     {
-      if( ruleId!=knownRule )
+      if (ruleId != knownRule)
       {
         continue;
       }
@@ -320,25 +319,25 @@ bool ProofDb::notifyMatch(Node s,
     Assert(d_proofDbRule.find(ruleId) != d_proofDbRule.end());
     // get the proof rule
     ProofDbRule& pr = d_proofDbRule[ruleId];
-    if (d_proofPrinting )
+    if (d_proofPrinting)
     {
       // construct map from substitution
-      std::map< Node, Node > smap;
-      for( unsigned i=0, nvars=vars.size(); i<nvars; i++ )
+      std::map<Node, Node> smap;
+      for (unsigned i = 0, nvars = vars.size(); i < nvars; i++)
       {
         smap[vars[i]] = subs[i];
       }
       d_pfStream << "(" << pr.d_name << " ";
       // cycle through the variables
-      std::map< Node, Node >::iterator itsm;
-      for( const Node& v : pr.d_fvs )
+      std::map<Node, Node>::iterator itsm;
+      for (const Node& v : pr.d_fvs)
       {
         // does it need to be displayed?
-        if( pr.d_noOccVars.find(v)!=pr.d_noOccVars.end() )
+        if (pr.d_noOccVars.find(v) != pr.d_noOccVars.end())
         {
           itsm = smap.find(v);
-          Assert( itsm!=smap.end() );
-          if( itsm!=smap.end() )
+          Assert(itsm != smap.end());
+          if (itsm != smap.end())
           {
             d_pfStream << itsm->second;
           }
@@ -357,7 +356,7 @@ bool ProofDb::notifyMatch(Node s,
     }
     // does the side condition hold?
     bool condSuccess = true;
-    Trace("proof-db") << "Check rule " << pr.d_name << std::endl;\
+    Trace("proof-db") << "Check rule " << pr.d_name << std::endl;
     for (const Node& cond : pr.d_cond)
     {
       // check whether condition holds?
@@ -398,9 +397,9 @@ bool ProofDb::notifyMatch(Node s,
         break;
       }
     }
-    if (d_proofPrinting )
+    if (d_proofPrinting)
     {
-      Assert( condSuccess );
+      Assert(condSuccess);
       d_pfStream << ")";
     }
     if (condSuccess)

@@ -33,7 +33,7 @@ enum ProofDbRuleId
   pf_rule_eq_sym,
   pf_rule_user
 };
-  
+
 class ProofDbRule
 {
  public:
@@ -44,14 +44,14 @@ class ProofDbRule
   /** The conclusion of the rule (an equality) */
   Node d_eq;
   /** the ordered list of free variables */
-  std::vector< Node > d_fvs;
+  std::vector<Node> d_fvs;
   /** number of free variables */
   unsigned d_numFv;
-  /** 
+  /**
    * The free variables that do not occur in the conditions. These cannot be
    * "holes" in a proof.
    */
-  std::map< Node, bool > d_noOccVars;
+  std::map<Node, bool> d_noOccVars;
   /** initialize this rule */
   void init(const std::string& name, const std::vector<Node>& cond, Node eq);
 };
