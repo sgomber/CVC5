@@ -14,6 +14,8 @@
 
 #include "theory/proof_db_pf.h"
 
+#include "theory/proof_db_sc.h"
+
 #include "expr/node_algorithm.h"
 
 using namespace CVC4::kind;
@@ -43,15 +45,32 @@ void ProofDbRule::init(const std::string& name,
   unsigned vcounter = 0;
   for( const Node& v : fvs )
   {
-    Trace("proof-db-to-lfsc") << "  (! " << v << " " << v.getType() << std::endl;
     if( fvsCond.find(v)==fvsCond.end() )
     {
       d_noOccVars[vcounter] = true;
     }
+    Trace("proof-db-to-lfsc") << "  (! " << v << " " << v.getType() << std::endl;
     vcounter++;
   }
-  unsigned counter = 1;
+  unsigned scounter = 1;
+  std::vector< Node > pureconds;
   for( const Node& c : cond )
+  {
+    // "purify" the side conditions
+    std::vector< Node > scs;
+    Node cpure = ProofDbScEval::purifySideConditions(c,scs);
+    pureconds.push_back(cpure);
+    for( const Node& sc : scs )
+    {
+      Trace("proof-db-to-lfsc") << "  (! " << sc[1] << " " << sc[1].getType() << std::endl;
+      rparens << ")";
+      Trace("proof-db-to-lfsc") << "  (! u" << scounter << " (^ " << sc[0] << " " << sc[1] << ")" << std::endl;
+      rparens << ")";
+      scounter++;
+    }
+  }
+  unsigned counter = 1;
+  for( const Node& c : pureconds )
   {
     Trace("proof-db-to-lfsc") << "  (! h" << counter << " (holds " << c << ")" << std::endl;
     rparens << ")";

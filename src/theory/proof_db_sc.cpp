@@ -161,6 +161,64 @@ Node ProofDbScEval::evaluate(Node n)
   return visited[n];
 }
 
+Node ProofDbScEval::purifySideConditions(Node n, std::vector< Node >& scs)
+{
+  NodeManager* nm = NodeManager::currentNM();
+  std::unordered_map<TNode, Node, TNodeHashFunction> visited;
+  std::unordered_map<TNode, Node, TNodeHashFunction>::iterator it;
+  std::vector<TNode> visit;
+  TNode cur;
+  visit.push_back(n);
+  do
+  {
+    cur = visit.back();
+    visit.pop_back();
+    it = visited.find(cur);
+
+    if (it == visited.end())
+    {
+      visited[cur] = Node::null();
+      visit.push_back(cur);
+      visit.insert(visit.end(),cur.begin(),cur.end());
+    }
+    else if (it->second.isNull())
+    {
+      Node ret = cur;
+      bool childChanged = false;
+      std::vector<Node> children;
+      for (const Node& cn : cur)
+      {
+        it = visited.find(cn);
+        Assert(it != visited.end());
+        Assert(!it->second.isNull());
+        childChanged = childChanged || cn != it->second;
+        children.push_back(it->second);
+      }
+      if (childChanged)
+      {
+        if (cur.getMetaKind() == metakind::PARAMETERIZED)
+        {
+          children.insert(children.begin(), cur.getOperator());
+        }
+        ret = nm->mkNode(cur.getKind(), children);
+      }
+      if (cur.getKind() == APPLY_UF)
+      {
+        std::stringstream ss;
+        ss << "u" << (scs.size()+1);
+        Node k = nm->mkSkolem(ss.str(),cur.getType(),"side condition purify variable",NodeManager::SKOLEM_EXACT_NAME);
+        Node scEq = cur.eqNode(k);
+        scs.push_back(scEq);
+        ret = k;
+      }
+      visited[cur] = ret;
+    }
+  } while (!visit.empty());
+  Assert(visited.find(n) != visited.end());
+  Assert(!visited.find(n)->second.isNull());
+  return visited[n];
+}
+
 Node ProofDbScEval::evaluateApp(Node op, const std::vector<Node>& args)
 {
   std::map<Node, SideConditionId>::iterator it = d_opTable.find(op);
