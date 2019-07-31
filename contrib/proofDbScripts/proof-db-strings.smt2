@@ -13,14 +13,14 @@
   ; general form needed since rewriter takes "shortcuts" like (str.len (str.++ x "A")) ---> (+ (str.len x) 1)
   len-concat-gen (=> (and (= (str.len x) n) (= (str.len y) m)) (= (str.len (str.++ x y)) (+ n m)))
   
-  len-repl-inv (=> (= (= (str.len y) (str.len z)) true) (= (str.len (str.replace x y z)) (str.len x)))
+  len-repl-inv (=> (= (str.len y) (str.len z)) (= (str.len (str.replace x y z)) (str.len x)))
   
   prefixof-elim (=> true (= (str.prefixof x y) (= x (str.substr y 0 (str.len x)))))
   suffixof-elim (=> true (= (str.suffixof x y) (= x (str.substr y (- (str.len y) (str.len x)) (str.len x)))))
   str.at-elim (=> true (= (str.at x n) (str.substr x n 1)))
   
   re-in-const-str (=> true (= (str.in.re x (str.to.re y)) (= x y)))
-  re-all-char (=> true (= (str.in.re x (re.* re.allchar)) true))
+  re-star-all-char (=> true (= (str.in.re x (re.* re.allchar)) true))
   re-concat-nctn (=> (>= (str.len y) (+ (str.len x) 1)) (= (str.in.re x (re.++ (str.to.re y) s)) false))
   
   ; recursion builtin
@@ -63,7 +63,7 @@
   re-concat-flatten (=> (= (flatten_regexp (re.++ r s)) t) (= (re.++ r s) t))
   
   re-all-char-elim (=> true (= (str.in.re x re.allchar) (= 1 (str.len x))))
-  re-all-char (=> (= (= 1 (str.len x)) true) (= (str.in.re x re.allchar) true))
+  re-all-char (=> (= 1 (str.len x)) (= (str.in.re x re.allchar) true))
   
   re-to-ctn (=> true (= (str.in.re x (re.++ (re.* re.allchar) (str.to.re y) (re.* re.allchar))) (str.contains x y)))
   
@@ -85,9 +85,9 @@
   
   substr-emp (=> true (= (str.substr "" n m) ""))
   substr-id (=> (>= n (str.len x)) (= (str.substr x 0 n) x))
-  substr-neg (=> (= (>= 0 (+ n 1)) true) (= (str.substr x n m) ""))
+  substr-neg (=> (>= 0 (+ n 1)) (= (str.substr x n m) ""))
   substr-range (=> (>= 0 m) (= (str.substr x n m) ""))
-  substr-oob (=> (= (>= n (str.len x)) true) (= (str.substr x n m) ""))
+  substr-oob (=> (>= n (str.len x)) (= (str.substr x n m) ""))
   
   substr-concat-len-ctn (=> (and (>= (str.len x) (+ n m)) (= (str.substr x n m) z)) (= (str.substr (str.++ x y) n m) z))
   substr-concat-len-nctn (=> (and (= (>= n (str.len x)) true) (= (- n (str.len x)) o)) (= (str.substr (str.++ x y) n m) (str.substr y o m)))
@@ -111,8 +111,8 @@
   indexof-find (=> true (= (str.indexof (str.++ x y) x 0) 0))
   indexof-find-sing (=> true (= (str.indexof x x 0) 0))
   indexof-nctn (=> (= (str.contains x y) false) (= (str.indexof x y n) (- 1)))
-  indexof-neg (=> (= (> 0 n) true) (= (str.indexof x y n) (- 1)))
-  indexof-oob (=> (= (> n (str.len x)) true) (= (str.indexof x y n) (- 1)))
+  indexof-neg (=> (> 0 n) (= (str.indexof x y n) (- 1)))
+  indexof-oob (=> (> n (str.len x)) (= (str.indexof x y n) (- 1)))
   indexof-pos (=> true (= (> 0 (str.indexof x y n)) false))
   indexof-id (=> true (= (str.indexof x x n) (str.indexof "" "" n)))
   
@@ -136,8 +136,8 @@
   arith-elim-lt (=> true (= (< n m) (not (>= n m))))
   arith-elim-gt (=> true (= (> n m) (not (<= n m))))
   
-  arith-norm-geq-false (=> (= (>= (arith_norm_term (- n m)) 0) false) (= (>= n m) false))
-  arith-norm-leq-false (=> (= (<= (arith_norm_term (- n m)) 0) false) (= (<= n m) false))
+  arith-norm-geq-false (=> (not (>= (arith_norm_term (- n m)) 0)) (= (>= n m) false))
+  arith-norm-leq-false (=> (not (<= (arith_norm_term (- n m)) 0)) (= (<= n m) false))
   arith-norm-geq-true (=> true (= (>= n n) true))
   arith-norm-leq-true (=> true (= (<= n n) true))
   
