@@ -1,0 +1,3 @@
+#!/bin/bash
+
+lfscc util.plf smt.plf th_base.plf th_ints.plf th_strings.plf $@

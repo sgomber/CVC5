@@ -21,7 +21,7 @@
 ; inference rules :
 
 (declare trust (th_holds false))	; temporary
-(declare trust_f (! f formula (th_holds f)))  ; temporary
+(declare trust_f (! f (term Bool) (th_holds f)))  ; temporary
 
 (declare refl
   (! s sort
@@ -57,8 +57,8 @@
 
 
 ;; TODO
-(program evaluate ((x term)) term
-  true)
+(program evaluate ((x term)) bool
+  tt)
 
 ; if two terms evaluate to the same thing, they are equal
 (declare eval
@@ -66,4 +66,4 @@
   (! x (term s)
   (! y (term s)
   (! e (^ (ifequal (evaluate x) (evaluate y) true false) true)
-    (th_holds (= s x y)))))
+    (th_holds (= s x y)))))))

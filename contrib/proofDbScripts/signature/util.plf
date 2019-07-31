@@ -1,0 +1,3 @@
+(declare bool type)
+(declare tt bool)
+(declare ff bool)

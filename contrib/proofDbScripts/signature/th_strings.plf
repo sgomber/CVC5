@@ -1,8 +1,31 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;
+; Theory of Strings and Regular Expressions
+;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; depends on : smt.plf th_ints.plf
+
 (declare String sort)
 
 (declare emptystr (term String))
 (declare c_String (! x mpq (term String)))
 (declare str.++ (! x (term String) (! y (term String) (term String))))
+(declare str.contains (! x (term String) (! y (term String) (term Bool))))
 (declare str.substr (! x (term String) (! n (term Int) (! m (term Int) (term String)))))
+(declare str.indexof (! x (term String) (! y (term String) (! n (term Int) (term Int)))))
+(declare str.replace (! x (term String) (! y (term String) (! z (term String) (term String)))))
+
+(declare str.prefixof (! x (term String) (! y (term String) (term Bool))))
+(declare str.suffixof (! x (term String) (! y (term String) (term Bool))))
 
 (declare RegLan sort)
+(declare re.nostr (term RegLan))
+(declare re.allchar (term RegLan))
+(declare str.to.re (! x (term String) (term RegLan)))
+(declare re.++ (! x (term RegLan) (! y (term RegLan) (term RegLan))))
+(declare re.union (! x (term RegLan) (! y (term RegLan) (term RegLan))))
+(declare re.inter (! x (term RegLan) (! y (term RegLan) (term RegLan))))
+(declare re.* (! x (term RegLan) (term RegLan)))
+(declare re.loop (! x (term RegLan) (! n (term Int) (! m (term Int) (term RegLan)))))
+
+(declare str.in.re (! x (term String) (! y (term RegLan) (term Bool))))
