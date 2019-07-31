@@ -1478,7 +1478,9 @@ Node RegExpOpr::removeIntersection(Node r) {
           NodeManager::currentNM()->mkNode(REGEXP_LOOP, retNode, r[1], r[2]));
       break;
     }
-    default: { Unreachable();
+    default:
+    {
+      Unreachable();
     }
   }
   d_rm_inter_cache[r] = retNode;
