@@ -1,0 +1,32 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;
+; SMT syntax and semantics (not theory-specific)
+;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; multi-sorted logic
+(declare sort type)
+
+; A term is parametric to sort
+(declare term (! t sort type))
+
+; Boolean sort
+(declare Bool sort)
+
+; Formulas are represented as terms of sort Bool
+
+; Boolean connectives
+(declare true (term Bool))
+(declare false (term Bool))
+(declare not (! f1 (term Bool) (term Bool)))
+(declare and (! f1 (term Bool) (! f2 (term Bool) (term Bool))))
+(declare or (! f1 (term Bool) (! f2 (term Bool) (term Bool))))
+(declare => (! f1 (term Bool) (! f2 (term Bool) (term Bool))))
+(declare xor (! f1 (term Bool) (! f2 (term Bool) (term Bool))))
+
+; Parametric definitions for =, ite
+(declare = (! s sort (! x (term s) (! y (term s) (term Bool)))))
+(declare ite (! s sort (! f (term Bool) (! t1 (term s) (! t2 (term s) (term s))))))
+
+; standard judgement for "a formula holds"
+(declare th_holds (! f (term Bool) type))

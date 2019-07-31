@@ -89,13 +89,13 @@ void ProofDbRule::init(const std::string& name,
   unsigned counter = 1;
   for (const Node& c : pureconds)
   {
-    pfrule << "  (! h" << counter << " (holds ";
+    pfrule << "  (! h" << counter << " (th_holds ";
     ProofDbTermProcess::printLFSCTerm(c,pfrule);
     pfrule << ")" << std::endl;
     rparens << ")";
     counter++;
   }
-  pfrule << "    (holds ";
+  pfrule << "    (th_holds ";
   ProofDbTermProcess::printLFSCTerm(eq,pfrule);
   pfrule << ")" << rparens.str() << std::endl;
   pfrule << std::endl;

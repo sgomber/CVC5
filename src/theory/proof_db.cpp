@@ -169,7 +169,7 @@ bool ProofDb::existsRuleInternal(Node a, Node b, unsigned& index, bool doRec)
     Trace("proof-db-debug") << "By equality reflexivity" << std::endl;
     if (d_proofPrinting)
     {
-      d_pfStream << "(eq-refl " << a[0] << ")";
+      d_pfStream << "(refl _ " << a[0] << ")";
       return true;
     }
     // rewriting reflexive equality to true
@@ -187,7 +187,7 @@ bool ProofDb::existsRuleInternal(Node a, Node b, unsigned& index, bool doRec)
       index = pf_rule_eq_sym;
       if (d_proofPrinting)
       {
-        d_pfStream << "(eq-sym " << a[0] << " " << a[1] << ")";
+        d_pfStream << "(symm _ " << a[0] << " " << a[1] << ")";
         return true;
       }
       d_erCache[eq] = index;
@@ -273,7 +273,7 @@ void ProofDb::notify(Node a, Node b, std::ostream& out)
                            << std::endl;
       std::stringstream holdsStream;
       holdsStream << "(check ";
-      holdsStream << "(: (holds ";
+      holdsStream << "(: (th_holds ";
       ProofDbTermProcess::printLFSCTerm(ai.eqNode(bi),holdsStream);
       holdsStream << ")";
       Trace("proof-db-pf") << holdsStream.str() << std::endl;

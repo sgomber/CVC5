@@ -1,0 +1,8 @@
+(declare String sort)
+
+(declare emptystr (term String))
+(declare c_String (! x mpq (term String)))
+(declare str.++ (! x (term String) (! y (term String) (term String))))
+(declare str.substr (! x (term String) (! n (term Int) (! m (term Int) (term String)))))
+
+(declare RegLan sort)

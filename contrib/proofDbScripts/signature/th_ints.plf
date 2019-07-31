@@ -1,0 +1,16 @@
+(declare Int sort)
+
+; a constant term
+(declare c_Int (! x mpz (term Int)))
+
+(declare >_Int (! x (term Int) (! y (term Int) (term Bool))))
+(declare >=_Int (! x (term Int) (! y (term Int) (term Bool))))
+(declare <_Int  (! x (term Int) (! y (term Int) (term Bool))))
+(declare <=_Int (! x (term Int) (! y (term Int) (term Bool))))
+
+(declare +_Int (! x (term Int) (! y (term Int) (term Int))))
+(declare -_Int (! x (term Int) (! y (term Int) (term Int))))
+(declare *_Int (! x (term Int) (! y (term Int) (term Int))))
+(declare /_Int (! x (term Int) (! y (term Int) (term Int))))
+(declare div_Int (! x (term Int) (! y (term Int) (term Int))))
+(declare mod_Int (! x (term Int) (! y (term Int) (term Int))))
