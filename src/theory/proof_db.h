@@ -44,8 +44,6 @@ class ProofDb
   bool existsRule(Node a, Node b, unsigned& index);
   bool existsRule(Node a, Node b);
   bool existsRule(Node p);
-  /** Prove rule */
-  bool proveRule(Node a, Node b);
   /** Notify */
   void notify(Node a, Node b, std::ostream& out);
   void notify(Node a, Node b);
@@ -103,6 +101,10 @@ class ProofDb
                    Node n,
                    std::vector<Node>& vars,
                    std::vector<Node>& subs);
+  /** are we currently printing a proof? */
+  bool d_proofPrinting;
+  /** the proof stream */
+  std::stringstream d_pfStream;
 };
 
 }  // namespace theory

@@ -34,23 +34,25 @@ void ProofDbRule::init(const std::string& name,
   
   std::unordered_set<Node, NodeHashFunction> fvs;
   expr::getFreeVariables(eq,fvs);
+  
+  d_numFv = fvs.size();
+  
   std::unordered_set<Node, NodeHashFunction> fvsCond;
   for( const Node& c : d_cond )
   {
     expr::getFreeVariables(c,fvsCond);
   }
-  // TODO: incorporate side conditions
   std::stringstream rparens;
   Trace("proof-db-to-lfsc") << "(declare " << d_name << std::endl;
   unsigned vcounter = 0;
   for( const Node& v : fvs )
   {
+    d_fvs.push_back(v);
     if( fvsCond.find(v)==fvsCond.end() )
     {
-      d_noOccVars[vcounter] = true;
+      d_noOccVars[v] = true;
     }
     Trace("proof-db-to-lfsc") << "  (! " << v << " " << v.getType() << std::endl;
-    vcounter++;
   }
   unsigned scounter = 1;
   std::vector< Node > pureconds;
@@ -67,6 +69,7 @@ void ProofDbRule::init(const std::string& name,
       Trace("proof-db-to-lfsc") << "  (! u" << scounter << " (^ " << sc[0] << " " << sc[1] << ")" << std::endl;
       rparens << ")";
       scounter++;
+      d_numFv++;
     }
   }
   unsigned counter = 1;
@@ -78,8 +81,6 @@ void ProofDbRule::init(const std::string& name,
   }
   Trace("proof-db-to-lfsc") << "    (holds " << eq << ")" << rparens.str() << std::endl;
   Trace("proof-db-to-lfsc") << std::endl;
-
-  d_numFv = fvs.size();
 }
 
 }  // namespace theory

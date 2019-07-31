@@ -43,13 +43,15 @@ class ProofDbRule
   std::vector<Node> d_cond;
   /** The conclusion of the rule (an equality) */
   Node d_eq;
+  /** the ordered list of free variables */
+  std::vector< Node > d_fvs;
   /** number of free variables */
   unsigned d_numFv;
   /** 
    * The free variables that do not occur in the conditions. These cannot be
    * "holes" in a proof.
    */
-  std::map< unsigned, bool > d_noOccVars;
+  std::map< Node, bool > d_noOccVars;
   /** initialize this rule */
   void init(const std::string& name, const std::vector<Node>& cond, Node eq);
 };
