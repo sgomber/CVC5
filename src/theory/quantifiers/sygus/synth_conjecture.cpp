@@ -45,6 +45,7 @@ SynthConjecture::SynthConjecture(QuantifiersEngine* qe)
     : d_qe(qe),
       d_tds(qe->getTermDatabaseSygus()),
       d_initSolving(false, qe->getUserContext()),
+      d_hasSolution(false, qe->getUserContext()),
       d_ceg_si(new CegSingleInv(qe, this)),
       d_ceg_proc(new SynthConjectureProcess(qe)),
       d_ceg_gc(new CegGrammarConstructor(qe, this)),
@@ -77,6 +78,8 @@ void SynthConjecture::presolve()
   // initialize solving, reset the flag since we know we have not initialized
   // in this context yet
   d_initSolving = false;
+  // we do not have a solution
+  d_hasSolution = false;
   initSolving();
 }
 
@@ -342,6 +345,7 @@ bool SynthConjecture::needsRefinement() const { return d_set_ce_sk_vars; }
 bool SynthConjecture::doCheck(std::vector<Node>& lems)
 {
   Assert(d_master != nullptr);
+  Assert(!d_hasSolution);
 
   // if we have a waiting exclusion lemma, send it now
   if (!d_waitingExcludeLem.get().isNull())
@@ -688,6 +692,8 @@ bool SynthConjecture::doCheck(std::vector<Node>& lems)
       lem = Node::null();
       d_waitingExcludeLem = excludeCurrentSolution(false);
     }
+    // remember that we have a solution
+    d_hasSolution = true;
   }
   if (!lem.isNull())
   {

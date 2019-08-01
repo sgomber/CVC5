@@ -170,6 +170,8 @@ class SynthConjecture
   TermDbSygus* d_tds;
   /** have we initialized solving in this user context? */
   context::CDO<bool> d_initSolving;
+  /** do we have a solution in this user context? */
+  context::CDO<bool> d_hasSolution;
   /** The feasible guard. */
   Node d_feasible_guard;
   /** the decision strategy for the feasible guard */

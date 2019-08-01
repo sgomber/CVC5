@@ -3718,6 +3718,8 @@ Result SmtEngine::checkSatisfiability(const vector<Expr>& assumptions,
     {
       r = Result(Result::SAT_UNKNOWN, Result::UNKNOWN_REASON);
     }
+    // if sygus incremental, we may be unsat without invalidating context
+    
     // flipped if we did a global negation
     if (d_globalNegation)
     {
@@ -5130,6 +5132,7 @@ bool SmtEngine::getAbductInternal(Expr& abd)
   Trace("sygus-abduct") << "  SmtEngine::getAbduct check sat..." << std::endl;
   Result r = d_subsolver->checkSat();
   Trace("sygus-abduct") << "  SmtEngine::getAbduct result: " << r << std::endl;
+  // FIXME
   if (true || r.asSatisfiabilityResult().isSat() == Result::UNSAT)
   {
     // get the synthesis solution
