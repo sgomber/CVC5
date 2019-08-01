@@ -25,8 +25,8 @@
 #include "theory/proof_db_sc.h"
 #include "theory/proof_db_term_process.h"
 #include "theory/proof_db_rule_check.h"
-#include "theory/quantifiers/candidate_rewrite_filter.h"
-#include "theory/quantifiers/term_canonize.h"
+#include "expr/match_trie.h"
+#include "expr/term_canonize.h"
 
 namespace CVC4 {
 namespace theory {
@@ -76,11 +76,11 @@ class ProofDb
   /** empty vector */
   std::vector<Node> d_emptyVec;
   /** the term canonization utility */
-  quantifiers::TermCanonize d_canon;
+  expr::TermCanonize d_canon;
   /** The match trie */
-  quantifiers::MatchTrie d_mt;
+  expr::MatchTrie d_mt;
   /** Notify class for the match trie */
-  class ProofDbMatchTrieNotify : public quantifiers::NotifyMatch
+  class ProofDbMatchTrieNotify : public expr::NotifyMatch
   {
    public:
     ProofDbMatchTrieNotify(ProofDb& p) : d_parent(p) {}
