@@ -977,7 +977,7 @@ OptionsHandler::stringToSygusFilterSolMode(std::string option,
   }
   else if (optarg == "help")
   {
-    puts(s_cegisSampleHelp.c_str());
+    puts(s_sygusFilterSolHelp.c_str());
     exit(1);
   }
   else
