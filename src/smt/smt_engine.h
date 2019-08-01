@@ -951,6 +951,11 @@ class CVC4_PUBLIC SmtEngine {
    * If this method returns true, then abd is set to a formula C such that
    * A ^ C is satisfiable, and A ^ B ^ C is unsatisfiable.
    *
+   * The argument aname is the name of the abduction predicate. This is used
+   * for printing the result of the query, e.g. if aname is "myAbduct" then
+   * a result of this query may be:
+   *   (define-fun myAbduct () Bool ...)
+   *
    * The argument grammarType is a sygus datatype type that encodes the syntax
    * restrictions on the shape of possible solutions.
    *
@@ -967,6 +972,9 @@ class CVC4_PUBLIC SmtEngine {
    * This method asks the SMT engine to find the next abduct with respect to
    * the previous call to getAbduct above. It is only valid immediately after
    * a successful call to getAbduct.
+   *
+   * If this method returns true, then aname is set to the name of the abduct
+   * and abd is set to the next abduct.
    */
   bool getNextAbduct(std::string& aname, Expr& abd);
 
