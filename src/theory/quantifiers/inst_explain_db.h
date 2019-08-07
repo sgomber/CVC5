@@ -24,12 +24,15 @@
 #include "theory/quantifiers/iex_pf_gen.h"
 #include "theory/quantifiers/inst_explain.h"
 #include "theory/quantifiers/subsume.h"
-#include "theory/quantifiers/term_database.h"
-#include "theory/quantifiers_engine.h"
 
 namespace CVC4 {
 namespace theory {
+
+class QuantifiersEngine;
+  
 namespace quantifiers {
+
+class TermDb;
 
 enum ExplainStatus
 {

@@ -29,6 +29,9 @@
 
 namespace CVC4 {
 namespace theory {
+  
+class QuantifiersEngine;
+
 namespace quantifiers {
 
 class EqualityQueryInstProp : public EqualityQuery {
