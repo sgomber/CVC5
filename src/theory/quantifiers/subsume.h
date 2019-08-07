@@ -17,10 +17,16 @@
 #ifndef __CVC4__THEORY__QUANTIFIERS__SUBSUME_H
 #define __CVC4__THEORY__QUANTIFIERS__SUBSUME_H
 
-#include "theory/quantifiers_engine.h"
+#include <map>
+#include <vector>
+
+#include "expr/node.h"
 
 namespace CVC4 {
 namespace theory {
+  
+class QuantifiersEngine;
+
 namespace quantifiers {
 
 /**

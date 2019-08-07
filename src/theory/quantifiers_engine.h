@@ -62,6 +62,8 @@
 #include "theory/quantifiers/term_database.h"
 #include "theory/quantifiers/term_enumeration.h"
 #include "theory/quantifiers/term_util.h"
+#include "theory/quantifiers/subsume.h"
+#include "theory/quantifiers/virtual_model.h"
 #include "theory/theory.h"
 #include "util/hash.h"
 #include "util/statistics_registry.h"
