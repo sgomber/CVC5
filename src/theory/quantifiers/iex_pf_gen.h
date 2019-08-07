@@ -23,7 +23,6 @@
 #include "theory/quantifiers/equality_explain.h"
 #include "theory/quantifiers/iex_proof.h"
 #include "theory/quantifiers/inst_explain.h"
-#include "theory/quantifiers_engine.h"
 
 namespace CVC4 {
 namespace theory {
