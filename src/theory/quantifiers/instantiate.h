@@ -23,11 +23,13 @@
 #include "theory/quantifiers/inst_explain_db.h"
 #include "theory/quantifiers/inst_match_trie.h"
 #include "theory/quantifiers/quant_util.h"
-#include "theory/quantifiers_engine.h"
 #include "util/statistics_registry.h"
 
 namespace CVC4 {
 namespace theory {
+
+class QuantifiersEngine;
+
 namespace quantifiers {
 
 class TermDb;

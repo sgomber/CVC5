@@ -22,6 +22,7 @@
 #include "theory/quantifiers/term_database.h"
 #include "theory/quantifiers/term_enumeration.h"
 #include "theory/quantifiers/term_util.h"
+#include "theory/quantifiers_engine.h"
 
 using namespace std;
 using namespace CVC4::kind;
@@ -248,6 +249,7 @@ void FirstOrderModel::reset_round() {
       }
     }
   }
+
   //order the quantified formulas
   d_forall_rlv_assert.clear();
   if( !d_forall_rlv_vec.empty() ){

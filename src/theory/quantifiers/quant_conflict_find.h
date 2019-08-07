@@ -24,7 +24,7 @@
 #include "context/cdlist.h"
 #include "expr/node_trie.h"
 #include "theory/quantifiers/inst_explain_db.h"
-#include "theory/quantifiers_engine.h"
+#include "theory/quantifiers/quant_util.h"
 
 namespace CVC4 {
 namespace theory {

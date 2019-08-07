@@ -19,7 +19,6 @@
 
 #include "expr/attribute.h"
 #include "theory/quantifiers/subsume.h"
-#include "theory/quantifiers_engine.h"
 #include "theory/theory_model.h"
 #include "theory/uf/theory_uf_model.h"
 
