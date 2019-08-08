@@ -9,6 +9,10 @@ Length preservation can be disabled with:
 
 --no-anon-str-preserve-lengths
 
+Containment preservation can be disabled with:
+
+--no-anon-str-preserve-ctn
+
 =============================================================================
 
 The preservation of all the above properties are approximate.
