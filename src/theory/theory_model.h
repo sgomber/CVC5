@@ -79,196 +79,202 @@ class TheoryModel : public Model
 {
   friend class TheoryEngineModelBuilder;
 public:
-  TheoryModel(theory::eq::EqualityEngineNotify* notify, context::Context* c, std::string name, bool enableFuncModels);
-  ~TheoryModel() override;
+ TheoryModel(theory::eq::EqualityEngineNotify* notify,
+             context::Context* c,
+             std::string name,
+             bool enableFuncModels);
+ ~TheoryModel() override;
 
-  /** reset the model */
-  virtual void reset();
-  /** is built
-   *
-   * Have we attempted to build this model since the last
-   * call to reset? Notice for model building techniques
-   * that are not guaranteed to succeed (such as
-   * when quantified formulas are enabled), a true return
-   * value does not imply that this is a model of the
-   * current assertions.
-   */
-  bool isBuilt() { return d_modelBuilt; }
-  /** is built success
-   *
-   * Was this model successfully built since the last call to reset?
-   */
-  bool isBuiltSuccess() { return d_modelBuiltSuccess; }
-  //---------------------------- for building the model
-  /** Adds a substitution from x to t. */
-  void addSubstitution(TNode x, TNode t, bool invalidateCache = true);
-  /** assert equality holds in the model
-   *
-   * This method returns true if and only if the equality engine of this model
-   * is consistent after asserting the equality to this model.
-   */
-  bool assertEquality(TNode a, TNode b, bool polarity);
-  /** assert predicate holds in the model
-   *
-   * This method returns true if and only if the equality engine of this model
-   * is consistent after asserting the predicate to this model.
-   */
-  bool assertPredicate(TNode a, bool polarity);
-  /** assert all equalities/predicates in equality engine hold in the model
-   *
-   * This method returns true if and only if the equality engine of this model
-   * is consistent after asserting the equality engine to this model.
-   */
-  bool assertEqualityEngine(const eq::EqualityEngine* ee,
-                            std::set<Node>* termSet = NULL);
-  /** assert skeleton
-   *
-   * This method gives a "skeleton" for the model value of the equivalence
-   * class containing n. This should be an application of interpreted function
-   * (e.g. datatype constructor, array store, set union chain). The subterms of
-   * this term that are variables or terms that belong to other theories will
-   * be filled in with model values.
-   *
-   * For example, if we call assertSkeleton on (C x y) where C is a datatype
-   * constructor and x and y are variables, then the equivalence class of
-   * (C x y) will be interpreted in m as (C x^m y^m) where
-   * x^m = m->getValue( x ) and y^m = m->getValue( y ).
-   *
-   * It should be called during model generation, before final representatives
-   * are chosen. In the case of TheoryEngineModelBuilder, it should be called
-   * during Theory's collectModelInfo( ... ) functions.
-   */
-  void assertSkeleton(TNode n);
-  /** record approximation
-   *
-   * This notifies this model that the value of n was approximated in this
-   * model such that the predicate pred (involving n) holds. For example,
-   * for transcendental functions, we may determine an error bound on the
-   * value of a transcendental function, say c-e <= y <= c+e where
-   * c and e are constants. We call this function with n set to sin( x ) and
-   * pred set to c-e <= sin( x ) <= c+e.
-   *
-   * If recordApproximation is called at least once during the model
-   * construction process, then check-model is not guaranteed to succeed.
-   * However, there are cases where we can establish the input is satisfiable
-   * without constructing an exact model. For example, if x=.77, sin(x)=.7, and
-   * say we have computed c=.7 and e=.01 as an approximation in the above
-   * example, then we may reason that the set of assertions { sin(x)>.6 } is
-   * satisfiable, albiet without establishing an exact (irrational) value for
-   * sin(x).
-   *
-   * This function is simply for bookkeeping, it does not affect the model
-   * construction process.
-   */
-  void recordApproximation(TNode n, TNode pred);
-  /** set unevaluate/semi-evaluated kind
-   *
-   * This informs this model how it should interpret applications of terms with
-   * kind k in getModelValue. We distinguish four categories of kinds:
-   *
-   * [1] "Evaluated"
-   * This includes (standard) interpreted symbols like NOT, PLUS, UNION, etc.
-   * These operators can be characterized by the invariant that they are
-   * "evaluatable". That is, if they are applied to only constants, the rewriter
-   * is guaranteed to rewrite the application to a constant. When getting
-   * the model value of <k>( t1...tn ) where k is a kind of this category, we
-   * compute the (constant) value of t1...tn, say this returns c1...cn, we
-   * return the (constant) result of rewriting <k>( c1...cn ).
-   *
-   * [2] "Unevaluated"
-   * This includes interpreted symbols like FORALL, EXISTS,
-   * CARDINALITY_CONSTRAINT, that are not evaluatable. When getting a model
-   * value for a term <k>( t1...tn ) where k is a kind of this category, we
-   * check whether <k>( t1...tn ) exists in the equality engine of this model.
-   * If it does, we return its representative, otherwise we return the term
-   * itself.
-   *
-   * [3] "Semi-evaluated"
-   * This includes kinds like BITVECTOR_ACKERMANNIZE_UDIV and others, typically
-   * those that correspond to abstractions. Like unevaluated kinds, these
-   * kinds do not have an evaluator. In contrast to unevaluated kinds, we
-   * interpret a term <k>( t1...tn ) not appearing in the equality engine as an
-   * arbitrary value instead of the term itself.
-   *
-   * [4] APPLY_UF, where getting the model value depends on an internally
-   * constructed representation of a lambda model value (d_uf_models).
-   * It is optional whether this kind is "evaluated" or "semi-evaluated".
-   * In the case that it is "evaluated", get model rewrites the application
-   * of the lambda model value of its operator to its evaluated arguments.
-   *
-   * By default, all kinds are considered "evaluated". The following methods
-   * change the interpretation of various (non-APPLY_UF) kinds to one of the
-   * above categories and should be called by the theories that own the kind
-   * during Theory::finishInit. We set APPLY_UF to be semi-interpreted when
-   * this model does not enabled function values (this is the case for the model
-   * of TheoryEngine when the option assignFunctionValues is set to false).
-   */
-  void setUnevaluatedKind(Kind k);
-  void setSemiEvaluatedKind(Kind k);
-  //---------------------------- end building the model
+ /** reset the model */
+ virtual void reset();
+ /** is built
+  *
+  * Have we attempted to build this model since the last
+  * call to reset? Notice for model building techniques
+  * that are not guaranteed to succeed (such as
+  * when quantified formulas are enabled), a true return
+  * value does not imply that this is a model of the
+  * current assertions.
+  */
+ bool isBuilt() { return d_modelBuilt; }
+ /** is built success
+  *
+  * Was this model successfully built since the last call to reset?
+  */
+ bool isBuiltSuccess() { return d_modelBuiltSuccess; }
+ //---------------------------- for building the model
+ /** Adds a substitution from x to t. */
+ void addSubstitution(TNode x, TNode t, bool invalidateCache = true);
+ /** assert equality holds in the model
+  *
+  * This method returns true if and only if the equality engine of this model
+  * is consistent after asserting the equality to this model.
+  */
+ bool assertEquality(TNode a, TNode b, bool polarity);
+ /** assert predicate holds in the model
+  *
+  * This method returns true if and only if the equality engine of this model
+  * is consistent after asserting the predicate to this model.
+  */
+ bool assertPredicate(TNode a, bool polarity);
+ /** assert all equalities/predicates in equality engine hold in the model
+  *
+  * This method returns true if and only if the equality engine of this model
+  * is consistent after asserting the equality engine to this model.
+  */
+ bool assertEqualityEngine(const eq::EqualityEngine* ee,
+                           std::set<Node>* termSet = NULL);
+ /** assert skeleton
+  *
+  * This method gives a "skeleton" for the model value of the equivalence
+  * class containing n. This should be an application of interpreted function
+  * (e.g. datatype constructor, array store, set union chain). The subterms of
+  * this term that are variables or terms that belong to other theories will
+  * be filled in with model values.
+  *
+  * For example, if we call assertSkeleton on (C x y) where C is a datatype
+  * constructor and x and y are variables, then the equivalence class of
+  * (C x y) will be interpreted in m as (C x^m y^m) where
+  * x^m = m->getValue( x ) and y^m = m->getValue( y ).
+  *
+  * It should be called during model generation, before final representatives
+  * are chosen. In the case of TheoryEngineModelBuilder, it should be called
+  * during Theory's collectModelInfo( ... ) functions.
+  */
+ void assertSkeleton(TNode n);
+ /** record approximation
+  *
+  * This notifies this model that the value of n was approximated in this
+  * model such that the predicate pred (involving n) holds. For example,
+  * for transcendental functions, we may determine an error bound on the
+  * value of a transcendental function, say c-e <= y <= c+e where
+  * c and e are constants. We call this function with n set to sin( x ) and
+  * pred set to c-e <= sin( x ) <= c+e.
+  *
+  * If recordApproximation is called at least once during the model
+  * construction process, then check-model is not guaranteed to succeed.
+  * However, there are cases where we can establish the input is satisfiable
+  * without constructing an exact model. For example, if x=.77, sin(x)=.7, and
+  * say we have computed c=.7 and e=.01 as an approximation in the above
+  * example, then we may reason that the set of assertions { sin(x)>.6 } is
+  * satisfiable, albiet without establishing an exact (irrational) value for
+  * sin(x).
+  *
+  * This function is simply for bookkeeping, it does not affect the model
+  * construction process.
+  */
+ void recordApproximation(TNode n, TNode pred);
+ /** set unevaluate/semi-evaluated kind
+  *
+  * This informs this model how it should interpret applications of terms with
+  * kind k in getModelValue. We distinguish four categories of kinds:
+  *
+  * [1] "Evaluated"
+  * This includes (standard) interpreted symbols like NOT, PLUS, UNION, etc.
+  * These operators can be characterized by the invariant that they are
+  * "evaluatable". That is, if they are applied to only constants, the rewriter
+  * is guaranteed to rewrite the application to a constant. When getting
+  * the model value of <k>( t1...tn ) where k is a kind of this category, we
+  * compute the (constant) value of t1...tn, say this returns c1...cn, we
+  * return the (constant) result of rewriting <k>( c1...cn ).
+  *
+  * [2] "Unevaluated"
+  * This includes interpreted symbols like FORALL, EXISTS,
+  * CARDINALITY_CONSTRAINT, that are not evaluatable. When getting a model
+  * value for a term <k>( t1...tn ) where k is a kind of this category, we
+  * check whether <k>( t1...tn ) exists in the equality engine of this model.
+  * If it does, we return its representative, otherwise we return the term
+  * itself.
+  *
+  * [3] "Semi-evaluated"
+  * This includes kinds like BITVECTOR_ACKERMANNIZE_UDIV and others, typically
+  * those that correspond to abstractions. Like unevaluated kinds, these
+  * kinds do not have an evaluator. In contrast to unevaluated kinds, we
+  * interpret a term <k>( t1...tn ) not appearing in the equality engine as an
+  * arbitrary value instead of the term itself.
+  *
+  * [4] APPLY_UF, where getting the model value depends on an internally
+  * constructed representation of a lambda model value (d_uf_models).
+  * It is optional whether this kind is "evaluated" or "semi-evaluated".
+  * In the case that it is "evaluated", get model rewrites the application
+  * of the lambda model value of its operator to its evaluated arguments.
+  *
+  * By default, all kinds are considered "evaluated". The following methods
+  * change the interpretation of various (non-APPLY_UF) kinds to one of the
+  * above categories and should be called by the theories that own the kind
+  * during Theory::finishInit. We set APPLY_UF to be semi-interpreted when
+  * this model does not enabled function values (this is the case for the model
+  * of TheoryEngine when the option assignFunctionValues is set to false).
+  */
+ void setUnevaluatedKind(Kind k);
+ void setSemiEvaluatedKind(Kind k);
+ //---------------------------- end building the model
 
-  // ------------------- general equality queries
-  /** does the equality engine of this model have term a? */
-  bool hasTerm(TNode a);
-  /** get the representative of a in the equality engine of this model */
-  Node getRepresentative(TNode a);
-  /** are a and b equal in the equality engine of this model? */
-  bool areEqual(TNode a, TNode b);
-  /** are a and b disequal in the equality engine of this model? */
-  bool areDisequal(TNode a, TNode b);
-  /** get the equality engine for this model */
-  eq::EqualityEngine* getEqualityEngine() { return d_equalityEngine; }
-  // ------------------- end general equality queries
+ // ------------------- general equality queries
+ /** does the equality engine of this model have term a? */
+ bool hasTerm(TNode a);
+ /** get the representative of a in the equality engine of this model */
+ Node getRepresentative(TNode a);
+ /** are a and b equal in the equality engine of this model? */
+ bool areEqual(TNode a, TNode b);
+ /** are a and b disequal in the equality engine of this model? */
+ bool areDisequal(TNode a, TNode b);
+ /** get the equality engine for this model */
+ eq::EqualityEngine* getEqualityEngine() { return d_equalityEngine; }
+ // ------------------- end general equality queries
 
-  /** Get value function.
-   * This should be called only after a ModelBuilder
-   * has called buildModel(...) on this model.
-   */
-  Node getValue(TNode n) const;
-  /** get comments */
-  void getComments(std::ostream& out) const override;
+ /** Get value function.
+  * This should be called only after a ModelBuilder
+  * has called buildModel(...) on this model.
+  */
+ Node getValue(TNode n) const;
+ /** get comments */
+ void getComments(std::ostream& out) const override;
 
-  //---------------------------- separation logic
-  /** set the heap and value sep.nil is equal to */
-  void setHeapModel(Node h, Node neq);
-  /** get the heap and value sep.nil is equal to */
-  bool getHeapModel(Expr& h, Expr& neq) const override;
-  //---------------------------- end separation logic
+ //---------------------------- separation logic
+ /** set the heap and value sep.nil is equal to */
+ void setHeapModel(Node h, Node neq);
+ /** get the heap and value sep.nil is equal to */
+ bool getHeapModel(Expr& h, Expr& neq) const override;
+ //---------------------------- end separation logic
 
-  /** is the list of approximations non-empty? */
-  bool hasApproximations() const override;
-  /** get approximations */
-  std::vector<std::pair<Expr, Expr> > getApproximations() const override;
-  /** get the representative set object */
-  const RepSet* getRepSet() const { return &d_rep_set; }
-  /** get the representative set object (FIXME: remove this, see #1199) */
-  RepSet* getRepSetPtr() { return &d_rep_set; }
+ /** is the list of approximations non-empty? */
+ bool hasApproximations() const override;
+ /** get approximations */
+ std::vector<std::pair<Expr, Expr> > getApproximations() const override;
+ /** get the representative set object */
+ const RepSet* getRepSet() const { return &d_rep_set; }
+ /** get the representative set object (FIXME: remove this, see #1199) */
+ RepSet* getRepSetPtr() { return &d_rep_set; }
 
-  //---------------------------- model cores
-  /** set using model core */
-  void setUsingModelCore() override;
-  /** record model core symbol */
-  void recordModelCoreSymbol(Expr sym) override;
-  /** Return whether symbol expr is in the model core. */
-  bool isModelCoreSymbol(Expr sym) const override;
-  //---------------------------- end model cores
+ //---------------------------- model cores
+ /** set using model core */
+ void setUsingModelCore() override;
+ /** record model core symbol */
+ void recordModelCoreSymbol(Expr sym) override;
+ /** Return whether symbol expr is in the model core. */
+ bool isModelCoreSymbol(Expr sym) const override;
+ //---------------------------- end model cores
 
-  /** get value function for Exprs. */
-  Expr getValue(Expr expr) const override;
-  /** get cardinality for sort */
-  Cardinality getCardinality(Type t) const override;
+ /** get value function for Exprs. */
+ Expr getValue(Expr expr) const override;
+ /** get cardinality for sort */
+ Cardinality getCardinality(Type t) const override;
 
-  //---------------------------- function values
-  /** a map from functions f to a list of all APPLY_UF terms with operator f */
-  std::map< Node, std::vector< Node > > d_uf_terms;
-  /** a map from functions f to a list of all HO_APPLY terms with first argument f */
-  std::map< Node, std::vector< Node > > d_ho_uf_terms;
-  /** are function values enabled? */
-  bool areFunctionValuesEnabled() const;
-  /** assign function value f to definition f_def */
-  void assignFunctionDefinition( Node f, Node f_def );
-  /** have we assigned function f? */
-  bool hasAssignedFunctionDefinition( Node f ) const { return d_uf_models.find( f )!=d_uf_models.end(); }
+ //---------------------------- function values
+ /** a map from functions f to a list of all APPLY_UF terms with operator f */
+ std::map<Node, std::vector<Node> > d_uf_terms;
+ /** a map from functions f to a list of all HO_APPLY terms with first argument
+  * f */
+ std::map<Node, std::vector<Node> > d_ho_uf_terms;
+ /** are function values enabled? */
+ bool areFunctionValuesEnabled() const;
+ /** assign function value f to definition f_def */
+ void assignFunctionDefinition(Node f, Node f_def);
+ /** have we assigned function f? */
+ bool hasAssignedFunctionDefinition(Node f) const
+ {
+   return d_uf_models.find(f) != d_uf_models.end(); }
   /** get the list of functions to assign. 
   * This list will contain all terms of function type that are terms in d_equalityEngine.
   * If higher-order is enabled, we ensure that this list is sorted by type size.

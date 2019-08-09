@@ -417,7 +417,6 @@ FirstOrderModelFmc::FirstOrderModelFmc(QuantifiersEngine* qe,
                                        std::string name)
     : FirstOrderModel(qe, notify, c, name)
 {
-
 }
 
 FirstOrderModelFmc::~FirstOrderModelFmc()

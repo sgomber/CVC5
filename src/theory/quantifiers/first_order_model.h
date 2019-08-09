@@ -87,7 +87,10 @@ class QRepBoundExt : public RepBoundExt
 class FirstOrderModel : public TheoryModel
 {
  public:
-  FirstOrderModel(QuantifiersEngine* qe, theory::eq::EqualityEngineNotify* notify, context::Context* c, std::string name);
+  FirstOrderModel(QuantifiersEngine* qe,
+                  theory::eq::EqualityEngineNotify* notify,
+                  context::Context* c,
+                  std::string name);
 
   virtual fmcheck::FirstOrderModelFmc* asFirstOrderModelFmc() { return nullptr; }
   /** assert quantifier */
@@ -210,7 +213,10 @@ class FirstOrderModelFmc : public FirstOrderModel
   void processInitializeModelForTerm(Node n) override;
 
  public:
-  FirstOrderModelFmc(QuantifiersEngine * qe, theory::eq::EqualityEngineNotify* notify, context::Context* c, std::string name);
+  FirstOrderModelFmc(QuantifiersEngine* qe,
+                     theory::eq::EqualityEngineNotify* notify,
+                     context::Context* c,
+                     std::string name);
   ~FirstOrderModelFmc() override;
   FirstOrderModelFmc* asFirstOrderModelFmc() override { return this; }
   // initialize the model
