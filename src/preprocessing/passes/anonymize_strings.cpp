@@ -176,7 +176,7 @@ unsigned analyzeSolutionNode(Node l,
                              const Graph& graphCheck,
                              const std::map<Node, Node>& sol)
 {
-  if( !options::anonymizeStringsPreserveCtn() )
+  if (!options::anonymizeStringsPreserveCtn())
   {
     // containment is irrelevant
     return 0;
@@ -408,10 +408,11 @@ bool solveAnonStrGraph(
     Graph graphCheck;
     std::map<Node, Node> sol;
     approxSolveGraph(graph, graphCheck, sol);
-    Trace("str-anon-solve") << "Done" << "..." << std::endl;
+    Trace("str-anon-solve") << "Done"
+                            << "..." << std::endl;
 
     unsigned score = 0;
-    if( nreps>1 )
+    if (nreps > 1)
     {
       Trace("str-anon-solve") << "Solve: Analyze #" << r << "..." << std::endl;
       score = analyzeSolution(litSet, sol, graph, graphCheck);
