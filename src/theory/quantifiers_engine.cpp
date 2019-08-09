@@ -295,12 +295,12 @@ QuantifiersEngine::QuantifiersEngine(context::Context* c,
     {
       Trace("quant-engine-debug") << "...make fmc builder." << std::endl;
       d_model.reset(new quantifiers::fmcheck::FirstOrderModelFmc(
-          this, c, "FirstOrderModelFmc"));
+          this, d_te->getModelNotify(), c, "FirstOrderModelFmc"));
       d_builder.reset(new quantifiers::fmcheck::FullModelChecker(c, this));
     }else{
       Trace("quant-engine-debug") << "...make default model builder." << std::endl;
       d_model.reset(
-          new quantifiers::FirstOrderModel(this, c, "FirstOrderModel"));
+          new quantifiers::FirstOrderModel(this, d_te->getModelNotify(), c, "FirstOrderModel"));
       d_builder.reset(new quantifiers::QModelBuilder(c, this));
     }
   }else{
