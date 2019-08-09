@@ -102,6 +102,7 @@
 #include "theory/quantifiers/sygus/sygus_abduct.h"
 #include "theory/quantifiers/sygus/synth_engine.h"
 #include "theory/quantifiers/term_util.h"
+#include "theory/quantifiers_engine.h"
 #include "theory/rewriter.h"
 #include "theory/sort_inference.h"
 #include "theory/strings/theory_strings.h"
@@ -1260,13 +1261,8 @@ void SmtEngine::setDefaults() {
   // sygus inference may require datatypes
   if (!d_isInternalSubsolver)
   {
-    if (options::produceAbducts())
-    {
-      // we may invoke a sygus conjecture, hence we need options related to
-      // sygus
-      is_sygus = true;
-    }
-    if (options::sygusInference() || options::sygusRewSynthInput())
+    if (options::produceAbducts() || options::sygusInference()
+        || options::sygusRewSynthInput())
     {
       // since we are trying to recast as sygus, we assume the input is sygus
       is_sygus = true;
@@ -5102,7 +5098,9 @@ bool SmtEngine::getAbduct(const Expr& conj, const Type& grammarType, Expr& abd)
     axioms.push_back(Node::fromExpr(easserts[i]));
   }
   std::vector<Node> asserts(axioms.begin(), axioms.end());
-  asserts.push_back(Node::fromExpr(conj));
+  // negate the conjecture
+  Node conjn = Node::fromExpr(conj).negate();
+  asserts.push_back(conjn);
   d_sssfVarlist.clear();
   d_sssfSyms.clear();
   std::string name("A");

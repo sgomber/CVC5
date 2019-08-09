@@ -37,7 +37,8 @@ static TheoryId theoryOf(TNode node) {
 }
 
 #ifdef CVC4_ASSERTIONS
-static thread_local std::unordered_set<Node, NodeHashFunction>* s_rewriteStack = NULL;
+static thread_local std::unique_ptr<std::unordered_set<Node, NodeHashFunction>>
+    s_rewriteStack = nullptr;
 #endif /* CVC4_ASSERTIONS */
 
 class RewriterInitializer {
@@ -95,8 +96,9 @@ Node Rewriter::rewriteTo(theory::TheoryId theoryId, Node node) {
 #ifdef CVC4_ASSERTIONS
   bool isEquality = node.getKind() == kind::EQUAL && (!node[0].getType().isBoolean());
 
-  if(s_rewriteStack == NULL) {
-    s_rewriteStack = new std::unordered_set<Node, NodeHashFunction>();
+  if (s_rewriteStack == nullptr)
+  {
+    s_rewriteStack.reset(new std::unordered_set<Node, NodeHashFunction>());
   }
 #endif
 
@@ -275,9 +277,9 @@ Node Rewriter::rewriteTo(theory::TheoryId theoryId, Node node) {
 
 void Rewriter::clearCaches() {
 #ifdef CVC4_ASSERTIONS
-  if(s_rewriteStack != NULL) {
-    delete s_rewriteStack;
-    s_rewriteStack = NULL;
+  if (s_rewriteStack != nullptr)
+  {
+    s_rewriteStack.reset(nullptr);
   }
 #endif
   Rewriter::clearCachesInternal();

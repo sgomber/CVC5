@@ -250,6 +250,7 @@ set(regress_0_tests
   regress0/bv/core/slice-20.smt
   regress0/bv/divtest_2_5.smt2
   regress0/bv/divtest_2_6.smt2
+  regress0/bv/eager-inc-cadical.smt2
   regress0/bv/eager-inc-cryptominisat.smt2
   regress0/bv/eager-force-logic.smt2
   regress0/bv/fuzz01.smt
@@ -504,6 +505,7 @@ set(regress_0_tests
   regress0/issue1063-overloading-dt-cons.smt2
   regress0/issue1063-overloading-dt-fun.smt2
   regress0/issue1063-overloading-dt-sel.smt2
+  regress0/issue2832-qualId.smt2
   regress0/ite.cvc
   regress0/ite2.smt2
   regress0/ite3.smt2
@@ -546,6 +548,7 @@ set(regress_0_tests
   regress0/nl/very-easy-sat.smt2
   regress0/nl/very-simple-unsat.smt2
   regress0/options/invalid_dump.smt2
+  regress0/opt-abd-no-use.smt2
   regress0/parallel-let.smt2
   regress0/parser/as.smt2
   regress0/parser/bv_arity_smt2.6.smt2
@@ -1629,13 +1632,12 @@ set(regress_1_tests
   regress1/strings/type002.smt2
   regress1/strings/type003.smt2
   regress1/strings/username_checker_min.smt2
+  regress1/sygus-abduct-ex1-grammar.smt2
   regress1/sygus-abduct-test.smt2
   regress1/sygus-abduct-test-user.smt2
   regress1/sygus/VC22_a.sy
   regress1/sygus/abv.sy
-  regress1/sygus/array_search_2.sy
   regress1/sygus/array_search_5-Q-easy.sy
-  regress1/sygus/array_sum_2_5.sy
   regress1/sygus/bvudiv-by-2.sy
   regress1/sygus/car_3.lus.sy
   regress1/sygus/cegar1.sy
@@ -1650,7 +1652,6 @@ set(regress_1_tests
   regress1/sygus/constant-ite-bv.sy
   regress1/sygus/constant.sy
   regress1/sygus/crci-ssb-unk.sy
-  regress1/sygus/crcy-si-rcons.sy
   regress1/sygus/crcy-si.sy
   regress1/sygus/cube-nia.sy
   regress1/sygus/double.sy
@@ -1694,6 +1695,7 @@ set(regress_1_tests
   regress1/sygus/real-grammar.sy
   regress1/sygus/simple-regexp.sy
   regress1/sygus/stopwatch-bt.sy
+  regress1/sygus/strings-no-syntax.sy
   regress1/sygus/strings-concat-3-args.sy
   regress1/sygus/strings-double-rec.sy
   regress1/sygus/strings-small.sy
@@ -1831,6 +1833,7 @@ set(regress_2_tests
   regress2/sygus/process-10-vars-2fun.sy
   regress2/sygus/process-arg-invariance.sy
   regress2/sygus/real-grammar-neg.sy
+  regress2/sygus/strings-no-syntax-len.sy
   regress2/sygus/three.sy
   regress2/sygus/vcb.sy
   regress2/typed_v1l50016-simp.cvc
@@ -2172,6 +2175,10 @@ set(regression_disabled_tests
   regress1/sygus/Base16_1.sy
   regress1/sygus/enum-test.sy
   regress1/sygus/inv_gen_fig8.sy
+  # rely on heuristic solution reconstruction TODO #3146 revisit
+  regress1/sygus/array_search_2.sy
+  regress1/sygus/array_sum_2_5.sy
+  regress1/sygus/crcy-si-rcons.sy
   regress2/arith/arith-int-098.cvc
   regress2/arith/miplib-opt1217--27.smt2
   regress2/arith/miplib-pp08a-3000.smt2
@@ -2196,7 +2203,7 @@ add_dependencies(build-tests build-regress)
 
 add_custom_target(regress
   COMMAND
-    ctest --output-on-failure -L "regress[0-2]" -j${CTEST_NTHREADS} $(ARGS)
+    ctest --output-on-failure -L "regress[0-2]" -j${CTEST_NTHREADS} $$ARGS
   DEPENDS build-regress)
 
 macro(cvc4_add_regression_test level file)
