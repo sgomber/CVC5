@@ -60,7 +60,6 @@ class Graph
   static std::map<Node, Node> d_emptyMap;
   void addInternal(Node l,
                    CtnNode& cl,
-                   std::unordered_set<Node, NodeHashFunction>& toProcess,
                    unsigned dir,
                    std::unordered_set<Node, NodeHashFunction>& processed,
                    std::unordered_set<Node, NodeHashFunction>& transCtn,

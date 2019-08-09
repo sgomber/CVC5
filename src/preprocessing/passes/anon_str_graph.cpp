@@ -16,6 +16,8 @@
 
 #include "preprocessing/passes/anon_str_graph.h"
 
+#include "options/strings_options.h"
+
 namespace CVC4 {
 namespace preprocessing {
 namespace passes {
@@ -94,21 +96,27 @@ void Graph::add(Node l, const std::map<Node, Node>& valMap)
   for (unsigned dir = 0; dir <= 1; dir++)
   {
     std::unordered_set<Node, NodeHashFunction> processed;
-    // add to graph
-    std::unordered_set<Node, NodeHashFunction> toProcess = d_baseNodes[1 - dir];
-    addInternal(l, cl, toProcess, dir, processed, transCtn, valMap);
+    addInternal(l, cl, dir, processed, transCtn, valMap);
   }
   Trace("str-anon-graph-debug") << std::endl;
 }
 
 void Graph::addInternal(Node l,
                         CtnNode& cl,
-                        std::unordered_set<Node, NodeHashFunction>& toProcess,
                         unsigned dir,
                         std::unordered_set<Node, NodeHashFunction>& processed,
                         std::unordered_set<Node, NodeHashFunction>& transCtn,
                         const std::map<Node, Node>& valMap)
 {
+  // if not preserving containment, its trivial
+  if (!options::anonymizeStringsPreserveCtn())
+  {
+    d_baseNodes[dir].insert(l);
+    return;
+  }
+
+  // add to graph
+  std::unordered_set<Node, NodeHashFunction> toProcess = d_baseNodes[1 - dir];
   Node lv = l;
   std::map<Node, Node>::const_iterator itv = valMap.find(l);
   if (itv != valMap.end())
