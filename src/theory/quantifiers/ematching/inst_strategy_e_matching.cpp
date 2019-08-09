@@ -2,9 +2,9 @@
 /*! \file inst_strategy_e_matching.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Andrew Reynolds, Morgan Deters
+ **   Andrew Reynolds, Morgan Deters, Aina Niemetz
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -18,7 +18,9 @@
 #include "theory/quantifiers/quantifiers_attributes.h"
 #include "theory/quantifiers/term_database.h"
 #include "theory/quantifiers/term_util.h"
+#include "theory/quantifiers_engine.h"
 #include "theory/theory_engine.h"
+#include "util/random.h"
 
 using namespace std;
 
@@ -324,7 +326,10 @@ void InstStrategyAutoGenTriggers::generateTriggers( Node f ){
         }
       }
       int curr_w = Trigger::getTriggerWeight( patTermsF[i] );
-      if( ntrivTriggers && !newVar && last_weight!=-1 && curr_w>last_weight ){
+      // triggers whose value is maximum (2) are considered expendable.
+      if (ntrivTriggers && !newVar && last_weight != -1 && curr_w > last_weight
+          && curr_w >= 2)
+      {
         Trace("auto-gen-trigger-debug") << "...exclude expendible non-trivial trigger : " << patTermsF[i] << std::endl;
         rmPatTermsF[patTermsF[i]] = true;
       }else{
@@ -453,10 +458,15 @@ void InstStrategyAutoGenTriggers::generateTriggers( Node f ){
             return;
           }
         }
-        //if we are re-generating triggers, shuffle based on some method
-        if( d_made_multi_trigger[f] ){
-          std::random_shuffle( patTerms.begin(), patTerms.end() ); //shuffle randomly
-        }else{
+        // if we are re-generating triggers, shuffle based on some method
+        if (d_made_multi_trigger[f])
+        {
+          std::shuffle(patTerms.begin(),
+                       patTerms.end(),
+                       Random::getRandom());  // shuffle randomly
+        }
+        else
+        {
           d_made_multi_trigger[f] = true;
         }
         //will possibly want to get an old trigger
@@ -570,43 +580,6 @@ void InstStrategyAutoGenTriggers::addUserNoPattern( Node q, Node pat ) {
     d_user_no_gen[q].push_back( pat[0] );
   }
 }
-
-/*  TODO?
-bool InstStrategyLocalTheoryExt::isLocalTheoryExt( Node f ) {
-  std::map< Node, bool >::iterator itq = d_quant.find( f );
-  if( itq==d_quant.end() ){
-    //generate triggers
-    Node bd = d_quantEngine->getTermUtil()->getInstConstantBody( f );
-    std::vector< Node > vars;
-    std::vector< Node > patTerms;
-    bool ret = Trigger::isLocalTheoryExt( bd, vars, patTerms );
-    if( ret ){
-      d_quant[f] = ret;
-      //add all variables to trigger that don't already occur
-      for( unsigned i=0; i<f[0].getNumChildren(); i++ ){
-        Node x = d_quantEngine->getTermUtil()->getInstantiationConstant( f, i );
-        if( std::find( vars.begin(), vars.end(), x )==vars.end() ){
-          patTerms.push_back( x );
-        }
-      }
-      Trace("local-t-ext") << "Local theory extensions trigger for " << f << " : " << std::endl;
-      for( unsigned i=0; i<patTerms.size(); i++ ){
-        Trace("local-t-ext") << "  " << patTerms[i] << std::endl;
-      }
-      Trace("local-t-ext") << std::endl;
-      Trigger * tr = Trigger::mkTrigger( d_quantEngine, f, patTerms, true, Trigger::TR_GET_OLD );
-      d_lte_trigger[f] = tr;
-    }else{
-      Trace("local-t-ext") << "No local theory extensions trigger for " << f << "." << std::endl;
-      Trace("local-t-ext-warn") << "WARNING: not local theory extensions : " << f << std::endl;
-    }
-    d_quant[f] = ret;
-    return ret;
-  }else{
-    return itq->second;
-  }
-}
-*/
 
 } /* CVC4::theory::quantifiers namespace */
 } /* CVC4::theory namespace */

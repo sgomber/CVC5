@@ -2,9 +2,9 @@
 /*! \file smt2_printer.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Morgan Deters, Andrew Reynolds, Tim King
+ **   Andrew Reynolds, Morgan Deters, Tim King
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -22,7 +22,9 @@
 #include <vector>
 
 #include "expr/node_manager_attributes.h"
+#include "options/bv_options.h"
 #include "options/language.h"
+#include "options/printer_options.h"
 #include "options/smt_options.h"
 #include "printer/dagification_visitor.h"
 #include "smt/smt_engine.h"
@@ -49,9 +51,6 @@ bool isVariant_2_6(Variant v)
 {
   return v == smt2_6_variant || v == smt2_6_1_variant;
 }
-
-static void printBvParameterizedOp(std::ostream& out, TNode n);
-static void printFpParameterizedOp(std::ostream& out, TNode n);
 
 static void toStreamRational(std::ostream& out,
                              const Rational& r,
@@ -93,7 +92,11 @@ void Smt2Printer::toStream(
 
 static std::string maybeQuoteSymbol(const std::string& s) {
   // this is the set of SMT-LIBv2 permitted characters in "simple" (non-quoted) symbols
-  if(s.find_first_not_of("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789~!@$%^&*_-+=<>.?/") != string::npos) {
+  if (s.find_first_not_of("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+                          "0123456789~!@$%^&*_-+=<>.?/")
+          != string::npos
+      || s.empty())
+  {
     // need to quote it
     stringstream ss;
     ss << '|' << s << '|';
@@ -163,11 +166,14 @@ void Smt2Printer::toStream(std::ostream& out,
       const BitVector& bv = n.getConst<BitVector>();
       const Integer& x = bv.getValue();
       unsigned n = bv.getSize();
-      if(d_variant == sygus_variant ){
+      if (d_variant == sygus_variant || options::bvPrintConstsInBinary())
+      {
         out << "#b" << bv.toString();
-      }else{
+      }
+      else
+      {
         out << "(_ ";
-        out << "bv" << x <<" " << n;
+        out << "bv" << x << " " << n;
         out << ")";
       }
 
@@ -267,14 +273,97 @@ void Smt2Printer::toStream(std::ostream& out,
 
     case kind::UNINTERPRETED_CONSTANT: {
       const UninterpretedConstant& uc = n.getConst<UninterpretedConstant>();
-      out << '@' << uc;
+      std::stringstream ss;
+      ss << '@' << uc;
+      out << maybeQuoteSymbol(ss.str());
       break;
     }
 
     case kind::EMPTYSET:
       out << "(as emptyset " << n.getConst<EmptySet>().getType() << ")";
       break;
-
+    case kind::BITVECTOR_EXTRACT_OP:
+    {
+      BitVectorExtract p = n.getConst<BitVectorExtract>();
+      out << "(_ extract " << p.high << ' ' << p.low << ")";
+      break;
+    }
+    case kind::BITVECTOR_REPEAT_OP:
+      out << "(_ repeat " << n.getConst<BitVectorRepeat>().repeatAmount << ")";
+      break;
+    case kind::BITVECTOR_ZERO_EXTEND_OP:
+      out << "(_ zero_extend "
+          << n.getConst<BitVectorZeroExtend>().zeroExtendAmount << ")";
+      break;
+    case kind::BITVECTOR_SIGN_EXTEND_OP:
+      out << "(_ sign_extend "
+          << n.getConst<BitVectorSignExtend>().signExtendAmount << ")";
+      break;
+    case kind::BITVECTOR_ROTATE_LEFT_OP:
+      out << "(_ rotate_left "
+          << n.getConst<BitVectorRotateLeft>().rotateLeftAmount << ")";
+      break;
+    case kind::BITVECTOR_ROTATE_RIGHT_OP:
+      out << "(_ rotate_right "
+          << n.getConst<BitVectorRotateRight>().rotateRightAmount << ")";
+      break;
+    case kind::INT_TO_BITVECTOR_OP:
+      out << "(_ int2bv " << n.getConst<IntToBitVector>().size << ")";
+      break;
+    case kind::FLOATINGPOINT_TO_FP_IEEE_BITVECTOR_OP:
+      // out << "to_fp_bv "
+      out << "(_ to_fp "
+          << n.getConst<FloatingPointToFPIEEEBitVector>().t.exponent() << ' '
+          << n.getConst<FloatingPointToFPIEEEBitVector>().t.significand()
+          << ")";
+      break;
+    case kind::FLOATINGPOINT_TO_FP_FLOATINGPOINT_OP:
+      // out << "to_fp_fp "
+      out << "(_ to_fp "
+          << n.getConst<FloatingPointToFPFloatingPoint>().t.exponent() << ' '
+          << n.getConst<FloatingPointToFPFloatingPoint>().t.significand()
+          << ")";
+      break;
+    case kind::FLOATINGPOINT_TO_FP_REAL_OP:
+      // out << "to_fp_real "
+      out << "(_ to_fp " << n.getConst<FloatingPointToFPReal>().t.exponent()
+          << ' ' << n.getConst<FloatingPointToFPReal>().t.significand() << ")";
+      break;
+    case kind::FLOATINGPOINT_TO_FP_SIGNED_BITVECTOR_OP:
+      // out << "to_fp_signed "
+      out << "(_ to_fp "
+          << n.getConst<FloatingPointToFPSignedBitVector>().t.exponent() << ' '
+          << n.getConst<FloatingPointToFPSignedBitVector>().t.significand()
+          << ")";
+      break;
+    case kind::FLOATINGPOINT_TO_FP_UNSIGNED_BITVECTOR_OP:
+      out << "(_ to_fp_unsigned "
+          << n.getConst<FloatingPointToFPUnsignedBitVector>().t.exponent()
+          << ' '
+          << n.getConst<FloatingPointToFPUnsignedBitVector>().t.significand()
+          << ")";
+      break;
+    case kind::FLOATINGPOINT_TO_FP_GENERIC_OP:
+      out << "(_ to_fp " << n.getConst<FloatingPointToFPGeneric>().t.exponent()
+          << ' ' << n.getConst<FloatingPointToFPGeneric>().t.significand()
+          << ")";
+      break;
+    case kind::FLOATINGPOINT_TO_UBV_OP:
+      out << "(_ fp.to_ubv " << n.getConst<FloatingPointToUBV>().bvs.size
+          << ")";
+      break;
+    case kind::FLOATINGPOINT_TO_SBV_OP:
+      out << "(_ fp.to_sbv " << n.getConst<FloatingPointToSBV>().bvs.size
+          << ")";
+      break;
+    case kind::FLOATINGPOINT_TO_UBV_TOTAL_OP:
+      out << "(_ fp.to_ubv_total "
+          << n.getConst<FloatingPointToUBVTotal>().bvs.size << ")";
+      break;
+    case kind::FLOATINGPOINT_TO_SBV_TOTAL_OP:
+      out << "(_ fp.to_sbv_total "
+          << n.getConst<FloatingPointToSBVTotal>().bvs.size << ")";
+      break;
     default:
       // fall back on whatever operator<< does on underlying type; we
       // might luck out and be SMT-LIB v2 compliant
@@ -391,7 +480,6 @@ void Smt2Printer::toStream(std::ostream& out,
   }
   switch(Kind k = n.getKind()) {
     // builtin theory
-  case kind::APPLY: break;
   case kind::EQUAL:
   case kind::DISTINCT:
     out << smtKindString(k, d_variant) << " ";
@@ -422,7 +510,34 @@ void Smt2Printer::toStream(std::ostream& out,
   // uf theory
   case kind::APPLY_UF: typeChildren = true; break;
   // higher-order
-  case kind::HO_APPLY: break;
+  case kind::HO_APPLY:
+    if (!options::flattenHOChains())
+    {
+      break;
+    }
+    // collapse "@" chains, i.e.
+    //
+    // ((a b) c) --> (a b c)
+    //
+    // (((a b) ((c d) e)) f) --> (a b (c d e) f)
+    {
+      Node head = n;
+      std::vector<Node> args;
+      while (head.getKind() == kind::HO_APPLY)
+      {
+        args.insert(args.begin(), head[1]);
+        head = head[0];
+      }
+      toStream(out, head, toDepth, types, TypeNode::null());
+      for (unsigned i = 0, size = args.size(); i < size; ++i)
+      {
+        out << " ";
+        toStream(out, args[i], toDepth, types, TypeNode::null());
+      }
+      out << ")";
+    }
+    return;
+
   case kind::LAMBDA:
     out << smtKindString(k, d_variant) << " ";
     break;
@@ -521,6 +636,9 @@ void Smt2Printer::toStream(std::ostream& out,
   case kind::STRING_STRCTN:
   case kind::STRING_STRIDOF:
   case kind::STRING_STRREPL:
+  case kind::STRING_STRREPLALL:
+  case kind::STRING_TOLOWER:
+  case kind::STRING_TOUPPER:
   case kind::STRING_PREFIX:
   case kind::STRING_SUFFIX:
   case kind::STRING_LEQ:
@@ -558,9 +676,13 @@ void Smt2Printer::toStream(std::ostream& out,
   case kind::BITVECTOR_SUB: out << "bvsub "; break;
   case kind::BITVECTOR_NEG: out << "bvneg "; break;
   case kind::BITVECTOR_UDIV: out << "bvudiv "; break;
-  case kind::BITVECTOR_UDIV_TOTAL: out << "bvudiv_total "; break;
+  case kind::BITVECTOR_UDIV_TOTAL:
+    out << (isVariant_2_6(d_variant) ? "bvudiv " : "bvudiv_total ");
+    break;
   case kind::BITVECTOR_UREM: out << "bvurem "; break;
-  case kind::BITVECTOR_UREM_TOTAL: out << "bvurem_total "; break;
+  case kind::BITVECTOR_UREM_TOTAL:
+    out << (isVariant_2_6(d_variant) ? "bvurem " : "bvurem_total ");
+    break;
   case kind::BITVECTOR_SDIV: out << "bvsdiv "; break;
   case kind::BITVECTOR_SREM: out << "bvsrem "; break;
   case kind::BITVECTOR_SMOD: out << "bvsmod "; break;
@@ -586,8 +708,7 @@ void Smt2Printer::toStream(std::ostream& out,
   case kind::BITVECTOR_ROTATE_LEFT:
   case kind::BITVECTOR_ROTATE_RIGHT:
   case kind::INT_TO_BITVECTOR:
-    printBvParameterizedOp(out, n);
-    out << ' ';
+    out << n.getOperator() << ' ';
     stillNeedToPrintParams = false;
     break;
 
@@ -656,8 +777,7 @@ void Smt2Printer::toStream(std::ostream& out,
   case kind::FLOATINGPOINT_TO_FP_GENERIC:
   case kind::FLOATINGPOINT_TO_UBV:
   case kind::FLOATINGPOINT_TO_SBV:
-    printFpParameterizedOp(out, n);
-    out << ' ';
+    out << n.getOperator() << ' ';
     stillNeedToPrintParams = false;
     break;
 
@@ -761,16 +881,8 @@ void Smt2Printer::toStream(std::ostream& out,
   if( n.getMetaKind() == kind::metakind::PARAMETERIZED &&
       stillNeedToPrintParams ) {
     if(toDepth != 0) {
-      if( d_variant==sygus_variant && n.getKind()==kind::APPLY_CONSTRUCTOR ){
-        std::stringstream ss;
-        toStream(ss, n.getOperator(), toDepth < 0 ? toDepth : toDepth - 1, types, TypeNode::null());
-        std::string tmp = ss.str();
-        size_t pos = 0;
-        if((pos = tmp.find("__Enum__", pos)) != std::string::npos){
-           tmp.replace(pos, 8, "::");
-        }
-        out << tmp;
-      }else if( n.getKind()==kind::APPLY_TESTER ){
+      if (n.getKind() == kind::APPLY_TESTER)
+      {
         unsigned cindex = Datatype::indexOf(n.getOperator().toExpr());
         const Datatype& dt = Datatype::datatypeOf(n.getOperator().toExpr());
         if (isVariant_2_6(d_variant))
@@ -834,6 +946,18 @@ void Smt2Printer::toStream(std::ostream& out,
       // APPLY_UF, APPLY_CONSTRUCTOR, etc.
       Assert( n.hasOperator() );
       TypeNode opt = n.getOperator().getType();
+      if (n.getKind() == kind::APPLY_CONSTRUCTOR)
+      {
+        Type tn = n.getType().toType();
+        // may be parametric, in which case the constructor type must be
+        // specialized
+        const Datatype& dt = static_cast<DatatypeType>(tn).getDatatype();
+        if (dt.isParametric())
+        {
+          unsigned ci = Datatype::indexOf(n.getOperator().toExpr());
+          opt = TypeNode::fromType(dt[ci].getSpecializedConstructorType(tn));
+        }
+      }
       Assert( opt.getNumChildren() == n.getNumChildren() + 1 );
       for(size_t i = 0; i < n.getNumChildren(); ++i ) {
         force_child_type[i] = opt[i];
@@ -874,7 +998,6 @@ static string smtKindString(Kind k, Variant v)
 {
   switch(k) {
     // builtin theory
-  case kind::APPLY: break;
   case kind::EQUAL: return "=";
   case kind::DISTINCT: return "distinct";
   case kind::CHAIN: break;
@@ -954,6 +1077,7 @@ static string smtKindString(Kind k, Variant v)
   case kind::BITVECTOR_NEG: return "bvneg";
   case kind::BITVECTOR_UDIV_TOTAL:
   case kind::BITVECTOR_UDIV: return "bvudiv";
+  case kind::BITVECTOR_UREM_TOTAL:
   case kind::BITVECTOR_UREM: return "bvurem";
   case kind::BITVECTOR_SDIV: return "bvsdiv";
   case kind::BITVECTOR_SREM: return "bvsrem";
@@ -969,6 +1093,7 @@ static string smtKindString(Kind k, Variant v)
   case kind::BITVECTOR_SLE: return "bvsle";
   case kind::BITVECTOR_SGT: return "bvsgt";
   case kind::BITVECTOR_SGE: return "bvsge";
+  case kind::BITVECTOR_TO_NAT: return "bv2nat";
   case kind::BITVECTOR_REDOR: return "bvredor";
   case kind::BITVECTOR_REDAND: return "bvredand";
 
@@ -1056,6 +1181,9 @@ static string smtKindString(Kind k, Variant v)
   case kind::STRING_CHARAT: return "str.at" ;
   case kind::STRING_STRIDOF: return "str.indexof" ;
   case kind::STRING_STRREPL: return "str.replace" ;
+  case kind::STRING_STRREPLALL: return "str.replaceall";
+  case kind::STRING_TOLOWER: return "str.tolower";
+  case kind::STRING_TOUPPER: return "str.toupper";
   case kind::STRING_PREFIX: return "str.prefixof" ;
   case kind::STRING_SUFFIX: return "str.suffixof" ;
   case kind::STRING_LEQ: return "str.<=";
@@ -1092,105 +1220,6 @@ static string smtKindString(Kind k, Variant v)
 
   // no SMT way to print these
   return kind::kindToString(k);
-}
-
-static void printBvParameterizedOp(std::ostream& out, TNode n)
-{
-  out << "(_ ";
-  switch(n.getKind()) {
-  case kind::BITVECTOR_EXTRACT: {
-    BitVectorExtract p = n.getOperator().getConst<BitVectorExtract>();
-    out << "extract " << p.high << ' ' << p.low;
-    break;
-  }
-  case kind::BITVECTOR_REPEAT:
-    out << "repeat "
-        << n.getOperator().getConst<BitVectorRepeat>().repeatAmount;
-    break;
-  case kind::BITVECTOR_ZERO_EXTEND:
-    out << "zero_extend "
-        << n.getOperator().getConst<BitVectorZeroExtend>().zeroExtendAmount;
-    break;
-  case kind::BITVECTOR_SIGN_EXTEND:
-    out << "sign_extend "
-        << n.getOperator().getConst<BitVectorSignExtend>().signExtendAmount;
-    break;
-  case kind::BITVECTOR_ROTATE_LEFT:
-    out << "rotate_left "
-        << n.getOperator().getConst<BitVectorRotateLeft>().rotateLeftAmount;
-    break;
-  case kind::BITVECTOR_ROTATE_RIGHT:
-    out << "rotate_right "
-        << n.getOperator().getConst<BitVectorRotateRight>().rotateRightAmount;
-    break;
-  case kind::INT_TO_BITVECTOR:
-    out << "int2bv "
-        << n.getOperator().getConst<IntToBitVector>().size;
-    break;
-  default:
-    out << n.getKind();
-  }
-  out << ")";
-}
-
-static void printFpParameterizedOp(std::ostream& out, TNode n)
-{
-  out << "(_ ";
-  switch(n.getKind()) {
-  case kind::FLOATINGPOINT_TO_FP_IEEE_BITVECTOR:
-    //out << "to_fp_bv "
-    out << "to_fp "
-        << n.getOperator().getConst<FloatingPointToFPIEEEBitVector>().t.exponent() << ' '
-        << n.getOperator().getConst<FloatingPointToFPIEEEBitVector>().t.significand();
-    break;
-  case kind::FLOATINGPOINT_TO_FP_FLOATINGPOINT:
-    //out << "to_fp_fp "
-    out << "to_fp "
-        << n.getOperator().getConst<FloatingPointToFPFloatingPoint>().t.exponent() << ' '
-        << n.getOperator().getConst<FloatingPointToFPFloatingPoint>().t.significand();
-    break;
-  case kind::FLOATINGPOINT_TO_FP_REAL:
-    //out << "to_fp_real "
-    out << "to_fp "
-        << n.getOperator().getConst<FloatingPointToFPReal>().t.exponent() << ' '
-        << n.getOperator().getConst<FloatingPointToFPReal>().t.significand();
-    break;
-  case kind::FLOATINGPOINT_TO_FP_SIGNED_BITVECTOR:
-    //out << "to_fp_signed "
-    out << "to_fp "
-        << n.getOperator().getConst<FloatingPointToFPSignedBitVector>().t.exponent() << ' '
-        << n.getOperator().getConst<FloatingPointToFPSignedBitVector>().t.significand();
-    break;
-  case kind::FLOATINGPOINT_TO_FP_UNSIGNED_BITVECTOR:
-    out << "to_fp_unsigned "
-        << n.getOperator().getConst<FloatingPointToFPUnsignedBitVector>().t.exponent() << ' '
-        << n.getOperator().getConst<FloatingPointToFPUnsignedBitVector>().t.significand();
-    break;
-  case kind::FLOATINGPOINT_TO_FP_GENERIC:
-    out << "to_fp "
-        << n.getOperator().getConst<FloatingPointToFPGeneric>().t.exponent() << ' '
-        << n.getOperator().getConst<FloatingPointToFPGeneric>().t.significand();
-    break;
-  case kind::FLOATINGPOINT_TO_UBV:
-    out << "fp.to_ubv "
-        << n.getOperator().getConst<FloatingPointToUBV>().bvs.size;
-    break;
-  case kind::FLOATINGPOINT_TO_SBV:
-    out << "fp.to_sbv "
-        << n.getOperator().getConst<FloatingPointToSBV>().bvs.size;
-    break;
-  case kind::FLOATINGPOINT_TO_UBV_TOTAL:
-    out << "fp.to_ubv_total "
-        << n.getOperator().getConst<FloatingPointToUBVTotal>().bvs.size;
-    break;
-  case kind::FLOATINGPOINT_TO_SBV_TOTAL:
-    out << "fp.to_sbv_total "
-        << n.getOperator().getConst<FloatingPointToSBVTotal>().bvs.size;
-    break;
-  default:
-    out << n.getKind();
-  }
-  out << ")";
 }
 
 template <class T>
@@ -1475,18 +1504,15 @@ void Smt2Printer::toStreamSygus(std::ostream& out, TNode n) const
       return;
     }
   }
+  Node p = n.getAttribute(theory::SygusPrintProxyAttribute());
+  if (!p.isNull())
+  {
+    out << p;
+  }
   else
   {
-    Node p = n.getAttribute(theory::SygusPrintProxyAttribute());
-    if (!p.isNull())
-    {
-      out << p;
-    }
-    else
-    {
-      // cannot convert term to analog, print original
-      out << n;
-    }
+    // cannot convert term to analog, print original
+    out << n;
   }
 }
 
@@ -1734,7 +1760,8 @@ static void toStreamRational(std::ostream& out,
 
 static void toStream(std::ostream& out, const DeclareTypeCommand* c)
 {
-  out << "(declare-sort " << c->getSymbol() << " " << c->getArity() << ")";
+  out << "(declare-sort " << maybeQuoteSymbol(c->getSymbol()) << " "
+      << c->getArity() << ")";
 }
 
 static void toStream(std::ostream& out, const DefineTypeCommand* c)
@@ -1905,15 +1932,74 @@ static void toStream(std::ostream& out,
          ++i)
     {
       const Datatype& d = i->getDatatype();
+      if (d.isParametric())
+      {
+        out << "(par (";
+        for (unsigned p = 0, nparam = d.getNumParameters(); p < nparam; p++)
+        {
+          out << (p > 0 ? " " : "") << d.getParameter(p);
+        }
+        out << ")";
+      }
       out << "(";
       toStream(out, d);
       out << ")";
+      if (d.isParametric())
+      {
+        out << ")";
+      }
     }
     out << ")";
   }
   else
   {
-    out << " () (";
+    out << " (";
+    // Can only print if all datatypes in this block have the same parameters.
+    // In theory, given input language 2.6 and output language 2.5, it could
+    // be impossible to print a datatype block where datatypes were given
+    // different parameter lists.
+    bool success = true;
+    const Datatype& d = datatypes[0].getDatatype();
+    unsigned nparam = d.getNumParameters();
+    for (unsigned j = 1, ndt = datatypes.size(); j < ndt; j++)
+    {
+      const Datatype& dj = datatypes[j].getDatatype();
+      if (dj.getNumParameters() != nparam)
+      {
+        success = false;
+      }
+      else
+      {
+        // must also have identical parameter lists
+        for (unsigned k = 0; k < nparam; k++)
+        {
+          if (dj.getParameter(k) != d.getParameter(k))
+          {
+            success = false;
+            break;
+          }
+        }
+      }
+      if (!success)
+      {
+        break;
+      }
+    }
+    if (success)
+    {
+      for (unsigned j = 0; j < nparam; j++)
+      {
+        out << (j > 0 ? " " : "") << d.getParameter(j);
+      }
+    }
+    else
+    {
+      out << std::endl;
+      out << "ERROR: datatypes in each block must have identical parameter "
+             "lists.";
+      out << std::endl;
+    }
+    out << ") (";
     for (vector<DatatypeType>::const_iterator i = datatypes.begin(),
                                               i_end = datatypes.end();
          i != i_end;

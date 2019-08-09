@@ -2,10 +2,10 @@
 /*! \file theory_fp_rewriter.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Martin Brain, Clark Barrett, Andrew Reynolds
+ **   Martin Brain, Martin Brain, Andrew Reynolds
  ** Copyright (c) 2013  University of Oxford
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -18,7 +18,6 @@
  **          (= x (fp.neg x)) --> (isNaN x)
  **          (fp.eq x (fp.neg x)) --> (isZero x)   (previous and reorganise should be sufficient)
  **          (fp.eq x const) --> various = depending on const
- **          (fp.abs (fp.neg x)) --> (fp.abs x)
  **          (fp.isPositive (fp.neg x)) --> (fp.isNegative x)
  **          (fp.isNegative (fp.neg x)) --> (fp.isPositive x)
  **          (fp.isPositive (fp.abs x)) --> (not (isNaN x))
@@ -69,7 +68,20 @@ namespace rewrite {
   RewriteResponse removeDoubleNegation (TNode node, bool) {
     Assert(node.getKind() == kind::FLOATINGPOINT_NEG);
     if (node[0].getKind() == kind::FLOATINGPOINT_NEG) {
-      RewriteResponse(REWRITE_AGAIN, node[0][0]);
+      return RewriteResponse(REWRITE_AGAIN, node[0][0]);
+    }
+
+    return RewriteResponse(REWRITE_DONE, node);
+  }
+
+  RewriteResponse compactAbs (TNode node, bool) {
+    Assert(node.getKind() == kind::FLOATINGPOINT_ABS);
+    if (node[0].getKind() == kind::FLOATINGPOINT_NEG
+        || node[0].getKind() == kind::FLOATINGPOINT_ABS)
+    {
+      Node ret =
+          NodeManager::currentNM()->mkNode(kind::FLOATINGPOINT_ABS, node[0][0]);
+      return RewriteResponse(REWRITE_AGAIN, ret);
     }
 
     return RewriteResponse(REWRITE_DONE, node);
@@ -166,8 +178,9 @@ namespace rewrite {
     if (node[0] == node[1]) {
       return RewriteResponse(REWRITE_DONE, NodeManager::currentNM()->mkConst(true));
     } else if (!isPreRewrite && (node[0] > node[1])) {
-	Node normal = NodeManager::currentNM()->mkNode(kind::EQUAL,node[1],node[0]);
-	return RewriteResponse(REWRITE_DONE, normal);
+      Node normal =
+          NodeManager::currentNM()->mkNode(kind::EQUAL, node[1], node[0]);
+      return RewriteResponse(REWRITE_DONE, normal);
     } else {
       return RewriteResponse(REWRITE_DONE, node);
     }
@@ -182,7 +195,7 @@ namespace rewrite {
 	   (k == kind::FLOATINGPOINT_MIN_TOTAL) || (k == kind::FLOATINGPOINT_MAX_TOTAL));
 #endif
     if (node[0] == node[1]) {
-      return RewriteResponse(REWRITE_DONE, node[0]);
+      return RewriteResponse(REWRITE_AGAIN, node[0]);
     } else {
       return RewriteResponse(REWRITE_DONE, node);
     }
@@ -240,10 +253,68 @@ namespace rewrite {
 	(childKind == kind::FLOATINGPOINT_ABS)) {
 
       Node rewritten = NodeManager::currentNM()->mkNode(node.getKind(),node[0][0]);
-      return RewriteResponse(REWRITE_AGAIN, rewritten);
+      return RewriteResponse(REWRITE_AGAIN_FULL, rewritten);
     } else {
       return RewriteResponse(REWRITE_DONE, node);
     } 
+  }
+
+  RewriteResponse compactRemainder (TNode node, bool isPreRewrite) {
+    Assert(node.getKind() == kind::FLOATINGPOINT_REM);
+    Assert(!isPreRewrite);  // status assumes parts have been rewritten
+
+    Node working = node;
+
+    // (fp.rem (fp.rem X Y) Y) == (fp.rem X Y)
+    if (working[0].getKind() == kind::FLOATINGPOINT_REM && // short-cut matters!
+	working[0][1] == working[1]) {
+      working = working[0];
+    }
+
+    // Sign of the RHS does not matter
+    if (working[1].getKind() == kind::FLOATINGPOINT_NEG ||
+	working[1].getKind() == kind::FLOATINGPOINT_ABS) {
+      working[1] = working[1][0];
+    }
+
+    // Lift negation out of the LHS so it can be cancelled out
+    if (working[0].getKind() == kind::FLOATINGPOINT_NEG) {
+      NodeManager * nm = NodeManager::currentNM();
+      working = nm->mkNode(
+          kind::FLOATINGPOINT_NEG,
+          nm->mkNode(kind::FLOATINGPOINT_REM, working[0][0], working[1]));
+      // in contrast to other rewrites here, this requires rewrite again full
+      return RewriteResponse(REWRITE_AGAIN_FULL, working);
+    }
+
+    return RewriteResponse(REWRITE_DONE, working);
+  }
+
+  RewriteResponse leqId(TNode node, bool isPreRewrite)
+  {
+    Assert(node.getKind() == kind::FLOATINGPOINT_LEQ);
+
+    if (node[0] == node[1])
+    {
+      NodeManager *nm = NodeManager::currentNM();
+      return RewriteResponse(
+          isPreRewrite ? REWRITE_DONE : REWRITE_AGAIN_FULL,
+          nm->mkNode(kind::NOT,
+                     nm->mkNode(kind::FLOATINGPOINT_ISNAN, node[0])));
+    }
+    return RewriteResponse(REWRITE_DONE, node);
+  }
+
+  RewriteResponse ltId(TNode node, bool isPreRewrite)
+  {
+    Assert(node.getKind() == kind::FLOATINGPOINT_LT);
+
+    if (node[0] == node[1])
+    {
+      return RewriteResponse(REWRITE_DONE,
+                             NodeManager::currentNM()->mkConst(false));
+    }
+    return RewriteResponse(REWRITE_DONE, node);
   }
 
 }; /* CVC4::theory::fp::rewrite */
@@ -931,7 +1002,7 @@ RewriteFunction TheoryFpRewriter::constantFoldTable[kind::LAST_KIND];
       
     /******** Operations ********/
     preRewriteTable[kind::FLOATINGPOINT_FP] = rewrite::identity;
-    preRewriteTable[kind::FLOATINGPOINT_ABS] = rewrite::identity;
+    preRewriteTable[kind::FLOATINGPOINT_ABS] = rewrite::compactAbs;
     preRewriteTable[kind::FLOATINGPOINT_NEG] = rewrite::removeDoubleNegation;
     preRewriteTable[kind::FLOATINGPOINT_PLUS] = rewrite::identity;
     preRewriteTable[kind::FLOATINGPOINT_SUB] = rewrite::convertSubtractionToAddition;
@@ -948,8 +1019,10 @@ RewriteFunction TheoryFpRewriter::constantFoldTable[kind::LAST_KIND];
 
     /******** Comparisons ********/
     preRewriteTable[kind::FLOATINGPOINT_EQ] = rewrite::then<rewrite::breakChain,rewrite::ieeeEqToEq>;
-    preRewriteTable[kind::FLOATINGPOINT_LEQ] = rewrite::breakChain;
-    preRewriteTable[kind::FLOATINGPOINT_LT] = rewrite::breakChain;
+    preRewriteTable[kind::FLOATINGPOINT_LEQ] =
+        rewrite::then<rewrite::breakChain, rewrite::leqId>;
+    preRewriteTable[kind::FLOATINGPOINT_LT] =
+        rewrite::then<rewrite::breakChain, rewrite::ltId>;
     preRewriteTable[kind::FLOATINGPOINT_GEQ] = rewrite::then<rewrite::breakChain,rewrite::geqToleq>;
     preRewriteTable[kind::FLOATINGPOINT_GT] = rewrite::then<rewrite::breakChain,rewrite::gtTolt>;
 
@@ -1014,7 +1087,7 @@ RewriteFunction TheoryFpRewriter::constantFoldTable[kind::LAST_KIND];
       
     /******** Operations ********/
     postRewriteTable[kind::FLOATINGPOINT_FP] = rewrite::identity;
-    postRewriteTable[kind::FLOATINGPOINT_ABS] = rewrite::identity;
+    postRewriteTable[kind::FLOATINGPOINT_ABS] = rewrite::compactAbs;
     postRewriteTable[kind::FLOATINGPOINT_NEG] = rewrite::removeDoubleNegation;
     postRewriteTable[kind::FLOATINGPOINT_PLUS] = rewrite::reorderBinaryOperation;
     postRewriteTable[kind::FLOATINGPOINT_SUB] = rewrite::removed;
@@ -1022,7 +1095,7 @@ RewriteFunction TheoryFpRewriter::constantFoldTable[kind::LAST_KIND];
     postRewriteTable[kind::FLOATINGPOINT_DIV] = rewrite::identity;
     postRewriteTable[kind::FLOATINGPOINT_FMA] = rewrite::reorderFMA;
     postRewriteTable[kind::FLOATINGPOINT_SQRT] = rewrite::identity;
-    postRewriteTable[kind::FLOATINGPOINT_REM] = rewrite::identity;
+    postRewriteTable[kind::FLOATINGPOINT_REM] = rewrite::compactRemainder;
     postRewriteTable[kind::FLOATINGPOINT_RTI] = rewrite::identity;
     postRewriteTable[kind::FLOATINGPOINT_MIN] = rewrite::compactMinMax;
     postRewriteTable[kind::FLOATINGPOINT_MAX] = rewrite::compactMinMax;
@@ -1031,8 +1104,8 @@ RewriteFunction TheoryFpRewriter::constantFoldTable[kind::LAST_KIND];
 
     /******** Comparisons ********/
     postRewriteTable[kind::FLOATINGPOINT_EQ] = rewrite::removed;
-    postRewriteTable[kind::FLOATINGPOINT_LEQ] = rewrite::identity;
-    postRewriteTable[kind::FLOATINGPOINT_LT] = rewrite::identity;
+    postRewriteTable[kind::FLOATINGPOINT_LEQ] = rewrite::leqId;
+    postRewriteTable[kind::FLOATINGPOINT_LT] = rewrite::ltId;
     postRewriteTable[kind::FLOATINGPOINT_GEQ] = rewrite::removed;
     postRewriteTable[kind::FLOATINGPOINT_GT] = rewrite::removed;
 

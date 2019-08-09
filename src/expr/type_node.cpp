@@ -4,7 +4,7 @@
  ** Top contributors (to current version):
  **   Andrew Reynolds, Morgan Deters, Tim King
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -83,51 +83,142 @@ bool TypeNode::isInterpretedFinite()
   if (!getAttribute(IsInterpretedFiniteComputedAttr()))
   {
     bool isInterpretedFinite = false;
-    if (getCardinality().isFinite())
+    if (isSort())
+    {
+      // If the finite model finding flag is set, we treat uninterpreted sorts
+      // as finite. If it is not set, we treat them implicitly as infinite
+      // sorts (that is, their cardinality is not constrained to be finite).
+      isInterpretedFinite = options::finiteModelFind();
+    }
+    else if (isBitVector() || isFloatingPoint())
     {
       isInterpretedFinite = true;
     }
-    else if (options::finiteModelFind())
+    else if (isDatatype())
     {
-      if( isSort() ){
-        isInterpretedFinite = true;
-      }else if( isDatatype() ){
-        TypeNode tn = *this;
-        const Datatype& dt = getDatatype();
-        isInterpretedFinite = dt.isInterpretedFinite(tn.toType());
-      }else if( isArray() ){
-        isInterpretedFinite =
-            getArrayIndexType().isInterpretedFinite()
-            && getArrayConstituentType().isInterpretedFinite();
-      }else if( isSet() ) {
-        isInterpretedFinite = getSetElementType().isInterpretedFinite();
-      }
-      else if (isFunction())
+      TypeNode tn = *this;
+      const Datatype& dt = getDatatype();
+      isInterpretedFinite = dt.isInterpretedFinite(tn.toType());
+    }
+    else if (isArray())
+    {
+      TypeNode tnc = getArrayConstituentType();
+      if (!tnc.isInterpretedFinite())
       {
+        // arrays with consistuent type that is infinite are infinite
+        isInterpretedFinite = false;
+      }
+      else if (getArrayIndexType().isInterpretedFinite())
+      {
+        // arrays with both finite consistuent and index types are finite
         isInterpretedFinite = true;
-        if (!getRangeType().isInterpretedFinite())
+      }
+      else
+      {
+        // If the consistuent type of the array has cardinality one, then the
+        // array type has cardinality one, independent of the index type.
+        isInterpretedFinite = tnc.getCardinality().isOne();
+      }
+    }
+    else if (isSet())
+    {
+      isInterpretedFinite = getSetElementType().isInterpretedFinite();
+    }
+    else if (isFunction())
+    {
+      isInterpretedFinite = true;
+      TypeNode tnr = getRangeType();
+      if (!tnr.isInterpretedFinite())
+      {
+        isInterpretedFinite = false;
+      }
+      else
+      {
+        std::vector<TypeNode> argTypes = getArgTypes();
+        for (unsigned i = 0, nargs = argTypes.size(); i < nargs; i++)
         {
-          isInterpretedFinite = false;
-        }
-        else
-        {
-          std::vector<TypeNode> argTypes = getArgTypes();
-          for (unsigned i = 0, nargs = argTypes.size(); i < nargs; i++)
+          if (!argTypes[i].isInterpretedFinite())
           {
-            if (!argTypes[i].isInterpretedFinite())
-            {
-              isInterpretedFinite = false;
-              break;
-            }
+            isInterpretedFinite = false;
+            break;
           }
         }
+        if (!isInterpretedFinite)
+        {
+          // similar to arrays, functions are finite if their range type
+          // has cardinality one, regardless of the arguments.
+          isInterpretedFinite = tnr.getCardinality().isOne();
+        }
       }
+    }
+    else
+    {
+      // by default, compute the exact cardinality for the type and check
+      // whether it is finite. This should be avoided in general, since
+      // computing cardinalities for types can be highly expensive.
+      isInterpretedFinite = getCardinality().isFinite();
     }
     setAttribute(IsInterpretedFiniteAttr(), isInterpretedFinite);
     setAttribute(IsInterpretedFiniteComputedAttr(), true);
     return isInterpretedFinite;
   }
   return getAttribute(IsInterpretedFiniteAttr());
+}
+
+/** Attribute true for types that are closed enumerable */
+struct IsClosedEnumerableTag
+{
+};
+struct IsClosedEnumerableComputedTag
+{
+};
+typedef expr::Attribute<IsClosedEnumerableTag, bool> IsClosedEnumerableAttr;
+typedef expr::Attribute<IsClosedEnumerableComputedTag, bool>
+    IsClosedEnumerableComputedAttr;
+
+bool TypeNode::isClosedEnumerable()
+{
+  // check it is already cached
+  if (!getAttribute(IsClosedEnumerableComputedAttr()))
+  {
+    bool ret = true;
+    if (isArray() || isSort() || isCodatatype() || isFunction())
+    {
+      ret = false;
+    }
+    else if (isSet())
+    {
+      ret = getSetElementType().isClosedEnumerable();
+    }
+    else if (isDatatype())
+    {
+      // avoid infinite loops: initially set to true
+      setAttribute(IsClosedEnumerableAttr(), ret);
+      setAttribute(IsClosedEnumerableComputedAttr(), true);
+      TypeNode tn = *this;
+      const Datatype& dt = getDatatype();
+      for (unsigned i = 0, ncons = dt.getNumConstructors(); i < ncons; i++)
+      {
+        for (unsigned j = 0, nargs = dt[i].getNumArgs(); j < nargs; j++)
+        {
+          TypeNode ctn = TypeNode::fromType(dt[i][j].getRangeType());
+          if (tn != ctn && !ctn.isClosedEnumerable())
+          {
+            ret = false;
+            break;
+          }
+        }
+        if (!ret)
+        {
+          break;
+        }
+      }
+    }
+    setAttribute(IsClosedEnumerableAttr(), ret);
+    setAttribute(IsClosedEnumerableComputedAttr(), true);
+    return ret;
+  }
+  return getAttribute(IsClosedEnumerableAttr());
 }
 
 bool TypeNode::isFirstClass() const {
@@ -342,6 +433,7 @@ TypeNode TypeNode::commonTypeNode(TypeNode t0, TypeNode t1, bool isLeast) {
   // t1.getKind() == kind::TYPE_CONSTANT
   switch(t0.getKind()) {
   case kind::BITVECTOR_TYPE:
+  case kind::FLOATINGPOINT_TYPE:
   case kind::SORT_TYPE:
   case kind::CONSTRUCTOR_TYPE:
   case kind::SELECTOR_TYPE:

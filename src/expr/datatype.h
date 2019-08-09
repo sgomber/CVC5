@@ -4,7 +4,7 @@
  ** Top contributors (to current version):
  **   Andrew Reynolds, Morgan Deters, Tim King
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -17,8 +17,8 @@
 
 #include "cvc4_public.h"
 
-#ifndef __CVC4__DATATYPE_H
-#define __CVC4__DATATYPE_H
+#ifndef CVC4__DATATYPE_H
+#define CVC4__DATATYPE_H
 
 #include <functional>
 #include <iostream>
@@ -151,17 +151,12 @@ class CVC4_PUBLIC DatatypeConstructorArg {
   Type getRangeType() const;
 
   /**
-   * Get the name of the type of this constructor argument
-   * (Datatype field).  Can be used for not-yet-resolved Datatypes
-   * (in which case the name of the unresolved type, or "[self]"
-   * for a self-referential type is returned).
-   */
-  std::string getTypeName() const;
-
-  /**
    * Returns true iff this constructor argument has been resolved.
    */
   bool isResolved() const;
+
+  /** prints this datatype constructor argument to stream */
+  void toStream(std::ostream& out) const;
 
  private:
   /** the name of this selector */
@@ -450,6 +445,14 @@ class CVC4_PUBLIC DatatypeConstructor {
    */
   void setSygus(Expr op, std::shared_ptr<SygusPrintCallback> spc);
 
+  /**
+   * Get the list of arguments to this constructor.
+   */
+  const std::vector<DatatypeConstructorArg>* getArgs() const;
+
+  /** prints this datatype constructor to stream */
+  void toStream(std::ostream& out) const;
+
  private:
   /** the name of the constructor */
   std::string d_name;
@@ -688,8 +691,8 @@ public:
    * constructors.
    */
   void addSygusConstructor(Expr op,
-                           std::string& cname,
-                           std::vector<Type>& cargs,
+                           const std::string& cname,
+                           const std::vector<Type>& cargs,
                            std::shared_ptr<SygusPrintCallback> spc = nullptr,
                            int weight = -1);
 
@@ -915,17 +918,6 @@ public:
    * to setSygus).
    */
   bool getSygusAllowAll() const;
-  /** get sygus evaluation function
-   *
-   * This gets the evaluation function for this datatype
-   * for the deep embedding. This is a function of type:
-   *   D x T1 x ... x Tn -> T
-   * where:
-   *   D is the datatype type for this datatype,
-   *   T1...Tn are the types of the variables in getSygusVarList(),
-   *   T is getSygusType().
-   */
-  Expr getSygusEvaluationFunc() const;
 
   /** involves external type
    * Get whether this datatype has a subfield
@@ -937,6 +929,14 @@ public:
    * in any constructor that is an uninterpreted type.
    */
   bool involvesUninterpretedType() const;
+
+  /**
+   * Get the list of constructors.
+   */
+  const std::vector<DatatypeConstructor>* getConstructors() const;
+
+  /** prints this datatype to stream */
+  void toStream(std::ostream& out) const;
 
  private:
   /** name of this datatype */
@@ -969,8 +969,6 @@ public:
   bool d_sygus_allow_const;
   /** whether all terms are allowed as solutions */
   bool d_sygus_allow_all;
-  /** the evaluation function for this sygus datatype */
-  Expr d_sygus_eval;
 
   /** the cardinality of this datatype
   * "mutable" because computing the cardinality can be expensive,
@@ -1290,4 +1288,4 @@ inline DatatypeConstructor::const_iterator DatatypeConstructor::end() const
 
 }/* CVC4 namespace */
 
-#endif /* __CVC4__DATATYPE_H */
+#endif /* CVC4__DATATYPE_H */

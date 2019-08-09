@@ -4,7 +4,7 @@
  ** Top contributors (to current version):
  **   Andrew Reynolds
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -32,7 +32,7 @@ void SygusEvalUnfold::registerEvalTerm(Node n)
 {
   Assert(options::sygusEvalUnfold());
   // is this a sygus evaluation function application?
-  if (!datatypes::DatatypesRewriter::isSygusEvalApp(n))
+  if (n.getKind() != DT_SYGUS_EVAL)
   {
     return;
   }
@@ -133,22 +133,31 @@ void SygusEvalUnfold::registerModelValue(Node a,
         bool do_unfold = false;
         if (options::sygusEvalUnfoldBool())
         {
-          if (bTerm.getKind() == ITE || bTerm.getType().isBoolean())
+          Node bTermUse = bTerm;
+          if (bTerm.getKind() == APPLY_UF)
+          {
+            // if the builtin term is non-beta-reduced application of lambda,
+            // we look at the body of the lambda.
+            Node bTermOp = bTerm.getOperator();
+            if (bTermOp.getKind() == LAMBDA)
+            {
+              bTermUse = bTermOp[0];
+            }
+          }
+          if (bTermUse.getKind() == ITE || bTermUse.getType().isBoolean())
           {
             do_unfold = true;
           }
         }
         if (do_unfold)
         {
-          // TODO (#1949) : this is replicated for different values, possibly
-          // do better caching
+          // note that this is replicated for different values
           std::map<Node, Node> vtm;
           std::vector<Node> exp;
           vtm[n] = vn;
           eval_children.insert(
               eval_children.end(), it->second[i].begin(), it->second[i].end());
-          Node eval_fun =
-              datatypes::DatatypesRewriter::mkSygusEvalApp(eval_children);
+          Node eval_fun = nm->mkNode(DT_SYGUS_EVAL, eval_children);
           eval_children.resize(1);
           res = d_tds->unfold(eval_fun, vtm, exp);
           expn = exp.size() == 1 ? exp[0] : nm->mkNode(AND, exp);
@@ -158,11 +167,9 @@ void SygusEvalUnfold::registerModelValue(Node a,
           EvalSygusInvarianceTest esit;
           eval_children.insert(
               eval_children.end(), it->second[i].begin(), it->second[i].end());
-          Node conj =
-              datatypes::DatatypesRewriter::mkSygusEvalApp(eval_children);
+          Node conj = nm->mkNode(DT_SYGUS_EVAL, eval_children);
           eval_children[0] = vn;
-          Node eval_fun =
-              datatypes::DatatypesRewriter::mkSygusEvalApp(eval_children);
+          Node eval_fun = nm->mkNode(DT_SYGUS_EVAL, eval_children);
           res = d_tds->evaluateWithUnfolding(eval_fun);
           esit.init(conj, n, res);
           eval_children.resize(1);

@@ -4,7 +4,7 @@
  ** Top contributors (to current version):
  **   Dejan Jovanovic, Morgan Deters, Andrew Reynolds
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -16,8 +16,8 @@
 
 #include "cvc4_private.h"
 
-#ifndef __CVC4__THEORY_ENGINE_H
-#define __CVC4__THEORY_ENGINE_H
+#ifndef CVC4__THEORY_ENGINE_H
+#define CVC4__THEORY_ENGINE_H
 
 #include <deque>
 #include <memory>
@@ -35,6 +35,7 @@
 #include "smt/command.h"
 #include "smt_util/lemma_channels.h"
 #include "theory/atom_requests.h"
+#include "theory/decision_manager.h"
 #include "theory/interrupted.h"
 #include "theory/rewriter.h"
 #include "theory/shared_terms_database.h"
@@ -84,7 +85,6 @@ struct NodeTheoryPairHashFunction {
 namespace theory {
   class TheoryModel;
   class TheoryEngineModelBuilder;
-  class ITEUtilities;
 
   namespace eq {
     class EqualityEngine;
@@ -100,7 +100,6 @@ namespace theory {
 
 class DecisionEngine;
 class RemoveTermFormulas;
-class UnconstrainedSimplifier;
 
 /**
  * This is essentially an abstraction for a collection of theories.  A
@@ -201,6 +200,10 @@ class TheoryEngine {
    * The quantifiers engine
    */
   theory::QuantifiersEngine* d_quantEngine;
+  /**
+   * The decision manager
+   */
+  std::unique_ptr<theory::DecisionManager> d_decManager;
 
   /**
    * Default model object
@@ -212,6 +215,8 @@ class TheoryEngine {
    */
   theory::TheoryEngineModelBuilder* d_curr_model_builder;
   bool d_aloc_curr_model_builder;
+  /** are we in eager model building mode? (see setEagerModelBuilding). */
+  bool d_eager_model_building;
 
   typedef std::unordered_map<Node, Node, NodeHashFunction> NodeMap;
   typedef std::unordered_map<TNode, Node, TNodeHashFunction> TNodeMap;
@@ -248,9 +253,8 @@ class TheoryEngine {
       return ss.str();
     }
 
-  public:
-
-    IntStat conflicts, propagations, lemmas, requirePhase, flipDecision, restartDemands;
+   public:
+    IntStat conflicts, propagations, lemmas, requirePhase, restartDemands;
 
     Statistics(theory::TheoryId theory);
     ~Statistics();
@@ -317,12 +321,6 @@ class TheoryEngine {
       d_engine->d_propEngine->requirePhase(n, phase);
     }
 
-    bool flipDecision() override {
-      Debug("theory") << "EngineOutputChannel::flipDecision()" << std::endl;
-      ++d_statistics.flipDecision;
-      return d_engine->d_propEngine->flipDecision();
-    }
-
     void setIncomplete() override {
       Trace("theory") << "TheoryEngine::setIncomplete()" << std::endl;
       d_engine->setIncomplete(d_theory);
@@ -353,6 +351,13 @@ class TheoryEngine {
    * Are we in conflict.
    */
   context::CDO<bool> d_inConflict;
+
+  /**
+   * Are we in "SAT mode"? In this state, the user can query for the model.
+   * This corresponds to the state in Figure 4.1, page 52 of the SMT-LIB
+   * standard, version 2.6.
+   */
+  bool d_inSatMode;
 
   /**
    * Called by the theories to notify of a conflict.
@@ -413,12 +418,6 @@ class TheoryEngine {
    * propagated literals.
    */
   void propagate(theory::Theory::Effort effort);
-
-  /**
-   * Called by the output channel to request decisions "as soon as
-   * possible."
-   */
-  void propagateAsDecision(TNode literal, theory::TheoryId theory);
 
   /**
    * A variable to mark if we added any lemmas.
@@ -540,9 +539,15 @@ public:
   theory::QuantifiersEngine* getQuantifiersEngine() const {
     return d_quantEngine;
   }
+  /**
+   * Get a pointer to the underlying decision manager.
+   */
+  theory::DecisionManager* getDecisionManager() const
+  {
+    return d_decManager.get();
+  }
 
-private:
-
+ private:
   /**
    * Helper for preprocess
    */
@@ -729,6 +734,12 @@ public:
     }
   }
 
+  /**
+   * Returns the next decision request, or null if none exist. The next
+   * decision request is a literal that this theory engine prefers the SAT
+   * solver to make as its next decision. Decision requests are managed by
+   * the decision manager d_decManager.
+   */
   Node getNextDecisionRequest();
 
   bool properConflict(TNode conflict) const;
@@ -754,9 +765,28 @@ public:
   void postProcessModel( theory::TheoryModel* m );
 
   /**
-   * Get the current model
+   * Get the pointer to the model object used by this theory engine.
    */
   theory::TheoryModel* getModel();
+  /**
+   * Get the current model for the current set of assertions. This method
+   * should only be called immediately after a satisfiable or unknown
+   * response to a check-sat call, and only if produceModels is true.
+   *
+   * If the model is not already built, this will cause this theory engine
+   * to build to the model.
+   */
+  theory::TheoryModel* getBuiltModel();
+  /** set eager model building
+   *
+   * If this method is called, then this TheoryEngine will henceforth build
+   * its model immediately after every satisfiability check that results
+   * in a satisfiable or unknown result. The motivation for this mode is to
+   * accomodate API users that get the model object from the TheoryEngine,
+   * where we want to ensure that this model is always valid.
+   * TODO (#2648): revisit this.
+   */
+  void setEagerModelBuilding() { d_eager_model_building = true; }
 
   /** get synth solutions
    *
@@ -869,11 +899,6 @@ private:
   /** Dump the assertions to the dump */
   void dumpAssertions(const char* tag);
 
-  /**
-   * A collection of ite preprocessing passes.
-   */
-  theory::ITEUtilities* d_iteUtilities;
-
   //-----------------------------------model-based theory combination
   /** check pair 
    * 
@@ -929,9 +954,6 @@ private:
   /** for each theory, stores whether the theory is parametric */
   std::map<theory::TheoryId, bool> d_tparametric;
   
-  /** For preprocessing pass simplifying unconstrained expressions */
-  UnconstrainedSimplifier* d_unconstrainedSimp;
-
   /** For preprocessing pass lifting bit-vectors of size 1 to booleans */
 public:
   void staticInitializeBVOptions(const std::vector<Node>& assertions);
@@ -939,8 +961,6 @@ public:
   Node ppSimpITE(TNode assertion);
   /** Returns false if an assertion simplified to false. */
   bool donePPSimpITE(std::vector<Node>& assertions);
-
-  void ppUnconstrainedSimp(std::vector<Node>& assertions);
 
   SharedTermsDatabase* getSharedTermsDatabase() { return &d_sharedTerms; }
 
@@ -995,4 +1015,4 @@ private:
 
 }/* CVC4 namespace */
 
-#endif /* __CVC4__THEORY_ENGINE_H */
+#endif /* CVC4__THEORY_ENGINE_H */

@@ -4,7 +4,7 @@
  ** Top contributors (to current version):
  **   Christopher L. Conway, Morgan Deters, Tim King
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -16,8 +16,8 @@
 
 #include "cvc4parser_public.h"
 
-#ifndef __CVC4__PARSER__INPUT_H
-#define __CVC4__PARSER__INPUT_H
+#ifndef CVC4__PARSER__INPUT_H
+#define CVC4__PARSER__INPUT_H
 
 #include <iostream>
 #include <stdio.h>
@@ -90,8 +90,8 @@ class CVC4_PUBLIC Input {
    * copy construction and assignment.  Mark them private and do not define
    * them.
    */
-  Input(const Input& input) CVC4_UNDEFINED;
-  Input& operator=(const Input& input) CVC4_UNDEFINED;
+  Input(const Input& input) = delete;
+  Input& operator=(const Input& input) = delete;
 
  public:
   /** Create an input for the given file.
@@ -178,4 +178,4 @@ class CVC4_PUBLIC Input {
 }/* CVC4::parser namespace */
 }/* CVC4 namespace */
 
-#endif /* __CVC4__PARSER__ANTLR_INPUT_H */
+#endif /* CVC4__PARSER__ANTLR_INPUT_H */

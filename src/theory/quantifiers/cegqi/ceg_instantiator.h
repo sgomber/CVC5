@@ -2,9 +2,9 @@
 /*! \file ceg_instantiator.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Andrew Reynolds, Tim King, Mathias Preiner
+ **   Andrew Reynolds, Mathias Preiner, Tim King
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -15,14 +15,19 @@
 
 #include "cvc4_private.h"
 
-#ifndef __CVC4__THEORY__QUANTIFIERS__CEG_INSTANTIATOR_H
-#define __CVC4__THEORY__QUANTIFIERS__CEG_INSTANTIATOR_H
+#ifndef CVC4__THEORY__QUANTIFIERS__CEG_INSTANTIATOR_H
+#define CVC4__THEORY__QUANTIFIERS__CEG_INSTANTIATOR_H
 
-#include "theory/quantifiers_engine.h"
+#include <vector>
+
+#include "expr/node.h"
 #include "util/statistics_registry.h"
 
 namespace CVC4 {
 namespace theory {
+
+class QuantifiersEngine;
+
 namespace quantifiers {
 
 class CegqiOutput {
@@ -70,15 +75,7 @@ public:
   }
   // compose property, should be such that: 
   //   p.getModifiedTerm( this.getModifiedTerm( x ) ) = this_updated.getModifiedTerm( x )
-  virtual void composeProperty( TermProperties& p ){
-    if( !p.d_coeff.isNull() ){
-      if( d_coeff.isNull() ){
-        d_coeff = p.d_coeff;
-      }else{
-        d_coeff = Rewriter::rewrite( NodeManager::currentNM()->mkNode( kind::MULT, d_coeff, p.d_coeff ) );
-      }
-    }
-  }
+  virtual void composeProperty(TermProperties& p);
 };
 
 /** Solved form
@@ -97,34 +94,9 @@ public:
   //   an example is for linear arithmetic, we store "substitution with coefficients".
   std::vector<Node> d_non_basic;
   // push the substitution pv_prop.getModifiedTerm(pv) -> n
-  void push_back( Node pv, Node n, TermProperties& pv_prop ){
-    d_vars.push_back( pv );
-    d_subs.push_back( n );
-    d_props.push_back( pv_prop );
-    if( !pv_prop.isBasic() ){
-      d_non_basic.push_back( pv );
-      // update theta value
-      Node new_theta = getTheta();
-      if( new_theta.isNull() ){
-        new_theta = pv_prop.d_coeff;
-      }else{
-        new_theta = NodeManager::currentNM()->mkNode( kind::MULT, new_theta, pv_prop.d_coeff );
-        new_theta = Rewriter::rewrite( new_theta );
-      }
-      d_theta.push_back( new_theta );
-    }
-  }
+  void push_back(Node pv, Node n, TermProperties& pv_prop);
   // pop the substitution pv_prop.getModifiedTerm(pv) -> n
-  void pop_back( Node pv, Node n, TermProperties& pv_prop ){
-    d_vars.pop_back();
-    d_subs.pop_back();
-    d_props.pop_back();
-    if( !pv_prop.isBasic() ){
-      d_non_basic.pop_back();
-      // update theta value
-      d_theta.pop_back();
-    }
-  }
+  void pop_back(Node pv, Node n, TermProperties& pv_prop);
   // is this solved form empty?
   bool empty() { return d_vars.empty(); }
 public:
@@ -548,6 +520,11 @@ class CegInstantiator {
    * for the quantified formula we are processing.
    */
   void deactivateInstantiationVariable(Node v);
+  /**
+   * Have we tried an instantiation for v after the last call to
+   * activateInstantiationVariable.
+   */
+  bool hasTriedInstantiation(Node v);
   //-------------------------------end current state
 
   //---------------------------------for applying substitutions
@@ -582,12 +559,24 @@ class CegInstantiator {
   std::map<Node, Instantiator*> d_instantiator;
 
   /** construct instantiation
-   * This method constructs the current instantiation, where we
-   * are currently processing the i^th variable in d_vars.
+   *
+   * This method attempts to find a term for the i^th variable in d_vars to
+   * include in the current instantiation, given by sf.
+   *
    * It returns true if a successful call to the output channel's
    * doAddInstantiation was made.
    */
   bool constructInstantiation(SolvedForm& sf, unsigned i);
+  /** construct instantiation
+   *
+   * Helper method for the above method. This method attempts to find a term for
+   * variable pv to include in the current instantiation, given by sf based
+   * on equality and theory-specific instantiation techniques. The latter is
+   * managed by the instantiator object vinst. Prior to calling this method,
+   * the variable pv has been activated by a call to
+   * activateInstantiationVariable.
+   */
+  bool constructInstantiation(SolvedForm& sf, Instantiator* vinst, Node pv);
   /** do add instantiation
    * This method is called by the above function after we finalize the
    * variables/substitution and auxiliary lemmas.
@@ -638,6 +627,18 @@ public:
   {
   }
 
+  /** has process equal term
+   *
+   * Whether this instantiator implements processEqualTerm and
+   * processEqualTerms.
+   */
+  virtual bool hasProcessEqualTerm(CegInstantiator* ci,
+                                   SolvedForm& sf,
+                                   Node pv,
+                                   CegInstEffort effort)
+  {
+    return false;
+  }
   /** process equal term
    *
    * This method is called when the entailment:
