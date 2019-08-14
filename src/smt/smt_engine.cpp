@@ -102,6 +102,7 @@
 #include "theory/quantifiers/sygus/sygus_abduct.h"
 #include "theory/quantifiers/sygus/synth_engine.h"
 #include "theory/quantifiers/term_util.h"
+#include "theory/quantifiers_engine.h"
 #include "theory/rewriter.h"
 #include "theory/sort_inference.h"
 #include "theory/strings/theory_strings.h"
@@ -848,8 +849,8 @@ class SmtEnginePrivate : public NodeManagerListener {
 
 SmtEngine::SmtEngine(ExprManager* em)
     : d_context(new Context()),
-      d_userLevels(),
       d_userContext(new UserContext()),
+      d_userLevels(),
       d_exprManager(em),
       d_nodeManager(d_exprManager->getNodeManager()),
       d_decisionEngine(NULL),
@@ -1318,14 +1319,6 @@ void SmtEngine::setDefaults() {
       Trace("smt") << "setting unconstrained simplification to " << uncSimp
                    << endl;
       options::unconstrainedSimp.set(uncSimp);
-    }
-  }
-  if (!options::proof())
-  {
-    // minimizing solutions from single invocation requires proofs
-    if (options::cegqiSolMinCore() && options::cegqiSolMinCore.wasSetByUser())
-    {
-      throw OptionException("cegqi-si-sol-min-core requires --proof");
     }
   }
 
@@ -1803,8 +1796,12 @@ void SmtEngine::setDefaults() {
     Notice() << "SmtEngine: turning off cbqi to support instMaxLevel" << endl;
     options::cbqi.set(false);
   }
-  //track instantiations?
-  if( options::cbqiNestedQE() || ( options::proof() && !options::trackInstLemmas.wasSetByUser() ) ){
+  // Do we need to track instantiations?
+  // Needed for sygus due to single invocation techniques.
+  if (options::cbqiNestedQE()
+      || (options::proof() && !options::trackInstLemmas.wasSetByUser())
+      || is_sygus)
+  {
     options::trackInstLemmas.set( true );
   }
 
@@ -2441,12 +2438,7 @@ CVC4::SExpr SmtEngine::getInfo(const std::string& key) const {
     }
     return SExpr(stats);
   } else if(key == "error-behavior") {
-    // immediate-exit | continued-execution
-    if( options::continuedExecution() || options::interactive() ) {
-      return SExpr(SExpr::Keyword("continued-execution"));
-    } else {
-      return SExpr(SExpr::Keyword("immediate-exit"));
-    }
+    return SExpr(SExpr::Keyword("immediate-exit"));
   } else if(key == "name") {
     return SExpr(Configuration::getName());
   } else if(key == "version") {
@@ -4920,6 +4912,70 @@ void SmtEngine::checkSynthSolution()
   }
 }
 
+void SmtEngine::checkAbduct(Expr a)
+{
+  Assert(a.getType().isBoolean());
+  Trace("check-abduct") << "SmtEngine::checkAbduct: get expanded assertions"
+                        << std::endl;
+
+  std::vector<Expr> asserts = getExpandedAssertions();
+  asserts.push_back(a);
+
+  // two checks: first, consistent with assertions, second, implies negated goal
+  // is unsatisfiable.
+  for (unsigned j = 0; j < 2; j++)
+  {
+    Trace("check-abduct") << "SmtEngine::checkAbduct: phase " << j
+                          << ": make new SMT engine" << std::endl;
+    // Start new SMT engine to check solution
+    SmtEngine abdChecker(d_exprManager);
+    abdChecker.setLogic(getLogicInfo());
+    Trace("check-abduct") << "SmtEngine::checkAbduct: phase " << j
+                          << ": asserting formulas" << std::endl;
+    for (const Expr& e : asserts)
+    {
+      abdChecker.assertFormula(e);
+    }
+    Trace("check-abduct") << "SmtEngine::checkAbduct: phase " << j
+                          << ": check the assertions" << std::endl;
+    Result r = abdChecker.checkSat();
+    Trace("check-abduct") << "SmtEngine::checkAbduct: phase " << j
+                          << ": result is " << r << endl;
+    std::stringstream serr;
+    bool isError = false;
+    if (j == 0)
+    {
+      if (r.asSatisfiabilityResult().isSat() != Result::SAT)
+      {
+        isError = true;
+        serr << "SmtEngine::checkAbduct(): produced solution cannot be shown "
+                "to be consisconsistenttent with assertions, result was "
+             << r;
+      }
+      Trace("check-abduct")
+          << "SmtEngine::checkAbduct: goal is " << d_abdConj << std::endl;
+      // add the goal to the set of assertions
+      Assert(!d_abdConj.isNull());
+      asserts.push_back(d_abdConj);
+    }
+    else
+    {
+      if (r.asSatisfiabilityResult().isSat() != Result::UNSAT)
+      {
+        isError = true;
+        serr << "SmtEngine::checkAbduct(): negated goal cannot be shown "
+                "unsatisfiable with produced solution, result was "
+             << r;
+      }
+    }
+    // did we get an unexpected result?
+    if (isError)
+    {
+      InternalError(serr.str().c_str());
+    }
+  }
+}
+
 // TODO(#1108): Simplify the error reporting of this method.
 UnsatCore SmtEngine::getUnsatCore() {
   Trace("smt") << "SMT getUnsatCore()" << endl;
@@ -5085,16 +5141,10 @@ bool SmtEngine::getAbduct(const std::string& aname,
   std::vector<Node> asserts(axioms.begin(), axioms.end());
   // negate the conjecture
   Node conjn = Node::fromExpr(conj).negate();
+  d_abdConj = conjn.toExpr();
   asserts.push_back(conjn);
-  d_sssfVarlist.clear();
-  d_sssfSyms.clear();
   Node aconj = theory::quantifiers::SygusAbduct::mkAbductionConjecture(
-      aname,
-      asserts,
-      axioms,
-      TypeNode::fromType(grammarType),
-      d_sssfVarlist,
-      d_sssfSyms);
+      aname, asserts, axioms, TypeNode::fromType(grammarType));
   // should be a quantified conjecture with one function-to-synthesize
   Assert(aconj.getKind() == kind::FORALL && aconj[0].getNumChildren() == 1);
   // remember the abduct-to-synthesize
@@ -5146,17 +5196,33 @@ bool SmtEngine::getAbductInternal(Expr& abd)
       {
         abdn = abdn[1];
       }
-      Assert(d_sssfVarlist.size() == d_sssfSyms.size());
+      // get the grammar type for the abduct
+      Node af = Node::fromExpr(d_sssf);
+      Node agdtbv = af.getAttribute(theory::SygusSynthFunVarListAttribute());
+      Assert(!agdtbv.isNull());
+      Assert(agdtbv.getKind() == kind::BOUND_VAR_LIST);
       // convert back to original
       // must replace formal arguments of abd with the free variables in the
       // input problem that they correspond to.
-      abdn = abdn.substitute(d_sssfVarlist.begin(),
-                             d_sssfVarlist.end(),
-                             d_sssfSyms.begin(),
-                             d_sssfSyms.end());
+      std::vector<Node> vars;
+      std::vector<Node> syms;
+      SygusVarToTermAttribute sta;
+      for (const Node& bv : agdtbv)
+      {
+        vars.push_back(bv);
+        syms.push_back(bv.hasAttribute(sta) ? bv.getAttribute(sta) : bv);
+      }
+      abdn =
+          abdn.substitute(vars.begin(), vars.end(), syms.begin(), syms.end());
 
       // convert to expression
       abd = abdn.toExpr();
+
+      // if check abducts option is set, we check the correctness
+      if (options::checkAbducts())
+      {
+        checkAbduct(abd);
+      }
       return true;
     }
     Trace("sygus-abduct") << "SmtEngine::getAbduct: could not find solution!"

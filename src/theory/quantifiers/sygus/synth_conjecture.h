@@ -29,7 +29,6 @@
 #include "theory/quantifiers/sygus/sygus_pbe.h"
 #include "theory/quantifiers/sygus/sygus_process_conj.h"
 #include "theory/quantifiers/sygus/sygus_repair_const.h"
-#include "theory/quantifiers_engine.h"
 
 namespace CVC4 {
 namespace theory {
@@ -87,11 +86,6 @@ class SynthConjecture
   bool needsCheck();
   /** whether the conjecture is waiting for a call to doRefine below */
   bool needsRefinement() const;
-  /** do single invocation check
-   * This updates Gamma for an iteration of step 2 of Figure 1 of Reynolds et al
-   * CAV 2015.
-   */
-  void doSingleInvCheck(std::vector<Node>& lems);
   /** do syntax-guided enumerative check
    *
    * This is step 2(a) of Figure 3 of Reynolds et al CAV 2015.
@@ -174,6 +168,11 @@ class SynthConjecture
   context::CDO<bool> d_hasSolution;
   /** The feasible guard. */
   Node d_feasible_guard;
+  /**
+   * Do we have a solution in this user context? This is user-context dependent
+   * to enable use cases of sygus in incremental mode.
+   */
+  context::CDO<bool> d_hasSolution;
   /** the decision strategy for the feasible guard */
   std::unique_ptr<DecisionStrategy> d_feasible_strategy;
   /** single invocation utility */

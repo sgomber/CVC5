@@ -17,11 +17,17 @@
 #ifndef CVC4__THEORY__QUANTIFIERS__CE_GUIDED_SINGLE_INV_SOL_H
 #define CVC4__THEORY__QUANTIFIERS__CE_GUIDED_SINGLE_INV_SOL_H
 
+#include <map>
+#include <vector>
+
 #include "context/cdhashmap.h"
-#include "theory/quantifiers_engine.h"
+#include "expr/node.h"
 
 namespace CVC4 {
 namespace theory {
+
+class QuantifiersEngine;
+
 namespace quantifiers {
 
 class CegSingleInv;
@@ -175,6 +181,18 @@ private:
                 std::vector<Node>& args,
                 int index_exc = -1,
                 int index_start = 0);
+  /** given a term, construct an equivalent smaller one that respects syntax */
+  Node minimizeBuiltinTerm(Node n);
+  /**
+   * Return the kind of "is less than" for type tn, where tn is either Int or
+   * BV.
+   */
+  static Kind getComparisonKind(TypeNode tn);
+  /**
+   * Return the kind of "plus" for type tn, or "minus" if is_neg is true, where
+   * tn is either Int or BV.
+   */
+  static Kind getPlusKind(TypeNode tn, bool is_neg = false);
 };
 
 

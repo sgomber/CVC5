@@ -33,6 +33,7 @@
 #include "theory/quantifiers/sygus/synth_engine.h"
 #include "theory/quantifiers/sygus/term_database_sygus.h"
 #include "theory/quantifiers/term_util.h"
+#include "theory/quantifiers_engine.h"
 #include "theory/theory_engine.h"
 
 using namespace CVC4::kind;
@@ -262,22 +263,19 @@ void SynthConjecture::assign(Node q)
     }
   }
 
-  if (isSingleInvocation())
-  {
-    std::vector<Node> lems;
-    d_ceg_si->getInitialSingleInvLemma(d_feasible_guard, lems);
-    for (unsigned i = 0; i < lems.size(); i++)
-    {
-      Trace("cegqi-lemma") << "Cegqi::Lemma : single invocation " << i << " : "
-                           << lems[i] << std::endl;
-      d_qe->getOutputChannel().lemma(lems[i]);
-      if (Trace.isOn("cegqi-debug"))
-      {
-        Node rlem = Rewriter::rewrite(lems[i]);
-        Trace("cegqi-debug") << "...rewritten : " << rlem << std::endl;
-      }
-    }
-  }
+  // register the strategy
+  d_feasible_strategy.reset(
+      new DecisionStrategySingleton("sygus_feasible",
+                                    d_feasible_guard,
+                                    d_qe->getSatContext(),
+                                    d_qe->getValuation()));
+  d_qe->getTheoryEngine()->getDecisionManager()->registerStrategy(
+      DecisionManager::STRAT_QUANT_SYGUS_FEASIBLE, d_feasible_strategy.get());
+  // this must be called, both to ensure that the feasible guard is
+  // decided on with true polariy, but also to ensure that output channel
+  // has been used on this call to check.
+  d_qe->getOutputChannel().requirePhase(d_feasible_guard, true);
+
   Node gneg = d_feasible_guard.negate();
   for (unsigned i = 0; i < guarded_lemmas.size(); i++)
   {
@@ -334,17 +332,24 @@ bool SynthConjecture::needsCheck()
   return true;
 }
 
-void SynthConjecture::doSingleInvCheck(std::vector<Node>& lems)
-{
-  if (d_ceg_si != NULL)
-  {
-    d_ceg_si->check(lems);
-  }
-}
-
 bool SynthConjecture::needsRefinement() const { return d_set_ce_sk_vars; }
 bool SynthConjecture::doCheck(std::vector<Node>& lems)
 {
+  if (isSingleInvocation())
+  {
+    // We now try to solve with the single invocation solver, which may or may
+    // not succeed in solving the conjecture. In either case,  we are done and
+    // return true.
+    if (d_ceg_si->solve())
+    {
+      d_hasSolution = true;
+      // the conjecture has a solution, so its negation holds
+      Node lem = d_quant.negate();
+      lem = getStreamGuardedLemma(lem);
+      lems.push_back(lem);
+    }
+    return true;
+  }
   Assert(d_master != nullptr);
   Assert(!d_hasSolution);
 
@@ -1097,6 +1102,7 @@ void SynthConjecture::printSynthSolution(std::ostream& out)
   {
     return;
   }
+  NodeManager* nm = NodeManager::currentNM();
   for (unsigned i = 0, size = d_embed_quant[0].getNumChildren(); i < size; i++)
   {
     Node sol = sols[i];
@@ -1161,13 +1167,35 @@ void SynthConjecture::printSynthSolution(std::ostream& out)
       if (is_unique_term)
       {
         out << "(define-fun " << f << " ";
-        if (dt.getSygusVarList().isNull())
+        // Only include variables that are truly bound variables of the
+        // function-to-synthesize. This means we exclude variables that encode
+        // external terms. This ensures that --sygus-stream prints
+        // solutions with no arguments on the predicate for responses to
+        // the get-abduct command.
+        // pvs stores the variables that will be printed in the argument list
+        // below.
+        std::vector<Node> pvs;
+        Node vl = Node::fromExpr(dt.getSygusVarList());
+        if (!vl.isNull())
+        {
+          Assert(vl.getKind() == BOUND_VAR_LIST);
+          SygusVarToTermAttribute sta;
+          for (const Node& v : vl)
+          {
+            if (!v.hasAttribute(sta))
+            {
+              pvs.push_back(v);
+            }
+          }
+        }
+        if (pvs.empty())
         {
           out << "() ";
         }
         else
         {
-          out << dt.getSygusVarList() << " ";
+          vl = nm->mkNode(BOUND_VAR_LIST, pvs);
+          out << vl << " ";
         }
         out << dt.getSygusType() << " ";
         if (status == 0)
