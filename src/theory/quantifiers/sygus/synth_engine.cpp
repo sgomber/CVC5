@@ -49,6 +49,7 @@ void SynthEngine::presolve()
   {
     d_conjs[i]->presolve();
   }
+  Trace("cegqi-engine") << "SynthEngine::presolve finished" << std::endl;
 }
 
 bool SynthEngine::needsCheck(Theory::Effort e)
