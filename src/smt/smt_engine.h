@@ -575,7 +575,7 @@ class CVC4_PUBLIC SmtEngine
    * current assertion stack (call it A) and the conjecture (call it B).
    * If this method returns true, then abd is set to a formula C such that
    * A ^ C is satisfiable, and A ^ ~B ^ C is unsatisfiable.
-   * 
+   *
    * The argument aname is the name of the abduction predicate. This is used
    * for printing the result of the query, e.g. if aname is "myAbduct" then
    * a result of this query may be:
@@ -587,10 +587,13 @@ class CVC4_PUBLIC SmtEngine
    * This method invokes a separate copy of the SMT engine for solving the
    * corresponding sygus problem for generating such a solution.
    */
-  bool getAbduct(const std::string& aname,const Expr& conj, const Type& grammarType, Expr& abd);
+  bool getAbduct(const std::string& aname,
+                 const Expr& conj,
+                 const Type& grammarType,
+                 Expr& abd);
 
   /** Same as above, but without user-provided grammar restrictions */
-  bool getAbduct(const std::string& aname,const Expr& conj, Expr& abd);
+  bool getAbduct(const std::string& aname, const Expr& conj, Expr& abd);
   /**
    * This method asks the SMT engine to find the next abduct with respect to
    * the previous call to getAbduct above. It is only valid immediately after
@@ -1041,7 +1044,7 @@ class CVC4_PUBLIC SmtEngine
    * problems.
    */
   bool getAbductInternal(Expr& abd);
-  
+
   /**
    * Helper method to obtain both the heap and nil from the solver. Returns a
    * std::pair where the first element is the heap expression and the second

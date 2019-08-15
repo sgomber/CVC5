@@ -3706,7 +3706,7 @@ Result SmtEngine::checkSatisfiability(const vector<Expr>& assumptions,
       r = Result(Result::SAT_UNKNOWN, Result::UNKNOWN_REASON);
     }
     // if sygus incremental, we may be unsat without invalidating context
-    
+
     // flipped if we did a global negation
     if (d_globalNegation)
     {
