@@ -390,9 +390,9 @@ class SynthConjecture
    */
   void printAndContinueStream(const std::vector<Node>& enums,
                               const std::vector<Node>& values);
-  /** 
-   * exclude the current solution { enums -> values } 
-   * 
+  /**
+   * exclude the current solution { enums -> values }
+   *
    * If sendLemma is true, we send a lemma that blocks the current solution,
    * if necessary, and return the null node. Notice that we do not send lemmas
    * for active enumerators since their value is not based on models from the

@@ -675,7 +675,8 @@ bool SynthConjecture::doCheck(std::vector<Node>& lems)
       // We additionally set the waiting exclude lemma to exclude the current
       // solution, since it should not be returned in the future.
       lem = Node::null();
-      d_waitingExcludeLem = excludeCurrentSolution(terms, candidate_values,false);
+      d_waitingExcludeLem =
+          excludeCurrentSolution(terms, candidate_values, false);
     }
     // remember that we have a solution
     d_hasSolution = true;
@@ -1049,8 +1050,7 @@ void SynthConjecture::printAndContinueStream(const std::vector<Node>& enums,
 
 Node SynthConjecture::excludeCurrentSolution(const std::vector<Node>& enums,
                                              const std::vector<Node>& values,
-                                             bool sendLemma
-                                            )
+                                             bool sendLemma)
 {
   // We will not refine the current candidate solution since it is a solution
   // thus, we clear information regarding the current refinement
