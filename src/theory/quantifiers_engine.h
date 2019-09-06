@@ -24,7 +24,6 @@
 #include "context/cdlist.h"
 #include "expr/attribute.h"
 #include "expr/term_canonize.h"
-#include "theory/quantifiers/bv_inverter.h"
 #include "theory/quantifiers/cegqi/inst_strategy_cegqi.h"
 #include "theory/quantifiers/ematching/trigger.h"
 #include "theory/quantifiers/equality_infer.h"
@@ -34,7 +33,6 @@
 #include "theory/quantifiers/fmf/model_builder.h"
 #include "theory/quantifiers/instantiate.h"
 #include "theory/quantifiers/quant_epr.h"
-#include "theory/quantifiers/quant_relevance.h"
 #include "theory/quantifiers/quant_util.h"
 #include "theory/quantifiers/quantifiers_attributes.h"
 #include "theory/quantifiers/relevant_domain.h"
@@ -115,10 +113,6 @@ public:
   quantifiers::EqualityInference* getEqualityInference() const;
   /** get relevant domain */
   quantifiers::RelevantDomain* getRelevantDomain() const;
-  /** get the BV inverter utility */
-  quantifiers::BvInverter* getBvInverter() const;
-  /** get quantifier relevance */
-  quantifiers::QuantRelevance* getQuantifierRelevance() const;
   //---------------------- end utilities
   //---------------------- modules (TODO remove these #1163)
   /** get bounded integers utility */
@@ -310,12 +304,8 @@ public:
   std::unique_ptr<inst::TriggerTrie> d_tr_trie;
   /** extended model object */
   std::unique_ptr<quantifiers::FirstOrderModel> d_model;
-  /** for computing relevance of quantifiers */
-  std::unique_ptr<quantifiers::QuantRelevance> d_quant_rel;
   /** relevant domain */
   std::unique_ptr<quantifiers::RelevantDomain> d_rel_dom;
-  /** inversion utility for BV instantiation */
-  std::unique_ptr<quantifiers::BvInverter> d_bv_invert;
   /** model builder */
   std::unique_ptr<quantifiers::QModelBuilder> d_builder;
   /** utility for effectively propositional logic */
