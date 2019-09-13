@@ -19,8 +19,8 @@
 #define CVC4__THEORY__DECISION_MANAGER__H
 
 #include <map>
-#include "theory/decision_strategy.h"
 #include "context/cdlist.h"
+#include "theory/decision_strategy.h"
 
 namespace CVC4 {
 namespace theory {
@@ -48,6 +48,7 @@ namespace theory {
 class DecisionManager
 {
   typedef context::CDList<DecisionStrategy*> DecisionStrategyList;
+
  public:
   enum StrategyId
   {
@@ -85,7 +86,7 @@ class DecisionManager
 
     STRAT_LAST
   };
-  DecisionManager(context::Context * userContext);
+  DecisionManager(context::Context* userContext);
   ~DecisionManager() {}
   /** presolve
    *
@@ -100,7 +101,9 @@ class DecisionManager
    * strategy should be run. If the arg isUserCd is true, then the strategy is
    * user-context-dependent.
    */
-  void registerStrategy(StrategyId id, DecisionStrategy* ds, bool isUserCd=true);
+  void registerStrategy(StrategyId id,
+                        DecisionStrategy* ds,
+                        bool isUserCd = true);
   /** Get the next decision request
    *
    * If this method returns a non-null node n, then n is a literal corresponding

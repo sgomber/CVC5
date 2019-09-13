@@ -22,25 +22,30 @@ using namespace CVC4::kind;
 namespace CVC4 {
 namespace theory {
 
-DecisionManager::DecisionManager(context::Context * userContext) : d_strategyCacheC(userContext){}
+DecisionManager::DecisionManager(context::Context* userContext)
+    : d_strategyCacheC(userContext)
+{
+}
 
 void DecisionManager::presolve()
 {
   Trace("dec-manager") << "DecisionManager: presolve." << std::endl;
   // remove the strategies that are not in this user context
   std::unordered_set<DecisionStrategy*> active;
-  for( DecisionStrategyList::const_iterator i = d_strategyCacheC.begin(); i != d_strategyCacheC.end(); ++i ) {
-    active.insert( *i );
+  for (DecisionStrategyList::const_iterator i = d_strategyCacheC.begin();
+       i != d_strategyCacheC.end();
+       ++i)
+  {
+    active.insert(*i);
   }
-  active.insert(d_strategyCache.begin(),d_strategyCache.end());
+  active.insert(d_strategyCache.begin(), d_strategyCache.end());
   std::map<StrategyId, std::vector<DecisionStrategy*> > tmp = d_reg_strategy;
   d_reg_strategy.clear();
-  for (std::pair<const StrategyId, std::vector<DecisionStrategy*> >& rs :
-       tmp)
+  for (std::pair<const StrategyId, std::vector<DecisionStrategy*> >& rs : tmp)
   {
-    for (DecisionStrategy* ds : rs.second )
+    for (DecisionStrategy* ds : rs.second)
     {
-      if (active.find(ds)!=active.end())
+      if (active.find(ds) != active.end())
       {
         // if its active, we keep it
         d_reg_strategy[rs.first].push_back(ds);
@@ -49,13 +54,15 @@ void DecisionManager::presolve()
   }
 }
 
-void DecisionManager::registerStrategy(StrategyId id, DecisionStrategy* ds, bool isUserCd)
+void DecisionManager::registerStrategy(StrategyId id,
+                                       DecisionStrategy* ds,
+                                       bool isUserCd)
 {
   Trace("dec-manager") << "DecisionManager: Register strategy : "
                        << ds->identify() << ", id = " << id << std::endl;
   ds->initialize();
   d_reg_strategy[id].push_back(ds);
-  if( isUserCd )
+  if (isUserCd)
   {
     // store it in the user-context-dependent list
     d_strategyCacheC.push_back(ds);

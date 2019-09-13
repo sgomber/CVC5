@@ -922,11 +922,11 @@ void TheoryEngine::getSynthSolutions(std::map<Node, Node>& sol_map)
 bool TheoryEngine::presolve() {
   // Reset the interrupt flag
   d_interrupted = false;
-  
+
   // Reset the decision manager. This clears its decision strategies that are
   // no longer valid in this user context.
   d_decManager->presolve();
-  
+
   try {
     // Definition of the statement that is to be run by every theory
 #ifdef CVC4_FOR_EACH_THEORY_STATEMENT

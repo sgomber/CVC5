@@ -1253,8 +1253,8 @@ void TheoryArrays::presolve()
 {
   Trace("arrays")<<"Presolving \n";
   // add the decision strategy, which is user-context-independent
-  getDecisionManager()->registerStrategy(DecisionManager::STRAT_ARRAYS,
-                                         d_dstrat.get(), true);
+  getDecisionManager()->registerStrategy(
+      DecisionManager::STRAT_ARRAYS, d_dstrat.get(), true);
 }
 
 
