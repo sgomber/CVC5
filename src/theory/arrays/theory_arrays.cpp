@@ -1252,9 +1252,9 @@ bool TheoryArrays::collectModelInfo(TheoryModel* m)
 void TheoryArrays::presolve()
 {
   Trace("arrays")<<"Presolving \n";
-  // add the decision strategy
+  // add the decision strategy, which is user-context-independent
   getDecisionManager()->registerStrategy(DecisionManager::STRAT_ARRAYS,
-                                         d_dstrat.get());
+                                         d_dstrat.get(), true);
 }
 
 

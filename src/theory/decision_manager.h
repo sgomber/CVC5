@@ -97,9 +97,10 @@ class DecisionManager
   void presolve();
   /**
    * Registers the strategy ds with this manager. The id specifies when the
-   * strategy should be run.
+   * strategy should be run. If the arg isUserCd is true, then the strategy is
+   * user-context-dependent.
    */
-  void registerStrategy(StrategyId id, DecisionStrategy* ds);
+  void registerStrategy(StrategyId id, DecisionStrategy* ds, bool isUserCd=true);
   /** Get the next decision request
    *
    * If this method returns a non-null node n, then n is a literal corresponding
@@ -114,7 +115,9 @@ class DecisionManager
   /** Map containing all strategies registered to this manager */
   std::map<StrategyId, std::vector<DecisionStrategy*> > d_reg_strategy;
   /** Set of decision strategies in this user context */
-  DecisionStrategyList d_strategyCache;
+  DecisionStrategyList d_strategyCacheC;
+  /** Set of decision strategies that are context independent */
+  std::unordered_set<DecisionStrategy*> d_strategyCache;
 };
 
 }  // namespace theory

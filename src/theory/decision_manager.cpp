@@ -22,41 +22,49 @@ using namespace CVC4::kind;
 namespace CVC4 {
 namespace theory {
 
-DecisionManager::DecisionManager(context::Context * userContext) : d_strategyCache(userContext){}
+DecisionManager::DecisionManager(context::Context * userContext) : d_strategyCacheC(userContext){}
 
 void DecisionManager::presolve()
 {
   Trace("dec-manager") << "DecisionManager: presolve." << std::endl;
-  //d_reg_strategy.clear();
   // remove the strategies that are not in this user context
-  std::unordered_set<DecisionStrategy*> strats;
-  for( DecisionStrategyList::const_iterator i = d_strategyCache.begin(); i != d_strategyCache.end(); ++i ) {
-    strats.insert( *i );
+  std::unordered_set<DecisionStrategy*> active;
+  for( DecisionStrategyList::const_iterator i = d_strategyCacheC.begin(); i != d_strategyCacheC.end(); ++i ) {
+    active.insert( *i );
   }
+  active.insert(d_strategyCache.begin(),d_strategyCache.end());
+  std::map<StrategyId, std::vector<DecisionStrategy*> > tmp = d_reg_strategy;
+  d_reg_strategy.clear();
   for (std::pair<const StrategyId, std::vector<DecisionStrategy*> >& rs :
-       d_reg_strategy)
+       tmp)
   {
-    unsigned i=0;
-    while (strats.find(rs.second[i])!=strats.end())
+    for (DecisionStrategy* ds : rs.second )
     {
-      i++;
-    }
-    if (i<rs.second.size())
-    {
-      Trace("dec-manager") << "DecisionManager: remove " << rs.second.size()-i << "/" << rs.second.size() << " strategies for id " << rs.first << std::endl;
-      rs.second.erase( rs.second.begin()+i, rs.second.end());
+      if (active.find(ds)!=active.end())
+      {
+        // if its active, we keep it
+        d_reg_strategy[rs.first].push_back(ds);
+      }
     }
   }
 }
 
-void DecisionManager::registerStrategy(StrategyId id, DecisionStrategy* ds)
+void DecisionManager::registerStrategy(StrategyId id, DecisionStrategy* ds, bool isUserCd)
 {
   Trace("dec-manager") << "DecisionManager: Register strategy : "
                        << ds->identify() << ", id = " << id << std::endl;
   ds->initialize();
   d_reg_strategy[id].push_back(ds);
-  // store it in the user-context-dependent list
-  d_strategyCache.push_back(ds);
+  if( isUserCd )
+  {
+    // store it in the user-context-dependent list
+    d_strategyCacheC.push_back(ds);
+  }
+  else
+  {
+    // it is context independent
+    d_strategyCache.insert(ds);
+  }
 }
 
 Node DecisionManager::getNextDecisionRequest()
