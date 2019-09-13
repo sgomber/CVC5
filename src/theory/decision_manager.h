@@ -99,7 +99,7 @@ class DecisionManager
   /**
    * Registers the strategy ds with this manager. The id specifies when the
    * strategy should be run. If the arg isUserCd is true, then the strategy is
-   * user-context-dependent.
+   * user-context-dependent, otherwise it is context independent.
    */
   void registerStrategy(StrategyId id,
                         DecisionStrategy* ds,
