@@ -22,12 +22,31 @@ using namespace CVC4::kind;
 namespace CVC4 {
 namespace theory {
 
-DecisionManager::DecisionManager(context::Context* satContext) {}
+DecisionManager::DecisionManager(context::Context * userContext) : d_strategyCache(userContext){}
 
-void DecisionManager::reset()
+void DecisionManager::presolve()
 {
-  Trace("dec-manager") << "DecisionManager: reset." << std::endl;
-  d_reg_strategy.clear();
+  Trace("dec-manager") << "DecisionManager: presolve." << std::endl;
+  //d_reg_strategy.clear();
+  // remove the strategies that are not in this user context
+  std::unordered_set<DecisionStrategy*> strats;
+  for( DecisionStrategyList::const_iterator i = d_strategyCache.begin(); i != d_strategyCache.end(); ++i ) {
+    strats.insert( *i );
+  }
+  for (std::pair<const StrategyId, std::vector<DecisionStrategy*> >& rs :
+       d_reg_strategy)
+  {
+    unsigned i=0;
+    while (strats.find(rs.second[i])!=strats.end())
+    {
+      i++;
+    }
+    if (i<rs.second.size())
+    {
+      Trace("dec-manager") << "DecisionManager: remove " << rs.second.size()-i << "/" << rs.second.size() << " strategies for id " << rs.first << std::endl;
+      rs.second.erase( rs.second.begin()+i, rs.second.end());
+    }
+  }
 }
 
 void DecisionManager::registerStrategy(StrategyId id, DecisionStrategy* ds)
@@ -36,13 +55,15 @@ void DecisionManager::registerStrategy(StrategyId id, DecisionStrategy* ds)
                        << ds->identify() << ", id = " << id << std::endl;
   ds->initialize();
   d_reg_strategy[id].push_back(ds);
+  // store it in the user-context-dependent list
+  d_strategyCache.push_back(ds);
 }
 
 Node DecisionManager::getNextDecisionRequest()
 {
   Trace("dec-manager-debug")
       << "DecisionManager: Get next decision..." << std::endl;
-  for (const std::pair<StrategyId, std::vector<DecisionStrategy*> >& rs :
+  for (const std::pair<const StrategyId, std::vector<DecisionStrategy*> >& rs :
        d_reg_strategy)
   {
     for (unsigned i = 0, size = rs.second.size(); i < size; i++)

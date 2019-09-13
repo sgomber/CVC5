@@ -20,6 +20,7 @@
 
 #include <map>
 #include "theory/decision_strategy.h"
+#include "context/cdlist.h"
 
 namespace CVC4 {
 namespace theory {
@@ -46,6 +47,7 @@ namespace theory {
  */
 class DecisionManager
 {
+  typedef context::CDList<DecisionStrategy*> DecisionStrategyList;
  public:
   enum StrategyId
   {
@@ -83,16 +85,16 @@ class DecisionManager
 
     STRAT_LAST
   };
-  DecisionManager(context::Context* satContext);
+  DecisionManager(context::Context * userContext);
   ~DecisionManager() {}
-  /** reset the strategy
+  /** presolve
    *
-   * This clears all decision strategies that are registered to this manager.
+   * This clears all decision strategies that are registered to this manager
+   * that no longer exist in the current user context.
    * We require that each satisfiability check beyond the first calls this
-   * function exactly once. Currently, it is called during
-   * TheoryEngine::postSolve.
+   * function exactly once. It is called during TheoryEngine::presolve.
    */
-  void reset();
+  void presolve();
   /**
    * Registers the strategy ds with this manager. The id specifies when the
    * strategy should be run.
@@ -111,6 +113,8 @@ class DecisionManager
  private:
   /** Map containing all strategies registered to this manager */
   std::map<StrategyId, std::vector<DecisionStrategy*> > d_reg_strategy;
+  /** Set of decision strategies in this user context */
+  DecisionStrategyList d_strategyCache;
 };
 
 }  // namespace theory
