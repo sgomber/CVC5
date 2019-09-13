@@ -47,7 +47,6 @@ SynthConjecture::SynthConjecture(QuantifiersEngine* qe, SynthEngine* p)
     : d_qe(qe),
       d_parent(p),
       d_tds(qe->getTermDatabaseSygus()),
-      d_initSolving(false, qe->getUserContext()),
       d_hasSolution(false, qe->getUserContext()),
       d_ceg_si(new CegSingleInv(qe, this)),
       d_ceg_proc(new SynthConjectureProcess(qe)),
@@ -78,47 +77,8 @@ SynthConjecture::~SynthConjecture() {}
 
 void SynthConjecture::presolve()
 {
-  // initialize solving, reset the flag since we know we have not initialized
-  // in this context yet
-  d_initSolving = false;
   // we do not have a solution
   d_hasSolution = false;
-  initSolving();
-}
-
-void SynthConjecture::initSolving()
-{
-  if (d_quant.isNull())
-  {
-    // not assigned, nothing to do
-    return;
-  }
-  // initialize user-context dependent information
-  if (d_initSolving)
-  {
-    // already initialized
-    return;
-  }
-  d_initSolving = true;
-
-  Trace("cegqi") << "SynthConjecture::initSolving" << std::endl;
-  Assert(!d_feasible_guard.isNull());
-  // register the decision strategy
-  if (d_feasible_strategy == nullptr)
-  {
-    d_feasible_strategy.reset(
-        new DecisionStrategySingleton("sygus_feasible",
-                                      d_feasible_guard,
-                                      d_qe->getSatContext(),
-                                      d_qe->getValuation()));
-  }
-  d_qe->getTheoryEngine()->getDecisionManager()->registerStrategy(
-      DecisionManager::STRAT_QUANT_SYGUS_FEASIBLE, d_feasible_strategy.get());
-  // this must be called, both to ensure that the feasible guard is
-  // decided on with true polariy, but also to ensure that output channel
-  // has been used on this call to check.
-  d_qe->getOutputChannel().requirePhase(d_feasible_guard, true);
-  Trace("cegqi") << "SynthConjecture::initSolving finished" << std::endl;
 }
 
 bool SynthConjecture::checkCompleteFor(Node q)
@@ -236,9 +196,6 @@ void SynthConjecture::assign(Node q)
     }
   }
 
-  // initialize solving now
-  initSolving();
-
   // register this term with sygus database and other utilities that impact
   // the enumerative sygus search
   std::vector<Node> guarded_lemmas;
@@ -266,6 +223,19 @@ void SynthConjecture::assign(Node q)
       d_inner_vars.push_back(v);
     }
   }
+  
+  // register the strategy	
+  d_feasible_strategy.reset(	
+      new DecisionStrategySingleton("sygus_feasible",	
+                                    d_feasible_guard,	
+                                    d_qe->getSatContext(),	
+                                    d_qe->getValuation()));	
+  d_qe->getTheoryEngine()->getDecisionManager()->registerStrategy(	
+      DecisionManager::STRAT_QUANT_SYGUS_FEASIBLE, d_feasible_strategy.get());	
+  // this must be called, both to ensure that the feasible guard is	
+  // decided on with true polariy, but also to ensure that output channel	
+  // has been used on this call to check.	
+  d_qe->getOutputChannel().requirePhase(d_feasible_guard, true);
 
   Node gneg = d_feasible_guard.negate();
   for (unsigned i = 0; i < guarded_lemmas.size(); i++)
