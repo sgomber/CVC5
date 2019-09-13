@@ -223,18 +223,18 @@ void SynthConjecture::assign(Node q)
       d_inner_vars.push_back(v);
     }
   }
-  
-  // register the strategy	
-  d_feasible_strategy.reset(	
-      new DecisionStrategySingleton("sygus_feasible",	
-                                    d_feasible_guard,	
-                                    d_qe->getSatContext(),	
-                                    d_qe->getValuation()));	
-  d_qe->getTheoryEngine()->getDecisionManager()->registerStrategy(	
-      DecisionManager::STRAT_QUANT_SYGUS_FEASIBLE, d_feasible_strategy.get());	
-  // this must be called, both to ensure that the feasible guard is	
-  // decided on with true polariy, but also to ensure that output channel	
-  // has been used on this call to check.	
+
+  // register the strategy
+  d_feasible_strategy.reset(
+      new DecisionStrategySingleton("sygus_feasible",
+                                    d_feasible_guard,
+                                    d_qe->getSatContext(),
+                                    d_qe->getValuation()));
+  d_qe->getTheoryEngine()->getDecisionManager()->registerStrategy(
+      DecisionManager::STRAT_QUANT_SYGUS_FEASIBLE, d_feasible_strategy.get());
+  // this must be called, both to ensure that the feasible guard is
+  // decided on with true polariy, but also to ensure that output channel
+  // has been used on this call to check.
   d_qe->getOutputChannel().requirePhase(d_feasible_guard, true);
 
   Node gneg = d_feasible_guard.negate();
