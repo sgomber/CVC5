@@ -78,7 +78,7 @@ namespace theory {
 class TheoryModel : public Model
 {
   friend class TheoryEngineModelBuilder;
-public:
+ public:
  TheoryModel(theory::eq::EqualityEngineNotify* notify,
              context::Context* c,
              std::string name,
