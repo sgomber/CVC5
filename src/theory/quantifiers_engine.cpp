@@ -288,8 +288,8 @@ QuantifiersEngine::QuantifiersEngine(context::Context* c,
       d_builder.reset(new quantifiers::fmcheck::FullModelChecker(c, this));
     }else{
       Trace("quant-engine-debug") << "...make default model builder." << std::endl;
-      d_model.reset(
-          new quantifiers::FirstOrderModel(this, d_te->getModelNotify(), c, "FirstOrderModel"));
+      d_model.reset(new quantifiers::FirstOrderModel(
+          this, d_te->getModelNotify(), c, "FirstOrderModel"));
       d_builder.reset(new quantifiers::QModelBuilder(c, this));
     }
   }else{
