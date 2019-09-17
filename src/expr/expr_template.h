@@ -4,7 +4,7 @@
  ** Top contributors (to current version):
  **   Morgan Deters, Dejan Jovanovic, Aina Niemetz
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -23,8 +23,8 @@
 // "expr.h" safely, then go on to completely declare their own stuff.
 ${includes}
 
-#ifndef __CVC4__EXPR_H
-#define __CVC4__EXPR_H
+#ifndef CVC4__EXPR_H
+#define CVC4__EXPR_H
 
 #include <stdint.h>
 #include <iosfwd>
@@ -63,12 +63,6 @@ class TypeCheckingExceptionPrivate;
 namespace api {
 class Solver;
 }
-
-namespace expr {
-  namespace pickle {
-    class Pickler;
-  }/* CVC4::expr::pickle namespace */
-}/* CVC4::expr namespace */
 
 namespace prop {
   class TheoryProxy;
@@ -218,7 +212,6 @@ class CVC4_PUBLIC Expr {
   friend class TypeCheckingException;
   friend class api::Solver;
   friend class expr::ExportPrivate;
-  friend class expr::pickle::Pickler;
   friend class prop::TheoryProxy;
   friend class smt::SmtEnginePrivate;
   friend std::ostream& CVC4::operator<<(std::ostream& out, const Expr& e);
@@ -391,7 +384,7 @@ public:
    * Returns the Boolean equivalence of this expression and
    * the given expression.
    */
-  Expr iffExpr(const Expr& e) const;
+  Expr eqExpr(const Expr& e) const;
 
   /**
    * Returns the implication of this expression and
@@ -612,7 +605,7 @@ private:
 
 ${getConst_instantiations}
 
-#line 613 "${template}"
+#line 616 "${template}"
 
 inline size_t ExprHashFunction::operator()(CVC4::Expr e) const {
   return (size_t) e.getId();
@@ -620,4 +613,4 @@ inline size_t ExprHashFunction::operator()(CVC4::Expr e) const {
 
 }/* CVC4 namespace */
 
-#endif /* __CVC4__EXPR_H */
+#endif /* CVC4__EXPR_H */
