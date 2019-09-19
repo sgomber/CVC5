@@ -256,12 +256,12 @@ public:
 
   /** get synth solutions
    *
-   * This function adds entries to sol_map that map functions-to-synthesize with
+   * This method adds entries to sol_map that map functions-to-synthesize with
    * their solutions, for all active conjectures. This should be called
    * immediately after the solver answers unsat for sygus input.
    *
    * For details on what is added to sol_map, see
-   * CegConjecture::getSynthSolutions.
+   * SynthConjecture::getSynthSolutions.
    */
   bool getSynthSolutions(std::map<Node, Node>& sol_map);
 

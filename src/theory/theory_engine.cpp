@@ -900,6 +900,7 @@ bool TheoryEngine::getSynthSolutions(std::map<Node, Node>& sol_map)
   {
     return d_quantEngine->getSynthSolutions(sol_map);
   }
+  // we are not in a quantified logic, there is no synthesis solution
   return false;
 }
 
