@@ -511,8 +511,8 @@ class CVC4_PUBLIC SmtEngine
    * Get synth solution.
    *
    * This method returns true if we are in a state immediately preceeded by
-   * a successful call to 
-   * 
+   * a successful call to
+   *
    * This method adds entries to sol_map that map functions-to-synthesize with
    * their solutions, for all active conjectures. This should be called
    * immediately after the solver answers unsat for sygus input.

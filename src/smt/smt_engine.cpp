@@ -5036,7 +5036,7 @@ bool SmtEngine::getSynthSolutions(std::map<Expr, Expr>& sol_map)
   finalOptionsAreSet();
   map<Node, Node> sol_mapn;
   Assert(d_theoryEngine != nullptr);
-  if( !d_theoryEngine->getSynthSolutions(sol_mapn) )
+  if (!d_theoryEngine->getSynthSolutions(sol_mapn))
   {
     return false;
   }
