@@ -399,15 +399,21 @@ void SynthEngine::printSynthSolution(std::ostream& out)
   }
 }
 
-void SynthEngine::getSynthSolutions(std::map<Node, Node>& sol_map)
+bool SynthEngine::getSynthSolutions(std::map<Node, Node>& sol_map)
 {
+  bool ret = true;
   for (unsigned i = 0, size = d_conjs.size(); i < size; i++)
   {
     if (d_conjs[i]->isAssigned())
     {
-      d_conjs[i]->getSynthSolutions(sol_map);
+      if (!d_conjs[i]->getSynthSolutions(sol_map))
+      {
+        // if one conjecture fails, we fail overall
+        ret = false;
+      }
     }
   }
+  return ret;
 }
 
 void SynthEngine::preregisterAssertion(Node n)

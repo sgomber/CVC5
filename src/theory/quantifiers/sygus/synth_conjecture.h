@@ -121,7 +121,7 @@ class SynthConjecture
    * containing the entry:
    *   f -> (lambda x. x+1)
    */
-  void getSynthSolutions(std::map<Node, Node>& sol_map);
+  bool getSynthSolutions(std::map<Node, Node>& sol_map);
   /**
    * The feasible guard whose semantics are "this conjecture is feasiable".
    * This is "G" in Figure 3 of Reynolds et al CAV 2015.

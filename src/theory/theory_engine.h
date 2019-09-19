@@ -774,7 +774,7 @@ public:
    * For details on what is added to sol_map, see
    * CegConjecture::getSynthSolutions.
    */
-  void getSynthSolutions(std::map<Node, Node>& sol_map);
+  bool getSynthSolutions(std::map<Node, Node>& sol_map);
 
   /**
    * Get the model builder

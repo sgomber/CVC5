@@ -1186,14 +1186,14 @@ void SynthConjecture::printSynthSolution(std::ostream& out)
   }
 }
 
-void SynthConjecture::getSynthSolutions(std::map<Node, Node>& sol_map)
+bool SynthConjecture::getSynthSolutions(std::map<Node, Node>& sol_map)
 {
   NodeManager* nm = NodeManager::currentNM();
   std::vector<Node> sols;
   std::vector<int> statuses;
   if (!getSynthSolutionsInternal(sols, statuses))
   {
-    return;
+    return false;
   }
   for (unsigned i = 0, size = d_embed_quant[0].getNumChildren(); i < size; i++)
   {
@@ -1226,6 +1226,7 @@ void SynthConjecture::getSynthSolutions(std::map<Node, Node>& sol_map)
     // store in map
     sol_map[fvar] = bsol;
   }
+  return true;
 }
 
 bool SynthConjecture::getSynthSolutionsInternal(std::vector<Node>& sols,

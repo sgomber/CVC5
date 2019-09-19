@@ -4797,7 +4797,11 @@ void SmtEngine::checkSynthSolution()
   Notice() << "SmtEngine::checkSynthSolution(): checking synthesis solution" << endl;
   map<Node, Node> sol_map;
   /* Get solutions and build auxiliary vectors for substituting */
-  d_theoryEngine->getSynthSolutions(sol_map);
+  if (!d_theoryEngine->getSynthSolutions(sol_map))
+  {
+    Trace("check-synth-sol") << "No solution to check!\n";
+    return;
+  }
   if (sol_map.empty())
   {
     Trace("check-synth-sol") << "No solution to check!\n";
@@ -5026,17 +5030,21 @@ void SmtEngine::printSynthSolution( std::ostream& out ) {
   }
 }
 
-void SmtEngine::getSynthSolutions(std::map<Expr, Expr>& sol_map)
+bool SmtEngine::getSynthSolutions(std::map<Expr, Expr>& sol_map)
 {
   SmtScope smts(this);
   finalOptionsAreSet();
   map<Node, Node> sol_mapn;
   Assert(d_theoryEngine != nullptr);
-  d_theoryEngine->getSynthSolutions(sol_mapn);
+  if( !d_theoryEngine->getSynthSolutions(sol_mapn) )
+  {
+    return false;
+  }
   for (std::pair<const Node, Node>& s : sol_mapn)
   {
     sol_map[s.first.toExpr()] = s.second.toExpr();
   }
+  return true;
 }
 
 Expr SmtEngine::doQuantifierElimination(const Expr& e, bool doFull, bool strict)
@@ -5171,12 +5179,11 @@ bool SmtEngine::getAbductInternal(Expr& abd)
   Trace("sygus-abduct") << "  SmtEngine::getAbduct check sat..." << std::endl;
   Result r = d_subsolver->checkSat();
   Trace("sygus-abduct") << "  SmtEngine::getAbduct result: " << r << std::endl;
-  // FIXME
-  if (true || r.asSatisfiabilityResult().isSat() == Result::UNSAT)
+  // we don't care about the result, we only check if there is a solution
+  // get the synthesis solution
+  std::map<Expr, Expr> sols;
+  if (d_subsolver->getSynthSolutions(sols))
   {
-    // get the synthesis solution
-    std::map<Expr, Expr> sols;
-    d_subsolver->getSynthSolutions(sols);
     Assert(sols.size() == 1);
     std::map<Expr, Expr>::iterator its = sols.find(d_sssf);
     if (its != sols.end())
