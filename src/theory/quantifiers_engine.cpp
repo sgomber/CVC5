@@ -976,17 +976,21 @@ void QuantifiersEngine::assertQuantifier( Node f, bool pol ){
     return;
   }
   if( !pol ){
-    // do skolemization
-    Node lem = d_skolemize->process(f);
-    if (!lem.isNull())
+    d_quant_attr->computeAttributes(f);
+    if( !d_quant_attr->isSygus(f) )
     {
-      if (Trace.isOn("quantifiers-sk-debug"))
+      // do skolemization
+      Node lem = d_skolemize->process(f);
+      if (!lem.isNull())
       {
-        Node slem = Rewriter::rewrite(lem);
-        Trace("quantifiers-sk-debug")
-            << "Skolemize lemma : " << slem << std::endl;
+        if (Trace.isOn("quantifiers-sk-debug"))
+        {
+          Node slem = Rewriter::rewrite(lem);
+          Trace("quantifiers-sk-debug")
+              << "Skolemize lemma : " << slem << std::endl;
+        }
+        getOutputChannel().lemma(lem, false, true);
       }
-      getOutputChannel().lemma(lem, false, true);
     }
     return;
   }

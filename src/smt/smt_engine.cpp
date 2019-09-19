@@ -4081,18 +4081,33 @@ Result SmtEngine::checkSynth()
 
   Trace("smt") << "Check synthesis conjecture: " << body << std::endl;
 
+  body = body.negate();
+  
   d_private->d_sygusConjectureStale = false;
 
+  Result r;
   if (options::incrementalSolving())
   {
     // we push a context so that this conjecture is removed if we modify it
     // later
     internalPush();
     assertFormula(body.toExpr(), true);
-    return checkSatisfiability(body.toExpr(), true, false);
+    r = checkSatisfiability(body.toExpr(), true, false);
   }
-
-  return checkSatisfiability(body.toExpr(), true, false);
+  else
+  {
+    r = checkSatisfiability(body.toExpr(), true, false);
+  }
+  // flip for now FIXME
+  if (r.asSatisfiabilityResult().isSat() == Result::SAT)
+  {
+    r = Result(Result::UNSAT);
+  }
+  else if (r.asSatisfiabilityResult().isSat()== Result::UNSAT )
+  {
+    r = Result(Result::SAT);
+  }
+  return r;
 }
 
 /*
