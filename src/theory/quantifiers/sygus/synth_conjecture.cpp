@@ -77,7 +77,7 @@ SynthConjecture::~SynthConjecture() {}
 
 void SynthConjecture::presolve()
 {
-  // we do not have a solution
+  // we don't have a solution yet
   d_hasSolution = false;
 }
 
