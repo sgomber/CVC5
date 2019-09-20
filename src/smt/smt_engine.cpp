@@ -4804,7 +4804,7 @@ void SmtEngine::checkSynthSolution()
   }
   if (sol_map.empty())
   {
-    Trace("check-synth-sol") << "No solution to check!\n";
+    Trace("check-synth-sol") << "Got empty solution!\n";
     return;
   }
   Trace("check-synth-sol") << "Got solution map:\n";

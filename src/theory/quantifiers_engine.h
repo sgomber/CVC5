@@ -256,6 +256,11 @@ public:
 
   /** get synth solutions
    *
+   * This method returns true if there is a synthesis solution available. This
+   * is the case if the last call to check satisfiability originated in a
+   * check-synth call, and the synthesis engine module of this class
+   * successfully found a solution for all active synthesis conjectures.
+   *
    * This method adds entries to sol_map that map functions-to-synthesize with
    * their solutions, for all active conjectures. This should be called
    * immediately after the solver answers unsat for sygus input.
