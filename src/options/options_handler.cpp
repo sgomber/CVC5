@@ -120,6 +120,22 @@ void OptionsHandler::notifyPrintSuccess(std::string option) {
   d_options->d_setPrintSuccessListeners.notify();
 }
 
+const std::string OptionsHandler::s_parseComplianceModeHelp = "\
+Modes currently supported by the --parser-compliance option:\n\
+\n\
+default\n\
++ Accept inputs that do not have incorrect syntax, regardless of whether they\n\
+strictly conform to e.g. the SMT-LIB standard.\n\
+\n\
+strict\n\
++ Throw an error if the input is not strictly correct according to e.g. the\n\
+SMT-LIB standard.\n\
+\n\
+liberal \n\
++ Allow non-standard language features e.g. SyGuS within SMT-LIB inputs.\n\
+\n\
+";
+
 // theory/arith/options_handlers.h
 const std::string OptionsHandler::s_arithUnateLemmasHelp = "\
 Unate lemmas are generated before SAT search begins using the relationship\n\
@@ -158,6 +174,24 @@ Heuristic pivot rules available:\n\
 +varord\n\
   The variable order\n\
 ";
+
+
+ParseComplianceMode OptionsHandler::stringToParseComplianceMode(std::string option, std::string optarg)
+{
+  if(optarg == "default") {
+    return PARSE_COMPLIANCE_DEFAULT;
+  } else if(optarg == "strict") {
+    return PARSE_COMPLIANCE_STRICT;
+  } else if(optarg == "liberal") {
+    return PARSE_COMPLIANCE_LIBERAL;
+  } else if(optarg == "help") {
+    puts(s_parseComplianceModeHelp.c_str());
+    exit(1);
+  } else {
+    throw OptionException(std::string("unknown option for --parse-compliance-mode: `") +
+                          optarg + "'.  Try --parse-compliance-mode help.");
+  }
+}
 
 ArithUnateLemmaMode OptionsHandler::stringToArithUnateLemmaMode(
     std::string option, std::string optarg)

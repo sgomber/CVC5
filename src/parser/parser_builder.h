@@ -72,6 +72,9 @@ class CVC4_PUBLIC ParserBuilder {
 
   /** Should we parse in strict mode? */
   bool d_strictMode;
+  
+  /** Should we parse in liberal mode? */
+  bool d_liberalMode;
 
   /** Should we allow include-file commands? */
   bool d_canIncludeFile;
@@ -151,11 +154,12 @@ class CVC4_PUBLIC ParserBuilder {
   ParserBuilder& withOptions(const Options& options);
 
   /**
-   * Should the parser use strict mode?
+   * Should the parser use strict or liberal mode?
    *
    * (Default: no)
    */
   ParserBuilder& withStrictMode(bool flag = true);
+  ParserBuilder& withLiberalMode(bool flag = true);
 
   /**
    * Should the include-file commands be enabled?

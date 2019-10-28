@@ -38,8 +38,9 @@ class Cvc : public Parser
   Cvc(api::Solver* solver,
       Input* input,
       bool strictMode = false,
+      bool liberalMode = false,
       bool parseOnly = false)
-      : Parser(solver, input, strictMode, parseOnly)
+      : Parser(solver, input, strictMode, liberalMode, parseOnly)
   {
   }
 };

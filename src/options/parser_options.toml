@@ -11,6 +11,16 @@ header = "options/parser_options.h"
   help       = "be less tolerant of non-conforming inputs"
 
 [[option]]
+  name       = "parseComplianceMode"
+  category   = "common"
+  long       = "parse-compliance=MODE"
+  type       = "CVC4::ParseComplianceMode"
+  default    = "CVC4::PARSE_COMPLIANCE_DEFAULT"
+  handler    = "stringToParseComplianceMode"
+  includes   = ["options/parser_modes.h"]
+  help       = "parsing compliance mode"
+
+[[option]]
   name       = "memoryMap"
   category   = "regular"
   long       = "mmap"

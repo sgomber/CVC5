@@ -190,6 +190,9 @@ private:
 
  /** Are we parsing in strict mode? */
  bool d_strictMode;
+ 
+ /** Are we parsing in liberal mode? */
+ bool d_liberalMode;
 
  /** Are we only parsing? */
  bool d_parseOnly;
@@ -259,6 +262,7 @@ protected:
  Parser(api::Solver* solver,
         Input* input,
         bool strictMode = false,
+        bool liberalMode = false,
         bool parseOnly = false);
 
 public:
@@ -305,13 +309,29 @@ public:
   void disableChecks() { d_checksEnabled = false; }
 
   /** Enable strict parsing, according to the language standards. */
-  void enableStrictMode() { d_strictMode = true; }
+  void enableStrictMode() { 
+    d_strictMode = true;
+    d_liberalMode = false;
+  }
 
   /** Disable strict parsing. Allows certain syntactic infelicities to
       pass without comment. */
-  void disableStrictMode() { d_strictMode = false; }
+  void disableStrictMode() { 
+    d_strictMode = false;
+  }
+  /** Enable liberal parsing. */
+  void enableLiberalMode() { 
+    d_strictMode = false;
+    d_liberalMode = true;
+  }
 
-  bool strictModeEnabled() { return d_strictMode; }
+  /** Disable liberal parsing. */
+  void disableLiberalMode() { 
+    d_liberalMode = false;
+  }
+
+  bool strictModeEnabled() const { return d_strictMode; }
+  bool liberalModeEnabled() const { return d_liberalMode; }
 
   void allowIncludeFile() { d_canIncludeFile = true; }
   void disallowIncludeFile() { d_canIncludeFile = false; }

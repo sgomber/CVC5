@@ -91,19 +91,19 @@ Parser* ParserBuilder::build()
   {
     case language::input::LANG_SYGUS:
     case language::input::LANG_SYGUS_V2:
-      parser = new Smt2(d_solver, input, d_strictMode, d_parseOnly);
+      parser = new Smt2(d_solver, input, d_strictMode, d_liberalMode, d_parseOnly);
       break;
     case language::input::LANG_TPTP:
-      parser = new Tptp(d_solver, input, d_strictMode, d_parseOnly);
+      parser = new Tptp(d_solver, input, d_strictMode, d_liberalMode, d_parseOnly);
       break;
     default:
       if (language::isInputLang_smt2(d_lang))
       {
-        parser = new Smt2(d_solver, input, d_strictMode, d_parseOnly);
+        parser = new Smt2(d_solver, input, d_strictMode, d_liberalMode, d_parseOnly);
       }
       else
       {
-        parser = new Cvc(d_solver, input, d_strictMode, d_parseOnly);
+        parser = new Cvc(d_solver, input, d_strictMode, d_liberalMode, d_parseOnly);
       }
       break;
   }
@@ -181,6 +181,11 @@ ParserBuilder& ParserBuilder::withOptions(const Options& options) {
 
 ParserBuilder& ParserBuilder::withStrictMode(bool flag) {
   d_strictMode = flag;
+  return *this;
+}
+ParserBuilder& withLiberalMode(bool flag)
+{
+  d_liberalMode = flag;
   return *this;
 }
 

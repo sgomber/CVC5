@@ -893,6 +893,7 @@ install(FILES
           options/language.h
           options/option_exception.h
           options/options.h
+          options/parser_modes.h
           options/printer_modes.h
           options/quantifiers_modes.h
           options/set_language.h

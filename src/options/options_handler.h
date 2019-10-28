@@ -41,6 +41,7 @@
 #include "options/sygus_out_mode.h"
 #include "options/theoryof_mode.h"
 #include "options/ufss_mode.h"
+#include "options/parser_modes.h"
 
 namespace CVC4 {
 namespace options {
@@ -69,6 +70,8 @@ public:
   void doubleLessOrEqual1(const std::string& option, double value) {
     options::less_equal(1.0)(option, value);
   }
+  /** parser options */
+  ParseComplianceMode stringToParseComplianceMode(std::string option, std::string optarg);
 
   // theory/arith/options_handlers.h
   ArithUnateLemmaMode stringToArithUnateLemmaMode(std::string option,
@@ -240,6 +243,7 @@ public:
   Options* d_options;
 
   /* Help strings */
+  static const std::string s_parseComplianceModeHelp;
   static const std::string s_bitblastingModeHelp;
   static const std::string s_bvSatSolverHelp;
   static const std::string s_bvProofFormatHelp;

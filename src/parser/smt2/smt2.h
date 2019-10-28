@@ -87,6 +87,7 @@ class Smt2 : public Parser
   Smt2(api::Solver* solver,
        Input* input,
        bool strictMode = false,
+       bool liberalMode = false,
        bool parseOnly = false);
 
  public:
