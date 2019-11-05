@@ -151,9 +151,11 @@ bool CommandExecutor::doCommandSingleton(Command* cmd)
     std::vector<std::unique_ptr<Command> > getterCommands;
     // SMT-LIB says models are available when the result was sat or unknown.
     // TPTP wants models when the result is sat.
-    if (d_options.getProduceModels() && d_options.getDumpModels() &&
-        (res.asSatisfiabilityResult() == Result::SAT ||
-         (d_options.getOutputLanguage()!=language::output::LANG_TPTP && res.isUnknown() && res.whyUnknown() == Result::INCOMPLETE))) {
+    if (d_options.getProduceModels() && d_options.getDumpModels()
+        && (res.asSatisfiabilityResult() == Result::SAT
+            || (d_options.getOutputLanguage() != language::output::LANG_TPTP
+                && res.isUnknown() && res.whyUnknown() == Result::INCOMPLETE)))
+    {
       getterCommands.emplace_back(new GetModelCommand());
     }
     if (d_options.getProof() && d_options.getDumpProofs() &&
