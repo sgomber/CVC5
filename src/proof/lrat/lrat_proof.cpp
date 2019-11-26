@@ -24,7 +24,7 @@
 #include <sstream>
 #include <unordered_map>
 
-#include "base/cvc4_assert.h"
+#include "base/check.h"
 #include "base/output.h"
 #include "proof/dimacs.h"
 #include "proof/lfsc_proof_printer.h"
@@ -135,15 +135,15 @@ LratProof LratProof::fromDratProof(
   std::string dratFilename("cvc4-drat-XXXXXX");
   std::string lratFilename("cvc4-lrat-XXXXXX");
 
-  std::fstream formStream = openTmpFile(&formulaFilename);
-  printDimacs(formStream, clauses, usedIds);
-  formStream.close();
+  std::unique_ptr<std::fstream> formStream = openTmpFile(&formulaFilename);
+  printDimacs(*formStream, clauses, usedIds);
+  formStream->close();
 
-  std::fstream dratStream = openTmpFile(&dratFilename);
-  dratStream << dratBinary;
-  dratStream.close();
+  std::unique_ptr<std::fstream> dratStream = openTmpFile(&dratFilename);
+  (*dratStream) << dratBinary;
+  dratStream->close();
 
-  std::fstream lratStream = openTmpFile(&lratFilename);
+  std::unique_ptr<std::fstream> lratStream = openTmpFile(&lratFilename);
 
   {
     CodeTimer blockTimer{toolTimer};
@@ -151,13 +151,13 @@ LratProof LratProof::fromDratProof(
     drat2er::drat_trim::CheckAndConvertToLRAT(
         formulaFilename, dratFilename, lratFilename, drat2er::options::QUIET);
 #else
-    Unimplemented(
-        "LRAT proof production requires drat2er.\n"
-        "Run contrib/get-drat2er, reconfigure with --drat2er, and rebuild");
+    Unimplemented()
+        << "LRAT proof production requires drat2er.\n"
+        << "Run contrib/get-drat2er, reconfigure with --drat2er, and rebuild";
 #endif
   }
 
-  LratProof lrat(lratStream);
+  LratProof lrat(*lratStream);
   remove(formulaFilename.c_str());
   remove(dratFilename.c_str());
   remove(lratFilename.c_str());
@@ -221,7 +221,8 @@ LratProof::LratProof(std::istream& textualProof)
       SatLiteral lit;
       firstS >> lit;
       Trace("pf::lrat") << "First lit: " << lit << std::endl;
-      Assert(!firstS.fail(), "Couldn't parse first literal from addition line");
+      Assert(!firstS.fail())
+          << "Couldn't parse first literal from addition line";
 
       SatClause clause;
       for (; lit != 0; textualProof >> lit)

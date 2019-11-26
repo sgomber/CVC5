@@ -20,14 +20,14 @@
 #include <algorithm>
 #include <utility>
 
-#include "base/cvc4_assert.h"
+#include "base/check.h"
 #include "base/map_util.h"
 #include "base/output.h"
+#include "preprocessing/passes/ackermann.h"
 #include "preprocessing/passes/apply_substs.h"
 #include "preprocessing/passes/apply_to_const.h"
 #include "preprocessing/passes/bool_to_bv.h"
 #include "preprocessing/passes/bv_abstraction.h"
-#include "preprocessing/passes/bv_ackermann.h"
 #include "preprocessing/passes/bv_eager_atoms.h"
 #include "preprocessing/passes/bv_gauss.h"
 #include "preprocessing/passes/bv_intro_pow2.h"
@@ -35,6 +35,7 @@
 #include "preprocessing/passes/extended_rewriter_pass.h"
 #include "preprocessing/passes/gen_ic_pbe.h"
 #include "preprocessing/passes/global_negate.h"
+#include "preprocessing/passes/ho_elim.h"
 #include "preprocessing/passes/int_to_bv.h"
 #include "preprocessing/passes/ite_removal.h"
 #include "preprocessing/passes/ite_simp.h"
@@ -49,7 +50,6 @@
 #include "preprocessing/passes/sep_skolem_emp.h"
 #include "preprocessing/passes/sort_infer.h"
 #include "preprocessing/passes/static_learning.h"
-#include "preprocessing/passes/sygus_abduct.h"
 #include "preprocessing/passes/sygus_inference.h"
 #include "preprocessing/passes/symmetry_breaker.h"
 #include "preprocessing/passes/symmetry_detect.h"
@@ -128,7 +128,6 @@ PreprocessingPassRegistry::PreprocessingPassRegistry()
   registerPassInfo("synth-rr", callCtor<SynthRewRulesPass>);
   registerPassInfo("real-to-int", callCtor<RealToInt>);
   registerPassInfo("sygus-infer", callCtor<SygusInference>);
-  registerPassInfo("sygus-abduct", callCtor<SygusAbduct>);
   registerPassInfo("bv-to-bool", callCtor<BVToBool>);
   registerPassInfo("bv-intro-pow2", callCtor<BvIntroPow2>);
   registerPassInfo("sort-inference", callCtor<SortInferencePass>);
@@ -144,7 +143,7 @@ PreprocessingPassRegistry::PreprocessingPassRegistry()
   registerPassInfo("ite-removal", callCtor<IteRemoval>);
   registerPassInfo("miplib-trick", callCtor<MipLibTrick>);
   registerPassInfo("non-clausal-simp", callCtor<NonClausalSimp>);
-  registerPassInfo("bv-ackermann", callCtor<BVAckermann>);
+  registerPassInfo("ackermann", callCtor<Ackermann>);
   registerPassInfo("sym-break", callCtor<SymBreakerPass>);
   registerPassInfo("ext-rew-pre", callCtor<ExtRewPre>);
   registerPassInfo("theory-preprocess", callCtor<TheoryPreprocess>);
@@ -152,6 +151,7 @@ PreprocessingPassRegistry::PreprocessingPassRegistry()
   registerPassInfo("nl-ext-purify", callCtor<NlExtPurify>);
   registerPassInfo("bool-to-bv", callCtor<BoolToBV>);
   registerPassInfo("gen-ic-pbe", callCtor<GenIcPbe>);
+  registerPassInfo("ho-elim", callCtor<HoElim>);
 }
 
 }  // namespace preprocessing

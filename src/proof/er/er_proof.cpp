@@ -29,7 +29,7 @@
 #include <iterator>
 #include <unordered_set>
 
-#include "base/cvc4_assert.h"
+#include "base/check.h"
 #include "base/map_util.h"
 #include "proof/dimacs.h"
 #include "proof/lfsc_proof_printer.h"
@@ -91,16 +91,17 @@ ErProof ErProof::fromBinaryDratProof(
   std::string tracecheckFilename("cvc4-tracecheck-er-XXXXXX");
 
   // Write the formula
-  std::fstream formStream = openTmpFile(&formulaFilename);
-  printDimacs(formStream, clauses, usedIds);
-  formStream.close();
+  std::unique_ptr<std::fstream> formStream = openTmpFile(&formulaFilename);
+  printDimacs(*formStream, clauses, usedIds);
+  formStream->close();
 
   // Write the (binary) DRAT proof
-  std::fstream dratStream = openTmpFile(&dratFilename);
-  dratStream << dratBinary;
-  dratStream.close();
+  std::unique_ptr<std::fstream> dratStream = openTmpFile(&dratFilename);
+  (*dratStream) << dratBinary;
+  dratStream->close();
 
-  std::fstream tracecheckStream = openTmpFile(&tracecheckFilename);
+  std::unique_ptr<std::fstream> tracecheckStream =
+      openTmpFile(&tracecheckFilename);
 
   // Invoke drat2er
   {
@@ -113,16 +114,16 @@ ErProof ErProof::fromBinaryDratProof(
                                                drat2er::options::QUIET,
                                                false);
 #else
-    Unimplemented(
-        "ER proof production requires drat2er.\n"
-        "Run contrib/get-drat2er, reconfigure with --drat2er, and rebuild");
+    Unimplemented()
+        << "ER proof production requires drat2er.\n"
+        << "Run contrib/get-drat2er, reconfigure with --drat2er, and rebuild";
 #endif
   }
 
   // Parse the resulting TRACECHECK proof into an ER proof.
-  TraceCheckProof pf = TraceCheckProof::fromText(tracecheckStream);
+  TraceCheckProof pf = TraceCheckProof::fromText(*tracecheckStream);
   ErProof proof(clauses, usedIds, std::move(pf));
-  tracecheckStream.close();
+  tracecheckStream->close();
 
   remove(formulaFilename.c_str());
   remove(dratFilename.c_str());
@@ -183,8 +184,8 @@ ErProof::ErProof(const std::unordered_map<ClauseId, prop::SatClause>& clauses,
     size_t nLinesForThisDef = 2 + otherLiterals.size();
     // Look at the negation of the second literal in the second clause to get
     // the old literal
-    AlwaysAssert(d_tracecheck.d_lines.size() > i + 1,
-                 "Malformed definition in TRACECHECK proof from drat2er");
+    AlwaysAssert(d_tracecheck.d_lines.size() > i + 1)
+        << "Malformed definition in TRACECHECK proof from drat2er";
     d_definitions.emplace_back(newVar,
                                ~d_tracecheck.d_lines[i + 1].d_clause[1],
                                std::move(otherLiterals));
@@ -298,8 +299,8 @@ void ErProof::outputAsLfsc(std::ostream& os) const
   }
 
   // Write proof of bottom
-  Assert(d_tracecheck.d_lines.back().d_clause.size() == 0,
-         "The TRACECHECK proof from drat2er did not prove bottom.");
+  Assert(d_tracecheck.d_lines.back().d_clause.size() == 0)
+      << "The TRACECHECK proof from drat2er did not prove bottom.";
   os << "\n      er.c" << d_tracecheck.d_lines.back().d_idx
      << " ; (holds cln)\n";
 

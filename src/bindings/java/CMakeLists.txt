@@ -37,6 +37,8 @@ set(gen_java_files
   ${CMAKE_CURRENT_BINARY_DIR}/BitVectorSize.java
   ${CMAKE_CURRENT_BINARY_DIR}/BitVectorType.java
   ${CMAKE_CURRENT_BINARY_DIR}/BitVectorZeroExtend.java
+  ${CMAKE_CURRENT_BINARY_DIR}/BlockModelCommand.java
+  ${CMAKE_CURRENT_BINARY_DIR}/BlockModelValuesCommand.java
   ${CMAKE_CURRENT_BINARY_DIR}/BoolHashFunction.java
   ${CMAKE_CURRENT_BINARY_DIR}/BooleanType.java
   ${CMAKE_CURRENT_BINARY_DIR}/CVC4.java
@@ -111,6 +113,7 @@ set(gen_java_files
   ${CMAKE_CURRENT_BINARY_DIR}/FloatingPointToUBV.java
   ${CMAKE_CURRENT_BINARY_DIR}/FloatingPointType.java
   ${CMAKE_CURRENT_BINARY_DIR}/FunctionType.java
+  ${CMAKE_CURRENT_BINARY_DIR}/GetAbductCommand.java
   ${CMAKE_CURRENT_BINARY_DIR}/GetAssertionsCommand.java
   ${CMAKE_CURRENT_BINARY_DIR}/GetAssignmentCommand.java
   ${CMAKE_CURRENT_BINARY_DIR}/GetInfoCommand.java
@@ -273,4 +276,13 @@ add_jar(cvc4jar
 add_dependencies(cvc4jar cvc4jni)
 install_jar(cvc4jar DESTINATION share/java/cvc4)
 install_jni_symlink(cvc4jar DESTINATION share/java/cvc4)
-install(TARGETS cvc4jni DESTINATION lib)
+install(TARGETS cvc4jni
+  EXPORT cvc4-targets
+  DESTINATION ${LIBRARY_INSTALL_DIR})
+
+install_jar_exports(
+  TARGETS cvc4jar
+  NAMESPACE CVC4::
+  FILE CVC4JavaTargets.cmake
+  DESTINATION ${LIBRARY_INSTALL_DIR}/cmake/CVC4
+)
