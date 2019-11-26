@@ -14,11 +14,11 @@
 
 #include "preprocessing/passes/gen_ic_pbe.h"
 
+#include "options/base_options.h"
 #include "options/quantifiers_options.h"
 #include "theory/quantifiers/sygus_sampler.h"
 #include "theory/quantifiers/term_enumeration.h"
 #include "util/random.h"
-#include "options/base_options.h"
 
 using namespace CVC4::kind;
 
@@ -88,7 +88,7 @@ PreprocessingPassResult GenIcPbe::applyInternal(
                "application and input problem.");
   testFormula = icCase[0];
   // we are just going to invoke preprocessing on this
-  if( options::genIcSimplify() )
+  if (options::genIcSimplify())
   {
     theory::quantifiers::ExtendedRewriter extr(options::extRewPrepAgg());
     Node res = extr.extendedRewrite(testFormula);
@@ -96,7 +96,7 @@ PreprocessingPassResult GenIcPbe::applyInternal(
     exit(1);
     return PreprocessingPassResult::NO_CONFLICT;
   }
-  
+
   AlwaysAssert(testFormula.getType().isBoolean(),
                "GenIcPbe: expected an IC of Boolean type.");
   icCase = icCase[1];
