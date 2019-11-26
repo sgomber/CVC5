@@ -328,11 +328,11 @@ Node TermDbSygus::sygusToBuiltin(Node n, TypeNode tn)
 
 Node TermDbSygus::sygusToBuiltinLambda(Node n, TypeNode tn)
 {
-  Node bn = sygusToBuiltin(n,tn);
+  Node bn = sygusToBuiltin(n, tn);
   SygusTypeInfo& ti = getTypeInfo(tn);
   const std::vector<Node>& varlist = ti.getVarList();
-  NodeManager * nm = NodeManager::currentNM();
-  return nm->mkNode( LAMBDA, nm->mkNode( BOUND_VAR_LIST, varlist), bn);
+  NodeManager* nm = NodeManager::currentNM();
+  return nm->mkNode(LAMBDA, nm->mkNode(BOUND_VAR_LIST, varlist), bn);
 }
 
 unsigned TermDbSygus::getSygusTermSize( Node n ){
