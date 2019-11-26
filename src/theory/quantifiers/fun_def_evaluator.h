@@ -44,6 +44,8 @@ class FunDefEvaluator
    * null.
    */
   Node evaluate(Node n) const;
+  /** evaluate, with a visited cache */
+  Node evaluate(Node n, std::unordered_map<TNode, Node, TNodeHashFunction> visited) const;
   /**
    * Has a call to assertDefinition been made? If this returns false, then
    * the evaluate method is the same as calling the rewriter, and returning

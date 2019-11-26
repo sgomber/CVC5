@@ -50,13 +50,18 @@ void FunDefEvaluator::assertDefinition(Node q)
 
 Node FunDefEvaluator::evaluate(Node n) const
 {
+  std::unordered_map<TNode, Node, TNodeHashFunction> visited;
+  return evaluate(n, visited);
+}
+
+Node FunDefEvaluator::evaluate(Node n, std::unordered_map<TNode, Node, TNodeHashFunction> visited) const
+{
   // should do standard rewrite before this call
   Assert(Rewriter::rewrite(n) == n);
   Trace("fd-eval") << "FunDefEvaluator: evaluate " << n << std::endl;
   NodeManager* nm = NodeManager::currentNM();
   std::unordered_map<TNode, unsigned, TNodeHashFunction> funDefCount;
   std::unordered_map<TNode, unsigned, TNodeHashFunction>::iterator itCount;
-  std::unordered_map<TNode, Node, TNodeHashFunction> visited;
   std::unordered_map<TNode, Node, TNodeHashFunction>::iterator it;
   std::map<Node, FunDefInfo>::const_iterator itf;
   std::vector<TNode> visit;
