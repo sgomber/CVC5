@@ -49,7 +49,7 @@ PreprocessingPassResult GenIcPbe::applyInternal(
 
   std::vector<Node>& asl = assertionsToPreprocess->ref();
 
-  AlwaysAssert(!asl.empty(), "GenIcPbe: no assertions");
+  AlwaysAssert(!asl.empty()) << "GenIcPbe: no assertions";
 
   Node icCase = asl[0];
   // must expand definitions
@@ -83,9 +83,9 @@ PreprocessingPassResult GenIcPbe::applyInternal(
            << icCase << std::endl;
 
   Node testFormula;
-  AlwaysAssert(icCase.getKind() == EQUAL,
+  AlwaysAssert(icCase.getKind() == EQUAL) <<
                "GenIcPbe: expected an equivalence between IC predicate "
-               "application and input problem.");
+               "application and input problem.";
   testFormula = icCase[0];
   // we are just going to invoke preprocessing on this
   if (options::genIcSimplify())
@@ -97,15 +97,15 @@ PreprocessingPassResult GenIcPbe::applyInternal(
     return PreprocessingPassResult::NO_CONFLICT;
   }
 
-  AlwaysAssert(testFormula.getType().isBoolean(),
-               "GenIcPbe: expected an IC of Boolean type.");
+  AlwaysAssert(testFormula.getType().isBoolean()) <<
+               "GenIcPbe: expected an IC of Boolean type.";
   icCase = icCase[1];
 
-  AlwaysAssert(icCase.getKind() == EXISTS,
-               "GenIcPbe: expected an existential.");
+  AlwaysAssert(icCase.getKind() == EXISTS) <<
+               "GenIcPbe: expected an existential.";
   AlwaysAssert(
-      icCase[0].getNumChildren() == 1,
-      "GenIcPbe: expected an inner existential with only one variable.");
+      icCase[0].getNumChildren() == 1) <<
+      "GenIcPbe: expected an inner existential with only one variable.";
   Node funToSynthBvar = icCase[0][0];
   icCase = icCase[1];
 
@@ -114,8 +114,8 @@ PreprocessingPassResult GenIcPbe::applyInternal(
   Trace("gen-ic-pbe-debug")
       << "...with variable-to-solve : " << funToSynthBvar << std::endl;
   // ensure the function type matches the computed type
-  AlwaysAssert(!funToSynthBvar.isNull(),
-               "GenIcPbe: no functions to synthesize");
+  AlwaysAssert(!funToSynthBvar.isNull()) <<
+               "GenIcPbe: no functions to synthesize";
 
   TypeNode frange = funToSynthBvar.getType();
 
@@ -131,7 +131,7 @@ PreprocessingPassResult GenIcPbe::applyInternal(
       TypeNode tn = bvars[i].getType();
       bool ret = tenum.getDomain(tn, completeDom[i]);
       AlwaysAssert(
-          ret, "GenIcPbe: expecting small finite type when gen-ic-pbe-full");
+          ret) << "GenIcPbe: expecting small finite type when gen-ic-pbe-full";
       nsamples = nsamples * completeDom[i].size();
     }
   }
@@ -169,8 +169,8 @@ PreprocessingPassResult GenIcPbe::applyInternal(
   if (options::genIcReadIoString())
   {
     AlwaysAssert(
-        asl.size() >= 2,
-        "GenIcPbe: expecting at least 2 assertions when reading I/O string");
+        asl.size() >= 2) <<
+        "GenIcPbe: expecting at least 2 assertions when reading I/O string";
     unsigned assertIndex = 1;
     bool success = true;
     while (success && assertIndex < asl.size())
@@ -185,7 +185,7 @@ PreprocessingPassResult GenIcPbe::applyInternal(
       }
       else if (!ioDef.isConst())  // maybe could have extraneous true assertion
       {
-        AlwaysAssert(false, "Expecting bit-vector equality for I/O string");
+        AlwaysAssert(false) << "Expecting bit-vector equality for I/O string";
       }
       assertIndex++;
     }
