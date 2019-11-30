@@ -203,6 +203,8 @@ class Cegis : public SygusModule
    * added as refinement lemmas.
    */
   std::unordered_set<unsigned> d_cegis_sample_refine;
+  /** explain count */
+  std::map< Node, unsigned > d_explainCount;
 
   //---------------------------------for symbolic constructors
   /** are we using symbolic constants?

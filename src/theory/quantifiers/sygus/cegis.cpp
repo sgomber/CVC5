@@ -232,6 +232,7 @@ bool Cegis::constructCandidates(const std::vector<Node>& enums,
                                 std::vector<Node>& candidate_values,
                                 std::vector<Node>& lems)
 {
+  NodeManager* nm = NodeManager::currentNM();
   if (Trace.isOn("cegis"))
   {
     Trace("cegis") << "  Enumerators :\n";
@@ -282,7 +283,6 @@ bool Cegis::constructCandidates(const std::vector<Node>& enums,
             enums[i], enum_values[i], exp);
       }
       Assert(!exp.empty());
-      NodeManager* nm = NodeManager::currentNM();
       Node expn = exp.size() == 1 ? exp[0] : nm->mkNode(AND, exp);
       // must guard it
       expn = nm->mkNode(OR, d_parent->getGuard().negate(), expn.negate());
@@ -316,6 +316,31 @@ bool Cegis::constructCandidates(const std::vector<Node>& enums,
           enums, enum_values, candidates, candidate_values, lems);
     }
   }
+  
+  // If we are using symbolic constructors, we check how many times we
+  // have tried this candidate. If it is beyond a threshold, we block. This is
+  // done for the sake of fairness.
+  if (d_usingSymCons)
+  {
+    std::vector<Node> exp;
+    for (unsigned i = 0, size = enums.size(); i < size; i++)
+    {
+      d_tds->getExplain()->getExplanationForEquality(
+          enums[i], enum_values[i], exp);
+    }  
+    Node expn = exp.size() == 1 ? exp[0] : nm->mkNode(AND, exp);
+    unsigned tryCount = d_explainCount[expn];
+    d_explainCount[expn]++;
+    Trace("cegis") << "CEGIS: Tried current candidate " << tryCount << " times already." << std::endl;
+    if (tryCount>=options::cegisSymSolAttempt())
+    {
+      // block
+      expn = nm->mkNode(OR, d_parent->getGuard().negate(), expn.negate());
+      lems.push_back(expn);
+      return false;
+    }
+  }
+  
   return true;
 }
 
