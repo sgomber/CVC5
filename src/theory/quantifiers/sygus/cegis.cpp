@@ -316,7 +316,7 @@ bool Cegis::constructCandidates(const std::vector<Node>& enums,
           enums, enum_values, candidates, candidate_values, lems);
     }
   }
-  
+
   // If we are using symbolic constructors, we check how many times we
   // have tried this candidate. If it is beyond a threshold, we block. This is
   // done for the sake of fairness.
@@ -327,12 +327,13 @@ bool Cegis::constructCandidates(const std::vector<Node>& enums,
     {
       d_tds->getExplain()->getExplanationForEquality(
           enums[i], enum_values[i], exp);
-    }  
+    }
     Node expn = exp.size() == 1 ? exp[0] : nm->mkNode(AND, exp);
     unsigned tryCount = d_explainCount[expn];
     d_explainCount[expn]++;
-    Trace("cegis") << "CEGIS: Tried current candidate " << tryCount << " times already." << std::endl;
-    if (tryCount>=options::cegisSymSolAttempt())
+    Trace("cegis") << "CEGIS: Tried current candidate " << tryCount
+                   << " times already." << std::endl;
+    if (tryCount >= options::cegisSymSolAttempt())
     {
       // block
       expn = nm->mkNode(OR, d_parent->getGuard().negate(), expn.negate());
@@ -340,7 +341,7 @@ bool Cegis::constructCandidates(const std::vector<Node>& enums,
       return false;
     }
   }
-  
+
   return true;
 }
 
