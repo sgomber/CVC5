@@ -23,6 +23,7 @@
 #include "theory/quantifiers/expr_miner.h"
 #include "theory/quantifiers/lazy_trie.h"
 #include "theory/quantifiers/sygus_sampler.h"
+#include "theory/evaluator.h"
 
 namespace CVC4 {
 namespace theory {
@@ -66,6 +67,28 @@ class SolutionFilterStrength : public ExprMiner
   std::vector<Node> d_curr_sols;
   /** whether we are trying to find the logically strongest solutions */
   bool d_isStrong;
+};
+
+class SolutionFilterObjFun : public ExprMiner
+{
+ public:
+  SolutionFilterObjFun() {}
+  ~SolutionFilterObjFun() {}
+  /** set objective function */
+  void setObjectiveFunction(const std::vector<Node>& vars, Node f);
+  /**
+   * Add term to this miner. 
+   */
+  bool addTerm(Node n, std::ostream& out) override;
+ private:
+  /** The free variable of the objective function */
+  std::vector<Node> d_objFunVars;
+  /** The objective ffunction */
+  Node d_objFun;
+  /** The maximum solution thus far */
+  Node d_maxValue;
+  /** Evaluator utility */
+  Evaluator d_eval;
 };
 
 }  // namespace quantifiers

@@ -25,6 +25,7 @@ ExpressionMinerManager::ExpressionMinerManager()
     : d_doRewSynth(false),
       d_doQueryGen(false),
       d_doFilterLogicalStrength(false),
+      d_doFilterObjFun(false),
       d_use_sygus_type(false),
       d_qe(nullptr),
       d_tds(nullptr)
@@ -39,6 +40,7 @@ void ExpressionMinerManager::initialize(const std::vector<Node>& vars,
   d_doRewSynth = false;
   d_doQueryGen = false;
   d_doFilterLogicalStrength = false;
+  d_doFilterObjFun = false;
   d_sygus_fun = Node::null();
   d_use_sygus_type = false;
   d_qe = nullptr;
@@ -55,6 +57,7 @@ void ExpressionMinerManager::initializeSygus(QuantifiersEngine* qe,
   d_doRewSynth = false;
   d_doQueryGen = false;
   d_doFilterLogicalStrength = false;
+  d_doFilterObjFun = false;
   d_sygus_fun = f;
   d_use_sygus_type = useSygusType;
   d_qe = qe;
@@ -127,6 +130,12 @@ void ExpressionMinerManager::enableFilterStrongSolutions()
   d_sols.setLogicallyStrong(false);
 }
 
+void ExpressionMinerManager::enableFilterObjFun(const std::vector<Node>& vars, Node f)
+{
+  d_doFilterObjFun = true;
+  d_solObjFun.setObjectiveFunction(vars,f);
+}
+
 bool ExpressionMinerManager::addTerm(Node sol,
                                      std::ostream& out,
                                      bool& rew_print)
@@ -155,6 +164,12 @@ bool ExpressionMinerManager::addTerm(Node sol,
   if (ret && d_doFilterLogicalStrength)
   {
     ret = d_sols.addTerm(solb, out);
+  }
+  
+  if (ret && d_doFilterObjFun)
+  {
+    // we use the sygus version
+    ret = d_solObjFun.addTerm(sol, out);
   }
   return ret;
 }

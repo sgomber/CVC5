@@ -77,6 +77,8 @@ class ExpressionMinerManager
   void enableFilterStrongSolutions();
   /** filter weak solutions (--sygus-filter-sol=weak) */
   void enableFilterWeakSolutions();
+  /** filter based on objective function */
+  void enableFilterObjFun(const std::vector<Node>& vars, Node f);
   /** add term
    *
    * Expression miners may print information on the output stream out, for
@@ -98,6 +100,8 @@ class ExpressionMinerManager
   bool d_doQueryGen;
   /** whether we are filtering solutions based on logical strength */
   bool d_doFilterLogicalStrength;
+  /** whether we are filtering solutions based on objective function */
+  bool d_doFilterObjFun;
   /** the sygus function passed to initializeSygus, if any */
   Node d_sygus_fun;
   /** whether we are using sygus types */
@@ -112,6 +116,8 @@ class ExpressionMinerManager
   QueryGenerator d_qg;
   /** solution filter based on logical strength */
   SolutionFilterStrength d_sols;
+  /** solution filter based on objective function */
+  SolutionFilterObjFun d_solObjFun;
   /** sygus sampler object */
   SygusSampler d_sampler;
   /** extended rewriter object */

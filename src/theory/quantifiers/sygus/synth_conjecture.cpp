@@ -1059,7 +1059,7 @@ void SynthConjecture::printSynthSolution(std::ostream& out)
 
       if (status != 0
           && (options::sygusRewSynth() || options::sygusQueryGen()
-              || options::sygusFilterSolMode() != SYGUS_FILTER_SOL_NONE))
+              || options::sygusFilterSolMode() != SYGUS_FILTER_SOL_NONE || !d_objFun.isNull()))
       {
         Trace("cegqi-sol-debug") << "Run expression mining..." << std::endl;
         std::map<Node, ExpressionMinerManager>::iterator its =
@@ -1086,6 +1086,17 @@ void SynthConjecture::printSynthSolution(std::ostream& out)
             {
               d_exprm[prog].enableFilterWeakSolutions();
             }
+          }
+          if (!d_objFun.isNull())
+          {
+            std::vector< Node > vars;
+            for (const Node& v : d_embed_quant[0])
+            {
+              vars.push_back(v);
+            }
+            // convert to embedding 
+            Node deepObjFun = d_ceg_gc->convertToEmbedding(d_objFun);
+            d_exprm[prog].enableFilterObjFun(vars,deepObjFun);
           }
           its = d_exprm.find(prog);
         }
