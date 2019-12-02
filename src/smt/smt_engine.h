@@ -431,6 +431,16 @@ class CVC4_PUBLIC SmtEngine
    * @throw Exception
    */
   Result checkSynth();
+  /**
+   * Assert a synthesis conjecture to the current context and call
+   * check().  Returns sat, unsat, or unknown result. Additionally, we
+   * supply a function f to optimize. This should be a real-valued term whose
+   * free variables may contain the functions-to-synthesize of the
+   * synthesis conjecture.
+   *
+   * @throw Exception
+   */
+  Result optimizeSynth(Expr f);
 
   /*------------------------- end of sygus commands ------------------------*/
 
@@ -886,6 +896,12 @@ class CVC4_PUBLIC SmtEngine
    */
   void checkModel(bool hardFailure = true);
 
+  /** 
+   * This invokes a checkSatisfiability call for the current synthesis
+   * conjecture. This method is called by checkSynth and optimizeSynth, see
+   * those methods for details.
+   */
+  Result checkSynthInternal(Expr f);
   /**
    * Check that a solution to a synthesis conjecture is indeed a solution.
    *

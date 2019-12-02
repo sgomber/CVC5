@@ -57,6 +57,12 @@ void QuantAttributes::setUserAttribute( const std::string& attr, Node n, std::ve
     Trace("quant-attr-debug") << "Set sygus " << n << std::endl;
     SygusAttribute ca;
     n.setAttribute( ca, true );
+  }else if( attr=="sygus-obj-fun" ){
+    Assert(node_values.size() == 1);
+    Node f = node_values[0];
+    Trace("quant-attr-debug") << "Set sygus objective function " << f<< std::endl;
+    SygusOptFunAttribute sofa;
+    n.setAttribute( sofa, f );
   }
   else if (attr == "quant-name")
   {
@@ -256,6 +262,9 @@ void QuantAttributes::computeQuantAttributes( Node q, QAttributes& qa ){
           //Assert( q[1][0].getKind()==FORALL );
           Trace("quant-attr") << "Attribute : sygus : " << q << std::endl;
           qa.d_sygus = true;
+        }
+        if (avar.hasAttribute(SygusOptFunAttribute()) ){
+          qa.d_sygusObjFun = avar.getAttribute(SygusOptFunAttribute());
         }
         if (avar.hasAttribute(SygusSideConditionAttribute()))
         {

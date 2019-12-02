@@ -47,9 +47,13 @@ typedef expr::Attribute< QuantElimAttributeId, bool > QuantElimAttribute;
 struct QuantElimPartialAttributeId {};
 typedef expr::Attribute< QuantElimPartialAttributeId, bool > QuantElimPartialAttribute;
 
-/** Attribute true for quantifiers that are SyGus conjectures */
+/** Attribute true for quantifiers that are SyGuS conjectures */
 struct SygusAttributeId {};
 typedef expr::Attribute< SygusAttributeId, bool > SygusAttribute;
+
+/** Attribute mapping SyGuS conjectures to objective functions. */
+struct SygusOptFunAttributeId {};
+typedef expr::Attribute< SygusOptFunAttributeId, Node > SygusOptFunAttribute;
 
 /**Attribute to give names to quantified formulas */
 struct QuantNameAttributeId
@@ -132,6 +136,8 @@ struct QAttributes
   Node d_fundef_f;
   /** is this formula marked as a sygus conjecture? */
   bool d_sygus;
+  /** the objective function for the sygus conjecture */
+  Node d_sygusObjFun;
   /** side condition for sygus conjectures */
   Node d_sygusSideCondition;
   /** if a rewrite rule, then this is the priority value for the rewrite rule */

@@ -913,6 +913,76 @@ Command* CheckSynthCommand::clone() const { return new CheckSynthCommand(); }
 
 std::string CheckSynthCommand::getCommandName() const { return "check-synth"; }
 
+
+/* -------------------------------------------------------------------------- */
+/* class OptimizeSynthCommand                                                    */
+/* -------------------------------------------------------------------------- */
+
+  OptimizeSynthCommand::OptimizeSynthCommand(Expr func) : d_func(func){}
+  Expr OptimizeSynthCommand::getFunction() const { return d_func; }
+void OptimizeSynthCommand::invoke(SmtEngine* smtEngine)
+{
+  try
+  {
+    d_result = smtEngine->optimizeSynth(d_func);
+    d_commandStatus = CommandSuccess::instance();
+    smt::SmtScope scope(smtEngine);
+    d_solution.clear();
+    // check whether we should print the status
+    if (d_result.asSatisfiabilityResult() != Result::UNSAT
+        || options::sygusOut() == SYGUS_SOL_OUT_STATUS_AND_DEF
+        || options::sygusOut() == SYGUS_SOL_OUT_STATUS)
+    {
+      if (options::sygusOut() == SYGUS_SOL_OUT_STANDARD)
+      {
+        d_solution << "(fail)" << endl;
+      }
+      else
+      {
+        d_solution << d_result << endl;
+      }
+    }
+    // check whether we should print the solution
+    if (d_result.asSatisfiabilityResult() == Result::UNSAT
+        && options::sygusOut() != SYGUS_SOL_OUT_STATUS)
+    {
+      // printing a synthesis solution is a non-constant
+      // method, since it invokes a sophisticated algorithm
+      // (Figure 5 of Reynolds et al. CAV 2015).
+      // Hence, we must call here print solution here,
+      // instead of during printResult.
+      smtEngine->printSynthSolution(d_solution);
+    }
+  }
+  catch (exception& e)
+  {
+    d_commandStatus = new CommandFailure(e.what());
+  }
+}
+
+Result OptimizeSynthCommand::getResult() const { return d_result; }
+void OptimizeSynthCommand::printResult(std::ostream& out, uint32_t verbosity) const
+{
+  if (!ok())
+  {
+    this->Command::printResult(out, verbosity);
+  }
+  else
+  {
+    out << d_solution.str();
+  }
+}
+
+Command* OptimizeSynthCommand::exportTo(ExprManager* exprManager,
+                                     ExprManagerMapCollection& variableMap)
+{
+  return new OptimizeSynthCommand(d_func.exportTo(exprManager, variableMap));
+}
+
+Command* OptimizeSynthCommand::clone() const { return new OptimizeSynthCommand(d_func); }
+
+std::string OptimizeSynthCommand::getCommandName() const { return "check-synth"; }
+
 /* -------------------------------------------------------------------------- */
 /* class ResetCommand                                                         */
 /* -------------------------------------------------------------------------- */

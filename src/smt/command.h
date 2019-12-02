@@ -861,6 +861,43 @@ class CVC4_PUBLIC CheckSynthCommand : public Command
   std::stringstream d_solution;
 };
 
+/** Optimize synthesis */
+class CVC4_PUBLIC OptimizeSynthCommand : public Command
+{
+ public:
+  OptimizeSynthCommand(Expr func);
+  /** get function */
+  Expr getFunction() const;
+  /** returns the result of the check-synth call */
+  Result getResult() const;
+  /** prints the result of the check-synth-call */
+  void printResult(std::ostream& out, uint32_t verbosity = 2) const override;
+  /** invokes this command
+   *
+   * This invocation makes the SMT engine build a synthesis conjecture based on
+   * previously declared information (such as universal variables,
+   * functions-to-synthesize and so on), set up attributes to guide the solving,
+   * and then perform a satisfiability check, whose result is stored in
+   * d_result.
+   */
+  void invoke(SmtEngine* smtEngine) override;
+  /** exports command to given expression manager */
+  Command* exportTo(ExprManager* exprManager,
+                    ExprManagerMapCollection& variableMap) override;
+  /** creates a copy of this command */
+  Command* clone() const override;
+  /** returns this command's name */
+  std::string getCommandName() const override;
+
+ protected:
+  /** result of the check-synth call */
+  Result d_result;
+  /** string stream that stores the output of the solution */
+  std::stringstream d_solution;
+  /** the quantity we are optimizing */
+  Expr d_func;
+};
+
 /* ------------------- sygus commands  ------------------ */
 
 // this is TRANSFORM in the CVC presentation language

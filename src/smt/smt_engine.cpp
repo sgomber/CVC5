@@ -4067,8 +4067,16 @@ void SmtEngine::assertSygusInvConstraint(const Expr& inv,
 
 Result SmtEngine::checkSynth()
 {
-  SmtScope smts(this);
+  return checkSynthInternal(Expr());
+}
+Result SmtEngine::optimizeSynth(Expr f)
+{
+  return checkSynthInternal(f);
+}
 
+Result SmtEngine::checkSynthInternal(Expr f)
+{
+  SmtScope smts(this);
   if (options::incrementalSolving())
   {
     // TODO (project #7)
@@ -4080,10 +4088,20 @@ Result SmtEngine::checkSynth()
   {
     // build synthesis conjecture from asserted constraints and declared
     // variables/functions
+    std::vector<Node> ips;
     Node sygusVar =
         d_nodeManager->mkSkolem("sygus", d_nodeManager->booleanType());
     Node inst_attr = d_nodeManager->mkNode(kind::INST_ATTRIBUTE, sygusVar);
-    Node sygusAttr = d_nodeManager->mkNode(kind::INST_PATTERN_LIST, inst_attr);
+    ips.push_back(inst_attr);
+    Node sygusVarO;
+    if (!f.isNull())
+    {
+      sygusVarO =
+          d_nodeManager->mkSkolem("sygusOpt", d_nodeManager->booleanType());
+      inst_attr = d_nodeManager->mkNode(kind::INST_ATTRIBUTE, sygusVarO);
+      ips.push_back(inst_attr);
+    }
+    Node sygusAttr = d_nodeManager->mkNode(kind::INST_PATTERN_LIST, ips);
     std::vector<Node> bodyv;
     Trace("smt") << "Sygus : Constructing sygus constraint...\n";
     unsigned n_constraints = d_private->d_sygusConstraints.size();
@@ -4112,6 +4130,12 @@ Result SmtEngine::checkSynth()
 
     // set attribute for synthesis conjecture
     setUserAttribute("sygus", sygusVar.toExpr(), {}, "");
+    if (!f.isNull())
+    {
+      std::vector<Expr> hfun;
+      hfun.push_back(f);
+      setUserAttribute("sygus-obj-fun", sygusVarO.toExpr(), hfun, "");
+    }
 
     Trace("smt") << "Check synthesis conjecture: " << body << std::endl;
 

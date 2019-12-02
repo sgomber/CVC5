@@ -639,6 +639,13 @@ sygusCommand returns [std::unique_ptr<CVC4::Command> cmd]
     {
       cmd.reset(new CheckSynthCommand());
     }
+  | /* optimize-synth */
+    OPTIMIZE_SYNTH_TOK
+    { PARSER_STATE->checkThatLogicIsSet(); }
+    term[expr, expr2]
+    {
+      cmd.reset(new OptimizeSynthCommand(expr));
+    }
   | command[&cmd]
   ;
 
@@ -2711,6 +2718,7 @@ SYNTH_FUN_TOK : { PARSER_STATE->sygus() && !PARSER_STATE->sygus_v1() }?'synth-fu
 SYNTH_INV_V1_TOK : { PARSER_STATE->sygus_v1()}?'synth-inv';
 SYNTH_INV_TOK : { PARSER_STATE->sygus() && !PARSER_STATE->sygus_v1()}?'synth-inv';
 CHECK_SYNTH_TOK : { PARSER_STATE->sygus()}?'check-synth';
+OPTIMIZE_SYNTH_TOK : { PARSER_STATE->sygus()}?'optimize-synth';
 DECLARE_VAR_TOK : { PARSER_STATE->sygus()}?'declare-var';
 DECLARE_PRIMED_VAR_TOK : { PARSER_STATE->sygus_v1() }?'declare-primed-var';
 CONSTRAINT_TOK : { PARSER_STATE->sygus()}?'constraint';
