@@ -130,10 +130,11 @@ void ExpressionMinerManager::enableFilterStrongSolutions()
   d_sols.setLogicallyStrong(false);
 }
 
-void ExpressionMinerManager::enableFilterObjFun(const std::vector<Node>& vars, Node f)
+void ExpressionMinerManager::enableFilterObjFun(const std::vector<Node>& vars,
+                                                Node f)
 {
   d_doFilterObjFun = true;
-  d_solObjFun.setObjectiveFunction(vars,f);
+  d_solObjFun.setObjectiveFunction(vars, f);
 }
 
 bool ExpressionMinerManager::addTerm(Node sol,
@@ -165,7 +166,7 @@ bool ExpressionMinerManager::addTerm(Node sol,
   {
     ret = d_sols.addTerm(solb, out);
   }
-  
+
   if (ret && d_doFilterObjFun)
   {
     // we use the sygus version

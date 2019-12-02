@@ -101,7 +101,8 @@ bool SolutionFilterStrength::addTerm(Node n, std::ostream& out)
   return true;
 }
 
-void SolutionFilterObjFun::setObjectiveFunction(const std::vector<Node>& vars, Node f)
+void SolutionFilterObjFun::setObjectiveFunction(const std::vector<Node>& vars,
+                                                Node f)
 {
   d_objFunVars = vars;
   d_objFun = f;
@@ -111,17 +112,20 @@ void SolutionFilterObjFun::setObjectiveFunction(const std::vector<Node>& vars, N
 
 bool SolutionFilterObjFun::addTerm(Node n, std::ostream& out)
 {
-  Trace("sygus-filter-obj-fun-debug") << "Filter via objective function: " << n << std::endl;
+  Trace("sygus-filter-obj-fun-debug")
+      << "Filter via objective function: " << n << std::endl;
   std::vector<Node> vals;
   vals.push_back(n);
-  Node res = d_eval.eval(d_objFun,d_objFunVars,vals);
+  Node res = d_eval.eval(d_objFun, d_objFunVars, vals);
   if (res.isNull())
   {
     Trace("sygus-filter-obj-fun-debug") << "...must substitute" << std::endl;
-    res = d_objFun.substitute(d_objFunVars.begin(), d_objFunVars.end(), vals.begin(), vals.end());
+    res = d_objFun.substitute(
+        d_objFunVars.begin(), d_objFunVars.end(), vals.begin(), vals.end());
     res = Rewriter::rewrite(res);
   }
-  Trace("sygus-filter-obj-fun") << "Value of objective function is " << res << std::endl;
+  Trace("sygus-filter-obj-fun")
+      << "Value of objective function is " << res << std::endl;
   if (!res.isConst())
   {
     // not constant, must keep but don't set value
@@ -135,7 +139,7 @@ bool SolutionFilterObjFun::addTerm(Node n, std::ostream& out)
     retValue = true;
     Trace("sygus-filter-obj-fun") << "...keep (first)" << std::endl;
   }
-  else if (res.getConst<Rational>()>d_maxValue.getConst<Rational>())
+  else if (res.getConst<Rational>() > d_maxValue.getConst<Rational>())
   {
     d_maxValue = res;
     retValue = true;

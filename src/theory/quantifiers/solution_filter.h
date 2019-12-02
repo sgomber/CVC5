@@ -20,10 +20,10 @@
 #include <map>
 #include <unordered_set>
 #include "expr/node.h"
+#include "theory/evaluator.h"
 #include "theory/quantifiers/expr_miner.h"
 #include "theory/quantifiers/lazy_trie.h"
 #include "theory/quantifiers/sygus_sampler.h"
-#include "theory/evaluator.h"
 
 namespace CVC4 {
 namespace theory {
@@ -77,9 +77,10 @@ class SolutionFilterObjFun : public ExprMiner
   /** set objective function */
   void setObjectiveFunction(const std::vector<Node>& vars, Node f);
   /**
-   * Add term to this miner. 
+   * Add term to this miner.
    */
   bool addTerm(Node n, std::ostream& out) override;
+
  private:
   /** The free variable of the objective function */
   std::vector<Node> d_objFunVars;
