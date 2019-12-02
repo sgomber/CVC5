@@ -913,13 +913,12 @@ Command* CheckSynthCommand::clone() const { return new CheckSynthCommand(); }
 
 std::string CheckSynthCommand::getCommandName() const { return "check-synth"; }
 
-
 /* -------------------------------------------------------------------------- */
-/* class OptimizeSynthCommand                                                    */
+/* class OptimizeSynthCommand */
 /* -------------------------------------------------------------------------- */
 
-  OptimizeSynthCommand::OptimizeSynthCommand(Expr func) : d_func(func){}
-  Expr OptimizeSynthCommand::getFunction() const { return d_func; }
+OptimizeSynthCommand::OptimizeSynthCommand(Expr func) : d_func(func) {}
+Expr OptimizeSynthCommand::getFunction() const { return d_func; }
 void OptimizeSynthCommand::invoke(SmtEngine* smtEngine)
 {
   try
@@ -961,7 +960,8 @@ void OptimizeSynthCommand::invoke(SmtEngine* smtEngine)
 }
 
 Result OptimizeSynthCommand::getResult() const { return d_result; }
-void OptimizeSynthCommand::printResult(std::ostream& out, uint32_t verbosity) const
+void OptimizeSynthCommand::printResult(std::ostream& out,
+                                       uint32_t verbosity) const
 {
   if (!ok())
   {
@@ -974,14 +974,20 @@ void OptimizeSynthCommand::printResult(std::ostream& out, uint32_t verbosity) co
 }
 
 Command* OptimizeSynthCommand::exportTo(ExprManager* exprManager,
-                                     ExprManagerMapCollection& variableMap)
+                                        ExprManagerMapCollection& variableMap)
 {
   return new OptimizeSynthCommand(d_func.exportTo(exprManager, variableMap));
 }
 
-Command* OptimizeSynthCommand::clone() const { return new OptimizeSynthCommand(d_func); }
+Command* OptimizeSynthCommand::clone() const
+{
+  return new OptimizeSynthCommand(d_func);
+}
 
-std::string OptimizeSynthCommand::getCommandName() const { return "check-synth"; }
+std::string OptimizeSynthCommand::getCommandName() const
+{
+  return "check-synth";
+}
 
 /* -------------------------------------------------------------------------- */
 /* class ResetCommand                                                         */

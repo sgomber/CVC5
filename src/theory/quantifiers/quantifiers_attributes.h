@@ -52,8 +52,10 @@ struct SygusAttributeId {};
 typedef expr::Attribute< SygusAttributeId, bool > SygusAttribute;
 
 /** Attribute mapping SyGuS conjectures to objective functions. */
-struct SygusOptFunAttributeId {};
-typedef expr::Attribute< SygusOptFunAttributeId, Node > SygusOptFunAttribute;
+struct SygusOptFunAttributeId
+{
+};
+typedef expr::Attribute<SygusOptFunAttributeId, Node> SygusOptFunAttribute;
 
 /**Attribute to give names to quantified formulas */
 struct QuantNameAttributeId

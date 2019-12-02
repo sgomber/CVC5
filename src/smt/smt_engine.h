@@ -896,7 +896,7 @@ class CVC4_PUBLIC SmtEngine
    */
   void checkModel(bool hardFailure = true);
 
-  /** 
+  /**
    * This invokes a checkSatisfiability call for the current synthesis
    * conjecture. This method is called by checkSynth and optimizeSynth, see
    * those methods for details.

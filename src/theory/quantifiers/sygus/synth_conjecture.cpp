@@ -121,7 +121,8 @@ void SynthConjecture::assign(Node q)
     }
   }
   d_objFun = qa.d_sygusObjFun;
-  Trace("cegqi") << "SynthConjecture : objective function is : " << d_objFun << std::endl;
+  Trace("cegqi") << "SynthConjecture : objective function is : " << d_objFun
+                 << std::endl;
 
   // post-simplify the quantified formula based on the process utility
   d_simp_quant = d_ceg_proc->postSimplify(d_simp_quant);

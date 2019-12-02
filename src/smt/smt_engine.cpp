@@ -4065,14 +4065,8 @@ void SmtEngine::assertSygusInvConstraint(const Expr& inv,
   setSygusConjectureStale();
 }
 
-Result SmtEngine::checkSynth()
-{
-  return checkSynthInternal(Expr());
-}
-Result SmtEngine::optimizeSynth(Expr f)
-{
-  return checkSynthInternal(f);
-}
+Result SmtEngine::checkSynth() { return checkSynthInternal(Expr()); }
+Result SmtEngine::optimizeSynth(Expr f) { return checkSynthInternal(f); }
 
 Result SmtEngine::checkSynthInternal(Expr f)
 {
