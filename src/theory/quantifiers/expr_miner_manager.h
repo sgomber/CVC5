@@ -93,6 +93,8 @@ class ExpressionMinerManager
    */
   bool addTerm(Node sol, std::ostream& out, bool& rew_print);
 
+  /** get the solution filter objective function */
+  const SolutionFilterObjFun& getSolutionFilterObjFun() const;
  private:
   /** whether we are doing rewrite synthesis */
   bool d_doRewSynth;

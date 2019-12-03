@@ -123,6 +123,10 @@ void SynthConjecture::assign(Node q)
   d_objFun = qa.d_sygusObjFun;
   Trace("cegqi") << "SynthConjecture : objective function is : " << d_objFun
                  << std::endl;
+  if (options::sygusObjFunThresh.wasSetByUser())
+  {
+    d_objFunTerminateVal = nm->mkConst(Rational(options::sygusObjFunThresh()));
+  }
 
   // post-simplify the quantified formula based on the process utility
   d_simp_quant = d_ceg_proc->postSimplify(d_simp_quant);
@@ -1067,25 +1071,26 @@ void SynthConjecture::printSynthSolution(std::ostream& out)
             d_exprm.find(prog);
         if (its == d_exprm.end())
         {
-          d_exprm[prog].initializeSygus(
+          ExpressionMinerManager& emm = d_exprm[prog];
+          emm.initializeSygus(
               d_qe, d_candidates[i], options::sygusSamples(), true);
           if (options::sygusRewSynth())
           {
-            d_exprm[prog].enableRewriteRuleSynth();
+            emm.enableRewriteRuleSynth();
           }
           if (options::sygusQueryGen())
           {
-            d_exprm[prog].enableQueryGeneration(options::sygusQueryGenThresh());
+            emm.enableQueryGeneration(options::sygusQueryGenThresh());
           }
           if (options::sygusFilterSolMode() != SYGUS_FILTER_SOL_NONE)
           {
             if (options::sygusFilterSolMode() == SYGUS_FILTER_SOL_STRONG)
             {
-              d_exprm[prog].enableFilterStrongSolutions();
+              emm.enableFilterStrongSolutions();
             }
             else if (options::sygusFilterSolMode() == SYGUS_FILTER_SOL_WEAK)
             {
-              d_exprm[prog].enableFilterWeakSolutions();
+              emm.enableFilterWeakSolutions();
             }
           }
           if (!d_objFun.isNull())
@@ -1097,12 +1102,12 @@ void SynthConjecture::printSynthSolution(std::ostream& out)
             }
             // convert to embedding
             Node deepObjFun = d_ceg_gc->convertToEmbedding(d_objFun);
-            d_exprm[prog].enableFilterObjFun(vars, deepObjFun);
+            emm.enableFilterObjFun(vars, deepObjFun);
           }
           its = d_exprm.find(prog);
         }
         bool rew_print = false;
-        is_unique_term = d_exprm[prog].addTerm(sol, out, rew_print);
+        is_unique_term = its->second.addTerm(sol, out, rew_print);
         if (rew_print)
         {
           ++(d_parent->d_statistics.d_candidate_rewrites_print);
@@ -1156,6 +1161,26 @@ void SynthConjecture::printSynthSolution(std::ostream& out)
               ->toStreamSygus(out, sol);
         }
         out << ")" << std::endl;
+        // if using objective function, check if we acheived threshold
+        if (!d_objFun.isNull() && !d_objFunTerminateVal.isNull())
+        {
+          Assert( d_exprm.find(prog)!=d_exprm.end());
+          ExpressionMinerManager& emm = d_exprm[prog];
+          Trace("cegqi-debug") << "Check threshold " << d_objFunTerminateVal << std::endl;
+          const SolutionFilterObjFun& sfof = emm.getSolutionFilterObjFun();
+          Node cval = sfof.getCurrentMaxValue();
+          if (!cval.isNull())
+          {
+            Node ineq = nm->mkNode(GEQ,cval,d_objFunTerminateVal);
+            Node ineqr = Rewriter::rewrite(ineq);
+            if (ineqr.isConst() && ineqr.getConst<bool>())
+            {
+              std::stringstream ss;
+              ss << "Threshold of objective function (" << d_objFunTerminateVal << ") for enumerative SyGuS achieved.";
+              throw LogicException(ss.str());
+            }
+          }
+        }
       }
     }
   }

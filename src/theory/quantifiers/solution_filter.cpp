@@ -145,7 +145,19 @@ bool SolutionFilterObjFun::addTerm(Node n, std::ostream& out)
     retValue = true;
     Trace("sygus-filter-obj-fun") << "...keep (new max)" << std::endl;
   }
+  if (retValue)
+  {
+    NodeManager* nm = NodeManager::currentNM();
+    Options& nodeManagerOptions = nm->getOptions();
+    std::ostream* out = nodeManagerOptions.getOut();
+    (*out) << "; optimal value is now " << d_maxValue << std::endl;
+  }
   return retValue;
+}
+
+Node SolutionFilterObjFun::getCurrentMaxValue() const
+{
+  return d_maxValue;
 }
 
 }  // namespace quantifiers

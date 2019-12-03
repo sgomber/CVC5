@@ -177,8 +177,10 @@ class SynthConjecture
   TermDbSygus* d_tds;
   /** The feasible guard. */
   Node d_feasible_guard;
-  /** The objection function */
+  /** The objective function */
   Node d_objFun;
+  /** termination for objective function */
+  Node d_objFunTerminateVal;
   /**
    * Do we have a solution in this solve context? This flag is reset to false
    * on every call to presolve.

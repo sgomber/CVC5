@@ -147,6 +147,7 @@ EvalResult Evaluator::evalInternal(TNode n,
       {
         queue.emplace_back(currNodeChild);
         doEval = false;
+        Trace("evaluator") << "Cannot evaluate " << currNode << std::endl;
       }
     }
 
@@ -304,7 +305,6 @@ EvalResult Evaluator::evalInternal(TNode n,
           results[currNode] = EvalResult(x < y);
           break;
         }
-
         case kind::CONST_STRING:
           results[currNode] = EvalResult(currNodeVal.getConst<String>());
           break;

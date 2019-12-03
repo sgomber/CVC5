@@ -181,6 +181,11 @@ bool ExpressionMinerManager::addTerm(Node sol, std::ostream& out)
   return addTerm(sol, out, rew_print);
 }
 
+const SolutionFilterObjFun& ExpressionMinerManager::getSolutionFilterObjFun() const
+{
+  return d_solObjFun;
+}
+
 }  // namespace quantifiers
 }  // namespace theory
 }  // namespace CVC4
