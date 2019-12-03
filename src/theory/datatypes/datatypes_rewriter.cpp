@@ -150,6 +150,21 @@ RewriteResponse DatatypesRewriter::postRewrite(TNode in)
       Trace("dt-sygus-util") << "...got " << ret << "\n";
       return RewriteResponse(REWRITE_AGAIN_FULL, ret);
     }
+    /*
+    if (ev.getKind() == APPLY_CONSTRUCTOR)
+    {
+      Trace("dt-sygus-util") << "Rewrite " << in << " by unfolding...\n";
+      std::vector<Node> args;
+      for (unsigned j = 1, nchild = in.getNumChildren(); j < nchild; j++)
+      {
+        args.push_back(in[j]);
+      }
+      Node ret = utils::sygusToBuiltinTermEval(ev,args);
+      Trace("dt-sygus-util") << "...got " << ret << "\n";
+      AlwaysAssert(ret.getType()==in.getType());
+      return RewriteResponse(REWRITE_AGAIN_FULL, ret);
+    }
+    */
   }
   else if (k == MATCH)
   {

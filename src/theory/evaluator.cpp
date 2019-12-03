@@ -19,6 +19,7 @@
 #include "theory/bv/theory_bv_utils.h"
 #include "theory/theory.h"
 #include "util/integer.h"
+#include "theory/rewriter.h"
 
 namespace CVC4 {
 namespace theory {
@@ -139,6 +140,22 @@ EvalResult Evaluator::evalInternal(TNode n,
       queue.pop_back();
       continue;
     }
+    
+    /*
+    if (currNode.getKind()==kind::DT_SYGUS_EVAL)
+    {
+      // The first argument is a datatype, which we do not use the evaluator
+      // for.
+      Node cop = currNode[0];
+      cop = cop.substitute(args.begin(),args.end(),vals.begin(),vals.end());
+      cop = Rewriter::rewrite(cop);
+      // If it is a constant, then we
+      if (cop.isConst())
+      {
+        Trace("evaluator") << "Datatype sygus evaluation " << currNode << " with constant (rewritten) operator " << cop << std::endl;
+      }
+    }
+    */
 
     bool doEval = true;
     for (const auto& currNodeChild : currNode)

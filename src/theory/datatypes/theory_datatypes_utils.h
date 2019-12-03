@@ -179,11 +179,12 @@ Node applySygusArgs(const Datatype& dt,
                     Node n,
                     const std::vector<Node>& args);
 /**
- * Get the builtin sygus operator for constructor term n of sygus datatype
- * type. For example, if n is the term C_+( d1, d2 ) where C_+ is a sygus
- * constructor whose sygus op is the builtin operator +, this method returns +.
  */
-Node getSygusOpForCTerm(Node n);
+Node sygusToBuiltinTerm(Node c);
+/**
+ */
+Node sygusToBuiltinTermEval(Node c,
+                    const std::vector<Node>& args);
 
 // ------------------------ end sygus utils
 
