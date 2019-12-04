@@ -95,6 +95,7 @@ class ExpressionMinerManager
 
   /** get the solution filter objective function */
   const SolutionFilterObjFun& getSolutionFilterObjFun() const;
+
  private:
   /** whether we are doing rewrite synthesis */
   bool d_doRewSynth;

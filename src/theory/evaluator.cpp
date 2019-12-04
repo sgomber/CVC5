@@ -17,9 +17,9 @@
 #include "theory/evaluator.h"
 
 #include "theory/bv/theory_bv_utils.h"
+#include "theory/rewriter.h"
 #include "theory/theory.h"
 #include "util/integer.h"
-#include "theory/rewriter.h"
 
 namespace CVC4 {
 namespace theory {
@@ -140,12 +140,13 @@ EvalResult Evaluator::evalInternal(TNode n,
       queue.pop_back();
       continue;
     }
-    
+
     bool doEval = true;
     Node currNodeVal = currNode;
-    if (currNode.getKind()==kind::DT_SYGUS_EVAL)
+    if (currNode.getKind() == kind::DT_SYGUS_EVAL)
     {
-      currNodeVal = currNodeVal.substitute(args.begin(),args.end(),vals.begin(),vals.end());
+      currNodeVal = currNodeVal.substitute(
+          args.begin(), args.end(), vals.begin(), vals.end());
       // No evaluator for this kind, but may be able to use rewriter.
       currNodeVal = Rewriter::rewrite(currNodeVal);
     }

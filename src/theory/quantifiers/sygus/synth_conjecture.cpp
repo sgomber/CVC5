@@ -1164,19 +1164,21 @@ void SynthConjecture::printSynthSolution(std::ostream& out)
         // if using objective function, check if we acheived threshold
         if (!d_objFun.isNull() && !d_objFunTerminateVal.isNull())
         {
-          Assert( d_exprm.find(prog)!=d_exprm.end());
+          Assert(d_exprm.find(prog) != d_exprm.end());
           ExpressionMinerManager& emm = d_exprm[prog];
-          Trace("cegqi-debug") << "Check threshold " << d_objFunTerminateVal << std::endl;
+          Trace("cegqi-debug")
+              << "Check threshold " << d_objFunTerminateVal << std::endl;
           const SolutionFilterObjFun& sfof = emm.getSolutionFilterObjFun();
           Node cval = sfof.getCurrentMaxValue();
           if (!cval.isNull())
           {
-            Node ineq = nm->mkNode(GEQ,cval,d_objFunTerminateVal);
+            Node ineq = nm->mkNode(GEQ, cval, d_objFunTerminateVal);
             Node ineqr = Rewriter::rewrite(ineq);
             if (ineqr.isConst() && ineqr.getConst<bool>())
             {
               std::stringstream ss;
-              ss << "Threshold of objective function (" << d_objFunTerminateVal << ") for enumerative SyGuS achieved.";
+              ss << "Threshold of objective function (" << d_objFunTerminateVal
+                 << ") for enumerative SyGuS achieved.";
               throw LogicException(ss.str());
             }
           }

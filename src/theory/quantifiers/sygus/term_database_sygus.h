@@ -254,7 +254,7 @@ class TermDbSygus {
    *
    * Given a sygus datatype term n of type tn, this function returns its analog,
    * that is, the term that n encodes.
-   * 
+   *
    * This function is a generalization of sygusToBuiltinType in
    * theory::datatypes::utils in two ways:
    * (1) It converts non-constant subterms of n to canonical free variables,

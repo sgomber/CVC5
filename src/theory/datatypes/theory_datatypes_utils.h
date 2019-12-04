@@ -179,7 +179,7 @@ Node applySygusArgs(const Datatype& dt,
                     Node n,
                     const std::vector<Node>& args);
 /** Sygus to builtin
- * 
+ *
  * This method converts a constant term of SyGuS datatype type to its builtin
  * equivalent. For example, given input C_*( C_x(), C_y() ), this method returns
  * x*y, assuming C_+, C_x, and C_y have sygus operators *, x, and y
@@ -187,16 +187,16 @@ Node applySygusArgs(const Datatype& dt,
  */
 Node sygusToBuiltin(Node c);
 /** Sygus to builtin eval
- * 
+ *
  * This method returns the rewritten form of (DT_SYGUS_EVAL n args). Notice that
  * n does not necessarily need to be a constant.
- * 
+ *
  * It does so by (1) converting constant subterms of n to builtin terms and
  * evaluating them on the arguments args, (2) unfolding non-constant
  * applications of sygus constructors in n with respect to args and (3)
  * converting all other non-constant subterms of n to applications of
  * DT_SYGUS_EVAL.
- * 
+ *
  * For example, if
  *   n = C_+( C_*( C_x(), C_y() ), n' ), and args = { 3, 4 }
  * where n' is a variable, then this method returns:
@@ -207,8 +207,7 @@ Node sygusToBuiltin(Node c);
  * 3,4, giving the term (DT_SYGUS_EVAL n' 3 4). Since the top-level constructor
  * is C_+, these terms are added together to give the result.
  */
-Node sygusToBuiltinEval(Node n,
-                    const std::vector<Node>& args);
+Node sygusToBuiltinEval(Node n, const std::vector<Node>& args);
 
 // ------------------------ end sygus utils
 

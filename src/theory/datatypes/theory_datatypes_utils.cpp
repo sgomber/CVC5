@@ -393,12 +393,14 @@ Node sygusToBuiltin(Node n)
   TNode cur;
   unsigned index;
   visit.push_back(n);
-  do {
+  do
+  {
     cur = visit.back();
     visit.pop_back();
     it = visited.find(cur);
-    if (it == visited.end()) {
-      if (cur.getKind()==APPLY_CONSTRUCTOR)
+    if (it == visited.end())
+    {
+      if (cur.getKind() == APPLY_CONSTRUCTOR)
       {
         if (cur.hasAttribute(SygusToBuiltinTermAttribute()))
         {
@@ -408,7 +410,8 @@ Node sygusToBuiltin(Node n)
         {
           visited[cur] = Node::null();
           visit.push_back(cur);
-          for (const Node& cn : cur) {
+          for (const Node& cn : cur)
+          {
             visit.push_back(cn);
           }
         }
@@ -418,27 +421,30 @@ Node sygusToBuiltin(Node n)
         // non-datatypes are themselves
         visited[cur] = cur;
       }
-    } else if (it->second.isNull()) {
+    }
+    else if (it->second.isNull())
+    {
       Node ret = cur;
-      Assert(cur.getKind()==APPLY_CONSTRUCTOR);
+      Assert(cur.getKind() == APPLY_CONSTRUCTOR);
       const Datatype& dt = cur.getType().getDatatype();
       // non sygus-datatype terms are also themselves
       if (dt.isSygus())
       {
         std::vector<Node> children;
-        for (const Node& cn : cur) {
+        for (const Node& cn : cur)
+        {
           it = visited.find(cn);
           Assert(it != visited.end());
           Assert(!it->second.isNull());
           children.push_back(it->second);
         }
         index = indexOf(cur.getOperator());
-        ret = mkSygusTerm(dt,index,children);
+        ret = mkSygusTerm(dt, index, children);
       }
       visited[cur] = ret;
       // cache
       SygusToBuiltinTermAttribute stbt;
-      cur.setAttribute(stbt,ret);
+      cur.setAttribute(stbt, ret);
     }
   } while (!visit.empty());
   Assert(visited.find(n) != visited.end());
@@ -446,10 +452,9 @@ Node sygusToBuiltin(Node n)
   return visited[n];
 }
 
-Node sygusToBuiltinEval(Node n,
-                    const std::vector<Node>& args)
+Node sygusToBuiltinEval(Node n, const std::vector<Node>& args)
 {
-  NodeManager * nm = NodeManager::currentNM();
+  NodeManager* nm = NodeManager::currentNM();
   Evaluator eval;
   // constant arguments?
   bool constArgs = true;
@@ -471,11 +476,13 @@ Node sygusToBuiltinEval(Node n,
   TNode cur;
   unsigned index;
   visit.push_back(n);
-  do {
+  do
+  {
     cur = visit.back();
     visit.pop_back();
     it = visited.find(cur);
-    if (it == visited.end()) {
+    if (it == visited.end())
+    {
       TypeNode tn = cur.getType();
       if (!tn.isDatatype() || !tn.getDatatype().isSygus())
       {
@@ -496,23 +503,25 @@ Node sygusToBuiltinEval(Node n,
             svars.push_back(v);
           }
         }
-        Assert(args.size()==svars.size());
+        Assert(args.size() == svars.size());
         // try evaluation if we have constant arguments
-        Node ret = constArgs ? eval.eval(bt,svars,args) : Node::null();
+        Node ret = constArgs ? eval.eval(bt, svars, args) : Node::null();
         if (ret.isNull())
         {
           // if evaluation was not available, use a substitution
-          ret = bt.substitute(svars.begin(),svars.end(),args.begin(),args.end());
+          ret = bt.substitute(
+              svars.begin(), svars.end(), args.begin(), args.end());
         }
         visited[cur] = ret;
       }
       else
       {
-        if (cur.getKind()==APPLY_CONSTRUCTOR)
+        if (cur.getKind() == APPLY_CONSTRUCTOR)
         {
           visited[cur] = Node::null();
           visit.push_back(cur);
-          for (const Node& cn : cur) {
+          for (const Node& cn : cur)
+          {
             visit.push_back(cn);
           }
         }
@@ -522,24 +531,27 @@ Node sygusToBuiltinEval(Node n,
           if (eargs.empty())
           {
             eargs.push_back(cur);
-            eargs.insert(eargs.end(),args.begin(),args.end());
+            eargs.insert(eargs.end(), args.begin(), args.end());
           }
           else
           {
             eargs[0] = cur;
           }
-          visited[cur] = nm->mkNode(DT_SYGUS_EVAL,eargs);
+          visited[cur] = nm->mkNode(DT_SYGUS_EVAL, eargs);
         }
       }
-    } else if (it->second.isNull()) {
+    }
+    else if (it->second.isNull())
+    {
       Node ret = cur;
-      Assert(cur.getKind()==APPLY_CONSTRUCTOR);
+      Assert(cur.getKind() == APPLY_CONSTRUCTOR);
       const Datatype& dt = cur.getType().getDatatype();
       // non sygus-datatype terms are also themselves
       if (dt.isSygus())
       {
         std::vector<Node> children;
-        for (const Node& cn : cur) {
+        for (const Node& cn : cur)
+        {
           it = visited.find(cn);
           Assert(it != visited.end());
           Assert(!it->second.isNull());
@@ -547,7 +559,7 @@ Node sygusToBuiltinEval(Node n,
         }
         index = indexOf(cur.getOperator());
         // apply to arguments
-        ret = mkSygusTerm(dt,index,children);
+        ret = mkSygusTerm(dt, index, children);
       }
       visited[cur] = ret;
     }

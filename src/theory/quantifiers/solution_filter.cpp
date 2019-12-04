@@ -155,10 +155,7 @@ bool SolutionFilterObjFun::addTerm(Node n, std::ostream& out)
   return retValue;
 }
 
-Node SolutionFilterObjFun::getCurrentMaxValue() const
-{
-  return d_maxValue;
-}
+Node SolutionFilterObjFun::getCurrentMaxValue() const { return d_maxValue; }
 
 }  // namespace quantifiers
 }  // namespace theory
