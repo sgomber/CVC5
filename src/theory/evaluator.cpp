@@ -141,30 +141,24 @@ EvalResult Evaluator::evalInternal(TNode n,
       continue;
     }
     
-    /*
+    bool doEval = true;
+    Node currNodeVal = currNode;
     if (currNode.getKind()==kind::DT_SYGUS_EVAL)
     {
-      // The first argument is a datatype, which we do not use the evaluator
-      // for.
-      Node cop = currNode[0];
-      cop = cop.substitute(args.begin(),args.end(),vals.begin(),vals.end());
-      cop = Rewriter::rewrite(cop);
-      // If it is a constant, then we
-      if (cop.isConst())
-      {
-        Trace("evaluator") << "Datatype sygus evaluation " << currNode << " with constant (rewritten) operator " << cop << std::endl;
-      }
+      currNodeVal = currNodeVal.substitute(args.begin(),args.end(),vals.begin(),vals.end());
+      // No evaluator for this kind, but may be able to use rewriter.
+      currNodeVal = Rewriter::rewrite(currNodeVal);
     }
-    */
-
-    bool doEval = true;
-    for (const auto& currNodeChild : currNode)
+    else
     {
-      if (results.find(currNodeChild) == results.end())
+      for (const auto& currNodeChild : currNode)
       {
-        queue.emplace_back(currNodeChild);
-        doEval = false;
-        Trace("evaluator") << "Cannot evaluate " << currNode << std::endl;
+        if (results.find(currNodeChild) == results.end())
+        {
+          queue.emplace_back(currNodeChild);
+          doEval = false;
+          Trace("evaluator") << "Cannot evaluate " << currNode << std::endl;
+        }
       }
     }
 
@@ -172,7 +166,6 @@ EvalResult Evaluator::evalInternal(TNode n,
     {
       queue.pop_back();
 
-      Node currNodeVal = currNode;
       if (currNode.isVar())
       {
         const auto& it = std::find(args.begin(), args.end(), currNode);
@@ -320,6 +313,12 @@ EvalResult Evaluator::evalInternal(TNode n,
           const Rational& x = results[currNode[0]].d_rat;
           const Rational& y = results[currNode[1]].d_rat;
           results[currNode] = EvalResult(x < y);
+          break;
+        }
+        case kind::ABS:
+        {
+          const Rational& x = results[currNode[0]].d_rat;
+          results[currNode] = EvalResult(x.abs());
           break;
         }
         case kind::CONST_STRING:
