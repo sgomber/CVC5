@@ -384,7 +384,7 @@ struct SygusToBuiltinTermAttributeId
 typedef expr::Attribute<SygusToBuiltinTermAttributeId, Node>
     SygusToBuiltinTermAttribute;
 
-Node sygusToBuiltinTerm(Node n)
+Node sygusToBuiltin(Node n)
 {
   Assert(n.isConst());
   std::unordered_map<TNode, Node, TNodeHashFunction> visited;
@@ -446,7 +446,7 @@ Node sygusToBuiltinTerm(Node n)
   return visited[n];
 }
 
-Node sygusToBuiltinTermEval(Node n,
+Node sygusToBuiltinEval(Node n,
                     const std::vector<Node>& args)
 {
   NodeManager * nm = NodeManager::currentNM();
@@ -484,7 +484,7 @@ Node sygusToBuiltinTermEval(Node n,
       else if (cur.isConst())
       {
         // convert to builtin term
-        Node bt = sygusToBuiltinTerm(cur);
+        Node bt = sygusToBuiltin(cur);
         // run the evaluator if possible
         if (!svarsInit)
         {
@@ -505,7 +505,6 @@ Node sygusToBuiltinTermEval(Node n,
           ret = bt.substitute(svars.begin(),svars.end(),args.begin(),args.end());
         }
         visited[cur] = ret;
-        //AlwaysAssert(cur.getType().isComparableTo(ret.getType()));
       }
       else
       {

@@ -254,6 +254,13 @@ class TermDbSygus {
    *
    * Given a sygus datatype term n of type tn, this function returns its analog,
    * that is, the term that n encodes.
+   * 
+   * This function is a generalization of sygusToBuiltinType in
+   * theory::datatypes::utils in two ways:
+   * (1) It converts non-constant subterms of n to canonical free variables,
+   * (2) It accounts for the attribute SygusPrintProxyAttribute, which overrides
+   * the sygus-to-builtin conversion for non-constant n and is used when
+   * grammar restrictions are ignored.
    */
   Node sygusToBuiltin(Node n, TypeNode tn);
   /** same as above, but without tn */
