@@ -451,6 +451,16 @@ Node sygusToBuiltinTermEval(Node n,
 {
   NodeManager * nm = NodeManager::currentNM();
   Evaluator eval;
+  // constant arguments?
+  bool constArgs = true;
+  for (const Node& a : args)
+  {
+    if (!a.isConst())
+    {
+      constArgs = false;
+      break;
+    }
+  }
   std::vector<Node> eargs;
   bool svarsInit = false;
   std::vector<Node> svars;
@@ -466,7 +476,12 @@ Node sygusToBuiltinTermEval(Node n,
     visit.pop_back();
     it = visited.find(cur);
     if (it == visited.end()) {
-      if (cur.isConst())
+      TypeNode tn = cur.getType();
+      if (!tn.isDatatype() || !tn.getDatatype().isSygus())
+      {
+        visited[cur] = cur;
+      }
+      else if (cur.isConst())
       {
         // convert to builtin term
         Node bt = sygusToBuiltinTerm(cur);
@@ -481,13 +496,16 @@ Node sygusToBuiltinTermEval(Node n,
             svars.push_back(v);
           }
         }
-        Node ret = eval.eval(bt,svars,args);
+        Assert(args.size()==svars.size());
+        // try evaluation if we have constant arguments
+        Node ret = constArgs ? eval.eval(bt,svars,args) : Node::null();
         if (ret.isNull())
         {
           // if evaluation was not available, use a substitution
           ret = bt.substitute(svars.begin(),svars.end(),args.begin(),args.end());
         }
         visited[cur] = ret;
+        //AlwaysAssert(cur.getType().isComparableTo(ret.getType()));
       }
       else
       {
@@ -501,27 +519,17 @@ Node sygusToBuiltinTermEval(Node n,
         }
         else
         {
-          TypeNode tn = cur.getType();
-          if (tn.isDatatype() && tn.getDatatype().isSygus())
+          // it is the evaluation of this term on the arguments
+          if (eargs.empty())
           {
-            // it is the evaluation of this term on the arguments
-            if (eargs.empty())
-            {
-              eargs.push_back(cur);
-              eargs.insert(eargs.end(),args.begin(),args.end());
-            }
-            else
-            {
-              eargs[0] = cur;
-            }
-            visited[cur] = nm->mkNode(DT_SYGUS_EVAL,eargs);
+            eargs.push_back(cur);
+            eargs.insert(eargs.end(),args.begin(),args.end());
           }
           else
           {
-            // It is itself. This case is exclusively called for arguments of
-            // any constant constructors.
-            visited[cur] = cur;
+            eargs[0] = cur;
           }
+          visited[cur] = nm->mkNode(DT_SYGUS_EVAL,eargs);
         }
       }
     } else if (it->second.isNull()) {
