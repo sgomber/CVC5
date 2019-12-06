@@ -126,8 +126,14 @@ Node mkSygusTerm(const Datatype& dt,
   Assert(i < dt.getNumConstructors());
   Assert(dt.isSygus());
   Assert(!dt[i].getSygusOp().isNull());
-  std::vector<Node> schildren;
   Node op = Node::fromExpr(dt[i].getSygusOp());
+  return mkSygusTerm(op, children, doBetaReduction);
+}
+
+Node mkSygusTerm(Node op,
+                 const std::vector<Node>& children,
+                 bool doBetaReduction)
+{
   Trace("dt-sygus-util") << "Operator is " << op << std::endl;
   if (children.empty())
   {
@@ -141,6 +147,7 @@ Node mkSygusTerm(const Datatype& dt,
     Assert(children.size() == 1);
     return children[0];
   }
+  std::vector<Node> schildren;
   // get the kind of the operator
   Kind ok = op.getKind();
   if (ok != BUILTIN)
@@ -427,7 +434,11 @@ Node sygusToBuiltin(Node n)
       Node ret = cur;
       Assert(cur.getKind() == APPLY_CONSTRUCTOR);
       const Datatype& dt = cur.getType().getDatatype();
-      // non sygus-datatype terms are also themselves
+      // Non sygus-datatype terms are also themselves. Notice we treat the
+      // case of non-sygus datatypes this way since it avoids computing
+      // the type / datatype of the node in the pre-traversal above. The
+      // case of non-sygus datatypes is very rare, so the extra addition to
+      // visited is justified performance-wise.
       if (dt.isSygus())
       {
         std::vector<Node> children;

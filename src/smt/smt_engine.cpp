@@ -1303,6 +1303,12 @@ void SmtEngine::setDefaults() {
     }
   }
 
+  // sygus core connective requires unsat cores
+  if (options::sygusCoreConnective())
+  {
+    options::unsatCores.set(true);
+  }
+
   if ((options::checkModels() || options::checkSynthSol()
        || options::produceAbducts()
        || options::modelCoresMode() != MODEL_CORES_NONE
@@ -1922,16 +1928,6 @@ void SmtEngine::setDefaults() {
       {
         options::cbqi.set(true);
       }
-    }
-    // setting unif requirements
-    if (options::sygusUnifBooleanHeuristicDt()
-        && !options::sygusUnifCondIndependent())
-    {
-      options::sygusUnifCondIndependent.set(true);
-    }
-    if (options::sygusUnifCondIndependent() && !options::sygusUnif())
-    {
-      options::sygusUnif.set(true);
     }
   }
   if (options::sygusInference())
