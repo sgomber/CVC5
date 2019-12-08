@@ -1049,6 +1049,63 @@ void SynthConjecture::printSynthSolution(std::ostream& out)
     return;
   }
   NodeManager* nm = NodeManager::currentNM();
+  if (!d_objFun.isNull())
+  {
+    Assert( sols.size()==1);
+    bool isSygusSol = true;
+    for (int s : statuses)
+    {
+      if (s==0)
+      {
+        isSygusSol = false;
+        break;
+      }
+    }
+    if (isSygusSol)
+    {
+      if (!d_exprmTuple.get())
+      {
+        d_exprmTuple.reset(new ExpressionMinerManager);
+        if (!d_objFun.isNull())
+        {
+          std::vector<Node> vars;
+          for (const Node& v : d_embed_quant[0])
+          {
+            vars.push_back(v);
+          }
+          // convert to embedding
+          Node deepObjFun = d_ceg_gc->convertToEmbedding(d_objFun);
+          d_exprmTuple->enableFilterObjFun(vars, deepObjFun);
+        }
+      }
+      if ( !d_exprmTuple->addTerm(sols, out))
+      {
+        // reject
+        return;
+      }
+    }
+    // if using objective function, check if we acheived threshold
+    if (!d_objFunTerminateVal.isNull())
+    {
+      Assert(d_exprm.find(prog) != d_exprm.end());
+      Trace("cegqi-debug")
+          << "Check threshold " << d_objFunTerminateVal << std::endl;
+      const SolutionFilterObjFun& sfof = d_exprmTuple->getSolutionFilterObjFun();
+      Node cval = sfof.getCurrentMaxValue();
+      if (!cval.isNull())
+      {
+        Node ineq = nm->mkNode(GEQ, cval, d_objFunTerminateVal);
+        Node ineqr = Rewriter::rewrite(ineq);
+        if (ineqr.isConst() && ineqr.getConst<bool>())
+        {
+          std::stringstream ss;
+          ss << "Threshold of objective function (" << d_objFunTerminateVal
+              << ") for enumerative SyGuS achieved.";
+          throw LogicException(ss.str());
+        }
+      }
+    }    
+  }
   for (unsigned i = 0, size = d_embed_quant[0].getNumChildren(); i < size; i++)
   {
     Node sol = sols[i];
@@ -1068,8 +1125,7 @@ void SynthConjecture::printSynthSolution(std::ostream& out)
 
       if (status != 0
           && (options::sygusRewSynth() || options::sygusQueryGen()
-              || options::sygusFilterSolMode() != SYGUS_FILTER_SOL_NONE
-              || !d_objFun.isNull()))
+              || options::sygusFilterSolMode() != SYGUS_FILTER_SOL_NONE))
       {
         Trace("cegqi-sol-debug") << "Run expression mining..." << std::endl;
         std::map<Node, ExpressionMinerManager>::iterator its =
@@ -1097,17 +1153,6 @@ void SynthConjecture::printSynthSolution(std::ostream& out)
             {
               emm.enableFilterWeakSolutions();
             }
-          }
-          if (!d_objFun.isNull())
-          {
-            std::vector<Node> vars;
-            for (const Node& v : d_embed_quant[0])
-            {
-              vars.push_back(v);
-            }
-            // convert to embedding
-            Node deepObjFun = d_ceg_gc->convertToEmbedding(d_objFun);
-            emm.enableFilterObjFun(vars, deepObjFun);
           }
           its = d_exprm.find(prog);
         }
@@ -1166,28 +1211,6 @@ void SynthConjecture::printSynthSolution(std::ostream& out)
               ->toStreamSygus(out, sol);
         }
         out << ")" << std::endl;
-        // if using objective function, check if we acheived threshold
-        if (!d_objFun.isNull() && !d_objFunTerminateVal.isNull())
-        {
-          Assert(d_exprm.find(prog) != d_exprm.end());
-          ExpressionMinerManager& emm = d_exprm[prog];
-          Trace("cegqi-debug")
-              << "Check threshold " << d_objFunTerminateVal << std::endl;
-          const SolutionFilterObjFun& sfof = emm.getSolutionFilterObjFun();
-          Node cval = sfof.getCurrentMaxValue();
-          if (!cval.isNull())
-          {
-            Node ineq = nm->mkNode(GEQ, cval, d_objFunTerminateVal);
-            Node ineqr = Rewriter::rewrite(ineq);
-            if (ineqr.isConst() && ineqr.getConst<bool>())
-            {
-              std::stringstream ss;
-              ss << "Threshold of objective function (" << d_objFunTerminateVal
-                 << ") for enumerative SyGuS achieved.";
-              throw LogicException(ss.str());
-            }
-          }
-        }
       }
     }
   }

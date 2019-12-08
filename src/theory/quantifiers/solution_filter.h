@@ -80,6 +80,7 @@ class SolutionFilterObjFun : public ExprMiner
    * Add term to this miner.
    */
   bool addTerm(Node n, std::ostream& out) override;
+  bool addTerm(std::vector<Node>& sols, std::ostream& out);
   /** get current max value */
   Node getCurrentMaxValue() const;
 

@@ -112,16 +112,22 @@ void SolutionFilterObjFun::setObjectiveFunction(const std::vector<Node>& vars,
 
 bool SolutionFilterObjFun::addTerm(Node n, std::ostream& out)
 {
+  std::vector<Node> sols;
+  sols.push_back(n);
+  return addTerm(sols,out);
+}
+
+bool SolutionFilterObjFun::addTerm(std::vector<Node>& sols, std::ostream& out)
+{
   Trace("sygus-filter-obj-fun-debug")
-      << "Filter via objective function: " << n << std::endl;
-  std::vector<Node> vals;
-  vals.push_back(n);
-  Node res = d_eval.eval(d_objFun, d_objFunVars, vals);
+      << "Filter via objective function: " << sols << std::endl;
+  Assert( sols.size()==d_objFunVars.size());
+  Node res = d_eval.eval(d_objFun, d_objFunVars, sols);
   if (res.isNull())
   {
     Trace("sygus-filter-obj-fun-debug") << "...must substitute" << std::endl;
     res = d_objFun.substitute(
-        d_objFunVars.begin(), d_objFunVars.end(), vals.begin(), vals.end());
+        d_objFunVars.begin(), d_objFunVars.end(), sols.begin(), sols.end());
     res = Rewriter::rewrite(res);
   }
   Trace("sygus-filter-obj-fun")

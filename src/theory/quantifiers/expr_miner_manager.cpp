@@ -137,48 +137,67 @@ void ExpressionMinerManager::enableFilterObjFun(const std::vector<Node>& vars,
   d_solObjFun.setObjectiveFunction(vars, f);
 }
 
-bool ExpressionMinerManager::addTerm(Node sol,
+bool ExpressionMinerManager::addTerm(std::vector<Node>& sols,
                                      std::ostream& out,
-                                     bool& rew_print)
+                                     bool& rewPrint)
 {
   // set the builtin version
-  Node solb = sol;
+  std::vector<Node> solbs = sols;
   if (d_use_sygus_type)
   {
-    solb = d_tds->sygusToBuiltin(sol);
+    for (unsigned i=0, ssize = sols.size(); i<ssize; i++)
+    {
+      solbs[i] = d_tds->sygusToBuiltin(sols[i]);
+    }
   }
 
   // add to the candidate rewrite rule database
   bool ret = true;
   if (d_doRewSynth)
   {
-    ret = d_crd.addTerm(sol, options::sygusRewSynthRec(), out, rew_print);
+    Assert( sols.size()==1);
+    ret = d_crd.addTerm(sols[0], options::sygusRewSynthRec(), out, rewPrint);
   }
 
   // a unique term, let's try the query generator
   if (ret && d_doQueryGen)
   {
-    d_qg.addTerm(solb, out);
+    Assert( solbs.size()==1);
+    d_qg.addTerm(solbs[0], out);
   }
 
   // filter based on logical strength
   if (ret && d_doFilterLogicalStrength)
   {
-    ret = d_sols.addTerm(solb, out);
+    Assert( solbs.size()==1);
+    ret = d_sols.addTerm(solbs[0], out);
   }
 
   if (ret && d_doFilterObjFun)
   {
     // we use the sygus version
-    ret = d_solObjFun.addTerm(sol, out);
+    ret = d_solObjFun.addTerm(sols, out);
   }
   return ret;
 }
 
+bool ExpressionMinerManager::addTerm(std::vector<Node>& sols, std::ostream& out)
+{
+  bool rewPrint = false;
+  return addTerm(sols, out, rewPrint);
+}
+
 bool ExpressionMinerManager::addTerm(Node sol, std::ostream& out)
 {
-  bool rew_print = false;
-  return addTerm(sol, out, rew_print);
+  bool rewPrint = false;
+  return addTerm(sol, out, rewPrint);
+}
+
+bool ExpressionMinerManager::addTerm(Node sol, std::ostream& out, bool& rewPrint)
+{
+  std::vector<Node> sols;
+  sols.push_back(sol);
+  return addTerm(sols, out, rewPrint);
 }
 
 const SolutionFilterObjFun& ExpressionMinerManager::getSolutionFilterObjFun()

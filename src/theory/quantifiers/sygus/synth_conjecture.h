@@ -415,6 +415,8 @@ class SynthConjecture
    * rewrite rules.
    */
   std::map<Node, ExpressionMinerManager> d_exprm;
+  /** expression manager for tuples of functions-to-synthesize */
+  std::unique_ptr<ExpressionMinerManager> d_exprmTuple;
 };
 
 }  // namespace quantifiers

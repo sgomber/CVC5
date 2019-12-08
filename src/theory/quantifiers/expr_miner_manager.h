@@ -87,11 +87,15 @@ class ExpressionMinerManager
    * which is computed based on the miners that this manager enables.
    */
   bool addTerm(Node sol, std::ostream& out);
+  /** Same as above, for a tuple of solutions sol */
+  bool addTerm(std::vector<Node>& sols, std::ostream& out);
   /**
-   * Same as above, but the argument rew_print is set to true if a rewrite rule
+   * Same as above, but the argument rewPrint is set to true if a rewrite rule
    * was printed on the output stream out.
    */
-  bool addTerm(Node sol, std::ostream& out, bool& rew_print);
+  bool addTerm(Node sol, std::ostream& out, bool& rewPrint);
+  /** Same as above, for a tuple of solutions sol */
+  bool addTerm(std::vector<Node>& sols, std::ostream& out, bool& rewPrint);
 
   /** get the solution filter objective function */
   const SolutionFilterObjFun& getSolutionFilterObjFun() const;
