@@ -1,0 +1,158 @@
+(set-logic ALL)
+
+(declare-datatype Packet ((P1) (P2)))
+
+(declare-datatype Node ((A) (B) (C)))
+
+(declare-datatype SPair ((mkPair (pnode Node) (ppacket Packet))))
+
+(declare-datatype State ((mkState (rcv (Array SPair Real)))))
+
+; C is destination of P1 and P2
+(define-fun H ((s State)) Real
+  (+ (select (rcv s) (mkPair C P1)) (select (rcv s) (mkPair C P2)))
+)
+
+; reliability
+(define-fun rel () Real 0.7)
+
+; new chance of success
+(define-fun updateReal ((addP Real) (currP Real)) Real
+  (+ currP (* (- 1.0 currP) addP))
+)
+
+; Actions and how they are interpreted
+
+(declare-datatype Action (
+  (sleep) 
+  (pushPck (push_dst Node) (push_pck Packet))
+  (pullPck (pull_dst Node) (pull_pck Packet))
+))
+(declare-datatype ActionList ((consAL (headA Action) (tailA ActionList)) (nilAL)))
+
+;; how likely an action is to fire
+(define-fun preconditionAction ((actor Node) (a Action) (s State)) Real
+  (let ((rcv (rcv s)))
+  (ite ((_ is pullPck) a)
+    (let ((pck (push_pck a)))
+    ; don't pull if already recieved the packet
+    (- 1.0 (select rcv (mkPair actor pck)))
+    )
+    1.0
+  )
+  )
+)
+
+(declare-datatype PAction ((mkPAction (prob Real) (act Action))))
+(declare-datatype PActionList ((consPAL (headPA PAction) (tailPA PActionList)) (nilPAL)))
+
+(define-fun-rec ActionListToPActionListP ((p Real) (actor Node) (al ActionList) (s State)) PActionList
+  (ite (= p 0.0) nilPAL
+  (ite ((_ is consAL) al)
+    (let ((a (headA al)))
+    (let ((pc (preconditionAction actor a s)))
+    (consPAL 
+        (mkPAction (* pc p) a)
+        (ActionListToPActionListP (* (- 1.0 pc) p) actor (tailA al) s)
+    )
+    ))
+    nilPAL
+  ))
+)
+(define-fun ActionListToPActionList ((actor Node) (al ActionList) (s State)) PActionList
+  (ActionListToPActionListP 1.0 actor al s)
+)
+
+(define-fun trans-node ((actor Node) (pa PAction) (s State) (sp State)) State
+  (let ((prev_rcv (rcv s)))
+  (let ((a (act pa)))
+  (let ((p (prob pa)))
+  (ite ((_ is pushPck) a)
+    (let ((dst (push_dst a))) 
+    (let ((pck (push_pck a)))
+    (let ((dst_pair (mkPair dst pck)))
+    (let ((src_pair (mkPair actor pck)))
+    (mkState 
+      (store 
+        prev_rcv
+        dst_pair (updateReal (* p rel (select prev_rcv src_pair)) (select prev_rcv dst_pair))
+      )
+    )))))
+  (ite ((_ is pullPck) a)
+    (let ((src (pull_dst a))) 
+    (let ((pck (pull_pck a)))
+    (let ((dst_pair (mkPair actor pck)))
+    (let ((src_pair (mkPair src pck)))
+    (mkState 
+      (store 
+        prev_rcv
+        dst_pair (updateReal (* p rel (select prev_rcv src_pair)) (select prev_rcv dst_pair))
+      )
+    )))))
+    sp))
+  )))
+)
+
+(define-fun-rec trans-node-list ((src Node) (l PActionList) (s State) (sp State)) State
+  (ite ((_ is consPAL) l) 
+    (trans-node src (headPA l) s (trans-node-list src (tailPA l) s sp))
+    sp)
+)
+
+(define-fun trans ((aa ActionList) (ab ActionList) (ac ActionList) (s State)) State
+  (trans-node-list A (ActionListToPActionList A aa s) s
+  (trans-node-list B (ActionListToPActionList B ab s) s
+  (trans-node-list C (ActionListToPActionList C ac s) s
+    s)))
+)
+
+(synth-fun actionA () ActionList
+  ((GAL ActionList) (GA Action) (GN Node) (GP Packet))
+  (
+  (GAL ActionList (nilAL))
+  (GA Action ((pushPck GN GP) (pullPck GN GP)))
+  (GN Node (B C))
+  (GP Packet (P1 P2))
+  )
+)
+(synth-fun actionB () ActionList
+  ((GAL ActionList) (GA Action) (GN Node) (GP Packet))
+  (
+  (GAL ActionList (nilAL))
+  (GA Action ((pushPck GN GP) (pullPck GN GP)))
+  (GN Node (A C))
+  (GP Packet (P1 P2))
+  )
+)
+(synth-fun actionC () ActionList
+  ((GAL ActionList) (GA Action) (GN Node) (GP Packet))
+  (
+  (GAL ActionList ((consAL GA GAL) nilAL))
+  (GA Action ((pushPck GN GP) (pullPck GN GP)))
+  (GN Node (A B))
+  (GP Packet (P1 P2))
+  )
+)
+
+
+; A and B initially have packets P1 and P2
+(define-fun init-state () State
+  (mkState
+    (store 
+      (store
+        ((as const (Array SPair Real)) 0)
+        (mkPair B P2) 1.0
+      )
+      (mkPair A P1) 1.0
+    )
+  )
+)
+
+;(define-fun toAction
+
+(optimize-synth 
+  (H 
+    (trans actionA actionB actionC (trans actionA actionB actionC init-state))
+  )
+)
+  
