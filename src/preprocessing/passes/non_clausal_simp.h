@@ -46,7 +46,11 @@ class NonClausalSimp : public PreprocessingPass
 
   Statistics d_statistics;
 
-  /* The top level substitutions */
+  /**
+   * User-context-dependent list of constant propagations.
+   * These are literals that have can be propagated via Boolean propagation
+   * based on some assertion in the current user context.
+   */
   theory::SubstitutionMap d_constantPropagations;
 };
 

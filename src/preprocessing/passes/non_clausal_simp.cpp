@@ -76,8 +76,6 @@ PreprocessingPassResult NonClausalSimp::applyInternal(
   propagator->initialize();
 
   // Assert all the assertions to the propagator
-  SubstitutionMap& top_level_substs =
-      d_preprocContext->getTopLevelSubstitutions();
   Trace("non-clausal-simplify") << "asserting to propagator" << std::endl;
   for (size_t i = 0, size = assertionsToPreprocess->size(); i < size; ++i)
   {
@@ -87,19 +85,6 @@ PreprocessingPassResult NonClausalSimp::applyInternal(
     if (assertionsToPreprocess->isSubstsIndex(i))
     {
       continue;
-    }
-    // apply the previous substitutions
-    Node newAssertion = assertion;
-    if (!top_level_substs.empty())
-    {
-      newAssertion = Rewriter::rewrite(top_level_substs.apply(newAssertion));
-    }
-    if (newAssertion!=assertion)
-    {
-      Trace("non-clausal-simplify")
-          << "simplified from previous " << assertion << " to " << newAssertion << std::endl;
-      assertionsToPreprocess->replace(i, newAssertion);
-      assertion = newAssertion;
     }
     Trace("non-clausal-simplify")
         << "asserting " << assertion << std::endl;
@@ -127,6 +112,8 @@ PreprocessingPassResult NonClausalSimp::applyInternal(
       << "Iterate through " << propagator->getLearnedLiterals().size()
       << " learned literals." << std::endl;
   // No conflict, go through the literals and solve them
+  SubstitutionMap& top_level_substs =
+      d_preprocContext->getTopLevelSubstitutions();
   SubstitutionMap newSubstitutions(d_preprocContext->getUserContext());
   SubstitutionMap::iterator pos;
   size_t j = 0;
