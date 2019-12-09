@@ -183,10 +183,18 @@ EvalResult Evaluator::evalInternal(
       queue.pop_back();
 
       Node currNodeVal = currNode;
+      
+      // The code below should either:
+      // (1) store a valid EvalResult into results[currNode], or
+      // (2) store an invalid EvalResult into results[currNode] and
+      // store the result of substitution + rewriting currNode { args -> vals }
+      // into evalAsNode[currNode].
+      
+      // If we did not successfully evaluate all children
       if (!doEval)
       {
-        // Reconstruct with a combination of children that we successfully
-        // evaluated, and children that did not.
+        // Reconstruct the node with a combination of the children that
+        // successfully evaluated, and the children that did not.
         Trace("evaluator") << "Evaluator: collect arguments" << std::endl;
         std::vector<Node> echildren;
         if (currNode.getMetaKind() == kind::metakind::PARAMETERIZED)
@@ -230,7 +238,9 @@ EvalResult Evaluator::evalInternal(
                            << currNodeVal << std::endl;
         if (currNodeVal.getNumChildren() > 0)
         {
-          // failed to evaluate to a (handled) constant, we have to abort.
+          // We may continue with a valid EvalResult at this point only if
+          // we have no children. We must otherwise fail here since some of
+          // our children may not have successful evaluations.
           results[currNode] = EvalResult();
           evalAsNode[currNode] = currNodeVal;
           continue;
@@ -242,7 +252,9 @@ EvalResult Evaluator::evalInternal(
         const auto& it = std::find(args.begin(), args.end(), currNode);
         if (it == args.end())
         {
-          return EvalResult();
+          evalAsNode[currNode] = currNode;
+          results[currNode] = EvalResult();
+          continue;
         }
         ptrdiff_t pos = std::distance(args.begin(), it);
         currNodeVal = vals[pos];
@@ -274,8 +286,8 @@ EvalResult Evaluator::evalInternal(
             evalInternal(op[1], lambdaArgs, lambdaVals, evalAsNode);
         if (results[currNode].d_tag == EvalResult::INVALID)
         {
-          // evaluation was invalid, we fail
-          return results[currNode];
+          // evaluation was invalid, we take the node of op[1] as this
+          evalAsNode[currNode] = evalAsNode[op[1]];
         }
         continue;
       }
@@ -706,9 +718,8 @@ EvalResult Evaluator::evalInternal(
             {
               Trace("evaluator") << "Theory " << Theory::theoryOf(currNode[0])
                                  << " not supported" << std::endl;
-              // results[currNode] = EvalResult();
-              // evalAsNode[currNode] = currNodeVal;
-              return EvalResult();
+              results[currNode] = EvalResult();
+              evalAsNode[currNode] = currNodeVal;
               break;
             }
           }
@@ -735,7 +746,6 @@ EvalResult Evaluator::evalInternal(
                              << " not supported" << std::endl;
           results[currNode] = EvalResult();
           evalAsNode[currNode] = currNodeVal;
-          // return EvalResult();
         }
       }
     }
