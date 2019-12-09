@@ -88,9 +88,7 @@ bool SolutionFilterStrength::addTerm(Node n, std::ostream& out)
       }
       else
       {
-        Options& nodeManagerOptions = nm->getOptions();
-        std::ostream* out = nodeManagerOptions.getOut();
-        (*out) << "; (filtered " << (d_isStrong ? s : s.negate()) << ")"
+        out << "; (filtered " << (d_isStrong ? s : s.negate()) << ")"
                << std::endl;
       }
     }
@@ -102,10 +100,13 @@ bool SolutionFilterStrength::addTerm(Node n, std::ostream& out)
 }
 
 void SolutionFilterObjFun::setObjectiveFunction(const std::vector<Node>& vars,
-                                                Node f)
+                                                Node f, FunDefEvaluator * fde )
 {
   d_objFunVars = vars;
-  d_objFun = f;
+  // expand definitions
+  d_objFun = Node::fromExpr(
+      smt::currentSmtEngine()->expandDefinitions(f.toExpr()));
+  d_funDefEval = fde;
   // must be real valued
   AlwaysAssert(d_objFun.getType().isReal());
 }
@@ -130,14 +131,23 @@ bool SolutionFilterObjFun::addTerm(std::vector<Node>& sols, std::ostream& out)
         d_objFunVars.begin(), d_objFunVars.end(), sols.begin(), sols.end());
     res = Rewriter::rewrite(res);
   }
-  Trace("sygus-filter-obj-fun")
-      << "Value of objective function is " << res << std::endl;
   if (!res.isConst())
   {
-    // not constant, must keep but don't set value
-    Trace("sygus-filter-obj-fun") << "...keep (non-constant)" << std::endl;
-    return true;
+    if (d_funDefEval!=nullptr)
+    {
+      res = d_funDefEval->evaluate(res);
+    }
+    if (!res.isConst())
+    {
+      Trace("sygus-filter-obj-fun")
+          << "Value of objective function is non-constant " << res << std::endl;
+      // not constant, must keep but don't set value
+      Trace("sygus-filter-obj-fun") << "...keep (non-constant)" << std::endl;
+      return true;
+    }
   }
+  Trace("sygus-filter-obj-fun")
+      << "Value of objective function is " << res << std::endl;
   bool retValue = false;
   if (d_maxValue.isNull())
   {
@@ -153,10 +163,7 @@ bool SolutionFilterObjFun::addTerm(std::vector<Node>& sols, std::ostream& out)
   }
   if (retValue)
   {
-    NodeManager* nm = NodeManager::currentNM();
-    Options& nodeManagerOptions = nm->getOptions();
-    std::ostream* out = nodeManagerOptions.getOut();
-    (*out) << "; optimal value is now " << d_maxValue << std::endl;
+    out << "; optimal value is now " << d_maxValue << std::endl;
   }
   return retValue;
 }

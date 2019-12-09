@@ -18,6 +18,8 @@
 #include "options/quantifiers_options.h"
 #include "theory/quantifiers/quantifiers_attributes.h"
 #include "theory/rewriter.h"
+#include "smt/smt_engine.h"
+#include "smt/smt_engine_scope.h"
 
 using namespace CVC4::kind;
 
@@ -41,7 +43,9 @@ void FunDefEvaluator::assertDefinition(Node q)
   Assert(d_funDefMap.find(f) == d_funDefMap.end())
       << "FunDefEvaluator::assertDefinition: function already defined";
   FunDefInfo& fdi = d_funDefMap[f];
-  fdi.d_body = QuantAttributes::getFunDefBody(q);
+  Node body = QuantAttributes::getFunDefBody(q);
+  fdi.d_body = Node::fromExpr(
+      smt::currentSmtEngine()->expandDefinitions(body.toExpr()));
   Assert(!fdi.d_body.isNull());
   fdi.d_args.insert(fdi.d_args.end(), q[0].begin(), q[0].end());
   Trace("fd-eval") << "FunDefEvaluator: function " << f << " is defined with "
@@ -122,6 +126,8 @@ Node FunDefEvaluator::evaluate(Node n) const
           {
             Trace("fd-eval") << "FunDefEvaluator: couldn't reduce condition of "
                                 "ITE to const, FAIL\n";
+            Trace("fd-eval") << "Condition was " << cur[0] << std::endl;
+            AlwaysAssert(false);
             return Node::null();
           }
           // pick child to evaluate depending on condition eval

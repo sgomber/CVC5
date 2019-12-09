@@ -131,10 +131,10 @@ void ExpressionMinerManager::enableFilterStrongSolutions()
 }
 
 void ExpressionMinerManager::enableFilterObjFun(const std::vector<Node>& vars,
-                                                Node f)
+                                                Node f, FunDefEvaluator* fde)
 {
   d_doFilterObjFun = true;
-  d_solObjFun.setObjectiveFunction(vars, f);
+  d_solObjFun.setObjectiveFunction(vars, f, fde);
 }
 
 bool ExpressionMinerManager::addTerm(std::vector<Node>& sols,

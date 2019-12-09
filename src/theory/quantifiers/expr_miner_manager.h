@@ -78,7 +78,7 @@ class ExpressionMinerManager
   /** filter weak solutions (--sygus-filter-sol=weak) */
   void enableFilterWeakSolutions();
   /** filter based on objective function */
-  void enableFilterObjFun(const std::vector<Node>& vars, Node f);
+  void enableFilterObjFun(const std::vector<Node>& vars, Node f, FunDefEvaluator* fde=nullptr);
   /** add term
    *
    * Expression miners may print information on the output stream out, for

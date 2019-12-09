@@ -24,6 +24,7 @@
 #include "theory/quantifiers/expr_miner.h"
 #include "theory/quantifiers/lazy_trie.h"
 #include "theory/quantifiers/sygus_sampler.h"
+#include "theory/quantifiers/fun_def_evaluator.h"
 
 namespace CVC4 {
 namespace theory {
@@ -72,10 +73,10 @@ class SolutionFilterStrength : public ExprMiner
 class SolutionFilterObjFun : public ExprMiner
 {
  public:
-  SolutionFilterObjFun() {}
+  SolutionFilterObjFun() : d_funDefEval(nullptr) {}
   ~SolutionFilterObjFun() {}
   /** set objective function */
-  void setObjectiveFunction(const std::vector<Node>& vars, Node f);
+  void setObjectiveFunction(const std::vector<Node>& vars, Node f, FunDefEvaluator * fde =nullptr);
   /**
    * Add term to this miner.
    */
@@ -93,6 +94,8 @@ class SolutionFilterObjFun : public ExprMiner
   Node d_maxValue;
   /** Evaluator utility */
   Evaluator d_eval;
+  /** (recursive) function evaluator utility */
+  FunDefEvaluator* d_funDefEval;
 };
 
 }  // namespace quantifiers

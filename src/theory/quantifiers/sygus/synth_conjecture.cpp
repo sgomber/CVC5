@@ -1051,7 +1051,6 @@ void SynthConjecture::printSynthSolution(std::ostream& out)
   NodeManager* nm = NodeManager::currentNM();
   if (!d_objFun.isNull())
   {
-    Assert( sols.size()==1);
     bool isSygusSol = true;
     for (int s : statuses)
     {
@@ -1075,7 +1074,7 @@ void SynthConjecture::printSynthSolution(std::ostream& out)
           }
           // convert to embedding
           Node deepObjFun = d_ceg_gc->convertToEmbedding(d_objFun);
-          d_exprmTuple->enableFilterObjFun(vars, deepObjFun);
+          d_exprmTuple->enableFilterObjFun(vars, deepObjFun, d_tds->getFunDefEvaluator());
         }
       }
       if ( !d_exprmTuple->addTerm(sols, out))
@@ -1087,7 +1086,6 @@ void SynthConjecture::printSynthSolution(std::ostream& out)
     // if using objective function, check if we acheived threshold
     if (!d_objFunTerminateVal.isNull())
     {
-      Assert(d_exprm.find(prog) != d_exprm.end());
       Trace("cegqi-debug")
           << "Check threshold " << d_objFunTerminateVal << std::endl;
       const SolutionFilterObjFun& sfof = d_exprmTuple->getSolutionFilterObjFun();
