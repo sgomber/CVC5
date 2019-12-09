@@ -124,6 +124,7 @@ Node Evaluator::eval(TNode n,
   Node ret = evalInternal(n, args, vals, evalAsNode).toNode();
   if (!ret.isNull())
   {
+    // maybe it was stored in the evaluation-as-node map
     std::unordered_map<TNode,Node,NodeHashFunction>::iterator itn = evalAsNode.find(n);
     if (itn!=evalAsNode.end())
     {
@@ -165,7 +166,6 @@ EvalResult Evaluator::evalInternal(TNode n,
       {
         queue.emplace_back(currNodeChild);
         doProcess = false;
-        Trace("evaluator") << "Cannot evaluate " << currNode << std::endl;
       }
       else if (itr->second.d_tag==EvalResult::INVALID)
       {
@@ -173,6 +173,7 @@ EvalResult Evaluator::evalInternal(TNode n,
         doEval = false;
       }
     }
+    Trace("evaluator") << "Evaluator: visit " << currNode << ", process = " << doProcess << ", evaluate = " << doEval << std::endl;
 
     if (doProcess)
     {
@@ -181,8 +182,13 @@ EvalResult Evaluator::evalInternal(TNode n,
       Node currNodeVal = currNode;
       if (!doEval)
       {
-        // reconstruct with existing nodes
+        // Reconstruct with a combination of children that we successfully
+        // evaluated, and children that did not.
+        Trace("evaluator") << "Evaluator: collect arguments" << std::endl;
         std::vector< Node > echildren;
+        if(currNode.getMetaKind() == kind::metakind::PARAMETERIZED) {
+          echildren.push_back(currNode.getOperator());
+        }
         for (const auto& currNodeChild : currNode)
         {
           itr = results.find(currNodeChild);
@@ -210,10 +216,19 @@ EvalResult Evaluator::evalInternal(TNode n,
         // The value is the result of our (partially) successful evaluation
         // of the children.
         currNodeVal = nm->mkNode(currNode.getKind(),echildren);
+        Trace("evaluator") << "Evaluator: partially evaluated " << currNodeVal << std::endl;
         // now, use substitution + rewriting
         currNodeVal = currNodeVal.substitute(
             args.begin(), args.end(), vals.begin(), vals.end());
         currNodeVal = Rewriter::rewrite(currNodeVal);
+        Trace("evaluator") << "Evaluator: now after substitution + rewriting: " << currNodeVal << std::endl;
+        if (currNodeVal.getNumChildren()>0)
+        {
+          // failed to evaluate to a (handled) constant, we have to abort.
+          results[currNode] = EvalResult();
+          evalAsNode[currNode] = currNodeVal;
+          continue;
+        }
       }
 
       if (currNode.isVar())
@@ -632,6 +647,22 @@ EvalResult Evaluator::evalInternal(TNode n,
           results[currNode] = EvalResult(res);
           break;
         }
+        case kind::BITVECTOR_UDIV:
+        case kind::BITVECTOR_UDIV_TOTAL:
+        {
+          BitVector res = results[currNode[0]].d_bv;
+          res = res.unsignedDivTotal(results[currNode[1]].d_bv);
+          results[currNode] = EvalResult(res);
+          break;
+        }
+        case kind::BITVECTOR_UREM:
+        case kind::BITVECTOR_UREM_TOTAL:
+        {
+          BitVector res = results[currNode[0]].d_bv;
+          res = res.unsignedRemTotal(results[currNode[1]].d_bv);
+          results[currNode] = EvalResult(res);
+          break;
+        }
 
         case kind::EQUAL:
         {
@@ -695,9 +726,9 @@ EvalResult Evaluator::evalInternal(TNode n,
         {
           Trace("evaluator") << "Kind " << currNodeVal.getKind()
                              << " not supported" << std::endl;
-          //results[currNode] = EvalResult();
-          //evalAsNode[currNode] = currNodeVal;
-          return EvalResult();
+          results[currNode] = EvalResult();
+          evalAsNode[currNode] = currNodeVal;
+          //return EvalResult();
         }
       }
     }

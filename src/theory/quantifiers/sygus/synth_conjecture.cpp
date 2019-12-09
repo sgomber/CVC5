@@ -1083,26 +1083,6 @@ void SynthConjecture::printSynthSolution(std::ostream& out)
         return;
       }
     }
-    // if using objective function, check if we acheived threshold
-    if (!d_objFunTerminateVal.isNull())
-    {
-      Trace("cegqi-debug")
-          << "Check threshold " << d_objFunTerminateVal << std::endl;
-      const SolutionFilterObjFun& sfof = d_exprmTuple->getSolutionFilterObjFun();
-      Node cval = sfof.getCurrentMaxValue();
-      if (!cval.isNull())
-      {
-        Node ineq = nm->mkNode(GEQ, cval, d_objFunTerminateVal);
-        Node ineqr = Rewriter::rewrite(ineq);
-        if (ineqr.isConst() && ineqr.getConst<bool>())
-        {
-          std::stringstream ss;
-          ss << "Threshold of objective function (" << d_objFunTerminateVal
-              << ") for enumerative SyGuS achieved.";
-          throw LogicException(ss.str());
-        }
-      }
-    }    
   }
   for (unsigned i = 0, size = d_embed_quant[0].getNumChildren(); i < size; i++)
   {
@@ -1209,6 +1189,29 @@ void SynthConjecture::printSynthSolution(std::ostream& out)
               ->toStreamSygus(out, sol);
         }
         out << ")" << std::endl;
+      }
+    }
+  }
+  if (!d_objFun.isNull())
+  {
+    // if using objective function, check if we acheived threshold
+    if (d_exprmTuple.get() && !d_objFunTerminateVal.isNull())
+    {
+      Trace("cegqi-debug")
+          << "Check threshold " << d_objFunTerminateVal << std::endl;
+      const SolutionFilterObjFun& sfof = d_exprmTuple->getSolutionFilterObjFun();
+      Node cval = sfof.getCurrentMaxValue();
+      if (!cval.isNull())
+      {
+        Node ineq = nm->mkNode(GEQ, cval, d_objFunTerminateVal);
+        Node ineqr = Rewriter::rewrite(ineq);
+        if (ineqr.isConst() && ineqr.getConst<bool>())
+        {
+          std::stringstream ss;
+          ss << "Threshold of objective function (" << d_objFunTerminateVal
+              << ") for enumerative SyGuS achieved.";
+          throw LogicException(ss.str());
+        }
       }
     }
   }
