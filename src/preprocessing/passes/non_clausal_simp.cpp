@@ -48,7 +48,7 @@ NonClausalSimp::Statistics::~Statistics()
 
 NonClausalSimp::NonClausalSimp(PreprocessingPassContext* preprocContext)
     : PreprocessingPass(preprocContext, "non-clausal-simp"),
-    d_constantPropagations(preprocContext->getUserContext())
+      d_constantPropagations(preprocContext->getUserContext())
 {
 }
 
@@ -80,16 +80,14 @@ PreprocessingPassResult NonClausalSimp::applyInternal(
   for (size_t i = 0, size = assertionsToPreprocess->size(); i < size; ++i)
   {
     Node assertion = (*assertionsToPreprocess)[i];
-    Assert(Rewriter::rewrite(assertion)== assertion);
+    Assert(Rewriter::rewrite(assertion) == assertion);
     // Don't reprocess substitutions
     if (assertionsToPreprocess->isSubstsIndex(i))
     {
       continue;
     }
-    Trace("non-clausal-simplify")
-        << "asserting " << assertion << std::endl;
-    Debug("cores") << "propagator->assertTrue: " << assertion
-                   << std::endl;
+    Trace("non-clausal-simplify") << "asserting " << assertion << std::endl;
+    Debug("cores") << "propagator->assertTrue: " << assertion << std::endl;
     propagator->assertTrue(assertion);
   }
 
@@ -276,7 +274,8 @@ PreprocessingPassResult NonClausalSimp::applyInternal(
     Assert(newSubstitutions.apply(newSubstitutions.apply((*pos).second))
            == newSubstitutions.apply((*pos).second));
   }
-  for (pos = d_constantPropagations.begin(); pos != d_constantPropagations.end();
+  for (pos = d_constantPropagations.begin();
+       pos != d_constantPropagations.end();
        ++pos)
   {
     Assert((*pos).second.isConst());
@@ -405,7 +404,8 @@ PreprocessingPassResult NonClausalSimp::applyInternal(
   }
   learned_literals.clear();
 
-  for (pos = d_constantPropagations.begin(); pos != d_constantPropagations.end();
+  for (pos = d_constantPropagations.begin();
+       pos != d_constantPropagations.end();
        ++pos)
   {
     Node cProp = (*pos).first.eqNode((*pos).second);
