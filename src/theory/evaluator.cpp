@@ -120,16 +120,31 @@ Node Evaluator::eval(TNode n,
 {
   Trace("evaluator") << "Evaluating " << n << " under substitution " << args
                      << " " << vals << std::endl;
-  return evalInternal(n, args, vals).toNode();
+  std::unordered_map<TNode,Node,NodeHashFunction> evalAsNode;
+  Node ret = evalInternal(n, args, vals, evalAsNode).toNode();
+  if (!ret.isNull())
+  {
+    std::unordered_map<TNode,Node,NodeHashFunction>::iterator itn = evalAsNode.find(n);
+    if (itn!=evalAsNode.end())
+    {
+      return itn->second;
+    }
+  }
+  return ret;
 }
 
 EvalResult Evaluator::evalInternal(TNode n,
                                    const std::vector<Node>& args,
-                                   const std::vector<Node>& vals)
+                                   const std::vector<Node>& vals,
+                                   std::unordered_map<TNode,Node,NodeHashFunction>& evalAsNode
+                                  )
 {
   std::unordered_map<TNode, EvalResult, TNodeHashFunction> results;
   std::vector<TNode> queue;
   queue.emplace_back(n);
+  std::unordered_map<TNode,Node,NodeHashFunction>::iterator itn;
+  std::unordered_map<TNode, EvalResult, TNodeHashFunction>::iterator itr;
+  NodeManager * nm = NodeManager::currentNM();
 
   while (queue.size() != 0)
   {
@@ -141,41 +156,73 @@ EvalResult Evaluator::evalInternal(TNode n,
       continue;
     }
 
+    bool doProcess = true;
     bool doEval = true;
-    Node currNodeVal = currNode;
-    if (currNode.getKind() == kind::DT_SYGUS_EVAL)
+    for (const auto& currNodeChild : currNode)
     {
-      currNodeVal = currNodeVal.substitute(
-          args.begin(), args.end(), vals.begin(), vals.end());
-      // No evaluator for this kind, but may be able to use rewriter.
-      currNodeVal = Rewriter::rewrite(currNodeVal);
-    }
-    else
-    {
-      for (const auto& currNodeChild : currNode)
+      itr = results.find(currNodeChild);
+      if (itr == results.end())
       {
-        if (results.find(currNodeChild) == results.end())
-        {
-          queue.emplace_back(currNodeChild);
-          doEval = false;
-          Trace("evaluator") << "Cannot evaluate " << currNode << std::endl;
-        }
+        queue.emplace_back(currNodeChild);
+        doProcess = false;
+        Trace("evaluator") << "Cannot evaluate " << currNode << std::endl;
+      }
+      else if (itr->second.d_tag==EvalResult::INVALID)
+      {
+        // we cannot evaluate since there was an invalid child
+        doEval = false;
       }
     }
 
-    if (doEval)
+    if (doProcess)
     {
       queue.pop_back();
+      
+      Node currNodeVal = currNode;
+      if (!doEval)
+      {
+        // reconstruct with existing nodes
+        std::vector< Node > echildren;
+        for (const auto& currNodeChild : currNode)
+        {
+          itr = results.find(currNodeChild);
+          if (itr->second.d_tag==EvalResult::INVALID)
+          {
+            // could not evaluate this child, look in the node cache
+            itn = evalAsNode.find(currNodeChild);
+            if (itn!=evalAsNode.end())
+            {
+              // take cached value
+              echildren.push_back(itn->second);
+            }
+            else
+            {
+              // must take original
+              echildren.push_back(currNodeChild);
+            }
+          }
+          else
+          {
+            // otherwise, use the evaluation
+            echildren.push_back(itr->second.toNode());
+          }
+        }
+        // The value is the result of our (partially) successful evaluation
+        // of the children.
+        currNodeVal = nm->mkNode(currNode.getKind(),echildren);
+        // now, use substitution + rewriting
+        currNodeVal = currNodeVal.substitute(
+            args.begin(), args.end(), vals.begin(), vals.end());
+        currNodeVal = Rewriter::rewrite(currNodeVal);
+      }
 
       if (currNode.isVar())
       {
         const auto& it = std::find(args.begin(), args.end(), currNode);
-
         if (it == args.end())
         {
           return EvalResult();
         }
-
         ptrdiff_t pos = std::distance(args.begin(), it);
         currNodeVal = vals[pos];
       }
@@ -202,7 +249,7 @@ EvalResult Evaluator::evalInternal(TNode n,
 
         // Lambdas are evaluated in a recursive fashion because each evaluation
         // requires different substitutions
-        results[currNode] = evalInternal(op[1], lambdaArgs, lambdaVals);
+        results[currNode] = evalInternal(op[1], lambdaArgs, lambdaVals, evalAsNode);
         if (results[currNode].d_tag == EvalResult::INVALID)
         {
           // evaluation was invalid, we fail
@@ -621,6 +668,8 @@ EvalResult Evaluator::evalInternal(TNode n,
             {
               Trace("evaluator") << "Theory " << Theory::theoryOf(currNode[0])
                                  << " not supported" << std::endl;
+              //results[currNode] = EvalResult();
+              //evalAsNode[currNode] = currNodeVal;
               return EvalResult();
               break;
             }
@@ -646,6 +695,8 @@ EvalResult Evaluator::evalInternal(TNode n,
         {
           Trace("evaluator") << "Kind " << currNodeVal.getKind()
                              << " not supported" << std::endl;
+          //results[currNode] = EvalResult();
+          //evalAsNode[currNode] = currNodeVal;
           return EvalResult();
         }
       }
