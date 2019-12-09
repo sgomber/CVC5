@@ -183,13 +183,13 @@ EvalResult Evaluator::evalInternal(
       queue.pop_back();
 
       Node currNodeVal = currNode;
-      
+
       // The code below should either:
       // (1) store a valid EvalResult into results[currNode], or
       // (2) store an invalid EvalResult into results[currNode] and
       // store the result of substitution + rewriting currNode { args -> vals }
       // into evalAsNode[currNode].
-      
+
       // If we did not successfully evaluate all children
       if (!doEval)
       {

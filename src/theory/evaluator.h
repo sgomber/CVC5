@@ -100,8 +100,8 @@ class Evaluator
   /**
    * Evaluates node `n` under the substitution described by the variable names
    * `args` and the corresponding values `vals`. The internal version returns
-   * an EvalResult which has slightly less overhead for recursive calls. 
-   * 
+   * an EvalResult which has slightly less overhead for recursive calls.
+   *
    * The method returns an invalid EvalResult if the result of the substitution
    * on n does not result in a constant value that is one of those supported in
    * the EvalResult class. Notice that e.g. datatype constants are not supported
