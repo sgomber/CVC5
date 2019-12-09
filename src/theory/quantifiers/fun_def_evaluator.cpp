@@ -127,7 +127,6 @@ Node FunDefEvaluator::evaluate(Node n) const
             Trace("fd-eval") << "FunDefEvaluator: couldn't reduce condition of "
                                 "ITE to const, FAIL\n";
             Trace("fd-eval") << "Condition was " << cur[0] << std::endl;
-            AlwaysAssert(false);
             return Node::null();
           }
           // pick child to evaluate depending on condition eval

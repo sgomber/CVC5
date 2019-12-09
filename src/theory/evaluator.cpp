@@ -143,7 +143,7 @@ EvalResult Evaluator::evalInternal(TNode n,
 
     bool doEval = true;
     Node currNodeVal = currNode;
-    if (currNode.getKind() == kind::DT_SYGUS_EVAL)
+    if (false && currNode.getKind() == kind::DT_SYGUS_EVAL)
     {
       currNodeVal = currNodeVal.substitute(
           args.begin(), args.end(), vals.begin(), vals.end());
