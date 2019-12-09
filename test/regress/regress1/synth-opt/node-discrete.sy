@@ -73,10 +73,6 @@
   (h_PState_rec (states ps) (prob ps))
 )
 
-
-; bugs
-; (1) rec -> cant eval,
-; (2) array constant with 0.0 real.
 (define-fun nilPState () PState
   (mkPState nilSL ((as const (Array State Real)) 0))
 )

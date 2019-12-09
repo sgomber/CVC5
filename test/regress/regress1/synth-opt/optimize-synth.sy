@@ -10,10 +10,10 @@
 
 ;(optimize-synth (- (+ (abs (- (f 0) 2)) (abs (- (f 5) 2)))))
 
-(optimize-synth (+ 12 (- (+
+(optimize-synth (- (+
 (abs (- (f 3 4) 20))
 (abs (- (f 11 4) 34))
 (abs (- (f 2 2) 13))
 (abs (- (f 1 1) 9))
 (abs (- (f 0 1) 6))
-))))
+)))
