@@ -16,10 +16,10 @@
 #include "theory/quantifiers/fun_def_evaluator.h"
 
 #include "options/quantifiers_options.h"
-#include "theory/quantifiers/quantifiers_attributes.h"
-#include "theory/rewriter.h"
 #include "smt/smt_engine.h"
 #include "smt/smt_engine_scope.h"
+#include "theory/quantifiers/quantifiers_attributes.h"
+#include "theory/rewriter.h"
 
 using namespace CVC4::kind;
 
@@ -44,8 +44,8 @@ void FunDefEvaluator::assertDefinition(Node q)
       << "FunDefEvaluator::assertDefinition: function already defined";
   FunDefInfo& fdi = d_funDefMap[f];
   Node body = QuantAttributes::getFunDefBody(q);
-  fdi.d_body = Node::fromExpr(
-      smt::currentSmtEngine()->expandDefinitions(body.toExpr()));
+  fdi.d_body =
+      Node::fromExpr(smt::currentSmtEngine()->expandDefinitions(body.toExpr()));
   Assert(!fdi.d_body.isNull());
   fdi.d_args.insert(fdi.d_args.end(), q[0].begin(), q[0].end());
   Trace("fd-eval") << "FunDefEvaluator: function " << f << " is defined with "

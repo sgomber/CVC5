@@ -105,10 +105,11 @@ class Evaluator
    * constant under the substitution or if an operator is not supported by the
    * evaluator.
    */
-  EvalResult evalInternal(TNode n,
-                          const std::vector<Node>& args,
-                          const std::vector<Node>& vals,
-                          std::unordered_map<TNode,Node,NodeHashFunction>& evalAsNode);
+  EvalResult evalInternal(
+      TNode n,
+      const std::vector<Node>& args,
+      const std::vector<Node>& vals,
+      std::unordered_map<TNode, Node, NodeHashFunction>& evalAsNode);
 };
 
 }  // namespace theory

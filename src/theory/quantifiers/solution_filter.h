@@ -22,9 +22,9 @@
 #include "expr/node.h"
 #include "theory/evaluator.h"
 #include "theory/quantifiers/expr_miner.h"
+#include "theory/quantifiers/fun_def_evaluator.h"
 #include "theory/quantifiers/lazy_trie.h"
 #include "theory/quantifiers/sygus_sampler.h"
-#include "theory/quantifiers/fun_def_evaluator.h"
 
 namespace CVC4 {
 namespace theory {
@@ -76,7 +76,9 @@ class SolutionFilterObjFun : public ExprMiner
   SolutionFilterObjFun() : d_funDefEval(nullptr) {}
   ~SolutionFilterObjFun() {}
   /** set objective function */
-  void setObjectiveFunction(const std::vector<Node>& vars, Node f, FunDefEvaluator * fde =nullptr);
+  void setObjectiveFunction(const std::vector<Node>& vars,
+                            Node f,
+                            FunDefEvaluator* fde = nullptr);
   /**
    * Add term to this miner.
    */

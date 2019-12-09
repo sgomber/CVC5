@@ -89,7 +89,7 @@ bool SolutionFilterStrength::addTerm(Node n, std::ostream& out)
       else
       {
         out << "; (filtered " << (d_isStrong ? s : s.negate()) << ")"
-               << std::endl;
+            << std::endl;
       }
     }
     d_curr_sols.clear();
@@ -100,12 +100,13 @@ bool SolutionFilterStrength::addTerm(Node n, std::ostream& out)
 }
 
 void SolutionFilterObjFun::setObjectiveFunction(const std::vector<Node>& vars,
-                                                Node f, FunDefEvaluator * fde )
+                                                Node f,
+                                                FunDefEvaluator* fde)
 {
   d_objFunVars = vars;
   // expand definitions
-  d_objFun = Node::fromExpr(
-      smt::currentSmtEngine()->expandDefinitions(f.toExpr()));
+  d_objFun =
+      Node::fromExpr(smt::currentSmtEngine()->expandDefinitions(f.toExpr()));
   d_funDefEval = fde;
   // must be real valued
   AlwaysAssert(d_objFun.getType().isReal());
@@ -115,14 +116,14 @@ bool SolutionFilterObjFun::addTerm(Node n, std::ostream& out)
 {
   std::vector<Node> sols;
   sols.push_back(n);
-  return addTerm(sols,out);
+  return addTerm(sols, out);
 }
 
 bool SolutionFilterObjFun::addTerm(std::vector<Node>& sols, std::ostream& out)
 {
   Trace("sygus-filter-obj-fun-debug")
       << "Filter via objective function: " << sols << std::endl;
-  Assert( sols.size()==d_objFunVars.size());
+  Assert(sols.size() == d_objFunVars.size());
   Node res = d_eval.eval(d_objFun, d_objFunVars, sols);
   if (res.isNull())
   {
@@ -133,7 +134,7 @@ bool SolutionFilterObjFun::addTerm(std::vector<Node>& sols, std::ostream& out)
   }
   if (!res.isConst())
   {
-    if (d_funDefEval!=nullptr)
+    if (d_funDefEval != nullptr)
     {
       res = d_funDefEval->evaluate(res);
     }

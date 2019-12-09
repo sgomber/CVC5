@@ -131,7 +131,8 @@ void ExpressionMinerManager::enableFilterStrongSolutions()
 }
 
 void ExpressionMinerManager::enableFilterObjFun(const std::vector<Node>& vars,
-                                                Node f, FunDefEvaluator* fde)
+                                                Node f,
+                                                FunDefEvaluator* fde)
 {
   d_doFilterObjFun = true;
   d_solObjFun.setObjectiveFunction(vars, f, fde);
@@ -145,7 +146,7 @@ bool ExpressionMinerManager::addTerm(std::vector<Node>& sols,
   std::vector<Node> solbs = sols;
   if (d_use_sygus_type)
   {
-    for (unsigned i=0, ssize = sols.size(); i<ssize; i++)
+    for (unsigned i = 0, ssize = sols.size(); i < ssize; i++)
     {
       solbs[i] = d_tds->sygusToBuiltin(sols[i]);
     }
@@ -155,21 +156,21 @@ bool ExpressionMinerManager::addTerm(std::vector<Node>& sols,
   bool ret = true;
   if (d_doRewSynth)
   {
-    Assert( sols.size()==1);
+    Assert(sols.size() == 1);
     ret = d_crd.addTerm(sols[0], options::sygusRewSynthRec(), out, rewPrint);
   }
 
   // a unique term, let's try the query generator
   if (ret && d_doQueryGen)
   {
-    Assert( solbs.size()==1);
+    Assert(solbs.size() == 1);
     d_qg.addTerm(solbs[0], out);
   }
 
   // filter based on logical strength
   if (ret && d_doFilterLogicalStrength)
   {
-    Assert( solbs.size()==1);
+    Assert(solbs.size() == 1);
     ret = d_sols.addTerm(solbs[0], out);
   }
 
@@ -193,7 +194,9 @@ bool ExpressionMinerManager::addTerm(Node sol, std::ostream& out)
   return addTerm(sol, out, rewPrint);
 }
 
-bool ExpressionMinerManager::addTerm(Node sol, std::ostream& out, bool& rewPrint)
+bool ExpressionMinerManager::addTerm(Node sol,
+                                     std::ostream& out,
+                                     bool& rewPrint)
 {
   std::vector<Node> sols;
   sols.push_back(sol);

@@ -1054,7 +1054,7 @@ void SynthConjecture::printSynthSolution(std::ostream& out)
     bool isSygusSol = true;
     for (int s : statuses)
     {
-      if (s==0)
+      if (s == 0)
       {
         isSygusSol = false;
         break;
@@ -1074,10 +1074,11 @@ void SynthConjecture::printSynthSolution(std::ostream& out)
           }
           // convert to embedding
           Node deepObjFun = d_ceg_gc->convertToEmbedding(d_objFun);
-          d_exprmTuple->enableFilterObjFun(vars, deepObjFun, d_tds->getFunDefEvaluator());
+          d_exprmTuple->enableFilterObjFun(
+              vars, deepObjFun, d_tds->getFunDefEvaluator());
         }
       }
-      if ( !d_exprmTuple->addTerm(sols, out))
+      if (!d_exprmTuple->addTerm(sols, out))
       {
         // reject
         return;
@@ -1197,9 +1198,10 @@ void SynthConjecture::printSynthSolution(std::ostream& out)
     // if using objective function, check if we acheived threshold
     if (d_exprmTuple.get() && !d_objFunTerminateVal.isNull())
     {
-      Trace("cegqi-debug")
-          << "Check threshold " << d_objFunTerminateVal << std::endl;
-      const SolutionFilterObjFun& sfof = d_exprmTuple->getSolutionFilterObjFun();
+      Trace("cegqi-debug") << "Check threshold " << d_objFunTerminateVal
+                           << std::endl;
+      const SolutionFilterObjFun& sfof =
+          d_exprmTuple->getSolutionFilterObjFun();
       Node cval = sfof.getCurrentMaxValue();
       if (!cval.isNull())
       {
@@ -1209,7 +1211,7 @@ void SynthConjecture::printSynthSolution(std::ostream& out)
         {
           std::stringstream ss;
           ss << "Threshold of objective function (" << d_objFunTerminateVal
-              << ") for enumerative SyGuS achieved.";
+             << ") for enumerative SyGuS achieved.";
           throw LogicException(ss.str());
         }
       }

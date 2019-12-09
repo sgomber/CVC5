@@ -120,13 +120,14 @@ Node Evaluator::eval(TNode n,
 {
   Trace("evaluator") << "Evaluating " << n << " under substitution " << args
                      << " " << vals << std::endl;
-  std::unordered_map<TNode,Node,NodeHashFunction> evalAsNode;
+  std::unordered_map<TNode, Node, NodeHashFunction> evalAsNode;
   Node ret = evalInternal(n, args, vals, evalAsNode).toNode();
   if (!ret.isNull())
   {
     // maybe it was stored in the evaluation-as-node map
-    std::unordered_map<TNode,Node,NodeHashFunction>::iterator itn = evalAsNode.find(n);
-    if (itn!=evalAsNode.end())
+    std::unordered_map<TNode, Node, NodeHashFunction>::iterator itn =
+        evalAsNode.find(n);
+    if (itn != evalAsNode.end())
     {
       return itn->second;
     }
@@ -134,18 +135,18 @@ Node Evaluator::eval(TNode n,
   return ret;
 }
 
-EvalResult Evaluator::evalInternal(TNode n,
-                                   const std::vector<Node>& args,
-                                   const std::vector<Node>& vals,
-                                   std::unordered_map<TNode,Node,NodeHashFunction>& evalAsNode
-                                  )
+EvalResult Evaluator::evalInternal(
+    TNode n,
+    const std::vector<Node>& args,
+    const std::vector<Node>& vals,
+    std::unordered_map<TNode, Node, NodeHashFunction>& evalAsNode)
 {
   std::unordered_map<TNode, EvalResult, TNodeHashFunction> results;
   std::vector<TNode> queue;
   queue.emplace_back(n);
-  std::unordered_map<TNode,Node,NodeHashFunction>::iterator itn;
+  std::unordered_map<TNode, Node, NodeHashFunction>::iterator itn;
   std::unordered_map<TNode, EvalResult, TNodeHashFunction>::iterator itr;
-  NodeManager * nm = NodeManager::currentNM();
+  NodeManager* nm = NodeManager::currentNM();
 
   while (queue.size() != 0)
   {
@@ -167,36 +168,39 @@ EvalResult Evaluator::evalInternal(TNode n,
         queue.emplace_back(currNodeChild);
         doProcess = false;
       }
-      else if (itr->second.d_tag==EvalResult::INVALID)
+      else if (itr->second.d_tag == EvalResult::INVALID)
       {
         // we cannot evaluate since there was an invalid child
         doEval = false;
       }
     }
-    Trace("evaluator") << "Evaluator: visit " << currNode << ", process = " << doProcess << ", evaluate = " << doEval << std::endl;
+    Trace("evaluator") << "Evaluator: visit " << currNode
+                       << ", process = " << doProcess
+                       << ", evaluate = " << doEval << std::endl;
 
     if (doProcess)
     {
       queue.pop_back();
-      
+
       Node currNodeVal = currNode;
       if (!doEval)
       {
         // Reconstruct with a combination of children that we successfully
         // evaluated, and children that did not.
         Trace("evaluator") << "Evaluator: collect arguments" << std::endl;
-        std::vector< Node > echildren;
-        if(currNode.getMetaKind() == kind::metakind::PARAMETERIZED) {
+        std::vector<Node> echildren;
+        if (currNode.getMetaKind() == kind::metakind::PARAMETERIZED)
+        {
           echildren.push_back(currNode.getOperator());
         }
         for (const auto& currNodeChild : currNode)
         {
           itr = results.find(currNodeChild);
-          if (itr->second.d_tag==EvalResult::INVALID)
+          if (itr->second.d_tag == EvalResult::INVALID)
           {
             // could not evaluate this child, look in the node cache
             itn = evalAsNode.find(currNodeChild);
-            if (itn!=evalAsNode.end())
+            if (itn != evalAsNode.end())
             {
               // take cached value
               echildren.push_back(itn->second);
@@ -215,14 +219,16 @@ EvalResult Evaluator::evalInternal(TNode n,
         }
         // The value is the result of our (partially) successful evaluation
         // of the children.
-        currNodeVal = nm->mkNode(currNode.getKind(),echildren);
-        Trace("evaluator") << "Evaluator: partially evaluated " << currNodeVal << std::endl;
+        currNodeVal = nm->mkNode(currNode.getKind(), echildren);
+        Trace("evaluator") << "Evaluator: partially evaluated " << currNodeVal
+                           << std::endl;
         // now, use substitution + rewriting
         currNodeVal = currNodeVal.substitute(
             args.begin(), args.end(), vals.begin(), vals.end());
         currNodeVal = Rewriter::rewrite(currNodeVal);
-        Trace("evaluator") << "Evaluator: now after substitution + rewriting: " << currNodeVal << std::endl;
-        if (currNodeVal.getNumChildren()>0)
+        Trace("evaluator") << "Evaluator: now after substitution + rewriting: "
+                           << currNodeVal << std::endl;
+        if (currNodeVal.getNumChildren() > 0)
         {
           // failed to evaluate to a (handled) constant, we have to abort.
           results[currNode] = EvalResult();
@@ -264,7 +270,8 @@ EvalResult Evaluator::evalInternal(TNode n,
 
         // Lambdas are evaluated in a recursive fashion because each evaluation
         // requires different substitutions
-        results[currNode] = evalInternal(op[1], lambdaArgs, lambdaVals, evalAsNode);
+        results[currNode] =
+            evalInternal(op[1], lambdaArgs, lambdaVals, evalAsNode);
         if (results[currNode].d_tag == EvalResult::INVALID)
         {
           // evaluation was invalid, we fail
@@ -699,8 +706,8 @@ EvalResult Evaluator::evalInternal(TNode n,
             {
               Trace("evaluator") << "Theory " << Theory::theoryOf(currNode[0])
                                  << " not supported" << std::endl;
-              //results[currNode] = EvalResult();
-              //evalAsNode[currNode] = currNodeVal;
+              // results[currNode] = EvalResult();
+              // evalAsNode[currNode] = currNodeVal;
               return EvalResult();
               break;
             }
@@ -728,7 +735,7 @@ EvalResult Evaluator::evalInternal(TNode n,
                              << " not supported" << std::endl;
           results[currNode] = EvalResult();
           evalAsNode[currNode] = currNodeVal;
-          //return EvalResult();
+          // return EvalResult();
         }
       }
     }
