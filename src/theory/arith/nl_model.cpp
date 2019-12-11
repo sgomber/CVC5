@@ -16,12 +16,12 @@
 
 #include "expr/node_algorithm.h"
 #include "options/arith_options.h"
+#include "smt/smt_engine.h"
+#include "smt/smt_engine_scope.h"
 #include "theory/arith/arith_msum.h"
 #include "theory/arith/arith_utilities.h"
 #include "theory/rewriter.h"
 #include "util/random.h"
-#include "smt/smt_engine.h"
-#include "smt/smt_engine_scope.h"
 
 using namespace CVC4::kind;
 
@@ -320,20 +320,23 @@ bool NlModel::checkModel(const std::vector<Node>& assertions,
     std::vector<Node> casubs = d_check_model_subs;
     // we take all the unsatisied assertions
     std::vector<Node> checkAsserts = nsatAssertions;
-    NodeManager * nm = NodeManager::currentNM();
-    for (std::map<Node, std::pair<Node, Node> >::iterator it = d_check_model_bounds.begin(); it != d_check_model_bounds.end(); ++it )
+    NodeManager* nm = NodeManager::currentNM();
+    for (std::map<Node, std::pair<Node, Node> >::iterator it =
+             d_check_model_bounds.begin();
+         it != d_check_model_bounds.end();
+         ++it)
     {
       Node p = getPurifyVariable(it->first);
-      Node al = nm->mkNode(GEQ,p,it->second.first);
-      Node au = nm->mkNode(LEQ,p,it->second.second);
+      Node al = nm->mkNode(GEQ, p, it->second.first);
+      Node au = nm->mkNode(LEQ, p, it->second.second);
       checkAsserts.push_back(al);
       checkAsserts.push_back(au);
     }
     // ensure that the solve substitution has been fully applied
-    arithSubstituteVec(checkAsserts,cavars,casubs);
+    arithSubstituteVec(checkAsserts, cavars, casubs);
     // now, linearize each assertion
     // The map useModelValue stores which terms we will fix their model values.
-    std::unordered_set<Node,NodeHashFunction> useModelValue;
+    std::unordered_set<Node, NodeHashFunction> useModelValue;
     for (const Node& n : checkAsserts)
     {
       if (!ensureModelValueImpliesLinear(n, useModelValue))
@@ -343,17 +346,17 @@ bool NlModel::checkModel(const std::vector<Node>& assertions,
       }
     }
     // fix the set of model values
-    std::vector< Node > mvars;
-    std::vector< Node > msubs;
+    std::vector<Node> mvars;
+    std::vector<Node> msubs;
     for (const Node& mv : useModelValue)
     {
       mvars.push_back(mv);
       msubs.push_back(computeConcreteModelValue(mv));
     }
     // apply the substitution
-    arithSubstituteVec(checkAsserts,mvars,msubs);
+    arithSubstituteVec(checkAsserts, mvars, msubs);
     // now, do the query
-    for( const Node& ca : checkAsserts)
+    for (const Node& ca : checkAsserts)
     {
       if (ca.isConst() && !ca.getConst<bool>())
       {
@@ -371,7 +374,6 @@ bool NlModel::checkModel(const std::vector<Node>& assertions,
     Trace("nl-ext-cm") << "  ...got " << r << std::endl;
     if (r.asSatisfiabilityResult().isSat() == Result::SAT)
     {
-      
     }
     return false;
   }
@@ -1365,46 +1367,51 @@ Node NlModel::getPurifyVariable(Node n)
     // already a variable
     return n;
   }
-  std::map<Node,Node>::iterator itp = d_purify.find(n);
-  if (itp!=d_purify.end())
+  std::map<Node, Node>::iterator itp = d_purify.find(n);
+  if (itp != d_purify.end())
   {
     return itp->second;
   }
-  Node k = NodeManager::currentNM()->mkSkolem("k",n.getType());
+  Node k = NodeManager::currentNM()->mkSkolem("k", n.getType());
   d_purify[n] = k;
   return k;
 }
 
-bool NlModel::ensureModelValueImpliesLinear(Node n, std::unordered_set<Node,NodeHashFunction>& useModelValue)
+bool NlModel::ensureModelValueImpliesLinear(
+    Node n, std::unordered_set<Node, NodeHashFunction>& useModelValue)
 {
   std::unordered_set<TNode, TNodeHashFunction> visited;
   std::unordered_set<TNode, TNodeHashFunction>::iterator it;
   std::vector<TNode> visit;
   TNode cur;
   visit.push_back(n);
-  do {
+  do
+  {
     cur = visit.back();
     visit.pop_back();
     it = visited.find(cur);
 
-    if (it == visited.end()) {
+    if (it == visited.end())
+    {
       visited.insert(cur);
       Kind ck = cur.getKind();
-      if (ck==NONLINEAR_MULT)
+      if (ck == NONLINEAR_MULT)
       {
-        // must ensure that at most one variable in the monomial does not exist in the domain of useModelValue
+        // must ensure that at most one variable in the monomial does not exist
+        // in the domain of useModelValue
         std::map<TNode, bool> cexpOne;
         for (TNode cc : cur)
         {
-          if (useModelValue.find(cc)!=useModelValue.end())
+          if (useModelValue.find(cc) != useModelValue.end())
           {
             // already have a model value
             continue;
           }
-          if (cexpOne.find(cc)!=cexpOne.end())
+          if (cexpOne.find(cc) != cexpOne.end())
           {
             cexpOne[cc] = false;
-            // If the exponent of this variable is >1, we must take its model value.
+            // If the exponent of this variable is >1, we must take its model
+            // value.
             useModelValue.insert(cc);
           }
           else
@@ -1413,7 +1420,7 @@ bool NlModel::ensureModelValueImpliesLinear(Node n, std::unordered_set<Node,Node
           }
         }
         std::vector<TNode> cchildren;
-        for (const std::pair<const TNode, bool >& ce : cexpOne)
+        for (const std::pair<const TNode, bool>& ce : cexpOne)
         {
           if (ce.second)
           {
@@ -1421,14 +1428,14 @@ bool NlModel::ensureModelValueImpliesLinear(Node n, std::unordered_set<Node,Node
           }
         }
         // if there are multiple variables that have exponent 1 in the monomial,
-        // then all but one 
-        if (cchildren.size()>1)
+        // then all but one
+        if (cchildren.size() > 1)
         {
           // shuffle so that we choose random child to instantiate
           std::shuffle(cchildren.begin(), cchildren.end(), Random::getRandom());
-          for (unsigned j=1, csize = cchildren.size(); j<csize; j++)
+          for (unsigned j = 1, csize = cchildren.size(); j < csize; j++)
           {
-            // use the model value 
+            // use the model value
             useModelValue[cchildren[j]] = true;
           }
         }
@@ -1439,15 +1446,14 @@ bool NlModel::ensureModelValueImpliesLinear(Node n, std::unordered_set<Node,Node
         return false;
       }
       TheoryId ctid = theory::kindToTheoryId(ck);
-      if (ctid != THEORY_ARITH && ctid != THEORY_BOOL
-          && ctid != THEORY_BUILTIN)
+      if (ctid != THEORY_ARITH && ctid != THEORY_BOOL && ctid != THEORY_BUILTIN)
       {
         // must use model value for terms not belonging to arithmetic
         useModelValue.insert(cur);
       }
       else
       {
-        for(TNode cc : cur )
+        for (TNode cc : cur)
         {
           visit.push_back(cc);
         }
