@@ -319,7 +319,7 @@ class NlModel
   /** ensure model values imply linear */
   bool ensureModelValueImpliesLinear(Node n, std::map< Node, bool >& useModelValue);
   /** apply substitution to vector */
-  void applySubstitutionVec(std::vector<Node>& asserts, const std::vector<Node>& vars, const std::vector<Node>& subs);
+  void applySubstitutionVec(std::vector<Node>& asserts, std::vector<Node>& vars, std::vector<Node>& subs);
 }; /* class NlModel */
 
 }  // namespace arith

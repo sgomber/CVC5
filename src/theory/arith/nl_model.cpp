@@ -1462,7 +1462,7 @@ bool NlModel::ensureModelValueImpliesLinear(Node n, std::map< Node, bool >& useM
   } while (!visit.empty());
   return true;
 }
-void NlModel::applySubstitutionVec(std::vector<Node>& asserts, const std::vector<Node>& vars, const std::vector<Node>& subs)
+void NlModel::applySubstitutionVec(std::vector<Node>& asserts, std::vector<Node>& vars, std::vector<Node>& subs)
 {
   Assert (vars.size()==subs.size());
   if (vars.empty())
