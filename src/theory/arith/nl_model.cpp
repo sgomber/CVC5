@@ -19,6 +19,7 @@
 #include "theory/arith/arith_msum.h"
 #include "theory/arith/arith_utilities.h"
 #include "theory/rewriter.h"
+#include "util/random.h"
 
 using namespace CVC4::kind;
 
@@ -309,9 +310,37 @@ bool NlModel::checkModel(const std::vector<Node>& assertions,
     std::vector<Node> cavars = d_check_model_vars;
     std::vector<Node> casubs = d_check_model_subs;
     std::vector<Node> checkAsserts;
-    for (const Node& a : assertions)
+    NodeManager * nm = NodeManager::currentNM();
+    for (std::map<Node, std::pair<Node, Node> >::iterator it = d_check_model_bounds.begin(); it != d_check_model_bounds.end(); ++it )
     {
-      
+      Node p = getPurifyVariable(it->first);
+      Node al = nm->mkNode(GEQ,p,it->second.first);
+      Node au = nm->mkNode(LEQ,p,it->second.second);
+      checkAsserts.push_back(al);
+      checkAsserts.push_back(au);
+    }
+    for (unsigned i=0, csize = checkAsserts.size(); i<csize; i++)
+    {
+      Node av = checkAsserts[i];
+      if (d_check_model_solved.find(av) == d_check_model_solved.end())
+      {
+        continue;
+      }
+      if (!cavars.empty())
+      {
+        av = av.substitute(cavars.begin(),
+                           cavars.end(),
+                           casubs.begin(),
+                           casubs.end());
+        av = Rewriter::rewrite(av);
+      }
+      checkAsserts[i] = av;
+    }
+    // now, linearize each assertion
+    std::map< Node, bool > useModelValue;
+    for (const Node& n : checkAsserts)
+    {
+      ensureModelValueImpliesLinear(n, useModelValue);
     }
     return false;
   }
@@ -1300,6 +1329,11 @@ void NlModel::getModelValueRepair(std::map<Node, Node>& arithModel,
 
 Node NlModel::getPurifyVariable(Node n)
 {
+  if (n.isVar())
+  {
+    // already a variable
+    return n;
+  }
   std::map<Node,Node>::iterator itp = d_purify.find(n);
   if (itp!=d_purify.end())
   {
@@ -1308,6 +1342,61 @@ Node NlModel::getPurifyVariable(Node n)
   Node k = NodeManager::currentNM()->mkSkolem("k",n.getType());
   d_purify[n] = k;
   return k;
+}
+
+bool NlModel::ensureModelValueImpliesLinear(Node n, std::map< Node, bool >& useModelValue)
+{
+  std::unordered_set<TNode, TNodeHashFunction> visited;
+  std::unordered_set<TNode, TNodeHashFunction>::iterator it;
+  std::vector<TNode> visit;
+  TNode cur;
+  visit.push_back(n);
+  do {
+    cur = visit.back();
+    visit.pop_back();
+    it = visited.find(cur);
+
+    if (it == visited.end()) {
+      visited.insert(cur);
+      Kind ck = cur.getKind();
+      if (ck==NONLINEAR_MULT)
+      {
+        // must ensure that at most one variable in the monomial does not exist in the domain of useModelValue
+        std::vector<TNode> cchildren;
+        for (TNode cc : cur)
+        {
+          if (useModelValue.find(cc)!=useModelValue.end())
+          {
+            // already have a model value
+            continue;
+          }
+          if (std::find(cchildren.begin(),cchildren.end(), cc)!=cchildren.end())
+          {
+            // If the exponent of this variable is >1, we must take its model value.
+            useModelValue[cc] = true;
+          }
+          cchildren.push_back(cc);
+        }
+        // if there are multiple variables that have exponent 1 in the monomial
+        if (cchildren.size()>1)
+        {
+          // shuffle so that we choose random child to instantiate
+          std::shuffle(cchildren.begin(), cchildren.end(), Random::getRandom());
+          for (unsigned j=1, csize = cchildren.size(); j<csize; j++)
+          {
+            // use the model value 
+            useModelValue[cchildren[j]] = true;
+          }
+        }
+      }
+      
+      for(TNode cc : cur )
+      {
+        visit.push_back(cc);
+      }
+    }
+  } while (!visit.empty());
+  return true;
 }
 
 }  // namespace arith

@@ -316,6 +316,8 @@ class NlModel
   std::map<Node,Node> d_purify;
   /** get purification variables */
   Node getPurifyVariable(Node n);
+  /** ensure model values imply linear */
+  bool ensureModelValueImpliesLinear(Node n, std::map< Node, bool >& useModelValue);
 }; /* class NlModel */
 
 }  // namespace arith
