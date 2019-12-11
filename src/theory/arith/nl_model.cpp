@@ -1444,10 +1444,19 @@ bool NlModel::ensureModelValueImpliesLinear(Node n, std::map< Node, bool >& useM
         // shouldnt generally happen
         return false;
       }
-      
-      for(TNode cc : cur )
+      TheoryId ctid = theory::kindToTheoryId(ck);
+      if (ctid != THEORY_ARITH && ctid != THEORY_BOOL
+          && ctid != THEORY_BUILTIN)
       {
-        visit.push_back(cc);
+        // must use model value for terms not belonging to arithmetic
+        useModelValue[cur] = true;
+      }
+      else
+      {
+        for(TNode cc : cur )
+        {
+          visit.push_back(cc);
+        }
       }
     }
   } while (!visit.empty());
