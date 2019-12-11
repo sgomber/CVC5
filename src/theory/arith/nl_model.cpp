@@ -378,11 +378,23 @@ bool NlModel::checkModel(const std::vector<Node>& assertions,
     repairNlSmt.setLogic(smt::currentSmtEngine()->getLogicInfo());
     Trace("nl-ext-cm") << "Check model for: " << std::endl;
     std::unordered_set<TNode, TNodeHashFunction> vs;
+    bool nonTrivial = false;
     for (const Node& ca : checkAsserts)
     {
+      if (ca.isConst() && ca.getConst<bool>())
+      {
+        continue;
+      }
+      nonTrivial = true;
       repairNlSmt.assertFormula(ca.toExpr());
       expr::getVariables(ca, vs);
       Trace("nl-ext-cm") << "  " << ca << std::endl;
+    }
+    if (!nonTrivial)
+    {
+      Trace("nl-ext-cm") << "...subcall trivial, success." << std::endl;
+      // we asserted true, thus are successful
+      return true;
     }
     Result r = repairNlSmt.checkSat();
     Trace("nl-ext-cm") << "  ...got " << r << std::endl;
