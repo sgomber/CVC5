@@ -735,6 +735,11 @@ SygusTypeInfo& TermDbSygus::getTypeInfo(TypeNode tn)
 Node TermDbSygus::rewriteNode(Node n) const
 {
   Node res = Rewriter::rewrite(n);
+  if (res.isConst())
+  {
+    // constant, we are done
+    return res;
+  }
   if (options::sygusRecFun())
   {
     if (d_funDefEval->hasDefinitions())
@@ -1006,7 +1011,8 @@ Node TermDbSygus::evaluateWithUnfolding(
     {
       if (ret == n && ret[0].isConst())
       {
-        ret = Rewriter::rewrite(ret);
+        // use rewriting, possibly involving recursive functions
+        ret = rewriteNode(ret);
       }
       else
       {
@@ -1028,6 +1034,8 @@ Node TermDbSygus::evaluateWithUnfolding(
         ret = NodeManager::currentNM()->mkNode( ret.getKind(), children );
       }
       ret = getExtRewriter()->extendedRewrite(ret);
+      // use rewriting, possibly involving recursive functions
+      ret = rewriteNode(ret);
     }
     visited[n] = ret;
     return ret;
