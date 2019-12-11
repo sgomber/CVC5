@@ -1436,7 +1436,7 @@ bool NlModel::ensureModelValueImpliesLinear(
           for (unsigned j = 1, csize = cchildren.size(); j < csize; j++)
           {
             // use the model value
-            useModelValue[cchildren[j]] = true;
+            useModelValue.insert(cchildren[j]);
           }
         }
       }
