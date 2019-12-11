@@ -1463,10 +1463,7 @@ void NlModel::applySubstitutionVec(std::vector<Node>& asserts, const std::vector
   for (unsigned i=0, asize = asserts.size(); i<asize; i++)
   {
     Node av = asserts[i];
-    av = av.substitute(vars.begin(),
-                      vars.end(),
-                      subs.begin(),
-                      subs.end());
+    av = arithSubstitute(av, vars, subs);
     av = Rewriter::rewrite(av);
     asserts[i] = av;
   }
