@@ -330,10 +330,9 @@ bool NlModel::checkModel(const std::vector<Node>& assertions,
       checkAsserts.push_back(au);
     }
     // ensure that the solve substitution has been fully applied
-    applySubstitutionVec(checkAsserts,cavars,casubs);
+    arithSubstituteVec(checkAsserts,cavars,casubs);
     // now, linearize each assertion
     // The map useModelValue stores which terms we will fix their model values.
-    
     std::map< Node, bool > useModelValue;
     for (const Node& n : checkAsserts)
     {
@@ -357,7 +356,7 @@ bool NlModel::checkModel(const std::vector<Node>& assertions,
       msubs.push_back(computeConcreteModelValue(v));
     }
     // apply the substitution
-    applySubstitutionVec(checkAsserts,mvars,msubs);
+    arithSubstituteVec(checkAsserts,mvars,msubs);
     // now, do the query
     for( const Node& ca : checkAsserts)
     {
@@ -373,7 +372,12 @@ bool NlModel::checkModel(const std::vector<Node>& assertions,
     {
       repairNlSmt.assertFormula(ca.toExpr());
     }
-    // TODO
+    Result r = repairNlSmt.checkSat();
+    Trace("nl-ext-cm") << "  ...got " << r << std::endl;
+    if (r.asSatisfiabilityResult().isSat() == Result::SAT)
+    {
+      
+    }
     return false;
   }
   Trace("nl-ext-cm") << "...simple check succeeded!" << std::endl;
@@ -1376,7 +1380,7 @@ Node NlModel::getPurifyVariable(Node n)
   return k;
 }
 
-bool NlModel::ensureModelValueImpliesLinear(Node n, std::map< Node, bool >& useModelValue)
+bool NlModel::ensureModelValueImpliesLinear(Node n, std::unordered_set<Node,NodeHashFunction>& useModelValue)
 {
   std::unordered_set<TNode, TNodeHashFunction> visited;
   std::unordered_set<TNode, TNodeHashFunction>::iterator it;
@@ -1406,7 +1410,7 @@ bool NlModel::ensureModelValueImpliesLinear(Node n, std::map< Node, bool >& useM
           {
             cexpOne[cc] = false;
             // If the exponent of this variable is >1, we must take its model value.
-            useModelValue[cc] = true;
+            useModelValue.insert(cc);
           }
           else
           {
@@ -1444,7 +1448,7 @@ bool NlModel::ensureModelValueImpliesLinear(Node n, std::map< Node, bool >& useM
           && ctid != THEORY_BUILTIN)
       {
         // must use model value for terms not belonging to arithmetic
-        useModelValue[cur] = true;
+        useModelValue.insert(cur);
       }
       else
       {
@@ -1456,21 +1460,6 @@ bool NlModel::ensureModelValueImpliesLinear(Node n, std::map< Node, bool >& useM
     }
   } while (!visit.empty());
   return true;
-}
-void NlModel::applySubstitutionVec(std::vector<Node>& asserts, std::vector<Node>& vars, std::vector<Node>& subs)
-{
-  Assert (vars.size()==subs.size());
-  if (vars.empty())
-  {
-    return;
-  }
-  for (unsigned i=0, asize = asserts.size(); i<asize; i++)
-  {
-    Node av = asserts[i];
-    av = arithSubstitute(av, vars, subs);
-    av = Rewriter::rewrite(av);
-    asserts[i] = av;
-  }
 }
 
 }  // namespace arith

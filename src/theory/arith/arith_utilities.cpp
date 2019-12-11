@@ -14,6 +14,8 @@
 
 #include "arith_utilities.h"
 
+#include "theory/rewriter.h"
+
 using namespace CVC4::kind;
 
 namespace CVC4 {
@@ -267,6 +269,23 @@ Node arithSubstitute(Node n, std::vector<Node>& vars, std::vector<Node>& subs)
   Assert(visited.find(n) != visited.end());
   Assert(!visited.find(n)->second.isNull());
   return visited[n];
+}
+
+
+void arithSubstituteVec(std::vector<Node>& asserts, std::vector<Node>& vars, std::vector<Node>& subs)
+{
+  Assert (vars.size()==subs.size());
+  if (vars.empty())
+  {
+    return;
+  }
+  for (unsigned i=0, asize = asserts.size(); i<asize; i++)
+  {
+    Node av = asserts[i];
+    av = arithSubstitute(av, vars, subs);
+    av = Rewriter::rewrite(av);
+    asserts[i] = av;
+  }
 }
 
 }  // namespace arith

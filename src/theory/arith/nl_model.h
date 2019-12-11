@@ -257,6 +257,20 @@ class NlModel
    * expensive to compute.
    */
   bool getApproximateSqrt(Node c, Node& l, Node& u, unsigned iter = 15) const;
+  /** Get the unique "purification" variable for term n. */
+  Node getPurifyVariable(Node n);
+  /** Ensure model values imply n is linear
+   *
+   * This adds enough terms to the domain of useModelValue to ensure that
+   *   n * { v -> M(v) | v in useModelValue }
+   * is a linear arithmetic term, where M(v) denotes the model value of v. 
+   * For example, for the term:
+   *   f(x) + x*x*y + y*z
+   * this function may add the terms f(x), x, and z too useModelValue, since
+   * replacing these terms with constants results in a term c1 + c2*c2*y + y*c3
+   * which is linear after simplification.
+   */
+  bool ensureModelValueImpliesLinear(Node n, std::unordered_set<Node,NodeHashFunction>& useModelValue);
 
   /** commonly used terms */
   Node d_zero;
@@ -312,14 +326,8 @@ class NlModel
   std::unordered_map<Node, Node, NodeHashFunction> d_check_model_solved;
   /** did we use an approximation on this call to last-call effort? */
   bool d_used_approx;
-  /** purification variables */
+  /** A cache mapping terms to purification variables. */
   std::map<Node,Node> d_purify;
-  /** get purification variables */
-  Node getPurifyVariable(Node n);
-  /** ensure model values imply linear */
-  bool ensureModelValueImpliesLinear(Node n, std::map< Node, bool >& useModelValue);
-  /** apply substitution to vector */
-  void applySubstitutionVec(std::vector<Node>& asserts, std::vector<Node>& vars, std::vector<Node>& subs);
 }; /* class NlModel */
 
 }  // namespace arith
