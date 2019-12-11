@@ -315,6 +315,11 @@ bool NlModel::checkModel(const std::vector<Node>& assertions,
   if (!nsatAssertions.empty())
   {
     Trace("nl-ext-cm") << "...simple check failed." << std::endl;
+    if (!options::nlExtLinRepairModel())
+    {
+      Trace("nl-ext-cm") << "...do not do linear subcall." << std::endl;
+      return false;
+    }
     // The following code generates a (linear) query that corresponds to
     // asking whether some alternative model values exist that satisfy the
     // current assertions.
