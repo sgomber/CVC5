@@ -302,6 +302,7 @@ bool NlModel::checkModel(const std::vector<Node>& assertions,
         else if (!av.getConst<bool>())
         {
           // an assertion is currently false, there is no repair possible
+          Trace("nl-ext-cm") << "...false assertion after solve substititution." << std::endl;
           return false;
         }
         Trace("nl-ext-cm-debug")
@@ -342,6 +343,7 @@ bool NlModel::checkModel(const std::vector<Node>& assertions,
       if (!ensureModelValueImpliesLinear(n, useModelValue))
       {
         // failed to linearize assertions
+        Trace("nl-ext-cm") << "...failed to linearize." << std::endl;
         return false;
       }
     }
@@ -361,20 +363,43 @@ bool NlModel::checkModel(const std::vector<Node>& assertions,
       if (ca.isConst() && !ca.getConst<bool>())
       {
         // an assertion is false after substitution, no repair is possible
+        Trace("nl-ext-cm") << "...false assertion after model substititution." << std::endl;
         return false;
       }
     }
     SmtEngine repairNlSmt(nm->toExprManager());
     repairNlSmt.setLogic(smt::currentSmtEngine()->getLogicInfo());
+    Trace("nl-ext-cm") << "Check model for: " << std::endl;
+    std::unordered_set<TNode, TNodeHashFunction> vs;
     for (const Node& ca : checkAsserts)
     {
       repairNlSmt.assertFormula(ca.toExpr());
+      expr::getVariables(ca,vs);
+      Trace("nl-ext-cm") << "  " << ca << std::endl;
     }
     Result r = repairNlSmt.checkSat();
     Trace("nl-ext-cm") << "  ...got " << r << std::endl;
     if (r.asSatisfiabilityResult().isSat() == Result::SAT)
     {
+      Trace("nl-ext-cm") << "...subcall succeeded!" << std::endl;
+      Trace("nl-ext-cm") << "Model is: {" << std::endl;
+      // get the model values
+      for (const Node& v : vs)
+      {
+        // ignore purify variables
+        if (d_purifyVars.find(v)!=d_purifyVars.end())
+        {
+          continue;
+        }
+        Expr ve = v.toExpr();
+        Node mve = Node::fromExpr(repairNlSmt.getValue(ve));
+        Trace("nl-ext-cm") << "  " << v << " -> " << mve << std::endl;
+        addCheckModelSubstitution(v, mve);
+      }
+      Trace("nl-ext-cm") << "}" << std::endl;
+      return true;
     }
+    Trace("nl-ext-cm") << "...subcall failed." << std::endl;
     return false;
   }
   Trace("nl-ext-cm") << "...simple check succeeded!" << std::endl;
@@ -1374,6 +1399,7 @@ Node NlModel::getPurifyVariable(Node n)
   }
   Node k = NodeManager::currentNM()->mkSkolem("k", n.getType());
   d_purify[n] = k;
+  d_purifyVars.insert(k);
   return k;
 }
 
@@ -1444,6 +1470,12 @@ bool NlModel::ensureModelValueImpliesLinear(
       {
         // shouldnt generally happen
         return false;
+      }
+      else if (cur.isVar() && !cur.getType().isReal())
+      {
+        // Must use model value for variables with non-arithmetic type. This is
+        // important for Boolean variables.
+        useModelValue.insert(cur);
       }
       TheoryId ctid = theory::kindToTheoryId(ck);
       if (ctid != THEORY_ARITH && ctid != THEORY_BOOL && ctid != THEORY_BUILTIN)

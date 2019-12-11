@@ -329,6 +329,8 @@ class NlModel
   bool d_used_approx;
   /** A cache mapping terms to purification variables. */
   std::map<Node, Node> d_purify;
+  /** All purification variables allocated */
+  std::unordered_set<Node, NodeHashFunction> d_purifyVars;
 }; /* class NlModel */
 
 }  // namespace arith
