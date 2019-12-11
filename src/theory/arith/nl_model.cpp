@@ -306,6 +306,13 @@ bool NlModel::checkModel(const std::vector<Node>& assertions,
   {
     Trace("nl-ext-cm") << "...simple check failed." << std::endl;
     // TODO (#1450) check model for general case
+    std::vector<Node> cavars = d_check_model_vars;
+    std::vector<Node> casubs = d_check_model_subs;
+    std::vector<Node> checkAsserts;
+    for (const Node& a : assertions)
+    {
+      
+    }
     return false;
   }
   Trace("nl-ext-cm") << "...simple check succeeded!" << std::endl;
@@ -1289,6 +1296,18 @@ void NlModel::getModelValueRepair(std::map<Node, Node>& arithModel,
     arithModel[v] = s;
     Trace("nl-model") << v << " solved is " << s << std::endl;
   }
+}
+
+Node NlModel::getPurifyVariable(Node n)
+{
+  std::map<Node,Node>::iterator itp = d_purify.find(n);
+  if (itp!=d_purify.end())
+  {
+    return itp->second;
+  }
+  Node k = NodeManager::currentNM()->mkSkolem("k",n.getType());
+  d_purify[n] = k;
+  return k;
 }
 
 }  // namespace arith

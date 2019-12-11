@@ -312,6 +312,10 @@ class NlModel
   std::unordered_map<Node, Node, NodeHashFunction> d_check_model_solved;
   /** did we use an approximation on this call to last-call effort? */
   bool d_used_approx;
+  /** purification variables */
+  std::map<Node,Node> d_purify;
+  /** get purification variables */
+  Node getPurifyVariable(Node n);
 }; /* class NlModel */
 
 }  // namespace arith
