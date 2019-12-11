@@ -310,7 +310,7 @@ bool NlModel::checkModel(const std::vector<Node>& assertions,
     }
   }
 
-  if (!nsatAssertions.empty() && false)
+  if (!nsatAssertions.empty())
   {
     Trace("nl-ext-cm") << "...simple check failed." << std::endl;
     // The following code generates a (linear) query that corresponds to
