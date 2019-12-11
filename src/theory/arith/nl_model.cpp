@@ -279,7 +279,6 @@ bool NlModel::checkModel(const std::vector<Node>& assertions,
 
   Trace("nl-ext-cm-debug") << "  check assertions..." << std::endl;
   std::vector<Node> nsatAssertions;
-  bool nsatAssertionsValid = true;
   for (const Node& a : assertions)
   {
     if (d_check_model_solved.find(a) == d_check_model_solved.end())
@@ -302,7 +301,8 @@ bool NlModel::checkModel(const std::vector<Node>& assertions,
         }
         else if (!av.getConst<bool>())
         {
-          nsatAssertionsValid = false;
+          // an assertion is currently false, there is no repair possible
+          return false;
         }
         Trace("nl-ext-cm-debug")
             << "...check-model : failed assertion, value : " << av << std::endl;
@@ -310,14 +310,9 @@ bool NlModel::checkModel(const std::vector<Node>& assertions,
     }
   }
 
-  if (!nsatAssertions.empty())
+  if (!nsatAssertions.empty() && false)
   {
     Trace("nl-ext-cm") << "...simple check failed." << std::endl;
-    if (!nsatAssertionsValid)
-    {
-      // an assertion is currently false, there is no repair possible
-      return false;
-    }
     // The following code generates a (linear) query that corresponds to
     // asking whether some alternative model values exist that satisfy the
     // current assertions.
