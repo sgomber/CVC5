@@ -302,7 +302,8 @@ bool NlModel::checkModel(const std::vector<Node>& assertions,
         else if (!av.getConst<bool>())
         {
           // an assertion is currently false, there is no repair possible
-          Trace("nl-ext-cm") << "...false assertion after solve substititution." << std::endl;
+          Trace("nl-ext-cm")
+              << "...false assertion after solve substititution." << std::endl;
           return false;
         }
         Trace("nl-ext-cm-debug")
@@ -363,7 +364,8 @@ bool NlModel::checkModel(const std::vector<Node>& assertions,
       if (ca.isConst() && !ca.getConst<bool>())
       {
         // an assertion is false after substitution, no repair is possible
-        Trace("nl-ext-cm") << "...false assertion after model substititution." << std::endl;
+        Trace("nl-ext-cm") << "...false assertion after model substititution."
+                           << std::endl;
         return false;
       }
     }
@@ -374,7 +376,7 @@ bool NlModel::checkModel(const std::vector<Node>& assertions,
     for (const Node& ca : checkAsserts)
     {
       repairNlSmt.assertFormula(ca.toExpr());
-      expr::getVariables(ca,vs);
+      expr::getVariables(ca, vs);
       Trace("nl-ext-cm") << "  " << ca << std::endl;
     }
     Result r = repairNlSmt.checkSat();
@@ -387,7 +389,7 @@ bool NlModel::checkModel(const std::vector<Node>& assertions,
       for (const Node& v : vs)
       {
         // ignore purify variables
-        if (d_purifyVars.find(v)!=d_purifyVars.end())
+        if (d_purifyVars.find(v) != d_purifyVars.end())
         {
           continue;
         }
