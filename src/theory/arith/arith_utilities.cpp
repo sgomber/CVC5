@@ -271,15 +271,16 @@ Node arithSubstitute(Node n, std::vector<Node>& vars, std::vector<Node>& subs)
   return visited[n];
 }
 
-
-void arithSubstituteVec(std::vector<Node>& asserts, std::vector<Node>& vars, std::vector<Node>& subs)
+void arithSubstituteVec(std::vector<Node>& asserts,
+                        std::vector<Node>& vars,
+                        std::vector<Node>& subs)
 {
-  Assert (vars.size()==subs.size());
+  Assert(vars.size() == subs.size());
   if (vars.empty())
   {
     return;
   }
-  for (unsigned i=0, asize = asserts.size(); i<asize; i++)
+  for (unsigned i = 0, asize = asserts.size(); i < asize; i++)
   {
     Node av = asserts[i];
     av = arithSubstitute(av, vars, subs);

@@ -263,14 +263,15 @@ class NlModel
    *
    * This adds enough terms to the domain of useModelValue to ensure that
    *   n * { v -> M(v) | v in useModelValue }
-   * is a linear arithmetic term, where M(v) denotes the model value of v. 
+   * is a linear arithmetic term, where M(v) denotes the model value of v.
    * For example, for the term:
    *   f(x) + x*x*y + y*z
    * this function may add the terms f(x), x, and z too useModelValue, since
    * replacing these terms with constants results in a term c1 + c2*c2*y + y*c3
    * which is linear after simplification.
    */
-  bool ensureModelValueImpliesLinear(Node n, std::unordered_set<Node,NodeHashFunction>& useModelValue);
+  bool ensureModelValueImpliesLinear(
+      Node n, std::unordered_set<Node, NodeHashFunction>& useModelValue);
 
   /** commonly used terms */
   Node d_zero;
@@ -327,7 +328,7 @@ class NlModel
   /** did we use an approximation on this call to last-call effort? */
   bool d_used_approx;
   /** A cache mapping terms to purification variables. */
-  std::map<Node,Node> d_purify;
+  std::map<Node, Node> d_purify;
 }; /* class NlModel */
 
 }  // namespace arith

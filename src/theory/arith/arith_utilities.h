@@ -334,11 +334,13 @@ void printRationalApprox(const char* c, Node cr, unsigned prec = 5);
  *   (5*f(x) + 7*x ){ x -> 3 } returns 5*f(x) + 7*3.
  */
 Node arithSubstitute(Node n, std::vector<Node>& vars, std::vector<Node>& subs);
-/** 
+/**
  * Apply the above method to all nodes in vector ns, rewrite the results.
  */
-void arithSubstituteVec(std::vector<Node>& ns, std::vector<Node>& vars, std::vector<Node>& subs);
-  
+void arithSubstituteVec(std::vector<Node>& ns,
+                        std::vector<Node>& vars,
+                        std::vector<Node>& subs);
+
 }/* CVC4::theory::arith namespace */
 }/* CVC4::theory namespace */
 }/* CVC4 namespace */
