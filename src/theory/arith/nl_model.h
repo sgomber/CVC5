@@ -318,6 +318,8 @@ class NlModel
   Node getPurifyVariable(Node n);
   /** ensure model values imply linear */
   bool ensureModelValueImpliesLinear(Node n, std::map< Node, bool >& useModelValue);
+  /** apply substitution to vector */
+  void applySubstitutionVec(std::vector<Node>& asserts, const std::vector<Node>& vars, const std::vector<Node>& subs);
 }; /* class NlModel */
 
 }  // namespace arith

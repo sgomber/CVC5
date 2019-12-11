@@ -20,6 +20,8 @@
 #include "theory/arith/arith_utilities.h"
 #include "theory/rewriter.h"
 #include "util/random.h"
+#include "smt/smt_engine.h"
+#include "smt/smt_engine_scope.h"
 
 using namespace CVC4::kind;
 
@@ -276,7 +278,8 @@ bool NlModel::checkModel(const std::vector<Node>& assertions,
   }
 
   Trace("nl-ext-cm-debug") << "  check assertions..." << std::endl;
-  std::vector<Node> check_assertions;
+  std::vector<Node> nsatAssertions;
+  bool nsatAssertionsValid = true;
   for (const Node& a : assertions)
   {
     if (d_check_model_solved.find(a) == d_check_model_solved.end())
@@ -296,20 +299,35 @@ bool NlModel::checkModel(const std::vector<Node>& assertions,
       {
         Trace("nl-ext-cm") << "...check-model : assertion failed : " << a
                            << std::endl;
-        check_assertions.push_back(av);
+        if (!av.isConst())
+        {
+          nsatAssertions.push_back(av);
+        }
+        else if (!av.getConst<bool>())
+        {
+          nsatAssertionsValid = false;
+        }
         Trace("nl-ext-cm-debug")
             << "...check-model : failed assertion, value : " << av << std::endl;
       }
     }
   }
 
-  if (!check_assertions.empty())
+  if (!nsatAssertions.empty())
   {
     Trace("nl-ext-cm") << "...simple check failed." << std::endl;
-    // TODO (#1450) check model for general case
+    if (!nsatAssertionsValid)
+    {
+      // an assertion is currently false, there is no repair possible
+      return false;
+    }
+    // The following code generates a (linear) query that corresponds to
+    // asking whether some alternative model values exist that satisfy the
+    // current assertions.
     std::vector<Node> cavars = d_check_model_vars;
     std::vector<Node> casubs = d_check_model_subs;
-    std::vector<Node> checkAsserts;
+    // we take all the unsatisied assertions
+    std::vector<Node> checkAsserts = nsatAssertions;
     NodeManager * nm = NodeManager::currentNM();
     for (std::map<Node, std::pair<Node, Node> >::iterator it = d_check_model_bounds.begin(); it != d_check_model_bounds.end(); ++it )
     {
@@ -319,29 +337,51 @@ bool NlModel::checkModel(const std::vector<Node>& assertions,
       checkAsserts.push_back(al);
       checkAsserts.push_back(au);
     }
-    for (unsigned i=0, csize = checkAsserts.size(); i<csize; i++)
-    {
-      Node av = checkAsserts[i];
-      if (d_check_model_solved.find(av) == d_check_model_solved.end())
-      {
-        continue;
-      }
-      if (!cavars.empty())
-      {
-        av = av.substitute(cavars.begin(),
-                           cavars.end(),
-                           casubs.begin(),
-                           casubs.end());
-        av = Rewriter::rewrite(av);
-      }
-      checkAsserts[i] = av;
-    }
+    // ensure that the solve substitution has been fully applied
+    applySubstitutionVec(checkAsserts,cavars,casubs);
     // now, linearize each assertion
+    // The map useModelValue stores which terms we will fix their model values.
+    
     std::map< Node, bool > useModelValue;
     for (const Node& n : checkAsserts)
     {
-      ensureModelValueImpliesLinear(n, useModelValue);
+      if (!ensureModelValueImpliesLinear(n, useModelValue))
+      {
+        // failed to linearize assertions
+        return false;
+      }
     }
+    // fix the set of model values
+    std::vector< Node > mvars;
+    std::vector< Node > msubs;
+    for (const std::pair< const Node, bool >& mv : useModelValue)
+    {
+      if (!mv.second)
+      {
+        continue;
+      }
+      Node v = mv.first;
+      mvars.push_back(v);
+      msubs.push_back(computeConcreteModelValue(v));
+    }
+    // apply the substitution
+    applySubstitutionVec(checkAsserts,mvars,msubs);
+    // now, do the query
+    for( const Node& ca : checkAsserts)
+    {
+      if (ca.isConst() && !ca.getConst<bool>())
+      {
+        // an assertion is false after substitution, no repair is possible
+        return false;
+      }
+    }
+    SmtEngine repairNlSmt(nm->toExprManager());
+    repairNlSmt.setLogic(smt::currentSmtEngine()->getLogicInfo());
+    for (const Node& ca : checkAsserts)
+    {
+      repairNlSmt.assertFormula(ca.toExpr());
+    }
+    // TODO
     return false;
   }
   Trace("nl-ext-cm") << "...simple check succeeded!" << std::endl;
@@ -1362,7 +1402,7 @@ bool NlModel::ensureModelValueImpliesLinear(Node n, std::map< Node, bool >& useM
       if (ck==NONLINEAR_MULT)
       {
         // must ensure that at most one variable in the monomial does not exist in the domain of useModelValue
-        std::vector<TNode> cchildren;
+        std::map<TNode, bool> cexpOne;
         for (TNode cc : cur)
         {
           if (useModelValue.find(cc)!=useModelValue.end())
@@ -1370,14 +1410,27 @@ bool NlModel::ensureModelValueImpliesLinear(Node n, std::map< Node, bool >& useM
             // already have a model value
             continue;
           }
-          if (std::find(cchildren.begin(),cchildren.end(), cc)!=cchildren.end())
+          if (cexpOne.find(cc)!=cexpOne.end())
           {
+            cexpOne[cc] = false;
             // If the exponent of this variable is >1, we must take its model value.
             useModelValue[cc] = true;
           }
-          cchildren.push_back(cc);
+          else
+          {
+            cexpOne[cc] = true;
+          }
         }
-        // if there are multiple variables that have exponent 1 in the monomial
+        std::vector<TNode> cchildren;
+        for (const std::pair<const TNode, bool >& ce : cexpOne)
+        {
+          if (ce.second)
+          {
+            cchildren.push_back(ce.first);
+          }
+        }
+        // if there are multiple variables that have exponent 1 in the monomial,
+        // then all but one 
         if (cchildren.size()>1)
         {
           // shuffle so that we choose random child to instantiate
@@ -1389,6 +1442,11 @@ bool NlModel::ensureModelValueImpliesLinear(Node n, std::map< Node, bool >& useM
           }
         }
       }
+      else if (isTranscendentalKind(ck))
+      {
+        // shouldnt generally happen
+        return false;
+      }
       
       for(TNode cc : cur )
       {
@@ -1397,6 +1455,24 @@ bool NlModel::ensureModelValueImpliesLinear(Node n, std::map< Node, bool >& useM
     }
   } while (!visit.empty());
   return true;
+}
+void NlModel::applySubstitutionVec(std::vector<Node>& asserts, const std::vector<Node>& vars, const std::vector<Node>& subs)
+{
+  Assert (vars.size()==subs.size());
+  if (vars.empty())
+  {
+    return;
+  }
+  for (unsigned i=0, asize = asserts.size(); i<asize; i++)
+  {
+    Node av = asserts[i];
+    av = av.substitute(vars.begin(),
+                      vars.end(),
+                      subs.begin(),
+                      subs.end());
+    av = Rewriter::rewrite(av);
+    asserts[i] = av;
+  }
 }
 
 }  // namespace arith
