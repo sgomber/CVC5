@@ -401,6 +401,8 @@ libcvc4_add_sources(
   theory/bv/theory_bv_utils.h
   theory/bv/type_enumerator.h
   theory/care_graph.h
+  theory/datatypes/codatatype_normalize.cpp
+  theory/datatypes/codatatype_normalize.h
   theory/datatypes/datatypes_rewriter.cpp
   theory/datatypes/datatypes_rewriter.h
   theory/datatypes/sygus_extension.cpp
