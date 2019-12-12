@@ -326,7 +326,7 @@ bool NlModel::checkModel(const std::vector<Node>& assertions,
     std::vector<Node> cavars = d_check_model_vars;
     std::vector<Node> casubs = d_check_model_subs;
     // we take all the unsatisied assertions
-    std::vector<Node> checkAsserts = nsatAssertions;
+    std::vector<Node> checkAsserts = assertions;
     NodeManager* nm = NodeManager::currentNM();
     for (std::map<Node, std::pair<Node, Node> >::iterator it =
              d_check_model_bounds.begin();
