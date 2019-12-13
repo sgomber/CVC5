@@ -527,6 +527,30 @@ const static std::unordered_map<CVC4::Kind, Kind, CVC4::kind::KindHashFunction>
         {CVC4::Kind::LAST_KIND, LAST_KIND},
     };
 
+/* Set of kinds for indexed operators */
+const static std::unordered_set<Kind, KindHashFunction> s_indexed_kinds(
+    {CHAIN,
+     RECORD_UPDATE,
+     DIVISIBLE,
+     BITVECTOR_REPEAT,
+     BITVECTOR_ZERO_EXTEND,
+     BITVECTOR_SIGN_EXTEND,
+     BITVECTOR_ROTATE_LEFT,
+     BITVECTOR_ROTATE_RIGHT,
+     INT_TO_BITVECTOR,
+     FLOATINGPOINT_TO_UBV,
+     FLOATINGPOINT_TO_UBV_TOTAL,
+     FLOATINGPOINT_TO_SBV,
+     FLOATINGPOINT_TO_SBV_TOTAL,
+     TUPLE_UPDATE,
+     BITVECTOR_EXTRACT,
+     FLOATINGPOINT_TO_FP_IEEE_BITVECTOR,
+     FLOATINGPOINT_TO_FP_FLOATINGPOINT,
+     FLOATINGPOINT_TO_FP_REAL,
+     FLOATINGPOINT_TO_FP_SIGNED_BITVECTOR,
+     FLOATINGPOINT_TO_FP_UNSIGNED_BITVECTOR,
+     FLOATINGPOINT_TO_FP_GENERIC});
+
 namespace {
 
 bool isDefinedKind(Kind k) { return k > UNDEFINED_KIND && k < LAST_KIND; }
@@ -1025,7 +1049,11 @@ bool Op::isIndexedHelper() const { return !d_expr->isNull(); }
 /* Public methods                                                             */
 bool Op::operator==(const Op& t) const
 {
-  if (d_expr->isNull() || t.d_expr->isNull())
+  if (d_expr->isNull() && t.d_expr->isNull())
+  {
+    return (d_kind == t.d_kind);
+  }
+  else if (d_expr->isNull() || t.d_expr->isNull())
   {
     return false;
   }
@@ -1652,20 +1680,26 @@ std::ostream& operator<<(std::ostream& out,
 
 /* DatatypeDecl ------------------------------------------------------------- */
 
-DatatypeDecl::DatatypeDecl(const std::string& name, bool isCoDatatype)
-    : d_dtype(new CVC4::Datatype(name, isCoDatatype))
+DatatypeDecl::DatatypeDecl(const Solver* s,
+                           const std::string& name,
+                           bool isCoDatatype)
+    : d_dtype(new CVC4::Datatype(s->getExprManager(), name, isCoDatatype))
 {
 }
 
-DatatypeDecl::DatatypeDecl(const std::string& name,
+DatatypeDecl::DatatypeDecl(const Solver* s,
+                           const std::string& name,
                            Sort param,
                            bool isCoDatatype)
-    : d_dtype(new CVC4::Datatype(
-          name, std::vector<Type>{*param.d_type}, isCoDatatype))
+    : d_dtype(new CVC4::Datatype(s->getExprManager(),
+                                 name,
+                                 std::vector<Type>{*param.d_type},
+                                 isCoDatatype))
 {
 }
 
-DatatypeDecl::DatatypeDecl(const std::string& name,
+DatatypeDecl::DatatypeDecl(const Solver* s,
+                           const std::string& name,
                            const std::vector<Sort>& params,
                            bool isCoDatatype)
 {
@@ -1675,7 +1709,7 @@ DatatypeDecl::DatatypeDecl(const std::string& name,
     tparams.push_back(*s.d_type);
   }
   d_dtype = std::shared_ptr<CVC4::Datatype>(
-      new CVC4::Datatype(name, tparams, isCoDatatype));
+      new CVC4::Datatype(s->getExprManager(), name, tparams, isCoDatatype));
 }
 
 DatatypeDecl::~DatatypeDecl() {}
@@ -2839,6 +2873,28 @@ Term Solver::mkVar(Sort sort, const std::string& symbol) const
   CVC4_API_SOLVER_TRY_CATCH_END;
 }
 
+/* Create datatype declarations                                               */
+/* -------------------------------------------------------------------------- */
+
+DatatypeDecl Solver::mkDatatypeDecl(const std::string& name, bool isCoDatatype)
+{
+  return DatatypeDecl(this, name, isCoDatatype);
+}
+
+DatatypeDecl Solver::mkDatatypeDecl(const std::string& name,
+                                    Sort param,
+                                    bool isCoDatatype)
+{
+  return DatatypeDecl(this, name, param, isCoDatatype);
+}
+
+DatatypeDecl Solver::mkDatatypeDecl(const std::string& name,
+                                    const std::vector<Sort>& params,
+                                    bool isCoDatatype)
+{
+  return DatatypeDecl(this, name, params, isCoDatatype);
+}
+
 /* Create terms                                                               */
 /* -------------------------------------------------------------------------- */
 
@@ -3063,6 +3119,15 @@ Term Solver::mkTuple(const std::vector<Sort>& sorts,
 
 /* Create operators                                                           */
 /* -------------------------------------------------------------------------- */
+
+Op Solver::mkOp(Kind kind) const
+{
+  CVC4_API_SOLVER_TRY_CATCH_BEGIN;
+  CVC4_API_CHECK(s_indexed_kinds.find(kind) == s_indexed_kinds.end())
+      << "Expected a kind for a non-indexed operator.";
+  return Op(kind);
+  CVC4_API_SOLVER_TRY_CATCH_END
+}
 
 Op Solver::mkOp(Kind kind, Kind k) const
 {
@@ -3372,7 +3437,7 @@ Sort Solver::declareDatatype(
 {
   CVC4_API_ARG_CHECK_EXPECTED(ctors.size() > 0, ctors)
       << "a datatype declaration with at least one constructor";
-  DatatypeDecl dtdecl(symbol);
+  DatatypeDecl dtdecl(this, symbol);
   for (const DatatypeConstructorDecl& ctor : ctors)
   {
     dtdecl.addConstructor(ctor);
