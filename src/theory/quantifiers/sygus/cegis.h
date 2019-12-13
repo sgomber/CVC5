@@ -203,6 +203,14 @@ class Cegis : public SygusModule
    * added as refinement lemmas.
    */
   std::unordered_set<unsigned> d_cegis_sample_refine;
+  /** 
+   * The number of times we have tried each candidate skeleton. This is cached
+   * based on their explanation omitting builtin subfields. For example:
+   *   ( 3*x + 4*y >= 0 )
+   * may be cached by is-C_geq_xy( e ) for enumerator e. This count is used
+   * to implement certain fairness schemes.
+   */
+  std::map<Node, unsigned> d_explainCount;
 
   //---------------------------------for symbolic constructors
   /** are we using symbolic constants?
