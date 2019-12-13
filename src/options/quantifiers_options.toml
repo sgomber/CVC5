@@ -1199,8 +1199,8 @@ header = "options/quantifiers_options.h"
   category   = "regular"
   long       = "cegis-sym-sol-attempt=N"
   type       = "unsigned"
-  default    = "5"
-  help       = "number of times to try a symbolic candidate before giving up"
+  default    = "0"
+  help       = "number of times to try a symbolic candidate before giving up (<=0 means no limit)"
 
 [[option]]
   name       = "minSynthSol"
