@@ -142,7 +142,7 @@ bool checkClash(Node n1, Node n2, std::vector<Node>& rew);
  * not imply that n is a "constant", due to codatatype normalization.
  */
 bool isTermCons(TNode n);
-/** 
+/**
  * Returns true if all children of n are constant, where n is an application
  * of a constructor.
  */

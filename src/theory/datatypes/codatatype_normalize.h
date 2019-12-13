@@ -23,9 +23,10 @@
 namespace CVC4 {
 namespace theory {
 namespace datatypes {
-  
-class CoDatatypeNormalize {
-public:
+
+class CoDatatypeNormalize
+{
+ public:
   /** normalize codatatype constant
    *
    * This returns the normal form of the codatatype constant n. This runs a
@@ -56,7 +57,8 @@ public:
                               Node orig,
                               TypeNode orig_tn,
                               unsigned depth);
-private:
+
+ private:
   /** collect references
    *
    * This function, given as input a codatatype term n, collects the necessary
@@ -128,8 +130,8 @@ private:
                                              std::map<Node, int>& eqc,
                                              int depth);
 };
-}
-}
-}
+}  // namespace datatypes
+}  // namespace theory
+}  // namespace CVC4
 
 #endif /* CVC4__THEORY__DATATYPES__CODATATYPE_NORMALIZE_H */

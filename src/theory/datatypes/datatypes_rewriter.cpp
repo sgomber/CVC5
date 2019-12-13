@@ -20,8 +20,8 @@
 #include "expr/node_algorithm.h"
 #include "expr/sygus_datatype.h"
 #include "options/datatypes_options.h"
-#include "theory/datatypes/theory_datatypes_utils.h"
 #include "theory/datatypes/codatatype_normalize.h"
+#include "theory/datatypes/theory_datatypes_utils.h"
 
 using namespace CVC4;
 using namespace CVC4::kind;
@@ -308,15 +308,15 @@ RewriteResponse DatatypesRewriter::rewriteConstructor(TNode in)
   {
     return RewriteResponse(REWRITE_DONE, in);
   }
-  Trace("datatypes-rewrite-debug") << "Normalizing constant " << in
-                                    << std::endl;
+  Trace("datatypes-rewrite-debug")
+      << "Normalizing constant " << in << std::endl;
   Node inn = CoDatatypeNormalize::normalizeConstant(in);
   // Constant may be a subterm of another constant, so cannot assume that inn
   // is non-null for codatatypes.
   if (!inn.isNull() && inn != in)
   {
-    Trace("datatypes-rewrite") << "Normalized constant " << in << " -> "
-                                << inn << std::endl;
+    Trace("datatypes-rewrite")
+        << "Normalized constant " << in << " -> " << inn << std::endl;
     return RewriteResponse(REWRITE_DONE, inn);
   }
   return RewriteResponse(REWRITE_DONE, in);
@@ -375,7 +375,8 @@ RewriteResponse DatatypesRewriter::rewriteSelector(TNode in)
       if (dt.isCodatatype() && in[0][selectorIndex].isConst())
       {
         // must replace all debruijn indices with self
-        Node sub = CoDatatypeNormalize::replaceDebruijn(in[0][selectorIndex], in[0], argType, 0);
+        Node sub = CoDatatypeNormalize::replaceDebruijn(
+            in[0][selectorIndex], in[0], argType, 0);
         Trace("datatypes-rewrite") << "DatatypesRewriter::postRewrite: "
                                    << "Rewrite trivial codatatype selector "
                                    << in << " to " << sub << std::endl;

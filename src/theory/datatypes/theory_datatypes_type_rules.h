@@ -21,8 +21,8 @@
 
 #include "expr/dtype.h"
 #include "expr/type_matcher.h"
-#include "theory/datatypes/theory_datatypes_utils.h"
 #include "theory/datatypes/codatatype_normalize.h"
+#include "theory/datatypes/theory_datatypes_utils.h"
 
 namespace CVC4 {
 
@@ -103,8 +103,10 @@ struct DatatypeConstructorTypeRule {
     NodeManagerScope nms(nodeManager);
     if (!n.getType().isCodatatype())
     {
-      for (TNode::const_iterator i = n.begin(); i != n.end(); ++i) {
-        if (!(*i).isConst()) {
+      for (TNode::const_iterator i = n.begin(); i != n.end(); ++i)
+      {
+        if (!(*i).isConst())
+        {
           return false;
         }
       }
@@ -113,7 +115,7 @@ struct DatatypeConstructorTypeRule {
     else if (utils::allTermConsChildren(n))
     {
       Node nn = CoDatatypeNormalize::normalizeCodatatypeConstant(n);
-      if (nn!=n)
+      if (nn != n)
       {
         // it is not canonical
         return false;

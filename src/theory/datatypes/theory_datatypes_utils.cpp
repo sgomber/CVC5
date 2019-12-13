@@ -400,16 +400,17 @@ bool isTermCons(TNode n)
   std::vector<TNode> visit;
   TNode cur;
   visit.push_back(n);
-  do {
+  do
+  {
     cur = visit.back();
     visit.pop_back();
     if (!cur.getAttribute(TermConsComputedAttr()))
     {
-      cur.setAttribute(TermConsComputedAttr(),true);
-      if (cur.getKind()==APPLY_CONSTRUCTOR)
+      cur.setAttribute(TermConsComputedAttr(), true);
+      if (cur.getKind() == APPLY_CONSTRUCTOR)
       {
         visit.push_back(cur);
-        for (const Node& cn : cur) 
+        for (const Node& cn : cur)
         {
           if (!cn.getAttribute(TermConsComputedAttr()))
           {
@@ -419,12 +420,15 @@ bool isTermCons(TNode n)
       }
       else
       {
-        cur.setAttribute(TermConsAttr(),cur.isConst());
+        cur.setAttribute(TermConsAttr(), cur.isConst());
       }
-    } else{
+    }
+    else
+    {
       Node ret = cur;
       bool isTermCons = true;
-      for (const Node& cn : cur) {
+      for (const Node& cn : cur)
+      {
         Assert(cn.hasAttribute(TermConsComputedAttr()));
         if (!cn.getAttribute(TermConsAttr()))
         {
@@ -432,7 +436,7 @@ bool isTermCons(TNode n)
           break;
         }
       }
-      cur.setAttribute(TermConsAttr(),isTermCons);
+      cur.setAttribute(TermConsAttr(), isTermCons);
     }
   } while (!visit.empty());
   Assert(n.getAttribute(TermConsComputedAttr()));
@@ -441,8 +445,10 @@ bool isTermCons(TNode n)
 
 bool allTermConsChildren(TNode n)
 {
-  for (TNode::const_iterator i = n.begin(); i != n.end(); ++i) {
-    if (!isTermCons(*i)) {
+  for (TNode::const_iterator i = n.begin(); i != n.end(); ++i)
+  {
+    if (!isTermCons(*i))
+    {
       return false;
     }
   }
