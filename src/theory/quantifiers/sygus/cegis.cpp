@@ -305,31 +305,18 @@ bool Cegis::constructCandidates(const std::vector<Node>& enums,
     return false;
   }
 
-  if (options::cegisSample() != CEGIS_SAMPLE_NONE && lems.empty())
-  {
-    // if we didn't add a lemma, trying sampling to add a refinement lemma
-    // that immediately refutes the candidate we just constructed
-    if (sampleAddRefinementLemma(candidates, candidate_values, lems))
-    {
-      candidate_values.clear();
-      // restart (should be guaranteed to add evaluation lemmas on this call)
-      return constructCandidates(
-          enums, enum_values, candidates, candidate_values, lems);
-    }
-  }
-
   // If we are using symbolic constructors, we check how many times we
   // have tried this candidate skeleton (modulo builtin subfields). If it is
   // beyond a threshold, we block. This is done for the sake of fairness.
-  if (d_usingSymCons && options::cegisSymSolAttempt()>0)
+  if (options::cegisSymSolAttempt()>0)
   {
     // A skeleton can be uniquely identified by its explanation that omits
     // builtin subfields.
     std::vector<Node> exp;
-    for (unsigned i = 0, size = enums.size(); i < size; i++)
+    for (unsigned i = 0, size = candidates.size(); i < size; i++)
     {
       d_tds->getExplain()->getExplanationForEquality(
-          enums[i], enum_values[i], exp);
+          candidates[i], candidate_values[i], exp);
     }
     Node expn = exp.size() == 1 ? exp[0] : nm->mkNode(AND, exp);
     unsigned tryCount = d_explainCount[expn];
@@ -342,6 +329,19 @@ bool Cegis::constructCandidates(const std::vector<Node>& enums,
       expn = nm->mkNode(OR, d_parent->getGuard().negate(), expn.negate());
       lems.push_back(expn);
       return false;
+    }
+  }
+  
+  if (options::cegisSample() != CEGIS_SAMPLE_NONE && lems.empty())
+  {
+    // if we didn't add a lemma, trying sampling to add a refinement lemma
+    // that immediately refutes the candidate we just constructed
+    if (sampleAddRefinementLemma(candidates, candidate_values, lems))
+    {
+      candidate_values.clear();
+      // restart (should be guaranteed to add evaluation lemmas on this call)
+      return constructCandidates(
+          enums, enum_values, candidates, candidate_values, lems);
     }
   }
 
