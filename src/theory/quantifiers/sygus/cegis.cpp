@@ -319,10 +319,12 @@ bool Cegis::constructCandidates(const std::vector<Node>& enums,
   }
 
   // If we are using symbolic constructors, we check how many times we
-  // have tried this candidate. If it is beyond a threshold, we block. This is
-  // done for the sake of fairness.
+  // have tried this candidate skeleton (modulo builtin subfields). If it is
+  // beyond a threshold, we block. This is done for the sake of fairness.
   if (d_usingSymCons)
   {
+    // A skeleton can be uniquely identified by its explanation that omits
+    // builtin subfields.
     std::vector<Node> exp;
     for (unsigned i = 0, size = enums.size(); i < size; i++)
     {
