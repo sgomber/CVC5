@@ -380,6 +380,75 @@ bool checkClash(Node n1, Node n2, std::vector<Node>& rew)
   return false;
 }
 
+/** Attribute true for terms that are term-constructed. */
+struct TermConsTag
+{
+};
+typedef expr::Attribute<TermConsTag, bool> TermConsAttr;
+/** Attribute true when we have computed whether a term is term-constructed. */
+struct TermConsComputedTag
+{
+};
+typedef expr::Attribute<TermConsComputedTag, bool> TermConsComputedAttr;
+
+bool isTermCons(TNode n)
+{
+  if (n.getAttribute(TermConsComputedAttr()))
+  {
+    return n.getAttribute(TermConsAttr());
+  }
+  std::vector<TNode> visit;
+  TNode cur;
+  visit.push_back(n);
+  do {
+    cur = visit.back();
+    visit.pop_back();
+    if (!cur.getAttribute(TermConsComputedAttr()))
+    {
+      cur.setAttribute(TermConsComputedAttr(),true);
+      if (cur.getKind()==APPLY_CONSTRUCTOR)
+      {
+        visit.push_back(cur);
+        for (const Node& cn : cur) 
+        {
+          if (!cn.getAttribute(TermConsComputedAttr()))
+          {
+            visit.push_back(cn);
+          }
+        }
+      }
+      else
+      {
+        cur.setAttribute(TermConsAttr(),cur.isConst());
+      }
+    } else{
+      Node ret = cur;
+      bool isTermCons = true;
+      for (const Node& cn : cur) {
+        Assert(cn.hasAttribute(TermConsComputedAttr()));
+        if (!cn.getAttribute(TermConsAttr()))
+        {
+          isTermCons = false;
+          break;
+        }
+      }
+      cur.setAttribute(TermConsAttr(),isTermCons);
+    }
+  } while (!visit.empty());
+  Assert(n.getAttribute(TermConsComputedAttr()));
+  return n.getAttribute(TermConsAttr());
+}
+
+bool allTermConsChildren(TNode n)
+{
+  for (TNode::const_iterator i = n.begin(); i != n.end(); ++i) {
+    if (!isTermCons(*i)) {
+      return false;
+    }
+  }
+  return true;
+}
+
 struct SygusToBuiltinTermAttributeId
 {
 };

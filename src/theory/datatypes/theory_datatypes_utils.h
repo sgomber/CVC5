@@ -136,6 +136,17 @@ bool isNullaryConstructor(const DTypeConstructor& c);
  *   C( x, y ) and z
  */
 bool checkClash(Node n1, Node n2, std::vector<Node>& rew);
+/**
+ * Returns true if n is "term constructed". That is, all of its subterms are
+ * either constants or applications of constructors. Notice that this does
+ * not imply that n is a "constant", due to codatatype normalization.
+ */
+bool isTermCons(TNode n);
+/** 
+ * Returns true if all children of n are constant, where n is an application
+ * of a constructor.
+ */
+bool allTermConsChildren(TNode n);
 
 // ------------------------ sygus utils
 

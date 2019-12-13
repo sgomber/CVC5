@@ -299,21 +299,25 @@ RewriteResponse DatatypesRewriter::preRewrite(TNode in)
 
 RewriteResponse DatatypesRewriter::rewriteConstructor(TNode in)
 {
-  if (in.isConst())
+  if (!in.getType().isCodatatype())
   {
-    Trace("datatypes-rewrite-debug") << "Normalizing constant " << in
-                                     << std::endl;
-    Node inn = CoDatatypeNormalize::normalizeConstant(in);
-    // constant may be a subterm of another constant, so cannot assume that this
-    // will succeed for codatatypes
-    // Assert( !inn.isNull() );
-    if (!inn.isNull() && inn != in)
-    {
-      Trace("datatypes-rewrite") << "Normalized constant " << in << " -> "
-                                 << inn << std::endl;
-      return RewriteResponse(REWRITE_DONE, inn);
-    }
+    // datatypes do not require normalization
     return RewriteResponse(REWRITE_DONE, in);
+  }
+  if (!utils::allTermConsChildren(in))
+  {
+    return RewriteResponse(REWRITE_DONE, in);
+  }
+  Trace("datatypes-rewrite-debug") << "Normalizing constant " << in
+                                    << std::endl;
+  Node inn = CoDatatypeNormalize::normalizeConstant(in);
+  // Constant may be a subterm of another constant, so cannot assume that inn
+  // is non-null for codatatypes.
+  if (!inn.isNull() && inn != in)
+  {
+    Trace("datatypes-rewrite") << "Normalized constant " << in << " -> "
+                                << inn << std::endl;
+    return RewriteResponse(REWRITE_DONE, inn);
   }
   return RewriteResponse(REWRITE_DONE, in);
 }
