@@ -184,11 +184,11 @@ Node CoDatatypeNormalize::normalizeConstant(Node n)
 }
 
 Node CoDatatypeNormalize::collectRef(Node n,
-                                   std::vector<Node>& sk,
-                                   std::map<Node, Node>& rf,
-                                   std::vector<Node>& rf_pending,
-                                   std::vector<Node>& terms,
-                                   std::map<Node, bool>& cdts)
+                                     std::vector<Node>& sk,
+                                     std::map<Node, Node>& rf,
+                                     std::vector<Node>& rf_pending,
+                                     std::vector<Node>& terms,
+                                     std::map<Node, bool>& cdts)
 {
   Assert(utils::isTermCons(n));
   TypeNode tn = n.getType();
@@ -306,9 +306,9 @@ Node CoDatatypeNormalize::normalizeCodatatypeConstantEqc(
 }
 
 Node CoDatatypeNormalize::replaceDebruijn(Node n,
-                                        Node orig,
-                                        TypeNode orig_tn,
-                                        unsigned depth)
+                                          Node orig,
+                                          TypeNode orig_tn,
+                                          unsigned depth)
 {
   if (n.getKind() == kind::UNINTERPRETED_CONSTANT && n.getType() == orig_tn)
   {
@@ -341,6 +341,6 @@ Node CoDatatypeNormalize::replaceDebruijn(Node n,
   return n;
 }
 
-} /* CVC4::theory::datatypes namespace */
-} /* CVC4::theory namespace */
-} /* CVC4 namespace */
+}  // namespace datatypes
+}  // namespace theory
+}  // namespace CVC4
