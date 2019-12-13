@@ -371,7 +371,7 @@ RewriteResponse DatatypesRewriter::rewriteSelector(TNode in)
       if (dt.isCodatatype() && in[0][selectorIndex].isConst())
       {
         // must replace all debruijn indices with self
-        Node sub = replaceDebruijn(in[0][selectorIndex], in[0], argType, 0);
+        Node sub = CoDatatypeNormalize::replaceDebruijn(in[0][selectorIndex], in[0], argType, 0);
         Trace("datatypes-rewrite") << "DatatypesRewriter::postRewrite: "
                                    << "Rewrite trivial codatatype selector "
                                    << in << " to " << sub << std::endl;
