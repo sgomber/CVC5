@@ -17,6 +17,7 @@
 #include "theory/datatypes/type_enumerator.h"
 #include "theory/datatypes/datatypes_rewriter.h"
 #include "theory/datatypes/theory_datatypes_utils.h"
+#include "theory/datatypes/codatatype_normalize.h"
 
 using namespace CVC4;
 using namespace theory;
@@ -172,7 +173,7 @@ Node DatatypesEnumerator::getTermEnum( TypeNode tn, unsigned i ){
 
    if (!d_child_enum && d_has_debruijn)
    {
-     Node nret = DatatypesRewriter::normalizeCodatatypeConstant(ret);
+     Node nret = CoDatatypeNormalize::normalizeCodatatypeConstant(ret);
      if (nret != ret)
      {
        if (nret.isNull())
