@@ -87,6 +87,8 @@ class Rewriter {
   std::unique_ptr<TheoryRewriter> d_theoryRewriters[theory::THEORY_LAST];
 
   unsigned long d_iterationCount = 0;
+  /** the null node */
+  Node d_null;
 
 #ifdef CVC4_ASSERTIONS
   std::unique_ptr<std::unordered_set<Node, NodeHashFunction>> d_rewriteStack =

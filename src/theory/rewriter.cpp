@@ -28,8 +28,17 @@ using namespace std;
 namespace CVC4 {
 namespace theory {
 
+// Note that this function is a simplified version of Theory::theoryOf for
+// (type-based) theoryOfMode. We expand and simplify it here for the sake of
+// efficiency.
 static TheoryId theoryOf(TNode node) {
-  return Theory::theoryOf(THEORY_OF_TYPE_BASED, node);
+  if (node.getKind() == kind::EQUAL)
+  {
+    // Equality is owned by the theory that owns the domain
+    return Theory::theoryOf(node[0].getType());
+  }
+  // Regular nodes are owned by the kind
+  return kindToTheoryId(node.getKind());
 }
 
 /**
@@ -72,6 +81,12 @@ struct RewriteStackElement {
 };
 
 Node Rewriter::rewrite(TNode node) {
+  if (node.getNumChildren() == 0)
+  {
+    // Nodes with zero children should never change via rewriting. We return
+    // eagerly for the sake of efficiency here.
+    return node;
+  }
   Rewriter& rewriter = getInstance();
   return rewriter.rewriteTo(theoryOf(node), node);
 }
@@ -83,7 +98,7 @@ Rewriter& Rewriter::getInstance()
 }
 
 Node Rewriter::rewriteTo(theory::TheoryId theoryId, Node node) {
-
+  Assert (node.getNumChildren()>0);
 #ifdef CVC4_ASSERTIONS
   bool isEquality = node.getKind() == kind::EQUAL && (!node[0].getType().isBoolean());
 
@@ -175,20 +190,44 @@ Node Rewriter::rewriteTo(theory::TheoryId theoryId, Node node) {
 
       // To build the rewritten expression we set up the builder
       if(child == 0) {
-        if (rewriteStackTop.node.getNumChildren() > 0) {
-          // The children will add themselves to the builder once they're done
-          rewriteStackTop.builder << rewriteStackTop.node.getKind();
-          kind::MetaKind metaKind = rewriteStackTop.node.getMetaKind();
-          if (metaKind == kind::metakind::PARAMETERIZED) {
-            rewriteStackTop.builder << rewriteStackTop.node.getOperator();
-          }
+        Assert(rewriteStackTop.node.getNumChildren() > 0);
+        // The children will add themselves to the builder once they're done
+        rewriteStackTop.builder << rewriteStackTop.node.getKind();
+        kind::MetaKind metaKind = rewriteStackTop.node.getMetaKind();
+        if (metaKind == kind::metakind::PARAMETERIZED) {
+          rewriteStackTop.builder << rewriteStackTop.node.getOperator();
+        }
+        
+      }
+      // get the next child with >0 children
+      Node childNode;
+      do
+      {
+        if (child >= rewriteStackTop.node.getNumChildren())
+        {
+          // no more children
+          break;
+        }
+        childNode = rewriteStackTop.node[child];
+        if (childNode.getNumChildren()==0)
+        {
+          // if zero children, it does not require rewrite, just add to builder
+          rewriteStackTop.builder << childNode;
+          child = rewriteStackTop.nextChild++;
+          childNode = d_null;
         }
       }
+      while (childNode.isNull());
 
       // Process the next child
-      if(child < rewriteStackTop.node.getNumChildren()) {
+      if(!childNode.isNull()) {
         // The child node
         Node childNode = rewriteStackTop.node[child];
+        while (childNode.getNumChildren()==0)
+        {
+          child = rewriteStackTop.nextChild++;
+          childNode = rewriteStackTop.node[child];
+        }
         // Push the rewrite request to the stack (NOTE: rewriteStackTop might be a bad reference now)
         rewriteStack.push_back(RewriteStackElement(childNode, theoryOf(childNode)));
         // Go on with the rewriting
@@ -196,12 +235,12 @@ Node Rewriter::rewriteTo(theory::TheoryId theoryId, Node node) {
       }
 
       // Incorporate the children if necessary
-      if (rewriteStackTop.node.getNumChildren() > 0) {
-        Node rewritten = rewriteStackTop.builder;
-        rewriteStackTop.node = rewritten;
-        rewriteStackTop.theoryId = theoryOf(rewriteStackTop.node);
-      }
-
+      Assert(rewriteStackTop.node.getNumChildren() > 0);
+      
+      Node rewritten = rewriteStackTop.builder;
+      rewriteStackTop.node = rewritten;
+      rewriteStackTop.theoryId = theoryOf(rewriteStackTop.node);
+      
       // Done with all pre-rewriting, so let's do the post rewrite
       for(;;) {
         // Do the post-rewrite
@@ -234,7 +273,7 @@ Node Rewriter::rewriteTo(theory::TheoryId theoryId, Node node) {
               d_theoryRewriters[newTheoryId]->postRewrite(response.node);
           Assert(r2.node == response.node);
 #endif
-	  rewriteStackTop.node = response.node;
+          rewriteStackTop.node = response.node;
           break;
         }
         // Check for trivial rewrite loops of size 1 or 2
