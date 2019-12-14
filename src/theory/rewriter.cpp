@@ -171,17 +171,30 @@ Node Rewriter::rewriteTo(theory::TheoryId theoryId, Node node) {
                            rewriteStackTop.node);
       }
       // Otherwise we're have already been pre-rewritten (in pre-rewrite cache)
-      else {
+      else{
         // Continue with the cached version
         rewriteStackTop.node = cached;
-        rewriteStackTop.theoryId = theoryOf(cached);
+        if (cached.getNumChildren()>0){
+          // dont need to compute theoryId here
+          rewriteStackTop.theoryId = theoryOf(cached);
+        }
       }
     }
 
+
     rewriteStackTop.original =rewriteStackTop.node;
     // Now it's time to rewrite the children, check if this has already been done
-    Node cached = getPostRewriteCache(rewriteStackTop.getTheoryId(),
-                                      rewriteStackTop.node);
+    Node cached;
+    if (rewriteStackTop.node.getNumChildren()>0)
+    {
+      cached = getPostRewriteCache(rewriteStackTop.getTheoryId(),
+                                        rewriteStackTop.node);
+    }
+    else
+    {
+      // just take self
+      cached = rewriteStackTop.node;
+    }
     // If not, go through the children
     if(cached.isNull()) {
 
@@ -278,9 +291,9 @@ Node Rewriter::rewriteTo(theory::TheoryId theoryId, Node node) {
         // Check for trivial rewrite loops of size 1 or 2
         Assert(response.node != rewriteStackTop.node);
         Assert(d_theoryRewriters[rewriteStackTop.getTheoryId()]
-                   ->postRewrite(response.node)
-                   .node
-               != rewriteStackTop.node);
+                  ->postRewrite(response.node)
+                  .node
+              != rewriteStackTop.node);
         rewriteStackTop.node = response.node;
       }
       // We're done with the post rewrite, so we add to the cache
@@ -292,11 +305,11 @@ Node Rewriter::rewriteTo(theory::TheoryId theoryId, Node node) {
       rewriteStackTop.node = cached;
       rewriteStackTop.theoryId = theoryOf(cached);
     }
-
+    
     // If this is the last node, just return
     if (rewriteStack.size() == 1) {
       Assert(!isEquality || rewriteStackTop.node.getKind() == kind::EQUAL
-             || rewriteStackTop.node.isConst());
+            || rewriteStackTop.node.isConst());
       return rewriteStackTop.node;
     }
 
