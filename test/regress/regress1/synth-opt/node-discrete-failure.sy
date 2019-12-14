@@ -61,28 +61,28 @@
     (let ((s (headSL pssl)))
       (+ (* (select pspb s) (h_State s)) (h_PState_rec (tailSL pssl) pspb))
     )
-    0.0)
+    0)
 )
-(define-fun h_PState ((ps PState)) Real
+(define-fun h_PState ((ps PState)) Int
   (h_PState_rec (states ps) (count ps))
 )
 
 (define-fun nilPState () PState
-  (mkPState nilSL ((as const (Array State Real)) 0))
+  (mkPState nilSL ((as const (Array State Int)) 0))
 )
-(define-fun-rec appendStateToPState ((s State) (count Int) (p PState)) PState
+(define-fun-rec appendStateToPState ((s State) (n Int) (p PState)) PState
   (let ((pstates (states p)))
   (let ((pcount (count p)))
   (let ((pr (select pcount s)))
   (mkPState
     ; add to list if not there already
-    (ite (= pr 0.0)
+    (ite (= pr 0)
       (consSL s pstates)
       pstates
     )
     (store 
       pcount
-      s (+ count pr)
+      s (+ n pr)
     )
   )
   )))
@@ -106,7 +106,7 @@
       (appendStateToPState
         ; failure that didn't count towards quota
         (mkState prevFail prevRcv)
-        (ite allowSuccess 0 1)
+        (ite allowSuccess 0 (ite allowFail 1 2))
       (appendStateToPState
         ; failure that counts towards quota
         (mkState (- prevFail 1) prevRcv)
@@ -128,7 +128,7 @@
       (appendStateToPState
         ; failure that didn't count towards quota
         (mkState prevFail prevRcv)
-        (ite allowSuccess 0 1)
+        (ite allowSuccess 0 (ite allowFail 1 2))
       (appendStateToPState
         ; failure that counts towards quota
         (mkState (- prevFail 1) prevRcv)
@@ -141,7 +141,7 @@
       2
       psp)
   ))
-  )
+  ))
 )
 
 (define-fun-rec transNodeListRec ((actor Node) (al ActionList) (ps PState) (pssl StateList) (psp PState)) PState
@@ -211,13 +211,17 @@
 )
 
 (define-fun init-pstate () PState
-  (appendStateToPState init-state 1.0 nilPState)
+  (appendStateToPState init-state 1 nilPState)
 )
 
 ; expected value of packets is greater than 1.0 after 2 time steps.
-(constraint
-  (< 1.0 (h_PState
-         (trans actionA actionB actionC (trans actionA actionB actionC init-pstate))
-         ))
+(optimize-synth 
+  (h_PState 
+    (trans actionA actionB actionC 
+    (trans actionA actionB actionC 
+    (trans actionA actionB actionC
+    (trans actionA actionB actionC 
+    (trans actionA actionB actionC 
+      init-pstate)))))
   )
-(check-synth)
+)
