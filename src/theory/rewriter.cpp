@@ -240,6 +240,12 @@ Node Rewriter::rewriteTo(theory::TheoryId theoryId, Node node) {
         RewriteResponse response =
             d_theoryRewriters[rewriteStackTop.getTheoryId()]->postRewrite(
                 rewriteStackTop.node);
+        if (response.node.getNumChildren()==0)
+        {
+          // no children, we are done
+          rewriteStackTop.node = response.node;
+          break;
+        }
         // We continue with the response we got
         TheoryId newTheoryId = theoryOf(response.node);
         if (newTheoryId != rewriteStackTop.getTheoryId()
