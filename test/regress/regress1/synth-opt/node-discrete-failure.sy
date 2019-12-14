@@ -11,12 +11,18 @@
 (declare-datatype State ((mkState (failureQuota Int) (rcv (Array SPair Bool)))))
 (declare-datatype StateList ((consSL (headSL State) (tailSL StateList)) (nilSL)))
 
+; is s a final state?
+(define-fun isFinalState ((s State)) Bool
+  (= (failureQuota s) 0))
+
 ; C is destination of P1 and P2
 (define-fun h_State ((s State)) Int
-  (+ 
-    (ite (select (rcv s) (mkPair C P1)) 1 0)
-    (ite (select (rcv s) (mkPair C P2)) 1 0)
-  )
+  (ite (isFinalState s)
+    (+ 
+      (ite (select (rcv s) (mkPair C P1)) 1 0)
+      (ite (select (rcv s) (mkPair C P2)) 1 0)
+    )
+    0)
 )
 
 ; Actions and how they are interpreted
@@ -56,6 +62,17 @@
 
 (declare-datatype PState ((mkPState (states StateList) (count (Array State Int)))))
 
+(define-fun-rec count_fs_PState_rec ((pssl StateList) (pspb (Array State Int))) Int
+  (ite ((_ is consSL) pssl)
+    (let ((s (headSL pssl)))
+      (+ (* (select pspb s) (ite (isFinalState s) 1 0)) (count_fs_PState_rec (tailSL pssl) pspb))
+    )
+    0)
+)
+(define-fun count_fs_PState ((ps PState)) Int
+  (count_fs_PState_rec (states ps) (count ps))
+)
+
 (define-fun-rec h_PState_rec ((pssl StateList) (pspb (Array State Int))) Int
   (ite ((_ is consSL) pssl)
     (let ((s (headSL pssl)))
@@ -63,8 +80,13 @@
     )
     0)
 )
-(define-fun h_PState ((ps PState)) Int
-  (h_PState_rec (states ps) (count ps))
+(define-fun h_PState ((ps PState)) Real
+  (let ((fs_count (count_fs_PState ps)))
+  (ite (= fs_count 0)
+    0.0
+    (/ (h_PState_rec (states ps) (count ps)) fs_count)
+  )
+  )
 )
 
 (define-fun nilPState () PState
@@ -76,7 +98,7 @@
   (let ((pr (select pcount s)))
   (mkPState
     ; add to list if not there already
-    (ite (= pr 0)
+    (ite (and (= pr 0) (not (= n 0)))
       (consSL s pstates)
       pstates
     )
@@ -89,7 +111,7 @@
 )
 
 
-(define-fun transNode ((actor Node) (a Action) (r Real) (s State) (psp PState)) PState
+(define-fun transNode ((actor Node) (a Action) (r Int) (s State) (psp PState)) PState
   (let ((prevRcv (rcv s)))
   (let ((prevFail (failureQuota s)))
   (ite ((_ is pushPck) a)
@@ -102,15 +124,15 @@
       (appendStateToPState
         ; success
         (mkState prevFail (store prevRcv dst_pair true))
-        (ite allowSuccess (ite allowFail 1 2) 0)
+        (* r (ite allowSuccess (ite allowFail 1 2) 0))
       (appendStateToPState
         ; failure that didn't count towards quota
         (mkState prevFail prevRcv)
-        (ite allowSuccess 0 (ite allowFail 1 2))
+        (* r (ite allowSuccess 0 (ite allowFail 1 2)))
       (appendStateToPState
         ; failure that counts towards quota
         (mkState (- prevFail 1) prevRcv)
-        (ite allowFail 1 0)
+        (* r (ite allowFail 1 0))
         psp
       )))
     ))))))
@@ -124,21 +146,21 @@
       (appendStateToPState
         ; success
         (mkState prevFail (store prevRcv dst_pair true))
-        (ite allowSuccess (ite allowFail 1 2) 0)
+        (* r (ite allowSuccess (ite allowFail 1 2) 0))
       (appendStateToPState
         ; failure that didn't count towards quota
         (mkState prevFail prevRcv)
-        (ite allowSuccess 0 (ite allowFail 1 2))
+        (* r (ite allowSuccess 0 (ite allowFail 1 2)))
       (appendStateToPState
         ; failure that counts towards quota
         (mkState (- prevFail 1) prevRcv)
-        (ite allowFail 1 0)
+        (* r (ite allowFail 1 0))
         psp
       )))
     ))))))
     (appendStateToPState
       s 
-      2
+      (* r 2)
       psp)
   ))
   ))
@@ -198,7 +220,7 @@
 ; A and B initially have packets P1 and P2
 (define-fun init-state () State
   (mkState
-    ; allow two failures
+    ; allow 2 failures
     2
     (store 
       (store
