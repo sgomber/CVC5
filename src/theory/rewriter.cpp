@@ -221,13 +221,6 @@ Node Rewriter::rewriteTo(theory::TheoryId theoryId, Node node) {
 
       // Process the next child
       if(!childNode.isNull()) {
-        // The child node
-        Node childNode = rewriteStackTop.node[child];
-        while (childNode.getNumChildren()==0)
-        {
-          child = rewriteStackTop.nextChild++;
-          childNode = rewriteStackTop.node[child];
-        }
         // Push the rewrite request to the stack (NOTE: rewriteStackTop might be a bad reference now)
         rewriteStack.push_back(RewriteStackElement(childNode, theoryOf(childNode)));
         // Go on with the rewriting
