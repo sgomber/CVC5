@@ -182,10 +182,8 @@ Node FunDefEvaluator::evaluate(Node n) const
           if (!args.empty())
           {
             // invoke it on arguments
-            sbody = sbody.substitute(
-                args.begin(), args.end(), children.begin(), children.end());
-            // rewrite it
-            sbody = Rewriter::rewrite(sbody);
+            sbody = d_eval.eval(sbody,args,children);
+            Assert(!sbody.isNull());
             if (Trace.isOn("fd-eval-debug2"))
             {
               Trace("fd-eval-debug2")
