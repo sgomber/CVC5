@@ -181,9 +181,23 @@ Node FunDefEvaluator::evaluate(Node n) const
           const std::vector<Node>& args = itf->second.d_args;
           if (!args.empty())
           {
+            /*
+            Trace("ajr-temp") << "Check " << sbody << " under substitution:" << std::endl;
+            for (unsigned j=0; j<args.size(); j++)
+            {
+              Trace("ajr-temp") << "  " << args[j] << " -> " << children[j] << std::endl;
+            }
+            // invoke it on arguments
+            Node sbodyr = sbody.substitute(
+                args.begin(), args.end(), children.begin(), children.end());
+            // rewrite it
+            sbodyr = Rewriter::rewrite(sbodyr);
+            Trace("ajr-temp") << "Rewrite : " << sbodyr << std::endl;
+            */
             // invoke it on arguments
             sbody = d_eval.eval(sbody,args,children);
-            Assert(!sbody.isNull());
+            Trace("ajr-temp") << "Evaluate : " << sbody << std::endl;
+            //AlwaysAssert(sbodyr==sbody);
             if (Trace.isOn("fd-eval-debug2"))
             {
               Trace("fd-eval-debug2")
@@ -195,6 +209,7 @@ Node FunDefEvaluator::evaluate(Node n) const
               Trace("fd-eval-debug2")
                   << "FunDefEvaluator: results in " << sbody << "\n";
             }
+            Assert(!sbody.isNull());
           }
           // our result is the result of the body
           visited[cur] = sbody;

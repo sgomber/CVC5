@@ -122,16 +122,15 @@ Node Evaluator::eval(TNode n,
                      << " " << vals << std::endl;
   std::unordered_map<TNode, Node, NodeHashFunction> evalAsNode;
   Node ret = evalInternal(n, args, vals, evalAsNode).toNode();
-  if (!ret.isNull())
+  if (ret.isNull())
   {
     // maybe it was stored in the evaluation-as-node map
     std::unordered_map<TNode, Node, NodeHashFunction>::iterator itn =
         evalAsNode.find(n);
-    if (itn != evalAsNode.end())
-    {
-      return itn->second;
-    }
+    Assert (itn != evalAsNode.end());
+    ret = itn->second;
   }
+  AlwaysAssert( !ret.isNull());
   return ret;
 }
 
@@ -390,6 +389,7 @@ EvalResult Evaluator::evalInternal(
           break;
         }
         case kind::MULT:
+        case kind::NONLINEAR_MULT:
         {
           Rational res = results[currNode[0]].d_rat;
           for (size_t i = 1, end = currNode.getNumChildren(); i < end; i++)
