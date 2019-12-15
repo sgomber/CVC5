@@ -243,6 +243,7 @@ Node Rewriter::rewriteTo(theory::TheoryId theoryId, Node node) {
       // Incorporate the children if necessary
       Assert(rewriteStackTop.node.getNumChildren() > 0);
       
+      // could avoid this if we keep no changes
       Node rewritten = rewriteStackTop.builder;
       rewriteStackTop.node = rewritten;
       rewriteStackTop.theoryId = theoryOf(rewriteStackTop.node);

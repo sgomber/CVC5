@@ -160,18 +160,51 @@ EvalResult Evaluator::evalInternal(
 
     bool doProcess = true;
     bool doEval = true;
-    for (const auto& currNodeChild : currNode)
+    bool processedChildren = false;
+    if (currNode.getKind()==kind::ITE)
     {
-      itr = results.find(currNodeChild);
+      itr = results.find(currNode[0]);
       if (itr == results.end())
       {
-        queue.emplace_back(currNodeChild);
+        // haven't computed condition yet
+        queue.emplace_back(currNode[0]);
         doProcess = false;
+        processedChildren = true;
       }
-      else if (itr->second.d_tag == EvalResult::INVALID)
+      else if (itr->second.d_tag != EvalResult::INVALID)
       {
-        // we cannot evaluate since there was an invalid child
-        doEval = false;
+        // computed condition, only consider the taken branch
+        TNode branch = currNode[ results[currNode[0]].d_bool ? 1 : 2];
+        itr = results.find(branch);
+        if (itr==results.end())
+        {
+          // branch not yet computed
+          queue.emplace_back(branch);
+          doProcess = false;
+          processedChildren = true;
+        }
+        else if (itr->second.d_tag != EvalResult::INVALID)
+        {
+          // branch was computed, we are ready to evaluate
+          processedChildren = true;
+        }
+      }
+    }
+    if (!processedChildren)
+    {
+      for (const auto& currNodeChild : currNode)
+      {
+        itr = results.find(currNodeChild);
+        if (itr == results.end())
+        {
+          queue.emplace_back(currNodeChild);
+          doProcess = false;
+        }
+        else if (itr->second.d_tag == EvalResult::INVALID)
+        {
+          // we cannot evaluate since there was an invalid child
+          doEval = false;
+        }
       }
     }
     Trace("evaluator") << "Evaluator: visit " << currNode
