@@ -122,6 +122,7 @@ Node Evaluator::eval(TNode n,
                      << " " << vals << std::endl;
   std::unordered_map<TNode, Node, NodeHashFunction> evalAsNode;
   Node ret = evalInternal(n, args, vals, evalAsNode).toNode();
+  // if we failed to evaluate
   if (ret.isNull())
   {
     // maybe it was stored in the evaluation-as-node map
