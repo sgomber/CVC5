@@ -39,6 +39,8 @@ policy C
   }
 }
 
+// objective
+
 maximize 
   chance(P1) + chance(P2)
   in (
