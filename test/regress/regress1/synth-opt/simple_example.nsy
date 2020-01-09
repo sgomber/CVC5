@@ -8,10 +8,14 @@ node C;
 edge A -> C;
 edge B -> C;
 
+// reliability
+
+reliability = 0.7;
+
 // workload
 
 packet P1 : A -> C;
-packet P1 : B -> C;
+packet P2 : B -> C;
 
 // policies
 
@@ -29,10 +33,14 @@ policy C
 {
   choose {
     GAL : actionList := try{ GA } else { GAL } | sleep,
-    GA : action := push GN GP | pull GN GP,
+    GA : action := push( GN, GP ) | pull( GN, GP ),
     GN : node := A | B,
     GP : packet := P1 | P2
   }
 }
 
-timesteps 2;
+maximize 
+  chance(P1) + chance(P2)
+  in (
+    timesteps = 2
+  );

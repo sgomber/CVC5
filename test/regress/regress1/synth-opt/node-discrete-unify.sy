@@ -20,11 +20,6 @@
 ; reliability
 (define-fun rel () Real 0.7)
 
-; new chance of success
-(define-fun updateReal ((addP Real) (currP Real)) Real
-  (+ currP (* (- 1.0 currP) addP))
-)
-
 ; Actions and how they are interpreted
 
 (declare-datatype Action (
