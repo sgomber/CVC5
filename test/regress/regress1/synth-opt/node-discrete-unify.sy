@@ -31,9 +31,9 @@
   (sleep) 
   (pushPck (push_dst Node) (push_pck Packet))
   (pullPck (pull_src Node) (pull_pck Packet))
+  (try (try_cond Action) (try_else Action))
 ))
 
-(declare-datatype ActionList ((consAL (headA Action) (tailA ActionList)) (nilAL)))
 
 ;; returns true if action is valid for actor in state s
 (define-fun preconditionAction ((actor Node) (a Action) (s State)) Bool
@@ -49,15 +49,16 @@
 )
 
 ; which action fires in state s?
-(define-fun-rec actionListToAction ((actor Node) (al ActionList) (s State)) Action
-  (ite ((_ is consAL) al)
-    (let ((a (headA al)))
+(define-fun-rec getAtomicAction ((actor Node) (al Action) (s State)) Action
+  (ite ((_ is try) al)
+    (let ((a (try_cond al)))
     (ite (preconditionAction actor a s)
       a
-      (actionListToAction actor (tailA al) s)
+      (getAtomicAction actor (try_else al) s)
     )
     )
-    sleep
+    ; otherwise it is already an atomic action
+    al
   )
 )
 
@@ -138,50 +139,50 @@
   )
 )
 
-(define-fun-rec transNodeListRec ((actor Node) (al ActionList) (ps PState) (pssl StateList) (psp PState)) PState
+(define-fun-rec transNodeListRec ((actor Node) (al Action) (ps PState) (pssl StateList) (psp PState)) PState
   ; if more states to consider in s
   (ite ((_ is consSL) pssl) 
     (let ((s (headSL pssl)))
     (let ((r (select (prob ps) s)))
-      (transNode actor (actionListToAction actor al s) r s 
+      (transNode actor (getAtomicAction actor al s) r s 
         (transNodeListRec actor al ps (tailSL pssl) psp))
     ))
     psp)
 )
 
-(define-fun-rec transNodeList ((actor Node) (al ActionList) (ps PState) (psp PState)) PState
+(define-fun-rec transNodeList ((actor Node) (al Action) (ps PState) (psp PState)) PState
   (transNodeListRec actor al ps (states ps) psp)
 )
 
-(define-fun trans ((aa ActionList) (ab ActionList) (ac ActionList) (ps PState)) PState
+(define-fun trans ((aa Action) (ab Action) (ac Action) (ps PState)) PState
   ;(transNodeList A aa ps
   ;(transNodeList B ab ps
   (transNodeList C ac ps
     nilPState);))
 )
 
-(synth-fun actionA () ActionList
-  ((GAL ActionList) (GA Action) (GN Node) (GP Packet))
+(synth-fun actionA () Action
+  ((GAL Action) (GA Action) (GN Node) (GP Packet))
   (
-  (GAL ActionList (nilAL))
+  (GAL Action (sleep))
   (GA Action ((pushPck GN GP) (pullPck GN GP)))
   (GN Node (B C))
   (GP Packet (P1 P2))
   )
 )
-(synth-fun actionB () ActionList
-  ((GAL ActionList) (GA Action) (GN Node) (GP Packet))
+(synth-fun actionB () Action
+  ((GAL Action) (GA Action) (GN Node) (GP Packet))
   (
-  (GAL ActionList (nilAL))
+  (GAL Action (sleep))
   (GA Action ((pushPck GN GP) (pullPck GN GP)))
   (GN Node (A C))
   (GP Packet (P1 P2))
   )
 )
-(synth-fun actionC () ActionList
-  ((GAL ActionList) (GA Action) (GN Node) (GP Packet))
+(synth-fun actionC () Action
+  ((GAL Action) (GA Action) (GN Node) (GP Packet))
   (
-  (GAL ActionList ((consAL GA GAL) nilAL))
+  (GAL Action ((try GA GAL) sleep))
   (GA Action ((pushPck GN GP) (pullPck GN GP)))
   (GN Node (A B))
   (GP Packet (P1 P2))

@@ -1,0 +1,38 @@
+
+// topology
+
+node A;
+node B;
+node C;
+
+edge A -> C;
+edge B -> C;
+
+// workload
+
+packet P1 : A -> C;
+packet P1 : B -> C;
+
+// policies
+
+policy A
+{
+  sleep
+}
+
+policy B
+{
+  sleep
+}
+
+policy C
+{
+  choose {
+    GAL : actionList := try{ GA } else { GAL } | sleep,
+    GA : action := push GN GP | pull GN GP,
+    GN : node := A | B,
+    GP : packet := P1 | P2
+  }
+}
+
+timesteps 2;
