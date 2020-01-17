@@ -277,10 +277,15 @@ Node SygusAbduct::mkAbductionConjecture(const std::string& name,
 
   Trace("sygus-abduct-debug") << "Make conjecture..." << std::endl;
   Node res = input.negate();
+  if (!ref.isNull())
+  {
+    res = nm->mkNode(AND,
+                      nm->mkNode(OR, abdApp, ref.negate()));
+  }
   if (!vars.empty())
   {
     Node bvl = nm->mkNode(BOUND_VAR_LIST, vars);
-    // exists x. ~( A( x ) => ~input( x ) )
+    // exists x. ~( ref(x) => A(x) ^ A( x ) => ~input( x ) )
     res = nm->mkNode(EXISTS, bvl, res);
   }
   // sygus attribute
