@@ -78,7 +78,8 @@ class SygusAbduct
    * t * { varlist -> SygusVarToTermAttribute(varlist) }.
    */
   static Node mkAbductionConjecture(const std::string& name,
-                                    const std::vector<Node>& asserts,
+                                    Node conj,
+                                    Node ref,
                                     const std::vector<Node>& axioms,
                                     TypeNode abdGType);
 };

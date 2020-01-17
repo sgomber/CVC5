@@ -5234,19 +5234,20 @@ bool SmtEngine::getAbduct(const Expr& conj, const Type& grammarType, Expr& abd, 
   {
     axioms.push_back(Node::fromExpr(easserts[i]));
   }
-  std::vector<Node> asserts(axioms.begin(), axioms.end());
-  // negate the conjecture
-  Node conjn = Node::fromExpr(conj);
   // must expand definitions
   std::unordered_map<Node, Node, NodeHashFunction> cache;
+  Node conjn = Node::fromExpr(conj);
   conjn = d_private->expandDefinitions(conjn, cache);
-  // now negate
-  conjn = conjn.negate();
-  d_abdConj = conjn.toExpr();
-  asserts.push_back(conjn);
+  Node refn;
+  if (!ref.isNull())
+  {
+    refn = Node::fromExpr(ref);
+    refn = d_private->expandDefinitions(refn, cache);
+  }
+  d_abdConj = conjn.negate().toExpr();
   std::string name("A");
   Node aconj = theory::quantifiers::SygusAbduct::mkAbductionConjecture(
-      name, asserts, axioms, TypeNode::fromType(grammarType));
+      name, conjn, refn, axioms, TypeNode::fromType(grammarType));
   // should be a quantified conjecture with one function-to-synthesize
   Assert(aconj.getKind() == kind::FORALL && aconj[0].getNumChildren() == 1);
   // remember the abduct-to-synthesize

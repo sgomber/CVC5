@@ -37,12 +37,16 @@ namespace quantifiers {
 SygusAbduct::SygusAbduct() {}
 
 Node SygusAbduct::mkAbductionConjecture(const std::string& name,
-                                        const std::vector<Node>& asserts,
+                                    Node conj,
+                                    Node ref,
                                         const std::vector<Node>& axioms,
                                         TypeNode abdGType)
 {
   NodeManager* nm = NodeManager::currentNM();
   std::unordered_set<Node, NodeHashFunction> symset;
+  std::vector< Node > asserts;
+  asserts.insert(asserts.end(),axioms.begin(),axioms.end());
+  asserts.push_back(conj.negate());
   for (size_t i = 0, size = asserts.size(); i < size; i++)
   {
     expr::getSymbols(asserts[i], symset);
