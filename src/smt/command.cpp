@@ -2147,15 +2147,16 @@ std::string GetSynthSolutionCommand::getCommandName() const
 }
 
 GetAbductCommand::GetAbductCommand() {}
-GetAbductCommand::GetAbductCommand(const std::string& name, Expr conj)
-    : d_name(name), d_conj(conj), d_resultStatus(false)
+GetAbductCommand::GetAbductCommand(const std::string& name, Expr conj, Expr ref)
+    : d_name(name), d_conj(conj), d_ref(ref), d_resultStatus(false)
 {
 }
 GetAbductCommand::GetAbductCommand(const std::string& name,
-                                   Expr conj,
+                                   Expr conj, Expr ref,
                                    const Type& gtype)
     : d_name(name),
       d_conj(conj),
+      d_ref(ref),
       d_sygus_grammar_type(gtype),
       d_resultStatus(false)
 {
@@ -2211,7 +2212,7 @@ Command* GetAbductCommand::exportTo(ExprManager* exprManager,
                                     ExprManagerMapCollection& variableMap)
 {
   GetAbductCommand* c =
-      new GetAbductCommand(d_name, d_conj.exportTo(exprManager, variableMap));
+      new GetAbductCommand(d_name, d_conj.exportTo(exprManager, variableMap), d_ref.exportTo(exprManager, variableMap));
   c->d_sygus_grammar_type =
       d_sygus_grammar_type.exportTo(exprManager, variableMap);
   c->d_result = d_result.exportTo(exprManager, variableMap);
@@ -2221,7 +2222,7 @@ Command* GetAbductCommand::exportTo(ExprManager* exprManager,
 
 Command* GetAbductCommand::clone() const
 {
-  GetAbductCommand* c = new GetAbductCommand(d_name, d_conj);
+  GetAbductCommand* c = new GetAbductCommand(d_name, d_conj, d_ref);
   c->d_sygus_grammar_type = d_sygus_grammar_type;
   c->d_result = d_result;
   c->d_resultStatus = d_resultStatus;

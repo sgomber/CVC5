@@ -1056,8 +1056,8 @@ class CVC4_PUBLIC GetAbductCommand : public Command
 {
  public:
   GetAbductCommand();
-  GetAbductCommand(const std::string& name, Expr conj);
-  GetAbductCommand(const std::string& name, Expr conj, const Type& gtype);
+  GetAbductCommand(const std::string& name, Expr conj, Expr ref);
+  GetAbductCommand(const std::string& name, Expr conj, Expr ref, const Type& gtype);
 
   /** Get the conjecture of the abduction query */
   Expr getConjecture() const;
@@ -1077,6 +1077,8 @@ class CVC4_PUBLIC GetAbductCommand : public Command
  protected:
   /** The name of the abduction predicate */
   std::string d_name;
+  /** The reference of the abduction query */
+  Expr d_ref;
   /** The conjecture of the abduction query */
   Expr d_conj;
   /**
