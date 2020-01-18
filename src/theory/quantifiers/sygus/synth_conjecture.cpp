@@ -145,6 +145,19 @@ void SynthConjecture::assign(Node q)
                    << d_embedSideCondition << std::endl;
   }
   d_ref = qa.d_sygusRef;
+  if (!d_ref.isNull())
+  {
+    Trace("ajr-temp") << "Reference is " << d_ref << std::endl;
+    std::vector< Node > rvars;
+    for (const Node& v : d_ref[0])
+    {
+      rvars.push_back(v);
+      Node k = nm->mkSkolem("rk", v.getType());
+      d_refSkolem.push_back(k);
+    }
+    d_refInst = d_ref[1].substitute(rvars.begin(),rvars.end(),d_refSkolem.begin(),d_refSkolem.end());
+    Trace("ajr-temp") << "Reference instantiation is " << d_refInst << std::endl;
+  }
 
   // we now finalize the single invocation module, based on the syntax
   // restrictions
@@ -1156,28 +1169,41 @@ void SynthConjecture::printSynthSolution(std::ostream& out)
               ->toStreamSygus(out, sol);
         }
         out << ")" << std::endl;
-        if (!d_ref.isNull())
+        if (!d_refInst.isNull())
         {
           Node solb = d_tds->sygusToBuiltin(sol);
+          // substitute to skolems
+          SygusTypeInfo& ti = d_tds->getTypeInfo(sol.getType());
+          const std::vector<Node>& varlist = ti.getVarList();
+          Trace("ajr-temp") << "Current solution : " << solb << std::endl;
+          Trace("ajr-temp") << "Ref skolems : " << d_refSkolem << std::endl;
+          Trace("ajr-temp") << "Var list : " << varlist << std::endl;
+          AlwaysAssert(d_refSkolem.size()==varlist.size());
+          solb = solb.substitute(varlist.begin(),varlist.end(),d_refSkolem.begin(),d_refSkolem.end());
+          
           d_accSolution.push_back(solb);
 
           Node accSol = d_accSolution.size()==1 ? d_accSolution[0] : nm->mkNode(OR,d_accSolution);
           Trace("ajr-temp") << "Accumulated solution is now : " << accSol << std::endl;
-          Trace("ajr-temp") << "Reference formula is " << d_ref << std::endl;
+          Trace("ajr-temp") << "Reference formula is " << d_refInst << std::endl;
           // check for termination
-          Trace("ajr-temp") << "Check sat..." << std::endl;
+          Trace("ajr-temp") << "--- Check sat..." << std::endl;
           SmtEngine smt(NodeManager::currentNM()->toExprManager());
           smt.setIsInternalSubsolver();
           smt.setLogic(smt::currentSmtEngine()->getLogicInfo());
+          Trace("ajr-temp") << "Assert : " << accSol.negate() << std::endl;
           smt.assertFormula(accSol.negate().toExpr());
-          smt.assertFormula(d_ref.toExpr());
+          Trace("ajr-temp") << "Assert : " << d_refInst << std::endl;
+          smt.assertFormula(d_refInst.toExpr());
           Result r = smt.checkSat();
-          Trace("ajr-temp") << "Result was : " << r << std::endl;
+          Trace("ajr-temp") << "--- Result was : " << r << std::endl;
           if (r.asSatisfiabilityResult().isSat() == Result::UNSAT)
           {
             Trace("ajr-temp") << "Terminate!" << std::endl;
+            // substitute back
+            Node accSolS = accSol.substitute(d_refSkolem.begin(),d_refSkolem.end(),varlist.begin(),varlist.end());
             out << "; Final solution" << std::endl;
-            out << funHeader.str() << " " << accSol << ")" << std::endl;
+            out << funHeader.str() << " " << accSolS << ")" << std::endl;
             std::stringstream ss;
             ss << "Disjunction of abducts is weaker or equivalent to reference formula.";
             throw LogicException(ss.str());

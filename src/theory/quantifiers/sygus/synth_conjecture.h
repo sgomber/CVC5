@@ -305,6 +305,8 @@ class SynthConjecture
    */
   Node d_embedSideCondition;
   Node d_ref;
+  Node d_refInst;
+  std::vector< Node > d_refSkolem;
   std::vector< Node > d_accSolution;
   /** (negated) conjecture after simplification */
   Node d_simp_quant;

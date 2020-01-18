@@ -312,15 +312,15 @@ Node SygusAbduct::mkAbductionConjecture(const std::string& name,
   Trace("sygus-abduct-debug") << "Reference is " << ref << std::endl;
   if (!ref.isNull())
   {
-    //ref = ref.substitute(syms.begin(), syms.end(), vars.begin(), vars.end());
+    ref = ref.substitute(syms.begin(), syms.end(), vars.begin(), vars.end());
     //sc = nm->mkNode(OR, ref.negate(), abdApp);
-    //vbvl = nm->mkNode(BOUND_VAR_LIST, vars);
-    //sc = nm->mkNode(FORALL, vbvl, sc);
+    vbvl = nm->mkNode(BOUND_VAR_LIST, vars);
+    ref = nm->mkNode(FORALL, vbvl, ref);
     sygusScVar = nm->mkSkolem("sygus_ref", nm->booleanType());
     sygusScVar.setAttribute(theory::SygusReferenceAttribute(), ref);
     instAttr = nm->mkNode(INST_ATTRIBUTE, sygusScVar);
     iplc.push_back(instAttr);
-    Trace("sygus-abduct-debug") << "Reference formula is " << sc << std::endl;
+    Trace("sygus-abduct-debug") << "Reference formula is " << ref << std::endl;
   }
   
   Node instAttrList = nm->mkNode(INST_PATTERN_LIST, iplc);
