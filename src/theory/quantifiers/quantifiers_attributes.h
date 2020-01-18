@@ -83,6 +83,12 @@ struct SygusSideConditionAttributeId
 };
 typedef expr::Attribute<SygusSideConditionAttributeId, Node>
     SygusSideConditionAttribute;
+    
+struct SygusReferenceAttributeId
+{
+};
+typedef expr::Attribute<SygusReferenceAttributeId, Node>
+    SygusReferenceAttribute;
 
 /** Attribute for indicating that a sygus variable encodes a term
  *
@@ -134,6 +140,7 @@ struct QAttributes
   bool d_sygus;
   /** side condition for sygus conjectures */
   Node d_sygusSideCondition;
+  Node d_sygusRef;
   /** if a rewrite rule, then this is the priority value for the rewrite rule */
   int d_rr_priority;
   /** stores the maximum instantiation level allowed for this quantified formula

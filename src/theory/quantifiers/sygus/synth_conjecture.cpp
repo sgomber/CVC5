@@ -144,6 +144,11 @@ void SynthConjecture::assign(Node q)
     Trace("cegqi") << "SynthConjecture : side condition : "
                    << d_embedSideCondition << std::endl;
   }
+  Node sr = qa.d_sygusRef;
+  if (!sr.isNull())
+  {
+    d_embedRef =  d_ceg_gc->convertToEmbedding(sr);
+  }
 
   // we now finalize the single invocation module, based on the syntax
   // restrictions
@@ -1088,12 +1093,12 @@ void SynthConjecture::printSynthSolution(std::ostream& out)
             if (options::sygusFilterSolMode()
                 == options::SygusFilterSolMode::STRONG)
             {
-              d_exprm[prog].enableFilterStrongSolutions();
+              d_exprm[prog].enableFilterStrongSolutions(d_embedRef);
             }
             else if (options::sygusFilterSolMode()
                      == options::SygusFilterSolMode::WEAK)
             {
-              d_exprm[prog].enableFilterWeakSolutions();
+              d_exprm[prog].enableFilterWeakSolutions(d_embedRef);
             }
           }
           its = d_exprm.find(prog);

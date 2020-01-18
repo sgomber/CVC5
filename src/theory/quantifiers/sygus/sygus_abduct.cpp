@@ -275,14 +275,6 @@ Node SygusAbduct::mkAbductionConjecture(const std::string& name,
   input = nm->mkNode(OR, abdApp.negate(), input.negate());
   Trace("sygus-abduct-debug") << "...finish" << std::endl;
   
-  Trace("sygus-abduct-debug") << "Reference is " << ref << std::endl;
-  if (!ref.isNull())
-  {
-    ref = ref.substitute(syms.begin(), syms.end(), vars.begin(), vars.end());
-    input = nm->mkNode(AND, input,
-                      nm->mkNode(OR, abdApp, ref.negate()));
-  }
-  
   Trace("sygus-abduct-debug") << "Make conjecture..." << std::endl;
   Node res = input.negate();
 
@@ -315,6 +307,22 @@ Node SygusAbduct::mkAbductionConjecture(const std::string& name,
   // as an additional annotation on the sygus conjecture. In other words,
   // the abducts A we procedure must be consistent with our axioms.
   iplc.push_back(instAttr);
+  
+
+  Trace("sygus-abduct-debug") << "Reference is " << ref << std::endl;
+  if (!ref.isNull())
+  {
+    ref = ref.substitute(syms.begin(), syms.end(), vars.begin(), vars.end());
+    sc = nm->mkNode(OR, ref.negate(), abdApp);
+    vbvl = nm->mkNode(BOUND_VAR_LIST, vars);
+    sc = nm->mkNode(FORALL, vbvl, sc);
+    sygusScVar = nm->mkSkolem("sygus_ref", nm->booleanType());
+    sygusScVar.setAttribute(theory::SygusReferenceAttribute(), sc);
+    instAttr = nm->mkNode(INST_ATTRIBUTE, sygusScVar);
+    iplc.push_back(instAttr);
+    Trace("sygus-abduct-debug") << "Reference formula is " << sc << std::endl;
+  }
+  
   Node instAttrList = nm->mkNode(INST_PATTERN_LIST, iplc);
 
   Node fbvl = nm->mkNode(BOUND_VAR_LIST, abd);
