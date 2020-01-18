@@ -274,14 +274,18 @@ Node SygusAbduct::mkAbductionConjecture(const std::string& name,
   // A(x) => ~input( x )
   input = nm->mkNode(OR, abdApp.negate(), input.negate());
   Trace("sygus-abduct-debug") << "...finish" << std::endl;
-
-  Trace("sygus-abduct-debug") << "Make conjecture..." << std::endl;
-  Node res = input.negate();
+  
+  Trace("sygus-abduct-debug") << "Reference is " << ref << std::endl;
   if (!ref.isNull())
   {
-    res = nm->mkNode(AND,
+    ref = ref.substitute(syms.begin(), syms.end(), vars.begin(), vars.end());
+    input = nm->mkNode(AND, input,
                       nm->mkNode(OR, abdApp, ref.negate()));
   }
+  
+  Trace("sygus-abduct-debug") << "Make conjecture..." << std::endl;
+  Node res = input.negate();
+
   if (!vars.empty())
   {
     Node bvl = nm->mkNode(BOUND_VAR_LIST, vars);
@@ -319,6 +323,7 @@ Node SygusAbduct::mkAbductionConjecture(const std::string& name,
   res = nm->mkNode(FORALL, fbvl, res, instAttrList);
   Trace("sygus-abduct-debug") << "...finish" << std::endl;
 
+  Trace("sygus-abduct-debug") << "Generate (pre-rewrite): " << res << std::endl;
   res = theory::Rewriter::rewrite(res);
 
   Trace("sygus-abduct") << "Generate: " << res << std::endl;
