@@ -100,10 +100,6 @@ bool SolutionFilterStrength::addTerm(Node n, std::ostream& out)
   d_curr_sols.push_back(basen);
   return true;
 }
-void SolutionFilterStrength::setReferenceFormula(Node ref)
-{
-  Trace("ajr-temp") << "Reference formula is " << ref << std::endl;
-}
 
 }  // namespace quantifiers
 }  // namespace theory

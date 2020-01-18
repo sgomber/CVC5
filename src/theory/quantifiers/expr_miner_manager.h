@@ -74,9 +74,9 @@ class ExpressionMinerManager
   /** enable query generation (--sygus-query-gen) */
   void enableQueryGeneration(unsigned deqThresh);
   /** filter strong solutions (--sygus-filter-sol=strong) */
-  void enableFilterStrongSolutions(Node ref);
+  void enableFilterStrongSolutions();
   /** filter weak solutions (--sygus-filter-sol=weak) */
-  void enableFilterWeakSolutions(Node ref);
+  void enableFilterWeakSolutions();
   /** add term
    *
    * Expression miners may print information on the output stream out, for

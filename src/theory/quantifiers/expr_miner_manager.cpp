@@ -109,24 +109,22 @@ void ExpressionMinerManager::enableQueryGeneration(unsigned deqThresh)
   d_qg.setThreshold(deqThresh);
 }
 
-void ExpressionMinerManager::enableFilterWeakSolutions(Node ref)
+void ExpressionMinerManager::enableFilterWeakSolutions()
 {
   d_doFilterLogicalStrength = true;
   std::vector<Node> vars;
   d_sampler.getVariables(vars);
   d_sols.initialize(vars, &d_sampler);
   d_sols.setLogicallyStrong(true);
-  d_sols.setReferenceFormula(ref);
 }
 
-void ExpressionMinerManager::enableFilterStrongSolutions(Node ref)
+void ExpressionMinerManager::enableFilterStrongSolutions()
 {
   d_doFilterLogicalStrength = true;
   std::vector<Node> vars;
   d_sampler.getVariables(vars);
   d_sols.initialize(vars, &d_sampler);
   d_sols.setLogicallyStrong(false);
-  d_sols.setReferenceFormula(ref);
 }
 
 bool ExpressionMinerManager::addTerm(Node sol,

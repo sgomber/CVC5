@@ -58,10 +58,7 @@ class SolutionFilterStrength : public ExprMiner
   /** set logically strong */
   void setLogicallyStrong(bool isStrong);
 
-  void setReferenceFormula(Node ref);
  private:
-  /** */
-  Node d_ref;
   /**
    * Set of all (non-filtered) terms registered to this class. We store the
    * negation of these terms if d_isStrong is false.

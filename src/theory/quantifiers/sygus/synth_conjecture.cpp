@@ -144,11 +144,7 @@ void SynthConjecture::assign(Node q)
     Trace("cegqi") << "SynthConjecture : side condition : "
                    << d_embedSideCondition << std::endl;
   }
-  Node sr = qa.d_sygusRef;
-  if (!sr.isNull())
-  {
-    d_embedRef =  d_ceg_gc->convertToEmbedding(sr);
-  }
+  d_ref = qa.d_sygusRef;
 
   // we now finalize the single invocation module, based on the syntax
   // restrictions
@@ -1093,12 +1089,12 @@ void SynthConjecture::printSynthSolution(std::ostream& out)
             if (options::sygusFilterSolMode()
                 == options::SygusFilterSolMode::STRONG)
             {
-              d_exprm[prog].enableFilterStrongSolutions(d_embedRef);
+              d_exprm[prog].enableFilterStrongSolutions();
             }
             else if (options::sygusFilterSolMode()
                      == options::SygusFilterSolMode::WEAK)
             {
-              d_exprm[prog].enableFilterWeakSolutions(d_embedRef);
+              d_exprm[prog].enableFilterWeakSolutions();
             }
           }
           its = d_exprm.find(prog);
@@ -1116,7 +1112,8 @@ void SynthConjecture::printSynthSolution(std::ostream& out)
       }
       if (is_unique_term)
       {
-        out << "(define-fun " << f << " ";
+        std::stringstream funHeader;
+        funHeader << "(define-fun " << f << " ";
         // Only include variables that are truly bound variables of the
         // function-to-synthesize. This means we exclude variables that encode
         // external terms. This ensures that --sygus-stream prints
@@ -1140,14 +1137,15 @@ void SynthConjecture::printSynthSolution(std::ostream& out)
         }
         if (pvs.empty())
         {
-          out << "() ";
+          funHeader << "() ";
         }
         else
         {
           vl = nm->mkNode(BOUND_VAR_LIST, pvs);
-          out << vl << " ";
+          funHeader << vl << " ";
         }
-        out << dt.getSygusType() << " ";
+        funHeader << dt.getSygusType() << " ";
+        out << funHeader.str();
         if (status == 0)
         {
           out << sol;
@@ -1158,19 +1156,32 @@ void SynthConjecture::printSynthSolution(std::ostream& out)
               ->toStreamSygus(out, sol);
         }
         out << ")" << std::endl;
-        if (!d_embedRef.isNull())
+        if (!d_ref.isNull())
         {
           Node solb = d_tds->sygusToBuiltin(sol);
-          if (d_accSolution.isNull())
+          d_accSolution.push_back(solb);
+
+          Node accSol = d_accSolution.size()==1 ? d_accSolution[0] : nm->mkNode(OR,d_accSolution);
+          Trace("ajr-temp") << "Accumulated solution is now : " << accSol << std::endl;
+          Trace("ajr-temp") << "Reference formula is " << d_ref << std::endl;
+          // check for termination
+          Trace("ajr-temp") << "Check sat..." << std::endl;
+          SmtEngine smt(NodeManager::currentNM()->toExprManager());
+          smt.setIsInternalSubsolver();
+          smt.setLogic(smt::currentSmtEngine()->getLogicInfo());
+          smt.assertFormula(accSol.negate().toExpr());
+          smt.assertFormula(d_ref.toExpr());
+          Result r = smt.checkSat();
+          Trace("ajr-temp") << "Result was : " << r << std::endl;
+          if (r.asSatisfiabilityResult().isSat() == Result::UNSAT)
           {
-            d_accSolution = solb;
+            Trace("ajr-temp") << "Terminate!" << std::endl;
+            out << "; Final solution" << std::endl;
+            out << funHeader.str() << " " << accSol << ")" << std::endl;
+            std::stringstream ss;
+            ss << "Disjunction of abducts is weaker or equivalent to reference formula.";
+            throw LogicException(ss.str());
           }
-          else
-          {
-            d_accSolution = nm->mkNode(OR,d_accSolution,solb);
-          }
-          Trace("ajr-temp") << "Accumulated solution is now : " << d_accSolution << std::endl;
-          Trace("ajr-temp") << "Reference formula is " << d_embedRef << std::endl;
         }
       }
     }
