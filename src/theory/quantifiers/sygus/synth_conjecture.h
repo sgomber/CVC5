@@ -305,6 +305,7 @@ class SynthConjecture
    */
   Node d_embedSideCondition;
   Node d_embedRef;
+  Node d_accSolution;
   /** (negated) conjecture after simplification */
   Node d_simp_quant;
   /** (negated) conjecture after simplification, conversion to deep embedding */

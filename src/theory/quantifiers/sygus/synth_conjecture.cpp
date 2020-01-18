@@ -1158,6 +1158,20 @@ void SynthConjecture::printSynthSolution(std::ostream& out)
               ->toStreamSygus(out, sol);
         }
         out << ")" << std::endl;
+        if (!d_embedRef.isNull())
+        {
+          Node solb = d_tds->sygusToBuiltin(sol);
+          if (d_accSolution.isNull())
+          {
+            d_accSolution = solb;
+          }
+          else
+          {
+            d_accSolution = nm->mkNode(OR,d_accSolution,solb);
+          }
+          Trace("ajr-temp") << "Accumulated solution is now : " << d_accSolution << std::endl;
+          Trace("ajr-temp") << "Reference formula is " << d_embedRef << std::endl;
+        }
       }
     }
   }
