@@ -5214,10 +5214,10 @@ Expr SmtEngine::doQuantifierElimination(const Expr& e, bool doFull, bool strict)
 bool SmtEngine::getAbduct(const Expr& conj, const Type& grammarType, Expr& abd)
 { 
   Expr ref;
-  return getAbduct(conj, grammarType, abd, ref);
+  return getAbduct(conj, ref, grammarType, abd);
 }
 
-bool SmtEngine::getAbduct(const Expr& conj, const Type& grammarType, Expr& abd, const Expr& ref)
+bool SmtEngine::getAbduct(const Expr& conj, const Expr& ref, const Type& grammarType, Expr& abd)
 {
   SmtScope smts(this);
 
@@ -5334,10 +5334,17 @@ bool SmtEngine::getAbductInternal(Expr& abd)
   return false;
 }
 
-bool SmtEngine::getAbduct(const Expr& conj, Expr& abd)
+bool SmtEngine::getAbduct(const Expr& conj, const Expr& ref, Expr& abd)
 {
   Type grammarType;
-  return getAbduct(conj, grammarType, abd);
+  return getAbduct(conj, ref, grammarType, abd);
+}
+  
+bool SmtEngine::getAbduct(const Expr& conj, Expr& abd)
+{
+  Expr ref;
+  Type grammarType;
+  return getAbduct(conj, ref, grammarType, abd);
 }
 
 void SmtEngine::getInstantiatedQuantifiedFormulas( std::vector< Expr >& qs ) {

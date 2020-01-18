@@ -2172,12 +2172,12 @@ void GetAbductCommand::invoke(SmtEngine* smtEngine)
   {
     if (d_sygus_grammar_type.isNull())
     {
-      d_resultStatus = smtEngine->getAbduct(d_conj, d_result);
+      d_resultStatus = smtEngine->getAbduct(d_conj, d_ref, d_result);
     }
     else
     {
       d_resultStatus =
-          smtEngine->getAbduct(d_conj, d_sygus_grammar_type, d_result);
+          smtEngine->getAbduct(d_conj, d_ref, d_sygus_grammar_type, d_result);
     }
     d_commandStatus = CommandSuccess::instance();
   }

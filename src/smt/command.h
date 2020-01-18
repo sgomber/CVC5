@@ -1077,10 +1077,10 @@ class CVC4_PUBLIC GetAbductCommand : public Command
  protected:
   /** The name of the abduction predicate */
   std::string d_name;
-  /** The reference of the abduction query */
-  Expr d_ref;
   /** The conjecture of the abduction query */
   Expr d_conj;
+  /** The reference of the abduction query */
+  Expr d_ref;
   /**
    * The (optional) grammar of the abduction query, expressed as a sygus
    * datatype type.
