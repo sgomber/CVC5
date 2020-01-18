@@ -1176,8 +1176,6 @@ void SynthConjecture::printSynthSolution(std::ostream& out)
           SygusTypeInfo& ti = d_tds->getTypeInfo(sol.getType());
           const std::vector<Node>& varlist = ti.getVarList();
           Trace("ajr-temp") << "Current solution : " << solb << std::endl;
-          Trace("ajr-temp") << "Ref skolems : " << d_refSkolem << std::endl;
-          Trace("ajr-temp") << "Var list : " << varlist << std::endl;
           AlwaysAssert(d_refSkolem.size()==varlist.size());
           solb = solb.substitute(varlist.begin(),varlist.end(),d_refSkolem.begin(),d_refSkolem.end());
           
