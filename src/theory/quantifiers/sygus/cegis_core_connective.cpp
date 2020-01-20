@@ -363,6 +363,7 @@ bool CegisCoreConnective::constructSolution(
 
     // ----- check for entailment, adding based on models of failed points
     std::vector<Node> asserts;
+    asserts.push_back(etsr);
     Node sol = constructSolutionFromPool(ccheck, asserts, passerts);
     if (!sol.isNull())
     {
