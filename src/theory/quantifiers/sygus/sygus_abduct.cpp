@@ -281,7 +281,7 @@ Node SygusAbduct::mkAbductionConjecture(const std::string& name,
   if (!vars.empty())
   {
     Node bvl = nm->mkNode(BOUND_VAR_LIST, vars);
-    // exists x. ~( ref(x) => A(x) ^ A( x ) => ~input( x ) )
+    // exists x. ~( A( x ) => ~input( x ) )
     res = nm->mkNode(EXISTS, bvl, res);
   }
   // sygus attribute
@@ -320,6 +320,7 @@ Node SygusAbduct::mkAbductionConjecture(const std::string& name,
     sygusScVar.setAttribute(theory::SygusReferenceAttribute(), ref);
     instAttr = nm->mkNode(INST_ATTRIBUTE, sygusScVar);
     iplc.push_back(instAttr);
+    // ref marked via an attribute, wrapped in a universal quantifier (this is a hack)
     Trace("sygus-abduct-debug") << "Reference formula is " << ref << std::endl;
   }
   
