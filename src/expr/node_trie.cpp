@@ -48,7 +48,8 @@ template Node NodeTemplateTrie<true>::existsTerm(
 
 template <bool ref_count>
 NodeTemplate<ref_count> NodeTemplateTrie<ref_count>::addOrGetTerm(
-    NodeTemplate<ref_count> n, const std::vector<NodeTemplate<ref_count>>& reps)
+    NodeTemplate<ref_count> n, const std::vector<NodeTemplate<ref_count>>& reps,
+      NodeTrieCompare * c)
 {
   NodeTemplateTrie<ref_count>* tnt = this;
   for (const NodeTemplate<ref_count> r : reps)
@@ -61,6 +62,16 @@ NodeTemplate<ref_count> NodeTemplateTrie<ref_count>::addOrGetTerm(
     // reference to a child.
     tnt->d_data[n].clear();
     return n;
+  }
+  else if (c!=nullptr)
+  {
+    NodeTemplate<ref_count> ret = getData();
+    if (c->compare(n,ret))
+    {
+      tnt->d_data.clear();
+      tnt->d_data[n].clear();
+    }
+    return ret;
   }
   return tnt->d_data.begin()->first;
 }

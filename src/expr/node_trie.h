@@ -23,6 +23,12 @@
 namespace CVC4 {
 namespace theory {
 
+class TNodeTrieCompare
+{
+public:
+  virtual bool compare(TNode a, TNode b) = 0;
+};
+  
 /** NodeTemplate trie class
  *
  * This is a trie data structure whose distinguishing feature is that it has
@@ -78,7 +84,8 @@ class NodeTemplateTrie
    */
   NodeTemplate<ref_count> addOrGetTerm(
       NodeTemplate<ref_count> n,
-      const std::vector<NodeTemplate<ref_count>>& reps);
+      const std::vector<NodeTemplate<ref_count>>& reps,
+      NodeTrieCompare * c = nullptr);
   /**
    * Returns false if a term is previously indexed by reps.
    * Returns true if no term is previously indexed by reps,

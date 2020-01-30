@@ -357,6 +357,7 @@ void TermDb::computeUfTerms( TNode f ) {
       Trace("term-db-debug2") << "...add term returned " << at << std::endl;
       if (at != n && ee->areEqual(at, n))
       {
+        AlwaysAssert( at < n );
         setTermInactive(n);
         Trace("term-db-debug") << n << " is redundant." << std::endl;
         congruentCount++;
