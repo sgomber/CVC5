@@ -48,8 +48,9 @@ template Node NodeTemplateTrie<true>::existsTerm(
 
 template <bool ref_count>
 NodeTemplate<ref_count> NodeTemplateTrie<ref_count>::addOrGetTerm(
-    NodeTemplate<ref_count> n, const std::vector<NodeTemplate<ref_count>>& reps,
-    TNodeCompare * c)
+    NodeTemplate<ref_count> n,
+    const std::vector<NodeTemplate<ref_count>>& reps,
+    TNodeCompare* c)
 {
   NodeTemplateTrie<ref_count>* tnt = this;
   for (const NodeTemplate<ref_count> r : reps)
@@ -63,11 +64,11 @@ NodeTemplate<ref_count> NodeTemplateTrie<ref_count>::addOrGetTerm(
     tnt->d_data[n].clear();
     return n;
   }
-  else if (c!=nullptr)
+  else if (c != nullptr)
   {
     NodeTemplate<ref_count> ret = getData();
-    TNode retn = c->compare(n,ret);
-    if (retn==n)
+    TNode retn = c->compare(n, ret);
+    if (retn == n)
     {
       tnt->d_data.clear();
       tnt->d_data[n].clear();
@@ -78,11 +79,9 @@ NodeTemplate<ref_count> NodeTemplateTrie<ref_count>::addOrGetTerm(
 }
 
 template TNode NodeTemplateTrie<false>::addOrGetTerm(
-    TNode n, const std::vector<TNode>& reps,
-      TNodeCompare * c);
+    TNode n, const std::vector<TNode>& reps, TNodeCompare* c);
 template Node NodeTemplateTrie<true>::addOrGetTerm(
-    Node n, const std::vector<Node>& reps,
-      TNodeCompare * c);
+    Node n, const std::vector<Node>& reps, TNodeCompare* c);
 
 template <bool ref_count>
 void NodeTemplateTrie<ref_count>::debugPrint(const char* c,

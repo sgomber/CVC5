@@ -25,20 +25,17 @@ namespace theory {
 
 class TNodeCompare
 {
-public:
-  TNodeCompare(){}
-  virtual ~TNodeCompare(){}
-  virtual TNode compare(TNode a, TNode b) 
+ public:
+  TNodeCompare() {}
+  virtual ~TNodeCompare() {}
+  virtual TNode compare(TNode a, TNode b) { return a < b ? a : b; }
+  TNode compareRev(TNode a, TNode b)
   {
-    return a<b ? a : b;
-  }
-  TNode compareRev(TNode a, TNode b) 
-  {
-    TNode c = compare(a,b);
-    return c==a ? b : a;
+    TNode c = compare(a, b);
+    return c == a ? b : a;
   }
 };
-  
+
 /** NodeTemplate trie class
  *
  * This is a trie data structure whose distinguishing feature is that it has
@@ -95,7 +92,7 @@ class NodeTemplateTrie
   NodeTemplate<ref_count> addOrGetTerm(
       NodeTemplate<ref_count> n,
       const std::vector<NodeTemplate<ref_count>>& reps,
-      TNodeCompare * c = nullptr);
+      TNodeCompare* c = nullptr);
   /**
    * Returns false if a term is previously indexed by reps.
    * Returns true if no term is previously indexed by reps,
