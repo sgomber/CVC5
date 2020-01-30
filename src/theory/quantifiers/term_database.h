@@ -303,6 +303,8 @@ class TermDb : public QuantifiersUtil {
  private:
   /** reference to the quantifiers engine */
   QuantifiersEngine* d_quantEngine;
+  /** A TNode compare object */
+  TNodeCompare d_ncomp;
   /** terms processed */
   std::unordered_set< Node, NodeHashFunction > d_processed;
   /** terms processed */

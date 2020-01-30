@@ -352,14 +352,14 @@ void TermDb::computeUfTerms( TNode f ) {
       Assert(ee->hasTerm(n));
       Trace("term-db-debug") << "  and value : " << ee->getRepresentative(n)
                              << std::endl;
-      Node at = d_func_map_trie[f].addOrGetTerm(n, d_arg_reps[n]);
+      Node at = d_func_map_trie[f].addOrGetTerm(n, d_arg_reps[n], &d_ncomp);
       Assert(ee->hasTerm(at));
       Trace("term-db-debug2") << "...add term returned " << at << std::endl;
       if (at != n && ee->areEqual(at, n))
       {
-        AlwaysAssert( at < n );
-        setTermInactive(n);
-        Trace("term-db-debug") << n << " is redundant." << std::endl;
+        TNode rn = d_ncomp.compareRev(at,n);
+        setTermInactive(rn);
+        Trace("term-db-debug") << rn << " is redundant." << std::endl;
         congruentCount++;
         continue;
       }
