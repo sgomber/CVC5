@@ -403,7 +403,8 @@ SygusEnumerator::TermEnumSlave::TermEnumSlave()
 bool SygusEnumerator::TermEnumSlave::initialize(SygusEnumerator* se,
                                                 TypeNode tn,
                                                 unsigned sizeMin,
-                                                unsigned sizeMax)
+                                                unsigned sizeMax,
+                    unsigned startIndex)
 {
   d_se = se;
   d_tn = tn;
@@ -462,7 +463,12 @@ Node SygusEnumerator::TermEnumSlave::getCurrent()
                              << "): indices : " << d_hasIndexNextEnd << " "
                              << d_indexNextEnd << " " << d_index << std::endl;
   // lookup in the cache
-  return tc.getTerm(d_index);
+  return curr;
+}
+
+unsigned SygusEnumerator::TermEnumSlave::getCurrentIndex() const
+{
+  return d_index;
 }
 
 bool SygusEnumerator::TermEnumSlave::increment()
@@ -594,6 +600,7 @@ SygusEnumerator::TermEnumMaster::TermEnumMaster()
       d_currTermSet(false),
       d_consClassNum(0),
       d_ccWeight(0),
+      d_ccIsCom(false),
       d_consNum(0),
       d_currChildSize(0),
       d_childrenValid(0)
@@ -708,6 +715,7 @@ bool SygusEnumerator::TermEnumMaster::incrementInternal()
       Assert(d_ccTypes.empty());
       tc.getTypesForConstructorClass(d_consClassNum, d_ccTypes);
       d_ccWeight = tc.getWeightForConstructorClass(d_consClassNum);
+      d_ccIsCom = false;
       d_childrenValid = 0;
       // initialize the children into their initial state
       if (!initializeChildren())
@@ -966,7 +974,13 @@ bool SygusEnumerator::TermEnumMaster::initializeChild(unsigned i,
   // initialize the child to enumerate exactly the terms that sum to size
   sizeMin = (i + 1 == d_ccTypes.size()) ? sizeMax : sizeMin;
   TermEnumSlave& te = d_children[i];
-  bool init = te.initialize(d_se, d_ccTypes[i], sizeMin, sizeMax);
+  unsigned startIndex = 0;
+  if (i>0 && d_ccIsCom)
+  {
+    // start index is the 
+    
+  }
+  bool init = te.initialize(d_se, d_ccTypes[i], sizeMin, sizeMax, startIndex);
   if (!init)
   {
     // failed to initialize

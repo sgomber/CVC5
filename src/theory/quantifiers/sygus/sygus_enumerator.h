@@ -252,9 +252,13 @@ class SygusEnumerator : public EnumValGenerator
     bool initialize(SygusEnumerator* se,
                     TypeNode tn,
                     unsigned sizeMin,
-                    unsigned sizeMax);
+                    unsigned sizeMax,
+                    unsigned startIndex
+                   );
     /** get the current term of the enumerator */
     Node getCurrent() override;
+    /** get the current index */
+    unsigned getCurrentIndex() const;
     /** increment the enumerator */
     bool increment() override;
 
@@ -347,6 +351,8 @@ class SygusEnumerator : public EnumValGenerator
     std::vector<TypeNode> d_ccTypes;
     /** the operator weight for the constructor class */
     unsigned d_ccWeight;
+    /** whether the constructor class is commutative operators */
+    bool d_ccIsCom;
     //----------------------------- end current constructor class information
     /** If >0, 1 + the index in d_ccCons we are considering */
     unsigned d_consNum;
