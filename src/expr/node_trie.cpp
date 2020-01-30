@@ -66,7 +66,7 @@ NodeTemplate<ref_count> NodeTemplateTrie<ref_count>::addOrGetTerm(
   }
   else if (c != nullptr)
   {
-    NodeTemplate<ref_count> ret = getData();
+    NodeTemplate<ref_count> ret = tnt->getData();
     TNode retn = c->compare(n, ret);
     if (retn == n)
     {
