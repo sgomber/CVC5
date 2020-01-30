@@ -28,7 +28,7 @@ namespace quantifiers {
 
 class SygusStatistics
 {
-public:
+ public:
   SygusStatistics();
   ~SygusStatistics();
   IntStat d_cegqi_lemmas_ce;

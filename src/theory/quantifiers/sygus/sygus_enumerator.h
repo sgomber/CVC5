@@ -99,7 +99,7 @@ class SygusEnumerator : public EnumValGenerator
    public:
     TermCache();
     /** initialize this cache */
-    void initialize(SygusStatistics* s, 
+    void initialize(SygusStatistics* s,
                     Node e,
                     TypeNode tn,
                     TermDbSygus* tds,
@@ -162,11 +162,11 @@ class SygusEnumerator : public EnumValGenerator
     /** Map from weights to the starting constructor class for that weight. */
     std::map<unsigned, unsigned> d_weightToCcIndex;
     /** Information for each constructor class */
-    class ConstructorClass 
+    class ConstructorClass
     {
-    public:
+     public:
       ConstructorClass() : d_weight(0) {}
-      ~ConstructorClass(){}
+      ~ConstructorClass() {}
       /** The indices of the constructors in this constructor class */
       std::vector<unsigned> d_cons;
       /** The argument types of the constructor class */
@@ -174,7 +174,7 @@ class SygusEnumerator : public EnumValGenerator
       /** Constructor weight */
       unsigned d_weight;
     };
-    std::map<unsigned,ConstructorClass> d_cclass;
+    std::map<unsigned, ConstructorClass> d_cclass;
     /** constructor to indices */
     std::map<unsigned, std::vector<unsigned>> d_cToCIndices;
     //-------------------------end static information about type
