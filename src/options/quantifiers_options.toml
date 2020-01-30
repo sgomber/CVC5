@@ -231,6 +231,15 @@ header = "options/quantifiers_options.h"
   help = "Quantifiers module considers only ground terms connected to current assertions."
 
 [[option]]
+  name       = "termDbOldIndex"
+  category   = "regular"
+  long       = "tdb-old-index"
+  type       = "bool"
+  default    = "false"
+  read_only  = true
+  help       = "whether to prefer old terms in term indices"
+
+[[option]]
   name       = "registerQuantBodyTerms"
   category   = "regular"
   long       = "register-quant-body-terms"
