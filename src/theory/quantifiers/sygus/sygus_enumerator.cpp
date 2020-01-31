@@ -186,8 +186,10 @@ void SygusEnumerator::TermCache::initialize(SygusStatistics* s,
 
   // get argument types for all constructors
   std::map<unsigned, std::vector<TypeNode>> argTypes;
+  
+  typedef std::pair< bool, unsigned > ConsDescriptor;
   // map weights to constructors
-  std::map<unsigned, std::vector<unsigned>> weightsToIndices;
+  std::map<ConsDescriptor, std::vector<unsigned>> descToIndices;
 
   // constructor class 0 is reserved for nullary operators with 0 weight
   // this is an optimization so that we always skip them for sizes >= 1
@@ -197,14 +199,20 @@ void SygusEnumerator::TermCache::initialize(SygusStatistics* s,
   d_ccToCom[0] = false;
   d_numConClasses = 1;
   // we must indicate that we should process zero weight constructor classes
-  weightsToIndices[0].clear();
+  ConsDescriptor cdZero = ConsDescriptor(false,0);
+  descToIndices[cdZero].clear();
+  
+  SygusTypeInfo& eti = d_tds->getTypeInfo(tn);
   for (unsigned i = 0, ncons = dt.getNumConstructors(); i < ncons; i++)
   {
-    // record weight information
+    // is it commutative operator?
+    bool isComm = false;
+    // get its weight
     unsigned w = dt[i].getWeight();
+    ConsDescriptor cd = ConsDescriptor(isComm, w);
     Trace("sygus-enum-debug") << "Weight " << dt[i].getSygusOp() << ": " << w
                               << std::endl;
-    weightsToIndices[w].push_back(i);
+    descToIndices[cd].push_back(i);
     // record type information
     for (unsigned j = 0, nargs = dt[i].getNumArgs(); j < nargs; j++)
     {
@@ -213,9 +221,10 @@ void SygusEnumerator::TermCache::initialize(SygusStatistics* s,
     }
   }
   NodeManager* nm = NodeManager::currentNM();
-  for (std::pair<const unsigned, std::vector<unsigned>>& wp : weightsToIndices)
+  for (std::pair<const ConsDescriptor, std::vector<unsigned>>& wp : descToIndices)
   {
-    unsigned w = wp.first;
+    bool isComm = wp.first.first;
+    unsigned w = wp.first.second;
 
     // assign constructors to constructor classes
     TypeNodeIdTrie tnit;
@@ -238,7 +247,6 @@ void SygusEnumerator::TermCache::initialize(SygusStatistics* s,
         tnit.add(n, argTypes[i]);
       }
     }
-    bool isComm = false;
     std::map<Node, unsigned> assign;
     tnit.assignIds(assign, d_numConClasses);
     for (std::pair<const Node, unsigned>& cp : assign)
