@@ -85,6 +85,7 @@ class ExampleEvalCache
    * later accessed by evaluateVec below.
    */
   Node addSearchVal(Node bvr);
+  Node addSearchVal(Node bvr, std::vector< Node >& subTerms);
   //----------------------------------- evaluating terms
   /** Evaluate vector
    *
@@ -97,6 +98,8 @@ class ExampleEvalCache
    * If doCache is true, the result of the evaluation is cached internally.
    */
   void evaluateVec(Node bv, std::vector<Node>& exOut, bool doCache = false);
+  void evaluateVec(Node bv, std::vector<Node>& exOut, std::vector< Node >& subTerms, 
+                   bool doCache = false);
   /** evaluate builtin
    *
    * This returns the evaluation of bn on the i^th example for the
@@ -117,7 +120,7 @@ class ExampleEvalCache
 
  private:
   /** Version of evaluateVec that does not do caching */
-  void evaluateVecInternal(Node bv, std::vector<Node>& exOut) const;
+  void evaluateVecInternal(Node bv, std::vector<Node>& exOut, std::vector< Node >& subTerms) const;
   /** Pointer to the sygus term database */
   TermDbSygus* d_tds;
   /** The set of examples from the example inference class */
@@ -143,7 +146,14 @@ class ExampleEvalCache
   NodeTrie d_trie;
   /** cache for evaluate */
   std::map<Node, std::vector<Node>> d_exOutCache;
+  /** Reverse data structure */
+  std::map< NodeTrie *, NodeTrie * > d_revParent;
+  std::map< NodeTrie *, Node > d_revParentEdge;
+  std::map< Node, NodeTrie * > d_revLeaf;
+  bool lookupEvaluation(Node n, std::vector< Node >& vals) const;
 };
+
+
 
 }  // namespace quantifiers
 }  // namespace theory

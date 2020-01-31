@@ -384,7 +384,12 @@ bool SygusEnumerator::TermCache::addTerm(Node n)
     {
       ++(d_stats->d_enumTermsExampleEval);
       // Is it equivalent under examples?
-      Node bne = d_eec->addSearchVal(bnr);
+      std::vector< Node > subTerms;
+      for (const Node& nc : n)
+      {
+        subTerms.push_back(d_tds->sygusToBuiltin(nc));
+      }
+      Node bne = d_eec->addSearchVal(bnr, subTerms);
       if (!bne.isNull())
       {
         if (bnr != bne)
