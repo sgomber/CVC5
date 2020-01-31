@@ -22,13 +22,12 @@ namespace CVC4 {
 namespace theory {
 namespace quantifiers {
 
-Node EmeEval::eval(
-    TNode n,
-    const std::vector<Node>& args,
-    const std::vector<Node>& vals)
+Node EmeEval::eval(TNode n,
+                   const std::vector<Node>& args,
+                   const std::vector<Node>& vals)
 {
   std::unordered_map<Node, Node, NodeHashFunction> visited;
-  return eval(n,args,vals,visited);
+  return eval(n, args, vals, visited);
 }
 
 ExampleMinEval::ExampleMinEval(Node n,
@@ -56,11 +55,10 @@ ExampleMinEval::ExampleMinEval(Node n,
   d_ece = ece;
 }
 
-Node ExampleMinEval::evaluate(
-    const std::vector<Node>& subs)
+Node ExampleMinEval::evaluate(const std::vector<Node>& subs)
 {
   std::unordered_map<Node, Node, NodeHashFunction> visited;
-  return evaluate(subs,visited);
+  return evaluate(subs, visited);
 }
 Node ExampleMinEval::evaluate(
     const std::vector<Node>& subs,

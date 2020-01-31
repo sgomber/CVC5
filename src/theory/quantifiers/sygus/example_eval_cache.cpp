@@ -105,7 +105,7 @@ void ExampleEvalCache::evaluateVecInternal(Node bv,
   ExampleMinEval eme(bv, varlist, &emetds);
   for (size_t j = 0, esize = d_examples.size(); j < esize; j++)
   {
-    Node res = eme.evaluate(d_examples[j],d_exVisited[j]);
+    Node res = eme.evaluate(d_examples[j], d_exVisited[j]);
     exOut.push_back(res);
   }
 }

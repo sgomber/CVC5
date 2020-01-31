@@ -144,7 +144,7 @@ class ExampleEvalCache
   /** cache for evaluate */
   std::map<Node, std::vector<Node>> d_exOutCache;
   /** visited cache for each example */
-  std::vector< std::unordered_map<Node, Node, NodeHashFunction> > d_exVisited;
+  std::vector<std::unordered_map<Node, Node, NodeHashFunction>> d_exVisited;
 };
 
 }  // namespace quantifiers
