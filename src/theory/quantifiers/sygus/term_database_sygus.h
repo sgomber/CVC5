@@ -267,6 +267,12 @@ class TermDbSygus {
   Node evaluateBuiltin(TypeNode tn,
                        Node bn,
                        const std::vector<Node>& args,
+      const std::unordered_map<Node, Node, NodeHashFunction>& visited,
+                       bool tryEval = true);
+  /** Same as above, without visited cache */
+  Node evaluateBuiltin(TypeNode tn,
+                       Node bn,
+                       const std::vector<Node>& args,
                        bool tryEval = true);
   /** evaluate with unfolding
    *

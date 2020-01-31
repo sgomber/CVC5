@@ -951,8 +951,17 @@ unsigned TermDbSygus::getAnchorDepth( Node n ) {
 }
 
 Node TermDbSygus::evaluateBuiltin(TypeNode tn,
+                      Node bn,
+                      const std::vector<Node>& args,
+                                  bool tryEval)
+{
+  std::unordered_map<Node, Node, NodeHashFunction> visited;
+  return evaluateBuiltin(tn,bn,args,visited,tryEval);
+}
+Node TermDbSygus::evaluateBuiltin(TypeNode tn,
                                   Node bn,
                                   const std::vector<Node>& args,
+      const std::unordered_map<Node, Node, NodeHashFunction>& visited,
                                   bool tryEval)
 {
   if (args.empty())
@@ -971,7 +980,7 @@ Node TermDbSygus::evaluateBuiltin(TypeNode tn,
     // This may fail if there is a subterm of bn under the
     // substitution that is not constant, or if an operator in bn is not
     // supported by the evaluator
-    res = d_eval->eval(bn, varlist, args);
+    res = d_eval->eval(bn, varlist, args, visited);
   }
   if (res.isNull())
   {

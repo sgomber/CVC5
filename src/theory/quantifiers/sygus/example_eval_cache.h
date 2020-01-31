@@ -120,7 +120,7 @@ class ExampleEvalCache
   void evaluateVecInternal(Node bv, std::vector<Node>& exOut) const;
   /** Pointer to the sygus term database */
   TermDbSygus* d_tds;
-  /** pointer to the example inference class */
+  /** The set of examples from the example inference class */
   std::vector<std::vector<Node>> d_examples;
   /** The SyGuS type of the enumerator */
   TypeNode d_stn;
