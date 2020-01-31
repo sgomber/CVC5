@@ -37,8 +37,6 @@ ExampleEvalCache::ExampleEvalCache(TermDbSygus* tds,
     std::vector<Node> input;
     ei->getExample(f, i, input);
     d_examples.push_back(input);
-    std::unordered_map<Node, Node, NodeHashFunction> vcache;
-    d_exVisited.push_back(vcache);
   }
   d_indexSearchVals = !d_tds->isVariableAgnosticEnumerator(e);
 }
@@ -105,7 +103,8 @@ void ExampleEvalCache::evaluateVecInternal(Node bv,
   ExampleMinEval eme(bv, varlist, &emetds);
   for (size_t j = 0, esize = d_examples.size(); j < esize; j++)
   {
-    Node res = eme.evaluate(d_examples[j], d_exVisited[j]);
+    std::unordered_map<Node, Node, NodeHashFunction> visited;
+    Node res = eme.evaluate(d_examples[j], visited);
     exOut.push_back(res);
   }
 }
