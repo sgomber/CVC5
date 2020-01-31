@@ -22,6 +22,15 @@ namespace CVC4 {
 namespace theory {
 namespace quantifiers {
 
+Node EmeEval::eval(
+    TNode n,
+    const std::vector<Node>& args,
+    const std::vector<Node>& vals)
+{
+  std::unordered_map<Node, Node, NodeHashFunction> visited;
+  return eval(n,args,vals,visited);
+}
+
 ExampleMinEval::ExampleMinEval(Node n,
                                const std::vector<Node>& vars,
                                EmeEval* ece)
@@ -48,6 +57,12 @@ ExampleMinEval::ExampleMinEval(Node n,
 }
 
 Node ExampleMinEval::evaluate(
+    const std::vector<Node>& subs)
+{
+  std::unordered_map<Node, Node, NodeHashFunction> visited;
+  return evaluate(subs,visited);
+}
+Node ExampleMinEval::evaluate(
     const std::vector<Node>& subs,
     const std::unordered_map<Node, Node, NodeHashFunction>& visited)
 {
@@ -56,7 +71,7 @@ Node ExampleMinEval::evaluate(
   if (d_indices.size() == d_vars.size())
   {
     // no sharing is possible since all variables are relevant, just evaluate
-    return d_ece->eval(d_evalNode, d_vars, subs);
+    return d_ece->eval(d_evalNode, d_vars, subs, visited);
   }
 
   // get the subsequence of subs that is relevant
@@ -69,7 +84,7 @@ Node ExampleMinEval::evaluate(
   if (res.isNull())
   {
     // not already cached, must evaluate
-    res = d_ece->eval(d_evalNode, d_vars, subs);
+    res = d_ece->eval(d_evalNode, d_vars, subs, visited);
 
     // add to trie
     d_trie.addTerm(res, relSubs);

@@ -37,6 +37,8 @@ ExampleEvalCache::ExampleEvalCache(TermDbSygus* tds,
     std::vector<Node> input;
     ei->getExample(f, i, input);
     d_examples.push_back(input);
+    std::unordered_map<Node, Node, NodeHashFunction> vcache;
+    d_exVisited.push_back(vcache);
   }
   d_indexSearchVals = !d_tds->isVariableAgnosticEnumerator(e);
 }
@@ -63,6 +65,10 @@ Node ExampleEvalCache::addSearchVal(Node bv)
     // immediately clear it
     Trace("sygus-pbe-debug") << "...clear example cache" << std::endl;
     clearEvaluationCache(bv);
+  }
+  else
+  {
+    // should remember permanently
   }
   Assert(ret.getType().isComparableTo(bv.getType()));
   return ret;
@@ -99,7 +105,7 @@ void ExampleEvalCache::evaluateVecInternal(Node bv,
   ExampleMinEval eme(bv, varlist, &emetds);
   for (size_t j = 0, esize = d_examples.size(); j < esize; j++)
   {
-    Node res = eme.evaluate(d_examples[j]);
+    Node res = eme.evaluate(d_examples[j],d_exVisited[j]);
     exOut.push_back(res);
   }
 }

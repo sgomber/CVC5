@@ -41,6 +41,11 @@ class EmeEval
       const std::vector<Node>& args,
       const std::vector<Node>& vals,
       const std::unordered_map<Node, Node, NodeHashFunction>& visited) = 0;
+  /** Evaluate n given substitution { args -> vals }. */
+  Node eval(
+      TNode n,
+      const std::vector<Node>& args,
+      const std::vector<Node>& vals);
 };
 
 /**
@@ -79,6 +84,9 @@ class ExampleMinEval
   Node evaluate(
       const std::vector<Node>& subs,
       const std::unordered_map<Node, Node, NodeHashFunction>& visited);
+  /** Same as above, without visited cache */
+  Node evaluate(
+      const std::vector<Node>& subs);
 
  private:
   /** The node to evaluate */
