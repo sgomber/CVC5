@@ -22,6 +22,14 @@ namespace CVC4 {
 namespace theory {
 namespace quantifiers {
 
+Node EmeEval::eval(TNode n,
+                   const std::vector<Node>& args,
+                   const std::vector<Node>& vals)
+{
+  std::unordered_map<Node, Node, NodeHashFunction> visited;
+  return eval(n, args, vals, visited);
+}
+
 ExampleMinEval::ExampleMinEval(Node n,
                                const std::vector<Node>& vars,
                                EmeEval* ece)
@@ -49,12 +57,19 @@ ExampleMinEval::ExampleMinEval(Node n,
 
 Node ExampleMinEval::evaluate(const std::vector<Node>& subs)
 {
+  std::unordered_map<Node, Node, NodeHashFunction> visited;
+  return evaluate(subs, visited);
+}
+Node ExampleMinEval::evaluate(
+    const std::vector<Node>& subs,
+    const std::unordered_map<Node, Node, NodeHashFunction>& visited)
+{
   Assert(d_vars.size() == subs.size());
 
   if (d_indices.size() == d_vars.size())
   {
     // no sharing is possible since all variables are relevant, just evaluate
-    return d_ece->eval(d_evalNode, d_vars, subs);
+    return d_ece->eval(d_evalNode, d_vars, subs, visited);
   }
 
   // get the subsequence of subs that is relevant
@@ -67,7 +82,7 @@ Node ExampleMinEval::evaluate(const std::vector<Node>& subs)
   if (res.isNull())
   {
     // not already cached, must evaluate
-    res = d_ece->eval(d_evalNode, d_vars, subs);
+    res = d_ece->eval(d_evalNode, d_vars, subs, visited);
 
     // add to trie
     d_trie.addTerm(res, relSubs);
@@ -75,11 +90,13 @@ Node ExampleMinEval::evaluate(const std::vector<Node>& subs)
   return res;
 }
 
-Node EmeEvalTds::eval(TNode n,
-                      const std::vector<Node>& args,
-                      const std::vector<Node>& vals)
+Node EmeEvalTds::eval(
+    TNode n,
+    const std::vector<Node>& args,
+    const std::vector<Node>& vals,
+    const std::unordered_map<Node, Node, NodeHashFunction>& visited)
 {
-  return d_tds->evaluateBuiltin(d_tn, n, vals);
+  return d_tds->evaluateBuiltin(d_tn, n, vals, visited);
 }
 
 }  // namespace quantifiers

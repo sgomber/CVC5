@@ -17,6 +17,10 @@
 #include "options/datatypes_options.h"
 #include "options/quantifiers_options.h"
 #include "theory/datatypes/theory_datatypes_utils.h"
+#include "theory/quantifiers/sygus/synth_engine.h"
+#include "theory/quantifiers/term_util.h"
+
+//#define BUILTIN_TERM_CACHE
 
 using namespace CVC4::kind;
 
@@ -24,8 +28,10 @@ namespace CVC4 {
 namespace theory {
 namespace quantifiers {
 
-SygusEnumerator::SygusEnumerator(TermDbSygus* tds, SynthConjecture* p)
-    : d_tds(tds), d_parent(p), d_tlEnum(nullptr), d_abortSize(-1)
+SygusEnumerator::SygusEnumerator(TermDbSygus* tds,
+                                 SynthConjecture* p,
+                                 SygusStatistics& s)
+    : d_tds(tds), d_parent(p), d_stats(s), d_tlEnum(nullptr), d_abortSize(-1)
 {
 }
 
@@ -105,7 +111,9 @@ void SygusEnumerator::addValue(Node v)
 }
 
 bool SygusEnumerator::increment() { return d_tlEnum->increment(); }
-Node SygusEnumerator::getCurrent()
+Node SygusEnumerator::getCurrent() { return getCurrentInternal(false); }
+Node SygusEnumerator::getCurrentBuiltin() { return getCurrentInternal(true); }
+Node SygusEnumerator::getCurrentInternal(bool isBuiltin)
 {
   if (d_abortSize >= 0)
   {
@@ -118,7 +126,7 @@ Node SygusEnumerator::getCurrent()
       throw LogicException(ss.str());
     }
   }
-  Node ret = d_tlEnum->getCurrent();
+  Node ret = isBuiltin ? d_tlEnum->getCurrentBuiltin() : d_tlEnum->getCurrent();
   if (!ret.isNull() && !d_sbExcTlCons.empty())
   {
     Assert(ret.hasOperator());
@@ -141,7 +149,7 @@ Node SygusEnumerator::getCurrent()
 
 SygusEnumerator::TermCache::TermCache()
     : d_tds(nullptr),
-      d_pbe(nullptr),
+      d_eec(nullptr),
       d_isSygusType(false),
       d_numConClasses(0),
       d_sizeEnum(0),
@@ -149,16 +157,18 @@ SygusEnumerator::TermCache::TermCache()
       d_sampleRrVInit(false)
 {
 }
-void SygusEnumerator::TermCache::initialize(Node e,
+void SygusEnumerator::TermCache::initialize(SygusStatistics* s,
+                                            Node e,
                                             TypeNode tn,
                                             TermDbSygus* tds,
-                                            SygusPbe* pbe)
+                                            ExampleEvalCache* eec)
 {
-  Trace("sygus-enum-debug") << "Init term cache " << tn << "..." << std::endl;
+  Trace("sygus-enum-init") << "Init term cache " << tn << "..." << std::endl;
+  d_stats = s;
   d_enum = e;
   d_tn = tn;
   d_tds = tds;
-  d_pbe = pbe;
+  d_eec = eec;
   d_sizeStartIndex[0] = 0;
   d_isSygusType = false;
 
@@ -179,23 +189,48 @@ void SygusEnumerator::TermCache::initialize(Node e,
 
   // get argument types for all constructors
   std::map<unsigned, std::vector<TypeNode>> argTypes;
+
+  typedef std::pair<bool, unsigned> ConsDescriptor;
   // map weights to constructors
-  std::map<unsigned, std::vector<unsigned>> weightsToIndices;
+  std::map<ConsDescriptor, std::vector<unsigned>> descToIndices;
 
   // constructor class 0 is reserved for nullary operators with 0 weight
   // this is an optimization so that we always skip them for sizes >= 1
   ConstructorClass& ccZero = d_cclass[0];
   ccZero.d_weight = 0;
+  ccZero.d_isComm = false;
   d_numConClasses = 1;
   // we must indicate that we should process zero weight constructor classes
-  weightsToIndices[0].clear();
+  ConsDescriptor cdZero = ConsDescriptor(false, 0);
+  descToIndices[cdZero].clear();
+
+  SygusTypeInfo& ti = d_tds->getTypeInfo(tn);
   for (unsigned i = 0, ncons = dt.getNumConstructors(); i < ncons; i++)
   {
-    // record weight information
+    // is it commutative operator?
+    bool isComm = false;
+    Kind k = ti.getConsNumKind(i);
+    if (quantifiers::TermUtil::isComm(k))
+    {
+      isComm = true;
+      TypeNode argType0 = dt[i].getArgType(0);
+      // must have the same argument type
+      for (unsigned j = 1, nargs = dt[i].getNumArgs(); j < nargs; j++)
+      {
+        if (dt[i].getArgType(j) != argType0)
+        {
+          isComm = false;
+          break;
+        }
+      }
+    }
+    // get its weight
     unsigned w = dt[i].getWeight();
-    Trace("sygus-enum-debug") << "Weight " << dt[i].getSygusOp() << ": " << w
-                              << std::endl;
-    weightsToIndices[w].push_back(i);
+    ConsDescriptor cd = ConsDescriptor(isComm, w);
+    Trace("sygus-enum-init")
+        << "ConsDescriptor " << dt[i].getSygusOp()
+        << ": (isComm, weight) = " << isComm << ", " << w << std::endl;
+    descToIndices[cd].push_back(i);
     // record type information
     for (unsigned j = 0, nargs = dt[i].getNumArgs(); j < nargs; j++)
     {
@@ -204,9 +239,11 @@ void SygusEnumerator::TermCache::initialize(Node e,
     }
   }
   NodeManager* nm = NodeManager::currentNM();
-  for (std::pair<const unsigned, std::vector<unsigned>>& wp : weightsToIndices)
+  for (std::pair<const ConsDescriptor, std::vector<unsigned>>& wp :
+       descToIndices)
   {
-    unsigned w = wp.first;
+    bool isComm = wp.first.first;
+    unsigned w = wp.first.second;
 
     // assign constructors to constructor classes
     TypeNodeIdTrie tnit;
@@ -236,13 +273,13 @@ void SygusEnumerator::TermCache::initialize(Node e,
       // determine which constructor class this goes into using tnit
       unsigned cclassi = cp.second;
       unsigned i = nToC[cp.first];
-      Trace("sygus-enum-debug") << "Constructor class for "
-                                << dt[i].getSygusOp() << " is " << cclassi
-                                << std::endl;
+      Trace("sygus-enum-init") << "Constructor class for " << dt[i].getSygusOp()
+                               << " is " << cclassi << std::endl;
       // initialize the constructor class
       if (d_cclass.find(cclassi) == d_cclass.end())
       {
         d_cclass[cclassi].d_weight = w;
+        d_cclass[cclassi].d_isComm = isComm;
         d_cclass[cclassi].d_types.insert(d_cclass[cclassi].d_types.end(),
                                          argTypes[i].begin(),
                                          argTypes[i].end());
@@ -250,11 +287,11 @@ void SygusEnumerator::TermCache::initialize(Node e,
       // add to constructor class
       d_cclass[cclassi].d_cons.push_back(i);
     }
-    Trace("sygus-enum-debug") << "#cons classes for weight <= " << w << " : "
-                              << d_numConClasses << std::endl;
+    Trace("sygus-enum-init") << "#cons classes for weight <= " << w << " : "
+                             << d_numConClasses << std::endl;
     d_weightToCcIndex[w] = d_numConClasses;
   }
-  Trace("sygus-enum-debug") << "...finish" << std::endl;
+  Trace("sygus-enum-init") << "...finish" << std::endl;
 }
 
 unsigned SygusEnumerator::TermCache::getLastConstructorClassIndexForWeight(
@@ -295,6 +332,12 @@ unsigned SygusEnumerator::TermCache::getWeightForConstructorClass(
   Assert(it != d_cclass.end());
   return it->second.d_weight;
 }
+bool SygusEnumerator::TermCache::isConstructorClassComm(unsigned i) const
+{
+  std::map<unsigned, ConstructorClass>::const_iterator it = d_cclass.find(i);
+  Assert(it != d_cclass.end());
+  return it->second.d_isComm;
+}
 
 bool SygusEnumerator::TermCache::addTerm(Node n)
 {
@@ -310,8 +353,13 @@ bool SygusEnumerator::TermCache::addTerm(Node n)
   Assert(!n.isNull());
   if (options::sygusSymBreakDynamic())
   {
+#ifdef BUILTIN_TERM_CACHE
+    Node bn = n;
+#else
     Node bn = d_tds->sygusToBuiltin(n);
+#endif
     Node bnr = d_tds->getExtRewriter()->extendedRewrite(bn);
+    ++(d_stats->d_enumTermsRewrite);
     if (options::sygusRewVerify())
     {
       if (bn != bnr)
@@ -332,10 +380,11 @@ bool SygusEnumerator::TermCache::addTerm(Node n)
       return false;
     }
     // if we are doing PBE symmetry breaking
-    if (d_pbe != nullptr)
+    if (d_eec != nullptr)
     {
+      ++(d_stats->d_enumTermsExampleEval);
       // Is it equivalent under examples?
-      Node bne = d_pbe->addSearchVal(d_tn, d_enum, bnr);
+      Node bne = d_eec->addSearchVal(bnr);
       if (!bne.isNull())
       {
         if (bnr != bne)
@@ -350,6 +399,7 @@ bool SygusEnumerator::TermCache::addTerm(Node n)
     Trace("sygus-enum-terms") << "tc(" << d_tn << "): term " << bn << std::endl;
     d_bterms.insert(bnr);
   }
+  ++(d_stats->d_enumTerms);
   d_terms.push_back(n);
   return true;
 }
@@ -390,6 +440,8 @@ SygusEnumerator::TermEnumSlave::TermEnumSlave()
       d_index(0),
       d_indexNextEnd(0),
       d_hasIndexNextEnd(false),
+      d_maxIndex(0),
+      d_hasMaxIndex(false),
       d_master(nullptr)
 {
 }
@@ -397,11 +449,15 @@ SygusEnumerator::TermEnumSlave::TermEnumSlave()
 bool SygusEnumerator::TermEnumSlave::initialize(SygusEnumerator* se,
                                                 TypeNode tn,
                                                 unsigned sizeMin,
-                                                unsigned sizeMax)
+                                                unsigned sizeMax,
+                                                unsigned maxIndex,
+                                                bool hasMaxIndex)
 {
   d_se = se;
   d_tn = tn;
   d_sizeLim = sizeMax;
+  d_maxIndex = maxIndex;
+  d_hasMaxIndex = hasMaxIndex;
   Trace("sygus-enum-debug2") << "slave(" << d_tn
                              << "): init, min/max=" << sizeMin << "/" << sizeMax
                              << "...\n";
@@ -456,7 +512,22 @@ Node SygusEnumerator::TermEnumSlave::getCurrent()
                              << "): indices : " << d_hasIndexNextEnd << " "
                              << d_indexNextEnd << " " << d_index << std::endl;
   // lookup in the cache
-  return tc.getTerm(d_index);
+  return curr;
+}
+
+Node SygusEnumerator::TermEnumSlave::getCurrentBuiltin()
+{
+#ifdef BUILTIN_TERM_CACHE
+  return getCurrent();
+#else
+  Node n = getCurrent();
+  return datatypes::utils::sygusToBuiltin(n);
+#endif
+}
+
+unsigned SygusEnumerator::TermEnumSlave::getCurrentIndex() const
+{
+  return d_index;
 }
 
 bool SygusEnumerator::TermEnumSlave::increment()
@@ -470,6 +541,11 @@ bool SygusEnumerator::TermEnumSlave::increment()
 bool SygusEnumerator::TermEnumSlave::validateIndex()
 {
   Trace("sygus-enum-debug2") << "slave(" << d_tn << ") : validate index...\n";
+  if (d_hasMaxIndex && d_index > d_maxIndex)
+  {
+    // we specified a maximum index, and the index is beyond it
+    return false;
+  }
   SygusEnumerator::TermCache& tc = d_se->d_tcache[d_tn];
   // ensure that index is in the range
   while (d_index >= tc.getNumTerms())
@@ -529,17 +605,13 @@ void SygusEnumerator::TermEnumSlave::validateIndexNextEnd()
 void SygusEnumerator::initializeTermCache(TypeNode tn)
 {
   // initialize the term cache
-  // see if we use sygus PBE for symmetry breaking
-  SygusPbe* pbe = nullptr;
+  // see if we use an example evaluation cache for symmetry breaking
+  ExampleEvalCache* eec = nullptr;
   if (options::sygusSymBreakPbe())
   {
-    pbe = d_parent->getPbe();
-    if (!pbe->hasExamples(d_enum))
-    {
-      pbe = nullptr;
-    }
+    eec = d_parent->getExampleEvalCache(d_enum);
   }
-  d_tcache[tn].initialize(d_enum, tn, d_tds, pbe);
+  d_tcache[tn].initialize(&d_stats, d_enum, tn, d_tds, eec);
 }
 
 SygusEnumerator::TermEnum* SygusEnumerator::getMasterEnumForType(TypeNode tn)
@@ -592,6 +664,7 @@ SygusEnumerator::TermEnumMaster::TermEnumMaster()
       d_currTermSet(false),
       d_consClassNum(0),
       d_ccWeight(0),
+      d_ccIsCom(false),
       d_consNum(0),
       d_currChildSize(0),
       d_childrenValid(0)
@@ -646,6 +719,40 @@ Node SygusEnumerator::TermEnumMaster::getCurrent()
   }
   d_currTerm = NodeManager::currentNM()->mkNode(APPLY_CONSTRUCTOR, children);
   return d_currTerm;
+}
+
+Node SygusEnumerator::TermEnumMaster::getCurrentBuiltin()
+{
+#ifdef BUILTIN_TERM_CACHE
+  if (d_currTermSet)
+  {
+    return d_currTerm;
+  }
+  d_currTermSet = true;
+  // construct based on the children
+  std::vector<Node> children;
+  const DType& dt = d_tn.getDType();
+  Assert(d_consNum > 0 && d_consNum <= d_ccCons.size());
+  // get the current constructor number
+  unsigned cnum = d_ccCons[d_consNum - 1];
+  // add the current of each child to children
+  for (unsigned i = 0, nargs = dt[cnum].getNumArgs(); i < nargs; i++)
+  {
+    Assert(d_children.find(i) != d_children.end());
+    Node cc = d_children[i].getCurrentBuiltin();
+    if (cc.isNull())
+    {
+      d_currTerm = cc;
+      return cc;
+    }
+    children.push_back(cc);
+  }
+  return datatypes::utils::mkSygusTerm(dt, cnum, children);
+#else
+  Node n = getCurrent();
+  return datatypes::utils::sygusToBuiltin(n);
+  // return d_tds->sygusToBuiltin(getCurrent());
+#endif
 }
 
 bool SygusEnumerator::TermEnumMaster::increment()
@@ -706,6 +813,7 @@ bool SygusEnumerator::TermEnumMaster::incrementInternal()
       Assert(d_ccTypes.empty());
       tc.getTypesForConstructorClass(d_consClassNum, d_ccTypes);
       d_ccWeight = tc.getWeightForConstructorClass(d_consClassNum);
+      d_ccIsCom = tc.isConstructorClassComm(d_consClassNum);
       d_childrenValid = 0;
       // initialize the children into their initial state
       if (!initializeChildren())
@@ -831,7 +939,11 @@ bool SygusEnumerator::TermEnumMaster::incrementInternal()
       d_consNum++;
       d_currTermSet = false;
       d_currTerm = Node::null();
+#ifdef BUILTIN_TERM_CACHE
+      Node c = getCurrentBuiltin();
+#else
       Node c = getCurrent();
+#endif
       if (!c.isNull())
       {
         if (!tc.addTerm(c))
@@ -964,7 +1076,16 @@ bool SygusEnumerator::TermEnumMaster::initializeChild(unsigned i,
   // initialize the child to enumerate exactly the terms that sum to size
   sizeMin = (i + 1 == d_ccTypes.size()) ? sizeMax : sizeMin;
   TermEnumSlave& te = d_children[i];
-  bool init = te.initialize(d_se, d_ccTypes[i], sizeMin, sizeMax);
+  unsigned maxIndex = 0;
+  bool hasMaxIndex = false;
+  if (i > 0 && d_ccIsCom)
+  {
+    // maximum index is the index of the child to the left
+    maxIndex = d_children[i - 1].getCurrentIndex();
+    hasMaxIndex = true;
+  }
+  bool init = te.initialize(
+      d_se, d_ccTypes[i], sizeMin, sizeMax, maxIndex, hasMaxIndex);
   if (!init)
   {
     // failed to initialize
@@ -1005,6 +1126,10 @@ bool SygusEnumerator::TermEnumMasterInterp::initialize(SygusEnumerator* se,
 }
 
 Node SygusEnumerator::TermEnumMasterInterp::getCurrent() { return *d_te; }
+Node SygusEnumerator::TermEnumMasterInterp::getCurrentBuiltin()
+{
+  return getCurrent();
+}
 bool SygusEnumerator::TermEnumMasterInterp::increment()
 {
   if (d_te.isFinished())
@@ -1044,6 +1169,10 @@ Node SygusEnumerator::TermEnumMasterFv::getCurrent()
   Trace("sygus-enum-debug2") << "master_fv(" << d_tn << "): mk " << ret
                              << std::endl;
   return ret;
+}
+Node SygusEnumerator::TermEnumMasterFv::getCurrentBuiltin()
+{
+  return getCurrent();
 }
 
 bool SygusEnumerator::TermEnumMasterFv::increment()

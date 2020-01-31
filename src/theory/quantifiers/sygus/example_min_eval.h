@@ -36,9 +36,15 @@ class EmeEval
   EmeEval() {}
   virtual ~EmeEval() {}
   /** Evaluate n given substitution { args -> vals }. */
-  virtual Node eval(TNode n,
-                    const std::vector<Node>& args,
-                    const std::vector<Node>& vals) = 0;
+  virtual Node eval(
+      TNode n,
+      const std::vector<Node>& args,
+      const std::vector<Node>& vals,
+      const std::unordered_map<Node, Node, NodeHashFunction>& visited) = 0;
+  /** Evaluate n given substitution { args -> vals }. */
+  Node eval(TNode n,
+            const std::vector<Node>& args,
+            const std::vector<Node>& vals);
 };
 
 /**
@@ -74,6 +80,10 @@ class ExampleMinEval
    * Return the result of evaluating n * { vars -> subs } where vars is the
    * set of variables passed to initialize above.
    */
+  Node evaluate(
+      const std::vector<Node>& subs,
+      const std::unordered_map<Node, Node, NodeHashFunction>& visited);
+  /** Same as above, without visited cache */
   Node evaluate(const std::vector<Node>& subs);
 
  private:
@@ -105,9 +115,11 @@ class EmeEvalTds : public EmeEval
    * Evaluate n given substitution { args -> vals } using the term database
    * sygus evaluateBuiltin function.
    */
-  Node eval(TNode n,
-            const std::vector<Node>& args,
-            const std::vector<Node>& vals) override;
+  Node eval(
+      TNode n,
+      const std::vector<Node>& args,
+      const std::vector<Node>& vals,
+      const std::unordered_map<Node, Node, NodeHashFunction>& visited) override;
 
  private:
   /** Pointer to the sygus term database */
