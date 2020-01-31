@@ -202,7 +202,7 @@ void SygusEnumerator::TermCache::initialize(SygusStatistics* s,
   ConsDescriptor cdZero = ConsDescriptor(false,0);
   descToIndices[cdZero].clear();
   
-  SygusTypeInfo& eti = d_tds->getTypeInfo(tn);
+  SygusTypeInfo& ti = d_tds->getTypeInfo(tn);
   for (unsigned i = 0, ncons = dt.getNumConstructors(); i < ncons; i++)
   {
     // is it commutative operator?
