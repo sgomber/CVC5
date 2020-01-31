@@ -209,18 +209,21 @@ void SygusEnumerator::TermCache::initialize(SygusStatistics* s,
   {
     // is it commutative operator?
     bool isComm = false;
-    Kind k = ti.getConsNumKind(i);
-    if (quantifiers::TermUtil::isComm(k))
+    if (options::fastEnumComm())
     {
-      isComm = true;
-      TypeNode argType0 = dt[i].getArgType(0);
-      // must have the same argument type
-      for (unsigned j = 1, nargs = dt[i].getNumArgs(); j < nargs; j++)
+      Kind k = ti.getConsNumKind(i);
+      if (quantifiers::TermUtil::isComm(k))
       {
-        if (dt[i].getArgType(j) != argType0)
+        isComm = true;
+        TypeNode argType0 = dt[i].getArgType(0);
+        // must have the same argument type
+        for (unsigned j = 1, nargs = dt[i].getNumArgs(); j < nargs; j++)
         {
-          isComm = false;
-          break;
+          if (dt[i].getArgType(j) != argType0)
+          {
+            isComm = false;
+            break;
+          }
         }
       }
     }
