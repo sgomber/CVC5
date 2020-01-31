@@ -126,6 +126,7 @@ class Evaluator
       const std::vector<Node>& args,
       const std::vector<Node>& vals,
       std::unordered_map<TNode, Node, NodeHashFunction>& evalAsNode,
+      const std::unordered_map<Node, Node, NodeHashFunction>& visited,
       std::unordered_map<TNode, EvalResult, TNodeHashFunction>& results) const;
   /** reconstruct
    *

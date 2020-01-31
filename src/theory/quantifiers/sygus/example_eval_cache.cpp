@@ -69,6 +69,14 @@ Node ExampleEvalCache::addSearchVal(Node bv)
   else
   {
     // should remember permanently
+    Assert( vals.size()==d_exVisited.size());
+    for (size_t j=0, nvals=vals.size(); j<nvals; j++)
+    {
+      if (bv!=vals[j])
+      {
+        d_exVisited[j][bv] = vals[j];
+      }
+    }
   }
   Assert(ret.getType().isComparableTo(bv.getType()));
   return ret;
