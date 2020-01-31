@@ -18,6 +18,7 @@
 #include "options/quantifiers_options.h"
 #include "theory/datatypes/theory_datatypes_utils.h"
 #include "theory/quantifiers/sygus/synth_engine.h"
+#include "theory/quantifiers/term_util.h"
 
 //#define BUILTIN_TERM_CACHE
 
@@ -160,7 +161,7 @@ void SygusEnumerator::TermCache::initialize(SygusStatistics* s,
                                             TermDbSygus* tds,
                                             ExampleEvalCache* eec)
 {
-  Trace("sygus-enum-debug") << "Init term cache " << tn << "..." << std::endl;
+  Trace("sygus-enum-init") << "Init term cache " << tn << "..." << std::endl;
   d_stats = s;
   d_enum = e;
   d_tn = tn;
@@ -207,10 +208,25 @@ void SygusEnumerator::TermCache::initialize(SygusStatistics* s,
   {
     // is it commutative operator?
     bool isComm = false;
+    Kind k = ti.getConsNumKind(i);
+    if (quantifiers::TermUtil::isComm(k))
+    {
+      isComm = true;
+      TypeNode argType0 = dt[i].getArgType(0);
+      // must have the same argument type
+      for (unsigned j=1, nargs = dt[i].getNumArgs(); j<nargs; j++)
+      {
+        if (dt[i].getArgType(j)!=argType0)
+        {
+          isComm = false;
+          break;
+        }
+      }
+    }
     // get its weight
     unsigned w = dt[i].getWeight();
     ConsDescriptor cd = ConsDescriptor(isComm, w);
-    Trace("sygus-enum-debug") << "Weight " << dt[i].getSygusOp() << ": " << w
+    Trace("sygus-enum-init") << "ConsDescriptor " << dt[i].getSygusOp() << ": (isComm, weight) = " << isComm << ", " << w
                               << std::endl;
     descToIndices[cd].push_back(i);
     // record type information
@@ -254,7 +270,7 @@ void SygusEnumerator::TermCache::initialize(SygusStatistics* s,
       // determine which constructor class this goes into using tnit
       unsigned cclassi = cp.second;
       unsigned i = nToC[cp.first];
-      Trace("sygus-enum-debug") << "Constructor class for "
+      Trace("sygus-enum-init") << "Constructor class for "
                                 << dt[i].getSygusOp() << " is " << cclassi
                                 << std::endl;
       // initialize the constructor class
@@ -268,11 +284,11 @@ void SygusEnumerator::TermCache::initialize(SygusStatistics* s,
       // add to constructor class
       d_ccToCons[cclassi].push_back(i);
     }
-    Trace("sygus-enum-debug") << "#cons classes for weight <= " << w << " : "
+    Trace("sygus-enum-init") << "#cons classes for weight <= " << w << " : "
                               << d_numConClasses << std::endl;
     d_weightToCcIndex[w] = d_numConClasses;
   }
-  Trace("sygus-enum-debug") << "...finish" << std::endl;
+  Trace("sygus-enum-init") << "...finish" << std::endl;
 }
 
 unsigned SygusEnumerator::TermCache::getLastConstructorClassIndexForWeight(
