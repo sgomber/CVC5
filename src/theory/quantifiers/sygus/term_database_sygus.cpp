@@ -951,18 +951,19 @@ unsigned TermDbSygus::getAnchorDepth( Node n ) {
 }
 
 Node TermDbSygus::evaluateBuiltin(TypeNode tn,
-                      Node bn,
-                      const std::vector<Node>& args,
+                                  Node bn,
+                                  const std::vector<Node>& args,
                                   bool tryEval)
 {
   std::unordered_map<Node, Node, NodeHashFunction> visited;
-  return evaluateBuiltin(tn,bn,args,visited,tryEval);
+  return evaluateBuiltin(tn, bn, args, visited, tryEval);
 }
-Node TermDbSygus::evaluateBuiltin(TypeNode tn,
-                                  Node bn,
-                                  const std::vector<Node>& args,
-      const std::unordered_map<Node, Node, NodeHashFunction>& visited,
-                                  bool tryEval)
+Node TermDbSygus::evaluateBuiltin(
+    TypeNode tn,
+    Node bn,
+    const std::vector<Node>& args,
+    const std::unordered_map<Node, Node, NodeHashFunction>& visited,
+    bool tryEval)
 {
   if (args.empty())
   {

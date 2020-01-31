@@ -272,8 +272,7 @@ class SygusEnumerator : public EnumValGenerator
                     unsigned sizeMin,
                     unsigned sizeMax,
                     unsigned maxIndex,
-                    bool hasMaxIndex
-                   );
+                    bool hasMaxIndex);
     /** get the current term of the enumerator */
     Node getCurrent() override;
     /** get the builtin version of the current term of the enumerator */

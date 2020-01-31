@@ -47,8 +47,9 @@ ExampleMinEval::ExampleMinEval(Node n,
   d_ece = ece;
 }
 
-Node ExampleMinEval::evaluate(const std::vector<Node>& subs,
-      const std::unordered_map<Node, Node, NodeHashFunction>& visited)
+Node ExampleMinEval::evaluate(
+    const std::vector<Node>& subs,
+    const std::unordered_map<Node, Node, NodeHashFunction>& visited)
 {
   Assert(d_vars.size() == subs.size());
 
@@ -76,10 +77,11 @@ Node ExampleMinEval::evaluate(const std::vector<Node>& subs,
   return res;
 }
 
-Node EmeEvalTds::eval(TNode n,
-                      const std::vector<Node>& args,
-                      const std::vector<Node>& vals,
-      const std::unordered_map<Node, Node, NodeHashFunction>& visited)
+Node EmeEvalTds::eval(
+    TNode n,
+    const std::vector<Node>& args,
+    const std::vector<Node>& vals,
+    const std::unordered_map<Node, Node, NodeHashFunction>& visited)
 {
   return d_tds->evaluateBuiltin(d_tn, n, vals, visited);
 }

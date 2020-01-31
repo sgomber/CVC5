@@ -264,11 +264,12 @@ class TermDbSygus {
    * If the argument tryEval is true, we consult the evaluator before the
    * rewriter, for performance reasons.
    */
-  Node evaluateBuiltin(TypeNode tn,
-                       Node bn,
-                       const std::vector<Node>& args,
+  Node evaluateBuiltin(
+      TypeNode tn,
+      Node bn,
+      const std::vector<Node>& args,
       const std::unordered_map<Node, Node, NodeHashFunction>& visited,
-                       bool tryEval = true);
+      bool tryEval = true);
   /** Same as above, without visited cache */
   Node evaluateBuiltin(TypeNode tn,
                        Node bn,
