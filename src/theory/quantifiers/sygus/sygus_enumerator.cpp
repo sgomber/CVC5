@@ -361,7 +361,7 @@ bool SygusEnumerator::TermCache::addTerm(Node n)
 #else
     Node bn = d_tds->sygusToBuiltin(n);
 #endif
-    Trace("sygus-enum-all-terms") << "checkTerm: " << bn << std::endl;
+    Trace("sygus-enum-all-terms") << "checkTerm: " << bn << " (" << n.getType() << " " << d_tds->getSygusTermSize(n) << ")" <<  std::endl;
     Node bnr = d_tds->getExtRewriter()->extendedRewrite(bn);
     ++(d_stats->d_enumTermsRewrite);
     if (options::sygusRewVerify())
