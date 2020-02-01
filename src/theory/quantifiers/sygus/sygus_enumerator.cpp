@@ -949,6 +949,13 @@ bool SygusEnumerator::TermEnumMaster::incrementInternal()
 #else
       Node c = getCurrent();
 #endif
+      Trace("ajr-temp") << "Built term for indices ";
+      for (
+    std::pair<const unsigned, TermEnumSlave>& c : d_children)
+      {
+        Trace("ajr-temp") << c.first << " -> " << c.second.getCurrentIndex() << " ";
+      }
+      Trace("ajr-temp") << std::endl;
       if (!c.isNull())
       {
         if (!tc.addTerm(c))
