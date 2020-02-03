@@ -2078,6 +2078,6 @@ header = "options/quantifiers_options.h"
   category   = "regular"
   long       = "fast-enum-comm"
   type       = "bool"
-  default    = "false"
+  default    = "true"
   read_only  = true
   help       = "compute commutative for fast enumerator"
