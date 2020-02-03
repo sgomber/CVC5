@@ -1,0 +1,40 @@
+; EXPECT: unsat
+; COMMAND-LINE: --sygus-out=status --sygus-active-gen=enum
+
+(set-logic BV)
+
+
+(define-fun origCir ( (LN10 Bool) (LN30 Bool) (LN32 Bool) (LN42 Bool)  )  Bool    
+          (xor (xor (xor  LN30 LN32 ) LN42 ) LN10 )
+)
+
+
+(synth-fun skel ( (LN10 Bool) (LN30 Bool) (LN32 Bool) (LN42 Bool)  )  Bool    
+          ((Start Bool (
+		                                  (xor depth1 depth1)
+          ))
+          (depth1 Bool (
+		                                  (not depth2)
+		                                  (xor depth2 depth2)
+		                                  LN10
+          ))
+          (depth2 Bool (
+		                                  (xor depth3 LN32)
+          ))
+          (depth3 Bool (
+		                                  (xor LN30 LN42)
+		                                  LN32
+          )))
+)
+
+
+(declare-var LN10 Bool)
+(declare-var LN30 Bool)
+(declare-var LN32 Bool)
+(declare-var LN42 Bool)
+
+(constraint (= (origCir LN10 LN30 LN32 LN42 ) (skel LN10 LN30 LN32 LN42 )))
+
+
+(check-synth)
+
