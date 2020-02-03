@@ -404,6 +404,7 @@ bool SygusEnumerator::TermCache::addTerm(Node n)
     d_bterms.insert(bnr);
   }
   Trace("sygus-enum-all-terms") << "addTerm: " << d_tds->sygusToBuiltin(n) << std::endl;
+  Trace("ajr-temp") << "#" << d_terms.size() << " for " << d_tn << " = " <<  d_tds->sygusToBuiltin(n) << std::endl;
   ++(d_stats->d_enumTerms);
   d_terms.push_back(n);
   return true;
@@ -413,6 +414,9 @@ void SygusEnumerator::TermCache::pushEnumSizeIndex()
   d_sizeEnum++;
   d_sizeStartIndex[d_sizeEnum] = d_terms.size();
   Trace("sygus-enum-debug") << "tc(" << d_tn << "): size " << d_sizeEnum
+                            << " terms start at index " << d_terms.size()
+                            << std::endl;
+  Trace("ajr-temp") << "tc(" << d_tn << "): size " << d_sizeEnum
                             << " terms start at index " << d_terms.size()
                             << std::endl;
 }
@@ -949,9 +953,10 @@ bool SygusEnumerator::TermEnumMaster::incrementInternal()
 #else
       Node c = getCurrent();
 #endif
-      Trace("ajr-temp") << "Built term for indices ";
-      for (
-    std::pair<const unsigned, TermEnumSlave>& c : d_children)
+      const DType& dt = d_tn.getDType();
+      unsigned cnum = d_ccCons[d_consNum - 1];
+      Trace("ajr-temp") << "Try " << d_tn << " term for op " << dt[cnum].getSygusOp() << " with indices ";
+      for (std::pair<const unsigned, TermEnumSlave>& c : d_children)
       {
         Trace("ajr-temp") << c.first << " -> " << c.second.getCurrentIndex() << " ";
       }
@@ -1095,6 +1100,7 @@ bool SygusEnumerator::TermEnumMaster::initializeChild(unsigned i,
     // maximum index is the index of the child to the left
     maxIndex = d_children[i - 1].getCurrentIndex();
     hasMaxIndex = true;
+    //Trace("ajr-temp") << "Max index for " << d_tn << " child " << i << " is " << maxIndex << std::endl;
   }
   bool init = te.initialize(
       d_se, d_ccTypes[i], sizeMin, sizeMax, maxIndex, hasMaxIndex);
