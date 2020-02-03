@@ -380,7 +380,9 @@ bool SygusEnumerator::TermCache::addTerm(Node n)
     // must be unique up to rewriting
     if (d_bterms.find(bnr) != d_bterms.end())
     {
-      Trace("sygus-enum-exc") << "Exclude: " << bn << std::endl;
+      Trace("sygus-enum-exc") << "Exclude: ";
+      d_tds->toStreamSygus("sygus-enum-exc",n);
+      Trace("sygus-enum-exc") << std::endl;
       return false;
     }
     // if we are doing PBE symmetry breaking
@@ -393,9 +395,9 @@ bool SygusEnumerator::TermCache::addTerm(Node n)
       {
         if (bnr != bne)
         {
-          Trace("sygus-enum-exc")
-              << "Exclude (by examples): " << bn << ", since we already have "
-              << bne << std::endl;
+          Trace("sygus-enum-exc") << "Exclude (by examples): ";
+          d_tds->toStreamSygus("sygus-enum-exc",n);
+          Trace("sygus-enum-exc") << std::endl;
           return false;
         }
       }
