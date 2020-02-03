@@ -1011,7 +1011,6 @@ bool SygusEnumerator::TermEnumMaster::incrementInternal()
           // child having a non-zero minimum size bound).
           Trace("sygus-enum-debug2")
               << "master(" << d_tn << "): fail init children\n";
-          //d_currChildSize -= d_children[i].getCurrentSize();
         }
       }
       else
