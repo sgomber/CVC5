@@ -61,7 +61,7 @@ class BaseSolver
    *
    * This function should be called as a first step of any strategy.
    */
-  void checkInit();
+  void checkInit(std::set<Node>& termSet);
   /** check constant equivalence classes
    *
    * This function infers whether CONCAT terms can be simplified to constants.

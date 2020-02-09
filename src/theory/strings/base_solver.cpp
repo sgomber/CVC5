@@ -39,7 +39,7 @@ BaseSolver::BaseSolver(context::Context* c,
 
 BaseSolver::~BaseSolver() {}
 
-void BaseSolver::checkInit()
+void BaseSolver::checkInit(std::set<Node>& termSet)
 {
   // build term index
   d_eqcToConst.clear();
@@ -47,7 +47,7 @@ void BaseSolver::checkInit()
   d_eqcToConstExp.clear();
   d_termIndex.clear();
   d_stringsEqc.clear();
-
+  
   std::map<Kind, uint32_t> ncongruent;
   std::map<Kind, uint32_t> congruent;
   eq::EqualityEngine* ee = d_state.getEqualityEngine();
@@ -59,22 +59,25 @@ void BaseSolver::checkInit()
     TypeNode tn = eqc.getType();
     if (!tn.isRegExp())
     {
-      if (tn.isString())
-      {
-        d_stringsEqc.push_back(eqc);
-      }
+      bool relevant = false;
       Node var;
       eq::EqClassIterator eqc_i = eq::EqClassIterator(eqc, ee);
       while (!eqc_i.isFinished())
       {
         Node n = *eqc_i;
+
         if (n.isConst())
         {
           d_eqcToConst[eqc] = n;
           d_eqcToConstBase[eqc] = n;
           d_eqcToConstExp[eqc] = Node::null();
         }
-        else if (tn.isInteger())
+        if (termSet.find(n)==termSet.end())
+        {
+          continue;
+        }
+        relevant = true;
+        if (tn.isInteger())
         {
           // do nothing
         }
@@ -214,6 +217,10 @@ void BaseSolver::checkInit()
           }
         }
         ++eqc_i;
+      }
+      if (relevant && tn.isString())
+      {
+        d_stringsEqc.push_back(eqc);
       }
     }
     ++eqcs_i;

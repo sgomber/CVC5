@@ -1976,7 +1976,14 @@ void TheoryStrings::runInferStep(InferStep s, int effort)
   Trace("strings-process") << "..." << std::endl;
   switch (s)
   {
-    case CHECK_INIT: d_bsolver.checkInit(); break;
+    case CHECK_INIT: 
+    {
+      std::set<Node> termSet;
+      // Compute terms appearing in assertions and shared terms
+      computeRelevantTerms(termSet);
+      d_bsolver.checkInit(termSet); 
+      break;
+    }
     case CHECK_CONST_EQC: d_bsolver.checkConstantEquivalenceClasses(); break;
     case CHECK_EXTF_EVAL: checkExtfEval(effort); break;
     case CHECK_CYCLES: d_csolver.checkCycles(); break;
