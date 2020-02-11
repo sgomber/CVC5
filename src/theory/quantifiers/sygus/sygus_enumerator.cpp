@@ -22,6 +22,7 @@
 
 //#define BUILTIN_TERM_CACHE
 
+
 using namespace CVC4::kind;
 
 namespace CVC4 {
@@ -157,6 +158,7 @@ SygusEnumerator::TermCache::TermCache()
       d_sampleRrVInit(false)
 {
 }
+
 void SygusEnumerator::TermCache::initialize(SygusStatistics* s,
                                             Node e,
                                             TypeNode tn,
