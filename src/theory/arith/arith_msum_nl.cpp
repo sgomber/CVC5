@@ -21,19 +21,59 @@ using namespace CVC4::kind;
 namespace CVC4 {
 namespace theory {
 
-bool ArithMSum::getMonomial(Node n, Node& c, Node& v)
+bool isMult(Node n)
 {
-  if (n.getKind() == MULT && n.getNumChildren() == 2 && n[0].isConst())
+  return n.getKind()==MULT || n.getKind()==NONLINEAR_MULT;
+}
+  
+bool ArithMSumNl::getMonomial(Node var, Node n, Node& c)
+{
+  if (isMult(n))
   {
-    c = n[0];
-    v = n[1];
+    bool foundVar = false;
+    std::vector< Node > vars;
+    for (const Node& nc : n)
+    {
+      if (nc==var)
+      {
+        if (foundVar)
+        {
+          // non-linear
+          return false;
+        }
+        foundVar = true;
+      }
+      else
+      {
+        vars.push_back(nc);
+      }
+    }
+    if (foundVar)
+    {
+      Assert( !vars.empty() );
+      c = vars.size()==1 ? vars[0] : NodeManager::currentNM()->mkNode(MULT,vars);
+      c = Rewriter::rewrite(c);
+      return true;
+    }
+  }
+  else if (n==var)
+  {
+    c = NodeManager::currentNM()->mkConst(Rational(1));
     return true;
   }
   return false;
 }
 
-bool ArithMSum::getMonomial(Node n, std::map<Node, Node>& msum)
+bool ArithMSumNl::getMonomial(Node var, Node n, std::map<Node, Node>& msum)
 {
+  Node c;
+  Node v;
+  if (getMonomial(var, n, c))
+  {
+    return true;
+  }
+  return false;
+  
   if (n.isConst())
   {
     if (msum.find(Node::null()) == msum.end())
@@ -61,7 +101,7 @@ bool ArithMSum::getMonomial(Node n, std::map<Node, Node>& msum)
   return false;
 }
 
-bool ArithMSum::getMonomialSum(Node n, std::map<Node, Node>& msum)
+bool ArithMSumNl::getMonomialSum(Node n, std::map<Node, Node>& msum)
 {
   if (n.getKind() == PLUS)
   {
@@ -77,7 +117,7 @@ bool ArithMSum::getMonomialSum(Node n, std::map<Node, Node>& msum)
   return getMonomial(n, msum);
 }
 
-bool ArithMSum::getMonomialSumLit(Node lit, std::map<Node, Node>& msum)
+bool ArithMSumNl::getMonomialSumLit(Node lit, std::map<Node, Node>& msum)
 {
   if (lit.getKind() == GEQ || lit.getKind() == EQUAL)
   {
@@ -121,7 +161,7 @@ bool ArithMSum::getMonomialSumLit(Node lit, std::map<Node, Node>& msum)
   return false;
 }
 
-Node ArithMSum::mkNode(const std::map<Node, Node>& msum)
+Node ArithMSumNl::mkNode(const std::map<Node, Node>& msum)
 {
   NodeManager* nm = NodeManager::currentNM();
   std::vector<Node> children;
@@ -145,7 +185,7 @@ Node ArithMSum::mkNode(const std::map<Node, Node>& msum)
              : (children.size() == 1 ? children[0] : nm->mkConst(Rational(0)));
 }
 
-int ArithMSum::isolate(
+int ArithMSumNl::isolate(
     Node v, const std::map<Node, Node>& msum, Node& veq_c, Node& val, Kind k)
 {
   Assert(veq_c.isNull());
@@ -201,7 +241,7 @@ int ArithMSum::isolate(
   return 0;
 }
 
-int ArithMSum::isolate(
+int ArithMSumNl::isolate(
     Node v, const std::map<Node, Node>& msum, Node& veq, Kind k, bool doCoeff)
 {
   Node veq_c;
@@ -229,7 +269,7 @@ int ArithMSum::isolate(
   return ires;
 }
 
-Node ArithMSum::solveEqualityFor(Node lit, Node v)
+Node ArithMSumNl::solveEqualityFor(Node lit, Node v)
 {
   Assert(lit.getKind() == EQUAL);
   // first look directly at sides
@@ -244,10 +284,10 @@ Node ArithMSum::solveEqualityFor(Node lit, Node v)
   if (tn.isReal())
   {
     std::map<Node, Node> msum;
-    if (ArithMSum::getMonomialSumLit(lit, msum))
+    if (ArithMSumNl::getMonomialSumLit(lit, msum))
     {
       Node val, veqc;
-      if (ArithMSum::isolate(v, msum, veqc, val, EQUAL) != 0)
+      if (ArithMSumNl::isolate(v, msum, veqc, val, EQUAL) != 0)
       {
         if (veqc.isNull())
         {
@@ -262,7 +302,7 @@ Node ArithMSum::solveEqualityFor(Node lit, Node v)
   return Node::null();
 }
 
-bool ArithMSum::decompose(Node n, Node v, Node& coeff, Node& rem)
+bool ArithMSumNl::decompose(Node n, Node v, Node& coeff, Node& rem)
 {
   std::map<Node, Node> msum;
   if (getMonomialSum(n, msum))
@@ -283,7 +323,7 @@ bool ArithMSum::decompose(Node n, Node v, Node& coeff, Node& rem)
   return false;
 }
 
-Node ArithMSum::negate(Node t)
+Node ArithMSumNl::negate(Node t)
 {
   Node tt = NodeManager::currentNM()->mkNode(
       MULT, NodeManager::currentNM()->mkConst(Rational(-1)), t);
@@ -291,7 +331,7 @@ Node ArithMSum::negate(Node t)
   return tt;
 }
 
-Node ArithMSum::offset(Node t, int i)
+Node ArithMSumNl::offset(Node t, int i)
 {
   Node tt = NodeManager::currentNM()->mkNode(
       PLUS, NodeManager::currentNM()->mkConst(Rational(i)), t);
@@ -299,7 +339,7 @@ Node ArithMSum::offset(Node t, int i)
   return tt;
 }
 
-void ArithMSum::debugPrintMonomialSum(std::map<Node, Node>& msum, const char* c)
+void ArithMSumNl::debugPrintMonomialSum(std::map<Node, Node>& msum, const char* c)
 {
   for (std::map<Node, Node>::iterator it = msum.begin(); it != msum.end(); ++it)
   {

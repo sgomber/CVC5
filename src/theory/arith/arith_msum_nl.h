@@ -14,8 +14,8 @@
 
 #include "cvc4_private.h"
 
-#ifndef CVC4__THEORY__ARITH__MSUM_H
-#define CVC4__THEORY__ARITH__MSUM_H
+#ifndef CVC4__THEORY__ARITH__MSUM_NL_H
+#define CVC4__THEORY__ARITH__MSUM_NL_H
 
 #include <map>
 
@@ -53,7 +53,7 @@ namespace theory {
  * The following has utilities involving monmoial sums.
  *
  */
-class ArithMSum
+class ArithMSumNl
 {
  public:
   /** get monomial
@@ -61,7 +61,7 @@ class ArithMSum
    * If n = n[0]*n[1] where n[0] is constant and n[1] is not,
    * this function returns true, sets c to n[0] and v to n[1].
    */
-  static bool getMonomial(Node n, Node& c, Node& v);
+  static bool getMonomial(Node var, Node n, Node& c);
 
   /** get monomial
    *
@@ -72,7 +72,7 @@ class ArithMSum
    * This function returns false if the m-variable of n is already
    * present in n.
    */
-  static bool getMonomial(Node n, std::map<Node, Node>& msum);
+  static bool getMonomial(Node var, Node n, std::map<Node, Node>& msum);
 
   /** get monomial sum for real-valued term n
    *
@@ -185,4 +185,4 @@ class ArithMSum
 } /* CVC4::theory namespace */
 } /* CVC4 namespace */
 
-#endif /* CVC4__THEORY__ARITH__MSUM_H */
+#endif /* CVC4__THEORY__ARITH__MSUM_NL_H */
