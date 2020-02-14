@@ -264,6 +264,8 @@ libcvc4_add_sources(
   theory/arith/arith_ite_utils.h
   theory/arith/arith_msum.cpp
   theory/arith/arith_msum.h
+  theory/arith/arith_msum_nl.cpp
+  theory/arith/arith_msum_nl.h
   theory/arith/arith_rewriter.cpp
   theory/arith/arith_rewriter.h
   theory/arith/arith_static_learner.cpp

@@ -17,6 +17,7 @@
 #include "expr/node_algorithm.h"
 #include "options/quantifiers_options.h"
 #include "theory/arith/arith_msum.h"
+#include "theory/arith/arith_msum_nl.h"
 #include "theory/arith/partial_model.h"
 #include "theory/arith/theory_arith.h"
 #include "theory/arith/theory_arith_private.h"
@@ -845,7 +846,14 @@ CegTermType ArithInstantiator::solve_arith(CegInstantiator* ci,
   if (ires == 0)
   {
     Trace("cegqi-arith-debug") << "fail : isolate" << std::endl;
-    return CEG_TT_INVALID;
+    // maybe non-linear?
+    Node procEq = ArithMSum::mkNode(msum);
+    val = ArithMSumNl::solve(procEq,pv);
+    if (val.isNull())
+    {
+      return CEG_TT_INVALID;
+    }
+    Trace("cegqi-arith-debug") << "Isolate via non-linear" << std::endl;
   }
   if (Trace.isOn("cegqi-arith-debug"))
   {
