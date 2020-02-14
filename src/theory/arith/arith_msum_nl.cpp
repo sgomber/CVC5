@@ -72,11 +72,11 @@ bool ArithMSumNl::getMonomialAcc(Node var, Node n, Node& coeff)
   {
     if (coeff.isNull())
     {
-      coeff = n;
+      coeff = c;
     }
     else
     {
-      Node sum = NodeManager::currentNM()->mkNode(PLUS,coeff,n);
+      Node sum = NodeManager::currentNM()->mkNode(PLUS,coeff,c);
       coeff = Rewriter::rewrite(sum);
     }
     return true;
@@ -126,6 +126,10 @@ Node ArithMSumNl::solve(Node poly, Node var)
   }
   sol = nm->mkNode(DIVISION, sol, coeff);
   sol = ArithMSum::negate(sol);
+  if (var.getType().isInteger())
+  {
+    sol = nm->mkNode(TO_INTEGER,sol);
+  }
   sol = Rewriter::rewrite(sol);
   return sol;
 }

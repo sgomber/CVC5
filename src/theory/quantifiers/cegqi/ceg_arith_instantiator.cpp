@@ -846,14 +846,16 @@ CegTermType ArithInstantiator::solve_arith(CegInstantiator* ci,
   if (ires == 0)
   {
     Trace("cegqi-arith-debug") << "fail : isolate" << std::endl;
+    Trace("cegqi-arith-debug") << "Try non-linear..." << std::endl;
     // maybe non-linear?
     Node procEq = ArithMSum::mkNode(msum);
     val = ArithMSumNl::solve(procEq,pv);
     if (val.isNull())
     {
+      Trace("cegqi-arith-debug") << "fail : non-linear isolate" << std::endl;
       return CEG_TT_INVALID;
     }
-    Trace("cegqi-arith-debug") << "Isolate via non-linear" << std::endl;
+    Trace("cegqi-arith-debug") << "Isolated via non-linear" << std::endl;
   }
   if (Trace.isOn("cegqi-arith-debug"))
   {
