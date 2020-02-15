@@ -346,8 +346,10 @@ bool SygusEnumerator::TermCache::addTerm(Node n)
     // if we are doing PBE symmetry breaking
     if (d_seb != nullptr)
     {
+      ++(d_stats->d_enumTermsExampleEval);
       d_seb->addTerm(n, bn);
     }
+    /*
     if (d_eec != nullptr)
     {
       ++(d_stats->d_enumTermsExampleEval);
@@ -364,6 +366,7 @@ bool SygusEnumerator::TermCache::addTerm(Node n)
         }
       }
     }
+    */
     Trace("sygus-enum-terms") << "tc(" << d_tn << "): term " << bn << std::endl;
     d_bterms.insert(bnr);
   }
