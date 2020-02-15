@@ -349,6 +349,10 @@ class SygusEnumerator : public EnumValGenerator
     Node d_currTerm;
     /** is d_currTerm set */
     bool d_currTermSet;
+    /** currently iterating through buffered terms */
+    bool d_bufferTermIterate;
+    /** the index of the buffer terms */
+    unsigned d_bufferTermIndex;
     //----------------------------- current constructor class information
     /** the next constructor class we are using */
     unsigned d_consClassNum;

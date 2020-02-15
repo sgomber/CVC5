@@ -343,32 +343,15 @@ bool SygusEnumerator::TermCache::addTerm(Node n)
       Trace("sygus-enum-exc") << "Exclude: " << bn << std::endl;
       return false;
     }
+    d_bterms.insert(bnr);
     // if we are doing PBE symmetry breaking
     if (d_seb != nullptr)
     {
       ++(d_stats->d_enumTermsExampleEval);
       d_seb->addTerm(n, bn);
+      return false;
     }
-    /*
-    if (d_eec != nullptr)
-    {
-      ++(d_stats->d_enumTermsExampleEval);
-      // Is it equivalent under examples?
-      Node bne = d_eec->addSearchVal(bnr);
-      if (!bne.isNull())
-      {
-        if (bnr != bne)
-        {
-          Trace("sygus-enum-exc")
-              << "Exclude (by examples): " << bn << ", since we already have "
-              << bne << std::endl;
-          return false;
-        }
-      }
-    }
-    */
     Trace("sygus-enum-terms") << "tc(" << d_tn << "): term " << bn << std::endl;
-    d_bterms.insert(bnr);
   }
   ++(d_stats->d_enumTerms);
   d_terms.push_back(n);
@@ -378,7 +361,12 @@ void SygusEnumerator::TermCache::pushEnumSizeIndex()
 {
   if (d_seb!=nullptr)
   {
+    size_t prevSize = d_terms.size();
     d_seb->computeBuffer(d_terms);
+    for (size_t i=prevSize, tsize = d_terms.size(); i<tsize; i++)
+    {
+      ++(d_stats->d_enumTerms);
+    }
   }
   d_sizeEnum++;
   d_sizeStartIndex[d_sizeEnum] = d_terms.size();
@@ -611,6 +599,7 @@ SygusEnumerator::TermEnumMaster::TermEnumMaster()
     : TermEnum(),
       d_isIncrementing(false),
       d_currTermSet(false),
+      d_bufferTermIterate(false),
       d_consClassNum(0),
       d_ccWeight(0),
       d_consNum(0),
@@ -633,6 +622,7 @@ bool SygusEnumerator::TermEnumMaster::initialize(SygusEnumerator* se,
   d_ccCons.clear();
   d_isIncrementing = false;
   d_currTermSet = false;
+  d_bufferTermIterate = false;
   bool ret = increment();
   Trace("sygus-enum-debug") << "master(" << tn
                             << "): finish init, ret = " << ret << "\n";
@@ -696,6 +686,18 @@ bool SygusEnumerator::TermEnumMaster::increment()
 
 bool SygusEnumerator::TermEnumMaster::incrementInternal()
 {
+  // iterating on buffered terms
+  if (d_bufferTermIterate)
+  {
+    if (d_bufferTermIndex<tc.getNumTerms())
+    {
+      d_currTermSet = true;
+      d_currTerm = tc.getTerm(d_bufferTermIndex);
+      d_bufferTermIndex++;
+      return true;
+    }
+    d_bufferTermIterate = false;
+  }  
   SygusEnumerator::TermCache& tc = d_se->d_tcache[d_tn];
   if (tc.isComplete())
   {
@@ -819,6 +821,8 @@ bool SygusEnumerator::TermEnumMaster::incrementInternal()
 
     // push the bound
     tc.pushEnumSizeIndex();
+    d_bufferTermIterate = true;
+    d_bufferTermIndex = tc.getIndexForSize(d_currSize-1);
 
     // restart with constructor class one (skip nullary constructors)
     d_consClassNum = 1;
