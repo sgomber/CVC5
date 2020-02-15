@@ -891,6 +891,8 @@ bool SygusEnumerator::TermEnumMaster::incrementInternal()
       }
       else
       {
+        // The above change is required if terms of the same size are not
+        // treated the same.  This is the case for the commutative optimization.
         Trace("sygus-enum-debug2") << "master(" << d_tn
                                    << "): fail, backtrack...\n";
         // current child is out of values
