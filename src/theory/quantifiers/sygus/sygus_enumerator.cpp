@@ -22,7 +22,6 @@
 
 //#define BUILTIN_TERM_CACHE
 
-
 using namespace CVC4::kind;
 
 namespace CVC4 {
@@ -363,7 +362,9 @@ bool SygusEnumerator::TermCache::addTerm(Node n)
 #else
     Node bn = d_tds->sygusToBuiltin(n);
 #endif
-    Trace("sygus-enum-all-terms") << "checkTerm: " << bn << " (" << n.getType() << " " << d_tds->getSygusTermSize(n) << ")" <<  std::endl;
+    Trace("sygus-enum-all-terms")
+        << "checkTerm: " << bn << " (" << n.getType() << " "
+        << d_tds->getSygusTermSize(n) << ")" << std::endl;
     Node bnr = d_tds->getExtRewriter()->extendedRewrite(bn);
     ++(d_stats->d_enumTermsRewrite);
     if (options::sygusRewVerify())
@@ -383,7 +384,7 @@ bool SygusEnumerator::TermCache::addTerm(Node n)
     if (d_bterms.find(bnr) != d_bterms.end())
     {
       Trace("sygus-enum-exc") << "Exclude: ";
-      d_tds->toStreamSygus("sygus-enum-exc",n);
+      d_tds->toStreamSygus("sygus-enum-exc", n);
       Trace("sygus-enum-exc") << std::endl;
       return false;
     }
@@ -398,7 +399,7 @@ bool SygusEnumerator::TermCache::addTerm(Node n)
         if (bnr != bne)
         {
           Trace("sygus-enum-exc") << "Exclude (by examples): ";
-          d_tds->toStreamSygus("sygus-enum-exc",n);
+          d_tds->toStreamSygus("sygus-enum-exc", n);
           Trace("sygus-enum-exc") << std::endl;
           return false;
         }
@@ -407,8 +408,10 @@ bool SygusEnumerator::TermCache::addTerm(Node n)
     Trace("sygus-enum-terms") << "tc(" << d_tn << "): term " << bn << std::endl;
     d_bterms.insert(bnr);
   }
-  Trace("sygus-enum-all-terms") << "addTerm: " << d_tds->sygusToBuiltin(n) << std::endl;
-  Trace("ajr-temp") << "#" << d_terms.size() << " for " << d_tn << " = " <<  d_tds->sygusToBuiltin(n) << std::endl;
+  Trace("sygus-enum-all-terms")
+      << "addTerm: " << d_tds->sygusToBuiltin(n) << std::endl;
+  Trace("ajr-temp") << "#" << d_terms.size() << " for " << d_tn << " = "
+                    << d_tds->sygusToBuiltin(n) << std::endl;
   ++(d_stats->d_enumTerms);
   d_terms.push_back(n);
   return true;
@@ -421,8 +424,7 @@ void SygusEnumerator::TermCache::pushEnumSizeIndex()
                             << " terms start at index " << d_terms.size()
                             << std::endl;
   Trace("ajr-temp") << "tc(" << d_tn << "): size " << d_sizeEnum
-                            << " terms start at index " << d_terms.size()
-                            << std::endl;
+                    << " terms start at index " << d_terms.size() << std::endl;
 }
 unsigned SygusEnumerator::TermCache::getEnumSize() const { return d_sizeEnum; }
 unsigned SygusEnumerator::TermCache::getIndexForSize(unsigned s) const
@@ -471,9 +473,9 @@ bool SygusEnumerator::TermEnumSlave::initialize(SygusEnumerator* se,
   d_sizeLim = sizeMax;
   d_maxIndex = maxIndex;
   d_hasMaxIndex = hasMaxIndex;
-  Trace("sygus-enum-debug2") << "slave(" << d_tn
-                             << "): init, min/max=" << sizeMin << "/" << sizeMax
-                             << ", maxIndex/hasMaxIndex=" << maxIndex << "/" << hasMaxIndex << "...\n";
+  Trace("sygus-enum-debug2")
+      << "slave(" << d_tn << "): init, min/max=" << sizeMin << "/" << sizeMax
+      << ", maxIndex/hasMaxIndex=" << maxIndex << "/" << hasMaxIndex << "...\n";
 
   // must have pointer to the master
   d_master = d_se->getMasterEnumForType(d_tn);
@@ -959,10 +961,12 @@ bool SygusEnumerator::TermEnumMaster::incrementInternal()
 #endif
       const DType& dt = d_tn.getDType();
       unsigned cnum = d_ccCons[d_consNum - 1];
-      Trace("ajr-temp") << "Try " << d_tn << " term for op " << dt[cnum].getSygusOp() << " with indices ";
+      Trace("ajr-temp") << "Try " << d_tn << " term for op "
+                        << dt[cnum].getSygusOp() << " with indices ";
       for (std::pair<const unsigned, TermEnumSlave>& c : d_children)
       {
-        Trace("ajr-temp") << c.first << " -> " << c.second.getCurrentIndex() << " ";
+        Trace("ajr-temp") << c.first << " -> " << c.second.getCurrentIndex()
+                          << " ";
       }
       Trace("ajr-temp") << std::endl;
       if (!c.isNull())
@@ -1103,7 +1107,8 @@ bool SygusEnumerator::TermEnumMaster::initializeChild(unsigned i,
     // maximum index is the index of the child to the left
     maxIndex = d_children[i - 1].getCurrentIndex();
     hasMaxIndex = true;
-    //Trace("ajr-temp") << "Max index for " << d_tn << " child " << i << " is " << maxIndex << std::endl;
+    // Trace("ajr-temp") << "Max index for " << d_tn << " child " << i << " is "
+    // << maxIndex << std::endl;
   }
   bool init = te.initialize(
       d_se, d_ccTypes[i], sizeMin, sizeMax, maxIndex, hasMaxIndex);
