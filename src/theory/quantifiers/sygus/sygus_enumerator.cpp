@@ -145,6 +145,7 @@ Node SygusEnumerator::getCurrent()
 SygusEnumerator::TermCache::TermCache()
     : d_tds(nullptr),
       d_eec(nullptr),
+      d_seb(nullptr),
       d_isSygusType(false),
       d_numConClasses(0),
       d_sizeEnum(0),
@@ -165,6 +166,10 @@ void SygusEnumerator::TermCache::initialize(SygusStatistics* s,
   d_tn = tn;
   d_tds = tds;
   d_eec = eec;
+  if (d_eec!=nullptr)
+  {
+    d_seb.reset(new SygusEnumeratorBuffer(d_tds,d_eec));
+  }
   d_sizeStartIndex[0] = 0;
   d_isSygusType = false;
 
@@ -339,6 +344,10 @@ bool SygusEnumerator::TermCache::addTerm(Node n)
       return false;
     }
     // if we are doing PBE symmetry breaking
+    if (d_seb != nullptr)
+    {
+      d_seb->addTerm(n, bn);
+    }
     if (d_eec != nullptr)
     {
       ++(d_stats->d_enumTermsExampleEval);
@@ -364,6 +373,10 @@ bool SygusEnumerator::TermCache::addTerm(Node n)
 }
 void SygusEnumerator::TermCache::pushEnumSizeIndex()
 {
+  if (d_seb!=nullptr)
+  {
+    d_seb->computeBuffer(d_terms);
+  }
   d_sizeEnum++;
   d_sizeStartIndex[d_sizeEnum] = d_terms.size();
   Trace("sygus-enum-debug") << "tc(" << d_tn << "): size " << d_sizeEnum

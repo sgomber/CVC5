@@ -22,6 +22,7 @@
 #include "expr/node.h"
 #include "expr/type_node.h"
 #include "theory/quantifiers/sygus/synth_conjecture.h"
+#include "theory/quantifiers/sygus/sygus_enumerator_buffer.h"
 #include "theory/quantifiers/sygus/term_database_sygus.h"
 
 namespace CVC4 {
@@ -157,6 +158,8 @@ class SygusEnumerator : public EnumValGenerator
      * breaking).
      */
     ExampleEvalCache* d_eec;
+    /** Buffer object */
+    std::unique_ptr<SygusEnumeratorBuffer> d_seb;
     //-------------------------static information about type
     /** is d_tn a sygus type? */
     bool d_isSygusType;
