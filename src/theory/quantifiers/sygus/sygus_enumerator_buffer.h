@@ -21,6 +21,7 @@
 #include "expr/node.h"
 #include "theory/quantifiers/sygus/term_database_sygus.h"
 #include "theory/quantifiers/sygus/example_eval_cache.h"
+#include "theory/quantifiers/sygus/sygus_stats.h"
 #include "expr/node_trie.h"
 #include <vector>
 
@@ -40,7 +41,7 @@ class VariadicTrieEval
 {
  public:
   /** the children of this node */
-  std::map<Node, VariadicTrie> d_children;
+  std::map<Node, VariadicTrieEval> d_children;
   /** the data at this node */
   Node d_data;
   /**
@@ -73,19 +74,15 @@ private:
   TermDbSygus* d_tds;
   /** pointer to the synth conjecture that owns this enumerator */
   SynthConjecture* d_parent;
-  /** reference to the statistics of parent */
-  SygusStatistics* d_stats;
-  /** 
-   * maps sygus constructors to applications of that constructor that are in
-   * the current buffer. 
-   */
-  std::map< Node, std::vector<Node> > d_buffer;
   /** TEMPORARY buffer */
   std::vector<Node> d_tbuffer;
   /** pointer to evaluation cache for enumerator */
   ExampleEvalCache* d_eec;
+  /** reference to the statistics of parent */
+  SygusStatistics* d_stats;
   /** node trie */
   std::map< Node, VariadicTrieEval > d_cache;
+  std::map< Node, std::map< unsigned, VariadicTrieEval > > d_cacheEx;
 };
 
 }  // namespace quantifiers

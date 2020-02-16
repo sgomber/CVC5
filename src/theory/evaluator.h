@@ -127,6 +127,14 @@ class Evaluator
       const std::vector<Node>& vals,
       std::unordered_map<TNode, Node, NodeHashFunction>& evalAsNode,
       std::unordered_map<TNode, EvalResult, TNodeHashFunction>& results) const;
+  /** Eval base */
+  void evalBase(
+      TNode currNode,
+      Node currNodeVal,
+      std::unordered_map<TNode, Node, NodeHashFunction>& evalAsNode,
+      std::unordered_map<TNode, EvalResult, TNodeHashFunction>& results,
+      bool needsReconstruct
+                     ) const;
   /** reconstruct
    *
    * This function reconstructs the result of evaluating n using a combination

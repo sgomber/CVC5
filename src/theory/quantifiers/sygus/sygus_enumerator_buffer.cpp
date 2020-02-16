@@ -47,33 +47,35 @@ SygusEnumeratorBuffer::SygusEnumeratorBuffer(TermDbSygus* tds, ExampleEvalCache 
 
 void SygusEnumeratorBuffer::addTerm(Node n, Node bn)
 {
-  //d_buffer[n.getOperator()].push_back(n);
   std::vector< std::vector< Node > > childrenEval;
   for (const Node& nc : n)
   {
-    Node bnc = datatypes::util::sygusToBuiltin(nc);
+    Node bnc = datatypes::utils::sygusToBuiltin(nc);
     std::vector< Node > eval;
     d_eec->evaluateVec(bnc,eval);
     childrenEval.push_back(eval);
   }
-  AlwaysAssert( !childrenEval.empty());
-  
-  VariadicTrieEval * vte = &d_cache[n.getOperator()];
-  unsigned nchildren = childrenEval.size();
-  for (unsigned i=0, csize=childrenEval[0].size(); i<csize; i++)
+  if( !childrenEval.empty())
   {
-    std::vector<Node> index;
-    for (unsigned j=0; j<nchildren; j++)
+    AlwaysAssert(!childrenEval[0].empty());
+    VariadicTrieEval * vte = &d_cache[n.getOperator()];
+    unsigned nchildren = childrenEval.size();
+    for (unsigned i=0, csize=childrenEval[0].size(); i<csize; i++)
     {
-      index.push_back(childrenEval[j][i]);
-    }
-    if (vte->add(n,index))
-    {
-      ++(d_stats->d_evalMiss);
-    }
-    else
-    {
-      ++(d_stats->d_evalHit);
+      //VariadicTrieEval * vte = &d_cacheEx[n.getOperator()][i];
+      std::vector<Node> index;
+      for (unsigned j=0; j<nchildren; j++)
+      {
+        index.push_back(childrenEval[j][i]);
+      }
+      if (vte->add(n,index))
+      {
+        ++(d_stats->d_evalMiss);
+      }
+      else
+      {
+        ++(d_stats->d_evalHit);
+      }
     }
   }
   
@@ -96,11 +98,6 @@ void SygusEnumeratorBuffer::addTerm(Node n, Node bn)
 
 void SygusEnumeratorBuffer::computeBuffer( std::vector<Node>& terms)
 {
-  for (const std::map< Node, std::vector<Node> >& p : buffer)
-  {
-    
-  }
-  
   
   
   /// NAIVE IMPLEMENTATION
