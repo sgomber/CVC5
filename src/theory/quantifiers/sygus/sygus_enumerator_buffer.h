@@ -64,6 +64,7 @@ class SygusEnumeratorBuffer
    * rewriting. Term bn is the builtin version of this term.
    */
   void addTerm(Node n, Node bn);
+  void notifyTerm(Node n, Node bn);
   /** 
    * Compute buffer, add the (sygus) terms to vector ts that are unique
    * up to example evaluation.

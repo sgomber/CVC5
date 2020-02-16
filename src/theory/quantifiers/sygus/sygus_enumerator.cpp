@@ -19,6 +19,8 @@
 #include "theory/datatypes/theory_datatypes_utils.h"
 #include "theory/quantifiers/sygus/synth_engine.h"
 
+//#define USE_BUFFER
+
 using namespace CVC4::kind;
 
 namespace CVC4 {
@@ -345,12 +347,37 @@ bool SygusEnumerator::TermCache::addTerm(Node n)
     }
     d_bterms.insert(bnr);
     // if we are doing PBE symmetry breaking
+#ifdef USE_BUFFER
     if (d_seb != nullptr)
     {
       ++(d_stats->d_enumTermsExampleEval);
       d_seb->addTerm(n, bn);
       return false;
     }
+#else
+    if (d_seb != nullptr)
+    {
+      d_seb->notifyTerm(n, bn);
+      return false;
+    }
+    // if we are doing PBE symmetry breaking
+    if (d_eec != nullptr)
+    {
+      ++(d_stats->d_enumTermsExampleEval);
+      // Is it equivalent under examples?
+      Node bne = d_eec->addSearchVal(bnr);
+      if (!bne.isNull())
+      {
+        if (bnr != bne)
+        {
+          Trace("sygus-enum-exc")
+              << "Exclude (by examples): " << bn << ", since we already have "
+              << bne << std::endl;
+          return false;
+        }
+      }
+    }
+#endif
     Trace("sygus-enum-terms") << "tc(" << d_tn << "): term " << bn << std::endl;
   }
   ++(d_stats->d_enumTerms);
@@ -359,6 +386,7 @@ bool SygusEnumerator::TermCache::addTerm(Node n)
 }
 void SygusEnumerator::TermCache::pushEnumSizeIndex()
 {
+#ifdef USE_BUFFER
   if (d_seb!=nullptr)
   {
     size_t prevSize = d_terms.size();
@@ -368,6 +396,7 @@ void SygusEnumerator::TermCache::pushEnumSizeIndex()
       ++(d_stats->d_enumTerms);
     }
   }
+#endif
   d_sizeEnum++;
   d_sizeStartIndex[d_sizeEnum] = d_terms.size();
   Trace("sygus-enum-debug") << "tc(" << d_tn << "): size " << d_sizeEnum
@@ -821,9 +850,11 @@ bool SygusEnumerator::TermEnumMaster::incrementInternal()
 
     // push the bound
     tc.pushEnumSizeIndex();
+#ifdef USE_BUFFER
     d_bufferTermIterate = true;
     d_bufferTermIndex = tc.getIndexForSize(d_currSize-1);
-
+#endif
+    
     // restart with constructor class one (skip nullary constructors)
     d_consClassNum = 1;
 

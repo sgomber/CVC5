@@ -47,6 +47,24 @@ SygusEnumeratorBuffer::SygusEnumeratorBuffer(TermDbSygus* tds, ExampleEvalCache 
 
 void SygusEnumeratorBuffer::addTerm(Node n, Node bn)
 {
+  /// NAIVE IMPLEMENTATION
+  // Is it equivalent under examples?
+  Node bne = d_eec->addSearchVal(bn);
+  if (!bne.isNull())
+  {
+    if (bn != bne)
+    {
+      Trace("sygus-enum-exc")
+          << "Exclude (by examples): " << bn << ", since we already have "
+          << bne << std::endl;
+      return;
+    }
+  }
+  d_tbuffer.push_back(n);
+}
+
+void SygusEnumeratorBuffer::notifyTerm(Node n, Node bn)
+{
   std::vector< std::vector< Node > > childrenEval;
   for (const Node& nc : n)
   {
@@ -78,22 +96,6 @@ void SygusEnumeratorBuffer::addTerm(Node n, Node bn)
       }
     }
   }
-  
-  
-  /// NAIVE IMPLEMENTATION
-  // Is it equivalent under examples?
-  Node bne = d_eec->addSearchVal(bn);
-  if (!bne.isNull())
-  {
-    if (bn != bne)
-    {
-      Trace("sygus-enum-exc")
-          << "Exclude (by examples): " << bn << ", since we already have "
-          << bne << std::endl;
-      return;
-    }
-  }
-  d_tbuffer.push_back(n);
 }
 
 void SygusEnumeratorBuffer::computeBuffer( std::vector<Node>& terms)
