@@ -686,6 +686,7 @@ bool SygusEnumerator::TermEnumMaster::increment()
 
 bool SygusEnumerator::TermEnumMaster::incrementInternal()
 {
+  SygusEnumerator::TermCache& tc = d_se->d_tcache[d_tn];
   // iterating on buffered terms
   if (d_bufferTermIterate)
   {
@@ -697,8 +698,7 @@ bool SygusEnumerator::TermEnumMaster::incrementInternal()
       return true;
     }
     d_bufferTermIterate = false;
-  }  
-  SygusEnumerator::TermCache& tc = d_se->d_tcache[d_tn];
+  }
   if (tc.isComplete())
   {
     return false;
