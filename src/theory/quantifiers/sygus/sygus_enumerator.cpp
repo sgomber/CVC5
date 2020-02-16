@@ -358,7 +358,6 @@ bool SygusEnumerator::TermCache::addTerm(Node n)
     if (d_seb != nullptr)
     {
       d_seb->notifyTerm(n, bn);
-      return false;
     }
     // if we are doing PBE symmetry breaking
     if (d_eec != nullptr)
