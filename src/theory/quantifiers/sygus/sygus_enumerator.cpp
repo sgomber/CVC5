@@ -168,7 +168,7 @@ void SygusEnumerator::TermCache::initialize(SygusStatistics* s,
   d_eec = eec;
   if (d_eec!=nullptr)
   {
-    d_seb.reset(new SygusEnumeratorBuffer(d_tds,d_eec));
+    d_seb.reset(new SygusEnumeratorBuffer(d_tds,d_eec,s));
   }
   d_sizeStartIndex[0] = 0;
   d_isSygusType = false;

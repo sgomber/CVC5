@@ -48,6 +48,8 @@ class VariadicTrie
    * stored at the node indexed by i.
    */
   bool add(Node n, const std::vector<Node>& i);
+  /** Is there any data in this trie that is indexed by any subset of is? */
+  bool hasSubset(const std::vector<Node>& is) const;
 };
 
 /** CegisCoreConnective

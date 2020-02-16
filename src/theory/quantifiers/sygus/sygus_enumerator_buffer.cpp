@@ -58,9 +58,23 @@ void SygusEnumeratorBuffer::addTerm(Node n, Node bn)
   }
   AlwaysAssert( !childrenEval.empty());
   
+  VariadicTrieEval * vte = &d_cache[n.getOperator()];
+  unsigned nchildren = childrenEval.size();
   for (unsigned i=0, csize=childrenEval[0].size(); i<csize; i++)
   {
-    
+    std::vector<Node> index;
+    for (unsigned j=0; j<nchildren; j++)
+    {
+      index.push_back(childrenEval[j][i]);
+    }
+    if (vte->add(n,index))
+    {
+      ++(d_stats->d_evalMiss);
+    }
+    else
+    {
+      ++(d_stats->d_evalHit);
+    }
   }
   
   
