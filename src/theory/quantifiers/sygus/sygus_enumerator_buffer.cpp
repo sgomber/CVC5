@@ -24,20 +24,44 @@ using namespace CVC4::kind;
 namespace CVC4 {
 namespace theory {
 namespace quantifiers {
-
-SygusEnumeratorBuffer::SygusEnumeratorBuffer(TermDbSygus* tds, ExampleEvalCache * eec) : d_tds(tds), d_eec(eec)
-{
   
+bool VariadicTrieEval::add(Node n, const std::vector<Node>& i)
+{
+  VariadicTrieEval* curr = this;
+  for (const Node& ic : i)
+  {
+    curr = &(curr->d_children[ic]);
+  }
+  if (curr->d_data.isNull())
+  {
+    curr->d_data = n;
+    return true;
+  }
+  return false;
 }
 
-void SygusEnumeratorBuffer::initialize(Node e)
+SygusEnumeratorBuffer::SygusEnumeratorBuffer(TermDbSygus* tds, ExampleEvalCache * eec, SygusStatistics * s) : d_tds(tds), d_eec(eec), d_stats(s)
 {
-  // ?
+  
 }
 
 void SygusEnumeratorBuffer::addTerm(Node n, Node bn)
 {
   //d_buffer[n.getOperator()].push_back(n);
+  std::vector< std::vector< Node > > childrenEval;
+  for (const Node& nc : n)
+  {
+    Node bnc = datatypes::util::sygusToBuiltin(nc);
+    std::vector< Node > eval;
+    d_eec->evaluateVec(bnc,eval);
+    childrenEval.push_back(eval);
+  }
+  AlwaysAssert( !childrenEval.empty());
+  
+  for (unsigned i=0, csize=childrenEval[0].size(); i<csize; i++)
+  {
+    
+  }
   
   
   /// NAIVE IMPLEMENTATION
@@ -58,6 +82,11 @@ void SygusEnumeratorBuffer::addTerm(Node n, Node bn)
 
 void SygusEnumeratorBuffer::computeBuffer( std::vector<Node>& terms)
 {
+  for (const std::map< Node, std::vector<Node> >& p : buffer)
+  {
+    
+  }
+  
   
   
   /// NAIVE IMPLEMENTATION

@@ -18,26 +18,48 @@
 #define CVC4__THEORY__QUANTIFIERS__SYGUS_ENUMERATOR_BUFFER_H
 
 #include <map>
-#include <unordered_set>
 #include "expr/node.h"
-#include "expr/type_node.h"
-#include "theory/quantifiers/sygus/synth_conjecture.h"
 #include "theory/quantifiers/sygus/term_database_sygus.h"
+#include "theory/quantifiers/sygus/example_eval_cache.h"
+#include "expr/node_trie.h"
 #include <vector>
 
 namespace CVC4 {
 namespace theory {
 namespace quantifiers {
 
+/**
+ * A trie that stores data at undetermined depth. Storing data at
+ * undetermined depth is in contrast to the NodeTrie (expr/node_trie.h), which
+ * assumes all data is stored at a fixed depth.
+ *
+ * Since data can be stored at any depth, we require both a d_children field
+ * and a d_data field.
+ */
+class VariadicTrieEval
+{
+ public:
+  /** the children of this node */
+  std::map<Node, VariadicTrie> d_children;
+  /** the data at this node */
+  Node d_data;
+  /**
+   * Add data with identifier n indexed by i, return true if data is not already
+   * stored at the node indexed by i.
+   */
+  bool add(Node n, const std::vector<Node>& i);
+  /** Is there any data in this trie that is indexed by any subset of is? */
+  bool hasSubset(const std::vector<Node>& is) const;
+};
+
+  
 /** SygusEnumeratorBuffer
  */
 class SygusEnumeratorBuffer
 {
  public:
-  SygusEnumeratorBuffer(TermDbSygus* tds, ExampleEvalCache * eec);
+  SygusEnumeratorBuffer(TermDbSygus* tds, ExampleEvalCache * eec, SygusStatistics * s);
   ~SygusEnumeratorBuffer() {}
-  /** initialize this class with sygus enumerator e */
-  void initialize(Node e);
   /** 
    * Add sygus constructor term n, called on terms that are unique up to
    * rewriting. Term bn is the builtin version of this term.
@@ -53,6 +75,8 @@ private:
   TermDbSygus* d_tds;
   /** pointer to the synth conjecture that owns this enumerator */
   SynthConjecture* d_parent;
+  /** reference to the statistics of parent */
+  SygusStatistics* d_stats;
   /** 
    * maps sygus constructors to applications of that constructor that are in
    * the current buffer. 
@@ -62,6 +86,8 @@ private:
   std::vector<Node> d_tbuffer;
   /** pointer to evaluation cache for enumerator */
   ExampleEvalCache* d_eec;
+  /** node trie */
+  NodeTrie d_cache;
 };
 
 }  // namespace quantifiers
