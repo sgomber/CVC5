@@ -1355,7 +1355,8 @@ ExampleEvalCache* SynthConjecture::getExampleEvalCache(Node e)
     d_exampleEvalCache[e].reset(nullptr);
     return nullptr;
   }
-  d_exampleEvalCache[e].reset(new ExampleEvalCache(d_tds, this, &d_stats, f, e));
+  d_exampleEvalCache[e].reset(
+      new ExampleEvalCache(d_tds, this, &d_stats, f, e));
   return d_exampleEvalCache[e].get();
 }
 

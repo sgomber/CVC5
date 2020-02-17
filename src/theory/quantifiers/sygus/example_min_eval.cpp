@@ -50,7 +50,7 @@ ExampleMinEval::ExampleMinEval(Node n,
 Node ExampleMinEval::evaluate(const std::vector<Node>& subs)
 {
   bool computed = false;
-  return evaluate(subs,computed);
+  return evaluate(subs, computed);
 }
 
 Node ExampleMinEval::evaluate(const std::vector<Node>& subs, bool& computed)

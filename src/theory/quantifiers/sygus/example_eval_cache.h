@@ -90,7 +90,8 @@ class ExampleEvalCache
    * are builtin terms that the analog of values taken by enumerator e that
    * is associated with f.
    */
-  ExampleEvalCache(TermDbSygus* tds, SynthConjecture* p, SygusStatistics* s, Node f, Node e);
+  ExampleEvalCache(
+      TermDbSygus* tds, SynthConjecture* p, SygusStatistics* s, Node f, Node e);
   ~ExampleEvalCache();
 
   /** Add search value
@@ -124,7 +125,10 @@ class ExampleEvalCache
    *
    * If doCache is true, the result of the evaluation is cached internally.
    */
-  void evaluateVec(Node n, Node bv, std::vector<Node>& exOut, bool doCache = false);
+  void evaluateVec(Node n,
+                   Node bv,
+                   std::vector<Node>& exOut,
+                   bool doCache = false);
   void evaluateVec(Node bv, std::vector<Node>& exOut);
   /** evaluate builtin
    *
@@ -174,7 +178,7 @@ class ExampleEvalCache
   /** cache for evaluate */
   std::map<Node, std::vector<Node>> d_exOutCache;
   /** node trie */
-  std::map< Node, VariadicTrieEval > d_vteCache;
+  std::map<Node, VariadicTrieEval> d_vteCache;
 };
 
 }  // namespace quantifiers

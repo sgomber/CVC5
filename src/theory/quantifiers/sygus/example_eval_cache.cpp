@@ -24,11 +24,8 @@ namespace CVC4 {
 namespace theory {
 namespace quantifiers {
 
-ExampleEvalCache::ExampleEvalCache(TermDbSygus* tds,
-                                   SynthConjecture* p,
-                                   SygusStatistics* s,
-                                   Node f,
-                                   Node e)
+ExampleEvalCache::ExampleEvalCache(
+    TermDbSygus* tds, SynthConjecture* p, SygusStatistics* s, Node f, Node e)
     : d_tds(tds), d_stats(s), d_stn(e.getType())
 {
   ExampleInfer* ei = p->getExampleInfer();
@@ -71,10 +68,13 @@ Node ExampleEvalCache::addSearchVal(Node n, Node bv)
 
 void ExampleEvalCache::evaluateVec(Node bv, std::vector<Node>& exOut)
 {
-  evaluateVecInternal(Node::null(),bv,exOut);
+  evaluateVecInternal(Node::null(), bv, exOut);
 }
 
-void ExampleEvalCache::evaluateVec(Node n, Node bv, std::vector<Node>& exOut, bool doCache)
+void ExampleEvalCache::evaluateVec(Node n,
+                                   Node bv,
+                                   std::vector<Node>& exOut,
+                                   bool doCache)
 {
   // is it in the cache?
   std::map<Node, std::vector<Node>>::iterator it = d_exOutCache.find(n);
@@ -93,27 +93,26 @@ void ExampleEvalCache::evaluateVec(Node n, Node bv, std::vector<Node>& exOut, bo
   }
 }
 
-void ExampleEvalCache::evaluateVecInternal(Node n, 
+void ExampleEvalCache::evaluateVecInternal(Node n,
                                            Node bv,
                                            std::vector<Node>& exOut)
 {
-
   // use ExampleMinEval
   SygusTypeInfo& ti = d_tds->getTypeInfo(d_stn);
   const std::vector<Node>& varlist = ti.getVarList();
   EmeEvalTds emetds(d_tds, d_stn);
   ExampleMinEval eme(bv, varlist, &emetds);
-  std::vector< std::map< Node, std::vector<Node> >::iterator > vecIt;
-  VariadicTrieEval * vte = nullptr;
+  std::vector<std::map<Node, std::vector<Node>>::iterator> vecIt;
+  VariadicTrieEval* vte = nullptr;
   if (options::sygusEvalAggCache())
   {
-    if (!n.isNull() && n.getNumChildren()>0)
+    if (!n.isNull() && n.getNumChildren() > 0)
     {
       vte = &(d_vteCache[n.getOperator()]);
       for (const Node& nc : n)
       {
-        std::map< Node, std::vector<Node> >::iterator it = d_exOutCache.find(nc);
-        if( it == d_exOutCache.end() )
+        std::map<Node, std::vector<Node>>::iterator it = d_exOutCache.find(nc);
+        if (it == d_exOutCache.end())
         {
           // This occurs when an argument of the current term n has not been
           // cached by this class. This should not happen infrequently, since
@@ -122,7 +121,7 @@ void ExampleEvalCache::evaluateVecInternal(Node n,
           // independently.
           Node ncbv = d_tds->sygusToBuiltin(nc);
           std::vector<Node> exOutC;
-          evaluateVec(nc,ncbv,exOutC,true);
+          evaluateVec(nc, ncbv, exOutC, true);
           it = d_exOutCache.find(nc);
           // it should be cached now
           AlwaysAssert(it != d_exOutCache.end());
@@ -135,10 +134,10 @@ void ExampleEvalCache::evaluateVecInternal(Node n,
   {
     Node res;
     bool computed = false;
-    if (vte!=nullptr)
+    if (vte != nullptr)
     {
-      VariadicTrieEval * vteCurr = vte;
-      for (const std::map< Node, std::vector<Node> >::iterator& it : vecIt)
+      VariadicTrieEval* vteCurr = vte;
+      for (const std::map<Node, std::vector<Node>>::iterator& it : vecIt)
       {
         vteCurr = &(vteCurr->d_children[it->second[j]]);
       }
@@ -178,10 +177,11 @@ void ExampleEvalCache::clearEvaluationCache(Node bv)
   d_exOutCache.erase(bv);
 }
 
-void ExampleEvalCache::clearEvaluationAll() { 
+void ExampleEvalCache::clearEvaluationAll()
+{
   if (!options::sygusEvalAggCache())
   {
-    d_exOutCache.clear(); 
+    d_exOutCache.clear();
   }
 }
 
