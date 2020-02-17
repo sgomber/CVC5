@@ -19,6 +19,7 @@
 
 #include "expr/node_trie.h"
 #include "theory/quantifiers/sygus/example_infer.h"
+#include "theory/quantifiers/sygus/sygus_stats.h"
 
 namespace CVC4 {
 namespace theory {
@@ -89,7 +90,7 @@ class ExampleEvalCache
    * are builtin terms that the analog of values taken by enumerator e that
    * is associated with f.
    */
-  ExampleEvalCache(TermDbSygus* tds, SynthConjecture* p, Node f, Node e);
+  ExampleEvalCache(TermDbSygus* tds, SynthConjecture* p, SygusStatistics* s, Node f, Node e);
   ~ExampleEvalCache();
 
   /** Add search value
@@ -147,6 +148,8 @@ class ExampleEvalCache
   void evaluateVecInternal(Node n, Node bv, std::vector<Node>& exOut);
   /** Pointer to the sygus term database */
   TermDbSygus* d_tds;
+  /** stats object */
+  SygusStatistics* d_stats;
   /** pointer to the example inference class */
   std::vector<std::vector<Node>> d_examples;
   /** The SyGuS type of the enumerator */
