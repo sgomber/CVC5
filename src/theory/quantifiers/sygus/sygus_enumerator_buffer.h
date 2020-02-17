@@ -29,29 +29,6 @@ namespace CVC4 {
 namespace theory {
 namespace quantifiers {
 
-/**
- * A trie that stores data at undetermined depth. Storing data at
- * undetermined depth is in contrast to the NodeTrie (expr/node_trie.h), which
- * assumes all data is stored at a fixed depth.
- *
- * Since data can be stored at any depth, we require both a d_children field
- * and a d_data field.
- */
-class VariadicTrieEval
-{
- public:
-  /** the children of this node */
-  std::map<Node, VariadicTrieEval> d_children;
-  /** the data at this node */
-  Node d_data;
-  /**
-   * Add data with identifier n indexed by i, return true if data is not already
-   * stored at the node indexed by i.
-   */
-  bool add(Node n, const std::vector<Node>& i);
-};
-
-  
 /** SygusEnumeratorBuffer
  */
 class SygusEnumeratorBuffer

@@ -24,21 +24,6 @@ using namespace CVC4::kind;
 namespace CVC4 {
 namespace theory {
 namespace quantifiers {
-  
-bool VariadicTrieEval::add(Node n, const std::vector<Node>& i)
-{
-  VariadicTrieEval* curr = this;
-  for (const Node& ic : i)
-  {
-    curr = &(curr->d_children[ic]);
-  }
-  if (curr->d_data.isNull())
-  {
-    curr->d_data = n;
-    return true;
-  }
-  return false;
-}
 
 SygusEnumeratorBuffer::SygusEnumeratorBuffer(TermDbSygus* tds, ExampleEvalCache * eec, SygusStatistics * s) : d_tds(tds), d_eec(eec), d_stats(s)
 {
@@ -84,10 +69,11 @@ void SygusEnumeratorBuffer::notifyTerm(Node n, Node bn)
       std::vector<Node> index;
       for (unsigned j=0; j<nchildren; j++)
       {
-        index.push_back(childrenEval[j][i]);
+        vte = &vte->d_children[childrenEval[j][i]];
       }
-      if (vte->add(n,index))
+      if (vte->d_data.isNull())
       {
+        vte->d_data = n;
         ++(d_stats->d_evalMiss);
       }
       else

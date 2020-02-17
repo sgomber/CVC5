@@ -27,6 +27,23 @@ namespace quantifiers {
 class SynthConjecture;
 class TermDbSygus;
 
+/**
+ * A trie that stores data at undetermined depth. Storing data at
+ * undetermined depth is in contrast to the NodeTrie (expr/node_trie.h), which
+ * assumes all data is stored at a fixed depth.
+ *
+ * Since data can be stored at any depth, we require both a d_children field
+ * and a d_data field.
+ */
+class VariadicTrieEval
+{
+ public:
+  /** the children of this node */
+  std::map<Node, VariadicTrieEval> d_children;
+  /** the data at this node */
+  Node d_data;
+};
+
 /** ExampleEvalCache
  *
  * This class caches the evaluation of nodes on a fixed list of examples. It
@@ -95,6 +112,7 @@ class ExampleEvalCache
    * later accessed by evaluateVec below.
    */
   Node addSearchVal(Node bvr);
+  Node addSearchVal(Node n, Node bvr);
   //----------------------------------- evaluating terms
   /** Evaluate vector
    *
@@ -152,6 +170,8 @@ class ExampleEvalCache
   NodeTrie d_trie;
   /** cache for evaluate */
   std::map<Node, std::vector<Node>> d_exOutCache;
+  /** node trie */
+  std::map< Node, VariadicTrieEval > d_vteCache;
 };
 
 }  // namespace quantifiers

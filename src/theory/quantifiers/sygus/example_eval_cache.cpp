@@ -67,6 +67,26 @@ Node ExampleEvalCache::addSearchVal(Node bv)
   return ret;
 }
 
+Node ExampleEvalCache::addSearchVal(Node n, Node bvr)
+{
+  if (n.getNumChildren()>0)
+  {
+    VariadicTrieEval * vte = d_vteCache[n.getOperator()];
+    unsigned nex = d_examples.size();
+    std::vector< std::map< Node, std::vector >::iterator > vecIt;
+    for (const Node& nc : n)
+    {
+      std::map< Node, std::vector >::iterator it = d_exOutCache.find(nc);
+      
+    }
+    
+    
+  }
+  Node ret = addSearchVar(bvr);
+  //d_sygusCache[
+  return ret;
+}
+
 void ExampleEvalCache::evaluateVec(Node bv,
                                    std::vector<Node>& exOut,
                                    bool doCache)
