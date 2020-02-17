@@ -110,6 +110,14 @@ void ExampleEvalCache::evaluateVecInternal(Node n,
     for (const Node& nc : n)
     {
       std::map< Node, std::vector<Node> >::iterator it = d_exOutCache.find(nc);
+      if( it == d_exOutCache.end() )
+      {
+        Node ncbv = d_tds->sygusToBuiltin(nc);
+        std::vector<Node> exOutC;
+        evaluateVec(nc,ncbv,exOutC,true);
+        it = d_exOutCache.find(nc);
+      }
+      AlwaysAssert(it != d_exOutCache.end());
       vecIt.push_back(it);
     }
   }
@@ -147,7 +155,7 @@ Node ExampleEvalCache::evaluate(Node bn, unsigned i) const
 void ExampleEvalCache::clearEvaluationCache(Node bv)
 {
   Assert(d_exOutCache.find(bv) != d_exOutCache.end());
-  d_exOutCache.erase(bv);
+  //d_exOutCache.erase(bv);
 }
 
 void ExampleEvalCache::clearEvaluationAll() { d_exOutCache.clear(); }

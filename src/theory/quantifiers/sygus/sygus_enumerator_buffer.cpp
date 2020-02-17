@@ -50,6 +50,7 @@ void SygusEnumeratorBuffer::addTerm(Node n, Node bn)
 
 void SygusEnumeratorBuffer::notifyTerm(Node n, Node bn)
 {
+  /*
   std::vector< std::vector< Node > > childrenEval;
   for (const Node& nc : n)
   {
@@ -82,6 +83,7 @@ void SygusEnumeratorBuffer::notifyTerm(Node n, Node bn)
       }
     }
   }
+  */
 }
 
 void SygusEnumeratorBuffer::computeBuffer( std::vector<Node>& terms)
