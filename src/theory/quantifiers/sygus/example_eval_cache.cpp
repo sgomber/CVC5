@@ -16,6 +16,7 @@
 
 #include "theory/quantifiers/sygus/example_min_eval.h"
 #include "theory/quantifiers/sygus/synth_conjecture.h"
+#include "options/quantifiers_options.h"
 
 using namespace CVC4;
 using namespace CVC4::kind;
@@ -60,7 +61,7 @@ Node ExampleEvalCache::addSearchVal(Node n, Node bv)
   // was cached prior to this call.
   if (ret != bv)
   {
-    clearEvaluationCache(bv);
+    clearEvaluationCache(n);
   }
   Assert(ret.getType().isComparableTo(bv.getType()));
   return ret;
