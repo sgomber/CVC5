@@ -125,6 +125,7 @@ void ExampleEvalCache::evaluateVecInternal(Node n,
   for (size_t j = 0, esize = d_examples.size(); j < esize; j++)
   {
     Node res;
+    bool computed = false;
     if (vte!=nullptr)
     {
       VariadicTrieEval * vteCurr = vte;
@@ -135,19 +136,22 @@ void ExampleEvalCache::evaluateVecInternal(Node n,
       res = vteCurr->d_data;
       if (res.isNull())
       {
-        res = eme.evaluate(d_examples[j]);
+        res = eme.evaluate(d_examples[j], computed);
         vteCurr->d_data = res;
-        ++(d_stats->d_evalMiss);
-      }
-      else
-      {
-        ++(d_stats->d_evalHit);
       }
     }
     else
     {
-      res = eme.evaluate(d_examples[j]);
+      res = eme.evaluate(d_examples[j], computed);
+    }
+    // add to statistics
+    if (computed)
+    {
       ++(d_stats->d_evalMiss);
+    }
+    else
+    {
+      ++(d_stats->d_evalHit);
     }
     exOut.push_back(res);
   }

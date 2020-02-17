@@ -49,10 +49,17 @@ ExampleMinEval::ExampleMinEval(Node n,
 
 Node ExampleMinEval::evaluate(const std::vector<Node>& subs)
 {
+  bool computed = false;
+  return evaluate(subs,computed);
+}
+
+Node ExampleMinEval::evaluate(const std::vector<Node>& subs, bool& computed)
+{
   Assert(d_vars.size() == subs.size());
 
   if (d_indices.size() == d_vars.size())
   {
+    computed = true;
     // no sharing is possible since all variables are relevant, just evaluate
     return d_ece->eval(d_evalNode, d_vars, subs);
   }
@@ -66,6 +73,7 @@ Node ExampleMinEval::evaluate(const std::vector<Node>& subs)
   Node res = d_trie.existsTerm(relSubs);
   if (res.isNull())
   {
+    computed = true;
     // not already cached, must evaluate
     res = d_ece->eval(d_evalNode, d_vars, subs);
 

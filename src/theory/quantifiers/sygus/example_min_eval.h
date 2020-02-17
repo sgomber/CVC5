@@ -73,8 +73,12 @@ class ExampleMinEval
   /**
    * Return the result of evaluating n * { vars -> subs } where vars is the
    * set of variables passed to initialize above.
+   * 
+   * The flag computed is set to true if the evaluation was a new computation
+   * (for debugging stats).
    */
   Node evaluate(const std::vector<Node>& subs);
+  Node evaluate(const std::vector<Node>& subs, bool& computed);
 
  private:
   /** The node to evaluate */
