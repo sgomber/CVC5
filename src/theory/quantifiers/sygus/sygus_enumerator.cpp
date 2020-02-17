@@ -343,7 +343,7 @@ bool SygusEnumerator::TermCache::addTerm(Node n)
     {
       ++(d_stats->d_enumTermsExampleEval);
       // Is it equivalent under examples?
-      Node bne = d_eec->addSearchVal(bnr);
+      Node bne = d_eec->addSearchVal(n, bnr);
       if (!bne.isNull())
       {
         if (bnr != bne)
