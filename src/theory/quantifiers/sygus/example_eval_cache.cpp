@@ -43,15 +43,16 @@ ExampleEvalCache::ExampleEvalCache(TermDbSygus* tds,
 
 ExampleEvalCache::~ExampleEvalCache() {}
 
-Node ExampleEvalCache::addSearchVal(Node bv)
+Node ExampleEvalCache::addSearchVal(Node n, Node bv)
 {
   if (!d_indexSearchVals)
   {
     // not indexing search values
     return Node::null();
   }
+
   std::vector<Node> vals;
-  evaluateVec(bv, vals, true);
+  evaluateVec(n, bv, vals, true);
   Trace("sygus-pbe-debug") << "Add to trie..." << std::endl;
   Node ret = d_trie.addOrGetTerm(bv, vals);
   Trace("sygus-pbe-debug") << "...got " << ret << std::endl;
@@ -67,58 +68,72 @@ Node ExampleEvalCache::addSearchVal(Node bv)
   return ret;
 }
 
-Node ExampleEvalCache::addSearchVal(Node n, Node bvr)
+void ExampleEvalCache::evaluateVec(Node bv, std::vector<Node>& exOut)
 {
-  if (n.getNumChildren()>0)
-  {
-    VariadicTrieEval * vte = d_vteCache[n.getOperator()];
-    unsigned nex = d_examples.size();
-    std::vector< std::map< Node, std::vector >::iterator > vecIt;
-    for (const Node& nc : n)
-    {
-      std::map< Node, std::vector >::iterator it = d_exOutCache.find(nc);
-      
-    }
-    
-    
-  }
-  Node ret = addSearchVar(bvr);
-  //d_sygusCache[
-  return ret;
+  evaluateVecInternal(Node::null(),bv,exOut);
 }
 
-void ExampleEvalCache::evaluateVec(Node bv,
-                                   std::vector<Node>& exOut,
-                                   bool doCache)
+void ExampleEvalCache::evaluateVec(Node n, Node bv, std::vector<Node>& exOut, bool doCache)
 {
   // is it in the cache?
-  std::map<Node, std::vector<Node>>::iterator it = d_exOutCache.find(bv);
+  std::map<Node, std::vector<Node>>::iterator it = d_exOutCache.find(n);
   if (it != d_exOutCache.end())
   {
     exOut.insert(exOut.end(), it->second.begin(), it->second.end());
     return;
   }
   // get the evaluation
-  evaluateVecInternal(bv, exOut);
+  evaluateVecInternal(n, bv, exOut);
   // store in cache if necessary
   if (doCache)
   {
-    std::vector<Node>& eocv = d_exOutCache[bv];
+    std::vector<Node>& eocv = d_exOutCache[n];
     eocv.insert(eocv.end(), exOut.begin(), exOut.end());
   }
 }
 
-void ExampleEvalCache::evaluateVecInternal(Node bv,
-                                           std::vector<Node>& exOut) const
+void ExampleEvalCache::evaluateVecInternal(Node n, 
+                                           Node bv,
+                                           std::vector<Node>& exOut)
 {
+
   // use ExampleMinEval
   SygusTypeInfo& ti = d_tds->getTypeInfo(d_stn);
   const std::vector<Node>& varlist = ti.getVarList();
   EmeEvalTds emetds(d_tds, d_stn);
   ExampleMinEval eme(bv, varlist, &emetds);
+  std::vector< std::map< Node, std::vector<Node> >::iterator > vecIt;
+  VariadicTrieEval * vte = nullptr;
+  if (!n.isNull() && n.getNumChildren()>0)
+  {
+    vte = &(d_vteCache[n.getOperator()]);
+    for (const Node& nc : n)
+    {
+      std::map< Node, std::vector<Node> >::iterator it = d_exOutCache.find(nc);
+      vecIt.push_back(it);
+    }
+  }
   for (size_t j = 0, esize = d_examples.size(); j < esize; j++)
   {
-    Node res = eme.evaluate(d_examples[j]);
+    Node res;
+    if (vte!=nullptr)
+    {
+      VariadicTrieEval * vteCurr = vte;
+      for (const std::map< Node, std::vector<Node> >::iterator& it : vecIt)
+      {
+        vteCurr = &(vteCurr->d_children[it->second[j]]);
+      }
+      res = vteCurr->d_data;
+      if (res.isNull())
+      {
+        res = eme.evaluate(d_examples[j]);
+        vteCurr->d_data = res;
+      }
+    }
+    else
+    {
+      res = eme.evaluate(d_examples[j]);
+    }
     exOut.push_back(res);
   }
 }

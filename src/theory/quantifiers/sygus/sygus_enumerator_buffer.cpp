@@ -34,7 +34,7 @@ void SygusEnumeratorBuffer::addTerm(Node n, Node bn)
 {
   /// NAIVE IMPLEMENTATION
   // Is it equivalent under examples?
-  Node bne = d_eec->addSearchVal(bn);
+  Node bne = d_eec->addSearchVal(n,bn);
   if (!bne.isNull())
   {
     if (bn != bne)

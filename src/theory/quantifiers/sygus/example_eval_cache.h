@@ -111,7 +111,6 @@ class ExampleEvalCache
    * result of the evaluation of bvr is cached by this class, and can be
    * later accessed by evaluateVec below.
    */
-  Node addSearchVal(Node bvr);
   Node addSearchVal(Node n, Node bvr);
   //----------------------------------- evaluating terms
   /** Evaluate vector
@@ -124,7 +123,8 @@ class ExampleEvalCache
    *
    * If doCache is true, the result of the evaluation is cached internally.
    */
-  void evaluateVec(Node bv, std::vector<Node>& exOut, bool doCache = false);
+  void evaluateVec(Node n, Node bv, std::vector<Node>& exOut, bool doCache = false);
+  void evaluateVec(Node bv, std::vector<Node>& exOut);
   /** evaluate builtin
    *
    * This returns the evaluation of bn on the i^th example for the
@@ -144,7 +144,7 @@ class ExampleEvalCache
 
  private:
   /** Version of evaluateVec that does not do caching */
-  void evaluateVecInternal(Node bv, std::vector<Node>& exOut) const;
+  void evaluateVecInternal(Node n, Node bv, std::vector<Node>& exOut);
   /** Pointer to the sygus term database */
   TermDbSygus* d_tds;
   /** pointer to the example inference class */

@@ -1063,7 +1063,7 @@ Node SygusExtension::registerSearchValue(Node a,
           quantifiers::ExampleEvalCache* eec = aconj->getExampleEvalCache(a);
           if (eec != nullptr)
           {
-            bvr_equiv = eec->addSearchVal(bvr);
+            bvr_equiv = eec->addSearchVal(cnv, bvr);
           }
         }
         if( !bvr_equiv.isNull() ){
