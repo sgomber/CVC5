@@ -31,8 +31,9 @@ SygusStatistics::SygusStatistics()
                                  0),
       d_enumTermsRewrite("SygusEnumerator::enumTermsRewrite", 0),
       d_enumTermsExampleEval("SygusEnumerator::enumTermsEvalExamples", 0),
-      d_enumTerms("SygusEnumerator::enumTerms", 0)
-
+      d_enumTerms("SygusEnumerator::enumTerms", 0),
+      d_evalHit("SygusEnumerator::evalHit", 0),
+      d_evalMiss("SygusEnumerator::evalMiss", 0)
 {
   smtStatisticsRegistry()->registerStat(&d_cegqi_lemmas_ce);
   smtStatisticsRegistry()->registerStat(&d_cegqi_lemmas_refine);
@@ -43,6 +44,8 @@ SygusStatistics::SygusStatistics()
   smtStatisticsRegistry()->registerStat(&d_enumTermsRewrite);
   smtStatisticsRegistry()->registerStat(&d_enumTermsExampleEval);
   smtStatisticsRegistry()->registerStat(&d_enumTerms);
+  smtStatisticsRegistry()->registerStat(&d_evalHit);
+  smtStatisticsRegistry()->registerStat(&d_evalMiss);
 }
 
 SygusStatistics::~SygusStatistics()
@@ -56,6 +59,8 @@ SygusStatistics::~SygusStatistics()
   smtStatisticsRegistry()->unregisterStat(&d_enumTermsRewrite);
   smtStatisticsRegistry()->unregisterStat(&d_enumTermsExampleEval);
   smtStatisticsRegistry()->unregisterStat(&d_enumTerms);
+  smtStatisticsRegistry()->unregisterStat(&d_evalHit);
+  smtStatisticsRegistry()->unregisterStat(&d_evalMiss);
 }
 
 }  // namespace quantifiers

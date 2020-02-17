@@ -96,7 +96,7 @@ void EquivSygusInvarianceTest::init(
   if (eec != nullptr)
   {
     // get the result of evaluating bvr on the examples of enumerator e.
-    eec->evaluateVec(bvr, d_exo, false);
+    eec->evaluateVec(bvr, d_exo);
     d_conj = aconj;
     d_enum = e;
   }

@@ -19,6 +19,7 @@
 
 #include "expr/node_trie.h"
 #include "theory/quantifiers/sygus/example_infer.h"
+#include "theory/quantifiers/sygus/sygus_stats.h"
 
 namespace CVC4 {
 namespace theory {
@@ -26,6 +27,23 @@ namespace quantifiers {
 
 class SynthConjecture;
 class TermDbSygus;
+
+/**
+ * A trie that stores data at undetermined depth. Storing data at
+ * undetermined depth is in contrast to the NodeTrie (expr/node_trie.h), which
+ * assumes all data is stored at a fixed depth.
+ *
+ * Since data can be stored at any depth, we require both a d_children field
+ * and a d_data field.
+ */
+class VariadicTrieEval
+{
+ public:
+  /** the children of this node */
+  std::map<Node, VariadicTrieEval> d_children;
+  /** the data at this node */
+  Node d_data;
+};
 
 /** ExampleEvalCache
  *
@@ -72,7 +90,7 @@ class ExampleEvalCache
    * are builtin terms that the analog of values taken by enumerator e that
    * is associated with f.
    */
-  ExampleEvalCache(TermDbSygus* tds, SynthConjecture* p, Node f, Node e);
+  ExampleEvalCache(TermDbSygus* tds, SynthConjecture* p, SygusStatistics* s, Node f, Node e);
   ~ExampleEvalCache();
 
   /** Add search value
@@ -94,7 +112,7 @@ class ExampleEvalCache
    * result of the evaluation of bvr is cached by this class, and can be
    * later accessed by evaluateVec below.
    */
-  Node addSearchVal(Node bvr);
+  Node addSearchVal(Node n, Node bvr);
   //----------------------------------- evaluating terms
   /** Evaluate vector
    *
@@ -106,7 +124,8 @@ class ExampleEvalCache
    *
    * If doCache is true, the result of the evaluation is cached internally.
    */
-  void evaluateVec(Node bv, std::vector<Node>& exOut, bool doCache = false);
+  void evaluateVec(Node n, Node bv, std::vector<Node>& exOut, bool doCache = false);
+  void evaluateVec(Node bv, std::vector<Node>& exOut);
   /** evaluate builtin
    *
    * This returns the evaluation of bn on the i^th example for the
@@ -126,9 +145,11 @@ class ExampleEvalCache
 
  private:
   /** Version of evaluateVec that does not do caching */
-  void evaluateVecInternal(Node bv, std::vector<Node>& exOut) const;
+  void evaluateVecInternal(Node n, Node bv, std::vector<Node>& exOut);
   /** Pointer to the sygus term database */
   TermDbSygus* d_tds;
+  /** stats object */
+  SygusStatistics* d_stats;
   /** pointer to the example inference class */
   std::vector<std::vector<Node>> d_examples;
   /** The SyGuS type of the enumerator */
@@ -152,6 +173,8 @@ class ExampleEvalCache
   NodeTrie d_trie;
   /** cache for evaluate */
   std::map<Node, std::vector<Node>> d_exOutCache;
+  /** node trie */
+  std::map< Node, VariadicTrieEval > d_vteCache;
 };
 
 }  // namespace quantifiers
