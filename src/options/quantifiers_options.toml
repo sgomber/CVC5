@@ -1436,6 +1436,14 @@ header = "options/quantifiers_options.h"
   help       = "use optimized approach for evaluation in sygus"
 
 [[option]]
+  name       = "sygusEvalAggCache"
+  category   = "regular"
+  long       = "sygus-eval-agg-cache"
+  type       = "bool"
+  default    = "true"
+  help       = "use aggressive caching for evaluation in sygus"
+
+[[option]]
   name       = "sygusArgRelevant"
   category   = "regular"
   long       = "sygus-arg-relevant"

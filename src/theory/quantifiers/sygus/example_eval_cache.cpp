@@ -105,21 +105,30 @@ void ExampleEvalCache::evaluateVecInternal(Node n,
   ExampleMinEval eme(bv, varlist, &emetds);
   std::vector< std::map< Node, std::vector<Node> >::iterator > vecIt;
   VariadicTrieEval * vte = nullptr;
-  if (!n.isNull() && n.getNumChildren()>0)
+  if (options::sygusEvalAggCache())
   {
-    vte = &(d_vteCache[n.getOperator()]);
-    for (const Node& nc : n)
+    if (!n.isNull() && n.getNumChildren()>0)
     {
-      std::map< Node, std::vector<Node> >::iterator it = d_exOutCache.find(nc);
-      if( it == d_exOutCache.end() )
+      vte = &(d_vteCache[n.getOperator()]);
+      for (const Node& nc : n)
       {
-        Node ncbv = d_tds->sygusToBuiltin(nc);
-        std::vector<Node> exOutC;
-        evaluateVec(nc,ncbv,exOutC,true);
-        it = d_exOutCache.find(nc);
+        std::map< Node, std::vector<Node> >::iterator it = d_exOutCache.find(nc);
+        if( it == d_exOutCache.end() )
+        {
+          // This occurs when an argument of the current term n has not been
+          // cached by this class. This should not happen infrequently, since
+          // generally terms are built out of terms that have been cached.
+          // In this case, we must compute the evaluation of the subterm
+          // independently.
+          Node ncbv = d_tds->sygusToBuiltin(nc);
+          std::vector<Node> exOutC;
+          evaluateVec(nc,ncbv,exOutC,true);
+          it = d_exOutCache.find(nc);
+          // it should be cached now
+          AlwaysAssert(it != d_exOutCache.end());
+        }
+        vecIt.push_back(it);
       }
-      AlwaysAssert(it != d_exOutCache.end());
-      vecIt.push_back(it);
     }
   }
   for (size_t j = 0, esize = d_examples.size(); j < esize; j++)
@@ -170,7 +179,10 @@ void ExampleEvalCache::clearEvaluationCache(Node bv)
 }
 
 void ExampleEvalCache::clearEvaluationAll() { 
-  //d_exOutCache.clear(); 
+  if (!options::sygusEvalAggCache())
+  {
+    d_exOutCache.clear(); 
+  }
 }
 
 }  // namespace quantifiers
