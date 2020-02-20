@@ -42,7 +42,7 @@ ExampleEvalCache::ExampleEvalCache(
 
 ExampleEvalCache::~ExampleEvalCache() {}
 
-Node ExampleEvalCache::addSearchVal(Node n, Node bv)
+Node ExampleEvalCache::addSearchVal(TypeNode tn, Node n, Node bv)
 {
   if (!d_indexSearchVals)
   {
@@ -53,7 +53,7 @@ Node ExampleEvalCache::addSearchVal(Node n, Node bv)
   std::vector<Node> vals;
   evaluateVec(n, bv, vals, true);
   Trace("sygus-pbe-debug") << "Add to trie..." << std::endl;
-  Node ret = d_trie.addOrGetTerm(bv, vals);
+  Node ret = d_trie[tn].addOrGetTerm(bv, vals);
   Trace("sygus-pbe-debug") << "...got " << ret << std::endl;
   // Only save the cache data if necessary: if the enumerated term
   // is redundant, its cached data will not be used later and thus should
