@@ -14,9 +14,9 @@
  **/
 #include "theory/quantifiers/sygus/example_eval_cache.h"
 
+#include "options/quantifiers_options.h"
 #include "theory/quantifiers/sygus/example_min_eval.h"
 #include "theory/quantifiers/sygus/synth_conjecture.h"
-#include "options/quantifiers_options.h"
 
 using namespace CVC4;
 using namespace CVC4::kind;
