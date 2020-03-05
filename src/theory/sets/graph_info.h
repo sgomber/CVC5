@@ -44,7 +44,7 @@ class PathInfo
 class GraphInfo
 {
  public:
-  GraphInfo() : d_idCounter(0) {}
+  GraphInfo() : d_eidCounter(0) {}
   /** initialize */
   void initialize(TNode g);
   /** add subset restriction */
@@ -71,8 +71,13 @@ class GraphInfo
                      std::unordered_map<TNode, EdgeInfo, TNodeHashFunction>,
                      TNodeHashFunction>
       d_einfo;
-  /** Id counter */
-  uint32_t d_idCounter;
+  /** The set of paths */
+  std::unordered_map<TNode,
+                     std::unordered_map<TNode, PathInfo, TNodeHashFunction>,
+                     TNodeHashFunction>
+      d_pinfo;
+  /** Edge id counter */
+  uint32_t d_eidCounter;
 };
 
 }  // namespace sets

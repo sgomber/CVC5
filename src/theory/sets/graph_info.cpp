@@ -46,6 +46,7 @@ void GraphInfo::addSubsetRestriction(TNode node)
     throw LogicException(ss.str());
   }
   d_subsetAtom = node;
+  // every edge that has been assigned an atom should be assigned
   std::unordered_set<TNode, TNodeHashFunction> visited;
   std::vector<TNode> visit;
   TNode cur;
@@ -69,8 +70,6 @@ void GraphInfo::addSubsetRestriction(TNode node)
         // cur[0] should be a constant tuple (c1, c2).
         checkEdge(cur[0]);
         addEdge(cur[0][0], cur[0][1]);
-        Trace("graph-info") << "Edge: (" << cur[0][0] << ", " << cur[0][1]
-                            << ") ?in " << d_var << std::endl;
       }
       else
       {
@@ -84,7 +83,31 @@ void GraphInfo::addSubsetRestriction(TNode node)
   } while (!visit.empty());
 }
 
-void GraphInfo::addEdgeAtom(TNode node, bool isPath) {}
+void GraphInfo::addEdgeAtom(TNode node, bool isPath) 
+{
+  checkEdge(node[0]);
+  TNode src = node[0][0];
+  TNode dst = node[0][1];
+  if (isPath)
+  {
+    PathInfo& pi = d_pinfo[src][dst];
+    
+    
+    Trace("graph-info") << "- Atom (path): " << node << std::endl;
+    return;
+  }
+  EdgeInfo& ei = d_einfo[src][dst];
+  if (!d_subsetAtom.isNull() && ei.d_id==0)
+  {
+    // If we've assigned the restriction already, then this edge should be
+    // in the set of possible edges. If not, we are in this case; the atom is
+    // trivially false.
+    Trace("graph-info") << "Atom (INVALID edge): " << node << std::endl;
+    return;
+  }
+  ei.d_atom = node;
+  Trace("graph-info") << "- Atom (edge): " << node << std::endl;
+}
 
 void GraphInfo::addEdge(TNode src, TNode dst)
 {
@@ -93,9 +116,11 @@ void GraphInfo::addEdge(TNode src, TNode dst)
   EdgeInfo& ei = d_einfo[src][dst];
   if (ei.d_id == 0)
   {
-    d_idCounter++;
-    ei.d_id = d_idCounter;
+    d_eidCounter++;
+    ei.d_id = d_eidCounter;
   }
+  Trace("graph-info") << "- Edge: (" << src << ", " << dst
+                      << ") ?in " << d_var << std::endl;
 }
 
 void GraphInfo::checkEdge(TNode c)
