@@ -15,8 +15,8 @@
 
 #include "theory/sets/graph_extension.h"
 
-#include "theory/sets/normal_form.h"
 #include "expr/datatype.h"
+#include "theory/sets/normal_form.h"
 
 using namespace CVC4::kind;
 
@@ -46,7 +46,7 @@ void GraphExtension::preRegisterTerm(TNode node)
     // ensure correct form
     checkEdge(node[0]);
     TNode g = node[1];
-    if (g.getKind()==TCLOSURE)
+    if (g.getKind() == TCLOSURE)
     {
       g = g[0];
     }
@@ -93,28 +93,34 @@ void GraphExtension::collectElements(TNode val, TNode g)
   std::vector<TNode> visit;
   TNode cur;
   visit.push_back(val);
-  do {
+  do
+  {
     cur = visit.back();
     visit.pop_back();
-    if (visited.find(cur) == visited.end()) {
+    if (visited.find(cur) == visited.end())
+    {
       visited.insert(cur);
-      if (cur.getKind()==UNION)
+      if (cur.getKind() == UNION)
       {
-        for (TNode cn : cur ){
+        for (TNode cn : cur)
+        {
           visit.push_back(cn);
         }
       }
-      else if (cur.getKind()==SINGLETON)
+      else if (cur.getKind() == SINGLETON)
       {
         // cur[0] should be a constant tuple (c1, c2).
         checkEdge(cur[0]);
         gi.addEdge(cur[0][0], cur[0][1]);
-        Trace("graph-info") << "Edge: (" << cur[0][0] << ", " << cur[0][1] << ") ?in " << g << std::endl;
+        Trace("graph-info") << "Edge: (" << cur[0][0] << ", " << cur[0][1]
+                            << ") ?in " << g << std::endl;
       }
       else
       {
         std::stringstream ss;
-        ss << "GraphExtension: Cannot handle non-constant in subset restriction for graph: " << cur;
+        ss << "GraphExtension: Cannot handle non-constant in subset "
+              "restriction for graph: "
+           << cur;
         throw LogicException(ss.str());
       }
     }
@@ -132,7 +138,8 @@ void GraphExtension::checkGraphVariable(TNode g)
 }
 void GraphExtension::checkEdge(TNode c)
 {
-  if (c.getKind()!=APPLY_CONSTRUCTOR || c.getNumChildren()!=2 || !c[0].isConst() || !c[1].isConst())
+  if (c.getKind() != APPLY_CONSTRUCTOR || c.getNumChildren() != 2
+      || !c[0].isConst() || !c[1].isConst())
   {
     std::stringstream ss;
     ss << "GraphExtension: Cannot handle non-constant edge " << c;

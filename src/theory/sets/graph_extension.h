@@ -27,7 +27,7 @@ namespace theory {
 namespace sets {
 
 /** The graph extension of the theory of sets
- * 
+ *
  * This extension is intended to handle atoms of the form:
  * (1) (c1, c2) in R, where c1, c2 are constants and R is a binary relation,
  * (2) (c1, c2) in tclosure(R), where c1, c2 are constants and R is a
@@ -74,10 +74,10 @@ class GraphExtension
   eq::EqualityEngine& d_ee;
   /** Information for each graph (binary relation) */
   std::map<Node, GraphInfo> d_ginfo;
-  
+
   /** Collect elements from set */
   void collectElements(TNode val, TNode g);
-  
+
   //------------------------------------- logic checks
   /** Logic exception if g is not a graph (binary relation) variable */
   void checkGraphVariable(TNode g);
