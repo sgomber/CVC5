@@ -48,7 +48,7 @@ TheorySetsPrivate::TheorySetsPrivate(TheorySets& external,
       d_state(*this, d_equalityEngine, c, u),
       d_im(*this, d_state, d_equalityEngine, c, u),
       d_rels(new TheorySetsRels(d_state, d_im, d_equalityEngine, u)),
-      d_graphs(new GraphExtension(d_state, d_im, d_equalityEngine, c, u)),
+      d_graphs(nullptr),
       d_cardSolver(
           new CardinalityExtension(d_state, d_im, d_equalityEngine, c, u)),
       d_rels_enabled(false),
@@ -65,6 +65,11 @@ TheorySetsPrivate::TheorySetsPrivate(TheorySets& external,
 
   d_equalityEngine.addFunctionKind(kind::MEMBER);
   d_equalityEngine.addFunctionKind(kind::SUBSET);
+  
+  if (options::setsGraphs())
+  {
+    d_graphs.reset(new GraphExtension(d_state, d_im, d_equalityEngine, c, u));
+  }
 }
 
 TheorySetsPrivate::~TheorySetsPrivate()
@@ -373,6 +378,8 @@ void TheorySetsPrivate::fullEffortCheck()
   Trace("sets") << "----- Full effort check ------" << std::endl;
   do
   {
+    Assert(!d_im.hasPendingLemmas() || d_im.hasProcessed());
+    
     Trace("sets") << "...iterate full effort check..." << std::endl;
     fullEffortReset();
 
@@ -476,71 +483,88 @@ void TheorySetsPrivate::fullEffortCheck()
 
     // We may have sent lemmas while registering the terms in the loop above,
     // e.g. the cardinality solver.
-    if (!d_im.hasProcessed())
+    if (d_im.hasProcessed())
     {
-      if (Trace.isOn("sets-mem"))
+      continue;
+    }
+    if (Trace.isOn("sets-mem"))
+    {
+      const std::vector<Node>& sec = d_state.getSetsEqClasses();
+      for (const Node& s : sec)
       {
-        const std::vector<Node>& sec = d_state.getSetsEqClasses();
-        for (const Node& s : sec)
+        Trace("sets-mem") << "Eqc " << s << " : ";
+        const std::map<Node, Node>& smem = d_state.getMembers(s);
+        if (!smem.empty())
         {
-          Trace("sets-mem") << "Eqc " << s << " : ";
-          const std::map<Node, Node>& smem = d_state.getMembers(s);
-          if (!smem.empty())
+          Trace("sets-mem") << "Memberships : ";
+          for (const std::pair<const Node, Node>& it2 : smem)
           {
-            Trace("sets-mem") << "Memberships : ";
-            for (const std::pair<const Node, Node>& it2 : smem)
-            {
-              Trace("sets-mem") << it2.first << " ";
-            }
-          }
-          Node ss = d_state.getSingletonEqClass(s);
-          if (!ss.isNull())
-          {
-            Trace("sets-mem") << " : Singleton : " << ss;
-          }
-          Trace("sets-mem") << std::endl;
-        }
-      }
-      checkSubtypes();
-      d_im.flushPendingLemmas(true);
-      if (!d_im.hasProcessed())
-      {
-        checkDownwardsClosure();
-        if (options::setsInferAsLemmas())
-        {
-          d_im.flushPendingLemmas();
-        }
-        if (!d_im.hasProcessed())
-        {
-          checkUpwardsClosure();
-          d_im.flushPendingLemmas();
-          if (!d_im.hasProcessed())
-          {
-            checkDisequalities();
-            d_im.flushPendingLemmas();
-            if (!d_im.hasProcessed())
-            {
-              checkReduceComprehensions();
-              d_im.flushPendingLemmas();
-
-              if (!d_im.hasProcessed() && d_card_enabled)
-              {
-                // call the check method of the cardinality solver
-                d_cardSolver->check();
-              }
-            }
+            Trace("sets-mem") << it2.first << " ";
           }
         }
+        Node ss = d_state.getSingletonEqClass(s);
+        if (!ss.isNull())
+        {
+          Trace("sets-mem") << " : Singleton : " << ss;
+        }
+        Trace("sets-mem") << std::endl;
       }
     }
-    if (!d_im.hasProcessed())
+    // check subtypes
+    checkSubtypes();
+    d_im.flushPendingLemmas(true);
+    if (d_im.hasProcessed())
     {
-      // invoke relations solver
+      continue;
+    }
+    // check downwards closure
+    checkDownwardsClosure();
+    if (options::setsInferAsLemmas())
+    {
+      d_im.flushPendingLemmas();
+    }
+    if (d_im.hasProcessed())
+    {
+      continue;
+    }
+    // check upwards closure
+    checkUpwardsClosure();
+    d_im.flushPendingLemmas();
+    if (d_im.hasProcessed())
+    {
+      continue;
+    }
+    // check disequalities
+    checkDisequalities();
+    d_im.flushPendingLemmas();
+    if (d_im.hasProcessed())
+    {
+      continue;
+    }
+    // check reduce comprehensions
+    checkReduceComprehensions();
+    d_im.flushPendingLemmas();
+    if (d_im.hasProcessed())
+    {
+      continue;
+    }
+    if (d_card_enabled)
+    {
+      // call the check method of the cardinality solver
+      d_cardSolver->check();
+      if (d_im.hasProcessed())
+      {
+        continue;
+      }
+    }
+    if (d_rels_enabled)
+    {
+      // call the check method of the relations solver
       d_rels->check(Theory::EFFORT_FULL);
     }
-    Assert(!d_im.hasPendingLemmas() || d_im.hasProcessed());
   } while (!d_im.hasSentLemma() && !d_state.isInConflict()
            && d_im.hasAddedFact());
+  Assert(!d_im.hasPendingLemmas() || d_im.hasProcessed());
   Trace("sets") << "----- End full effort check, conflict="
                 << d_state.isInConflict() << ", lemma=" << d_im.hasSentLemma()
                 << std::endl;
@@ -1463,6 +1487,11 @@ void TheorySetsPrivate::preRegisterTerm(TNode node)
     case kind::MEMBER: d_equalityEngine.addTriggerPredicate(node); break;
     case kind::CARD: d_equalityEngine.addTriggerTerm(node, THEORY_SETS); break;
     default: d_equalityEngine.addTerm(node); break;
+  }
+  // pre-register with graph extension
+  if (d_graphs!=nullptr)
+  {
+    d_graphs->preRegisterTerm(node);
   }
 }
 

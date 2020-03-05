@@ -47,6 +47,14 @@ public:
                 context::UserContext* u);
  ~GraphExtension();
  /**
+  * Called when a node is pre-registered to the theory of sets.
+  */
+ void preRegisterTerm(TNode node);
+ /**
+  * Called when the (literal) node is asserted to the theory of sets.
+  */
+ void assertNode(TNode node);
+ /**
   * Invoke the check method with effort level e. At a high level, this class
   * will make calls to TheorySetsPrivate::processInference to assert facts,
   * lemmas, and conflicts. If this class makes no such call, then the current

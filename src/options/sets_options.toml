@@ -28,3 +28,13 @@ header = "options/sets_options.h"
   default    = "false"
   read_only  = true
   help       = "enable extended symbols such as complement and universe in theory of sets"
+
+[[option]]
+  name       = "setsGraphs"
+  category   = "regular"
+  long       = "sets-graph"
+  type       = "bool"
+  default    = "false"
+  read_only  = true
+  help       = "use graph extension for handling constraints in the theory of sets"
+

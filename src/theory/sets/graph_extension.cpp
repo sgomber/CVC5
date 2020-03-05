@@ -37,6 +37,16 @@ GraphExtension::GraphExtension(SolverState& s,
 
 GraphExtension::~GraphExtension() {}
 
+void GraphExtension::preRegisterTerm(TNode node)
+{
+  
+}
+ 
+void GraphExtension::assertNode(TNode lit)
+{
+  
+}
+ 
 void GraphExtension::check(Theory::Effort level)
 {
 
