@@ -88,10 +88,7 @@ void GraphExtension::check(Theory::Effort level)
   throw LogicException(ss.str());
 }
 
-void GraphExtension::collectModelInfo(TheoryModel* m)
-{
-  
-}
+void GraphExtension::collectModelInfo(TheoryModel* m) {}
 
 GraphInfo& GraphExtension::getGraphInfo(TNode g)
 {

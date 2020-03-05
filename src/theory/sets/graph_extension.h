@@ -63,6 +63,7 @@ class GraphExtension
   void check(Theory::Effort e);
   /** collect model info */
   void collectModelInfo(TheoryModel* m);
+
  private:
   /** Get graph info for g */
   GraphInfo& getGraphInfo(TNode g);
