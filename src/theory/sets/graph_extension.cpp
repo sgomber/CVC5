@@ -44,30 +44,28 @@ void GraphExtension::preRegisterTerm(TNode node)
   // (2) R subset ((c1, d1) union ... union (cn, dn)) where c1 ... cn and
   // d1 ... dn are constants.
   Kind k = node.getKind();
-  if (k==MEMBER)
+  if (k == MEMBER)
   {
-    
   }
 }
- 
+
 void GraphExtension::assertFact(TNode fact, TNode exp)
 {
   if (Trace.isOn("graph"))
   {
     Trace("graph") << "GraphExtension::assertNode: " << fact << std::endl;
-    if (fact!=exp)
+    if (fact != exp)
     {
       Trace("graph") << "  with explanation " << exp << std::endl;
     }
   }
 }
- 
+
 void GraphExtension::check(Theory::Effort level)
 {
   Trace("graph") << "GraphExtension::check: " << level << std::endl;
-
 }
 
-}
-}
-}
+}  // namespace sets
+}  // namespace theory
+}  // namespace CVC4

@@ -266,8 +266,8 @@ class TheorySetsPrivate {
   InferenceManager d_im;
   /** subtheory solver for the theory of relations */
   std::unique_ptr<TheorySetsRels> d_rels;
-  /** 
-   * Subtheory solver for the theory of relations restricted to finite graphs 
+  /**
+   * Subtheory solver for the theory of relations restricted to finite graphs
    */
   std::unique_ptr<GraphExtension> d_graphs;
   /** subtheory solver for the theory of sets with cardinality */

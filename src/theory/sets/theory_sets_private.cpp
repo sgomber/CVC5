@@ -65,7 +65,7 @@ TheorySetsPrivate::TheorySetsPrivate(TheorySets& external,
 
   d_equalityEngine.addFunctionKind(kind::MEMBER);
   d_equalityEngine.addFunctionKind(kind::SUBSET);
-  
+
   if (options::graphsExt())
   {
     d_graphs.reset(new GraphExtension(d_state, d_im, d_equalityEngine, c, u));
@@ -286,7 +286,7 @@ bool TheorySetsPrivate::assertFact(Node fact, Node exp)
 {
   Trace("sets-assert") << "TheorySets::assertFact : " << fact
                        << ", exp = " << exp << std::endl;
-  if (d_graphs!=nullptr)
+  if (d_graphs != nullptr)
   {
     d_graphs->assertFact(fact, exp);
   }
@@ -379,7 +379,7 @@ void TheorySetsPrivate::fullEffortReset()
 
 void TheorySetsPrivate::fullEffortCheck()
 {
-  if (d_graphs!=nullptr)
+  if (d_graphs != nullptr)
   {
     // graphs implementation is independent of others
     d_graphs->check(Theory::EFFORT_FULL);
@@ -389,7 +389,7 @@ void TheorySetsPrivate::fullEffortCheck()
   do
   {
     Assert(!d_im.hasPendingLemmas() || d_im.hasProcessed());
-    
+
     Trace("sets") << "...iterate full effort check..." << std::endl;
     fullEffortReset();
 
@@ -1499,7 +1499,7 @@ void TheorySetsPrivate::preRegisterTerm(TNode node)
     default: d_equalityEngine.addTerm(node); break;
   }
   // pre-register with graph extension
-  if (d_graphs!=nullptr)
+  if (d_graphs != nullptr)
   {
     d_graphs->preRegisterTerm(node);
   }
