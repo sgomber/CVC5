@@ -27,17 +27,13 @@ namespace theory {
 namespace sets {
 
 /** The graph extension of the theory of sets
- *
- * This class implements inference schemes described in Meng et al. CADE 2017
- * for handling quantifier-free constraints in the theory of relations.
- *
- * In CVC4, relations are represented as sets of tuples. The theory of
- * relations includes constraints over operators, e.g. TRANSPOSE, JOIN and so
- * on, which apply to sets of tuples.
- *
- * Since relations are a special case of sets, this class is implemented as an
- * extension of the theory of sets. That is, it shares many components of the
- * TheorySets object which owns it.
+ * 
+ * This extension is intended to handle atoms of the form:
+ * (1) (c1, c2) in R, where c1, c2 are constants and R is a binary relation,
+ * (2) (c1, c2) in tclosure(R), where c1, c2 are constants and R is a
+ * binary relation,
+ * (3) R subset ((c1, d1) union ... union (cn, dn)) where c1 ... cn and
+ * d1 ... dn are constants.
  */
 class GraphExtension
 {
@@ -49,7 +45,8 @@ class GraphExtension
                  context::UserContext* u);
   ~GraphExtension();
   /**
-   * Called when a node is pre-registered to the theory of sets.
+   * Called when a node is pre-registered to the theory of sets. This
+   * throws a logic exception if the node is unhandled by this module.
    */
   void preRegisterTerm(TNode node);
   /**
@@ -77,6 +74,16 @@ class GraphExtension
   eq::EqualityEngine& d_ee;
   /** Information for each graph (binary relation) */
   std::map<Node, GraphInfo> d_ginfo;
+  
+  /** Collect elements from set */
+  void collectElements(TNode val, TNode g);
+  
+  //------------------------------------- logic checks
+  /** Logic exception if g is not a graph (binary relation) variable */
+  void checkGraphVariable(TNode g);
+  /** Logic exception if t is not a constant tuple (c1,c2) */
+  void checkEdge(TNode c);
+  //------------------------------------- end logic checks
 };
 
 }  // namespace sets
