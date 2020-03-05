@@ -64,7 +64,7 @@ class GraphInfo
   /** Process invalid edge
    *
    * This is called on preregistered atoms that are of the form (c1,c2) in g
-   * where g subset V and (c1,c2) is not in V.
+   * where (g subset S) but (c1,c2) is not in S.
    */
   void processInvalidEdgeAtom(TNode node);
   /** Get edge info */
