@@ -9,9 +9,8 @@
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
- ** \brief Sets theory implementation.
- **
- ** Extension to Sets theory.
+ ** \brief Implementation of an extension of the sets theory that specializes in
+ ** finite graphs.
  **/
 
 #include "theory/sets/graph_extension.h"
@@ -28,6 +27,7 @@ namespace sets {
 GraphExtension::GraphExtension(SolverState& s,
                                InferenceManager& im,
                                eq::EqualityEngine& e,
+                               context::Context* c,
                                context::UserContext* u)
     : d_state(s), d_im(im), d_ee(e)
 {
