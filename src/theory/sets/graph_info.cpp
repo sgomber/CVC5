@@ -23,7 +23,7 @@ namespace sets {
 void GraphInfo::addEdge(TNode src, TNode dst)
 {
   EdgeInfo& ei = d_einfo[src][dst];
-  if (ei.d_id==0)
+  if (ei.d_id == 0)
   {
     d_idCounter++;
     ei.d_id = d_idCounter;

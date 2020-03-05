@@ -17,10 +17,10 @@
 
 #include "context/context.h"
 #include "expr/node.h"
+#include "theory/sets/graph_info.h"
 #include "theory/sets/inference_manager.h"
 #include "theory/sets/solver_state.h"
 #include "theory/uf/equality_engine.h"
-#include "theory/sets/graph_info.h"
 
 namespace CVC4 {
 namespace theory {

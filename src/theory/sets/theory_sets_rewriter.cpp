@@ -56,7 +56,7 @@ RewriteResponse TheorySetsRewriter::postRewrite(TNode node) {
     // Dare you touch the const and mangle it to something else.
     return RewriteResponse(REWRITE_DONE, node);
   }
-  
+
   switch(kind) {
 
   case kind::MEMBER: {

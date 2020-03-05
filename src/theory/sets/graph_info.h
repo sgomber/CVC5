@@ -30,18 +30,22 @@ class EdgeInfo
   /** Edge Id */
   uint32_t d_id;
 };
-  
+
 class GraphInfo
 {
  public:
-   GraphInfo() : d_idCounter(0){}
-   /** Add edge */
-   void addEdge(TNode src, TNode dst);
-   /** Domain */
-   std::unordered_map< TNode, std::unordered_map< TNode, EdgeInfo, TNodeHashFunction >, TNodeHashFunction > d_einfo;
- private:  
-   /** Id counter? */
-   uint32_t d_idCounter;
+  GraphInfo() : d_idCounter(0) {}
+  /** Add edge */
+  void addEdge(TNode src, TNode dst);
+  /** Domain */
+  std::unordered_map<TNode,
+                     std::unordered_map<TNode, EdgeInfo, TNodeHashFunction>,
+                     TNodeHashFunction>
+      d_einfo;
+
+ private:
+  /** Id counter? */
+  uint32_t d_idCounter;
 };
 
 }  // namespace sets
