@@ -83,6 +83,14 @@ void GraphExtension::assertFact(TNode fact, TNode exp)
 void GraphExtension::check(Theory::Effort level)
 {
   Trace("graph") << "GraphExtension::check: " << level << std::endl;
+  std::stringstream ss;
+  ss << "GraphExtension::check not implemented yet";
+  throw LogicException(ss.str());
+}
+
+void GraphExtension::collectModelInfo(TheoryModel* m)
+{
+  
 }
 
 GraphInfo& GraphExtension::getGraphInfo(TNode g)

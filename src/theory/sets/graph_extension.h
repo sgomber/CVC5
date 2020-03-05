@@ -61,7 +61,8 @@ class GraphExtension
    * set of assertions is satisfiable with respect to graph constraints.
    */
   void check(Theory::Effort e);
-
+  /** collect model info */
+  void collectModelInfo(TheoryModel* m);
  private:
   /** Get graph info for g */
   GraphInfo& getGraphInfo(TNode g);
