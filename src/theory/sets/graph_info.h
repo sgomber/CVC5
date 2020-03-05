@@ -29,22 +29,48 @@ class EdgeInfo
   EdgeInfo() : d_id(0) {}
   /** Edge Id */
   uint32_t d_id;
+  /** The atom that corresponds to this edge (if one exists) */
+  TNode d_atom;
+};
+
+class PathInfo
+{
+ public:
+  PathInfo() : d_id(0) {}
+  /** Path Id */
+  uint32_t d_id;
 };
 
 class GraphInfo
 {
  public:
   GraphInfo() : d_idCounter(0) {}
+  /** initialize */
+  void initialize(TNode g);
+  /** add subset restriction */
+  void addSubsetRestriction(TNode node);
+  /** add edge atom */
+  void addEdgeAtom(TNode node, bool isPath = false);
+ private:
+  //------------------------------------- logic checks
+  /** Logic exception if g is not a graph (binary relation) variable */
+  void checkGraphVariable(TNode g);
+  /** Logic exception if t is not a constant tuple (c1,c2) */
+  void checkEdge(TNode c);
+  //------------------------------------- end logic checks
   /** Add edge */
   void addEdge(TNode src, TNode dst);
-  /** Domain */
+  
+  /** The graph variable */
+  Node d_var;
+  /** The atom corresponding to the subset restriction */
+  Node d_subsetAtom;
+  /** The domain of possible edges */
   std::unordered_map<TNode,
                      std::unordered_map<TNode, EdgeInfo, TNodeHashFunction>,
                      TNodeHashFunction>
       d_einfo;
-
- private:
-  /** Id counter? */
+  /** Id counter */
   uint32_t d_idCounter;
 };
 

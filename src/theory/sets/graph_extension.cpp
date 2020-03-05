@@ -43,19 +43,18 @@ void GraphExtension::preRegisterTerm(TNode node)
   Kind k = node.getKind();
   if (k == MEMBER)
   {
-    // ensure correct form
-    checkEdge(node[0]);
+    // can be (c1, c2) in g or (c1, c2) in tclosure(g)
     TNode g = node[1];
-    if (g.getKind() == TCLOSURE)
-    {
-      g = g[0];
-    }
-    checkGraphVariable(g);
+    bool isPath = (g.getKind() == TCLOSURE);
+    g = isPath ? g[0] : g;
+    GraphInfo& gi = getGraphInfo(g);
+    gi.addEdgeAtom(node, isPath);
   }
   else if (k == SUBSET)
   {
-    checkGraphVariable(node[0]);
-    collectElements(node[1], node[0]);
+    TNode g = node[0];
+    GraphInfo& gi = getGraphInfo(g);
+    gi.addSubsetRestriction(node);
   }
   else if (k == EQUAL)
   {
@@ -86,65 +85,16 @@ void GraphExtension::check(Theory::Effort level)
   Trace("graph") << "GraphExtension::check: " << level << std::endl;
 }
 
-void GraphExtension::collectElements(TNode val, TNode g)
+GraphInfo& GraphExtension::getGraphInfo(TNode g)
 {
-  GraphInfo& gi = d_ginfo[g];
-  std::unordered_set<TNode, TNodeHashFunction> visited;
-  std::vector<TNode> visit;
-  TNode cur;
-  visit.push_back(val);
-  do
+  std::map<TNode, GraphInfo>::iterator it = d_ginfo.find(g);
+  if (it==d_ginfo.end());
   {
-    cur = visit.back();
-    visit.pop_back();
-    if (visited.find(cur) == visited.end())
-    {
-      visited.insert(cur);
-      if (cur.getKind() == UNION)
-      {
-        for (TNode cn : cur)
-        {
-          visit.push_back(cn);
-        }
-      }
-      else if (cur.getKind() == SINGLETON)
-      {
-        // cur[0] should be a constant tuple (c1, c2).
-        checkEdge(cur[0]);
-        gi.addEdge(cur[0][0], cur[0][1]);
-        Trace("graph-info") << "Edge: (" << cur[0][0] << ", " << cur[0][1]
-                            << ") ?in " << g << std::endl;
-      }
-      else
-      {
-        std::stringstream ss;
-        ss << "GraphExtension: Cannot handle non-constant in subset "
-              "restriction for graph: "
-           << cur;
-        throw LogicException(ss.str());
-      }
-    }
-  } while (!visit.empty());
-}
-
-void GraphExtension::checkGraphVariable(TNode g)
-{
-  if (!g.isVar())
-  {
-    std::stringstream ss;
-    ss << "GraphExtension: Cannot handle graph this is not a variable: " << g;
-    throw LogicException(ss.str());
+    GraphInfo& gi = d_ginfo[g];
+    gi.initialize(g);
+    return gi;
   }
-}
-void GraphExtension::checkEdge(TNode c)
-{
-  if (c.getKind() != APPLY_CONSTRUCTOR || c.getNumChildren() != 2
-      || !c[0].isConst() || !c[1].isConst())
-  {
-    std::stringstream ss;
-    ss << "GraphExtension: Cannot handle non-constant edge " << c;
-    throw LogicException(ss.str());
-  }
+  return it->second;
 }
 
 }  // namespace sets

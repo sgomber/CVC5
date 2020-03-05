@@ -63,6 +63,8 @@ class GraphExtension
   void check(Theory::Effort e);
 
  private:
+  /** Get graph info for g */
+  GraphInfo& getGraphInfo(TNode g);
   /** Commonly used nodes */
   Node d_true;
   Node d_false;
@@ -73,17 +75,7 @@ class GraphExtension
   /** Reference to the equality engine of theory of sets */
   eq::EqualityEngine& d_ee;
   /** Information for each graph (binary relation) */
-  std::map<Node, GraphInfo> d_ginfo;
-
-  /** Collect elements from set */
-  void collectElements(TNode val, TNode g);
-
-  //------------------------------------- logic checks
-  /** Logic exception if g is not a graph (binary relation) variable */
-  void checkGraphVariable(TNode g);
-  /** Logic exception if t is not a constant tuple (c1,c2) */
-  void checkEdge(TNode c);
-  //------------------------------------- end logic checks
+  std::map<TNode, GraphInfo> d_ginfo;
 };
 
 }  // namespace sets

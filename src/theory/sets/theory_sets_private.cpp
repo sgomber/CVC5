@@ -383,6 +383,8 @@ void TheorySetsPrivate::fullEffortCheck()
   {
     // graphs implementation is independent of others
     d_graphs->check(Theory::EFFORT_FULL);
+    // TODO currently unimplemented
+    d_external.d_out->setIncomplete();
     return;
   }
   Trace("sets") << "----- Full effort check ------" << std::endl;
