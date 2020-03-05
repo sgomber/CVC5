@@ -46,7 +46,6 @@ void GraphInfo::addSubsetRestriction(TNode node)
     throw LogicException(ss.str());
   }
   d_subsetAtom = node;
-  // every edge that has been assigned an atom should be assigned
   std::unordered_set<TNode, TNodeHashFunction> visited;
   std::vector<TNode> visit;
   TNode cur;
@@ -81,6 +80,19 @@ void GraphInfo::addSubsetRestriction(TNode node)
       }
     }
   } while (!visit.empty());
+  
+  // process any edge still on the waitlist
+  for (const std::pair<TNode, TNode>& w : d_einfoWait )
+  {
+    TNode src = w.first;
+    TNode dst = w.second;
+    std::unordered_map<TNode, EdgeInfo, TNodeHashFunction>& srcEdges = d_einfo[src];
+    EdgeInfo& ei = srcEdges[dst];
+    processInvalidEdgeAtom(ei.d_atom);
+    // remove the edge info
+    srcEdges.erase(dst);
+  }
+  d_einfoWait.clear();
 }
 
 void GraphInfo::addEdgeAtom(TNode node, bool isPath) 
@@ -91,22 +103,38 @@ void GraphInfo::addEdgeAtom(TNode node, bool isPath)
   if (isPath)
   {
     PathInfo& pi = d_pinfo[src][dst];
-    
-    
-    Trace("graph-info") << "- Atom (path): " << node << std::endl;
+    pi.d_atom = node;
+    Trace("graph-info") << "- Path atom: " << node << std::endl;
     return;
   }
-  EdgeInfo& ei = d_einfo[src][dst];
-  if (!d_subsetAtom.isNull() && ei.d_id==0)
+  if (d_subsetAtom.isNull())
+  {
+    // set the atom
+    EdgeInfo& ei = d_einfo[src][dst];
+    ei.d_atom = node;
+    // add to waiting list
+    d_einfoWait.insert(std::pair<TNode,TNode>(src,dst));
+    return;
+  }
+  // otherwise lookup the edge info
+  EdgeInfo * ei = getEdgeInfo(src,dst);
+  if (ei==nullptr)
   {
     // If we've assigned the restriction already, then this edge should be
     // in the set of possible edges. If not, we are in this case; the atom is
     // trivially false.
-    Trace("graph-info") << "Atom (INVALID edge): " << node << std::endl;
+    processInvalidEdgeAtom(node);
     return;
   }
-  ei.d_atom = node;
-  Trace("graph-info") << "- Atom (edge): " << node << std::endl;
+  // set the atom
+  ei->d_atom = node;
+}
+
+void GraphInfo::processInvalidEdgeAtom(TNode node)
+{
+  Assert(!node.isNull());
+  Trace("graph-info") << "- Edge (INVALID): " << node << std::endl;
+  // TODO?
 }
 
 void GraphInfo::addEdge(TNode src, TNode dst)
@@ -120,7 +148,36 @@ void GraphInfo::addEdge(TNode src, TNode dst)
     ei.d_id = d_eidCounter;
   }
   Trace("graph-info") << "- Edge: (" << src << ", " << dst
-                      << ") ?in " << d_var << std::endl;
+                      << ") ?in " << d_var;
+  // if it has an atom, remove from waiting list
+  if (!ei.d_atom.isNull())
+  {
+    Trace("graph-info") << ", atom: " << ei.d_atom;
+    // remove from waitlist
+    std::pair<TNode, TNode> p = std::pair<TNode,TNode>(src,dst);
+    Assert(d_einfoWait.find(p)!=d_einfoWait.end());
+    d_einfoWait.erase(p);
+  }
+  Trace("graph-info") << std::endl;
+}
+
+EdgeInfo * GraphInfo::getEdgeInfo(TNode src, TNode dst)
+{
+
+  std::unordered_map<TNode,
+                     std::unordered_map<TNode, EdgeInfo, TNodeHashFunction>,
+                     TNodeHashFunction>::iterator it =
+      d_einfo.find(src);
+  if (it==d_einfo.end())
+  {
+    return nullptr;
+  }
+  std::unordered_map<TNode, EdgeInfo, TNodeHashFunction>::iterator it2 = it->second.find(dst);
+  if (it2==it->second.end())
+  {
+    return nullptr;
+  }
+  return &it2->second;
 }
 
 void GraphInfo::checkEdge(TNode c)

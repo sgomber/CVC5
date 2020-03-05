@@ -36,9 +36,9 @@ class EdgeInfo
 class PathInfo
 {
  public:
-  PathInfo() : d_id(0) {}
-  /** Path Id */
-  uint32_t d_id;
+  PathInfo() {}
+  /** The atom that corresponds to this path*/
+  TNode d_atom;
 };
 
 class GraphInfo
@@ -61,21 +61,35 @@ class GraphInfo
   //------------------------------------- end logic checks
   /** Add edge */
   void addEdge(TNode src, TNode dst);
+  /** Process invalid edge 
+   * 
+   * This is called on preregistered atoms that are of the form (c1,c2) in g
+   * where g subset V and (c1,c2) is not in V.
+   */
+  void processInvalidEdgeAtom(TNode node);
+  /** Get edge info */
+  EdgeInfo * getEdgeInfo(TNode src, TNode dst);
 
   /** The graph variable */
   Node d_var;
   /** The atom corresponding to the subset restriction */
   Node d_subsetAtom;
-  /** The domain of possible edges */
+  /** The set of possible edges (maybe associated with atoms) */
   std::unordered_map<TNode,
                      std::unordered_map<TNode, EdgeInfo, TNodeHashFunction>,
                      TNodeHashFunction>
       d_einfo;
-  /** The set of paths */
+  /** The set of paths that have atoms */
   std::unordered_map<TNode,
                      std::unordered_map<TNode, PathInfo, TNodeHashFunction>,
                      TNodeHashFunction>
       d_pinfo;
+  /** 
+   * Waiting edges, true for edges that have been assigned atoms but have not
+   * yet been specified in the subset restriction.
+   */
+  std::unordered_set<std::pair<TNode, TNode>, TNodePairHashFunction>
+                     d_einfoWait;
   /** Edge id counter */
   uint32_t d_eidCounter;
 };
