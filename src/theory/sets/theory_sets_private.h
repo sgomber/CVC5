@@ -23,6 +23,7 @@
 #include "context/cdqueue.h"
 #include "expr/node_trie.h"
 #include "theory/sets/cardinality_extension.h"
+#include "theory/sets/graph_extension.h"
 #include "theory/sets/inference_manager.h"
 #include "theory/sets/solver_state.h"
 #include "theory/sets/theory_sets_rels.h"
@@ -265,6 +266,10 @@ class TheorySetsPrivate {
   InferenceManager d_im;
   /** subtheory solver for the theory of relations */
   std::unique_ptr<TheorySetsRels> d_rels;
+  /** 
+   * Subtheory solver for the theory of relations restricted to finite graphs 
+   */
+  std::unique_ptr<GraphExtension> d_graphs;
   /** subtheory solver for the theory of sets with cardinality */
   std::unique_ptr<CardinalityExtension> d_cardSolver;
   /** are relations enabled?

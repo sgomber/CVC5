@@ -48,6 +48,7 @@ TheorySetsPrivate::TheorySetsPrivate(TheorySets& external,
       d_state(*this, d_equalityEngine, c, u),
       d_im(*this, d_state, d_equalityEngine, c, u),
       d_rels(new TheorySetsRels(d_state, d_im, d_equalityEngine, u)),
+      d_graphs(new GraphExtension(d_state, d_im, d_equalityEngine, c, u)),
       d_cardSolver(
           new CardinalityExtension(d_state, d_im, d_equalityEngine, c, u)),
       d_rels_enabled(false),
