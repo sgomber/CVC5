@@ -56,7 +56,7 @@ RewriteResponse TheorySetsRewriter::postRewrite(TNode node) {
     // Dare you touch the const and mangle it to something else.
     return RewriteResponse(REWRITE_DONE, node);
   }
-
+  
   switch(kind) {
 
   case kind::MEMBER: {
@@ -82,21 +82,6 @@ RewriteResponse TheorySetsRewriter::postRewrite(TNode node) {
     }
     break;
   }//kind::MEMBER
-
-  case kind::SUBSET: {
-    Assert(false)
-        << "TheorySets::postRrewrite(): Subset is handled in preRewrite.";
-
-    // but in off-chance we do end up here, let us do our best
-
-    // rewrite (A subset-or-equal B) as (A union B = B)
-    TNode A = node[0];
-    TNode B = node[1];
-    return RewriteResponse(REWRITE_AGAIN_FULL,
-                           nm->mkNode(kind::EQUAL,
-                                      nm->mkNode(kind::UNION, A, B),
-                                      B) );
-  }//kind::SUBSET
 
   case kind::EQUAL: {
     //rewrite: t = t with true (t term)
@@ -488,7 +473,7 @@ RewriteResponse TheorySetsRewriter::preRewrite(TNode node) {
     // Graphs have native handling for subset. Regardless, we should rewrite
     // for constant arguments.
     bool doRewrite = true;
-    if (!options::graphsExt())
+    if (options::graphsExt())
     {
       for (TNode nc : node)
       {

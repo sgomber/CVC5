@@ -647,6 +647,8 @@ libcvc4_add_sources(
   theory/sets/cardinality_extension.h
   theory/sets/graph_extension.cpp
   theory/sets/graph_extension.h
+  theory/sets/graph_info.cpp
+  theory/sets/graph_info.h
   theory/sets/inference_manager.cpp
   theory/sets/inference_manager.h
   theory/sets/normal_form.h

@@ -46,6 +46,15 @@ void GraphExtension::preRegisterTerm(TNode node)
   Kind k = node.getKind();
   if (k == MEMBER)
   {
+    
+  }
+  else if (k==SUBSET)
+  {
+    
+  }
+  else if (k==EQUAL)
+  {
+    
   }
 }
 
