@@ -104,7 +104,7 @@ void GraphInfo::addEdgeAtom(TNode node, bool isPath)
   {
     PathInfo& pi = d_pinfo[src][dst];
     pi.d_atom = node;
-    Trace("graph-info") << "- Path atom: " << node << std::endl;
+    Trace("graph-info") << "- Path: (" << src << ", " << dst << ") ?in " << d_var << ", atom: " << node << std::endl;
     return;
   }
   if (d_subsetAtom.isNull())
