@@ -31,18 +31,18 @@ void GraphInfo::initialize(TNode g)
     throw LogicException(ss.str());
   }
   Assert(d_var.isNull());
-  d_var = g;  
+  d_var = g;
 }
-  
+
 void GraphInfo::addSubsetRestriction(TNode node)
 {
-  Assert(node.getKind()==SUBSET);
-  Assert(d_var==node[0]);
+  Assert(node.getKind() == SUBSET);
+  Assert(d_var == node[0]);
   if (!d_subsetAtom.isNull())
   {
     std::stringstream ss;
     ss << "GraphInfo: Cannot handle multiple subset restrictions for graph "
-        << d_var;
+       << d_var;
     throw LogicException(ss.str());
   }
   d_subsetAtom = node;
@@ -84,11 +84,8 @@ void GraphInfo::addSubsetRestriction(TNode node)
   } while (!visit.empty());
 }
 
-void GraphInfo::addEdgeAtom(TNode node, bool isPath)
-{
-  
-}
-  
+void GraphInfo::addEdgeAtom(TNode node, bool isPath) {}
+
 void GraphInfo::addEdge(TNode src, TNode dst)
 {
   Assert(src.isConst());

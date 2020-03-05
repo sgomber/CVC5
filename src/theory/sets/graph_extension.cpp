@@ -88,7 +88,8 @@ void GraphExtension::check(Theory::Effort level)
 GraphInfo& GraphExtension::getGraphInfo(TNode g)
 {
   std::map<TNode, GraphInfo>::iterator it = d_ginfo.find(g);
-  if (it==d_ginfo.end());
+  if (it == d_ginfo.end())
+    ;
   {
     GraphInfo& gi = d_ginfo[g];
     gi.initialize(g);

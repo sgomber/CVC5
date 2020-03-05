@@ -51,6 +51,7 @@ class GraphInfo
   void addSubsetRestriction(TNode node);
   /** add edge atom */
   void addEdgeAtom(TNode node, bool isPath = false);
+
  private:
   //------------------------------------- logic checks
   /** Logic exception if g is not a graph (binary relation) variable */
@@ -60,7 +61,7 @@ class GraphInfo
   //------------------------------------- end logic checks
   /** Add edge */
   void addEdge(TNode src, TNode dst);
-  
+
   /** The graph variable */
   Node d_var;
   /** The atom corresponding to the subset restriction */
