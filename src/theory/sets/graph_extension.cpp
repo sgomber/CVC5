@@ -17,7 +17,6 @@
 
 #include "expr/datatype.h"
 
-using namespace std;
 using namespace CVC4::kind;
 
 namespace CVC4 {
@@ -39,16 +38,33 @@ GraphExtension::~GraphExtension() {}
 
 void GraphExtension::preRegisterTerm(TNode node)
 {
-  
+  Trace("graph") << "GraphExtension::preRegisterTerm: " << node << std::endl;
+  // this class is intended to handle atoms of the form:
+  // (1) (c1, c2) in R, where c1, c2 are constants and R is a binary relation,
+  // (2) R subset ((c1, d1) union ... union (cn, dn)) where c1 ... cn and
+  // d1 ... dn are constants.
+  Kind k = node.getKind();
+  if (k==MEMBER)
+  {
+    
+  }
 }
  
-void GraphExtension::assertNode(TNode lit)
+void GraphExtension::assertFact(TNode fact, TNode exp)
 {
-  
+  if (Trace.isOn("graph"))
+  {
+    Trace("graph") << "GraphExtension::assertNode: " << fact << std::endl;
+    if (fact!=exp)
+    {
+      Trace("graph") << "  with explanation " << exp << std::endl;
+    }
+  }
 }
  
 void GraphExtension::check(Theory::Effort level)
 {
+  Trace("graph") << "GraphExtension::check: " << level << std::endl;
 
 }
 

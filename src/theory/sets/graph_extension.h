@@ -25,6 +25,12 @@ namespace CVC4 {
 namespace theory {
 namespace sets {
 
+class GraphInfo
+{
+public:
+  
+};
+  
 /** The graph extension of the theory of sets
  *
  * This class implements inference schemes described in Meng et al. CADE 2017
@@ -51,9 +57,10 @@ public:
   */
  void preRegisterTerm(TNode node);
  /**
-  * Called when the (literal) node is asserted to the theory of sets.
+  * Called when the (literal) fact is asserted to the theory of sets whose
+  * explanation is exp.
   */
- void assertNode(TNode node);
+ void assertFact(TNode fact, TNode exp);
  /**
   * Invoke the check method with effort level e. At a high level, this class
   * will make calls to TheorySetsPrivate::processInference to assert facts,
@@ -71,6 +78,8 @@ private:
   InferenceManager& d_im;
   /** Reference to the equality engine of theory of sets */
   eq::EqualityEngine& d_ee;
+  /** Information for each graph (binary relation) */
+  std::map<Node,GraphInfo> d_ginfo;
 };
 
 }/* CVC4::theory::sets namespace */

@@ -483,15 +483,31 @@ RewriteResponse TheorySetsRewriter::preRewrite(TNode node) {
                                       node[setNodeIndex]));
 
   }//kind::INSERT
-  else if(node.getKind() == kind::SUBSET) {
-
-    // rewrite (A subset-or-equal B) as (A union B = B)
-    return RewriteResponse(REWRITE_AGAIN,
-                           nm->mkNode(kind::EQUAL,
-                                      nm->mkNode(kind::UNION, node[0], node[1]),
-                                      node[1]) );
-
-  }//kind::SUBSET
+  else if(node.getKind() == SUBSET) 
+  {
+    // Graphs have native handling for subset. Regardless, we should rewrite
+    // for constant arguments.
+    bool doRewrite = true;
+    if (!options::graphsExt())
+    {
+      for (TNode nc : node)
+      {
+        if (!nc.isConst())
+        {
+          doRewrite = false;
+          break;
+        }
+      }
+    }
+    if (doRewrite)
+    {
+      // rewrite (A subset-or-equal B) as (A union B = B)
+      return RewriteResponse(REWRITE_AGAIN,
+                            nm->mkNode(EQUAL,
+                                        nm->mkNode(UNION, node[0], node[1]),
+                                        node[1]) );
+    }
+  }
 
   return RewriteResponse(REWRITE_DONE, node);
 }

@@ -30,9 +30,9 @@ header = "options/sets_options.h"
   help       = "enable extended symbols such as complement and universe in theory of sets"
 
 [[option]]
-  name       = "setsGraphs"
+  name       = "graphsExt"
   category   = "regular"
-  long       = "sets-graph"
+  long       = "graphs-ext"
   type       = "bool"
   default    = "false"
   read_only  = true
