@@ -148,13 +148,17 @@ class SygusExplain
    * - All formulas in exp are of the form ((_ is C) ns), where ns
    *   is a chain of selectors applied to n, and
    * - exp => ( n = vn )
+   *
+   * The argument isSkeleton determines whether we are explaining the value
+   * of any constant fields. If false, then we include equalities like
+   * (= t.1 c) where t's model value is (any_constant c).
    */
   void getExplanationForEquality(Node n,
                                  Node vn,
                                  std::vector<Node>& exp,
-                                 bool isSkeleton = false);
+                                 bool isSkeleton = true);
   /** returns the conjunction of exp computed in the above function */
-  Node getExplanationForEquality(Node n, Node vn, bool isSkeleton = false);
+  Node getExplanationForEquality(Node n, Node vn, bool isSkeleton = true);
 
   /** get explanation for equality
    *
@@ -166,17 +170,21 @@ class SygusExplain
    * then the following is appended to exp :
    *   { ((_ is plus) n), ((_ is y) n.1) }
    * where notice that the 0^th argument of vn is excluded.
+   *
+   * The argument isSkeleton determines whether we are explaining the value
+   * of any constant fields. If false, then we include equalities like
+   * (= t.1 c) where t's model value is (any_constant c).
    */
   void getExplanationForEquality(Node n,
                                  Node vn,
                                  std::vector<Node>& exp,
                                  std::map<unsigned, bool>& cexc,
-                                 bool isSkeleton = false);
+                                 bool isSkeleton = true);
   /** returns the conjunction of exp computed in the above function */
   Node getExplanationForEquality(Node n,
                                  Node vn,
                                  std::map<unsigned, bool>& cexc,
-                                 bool isSkeleton = false);
+                                 bool isSkeleton = true);
 
   /** get explanation for
    *
@@ -198,7 +206,7 @@ class SygusExplain
    * introduce variables that shadow the variables introduced on previous calls.
    *
    * The argument isSkeleton determines whether we are explaining the value
-   * of any constant fields. If false, then we add equalities like
+   * of any constant fields. If false, then we include equalities like
    * (= t.1 c) where t's model value is (any_constant c).
    */
   void getExplanationFor(Node n,
@@ -207,7 +215,7 @@ class SygusExplain
                          SygusInvarianceTest& et,
                          Node vnr,
                          unsigned& sz,
-                         bool isSkeleton = false);
+                         bool isSkeleton = true);
   void getExplanationFor(Node n,
                          Node vn,
                          std::vector<Node>& exp,
@@ -215,20 +223,20 @@ class SygusExplain
                          Node vnr,
                          std::map<TypeNode, int>& var_count,
                          unsigned& sz,
-                         bool isSkeleton = false);
+                         bool isSkeleton = true);
   void getExplanationFor(Node n,
                          Node vn,
                          std::vector<Node>& exp,
                          SygusInvarianceTest& et,
                          bool strict = true,
-                         bool isSkeleton = false);
+                         bool isSkeleton = true);
   void getExplanationFor(Node n,
                          Node vn,
                          std::vector<Node>& exp,
                          SygusInvarianceTest& et,
                          std::map<TypeNode, int>& var_count,
                          bool strict = true,
-                         bool isSkeleton = false);
+                         bool isSkeleton = true);
 
  private:
   /** sygus term database associated with this utility */
