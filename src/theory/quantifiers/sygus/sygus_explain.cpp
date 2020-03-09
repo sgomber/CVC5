@@ -265,7 +265,7 @@ void SygusExplain::getExplanationFor(TermRecBuild& trb,
       trb.push(i);
       Node vnr_exp_c;
       getExplanationFor(
-          trb, sel, vn[i], exp, var_count, et, vnr_c, vnr_exp_c, sz);
+          trb, sel, vn[i], exp, var_count, et, vnr_c, vnr_exp_c, sz, isSkeleton);
       trb.pop();
       if (!vnr_c.isNull())
       {
@@ -298,10 +298,11 @@ void SygusExplain::getExplanationFor(Node n,
                                      std::vector<Node>& exp,
                                      SygusInvarianceTest& et,
                                      Node vnr,
-                                     unsigned& sz)
+                                     unsigned& sz,
+                         bool isSkeleton)
 {
   std::map<TypeNode, int> var_count;
-  return getExplanationFor(n, vn, exp, et, vnr, var_count, sz);
+  return getExplanationFor(n, vn, exp, et, vnr, var_count, sz, isSkeleton);
 }
 
 void SygusExplain::getExplanationFor(Node n,
