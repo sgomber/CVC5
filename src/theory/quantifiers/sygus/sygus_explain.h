@@ -149,11 +149,12 @@ class SygusExplain
    *   is a chain of selectors applied to n, and
    * - exp => ( n = vn )
    */
-  void getExplanationForEquality(Node n, Node vn, std::vector<Node>& exp,
-                         bool isSkeleton=false);
+  void getExplanationForEquality(Node n,
+                                 Node vn,
+                                 std::vector<Node>& exp,
+                                 bool isSkeleton = false);
   /** returns the conjunction of exp computed in the above function */
-  Node getExplanationForEquality(Node n, Node vn,
-                         bool isSkeleton=false);
+  Node getExplanationForEquality(Node n, Node vn, bool isSkeleton = false);
 
   /** get explanation for equality
    *
@@ -170,12 +171,12 @@ class SygusExplain
                                  Node vn,
                                  std::vector<Node>& exp,
                                  std::map<unsigned, bool>& cexc,
-                         bool isSkeleton=false);
+                                 bool isSkeleton = false);
   /** returns the conjunction of exp computed in the above function */
   Node getExplanationForEquality(Node n,
                                  Node vn,
                                  std::map<unsigned, bool>& cexc,
-                         bool isSkeleton=false);
+                                 bool isSkeleton = false);
 
   /** get explanation for
    *
@@ -198,7 +199,7 @@ class SygusExplain
    *
    * The argument isSkeleton determines whether we are explaining the value
    * of any constant fields. If false, then we add equalities like
-   * (= t.1 c) where t's model value is (any_constant c). 
+   * (= t.1 c) where t's model value is (any_constant c).
    */
   void getExplanationFor(Node n,
                          Node vn,
@@ -206,7 +207,7 @@ class SygusExplain
                          SygusInvarianceTest& et,
                          Node vnr,
                          unsigned& sz,
-                         bool isSkeleton=false);
+                         bool isSkeleton = false);
   void getExplanationFor(Node n,
                          Node vn,
                          std::vector<Node>& exp,

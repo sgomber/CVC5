@@ -114,7 +114,7 @@ Node TermRecBuild::build(unsigned d)
 void SygusExplain::getExplanationForEquality(Node n,
                                              Node vn,
                                              std::vector<Node>& exp,
-                         bool isSkeleton)
+                                             bool isSkeleton)
 {
   std::map<unsigned, bool> cexc;
   getExplanationForEquality(n, vn, exp, cexc, isSkeleton);
@@ -124,7 +124,7 @@ void SygusExplain::getExplanationForEquality(Node n,
                                              Node vn,
                                              std::vector<Node>& exp,
                                              std::map<unsigned, bool>& cexc,
-                         bool isSkeleton)
+                                             bool isSkeleton)
 {
   // since builtin types occur in grammar, types are comparable but not
   // necessarily equal
@@ -160,8 +160,7 @@ void SygusExplain::getExplanationForEquality(Node n,
   }
 }
 
-Node SygusExplain::getExplanationForEquality(Node n, Node vn,
-                         bool isSkeleton)
+Node SygusExplain::getExplanationForEquality(Node n, Node vn, bool isSkeleton)
 {
   std::map<unsigned, bool> cexc;
   return getExplanationForEquality(n, vn, cexc, isSkeleton);
@@ -170,7 +169,7 @@ Node SygusExplain::getExplanationForEquality(Node n, Node vn,
 Node SygusExplain::getExplanationForEquality(Node n,
                                              Node vn,
                                              std::map<unsigned, bool>& cexc,
-                         bool isSkeleton)
+                                             bool isSkeleton)
 {
   std::vector<Node> exp;
   getExplanationForEquality(n, vn, exp, cexc, isSkeleton);
@@ -190,7 +189,7 @@ void SygusExplain::getExplanationFor(TermRecBuild& trb,
                                      Node vnr,
                                      Node& vnr_exp,
                                      int& sz,
-                         bool isSkeleton)
+                                     bool isSkeleton)
 {
   Assert(vnr.isNull() || vn != vnr);
   Assert(n.getType().isComparableTo(vn.getType()));
@@ -264,8 +263,16 @@ void SygusExplain::getExplanationFor(TermRecBuild& trb,
     {
       trb.push(i);
       Node vnr_exp_c;
-      getExplanationFor(
-          trb, sel, vn[i], exp, var_count, et, vnr_c, vnr_exp_c, sz, isSkeleton);
+      getExplanationFor(trb,
+                        sel,
+                        vn[i],
+                        exp,
+                        var_count,
+                        et,
+                        vnr_c,
+                        vnr_exp_c,
+                        sz,
+                        isSkeleton);
       trb.pop();
       if (!vnr_c.isNull())
       {
@@ -299,7 +306,7 @@ void SygusExplain::getExplanationFor(Node n,
                                      SygusInvarianceTest& et,
                                      Node vnr,
                                      unsigned& sz,
-                         bool isSkeleton)
+                                     bool isSkeleton)
 {
   std::map<TypeNode, int> var_count;
   return getExplanationFor(n, vn, exp, et, vnr, var_count, sz, isSkeleton);
@@ -312,7 +319,7 @@ void SygusExplain::getExplanationFor(Node n,
                                      Node vnr,
                                      std::map<TypeNode, int>& var_count,
                                      unsigned& sz,
-                         bool isSkeleton)
+                                     bool isSkeleton)
 {
   // naive :
   // return getExplanationForEquality( n, vn, exp );
@@ -322,7 +329,8 @@ void SygusExplain::getExplanationFor(Node n,
   trb.init(vn);
   Node vnr_exp;
   int sz_use = sz;
-  getExplanationFor(trb, n, vn, exp, var_count, et, vnr, vnr_exp, sz_use, isSkeleton);
+  getExplanationFor(
+      trb, n, vn, exp, var_count, et, vnr, vnr_exp, sz_use, isSkeleton);
   Assert(sz_use >= 0);
   sz = sz_use;
   Assert(vnr.isNull() || !vnr_exp.isNull());
@@ -337,7 +345,7 @@ void SygusExplain::getExplanationFor(Node n,
                                      std::vector<Node>& exp,
                                      SygusInvarianceTest& et,
                                      bool strict,
-                         bool isSkeleton)
+                                     bool isSkeleton)
 {
   std::map<TypeNode, int> var_count;
   getExplanationFor(n, vn, exp, et, var_count, strict, isSkeleton);
@@ -349,7 +357,7 @@ void SygusExplain::getExplanationFor(Node n,
                                      SygusInvarianceTest& et,
                                      std::map<TypeNode, int>& var_count,
                                      bool strict,
-                         bool isSkeleton)
+                                     bool isSkeleton)
 {
   if (!strict)
   {
@@ -367,7 +375,8 @@ void SygusExplain::getExplanationFor(Node n,
   trb.init(vn);
   Node vnr;
   Node vnr_exp;
-  getExplanationFor(trb, n, vn, exp, var_count, et, vnr, vnr_exp, sz, isSkeleton);
+  getExplanationFor(
+      trb, n, vn, exp, var_count, et, vnr, vnr_exp, sz, isSkeleton);
 }
 
 } /* CVC4::theory::quantifiers namespace */
