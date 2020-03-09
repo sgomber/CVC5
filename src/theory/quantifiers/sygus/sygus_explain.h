@@ -246,7 +246,8 @@ class SygusExplain
                          SygusInvarianceTest& et,
                          Node vnr,
                          Node& vnr_exp,
-                         int& sz);
+                         int& sz,
+                         bool isSkeleton);
 };
 
 } /* CVC4::theory::quantifiers namespace */
