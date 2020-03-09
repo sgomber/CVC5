@@ -149,9 +149,11 @@ class SygusExplain
    *   is a chain of selectors applied to n, and
    * - exp => ( n = vn )
    */
-  void getExplanationForEquality(Node n, Node vn, std::vector<Node>& exp);
+  void getExplanationForEquality(Node n, Node vn, std::vector<Node>& exp,
+                         bool isSkeleton=false);
   /** returns the conjunction of exp computed in the above function */
-  Node getExplanationForEquality(Node n, Node vn);
+  Node getExplanationForEquality(Node n, Node vn,
+                         bool isSkeleton=false);
 
   /** get explanation for equality
    *
@@ -167,11 +169,13 @@ class SygusExplain
   void getExplanationForEquality(Node n,
                                  Node vn,
                                  std::vector<Node>& exp,
-                                 std::map<unsigned, bool>& cexc);
+                                 std::map<unsigned, bool>& cexc,
+                         bool isSkeleton=false);
   /** returns the conjunction of exp computed in the above function */
   Node getExplanationForEquality(Node n,
                                  Node vn,
-                                 std::map<unsigned, bool>& cexc);
+                                 std::map<unsigned, bool>& cexc,
+                         bool isSkeleton=false);
 
   /** get explanation for
    *
@@ -191,31 +195,39 @@ class SygusExplain
    * TermDbSygus::getFreeVarInc. This argument should be used if we are
    * calling this function multiple times and the generalization should not
    * introduce variables that shadow the variables introduced on previous calls.
+   *
+   * The argument isSkeleton determines whether we are explaining the value
+   * of any constant fields. If false, then we add equalities like
+   * (= t.1 c) where t's model value is (any_constant c). 
    */
   void getExplanationFor(Node n,
                          Node vn,
                          std::vector<Node>& exp,
                          SygusInvarianceTest& et,
                          Node vnr,
-                         unsigned& sz);
+                         unsigned& sz,
+                         bool isSkeleton=false);
   void getExplanationFor(Node n,
                          Node vn,
                          std::vector<Node>& exp,
                          SygusInvarianceTest& et,
                          Node vnr,
                          std::map<TypeNode, int>& var_count,
-                         unsigned& sz);
+                         unsigned& sz,
+                         bool isSkeleton = false);
   void getExplanationFor(Node n,
                          Node vn,
                          std::vector<Node>& exp,
                          SygusInvarianceTest& et,
-                         bool strict = true);
+                         bool strict = true,
+                         bool isSkeleton = false);
   void getExplanationFor(Node n,
                          Node vn,
                          std::vector<Node>& exp,
                          SygusInvarianceTest& et,
                          std::map<TypeNode, int>& var_count,
-                         bool strict = true);
+                         bool strict = true,
+                         bool isSkeleton = false);
 
  private:
   /** sygus term database associated with this utility */
