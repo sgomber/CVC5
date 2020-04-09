@@ -987,7 +987,6 @@ void CoreSolver::processSimpleNEq(NormalForm& nfi,
                                   TypeNode stype)
 {
   NodeManager* nm = NodeManager::currentNM();
-  eq::EqualityEngine* ee = d_state.getEqualityEngine();
   Node emp = Word::mkEmptyWord(stype);
 
   const std::vector<Node>& nfiv = nfi.d_nf;
@@ -1568,7 +1567,8 @@ CoreSolver::ProcessLoopResult CoreSolver::processLoop(NormalForm& nfi,
     // the equality could rewrite to false
     if (!split_eqr.isConst())
     {
-      if (!d_state.areDisequal(t, emp))
+      Node expNonEmpty = d_state.explainNonEmpty(t);
+      if (expNonEmpty.isNull())
       {
         // try to make t equal to empty to avoid loop
         info.d_conc = nm->mkNode(kind::OR, split_eq, split_eq.negate());
@@ -1577,7 +1577,7 @@ CoreSolver::ProcessLoopResult CoreSolver::processLoop(NormalForm& nfi,
       }
       else
       {
-        info.d_ant.push_back(split_eq.negate());
+        info.d_ant.push_back(expNonEmpty);
       }
     }
     else
@@ -1703,7 +1703,6 @@ void CoreSolver::processDeq(Node ni, Node nj)
   NodeManager* nm = NodeManager::currentNM();
   NormalForm& nfni = getNormalForm(ni);
   NormalForm& nfnj = getNormalForm(nj);
-  eq::EqualityEngine* ee = d_state.getEqualityEngine();
 
   if (nfni.d_nf.size() <= 1 && nfnj.d_nf.size() <= 1)
   {
@@ -1784,8 +1783,8 @@ void CoreSolver::processDeq(Node ni, Node nj)
         Node ck = x.isConst() ? x : y;
         Node nck = x.isConst() ? y : x;
         Node nckLenTerm = x.isConst() ? yLenTerm : xLenTerm;
-        Node emp = Word::mkEmptyWord(nck.getType());
-        if (!ee->areDisequal(nck, emp, true))
+        Node expNonEmpty = d_state.explainNonEmpty(nck);
+        if (expNonEmpty.isNull())
         {
           // Either `x` or `y` is a constant and the other may be equal to the
           // empty string in the current context. We split on whether it
@@ -1793,6 +1792,7 @@ void CoreSolver::processDeq(Node ni, Node nj)
           //
           // E.g. x ++ x' ++ ... != "abc" ++ y' ++ ... ^ len(x) != len(y) --->
           //      x = "" v x != ""
+          Node emp = Word::mkEmptyWord(nck.getType());
           d_im.sendSplit(nck, emp, Inference::DEQ_DISL_EMP_SPLIT);
           return;
         }
@@ -1849,7 +1849,7 @@ void CoreSolver::processDeq(Node ni, Node nj)
               nck.eqNode(nm->mkNode(kind::STRING_CONCAT, firstChar, skr));
           std::vector<Node> antec(nfni.d_exp.begin(), nfni.d_exp.end());
           antec.insert(antec.end(), nfnj.d_exp.begin(), nfnj.d_exp.end());
-          antec.push_back(nck.eqNode(emp).negate());
+          antec.push_back(expNonEmpty);
           d_im.sendInference(
               antec,
               nm->mkNode(
