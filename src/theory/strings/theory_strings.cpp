@@ -317,7 +317,7 @@ bool TheoryStrings::collectModelInfo(TheoryModel* m)
 bool TheoryStrings::collectModelInfoType(
     TypeNode tn,
     const std::unordered_set<Node, NodeHashFunction>& repSet,
-    TheoryModel * m,
+    TheoryModel* m,
     std::map<Node, Node>& mAssert)
 {
   NodeManager* nm = NodeManager::currentNM();
