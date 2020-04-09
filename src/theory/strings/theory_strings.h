@@ -31,6 +31,7 @@
 #include "theory/strings/extf_solver.h"
 #include "theory/strings/infer_info.h"
 #include "theory/strings/inference_manager.h"
+#include "theory/strings/model_check.h"
 #include "theory/strings/normal_form.h"
 #include "theory/strings/regexp_elim.h"
 #include "theory/strings/regexp_operation.h"
@@ -39,7 +40,6 @@
 #include "theory/strings/skolem_cache.h"
 #include "theory/strings/solver_state.h"
 #include "theory/strings/strings_fmf.h"
-#include "theory/strings/model_check.h"
 #include "theory/strings/strings_rewriter.h"
 #include "theory/theory.h"
 #include "theory/uf/equality_engine.h"
@@ -391,6 +391,7 @@ private:
   StringsFmf d_stringsFmf;
   /** Model checker */
   ModelCheck d_modelCheck;
+
  public:
   // ppRewrite
   Node ppRewrite(TNode atom) override;

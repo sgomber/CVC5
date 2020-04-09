@@ -24,25 +24,22 @@ namespace CVC4 {
 namespace theory {
 namespace strings {
 
-ModelCheck::ModelCheck(TheoryStrings& parent)
-    : d_parent(parent)
-{
-}
+ModelCheck::ModelCheck(TheoryStrings& parent) : d_parent(parent) {}
 
 ModelCheck::~ModelCheck() {}
 
 bool ModelCheck::check(const std::map<Node, Node>& model)
 {
   std::vector<Node> assertions;
-  for (Theory::assertions_iterator it = d_parent.facts_begin(), itEnd = d_parent.facts_end();
-      it != itEnd;
-      ++it)
+  for (Theory::assertions_iterator it = d_parent.facts_begin(),
+                                   itEnd = d_parent.facts_end();
+       it != itEnd;
+       ++it)
   {
     assertions.insert(it->d_assertion);
   }
   return false;
 }
-
 
 }  // namespace strings
 }  // namespace theory

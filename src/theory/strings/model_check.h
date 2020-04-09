@@ -24,7 +24,7 @@
 namespace CVC4 {
 namespace theory {
 namespace strings {
-  
+
 class TheoryStrings;
 
 /** Strings model check
@@ -41,8 +41,8 @@ class ModelCheck
   bool check(const std::map<Node, Node>& model);
 
  private:
-   /** The parent who owns this */
-   TheoryStrings& d_parent;
+  /** The parent who owns this */
+  TheoryStrings& d_parent;
 };
 
 }  // namespace strings
