@@ -282,12 +282,13 @@ bool TheoryStrings::collectModelInfo(TheoryModel* m)
       repSet[tn].insert(r);
     }
   }
+  // The set of equalites to add to the equality engine
   std::map<Node, Node> mAssert;
   for (const std::pair<const TypeNode,
                        std::unordered_set<Node, NodeHashFunction> >& rst :
        repSet)
   {
-    if (!collectModelInfoType(rst.first, rst.second, mAssert))
+    if (!collectModelInfoType(rst.first, rst.second, m, mAssert))
     {
       return false;
     }
@@ -316,6 +317,7 @@ bool TheoryStrings::collectModelInfo(TheoryModel* m)
 bool TheoryStrings::collectModelInfoType(
     TypeNode tn,
     const std::unordered_set<Node, NodeHashFunction>& repSet,
+    TheoryModel * m,
     std::map<Node, Node>& mAssert)
 {
   NodeManager* nm = NodeManager::currentNM();
