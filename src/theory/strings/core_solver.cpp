@@ -1239,19 +1239,7 @@ void CoreSolver::processSimpleNEq(NormalForm& nfi,
       Assert(!nc.isConst()) << "Other string is not constant.";
       Assert(nc.getKind() != STRING_CONCAT) << "Other string is not CONCAT.";
       // explanation for why nc is non-empty
-      Node expNonEmpty;
-      if (ee->areDisequal(nc, emp, true))
-      {
-        expNonEmpty = nc.eqNode(emp).negate();
-      }
-      else
-      {
-        Node ncLen = utils::mkNLength(nc);
-        if (ee->areDisequal(ncLen,d_zero, true))
-        {
-          expNonEmpty = ncLen.eqNode(d_zero).negate();
-        }
-      }
+      Node expNonEmpty = d_state.explainNonEmpty(nc);
       if (expNonEmpty.isNull())
       {
         // The non-constant side may be equal to the empty string. Split on
@@ -1427,13 +1415,14 @@ void CoreSolver::processSimpleNEq(NormalForm& nfi,
     for (unsigned xory = 0; xory < 2; xory++)
     {
       Node t = xory == 0 ? x : y;
-      Node tnz = x.eqNode(emp).negate();
-      if (ee->areDisequal(x, emp, true))
+      Node tnz = d_state.explainNonEmpty(x);
+      if (!tnz.isNull())
       {
         info.d_ant.push_back(tnz);
       }
       else
       {
+        tnz = x.eqNode(emp).negate();
         info.d_antn.push_back(tnz);
       }
     }
