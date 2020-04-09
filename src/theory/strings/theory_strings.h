@@ -39,6 +39,7 @@
 #include "theory/strings/skolem_cache.h"
 #include "theory/strings/solver_state.h"
 #include "theory/strings/strings_fmf.h"
+#include "theory/strings/model_check.h"
 #include "theory/strings/strings_rewriter.h"
 #include "theory/theory.h"
 #include "theory/uf/equality_engine.h"
@@ -388,7 +389,8 @@ private:
   RegExpElimination d_regexp_elim;
   /** Strings finite model finding decision strategy */
   StringsFmf d_stringsFmf;
-
+  /** Model checker */
+  ModelCheck d_modelCheck;
  public:
   // ppRewrite
   Node ppRewrite(TNode atom) override;

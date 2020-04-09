@@ -84,6 +84,7 @@ TheoryStrings::TheoryStrings(context::Context* c,
       d_esolver(nullptr),
       d_rsolver(nullptr),
       d_stringsFmf(c, u, valuation, d_sk_cache),
+      d_modelCheck(*this),
       d_strategy_init(false)
 {
   setupExtTheory();
@@ -296,6 +297,7 @@ bool TheoryStrings::collectModelInfo(TheoryModel* m)
   if (options::stringGuessModel())
   {
     // we are not sure that this is a model
+    d_modelCheck.process(mAssert);
   }
   // now assert to model
   for (const std::pair<const Node, Node>& meq : mAssert)
