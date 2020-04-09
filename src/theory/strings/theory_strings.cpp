@@ -282,7 +282,7 @@ bool TheoryStrings::collectModelInfo(TheoryModel* m)
       repSet[tn].insert(r);
     }
   }
-  std::map<Node,Node> mAssert;
+  std::map<Node, Node> mAssert;
   for (const std::pair<const TypeNode,
                        std::unordered_set<Node, NodeHashFunction> >& rst :
        repSet)
@@ -297,7 +297,7 @@ bool TheoryStrings::collectModelInfo(TheoryModel* m)
     // we are not sure that this is a model
   }
   // now assert to model
-  for (const std::pair<const Node,Node>& meq : mAssert)
+  for (const std::pair<const Node, Node>& meq : mAssert)
   {
     if (meq.first == meq.second)
     {
@@ -316,7 +316,7 @@ bool TheoryStrings::collectModelInfo(TheoryModel* m)
 bool TheoryStrings::collectModelInfoType(
     TypeNode tn,
     const std::unordered_set<Node, NodeHashFunction>& repSet,
-    std::map<Node,Node>& meqs)
+    std::map<Node, Node>& mAssert)
 {
   NodeManager* nm = NodeManager::currentNM();
   std::vector<Node> nodes(repSet.begin(), repSet.end());
@@ -517,7 +517,8 @@ bool TheoryStrings::collectModelInfoType(
   Trace("strings-model") << "String Model : Pure Assigned." << std::endl;
   //step 4 : assign constants to all other equivalence classes
   for( unsigned i=0; i<nodes.size(); i++ ){
-    if( mAssert.find( nodes[i] )==mAssert.end() ){
+    if (mAssert.find(nodes[i]) == mAssert.end())
+    {
       NormalForm& nf = d_csolver.getNormalForm(nodes[i]);
       if (Trace.isOn("strings-model"))
       {

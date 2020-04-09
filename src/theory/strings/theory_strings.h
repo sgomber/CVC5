@@ -322,7 +322,7 @@ private:
   bool collectModelInfoType(
       TypeNode tn,
       const std::unordered_set<Node, NodeHashFunction>& repSet,
-      std::map<Node,Node>& meqs);
+      std::map<Node, Node>& meqs);
 
   /** assert pending fact
    *
