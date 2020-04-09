@@ -20,6 +20,7 @@
 #include <map>
 
 #include "expr/node.h"
+#include "theory/evaluator.h"
 
 namespace CVC4 {
 namespace theory {
@@ -31,8 +32,6 @@ class TheoryStrings;
  */
 class ModelCheck
 {
-  typedef context::CDHashSet<Node, NodeHashFunction> NodeSet;
-
  public:
   ModelCheck(TheoryStrings& parent);
   ~ModelCheck();
@@ -43,6 +42,8 @@ class ModelCheck
  private:
   /** The parent who owns this */
   TheoryStrings& d_parent;
+  /** An evaluator */
+  Evaluator d_eval;
 };
 
 }  // namespace strings

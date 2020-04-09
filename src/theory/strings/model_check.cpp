@@ -30,14 +30,33 @@ ModelCheck::~ModelCheck() {}
 
 bool ModelCheck::check(const std::map<Node, Node>& model)
 {
-  std::vector<Node> assertions;
+  Trace("strings-mc") << "ModelCheck::check..." << std::endl;
+  Trace("strings-mc") << "Model M {" << std::endl;
+  std::vector<Node> vars;
+  std::vector<Node> subs;
+  for (const std::pair<const Node, Node >& meq : model)
+  {
+    if (meq.first != meq.second)
+    {
+      vars.push_back(meq.first);
+      subs.push_back(meq.second);
+      Trace("strings-mc") << "  M(" << meq.first << ") = " << meq.second << std::endl;
+    }
+  }
+  Trace("strings-mc") << "}" << std::endl;
+  Trace("strings-mc") << "Assertions:" << std::endl;
   for (Theory::assertions_iterator it = d_parent.facts_begin(),
                                    itEnd = d_parent.facts_end();
        it != itEnd;
        ++it)
   {
-    assertions.insert(it->d_assertion);
+    Node lit = (*it).d_assertion;
+    Trace("strings-mc") << "- " << lit << std::endl;
+    // evaluate it
+    Node litEval = d_eval.eval(lit, vars, subs);
+    Trace("strings-mc") << "- eval: " << litEval << std::endl;
   }
+  exit(1);
   return false;
 }
 

@@ -92,7 +92,7 @@ enum InferStep
   // check cardinality
   CHECK_CARDINALITY,
 };
-std::ostream& operator<<(std::ostream& out, Inference i);
+std::ostream& operator<<(std::ostream& out, InferStep i);
 
 struct StringsProxyVarAttributeId {};
 typedef expr::Attribute< StringsProxyVarAttributeId, bool > StringsProxyVarAttribute;
@@ -269,6 +269,8 @@ private:
  private:
   /** All the function terms that the theory has seen */
   context::CDList<TNode> d_functionsTerms;
+  /** All the variables that the theory has seen */
+  context::CDList<TNode> d_varTerms;
 private:
   /** have we asserted any str.code terms? */
   bool d_has_str_code;

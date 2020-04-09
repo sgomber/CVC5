@@ -1238,7 +1238,21 @@ void CoreSolver::processSimpleNEq(NormalForm& nfi,
       Node nc = nfncv[index];
       Assert(!nc.isConst()) << "Other string is not constant.";
       Assert(nc.getKind() != STRING_CONCAT) << "Other string is not CONCAT.";
-      if (!ee->areDisequal(nc, emp, true))
+      // explanation for why nc is non-empty
+      Node expNonEmpty;
+      if (ee->areDisequal(nc, emp, true))
+      {
+        expNonEmpty = nc.eqNode(emp).negate();
+      }
+      else
+      {
+        Node ncLen = utils::mkNLength(nc);
+        if (ee->areDisequal(ncLen,d_zero, true))
+        {
+          expNonEmpty = ncLen.eqNode(d_zero).negate();
+        }
+      }
+      if (expNonEmpty.isNull())
       {
         // The non-constant side may be equal to the empty string. Split on
         // whether it is.
@@ -1273,8 +1287,7 @@ void CoreSolver::processSimpleNEq(NormalForm& nfi,
 
       // At this point, we know that `nc` is non-empty, so we add that to our
       // explanation.
-      Node ncnz = nc.eqNode(emp).negate();
-      info.d_ant.push_back(ncnz);
+      info.d_ant.push_back(expNonEmpty);
 
       size_t ncIndex = index + 1;
       Node nextConstStr = nfnc.collectConstantStringAt(ncIndex);

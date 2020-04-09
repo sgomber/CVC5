@@ -77,6 +77,7 @@ TheoryStrings::TheoryStrings(context::Context* c,
       d_registered_terms_cache(u),
       d_registeredTypesCache(u),
       d_functionsTerms(c),
+      d_varTerms(c),
       d_has_str_code(false),
       d_rewriter(&d_statistics.d_rewrites),
       d_bsolver(c, u, d_state, d_im),
@@ -297,7 +298,7 @@ bool TheoryStrings::collectModelInfo(TheoryModel* m)
   if (options::stringGuessModel())
   {
     // we are not sure that this is a model
-    d_modelCheck.process(mAssert);
+    d_modelCheck.check(mAssert);
   }
   // now assert to model
   for (const std::pair<const Node, Node>& meq : mAssert)
@@ -603,11 +604,15 @@ void TheoryStrings::preRegisterTerm(TNode n) {
       default: {
         registerTerm(n, 0);
         TypeNode tn = n.getType();
-        if (tn.isRegExp() && n.isVar())
+        if (n.isVar())
         {
-          std::stringstream ss;
-          ss << "Regular expression variables are not supported.";
-          throw LogicException(ss.str());
+          if (tn.isRegExp())
+          {
+            std::stringstream ss;
+            ss << "Regular expression variables are not supported.";
+            throw LogicException(ss.str());
+          }
+          //d_varTerms.push_back(n);
         }
         if( tn.isString() ) {
           // all characters of constants should fall in the alphabet
@@ -1359,6 +1364,17 @@ void TheoryStrings::runStrategy(unsigned sbegin, unsigned send)
     else
     {
       runInferStep(curr, d_infer_step_effort[i]);
+      if (Trace.isOn("strings-process"))
+      {
+        if (d_state.isInConflict())
+        {
+          Trace("strings-process") << "---> conflict at " << curr << std::endl;
+        }
+        if (d_im.hasProcessed())
+        {
+          Trace("strings-process") << "---> processed at " << curr << std::endl;
+        }
+      }
       if (d_state.isInConflict())
       {
         break;
