@@ -247,12 +247,12 @@ Node SolverState::explainNonEmpty(Node s)
 {
   Assert(s.getType().isStringLike());
   Node emp = Word::mkEmptyWord(s.getType());
-  if (d_ee.areDisequal(s, emp, true))
+  if (areDisequal(s, emp))
   {
     return s.eqNode(emp).negate();
   }
   Node sLen = utils::mkNLength(s);
-  if (d_ee.areDisequal(sLen, d_zero, true))
+  if (areDisequal(sLen, d_zero))
   {
     return sLen.eqNode(d_zero).negate();
   }
