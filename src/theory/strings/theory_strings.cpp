@@ -282,12 +282,31 @@ bool TheoryStrings::collectModelInfo(TheoryModel* m)
       repSet[tn].insert(r);
     }
   }
+  std::map<Node,Node> mAssert;
   for (const std::pair<const TypeNode,
                        std::unordered_set<Node, NodeHashFunction> >& rst :
        repSet)
   {
-    if (!collectModelInfoType(rst.first, rst.second, m))
+    if (!collectModelInfoType(rst.first, rst.second, mAssert))
     {
+      return false;
+    }
+  }
+  if (options::stringGuessModel())
+  {
+    // we are not sure that this is a model
+  }
+  // now assert to model
+  for (const std::pair<const Node,Node>& meq : mAssert)
+  {
+    if (meq.first == meq.second)
+    {
+      // already equal
+      continue;
+    }
+    if (!m->assertEquality(meq.first, meq.second, true))
+    {
+      // conflicting equality, return
       return false;
     }
   }
@@ -297,11 +316,10 @@ bool TheoryStrings::collectModelInfo(TheoryModel* m)
 bool TheoryStrings::collectModelInfoType(
     TypeNode tn,
     const std::unordered_set<Node, NodeHashFunction>& repSet,
-    TheoryModel* m)
+    std::map<Node,Node>& meqs)
 {
   NodeManager* nm = NodeManager::currentNM();
   std::vector<Node> nodes(repSet.begin(), repSet.end());
-  std::map< Node, Node > processed;
   std::vector< std::vector< Node > > col;
   std::vector< Node > lts;
   d_state.separateByLength(nodes, col, lts);
@@ -397,7 +415,7 @@ bool TheoryStrings::collectModelInfoType(
       }
       else
       {
-        processed[eqc] = eqc;
+        mAssert[eqc] = eqc;
       }
     }
     Trace("strings-model") << "have length " << lts_values[i] << std::endl;
@@ -491,18 +509,15 @@ bool TheoryStrings::collectModelInfoType(
         }
         Trace("strings-model") << "*** Assigned constant " << c << " for "
                                << eqc << std::endl;
-        processed[eqc] = c;
-        if (!m->assertEquality(eqc, c, true))
-        {
-          return false;
-        }
+        // will assert this to the model
+        mAssert[eqc] = c;
       }
     }
   }
   Trace("strings-model") << "String Model : Pure Assigned." << std::endl;
   //step 4 : assign constants to all other equivalence classes
   for( unsigned i=0; i<nodes.size(); i++ ){
-    if( processed.find( nodes[i] )==processed.end() ){
+    if( mAssert.find( nodes[i] )==mAssert.end() ){
       NormalForm& nf = d_csolver.getNormalForm(nodes[i]);
       if (Trace.isOn("strings-model"))
       {
@@ -517,7 +532,7 @@ bool TheoryStrings::collectModelInfoType(
           }
           Trace("strings-model") << n;
           Node r = d_state.getRepresentative(n);
-          if (!r.isConst() && processed.find(r) == processed.end())
+          if (!r.isConst() && mAssert.find(r) == mAssert.end())
           {
             Trace("strings-model") << "(UNPROCESSED)";
           }
@@ -528,17 +543,13 @@ bool TheoryStrings::collectModelInfoType(
       for (const Node& n : nf.d_nf)
       {
         Node r = d_state.getRepresentative(n);
-        Assert(r.isConst() || processed.find(r) != processed.end());
-        nc.push_back(r.isConst() ? r : processed[r]);
+        Assert(r.isConst() || mAssert.find(r) != mAssert.end());
+        nc.push_back(r.isConst() ? r : mAssert[r]);
       }
       Node cc = utils::mkNConcat(nc, tn);
       Assert(cc.isConst());
       Trace("strings-model") << "*** Determined constant " << cc << " for " << nodes[i] << std::endl;
-      processed[nodes[i]] = cc;
-      if (!m->assertEquality(nodes[i], cc, true))
-      {
-        return false;
-      }
+      mAssert[nodes[i]] = cc;
     }
   }
   //Trace("strings-model") << "String Model : Assigned." << std::endl;
@@ -771,10 +782,7 @@ void TheoryStrings::check(Effort e) {
 }
 
 bool TheoryStrings::needsCheckLastEffort() {
-  if( options::stringGuessModel() ){
-    return d_esolver->hasExtendedFunctions();
-  }
-  return false;
+  return options::stringGuessModel();
 }
 
 /** Conflict when merging two constants */
@@ -1287,6 +1295,11 @@ void TheoryStrings::initializeStrategy()
       addStrategyStep(CHECK_REGISTER_TERMS_PRE_NF);
     }
     addStrategyStep(CHECK_NORMAL_FORMS_EQ);
+    if (options::stringGuessModel())
+    {
+      step_end[EFFORT_FULL] = d_infer_steps.size() - 1;
+      step_end[EFFORT_LAST_CALL] = d_infer_steps.size();
+    }
     addStrategyStep(CHECK_EXTF_EVAL, 1);
     if (!options::stringEagerLen() && options::stringLenNorm())
     {
@@ -1299,20 +1312,19 @@ void TheoryStrings::initializeStrategy()
     {
       addStrategyStep(CHECK_LENGTH_EQC);
     }
-    if (options::stringExp() && !options::stringGuessModel())
+    if (options::stringExp())
     {
       addStrategyStep(CHECK_EXTF_REDUCTION, 2);
     }
     addStrategyStep(CHECK_MEMBERSHIP);
     addStrategyStep(CHECK_CARDINALITY);
-    step_end[EFFORT_FULL] = d_infer_steps.size() - 1;
-    if (options::stringExp() && options::stringGuessModel())
+    if (options::stringGuessModel())
     {
-      step_begin[EFFORT_LAST_CALL] = d_infer_steps.size();
-      // these two steps are run in parallel
-      addStrategyStep(CHECK_EXTF_REDUCTION, 2, false);
-      addStrategyStep(CHECK_EXTF_EVAL, 3);
       step_end[EFFORT_LAST_CALL] = d_infer_steps.size() - 1;
+    }
+    else
+    {
+      step_end[EFFORT_FULL] = d_infer_steps.size() - 1;
     }
     // set the beginning/ending ranges
     for (const std::pair<const Effort, unsigned>& it_begin : step_begin)
