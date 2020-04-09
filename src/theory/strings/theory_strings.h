@@ -271,7 +271,8 @@ private:
   context::CDList<TNode> d_functionsTerms;
   /** All the variables that the theory has seen */
   context::CDList<TNode> d_varTerms;
-private:
+
+ private:
   /** have we asserted any str.code terms? */
   bool d_has_str_code;
   // static information about extf

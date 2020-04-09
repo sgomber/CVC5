@@ -34,13 +34,14 @@ bool ModelCheck::check(const std::map<Node, Node>& model)
   Trace("strings-mc") << "Model M {" << std::endl;
   std::vector<Node> vars;
   std::vector<Node> subs;
-  for (const std::pair<const Node, Node >& meq : model)
+  for (const std::pair<const Node, Node>& meq : model)
   {
     if (meq.first != meq.second)
     {
       vars.push_back(meq.first);
       subs.push_back(meq.second);
-      Trace("strings-mc") << "  M(" << meq.first << ") = " << meq.second << std::endl;
+      Trace("strings-mc") << "  M(" << meq.first << ") = " << meq.second
+                          << std::endl;
     }
   }
   Trace("strings-mc") << "}" << std::endl;

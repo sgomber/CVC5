@@ -612,7 +612,7 @@ void TheoryStrings::preRegisterTerm(TNode n) {
             ss << "Regular expression variables are not supported.";
             throw LogicException(ss.str());
           }
-          //d_varTerms.push_back(n);
+          // d_varTerms.push_back(n);
         }
         if( tn.isString() ) {
           // all characters of constants should fall in the alphabet
