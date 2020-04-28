@@ -9,9 +9,9 @@
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
- ** \brief Typing and cardinality rules for the theory of arrays
+ ** \brief Typing rules for the theory of strings and regexps
  **
- ** Typing and cardinality rules for the theory of arrays.
+ ** Typing rules for the theory of strings and regexps
  **/
 
 #include "cvc4_private.h"
@@ -24,215 +24,206 @@ namespace CVC4 {
 namespace theory {
 namespace strings {
 
-class StringConstantTypeRule {
-public:
-  inline static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check)
-  {
-    return nodeManager->stringType();
-  }
-};
-
-class StringConcatTypeRule {
-public:
-  inline static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check)
-  {
-    if( check ){
-      TNode::iterator it = n.begin();
-      TNode::iterator it_end = n.end();
-      int size = 0;
-      for (; it != it_end; ++ it) {
-       TypeNode t = (*it).getType(check);
-       if (!t.isString()) {
-         throw TypeCheckingExceptionPrivate(n, "expecting string terms in string concat");
-       }
-       ++size;
-      }
-      if(size < 2) {
-        throw TypeCheckingExceptionPrivate(n, "expecting at least 2 terms in string concat");
-      }
-    }
-    return nodeManager->stringType();
-  }
-};
-
-class StringLengthTypeRule {
-public:
-  inline static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check)
-  {
-    if( check ) {
-      TypeNode t = n[0].getType(check);
-      if (!t.isString()) {
-        throw TypeCheckingExceptionPrivate(n, "expecting string terms in string length");
-      }
-    }
-    return nodeManager->integerType();
-  }
-};
-
-class StringSubstrTypeRule {
-public:
-  inline static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check)
-  {
-    if( check ) {
-      TypeNode t = n[0].getType(check);
-      if (!t.isString()) {
-        throw TypeCheckingExceptionPrivate(n, "expecting a string term in substr");
-      }
-      t = n[1].getType(check);
-      if (!t.isInteger()) {
-        throw TypeCheckingExceptionPrivate(n, "expecting a start int term in substr");
-      }
-      t = n[2].getType(check);
-      if (!t.isInteger()) {
-        throw TypeCheckingExceptionPrivate(n, "expecting a length int term in substr");
-      }
-    }
-    return nodeManager->stringType();
-  }
-};
-
-class StringRelationTypeRule
+class StringConcatTypeRule
 {
  public:
-  inline static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check)
+  inline static TypeNode computeType(NodeManager* nodeManager,
+                                     TNode n,
+                                     bool check)
   {
-    if( check ) {
-      TypeNode t = n[0].getType(check);
-      if (!t.isString()) {
-        throw TypeCheckingExceptionPrivate(
-            n, "expecting a string term in string relation");
+    TypeNode tret;
+    for (const Node& nc : n)
+    {
+      TypeNode t = nc.getType(check);
+      if (tret.isNull())
+      {
+        tret = t;
+        if (check)
+        {
+          if (!t.isStringLike())
+          {
+            throw TypeCheckingExceptionPrivate(
+                n, "expecting string-like terms in concat");
+          }
+        }
+        else
+        {
+          break;
+        }
       }
-      t = n[1].getType(check);
-      if (!t.isString()) {
+      else if (t != tret)
+      {
         throw TypeCheckingExceptionPrivate(
-            n, "expecting a string term in string relation");
+            n, "expecting all children to have the same type in concat");
       }
     }
-    return nodeManager->booleanType();
+    return tret;
   }
 };
 
-class StringCharAtTypeRule {
-public:
-  inline static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check)
+class StringSubstrTypeRule
+{
+ public:
+  inline static TypeNode computeType(NodeManager* nodeManager,
+                                     TNode n,
+                                     bool check)
   {
-    if( check ) {
-      TypeNode t = n[0].getType(check);
-      if (!t.isString()) {
-        throw TypeCheckingExceptionPrivate(n, "expecting a string term in string char at 0");
+    TypeNode t = n[0].getType(check);
+    if (check)
+    {
+      if (!t.isStringLike())
+      {
+        throw TypeCheckingExceptionPrivate(
+            n, "expecting a string-like term in substr");
       }
-      t = n[1].getType(check);
-      if (!t.isInteger()) {
-        throw TypeCheckingExceptionPrivate(n, "expecting an integer term in string char at 1");
+      TypeNode t2 = n[1].getType(check);
+      if (!t2.isInteger())
+      {
+        throw TypeCheckingExceptionPrivate(
+            n, "expecting an integer start term in substr");
+      }
+      t2 = n[2].getType(check);
+      if (!t2.isInteger())
+      {
+        throw TypeCheckingExceptionPrivate(
+            n, "expecting an integer length term in substr");
       }
     }
-    return nodeManager->stringType();
+    return t;
   }
 };
 
-class StringIndexOfTypeRule {
-public:
-  inline static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check)
+class StringAtTypeRule
+{
+ public:
+  inline static TypeNode computeType(NodeManager* nodeManager,
+                                     TNode n,
+                                     bool check)
   {
-    if( check ) {
-      TypeNode t = n[0].getType(check);
-      if (!t.isString()) {
-        throw TypeCheckingExceptionPrivate(n, "expecting a string term in string indexof 0");
+    TypeNode t = n[0].getType(check);
+    if (check)
+    {
+      if (!t.isStringLike())
+      {
+        throw TypeCheckingExceptionPrivate(
+            n, "expecting a string-like term in str.at");
       }
-      t = n[1].getType(check);
-      if (!t.isString()) {
-        throw TypeCheckingExceptionPrivate(n, "expecting a string term in string indexof 1");
+      TypeNode t2 = n[1].getType(check);
+      if (!t2.isInteger())
+      {
+        throw TypeCheckingExceptionPrivate(
+            n, "expecting an integer start term in str.at");
+      }
+    }
+    return t;
+  }
+};
+
+class StringIndexOfTypeRule
+{
+ public:
+  inline static TypeNode computeType(NodeManager* nodeManager,
+                                     TNode n,
+                                     bool check)
+  {
+    if (check)
+    {
+      TypeNode t = n[0].getType(check);
+      if (!t.isStringLike())
+      {
+        throw TypeCheckingExceptionPrivate(
+            n, "expecting a string-like term in indexof");
+      }
+      TypeNode t2 = n[1].getType(check);
+      if (t != t2)
+      {
+        throw TypeCheckingExceptionPrivate(
+            n,
+            "expecting a term in second argument of indexof that is the same "
+            "type as the first argument");
       }
       t = n[2].getType(check);
-      if (!t.isInteger()) {
-        throw TypeCheckingExceptionPrivate(n, "expecting an integer term in string indexof 2");
+      if (!t.isInteger())
+      {
+        throw TypeCheckingExceptionPrivate(
+            n, "expecting an integer term in third argument of indexof");
       }
     }
     return nodeManager->integerType();
   }
 };
 
-class StringReplaceTypeRule {
-public:
-  inline static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check)
+class StringReplaceTypeRule
+{
+ public:
+  inline static TypeNode computeType(NodeManager* nodeManager,
+                                     TNode n,
+                                     bool check)
   {
-    if( check ) {
-      TypeNode t = n[0].getType(check);
-      if (!t.isString()) {
-        throw TypeCheckingExceptionPrivate(n, "expecting a string term in string replace 0");
+    TypeNode t = n[0].getType(check);
+    if (check)
+    {
+      if (!t.isStringLike())
+      {
+        throw TypeCheckingExceptionPrivate(
+            n, "expecting a string-like term in replace");
       }
-      t = n[1].getType(check);
-      if (!t.isString()) {
-        throw TypeCheckingExceptionPrivate(n, "expecting a string term in string replace 1");
+      TypeNode t2 = n[1].getType(check);
+      if (t != t2)
+      {
+        throw TypeCheckingExceptionPrivate(
+            n,
+            "expecting a term in second argument of replace that is the same "
+            "type as the first argument");
       }
-      t = n[2].getType(check);
-      if (!t.isString()) {
-        throw TypeCheckingExceptionPrivate(n, "expecting a string term in string replace 2");
+      t2 = n[2].getType(check);
+      if (t != t2)
+      {
+        throw TypeCheckingExceptionPrivate(
+            n,
+            "expecting a term in third argument of replace that is the same "
+            "type as the first argument");
       }
     }
-    return nodeManager->stringType();
+    return t;
   }
 };
 
-class StringPrefixOfTypeRule {
-public:
-  inline static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check)
+class StringStrToBoolTypeRule
+{
+ public:
+  inline static TypeNode computeType(NodeManager* nodeManager,
+                                     TNode n,
+                                     bool check)
   {
-    if( check ) {
+    if (check)
+    {
       TypeNode t = n[0].getType(check);
-      if (!t.isString()) {
-        throw TypeCheckingExceptionPrivate(n, "expecting a string term in string prefixof 0");
-      }
-      t = n[1].getType(check);
-      if (!t.isString()) {
-        throw TypeCheckingExceptionPrivate(n, "expecting a string term in string prefixof 1");
-      }
-    }
-    return nodeManager->booleanType();
-  }
-};
-
-class StringSuffixOfTypeRule {
-public:
-  inline static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check)
-  {
-    if( check ) {
-      TypeNode t = n[0].getType(check);
-      if (!t.isString()) {
-        throw TypeCheckingExceptionPrivate(n, "expecting a string term in string suffixof 0");
-      }
-      t = n[1].getType(check);
-      if (!t.isString()) {
-        throw TypeCheckingExceptionPrivate(n, "expecting a string term in string suffixof 1");
-      }
-    }
-    return nodeManager->booleanType();
-  }
-};
-
-class StringIntToStrTypeRule {
-public:
-  inline static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check)
-  {
-    if( check ) {
-      TypeNode t = n[0].getType(check);
-      if (!t.isInteger()) {
-        throw TypeCheckingExceptionPrivate(n, "expecting an integer term in int to string 0");
-      }
-    }
-    return nodeManager->stringType();
-  }
-};
-
-class StringStrToIntTypeRule {
-public:
-  inline static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check)
-  {
-    if( check ) {
-      TypeNode t = n[0].getType(check);
-      if (!t.isString()) {
+      if (!t.isStringLike())
+      {
         std::stringstream ss;
-        ss << "expecting a string term in argument of " << n.getKind();
+        ss << "expecting a string-like term in argument of " << n.getKind();
+        throw TypeCheckingExceptionPrivate(n, ss.str());
+      }
+    }
+    return nodeManager->booleanType();
+  }
+};
+
+class StringStrToIntTypeRule
+{
+ public:
+  inline static TypeNode computeType(NodeManager* nodeManager,
+                                     TNode n,
+                                     bool check)
+  {
+    if (check)
+    {
+      TypeNode t = n[0].getType(check);
+      if (!t.isStringLike())
+      {
+        std::stringstream ss;
+        ss << "expecting a string-like term in argument of " << n.getKind();
         throw TypeCheckingExceptionPrivate(n, ss.str());
       }
     }
@@ -247,118 +238,43 @@ class StringStrToStrTypeRule
                                      TNode n,
                                      bool check)
   {
+    TypeNode t = n[0].getType(check);
     if (check)
     {
-      TypeNode t = n[0].getType(check);
-      if (!t.isString())
+      if (!t.isStringLike())
       {
         std::stringstream ss;
         ss << "expecting a string term in argument of " << n.getKind();
         throw TypeCheckingExceptionPrivate(n, ss.str());
       }
     }
-    return nodeManager->stringType();
+    return t;
   }
 };
 
-class RegExpConcatTypeRule {
-public:
-  inline static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check)
+class StringRelationTypeRule
+{
+ public:
+  inline static TypeNode computeType(NodeManager* nodeManager,
+                                     TNode n,
+                                     bool check)
   {
-    if( check ) {
-      TNode::iterator it = n.begin();
-      TNode::iterator it_end = n.end();
-      int size = 0;
-      for (; it != it_end; ++ it) {
-         TypeNode t = (*it).getType(check);
-         if (!t.isRegExp()) {
-           throw TypeCheckingExceptionPrivate(n, "expecting regexp terms in regexp concat");
-         }
-         ++size;
-      }
-      if(size < 2) {
-         throw TypeCheckingExceptionPrivate(n, "expecting at least 2 terms in regexp concat");
-      }
-    }
-    return nodeManager->regExpType();
-  }
-};
-
-class RegExpUnionTypeRule {
-public:
-  inline static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check)
-  {
-    if( check ) {
-      TNode::iterator it = n.begin();
-      TNode::iterator it_end = n.end();
-      for (; it != it_end; ++ it) {
-         TypeNode t = (*it).getType(check);
-         if (!t.isRegExp()) {
-           throw TypeCheckingExceptionPrivate(n, "expecting regexp terms");
-         }
-      }
-    }
-    return nodeManager->regExpType();
-  }
-};
-
-class RegExpInterTypeRule {
-public:
-  inline static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check)
-  {
-    if( check ) {
-      TNode::iterator it = n.begin();
-      TNode::iterator it_end = n.end();
-      for (; it != it_end; ++ it) {
-       TypeNode t = (*it).getType(check);
-       if (!t.isRegExp()) {
-         throw TypeCheckingExceptionPrivate(n, "expecting regexp terms");
-       }
-      }
-    }
-    return nodeManager->regExpType();
-  }
-};
-
-class RegExpStarTypeRule {
-public:
-  inline static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check)
-  {
-    if( check ) {
+    if (check)
+    {
       TypeNode t = n[0].getType(check);
-      if (!t.isRegExp()) {
-        throw TypeCheckingExceptionPrivate(n, "expecting regexp terms");
+      if (!t.isStringLike())
+      {
+        throw TypeCheckingExceptionPrivate(
+            n, "expecting a string-like term in relation");
+      }
+      TypeNode t2 = n[1].getType(check);
+      if (t != t2)
+      {
+        throw TypeCheckingExceptionPrivate(
+            n, "expecting two terms of the same string-like type in relation");
       }
     }
-    return nodeManager->regExpType();
-  }
-};
-
-class RegExpPlusTypeRule {
-public:
-  inline static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check)
-  {
-    if( check ) {
-      TypeNode t = n[0].getType(check);
-      if (!t.isRegExp()) {
-        throw TypeCheckingExceptionPrivate(n, "expecting regexp terms");
-      }
-    }
-    return nodeManager->regExpType();
-  }
-};
-
-class RegExpOptTypeRule {
-public:
-  inline static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check)
-  {
-    if( check ) {
-      TypeNode t = n[0].getType(check);
-      if (!t.isRegExp()) {
-        throw TypeCheckingExceptionPrivate(n, "expecting regexp terms");
-      }
-    }
-    return nodeManager->regExpType();
+    return nodeManager->booleanType();
   }
 };
 
@@ -375,14 +291,15 @@ public:
         if (!t.isString()) {
           throw TypeCheckingExceptionPrivate(n, "expecting a string term in regexp range");
         }
-        if( (*it).getKind() != kind::CONST_STRING ) {
+        if (!(*it).isConst())
+        {
           throw TypeCheckingExceptionPrivate(n, "expecting a constant string term in regexp range");
         }
         if( (*it).getConst<String>().size() != 1 ) {
           throw TypeCheckingExceptionPrivate(n, "expecting a single constant string term in regexp range");
         }
         unsigned ci = (*it).getConst<String>().front();
-        ch[i] = String::convertUnsignedIntToCode(ci);
+        ch[i] = ci;
         ++it;
       }
       if(ch[0] > ch[1]) {
@@ -400,112 +317,6 @@ public:
     return nodeManager->regExpType();
   }
 };
-
-class RegExpLoopTypeRule {
-public:
-  inline static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check)
-  {
-    if( check ) {
-      TNode::iterator it = n.begin();
-      TNode::iterator it_end = n.end();
-      TypeNode t = (*it).getType(check);
-      if (!t.isRegExp()) {
-        throw TypeCheckingExceptionPrivate(n, "expecting a regexp term in regexp loop 1");
-      }
-      ++it; t = (*it).getType(check);
-      if (!t.isInteger()) {
-        throw TypeCheckingExceptionPrivate(n, "expecting an integer term in regexp loop 2");
-      }
-      //if(!(*it).isConst()) {
-        //throw TypeCheckingExceptionPrivate(n, "expecting an const integer term in regexp loop 2");
-      //}
-      ++it;
-      if(it != it_end) {
-        t = (*it).getType(check);
-        if (!t.isInteger()) {
-          throw TypeCheckingExceptionPrivate(n, "expecting an integer term in regexp loop 3");
-        }
-        //if(!(*it).isConst()) {
-          //throw TypeCheckingExceptionPrivate(n, "expecting an const integer term in regexp loop 3");
-        //}
-        //if(++it != it_end) {
-        //  throw TypeCheckingExceptionPrivate(n, "too many regexp");
-        //}
-      }
-    }
-    return nodeManager->regExpType();
-  }
-};
-
-class StringToRegExpTypeRule {
-public:
-  inline static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check)
-  {
-    if( check ) {
-      TypeNode t = n[0].getType(check);
-      if (!t.isString()) {
-        throw TypeCheckingExceptionPrivate(n, "expecting string terms");
-      }
-      //if( (*it).getKind() != kind::CONST_STRING ) {
-      //  throw TypeCheckingExceptionPrivate(n, "expecting constant string terms");
-      //}
-    }
-    return nodeManager->regExpType();
-  }
-};
-
-class StringInRegExpTypeRule {
-public:
-  inline static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check)
-  {
-    if( check ) {
-      TNode::iterator it = n.begin();
-      TypeNode t = (*it).getType(check);
-      if (!t.isString()) {
-        throw TypeCheckingExceptionPrivate(n, "expecting string terms");
-      }
-      ++it;
-      t = (*it).getType(check);
-      if (!t.isRegExp()) {
-        throw TypeCheckingExceptionPrivate(n, "expecting regexp terms");
-      }
-    }
-    return nodeManager->booleanType();
-  }
-};
-
-class EmptyRegExpTypeRule {
-public:
-  inline static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check)
-  {
-    Assert(n.getKind() == kind::REGEXP_EMPTY);
-    return nodeManager->regExpType();
-  }
-};
-
-class SigmaRegExpTypeRule {
-public:
-  inline static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check)
-  {
-    Assert(n.getKind() == kind::REGEXP_SIGMA);
-    return nodeManager->regExpType();
-  }
-};
-
-class RegExpRVTypeRule {
-public:
-  inline static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check)
-  {
-    if( check ) {
-      TypeNode t = n[0].getType(check);
-      if (!t.isInteger()) {
-        throw TypeCheckingExceptionPrivate(n, "expecting an integer term in RV");
-      }
-    }
-    return nodeManager->regExpType();
-  }
-};
-
 
 }/* CVC4::theory::strings namespace */
 }/* CVC4::theory namespace */

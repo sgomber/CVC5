@@ -33,7 +33,6 @@
 #include "lib/ffs.h"
 #include "options/options.h"
 #include "options/theory_options.h"
-#include "options/theoryof_mode.h"
 #include "smt/command.h"
 #include "smt/dump.h"
 #include "smt/logic_request.h"
@@ -42,6 +41,8 @@
 #include "theory/decision_manager.h"
 #include "theory/logic_info.h"
 #include "theory/output_channel.h"
+#include "theory/theory_id.h"
+#include "theory/theory_rewriter.h"
 #include "theory/valuation.h"
 #include "util/statistics_registry.h"
 
@@ -55,6 +56,7 @@ class QuantifiersEngine;
 class TheoryModel;
 class SubstitutionMap;
 class ExtTheory;
+class TheoryRewriter;
 
 class EntailmentCheckParameters;
 class EntailmentCheckSideEffects;
@@ -78,9 +80,7 @@ namespace eq {
  * all calls to them.)
  */
 class Theory {
-
-private:
-
+ private:
   friend class ::CVC4::TheoryEngine;
 
   // Disallow default construction, copy, assignment.
@@ -138,7 +138,6 @@ private:
   ExtTheory* d_extTheory;
 
  protected:
-
 
   // === STATISTICS ===
   /** time spent in check calls */
@@ -272,7 +271,7 @@ public:
   /**
    * Returns the ID of the theory responsible for the given node.
    */
-  static TheoryId theoryOf(TheoryOfMode mode, TNode node);
+  static TheoryId theoryOf(options::TheoryOfMode mode, TNode node);
 
   /**
    * Returns the ID of the theory responsible for the given node.
@@ -315,6 +314,11 @@ public:
    * Destructs a Theory.
    */
   virtual ~Theory();
+
+  /**
+   * @return The theory rewriter associated with this theory.
+   */
+  virtual TheoryRewriter* getTheoryRewriter() = 0;
 
   /**
    * Subclasses of Theory may add additional efforts.  DO NOT CHECK
@@ -420,22 +424,21 @@ public:
   virtual void finishInit() { }
 
   /**
-   * Some theories have kinds that are effectively definitions and
-   * should be expanded before they are handled.  Definitions allow
-   * a much wider range of actions than the normal forms given by the
-   * rewriter; they can enable other theories and create new terms.
-   * However no assumptions can be made about subterms having been
-   * expanded or rewritten.  Where possible rewrite rules should be
-   * used, definitions should only be used when rewrites are not
-   * possible, for example in handling under-specified operations
-   * using partially defined functions.
+   * Some theories have kinds that are effectively definitions and should be
+   * expanded before they are handled.  Definitions allow a much wider range of
+   * actions than the normal forms given by the rewriter. However no
+   * assumptions can be made about subterms having been expanded or rewritten.
+   * Where possible rewrite rules should be used, definitions should only be
+   * used when rewrites are not possible, for example in handling
+   * under-specified operations using partially defined functions.
    *
    * Some theories like sets use expandDefinition as a "context
    * independent preRegisterTerm".  This is required for cases where
    * a theory wants to be notified about a term before preprocessing
    * and simplification but doesn't necessarily want to rewrite it.
    */
-  virtual Node expandDefinition(LogicRequest &logicRequest, Node node) {
+  virtual Node expandDefinition(Node node)
+  {
     // by default, do nothing
     return node;
   }
@@ -516,8 +519,9 @@ public:
    * (which was previously propagated by this theory).
    */
   virtual Node explain(TNode n) {
-    Unimplemented("Theory %s propagated a node but doesn't implement the "
-                  "Theory::explain() interface!", identify().c_str());
+    Unimplemented() << "Theory " << identify()
+                    << " propagated a node but doesn't implement the "
+                       "Theory::explain() interface!";
   }
 
   /**
@@ -614,8 +618,8 @@ public:
     *  via the syntax (! n :attr)
     */
   virtual void setUserAttribute(const std::string& attr, Node n, std::vector<Node> node_values, std::string str_value) {
-    Unimplemented("Theory %s doesn't support Theory::setUserAttribute interface",
-                  identify().c_str());
+    Unimplemented() << "Theory " << identify()
+                    << " doesn't support Theory::setUserAttribute interface";
   }
 
   /** A set of theories */
@@ -644,7 +648,7 @@ public:
 
   /** Returns the index size of a set of theories */
   static inline size_t setIndex(TheoryId id, Set set) {
-    Assert (setContains(id, set));
+    Assert(setContains(id, set));
     size_t count = 0;
     while (setPop(set) != id) {
       ++ count;
@@ -857,7 +861,7 @@ std::ostream& operator<<(std::ostream& os, theory::Theory::Effort level);
 
 
 inline theory::Assertion Theory::get() {
-  Assert( !done(), "Theory::get() called with assertion queue empty!" );
+  Assert(!done()) << "Theory::get() called with assertion queue empty!";
 
   // Get the assertion
   Assertion fact = d_facts[d_factsHead];
@@ -866,7 +870,7 @@ inline theory::Assertion Theory::get() {
   Trace("theory") << "Theory::get() => " << fact << " (" << d_facts.size() - d_factsHead << " left)" << std::endl;
 
   if(Dump.isOn("state")) {
-    Dump("state") << AssertCommand(fact.assertion.toExpr());
+    Dump("state") << AssertCommand(fact.d_assertion.toExpr());
   }
 
   return fact;

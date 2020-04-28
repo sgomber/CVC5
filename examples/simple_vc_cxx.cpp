@@ -18,8 +18,7 @@
 
 #include <iostream>
 
-//#include <cvc4/cvc4.h> // use this after CVC4 is properly installed
-#include "smt/smt_engine.h"
+#include <cvc4/cvc4.h>
 
 using namespace std;
 using namespace CVC4;
@@ -51,9 +50,9 @@ int main() {
     em.mkExpr(kind::AND, x_positive, y_positive).
     impExpr(twox_plus_y_geq_3);
 
-  cout << "Checking validity of formula " << formula << " with CVC4." << endl;
-  cout << "CVC4 should report VALID." << endl;
-  cout << "Result from CVC4 is: " << smt.query(formula) << endl;
+  cout << "Checking entailment of formula " << formula << " with CVC4." << endl;
+  cout << "CVC4 should report ENTAILED." << endl;
+  cout << "Result from CVC4 is: " << smt.checkEntailed(formula) << endl;
 
   return 0;
 }

@@ -19,31 +19,23 @@
 #define CVC4__THEORY__ARITH__NONLINEAR_EXTENSION_H
 
 #include <stdint.h>
-
 #include <map>
-#include <queue>
-#include <set>
-#include <unordered_map>
-#include <utility>
 #include <vector>
 
-#include "context/cdhashset.h"
-#include "context/cdinsert_hashmap.h"
 #include "context/cdlist.h"
-#include "context/cdqueue.h"
-#include "context/context.h"
 #include "expr/kind.h"
 #include "expr/node.h"
+#include "theory/arith/nl_lemma_utils.h"
+#include "theory/arith/nl_model.h"
+#include "theory/arith/nl_solver.h"
 #include "theory/arith/theory_arith.h"
+#include "theory/arith/transcendental_solver.h"
 #include "theory/uf/equality_engine.h"
 
 namespace CVC4 {
 namespace theory {
 namespace arith {
 
-typedef std::map<Node, unsigned> NodeMultiset;
-
-// TODO : refactor/document this class (#1287)
 /** Non-linear extension class
  *
  * This class implements model-based refinement schemes
@@ -62,14 +54,15 @@ typedef std::map<Node, unsigned> NodeMultiset;
  *
  * It's main functionality is a check(...) method,
  * which is called by TheoryArithPrivate either:
- * (1) at full effort with no conflicts or lemmas emitted,
- * or
+ * (1) at full effort with no conflicts or lemmas emitted, or
  * (2) at last call effort.
  * In this method, this class calls d_out->lemma(...)
  * for valid arithmetic theory lemmas, based on the current set of assertions,
  * where d_out is the output channel of TheoryArith.
  */
 class NonlinearExtension {
+  typedef context::CDHashSet<Node, NodeHashFunction> NodeSet;
+
  public:
   NonlinearExtension(TheoryArith& containing, eq::EqualityEngine* ee);
   ~NonlinearExtension();
@@ -114,11 +107,46 @@ class NonlinearExtension {
                                       const std::vector<Node>& exp) const;
   /** Check at effort level e.
    *
-   * This call may result in (possibly multiple)
-   * calls to d_out->lemma(...) where d_out
-   * is the output channel of TheoryArith.
+   * This call may result in (possibly multiple) calls to d_out->lemma(...)
+   * where d_out is the output channel of TheoryArith.
+   *
+   * If e is FULL, then we add lemmas based on context-depedent
+   * simplification (see Reynolds et al FroCoS 2017).
+   *
+   * If e is LAST_CALL, we add lemmas based on model-based refinement
+   * (see additionally Cimatti et al., TACAS 2017). The lemmas added at this
+   * effort may be computed during a call to interceptModel as described below.
    */
   void check(Theory::Effort e);
+  /** intercept model
+   *
+   * This method is called during TheoryArith::collectModelInfo, which is
+   * invoked after the linear arithmetic solver passes a full effort check
+   * with no lemmas.
+   *
+   * The argument arithModel is a map of the form { v1 -> c1, ..., vn -> cn }
+   * which represents the linear arithmetic theory solver's contribution to the
+   * current candidate model. That is, its collectModelInfo method is requesting
+   * that equalities v1 = c1, ..., vn = cn be added to the current model, where
+   * v1, ..., vn are arithmetic variables and c1, ..., cn are constants. Notice
+   * arithmetic variables may be real-valued terms belonging to other theories,
+   * or abstractions of applications of multiplication (kind NONLINEAR_MULT).
+   *
+   * This method requests that the non-linear solver inspect this model and
+   * do any number of the following:
+   * (1) Construct lemmas based on a model-based refinement procedure inspired
+   * by Cimatti et al., TACAS 2017.,
+   * (2) In the case that the nonlinear solver finds that the current
+   * constraints are satisfiable, it may "repair" the values in the argument
+   * arithModel so that it satisfies certain nonlinear constraints. This may
+   * involve e.g. solving for variables in nonlinear equations.
+   *
+   * Notice that in the former case, the lemmas it constructs are not sent out
+   * immediately. Instead, they are put in temporary vectors d_cmiLemmas
+   * and d_cmiLemmasPp, which are then sent out (if necessary) when a last call
+   * effort check is issued to this class.
+   */
+  void interceptModel(std::map<Node, Node>& arithModel);
   /** Does this class need a call to check(...) at last call effort? */
   bool needsCheckLastEffort() const { return d_needsLastCall; }
   /** presolve
@@ -129,52 +157,28 @@ class NonlinearExtension {
    * on the output channel of TheoryArith in this function.
    */
   void presolve();
-  /** Compare arithmetic terms i and j based an ordering.
-   *
-   * orderType = 0 : compare concrete model values
-   * orderType = 1 : compare abstract model values
-   * orderType = 2 : compare abs of concrete model values
-   * orderType = 3 : compare abs of abstract model values
-   * TODO (#1287) make this an enum?
-   *
-   * For definitions of concrete vs abstract model values,
-   * see computeModelValue below.
-   */
-  int compare(Node i, Node j, unsigned orderType) const;
-  /** Compare constant rationals i and j based an ordering.
-   * orderType is the same as above.
-   */
-  int compare_value(Node i, Node j, unsigned orderType) const;
-
  private:
-  /** returns true if the multiset containing the
-   * factors of monomial a is a subset of the multiset
-   * containing the factors of monomial b.
+  /** Model-based refinement
+   *
+   * This is the main entry point of this class for generating lemmas on the
+   * output channel of the theory of arithmetic.
+   *
+   * It is currently run at last call effort. It applies lemma schemas
+   * described in Reynolds et al. FroCoS 2017 that are based on ruling out
+   * the current candidate model.
+   *
+   * This function returns true if a lemma was added to the vector lems/lemsPp.
+   * Otherwise, it returns false. In the latter case, the model object d_model
+   * may have information regarding how to construct a model, in the case that
+   * we determined the problem is satisfiable.
+   *
+   * The argument lemSE is the "side effect" of the lemmas in mlems and mlemsPp
+   * (for details, see checkLastCall).
    */
-  bool isMonomialSubset(Node a, Node b) const;
-  void registerMonomialSubset(Node a, Node b);
+  bool modelBasedRefinement(std::vector<Node>& mlems,
+                            std::vector<Node>& mlemsPp,
+                            std::map<Node, NlLemmaSideEffect>& lemSE);
 
-  typedef context::CDHashSet<Node, NodeHashFunction> NodeSet;
-
-  // monomial information (context-independent)
-  class MonomialIndex {
-   public:
-    // status 0 : n equal, -1 : n superset, 1 : n subset
-    void addTerm(Node n, const std::vector<Node>& reps, NonlinearExtension* nla,
-                 int status = 0, unsigned argIndex = 0);
-
-   private:
-    std::map<Node, MonomialIndex> d_data;
-    std::vector<Node> d_monos;
-  }; /* class MonomialIndex */
-
-  // constraint information (context-independent)
-  struct ConstraintInfo {
-   public:
-    Node d_rhs;
-    Node d_coeff;
-    Kind d_type;
-  }; /* struct ConstraintInfo */
 
   /** check last call
    *
@@ -183,58 +187,32 @@ class NonlinearExtension {
    *
    * xts : the list of (non-reduced) extended terms in the current context.
    *
-   * This method returns the number of lemmas added on the output channel of
-   * TheoryArith.
+   * This method adds lemmas to arguments lems, lemsPp, and wlems, each of
+   * which are intended to be sent out on the output channel of TheoryArith
+   * under certain conditions.
+   *
+   * If the set lems or lemsPp is non-empty, then no further processing is
+   * necessary. The last call effort check should terminate and these
+   * lemmas should be sent. The set lemsPp is distinguished from lems since
+   * the preprocess flag on the lemma(...) call should be set to true.
+   *
+   * The "waiting" lemmas wlems contain lemmas that should be sent on the
+   * output channel as a last resort. In other words, only if we are not
+   * able to establish SAT via a call to checkModel(...) should wlems be
+   * considered. This set typically contains tangent plane lemmas.
+   *
+   * The argument lemSE is the "side effect" of the lemmas from the previous
+   * three calls. If a lemma is mapping to a side effect, it should be
+   * processed via a call to processSideEffect(...) immediately after the
+   * lemma is sent (if it is indeed sent on this call to check).
    */
   int checkLastCall(const std::vector<Node>& assertions,
                     const std::vector<Node>& false_asserts,
-                    const std::vector<Node>& xts);
-  //---------------------------------------term utilities
-  static bool isArithKind(Kind k);
-  static Node mkLit(Node a, Node b, int status, int orderType = 0);
-  static Node mkAbs(Node a);
-  static Node mkValidPhase(Node a, Node pi);
-  static Node mkBounded( Node l, Node a, Node u );
-  static Kind joinKinds(Kind k1, Kind k2);
-  static Kind transKinds(Kind k1, Kind k2);
-  static bool isTranscendentalKind(Kind k);
-  Node mkMonomialRemFactor(Node n, const NodeMultiset& n_exp_rem) const;
-  //---------------------------------------end term utilities
-
-  /** register monomial */
-  void registerMonomial(Node n);
-  void setMonomialFactor(Node a, Node b, const NodeMultiset& common);
-
-  void registerConstraint(Node atom);
-  /** compute model value
-   *
-   * This computes model values for terms based on two semantics, a "concrete"
-   * semantics and an "abstract" semantics.
-   *
-   * index = 0 means compute the value of n based on its children recursively.
-   *          (we call this its "concrete" value)
-   * index = 1 means lookup the value of n in the model.
-   *          (we call this its "abstract" value)
-   * In other words, index = 1 treats multiplication terms and transcendental
-   * function applications as variables, whereas index = 0 computes their
-   * actual values. This is a key distinction used in the model-based
-   * refinement scheme in Cimatti et al. TACAS 2017.
-   *
-   * For example, if M( a ) = 2, M( b ) = 3, M( a * b ) = 5, then :
-   *
-   *   computeModelValue( a*b, 0 ) =
-   *   computeModelValue( a, 0 )*computeModelValue( b, 0 ) = 2*3 = 6
-   * whereas:
-   *   computeModelValue( a*b, 1 ) = 5
-   */
-  Node computeModelValue(Node n, unsigned index = 0);
-  /** returns the Node corresponding to the value of i in the
-   * type of order orderType, which is one of values
-   * described above ::compare(...).
-   */
-  Node get_compare_value(Node i, unsigned orderType) const;
-  void assignOrderIds(std::vector<Node>& vars, NodeMultiset& d_order,
-                      unsigned orderType);
+                    const std::vector<Node>& xts,
+                    std::vector<Node>& lems,
+                    std::vector<Node>& lemsPp,
+                    std::vector<Node>& wlems,
+                    std::map<Node, NlLemmaSideEffect>& lemSE);
 
   /** get assertions
    *
@@ -269,744 +247,85 @@ class NonlinearExtension {
    *
    * For details, see Section 3 of Cimatti et al CADE 2017 under the heading
    * "Detecting Satisfiable Formulas".
+   *
+   * The arguments lemmas and gs store the lemmas and guard literals to be sent
+   * out on the output channel of TheoryArith as lemmas and calls to
+   * ensureLiteral respectively.
    */
   bool checkModel(const std::vector<Node>& assertions,
-                  const std::vector<Node>& false_asserts);
-
-  /** solve equality simple
-   *
-   * This method is used during checkModel(...). It takes as input an
-   * equality eq. If it returns true, then eq is correct-by-construction based
-   * on the information stored in our model representation (see
-   * d_check_model_vars, d_check_model_subs, d_check_model_bounds), and eq
-   * is added to d_check_model_solved.
-   */
-  bool solveEqualitySimple(Node eq);
-
-  /** simple check model for transcendental functions for literal
-   *
-   * This method returns true if literal is true for all interpretations of
-   * transcendental functions within their error bounds (as stored
-   * in d_check_model_bounds). This is determined by a simple under/over
-   * approximation of the value of sum of (linear) monomials. For example,
-   * if we determine that .8 < sin( 1 ) < .9, this function will return
-   * true for literals like:
-   *   2.0*sin( 1 ) > 1.5
-   *   -1.0*sin( 1 ) < -0.79
-   *   -1.0*sin( 1 ) > -0.91
-   *   sin( 1 )*sin( 1 ) + sin( 1 ) > 0.0
-   * It will return false for literals like:
-   *   sin( 1 ) > 0.85
-   * It will also return false for literals like:
-   *   -0.3*sin( 1 )*sin( 2 ) + sin( 2 ) > .7
-   *   sin( sin( 1 ) ) > .5
-   * since the bounds on these terms cannot quickly be determined.
-   */
-  bool simpleCheckModelLit(Node lit);
-  bool simpleCheckModelMsum(const std::map<Node, Node>& msum, bool pol);
-  /**
-   * A substitution from variables that appear in assertions to a solved form
-   * term. These vectors are ordered in the form:
-   *   x_1 -> t_1 ... x_n -> t_n
-   * where x_i is not in the free variables of t_j for j>=i.
-   */
-  std::vector<Node> d_check_model_vars;
-  std::vector<Node> d_check_model_subs;
-  /** add check model substitution
-   *
-   * Adds the model substitution v -> s. This applies the substitution
-   * { v -> s } to each term in d_check_model_subs and adds v,s to
-   * d_check_model_vars and d_check_model_subs respectively.
-   * If this method returns false, then the substitution v -> s is inconsistent
-   * with the current substitution and bounds.
-   */
-  bool addCheckModelSubstitution(TNode v, TNode s);
-  /** lower and upper bounds for check model
-   *
-   * For each term t in the domain of this map, if this stores the pair
-   * (c_l, c_u) then the model M is such that c_l <= M( t ) <= c_u.
-   *
-   * We add terms whose value is approximated in the model to this map, which
-   * includes:
-   * (1) applications of transcendental functions, whose value is approximated
-   * by the Taylor series,
-   * (2) variables we have solved quadratic equations for, whose value
-   * involves approximations of square roots.
-   */
-  std::map<Node, std::pair<Node, Node> > d_check_model_bounds;
-  /** add check model bound
-   *
-   * Adds the bound x -> < l, u > to the map above, and records the
-   * approximation ( x, l <= x <= u ) in the model. This method returns false
-   * if the bound is inconsistent with the current model substitution or
-   * bounds.
-   */
-  bool addCheckModelBound(TNode v, TNode l, TNode u);
-  /**
-   * The map from literals that our model construction solved, to the variable
-   * that was solved for. Examples of such literals are:
-   * (1) Equalities x = t, which we turned into a model substitution x -> t,
-   * where x not in FV( t ), and
-   * (2) Equalities a*x*x + b*x + c = 0, which we turned into a model bound
-   * -b+s*sqrt(b*b-4*a*c)/2a - E <= x <= -b+s*sqrt(b*b-4*a*c)/2a + E.
-   *
-   * These literals are exempt from check-model, since they are satisfied by
-   * definition of our model construction.
-   */
-  std::unordered_map<Node, Node, NodeHashFunction> d_check_model_solved;
-  /** has check model assignment
-   *
-   * Have we assigned v in the current checkModel(...) call?
-   *
-   * This method returns true if variable v is in the domain of
-   * d_check_model_bounds or if it occurs in d_check_model_vars.
-   */
-  bool hasCheckModelAssignment(Node v) const;
-  /** have we successfully built the model in this SAT context? */
-  context::CDO<bool> d_builtModel;
+                  const std::vector<Node>& false_asserts,
+                  std::vector<Node>& lemmas,
+                  std::vector<Node>& gs);
   //---------------------------end check model
 
-  /** In the following functions, status states a relationship
-  * between two arithmetic terms, where:
-  * 0 : equal
-  * 1 : greater than or equal
-  * 2 : greater than
-  * -X : (greater -> less)
-  * TODO (#1287) make this an enum?
-  */
-  /** compute the sign of a.
-  *
-  * Calls to this function are such that :
-  *    exp => ( oa = a ^ a <status> 0 )
-  *
-  * This function iterates over the factors of a,
-  * where a_index is the index of the factor in a
-  * we are currently looking at.
-  *
-  * This function returns a status, which indicates
-  * a's relationship to 0.
-  * We add lemmas to lem of the form given by the
-  * lemma schema checkSign(...).
-  */
-  int compareSign(Node oa, Node a, unsigned a_index, int status,
-                  std::vector<Node>& exp, std::vector<Node>& lem);
-  /** compare monomials a and b
-  *
-  * Initially, a call to this function is such that :
-  *    exp => ( oa = a ^ ob = b )
-  *
-  * This function returns true if we can infer a valid
-  * arithmetic lemma of the form :
-  *    P => abs( a ) >= abs( b )
-  * where P is true and abs( a ) >= abs( b ) is false in the
-  * current model.
-  *
-  * This function is implemented by "processing" factors
-  * of monomials a and b until an inference of the above
-  * form can be made. For example, if :
-  *   a = x*x*y and b = z*w
-  * Assuming we are trying to show abs( a ) >= abs( c ),
-  * then if abs( M( x ) ) >= abs( M( z ) ) where M is the current model,
-  * then we can add abs( x ) >= abs( z ) to our explanation, and
-  * mark one factor of x as processed in a, and
-  * one factor of z as processed in b. The number of processed factors of a
-  * and b are stored in a_exp_proc and b_exp_proc respectively.
-  *
-  * cmp_infers stores information that is helpful
-  * in discarding redundant inferences.  For example,
-  * we do not want to infer abs( x ) >= abs( z ) if
-  * we have already inferred abs( x ) >= abs( y ) and
-  * abs( y ) >= abs( z ).
-  * It stores entries of the form (status,t1,t2)->F,
-  * which indicates that we constructed a lemma F that
-  * showed t1 <status> t2.
-  *
-  * We add lemmas to lem of the form given by the
-  * lemma schema checkMagnitude(...).
-  */
-  bool compareMonomial(
-      Node oa, Node a, NodeMultiset& a_exp_proc, Node ob, Node b,
-      NodeMultiset& b_exp_proc, std::vector<Node>& exp, std::vector<Node>& lem,
-      std::map<int, std::map<Node, std::map<Node, Node> > >& cmp_infers);
-  /** helper function for above
-   *
-   * The difference is the inputs a_index and b_index, which are the indices of
-   * children (factors) in monomials a and b which we are currently looking at.
-   */
-  bool compareMonomial(
-      Node oa, Node a, unsigned a_index, NodeMultiset& a_exp_proc, Node ob,
-      Node b, unsigned b_index, NodeMultiset& b_exp_proc, int status,
-      std::vector<Node>& exp, std::vector<Node>& lem,
-      std::map<int, std::map<Node, std::map<Node, Node> > >& cmp_infers);
-  /** Check whether we have already inferred a relationship between monomials
-   * x and y based on the information in cmp_infers. This computes the
-   * transitive closure of the relation stored in cmp_infers.
-   */
-  bool cmp_holds(Node x, Node y,
-                 std::map<Node, std::map<Node, Node> >& cmp_infers,
-                 std::vector<Node>& exp, std::map<Node, bool>& visited);
   /** Is n entailed with polarity pol in the current context? */
   bool isEntailed(Node n, bool pol);
 
-  /** flush lemmas
-   *
-   * Potentially sends lem on the output channel if lem has not been sent on the
-   * output channel in this context. Returns the number of lemmas sent on the
-   * output channel of TheoryArith.
+  /**
+   * Potentially adds lemmas to the set out and clears lemmas. Returns
+   * the number of lemmas added to out. We do not add lemmas that have already
+   * been sent on the output channel of TheoryArith.
    */
-  int flushLemma(Node lem);
-
-  /** Potentially sends lemmas to the output channel and clears lemmas. Returns
-   * the number of lemmas sent to the output channel.
-   */
-  int flushLemmas(std::vector<Node>& lemmas);
-
-  // Returns the NodeMultiset for an existing monomial.
-  const NodeMultiset& getMonomialExponentMap(Node monomial) const;
-
-  // Map from monomials to var^index.
-  typedef std::map<Node, NodeMultiset> MonomialExponentMap;
-  MonomialExponentMap d_m_exp;
+  unsigned filterLemmas(std::vector<Node>& lemmas, std::vector<Node>& out);
+  /** singleton version of above */
+  unsigned filterLemma(Node lem, std::vector<Node>& out);
 
   /**
-   * Mapping from monomials to the list of variables that occur in it. For
-   * example, x*x*y*z -> { x, y, z }.
+   * Send lemmas in out on the output channel of theory of arithmetic.
    */
-  std::map<Node, std::vector<Node> > d_m_vlist;
-  NodeMultiset d_m_degree;
-  // monomial index, by sorted variables
-  MonomialIndex d_m_index;
-  // list of all monomials
-  std::vector<Node> d_monomials;
-  // containment ordering
-  std::map<Node, std::vector<Node> > d_m_contain_children;
-  std::map<Node, std::vector<Node> > d_m_contain_parent;
-  std::map<Node, std::map<Node, Node> > d_m_contain_mult;
-  std::map<Node, std::map<Node, Node> > d_m_contain_umult;
-  // ( x*y, x*z, y ) for each pair of monomials ( x*y, x*z ) with common factors
-  std::map<Node, std::map<Node, Node> > d_mono_diff;
+  void sendLemmas(const std::vector<Node>& out,
+                  bool preprocess,
+                  std::map<Node, NlLemmaSideEffect>& lemSE);
+  /** Process side effect se */
+  void processSideEffect(const NlLemmaSideEffect& se);
 
   /** cache of all lemmas sent on the output channel (user-context-dependent) */
   NodeSet d_lemmas;
-  /** cache of terms t for which we have added the lemma ( t = 0 V t != 0 ). */
-  NodeSet d_zero_split;
-  
-  /** 
-   * The set of atoms with Skolems that this solver introduced. We do not
-   * require that models satisfy literals over Skolem atoms.
-   */
-  NodeSet d_skolem_atoms;
-
   /** commonly used terms */
   Node d_zero;
   Node d_one;
   Node d_neg_one;
-  Node d_two;
   Node d_true;
-  Node d_false;
-  /** PI
-   *
-   * Note that PI is a (symbolic, non-constant) nullary operator. This is
-   * because its value cannot be computed exactly. We constraint PI to concrete
-   * lower and upper bounds stored in d_pi_bound below.
-   */
-  Node d_pi;
-  /** PI/2 */
-  Node d_pi_2;
-  /** -PI/2 */
-  Node d_pi_neg_2;
-  /** -PI */
-  Node d_pi_neg;
-  /** the concrete lower and upper bounds for PI */
-  Node d_pi_bound[2];
-
   // The theory of arithmetic containing this extension.
   TheoryArith& d_containing;
-
   // pointer to used equality engine
   eq::EqualityEngine* d_ee;
   // needs last call effort
   bool d_needsLastCall;
-
-  // if d_c_info[lit][x] = ( r, coeff, k ), then ( lit <=>  (coeff * x) <k> r )
-  std::map<Node, std::map<Node, ConstraintInfo> > d_c_info;
-  std::map<Node, std::map<Node, bool> > d_c_info_maxm;
-  std::vector<Node> d_constraints;
-
-  // per last-call effort
-
-  // model values/orderings
-  /** cache of model values
+  /** The non-linear model object
    *
-   * Stores the the concrete/abstract model values
-   * at indices 0 and 1 respectively.
+   * This class is responsible for computing model values for arithmetic terms
+   * and for establishing when we are able to answer "SAT".
    */
-  std::map<Node, Node> d_mv[2];
-
-  // ordering, stores variables and 0,1,-1
-  std::map<Node, unsigned> d_order_vars;
-  std::vector<Node> d_order_points;
-  
-  //transcendental functions
-  std::map<Node, Node> d_tr_base;
-  std::map<Node, bool> d_tr_is_base;
-  std::map< Node, bool > d_tf_initial_refine;
-  /** the list of lemmas we are waiting to flush until after check model */
-  std::vector<Node> d_waiting_lemmas;
-  /** did we use an approximation on this call to last-call effort? */
-  bool d_used_approx;
-
-  void mkPi();
-  void getCurrentPiBounds( std::vector< Node >& lemmas );
-  /** print rational approximation */
-  void printRationalApprox(const char* c, Node cr, unsigned prec = 5) const;
-  /** print model value */
-  void printModelValue(const char* c, Node n, unsigned prec = 5) const;
-
- private:
-  //per last-call effort check
-  
-  //information about monomials
-  std::vector< Node > d_ms;
-  std::vector< Node > d_ms_vars;
-  std::map<Node, bool> d_ms_proc;
-  std::vector<Node> d_mterms;
-
-  //list of monomials with factors whose model value is non-constant in model 
-  //  e.g. y*cos( x )
-  std::map<Node, bool> d_m_nconst_factor;
-  /** the set of monomials we should apply tangent planes to */
-  std::unordered_set<Node, NodeHashFunction> d_tplane_refine;
-  // term -> coeff -> rhs -> ( status, exp, b ),
-  //   where we have that : exp =>  ( coeff * term <status> rhs )
-  //   b is true if degree( term ) >= degree( rhs )
-  std::map<Node, std::map<Node, std::map<Node, Kind> > > d_ci;
-  std::map<Node, std::map<Node, std::map<Node, Node> > > d_ci_exp;
-  std::map<Node, std::map<Node, std::map<Node, bool> > > d_ci_max;
-
-  /** A list of all functions for each kind in { EXPONENTIAL, SINE, POW, PI } */
-  std::map<Kind, std::vector<Node> > d_f_map;
-
-  // factor skolems
-  std::map< Node, Node > d_factor_skolem;
-  Node getFactorSkolem( Node n, std::vector< Node >& lemmas );
-
-  // tangent plane bounds
-  std::map< Node, std::map< Node, Node > > d_tangent_val_bound[4];
-
-  /** secant points (sorted list) for transcendental functions
+  NlModel d_model;
+  /** The transcendental extension object
    *
-   * This is used for tangent plane refinements for
-   * transcendental functions. This is the set
-   * "get-previous-secant-points" in "Satisfiability
-   * Modulo Transcendental Functions via Incremental
-   * Linearization" by Cimatti et al., CADE 2017, for
-   * each transcendental function application. We store this set for each
-   * Taylor degree.
+   * This is the subsolver responsible for running the procedure for
+   * transcendental functions.
    */
-  std::unordered_map<Node,
-                     std::map<unsigned, std::vector<Node> >,
-                     NodeHashFunction>
-      d_secant_points;
-
-  /** get Taylor series of degree n for function fa centered around point fa[0].
+  TranscendentalSolver d_trSlv;
+  /** The nonlinear extension object
    *
-   * Return value is ( P_{n,f(a)}( x ), R_{n+1,f(a)}( x ) ) where
-   * the first part of the pair is the Taylor series expansion :
-   *    P_{n,f(a)}( x ) = sum_{i=0}^n (f^i( a )/i!)*(x-a)^i
-   * and the second part of the pair is the Taylor series remainder :
-   *    R_{n+1,f(a),b}( x ) = (f^{n+1}( b )/(n+1)!)*(x-a)^{n+1}
-   *
-   * The above values are cached for each (f,n) for a fixed variable "a".
-   * To compute the Taylor series for fa, we compute the Taylor series
-   *   for ( fa.getKind(), n ) then substitute { a -> fa[0] } if fa[0]!=0.
-   * We compute P_{n,f(0)}( x )/R_{n+1,f(0),b}( x ) for ( fa.getKind(), n )
-   *   if fa[0]=0.
-   * In the latter case, note we compute the exponential x^{n+1}
-   * instead of (x-a)^{n+1}, which can be done faster.
+   * This is the subsolver responsible for running the procedure for
+   * constraints involving nonlinear mulitplication.
    */
-  std::pair<Node, Node> getTaylor(Node fa, unsigned n);
-
-  /** internal variables used for constructing (cached) versions of the Taylor
-   * series above.
-   */
-  Node d_taylor_real_fv;           // x above
-  Node d_taylor_real_fv_base;      // a above
-  Node d_taylor_real_fv_base_rem;  // b above
-
-  /** cache of sum and remainder terms for getTaylor */
-  std::unordered_map<Node, std::unordered_map<unsigned, Node>, NodeHashFunction>
-      d_taylor_sum;
-  std::unordered_map<Node, std::unordered_map<unsigned, Node>, NodeHashFunction>
-      d_taylor_rem;
-  /** taylor degree
-   *
-   * Indicates that the degree of the polynomials in the Taylor approximation of
-   * all transcendental functions is 2*d_taylor_degree. This value is set
-   * initially to options::nlExtTfTaylorDegree() and may be incremented
-   * if the option options::nlExtTfIncPrecision() is enabled.
-   */
-  unsigned d_taylor_degree;
-  /** polynomial approximation bounds
-   *
-   * This adds P_l+[x], P_l-[x], P_u+[x], P_u-[x] to pbounds, where x is
-   * d_taylor_real_fv. These are polynomial approximations of the Taylor series
-   * of <k>( 0 ) for degree 2*d where k is SINE or EXPONENTIAL.
-   * These correspond to P_l and P_u from Figure 3 of Cimatti et al., CADE 2017,
-   * for positive/negative (+/-) values of the argument of <k>( 0 ).
-   *
-   * Notice that for certain bounds (e.g. upper bounds for exponential), the
-   * Taylor approximation for a fixed degree is only sound up to a given
-   * upper bound on the argument. To obtain sound lower/upper bounds for a
-   * given <k>( c ), use the function below.
-   */
-  void getPolynomialApproximationBounds(Kind k,
-                                        unsigned d,
-                                        std::vector<Node>& pbounds);
-  /** polynomial approximation bounds
-   *
-   * This computes polynomial approximations P_l+[x], P_l-[x], P_u+[x], P_u-[x]
-   * that are sound (lower, upper) bounds for <k>( c ). Notice that these
-   * polynomials may depend on c. In particular, for P_u+[x] for <k>( c ) where
-   * c>0, we return the P_u+[x] from the function above for the minimum degree
-   * d' >= d such that (1-c^{2*d'+1}/(2*d'+1)!) is positive.
-   */
-  void getPolynomialApproximationBoundForArg(Kind k,
-                                             Node c,
-                                             unsigned d,
-                                             std::vector<Node>& pbounds);
-  /** cache of the above function */
-  std::map<Kind, std::map<unsigned, std::vector<Node> > > d_poly_bounds;
-  /** get transcendental function model bounds
-   *
-   * This returns the current lower and upper bounds of transcendental
-   * function application tf based on Taylor of degree 2*d, which is dependent
-   * on the model value of its argument.
-   */
-  std::pair<Node, Node> getTfModelBounds(Node tf, unsigned d);
-  /** is refinable transcendental function
-   *
-   * A transcendental function application is not refineable if its current
-   * model value is zero, or if it is an application of SINE applied
-   * to a non-variable.
-   */
-  bool isRefineableTfFun(Node tf);
+  NlSolver d_nlSlv;
   /**
-   * Get a lower/upper approximation of the constant r within the given
-   * level of precision. In other words, this returns a constant c' such that
-   *   c' <= c <= c' + 1/(10^prec) if isLower is true, or
-   *   c' + 1/(10^prec) <= c <= c' if isLower is false.
-   * where c' is a rational of the form n/d for some n and d <= 10^prec.
+   * The lemmas we computed during collectModelInfo. We store two vectors of
+   * lemmas to be sent out on the output channel of TheoryArith. The first
+   * is not preprocessed, the second is.
    */
-  Node getApproximateConstant(Node c, bool isLower, unsigned prec) const;
-  /** get approximate sqrt
-   *
-   * This approximates the square root of positive constant c. If this method
-   * returns true, then l and u are updated to constants such that
-   *   l <= sqrt( c ) <= u
-   * The argument iter is the number of iterations in the binary search to
-   * perform. By default, this is set to 15, which is usually enough to be
-   * precise in the majority of simple cases, whereas not prohibitively
-   * expensive to compute.
+  std::vector<Node> d_cmiLemmas;
+  std::vector<Node> d_cmiLemmasPp;
+  /** the side effects of the above lemmas */
+  std::map<Node, NlLemmaSideEffect> d_cmiLemmasSE;
+  /**
+   * The approximations computed during collectModelInfo. For details, see
+   * NlModel::getModelValueRepair.
    */
-  bool getApproximateSqrt(Node c, Node& l, Node& u, unsigned iter = 15) const;
-
-  /** concavity region for transcendental functions
-  *
-  * This stores an integer that identifies an interval in
-  * which the current model value for an argument of an
-  * application of a transcendental function resides.
-  *
-  * For exp( x ):
-  *   region #1 is -infty < x < infty
-  * For sin( x ):
-  *   region #0 is pi < x < infty (this is an invalid region)
-  *   region #1 is pi/2 < x <= pi
-  *   region #2 is 0 < x <= pi/2
-  *   region #3 is -pi/2 < x <= 0
-  *   region #4 is -pi < x <= -pi/2
-  *   region #5 is -infty < x <= -pi (this is an invalid region)
-  * All regions not listed above, as well as regions 0 and 5
-  * for SINE are "invalid". We only process applications
-  * of transcendental functions whose arguments have model
-  * values that reside in valid regions.
-  */
-  std::unordered_map<Node, int, NodeHashFunction> d_tf_region;
-  /** get monotonicity direction
-   *
-  * Returns whether the slope is positive (+1) or negative(-1)
-  * in region of transcendental function with kind k.
-  * Returns 0 if region is invalid.
-  */
-  int regionToMonotonicityDir(Kind k, int region);
-  /** get concavity
-   *
-  * Returns whether we are concave (+1) or convex (-1)
-  * in region of transcendental function with kind k,
-  * where region is defined above.
-  * Returns 0 if region is invalid.
-  */
-  int regionToConcavity(Kind k, int region);
-  /** region to lower bound
-   *
-   * Returns the term corresponding to the lower
-   * bound of the region of transcendental function
-   * with kind k. Returns Node::null if the region
-   * is invalid, or there is no lower bound for the
-   * region.
-   */
-  Node regionToLowerBound(Kind k, int region);
-  /** region to upper bound
-   *
-   * Returns the term corresponding to the upper
-   * bound of the region of transcendental function
-   * with kind k. Returns Node::null if the region
-   * is invalid, or there is no upper bound for the
-   * region.
-   */
-  Node regionToUpperBound(Kind k, int region);
-  /** get derivative
-   *
-   * Returns d/dx n. Supports cases of n
-   * for transcendental functions applied to x,
-   * multiplication, addition, constants and variables.
-   * Returns Node::null() if derivative is an
-   * unhandled case.
-   */
-  Node getDerivative(Node n, Node x);
-
- private:
-  //-------------------------------------------- lemma schemas
-  /** check split zero
-  *
-  * Returns a set of theory lemmas of the form
-  *   t = 0 V t != 0
-  * where t is a term that exists in the current context.
-  */
-  std::vector<Node> checkSplitZero();
-
-  /** check monomial sign
-  *
-  * Returns a set of valid theory lemmas, based on a
-  * lemma schema which ensures that non-linear monomials
-  * respect sign information based on their facts.
-  * For more details, see Section 5 of "Design Theory
-  * Solvers with Extensions" by Reynolds et al., FroCoS 2017,
-  * Figure 5, this is the schema "Sign".
-  *
-  * Examples:
-  *
-  * x > 0 ^ y > 0 => x*y > 0
-  * x < 0 => x*y*y < 0
-  * x = 0 => x*y*z = 0
-  */
-  std::vector<Node> checkMonomialSign();
-
-  /** check monomial magnitude
-  *
-  * Returns a set of valid theory lemmas, based on a
-  * lemma schema which ensures that comparisons between
-  * non-linear monomials respect the magnitude of their
-  * factors.
-  * For more details, see Section 5 of "Design Theory
-  * Solvers with Extensions" by Reynolds et al., FroCoS 2017,
-  * Figure 5, this is the schema "Magnitude".
-  *
-  * Examples:
-  *
-  * |x|>|y| => |x*z|>|y*z|
-  * |x|>|y| ^ |z|>|w| ^ |x|>=1 => |x*x*z*u|>|y*w|
-  *
-  * Argument c indicates the class of inferences to perform for the (non-linear)
-  * monomials in the vector d_ms.
-  *   0 : compare non-linear monomials against 1,
-  *   1 : compare non-linear monomials against variables,
-  *   2 : compare non-linear monomials against other non-linear monomials.
-  */
-  std::vector<Node> checkMonomialMagnitude( unsigned c );
-
-  /** check monomial inferred bounds
-  *
-  * Returns a set of valid theory lemmas, based on a
-  * lemma schema that infers new constraints about existing
-  * terms based on mulitplying both sides of an existing
-  * constraint by a term.
-  * For more details, see Section 5 of "Design Theory
-  * Solvers with Extensions" by Reynolds et al., FroCoS 2017,
-  * Figure 5, this is the schema "Multiply".
-  *
-  * Examples:
-  *
-  * x > 0 ^ (y > z + w) => x*y > x*(z+w)
-  * x < 0 ^ (y > z + w) => x*y < x*(z+w)
-  *   ...where (y > z + w) and x*y are a constraint and term
-  *      that occur in the current context.
-  */
-  std::vector<Node> checkMonomialInferBounds(
-      std::vector<Node>& nt_lemmas,
-      const std::vector<Node>& asserts,
-      const std::vector<Node>& false_asserts);
-
-  /** check factoring
-  *
-  * Returns a set of valid theory lemmas, based on a
-  * lemma schema that states a relationship betwen monomials
-  * with common factors that occur in the same constraint.
-  *
-  * Examples:
-  *
-  * x*z+y*z > t => ( k = x + y ^ k*z > t )
-  *   ...where k is fresh and x*z + y*z > t is a
-  *      constraint that occurs in the current context.
-  */
-  std::vector<Node> checkFactoring(const std::vector<Node>& asserts,
-                                   const std::vector<Node>& false_asserts);
-
-  /** check monomial infer resolution bounds
-  *
-  * Returns a set of valid theory lemmas, based on a
-  * lemma schema which "resolves" upper bounds
-  * of one inequality with lower bounds for another.
-  * This schema is not enabled by default, and can
-  * be enabled by --nl-ext-rbound.
-  *
-  * Examples:
-  *
-  *  ( y>=0 ^ s <= x*z ^ x*y <= t ) => y*s <= z*t
-  *  ...where s <= x*z and x*y <= t are constraints
-  *     that occur in the current context.
-  */
-  std::vector<Node> checkMonomialInferResBounds();
-
-  /** check tangent planes
-  *
-  * Returns a set of valid theory lemmas, based on an
-  * "incremental linearization" of non-linear monomials.
-  * This linearization is accomplished by adding constraints
-  * corresponding to "tangent planes" at the current
-  * model value of each non-linear monomial. In particular
-  * consider the definition for constants a,b :
-  *   T_{a,b}( x*y ) = b*x + a*y - a*b.
-  * The lemmas added by this function are of the form :
-  *  ( ( x>a ^ y<b) ^ (x<a ^ y>b) ) => x*y < T_{a,b}( x*y )
-  *  ( ( x>a ^ y>b) ^ (x<a ^ y<b) ) => x*y > T_{a,b}( x*y )
-  * It is inspired by "Invariant Checking of NRA Transition
-  * Systems via Incremental Reduction to LRA with EUF" by
-  * Cimatti et al., TACAS 2017.
-  * This schema is not terminating in general.
-  * It is not enabled by default, and can
-  * be enabled by --nl-ext-tplanes.
-  *
-  * Examples:
-  *
-  * ( ( x>2 ^ y>5) ^ (x<2 ^ y<5) ) => x*y > 5*x + 2*y - 10
-  * ( ( x>2 ^ y<5) ^ (x<2 ^ y>5) ) => x*y < 5*x + 2*y - 10
-  */
-  std::vector<Node> checkTangentPlanes();
-
-  /** check transcendental initial refine
-  *
-  * Returns a set of valid theory lemmas, based on
-  * simple facts about transcendental functions.
-  * This mostly follows the initial axioms described in
-  * Section 4 of "Satisfiability
-  * Modulo Transcendental Functions via Incremental
-  * Linearization" by Cimatti et al., CADE 2017.
-  *
-  * Examples:
-  *
-  * sin( x ) = -sin( -x )
-  * ( PI > x > 0 ) => 0 < sin( x ) < 1
-  * exp( x )>0
-  * x<0 => exp( x )<1
-  */
-  std::vector<Node> checkTranscendentalInitialRefine();
-
-  /** check transcendental monotonic
-  *
-  * Returns a set of valid theory lemmas, based on a
-  * lemma scheme that ensures that applications
-  * of transcendental functions respect monotonicity.
-  *
-  * Examples:
-  *
-  * x > y => exp( x ) > exp( y )
-  * PI/2 > x > y > 0 => sin( x ) > sin( y )
-  * PI > x > y > PI/2 => sin( x ) < sin( y )
-  */
-  std::vector<Node> checkTranscendentalMonotonic();
-
-  /** check transcendental tangent planes
-  *
-  * Returns a set of valid theory lemmas, based on
-  * computing an "incremental linearization" of
-  * transcendental functions based on the model values
-  * of transcendental functions and their arguments.
-  * It is based on Figure 3 of "Satisfiability
-  * Modulo Transcendental Functions via Incremental
-  * Linearization" by Cimatti et al., CADE 2017.
-  * This schema is not terminating in general.
-  * It is not enabled by default, and can
-  * be enabled by --nl-ext-tf-tplanes.
-  *
-  * Example:
-  *
-  * Assume we have a term sin(y) where M( y ) = 1 where M is the current model.
-  * Note that:
-  *   sin(1) ~= .841471
-  *
-  * The Taylor series and remainder of sin(y) of degree 7 is
-  *   P_{7,sin(0)}( x ) = x + (-1/6)*x^3 + (1/20)*x^5
-  *   R_{7,sin(0),b}( x ) = (-1/5040)*x^7
-  *
-  * This gives us lower and upper bounds :
-  *   P_u( x ) = P_{7,sin(0)}( x ) + R_{7,sin(0),b}( x )
-  *     ...where note P_u( 1 ) = 4243/5040 ~= .841865
-  *   P_l( x ) = P_{7,sin(0)}( x ) - R_{7,sin(0),b}( x )
-  *     ...where note P_l( 1 ) = 4241/5040 ~= .841468
-  *
-  * Assume that M( sin(y) ) > P_u( 1 ).
-  * Since the concavity of sine in the region 0 < x < PI/2 is -1,
-  * we add a tangent plane refinement.
-  * The tangent plane at the point 1 in P_u is
-  * given by the formula:
-  *   T( x ) = P_u( 1 ) + ((d/dx)(P_u(x)))( 1 )*( x - 1 )
-  * We add the lemma:
-  *   ( 0 < y < PI/2 ) => sin( y ) <= T( y )
-  * which is:
-  *   ( 0 < y < PI/2 ) => sin( y ) <= (391/720)*(y - 2737/1506)
-  *
-  * Assume that M( sin(y) ) < P_u( 1 ).
-  * Since the concavity of sine in the region 0 < x < PI/2 is -1,
-  * we add a secant plane refinement for some constants ( l, u )
-  * such that 0 <= l < M( y ) < u <= PI/2. Assume we choose
-  * l = 0 and u = M( PI/2 ) = 150517/47912.
-  * The secant planes at point 1 for P_l
-  * are given by the formulas:
-  *   S_l( x ) = (x-l)*(P_l( l )-P_l(c))/(l-1) + P_l( l )
-  *   S_u( x ) = (x-u)*(P_l( u )-P_l(c))/(u-1) + P_l( u )
-  * We add the lemmas:
-  *   ( 0 < y < 1 ) => sin( y ) >= S_l( y )
-  *   ( 1 < y < PI/2 ) => sin( y ) >= S_u( y )
-  * which are:
-  *   ( 0 < y < 1 ) => (sin y) >= 4251/5040*y
-  *   ( 1 < y < PI/2 ) => (sin y) >= c1*(y+c2)
-  *     where c1, c2 are rationals (for brevity, omitted here)
-  *     such that c1 ~= .277 and c2 ~= 2.032.
-  */
-  std::vector<Node> checkTranscendentalTangentPlanes();
-  /** check transcendental function refinement for tf
-   *
-   * This method is called by the above method for each refineable
-   * transcendental function (see isRefineableTfFun) that occurs in an
-   * assertion in the current context.
-   *
-   * This runs Figure 3 of Cimatti et al., CADE 2017 for transcendental
-   * function application tf for Taylor degree d. It may add a secant or
-   * tangent plane lemma to lems.
-   */
-  bool checkTfTangentPlanesFun(Node tf, unsigned d, std::vector<Node>& lems);
-  //-------------------------------------------- end lemma schemas
+  std::map<Node, std::pair<Node, Node>> d_approximations;
+  /** have we successfully built the model in this SAT context? */
+  context::CDO<bool> d_builtModel;
 }; /* class NonlinearExtension */
 
 }  // namespace arith

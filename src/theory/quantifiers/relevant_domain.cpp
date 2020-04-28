@@ -27,8 +27,8 @@ using namespace CVC4::theory;
 using namespace CVC4::theory::quantifiers;
 
 void RelevantDomain::RDomain::merge( RDomain * r ) {
-  Assert( !d_parent );
-  Assert( !r->d_parent );
+  Assert(!d_parent);
+  Assert(!r->d_parent);
   d_parent = r;
   for( unsigned i=0; i<d_terms.size(); i++ ){
     r->addTerm( d_terms[i] );
@@ -79,7 +79,7 @@ RelevantDomain::~RelevantDomain() {
   for( std::map< Node, std::map< int, RDomain * > >::iterator itr = d_rel_doms.begin(); itr != d_rel_doms.end(); ++itr ){
     for( std::map< int, RDomain * >::iterator itr2 = itr->second.begin(); itr2 != itr->second.end(); ++itr2 ){
       RDomain * current = (*itr2).second;
-      Assert( current != NULL );
+      Assert(current != NULL);
       delete current;
     }
   }
@@ -183,7 +183,8 @@ void RelevantDomain::computeRelevantDomain( Node q, Node n, bool hasPol, bool po
     //compute the information for what this literal does
     computeRelevantDomainLit( q, hasPol, pol, n );
     if( d_rel_dom_lit[hasPol][pol][n].d_merge ){
-      Assert( d_rel_dom_lit[hasPol][pol][n].d_rd[0]!=NULL && d_rel_dom_lit[hasPol][pol][n].d_rd[1]!=NULL );
+      Assert(d_rel_dom_lit[hasPol][pol][n].d_rd[0] != NULL
+             && d_rel_dom_lit[hasPol][pol][n].d_rd[1] != NULL);
       RDomain * rd1 = d_rel_dom_lit[hasPol][pol][n].d_rd[0]->getParent();
       RDomain * rd2 = d_rel_dom_lit[hasPol][pol][n].d_rd[1]->getParent();
       if( rd1!=rd2 ){
@@ -206,6 +207,7 @@ void RelevantDomain::computeRelevantDomainOpCh( RDomain * rf, Node n ) {
     Node q = d_qe->getTermUtil()->getInstConstAttr( n );
     //merge the RDomains
     unsigned id = n.getAttribute(InstVarNumAttribute());
+    Assert(q[0][id].getType() == n.getType());
     Trace("rel-dom-debug") << n << " is variable # " << id << " for " << q;
     Trace("rel-dom-debug") << " with body : " << d_qe->getTermUtil()->getInstConstantBody( q ) << std::endl;
     RDomain * rq = getRDomain( q, id );
@@ -224,9 +226,14 @@ void RelevantDomain::computeRelevantDomainLit( Node q, bool hasPol, bool pol, No
     d_rel_dom_lit[hasPol][pol][n].d_merge = false;
     int varCount = 0;
     int varCh = -1;
+    TermUtil* tu = d_qe->getTermUtil();
     for( unsigned i=0; i<n.getNumChildren(); i++ ){
       if( n[i].getKind()==INST_CONSTANT ){
-        d_rel_dom_lit[hasPol][pol][n].d_rd[i] = getRDomain( q, n[i].getAttribute(InstVarNumAttribute()), false );
+        // must get the quantified formula this belongs to, which may be
+        // different from q
+        Node qi = tu->getInstConstAttr(n[i]);
+        unsigned id = n[i].getAttribute(InstVarNumAttribute());
+        d_rel_dom_lit[hasPol][pol][n].d_rd[i] = getRDomain(qi, id, false);
         varCount++;
         varCh = i;
       }else{

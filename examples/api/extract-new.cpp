@@ -16,8 +16,7 @@
 
 #include <iostream>
 
-// #include "cvc4/api/cvc4cpp.h" // use this after CVC4 is properly installed
-#include "api/cvc4cpp.h"
+#include <cvc4/api/cvc4cpp.h>
 
 using namespace std;
 using namespace CVC4::api;
@@ -31,26 +30,26 @@ int main()
 
   Term x = slv.mkConst(bitvector32, "a");
 
-  OpTerm ext_31_1 = slv.mkOpTerm(BITVECTOR_EXTRACT_OP, 31, 1);
-  Term x_31_1 = slv.mkTerm(BITVECTOR_EXTRACT, ext_31_1, x);
+  Op ext_31_1 = slv.mkOp(BITVECTOR_EXTRACT, 31, 1);
+  Term x_31_1 = slv.mkTerm(ext_31_1, x);
 
-  OpTerm ext_30_0 = slv.mkOpTerm(BITVECTOR_EXTRACT_OP, 30, 0);
-  Term x_30_0 = slv.mkTerm(BITVECTOR_EXTRACT, ext_30_0, x);
+  Op ext_30_0 = slv.mkOp(BITVECTOR_EXTRACT, 30, 0);
+  Term x_30_0 = slv.mkTerm(ext_30_0, x);
 
-  OpTerm ext_31_31 = slv.mkOpTerm(BITVECTOR_EXTRACT_OP, 31, 31);
-  Term x_31_31 = slv.mkTerm(BITVECTOR_EXTRACT, ext_31_31, x);
+  Op ext_31_31 = slv.mkOp(BITVECTOR_EXTRACT, 31, 31);
+  Term x_31_31 = slv.mkTerm(ext_31_31, x);
 
-  OpTerm ext_0_0 = slv.mkOpTerm(BITVECTOR_EXTRACT_OP, 0, 0);
-  Term x_0_0 = slv.mkTerm(BITVECTOR_EXTRACT, ext_0_0, x);
+  Op ext_0_0 = slv.mkOp(BITVECTOR_EXTRACT, 0, 0);
+  Term x_0_0 = slv.mkTerm(ext_0_0, x);
 
   Term eq = slv.mkTerm(EQUAL, x_31_1, x_30_0);
   cout << " Asserting: " << eq << endl;
   slv.assertFormula(eq);
 
   Term eq2 = slv.mkTerm(EQUAL, x_31_31, x_0_0);
-  cout << " Check validity assuming: " << eq2 << endl;
-  cout << " Expect valid. " << endl;
-  cout << " CVC4: " << slv.checkValidAssuming(eq2) << endl;
+  cout << " Check entailment assuming: " << eq2 << endl;
+  cout << " Expect ENTAILED. " << endl;
+  cout << " CVC4: " << slv.checkEntailed(eq2) << endl;
 
   return 0;
 }

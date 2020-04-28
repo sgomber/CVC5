@@ -57,7 +57,7 @@ private:
     {
       char* argv[2];
       argv[0] = strdup("");
-      argv[1] = strdup("--output-language=ast");
+      argv[1] = strdup("--output-lang=ast");
       Options::parseOptions(&opts, 2, argv);
       free(argv[0]);
       free(argv[1]);
@@ -370,7 +370,7 @@ private:
     TS_ASSERT(!null->isConst());
 
     // more complicated "constants" exist in datatypes and arrays theories
-    Datatype list("list");
+    Datatype list(d_em, "list");
     DatatypeConstructor consC("cons");
     consC.addArg("car", d_em->integerType());
     consC.addArg("cdr", DatatypeSelfType());

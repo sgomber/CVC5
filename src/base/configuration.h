@@ -47,8 +47,6 @@ public:
 
   static bool isStatisticsBuild();
 
-  static bool isReplayBuild();
-
   static bool isTracingBuild();
 
   static bool isDumpingBuild();
@@ -64,6 +62,10 @@ public:
   static bool isProfilingBuild();
 
   static bool isAsanBuild();
+
+  static bool isUbsanBuild();
+
+  static bool isTsanBuild();
 
   static bool isCompetitionBuild();
 

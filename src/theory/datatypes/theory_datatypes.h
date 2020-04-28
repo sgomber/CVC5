@@ -26,7 +26,8 @@
 #include "expr/attribute.h"
 #include "expr/datatype.h"
 #include "expr/node_trie.h"
-#include "theory/datatypes/datatypes_sygus.h"
+#include "theory/datatypes/datatypes_rewriter.h"
+#include "theory/datatypes/sygus_extension.h"
 #include "theory/theory.h"
 #include "theory/uf/equality_engine.h"
 #include "util/hash.h"
@@ -205,8 +206,16 @@ private:
   bool d_addedFact;
   /** The conflict node */
   Node d_conflictNode;
-  /** cache for which terms we have called collectTerms(...) on */
+  /**
+   * SAT-context dependent cache for which terms we have called
+   * collectTerms(...) on.
+   */
   BoolMap d_collectTermsCache;
+  /**
+   * User-context dependent cache for which terms we have called
+   * collectTerms(...) on.
+   */
+  BoolMap d_collectTermsCacheU;
   /** pending assertions/merges */
   std::vector< Node > d_pending_lem;
   std::vector< Node > d_pending;
@@ -263,6 +272,8 @@ private:
                   const LogicInfo& logicInfo);
   ~TheoryDatatypes();
 
+  TheoryRewriter* getTheoryRewriter() override { return &d_rewriter; }
+
   void setMasterEqualityEngine(eq::EqualityEngine* eq) override;
 
   /** propagate */
@@ -291,7 +302,7 @@ private:
   bool needsCheckLastEffort() override;
   void preRegisterTerm(TNode n) override;
   void finishInit() override;
-  Node expandDefinition(LogicRequest& logicRequest, Node n) override;
+  Node expandDefinition(Node n) override;
   Node ppRewrite(TNode n) override;
   void presolve() override;
   void addSharedTerm(TNode t) override;
@@ -346,7 +357,7 @@ private:
   /** collect terms */
   void collectTerms( Node n );
   /** get instantiate cons */
-  Node getInstantiateCons( Node n, const Datatype& dt, int index );
+  Node getInstantiateCons(Node n, const DType& dt, int index);
   /** check instantiate */
   void instantiate( EqcInfo* eqc, Node n );
   /** must communicate fact */
@@ -360,10 +371,13 @@ private:
   bool areDisequal( TNode a, TNode b );
   bool areCareDisequal( TNode x, TNode y );
   TNode getRepresentative( TNode a );
-private:
- /** sygus symmetry breaking utility */
- SygusSymBreakNew* d_sygus_sym_break;
 
+ private:
+  /** sygus symmetry breaking utility */
+  std::unique_ptr<SygusExtension> d_sygusExtension;
+
+  /** The theory rewriter for this theory. */
+  DatatypesRewriter d_rewriter;
 };/* class TheoryDatatypes */
 
 }/* CVC4::theory::datatypes namespace */

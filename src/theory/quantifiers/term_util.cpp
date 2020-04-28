@@ -25,6 +25,7 @@
 #include "theory/quantifiers/term_database.h"
 #include "theory/quantifiers/term_enumeration.h"
 #include "theory/quantifiers_engine.h"
+#include "theory/strings/word.h"
 #include "theory/theory_engine.h"
 
 using namespace std;
@@ -217,7 +218,7 @@ Node TermUtil::substituteBoundVariables(Node n,
                                         std::vector<Node>& terms)
 {
   registerQuantifier(q);
-  Assert( d_vars[q].size()==terms.size() );
+  Assert(d_vars[q].size() == terms.size());
   return n.substitute( d_vars[q].begin(), d_vars[q].end(), terms.begin(), terms.end() );
 }
 
@@ -301,19 +302,6 @@ void TermUtil::computeInstConstContainsForQuant(Node q,
         vars.push_back(v);
       }
     }
-  }
-}
-
-Node TermUtil::ensureType( Node n, TypeNode tn ) {
-  TypeNode ntn = n.getType();
-  Assert( ntn.isComparableTo( tn ) );
-  if( ntn.isSubtypeOf( tn ) ){
-    return n;
-  }else{
-    if( tn.isInteger() ){
-      return NodeManager::currentNM()->mkNode( TO_INTEGER, n );
-    }
-    return Node::null();
   }
 }
 
@@ -464,11 +452,11 @@ Node TermUtil::mkTypeValue(TypeNode tn, int val)
       n = NodeManager::currentNM()->mkConst(false);
     }
   }
-  else if (tn.isString())
+  else if (tn.isStringLike())
   {
     if (val == 0)
     {
-      n = NodeManager::currentNM()->mkConst(::CVC4::String(""));
+      n = strings::Word::mkEmptyWord(tn);
     }
   }
   return n;

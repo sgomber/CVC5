@@ -17,21 +17,13 @@
  ** following:
  **
  **   java \
- **     -classpath path/to/CVC4.jar \
- **     -Djava.library.path=/dir/containing/java/CVC4.so \
+ **     -cp path/to/CVC4.jar:SimpleVC.jar \
+ **     -Djava.library.path=/dir/containing/libcvc4jni.so \
  **     SimpleVC
  **
- ** For example, if you are building CVC4 without specifying your own
- ** build directory, the build process puts everything in builds/, and
- ** you can run this example (after building it with "make") like this:
- **
- **   java \
- **     -classpath builds/examples:builds/src/bindings/CVC4.jar \
- **     -Djava.library.path=builds/src/bindings/java/.libs \
- **     SimpleVC
  **/
 
-import edu.nyu.acsys.CVC4.*;
+import edu.stanford.CVC4.*;
 
 public class SimpleVC {
   public static void main(String[] args) {
@@ -63,8 +55,9 @@ public class SimpleVC {
       new Expr(em.mkExpr(Kind.AND, x_positive, y_positive)).
       impExpr(new Expr(twox_plus_y_geq_3));
 
-    System.out.println("Checking validity of formula " + formula + " with CVC4.");
-    System.out.println("CVC4 should report VALID.");
-    System.out.println("Result from CVC4 is: " + smt.query(formula));
+    System.out.println(
+        "Checking entailment of formula " + formula + " with CVC4.");
+    System.out.println("CVC4 should report ENTAILED.");
+    System.out.println("Result from CVC4 is: " + smt.checkEntailed(formula));
   }
 }

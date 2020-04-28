@@ -31,7 +31,6 @@
 #include "proof/proof_manager.h"
 #include "prop/registrar.h"
 #include "prop/theory_proxy.h"
-#include "smt_util/lemma_channels.h"
 
 namespace CVC4 {
 
@@ -87,25 +86,6 @@ class CnfStream {
 
   /** Pointer to the proof corresponding to this CnfStream */
   CnfProof* d_cnfProof;
-
-  /**
-   * How many literals were already mapped at the top-level when we
-   * tried to convertAndAssert() something.  This
-   * achieves early detection of units and leads to fewer
-   * clauses.  It's motivated by the following pattern:
-   *
-   *   ASSERT  BIG FORMULA => x
-   *   (and then later...)
-   *   ASSERT  BIG FORMULA
-   *
-   * With the first assert, BIG FORMULA is clausified, and a literal
-   * is assigned for the top level so that the final clause for the
-   * implication is "lit => x".  But without "fortunate literal
-   * detection," when BIG FORMULA is later asserted, it is clausified
-   * separately, and "lit" is never asserted as a unit clause.
-   */
-  // KEEP_STATISTIC(IntStat, d_fortunateLiterals,
-  //               "prop::CnfStream::fortunateLiterals", 0);
 
   /** Remove nots from the node */
   TNode stripNot(TNode node) {
@@ -273,11 +253,15 @@ class TseitinCnfStream : public CnfStream {
    * @param satSolver the sat solver to use
    * @param registrar the entity that takes care of pre-registration of Nodes
    * @param context the context that the CNF should respect.
+   * @param rm the resource manager of the CNF stream
    * @param fullLitToNodeMap maintain a full SAT-literal-to-Node mapping,
    * even for non-theory literals
    */
-  TseitinCnfStream(SatSolver* satSolver, Registrar* registrar,
-                   context::Context* context, bool fullLitToNodeMap = false,
+  TseitinCnfStream(SatSolver* satSolver,
+                   Registrar* registrar,
+                   context::Context* context,
+                   ResourceManager* rm,
+                   bool fullLitToNodeMap = false,
                    std::string name = "");
 
   /**
@@ -333,6 +317,8 @@ class TseitinCnfStream : public CnfStream {
 
   void ensureLiteral(TNode n, bool noPreregistration = false) override;
 
+  /** Pointer to resource manager for associated SmtEngine */
+  ResourceManager* d_resourceManager;
 }; /* class TseitinCnfStream */
 
 } /* CVC4::prop namespace */

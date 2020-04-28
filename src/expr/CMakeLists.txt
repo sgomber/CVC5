@@ -7,15 +7,12 @@ libcvc4_add_sources(
   attribute.cpp
   attribute_internals.h
   attribute_unique_id.h
-  chain.h
   emptyset.cpp
   emptyset.h
   expr_iomanip.cpp
   expr_iomanip.h
   expr_manager_scope.h
-  expr_stream.h
   kind_map.h
-  matcher.h
   match_trie.cpp
   match_trie.h
   node.cpp
@@ -31,8 +28,21 @@ libcvc4_add_sources(
   node_self_iterator.h
   node_trie.cpp
   node_trie.h
+  node_traversal.cpp
+  node_traversal.h
   node_value.cpp
   node_value.h
+  node_visitor.h
+  proof.cpp
+  proof.h
+  proof_checker.cpp
+  proof_checker.h
+  proof_node.cpp
+  proof_node.h
+  proof_node_manager.cpp
+  proof_node_manager.h
+  proof_rule.cpp
+  proof_rule.h
   symbol_table.cpp
   symbol_table.h
   term_canonize.cpp
@@ -40,13 +50,23 @@ libcvc4_add_sources(
   type.cpp
   type.h
   type_checker.h
+  type_matcher.cpp
+  type_matcher.h
   type_node.cpp
   type_node.h
   variable_type_map.h
   datatype.h
   datatype.cpp
+  dtype.h
+  dtype.cpp
+  dtype_cons.h
+  dtype_cons.cpp
+  dtype_selector.h
+  dtype_selector.cpp
   record.cpp
   record.h
+  sygus_datatype.cpp
+  sygus_datatype.h
   uninterpreted_constant.cpp
   uninterpreted_constant.h
 )

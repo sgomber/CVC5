@@ -36,12 +36,6 @@ namespace CVC4 {
 #  define IS_STATISTICS_BUILD false
 #endif /* CVC4_STATISTICS_ON */
 
-#ifdef CVC4_REPLAY
-#  define IS_REPLAY_BUILD true
-#else /* CVC4_REPLAY */
-#  define IS_REPLAY_BUILD false
-#endif /* CVC4_REPLAY */
-
 #ifdef CVC4_TRACING
 #  define IS_TRACING_BUILD true
 #else /* CVC4_TRACING */
@@ -170,6 +164,28 @@ namespace CVC4 {
 #    undef IS_ASAN_BUILD
 #    define IS_ASAN_BUILD true
 #  endif /* __has_feature(address_sanitizer) */
+#endif /* defined(__has_feature) */
+
+#ifdef CVC4_USE_UBSAN
+#define IS_UBSAN_BUILD true
+#else /* CVC4_USE_UBSAN */
+#define IS_UBSAN_BUILD false
+#endif /* CVC4_USE_UBSAN */
+
+#define IS_TSAN_BUILD false
+
+// GCC test
+#if defined(__SANITIZE_THREAD__)
+#undef IS_TSAN_BUILD
+#define IS_TSAN_BUILD true
+#endif /* defined(__SANITIZE_THREAD__) */
+
+// Clang test
+#if defined(__has_feature)
+#if __has_feature(thread_sanitizer)
+#undef IS_TSAN_BUILD
+#define IS_TSAN_BUILD true
+#endif /* __has_feature(thread_sanitizer) */
 #endif /* defined(__has_feature) */
 
 }/* CVC4 namespace */

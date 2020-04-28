@@ -19,6 +19,7 @@
 
 #include <ostream>
 
+#include "base/check.h"
 #include "options/open_ostream.h"
 #include "options/smt_options.h"
 #include "smt/update_ostream.h"
@@ -161,32 +162,5 @@ void ManagedDiagnosticOutputChannel::addSpecialCases(OstreamOpener* opener)
   opener->addSpecialCase("stdout", &std::cout);
   opener->addSpecialCase("stderr", &std::cerr);
 }
-
-
-ManagedReplayLogOstream::ManagedReplayLogOstream() : d_replayLog(NULL) {}
-ManagedReplayLogOstream::~ManagedReplayLogOstream(){
-  if(d_replayLog != NULL) {
-    (*d_replayLog) << std::flush;
-  }
-}
-
-std::string ManagedReplayLogOstream::defaultSource() const {
-  return options::replayLogFilename();
-}
-
-void ManagedReplayLogOstream::initialize(std::ostream* outStream) {
-  if(outStream != NULL){
-    *outStream << language::SetLanguage(options::outputLanguage())
-               << expr::ExprSetDepth(-1);
-  }
-  /* Do this regardless of managing the memory. */
-  d_replayLog = outStream;
-}
-
-/** Adds special cases to an ostreamopener. */
-void ManagedReplayLogOstream::addSpecialCases(OstreamOpener* opener) const {
-  opener->addSpecialCase("-", &std::cout);
-}
-
 
 }/* CVC4 namespace */

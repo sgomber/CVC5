@@ -19,8 +19,10 @@
 
 #include <unordered_set>
 
+#include "expr/dtype.h"
 #include "theory/evaluator.h"
 #include "theory/quantifiers/extended_rewrite.h"
+#include "theory/quantifiers/fun_def_evaluator.h"
 #include "theory/quantifiers/sygus/sygus_eval_unfold.h"
 #include "theory/quantifiers/sygus/sygus_explain.h"
 #include "theory/quantifiers/sygus/type_info.h"
@@ -77,6 +79,8 @@ class TermDbSygus {
   ExtendedRewriter* getExtRewriter() { return d_ext_rw.get(); }
   /** get the evaluator */
   Evaluator* getEvaluator() { return d_eval.get(); }
+  /** (recursive) function evaluator utility */
+  FunDefEvaluator* getFunDefEvaluator() { return d_funDefEval.get(); }
   /** evaluation unfolding utility */
   SygusEvalUnfold* getEvalUnfold() { return d_eval_unfold.get(); }
   //------------------------------end utilities
@@ -99,17 +103,13 @@ class TermDbSygus {
    * and not x2-x1 will be generated, assuming x1 and x2 are in the same
    * "subclass", see getSubclassForVar).
    *
-   * useSymbolicCons : whether we want model values for e to include symbolic
-   * constructors like the "any constant" variable.
-   *
    * An "active guard" may be allocated by this method for e based on erole
    * and the policies for active generation.
    */
   void registerEnumerator(Node e,
                           Node f,
                           SynthConjecture* conj,
-                          EnumeratorRole erole,
-                          bool useSymbolicCons = false);
+                          EnumeratorRole erole);
   /** is e an enumerator registered with this class? */
   bool isEnumerator(Node e) const;
   /** return the conjecture e is associated with */
@@ -223,15 +223,21 @@ class TermDbSygus {
    *   If i is in the domain of pre, then ti = pre[i].
    *   If i is not in the domain of pre, then ti = d_fv[1][ var_count[Ti ] ],
    *     and var_count[Ti] is incremented.
+   * If doBetaRed is true, then lambda operators are eagerly eliminated via
+   * beta reduction.
    */
-  Node mkGeneric(const Datatype& dt,
+  Node mkGeneric(const DType& dt,
                  unsigned c,
                  std::map<TypeNode, int>& var_count,
-                 std::map<int, Node>& pre);
+                 std::map<int, Node>& pre,
+                 bool doBetaRed = true);
   /** same as above, but with empty var_count */
-  Node mkGeneric(const Datatype& dt, int c, std::map<int, Node>& pre);
+  Node mkGeneric(const DType& dt,
+                 int c,
+                 std::map<int, Node>& pre,
+                 bool doBetaRed = true);
   /** same as above, but with empty pre */
-  Node mkGeneric(const Datatype& dt, int c);
+  Node mkGeneric(const DType& dt, int c, bool doBetaRed = true);
   /** makes a symbolic term concrete
    *
    * Given a sygus datatype term n of type tn with holes (symbolic constructor
@@ -260,7 +266,7 @@ class TermDbSygus {
    */
   Node evaluateBuiltin(TypeNode tn,
                        Node bn,
-                       std::vector<Node>& args,
+                       const std::vector<Node>& args,
                        bool tryEval = true);
   /** evaluate with unfolding
    *
@@ -296,6 +302,11 @@ class TermDbSygus {
    * (a subfield type of) a type that has been registered to this class.
    */
   SygusTypeInfo& getTypeInfo(TypeNode tn);
+  /**
+   * Rewrite the given node using the utilities in this class. This may
+   * involve (recursive function) evaluation.
+   */
+  Node rewriteNode(Node n) const;
 
   /** print to sygus stream n on trace c */
   static void toStreamSygus(const char* c, Node n);
@@ -311,6 +322,8 @@ class TermDbSygus {
   std::unique_ptr<ExtendedRewriter> d_ext_rw;
   /** evaluator */
   std::unique_ptr<Evaluator> d_eval;
+  /** (recursive) function evaluator utility */
+  std::unique_ptr<FunDefEvaluator> d_funDefEval;
   /** evaluation function unfolding utility */
   std::unique_ptr<SygusEvalUnfold> d_eval_unfold;
   //------------------------------end utilities
@@ -397,9 +410,9 @@ class TermDbSygus {
   /** get the weight of the selector, where tn is the domain of sel */
   unsigned getSelectorWeight(TypeNode tn, Node sel);
   /** get arg type */
-  TypeNode getArgType(const DatatypeConstructor& c, unsigned i) const;
+  TypeNode getArgType(const DTypeConstructor& c, unsigned i) const;
   /** Do constructors c1 and c2 have the same type? */
-  bool isTypeMatch( const DatatypeConstructor& c1, const DatatypeConstructor& c2 );
+  bool isTypeMatch(const DTypeConstructor& c1, const DTypeConstructor& c2);
   /** return whether n is an application of a symbolic constructor */
   bool isSymbolicConsApp(Node n) const;
   /** can construct kind
@@ -437,32 +450,6 @@ class TermDbSygus {
   static Node getAnchor( Node n );
   static unsigned getAnchorDepth( Node n );
 
- public:
-  /** unfold
-   *
-   * This method returns the one-step unfolding of an evaluation function
-   * application. An example of a one step unfolding is:
-   *    eval( C_+( d1, d2 ), t ) ---> +( eval( d1, t ), eval( d2, t ) )
-   *
-   * This function does this unfolding for a (possibly symbolic) evaluation
-   * head, where the argument "variable to model" vtm stores the model value of
-   * variables from this head. This allows us to track an explanation of the
-   * unfolding in the vector exp when track_exp is true.
-   *
-   * For example, if vtm[d] = C_+( C_x(), C_0() ) and track_exp is true, then
-   * this method applied to eval( d, t ) will return
-   * +( eval( d.0, t ), eval( d.1, t ) ), and is-C_+( d ) is added to exp.
-   */
-  Node unfold(Node en,
-              std::map<Node, Node>& vtm,
-              std::vector<Node>& exp,
-              bool track_exp = true);
-  /**
-   * Same as above, but without explanation tracking. This is used for concrete
-   * evaluation heads
-   */
-  Node unfold(Node en);
-  Node getEagerUnfold( Node n, std::map< Node, Node >& visited );
 };
 
 }/* CVC4::theory::quantifiers namespace */

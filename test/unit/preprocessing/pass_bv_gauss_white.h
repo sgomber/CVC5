@@ -20,6 +20,7 @@
 #include "preprocessing/passes/bv_gauss.h"
 #include "smt/smt_engine.h"
 #include "smt/smt_engine_scope.h"
+#include "test_utils.h"
 #include "theory/bv/theory_bv_utils.h"
 #include "theory/rewriter.h"
 #include "util/bitvector.h"
@@ -116,14 +117,6 @@ static void testGaussElimX(Integer prime,
   }
 }
 
-template <class T>
-static void testGaussElimT(Integer prime,
-                           std::vector<Integer> rhs,
-                           std::vector<std::vector<Integer>> lhs)
-{
-  TS_ASSERT_THROWS(BVGauss::gaussElim(prime, rhs, lhs), T);
-}
-
 class TheoryBVGaussWhite : public CxxTest::TestSuite
 {
   ExprManager *d_em;
@@ -183,6 +176,7 @@ class TheoryBVGaussWhite : public CxxTest::TestSuite
     d_nm = NodeManager::fromExprManager(d_em);
     d_smt = new SmtEngine(d_em);
     d_scope = new SmtScope(d_smt);
+    d_smt->finalOptionsAreSet();
 
     d_zero = bv::utils::mkZero(16);
 
@@ -319,7 +313,7 @@ class TheoryBVGaussWhite : public CxxTest::TestSuite
            {Integer(2), Integer(3), Integer(5)},
            {Integer(4), Integer(0), Integer(5)}};
     std::cout << "matrix 0, modulo 0" << std::endl;  // throws
-    testGaussElimT<AssertionException>(Integer(0), rhs, lhs);
+    TS_UTILS_EXPECT_ABORT(BVGauss::gaussElim(Integer(0), rhs, lhs));
     std::cout << "matrix 0, modulo 1" << std::endl;
     testGaussElimX(Integer(1), rhs, lhs, BVGauss::Result::UNIQUE);
     std::cout << "matrix 0, modulo 2" << std::endl;
@@ -2380,7 +2374,7 @@ class TheoryBVGaussWhite : public CxxTest::TestSuite
 
     AssertionPipeline apipe;
     apipe.push_back(a);
-    passes::BVGauss bgauss(nullptr);
+    passes::BVGauss bgauss(nullptr, "bv-gauss-unit");
     std::unordered_map<Node, Node, NodeHashFunction> res;
     PreprocessingPassResult pres = bgauss.applyInternal(&apipe);
     TS_ASSERT (pres == PreprocessingPassResult::NO_CONFLICT);
@@ -2464,7 +2458,7 @@ class TheoryBVGaussWhite : public CxxTest::TestSuite
     apipe.push_back(a);
     apipe.push_back(eq4);
     apipe.push_back(eq5);
-    passes::BVGauss bgauss(nullptr);
+    passes::BVGauss bgauss(nullptr, "bv-gauss-unit");
     std::unordered_map<Node, Node, NodeHashFunction> res;
     PreprocessingPassResult pres = bgauss.applyInternal(&apipe);
     TS_ASSERT (pres == PreprocessingPassResult::NO_CONFLICT);
@@ -2514,7 +2508,7 @@ class TheoryBVGaussWhite : public CxxTest::TestSuite
     AssertionPipeline apipe;
     apipe.push_back(eq1);
     apipe.push_back(eq2);
-    passes::BVGauss bgauss(nullptr);
+    passes::BVGauss bgauss(nullptr, "bv-gauss-unit");
     std::unordered_map<Node, Node, NodeHashFunction> res;
     PreprocessingPassResult pres = bgauss.applyInternal(&apipe);
     TS_ASSERT (pres == PreprocessingPassResult::NO_CONFLICT);

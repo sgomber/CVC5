@@ -18,7 +18,6 @@
 
 #include "expr/datatype.h"
 #include "options/quantifiers_options.h"
-#include "theory/datatypes/datatypes_rewriter.h"
 #include "theory/quantifiers/sygus/term_database_sygus.h"
 #include "theory/quantifiers/term_util.h"
 
@@ -69,7 +68,7 @@ bool SynthConjectureProcessFun::checkMatch(
   Node cn_subs =
       cn.substitute(vars.begin(), vars.end(), subs.begin(), subs.end());
   cn_subs = Rewriter::rewrite(cn_subs);
-  Assert(Rewriter::rewrite(n) == n);
+  n = Rewriter::rewrite(n);
   return cn_subs == n;
 }
 

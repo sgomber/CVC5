@@ -16,14 +16,14 @@
 
 #include <iostream>
 
-//#include <cvc4/cvc4.h> // use this after CVC4 is properly installed
-#include "smt/smt_engine.h"
+#include <cvc4/cvc4.h>
 
 using namespace CVC4;
 int main() {
   ExprManager em;
   Expr helloworld = em.mkVar("Hello World!", em.booleanType());
   SmtEngine smt(&em);
-  std::cout << helloworld << " is " << smt.query(helloworld) << std::endl;
+  std::cout << helloworld << " is " << smt.checkEntailed(helloworld)
+            << std::endl;
   return 0;
 }

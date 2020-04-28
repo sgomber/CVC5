@@ -20,25 +20,25 @@
 #include "smt/smt_statistics_registry.h"
 #include "theory/arith/arith_msum.h"
 #include "theory/quantifiers/quantifiers_attributes.h"
+#include "theory/quantifiers/quantifiers_rewriter.h"
 #include "theory/quantifiers/sygus/sygus_grammar_cons.h"
 #include "theory/quantifiers/sygus/term_database_sygus.h"
 #include "theory/quantifiers/term_enumeration.h"
 #include "theory/quantifiers/term_util.h"
 #include "theory/quantifiers_engine.h"
 
-using namespace CVC4;
 using namespace CVC4::kind;
-using namespace CVC4::theory;
-using namespace CVC4::theory::quantifiers;
-using namespace std;
 
 namespace CVC4 {
+namespace theory {
+namespace quantifiers {
 
 CegSingleInv::CegSingleInv(QuantifiersEngine* qe, SynthConjecture* p)
     : d_qe(qe),
       d_parent(p),
       d_sip(new SingleInvocationPartition),
       d_sol(new CegSingleInvSol(qe)),
+      d_isSolved(false),
       d_single_invocation(false)
 {
 
@@ -53,10 +53,10 @@ CegSingleInv::~CegSingleInv()
 void CegSingleInv::initialize(Node q)
 {
   // can only register one quantified formula with this
-  Assert( d_quant.isNull() );
+  Assert(d_quant.isNull());
   d_quant = q;
   d_simp_quant = q;
-  Trace("cegqi-si") << "CegSingleInv::initialize : " << q << std::endl;
+  Trace("sygus-si") << "CegSingleInv::initialize : " << q << std::endl;
   // infer single invocation-ness
 
   // get the variables
@@ -87,13 +87,13 @@ void CegSingleInv::initialize(Node q)
   // process the single invocation-ness of the property
   if (!d_sip->init(progs, qq))
   {
-    Trace("cegqi-si") << "...not single invocation (type mismatch)"
+    Trace("sygus-si") << "...not single invocation (type mismatch)"
                       << std::endl;
     return;
   }
-  Trace("cegqi-si") << "- Partitioned to single invocation parts : "
+  Trace("sygus-si") << "- Partitioned to single invocation parts : "
                     << std::endl;
-  d_sip->debugPrint("cegqi-si");
+  d_sip->debugPrint("sygus-si");
 
   // map from program to bound variables
   std::vector<Node> funcs;
@@ -109,7 +109,7 @@ void CegSingleInv::initialize(Node q)
   {
     // We are fully single invocation, set single invocation if we haven't
     // disabled single invocation techniques.
-    if (options::cegqiSingleInvMode() != CEGQI_SI_MODE_NONE)
+    if (options::cegqiSingleInvMode() != options::CegqiSingleInvMode::NONE)
     {
       d_single_invocation = true;
       return;
@@ -118,39 +118,40 @@ void CegSingleInv::initialize(Node q)
   // We are processing without single invocation techniques, now check if
   // we should fix an invariant template (post-condition strengthening or
   // pre-condition weakening).
-  SygusInvTemplMode tmode = options::sygusInvTemplMode();
-  if (tmode != SYGUS_INV_TEMPL_MODE_NONE)
+  options::SygusInvTemplMode tmode = options::sygusInvTemplMode();
+  if (tmode != options::SygusInvTemplMode::NONE)
   {
     // currently only works for single predicate synthesis
     if (q[0].getNumChildren() > 1 || !q[0][0].getType().isPredicate())
     {
-      tmode = SYGUS_INV_TEMPL_MODE_NONE;
+      tmode = options::SygusInvTemplMode::NONE;
     }
     else if (!options::sygusInvTemplWhenSyntax())
     {
       // only use invariant templates if no syntactic restrictions
       if (CegGrammarConstructor::hasSyntaxRestrictions(q))
       {
-        tmode = SYGUS_INV_TEMPL_MODE_NONE;
+        tmode = options::SygusInvTemplMode::NONE;
       }
     }
   }
 
-  if (tmode == SYGUS_INV_TEMPL_MODE_NONE)
+  if (tmode == options::SygusInvTemplMode::NONE)
   {
     // not processing invariant templates
     return;
   }
   // if we are doing invariant templates, then construct the template
-  Trace("cegqi-si") << "- Do transition inference..." << std::endl;
-  d_ti[q].process(qq);
+  Trace("sygus-si") << "- Do transition inference..." << std::endl;
+  d_ti[q].process(qq, q[0][0]);
   Trace("cegqi-inv") << std::endl;
   Node prog = d_ti[q].getFunction();
-  if (prog.isNull())
+  if (!d_ti[q].isComplete())
   {
     // the invariant could not be inferred
     return;
   }
+  Assert(prog == q[0][0]);
   NodeManager* nm = NodeManager::currentNM();
   // map the program back via non-single invocation map
   std::vector<Node> prog_templ_vars;
@@ -162,7 +163,12 @@ void CegSingleInv::initialize(Node q)
   std::vector<Node> sivars;
   d_sip->getSingleInvocationVariables(sivars);
   Node invariant = d_sip->getFunctionInvocationFor(prog);
-  Assert(!invariant.isNull());
+  if (invariant.isNull())
+  {
+    // the conjecture did not have an instance of the invariant
+    // (e.g. it is trivially true/false).
+    return;
+  }
   invariant = invariant.substitute(sivars.begin(),
                                    sivars.end(),
                                    prog_templ_vars.begin(),
@@ -188,7 +194,7 @@ void CegSingleInv::initialize(Node q)
           .negate();
   d_simp_quant = Rewriter::rewrite(d_simp_quant);
   d_simp_quant = nm->mkNode(FORALL, q[0], d_simp_quant, q[2]);
-  Trace("cegqi-si") << "Rewritten quantifier : " << d_simp_quant << std::endl;
+  Trace("sygus-si") << "Rewritten quantifier : " << d_simp_quant << std::endl;
 
   // construct template argument
   d_templ_arg[prog] = nm->mkSkolem("I", invariant.getType());
@@ -242,13 +248,13 @@ void CegSingleInv::initialize(Node q)
                      << std::endl;
   if (templ.isNull())
   {
-    if (tmode == SYGUS_INV_TEMPL_MODE_PRE)
+    if (tmode == options::SygusInvTemplMode::PRE)
     {
       templ = nm->mkNode(OR, d_trans_pre[prog], d_templ_arg[prog]);
     }
     else
     {
-      Assert(tmode == SYGUS_INV_TEMPL_MODE_POST);
+      Assert(tmode == options::SygusInvTemplMode::POST);
       templ = nm->mkNode(AND, d_trans_post[prog], d_templ_arg[prog]);
     }
   }
@@ -267,18 +273,21 @@ void CegSingleInv::initialize(Node q)
 
 void CegSingleInv::finishInit(bool syntaxRestricted)
 {
-  Trace("cegqi-si-debug") << "Single invocation: finish init" << std::endl;
-  // do not do single invocation if grammar is restricted and CEGQI_SI_MODE_ALL is not enabled
-  if( options::cegqiSingleInvMode()==CEGQI_SI_MODE_USE && d_single_invocation && syntaxRestricted ){
+  Trace("sygus-si-debug") << "Single invocation: finish init" << std::endl;
+  // do not do single invocation if grammar is restricted and
+  // options::CegqiSingleInvMode::ALL is not enabled
+  if (options::cegqiSingleInvMode() == options::CegqiSingleInvMode::USE
+      && d_single_invocation && syntaxRestricted)
+  {
     d_single_invocation = false;
-    Trace("cegqi-si") << "...grammar is restricted, do not use single invocation techniques." << std::endl;
+    Trace("sygus-si") << "...grammar is restricted, do not use single invocation techniques." << std::endl;
   }
 
   // we now have determined whether we will do single invocation techniques
   if (!d_single_invocation)
   {
     d_single_inv = Node::null();
-    Trace("cegqi-si") << "Formula is not single invocation." << std::endl;
+    Trace("sygus-si") << "Formula is not single invocation." << std::endl;
     if (options::cegqiSingleInvAbort())
     {
       std::stringstream ss;
@@ -311,27 +320,48 @@ void CegSingleInv::finishInit(bool syntaxRestricted)
                                          sivars.end(),
                                          d_single_inv_arg_sk.begin(),
                                          d_single_inv_arg_sk.end());
-  Trace("cegqi-si") << "Single invocation formula is : " << d_single_inv
+  Trace("sygus-si") << "Single invocation formula is : " << d_single_inv
                     << std::endl;
   // check whether we can handle this quantified formula
   CegHandledStatus status = CEG_HANDLED;
   if (d_single_inv.getKind() == FORALL)
   {
-    status = CegInstantiator::isCbqiQuant(d_single_inv);
+    // if the conjecture is not trivially solvable
+    if (!solveTrivial(d_single_inv))
+    {
+      status = CegInstantiator::isCbqiQuant(d_single_inv);
+    }
   }
-  Trace("cegqi-si") << "CegHandledStatus is " << status << std::endl;
+  Trace("sygus-si") << "CegHandledStatus is " << status << std::endl;
   if (status < CEG_HANDLED)
   {
-    Trace("cegqi-si") << "...do not invoke single invocation techniques since "
+    Trace("sygus-si") << "...do not invoke single invocation techniques since "
                          "the quantified formula does not have a handled "
                          "counterexample-guided instantiation strategy!"
                       << std::endl;
     d_single_invocation = false;
     d_single_inv = Node::null();
   }
-  // If we succeeded, mark the quantified formula with the quantifier
-  // elimination attribute to ensure its structure is preserved
-  if (!d_single_inv.isNull() && d_single_inv.getKind() == FORALL)
+}
+
+bool CegSingleInv::solve()
+{
+  if (d_single_inv.isNull())
+  {
+    // not using single invocation techniques
+    return false;
+  }
+  if (d_isSolved)
+  {
+    // already solved, probably via a call to solveTrivial.
+    return true;
+  }
+  Trace("sygus-si") << "Solve using single invocation..." << std::endl;
+  NodeManager* nm = NodeManager::currentNM();
+  // Mark the quantified formula with the quantifier elimination attribute to
+  // ensure its structure is preserved in the query below.
+  Node siq = d_single_inv;
+  if (siq.getKind() == FORALL)
   {
     Node n_attr =
         nm->mkSkolem("qe_si",
@@ -341,24 +371,14 @@ void CegSingleInv::finishInit(bool syntaxRestricted)
     n_attr.setAttribute(qea, true);
     n_attr = nm->mkNode(INST_ATTRIBUTE, n_attr);
     n_attr = nm->mkNode(INST_PATTERN_LIST, n_attr);
-    d_single_inv = nm->mkNode(FORALL, d_single_inv[0], d_single_inv[1], n_attr);
+    siq = nm->mkNode(FORALL, siq[0], siq[1], n_attr);
   }
-}
-bool CegSingleInv::solve()
-{
-  if (d_single_inv.isNull())
-  {
-    // not using single invocation techniques
-    return false;
-  }
-  Trace("cegqi-si") << "Solve using single invocation..." << std::endl;
-  NodeManager* nm = NodeManager::currentNM();
   // solve the single invocation conjecture using a fresh copy of SMT engine
   SmtEngine siSmt(nm->toExprManager());
   siSmt.setLogic(smt::currentSmtEngine()->getLogicInfo());
-  siSmt.assertFormula(d_single_inv.toExpr());
+  siSmt.assertFormula(siq.toExpr());
   Result r = siSmt.checkSat();
-  Trace("cegqi-si") << "Result: " << r << std::endl;
+  Trace("sygus-si") << "Result: " << r << std::endl;
   if (r.asSatisfiabilityResult().isSat() != Result::UNSAT)
   {
     // conjecture is infeasible or unknown
@@ -369,7 +389,7 @@ bool CegSingleInv::solve()
   siSmt.getInstantiatedQuantifiedFormulas(qs);
   Assert(qs.size() <= 1);
   // track the instantiations, as solution construction is based on this
-  Trace("cegqi-si") << "#instantiated quantified formulas=" << qs.size()
+  Trace("sygus-si") << "#instantiated quantified formulas=" << qs.size()
                     << std::endl;
   d_inst.clear();
   d_instConds.clear();
@@ -379,7 +399,7 @@ bool CegSingleInv::solve()
     Assert(qn.getKind() == FORALL);
     std::vector<std::vector<Expr> > tvecs;
     siSmt.getInstantiationTermVectors(q, tvecs);
-    Trace("cegqi-si") << "#instantiations of " << q << "=" << tvecs.size()
+    Trace("sygus-si") << "#instantiations of " << q << "=" << tvecs.size()
                       << std::endl;
     std::vector<Node> vars;
     for (const Node& v : qn[0])
@@ -395,16 +415,17 @@ bool CegSingleInv::solve()
       {
         inst.push_back(Node::fromExpr(t));
       }
-      Trace("cegqi-si") << "  Instantiation: " << inst << std::endl;
+      Trace("sygus-si") << "  Instantiation: " << inst << std::endl;
       d_inst.push_back(inst);
       Assert(inst.size() == vars.size());
       Node ilem =
           body.substitute(vars.begin(), vars.end(), inst.begin(), inst.end());
       ilem = Rewriter::rewrite(ilem);
       d_instConds.push_back(ilem);
-      Trace("cegqi-si") << "  Instantiation Lemma: " << ilem << std::endl;
+      Trace("sygus-si") << "  Instantiation Lemma: " << ilem << std::endl;
     }
   }
+  d_isSolved = true;
   return true;
 }
 
@@ -421,41 +442,14 @@ struct sortSiInstanceIndices {
   }
 };
 
-Node CegSingleInv::postProcessSolution(Node n)
-{
-  bool childChanged = false;
-  Kind k = n.getKind();
-  if( n.getKind()==INTS_DIVISION_TOTAL ){
-    k = INTS_DIVISION;
-    childChanged = true;
-  }else if( n.getKind()==INTS_MODULUS_TOTAL ){
-    k = INTS_MODULUS;
-    childChanged = true;
-  }
-  std::vector< Node > children;
-  for( unsigned i=0; i<n.getNumChildren(); i++ ){
-    Node nn = postProcessSolution( n[i] );
-    children.push_back( nn );
-    childChanged = childChanged || nn!=n[i];
-  }
-  if( childChanged ){
-    if( n.hasOperator() && k==n.getKind() ){
-      children.insert( children.begin(), n.getOperator() );
-    }
-    return NodeManager::currentNM()->mkNode( k, children );
-  }else{
-    return n;
-  }
-}
-
 Node CegSingleInv::getSolution(unsigned sol_index,
                                TypeNode stn,
                                int& reconstructed,
                                bool rconsSygus)
 {
-  Assert( d_sol!=NULL );
-  const Datatype& dt = ((DatatypeType)(stn).toType()).getDatatype();
-  Node varList = Node::fromExpr( dt.getSygusVarList() );
+  Assert(d_sol != NULL);
+  const DType& dt = stn.getDType();
+  Node varList = dt.getSygusVarList();
   Node prog = d_quant[0][sol_index];
   std::vector< Node > vars;
   Node s;
@@ -465,15 +459,14 @@ Node CegSingleInv::getSolution(unsigned sol_index,
       || d_inst.empty())
   {
     Trace("csi-sol") << "Get solution for (unconstrained) " << prog << std::endl;
-    s = d_qe->getTermEnumeration()->getEnumerateTerm(
-        TypeNode::fromType(dt.getSygusType()), 0);
+    s = d_qe->getTermEnumeration()->getEnumerateTerm(dt.getSygusType(), 0);
   }
   else
   {
     Trace("csi-sol") << "Get solution for " << prog << ", with skolems : ";
     sol_index = d_prog_to_sol_index[prog];
     d_sol->d_varList.clear();
-    Assert( d_single_inv_arg_sk.size()==varList.getNumChildren() );
+    Assert(d_single_inv_arg_sk.size() == varList.getNumChildren());
     for( unsigned i=0; i<d_single_inv_arg_sk.size(); i++ ){
       Trace("csi-sol") << d_single_inv_arg_sk[i] << " ";
       vars.push_back( d_single_inv_arg_sk[i] );
@@ -488,13 +481,23 @@ Node CegSingleInv::getSolution(unsigned sol_index,
     {
       indices.push_back(i);
     }
-    Assert( !indices.empty() );
-    //sort indices based on heuristic : currently, do all constant returns first (leads to simpler conditions)
-    // TODO : to minimize solution size, put the largest term last
-    sortSiInstanceIndices ssii;
-    ssii.d_ccsi = this;
-    ssii.d_i = sol_index;
-    std::sort( indices.begin(), indices.end(), ssii );
+    Assert(!indices.empty());
+    // We are constructing an ITE based on the list of instantiations. We
+    // sort this list based on heuristic. Currently, we do all constant values
+    // first since this leads to simpler conditions. Notice that we only allow
+    // sorting if we have a single variable, since the correctness of
+    // Proposition 1 of Reynolds et al CAV 2015 for the case of multiple
+    // functions-to-synthesize requires that the instantiations come in the
+    // same order for all functions. Thus, we cannot decide on an order for
+    // instantiations independently, since this may lead to incorrect solutions.
+    bool allowSort = (d_quant[0].getNumChildren() == 1);
+    if (allowSort)
+    {
+      sortSiInstanceIndices ssii;
+      ssii.d_ccsi = this;
+      ssii.d_i = sol_index;
+      std::sort(indices.begin(), indices.end(), ssii);
+    }
     Trace("csi-sol") << "Construct solution" << std::endl;
     std::reverse(indices.begin(), indices.end());
     s = d_inst[indices[0]][sol_index];
@@ -507,7 +510,7 @@ Node CegSingleInv::getSolution(unsigned sol_index,
       cond = TermUtil::simpleNegate(cond);
       s = nm->mkNode(ITE, cond, d_inst[uindex][sol_index], s);
     }
-    Assert( vars.size()==d_sol->d_varList.size() );
+    Assert(vars.size() == d_sol->d_varList.size());
     s = s.substitute( vars.begin(), vars.end(), d_sol->d_varList.begin(), d_sol->d_varList.end() );
   }
   d_orig_solution = s;
@@ -525,21 +528,23 @@ Node CegSingleInv::reconstructToSyntax(Node s,
                                        bool rconsSygus)
 {
   d_solution = s;
-  const Datatype& dt = ((DatatypeType)(stn).toType()).getDatatype();
+  const DType& dt = stn.getDType();
 
   //reconstruct the solution into sygus if necessary
   reconstructed = 0;
-  if (options::cegqiSingleInvReconstruct() != CEGQI_SI_RCONS_MODE_NONE
+  if (options::cegqiSingleInvReconstruct()
+          != options::CegqiSingleInvRconsMode::NONE
       && !dt.getSygusAllowAll() && !stn.isNull() && rconsSygus)
   {
     d_sol->preregisterConjecture( d_orig_conjecture );
     int enumLimit = -1;
-    if (options::cegqiSingleInvReconstruct() == CEGQI_SI_RCONS_MODE_TRY)
+    if (options::cegqiSingleInvReconstruct()
+        == options::CegqiSingleInvRconsMode::TRY)
     {
       enumLimit = 0;
     }
     else if (options::cegqiSingleInvReconstruct()
-             == CEGQI_SI_RCONS_MODE_ALL_LIMIT)
+             == options::CegqiSingleInvRconsMode::ALL_LIMIT)
     {
       enumLimit = options::cegqiSingleInvReconstructLimit();
     }
@@ -551,25 +556,23 @@ Node CegSingleInv::reconstructToSyntax(Node s,
   }else{
     Trace("csi-sol") << "Post-process solution..." << std::endl;
     Node prev = d_solution;
-    if (options::minSynthSol())
-    {
-      d_solution =
-          d_qe->getTermDatabaseSygus()->getExtRewriter()->extendedRewrite(
-              d_solution);
-    }
-    d_solution = postProcessSolution( d_solution );
+    d_solution =
+        d_qe->getTermDatabaseSygus()->getExtRewriter()->extendedRewrite(
+            d_solution);
     if( prev!=d_solution ){
       Trace("csi-sol") << "Solution (after post process) : " << d_solution << std::endl;
     }
   }
 
-
-  if( Trace.isOn("csi-sol") ){
-    //debug solution
-    if (!d_sol->debugSolution(d_solution))
-    {
-      Trace("csi-sol") << "WARNING : solution " << d_solution << " contains free constants." << std::endl;
-    }
+  // debug solution
+  if (!d_sol->debugSolution(d_solution))
+  {
+    // This can happen if we encountered free variables in either the
+    // instantiation terms, or in the instantiation lemmas after postprocessing.
+    // In this case, we fail, since the solution is not valid.
+    Trace("csi-sol") << "FAIL : solution " << d_solution
+                     << " contains free constants." << std::endl;
+    reconstructed = -1;
   }
   if( Trace.isOn("cegqi-stats") ){
     int tsize, itesize;
@@ -598,7 +601,7 @@ Node CegSingleInv::reconstructToSyntax(Node s,
   }
   //make into lambda
   if( !dt.getSygusVarList().isNull() ){
-    Node varList = Node::fromExpr( dt.getSygusVarList() );
+    Node varList = dt.getSygusVarList();
     return NodeManager::currentNM()->mkNode( LAMBDA, varList, sol );
   }else{
     return sol;
@@ -606,5 +609,75 @@ Node CegSingleInv::reconstructToSyntax(Node s,
 }
 
 void CegSingleInv::preregisterConjecture(Node q) { d_orig_conjecture = q; }
-  
-} //namespace CVC4
+
+bool CegSingleInv::solveTrivial(Node q)
+{
+  Assert(!d_isSolved);
+  Assert(d_inst.empty());
+  Assert(q.getKind() == FORALL);
+  // If the conjecture is forall x1...xn. ~(x1 = t1 ^ ... xn = tn), it is
+  // trivially solvable.
+  std::vector<Node> args(q[0].begin(), q[0].end());
+  // keep solving for variables until a fixed point is reached
+  std::vector<Node> vars;
+  std::vector<Node> subs;
+  Node body = q[1];
+  Node prev;
+  while (prev != body && !args.empty())
+  {
+    prev = body;
+
+    std::vector<Node> varsTmp;
+    std::vector<Node> subsTmp;
+    QuantifiersRewriter::getVarElim(body, false, args, varsTmp, subsTmp);
+    // if we eliminated a variable, update body and reprocess
+    if (!varsTmp.empty())
+    {
+      Assert(varsTmp.size() == subsTmp.size());
+      // remake with eliminated nodes
+      body = body.substitute(
+          varsTmp.begin(), varsTmp.end(), subsTmp.begin(), subsTmp.end());
+      body = Rewriter::rewrite(body);
+      // apply to subs
+      // this ensures we behave correctly if we solve x before y in
+      // x = y+1 ^ y = 2.
+      for (size_t i = 0, ssize = subs.size(); i < ssize; i++)
+      {
+        subs[i] = subs[i].substitute(
+            varsTmp.begin(), varsTmp.end(), subsTmp.begin(), subsTmp.end());
+        subs[i] = Rewriter::rewrite(subs[i]);
+      }
+      vars.insert(vars.end(), varsTmp.begin(), varsTmp.end());
+      subs.insert(subs.end(), subsTmp.begin(), subsTmp.end());
+    }
+  }
+  // if we solved all arguments
+  if (args.empty() && body.isConst() && !body.getConst<bool>())
+  {
+    Trace("sygus-si-trivial-solve")
+        << q << " is trivially solvable by substitution " << vars << " -> "
+        << subs << std::endl;
+    std::map<Node, Node> imap;
+    for (size_t j = 0, vsize = vars.size(); j < vsize; j++)
+    {
+      imap[vars[j]] = subs[j];
+    }
+    std::vector<Node> inst;
+    for (const Node& v : q[0])
+    {
+      Assert(imap.find(v) != imap.end());
+      inst.push_back(imap[v]);
+    }
+    d_inst.push_back(inst);
+    d_instConds.push_back(NodeManager::currentNM()->mkConst(true));
+    d_isSolved = true;
+    return true;
+  }
+  Trace("sygus-si-trivial-solve")
+      << q << " is not trivially solvable." << std::endl;
+  return false;
+}
+
+}  // namespace quantifiers
+}  // namespace theory
+}  // namespace CVC4

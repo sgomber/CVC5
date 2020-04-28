@@ -16,8 +16,7 @@
 
 #include <iostream>
 
-// #include "cvc4/api/cvc4cpp.h" // use this after CVC4 is properly installed
-#include "api/cvc4cpp.h"
+#include <cvc4/api/cvc4cpp.h>
 
 using namespace std;
 using namespace CVC4::api;
@@ -53,8 +52,8 @@ int main()
 
     Term theorem = slv.mkTerm(EQUAL, lhs, rhs);
 
-    cout << "CVC4 reports: " << theorem << " is "
-         << slv.checkValidAssuming(theorem) << "." << endl;
+    cout << "CVC4 reports: " << theorem << " is " << slv.checkEntailed(theorem)
+         << "." << endl;
   }
 
   // Verify emptset is a subset of any set
@@ -64,8 +63,8 @@ int main()
 
     Term theorem = slv.mkTerm(SUBSET, emptyset, A);
 
-    cout << "CVC4 reports: " << theorem << " is "
-         << slv.checkValidAssuming(theorem) << "." << endl;
+    cout << "CVC4 reports: " << theorem << " is " << slv.checkEntailed(theorem)
+         << "." << endl;
   }
 
   // Find me an element in {1, 2} intersection {2, 3}, if there is one.

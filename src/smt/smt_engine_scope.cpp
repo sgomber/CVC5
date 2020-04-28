@@ -17,8 +17,8 @@
 
 #include "smt/smt_engine_scope.h"
 
+#include "base/check.h"
 #include "base/configuration_private.h"
-#include "base/cvc4_assert.h"
 #include "base/output.h"
 #include "proof/proof.h"
 #include "smt/smt_engine.h"
@@ -38,9 +38,10 @@ bool smtEngineInScope() { return s_smtEngine_current != NULL; }
 ProofManager* currentProofManager() {
 #if IS_PROOFS_BUILD
   Assert(s_smtEngine_current != NULL);
-  return s_smtEngine_current->d_proofManager;
+  return s_smtEngine_current->getProofManager();
 #else  /* IS_PROOFS_BUILD */
-  InternalError("proofs/unsat cores are not on, but ProofManager requested");
+  InternalError()
+      << "proofs/unsat cores are not on, but ProofManager requested";
   return NULL;
 #endif /* IS_PROOFS_BUILD */
 }
@@ -61,7 +62,7 @@ SmtScope::~SmtScope() {
 
 StatisticsRegistry* SmtScope::currentStatisticsRegistry() {
   Assert(smtEngineInScope());
-  return s_smtEngine_current->d_statisticsRegistry;
+  return s_smtEngine_current->getStatisticsRegistry();
 }
 
 }/* CVC4::smt namespace */

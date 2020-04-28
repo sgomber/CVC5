@@ -16,9 +16,8 @@
 
 #include <iostream>
 
-//#include <cvc4/cvc4.h> // use this after CVC4 is properly installed
-#include "smt/smt_engine.h"
-#include "options/set_language.h"
+#include <cvc4/cvc4.h>
+#include <cvc4/options/set_language.h>
 
 using namespace std;
 using namespace CVC4;
@@ -56,7 +55,8 @@ int main() {
 
     Expr theorem = em.mkExpr(kind::EQUAL, lhs, rhs);
 
-    cout << "CVC4 reports: " << theorem << " is " << smt.query(theorem) << "." << endl;
+    cout << "CVC4 reports: " << theorem << " is " << smt.checkEntailed(theorem)
+         << "." << endl;
   }
 
   // Verify emptset is a subset of any set
@@ -66,7 +66,8 @@ int main() {
 
     Expr theorem = em.mkExpr(kind::SUBSET, emptyset, A);
 
-    cout << "CVC4 reports: " << theorem << " is " << smt.query(theorem) << "." << endl;
+    cout << "CVC4 reports: " << theorem << " is " << smt.checkEntailed(theorem)
+         << "." << endl;
   }
 
   // Find me an element in {1, 2} intersection {2, 3}, if there is one.

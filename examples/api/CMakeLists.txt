@@ -17,14 +17,10 @@ set(CVC4_EXAMPLES_API
   sets-new
   strings
   strings-new
+  sygus-fun
+  sygus-inv
 )
 
-set(EXAMPLES_API_LINK_LIBS cvc4 cvc4parser)
 foreach(example ${CVC4_EXAMPLES_API})
-  cvc4_add_example(${example}
-    "" "${EXAMPLES_API_LINK_LIBS}" "api")
+  cvc4_add_example(${example} "" "api")
 endforeach()
-
-if(BUILD_BINDINGS_JAVA)
-  add_subdirectory(java)
-endif()

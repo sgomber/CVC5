@@ -16,8 +16,7 @@
 
 #include <iostream>
 
-//#include <cvc4/cvc4.h> // use this after CVC4 is properly installed
-#include "smt/smt_engine.h"
+#include <cvc4/cvc4.h>
 
 using namespace std;
 using namespace CVC4;
@@ -88,8 +87,8 @@ int main() {
   Expr new_x_eq_new_x_ = em.mkExpr(kind::EQUAL, new_x, new_x_);
 
   cout << " Querying: " << new_x_eq_new_x_ << endl;
-  cout << " Expect valid. " << endl;
-  cout << " CVC4: " << smt.query(new_x_eq_new_x_) << endl;
+  cout << " Expect entailed. " << endl;
+  cout << " CVC4: " << smt.checkEntailed(new_x_eq_new_x_) << endl;
   cout << " Popping context. " << endl;
   smt.pop();
 
@@ -104,14 +103,14 @@ int main() {
   smt.assertFormula(assignment2);
 
   cout << " Querying: " << new_x_eq_new_x_ << endl;
-  cout << " Expect valid. " << endl;
-  cout << " CVC4: " << smt.query(new_x_eq_new_x_) << endl;
+  cout << " Expect ENTAILED. " << endl;
+  cout << " CVC4: " << smt.checkEntailed(new_x_eq_new_x_) << endl;
 
   Expr x_neq_x = em.mkExpr(kind::EQUAL, x, x).notExpr();
   std::vector<Expr> v{new_x_eq_new_x_, x_neq_x};
   cout << " Querying: " << v << endl;
-  cout << " Expect invalid. " << endl;
-  cout << " CVC4: " << smt.query(v) << endl;
+  cout << " Expect NOT_ENTAILED. " << endl;
+  cout << " CVC4: " << smt.checkEntailed(v) << endl;
 
   // Assert that a is odd 
   Expr extract_op = em.mkConst(BitVectorExtract(0, 0));

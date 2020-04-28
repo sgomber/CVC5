@@ -16,8 +16,7 @@
 
 #include <iostream>
 
-//#include <cvc4/cvc4.h> // use this after CVC4 is properly installed
-#include "smt/smt_engine.h"
+#include <cvc4/cvc4.h>
 
 using namespace std;
 using namespace CVC4;
@@ -49,8 +48,8 @@ int main() {
 
   Expr eq2 = em.mkExpr(kind::EQUAL, x_31_31, x_0_0);
   cout << " Querying: " << eq2 << endl;
-  cout << " Expect valid. " << endl;
-  cout << " CVC4: " << smt.query(eq2) << endl;
+  cout << " Expect entailed. " << endl;
+  cout << " CVC4: " << smt.checkEntailed(eq2) << endl;
 
   return 0;
 }

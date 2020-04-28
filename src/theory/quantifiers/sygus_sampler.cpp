@@ -14,6 +14,7 @@
 
 #include "theory/quantifiers/sygus_sampler.h"
 
+#include "expr/dtype.h"
 #include "expr/node_algorithm.h"
 #include "options/base_options.h"
 #include "options/quantifiers_options.h"
@@ -92,7 +93,7 @@ void SygusSampler::initializeSygus(TermDbSygus* tds,
   d_is_valid = true;
   d_ftn = f.getType();
   Assert(d_ftn.isDatatype());
-  const Datatype& dt = static_cast<DatatypeType>(d_ftn.toType()).getDatatype();
+  const DType& dt = d_ftn.getDType();
   Assert(dt.isSygus());
 
   Trace("sygus-sample") << "Register sampler for " << f << std::endl;
@@ -105,7 +106,7 @@ void SygusSampler::initializeSygus(TermDbSygus* tds,
   d_rvalue_null_cindices.clear();
   d_var_sygus_types.clear();
   // get the sygus variable list
-  Node var_list = Node::fromExpr(dt.getSygusVarList());
+  Node var_list = dt.getSygusVarList();
   if (!var_list.isNull())
   {
     for (const Node& sv : var_list)
@@ -559,8 +560,7 @@ Node SygusSampler::getRandomValue(TypeNode tn)
       for (unsigned ch : alphas)
       {
         d_rstring_alphabet.push_back(ch);
-        Trace("sygus-sample-str-alpha")
-            << " \"" << String::convertUnsignedIntToChar(ch) << "\"";
+        Trace("sygus-sample-str-alpha") << " \\u" << ch;
       }
       Trace("sygus-sample-str-alpha") << std::endl;
     }
@@ -659,7 +659,7 @@ Node SygusSampler::getSygusRandomValue(TypeNode tn,
   {
     return getRandomValue(tn);
   }
-  const Datatype& dt = static_cast<DatatypeType>(tn.toType()).getDatatype();
+  const DType& dt = tn.getDType();
   if (!dt.isSygus())
   {
     return getRandomValue(tn);
@@ -685,7 +685,7 @@ Node SygusSampler::getSygusRandomValue(TypeNode tn,
         << "Recurse constructor index #" << index << std::endl;
     unsigned cindex = cindices[index];
     Assert(cindex < dt.getNumConstructors());
-    const DatatypeConstructor& dtc = dt[cindex];
+    const DTypeConstructor& dtc = dt[cindex];
     // more likely to terminate in recursive calls
     double rchance_new = rchance + (1.0 - rchance) * rinc;
     std::map<int, Node> pre;
@@ -712,13 +712,17 @@ Node SygusSampler::getSygusRandomValue(TypeNode tn,
       Trace("sygus-sample-grammar") << "...returned " << ret << std::endl;
       ret = Rewriter::rewrite(ret);
       Trace("sygus-sample-grammar") << "...after rewrite " << ret << std::endl;
-      Assert(ret.isConst());
-      return ret;
+      // A rare case where we generate a non-constant value from constant
+      // leaves is (/ n 0).
+      if(ret.isConst())
+      {
+        return ret;
+      }
     }
   }
   Trace("sygus-sample-grammar") << "...resort to random value" << std::endl;
   // if we did not generate based on the grammar, pick a random value
-  return getRandomValue(TypeNode::fromType(dt.getSygusType()));
+  return getRandomValue(dt.getSygusType());
 }
 
 // recursion depth bounded by number of types in grammar (small)
@@ -731,15 +735,15 @@ void SygusSampler::registerSygusType(TypeNode tn)
     {
       return;
     }
-    const Datatype& dt = static_cast<DatatypeType>(tn.toType()).getDatatype();
+    const DType& dt = tn.getDType();
     if (!dt.isSygus())
     {
       return;
     }
     for (unsigned i = 0, ncons = dt.getNumConstructors(); i < ncons; i++)
     {
-      const DatatypeConstructor& dtc = dt[i];
-      Node sop = Node::fromExpr(dtc.getSygusOp());
+      const DTypeConstructor& dtc = dt[i];
+      Node sop = dtc.getSygusOp();
       bool isVar = std::find(d_vars.begin(), d_vars.end(), sop) != d_vars.end();
       if (isVar)
       {
@@ -776,6 +780,7 @@ void SygusSampler::checkEquivalent(Node bv, Node bvr)
 
   // see if they evaluate to same thing on all sample points
   bool ptDisequal = false;
+  bool ptDisequalConst = false;
   unsigned pt_index = 0;
   Node bve, bvre;
   for (unsigned i = 0, npoints = getNumSamplePoints(); i < npoints; i++)
@@ -786,35 +791,48 @@ void SygusSampler::checkEquivalent(Node bv, Node bvr)
     {
       ptDisequal = true;
       pt_index = i;
-      break;
+      if (bve.isConst() && bvre.isConst())
+      {
+        ptDisequalConst = true;
+        break;
+      }
     }
   }
   // bv and bvr should be equivalent under examples
   if (ptDisequal)
   {
-    // we have detected unsoundness in the rewriter
-    Options& nodeManagerOptions = NodeManager::currentNM()->getOptions();
-    std::ostream* out = nodeManagerOptions.getOut();
-    (*out) << "(unsound-rewrite " << bv << " " << bvr << ")" << std::endl;
-    // debugging information
-    (*out) << "; unsound: are not equivalent for : " << std::endl;
     std::vector<Node> vars;
     getVariables(vars);
     std::vector<Node> pt;
     getSamplePoint(pt_index, pt);
     Assert(vars.size() == pt.size());
+    std::stringstream ptOut;
     for (unsigned i = 0, size = pt.size(); i < size; i++)
     {
-      (*out) << "; unsound:    " << vars[i] << " -> " << pt[i] << std::endl;
+      ptOut << "  " << vars[i] << " -> " << pt[i] << std::endl;
     }
+    if (!ptDisequalConst)
+    {
+      Notice() << "Warning: " << bv << " and " << bvr
+               << " evaluate to different (non-constant) values on point:"
+               << std::endl;
+      Notice() << ptOut.str();
+      return;
+    }
+    // we have detected unsoundness in the rewriter
+    Options& nodeManagerOptions = NodeManager::currentNM()->getOptions();
+    std::ostream* out = nodeManagerOptions.getOut();
+    (*out) << "(unsound-rewrite " << bv << " " << bvr << ")" << std::endl;
+    // debugging information
+    (*out) << "Terms are not equivalent for : " << std::endl;
+    (*out) << ptOut.str();
     Assert(bve != bvre);
-    (*out) << "; unsound: where they evaluate to " << bve << " and " << bvre
-           << std::endl;
+    (*out) << "where they evaluate to " << bve << " and " << bvre << std::endl;
 
     if (options::sygusRewVerifyAbort())
     {
-      AlwaysAssert(false,
-                   "--sygus-rr-verify detected unsoundness in the rewriter!");
+      AlwaysAssert(false)
+          << "--sygus-rr-verify detected unsoundness in the rewriter!";
     }
   }
 }

@@ -20,19 +20,24 @@
 namespace CVC4 {
 namespace kind {
 
-std::ostream& operator<<(std::ostream& out, CVC4::Kind k) {
+const char* toString(CVC4::Kind k)
+{
   using namespace CVC4::kind;
 
-  switch(k) {
-
-  /* special cases */
-  case UNDEFINED_KIND: out << "UNDEFINED_KIND"; break;
-  case NULL_EXPR: out << "NULL"; break;
-${kind_printers}
-  case LAST_KIND: out << "LAST_KIND"; break;
-  default: out << "UNKNOWNKIND!" << int(k); break;
+  switch (k)
+  {
+    /* special cases */
+    case UNDEFINED_KIND: return "UNDEFINED_KIND";
+    case NULL_EXPR: return "NULL";
+    ${kind_printers}
+    case LAST_KIND: return "LAST_KIND";
+    default: return "?";
   }
+}
 
+std::ostream& operator<<(std::ostream& out, CVC4::Kind k)
+{
+  out << toString(k);
   return out;
 }
 
@@ -64,7 +69,7 @@ std::string kindToString(::CVC4::Kind k) {
 std::ostream& operator<<(std::ostream& out, TypeConstant typeConstant) {
   switch(typeConstant) {
 ${type_constant_descriptions}
-#line 68 "${template}"
+#line 73 "${template}"
   default:
     out << "UNKNOWN_TYPE_CONSTANT";
     break;
@@ -74,48 +79,29 @@ ${type_constant_descriptions}
 
 namespace theory {
 
-std::ostream& operator<<(std::ostream& out, TheoryId theoryId) {
-  switch(theoryId) {
-${theory_descriptions}
-#line 81 "${template}"
-  default:
-    out << "UNKNOWN_THEORY";
-    break;
-  }
-  return out;
-}
-
 TheoryId kindToTheoryId(::CVC4::Kind k) {
   switch(k) {
   case kind::UNDEFINED_KIND:
   case kind::NULL_EXPR:
     break;
 ${kind_to_theory_id}
-#line 95 "${template}"
+#line 89 "${template}"
   case kind::LAST_KIND:
     break;
   }
   throw IllegalArgumentException("", "k", __PRETTY_FUNCTION__, "bad kind");
 }
 
-TheoryId typeConstantToTheoryId(::CVC4::TypeConstant typeConstant) {
-  switch(typeConstant) {
+TheoryId typeConstantToTheoryId(::CVC4::TypeConstant typeConstant)
+{
+  switch (typeConstant)
+  {
 ${type_constant_to_theory_id}
-#line 105 "${template}"
-  case LAST_TYPE:
-    break;
+#line 101 "${template}"
+    case LAST_TYPE: break;
   }
-  throw IllegalArgumentException("", "k", __PRETTY_FUNCTION__, "bad type constant");
-}
-
-std::string getStatsPrefix(TheoryId theoryId) {
-  switch(theoryId) {
-${theory_stats_prefixes}
-#line 115 "${template}"
-  default:
-    break;
-  }
-  return "unknown";
+  throw IllegalArgumentException(
+      "", "k", __PRETTY_FUNCTION__, "bad type constant");
 }
 
 }/* CVC4::theory namespace */
