@@ -537,7 +537,15 @@ void InferenceManager::explain(TNode literal,
     if (std::find(assumptions.begin(), assumptions.end(), a)
         == assumptions.end())
     {
-      assumptions.push_back(a);
+      if (a==literal)
+      {
+        assumptions.push_back(a);
+      }
+      else
+      {
+        // recurse
+        explain(a, assumptions);
+      }
     }
   }
   if (Debug.isOn("strings-explain-debug"))
