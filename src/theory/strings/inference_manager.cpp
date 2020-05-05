@@ -513,6 +513,11 @@ Node InferenceManager::mkExplain(const std::vector<Node>& a,
 void InferenceManager::explain(TNode literal,
                                std::vector<TNode>& assumptions) const
 {
+  if (std::find(assumptions.begin(), assumptions.end(), literal)
+      != assumptions.end())
+  {
+    return;
+  }
   Debug("strings-explain") << "Explain " << literal << " "
                            << d_state.isInConflict() << std::endl;
   eq::EqualityEngine* ee = d_state.getEqualityEngine();
@@ -534,18 +539,23 @@ void InferenceManager::explain(TNode literal,
   }
   for (const TNode a : tassumptions)
   {
-    if (std::find(assumptions.begin(), assumptions.end(), a)
-        == assumptions.end())
+    if (a==literal)
     {
-      if (a==literal)
-      {
-        assumptions.push_back(a);
-      }
-      else
+      // own explanation, just add
+      assumptions.push_back(a);
+    }
+    else if (a.getKind()==AND)
+    {
+      for (const Node& ac : a)
       {
         // recurse
-        explain(a, assumptions);
+        explain(ac, assumptions);
       }
+    }
+    else
+    {
+      // recurse
+      explain(a, assumptions);
     }
   }
   if (Debug.isOn("strings-explain-debug"))
