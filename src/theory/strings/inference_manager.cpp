@@ -530,12 +530,38 @@ void InferenceManager::explain(TNode literal,
     {
       Assert(ee->hasTerm(atom[0]));
       Assert(ee->hasTerm(atom[1]));
+      if (!polarity)
+      {
+        if(!ee->areDisequal(atom[0],atom[1],true))
+        {
+          // TODO: it appears that this is necessary for assumptions that caused
+          // a conflict
+          assumptions.push_back(literal);
+          return;
+        }
+      }
       ee->explainEquality(atom[0], atom[1], polarity, tassumptions);
     }
   }
   else
   {
+    if (!ee->hasTerm(atom))
+    {
+      // TODO: it appears that this is necessary for assumptions that caused
+      // a conflict
+      assumptions.push_back(literal);
+      return;
+    }
     ee->explainPredicate(atom, polarity, tassumptions);
+  }
+  if (Debug.isOn("strings-explain-debug"))
+  {
+    Debug("strings-explain-debug")
+        << "Explanation for " << literal << " was " << std::endl;
+    for (const TNode a : tassumptions)
+    {
+      Debug("strings-explain-debug") << "   " << a << std::endl;
+    }
   }
   for (const TNode a : tassumptions)
   {
@@ -556,15 +582,6 @@ void InferenceManager::explain(TNode literal,
     {
       // recurse
       explain(a, assumptions);
-    }
-  }
-  if (Debug.isOn("strings-explain-debug"))
-  {
-    Debug("strings-explain-debug")
-        << "Explanation for " << literal << " was " << std::endl;
-    for (const TNode a : tassumptions)
-    {
-      Debug("strings-explain-debug") << "   " << a << std::endl;
     }
   }
 }
