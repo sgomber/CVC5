@@ -1391,7 +1391,7 @@ void setDefaults(SmtEngine& smte, LogicInfo& logic)
   }
   else if (options::sortInference())
   {
-    disableModels = true;
+    //disableModels = true;
     sOptNoModel = "sort-inference";
   }
   else if (options::minisatUseElim())
