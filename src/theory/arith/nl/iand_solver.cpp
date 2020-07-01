@@ -98,6 +98,7 @@ std::vector<NlLemma> IAndSolver::checkInitialRefine()
       conj.push_back(nm->mkNode(LEQ, i, i[1]));
       // x=y => iand(x,y)=x
       conj.push_back(nm->mkNode(IMPLIES, i[0].eqNode(i[1]), i.eqNode(i[0])));
+<<<<<<< HEAD
       //(= (+ (iand x y) (ior x y)) (+ x y))
       // Node ior = mkIOr(k,i[0],i[1]);
       // conj.push_back(i.eqNode(nm->mkNode(MINUS, nm->mkNode(PLUS, i[0], i[1]),
@@ -111,6 +112,8 @@ std::vector<NlLemma> IAndSolver::checkInitialRefine()
       //(= (- x y) (- (iand x (inot y)) (iand (inot x) y)))
       // TODO
 
+=======
+>>>>>>> e968ea45fd46ce6837d50b2893568872378171f1
       Node lem = conj.size() == 1 ? conj[0] : nm->mkNode(AND, conj);
       Trace("iand-lemma") << "IAndSolver::Lemma: " << lem << " ; INIT_REFINE"
                           << std::endl;
@@ -164,6 +167,7 @@ std::vector<NlLemma> IAndSolver::checkFullRefine()
       // ************* additional lemma schemas go here
       if (options::iandMode() == options::IandMode::SUM)
       {
+<<<<<<< HEAD
         Node lem = sumBasedLemma(i);
         Trace("iand-lemma")
             << "IAndSolver::Lemma: " << lem << " ; SUM_REFINE" << std::endl;
@@ -179,6 +183,13 @@ std::vector<NlLemma> IAndSolver::checkFullRefine()
         NlLemma nlem(lem);
         nlem.d_preprocess = true;
         lems.push_back(nlem);
+=======
+        // add lemmas based on sum mode
+      }
+      else if (options::iandMode() == options::IandMode::BITWISE)
+      {
+        // add lemmas based on sum mode
+>>>>>>> e968ea45fd46ce6837d50b2893568872378171f1
       }
       else
       {
