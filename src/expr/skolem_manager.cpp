@@ -57,7 +57,8 @@ Node SkolemManager::mkSkolem(Node v,
   // store the mapping to proof generator if it exists
   if (pg != nullptr)
   {
-    // we cache based on the original (Skolem) form
+    // We cache based on the original (Skolem) form, since the user of this
+    // method operates on Skolem forms.
     Node q = nm->mkNode(EXISTS, bvl, pred);
     // Notice this may overwrite an existing proof generator. This does not
     // matter since either should be able to prove q.
@@ -168,12 +169,17 @@ Node SkolemManager::mkPurifySkolem(Node t,
   // directly.
   if (t.getKind() == WITNESS)
   {
-    return getOrMakeSkolem(t, prefix, comment, flags);
+    return getOrMakeSkolem(getWitnessForm(t), prefix, comment, flags);
   }
   Node v = NodeManager::currentNM()->mkBoundVar(t.getType());
   Node k = mkSkolem(v, v.eqNode(t), prefix, comment, flags);
   t.setAttribute(psa, k);
   return k;
+}
+
+Node SkolemManager::mkBooleanTermVariable(Node t)
+{
+  return mkPurifySkolem(t, "", "", NodeManager::SKOLEM_BOOL_TERM_VAR);
 }
 
 Node SkolemManager::mkExistential(Node t, Node p)
@@ -327,7 +333,16 @@ Node SkolemManager::getOrMakeSkolem(Node w,
   }
   NodeManager* nm = NodeManager::currentNM();
   // make the new skolem
-  Node k = nm->mkSkolem(prefix, w.getType(), comment, flags);
+  Node k;
+  if (flags & NodeManager::SKOLEM_BOOL_TERM_VAR)
+  {
+    Assert (w.getType().isBoolean());
+    k = nm->mkBooleanTermVariable();
+  }
+  else
+  {
+    k = nm->mkSkolem(prefix, w.getType(), comment, flags);
+  }
   // set witness form attribute for k
   WitnessFormAttribute wfa;
   k.setAttribute(wfa, w);
