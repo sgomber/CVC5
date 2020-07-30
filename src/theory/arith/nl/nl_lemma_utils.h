@@ -123,12 +123,12 @@ class ArgTrie
 /** For analyzing connected components */
 class ConnectedComponents
 {
-public:
-  ConnectedComponents(){}
-  ~ConnectedComponents(){}
+ public:
+  ConnectedComponents() {}
+  ~ConnectedComponents() {}
   /** clear */
   void clear();
-  /** 
+  /**
    * Register (polynomial) constraint, which pairwise connects all of its
    * monomials.
    */
@@ -137,7 +137,8 @@ public:
   bool areConnected(Node t, Node s);
   /** get representative for t */
   Node getRepresentative(Node t);
-private:
+
+ private:
   /** set the representative of t to s */
   void setRepresentative(Node t, Node s);
   /** union find */

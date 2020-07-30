@@ -14,8 +14,8 @@
 
 #include "theory/arith/nl/nl_lemma_utils.h"
 
-#include "theory/arith/nl/nl_model.h"
 #include "theory/arith/arith_msum.h"
+#include "theory/arith/nl/nl_model.h"
 
 namespace CVC4 {
 namespace theory {
@@ -71,10 +71,7 @@ Node ArgTrie::add(Node d, const std::vector<Node>& args)
   return at->d_data;
 }
 
-void ConnectedComponents::clear()
-{
-  d_ufind.clear();
-}
+void ConnectedComponents::clear() { d_ufind.clear(); }
 
 void ConnectedComponents::registerConstraint(Node lit)
 {
@@ -109,16 +106,16 @@ void ConnectedComponents::registerConstraint(Node lit)
 
 bool ConnectedComponents::areConnected(Node t, Node s)
 {
-  return getRepresentative(t)==getRepresentative(s);
+  return getRepresentative(t) == getRepresentative(s);
 }
 
 Node ConnectedComponents::getRepresentative(Node t)
 {
   std::map<Node, Node>::const_iterator it = d_ufind.find(t);
-  if (it!=d_ufind.end())
+  if (it != d_ufind.end())
   {
     Node tr = getRepresentative(it->second);
-    if (tr!=it->second)
+    if (tr != it->second)
     {
       // merge path
       d_ufind[t] = tr;
@@ -130,12 +127,12 @@ Node ConnectedComponents::getRepresentative(Node t)
 
 void ConnectedComponents::setRepresentative(Node r, Node t)
 {
-  if (r!=t)
+  if (r != t)
   {
     Node tr = getRepresentative(t);
-    if (tr!=r)
+    if (tr != r)
     {
-      Assert (d_ufind.find(tr)==d_ufind.end());
+      Assert(d_ufind.find(tr) == d_ufind.end());
       d_ufind[tr] = r;
     }
   }

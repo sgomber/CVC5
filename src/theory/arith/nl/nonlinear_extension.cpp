@@ -678,7 +678,7 @@ bool NonlinearExtension::modelBasedRefinement(std::vector<NlLemma>& mlems)
   // get the assertions
   std::vector<Node> assertions;
   getAssertions(assertions);
-  
+
   // reset the flag that tracks whether we have computed connected components
   d_needsComputeCCom = options::nlConnectedComponents();
 
