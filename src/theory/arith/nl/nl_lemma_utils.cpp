@@ -15,6 +15,7 @@
 #include "theory/arith/nl/nl_lemma_utils.h"
 
 #include "theory/arith/nl/nl_model.h"
+#include "theory/arith/arith_msum.h"
 
 namespace CVC4 {
 namespace theory {
@@ -68,6 +69,76 @@ Node ArgTrie::add(Node d, const std::vector<Node>& args)
     at->d_data = d;
   }
   return at->d_data;
+}
+
+void ConnectedComponents::clear()
+{
+  d_ufind.clear();
+}
+
+void ConnectedComponents::registerConstraint(Node lit)
+{
+  std::map<Node, Node> msum;
+  ArithMSum::getMonomialSumLit(lit, msum);
+  Node r;
+  bool computedRep = false;
+  for (const std::pair<const Node, Node>& m : msum)
+  {
+    Node t = m.first;
+    if (t.isNull())
+    {
+      // constant, skip
+      continue;
+    }
+    if (r.isNull())
+    {
+      // use the representative of the first monomial
+      r = t;
+      continue;
+    }
+    if (!computedRep)
+    {
+      // compute the representative when a second monomial is encountered
+      r = getRepresentative(r);
+      computedRep = true;
+    }
+    // connect the monomial to the representative
+    setRepresentative(r, t);
+  }
+}
+
+bool ConnectedComponents::areConnected(Node t, Node s)
+{
+  return getRepresentative(t)==getRepresentative(s);
+}
+
+Node ConnectedComponents::getRepresentative(Node t)
+{
+  std::map<Node, Node>::const_iterator it = d_ufind.find(t);
+  if (it!=d_ufind.end())
+  {
+    Node tr = getRepresentative(it->second);
+    if (tr!=it->second)
+    {
+      // merge path
+      d_ufind[t] = tr;
+    }
+    return tr;
+  }
+  return t;
+}
+
+void ConnectedComponents::setRepresentative(Node r, Node t)
+{
+  if (r!=t)
+  {
+    Node tr = getRepresentative(t);
+    if (tr!=r)
+    {
+      Assert (d_ufind.find(tr)==d_ufind.end());
+      d_ufind[tr] = r;
+    }
+  }
 }
 
 }  // namespace nl

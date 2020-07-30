@@ -120,6 +120,30 @@ class ArgTrie
   Node add(Node d, const std::vector<Node>& args);
 };
 
+/** For analyzing connected components */
+class ConnectedComponents
+{
+public:
+  ConnectedComponents(){}
+  ~ConnectedComponents(){}
+  /** clear */
+  void clear();
+  /** 
+   * Register (polynomial) constraint, which pairwise connects all of its
+   * monomials.
+   */
+  void registerConstraint(Node lit);
+  /** are monomials t and s connected? */
+  bool areConnected(Node t, Node s);
+  /** get representative for t */
+  Node getRepresentative(Node t);
+private:
+  /** set the representative of t to s */
+  void setRepresentative(Node t, Node s);
+  /** union find */
+  std::map<Node, Node> d_ufind;
+};
+
 }  // namespace nl
 }  // namespace arith
 }  // namespace theory

@@ -58,7 +58,7 @@ class NlSolver
   typedef context::CDHashSet<Node, NodeHashFunction> NodeSet;
 
  public:
-  NlSolver(TheoryArith& containing, NlModel& model);
+  NlSolver(TheoryArith& containing, NlModel& model, ConnectedComponents& ccom);
   ~NlSolver();
 
   /** init last call
@@ -205,6 +205,8 @@ class NlSolver
   TheoryArith& d_containing;
   /** Reference to the non-linear model object */
   NlModel& d_model;
+  /** Reference to the utility for computing connected components */
+  ConnectedComponents& d_ccom;
   /** commonly used terms */
   Node d_zero;
   Node d_one;

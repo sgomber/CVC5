@@ -63,9 +63,10 @@ bool hasNewMonomials(Node n, const std::vector<Node>& existing)
   return false;
 }
 
-NlSolver::NlSolver(TheoryArith& containing, NlModel& model)
+NlSolver::NlSolver(TheoryArith& containing, NlModel& model, ConnectedComponents& ccom)
     : d_containing(containing),
       d_model(model),
+      d_ccom(ccom),
       d_cdb(d_mdb),
       d_zero_split(containing.getUserContext())
 {
@@ -751,6 +752,11 @@ std::vector<NlLemma> NlSolver::checkMonomialMagnitude(unsigned c)
           for (unsigned k = (j + 1); k < d_ms.size(); k++)
           {
             Node b = d_ms[k];
+            if (options::nlConnectedComponents() && !d_ccom.areConnected(a,b))
+            {
+              // not connected, skip
+              continue;
+            }
             //(signs[a]==signs[b])==(r==0)
             if (d_ms_proc.find(b) == d_ms_proc.end()
                 && d_m_nconst_factor.find(b) == d_m_nconst_factor.end())

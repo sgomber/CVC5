@@ -299,6 +299,14 @@ class NonlinearExtension
    * and for establishing when we are able to answer "SAT".
    */
   NlModel d_model;
+  /** The utility for computing connected components */
+  ConnectedComponents d_ccom;
+  /** 
+   * Whether we need to compute the above utility on this last call effort. We
+   * compute this information as needed, as soon as we use a lemma schema
+   * that requires it (e.g. NlSolver::checkMonomialMagnitude).
+   */
+  bool d_needsComputeCCom;
   /** The transcendental extension object
    *
    * This is the subsolver responsible for running the procedure for

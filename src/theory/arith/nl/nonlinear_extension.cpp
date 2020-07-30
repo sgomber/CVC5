@@ -40,8 +40,9 @@ NonlinearExtension::NonlinearExtension(TheoryArith& containing,
       d_needsLastCall(false),
       d_extTheory(&containing),
       d_model(containing.getSatContext()),
+      d_needsComputeCCom(false),
       d_trSlv(d_model),
-      d_nlSlv(containing, d_model),
+      d_nlSlv(containing, d_model, d_ccom),
       d_iandSlv(containing, d_model),
       d_builtModel(containing.getSatContext(), false)
 {
@@ -505,6 +506,16 @@ int NonlinearExtension::checkLastCall(const std::vector<Node>& assertions,
     }
 
     //------------------------lemmas based on magnitude of non-zero monomials
+    // compute connected components
+    if (d_needsComputeCCom)
+    {
+      d_needsComputeCCom = false;
+      d_ccom.clear();
+      for (const Node& lit : assertions)
+      {
+        d_ccom.registerConstraint(lit);
+      }
+    }
     for (unsigned c = 0; c < 3; c++)
     {
       // c is effort level
@@ -667,6 +678,9 @@ bool NonlinearExtension::modelBasedRefinement(std::vector<NlLemma>& mlems)
   // get the assertions
   std::vector<Node> assertions;
   getAssertions(assertions);
+  
+  // reset the flag that tracks whether we have computed connected components
+  d_needsComputeCCom = options::nlConnectedComponents();
 
   Trace("nl-ext-mv-assert")
       << "Getting model values... check for [model-false]" << std::endl;

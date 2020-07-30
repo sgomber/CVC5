@@ -541,3 +541,11 @@ header = "options/arith_options.h"
   default    = "true"
   read_only  = true
   help       = "whether to use simple rounding, similar to a unit-cube test, for integers"
+
+[[option]]
+  name       = "nlConnectedComponents"
+  category   = "regular"
+  long       = "nl-ext-ccom"
+  type       = "bool"
+  default    = "false"
+  help       = "do connected components analysis to minimize the number of compared monomials"
