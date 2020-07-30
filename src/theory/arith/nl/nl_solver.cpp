@@ -756,9 +756,11 @@ std::vector<NlLemma> NlSolver::checkMonomialMagnitude(unsigned c)
             Node b = d_ms[k];
             if (options::nlConnectedComponents() && !d_ccom.areConnected(a, b))
             {
+              Trace("nl-ext-comp-debug") << "Skip non-connected: " << a << ", " << b << std::endl;
               // not connected, skip
               continue;
             }
+              Trace("nl-ext-comp-debug") << "Connected: " << a << ", " << b << std::endl;
             //(signs[a]==signs[b])==(r==0)
             if (d_ms_proc.find(b) == d_ms_proc.end()
                 && d_m_nconst_factor.find(b) == d_m_nconst_factor.end())
