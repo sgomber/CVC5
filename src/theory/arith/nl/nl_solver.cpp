@@ -754,11 +754,12 @@ std::vector<NlLemma> NlSolver::checkMonomialMagnitude(unsigned c)
           for (unsigned k = (j + 1); k < d_ms.size(); k++)
           {
             Node b = d_ms[k];
-            if (options::nlConnectedComponents() && !d_ccom.areConnected(a, b))
+            if (options::nlExtRestrict()==options::NlExtRestrictMode::CONNECTED && !d_ccom.areConnected(a, b))
             {
               Trace("nl-ext-comp-debug")
                   << "Skip non-connected: " << a << ", " << b << std::endl;
-              // not connected, skip
+              // Not connected, skip. Notice this is an optimization, as the
+              // lemma will be filtered regardless.
               continue;
             }
             Trace("nl-ext-comp-debug")

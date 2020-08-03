@@ -34,6 +34,7 @@
 #include "theory/arith/theory_arith.h"
 #include "theory/ext_theory.h"
 #include "theory/uf/equality_engine.h"
+#include "options/arith_options.h"
 
 namespace CVC4 {
 namespace theory {
@@ -263,9 +264,12 @@ class NonlinearExtension
    * been sent on the output channel of TheoryArith.
    */
   unsigned filterLemmas(std::vector<NlLemma>& lemmas,
-                        std::vector<NlLemma>& out);
+                        std::vector<NlLemma>& out,
+                        options::NlExtRestrictMode rmode = options::NlExtRestrictMode::NONE
+                       );
   /** singleton version of above */
-  unsigned filterLemma(NlLemma lem, std::vector<NlLemma>& out);
+  unsigned filterLemma(NlLemma lem, std::vector<NlLemma>& out,
+                        options::NlExtRestrictMode rmode = options::NlExtRestrictMode::NONE);
 
   /**
    * Send lemmas in out on the output channel of theory of arithmetic.

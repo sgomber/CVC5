@@ -192,7 +192,8 @@ void NonlinearExtension::processSideEffect(const NlLemma& se)
   d_trSlv.processSideEffect(se);
 }
 
-unsigned NonlinearExtension::filterLemma(NlLemma lem, std::vector<NlLemma>& out)
+unsigned NonlinearExtension::filterLemma(NlLemma lem, std::vector<NlLemma>& out,
+                        options::NlExtRestrictMode rmode)
 {
   Trace("nl-ext-lemma-debug")
       << "NonlinearExtension::Lemma pre-rewrite : " << lem.d_lemma << std::endl;
@@ -205,12 +206,18 @@ unsigned NonlinearExtension::filterLemma(NlLemma lem, std::vector<NlLemma>& out)
         << "NonlinearExtension::Lemma duplicate : " << lem.d_lemma << std::endl;
     return 0;
   }
+  // restrict based on the mode
+  if (rmode != options::NlExtRestrictMode::NONE)
+  {
+    
+  }
   out.emplace_back(lem);
   return 1;
 }
 
 unsigned NonlinearExtension::filterLemmas(std::vector<NlLemma>& lemmas,
-                                          std::vector<NlLemma>& out)
+                                          std::vector<NlLemma>& out,
+                        options::NlExtRestrictMode rmode)
 {
   if (options::nlExtEntailConflicts())
   {
@@ -230,7 +237,7 @@ unsigned NonlinearExtension::filterLemmas(std::vector<NlLemma>& lemmas,
         Trace("nl-ext-et") << "*** Lemma entailed to be in conflict : "
                            << lem.d_lemma << std::endl;
         // return just this lemma
-        if (filterLemma(lem, out) > 0)
+        if (filterLemma(lem, out, rmode) > 0)
         {
           lemmas.clear();
           return 1;
@@ -242,7 +249,7 @@ unsigned NonlinearExtension::filterLemmas(std::vector<NlLemma>& lemmas,
   unsigned sum = 0;
   for (const NlLemma& lem : lemmas)
   {
-    sum += filterLemma(lem, out);
+    sum += filterLemma(lem, out, rmode);
   }
   lemmas.clear();
   return sum;
@@ -680,7 +687,7 @@ bool NonlinearExtension::modelBasedRefinement(std::vector<NlLemma>& mlems)
   getAssertions(assertions);
 
   // reset the flag that tracks whether we have computed connected components
-  d_needsComputeCCom = options::nlConnectedComponents();
+  d_needsComputeCCom = options::nlExtRestrict() == options::NlExtRestrictMode::CONNECTED;
 
   Trace("nl-ext-mv-assert")
       << "Getting model values... check for [model-false]" << std::endl;

@@ -543,9 +543,20 @@ header = "options/arith_options.h"
   help       = "whether to use simple rounding, similar to a unit-cube test, for integers"
 
 [[option]]
-  name       = "nlConnectedComponents"
+  name       = "nlExtRestrict"
   category   = "regular"
-  long       = "nl-ext-ccom"
-  type       = "bool"
-  default    = "false"
-  help       = "do connected components analysis to minimize the number of compared monomials"
+  long       = "nl-ext-restrict=RULE"
+  type       = "NlExtRestrictMode"
+  default    = "NONE"
+  read_only  = true
+  help       = "restrictions on the lemma schemas applied in the nl-ext solver (default is 'none', see --nl-ext-restrict help)"
+  help_mode  = "Restrictions on the lemma schemas applied in the nl-ext solver."
+[[option.mode.NONE]]
+  name = "none"
+  help = "No restrictions on the new monomials and constraints."
+[[option.mode.TERMS]]
+  name = "terms"
+  help = "Do not introduce new monomials."
+[[option.mode.CONNECTED]]
+  name = "connected"
+  help = "Do not introduce any new monomials or constraints between unconnected monomials."
