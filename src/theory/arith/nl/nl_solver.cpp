@@ -1277,8 +1277,9 @@ std::vector<NlLemma> NlSolver::checkMonomialInferBounds(
             {
               lemmas.emplace_back(iblem, Inference::INFER_BOUNDS);
             }
-            else
+            else if (options::nlExtRestrict()==options::NlExtRestrictMode::NONE)
             {
+              // check above is an optimization, since the lemmas will be rejected anyways
               nt_lemmas.emplace_back(iblem, Inference::INFER_BOUNDS_NT);
             }
           }

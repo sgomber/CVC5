@@ -543,10 +543,8 @@ int NonlinearExtension::checkLastCall(const std::vector<Node>& assertions,
     std::vector<NlLemma> nt_lemmas;
     lemmas =
         d_nlSlv.checkMonomialInferBounds(nt_lemmas, assertions, false_asserts);
-    // Trace("nl-ext") << "Bound lemmas : " << lemmas.size() << ", " <<
-    // nt_lemmas.size() << std::endl;  prioritize lemmas that do not
-    // introduce new monomials
-    filterLemmas(lemmas, lems);
+    // prioritize lemmas that do not introduce new monomials
+    filterLemmas(lemmas, lems, options::nlExtRestrict());
 
     if (options::nlExtTangentPlanes()
         && options::nlExtTangentPlanesInterleave())
