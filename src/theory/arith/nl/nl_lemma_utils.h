@@ -137,7 +137,8 @@ class ConnectedComponents
   bool areConnected(Node t, Node s);
   /** get representative for t */
   Node getRepresentative(Node t);
-
+  /** preserves connections */
+  bool preservesConnections(Node lem) const;
  private:
   /** set the representative of t to s */
   void setRepresentative(Node t, Node s);

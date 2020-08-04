@@ -207,9 +207,18 @@ unsigned NonlinearExtension::filterLemma(NlLemma lem, std::vector<NlLemma>& out,
     return 0;
   }
   // restrict based on the mode
+  if (rmode == options::NlExtRestrictMode::CONNECTED)
+  {
+    if (!d_ccom.preservesConnections(lem.d_lemma))
+    {
+      Trace("nl-ext-lemma-debug")
+          << "NonlinearExtension::Lemma does not preserve connections : " << lem.d_lemma << std::endl;
+      return 0;
+    }
+  }
   if (rmode != options::NlExtRestrictMode::NONE)
   {
-    
+    // contains new monomials TODO
   }
   out.emplace_back(lem);
   return 1;

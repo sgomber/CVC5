@@ -125,6 +125,12 @@ Node ConnectedComponents::getRepresentative(Node t)
   return t;
 }
 
+bool ConnectedComponents::preservesConnections(Node lem) const
+{
+  // TODO
+  return true;
+}
+
 void ConnectedComponents::setRepresentative(Node r, Node t)
 {
   if (r != t)
