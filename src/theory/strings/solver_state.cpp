@@ -98,7 +98,7 @@ bool SolverState::areDisequal(Node a, Node b) const
   return ar != br && ar.isConst() && br.isConst();
 }
 
-eq::EqualityEngine* SolverState::getEqualityEngine() const { return &d_ee; }
+eq::EqualityEngine* SolverState::getEqualityEngine() const { return d_ee; }
 
 const context::CDList<Node>& SolverState::getDisequalityList() const
 {

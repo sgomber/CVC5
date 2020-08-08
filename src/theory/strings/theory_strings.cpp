@@ -117,8 +117,7 @@ void TheoryStrings::finishInit()
   d_equalityEngine->addFunctionKind(kind::STRING_TOUPPER, eagerEval);
   d_equalityEngine->addFunctionKind(kind::STRING_REV, eagerEval);
   
-  d_state->finishInit(d_equalityEngine);
-  d_termReg->finishInit(d_equalityEngine);
+  d_state.finishInit(d_equalityEngine);
 }
 
 std::string TheoryStrings::identify() const
@@ -246,7 +245,7 @@ bool TheoryStrings::collectModelInfo(TheoryModel* m)
   // Compute terms appearing in assertions and shared terms
   computeRelevantTerms(termSet);
   // assert the (relevant) portion of the equality engine to the model
-  if (!m->assertEqualityEngine(&d_equalityEngine, &termSet))
+  if (!m->assertEqualityEngine(d_equalityEngine, &termSet))
   {
     Unreachable()
         << "TheoryStrings::collectModelInfo: failed to assert equality engine"
@@ -665,14 +664,14 @@ void TheoryStrings::check(Effort e) {
         << "Theory of strings " << e << " effort check " << std::endl;
     if(Trace.isOn("strings-eqc")) {
       for( unsigned t=0; t<2; t++ ) {
-        eq::EqClassesIterator eqcs2_i = eq::EqClassesIterator( &d_equalityEngine );
+        eq::EqClassesIterator eqcs2_i = eq::EqClassesIterator( d_equalityEngine );
         Trace("strings-eqc") << (t==0 ? "STRINGS:" : "OTHER:") << std::endl;
         while( !eqcs2_i.isFinished() ){
           Node eqc = (*eqcs2_i);
           bool print = (t == 0 && eqc.getType().isStringLike())
                        || (t == 1 && !eqc.getType().isStringLike());
           if (print) {
-            eq::EqClassIterator eqc2_i = eq::EqClassIterator( eqc, &d_equalityEngine );
+            eq::EqClassIterator eqc2_i = eq::EqClassIterator( eqc, d_equalityEngine );
             Trace("strings-eqc") << "Eqc( " << eqc << " ) : { ";
             while( !eqc2_i.isFinished() ) {
               if( (*eqc2_i)!=eqc && (*eqc2_i).getKind()!=kind::EQUAL ){
@@ -884,7 +883,7 @@ void TheoryStrings::checkRegisterTermsPreNormalForm()
   const std::vector<Node>& seqc = d_bsolver.getStringEqc();
   for (const Node& eqc : seqc)
   {
-    eq::EqClassIterator eqc_i = eq::EqClassIterator(eqc, &d_equalityEngine);
+    eq::EqClassIterator eqc_i = eq::EqClassIterator(eqc, d_equalityEngine);
     while (!eqc_i.isFinished())
     {
       Node n = (*eqc_i);

@@ -77,7 +77,7 @@ TheoryRewriter* TheoryUF::getTheoryRewriter()
 
 eq::EqualityEngine* TheoryUF::allocateEqualityEngine()
 {
-  return new eq::EqualityEngine(d_notify, d_satContext, "theory::uf::ee", true);
+  return new eq::EqualityEngine(d_notify, getSatContext(), "theory::uf::ee", true);
 }
 
 void TheoryUF::finishInit() {
@@ -338,7 +338,7 @@ bool TheoryUF::collectModelInfo(TheoryModel* m)
   // Compute terms appearing in assertions and shared terms
   computeRelevantTerms(termSet);
 
-  if (!m->assertEqualityEngine(&d_equalityEngine, &termSet))
+  if (!m->assertEqualityEngine(d_equalityEngine, &termSet))
   {
     Trace("uf") << "Collect model info fail UF" << std::endl;
     return false;

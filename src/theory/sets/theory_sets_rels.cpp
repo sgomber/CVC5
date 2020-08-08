@@ -35,7 +35,7 @@ typedef std::map< Node, std::map< Node, std::unordered_set< Node, NodeHashFuncti
 TheorySetsRels::TheorySetsRels(SolverState& s,
                                InferenceManager& im,
                                context::UserContext* u)
-    : d_state(s), d_im(im), d_ee(nullptr), d_shared_terms(u)
+    : d_state(s), d_im(im), d_shared_terms(u)
 {
   d_trueNode = NodeManager::currentNM()->mkConst(true);
   d_falseNode = NodeManager::currentNM()->mkConst(false);
@@ -177,10 +177,11 @@ void TheorySetsRels::check(Theory::Effort level)
 
   void TheorySetsRels::collectRelsInfo() {
     Trace("rels") << "[sets-rels] Start collecting relational terms..." << std::endl;
-    eq::EqClassesIterator eqcs_i = eq::EqClassesIterator(&d_ee);
+    eq::EqualityEngine * ee = d_state.getEqualityEngine();
+    eq::EqClassesIterator eqcs_i = eq::EqClassesIterator(ee);
     while( !eqcs_i.isFinished() ){
       Node                      eqc_rep  = (*eqcs_i);
-      eq::EqClassIterator eqc_i = eq::EqClassIterator(eqc_rep, &d_ee);
+      eq::EqClassIterator eqc_i = eq::EqClassIterator(eqc_rep, ee);
 
       TypeNode erType = eqc_rep.getType();
       Trace("rels-ee") << "[sets-rels-ee] Eqc term representative: " << eqc_rep << " with type " << eqc_rep.getType() << std::endl;

@@ -223,17 +223,17 @@ class TheorySetsPrivate {
   /** get the valuation */
   Valuation& getValuation();
 
- private:
-  TheorySets& d_external;
-
-  /** Pointer to the equality engine of theory of sets */
-  eq::EqualityEngine * d_equalityEngine;
-
   /** Proagate out to output channel */
   bool propagate(TNode);
 
   /** generate and send out conflict node */
   void conflict(TNode, TNode);
+  
+ private:
+  TheorySets& d_external;
+
+  /** Pointer to the equality engine of theory of sets */
+  eq::EqualityEngine * d_equalityEngine;
   
   bool isCareArg( Node n, unsigned a );
 

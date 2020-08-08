@@ -55,7 +55,7 @@ TheoryRewriter* TheorySets::getTheoryRewriter()
 
 eq::EqualityEngine* TheorySets::allocateEqualityEngine()
 {
-  return eq::EqualityEngine(d_notify, getSatContext(), "theory::sets::ee", true);
+  return new eq::EqualityEngine(d_notify, getSatContext(), "theory::sets::ee", true);
 }
 
 void TheorySets::finishInit()

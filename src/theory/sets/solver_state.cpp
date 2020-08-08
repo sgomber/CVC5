@@ -34,7 +34,7 @@ SolverState::SolverState(TheorySetsPrivate& p,
   d_false = NodeManager::currentNM()->mkConst(false);
 }
 
-void finishInit(eq::EqualityEngine * ee)
+void SolverState::finishInit(eq::EqualityEngine * ee)
 {
   Assert (ee!=nullptr);
   d_ee = ee;
@@ -169,6 +169,20 @@ void SolverState::registerTerm(Node r, TypeNode tnn, Node n)
   }
 }
 
+Node SolverState::getRepresentative(Node a) const
+{
+  if (d_ee->hasTerm(a))
+  {
+    return d_ee->getRepresentative(a);
+  }
+  return a;
+}
+
+bool SolverState::hasTerm(Node a) const
+{
+  return d_ee->hasTerm(a);
+}
+
 bool SolverState::areEqual(Node a, Node b) const
 {
   if (a == b)
@@ -193,6 +207,11 @@ bool SolverState::areDisequal(Node a, Node b) const
     return d_ee->areDisequal(a, b, false);
   }
   return a.isConst() && b.isConst();
+}
+
+eq::EqualityEngine* SolverState::getEqualityEngine() const
+{
+  return d_ee;
 }
 
 void SolverState::setConflict() { d_conflict = true; }

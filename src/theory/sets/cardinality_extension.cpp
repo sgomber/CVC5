@@ -31,12 +31,10 @@ namespace sets {
 
 CardinalityExtension::CardinalityExtension(SolverState& s,
                                            InferenceManager& im,
-                                           eq::EqualityEngine& e,
                                            context::Context* c,
                                            context::UserContext* u)
     : d_state(s),
       d_im(im),
-      d_state(e),
       d_card_processed(u),
       d_finite_type_constants_processed(false)
 {

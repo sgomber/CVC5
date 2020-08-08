@@ -72,10 +72,19 @@ class SolverState
   void setConflict();
   /** Set conf is a conflict node to be sent on the output channel.  */
   void setConflict(Node conf);
+  /**
+   * Get the representative of a in the equality engine of this class, or a
+   * itself if it is not registered as a term.
+   */
+  Node getRepresentative(Node a) const;
+  /** Is a registered as a term in the equality engine of this class? */
+  bool hasTerm(Node a) const;
   /** Is a=b according to equality reasoning in the current context? */
   bool areEqual(Node a, Node b) const;
   /** Is a!=b according to equality reasoning in the current context? */
   bool areDisequal(Node a, Node b) const;
+  /** get equality engine */
+  eq::EqualityEngine* getEqualityEngine() const;
   /** add equality to explanation
    *
    * This adds a = b to exp if a and b are syntactically disequal. The equality
