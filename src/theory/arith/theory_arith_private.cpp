@@ -134,7 +134,7 @@ TheoryArithPrivate::TheoryArithPrivate(TheoryArith& containing,
           d_linEq, d_errorSet, RaiseConflict(*this), TempVarMalloc(*this)),
       d_attemptSolSimplex(
           d_linEq, d_errorSet, RaiseConflict(*this), TempVarMalloc(*this)),
-      d_nonlinearExtension(NULL),
+      d_nonlinearExtension(nullptr),
       d_pass1SDP(NULL),
       d_otherSDP(NULL),
       d_lastContextIntegerAttempted(c, -1),
@@ -159,12 +159,6 @@ TheoryArithPrivate::TheoryArithPrivate(TheoryArith& containing,
       d_statistics(),
       d_opElim(pnm, logicInfo)
 {
-  // only need to create if non-linear logic
-  if (logicInfo.isTheoryEnabled(THEORY_ARITH) && !logicInfo.isLinear())
-  {
-    d_nonlinearExtension = new nl::NonlinearExtension(
-        containing, d_congruenceManager.getEqualityEngine());
-  }
 }
 
 TheoryArithPrivate::~TheoryArithPrivate(){
@@ -186,6 +180,13 @@ void TheoryArithPrivate::finishInit()
   eq::EqualityEngine * ee = d_containing.getEqualityEngine();
   Assert (ee!=nullptr);
   d_congruenceManager.finishInit(ee);
+  const LogicInfo& logicInfo = getLogicInfo();
+  // only need to create nonlinear extension if non-linear logic
+  if (logicInfo.isTheoryEnabled(THEORY_ARITH) && !logicInfo.isLinear())
+  {
+    d_nonlinearExtension = new nl::NonlinearExtension(
+        d_containing, ee);
+  }
 }
 
 static bool contains(const ConstraintCPVec& v, ConstraintP con){
