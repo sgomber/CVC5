@@ -130,7 +130,21 @@ std::string getTheoryString(theory::TheoryId id)
 }
 
 void TheoryEngine::finishInit() {
-  // initialize the equality engine architecture for all theories
+  //initialize the quantifiers engine
+  if( d_logicInfo.isQuantified() )
+  {
+    // initialize the quantifiers engine
+    d_quantEngine = new QuantifiersEngine(d_context, d_userContext, this);
+
+    for(TheoryId theoryId = theory::THEORY_FIRST; theoryId != theory::THEORY_LAST; ++ theoryId) {
+      if (d_theoryTable[theoryId]) {
+        d_theoryTable[theoryId]->setQuantifiersEngine(d_quantEngine);
+      }
+    }
+  }
+  
+  // Initialize the equality engine architecture for all theories, which
+  // includes the master equality engine.
   if (options::eeMode()==options::EqEngineMode::DISTRIBUTED)
   {
     d_eeDistributed.reset(new EqEngineManagerDistributed(*this));
@@ -140,17 +154,9 @@ void TheoryEngine::finishInit() {
   {
     AlwaysAssert(false) << "TheoryEngine::finishInit: equality engine mode " << options::eeMode() << " not supported";
   }
-  
-  //initialize the quantifiers engine, master equality engine, model, model builder
-  if( d_logicInfo.isQuantified() ) {
-    // initialize the quantifiers engine
-    d_quantEngine = new QuantifiersEngine(d_context, d_userContext, this);
 
-    for(TheoryId theoryId = theory::THEORY_FIRST; theoryId != theory::THEORY_LAST; ++ theoryId) {
-      if (d_theoryTable[theoryId]) {
-        d_theoryTable[theoryId]->setQuantifiersEngine(d_quantEngine);
-      }
-    }
+  // Initialize the model and model builder.
+  if( d_logicInfo.isQuantified() ) {
     d_curr_model_builder = d_quantEngine->getModelBuilder();
     d_curr_model = d_quantEngine->getModel();
   } else {
@@ -158,12 +164,14 @@ void TheoryEngine::finishInit() {
         d_userContext, "DefaultModel", options::assignFunctionValues());
     d_aloc_curr_model = true;
   }
+  
   //make the default builder, e.g. in the case that the quantifiers engine does not have a model builder
   if( d_curr_model_builder==NULL ){
     d_curr_model_builder = new theory::TheoryEngineModelBuilder(this);
     d_aloc_curr_model_builder = true;
   }
 
+  // finish initializing the theories
   for(TheoryId theoryId = theory::THEORY_FIRST; theoryId != theory::THEORY_LAST; ++ theoryId) {
     if (d_theoryTable[theoryId]) {
       // set the decision manager for the theory
@@ -171,12 +179,6 @@ void TheoryEngine::finishInit() {
       // finish initializing the theory
       d_theoryTable[theoryId]->finishInit();
     }
-  }
-}
-
-void TheoryEngine::eqNotifyNewClass(TNode t){
-  if (d_logicInfo.isQuantified()) {
-    d_quantEngine->eqNotifyNewClass( t );
   }
 }
 

@@ -16,11 +16,12 @@
 #include "theory/ee_manager_distributed.h"
 
 #include "theory/theory_engine.h"
+#include "theory/quantifiers_engine.h"
 
 namespace CVC4 {
 namespace theory {
 
-EqEngineManagerDistributed::EqEngineManagerDistributed(TheoryEngine& te) : d_te(te)
+EqEngineManagerDistributed::EqEngineManagerDistributed(TheoryEngine& te) : d_te(te), d_masterEENotify(nullptr)
 {
 }
 
@@ -51,7 +52,10 @@ void EqEngineManagerDistributed::finishInit()
   {
     // construct the master equality engine
     Assert(d_masterEqualityEngine == nullptr);
-    d_masterEqualityEngine.reset(new eq::EqualityEngine(d_te.getSatContext(), "theory::master", false));
+    QuantifiersEngine * qe = d_te.getQuantifiersEngine();
+    Assert (qe !=nullptr);
+    d_masterEENotify.reset(new MasterNotifyClass(qe));
+    d_masterEqualityEngine.reset(new eq::EqualityEngine(d_masterEENotify.get(), d_te.getSatContext(), "theory::master", false));
 
     for(TheoryId theoryId = theory::THEORY_FIRST; theoryId != theory::THEORY_LAST; ++ theoryId) {
       Theory * t = d_te.theoryOf(theoryId);
@@ -71,6 +75,12 @@ void EqEngineManagerDistributed::finishInit()
     }
   }
 }
+
+void EqEngineManagerDistributed::NotifyClass::eqNotifyNewClass(TNode t)
+{
+  d_quantEngine->eqNotifyNewClass( t );
+}
+
 eq::EqualityEngine* EqEngineManagerDistributed::getMasterEqualityEngine()
 {
   return d_masterEqualityEngine.get();

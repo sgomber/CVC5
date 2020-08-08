@@ -152,14 +152,6 @@ class TheoryEngine {
   std::unique_ptr<theory::EqEngineManagerDistributed> d_eeDistributed;
 
   /**
-   * notification methods
-   */
-  void eqNotifyNewClass(TNode t);
-  void eqNotifyPreMerge(TNode t1, TNode t2);
-  void eqNotifyPostMerge(TNode t1, TNode t2);
-  void eqNotifyDisequal(TNode t1, TNode t2, TNode reason);
-
-  /**
    * The quantifiers engine
    */
   theory::QuantifiersEngine* d_quantEngine;

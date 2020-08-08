@@ -49,6 +49,20 @@ public:
 private:
   /** Reference to the theory engine */
   TheoryEngine& d_te;
+  /** Pointer to quantifiers engine of d_te */
+  QuantifiersEngine * d_quantEngine;
+  /** notify class for master equality engine */
+  class MasterNotifyClass : public theory::eq::EqualityEngineNotify {
+    QuantifiersEngine * d_quantEngine;
+  public:
+    MasterNotifyClass(QuantifiersEngine * qe): d_quantEngine(qe) {}
+    /**
+     * Called when a new equivalence class is created in the master equality
+     * engine.
+     */
+    void eqNotifyNewClass(TNode t) override;
+  };
+  std::unique_ptr<MasterNotifyClass> d_masterEENotify;
   /**
    * Master equality engine, to share with theories.
    */
