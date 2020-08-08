@@ -41,6 +41,9 @@ void EqEngineManagerDistributed::finishInit()
     // allocate an equality engine
     EeTheoryInfo& eet = d_einfo[theoryId];
     eet.d_allocEe.reset(t->allocateEqualityEngine());
+    // the theory uses the equality engine it allocates
+    eq::EqualityEngine * eeAlloc = eet.d_allocEe.get();
+    t->setEqualityEngine(eeAlloc);
   }
   
   const LogicInfo& logicInfo = d_te.getLogicInfo();
