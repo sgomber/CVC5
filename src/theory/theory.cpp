@@ -434,7 +434,7 @@ void Theory::setEqualityEngine(eq::EqualityEngine* ee)
   d_equalityEngine = ee;
 }
 
-eq::EqualityEngine* allocateEqualityEngine()
+eq::EqualityEngine* Theory::allocateEqualityEngine()
 {
   // this theory does not use an (official) equality engine
   return nullptr;
