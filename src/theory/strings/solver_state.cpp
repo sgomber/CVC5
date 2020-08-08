@@ -49,7 +49,7 @@ SolverState::~SolverState()
 
 void SolverState::finishInit(eq::EqualityEngine * ee)
 {
-  Assert (d_ee!=nullptr);
+  Assert (ee!=nullptr);
   d_ee = ee;
 }
 
