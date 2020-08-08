@@ -54,18 +54,14 @@ void EqEngineManagerDistributed::finishInit()
       // theory not active, skip
       continue;
     }
-    eet.d_allocEe.reset(t->allocateEqualityEngine());
+    EeTheoryInfo& eet = d_einfo[theoryId];
+    // get the allocated equality engine
     eq::EqualityEngine * eeAlloc = eet.d_allocEe.get();
-    if (eeAlloc==nullptr)
-    {
-      
-    }
-    else
+    if (eeAlloc!=nullptr)
     {
       // set the master equality engine of the theory's equality engine
       eeAlloc->setMasterEqualityEngine(d_masterEqualityEngine.get());
     }
-    t->setMasterEqualityEngine(d_masterEqualityEngine.get());
   }
 
 }

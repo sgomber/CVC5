@@ -164,7 +164,7 @@ TheoryRewriter* TheoryArrays::getTheoryRewriter()
 
 eq::EqualityEngine* TheoryArrays::allocateEqualityEngine()
 {
-  return new eq::EqualityEngine(d_notify, getSatContext(), name + "theory::arrays", true);
+  return new eq::EqualityEngine(d_notify, getSatContext(), "theory::arrays::ee", true);
 }
 
 void TheoryArrays::finishInit()
