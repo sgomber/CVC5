@@ -221,11 +221,11 @@ class Theory {
    * theory engine (and other theories).
    */
   Valuation d_valuation;
-  /** 
+  /**
    * Pointer to the official equality engine of this theory, which is owned by
    * the equality engine manager of TheoryEngine.
    */
-  eq::EqualityEngine * d_equalityEngine;
+  eq::EqualityEngine* d_equalityEngine;
 
   /**
    * Whether proofs are enabled

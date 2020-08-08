@@ -65,19 +65,17 @@ TheorySep::~TheorySep() {
   }
 }
 
-TheoryRewriter* TheorySep::getTheoryRewriter()
-{
-  return &d_rewriter;
-}
+TheoryRewriter* TheorySep::getTheoryRewriter() { return &d_rewriter; }
 
 eq::EqualityEngine* TheorySep::allocateEqualityEngine()
 {
-  return new eq::EqualityEngine(d_notify, getSatContext(), "theory::sep::ee", true);
+  return new eq::EqualityEngine(
+      d_notify, getSatContext(), "theory::sep::ee", true);
 }
 
 void TheorySep::finishInit()
 {
-  Assert (d_equalityEngine!=nullptr);
+  Assert(d_equalityEngine != nullptr);
   // The kinds we are treating as function application in congruence
   d_equalityEngine->addFunctionKind(kind::SEP_PTO);
   // we could but don't do congruence on SEP_STAR here.
@@ -135,9 +133,10 @@ void TheorySep::explain(TNode literal, std::vector<TNode>& assumptions) {
     bool polarity = literal.getKind() != kind::NOT;
     TNode atom = polarity ? literal : literal[0];
     if (atom.getKind() == kind::EQUAL) {
-      d_equalityEngine->explainEquality( atom[0], atom[1], polarity, assumptions, NULL );
+      d_equalityEngine->explainEquality(
+          atom[0], atom[1], polarity, assumptions, NULL);
     } else {
-      d_equalityEngine->explainPredicate( atom, polarity, assumptions );
+      d_equalityEngine->explainPredicate(atom, polarity, assumptions);
     }
   }
 }
@@ -170,11 +169,13 @@ void TheorySep::addSharedTerm(TNode t) {
 
 EqualityStatus TheorySep::getEqualityStatus(TNode a, TNode b) {
   Assert(d_equalityEngine->hasTerm(a) && d_equalityEngine->hasTerm(b));
-  if (d_equalityEngine->areEqual(a, b)) {
+  if (d_equalityEngine->areEqual(a, b))
+  {
     // The terms are implied to be equal
     return EQUALITY_TRUE;
   }
-  else if (d_equalityEngine->areDisequal(a, b, false)) {
+  else if (d_equalityEngine->areDisequal(a, b, false))
+  {
     // The terms are implied to be dis-equal
     return EQUALITY_FALSE;
   }
@@ -628,11 +629,11 @@ void TheorySep::check(Effort e) {
       Trace("sep-process") << "---" << std::endl;
     }
     if(Trace.isOn("sep-eqc")) {
-      eq::EqClassesIterator eqcs2_i = eq::EqClassesIterator( d_equalityEngine );
+      eq::EqClassesIterator eqcs2_i = eq::EqClassesIterator(d_equalityEngine);
       Trace("sep-eqc") << "EQC:" << std::endl;
       while( !eqcs2_i.isFinished() ){
         Node eqc = (*eqcs2_i);
-        eq::EqClassIterator eqc2_i = eq::EqClassIterator( eqc, d_equalityEngine );
+        eq::EqClassIterator eqc2_i = eq::EqClassIterator(eqc, d_equalityEngine);
         Trace("sep-eqc") << "Eqc( " << eqc << " ) : { ";
         while( !eqc2_i.isFinished() ) {
           if( (*eqc2_i)!=eqc ){
@@ -1561,22 +1562,21 @@ void TheorySep::computeLabelModel( Node lbl ) {
 }
 
 Node TheorySep::getRepresentative( Node t ) {
-  if( d_equalityEngine->hasTerm( t ) ){
-    return d_equalityEngine->getRepresentative( t );
+  if (d_equalityEngine->hasTerm(t))
+  {
+    return d_equalityEngine->getRepresentative(t);
   }else{
     return t;
   }
 }
 
-bool TheorySep::hasTerm( Node a ){
-  return d_equalityEngine->hasTerm( a );
-}
+bool TheorySep::hasTerm(Node a) { return d_equalityEngine->hasTerm(a); }
 
 bool TheorySep::areEqual( Node a, Node b ){
   if( a==b ){
     return true;
   }else if( hasTerm( a ) && hasTerm( b ) ){
-    return d_equalityEngine->areEqual( a, b );
+    return d_equalityEngine->areEqual(a, b);
   }else{
     return false;
   }
@@ -1586,7 +1586,8 @@ bool TheorySep::areDisequal( Node a, Node b ){
   if( a==b ){
     return false;
   }else if( hasTerm( a ) && hasTerm( b ) ){
-    if( d_equalityEngine->areDisequal( a, b, false ) ){
+    if (d_equalityEngine->areDisequal(a, b, false))
+    {
       return true;
     }
   }

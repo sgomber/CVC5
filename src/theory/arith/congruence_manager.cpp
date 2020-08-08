@@ -48,14 +48,16 @@ ArithCongruenceManager::ArithCongruenceManager(
 
 ArithCongruenceManager::~ArithCongruenceManager() {}
 
-eq::EqualityEngine* ArithCongruenceManager::allocateEqualityEngine(context::Context* c)
+eq::EqualityEngine* ArithCongruenceManager::allocateEqualityEngine(
+    context::Context* c)
 {
-  return new eq::EqualityEngine(d_notify, c, "theory::arith::ArithCongruenceManager", true);
+  return new eq::EqualityEngine(
+      d_notify, c, "theory::arith::ArithCongruenceManager", true);
 }
 
 void ArithCongruenceManager::finishInit(eq::EqualityEngine* ee)
 {
-  Assert (ee !=nullptr);
+  Assert(ee != nullptr);
   d_ee = ee;
   d_ee->addFunctionKind(kind::NONLINEAR_MULT);
   d_ee->addFunctionKind(kind::EXPONENTIAL);

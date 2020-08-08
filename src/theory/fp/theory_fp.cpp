@@ -123,19 +123,17 @@ TheoryFp::TheoryFp(context::Context* c,
 {
 } /* TheoryFp::TheoryFp() */
 
-TheoryRewriter* TheoryFp::getTheoryRewriter()
-{
-  return &d_rewriter;
-}
+TheoryRewriter* TheoryFp::getTheoryRewriter() { return &d_rewriter; }
 
 eq::EqualityEngine* TheoryFp::allocateEqualityEngine()
 {
-  return new eq::EqualityEngine(d_notification, getSatContext(), "theory::fp::ee", true);
+  return new eq::EqualityEngine(
+      d_notification, getSatContext(), "theory::fp::ee", true);
 }
 
 void TheoryFp::finishInit()
 {
-  Assert (d_equalityEngine!=nullptr);
+  Assert(d_equalityEngine != nullptr);
   // Kinds that are to be handled in the congruence closure
 
   d_equalityEngine->addFunctionKind(kind::FLOATINGPOINT_ABS);
@@ -190,7 +188,7 @@ void TheoryFp::finishInit()
   d_equalityEngine->addFunctionKind(kind::FLOATINGPOINT_COMPONENT_SIGNIFICAND);
   d_equalityEngine->addFunctionKind(kind::ROUNDINGMODE_BITBLAST);
 }
-  
+
 Node TheoryFp::minUF(Node node) {
   Assert(node.getKind() == kind::FLOATINGPOINT_MIN);
   TypeNode t(node.getType());
@@ -976,7 +974,6 @@ void TheoryFp::check(Effort level) {
         Debug("fp-eq") << "TheoryFp::check(): adding dis-equality " << fact[0]
                        << std::endl;
         d_equalityEngine->assertEquality(predicate, false, fact);
-
       } else {
         Debug("fp-eq") << "TheoryFp::check(): adding equality " << fact
                        << std::endl;
@@ -987,7 +984,8 @@ void TheoryFp::check(Effort level) {
       // asserted
       Assert(isRegistered(predicate));
 
-      if (d_equalityEngine->isFunctionKind(predicate.getKind())) {
+      if (d_equalityEngine->isFunctionKind(predicate.getKind()))
+      {
         Debug("fp-eq") << "TheoryFp::check(): adding predicate " << predicate
                        << " is " << !negated << std::endl;
         d_equalityEngine->assertPredicate(predicate, !negated, fact);

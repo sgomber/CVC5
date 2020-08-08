@@ -45,21 +45,21 @@ CoreSolver::CoreSolver(context::Context* c, TheoryBV* bv, ExtTheory* extt)
       d_extTheory(extt),
       d_reasons(c)
 {
-
 }
 
 CoreSolver::~CoreSolver() {}
 
-eq::EqualityEngine * CoreSolver::allocateEqualityEngine()
+eq::EqualityEngine* CoreSolver::allocateEqualityEngine()
 {
-  return new eq::EqualityEngine(d_notify, d_bv->getSatContext(), "theory::bv::ee", true);
+  return new eq::EqualityEngine(
+      d_notify, d_bv->getSatContext(), "theory::bv::ee", true);
 }
 
 void CoreSolver::finishInit()
 {
   // use the parent's equality engine, which may be the one we allocated above
   d_equalityEngine = d_bv->getEqualityEngine();
-  
+
   // The kinds we are treating as function application in congruence
   d_equalityEngine->addFunctionKind(kind::BITVECTOR_CONCAT, true);
   //    d_equalityEngine->addFunctionKind(kind::BITVECTOR_AND);
@@ -104,10 +104,11 @@ void CoreSolver::enableSlicer() {
 void CoreSolver::preRegister(TNode node) {
   d_preregisterCalled = true;
   if (node.getKind() == kind::EQUAL) {
-      d_equalityEngine->addTriggerEquality(node);
-      if (d_useSlicer) {
-        d_slicer->processEquality(node);
-        AlwaysAssert(!d_checkCalled);
+    d_equalityEngine->addTriggerEquality(node);
+    if (d_useSlicer)
+    {
+      d_slicer->processEquality(node);
+      AlwaysAssert(!d_checkCalled);
       }
   } else {
     d_equalityEngine->addTerm(node);
@@ -362,7 +363,8 @@ bool CoreSolver::assertFactToEqualityEngine(TNode fact, TNode reason) {
       }
     } else {
       // Adding predicate if the congruence over it is turned on
-      if (d_equalityEngine->isFunctionKind(predicate.getKind())) {
+      if (d_equalityEngine->isFunctionKind(predicate.getKind()))
+      {
         d_equalityEngine->assertPredicate(predicate, !negated, reason);
       }
     }
@@ -489,20 +491,28 @@ void CoreSolver::addSharedTerm(TNode t)
 
 EqualityStatus CoreSolver::getEqualityStatus(TNode a, TNode b)
 {
-  if (d_equalityEngine->areEqual(a, b)) {
+  if (d_equalityEngine->areEqual(a, b))
+  {
     // The terms are implied to be equal
     return EQUALITY_TRUE;
   }
-  if (d_equalityEngine->areDisequal(a, b, false)) {
+  if (d_equalityEngine->areDisequal(a, b, false))
+  {
     // The terms are implied to be dis-equal
     return EQUALITY_FALSE;
   }
   return EQUALITY_UNKNOWN;
 }
 
-  bool CoreSolver::hasTerm(TNode node) const { return d_equalityEngine->hasTerm(node); }
-  void CoreSolver::addTermToEqualityEngine(TNode node) { d_equalityEngine->addTerm(node); }
-  
+bool CoreSolver::hasTerm(TNode node) const
+{
+  return d_equalityEngine->hasTerm(node);
+}
+void CoreSolver::addTermToEqualityEngine(TNode node)
+{
+  d_equalityEngine->addTerm(node);
+}
+
 CoreSolver::Statistics::Statistics()
   : d_numCallstoCheck("theory::bv::CoreSolver::NumCallsToCheck", 0)
   , d_slicerEnabled("theory::bv::CoreSolver::SlicerEnabled", false)

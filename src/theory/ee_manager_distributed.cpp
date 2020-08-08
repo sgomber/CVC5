@@ -12,29 +12,30 @@
  ** \brief Management of a distributed approach for equality sharing.
  **/
 
-
 #include "theory/ee_manager_distributed.h"
 
-#include "theory/theory_engine.h"
 #include "theory/quantifiers_engine.h"
+#include "theory/theory_engine.h"
 
 namespace CVC4 {
 namespace theory {
 
-EqEngineManagerDistributed::EqEngineManagerDistributed(TheoryEngine& te) : d_te(te), d_masterEENotify(nullptr)
+EqEngineManagerDistributed::EqEngineManagerDistributed(TheoryEngine& te)
+    : d_te(te), d_masterEENotify(nullptr)
 {
 }
 
-EqEngineManagerDistributed::~EqEngineManagerDistributed()
-{
-}
+EqEngineManagerDistributed::~EqEngineManagerDistributed() {}
 
 void EqEngineManagerDistributed::finishInit()
 {
   // allocate equality engines per theory
-  for(TheoryId theoryId = theory::THEORY_FIRST; theoryId != theory::THEORY_LAST; ++ theoryId) {
-    Theory * t = d_te.theoryOf(theoryId);
-    if (t == nullptr) 
+  for (TheoryId theoryId = theory::THEORY_FIRST;
+       theoryId != theory::THEORY_LAST;
+       ++theoryId)
+  {
+    Theory* t = d_te.theoryOf(theoryId);
+    if (t == nullptr)
     {
       // theory not active, skip
       continue;
@@ -43,31 +44,35 @@ void EqEngineManagerDistributed::finishInit()
     EeTheoryInfo& eet = d_einfo[theoryId];
     eet.d_allocEe.reset(t->allocateEqualityEngine());
     // the theory uses the equality engine it allocates
-    eq::EqualityEngine * eeAlloc = eet.d_allocEe.get();
+    eq::EqualityEngine* eeAlloc = eet.d_allocEe.get();
     t->setEqualityEngine(eeAlloc);
   }
-  
+
   const LogicInfo& logicInfo = d_te.getLogicInfo();
   if (logicInfo.isQuantified())
   {
     // construct the master equality engine
     Assert(d_masterEqualityEngine == nullptr);
-    QuantifiersEngine * qe = d_te.getQuantifiersEngine();
-    Assert (qe !=nullptr);
+    QuantifiersEngine* qe = d_te.getQuantifiersEngine();
+    Assert(qe != nullptr);
     d_masterEENotify.reset(new MasterNotifyClass(qe));
-    d_masterEqualityEngine.reset(new eq::EqualityEngine(d_masterEENotify.get(), d_te.getSatContext(), "theory::master", false));
+    d_masterEqualityEngine.reset(new eq::EqualityEngine(
+        d_masterEENotify.get(), d_te.getSatContext(), "theory::master", false));
 
-    for(TheoryId theoryId = theory::THEORY_FIRST; theoryId != theory::THEORY_LAST; ++ theoryId) {
-      Theory * t = d_te.theoryOf(theoryId);
-      if (t == nullptr) 
+    for (TheoryId theoryId = theory::THEORY_FIRST;
+         theoryId != theory::THEORY_LAST;
+         ++theoryId)
+    {
+      Theory* t = d_te.theoryOf(theoryId);
+      if (t == nullptr)
       {
         // theory not active, skip
         continue;
       }
       EeTheoryInfo& eet = d_einfo[theoryId];
       // get the allocated equality engine
-      eq::EqualityEngine * eeAlloc = eet.d_allocEe.get();
-      if (eeAlloc!=nullptr)
+      eq::EqualityEngine* eeAlloc = eet.d_allocEe.get();
+      if (eeAlloc != nullptr)
       {
         // set the master equality engine of the theory's equality engine
         eeAlloc->setMasterEqualityEngine(d_masterEqualityEngine.get());
@@ -78,7 +83,7 @@ void EqEngineManagerDistributed::finishInit()
 
 void EqEngineManagerDistributed::NotifyClass::eqNotifyNewClass(TNode t)
 {
-  d_quantEngine->eqNotifyNewClass( t );
+  d_quantEngine->eqNotifyNewClass(t);
 }
 
 eq::EqualityEngine* EqEngineManagerDistributed::getMasterEqualityEngine()
@@ -88,4 +93,3 @@ eq::EqualityEngine* EqEngineManagerDistributed::getMasterEqualityEngine()
 
 }  // namespace theory
 }  // namespace CVC4
-

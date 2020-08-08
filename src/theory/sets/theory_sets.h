@@ -51,7 +51,7 @@ class TheorySets : public Theory
   /** finish initialization */
   void finishInit() override;
   //--------------------------------- end initialization
-  
+
   void addSharedTerm(TNode) override;
   void check(Effort) override;
   bool collectModelInfo(TheoryModel* m) override;
@@ -74,10 +74,12 @@ class TheorySets : public Theory
 
   std::unique_ptr<TheorySetsPrivate> d_internal;
   /** Functions to handle callbacks from equality engine */
-  class NotifyClass : public eq::EqualityEngineNotify {
+  class NotifyClass : public eq::EqualityEngineNotify
+  {
     TheorySetsPrivate& d_theory;
-  public:
-    NotifyClass(TheorySetsPrivate& theory): d_theory(theory) {}
+
+   public:
+    NotifyClass(TheorySetsPrivate& theory) : d_theory(theory) {}
     bool eqNotifyTriggerEquality(TNode equality, bool value) override;
     bool eqNotifyTriggerPredicate(TNode predicate, bool value) override;
     bool eqNotifyTriggerTermEquality(TheoryId tag,

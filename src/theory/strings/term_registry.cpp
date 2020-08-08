@@ -127,7 +127,7 @@ void TermRegistry::preRegisterTerm(TNode n)
   {
     return;
   }
-  eq::EqualityEngine * ee = d_state.getEqualityEngine();
+  eq::EqualityEngine* ee = d_state.getEqualityEngine();
   d_preregisteredTerms.insert(n);
   Trace("strings-preregister")
       << "TheoryString::preregister : " << n << std::endl;

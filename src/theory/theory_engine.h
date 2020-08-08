@@ -147,7 +147,7 @@ class TheoryEngine {
    * The database of shared terms.
    */
   SharedTermsDatabase d_sharedTerms;
-  
+
   /** The distributed equality manager */
   std::unique_ptr<theory::EqEngineManagerDistributed> d_eeDistributed;
 

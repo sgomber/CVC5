@@ -167,25 +167,21 @@ TheoryArithPrivate::~TheoryArithPrivate(){
   if(d_nonlinearExtension != NULL) { delete d_nonlinearExtension; }
 }
 
-TheoryRewriter* TheoryArithPrivate::getTheoryRewriter()
-{
-  return &d_rewriter;
-}
+TheoryRewriter* TheoryArithPrivate::getTheoryRewriter() { return &d_rewriter; }
 eq::EqualityEngine* TheoryArithPrivate::allocateEqualityEngine()
 {
   return d_congruenceManager.allocateEqualityEngine(getSatContext());
 }
 void TheoryArithPrivate::finishInit()
 {
-  eq::EqualityEngine * ee = d_containing.getEqualityEngine();
-  Assert (ee!=nullptr);
+  eq::EqualityEngine* ee = d_containing.getEqualityEngine();
+  Assert(ee != nullptr);
   d_congruenceManager.finishInit(ee);
   const LogicInfo& logicInfo = getLogicInfo();
   // only need to create nonlinear extension if non-linear logic
   if (logicInfo.isTheoryEnabled(THEORY_ARITH) && !logicInfo.isLinear())
   {
-    d_nonlinearExtension = new nl::NonlinearExtension(
-        d_containing, ee);
+    d_nonlinearExtension = new nl::NonlinearExtension(d_containing, ee);
   }
 }
 

@@ -17,45 +17,47 @@
 #ifndef CVC4__THEORY__EE_MANAGER_DISTRIBUTED__H
 #define CVC4__THEORY__EE_MANAGER_DISTRIBUTED__H
 
-#include <memory>
 #include <map>
+#include <memory>
 
 #include "theory/theory.h"
 #include "theory/uf/equality_engine.h"
 
 namespace CVC4 {
-  
+
 class TheoryEngine;
 
 namespace theory {
 
 class EeTheoryInfo
 {
-public:
-  
+ public:
   /** The equality engine allocated by this theory (if it exists) */
   std::unique_ptr<eq::EqualityEngine> d_allocEe;
 };
-  
+
 class EqEngineManagerDistributed
 {
-public:
+ public:
   EqEngineManagerDistributed(TheoryEngine& te);
   ~EqEngineManagerDistributed();
   /** finish initialize */
   void finishInit();
   /** get the master equality engine */
   eq::EqualityEngine* getMasterEqualityEngine();
-private:
+
+ private:
   /** Reference to the theory engine */
   TheoryEngine& d_te;
   /** Pointer to quantifiers engine of d_te */
-  QuantifiersEngine * d_quantEngine;
+  QuantifiersEngine* d_quantEngine;
   /** notify class for master equality engine */
-  class MasterNotifyClass : public theory::eq::EqualityEngineNotify {
-    QuantifiersEngine * d_quantEngine;
-  public:
-    MasterNotifyClass(QuantifiersEngine * qe): d_quantEngine(qe) {}
+  class MasterNotifyClass : public theory::eq::EqualityEngineNotify
+  {
+    QuantifiersEngine* d_quantEngine;
+
+   public:
+    MasterNotifyClass(QuantifiersEngine* qe) : d_quantEngine(qe) {}
     /**
      * Called when a new equivalence class is created in the master equality
      * engine.
@@ -72,7 +74,7 @@ private:
    */
   std::map<TheoryId, EeTheoryInfo> d_einfo;
 };
-  
+
 }  // namespace theory
 }  // namespace CVC4
 

@@ -47,9 +47,9 @@ SolverState::~SolverState()
   }
 }
 
-void SolverState::finishInit(eq::EqualityEngine * ee)
+void SolverState::finishInit(eq::EqualityEngine* ee)
 {
-  Assert (ee!=nullptr);
+  Assert(ee != nullptr);
   d_ee = ee;
 }
 

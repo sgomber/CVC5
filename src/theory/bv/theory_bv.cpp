@@ -113,15 +113,13 @@ TheoryBV::TheoryBV(context::Context* c,
 
 TheoryBV::~TheoryBV() {}
 
-TheoryRewriter* TheoryBV::getTheoryRewriter()
-{
-  return &d_rewriter;
-}
+TheoryRewriter* TheoryBV::getTheoryRewriter() { return &d_rewriter; }
 
-eq::EqualityEngine * TheoryBV::allocateEqualityEngine() 
+eq::EqualityEngine* TheoryBV::allocateEqualityEngine()
 {
   CoreSolver* core = (CoreSolver*)d_subtheoryMap[SUB_CORE];
-  if( core ){
+  if (core)
+  {
     return core->allocateEqualityEngine();
   }
   // otherwise we don't use an equality engine
@@ -136,9 +134,10 @@ void TheoryBV::finishInit()
   Assert(tm != nullptr);
   tm->setSemiEvaluatedKind(kind::BITVECTOR_ACKERMANNIZE_UDIV);
   tm->setSemiEvaluatedKind(kind::BITVECTOR_ACKERMANNIZE_UREM);
-  
+
   CoreSolver* core = (CoreSolver*)d_subtheoryMap[SUB_CORE];
-  if( core ){
+  if (core)
+  {
     // must finish initialization in the core solver
     core->finishInit();
   }

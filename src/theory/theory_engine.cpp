@@ -42,6 +42,7 @@
 #include "theory/bv/theory_bv_utils.h"
 #include "theory/care_graph.h"
 #include "theory/decision_manager.h"
+#include "theory/ee_manager_distributed.h"
 #include "theory/quantifiers/first_order_model.h"
 #include "theory/quantifiers/fmf/model_engine.h"
 #include "theory/quantifiers/theory_quantifiers.h"
@@ -51,7 +52,6 @@
 #include "theory/theory_model.h"
 #include "theory/theory_traits.h"
 #include "theory/uf/equality_engine.h"
-#include "theory/ee_manager_distributed.h"
 #include "util/resource_manager.h"
 
 using namespace std;
@@ -130,8 +130,8 @@ std::string getTheoryString(theory::TheoryId id)
 }
 
 void TheoryEngine::finishInit() {
-  //initialize the quantifiers engine
-  if( d_logicInfo.isQuantified() )
+  // initialize the quantifiers engine
+  if (d_logicInfo.isQuantified())
   {
     // initialize the quantifiers engine
     d_quantEngine = new QuantifiersEngine(d_context, d_userContext, this);
@@ -142,21 +142,23 @@ void TheoryEngine::finishInit() {
       }
     }
   }
-  
+
   // Initialize the equality engine architecture for all theories, which
   // includes the master equality engine.
-  if (options::eeMode()==options::EqEngineMode::DISTRIBUTED)
+  if (options::eeMode() == options::EqEngineMode::DISTRIBUTED)
   {
     d_eeDistributed.reset(new EqEngineManagerDistributed(*this));
     d_eeDistributed->finishInit();
   }
   else
   {
-    AlwaysAssert(false) << "TheoryEngine::finishInit: equality engine mode " << options::eeMode() << " not supported";
+    AlwaysAssert(false) << "TheoryEngine::finishInit: equality engine mode "
+                        << options::eeMode() << " not supported";
   }
 
   // Initialize the model and model builder.
-  if( d_logicInfo.isQuantified() ) {
+  if (d_logicInfo.isQuantified())
+  {
     d_curr_model_builder = d_quantEngine->getModelBuilder();
     d_curr_model = d_quantEngine->getModel();
   } else {
@@ -164,7 +166,7 @@ void TheoryEngine::finishInit() {
         d_userContext, "DefaultModel", options::assignFunctionValues());
     d_aloc_curr_model = true;
   }
-  
+
   //make the default builder, e.g. in the case that the quantifiers engine does not have a model builder
   if( d_curr_model_builder==NULL ){
     d_curr_model_builder = new theory::TheoryEngineModelBuilder(this);
@@ -546,8 +548,9 @@ void TheoryEngine::check(Theory::Effort effort) {
     if( Theory::fullEffort(effort) && !d_inConflict && !needCheck()) {
       // case where we are about to answer SAT, the master equality engine,
       // if it exists, must be consistent.
-      eq::EqualityEngine * mee = getMasterEqualityEngine();
-      if( mee != NULL ){
+      eq::EqualityEngine* mee = getMasterEqualityEngine();
+      if (mee != NULL)
+      {
         AlwaysAssert(mee->consistent());
       }
       if (d_curr_model->isBuilt())
@@ -1802,12 +1805,16 @@ void TheoryEngine::staticInitializeBVOptions(
   }
 }
 
-SharedTermsDatabase* TheoryEngine::getSharedTermsDatabase() { return &d_sharedTerms; }
+SharedTermsDatabase* TheoryEngine::getSharedTermsDatabase()
+{
+  return &d_sharedTerms;
+}
 
-theory::eq::EqualityEngine* TheoryEngine::getMasterEqualityEngine() { 
-  if (d_eeDistributed!=nullptr)
+theory::eq::EqualityEngine* TheoryEngine::getMasterEqualityEngine()
+{
+  if (d_eeDistributed != nullptr)
   {
-    return d_eeDistributed->getMasterEqualityEngine(); 
+    return d_eeDistributed->getMasterEqualityEngine();
   }
   return nullptr;
 }

@@ -177,7 +177,7 @@ void TheorySetsRels::check(Theory::Effort level)
 
   void TheorySetsRels::collectRelsInfo() {
     Trace("rels") << "[sets-rels] Start collecting relational terms..." << std::endl;
-    eq::EqualityEngine * ee = d_state.getEqualityEngine();
+    eq::EqualityEngine* ee = d_state.getEqualityEngine();
     eq::EqClassesIterator eqcs_i = eq::EqClassesIterator(ee);
     while( !eqcs_i.isFinished() ){
       Node                      eqc_rep  = (*eqcs_i);

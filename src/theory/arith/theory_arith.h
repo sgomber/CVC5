@@ -63,7 +63,7 @@ class TheoryArith : public Theory {
   /** finish initialization */
   void finishInit() override;
   //--------------------------------- end initialization
-  
+
   /**
    * Does non-context dependent setup for a node connected to a theory.
    */

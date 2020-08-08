@@ -90,9 +90,9 @@ class CoreSolver : public SubtheorySolver {
   bool d_checkCalled;
 
   /** Pointer to the parent theory solver that owns this */
-  TheoryBV * d_bv;
+  TheoryBV* d_bv;
   /** Pointer to the equality engine of the parent */
-  eq::EqualityEngine * d_equalityEngine;
+  eq::EqualityEngine* d_equalityEngine;
   /** Pointer to the extended theory module. */
   ExtTheory* d_extTheory;
 
@@ -105,10 +105,11 @@ class CoreSolver : public SubtheorySolver {
   Node getBaseDecomposition(TNode a);
   bool isCompleteForTerm(TNode term, TNodeBoolMap& seen);
   Statistics d_statistics;
+
  public:
   CoreSolver(context::Context* c, TheoryBV* bv, ExtTheory* extt);
   ~CoreSolver();
-  eq::EqualityEngine * allocateEqualityEngine();
+  eq::EqualityEngine* allocateEqualityEngine();
   void finishInit();
   bool isComplete() override { return d_isComplete; }
   void preRegister(TNode node) override;

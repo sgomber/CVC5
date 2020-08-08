@@ -46,8 +46,7 @@ TheorySetsPrivate::TheorySetsPrivate(TheorySets& external,
       d_state(*this, c, u),
       d_im(*this, d_state, c, u),
       d_rels(new TheorySetsRels(d_state, d_im, u)),
-      d_cardSolver(
-          new CardinalityExtension(d_state, d_im, c, u)),
+      d_cardSolver(new CardinalityExtension(d_state, d_im, c, u)),
       d_rels_enabled(false),
       d_card_enabled(false)
 {
@@ -67,7 +66,7 @@ TheorySetsPrivate::~TheorySetsPrivate()
 void TheorySetsPrivate::finishInit()
 {
   d_equalityEngine = d_external.getEqualityEngine();
-  Assert (d_equalityEngine!=nullptr);
+  Assert(d_equalityEngine != nullptr);
   d_state.finishInit(d_equalityEngine);
 }
 
@@ -1036,10 +1035,10 @@ void TheorySetsPrivate::addCarePairs(TNodeTrie* t1,
             if (d_equalityEngine->isTriggerTerm(x, THEORY_SETS)
                 && d_equalityEngine->isTriggerTerm(y, THEORY_SETS))
             {
-              TNode x_shared =
-                  d_equalityEngine->getTriggerTermRepresentative(x, THEORY_SETS);
-              TNode y_shared =
-                  d_equalityEngine->getTriggerTermRepresentative(y, THEORY_SETS);
+              TNode x_shared = d_equalityEngine->getTriggerTermRepresentative(
+                  x, THEORY_SETS);
+              TNode y_shared = d_equalityEngine->getTriggerTermRepresentative(
+                  y, THEORY_SETS);
               currentPairs.push_back(make_pair(x_shared, y_shared));
             }
             else if (isCareArg(f1, k) && isCareArg(f2, k))

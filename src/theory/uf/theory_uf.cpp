@@ -70,18 +70,16 @@ TheoryUF::TheoryUF(context::Context* c,
 TheoryUF::~TheoryUF() {
 }
 
-TheoryRewriter* TheoryUF::getTheoryRewriter()
-{
-  return &d_rewriter;
-}
+TheoryRewriter* TheoryUF::getTheoryRewriter() { return &d_rewriter; }
 
 eq::EqualityEngine* TheoryUF::allocateEqualityEngine()
 {
-  return new eq::EqualityEngine(d_notify, getSatContext(), "theory::uf::ee", true);
+  return new eq::EqualityEngine(
+      d_notify, getSatContext(), "theory::uf::ee", true);
 }
 
 void TheoryUF::finishInit() {
-  Assert (d_equalityEngine!=nullptr);
+  Assert(d_equalityEngine != nullptr);
   // combined cardinality constraints are not evaluated in getModelValue
   TheoryModel* tm = d_valuation.getModel();
   Assert(tm != nullptr);
@@ -205,7 +203,7 @@ Node TheoryUF::getOperatorForApplyTerm( TNode node ) {
   if( node.getKind()==kind::APPLY_UF ){
     return node.getOperator();
   }else{
-    return d_equalityEngine->getRepresentative( node[0] );
+    return d_equalityEngine->getRepresentative(node[0]);
   }
 }
 
@@ -301,7 +299,8 @@ void TheoryUF::explain(TNode literal, std::vector<TNode>& assumptions, eq::EqPro
   bool polarity = literal.getKind() != kind::NOT;
   TNode atom = polarity ? literal : literal[0];
   if (atom.getKind() == kind::EQUAL) {
-    d_equalityEngine->explainEquality(atom[0], atom[1], polarity, assumptions, pf);
+    d_equalityEngine->explainEquality(
+        atom[0], atom[1], polarity, assumptions, pf);
   } else {
     d_equalityEngine->explainPredicate(atom, polarity, assumptions, pf);
   }
@@ -502,13 +501,15 @@ void TheoryUF::ppStaticLearn(TNode n, NodeBuilder<>& learned) {
 EqualityStatus TheoryUF::getEqualityStatus(TNode a, TNode b) {
 
   // Check for equality (simplest)
-  if (d_equalityEngine->areEqual(a, b)) {
+  if (d_equalityEngine->areEqual(a, b))
+  {
     // The terms are implied to be equal
     return EQUALITY_TRUE;
   }
 
   // Check for disequality
-  if (d_equalityEngine->areDisequal(a, b, false)) {
+  if (d_equalityEngine->areDisequal(a, b, false))
+  {
     // The terms are implied to be dis-equal
     return EQUALITY_FALSE;
   }
@@ -525,9 +526,13 @@ void TheoryUF::addSharedTerm(TNode t) {
 bool TheoryUF::areCareDisequal(TNode x, TNode y){
   Assert(d_equalityEngine->hasTerm(x));
   Assert(d_equalityEngine->hasTerm(y));
-  if( d_equalityEngine->isTriggerTerm(x, THEORY_UF) && d_equalityEngine->isTriggerTerm(y, THEORY_UF) ){
-    TNode x_shared = d_equalityEngine->getTriggerTermRepresentative(x, THEORY_UF);
-    TNode y_shared = d_equalityEngine->getTriggerTermRepresentative(y, THEORY_UF);
+  if (d_equalityEngine->isTriggerTerm(x, THEORY_UF)
+      && d_equalityEngine->isTriggerTerm(y, THEORY_UF))
+  {
+    TNode x_shared =
+        d_equalityEngine->getTriggerTermRepresentative(x, THEORY_UF);
+    TNode y_shared =
+        d_equalityEngine->getTriggerTermRepresentative(y, THEORY_UF);
     EqualityStatus eqStatus = d_valuation.getEqualityStatus(x_shared, y_shared);
     if( eqStatus==EQUALITY_FALSE_AND_PROPAGATED || eqStatus==EQUALITY_FALSE || eqStatus==EQUALITY_FALSE_IN_MODEL ){
       return true;
@@ -545,7 +550,8 @@ void TheoryUF::addCarePairs(TNodeTrie* t1,
     if( t2!=NULL ){
       Node f1 = t1->getData();
       Node f2 = t2->getData();
-      if( !d_equalityEngine->areEqual( f1, f2 ) ){
+      if (!d_equalityEngine->areEqual(f1, f2))
+      {
         Debug("uf::sharing") << "TheoryUf::computeCareGraph(): checking function " << f1 << " and " << f2 << std::endl;
         vector< pair<TNode, TNode> > currentPairs;
         unsigned arg_start_index = getArgumentStartIndexForApplyTerm( f1 );
@@ -556,10 +562,15 @@ void TheoryUF::addCarePairs(TNodeTrie* t1,
           Assert(d_equalityEngine->hasTerm(y));
           Assert(!d_equalityEngine->areDisequal(x, y, false));
           Assert(!areCareDisequal(x, y));
-          if( !d_equalityEngine->areEqual( x, y ) ){
-            if( d_equalityEngine->isTriggerTerm(x, THEORY_UF) && d_equalityEngine->isTriggerTerm(y, THEORY_UF) ){
-              TNode x_shared = d_equalityEngine->getTriggerTermRepresentative(x, THEORY_UF);
-              TNode y_shared = d_equalityEngine->getTriggerTermRepresentative(y, THEORY_UF);
+          if (!d_equalityEngine->areEqual(x, y))
+          {
+            if (d_equalityEngine->isTriggerTerm(x, THEORY_UF)
+                && d_equalityEngine->isTriggerTerm(y, THEORY_UF))
+            {
+              TNode x_shared =
+                  d_equalityEngine->getTriggerTermRepresentative(x, THEORY_UF);
+              TNode y_shared =
+                  d_equalityEngine->getTriggerTermRepresentative(y, THEORY_UF);
               currentPairs.push_back(make_pair(x_shared, y_shared));
             }
           }
@@ -587,7 +598,8 @@ void TheoryUF::addCarePairs(TNodeTrie* t1,
         std::map<TNode, TNodeTrie>::iterator it2 = it;
         ++it2;
         for( ; it2 != t1->d_data.end(); ++it2 ){
-          if( !d_equalityEngine->areDisequal(it->first, it2->first, false) ){
+          if (!d_equalityEngine->areDisequal(it->first, it2->first, false))
+          {
             if( !areCareDisequal(it->first, it2->first) ){
               addCarePairs( &it->second, &it2->second, arity, depth+1 );
             }
@@ -628,8 +640,9 @@ void TheoryUF::computeCareGraph() {
       std::vector< TNode > reps;
       bool has_trigger_arg = false;
       for( unsigned j=arg_start_index; j<f1.getNumChildren(); j++ ){
-        reps.push_back( d_equalityEngine->getRepresentative( f1[j] ) );
-        if( d_equalityEngine->isTriggerTerm( f1[j], THEORY_UF ) ){
+        reps.push_back(d_equalityEngine->getRepresentative(f1[j]));
+        if (d_equalityEngine->isTriggerTerm(f1[j], THEORY_UF))
+        {
           has_trigger_arg = true;
         }
       }

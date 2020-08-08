@@ -281,8 +281,7 @@ private:
   /** finish initialization */
   void finishInit() override;
   //--------------------------------- end initialization
-  
-  
+
   /** propagate */
   void propagate(Effort effort) override;
   /** propagate */

@@ -163,7 +163,7 @@ class TheorySetsPrivate {
 
   TheoryRewriter* getTheoryRewriter() { return &d_rewriter; }
 
-  /** 
+  /**
    * Finish initialize, called after the equality engine of theory sets has
    * been determined.
    */
@@ -228,13 +228,13 @@ class TheorySetsPrivate {
 
   /** generate and send out conflict node */
   void conflict(TNode, TNode);
-  
+
  private:
   TheorySets& d_external;
 
   /** Pointer to the equality engine of theory of sets */
-  eq::EqualityEngine * d_equalityEngine;
-  
+  eq::EqualityEngine* d_equalityEngine;
+
   bool isCareArg( Node n, unsigned a );
 
  public:

@@ -55,12 +55,13 @@ TheoryRewriter* TheorySets::getTheoryRewriter()
 
 eq::EqualityEngine* TheorySets::allocateEqualityEngine()
 {
-  return new eq::EqualityEngine(d_notify, getSatContext(), "theory::sets::ee", true);
+  return new eq::EqualityEngine(
+      d_notify, getSatContext(), "theory::sets::ee", true);
 }
 
 void TheorySets::finishInit()
 {
-  Assert (d_equalityEngine!=nullptr);
+  Assert(d_equalityEngine != nullptr);
   // functions we are doing congruence over
   d_equalityEngine->addFunctionKind(kind::SINGLETON);
   d_equalityEngine->addFunctionKind(kind::UNION);
@@ -78,13 +79,13 @@ void TheorySets::finishInit()
   d_equalityEngine->addFunctionKind(APPLY_CONSTRUCTOR);
   // we do congruence over cardinality
   d_equalityEngine->addFunctionKind(CARD);
-  
+
   TheoryModel* tm = d_valuation.getModel();
   Assert(tm != nullptr);
   tm->setUnevaluatedKind(COMPREHENSION);
   // choice is used to eliminate witness
   tm->setUnevaluatedKind(WITNESS);
-  
+
   // finish initialization internally
   d_internal->finishInit();
 }
@@ -205,11 +206,10 @@ bool TheorySets::isEntailed( Node n, bool pol ) {
   return d_internal->isEntailed( n, pol );
 }
 
-
 /**************************** eq::NotifyClass *****************************/
 
 bool TheorySets::NotifyClass::eqNotifyTriggerEquality(TNode equality,
-                                                             bool value)
+                                                      bool value)
 {
   Debug("sets-eq") << "[sets-eq] eqNotifyTriggerEquality: equality = "
                    << equality << " value = " << value << std::endl;
@@ -225,7 +225,7 @@ bool TheorySets::NotifyClass::eqNotifyTriggerEquality(TNode equality,
 }
 
 bool TheorySets::NotifyClass::eqNotifyTriggerPredicate(TNode predicate,
-                                                              bool value)
+                                                       bool value)
 {
   Debug("sets-eq") << "[sets-eq] eqNotifyTriggerPredicate: predicate = "
                    << predicate << " value = " << value << std::endl;
@@ -240,9 +240,9 @@ bool TheorySets::NotifyClass::eqNotifyTriggerPredicate(TNode predicate,
 }
 
 bool TheorySets::NotifyClass::eqNotifyTriggerTermEquality(TheoryId tag,
-                                                                 TNode t1,
-                                                                 TNode t2,
-                                                                 bool value)
+                                                          TNode t1,
+                                                          TNode t2,
+                                                          bool value)
 {
   Debug("sets-eq") << "[sets-eq] eqNotifyTriggerTermEquality: tag = " << tag
                    << " t1 = " << t1 << "  t2 = " << t2 << "  value = " << value
@@ -251,8 +251,7 @@ bool TheorySets::NotifyClass::eqNotifyTriggerTermEquality(TheoryId tag,
   return true;
 }
 
-void TheorySets::NotifyClass::eqNotifyConstantTermMerge(TNode t1,
-                                                               TNode t2)
+void TheorySets::NotifyClass::eqNotifyConstantTermMerge(TNode t1, TNode t2)
 {
   Debug("sets-eq") << "[sets-eq] eqNotifyConstantTermMerge "
                    << " t1 = " << t1 << " t2 = " << t2 << std::endl;
@@ -280,9 +279,7 @@ void TheorySets::NotifyClass::eqNotifyPostMerge(TNode t1, TNode t2)
   d_theory.eqNotifyPostMerge(t1, t2);
 }
 
-void TheorySets::NotifyClass::eqNotifyDisequal(TNode t1,
-                                                      TNode t2,
-                                                      TNode reason)
+void TheorySets::NotifyClass::eqNotifyDisequal(TNode t1, TNode t2, TNode reason)
 {
   Debug("sets-eq") << "[sets-eq] eqNotifyDisequal:"
                    << " t1 = " << t1 << " t2 = " << t2 << " reason = " << reason

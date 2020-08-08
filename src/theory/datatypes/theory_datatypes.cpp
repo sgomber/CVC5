@@ -78,19 +78,17 @@ TheoryDatatypes::~TheoryDatatypes() {
   }
 }
 
-TheoryRewriter* TheoryDatatypes::getTheoryRewriter()
-{
-  return &d_rewriter;
-}
+TheoryRewriter* TheoryDatatypes::getTheoryRewriter() { return &d_rewriter; }
 
 eq::EqualityEngine* TheoryDatatypes::allocateEqualityEngine()
 {
-  return new eq::EqualityEngine(d_notify, getSatContext(), "theory::datatypes", true);
+  return new eq::EqualityEngine(
+      d_notify, getSatContext(), "theory::datatypes", true);
 }
 
-void TheoryDatatypes::finishInit() 
+void TheoryDatatypes::finishInit()
 {
-  Assert (d_equalityEngine!=nullptr);
+  Assert(d_equalityEngine != nullptr);
   // The kinds we are treating as function application in congruence
   d_equalityEngine->addFunctionKind(kind::APPLY_CONSTRUCTOR);
   d_equalityEngine->addFunctionKind(kind::APPLY_SELECTOR_TOTAL);
@@ -210,7 +208,7 @@ void TheoryDatatypes::check(Effort e) {
     do {
       d_addedFact = false;
       std::map< TypeNode, Node > rec_singletons;
-      eq::EqClassesIterator eqcs_i = eq::EqClassesIterator( d_equalityEngine );
+      eq::EqClassesIterator eqcs_i = eq::EqClassesIterator(d_equalityEngine);
       while( !eqcs_i.isFinished() ){
         Node n = (*eqcs_i);
         //TODO : avoid irrelevant (pre-registered but not asserted) terms here?
@@ -496,9 +494,9 @@ void TheoryDatatypes::assertFact( Node fact, Node exp ){
   bool polarity = fact.getKind() != kind::NOT;
   TNode atom = polarity ? fact : fact[0];
   if (atom.getKind() == kind::EQUAL) {
-    d_equalityEngine->assertEquality( atom, polarity, exp );
+    d_equalityEngine->assertEquality(atom, polarity, exp);
   }else{
-    d_equalityEngine->assertPredicate( atom, polarity, exp );
+    d_equalityEngine->assertPredicate(atom, polarity, exp);
   }
   doPendingMerges();
   // could be sygus-specific
@@ -559,7 +557,7 @@ void TheoryDatatypes::preRegisterTerm(TNode n) {
       d_sygusExtension->preRegisterTerm(n, lemmas);
       doSendLemmas( lemmas );
     }
-    //d_equalityEngine->addTriggerTerm(n, THEORY_DATATYPES);
+    // d_equalityEngine->addTriggerTerm(n, THEORY_DATATYPES);
     break;
   }
   flushPendingFacts();
@@ -1383,11 +1381,13 @@ void TheoryDatatypes::collapseSelector( Node s, Node c ) {
 
 EqualityStatus TheoryDatatypes::getEqualityStatus(TNode a, TNode b){
   Assert(d_equalityEngine->hasTerm(a) && d_equalityEngine->hasTerm(b));
-  if (d_equalityEngine->areEqual(a, b)) {
+  if (d_equalityEngine->areEqual(a, b))
+  {
     // The terms are implied to be equal
     return EQUALITY_TRUE;
   }
-  if (d_equalityEngine->areDisequal(a, b, false)) {
+  if (d_equalityEngine->areDisequal(a, b, false))
+  {
     // The terms are implied to be dis-equal
     return EQUALITY_FALSE;
   }
@@ -1414,11 +1414,16 @@ void TheoryDatatypes::addCarePairs(TNodeTrie* t1,
           Assert(d_equalityEngine->hasTerm(y));
           Assert(!areDisequal(x, y));
           Assert(!areCareDisequal(x, y));
-          if( !d_equalityEngine->areEqual( x, y ) ){
+          if (!d_equalityEngine->areEqual(x, y))
+          {
             Trace("dt-cg") << "Arg #" << k << " is " << x << " " << y << std::endl;
-            if( d_equalityEngine->isTriggerTerm(x, THEORY_DATATYPES) && d_equalityEngine->isTriggerTerm(y, THEORY_DATATYPES) ){
-              TNode x_shared = d_equalityEngine->getTriggerTermRepresentative(x, THEORY_DATATYPES);
-              TNode y_shared = d_equalityEngine->getTriggerTermRepresentative(y, THEORY_DATATYPES);
+            if (d_equalityEngine->isTriggerTerm(x, THEORY_DATATYPES)
+                && d_equalityEngine->isTriggerTerm(y, THEORY_DATATYPES))
+            {
+              TNode x_shared = d_equalityEngine->getTriggerTermRepresentative(
+                  x, THEORY_DATATYPES);
+              TNode y_shared = d_equalityEngine->getTriggerTermRepresentative(
+                  y, THEORY_DATATYPES);
               currentPairs.push_back(make_pair(x_shared, y_shared));
             }
           }
@@ -1447,7 +1452,8 @@ void TheoryDatatypes::addCarePairs(TNodeTrie* t1,
         std::map<TNode, TNodeTrie>::iterator it2 = it;
         ++it2;
         for( ; it2 != t1->d_data.end(); ++it2 ){
-          if( !d_equalityEngine->areDisequal(it->first, it2->first, false) ){
+          if (!d_equalityEngine->areDisequal(it->first, it2->first, false))
+          {
             if( !areCareDisequal(it->first, it2->first) ){
               addCarePairs( &it->second, &it2->second, arity, depth+1, n_pairs );
             }
@@ -1491,8 +1497,9 @@ void TheoryDatatypes::computeCareGraph(){
     std::vector< TNode > reps;
     bool has_trigger_arg = false;
     for( unsigned j=0; j<f1.getNumChildren(); j++ ){
-      reps.push_back( d_equalityEngine->getRepresentative( f1[j] ) );
-      if( d_equalityEngine->isTriggerTerm( f1[j], THEORY_DATATYPES ) ){
+      reps.push_back(d_equalityEngine->getRepresentative(f1[j]));
+      if (d_equalityEngine->isTriggerTerm(f1[j], THEORY_DATATYPES))
+      {
         has_trigger_arg = true;
       }
     }
@@ -1517,7 +1524,8 @@ void TheoryDatatypes::computeCareGraph(){
 
 bool TheoryDatatypes::collectModelInfo(TheoryModel* m)
 {
-  Trace("dt-cmi") << "Datatypes : Collect model info " << d_equalityEngine->consistent() << std::endl;
+  Trace("dt-cmi") << "Datatypes : Collect model info "
+                  << d_equalityEngine->consistent() << std::endl;
   Trace("dt-model") << std::endl;
   printModelDebug( "dt-model" );
   Trace("dt-model") << std::endl;
@@ -1534,7 +1542,7 @@ bool TheoryDatatypes::collectModelInfo(TheoryModel* m)
   }
 
   //get all constructors
-  eq::EqClassesIterator eqccs_i = eq::EqClassesIterator( d_equalityEngine );
+  eq::EqClassesIterator eqccs_i = eq::EqClassesIterator(d_equalityEngine);
   std::vector< Node > cons;
   std::vector< Node > nodes;
   std::map< Node, Node > eqc_cons;
@@ -1573,7 +1581,8 @@ bool TheoryDatatypes::collectModelInfo(TheoryModel* m)
     bool addCons = false;
     TypeNode tt = eqc.getType();
     const DType& dt = tt.getDType();
-    if( !d_equalityEngine->hasTerm( eqc ) ){
+    if (!d_equalityEngine->hasTerm(eqc))
+    {
       Assert(false);
     }else{
       Trace("dt-cmi") << "NOTICE : Datatypes: no constructor in equivalence class " << eqc << std::endl;
@@ -1593,9 +1602,11 @@ bool TheoryDatatypes::collectModelInfo(TheoryModel* m)
             bool cfinite = dt[ i ].isInterpretedFinite( tt );
             if( pcons[i] && (r==1)==cfinite ){
               neqc = utils::getInstCons(eqc, dt, i);
-              //for( unsigned j=0; j<neqc.getNumChildren(); j++ ){
-              //  //if( sels[i].find( j )==sels[i].end() && neqc[j].getType().isDatatype() ){
-              //  if( !d_equalityEngine->hasTerm( neqc[j] ) && neqc[j].getType().isDatatype() ){
+              // for( unsigned j=0; j<neqc.getNumChildren(); j++ ){
+              //  //if( sels[i].find( j )==sels[i].end() &&
+              //  neqc[j].getType().isDatatype() ){ if(
+              //  !d_equalityEngine->hasTerm( neqc[j] ) &&
+              //  neqc[j].getType().isDatatype() ){
               //    nodes.push_back( neqc[j] );
               //  }
               //}
@@ -1839,7 +1850,7 @@ void TheoryDatatypes::instantiate( EqcInfo* eqc, Node n ){
 void TheoryDatatypes::checkCycles() {
   Trace("datatypes-cycle-check") << "Check acyclicity" << std::endl;
   std::vector< Node > cdt_eqc;
-  eq::EqClassesIterator eqcs_i = eq::EqClassesIterator( d_equalityEngine );
+  eq::EqClassesIterator eqcs_i = eq::EqClassesIterator(d_equalityEngine);
   while( !eqcs_i.isFinished() ){
     Node eqc = (*eqcs_i);
     TypeNode tn = eqc.getType();
@@ -2130,15 +2141,13 @@ bool TheoryDatatypes::mustCommunicateFact( Node n, Node exp ){
   }
 }
 
-bool TheoryDatatypes::hasTerm( TNode a ){
-  return d_equalityEngine->hasTerm( a );
-}
+bool TheoryDatatypes::hasTerm(TNode a) { return d_equalityEngine->hasTerm(a); }
 
 bool TheoryDatatypes::areEqual( TNode a, TNode b ){
   if( a==b ){
     return true;
   }else if( hasTerm( a ) && hasTerm( b ) ){
-    return d_equalityEngine->areEqual( a, b );
+    return d_equalityEngine->areEqual(a, b);
   }else{
     return false;
   }
@@ -2148,7 +2157,7 @@ bool TheoryDatatypes::areDisequal( TNode a, TNode b ){
   if( a==b ){
     return false;
   }else if( hasTerm( a ) && hasTerm( b ) ){
-    return d_equalityEngine->areDisequal( a, b, false );
+    return d_equalityEngine->areDisequal(a, b, false);
   }else{
     //TODO : constants here?
     return false;
@@ -2158,9 +2167,13 @@ bool TheoryDatatypes::areDisequal( TNode a, TNode b ){
 bool TheoryDatatypes::areCareDisequal( TNode x, TNode y ) {
   Assert(d_equalityEngine->hasTerm(x));
   Assert(d_equalityEngine->hasTerm(y));
-  if( d_equalityEngine->isTriggerTerm(x, THEORY_DATATYPES) && d_equalityEngine->isTriggerTerm(y, THEORY_DATATYPES) ){
-    TNode x_shared = d_equalityEngine->getTriggerTermRepresentative(x, THEORY_DATATYPES);
-    TNode y_shared = d_equalityEngine->getTriggerTermRepresentative(y, THEORY_DATATYPES);
+  if (d_equalityEngine->isTriggerTerm(x, THEORY_DATATYPES)
+      && d_equalityEngine->isTriggerTerm(y, THEORY_DATATYPES))
+  {
+    TNode x_shared =
+        d_equalityEngine->getTriggerTermRepresentative(x, THEORY_DATATYPES);
+    TNode y_shared =
+        d_equalityEngine->getTriggerTermRepresentative(y, THEORY_DATATYPES);
     EqualityStatus eqStatus = d_valuation.getEqualityStatus(x_shared, y_shared);
     if( eqStatus==EQUALITY_FALSE_AND_PROPAGATED || eqStatus==EQUALITY_FALSE || eqStatus==EQUALITY_FALSE_IN_MODEL ){
       return true;
@@ -2171,7 +2184,7 @@ bool TheoryDatatypes::areCareDisequal( TNode x, TNode y ) {
 
 TNode TheoryDatatypes::getRepresentative( TNode a ){
   if( hasTerm( a ) ){
-    return d_equalityEngine->getRepresentative( a );
+    return d_equalityEngine->getRepresentative(a);
   }else{
     return a;
   }
@@ -2187,7 +2200,7 @@ void TheoryDatatypes::printModelDebug( const char* c ){
   }
 
   Trace( c ) << "Datatypes model : " << std::endl;
-  eq::EqClassesIterator eqcs_i = eq::EqClassesIterator( d_equalityEngine );
+  eq::EqClassesIterator eqcs_i = eq::EqClassesIterator(d_equalityEngine);
   while( !eqcs_i.isFinished() ){
     Node eqc = (*eqcs_i);
     //if( !eqc.getType().isBoolean() ){
@@ -2197,7 +2210,7 @@ void TheoryDatatypes::printModelDebug( const char* c ){
       Trace( c ) << eqc << " : " << eqc.getType() << " : " << std::endl;
       Trace( c ) << "   { ";
       //add terms to model
-      eq::EqClassIterator eqc_i = eq::EqClassIterator( eqc, d_equalityEngine );
+      eq::EqClassIterator eqc_i = eq::EqClassIterator(eqc, d_equalityEngine);
       while( !eqc_i.isFinished() ){
         if( (*eqc_i)!=eqc ){
           Trace( c ) << (*eqc_i) << " ";
@@ -2263,7 +2276,7 @@ void TheoryDatatypes::getRelevantTerms( std::set<Node>& termSet ) {
                   << std::endl;
 
   //also include non-singleton equivalence classes  TODO : revisit this
-  eq::EqClassesIterator eqcs_i = eq::EqClassesIterator( d_equalityEngine );
+  eq::EqClassesIterator eqcs_i = eq::EqClassesIterator(d_equalityEngine);
   while( !eqcs_i.isFinished() ){
     TNode r = (*eqcs_i);
     bool addedFirst = false;
@@ -2311,7 +2324,7 @@ std::pair<bool, Node> TheoryDatatypes::entailmentCheck(TNode lit)
   if( atom.getKind()==APPLY_TESTER ){
     Node n = atom[0];
     if( hasTerm( n ) ){
-      Node r = d_equalityEngine->getRepresentative( n );
+      Node r = d_equalityEngine->getRepresentative(n);
       EqcInfo * ei = getOrMakeEqcInfo( r, false );
       int l_index = getLabelIndex( ei, r );
       int t_index = static_cast<int>(utils::indexOf(atom.getOperator()));
