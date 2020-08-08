@@ -61,7 +61,7 @@ class EqEngineManagerDistributed
      * engine.
      */
     void eqNotifyNewClass(TNode t) override;
-    
+
     bool eqNotifyTriggerEquality(TNode equality, bool value) override
     {
       return true;
@@ -71,9 +71,9 @@ class EqEngineManagerDistributed
       return true;
     }
     bool eqNotifyTriggerTermEquality(TheoryId tag,
-                                      TNode t1,
-                                      TNode t2,
-                                      bool value) override
+                                     TNode t1,
+                                     TNode t2,
+                                     bool value) override
     {
       return true;
     }
@@ -81,7 +81,8 @@ class EqEngineManagerDistributed
     void eqNotifyPreMerge(TNode t1, TNode t2) override {}
     void eqNotifyPostMerge(TNode t1, TNode t2) override {}
     void eqNotifyDisequal(TNode t1, TNode t2, TNode reason) override {}
-  private:
+
+   private:
     /** Pointer to quantifiers engine */
     QuantifiersEngine* d_quantEngine;
   };
