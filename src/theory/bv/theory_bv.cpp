@@ -144,16 +144,6 @@ void TheoryBV::finishInit()
   }
 }
 
-void TheoryBV::setMasterEqualityEngine(eq::EqualityEngine* eq) {
-  if (options::bitblastMode() == options::BitblastMode::EAGER)
-  {
-    return;
-  }
-  if (options::bitvectorEqualitySolver()) {
-    dynamic_cast<CoreSolver*>(d_subtheoryMap[SUB_CORE])->setMasterEqualityEngine(eq);
-  }
-}
-
 void TheoryBV::spendResource(ResourceManager::Resource r)
 {
   getOutputChannel().spendResource(r);

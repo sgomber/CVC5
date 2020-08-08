@@ -163,6 +163,10 @@ class TheorySetsPrivate {
 
   TheoryRewriter* getTheoryRewriter() { return &d_rewriter; }
 
+  /** 
+   * Finish initialize, called after the equality engine of theory sets has
+   * been determined.
+   */
   void finishInit();
 
   void addSharedTerm(TNode);

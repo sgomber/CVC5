@@ -509,10 +509,6 @@ class Theory {
    * closure.
    */
   virtual eq::EqualityEngine* allocateEqualityEngine();
-  /**
-   * Called to set the master equality engine, when 
-   */
-  virtual void setMasterEqualityEngine(eq::EqualityEngine* ee);
   //---------------------------------- equality engine management
 
   /** Called to set the quantifiers engine. */

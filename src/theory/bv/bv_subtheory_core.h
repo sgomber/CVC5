@@ -71,9 +71,6 @@ class CoreSolver : public SubtheorySolver {
   /** The notify class for d_equalityEngine */
   NotifyClass d_notify;
 
-  /** Equality engine */
-  eq::EqualityEngine * d_equalityEngine;
-
   /** Store a propagation to the bv solver */
   bool storePropagation(TNode literal);
 
@@ -92,8 +89,10 @@ class CoreSolver : public SubtheorySolver {
   bool d_preregisterCalled;
   bool d_checkCalled;
 
-  /** Pointer to the parent */
+  /** Pointer to the parent theory solver that owns this */
   TheoryBV * d_bv;
+  /** Pointer to the equality engine of the parent */
+  eq::EqualityEngine * d_equalityEngine;
   /** Pointer to the extended theory module. */
   ExtTheory* d_extTheory;
 

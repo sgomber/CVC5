@@ -87,6 +87,8 @@ eq::EqualityEngine* TheoryStrings::allocateEqualityEngine()
 
 void TheoryStrings::finishInit()
 {
+  Assert (d_equalityEngine!=nullptr);
+  
   TheoryModel* tm = d_valuation.getModel();
   // witness is used to eliminate str.from_code
   tm->setUnevaluatedKind(WITNESS);
@@ -114,6 +116,9 @@ void TheoryStrings::finishInit()
   d_equalityEngine->addFunctionKind(kind::STRING_TOLOWER, eagerEval);
   d_equalityEngine->addFunctionKind(kind::STRING_TOUPPER, eagerEval);
   d_equalityEngine->addFunctionKind(kind::STRING_REV, eagerEval);
+  
+  d_state->finishInit(d_equalityEngine);
+  d_termReg->finishInit(d_equalityEngine);
 }
 
 std::string TheoryStrings::identify() const
@@ -133,10 +138,6 @@ bool TheoryStrings::areCareDisequal( TNode x, TNode y ) {
     }
   }
   return false;
-}
-
-void TheoryStrings::setMasterEqualityEngine(eq::EqualityEngine* eq) {
-  d_equalityEngine->setMasterEqualityEngine(eq);
 }
 
 void TheoryStrings::addSharedTerm(TNode t) {

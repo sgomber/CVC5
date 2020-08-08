@@ -71,8 +71,6 @@ class TheoryArith : public Theory {
 
   TrustNode expandDefinition(Node node) override;
 
-  void setMasterEqualityEngine(eq::EqualityEngine* eq) override;
-
   void check(Effort e) override;
   bool needsCheckLastEffort() override;
   void propagate(Effort e) override;

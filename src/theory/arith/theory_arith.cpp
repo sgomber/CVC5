@@ -87,10 +87,6 @@ TrustNode TheoryArith::expandDefinition(Node node)
   return d_internal->expandDefinition(node);
 }
 
-void TheoryArith::setMasterEqualityEngine(eq::EqualityEngine* eq) {
-  d_internal->setMasterEqualityEngine(eq);
-}
-
 void TheoryArith::addSharedTerm(TNode n){
   d_internal->addSharedTerm(n);
 }

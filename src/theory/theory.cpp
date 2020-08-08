@@ -424,20 +424,20 @@ void Theory::setDecisionManager(DecisionManager* dm)
 
 eq::EqualityEngine* Theory::getEqualityEngine()
 {
+  // get the assigned equality engine, which is a pointer stored in this class
   return d_equalityEngine;
 }
 
 void Theory::setEqualityEngine(eq::EqualityEngine* ee)
 {
+  // set the equality engine pointer
   d_equalityEngine = ee;
 }
+
 eq::EqualityEngine* allocateEqualityEngine()
 {
+  // this theory does not use an (official) equality engine
   return nullptr;
-}
-void setMasterEqualityEngine(eq::EqualityEngine* ee)
-{
-  // do nothing
 }
 
 }/* CVC4::theory namespace */

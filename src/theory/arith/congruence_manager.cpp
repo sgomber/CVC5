@@ -152,10 +152,6 @@ bool ArithCongruenceManager::canExplain(TNode n) const {
   return d_explanationMap.find(n) != d_explanationMap.end();
 }
 
-void ArithCongruenceManager::setMasterEqualityEngine(eq::EqualityEngine* eq) {
-  d_ee->setMasterEqualityEngine(eq);
-}
-
 Node ArithCongruenceManager::externalToInternal(TNode n) const{
   Assert(canExplain(n));
   ExplainMap::const_iterator iter = d_explanationMap.find(n);
