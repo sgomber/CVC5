@@ -173,6 +173,21 @@ TheoryArithPrivate::~TheoryArithPrivate(){
   if(d_nonlinearExtension != NULL) { delete d_nonlinearExtension; }
 }
 
+TheoryRewriter* TheoryArithPrivate::getTheoryRewriter()
+{
+  return &d_rewriter;
+}
+eq::EqualityEngine* TheoryArithPrivate::allocateEqualityEngine()
+{
+  return d_congruenceManager.allocateEqualityEngine(getSatContext());
+}
+void TheoryArithPrivate::finishInit()
+{
+  eq::EqualityEngine * ee = d_containing.getEqualityEngine();
+  Assert (ee!=nullptr);
+  d_congruenceManager.finishInit(ee);
+}
+
 static bool contains(const ConstraintCPVec& v, ConstraintP con){
   for(unsigned i = 0, N = v.size(); i < N; ++i){
     if(v[i] == con){
@@ -225,10 +240,6 @@ static void resolve(ConstraintCPVec& buf, ConstraintP c, const ConstraintCPVec& 
   // dropPosition(nb, dnconf, dnpos);
   // dropPosition(nb, upconf, uppos);
   // return safeConstructNary(nb);
-}
-
-void TheoryArithPrivate::setMasterEqualityEngine(eq::EqualityEngine* eq) {
-  d_congruenceManager.setMasterEqualityEngine(eq);
 }
 
 TheoryArithPrivate::ModelException::ModelException(TNode n, const char* msg)

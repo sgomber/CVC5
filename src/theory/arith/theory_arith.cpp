@@ -56,10 +56,10 @@ TheoryRewriter* TheoryArith::getTheoryRewriter()
   return d_internal->getTheoryRewriter();
 }
 
-void TheoryArith::preRegisterTerm(TNode n){
-  d_internal->preRegisterTerm(n);
+eq::EqualityEngine* allocateEqualityEngine()
+{
+  return d_internal->allocateEqualityEngine();
 }
-
 void TheoryArith::finishInit()
 {
   TheoryModel* tm = d_valuation.getModel();
@@ -74,6 +74,12 @@ void TheoryArith::finishInit()
     tm->setUnevaluatedKind(kind::SINE);
     tm->setUnevaluatedKind(kind::PI);
   }
+  // finish initialize internally
+  d_internal->finishInit();
+}
+
+void TheoryArith::preRegisterTerm(TNode n){
+  d_internal->preRegisterTerm(n);
 }
 
 TrustNode TheoryArith::expandDefinition(Node node)

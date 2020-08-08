@@ -80,6 +80,7 @@ Theory::Theory(TheoryId id,
       d_sharedTerms(satContext),
       d_out(&out),
       d_valuation(valuation),
+      d_equalityEngine(nullptr),
       d_proofsEnabled(false)
 {
   smtStatisticsRegistry()->registerStat(&d_checkTime);
@@ -419,6 +420,24 @@ void Theory::setDecisionManager(DecisionManager* dm)
   Assert(d_decManager == nullptr);
   Assert(dm != nullptr);
   d_decManager = dm;
+}
+
+eq::EqualityEngine* Theory::getEqualityEngine()
+{
+  return d_equalityEngine;
+}
+
+void Theory::setEqualityEngine(eq::EqualityEngine* ee)
+{
+  d_equalityEngine = ee;
+}
+eq::EqualityEngine* allocateEqualityEngine()
+{
+  return nullptr;
+}
+void setMasterEqualityEngine(eq::EqualityEngine* ee)
+{
+  // do nothing
 }
 
 }/* CVC4::theory namespace */

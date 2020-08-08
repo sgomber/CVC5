@@ -90,6 +90,7 @@ struct NodeTheoryPairHashFunction {
 namespace theory {
   class TheoryModel;
   class TheoryEngineModelBuilder;
+  class EqEngineManagerDistributed;
 
   namespace eq {
     class EqualityEngine;
@@ -146,45 +147,9 @@ class TheoryEngine {
    * The database of shared terms.
    */
   SharedTermsDatabase d_sharedTerms;
-
-  /**
-   * Master equality engine, to share with theories.
-   */
-  theory::eq::EqualityEngine* d_masterEqualityEngine;
-
-  /** notify class for master equality engine */
-  class NotifyClass : public theory::eq::EqualityEngineNotify {
-    TheoryEngine& d_te;
-  public:
-    NotifyClass(TheoryEngine& te): d_te(te) {}
-    bool eqNotifyTriggerEquality(TNode equality, bool value) override
-    {
-      return true;
-    }
-    bool eqNotifyTriggerPredicate(TNode predicate, bool value) override
-    {
-      return true;
-    }
-    bool eqNotifyTriggerTermEquality(theory::TheoryId tag,
-                                     TNode t1,
-                                     TNode t2,
-                                     bool value) override
-    {
-      return true;
-    }
-    void eqNotifyConstantTermMerge(TNode t1, TNode t2) override {}
-    void eqNotifyNewClass(TNode t) override { d_te.eqNotifyNewClass(t); }
-    void eqNotifyPreMerge(TNode t1, TNode t2) override
-    {
-    }
-    void eqNotifyPostMerge(TNode t1, TNode t2) override
-    {
-    }
-    void eqNotifyDisequal(TNode t1, TNode t2, TNode reason) override
-    {
-    }
-  };/* class TheoryEngine::NotifyClass */
-  NotifyClass d_masterEENotify;
+  
+  /** The distributed equality manager */
+  std::unique_ptr<EqEngineManagerDistributed> d_eeDistributed;
 
   /**
    * notification methods
@@ -767,13 +732,9 @@ public:
 public:
   void staticInitializeBVOptions(const std::vector<Node>& assertions);
 
-  Node ppSimpITE(TNode assertion);
-  /** Returns false if an assertion simplified to false. */
-  bool donePPSimpITE(std::vector<Node>& assertions);
+  SharedTermsDatabase* getSharedTermsDatabase();
 
-  SharedTermsDatabase* getSharedTermsDatabase() { return &d_sharedTerms; }
-
-  theory::eq::EqualityEngine* getMasterEqualityEngine() { return d_masterEqualityEngine; }
+  theory::eq::EqualityEngine* getMasterEqualityEngine();
 
   SortInference* getSortInference() { return &d_sortInfer; }
 

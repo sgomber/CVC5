@@ -129,20 +129,27 @@ std::string getTheoryString(theory::TheoryId id)
 }
 
 void TheoryEngine::finishInit() {
+  // initialize the equality engine architecture for all theories
+  if (options::eeMode()==options::EqEngineMode::DISTRIBUTED)
+  {
+    d_eeDistributed.reset(new EqEngineManagerDistributed(*this));
+    d_eeDistributed->finishInit();
+  }
+  else
+  {
+    AlwaysAssert(false) << "TheoryEngine::finishInit: equality engine mode " << options::eeMode() << " not supported";
+  }
+  
   //initialize the quantifiers engine, master equality engine, model, model builder
   if( d_logicInfo.isQuantified() ) {
     // initialize the quantifiers engine
     d_quantEngine = new QuantifiersEngine(d_context, d_userContext, this);
-    Assert(d_masterEqualityEngine == 0);
-    d_masterEqualityEngine = new eq::EqualityEngine(d_masterEENotify,getSatContext(), "theory::master", false);
 
     for(TheoryId theoryId = theory::THEORY_FIRST; theoryId != theory::THEORY_LAST; ++ theoryId) {
       if (d_theoryTable[theoryId]) {
         d_theoryTable[theoryId]->setQuantifiersEngine(d_quantEngine);
-        d_theoryTable[theoryId]->setMasterEqualityEngine(d_masterEqualityEngine);
       }
     }
-
     d_curr_model_builder = d_quantEngine->getModelBuilder();
     d_curr_model = d_quantEngine->getModel();
   } else {
@@ -182,7 +189,7 @@ TheoryEngine::TheoryEngine(context::Context* context,
       d_userContext(userContext),
       d_logicInfo(logicInfo),
       d_sharedTerms(this, context),
-      d_masterEqualityEngine(nullptr),
+      d_eeDistributed(nullptr),
       d_masterEENotify(*this),
       d_quantEngine(nullptr),
       d_decManager(new DecisionManager(userContext)),
@@ -1792,6 +1799,10 @@ void TheoryEngine::staticInitializeBVOptions(
     bv_theory->enableCoreTheorySlicer();
   }
 }
+
+SharedTermsDatabase* TheoryEngine::getSharedTermsDatabase() { return &d_sharedTerms; }
+
+theory::eq::EqualityEngine* TheoryEngine::getMasterEqualityEngine() { return d_masterEqualityEngine; }
 
 void TheoryEngine::getExplanation(std::vector<NodeTheoryPair>& explanationVector, LemmaProofRecipe* proofRecipe) {
   Assert(explanationVector.size() > 0);

@@ -43,27 +43,17 @@ TheorySetsPrivate::TheorySetsPrivate(TheorySets& external,
       d_keep(c),
       d_full_check_incomplete(false),
       d_external(external),
-      d_notify(*this),
-      d_equalityEngine(d_notify, c, "theory::sets::ee", true),
-      d_state(*this, d_equalityEngine, c, u),
-      d_im(*this, d_state, d_equalityEngine, c, u),
-      d_rels(new TheorySetsRels(d_state, d_im, d_equalityEngine, u)),
+      d_state(*this, c, u),
+      d_im(*this, d_state, c, u),
+      d_rels(new TheorySetsRels(d_state, d_im, u)),
       d_cardSolver(
-          new CardinalityExtension(d_state, d_im, d_equalityEngine, c, u)),
+          new CardinalityExtension(d_state, d_im, c, u)),
       d_rels_enabled(false),
       d_card_enabled(false)
 {
   d_true = NodeManager::currentNM()->mkConst(true);
   d_false = NodeManager::currentNM()->mkConst(false);
   d_zero = NodeManager::currentNM()->mkConst(Rational(0));
-
-  d_equalityEngine.addFunctionKind(kind::SINGLETON);
-  d_equalityEngine.addFunctionKind(kind::UNION);
-  d_equalityEngine.addFunctionKind(kind::INTERSECTION);
-  d_equalityEngine.addFunctionKind(kind::SETMINUS);
-
-  d_equalityEngine.addFunctionKind(kind::MEMBER);
-  d_equalityEngine.addFunctionKind(kind::SUBSET);
 }
 
 TheorySetsPrivate::~TheorySetsPrivate()
@@ -72,6 +62,11 @@ TheorySetsPrivate::~TheorySetsPrivate()
   {
     delete current_pair.second;
   }
+}
+
+void TheorySetsPrivate::finishInit()
+{
+  
 }
 
 void TheorySetsPrivate::eqNotifyNewClass(TNode t)
@@ -1429,9 +1424,9 @@ OutputChannel* TheorySetsPrivate::getOutputChannel()
 
 Valuation& TheorySetsPrivate::getValuation() { return d_external.d_valuation; }
 
-void TheorySetsPrivate::setMasterEqualityEngine(eq::EqualityEngine* eq)
+void TheorySetsPrivate::finishInit(eq::EqualityEngine* eq)
 {
-  d_equalityEngine.setMasterEqualityEngine(eq);
+  
 }
 
 void TheorySetsPrivate::conflict(TNode a, TNode b)
@@ -1537,92 +1532,6 @@ Node TheorySetsPrivate::getChooseFunction(const TypeNode& setType)
 }
 
 void TheorySetsPrivate::presolve() { d_state.reset(); }
-
-/**************************** eq::NotifyClass *****************************/
-/**************************** eq::NotifyClass *****************************/
-/**************************** eq::NotifyClass *****************************/
-
-bool TheorySetsPrivate::NotifyClass::eqNotifyTriggerEquality(TNode equality,
-                                                             bool value)
-{
-  Debug("sets-eq") << "[sets-eq] eqNotifyTriggerEquality: equality = "
-                   << equality << " value = " << value << std::endl;
-  if (value)
-  {
-    return d_theory.propagate(equality);
-  }
-  else
-  {
-    // We use only literal triggers so taking not is safe
-    return d_theory.propagate(equality.notNode());
-  }
-}
-
-bool TheorySetsPrivate::NotifyClass::eqNotifyTriggerPredicate(TNode predicate,
-                                                              bool value)
-{
-  Debug("sets-eq") << "[sets-eq] eqNotifyTriggerPredicate: predicate = "
-                   << predicate << " value = " << value << std::endl;
-  if (value)
-  {
-    return d_theory.propagate(predicate);
-  }
-  else
-  {
-    return d_theory.propagate(predicate.notNode());
-  }
-}
-
-bool TheorySetsPrivate::NotifyClass::eqNotifyTriggerTermEquality(TheoryId tag,
-                                                                 TNode t1,
-                                                                 TNode t2,
-                                                                 bool value)
-{
-  Debug("sets-eq") << "[sets-eq] eqNotifyTriggerTermEquality: tag = " << tag
-                   << " t1 = " << t1 << "  t2 = " << t2 << "  value = " << value
-                   << std::endl;
-  d_theory.propagate(value ? t1.eqNode(t2) : t1.eqNode(t2).negate());
-  return true;
-}
-
-void TheorySetsPrivate::NotifyClass::eqNotifyConstantTermMerge(TNode t1,
-                                                               TNode t2)
-{
-  Debug("sets-eq") << "[sets-eq] eqNotifyConstantTermMerge "
-                   << " t1 = " << t1 << " t2 = " << t2 << std::endl;
-  d_theory.conflict(t1, t2);
-}
-
-void TheorySetsPrivate::NotifyClass::eqNotifyNewClass(TNode t)
-{
-  Debug("sets-eq") << "[sets-eq] eqNotifyNewClass:"
-                   << " t = " << t << std::endl;
-  d_theory.eqNotifyNewClass(t);
-}
-
-void TheorySetsPrivate::NotifyClass::eqNotifyPreMerge(TNode t1, TNode t2)
-{
-  Debug("sets-eq") << "[sets-eq] eqNotifyPreMerge:"
-                   << " t1 = " << t1 << " t2 = " << t2 << std::endl;
-  d_theory.eqNotifyPreMerge(t1, t2);
-}
-
-void TheorySetsPrivate::NotifyClass::eqNotifyPostMerge(TNode t1, TNode t2)
-{
-  Debug("sets-eq") << "[sets-eq] eqNotifyPostMerge:"
-                   << " t1 = " << t1 << " t2 = " << t2 << std::endl;
-  d_theory.eqNotifyPostMerge(t1, t2);
-}
-
-void TheorySetsPrivate::NotifyClass::eqNotifyDisequal(TNode t1,
-                                                      TNode t2,
-                                                      TNode reason)
-{
-  Debug("sets-eq") << "[sets-eq] eqNotifyDisequal:"
-                   << " t1 = " << t1 << " t2 = " << t2 << " reason = " << reason
-                   << std::endl;
-  d_theory.eqNotifyDisequal(t1, t2, reason);
-}
 
 }  // namespace sets
 }  // namespace theory

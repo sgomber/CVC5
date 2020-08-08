@@ -64,6 +64,10 @@ TheoryQuantifiers::TheoryQuantifiers(Context* c,
 TheoryQuantifiers::~TheoryQuantifiers() {
 }
 
+TheoryRewriter* TheoryQuantifiers::getTheoryRewriter()
+{
+  return &d_rewriter;
+}
 void TheoryQuantifiers::finishInit()
 {
   // quantifiers are not evaluated in getModelValue

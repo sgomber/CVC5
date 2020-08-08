@@ -34,3 +34,19 @@ header = "options/theory_options.h"
   default    = "true"
   read_only  = true
   help       = "condense values for functions in models rather than explicitly representing them"
+
+[[option]]
+  name       = "eeMode"
+  smt_name   = "rr-mode"
+  category   = "expert"
+  long       = "ee-mode=MODE"
+  type       = "EqEngineMode"
+  default    = "DISTRIBUTED"
+  help       = "mode for managing equalities across theory solvers"
+  help_mode  = "Defines mode for managing equalities across theory solvers."
+[[option.mode.DISTRIBUTED]]
+  name = "type"
+  help = "Each theory maintains its own equality engine."
+[[option.mode.CENTRAL]]
+  name = "term"
+  help = "Each theory uses a central equality engine."
