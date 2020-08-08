@@ -50,6 +50,11 @@ class SolverState
   SolverState(TheorySetsPrivate& p,
               context::Context* c,
               context::UserContext* u);
+  /** 
+   * Finish initialize, there ee is a pointer to the official equality engine
+   * of theory of strings.
+   */
+  void finishInit(eq::EqualityEngine * ee);
   //-------------------------------- initialize per check
   /** reset, clears the data structures maintained by this class. */
   void reset();
@@ -219,7 +224,7 @@ class SolverState
   context::CDO<bool> d_conflict;
   /** Reference to the parent theory of sets */
   TheorySetsPrivate& d_parent;
-  /** Reference to the equality engine of theory of sets */
+  /** Pointer to the official equality engine of theory of sets */
   eq::EqualityEngine * d_ee;
   /** The list of all equivalence classes of type set in the current context */
   std::vector<Node> d_set_eqc;

@@ -226,8 +226,8 @@ class TheorySetsPrivate {
  private:
   TheorySets& d_external;
 
-  /** Equality engine */
-  eq::EqualityEngine d_equalityEngine;
+  /** Pointer to the equality engine of theory of sets */
+  eq::EqualityEngine * d_equalityEngine;
 
   /** Proagate out to output channel */
   bool propagate(TNode);

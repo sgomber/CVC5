@@ -66,7 +66,8 @@ TheorySetsPrivate::~TheorySetsPrivate()
 
 void TheorySetsPrivate::finishInit()
 {
-  
+  d_equalityEngine = d_external.getEqualityEngine();
+  Assert (d_equalityEngine!=nullptr);
 }
 
 void TheorySetsPrivate::eqNotifyNewClass(TNode t)

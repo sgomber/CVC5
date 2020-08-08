@@ -43,29 +43,32 @@ void EqEngineManagerDistributed::finishInit()
     eet.d_allocEe.reset(t->allocateEqualityEngine());
   }
   
-  // construct the master equality engine
-  Assert(d_masterEqualityEngine == nullptr);
-  d_masterEqualityEngine.reset(new eq::EqualityEngine(d_te.getSatContext(), "theory::master", false));
+  const LogicInfo& logicInfo = d_te.getLogicInfo();
+  if (logicInfo.isQuantified())
+  {
+    // construct the master equality engine
+    Assert(d_masterEqualityEngine == nullptr);
+    d_masterEqualityEngine.reset(new eq::EqualityEngine(d_te.getSatContext(), "theory::master", false));
 
-  for(TheoryId theoryId = theory::THEORY_FIRST; theoryId != theory::THEORY_LAST; ++ theoryId) {
-    Theory * t = d_te.theoryOf(theoryId);
-    if (t == nullptr) 
-    {
-      // theory not active, skip
-      continue;
-    }
-    EeTheoryInfo& eet = d_einfo[theoryId];
-    // get the allocated equality engine
-    eq::EqualityEngine * eeAlloc = eet.d_allocEe.get();
-    if (eeAlloc!=nullptr)
-    {
-      // set the master equality engine of the theory's equality engine
-      eeAlloc->setMasterEqualityEngine(d_masterEqualityEngine.get());
+    for(TheoryId theoryId = theory::THEORY_FIRST; theoryId != theory::THEORY_LAST; ++ theoryId) {
+      Theory * t = d_te.theoryOf(theoryId);
+      if (t == nullptr) 
+      {
+        // theory not active, skip
+        continue;
+      }
+      EeTheoryInfo& eet = d_einfo[theoryId];
+      // get the allocated equality engine
+      eq::EqualityEngine * eeAlloc = eet.d_allocEe.get();
+      if (eeAlloc!=nullptr)
+      {
+        // set the master equality engine of the theory's equality engine
+        eeAlloc->setMasterEqualityEngine(d_masterEqualityEngine.get());
+      }
     }
   }
-
 }
-eq::EqualityEngine* getMasterEqualityEngine()
+eq::EqualityEngine* EqEngineManagerDistributed::getMasterEqualityEngine()
 {
   return d_masterEqualityEngine.get();
 }

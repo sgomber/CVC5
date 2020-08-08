@@ -191,7 +191,6 @@ TheoryEngine::TheoryEngine(context::Context* context,
       d_logicInfo(logicInfo),
       d_sharedTerms(this, context),
       d_eeDistributed(nullptr),
-      d_masterEENotify(*this),
       d_quantEngine(nullptr),
       d_decManager(new DecisionManager(userContext)),
       d_curr_model(nullptr),
@@ -259,8 +258,6 @@ TheoryEngine::~TheoryEngine() {
   }
 
   delete d_quantEngine;
-
-  delete d_masterEqualityEngine;
 
   smtStatisticsRegistry()->unregisterStat(&d_combineTheoriesTime);
   smtStatisticsRegistry()->unregisterStat(&d_arithSubstitutionsAdded);
@@ -545,9 +542,11 @@ void TheoryEngine::check(Theory::Effort effort) {
     Debug("theory") << ", need check = " << (needCheck() ? "YES" : "NO") << endl;
 
     if( Theory::fullEffort(effort) && !d_inConflict && !needCheck()) {
-      // case where we are about to answer SAT
-      if( d_masterEqualityEngine != NULL ){
-        AlwaysAssert(d_masterEqualityEngine->consistent());
+      // case where we are about to answer SAT, the master equality engine,
+      // if it exists, must be consistent.
+      eq::EqualityEngine * mee = getMasterEqualityEngine();
+      if( mee != NULL ){
+        AlwaysAssert(mee->consistent());
       }
       if (d_curr_model->isBuilt())
       {
@@ -1803,7 +1802,13 @@ void TheoryEngine::staticInitializeBVOptions(
 
 SharedTermsDatabase* TheoryEngine::getSharedTermsDatabase() { return &d_sharedTerms; }
 
-theory::eq::EqualityEngine* TheoryEngine::getMasterEqualityEngine() { return d_masterEqualityEngine; }
+theory::eq::EqualityEngine* TheoryEngine::getMasterEqualityEngine() { 
+  if (d_eeDistributed!=nullptr)
+  {
+    return d_eeDistributed->getMasterEqualityEngine(); 
+  }
+  return nullptr;
+}
 
 void TheoryEngine::getExplanation(std::vector<NodeTheoryPair>& explanationVector, LemmaProofRecipe* proofRecipe) {
   Assert(explanationVector.size() > 0);

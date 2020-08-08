@@ -26,13 +26,18 @@ namespace theory {
 namespace sets {
 
 SolverState::SolverState(TheorySetsPrivate& p,
-                         eq::EqualityEngine& e,
                          context::Context* c,
                          context::UserContext* u)
     : d_conflict(c), d_parent(p), d_ee(nullptr), d_proxy(u), d_proxy_to_term(u)
 {
   d_true = NodeManager::currentNM()->mkConst(true);
   d_false = NodeManager::currentNM()->mkConst(false);
+}
+
+void finishInit(eq::EqualityEngine * ee)
+{
+  Assert (ee!=nullptr);
+  d_ee = ee;
 }
 
 void SolverState::reset()

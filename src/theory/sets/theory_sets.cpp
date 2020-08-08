@@ -208,7 +208,7 @@ bool TheorySets::isEntailed( Node n, bool pol ) {
 
 /**************************** eq::NotifyClass *****************************/
 
-bool TheorySetsPrivate::NotifyClass::eqNotifyTriggerEquality(TNode equality,
+bool TheorySets::NotifyClass::eqNotifyTriggerEquality(TNode equality,
                                                              bool value)
 {
   Debug("sets-eq") << "[sets-eq] eqNotifyTriggerEquality: equality = "
@@ -224,7 +224,7 @@ bool TheorySetsPrivate::NotifyClass::eqNotifyTriggerEquality(TNode equality,
   }
 }
 
-bool TheorySetsPrivate::NotifyClass::eqNotifyTriggerPredicate(TNode predicate,
+bool TheorySets::NotifyClass::eqNotifyTriggerPredicate(TNode predicate,
                                                               bool value)
 {
   Debug("sets-eq") << "[sets-eq] eqNotifyTriggerPredicate: predicate = "
@@ -239,7 +239,7 @@ bool TheorySetsPrivate::NotifyClass::eqNotifyTriggerPredicate(TNode predicate,
   }
 }
 
-bool TheorySetsPrivate::NotifyClass::eqNotifyTriggerTermEquality(TheoryId tag,
+bool TheorySets::NotifyClass::eqNotifyTriggerTermEquality(TheoryId tag,
                                                                  TNode t1,
                                                                  TNode t2,
                                                                  bool value)
@@ -251,7 +251,7 @@ bool TheorySetsPrivate::NotifyClass::eqNotifyTriggerTermEquality(TheoryId tag,
   return true;
 }
 
-void TheorySetsPrivate::NotifyClass::eqNotifyConstantTermMerge(TNode t1,
+void TheorySets::NotifyClass::eqNotifyConstantTermMerge(TNode t1,
                                                                TNode t2)
 {
   Debug("sets-eq") << "[sets-eq] eqNotifyConstantTermMerge "
@@ -259,28 +259,28 @@ void TheorySetsPrivate::NotifyClass::eqNotifyConstantTermMerge(TNode t1,
   d_theory.conflict(t1, t2);
 }
 
-void TheorySetsPrivate::NotifyClass::eqNotifyNewClass(TNode t)
+void TheorySets::NotifyClass::eqNotifyNewClass(TNode t)
 {
   Debug("sets-eq") << "[sets-eq] eqNotifyNewClass:"
                    << " t = " << t << std::endl;
   d_theory.eqNotifyNewClass(t);
 }
 
-void TheorySetsPrivate::NotifyClass::eqNotifyPreMerge(TNode t1, TNode t2)
+void TheorySets::NotifyClass::eqNotifyPreMerge(TNode t1, TNode t2)
 {
   Debug("sets-eq") << "[sets-eq] eqNotifyPreMerge:"
                    << " t1 = " << t1 << " t2 = " << t2 << std::endl;
   d_theory.eqNotifyPreMerge(t1, t2);
 }
 
-void TheorySetsPrivate::NotifyClass::eqNotifyPostMerge(TNode t1, TNode t2)
+void TheorySets::NotifyClass::eqNotifyPostMerge(TNode t1, TNode t2)
 {
   Debug("sets-eq") << "[sets-eq] eqNotifyPostMerge:"
                    << " t1 = " << t1 << " t2 = " << t2 << std::endl;
   d_theory.eqNotifyPostMerge(t1, t2);
 }
 
-void TheorySetsPrivate::NotifyClass::eqNotifyDisequal(TNode t1,
+void TheorySets::NotifyClass::eqNotifyDisequal(TNode t1,
                                                       TNode t2,
                                                       TNode reason)
 {

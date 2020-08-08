@@ -220,7 +220,7 @@ bool TheorySep::collectModelInfo(TheoryModel* m)
   computeRelevantTerms(termSet);
 
   // Send the equality engine information to the model
-  return m->assertEqualityEngine(&d_equalityEngine, &termSet);
+  return m->assertEqualityEngine(d_equalityEngine, &termSet);
 }
 
 void TheorySep::postProcessModel( TheoryModel* m ){
@@ -628,11 +628,11 @@ void TheorySep::check(Effort e) {
       Trace("sep-process") << "---" << std::endl;
     }
     if(Trace.isOn("sep-eqc")) {
-      eq::EqClassesIterator eqcs2_i = eq::EqClassesIterator( &d_equalityEngine );
+      eq::EqClassesIterator eqcs2_i = eq::EqClassesIterator( d_equalityEngine );
       Trace("sep-eqc") << "EQC:" << std::endl;
       while( !eqcs2_i.isFinished() ){
         Node eqc = (*eqcs2_i);
-        eq::EqClassIterator eqc2_i = eq::EqClassIterator( eqc, &d_equalityEngine );
+        eq::EqClassIterator eqc2_i = eq::EqClassIterator( eqc, d_equalityEngine );
         Trace("sep-eqc") << "Eqc( " << eqc << " ) : { ";
         while( !eqc2_i.isFinished() ) {
           if( (*eqc2_i)!=eqc ){
