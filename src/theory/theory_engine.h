@@ -149,7 +149,7 @@ class TheoryEngine {
   SharedTermsDatabase d_sharedTerms;
   
   /** The distributed equality manager */
-  std::unique_ptr<EqEngineManagerDistributed> d_eeDistributed;
+  std::unique_ptr<theory::EqEngineManagerDistributed> d_eeDistributed;
 
   /**
    * notification methods

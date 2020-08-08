@@ -138,16 +138,18 @@ public:
   ArithCongruenceManager(context::Context* satContext, ConstraintDatabase&, SetupLiteralCallBack, const ArithVariables&, RaiseEqualityEngineConflict raiseConflict);
   ~ArithCongruenceManager();
   
+  //--------------------------------- initialization
   /** 
    * Allocate the equality engine, which is subsequently used as the official
    * equality engine of the theory of arithmetic.
    */
-  eq::EqualityEngine* allocateEqualityEngine();
+  eq::EqualityEngine* allocateEqualityEngine(context::Context* c);
   /** 
    * Finish initialize. This class is instructed by TheoryArithPrivate to use
    * the equality engine ee.
    */
   void finishInit(eq::EqualityEngine * ee);
+  //--------------------------------- end initialization
 
   Node explain(TNode literal);
   void explain(TNode lit, NodeBuilder<>& out);

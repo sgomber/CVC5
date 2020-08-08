@@ -85,7 +85,7 @@ TheoryRewriter* TheoryDatatypes::getTheoryRewriter()
 
 eq::EqualityEngine* TheoryDatatypes::allocateEqualityEngine()
 {
-  return new eq::EqualityEngine(d_notify, c, "theory::datatypes", true);
+  return new eq::EqualityEngine(d_notify, getSatContext(), "theory::datatypes", true);
 }
 
 void TheoryDatatypes::finishInit() 
@@ -210,7 +210,7 @@ void TheoryDatatypes::check(Effort e) {
     do {
       d_addedFact = false;
       std::map< TypeNode, Node > rec_singletons;
-      eq::EqClassesIterator eqcs_i = eq::EqClassesIterator( &d_equalityEngine );
+      eq::EqClassesIterator eqcs_i = eq::EqClassesIterator( d_equalityEngine );
       while( !eqcs_i.isFinished() ){
         Node n = (*eqcs_i);
         //TODO : avoid irrelevant (pre-registered but not asserted) terms here?
@@ -1528,13 +1528,13 @@ bool TheoryDatatypes::collectModelInfo(TheoryModel* m)
   getRelevantTerms(termSet);
 
   //combine the equality engine
-  if (!m->assertEqualityEngine(&d_equalityEngine, &termSet))
+  if (!m->assertEqualityEngine(d_equalityEngine, &termSet))
   {
     return false;
   }
 
   //get all constructors
-  eq::EqClassesIterator eqccs_i = eq::EqClassesIterator( &d_equalityEngine );
+  eq::EqClassesIterator eqccs_i = eq::EqClassesIterator( d_equalityEngine );
   std::vector< Node > cons;
   std::vector< Node > nodes;
   std::map< Node, Node > eqc_cons;
@@ -1839,7 +1839,7 @@ void TheoryDatatypes::instantiate( EqcInfo* eqc, Node n ){
 void TheoryDatatypes::checkCycles() {
   Trace("datatypes-cycle-check") << "Check acyclicity" << std::endl;
   std::vector< Node > cdt_eqc;
-  eq::EqClassesIterator eqcs_i = eq::EqClassesIterator( &d_equalityEngine );
+  eq::EqClassesIterator eqcs_i = eq::EqClassesIterator( d_equalityEngine );
   while( !eqcs_i.isFinished() ){
     Node eqc = (*eqcs_i);
     TypeNode tn = eqc.getType();
@@ -2187,7 +2187,7 @@ void TheoryDatatypes::printModelDebug( const char* c ){
   }
 
   Trace( c ) << "Datatypes model : " << std::endl;
-  eq::EqClassesIterator eqcs_i = eq::EqClassesIterator( &d_equalityEngine );
+  eq::EqClassesIterator eqcs_i = eq::EqClassesIterator( d_equalityEngine );
   while( !eqcs_i.isFinished() ){
     Node eqc = (*eqcs_i);
     //if( !eqc.getType().isBoolean() ){
@@ -2197,7 +2197,7 @@ void TheoryDatatypes::printModelDebug( const char* c ){
       Trace( c ) << eqc << " : " << eqc.getType() << " : " << std::endl;
       Trace( c ) << "   { ";
       //add terms to model
-      eq::EqClassIterator eqc_i = eq::EqClassIterator( eqc, &d_equalityEngine );
+      eq::EqClassIterator eqc_i = eq::EqClassIterator( eqc, d_equalityEngine );
       while( !eqc_i.isFinished() ){
         if( (*eqc_i)!=eqc ){
           Trace( c ) << (*eqc_i) << " ";
@@ -2263,7 +2263,7 @@ void TheoryDatatypes::getRelevantTerms( std::set<Node>& termSet ) {
                   << std::endl;
 
   //also include non-singleton equivalence classes  TODO : revisit this
-  eq::EqClassesIterator eqcs_i = eq::EqClassesIterator( &d_equalityEngine );
+  eq::EqClassesIterator eqcs_i = eq::EqClassesIterator( d_equalityEngine );
   while( !eqcs_i.isFinished() ){
     TNode r = (*eqcs_i);
     bool addedFirst = false;
@@ -2271,7 +2271,7 @@ void TheoryDatatypes::getRelevantTerms( std::set<Node>& termSet ) {
     TypeNode rtn = r.getType();
     if (!rtn.isBoolean())
     {
-      eq::EqClassIterator eqc_i = eq::EqClassIterator(r, &d_equalityEngine);
+      eq::EqClassIterator eqc_i = eq::EqClassIterator(r, d_equalityEngine);
       while (!eqc_i.isFinished())
       {
         TNode n = (*eqc_i);

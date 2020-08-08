@@ -82,7 +82,7 @@ TheoryRewriter* TheoryStrings::getTheoryRewriter() { return &d_rewriter; }
 
 eq::EqualityEngine* TheoryStrings::allocateEqualityEngine()
 {
-  return new eq::EqualityEngine(d_notify, d_satContext, "theory::strings::ee", true);
+  return new eq::EqualityEngine(d_notify, getSatContext(), "theory::strings::ee", true);
 }
 
 void TheoryStrings::finishInit()

@@ -130,7 +130,7 @@ TheoryRewriter* TheoryFp::getTheoryRewriter()
 
 eq::EqualityEngine* TheoryFp::allocateEqualityEngine()
 {
-  return new eq::EqualityEngine(d_notification, d_satContext, "theory::fp::ee", true);
+  return new eq::EqualityEngine(d_notification, getSatContext(), "theory::fp::ee", true);
 }
 
 void TheoryFp::finishInit()

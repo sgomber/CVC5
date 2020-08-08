@@ -72,7 +72,7 @@ TheoryRewriter* TheorySep::getTheoryRewriter()
 
 eq::EqualityEngine* TheorySep::allocateEqualityEngine()
 {
-  return new eq::EqualityEngine(d_notify, c, "theory::sep::ee", true);
+  return new eq::EqualityEngine(d_notify, getSatContext(), "theory::sep::ee", true);
 }
 
 void TheorySep::finishInit()

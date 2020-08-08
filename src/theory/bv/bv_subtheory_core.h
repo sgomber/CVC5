@@ -118,8 +118,8 @@ class CoreSolver : public SubtheorySolver {
   Node getModelValue(TNode var) override;
   void addSharedTerm(TNode t) override;
   EqualityStatus getEqualityStatus(TNode a, TNode b) override;
-  bool hasTerm(TNode node) const { return d_equalityEngine.hasTerm(node); }
-  void addTermToEqualityEngine(TNode node) { d_equalityEngine.addTerm(node); }
+  bool hasTerm(TNode node) const;
+  void addTermToEqualityEngine(TNode node);
   void enableSlicer();
 };
 

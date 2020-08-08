@@ -34,19 +34,11 @@ typedef std::map< Node, std::map< Node, std::unordered_set< Node, NodeHashFuncti
 
 TheorySetsRels::TheorySetsRels(SolverState& s,
                                InferenceManager& im,
-                               eq::EqualityEngine& e,
                                context::UserContext* u)
-    : d_state(s), d_im(im), d_ee(e), d_shared_terms(u)
+    : d_state(s), d_im(im), d_ee(nullptr), d_shared_terms(u)
 {
   d_trueNode = NodeManager::currentNM()->mkConst(true);
   d_falseNode = NodeManager::currentNM()->mkConst(false);
-  d_ee.addFunctionKind(PRODUCT);
-  d_ee.addFunctionKind(JOIN);
-  d_ee.addFunctionKind(TRANSPOSE);
-  d_ee.addFunctionKind(TCLOSURE);
-  d_ee.addFunctionKind(JOIN_IMAGE);
-  d_ee.addFunctionKind(IDEN);
-  d_ee.addFunctionKind(APPLY_CONSTRUCTOR);
 }
 
 TheorySetsRels::~TheorySetsRels() {}
@@ -1139,24 +1131,17 @@ void TheorySetsRels::check(Theory::Effort level)
   }
 
   Node TheorySetsRels::getRepresentative( Node t ) {
-    if (d_ee.hasTerm(t))
-    {
-      return d_ee.getRepresentative(t);
-    }
-    else
-    {
-      return t;
-    }
+    return d_state.getRepresentative(t);
   }
 
-  bool TheorySetsRels::hasTerm(Node a) { return d_ee.hasTerm(a); }
+  bool TheorySetsRels::hasTerm(Node a) { return d_state.hasTerm(a); }
   bool TheorySetsRels::areEqual( Node a, Node b ){
     Assert(a.getType() == b.getType());
     Trace("rels-eq") << "[sets-rels]**** checking equality between " << a << " and " << b << std::endl;
     if(a == b) {
       return true;
     } else if( hasTerm( a ) && hasTerm( b ) ){
-      return d_ee.areEqual(a, b);
+      return d_state.areEqual(a, b);
     } else if(a.getType().isTuple()) {
       bool equal = true;
       for(unsigned int i = 0; i < a.getType().getTupleLength(); i++) {

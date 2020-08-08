@@ -48,17 +48,16 @@ class SolverState
 
  public:
   SolverState(TheorySetsPrivate& p,
-              eq::EqualityEngine& e,
               context::Context* c,
               context::UserContext* u);
-  //-------------------------------- initialize
+  //-------------------------------- initialize per check
   /** reset, clears the data structures maintained by this class. */
   void reset();
   /** register equivalence class whose type is tn */
   void registerEqc(TypeNode tn, Node r);
   /** register term n of type tnn in the equivalence class of r */
   void registerTerm(Node r, TypeNode tnn, Node n);
-  //-------------------------------- end initialize
+  //-------------------------------- end initialize per check
   /** Are we currently in conflict? */
   bool isInConflict() const { return d_conflict; }
   /**
@@ -221,7 +220,7 @@ class SolverState
   /** Reference to the parent theory of sets */
   TheorySetsPrivate& d_parent;
   /** Reference to the equality engine of theory of sets */
-  eq::EqualityEngine& d_ee;
+  eq::EqualityEngine * d_ee;
   /** The list of all equivalence classes of type set in the current context */
   std::vector<Node> d_set_eqc;
   /** Maps types to the equivalence class containing empty set of that type */

@@ -50,12 +50,12 @@ CoreSolver::CoreSolver(context::Context* c, TheoryBV* bv, ExtTheory* extt)
 
 CoreSolver::~CoreSolver() {}
 
-eq::EqualityEngine * allocateEqualityEngine()
+eq::EqualityEngine * CoreSolver::allocateEqualityEngine()
 {
   return new eq::EqualityEngine(d_notify, d_bv->getSatContext(), "theory::bv::ee", true);
 }
 
-void finishInit()
+void CoreSolver::finishInit()
 {
   // use the parent's equality engine, which may be the one we allocated above
   d_equalityEngine = d_bv->getEqualityEngine();
@@ -228,14 +228,14 @@ void CoreSolver::buildModel()
   TNodeSet constants;
   TNodeSet constants_in_eq_engine;
   // collect constants in equality engine
-  eq::EqClassesIterator eqcs_i = eq::EqClassesIterator(&d_equalityEngine);
+  eq::EqClassesIterator eqcs_i = eq::EqClassesIterator(d_equalityEngine);
   while (!eqcs_i.isFinished())
   {
     TNode repr = *eqcs_i;
     if (repr.getKind() == kind::CONST_BITVECTOR)
     {
       // must check if it's just the constant
-      eq::EqClassIterator it(repr, &d_equalityEngine);
+      eq::EqClassIterator it(repr, d_equalityEngine);
       if (!(++it).isFinished() || true)
       {
         constants.insert(repr);
@@ -247,7 +247,7 @@ void CoreSolver::buildModel()
 
   // build repr to value map
 
-  eqcs_i = eq::EqClassesIterator(&d_equalityEngine);
+  eqcs_i = eq::EqClassesIterator(d_equalityEngine);
   while (!eqcs_i.isFinished())
   {
     TNode repr = *eqcs_i;
@@ -444,7 +444,7 @@ bool CoreSolver::collectModelInfo(TheoryModel* m, bool fullModel)
   }
   set<Node> termSet;
   d_bv->computeRelevantTerms(termSet);
-  if (!m->assertEqualityEngine(&d_equalityEngine, &termSet))
+  if (!m->assertEqualityEngine(d_equalityEngine, &termSet))
   {
     return false;
   }
@@ -500,6 +500,9 @@ EqualityStatus CoreSolver::getEqualityStatus(TNode a, TNode b)
   return EQUALITY_UNKNOWN;
 }
 
+  bool CoreSolver::hasTerm(TNode node) const { return d_equalityEngine->hasTerm(node); }
+  void CoreSolver::addTermToEqualityEngine(TNode node) { d_equalityEngine->addTerm(node); }
+  
 CoreSolver::Statistics::Statistics()
   : d_numCallstoCheck("theory::bv::CoreSolver::NumCallsToCheck", 0)
   , d_slicerEnabled("theory::bv::CoreSolver::SlicerEnabled", false)

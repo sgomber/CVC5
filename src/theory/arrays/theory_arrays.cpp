@@ -157,14 +157,14 @@ TheoryArrays::~TheoryArrays() {
   smtStatisticsRegistry()->unregisterStat(&d_numSetModelValConflicts);
 }
 
-TheoryRewriter* getTheoryRewriter()
+TheoryRewriter* TheoryArrays::getTheoryRewriter()
 {
   return &d_rewriter;
 }
 
 eq::EqualityEngine* TheoryArrays::allocateEqualityEngine()
 {
-  return new eq:EqualityEngine(d_notify, d_satContext, name + "theory::arrays", true);
+  return new eq::EqualityEngine(d_notify, getSatContext(), name + "theory::arrays", true);
 }
 
 void TheoryArrays::finishInit()
@@ -1075,7 +1075,7 @@ bool TheoryArrays::collectModelInfo(TheoryModel* m)
   NodeManager* nm = NodeManager::currentNM();
   std::vector<Node> arrays;
   bool computeRep, isArray;
-  eq::EqClassesIterator eqcs_i = eq::EqClassesIterator(&d_equalityEngine);
+  eq::EqClassesIterator eqcs_i = eq::EqClassesIterator(d_equalityEngine);
   for (; !eqcs_i.isFinished(); ++eqcs_i) {
     Node eqc = (*eqcs_i);
     isArray = eqc.getType().isArray();
@@ -1083,7 +1083,7 @@ bool TheoryArrays::collectModelInfo(TheoryModel* m)
       continue;
     }
     computeRep = false;
-    eq::EqClassIterator eqc_i = eq::EqClassIterator(eqc, &d_equalityEngine);
+    eq::EqClassIterator eqc_i = eq::EqClassIterator(eqc, d_equalityEngine);
     for (; !eqc_i.isFinished(); ++eqc_i) {
       Node n = *eqc_i;
       // If this EC is an array type and it contains something other than STORE nodes, we have to compute a representative explicitly
@@ -1106,17 +1106,17 @@ bool TheoryArrays::collectModelInfo(TheoryModel* m)
   bool changed;
   do {
     changed = false;
-    eqcs_i = eq::EqClassesIterator(&d_equalityEngine);
+    eqcs_i = eq::EqClassesIterator(d_equalityEngine);
     for (; !eqcs_i.isFinished(); ++eqcs_i) {
       Node eqc = (*eqcs_i);
-      eq::EqClassIterator eqc_i = eq::EqClassIterator(eqc, &d_equalityEngine);
+      eq::EqClassIterator eqc_i = eq::EqClassIterator(eqc, d_equalityEngine);
       for (; !eqc_i.isFinished(); ++eqc_i) {
         Node n = *eqc_i;
         if (n.getKind() == kind::SELECT && termSet.find(n) != termSet.end()) {
 
           // Find all terms equivalent to n[0] and get corresponding read terms
           Node array_eqc = d_equalityEngine->getRepresentative(n[0]);
-          eq::EqClassIterator array_eqc_i = eq::EqClassIterator(array_eqc, &d_equalityEngine);
+          eq::EqClassIterator array_eqc_i = eq::EqClassIterator(array_eqc, d_equalityEngine);
           for (; !array_eqc_i.isFinished(); ++array_eqc_i) {
             Node arr = *array_eqc_i;
             if (arr.getKind() == kind::STORE &&
@@ -1165,7 +1165,7 @@ bool TheoryArrays::collectModelInfo(TheoryModel* m)
   } while (changed);
 
   // Send the equality engine information to the model
-  if (!m->assertEqualityEngine(&d_equalityEngine, &termSet))
+  if (!m->assertEqualityEngine(d_equalityEngine, &termSet))
   {
     return false;
   }

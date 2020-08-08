@@ -55,7 +55,7 @@ TheoryRewriter* TheorySets::getTheoryRewriter()
 
 eq::EqualityEngine* TheorySets::allocateEqualityEngine()
 {
-  return eq::EqualityEngine(d_notify, c, "theory::sets::ee", true);
+  return eq::EqualityEngine(d_notify, getSatContext(), "theory::sets::ee", true);
 }
 
 void TheorySets::finishInit()
@@ -68,6 +68,16 @@ void TheorySets::finishInit()
   d_equalityEngine->addFunctionKind(kind::SETMINUS);
   d_equalityEngine->addFunctionKind(kind::MEMBER);
   d_equalityEngine->addFunctionKind(kind::SUBSET);
+  // relation operators
+  d_equalityEngine->addFunctionKind(PRODUCT);
+  d_equalityEngine->addFunctionKind(JOIN);
+  d_equalityEngine->addFunctionKind(TRANSPOSE);
+  d_equalityEngine->addFunctionKind(TCLOSURE);
+  d_equalityEngine->addFunctionKind(JOIN_IMAGE);
+  d_equalityEngine->addFunctionKind(IDEN);
+  d_equalityEngine->addFunctionKind(APPLY_CONSTRUCTOR);
+  // we do congruence over cardinality
+  d_equalityEngine->addFunctionKind(CARD);
   
   TheoryModel* tm = d_valuation.getModel();
   Assert(tm != nullptr);
