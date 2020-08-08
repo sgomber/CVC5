@@ -57,7 +57,7 @@ void EqEngineManagerDistributed::finishInit()
     Assert(qe != nullptr);
     d_masterEENotify.reset(new MasterNotifyClass(qe));
     d_masterEqualityEngine.reset(new eq::EqualityEngine(
-        d_masterEENotify.get(), d_te.getSatContext(), "theory::master", false));
+        *d_masterEENotify.get(), d_te.getSatContext(), "theory::master", false));
 
     for (TheoryId theoryId = theory::THEORY_FIRST;
          theoryId != theory::THEORY_LAST;
@@ -81,7 +81,7 @@ void EqEngineManagerDistributed::finishInit()
   }
 }
 
-void EqEngineManagerDistributed::NotifyClass::eqNotifyNewClass(TNode t)
+void EqEngineManagerDistributed::MasterNotifyClass::eqNotifyNewClass(TNode t)
 {
   d_quantEngine->eqNotifyNewClass(t);
 }
