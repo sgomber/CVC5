@@ -61,6 +61,8 @@ class EqEngineManagerDistributed
  public:
   EqEngineManagerDistributed(TheoryEngine& te);
   ~EqEngineManagerDistributed();
+  /** Initialize core */
+  void initializeCore();
   /**
    * Finish initialize, called by TheoryEngine::finishInit after theory
    * objects have been created but prior to their final initialization. This
@@ -69,11 +71,26 @@ class EqEngineManagerDistributed
    * This method is context-independent, and is applied once during
    * the lifetime of TheoryEngine (during finishInit).
    */
-  void finishInit();
+  void initializeTheories();
+  /**
+   * Finish initialize, called by TheoryEngine::finishInit after theory
+   * objects have been created but prior to their final initialization. This
+   * sets up equality engines for all theories.
+   *
+   * This method is context-independent, and is applied once during
+   * the lifetime of TheoryEngine (during finishInit).
+   */
+  void initializeModel(TheoryModel * m);
+  /** get the model equality engine context */
+  context::Context* getModelEqualityEngineContext();
+  /** get the model equality engine */
+  eq::EqualityEngine* getModelEqualityEngine();
   /** get the master equality engine */
   eq::EqualityEngine* getMasterEqualityEngine();
 
  private:
+  /** Allocate equality engine that is context-dependent on c with setup info esi */
+  eq::EqualityEngine * allocateEqualityEngine(EeSetupInfo& esi, context::Context* c);
   /** Reference to the theory engine */
   TheoryEngine& d_te;
   /** notify class for master equality engine */
@@ -112,6 +129,19 @@ class EqEngineManagerDistributed
     QuantifiersEngine* d_quantEngine;
   };
   std::unique_ptr<MasterNotifyClass> d_masterEENotify;
+  /**
+   * The equality engine of the shared terms database.
+   */
+  std::unique_ptr<eq::EqualityEngine> d_stbEqualityEngine;
+  /** 
+   * A dummy context for the model equality engine, so we can clear it
+   * independently of search context.
+   */
+  context::Context d_modelEeContext;
+  /**
+   * The equality engine of the model.
+   */
+  std::unique_ptr<eq::EqualityEngine> d_modelEqualityEngine;
   /**
    * The master equality engine.
    */

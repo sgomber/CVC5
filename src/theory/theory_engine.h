@@ -89,8 +89,8 @@ struct NodeTheoryPairHashFunction {
 /* Forward declarations */
 namespace theory {
   class TheoryModel;
-  class TheoryEngineModelBuilder;
   class EqEngineManagerDistributed;
+  class ModelManagerDistributed;
 
   namespace eq {
     class EqualityEngine;
@@ -157,6 +157,9 @@ class TheoryEngine {
    */
   std::unique_ptr<theory::EqEngineManagerDistributed> d_eeDistributed;
 
+  /** The model manager */
+  std::unique_ptr<theory::ModelManagerDistributed> d_mDistributed;
+  
   /**
    * The quantifiers engine
    */
@@ -166,16 +169,6 @@ class TheoryEngine {
    */
   std::unique_ptr<theory::DecisionManager> d_decManager;
 
-  /**
-   * Default model object
-   */
-  theory::TheoryModel* d_curr_model;
-  bool d_aloc_curr_model;
-  /**
-   * Model builder object
-   */
-  theory::TheoryEngineModelBuilder* d_curr_model_builder;
-  bool d_aloc_curr_model_builder;
   /** are we in eager model building mode? (see setEagerModelBuilding). */
   bool d_eager_model_building;
 
@@ -591,8 +584,6 @@ public:
    * collect model info
    */
   bool collectModelInfo(theory::TheoryModel* m);
-  /** post process model */
-  void postProcessModel( theory::TheoryModel* m );
 
   /**
    * Get the pointer to the model object used by this theory engine.
@@ -610,6 +601,10 @@ public:
    * was interrupted), then this returns the null pointer.
    */
   theory::TheoryModel* getBuiltModel();
+  /** 
+   * Build the model 
+   */
+  bool buildModel();
   /** set eager model building
    *
    * If this method is called, then this TheoryEngine will henceforth build
@@ -636,11 +631,6 @@ public:
    * SynthConjecture::getSynthSolutions.
    */
   bool getSynthSolutions(std::map<Node, std::map<Node, Node> >& sol_map);
-
-  /**
-   * Get the model builder
-   */
-  theory::TheoryEngineModelBuilder* getModelBuilder() { return d_curr_model_builder; }
 
   /**
    * Get the theory associated to a given Node.

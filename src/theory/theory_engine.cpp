@@ -43,6 +43,7 @@
 #include "theory/care_graph.h"
 #include "theory/decision_manager.h"
 #include "theory/ee_manager_distributed.h"
+#include "theory/model_manager_distributed.h"
 #include "theory/quantifiers/first_order_model.h"
 #include "theory/quantifiers/fmf/model_engine.h"
 #include "theory/quantifiers/theory_quantifiers.h"
@@ -130,6 +131,19 @@ std::string getTheoryString(theory::TheoryId id)
 }
 
 void TheoryEngine::finishInit() {
+  // Initialize the equality engine architecture for all theories, which
+  // includes the master equality engine.
+  if (options::eeMode() == options::EqEngineMode::DISTRIBUTED)
+  {
+    d_eeDistributed.reset(new EqEngineManagerDistributed(*this));
+    d_mDistributed.reset(new ModelManagerDistributed(*this, *d_eeDistributed.get()));
+  }
+  else
+  {
+    AlwaysAssert(false) << "TheoryEngine::finishInit: equality engine mode "
+                        << options::eeMode() << " not supported";
+  }
+  
   // initialize the quantifiers engine
   if (d_logicInfo.isQuantified())
   {
@@ -142,36 +156,11 @@ void TheoryEngine::finishInit() {
       }
     }
   }
+  
+  // initialize equality engines in all theories
+  d_eeDistributed->initializeTheories();
 
-  // Initialize the equality engine architecture for all theories, which
-  // includes the master equality engine.
-  if (options::eeMode() == options::EqEngineMode::DISTRIBUTED)
-  {
-    d_eeDistributed.reset(new EqEngineManagerDistributed(*this));
-    d_eeDistributed->finishInit();
-  }
-  else
-  {
-    AlwaysAssert(false) << "TheoryEngine::finishInit: equality engine mode "
-                        << options::eeMode() << " not supported";
-  }
-
-  // Initialize the model and model builder.
-  if (d_logicInfo.isQuantified())
-  {
-    d_curr_model_builder = d_quantEngine->getModelBuilder();
-    d_curr_model = d_quantEngine->getModel();
-  } else {
-    d_curr_model = new theory::TheoryModel(
-        d_userContext, "DefaultModel", options::assignFunctionValues());
-    d_aloc_curr_model = true;
-  }
-
-  //make the default builder, e.g. in the case that the quantifiers engine does not have a model builder
-  if( d_curr_model_builder==NULL ){
-    d_curr_model_builder = new theory::TheoryEngineModelBuilder(this);
-    d_aloc_curr_model_builder = true;
-  }
+  d_mDistributed->finishInit();
 
   // finish initializing the theories
   for(TheoryId theoryId = theory::THEORY_FIRST; theoryId != theory::THEORY_LAST; ++ theoryId) {
@@ -195,12 +184,9 @@ TheoryEngine::TheoryEngine(context::Context* context,
       d_logicInfo(logicInfo),
       d_sharedTerms(this, context),
       d_eeDistributed(nullptr),
+      d_mDistributed(nullptr),
       d_quantEngine(nullptr),
       d_decManager(new DecisionManager(userContext)),
-      d_curr_model(nullptr),
-      d_aloc_curr_model(false),
-      d_curr_model_builder(nullptr),
-      d_aloc_curr_model_builder(false),
       d_eager_model_building(false),
       d_possiblePropagations(context),
       d_hasPropagated(context),
@@ -252,13 +238,6 @@ TheoryEngine::~TheoryEngine() {
       delete d_theoryTable[theoryId];
       delete d_theoryOut[theoryId];
     }
-  }
-
-  if( d_aloc_curr_model_builder ){
-    delete d_curr_model_builder;
-  }
-  if( d_aloc_curr_model ){
-    delete d_curr_model;
   }
 
   delete d_quantEngine;
@@ -505,17 +484,17 @@ void TheoryEngine::check(Theory::Effort effort) {
       if (Trace.isOn("theory::assertions-model")) {
         printAssertions("theory::assertions-model");
       }
+      ModelManagerDistributed * builder = d_mDistributed.get();
+      Assert (builder != nullptr);
       //checks for theories requiring the model go at last call
-      d_curr_model->reset();
+      builder->resetModel();
       for (TheoryId theoryId = THEORY_FIRST; theoryId < THEORY_LAST; ++theoryId) {
         if( theoryId!=THEORY_QUANTIFIERS ){
           Theory* theory = d_theoryTable[theoryId];
           if (theory && d_logicInfo.isTheoryEnabled(theoryId)) {
             if( theory->needsCheckLastEffort() ){
-              if( !d_curr_model->isBuilt() ){
-                if( !d_curr_model_builder->buildModel(d_curr_model) ){
-                  break;
-                }
+              if( !builder->buildModel() ){
+                break;
               }
               theory->check(Theory::EFFORT_LAST_CALL);
             }
@@ -535,9 +514,9 @@ void TheoryEngine::check(Theory::Effort effort) {
         // are in "SAT mode". We build the model later only if the user asks
         // for it via getBuiltModel.
         d_inSatMode = true;
-        if (d_eager_model_building && !d_curr_model->isBuilt())
+        if (d_eager_model_building)
         {
-          d_curr_model_builder->buildModel(d_curr_model);
+          builder->buildModel();
         }
       }
     }
@@ -553,20 +532,10 @@ void TheoryEngine::check(Theory::Effort effort) {
       {
         AlwaysAssert(mee->consistent());
       }
-      if (d_curr_model->isBuilt())
-      {
-        // model construction should always succeed unless lemmas were added
-        AlwaysAssert(d_curr_model->isBuiltSuccess());
-        if (options::produceModels())
-        {
-          // Do post-processing of model from the theories (used for THEORY_SEP
-          // to construct heap model)
-          postProcessModel(d_curr_model);
-          // also call the model builder's post-process model
-          d_curr_model_builder->postProcessModel(d_incomplete.get(),
-                                                 d_curr_model);
-        }
-      }
+      ModelManagerDistributed * builder = d_mDistributed.get();
+      // Do post-processing of model from the theories (used for THEORY_SEP
+      // to construct heap model)
+      builder->postProcessModel(d_incomplete.get());
     }
   } catch(const theory::Interrupted&) {
     Trace("theory") << "TheoryEngine::check() => interrupted" << endl;
@@ -800,22 +769,23 @@ bool TheoryEngine::collectModelInfo(theory::TheoryModel* m)
   return true;
 }
 
-void TheoryEngine::postProcessModel( theory::TheoryModel* m ){
-  for(TheoryId theoryId = theory::THEORY_FIRST; theoryId < theory::THEORY_LAST; ++theoryId) {
-    if(d_logicInfo.isTheoryEnabled(theoryId)) {
-      Trace("model-builder-debug") << "  PostProcessModel on theory: " << theoryId << endl;
-      d_theoryTable[theoryId]->postProcessModel( m );
-    }
-  }
-}
-
 TheoryModel* TheoryEngine::getModel() {
-  return d_curr_model;
+  if (d_mDistributed==nullptr)
+  {
+    return nullptr;
+  }
+  return d_mDistributed->getModel();
 }
 
 TheoryModel* TheoryEngine::getBuiltModel()
 {
-  if (!d_curr_model->isBuilt())
+  TheoryModel* m = getModel();
+  if (m==nullptr)
+  {
+    // not producing models
+    return nullptr;
+  }
+  if (!m->isBuilt())
   {
     // If this method was called, we should be in SAT mode, and produceModels
     // should be true.
@@ -826,9 +796,21 @@ TheoryModel* TheoryEngine::getBuiltModel()
       return nullptr;
     }
     // must build model at this point
-    d_curr_model_builder->buildModel(d_curr_model);
+    if (!d_mDistributed->buildModel())
+    {
+      return nullptr;
+    }
   }
-  return d_curr_model;
+  return m;
+}
+
+bool TheoryEngine::buildModel()
+{
+  if (d_mDistributed==nullptr)
+  {
+    return false;
+  }
+  return d_mDistributed->buildModel();
 }
 
 bool TheoryEngine::getSynthSolutions(

@@ -517,7 +517,7 @@ void QuantifiersEngine::check( Theory::Effort e ){
   // if we want to use the model's equality engine, build the model now
   if( d_useModelEe && !d_model->isBuilt() ){
     Trace("quant-engine-debug") << "Build the model." << std::endl;
-    if (!d_te->getModelBuilder()->buildModel(d_model.get()))
+    if (!d_te->buildModel())
     {
       //we are done if model building was unsuccessful
       flushLemmas();
@@ -683,12 +683,10 @@ void QuantifiersEngine::check( Theory::Effort e ){
       {
         if (!d_model->isBuilt())
         {
-          // theory engine's model builder is quantifier engine's builder if it
-          // has one
-          Assert(!getModelBuilder()
-                 || getModelBuilder() == d_te->getModelBuilder());
+          // TODO: theory engine's model builder is quantifier engine's builder if it
+          // has one, refactor this
           Trace("quant-engine-debug") << "Build model..." << std::endl;
-          if (!d_te->getModelBuilder()->buildModel(d_model.get()))
+          if (!d_te->buildModel())
           {
             flushLemmas();
           }
