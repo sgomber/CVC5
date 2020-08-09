@@ -360,10 +360,10 @@ class TheoryEngine {
     d_propEngine = propEngine;
   }
 
-  /** 
+  /**
    * Called when all initialization of options/logic is done, after theory
    * objects have been created.
-   * 
+   *
    * This initializes the quantifiers engine, the "official" equality engines
    * of each theory as required, and the model and model builder utilities.
    */
