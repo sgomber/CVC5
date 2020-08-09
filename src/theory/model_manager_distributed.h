@@ -36,7 +36,7 @@ namespace theory {
  */
 class ModelManagerDistributed
 {
-public:
+ public:
   ModelManagerDistributed(TheoryEngine& te, EqEngineManagerDistributed& eem);
   ~ModelManagerDistributed();
   /** reset model */
@@ -49,7 +49,8 @@ public:
   void postProcessModel(bool incomplete);
   /** Get model */
   theory::TheoryModel* getModel();
-private:
+
+ private:
   /** Reference to the theory engine */
   TheoryEngine& d_te;
   /** Reference to the equality engine manager */

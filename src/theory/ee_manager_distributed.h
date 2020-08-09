@@ -80,7 +80,7 @@ class EqEngineManagerDistributed
    * This method is context-independent, and is applied once during
    * the lifetime of TheoryEngine (during finishInit).
    */
-  void initializeModel(TheoryModel * m);
+  void initializeModel(TheoryModel* m);
   /** get the model equality engine context */
   context::Context* getModelEqualityEngineContext();
   /** get the model equality engine */
@@ -89,8 +89,10 @@ class EqEngineManagerDistributed
   eq::EqualityEngine* getMasterEqualityEngine();
 
  private:
-  /** Allocate equality engine that is context-dependent on c with setup info esi */
-  eq::EqualityEngine * allocateEqualityEngine(EeSetupInfo& esi, context::Context* c);
+  /** Allocate equality engine that is context-dependent on c with setup info
+   * esi */
+  eq::EqualityEngine* allocateEqualityEngine(EeSetupInfo& esi,
+                                             context::Context* c);
   /** Reference to the theory engine */
   TheoryEngine& d_te;
   /** notify class for master equality engine */
@@ -133,7 +135,7 @@ class EqEngineManagerDistributed
    * The equality engine of the shared terms database.
    */
   std::unique_ptr<eq::EqualityEngine> d_stbEqualityEngine;
-  /** 
+  /**
    * A dummy context for the model equality engine, so we can clear it
    * independently of search context.
    */

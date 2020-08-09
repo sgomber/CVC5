@@ -43,9 +43,7 @@ TheoryModel::TheoryModel(context::Context* c,
   d_false = NodeManager::currentNM()->mkConst( false );
 }
 
-TheoryModel::~TheoryModel()
-{
-}
+TheoryModel::~TheoryModel() {}
 
 void TheoryModel::setEqualityEngine(eq::EqualityEngine* ee)
 {
@@ -62,7 +60,7 @@ bool TheoryModel::needsEqualityEngine(EeSetupInfo& esi)
 
 void TheoryModel::finishInit()
 {
-  Assert (d_equalityEngine!=nullptr);
+  Assert(d_equalityEngine != nullptr);
   // The kinds we are treating as function application in congruence
   d_equalityEngine->addFunctionKind(kind::APPLY_UF, false, options::ufHo());
   d_equalityEngine->addFunctionKind(kind::HO_APPLY);

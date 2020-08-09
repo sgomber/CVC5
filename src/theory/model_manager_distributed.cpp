@@ -15,22 +15,20 @@
 
 #include "theory/model_manager_distributed.h"
 
-#include "theory/theory_engine.h"
 #include "options/theory_options.h"
 #include "theory/quantifiers_engine.h"
+#include "theory/theory_engine.h"
 
 namespace CVC4 {
 namespace theory {
 
-ModelManagerDistributed::ModelManagerDistributed(TheoryEngine& te, EqEngineManagerDistributed& eem) : d_te(te), d_eem(eem), d_model(nullptr), d_modelBuilder(nullptr)
+ModelManagerDistributed::ModelManagerDistributed(
+    TheoryEngine& te, EqEngineManagerDistributed& eem)
+    : d_te(te), d_eem(eem), d_model(nullptr), d_modelBuilder(nullptr)
 {
-  
 }
 
-ModelManagerDistributed::~ModelManagerDistributed()
-{
-  
-}
+ModelManagerDistributed::~ModelManagerDistributed() {}
 
 void ModelManagerDistributed::resetModel()
 {
@@ -51,19 +49,23 @@ void ModelManagerDistributed::finishInit()
     Assert(qe != nullptr);
     d_modelBuilder = qe->getModelBuilder();
     d_model = qe->getModel();
-  } else {
+  }
+  else
+  {
     context::Context* u = d_te.getUserContext();
-    d_alocModel.reset(new TheoryModel(
-        u, "DefaultModel", options::assignFunctionValues()));
+    d_alocModel.reset(
+        new TheoryModel(u, "DefaultModel", options::assignFunctionValues()));
     d_model = d_alocModel.get();
   }
 
-  //make the default builder, e.g. in the case that the quantifiers engine does not have a model builder
-  if( d_modelBuilder==nullptr ){
+  // make the default builder, e.g. in the case that the quantifiers engine does
+  // not have a model builder
+  if (d_modelBuilder == nullptr)
+  {
     d_alocModelBuilder.reset(new TheoryEngineModelBuilder(&d_te));
     d_modelBuilder = d_alocModelBuilder.get();
   }
-  
+
   // initialize equality engine of model
   d_eem.initializeModel(d_model);
 }
@@ -94,7 +96,8 @@ void ModelManagerDistributed::postProcessModel(bool incomplete)
   }
   // Do post-processing of model from the theories (used for THEORY_SEP
   // to construct heap model)
-  for(TheoryId theoryId = theory::THEORY_FIRST; theoryId < theory::THEORY_LAST; ++theoryId)
+  for (TheoryId theoryId = theory::THEORY_FIRST; theoryId < theory::THEORY_LAST;
+       ++theoryId)
   {
     Theory* t = d_te.theoryOf(theoryId);
     if (t == nullptr)
@@ -102,17 +105,15 @@ void ModelManagerDistributed::postProcessModel(bool incomplete)
       // theory not active, skip
       continue;
     }
-    Trace("model-builder-debug") << "  PostProcessModel on theory: " << theoryId << std::endl;
-    t->postProcessModel( d_model );
+    Trace("model-builder-debug")
+        << "  PostProcessModel on theory: " << theoryId << std::endl;
+    t->postProcessModel(d_model);
   }
   // also call the model builder's post-process model
   d_modelBuilder->postProcessModel(incomplete, d_model);
 }
 
-theory::TheoryModel* ModelManagerDistributed::getModel()
-{
-  return d_model;
-}
+theory::TheoryModel* ModelManagerDistributed::getModel() { return d_model; }
 
 }  // namespace theory
 }  // namespace CVC4

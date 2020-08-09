@@ -25,7 +25,8 @@ EqEngineManagerDistributed::EqEngineManagerDistributed(TheoryEngine& te)
 {
 }
 
-EqEngineManagerDistributed::~EqEngineManagerDistributed() {
+EqEngineManagerDistributed::~EqEngineManagerDistributed()
+{
   d_modelEeContext.pop();
 }
 
@@ -42,9 +43,10 @@ void EqEngineManagerDistributed::initializeTheories()
   }
   else
   {
-    AlwaysAssert(false) << "Expected shared terms database to use equality engine";
+    AlwaysAssert(false)
+        << "Expected shared terms database to use equality engine";
   }
-  
+
   // allocate equality engines per theory
   for (TheoryId theoryId = theory::THEORY_FIRST;
        theoryId != theory::THEORY_LAST;
@@ -69,7 +71,7 @@ void EqEngineManagerDistributed::initializeTheories()
     eq::EqualityEngine* eeAlloc = eet.d_allocEe.get();
     t->setEqualityEngine(eeAlloc);
   }
-  
+
   const LogicInfo& logicInfo = d_te.getLogicInfo();
   if (logicInfo.isQuantified())
   {
@@ -106,14 +108,15 @@ void EqEngineManagerDistributed::initializeTheories()
   }
 }
 
-void EqEngineManagerDistributed::initializeModel(TheoryModel * m)
+void EqEngineManagerDistributed::initializeModel(TheoryModel* m)
 {
-  Assert (m!=nullptr);
+  Assert(m != nullptr);
   // initialize the model equality engine
   EeSetupInfo esim;
   if (m->needsEqualityEngine(esim))
   {
-    d_modelEqualityEngine.reset(allocateEqualityEngine(esim, &d_modelEeContext));
+    d_modelEqualityEngine.reset(
+        allocateEqualityEngine(esim, &d_modelEeContext));
     m->setEqualityEngine(d_modelEqualityEngine.get());
   }
   else
@@ -124,16 +127,16 @@ void EqEngineManagerDistributed::initializeModel(TheoryModel * m)
   d_modelEeContext.push();
 }
 
-eq::EqualityEngine * EqEngineManagerDistributed::allocateEqualityEngine(EeSetupInfo& esi, context::Context* c)
+eq::EqualityEngine* EqEngineManagerDistributed::allocateEqualityEngine(
+    EeSetupInfo& esi, context::Context* c)
 {
-    if (esi.d_notify != nullptr)
-    {
-      return new eq::EqualityEngine(
-          *esi.d_notify, c, esi.d_name, esi.d_constantsAreTriggers);
-    }
-      // don't care about notifications
-      return
-          new eq::EqualityEngine(c, esi.d_name, esi.d_constantsAreTriggers);
+  if (esi.d_notify != nullptr)
+  {
+    return new eq::EqualityEngine(
+        *esi.d_notify, c, esi.d_name, esi.d_constantsAreTriggers);
+  }
+  // don't care about notifications
+  return new eq::EqualityEngine(c, esi.d_name, esi.d_constantsAreTriggers);
 }
 
 void EqEngineManagerDistributed::MasterNotifyClass::eqNotifyNewClass(TNode t)

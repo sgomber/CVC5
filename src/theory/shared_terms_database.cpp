@@ -35,7 +35,8 @@ SharedTermsDatabase::SharedTermsDatabase(TheoryEngine* theoryEngine,
       d_theoryEngine(theoryEngine),
       d_inConflict(context, false),
       d_conflictPolarity(),
-      d_equalityEngine(nullptr) {
+      d_equalityEngine(nullptr)
+{
   smtStatisticsRegistry()->registerStat(&d_statSharedTerms);
 }
 
@@ -50,7 +51,7 @@ bool SharedTermsDatabase::needsEqualityEngine(EeSetupInfo& esi)
   esi.d_name = "SharedTermsDatabase";
   return true;
 }
-  
+
 SharedTermsDatabase::~SharedTermsDatabase()
 {
   smtStatisticsRegistry()->unregisterStat(&d_statSharedTerms);
@@ -185,8 +186,9 @@ void SharedTermsDatabase::markNotified(TNode term, Theory::Set theories) {
 }
 
 bool SharedTermsDatabase::areEqual(TNode a, TNode b) const {
-  if (d_equalityEngine->hasTerm(a) && d_equalityEngine->hasTerm(b)) {
-    return d_equalityEngine->areEqual(a,b);
+  if (d_equalityEngine->hasTerm(a) && d_equalityEngine->hasTerm(b))
+  {
+    return d_equalityEngine->areEqual(a, b);
   } else {
     Assert(d_equalityEngine->hasTerm(a) || a.isConst());
     Assert(d_equalityEngine->hasTerm(b) || b.isConst());
@@ -196,8 +198,9 @@ bool SharedTermsDatabase::areEqual(TNode a, TNode b) const {
 }
 
 bool SharedTermsDatabase::areDisequal(TNode a, TNode b) const {
-  if (d_equalityEngine->hasTerm(a) && d_equalityEngine->hasTerm(b)) {
-    return d_equalityEngine->areDisequal(a,b,false);
+  if (d_equalityEngine->hasTerm(a) && d_equalityEngine->hasTerm(b))
+  {
+    return d_equalityEngine->areDisequal(a, b, false);
   } else {
     Assert(d_equalityEngine->hasTerm(a) || a.isConst());
     Assert(d_equalityEngine->hasTerm(b) || b.isConst());
@@ -255,7 +258,8 @@ void SharedTermsDatabase::checkForConflict() {
   if (d_inConflict) {
     d_inConflict = false;
     std::vector<TNode> assumptions;
-    d_equalityEngine->explainEquality(d_conflictLHS, d_conflictRHS, d_conflictPolarity, assumptions);
+    d_equalityEngine->explainEquality(
+        d_conflictLHS, d_conflictRHS, d_conflictPolarity, assumptions);
     Node conflict = mkAnd(assumptions);
     d_theoryEngine->conflict(conflict, THEORY_BUILTIN);
     d_conflictLHS = d_conflictRHS = Node::null();

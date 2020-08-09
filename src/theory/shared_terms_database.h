@@ -156,7 +156,7 @@ public:
 
   SharedTermsDatabase(TheoryEngine* theoryEngine, context::Context* context);
   ~SharedTermsDatabase();
-  
+
   //============================================= initialization
   /** Called to set the equality engine. */
   void setEqualityEngine(theory::eq::EqualityEngine* ee);
@@ -254,15 +254,15 @@ public:
    */
   theory::eq::EqualityEngine* getEqualityEngine();
 
-protected:
+ protected:
 
   /**
    * This method gets called on backtracks from the context manager.
    */
  void contextNotifyPop() override { backtrack(); }
- 
-  /** Equality engine */
-  theory::eq::EqualityEngine * d_equalityEngine;
+
+ /** Equality engine */
+ theory::eq::EqualityEngine* d_equalityEngine;
 };
 
 }

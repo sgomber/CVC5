@@ -683,8 +683,8 @@ void QuantifiersEngine::check( Theory::Effort e ){
       {
         if (!d_model->isBuilt())
         {
-          // TODO: theory engine's model builder is quantifier engine's builder if it
-          // has one, refactor this
+          // TODO: theory engine's model builder is quantifier engine's builder
+          // if it has one, refactor this
           Trace("quant-engine-debug") << "Build model..." << std::endl;
           if (!d_te->buildModel())
           {

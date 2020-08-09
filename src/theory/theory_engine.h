@@ -159,7 +159,7 @@ class TheoryEngine {
 
   /** The model manager */
   std::unique_ptr<theory::ModelManagerDistributed> d_mDistributed;
-  
+
   /**
    * The quantifiers engine
    */
@@ -601,8 +601,8 @@ public:
    * was interrupted), then this returns the null pointer.
    */
   theory::TheoryModel* getBuiltModel();
-  /** 
-   * Build the model 
+  /**
+   * Build the model
    */
   bool buildModel();
   /** set eager model building

@@ -136,14 +136,15 @@ void TheoryEngine::finishInit() {
   if (options::eeMode() == options::EqEngineMode::DISTRIBUTED)
   {
     d_eeDistributed.reset(new EqEngineManagerDistributed(*this));
-    d_mDistributed.reset(new ModelManagerDistributed(*this, *d_eeDistributed.get()));
+    d_mDistributed.reset(
+        new ModelManagerDistributed(*this, *d_eeDistributed.get()));
   }
   else
   {
     AlwaysAssert(false) << "TheoryEngine::finishInit: equality engine mode "
                         << options::eeMode() << " not supported";
   }
-  
+
   // initialize the quantifiers engine
   if (d_logicInfo.isQuantified())
   {
@@ -156,7 +157,7 @@ void TheoryEngine::finishInit() {
       }
     }
   }
-  
+
   // initialize equality engines in all theories
   d_eeDistributed->initializeTheories();
 
@@ -484,8 +485,8 @@ void TheoryEngine::check(Theory::Effort effort) {
       if (Trace.isOn("theory::assertions-model")) {
         printAssertions("theory::assertions-model");
       }
-      ModelManagerDistributed * builder = d_mDistributed.get();
-      Assert (builder != nullptr);
+      ModelManagerDistributed* builder = d_mDistributed.get();
+      Assert(builder != nullptr);
       //checks for theories requiring the model go at last call
       builder->resetModel();
       for (TheoryId theoryId = THEORY_FIRST; theoryId < THEORY_LAST; ++theoryId) {
@@ -493,7 +494,8 @@ void TheoryEngine::check(Theory::Effort effort) {
           Theory* theory = d_theoryTable[theoryId];
           if (theory && d_logicInfo.isTheoryEnabled(theoryId)) {
             if( theory->needsCheckLastEffort() ){
-              if( !builder->buildModel() ){
+              if (!builder->buildModel())
+              {
                 break;
               }
               theory->check(Theory::EFFORT_LAST_CALL);
@@ -532,7 +534,7 @@ void TheoryEngine::check(Theory::Effort effort) {
       {
         AlwaysAssert(mee->consistent());
       }
-      ModelManagerDistributed * builder = d_mDistributed.get();
+      ModelManagerDistributed* builder = d_mDistributed.get();
       // Do post-processing of model from the theories (used for THEORY_SEP
       // to construct heap model)
       builder->postProcessModel(d_incomplete.get());
@@ -770,7 +772,7 @@ bool TheoryEngine::collectModelInfo(theory::TheoryModel* m)
 }
 
 TheoryModel* TheoryEngine::getModel() {
-  if (d_mDistributed==nullptr)
+  if (d_mDistributed == nullptr)
   {
     return nullptr;
   }
@@ -780,7 +782,7 @@ TheoryModel* TheoryEngine::getModel() {
 TheoryModel* TheoryEngine::getBuiltModel()
 {
   TheoryModel* m = getModel();
-  if (m==nullptr)
+  if (m == nullptr)
   {
     // not producing models
     return nullptr;
@@ -806,7 +808,7 @@ TheoryModel* TheoryEngine::getBuiltModel()
 
 bool TheoryEngine::buildModel()
 {
-  if (d_mDistributed==nullptr)
+  if (d_mDistributed == nullptr)
   {
     return false;
   }
