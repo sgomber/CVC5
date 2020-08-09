@@ -1068,7 +1068,7 @@ void TheoryProof::printTheoryLemmaProof(std::vector<Expr>& lemma,
   theory::Theory* th;
   Trace("pf::tp") << ";; Print theory lemma proof, theory id = " << d_theory->getId() << std::endl;
 
-  EeSetupInfo esi;
+  theory::EeSetupInfo esi;
   bool needsEe = false;
   if (d_theory->getId()==theory::THEORY_UF) {
     th = new theory::uf::TheoryUF(&fakeContext,
@@ -1098,14 +1098,14 @@ void TheoryProof::printTheoryLemmaProof(std::vector<Expr>& lemma,
                     << ProofManager::currentPM()->getLogic();
   }
   // must perform initialization on the theory
+  theory::eq::EqualityEngine * ee = nullptr;
   if (th!=nullptr)
   {
     // set up the equality engine for the theory
-    std::shared_ptr<eq::EqualityEngine> ee;
     if (needsEe)
     {
-      ee = std::make_shared<eq:::EqualityEngine>(*esi.d_notify, &fakeContext, esi.d_name, esi.d_constantsAreTriggers);
-      th->setEqualityEngine(ee.get());
+      //ee = new theory::eq:::EqualityEngine(*esi.d_notify, &fakeContext, esi.d_name, esi.d_constantsAreTriggers);
+      th->setEqualityEngine(ee);
     }
     // finish init
     th->finishInit();
@@ -1172,6 +1172,7 @@ void TheoryProof::printTheoryLemmaProof(std::vector<Expr>& lemma,
   }
 
   Debug("pf::tp") << "About to delete the theory solver used for proving the lemma... " << std::endl;
+  delete ee;
   delete th;
   Debug("pf::tp") << "About to delete the theory solver used for proving the lemma: DONE! " << std::endl;
 }
