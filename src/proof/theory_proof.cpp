@@ -1104,7 +1104,7 @@ void TheoryProof::printTheoryLemmaProof(std::vector<Expr>& lemma,
     // set up the equality engine for the theory
     if (needsEe)
     {
-      //ee = new theory::eq:::EqualityEngine(*esi.d_notify, &fakeContext, esi.d_name, esi.d_constantsAreTriggers);
+      ee = new theory::eq::EqualityEngine(*esi.d_notify, &fakeContext, esi.d_name, esi.d_constantsAreTriggers);
       th->setEqualityEngine(ee);
     }
     // finish init
