@@ -426,11 +426,11 @@ private:
                      const LogicInfo& logicInfo,
                      ProofNodeManager* pnm);
   ~TheoryArithPrivate();
-  
+
   //--------------------------------- initialization
   /** get the official theory rewriter of this theory */
   TheoryRewriter* getTheoryRewriter();
-  /** 
+  /**
    * Returns true if we need an equality engine, see
    * Theory::needsEqualityEngine.
    */

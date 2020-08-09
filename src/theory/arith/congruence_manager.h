@@ -139,7 +139,7 @@ public:
   ~ArithCongruenceManager();
 
   //--------------------------------- initialization
-  /** 
+  /**
    * Returns true if we need an equality engine, see
    * Theory::needsEqualityEngine.
    */

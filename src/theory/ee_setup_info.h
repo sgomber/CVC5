@@ -23,23 +23,23 @@ namespace CVC4 {
 namespace theory {
 
 namespace eq {
-  class EqualityEngineNotify;
+class EqualityEngineNotify;
 }
-  
+
 /**
  * This is a helper class that encapsulates instructions for how a Theory
  * wishes to initialize and setup notifications with its official equality
  * engine, e.g. via a notification class (eq::EqualityEngineNotify).
- * 
+ *
  * This includes (at a basic level) the arguments to the equality engine
  * constructor that theories may wish to modify. This information is determined
  * by the Theory during needsEqualityEngine.
  */
 struct EeSetupInfo
 {
-  EeSetupInfo() : d_notify(nullptr), d_constantsAreTriggers(true){}
+  EeSetupInfo() : d_notify(nullptr), d_constantsAreTriggers(true) {}
   /** The notification class of the theory */
-  eq::EqualityEngineNotify * d_notify;
+  eq::EqualityEngineNotify* d_notify;
   /** The name of the equality engine */
   std::string d_name;
   /** Constants are triggers */

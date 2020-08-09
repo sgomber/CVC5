@@ -50,8 +50,8 @@ void EqEngineManagerDistributed::finishInit()
     }
     // allocate the equality engine
     EeTheoryInfo& eet = d_einfo[theoryId];
-    eet.d_allocEe.reset(new eq::EqualityEngine(
-      *esi.d_notify, c, esi.d_name, true));
+    eet.d_allocEe.reset(
+        new eq::EqualityEngine(*esi.d_notify, c, esi.d_name, true));
     // the theory uses this equality engine
     eq::EqualityEngine* eeAlloc = eet.d_allocEe.get();
     t->setEqualityEngine(eeAlloc);

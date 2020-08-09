@@ -39,13 +39,13 @@
 #include "theory/assertion.h"
 #include "theory/care_graph.h"
 #include "theory/decision_manager.h"
+#include "theory/ee_setup_info.h"
 #include "theory/logic_info.h"
 #include "theory/output_channel.h"
 #include "theory/theory_id.h"
 #include "theory/theory_rewriter.h"
 #include "theory/trust_node.h"
 #include "theory/valuation.h"
-#include "theory/ee_setup_info.h"
 #include "util/statistics_registry.h"
 
 namespace CVC4 {
@@ -132,12 +132,11 @@ class Theory {
   DecisionManager* d_decManager;
 
  protected:
-
   /** Name of this theory instance. Along with the TheoryId this should provide
    * an unique string identifier for each instance of a Theory class. We need
    * this to ensure unique statistics names over multiple theory instances. */
   std::string d_instanceName;
-  
+
   // === STATISTICS ===
   /** time spent in check calls */
   TimerStat d_checkTime;
@@ -511,7 +510,7 @@ class Theory {
   /**
    * Returns true if this theory needs an equality engine for checking
    * satisfiability.
-   * 
+   *
    * If this method returns true, then the equality engine manager will
    * initialize its equality engine field via setEqualityEngine above during
    * TheoryEngine::finishInit, prior to calling finishInit for this theory.

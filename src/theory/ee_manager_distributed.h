@@ -21,9 +21,9 @@
 #include <map>
 #include <memory>
 
+#include "theory/ee_setup_info.h"
 #include "theory/theory.h"
 #include "theory/uf/equality_engine.h"
-#include "theory/ee_setup_info.h"
 
 namespace CVC4 {
 
@@ -49,7 +49,7 @@ struct EeTheoryInfo
  * The (distributed) equality engine manager. This encapsulates the current
  * architecture for managing equalities in the TheoryEngine, in which all
  * theories.
- * 
+ *
  * This call is responsible for the memory management and initialization of
  * all "official" equality engine objects owned by theories, and for setting
  * up the master equality engine, which is used as a special communication
@@ -61,17 +61,18 @@ class EqEngineManagerDistributed
  public:
   EqEngineManagerDistributed(TheoryEngine& te);
   ~EqEngineManagerDistributed();
-  /** 
+  /**
    * Finish initialize, called by TheoryEngine::finishInit after theory
    * objects have been created but prior to their final initialization. This
    * sets up equality engines for all theories.
-   * 
+   *
    * This method is context-independent, and is applied once during
    * the lifetime of TheoryEngine (during finishInit).
    */
   void finishInit();
   /** get the master equality engine */
   eq::EqualityEngine* getMasterEqualityEngine();
+
  private:
   /** Reference to the theory engine */
   TheoryEngine& d_te;

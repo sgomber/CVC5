@@ -77,7 +77,7 @@ class TheorySep : public Theory {
   //--------------------------------- initialization
   /** get the official theory rewriter of this theory */
   TheoryRewriter* getTheoryRewriter() override;
-  /** 
+  /**
    * Returns true if we need an equality engine. If so, we initialize the
    * information regarding how it should be setup. For details, see the
    * documentation in Theory::needsEqualityEngine.
