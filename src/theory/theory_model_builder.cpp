@@ -376,27 +376,6 @@ bool TheoryEngineModelBuilder::buildModel(Model* m)
 {
   Trace("model-builder") << "TheoryEngineModelBuilder: buildModel" << std::endl;
   TheoryModel* tm = (TheoryModel*)m;
-  eq::EqualityEngine* ee = tm->d_equalityEngine;
-
-  // buildModel should only be called once per check
-  Assert(!tm->isBuilt());
-
-  // Reset model
-  tm->reset();
-
-  // mark as built
-  tm->d_modelBuilt = true;
-  tm->d_modelBuiltSuccess = false;
-
-  // Collect model info from the theories
-  Trace("model-builder") << "TheoryEngineModelBuilder: Collect model info..."
-                         << std::endl;
-  if (!d_te->collectModelInfo(tm))
-  {
-    Trace("model-builder")
-        << "TheoryEngineModelBuilder: fail collect model info" << std::endl;
-    return false;
-  }
 
   Trace("model-builder")
       << "TheoryEngineModelBuilder: Preprocess build model..." << std::endl;
@@ -409,6 +388,7 @@ bool TheoryEngineModelBuilder::buildModel(Model* m)
     return false;
   }
 
+  eq::EqualityEngine* ee = tm->d_equalityEngine;
   Trace("model-builder")
       << "TheoryEngineModelBuilder: Add assignable subterms..." << std::endl;
   // Loop through all terms and make sure that assignable sub-terms are in the
@@ -943,7 +923,6 @@ bool TheoryEngineModelBuilder::buildModel(Model* m)
     return false;
   }
   Trace("model-builder") << "TheoryEngineModelBuilder: success" << std::endl;
-  tm->d_modelBuiltSuccess = true;
   return true;
 }
 void TheoryEngineModelBuilder::computeAssignableInfo(

@@ -787,23 +787,20 @@ TheoryModel* TheoryEngine::getBuiltModel()
     // not producing models
     return nullptr;
   }
-  if (!m->isBuilt())
+  // If this method was called, we should be in SAT mode, and produceModels
+  // should be true.
+  AlwaysAssert(options::produceModels());
+  if (!d_inSatMode)
   {
-    // If this method was called, we should be in SAT mode, and produceModels
-    // should be true.
-    AlwaysAssert(options::produceModels());
-    if (!d_inSatMode)
-    {
-      // not available, perhaps due to interuption.
-      return nullptr;
-    }
-    // must build model at this point
-    if (!d_mDistributed->buildModel())
-    {
-      return nullptr;
-    }
+    // not available, perhaps due to interuption.
+    return nullptr;
   }
-  return m;
+  // must build model at this point
+  if (!d_mDistributed->buildModel())
+  {
+    return nullptr;
+  }
+  return d_mDistributed->getModel();
 }
 
 bool TheoryEngine::buildModel()

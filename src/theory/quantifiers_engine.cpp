@@ -514,19 +514,6 @@ void QuantifiersEngine::ppNotifyAssertions(
 void QuantifiersEngine::check( Theory::Effort e ){
   CodeTimer codeTimer(d_statistics.d_time);
   d_useModelEe = options::quantModelEe() && ( e>=Theory::EFFORT_LAST_CALL );
-  // if we want to use the model's equality engine, build the model now
-  if( d_useModelEe && !d_model->isBuilt() ){
-    Trace("quant-engine-debug") << "Build the model." << std::endl;
-    if (!d_te->buildModel())
-    {
-      //we are done if model building was unsuccessful
-      flushLemmas();
-      if( d_hasAddedLemma ){
-        Trace("quant-engine-debug") << "...failed." << std::endl;
-        return;
-      }
-    }
-  }
   
   if( !getActiveEqualityEngine()->consistent() ){
     Trace("quant-engine-debug") << "Master equality engine not consistent, return." << std::endl;
@@ -681,18 +668,10 @@ void QuantifiersEngine::check( Theory::Effort e ){
       //build the model if any module requested it
       if (needsModelE == quant_e)
       {
-        if (!d_model->isBuilt())
-        {
-          // TODO: theory engine's model builder is quantifier engine's builder
-          // if it has one, refactor this
           Trace("quant-engine-debug") << "Build model..." << std::endl;
-          if (!d_te->buildModel())
-          {
-            flushLemmas();
-          }
-        }
-        if (!d_model->isBuiltSuccess())
+        if (!d_te->buildModel())
         {
+          flushLemmas();
           break;
         }
       }

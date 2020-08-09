@@ -63,6 +63,10 @@ class ModelManagerDistributed
   theory::TheoryEngineModelBuilder* d_modelBuilder;
   /** The model builder object we have allocated (if one exists) */
   std::unique_ptr<theory::TheoryEngineModelBuilder> d_alocModelBuilder;
+  /** whether we have tried to build this model in the current context */
+  bool d_modelBuilt;
+  /** whether this model has been built successfully */
+  bool d_modelBuiltSuccess;
 };
 
 }  // namespace theory

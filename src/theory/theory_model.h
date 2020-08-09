@@ -30,6 +30,8 @@
 
 namespace CVC4 {
 namespace theory {
+  
+class ModelManagerDistributed;
 
 /** Theory Model class.
  *
@@ -79,6 +81,7 @@ namespace theory {
 class TheoryModel : public Model
 {
   friend class TheoryEngineModelBuilder;
+  friend class ModelManagerDistributed;
 public:
   TheoryModel(context::Context* c, std::string name, bool enableFuncModels);
   ~TheoryModel() override;
@@ -96,21 +99,6 @@ public:
 
   /** reset the model */
   virtual void reset();
-  /** is built
-   *
-   * Have we attempted to build this model since the last
-   * call to reset? Notice for model building techniques
-   * that are not guaranteed to succeed (such as
-   * when quantified formulas are enabled), a true return
-   * value does not imply that this is a model of the
-   * current assertions.
-   */
-  bool isBuilt() { return d_modelBuilt; }
-  /** is built success
-   *
-   * Was this model successfully built since the last call to reset?
-   */
-  bool isBuiltSuccess() { return d_modelBuiltSuccess; }
   //---------------------------- for building the model
   /** Adds a substitution from x to t. */
   void addSubstitution(TNode x, TNode t, bool invalidateCache = true);
@@ -364,10 +352,6 @@ public:
   std::string d_name;
   /** substitution map for this model */
   SubstitutionMap d_substitutions;
-  /** whether we have tried to build this model in the current context */
-  bool d_modelBuilt;
-  /** whether this model has been built successfully */
-  bool d_modelBuiltSuccess;
   /** equality engine containing all known equalities/disequalities */
   eq::EqualityEngine* d_equalityEngine;
   /** approximations (see recordApproximation) */

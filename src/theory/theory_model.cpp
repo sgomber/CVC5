@@ -31,8 +31,6 @@ TheoryModel::TheoryModel(context::Context* c,
                          bool enableFuncModels)
     : d_name(name),
       d_substitutions(c, false),
-      d_modelBuilt(false),
-      d_modelBuiltSuccess(false),
       d_equalityEngine(nullptr),
       d_using_model_core(false),
       d_enableFuncModels(enableFuncModels)
@@ -77,8 +75,6 @@ void TheoryModel::finishInit()
 }
 
 void TheoryModel::reset(){
-  d_modelBuilt = false;
-  d_modelBuiltSuccess = false;
   d_modelCache.clear();
   d_comment_str.clear();
   d_sep_heap = Node::null();

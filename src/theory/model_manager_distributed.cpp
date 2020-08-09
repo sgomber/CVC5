@@ -24,7 +24,8 @@ namespace theory {
 
 ModelManagerDistributed::ModelManagerDistributed(
     TheoryEngine& te, EqEngineManagerDistributed& eem)
-    : d_te(te), d_eem(eem), d_model(nullptr), d_modelBuilder(nullptr)
+    : d_te(te), d_eem(eem), d_model(nullptr), d_modelBuilder(nullptr),
+    d_modelBuilt(false), d_modelBuiltSuccess(false)
 {
 }
 
@@ -32,11 +33,8 @@ ModelManagerDistributed::~ModelManagerDistributed() {}
 
 void ModelManagerDistributed::resetModel()
 {
-  d_model->reset();
-  // push/pop to clear the equality engine of the model
-  context::Context* meec = d_eem.getModelEqualityEngineContext();
-  meec->pop();
-  meec->push();
+  d_modelBuilt = false;
+  d_modelBuiltSuccess = false;
 }
 
 void ModelManagerDistributed::finishInit()
@@ -72,24 +70,49 @@ void ModelManagerDistributed::finishInit()
 
 bool ModelManagerDistributed::buildModel()
 {
-  if (d_model->isBuilt())
+  if (d_modelBuilt)
   {
-    return true;
+    // already computed
+    return d_modelBuiltSuccess;
   }
-  // need this???
-  resetModel();
-  return d_modelBuilder->buildModel(d_model);
+  d_modelBuilt = true;
+  d_modelBuiltSuccess = false;
+
+  Trace("model-builder") << "ModelManagerDistributed: reset model..."
+                         << std::endl;
+  // Reset model
+  d_model->reset();
+
+  // push/pop to clear the equality engine of the model
+  context::Context* meec = d_eem.getModelEqualityEngineContext();
+  meec->pop();
+  meec->push();
+
+  // Collect model info from the theories
+  Trace("model-builder") << "ModelManagerDistributed: Collect model info..." << std::endl;
+  if (!d_te.collectModelInfo(d_model))
+  {
+    Trace("model-builder")
+        << "ModelManagerDistributed: fail collect model info" << std::endl;
+    return false;
+  }
+  
+  // success is determined by the model builder
+  d_modelBuiltSuccess = d_modelBuilder->buildModel(d_model);
+  return d_modelBuiltSuccess;
 }
 
 void ModelManagerDistributed::postProcessModel(bool incomplete)
 {
-  if (!d_model->isBuilt())
+  if (!d_modelBuilt)
   {
     // model not built, nothing to do
     return;
   }
+  Trace("model-builder") << "ModelManagerDistributed: post-process model..."
+                         << std::endl;
   // model construction should always succeed unless lemmas were added
-  AlwaysAssert(d_model->isBuiltSuccess());
+  AlwaysAssert(d_modelBuiltSuccess);
   if (!options::produceModels())
   {
     return;
