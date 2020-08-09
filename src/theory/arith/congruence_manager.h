@@ -139,11 +139,11 @@ public:
   ~ArithCongruenceManager();
 
   //--------------------------------- initialization
-  /**
-   * Allocate the equality engine, which is subsequently used as the official
-   * equality engine of the theory of arithmetic.
+  /** 
+   * Returns true if we need an equality engine, see
+   * Theory::needsEqualityEngine.
    */
-  eq::EqualityEngine* allocateEqualityEngine(context::Context* c);
+  bool needsEqualityEngine(EeSetupInfo& esi);
   /**
    * Finish initialize. This class is instructed by TheoryArithPrivate to use
    * the equality engine ee.

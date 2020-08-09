@@ -45,6 +45,7 @@
 #include "theory/theory_rewriter.h"
 #include "theory/trust_node.h"
 #include "theory/valuation.h"
+#include "theory/ee_setup_info.h"
 #include "util/statistics_registry.h"
 
 namespace CVC4 {
@@ -89,11 +90,6 @@ class Theory {
   /** An integer identifying the type of the theory. */
   TheoryId d_id;
 
-  /** Name of this theory instance. Along with the TheoryId this should provide
-   * an unique string identifier for each instance of a Theory class. We need
-   * this to ensure unique statistics names over multiple theory instances. */
-  std::string d_instanceName;
-
   /** The SAT search context for the Theory. */
   context::Context* d_satContext;
 
@@ -137,6 +133,11 @@ class Theory {
 
  protected:
 
+  /** Name of this theory instance. Along with the TheoryId this should provide
+   * an unique string identifier for each instance of a Theory class. We need
+   * this to ensure unique statistics names over multiple theory instances. */
+  std::string d_instanceName;
+  
   // === STATISTICS ===
   /** time spent in check calls */
   TimerStat d_checkTime;
@@ -508,10 +509,19 @@ class Theory {
   void setEqualityEngine(eq::EqualityEngine* ee);
   //=========== Distributed
   /**
-   * Called to allocate an equality engine if doing distributed congruence
-   * closure.
+   * Returns true if this theory needs an equality engine for checking
+   * satisfiability.
+   * 
+   * If this method returns true, then the equality engine manager will
+   * initialize its equality engine field via setEqualityEngine above during
+   * TheoryEngine::finishInit, prior to calling finishInit for this theory.
+   *
+   * Additionally, if this method returns true, then this method is required to
+   * update the argument eni with instructions for initializing and setting up
+   * notifications from its equality engine, which is commonly done with
+   * a notifications class (eq::EqualityEngineNotify).
    */
-  virtual eq::EqualityEngine* allocateEqualityEngine();
+  virtual bool needsEqualityEngine(EeSetupInfo& esi);
   //---------------------------------- equality engine management
 
   /** Called to set the quantifiers engine. */

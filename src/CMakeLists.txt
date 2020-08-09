@@ -474,6 +474,7 @@ libcvc4_add_sources(
   theory/eager_proof_generator.h
   theory/ee_manager_distributed.cpp
   theory/ee_manager_distributed.h
+  theory/ee_setup_info.h
   theory/engine_output_channel.cpp
   theory/engine_output_channel.h
   theory/evaluator.cpp
@@ -813,6 +814,7 @@ libcvc4_add_sources(
   theory/uf/cardinality_extension.h
   theory/uf/equality_engine.cpp
   theory/uf/equality_engine.h
+  theory/uf/equality_engine_notify.h
   theory/uf/equality_engine_types.h
   theory/uf/eq_proof.cpp
   theory/uf/eq_proof.h

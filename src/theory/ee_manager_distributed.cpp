@@ -29,6 +29,7 @@ EqEngineManagerDistributed::~EqEngineManagerDistributed() {}
 
 void EqEngineManagerDistributed::finishInit()
 {
+  context::Context* c = d_te.getSatContext();
   // allocate equality engines per theory
   for (TheoryId theoryId = theory::THEORY_FIRST;
        theoryId != theory::THEORY_LAST;
@@ -41,9 +42,17 @@ void EqEngineManagerDistributed::finishInit()
       continue;
     }
     // allocate an equality engine
+    EeSetupInfo esi;
+    if (!t->needsEqualityEngine(esi))
+    {
+      // theory said it doesn't need an equality engine, skip
+      continue;
+    }
+    // allocate the equality engine
     EeTheoryInfo& eet = d_einfo[theoryId];
-    eet.d_allocEe.reset(t->allocateEqualityEngine());
-    // the theory uses the equality engine it allocates
+    eet.d_allocEe.reset(new eq::EqualityEngine(
+      *esi.d_notify, c, esi.d_name, true));
+    // the theory uses this equality engine
     eq::EqualityEngine* eeAlloc = eet.d_allocEe.get();
     t->setEqualityEngine(eeAlloc);
   }
@@ -72,7 +81,8 @@ void EqEngineManagerDistributed::finishInit()
         continue;
       }
       EeTheoryInfo& eet = d_einfo[theoryId];
-      // get the allocated equality engine
+      // Get the allocated equality engine, and connect it to the master
+      // equality engine.
       eq::EqualityEngine* eeAlloc = eet.d_allocEe.get();
       if (eeAlloc != nullptr)
       {
@@ -85,6 +95,7 @@ void EqEngineManagerDistributed::finishInit()
 
 void EqEngineManagerDistributed::MasterNotifyClass::eqNotifyNewClass(TNode t)
 {
+  // adds t to the quantifiers term database
   d_quantEngine->eqNotifyNewClass(t);
 }
 
