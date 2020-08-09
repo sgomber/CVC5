@@ -81,11 +81,9 @@ void TheorySets::finishInit()
   // we do congruence over cardinality
   d_equalityEngine->addFunctionKind(CARD);
 
-  TheoryModel* tm = d_valuation.getModel();
-  Assert(tm != nullptr);
-  tm->setUnevaluatedKind(COMPREHENSION);
+  d_valuation.setUnevaluatedKind(COMPREHENSION);
   // choice is used to eliminate witness
-  tm->setUnevaluatedKind(WITNESS);
+  d_valuation.setUnevaluatedKind(WITNESS);
 
   // finish initialization internally
   d_internal->finishInit();
