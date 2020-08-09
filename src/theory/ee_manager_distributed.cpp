@@ -41,7 +41,6 @@ void EqEngineManagerDistributed::finishInit()
       // theory not active, skip
       continue;
     }
-    // allocate an equality engine
     EeSetupInfo esi;
     if (!t->needsEqualityEngine(esi))
     {

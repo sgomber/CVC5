@@ -180,8 +180,6 @@ public:
 
   void addSharedTerm(Node x);
 
-  eq::EqualityEngine* getEqualityEngine() { return d_ee; }
-
  private:
   class Statistics {
   public:
