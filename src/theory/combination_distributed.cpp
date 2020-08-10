@@ -24,7 +24,7 @@ CombinationDistributed::CombinationDistributed(
     TheoryEngine& te,
     const std::vector<Theory*>& paraTheories,
     context::Context* c,
-                         SharedTermsDatabase& sdb)
+    SharedTermsDatabase& sdb)
     : d_te(te),
       d_paraTheories(paraTheories),
       d_sharedTerms(sdb),

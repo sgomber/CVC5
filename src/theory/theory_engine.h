@@ -162,7 +162,7 @@ class TheoryEngine {
   /** The model manager */
   std::unique_ptr<theory::ModelManagerDistributed> d_mDistributed;
 
-  /** 
+  /**
    * The combination manager
    */
   std::unique_ptr<theory::CombinationDistributed> d_tcDistributed;

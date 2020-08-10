@@ -143,16 +143,18 @@ void TheoryEngine::finishInit() {
   if (theory::TheoryTraits<THEORY>::isParametric \
       && d_logicInfo.isTheoryEnabled(THEORY))    \
   {                                              \
-    paraTheories.push_back(theoryOf(THEORY));  \
+    paraTheories.push_back(theoryOf(THEORY));    \
   }
-  // Collect the parametric theories, which are given to the theory combination manager below
+  // Collect the parametric theories, which are given to the theory combination
+  // manager below
   CVC4_FOR_EACH_THEORY;
 
   // Initialize the equality engine architecture for all theories, which
   // includes the master equality engine.
   if (options::eeMode() == options::EqEngineMode::DISTRIBUTED)
   {
-    d_tcDistributed.reset(new CombinationDistributed(*this, paraTheories, d_context, d_sharedTerms));
+    d_tcDistributed.reset(new CombinationDistributed(
+        *this, paraTheories, d_context, d_sharedTerms));
   }
   else
   {
@@ -784,7 +786,7 @@ bool TheoryEngine::collectModelInfo(theory::TheoryModel* m)
 
 TheoryModel* TheoryEngine::getModel()
 {
-  Assert (d_tcDistributed!=nullptr);
+  Assert(d_tcDistributed != nullptr);
   TheoryModel* m = d_tcDistributed->getModel();
   Assert(m != nullptr);
   return m;
@@ -792,7 +794,7 @@ TheoryModel* TheoryEngine::getModel()
 
 TheoryModel* TheoryEngine::getBuiltModel()
 {
-  Assert (d_tcDistributed!=nullptr);
+  Assert(d_tcDistributed != nullptr);
   // If this method was called, we should be in SAT mode, and produceModels
   // should be true.
   AlwaysAssert(options::produceModels());
@@ -811,7 +813,7 @@ TheoryModel* TheoryEngine::getBuiltModel()
 
 bool TheoryEngine::buildModel()
 {
-  Assert (d_tcDistributed!=nullptr);
+  Assert(d_tcDistributed != nullptr);
   return d_tcDistributed->buildModel();
 }
 
@@ -1147,7 +1149,6 @@ void TheoryEngine::assertFact(TNode literal)
   TNode atom = polarity ? literal : literal[0];
 
   if (d_logicInfo.isSharingEnabled()) {
-
     // %%% TC: begin notifyAssertFact(atom);
     // If any shared terms, it's time to do sharing work
     if (d_sharedTerms.hasSharedTerms(atom)) {
@@ -1802,7 +1803,7 @@ SharedTermsDatabase* TheoryEngine::getSharedTermsDatabase()
 
 theory::eq::EqualityEngine* TheoryEngine::getMasterEqualityEngine()
 {
-  Assert (d_tcDistributed!=nullptr);
+  Assert(d_tcDistributed != nullptr);
   return d_tcDistributed->getMasterEqualityEngine();
 }
 
