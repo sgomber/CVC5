@@ -36,7 +36,9 @@ namespace theory {
 class CombinationDistributed
 {
  public:
-  CombinationDistributed(TheoryEngine& te, const std::vector<Theory*>& paraTheories, context::Context* c);
+  CombinationDistributed(TheoryEngine& te,
+                         const std::vector<Theory*>& paraTheories,
+                         context::Context* c);
   ~CombinationDistributed();
   /** Finish initialization */
   void finishInit();

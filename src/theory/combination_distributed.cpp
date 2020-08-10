@@ -20,11 +20,12 @@
 namespace CVC4 {
 namespace theory {
 
-CombinationDistributed::CombinationDistributed(TheoryEngine& te,
-                                               const std::vector<Theory*>& paraTheories,
-                                               context::Context* c)
+CombinationDistributed::CombinationDistributed(
+    TheoryEngine& te,
+    const std::vector<Theory*>& paraTheories,
+    context::Context* c)
     : d_te(te),
-    d_paraTheories(paraTheories),
+      d_paraTheories(paraTheories),
       d_sharedTerms(&te, c),
       d_eeDistributed(new EqEngineManagerDistributed(te)),
       d_mDistributed(new ModelManagerDistributed(te, *d_eeDistributed.get()))
@@ -51,7 +52,7 @@ void CombinationDistributed::combineTheories()
   CareGraph careGraph;
 
   // get the care graph from the parametric theories
-  for (Theory * t : d_paraTheories)
+  for (Theory* t : d_paraTheories)
   {
     t->getCareGraph(&careGraph);
   }
