@@ -54,6 +54,11 @@ class CombinationDistributed
   /** Get model */
   theory::TheoryModel* getModel();
   //-------------------------- end model
+  
+  //void preRegister(TNode preprocessed);
+  //void notifyAssertFact(TNode literal);
+  //bool isShared(TNode term) const;
+  //theory::EqualityStatus getEqualityStatus(TNode a, TNode b);
  private:
   /** Reference to the theory engine */
   TheoryEngine& d_te;

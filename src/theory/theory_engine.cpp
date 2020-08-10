@@ -747,8 +747,6 @@ bool TheoryEngine::properExplanation(TNode node, TNode expl) const {
 
 bool TheoryEngine::collectModelInfo(theory::TheoryModel* m)
 {
-  //have shared term engine collectModelInfo
-  //  d_sharedTerms.collectModelInfo( m );
   // Consult each active theory to get all relevant information
   // concerning the model.
   for(TheoryId theoryId = theory::THEORY_FIRST; theoryId < theory::THEORY_LAST; ++theoryId) {
@@ -1176,6 +1174,7 @@ void TheoryEngine::assertFact(TNode literal)
         d_sharedTerms.markNotified(term, theories);
       }
     }
+    // %%% TC: notifyAssertFact(atom);
 
     // If it's an equality, assert it to the shared term manager, even though the terms are not
     // yet shared. As the terms become shared later, the shared terms manager will then add them
@@ -1276,6 +1275,7 @@ theory::EqualityStatus TheoryEngine::getEqualityStatus(TNode a, TNode b) {
       return EQUALITY_FALSE_AND_PROPAGATED;
     }
   }
+  // %%% TC: getEqualityStatus(a, b);
   return theoryOf(Theory::theoryOf(a.getType()))->getEqualityStatus(a, b);
 }
 
@@ -1286,6 +1286,7 @@ Node TheoryEngine::getModelValue(TNode var) {
     return var;
   }
   Assert(d_sharedTerms.isShared(var));
+  // %%% TC: isShared(var);
   return theoryOf(Theory::theoryOf(var.getType()))->getModelValue(var);
 }
 
@@ -1924,6 +1925,7 @@ void TheoryEngine::getExplanation(std::vector<NodeTheoryPair>& explanationVector
     Node explanation;
     if (toExplain.d_theory == THEORY_BUILTIN)
     {
+      // %%% TC: ????
       explanation = d_sharedTerms.explain(toExplain.d_node);
       Debug("theory::explain") << "\tTerm was propagated by THEORY_BUILTIN. Explanation: " << explanation << std::endl;
     }
