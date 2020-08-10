@@ -44,23 +44,23 @@ struct EeTheoryInfo
   /** The equality engine allocated by this theory (if it exists) */
   std::unique_ptr<eq::EqualityEngine> d_allocEe;
 };
-  
+
 /** Virtual base class for equality engine managers */
 class EqEngineManager
 {
-public:
-  virtual ~EqEngineManager(){}
-  /** 
+ public:
+  virtual ~EqEngineManager() {}
+  /**
    * Get the equality engine theory information.
    */
-  const EeTheoryInfo * getEeTheoryInfo(TheoryId tid) const;
-protected:
+  const EeTheoryInfo* getEeTheoryInfo(TheoryId tid) const;
+
+ protected:
   /**
    * Information related to the equality engine, per theory.
    */
   std::map<TheoryId, EeTheoryInfo> d_einfo;
 };
-
 
 /**
  * The (distributed) equality engine manager. This encapsulates the current

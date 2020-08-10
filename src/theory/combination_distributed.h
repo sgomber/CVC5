@@ -47,7 +47,7 @@ class CombinationDistributed
   void combineTheories();
   //-------------------------- equality engine
   /** Get the equality engine theory information. */
-  const EeTheoryInfo * getEeTheoryInfo(TheoryId tid) const;
+  const EeTheoryInfo* getEeTheoryInfo(TheoryId tid) const;
   /** get the master equality engine */
   eq::EqualityEngine* getMasterEqualityEngine();
   //-------------------------- end equality engine

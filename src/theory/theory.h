@@ -294,7 +294,6 @@ class Theory {
    */
   bool isLegalElimination(TNode x, TNode val);
 
-
   //--------------------------------- private initialization
   /**
    * Called to set the official equality engine. This should be done by
@@ -308,11 +307,10 @@ class Theory {
    * theory has been assigned.  This base class implementation
    * does nothing. This should be done by TheoryEngine only.
    */
-  virtual void finishInit() { }
+  virtual void finishInit() {}
   //--------------------------------- end private initialization
-  
+
  public:
-   
   //--------------------------------- initialization
   /**
    * @return The theory rewriter associated with this theory.
@@ -340,7 +338,7 @@ class Theory {
    */
   void finishInitStandalone();
   //--------------------------------- end initialization
-  
+
   /**
    * Return the ID of the theory responsible for the given type.
    */
