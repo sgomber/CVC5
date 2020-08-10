@@ -104,6 +104,11 @@ void CombinationDistributed::combineTheories()
   }
 }
 
+eq::EqualityEngine* CombinationDistributed::getMasterEqualityEngine()
+{
+  return d_eeDistributed->getMasterEqualityEngine();
+}
+
 void CombinationDistributed::resetModel() { d_mDistributed->resetModel(); }
 
 bool CombinationDistributed::buildModel()

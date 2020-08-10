@@ -131,6 +131,9 @@ std::string getTheoryString(theory::TheoryId id)
 }
 
 void TheoryEngine::finishInit() {
+  // NOTE: This seems to be required since
+  // theory::TheoryTraits<THEORY>::isParametric is hard to access without
+  // using the CVC4_FOR_EACH_THEORY_STATEMENT macro. -AJR
 #ifdef CVC4_FOR_EACH_THEORY_STATEMENT
 #undef CVC4_FOR_EACH_THEORY_STATEMENT
 #endif
@@ -140,7 +143,6 @@ void TheoryEngine::finishInit() {
   {                                              \
     d_paraTheories.push_back(theoryOf(THEORY));  \
   }
-
   // Collect the parametric theories
   CVC4_FOR_EACH_THEORY;
 
@@ -1158,6 +1160,7 @@ void TheoryEngine::assertFact(TNode literal)
 
   if (d_logicInfo.isSharingEnabled()) {
 
+    // %%% TC: begin notifyAssertFact(atom);
     // If any shared terms, it's time to do sharing work
     if (d_sharedTerms.hasSharedTerms(atom)) {
       // Notify the theories the shared terms
@@ -1174,7 +1177,7 @@ void TheoryEngine::assertFact(TNode literal)
         d_sharedTerms.markNotified(term, theories);
       }
     }
-    // %%% TC: notifyAssertFact(atom);
+    // %%% TC: end notifyAssertFact(atom);
 
     // If it's an equality, assert it to the shared term manager, even though the terms are not
     // yet shared. As the terms become shared later, the shared terms manager will then add them
@@ -1267,6 +1270,7 @@ const LogicInfo& TheoryEngine::getLogicInfo() const { return d_logicInfo; }
 
 theory::EqualityStatus TheoryEngine::getEqualityStatus(TNode a, TNode b) {
   Assert(a.getType().isComparableTo(b.getType()));
+  // %%% TC: begin getEqualityStatus(a, b);
   if (d_sharedTerms.isShared(a) && d_sharedTerms.isShared(b)) {
     if (d_sharedTerms.areEqual(a,b)) {
       return EQUALITY_TRUE_AND_PROPAGATED;
@@ -1275,7 +1279,7 @@ theory::EqualityStatus TheoryEngine::getEqualityStatus(TNode a, TNode b) {
       return EQUALITY_FALSE_AND_PROPAGATED;
     }
   }
-  // %%% TC: getEqualityStatus(a, b);
+  // %%% TC: end getEqualityStatus(a, b);
   return theoryOf(Theory::theoryOf(a.getType()))->getEqualityStatus(a, b);
 }
 
@@ -1285,8 +1289,9 @@ Node TheoryEngine::getModelValue(TNode var) {
     // the model value of a constant must be itself
     return var;
   }
+  // %%% TC: begin isShared(var);
   Assert(d_sharedTerms.isShared(var));
-  // %%% TC: isShared(var);
+  // %%% TC: end isShared(var);
   return theoryOf(Theory::theoryOf(var.getType()))->getModelValue(var);
 }
 

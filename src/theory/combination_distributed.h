@@ -44,6 +44,10 @@ class CombinationDistributed
   void finishInit();
   /** Combine theories */
   void combineTheories();
+  //-------------------------- equality engine
+  /** get the master equality engine */
+  eq::EqualityEngine* getMasterEqualityEngine();
+  //-------------------------- end equality engine
   //-------------------------- model
   /** reset model */
   void resetModel();
