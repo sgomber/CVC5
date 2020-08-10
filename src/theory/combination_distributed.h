@@ -20,9 +20,9 @@
 #include <map>
 #include <memory>
 
-#include "theory/shared_terms_database.h"
 #include "theory/ee_manager_distributed.h"
 #include "theory/model_manager_distributed.h"
+#include "theory/shared_terms_database.h"
 
 namespace CVC4 {
 

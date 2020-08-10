@@ -669,10 +669,10 @@ void QuantifiersEngine::check( Theory::Effort e ){
       if (needsModelE == quant_e)
       {
           Trace("quant-engine-debug") << "Build model..." << std::endl;
-        if (!d_te->buildModel())
-        {
-          flushLemmas();
-          break;
+          if (!d_te->buildModel())
+          {
+            flushLemmas();
+            break;
         }
       }
       if( !d_hasAddedLemma ){

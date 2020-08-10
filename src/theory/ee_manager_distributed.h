@@ -85,6 +85,7 @@ class EqEngineManagerDistributed
   eq::EqualityEngine* getModelEqualityEngine();
   /** get the master equality engine */
   eq::EqualityEngine* getMasterEqualityEngine();
+
  private:
   /** Allocate equality engine that is context-dependent on c with setup info
    * esi */

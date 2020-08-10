@@ -771,13 +771,14 @@ bool TheoryEngine::collectModelInfo(theory::TheoryModel* m)
   return true;
 }
 
-TheoryModel* TheoryEngine::getModel() {
+TheoryModel* TheoryEngine::getModel()
+{
   if (d_mDistributed == nullptr)
   {
     return nullptr;
   }
   TheoryModel* m = d_mDistributed->getModel();
-  Assert (m!=nullptr);
+  Assert(m != nullptr);
   return m;
 }
 

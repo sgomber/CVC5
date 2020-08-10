@@ -24,8 +24,12 @@ namespace theory {
 
 ModelManagerDistributed::ModelManagerDistributed(
     TheoryEngine& te, EqEngineManagerDistributed& eem)
-    : d_te(te), d_eem(eem), d_model(nullptr), d_modelBuilder(nullptr),
-    d_modelBuilt(false), d_modelBuiltSuccess(false)
+    : d_te(te),
+      d_eem(eem),
+      d_model(nullptr),
+      d_modelBuilder(nullptr),
+      d_modelBuilt(false),
+      d_modelBuiltSuccess(false)
 {
 }
 
@@ -89,14 +93,15 @@ bool ModelManagerDistributed::buildModel()
   meec->push();
 
   // Collect model info from the theories
-  Trace("model-builder") << "ModelManagerDistributed: Collect model info..." << std::endl;
+  Trace("model-builder") << "ModelManagerDistributed: Collect model info..."
+                         << std::endl;
   if (!d_te.collectModelInfo(d_model))
   {
-    Trace("model-builder")
-        << "ModelManagerDistributed: fail collect model info" << std::endl;
+    Trace("model-builder") << "ModelManagerDistributed: fail collect model info"
+                           << std::endl;
     return false;
   }
-  
+
   // success is determined by the model builder
   d_modelBuiltSuccess = d_modelBuilder->buildModel(d_model);
   return d_modelBuiltSuccess;

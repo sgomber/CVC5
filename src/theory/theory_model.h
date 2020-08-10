@@ -30,7 +30,7 @@
 
 namespace CVC4 {
 namespace theory {
-  
+
 class ModelManagerDistributed;
 
 /** Theory Model class.
@@ -82,7 +82,8 @@ class TheoryModel : public Model
 {
   friend class TheoryEngineModelBuilder;
   friend class ModelManagerDistributed;
-public:
+
+ public:
   TheoryModel(context::Context* c, std::string name, bool enableFuncModels);
   ~TheoryModel() override;
   //============================================= initialization

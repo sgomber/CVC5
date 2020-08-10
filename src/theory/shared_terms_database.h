@@ -255,7 +255,6 @@ public:
   theory::eq::EqualityEngine* getEqualityEngine();
 
  protected:
-
   /**
    * This method gets called on backtracks from the context manager.
    */
