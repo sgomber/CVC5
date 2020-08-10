@@ -155,6 +155,7 @@ void TheoryEngine::finishInit() {
   {
     d_tcDistributed.reset(new CombinationDistributed(
         *this, paraTheories, d_context, d_sharedTerms));
+    d_tc = d_tcDistributed.get();
   }
   else
   {
@@ -177,7 +178,7 @@ void TheoryEngine::finishInit() {
 
   // initialize the theory combination manager, which decides and allocates the
   // equality engines to use for all theories.
-  d_tcDistributed->finishInit();
+  d_tc->finishInit();
 
   // finish initializing the theories
   for(TheoryId theoryId = theory::THEORY_FIRST; theoryId != theory::THEORY_LAST; ++ theoryId) {
@@ -189,7 +190,7 @@ void TheoryEngine::finishInit() {
     }
     // set the equality engine for the theory based on the theory combination
     // policy.
-    const EeTheoryInfo* eeti = d_tcDistributed->getEeTheoryInfo(theoryId);
+    const EeTheoryInfo* eeti = d_tc->getEeTheoryInfo(theoryId);
     Assert(eeti != nullptr);
     // the theory's official equality engine is the one specified by the manager
     eq::EqualityEngine* ee = eeti->d_allocEe.get();
@@ -211,6 +212,7 @@ TheoryEngine::TheoryEngine(context::Context* context,
       d_userContext(userContext),
       d_logicInfo(logicInfo),
       d_sharedTerms(this, context),
+      d_tc(nullptr),
       d_tcDistributed(nullptr),
       d_quantEngine(nullptr),
       d_decManager(new DecisionManager(userContext)),
@@ -291,17 +293,17 @@ void TheoryEngine::preRegister(TNode preprocessed) {
       // Get the next atom to pre-register
       preprocessed = d_preregisterQueue.front();
       d_preregisterQueue.pop();
-
+      
+      // the atom should not have free variables
+      Debug("theory") << "TheoryEngine::preRegister: " << preprocessed
+                      << std::endl;
+      Assert(!expr::hasFreeVar(preprocessed));
+      
       // % TC: preRegister
       if (d_logicInfo.isSharingEnabled() && preprocessed.getKind() == kind::EQUAL) {
         // When sharing is enabled, we propagate from the shared terms manager also
         d_sharedTerms.addEqualityToPropagate(preprocessed);
       }
-
-      // the atom should not have free variables
-      Debug("theory") << "TheoryEngine::preRegister: " << preprocessed
-                      << std::endl;
-      Assert(!expr::hasFreeVar(preprocessed));
       // Pre-register the terms in the atom
       Theory::Set theories = NodeVisitor<PreRegisterVisitor>::run(d_preRegistrationVisitor, preprocessed);
       theories = Theory::setRemove(THEORY_BOOL, theories);
@@ -513,7 +515,7 @@ void TheoryEngine::check(Theory::Effort effort) {
       if (Trace.isOn("theory::assertions-model")) {
         printAssertions("theory::assertions-model");
       }
-      CombinationDistributed* builder = d_tcDistributed.get();
+      CombinationDistributed* builder = d_tc;
       Assert(builder != nullptr);
       //checks for theories requiring the model go at last call
       builder->resetModel();
@@ -562,7 +564,7 @@ void TheoryEngine::check(Theory::Effort effort) {
       {
         AlwaysAssert(mee->consistent());
       }
-      CombinationDistributed* builder = d_tcDistributed.get();
+      CombinationDistributed* builder = d_tc;
       // Do post-processing of model from the theories (used for THEORY_SEP
       // to construct heap model)
       builder->postProcessModel(d_incomplete.get());
@@ -611,8 +613,8 @@ void TheoryEngine::combineTheories() {
         << "TheoryEngine::combineTheories(): checking " << carePair.d_a << " = "
         << carePair.d_b << " from " << carePair.d_theory << endl;
 
-    Assert(d_sharedTerms.isShared(carePair.d_a) || carePair.d_a.isConst());
-    Assert(d_sharedTerms.isShared(carePair.d_b) || carePair.d_b.isConst());
+    Assert(d_tc->isShared(carePair.d_a) || carePair.d_a.isConst());
+    Assert(d_tc->isShared(carePair.d_b) || carePair.d_b.isConst());
 
     // The equality in question (order for no repetition)
     Node equality = carePair.d_a.eqNode(carePair.d_b);
@@ -799,8 +801,8 @@ bool TheoryEngine::collectModelInfo(theory::TheoryModel* m)
 
 TheoryModel* TheoryEngine::getModel()
 {
-  Assert(d_tcDistributed != nullptr);
-  TheoryModel* m = d_tcDistributed->getModel();
+  Assert(d_tc != nullptr);
+  TheoryModel* m = d_tc->getModel();
   Assert(m != nullptr);
   return m;
 }
@@ -817,17 +819,17 @@ TheoryModel* TheoryEngine::getBuiltModel()
     return nullptr;
   }
   // must build model at this point
-  if (!d_tcDistributed->buildModel())
+  if (!d_tc->buildModel())
   {
     return nullptr;
   }
-  return d_tcDistributed->getModel();
+  return d_tc->getModel();
 }
 
 bool TheoryEngine::buildModel()
 {
-  Assert(d_tcDistributed != nullptr);
-  return d_tcDistributed->buildModel();
+  Assert(d_tc != nullptr);
+  return d_tc->buildModel();
 }
 
 bool TheoryEngine::getSynthSolutions(
@@ -1272,17 +1274,7 @@ const LogicInfo& TheoryEngine::getLogicInfo() const { return d_logicInfo; }
 
 theory::EqualityStatus TheoryEngine::getEqualityStatus(TNode a, TNode b) {
   Assert(a.getType().isComparableTo(b.getType()));
-  // %%% TC: begin getEqualityStatus(a, b);
-  if (d_sharedTerms.isShared(a) && d_sharedTerms.isShared(b)) {
-    if (d_sharedTerms.areEqual(a,b)) {
-      return EQUALITY_TRUE_AND_PROPAGATED;
-    }
-    else if (d_sharedTerms.areDisequal(a,b)) {
-      return EQUALITY_FALSE_AND_PROPAGATED;
-    }
-  }
-  // %%% TC: end getEqualityStatus(a, b);
-  return theoryOf(Theory::theoryOf(a.getType()))->getEqualityStatus(a, b);
+  return d_tc->getEqualityStatus(a,b);
 }
 
 Node TheoryEngine::getModelValue(TNode var) {
@@ -1292,7 +1284,7 @@ Node TheoryEngine::getModelValue(TNode var) {
     return var;
   }
   // %%% TC: begin isShared(var);
-  Assert(d_sharedTerms.isShared(var));
+  Assert(d_tc->isShared(var));
   // %%% TC: end isShared(var);
   return theoryOf(Theory::theoryOf(var.getType()))->getModelValue(var);
 }
@@ -1502,6 +1494,12 @@ Node TheoryEngine::getExplanation(TNode node) {
   return getExplanationAndRecipe(node, dontCareRecipe);
 }
 
+void TheoryEngine::addSharedTermInternal(theory::TheoryId tid, TNode term)
+{
+  Assert (theoryOf(tid)!=nullptr);
+  theoryOf(tid)->addSharedTermInternal(term);
+}
+  
 struct AtomsCollect {
 
   std::vector<TNode> d_atoms;
@@ -1816,8 +1814,8 @@ SharedTermsDatabase* TheoryEngine::getSharedTermsDatabase()
 
 theory::eq::EqualityEngine* TheoryEngine::getMasterEqualityEngine()
 {
-  Assert(d_tcDistributed != nullptr);
-  return d_tcDistributed->getMasterEqualityEngine();
+  Assert(d_tc != nullptr);
+  return d_tc->getMasterEqualityEngine();
 }
 
 void TheoryEngine::getExplanation(std::vector<NodeTheoryPair>& explanationVector, LemmaProofRecipe* proofRecipe) {

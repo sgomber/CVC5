@@ -150,6 +150,8 @@ class TheoryEngine {
    */
   SharedTermsDatabase d_sharedTerms;
 
+  /** The combination manager we are using */
+  theory::CombinationDistributed * d_tc;
   /**
    * The combination manager
    */
@@ -447,6 +449,8 @@ class TheoryEngine {
    */
   void getExplanation(std::vector<NodeTheoryPair>& explanationVector, LemmaProofRecipe* lemmaProofRecipe);
 
+  /** Add shared term internal, called by the combination manager. */
+  void addSharedTermInternal(theory::TheoryId tid, TNode term);
 public:
 
   /**

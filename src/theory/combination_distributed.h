@@ -44,8 +44,6 @@ class CombinationDistributed
   ~CombinationDistributed();
   /** Finish initialization */
   void finishInit();
-  /** Combine theories */
-  void combineTheories();
   //-------------------------- equality engine
   /** Get the equality engine theory information. */
   const EeTheoryInfo* getEeTheoryInfo(TheoryId tid) const;
@@ -64,8 +62,10 @@ class CombinationDistributed
   //-------------------------- end model
 
   //-------------------------- interface used by theory engine
+  /** Combine theories */
+  void combineTheories();
   void preRegister(TNode preprocessed);
-  void notifyAssertFact(TNode literal);
+  void notifyAssertFact(TNode atom);
   bool isShared(TNode term) const;
   theory::EqualityStatus getEqualityStatus(TNode a, TNode b);
   //-------------------------- end interface used by theory engine
