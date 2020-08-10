@@ -161,7 +161,7 @@ void TheoryEngine::finishInit() {
     AlwaysAssert(false) << "TheoryEngine::finishInit: equality engine mode "
                         << options::eeMode() << " not supported";
   }
-
+  
   // initialize the quantifiers engine
   if (d_logicInfo.isQuantified())
   {
@@ -179,6 +179,22 @@ void TheoryEngine::finishInit() {
   // engines in all theories.
   d_tcDistributed->finishInit();
 
+  // Initialize the theories based on the theory combination equality engine
+  // manager.
+  for(TheoryId theoryId = theory::THEORY_FIRST; theoryId != theory::THEORY_LAST; ++ theoryId) {
+    Theory * t = d_theoryTable[theoryId];
+    if (t==nullptr)
+    {
+      // theory is inactive, skip
+      continue;
+    }
+    const EeTheoryInfo * eeti = d_tcDistributed->getEeTheoryInfo(theoryId);
+    Assert (eeti!=nullptr);
+    // the theory's official equality engine is the one specified by the manager
+    eq::EqualityEngine * ee = eeti->d_allocEe.get();
+    t->setEqualityEngine(ee);
+  }
+  
   // finish initializing the theories
   for(TheoryId theoryId = theory::THEORY_FIRST; theoryId != theory::THEORY_LAST; ++ theoryId) {
     if (d_theoryTable[theoryId]) {

@@ -105,6 +105,11 @@ void CombinationDistributed::combineTheories()
   }
 }
 
+const EeTheoryInfo * CombinationDistributed::getEeTheoryInfo(TheoryId tid) const
+{
+  return d_eeDistributed->getEeTheoryInfo(tid);
+}
+
 eq::EqualityEngine* CombinationDistributed::getMasterEqualityEngine()
 {
   return d_eeDistributed->getMasterEqualityEngine();

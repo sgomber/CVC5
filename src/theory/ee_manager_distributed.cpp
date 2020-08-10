@@ -20,6 +20,16 @@
 namespace CVC4 {
 namespace theory {
 
+const EeTheoryInfo* EqEngineManager::getEeTheoryInfo(TheoryId tid) const
+{
+  std::map<TheoryId, EeTheoryInfo>::const_iterator it = d_einfo.find(tid);
+  if (it!=d_einfo.end())
+  {
+    return &it->second;
+  }
+  return nullptr;
+}
+
 EqEngineManagerDistributed::EqEngineManagerDistributed(TheoryEngine& te)
     : d_te(te), d_masterEENotify(nullptr)
 {
@@ -58,18 +68,15 @@ void EqEngineManagerDistributed::initializeTheories()
       // theory not active, skip
       continue;
     }
+    // allocate the equality engine
+    EeTheoryInfo& eet = d_einfo[theoryId];
     EeSetupInfo esi;
     if (!t->needsEqualityEngine(esi))
     {
       // theory said it doesn't need an equality engine, skip
       continue;
     }
-    // allocate the equality engine
-    EeTheoryInfo& eet = d_einfo[theoryId];
     eet.d_allocEe.reset(allocateEqualityEngine(esi, c));
-    // the theory uses this equality engine
-    eq::EqualityEngine* eeAlloc = eet.d_allocEe.get();
-    t->setEqualityEngine(eeAlloc);
   }
 
   const LogicInfo& logicInfo = d_te.getLogicInfo();
