@@ -23,10 +23,11 @@ namespace theory {
 CombinationDistributed::CombinationDistributed(
     TheoryEngine& te,
     const std::vector<Theory*>& paraTheories,
-    context::Context* c)
+    context::Context* c,
+                         SharedTermsDatabase& sdb)
     : d_te(te),
       d_paraTheories(paraTheories),
-      d_sharedTerms(&te, c),
+      d_sharedTerms(sdb),
       d_eeDistributed(new EqEngineManagerDistributed(te)),
       d_mDistributed(new ModelManagerDistributed(te, *d_eeDistributed.get()))
 {

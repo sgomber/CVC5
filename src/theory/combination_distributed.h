@@ -38,7 +38,8 @@ class CombinationDistributed
  public:
   CombinationDistributed(TheoryEngine& te,
                          const std::vector<Theory*>& paraTheories,
-                         context::Context* c);
+                         context::Context* c,
+                         SharedTermsDatabase& sdb);
   ~CombinationDistributed();
   /** Finish initialization */
   void finishInit();
@@ -71,7 +72,7 @@ class CombinationDistributed
   /**
    * The database of shared terms.
    */
-  SharedTermsDatabase d_sharedTerms;
+  SharedTermsDatabase& d_sharedTerms;
 
   /**
    * The distributed equality manager. This class is responsible for

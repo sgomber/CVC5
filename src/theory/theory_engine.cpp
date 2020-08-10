@@ -41,6 +41,7 @@
 #include "theory/arith/arith_ite_utils.h"
 #include "theory/bv/theory_bv_utils.h"
 #include "theory/care_graph.h"
+#include "theory/combination_distributed.h"
 #include "theory/decision_manager.h"
 #include "theory/ee_manager_distributed.h"
 #include "theory/model_manager_distributed.h"
@@ -134,6 +135,7 @@ void TheoryEngine::finishInit() {
   // NOTE: This seems to be required since
   // theory::TheoryTraits<THEORY>::isParametric is hard to access without
   // using the CVC4_FOR_EACH_THEORY_STATEMENT macro. -AJR
+  std::vector<theory::Theory*> paraTheories;
 #ifdef CVC4_FOR_EACH_THEORY_STATEMENT
 #undef CVC4_FOR_EACH_THEORY_STATEMENT
 #endif
@@ -141,18 +143,16 @@ void TheoryEngine::finishInit() {
   if (theory::TheoryTraits<THEORY>::isParametric \
       && d_logicInfo.isTheoryEnabled(THEORY))    \
   {                                              \
-    d_paraTheories.push_back(theoryOf(THEORY));  \
+    paraTheories.push_back(theoryOf(THEORY));  \
   }
-  // Collect the parametric theories
+  // Collect the parametric theories, which are given to the theory combination manager below
   CVC4_FOR_EACH_THEORY;
 
   // Initialize the equality engine architecture for all theories, which
   // includes the master equality engine.
   if (options::eeMode() == options::EqEngineMode::DISTRIBUTED)
   {
-    d_eeDistributed.reset(new EqEngineManagerDistributed(*this));
-    d_mDistributed.reset(
-        new ModelManagerDistributed(*this, *d_eeDistributed.get()));
+    d_tcDistributed.reset(new CombinationDistributed(*this, paraTheories, d_context, d_sharedTerms));
   }
   else
   {
@@ -173,10 +173,9 @@ void TheoryEngine::finishInit() {
     }
   }
 
-  // initialize equality engines in all theories
-  d_eeDistributed->initializeTheories();
-
-  d_mDistributed->finishInit();
+  // initialize the theory combination manager, which initializes equality
+  // engines in all theories.
+  d_tcDistributed->finishInit();
 
   // finish initializing the theories
   for(TheoryId theoryId = theory::THEORY_FIRST; theoryId != theory::THEORY_LAST; ++ theoryId) {
@@ -199,8 +198,7 @@ TheoryEngine::TheoryEngine(context::Context* context,
       d_userContext(userContext),
       d_logicInfo(logicInfo),
       d_sharedTerms(this, context),
-      d_eeDistributed(nullptr),
-      d_mDistributed(nullptr),
+      d_tcDistributed(nullptr),
       d_quantEngine(nullptr),
       d_decManager(new DecisionManager(userContext)),
       d_eager_model_building(false),
@@ -500,7 +498,7 @@ void TheoryEngine::check(Theory::Effort effort) {
       if (Trace.isOn("theory::assertions-model")) {
         printAssertions("theory::assertions-model");
       }
-      ModelManagerDistributed* builder = d_mDistributed.get();
+      CombinationDistributed* builder = d_tcDistributed.get();
       Assert(builder != nullptr);
       //checks for theories requiring the model go at last call
       builder->resetModel();
@@ -549,7 +547,7 @@ void TheoryEngine::check(Theory::Effort effort) {
       {
         AlwaysAssert(mee->consistent());
       }
-      ModelManagerDistributed* builder = d_mDistributed.get();
+      CombinationDistributed* builder = d_tcDistributed.get();
       // Do post-processing of model from the theories (used for THEORY_SEP
       // to construct heap model)
       builder->postProcessModel(d_incomplete.get());
@@ -786,22 +784,15 @@ bool TheoryEngine::collectModelInfo(theory::TheoryModel* m)
 
 TheoryModel* TheoryEngine::getModel()
 {
-  if (d_mDistributed == nullptr)
-  {
-    return nullptr;
-  }
-  TheoryModel* m = d_mDistributed->getModel();
+  Assert (d_tcDistributed!=nullptr);
+  TheoryModel* m = d_tcDistributed->getModel();
   Assert(m != nullptr);
   return m;
 }
 
 TheoryModel* TheoryEngine::getBuiltModel()
 {
-  if (d_mDistributed == nullptr)
-  {
-    // not producing models
-    return nullptr;
-  }
+  Assert (d_tcDistributed!=nullptr);
   // If this method was called, we should be in SAT mode, and produceModels
   // should be true.
   AlwaysAssert(options::produceModels());
@@ -811,20 +802,17 @@ TheoryModel* TheoryEngine::getBuiltModel()
     return nullptr;
   }
   // must build model at this point
-  if (!d_mDistributed->buildModel())
+  if (!d_tcDistributed->buildModel())
   {
     return nullptr;
   }
-  return d_mDistributed->getModel();
+  return d_tcDistributed->getModel();
 }
 
 bool TheoryEngine::buildModel()
 {
-  if (d_mDistributed == nullptr)
-  {
-    return false;
-  }
-  return d_mDistributed->buildModel();
+  Assert (d_tcDistributed!=nullptr);
+  return d_tcDistributed->buildModel();
 }
 
 bool TheoryEngine::getSynthSolutions(
@@ -1814,11 +1802,8 @@ SharedTermsDatabase* TheoryEngine::getSharedTermsDatabase()
 
 theory::eq::EqualityEngine* TheoryEngine::getMasterEqualityEngine()
 {
-  if (d_eeDistributed != nullptr)
-  {
-    return d_eeDistributed->getMasterEqualityEngine();
-  }
-  return nullptr;
+  Assert (d_tcDistributed!=nullptr);
+  return d_tcDistributed->getMasterEqualityEngine();
 }
 
 void TheoryEngine::getExplanation(std::vector<NodeTheoryPair>& explanationVector, LemmaProofRecipe* proofRecipe) {

@@ -136,9 +136,6 @@ class TheoryEngine {
    */
   theory::Theory* d_theoryTable[theory::THEORY_LAST];
 
-  /** The list of parametric theories (for theory combination) */
-  std::vector<theory::Theory*> d_paraTheories;
-
   /**
    * A collection of theories that are "active" for the current run.
    * This set is provided by the user (as a logic string, say, in SMT-LIBv2
@@ -165,6 +162,10 @@ class TheoryEngine {
   /** The model manager */
   std::unique_ptr<theory::ModelManagerDistributed> d_mDistributed;
 
+  /** 
+   * The combination manager
+   */
+  std::unique_ptr<theory::CombinationDistributed> d_tcDistributed;
   /**
    * The quantifiers engine
    */

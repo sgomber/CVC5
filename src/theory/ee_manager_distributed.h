@@ -87,8 +87,7 @@ class EqEngineManagerDistributed
   eq::EqualityEngine* getMasterEqualityEngine();
 
  private:
-  /** Allocate equality engine that is context-dependent on c with setup info
-   * esi */
+  /** Allocate equality engine that is context-dependent on c with info esi */
   eq::EqualityEngine* allocateEqualityEngine(EeSetupInfo& esi,
                                              context::Context* c);
   /** Reference to the theory engine */

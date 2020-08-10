@@ -127,18 +127,6 @@ void EqEngineManagerDistributed::initializeModel(TheoryModel* m)
   d_modelEeContext.push();
 }
 
-eq::EqualityEngine* EqEngineManagerDistributed::allocateEqualityEngine(
-    EeSetupInfo& esi, context::Context* c)
-{
-  if (esi.d_notify != nullptr)
-  {
-    return new eq::EqualityEngine(
-        *esi.d_notify, c, esi.d_name, esi.d_constantsAreTriggers);
-  }
-  // don't care about notifications
-  return new eq::EqualityEngine(c, esi.d_name, esi.d_constantsAreTriggers);
-}
-
 void EqEngineManagerDistributed::MasterNotifyClass::eqNotifyNewClass(TNode t)
 {
   // adds t to the quantifiers term database
@@ -158,6 +146,18 @@ eq::EqualityEngine* EqEngineManagerDistributed::getModelEqualityEngine()
 eq::EqualityEngine* EqEngineManagerDistributed::getMasterEqualityEngine()
 {
   return d_masterEqualityEngine.get();
+}
+
+eq::EqualityEngine* EqEngineManagerDistributed::allocateEqualityEngine(
+    EeSetupInfo& esi, context::Context* c)
+{
+  if (esi.d_notify != nullptr)
+  {
+    return new eq::EqualityEngine(
+        *esi.d_notify, c, esi.d_name, esi.d_constantsAreTriggers);
+  }
+  // don't care about notifications
+  return new eq::EqualityEngine(c, esi.d_name, esi.d_constantsAreTriggers);
 }
 
 }  // namespace theory
