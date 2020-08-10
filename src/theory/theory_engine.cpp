@@ -175,37 +175,29 @@ void TheoryEngine::finishInit() {
     }
   }
 
-  // initialize the theory combination manager, which initializes equality
-  // engines in all theories.
+  // initialize the theory combination manager, which decides and allocates the
+  // equality engines to use for all theories.
   d_tcDistributed->finishInit();
 
-  // Initialize the theories based on the theory combination equality engine
-  // manager.
-  for (TheoryId theoryId = theory::THEORY_FIRST;
-       theoryId != theory::THEORY_LAST;
-       ++theoryId)
-  {
+  // finish initializing the theories
+  for(TheoryId theoryId = theory::THEORY_FIRST; theoryId != theory::THEORY_LAST; ++ theoryId) {
     Theory* t = d_theoryTable[theoryId];
     if (t == nullptr)
     {
       // theory is inactive, skip
       continue;
     }
+    // set the equality engine for the theory based on the theory combination
+    // policy.
     const EeTheoryInfo* eeti = d_tcDistributed->getEeTheoryInfo(theoryId);
     Assert(eeti != nullptr);
     // the theory's official equality engine is the one specified by the manager
     eq::EqualityEngine* ee = eeti->d_allocEe.get();
     t->setEqualityEngine(ee);
-  }
-
-  // finish initializing the theories
-  for(TheoryId theoryId = theory::THEORY_FIRST; theoryId != theory::THEORY_LAST; ++ theoryId) {
-    if (d_theoryTable[theoryId]) {
-      // set the decision manager for the theory
-      d_theoryTable[theoryId]->setDecisionManager(d_decManager.get());
-      // finish initializing the theory
-      d_theoryTable[theoryId]->finishInit();
-    }
+    // set the decision manager for the theory
+    t->setDecisionManager(d_decManager.get());
+    // finish initializing the theory
+    t->finishInit();
   }
 }
 
@@ -300,6 +292,7 @@ void TheoryEngine::preRegister(TNode preprocessed) {
       preprocessed = d_preregisterQueue.front();
       d_preregisterQueue.pop();
 
+      // % TC: preRegister
       if (d_logicInfo.isSharingEnabled() && preprocessed.getKind() == kind::EQUAL) {
         // When sharing is enabled, we propagate from the shared terms manager also
         d_sharedTerms.addEqualityToPropagate(preprocessed);
@@ -338,6 +331,7 @@ void TheoryEngine::preRegister(TNode preprocessed) {
         // Collect the shared terms if there are multiple theories
         NodeVisitor<SharedTermsVisitor>::run(d_sharedTermsVisitor, preprocessed);
       }
+      // % TC: preRegister
     }
 
     // Leaving pre-register
@@ -1935,8 +1929,9 @@ void TheoryEngine::getExplanation(std::vector<NodeTheoryPair>& explanationVector
     Node explanation;
     if (toExplain.d_theory == THEORY_BUILTIN)
     {
-      // %%% TC: ????
+      // %%% TC: explain
       explanation = d_sharedTerms.explain(toExplain.d_node);
+      // %%% TC: end explain
       Debug("theory::explain") << "\tTerm was propagated by THEORY_BUILTIN. Explanation: " << explanation << std::endl;
     }
     else

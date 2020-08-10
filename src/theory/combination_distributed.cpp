@@ -28,6 +28,8 @@ CombinationDistributed::CombinationDistributed(
     : d_te(te),
       d_paraTheories(paraTheories),
       d_sharedTerms(sdb),
+      d_preRegistrationVisitor(&te, c),
+      d_sharedTermsVisitor(sdb),
       d_eeDistributed(new EqEngineManagerDistributed(te)),
       d_mDistributed(new ModelManagerDistributed(te, *d_eeDistributed.get()))
 {
@@ -132,5 +134,33 @@ theory::TheoryModel* CombinationDistributed::getModel()
   return d_mDistributed->getModel();
 }
 
+void CombinationDistributed::preRegister(TNode preprocessed)
+{
+  // TODO
+}
+void CombinationDistributed::notifyAssertFact(TNode literal)
+{
+  // TODO
+}
+
+bool CombinationDistributed::isShared(TNode term) const
+{
+  return d_sharedTerms.isShared(term);
+}
+
+theory::EqualityStatus CombinationDistributed::getEqualityStatus(TNode a, TNode b)
+{
+  Assert(a.getType().isComparableTo(b.getType()));
+  if (d_sharedTerms.isShared(a) && d_sharedTerms.isShared(b)) {
+    if (d_sharedTerms.areEqual(a,b)) {
+      return EQUALITY_TRUE_AND_PROPAGATED;
+    }
+    else if (d_sharedTerms.areDisequal(a,b)) {
+      return EQUALITY_FALSE_AND_PROPAGATED;
+    }
+  }
+  return d_te.theoryOf(Theory::theoryOf(a.getType()))->getEqualityStatus(a, b);
+}
+  
 }  // namespace theory
 }  // namespace CVC4

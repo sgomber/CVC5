@@ -23,6 +23,7 @@
 #include "theory/ee_manager_distributed.h"
 #include "theory/model_manager_distributed.h"
 #include "theory/shared_terms_database.h"
+#include "theory/term_registration_visitor.h"
 
 namespace CVC4 {
 
@@ -62,10 +63,12 @@ class CombinationDistributed
   theory::TheoryModel* getModel();
   //-------------------------- end model
 
-  // void preRegister(TNode preprocessed);
-  // void notifyAssertFact(TNode literal);
-  // bool isShared(TNode term) const;
-  // theory::EqualityStatus getEqualityStatus(TNode a, TNode b);
+  //-------------------------- interface used by theory engine
+  void preRegister(TNode preprocessed);
+  void notifyAssertFact(TNode literal);
+  bool isShared(TNode term) const;
+  theory::EqualityStatus getEqualityStatus(TNode a, TNode b);
+  //-------------------------- end interface used by theory engine
  private:
   /** Reference to the theory engine */
   TheoryEngine& d_te;
@@ -76,6 +79,12 @@ class CombinationDistributed
    */
   SharedTermsDatabase& d_sharedTerms;
 
+  /** Default visitor for pre-registration */
+  PreRegisterVisitor d_preRegistrationVisitor;
+
+  /** Visitor for collecting shared terms */
+  SharedTermsVisitor d_sharedTermsVisitor;
+  
   /**
    * The distributed equality manager. This class is responsible for
    * configuring the theories of this class for handling equalties
