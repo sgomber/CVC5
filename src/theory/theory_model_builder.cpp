@@ -1103,7 +1103,6 @@ void TheoryEngineModelBuilder::postProcessModel(bool incomplete, Model* m)
 void TheoryEngineModelBuilder::debugCheckModel(TheoryModel* tm)
 {
 #ifdef CVC4_ASSERTIONS
-  Assert(tm->isBuilt());
   if (tm->hasApproximations())
   {
     // models with approximations may fail the assertions below
