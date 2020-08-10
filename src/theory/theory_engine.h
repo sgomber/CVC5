@@ -91,6 +91,7 @@ namespace theory {
   class TheoryModel;
   class EqEngineManagerDistributed;
   class ModelManagerDistributed;
+  class CombinationDistributed;
 
   namespace eq {
     class EqualityEngine;
@@ -118,6 +119,7 @@ class TheoryEngine {
   friend class SharedTermsDatabase;
   friend class theory::quantifiers::TermDb;
   friend class theory::EngineOutputChannel;
+  friend class theory::CombinationDistributed;
 
   /** Associated PropEngine engine */
   prop::PropEngine* d_propEngine;

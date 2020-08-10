@@ -36,7 +36,7 @@ namespace theory {
 class CombinationDistributed
 {
  public:
-  CombinationDistributed(TheoryEngine& te);
+  CombinationDistributed(TheoryEngine& te, context::Context* c);
   ~CombinationDistributed();
   /** Finish initialization */
   void finishInit();

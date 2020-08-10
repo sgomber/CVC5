@@ -61,8 +61,6 @@ class EqEngineManagerDistributed
  public:
   EqEngineManagerDistributed(TheoryEngine& te);
   ~EqEngineManagerDistributed();
-  /** Initialize core */
-  void initializeCore();
   /**
    * Finish initialize, called by TheoryEngine::finishInit after theory
    * objects have been created but prior to their final initialization. This
@@ -87,7 +85,6 @@ class EqEngineManagerDistributed
   eq::EqualityEngine* getModelEqualityEngine();
   /** get the master equality engine */
   eq::EqualityEngine* getMasterEqualityEngine();
-
  private:
   /** Allocate equality engine that is context-dependent on c with setup info
    * esi */

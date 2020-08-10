@@ -776,13 +776,14 @@ TheoryModel* TheoryEngine::getModel() {
   {
     return nullptr;
   }
-  return d_mDistributed->getModel();
+  TheoryModel* m = d_mDistributed->getModel();
+  Assert (m!=nullptr);
+  return m;
 }
 
 TheoryModel* TheoryEngine::getBuiltModel()
 {
-  TheoryModel* m = getModel();
-  if (m == nullptr)
+  if (d_mDistributed == nullptr)
   {
     // not producing models
     return nullptr;
