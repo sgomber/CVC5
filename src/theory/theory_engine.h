@@ -136,6 +136,9 @@ class TheoryEngine {
    */
   theory::Theory* d_theoryTable[theory::THEORY_LAST];
 
+  /** The list of parametric theories (for theory combination) */
+  std::vector<theory::Theory*> d_paraTheories;
+  
   /**
    * A collection of theories that are "active" for the current run.
    * This set is provided by the user (as a logic string, say, in SMT-LIBv2

@@ -21,8 +21,10 @@ namespace CVC4 {
 namespace theory {
 
 CombinationDistributed::CombinationDistributed(TheoryEngine& te,
+                                               const std::vector<Theory*>& paraTheories,
                                                context::Context* c)
     : d_te(te),
+    d_paraTheories(paraTheories),
       d_sharedTerms(&te, c),
       d_eeDistributed(new EqEngineManagerDistributed(te)),
       d_mDistributed(new ModelManagerDistributed(te, *d_eeDistributed.get()))
@@ -48,19 +50,11 @@ void CombinationDistributed::combineTheories()
   // Care graph we'll be building
   CareGraph careGraph;
 
-  /*   FIXME
-#ifdef CVC4_FOR_EACH_THEORY_STATEMENT
-#undef CVC4_FOR_EACH_THEORY_STATEMENT
-#endif
-#define CVC4_FOR_EACH_THEORY_STATEMENT(THEORY) \
-  if (theory::TheoryTraits<THEORY>::isParametric &&
-logicInfo.isTheoryEnabled(THEORY)) { \
-    d_te.theoryOf(THEORY)->getCareGraph(&careGraph); \
+  // get the care graph from the parametric theories
+  for (Theory * t : d_paraTheories)
+  {
+    t->getCareGraph(&careGraph);
   }
-
-  // Call on each parametric theory to give us its care graph
-  CVC4_FOR_EACH_THEORY;
-  */
 
   Trace("combineTheories")
       << "TheoryEngine::combineTheories(): care graph size = "

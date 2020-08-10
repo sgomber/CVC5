@@ -36,7 +36,7 @@ namespace theory {
 class CombinationDistributed
 {
  public:
-  CombinationDistributed(TheoryEngine& te, context::Context* c);
+  CombinationDistributed(TheoryEngine& te, const std::vector<Theory*>& paraTheories, context::Context* c);
   ~CombinationDistributed();
   /** Finish initialization */
   void finishInit();
@@ -55,6 +55,8 @@ class CombinationDistributed
  private:
   /** Reference to the theory engine */
   TheoryEngine& d_te;
+  /** List of parametric theories of theory engine */
+  const std::vector<Theory*> d_paraTheories;
   /**
    * The database of shared terms.
    */

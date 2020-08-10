@@ -131,6 +131,19 @@ std::string getTheoryString(theory::TheoryId id)
 }
 
 void TheoryEngine::finishInit() {
+
+  
+#ifdef CVC4_FOR_EACH_THEORY_STATEMENT
+#undef CVC4_FOR_EACH_THEORY_STATEMENT
+#endif
+#define CVC4_FOR_EACH_THEORY_STATEMENT(THEORY) \
+  if (theory::TheoryTraits<THEORY>::isParametric && d_logicInfo.isTheoryEnabled(THEORY)) { \
+    d_paraTheories.push_back(theoryOf(THEORY)); \
+  }
+
+  // Collect the parametric theories
+  CVC4_FOR_EACH_THEORY;
+  
   // Initialize the equality engine architecture for all theories, which
   // includes the master equality engine.
   if (options::eeMode() == options::EqEngineMode::DISTRIBUTED)
