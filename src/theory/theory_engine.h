@@ -219,7 +219,6 @@ class TheoryEngine {
     d_incomplete = true;
   }
 
-
   /**
    * Mapping of propagations from recievers to senders.
    */
@@ -548,8 +547,6 @@ public:
   Node getNextDecisionRequest();
 
   bool properConflict(TNode conflict) const;
-  bool properPropagation(TNode lit) const;
-  bool properExplanation(TNode node, TNode expl) const;
 
   /**
    * Returns an explanation of the node propagated to the SAT solver.

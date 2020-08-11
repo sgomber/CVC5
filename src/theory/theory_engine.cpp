@@ -162,24 +162,27 @@ void TheoryEngine::finishInit() {
                         << options::eeMode() << " not supported";
   }
 
+
+
   // initialize the quantifiers engine
   if (d_logicInfo.isQuantified())
   {
     // initialize the quantifiers engine
     d_quantEngine = new QuantifiersEngine(d_context, d_userContext, this);
-
-    for(TheoryId theoryId = theory::THEORY_FIRST; theoryId != theory::THEORY_LAST; ++ theoryId) {
-      if (d_theoryTable[theoryId]) {
-        d_theoryTable[theoryId]->setQuantifiersEngine(d_quantEngine);
-      }
-    }
   }
-
   // initialize the theory combination manager, which decides and allocates the
   // equality engines to use for all theories.
   d_tc->finishInit();
-
-  // finish initializing the theories
+  
+  // set the master equality engine
+  if (d_logicInfo.isQuantified())
+  {
+    d_quantEngine->setMasterEqualityEngine(d_tc->getMasterEqualityEngine());
+  }
+  
+  
+  // finish initializing the theories by linking them with the appropriate
+  // utilities and then calling their finishInit method.
   for(TheoryId theoryId = theory::THEORY_FIRST; theoryId != theory::THEORY_LAST; ++ theoryId) {
     Theory* t = d_theoryTable[theoryId];
     if (t == nullptr)
@@ -192,10 +195,11 @@ void TheoryEngine::finishInit() {
     const EeTheoryInfo* eeti = d_tc->getEeTheoryInfo(theoryId);
     Assert(eeti != nullptr);
     // the theory's official equality engine is the one specified by the manager
-    eq::EqualityEngine* ee = eeti->d_allocEe.get();
-    t->setEqualityEngine(ee);
+    t->setEqualityEngine(eeti->d_usedEe);
     // set the decision manager for the theory
     t->setDecisionManager(d_decManager.get());
+    // set the quantifiers engine
+    t->setQuantifiersEngine(d_quantEngine);
     // finish initializing the theory
     t->finishInit();
   }
@@ -628,31 +632,6 @@ bool TheoryEngine::properConflict(TNode conflict) const {
                               << conflict << " vs " << Rewriter::rewrite(conflict) << endl;
       return false;
     }
-  }
-  return true;
-}
-
-bool TheoryEngine::properPropagation(TNode lit) const {
-  if(!getPropEngine()->isSatLiteral(lit)) {
-    return false;
-  }
-  bool b;
-  return !getPropEngine()->hasValue(lit, b);
-}
-
-bool TheoryEngine::properExplanation(TNode node, TNode expl) const {
-  // Explanation must be either a conjunction of true literals that have true SAT values already
-  // or a singled literal that has a true SAT value already.
-  if (expl.getKind() == kind::AND) {
-    for (unsigned i = 0; i < expl.getNumChildren(); ++ i) {
-      bool value;
-      if (!d_propEngine->hasValue(expl[i], value) || !value) {
-        return false;
-      }
-    }
-  } else {
-    bool value;
-    return d_propEngine->hasValue(expl, value) && value;
   }
   return true;
 }

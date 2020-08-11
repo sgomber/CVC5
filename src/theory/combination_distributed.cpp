@@ -97,9 +97,9 @@ void CombinationDistributed::combineTheories()
 
     // Could check the equality status here:
     //   EqualityStatus es = getEqualityStatus(carePair.d_a, carePair.d_b);
-    // and only require true phase belowif:
+    // and only require true phase below if:
     //   es == EQUALITY_TRUE || es == EQUALITY_TRUE_IN_MODEL
-    // and only require false phase below if:
+    // and require false phase below if:
     //   es == EQUALITY_FALSE_IN_MODEL
     // This is supposed to force preference to follow what the theory models
     // already have but it doesn't seem to make a big difference - need to

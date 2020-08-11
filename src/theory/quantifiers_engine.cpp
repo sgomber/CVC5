@@ -176,6 +176,7 @@ QuantifiersEngine::QuantifiersEngine(context::Context* c,
                                      context::UserContext* u,
                                      TheoryEngine* te)
     : d_te(te),
+      d_masterEqualityEngine(nullptr),
       d_eq_query(new quantifiers::EqualityQueryQuantifiersEngine(c, this)),
       d_tr_trie(new inst::TriggerTrie),
       d_model(nullptr),
@@ -275,6 +276,11 @@ QuantifiersEngine::QuantifiersEngine(context::Context* c,
 
 QuantifiersEngine::~QuantifiersEngine() {}
 
+void QuantifiersEngine::setMasterEqualityEngine(eq::EqualityEngine* mee)
+{
+  d_masterEqualityEngine = mee;
+}
+  
 context::Context* QuantifiersEngine::getSatContext()
 {
   return d_te->theoryOf(THEORY_QUANTIFIERS)->getSatContext();
@@ -1249,7 +1255,7 @@ QuantifiersEngine::Statistics::~Statistics(){
 
 eq::EqualityEngine* QuantifiersEngine::getMasterEqualityEngine() const
 {
-  return d_te->getMasterEqualityEngine();
+  return d_masterEqualityEngine;
 }
 
 eq::EqualityEngine* QuantifiersEngine::getActiveEqualityEngine() const
@@ -1257,7 +1263,7 @@ eq::EqualityEngine* QuantifiersEngine::getActiveEqualityEngine() const
   if( d_useModelEe ){
     return d_model->getEqualityEngine();
   }
-  return d_te->getMasterEqualityEngine();
+  return d_masterEqualityEngine;
 }
 
 Node QuantifiersEngine::getInternalRepresentative( Node a, Node q, int index ){
