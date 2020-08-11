@@ -16,6 +16,7 @@
 
 #include "theory/quantifiers_engine.h"
 #include "theory/theory_engine.h"
+#include "theory/shared_terms_database.h"
 
 namespace CVC4 {
 namespace theory {
@@ -30,8 +31,8 @@ const EeTheoryInfo* EqEngineManager::getEeTheoryInfo(TheoryId tid) const
   return nullptr;
 }
 
-EqEngineManagerDistributed::EqEngineManagerDistributed(TheoryEngine& te)
-    : d_te(te), d_masterEENotify(nullptr)
+EqEngineManagerDistributed::EqEngineManagerDistributed(TheoryEngine& te, SharedTermsDatabase* sdb)
+    : d_te(te), d_sdb(sdb), d_masterEENotify(nullptr)
 {
 }
 
@@ -44,17 +45,19 @@ void EqEngineManagerDistributed::initializeTheories()
 {
   context::Context* c = d_te.getSatContext();
   // initialize the shared terms database
-  SharedTermsDatabase* stdb = d_te.getSharedTermsDatabase();
-  EeSetupInfo esis;
-  if (stdb->needsEqualityEngine(esis))
+  if (d_sdb!=nullptr)
   {
-    d_stbEqualityEngine.reset(allocateEqualityEngine(esis, c));
-    stdb->setEqualityEngine(d_stbEqualityEngine.get());
-  }
-  else
-  {
-    AlwaysAssert(false)
-        << "Expected shared terms database to use equality engine";
+    EeSetupInfo esis;
+    if (d_sdb->needsEqualityEngine(esis))
+    {
+      d_stbEqualityEngine.reset(allocateEqualityEngine(esis, c));
+      d_sdb->setEqualityEngine(d_stbEqualityEngine.get());
+    }
+    else
+    {
+      AlwaysAssert(false)
+          << "Expected shared terms database to use equality engine";
+    }
   }
 
   // allocate equality engines per theory
@@ -77,6 +80,8 @@ void EqEngineManagerDistributed::initializeTheories()
       continue;
     }
     eet.d_allocEe.reset(allocateEqualityEngine(esi, c));
+    // the theory uses the equality engine
+    eet.d_usedEe = eet.d_allocEe.get();
   }
 
   const LogicInfo& logicInfo = d_te.getLogicInfo();

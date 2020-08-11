@@ -28,9 +28,10 @@
 namespace CVC4 {
 
 class TheoryEngine;
+class SharedTermsDatabase;
 
 namespace theory {
-
+  
 /**
  * This is (theory-agnostic) information associated with the management of
  * an equality engine for a single theory. This information is maintained
@@ -41,7 +42,10 @@ namespace theory {
  */
 struct EeTheoryInfo
 {
-  /** The equality engine allocated by this theory (if it exists) */
+  EeTheoryInfo() : d_usedEe(nullptr){}
+  /** Equality engine that is used (if it exists) */
+  eq::EqualityEngine * d_usedEe;
+  /** Equality engine allocated specifically for this theory (if it exists) */
   std::unique_ptr<eq::EqualityEngine> d_allocEe;
 };
 
@@ -76,7 +80,7 @@ class EqEngineManager
 class EqEngineManagerDistributed : public EqEngineManager
 {
  public:
-  EqEngineManagerDistributed(TheoryEngine& te);
+  EqEngineManagerDistributed(TheoryEngine& te, SharedTermsDatabase* sdb);
   ~EqEngineManagerDistributed();
   /**
    * Finish initialize, called by TheoryEngine::finishInit after theory
@@ -109,6 +113,8 @@ class EqEngineManagerDistributed : public EqEngineManager
                                              context::Context* c);
   /** Reference to the theory engine */
   TheoryEngine& d_te;
+  /** Pointer to shared terms database (if it exists) */
+  SharedTermsDatabase* d_sdb;
   /** notify class for master equality engine */
   class MasterNotifyClass : public theory::eq::EqualityEngineNotify
   {

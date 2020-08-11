@@ -27,14 +27,14 @@ namespace theory {
 CombinationDistributed::CombinationDistributed(
     TheoryEngine& te,
     const std::vector<Theory*>& paraTheories,
-    context::Context* c,
-    SharedTermsDatabase& sdb)
+    context::Context* c)
     : d_te(te),
+    d_logicInfo(te.getLogicInfo()),
       d_paraTheories(paraTheories),
-      d_sharedTerms(sdb),
+      d_sharedTerms(&te, c),
       d_preRegistrationVisitor(&te, c),
-      d_sharedTermsVisitor(sdb),
-      d_eeDistributed(new EqEngineManagerDistributed(te)),
+      d_sharedTermsVisitor(d_sharedTerms),
+      d_eeDistributed(new EqEngineManagerDistributed(te, &d_sharedTerms)),
       d_mDistributed(new ModelManagerDistributed(te, *d_eeDistributed.get()))
 {
 }
@@ -138,8 +138,7 @@ theory::TheoryModel* CombinationDistributed::getModel()
 
 void CombinationDistributed::preRegister(TNode t)
 {
-  const LogicInfo& logicInfo = d_te.getLogicInfo();
-  if (logicInfo.isSharingEnabled() && t.getKind() == kind::EQUAL) {
+  if (d_logicInfo.isSharingEnabled() && t.getKind() == kind::EQUAL) {
     // When sharing is enabled, we propagate from the shared terms manager also
     d_sharedTerms.addEqualityToPropagate(t);
   }
@@ -154,12 +153,12 @@ void CombinationDistributed::preRegister(TNode t)
   // even though arithmetic isn't actually involved.
   if(!options::finiteModelFind()) {
     while((i = Theory::setPop(theories)) != THEORY_LAST) {
-      if(!logicInfo.isTheoryEnabled(i)) {
-        LogicInfo newLogicInfo = logicInfo.getUnlockedCopy();
+      if(!d_logicInfo.isTheoryEnabled(i)) {
+        LogicInfo newLogicInfo = d_logicInfo.getUnlockedCopy();
         newLogicInfo.enableTheory(i);
         newLogicInfo.lock();
         std::stringstream ss;
-        ss << "The logic was specified as " << logicInfo.getLogicString()
+        ss << "The logic was specified as " << d_logicInfo.getLogicString()
             << ", which doesn't include " << i
             << ", but found a term in that theory." << std::endl
             << "You might want to extend your logic to "
@@ -210,6 +209,16 @@ theory::EqualityStatus CombinationDistributed::getEqualityStatus(TNode a, TNode 
     }
   }
   return d_te.theoryOf(Theory::theoryOf(a.getType()))->getEqualityStatus(a, b);
+}
+
+Node CombinationDistributed::explain(TNode literal) const
+{
+  return d_sharedTerms.explain(literal);
+}
+
+void CombinationDistributed::assertEquality(TNode equality, bool polarity, TNode reason)
+{
+  d_sharedTerms.assertEquality(equality, polarity, reason);
 }
   
 }  // namespace theory

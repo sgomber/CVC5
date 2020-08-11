@@ -102,11 +102,6 @@ PropEngine::PropEngine(TheoryEngine* te,
   PROOF (
          ProofManager::currentPM()->initCnfProof(d_cnfStream, userContext);
          );
-
-  NodeManager* nm = NodeManager::currentNM();
-  d_cnfStream->convertAndAssert(nm->mkConst(true), false, false, RULE_GIVEN);
-  d_cnfStream->convertAndAssert(
-      nm->mkConst(false).notNode(), false, false, RULE_GIVEN);
 }
 
 PropEngine::~PropEngine() {
@@ -117,6 +112,14 @@ PropEngine::~PropEngine() {
   delete d_registrar;
   delete d_satSolver;
   delete d_theoryProxy;
+}
+
+void PropEngine::finishInit()
+{
+  NodeManager* nm = NodeManager::currentNM();
+  d_cnfStream->convertAndAssert(nm->mkConst(true), false, false, RULE_GIVEN);
+  d_cnfStream->convertAndAssert(
+      nm->mkConst(false).notNode(), false, false, RULE_GIVEN);
 }
 
 void PropEngine::assertFormula(TNode node) {

@@ -323,6 +323,7 @@ void SmtEngine::finishInit()
   d_theoryEngine->setPropEngine(getPropEngine());
   Trace("smt-debug") << "Finishing init for theory engine..." << std::endl;
   d_theoryEngine->finishInit();
+  d_propEngine->finishInit();
 
   // global push/pop around everything, to ensure proper destruction
   // of context-dependent data structures
@@ -2733,6 +2734,7 @@ void SmtEngine::resetAssertions()
   d_propEngine.reset(new PropEngine(
       getTheoryEngine(), getContext(), getUserContext(), getResourceManager()));
   d_theoryEngine->setPropEngine(getPropEngine());
+  d_propEngine->finishInit();
 }
 
 void SmtEngine::interrupt()

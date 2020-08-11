@@ -68,6 +68,11 @@ class PropEngine
    * Destructor.
    */
   CVC4_PUBLIC ~PropEngine();
+  
+  /**
+   * Finish init.
+   */
+  void finishInit();
 
   /**
    * This is called by SmtEngine, at shutdown time, just before

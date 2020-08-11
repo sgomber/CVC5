@@ -149,12 +149,11 @@ void TheoryEngine::finishInit() {
   // manager below
   CVC4_FOR_EACH_THEORY;
 
-  // Initialize the equality engine architecture for all theories, which
-  // includes the master equality engine.
+  // Initialize the theory combination architecture
   if (options::eeMode() == options::EqEngineMode::DISTRIBUTED)
   {
     d_tcDistributed.reset(new CombinationDistributed(
-        *this, paraTheories, d_context, d_sharedTerms));
+        *this, paraTheories, d_context));
     d_tc = d_tcDistributed.get();
   }
   else
@@ -211,7 +210,6 @@ TheoryEngine::TheoryEngine(context::Context* context,
       d_context(context),
       d_userContext(userContext),
       d_logicInfo(logicInfo),
-      d_sharedTerms(this, context),
       d_tc(nullptr),
       d_tcDistributed(nullptr),
       d_quantEngine(nullptr),
@@ -236,8 +234,6 @@ TheoryEngine::TheoryEngine(context::Context* context,
       d_resourceManager(rm),
       d_inPreregister(false),
       d_factsAsserted(context, false),
-      d_preRegistrationVisitor(this, context),
-      d_sharedTermsVisitor(d_sharedTerms),
       d_attr_handle(),
       d_arithSubstitutionsAdded("theory::arith::zzz::arith::substitutions", 0)
 {
@@ -299,41 +295,10 @@ void TheoryEngine::preRegister(TNode preprocessed) {
                       << std::endl;
       Assert(!expr::hasFreeVar(preprocessed));
       
-      // % TC: preRegister
-      if (d_logicInfo.isSharingEnabled() && preprocessed.getKind() == kind::EQUAL) {
-        // When sharing is enabled, we propagate from the shared terms manager also
-        d_sharedTerms.addEqualityToPropagate(preprocessed);
-      }
-      // Pre-register the terms in the atom
-      Theory::Set theories = NodeVisitor<PreRegisterVisitor>::run(d_preRegistrationVisitor, preprocessed);
-      theories = Theory::setRemove(THEORY_BOOL, theories);
-      // Remove the top theory, if any more that means multiple theories were involved
-      bool multipleTheories = Theory::setRemove(Theory::theoryOf(preprocessed), theories);
-      TheoryId i;
-      // These checks don't work with finite model finding, because it
-      // uses Rational constants to represent cardinality constraints,
-      // even though arithmetic isn't actually involved.
-      if(!options::finiteModelFind()) {
-        while((i = Theory::setPop(theories)) != THEORY_LAST) {
-          if(!d_logicInfo.isTheoryEnabled(i)) {
-            LogicInfo newLogicInfo = d_logicInfo.getUnlockedCopy();
-            newLogicInfo.enableTheory(i);
-            newLogicInfo.lock();
-            stringstream ss;
-            ss << "The logic was specified as " << d_logicInfo.getLogicString()
-               << ", which doesn't include " << i
-               << ", but found a term in that theory." << endl
-               << "You might want to extend your logic to "
-               << newLogicInfo.getLogicString() << endl;
-            throw LogicException(ss.str());
-          }
-        }
-      }
-      if (multipleTheories) {
-        // Collect the shared terms if there are multiple theories
-        NodeVisitor<SharedTermsVisitor>::run(d_sharedTermsVisitor, preprocessed);
-      }
-      // % TC: preRegister
+      // pre-register with the theory combination module, which also handles
+      // calling prepregister on individual theories.
+      Assert (d_tc!=nullptr);
+      d_tc->preRegister(preprocessed);
     }
 
     // Leaving pre-register
@@ -502,7 +467,10 @@ void TheoryEngine::check(Theory::Effort effort) {
       if (Theory::fullEffort(effort) && d_logicInfo.isSharingEnabled() && !d_factsAsserted && !d_lemmasAdded && !d_inConflict) {
         // Do the combination
         Debug("theory") << "TheoryEngine::check(" << effort << "): running combination" << endl;
-        combineTheories();
+        {
+          TimerStat::CodeTimer combineTheoriesTimer(d_combineTheoriesTime);
+          d_tc->combineTheories();
+        }
         if(d_logicInfo.isQuantified()){
           d_quantEngine->notifyCombineTheories();
         }
@@ -577,79 +545,6 @@ void TheoryEngine::check(Theory::Effort effort) {
     if (!d_inConflict && !needCheck()) {
       dumpAssertions("theory::fullcheck");
     }
-  }
-}
-
-void TheoryEngine::combineTheories() {
-
-  Trace("combineTheories") << "TheoryEngine::combineTheories()" << endl;
-
-  TimerStat::CodeTimer combineTheoriesTimer(d_combineTheoriesTime);
-
-  // Care graph we'll be building
-  CareGraph careGraph;
-
-#ifdef CVC4_FOR_EACH_THEORY_STATEMENT
-#undef CVC4_FOR_EACH_THEORY_STATEMENT
-#endif
-#define CVC4_FOR_EACH_THEORY_STATEMENT(THEORY) \
-  if (theory::TheoryTraits<THEORY>::isParametric && d_logicInfo.isTheoryEnabled(THEORY)) { \
-    theoryOf(THEORY)->getCareGraph(&careGraph); \
-  }
-
-  // Call on each parametric theory to give us its care graph
-  CVC4_FOR_EACH_THEORY;
-
-  Trace("combineTheories") << "TheoryEngine::combineTheories(): care graph size = " << careGraph.size() << endl;
-
-  // Now add splitters for the ones we are interested in
-  CareGraph::const_iterator care_it = careGraph.begin();
-  CareGraph::const_iterator care_it_end = careGraph.end();
-
-  for (; care_it != care_it_end; ++ care_it) {
-    const CarePair& carePair = *care_it;
-
-    Debug("combineTheories")
-        << "TheoryEngine::combineTheories(): checking " << carePair.d_a << " = "
-        << carePair.d_b << " from " << carePair.d_theory << endl;
-
-    Assert(d_tc->isShared(carePair.d_a) || carePair.d_a.isConst());
-    Assert(d_tc->isShared(carePair.d_b) || carePair.d_b.isConst());
-
-    // The equality in question (order for no repetition)
-    Node equality = carePair.d_a.eqNode(carePair.d_b);
-    // EqualityStatus es = getEqualityStatus(carePair.d_a, carePair.d_b);
-    // Debug("combineTheories") << "TheoryEngine::combineTheories(): " <<
-    //   (es == EQUALITY_TRUE_AND_PROPAGATED ? "EQUALITY_TRUE_AND_PROPAGATED" :
-    //   es == EQUALITY_FALSE_AND_PROPAGATED ? "EQUALITY_FALSE_AND_PROPAGATED" :
-    //   es == EQUALITY_TRUE ? "EQUALITY_TRUE" :
-    //   es == EQUALITY_FALSE ? "EQUALITY_FALSE" :
-    //   es == EQUALITY_TRUE_IN_MODEL ? "EQUALITY_TRUE_IN_MODEL" :
-    //   es == EQUALITY_FALSE_IN_MODEL ? "EQUALITY_FALSE_IN_MODEL" :
-    //   es == EQUALITY_UNKNOWN ? "EQUALITY_UNKNOWN" :
-    //    "Unexpected case") << endl;
-
-    // We need to split on it
-    Debug("combineTheories") << "TheoryEngine::combineTheories(): requesting a split " << endl;
-
-    lemma(equality.orNode(equality.notNode()),
-          RULE_INVALID,
-          false,
-          LemmaProperty::NONE,
-          carePair.d_theory);
-
-    // This code is supposed to force preference to follow what the theory models already have
-    // but it doesn't seem to make a big difference - need to explore more -Clark
-    // if (true) {
-    //   if (es == EQUALITY_TRUE || es == EQUALITY_TRUE_IN_MODEL) {
-    Node e = ensureLiteral(equality);
-    d_propEngine->requirePhase(e, true);
-    //   }
-    //   else if (es == EQUALITY_FALSE_IN_MODEL) {
-    //     Node e = ensureLiteral(equality);
-    //     d_propEngine->requirePhase(e, false);
-    //   }
-    // }
   }
 }
 
@@ -1076,7 +971,8 @@ void TheoryEngine::assertToTheory(TNode assertion, TNode originalAssertion, theo
     Assert(atom.getKind() == kind::EQUAL)
         << "atom should be an EQUALity, not `" << atom << "'";
     if (markPropagation(assertion, originalAssertion, toTheoryId, fromTheoryId)) {
-      d_sharedTerms.assertEquality(atom, polarity, assertion);
+      // assert to theory combination
+      d_tc->assertEquality(atom, polarity, assertion);
     }
     return;
   }
@@ -1164,24 +1060,8 @@ void TheoryEngine::assertFact(TNode literal)
   TNode atom = polarity ? literal : literal[0];
 
   if (d_logicInfo.isSharingEnabled()) {
-    // %%% TC: begin notifyAssertFact(atom);
     // If any shared terms, it's time to do sharing work
-    if (d_sharedTerms.hasSharedTerms(atom)) {
-      // Notify the theories the shared terms
-      SharedTermsDatabase::shared_terms_iterator it = d_sharedTerms.begin(atom);
-      SharedTermsDatabase::shared_terms_iterator it_end = d_sharedTerms.end(atom);
-      for (; it != it_end; ++ it) {
-        TNode term = *it;
-        Theory::Set theories = d_sharedTerms.getTheoriesToNotify(atom, term);
-        for (TheoryId id = THEORY_FIRST; id != THEORY_LAST; ++ id) {
-          if (Theory::setContains(id, theories)) {
-            theoryOf(id)->addSharedTermInternal(term);
-          }
-        }
-        d_sharedTerms.markNotified(term, theories);
-      }
-    }
-    // %%% TC: end notifyAssertFact(atom);
+    d_tc->notifyAssertFact(atom);
 
     // If it's an equality, assert it to the shared term manager, even though the terms are not
     // yet shared. As the terms become shared later, the shared terms manager will then add them
@@ -1283,9 +1163,7 @@ Node TheoryEngine::getModelValue(TNode var) {
     // the model value of a constant must be itself
     return var;
   }
-  // %%% TC: begin isShared(var);
   Assert(d_tc->isShared(var));
-  // %%% TC: end isShared(var);
   return theoryOf(Theory::theoryOf(var.getType()))->getModelValue(var);
 }
 
@@ -1807,11 +1685,6 @@ void TheoryEngine::staticInitializeBVOptions(
   }
 }
 
-SharedTermsDatabase* TheoryEngine::getSharedTermsDatabase()
-{
-  return &d_sharedTerms;
-}
-
 theory::eq::EqualityEngine* TheoryEngine::getMasterEqualityEngine()
 {
   Assert(d_tc != nullptr);
@@ -1927,9 +1800,8 @@ void TheoryEngine::getExplanation(std::vector<NodeTheoryPair>& explanationVector
     Node explanation;
     if (toExplain.d_theory == THEORY_BUILTIN)
     {
-      // %%% TC: explain
-      explanation = d_sharedTerms.explain(toExplain.d_node);
-      // %%% TC: end explain
+      // explain using theory combination
+      explanation = d_tc->explain(toExplain.d_node);
       Debug("theory::explain") << "\tTerm was propagated by THEORY_BUILTIN. Explanation: " << explanation << std::endl;
     }
     else

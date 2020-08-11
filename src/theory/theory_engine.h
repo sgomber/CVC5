@@ -39,7 +39,6 @@
 #include "theory/engine_output_channel.h"
 #include "theory/interrupted.h"
 #include "theory/rewriter.h"
-#include "theory/shared_terms_database.h"
 #include "theory/sort_inference.h"
 #include "theory/substitutions.h"
 #include "theory/term_registration_visitor.h"
@@ -144,11 +143,6 @@ class TheoryEngine {
    * the cost of walking the DAG on registration, etc.
    */
   const LogicInfo& d_logicInfo;
-
-  /**
-   * The database of shared terms.
-   */
-  SharedTermsDatabase d_sharedTerms;
 
   /** The combination manager we are using */
   theory::CombinationDistributed * d_tc;
@@ -411,11 +405,6 @@ class TheoryEngine {
   context::CDO<bool> d_factsAsserted;
 
   /**
-   * Map from equality atoms to theories that would like to be notified about them.
-   */
-
-
-  /**
    * Assert the formula to the given theory.
    * @param assertion the assertion to send (not necesserily normalized)
    * @param original the assertion as it was sent in from the propagating theory
@@ -520,11 +509,6 @@ public:
    * @param effort the effort level to use
    */
   void check(theory::Theory::Effort effort);
-
-  /**
-   * Run the combination framework.
-   */
-  void combineTheories();
 
   /**
    * Calls ppStaticLearn() on all theories, accumulating their
@@ -711,11 +695,6 @@ public:
   std::pair<bool, Node> entailmentCheck(options::TheoryOfMode mode, TNode lit);
 
  private:
-  /** Default visitor for pre-registration */
-  PreRegisterVisitor d_preRegistrationVisitor;
-
-  /** Visitor for collecting shared terms */
-  SharedTermsVisitor d_sharedTermsVisitor;
 
   /** Dump the assertions to the dump */
   void dumpAssertions(const char* tag);
@@ -723,8 +702,6 @@ public:
   /** For preprocessing pass lifting bit-vectors of size 1 to booleans */
 public:
   void staticInitializeBVOptions(const std::vector<Node>& assertions);
-
-  SharedTermsDatabase* getSharedTermsDatabase();
 
   theory::eq::EqualityEngine* getMasterEqualityEngine();
 

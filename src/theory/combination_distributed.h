@@ -24,6 +24,7 @@
 #include "theory/model_manager_distributed.h"
 #include "theory/shared_terms_database.h"
 #include "theory/term_registration_visitor.h"
+#include "theory/shared_terms_database.h"
 
 namespace CVC4 {
 
@@ -39,8 +40,7 @@ class CombinationDistributed
  public:
   CombinationDistributed(TheoryEngine& te,
                          const std::vector<Theory*>& paraTheories,
-                         context::Context* c,
-                         SharedTermsDatabase& sdb);
+                         context::Context* c);
   ~CombinationDistributed();
   /** Finish initialization */
   void finishInit();
@@ -68,16 +68,21 @@ class CombinationDistributed
   void notifyAssertFact(TNode atom);
   bool isShared(TNode term) const;
   theory::EqualityStatus getEqualityStatus(TNode a, TNode b);
+
+  Node explain(TNode literal) const;
+  void assertEquality(TNode equality, bool polarity, TNode reason);
   //-------------------------- end interface used by theory engine
  private:
   /** Reference to the theory engine */
   TheoryEngine& d_te;
+  /** Logic info of theory engine (cached) */
+  const LogicInfo& d_logicInfo;
   /** List of parametric theories of theory engine */
   const std::vector<Theory*> d_paraTheories;
   /**
    * The database of shared terms.
    */
-  SharedTermsDatabase& d_sharedTerms;
+  SharedTermsDatabase d_sharedTerms;
 
   /** Default visitor for pre-registration */
   PreRegisterVisitor d_preRegistrationVisitor;
