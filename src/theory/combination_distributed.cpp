@@ -43,10 +43,12 @@ CombinationDistributed::~CombinationDistributed() {}
 
 void CombinationDistributed::finishInit()
 {
-  // initialize equality engines in all theories
+  // initialize equality engines in all theories, including quantifiers engine
   d_eeDistributed->initializeTheories();
   // initialize the model
   d_mDistributed->finishInit();
+  // initialize equality engine of model
+  d_eeDistributed->initializeModel(d_mDistributed->getModel());
 }
 
 void CombinationDistributed::combineTheories()
@@ -128,6 +130,13 @@ bool CombinationDistributed::buildModel()
 
 void CombinationDistributed::postProcessModel(bool incomplete)
 {
+  // should have a consistent master equality engine
+  eq::EqualityEngine* mee = d_eeDistributed->getMasterEqualityEngine();
+  if (mee != NULL)
+  {
+    AlwaysAssert(mee->consistent());
+  }
+  // postprocess with the model
   d_mDistributed->postProcessModel(incomplete);
 }
 

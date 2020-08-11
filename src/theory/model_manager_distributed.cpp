@@ -68,9 +68,6 @@ void ModelManagerDistributed::finishInit()
     d_alocModelBuilder.reset(new TheoryEngineModelBuilder(&d_te));
     d_modelBuilder = d_alocModelBuilder.get();
   }
-
-  // initialize equality engine of model
-  d_eem.initializeModel(d_model);
 }
 
 bool ModelManagerDistributed::buildModel()

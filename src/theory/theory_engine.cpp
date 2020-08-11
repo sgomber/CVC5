@@ -180,7 +180,6 @@ void TheoryEngine::finishInit() {
     d_quantEngine->setMasterEqualityEngine(d_tc->getMasterEqualityEngine());
   }
   
-  
   // finish initializing the theories by linking them with the appropriate
   // utilities and then calling their finishInit method.
   for(TheoryId theoryId = theory::THEORY_FIRST; theoryId != theory::THEORY_LAST; ++ theoryId) {
@@ -531,11 +530,6 @@ void TheoryEngine::check(Theory::Effort effort) {
     if( Theory::fullEffort(effort) && !d_inConflict && !needCheck()) {
       // case where we are about to answer SAT, the master equality engine,
       // if it exists, must be consistent.
-      eq::EqualityEngine* mee = getMasterEqualityEngine();
-      if (mee != NULL)
-      {
-        AlwaysAssert(mee->consistent());
-      }
       CombinationDistributed* builder = d_tc;
       // Do post-processing of model from the theories (used for THEORY_SEP
       // to construct heap model)
@@ -1625,12 +1619,6 @@ void TheoryEngine::staticInitializeBVOptions(
     bv::TheoryBV* bv_theory = (bv::TheoryBV*)d_theoryTable[THEORY_BV];
     bv_theory->enableCoreTheorySlicer();
   }
-}
-
-theory::eq::EqualityEngine* TheoryEngine::getMasterEqualityEngine()
-{
-  Assert(d_tc != nullptr);
-  return d_tc->getMasterEqualityEngine();
 }
 
 void TheoryEngine::getExplanation(std::vector<NodeTheoryPair>& explanationVector, LemmaProofRecipe* proofRecipe) {
