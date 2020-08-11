@@ -50,9 +50,13 @@ class ModelManagerDistributed
   /** Get model */
   theory::TheoryModel* getModel();
 
+  /** Collect model info */
+  bool collectModelInfo();
  private:
   /** Reference to the theory engine */
   TheoryEngine& d_te;
+  /** Logic info of theory engine (cached) */
+  const LogicInfo& d_logicInfo;
   /** Reference to the equality engine manager */
   EqEngineManagerDistributed& d_eem;
   /** The model object we are using */

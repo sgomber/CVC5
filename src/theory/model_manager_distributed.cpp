@@ -25,6 +25,7 @@ namespace theory {
 ModelManagerDistributed::ModelManagerDistributed(
     TheoryEngine& te, EqEngineManagerDistributed& eem)
     : d_te(te),
+      d_logicInfo(te.getLogicInfo()),
       d_eem(eem),
       d_model(nullptr),
       d_modelBuilder(nullptr),
@@ -95,7 +96,7 @@ bool ModelManagerDistributed::buildModel()
   // Collect model info from the theories
   Trace("model-builder") << "ModelManagerDistributed: Collect model info..."
                          << std::endl;
-  if (!d_te.collectModelInfo(d_model))
+  if (!collectModelInfo())
   {
     Trace("model-builder") << "ModelManagerDistributed: fail collect model info"
                            << std::endl;
@@ -142,6 +143,48 @@ void ModelManagerDistributed::postProcessModel(bool incomplete)
 }
 
 theory::TheoryModel* ModelManagerDistributed::getModel() { return d_model; }
+
+bool ModelManagerDistributed::collectModelInfo()
+{
+  // Consult each active theory to get all relevant information
+  // concerning the model.
+  for(TheoryId theoryId = theory::THEORY_FIRST; theoryId < theory::THEORY_LAST; ++theoryId) {
+    if (!d_logicInfo.isTheoryEnabled(theoryId))
+    {
+      // theory not active, skip
+      continue;
+    }
+    Theory* t = d_te.theoryOf(theoryId);
+    Trace("model-builder") << "  CollectModelInfo on theory: " << theoryId << std::endl;
+    if (!t->collectModelInfo(d_model))
+    {
+      return false;
+    }
+  }
+  Trace("model-builder") << "  CollectModelInfo boolean variables" << std::endl;
+  // Get value of the Boolean variables
+  prop::PropEngine* propEngine = d_te.getPropEngine();
+  std::vector<TNode> boolVars;
+  propEngine->getBooleanVariables(boolVars);
+  std::vector<TNode>::iterator it, iend = boolVars.end();
+  bool hasValue, value;
+  for (it = boolVars.begin(); it != iend; ++it) {
+    TNode var = *it;
+    hasValue = propEngine->hasValue(var, value);
+    // Should we assert that hasValue is true?
+    if (!hasValue) {
+      Trace("model-builder-assertions")
+          << "    has no value : " << var << std::endl;
+      value = false;
+    }
+    Trace("model-builder-assertions") << "(assert" << (value ? " " : " (not ") << var << (value ? ");" : "));") << std::endl;
+    if (!d_model->assertPredicate(var, value))
+    {
+      return false;
+    }
+  }
+  return true;
+}
 
 }  // namespace theory
 }  // namespace CVC4

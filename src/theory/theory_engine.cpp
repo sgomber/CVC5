@@ -657,43 +657,6 @@ bool TheoryEngine::properExplanation(TNode node, TNode expl) const {
   return true;
 }
 
-bool TheoryEngine::collectModelInfo(theory::TheoryModel* m)
-{
-  // Consult each active theory to get all relevant information
-  // concerning the model.
-  for(TheoryId theoryId = theory::THEORY_FIRST; theoryId < theory::THEORY_LAST; ++theoryId) {
-    if(d_logicInfo.isTheoryEnabled(theoryId)) {
-      Trace("model-builder") << "  CollectModelInfo on theory: " << theoryId << endl;
-      if (!d_theoryTable[theoryId]->collectModelInfo(m))
-      {
-        return false;
-      }
-    }
-  }
-  Trace("model-builder") << "  CollectModelInfo boolean variables" << std::endl;
-  // Get the Boolean variables
-  vector<TNode> boolVars;
-  d_propEngine->getBooleanVariables(boolVars);
-  vector<TNode>::iterator it, iend = boolVars.end();
-  bool hasValue, value;
-  for (it = boolVars.begin(); it != iend; ++it) {
-    TNode var = *it;
-    hasValue = d_propEngine->hasValue(var, value);
-    // TODO: Assert that hasValue is true?
-    if (!hasValue) {
-      Trace("model-builder-assertions")
-          << "    has no value : " << var << std::endl;
-      value = false;
-    }
-    Trace("model-builder-assertions") << "(assert" << (value ? " " : " (not ") << var << (value ? ");" : "));") << endl;
-    if (!m->assertPredicate(var, value))
-    {
-      return false;
-    }
-  }
-  return true;
-}
-
 TheoryModel* TheoryEngine::getModel()
 {
   Assert(d_tc != nullptr);
@@ -1909,7 +1872,7 @@ void TheoryEngine::checkTheoryAssertionsWithModel(bool hardFailure) {
           it != it_end;
           ++it) {
         Node assertion = (*it).d_assertion;
-        Node val = getModel()->getValue(assertion);
+        Node val = d_tc->getModel()->getValue(assertion);
         if (val != d_true)
         {
           std::stringstream ss;

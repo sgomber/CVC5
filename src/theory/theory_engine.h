@@ -563,11 +563,6 @@ public:
   Node getExplanationAndRecipe(TNode node, LemmaProofRecipe* proofRecipe);
 
   /**
-   * collect model info
-   */
-  bool collectModelInfo(theory::TheoryModel* m);
-
-  /**
    * Get the pointer to the model object used by this theory engine.
    */
   theory::TheoryModel* getModel();
