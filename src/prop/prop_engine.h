@@ -68,7 +68,7 @@ class PropEngine
    * Destructor.
    */
   CVC4_PUBLIC ~PropEngine();
-  
+
   /**
    * Finish init.
    */

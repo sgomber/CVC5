@@ -15,8 +15,8 @@
 #include "theory/ee_manager_distributed.h"
 
 #include "theory/quantifiers_engine.h"
-#include "theory/theory_engine.h"
 #include "theory/shared_terms_database.h"
+#include "theory/theory_engine.h"
 
 namespace CVC4 {
 namespace theory {
@@ -31,7 +31,8 @@ const EeTheoryInfo* EqEngineManager::getEeTheoryInfo(TheoryId tid) const
   return nullptr;
 }
 
-EqEngineManagerDistributed::EqEngineManagerDistributed(TheoryEngine& te, SharedTermsDatabase* sdb)
+EqEngineManagerDistributed::EqEngineManagerDistributed(TheoryEngine& te,
+                                                       SharedTermsDatabase* sdb)
     : d_te(te), d_sdb(sdb), d_masterEENotify(nullptr)
 {
 }
@@ -45,7 +46,7 @@ void EqEngineManagerDistributed::initializeTheories()
 {
   context::Context* c = d_te.getSatContext();
   // initialize the shared terms database
-  if (d_sdb!=nullptr)
+  if (d_sdb != nullptr)
   {
     EeSetupInfo esis;
     if (d_sdb->needsEqualityEngine(esis))

@@ -51,7 +51,7 @@ class QuantifiersEnginePrivate;
 class QuantifiersEngine {
   // for access to private initialization
   friend class ::CVC4::TheoryEngine;
-  
+
   typedef context::CDHashMap< Node, bool, NodeHashFunction > BoolMap;
   typedef context::CDList<Node> NodeList;
   typedef context::CDList<bool> BoolList;
@@ -324,7 +324,7 @@ public:
   /** reference to theory engine object */
   TheoryEngine* d_te;
   /** Pointer to the master equality engine */
-  eq::EqualityEngine * d_masterEqualityEngine;
+  eq::EqualityEngine* d_masterEqualityEngine;
   /** vector of utilities for quantifiers */
   std::vector<QuantifiersUtil*> d_util;
   /** vector of modules for quantifiers */

@@ -152,8 +152,8 @@ void TheoryEngine::finishInit() {
   // Initialize the theory combination architecture
   if (options::eeMode() == options::EqEngineMode::DISTRIBUTED)
   {
-    d_tcDistributed.reset(new CombinationDistributed(
-        *this, paraTheories, d_context));
+    d_tcDistributed.reset(
+        new CombinationDistributed(*this, paraTheories, d_context));
     d_tc = d_tcDistributed.get();
   }
   else
@@ -161,8 +161,6 @@ void TheoryEngine::finishInit() {
     AlwaysAssert(false) << "TheoryEngine::finishInit: equality engine mode "
                         << options::eeMode() << " not supported";
   }
-
-
 
   // initialize the quantifiers engine
   if (d_logicInfo.isQuantified())
@@ -173,13 +171,13 @@ void TheoryEngine::finishInit() {
   // initialize the theory combination manager, which decides and allocates the
   // equality engines to use for all theories.
   d_tc->finishInit();
-  
+
   // set the master equality engine
   if (d_logicInfo.isQuantified())
   {
     d_quantEngine->setMasterEqualityEngine(d_tc->getMasterEqualityEngine());
   }
-  
+
   // finish initializing the theories by linking them with the appropriate
   // utilities and then calling their finishInit method.
   for(TheoryId theoryId = theory::THEORY_FIRST; theoryId != theory::THEORY_LAST; ++ theoryId) {
@@ -292,15 +290,15 @@ void TheoryEngine::preRegister(TNode preprocessed) {
       // Get the next atom to pre-register
       preprocessed = d_preregisterQueue.front();
       d_preregisterQueue.pop();
-      
+
       // the atom should not have free variables
       Debug("theory") << "TheoryEngine::preRegister: " << preprocessed
                       << std::endl;
       Assert(!expr::hasFreeVar(preprocessed));
-      
+
       // pre-register with the theory combination module, which also handles
       // calling prepregister on individual theories.
-      Assert (d_tc!=nullptr);
+      Assert(d_tc != nullptr);
       d_tc->preRegister(preprocessed);
     }
 
@@ -1090,7 +1088,7 @@ const LogicInfo& TheoryEngine::getLogicInfo() const { return d_logicInfo; }
 
 theory::EqualityStatus TheoryEngine::getEqualityStatus(TNode a, TNode b) {
   Assert(a.getType().isComparableTo(b.getType()));
-  return d_tc->getEqualityStatus(a,b);
+  return d_tc->getEqualityStatus(a, b);
 }
 
 Node TheoryEngine::getModelValue(TNode var) {
@@ -1310,10 +1308,10 @@ Node TheoryEngine::getExplanation(TNode node) {
 
 void TheoryEngine::addSharedTermInternal(theory::TheoryId tid, TNode term)
 {
-  Assert (theoryOf(tid)!=nullptr);
+  Assert(theoryOf(tid) != nullptr);
   theoryOf(tid)->addSharedTermInternal(term);
 }
-  
+
 struct AtomsCollect {
 
   std::vector<TNode> d_atoms;

@@ -52,6 +52,7 @@ class ModelManagerDistributed
 
   /** Collect model info */
   bool collectModelInfo();
+
  private:
   /** Reference to the theory engine */
   TheoryEngine& d_te;

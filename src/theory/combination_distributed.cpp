@@ -14,9 +14,9 @@
 
 #include "theory/combination_distributed.h"
 
+#include "expr/node_visitor.h"
 #include "theory/care_graph.h"
 #include "theory/theory_engine.h"
-#include "expr/node_visitor.h"
 
 // TODO: remove
 #include "options/quantifiers_options.h"
@@ -29,7 +29,7 @@ CombinationDistributed::CombinationDistributed(
     const std::vector<Theory*>& paraTheories,
     context::Context* c)
     : d_te(te),
-    d_logicInfo(te.getLogicInfo()),
+      d_logicInfo(te.getLogicInfo()),
       d_paraTheories(paraTheories),
       d_sharedTerms(&te, c),
       d_preRegistrationVisitor(&te, c),
@@ -147,53 +147,64 @@ theory::TheoryModel* CombinationDistributed::getModel()
 
 void CombinationDistributed::preRegister(TNode t)
 {
-  if (d_logicInfo.isSharingEnabled() && t.getKind() == kind::EQUAL) {
+  if (d_logicInfo.isSharingEnabled() && t.getKind() == kind::EQUAL)
+  {
     // When sharing is enabled, we propagate from the shared terms manager also
     d_sharedTerms.addEqualityToPropagate(t);
   }
   // Pre-register the terms in the atom
-  Theory::Set theories = NodeVisitor<PreRegisterVisitor>::run(d_preRegistrationVisitor, t);
+  Theory::Set theories =
+      NodeVisitor<PreRegisterVisitor>::run(d_preRegistrationVisitor, t);
   theories = Theory::setRemove(THEORY_BOOL, theories);
-  // Remove the top theory, if any more that means multiple theories were involved
+  // Remove the top theory, if any more that means multiple theories were
+  // involved
   bool multipleTheories = Theory::setRemove(Theory::theoryOf(t), theories);
   TheoryId i;
   // These checks don't work with finite model finding, because it
   // uses Rational constants to represent cardinality constraints,
   // even though arithmetic isn't actually involved.
-  if(!options::finiteModelFind()) {
-    while((i = Theory::setPop(theories)) != THEORY_LAST) {
-      if(!d_logicInfo.isTheoryEnabled(i)) {
+  if (!options::finiteModelFind())
+  {
+    while ((i = Theory::setPop(theories)) != THEORY_LAST)
+    {
+      if (!d_logicInfo.isTheoryEnabled(i))
+      {
         LogicInfo newLogicInfo = d_logicInfo.getUnlockedCopy();
         newLogicInfo.enableTheory(i);
         newLogicInfo.lock();
         std::stringstream ss;
         ss << "The logic was specified as " << d_logicInfo.getLogicString()
-            << ", which doesn't include " << i
-            << ", but found a term in that theory." << std::endl
-            << "You might want to extend your logic to "
-            << newLogicInfo.getLogicString() << std::endl;
+           << ", which doesn't include " << i
+           << ", but found a term in that theory." << std::endl
+           << "You might want to extend your logic to "
+           << newLogicInfo.getLogicString() << std::endl;
         throw LogicException(ss.str());
       }
     }
   }
-  if (multipleTheories) {
+  if (multipleTheories)
+  {
     // Collect the shared terms if there are multiple theories
     NodeVisitor<SharedTermsVisitor>::run(d_sharedTermsVisitor, t);
   }
 }
 void CombinationDistributed::notifyAssertFact(TNode atom)
 {
-  if (d_sharedTerms.hasSharedTerms(atom)) {
+  if (d_sharedTerms.hasSharedTerms(atom))
+  {
     // Notify the theories the shared terms
     SharedTermsDatabase::shared_terms_iterator it = d_sharedTerms.begin(atom);
     SharedTermsDatabase::shared_terms_iterator it_end = d_sharedTerms.end(atom);
-    for (; it != it_end; ++ it) {
+    for (; it != it_end; ++it)
+    {
       TNode term = *it;
       Theory::Set theories = d_sharedTerms.getTheoriesToNotify(atom, term);
-      for (TheoryId id = THEORY_FIRST; id != THEORY_LAST; ++ id) {
-        if (Theory::setContains(id, theories)) {
+      for (TheoryId id = THEORY_FIRST; id != THEORY_LAST; ++id)
+      {
+        if (Theory::setContains(id, theories))
+        {
           // call the add shared term internal method of theory engine
-          d_te.addSharedTermInternal(id,term);
+          d_te.addSharedTermInternal(id, term);
         }
       }
       d_sharedTerms.markNotified(term, theories);
@@ -206,14 +217,18 @@ bool CombinationDistributed::isShared(TNode term) const
   return d_sharedTerms.isShared(term);
 }
 
-theory::EqualityStatus CombinationDistributed::getEqualityStatus(TNode a, TNode b)
+theory::EqualityStatus CombinationDistributed::getEqualityStatus(TNode a,
+                                                                 TNode b)
 {
   Assert(a.getType().isComparableTo(b.getType()));
-  if (d_sharedTerms.isShared(a) && d_sharedTerms.isShared(b)) {
-    if (d_sharedTerms.areEqual(a,b)) {
+  if (d_sharedTerms.isShared(a) && d_sharedTerms.isShared(b))
+  {
+    if (d_sharedTerms.areEqual(a, b))
+    {
       return EQUALITY_TRUE_AND_PROPAGATED;
     }
-    else if (d_sharedTerms.areDisequal(a,b)) {
+    else if (d_sharedTerms.areDisequal(a, b))
+    {
       return EQUALITY_FALSE_AND_PROPAGATED;
     }
   }
@@ -225,10 +240,12 @@ Node CombinationDistributed::explain(TNode literal) const
   return d_sharedTerms.explain(literal);
 }
 
-void CombinationDistributed::assertEquality(TNode equality, bool polarity, TNode reason)
+void CombinationDistributed::assertEquality(TNode equality,
+                                            bool polarity,
+                                            TNode reason)
 {
   d_sharedTerms.assertEquality(equality, polarity, reason);
 }
-  
+
 }  // namespace theory
 }  // namespace CVC4

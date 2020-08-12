@@ -145,14 +145,17 @@ bool ModelManagerDistributed::collectModelInfo()
 {
   // Consult each active theory to get all relevant information
   // concerning the model.
-  for(TheoryId theoryId = theory::THEORY_FIRST; theoryId < theory::THEORY_LAST; ++theoryId) {
+  for (TheoryId theoryId = theory::THEORY_FIRST; theoryId < theory::THEORY_LAST;
+       ++theoryId)
+  {
     if (!d_logicInfo.isTheoryEnabled(theoryId))
     {
       // theory not active, skip
       continue;
     }
     Theory* t = d_te.theoryOf(theoryId);
-    Trace("model-builder") << "  CollectModelInfo on theory: " << theoryId << std::endl;
+    Trace("model-builder") << "  CollectModelInfo on theory: " << theoryId
+                           << std::endl;
     if (!t->collectModelInfo(d_model))
     {
       return false;
@@ -165,16 +168,20 @@ bool ModelManagerDistributed::collectModelInfo()
   propEngine->getBooleanVariables(boolVars);
   std::vector<TNode>::iterator it, iend = boolVars.end();
   bool hasValue, value;
-  for (it = boolVars.begin(); it != iend; ++it) {
+  for (it = boolVars.begin(); it != iend; ++it)
+  {
     TNode var = *it;
     hasValue = propEngine->hasValue(var, value);
     // Should we assert that hasValue is true?
-    if (!hasValue) {
+    if (!hasValue)
+    {
       Trace("model-builder-assertions")
           << "    has no value : " << var << std::endl;
       value = false;
     }
-    Trace("model-builder-assertions") << "(assert" << (value ? " " : " (not ") << var << (value ? ");" : "));") << std::endl;
+    Trace("model-builder-assertions")
+        << "(assert" << (value ? " " : " (not ") << var
+        << (value ? ");" : "));") << std::endl;
     if (!d_model->assertPredicate(var, value))
     {
       return false;

@@ -279,7 +279,7 @@ void QuantifiersEngine::setMasterEqualityEngine(eq::EqualityEngine* mee)
 {
   d_masterEqualityEngine = mee;
 }
-  
+
 context::Context* QuantifiersEngine::getSatContext()
 {
   return d_te->theoryOf(THEORY_QUANTIFIERS)->getSatContext();

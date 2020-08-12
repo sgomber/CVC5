@@ -24,7 +24,6 @@
 #include "theory/model_manager_distributed.h"
 #include "theory/shared_terms_database.h"
 #include "theory/term_registration_visitor.h"
-#include "theory/shared_terms_database.h"
 
 namespace CVC4 {
 
@@ -89,7 +88,7 @@ class CombinationDistributed
 
   /** Visitor for collecting shared terms */
   SharedTermsVisitor d_sharedTermsVisitor;
-  
+
   /**
    * The distributed equality manager. This class is responsible for
    * configuring the theories of this class for handling equalties

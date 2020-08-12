@@ -145,7 +145,7 @@ class TheoryEngine {
   const LogicInfo& d_logicInfo;
 
   /** The combination manager we are using */
-  theory::CombinationDistributed * d_tc;
+  theory::CombinationDistributed* d_tc;
   /**
    * The combination manager
    */
@@ -439,7 +439,8 @@ class TheoryEngine {
 
   /** Add shared term internal, called by the combination manager. */
   void addSharedTermInternal(theory::TheoryId tid, TNode term);
-public:
+
+ public:
 
   /**
    * Signal the start of a new round of assertion preprocessing
