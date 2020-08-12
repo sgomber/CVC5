@@ -1066,19 +1066,6 @@ void TheoryArithPrivate::addSharedTerm(TNode n){
   }
 }
 
-Node TheoryArithPrivate::getModelValue(TNode term) {
-  try{
-    const DeltaRational drv = getDeltaValue(term);
-    const Rational& delta = d_partialModel.getDelta();
-    const Rational qmodel = drv.substituteDelta( delta );
-    return mkRationalNode( qmodel );
-  } catch (DeltaRationalException& dr) {
-    return Node::null();
-  } catch (ModelException& me) {
-    return Node::null();
-  }
-}
-
 TrustNode TheoryArithPrivate::ppRewriteTerms(TNode n)
 {
   if(Theory::theoryOf(n) != THEORY_ARITH) {

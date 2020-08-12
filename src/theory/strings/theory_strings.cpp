@@ -310,7 +310,7 @@ bool TheoryStrings::collectModelInfoType(
     else if (!lts[i].isNull())
     {
       // get the model value for lts[i]
-      len_value = d_valuation.getModelValue(lts[i]);
+      len_value = m->getRepresentative(lts[i]);
     }
     if (len_value.isNull())
     {
@@ -372,7 +372,7 @@ bool TheoryStrings::collectModelInfoType(
             {
               // its value must be equal to its code
               Node ct = nm->mkNode(kind::STRING_TO_CODE, eip->d_codeTerm.get());
-              Node ctv = d_valuation.getModelValue(ct);
+              Node ctv = m->getRepresentative(ct);
               unsigned cvalue =
                   ctv.getConst<Rational>().getNumerator().toUnsignedInt();
               Trace("strings-model") << "(code: " << cvalue << ") ";

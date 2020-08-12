@@ -81,7 +81,6 @@ class SubtheorySolver {
   virtual void preRegister(TNode node) {}
   virtual void propagate(Theory::Effort e) {}
   virtual bool collectModelInfo(TheoryModel* m, bool fullModel) = 0;
-  virtual Node getModelValue(TNode var) = 0;
   virtual bool isComplete() = 0;
   virtual EqualityStatus getEqualityStatus(TNode a, TNode b) = 0;
   virtual void addSharedTerm(TNode node) {}

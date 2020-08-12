@@ -1008,41 +1008,19 @@ void TheoryArrays::computeCareGraph()
       }
       Node x_shared = d_equalityEngine.getTriggerTermRepresentative(x, THEORY_ARRAYS);
 
-      // Get the model value of index and find all reads that read from that same model value: these are the pairs we have to check
-      // Also, insert this read in the list at the proper index
 
-      if (!x_shared.isConst()) {
-        x_shared = d_valuation.getModelValue(x_shared);
+      // We don't know the model value for x.  Just do brute force examination of all pairs of reads
+      for (unsigned j = 0; j < size; ++j) {
+        TNode r2 = d_reads[j];
+        Assert(d_equalityEngine.hasTerm(r2));
+        checkPair(r1,r2);
       }
-      if (!x_shared.isNull()) {
-        CTNodeList* temp;
-        CNodeNListMap::iterator it = d_constReads.find(x_shared);
-        if (it == d_constReads.end()) {
-          // This is the only x_shared with this model value - no need to create any splits
-          temp = new(true) CTNodeList(d_constReadsContext);
-          d_constReads[x_shared] = temp;
-        }
-        else {
-          temp = (*it).second;
-          for (size_t j = 0; j < temp->size(); ++j) {
-            checkPair(r1, (*temp)[j]);
-          }
-        }
-        temp->push_back(r1);
+      for (unsigned j = 0; j < d_constReadsList.size(); ++j) {
+        TNode r2 = d_constReadsList[j];
+        Assert(d_equalityEngine.hasTerm(r2));
+        checkPair(r1,r2);
       }
-      else {
-        // We don't know the model value for x.  Just do brute force examination of all pairs of reads
-        for (unsigned j = 0; j < size; ++j) {
-          TNode r2 = d_reads[j];
-          Assert(d_equalityEngine.hasTerm(r2));
-          checkPair(r1,r2);
-        }
-        for (unsigned j = 0; j < d_constReadsList.size(); ++j) {
-          TNode r2 = d_constReadsList[j];
-          Assert(d_equalityEngine.hasTerm(r2));
-          checkPair(r1,r2);
-        }
-      }
+    
     }
     d_constReadsContext->pop();
   }

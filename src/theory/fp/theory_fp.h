@@ -55,7 +55,6 @@ class TheoryFp : public Theory {
   void check(Effort) override;
 
   bool needsCheckLastEffort() override { return true; }
-  Node getModelValue(TNode var) override;
   bool collectModelInfo(TheoryModel* m) override;
 
   std::string identify() const override { return "THEORY_FP"; }

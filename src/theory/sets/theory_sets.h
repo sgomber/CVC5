@@ -53,7 +53,6 @@ class TheorySets : public Theory
   void computeCareGraph() override;
   TrustNode explain(TNode) override;
   EqualityStatus getEqualityStatus(TNode a, TNode b) override;
-  Node getModelValue(TNode) override;
   std::string identify() const override { return "THEORY_SETS"; }
   void preRegisterTerm(TNode node) override;
   TrustNode expandDefinition(Node n) override;

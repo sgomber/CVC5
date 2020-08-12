@@ -97,8 +97,6 @@ class TheoryArith : public Theory {
 
   void addSharedTerm(TNode n) override;
 
-  Node getModelValue(TNode var) override;
-
   std::pair<bool, Node> entailmentCheck(TNode lit) override;
 
   void setProofRecorder(proof::ArithProofRecorder* proofRecorder)

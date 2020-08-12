@@ -455,24 +455,6 @@ bool CoreSolver::collectModelInfo(TheoryModel* m, bool fullModel)
   return true;
 }
 
-Node CoreSolver::getModelValue(TNode var) {
-  Debug("bitvector-model") << "CoreSolver::getModelValue (" << var <<")";
-  Assert(isComplete());
-  TNode repr = d_equalityEngine.getRepresentative(var);
-  Node result = Node();
-  if (repr.getKind() == kind::CONST_BITVECTOR) {
-    result = repr;
-  } else if (d_modelValues.find(repr) == d_modelValues.end()) {
-    // it may be a shared term that never gets asserted
-    // result is just Null
-    Assert(d_bv->isSharedTerm(var));
-  } else {
-    result = d_modelValues[repr];
-  }
-  Debug("bitvector-model") << " => " << result <<"\n";
-  return result;
-}
-
 CoreSolver::Statistics::Statistics()
   : d_numCallstoCheck("theory::bv::CoreSolver::NumCallsToCheck", 0)
   , d_slicerEnabled("theory::bv::CoreSolver::SlicerEnabled", false)

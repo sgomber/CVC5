@@ -544,16 +544,6 @@ bool TheoryBV::collectModelInfo(TheoryModel* m)
   return true;
 }
 
-Node TheoryBV::getModelValue(TNode var) {
-  Assert(!inConflict());
-  for (unsigned i = 0; i < d_subtheories.size(); ++i) {
-    if (d_subtheories[i]->isComplete()) {
-      return d_subtheories[i]->getModelValue(var);
-    }
-  }
-  Unreachable();
-}
-
 void TheoryBV::propagate(Effort e) {
   Debug("bitvector") << indent() << "TheoryBV::propagate()" << std::endl;
   if (options::bitblastMode() == options::BitblastMode::EAGER)

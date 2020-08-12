@@ -1271,17 +1271,6 @@ theory::EqualityStatus TheoryEngine::getEqualityStatus(TNode a, TNode b) {
   return theoryOf(Theory::theoryOf(a.getType()))->getEqualityStatus(a, b);
 }
 
-Node TheoryEngine::getModelValue(TNode var) {
-  if (var.isConst())
-  {
-    // the model value of a constant must be itself
-    return var;
-  }
-  Assert(d_sharedTerms.isShared(var));
-  return theoryOf(Theory::theoryOf(var.getType()))->getModelValue(var);
-}
-
-
 Node TheoryEngine::ensureLiteral(TNode n) {
   Debug("ensureLiteral") << "rewriting: " << n << std::endl;
   Node rewritten = Rewriter::rewrite(n);

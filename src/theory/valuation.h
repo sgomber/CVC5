@@ -102,11 +102,6 @@ public:
   EqualityStatus getEqualityStatus(TNode a, TNode b);
 
   /**
-   * Returns the model value of the shared term (or null if not available).
-   */
-  Node getModelValue(TNode var);
-
-  /**
    * Returns pointer to model.
    */
   TheoryModel* getModel();

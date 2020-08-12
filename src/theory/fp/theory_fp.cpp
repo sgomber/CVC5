@@ -1031,10 +1031,6 @@ TrustNode TheoryFp::explain(TNode n)
   return TrustNode::mkTrustPropExp(n, exp, nullptr);
 }
 
-Node TheoryFp::getModelValue(TNode var) {
-  return d_conv.getValue(d_valuation, var);
-}
-
 bool TheoryFp::collectModelInfo(TheoryModel *m)
 {
   std::set<Node> relevantTerms;

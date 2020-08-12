@@ -248,8 +248,6 @@ class TheoryBV : public Theory {
 
   EqualityStatus getEqualityStatus(TNode a, TNode b) override;
 
-  Node getModelValue(TNode var) override;
-
   inline std::string indent()
   {
     std::string indentStr(getSatContext()->getLevel(), ' ');

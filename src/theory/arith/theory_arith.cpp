@@ -144,10 +144,6 @@ EqualityStatus TheoryArith::getEqualityStatus(TNode a, TNode b) {
   return d_internal->getEqualityStatus(a,b);
 }
 
-Node TheoryArith::getModelValue(TNode var) {
-  return d_internal->getModelValue( var );
-}
-
 std::pair<bool, Node> TheoryArith::entailmentCheck(TNode lit)
 {
   ArithEntailmentCheckParameters def;

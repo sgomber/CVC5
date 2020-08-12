@@ -113,7 +113,6 @@ public:
  bool check(Theory::Effort e) override;
  void explain(TNode literal, std::vector<TNode>& assumptions) override;
  bool collectModelInfo(TheoryModel* m, bool fullModel) override;
- Node getModelValue(TNode var) override;
  void addSharedTerm(TNode t) override
  {
    d_equalityEngine.addTriggerTerm(t, THEORY_BV);

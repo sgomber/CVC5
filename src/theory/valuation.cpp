@@ -110,11 +110,6 @@ EqualityStatus Valuation::getEqualityStatus(TNode a, TNode b) {
   return d_engine->getEqualityStatus(a, b);
 }
 
-Node Valuation::getModelValue(TNode var) {
-  Assert(d_engine != nullptr);
-  return d_engine->getModelValue(var);
-}
-
 TheoryModel* Valuation::getModel() {
   if (d_engine == nullptr)
   {

@@ -770,11 +770,8 @@ bool AlgebraicSolver::collectModelInfo(TheoryModel* model, bool fullModel)
     }
   }
   return true;
- }
-
-Node AlgebraicSolver::getModelValue(TNode node) {
-  return Node::null();
 }
+
 
 AlgebraicSolver::Statistics::Statistics()
   : d_numCallstoCheck("theory::bv::algebraic::NumCallsToCheck", 0)

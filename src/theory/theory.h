@@ -521,11 +521,6 @@ class Theory {
   }
 
   /**
-   * Return the model value of the give shared term (or null if not available).
-   */
-  virtual Node getModelValue(TNode var) { return Node::null(); }
-
-  /**
    * Check the current assignment's consistency.
    *
    * An implementation of check() is required to either:

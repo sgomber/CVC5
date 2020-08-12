@@ -204,21 +204,6 @@ bool InequalitySolver::collectModelInfo(TheoryModel* m, bool fullModel)
   return true;
 }
 
-Node InequalitySolver::getModelValue(TNode var) {
-  Assert(isInequalityOnly(var));
-  Debug("bitvector-model") << "InequalitySolver::getModelValue (" << var <<")";
-  Assert(isComplete());
-  Node result = Node();
-  if (!d_inequalityGraph.hasValueInModel(var)) {
-    Assert(d_bv->isSharedTerm(var));
-  } else {
-    BitVector val = d_inequalityGraph.getValueInModel(var);
-    result = utils::mkConst(val);
-  }
-  Debug("bitvector-model") << " => " << result <<"\n";
-  return result;
-}
-
 void InequalitySolver::preRegister(TNode node) {
   Kind kind = node.getKind(); 
   if (kind == kind::EQUAL ||

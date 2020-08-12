@@ -705,12 +705,6 @@ public:
   theory::EqualityStatus getEqualityStatus(TNode a, TNode b);
 
   /**
-   * Returns the value that a theory that owns the type of var currently
-   * has (or null if none);
-   */
-  Node getModelValue(TNode var);
-
-  /**
    * Takes a literal and returns an equivalent literal that is guaranteed to be a SAT literal
    */
   Node ensureLiteral(TNode n);

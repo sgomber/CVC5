@@ -462,9 +462,6 @@ private:
 
   void addSharedTerm(TNode n);
 
-  Node getModelValue(TNode var);
-
-
   std::pair<bool, Node> entailmentCheck(TNode lit, const ArithEntailmentCheckParameters& params, ArithEntailmentCheckSideEffects& out);
 
 

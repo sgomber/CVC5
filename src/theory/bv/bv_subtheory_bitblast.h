@@ -63,7 +63,6 @@ class BitblastSolver : public SubtheorySolver {
   AbstractionModule* d_abstractionModule;
   std::unique_ptr<BVQuickCheck> d_quickCheck;
   std::unique_ptr<QuickXPlain> d_quickXplain;
-  //  Node getModelValueRec(TNode node);
   void setConflict(TNode conflict);
 public:
   BitblastSolver(context::Context* c, TheoryBV* bv);
@@ -74,7 +73,6 @@ public:
   void explain(TNode literal, std::vector<TNode>& assumptions) override;
   EqualityStatus getEqualityStatus(TNode a, TNode b) override;
   bool collectModelInfo(TheoryModel* m, bool fullModel) override;
-  Node getModelValue(TNode node) override;
   bool isComplete() override { return true; }
   void bitblastQueue();
   void setAbstraction(AbstractionModule* module);
