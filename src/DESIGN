@@ -5,24 +5,32 @@ In the current architecture, a Theory maintains:
 (2) OutputChannel for sending lemmas/conflicts.
 (3) (Optionally) EqualityEngine.
 
-In the new architecture, Theory *must* denote its "official" equality engine (which is highly recommended but not required), which will be used to standardize various behaviors of the Theory and to provide a default behavior for its role in theory combination. 
+In the new architecture, Theory *must* denote its "official" equality engine
+(which is highly recommended but not required), which will be used to
+standardize various behaviors of the Theory and to provide a default behavior
+for its role in theory combination. 
 
 Notes:
-- arith and (lazy) bv use equality engines, albeit in highly specialized ways. These theories can continue to use these custom methods but should be progressively refactored to conform to the new standard architecture.
+- arith and (lazy) bv use equality engines, albeit in highly specialized ways.
+These theories can continue to use these custom methods but should be
+progressively refactored to conform to the new standard architecture.
 - quantifiers, boolean, builtin do not require equality engines.
 - All other theories use equality engines in roughly a standard way.
 
-A Theory should not use (1) and (2) directly, and instead use the following two classes that wrap Valuation/OutputChannel respectively, while also considering the EqualityEngine:
+A Theory should not use (1) and (2) directly, and instead use the following two
+classes that wrap Valuation/OutputChannel respectively, while also considering
+the EqualityEngine:
 
 (4) SolverState, which references:
 * Valuation, which forwards basic queries.
 * EqualityEngine, for methods getRepresentative, hasTerm, areEqual, etc.
-* Standard methods for "inConflict", "hasSentLemma", "hasAddedInternalFact", etc.
+* Methods for "inConflict", "hasSentLemma", "hasAddedInternalFact", etc.
 
 (5) InferenceManager, which manages whether derived conclusions should:
-* Be sent as "facts" to its EqualityEngine via assertEquality, assertPredicate, etc.
+* Be sent as "facts" to EqualityEngine via assertEquality, assertPredicate, etc.
 * Be sent as "lemmas" via OutputChannel.
-InferenceManager references SolverState and should have a standard effect on it (e.g. mark "inConflict" in SolverState if OutputChannel::conflict was called).
+InferenceManager references SolverState and should have a standard effect on it
+(e.g. mark "inConflict" in SolverState if OutputChannel::conflict was called).
 
 ======================== TheoryEngine
 
@@ -30,16 +38,31 @@ In the current architecture TheoryEngine maintains:
 (1) (Multiple) Theory objects.
 (2) QuantifiersEngine.
 (3) ModelBuilder and Model.
-(4) Methods for theory combination, including SharedTermsDatabase and a TheoryEngine::combineTheories method.
+(4) Methods for theory combination, including SharedTermsDatabase and a
+TheoryEngine::combineTheories method.
 (5) Methods that manage propagations between theories and how to explain lemmas.
 (6) Pointer to PropEngine.
 
-In the new architecture, TheoryEngine should not use (3) and (4) directly, and instead maintains a new member:
+In the new architecture, TheoryEngine should not use (3) and (4) directly, and
+instead maintains a new member:
 (7) CombinationEngine
-This class is responsible for running the theory combination method. The current implementation would be called CombinationEngineCareGraph and derive from the abstract class. A future implementation would be called CombinationEngineModelBased.
+This class is responsible for running the theory combination method. The current
+implementation would be called CombinationEngineCareGraph and derive from the
+abstract class. A future implementation would be called
+CombinationEngineModelBased.
 This class maintains (at least two) components:
-(7.1) EqualityEngineManager, which decides which equality engines are assigned to Theory.  The current implementation would be called EqualityEngineManagerDistributed, which assigns unique equality engines to each theory. A future implementation would be called EqualityEngineManagerCentral, for assigning the same equality engine to all theories.
-(7.2) ModelManager, which manages the model in a way that is compatible with the combination method. The current implementation would be called ModelManagerDistributed (since the model maintains its own equality engine).
+(7.1) EqualityEngineManager, which decides which equality engines are assigned
+to Theory.  The current implementation would be called
+EqualityEngineManagerDistributed, which assigns unique equality engines to each
+theory. A future implementation would be called EqualityEngineManagerCentral,
+for assigning the same equality engine to all theories.
+(7.2) ModelManager, which manages the model in a way that is compatible with
+the combination method. The current implementation would be called
+ModelManagerDistributed (since the model maintains its own equality engine).
 
 
-Overall, the goal is to update Theory to use standard interfaces to EqualityEngine/SolverState/InferenceManager so that the theory combination mechanism can be made flexible. For instance, equality engines can be configured by the TheoryCombination mechanism to behave differently and as appropriate if the theory combination method is modified.
+Overall, the goal is to update Theory to use standard interfaces to
+EqualityEngine/SolverState/InferenceManager so that the theory combination
+mechanism can be made flexible. For instance, equality engines can be
+configured by the TheoryCombination mechanism to behave differently and as
+appropriate if the theory combination method is modified.
