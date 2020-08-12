@@ -41,7 +41,7 @@
 #include "theory/arith/arith_ite_utils.h"
 #include "theory/bv/theory_bv_utils.h"
 #include "theory/care_graph.h"
-#include "theory/combination_distributed.h"
+#include "theory/combination_care_graph.h"
 #include "theory/decision_manager.h"
 #include "theory/ee_manager_distributed.h"
 #include "theory/model_manager_distributed.h"
@@ -153,7 +153,7 @@ void TheoryEngine::finishInit() {
   if (options::eeMode() == options::EqEngineMode::DISTRIBUTED)
   {
     d_tcDistributed.reset(
-        new CombinationDistributed(*this, paraTheories, d_context));
+        new CombinationCareGraph(*this, paraTheories, d_context));
     d_tc = d_tcDistributed.get();
   }
   else
@@ -484,7 +484,7 @@ void TheoryEngine::check(Theory::Effort effort) {
       if (Trace.isOn("theory::assertions-model")) {
         printAssertions("theory::assertions-model");
       }
-      CombinationDistributed* builder = d_tc;
+      CombinationCareGraph* builder = d_tc;
       Assert(builder != nullptr);
       //checks for theories requiring the model go at last call
       builder->resetModel();
@@ -528,7 +528,7 @@ void TheoryEngine::check(Theory::Effort effort) {
     if( Theory::fullEffort(effort) && !d_inConflict && !needCheck()) {
       // case where we are about to answer SAT, the master equality engine,
       // if it exists, must be consistent.
-      CombinationDistributed* builder = d_tc;
+      CombinationCareGraph* builder = d_tc;
       // Do post-processing of model from the theories (used for THEORY_SEP
       // to construct heap model)
       builder->postProcessModel(d_incomplete.get());

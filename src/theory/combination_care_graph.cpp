@@ -1,5 +1,5 @@
 /*********************                                                        */
-/*! \file combination_distributed.cpp
+/*! \file combination_care_graph.cpp
  ** \verbatim
  ** Top contributors (to current version):
  **   Andrew Reynolds
@@ -9,10 +9,10 @@
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
- ** \brief Management of a distributed approach for theory combination.
+ ** \brief Management of a care graph based approach for theory combination.
  **/
 
-#include "theory/combination_distributed.h"
+#include "theory/combination_care_graph.h"
 
 #include "expr/node_visitor.h"
 #include "theory/care_graph.h"
@@ -24,7 +24,7 @@
 namespace CVC4 {
 namespace theory {
 
-CombinationDistributed::CombinationDistributed(
+CombinationCareGraph::CombinationCareGraph(
     TheoryEngine& te,
     const std::vector<Theory*>& paraTheories,
     context::Context* c)
@@ -39,9 +39,9 @@ CombinationDistributed::CombinationDistributed(
 {
 }
 
-CombinationDistributed::~CombinationDistributed() {}
+CombinationCareGraph::~CombinationCareGraph() {}
 
-void CombinationDistributed::finishInit()
+void CombinationCareGraph::finishInit()
 {
   // initialize equality engines in all theories, including quantifiers engine
   d_eeDistributed->initializeTheories();
@@ -51,7 +51,7 @@ void CombinationDistributed::finishInit()
   d_eeDistributed->initializeModel(d_mDistributed->getModel());
 }
 
-void CombinationDistributed::combineTheories()
+void CombinationCareGraph::combineTheories()
 {
   Trace("combineTheories") << "TheoryEngine::combineTheories()" << std::endl;
 
@@ -111,24 +111,24 @@ void CombinationDistributed::combineTheories()
   }
 }
 
-const EeTheoryInfo* CombinationDistributed::getEeTheoryInfo(TheoryId tid) const
+const EeTheoryInfo* CombinationCareGraph::getEeTheoryInfo(TheoryId tid) const
 {
   return d_eeDistributed->getEeTheoryInfo(tid);
 }
 
-eq::EqualityEngine* CombinationDistributed::getMasterEqualityEngine()
+eq::EqualityEngine* CombinationCareGraph::getMasterEqualityEngine()
 {
   return d_eeDistributed->getMasterEqualityEngine();
 }
 
-void CombinationDistributed::resetModel() { d_mDistributed->resetModel(); }
+void CombinationCareGraph::resetModel() { d_mDistributed->resetModel(); }
 
-bool CombinationDistributed::buildModel()
+bool CombinationCareGraph::buildModel()
 {
   return d_mDistributed->buildModel();
 }
 
-void CombinationDistributed::postProcessModel(bool incomplete)
+void CombinationCareGraph::postProcessModel(bool incomplete)
 {
   // should have a consistent master equality engine
   eq::EqualityEngine* mee = d_eeDistributed->getMasterEqualityEngine();
@@ -140,12 +140,12 @@ void CombinationDistributed::postProcessModel(bool incomplete)
   d_mDistributed->postProcessModel(incomplete);
 }
 
-theory::TheoryModel* CombinationDistributed::getModel()
+theory::TheoryModel* CombinationCareGraph::getModel()
 {
   return d_mDistributed->getModel();
 }
 
-void CombinationDistributed::preRegister(TNode t)
+void CombinationCareGraph::preRegister(TNode t)
 {
   if (d_logicInfo.isSharingEnabled() && t.getKind() == kind::EQUAL)
   {
@@ -188,7 +188,7 @@ void CombinationDistributed::preRegister(TNode t)
     NodeVisitor<SharedTermsVisitor>::run(d_sharedTermsVisitor, t);
   }
 }
-void CombinationDistributed::notifyAssertFact(TNode atom)
+void CombinationCareGraph::notifyAssertFact(TNode atom)
 {
   if (d_sharedTerms.hasSharedTerms(atom))
   {
@@ -212,12 +212,12 @@ void CombinationDistributed::notifyAssertFact(TNode atom)
   }
 }
 
-bool CombinationDistributed::isShared(TNode term) const
+bool CombinationCareGraph::isShared(TNode term) const
 {
   return d_sharedTerms.isShared(term);
 }
 
-theory::EqualityStatus CombinationDistributed::getEqualityStatus(TNode a,
+theory::EqualityStatus CombinationCareGraph::getEqualityStatus(TNode a,
                                                                  TNode b)
 {
   Assert(a.getType().isComparableTo(b.getType()));
@@ -235,12 +235,12 @@ theory::EqualityStatus CombinationDistributed::getEqualityStatus(TNode a,
   return d_te.theoryOf(Theory::theoryOf(a.getType()))->getEqualityStatus(a, b);
 }
 
-Node CombinationDistributed::explain(TNode literal) const
+Node CombinationCareGraph::explain(TNode literal) const
 {
   return d_sharedTerms.explain(literal);
 }
 
-void CombinationDistributed::assertEquality(TNode equality,
+void CombinationCareGraph::assertEquality(TNode equality,
                                             bool polarity,
                                             TNode reason)
 {

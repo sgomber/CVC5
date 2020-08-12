@@ -1,5 +1,5 @@
 /*********************                                                        */
-/*! \file combination_distributed.h
+/*! \file combination_care_graph.h
  ** \verbatim
  ** Top contributors (to current version):
  **   Andrew Reynolds
@@ -9,13 +9,13 @@
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
- ** \brief Management of a distributed approach for theory combination.
+ ** \brief Management of a care graph based approach for theory combination.
  **/
 
 #include "cvc4_private.h"
 
-#ifndef CVC4__THEORY__COMBINATION_DISTRIBUTED__H
-#define CVC4__THEORY__COMBINATION_DISTRIBUTED__H
+#ifndef CVC4__THEORY__COMBINATION_CARE_GRAPH__H
+#define CVC4__THEORY__COMBINATION_CARE_GRAPH__H
 
 #include <map>
 #include <memory>
@@ -34,13 +34,13 @@ namespace theory {
 /**
  * Manager for doing theory combination in a distributed architecture.
  */
-class CombinationDistributed
+class CombinationCareGraph
 {
  public:
-  CombinationDistributed(TheoryEngine& te,
+  CombinationCareGraph(TheoryEngine& te,
                          const std::vector<Theory*>& paraTheories,
                          context::Context* c);
-  ~CombinationDistributed();
+  ~CombinationCareGraph();
   /** Finish initialization */
   void finishInit();
   //-------------------------- equality engine

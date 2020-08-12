@@ -451,8 +451,8 @@ libcvc4_add_sources(
   theory/bv/theory_bv_utils.h
   theory/bv/type_enumerator.h
   theory/care_graph.h
-  theory/combination_distributed.cpp
-  theory/combination_distributed.h
+  theory/combination_care_graph.cpp
+  theory/combination_care_graph.h
   theory/datatypes/datatypes_rewriter.cpp
   theory/datatypes/datatypes_rewriter.h
   theory/datatypes/sygus_datatype_utils.cpp

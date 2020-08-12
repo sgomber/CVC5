@@ -90,7 +90,7 @@ namespace theory {
   class TheoryModel;
   class EqEngineManagerDistributed;
   class ModelManagerDistributed;
-  class CombinationDistributed;
+  class CombinationCareGraph;
 
   namespace eq {
     class EqualityEngine;
@@ -118,7 +118,7 @@ class TheoryEngine {
   friend class SharedTermsDatabase;
   friend class theory::quantifiers::TermDb;
   friend class theory::EngineOutputChannel;
-  friend class theory::CombinationDistributed;
+  friend class theory::CombinationCareGraph;
 
   /** Associated PropEngine engine */
   prop::PropEngine* d_propEngine;
@@ -145,11 +145,11 @@ class TheoryEngine {
   const LogicInfo& d_logicInfo;
 
   /** The combination manager we are using */
-  theory::CombinationDistributed* d_tc;
+  theory::CombinationCareGraph* d_tc;
   /**
    * The combination manager
    */
-  std::unique_ptr<theory::CombinationDistributed> d_tcDistributed;
+  std::unique_ptr<theory::CombinationCareGraph> d_tcDistributed;
   /**
    * The quantifiers engine
    */
