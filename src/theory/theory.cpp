@@ -436,8 +436,8 @@ void Theory::getCareGraph(CareGraph* careGraph) {
 }
 
 void Theory::setQuantifiersEngine(QuantifiersEngine* qe) {
-  Assert(d_quantEngine == NULL);
-  Assert(qe != NULL);
+  Assert(d_quantEngine == nullptr);
+  // we may be setting to a null quantifiers engine if quantifiers are disabled
   d_quantEngine = qe;
 }
 
