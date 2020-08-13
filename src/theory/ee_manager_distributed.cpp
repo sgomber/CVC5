@@ -72,7 +72,7 @@ void EqEngineManagerDistributed::initializeTheories()
       // theory not active, skip
       continue;
     }
-    // allocate the equality engine
+    // always allocate an object in d_einfo here
     EeTheoryInfo& eet = d_einfo[theoryId];
     EeSetupInfo esi;
     if (!t->needsEqualityEngine(esi))
@@ -169,7 +169,7 @@ eq::EqualityEngine* EqEngineManagerDistributed::allocateEqualityEngine(
     return new eq::EqualityEngine(
         *esi.d_notify, c, esi.d_name, esi.d_constantsAreTriggers);
   }
-  // don't care about notifications
+  // the theory doesn't care about explicit notifications
   return new eq::EqualityEngine(c, esi.d_name, esi.d_constantsAreTriggers);
 }
 

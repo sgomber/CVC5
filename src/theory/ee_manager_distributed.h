@@ -55,27 +55,29 @@ class EqEngineManager
  public:
   virtual ~EqEngineManager() {}
   /**
-   * Get the equality engine theory information.
+   * Get the equality engine theory information for theory with the given id.
    */
   const EeTheoryInfo* getEeTheoryInfo(TheoryId tid) const;
 
  protected:
-  /**
-   * Information related to the equality engine, per theory.
-   */
+  /** Information related to the equality engine, per theory. */
   std::map<TheoryId, EeTheoryInfo> d_einfo;
 };
 
 /**
- * The (distributed) equality engine manager. This encapsulates the current
- * architecture for managing equalities in the TheoryEngine, in which all
- * theories maintain their own copy of an equality engine.
+ * The (distributed) equality engine manager. This encapsulates an architecture
+ * in which all theories maintain their own copy of an equality engine.
  *
- * This call is responsible for the memory management and initialization of
- * all "official" equality engine objects owned by theories, and for setting
- * up the master equality engine, which is used as a special communication
- * channel to quantifiers engine (e.g. for ensuring quantifiers E-matching
- * is aware of terms from all theories).
+ * This class is not responsible for actually initializing equality engines in
+ * theories (since this class does not have access to the internals of Theory).
+ * Instead, it is only responsible for the construction of the equality
+ * engine objects themselves. TheoryEngine is responsible for querying this
+ * class during finishInit() to determine the equality engines to pass to each
+ * theories based on getEeTheoryInfo.
+ *
+ * This class is also responsible for setting up the master equality engine,
+ * which is used as a special communication channel to quantifiers engine (e.g.
+ * for ensuring quantifiers E-matching is aware of terms from all theories).
  */
 class EqEngineManagerDistributed : public EqEngineManager
 {
@@ -111,10 +113,6 @@ class EqEngineManagerDistributed : public EqEngineManager
   /** Allocate equality engine that is context-dependent on c with info esi */
   eq::EqualityEngine* allocateEqualityEngine(EeSetupInfo& esi,
                                              context::Context* c);
-  /** Reference to the theory engine */
-  TheoryEngine& d_te;
-  /** Pointer to shared terms database (if it exists) */
-  SharedTermsDatabase* d_sdb;
   /** notify class for master equality engine */
   class MasterNotifyClass : public theory::eq::EqualityEngineNotify
   {
@@ -150,7 +148,14 @@ class EqEngineManagerDistributed : public EqEngineManager
     /** Pointer to quantifiers engine */
     QuantifiersEngine* d_quantEngine;
   };
+  /** Reference to the theory engine */
+  TheoryEngine& d_te;
+  /** Pointer to shared terms database (if it exists) */
+  SharedTermsDatabase* d_sdb;
+  /** The master equality engine notify class */
   std::unique_ptr<MasterNotifyClass> d_masterEENotify;
+  /** The master equality engine. */
+  std::unique_ptr<eq::EqualityEngine> d_masterEqualityEngine;
   /**
    * The equality engine of the shared terms database.
    */
@@ -164,10 +169,6 @@ class EqEngineManagerDistributed : public EqEngineManager
    * The equality engine of the model.
    */
   std::unique_ptr<eq::EqualityEngine> d_modelEqualityEngine;
-  /**
-   * The master equality engine.
-   */
-  std::unique_ptr<eq::EqualityEngine> d_masterEqualityEngine;
 };
 
 }  // namespace theory
