@@ -42,6 +42,12 @@ void ModelManager::resetModel()
 
 void ModelManager::finishInit()
 {
+  // initialize the model
+  initializeModel();
+}
+
+void ModelManager::initializeModel()
+{
   const LogicInfo& logicInfo = d_te.getLogicInfo();
   // Initialize the model and model builder.
   if (logicInfo.isQuantified())

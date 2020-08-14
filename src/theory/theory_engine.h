@@ -149,7 +149,7 @@ class TheoryEngine {
   /**
    * The combination manager
    */
-  std::unique_ptr<theory::CombinationCareGraph> d_tcDistributed;
+  std::unique_ptr<theory::CombinationCareGraph> d_tcCareGraph;
   /**
    * The quantifiers engine
    */

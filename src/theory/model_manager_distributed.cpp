@@ -25,6 +25,16 @@ ModelManagerDistributed::ModelManagerDistributed(
 
 ModelManagerDistributed::~ModelManagerDistributed() {}
 
+void ModelManagerDistributed::finishInit()
+{
+  // initialize equality engines in all theories, including quantifiers engine
+  d_eem.initializeTheories();
+  // initialize the model
+  initializeModel();
+  // initialize equality engine of model
+  d_eem.initializeModel(d_model);
+}
+
 bool ModelManagerDistributed::buildModelInternal()
 {
   Trace("model-builder") << "ModelManagerDistributed: reset model..."

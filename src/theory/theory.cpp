@@ -359,28 +359,6 @@ void Theory::computeRelevantTerms(set<Node>& termSet, bool includeShared) const
   computeRelevantTerms(termSet, irrKinds, includeShared);
 }
 
-void Theory::computeRelevantTerms(set<Node>& termSet,
-                                  set<Kind>& irrKinds,
-                                  bool includeShared) const
-{
-  // Collect all terms appearing in assertions
-  irrKinds.insert(kind::EQUAL);
-  irrKinds.insert(kind::NOT);
-  context::CDList<Assertion>::const_iterator assert_it = facts_begin(), assert_it_end = facts_end();
-  for (; assert_it != assert_it_end; ++assert_it) {
-    collectTerms(*assert_it, irrKinds, termSet);
-  }
-
-  if (!includeShared) return;
-
-  // Add terms that are shared terms
-  set<Kind> kempty;
-  context::CDList<TNode>::const_iterator shared_it = shared_terms_begin(), shared_it_end = shared_terms_end();
-  for (; shared_it != shared_it_end; ++shared_it) {
-    collectTerms(*shared_it, kempty, termSet);
-  }
-}
-
 Theory::PPAssertStatus Theory::ppAssert(TNode in,
                                         SubstitutionMap& outSubstitutions)
 {
@@ -435,15 +413,118 @@ void Theory::getCareGraph(CareGraph* careGraph) {
   d_careGraph = NULL;
 }
 
+
+//--------------------------------- new standard  
+bool Theory::isInConflict() const
+{
+  return false;
+}
+void Theory::notifyInConflict() const {}
 bool Theory::propagate(TNode lit)
 {
-  Unimplemented() << "Theory::propagate " << getId();
+  // If already in conflict, no more propagation
+  if (isInConflict()) {
+    return false;
+  }
+  // Propagate out
+  bool ok = d_out->propagate(lit);
+  if (!ok) 
+  {
+    notifyInConflict();
+  }
+  return ok;
 }
 
 void Theory::conflict(TNode a, TNode b)
 {
-  Unimplemented() << "Theory::conflict " << getId();
+  // explain the conflict
+  TrustNode tconf = explainConflict(a, b);
+  // we are now in conflict
+  notifyInConflict();
+  // send the conflict
+  d_out->trustedConflict(tconf);
 }
+
+void Theory::processPendingFacts()
+{
+  while (!done() && !isInConflict())
+  {
+    // Get all the assertions
+    Assertion assertion = get();
+    TNode fact = assertion.d_assertion;
+    bool polarity = fact.getKind() != kind::NOT;
+    TNode atom = polarity ? fact : fact[0];
+    // if we have an equality engine, immediately assert to it
+    if (d_equalityEngine!=nullptr)
+    {
+      if (atom.getKind() == kind::EQUAL) 
+      {
+        d_equalityEngine->assertEquality(atom, polarity, fact);
+      }
+      else
+      {
+        d_equalityEngine->assertPredicate(atom, polarity, fact);
+      }
+    }
+    // if we aren't already in conflict
+    if (!isInConflict())
+    {
+      // notify the theory of the new fact
+      notifyNewFact(atom, polarity, fact);
+    }
+  }
+}
+
+void Theory::notifyNewFact(TNode atom, bool polarity, TNode fact)
+{
+  // do nothing
+}
+
+void Theory::computeRelevantTerms(set<Node>& termSet,
+                                  set<Kind>& irrKinds,
+                                  bool includeShared) const
+{
+  // Collect all terms appearing in assertions
+  irrKinds.insert(kind::EQUAL);
+  irrKinds.insert(kind::NOT);
+  context::CDList<Assertion>::const_iterator assert_it = facts_begin(), assert_it_end = facts_end();
+  for (; assert_it != assert_it_end; ++assert_it) {
+    collectTerms(*assert_it, irrKinds, termSet);
+  }
+
+  if (!includeShared) return;
+
+  // Add terms that are shared terms
+  set<Kind> kempty;
+  context::CDList<TNode>::const_iterator shared_it = shared_terms_begin(), shared_it_end = shared_terms_end();
+  for (; shared_it != shared_it_end; ++shared_it) {
+    collectTerms(*shared_it, kempty, termSet);
+  }
+}
+bool Theory::collectModelEqualities(TheoryModel* m)
+{
+  if (d_equalityEngine==nullptr)
+  {
+    // not using equality engine, nothing to do
+    return true;
+  }
+  std::set<Node> termSet;
+  // Compute terms appearing in assertions and shared terms
+  computeRelevantTerms(termSet);
+  if (!m->assertEqualityEngine(d_equalityEngine, &termSet))
+  {
+    return false;
+  }
+  return true;
+}
+
+TrustNode Theory::explainConflict(TNode a, TNode b)
+{
+  Unimplemented() << "Theory " << identify()
+                  << " sent a conflict but doesn't implement the "
+                      "Theory::explainConflict() interface!";
+}
+//--------------------------------- end new standard
 
 void Theory::setQuantifiersEngine(QuantifiersEngine* qe) {
   Assert(d_quantEngine == nullptr);

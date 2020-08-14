@@ -152,9 +152,9 @@ void TheoryEngine::finishInit() {
   // Initialize the theory combination architecture
   if (options::eeMode() == options::EqEngineMode::DISTRIBUTED)
   {
-    d_tcDistributed.reset(
+    d_tcCareGraph.reset(
         new CombinationCareGraph(*this, paraTheories, d_context));
-    d_tc = d_tcDistributed.get();
+    d_tc = d_tcCareGraph.get();
   }
   else
   {
@@ -212,7 +212,7 @@ TheoryEngine::TheoryEngine(context::Context* context,
       d_userContext(userContext),
       d_logicInfo(logicInfo),
       d_tc(nullptr),
-      d_tcDistributed(nullptr),
+      d_tcCareGraph(nullptr),
       d_quantEngine(nullptr),
       d_decManager(new DecisionManager(userContext)),
       d_eager_model_building(false),
@@ -638,7 +638,7 @@ TheoryModel* TheoryEngine::getModel()
 
 TheoryModel* TheoryEngine::getBuiltModel()
 {
-  Assert(d_tcDistributed != nullptr);
+  Assert(d_tc != nullptr);
   // If this method was called, we should be in SAT mode, and produceModels
   // should be true.
   AlwaysAssert(options::produceModels());

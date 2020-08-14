@@ -37,7 +37,6 @@ header = "options/theory_options.h"
 
 [[option]]
   name       = "eeMode"
-  smt_name   = "rr-mode"
   category   = "expert"
   long       = "ee-mode=MODE"
   type       = "EqEngineMode"
@@ -45,8 +44,23 @@ header = "options/theory_options.h"
   help       = "mode for managing equalities across theory solvers"
   help_mode  = "Defines mode for managing equalities across theory solvers."
 [[option.mode.DISTRIBUTED]]
-  name = "type"
+  name = "distributed"
   help = "Each theory maintains its own equality engine."
 [[option.mode.CENTRAL]]
-  name = "term"
+  name = "central"
   help = "Each theory uses a central equality engine."
+
+[[option]]
+  name       = "tcMode"
+  category   = "expert"
+  long       = "tc-mode=MODE"
+  type       = "TcEngineMode"
+  default    = "CARE_GRAPH"
+  help       = "mode for theory combination"
+  help_mode  = "Defines mode for theory combination."
+[[option.mode.CARE_GRAPH]]
+  name = "care-graph"
+  help = "Use care graphs for theory combination."
+[[option.mode.MODEL_BASED]]
+  name = "model-based"
+  help = "Use model building for theory combination."

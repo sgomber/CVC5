@@ -43,12 +43,8 @@ CombinationCareGraph::~CombinationCareGraph() {}
 
 void CombinationCareGraph::finishInit()
 {
-  // initialize equality engines in all theories, including quantifiers engine
-  d_eeDistributed->initializeTheories();
-  // initialize the model
+  // initialize the model manager
   d_mDistributed->finishInit();
-  // initialize equality engine of model
-  d_eeDistributed->initializeModel(d_mDistributed->getModel());
 }
 
 void CombinationCareGraph::combineTheories()

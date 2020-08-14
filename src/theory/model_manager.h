@@ -39,7 +39,7 @@ class ModelManager
   ModelManager(TheoryEngine& te);
   virtual ~ModelManager();
   /** reset model */
-  virtual void resetModel();
+  void resetModel();
   /** finish init */
   virtual void finishInit();
   /** Build model */
@@ -52,6 +52,8 @@ class ModelManager
  protected:
   /** Collect model info */
   bool collectModelInfo();
+  /** Initialize the model */
+  void initializeModel();
   /** Build model */
   virtual bool buildModelInternal() = 0;
   /** Reference to the theory engine */
