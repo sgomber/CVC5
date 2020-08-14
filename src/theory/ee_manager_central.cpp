@@ -150,10 +150,12 @@ bool EqEngineManagerCentral::CentralNotifyClass::eqNotifyTriggerEquality(
   if (value) {
     return d_uf.propagate(equality);
   } else {
-    // We use only literal triggers so taking not is safe
     return d_uf.propagate(equality.notNode());
   }
   */
+  TheoryId tid = theoryOf(equality);
+  Assert (d_theoryNotify[tid]!=nullptr);
+  d_theoryNotify[tid]->eqNotifyTriggerEquality(equality, value);
 }
 
 bool EqEngineManagerCentral::CentralNotifyClass::eqNotifyTriggerPredicate(
@@ -166,6 +168,9 @@ bool EqEngineManagerCentral::CentralNotifyClass::eqNotifyTriggerPredicate(
     return d_uf.propagate(predicate.notNode());
   }
   */
+  TheoryId tid = theoryOf(predicate);
+  Assert (d_theoryNotify[tid]!=nullptr);
+  d_theoryNotify[tid]->eqNotifyTriggerPredicate(predicate, value);
 }
 
 bool EqEngineManagerCentral::CentralNotifyClass::eqNotifyTriggerTermEquality(
@@ -178,6 +183,8 @@ bool EqEngineManagerCentral::CentralNotifyClass::eqNotifyTriggerTermEquality(
     return d_uf.propagate(t1.eqNode(t2).notNode());
   }
   */
+  Assert (d_theoryNotify[tag]!=nullptr);
+  d_theoryNotify[tid]->eqNotifyTriggerTermEquality(tag, t1, t2, value);
 }
 
 void EqEngineManagerCentral::CentralNotifyClass::eqNotifyConstantTermMerge(
@@ -186,6 +193,9 @@ void EqEngineManagerCentral::CentralNotifyClass::eqNotifyConstantTermMerge(
   /*
   d_uf.conflict(t1, t2);
   */
+  TheoryId tid = theoryOf(t1.getType());
+  Assert (d_theoryNotify[tid]!=nullptr);
+  d_theoryNotify[tid]->eqNotifyConstantTermMerge(t1, t2);
 }
 
 void EqEngineManagerCentral::CentralNotifyClass::eqNotifyPreMerge(TNode t1,
