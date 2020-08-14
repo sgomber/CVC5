@@ -88,6 +88,19 @@ bool TheoryStrings::needsEqualityEngine(EeSetupInfo& esi)
 {
   esi.d_notify = &d_notify;
   esi.d_name = "theory::strings::ee";
+  
+  // need notifications about equivalence class changes, for all string eqc
+  TypeNode stype = NodeManager::currentNM()->stringType();
+  esi.d_notifyNewEqClassTypes.push_back(stype);
+  esi.d_notifyNewEqClassTypeKinds.push_back(SEQUENCE_TYPE);
+  esi.d_notifyMergeTypes.push_back(stype);
+  esi.d_notifyMergeTypeKinds.push_back(SEQUENCE_TYPE);
+  esi.d_notifyDisequalTypes.push_back(stype);
+  esi.d_notifyDisequalTypeKinds.push_back(SEQUENCE_TYPE);
+  // also tracking length/code
+  esi.d_notifyNewEqClassKinds.push_back(STRING_LENGTH);
+  esi.d_notifyNewEqClassKinds.push_back(STRING_TO_CODE);
+  
   return true;
 }
 

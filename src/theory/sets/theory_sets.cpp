@@ -57,6 +57,14 @@ bool TheorySets::needsEqualityEngine(EeSetupInfo& esi)
 {
   esi.d_notify = &d_notify;
   esi.d_name = "theory::sets::ee";
+  
+  // need notifications about equivalence class changes, for all string eqc
+  esi.d_notifyMergeTypeKinds.push_back(SET_TYPE);
+  esi.d_notifyDisequalTypeKinds.push_back(SET_TYPE);
+  // also tracking new equivalence classes for singleton/emptyset
+  esi.d_notifyNewEqClassKinds.push_back(SINGLETON);
+  esi.d_notifyNewEqClassKinds.push_back(EMPTYSET);
+  
   return true;
 }
 
@@ -69,12 +77,12 @@ void TheorySets::finishInit()
   d_valuation.setUnevaluatedKind(WITNESS);
 
   // functions we are doing congruence over
-  d_equalityEngine->addFunctionKind(kind::SINGLETON);
-  d_equalityEngine->addFunctionKind(kind::UNION);
-  d_equalityEngine->addFunctionKind(kind::INTERSECTION);
-  d_equalityEngine->addFunctionKind(kind::SETMINUS);
-  d_equalityEngine->addFunctionKind(kind::MEMBER);
-  d_equalityEngine->addFunctionKind(kind::SUBSET);
+  d_equalityEngine->addFunctionKind(SINGLETON);
+  d_equalityEngine->addFunctionKind(UNION);
+  d_equalityEngine->addFunctionKind(INTERSECTION);
+  d_equalityEngine->addFunctionKind(SETMINUS);
+  d_equalityEngine->addFunctionKind(MEMBER);
+  d_equalityEngine->addFunctionKind(SUBSET);
   // relation operators
   d_equalityEngine->addFunctionKind(PRODUCT);
   d_equalityEngine->addFunctionKind(JOIN);
@@ -161,7 +169,7 @@ Theory::PPAssertStatus TheorySets::ppAssert(TNode in, SubstitutionMap& outSubsti
   Theory::PPAssertStatus status = Theory::PP_ASSERT_STATUS_UNSOLVED;
 
   // this is based off of Theory::ppAssert
-  if (in.getKind() == kind::EQUAL)
+  if (in.getKind() == EQUAL)
   {
     if (in[0].isVar() && isLegalElimination(in[0], in[1]))
     {

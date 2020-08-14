@@ -76,6 +76,14 @@ bool TheoryUF::needsEqualityEngine(EeSetupInfo& esi)
 {
   esi.d_notify = &d_notify;
   esi.d_name = d_instanceName + "theory::uf::ee";
+  if (options::finiteModelFind()
+      && options::ufssMode() != options::UfssMode::NONE)
+  {
+    // need notifications about sorts
+    esi.d_notifyNewEqClassTypeKinds.push_back(kind::SORT_TYPE);
+    esi.d_notifyMergeTypeKinds.push_back(kind::SORT_TYPE);
+    esi.d_notifyDisequalTypeKinds.push_back(kind::SORT_TYPE);
+  }
   return true;
 }
 
@@ -86,7 +94,7 @@ void TheoryUF::finishInit() {
   // Initialize the cardinality constraints solver if the logic includes UF,
   // finite model finding is enabled, and it is not disabled by
   // options::ufssMode().
-  if (getLogicInfo().isTheoryEnabled(THEORY_UF) && options::finiteModelFind()
+  if (options::finiteModelFind()
       && options::ufssMode() != options::UfssMode::NONE)
   {
     d_thss.reset(new CardinalityExtension(

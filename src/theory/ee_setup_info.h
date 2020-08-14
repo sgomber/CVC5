@@ -18,6 +18,9 @@
 #define CVC4__THEORY__EE_SETUP_INFO__H
 
 #include <string>
+#include <vector>
+
+#include "expr/type_node.h"
 
 namespace CVC4 {
 namespace theory {
@@ -44,6 +47,22 @@ struct EeSetupInfo
   std::string d_name;
   /** Constants are triggers */
   bool d_constantsAreTriggers;
+  //-------------------------- fine grained notifications
+  /** The TypeNode kinds to notify on eqNotifyNewClass */
+  std::vector<Kind> d_notifyNewEqClassTypeKinds;
+  /** The Node kinds to notify on eqNotifyNewClass */
+  std::vector<Kind> d_notifyNewEqClassKinds;
+  /** Specific types to notify on eqNotifyNewClass. */
+  std::vector<TypeNode> d_notifyNewEqClassTypes;
+  /** The TypeNode kinds to notify on eqNotifyMerge */
+  std::vector<Kind> d_notifyMergeTypeKinds;
+  /** Specific types to notify on eqNotifyMerge. */
+  std::vector<TypeNode> d_notifyMergeTypes;
+  /** The TypeNode kinds to notify on eqNotifyDisequal */
+  std::vector<Kind> d_notifyDisequalTypeKinds;
+  /** Specific types to notify on eqNotifyDisequal. */
+  std::vector<TypeNode> d_notifyDisequalTypes;
+  //-------------------------- end fine grained notifications
 };
 
 }  // namespace theory

@@ -84,6 +84,12 @@ bool TheoryDatatypes::needsEqualityEngine(EeSetupInfo& esi)
 {
   esi.d_notify = &d_notify;
   esi.d_name = "theory::datatypes::ee";
+  
+  // need notifications on new constructors, merging datatype eqcs
+  esi.d_notifyNewEqClassKinds.push_back(APPLY_CONSTRUCTOR);
+  esi.d_notifyMergeTypeKinds.push_back(DATATYPE_TYPE);
+  esi.d_notifyMergeTypeKinds.push_back(PARAMETRIC_DATATYPE); // necessary?
+  
   return true;
 }
 
