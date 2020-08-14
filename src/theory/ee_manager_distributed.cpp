@@ -21,16 +21,6 @@
 namespace CVC4 {
 namespace theory {
 
-const EeTheoryInfo* EqEngineManager::getEeTheoryInfo(TheoryId tid) const
-{
-  std::map<TheoryId, EeTheoryInfo>::const_iterator it = d_einfo.find(tid);
-  if (it != d_einfo.end())
-  {
-    return &it->second;
-  }
-  return nullptr;
-}
-
 EqEngineManagerDistributed::EqEngineManagerDistributed(TheoryEngine& te,
                                                        SharedTermsDatabase* sdb)
     : d_te(te), d_sdb(sdb), d_masterEENotify(nullptr)
