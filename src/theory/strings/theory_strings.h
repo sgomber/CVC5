@@ -173,11 +173,11 @@ class TheoryStrings : public Theory {
     void eqNotifyPreMerge(TNode t1, TNode t2) override
     {
       Debug("strings") << "NotifyClass::eqNotifyPreMerge(" << t1 << ", " << t2 << std::endl;
-      d_state.eqNotifyPreMerge(t1, t2);
     }
     void eqNotifyPostMerge(TNode t1, TNode t2) override
     {
       Debug("strings") << "NotifyClass::eqNotifyPostMerge(" << t1 << ", " << t2 << std::endl;
+      d_state.eqNotifyPostMerge(t1, t2);
     }
     void eqNotifyDisequal(TNode t1, TNode t2, TNode reason) override
     {
