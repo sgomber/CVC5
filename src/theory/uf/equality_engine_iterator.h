@@ -85,13 +85,13 @@ class EqClassesCache
   /** Compute */
   void compute();
   /** Get representatives */
-  const std::vector<Node>& getRepresentatives();
+  const std::vector<Node>& getRepresentatives() const;
   /** Get representatives for type */
-  const std::vector<Node>& getRepresentativesForType(TypeNode t);
+  const std::vector<Node>& getRepresentativesForType(TypeNode t) const;
 
  private:
   /** The equality engine */
-  eq::EqualityEngine* d_ee;
+  const eq::EqualityEngine* d_ee;
   /** All representatives */
   std::vector<Node> d_reps;
   /** All representatives per type */
