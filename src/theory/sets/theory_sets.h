@@ -72,6 +72,10 @@ class TheorySets : public Theory
   void presolve() override;
   void propagate(Effort) override;
   bool isEntailed(Node n, bool pol);
+  /** Proagate out to output channel */
+  bool propagate(TNode lit) override;
+  /** generate and send out conflict node */
+  void conflict(TNode a, TNode b) override;
  private:
   /** Functions to handle callbacks from equality engine */
   class NotifyClass : public eq::EqualityEngineNotify

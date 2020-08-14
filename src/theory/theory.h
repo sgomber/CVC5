@@ -601,6 +601,15 @@ class Theory {
   /** T-propagate new literal assignments in the current context. */
   virtual void propagate(Effort level = EFFORT_FULL) { }
 
+  //--------------------------------- new standard
+  /** 
+   * T-propagate literal lit encountered by equality engine, 
+   */
+  virtual bool propagate(TNode lit);
+  /** Raise conflict, called when constants a and b merge */
+  virtual void conflict(TNode a, TNode b);
+  //--------------------------------- end new standard
+  
   /**
    * Return an explanation for the literal represented by parameter n
    * (which was previously propagated by this theory).

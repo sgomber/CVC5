@@ -435,6 +435,16 @@ void Theory::getCareGraph(CareGraph* careGraph) {
   d_careGraph = NULL;
 }
 
+bool Theory::propagate(TNode lit)
+{
+  Unimplemented() << "Theory::propagate " << getId();
+}
+
+void Theory::conflict(TNode a, TNode b)
+{
+  Unimplemented() << "Theory::conflict " << getId();
+}
+  
 void Theory::setQuantifiersEngine(QuantifiersEngine* qe) {
   Assert(d_quantEngine == nullptr);
   // we may be setting to a null quantifiers engine if quantifiers are disabled

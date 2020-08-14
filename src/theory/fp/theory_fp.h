@@ -110,8 +110,8 @@ class TheoryFp : public Theory {
 
   /** Interaction with the rest of the solver **/
   void handleLemma(Node node);
-  bool handlePropagation(TNode node);
-  void handleConflict(TNode node);
+  bool propagate(TNode node) override;
+  void conflict(TNode t1, TNode t2) override;
 
   context::CDO<bool> d_conflict;
   context::CDO<Node> d_conflictNode;

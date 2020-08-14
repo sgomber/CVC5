@@ -922,8 +922,8 @@ void TheoryFp::handleLemma(Node node) {
   return;
 }
 
-bool TheoryFp::handlePropagation(TNode node) {
-  Trace("fp") << "TheoryFp::handlePropagation(): propagate " << node
+bool TheoryFp::propagate(TNode node) {
+  Trace("fp") << "TheoryFp::propagate(): propagate " << node
               << std::endl;
 
   bool stat = d_out->propagate(node);
@@ -935,13 +935,18 @@ bool TheoryFp::handlePropagation(TNode node) {
   return stat;
 }
 
-void TheoryFp::handleConflict(TNode node) {
-  Trace("fp") << "TheoryFp::handleConflict(): conflict detected " << node
+void TheoryFp::conflict(TNode t1, TNode t2) {
+
+  std::vector<TNode> assumptions;
+  d_equalityEngine->explainEquality(t1, t2, true, assumptions);
+
+  Node conflict = helper::buildConjunct(assumptions);
+  Trace("fp") << "TheoryFp::handleConflict(): conflict detected " << conflict
               << std::endl;
 
-  d_conflictNode = node;
+  d_conflictNode = conflict;
   d_conflict = true;
-  d_out->conflict(node);
+  d_out->conflict(conflict);
   return;
 }
 
@@ -1150,9 +1155,9 @@ bool TheoryFp::NotifyClass::eqNotifyTriggerEquality(TNode equality,
       << equality << " is " << value << std::endl;
 
   if (value) {
-    return d_theorySolver.handlePropagation(equality);
+    return d_theorySolver.propagate(equality);
   } else {
-    return d_theorySolver.handlePropagation(equality.notNode());
+    return d_theorySolver.propagate(equality.notNode());
   }
 }
 
@@ -1163,9 +1168,9 @@ bool TheoryFp::NotifyClass::eqNotifyTriggerPredicate(TNode predicate,
       << predicate << " is " << value << std::endl;
 
   if (value) {
-    return d_theorySolver.handlePropagation(predicate);
+    return d_theorySolver.propagate(predicate);
   } else {
-    return d_theorySolver.handlePropagation(predicate.notNode());
+    return d_theorySolver.propagate(predicate.notNode());
   }
 }
 
@@ -1175,22 +1180,16 @@ bool TheoryFp::NotifyClass::eqNotifyTriggerTermEquality(TheoryId tag, TNode t1,
                  << t1 << (value ? " = " : " != ") << t2 << std::endl;
 
   if (value) {
-    return d_theorySolver.handlePropagation(t1.eqNode(t2));
+    return d_theorySolver.propagate(t1.eqNode(t2));
   } else {
-    return d_theorySolver.handlePropagation(t1.eqNode(t2).notNode());
+    return d_theorySolver.propagate(t1.eqNode(t2).notNode());
   }
 }
 
 void TheoryFp::NotifyClass::eqNotifyConstantTermMerge(TNode t1, TNode t2) {
   Debug("fp-eq") << "TheoryFp::eqNotifyConstantTermMerge(): call back as " << t1
                  << " = " << t2 << std::endl;
-
-  std::vector<TNode> assumptions;
-  d_theorySolver.d_equalityEngine->explainEquality(t1, t2, true, assumptions);
-
-  Node conflict = helper::buildConjunct(assumptions);
-
-  d_theorySolver.handleConflict(conflict);
+  d_theorySolver.conflict(t1, t2);
 }
 
 }  // namespace fp

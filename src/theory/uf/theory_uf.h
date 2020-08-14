@@ -132,12 +132,6 @@ private:
   Node d_true;
 
   /**
-   * Should be called to propagate the literal. We use a node here
-   * since some of the propagated literals are not kept anywhere.
-   */
-  bool propagate(TNode literal);
-
-  /**
    * Explain why this literal is true by adding assumptions
    * with proof (if "pf" is non-NULL).
    */
@@ -154,8 +148,14 @@ private:
   /** Symmetry analyzer */
   SymmetryBreaker d_symb;
 
+  /**
+   * Should be called to propagate the literal. We use a node here
+   * since some of the propagated literals are not kept anywhere.
+   */
+  bool propagate(TNode literal) override;
+  
   /** Conflict when merging two constants */
-  void conflict(TNode a, TNode b);
+  void conflict(TNode a, TNode b) override;
 
   /** called when a new equivalance class is created */
   void eqNotifyNewClass(TNode t);
@@ -216,8 +216,6 @@ private:
 
   void addSharedTerm(TNode n) override;
   void computeCareGraph() override;
-
-  void propagate(Effort effort) override;
 
   EqualityStatus getEqualityStatus(TNode a, TNode b) override;
 

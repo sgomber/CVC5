@@ -121,7 +121,7 @@ bool TheorySep::propagate(TNode literal)
     d_conflict = true;
   }
   return ok;
-}/* TheorySep::propagate(TNode) */
+}
 
 
 void TheorySep::explain(TNode literal, std::vector<TNode>& assumptions) {
@@ -140,11 +140,6 @@ void TheorySep::explain(TNode literal, std::vector<TNode>& assumptions) {
       d_equalityEngine->explainPredicate(atom, polarity, assumptions);
     }
   }
-}
-
-
-void TheorySep::propagate(Effort e){
-
 }
 
 TrustNode TheorySep::explain(TNode literal)

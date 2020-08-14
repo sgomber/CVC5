@@ -452,6 +452,11 @@ bool TheoryModel::assertEqualityEngine(const eq::EqualityEngine* ee,
                                        set<Node>* termSet)
 {
   Assert(d_equalityEngine->consistent());
+  if (d_equalityEngine==ee)
+  {
+    // same equality engine, skip
+    return true;
+  }
   eq::EqClassesIterator eqcs_i = eq::EqClassesIterator( ee );
   for (; !eqcs_i.isFinished(); ++eqcs_i) {
     Node eqc = (*eqcs_i);

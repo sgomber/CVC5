@@ -592,6 +592,16 @@ void TheoryBV::propagate(Effort e) {
   }
 }
 
+bool TheoryBV::propagate(TNode literal)
+{
+  // FIXME
+  return true;
+}
+void TheoryBV::conflict(TNode a, TNode b)
+{
+  // FIXME
+}
+  
 bool TheoryBV::getCurrentSubstitution( int effort, std::vector< Node >& vars, std::vector< Node >& subs, std::map< Node, std::vector< Node > >& exp ) {
   eq::EqualityEngine * ee = getEqualityEngine();
   if( ee ){

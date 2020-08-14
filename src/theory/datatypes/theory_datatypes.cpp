@@ -744,11 +744,6 @@ void TheoryDatatypes::addSharedTerm(TNode t) {
 }
 
 /** propagate */
-void TheoryDatatypes::propagate(Effort effort){
-
-}
-
-/** propagate */
 bool TheoryDatatypes::propagate(TNode literal){
   Debug("dt::propagate") << "TheoryDatatypes::propagate(" << literal  << ")" << std::endl;
   // If already in conflict, no more propagation

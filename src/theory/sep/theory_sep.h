@@ -103,13 +103,13 @@ class TheorySep : public Theory {
 
  private:
   /** Should be called to propagate the literal.  */
-  bool propagate(TNode literal);
-
+  bool propagate(TNode literal) override;
+  /** Conflict when merging constants */
+  void conflict(TNode a, TNode b) override;
   /** Explain why this literal is true by adding assumptions */
   void explain(TNode literal, std::vector<TNode>& assumptions);
 
  public:
-  void propagate(Effort e) override;
   TrustNode explain(TNode n) override;
 
  public:
@@ -223,9 +223,6 @@ class TheorySep : public Theory {
 
   /** list of all refinement lemms */
   std::map< Node, std::map< Node, std::vector< Node > > > d_refinement_lem;
-
-  /** Conflict when merging constants */
-  void conflict(TNode a, TNode b);
 
   //cache for positive polarity start reduction
   NodeSet d_reduce;

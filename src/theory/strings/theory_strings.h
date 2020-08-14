@@ -83,8 +83,6 @@ class TheoryStrings : public Theory {
   //--------------------------------- end initialization
   /** Identify this theory */
   std::string identify() const override;
-  /** Propagate */
-  void propagate(Effort e) override;
   /** Explain */
   TrustNode explain(TNode literal) override;
   /** Get current substitution */
@@ -109,7 +107,9 @@ class TheoryStrings : public Theory {
   /** needs check last effort */
   bool needsCheckLastEffort() override;
   /** Conflict when merging two constants */
-  void conflict(TNode a, TNode b);
+  void conflict(TNode a, TNode b) override;
+  /** propagate method */
+  bool propagate(TNode literal) override;
   /** called when a new equivalence class is created */
   void eqNotifyNewClass(TNode t);
   /** preprocess rewrite */
@@ -191,8 +191,6 @@ class TheoryStrings : public Theory {
     /** The solver state of the theory of strings */
     SolverState& d_state;
   };/* class TheoryStrings::NotifyClass */
-  /** propagate method */
-  bool propagate(TNode literal);
   /** compute care graph */
   void computeCareGraph() override;
   /**

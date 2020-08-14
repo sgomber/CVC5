@@ -285,11 +285,10 @@ private:
   /** finish initialization */
   void finishInit() override;
   //--------------------------------- end initialization
-
   /** propagate */
-  void propagate(Effort effort) override;
-  /** propagate */
-  bool propagate(TNode literal);
+  bool propagate(TNode literal) override;
+  /** Conflict when merging two constants */
+  void conflict(TNode a, TNode b) override;
   /** explain */
   void addAssumptions( std::vector<TNode>& assumptions, std::vector<TNode>& tassumptions );
   void explainEquality( TNode a, TNode b, bool polarity, std::vector<TNode>& assumptions );
@@ -298,8 +297,6 @@ private:
   TrustNode explain(TNode literal) override;
   Node explainLit(TNode literal);
   Node explain( std::vector< Node >& lits );
-  /** Conflict when merging two constants */
-  void conflict(TNode a, TNode b);
   /** called when a new equivalance class is created */
   void eqNotifyNewClass(TNode t);
   /** called when two equivalance classes will merge */

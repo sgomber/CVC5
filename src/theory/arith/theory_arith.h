@@ -80,6 +80,10 @@ class TheoryArith : public Theory {
   void check(Effort e) override;
   bool needsCheckLastEffort() override;
   void propagate(Effort e) override;
+  /** Should be called to propagate the literal.  */
+  bool propagate(TNode literal) override;
+  /** Conflict when merging constants */
+  void conflict(TNode a, TNode b) override;
   TrustNode explain(TNode n) override;
   bool getCurrentSubstitution(int effort,
                               std::vector<Node>& vars,

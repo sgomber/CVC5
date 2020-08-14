@@ -213,6 +213,14 @@ void TheorySets::propagate(Effort e) {
 bool TheorySets::isEntailed( Node n, bool pol ) {
   return d_internal->isEntailed( n, pol );
 }
+bool TheorySets::propagate(TNode lit)
+{
+  return d_internal->propagate(lit);
+}
+void TheorySets::conflict(TNode a, TNode b)
+{
+  d_internal->conflict(a, b);
+}
 
 /**************************** eq::NotifyClass *****************************/
 
