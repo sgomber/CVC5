@@ -17,21 +17,23 @@
 #include "expr/node_visitor.h"
 #include "theory/care_graph.h"
 #include "theory/theory_engine.h"
-
-// TODO: remove
-#include "options/quantifiers_options.h"
+#include "theory/ee_manager_distributed.h"
+#include "theory/model_manager_distributed.h"
+#include "theory/shared_terms_database.h"
+#include "theory/term_registration_visitor.h"
 
 namespace CVC4 {
 namespace theory {
 
 CombinationEngine::CombinationEngine(TheoryEngine& te,
-                                     const std::vector<Theory*>& paraTheories,
-                                     context::Context* c)
+                                     const std::vector<Theory*>& paraTheories)
     : d_te(te),
       d_logicInfo(te.getLogicInfo()),
       d_paraTheories(paraTheories),
       d_eemUse(nullptr),
-      d_mmUse(nullptr)
+      d_mmUse(nullptr),
+      d_sharedTerms(nullptr),
+      d_sharedTermsVisitor(nullptr)
 {
 }
 
@@ -40,7 +42,20 @@ CombinationEngine::~CombinationEngine() {}
 void CombinationEngine::finishInit()
 {
   // create the equality engine and model managers
-  initializeInternal();
+  if (options::eeMode() == options::EqEngineMode::DISTRIBUTED)
+  {
+    d_sharedTerms.reset(new SharedTermsDatabase(&d_te, d_te.getSatContext()));
+    d_sharedTermsVisitor.reset(new SharedTermsVisitor(*d_sharedTerms.get()));
+    std::unique_ptr<EqEngineManagerDistributed> eeDistributed(new EqEngineManagerDistributed(d_te, d_sharedTerms.get()));
+    d_mmUse.reset(
+        new ModelManagerDistributed(d_te, *eeDistributed.get()));
+    d_eemUse = std::move(eeDistributed);
+  }
+  else
+  {
+    Unhandled() << "CombinationEngine::finishInit: equality engine mode "
+                << options::eeMode() << " not supported";
+  }
 
   Assert(d_eemUse != nullptr);
   // initialize equality engines in all theories, including quantifiers engine
@@ -53,12 +68,6 @@ void CombinationEngine::finishInit()
   // initialize equality engine of the model using the equality engine manager
   TheoryModel* m = d_mmUse->getModel();
   d_eemUse->initializeModel(m);
-}
-
-void CombinationEngine::initializeInternal()
-{
-  Unhandled() << "CombinationEngine::CombinationEngine: equality engine mode "
-              << options::eeMode() << " not supported";
 }
 
 const EeTheoryInfo* CombinationEngine::getEeTheoryInfo(TheoryId tid) const

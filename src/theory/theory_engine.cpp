@@ -153,7 +153,7 @@ void TheoryEngine::finishInit() {
   if (options::eeMode() == options::EqEngineMode::DISTRIBUTED)
   {
     d_tcCareGraph.reset(
-        new CombinationCareGraph(*this, paraTheories, d_context));
+        new CombinationCareGraph(*this, paraTheories));
     d_tc = d_tcCareGraph.get();
   }
   else
@@ -1071,7 +1071,7 @@ bool TheoryEngine::propagate(TNode literal, theory::TheoryId theory) {
   if (!d_tc->needsPropagation(literal, theory))
   {
     // nothing to do, return
-    return;
+    return true;
   }
 
   Trace("dtview::prop") << std::string(d_context->getLevel(), ' ')

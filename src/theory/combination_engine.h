@@ -20,12 +20,14 @@
 #include <map>
 #include <memory>
 
-#include "theory/ee_manager_distributed.h"
-#include "theory/model_manager_distributed.h"
+#include "theory/ee_manager.h"
+#include "theory/model_manager.h"
 
 namespace CVC4 {
 
 class TheoryEngine;
+class SharedTermsDatabase;
+class SharedTermsVisitor;
 
 namespace theory {
 
@@ -36,8 +38,7 @@ class CombinationEngine
 {
  public:
   CombinationEngine(TheoryEngine& te,
-                    const std::vector<Theory*>& paraTheories,
-                    context::Context* c);
+                    const std::vector<Theory*>& paraTheories);
   virtual ~CombinationEngine();
 
   /** Finish initialization */
@@ -79,11 +80,6 @@ class CombinationEngine
   virtual bool needsPropagation(TNode literal, TheoryId theory);
   //-------------------------- end interface used by theory engine
  protected:
-  /**
-   * Initialize internal, which is responsible for constructing the equality
-   * engine and model managers (d_eemUse and d_mmUse) based on the options.
-   */
-  virtual void initializeInternal();
   /** Reference to the theory engine */
   TheoryEngine& d_te;
   /** Logic info of theory engine (cached) */
@@ -94,9 +90,13 @@ class CombinationEngine
    * The equality engine manager we are using. This class is responsible for
    * configuring equality engines for each theory.
    */
-  EqEngineManager* d_eemUse;
+  std::unique_ptr<EqEngineManager> d_eemUse;
   /** The model manager we are using */
-  ModelManager* d_mmUse;
+  std::unique_ptr<ModelManager> d_mmUse;
+  /** The database of shared terms.*/
+  std::unique_ptr<SharedTermsDatabase> d_sharedTerms;
+  /** Visitor for collecting shared terms */
+  std::unique_ptr<SharedTermsVisitor> d_sharedTermsVisitor;
 };
 
 }  // namespace theory

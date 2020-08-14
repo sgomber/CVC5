@@ -26,33 +26,12 @@ namespace theory {
 
 CombinationCareGraph::CombinationCareGraph(
     TheoryEngine& te,
-    const std::vector<Theory*>& paraTheories,
-    context::Context* c)
-    : CombinationEngine(te, paraTheories, c),
-      d_sharedTerms(&te, c),
-      d_sharedTermsVisitor(d_sharedTerms),
-      d_eeDistributed(nullptr),
-      d_mDistributed(nullptr)
+    const std::vector<Theory*>& paraTheories)
+    : CombinationEngine(te, paraTheories)
 {
 }
 
 CombinationCareGraph::~CombinationCareGraph() {}
-
-void CombinationCareGraph::initializeInternal()
-{
-  if (options::eeMode() == options::EqEngineMode::DISTRIBUTED)
-  {
-    d_eeDistributed.reset(new EqEngineManagerDistributed(d_te, &d_sharedTerms));
-    d_eemUse = d_eeDistributed.get();
-    d_mDistributed.reset(
-        new ModelManagerDistributed(d_te, *d_eeDistributed.get()));
-    d_mmUse = d_mDistributed.get();
-  }
-  else
-  {
-    CombinationEngine::initializeInternal();
-  }
-}
 
 void CombinationCareGraph::combineTheories()
 {
@@ -84,8 +63,8 @@ void CombinationCareGraph::combineTheories()
         << "TheoryEngine::combineTheories(): checking " << carePair.d_a << " = "
         << carePair.d_b << " from " << carePair.d_theory << std::endl;
 
-    Assert(d_sharedTerms.isShared(carePair.d_a) || carePair.d_a.isConst());
-    Assert(d_sharedTerms.isShared(carePair.d_b) || carePair.d_b.isConst());
+    Assert(isShared(carePair.d_a) || carePair.d_a.isConst());
+    Assert(isShared(carePair.d_b) || carePair.d_b.isConst());
 
     // The equality in question (order for no repetition)
     Node equality = carePair.d_a.eqNode(carePair.d_b);
@@ -116,28 +95,36 @@ void CombinationCareGraph::combineTheories()
 
 void CombinationCareGraph::preRegister(TNode t, bool multipleTheories)
 {
+  if (d_sharedTerms==nullptr)
+  {
+    return;
+  }
   if (d_logicInfo.isSharingEnabled() && t.getKind() == kind::EQUAL)
   {
     // When sharing is enabled, we propagate from the shared terms manager also
-    d_sharedTerms.addEqualityToPropagate(t);
+    d_sharedTerms->addEqualityToPropagate(t);
   }
   if (multipleTheories)
   {
     // Collect the shared terms if there are multiple theories
-    NodeVisitor<SharedTermsVisitor>::run(d_sharedTermsVisitor, t);
+    NodeVisitor<SharedTermsVisitor>::run(*d_sharedTermsVisitor.get(), t);
   }
 }
 void CombinationCareGraph::notifyAssertFact(TNode atom)
 {
-  if (d_sharedTerms.hasSharedTerms(atom))
+  if (d_sharedTerms==nullptr)
+  {
+    return;
+  }
+  if (d_sharedTerms->hasSharedTerms(atom))
   {
     // Notify the theories the shared terms
-    SharedTermsDatabase::shared_terms_iterator it = d_sharedTerms.begin(atom);
-    SharedTermsDatabase::shared_terms_iterator it_end = d_sharedTerms.end(atom);
+    SharedTermsDatabase::shared_terms_iterator it = d_sharedTerms->begin(atom);
+    SharedTermsDatabase::shared_terms_iterator it_end = d_sharedTerms->end(atom);
     for (; it != it_end; ++it)
     {
       TNode term = *it;
-      Theory::Set theories = d_sharedTerms.getTheoriesToNotify(atom, term);
+      Theory::Set theories = d_sharedTerms->getTheoriesToNotify(atom, term);
       for (TheoryId id = THEORY_FIRST; id != THEORY_LAST; ++id)
       {
         if (Theory::setContains(id, theories))
@@ -146,28 +133,35 @@ void CombinationCareGraph::notifyAssertFact(TNode atom)
           d_te.addSharedTermInternal(id, term);
         }
       }
-      d_sharedTerms.markNotified(term, theories);
+      d_sharedTerms->markNotified(term, theories);
     }
   }
 }
 
 bool CombinationCareGraph::isShared(TNode term) const
 {
-  return d_sharedTerms.isShared(term);
+  if (d_sharedTerms==nullptr)
+  {
+    return true;
+  }
+  return d_sharedTerms->isShared(term);
 }
 
 theory::EqualityStatus CombinationCareGraph::getEqualityStatus(TNode a, TNode b)
 {
   Assert(a.getType().isComparableTo(b.getType()));
-  if (d_sharedTerms.isShared(a) && d_sharedTerms.isShared(b))
+  if (d_sharedTerms!=nullptr)
   {
-    if (d_sharedTerms.areEqual(a, b))
+    if (d_sharedTerms->isShared(a) && d_sharedTerms->isShared(b))
     {
-      return EQUALITY_TRUE_AND_PROPAGATED;
-    }
-    else if (d_sharedTerms.areDisequal(a, b))
-    {
-      return EQUALITY_FALSE_AND_PROPAGATED;
+      if (d_sharedTerms->areEqual(a, b))
+      {
+        return EQUALITY_TRUE_AND_PROPAGATED;
+      }
+      else if (d_sharedTerms->areDisequal(a, b))
+      {
+        return EQUALITY_FALSE_AND_PROPAGATED;
+      }
     }
   }
   return d_te.theoryOf(Theory::theoryOf(a.getType()))->getEqualityStatus(a, b);
@@ -175,14 +169,18 @@ theory::EqualityStatus CombinationCareGraph::getEqualityStatus(TNode a, TNode b)
 
 Node CombinationCareGraph::explain(TNode literal) const
 {
-  return d_sharedTerms.explain(literal);
+  if (d_sharedTerms==nullptr)
+  {
+    return Node::null();
+  }
+  return d_sharedTerms->explain(literal);
 }
 
 void CombinationCareGraph::assertEquality(TNode equality,
                                           bool polarity,
                                           TNode reason)
 {
-  d_sharedTerms.assertEquality(equality, polarity, reason);
+  d_sharedTerms->assertEquality(equality, polarity, reason);
 }
 
 bool CombinationCareGraph::needsPropagation(TNode literal,
