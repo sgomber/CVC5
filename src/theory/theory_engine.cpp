@@ -215,7 +215,7 @@ TheoryEngine::TheoryEngine(context::Context* context,
       d_tcCareGraph(nullptr),
       d_quantEngine(nullptr),
       d_decManager(new DecisionManager(userContext)),
-      d_preRegistrationVisitor(*this, context),
+      d_preRegistrationVisitor(this, context),
       d_eager_model_building(false),
       d_possiblePropagations(context),
       d_hasPropagated(context),
@@ -299,11 +299,11 @@ void TheoryEngine::preRegister(TNode preprocessed) {
 
       // Pre-register the terms in the atom
       Theory::Set theories =
-          NodeVisitor<PreRegisterVisitor>::run(d_preRegistrationVisitor, t);
+          NodeVisitor<PreRegisterVisitor>::run(d_preRegistrationVisitor, preprocessed);
       theories = Theory::setRemove(THEORY_BOOL, theories);
       // Remove the top theory, if any more that means multiple theories were
       // involved
-      bool multipleTheories = Theory::setRemove(Theory::theoryOf(t), theories);
+      bool multipleTheories = Theory::setRemove(Theory::theoryOf(preprocessed), theories);
 #ifdef CVC4_ASSERTIONS
       TheoryId i;
       // This should never throw an exception, since theories should be
@@ -580,7 +580,7 @@ void TheoryEngine::check(Theory::Effort effort) {
   }
 }
 
-void TheoryEngine::propagate(Theory::Effort effort) {
+void TheoryEngine::propagate(Theory::Effort effort) {  
   // Reset the interrupt flag
   d_interrupted = false;
 
@@ -1065,9 +1065,14 @@ void TheoryEngine::assertFact(TNode literal)
 }
 
 bool TheoryEngine::propagate(TNode literal, theory::TheoryId theory) {
-
   Debug("theory::propagate") << "TheoryEngine::propagate(" << literal << ", " << theory << ")" << endl;
-
+  // check if theory combination requires propagating it
+  if (!d_tc->needsPropagation(literal, theory))
+  {
+    // nothing to do, return
+    return;
+  }
+  
   Trace("dtview::prop") << std::string(d_context->getLevel(), ' ')
                         << ":THEORY-PROP: " << literal << endl;
 
