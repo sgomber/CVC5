@@ -113,6 +113,8 @@ void CoreSolver::preRegister(TNode node) {
       }
   } else {
     d_equalityEngine->addTerm(node);
+    // also register with the extended theory
+    d_extTheory->registerTerm(node);
   }
 }
 
@@ -424,7 +426,7 @@ void CoreSolver::conflict(TNode a, TNode b) {
   d_bv->setConflict(conflict);
 }
 
-void CoreSolver::eqNotifyNewClass(TNode t) { d_extTheory->registerTerm(t); }
+void CoreSolver::eqNotifyNewClass(TNode t) { }
 
 bool CoreSolver::isCompleteForTerm(TNode term, TNodeBoolMap& seen) {
   if (d_useSlicer)
