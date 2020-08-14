@@ -88,7 +88,7 @@ bool TheoryStrings::needsEqualityEngine(EeSetupInfo& esi)
 {
   esi.d_notify = &d_notify;
   esi.d_name = "theory::strings::ee";
-  
+
   // need notifications about equivalence class changes, for all string eqc
   TypeNode stype = NodeManager::currentNM()->stringType();
   esi.d_notifyNewEqClassTypes.push_back(stype);
@@ -100,7 +100,7 @@ bool TheoryStrings::needsEqualityEngine(EeSetupInfo& esi)
   // also tracking length/code
   esi.d_notifyNewEqClassKinds.push_back(STRING_LENGTH);
   esi.d_notifyNewEqClassKinds.push_back(STRING_TO_CODE);
-  
+
   return true;
 }
 

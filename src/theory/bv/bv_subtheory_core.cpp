@@ -426,7 +426,7 @@ void CoreSolver::conflict(TNode a, TNode b) {
   d_bv->setConflict(conflict);
 }
 
-void CoreSolver::eqNotifyNewClass(TNode t) { }
+void CoreSolver::eqNotifyNewClass(TNode t) {}
 
 bool CoreSolver::isCompleteForTerm(TNode term, TNodeBoolMap& seen) {
   if (d_useSlicer)
