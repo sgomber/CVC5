@@ -77,6 +77,28 @@ class EqClassIterator
   EqualityNodeId d_current;
 };
 
+/** Cached version */
+class EqClassesCache
+{
+public:
+  EqClassesCache(const eq::EqualityEngine* ee);
+  /** Compute */
+  void compute();
+  /** Get representatives */
+  const std::vector<Node>& getRepresentatives();
+  /** Get representatives for type */
+  const std::vector<Node>& getRepresentativesForType(TypeNode t);
+private:
+  /** The equality engine */
+  eq::EqualityEngine * d_ee;
+  /** All representatives */
+  std::vector<Node> d_reps;
+  /** All representatives per type */
+  std::map<TypeNode, std::vector<Node> > d_repTypes;
+  /** Empty vector */
+  std::vector<Node> d_emptyVec;
+};
+
 }  // Namespace eq
 }  // Namespace theory
 }  // Namespace CVC4
