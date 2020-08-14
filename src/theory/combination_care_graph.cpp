@@ -28,49 +28,15 @@ CombinationCareGraph::CombinationCareGraph(
     TheoryEngine& te,
     const std::vector<Theory*>& paraTheories,
     context::Context* c)
-    : d_te(te),
-      d_logicInfo(te.getLogicInfo()),
-      d_paraTheories(paraTheories),
+    : CombinationEngine(te, paraTheories, c),
       d_sharedTerms(&te, c),
       d_preRegistrationVisitor(&te, c),
-      d_sharedTermsVisitor(d_sharedTerms),
-      d_eemUse(nullptr),
-      d_eeDistributed(nullptr),
-      d_mmUse(nullptr),
-      d_mDistributed(nullptr)
+      d_sharedTermsVisitor(d_sharedTerms)
 {
-  if (options::eeMode() == options::EqEngineMode::DISTRIBUTED)
-  {
-    d_eeDistributed.reset(new EqEngineManagerDistributed(te, &d_sharedTerms));
-    d_eemUse = d_eeDistributed.get();
-    d_mDistributed.reset(
-        new ModelManagerDistributed(te, *d_eeDistributed.get()));
-    d_mmUse = d_mDistributed.get();
-  }
-  else
-  {
-    AlwaysAssert(false)
-        << "CombinationCareGraph::CombinationCareGraph: equality engine mode "
-        << options::eeMode() << " not supported";
-  }
+  
 }
 
 CombinationCareGraph::~CombinationCareGraph() {}
-
-void CombinationCareGraph::finishInit()
-{
-  Assert(d_eemUse != nullptr);
-  // initialize equality engines in all theories, including quantifiers engine
-  d_eemUse->initializeTheories();
-
-  Assert(d_mmUse != nullptr);
-  // initialize the model manager
-  d_mmUse->finishInit();
-
-  // initialize equality engine of the model using the equality engine manager
-  TheoryModel* m = d_mmUse->getModel();
-  d_eemUse->initializeModel(m);
-}
 
 void CombinationCareGraph::combineTheories()
 {
@@ -130,37 +96,6 @@ void CombinationCareGraph::combineTheories()
     Node e = d_te.ensureLiteral(equality);
     propEngine->requirePhase(e, true);
   }
-}
-
-const EeTheoryInfo* CombinationCareGraph::getEeTheoryInfo(TheoryId tid) const
-{
-  return d_eemUse->getEeTheoryInfo(tid);
-}
-
-eq::EqualityEngine* CombinationCareGraph::getCoreEqualityEngine()
-{
-  return d_eemUse->getCoreEqualityEngine();
-}
-
-void CombinationCareGraph::resetModel() { d_mmUse->resetModel(); }
-
-bool CombinationCareGraph::buildModel() { return d_mmUse->buildModel(); }
-
-void CombinationCareGraph::postProcessModel(bool incomplete)
-{
-  // should have a consistent core equality engine
-  eq::EqualityEngine* mee = d_eemUse->getCoreEqualityEngine();
-  if (mee != NULL)
-  {
-    AlwaysAssert(mee->consistent());
-  }
-  // postprocess with the model
-  d_mmUse->postProcessModel(incomplete);
-}
-
-theory::TheoryModel* CombinationCareGraph::getModel()
-{
-  return d_mmUse->getModel();
 }
 
 void CombinationCareGraph::preRegister(TNode t)

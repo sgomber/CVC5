@@ -88,8 +88,7 @@ struct NodeTheoryPairHashFunction {
 /* Forward declarations */
 namespace theory {
   class TheoryModel;
-  class EqEngineManagerDistributed;
-  class ModelManagerDistributed;
+  class CombinationEngine;
   class CombinationCareGraph;
 
   namespace eq {
@@ -145,7 +144,7 @@ class TheoryEngine {
   const LogicInfo& d_logicInfo;
 
   /** The combination manager we are using */
-  theory::CombinationCareGraph* d_tc;
+  theory::CombinationEngine* d_tc;
   /**
    * The combination manager
    */
