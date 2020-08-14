@@ -37,7 +37,7 @@ class ModelManager
 {
  public:
   ModelManager(TheoryEngine& te);
-  ~ModelManager();
+  virtual ~ModelManager();
   /** reset model */
   virtual void resetModel();
   /** finish init */

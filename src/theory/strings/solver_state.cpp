@@ -143,7 +143,7 @@ void SolverState::eqNotifyPostMerge(TNode t1, TNode t2)
   if (e2)
   {
     // we only track information about string-like equivalence classes
-    Assert(t1.getKind().isStringLike());
+    Assert(t1.getType().isStringLike());
     EqcInfo* e1 = getOrMakeEqcInfo(t1);
     // add information from e2 to e1
     if (!e2->d_lengthTerm.get().isNull())

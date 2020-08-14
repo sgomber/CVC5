@@ -1,5 +1,5 @@
 /*********************                                                        */
-/*! \file ee_manager_distributed.cpp
+/*! \file model_manager_distributed.cpp
  ** \verbatim
  ** Top contributors (to current version):
  **   Andrew Reynolds
@@ -9,15 +9,10 @@
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
- ** \brief Management of a distributed approach for equality engines over
- ** all theories.
+ ** \brief Management of a distributed approach for model generation.
  **/
 
 #include "theory/model_manager_distributed.h"
-
-#include "options/theory_options.h"
-#include "theory/quantifiers_engine.h"
-#include "theory/theory_engine.h"
 
 namespace CVC4 {
 namespace theory {
@@ -38,24 +33,26 @@ bool ModelManagerDistributed::buildModelInternal()
   // Reset model
   d_model->reset();
 
-  // push/pop to clear the equality engine of the model
-  context::Context* meec = d_eem.getModelEqualityEngineContext();
-  meec->pop();
-  meec->push();
+  // push a SAT context
 
   // Collect model info from the theories
   Trace("model-builder") << "ModelManagerDistributed: Collect model info..."
                          << std::endl;
+  bool success = true;
   if (!collectModelInfo())
   {
     Trace("model-builder") << "ModelManagerDistributed: fail collect model info"
                            << std::endl;
-    return false;
+    success = false;
   }
-
-  // success is determined by the model builder
-  d_modelBuiltSuccess = d_modelBuilder->buildModel(d_model);
-  return d_modelBuiltSuccess;
+  else (!d_modelBuilder->buildModel(d_model))
+  {
+    success = false;
+  }
+  
+  // pop a SAT context
+  
+  return success;
 }
 
 }  // namespace theory

@@ -76,11 +76,13 @@ bool ModelManager::buildModel()
     // already computed
     return d_modelBuiltSuccess;
   }
+  // reset the flags now
   d_modelBuilt = true;
   d_modelBuiltSuccess = false;
 
   // call the internal (manager-specific) building method
-  return buildModelInternal();
+  d_modelBuiltSuccess = buildModelInternal();
+  return d_modelBuiltSuccess;
 }
 
 void ModelManager::postProcessModel(bool incomplete)

@@ -9,8 +9,7 @@
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
- ** \brief Management of a distributed approach for equality engines over
- ** all theories.
+ ** \brief Management of a distributed approach for model generation.
  **/
 
 #include "cvc4_private.h"
@@ -38,7 +37,7 @@ class ModelManagerDistributed : public ModelManager
  public:
   ModelManagerDistributed(TheoryEngine& te, EqEngineManagerDistributed& eem);
   ~ModelManagerDistributed();
- protectedS:
+ protected:
   /** Build model */
   bool buildModelInternal() override;
   /** Reference to the equality engine manager */
