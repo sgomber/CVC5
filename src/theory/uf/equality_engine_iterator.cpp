@@ -130,7 +130,7 @@ EqClassIterator EqClassIterator::operator++(int)
 
 bool EqClassIterator::isFinished() const { return d_current == null_id; }
 
-EqClassesCache::EqClassesCache(const eq::EqualityEngine* ee) : d_ee(ee){}
+EqClassesCache::EqClassesCache(const eq::EqualityEngine* ee) : d_ee(ee) {}
 
 void EqClassesCache::compute()
 {
@@ -141,7 +141,7 @@ void EqClassesCache::compute()
   while (!eqcs_i.isFinished())
   {
     Node eqc = (*eqcs_i);
-    
+
     ++eqcs_i;
   }
 }
@@ -151,10 +151,12 @@ const std::vector<Node>& EqClassesCache::getRepresentatives() const
   return d_reps;
 }
 
-const std::vector<Node>& EqClassesCache::getRepresentativesForType(TypeNode t) const
+const std::vector<Node>& EqClassesCache::getRepresentativesForType(
+    TypeNode t) const
 {
-  std::map<TypeNode, std::vector<Node> >::const_iterator it = d_repTypes.find(t);
-  if (it!=d_repTypes.end())
+  std::map<TypeNode, std::vector<Node> >::const_iterator it =
+      d_repTypes.find(t);
+  if (it != d_repTypes.end())
   {
     return it->second;
   }

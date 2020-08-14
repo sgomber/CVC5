@@ -123,10 +123,7 @@ eq::EqualityEngine* CombinationCareGraph::getMasterEqualityEngine()
 
 void CombinationCareGraph::resetModel() { d_mDistributed->resetModel(); }
 
-bool CombinationCareGraph::buildModel()
-{
-  return d_mDistributed->buildModel();
-}
+bool CombinationCareGraph::buildModel() { return d_mDistributed->buildModel(); }
 
 void CombinationCareGraph::postProcessModel(bool incomplete)
 {
@@ -217,8 +214,7 @@ bool CombinationCareGraph::isShared(TNode term) const
   return d_sharedTerms.isShared(term);
 }
 
-theory::EqualityStatus CombinationCareGraph::getEqualityStatus(TNode a,
-                                                                 TNode b)
+theory::EqualityStatus CombinationCareGraph::getEqualityStatus(TNode a, TNode b)
 {
   Assert(a.getType().isComparableTo(b.getType()));
   if (d_sharedTerms.isShared(a) && d_sharedTerms.isShared(b))
@@ -241,8 +237,8 @@ Node CombinationCareGraph::explain(TNode literal) const
 }
 
 void CombinationCareGraph::assertEquality(TNode equality,
-                                            bool polarity,
-                                            TNode reason)
+                                          bool polarity,
+                                          TNode reason)
 {
   d_sharedTerms.assertEquality(equality, polarity, reason);
 }

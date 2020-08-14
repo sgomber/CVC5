@@ -80,7 +80,7 @@ class EqClassIterator
 /** Cached version */
 class EqClassesCache
 {
-public:
+ public:
   EqClassesCache(const eq::EqualityEngine* ee);
   /** Compute */
   void compute();
@@ -88,9 +88,10 @@ public:
   const std::vector<Node>& getRepresentatives();
   /** Get representatives for type */
   const std::vector<Node>& getRepresentativesForType(TypeNode t);
-private:
+
+ private:
   /** The equality engine */
-  eq::EqualityEngine * d_ee;
+  eq::EqualityEngine* d_ee;
   /** All representatives */
   std::vector<Node> d_reps;
   /** All representatives per type */

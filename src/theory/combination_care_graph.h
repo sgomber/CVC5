@@ -38,8 +38,8 @@ class CombinationCareGraph
 {
  public:
   CombinationCareGraph(TheoryEngine& te,
-                         const std::vector<Theory*>& paraTheories,
-                         context::Context* c);
+                       const std::vector<Theory*>& paraTheories,
+                       context::Context* c);
   ~CombinationCareGraph();
   /** Finish initialization */
   void finishInit();

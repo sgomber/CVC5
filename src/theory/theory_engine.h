@@ -441,7 +441,6 @@ class TheoryEngine {
   void addSharedTermInternal(theory::TheoryId tid, TNode term);
 
  public:
-
   /**
    * Signal the start of a new round of assertion preprocessing
    */
