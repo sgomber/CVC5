@@ -13,44 +13,52 @@
  ** all theories.
  **/
 
-#include "theory/model_manager_distributed.h"
+#include "theory/model_manager_central.h"
+
+#include "theory/theory_engine.h"
 
 namespace CVC4 {
 namespace theory {
 
-ModelManagerDistributed::ModelManagerDistributed(
+ModelManagerCentral::ModelManagerCentral(
     TheoryEngine& te, EqEngineManagerDistributed& eem)
     : ModelManager(te),
       d_eem(eem)
 {
 }
 
-ModelManagerDistributed::~ModelManagerDistributed() {}
+ModelManagerCentral::~ModelManagerCentral() {}
 
-bool ModelManagerDistributed::buildModelInternal()
+bool ModelManagerCentral::buildModelInternal()
 {
-  Trace("model-builder") << "ModelManagerDistributed: reset model..."
+  Trace("model-builder") << "ModelManagerCentral: reset model..."
                          << std::endl;
   // Reset model
   d_model->reset();
 
-  // push/pop to clear the equality engine of the model
-  context::Context* meec = d_eem.getModelEqualityEngineContext();
-  meec->pop();
-  meec->push();
+  // push a SAT context
+  context::Context* c = d_te.getSatContext();
+  c->push();
 
   // Collect model info from the theories
-  Trace("model-builder") << "ModelManagerDistributed: Collect model info..."
+  Trace("model-builder") << "ModelManagerCentral: Collect model info..."
                          << std::endl;
+  bool success = true;
   if (!collectModelInfo())
   {
-    Trace("model-builder") << "ModelManagerDistributed: fail collect model info"
+    Trace("model-builder") << "ModelManagerCentral: fail collect model info"
                            << std::endl;
-    return false;
+    success = false;
   }
-
-  // success is determined by the model builder
-  return d_modelBuilder->buildModel(d_model);
+  else (!d_modelBuilder->buildModel(d_model))
+  {
+    success = false;
+  }
+  
+  // pop a SAT context
+  c->pop();
+  
+  return success;
 }
 
 }  // namespace theory

@@ -506,6 +506,8 @@ libcvc4_add_sources(
   theory/logic_info.h
   theory/model_manager.cpp
   theory/model_manager.h
+  theory/model_manager_central.cpp
+  theory/model_manager_central.h
   theory/model_manager_distributed.cpp
   theory/model_manager_distributed.h
   theory/output_channel.cpp
