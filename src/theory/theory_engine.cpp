@@ -215,6 +215,7 @@ TheoryEngine::TheoryEngine(context::Context* context,
       d_tcCareGraph(nullptr),
       d_quantEngine(nullptr),
       d_decManager(new DecisionManager(userContext)),
+      d_preRegistrationVisitor(*this, c),
       d_eager_model_building(false),
       d_possiblePropagations(context),
       d_hasPropagated(context),
@@ -296,10 +297,45 @@ void TheoryEngine::preRegister(TNode preprocessed) {
                       << std::endl;
       Assert(!expr::hasFreeVar(preprocessed));
 
+      // Pre-register the terms in the atom
+      Theory::Set theories =
+          NodeVisitor<PreRegisterVisitor>::run(d_preRegistrationVisitor, t);
+      theories = Theory::setRemove(THEORY_BOOL, theories);
+      // Remove the top theory, if any more that means multiple theories were
+      // involved
+      bool multipleTheories = Theory::setRemove(Theory::theoryOf(t), theories);
+#ifdef CVC4_ASSERTIONS
+      TheoryId i;
+      // This should never throw an exception, since theories should be
+      // guaranteed to be initialized.
+      // These checks don't work with finite model finding, because it
+      // uses Rational constants to represent cardinality constraints,
+      // even though arithmetic isn't actually involved.
+      if (!options::finiteModelFind())
+      {
+        while ((i = Theory::setPop(theories)) != THEORY_LAST)
+        {
+          if (!d_logicInfo.isTheoryEnabled(i))
+          {
+            LogicInfo newLogicInfo = d_logicInfo.getUnlockedCopy();
+            newLogicInfo.enableTheory(i);
+            newLogicInfo.lock();
+            std::stringstream ss;
+            ss << "The logic was specified as " << d_logicInfo.getLogicString()
+              << ", which doesn't include " << i
+              << ", but found a term in that theory." << std::endl
+              << "You might want to extend your logic to "
+              << newLogicInfo.getLogicString() << std::endl;
+            throw LogicException(ss.str());
+          }
+        }
+      }
+#endif
+        
       // pre-register with the theory combination module, which also handles
       // calling prepregister on individual theories.
       Assert(d_tc != nullptr);
-      d_tc->preRegister(preprocessed);
+      d_tc->preRegister(preprocessed, multipleTheories);
     }
 
     // Leaving pre-register

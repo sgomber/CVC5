@@ -67,7 +67,7 @@ class CombinationEngine
    * theory combination (e.g. splitting lemmas) to the parent TheoryEngine.
    */
   virtual void combineTheories() = 0;
-  virtual void preRegister(TNode preprocessed);
+  virtual void preRegister(TNode preprocessed, bool multipleTheories);
   virtual void notifyAssertFact(TNode atom);
   virtual bool isShared(TNode term) const;
   virtual EqualityStatus getEqualityStatus(TNode a, TNode b);

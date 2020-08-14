@@ -30,7 +30,6 @@ CombinationCareGraph::CombinationCareGraph(
     context::Context* c)
     : CombinationEngine(te, paraTheories, c),
       d_sharedTerms(&te, c),
-      d_preRegistrationVisitor(&te, c),
       d_sharedTermsVisitor(d_sharedTerms),
       d_eeDistributed(nullptr),
       d_mDistributed(nullptr)
@@ -115,42 +114,12 @@ void CombinationCareGraph::combineTheories()
   }
 }
 
-void CombinationCareGraph::preRegister(TNode t)
+void CombinationCareGraph::preRegister(TNode t, bool multipleTheories)
 {
   if (d_logicInfo.isSharingEnabled() && t.getKind() == kind::EQUAL)
   {
     // When sharing is enabled, we propagate from the shared terms manager also
     d_sharedTerms.addEqualityToPropagate(t);
-  }
-  // Pre-register the terms in the atom
-  Theory::Set theories =
-      NodeVisitor<PreRegisterVisitor>::run(d_preRegistrationVisitor, t);
-  theories = Theory::setRemove(THEORY_BOOL, theories);
-  // Remove the top theory, if any more that means multiple theories were
-  // involved
-  bool multipleTheories = Theory::setRemove(Theory::theoryOf(t), theories);
-  TheoryId i;
-  // These checks don't work with finite model finding, because it
-  // uses Rational constants to represent cardinality constraints,
-  // even though arithmetic isn't actually involved.
-  if (!options::finiteModelFind())
-  {
-    while ((i = Theory::setPop(theories)) != THEORY_LAST)
-    {
-      if (!d_logicInfo.isTheoryEnabled(i))
-      {
-        LogicInfo newLogicInfo = d_logicInfo.getUnlockedCopy();
-        newLogicInfo.enableTheory(i);
-        newLogicInfo.lock();
-        std::stringstream ss;
-        ss << "The logic was specified as " << d_logicInfo.getLogicString()
-           << ", which doesn't include " << i
-           << ", but found a term in that theory." << std::endl
-           << "You might want to extend your logic to "
-           << newLogicInfo.getLogicString() << std::endl;
-        throw LogicException(ss.str());
-      }
-    }
   }
   if (multipleTheories)
   {

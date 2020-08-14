@@ -92,7 +92,7 @@ theory::TheoryModel* CombinationEngine::getModel()
   return d_mmUse->getModel();
 }
 
-void CombinationEngine::preRegister(TNode preprocessed) {}
+void CombinationEngine::preRegister(TNode preprocessed, bool multipleTheories) {}
 void CombinationEngine::notifyAssertFact(TNode atom) {}
 bool CombinationEngine::isShared(TNode term) const { return true; }
 
@@ -106,6 +106,7 @@ Node CombinationEngine::explain(TNode literal) const
 {
   Unhandled() << "CombinationEngine::CombinationEngine: does not support the "
                  "explain interface";
+  return Node::null();
 }
 void CombinationEngine::assertEquality(TNode equality,
                                        bool polarity,

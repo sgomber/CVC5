@@ -158,6 +158,9 @@ class TheoryEngine {
    */
   std::unique_ptr<theory::DecisionManager> d_decManager;
 
+  /** Default visitor for pre-registration */
+  PreRegisterVisitor d_preRegistrationVisitor;
+
   /** are we in eager model building mode? (see setEagerModelBuilding). */
   bool d_eager_model_building;
 
