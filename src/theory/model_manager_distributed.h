@@ -39,6 +39,7 @@ class ModelManagerDistributed : public ModelManager
   ~ModelManagerDistributed();
   /** finish init */
   void finishInit() override;
+
  protected:
   /** Build model */
   bool buildModelInternal() override;

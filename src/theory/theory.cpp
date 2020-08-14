@@ -413,22 +413,19 @@ void Theory::getCareGraph(CareGraph* careGraph) {
   d_careGraph = NULL;
 }
 
-
-//--------------------------------- new standard  
-bool Theory::isInConflict() const
-{
-  return false;
-}
+//--------------------------------- new standard
+bool Theory::isInConflict() const { return false; }
 void Theory::notifyInConflict() const {}
 bool Theory::propagate(TNode lit)
 {
   // If already in conflict, no more propagation
-  if (isInConflict()) {
+  if (isInConflict())
+  {
     return false;
   }
   // Propagate out
   bool ok = d_out->propagate(lit);
-  if (!ok) 
+  if (!ok)
   {
     notifyInConflict();
   }
@@ -455,9 +452,9 @@ void Theory::processPendingFacts()
     bool polarity = fact.getKind() != kind::NOT;
     TNode atom = polarity ? fact : fact[0];
     // if we have an equality engine, immediately assert to it
-    if (d_equalityEngine!=nullptr)
+    if (d_equalityEngine != nullptr)
     {
-      if (atom.getKind() == kind::EQUAL) 
+      if (atom.getKind() == kind::EQUAL)
       {
         d_equalityEngine->assertEquality(atom, polarity, fact);
       }
@@ -487,8 +484,10 @@ void Theory::computeRelevantTerms(set<Node>& termSet,
   // Collect all terms appearing in assertions
   irrKinds.insert(kind::EQUAL);
   irrKinds.insert(kind::NOT);
-  context::CDList<Assertion>::const_iterator assert_it = facts_begin(), assert_it_end = facts_end();
-  for (; assert_it != assert_it_end; ++assert_it) {
+  context::CDList<Assertion>::const_iterator assert_it = facts_begin(),
+                                             assert_it_end = facts_end();
+  for (; assert_it != assert_it_end; ++assert_it)
+  {
     collectTerms(*assert_it, irrKinds, termSet);
   }
 
@@ -496,14 +495,16 @@ void Theory::computeRelevantTerms(set<Node>& termSet,
 
   // Add terms that are shared terms
   set<Kind> kempty;
-  context::CDList<TNode>::const_iterator shared_it = shared_terms_begin(), shared_it_end = shared_terms_end();
-  for (; shared_it != shared_it_end; ++shared_it) {
+  context::CDList<TNode>::const_iterator shared_it = shared_terms_begin(),
+                                         shared_it_end = shared_terms_end();
+  for (; shared_it != shared_it_end; ++shared_it)
+  {
     collectTerms(*shared_it, kempty, termSet);
   }
 }
 bool Theory::collectModelEqualities(TheoryModel* m)
 {
-  if (d_equalityEngine==nullptr)
+  if (d_equalityEngine == nullptr)
   {
     // not using equality engine, nothing to do
     return true;
@@ -522,7 +523,7 @@ TrustNode Theory::explainConflict(TNode a, TNode b)
 {
   Unimplemented() << "Theory " << identify()
                   << " sent a conflict but doesn't implement the "
-                      "Theory::explainConflict() interface!";
+                     "Theory::explainConflict() interface!";
 }
 //--------------------------------- end new standard
 

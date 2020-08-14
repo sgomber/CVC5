@@ -614,8 +614,8 @@ class Theory {
    * shared terms are not influenced by irrKinds.
    */
   virtual void computeRelevantTerms(std::set<Node>& termSet,
-                            std::set<Kind>& irrKinds,
-                            bool includeShared = true) const;
+                                    std::set<Kind>& irrKinds,
+                                    bool includeShared = true) const;
   /** collect model equalities */
   bool collectModelEqualities(TheoryModel* m);
   //--------------------------------- end new standard
