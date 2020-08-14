@@ -137,7 +137,7 @@ void EqClassesCache::compute()
   d_reps.clear();
   d_repTypes.clear();
 
-  eq::EqClassesIterator eqcs_i = eq::EqClassesIterator(ee);
+  eq::EqClassesIterator eqcs_i = eq::EqClassesIterator(d_ee);
   while (!eqcs_i.isFinished())
   {
     Node eqc = (*eqcs_i);
