@@ -33,7 +33,6 @@ CombinationEngine::CombinationEngine(TheoryEngine& te,
       d_eemUse(nullptr),
       d_mmUse(nullptr)
 {
-  
 }
 
 CombinationEngine::~CombinationEngine() {}
@@ -42,7 +41,7 @@ void CombinationEngine::finishInit()
 {
   // create the equality engine and model managers
   initializeInternal();
-  
+
   Assert(d_eemUse != nullptr);
   // initialize equality engines in all theories, including quantifiers engine
   d_eemUse->initializeTheories();
@@ -58,9 +57,8 @@ void CombinationEngine::finishInit()
 
 void CombinationEngine::initializeInternal()
 {
-  Unhandled()
-      << "CombinationEngine::CombinationEngine: equality engine mode "
-      << options::eeMode() << " not supported";
+  Unhandled() << "CombinationEngine::CombinationEngine: equality engine mode "
+              << options::eeMode() << " not supported";
 }
 
 const EeTheoryInfo* CombinationEngine::getEeTheoryInfo(TheoryId tid) const
@@ -96,10 +94,7 @@ theory::TheoryModel* CombinationEngine::getModel()
 
 void CombinationEngine::preRegister(TNode preprocessed) {}
 void CombinationEngine::notifyAssertFact(TNode atom) {}
-bool CombinationEngine::isShared(TNode term) const
-{
-  return true;
-}
+bool CombinationEngine::isShared(TNode term) const { return true; }
 
 EqualityStatus CombinationEngine::getEqualityStatus(TNode a, TNode b)
 {
@@ -109,12 +104,19 @@ EqualityStatus CombinationEngine::getEqualityStatus(TNode a, TNode b)
 
 Node CombinationEngine::explain(TNode literal) const
 {
-  Unhandled()
-      << "CombinationEngine::CombinationEngine: does not support the explain interface";
+  Unhandled() << "CombinationEngine::CombinationEngine: does not support the "
+                 "explain interface";
 }
-void CombinationEngine::assertEquality(TNode equality, bool polarity, TNode reason) {}
+void CombinationEngine::assertEquality(TNode equality,
+                                       bool polarity,
+                                       TNode reason)
+{
+}
 
-bool CombinationEngine::needsPropagation(TNode literal, TheoryId theory) { return true; }
+bool CombinationEngine::needsPropagation(TNode literal, TheoryId theory)
+{
+  return true;
+}
 
 }  // namespace theory
 }  // namespace CVC4

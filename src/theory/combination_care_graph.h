@@ -55,8 +55,8 @@ class CombinationCareGraph : public CombinationEngine
    */
   bool needsPropagation(TNode literal, TheoryId theory) override;
 
- private: 
-   /** 
+ private:
+  /**
    * Initialize internal, which is responsible for constructing the equality
    * engine and model managers (d_eemUse and d_mmUse) based on the options.
    */

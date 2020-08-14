@@ -36,8 +36,8 @@ class CombinationEngine
 {
  public:
   CombinationEngine(TheoryEngine& te,
-                       const std::vector<Theory*>& paraTheories,
-                       context::Context* c);
+                    const std::vector<Theory*>& paraTheories,
+                    context::Context* c);
   virtual ~CombinationEngine();
 
   /** Finish initialization */
@@ -61,7 +61,7 @@ class CombinationEngine
   //-------------------------- end model
 
   //-------------------------- interface used by theory engine
-  /** 
+  /**
    * Combine theories, called after FULL effort passes with no lemmas
    * and before LAST_CALL effort is run. This adds necessary lemmas for
    * theory combination (e.g. splitting lemmas) to the parent TheoryEngine.
@@ -79,7 +79,7 @@ class CombinationEngine
   virtual bool needsPropagation(TNode literal, TheoryId theory);
   //-------------------------- end interface used by theory engine
  protected:
-  /** 
+  /**
    * Initialize internal, which is responsible for constructing the equality
    * engine and model managers (d_eemUse and d_mmUse) based on the options.
    */
