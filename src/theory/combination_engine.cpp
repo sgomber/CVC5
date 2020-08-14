@@ -24,10 +24,9 @@
 namespace CVC4 {
 namespace theory {
 
-CombinationEngine::CombinationEngine(
-    TheoryEngine& te,
-    const std::vector<Theory*>& paraTheories,
-    context::Context* c)
+CombinationEngine::CombinationEngine(TheoryEngine& te,
+                                     const std::vector<Theory*>& paraTheories,
+                                     context::Context* c)
     : d_te(te),
       d_logicInfo(te.getLogicInfo()),
       d_paraTheories(paraTheories),

@@ -53,6 +53,7 @@ class CombinationCareGraph : public CombinationEngine
    * The given theory propagated the given literal. Do we need to process it?
    */
   bool needsPropagation(TNode literal, TheoryId theory) override;
+
  private:
   /**
    * The database of shared terms.

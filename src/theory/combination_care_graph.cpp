@@ -33,7 +33,6 @@ CombinationCareGraph::CombinationCareGraph(
       d_preRegistrationVisitor(&te, c),
       d_sharedTermsVisitor(d_sharedTerms)
 {
-  
 }
 
 CombinationCareGraph::~CombinationCareGraph() {}

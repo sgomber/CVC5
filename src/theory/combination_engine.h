@@ -39,10 +39,10 @@ class CombinationEngine
                        const std::vector<Theory*>& paraTheories,
                        context::Context* c);
   ~CombinationCareGraph();
-  
+
   /** Finish initialization */
   void finishInit();
-  
+
   //-------------------------- equality engine
   /** Get the equality engine theory information. */
   const EeTheoryInfo* getEeTheoryInfo(TheoryId tid) const;
@@ -74,7 +74,7 @@ class CombinationEngine
    */
   virtual bool needsPropagation(TNode literal, TheoryId theory);
   //-------------------------- end interface used by theory engine
-protected:
+ protected:
   /** Reference to the theory engine */
   TheoryEngine& d_te;
   /** Logic info of theory engine (cached) */
@@ -93,7 +93,7 @@ protected:
   std::unique_ptr<EqEngineManagerDistributed> d_eeDistributed;
   /** The model manager we are using */
   ModelManager* d_mmUse;
-  /** 
+  /**
    * The distributed model manager.
    */
   std::unique_ptr<ModelManagerDistributed> d_mDistributed;
