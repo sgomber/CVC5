@@ -64,12 +64,22 @@ struct EeSetupInfo
   std::vector<TypeNode> d_notifyDisequalTypes;
   //-------------------------- end fine grained notifications
   /** Does it need notifications when equivalence classes are created? */
-  bool needsNotifyNewEqClass() const { return !d_notifyNewEqClassTypeKinds.empty() || !d_notifyNewEqClassKinds.empty() || !d_notifyNewEqClassTypes.empty(); }
+  bool needsNotifyNewEqClass() const
+  {
+    return !d_notifyNewEqClassTypeKinds.empty()
+           || !d_notifyNewEqClassKinds.empty()
+           || !d_notifyNewEqClassTypes.empty();
+  }
   /** Does it need notifications when equivalence classes are merged? */
-  bool needsNotifyMerge() const { return !d_notifyMergeTypeKinds.empty() || !d_notifyMergeTypes.empty(); }
+  bool needsNotifyMerge() const
+  {
+    return !d_notifyMergeTypeKinds.empty() || !d_notifyMergeTypes.empty();
+  }
   /** Does it need notifications when disequalities are generated? */
-  bool needsNotifyDisequal() const { return !d_notifyDisequalTypeKinds.empty() || !d_notifyDisequalTypes.empty(); }
-  
+  bool needsNotifyDisequal() const
+  {
+    return !d_notifyDisequalTypeKinds.empty() || !d_notifyDisequalTypes.empty();
+  }
 };
 
 }  // namespace theory

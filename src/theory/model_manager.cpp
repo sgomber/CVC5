@@ -22,8 +22,7 @@
 namespace CVC4 {
 namespace theory {
 
-ModelManager::ModelManager(
-    TheoryEngine& te)
+ModelManager::ModelManager(TheoryEngine& te)
     : d_te(te),
       d_logicInfo(te.getLogicInfo()),
       d_model(nullptr),
@@ -92,8 +91,7 @@ void ModelManager::postProcessModel(bool incomplete)
     // model not built, nothing to do
     return;
   }
-  Trace("model-builder") << "ModelManager: post-process model..."
-                         << std::endl;
+  Trace("model-builder") << "ModelManager: post-process model..." << std::endl;
   // model construction should always succeed unless lemmas were added
   AlwaysAssert(d_modelBuiltSuccess);
   if (!options::produceModels())

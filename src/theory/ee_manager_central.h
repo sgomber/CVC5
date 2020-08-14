@@ -90,7 +90,8 @@ class EqEngineManagerCentral : public EqEngineManager
     void eqNotifyPreMerge(TNode t1, TNode t2) override;
     void eqNotifyPostMerge(TNode t1, TNode t2) override;
     void eqNotifyDisequal(TNode t1, TNode t2, TNode reason) override;
-  private:
+
+   private:
     /** The shared terms database notify class */
     eq::EqualityEngineNotify* d_sdbNotify;
     /**

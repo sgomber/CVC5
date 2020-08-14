@@ -123,11 +123,7 @@ eq::EqualityEngine* CombinationCareGraph::getMasterEqualityEngine()
 
 void CombinationCareGraph::resetModel() { d_mDistributed->resetModel(); }
 
-bool CombinationCareGraph::buildModel() 
-{ 
-  
-  return d_mDistributed->buildModel(); 
-}
+bool CombinationCareGraph::buildModel() { return d_mDistributed->buildModel(); }
 
 void CombinationCareGraph::postProcessModel(bool incomplete)
 {

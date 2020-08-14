@@ -19,8 +19,7 @@ namespace theory {
 
 ModelManagerDistributed::ModelManagerDistributed(
     TheoryEngine& te, EqEngineManagerDistributed& eem)
-    : ModelManager(te),
-      d_eem(eem)
+    : ModelManager(te), d_eem(eem)
 {
 }
 

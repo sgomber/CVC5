@@ -21,16 +21,17 @@
 namespace CVC4 {
 namespace theory {
 
-
 EqEngineManagerCentral::EqEngineManagerCentral(TheoryEngine& te,
                                                SharedTermsDatabase* sdb)
-    : d_te(te), d_sdb(sdb), d_centralEENotify(), d_centralEqualityEngine(&d_centralEENotify, te.getSatContext(), "centralEE", true)
+    : d_te(te),
+      d_sdb(sdb),
+      d_centralEENotify(),
+      d_centralEqualityEngine(
+          &d_centralEENotify, te.getSatContext(), "centralEE", true)
 {
 }
 
-EqEngineManagerCentral::~EqEngineManagerCentral()
-{
-}
+EqEngineManagerCentral::~EqEngineManagerCentral() {}
 
 void EqEngineManagerCentral::initializeTheories()
 {
@@ -91,7 +92,7 @@ void EqEngineManagerCentral::initializeTheories()
     // the theory uses the central equality engine
     eet.d_usedEe = &d_centralEqualityEngine;
   }
-  
+
   // also take pointer to quantifiers engine
   const LogicInfo& logicInfo = d_te.getLogicInfo();
   if (logicInfo.isQuantified())
@@ -119,10 +120,12 @@ void EqEngineManagerCentral::initializeModel(TheoryModel* m)
   m->finishInit();
 }
 
-EqEngineManagerCentral::CentralNotifyClass::CentralNotifyClass() : d_sdbNotify(nullptr), d_mNotify(nullptr), d_quantEngine(nullptr)
+EqEngineManagerCentral::CentralNotifyClass::CentralNotifyClass()
+    : d_sdbNotify(nullptr), d_mNotify(nullptr), d_quantEngine(nullptr)
 {
-  for(TheoryId theoryId = theory::THEORY_FIRST; theoryId != theory::THEORY_LAST;
-      ++ theoryId)
+  for (TheoryId theoryId = theory::THEORY_FIRST;
+       theoryId != theory::THEORY_LAST;
+       ++theoryId)
   {
     d_theoryNotify[theoryId] = nullptr;
   }
@@ -134,13 +137,14 @@ void EqEngineManagerCentral::CentralNotifyClass::eqNotifyNewClass(TNode t)
     notify->eqNotifyNewClass(t);
   }
   // also always forward to quantifiers
-  if (d_quantEngine!=nullptr)
+  if (d_quantEngine != nullptr)
   {
     d_quantEngine->eqNotifyNewClass(t);
   }
 }
 
-bool EqEngineManagerCentral::CentralNotifyClass::eqNotifyTriggerEquality(TNode equality, bool value)
+bool EqEngineManagerCentral::CentralNotifyClass::eqNotifyTriggerEquality(
+    TNode equality, bool value)
 {
   /*
   if (value) {
@@ -152,7 +156,8 @@ bool EqEngineManagerCentral::CentralNotifyClass::eqNotifyTriggerEquality(TNode e
   */
 }
 
-bool EqEngineManagerCentral::CentralNotifyClass::eqNotifyTriggerPredicate(TNode predicate, bool value)
+bool EqEngineManagerCentral::CentralNotifyClass::eqNotifyTriggerPredicate(
+    TNode predicate, bool value)
 {
   /*
   if (value) {
@@ -163,10 +168,8 @@ bool EqEngineManagerCentral::CentralNotifyClass::eqNotifyTriggerPredicate(TNode 
   */
 }
 
-bool EqEngineManagerCentral::CentralNotifyClass::eqNotifyTriggerTermEquality(TheoryId tag,
-                                  TNode t1,
-                                  TNode t2,
-                                  bool value)
+bool EqEngineManagerCentral::CentralNotifyClass::eqNotifyTriggerTermEquality(
+    TheoryId tag, TNode t1, TNode t2, bool value)
 {
   /*
   if (value) {
@@ -177,19 +180,22 @@ bool EqEngineManagerCentral::CentralNotifyClass::eqNotifyTriggerTermEquality(The
   */
 }
 
-void EqEngineManagerCentral::CentralNotifyClass::eqNotifyConstantTermMerge(TNode t1, TNode t2)
+void EqEngineManagerCentral::CentralNotifyClass::eqNotifyConstantTermMerge(
+    TNode t1, TNode t2)
 {
   /*
   d_uf.conflict(t1, t2);
   */
 }
 
-void EqEngineManagerCentral::CentralNotifyClass::eqNotifyPreMerge(TNode t1, TNode t2)
+void EqEngineManagerCentral::CentralNotifyClass::eqNotifyPreMerge(TNode t1,
+                                                                  TNode t2)
 {
   // do nothing (for now)
 }
 
-void EqEngineManagerCentral::CentralNotifyClass::eqNotifyPostMerge(TNode t1, TNode t2)
+void EqEngineManagerCentral::CentralNotifyClass::eqNotifyPostMerge(TNode t1,
+                                                                   TNode t2)
 {
   for (eq::EqualityEngineNotify* notify : d_mergeNotify)
   {
@@ -197,7 +203,9 @@ void EqEngineManagerCentral::CentralNotifyClass::eqNotifyPostMerge(TNode t1, TNo
   }
 }
 
-void EqEngineManagerCentral::CentralNotifyClass::eqNotifyDisequal(TNode t1, TNode t2, TNode reason)
+void EqEngineManagerCentral::CentralNotifyClass::eqNotifyDisequal(TNode t1,
+                                                                  TNode t2,
+                                                                  TNode reason)
 {
   for (eq::EqualityEngineNotify* notify : d_disequalNotify)
   {

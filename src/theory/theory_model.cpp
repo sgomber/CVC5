@@ -452,7 +452,7 @@ bool TheoryModel::assertEqualityEngine(const eq::EqualityEngine* ee,
                                        set<Node>* termSet)
 {
   Assert(d_equalityEngine->consistent());
-  if (d_equalityEngine==ee)
+  if (d_equalityEngine == ee)
   {
     // same equality engine, skip
     return true;

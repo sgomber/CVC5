@@ -36,6 +36,7 @@ class ModelManagerCentral : public ModelManager
  public:
   ModelManagerCentral(TheoryEngine& te);
   ~ModelManagerCentral();
+
  protected:
   /** Build model */
   bool buildModelInternal() override;

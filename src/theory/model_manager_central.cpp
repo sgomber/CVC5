@@ -19,18 +19,13 @@
 namespace CVC4 {
 namespace theory {
 
-ModelManagerCentral::ModelManagerCentral(
-    TheoryEngine& te)
-    : ModelManager(te)
-{
-}
+ModelManagerCentral::ModelManagerCentral(TheoryEngine& te) : ModelManager(te) {}
 
 ModelManagerCentral::~ModelManagerCentral() {}
 
 bool ModelManagerCentral::buildModelInternal()
 {
-  Trace("model-builder") << "ModelManagerCentral: reset model..."
-                         << std::endl;
+  Trace("model-builder") << "ModelManagerCentral: reset model..." << std::endl;
   // Reset model
   d_model->reset();
 
@@ -54,10 +49,10 @@ bool ModelManagerCentral::buildModelInternal()
                            << std::endl;
     success = false;
   }
-  
+
   // pop a SAT context
   c->pop();
-  
+
   return success;
 }
 

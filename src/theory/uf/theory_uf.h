@@ -153,7 +153,7 @@ private:
    * since some of the propagated literals are not kept anywhere.
    */
   bool propagate(TNode literal) override;
-  
+
   /** Conflict when merging two constants */
   void conflict(TNode a, TNode b) override;
 

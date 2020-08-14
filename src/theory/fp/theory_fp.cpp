@@ -922,9 +922,9 @@ void TheoryFp::handleLemma(Node node) {
   return;
 }
 
-bool TheoryFp::propagate(TNode node) {
-  Trace("fp") << "TheoryFp::propagate(): propagate " << node
-              << std::endl;
+bool TheoryFp::propagate(TNode node)
+{
+  Trace("fp") << "TheoryFp::propagate(): propagate " << node << std::endl;
 
   bool stat = d_out->propagate(node);
 
@@ -935,8 +935,8 @@ bool TheoryFp::propagate(TNode node) {
   return stat;
 }
 
-void TheoryFp::conflict(TNode t1, TNode t2) {
-
+void TheoryFp::conflict(TNode t1, TNode t2)
+{
   std::vector<TNode> assumptions;
   d_equalityEngine->explainEquality(t1, t2, true, assumptions);
 

@@ -37,6 +37,7 @@ class ModelManagerDistributed : public ModelManager
  public:
   ModelManagerDistributed(TheoryEngine& te, EqEngineManagerDistributed& eem);
   ~ModelManagerDistributed();
+
  protected:
   /** Build model */
   bool buildModelInternal() override;

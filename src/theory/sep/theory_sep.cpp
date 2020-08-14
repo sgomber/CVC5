@@ -123,7 +123,6 @@ bool TheorySep::propagate(TNode literal)
   return ok;
 }
 
-
 void TheorySep::explain(TNode literal, std::vector<TNode>& assumptions) {
   if( literal.getKind()==kind::SEP_LABEL ||
       ( literal.getKind()==kind::NOT && literal[0].getKind()==kind::SEP_LABEL ) ){

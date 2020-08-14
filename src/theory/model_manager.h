@@ -48,6 +48,7 @@ class ModelManager
   void postProcessModel(bool incomplete);
   /** Get model */
   theory::TheoryModel* getModel();
+
  protected:
   /** Collect model info */
   bool collectModelInfo();
