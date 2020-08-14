@@ -525,6 +525,16 @@ TrustNode Theory::explainConflict(TNode a, TNode b)
                   << " sent a conflict but doesn't implement the "
                      "Theory::explainConflict() interface!";
 }
+
+void Theory::preRegisterTerm(TNode)
+{
+  // TODO: eq engine trigger?
+}
+
+void Theory::addSharedTerm(TNode n)
+{
+  // TODO: eq engine trigger?
+}
 //--------------------------------- end new standard
 
 void Theory::setQuantifiersEngine(QuantifiersEngine* qe) {

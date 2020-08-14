@@ -146,7 +146,7 @@ eq::EqualityEngine* EqEngineManagerDistributed::getModelEqualityEngine()
   return d_modelEqualityEngine.get();
 }
 
-eq::EqualityEngine* EqEngineManagerDistributed::getMasterEqualityEngine()
+eq::EqualityEngine* EqEngineManagerDistributed::getCoreEqualityEngine()
 {
   return d_masterEqualityEngine.get();
 }

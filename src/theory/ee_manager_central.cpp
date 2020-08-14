@@ -36,6 +36,7 @@ EqEngineManagerCentral::~EqEngineManagerCentral() {}
 void EqEngineManagerCentral::initializeTheories()
 {
   context::Context* c = d_te.getSatContext();
+  /*
   // initialize the shared terms database
   if (d_sdb != nullptr)
   {
@@ -53,6 +54,7 @@ void EqEngineManagerCentral::initializeTheories()
           << "Expected shared terms database to use equality engine";
     }
   }
+  */
 
   // allocate equality engines per theory
   for (TheoryId theoryId = theory::THEORY_FIRST;

@@ -29,49 +29,24 @@ class SharedTermsDatabase;
 namespace theory {
 
 /**
- * The (distributed) equality engine manager. This encapsulates an architecture
- * in which all theories maintain their own copy of an equality engine.
- *
- * This class is not responsible for actually initializing equality engines in
- * theories (since this class does not have access to the internals of Theory).
- * Instead, it is only responsible for the construction of the equality
- * engine objects themselves. TheoryEngine is responsible for querying this
- * class during finishInit() to determine the equality engines to pass to each
- * theories based on getEeTheoryInfo.
- *
- * This class is also responsible for setting up the master equality engine,
- * which is used as a special communication channel to quantifiers engine (e.g.
- * for ensuring quantifiers E-matching is aware of terms from all theories).
+ * The (central) equality engine manager. This encapsulates an architecture
+ * in which all theories use a common central equality engine.
  */
 class EqEngineManagerCentral : public EqEngineManager
 {
  public:
   EqEngineManagerCentral(TheoryEngine& te, SharedTermsDatabase* sdb);
   ~EqEngineManagerCentral();
-  /**
-   * Finish initialize, called by TheoryEngine::finishInit after theory
-   * objects have been created but prior to their final initialization. This
-   * sets up equality engines for all theories.
-   *
-   * This method is context-independent, and is applied once during
-   * the lifetime of TheoryEngine (during finishInit).
+  /** 
+   * Initialize theories
    */
-  void initializeTheories();
+  void initializeTheories() override;
   /**
-   * Finish initialize, called by TheoryEngine::finishInit after theory
-   * objects have been created but prior to their final initialization. This
-   * sets up equality engines for all theories.
-   *
-   * This method is context-independent, and is applied once during
-   * the lifetime of TheoryEngine (during finishInit).
+   * Initialize model.
    */
-  void initializeModel(TheoryModel* m);
-  /** get the model equality engine context */
-  context::Context* getModelEqualityEngineContext();
-  /** get the model equality engine */
-  eq::EqualityEngine* getModelEqualityEngine();
-  /** get the master equality engine */
-  eq::EqualityEngine* getMasterEqualityEngine();
+  void initializeModel(TheoryModel* m) override;
+  /** get the core equality engine */
+  eq::EqualityEngine* getCoreEqualityEngine() override;
 
  private:
   /** notify class for central equality engine */

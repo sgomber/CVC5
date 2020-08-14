@@ -50,10 +50,34 @@ class EqEngineManager
  public:
   virtual ~EqEngineManager() {}
   /**
+   * Finish initialize, called by TheoryEngine::finishInit after theory
+   * objects have been created but prior to their final initialization. This
+   * sets up equality engines for all theories.
+   *
+   * This method is context-independent, and is applied once during
+   * the lifetime of TheoryEngine (during finishInit).
+   */
+  virtual void initializeTheories() = 0;
+  /**
+   * Finish initialize, called by TheoryEngine::finishInit after theory
+   * objects have been created but prior to their final initialization. This
+   * sets up equality engines for all theories.
+   *
+   * This method is context-independent, and is applied once during
+   * the lifetime of TheoryEngine (during finishInit).
+   */
+  virtual void initializeModel(TheoryModel* m) = 0;
+  /**
    * Get the equality engine theory information for theory with the given id.
    */
   const EeTheoryInfo* getEeTheoryInfo(TheoryId tid) const;
-
+  /** 
+   * Get the core equality engine, which is the equality engine that the
+   * quantifiers engine should use. This corresponds to the master equality
+   * engine if eeMode is distributed, or the central equality engine if eeMode
+   * is central.
+   */
+  virtual eq::EqualityEngine* getCoreEqualityEngine() = 0;
  protected:
   /** Information related to the equality engine, per theory. */
   std::map<TheoryId, EeTheoryInfo> d_einfo;

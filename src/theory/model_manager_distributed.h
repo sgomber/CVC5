@@ -37,13 +37,14 @@ class ModelManagerDistributed : public ModelManager
  public:
   ModelManagerDistributed(TheoryEngine& te, EqEngineManagerDistributed& eem);
   ~ModelManagerDistributed();
-  /** finish init */
-  void finishInit() override;
 
  protected:
   /** Build model */
   bool buildModelInternal() override;
-  /** Reference to the equality engine manager */
+  /** 
+   * Distributed equality engine manager, which as a special interaction
+   * for building models.
+   */
   EqEngineManagerDistributed& d_eem;
 };
 

@@ -284,6 +284,10 @@ class Theory {
    * TheoryEngine only.
    */
   void setEqualityEngine(eq::EqualityEngine* ee);
+  /** Called to set the quantifiers engine. */
+  void setQuantifiersEngine(QuantifiersEngine* qe);
+  /** Called to set the decision manager. */
+  void setDecisionManager(DecisionManager* dm);
   /**
    * Finish theory initialization.  At this point, options and the logic
    * setting are final, the master equality engine and quantifiers
@@ -446,13 +450,6 @@ class Theory {
   }
 
   /**
-   * Set the output channel associated to this theory.
-   */
-  void setOutputChannel(OutputChannel& out) {
-    d_out = &out;
-  }
-
-  /**
    * Get the output channel associated to this theory.
    */
   OutputChannel& getOutputChannel() {
@@ -466,17 +463,14 @@ class Theory {
     return d_valuation;
   }
 
+
+  /** Get the equality engine being used by this theory. */
+  eq::EqualityEngine* getEqualityEngine();
+  
   /**
    * Get the quantifiers engine associated to this theory.
    */
   QuantifiersEngine* getQuantifiersEngine() {
-    return d_quantEngine;
-  }
-
-  /**
-   * Get the quantifiers engine associated to this theory (const version).
-   */
-  const QuantifiersEngine* getQuantifiersEngine() const {
     return d_quantEngine;
   }
 
@@ -519,7 +513,7 @@ class Theory {
   /**
    * Pre-register a term.  Done one time for a Node per SAT context level.
    */
-  virtual void preRegisterTerm(TNode) { }
+  virtual void preRegisterTerm(TNode);
 
   /**
    * Assert a fact in the current context.
@@ -535,18 +529,7 @@ class Theory {
    * This method is called to notify a theory that the node n should
    * be considered a "shared term" by this theory
    */
-  virtual void addSharedTerm(TNode n) { }
-
-  /** Get the equality engine being used by this theory. */
-  eq::EqualityEngine* getEqualityEngine();
-
-  /** Called to set the quantifiers engine. */
-  void setQuantifiersEngine(QuantifiersEngine* qe);
-  /** Called to set the decision manager. */
-  void setDecisionManager(DecisionManager* dm);
-
-  /** Setup an ExtTheory module for this Theory. Can only be called once. */
-  void setupExtTheory();
+  virtual void addSharedTerm(TNode n);
 
   /**
    * Return the current theory care graph. Theories should overload

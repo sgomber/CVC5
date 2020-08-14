@@ -172,10 +172,10 @@ void TheoryEngine::finishInit() {
   // equality engines to use for all theories.
   d_tc->finishInit();
 
-  // set the master equality engine
+  // set the core equality engine on quantifiers engine
   if (d_logicInfo.isQuantified())
   {
-    d_quantEngine->setMasterEqualityEngine(d_tc->getMasterEqualityEngine());
+    d_quantEngine->setMasterEqualityEngine(d_tc->getCoreEqualityEngine());
   }
 
   // finish initializing the theories by linking them with the appropriate

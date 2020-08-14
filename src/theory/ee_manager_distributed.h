@@ -59,7 +59,7 @@ class EqEngineManagerDistributed : public EqEngineManager
    * This method is context-independent, and is applied once during
    * the lifetime of TheoryEngine (during finishInit).
    */
-  void initializeTheories();
+  void initializeTheories() override;
   /**
    * Finish initialize, called by TheoryEngine::finishInit after theory
    * objects have been created but prior to their final initialization. This
@@ -68,13 +68,13 @@ class EqEngineManagerDistributed : public EqEngineManager
    * This method is context-independent, and is applied once during
    * the lifetime of TheoryEngine (during finishInit).
    */
-  void initializeModel(TheoryModel* m);
+  void initializeModel(TheoryModel* m) override;
   /** get the model equality engine context */
   context::Context* getModelEqualityEngineContext();
   /** get the model equality engine */
   eq::EqualityEngine* getModelEqualityEngine();
-  /** get the master equality engine */
-  eq::EqualityEngine* getMasterEqualityEngine();
+  /** get the core equality engine */
+  eq::EqualityEngine* getCoreEqualityEngine() override;
 
  private:
   /** Allocate equality engine that is context-dependent on c with info esi */

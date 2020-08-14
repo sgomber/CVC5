@@ -42,12 +42,7 @@ void ModelManager::resetModel()
 
 void ModelManager::finishInit()
 {
-  // initialize the model
-  initializeModel();
-}
-
-void ModelManager::initializeModel()
-{
+  // construct the model
   const LogicInfo& logicInfo = d_te.getLogicInfo();
   // Initialize the model and model builder.
   if (logicInfo.isQuantified())
@@ -72,6 +67,7 @@ void ModelManager::initializeModel()
     d_alocModelBuilder.reset(new TheoryEngineModelBuilder(&d_te));
     d_modelBuilder = d_alocModelBuilder.get();
   }
+  // notice that the equality engine of the model has yet to be assigned.
 }
 
 bool ModelManager::buildModel()

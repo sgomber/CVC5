@@ -20,7 +20,6 @@
 #include <map>
 #include <memory>
 
-#include "theory/ee_manager_distributed.h"
 #include "theory/theory_model.h"
 #include "theory/theory_model_builder.h"
 
@@ -41,7 +40,7 @@ class ModelManager
   /** reset model */
   void resetModel();
   /** finish init */
-  virtual void finishInit();
+  void finishInit();
   /** Build model */
   bool buildModel();
   /** Post process model */
@@ -52,8 +51,6 @@ class ModelManager
  protected:
   /** Collect model info */
   bool collectModelInfo();
-  /** Initialize the model */
-  void initializeModel();
   /** Build model */
   virtual bool buildModelInternal() = 0;
   /** Reference to the theory engine */

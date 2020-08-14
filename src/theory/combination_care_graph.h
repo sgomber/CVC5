@@ -47,7 +47,7 @@ class CombinationCareGraph
   /** Get the equality engine theory information. */
   const EeTheoryInfo* getEeTheoryInfo(TheoryId tid) const;
   /** get the master equality engine */
-  eq::EqualityEngine* getMasterEqualityEngine();
+  eq::EqualityEngine* getCoreEqualityEngine();
   //-------------------------- end equality engine
   //-------------------------- model
   /** reset model */
@@ -57,7 +57,7 @@ class CombinationCareGraph
   /** Post process model */
   void postProcessModel(bool incomplete);
   /** Get model */
-  theory::TheoryModel* getModel();
+  TheoryModel* getModel();
   //-------------------------- end model
 
   //-------------------------- interface used by theory engine
@@ -66,10 +66,14 @@ class CombinationCareGraph
   void preRegister(TNode preprocessed);
   void notifyAssertFact(TNode atom);
   bool isShared(TNode term) const;
-  theory::EqualityStatus getEqualityStatus(TNode a, TNode b);
+  EqualityStatus getEqualityStatus(TNode a, TNode b);
 
   Node explain(TNode literal) const;
   void assertEquality(TNode equality, bool polarity, TNode reason);
+  /**
+   * The given theory propagated the given literal. Do we need to process it?
+   */
+  bool needsPropagation(TNode literal, TheoryId theory);
   //-------------------------- end interface used by theory engine
  private:
   /** Reference to the theory engine */
@@ -89,17 +93,20 @@ class CombinationCareGraph
   /** Visitor for collecting shared terms */
   SharedTermsVisitor d_sharedTermsVisitor;
 
-  /**
-   * The distributed equality manager. This class is responsible for
-   * configuring the theories of this class for handling equalties
-   * in a "distributed" fashion, i.e. each theory maintains a unique
-   * instance of an equality engine. These equality engines are memory
-   * managed by this class.
+  /** 
+   * The equality engine manager. This class is responsible for
+   * configuring equality engines for each theory.
    */
-  std::unique_ptr<theory::EqEngineManagerDistributed> d_eeDistributed;
-
+  EqEngineManager * d_eemUse;
+  /**
+   * Equality engine manager for handling equalties in a "distributed" fashion,
+   * i.e. each theory maintains a unique instance of an equality engine.
+   */
+  std::unique_ptr<EqEngineManagerDistributed> d_eeDistributed;
   /** The model manager */
-  std::unique_ptr<theory::ModelManagerDistributed> d_mDistributed;
+  ModelManager * d_mmUse;
+  /** The distributed model manager */
+  std::unique_ptr<ModelManagerDistributed> d_mDistributed;
 };
 
 }  // namespace theory
