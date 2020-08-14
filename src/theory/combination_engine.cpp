@@ -92,7 +92,9 @@ theory::TheoryModel* CombinationEngine::getModel()
   return d_mmUse->getModel();
 }
 
-void CombinationEngine::preRegister(TNode preprocessed, bool multipleTheories) {}
+void CombinationEngine::preRegister(TNode preprocessed, bool multipleTheories)
+{
+}
 void CombinationEngine::notifyAssertFact(TNode atom) {}
 bool CombinationEngine::isShared(TNode term) const { return true; }
 

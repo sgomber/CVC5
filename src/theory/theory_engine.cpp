@@ -298,8 +298,8 @@ void TheoryEngine::preRegister(TNode preprocessed) {
       Assert(!expr::hasFreeVar(preprocessed));
 
       // Pre-register the terms in the atom
-      Theory::Set theories =
-          NodeVisitor<PreRegisterVisitor>::run(d_preRegistrationVisitor, preprocessed);
+      Theory::Set theories = NodeVisitor<PreRegisterVisitor>::run(
+          d_preRegistrationVisitor, preprocessed);
       theories = Theory::setRemove(THEORY_BOOL, theories);
       // Remove the top theory, if any more that means multiple theories were
       // involved
@@ -322,16 +322,16 @@ void TheoryEngine::preRegister(TNode preprocessed) {
             newLogicInfo.lock();
             std::stringstream ss;
             ss << "The logic was specified as " << d_logicInfo.getLogicString()
-              << ", which doesn't include " << i
-              << ", but found a term in that theory." << std::endl
-              << "You might want to extend your logic to "
-              << newLogicInfo.getLogicString() << std::endl;
+               << ", which doesn't include " << i
+               << ", but found a term in that theory." << std::endl
+               << "You might want to extend your logic to "
+               << newLogicInfo.getLogicString() << std::endl;
             throw LogicException(ss.str());
           }
         }
       }
 #endif
-        
+
       // pre-register with the theory combination module, which also handles
       // calling prepregister on individual theories.
       Assert(d_tc != nullptr);
@@ -580,7 +580,8 @@ void TheoryEngine::check(Theory::Effort effort) {
   }
 }
 
-void TheoryEngine::propagate(Theory::Effort effort) {  
+void TheoryEngine::propagate(Theory::Effort effort)
+{
   // Reset the interrupt flag
   d_interrupted = false;
 
@@ -1072,7 +1073,7 @@ bool TheoryEngine::propagate(TNode literal, theory::TheoryId theory) {
     // nothing to do, return
     return;
   }
-  
+
   Trace("dtview::prop") << std::string(d_context->getLevel(), ' ')
                         << ":THEORY-PROP: " << literal << endl;
 
