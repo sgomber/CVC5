@@ -1,5 +1,5 @@
 /*********************                                                        */
-/*! \file ee_manager_distributed.h
+/*! \file model_manager_central.h
  ** \verbatim
  ** Top contributors (to current version):
  **   Andrew Reynolds
@@ -9,19 +9,17 @@
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
- ** \brief Management of a distributed approach for equality engines over
- ** all theories.
+ ** \brief Management of a central approach for model generation.
  **/
 
 #include "cvc4_private.h"
 
-#ifndef CVC4__THEORY__MODEL_MANAGER_DISTRIBUTED__H
-#define CVC4__THEORY__MODEL_MANAGER_DISTRIBUTED__H
+#ifndef CVC4__THEORY__MODEL_MANAGER_CENTRAL__H
+#define CVC4__THEORY__MODEL_MANAGER_CENTRAL__H
 
 #include <map>
 #include <memory>
 
-#include "theory/ee_manager_distributed.h"
 #include "theory/model_manager.h"
 
 namespace CVC4 {
@@ -33,19 +31,17 @@ namespace theory {
 /**
  * Manager for building models in a distributed architecture.
  */
-class ModelManagerDistributed : public ModelManager
+class ModelManagerCentral : public ModelManager
 {
  public:
-  ModelManagerDistributed(TheoryEngine& te, EqEngineManagerDistributed& eem);
-  ~ModelManagerDistributed();
+  ModelManagerCentral(TheoryEngine& te);
+  ~ModelManagerCentral();
  protected:
   /** Build model */
   bool buildModelInternal() override;
-  /** Reference to the equality engine manager */
-  EqEngineManagerDistributed& d_eem;
 };
 
 }  // namespace theory
 }  // namespace CVC4
 
-#endif /* CVC4__THEORY__MODEL_MANAGER_DISTRIBUTED__H */
+#endif /* CVC4__THEORY__MODEL_MANAGER_CENTRAL__H */

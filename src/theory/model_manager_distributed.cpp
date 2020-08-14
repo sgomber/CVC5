@@ -1,5 +1,5 @@
 /*********************                                                        */
-/*! \file ee_manager_distributed.cpp
+/*! \file model_manager_distributed.cpp
  ** \verbatim
  ** Top contributors (to current version):
  **   Andrew Reynolds
@@ -9,8 +9,7 @@
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
- ** \brief Management of a distributed approach for equality engines over
- ** all theories.
+ ** \brief Management of a distributed approach for model generation.
  **/
 
 #include "theory/model_manager_distributed.h"
@@ -50,7 +49,13 @@ bool ModelManagerDistributed::buildModelInternal()
   }
 
   // success is determined by the model builder
-  return d_modelBuilder->buildModel(d_model);
+  if (!d_modelBuilder->buildModel(d_model))
+  {
+    Trace("model-builder") << "ModelManagerDistributed: fail build model"
+                           << std::endl;
+    return false;
+  }
+  return true;
 }
 
 }  // namespace theory

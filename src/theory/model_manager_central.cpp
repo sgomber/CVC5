@@ -1,5 +1,5 @@
 /*********************                                                        */
-/*! \file ee_manager_distributed.cpp
+/*! \file model_manager_central.cpp
  ** \verbatim
  ** Top contributors (to current version):
  **   Andrew Reynolds
@@ -9,8 +9,7 @@
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
- ** \brief Management of a distributed approach for equality engines over
- ** all theories.
+ ** \brief Management of a central approach for model generation.
  **/
 
 #include "theory/model_manager_central.h"
@@ -21,9 +20,8 @@ namespace CVC4 {
 namespace theory {
 
 ModelManagerCentral::ModelManagerCentral(
-    TheoryEngine& te, EqEngineManagerDistributed& eem)
-    : ModelManager(te),
-      d_eem(eem)
+    TheoryEngine& te)
+    : ModelManager(te)
 {
 }
 
@@ -50,8 +48,10 @@ bool ModelManagerCentral::buildModelInternal()
                            << std::endl;
     success = false;
   }
-  else (!d_modelBuilder->buildModel(d_model))
+  else if (!d_modelBuilder->buildModel(d_model))
   {
+    Trace("model-builder") << "ModelManagerCentral: fail build model"
+                           << std::endl;
     success = false;
   }
   
