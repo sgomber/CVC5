@@ -484,7 +484,7 @@ void TheoryEngine::check(Theory::Effort effort) {
       if (Trace.isOn("theory::assertions-model")) {
         printAssertions("theory::assertions-model");
       }
-      CombinationCareGraph* builder = d_tc;
+      CombinationEngine* builder = d_tc;
       Assert(builder != nullptr);
       //checks for theories requiring the model go at last call
       builder->resetModel();
@@ -528,7 +528,7 @@ void TheoryEngine::check(Theory::Effort effort) {
     if( Theory::fullEffort(effort) && !d_inConflict && !needCheck()) {
       // case where we are about to answer SAT, the master equality engine,
       // if it exists, must be consistent.
-      CombinationCareGraph* builder = d_tc;
+      CombinationEngine* builder = d_tc;
       // Do post-processing of model from the theories (used for THEORY_SEP
       // to construct heap model)
       builder->postProcessModel(d_incomplete.get());

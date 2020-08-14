@@ -77,7 +77,8 @@ class CombinationCareGraph : public CombinationEngine
    */
   std::unique_ptr<EqEngineManagerDistributed> d_eeDistributed;
   /**
-   * The distributed model manager.
+   * The distributed model manager, which maintains its own equality engine
+   * which other theories dump to after a FULL effort check.
    */
   std::unique_ptr<ModelManagerDistributed> d_mDistributed;
 };

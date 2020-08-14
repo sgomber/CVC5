@@ -61,8 +61,12 @@ class CombinationEngine
   //-------------------------- end model
 
   //-------------------------- interface used by theory engine
-  /** Combine theories */
-  virtual void combineTheories();
+  /** 
+   * Combine theories, called after FULL effort passes with no lemmas
+   * and before LAST_CALL effort is run. This adds necessary lemmas for
+   * theory combination (e.g. splitting lemmas) to the parent TheoryEngine.
+   */
+  virtual void combineTheories() = 0;
   virtual void preRegister(TNode preprocessed);
   virtual void notifyAssertFact(TNode atom);
   virtual bool isShared(TNode term) const;

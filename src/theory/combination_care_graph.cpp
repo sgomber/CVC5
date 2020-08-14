@@ -219,6 +219,7 @@ void CombinationCareGraph::assertEquality(TNode equality,
 bool CombinationCareGraph::needsPropagation(TNode literal,
                                             theory::TheoryId theory)
 {
+  // always needs propagation?
   return true;
 }
 

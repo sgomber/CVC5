@@ -58,7 +58,7 @@ void CombinationEngine::finishInit()
 
 void CombinationEngine::initializeInternal()
 {
-  AlwaysAssert(false)
+  Unhandled()
       << "CombinationEngine::CombinationEngine: equality engine mode "
       << options::eeMode() << " not supported";
 }
@@ -93,6 +93,28 @@ theory::TheoryModel* CombinationEngine::getModel()
 {
   return d_mmUse->getModel();
 }
+
+void CombinationEngine::preRegister(TNode preprocessed) {}
+void CombinationEngine::notifyAssertFact(TNode atom) {}
+bool CombinationEngine::isShared(TNode term) const
+{
+  return true;
+}
+
+EqualityStatus CombinationEngine::getEqualityStatus(TNode a, TNode b)
+{
+  Assert(a.getType().isComparableTo(b.getType()));
+  return d_te.theoryOf(Theory::theoryOf(a.getType()))->getEqualityStatus(a, b);
+}
+
+Node CombinationEngine::explain(TNode literal) const
+{
+  Unhandled()
+      << "CombinationEngine::CombinationEngine: does not support the explain interface";
+}
+void CombinationEngine::assertEquality(TNode equality, bool polarity, TNode reason) {}
+
+bool CombinationEngine::needsPropagation(TNode literal, TheoryId theory) { return true; }
 
 }  // namespace theory
 }  // namespace CVC4
