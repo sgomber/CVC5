@@ -31,11 +31,29 @@ CombinationCareGraph::CombinationCareGraph(
     : CombinationEngine(te, paraTheories, c),
       d_sharedTerms(&te, c),
       d_preRegistrationVisitor(&te, c),
-      d_sharedTermsVisitor(d_sharedTerms)
+      d_sharedTermsVisitor(d_sharedTerms),
+      d_eeDistributed(nullptr),
+      d_mDistributed(nullptr)
 {
 }
 
 CombinationCareGraph::~CombinationCareGraph() {}
+
+void CombinationCareGraph::initializeInternal()
+{
+  if (options::eeMode() == options::EqEngineMode::DISTRIBUTED)
+  {
+    d_eeDistributed.reset(new EqEngineManagerDistributed(d_te, &d_sharedTerms));
+    d_eemUse = d_eeDistributed.get();
+    d_mDistributed.reset(
+        new ModelManagerDistributed(d_te, *d_eeDistributed.get()));
+    d_mmUse = d_mDistributed.get();
+  }
+  else
+  {
+    CombinationEngine::initializeInternal();
+  }
+}
 
 void CombinationCareGraph::combineTheories()
 {

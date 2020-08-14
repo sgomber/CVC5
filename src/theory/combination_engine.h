@@ -35,10 +35,10 @@ namespace theory {
 class CombinationEngine
 {
  public:
-  CombinationCareGraph(TheoryEngine& te,
+  CombinationEngine(TheoryEngine& te,
                        const std::vector<Theory*>& paraTheories,
                        context::Context* c);
-  ~CombinationCareGraph();
+  virtual ~CombinationEngine();
 
   /** Finish initialization */
   void finishInit();
@@ -75,6 +75,11 @@ class CombinationEngine
   virtual bool needsPropagation(TNode literal, TheoryId theory);
   //-------------------------- end interface used by theory engine
  protected:
+  /** 
+   * Initialize internal, which is responsible for constructing the equality
+   * engine and model managers (d_eemUse and d_mmUse) based on the options.
+   */
+  virtual void initializeInternal();
   /** Reference to the theory engine */
   TheoryEngine& d_te;
   /** Logic info of theory engine (cached) */
@@ -86,17 +91,8 @@ class CombinationEngine
    * configuring equality engines for each theory.
    */
   EqEngineManager* d_eemUse;
-  /**
-   * Equality engine manager for handling equalties in a "distributed" fashion,
-   * i.e. each theory maintains a unique instance of an equality engine.
-   */
-  std::unique_ptr<EqEngineManagerDistributed> d_eeDistributed;
   /** The model manager we are using */
   ModelManager* d_mmUse;
-  /**
-   * The distributed model manager.
-   */
-  std::unique_ptr<ModelManagerDistributed> d_mDistributed;
 };
 
 }  // namespace theory

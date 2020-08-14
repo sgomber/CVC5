@@ -31,7 +31,8 @@ class TheoryEngine;
 namespace theory {
 
 /**
- * Manager for doing theory combination in a distributed architecture.
+ * Manager for doing theory combination using care graphs. This is typically
+ * done via a distributed equalty engine architecture.
  */
 class CombinationCareGraph : public CombinationEngine
 {
@@ -54,7 +55,12 @@ class CombinationCareGraph : public CombinationEngine
    */
   bool needsPropagation(TNode literal, TheoryId theory) override;
 
- private:
+ private: 
+   /** 
+   * Initialize internal, which is responsible for constructing the equality
+   * engine and model managers (d_eemUse and d_mmUse) based on the options.
+   */
+  void initializeInternal() override;
   /**
    * The database of shared terms.
    */
@@ -65,6 +71,15 @@ class CombinationCareGraph : public CombinationEngine
 
   /** Visitor for collecting shared terms */
   SharedTermsVisitor d_sharedTermsVisitor;
+  /**
+   * Equality engine manager for handling equalties in a "distributed" fashion,
+   * i.e. each theory maintains a unique instance of an equality engine.
+   */
+  std::unique_ptr<EqEngineManagerDistributed> d_eeDistributed;
+  /**
+   * The distributed model manager.
+   */
+  std::unique_ptr<ModelManagerDistributed> d_mDistributed;
 };
 
 }  // namespace theory

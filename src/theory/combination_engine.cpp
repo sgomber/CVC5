@@ -31,30 +31,18 @@ CombinationEngine::CombinationEngine(TheoryEngine& te,
       d_logicInfo(te.getLogicInfo()),
       d_paraTheories(paraTheories),
       d_eemUse(nullptr),
-      d_eeDistributed(nullptr),
-      d_mmUse(nullptr),
-      d_mDistributed(nullptr)
+      d_mmUse(nullptr)
 {
-  if (options::eeMode() == options::EqEngineMode::DISTRIBUTED)
-  {
-    d_eeDistributed.reset(new EqEngineManagerDistributed(te, &d_sharedTerms));
-    d_eemUse = d_eeDistributed.get();
-    d_mDistributed.reset(
-        new ModelManagerDistributed(te, *d_eeDistributed.get()));
-    d_mmUse = d_mDistributed.get();
-  }
-  else
-  {
-    AlwaysAssert(false)
-        << "CombinationEngine::CombinationEngine: equality engine mode "
-        << options::eeMode() << " not supported";
-  }
+  
 }
 
 CombinationEngine::~CombinationEngine() {}
 
 void CombinationEngine::finishInit()
 {
+  // create the equality engine and model managers
+  initializeInternal();
+  
   Assert(d_eemUse != nullptr);
   // initialize equality engines in all theories, including quantifiers engine
   d_eemUse->initializeTheories();
@@ -66,6 +54,13 @@ void CombinationEngine::finishInit()
   // initialize equality engine of the model using the equality engine manager
   TheoryModel* m = d_mmUse->getModel();
   d_eemUse->initializeModel(m);
+}
+
+void CombinationEngine::initializeInternal()
+{
+  AlwaysAssert(false)
+      << "CombinationEngine::CombinationEngine: equality engine mode "
+      << options::eeMode() << " not supported";
 }
 
 const EeTheoryInfo* CombinationEngine::getEeTheoryInfo(TheoryId tid) const
