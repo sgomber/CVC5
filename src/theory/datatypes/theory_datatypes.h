@@ -82,7 +82,7 @@ class TheoryDatatypes : public Theory {
                                      TNode t2,
                                      bool value) override
     {
-  AlwaysAssert (tag==THEORY_DATATYPES);
+      AlwaysAssert(tag == THEORY_DATATYPES);
       Debug("dt") << "NotifyClass::eqNotifyTriggerTermMerge(" << tag << ", " << t1 << ", " << t2 << ")" << std::endl;
       if (value) {
         return d_dt.propagate(t1.eqNode(t2));

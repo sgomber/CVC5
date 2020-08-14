@@ -43,32 +43,32 @@ CombinationCareGraph::CombinationCareGraph(
   {
     d_eeDistributed.reset(new EqEngineManagerDistributed(te, &d_sharedTerms));
     d_eemUse = d_eeDistributed.get();
-    d_mDistributed.reset(new ModelManagerDistributed(te, *d_eeDistributed.get()));
+    d_mDistributed.reset(
+        new ModelManagerDistributed(te, *d_eeDistributed.get()));
     d_mmUse = d_mDistributed.get();
   }
   else
   {
-    AlwaysAssert(false) << "CombinationCareGraph::CombinationCareGraph: equality engine mode "
-                        << options::eeMode() << " not supported";
+    AlwaysAssert(false)
+        << "CombinationCareGraph::CombinationCareGraph: equality engine mode "
+        << options::eeMode() << " not supported";
   }
-
-  
 }
 
 CombinationCareGraph::~CombinationCareGraph() {}
 
 void CombinationCareGraph::finishInit()
 {
-  Assert (d_eemUse!=nullptr);
+  Assert(d_eemUse != nullptr);
   // initialize equality engines in all theories, including quantifiers engine
   d_eemUse->initializeTheories();
-  
-  Assert (d_mmUse!=nullptr);
+
+  Assert(d_mmUse != nullptr);
   // initialize the model manager
   d_mmUse->finishInit();
 
   // initialize equality engine of the model using the equality engine manager
-  TheoryModel * m = d_mmUse->getModel();
+  TheoryModel* m = d_mmUse->getModel();
   d_eemUse->initializeModel(m);
 }
 
@@ -264,10 +264,11 @@ void CombinationCareGraph::assertEquality(TNode equality,
   d_sharedTerms.assertEquality(equality, polarity, reason);
 }
 
-bool CombinationCareGraph::needsPropagation(TNode literal, theory::TheoryId theory)
+bool CombinationCareGraph::needsPropagation(TNode literal,
+                                            theory::TheoryId theory)
 {
   return true;
 }
-  
+
 }  // namespace theory
 }  // namespace CVC4

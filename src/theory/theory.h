@@ -463,10 +463,9 @@ class Theory {
     return d_valuation;
   }
 
-
   /** Get the equality engine being used by this theory. */
   eq::EqualityEngine* getEqualityEngine();
-  
+
   /**
    * Get the quantifiers engine associated to this theory.
    */

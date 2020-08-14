@@ -37,7 +37,7 @@ class EqEngineManagerCentral : public EqEngineManager
  public:
   EqEngineManagerCentral(TheoryEngine& te, SharedTermsDatabase* sdb);
   ~EqEngineManagerCentral();
-  /** 
+  /**
    * Initialize theories
    */
   void initializeTheories() override;

@@ -41,7 +41,7 @@ class ModelManagerDistributed : public ModelManager
  protected:
   /** Build model */
   bool buildModelInternal() override;
-  /** 
+  /**
    * Distributed equality engine manager, which as a special interaction
    * for building models.
    */

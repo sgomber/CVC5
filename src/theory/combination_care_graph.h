@@ -93,18 +93,18 @@ class CombinationCareGraph
   /** Visitor for collecting shared terms */
   SharedTermsVisitor d_sharedTermsVisitor;
 
-  /** 
+  /**
    * The equality engine manager. This class is responsible for
    * configuring equality engines for each theory.
    */
-  EqEngineManager * d_eemUse;
+  EqEngineManager* d_eemUse;
   /**
    * Equality engine manager for handling equalties in a "distributed" fashion,
    * i.e. each theory maintains a unique instance of an equality engine.
    */
   std::unique_ptr<EqEngineManagerDistributed> d_eeDistributed;
   /** The model manager */
-  ModelManager * d_mmUse;
+  ModelManager* d_mmUse;
   /** The distributed model manager */
   std::unique_ptr<ModelManagerDistributed> d_mDistributed;
 };
