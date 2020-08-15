@@ -280,7 +280,7 @@ class Theory {
    * be considered a "shared term" by this theory
    */
   virtual void addSharedTerm(TNode n);
-  
+
   //--------------------------------- private initialization
   /**
    * Called to set the official equality engine. This should be done by
@@ -529,7 +529,7 @@ class Theory {
 
   /** Add shared term to the theory. */
   void notifySharedTerm(TNode node);
-  
+
   /**
    * Return the current theory care graph. Theories should overload
    * computeCareGraph to do the actual computation, and use addCarePair to add

@@ -248,9 +248,12 @@ TheoryId Theory::theoryOf(options::TheoryOfMode mode, TNode node)
   return tid;
 }
 
-void Theory::notifySharedTerm(TNode n) {
-  Debug("sharing") << "Theory::notifySharedTerm<" << getId() << ">(" << n << ")" << endl;
-  Debug("theory::assertions") << "Theory::notifySharedTerm<" << getId() << ">(" << n << ")" << endl;
+void Theory::notifySharedTerm(TNode n)
+{
+  Debug("sharing") << "Theory::notifySharedTerm<" << getId() << ">(" << n << ")"
+                   << endl;
+  Debug("theory::assertions")
+      << "Theory::notifySharedTerm<" << getId() << ">(" << n << ")" << endl;
   d_sharedTerms.push_back(n);
   addSharedTerm(n);
 }

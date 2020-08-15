@@ -73,7 +73,7 @@ class CombinationEngine
    * This adds t as an equality to propagate in the shared terms database
    * if it is an equality, or adds its shared terms if it involves multiple
    * theories.
-   * 
+   *
    * @param t The term to preregister
    * @param multipleTheories Whether multiple theories are present in t.
    */

@@ -122,7 +122,8 @@ void CombinationEngine::preRegister(TNode t, bool multipleTheories)
   }
 }
 
-void CombinationEngine::notifyAssertFact(TNode atom) {
+void CombinationEngine::notifyAssertFact(TNode atom)
+{
   if (d_sharedTerms != nullptr && d_sharedTerms->hasSharedTerms(atom))
   {
     // Notify the theories the shared terms
@@ -147,7 +148,8 @@ void CombinationEngine::notifyAssertFact(TNode atom) {
   }
 }
 
-bool CombinationEngine::isShared(TNode term) const { 
+bool CombinationEngine::isShared(TNode term) const
+{
   if (d_sharedTerms != nullptr)
   {
     return d_sharedTerms->isShared(term);
@@ -183,7 +185,7 @@ Node CombinationEngine::explain(TNode literal) const
   if (d_sharedTerms == nullptr)
   {
     Unhandled() << "CombinationEngine::CombinationEngine: does not support the "
-                  "explain interface";
+                   "explain interface";
   }
   return d_sharedTerms->explain(literal);
 }
@@ -192,7 +194,7 @@ void CombinationEngine::assertEquality(TNode equality,
                                        bool polarity,
                                        TNode reason)
 {
-  if (d_sharedTerms!=nullptr)
+  if (d_sharedTerms != nullptr)
   {
     d_sharedTerms->assertEquality(equality, polarity, reason);
   }
