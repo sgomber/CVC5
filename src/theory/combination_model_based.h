@@ -36,7 +36,7 @@ class CombinationModelBased : public CombinationEngine
 {
  public:
   CombinationModelBased(TheoryEngine& te,
-                       const std::vector<Theory*>& paraTheories);
+                        const std::vector<Theory*>& paraTheories);
   ~CombinationModelBased();
 
   /**
