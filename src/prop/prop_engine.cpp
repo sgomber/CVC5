@@ -122,14 +122,6 @@ PropEngine::~PropEngine() {
   delete d_theoryProxy;
 }
 
-void PropEngine::finishInit()
-{
-  NodeManager* nm = NodeManager::currentNM();
-  d_cnfStream->convertAndAssert(nm->mkConst(true), false, false, RULE_GIVEN);
-  d_cnfStream->convertAndAssert(
-      nm->mkConst(false).notNode(), false, false, RULE_GIVEN);
-}
-
 void PropEngine::assertFormula(TNode node) {
   Assert(!d_inCheckSat) << "Sat solver in solve()!";
   Debug("prop") << "assertFormula(" << node << ")" << endl;

@@ -27,7 +27,7 @@ EqEngineManagerCentral::EqEngineManagerCentral(TheoryEngine& te,
       d_sdb(sdb),
       d_centralEENotify(),
       d_centralEqualityEngine(
-          &d_centralEENotify, te.getSatContext(), "centralEE", true)
+          d_centralEENotify, te.getSatContext(), "centralEE", true)
 {
 }
 
@@ -35,7 +35,6 @@ EqEngineManagerCentral::~EqEngineManagerCentral() {}
 
 void EqEngineManagerCentral::initializeTheories()
 {
-  context::Context* c = d_te.getSatContext();
   /*
   // initialize the shared terms database
   if (d_sdb != nullptr)
@@ -111,7 +110,7 @@ void EqEngineManagerCentral::initializeModel(TheoryModel* m)
   if (m->needsEqualityEngine(esim))
   {
     // set the notification class
-    d_centralEENotify.d_mNotify = esmi.d_notify;
+    d_centralEENotify.d_mNotify = esim.d_notify;
     // model uses the central equality engine
     m->setEqualityEngine(&d_centralEqualityEngine);
   }
@@ -155,9 +154,9 @@ bool EqEngineManagerCentral::CentralNotifyClass::eqNotifyTriggerEquality(
     return d_uf.propagate(equality.notNode());
   }
   */
-  TheoryId tid = theoryOf(equality);
+  TheoryId tid = Theory::theoryOf(equality);
   Assert(d_theoryNotify[tid] != nullptr);
-  d_theoryNotify[tid]->eqNotifyTriggerEquality(equality, value);
+  return d_theoryNotify[tid]->eqNotifyTriggerEquality(equality, value);
 }
 
 bool EqEngineManagerCentral::CentralNotifyClass::eqNotifyTriggerPredicate(
@@ -170,9 +169,9 @@ bool EqEngineManagerCentral::CentralNotifyClass::eqNotifyTriggerPredicate(
     return d_uf.propagate(predicate.notNode());
   }
   */
-  TheoryId tid = theoryOf(predicate);
+  TheoryId tid = Theory::theoryOf(predicate);
   Assert(d_theoryNotify[tid] != nullptr);
-  d_theoryNotify[tid]->eqNotifyTriggerPredicate(predicate, value);
+  return d_theoryNotify[tid]->eqNotifyTriggerPredicate(predicate, value);
 }
 
 bool EqEngineManagerCentral::CentralNotifyClass::eqNotifyTriggerTermEquality(
@@ -186,7 +185,7 @@ bool EqEngineManagerCentral::CentralNotifyClass::eqNotifyTriggerTermEquality(
   }
   */
   Assert(d_theoryNotify[tag] != nullptr);
-  d_theoryNotify[tid]->eqNotifyTriggerTermEquality(tag, t1, t2, value);
+  return d_theoryNotify[tag]->eqNotifyTriggerTermEquality(tag, t1, t2, value);
 }
 
 void EqEngineManagerCentral::CentralNotifyClass::eqNotifyConstantTermMerge(
@@ -195,23 +194,17 @@ void EqEngineManagerCentral::CentralNotifyClass::eqNotifyConstantTermMerge(
   /*
   d_uf.conflict(t1, t2);
   */
-  TheoryId tid = theoryOf(t1.getType());
+  TheoryId tid = Theory::theoryOf(t1.getType());
   Assert(d_theoryNotify[tid] != nullptr);
   d_theoryNotify[tid]->eqNotifyConstantTermMerge(t1, t2);
 }
 
-void EqEngineManagerCentral::CentralNotifyClass::eqNotifyPreMerge(TNode t1,
-                                                                  TNode t2)
-{
-  // do nothing (for now)
-}
-
-void EqEngineManagerCentral::CentralNotifyClass::eqNotifyPostMerge(TNode t1,
+void EqEngineManagerCentral::CentralNotifyClass::eqNotifyMerge(TNode t1,
                                                                    TNode t2)
 {
   for (eq::EqualityEngineNotify* notify : d_mergeNotify)
   {
-    notify->eqNotifyPostMerge(t1, t2);
+    notify->eqNotifyMerge(t1, t2);
   }
 }
 
@@ -221,7 +214,7 @@ void EqEngineManagerCentral::CentralNotifyClass::eqNotifyDisequal(TNode t1,
 {
   for (eq::EqualityEngineNotify* notify : d_disequalNotify)
   {
-    notify->eqNotifyDisequal(t1, t2);
+    notify->eqNotifyDisequal(t1, t2, reason);
   }
 }
 
