@@ -70,7 +70,9 @@ class PropEngine
   CVC4_PUBLIC ~PropEngine();
 
   /**
-   * Finish init.
+   * Finish initialize. Call this after construction just before we are
+   * ready to use this class. Should be called after TheoryEngine::finishInit.
+   * This method converts and asserts true and false into the CNF stream.
    */
   void finishInit();
 

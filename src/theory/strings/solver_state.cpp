@@ -128,7 +128,6 @@ void SolverState::eqNotifyNewClass(TNode t)
       EqcInfo* ei = getOrMakeEqcInfo(t);
       ei->d_prefixC = t;
       ei->d_suffixC = t;
-      return;
     }
   }
   else if (k == STRING_CONCAT)
@@ -142,7 +141,6 @@ void SolverState::eqNotifyMerge(TNode t1, TNode t2)
   EqcInfo* e2 = getOrMakeEqcInfo(t2, false);
   if (e2)
   {
-    // we only track information about string-like equivalence classes
     Assert(t1.getType().isStringLike());
     EqcInfo* e1 = getOrMakeEqcInfo(t1);
     // add information from e2 to e1

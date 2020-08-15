@@ -104,6 +104,14 @@ PropEngine::PropEngine(TheoryEngine* te,
          );
 }
 
+void PropEngine::finishInit()
+{
+  NodeManager* nm = NodeManager::currentNM();
+  d_cnfStream->convertAndAssert(nm->mkConst(true), false, false, RULE_GIVEN);
+  d_cnfStream->convertAndAssert(
+      nm->mkConst(false).notNode(), false, false, RULE_GIVEN);
+}
+
 PropEngine::~PropEngine() {
   Debug("prop") << "Destructing the PropEngine" << endl;
   d_decisionEngine->shutdown();
