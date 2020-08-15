@@ -62,7 +62,7 @@ void CombinationModelBased::eqNotifyMerge(TNode t1, TNode t2)
 {
   mergeSharedTermEqcs(t1, t2);
 }
-  
+
 void CombinationModelBased::mergeSharedTermEqcs(TNode t1, TNode t2)
 {
   // equivalence classes on the model have merged, update the shared term
@@ -103,11 +103,10 @@ void CombinationModelBased::mergeSharedTermEqcs(TNode t1, TNode t2)
   }
 }
 
-
 unsigned CombinationModelBased::checkPair(TNode a,
-                                 TNode b,
-                                 TheoryId tid,
-                                 bool tparametric)
+                                          TNode b,
+                                          TheoryId tid,
+                                          bool tparametric)
 {
   Trace("tc-model-debug-pair")
       << "Check pair " << a << " <> " << b << " with " << tid << std::endl;
@@ -184,9 +183,9 @@ unsigned CombinationModelBased::checkSharedTermMaps(
           Trace("tc-model-debug")
               << "   true/unknown in : " << tid_eq
               << " (parametric : " << isParametric(tid_eq) << ")" << std::endl;
-          Trace("tc-model-debug") << "  false/unknown in : " << tid_deq
-                                  << " (parametric : " << isParametric(tid_deq)
-                                  << ")" << std::endl;
+          Trace("tc-model-debug")
+              << "  false/unknown in : " << tid_deq
+              << " (parametric : " << isParametric(tid_deq) << ")" << std::endl;
           numSplits += checkSplitCandidate(a, b, tid_eq, tid_deq);
         }
       }
@@ -196,9 +195,9 @@ unsigned CombinationModelBased::checkSharedTermMaps(
 }
 
 unsigned CombinationModelBased::checkSplitCandidate(TNode a,
-                                           TNode b,
-                                           theory::TheoryId t1,
-                                           theory::TheoryId t2)
+                                                    TNode b,
+                                                    theory::TheoryId t1,
+                                                    theory::TheoryId t2)
 {
   // split must come from a parametric theory
   TheoryId tid = isParametric(t1) ? t1 : t2;
@@ -206,7 +205,7 @@ unsigned CombinationModelBased::checkSplitCandidate(TNode a,
   {
     return 0;
   }
-  bool tcTermUnique = false; // option
+  bool tcTermUnique = false;  // option
   if (tcTermUnique)
   {
     if (d_split_terms.find(a) != d_split_terms.end()
@@ -232,9 +231,9 @@ unsigned CombinationModelBased::checkSplitCandidate(TNode a,
     }
     // Assert(d_sharedTerms->isShared(a));
     // Assert(d_sharedTerms->isShared(b));
-    Assert(
-        !d_sharedTerms->isShared(a) || !d_sharedTerms->isShared(b)
-        || (!d_sharedTerms->areEqual(a, b) && !d_sharedTerms->areDisequal(a, b)));
+    Assert(!d_sharedTerms->isShared(a) || !d_sharedTerms->isShared(b)
+           || (!d_sharedTerms->areEqual(a, b)
+               && !d_sharedTerms->areDisequal(a, b)));
     Node split = equality.orNode(equality.notNode());
     sendLemma(split, tid);
     Node e = d_te.ensureLiteral(equality);
@@ -305,7 +304,7 @@ void CombinationModelBased::combineTheoriesOld()
   unsigned numSplits = 0;
   std::vector<std::pair<Node, Node>> conflict_pairs;
   std::map<Node, Node> value_to_rep;
-  TheoryModel * m = getModel();
+  TheoryModel* m = getModel();
   if (d_mmUse->buildModel())
   {
     Trace("tc-model-debug")
@@ -391,7 +390,7 @@ void CombinationModelBased::combineTheoriesOld()
         Assert(a.getNumChildren() == b.getNumChildren());
         Assert(a.getOperator() == b.getOperator());
         TheoryId parentId = Theory::theoryOf(a);
-        bool useAckermann = false; // option
+        bool useAckermann = false;  // option
         if (useAckermann)
         {
           std::vector<Node> lem_c;
@@ -457,11 +456,11 @@ void CombinationModelBased::combineTheoriesOld()
     // get the shared terms for each theory
     std::map<TheoryId, std::unordered_set<TNode, TNodeHashFunction>> tshared;
     for (TheoryId theoryId = theory::THEORY_FIRST;
-        theoryId != theory::THEORY_LAST;
-        ++theoryId)
+         theoryId != theory::THEORY_LAST;
+         ++theoryId)
     {
       Theory* t = d_te.theoryOf(theoryId);
-      if (t==nullptr)
+      if (t == nullptr)
       {
         continue;
       }
@@ -560,8 +559,8 @@ void CombinationModelBased::combineTheoriesOld()
   Trace("tc-model") << "------end model-based theory combination" << std::endl;
 
   Trace("combineTheories")
-      << "CombinationModelBased::combineTheoriesModelBased() : requested " << numSplits
-      << " splits." << std::endl;
+      << "CombinationModelBased::combineTheoriesModelBased() : requested "
+      << numSplits << " splits." << std::endl;
 }
 
 }  // namespace theory

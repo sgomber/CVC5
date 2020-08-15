@@ -46,7 +46,7 @@ class CombinationModelBased : public CombinationEngine
    */
   void combineTheories() override;
 
-private:
+ private:
   /**
    * Run the combination framework, model-based version.
    *
@@ -68,7 +68,7 @@ private:
    * disagree on the status of the equality t == s, we split on t == s.
    */
   void combineTheoriesOld();
-  
+
   void eqNotifyNewClass(TNode node);
   void eqNotifyMerge(TNode t1, TNode t2);
   //-----------------------------------model-based theory combination
