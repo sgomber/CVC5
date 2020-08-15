@@ -121,6 +121,11 @@ void EqEngineManagerCentral::initializeModel(TheoryModel* m)
   m->finishInit();
 }
 
+eq::EqualityEngine* EqEngineManagerCentral::getCoreEqualityEngine()
+{
+  return &d_centralEqualityEngine;
+}
+
 EqEngineManagerCentral::CentralNotifyClass::CentralNotifyClass()
     : d_sdbNotify(nullptr), d_mNotify(nullptr), d_quantEngine(nullptr)
 {
