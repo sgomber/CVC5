@@ -16,6 +16,8 @@
 
 #include "expr/node_visitor.h"
 #include "theory/care_graph.h"
+#include "theory/ee_manager_central.h"
+#include "theory/model_manager_central.h"
 #include "theory/ee_manager_distributed.h"
 #include "theory/model_manager_distributed.h"
 #include "theory/shared_terms_database.h"
@@ -54,6 +56,11 @@ void CombinationEngine::finishInit()
     d_mmUse.reset(new ModelManagerDistributed(d_te, *eeDistributed.get()));
     d_eemUse = std::move(eeDistributed);
   }
+  else if (options::eeMode() == options::EqEngineMode::CENTRAL)
+  {
+    d_eemUse.reset(new EqEngineManagerCentral(d_te, nullptr));
+    d_mmUse.reset(new ModelManagerCentral(d_te));
+  }
   else
   {
     Unhandled() << "CombinationEngine::finishInit: equality engine mode "
@@ -91,7 +98,7 @@ void CombinationEngine::postProcessModel(bool incomplete)
 {
   // should have a consistent core equality engine
   eq::EqualityEngine* mee = d_eemUse->getCoreEqualityEngine();
-  if (mee != NULL)
+  if (mee != nullptr)
   {
     AlwaysAssert(mee->consistent());
   }
