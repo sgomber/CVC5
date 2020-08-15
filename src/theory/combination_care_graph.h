@@ -39,6 +39,8 @@ class CombinationCareGraph : public CombinationEngine
                        const std::vector<Theory*>& paraTheories);
   ~CombinationCareGraph();
 
+  /** Build model */
+  bool buildModel();
   /**
    * Combine theories using a care graph.
    */

@@ -92,8 +92,6 @@ eq::EqualityEngine* CombinationEngine::getCoreEqualityEngine()
 
 void CombinationEngine::resetModel() { d_mmUse->resetModel(); }
 
-bool CombinationEngine::buildModel() { return d_mmUse->buildModel(); }
-
 void CombinationEngine::postProcessModel(bool incomplete)
 {
   // should have a consistent core equality engine

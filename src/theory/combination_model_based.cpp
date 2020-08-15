@@ -27,9 +27,19 @@ CombinationModelBased::CombinationModelBased(
 
 CombinationModelBased::~CombinationModelBased() {}
 
+bool CombinationModelBased::buildModel()
+{
+  // model was already built in combine theories
+  Assert(d_mmUse->isModelBuilt());
+  return d_mmUse->buildModel();
+}
+
 void CombinationModelBased::combineTheories()
 {
+  // TODO: change the notification class of the ee if central?
   // TODO
+  
+  // TODO: change the notification class of the ee back if central?
 }
 
 }  // namespace theory

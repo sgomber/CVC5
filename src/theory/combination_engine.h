@@ -53,7 +53,7 @@ class CombinationEngine
   /** reset model */
   void resetModel();
   /** Build model */
-  bool buildModel();
+  virtual bool buildModel() = 0;
   /** Post process model */
   void postProcessModel(bool incomplete);
   /** Get model */

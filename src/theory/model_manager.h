@@ -43,6 +43,8 @@ class ModelManager
   void finishInit();
   /** Build model */
   bool buildModel();
+  /** is model built? */
+  bool isModelBuilt() const;
   /** Post process model */
   void postProcessModel(bool incomplete);
   /** Get model */
