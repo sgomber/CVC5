@@ -38,7 +38,7 @@ class CombinationModelBased : public CombinationEngine
   CombinationModelBased(TheoryEngine& te,
                         const std::vector<Theory*>& paraTheories);
   ~CombinationModelBased();
-  
+
   /** Build model (a no-op) */
   bool buildModel() override;
   /**

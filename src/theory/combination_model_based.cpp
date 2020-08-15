@@ -38,7 +38,7 @@ void CombinationModelBased::combineTheories()
 {
   // TODO: change the notification class of the ee if central?
   // TODO
-  
+
   // TODO: change the notification class of the ee back if central?
 }
 

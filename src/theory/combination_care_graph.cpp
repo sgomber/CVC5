@@ -89,7 +89,8 @@ void CombinationCareGraph::combineTheories()
   }
 }
 
-bool CombinationCareGraph::buildModel() { 
+bool CombinationCareGraph::buildModel()
+{
   // building the model happens as a separate step
   return d_mmUse->buildModel();
 }

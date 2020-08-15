@@ -86,10 +86,7 @@ bool ModelManager::buildModel()
   return d_modelBuiltSuccess;
 }
 
-bool ModelManager::isModelBuilt() const
-{
-  return d_modelBuilt;
-}
+bool ModelManager::isModelBuilt() const { return d_modelBuilt; }
 
 void ModelManager::postProcessModel(bool incomplete)
 {
