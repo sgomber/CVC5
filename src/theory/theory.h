@@ -134,9 +134,6 @@ class Theory {
   /** Index into the head of the facts list */
   context::CDO<unsigned> d_factsHead;
 
-  /** Add shared term to the theory. */
-  void addSharedTermInternal(TNode node);
-
   /** Indices for splitting on the shared terms. */
   context::CDO<unsigned> d_sharedTermsIndex;
 
@@ -278,6 +275,12 @@ class Theory {
    */
   bool isLegalElimination(TNode x, TNode val);
 
+  /**
+   * This method is called to notify a theory that the node n should
+   * be considered a "shared term" by this theory
+   */
+  virtual void addSharedTerm(TNode n);
+  
   //--------------------------------- private initialization
   /**
    * Called to set the official equality engine. This should be done by
@@ -524,12 +527,9 @@ class Theory {
     d_facts.push_back(Assertion(assertion, isPreregistered));
   }
 
-  /**
-   * This method is called to notify a theory that the node n should
-   * be considered a "shared term" by this theory
-   */
-  virtual void addSharedTerm(TNode n);
-
+  /** Add shared term to the theory. */
+  void notifySharedTerm(TNode node);
+  
   /**
    * Return the current theory care graph. Theories should overload
    * computeCareGraph to do the actual computation, and use addCarePair to add

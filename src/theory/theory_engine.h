@@ -439,9 +439,6 @@ class TheoryEngine {
    */
   void getExplanation(std::vector<NodeTheoryPair>& explanationVector, LemmaProofRecipe* lemmaProofRecipe);
 
-  /** Add shared term internal, called by the combination manager. */
-  void addSharedTermInternal(theory::TheoryId tid, TNode term);
-
  public:
   /**
    * Signal the start of a new round of assertion preprocessing

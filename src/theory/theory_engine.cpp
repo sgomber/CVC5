@@ -1347,12 +1347,6 @@ Node TheoryEngine::getExplanation(TNode node) {
   return getExplanationAndRecipe(node, dontCareRecipe);
 }
 
-void TheoryEngine::addSharedTermInternal(theory::TheoryId tid, TNode term)
-{
-  Assert(theoryOf(tid) != nullptr);
-  theoryOf(tid)->addSharedTermInternal(term);
-}
-
 struct AtomsCollect {
 
   std::vector<TNode> d_atoms;

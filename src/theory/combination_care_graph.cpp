@@ -18,9 +18,6 @@
 #include "theory/care_graph.h"
 #include "theory/theory_engine.h"
 
-// TODO: remove
-#include "options/quantifiers_options.h"
-
 namespace CVC4 {
 namespace theory {
 
@@ -90,104 +87,6 @@ void CombinationCareGraph::combineTheories()
     Node e = d_te.ensureLiteral(equality);
     propEngine->requirePhase(e, true);
   }
-}
-
-void CombinationCareGraph::preRegister(TNode t, bool multipleTheories)
-{
-  if (d_sharedTerms == nullptr)
-  {
-    return;
-  }
-  if (d_logicInfo.isSharingEnabled() && t.getKind() == kind::EQUAL)
-  {
-    // When sharing is enabled, we propagate from the shared terms manager also
-    d_sharedTerms->addEqualityToPropagate(t);
-  }
-  if (multipleTheories)
-  {
-    // Collect the shared terms if there are multiple theories
-    NodeVisitor<SharedTermsVisitor>::run(*d_sharedTermsVisitor.get(), t);
-  }
-}
-void CombinationCareGraph::notifyAssertFact(TNode atom)
-{
-  if (d_sharedTerms == nullptr)
-  {
-    return;
-  }
-  if (d_sharedTerms->hasSharedTerms(atom))
-  {
-    // Notify the theories the shared terms
-    SharedTermsDatabase::shared_terms_iterator it = d_sharedTerms->begin(atom);
-    SharedTermsDatabase::shared_terms_iterator it_end =
-        d_sharedTerms->end(atom);
-    for (; it != it_end; ++it)
-    {
-      TNode term = *it;
-      Theory::Set theories = d_sharedTerms->getTheoriesToNotify(atom, term);
-      for (TheoryId id = THEORY_FIRST; id != THEORY_LAST; ++id)
-      {
-        if (Theory::setContains(id, theories))
-        {
-          // call the add shared term internal method of theory engine
-          d_te.addSharedTermInternal(id, term);
-        }
-      }
-      d_sharedTerms->markNotified(term, theories);
-    }
-  }
-}
-
-bool CombinationCareGraph::isShared(TNode term) const
-{
-  if (d_sharedTerms == nullptr)
-  {
-    return true;
-  }
-  return d_sharedTerms->isShared(term);
-}
-
-theory::EqualityStatus CombinationCareGraph::getEqualityStatus(TNode a, TNode b)
-{
-  Assert(a.getType().isComparableTo(b.getType()));
-  if (d_sharedTerms != nullptr)
-  {
-    if (d_sharedTerms->isShared(a) && d_sharedTerms->isShared(b))
-    {
-      if (d_sharedTerms->areEqual(a, b))
-      {
-        return EQUALITY_TRUE_AND_PROPAGATED;
-      }
-      else if (d_sharedTerms->areDisequal(a, b))
-      {
-        return EQUALITY_FALSE_AND_PROPAGATED;
-      }
-    }
-  }
-  return d_te.theoryOf(Theory::theoryOf(a.getType()))->getEqualityStatus(a, b);
-}
-
-Node CombinationCareGraph::explain(TNode literal) const
-{
-  if (d_sharedTerms == nullptr)
-  {
-    return Node::null();
-  }
-  return d_sharedTerms->explain(literal);
-}
-
-void CombinationCareGraph::assertEquality(TNode equality,
-                                          bool polarity,
-                                          TNode reason)
-{
-  d_sharedTerms->assertEquality(equality, polarity, reason);
-}
-
-bool CombinationCareGraph::needsPropagation(TNode literal,
-                                            theory::TheoryId theory)
-{
-  // always needs propagation?
-  return true;
 }
 
 }  // namespace theory

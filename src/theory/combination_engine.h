@@ -67,11 +67,52 @@ class CombinationEngine
    * theory combination (e.g. splitting lemmas) to the parent TheoryEngine.
    */
   virtual void combineTheories() = 0;
-  virtual void preRegister(TNode preprocessed, bool multipleTheories);
+  /**
+   * Called when the given term t is pre-registered in TheoryEngine.
+   *
+   * This adds t as an equality to propagate in the shared terms database
+   * if it is an equality, or adds its shared terms if it involves multiple
+   * theories.
+   * 
+   * @param t The term to preregister
+   * @param multipleTheories Whether multiple theories are present in t.
+   */
+  virtual void preRegister(TNode t, bool multipleTheories);
+  /**
+   * Notify assertion fact with the given atom. This is called when any
+   * fact is asserted in TheoryEngine, just before it is dispatched to the
+   * appropriate theory.
+   *
+   * This calls Theory::notifySharedTerm for the shared terms of the atom.
+   */
   virtual void notifyAssertFact(TNode atom);
+  /**
+   * Is term a shared term? This is used for debugging.
+   */
   virtual bool isShared(TNode term) const;
+  /**
+   * Get the equality status of a and b, which first asks if the shared
+   * terms database as an equality status, and otherwise asks the appropriate
+   * Theory.
+   *
+   * This method is used by ...
+   */
   virtual EqualityStatus getEqualityStatus(TNode a, TNode b);
+  /**
+   * Explain literal, which returns a conjunction of literals that that entail
+   * the given one. The shared terms database is used to find this explanation.
+   *
+   * This method is used by TheoryEngine when it wants an explanation of a
+   * propagation that was made by the shared terms database.
+   */
   virtual Node explain(TNode literal) const;
+  /**
+   * Assert equality to the shared terms database.
+   *
+   * This method is called by TheoryEngine when a fact has been marked to
+   * send to THEORY_BUILTIN, meaning that shared terms database should
+   * maintain this fact. This is the case when ...
+   */
   virtual void assertEquality(TNode equality, bool polarity, TNode reason);
   /**
    * The given theory propagated the given literal. Do we need to process it?
