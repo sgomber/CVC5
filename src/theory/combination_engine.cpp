@@ -16,11 +16,11 @@
 
 #include "expr/node_visitor.h"
 #include "theory/care_graph.h"
-#include "theory/theory_engine.h"
 #include "theory/ee_manager_distributed.h"
 #include "theory/model_manager_distributed.h"
 #include "theory/shared_terms_database.h"
 #include "theory/term_registration_visitor.h"
+#include "theory/theory_engine.h"
 
 namespace CVC4 {
 namespace theory {
@@ -46,9 +46,9 @@ void CombinationEngine::finishInit()
   {
     d_sharedTerms.reset(new SharedTermsDatabase(&d_te, d_te.getSatContext()));
     d_sharedTermsVisitor.reset(new SharedTermsVisitor(*d_sharedTerms.get()));
-    std::unique_ptr<EqEngineManagerDistributed> eeDistributed(new EqEngineManagerDistributed(d_te, d_sharedTerms.get()));
-    d_mmUse.reset(
-        new ModelManagerDistributed(d_te, *eeDistributed.get()));
+    std::unique_ptr<EqEngineManagerDistributed> eeDistributed(
+        new EqEngineManagerDistributed(d_te, d_sharedTerms.get()));
+    d_mmUse.reset(new ModelManagerDistributed(d_te, *eeDistributed.get()));
     d_eemUse = std::move(eeDistributed);
   }
   else

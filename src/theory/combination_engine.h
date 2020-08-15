@@ -37,8 +37,7 @@ namespace theory {
 class CombinationEngine
 {
  public:
-  CombinationEngine(TheoryEngine& te,
-                    const std::vector<Theory*>& paraTheories);
+  CombinationEngine(TheoryEngine& te, const std::vector<Theory*>& paraTheories);
   virtual ~CombinationEngine();
 
   /** Finish initialization */

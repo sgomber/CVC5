@@ -152,8 +152,7 @@ void TheoryEngine::finishInit() {
   // Initialize the theory combination architecture
   if (options::eeMode() == options::EqEngineMode::DISTRIBUTED)
   {
-    d_tcCareGraph.reset(
-        new CombinationCareGraph(*this, paraTheories));
+    d_tcCareGraph.reset(new CombinationCareGraph(*this, paraTheories));
     d_tc = d_tcCareGraph.get();
   }
   else

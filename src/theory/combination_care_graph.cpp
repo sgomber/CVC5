@@ -25,8 +25,7 @@ namespace CVC4 {
 namespace theory {
 
 CombinationCareGraph::CombinationCareGraph(
-    TheoryEngine& te,
-    const std::vector<Theory*>& paraTheories)
+    TheoryEngine& te, const std::vector<Theory*>& paraTheories)
     : CombinationEngine(te, paraTheories)
 {
 }
@@ -95,7 +94,7 @@ void CombinationCareGraph::combineTheories()
 
 void CombinationCareGraph::preRegister(TNode t, bool multipleTheories)
 {
-  if (d_sharedTerms==nullptr)
+  if (d_sharedTerms == nullptr)
   {
     return;
   }
@@ -112,7 +111,7 @@ void CombinationCareGraph::preRegister(TNode t, bool multipleTheories)
 }
 void CombinationCareGraph::notifyAssertFact(TNode atom)
 {
-  if (d_sharedTerms==nullptr)
+  if (d_sharedTerms == nullptr)
   {
     return;
   }
@@ -120,7 +119,8 @@ void CombinationCareGraph::notifyAssertFact(TNode atom)
   {
     // Notify the theories the shared terms
     SharedTermsDatabase::shared_terms_iterator it = d_sharedTerms->begin(atom);
-    SharedTermsDatabase::shared_terms_iterator it_end = d_sharedTerms->end(atom);
+    SharedTermsDatabase::shared_terms_iterator it_end =
+        d_sharedTerms->end(atom);
     for (; it != it_end; ++it)
     {
       TNode term = *it;
@@ -140,7 +140,7 @@ void CombinationCareGraph::notifyAssertFact(TNode atom)
 
 bool CombinationCareGraph::isShared(TNode term) const
 {
-  if (d_sharedTerms==nullptr)
+  if (d_sharedTerms == nullptr)
   {
     return true;
   }
@@ -150,7 +150,7 @@ bool CombinationCareGraph::isShared(TNode term) const
 theory::EqualityStatus CombinationCareGraph::getEqualityStatus(TNode a, TNode b)
 {
   Assert(a.getType().isComparableTo(b.getType()));
-  if (d_sharedTerms!=nullptr)
+  if (d_sharedTerms != nullptr)
   {
     if (d_sharedTerms->isShared(a) && d_sharedTerms->isShared(b))
     {
@@ -169,7 +169,7 @@ theory::EqualityStatus CombinationCareGraph::getEqualityStatus(TNode a, TNode b)
 
 Node CombinationCareGraph::explain(TNode literal) const
 {
-  if (d_sharedTerms==nullptr)
+  if (d_sharedTerms == nullptr)
   {
     return Node::null();
   }
