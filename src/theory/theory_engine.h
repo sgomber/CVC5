@@ -117,7 +117,7 @@ class TheoryEngine {
   friend class SharedTermsDatabase;
   friend class theory::quantifiers::TermDb;
   friend class theory::EngineOutputChannel;
-  friend class theory::CombinationCareGraph;
+  friend class theory::CombinationEngine;
 
   /** Associated PropEngine engine */
   prop::PropEngine* d_propEngine;

@@ -120,6 +120,10 @@ class CombinationEngine
   virtual bool needsPropagation(TNode literal, TheoryId theory);
   //-------------------------- end interface used by theory engine
  protected:
+  /** Send lemma */
+  void sendLemma(TNode node, TheoryId atomsTo);
+  /** Is theory tid parametric? */
+  bool isParametric(TheoryId tid) const;
   /** Reference to the theory engine */
   TheoryEngine& d_te;
   /** Logic info of theory engine (cached) */

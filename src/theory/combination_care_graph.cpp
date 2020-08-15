@@ -69,11 +69,8 @@ void CombinationCareGraph::combineTheories()
     Debug("combineTheories")
         << "TheoryEngine::combineTheories(): requesting a split " << std::endl;
 
-    d_te.lemma(equality.orNode(equality.notNode()),
-               RULE_INVALID,
-               false,
-               LemmaProperty::NONE,
-               carePair.d_theory);
+    Node split = equality.orNode(equality.notNode());
+    sendLemma(split, carePair.d_theory);
 
     // Could check the equality status here:
     //   EqualityStatus es = getEqualityStatus(carePair.d_a, carePair.d_b);

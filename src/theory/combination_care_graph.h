@@ -40,7 +40,7 @@ class CombinationCareGraph : public CombinationEngine
   ~CombinationCareGraph();
 
   /** Build model */
-  bool buildModel();
+  bool buildModel() override;
   /**
    * Combine theories using a care graph.
    */

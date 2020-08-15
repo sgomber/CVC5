@@ -211,5 +211,20 @@ bool CombinationEngine::needsPropagation(TNode literal, TheoryId theory)
   return true;
 }
 
+void CombinationEngine::sendLemma(TNode node, TheoryId atomsTo)
+{
+  d_te.lemma(node,
+              RULE_INVALID,
+              false,
+              LemmaProperty::NONE,
+              atomsTo);
+}
+
+bool CombinationEngine::isParametric(TheoryId tid) const
+{
+  // FIXME
+  return true;
+}
+
 }  // namespace theory
 }  // namespace CVC4
