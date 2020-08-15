@@ -200,7 +200,7 @@ void EqEngineManagerCentral::CentralNotifyClass::eqNotifyConstantTermMerge(
 }
 
 void EqEngineManagerCentral::CentralNotifyClass::eqNotifyMerge(TNode t1,
-                                                                   TNode t2)
+                                                               TNode t2)
 {
   for (eq::EqualityEngineNotify* notify : d_mergeNotify)
   {
