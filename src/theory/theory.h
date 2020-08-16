@@ -565,6 +565,8 @@ class Theory {
   /**
    * Return the status of two terms in the current context. Should be
    * implemented in sub-theories to enable more efficient theory-combination.
+   * 
+   * TODO: use equality engine?
    */
   virtual EqualityStatus getEqualityStatus(TNode a, TNode b) {
     return EQUALITY_UNKNOWN;
@@ -572,6 +574,8 @@ class Theory {
 
   /**
    * Return the model value of the give shared term (or null if not available).
+   * 
+   * TODO: delete
    */
   virtual Node getModelValue(TNode var) { return Node::null(); }
 
@@ -581,19 +585,6 @@ class Theory {
   /** T-propagate new literal assignments in the current context. */
   virtual void propagate(Effort level = EFFORT_FULL) {}
 
-  //--------------------------------- new standard
-  /**
-   * Check the current assignment's consistency.
-   *
-   * An implementation of check() is required to either:
-   * - return a conflict on the output channel,
-   * - be interrupted,
-   * - throw an exception
-   * - or call get() until done() is true.
-   *
-   * TODO: non-virtual (use template)
-   */
-  virtual void check(Effort level = EFFORT_FULL);
   /**
    * in conflict?
    * TODO: non-virtual (use state)
@@ -616,14 +607,40 @@ class Theory {
    * TODO: non-virtual (use template)
    */
   virtual void conflict(TNode a, TNode b);
-  /** process pending facts */
-  void processPendingFacts();
+  
   /**
-   * Collect model equalities, asserts the (relevant) equalities from the
-   * theory's equality engine into the model m.
+   * Return an explanation for the literal represented by parameter n
+   * (which was previously propagated by this theory).
    */
-  bool collectModelEqualities(TheoryModel* m);
+  virtual TrustNode explain(TNode n)
+  {
+    Unimplemented() << "Theory " << identify()
+                    << " propagated a node but doesn't implement the "
+                       "Theory::explain() interface!";
+  }
+  /** Explain conflict */
+  virtual TrustNode explainConflict(TNode a, TNode b);
 
+  
+  //--------------------------------- new standard check
+  /**
+   * Check the current assignment's consistency.
+   *
+   * An implementation of check() is required to either:
+   * - return a conflict on the output channel,
+   * - be interrupted,
+   * - throw an exception
+   * - or call get() until done() is true.
+   *
+   * TODO: non-virtual (use template)
+   */
+  virtual void check(Effort level = EFFORT_FULL);
+  /** 
+   * process pending facts
+   * 
+   * TODO: inline into check
+   */
+  void processPendingFacts();
   /**
    * Pre-check, called before the fact queue of the theory is processed.
    */
@@ -643,20 +660,9 @@ class Theory {
    * equality engine.
    */
   virtual void notifyNewFact(TNode atom, bool polarity, TNode fact);
-  //--------------------------------- end new standard
-  /**
-   * Return an explanation for the literal represented by parameter n
-   * (which was previously propagated by this theory).
-   */
-  virtual TrustNode explain(TNode n)
-  {
-    Unimplemented() << "Theory " << identify()
-                    << " propagated a node but doesn't implement the "
-                       "Theory::explain() interface!";
-  }
-  /** Explain conflict */
-  virtual TrustNode explainConflict(TNode a, TNode b);
-
+  //--------------------------------- end new standard check
+  
+  //--------------------------------- new standard collect model info
   /**
    * Get all relevant information in this theory regarding the current
    * model.  This should be called after a call to check( FULL_EFFORT )
@@ -664,8 +670,25 @@ class Theory {
    *
    * This method returns true if and only if the equality engine of m is
    * consistent as a result of this call.
+   * 
+   * TODO: non-virtual
    */
-  virtual bool collectModelInfo(TheoryModel* m) { return true; }
+  virtual bool collectModelInfo(TheoryModel* m);
+  /**
+   * Collect model equalities, asserts the (relevant) equalities from the
+   * theory's equality engine into the model m.
+   * 
+   * TODO: inline into collectModelInfo.
+   */
+  bool collectModelEqualities(TheoryModel* m);
+  /**
+   * Collect model values, after equality information is added to the model.
+   */
+  virtual bool collectModelValues(TheoryModel* m);
+  //--------------------------------- end new standard collect model info
+  
+  
+  
   /** if theories want to do something with model after building, do it here */
   virtual void postProcessModel( TheoryModel* m ){ }
   /**

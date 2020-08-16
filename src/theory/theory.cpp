@@ -493,17 +493,18 @@ void Theory::processPendingFacts()
 {
   while (!done() && !isInConflict())
   {
-    // Get all the assertions
+    // Get the next assertion from the fact queue
     Assertion assertion = get();
     TNode fact = assertion.d_assertion;
     bool polarity = fact.getKind() != kind::NOT;
     TNode atom = polarity ? fact : fact[0];
+    // call the preprocess method
     if (preprocessNewFact(atom, polarity, fact))
     {
-      // handled in theory-specific way
+      // handled in theory-specific way that doesn't involve equality engine
       continue;
     }
-    // if we have an equality engine, immediately assert to it
+    // if we have an equality engine, assert to it now
     if (d_equalityEngine != nullptr)
     {
       if (atom.getKind() == kind::EQUAL)
@@ -538,6 +539,15 @@ void Theory::notifyNewFact(TNode atom, bool polarity, TNode fact)
   // do nothing
 }
 
+bool Theory::collectModelInfo(TheoryModel* m)
+{
+  if (!collectModelEqualities(m))
+  {
+    return false;
+  }
+  return collectModelValues(m);
+}
+
 bool Theory::collectModelEqualities(TheoryModel* m)
 {
   if (d_equalityEngine == nullptr)
@@ -552,6 +562,11 @@ bool Theory::collectModelEqualities(TheoryModel* m)
   {
     return false;
   }
+  return true;
+}
+
+bool Theory::collectModelValues(TheoryModel* m)
+{
   return true;
 }
 
