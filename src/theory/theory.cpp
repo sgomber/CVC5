@@ -455,7 +455,6 @@ void Theory::check(Effort level)
   // pre-check at level
   preCheck(level);
   // process the pending fact queue
-  // TODO: inline
   processPendingFacts();
   // post-check at level
   postCheck(level);
