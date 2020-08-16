@@ -17,7 +17,7 @@
 #ifndef CVC4__THEORY__SOLVER_STATE_H
 #define CVC4__THEORY__SOLVER_STATE_H
 
-#include "context/context.h"
+#include "context/cdo.h"
 #include "expr/node.h"
 #include "theory/valuation.h"
 
@@ -43,22 +43,22 @@ class SolverState
   context::UserContext* getUserContext() const;
   //-------------------------------------- equality information
   /** Is t registered as a term in the equality engine of this class? */
-  bool hasTerm(Node a) const;
+  bool hasTerm(TNode a) const;
   /**
    * Get the representative of t in the equality engine of this class, or t
    * itself if it is not registered as a term.
    */
-  Node getRepresentative(Node t) const;
+  TNode getRepresentative(TNode t) const;
   /**
    * Are a and b equal according to the equality engine of this class? Also
    * returns true if a and b are identical.
    */
-  bool areEqual(Node a, Node b) const;
+  bool areEqual(TNode a, TNode b) const;
   /**
    * Are a and b disequal according to the equality engine of this class? Also
    * returns true if the representative of a and b are distinct constants.
    */
-  bool areDisequal(Node a, Node b) const;
+  bool areDisequal(TNode a, TNode b) const;
   /** get equality engine */
   eq::EqualityEngine* getEqualityEngine() const;
   //-------------------------------------- end equality information

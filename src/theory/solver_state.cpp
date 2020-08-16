@@ -36,7 +36,12 @@ context::Context* SolverState::getSatContext() const { return d_context; }
 
 context::UserContext* SolverState::getUserContext() const { return d_ucontext; }
 
-Node SolverState::getRepresentative(Node t) const
+bool SolverState::hasTerm(TNode a) const { 
+  Assert(d_ee != nullptr);
+  return d_ee->hasTerm(a); 
+}
+
+TNode SolverState::getRepresentative(TNode t) const
 {
   Assert(d_ee != nullptr);
   if (d_ee->hasTerm(t))
@@ -46,10 +51,9 @@ Node SolverState::getRepresentative(Node t) const
   return t;
 }
 
-bool SolverState::hasTerm(Node a) const { return d_ee->hasTerm(a); }
-
-bool SolverState::areEqual(Node a, Node b) const
+bool SolverState::areEqual(TNode a, TNode b) const
 {
+  Assert(d_ee != nullptr);
   if (a == b)
   {
     return true;
@@ -61,14 +65,16 @@ bool SolverState::areEqual(Node a, Node b) const
   return false;
 }
 
-bool SolverState::areDisequal(Node a, Node b) const
+bool SolverState::areDisequal(TNode a, TNode b) const
 {
+  Assert(d_ee != nullptr);
   if (a == b)
   {
     return false;
   }
 
   bool isConst = true;
+  bool hasTerms = true;
   if (hasTerm(a))
   {
     a = d_ee->getRepresentative(a);
@@ -76,8 +82,12 @@ bool SolverState::areDisequal(Node a, Node b) const
   }
   else if (!a.isConst())
   {
-    // not disequal
+    // if not constant and not a term in the ee, it cannot be disequal
     return false;
+  }
+  else
+  {
+    hasTerms = false;
   }
 
   if (hasTerm(b))
@@ -87,8 +97,12 @@ bool SolverState::areDisequal(Node a, Node b) const
   }
   else if (!b.isConst())
   {
-    // not disequal
+    // same as above, it cannot be disequal
     return false;
+  }
+  else
+  {
+    hasTerms = false;
   }
 
   if (isConst)
@@ -96,9 +110,12 @@ bool SolverState::areDisequal(Node a, Node b) const
     // distinct constants are disequal
     return a != b;
   }
+  else if (!hasTerms)
+  {
+    return false;
+  }
   // otherwise there may be an explicit disequality in the equality engine
-  Assert(hasTerm(a) && hasTerm(b));
-  return d_ee->areDisequal(ar, br, false);
+  return d_ee->areDisequal(a, b, false);
 }
 
 eq::EqualityEngine* SolverState::getEqualityEngine() const { return d_ee; }
