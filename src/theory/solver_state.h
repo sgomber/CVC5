@@ -17,20 +17,20 @@
 #ifndef CVC4__THEORY__SOLVER_STATE_H
 #define CVC4__THEORY__SOLVER_STATE_H
 
+#include "context/context.h"
 #include "expr/node.h"
 #include "theory/valuation.h"
-#include "context/context.h"
 
 namespace CVC4 {
 namespace theory {
 
 namespace eq {
-  class EqualityEngine;
+class EqualityEngine;
 }
-  
+
 class SolverState
 {
-public:
+ public:
   SolverState(context::Context* c, context::UserContext* u, Valuation val);
   /**
    * Finish initialize, there ee is a pointer to the official equality engine
@@ -70,7 +70,8 @@ public:
   void setConflict();
   /** Are we currently in conflict? */
   bool isInConflict() const;
-protected:
+
+ protected:
   /** Pointer to the SAT context object used by the theory. */
   context::Context* d_context;
   /** Pointer to the user context object used by the theory. */
@@ -85,9 +86,8 @@ protected:
   /** Are we in conflict? */
   context::CDO<bool> d_conflict;
 };
-  
 
-}/* CVC4::theory namespace */
-}/* CVC4 namespace */
+}  // namespace theory
+}  // namespace CVC4
 
 #endif /* CVC4__THEORY__SOLVER_STATE_H */

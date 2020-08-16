@@ -19,30 +19,26 @@
 namespace CVC4 {
 namespace theory {
 
-SolverState::SolverState(context::Context* c, context::UserContext* u, Valuation val) : d_context(c), d_ucontext(u), d_valuation(val), d_ee(nullptr),
+SolverState::SolverState(context::Context* c,
+                         context::UserContext* u,
+                         Valuation val)
+    : d_context(c),
+      d_ucontext(u),
+      d_valuation(val),
+      d_ee(nullptr),
       d_conflict(c, false)
 {
-  
 }
 
-void SolverState::finishInit(eq::EqualityEngine* ee)
-{
-  d_ee = ee;
-}
+void SolverState::finishInit(eq::EqualityEngine* ee) { d_ee = ee; }
 
-context::Context* SolverState::getSatContext() const
-{
-  return d_context;
-}
+context::Context* SolverState::getSatContext() const { return d_context; }
 
-context::UserContext* SolverState::getUserContext() const
-{
-  return d_ucontext;
-}
+context::UserContext* SolverState::getUserContext() const { return d_ucontext; }
 
 Node SolverState::getRepresentative(Node t) const
 {
-  Assert(d_ee!=nullptr);
+  Assert(d_ee != nullptr);
   if (d_ee->hasTerm(t))
   {
     return d_ee->getRepresentative(t);
@@ -50,10 +46,7 @@ Node SolverState::getRepresentative(Node t) const
   return t;
 }
 
-bool SolverState::hasTerm(Node a) const
-{
-  return d_ee->hasTerm(a);
-}
+bool SolverState::hasTerm(Node a) const { return d_ee->hasTerm(a); }
 
 bool SolverState::areEqual(Node a, Node b) const
 {
@@ -74,7 +67,7 @@ bool SolverState::areDisequal(Node a, Node b) const
   {
     return false;
   }
-  
+
   bool isConst = true;
   if (hasTerm(a))
   {
@@ -86,7 +79,7 @@ bool SolverState::areDisequal(Node a, Node b) const
     // not disequal
     return false;
   }
-  
+
   if (hasTerm(b))
   {
     b = d_ee->getRepresentative(b);
@@ -97,31 +90,22 @@ bool SolverState::areDisequal(Node a, Node b) const
     // not disequal
     return false;
   }
-  
+
   if (isConst)
   {
     // distinct constants are disequal
-    return a!=b;
+    return a != b;
   }
   // otherwise there may be an explicit disequality in the equality engine
-  Assert (hasTerm(a) && hasTerm(b));
+  Assert(hasTerm(a) && hasTerm(b));
   return d_ee->areDisequal(ar, br, false);
 }
 
-eq::EqualityEngine* SolverState::getEqualityEngine() const
-{
-  return d_ee;
-}
+eq::EqualityEngine* SolverState::getEqualityEngine() const { return d_ee; }
 
-void SolverState::setConflict()
-{
-  d_conflict = true;
-}
+void SolverState::setConflict() { d_conflict = true; }
 
-bool SolverState::isInConflict() const
-{
-  return d_conflict;
-}
+bool SolverState::isInConflict() const { return d_conflict; }
 
-}/* CVC4::theory namespace */
-}/* CVC4 namespace */
+}  // namespace theory
+}  // namespace CVC4
