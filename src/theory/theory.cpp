@@ -417,6 +417,22 @@ void Theory::getCareGraph(CareGraph* careGraph) {
 }
 
 //--------------------------------- new standard
+void Theory::check(Effort level)
+{
+  // see if we are already done (as an optimization)
+  if (done() && !fullEffort(level)) 
+  {
+    return;
+  }
+  // pre-check at level
+  preCheck(level);
+  // process the pending fact queue
+  // TODO: inline
+  processPendingFacts();
+  // post-check at level
+  postCheck(level);
+}
+
 bool Theory::isInConflict() const { return false; }
 void Theory::notifyInConflict() const {}
 bool Theory::propagate(TNode lit)
@@ -454,6 +470,11 @@ void Theory::processPendingFacts()
     TNode fact = assertion.d_assertion;
     bool polarity = fact.getKind() != kind::NOT;
     TNode atom = polarity ? fact : fact[0];
+    if (preprocessNewFact(atom, polarity, fact))
+    {
+      // handled in theory-specific way
+      continue;
+    }
     // if we have an equality engine, immediately assert to it
     if (d_equalityEngine != nullptr)
     {
@@ -473,6 +494,21 @@ void Theory::processPendingFacts()
       notifyNewFact(atom, polarity, fact);
     }
   }
+}
+
+void Theory::preCheck(Effort level)
+{
+  
+}
+
+void Theory::postCheck(Effort level)
+{
+  
+}
+
+bool Theory::preprocessNewFact(TNode atom, bool polarity, TNode fact)
+{
+  return false;
 }
 
 void Theory::notifyNewFact(TNode atom, bool polarity, TNode fact)
@@ -505,6 +541,7 @@ void Theory::computeRelevantTerms(set<Node>& termSet,
     collectTerms(*shared_it, kempty, termSet);
   }
 }
+
 bool Theory::collectModelEqualities(TheoryModel* m)
 {
   if (d_equalityEngine == nullptr)
