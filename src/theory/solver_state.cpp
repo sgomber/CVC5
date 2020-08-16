@@ -36,9 +36,10 @@ context::Context* SolverState::getSatContext() const { return d_context; }
 
 context::UserContext* SolverState::getUserContext() const { return d_ucontext; }
 
-bool SolverState::hasTerm(TNode a) const { 
+bool SolverState::hasTerm(TNode a) const
+{
   Assert(d_ee != nullptr);
-  return d_ee->hasTerm(a); 
+  return d_ee->hasTerm(a);
 }
 
 TNode SolverState::getRepresentative(TNode t) const
