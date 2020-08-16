@@ -484,12 +484,12 @@ bool TheoryEngineModelBuilder::buildModel(Model* m)
     {
       Node n = *eqc_i;
       Trace("model-builder") << "  Processing Term: " << n << endl;
-      
+
       // check if its a relevant term?
       bool isRelevantTerm = true;
       if (!n.isConst() && usingRelevantTerms)
       {
-        isRelevantTerm = relevantTerms.find(n)!=relevantTerms.end();
+        isRelevantTerm = relevantTerms.find(n) != relevantTerms.end();
       }
 
       // For each term, we:
@@ -523,7 +523,7 @@ bool TheoryEngineModelBuilder::buildModel(Model* m)
         // already have a constant representative, or its not a relevant term
         continue;
       }
-      
+
       // If we don't have a constant rep, check if this is an assigned rep.
       itm = tm->d_reps.find(n);
       if (itm != tm->d_reps.end())

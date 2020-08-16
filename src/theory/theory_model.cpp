@@ -766,20 +766,11 @@ std::vector< Node > TheoryModel::getFunctionsToAssign() {
   return funcs_to_assign;
 }
 
-void TheoryModel::setUsingRelevantTerms()
-{
-  d_usingRelevantTerms = true;
-}
+void TheoryModel::setUsingRelevantTerms() { d_usingRelevantTerms = true; }
 
-bool TheoryModel::isUsingRelevantTerms() const
-{
-  return d_usingRelevantTerms;
-}
+bool TheoryModel::isUsingRelevantTerms() const { return d_usingRelevantTerms; }
 
-void TheoryModel::addRelevantTerm(Node n)
-{
-  d_relevantTermSet.insert(n);
-}
+void TheoryModel::addRelevantTerm(Node n) { d_relevantTermSet.insert(n); }
 
 const std::set<Node>& TheoryModel::getRelevantTerms() const
 {
@@ -790,7 +781,7 @@ bool TheoryModel::isRelevantTerm(TNode n) const
 {
   if (d_usingRelevantTerms)
   {
-    return d_relevantTermSet.find(n)!=d_relevantTermSet.end();
+    return d_relevantTermSet.find(n) != d_relevantTermSet.end();
   }
   return true;
 }

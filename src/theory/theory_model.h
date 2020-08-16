@@ -348,7 +348,7 @@ class TheoryModel : public Model
   */
   std::vector< Node > getFunctionsToAssign();
   //---------------------------- end function values
-  
+
   //---------------------------- relevant terms
   /** Set using relevant terms */
   void setUsingRelevantTerms();
@@ -437,7 +437,7 @@ class TheoryModel : public Model
   */
   std::map<Node, Node> d_uf_models;
   //---------------------------- end function values
-  
+
   //---------------------------- relevant terms
   /** Using relevant terms */
   bool d_usingRelevantTerms;
