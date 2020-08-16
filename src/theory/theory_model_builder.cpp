@@ -407,7 +407,7 @@ bool TheoryEngineModelBuilder::buildModel(Model* m)
   // sizes.
   std::vector<TypeNode> type_list;
   std::map<TypeNode, unsigned> eqc_usort_count;
-  std::map<Node,Node>::iterator itm;
+  std::map<Node, Node>::iterator itm;
   eq::EqClassesIterator eqcs_i = eq::EqClassesIterator(ee);
   NodeSet assignableCache;
   // for each equivalence class
@@ -445,8 +445,8 @@ bool TheoryEngineModelBuilder::buildModel(Model* m)
       {
         Assert(constRep.isNull());
         constRep = n;
-        Trace("model-builder") << "  ConstRep( " << eqc << " ) = " << constRep
-                               << std::endl;
+        Trace("model-builder")
+            << "  ConstRep( " << eqc << " ) = " << constRep << std::endl;
       }
       // model-specific processing of the term
       tm->addTermInternal(n);
