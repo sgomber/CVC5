@@ -664,7 +664,7 @@ bool TheoryEngineModelBuilder::buildModel(Model* m)
       }
     }
   }
-  
+
   // Now finished initialization
 
   // Compute type enumerator properties. This code ensures we do not
