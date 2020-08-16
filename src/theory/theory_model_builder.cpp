@@ -418,11 +418,6 @@ bool TheoryEngineModelBuilder::buildModel(Model* m)
   // The count of equivalence classes per sort (for finite model finding).
   std::map<TypeNode, unsigned> eqc_usort_count;
 
-  // should we compute assigner objects?
-  bool computeAssigners = tm->hasAssignmentExclusionSets();
-  // the set of exclusion sets we have processed
-  std::unordered_set<Node, NodeHashFunction> processedExcSet;
-
   // the set of equivalence classes that are "assignable", i.e. those that have
   // an assignable expression in them (see isAssignable), and have not already
   // been assigned a constant.
@@ -440,11 +435,16 @@ bool TheoryEngineModelBuilder::buildModel(Model* m)
   // domain of eqcToAssigner).
   std::map<Node, Node> eqcToAssignerMaster;
 
+  
   // Loop through equivalence classes of the equality engine of the model.
   eq::EqualityEngine* ee = tm->d_equalityEngine;
   NodeSet assignableCache;
   std::map<Node, Node>::iterator itm;
   eq::EqClassesIterator eqcs_i = eq::EqClassesIterator(ee);
+  // should we compute assigner objects?
+  bool computeAssigners = tm->hasAssignmentExclusionSets();
+  // the set of exclusion sets we have processed
+  std::unordered_set<Node, NodeHashFunction> processedExcSet;
   for (; !eqcs_i.isFinished(); ++eqcs_i)
   {
     Node eqc = *eqcs_i;
