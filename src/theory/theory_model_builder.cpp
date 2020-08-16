@@ -388,12 +388,13 @@ bool TheoryEngineModelBuilder::buildModel(Model* m)
     return false;
   }
 
-  Trace("model-builder")
-      << "TheoryEngineModelBuilder: Add assignable subterms and collect representatives..." << std::endl;
-      
+  Trace("model-builder") << "TheoryEngineModelBuilder: Add assignable subterms "
+                            "and collect representatives..."
+                         << std::endl;
+
   // In the first step of model building, we do a traversal of the
   // equality engine and record the information in the following:
-      
+
   // The constant representatives, per equivalence class
   d_constantReps.clear();
   // The representatives that have been asserted by theories. This includes
@@ -412,8 +413,7 @@ bool TheoryEngineModelBuilder::buildModel(Model* m)
   std::vector<TypeNode> type_list;
   // The count of equivalence classes per sort (for finite model finding).
   std::map<TypeNode, unsigned> eqc_usort_count;
-  
-  
+
   // Loop through equivalence classes of the equality engine of the model.
   eq::EqualityEngine* ee = tm->d_equalityEngine;
   NodeSet assignableCache;
@@ -457,8 +457,8 @@ bool TheoryEngineModelBuilder::buildModel(Model* m)
           // information from another theory. We overwrite the value of rep in
           // these cases here.
           rep = itm->second;
-          Trace("model-builder") << "  Rep( " << eqc << " ) = " << rep
-                                << std::endl;
+          Trace("model-builder")
+              << "  Rep( " << eqc << " ) = " << rep << std::endl;
         }
       }
       // model-specific processing of the term
