@@ -2263,10 +2263,10 @@ void TheoryDatatypes::computeRelevantTerms(std::set<Node>& termSet,
                                            bool includeShared)
 {
   // Compute terms appearing in assertions and shared terms
-  std::set<Kind> irr_kinds;
+  std::set<Kind> irrKinds;
   // testers are not relevant for model construction
-  irr_kinds.insert(APPLY_TESTER);
-  computeRelevantTermsInternal(termSet, irr_kinds, includeShared);
+  irrKinds.insert(APPLY_TESTER);
+  computeRelevantTermsInternal(termSet, irrKinds, includeShared);
 
   Trace("dt-cmi") << "Have " << termSet.size() << " relevant terms..."
                   << std::endl;

@@ -370,7 +370,6 @@ private:
   void computeRelevantTerms(std::set<Node>& termSet,
                             bool includeShared = true) override;
 
- private:
   /** sygus symmetry breaking utility */
   std::unique_ptr<SygusExtension> d_sygusExtension;
 
