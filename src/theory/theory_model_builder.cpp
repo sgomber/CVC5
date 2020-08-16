@@ -492,10 +492,11 @@ bool TheoryEngineModelBuilder::buildModel(Model* m)
         isRelevantTerm = relevantTerms.find(n) != relevantTerms.end();
       }
 
-      // For each term, we:
-      // (1) Register its assignable subterms,
+      // For each term n in this equivalence class:
+      // (1) If n is relevant, register its assignable subterms,
       // (2) Compute whether it is a constant or assigned representative,
-      // (3) Compute information regarding how we will assign values.
+      // (3) If n is relevant and we don't have a constant representative,
+      // compute information regarding how we will assign values.
 
       // (1) Add assignable subterms, which ensures that e.g. models for
       // uninterpreted functions take into account all subterms in the
@@ -663,6 +664,8 @@ bool TheoryEngineModelBuilder::buildModel(Model* m)
       }
     }
   }
+  
+  // Now finished initialization
 
   // Compute type enumerator properties. This code ensures we do not
   // enumerate terms that have uninterpreted constants that violate the
