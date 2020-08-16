@@ -205,30 +205,19 @@ void TheoryUF::check(Effort level) {
   }
 }/* TheoryUF::check() */
 
-
 //--------------------------------- standard check
-void TheoryUF::preCheck(Effort level)
-{
-  
-}
+void TheoryUF::preCheck(Effort level) {}
 
-void TheoryUF::postCheck(Effort level)
-{
-  
-}
+void TheoryUF::postCheck(Effort level) {}
 
 bool TheoryUF::preprocessNewFact(TNode atom, bool polarity, TNode fact)
 {
   return false;
 }
 
-void TheoryUF::notifyNewFact(TNode atom, bool polarity, TNode fact)
-{
-  
-}
+void TheoryUF::notifyNewFact(TNode atom, bool polarity, TNode fact) {}
 //--------------------------------- end standard check
-  
-  
+
 Node TheoryUF::getOperatorForApplyTerm( TNode node ) {
   Assert(node.getKind() == kind::APPLY_UF || node.getKind() == kind::HO_APPLY);
   if( node.getKind()==kind::APPLY_UF ){

@@ -197,7 +197,7 @@ private:
   //--------------------------------- end initialization
 
   void check(Effort) override;
-  
+
   //--------------------------------- standard check
   /** Pre-check, called before the fact queue of the theory is processed. */
   void preCheck(Effort level) override;
@@ -208,7 +208,7 @@ private:
   /** Notify new fact */
   void notifyNewFact(TNode atom, bool polarity, TNode fact) override;
   //--------------------------------- end standard check
-  
+
   TrustNode expandDefinition(Node node) override;
   void preRegisterTerm(TNode term) override;
   TrustNode explain(TNode n) override;
