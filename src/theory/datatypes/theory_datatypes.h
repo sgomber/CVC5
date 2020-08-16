@@ -362,12 +362,13 @@ private:
   bool areDisequal( TNode a, TNode b );
   bool areCareDisequal( TNode x, TNode y );
   TNode getRepresentative( TNode a );
-  
-  /** 
+
+  /**
    * Compute relevant terms. In addition to all terms in assertions and shared
    * terms, this includes datatypes in non-singleton equivalence classes.
    */
-  void computeRelevantTerms(std::set<Node>& termSet, bool includeShared = true) override;
+  void computeRelevantTerms(std::set<Node>& termSet,
+                            bool includeShared = true) override;
 
  private:
   /** sygus symmetry breaking utility */

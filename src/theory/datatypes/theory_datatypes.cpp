@@ -1523,9 +1523,9 @@ bool TheoryDatatypes::collectModelInfo(TheoryModel* m)
   Trace("dt-model") << std::endl;
   printModelDebug( "dt-model" );
   Trace("dt-model") << std::endl;
-  
+
   std::set<Node> termSet;
-  
+
   // Compute terms appearing in assertions and shared terms, and in inferred equalities
   computeRelevantTerms(termSet);
 
@@ -2259,7 +2259,8 @@ Node TheoryDatatypes::mkAnd( std::vector< TNode >& assumptions ) {
   }
 }
 
-void TheoryDatatypes::computeRelevantTerms(std::set<Node>& termSet, bool includeShared)
+void TheoryDatatypes::computeRelevantTerms(std::set<Node>& termSet,
+                                           bool includeShared)
 {
   // Compute terms appearing in assertions and shared terms
   std::set<Kind> irr_kinds;

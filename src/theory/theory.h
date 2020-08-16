@@ -199,11 +199,12 @@ class Theory {
                     std::set<Kind>& irrKinds,
                     std::set<Node>& termSet) const;
 
-  /** 
+  /**
    * Same as above, but with empty irrKinds. This version can be overridden
    * by the theory.
    */
-  virtual void computeRelevantTerms(std::set<Node>& termSet, bool includeShared = true);
+  virtual void computeRelevantTerms(std::set<Node>& termSet,
+                                    bool includeShared = true);
   /**
    * Construct a Theory.
    *

@@ -1102,7 +1102,8 @@ bool TheoryArrays::collectModelInfo(TheoryModel* m)
   eq::EqClassesIterator eqcs_i = eq::EqClassesIterator(d_equalityEngine);
   for (; !eqcs_i.isFinished(); ++eqcs_i) {
     Node eqc = (*eqcs_i);
-    if (!eqc.getType().isArray()) {
+    if (!eqc.getType().isArray())
+    {
       continue;
     }
     computeRep = false;
@@ -1110,7 +1111,8 @@ bool TheoryArrays::collectModelInfo(TheoryModel* m)
     for (; !eqc_i.isFinished(); ++eqc_i) {
       Node n = *eqc_i;
       // If this EC is an array type and it contains something other than STORE nodes, we have to compute a representative explicitly
-      if (termSet.find(n) != termSet.end()) {
+      if (termSet.find(n) != termSet.end())
+      {
         if (n.getKind() == kind::STORE) {
           // Make sure RIntro1 reads are included
           Node r = nm->mkNode(kind::SELECT, n, n[1]);
