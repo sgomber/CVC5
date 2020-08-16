@@ -561,7 +561,7 @@ class Theory {
   virtual bool needsCheckLastEffort() { return false; }
 
   /** T-propagate new literal assignments in the current context. */
-  virtual void propagate(Effort level = EFFORT_FULL) { }
+  virtual void propagate(Effort level = EFFORT_FULL) {}
 
   //--------------------------------- new standard
   /**
@@ -572,55 +572,55 @@ class Theory {
    * - be interrupted,
    * - throw an exception
    * - or call get() until done() is true.
-   * 
+   *
    * TODO: non-virtual (use template)
    */
   virtual void check(Effort level = EFFORT_FULL);
-  /** 
-   * in conflict? 
+  /**
+   * in conflict?
    * TODO: non-virtual (use state)
    */
   virtual bool isInConflict() const;
-  /** 
+  /**
    * in conflict
    * TODO: non-virtual (use state)
    */
   virtual void notifyInConflict() const;
   /**
    * T-propagate literal lit encountered by equality engine,
-   * 
+   *
    * TODO: non-virtual (use template)
    */
   virtual bool propagate(TNode lit);
-  /** 
+  /**
    * Raise conflict, called when constants a and b merge
-   * 
+   *
    * TODO: non-virtual (use template)
    */
   virtual void conflict(TNode a, TNode b);
   /** process pending facts */
   void processPendingFacts();
-  /** 
+  /**
    * Collect model equalities, asserts the (relevant) equalities from the
    * theory's equality engine into the model m.
    */
   bool collectModelEqualities(TheoryModel* m);
-  
-  /** 
+
+  /**
    * Pre-check, called before the fact queue of the theory is processed.
    */
   virtual void preCheck(Effort level = EFFORT_FULL);
-  /** 
+  /**
    * Post-check, called after the fact queue of the theory is processed.
    */
   virtual void postCheck(Effort level = EFFORT_FULL);
-  /** 
+  /**
    * Preprocess new fact, return true if the theory processed it. If this
    * method returns false, then the atom will be added to the equality engine
    * of the theory and notifyNewFact will be called.
    */
   virtual bool preprocessNewFact(TNode atom, bool polarity, TNode fact);
-  /** 
+  /**
    * Notify new fact, called immediately after the fact was pushed into the
    * equality engine.
    */

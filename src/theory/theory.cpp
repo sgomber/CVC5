@@ -420,7 +420,7 @@ void Theory::getCareGraph(CareGraph* careGraph) {
 void Theory::check(Effort level)
 {
   // see if we are already done (as an optimization)
-  if (done() && !fullEffort(level)) 
+  if (done() && !fullEffort(level))
   {
     return;
   }
@@ -496,15 +496,9 @@ void Theory::processPendingFacts()
   }
 }
 
-void Theory::preCheck(Effort level)
-{
-  
-}
+void Theory::preCheck(Effort level) {}
 
-void Theory::postCheck(Effort level)
-{
-  
-}
+void Theory::postCheck(Effort level) {}
 
 bool Theory::preprocessNewFact(TNode atom, bool polarity, TNode fact)
 {
