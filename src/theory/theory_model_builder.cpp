@@ -388,29 +388,37 @@ bool TheoryEngineModelBuilder::buildModel(Model* m)
     return false;
   }
 
-  eq::EqualityEngine* ee = tm->d_equalityEngine;
   Trace("model-builder")
-      << "TheoryEngineModelBuilder: Add assignable subterms..." << std::endl;
-  // Loop through all terms and make sure that assignable sub-terms are in the
-  // equality engine
-  // Also, record #eqc per type (for finite model finding)
-
-  // Process all terms in the equality engine, store representatives for each EC
+      << "TheoryEngineModelBuilder: Add assignable subterms and collect representatives..." << std::endl;
+      
+  // In the first step of model building, we do a traversal of the
+  // equality engine and record the information in the following:
+      
+  // The constant representatives, per equivalence class
   d_constantReps.clear();
+  // The representatives that have been asserted by theories. This includes
+  // non-constant "skeletons" that have been specified by parametric theories.
   std::map<Node, Node> assertedReps;
+  // A parition of the set of equivalence classes that have:
+  // (1) constant representatives,
+  // (2) an assigned representative specified by a theory in collectModelInfo,
+  // (3) no assigned representative.
   TypeSet typeConstSet, typeRepSet, typeNoRepSet;
-  // AJR: build ordered list of types that ensures that base types are
-  // enumerated first.
-  // (I think) this is only strictly necessary for finite model finding +
-  // parametric types instantiated with uninterpreted sorts, but is probably
-  // a good idea to do in general since it leads to models with smaller term
-  // sizes.
+  // An order list of types, such that T1 comes before T2 if T1 is a "component
+  // type" of T2, e.g. U comes before (Set U). This is only strictly necessary
+  // for finite model finding + parametric types instantiated with uninterpreted
+  // sorts, but is probably a good idea to do in general since it leads to
+  // models with smaller term sizes. -AJR
   std::vector<TypeNode> type_list;
+  // The count of equivalence classes per sort (for finite model finding).
   std::map<TypeNode, unsigned> eqc_usort_count;
+  
+  
+  // Loop through equivalence classes of the equality engine of the model.
+  eq::EqualityEngine* ee = tm->d_equalityEngine;
+  NodeSet assignableCache;
   std::map<Node, Node>::iterator itm;
   eq::EqClassesIterator eqcs_i = eq::EqClassesIterator(ee);
-  NodeSet assignableCache;
-  // for each equivalence class
   for (; !eqcs_i.isFinished(); ++eqcs_i)
   {
     Node eqc = *eqcs_i;
@@ -423,30 +431,35 @@ bool TheoryEngineModelBuilder::buildModel(Model* m)
     for (; !eqc_i.isFinished(); ++eqc_i)
     {
       Node n = *eqc_i;
-      // add assignable subterms
+      // Add assignable subterms, which ensures that e.g. models for
+      // uninterpreted functions take into account all subterms in the
+      // equality engine of the model
       addAssignableSubterms(n, tm, assignableCache);
       Trace("model-builder") << "  Processing Term: " << n << endl;
-      itm = tm->d_reps.find(n);
-      // Record as rep if this node was specified as a representative
-      if (itm != tm->d_reps.end())
-      {
-        // AJR: I believe this assertion is too strict,
-        // e.g. datatypes may assert representative for two constructor terms
-        // that are not in the care graph and are merged during
-        // collectModelInfo.
-        // Assert(rep.isNull());
-        rep = itm->second;
-        Assert(!rep.isNull());
-        Trace("model-builder") << "  Rep( " << eqc << " ) = " << rep
-                               << std::endl;
-      }
-      // Record as constRep if this node is constant
+      // Record constant representative or assign represenative, if applicable
       if (n.isConst())
       {
         Assert(constRep.isNull());
         constRep = n;
         Trace("model-builder")
             << "  ConstRep( " << eqc << " ) = " << constRep << std::endl;
+      }
+      else if (constRep.isNull())
+      {
+        // if we don't have a constant rep, check if we have an assigned rep
+        itm = tm->d_reps.find(n);
+        if (itm != tm->d_reps.end())
+        {
+          // Notice that this equivalence class may contain multiple terms that
+          // were specified as being a representative, since e.g. datatypes may
+          // assert representative for two constructor terms that are not in the
+          // care graph and are merged during collectModeInfo due to equality
+          // information from another theory. We overwrite the value of rep in
+          // these cases here.
+          rep = itm->second;
+          Trace("model-builder") << "  Rep( " << eqc << " ) = " << rep
+                                << std::endl;
+        }
       }
       // model-specific processing of the term
       tm->addTermInternal(n);
@@ -484,8 +497,6 @@ bool TheoryEngineModelBuilder::buildModel(Model* m)
       addToTypeList(eqct, type_list, visiting);
     }
   }
-
-  Trace("model-builder") << "Collect representatives..." << std::endl;
 
   // Compute type enumerator properties. This code ensures we do not
   // enumerate terms that have uninterpreted constants that violate the
