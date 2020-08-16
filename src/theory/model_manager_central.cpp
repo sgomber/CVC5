@@ -50,7 +50,7 @@ bool ModelManagerCentral::buildModelInternal()
   {
     d_model->addRelevantTerm(t);
   }
-  
+
   // push a SAT context
   context::Context* c = d_te.getSatContext();
   c->push();

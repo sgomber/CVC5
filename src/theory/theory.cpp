@@ -554,9 +554,8 @@ bool Theory::collectModelInfo(TheoryModel* m)
   return collectModelValues(m, termSet);
 }
 
-
 bool Theory::collectModelValues(TheoryModel* m, std::set<Node>& termSet)
-{ 
+{
   return true;
 }
 
