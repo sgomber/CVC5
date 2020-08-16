@@ -1094,13 +1094,13 @@ bool TheoryArrays::collectModelInfo(TheoryModel* m)
   // include additional reads due to the RIntro1 rule.
   std::set<Node> termSet;
   computeRelevantTerms(termSet);
-  
+
   // Send the equality engine information to the model
   if (!m->assertEqualityEngine(d_equalityEngine, &termSet))
   {
     return false;
   }
-  
+
   // Compute arrays that we need to produce representatives for
   std::vector<Node> arrays;
   eq::EqClassesIterator eqcs_i = eq::EqClassesIterator(d_equalityEngine);
@@ -1155,13 +1155,15 @@ bool TheoryArrays::collectModelInfo(TheoryModel* m)
   //}
 
   // Loop through all array equivalence classes that need a representative computed
-  NodeManager* nm = NodeManager::currentNM();
-  for (size_t i=0; i<arrays.size(); ++i) {
-    TNode n = arrays[i];
-    TNode nrep = d_equalityEngine->getRepresentative(n);
+    NodeManager* nm = NodeManager::currentNM();
+    for (size_t i = 0; i < arrays.size(); ++i)
+    {
+      TNode n = arrays[i];
+      TNode nrep = d_equalityEngine->getRepresentative(n);
 
-    //if (fullModel) {
-      // Compute default value for this array - there is one default value for every mayEqual equivalence class
+      // if (fullModel) {
+      // Compute default value for this array - there is one default value for
+      // every mayEqual equivalence class
       TNode mayRep = d_mayEqualEqualityEngine.getRepresentative(nrep);
       it = d_defValues.find(mayRep);
       // If this mayEqual EC doesn't have a default value associated, get the next available default value for the associated array element type
@@ -2297,24 +2299,29 @@ void TheoryArrays::computeRelevantTerms(std::set<Node>& termSet,
       }
     }
   }
-  
-  // Now do a fixed-point iteration to get all reads that need to be included because of RIntro2 rule
+
+  // Now do a fixed-point iteration to get all reads that need to be included
+  // because of RIntro2 rule
   bool changed;
-  do {
+  do
+  {
     changed = false;
     eqcs_i = eq::EqClassesIterator(d_equalityEngine);
-    for (; !eqcs_i.isFinished(); ++eqcs_i) {
+    for (; !eqcs_i.isFinished(); ++eqcs_i)
+    {
       Node eqc = (*eqcs_i);
       eq::EqClassIterator eqc_i = eq::EqClassIterator(eqc, d_equalityEngine);
-      for (; !eqc_i.isFinished(); ++eqc_i) {
+      for (; !eqc_i.isFinished(); ++eqc_i)
+      {
         Node n = *eqc_i;
-        if (n.getKind() == kind::SELECT && termSet.find(n) != termSet.end()) {
-
+        if (n.getKind() == kind::SELECT && termSet.find(n) != termSet.end())
+        {
           // Find all terms equivalent to n[0] and get corresponding read terms
           Node array_eqc = d_equalityEngine->getRepresentative(n[0]);
           eq::EqClassIterator array_eqc_i =
               eq::EqClassIterator(array_eqc, d_equalityEngine);
-          for (; !array_eqc_i.isFinished(); ++array_eqc_i) {
+          for (; !array_eqc_i.isFinished(); ++array_eqc_i)
+          {
             Node arr = *array_eqc_i;
             if (arr.getKind() == kind::STORE
                 && termSet.find(arr) != termSet.end()
@@ -2324,7 +2331,10 @@ void TheoryArrays::computeRelevantTerms(std::set<Node>& termSet,
               if (termSet.find(r) == termSet.end()
                   && d_equalityEngine->hasTerm(r))
               {
-                Trace("arrays::collectModelInfo") << "TheoryArrays::collectModelInfo, adding RIntro2(a) read: " << r << endl;
+                Trace("arrays::collectModelInfo")
+                    << "TheoryArrays::collectModelInfo, adding RIntro2(a) "
+                       "read: "
+                    << r << endl;
                 termSet.insert(r);
                 changed = true;
               }
@@ -2332,17 +2342,22 @@ void TheoryArrays::computeRelevantTerms(std::set<Node>& termSet,
               if (termSet.find(r) == termSet.end()
                   && d_equalityEngine->hasTerm(r))
               {
-                Trace("arrays::collectModelInfo") << "TheoryArrays::collectModelInfo, adding RIntro2(b) read: " << r << endl;
+                Trace("arrays::collectModelInfo")
+                    << "TheoryArrays::collectModelInfo, adding RIntro2(b) "
+                       "read: "
+                    << r << endl;
                 termSet.insert(r);
                 changed = true;
               }
             }
           }
 
-          // Find all stores in which n[0] appears and get corresponding read terms
+          // Find all stores in which n[0] appears and get corresponding read
+          // terms
           const CTNodeList* instores = d_infoMap.getInStores(array_eqc);
           size_t it = 0;
-          for(; it < instores->size(); ++it) {
+          for (; it < instores->size(); ++it)
+          {
             TNode instore = (*instores)[it];
             Assert(instore.getKind() == kind::STORE);
             if (termSet.find(instore) != termSet.end()
@@ -2352,7 +2367,10 @@ void TheoryArrays::computeRelevantTerms(std::set<Node>& termSet,
               if (termSet.find(r) == termSet.end()
                   && d_equalityEngine->hasTerm(r))
               {
-                Trace("arrays::collectModelInfo") << "TheoryArrays::collectModelInfo, adding RIntro2(c) read: " << r << endl;
+                Trace("arrays::collectModelInfo")
+                    << "TheoryArrays::collectModelInfo, adding RIntro2(c) "
+                       "read: "
+                    << r << endl;
                 termSet.insert(r);
                 changed = true;
               }
@@ -2360,7 +2378,10 @@ void TheoryArrays::computeRelevantTerms(std::set<Node>& termSet,
               if (termSet.find(r) == termSet.end()
                   && d_equalityEngine->hasTerm(r))
               {
-                Trace("arrays::collectModelInfo") << "TheoryArrays::collectModelInfo, adding RIntro2(d) read: " << r << endl;
+                Trace("arrays::collectModelInfo")
+                    << "TheoryArrays::collectModelInfo, adding RIntro2(d) "
+                       "read: "
+                    << r << endl;
                 termSet.insert(r);
                 changed = true;
               }

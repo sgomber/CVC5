@@ -565,10 +565,7 @@ bool Theory::collectModelEqualities(TheoryModel* m)
   return true;
 }
 
-bool Theory::collectModelValues(TheoryModel* m)
-{
-  return true;
-}
+bool Theory::collectModelValues(TheoryModel* m) { return true; }
 
 TrustNode Theory::explainConflict(TNode a, TNode b)
 {

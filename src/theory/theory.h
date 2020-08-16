@@ -565,7 +565,7 @@ class Theory {
   /**
    * Return the status of two terms in the current context. Should be
    * implemented in sub-theories to enable more efficient theory-combination.
-   * 
+   *
    * TODO: use equality engine?
    */
   virtual EqualityStatus getEqualityStatus(TNode a, TNode b) {
@@ -574,7 +574,7 @@ class Theory {
 
   /**
    * Return the model value of the give shared term (or null if not available).
-   * 
+   *
    * TODO: delete
    */
   virtual Node getModelValue(TNode var) { return Node::null(); }
@@ -607,7 +607,7 @@ class Theory {
    * TODO: non-virtual (use template)
    */
   virtual void conflict(TNode a, TNode b);
-  
+
   /**
    * Return an explanation for the literal represented by parameter n
    * (which was previously propagated by this theory).
@@ -621,7 +621,6 @@ class Theory {
   /** Explain conflict */
   virtual TrustNode explainConflict(TNode a, TNode b);
 
-  
   //--------------------------------- new standard check
   /**
    * Check the current assignment's consistency.
@@ -635,9 +634,9 @@ class Theory {
    * TODO: non-virtual (use template)
    */
   virtual void check(Effort level = EFFORT_FULL);
-  /** 
+  /**
    * process pending facts
-   * 
+   *
    * TODO: inline into check
    */
   void processPendingFacts();
@@ -661,7 +660,7 @@ class Theory {
    */
   virtual void notifyNewFact(TNode atom, bool polarity, TNode fact);
   //--------------------------------- end new standard check
-  
+
   //--------------------------------- new standard collect model info
   /**
    * Get all relevant information in this theory regarding the current
@@ -670,14 +669,14 @@ class Theory {
    *
    * This method returns true if and only if the equality engine of m is
    * consistent as a result of this call.
-   * 
+   *
    * TODO: non-virtual
    */
   virtual bool collectModelInfo(TheoryModel* m);
   /**
    * Collect model equalities, asserts the (relevant) equalities from the
    * theory's equality engine into the model m.
-   * 
+   *
    * TODO: inline into collectModelInfo.
    */
   bool collectModelEqualities(TheoryModel* m);
@@ -686,9 +685,7 @@ class Theory {
    */
   virtual bool collectModelValues(TheoryModel* m);
   //--------------------------------- end new standard collect model info
-  
-  
-  
+
   /** if theories want to do something with model after building, do it here */
   virtual void postProcessModel( TheoryModel* m ){ }
   /**
