@@ -392,6 +392,10 @@ bool TheoryEngineModelBuilder::buildModel(Model* m)
       << "TheoryEngineModelBuilder: Add assignable subterms "
          ", collect representatives and compute assignable information..."
       << std::endl;
+  // properties about the model
+  bool usingRelevantTerms = tm->isUsingRelevantTerms();
+  // the relevant terms
+  const std::set<Node>& relevantTerms = tm->getRelevantTerms();
 
   // type enumerator properties
   TypeEnumeratorProperties tep;
@@ -480,6 +484,13 @@ bool TheoryEngineModelBuilder::buildModel(Model* m)
     {
       Node n = *eqc_i;
       Trace("model-builder") << "  Processing Term: " << n << endl;
+      
+      // check if its a relevant term?
+      bool isRelevantTerm = true;
+      if (!n.isConst() && usingRelevantTerms)
+      {
+        isRelevantTerm = relevantTerms.find(n)!=relevantTerms.end();
+      }
 
       // For each term, we:
       // (1) Register its assignable subterms,
@@ -489,9 +500,12 @@ bool TheoryEngineModelBuilder::buildModel(Model* m)
       // (1) Add assignable subterms, which ensures that e.g. models for
       // uninterpreted functions take into account all subterms in the
       // equality engine of the model
-      addAssignableSubterms(n, tm, assignableCache);
-      // model-specific processing of the term
-      tm->addTermInternal(n);
+      if (isRelevantTerm)
+      {
+        addAssignableSubterms(n, tm, assignableCache);
+        // model-specific processing of the term
+        tm->addTermInternal(n);
+      }
 
       // (2) Record constant representative or assign representative, if
       // applicable
@@ -504,11 +518,12 @@ bool TheoryEngineModelBuilder::buildModel(Model* m)
         // if we have a constant representative, nothing else matters
         continue;
       }
-      else if (!constRep.isNull())
+      else if (!constRep.isNull() || !isRelevantTerm)
       {
-        // already have a constant representative
+        // already have a constant representative, or its not a relevant term
         continue;
       }
+      
       // If we don't have a constant rep, check if this is an assigned rep.
       itm = tm->d_reps.find(n);
       if (itm != tm->d_reps.end())

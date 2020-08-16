@@ -28,6 +28,9 @@ bool ModelManagerCentral::buildModelInternal()
   Trace("model-builder") << "ModelManagerCentral: reset model..." << std::endl;
   // Reset model
   d_model->reset();
+  
+  // must compute relevant terms
+  
 
   // push a SAT context
   context::Context* c = d_te.getSatContext();
