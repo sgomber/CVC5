@@ -388,14 +388,14 @@ bool TheoryEngineModelBuilder::buildModel(Model* m)
     return false;
   }
 
-  Trace("model-builder") << "TheoryEngineModelBuilder: Add assignable subterms "
-                            ", collect representatives and compute assignable information..."
-                         << std::endl;
+  Trace("model-builder")
+      << "TheoryEngineModelBuilder: Add assignable subterms "
+         ", collect representatives and compute assignable information..."
+      << std::endl;
 
-  
   // type enumerator properties
   TypeEnumeratorProperties tep;
-    
+
   // In the first step of model building, we do a traversal of the
   // equality engine and record the information in the following:
 
@@ -417,7 +417,7 @@ bool TheoryEngineModelBuilder::buildModel(Model* m)
   std::vector<TypeNode> type_list;
   // The count of equivalence classes per sort (for finite model finding).
   std::map<TypeNode, unsigned> eqc_usort_count;
-  
+
   // should we compute assigner objects?
   bool computeAssigners = tm->hasAssignmentExclusionSets();
   // the set of exclusion sets we have processed
@@ -439,7 +439,7 @@ bool TheoryEngineModelBuilder::buildModel(Model* m)
   // assigner object with (all elements in the range of this map are in the
   // domain of eqcToAssigner).
   std::map<Node, Node> eqcToAssignerMaster;
-  
+
   // Loop through equivalence classes of the equality engine of the model.
   eq::EqualityEngine* ee = tm->d_equalityEngine;
   NodeSet assignableCache;
@@ -448,9 +448,9 @@ bool TheoryEngineModelBuilder::buildModel(Model* m)
   for (; !eqcs_i.isFinished(); ++eqcs_i)
   {
     Node eqc = *eqcs_i;
-    
+
     // Information computed for each equivalence class
-    
+
     // The assigned represenative and constant representative
     Node rep, constRep;
     // A flag set to true if the current equivalence class is assignable (see
@@ -474,26 +474,26 @@ bool TheoryEngineModelBuilder::buildModel(Model* m)
     // were assigned (see the argument group of
     // TheoryModel::getAssignmentExclusionSet).
     std::vector<Node> esetGroup;
-    
+
     // Loop through terms in this EC
     eq::EqClassIterator eqc_i = eq::EqClassIterator(eqc, ee);
     for (; !eqc_i.isFinished(); ++eqc_i)
     {
       Node n = *eqc_i;
       Trace("model-builder") << "  Processing Term: " << n << endl;
-      
+
       // For each term, we:
       // (1) Register its assignable subterms,
       // (2) Compute whether it is a constant or assigned representative,
       // (3) Compute information regarding how we will assign values.
-      
+
       // (1) Add assignable subterms, which ensures that e.g. models for
       // uninterpreted functions take into account all subterms in the
       // equality engine of the model
       addAssignableSubterms(n, tm, assignableCache);
       // model-specific processing of the term
       tm->addTermInternal(n);
-      
+
       // (2) Record constant representative or assign representative, if
       // applicable
       if (n.isConst())
@@ -524,7 +524,7 @@ bool TheoryEngineModelBuilder::buildModel(Model* m)
         Trace("model-builder")
             << "  Rep( " << eqc << " ) = " << rep << std::endl;
       }
-      
+
       // (3) Finally, process assignable information
       if (!isAssignable(n))
       {
@@ -562,7 +562,7 @@ bool TheoryEngineModelBuilder::buildModel(Model* m)
         hasESet = true;
       }
     }
-    
+
     // finished traversing the equality engine
     TypeNode eqct = eqc.getType();
     // count the number of equivalence classes of sorts in finite model finding
@@ -598,7 +598,7 @@ bool TheoryEngineModelBuilder::buildModel(Model* m)
       std::unordered_set<TypeNode, TypeNodeHashFunction> visiting;
       addToTypeList(eqct, type_list, visiting);
     }
-    
+
     if (assignable)
     {
       assignableEqc.insert(eqc);
