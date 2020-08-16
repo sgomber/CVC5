@@ -355,8 +355,6 @@ private:
   void instantiate( EqcInfo* eqc, Node n );
   /** must communicate fact */
   bool mustCommunicateFact( Node n, Node exp );
-  /** get relevant terms */
-  void getRelevantTerms( std::set<Node>& termSet );
 private:
   //equality queries
   bool hasTerm( TNode a );
@@ -364,6 +362,12 @@ private:
   bool areDisequal( TNode a, TNode b );
   bool areCareDisequal( TNode x, TNode y );
   TNode getRepresentative( TNode a );
+  
+  /** 
+   * Compute relevant terms. In addition to all terms in assertions and shared
+   * terms, this includes datatypes in non-singleton equivalence classes.
+   */
+  void computeRelevantTerms(std::set<Node>& termSet, bool includeShared = true) override;
 
  private:
   /** sygus symmetry breaking utility */

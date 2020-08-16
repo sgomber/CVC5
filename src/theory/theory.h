@@ -176,7 +176,22 @@ class Theory {
    * A list of shared terms that the theory has.
    */
   context::CDList<TNode> d_sharedTerms;
-
+  /**
+   * Scans the current set of assertions and shared terms top-down
+   * until a theory-leaf is reached, and adds all terms found to
+   * termSet.  This is used by collectModelInfo to delimit the set of
+   * terms that should be used when constructing a model.
+   *
+   * irrKinds: The kinds of terms that appear in assertions that should *not*
+   * be included in termSet. Note that the kinds EQUAL and NOT are always
+   * treated as irrelevant kinds.
+   *
+   * includeShared: Whether to include shared terms in termSet. Notice that
+   * shared terms are not influenced by irrKinds.
+   */
+  void computeRelevantTermsInternal(std::set<Node>& termSet,
+                                    std::set<Kind>& irrKinds,
+                                    bool includeShared = true) const;
   /**
    * Helper function for computeRelevantTerms
    */
@@ -184,9 +199,11 @@ class Theory {
                     std::set<Kind>& irrKinds,
                     std::set<Node>& termSet) const;
 
-  /** same as above, but with empty irrKinds */
-  void computeRelevantTerms(std::set<Node>& termSet, bool includeShared = true) const;
-
+  /** 
+   * Same as above, but with empty irrKinds. This version can be overridden
+   * by the theory.
+   */
+  virtual void computeRelevantTerms(std::set<Node>& termSet, bool includeShared = true);
   /**
    * Construct a Theory.
    *
@@ -625,22 +642,6 @@ class Theory {
    * equality engine.
    */
   virtual void notifyNewFact(TNode atom, bool polarity, TNode fact);
-  /**
-   * Scans the current set of assertions and shared terms top-down
-   * until a theory-leaf is reached, and adds all terms found to
-   * termSet.  This is used by collectModelInfo to delimit the set of
-   * terms that should be used when constructing a model.
-   *
-   * irrKinds: The kinds of terms that appear in assertions that should *not*
-   * be included in termSet. Note that the kinds EQUAL and NOT are always
-   * treated as irrelevant kinds.
-   *
-   * includeShared: Whether to include shared terms in termSet. Notice that
-   * shared terms are not influenced by irrKinds.
-   */
-  virtual void computeRelevantTerms(std::set<Node>& termSet,
-                                    std::set<Kind>& irrKinds,
-                                    bool includeShared = true) const;
   //--------------------------------- end new standard
   /**
    * Return an explanation for the literal represented by parameter n

@@ -1090,7 +1090,7 @@ void TheoryArrays::computeCareGraph()
 
 bool TheoryArrays::collectModelInfo(TheoryModel* m)
 {
-  set<Node> termSet;
+  std::set<Node> termSet;
 
   // Compute terms appearing in assertions and shared terms
   computeRelevantTerms(termSet);
@@ -1098,12 +1098,11 @@ bool TheoryArrays::collectModelInfo(TheoryModel* m)
   // Compute arrays that we need to produce representatives for and also make sure RIntro1 reads are included in the relevant set of reads
   NodeManager* nm = NodeManager::currentNM();
   std::vector<Node> arrays;
-  bool computeRep, isArray;
+  bool computeRep;
   eq::EqClassesIterator eqcs_i = eq::EqClassesIterator(d_equalityEngine);
   for (; !eqcs_i.isFinished(); ++eqcs_i) {
     Node eqc = (*eqcs_i);
-    isArray = eqc.getType().isArray();
-    if (!isArray) {
+    if (!eqc.getType().isArray()) {
       continue;
     }
     computeRep = false;
@@ -1111,7 +1110,7 @@ bool TheoryArrays::collectModelInfo(TheoryModel* m)
     for (; !eqc_i.isFinished(); ++eqc_i) {
       Node n = *eqc_i;
       // If this EC is an array type and it contains something other than STORE nodes, we have to compute a representative explicitly
-      if (isArray && termSet.find(n) != termSet.end()) {
+      if (termSet.find(n) != termSet.end()) {
         if (n.getKind() == kind::STORE) {
           // Make sure RIntro1 reads are included
           Node r = nm->mkNode(kind::SELECT, n, n[1]);

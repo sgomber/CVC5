@@ -356,10 +356,39 @@ void Theory::collectTerms(TNode n,
 }
 
 
-void Theory::computeRelevantTerms(set<Node>& termSet, bool includeShared) const
+void Theory::computeRelevantTermsInternal(set<Node>& termSet,
+                                  std::set<Kind>& irrKinds,
+                                  bool includeShared) const
 {
-  set<Kind> irrKinds;
-  computeRelevantTerms(termSet, irrKinds, includeShared);
+  // Collect all terms appearing in assertions
+  irrKinds.insert(kind::EQUAL);
+  irrKinds.insert(kind::NOT);
+  context::CDList<Assertion>::const_iterator assert_it = facts_begin(),
+                                             assert_it_end = facts_end();
+  for (; assert_it != assert_it_end; ++assert_it)
+  {
+    collectTerms(*assert_it, irrKinds, termSet);
+  }
+
+  if (!includeShared)
+  {
+    return;
+  }
+  // Add terms that are shared terms
+  std::set<Kind> kempty;
+  context::CDList<TNode>::const_iterator shared_it = shared_terms_begin(),
+                                         shared_it_end = shared_terms_end();
+  for (; shared_it != shared_it_end; ++shared_it)
+  {
+    collectTerms(*shared_it, kempty, termSet);
+  }
+}
+
+void Theory::computeRelevantTerms(std::set<Node>& termSet, bool includeShared)
+{
+  // by default, use the above method
+  std::set<Kind> irrKinds;
+  computeRelevantTermsInternal(termSet, irrKinds, includeShared);
 }
 
 Theory::PPAssertStatus Theory::ppAssert(TNode in,
@@ -508,32 +537,6 @@ bool Theory::preprocessNewFact(TNode atom, bool polarity, TNode fact)
 void Theory::notifyNewFact(TNode atom, bool polarity, TNode fact)
 {
   // do nothing
-}
-
-void Theory::computeRelevantTerms(set<Node>& termSet,
-                                  set<Kind>& irrKinds,
-                                  bool includeShared) const
-{
-  // Collect all terms appearing in assertions
-  irrKinds.insert(kind::EQUAL);
-  irrKinds.insert(kind::NOT);
-  context::CDList<Assertion>::const_iterator assert_it = facts_begin(),
-                                             assert_it_end = facts_end();
-  for (; assert_it != assert_it_end; ++assert_it)
-  {
-    collectTerms(*assert_it, irrKinds, termSet);
-  }
-
-  if (!includeShared) return;
-
-  // Add terms that are shared terms
-  set<Kind> kempty;
-  context::CDList<TNode>::const_iterator shared_it = shared_terms_begin(),
-                                         shared_it_end = shared_terms_end();
-  for (; shared_it != shared_it_end; ++shared_it)
-  {
-    collectTerms(*shared_it, kempty, termSet);
-  }
 }
 
 bool Theory::collectModelEqualities(TheoryModel* m)
