@@ -1111,7 +1111,8 @@ bool TheoryArrays::collectModelInfo(TheoryModel* m)
       // If this EC is an array type and it contains something other than STORE nodes, we have to compute a representative explicitly
       if (termSet.find(n) != termSet.end())
       {
-        if (n.getKind() != kind::STORE) {
+        if (n.getKind() != kind::STORE)
+        {
           arrays.push_back(n);
           break;
         }
@@ -1192,7 +1193,7 @@ bool TheoryArrays::collectModelInfo(TheoryModel* m)
       }
     }
   } while (changed);
-  
+
   // Send the equality engine information to the model
   if (!m->assertEqualityEngine(d_equalityEngine, &termSet))
   {
@@ -2333,18 +2334,18 @@ TrustNode TheoryArrays::expandDefinition(Node node)
   return TrustNode::null();
 }
 
-
 void TheoryArrays::computeRelevantTerms(std::set<Node>& termSet,
-                          bool includeShared)
+                                        bool includeShared)
 {
-  NodeManager * nm = NodeManager::currentNM();
+  NodeManager* nm = NodeManager::currentNM();
   // include all standard terms
   std::set<Kind> irrKinds;
   computeRelevantTermsInternal(termSet, irrKinds, includeShared);
-  
+
   // make sure RIntro1 reads are included in the relevant set of reads
   eq::EqClassesIterator eqcs_i = eq::EqClassesIterator(d_equalityEngine);
-  for (; !eqcs_i.isFinished(); ++eqcs_i) {
+  for (; !eqcs_i.isFinished(); ++eqcs_i)
+  {
     Node eqc = (*eqcs_i);
     if (!eqc.getType().isArray())
     {
@@ -2352,14 +2353,18 @@ void TheoryArrays::computeRelevantTerms(std::set<Node>& termSet,
       continue;
     }
     eq::EqClassIterator eqc_i = eq::EqClassIterator(eqc, d_equalityEngine);
-    for (; !eqc_i.isFinished(); ++eqc_i) {
+    for (; !eqc_i.isFinished(); ++eqc_i)
+    {
       Node n = *eqc_i;
       if (termSet.find(n) != termSet.end())
       {
-        if (n.getKind() == kind::STORE) {
+        if (n.getKind() == kind::STORE)
+        {
           // Make sure RIntro1 reads are included
           Node r = nm->mkNode(kind::SELECT, n, n[1]);
-          Trace("arrays::collectModelInfo") << "TheoryArrays::collectModelInfo, adding RIntro1 read: " << r << endl;
+          Trace("arrays::collectModelInfo")
+              << "TheoryArrays::collectModelInfo, adding RIntro1 read: " << r
+              << endl;
           termSet.insert(r);
         }
       }
