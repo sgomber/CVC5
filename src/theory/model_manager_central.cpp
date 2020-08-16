@@ -30,7 +30,27 @@ bool ModelManagerCentral::buildModelInternal()
   d_model->reset();
 
   // must compute relevant terms
-
+  std::set<Node> relevantTerms;
+  for (TheoryId theoryId = theory::THEORY_FIRST;
+       theoryId != theory::THEORY_LAST;
+       ++theoryId)
+  {
+    Theory* t = d_te.theoryOf(theoryId);
+    if (t == nullptr)
+    {
+      // theory not active, skip
+      continue;
+    }
+    // compute relevant terms
+    t->computeRelevantTerms(relevantTerms);
+  }
+  // we use relevant terms based on the above set
+  d_model->setUsingRelevantTerms();
+  for (const Node& t : relevantTerms)
+  {
+    d_model->addRelevantTerm(t);
+  }
+  
   // push a SAT context
   context::Context* c = d_te.getSatContext();
   c->push();

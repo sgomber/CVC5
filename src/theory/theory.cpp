@@ -540,31 +540,25 @@ void Theory::notifyNewFact(TNode atom, bool polarity, TNode fact)
 
 bool Theory::collectModelInfo(TheoryModel* m)
 {
-  if (!collectModelEqualities(m))
-  {
-    return false;
-  }
-  return collectModelValues(m);
-}
-
-bool Theory::collectModelEqualities(TheoryModel* m)
-{
-  if (d_equalityEngine == nullptr)
-  {
-    // not using equality engine, nothing to do
-    return true;
-  }
   std::set<Node> termSet;
   // Compute terms appearing in assertions and shared terms
   computeRelevantTerms(termSet);
-  if (!m->assertEqualityEngine(d_equalityEngine, &termSet))
+  // if we are using an equality engine, assert it to the model
+  if (d_equalityEngine != nullptr)
   {
-    return false;
+    if (!m->assertEqualityEngine(d_equalityEngine, &termSet))
+    {
+      return false;
+    }
   }
-  return true;
+  return collectModelValues(m, termSet);
 }
 
-bool Theory::collectModelValues(TheoryModel* m) { return true; }
+
+bool Theory::collectModelValues(TheoryModel* m, std::set<Node>& termSet)
+{ 
+  return true;
+}
 
 TrustNode Theory::explainConflict(TNode a, TNode b)
 {

@@ -198,15 +198,6 @@ class Theory {
   void collectTerms(TNode n,
                     std::set<Kind>& irrKinds,
                     std::set<Node>& termSet) const;
-
-  /**
-   * Same as above, but with empty irrKinds. This version can be overridden
-   * by the theory, e.g. by restricting or extended the set of terms returned
-   * by computeRelevantTermsInternal, which is called by default with no
-   * irrKinds.
-   */
-  virtual void computeRelevantTerms(std::set<Node>& termSet,
-                                    bool includeShared = true);
   /**
    * Construct a Theory.
    *
@@ -676,16 +667,21 @@ class Theory {
    */
   virtual bool collectModelInfo(TheoryModel* m);
   /**
-   * Collect model equalities, asserts the (relevant) equalities from the
-   * theory's equality engine into the model m.
-   *
-   * TODO: inline into collectModelInfo.
-   */
-  bool collectModelEqualities(TheoryModel* m);
-  /**
    * Collect model values, after equality information is added to the model.
+   * The argument termSet is the set of relevant terms returned by
+   * computeRelevantTerms.
    */
-  virtual bool collectModelValues(TheoryModel* m);
+  virtual bool collectModelValues(TheoryModel* m, std::set<Node>& termSet);
+  /**
+   * Compute relevant terms in the current model. This is by default the
+   * set of terms appearing in the assertions of theory and its shared terms.
+   *
+   * This version can be overridden by the theory, e.g. by restricting or
+   * extended the set of terms returned by computeRelevantTermsInternal, which
+   * is called by default with no irrKinds.
+   */
+  virtual void computeRelevantTerms(std::set<Node>& termSet,
+                                    bool includeShared = true);
   //--------------------------------- end new standard collect model info
 
   /** if theories want to do something with model after building, do it here */
