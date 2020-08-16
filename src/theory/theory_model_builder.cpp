@@ -435,7 +435,6 @@ bool TheoryEngineModelBuilder::buildModel(Model* m)
   // domain of eqcToAssigner).
   std::map<Node, Node> eqcToAssignerMaster;
 
-  
   // Loop through equivalence classes of the equality engine of the model.
   eq::EqualityEngine* ee = tm->d_equalityEngine;
   NodeSet assignableCache;
