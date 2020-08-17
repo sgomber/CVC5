@@ -1,5 +1,5 @@
 /*********************                                                        */
-/*! \file solver_state.h
+/*! \file theory_state.h
  ** \verbatim
  ** Top contributors (to current version):
  **   Andrew Reynolds
@@ -9,13 +9,13 @@
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
- ** \brief A solver state for Theory
+ ** \brief A theory state for Theory
  **/
 
 #include "cvc4_private.h"
 
-#ifndef CVC4__THEORY__SOLVER_STATE_H
-#define CVC4__THEORY__SOLVER_STATE_H
+#ifndef CVC4__THEORY__THEORY_STATE_H
+#define CVC4__THEORY__THEORY_STATE_H
 
 #include "context/cdo.h"
 #include "expr/node.h"
@@ -28,11 +28,11 @@ namespace eq {
 class EqualityEngine;
 }
 
-class SolverState
+class TheoryState
 {
  public:
-  SolverState(context::Context* c, context::UserContext* u, Valuation val);
-  virtual ~SolverState() {}
+  TheoryState(context::Context* c, context::UserContext* u, Valuation val);
+  virtual ~TheoryState() {}
   /**
    * Finish initialize, there ee is a pointer to the official equality engine
    * of theory.

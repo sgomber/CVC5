@@ -1,5 +1,5 @@
 /*********************                                                        */
-/*! \file solver_state.cpp
+/*! \file theory_state.cpp
  ** \verbatim
  ** Top contributors (to current version):
  **   Andrew Reynolds
@@ -9,17 +9,17 @@
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
- ** \brief A solver state for Theory
+ ** \brief A theory state for Theory
  **/
 
-#include "theory/solver_state.h"
+#include "theory/theory_state.h"
 
 #include "theory/uf/equality_engine.h"
 
 namespace CVC4 {
 namespace theory {
 
-SolverState::SolverState(context::Context* c,
+TheoryState::TheoryState(context::Context* c,
                          context::UserContext* u,
                          Valuation val)
     : d_context(c),
@@ -30,19 +30,19 @@ SolverState::SolverState(context::Context* c,
 {
 }
 
-void SolverState::finishInit(eq::EqualityEngine* ee) { d_ee = ee; }
+void TheoryState::finishInit(eq::EqualityEngine* ee) { d_ee = ee; }
 
-context::Context* SolverState::getSatContext() const { return d_context; }
+context::Context* TheoryState::getSatContext() const { return d_context; }
 
-context::UserContext* SolverState::getUserContext() const { return d_ucontext; }
+context::UserContext* TheoryState::getUserContext() const { return d_ucontext; }
 
-bool SolverState::hasTerm(TNode a) const
+bool TheoryState::hasTerm(TNode a) const
 {
   Assert(d_ee != nullptr);
   return d_ee->hasTerm(a);
 }
 
-TNode SolverState::getRepresentative(TNode t) const
+TNode TheoryState::getRepresentative(TNode t) const
 {
   Assert(d_ee != nullptr);
   if (d_ee->hasTerm(t))
@@ -52,7 +52,7 @@ TNode SolverState::getRepresentative(TNode t) const
   return t;
 }
 
-bool SolverState::areEqual(TNode a, TNode b) const
+bool TheoryState::areEqual(TNode a, TNode b) const
 {
   Assert(d_ee != nullptr);
   if (a == b)
@@ -66,7 +66,7 @@ bool SolverState::areEqual(TNode a, TNode b) const
   return false;
 }
 
-bool SolverState::areDisequal(TNode a, TNode b) const
+bool TheoryState::areDisequal(TNode a, TNode b) const
 {
   Assert(d_ee != nullptr);
   if (a == b)
@@ -119,11 +119,11 @@ bool SolverState::areDisequal(TNode a, TNode b) const
   return d_ee->areDisequal(a, b, false);
 }
 
-eq::EqualityEngine* SolverState::getEqualityEngine() const { return d_ee; }
+eq::EqualityEngine* TheoryState::getEqualityEngine() const { return d_ee; }
 
-void SolverState::notifyInConflict() { d_conflict = true; }
+void TheoryState::notifyInConflict() { d_conflict = true; }
 
-bool SolverState::isInConflict() const { return d_conflict; }
+bool TheoryState::isInConflict() const { return d_conflict; }
 
 }  // namespace theory
 }  // namespace CVC4

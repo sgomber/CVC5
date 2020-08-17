@@ -8,6 +8,7 @@ PR current:
 
 (3) Dynamic allocation of ee *
 (4) Merge collectModelInfo *
+(17) Solver state
 
 PR planned:
 
@@ -23,3 +24,4 @@ PR planned:
 (14) Equality engine manager central (req 6)
 (15) Relevant terms for model and model builder (req 5)
 (16) Model manager central (req 15)
+(18) Strings/sets solver state inherit from solver state

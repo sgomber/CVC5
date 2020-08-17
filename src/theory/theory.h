@@ -60,7 +60,7 @@ class QuantifiersEngine;
 class TheoryModel;
 class SubstitutionMap;
 class TheoryRewriter;
-class SolverState;
+class TheoryState;
 
 namespace rrinst {
   class CandidateGenerator;
@@ -248,7 +248,7 @@ class Theory {
   /**
    * The solver state, which contains contexts, valuation, and equality engine.
    */
-  std::unique_ptr<SolverState> d_solverState;
+  std::unique_ptr<TheoryState> d_theoryState;
   /**
    * Whether proofs are enabled
    *
