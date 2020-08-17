@@ -46,6 +46,7 @@
 #include "theory/theory_rewriter.h"
 #include "theory/trust_node.h"
 #include "theory/valuation.h"
+#include "theory/solver_state.h"
 #include "util/statistics_registry.h"
 
 namespace CVC4 {
@@ -59,6 +60,7 @@ class QuantifiersEngine;
 class TheoryModel;
 class SubstitutionMap;
 class TheoryRewriter;
+class SolverState;
 
 namespace rrinst {
   class CandidateGenerator;
@@ -243,7 +245,10 @@ class Theory {
    * The official equality engine, if we allocated it.
    */
   std::unique_ptr<eq::EqualityEngine> d_alocEqualityEngine;
-
+  /**
+   * The solver state, which contains contexts, valuation, and equality engine.
+   */
+  std::unique_ptr<SolverState> d_solverState;
   /**
    * Whether proofs are enabled
    *
@@ -580,12 +585,12 @@ class Theory {
 
   /**
    * is in conflict?
-   * TODO: non-virtual (use state)
+   * TODO: non-virtual (always use state)
    */
   virtual bool isInConflict() const;
   /**
    * notify in conflict
-   * TODO: non-virtual (use state)
+   * TODO: non-virtual (always use state)
    */
   virtual void notifyInConflict();
   /**

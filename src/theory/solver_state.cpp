@@ -121,7 +121,7 @@ bool SolverState::areDisequal(TNode a, TNode b) const
 
 eq::EqualityEngine* SolverState::getEqualityEngine() const { return d_ee; }
 
-void SolverState::setConflict() { d_conflict = true; }
+void SolverState::notifyInConflict() { d_conflict = true; }
 
 bool SolverState::isInConflict() const { return d_conflict; }
 

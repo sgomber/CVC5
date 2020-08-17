@@ -107,6 +107,8 @@ void TheoryUF::finishInit() {
     d_equalityEngine->addFunctionKind(kind::HO_APPLY);
     d_ho.reset(new HoExtension(*this, getSatContext(), getUserContext()));
   }
+  // use default state object
+  d_solverState.reset(new SolverState(getSatContext(), getUserContext(), d_valuation));
 }
 
 static Node mkAnd(const std::vector<TNode>& conjunctions) {
@@ -131,6 +133,7 @@ static Node mkAnd(const std::vector<TNode>& conjunctions) {
   return conjunction;
 }/* mkAnd() */
 
+// %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% BEGIN DELETE
 void TheoryUF::check(Effort level) {
   if (done() && !fullEffort(level)) {
     return;
@@ -204,11 +207,9 @@ void TheoryUF::check(Effort level) {
     }
   }
 }/* TheoryUF::check() */
+// %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% END DELETE
 
 //--------------------------------- standard check
-bool TheoryUF::isInConflict() const { return d_conflict; }
-
-void TheoryUF::notifyInConflict() { d_conflict = true; }
 
 void TheoryUF::preCheck(Effort level)
 {

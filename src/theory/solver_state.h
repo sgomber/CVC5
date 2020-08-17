@@ -32,33 +32,34 @@ class SolverState
 {
  public:
   SolverState(context::Context* c, context::UserContext* u, Valuation val);
+  virtual ~SolverState(){}
   /**
    * Finish initialize, there ee is a pointer to the official equality engine
    * of theory.
    */
-  void finishInit(eq::EqualityEngine* ee);
+  virtual void finishInit(eq::EqualityEngine* ee);
   /** Get the SAT context */
   context::Context* getSatContext() const;
   /** Get the user context */
   context::UserContext* getUserContext() const;
   //-------------------------------------- equality information
   /** Is t registered as a term in the equality engine of this class? */
-  bool hasTerm(TNode a) const;
+  virtual bool hasTerm(TNode a) const;
   /**
    * Get the representative of t in the equality engine of this class, or t
    * itself if it is not registered as a term.
    */
-  TNode getRepresentative(TNode t) const;
+  virtual TNode getRepresentative(TNode t) const;
   /**
    * Are a and b equal according to the equality engine of this class? Also
    * returns true if a and b are identical.
    */
-  bool areEqual(TNode a, TNode b) const;
+  virtual bool areEqual(TNode a, TNode b) const;
   /**
    * Are a and b disequal according to the equality engine of this class? Also
    * returns true if the representative of a and b are distinct constants.
    */
-  bool areDisequal(TNode a, TNode b) const;
+  virtual bool areDisequal(TNode a, TNode b) const;
   /** get equality engine */
   eq::EqualityEngine* getEqualityEngine() const;
   //-------------------------------------- end equality information
@@ -67,9 +68,9 @@ class SolverState
    * called immediately after a call to conflict(...) on the output channel of
    * the theory.
    */
-  void setConflict();
+  virtual void notifyInConflict();
   /** Are we currently in conflict? */
-  bool isInConflict() const;
+  virtual bool isInConflict() const;
 
  protected:
   /** Pointer to the SAT context object used by the theory. */

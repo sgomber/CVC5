@@ -463,8 +463,18 @@ void Theory::check(Effort level)
   postCheck(level);
 }
 
-bool Theory::isInConflict() const { return false; }
-void Theory::notifyInConflict() {}
+bool Theory::isInConflict() const 
+{
+  Assert (d_solverState!=nullptr);
+  return d_solverState->isInConflict(); 
+}
+
+void Theory::notifyInConflict() 
+{
+  Assert (d_solverState!=nullptr);
+  d_solverState->notifyInConflict();
+}
+
 bool Theory::propagate(TNode lit)
 {
   // If already in conflict, no more propagation
