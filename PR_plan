@@ -12,7 +12,7 @@ PR current:
 PR planned:
 
 (5) Merge collectModelInfo part two (req 4)
-(6) Split inheritence in equality engine manager to own files
+(6) Split inheritence in equality engine manager to own files (req 3)
 (7) Model manager / model manager distributed
 (8) Standardize collect relevant terms (req 3)
 (9) Standardize collectModelValues (req 8)

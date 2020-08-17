@@ -551,6 +551,7 @@ bool Theory::collectModelInfo(TheoryModel* m)
       return false;
     }
   }
+  // now, collect theory-specific value assigments
   return collectModelValues(m, termSet);
 }
 

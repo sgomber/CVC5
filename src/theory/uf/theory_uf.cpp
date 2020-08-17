@@ -352,20 +352,8 @@ Node TheoryUF::explain(TNode literal, eq::EqProof* pf) {
   return mkAnd(assumptions);
 }
 
-bool TheoryUF::collectModelInfo(TheoryModel* m)
+bool TheoryUF::collectModelValues(TheoryModel* m, std::set<Node>& termSet)
 {
-  Debug("uf") << "UF : collectModelInfo " << std::endl;
-  set<Node> termSet;
-
-  // Compute terms appearing in assertions and shared terms
-  computeRelevantTerms(termSet);
-
-  if (!m->assertEqualityEngine(d_equalityEngine, &termSet))
-  {
-    Trace("uf") << "Collect model info fail UF" << std::endl;
-    return false;
-  }
-
   if( options::ufHo() ){
     // must add extensionality disequalities for all pairs of (non-disequal)
     // function equivalence classes.

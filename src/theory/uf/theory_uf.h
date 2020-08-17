@@ -209,11 +209,15 @@ private:
   void notifyNewFact(TNode atom, bool polarity, TNode fact) override;
   //--------------------------------- end standard check
 
+  //--------------------------------- collect model info
+  /** Collect model values */
+  bool collectModelValues(TheoryModel* m, std::set<Node>& termSet) override;
+  //--------------------------------- end collect model info
+  
   TrustNode expandDefinition(Node node) override;
   void preRegisterTerm(TNode term) override;
   TrustNode explain(TNode n) override;
 
-  bool collectModelInfo(TheoryModel* m) override;
 
   void ppStaticLearn(TNode in, NodeBuilder<>& learned) override;
   void presolve() override;

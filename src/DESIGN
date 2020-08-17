@@ -32,6 +32,95 @@ the EqualityEngine:
 InferenceManager references SolverState and should have a standard effect on it
 (e.g. mark "inConflict" in SolverState if OutputChannel::conflict was called).
 
+======== Standard check method:
+
+The `check` method of Theory is recommended to be a fixed template:
+
+```
+void Theory::check(Effort level)
+{
+  // see if we are already done (as an optimization)
+  if (done() && !fullEffort(level))
+  {
+    return;
+  }
+  // pre-check at level
+  preCheck(level);
+  // process the pending fact queue
+  while (!done() && !isInConflict())
+  {
+    // Get the next assertion from the fact queue
+    Assertion assertion = get();
+    TNode fact = assertion.d_assertion;
+    bool polarity = fact.getKind() != kind::NOT;
+    TNode atom = polarity ? fact : fact[0];
+    // call the preprocess method
+    if (preprocessNewFact(atom, polarity, fact))
+    {
+      // handled in theory-specific way that doesn't involve equality engine
+      continue;
+    }
+    // if we have an equality engine, assert to it now
+    if (d_equalityEngine != nullptr)
+    {
+      if (atom.getKind() == kind::EQUAL)
+      {
+        d_equalityEngine->assertEquality(atom, polarity, fact);
+      }
+      else
+      {
+        d_equalityEngine->assertPredicate(atom, polarity, fact);
+      }
+    }
+    // if we aren't already in conflict
+    if (!isInConflict())
+    {
+      // notify the theory of the new fact
+      notifyNewFact(atom, polarity, fact);
+    }
+  }
+  // post-check at level
+  postCheck(level);
+}
+```
+
+Theory must implement these methods:
+```
+virtual void preCheck(Effort level = EFFORT_FULL);
+virtual void postCheck(Effort level = EFFORT_FULL);
+virtual bool preprocessNewFact(TNode atom, bool polarity, TNode fact);
+virtual void notifyNewFact(TNode atom, bool polarity, TNode fact);
+```
+
+======== Standard collect model info method:
+
+The `collectModelInfo` method of Theory is recommended to be a fixed template:
+
+```
+bool Theory::collectModelInfo(TheoryModel* m)
+{
+  std::set<Node> termSet;
+  // Compute terms appearing in assertions and shared terms
+  computeRelevantTerms(termSet);
+  // if we are using an equality engine, assert it to the model
+  if (d_equalityEngine != nullptr)
+  {
+    if (!m->assertEqualityEngine(d_equalityEngine, &termSet))
+    {
+      return false;
+    }
+  }
+  // now, collect theory-specific value assigments
+  return collectModelValues(m, termSet);
+}
+```
+Theory must implement these methods:
+```
+virtual bool collectModelValues(TheoryModel* m, std::set<Node>& termSet);
+virtual void computeRelevantTerms(std::set<Node>& termSet,
+                                  bool includeShared = true);
+```
+
 ======================== TheoryEngine
 
 In the current architecture TheoryEngine maintains:
@@ -66,3 +155,7 @@ EqualityEngine/SolverState/InferenceManager so that the theory combination
 mechanism can be made flexible. For instance, equality engines can be
 configured by the TheoryCombination mechanism to behave differently and as
 appropriate if the theory combination method is modified.
+
+
+
+
