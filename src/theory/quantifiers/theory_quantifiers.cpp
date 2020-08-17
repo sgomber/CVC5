@@ -104,7 +104,7 @@ void TheoryQuantifiers::ppNotifyAssertions(
   }
 }
 
-bool TheoryQuantifiers::collectModelInfo(TheoryModel* m)
+bool TheoryQuantifiers::collectModelValues(TheoryModel* m, std::set<Node>& termSet)
 {
   for(assertions_iterator i = facts_begin(); i != facts_end(); ++i) {
     if ((*i).d_assertion.getKind() == kind::NOT)

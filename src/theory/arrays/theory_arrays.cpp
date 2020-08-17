@@ -1088,19 +1088,8 @@ void TheoryArrays::computeCareGraph()
 // MODEL GENERATION
 /////////////////////////////////////////////////////////////////////////////
 
-bool TheoryArrays::collectModelInfo(TheoryModel* m)
+bool TheoryArrays::collectModelValues(TheoryModel* m, std::set<Node>& termSet)
 {
-  // Compute terms appearing in assertions and shared terms, and also
-  // include additional reads due to the RIntro1 rule.
-  std::set<Node> termSet;
-  computeRelevantTerms(termSet);
-
-  // Send the equality engine information to the model
-  if (!m->assertEqualityEngine(d_equalityEngine, &termSet))
-  {
-    return false;
-  }
-
   // Compute arrays that we need to produce representatives for
   std::vector<Node> arrays;
   eq::EqClassesIterator eqcs_i = eq::EqClassesIterator(d_equalityEngine);

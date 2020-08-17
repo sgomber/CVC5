@@ -53,7 +53,8 @@ class TheoryQuantifiers : public Theory {
   void presolve() override;
   void ppNotifyAssertions(const std::vector<Node>& assertions) override;
   void check(Effort e) override;
-  bool collectModelInfo(TheoryModel* m) override;
+  /** Collect model values in m based on the relevant terms given by termSet */
+  bool collectModelValues(TheoryModel* m, std::set<Node>& termSet) override;
   void shutdown() override {}
   std::string identify() const override
   {

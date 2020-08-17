@@ -258,18 +258,6 @@ class TheoryArrays : public Theory {
     return (d_sharedArrays.find(t) != d_sharedArrays.end());
   }
 
-  /////////////////////////////////////////////////////////////////////////////
-  // MODEL GENERATION
-  /////////////////////////////////////////////////////////////////////////////
-
- public:
-  bool collectModelInfo(TheoryModel* m) override;
-
-  /////////////////////////////////////////////////////////////////////////////
-  // NOTIFICATIONS
-  /////////////////////////////////////////////////////////////////////////////
-
-
   void presolve() override;
   void shutdown() override {}
 
@@ -499,6 +487,8 @@ class TheoryArrays : public Theory {
    */
   Node getNextDecisionRequest();
 
+  /** Collect model values in m based on the relevant terms given by termSet */
+  bool collectModelValues(TheoryModel* m, std::set<Node>& termSet) override;
   /**
    * Compute relevant terms. This includes additional select nodes for the
    * RIntro1 and RIntro2 rules.
