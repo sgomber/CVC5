@@ -209,10 +209,8 @@ private:
   void notifyNewFact(TNode atom, bool polarity, TNode fact) override;
   //--------------------------------- end standard check
 
-  //--------------------------------- collect model info
-  /** Collect model values */
+  /** Collect model values in m based on the relevant terms given by termSet */
   bool collectModelValues(TheoryModel* m, std::set<Node>& termSet) override;
-  //--------------------------------- end collect model info
   
   TrustNode expandDefinition(Node node) override;
   void preRegisterTerm(TNode term) override;

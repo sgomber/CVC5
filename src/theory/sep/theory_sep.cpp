@@ -208,17 +208,6 @@ void TheorySep::computeCareGraph() {
 // MODEL GENERATION
 /////////////////////////////////////////////////////////////////////////////
 
-bool TheorySep::collectModelInfo(TheoryModel* m)
-{
-  set<Node> termSet;
-
-  // Compute terms appearing in assertions and shared terms
-  computeRelevantTerms(termSet);
-
-  // Send the equality engine information to the model
-  return m->assertEqualityEngine(d_equalityEngine, &termSet);
-}
-
 void TheorySep::postProcessModel( TheoryModel* m ){
   Trace("sep-model") << "Printing model for TheorySep..." << std::endl;
   

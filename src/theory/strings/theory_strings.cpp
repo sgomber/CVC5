@@ -263,23 +263,9 @@ void TheoryStrings::presolve() {
 // MODEL GENERATION
 /////////////////////////////////////////////////////////////////////////////
 
-bool TheoryStrings::collectModelInfo(TheoryModel* m)
+bool TheoryStrings::collectModelValues(TheoryModel* m, std::set<Node>& termSet)
 {
-  Trace("strings-model") << "TheoryStrings : Collect model info" << std::endl;
-  Trace("strings-model") << "TheoryStrings : assertEqualityEngine." << std::endl;
-
-  std::set<Node> termSet;
-
-  // Compute terms appearing in assertions and shared terms
-  computeRelevantTerms(termSet);
-  // assert the (relevant) portion of the equality engine to the model
-  if (!m->assertEqualityEngine(d_equalityEngine, &termSet))
-  {
-    Unreachable()
-        << "TheoryStrings::collectModelInfo: failed to assert equality engine"
-        << std::endl;
-    return false;
-  }
+  Trace("strings-model") << "TheoryStrings : Collect model values" << std::endl;
 
   std::map<TypeNode, std::unordered_set<Node, NodeHashFunction> > repSet;
   // Generate model

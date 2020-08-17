@@ -60,7 +60,8 @@ class TheorySets : public Theory
 
   void addSharedTerm(TNode) override;
   void check(Effort) override;
-  bool collectModelInfo(TheoryModel* m) override;
+  /** Collect model values in m based on the relevant terms given by termSet */
+  bool collectModelValues(TheoryModel* m, std::set<Node>& termSet) override;
   void computeCareGraph() override;
   TrustNode explain(TNode) override;
   EqualityStatus getEqualityStatus(TNode a, TNode b) override;
