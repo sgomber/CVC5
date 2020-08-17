@@ -603,7 +603,7 @@ void Theory::preRegisterTerm(TNode)
 
 void Theory::addSharedTerm(TNode n)
 {
-  if (d_equalityEngine!=nullptr)
+  if (d_equalityEngine != nullptr)
   {
     d_equalityEngine->addTriggerTerm(n, d_id);
   }
