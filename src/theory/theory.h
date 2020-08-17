@@ -83,28 +83,31 @@ namespace eq {
  * NOTE: A Theory has a special way of being initialized. The owner of a Theory
  * is either:
  *
- * (A) Using Theory as a standalone object, not associate with a TheoryEngine.
+ * (A) Using Theory as a standalone object, not associated with a TheoryEngine.
  * In this case, simply call the public initialization method
  * (Theory::finishInitStandalone).
  *
  * (B) TheoryEngine, which determines how the Theory acts in accordance with
  * its theory combination policy. We require the following steps in order:
- * (B.1) Get information about which equality engine notifications the Theory
+ * (B.1) Get information about whether the theory wishes to use an equality
+ * eninge, and more specifically which equality engine notifications the Theory
  * would like to be notified of (Theory::needsEqualityEngine).
  * (B.2) Set the equality engine of the theory (Theory::setEqualityEngine),
  * which we refer to as the "official equality engine" of this Theory. The
  * equality engine passed to the theory must respect the contract(s) specified
- * by the equality engine setup informatio (EeSetupInfo) returned in the
+ * by the equality engine setup information (EeSetupInfo) returned in the
  * previous step.
- * (B.3) Call the private initialization method (Theory::finishInit).
+ * (B.3) Set the other required utilities including setQuantifiersEngine and
+ * setDecisionManager.
+ * (B.4) Call the private initialization method (Theory::finishInit).
  *
  * Initialization of the second form happens during TheoryEngine::finishInit,
  * after the quantifiers engine and model objects have been set up.
  */
 class Theory {
- private:
   friend class ::CVC4::TheoryEngine;
 
+ private:
   // Disallow default construction, copy, assignment.
   Theory() = delete;
   Theory(const Theory&) = delete;
@@ -244,7 +247,7 @@ class Theory {
   /**
    * The official equality engine, if we allocated it.
    */
-  std::unique_ptr<eq::EqualityEngine> d_alocEqualityEngine;
+  std::unique_ptr<eq::EqualityEngine> d_allocEqualityEngine;
   /**
    * The theory state, which contains contexts, valuation, and equality engine.
    * Notice the theory is responsible for memory management of this class.
@@ -291,6 +294,25 @@ class Theory {
    * its value must be computed (approximated) by the non-linear solver.
    */
   bool isLegalElimination(TNode x, TNode val);
+  //--------------------------------- private initialization
+  /**
+   * Called to set the official equality engine. This should be done by
+   * TheoryEngine only.
+   */
+  void setEqualityEngine(eq::EqualityEngine* ee);
+  /** Called to set the quantifiers engine. */
+  void setQuantifiersEngine(QuantifiersEngine* qe);
+  /** Called to set the decision manager. */
+  void setDecisionManager(DecisionManager* dm);
+  /**
+   * Finish theory initialization.  At this point, options and the logic
+   * setting are final, the master equality engine and quantifiers
+   * engine (if any) are initialized, and the official equality engine of this
+   * theory has been assigned.  This base class implementation
+   * does nothing. This should be called by TheoryEngine only.
+   */
+  virtual void finishInit() {}
+  //--------------------------------- end private initialization
 
   /**
    * This method is called to notify a theory that the node n should

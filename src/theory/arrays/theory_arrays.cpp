@@ -1092,6 +1092,7 @@ bool TheoryArrays::collectModelValues(TheoryModel* m, std::set<Node>& termSet)
 {
   // Compute arrays that we need to produce representatives for
   std::vector<Node> arrays;
+
   eq::EqClassesIterator eqcs_i = eq::EqClassesIterator(d_equalityEngine);
   for (; !eqcs_i.isFinished(); ++eqcs_i) {
     Node eqc = (*eqcs_i);

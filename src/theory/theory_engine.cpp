@@ -183,19 +183,18 @@ void TheoryEngine::finishInit() {
     Theory* t = d_theoryTable[theoryId];
     if (t == nullptr)
     {
-      // theory is inactive, skip
       continue;
     }
-    // set the equality engine for the theory based on the theory combination
-    // policy.
-    const EeTheoryInfo* eeti = d_tc->getEeTheoryInfo(theoryId);
+    // setup the pointers to the utilities
+    const EeTheoryInfo* eeti = d_eeDistributed->getEeTheoryInfo(theoryId);
     Assert(eeti != nullptr);
-    // the theory's official equality engine is the one specified by the manager
+    // the theory's official equality engine is the one specified by the
+    // equality engine manager
     t->setEqualityEngine(eeti->d_usedEe);
-    // set the decision manager for the theory
-    t->setDecisionManager(d_decManager.get());
     // set the quantifiers engine
     t->setQuantifiersEngine(d_quantEngine);
+    // set the decision manager for the theory
+    t->setDecisionManager(d_decManager.get());
     // finish initializing the theory
     t->finishInit();
   }
@@ -1652,6 +1651,17 @@ void TheoryEngine::staticInitializeBVOptions(
     bv::TheoryBV* bv_theory = (bv::TheoryBV*)d_theoryTable[THEORY_BV];
     bv_theory->enableCoreTheorySlicer();
   }
+}
+
+SharedTermsDatabase* TheoryEngine::getSharedTermsDatabase()
+{
+  return &d_sharedTerms;
+}
+
+theory::eq::EqualityEngine* TheoryEngine::getMasterEqualityEngine()
+{
+  Assert(d_eeDistributed != nullptr);
+  return d_eeDistributed->getMasterEqualityEngine();
 }
 
 void TheoryEngine::getExplanation(std::vector<NodeTheoryPair>& explanationVector, LemmaProofRecipe* proofRecipe) {

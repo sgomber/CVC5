@@ -196,8 +196,6 @@ private:
   void finishInit() override;
   //--------------------------------- end initialization
 
-  // void check(Effort) override;
-
   //--------------------------------- standard check
   /** Pre-check, called before the fact queue of the theory is processed. */
   void preCheck(Effort level) override;

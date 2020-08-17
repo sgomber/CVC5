@@ -81,6 +81,7 @@ Theory::Theory(TheoryId id,
       d_out(&out),
       d_valuation(valuation),
       d_equalityEngine(nullptr),
+      d_allocEqualityEngine(nullptr),
       d_theoryState(nullptr),
       d_proofsEnabled(false)
 {
@@ -99,6 +100,20 @@ void Theory::setEqualityEngine(eq::EqualityEngine* ee)
   d_equalityEngine = ee;
 }
 
+void Theory::setQuantifiersEngine(QuantifiersEngine* qe)
+{
+  Assert(d_quantEngine == nullptr);
+  // quantifiers engine may be null if not in quantified logic
+  d_quantEngine = qe;
+}
+
+void Theory::setDecisionManager(DecisionManager* dm)
+{
+  Assert(d_decManager == nullptr);
+  Assert(dm != nullptr);
+  d_decManager = dm;
+}
+
 bool Theory::needsEqualityEngine(EeSetupInfo& esi)
 {
   // by default, this theory does not use an (official) equality engine
@@ -111,10 +126,10 @@ void Theory::finishInitStandalone()
   if (needsEqualityEngine(esi))
   {
     // always associated with the same SAT context as the theory (d_satContext)
-    d_alocEqualityEngine.reset(new eq::EqualityEngine(
+    d_allocEqualityEngine.reset(new eq::EqualityEngine(
         *esi.d_notify, d_satContext, esi.d_name, esi.d_constantsAreTriggers));
     // use it as the official equality engine
-    d_equalityEngine = d_alocEqualityEngine.get();
+    d_equalityEngine = d_allocEqualityEngine.get();
   }
   finishInit();
 }
@@ -591,19 +606,6 @@ void Theory::addSharedTerm(TNode n)
   // TODO: eq engine trigger?
 }
 //--------------------------------- end new standard
-
-void Theory::setQuantifiersEngine(QuantifiersEngine* qe) {
-  Assert(d_quantEngine == nullptr);
-  // we may be setting to a null quantifiers engine if quantifiers are disabled
-  d_quantEngine = qe;
-}
-
-void Theory::setDecisionManager(DecisionManager* dm)
-{
-  Assert(d_decManager == nullptr);
-  Assert(dm != nullptr);
-  d_decManager = dm;
-}
 
 eq::EqualityEngine* Theory::getEqualityEngine()
 {
