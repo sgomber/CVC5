@@ -123,7 +123,6 @@ void ModelManager::postProcessModel(bool incomplete)
 
 theory::TheoryModel* ModelManager::getModel() { return d_model; }
 
-
 bool ModelManager::collectModelBooleanVariables()
 {
   Trace("model-builder") << "  CollectModelInfo boolean variables" << std::endl;

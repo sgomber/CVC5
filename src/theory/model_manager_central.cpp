@@ -75,8 +75,8 @@ bool ModelManagerCentral::buildModelInternal()
                            << std::endl;
     if (!t->collectModelValues(d_model, relevantTerms))
     {
-      Trace("model-builder") << "ModelManagerCentral: fail collect model values"
-                            << std::endl;
+      Trace("model-builder")
+          << "ModelManagerCentral: fail collect model values" << std::endl;
       success = false;
       break;
     }
@@ -85,14 +85,14 @@ bool ModelManagerCentral::buildModelInternal()
   {
     if (!collectModelBooleanVariables())
     {
-        Trace("model-builder") << "ModelManagerCentral: fail Boolean variables"
-                              << std::endl;
+      Trace("model-builder")
+          << "ModelManagerCentral: fail Boolean variables" << std::endl;
       success = false;
     }
     else if (!d_modelBuilder->buildModel(d_model))
     {
-      Trace("model-builder") << "ModelManagerCentral: fail build model"
-                            << std::endl;
+      Trace("model-builder")
+          << "ModelManagerCentral: fail build model" << std::endl;
       success = false;
     }
   }

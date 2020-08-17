@@ -58,16 +58,16 @@ bool ModelManagerDistributed::buildModelInternal()
                            << std::endl;
     if (!t->collectModelInfo(d_model))
     {
-      Trace("model-builder") << "ModelManagerDistributed: fail collect model info"
-                            << std::endl;
+      Trace("model-builder")
+          << "ModelManagerDistributed: fail collect model info" << std::endl;
       return false;
     }
   }
 
   if (!collectModelBooleanVariables())
   {
-      Trace("model-builder") << "ModelManagerDistributed: fail Boolean variables"
-                            << std::endl;
+    Trace("model-builder") << "ModelManagerDistributed: fail Boolean variables"
+                           << std::endl;
     return false;
   }
 
