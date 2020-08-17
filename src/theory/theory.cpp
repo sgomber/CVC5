@@ -463,15 +463,15 @@ void Theory::check(Effort level)
   postCheck(level);
 }
 
-bool Theory::isInConflict() const 
+bool Theory::isInConflict() const
 {
-  Assert (d_solverState!=nullptr);
-  return d_solverState->isInConflict(); 
+  Assert(d_solverState != nullptr);
+  return d_solverState->isInConflict();
 }
 
-void Theory::notifyInConflict() 
+void Theory::notifyInConflict()
 {
-  Assert (d_solverState!=nullptr);
+  Assert(d_solverState != nullptr);
   d_solverState->notifyInConflict();
 }
 

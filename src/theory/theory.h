@@ -42,11 +42,11 @@
 #include "theory/ee_setup_info.h"
 #include "theory/logic_info.h"
 #include "theory/output_channel.h"
+#include "theory/solver_state.h"
 #include "theory/theory_id.h"
 #include "theory/theory_rewriter.h"
 #include "theory/trust_node.h"
 #include "theory/valuation.h"
-#include "theory/solver_state.h"
 #include "util/statistics_registry.h"
 
 namespace CVC4 {
