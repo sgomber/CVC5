@@ -327,6 +327,7 @@ private:
    */
   void computeRelevantTerms(std::set<Node>& termSet,
                             bool includeShared = true) override;
+
  private:
   /** add tester to equivalence class info */
   void addTester(unsigned ttindex, Node t, EqcInfo* eqc, Node n, Node t_arg);

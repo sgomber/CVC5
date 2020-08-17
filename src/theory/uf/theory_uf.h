@@ -211,7 +211,7 @@ private:
 
   /** Collect model values in m based on the relevant terms given by termSet */
   bool collectModelValues(TheoryModel* m, std::set<Node>& termSet) override;
-  
+
   TrustNode expandDefinition(Node node) override;
   void preRegisterTerm(TNode term) override;
   TrustNode explain(TNode n) override;
