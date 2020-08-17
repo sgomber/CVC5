@@ -123,26 +123,9 @@ void ModelManager::postProcessModel(bool incomplete)
 
 theory::TheoryModel* ModelManager::getModel() { return d_model; }
 
-bool ModelManager::collectModelInfo()
+
+bool ModelManager::collectModelBooleanVariables()
 {
-  // Consult each active theory to get all relevant information
-  // concerning the model.
-  for (TheoryId theoryId = theory::THEORY_FIRST; theoryId < theory::THEORY_LAST;
-       ++theoryId)
-  {
-    if (!d_logicInfo.isTheoryEnabled(theoryId))
-    {
-      // theory not active, skip
-      continue;
-    }
-    Theory* t = d_te.theoryOf(theoryId);
-    Trace("model-builder") << "  CollectModelInfo on theory: " << theoryId
-                           << std::endl;
-    if (!t->collectModelInfo(d_model))
-    {
-      return false;
-    }
-  }
   Trace("model-builder") << "  CollectModelInfo boolean variables" << std::endl;
   // Get value of the Boolean variables
   prop::PropEngine* propEngine = d_te.getPropEngine();

@@ -14,6 +14,8 @@
 
 #include "theory/model_manager_distributed.h"
 
+#include "theory/theory_engine.h"
+
 namespace CVC4 {
 namespace theory {
 
@@ -40,10 +42,32 @@ bool ModelManagerDistributed::buildModelInternal()
   // Collect model info from the theories
   Trace("model-builder") << "ModelManagerDistributed: Collect model info..."
                          << std::endl;
-  if (!collectModelInfo())
+  // Consult each active theory to get all relevant information concerning the
+  // model, which includes both dump their equality information and assigning
+  // values.
+  for (TheoryId theoryId = theory::THEORY_FIRST; theoryId < theory::THEORY_LAST;
+       ++theoryId)
   {
-    Trace("model-builder") << "ModelManagerDistributed: fail collect model info"
+    if (!d_logicInfo.isTheoryEnabled(theoryId))
+    {
+      // theory not active, skip
+      continue;
+    }
+    Theory* t = d_te.theoryOf(theoryId);
+    Trace("model-builder") << "  CollectModelInfo on theory: " << theoryId
                            << std::endl;
+    if (!t->collectModelInfo(d_model))
+    {
+      Trace("model-builder") << "ModelManagerDistributed: fail collect model info"
+                            << std::endl;
+      return false;
+    }
+  }
+
+  if (!collectModelBooleanVariables())
+  {
+      Trace("model-builder") << "ModelManagerDistributed: fail Boolean variables"
+                            << std::endl;
     return false;
   }
 

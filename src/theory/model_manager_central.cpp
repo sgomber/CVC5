@@ -56,20 +56,45 @@ bool ModelManagerCentral::buildModelInternal()
   c->push();
 
   // Collect model info from the theories
-  Trace("model-builder") << "ModelManagerCentral: Collect model info..."
-                         << std::endl;
   bool success = true;
-  if (!collectModelInfo())
+  Trace("model-builder") << "ModelManagerCentral: Collect model values..."
+                         << std::endl;
+  // Consult each active theory to get all relevant information concerning the
+  // model, which includes both dump their equality information and assigning
+  // values.
+  for (TheoryId theoryId = theory::THEORY_FIRST; theoryId < theory::THEORY_LAST;
+       ++theoryId)
   {
-    Trace("model-builder") << "ModelManagerCentral: fail collect model info"
+    if (!d_logicInfo.isTheoryEnabled(theoryId))
+    {
+      // theory not active, skip
+      continue;
+    }
+    Theory* t = d_te.theoryOf(theoryId);
+    Trace("model-builder") << "  CollectModelValues on theory: " << theoryId
                            << std::endl;
-    success = false;
+    if (!t->collectModelValues(d_model, relevantTerms))
+    {
+      Trace("model-builder") << "ModelManagerCentral: fail collect model values"
+                            << std::endl;
+      success = false;
+      break;
+    }
   }
-  else if (!d_modelBuilder->buildModel(d_model))
+  if (success)
   {
-    Trace("model-builder") << "ModelManagerCentral: fail build model"
-                           << std::endl;
-    success = false;
+    if (!collectModelBooleanVariables())
+    {
+        Trace("model-builder") << "ModelManagerCentral: fail Boolean variables"
+                              << std::endl;
+      success = false;
+    }
+    else if (!d_modelBuilder->buildModel(d_model))
+    {
+      Trace("model-builder") << "ModelManagerCentral: fail build model"
+                            << std::endl;
+      success = false;
+    }
   }
 
   // pop a SAT context

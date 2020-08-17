@@ -51,8 +51,8 @@ class ModelManager
   theory::TheoryModel* getModel();
 
  protected:
-  /** Collect model info */
-  bool collectModelInfo();
+  /** Collect model Boolean variables, return true if conflict */
+  bool collectModelBooleanVariables();
   /** Build model */
   virtual bool buildModelInternal() = 0;
   /** Reference to the theory engine */
