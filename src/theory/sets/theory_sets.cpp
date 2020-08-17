@@ -112,23 +112,22 @@ void TheorySets::check(Effort e) {
 
 void TheorySets::preCheck(Effort level)
 {
-  // TODO
+  d_internal->preCheck(level);
 }
 
 void TheorySets::postCheck(Effort level)
 {
-  // TODO
+  d_internal->postCheck(level);
 }
 
 bool TheorySets::preprocessNewFact(TNode atom, bool polarity, TNode fact)
 {
-  // TODO
-  return false;
+  return d_internal->preprocessNewFact(atom, polarity, fact);
 }
 
 void TheorySets::notifyNewFact(TNode atom, bool polarity, TNode fact)
 {
-  // TODO
+  d_internal->notifyNewFact(atom, polarity, fact);
 }
 
 bool TheorySets::collectModelValues(TheoryModel* m, std::set<Node>& termSet)

@@ -171,6 +171,16 @@ class TheorySetsPrivate {
   void addSharedTerm(TNode);
 
   void check(Theory::Effort);
+  //--------------------------------- standard check
+  /** Pre-check, called before the fact queue of the theory is processed. */
+  void preCheck(Theory::Effort level);
+  /** Post-check, called after the fact queue of the theory is processed. */
+  void postCheck(Theory::Effort level);
+  /** Preprocess fact, return true if processed. */
+  bool preprocessNewFact(TNode atom, bool polarity, TNode fact);
+  /** Notify new fact */
+  void notifyNewFact(TNode atom, bool polarity, TNode fact);
+  //--------------------------------- end standard check
 
   /** Collect model values in m based on the relevant terms given by termSet */
   bool collectModelValues(TheoryModel* m, std::set<Node>& termSet);

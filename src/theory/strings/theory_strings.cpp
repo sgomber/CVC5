@@ -748,23 +748,98 @@ void TheoryStrings::check(Effort e) {
 
 void TheoryStrings::preCheck(Effort level)
 {
-  // TODO
+  // do nothing
 }
 
-void TheoryStrings::postCheck(Effort level)
+void TheoryStrings::postCheck(Effort e)
 {
-  // TODO
+  d_im.doPendingFacts();
+
+  Assert(d_strat.isStrategyInit());
+  if (!d_state.isInConflict() && !d_valuation.needCheck()
+      && d_strat.hasStrategyEffort(e))
+  {
+    Trace("strings-check-debug")
+        << "Theory of strings " << e << " effort check " << std::endl;
+    if(Trace.isOn("strings-eqc")) {
+      for( unsigned t=0; t<2; t++ ) {
+        eq::EqClassesIterator eqcs2_i = eq::EqClassesIterator(d_equalityEngine);
+        Trace("strings-eqc") << (t==0 ? "STRINGS:" : "OTHER:") << std::endl;
+        while( !eqcs2_i.isFinished() ){
+          Node eqc = (*eqcs2_i);
+          bool print = (t == 0 && eqc.getType().isStringLike())
+                       || (t == 1 && !eqc.getType().isStringLike());
+          if (print) {
+            eq::EqClassIterator eqc2_i =
+                eq::EqClassIterator(eqc, d_equalityEngine);
+            Trace("strings-eqc") << "Eqc( " << eqc << " ) : { ";
+            while( !eqc2_i.isFinished() ) {
+              if( (*eqc2_i)!=eqc && (*eqc2_i).getKind()!=kind::EQUAL ){
+                Trace("strings-eqc") << (*eqc2_i) << " ";
+              }
+              ++eqc2_i;
+            }
+            Trace("strings-eqc") << " } " << std::endl;
+            EqcInfo* ei = d_state.getOrMakeEqcInfo(eqc, false);
+            if( ei ){
+              Trace("strings-eqc-debug")
+                  << "* Length term : " << ei->d_lengthTerm.get() << std::endl;
+              Trace("strings-eqc-debug")
+                  << "* Cardinality lemma k : " << ei->d_cardinalityLemK.get()
+                  << std::endl;
+              Trace("strings-eqc-debug")
+                  << "* Normalization length lemma : "
+                  << ei->d_normalizedLength.get() << std::endl;
+            }
+          }
+          ++eqcs2_i;
+        }
+        Trace("strings-eqc") << std::endl;
+      }
+      Trace("strings-eqc") << std::endl;
+    }
+    ++(d_statistics.d_checkRuns);
+    bool addedLemma = false;
+    bool addedFact;
+    Trace("strings-check") << "Full effort check..." << std::endl;
+    do{
+      ++(d_statistics.d_strategyRuns);
+      Trace("strings-check") << "  * Run strategy..." << std::endl;
+      runStrategy(e);
+      // flush the facts
+      addedFact = d_im.hasPendingFact();
+      addedLemma = d_im.hasPendingLemma();
+      d_im.doPendingFacts();
+      d_im.doPendingLemmas();
+      if (Trace.isOn("strings-check"))
+      {
+        Trace("strings-check") << "  ...finish run strategy: ";
+        Trace("strings-check") << (addedFact ? "addedFact " : "");
+        Trace("strings-check") << (addedLemma ? "addedLemma " : "");
+        Trace("strings-check") << (d_state.isInConflict() ? "conflict " : "");
+        if (!addedFact && !addedLemma && !d_state.isInConflict())
+        {
+          Trace("strings-check") << "(none)";
+        }
+        Trace("strings-check") << std::endl;
+      }
+      // repeat if we did not add a lemma or conflict
+    } while (!d_state.isInConflict() && !addedLemma && addedFact);
+  }
+  Trace("strings-check") << "Theory of strings, done check : " << e << std::endl;
+  Assert(!d_im.hasPendingFact());
+  Assert(!d_im.hasPendingLemma());
 }
 
 bool TheoryStrings::preprocessNewFact(TNode atom, bool polarity, TNode fact)
 {
-  // TODO
+  // TODO : inference manager splitting
   return false;
 }
 
 void TheoryStrings::notifyNewFact(TNode atom, bool polarity, TNode fact)
 {
-  // TODO
+  // TODO : inference manager splitting
 }
 
 bool TheoryStrings::needsCheckLastEffort() {
