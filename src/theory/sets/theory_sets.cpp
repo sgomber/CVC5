@@ -34,7 +34,7 @@ TheorySets::TheorySets(context::Context* c,
                        const LogicInfo& logicInfo,
                        ProofNodeManager* pnm)
     : Theory(THEORY_SETS, c, u, out, valuation, logicInfo, pnm),
-      d_internal(new TheorySetsPrivate(*this, c, u)),
+      d_internal(new TheorySetsPrivate(*this, c, u, valuation)),
       d_notify(*d_internal.get())
 {
   // Do not move me to the header.
@@ -96,6 +96,7 @@ void TheorySets::finishInit()
 
   // finish initialization internally
   d_internal->finishInit();
+  d_theoryState = d_internal->getSolverState();
 }
 
 void TheorySets::addSharedTerm(TNode n) {

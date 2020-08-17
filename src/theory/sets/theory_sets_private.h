@@ -156,7 +156,8 @@ class TheorySetsPrivate {
    */
   TheorySetsPrivate(TheorySets& external,
                     context::Context* c,
-                    context::UserContext* u);
+                    context::UserContext* u,
+                         Valuation& val);
 
   ~TheorySetsPrivate();
 
@@ -232,6 +233,8 @@ class TheorySetsPrivate {
   OutputChannel* getOutputChannel();
   /** get the valuation */
   Valuation& getValuation();
+  /** Get the solver state */
+  SolverState * getSolverState();
 
   /** Proagate out to output channel */
   bool propagate(TNode);

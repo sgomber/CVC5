@@ -36,14 +36,15 @@ namespace sets {
 
 TheorySetsPrivate::TheorySetsPrivate(TheorySets& external,
                                      context::Context* c,
-                                     context::UserContext* u)
+                                     context::UserContext* u,
+                         Valuation& val)
     : d_members(c),
       d_deq(c),
       d_termProcessed(u),
       d_keep(c),
       d_full_check_incomplete(false),
       d_external(external),
-      d_state(*this, c, u),
+      d_state(*this, c, u, val),
       d_im(*this, d_state, c, u),
       d_rels(new TheorySetsRels(d_state, d_im, u)),
       d_cardSolver(new CardinalityExtension(d_state, d_im, c, u)),
@@ -1439,7 +1440,7 @@ bool TheorySetsPrivate::propagate(TNode literal)
   bool ok = d_external.d_out->propagate(literal);
   if (!ok)
   {
-    d_state.setConflict();
+    d_state.notifyInConflict();
   }
 
   return ok;
@@ -1451,6 +1452,11 @@ OutputChannel* TheorySetsPrivate::getOutputChannel()
 }
 
 Valuation& TheorySetsPrivate::getValuation() { return d_external.d_valuation; }
+
+SolverState * TheorySetsPrivate::getSolverState()
+{
+  return &d_state;
+}
 
 void TheorySetsPrivate::conflict(TNode a, TNode b)
 {

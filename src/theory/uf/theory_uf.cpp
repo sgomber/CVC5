@@ -108,8 +108,9 @@ void TheoryUF::finishInit() {
     d_ho.reset(new HoExtension(*this, getSatContext(), getUserContext()));
   }
   // use default state object
-  d_theoryState.reset(
+  d_allocState.reset(
       new TheoryState(getSatContext(), getUserContext(), d_valuation));
+  d_theoryState = d_allocState.get();
 }
 
 static Node mkAnd(const std::vector<TNode>& conjunctions) {

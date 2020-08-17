@@ -246,9 +246,10 @@ class Theory {
    */
   std::unique_ptr<eq::EqualityEngine> d_alocEqualityEngine;
   /**
-   * The solver state, which contains contexts, valuation, and equality engine.
+   * The theory state, which contains contexts, valuation, and equality engine.
+   * Notice the theory is responsible for memory management of this class.
    */
-  std::unique_ptr<TheoryState> d_theoryState;
+  TheoryState * d_theoryState;
   /**
    * Whether proofs are enabled
    *
