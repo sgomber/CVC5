@@ -22,8 +22,8 @@
 
 #include "context/cdhashset.h"
 #include "theory/sets/skolem_cache.h"
-#include "theory/uf/equality_engine.h"
 #include "theory/theory_state.h"
+#include "theory/uf/equality_engine.h"
 
 namespace CVC4 {
 namespace theory {
@@ -51,7 +51,7 @@ class SolverState : public TheoryState
   SolverState(TheorySetsPrivate& p,
               context::Context* c,
               context::UserContext* u,
-                         Valuation& val);
+              Valuation& val);
   //-------------------------------- initialize per check
   /** reset, clears the data structures maintained by this class. */
   void reset();

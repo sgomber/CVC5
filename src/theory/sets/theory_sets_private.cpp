@@ -37,7 +37,7 @@ namespace sets {
 TheorySetsPrivate::TheorySetsPrivate(TheorySets& external,
                                      context::Context* c,
                                      context::UserContext* u,
-                         Valuation& val)
+                                     Valuation& val)
     : d_members(c),
       d_deq(c),
       d_termProcessed(u),
@@ -993,8 +993,7 @@ void TheorySetsPrivate::notifyNewFact(TNode atom, bool polarity, TNode fact)
         {
           if (s[0] != atom[0])
           {
-            Trace("sets-prop")
-                << "Propagate mem-eq : " << pexp << std::endl;
+            Trace("sets-prop") << "Propagate mem-eq : " << pexp << std::endl;
             Node eq = s[0].eqNode(atom[0]);
             d_keep.insert(eq);
             // triggers an internal inference
@@ -1028,7 +1027,7 @@ void TheorySetsPrivate::notifyNewFact(TNode atom, bool polarity, TNode fact)
   }
 }
 //--------------------------------- end standard check
-  
+
 /************************ Sharing ************************/
 /************************ Sharing ************************/
 /************************ Sharing ************************/
@@ -1453,10 +1452,7 @@ OutputChannel* TheorySetsPrivate::getOutputChannel()
 
 Valuation& TheorySetsPrivate::getValuation() { return d_external.d_valuation; }
 
-SolverState * TheorySetsPrivate::getSolverState()
-{
-  return &d_state;
-}
+SolverState* TheorySetsPrivate::getSolverState() { return &d_state; }
 
 void TheorySetsPrivate::conflict(TNode a, TNode b)
 {

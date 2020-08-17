@@ -679,24 +679,29 @@ void TheoryStrings::check(Effort e) {
     if(Trace.isOn("strings-eqc")) {
       for( unsigned t=0; t<2; t++ ) {
         eq::EqClassesIterator eqcs2_i = eq::EqClassesIterator(d_equalityEngine);
-        Trace("strings-eqc") << (t==0 ? "STRINGS:" : "OTHER:") << std::endl;
-        while( !eqcs2_i.isFinished() ){
+        Trace("strings-eqc") << (t == 0 ? "STRINGS:" : "OTHER:") << std::endl;
+        while (!eqcs2_i.isFinished())
+        {
           Node eqc = (*eqcs2_i);
           bool print = (t == 0 && eqc.getType().isStringLike())
                        || (t == 1 && !eqc.getType().isStringLike());
-          if (print) {
+          if (print)
+          {
             eq::EqClassIterator eqc2_i =
                 eq::EqClassIterator(eqc, d_equalityEngine);
             Trace("strings-eqc") << "Eqc( " << eqc << " ) : { ";
-            while( !eqc2_i.isFinished() ) {
-              if( (*eqc2_i)!=eqc && (*eqc2_i).getKind()!=kind::EQUAL ){
+            while (!eqc2_i.isFinished())
+            {
+              if ((*eqc2_i) != eqc && (*eqc2_i).getKind() != kind::EQUAL)
+              {
                 Trace("strings-eqc") << (*eqc2_i) << " ";
               }
               ++eqc2_i;
             }
             Trace("strings-eqc") << " } " << std::endl;
             EqcInfo* ei = d_state.getOrMakeEqcInfo(eqc, false);
-            if( ei ){
+            if (ei)
+            {
               Trace("strings-eqc-debug")
                   << "* Length term : " << ei->d_lengthTerm.get() << std::endl;
               Trace("strings-eqc-debug")
@@ -717,7 +722,8 @@ void TheoryStrings::check(Effort e) {
     bool addedLemma = false;
     bool addedFact;
     Trace("strings-check") << "Full effort check..." << std::endl;
-    do{
+    do
+    {
       ++(d_statistics.d_strategyRuns);
       Trace("strings-check") << "  * Run strategy..." << std::endl;
       runStrategy(e);
@@ -741,7 +747,8 @@ void TheoryStrings::check(Effort e) {
       // repeat if we did not add a lemma or conflict
     } while (!d_state.isInConflict() && !addedLemma && addedFact);
   }
-  Trace("strings-check") << "Theory of strings, done check : " << e << std::endl;
+  Trace("strings-check") << "Theory of strings, done check : " << e
+                         << std::endl;
   Assert(!d_im.hasPendingFact());
   Assert(!d_im.hasPendingLemma());
 }
@@ -761,8 +768,10 @@ void TheoryStrings::postCheck(Effort e)
   {
     Trace("strings-check-debug")
         << "Theory of strings " << e << " effort check " << std::endl;
-    if(Trace.isOn("strings-eqc")) {
-      for( unsigned t=0; t<2; t++ ) {
+    if (Trace.isOn("strings-eqc"))
+    {
+      for (unsigned t = 0; t < 2; t++)
+      {
         eq::EqClassesIterator eqcs2_i = eq::EqClassesIterator(d_equalityEngine);
         Trace("strings-eqc") << (t==0 ? "STRINGS:" : "OTHER:") << std::endl;
         while( !eqcs2_i.isFinished() ){

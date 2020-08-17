@@ -28,10 +28,8 @@ namespace sets {
 SolverState::SolverState(TheorySetsPrivate& p,
                          context::Context* c,
                          context::UserContext* u,
-                         Valuation& val
-                        )
-    : TheoryState(c, u, val),
-    d_parent(p), d_proxy(u), d_proxy_to_term(u)
+                         Valuation& val)
+    : TheoryState(c, u, val), d_parent(p), d_proxy(u), d_proxy_to_term(u)
 {
   d_true = NodeManager::currentNM()->mkConst(true);
   d_false = NodeManager::currentNM()->mkConst(false);

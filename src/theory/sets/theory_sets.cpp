@@ -111,15 +111,9 @@ void TheorySets::check(Effort e) {
   d_internal->check(e);
 }
 
-void TheorySets::preCheck(Effort level)
-{
-  d_internal->preCheck(level);
-}
+void TheorySets::preCheck(Effort level) { d_internal->preCheck(level); }
 
-void TheorySets::postCheck(Effort level)
-{
-  d_internal->postCheck(level);
-}
+void TheorySets::postCheck(Effort level) { d_internal->postCheck(level); }
 
 bool TheorySets::preprocessNewFact(TNode atom, bool polarity, TNode fact)
 {
