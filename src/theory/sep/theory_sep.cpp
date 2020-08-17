@@ -843,7 +843,6 @@ void TheorySep::notifyNewFact(TNode atom, bool polarity, TNode fact)
   // TODO
 }
 
-
 bool TheorySep::needsCheckLastEffort() {
   return hasFacts();
 }

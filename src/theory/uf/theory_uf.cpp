@@ -135,7 +135,7 @@ static Node mkAnd(const std::vector<TNode>& conjunctions) {
 }/* mkAnd() */
 
 // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% BEGIN DELETE
-/*
+#if 0
 void TheoryUF::check(Effort level) {
   if (done() && !fullEffort(level)) {
     return;
@@ -208,7 +208,8 @@ void TheoryUF::check(Effort level) {
       }
     }
   }
-} */
+}
+#endif
 // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% END DELETE
 
 //--------------------------------- standard check

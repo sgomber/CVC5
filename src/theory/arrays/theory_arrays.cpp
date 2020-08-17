@@ -1522,7 +1522,6 @@ void TheoryArrays::notifyNewFact(TNode atom, bool polarity, TNode fact)
   // TODO
 }
 
-
 Node TheoryArrays::mkAnd(std::vector<TNode>& conjunctions, bool invert, unsigned startIndex)
 {
   if (conjunctions.empty())

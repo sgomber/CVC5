@@ -746,7 +746,6 @@ void TheoryStrings::check(Effort e) {
   Assert(!d_im.hasPendingLemma());
 }
 
-
 void TheoryStrings::preCheck(Effort level)
 {
   // TODO
