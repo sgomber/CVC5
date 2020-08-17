@@ -1501,6 +1501,27 @@ void TheoryArrays::check(Effort e) {
   Trace("arrays") << spaces(getSatContext()->getLevel()) << "Arrays::check(): done" << endl;
 }
 
+void TheoryArrays::preCheck(Effort level)
+{
+  // TODO
+}
+
+void TheoryArrays::postCheck(Effort level)
+{
+  // TODO
+}
+
+bool TheoryArrays::preprocessNewFact(TNode atom, bool polarity, TNode fact)
+{
+  // TODO
+  return false;
+}
+
+void TheoryArrays::notifyNewFact(TNode atom, bool polarity, TNode fact)
+{
+  // TODO
+}
+
 
 Node TheoryArrays::mkAnd(std::vector<TNode>& conjunctions, bool invert, unsigned startIndex)
 {

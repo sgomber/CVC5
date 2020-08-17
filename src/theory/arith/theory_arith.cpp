@@ -106,6 +106,27 @@ void TheoryArith::check(Effort effortLevel){
   d_internal->check(effortLevel);
 }
 
+void TheoryArith::preCheck(Effort level)
+{
+  // TODO
+}
+
+void TheoryArith::postCheck(Effort level)
+{
+  // TODO
+}
+
+bool TheoryArith::preprocessNewFact(TNode atom, bool polarity, TNode fact)
+{
+  // TODO
+  return false;
+}
+
+void TheoryArith::notifyNewFact(TNode atom, bool polarity, TNode fact)
+{
+  // TODO
+}
+
 bool TheoryArith::needsCheckLastEffort() {
   return d_internal->needsCheckLastEffort();
 }

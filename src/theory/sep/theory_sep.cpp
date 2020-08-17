@@ -822,6 +822,27 @@ void TheorySep::check(Effort e) {
   Trace("sep-check") << "Sep::check(): " << e << " done, conflict=" << d_conflict.get() << endl;
 }
 
+void TheorySep::preCheck(Effort level)
+{
+  // TODO
+}
+
+void TheorySep::postCheck(Effort level)
+{
+  // TODO
+}
+
+bool TheorySep::preprocessNewFact(TNode atom, bool polarity, TNode fact)
+{
+  // TODO
+  return false;
+}
+
+void TheorySep::notifyNewFact(TNode atom, bool polarity, TNode fact)
+{
+  // TODO
+}
+
 
 bool TheorySep::needsCheckLastEffort() {
   return hasFacts();

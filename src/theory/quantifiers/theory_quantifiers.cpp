@@ -174,6 +174,27 @@ void TheoryQuantifiers::check(Effort e) {
   getQuantifiersEngine()->check( e );
 }
 
+void TheoryQuantifiers::preCheck(Effort level)
+{
+  // TODO
+}
+
+void TheoryQuantifiers::postCheck(Effort level)
+{
+  // TODO
+}
+
+bool TheoryQuantifiers::preprocessNewFact(TNode atom, bool polarity, TNode fact)
+{
+  // TODO
+  return false;
+}
+
+void TheoryQuantifiers::notifyNewFact(TNode atom, bool polarity, TNode fact)
+{
+  // TODO
+}
+
 void TheoryQuantifiers::setUserAttribute(const std::string& attr, Node n, std::vector<Node> node_values, std::string str_value){
   QuantAttributes::setUserAttribute( attr, n, node_values, str_value );
 }

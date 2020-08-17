@@ -746,6 +746,28 @@ void TheoryStrings::check(Effort e) {
   Assert(!d_im.hasPendingLemma());
 }
 
+
+void TheoryStrings::preCheck(Effort level)
+{
+  // TODO
+}
+
+void TheoryStrings::postCheck(Effort level)
+{
+  // TODO
+}
+
+bool TheoryStrings::preprocessNewFact(TNode atom, bool polarity, TNode fact)
+{
+  // TODO
+  return false;
+}
+
+void TheoryStrings::notifyNewFact(TNode atom, bool polarity, TNode fact)
+{
+  // TODO
+}
+
 bool TheoryStrings::needsCheckLastEffort() {
   if( options::stringGuessModel() ){
     return d_esolver.hasExtendedFunctions();

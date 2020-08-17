@@ -95,6 +95,16 @@ class TheoryBV : public Theory {
   void preRegisterTerm(TNode n) override;
 
   void check(Effort e) override;
+  //--------------------------------- standard check
+  /** Pre-check, called before the fact queue of the theory is processed. */
+  void preCheck(Effort level) override;
+  /** Post-check, called after the fact queue of the theory is processed. */
+  void postCheck(Effort level) override;
+  /** Preprocess fact, return true if processed. */
+  bool preprocessNewFact(TNode atom, bool polarity, TNode fact) override;
+  /** Notify new fact */
+  void notifyNewFact(TNode atom, bool polarity, TNode fact) override;
+  //--------------------------------- end standard check
 
   bool needsCheckLastEffort() override;
 

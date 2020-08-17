@@ -1025,6 +1025,27 @@ void TheoryFp::check(Effort level) {
 
 } /* TheoryFp::check() */
 
+void TheoryFp::preCheck(Effort level)
+{
+  // TODO
+}
+
+void TheoryFp::postCheck(Effort level)
+{
+  // TODO
+}
+
+bool TheoryFp::preprocessNewFact(TNode atom, bool polarity, TNode fact)
+{
+  // TODO
+  return false;
+}
+
+void TheoryFp::notifyNewFact(TNode atom, bool polarity, TNode fact)
+{
+  // TODO
+}
+
 TrustNode TheoryFp::explain(TNode n)
 {
   Trace("fp") << "TheoryFp::explain(): explain " << n << std::endl;

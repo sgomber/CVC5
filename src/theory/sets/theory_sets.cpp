@@ -110,6 +110,27 @@ void TheorySets::check(Effort e) {
   d_internal->check(e);
 }
 
+void TheorySets::preCheck(Effort level)
+{
+  // TODO
+}
+
+void TheorySets::postCheck(Effort level)
+{
+  // TODO
+}
+
+bool TheorySets::preprocessNewFact(TNode atom, bool polarity, TNode fact)
+{
+  // TODO
+  return false;
+}
+
+void TheorySets::notifyNewFact(TNode atom, bool polarity, TNode fact)
+{
+  // TODO
+}
+
 bool TheorySets::collectModelValues(TheoryModel* m, std::set<Node>& termSet)
 {
   return d_internal->collectModelValues(m, termSet);

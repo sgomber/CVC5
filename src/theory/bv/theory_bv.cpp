@@ -438,6 +438,27 @@ void TheoryBV::check(Effort e)
   }
 }
 
+void TheoryBV::preCheck(Effort level)
+{
+  // TODO
+}
+
+void TheoryBV::postCheck(Effort level)
+{
+  // TODO
+}
+
+bool TheoryBV::preprocessNewFact(TNode atom, bool polarity, TNode fact)
+{
+  // TODO
+  return false;
+}
+
+void TheoryBV::notifyNewFact(TNode atom, bool polarity, TNode fact)
+{
+  // TODO
+}
+
 bool TheoryBV::doExtfInferences(std::vector<Node>& terms)
 {
   NodeManager* nm = NodeManager::currentNM();

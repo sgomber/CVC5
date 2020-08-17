@@ -397,6 +397,26 @@ void TheoryDatatypes::check(Effort e) {
     Notice() << "TheoryDatatypes::check(): done" << endl;
   }
 }
+void TheoryDatatypes::preCheck(Effort level)
+{
+  // TODO
+}
+
+void TheoryDatatypes::postCheck(Effort level)
+{
+  // TODO
+}
+
+bool TheoryDatatypes::preprocessNewFact(TNode atom, bool polarity, TNode fact)
+{
+  // TODO
+  return false;
+}
+
+void TheoryDatatypes::notifyNewFact(TNode atom, bool polarity, TNode fact)
+{
+  // TODO
+}
 
 bool TheoryDatatypes::needsCheckLastEffort() {
   return d_sygusExtension != nullptr;
