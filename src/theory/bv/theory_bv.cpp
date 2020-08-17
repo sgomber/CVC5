@@ -536,8 +536,9 @@ bool TheoryBV::doExtfReductions( std::vector< Node >& terms ) {
 bool TheoryBV::needsCheckLastEffort() {
   return d_needsLastCallCheck;
 }
-bool TheoryBV::collectModelInfo(TheoryModel* m)
+bool TheoryBV::collectModelValues(TheoryModel* m, std::set<Node>& termSet)
 {
+  // doesn't use termSet currently
   Assert(!inConflict());
   if (options::bitblastMode() == options::BitblastMode::EAGER)
   {
