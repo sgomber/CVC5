@@ -320,26 +320,6 @@ class Theory {
    */
   virtual void addSharedTerm(TNode n);
 
-  //--------------------------------- private initialization
-  /**
-   * Called to set the official equality engine. This should be done by
-   * TheoryEngine only.
-   */
-  void setEqualityEngine(eq::EqualityEngine* ee);
-  /** Called to set the quantifiers engine. */
-  void setQuantifiersEngine(QuantifiersEngine* qe);
-  /** Called to set the decision manager. */
-  void setDecisionManager(DecisionManager* dm);
-  /**
-   * Finish theory initialization.  At this point, options and the logic
-   * setting are final, the master equality engine and quantifiers
-   * engine (if any) are initialized, and the official equality engine of this
-   * theory has been assigned.  This base class implementation
-   * does nothing. This should be done by TheoryEngine only.
-   */
-  virtual void finishInit() {}
-  //--------------------------------- end private initialization
-
  public:
   //--------------------------------- initialization
   /**

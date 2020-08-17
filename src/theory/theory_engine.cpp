@@ -186,7 +186,7 @@ void TheoryEngine::finishInit() {
       continue;
     }
     // setup the pointers to the utilities
-    const EeTheoryInfo* eeti = d_eeDistributed->getEeTheoryInfo(theoryId);
+    const EeTheoryInfo* eeti = d_tc->getEeTheoryInfo(theoryId);
     Assert(eeti != nullptr);
     // the theory's official equality engine is the one specified by the
     // equality engine manager
@@ -1651,17 +1651,6 @@ void TheoryEngine::staticInitializeBVOptions(
     bv::TheoryBV* bv_theory = (bv::TheoryBV*)d_theoryTable[THEORY_BV];
     bv_theory->enableCoreTheorySlicer();
   }
-}
-
-SharedTermsDatabase* TheoryEngine::getSharedTermsDatabase()
-{
-  return &d_sharedTerms;
-}
-
-theory::eq::EqualityEngine* TheoryEngine::getMasterEqualityEngine()
-{
-  Assert(d_eeDistributed != nullptr);
-  return d_eeDistributed->getMasterEqualityEngine();
 }
 
 void TheoryEngine::getExplanation(std::vector<NodeTheoryPair>& explanationVector, LemmaProofRecipe* proofRecipe) {
