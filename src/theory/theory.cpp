@@ -452,6 +452,9 @@ void Theory::check(Effort level)
   {
     return;
   }
+  // resource, stats
+  d_out->spendResource(ResourceManager::Resource::TheoryCheckStep);
+  TimerStat::CodeTimer checkTimer(d_checkTime);
   // pre-check at level
   preCheck(level);
   // process the pending fact queue
@@ -461,7 +464,7 @@ void Theory::check(Effort level)
 }
 
 bool Theory::isInConflict() const { return false; }
-void Theory::notifyInConflict() const {}
+void Theory::notifyInConflict() {}
 bool Theory::propagate(TNode lit)
 {
   // If already in conflict, no more propagation

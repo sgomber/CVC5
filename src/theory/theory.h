@@ -579,15 +579,15 @@ class Theory {
   virtual void propagate(Effort level = EFFORT_FULL) {}
 
   /**
-   * in conflict?
+   * is in conflict?
    * TODO: non-virtual (use state)
    */
   virtual bool isInConflict() const;
   /**
-   * in conflict
+   * notify in conflict
    * TODO: non-virtual (use state)
    */
-  virtual void notifyInConflict() const;
+  virtual void notifyInConflict();
   /**
    * T-propagate literal lit encountered by equality engine,
    *

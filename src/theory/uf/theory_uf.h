@@ -198,7 +198,11 @@ private:
 
   void check(Effort) override;
 
-  //--------------------------------- standard check
+  //--------------------------------- standard check  
+  /** is in conflict? TODO: use state */
+  bool isInConflict() const override;
+  /** notify in conflict TODO: use state */
+  void notifyInConflict() override;
   /** Pre-check, called before the fact queue of the theory is processed. */
   void preCheck(Effort level) override;
   /** Post-check, called after the fact queue of the theory is processed. */
