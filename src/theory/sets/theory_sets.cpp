@@ -94,19 +94,12 @@ void TheorySets::finishInit()
 
   // finish initialization internally
   d_internal->finishInit();
+  // use the solver state as the official theory state object
   d_theoryState = d_internal->getSolverState();
 }
 
 void TheorySets::addSharedTerm(TNode n) {
   d_internal->addSharedTerm(n);
-}
-
-void TheorySets::check(Effort e) {
-  if (done() && e < Theory::EFFORT_FULL) {
-    return;
-  }
-  TimerStat::CodeTimer checkTimer(d_checkTime);
-  d_internal->check(e);
 }
 
 void TheorySets::preCheck(Effort level) { d_internal->preCheck(level); }

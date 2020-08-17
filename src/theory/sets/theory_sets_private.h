@@ -171,7 +171,6 @@ class TheorySetsPrivate {
 
   void addSharedTerm(TNode);
 
-  void check(Theory::Effort);
   //--------------------------------- standard check
   /** Pre-check, called before the fact queue of the theory is processed. */
   void preCheck(Theory::Effort level);

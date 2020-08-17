@@ -898,47 +898,6 @@ void TheorySetsPrivate::checkReduceComprehensions()
   }
 }
 
-/**************************** TheorySetsPrivate *****************************/
-/**************************** TheorySetsPrivate *****************************/
-/**************************** TheorySetsPrivate *****************************/
-
-void TheorySetsPrivate::check(Theory::Effort level)
-{
-  Trace("sets-check") << "Sets check effort " << level << std::endl;
-  if (level == Theory::EFFORT_LAST_CALL)
-  {
-    return;
-  }
-  while (!d_external.done() && !d_state.isInConflict())
-  {
-    // Get all the assertions
-    Assertion assertion = d_external.get();
-    TNode fact = assertion.d_assertion;
-    Trace("sets-assert") << "Assert from input " << fact << std::endl;
-    // assert the fact
-    assertFact(fact, fact);
-  }
-  Trace("sets-check") << "Sets finished assertions effort " << level
-                      << std::endl;
-  // invoke full effort check, relations check
-  if (!d_state.isInConflict())
-  {
-    if (level == Theory::EFFORT_FULL)
-    {
-      if (!d_external.d_valuation.needCheck())
-      {
-        fullEffortCheck();
-        if (!d_state.isInConflict() && !d_im.hasSentLemma()
-            && d_full_check_incomplete)
-        {
-          d_external.d_out->setIncomplete();
-        }
-      }
-    }
-  }
-  Trace("sets-check") << "Sets finish Check effort " << level << std::endl;
-} /* TheorySetsPrivate::check() */
-
 //--------------------------------- standard check
 void TheorySetsPrivate::preCheck(Theory::Effort level)
 {

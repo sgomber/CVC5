@@ -603,7 +603,10 @@ void Theory::preRegisterTerm(TNode)
 
 void Theory::addSharedTerm(TNode n)
 {
-  // TODO: eq engine trigger?
+  if (d_equalityEngine!=nullptr)
+  {
+    d_equalityEngine->addTriggerTerm(n, d_id);
+  }
 }
 //--------------------------------- end new standard
 
