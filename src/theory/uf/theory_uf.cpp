@@ -206,15 +206,9 @@ void TheoryUF::check(Effort level) {
 }/* TheoryUF::check() */
 
 //--------------------------------- standard check
-bool TheoryUF::isInConflict() const
-{
-  return d_conflict;
-}
+bool TheoryUF::isInConflict() const { return d_conflict; }
 
-void TheoryUF::notifyInConflict()
-{
-  d_conflict = true;
-}
+void TheoryUF::notifyInConflict() { d_conflict = true; }
 
 void TheoryUF::preCheck(Effort level)
 {
@@ -223,19 +217,24 @@ void TheoryUF::preCheck(Effort level)
 
 void TheoryUF::postCheck(Effort level)
 {
-  if( isInConflict() ){
+  if (isInConflict())
+  {
     return;
   }
   // check with the cardinality constraints extension
-  if (d_thss != nullptr) {
+  if (d_thss != nullptr)
+  {
     d_thss->check(level);
-    if( d_thss->isConflict() ){
+    if (d_thss->isConflict())
+    {
       d_conflict = true;
     }
   }
   // check with the higher-order extension
-  if(! isInConflict() && fullEffort(level) ){
-    if( options::ufHo() ){
+  if (!isInConflict() && fullEffort(level))
+  {
+    if (options::ufHo())
+    {
       d_ho->check();
     }
   }
@@ -243,28 +242,39 @@ void TheoryUF::postCheck(Effort level)
 
 bool TheoryUF::preprocessNewFact(TNode atom, bool polarity, TNode fact)
 {
-  if (d_thss != nullptr) {
-    bool isDecision = d_valuation.isSatLiteral(fact) && d_valuation.isDecision(fact);
+  if (d_thss != nullptr)
+  {
+    bool isDecision =
+        d_valuation.isSatLiteral(fact) && d_valuation.isDecision(fact);
     d_thss->assertNode(fact, isDecision);
-    if( d_thss->isConflict() ){
+    if (d_thss->isConflict())
+    {
       d_conflict = true;
       return true;
     }
   }
-  if (atom.getKind() == kind::CARDINALITY_CONSTRAINT || atom.getKind() == kind::COMBINED_CARDINALITY_CONSTRAINT) {
-    if( d_thss == nullptr ){
-      if( !getLogicInfo().hasCardinalityConstraints() ){
+  if (atom.getKind() == kind::CARDINALITY_CONSTRAINT
+      || atom.getKind() == kind::COMBINED_CARDINALITY_CONSTRAINT)
+  {
+    if (d_thss == nullptr)
+    {
+      if (!getLogicInfo().hasCardinalityConstraints())
+      {
         std::stringstream ss;
-        ss << "Cardinality constraint " << atom << " was asserted, but the logic does not allow it." << std::endl;
+        ss << "Cardinality constraint " << atom
+           << " was asserted, but the logic does not allow it." << std::endl;
         ss << "Try using a logic containing \"UFC\"." << std::endl;
-        throw Exception( ss.str() );
-      }else{
+        throw Exception(ss.str());
+      }
+      else
+      {
         // support for cardinality constraints is not enabled, set incomplete
         d_out->setIncomplete();
       }
     }
     // don't need to assert if not producing models
-    if( !options::produceModels() ){
+    if (!options::produceModels())
+    {
       return true;
     }
   }
@@ -273,9 +283,12 @@ bool TheoryUF::preprocessNewFact(TNode atom, bool polarity, TNode fact)
 
 void TheoryUF::notifyNewFact(TNode atom, bool polarity, TNode fact)
 {
-  if (atom.getKind() == kind::EQUAL) {
-    if( options::ufHo() && options::ufHoExt() ){
-      if( !polarity && !d_conflict && atom[0].getType().isFunction() ){
+  if (atom.getKind() == kind::EQUAL)
+  {
+    if (options::ufHo() && options::ufHoExt())
+    {
+      if (!polarity && !d_conflict && atom[0].getType().isFunction())
+      {
         // apply extensionality eagerly using the ho extension
         d_ho->applyExtensionality(fact);
       }

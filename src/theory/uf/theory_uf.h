@@ -198,7 +198,7 @@ private:
 
   void check(Effort) override;
 
-  //--------------------------------- standard check  
+  //--------------------------------- standard check
   /** is in conflict? TODO: use state */
   bool isInConflict() const override;
   /** notify in conflict TODO: use state */
