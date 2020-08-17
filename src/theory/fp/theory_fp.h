@@ -67,6 +67,8 @@ class TheoryFp : public Theory {
   bool needsCheckLastEffort() override { return true; }
   Node getModelValue(TNode var) override;
   bool collectModelInfo(TheoryModel* m) override;
+  /** Collect model values in m based on the relevant terms given by termSet */
+  bool collectModelValues(TheoryModel* m, std::set<Node>& termSet) override;
 
   std::string identify() const override { return "THEORY_FP"; }
 

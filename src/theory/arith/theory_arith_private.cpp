@@ -4128,7 +4128,7 @@ Rational TheoryArithPrivate::deltaValueForTotalOrder() const{
   return belowMin;
 }
 
-bool TheoryArithPrivate::collectModelInfo(TheoryModel* m)
+bool TheoryArithPrivate::collectModelValues(TheoryModel* m, std::set<Node>& termSet)
 {
   AlwaysAssert(d_qflraStatus == Result::SAT);
   //AlwaysAssert(!d_nlIncomplete, "Arithmetic solver cannot currently produce models for input with nonlinear arithmetic constraints");
@@ -4137,11 +4137,7 @@ bool TheoryArithPrivate::collectModelInfo(TheoryModel* m)
     debugPrintFacts();
   }
 
-  Debug("arith::collectModelInfo") << "collectModelInfo() begin " << endl;
-
-  std::set<Node> termSet;
-  d_containing.computeRelevantTerms(termSet);
- 
+  Debug("arith::collectModelInfo") << "collectModelInfo() begin " << endl; 
 
   // Delta lasts at least the duration of the function call
   const Rational& delta = d_partialModel.getDelta();

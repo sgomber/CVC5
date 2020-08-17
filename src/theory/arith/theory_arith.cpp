@@ -140,7 +140,15 @@ void TheoryArith::conflict(TNode a, TNode b)
 
 bool TheoryArith::collectModelInfo(TheoryModel* m)
 {
-  return d_internal->collectModelInfo(m);
+  std::set<Node> termSet;
+  computeRelevantTerms(termSet);
+  // overrides behavior to not assert the equality engine
+  return collectModelValues(m, termSet);
+}
+
+bool TheoryArith::collectModelValues(TheoryModel* m, std::set<Node>& termSet)
+{
+  return d_internal->collectModelValues(m, termSet);
 }
 
 void TheoryArith::notifyRestart(){

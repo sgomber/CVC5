@@ -1052,13 +1052,16 @@ Node TheoryFp::getModelValue(TNode var) {
 bool TheoryFp::collectModelInfo(TheoryModel *m)
 {
   std::set<Node> relevantTerms;
-
-  Trace("fp-collectModelInfo")
-      << "TheoryFp::collectModelInfo(): begin" << std::endl;
-
   // Work out which variables are needed
   computeRelevantTerms(relevantTerms);
+  // override behavior to not assert equality engine
+  return collectModelValues(m, relevantTerms);
+}
 
+bool TheoryFp::collectModelValues(TheoryModel* m, std::set<Node>& relevantTerms)
+{
+  Trace("fp-collectModelInfo")
+      << "TheoryFp::collectModelInfo(): begin" << std::endl;
   if (Trace.isOn("fp-collectModelInfo")) {
     for (std::set<Node>::const_iterator i(relevantTerms.begin());
          i != relevantTerms.end(); ++i) {

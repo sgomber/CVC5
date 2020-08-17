@@ -1516,24 +1516,13 @@ void TheoryDatatypes::computeCareGraph(){
   Trace("dt-cg-summary") << "...done, # pairs = " << n_pairs << std::endl;
 }
 
-bool TheoryDatatypes::collectModelInfo(TheoryModel* m)
+bool TheoryDatatypes::collectModelValues(TheoryModel* m, std::set<Node>& termSet)
 {
-  Trace("dt-cmi") << "Datatypes : Collect model info "
+  Trace("dt-cmi") << "Datatypes : Collect model values "
                   << d_equalityEngine->consistent() << std::endl;
   Trace("dt-model") << std::endl;
   printModelDebug( "dt-model" );
   Trace("dt-model") << std::endl;
-
-  std::set<Node> termSet;
-
-  // Compute terms appearing in assertions and shared terms, and in inferred equalities
-  computeRelevantTerms(termSet);
-
-  //combine the equality engine
-  if (!m->assertEqualityEngine(d_equalityEngine, &termSet))
-  {
-    return false;
-  }
 
   //get all constructors
   eq::EqClassesIterator eqccs_i = eq::EqClassesIterator(d_equalityEngine);
