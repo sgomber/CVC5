@@ -60,7 +60,6 @@ class QuantifiersEngine;
 class TheoryModel;
 class SubstitutionMap;
 class TheoryRewriter;
-class TheoryState;
 
 namespace rrinst {
   class CandidateGenerator;

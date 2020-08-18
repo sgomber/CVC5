@@ -9,7 +9,7 @@ PR current:
 
 (4) Merge collectModelInfo *
 (6) Split inheritence in equality engine manager to own files (req 3)
-(8) Standardize collect relevant terms (req 3)
+(8) Standardize collect relevant terms (req 3) *
 (10) Quantifiers engine set master equality engine *
 (17) Theory state
 
