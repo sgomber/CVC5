@@ -504,7 +504,6 @@ class TheoryArrays : public Theory {
    */
   void computeRelevantTerms(std::set<Node>& termSet,
                             bool includeShared = true) override;
-
 };/* class TheoryArrays */
 
 }/* CVC4::theory::arrays namespace */

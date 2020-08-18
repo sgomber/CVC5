@@ -371,7 +371,7 @@ void Theory::collectTerms(TNode n,
   }
 }
 
-void Theory::computeRelevantTermsInternal(set<Node>& termSet,
+void Theory::computeRelevantTermsInternal(std::set<Node>& termSet,
                                           std::set<Kind>& irrKinds,
                                           bool includeShared) const
 {
@@ -401,9 +401,13 @@ void Theory::computeRelevantTermsInternal(set<Node>& termSet,
 
 void Theory::computeRelevantTerms(std::set<Node>& termSet, bool includeShared)
 {
-  // by default, use the above method
   std::set<Kind> irrKinds;
   computeRelevantTermsInternal(termSet, irrKinds, includeShared);
+}
+
+bool Theory::collectModelValues(TheoryModel* m, std::set<Node>& termSet)
+{
+  return true;
 }
 
 Theory::PPAssertStatus Theory::ppAssert(TNode in,
@@ -582,11 +586,6 @@ bool Theory::collectModelInfo(TheoryModel* m)
   }
   // now, collect theory-specific value assigments
   return collectModelValues(m, termSet);
-}
-
-bool Theory::collectModelValues(TheoryModel* m, std::set<Node>& termSet)
-{
-  return true;
 }
 
 TrustNode Theory::explainConflict(TNode a, TNode b)

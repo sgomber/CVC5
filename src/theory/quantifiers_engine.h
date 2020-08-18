@@ -49,9 +49,7 @@ class QuantifiersEnginePrivate;
 
 // TODO: organize this more/review this, github issue #1163
 class QuantifiersEngine {
-  // for access to private initialization
   friend class ::CVC4::TheoryEngine;
-
   typedef context::CDHashMap< Node, bool, NodeHashFunction > BoolMap;
   typedef context::CDList<Node> NodeList;
   typedef context::CDList<bool> BoolList;

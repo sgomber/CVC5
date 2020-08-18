@@ -329,15 +329,6 @@ private:
   /** entailment check */
   std::pair<bool, Node> entailmentCheck(TNode lit) override;
 
-  /** Collect model values in m based on the relevant terms given by termSet */
-  bool collectModelValues(TheoryModel* m, std::set<Node>& termSet) override;
-  /**
-   * Compute relevant terms. In addition to all terms in assertions and shared
-   * terms, this includes datatypes in non-singleton equivalence classes.
-   */
-  void computeRelevantTerms(std::set<Node>& termSet,
-                            bool includeShared = true) override;
-
  private:
   /** add tester to equivalence class info */
   void addTester(unsigned ttindex, Node t, EqcInfo* eqc, Node n, Node t_arg);
@@ -380,6 +371,15 @@ private:
   bool areDisequal( TNode a, TNode b );
   bool areCareDisequal( TNode x, TNode y );
   TNode getRepresentative( TNode a );
+
+  /** Collect model values in m based on the relevant terms given by termSet */
+  bool collectModelValues(TheoryModel* m, std::set<Node>& termSet) override;
+  /**
+   * Compute relevant terms. In addition to all terms in assertions and shared
+   * terms, this includes datatypes in non-singleton equivalence classes.
+   */
+  void computeRelevantTerms(std::set<Node>& termSet,
+                            bool includeShared = true) override;
 
   /** sygus symmetry breaking utility */
   std::unique_ptr<SygusExtension> d_sygusExtension;
