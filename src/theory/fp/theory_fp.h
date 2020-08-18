@@ -63,14 +63,10 @@ class TheoryFp : public Theory {
 
   void check(Effort) override;
   //--------------------------------- standard check
-  /** Pre-check, called before the fact queue of the theory is processed. */
-  void preCheck(Effort level) override;
   /** Post-check, called after the fact queue of the theory is processed. */
   void postCheck(Effort level) override;
   /** Preprocess fact, return true if processed. */
   bool preprocessNewFact(TNode atom, bool polarity, TNode fact) override;
-  /** Notify new fact */
-  void notifyNewFact(TNode atom, bool polarity, TNode fact) override;
   //--------------------------------- end standard check
 
   bool needsCheckLastEffort() override { return true; }
@@ -125,6 +121,9 @@ class TheoryFp : public Theory {
 
   context::CDO<bool> d_conflict;
   context::CDO<Node> d_conflictNode;
+  /** A (default) theory state object */
+  std::unique_ptr<TheoryState> d_allocState;
+  
 
   typedef context::CDHashMap<TypeNode, Node, TypeNodeHashFunction>
       ComparisonUFMap;

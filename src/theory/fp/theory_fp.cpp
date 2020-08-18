@@ -188,6 +188,8 @@ void TheoryFp::finishInit()
   d_equalityEngine->addFunctionKind(kind::FLOATINGPOINT_COMPONENT_EXPONENT);
   d_equalityEngine->addFunctionKind(kind::FLOATINGPOINT_COMPONENT_SIGNIFICAND);
   d_equalityEngine->addFunctionKind(kind::ROUNDINGMODE_BITBLAST);
+  
+  d_allocState.reset(new TheoryState(getSatContext(), getUserContext(), d_valuation));
 }
 
 Node TheoryFp::minUF(Node node) {
@@ -1017,25 +1019,51 @@ void TheoryFp::check(Effort level) {
 
 } /* TheoryFp::check() */
 
-void TheoryFp::preCheck(Effort level)
-{
-  // TODO
-}
-
 void TheoryFp::postCheck(Effort level)
 {
-  // TODO
+  // Resolve the abstractions for the conversion lemmas
+  //  if (level == EFFORT_COMBINATION) {
+  if (level == EFFORT_LAST_CALL)
+  {
+    Trace("fp") << "TheoryFp::check(): checking abstractions" << std::endl;
+    TheoryModel *m = getValuation().getModel();
+    bool lemmaAdded = false;
+
+    for (abstractionMapType::const_iterator i = abstractionMap.begin();
+         i != abstractionMap.end();
+         ++i)
+    {
+      if (m->hasTerm((*i).first))
+      {  // Is actually used in the model
+        lemmaAdded |= refineAbstraction(m, (*i).first, (*i).second);
+      }
+    }
+  }
+
+  Trace("fp") << "TheoryFp::check(): completed" << std::endl;
 }
 
 bool TheoryFp::preprocessNewFact(TNode atom, bool polarity, TNode fact)
 {
-  // TODO
-  return false;
-}
+  if (atom.getKind() == kind::EQUAL) {
+    Assert(!(atom[0].getType().isFloatingPoint()
+              || atom[0].getType().isRoundingMode())
+            || isRegistered(atom[0]));
+    Assert(!(atom[1].getType().isFloatingPoint()
+              || atom[1].getType().isRoundingMode())
+            || isRegistered(atom[1]));
+    registerTerm(atom);  // Needed for float equalities
+  } else {
+    // A system-wide invariant; predicates are registered before they are
+    // asserted
+    Assert(isRegistered(atom));
 
-void TheoryFp::notifyNewFact(TNode atom, bool polarity, TNode fact)
-{
-  // TODO
+    if (d_equalityEngine->isFunctionKind(atom.getKind()))
+    {
+      return true;
+    }
+  }
+  return false;
 }
 
 TrustNode TheoryFp::explain(TNode n)
