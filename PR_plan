@@ -9,15 +9,15 @@ PR current:
 
 (4) Merge collectModelInfo *
 (6) Split inheritence in equality engine manager to own files (req 3)
-(7) Model manager / model manager distributed
 (8) Standardize collect relevant terms (req 3)
-(17) Solver state
+(10) Quantifiers engine set master equality engine *
+(17) Theory state
 
 PR planned:
 
 (5) Merge collectModelInfo part two (req 4)
+(7) Model manager / model manager distributed (req 6, 10)
 (9) Standardize collectModelValues (req 8)
-(10) Quantifiers engine set master equality engine
 (11) CombinationEngine (reg 6, 7)
 (12) Combination care graph (req 11)
 (13) Cleanup model building and enable model manager distributed (req 7, 12)
