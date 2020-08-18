@@ -991,13 +991,6 @@ void TheorySetsPrivate::notifyNewFact(TNode atom, bool polarity, TNode fact)
 /************************ Sharing ************************/
 /************************ Sharing ************************/
 
-void TheorySetsPrivate::addSharedTerm(TNode n)
-{
-  Debug("sets") << "[sets] TheorySetsPrivate::addSharedTerm( " << n << ")"
-                << std::endl;
-  d_equalityEngine->addTriggerTerm(n, THEORY_SETS);
-}
-
 void TheorySetsPrivate::addCarePairs(TNodeTrie* t1,
                                      TNodeTrie* t2,
                                      unsigned arity,

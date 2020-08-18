@@ -98,10 +98,6 @@ void TheorySets::finishInit()
   d_theoryState = d_internal->getSolverState();
 }
 
-void TheorySets::addSharedTerm(TNode n) {
-  d_internal->addSharedTerm(n);
-}
-
 void TheorySets::preCheck(Effort level) { d_internal->preCheck(level); }
 
 void TheorySets::postCheck(Effort level) { d_internal->postCheck(level); }

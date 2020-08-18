@@ -58,7 +58,6 @@ class TheorySets : public Theory
   void finishInit() override;
   //--------------------------------- end initialization
 
-  void addSharedTerm(TNode) override;
   //--------------------------------- standard check
   /** Pre-check, called before the fact queue of the theory is processed. */
   void preCheck(Effort level) override;
