@@ -584,7 +584,6 @@ void TheoryDatatypes::preRegisterTerm(TNode n) {
       d_sygusExtension->preRegisterTerm(n, lemmas);
       doSendLemmas( lemmas );
     }
-    // d_equalityEngine->addTriggerTerm(n, THEORY_DATATYPES);
     break;
   }
   flushPendingFacts();

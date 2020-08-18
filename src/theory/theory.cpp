@@ -271,12 +271,34 @@ void Theory::notifySharedTerm(TNode n)
   Debug("theory::assertions")
       << "Theory::notifySharedTerm<" << getId() << ">(" << n << ")" << endl;
   d_sharedTerms.push_back(n);
+  // now call theory-specific addSharedTerm
   addSharedTerm(n);
   // if we have an equality engine, add the trigger term
   if (d_equalityEngine != nullptr)
   {
     d_equalityEngine->addTriggerTerm(n, d_id);
   }
+}
+
+void Theory::notifyPreRegisterTerm(TNode node)
+{
+  if (d_equalityEngine!=nullptr)
+  {
+    if (node.getKind()==kind::EQUAL)
+    {
+      d_equalityEngine->addTriggerEquality(node);
+    }
+    else if (node.getType().isBoolean())
+    {
+      d_equalityEngine->addTriggerPredicate(node);
+    }
+    else
+    {
+      d_equalityEngine->addTerm(node);
+    }
+  }
+  // now call theory-specific preRegisterTerm
+  preRegisterTerm(node);
 }
 
 void Theory::computeCareGraph() {
