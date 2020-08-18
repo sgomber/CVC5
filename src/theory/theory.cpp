@@ -512,14 +512,19 @@ void Theory::check(Effort level)
 
 bool Theory::isInConflict() const
 {
-  Assert(d_theoryState != nullptr);
-  return d_theoryState->isInConflict();
+  if(d_theoryState != nullptr)
+  {
+    return d_theoryState->isInConflict();
+  }
+  return false;
 }
 
 void Theory::notifyInConflict()
 {
-  Assert(d_theoryState != nullptr);
-  d_theoryState->notifyInConflict();
+  if (d_theoryState != nullptr)
+  {
+    d_theoryState->notifyInConflict();
+  }
 }
 
 bool Theory::propagate(TNode lit)
