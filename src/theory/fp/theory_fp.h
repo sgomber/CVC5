@@ -123,7 +123,6 @@ class TheoryFp : public Theory {
   context::CDO<Node> d_conflictNode;
   /** A (default) theory state object */
   std::unique_ptr<TheoryState> d_allocState;
-  
 
   typedef context::CDHashMap<TypeNode, Node, TypeNodeHashFunction>
       ComparisonUFMap;

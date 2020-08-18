@@ -188,8 +188,9 @@ void TheoryFp::finishInit()
   d_equalityEngine->addFunctionKind(kind::FLOATINGPOINT_COMPONENT_EXPONENT);
   d_equalityEngine->addFunctionKind(kind::FLOATINGPOINT_COMPONENT_SIGNIFICAND);
   d_equalityEngine->addFunctionKind(kind::ROUNDINGMODE_BITBLAST);
-  
-  d_allocState.reset(new TheoryState(getSatContext(), getUserContext(), d_valuation));
+
+  d_allocState.reset(
+      new TheoryState(getSatContext(), getUserContext(), d_valuation));
 }
 
 Node TheoryFp::minUF(Node node) {
@@ -1026,7 +1027,7 @@ void TheoryFp::postCheck(Effort level)
   if (level == EFFORT_LAST_CALL)
   {
     Trace("fp") << "TheoryFp::check(): checking abstractions" << std::endl;
-    TheoryModel *m = getValuation().getModel();
+    TheoryModel* m = getValuation().getModel();
     bool lemmaAdded = false;
 
     for (abstractionMapType::const_iterator i = abstractionMap.begin();
@@ -1045,15 +1046,18 @@ void TheoryFp::postCheck(Effort level)
 
 bool TheoryFp::preprocessNewFact(TNode atom, bool polarity, TNode fact)
 {
-  if (atom.getKind() == kind::EQUAL) {
+  if (atom.getKind() == kind::EQUAL)
+  {
     Assert(!(atom[0].getType().isFloatingPoint()
-              || atom[0].getType().isRoundingMode())
-            || isRegistered(atom[0]));
+             || atom[0].getType().isRoundingMode())
+           || isRegistered(atom[0]));
     Assert(!(atom[1].getType().isFloatingPoint()
-              || atom[1].getType().isRoundingMode())
-            || isRegistered(atom[1]));
+             || atom[1].getType().isRoundingMode())
+           || isRegistered(atom[1]));
     registerTerm(atom);  // Needed for float equalities
-  } else {
+  }
+  else
+  {
     // A system-wide invariant; predicates are registered before they are
     // asserted
     Assert(isRegistered(atom));

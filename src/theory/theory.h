@@ -558,7 +558,7 @@ class Theory {
 
   /** Add shared term to the theory. */
   void notifySharedTerm(TNode node);
-  
+
   /** Notify pre-register term */
   void notifyPreRegisterTerm(TNode node);
 

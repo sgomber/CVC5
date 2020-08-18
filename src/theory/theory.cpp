@@ -282,9 +282,9 @@ void Theory::notifySharedTerm(TNode n)
 
 void Theory::notifyPreRegisterTerm(TNode node)
 {
-  if (d_equalityEngine!=nullptr)
+  if (d_equalityEngine != nullptr)
   {
-    if (node.getKind()==kind::EQUAL)
+    if (node.getKind() == kind::EQUAL)
     {
       d_equalityEngine->addTriggerEquality(node);
     }
@@ -512,7 +512,7 @@ void Theory::check(Effort level)
 
 bool Theory::isInConflict() const
 {
-  if(d_theoryState != nullptr)
+  if (d_theoryState != nullptr)
   {
     return d_theoryState->isInConflict();
   }

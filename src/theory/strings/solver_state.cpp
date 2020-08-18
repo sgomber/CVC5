@@ -28,9 +28,7 @@ namespace strings {
 SolverState::SolverState(context::Context* c,
                          context::UserContext* u,
                          Valuation& v)
-    : TheoryState(c, u, v),
-      d_eeDisequalities(c),
-      d_pendingConflict(c)
+    : TheoryState(c, u, v), d_eeDisequalities(c), d_pendingConflict(c)
 {
   d_zero = NodeManager::currentNM()->mkConst(Rational(0));
 }

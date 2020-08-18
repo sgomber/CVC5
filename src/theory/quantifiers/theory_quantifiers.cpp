@@ -35,7 +35,7 @@ using namespace CVC4::context;
 namespace CVC4 {
 namespace theory {
 namespace quantifiers {
-  
+
 TheoryQuantifiers::TheoryQuantifiers(Context* c,
                                      context::UserContext* u,
                                      OutputChannel& out,
@@ -79,7 +79,8 @@ void TheoryQuantifiers::preRegisterTerm(TNode n) {
   {
     return;
   }
-  Debug("quantifiers-prereg") << "TheoryQuantifiers::preRegisterTerm() " << n << std::endl;
+  Debug("quantifiers-prereg")
+      << "TheoryQuantifiers::preRegisterTerm() " << n << std::endl;
   // Preregister the quantified formula.
   // This initializes the modules used for handling n in this user context.
   getQuantifiersEngine()->preRegisterQuantifier(n);
@@ -119,7 +120,8 @@ bool TheoryQuantifiers::collectModelValues(TheoryModel* m,
     }
     else
     {
-      Debug("quantifiers::collectModelInfo") << "got quant TRUE : " << *i << std::endl;
+      Debug("quantifiers::collectModelInfo")
+          << "got quant TRUE : " << *i << std::endl;
       if (!m->assertPredicate(*i, true))
       {
         return false;
@@ -132,25 +134,26 @@ bool TheoryQuantifiers::collectModelValues(TheoryModel* m,
 void TheoryQuantifiers::postCheck(Effort level)
 {
   // call the quantifiers engine to check
-  getQuantifiersEngine()->check( level );
+  getQuantifiersEngine()->check(level);
 }
 
 bool TheoryQuantifiers::preprocessNewFact(TNode atom, bool polarity, TNode fact)
 {
   Kind k = atom.getKind();
-  if (k==FORALL)
+  if (k == FORALL)
   {
     getQuantifiersEngine()->assertQuantifier(atom, polarity);
   }
-  else if (k==INST_CLOSURE)
+  else if (k == INST_CLOSURE)
   {
     if (!polarity)
     {
       Unhandled() << "Unexpected inst-closure fact " << fact;
     }
-    getQuantifiersEngine()->addTermToDatabase( atom[0], false, true );
-    if( !options::lteRestrictInstClosure() ){
-      getQuantifiersEngine()->getMasterEqualityEngine()->addTerm( atom[0] );
+    getQuantifiersEngine()->addTermToDatabase(atom[0], false, true);
+    if (!options::lteRestrictInstClosure())
+    {
+      getQuantifiersEngine()->getMasterEqualityEngine()->addTerm(atom[0]);
     }
   }
   else
@@ -165,7 +168,6 @@ void TheoryQuantifiers::setUserAttribute(const std::string& attr, Node n, std::v
   QuantAttributes::setUserAttribute( attr, n, node_values, str_value );
 }
 
-}
-}
-}
-
+}  // namespace quantifiers
+}  // namespace theory
+}  // namespace CVC4
