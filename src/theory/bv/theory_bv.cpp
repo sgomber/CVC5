@@ -918,11 +918,6 @@ TrustNode TheoryBV::explain(TNode node)
 void TheoryBV::addSharedTerm(TNode t) {
   Debug("bitvector::sharing") << indent() << "TheoryBV::addSharedTerm(" << t << ")" << std::endl;
   d_sharedTermsSet.insert(t);
-  if (options::bitvectorEqualitySolver()) {
-    for (unsigned i = 0; i < d_subtheories.size(); ++i) {
-      d_subtheories[i]->addSharedTerm(t);
-    }
-  }
 }
 
 

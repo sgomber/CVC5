@@ -169,7 +169,6 @@ bool TheoryStrings::areCareDisequal( TNode x, TNode y ) {
 void TheoryStrings::addSharedTerm(TNode t) {
   Debug("strings") << "TheoryStrings::addSharedTerm(): "
                      << t << " " << t.getType().isBoolean() << endl;
-  d_equalityEngine->addTriggerTerm(t, THEORY_STRINGS);
   if (options::stringExp())
   {
     d_esolver.addSharedTerm(t);

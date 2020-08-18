@@ -453,10 +453,6 @@ void ArithCongruenceManager::equalsConstant(ConstraintCP lb, ConstraintCP ub){
   d_ee->assertEquality(eq, true, reason);
 }
 
-void ArithCongruenceManager::addSharedTerm(Node x){
-  d_ee->addTriggerTerm(x, THEORY_ARITH);
-}
-
 }/* CVC4::theory::arith namespace */
 }/* CVC4::theory namespace */
 }/* CVC4 namespace */

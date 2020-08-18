@@ -272,6 +272,11 @@ void Theory::notifySharedTerm(TNode n)
       << "Theory::notifySharedTerm<" << getId() << ">(" << n << ")" << endl;
   d_sharedTerms.push_back(n);
   addSharedTerm(n);
+  // if we have an equality engine, add the trigger term
+  if (d_equalityEngine != nullptr)
+  {
+    d_equalityEngine->addTriggerTerm(n, d_id);
+  }
 }
 
 void Theory::computeCareGraph() {
@@ -602,11 +607,7 @@ void Theory::preRegisterTerm(TNode)
 
 void Theory::addSharedTerm(TNode n)
 {
-  if (d_equalityEngine != nullptr)
-  {
-    // add the trigger term
-    d_equalityEngine->addTriggerTerm(n, d_id);
-  }
+  // do nothing
 }
 //--------------------------------- end new standard
 
