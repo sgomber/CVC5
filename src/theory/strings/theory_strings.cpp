@@ -205,7 +205,7 @@ bool TheoryStrings::propagate(TNode literal) {
   // Propagate out
   bool ok = d_out->propagate(literal);
   if (!ok) {
-    d_state.setConflict();
+    d_state.notifyInConflict();
   }
   return ok;
 }
@@ -861,7 +861,7 @@ void TheoryStrings::conflict(TNode a, TNode b){
   if (!d_state.isInConflict())
   {
     Debug("strings-conflict") << "Making conflict..." << std::endl;
-    d_state.setConflict();
+    d_state.notifyInConflict();
     TrustNode conflictNode = explain(a.eqNode(b));
     Trace("strings-conflict")
         << "CONFLICT: Eq engine conflict : " << conflictNode.getNode()
