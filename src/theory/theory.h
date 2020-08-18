@@ -181,7 +181,7 @@ class Theory {
    */
   context::CDList<TNode> d_sharedTerms;
 
-  //---------------------------------- collect model info
+  //---------------------------------- private collect model info
   /**
    * Scans the current set of assertions and shared terms top-down
    * until a theory-leaf is reached, and adds all terms found to
@@ -204,21 +204,7 @@ class Theory {
   void collectTerms(TNode n,
                     std::set<Kind>& irrKinds,
                     std::set<Node>& termSet) const;
-  /**
-   * Same as above, but with empty irrKinds. This version can be overridden
-   * by the theory, e.g. by restricting or extending the set of terms returned
-   * by computeRelevantTermsInternal, which is called by default with no
-   * irrKinds.
-   */
-  virtual void computeRelevantTerms(std::set<Node>& termSet,
-                                    bool includeShared = true);
-  /**
-   * Collect model values, after equality information is added to the model.
-   * The argument termSet is the set of relevant terms returned by
-   * computeRelevantTerms.
-   */
-  virtual bool collectModelValues(TheoryModel* m, std::set<Node>& termSet);
-  //---------------------------------- end collect model info
+  //---------------------------------- end private collect model info
 
   /**
    * Construct a Theory.
@@ -679,6 +665,7 @@ class Theory {
   virtual void notifyNewFact(TNode atom, bool polarity, TNode fact);
   //--------------------------------- end new standard check
 
+  //--------------------------------- collect model info
   /**
    * Get all relevant information in this theory regarding the current
    * model.  This should be called after a call to check( FULL_EFFORT )
@@ -690,6 +677,21 @@ class Theory {
    * TODO: non-virtual
    */
   virtual bool collectModelInfo(TheoryModel* m);
+  /**
+   * Same as above, but with empty irrKinds. This version can be overridden
+   * by the theory, e.g. by restricting or extending the set of terms returned
+   * by computeRelevantTermsInternal, which is called by default with no
+   * irrKinds.
+   */
+  virtual void computeRelevantTerms(std::set<Node>& termSet,
+                                    bool includeShared = true);
+  /**
+   * Collect model values, after equality information is added to the model.
+   * The argument termSet is the set of relevant terms returned by
+   * computeRelevantTerms.
+   */
+  virtual bool collectModelValues(TheoryModel* m, std::set<Node>& termSet);
+  //--------------------------------- end collect model info
 
   /** if theories want to do something with model after building, do it here */
   virtual void postProcessModel( TheoryModel* m ){ }
