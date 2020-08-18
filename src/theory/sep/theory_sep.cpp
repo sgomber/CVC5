@@ -155,13 +155,6 @@ TrustNode TheorySep::explain(TNode literal)
 // SHARING
 /////////////////////////////////////////////////////////////////////////////
 
-
-void TheorySep::addSharedTerm(TNode t) {
-  Debug("sep") << "TheorySep::addSharedTerm(" << t << ")" << std::endl;
-  d_equalityEngine->addTriggerTerm(t, THEORY_SEP);
-}
-
-
 EqualityStatus TheorySep::getEqualityStatus(TNode a, TNode b) {
   Assert(d_equalityEngine->hasTerm(a) && d_equalityEngine->hasTerm(b));
   if (d_equalityEngine->areEqual(a, b))

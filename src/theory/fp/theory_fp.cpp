@@ -905,14 +905,6 @@ void TheoryFp::preRegisterTerm(TNode node)
   return;
 }
 
-void TheoryFp::addSharedTerm(TNode node) {
-  Trace("fp-addSharedTerm")
-      << "TheoryFp::addSharedTerm(): " << node << std::endl;
-  // A system-wide invariant; terms must be registered before they are shared
-  Assert(isRegistered(node));
-  return;
-}
-
 void TheoryFp::handleLemma(Node node) {
   Trace("fp") << "TheoryFp::handleLemma(): asserting " << node << std::endl;
   // Preprocess has to be true because it contains embedded ITEs

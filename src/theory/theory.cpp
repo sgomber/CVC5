@@ -604,6 +604,7 @@ void Theory::addSharedTerm(TNode n)
 {
   if (d_equalityEngine != nullptr)
   {
+    // add the trigger term
     d_equalityEngine->addTriggerTerm(n, d_id);
   }
 }

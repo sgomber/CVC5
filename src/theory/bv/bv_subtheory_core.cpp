@@ -478,11 +478,6 @@ Node CoreSolver::getModelValue(TNode var) {
   return result;
 }
 
-void CoreSolver::addSharedTerm(TNode t)
-{
-  d_equalityEngine->addTriggerTerm(t, THEORY_BV);
-}
-
 EqualityStatus CoreSolver::getEqualityStatus(TNode a, TNode b)
 {
   if (d_equalityEngine->areEqual(a, b))

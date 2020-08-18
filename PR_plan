@@ -10,14 +10,14 @@ PR done:
 
 PR current:
 
-(4) Merge collectModelInfo *
+(4) Merge build model passes *
 (6) Split inheritence in equality engine manager to own files, dynamic model (req 3) *
+(9) Standardize collectModelValues (req 8)
 
 PR planned:
 
-(5) Merge collectModelInfo part two (req 4)
+(5) Merge build model passes part two (req 4)
 (7) Model manager / model manager distributed (req 6, 10)
-(9) Standardize collectModelValues (req 8)
 (11) CombinationEngine (req 7)
 (12) Combination care graph (req 11)
 (13) Cleanup model building and enable model manager distributed (req 7, 12)

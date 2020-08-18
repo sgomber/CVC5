@@ -113,7 +113,6 @@ class CoreSolver : public SubtheorySolver {
   void explain(TNode literal, std::vector<TNode>& assumptions) override;
   bool collectModelInfo(TheoryModel* m, bool fullModel) override;
   Node getModelValue(TNode var) override;
-  void addSharedTerm(TNode t) override;
   EqualityStatus getEqualityStatus(TNode a, TNode b) override;
   bool hasTerm(TNode node) const;
   void addTermToEqualityEngine(TNode node);

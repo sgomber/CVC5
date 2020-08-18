@@ -113,7 +113,6 @@ class TheorySep : public Theory {
   TrustNode explain(TNode n) override;
 
  public:
-  void addSharedTerm(TNode t) override;
   EqualityStatus getEqualityStatus(TNode a, TNode b) override;
   void computeCareGraph() override;
 

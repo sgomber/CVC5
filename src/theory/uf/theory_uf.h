@@ -218,7 +218,6 @@ private:
   void ppStaticLearn(TNode in, NodeBuilder<>& learned) override;
   void presolve() override;
 
-  void addSharedTerm(TNode n) override;
   void computeCareGraph() override;
 
   EqualityStatus getEqualityStatus(TNode a, TNode b) override;
