@@ -309,7 +309,6 @@ private:
   TrustNode expandDefinition(Node n) override;
   TrustNode ppRewrite(TNode n) override;
   void presolve() override;
-  EqualityStatus getEqualityStatus(TNode a, TNode b) override;
   void shutdown() override {}
   std::string identify() const override
   {
