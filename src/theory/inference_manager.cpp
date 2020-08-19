@@ -19,24 +19,26 @@
 namespace CVC4 {
 namespace theory {
 
-InferenceManager::InferenceManager(TheoryId tid, TheoryState& state, OutputChannel& out)
+InferenceManager::InferenceManager(TheoryId tid,
+                                   TheoryState& state,
+                                   OutputChannel& out)
     : d_theoryId(tid), d_state(state), d_out(out), d_ee(nullptr)
 {
 }
 
-void InferenceManager::setEqualityEngine(eq::EqualityEngine* ee) {
-  d_ee = ee;
-}
+void InferenceManager::setEqualityEngine(eq::EqualityEngine* ee) { d_ee = ee; }
 
-void InferenceManager::conflictConstantEq(TNode a, TNode b) {
+void InferenceManager::conflictConstantEq(TNode a, TNode b)
+{
   if (!d_state.isInConflict())
   {
     TrustNode tconf = mkTrustedConflictConstantEq(a, b);
     trustedConflict(tconf);
-  }  
+  }
 }
 
-void InferenceManager::conflict(TNode conf) {
+void InferenceManager::conflict(TNode conf)
+{
   if (!d_state.isInConflict())
   {
     TrustNode tconf = mkTrustedConflict(conf);
@@ -44,8 +46,8 @@ void InferenceManager::conflict(TNode conf) {
   }
 }
 
-void InferenceManager::trustedConflict(TrustNode tconf) 
-{  
+void InferenceManager::trustedConflict(TrustNode tconf)
+{
   if (!d_state.isInConflict())
   {
     d_state.notifyInConflict();

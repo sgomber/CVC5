@@ -19,9 +19,9 @@
 
 #include "expr/node.h"
 #include "theory/output_channel.h"
+#include "theory/theory_id.h"
 #include "theory/theory_state.h"
 #include "theory/trust_node.h"
-#include "theory/theory_id.h"
 
 namespace CVC4 {
 namespace theory {
@@ -62,6 +62,7 @@ class InferenceManager
    * (which was previously propagated by this theory).
    */
   virtual TrustNode explain(TNode n);
+
  protected:
   /** Make trusted conflict */
   virtual TrustNode mkTrustedConflictConstantEq(TNode a, TNode b);
