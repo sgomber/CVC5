@@ -134,9 +134,7 @@ void TheorySets::notifyPreRegisterTerm(TNode node)
   switch (node.getKind())
   {
     case kind::EQUAL:
-    case kind::MEMBER: 
-      preRegisterTermDefault(node);
-      break;
+    case kind::MEMBER: preRegisterTermDefault(node); break;
     case kind::CARD: d_equalityEngine->addTriggerTerm(node, THEORY_SETS); break;
     default: d_equalityEngine->addTerm(node); break;
   }

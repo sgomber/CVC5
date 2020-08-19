@@ -622,7 +622,7 @@ void Theory::preRegisterTermDefault(TNode node)
     }
     else
     {
-      //d_equalityEngine->addTerm(node);
+      // d_equalityEngine->addTerm(node);
     }
   }
 }
