@@ -996,31 +996,8 @@ void TheoryFp::check(Effort level) {
     }
   }
 
-  // Resolve the abstractions for the conversion lemmas
-  //  if (level == EFFORT_COMBINATION) {
-  if (level == EFFORT_LAST_CALL)
-  {
-    Trace("fp") << "TheoryFp::check(): checking abstractions" << std::endl;
-    TheoryModel *m = getValuation().getModel();
-    bool lemmaAdded = false;
-
-    for (abstractionMapType::const_iterator i = abstractionMap.begin();
-         i != abstractionMap.end();
-         ++i)
-    {
-      if (m->hasTerm((*i).first))
-      {  // Is actually used in the model
-        lemmaAdded |= refineAbstraction(m, (*i).first, (*i).second);
-      }
-    }
-  }
-
-  Trace("fp") << "TheoryFp::check(): completed" << std::endl;
-
-  /* Checking should be handled by the bit-vector engine */
-  return;
-
-} /* TheoryFp::check() */
+  postCheck(level);
+}
 
 void TheoryFp::postCheck(Effort level)
 {

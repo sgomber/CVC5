@@ -315,16 +315,6 @@ void TheorySep::check(Effort e) {
 
     bool polarity = fact.getKind() != kind::NOT;
     TNode atom = polarity ? fact : fact[0];
-    /*
-    if( atom.getKind()==kind::SEP_EMP ){
-      TypeNode tn = atom[0].getType();
-      if( d_emp_arg.find( tn )==d_emp_arg.end() ){
-        d_emp_arg[tn] = atom[0];
-      }else{
-        //normalize argument TODO
-      }
-    }
-    */
     TNode s_atom = atom.getKind()==kind::SEP_LABEL ? atom[0] : atom;
     TNode s_lbl = atom.getKind()==kind::SEP_LABEL ? atom[1] : TNode::null();
     bool is_spatial = s_atom.getKind()==kind::SEP_STAR || s_atom.getKind()==kind::SEP_WAND || s_atom.getKind()==kind::SEP_PTO || s_atom.getKind()==kind::SEP_EMP;
@@ -505,8 +495,12 @@ void TheorySep::check(Effort e) {
       }
     }
   }
+  postCheck(e);
+}
 
-  if( e == EFFORT_LAST_CALL && !d_conflict && !d_valuation.needCheck() ){
+void TheorySep::postCheck(Effort level)
+{
+  if( level == EFFORT_LAST_CALL && !d_conflict && !d_valuation.needCheck() ){
     Trace("sep-process") << "Checking heap at full effort..." << std::endl;
     d_label_model.clear();
     d_tmodel.clear();
@@ -817,17 +811,7 @@ void TheorySep::check(Effort e) {
       }
     }
   }
-  Trace("sep-check") << "Sep::check(): " << e << " done, conflict=" << d_conflict.get() << endl;
-}
-
-void TheorySep::preCheck(Effort level)
-{
-  // TODO
-}
-
-void TheorySep::postCheck(Effort level)
-{
-  // TODO
+  Trace("sep-check") << "Sep::check(): " << level << " done, conflict=" << d_conflict.get() << endl;
 }
 
 bool TheorySep::preprocessNewFact(TNode atom, bool polarity, TNode fact)

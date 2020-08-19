@@ -642,12 +642,6 @@ class Theory {
    */
   virtual void check(Effort level = EFFORT_FULL);
   /**
-   * process pending facts
-   *
-   * TODO: inline into check
-   */
-  void processPendingFacts();
-  /**
    * Pre-check, called before the fact queue of the theory is processed.
    */
   virtual void preCheck(Effort level = EFFORT_FULL);

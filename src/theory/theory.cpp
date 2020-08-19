@@ -505,7 +505,38 @@ void Theory::check(Effort level)
   // pre-check at level
   preCheck(level);
   // process the pending fact queue
-  processPendingFacts();
+  while (!done() && !isInConflict())
+  {
+    // Get the next assertion from the fact queue
+    Assertion assertion = get();
+    TNode fact = assertion.d_assertion;
+    bool polarity = fact.getKind() != kind::NOT;
+    TNode atom = polarity ? fact : fact[0];
+    // call the preprocess method
+    if (preprocessNewFact(atom, polarity, fact))
+    {
+      // handled in theory-specific way that doesn't involve equality engine
+      continue;
+    }
+    // if we have an equality engine, assert to it now
+    if (d_equalityEngine != nullptr)
+    {
+      if (atom.getKind() == kind::EQUAL)
+      {
+        d_equalityEngine->assertEquality(atom, polarity, fact);
+      }
+      else
+      {
+        d_equalityEngine->assertPredicate(atom, polarity, fact);
+      }
+    }
+    // if we aren't already in conflict
+    if (!isInConflict())
+    {
+      // notify the theory of the new fact
+      notifyNewFact(atom, polarity, fact);
+    }
+  }
   // post-check at level
   postCheck(level);
 }
@@ -551,42 +582,6 @@ void Theory::conflict(TNode a, TNode b)
   notifyInConflict();
   // send the conflict
   d_out->trustedConflict(tconf);
-}
-
-void Theory::processPendingFacts()
-{
-  while (!done() && !isInConflict())
-  {
-    // Get the next assertion from the fact queue
-    Assertion assertion = get();
-    TNode fact = assertion.d_assertion;
-    bool polarity = fact.getKind() != kind::NOT;
-    TNode atom = polarity ? fact : fact[0];
-    // call the preprocess method
-    if (preprocessNewFact(atom, polarity, fact))
-    {
-      // handled in theory-specific way that doesn't involve equality engine
-      continue;
-    }
-    // if we have an equality engine, assert to it now
-    if (d_equalityEngine != nullptr)
-    {
-      if (atom.getKind() == kind::EQUAL)
-      {
-        d_equalityEngine->assertEquality(atom, polarity, fact);
-      }
-      else
-      {
-        d_equalityEngine->assertPredicate(atom, polarity, fact);
-      }
-    }
-    // if we aren't already in conflict
-    if (!isInConflict())
-    {
-      // notify the theory of the new fact
-      notifyNewFact(atom, polarity, fact);
-    }
-  }
 }
 
 void Theory::preCheck(Effort level) {}
