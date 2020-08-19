@@ -82,9 +82,9 @@ class TheorySets : public Theory
   void propagate(Effort) override;
   bool isEntailed(Node n, bool pol);
   /** Proagate out to output channel */
-  bool propagate(TNode lit) override;
+  bool propagate(TNode lit);
   /** generate and send out conflict node */
-  void conflict(TNode a, TNode b) override;
+  void conflict(TNode a, TNode b);
 
  private:
   /** Functions to handle callbacks from equality engine */

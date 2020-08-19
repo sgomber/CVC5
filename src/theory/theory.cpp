@@ -572,49 +572,6 @@ void Theory::check(Effort level)
   postCheck(level);
 }
 
-bool Theory::isInConflict() const
-{
-  if (d_theoryState != nullptr)
-  {
-    return d_theoryState->isInConflict();
-  }
-  return false;
-}
-
-void Theory::notifyInConflict()
-{
-  if (d_theoryState != nullptr)
-  {
-    d_theoryState->notifyInConflict();
-  }
-}
-
-bool Theory::propagate(TNode lit)
-{
-  // If already in conflict, no more propagation
-  if (isInConflict())
-  {
-    return false;
-  }
-  // Propagate out
-  bool ok = d_out->propagate(lit);
-  if (!ok)
-  {
-    notifyInConflict();
-  }
-  return ok;
-}
-
-void Theory::conflict(TNode a, TNode b)
-{
-  // explain the conflict
-  TrustNode tconf = explainConflict(a, b);
-  // we are now in conflict
-  notifyInConflict();
-  // send the conflict
-  d_out->trustedConflict(tconf);
-}
-
 void Theory::preCheck(Effort level) {}
 
 void Theory::postCheck(Effort level) {}

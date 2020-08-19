@@ -116,9 +116,9 @@ class TheoryStrings : public Theory {
   /** needs check last effort */
   bool needsCheckLastEffort() override;
   /** Conflict when merging two constants */
-  void conflict(TNode a, TNode b) override;
+  void conflict(TNode a, TNode b);
   /** propagate method */
-  bool propagate(TNode literal) override;
+  bool propagate(TNode literal);
   /** called when a new equivalence class is created */
   void eqNotifyNewClass(TNode t);
   /** preprocess rewrite */

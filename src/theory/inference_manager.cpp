@@ -19,18 +19,39 @@
 namespace CVC4 {
 namespace theory {
 
-InferenceManager::InferenceManager(TheoryState& state, OutputChannel& out)
-    : d_state(state), d_out(out), d_ee(nullptr)
+InferenceManager::InferenceManager(TheoryId tid, TheoryState& state, OutputChannel& out)
+    : d_theoryId(tid), d_state(state), d_out(out), d_ee(nullptr)
 {
 }
 
-void InferenceManager::setEqualityEngine(eq::EqualityEngine* ee) {}
+void InferenceManager::setEqualityEngine(eq::EqualityEngine* ee) {
+  d_ee = ee;
+}
 
-void InferenceManager::conflictConstantEq(TNode a, TNode b) {}
+void InferenceManager::conflictConstantEq(TNode a, TNode b) {
+  if (!d_state.isInConflict())
+  {
+    TrustNode tconf = mkTrustedConflictConstantEq(a, b);
+    trustedConflict(tconf);
+  }  
+}
 
-void InferenceManager::conflict(TNode conf) {}
+void InferenceManager::conflict(TNode conf) {
+  if (!d_state.isInConflict())
+  {
+    TrustNode tconf = mkTrustedConflict(conf);
+    trustedConflict(tconf);
+  }
+}
 
-void InferenceManager::trustedConflict(TrustNode tconf) {}
+void InferenceManager::trustedConflict(TrustNode tconf) 
+{  
+  if (!d_state.isInConflict())
+  {
+    d_state.notifyInConflict();
+    d_out.trustedConflict(tconf);
+  }
+}
 
 bool InferenceManager::propagate(TNode lit)
 {
@@ -48,7 +69,25 @@ bool InferenceManager::propagate(TNode lit)
   return ok;
 }
 
+TrustNode InferenceManager::explain(TNode n)
+{
+  // TODO
+  Unimplemented() << "Theory " << d_theoryId
+                  << " sent a conflict but doesn't implement the "
+                     "Theory::explain() interface!";
+}
+
+TrustNode InferenceManager::mkTrustedConflictConstantEq(TNode a, TNode b)
+{
+  // TODO
+  Unimplemented() << "Theory " << d_theoryId << " mkTrustedConflictConstantEq";
+}
+
+TrustNode InferenceManager::mkTrustedConflict(TNode conf)
+{
+  // TODO
+  Unimplemented() << "Theory " << d_theoryId << " mkTrustedConflict";
+}
+
 }  // namespace theory
 }  // namespace CVC4
-
-#endif /* CVC4__THEORY__INFERENCE_MANAGER_H */

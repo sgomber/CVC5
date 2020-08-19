@@ -591,29 +591,6 @@ class Theory {
   virtual void propagate(Effort level = EFFORT_FULL) {}
 
   /**
-   * is in conflict?
-   * TODO: non-virtual (always use state)
-   */
-  virtual bool isInConflict() const;
-  /**
-   * notify in conflict
-   * TODO: non-virtual (always use state)
-   */
-  virtual void notifyInConflict();
-  /**
-   * T-propagate literal lit encountered by equality engine,
-   *
-   * TODO: non-virtual (use template)
-   */
-  virtual bool propagate(TNode lit);
-  /**
-   * Raise conflict, called when constants a and b merge
-   *
-   * TODO: non-virtual (use template)
-   */
-  virtual void conflict(TNode a, TNode b);
-
-  /**
    * Return an explanation for the literal represented by parameter n
    * (which was previously propagated by this theory).
    */

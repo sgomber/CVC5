@@ -21,6 +21,7 @@
 #include "theory/output_channel.h"
 #include "theory/theory_state.h"
 #include "theory/trust_node.h"
+#include "theory/theory_id.h"
 
 namespace CVC4 {
 namespace theory {
@@ -35,7 +36,7 @@ class EqualityEngine;
 class InferenceManager
 {
  public:
-  InferenceManager(TheoryState& state, OutputChannel& out);
+  InferenceManager(TheoryId tid, TheoryState& state, OutputChannel& out);
   virtual ~InferenceManager() {}
   /**
    * Set equality engine, ee is a pointer to the official equality engine
@@ -56,8 +57,18 @@ class InferenceManager
    * T-propagate literal lit encountered by equality engine,
    */
   bool propagate(TNode lit);
-
+  /**
+   * Return an explanation for the literal represented by parameter n
+   * (which was previously propagated by this theory).
+   */
+  virtual TrustNode explain(TNode n);
  protected:
+  /** Make trusted conflict */
+  virtual TrustNode mkTrustedConflictConstantEq(TNode a, TNode b);
+  /** Make trusted conflict */
+  virtual TrustNode mkTrustedConflict(TNode conf);
+  /** The identifier */
+  TheoryId d_theoryId;
   /** Reference to the state of theory */
   TheoryState& d_state;
   /** Reference to the output channel of the theory */

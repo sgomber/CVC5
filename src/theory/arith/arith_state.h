@@ -28,8 +28,7 @@ class TheoryArithPrivate;
 /**
  * The arithmetic state.
  *
- * This is a temporary wrapper for making a state object out of the old
- * arithmetic solver.
+ * This is a wrapper for making a state object out of TheoryArithPrivate.
  */
 class ArithState : public TheoryState
 {

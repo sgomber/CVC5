@@ -279,9 +279,9 @@ private:
   void finishInit() override;
   //--------------------------------- end initialization
   /** propagate */
-  bool propagate(TNode literal) override;
+  bool propagate(TNode literal);
   /** Conflict when merging two constants */
-  void conflict(TNode a, TNode b) override;
+  void conflict(TNode a, TNode b);
   /** explain */
   void addAssumptions( std::vector<TNode>& assumptions, std::vector<TNode>& tassumptions );
   void explainEquality( TNode a, TNode b, bool polarity, std::vector<TNode>& assumptions );

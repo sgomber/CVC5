@@ -153,16 +153,6 @@ void TheoryArith::propagate(Effort e) {
   d_internal->propagate(e);
 }
 
-bool TheoryArith::propagate(TNode literal)
-{
-  // FIXME
-  return true;
-}
-void TheoryArith::conflict(TNode a, TNode b)
-{
-  // FIXME
-}
-
 bool TheoryArith::collectModelInfo(TheoryModel* m)
 {
   std::set<Node> termSet;

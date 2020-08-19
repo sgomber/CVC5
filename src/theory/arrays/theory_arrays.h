@@ -213,7 +213,7 @@ class TheoryArrays : public Theory {
   context::CDO<unsigned> d_literalsToPropagateIndex;
 
   /** Should be called to propagate the literal.  */
-  bool propagate(TNode literal) override;
+  bool propagate(TNode literal);
 
   /** Explain why this literal is true by adding assumptions */
   void explain(TNode literal, std::vector<TNode>& assumptions,
@@ -360,7 +360,7 @@ class TheoryArrays : public Theory {
   NotifyClass d_notify;
 
   /** Conflict when merging constants */
-  void conflict(TNode a, TNode b) override;
+  void conflict(TNode a, TNode b);
 
   /** The conflict node */
   Node d_conflictNode;
