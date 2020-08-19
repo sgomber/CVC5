@@ -308,8 +308,8 @@ private:
   void preRegisterTerm(TNode n) override;
   TrustNode expandDefinition(Node n) override;
   TrustNode ppRewrite(TNode n) override;
-  void presolve() override;
-  void shutdown() override {}
+  /** Get the equality status of a and b */
+  EqualityStatus getEqualityStatus(TNode a, TNode b) override;
   std::string identify() const override
   {
     return std::string("TheoryDatatypes");

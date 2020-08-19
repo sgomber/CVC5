@@ -187,8 +187,6 @@ class TheorySetsPrivate {
 
   Node explain(TNode);
 
-  EqualityStatus getEqualityStatus(TNode a, TNode b);
-
   void preRegisterTerm(TNode node);
 
   /** expandDefinition

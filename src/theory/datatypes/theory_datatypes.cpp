@@ -718,11 +718,6 @@ TrustNode TheoryDatatypes::expandDefinition(Node n)
   return TrustNode::null();
 }
 
-void TheoryDatatypes::presolve()
-{
-  Debug("datatypes") << "TheoryDatatypes::presolve()" << endl;
-}
-
 TrustNode TheoryDatatypes::ppRewrite(TNode in)
 {
   Debug("tuprec") << "TheoryDatatypes::ppRewrite(" << in << ")" << endl;
@@ -1382,6 +1377,21 @@ void TheoryDatatypes::collapseSelector( Node s, Node c ) {
       d_infer_exp.push_back(peq);
     }
   }
+}
+
+EqualityStatus TheoryDatatypes::getEqualityStatus(TNode a, TNode b){
+  Assert(d_equalityEngine->hasTerm(a) && d_equalityEngine->hasTerm(b));
+  if (d_equalityEngine->areEqual(a, b))
+  {
+    // The terms are implied to be equal
+    return EQUALITY_TRUE;
+  }
+  if (d_equalityEngine->areDisequal(a, b, false))
+  {
+    // The terms are implied to be dis-equal
+    return EQUALITY_FALSE;
+  }
+  return EQUALITY_FALSE_IN_MODEL;
 }
 
 void TheoryDatatypes::addCarePairs(TNodeTrie* t1,

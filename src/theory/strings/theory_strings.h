@@ -97,8 +97,6 @@ class TheoryStrings : public Theory {
   void shutdown() override {}
   /** add shared term */
   void addSharedTerm(TNode n) override;
-  /** get equality status */
-  EqualityStatus getEqualityStatus(TNode a, TNode b) override;
   /** preregister term */
   void preRegisterTerm(TNode n) override;
   /** Expand definition */

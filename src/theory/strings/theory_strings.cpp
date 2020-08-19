@@ -176,23 +176,6 @@ void TheoryStrings::addSharedTerm(TNode t) {
   Debug("strings") << "TheoryStrings::addSharedTerm() finished" << std::endl;
 }
 
-EqualityStatus TheoryStrings::getEqualityStatus(TNode a, TNode b) {
-  if (d_equalityEngine->hasTerm(a) && d_equalityEngine->hasTerm(b))
-  {
-    if (d_equalityEngine->areEqual(a, b))
-    {
-      // The terms are implied to be equal
-      return EQUALITY_TRUE;
-    }
-    if (d_equalityEngine->areDisequal(a, b, false))
-    {
-      // The terms are implied to be dis-equal
-      return EQUALITY_FALSE;
-    }
-  }
-  return EQUALITY_UNKNOWN;
-}
-
 bool TheoryStrings::propagate(TNode literal) {
   Debug("strings-propagate") << "TheoryStrings::propagate(" << literal  << ")" << std::endl;
   // If already in conflict, no more propagation

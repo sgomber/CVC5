@@ -1181,37 +1181,6 @@ bool TheorySetsPrivate::isCareArg(Node n, unsigned a)
   }
 }
 
-EqualityStatus TheorySetsPrivate::getEqualityStatus(TNode a, TNode b)
-{
-  Assert(d_equalityEngine->hasTerm(a) && d_equalityEngine->hasTerm(b));
-  if (d_equalityEngine->areEqual(a, b))
-  {
-    // The terms are implied to be equal
-    return EQUALITY_TRUE;
-  }
-  if (d_equalityEngine->areDisequal(a, b, false))
-  {
-    // The terms are implied to be dis-equal
-    return EQUALITY_FALSE;
-  }
-  return EQUALITY_UNKNOWN;
-  /*
-  Node aModelValue = d_external.d_valuation.getModelValue(a);
-  if(aModelValue.isNull()) { return EQUALITY_UNKNOWN; }
-  Node bModelValue = d_external.d_valuation.getModelValue(b);
-  if(bModelValue.isNull()) { return EQUALITY_UNKNOWN; }
-  if( aModelValue == bModelValue ) {
-    // The term are true in current model
-    return EQUALITY_TRUE_IN_MODEL;
-  } else {
-    return EQUALITY_FALSE_IN_MODEL;
-  }
-  */
-  // }
-  // //TODO: can we be more precise sometimes?
-  // return EQUALITY_UNKNOWN;
-}
-
 /******************** Model generation ********************/
 /******************** Model generation ********************/
 /******************** Model generation ********************/

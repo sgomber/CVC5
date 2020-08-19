@@ -72,7 +72,6 @@ class TheorySets : public Theory
   bool collectModelValues(TheoryModel* m, std::set<Node>& termSet) override;
   void computeCareGraph() override;
   TrustNode explain(TNode) override;
-  EqualityStatus getEqualityStatus(TNode a, TNode b) override;
   Node getModelValue(TNode) override;
   std::string identify() const override { return "THEORY_SETS"; }
   void preRegisterTerm(TNode node) override;

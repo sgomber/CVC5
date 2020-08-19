@@ -218,6 +218,7 @@ private:
 
   void computeCareGraph() override;
 
+  /** Get the equality status of a and b */
   EqualityStatus getEqualityStatus(TNode a, TNode b) override;
 
   std::string identify() const override { return "THEORY_UF"; }

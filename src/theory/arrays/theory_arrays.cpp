@@ -901,23 +901,6 @@ void TheoryArrays::addSharedTerm(TNode t) {
   }
 }
 
-
-EqualityStatus TheoryArrays::getEqualityStatus(TNode a, TNode b) {
-  Assert(d_equalityEngine->hasTerm(a) && d_equalityEngine->hasTerm(b));
-  if (d_equalityEngine->areEqual(a, b))
-  {
-    // The terms are implied to be equal
-    return EQUALITY_TRUE;
-  }
-  else if (d_equalityEngine->areDisequal(a, b, false))
-  {
-    // The terms are implied to be dis-equal
-    return EQUALITY_FALSE;
-  }
-  return EQUALITY_UNKNOWN;//FALSE_IN_MODEL;
-}
-
-
 void TheoryArrays::checkPair(TNode r1, TNode r2)
 {
   Debug("arrays::sharing") << "TheoryArrays::computeCareGraph(): checking reads " << r1 << " and " << r2 << std::endl;

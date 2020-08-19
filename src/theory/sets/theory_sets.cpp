@@ -123,10 +123,6 @@ TrustNode TheorySets::explain(TNode node)
   return TrustNode::mkTrustPropExp(node, exp, nullptr);
 }
 
-EqualityStatus TheorySets::getEqualityStatus(TNode a, TNode b) {
-  return d_internal->getEqualityStatus(a, b);
-}
-
 Node TheorySets::getModelValue(TNode node) {
   return Node::null();
 }
