@@ -21,8 +21,9 @@ namespace theory {
 
 InferenceManager::InferenceManager(TheoryId tid,
                                    TheoryState& state,
-                                   OutputChannel& out)
-    : d_theoryId(tid), d_state(state), d_out(out), d_ee(nullptr)
+                                   OutputChannel& out,
+                                   ProofNodeManager* pnm)
+    : d_theoryId(tid), d_state(state), d_out(out), d_ee(nullptr), d_pnm(pnm)
 {
 }
 

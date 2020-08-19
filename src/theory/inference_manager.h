@@ -36,7 +36,8 @@ class EqualityEngine;
 class InferenceManager
 {
  public:
-  InferenceManager(TheoryId tid, TheoryState& state, OutputChannel& out);
+  InferenceManager(TheoryId tid, TheoryState& state, OutputChannel& out,
+                                   ProofNodeManager* pnm);
   virtual ~InferenceManager() {}
   /**
    * Set equality engine, ee is a pointer to the official equality engine
@@ -76,6 +77,8 @@ class InferenceManager
   OutputChannel& d_out;
   /** Pointer to equality engine of the theory. */
   eq::EqualityEngine* d_ee;
+  /** The proof node manager */
+  ProofNodeManager* d_pnm;
 };
 
 }  // namespace theory
