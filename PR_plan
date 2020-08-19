@@ -12,7 +12,7 @@ PR current:
 
 (4) Merge build model passes *
 (6) Split inheritence in equality engine manager to own files, dynamic model (req 3) *
-(9) Standardize collectModelValues (req 8)
+(9) Standardize Theory templates
 
 PR planned:
 
@@ -25,3 +25,5 @@ PR planned:
 (15) Relevant terms for model and model builder (req 5)
 (16) Model manager central (req 15)
 (18) Strings/sets solver state inherit from solver state
+(19) per each theory, update to standard templates (req 9)
+(20) activate theory templates

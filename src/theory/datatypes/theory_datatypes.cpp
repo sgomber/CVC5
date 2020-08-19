@@ -166,14 +166,7 @@ void TheoryDatatypes::check(Effort e) {
   }
   Assert(d_pending.empty() && d_pending_merge.empty());
   d_addedLemma = false;
-  
-  if( e == EFFORT_LAST_CALL ){
-    Assert(d_sygusExtension != nullptr);
-    std::vector< Node > lemmas;
-    d_sygusExtension->check(lemmas);
-    doSendLemmas( lemmas );
-    return;
-  }
+
 
   TimerStat::CodeTimer checkTimer(d_checkTime);
 
@@ -199,8 +192,20 @@ void TheoryDatatypes::check(Effort e) {
     assertFact( fact, fact );
     flushPendingFacts();
   }
+  
+  postCheck(e);
+}
 
-  if( e == EFFORT_FULL && !d_conflict && !d_addedLemma && !d_valuation.needCheck() ) {
+void TheoryDatatypes::postCheck(Effort level)
+{
+  if( level == EFFORT_LAST_CALL ){
+    Assert(d_sygusExtension != nullptr);
+    std::vector< Node > lemmas;
+    d_sygusExtension->check(lemmas);
+    doSendLemmas( lemmas );
+    return;
+  }
+  else if( level == EFFORT_FULL && !d_conflict && !d_addedLemma && !d_valuation.needCheck() ) {
     //check for cycles
     Assert(d_pending.empty() && d_pending_merge.empty());
     do {
@@ -215,7 +220,7 @@ void TheoryDatatypes::check(Effort e) {
     }while( d_addedFact );
   
     //check for splits
-    Trace("datatypes-debug") << "Check for splits " << e << endl;
+    Trace("datatypes-debug") << "Check for splits " << endl;
     do {
       d_addedFact = false;
       std::map< TypeNode, Node > rec_singletons;
@@ -283,8 +288,6 @@ void TheoryDatatypes::check(Effort e) {
               //all other cases
               std::vector< bool > pcons;
               getPossibleCons( eqc, n, pcons );
-              //std::map< int, bool > sel_apps;
-              //getSelectorsForCons( n, sel_apps );
               //check if we do not need to resolve the constructor type for this equivalence class.
               // this is if there are no selectors for this equivalence class, and its possible values are infinite,
               //  then do not split.
@@ -376,18 +379,6 @@ void TheoryDatatypes::check(Effort e) {
         Trace("datatypes-debug") << "Flush pending facts..." << std::endl;
         flushPendingFacts();
       }
-      /*
-      if( !d_conflict ){
-        if( options::dtRewriteErrorSel() ){
-          bool innerAddedFact = false;
-          do {
-            collapseSelectors();
-            innerAddedFact = !d_pending.empty() || !d_pending_merge.empty();
-            flushPendingFacts();
-          }while( !d_conflict && innerAddedFact );
-        }
-      }
-      */
     }while( !d_conflict && !d_addedLemma && d_addedFact );
     Trace("datatypes-debug") << "Finished, conflict=" << d_conflict << ", lemmas=" << d_addedLemma << std::endl;
     if( !d_conflict ){
@@ -396,19 +387,10 @@ void TheoryDatatypes::check(Effort e) {
     }
   }
 
-  Trace("datatypes-check") << "Finished check effort " << e << std::endl;
+  Trace("datatypes-check") << "Finished check effort " << level << std::endl;
   if( Debug.isOn("datatypes") || Debug.isOn("datatypes-split") ) {
     Notice() << "TheoryDatatypes::check(): done" << endl;
   }
-}
-void TheoryDatatypes::preCheck(Effort level)
-{
-  // TODO
-}
-
-void TheoryDatatypes::postCheck(Effort level)
-{
-  // TODO
 }
 
 bool TheoryDatatypes::preprocessNewFact(TNode atom, bool polarity, TNode fact)
