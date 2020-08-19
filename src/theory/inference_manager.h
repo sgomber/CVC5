@@ -39,8 +39,10 @@ class EqualityEngine;
 class InferenceManager
 {
  public:
-  InferenceManager(TheoryId tid, TheoryState& state, OutputChannel& out,
-                                   ProofNodeManager* pnm);
+  InferenceManager(TheoryId tid,
+                   TheoryState& state,
+                   OutputChannel& out,
+                   ProofNodeManager* pnm);
   virtual ~InferenceManager() {}
   /**
    * Set equality engine, ee is a pointer to the official equality engine
