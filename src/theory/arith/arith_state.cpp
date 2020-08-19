@@ -12,7 +12,7 @@
  ** \brief Arithmetic theory state.
  **/
 
-#include "theory/theory_state.h"
+#include "theory/arith/arith_state.h"
 
 #include "theory/arith/theory_arith_private.h"
 
