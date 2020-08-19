@@ -166,14 +166,14 @@ bool TheoryStrings::areCareDisequal( TNode x, TNode y ) {
   return false;
 }
 
-void TheoryStrings::addSharedTerm(TNode t) {
-  Debug("strings") << "TheoryStrings::addSharedTerm(): "
+void TheoryStrings::notifySharedTerm(TNode t) {
+  Debug("strings") << "TheoryStrings::notifySharedTerm(): "
                      << t << " " << t.getType().isBoolean() << endl;
   if (options::stringExp())
   {
     d_esolver.addSharedTerm(t);
   }
-  Debug("strings") << "TheoryStrings::addSharedTerm() finished" << std::endl;
+  Debug("strings") << "TheoryStrings::notifySharedTerm() finished" << std::endl;
 }
 
 bool TheoryStrings::propagate(TNode literal) {

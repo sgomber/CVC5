@@ -144,8 +144,8 @@ void CombinationEngine::notifyAssertFact(TNode atom)
         if (Theory::setContains(id, theories))
         {
           Theory* t = d_te.theoryOf(id);
-          // call the notify shared term method
-          t->notifySharedTerm(term);
+          // call the add shared term method
+          t->addSharedTerm(term);
         }
       }
       d_sharedTerms->markNotified(term, theories);

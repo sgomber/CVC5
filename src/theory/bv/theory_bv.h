@@ -262,7 +262,7 @@ class TheoryBV : public Theory {
    */
   void explain(TNode literal, std::vector<TNode>& assumptions);
 
-  void addSharedTerm(TNode t) override;
+  void notifySharedTerm(TNode t) override;
 
   bool isSharedTerm(TNode t) { return d_sharedTermsSet.contains(t); }
 

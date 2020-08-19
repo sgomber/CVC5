@@ -321,8 +321,11 @@ class Theory {
    * This method is called to notify a theory that the node n should
    * be considered a "shared term" by this theory
    */
-  virtual void addSharedTerm(TNode n);
+  virtual void notifySharedTerm(TNode n);
 
+  /** 
+   */
+  virtual void notifyPreRegisterTerm(TNode node);
  public:
   //--------------------------------- initialization
   /**
@@ -543,6 +546,8 @@ class Theory {
 
   /**
    * Pre-register a term.  Done one time for a Node per SAT context level.
+   * 
+   * TODO: non-virtual
    */
   virtual void preRegisterTerm(TNode);
 
@@ -557,10 +562,7 @@ class Theory {
   }
 
   /** Add shared term to the theory. */
-  void notifySharedTerm(TNode node);
-
-  /** Notify pre-register term */
-  void notifyPreRegisterTerm(TNode node);
+  void addSharedTerm(TNode node);
 
   /**
    * Return the current theory care graph. Theories should overload

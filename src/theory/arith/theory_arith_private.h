@@ -469,7 +469,7 @@ public:
 
   EqualityStatus getEqualityStatus(TNode a, TNode b);
 
-  void addSharedTerm(TNode n);
+  void notifySharedTerm(TNode n);
 
   Node getModelValue(TNode var);
 

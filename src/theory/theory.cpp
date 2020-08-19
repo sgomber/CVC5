@@ -271,39 +271,7 @@ TheoryId Theory::theoryOf(options::TheoryOfMode mode, TNode node)
 
 void Theory::notifySharedTerm(TNode n)
 {
-  Debug("sharing") << "Theory::notifySharedTerm<" << getId() << ">(" << n << ")"
-                   << endl;
-  Debug("theory::assertions")
-      << "Theory::notifySharedTerm<" << getId() << ">(" << n << ")" << endl;
-  d_sharedTerms.push_back(n);
-  // now call theory-specific addSharedTerm
-  addSharedTerm(n);
-  // if we have an equality engine, add the trigger term
-  if (d_equalityEngine != nullptr)
-  {
-    d_equalityEngine->addTriggerTerm(n, d_id);
-  }
-}
-
-void Theory::notifyPreRegisterTerm(TNode node)
-{
-  if (d_equalityEngine != nullptr)
-  {
-    if (node.getKind() == kind::EQUAL)
-    {
-      d_equalityEngine->addTriggerEquality(node);
-    }
-    else if (node.getType().isBoolean())
-    {
-      d_equalityEngine->addTriggerPredicate(node);
-    }
-    else
-    {
-      d_equalityEngine->addTerm(node);
-    }
-  }
-  // now call theory-specific preRegisterTerm
-  preRegisterTerm(node);
+  // do nothing
 }
 
 void Theory::computeCareGraph() {
@@ -440,6 +408,11 @@ void Theory::computeRelevantTerms(std::set<Node>& termSet, bool includeShared)
 bool Theory::collectModelValues(TheoryModel* m, std::set<Node>& termSet)
 {
   return true;
+}
+
+void Theory::notifyPreRegisterTerm(TNode node)
+{
+  // do nothing 
 }
 
 Theory::PPAssertStatus Theory::ppAssert(TNode in,
@@ -612,14 +585,44 @@ TrustNode Theory::explainConflict(TNode a, TNode b)
                      "Theory::explainConflict() interface!";
 }
 
-void Theory::preRegisterTerm(TNode)
+void Theory::preRegisterTerm(TNode node)
 {
-  // TODO: eq engine trigger?
+  // by default, add as triggers to the equality engine
+  /*
+  if (d_equalityEngine != nullptr)
+  {
+    if (node.getKind() == kind::EQUAL)
+    {
+      d_equalityEngine->addTriggerEquality(node);
+    }
+    else if (node.getType().isBoolean())
+    {
+      d_equalityEngine->addTriggerPredicate(node);
+    }
+    else
+    {
+      d_equalityEngine->addTerm(node);
+    }
+  }
+  */
+  // do theory-specific preRegisterTerm
+  notifyPreRegisterTerm(node);
 }
 
 void Theory::addSharedTerm(TNode n)
 {
-  // do nothing
+  Debug("sharing") << "Theory::addSharedTerm<" << getId() << ">(" << n << ")"
+                   << std::endl;
+  Debug("theory::assertions")
+      << "Theory::addSharedTerm<" << getId() << ">(" << n << ")" << std::endl;
+  d_sharedTerms.push_back(n);
+  // now call theory-specific addSharedTerm
+  notifySharedTerm(n);
+  // if we have an equality engine, add the trigger term
+  if (d_equalityEngine != nullptr)
+  {
+    d_equalityEngine->addTriggerTerm(n, d_id);
+  }
 }
 //--------------------------------- end new standard
 
