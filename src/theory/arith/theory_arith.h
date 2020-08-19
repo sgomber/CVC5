@@ -17,11 +17,11 @@
 
 #pragma once
 
-#include "theory/theory.h"
 #include "expr/node.h"
 #include "proof/arith_proof_recorder.h"
-#include "theory/arith/theory_arith_private_forward.h"
 #include "theory/arith/arith_state.h"
+#include "theory/arith/theory_arith_private_forward.h"
+#include "theory/theory.h"
 
 namespace CVC4 {
 namespace theory {
@@ -130,9 +130,10 @@ class TheoryArith : public Theory {
   {
     d_proofRecorder = proofRecorder;
   }
-private:
-    /** The state object */
-    ArithState d_astate;
+
+ private:
+  /** The state object */
+  ArithState d_astate;
 };/* class TheoryArith */
 
 }/* CVC4::theory::arith namespace */

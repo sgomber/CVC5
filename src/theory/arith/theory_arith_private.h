@@ -325,10 +325,12 @@ public:
   void raiseBlackBoxConflict(Node bb);
 
   /** Returns true iff a conflict has been raised. */
-  inline bool anyConflict() const {
+  inline bool anyConflict() const
+  {
     return !conflictQueueEmpty() || !d_blackBoxConflict.get().isNull();
   }
-private:
+
+ private:
 
   inline bool conflictQueueEmpty() const {
     return d_conflicts.empty();

@@ -19,14 +19,17 @@
 namespace CVC4 {
 namespace theory {
 namespace arith {
-  
-ArithState::ArithState(TheoryArithPrivate& parent, context::Context* c, context::UserContext* u, Valuation val) : TheoryState(c, u, val), d_parent(parent){}
 
-bool ArithState::isInConflict() const
+ArithState::ArithState(TheoryArithPrivate& parent,
+                       context::Context* c,
+                       context::UserContext* u,
+                       Valuation val)
+    : TheoryState(c, u, val), d_parent(parent)
 {
-  return d_parent.anyConflict();
 }
 
-}/* CVC4::theory::arith namespace */
-}/* CVC4::theory namespace */
-}/* CVC4 namespace */
+bool ArithState::isInConflict() const { return d_parent.anyConflict(); }
+
+}  // namespace arith
+}  // namespace theory
+}  // namespace CVC4

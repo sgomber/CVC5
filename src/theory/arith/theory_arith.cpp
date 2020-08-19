@@ -45,8 +45,8 @@ TheoryArith::TheoryArith(context::Context* c,
       d_astate(*d_internal, c, u, valuation)
 {
   smtStatisticsRegistry()->registerStat(&d_ppRewriteTimer);
-  
-    // indicate we are using the default theory state object
+
+  // indicate we are using the default theory state object
   d_theoryState = &d_astate;
 }
 

@@ -22,29 +22,33 @@
 namespace CVC4 {
 namespace theory {
 namespace arith {
-  
+
 class TheoryArithPrivate;
 
 /**
  * The arithmetic state.
- * 
+ *
  * This is a temporary wrapper for making a state object out of the old
  * arithmetic solver.
  */
 class ArithState : public TheoryState
 {
  public:
-  ArithState(TheoryArithPrivate& parent, context::Context* c, context::UserContext* u, Valuation val);
+  ArithState(TheoryArithPrivate& parent,
+             context::Context* c,
+             context::UserContext* u,
+             Valuation val);
   ~ArithState() {}
   /** Are we currently in conflict? */
   bool isInConflict() const override;
+
  private:
   /** reference to parent */
   TheoryArithPrivate& d_parent;
 };
 
-}/* CVC4::theory::arith namespace */
-}/* CVC4::theory namespace */
-}/* CVC4 namespace */
+}  // namespace arith
+}  // namespace theory
+}  // namespace CVC4
 
 #endif
