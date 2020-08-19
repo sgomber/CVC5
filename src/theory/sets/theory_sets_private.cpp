@@ -962,7 +962,7 @@ void TheorySetsPrivate::notifyNewFact(TNode atom, bool polarity, TNode fact)
         {
           Trace("sets-prop")
               << "Propagate mem-eq conflict : " << pexp << std::endl;
-          d_state.setConflict(pexp);
+          d_im.conflict(pexp);
         }
       }
     }
@@ -1371,8 +1371,6 @@ OutputChannel* TheorySetsPrivate::getOutputChannel()
 }
 
 Valuation& TheorySetsPrivate::getValuation() { return d_external.d_valuation; }
-
-SolverState* TheorySetsPrivate::getSolverState() { return &d_state; }
 
 void TheorySetsPrivate::conflict(TNode a, TNode b)
 {
