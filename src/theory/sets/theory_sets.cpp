@@ -37,7 +37,7 @@ TheorySets::TheorySets(context::Context* c,
       d_internal(new TheorySetsPrivate(*this, c, u, valuation)),
       d_notify(*d_internal.get())
 {
-  // use the solver state as the official theory state object
+  // use the state object as the official theory state
   d_theoryState = d_internal->getSolverState();
 }
 
