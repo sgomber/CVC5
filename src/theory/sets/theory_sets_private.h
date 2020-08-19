@@ -190,6 +190,8 @@ class TheorySetsPrivate {
 
   Node explain(TNode);
 
+  void preRegisterTerm(TNode node);
+
   /** expandDefinition
    * If the sets-ext option is not set and we have an extended operator, 
    * we throw an exception. This function is a no-op otherwise.

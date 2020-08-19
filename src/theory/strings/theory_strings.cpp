@@ -565,7 +565,6 @@ bool TheoryStrings::collectModelInfoType(
 
 void TheoryStrings::notifyPreRegisterTerm(TNode n)
 {
-  preRegisterTermDefault(n);
   Trace("strings-preregister")
       << "TheoryStrings::preRegisterTerm: " << n << std::endl;
   d_termReg.preRegisterTerm(n);

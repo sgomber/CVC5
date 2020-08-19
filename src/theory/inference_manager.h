@@ -36,14 +36,14 @@ class EqualityEngine;
 /**
  * The base class for inference manager.
  */
-class InferenceManager
+class InferManager
 {
  public:
-  InferenceManager(TheoryId tid,
+  InferManager(TheoryId tid,
                    TheoryState& state,
                    OutputChannel& out,
                    ProofNodeManager* pnm);
-  virtual ~InferenceManager() {}
+  virtual ~InferManager() {}
   /**
    * Set equality engine, ee is a pointer to the official equality engine
    * of theory.
@@ -67,19 +67,29 @@ class InferenceManager
   void trustedConflict(TrustNode tconf);
   /**
    * T-propagate literal lit, possibly encountered by equality engine,
+   * returns false if we are in conflict.
    */
   bool propagate(TNode lit);
   /**
    * Return an explanation for the literal represented by parameter n
    * (which was previously propagated by this theory).
    */
-  virtual TrustNode explain(TNode n);
+  virtual TrustNode explain(TNode lit);
 
  protected:
   /** Make trusted conflict */
   virtual TrustNode mkTrustedConflictEqConstantMerge(TNode a, TNode b);
   /** Make trusted conflict */
   virtual TrustNode mkTrustedConflict(TNode conf);
+  /**
+   * Explain literal l, return conjunction.
+   */
+  Node mkExplain(TNode literal) const;
+  /**
+   * Explain literal l, add conjuncts to assumptions vector instead of making
+   * the node corresponding to their conjunction.
+   */
+  void explain(TNode literal, std::vector<TNode>& assumptions) const;
   /** The identifier */
   TheoryId d_theoryId;
   /** Reference to the state of theory */

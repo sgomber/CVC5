@@ -44,6 +44,7 @@
 #include "theory/output_channel.h"
 #include "theory/theory_id.h"
 #include "theory/theory_rewriter.h"
+#include "theory/inference_manager.h"
 #include "theory/theory_state.h"
 #include "theory/trust_node.h"
 #include "theory/valuation.h"
@@ -256,6 +257,10 @@ class Theory {
    * Notice the theory is responsible for memory management of this class.
    */
   TheoryState* d_theoryState;
+  /** 
+   * The inference manager.
+   */
+  InferManager * d_inferManager;
   /**
    * Whether proofs are enabled
    *

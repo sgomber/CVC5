@@ -155,11 +155,13 @@ void TermRegistry::preRegisterTerm(TNode n)
       ss << "Equality between regular expressions is not supported";
       throw LogicException(ss.str());
     }
+    ee->addTriggerEquality(n);
     return;
   }
   else if (k == STRING_IN_REGEXP)
   {
     d_out.requirePhase(n, true);
+    ee->addTriggerPredicate(n);
     ee->addTerm(n[0]);
     ee->addTerm(n[1]);
     return;
@@ -194,6 +196,11 @@ void TermRegistry::preRegisterTerm(TNode n)
       }
     }
     ee->addTerm(n);
+  }
+  else if (tn.isBoolean())
+  {
+    // Get triggered for both equal and dis-equal
+    ee->addTriggerPredicate(n);
   }
   else
   {
