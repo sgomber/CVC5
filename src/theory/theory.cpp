@@ -96,13 +96,11 @@ Theory::~Theory() {
 
 void Theory::setEqualityEngine(eq::EqualityEngine* ee)
 {
+  Assert (d_theoryState!=nullptr);
   // set the equality engine pointer
   d_equalityEngine = ee;
-  if (d_theoryState != nullptr)
-  {
-    // finish initialize the state with this equality engine
-    d_theoryState->finishInit(ee);
-  }
+  // finish initialize the state with this equality engine
+  d_theoryState->setEqualityEngine(ee);
 }
 
 void Theory::setQuantifiersEngine(QuantifiersEngine* qe)
