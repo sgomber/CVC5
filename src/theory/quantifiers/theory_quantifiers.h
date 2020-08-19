@@ -22,8 +22,8 @@
 #include "expr/node.h"
 #include "theory/quantifiers/proof_checker.h"
 #include "theory/quantifiers/quantifiers_rewriter.h"
-#include "theory/theory.h"
 #include "theory/quantifiers/quantifiers_state.h"
+#include "theory/theory.h"
 
 namespace CVC4 {
 namespace theory {

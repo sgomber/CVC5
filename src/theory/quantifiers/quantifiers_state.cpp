@@ -18,8 +18,12 @@ namespace CVC4 {
 namespace theory {
 namespace quantifiers {
 
-QuantifiersState::QuantifiersState(context::Context* c, context::UserContext* u, Valuation val) : TheoryState(c, u, val) {}
-
+QuantifiersState::QuantifiersState(context::Context* c,
+                                   context::UserContext* u,
+                                   Valuation val)
+    : TheoryState(c, u, val)
+{
+}
 
 }  // namespace quantifiers
 }  // namespace theory

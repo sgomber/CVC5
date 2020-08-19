@@ -98,7 +98,7 @@ void Theory::setEqualityEngine(eq::EqualityEngine* ee)
 {
   // set the equality engine pointer
   d_equalityEngine = ee;
-  if (d_theoryState!=nullptr)
+  if (d_theoryState != nullptr)
   {
     // finish initialize the state with this equality engine
     d_theoryState->finishInit(ee);

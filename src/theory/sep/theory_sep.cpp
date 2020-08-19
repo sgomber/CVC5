@@ -83,7 +83,6 @@ void TheorySep::finishInit()
   // The kinds we are treating as function application in congruence
   d_equalityEngine->addFunctionKind(kind::SEP_PTO);
   // we could but don't do congruence on SEP_STAR here.
-
 }
 
 Node TheorySep::mkAnd( std::vector< TNode >& assumptions ) {
