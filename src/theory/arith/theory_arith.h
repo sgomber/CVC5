@@ -128,7 +128,7 @@ class TheoryArith : public Theory {
   }
 
  private:
-  /** 
+  /**
    * The state object. Note this object is intended to use TheoryArithPrivate
    * as a black box, and moreover the internals of TheoryArithPrivate will not
    * be refactored to use this state. Instead, this class will be
