@@ -119,9 +119,12 @@ TheoryFp::TheoryFp(context::Context* c,
       d_toRealMap(u),
       realToFloatMap(u),
       floatToRealMap(u),
-      abstractionMap(u)
+      abstractionMap(u),
+      d_state(c, u, valuation)
 {
-} /* TheoryFp::TheoryFp() */
+  // indicate we are using the default theory state object
+  d_theoryState = &d_state;
+} 
 
 TheoryRewriter* TheoryFp::getTheoryRewriter() { return &d_rewriter; }
 
@@ -188,11 +191,6 @@ void TheoryFp::finishInit()
   d_equalityEngine->addFunctionKind(kind::FLOATINGPOINT_COMPONENT_EXPONENT);
   d_equalityEngine->addFunctionKind(kind::FLOATINGPOINT_COMPONENT_SIGNIFICAND);
   d_equalityEngine->addFunctionKind(kind::ROUNDINGMODE_BITBLAST);
-
-  // allocate default theory state object
-  d_allocState.reset(
-      new TheoryState(getSatContext(), getUserContext(), d_valuation));
-  d_theoryState = d_allocState.get();
 }
 
 Node TheoryFp::minUF(Node node) {

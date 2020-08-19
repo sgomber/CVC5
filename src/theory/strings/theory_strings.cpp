@@ -81,6 +81,8 @@ TheoryStrings::TheoryStrings(context::Context* c,
     // add checkers
     d_sProofChecker.registerTo(pc);
   }
+  // indicate we are using the theory state
+  d_theoryState = &d_state;
 }
 
 TheoryStrings::~TheoryStrings() {
@@ -139,8 +141,6 @@ void TheoryStrings::finishInit()
   d_equalityEngine->addFunctionKind(kind::STRING_TOLOWER, eagerEval);
   d_equalityEngine->addFunctionKind(kind::STRING_TOUPPER, eagerEval);
   d_equalityEngine->addFunctionKind(kind::STRING_REV, eagerEval);
-
-  d_state.finishInit(d_equalityEngine);
 }
 
 std::string TheoryStrings::identify() const

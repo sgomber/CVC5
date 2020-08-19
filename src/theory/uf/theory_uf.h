@@ -238,7 +238,7 @@ private:
   /** Proof rule checker */
   UfProofRuleChecker d_ufProofChecker;
   /** A (default) theory state object */
-  std::unique_ptr<TheoryState> d_allocState;
+  TheoryState d_state;
 };/* class TheoryUF */
 
 }/* CVC4::theory::uf namespace */

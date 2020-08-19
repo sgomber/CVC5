@@ -61,12 +61,15 @@ TheoryDatatypes::TheoryDatatypes(Context* c,
       d_functionTerms(c),
       d_singleton_eq(u),
       d_lemmas_produced_c(u),
-      d_sygusExtension(nullptr)
+      d_sygusExtension(nullptr),
+      d_state(c, u, valuation)
 {
 
   d_true = NodeManager::currentNM()->mkConst( true );
   d_zero = NodeManager::currentNM()->mkConst( Rational(0) );
   d_dtfCounter = 0;
+  // indicate we are using the default theory state object
+  d_theoryState = &d_state;
 }
 
 TheoryDatatypes::~TheoryDatatypes() {
@@ -110,10 +113,6 @@ void TheoryDatatypes::finishInit()
     // do congruence on evaluation functions
     d_equalityEngine->addFunctionKind(kind::DT_SYGUS_EVAL);
   }
-  // allocate default theory state object
-  d_allocState.reset(
-      new TheoryState(getSatContext(), getUserContext(), d_valuation));
-  d_theoryState = d_allocState.get();
 }
 
 TheoryDatatypes::EqcInfo* TheoryDatatypes::getOrMakeEqcInfo( TNode n, bool doMake ){

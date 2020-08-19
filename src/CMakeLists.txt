@@ -618,6 +618,8 @@ libcvc4_add_sources(
   theory/quantifiers/quantifiers_attributes.h
   theory/quantifiers/quantifiers_rewriter.cpp
   theory/quantifiers/quantifiers_rewriter.h
+  theory/quantifiers/quantifiers_state.cpp
+  theory/quantifiers/quantifiers_state.h
   theory/quantifiers/query_generator.cpp
   theory/quantifiers/query_generator.h
   theory/quantifiers/relevant_domain.cpp

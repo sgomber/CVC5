@@ -98,6 +98,11 @@ void Theory::setEqualityEngine(eq::EqualityEngine* ee)
 {
   // set the equality engine pointer
   d_equalityEngine = ee;
+  if (d_theoryState!=nullptr)
+  {
+    // finish initialize the state with this equality engine
+    d_theoryState->finishInit(ee);
+  }
 }
 
 void Theory::setQuantifiersEngine(QuantifiersEngine* qe)
@@ -129,7 +134,7 @@ void Theory::finishInitStandalone()
     d_allocEqualityEngine.reset(new eq::EqualityEngine(
         *esi.d_notify, d_satContext, esi.d_name, esi.d_constantsAreTriggers));
     // use it as the official equality engine
-    d_equalityEngine = d_allocEqualityEngine.get();
+    setEqualityEngine(d_allocEqualityEngine.get());
   }
   finishInit();
 }

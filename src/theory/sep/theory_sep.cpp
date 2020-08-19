@@ -52,11 +52,14 @@ TheorySep::TheorySep(context::Context* c,
       d_reduce(u),
       d_infer(c),
       d_infer_exp(c),
-      d_spatial_assertions(c)
+      d_spatial_assertions(c),
+      d_state(c, u, valuation)
 {
   d_true = NodeManager::currentNM()->mkConst<bool>(true);
   d_false = NodeManager::currentNM()->mkConst<bool>(false);
   d_bounds_init = false;
+  // indicate we are using the default theory state object
+  d_theoryState = &d_state;
 }
 
 TheorySep::~TheorySep() {
@@ -81,10 +84,6 @@ void TheorySep::finishInit()
   d_equalityEngine->addFunctionKind(kind::SEP_PTO);
   // we could but don't do congruence on SEP_STAR here.
 
-  // allocate default theory state object
-  d_allocState.reset(
-      new TheoryState(getSatContext(), getUserContext(), d_valuation));
-  d_theoryState = d_allocState.get();
 }
 
 Node TheorySep::mkAnd( std::vector< TNode >& assumptions ) {
@@ -498,6 +497,17 @@ void TheorySep::check(Effort e) {
   postCheck(e);
 }
 
+bool TheorySep::preprocessNewFact(TNode atom, bool polarity, TNode fact)
+{
+  // TODO
+  return false;
+}
+
+void TheorySep::notifyNewFact(TNode atom, bool polarity, TNode fact)
+{
+  // TODO
+}
+
 void TheorySep::postCheck(Effort level)
 {
   if (level == EFFORT_LAST_CALL && !d_conflict && !d_valuation.needCheck())
@@ -814,17 +824,6 @@ void TheorySep::postCheck(Effort level)
   }
   Trace("sep-check") << "Sep::check(): " << level
                      << " done, conflict=" << d_conflict.get() << endl;
-}
-
-bool TheorySep::preprocessNewFact(TNode atom, bool polarity, TNode fact)
-{
-  // TODO
-  return false;
-}
-
-void TheorySep::notifyNewFact(TNode atom, bool polarity, TNode fact)
-{
-  // TODO
 }
 
 bool TheorySep::needsCheckLastEffort() {

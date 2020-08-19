@@ -384,7 +384,7 @@ private:
   /** The theory rewriter for this theory. */
   DatatypesRewriter d_rewriter;
   /** A (default) theory state object */
-  std::unique_ptr<TheoryState> d_allocState;
+  TheoryState d_state;
 };/* class TheoryDatatypes */
 
 }/* CVC4::theory::datatypes namespace */
