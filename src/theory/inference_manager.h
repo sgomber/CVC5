@@ -40,9 +40,9 @@ class InferManager
 {
  public:
   InferManager(TheoryId tid,
-                   TheoryState& state,
-                   OutputChannel& out,
-                   ProofNodeManager* pnm);
+               TheoryState& state,
+               OutputChannel& out,
+               ProofNodeManager* pnm);
   virtual ~InferManager() {}
   /**
    * Set equality engine, ee is a pointer to the official equality engine

@@ -22,9 +22,9 @@ namespace CVC4 {
 namespace theory {
 
 InferManager::InferManager(TheoryId tid,
-                                   TheoryState& state,
-                                   OutputChannel& out,
-                                   ProofNodeManager* pnm)
+                           TheoryState& state,
+                           OutputChannel& out,
+                           ProofNodeManager* pnm)
     : d_theoryId(tid), d_state(state), d_out(out), d_ee(nullptr), d_pnm(pnm)
 {
 }
@@ -77,7 +77,7 @@ bool InferManager::propagate(TNode lit)
 TrustNode InferManager::explain(TNode lit)
 {
   // TODO: use proof equality engine
-  if (d_ee!=nullptr)
+  if (d_ee != nullptr)
   {
     Node exp = mkExplain(lit);
     return TrustNode::mkTrustPropExp(lit, exp, nullptr);
@@ -90,7 +90,7 @@ TrustNode InferManager::explain(TNode lit)
 TrustNode InferManager::mkTrustedConflictEqConstantMerge(TNode a, TNode b)
 {
   // TODO: use proof equality engine
-  if (d_ee!=nullptr)
+  if (d_ee != nullptr)
   {
     Node lit = a.eqNode(b);
     Node conf = mkExplain(lit);
@@ -109,15 +109,20 @@ TrustNode InferManager::mkTrustedConflict(TNode conf)
 
 Node InferManager::mkExplain(TNode lit) const
 {
-  std::vector< TNode > assumptions;
+  std::vector<TNode> assumptions;
   explain(lit, assumptions);
   Node ret;
-  NodeManager * nm = NodeManager::currentNM();
-  if( assumptions.empty() ){
+  NodeManager* nm = NodeManager::currentNM();
+  if (assumptions.empty())
+  {
     ret = nm->mkConst(true);
-  }else if( assumptions.size()==1 ){
+  }
+  else if (assumptions.size() == 1)
+  {
     ret = assumptions[0];
-  }else{
+  }
+  else
+  {
     ret = nm->mkNode(kind::AND, assumptions);
   }
   return ret;
@@ -125,7 +130,7 @@ Node InferManager::mkExplain(TNode lit) const
 
 void InferManager::explain(TNode lit, std::vector<TNode>& assumptions) const
 {
-  Assert (d_ee!=nullptr);
+  Assert(d_ee != nullptr);
   bool polarity = lit.getKind() != NOT;
   TNode atom = polarity ? lit : lit[0];
   std::vector<TNode> tassumptions;
