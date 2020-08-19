@@ -1407,19 +1407,6 @@ Node TheorySetsPrivate::explain(TNode literal)
   return mkAnd(assumptions);
 }
 
-void TheorySetsPrivate::preRegisterTerm(TNode node)
-{
-  Debug("sets") << "TheorySetsPrivate::preRegisterTerm(" << node << ")"
-                << std::endl;
-  switch (node.getKind())
-  {
-    case kind::EQUAL: d_equalityEngine->addTriggerEquality(node); break;
-    case kind::MEMBER: d_equalityEngine->addTriggerPredicate(node); break;
-    case kind::CARD: d_equalityEngine->addTriggerTerm(node, THEORY_SETS); break;
-    default: d_equalityEngine->addTerm(node); break;
-  }
-}
-
 TrustNode TheorySetsPrivate::expandDefinition(Node node)
 {
   Debug("sets-proc") << "expandDefinition : " << node << std::endl;

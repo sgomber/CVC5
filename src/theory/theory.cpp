@@ -586,6 +586,8 @@ TrustNode Theory::explainConflict(TNode a, TNode b)
 
 void Theory::preRegisterTerm(TNode node)
 {
+  // do theory-specific preRegisterTerm
+  notifyPreRegisterTerm(node);
   // by default, add as triggers to the equality engine
   /*
   if (d_equalityEngine != nullptr)
@@ -600,12 +602,29 @@ void Theory::preRegisterTerm(TNode node)
     }
     else
     {
-      d_equalityEngine->addTerm(node);
+      //d_equalityEngine->addTerm(node);
     }
   }
   */
-  // do theory-specific preRegisterTerm
-  notifyPreRegisterTerm(node);
+}
+
+void Theory::preRegisterTermDefault(TNode node)
+{
+  if (d_equalityEngine != nullptr)
+  {
+    if (node.getKind() == kind::EQUAL)
+    {
+      d_equalityEngine->addTriggerEquality(node);
+    }
+    else if (node.getType().isBoolean())
+    {
+      d_equalityEngine->addTriggerPredicate(node);
+    }
+    else
+    {
+      //d_equalityEngine->addTerm(node);
+    }
+  }
 }
 
 void Theory::addSharedTerm(TNode n)

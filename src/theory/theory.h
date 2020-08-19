@@ -967,6 +967,11 @@ class Theory {
   /** Turn on proof-production mode. */
   void produceProofs() { d_proofsEnabled = true; }
 
+  /**
+   * TODO: delete
+   * Pre-register a term.  Done one time for a Node per SAT context level.
+   */
+  void preRegisterTermDefault(TNode node);
 };/* class Theory */
 
 std::ostream& operator<<(std::ostream& os, theory::Theory::Effort level);

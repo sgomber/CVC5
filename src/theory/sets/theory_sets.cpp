@@ -129,7 +129,17 @@ Node TheorySets::getModelValue(TNode node) {
 
 void TheorySets::notifyPreRegisterTerm(TNode node)
 {
-  d_internal->preRegisterTerm(node);
+  Debug("sets") << "TheorySetsPrivate::preRegisterTerm(" << node << ")"
+                << std::endl;
+  switch (node.getKind())
+  {
+    case kind::EQUAL:
+    case kind::MEMBER: 
+      preRegisterTermDefault(node);
+      break;
+    case kind::CARD: d_equalityEngine->addTriggerTerm(node, THEORY_SETS); break;
+    default: d_equalityEngine->addTerm(node); break;
+  }
 }
 
 TrustNode TheorySets::expandDefinition(Node n)
