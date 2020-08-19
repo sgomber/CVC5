@@ -167,7 +167,6 @@ void TheoryDatatypes::check(Effort e) {
   Assert(d_pending.empty() && d_pending_merge.empty());
   d_addedLemma = false;
 
-
   TimerStat::CodeTimer checkTimer(d_checkTime);
 
   Trace("datatypes-check") << "Check effort " << e << std::endl;
@@ -192,20 +191,23 @@ void TheoryDatatypes::check(Effort e) {
     assertFact( fact, fact );
     flushPendingFacts();
   }
-  
+
   postCheck(e);
 }
 
 void TheoryDatatypes::postCheck(Effort level)
 {
-  if( level == EFFORT_LAST_CALL ){
+  if (level == EFFORT_LAST_CALL)
+  {
     Assert(d_sygusExtension != nullptr);
-    std::vector< Node > lemmas;
+    std::vector<Node> lemmas;
     d_sygusExtension->check(lemmas);
-    doSendLemmas( lemmas );
+    doSendLemmas(lemmas);
     return;
   }
-  else if( level == EFFORT_FULL && !d_conflict && !d_addedLemma && !d_valuation.needCheck() ) {
+  else if (level == EFFORT_FULL && !d_conflict && !d_addedLemma
+           && !d_valuation.needCheck())
+  {
     //check for cycles
     Assert(d_pending.empty() && d_pending_merge.empty());
     do {

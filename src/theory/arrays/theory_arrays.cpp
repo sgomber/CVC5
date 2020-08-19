@@ -1405,7 +1405,9 @@ void TheoryArrays::check(Effort e) {
 
 void TheoryArrays::postCheck(Effort level)
 {
-  if ((options::arraysEagerLemmas() || fullEffort(level)) && !d_conflict && options::arraysWeakEquivalence()) {
+  if ((options::arraysEagerLemmas() || fullEffort(level)) && !d_conflict
+      && options::arraysWeakEquivalence())
+  {
     // Replay all array merges to update weak equivalence data structures
     context::CDList<Node>::iterator it = d_arrayMerges.begin(), iend = d_arrayMerges.end();
     TNode a, b, eq;
@@ -1492,7 +1494,9 @@ void TheoryArrays::postCheck(Effort level)
     d_readTableContext->pop();
   }
 
-  if(!options::arraysEagerLemmas() && fullEffort(level) && !d_conflict && !options::arraysWeakEquivalence()) {
+  if (!options::arraysEagerLemmas() && fullEffort(level) && !d_conflict
+      && !options::arraysWeakEquivalence())
+  {
     // generate the lemmas on the worklist
     Trace("arrays-lem")<< "Arrays::discharging lemmas. Number of queued lemmas: " << d_RowQueue.size() << "\n";
     while (d_RowQueue.size() > 0 && !d_conflict) {

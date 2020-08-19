@@ -80,7 +80,7 @@ void TheorySep::finishInit()
   // The kinds we are treating as function application in congruence
   d_equalityEngine->addFunctionKind(kind::SEP_PTO);
   // we could but don't do congruence on SEP_STAR here.
-  
+
   // allocate default theory state object
   d_allocState.reset(
       new TheoryState(getSatContext(), getUserContext(), d_valuation));
@@ -500,7 +500,8 @@ void TheorySep::check(Effort e) {
 
 void TheorySep::postCheck(Effort level)
 {
-  if( level == EFFORT_LAST_CALL && !d_conflict && !d_valuation.needCheck() ){
+  if (level == EFFORT_LAST_CALL && !d_conflict && !d_valuation.needCheck())
+  {
     Trace("sep-process") << "Checking heap at full effort..." << std::endl;
     d_label_model.clear();
     d_tmodel.clear();
@@ -811,7 +812,8 @@ void TheorySep::postCheck(Effort level)
       }
     }
   }
-  Trace("sep-check") << "Sep::check(): " << level << " done, conflict=" << d_conflict.get() << endl;
+  Trace("sep-check") << "Sep::check(): " << level
+                     << " done, conflict=" << d_conflict.get() << endl;
 }
 
 bool TheorySep::preprocessNewFact(TNode atom, bool polarity, TNode fact)
