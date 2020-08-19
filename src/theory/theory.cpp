@@ -412,7 +412,7 @@ bool Theory::collectModelValues(TheoryModel* m, std::set<Node>& termSet)
 
 void Theory::notifyPreRegisterTerm(TNode node)
 {
-  // do nothing 
+  // do nothing
 }
 
 Theory::PPAssertStatus Theory::ppAssert(TNode in,

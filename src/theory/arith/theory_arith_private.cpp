@@ -1054,7 +1054,8 @@ bool TheoryArithPrivate::AssertDisequality(ConstraintP constraint){
   return false;
 }
 
-void TheoryArithPrivate::notifySharedTerm(TNode n){
+void TheoryArithPrivate::notifySharedTerm(TNode n)
+{
   Debug("arith::notifySharedTerm") << "notifySharedTerm: " << n << endl;
   if(n.isConst()){
     d_partialModel.invalidateDelta();

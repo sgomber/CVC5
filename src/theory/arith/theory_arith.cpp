@@ -87,9 +87,7 @@ TrustNode TheoryArith::expandDefinition(Node node)
   return d_internal->expandDefinition(node);
 }
 
-void TheoryArith::notifySharedTerm(TNode n){
-  d_internal->notifySharedTerm(n);
-}
+void TheoryArith::notifySharedTerm(TNode n) { d_internal->notifySharedTerm(n); }
 
 TrustNode TheoryArith::ppRewrite(TNode atom)
 {

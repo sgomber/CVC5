@@ -887,9 +887,11 @@ Node TheoryArrays::explain(TNode literal, eq::EqProof* proof) {
 // SHARING
 /////////////////////////////////////////////////////////////////////////////
 
-
-void TheoryArrays::notifySharedTerm(TNode t) {
-  Debug("arrays::sharing") << spaces(getSatContext()->getLevel()) << "TheoryArrays::notifySharedTerm(" << t << ")" << std::endl;
+void TheoryArrays::notifySharedTerm(TNode t)
+{
+  Debug("arrays::sharing") << spaces(getSatContext()->getLevel())
+                           << "TheoryArrays::notifySharedTerm(" << t << ")"
+                           << std::endl;
   if (t.getType().isArray()) {
     d_sharedArrays.insert(t);
   }
