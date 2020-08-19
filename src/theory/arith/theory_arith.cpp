@@ -80,7 +80,10 @@ void TheoryArith::finishInit()
   d_internal->finishInit();
 }
 
-void TheoryArith::notifyPreRegisterTerm(TNode n) { d_internal->preRegisterTerm(n); }
+void TheoryArith::notifyPreRegisterTerm(TNode n)
+{
+  d_internal->preRegisterTerm(n);
+}
 
 TrustNode TheoryArith::expandDefinition(Node node)
 {

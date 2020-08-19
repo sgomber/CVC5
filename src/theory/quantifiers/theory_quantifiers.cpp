@@ -77,7 +77,8 @@ void TheoryQuantifiers::finishInit()
   d_valuation.setUnevaluatedKind(WITNESS);
 }
 
-void TheoryQuantifiers::notifyPreRegisterTerm(TNode n) {
+void TheoryQuantifiers::notifyPreRegisterTerm(TNode n)
+{
   if (n.getKind() != FORALL)
   {
     return;

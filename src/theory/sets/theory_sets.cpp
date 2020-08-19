@@ -127,7 +127,8 @@ Node TheorySets::getModelValue(TNode node) {
   return Node::null();
 }
 
-void TheorySets::notifyPreRegisterTerm(TNode node) {
+void TheorySets::notifyPreRegisterTerm(TNode node)
+{
   d_internal->preRegisterTerm(node);
 }
 

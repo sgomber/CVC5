@@ -850,7 +850,6 @@ void TheoryArrays::preRegisterTermInternal(TNode node)
   // !d_equalityEngine->consistent());
 }
 
-
 void TheoryArrays::notifyPreRegisterTerm(TNode node)
 {
   preRegisterTermInternal(node);

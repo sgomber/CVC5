@@ -253,7 +253,8 @@ TrustNode TheoryUF::expandDefinition(Node node)
   return TrustNode::null();
 }
 
-void TheoryUF::notifyPreRegisterTerm(TNode node) {
+void TheoryUF::notifyPreRegisterTerm(TNode node)
+{
   Debug("uf") << "TheoryUF::notifyPreRegisterTerm(" << node << ")" << std::endl;
 
   if (d_thss != NULL) {
