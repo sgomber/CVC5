@@ -518,8 +518,9 @@ EqualityStatus Theory::getEqualityStatus(TNode a, TNode b)
     return EQUALITY_FALSE;
   }
 
-  // All other terms we interpret as dis-equal in the model
-  return EQUALITY_FALSE_IN_MODEL;
+  // All other terms are unknown, which is conservative. A theory may override
+  // this method if it knows more information.
+  return EQUALITY_UNKNOWN;
 }
 
 //--------------------------------- new standard

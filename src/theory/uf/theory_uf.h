@@ -218,6 +218,8 @@ private:
 
   void computeCareGraph() override;
 
+  EqualityStatus getEqualityStatus(TNode a, TNode b) override;
+
   std::string identify() const override { return "THEORY_UF"; }
 
   /** get a pointer to the uf with cardinality */

@@ -500,6 +500,26 @@ void TheoryUF::ppStaticLearn(TNode n, NodeBuilder<>& learned) {
   }
 }/* TheoryUF::ppStaticLearn() */
 
+EqualityStatus TheoryUF::getEqualityStatus(TNode a, TNode b) {
+
+  // Check for equality (simplest)
+  if (d_equalityEngine->areEqual(a, b))
+  {
+    // The terms are implied to be equal
+    return EQUALITY_TRUE;
+  }
+
+  // Check for disequality
+  if (d_equalityEngine->areDisequal(a, b, false))
+  {
+    // The terms are implied to be dis-equal
+    return EQUALITY_FALSE;
+  }
+
+  // All other terms we interpret as dis-equal in the model
+  return EQUALITY_FALSE_IN_MODEL;
+}
+
 bool TheoryUF::areCareDisequal(TNode x, TNode y){
   Assert(d_equalityEngine->hasTerm(x));
   Assert(d_equalityEngine->hasTerm(y));

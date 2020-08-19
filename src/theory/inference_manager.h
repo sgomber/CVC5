@@ -24,6 +24,9 @@
 #include "theory/trust_node.h"
 
 namespace CVC4 {
+
+class ProofNodeManager;
+
 namespace theory {
 
 namespace eq {
