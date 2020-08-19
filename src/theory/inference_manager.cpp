@@ -29,11 +29,11 @@ InferenceManager::InferenceManager(TheoryId tid,
 
 void InferenceManager::setEqualityEngine(eq::EqualityEngine* ee) { d_ee = ee; }
 
-void InferenceManager::conflictConstantEq(TNode a, TNode b)
+void InferenceManager::conflictEqConstantMerge(TNode a, TNode b)
 {
   if (!d_state.isInConflict())
   {
-    TrustNode tconf = mkTrustedConflictConstantEq(a, b);
+    TrustNode tconf = mkTrustedConflictEqConstantMerge(a, b);
     trustedConflict(tconf);
   }
 }
@@ -80,10 +80,10 @@ TrustNode InferenceManager::explain(TNode n)
                      "Theory::explain() interface!";
 }
 
-TrustNode InferenceManager::mkTrustedConflictConstantEq(TNode a, TNode b)
+TrustNode InferenceManager::mkTrustedConflictEqConstantMerge(TNode a, TNode b)
 {
   // TODO
-  Unimplemented() << "Theory " << d_theoryId << " mkTrustedConflictConstantEq";
+  Unimplemented() << "Theory " << d_theoryId << " mkTrustedConflictEqConstantMerge";
 }
 
 TrustNode InferenceManager::mkTrustedConflict(TNode conf)

@@ -573,8 +573,6 @@ class Theory {
   /**
    * Return the status of two terms in the current context. Should be
    * implemented in sub-theories to enable more efficient theory-combination.
-   *
-   * TODO: use equality engine?
    */
   virtual EqualityStatus getEqualityStatus(TNode a, TNode b);
 
@@ -647,7 +645,7 @@ class Theory {
    * This method returns true if and only if the equality engine of m is
    * consistent as a result of this call.
    *
-   * TODO: non-virtual
+   * TODO: non-virtual (use template)
    */
   virtual bool collectModelInfo(TheoryModel* m);
   /**

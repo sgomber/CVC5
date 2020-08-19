@@ -52,15 +52,21 @@ class InferenceManager
   /**
    * Raise conflict, called when constants a and b merge. Sends the conflict
    * on the output channel corresponding to the equality engine's explanation
-   * of (= a b).
+   * of (= a b). The proof equality engine (if it exists) will be used as the
+   * proof generator.
    */
-  void conflictConstantEq(TNode a, TNode b);
-  /** Raise conflict conf */
+  void conflictEqConstantMerge(TNode a, TNode b);
+  /** 
+   * Raise conflict conf (of any form), without proofs.
+   */
   void conflict(TNode conf);
-  /** Raise trusted conflict conf */
+  /** 
+   * Raise trusted conflict tconf (of any form) where a proof generator has
+   * been provided in a custom way.
+   */
   void trustedConflict(TrustNode tconf);
   /**
-   * T-propagate literal lit encountered by equality engine,
+   * T-propagate literal lit, possibly encountered by equality engine,
    */
   bool propagate(TNode lit);
   /**
@@ -71,7 +77,7 @@ class InferenceManager
 
  protected:
   /** Make trusted conflict */
-  virtual TrustNode mkTrustedConflictConstantEq(TNode a, TNode b);
+  virtual TrustNode mkTrustedConflictEqConstantMerge(TNode a, TNode b);
   /** Make trusted conflict */
   virtual TrustNode mkTrustedConflict(TNode conf);
   /** The identifier */

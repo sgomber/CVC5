@@ -34,6 +34,8 @@ class EqualityEngineNotify
 
   /**
    * Notifies about a trigger equality that became true or false.
+   * 
+   * NOTE: it is recommended that this method call InferenceManager::propagate.
    *
    * @param equality the equality that became true or false
    * @param value the value of the equality
@@ -43,6 +45,8 @@ class EqualityEngineNotify
   /**
    * Notifies about a trigger predicate that became true or false.
    *
+   * NOTE: it is recommended that this method call InferenceManager::propagate.
+   *
    * @param predicate the trigger predicate that became true or false
    * @param value the value of the predicate
    */
@@ -50,6 +54,8 @@ class EqualityEngineNotify
 
   /**
    * Notifies about the merge of two trigger terms.
+   *
+   * NOTE: it is recommended that this method call InferenceManager::propagate.
    *
    * @param tag the theory that both triggers were tagged with
    * @param t1 a term marked as trigger
@@ -64,6 +70,8 @@ class EqualityEngineNotify
   /**
    * Notifies about the merge of two constant terms. After this, all work is
    * suspended and all you can do is ask for explanations.
+   *
+   * NOTE: it is recommended that this method call InferenceManager::eqConflictConstantMerge.
    *
    * @param t1 a constant term
    * @param t2 a constant term
