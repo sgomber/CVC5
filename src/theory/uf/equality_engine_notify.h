@@ -34,7 +34,7 @@ class EqualityEngineNotify
 
   /**
    * Notifies about a trigger equality that became true or false.
-   * 
+   *
    * NOTE: it is recommended that this method call InferenceManager::propagate.
    *
    * @param equality the equality that became true or false
@@ -71,7 +71,8 @@ class EqualityEngineNotify
    * Notifies about the merge of two constant terms. After this, all work is
    * suspended and all you can do is ask for explanations.
    *
-   * NOTE: it is recommended that this method call InferenceManager::eqConflictConstantMerge.
+   * NOTE: it is recommended that this method call
+   * InferenceManager::eqConflictConstantMerge.
    *
    * @param t1 a constant term
    * @param t2 a constant term

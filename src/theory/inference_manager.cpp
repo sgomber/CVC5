@@ -83,7 +83,8 @@ TrustNode InferenceManager::explain(TNode n)
 TrustNode InferenceManager::mkTrustedConflictEqConstantMerge(TNode a, TNode b)
 {
   // TODO
-  Unimplemented() << "Theory " << d_theoryId << " mkTrustedConflictEqConstantMerge";
+  Unimplemented() << "Theory " << d_theoryId
+                  << " mkTrustedConflictEqConstantMerge";
 }
 
 TrustNode InferenceManager::mkTrustedConflict(TNode conf)

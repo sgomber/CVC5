@@ -56,11 +56,11 @@ class InferenceManager
    * proof generator.
    */
   void conflictEqConstantMerge(TNode a, TNode b);
-  /** 
+  /**
    * Raise conflict conf (of any form), without proofs.
    */
   void conflict(TNode conf);
-  /** 
+  /**
    * Raise trusted conflict tconf (of any form) where a proof generator has
    * been provided in a custom way.
    */
