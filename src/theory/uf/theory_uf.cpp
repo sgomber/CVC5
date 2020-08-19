@@ -66,6 +66,8 @@ TheoryUF::TheoryUF(context::Context* c,
   {
     d_ufProofChecker.registerTo(pc);
   }
+  // indicate we are using the default theory state object
+  d_theoryState = &d_state;
 }
 
 TheoryUF::~TheoryUF() {
@@ -108,10 +110,6 @@ void TheoryUF::finishInit() {
     d_equalityEngine->addFunctionKind(kind::HO_APPLY);
     d_ho.reset(new HoExtension(*this, getSatContext(), getUserContext()));
   }
-  // use default state object
-  d_allocState.reset(
-      new TheoryState(getSatContext(), getUserContext(), d_valuation));
-  d_theoryState = d_allocState.get();
 }
 
 static Node mkAnd(const std::vector<TNode>& conjunctions) {

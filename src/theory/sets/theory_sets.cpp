@@ -37,10 +37,8 @@ TheorySets::TheorySets(context::Context* c,
       d_internal(new TheorySetsPrivate(*this, c, u, valuation)),
       d_notify(*d_internal.get())
 {
-  // Do not move me to the header.
-  // The constructor + destructor are not in the header as d_internal is a
-  // unique_ptr<TheorySetsPrivate> and TheorySetsPrivate is an opaque type in
-  // the header (Pimpl). See https://herbsutter.com/gotw/_100/ .
+  // use the solver state as the official theory state object
+  d_theoryState = d_internal->getSolverState();
 }
 
 TheorySets::~TheorySets()
@@ -94,8 +92,6 @@ void TheorySets::finishInit()
 
   // finish initialization internally
   d_internal->finishInit();
-  // use the solver state as the official theory state object
-  d_theoryState = d_internal->getSolverState();
 }
 
 void TheorySets::preCheck(Effort level) { d_internal->preCheck(level); }
