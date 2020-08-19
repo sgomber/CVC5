@@ -536,7 +536,7 @@ void Theory::check(Effort level)
   // pre-check at level
   preCheck(level);
   // process the pending fact queue
-  while (!done() && !isInConflict())
+  while (!done() && !d_theoryState->isInConflict())
   {
     // Get the next assertion from the fact queue
     Assertion assertion = get();
@@ -562,7 +562,7 @@ void Theory::check(Effort level)
       }
     }
     // if we aren't already in conflict
-    if (!isInConflict())
+    if (!d_theoryState->isInConflict())
     {
       // notify the theory of the new fact
       notifyNewFact(atom, polarity, fact);
