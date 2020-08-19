@@ -110,7 +110,6 @@ TheoryFp::TheoryFp(context::Context* c,
       d_registeredTerms(u),
       d_conv(u),
       d_expansionRequested(false),
-      d_conflict(c, false),
       d_conflictNode(c, Node::null()),
       d_minMap(u),
       d_maxMap(u),
@@ -925,7 +924,7 @@ bool TheoryFp::propagate(TNode node)
 
   if (!stat)
   {
-    d_conflict = true;
+    d_state.notifyInConflict();
   }
   return stat;
 }
@@ -940,7 +939,7 @@ void TheoryFp::conflict(TNode t1, TNode t2)
               << std::endl;
 
   d_conflictNode = conflict;
-  d_conflict = true;
+  d_state.notifyInConflict();
   d_out->conflict(conflict);
   return;
 }
@@ -949,7 +948,7 @@ void TheoryFp::check(Effort level) {
   Trace("fp") << "TheoryFp::check(): started at effort level " << level
               << std::endl;
 
-  while (!done() && !d_conflict) {
+  while (!done() && !d_state.isInConflict()) {
     // Get all the assertions
     Assertion assertion = get();
     TNode fact = assertion.d_assertion;

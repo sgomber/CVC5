@@ -359,9 +359,6 @@ class TheoryArrays : public Theory {
   /** The notify class for d_equalityEngine */
   NotifyClass d_notify;
 
-  /** Are we in conflict? */
-  context::CDO<bool> d_conflict;
-
   /** Conflict when merging constants */
   void conflict(TNode a, TNode b) override;
 

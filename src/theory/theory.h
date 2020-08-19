@@ -575,9 +575,7 @@ class Theory {
    *
    * TODO: use equality engine?
    */
-  virtual EqualityStatus getEqualityStatus(TNode a, TNode b) {
-    return EQUALITY_UNKNOWN;
-  }
+  virtual EqualityStatus getEqualityStatus(TNode a, TNode b);
 
   /**
    * Return the model value of the give shared term (or null if not available).

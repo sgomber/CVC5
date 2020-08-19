@@ -183,8 +183,6 @@ private:
   /** selector apps for eqch equivalence class */
   NodeUIntMap d_selector_apps;
   std::map< Node, std::vector< Node > > d_selector_apps_data;
-  /** Are we in conflict */
-  context::CDO<bool> d_conflict;
   /** added lemma
    *
    * This flag is set to true during a full effort check if this theory

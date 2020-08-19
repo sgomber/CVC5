@@ -53,7 +53,6 @@ TheoryDatatypes::TheoryDatatypes(Context* c,
       d_notify(*this),
       d_labels(c),
       d_selector_apps(c),
-      d_conflict(c, false),
       d_addedLemma(false),
       d_addedFact(false),
       d_collectTermsCache(c),
@@ -169,7 +168,7 @@ void TheoryDatatypes::check(Effort e) {
   TimerStat::CodeTimer checkTimer(d_checkTime);
 
   Trace("datatypes-check") << "Check effort " << e << std::endl;
-  while(!done() && !d_conflict) {
+  while(!done() && !d_state.isInConflict()) {
     // Get all the assertions
     Assertion assertion = get();
     TNode fact = assertion.d_assertion;
@@ -204,7 +203,7 @@ void TheoryDatatypes::postCheck(Effort level)
     doSendLemmas(lemmas);
     return;
   }
-  else if (level == EFFORT_FULL && !d_conflict && !d_addedLemma
+  else if (level == EFFORT_FULL && !d_state.isInConflict() && !d_addedLemma
            && !d_valuation.needCheck())
   {
     //check for cycles
@@ -215,7 +214,7 @@ void TheoryDatatypes::postCheck(Effort level)
       checkCycles();
       Trace("datatypes-proc") << "...finish check cycles" << std::endl;
       flushPendingFacts();
-      if( d_conflict || d_addedLemma ){
+      if( d_state.isInConflict() || d_addedLemma ){
         return;
       }
     }while( d_addedFact );
@@ -380,9 +379,9 @@ void TheoryDatatypes::postCheck(Effort level)
         Trace("datatypes-debug") << "Flush pending facts..." << std::endl;
         flushPendingFacts();
       }
-    }while( !d_conflict && !d_addedLemma && d_addedFact );
-    Trace("datatypes-debug") << "Finished, conflict=" << d_conflict << ", lemmas=" << d_addedLemma << std::endl;
-    if( !d_conflict ){
+    }while( !d_state.isInConflict() && !d_addedLemma && d_addedFact );
+    Trace("datatypes-debug") << "Finished, conflict=" << d_state.isInConflict() << ", lemmas=" << d_addedLemma << std::endl;
+    if( !d_state.isInConflict() ){
       Trace("dt-model-debug") << std::endl;
       printModelDebug("dt-model-debug");
     }
@@ -422,7 +421,7 @@ void TheoryDatatypes::flushPendingFacts(){
     doPendingMerges();
   }
   int i = 0;
-  while( !d_conflict && i<(int)d_pending.size() ){
+  while( !d_state.isInConflict() && i<(int)d_pending.size() ){
     Node fact = d_pending[i];
     Node exp = d_pending_exp[ fact ];
     Trace("datatypes-debug") << "Assert fact (#" << (i+1) << "/" << d_pending.size() << ") " << fact << " with explanation " << exp << std::endl;
@@ -458,7 +457,7 @@ void TheoryDatatypes::flushPendingFacts(){
       assertFact( fact, exp );
       d_addedFact = true;
     }
-    Trace("datatypes-debug") << "Finished fact " << fact << ", now = " << d_conflict << " " << d_pending.size() << std::endl;
+    Trace("datatypes-debug") << "Finished fact " << fact << ", now = " << d_state.isInConflict() << " " << d_pending.size() << std::endl;
     i++;
   }
   d_pending.clear();
@@ -466,7 +465,7 @@ void TheoryDatatypes::flushPendingFacts(){
 }
 
 void TheoryDatatypes::doPendingMerges(){
-  if( !d_conflict ){
+  if( !d_state.isInConflict() ){
     //do all pending merges
     int i=0;
     while( i<(int)d_pending_merge.size() ){
@@ -533,11 +532,10 @@ void TheoryDatatypes::assertFact( Node fact, Node exp ){
     //do pending merges
     doPendingMerges();
     Trace("dt-tester") << "Done pending merges." << std::endl;
-    if( !d_conflict && polarity ){
+    if( !d_state.isInConflict() && polarity ){
       if (d_sygusExtension)
       {
         Trace("dt-tester") << "Assert tester to sygus : " << atom << std::endl;
-        //Assert( !d_sygus_util->d_conflict );
         std::vector< Node > lemmas;
         d_sygusExtension->assertTester(tindex, t_arg, atom, lemmas);
         Trace("dt-tester") << "Done assert tester to sygus." << std::endl;
@@ -746,7 +744,7 @@ TrustNode TheoryDatatypes::ppRewrite(TNode in)
 bool TheoryDatatypes::propagate(TNode literal){
   Debug("dt::propagate") << "TheoryDatatypes::propagate(" << literal  << ")" << std::endl;
   // If already in conflict, no more propagation
-  if (d_conflict) {
+  if (d_state.isInConflict()) {
     Debug("dt::propagate") << "TheoryDatatypes::propagate(" << literal << "): already in conflict" << std::endl;
     return false;
   }
@@ -755,7 +753,7 @@ bool TheoryDatatypes::propagate(TNode literal){
   bool ok = d_out->propagate(literal);
   if (!ok) {
     Trace("dt-conflict") << "CONFLICT: Eq engine propagate conflict " << std::endl;
-    d_conflict = true;
+    d_state.notifyInConflict();
   }
   return ok;
 }
@@ -837,7 +835,7 @@ void TheoryDatatypes::conflict(TNode a, TNode b){
   d_conflictNode = explainLit(eq);
   Trace("dt-conflict") << "CONFLICT: Eq engine conflict : " << d_conflictNode << std::endl;
   d_out->conflict( d_conflictNode );
-  d_conflict = true;
+  d_state.notifyInConflict();
 }
 
 /** called when a new equivalance class is created */
@@ -858,7 +856,7 @@ void TheoryDatatypes::eqNotifyMerge(TNode t1, TNode t2)
 }
 
 void TheoryDatatypes::merge( Node t1, Node t2 ){
-  if( !d_conflict ){
+  if( !d_state.isInConflict() ){
     TNode trep1 = t1;
     TNode trep2 = t2;
     Trace("datatypes-debug") << "Merge " << t1 << " " << t2 << std::endl;
@@ -887,7 +885,7 @@ void TheoryDatatypes::merge( Node t1, Node t2 ){
             d_conflictNode = explainLit(unifEq);
             Trace("dt-conflict") << "CONFLICT: Clash conflict : " << d_conflictNode << std::endl;
             d_out->conflict( d_conflictNode );
-            d_conflict = true;
+            d_state.notifyInConflict();
             return;
           }
           else
@@ -921,7 +919,7 @@ void TheoryDatatypes::merge( Node t1, Node t2 ){
             Trace("datatypes-debug") << "  must check if it is okay to set the constructor." << std::endl;
             checkInst = true;
             addConstructor( eqc2->d_constructor.get(), eqc1, t1 );
-            if( d_conflict ){
+            if( d_state.isInConflict() ){
               return;
             }
           }
@@ -948,7 +946,7 @@ void TheoryDatatypes::merge( Node t1, Node t2 ){
           Node t_arg = d_labels_args[t2][i];
           unsigned tindex = d_labels_tindex[t2][i];
           addTester( tindex, t, eqc1, t1, t_arg );
-          if( d_conflict ){
+          if( d_state.isInConflict() ){
             Trace("datatypes-debug") << "  conflict!" << std::endl;
             return;
           }
@@ -972,7 +970,7 @@ void TheoryDatatypes::merge( Node t1, Node t2 ){
       if( checkInst ){
         Trace("datatypes-debug") << "  checking instantiate" << std::endl;
         instantiate( eqc1, t1 );
-        if( d_conflict ){
+        if( d_state.isInConflict() ){
           return;
         }
       }
@@ -1100,7 +1098,7 @@ void TheoryDatatypes::addTester(
         d_conflictNode = mkAnd( assumptions );
         Trace("dt-conflict") << "CONFLICT: Tester eq conflict : " << d_conflictNode << std::endl;
         d_out->conflict( d_conflictNode );
-        d_conflict = true;
+        d_state.notifyInConflict();
         return;
       }else{
         makeConflict = true;
@@ -1210,7 +1208,7 @@ void TheoryDatatypes::addTester(
     }
   }
   if( makeConflict ){
-    d_conflict = true;
+    d_state.notifyInConflict();
     Debug("datatypes-labels") << "Explain " << j << " " << t << std::endl;
     std::vector< TNode > assumptions;
     explain( j, assumptions );
@@ -1277,7 +1275,7 @@ void TheoryDatatypes::addConstructor( Node c, EqcInfo* eqc, Node n ){
           d_conflictNode = mkAnd( assumptions );
           Trace("dt-conflict") << "CONFLICT: Tester merge eq conflict : " << d_conflictNode << std::endl;
           d_out->conflict( d_conflictNode );
-          d_conflict = true;
+          d_state.notifyInConflict();
           return;
         }
       }
@@ -1854,7 +1852,7 @@ void TheoryDatatypes::checkCycles() {
             d_conflictNode = mkAnd( expl );
             Trace("dt-conflict") << "CONFLICT: Cycle conflict : " << d_conflictNode << std::endl;
             d_out->conflict( d_conflictNode );
-            d_conflict = true;
+            d_state.notifyInConflict();
             return;
           }
         }

@@ -496,6 +496,32 @@ void Theory::getCareGraph(CareGraph* careGraph) {
   d_careGraph = NULL;
 }
 
+EqualityStatus Theory::getEqualityStatus(TNode a, TNode b)
+{
+  // if not using an equality engine, then by default we don't know the status
+  if (d_equalityEngine==nullptr)
+  {
+    return EQUALITY_UNKNOWN;
+  }
+
+  // Check for equality (simplest)
+  if (d_equalityEngine->areEqual(a, b))
+  {
+    // The terms are implied to be equal
+    return EQUALITY_TRUE;
+  }
+
+  // Check for disequality
+  if (d_equalityEngine->areDisequal(a, b, false))
+  {
+    // The terms are implied to be dis-equal
+    return EQUALITY_FALSE;
+  }
+
+  // All other terms we interpret as dis-equal in the model
+  return EQUALITY_FALSE_IN_MODEL;
+}
+
 //--------------------------------- new standard
 void Theory::check(Effort level)
 {

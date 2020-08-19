@@ -119,7 +119,6 @@ class TheoryFp : public Theory {
   bool propagate(TNode node) override;
   void conflict(TNode t1, TNode t2) override;
 
-  context::CDO<bool> d_conflict;
   context::CDO<Node> d_conflictNode;
 
   typedef context::CDHashMap<TypeNode, Node, TypeNodeHashFunction>

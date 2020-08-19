@@ -220,7 +220,6 @@ class TheorySep : public Theory {
   NotifyClass d_notify;
 
   /** Are we in conflict? */
-  context::CDO<bool> d_conflict;
   std::vector< Node > d_pending_exp;
   std::vector< Node > d_pending;
   std::vector< int > d_pending_lem;

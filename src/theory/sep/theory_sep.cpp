@@ -47,17 +47,16 @@ TheorySep::TheorySep(context::Context* c,
                      ProofNodeManager* pnm)
     : Theory(THEORY_SEP, c, u, out, valuation, logicInfo, pnm),
       d_lemmas_produced_c(u),
+      d_bounds_init(false),
+      d_state(c, u, valuation),
       d_notify(*this),
-      d_conflict(c, false),
       d_reduce(u),
       d_infer(c),
       d_infer_exp(c),
-      d_spatial_assertions(c),
-      d_state(c, u, valuation)
+      d_spatial_assertions(c)
 {
   d_true = NodeManager::currentNM()->mkConst<bool>(true);
   d_false = NodeManager::currentNM()->mkConst<bool>(false);
-  d_bounds_init = false;
   // indicate we are using the default theory state object
   d_theoryState = &d_state;
 }
@@ -115,13 +114,13 @@ bool TheorySep::propagate(TNode literal)
 {
   Debug("sep") << "TheorySep::propagate(" << literal  << ")" << std::endl;
   // If already in conflict, no more propagation
-  if (d_conflict) {
+  if (d_state.isInConflict()) {
     Debug("sep") << "TheorySep::propagate(" << literal << "): already in conflict" << std::endl;
     return false;
   }
   bool ok = d_out->propagate(literal);
   if (!ok) {
-    d_conflict = true;
+    d_state.notifyInConflict();
   }
   return ok;
 }
@@ -304,7 +303,7 @@ void TheorySep::check(Effort e) {
   Trace("sep-check") << "Sep::check(): " << e << endl;
   NodeManager* nm = NodeManager::currentNM();
 
-  while( !done() && !d_conflict ){
+  while( !done() && !d_state.isInConflict() ){
     // Get all the assertions
     Assertion assertion = get();
     TNode fact = assertion.d_assertion;
@@ -488,7 +487,7 @@ void TheorySep::check(Effort e) {
       //maybe propagate
       doPendingFacts();
       //add to spatial assertions
-      if( !d_conflict && is_spatial ){
+      if( !d_state.isInConflict() && is_spatial ){
         d_spatial_assertions.push_back( fact );
       }
     }
@@ -509,7 +508,7 @@ void TheorySep::notifyNewFact(TNode atom, bool polarity, TNode fact)
 
 void TheorySep::postCheck(Effort level)
 {
-  if (level == EFFORT_LAST_CALL && !d_conflict && !d_valuation.needCheck())
+  if (level == EFFORT_LAST_CALL && !d_state.isInConflict() && !d_valuation.needCheck())
   {
     Trace("sep-process") << "Checking heap at full effort..." << std::endl;
     d_label_model.clear();
@@ -822,7 +821,7 @@ void TheorySep::postCheck(Effort level)
     }
   }
   Trace("sep-check") << "Sep::check(): " << level
-                     << " done, conflict=" << d_conflict.get() << endl;
+                     << " done, conflict=" << d_state.isInConflict() << std::endl;
 }
 
 bool TheorySep::needsCheckLastEffort() {
@@ -835,7 +834,7 @@ void TheorySep::conflict(TNode a, TNode b) {
   std::vector<TNode> assumptions;
   explain(eq, assumptions);
   Node conflictNode = mkAnd(assumptions);
-  d_conflict = true;
+  d_state.notifyInConflict();
   d_out->conflict( conflictNode );
 }
 
@@ -1718,7 +1717,7 @@ void TheorySep::sendLemma( std::vector< Node >& ant, Node conc, const char * c, 
       if( conc==d_false ){
         Trace("sep-lemma") << "Sep::Conflict: " << ant_n << " by " << c << std::endl;
         d_out->conflict( ant_n );
-        d_conflict = true;
+        d_state.notifyInConflict();
       }else{
         Trace("sep-lemma") << "Sep::Lemma: " << conc << " from " << ant_n << " by " << c << std::endl;
         d_pending_exp.push_back( ant_n );
@@ -1732,7 +1731,7 @@ void TheorySep::sendLemma( std::vector< Node >& ant, Node conc, const char * c, 
 void TheorySep::doPendingFacts() {
   if( d_pending_lem.empty() ){
     for( unsigned i=0; i<d_pending.size(); i++ ){
-      if( d_conflict ){
+      if( d_state.isInConflict() ){
         break;
       }
       Node atom = d_pending[i].getKind()==kind::NOT ? d_pending[i][0] : d_pending[i];
@@ -1746,7 +1745,7 @@ void TheorySep::doPendingFacts() {
     }
   }else{
     for( unsigned i=0; i<d_pending_lem.size(); i++ ){
-      if( d_conflict ){
+      if( d_state.isInConflict() ){
         break;
       }
       int index = d_pending_lem[i];

@@ -138,7 +138,7 @@ static Node mkAnd(const std::vector<TNode>& conjunctions) {
 
 void TheoryUF::postCheck(Effort level)
 {
-  if (isInConflict())
+  if (d_state.isInConflict())
   {
     return;
   }
@@ -152,7 +152,7 @@ void TheoryUF::postCheck(Effort level)
     }
   }
   // check with the higher-order extension
-  if (!isInConflict() && fullEffort(level))
+  if (!d_state.isInConflict() && fullEffort(level))
   {
     if (options::ufHo())
     {
