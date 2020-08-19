@@ -46,7 +46,7 @@ TheoryArith::TheoryArith(context::Context* c,
 {
   smtStatisticsRegistry()->registerStat(&d_ppRewriteTimer);
 
-  // indicate we are using the default theory state object
+  // indicate we are using the theory state object
   d_theoryState = &d_astate;
 }
 
