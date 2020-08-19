@@ -19,23 +19,18 @@
 namespace CVC4 {
 namespace theory {
 
-InferenceManager::InferenceManager(TheoryState& state, OutputChannel& out) : d_state(state), d_out(out), d_ee(nullptr) {}
-
-void InferenceManager::setEqualityEngine(eq::EqualityEngine* ee)
+InferenceManager::InferenceManager(TheoryState& state, OutputChannel& out)
+    : d_state(state), d_out(out), d_ee(nullptr)
 {
 }
 
-void InferenceManager::conflictConstantEq(TNode a, TNode b)
-{
-}
+void InferenceManager::setEqualityEngine(eq::EqualityEngine* ee) {}
 
-void InferenceManager::conflict(TNode conf)
-{
-}
+void InferenceManager::conflictConstantEq(TNode a, TNode b) {}
 
-void InferenceManager::trustedConflict(TrustNode tconf)
-{
-}
+void InferenceManager::conflict(TNode conf) {}
+
+void InferenceManager::trustedConflict(TrustNode tconf) {}
 
 bool InferenceManager::propagate(TNode lit)
 {
@@ -52,7 +47,6 @@ bool InferenceManager::propagate(TNode lit)
   }
   return ok;
 }
-
 
 }  // namespace theory
 }  // namespace CVC4

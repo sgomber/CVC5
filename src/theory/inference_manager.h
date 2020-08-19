@@ -18,9 +18,9 @@
 #define CVC4__THEORY__INFERENCE_MANAGER_H
 
 #include "expr/node.h"
+#include "theory/output_channel.h"
 #include "theory/theory_state.h"
 #include "theory/trust_node.h"
-#include "theory/output_channel.h"
 
 namespace CVC4 {
 namespace theory {
@@ -42,7 +42,7 @@ class InferenceManager
    * of theory.
    */
   void setEqualityEngine(eq::EqualityEngine* ee);
-  /** 
+  /**
    * Raise conflict, called when constants a and b merge. Sends the conflict
    * on the output channel corresponding to the equality engine's explanation
    * of (= a b).
@@ -56,6 +56,7 @@ class InferenceManager
    * T-propagate literal lit encountered by equality engine,
    */
   bool propagate(TNode lit);
+
  protected:
   /** Reference to the state of theory */
   TheoryState& d_state;
