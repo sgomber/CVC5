@@ -114,7 +114,8 @@ bool TheorySep::propagate(TNode literal)
 {
   Debug("sep") << "TheorySep::propagate(" << literal  << ")" << std::endl;
   // If already in conflict, no more propagation
-  if (d_state.isInConflict()) {
+  if (d_state.isInConflict())
+  {
     Debug("sep") << "TheorySep::propagate(" << literal << "): already in conflict" << std::endl;
     return false;
   }
@@ -303,7 +304,8 @@ void TheorySep::check(Effort e) {
   Trace("sep-check") << "Sep::check(): " << e << endl;
   NodeManager* nm = NodeManager::currentNM();
 
-  while( !done() && !d_state.isInConflict() ){
+  while (!done() && !d_state.isInConflict())
+  {
     // Get all the assertions
     Assertion assertion = get();
     TNode fact = assertion.d_assertion;
@@ -487,7 +489,8 @@ void TheorySep::check(Effort e) {
       //maybe propagate
       doPendingFacts();
       //add to spatial assertions
-      if( !d_state.isInConflict() && is_spatial ){
+      if (!d_state.isInConflict() && is_spatial)
+      {
         d_spatial_assertions.push_back( fact );
       }
     }
@@ -508,7 +511,8 @@ void TheorySep::notifyNewFact(TNode atom, bool polarity, TNode fact)
 
 void TheorySep::postCheck(Effort level)
 {
-  if (level == EFFORT_LAST_CALL && !d_state.isInConflict() && !d_valuation.needCheck())
+  if (level == EFFORT_LAST_CALL && !d_state.isInConflict()
+      && !d_valuation.needCheck())
   {
     Trace("sep-process") << "Checking heap at full effort..." << std::endl;
     d_label_model.clear();
@@ -821,7 +825,8 @@ void TheorySep::postCheck(Effort level)
     }
   }
   Trace("sep-check") << "Sep::check(): " << level
-                     << " done, conflict=" << d_state.isInConflict() << std::endl;
+                     << " done, conflict=" << d_state.isInConflict()
+                     << std::endl;
 }
 
 bool TheorySep::needsCheckLastEffort() {
@@ -1731,7 +1736,8 @@ void TheorySep::sendLemma( std::vector< Node >& ant, Node conc, const char * c, 
 void TheorySep::doPendingFacts() {
   if( d_pending_lem.empty() ){
     for( unsigned i=0; i<d_pending.size(); i++ ){
-      if( d_state.isInConflict() ){
+      if (d_state.isInConflict())
+      {
         break;
       }
       Node atom = d_pending[i].getKind()==kind::NOT ? d_pending[i][0] : d_pending[i];
@@ -1745,7 +1751,8 @@ void TheorySep::doPendingFacts() {
     }
   }else{
     for( unsigned i=0; i<d_pending_lem.size(); i++ ){
-      if( d_state.isInConflict() ){
+      if (d_state.isInConflict())
+      {
         break;
       }
       int index = d_pending_lem[i];

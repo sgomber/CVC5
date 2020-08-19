@@ -98,7 +98,7 @@ void Theory::setEqualityEngine(eq::EqualityEngine* ee)
 {
   // set the equality engine pointer
   d_equalityEngine = ee;
-  if (d_theoryState!=nullptr)
+  if (d_theoryState != nullptr)
   {
     // finish initialize the state with this equality engine
     d_theoryState->setEqualityEngine(ee);
@@ -499,7 +499,7 @@ void Theory::getCareGraph(CareGraph* careGraph) {
 EqualityStatus Theory::getEqualityStatus(TNode a, TNode b)
 {
   // if not using an equality engine, then by default we don't know the status
-  if (d_equalityEngine==nullptr)
+  if (d_equalityEngine == nullptr)
   {
     return EQUALITY_UNKNOWN;
   }

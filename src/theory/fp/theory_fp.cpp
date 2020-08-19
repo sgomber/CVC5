@@ -948,7 +948,8 @@ void TheoryFp::check(Effort level) {
   Trace("fp") << "TheoryFp::check(): started at effort level " << level
               << std::endl;
 
-  while (!done() && !d_state.isInConflict()) {
+  while (!done() && !d_state.isInConflict())
+  {
     // Get all the assertions
     Assertion assertion = get();
     TNode fact = assertion.d_assertion;

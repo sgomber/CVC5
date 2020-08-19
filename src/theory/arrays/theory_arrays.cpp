@@ -419,7 +419,8 @@ bool TheoryArrays::propagate(TNode literal)
   Debug("arrays") << spaces(getSatContext()->getLevel()) << "TheoryArrays::propagate(" << literal  << ")" << std::endl;
 
   // If already in conflict, no more propagation
-  if (d_state.isInConflict()) {
+  if (d_state.isInConflict())
+  {
     Debug("arrays") << spaces(getSatContext()->getLevel()) << "TheoryArrays::propagate(" << literal << "): already in conflict" << std::endl;
     return false;
   }
@@ -691,7 +692,8 @@ void TheoryArrays::checkWeakEquiv(bool arraysMerged) {
  */
 void TheoryArrays::preRegisterTermInternal(TNode node)
 {
-  if (d_state.isInConflict()) {
+  if (d_state.isInConflict())
+  {
     return;
   }
   Debug("arrays") << spaces(getSatContext()->getLevel()) << "TheoryArrays::preRegisterTerm(" << node << ")" << std::endl;
@@ -1320,8 +1322,8 @@ void TheoryArrays::check(Effort e) {
           d_equalityEngine->assertEquality(fact[0], false, fact);
 
           // Apply ArrDiseq Rule if diseq is between arrays
-          if(fact[0][0].getType().isArray() && !d_state.isInConflict()) {
-
+          if (fact[0][0].getType().isArray() && !d_state.isInConflict())
+          {
             NodeManager* nm = NodeManager::currentNM();
             TypeNode indexType = fact[0][0].getType()[0];
 
@@ -1406,8 +1408,8 @@ void TheoryArrays::check(Effort e) {
 
 void TheoryArrays::postCheck(Effort level)
 {
-  if ((options::arraysEagerLemmas() || fullEffort(level)) && !d_state.isInConflict()
-      && options::arraysWeakEquivalence())
+  if ((options::arraysEagerLemmas() || fullEffort(level))
+      && !d_state.isInConflict() && options::arraysWeakEquivalence())
   {
     // Replay all array merges to update weak equivalence data structures
     context::CDList<Node>::iterator it = d_arrayMerges.begin(), iend = d_arrayMerges.end();
@@ -1495,12 +1497,13 @@ void TheoryArrays::postCheck(Effort level)
     d_readTableContext->pop();
   }
 
-  if (!options::arraysEagerLemmas() && fullEffort(level) && !d_state.isInConflict()
-      && !options::arraysWeakEquivalence())
+  if (!options::arraysEagerLemmas() && fullEffort(level)
+      && !d_state.isInConflict() && !options::arraysWeakEquivalence())
   {
     // generate the lemmas on the worklist
     Trace("arrays-lem")<< "Arrays::discharging lemmas. Number of queued lemmas: " << d_RowQueue.size() << "\n";
-    while (d_RowQueue.size() > 0 && !d_state.isInConflict()) {
+    while (d_RowQueue.size() > 0 && !d_state.isInConflict())
+    {
       if (dischargeLemmas()) {
         break;
       }
@@ -1724,7 +1727,8 @@ void TheoryArrays::mergeArrays(TNode a, TNode b)
     }
 
     // If no more to do, break
-    if (d_state.isInConflict() || d_mergeQueue.empty()) {
+    if (d_state.isInConflict() || d_mergeQueue.empty())
+    {
       break;
     }
 
@@ -1946,7 +1950,8 @@ void TheoryArrays::queueRowLemma(RowLemmaType lem)
 {
   Debug("pf::array") << "Array solver: queue row lemma called" << std::endl;
 
-  if (d_state.isInConflict() || d_RowAlreadyAdded.contains(lem)) {
+  if (d_state.isInConflict() || d_RowAlreadyAdded.contains(lem))
+  {
     return;
   }
   TNode a, b, i, j;
@@ -2107,7 +2112,8 @@ bool TheoryArrays::dischargeLemmas()
     int prop = options::arraysPropagate();
     if (prop > 0) {
       propagate(l);
-      if (d_state.isInConflict()) {
+      if (d_state.isInConflict())
+      {
         return true;
       }
     }

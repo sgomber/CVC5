@@ -331,7 +331,6 @@ public:
   }
 
  private:
-
   inline bool conflictQueueEmpty() const {
     return d_conflicts.empty();
   }
