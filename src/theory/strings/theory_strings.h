@@ -98,7 +98,7 @@ class TheoryStrings : public Theory {
   /** add shared term */
   void notifySharedTerm(TNode n) override;
   /** preregister term */
-  void preRegisterTerm(TNode n) override;
+  void notifyPreRegisterTerm(TNode n) override;
   /** Expand definition */
   TrustNode expandDefinition(Node n) override;
   /** Check at effort e */

@@ -253,8 +253,8 @@ TrustNode TheoryUF::expandDefinition(Node node)
   return TrustNode::null();
 }
 
-void TheoryUF::preRegisterTerm(TNode node) {
-  Debug("uf") << "TheoryUF::preRegisterTerm(" << node << ")" << std::endl;
+void TheoryUF::notifyPreRegisterTerm(TNode node) {
+  Debug("uf") << "TheoryUF::notifyPreRegisterTerm(" << node << ")" << std::endl;
 
   if (d_thss != NULL) {
     d_thss->preRegisterTerm(node);
@@ -291,7 +291,7 @@ void TheoryUF::preRegisterTerm(TNode node) {
     d_equalityEngine->addTerm(node);
     break;
   }
-}/* TheoryUF::preRegisterTerm() */
+}
 
 bool TheoryUF::propagate(TNode literal) {
   Debug("uf::propagate") << "TheoryUF::propagate(" << literal  << ")" << std::endl;

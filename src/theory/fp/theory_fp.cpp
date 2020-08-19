@@ -879,7 +879,7 @@ bool TheoryFp::isRegistered(TNode node) {
   return !(d_registeredTerms.find(node) == d_registeredTerms.end());
 }
 
-void TheoryFp::preRegisterTerm(TNode node)
+void TheoryFp::notifyPreRegisterTerm(TNode node)
 {
   if (Configuration::isBuiltWithSymFPU() && !options::fpExp())
   {
@@ -902,7 +902,7 @@ void TheoryFp::preRegisterTerm(TNode node)
     }
   }
   Trace("fp-preRegisterTerm")
-      << "TheoryFp::preRegisterTerm(): " << node << std::endl;
+      << "TheoryFp::notifyPreRegisterTerm(): " << node << std::endl;
   registerTerm(node);
   return;
 }

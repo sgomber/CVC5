@@ -92,7 +92,7 @@ class TheoryBV : public Theory {
 
   TrustNode expandDefinition(Node node) override;
 
-  void preRegisterTerm(TNode n) override;
+  void notifyPreRegisterTerm(TNode n) override;
 
   void check(Effort e) override;
   //--------------------------------- standard check

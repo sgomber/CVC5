@@ -851,7 +851,7 @@ void TheoryArrays::preRegisterTermInternal(TNode node)
 }
 
 
-void TheoryArrays::preRegisterTerm(TNode node)
+void TheoryArrays::notifyPreRegisterTerm(TNode node)
 {
   preRegisterTermInternal(node);
   // If we have a select from an array of Bools, mark it as a term that can be propagated.

@@ -547,10 +547,8 @@ class Theory {
 
   /**
    * Pre-register a term.  Done one time for a Node per SAT context level.
-   *
-   * TODO: non-virtual
    */
-  virtual void preRegisterTerm(TNode);
+  void preRegisterTerm(TNode);
 
   /**
    * Assert a fact in the current context.

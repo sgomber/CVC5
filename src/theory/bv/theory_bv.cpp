@@ -249,9 +249,9 @@ TrustNode TheoryBV::expandDefinition(Node node)
   return TrustNode::null();
 }
 
-void TheoryBV::preRegisterTerm(TNode node) {
+void TheoryBV::notifyPreRegisterTerm(TNode node) {
   d_calledPreregister = true;
-  Debug("bitvector-preregister") << "TheoryBV::preRegister(" << node << ")" << std::endl;
+  Debug("bitvector-preregister") << "TheoryBV::notifyPreRegisterTerm(" << node << ")" << std::endl;
 
   if (options::bitblastMode() == options::BitblastMode::EAGER)
   {

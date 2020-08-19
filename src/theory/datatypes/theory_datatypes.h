@@ -305,7 +305,7 @@ private:
   void notifyNewFact(TNode atom, bool polarity, TNode fact) override;
   //--------------------------------- end standard check
   bool needsCheckLastEffort() override;
-  void preRegisterTerm(TNode n) override;
+  void notifyPreRegisterTerm(TNode n) override;
   TrustNode expandDefinition(Node n) override;
   TrustNode ppRewrite(TNode n) override;
   /** Get the equality status of a and b */

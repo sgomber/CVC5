@@ -73,7 +73,7 @@ class TheoryArith : public Theory {
   /**
    * Does non-context dependent setup for a node connected to a theory.
    */
-  void preRegisterTerm(TNode n) override;
+  void notifyPreRegisterTerm(TNode n) override;
 
   TrustNode expandDefinition(Node node) override;
 

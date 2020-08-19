@@ -557,8 +557,8 @@ void TheoryDatatypes::assertFact( Node fact, Node exp ){
   Trace("datatypes-debug") << "TheoryDatatypes::assertFact : finished " << fact << std::endl;
 }
 
-void TheoryDatatypes::preRegisterTerm(TNode n) {
-  Debug("datatypes-prereg") << "TheoryDatatypes::preRegisterTerm() " << n << endl;
+void TheoryDatatypes::notifyPreRegisterTerm(TNode n) {
+  Debug("datatypes-prereg") << "TheoryDatatypes::notifyPreRegisterTerm() " << n << endl;
   collectTerms( n );
   switch (n.getKind()) {
   case kind::EQUAL:
