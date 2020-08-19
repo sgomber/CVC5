@@ -189,8 +189,10 @@ void TheoryFp::finishInit()
   d_equalityEngine->addFunctionKind(kind::FLOATINGPOINT_COMPONENT_SIGNIFICAND);
   d_equalityEngine->addFunctionKind(kind::ROUNDINGMODE_BITBLAST);
 
+  // allocate default theory state object
   d_allocState.reset(
       new TheoryState(getSatContext(), getUserContext(), d_valuation));
+  d_theoryState = d_allocState.get();
 }
 
 Node TheoryFp::minUF(Node node) {

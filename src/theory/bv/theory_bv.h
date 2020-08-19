@@ -290,6 +290,8 @@ class TheoryBV : public Theory {
 
   /** The theory rewriter for this theory. */
   TheoryBVRewriter d_rewriter;
+  /** A (default) theory state object */
+  std::unique_ptr<TheoryState> d_allocState;
 
   friend class LazyBitblaster;
   friend class TLazyBitblaster;

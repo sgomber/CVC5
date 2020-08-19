@@ -121,8 +121,6 @@ class TheoryFp : public Theory {
 
   context::CDO<bool> d_conflict;
   context::CDO<Node> d_conflictNode;
-  /** A (default) theory state object */
-  std::unique_ptr<TheoryState> d_allocState;
 
   typedef context::CDHashMap<TypeNode, Node, TypeNodeHashFunction>
       ComparisonUFMap;
@@ -163,6 +161,8 @@ class TheoryFp : public Theory {
 
   /** The theory rewriter for this theory. */
   TheoryFpRewriter d_rewriter;
+  /** A (default) theory state object */
+  std::unique_ptr<TheoryState> d_allocState;
 }; /* class TheoryFp */
 
 }  // namespace fp

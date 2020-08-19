@@ -139,6 +139,10 @@ void TheoryBV::finishInit()
     // must finish initialization in the core solver
     core->finishInit();
   }
+  // allocate default theory state object
+  d_allocState.reset(
+      new TheoryState(getSatContext(), getUserContext(), d_valuation));
+  d_theoryState = d_allocState.get();
 }
 
 void TheoryBV::spendResource(ResourceManager::Resource r)

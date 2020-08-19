@@ -110,6 +110,10 @@ void TheoryDatatypes::finishInit()
     // do congruence on evaluation functions
     d_equalityEngine->addFunctionKind(kind::DT_SYGUS_EVAL);
   }
+  // allocate default theory state object
+  d_allocState.reset(
+      new TheoryState(getSatContext(), getUserContext(), d_valuation));
+  d_theoryState = d_allocState.get();
 }
 
 TheoryDatatypes::EqcInfo* TheoryDatatypes::getOrMakeEqcInfo( TNode n, bool doMake ){

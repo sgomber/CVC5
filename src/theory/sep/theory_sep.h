@@ -58,6 +58,8 @@ class TheorySep : public Theory {
   bool d_bounds_init;
 
   TheorySepRewriter d_rewriter;
+  /** A (default) theory state object */
+  std::unique_ptr<TheoryState> d_allocState;
 
   Node mkAnd( std::vector< TNode >& assumptions );
 

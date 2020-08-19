@@ -80,6 +80,11 @@ void TheorySep::finishInit()
   // The kinds we are treating as function application in congruence
   d_equalityEngine->addFunctionKind(kind::SEP_PTO);
   // we could but don't do congruence on SEP_STAR here.
+  
+  // allocate default theory state object
+  d_allocState.reset(
+      new TheoryState(getSatContext(), getUserContext(), d_valuation));
+  d_theoryState = d_allocState.get();
 }
 
 Node TheorySep::mkAnd( std::vector< TNode >& assumptions ) {
