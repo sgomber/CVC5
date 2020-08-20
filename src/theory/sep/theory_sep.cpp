@@ -277,8 +277,6 @@ void TheorySep::presolve() {
 // MAIN SOLVER
 /////////////////////////////////////////////////////////////////////////////
 
-
-
 bool TheorySep::preNotifyFact(TNode atom,
                               bool polarity,
                               TNode fact,
