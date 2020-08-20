@@ -3347,37 +3347,6 @@ bool TheoryArithPrivate::preNotifyFact(TNode atom,
   return true;
 }
 
-void TheoryArithPrivate::check(Theory::Effort effortLevel){
-  Assert(d_currentPropagationList.empty());
-
-  if(done() && effortLevel < Theory::EFFORT_FULL && ( d_qflraStatus == Result::SAT) ){
-    return;
-  }
-
-  TimerStat::CodeTimer checkTimer(d_containing.d_checkTime);
-  //cout << "TheoryArithPrivate::check " << effortLevel << std::endl;
-  Debug("effortlevel") << "TheoryArithPrivate::check " << effortLevel << std::endl;
-  Debug("arith") << "TheoryArithPrivate::check begun " << effortLevel << std::endl;
-
-  preCheck(effortLevel);
-
-  while (!done())
-  {
-    TNode assertion = get();
-    ConstraintP curr = constraintFromFactQueue(assertion);
-    if (curr != NullConstraint)
-    {
-      bool res CVC4_UNUSED = assertionCases(curr);
-      Assert(!res || anyConflict());
-    }
-    if (anyConflict())
-    {
-      break;
-    }
-  }
-  postCheck(effortLevel);
-}
-
 bool TheoryArithPrivate::preCheck(Theory::Effort level)
 {
   if(Debug.isOn("arith::consistency")){

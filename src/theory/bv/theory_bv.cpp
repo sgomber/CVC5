@@ -330,13 +330,6 @@ void TheoryBV::check(Effort e)
   if (done() && e<Theory::EFFORT_FULL) {
     return;
   }
-  
-  //last call : do reductions on extended bitvector functions
-  if (e == Theory::EFFORT_LAST_CALL) {
-    std::vector<Node> nred = d_extTheory->getActive();
-    doExtfReductions(nred);
-    return;
-  }
 
   TimerStat::CodeTimer checkTimer(d_checkTime);
   Debug("bitvector") << "TheoryBV::check(" << e << ")" << std::endl;
@@ -443,23 +436,115 @@ void TheoryBV::check(Effort e)
 
 bool TheoryBV::preCheck(Effort level)
 {
-  // TODO
+  // we may be getting new assertions so the model cache may not be sound
+  d_invalidateModelCache.set(true);
+  // if we are using the eager solver
+  if (options::bitblastMode() == options::BitblastMode::EAGER)
+  {
+    // this can only happen on an empty benchmark
+    if (!d_eagerSolver->isInitialized()) {
+      d_eagerSolver->initialize();
+    }
+    if (!Theory::fullEffort(level))
+    {
+      // wait for full effort
+      return true;
+    }
+
+    std::vector<TNode> assertions;
+    while (!done()) {
+      TNode fact = get().d_assertion;
+      Assert(fact.getKind() == kind::BITVECTOR_EAGER_ATOM);
+      assertions.push_back(fact);
+      d_eagerSolver->assertFormula(fact[0]);
+    }
+
+    bool ok = d_eagerSolver->checkSat();
+    if (!ok) {
+      if (assertions.size() == 1) {
+        d_out->conflict(assertions[0]);
+        return true;
+      }
+      Node conflict = utils::mkAnd(assertions);
+      d_out->conflict(conflict);
+    }
+    return true;
+  }
+  if (Theory::fullEffort(level)) {
+    ++(d_statistics.d_numCallsToCheckFullEffort);
+  } else {
+    ++(d_statistics.d_numCallsToCheckStandardEffort);
+  }
+  // should have sent the conflict already
+  Assert (!inConflict());
   return false;
 }
 
 void TheoryBV::postCheck(Effort level)
 {
-  // TODO
+  Assert (options::bitblastMode() != options::BitblastMode::EAGER);
+  bool ok = true;
+  bool complete = false;
+  for (unsigned i = 0; i < d_subtheories.size(); ++i) {
+    Assert(!inConflict());
+    ok = d_subtheories[i]->check(level);
+    complete = d_subtheories[i]->isComplete();
+
+    if (!ok) {
+      // if we are in a conflict no need to check with other theories
+      Assert(inConflict());
+      sendConflict();
+      return;
+    }
+    if (complete) {
+      // if the last subtheory was complete we stop
+      break;
+    }
+  }
+  
+  //check extended functions
+  if (Theory::fullEffort(level)) {
+    //do inferences (adds external lemmas)  TODO: this can be improved to add internal inferences
+    std::vector< Node > nred;
+    if (d_extTheory->doInferences(0, nred))
+    {
+      return;
+    }
+    d_needsLastCallCheck = false;
+    if( !nred.empty() ){
+      //other inferences involving bv2nat, int2bv
+      if( options::bvAlgExtf() ){
+        if( doExtfInferences( nred ) ){
+          return;
+        }
+      }
+      if( !options::bvLazyReduceExtf() ){
+        if( doExtfReductions( nred ) ){
+          return;
+        }
+      }else{     
+        d_needsLastCallCheck = true;
+      }
+    }
+  }
+  else if (level == Theory::EFFORT_LAST_CALL) 
+  {
+  //last call : do reductions on extended bitvector functions
+    std::vector<Node> nred = d_extTheory->getActive();
+    doExtfReductions(nred);
+  }
 }
 
 bool TheoryBV::preNotifyFact(TNode atom, bool pol, TNode fact, bool isPrereg)
 {
+  Assert (options::bitblastMode() != options::BitblastMode::EAGER);
   // TODO
   return false;
 }
 
 void TheoryBV::notifyFact(TNode atom, bool pol, TNode fact, bool isInternal)
 {
+  Assert (options::bitblastMode() != options::BitblastMode::EAGER);
   // TODO
 }
 

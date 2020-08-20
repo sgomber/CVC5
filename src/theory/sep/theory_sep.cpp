@@ -355,7 +355,10 @@ bool TheorySep::preNotifyFact(TNode atom,
   if (isSpatial)
   {
     reduceFact(atom, polarity, fact);
-    d_spatial_assertions.push_back(fact);
+    if (!slbl.isNull())
+    {
+      d_spatial_assertions.push_back(fact);
+    }
   }
   // assert to equality if non-spatial or a labelled pto
   if (!isSpatial || (!slbl.isNull() && satom.getKind() == SEP_PTO))
