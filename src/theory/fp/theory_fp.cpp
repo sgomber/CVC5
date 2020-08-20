@@ -944,59 +944,6 @@ void TheoryFp::conflict(TNode t1, TNode t2)
   return;
 }
 
-void TheoryFp::check(Effort level) {
-  Trace("fp") << "TheoryFp::check(): started at effort level " << level
-              << std::endl;
-
-  while (!done() && !d_state.isInConflict())
-  {
-    // Get all the assertions
-    Assertion assertion = get();
-    TNode fact = assertion.d_assertion;
-
-    Debug("fp") << "TheoryFp::check(): processing " << fact << std::endl;
-
-    // Only handle equalities; the rest should be handled by
-    // the bit-vector theory
-
-    bool negated = fact.getKind() == kind::NOT;
-    TNode predicate = negated ? fact[0] : fact;
-
-    if (predicate.getKind() == kind::EQUAL) {
-      Assert(!(predicate[0].getType().isFloatingPoint()
-               || predicate[0].getType().isRoundingMode())
-             || isRegistered(predicate[0]));
-      Assert(!(predicate[1].getType().isFloatingPoint()
-               || predicate[1].getType().isRoundingMode())
-             || isRegistered(predicate[1]));
-      registerTerm(predicate);  // Needed for float equalities
-
-      if (negated) {
-        Debug("fp-eq") << "TheoryFp::check(): adding dis-equality " << fact[0]
-                       << std::endl;
-        d_equalityEngine->assertEquality(predicate, false, fact);
-      } else {
-        Debug("fp-eq") << "TheoryFp::check(): adding equality " << fact
-                       << std::endl;
-        d_equalityEngine->assertEquality(predicate, true, fact);
-      }
-    } else {
-      // A system-wide invariant; predicates are registered before they are
-      // asserted
-      Assert(isRegistered(predicate));
-
-      if (d_equalityEngine->isFunctionKind(predicate.getKind()))
-      {
-        Debug("fp-eq") << "TheoryFp::check(): adding predicate " << predicate
-                       << " is " << !negated << std::endl;
-        d_equalityEngine->assertPredicate(predicate, !negated, fact);
-      }
-    }
-  }
-
-  postCheck(level);
-}
-
 void TheoryFp::postCheck(Effort level)
 {
   // Resolve the abstractions for the conversion lemmas

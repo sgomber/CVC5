@@ -287,7 +287,6 @@ private:
   /** called when two equivalance classes have merged */
   void eqNotifyMerge(TNode t1, TNode t2);
 
-  void check(Effort e) override;
   //--------------------------------- standard check
   /** Pre-check, called before the fact queue of the theory is processed. */
   void preCheck(Effort level) override;

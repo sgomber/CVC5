@@ -158,48 +158,6 @@ TNode TheoryDatatypes::getEqcConstructor( TNode r ) {
   }
 }
 
-void TheoryDatatypes::check(Effort e) {
-  if (done() && e<EFFORT_FULL) {
-    return;
-  }
-  Assert(d_pending.empty() && d_pending_merge.empty());
-  TimerStat::CodeTimer checkTimer(d_checkTime);
-
-  preCheck(e);
-
-  Trace("datatypes-check") << "Check effort " << e << std::endl;
-  while (!done() && !d_state.isInConflict())
-  {
-    // Get the next assertion from the fact queue
-    Assertion assertion = get();
-    TNode fact = assertion.d_assertion;
-    bool polarity = fact.getKind() != kind::NOT;
-    TNode atom = polarity ? fact : fact[0];
-    // call the preprocess method
-    if (preprocessNewFact(atom, polarity, fact))
-    {
-      // handled in theory-specific way that doesn't involve equality engine
-      continue;
-    }
-    // if we have an equality engine, assert to it now
-    if (d_equalityEngine != nullptr)
-    {
-      if (atom.getKind() == kind::EQUAL)
-      {
-        d_equalityEngine->assertEquality(atom, polarity, fact);
-      }
-      else
-      {
-        d_equalityEngine->assertPredicate(atom, polarity, fact);
-      }
-    }
-    // notify the theory of the new fact
-    notifyNewFact(atom, polarity, fact);
-  }
-
-  postCheck(e);
-}
-
 void TheoryDatatypes::preCheck(Effort level) { d_addedLemma = false; }
 
 void TheoryDatatypes::postCheck(Effort level)

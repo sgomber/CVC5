@@ -505,12 +505,12 @@ EqualityStatus Theory::getEqualityStatus(TNode a, TNode b)
 void Theory::check(Effort level)
 {
   // see if we are already done (as an optimization)
-  if (done() && !fullEffort(level))
+  if (done() && level<EFFORT_FULL)
   {
     return;
   }
   // resource, stats
-  // d_out->spendResource(ResourceManager::Resource::TheoryCheckStep);
+  d_out->spendResource(ResourceManager::Resource::TheoryCheckStep);
   TimerStat::CodeTimer checkTimer(d_checkTime);
   // pre-check at level
   preCheck(level);
