@@ -149,21 +149,6 @@ void EqEngineManagerCentral::CentralNotifyClass::eqNotifyNewClass(TNode t)
   }
 }
 
-bool EqEngineManagerCentral::CentralNotifyClass::eqNotifyTriggerEquality(
-    TNode equality, bool value)
-{
-  /*
-  if (value) {
-    return d_uf.propagate(equality);
-  } else {
-    return d_uf.propagate(equality.notNode());
-  }
-  */
-  TheoryId tid = Theory::theoryOf(equality);
-  Assert(d_theoryNotify[tid] != nullptr);
-  return d_theoryNotify[tid]->eqNotifyTriggerEquality(equality, value);
-}
-
 bool EqEngineManagerCentral::CentralNotifyClass::eqNotifyTriggerPredicate(
     TNode predicate, bool value)
 {

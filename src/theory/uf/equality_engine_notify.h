@@ -33,17 +33,8 @@ class EqualityEngineNotify
   virtual ~EqualityEngineNotify(){};
 
   /**
-   * Notifies about a trigger equality that became true or false.
-   *
-   * NOTE: it is recommended that this method call InferenceManager::propagate.
-   *
-   * @param equality the equality that became true or false
-   * @param value the value of the equality
-   */
-  virtual bool eqNotifyTriggerEquality(TNode equality, bool value) = 0;
-
-  /**
-   * Notifies about a trigger predicate that became true or false.
+   * Notifies about a trigger predicate that became true or false. Notice that
+   * predicate can be an equality.
    *
    * NOTE: it is recommended that this method call InferenceManager::propagate.
    *
@@ -112,10 +103,6 @@ class EqualityEngineNotify
 class EqualityEngineNotifyNone : public EqualityEngineNotify
 {
  public:
-  bool eqNotifyTriggerEquality(TNode equality, bool value) override
-  {
-    return true;
-  }
   bool eqNotifyTriggerPredicate(TNode predicate, bool value) override
   {
     return true;

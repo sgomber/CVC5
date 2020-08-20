@@ -55,7 +55,6 @@ class EqEngineManagerCentral : public EqEngineManager
    public:
     CentralNotifyClass();
     void eqNotifyNewClass(TNode t) override;
-    bool eqNotifyTriggerEquality(TNode equality, bool value) override;
     bool eqNotifyTriggerPredicate(TNode predicate, bool value) override;
     bool eqNotifyTriggerTermEquality(TheoryId tag,
                                      TNode t1,

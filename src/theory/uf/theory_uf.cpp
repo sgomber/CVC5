@@ -268,7 +268,7 @@ void TheoryUF::notifyPreRegisterTerm(TNode node)
   switch (node.getKind()) {
   case kind::EQUAL:
     // Add the trigger for equality
-    d_equalityEngine->addTriggerEquality(node);
+    d_equalityEngine->addTriggerPredicate(node);
     break;
   case kind::APPLY_UF:
   case kind::HO_APPLY:

@@ -91,7 +91,6 @@ class TheorySets : public Theory
   {
    public:
     NotifyClass(TheorySetsPrivate& theory) : d_theory(theory) {}
-    bool eqNotifyTriggerEquality(TNode equality, bool value) override;
     bool eqNotifyTriggerPredicate(TNode predicate, bool value) override;
     bool eqNotifyTriggerTermEquality(TheoryId tag,
                                      TNode t1,

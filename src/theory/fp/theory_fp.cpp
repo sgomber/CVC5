@@ -818,7 +818,7 @@ void TheoryFp::registerTerm(TNode node) {
     // Add to the equality engine
     if (k == kind::EQUAL)
     {
-      d_equalityEngine->addTriggerEquality(node);
+      d_equalityEngine->addTriggerPredicate(node);
     }
     else
     {
@@ -1173,19 +1173,6 @@ bool TheoryFp::collectModelValues(TheoryModel* m, std::set<Node>& relevantTerms)
   return true;
 }
 
-bool TheoryFp::NotifyClass::eqNotifyTriggerEquality(TNode equality,
-                                                    bool value) {
-  Debug("fp-eq")
-      << "TheoryFp::eqNotifyTriggerEquality(): call back as equality "
-      << equality << " is " << value << std::endl;
-
-  if (value) {
-    return d_theorySolver.propagate(equality);
-  } else {
-    return d_theorySolver.propagate(equality.notNode());
-  }
-}
-
 bool TheoryFp::NotifyClass::eqNotifyTriggerPredicate(TNode predicate,
                                                      bool value) {
   Debug("fp-eq")
@@ -1194,9 +1181,8 @@ bool TheoryFp::NotifyClass::eqNotifyTriggerPredicate(TNode predicate,
 
   if (value) {
     return d_theorySolver.propagate(predicate);
-  } else {
-    return d_theorySolver.propagate(predicate.notNode());
   }
+  return d_theorySolver.propagate(predicate.notNode());
 }
 
 bool TheoryFp::NotifyClass::eqNotifyTriggerTermEquality(TheoryId tag, TNode t1,
