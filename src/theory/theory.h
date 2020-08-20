@@ -667,7 +667,7 @@ class Theory {
    *
    * This method returns true if and only if the equality engine of m is
    * consistent as a result of this call.
-   * 
+   *
    * The standard method for collectModelInfo computes the relevant terms,
    * asserts the theory's equality engine to the model (if necessary) and
    * then calls computeModelValues.

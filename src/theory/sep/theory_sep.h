@@ -150,10 +150,8 @@ class TheorySep : public Theory {
   bool needsCheckLastEffort() override;
 
  private:
-   /** Ensures that the reduction has been added for the given fact */
-   void reduceFact(TNode atom,
-                           bool polarity,
-                           TNode fact);
+  /** Ensures that the reduction has been added for the given fact */
+  void reduceFact(TNode atom, bool polarity, TNode fact);
   // NotifyClass: template helper class for d_equalityEngine - handles
   // call-back from congruence closure module
   class NotifyClass : public eq::EqualityEngineNotify
