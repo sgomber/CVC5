@@ -947,7 +947,6 @@ void TheoryFp::conflict(TNode t1, TNode t2)
 void TheoryFp::postCheck(Effort level)
 {
   // Resolve the abstractions for the conversion lemmas
-  //  if (level == EFFORT_COMBINATION) {
   if (level == EFFORT_LAST_CALL)
   {
     Trace("fp") << "TheoryFp::check(): checking abstractions" << std::endl;

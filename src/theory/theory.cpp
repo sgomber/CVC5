@@ -44,8 +44,6 @@ std::ostream& operator<<(std::ostream& os, Theory::Effort level){
     os << "EFFORT_STANDARD"; break;
   case Theory::EFFORT_FULL:
     os << "EFFORT_FULL"; break;
-  case Theory::EFFORT_COMBINATION:
-    os << "EFFORT_COMBINATION"; break;
   case Theory::EFFORT_LAST_CALL:
     os << "EFFORT_LAST_CALL"; break;
   default:

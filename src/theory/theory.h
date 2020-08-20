@@ -443,12 +443,8 @@ class Theory {
      */
     EFFORT_FULL = 100,
     /**
-     * Combination effort means that the individual theories are already satisfied, and
-     * it is time to put some effort into propagation of shared term equalities
-     */
-    EFFORT_COMBINATION = 150,
-    /**
-     * Last call effort, reserved for quantifiers.
+     * Last call effort, called after theory combination has completed with
+     * no lemmas and a model is available.
      */
     EFFORT_LAST_CALL = 200
   };/* enum Effort */
@@ -459,8 +455,6 @@ class Theory {
     { return e >= EFFORT_STANDARD && e <  EFFORT_FULL; }
   static inline bool fullEffort(Effort e) CVC4_CONST_FUNCTION
     { return e == EFFORT_FULL; }
-  static inline bool combination(Effort e) CVC4_CONST_FUNCTION
-    { return e == EFFORT_COMBINATION; }
 
   /**
    * Get the id for this Theory.
