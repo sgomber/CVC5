@@ -24,6 +24,7 @@
 #include "theory/quantifiers/quantifiers_rewriter.h"
 #include "theory/quantifiers/quantifiers_state.h"
 #include "theory/theory.h"
+#include "theory/valuation.h"
 
 namespace CVC4 {
 namespace theory {

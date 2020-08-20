@@ -58,6 +58,7 @@ TheorySep::TheorySep(context::Context* c,
 {
   d_true = NodeManager::currentNM()->mkConst<bool>(true);
   d_false = NodeManager::currentNM()->mkConst<bool>(false);
+
   // indicate we are using the default theory state object
   d_theoryState = &d_state;
 }
