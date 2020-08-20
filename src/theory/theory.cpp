@@ -505,7 +505,7 @@ EqualityStatus Theory::getEqualityStatus(TNode a, TNode b)
 void Theory::check(Effort level)
 {
   // see if we are already done (as an optimization)
-  if (done() && level<EFFORT_FULL)
+  if (done() && level < EFFORT_FULL)
   {
     return;
   }
