@@ -420,9 +420,12 @@ void InferenceManager::assertPendingFact(Node atom, bool polarity, Node exp)
   notifyFact(atom, polarity, exp, true);
 }
 
-void InferenceManager::notifyFact(TNode atom, bool polarity, TNode exp, bool isInternal)
+void InferenceManager::notifyFact(TNode atom,
+                                  bool polarity,
+                                  TNode exp,
+                                  bool isInternal)
 {
-  if (atom.getKind()== EQUAL)
+  if (atom.getKind() == EQUAL)
   {
     // we must ensure these terms are registered
     Trace("strings-pending-debug") << "  Register term" << std::endl;
