@@ -263,9 +263,8 @@ Node BitblastSolver::getModelValue(TNode node)
   return val;
 }
 
-
-
-void BitblastSolver::setPendingConflict(TNode conflict) {
+void BitblastSolver::setPendingConflict(TNode conflict)
+{
   Node final_conflict = conflict;
   if (options::bitvectorQuickXplain() &&
       conflict.getKind() == kind::AND) {

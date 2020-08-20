@@ -471,7 +471,8 @@ bool AlgebraicSolver::quickCheck(std::vector<Node>& facts) {
   return false;
 }
 
-void AlgebraicSolver::setPendingConflict(TNode conflict) {
+void AlgebraicSolver::setPendingConflict(TNode conflict)
+{
   Node final_conflict = conflict;
   if (options::bitvectorQuickXplain() &&
       conflict.getKind() == kind::AND &&

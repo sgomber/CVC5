@@ -279,7 +279,10 @@ void CoreSolver::buildModel()
 
 bool CoreSolver::assertFactToEqualityEngine(TNode fact, TNode reason) {
   // Notify the equality engine
-  if (!d_bv->inPendingConflict() && (!d_bv->wasPropagatedBySubtheory(fact) || d_bv->getPropagatingSubtheory(fact) != SUB_CORE)) {
+  if (!d_bv->inPendingConflict()
+      && (!d_bv->wasPropagatedBySubtheory(fact)
+          || d_bv->getPropagatingSubtheory(fact) != SUB_CORE))
+  {
     Debug("bv-slicer-eq") << "CoreSolver::assertFactToEqualityEngine fact=" << fact << endl;
     // Debug("bv-slicer-eq") << "                     reason=" << reason << endl;
     bool negated = fact.getKind() == kind::NOT;
@@ -302,7 +305,8 @@ bool CoreSolver::assertFactToEqualityEngine(TNode fact, TNode reason) {
   }
 
   // checking for a conflict
-  if (d_bv->inPendingConflict()) {
+  if (d_bv->inPendingConflict())
+  {
     return false;
   }
   return true;

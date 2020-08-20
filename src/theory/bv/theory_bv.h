@@ -273,9 +273,7 @@ class TheoryBV : public Theory {
 
   void setPendingConflict(Node conflict = Node::null());
 
-  bool inPendingConflict() {
-    return d_pendingConflict;
-  }
+  bool inPendingConflict() { return d_pendingConflict; }
 
   void sendConflict();
 

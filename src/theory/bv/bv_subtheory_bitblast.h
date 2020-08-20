@@ -64,7 +64,8 @@ class BitblastSolver : public SubtheorySolver {
   std::unique_ptr<BVQuickCheck> d_quickCheck;
   std::unique_ptr<QuickXPlain> d_quickXplain;
   void setPendingConflict(TNode conflict);
-public:
+
+ public:
   BitblastSolver(context::Context* c, TheoryBV* bv);
   ~BitblastSolver();
 

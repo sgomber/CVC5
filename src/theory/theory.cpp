@@ -581,9 +581,7 @@ TrustNode Theory::explainConflict(TNode a, TNode b)
                      "Theory::explainConflict() interface!";
 }
 
-void Theory::preRegisterTerm(TNode node)
-{
-}
+void Theory::preRegisterTerm(TNode node) {}
 
 /*
 void Theory::preRegisterTermDefault(TNode node)

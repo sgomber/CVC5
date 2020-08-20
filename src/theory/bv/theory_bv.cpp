@@ -284,12 +284,15 @@ void TheoryBV::preRegisterTerm(TNode node)
 
 void TheoryBV::sendConflict() {
   Assert(d_pendingConflict);
-  if (d_pendingConflictNode.isNull()) {
+  if (d_pendingConflictNode.isNull())
+  {
     return;
   }
-  Debug("bitvector") << indent() << "TheoryBV::check(): conflict " << d_pendingConflictNode << std::endl;
+  Debug("bitvector") << indent() << "TheoryBV::check(): conflict "
+                     << d_pendingConflictNode << std::endl;
   d_out->conflict(d_pendingConflictNode);
-  d_statistics.d_avgConflictSize.addEntry(d_pendingConflictNode.getNumChildren());
+  d_statistics.d_avgConflictSize.addEntry(
+      d_pendingConflictNode.getNumChildren());
   d_pendingConflictNode = Node::null();
   // we are now in conflict
   d_state.notifyInConflict();
@@ -594,7 +597,8 @@ void TheoryBV::propagate(Effort e) {
     return;
   }
 
-  if (inPendingConflict()) {
+  if (inPendingConflict())
+  {
     return;
   }
 
@@ -839,7 +843,8 @@ bool TheoryBV::storePropagation(TNode literal, SubTheory subtheory)
   prop_count++;
 
   // If already in conflict, no more propagation
-  if (d_pendingConflict) {
+  if (d_pendingConflict)
+  {
     Debug("bitvector::propagate") << indent() << "TheoryBV::storePropagation(" << literal << ", " << subtheory << "): already in conflict" << std::endl;
     return false;
   }
