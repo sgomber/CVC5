@@ -619,6 +619,8 @@ class Theory {
    * - be interrupted,
    * - throw an exception
    * - or call get() until done() is true.
+   * The standard method for check consists of implementing four callbacks,
+   * (preCheck, postCheck, preNotifyFact, notifyFact) as desribed below.
    *
    * TODO (project #39): this method should be non-virtual, once all theories
    * conform to the new standard
@@ -633,9 +635,9 @@ class Theory {
    */
   virtual void postCheck(Effort level = EFFORT_FULL);
   /**
-   * Preprocess new fact, return true if the theory processed it. If this
+   * Prenotify fact, return true if the theory processed it. If this
    * method returns false, then the atom will be added to the equality engine
-   * of the theory and notifyNewFact will be called.
+   * of the theory and notifyFact will be called with isInternal=false.
    *
    * @param atom The atom
    * @param polarity Its polarity
@@ -646,7 +648,7 @@ class Theory {
    */
   virtual bool preNotifyFact(TNode atom, bool pol, TNode fact, bool isPrereg);
   /**
-   * Notify new fact, called immediately after the fact was pushed into the
+   * Notify fact, called immediately after the fact was pushed into the
    * equality engine.
    *
    * @param atom The atom
@@ -665,6 +667,10 @@ class Theory {
    *
    * This method returns true if and only if the equality engine of m is
    * consistent as a result of this call.
+   * 
+   * The standard method for collectModelInfo computes the relevant terms,
+   * asserts the theory's equality engine to the model (if necessary) and
+   * then calls computeModelValues.
    *
    * TODO (project #39): this method should be non-virtual, once all theories
    * conform to the new standard
