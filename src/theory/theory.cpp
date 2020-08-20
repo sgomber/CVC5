@@ -93,6 +93,12 @@ Theory::~Theory() {
   smtStatisticsRegistry()->unregisterStat(&d_computeCareGraphTime);
 }
 
+bool Theory::needsEqualityEngine(EeSetupInfo& esi)
+{
+  // by default, this theory does not use an (official) equality engine
+  return false;
+}
+
 void Theory::setEqualityEngine(eq::EqualityEngine* ee)
 {
   // set the equality engine pointer
@@ -119,12 +125,6 @@ void Theory::setDecisionManager(DecisionManager* dm)
   Assert(d_decManager == nullptr);
   Assert(dm != nullptr);
   d_decManager = dm;
-}
-
-bool Theory::needsEqualityEngine(EeSetupInfo& esi)
-{
-  // by default, this theory does not use an (official) equality engine
-  return false;
 }
 
 void Theory::finishInitStandalone()
@@ -351,6 +351,23 @@ std::unordered_set<TNode, TNodeHashFunction> Theory::currentlySharedTerms() cons
   return currentlyShared;
 }
 
+bool Theory::collectModelInfo(TheoryModel* m)
+{
+  std::set<Node> termSet;
+  // Compute terms appearing in assertions and shared terms
+  computeRelevantTerms(termSet);
+  // if we are using an equality engine, assert it to the model
+  if (d_equalityEngine != nullptr)
+  {
+    if (!m->assertEqualityEngine(d_equalityEngine, &termSet))
+    {
+      return false;
+    }
+  }
+  // now, collect theory-specific value assigments
+  return collectModelValues(m, termSet);
+}
+
 void Theory::collectTerms(TNode n,
                           set<Kind>& irrKinds,
                           set<Node>& termSet) const
@@ -410,11 +427,6 @@ void Theory::computeRelevantTerms(std::set<Node>& termSet, bool includeShared)
 bool Theory::collectModelValues(TheoryModel* m, std::set<Node>& termSet)
 {
   return true;
-}
-
-void Theory::notifyPreRegisterTerm(TNode node)
-{
-  // do nothing
 }
 
 Theory::PPAssertStatus Theory::ppAssert(TNode in,
@@ -562,23 +574,6 @@ void Theory::notifyFact(TNode atom, bool polarity, TNode fact, bool isInternal)
 {
 }
 
-bool Theory::collectModelInfo(TheoryModel* m)
-{
-  std::set<Node> termSet;
-  // Compute terms appearing in assertions and shared terms
-  computeRelevantTerms(termSet);
-  // if we are using an equality engine, assert it to the model
-  if (d_equalityEngine != nullptr)
-  {
-    if (!m->assertEqualityEngine(d_equalityEngine, &termSet))
-    {
-      return false;
-    }
-  }
-  // now, collect theory-specific value assigments
-  return collectModelValues(m, termSet);
-}
-
 TrustNode Theory::explainConflict(TNode a, TNode b)
 {
   Unimplemented() << "Theory " << identify()
@@ -588,8 +583,6 @@ TrustNode Theory::explainConflict(TNode a, TNode b)
 
 void Theory::preRegisterTerm(TNode node)
 {
-  // do theory-specific preRegisterTerm
-  notifyPreRegisterTerm(node);
 }
 
 /*
