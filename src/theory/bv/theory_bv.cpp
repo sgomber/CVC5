@@ -937,17 +937,6 @@ EqualityStatus TheoryBV::getEqualityStatus(TNode a, TNode b)
   return EQUALITY_UNKNOWN; ;
 }
 
-
-void TheoryBV::enableCoreTheorySlicer() {
-  Assert(!d_calledPreregister);
-  d_isCoreTheory = true;
-  if (d_subtheoryMap.find(SUB_CORE) != d_subtheoryMap.end()) {
-    CoreSolver* core = (CoreSolver*)d_subtheoryMap[SUB_CORE];
-    core->enableSlicer();
-  }
-}
-
-
 void TheoryBV::ppStaticLearn(TNode in, NodeBuilder<>& learned) {
   if(d_staticLearnCache.find(in) != d_staticLearnCache.end()){
     return;

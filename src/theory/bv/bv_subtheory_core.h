@@ -43,7 +43,6 @@ class CoreSolver : public SubtheorySolver {
 
   struct Statistics {
     IntStat d_numCallstoCheck;
-    BackedStat<bool> d_slicerEnabled;
     Statistics();
     ~Statistics();
   };
@@ -75,12 +74,10 @@ class CoreSolver : public SubtheorySolver {
   /** Store a conflict from merging two constants */
   void conflict(TNode a, TNode b);
 
-  std::unique_ptr<Slicer> d_slicer;
   context::CDO<bool> d_isComplete;
   unsigned d_lemmaThreshold;
   
   /** Used to ensure that the core slicer is used properly*/
-  bool d_useSlicer;
   bool d_preregisterCalled;
   bool d_checkCalled;
 
@@ -96,8 +93,6 @@ class CoreSolver : public SubtheorySolver {
   ModelValue d_modelValues;
   void buildModel();
   bool assertFactToEqualityEngine(TNode fact, TNode reason);
-  bool decomposeFact(TNode fact);
-  Node getBaseDecomposition(TNode a);
   bool isCompleteForTerm(TNode term, TNodeBoolMap& seen);
   Statistics d_statistics;
 
@@ -115,7 +110,6 @@ class CoreSolver : public SubtheorySolver {
   EqualityStatus getEqualityStatus(TNode a, TNode b) override;
   bool hasTerm(TNode node) const;
   void addTermToEqualityEngine(TNode node);
-  void enableSlicer();
 };
 
 

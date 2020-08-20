@@ -692,7 +692,6 @@ class TheoryEngine {
 
   /** For preprocessing pass lifting bit-vectors of size 1 to booleans */
 public:
-  void staticInitializeBVOptions(const std::vector<Node>& assertions);
 
   SortInference* getSortInference() { return &d_sortInfer; }
 

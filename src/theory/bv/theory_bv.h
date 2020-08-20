@@ -126,8 +126,6 @@ class TheoryBV : public Theory {
 
   PPAssertStatus ppAssert(TNode in, SubstitutionMap& outSubstitutions) override;
 
-  void enableCoreTheorySlicer();
-
   TrustNode ppRewrite(TNode t) override;
 
   void ppStaticLearn(TNode in, NodeBuilder<>& learned) override;
