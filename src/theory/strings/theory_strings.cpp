@@ -744,7 +744,10 @@ bool TheoryStrings::preNotifyFact(TNode atom,
   return false;
 }
 
-void TheoryStrings::notifyFact(TNode atom, bool polarity, TNode fact, bool isInternal)
+void TheoryStrings::notifyFact(TNode atom,
+                               bool polarity,
+                               TNode fact,
+                               bool isInternal)
 {
   // TODO : inference manager splitting
 }

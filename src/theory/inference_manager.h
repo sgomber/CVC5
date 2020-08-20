@@ -75,6 +75,7 @@ class InferManager
 
   /** assert fact */
   void assertInternalFact(TNode atom, bool pol, TNode fact);
+
  protected:
   /** Make trusted conflict */
   virtual TrustNode mkTrustedConflictEqConstantMerge(TNode a, TNode b);

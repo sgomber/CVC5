@@ -477,7 +477,10 @@ void TheoryDatatypes::assertFact( Node fact, Node exp ){
   notifyFact(atom, polarity, fact, true);
 }
 
-void TheoryDatatypes::notifyFact(TNode atom, bool polarity, TNode fact, bool isInternal)
+void TheoryDatatypes::notifyFact(TNode atom,
+                                 bool polarity,
+                                 TNode fact,
+                                 bool isInternal)
 {
   doPendingMerges();
   // could be sygus-specific

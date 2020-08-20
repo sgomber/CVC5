@@ -14,8 +14,8 @@
 
 #include "theory/inference_manager.h"
 
-#include "theory/uf/equality_engine.h"
 #include "theory/theory.h"
+#include "theory/uf/equality_engine.h"
 
 using namespace CVC4::kind;
 
@@ -23,9 +23,12 @@ namespace CVC4 {
 namespace theory {
 
 InferManager::InferManager(Theory& t, TheoryState& state)
-    : d_theory(t), d_state(state), d_out(t.getOutputChannel()), d_ee(nullptr), d_pnm(nullptr)
+    : d_theory(t),
+      d_state(state),
+      d_out(t.getOutputChannel()),
+      d_ee(nullptr),
+      d_pnm(nullptr)
 {
-
 }
 
 void InferManager::setEqualityEngine(eq::EqualityEngine* ee) { d_ee = ee; }
@@ -158,7 +161,7 @@ void InferManager::explain(TNode lit, std::vector<TNode>& assumptions) const
 
 void InferManager::assertInternalFact(TNode atom, bool pol, TNode fact)
 {
-  Assert (d_ee!=nullptr);
+  Assert(d_ee != nullptr);
   if (atom.getKind() == kind::EQUAL)
   {
     d_ee->assertEquality(atom, pol, fact);

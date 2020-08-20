@@ -491,7 +491,10 @@ bool TheorySep::preNotifyFact(TNode atom,
   return false;
 }
 
-void TheorySep::notifyFact(TNode atom, bool polarity, TNode fact, bool isInternal)
+void TheorySep::notifyFact(TNode atom,
+                           bool polarity,
+                           TNode fact,
+                           bool isInternal)
 {
   // TODO
 }

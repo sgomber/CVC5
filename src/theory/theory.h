@@ -107,6 +107,7 @@ namespace eq {
 class Theory {
   friend class ::CVC4::TheoryEngine;
   friend class InferManager;
+
  private:
   // Disallow default construction, copy, assignment.
   Theory() = delete;

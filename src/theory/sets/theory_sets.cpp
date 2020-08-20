@@ -106,7 +106,10 @@ bool TheorySets::preNotifyFact(TNode atom,
   return d_internal->preNotifyFact(atom, polarity, fact);
 }
 
-void TheorySets::notifyFact(TNode atom, bool polarity, TNode fact, bool isInternal)
+void TheorySets::notifyFact(TNode atom,
+                            bool polarity,
+                            TNode fact,
+                            bool isInternal)
 {
   d_internal->notifyFact(atom, polarity, fact);
 }
