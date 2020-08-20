@@ -102,8 +102,6 @@ class TheoryBV : public Theory {
   void postCheck(Effort level) override;
   /** Pre-notify fact, return true if processed. */
   bool preNotifyFact(TNode atom, bool pol, TNode fact, bool isPrereg) override;
-  /** Notify fact */
-  void notifyFact(TNode atom, bool pol, TNode fact, bool isInternal) override;
   //--------------------------------- end standard check
 
   bool needsCheckLastEffort() override;

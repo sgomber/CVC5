@@ -102,13 +102,13 @@ class TheoryStrings : public Theory {
   /** Expand definition */
   TrustNode expandDefinition(Node n) override;
   //--------------------------------- standard check
+  /** Do we need a check call at last call effort? */
+  bool needsCheckLastEffort() override;
   /** Post-check, called after the fact queue of the theory is processed. */
   void postCheck(Effort level) override;
   /** Notify fact */
   void notifyFact(TNode atom, bool pol, TNode fact, bool isInternal) override;
   //--------------------------------- end standard check
-  /** needs check last effort */
-  bool needsCheckLastEffort() override;
   /** Conflict when merging two constants */
   void conflict(TNode a, TNode b);
   /** propagate method */

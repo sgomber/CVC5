@@ -139,6 +139,8 @@ class TheorySep : public Theory {
 
   void check(Effort e) override;
   //--------------------------------- standard check
+  /** Do we need a check call at last call effort? */
+  bool needsCheckLastEffort() override;
   /** Post-check, called after the fact queue of the theory is processed. */
   void postCheck(Effort level) override;
   /** Pre-notify fact, return true if processed. */
@@ -146,8 +148,6 @@ class TheorySep : public Theory {
   /** Notify fact */
   void notifyFact(TNode atom, bool pol, TNode fact, bool isInternal) override;
   //--------------------------------- end standard check
-
-  bool needsCheckLastEffort() override;
 
  private:
   /** Ensures that the reduction has been added for the given fact */

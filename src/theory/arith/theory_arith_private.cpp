@@ -3332,21 +3332,6 @@ bool TheoryArithPrivate::hasFreshArithLiteral(Node n) const{
   }
 }
 
-bool TheoryArithPrivate::preNotifyFact(TNode atom,
-                                       bool pol,
-                                       TNode fact,
-                                       bool isPrereg)
-{
-  ConstraintP curr = constraintFromFactQueue(fact);
-  if (curr != NullConstraint)
-  {
-    bool res CVC4_UNUSED = assertionCases(curr);
-    Assert(!res || anyConflict());
-  }
-  // we do not assert the fact to the equality engine
-  return true;
-}
-
 bool TheoryArithPrivate::preCheck(Theory::Effort level)
 {
   if(Debug.isOn("arith::consistency")){
@@ -3363,6 +3348,21 @@ bool TheoryArithPrivate::preCheck(Theory::Effort level)
     d_hasDoneWorkSinceCut = true;
   }
   return false;
+}
+
+bool TheoryArithPrivate::preNotifyFact(TNode atom,
+                                       bool pol,
+                                       TNode fact,
+                                       bool isPrereg)
+{
+  ConstraintP curr = constraintFromFactQueue(fact);
+  if (curr != NullConstraint)
+  {
+    bool res CVC4_UNUSED = assertionCases(curr);
+    Assert(!res || anyConflict());
+  }
+  // we do not assert the fact to the equality engine
+  return true;
 }
 
 void TheoryArithPrivate::postCheck(Theory::Effort effortLevel)

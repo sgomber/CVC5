@@ -334,47 +334,9 @@ void TheoryBV::check(Effort e)
   TimerStat::CodeTimer checkTimer(d_checkTime);
   Debug("bitvector") << "TheoryBV::check(" << e << ")" << std::endl;
   TimerStat::CodeTimer codeTimer(d_statistics.d_solveTimer);
-  // we may be getting new assertions so the model cache may not be sound
-  d_invalidateModelCache.set(true);
-  // if we are using the eager solver
-  if (options::bitblastMode() == options::BitblastMode::EAGER)
+  
+  if (preCheck(e))
   {
-    // this can only happen on an empty benchmark
-    if (!d_eagerSolver->isInitialized()) {
-      d_eagerSolver->initialize();
-    }
-    if (!Theory::fullEffort(e))
-      return;
-
-    std::vector<TNode> assertions;
-    while (!done()) {
-      TNode fact = get().d_assertion;
-      Assert(fact.getKind() == kind::BITVECTOR_EAGER_ATOM);
-      assertions.push_back(fact);
-      d_eagerSolver->assertFormula(fact[0]);
-    }
-
-    bool ok = d_eagerSolver->checkSat();
-    if (!ok) {
-      if (assertions.size() == 1) {
-        d_out->conflict(assertions[0]);
-        return;
-      }
-      Node conflict = utils::mkAnd(assertions);
-      d_out->conflict(conflict);
-      return;
-    }
-    return;
-  }
-
-  if (Theory::fullEffort(e)) {
-    ++(d_statistics.d_numCallsToCheckFullEffort);
-  } else {
-    ++(d_statistics.d_numCallsToCheckStandardEffort);
-  }
-  // if we are already in conflict just return the conflict
-  if (inConflict()) {
-    sendConflict();
     return;
   }
 
@@ -557,14 +519,12 @@ void TheoryBV::postCheck(Effort level)
 bool TheoryBV::preNotifyFact(TNode atom, bool pol, TNode fact, bool isPrereg)
 {
   Assert(options::bitblastMode() != options::BitblastMode::EAGER);
-  // TODO
-  return false;
-}
+  checkForLemma(fact);
 
-void TheoryBV::notifyFact(TNode atom, bool pol, TNode fact, bool isInternal)
-{
-  Assert(options::bitblastMode() != options::BitblastMode::EAGER);
-  // TODO
+  for (unsigned i = 0; i < d_subtheories.size(); ++i) {
+    d_subtheories[i]->assertFact(fact);
+  }
+  return true;
 }
 
 bool TheoryBV::doExtfInferences(std::vector<Node>& terms)
