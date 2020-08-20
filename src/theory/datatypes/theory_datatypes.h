@@ -220,6 +220,9 @@ private:
   /** assert fact */
   void assertFact( Node fact, Node exp );
 
+  /** notify new fact internal */
+  void notifyNewFactInternal(TNode atom, bool polarity, TNode fact);
+  
   /** flush pending facts */
   void flushPendingFacts();
 

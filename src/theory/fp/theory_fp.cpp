@@ -1039,7 +1039,7 @@ bool TheoryFp::preprocessNewFact(TNode atom, bool polarity, TNode fact)
     // asserted
     Assert(isRegistered(atom));
 
-    if (d_equalityEngine->isFunctionKind(atom.getKind()))
+    if (!d_equalityEngine->isFunctionKind(atom.getKind()))
     {
       return true;
     }

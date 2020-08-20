@@ -175,20 +175,15 @@ void TheoryDatatypes::check(Effort e) {
     TNode fact = assertion.d_assertion;
     Trace("datatypes-assert") << "Assert " << fact << std::endl;
 
-    TNode atom CVC4_UNUSED = fact.getKind() == kind::NOT ? fact[0] : fact;
-
-    // extra debug check to make sure that the rewriter did its job correctly
-    Assert(atom.getKind() != kind::EQUAL
-           || (atom[0].getKind() != kind::TUPLE_UPDATE
-               && atom[1].getKind() != kind::TUPLE_UPDATE
-               && atom[0].getKind() != kind::RECORD_UPDATE
-               && atom[1].getKind() != kind::RECORD_UPDATE))
-        << "tuple/record escaped into datatypes decision procedure; should "
-           "have been rewritten away";
-
     //assert the fact
-    assertFact( fact, fact );
-    flushPendingFacts();
+    bool polarity = fact.getKind() != kind::NOT;
+    TNode atom = polarity ? fact : fact[0];
+    if (atom.getKind() == kind::EQUAL) {
+      d_equalityEngine->assertEquality(atom, polarity, fact);
+    }else{
+      d_equalityEngine->assertPredicate(atom, polarity, fact);
+    }
+    notifyNewFact(atom, polarity, fact);
   }
 
   postCheck(e);
@@ -196,6 +191,7 @@ void TheoryDatatypes::check(Effort e) {
 
 void TheoryDatatypes::postCheck(Effort level)
 {
+  d_addedLemma = false;
   if (level == EFFORT_LAST_CALL)
   {
     Assert(d_sygusExtension != nullptr);
@@ -403,11 +399,6 @@ bool TheoryDatatypes::preprocessNewFact(TNode atom, bool polarity, TNode fact)
   return false;
 }
 
-void TheoryDatatypes::notifyNewFact(TNode atom, bool polarity, TNode fact)
-{
-  // TODO
-}
-
 bool TheoryDatatypes::needsCheckLastEffort() {
   return d_sygusExtension != nullptr;
 }
@@ -519,6 +510,17 @@ void TheoryDatatypes::assertFact( Node fact, Node exp ){
   }else{
     d_equalityEngine->assertPredicate(atom, polarity, exp);
   }
+  notifyNewFactInternal(atom, polarity, fact);
+}
+
+void TheoryDatatypes::notifyNewFact(TNode atom, bool polarity, TNode fact)
+{
+  notifyNewFactInternal(atom, polarity, fact);
+  flushPendingFacts();
+}
+
+void TheoryDatatypes::notifyNewFactInternal(TNode atom, bool polarity, TNode fact)
+{
   doPendingMerges();
   // could be sygus-specific
   if (d_sygusExtension)

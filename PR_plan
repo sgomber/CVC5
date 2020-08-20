@@ -8,12 +8,13 @@ PR done:
 (10) Quantifiers engine set master equality engine
 (17) Theory state
 (18) Strings/sets solver state inherit from solver state
+(22) simplify eq notifications (eqNotifyTriggerEquality)
 
 PR current:
 
 (4) Merge build model passes *
 (6) Split inheritence in equality engine manager to own files, dynamic model (req 3) *
-(21) standard states (req 18)
+(21) standard states (req 18) *
 
 PR planned:
 
