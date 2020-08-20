@@ -266,7 +266,6 @@ class TheoryArrays : public Theory {
   // MAIN SOLVER
   /////////////////////////////////////////////////////////////////////////////
 
-  void check(Effort e) override;
   //--------------------------------- standard check
   /** Post-check, called after the fact queue of the theory is processed. */
   void postCheck(Effort level) override;

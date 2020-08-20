@@ -324,7 +324,11 @@ class Theory {
 
   /**
    * This method is called to notify a theory that the node n should
-   * be considered a "shared term" by this theory
+   * be considered a "shared term" by this theory. This does anything
+   * theory-specific concerning the fact that n is now marked as a shared
+   * term, which is done in addition to explicitly storing n as a shared
+   * term and adding it as a trigger term in the equality engine of this
+   * class (see addSharedTerm).
    */
   virtual void notifySharedTerm(TNode n);
 
@@ -580,7 +584,7 @@ class Theory {
   /**
    * Return the model value of the give shared term (or null if not available).
    *
-   * TODO: delete
+   * TODO (project #39): this method is likely to become deprecated.
    */
   virtual Node getModelValue(TNode var) { return Node::null(); }
 
@@ -600,7 +604,7 @@ class Theory {
   /** Explain conflict */
   virtual TrustNode explainConflict(TNode a, TNode b);
 
-  //--------------------------------- new standard check
+  //--------------------------------- standard check
   /**
    * Does this theory wish to be called to check at last call effort? This is
    * the case for any theory that wishes to run when a model is available.
@@ -615,7 +619,8 @@ class Theory {
    * - throw an exception
    * - or call get() until done() is true.
    *
-   * TODO: non-virtual (use template)
+   * TODO (project #39): this method should be non-virtual, once all theories
+   * conform to the new standard
    */
   virtual void check(Effort level = EFFORT_FULL);
   /**
@@ -648,7 +653,7 @@ class Theory {
    * @param fact The original literal that was asserted
    */
   virtual void notifyFact(TNode atom, bool pol, TNode fact);
-  //--------------------------------- end new standard check
+  //--------------------------------- end standard check
 
   //--------------------------------- collect model info
   /**
@@ -659,7 +664,8 @@ class Theory {
    * This method returns true if and only if the equality engine of m is
    * consistent as a result of this call.
    *
-   * TODO: non-virtual (use template)
+   * TODO (project #39): this method should be non-virtual, once all theories
+   * conform to the new standard
    */
   virtual bool collectModelInfo(TheoryModel* m);
   /**
@@ -676,10 +682,11 @@ class Theory {
    * computeRelevantTerms.
    */
   virtual bool collectModelValues(TheoryModel* m, std::set<Node>& termSet);
-  //--------------------------------- end collect model info
-
   /** if theories want to do something with model after building, do it here */
   virtual void postProcessModel( TheoryModel* m ){ }
+  //--------------------------------- end collect model info
+
+  //--------------------------------- preprocessing
   /**
    * Statically learn from assertion "in," which has been asserted
    * true at the top level.  The theory should only add (via
@@ -720,6 +727,7 @@ class Theory {
    * preprocessing before they are asserted to theory engine.
    */
   virtual void ppNotifyAssertions(const std::vector<Node>& assertions) {}
+  //--------------------------------- end preprocessing
 
   /**
    * A Theory is called with presolve exactly one time per user
