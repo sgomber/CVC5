@@ -479,12 +479,10 @@ public:
   //--------------------------------- standard check
   /** Pre-check, called before the fact queue of the theory is processed. */
   void preCheck(Theory::Effort level);
-  /** Post-check, called after the fact queue of the theory is processed. */
-  void postCheck(Theory::Effort level);
   /** Pre-notify fact, return true if processed. */
   bool preNotifyFact(TNode atom, bool pol, TNode fact, bool isPrereg);
-  /** Notify fact */
-  void notifyFact(TNode atom, bool pol, TNode fact);
+  /** Post-check, called after the fact queue of the theory is processed. */
+  void postCheck(Theory::Effort level);
   //--------------------------------- end standard check
  private:
 

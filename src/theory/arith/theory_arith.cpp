@@ -120,11 +120,6 @@ bool TheoryArith::preNotifyFact(TNode atom, bool pol, TNode fact, bool isPrereg)
   return d_internal->preNotifyFact(atom, pol, fact, isPrereg);
 }
 
-void TheoryArith::notifyFact(TNode atom, bool pol, TNode fact)
-{
-  d_internal->notifyFact(atom, pol, fact);
-}
-
 bool TheoryArith::needsCheckLastEffort() {
   return d_internal->needsCheckLastEffort();
 }

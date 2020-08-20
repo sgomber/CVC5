@@ -3337,9 +3337,14 @@ bool TheoryArithPrivate::preNotifyFact(TNode atom,
                                        TNode fact,
                                        bool isPrereg)
 {
-  return false;
+  ConstraintP curr = constraintFromFactQueue(fact);
+  if (curr != NullConstraint)
+  {
+    bool res CVC4_UNUSED = assertionCases(curr);
+    Assert(!res || anyConflict());
+  }
+  return true;
 }
-void TheoryArithPrivate::notifyFact(TNode atom, bool pol, TNode fact) {}
 
 void TheoryArithPrivate::check(Theory::Effort effortLevel){
   Assert(d_currentPropagationList.empty());
