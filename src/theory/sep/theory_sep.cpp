@@ -571,9 +571,7 @@ void TheorySep::reduceFact(TNode atom, bool polarity, TNode fact)
 
 bool TheorySep::isSpatialKind(Kind k) const
 {
-  return k== SEP_STAR || k == SEP_WAND
-                     || k == SEP_PTO
-                     || k == SEP_EMP;
+  return k == SEP_STAR || k == SEP_WAND || k == SEP_PTO || k == SEP_EMP;
 }
 
 void TheorySep::postCheck(Effort level)
