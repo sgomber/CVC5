@@ -625,7 +625,7 @@ class Theory {
    * TODO (project #39): this method should be non-virtual, once all theories
    * conform to the new standard
    */
-  virtual void check(Effort level = EFFORT_FULL);
+  void check(Effort level = EFFORT_FULL);
   /**
    * Pre-check, called before the fact queue of the theory is processed.
    * If this method returns true, then the check is complete and the check()
