@@ -178,9 +178,12 @@ void TheoryDatatypes::check(Effort e) {
     //assert the fact
     bool polarity = fact.getKind() != kind::NOT;
     TNode atom = polarity ? fact : fact[0];
-    if (atom.getKind() == kind::EQUAL) {
+    if (atom.getKind() == kind::EQUAL)
+    {
       d_equalityEngine->assertEquality(atom, polarity, fact);
-    }else{
+    }
+    else
+    {
       d_equalityEngine->assertPredicate(atom, polarity, fact);
     }
     notifyNewFact(atom, polarity, fact);
@@ -519,7 +522,9 @@ void TheoryDatatypes::notifyNewFact(TNode atom, bool polarity, TNode fact)
   flushPendingFacts();
 }
 
-void TheoryDatatypes::notifyNewFactInternal(TNode atom, bool polarity, TNode fact)
+void TheoryDatatypes::notifyNewFactInternal(TNode atom,
+                                            bool polarity,
+                                            TNode fact)
 {
   doPendingMerges();
   // could be sygus-specific

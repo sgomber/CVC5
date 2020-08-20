@@ -222,7 +222,7 @@ private:
 
   /** notify new fact internal */
   void notifyNewFactInternal(TNode atom, bool polarity, TNode fact);
-  
+
   /** flush pending facts */
   void flushPendingFacts();
 
