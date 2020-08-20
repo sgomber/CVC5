@@ -1501,7 +1501,8 @@ bool TheoryArrays::preNotifyFact(TNode atom, bool pol, TNode fact, bool isPreg)
 {
   if (!isPreg)
   {
-    if (atom.getKind() == kind::EQUAL) {
+    if (atom.getKind() == kind::EQUAL)
+    {
       if (!d_equalityEngine->hasTerm(atom[0]))
       {
         Assert(atom[0].isConst());
@@ -1520,7 +1521,7 @@ bool TheoryArrays::preNotifyFact(TNode atom, bool pol, TNode fact, bool isPreg)
 void TheoryArrays::notifyFact(TNode atom, bool pol, TNode fact)
 {
   // if a disequality
-  if (atom.getKind()==kind::EQUAL && !pol)
+  if (atom.getKind() == kind::EQUAL && !pol)
   {
     // Apply ArrDiseq Rule if diseq is between arrays
     if (fact[0][0].getType().isArray() && !d_state.isInConflict())
@@ -1530,22 +1531,28 @@ void TheoryArrays::notifyFact(TNode atom, bool pol, TNode fact)
 
       TNode k;
       // k is the skolem for this disequality.
-      if (!d_proofsEnabled) {
-        Debug("pf::array") << "Check: kind::NOT: array theory making a skolem" << std::endl;
+      if (!d_proofsEnabled)
+      {
+        Debug("pf::array") << "Check: kind::NOT: array theory making a skolem"
+                           << std::endl;
 
         // If not in replay mode, generate a fresh skolem variable
-        k = getSkolem(fact,
-                      "array_ext_index",
-                      indexType,
-                      "an extensional lemma index variable from the theory of arrays",
-                      false);
+        k = getSkolem(
+            fact,
+            "array_ext_index",
+            indexType,
+            "an extensional lemma index variable from the theory of arrays",
+            false);
 
         // Register this skolem for the proof replay phase
         PROOF(ProofManager::getSkolemizationManager()->registerSkolem(fact, k));
-      } else {
-        if (!ProofManager::getSkolemizationManager()->hasSkolem(fact)) {
-          // In the solution pass we didn't need this skolem. Therefore, we don't need it
-          // in this reply pass, either.
+      }
+      else
+      {
+        if (!ProofManager::getSkolemizationManager()->hasSkolem(fact))
+        {
+          // In the solution pass we didn't need this skolem. Therefore, we
+          // don't need it in this reply pass, either.
           return;
         }
 
@@ -1559,10 +1566,11 @@ void TheoryArrays::notifyFact(TNode atom, bool pol, TNode fact)
       Node eq = ak.eqNode(bk);
       Node lemma = fact[0].orNode(eq.notNode());
 
-      // In solve mode we don't care if ak and bk are registered. If they aren't, they'll be registered
-      // when we output the lemma. However, in replay need the lemma to be propagated, and so we
-      // preregister manually.
-      if (d_proofsEnabled) {
+      // In solve mode we don't care if ak and bk are registered. If they
+      // aren't, they'll be registered when we output the lemma. However, in
+      // replay need the lemma to be propagated, and so we preregister manually.
+      if (d_proofsEnabled)
+      {
         if (!d_equalityEngine->hasTerm(ak))
         {
           preRegisterTermInternal(ak);
@@ -1579,22 +1587,26 @@ void TheoryArrays::notifyFact(TNode atom, bool pol, TNode fact)
         // Propagate witness disequality - might produce a conflict
         d_permRef.push_back(lemma);
         Debug("pf::array") << "Asserting to the equality engine:" << std::endl
-                            << "\teq = " << eq << std::endl
-                            << "\treason = " << fact << std::endl;
+                           << "\teq = " << eq << std::endl
+                           << "\treason = " << fact << std::endl;
 
         d_equalityEngine->assertEquality(eq, false, fact, d_reasonExt);
         ++d_numProp;
       }
 
-      if (!d_proofsEnabled) {
-        // If this is the solution pass, generate the lemma. Otherwise, don't generate it -
-        // as this is the lemma that we're reproving...
-        Trace("arrays-lem")<<"Arrays::addExtLemma " << lemma <<"\n";
+      if (!d_proofsEnabled)
+      {
+        // If this is the solution pass, generate the lemma. Otherwise, don't
+        // generate it - as this is the lemma that we're reproving...
+        Trace("arrays-lem") << "Arrays::addExtLemma " << lemma << "\n";
         d_out->lemma(lemma);
         ++d_numExt;
       }
-    } else {
-      Debug("pf::array") << "Check: kind::NOT: array theory NOT making a skolem" << std::endl;
+    }
+    else
+    {
+      Debug("pf::array") << "Check: kind::NOT: array theory NOT making a skolem"
+                         << std::endl;
       d_modelConstraints.push_back(fact);
     }
   }
