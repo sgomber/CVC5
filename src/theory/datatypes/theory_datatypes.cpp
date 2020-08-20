@@ -483,9 +483,7 @@ void TheoryDatatypes::notifyFact(TNode atom, bool polarity, TNode fact)
   flushPendingFacts();
 }
 
-void TheoryDatatypes::notifyFactInternal(TNode atom,
-                                            bool polarity,
-                                            TNode fact)
+void TheoryDatatypes::notifyFactInternal(TNode atom, bool polarity, TNode fact)
 {
   doPendingMerges();
   // could be sygus-specific

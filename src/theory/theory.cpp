@@ -528,7 +528,7 @@ void Theory::check(Effort level)
     }
     // Theories that don't have an equality engine should always return true
     // for preNotifyFact
-    Assert (d_equalityEngine != nullptr);
+    Assert(d_equalityEngine != nullptr);
     // assert to the equality engine
     if (atom.getKind() == kind::EQUAL)
     {

@@ -29,7 +29,10 @@ namespace theory {
 namespace uf {
 
 HoExtension::HoExtension(TheoryUF& p, TheoryState& state)
-    : d_parent(p), d_state(state), d_extensionality(state.getUserContext()), d_uf_std_skolem(state.getUserContext())
+    : d_parent(p),
+      d_state(state),
+      d_extensionality(state.getUserContext()),
+      d_uf_std_skolem(state.getUserContext())
 {
   d_true = NodeManager::currentNM()->mkConst(true);
 }

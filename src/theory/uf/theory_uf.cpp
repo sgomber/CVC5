@@ -296,7 +296,8 @@ void TheoryUF::notifyPreRegisterTerm(TNode node)
 bool TheoryUF::propagate(TNode literal) {
   Debug("uf::propagate") << "TheoryUF::propagate(" << literal  << ")" << std::endl;
   // If already in conflict, no more propagation
-  if (d_state.isInConflict()) {
+  if (d_state.isInConflict())
+  {
     Debug("uf::propagate") << "TheoryUF::propagate(" << literal << "): already in conflict" << std::endl;
     return false;
   }

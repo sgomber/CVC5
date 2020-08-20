@@ -482,7 +482,10 @@ void TheorySep::check(Effort e) {
   postCheck(e);
 }
 
-bool TheorySep::preNotifyFact(TNode atom, bool polarity, TNode fact, bool isPrereg)
+bool TheorySep::preNotifyFact(TNode atom,
+                              bool polarity,
+                              TNode fact,
+                              bool isPrereg)
 {
   // TODO
   return false;

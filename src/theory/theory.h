@@ -601,7 +601,7 @@ class Theory {
   virtual TrustNode explainConflict(TNode a, TNode b);
 
   //--------------------------------- new standard check
-  /** 
+  /**
    * Does this theory wish to be called to check at last call effort? This is
    * the case for any theory that wishes to run when a model is available.
    */
@@ -630,7 +630,7 @@ class Theory {
    * Preprocess new fact, return true if the theory processed it. If this
    * method returns false, then the atom will be added to the equality engine
    * of the theory and notifyNewFact will be called.
-   * 
+   *
    * @param atom The atom
    * @param polarity Its polarity
    * @param fact The original literal that was asserted
@@ -642,7 +642,7 @@ class Theory {
   /**
    * Notify new fact, called immediately after the fact was pushed into the
    * equality engine.
-   * 
+   *
    * @param atom The atom
    * @param polarity Its polarity
    * @param fact The original literal that was asserted
