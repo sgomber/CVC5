@@ -474,16 +474,10 @@ void TheoryDatatypes::assertFact( Node fact, Node exp ){
   }else{
     d_equalityEngine->assertPredicate(atom, polarity, exp);
   }
-  notifyFactInternal(atom, polarity, fact);
+  notifyFact(atom, polarity, fact, true);
 }
 
-void TheoryDatatypes::notifyFact(TNode atom, bool polarity, TNode fact)
-{
-  notifyFactInternal(atom, polarity, fact);
-  flushPendingFacts();
-}
-
-void TheoryDatatypes::notifyFactInternal(TNode atom, bool polarity, TNode fact)
+void TheoryDatatypes::notifyFact(TNode atom, bool polarity, TNode fact, bool isInternal)
 {
   doPendingMerges();
   // could be sygus-specific
@@ -521,6 +515,11 @@ void TheoryDatatypes::notifyFactInternal(TNode atom, bool polarity, TNode fact)
     Trace("dt-tester-debug") << "Assert (non-tester) : " << atom << std::endl;
   }
   Trace("datatypes-debug") << "TheoryDatatypes::assertFact : finished " << fact << std::endl;
+  // now, flush pending facts if this wasn't an internal call
+  if (!isInternal)
+  {
+    flushPendingFacts();
+  }
 }
 
 void TheoryDatatypes::notifyPreRegisterTerm(TNode n)

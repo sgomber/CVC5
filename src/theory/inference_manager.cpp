@@ -15,18 +15,17 @@
 #include "theory/inference_manager.h"
 
 #include "theory/uf/equality_engine.h"
+#include "theory/theory.h"
 
 using namespace CVC4::kind;
 
 namespace CVC4 {
 namespace theory {
 
-InferManager::InferManager(TheoryId tid,
-                           TheoryState& state,
-                           OutputChannel& out,
-                           ProofNodeManager* pnm)
-    : d_theoryId(tid), d_state(state), d_out(out), d_ee(nullptr), d_pnm(pnm)
+InferManager::InferManager(Theory& t, TheoryState& state)
+    : d_theory(t), d_state(state), d_out(t.getOutputChannel()), d_ee(nullptr), d_pnm(nullptr)
 {
+
 }
 
 void InferManager::setEqualityEngine(eq::EqualityEngine* ee) { d_ee = ee; }
@@ -76,35 +75,35 @@ bool InferManager::propagate(TNode lit)
 
 TrustNode InferManager::explain(TNode lit)
 {
-  // TODO: use proof equality engine
+  // TODO: use proof equality engine if it exists
   if (d_ee != nullptr)
   {
     Node exp = mkExplain(lit);
     return TrustNode::mkTrustPropExp(lit, exp, nullptr);
   }
-  Unimplemented() << "Theory " << d_theoryId
+  Unimplemented() << "Theory " << d_theory.getId()
                   << " sent a conflict but doesn't implement the "
                      "Theory::explain() interface!";
 }
 
 TrustNode InferManager::mkTrustedConflictEqConstantMerge(TNode a, TNode b)
 {
-  // TODO: use proof equality engine
+  // TODO: use proof equality engine if it exists
   if (d_ee != nullptr)
   {
     Node lit = a.eqNode(b);
     Node conf = mkExplain(lit);
     return TrustNode::mkTrustConflict(conf, nullptr);
   }
-  Unimplemented() << "Theory " << d_theoryId
+  Unimplemented() << "Theory " << d_theory.getId()
                   << " mkTrustedConflictEqConstantMerge";
 }
 
 TrustNode InferManager::mkTrustedConflict(TNode conf)
 {
-  // TODO: use proof equality engine
+  // TODO: use proof equality engine if it exists
   // TODO
-  Unimplemented() << "Theory " << d_theoryId << " mkTrustedConflict";
+  Unimplemented() << "Theory " << d_theory.getId() << " mkTrustedConflict";
 }
 
 Node InferManager::mkExplain(TNode lit) const
@@ -155,6 +154,21 @@ void InferManager::explain(TNode lit, std::vector<TNode>& assumptions) const
       assumptions.push_back(a);
     }
   }
+}
+
+void InferManager::assertInternalFact(TNode atom, bool pol, TNode fact)
+{
+  Assert (d_ee!=nullptr);
+  if (atom.getKind() == kind::EQUAL)
+  {
+    d_ee->assertEquality(atom, pol, fact);
+  }
+  else
+  {
+    d_ee->assertPredicate(atom, pol, fact);
+  }
+  // call the notify fact method, where this is an internally generated fact
+  d_theory.notifyFact(atom, pol, fact, true);
 }
 
 }  // namespace theory

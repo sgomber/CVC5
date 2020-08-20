@@ -66,7 +66,7 @@ class TheorySets : public Theory
   /** Pre-notify fact, return true if processed. */
   bool preNotifyFact(TNode atom, bool pol, TNode fact, bool isPrereg) override;
   /** Notify fact */
-  void notifyFact(TNode atom, bool pol, TNode fact) override;
+  void notifyFact(TNode atom, bool pol, TNode fact, bool isInternal) override;
   //--------------------------------- end standard check
   /** Collect model values in m based on the relevant terms given by termSet */
   bool collectModelValues(TheoryModel* m, std::set<Node>& termSet) override;

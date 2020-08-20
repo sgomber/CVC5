@@ -220,9 +220,6 @@ private:
   /** assert fact */
   void assertFact( Node fact, Node exp );
 
-  /** notify fact internal */
-  void notifyFactInternal(TNode atom, bool polarity, TNode fact);
-
   /** flush pending facts */
   void flushPendingFacts();
 
@@ -293,7 +290,7 @@ private:
   /** Post-check, called after the fact queue of the theory is processed. */
   void postCheck(Effort level) override;
   /** Notify fact */
-  void notifyFact(TNode atom, bool pol, TNode fact) override;
+  void notifyFact(TNode atom, bool pol, TNode fact, bool isInternal) override;
   //--------------------------------- end standard check
   bool needsCheckLastEffort() override;
   void notifyPreRegisterTerm(TNode n) override;

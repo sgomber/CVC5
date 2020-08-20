@@ -201,7 +201,7 @@ bool TheoryUF::preNotifyFact(TNode atom, bool pol, TNode fact, bool isPrereg)
   return false;
 }
 
-void TheoryUF::notifyFact(TNode atom, bool pol, TNode fact)
+void TheoryUF::notifyFact(TNode atom, bool pol, TNode fact, bool isInternal)
 {
   if (!d_state.isInConflict() && atom.getKind() == kind::EQUAL)
   {

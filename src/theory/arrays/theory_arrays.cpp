@@ -1379,7 +1379,7 @@ bool TheoryArrays::preNotifyFact(TNode atom, bool pol, TNode fact, bool isPreg)
   return false;
 }
 
-void TheoryArrays::notifyFact(TNode atom, bool pol, TNode fact)
+void TheoryArrays::notifyFact(TNode atom, bool pol, TNode fact, bool isInternal)
 {
   // if a disequality
   if (atom.getKind() == kind::EQUAL && !pol)

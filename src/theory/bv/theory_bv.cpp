@@ -457,7 +457,7 @@ bool TheoryBV::preNotifyFact(TNode atom, bool pol, TNode fact, bool isPrereg)
   return false;
 }
 
-void TheoryBV::notifyFact(TNode atom, bool pol, TNode fact)
+void TheoryBV::notifyFact(TNode atom, bool pol, TNode fact, bool isInternal)
 {
   // TODO
 }

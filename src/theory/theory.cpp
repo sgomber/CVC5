@@ -538,8 +538,8 @@ void Theory::check(Effort level)
     {
       d_equalityEngine->assertPredicate(atom, polarity, fact);
     }
-    // notify the theory of the new fact
-    notifyFact(atom, polarity, fact);
+    // notify the theory of the new fact, which is not internal
+    notifyFact(atom, polarity, fact, false);
   }
   // post-check at level
   postCheck(level);
@@ -554,7 +554,7 @@ bool Theory::preNotifyFact(TNode atom, bool polarity, TNode fact, bool isPrereg)
   return false;
 }
 
-void Theory::notifyFact(TNode atom, bool polarity, TNode fact)
+void Theory::notifyFact(TNode atom, bool polarity, TNode fact, bool isInternal)
 {
   // do nothing
 }

@@ -19,7 +19,6 @@
 
 #include "expr/node.h"
 #include "theory/output_channel.h"
-#include "theory/theory_id.h"
 #include "theory/theory_state.h"
 #include "theory/trust_node.h"
 
@@ -29,6 +28,7 @@ class ProofNodeManager;
 
 namespace theory {
 
+class Theory;
 namespace eq {
 class EqualityEngine;
 }
@@ -39,10 +39,7 @@ class EqualityEngine;
 class InferManager
 {
  public:
-  InferManager(TheoryId tid,
-               TheoryState& state,
-               OutputChannel& out,
-               ProofNodeManager* pnm);
+  InferManager(Theory& t, TheoryState& state);
   virtual ~InferManager() {}
   /**
    * Set equality engine, ee is a pointer to the official equality engine
@@ -76,29 +73,29 @@ class InferManager
    */
   virtual TrustNode explain(TNode lit);
 
+  /** assert fact */
+  void assertInternalFact(TNode atom, bool pol, TNode fact);
  protected:
   /** Make trusted conflict */
   virtual TrustNode mkTrustedConflictEqConstantMerge(TNode a, TNode b);
   /** Make trusted conflict */
   virtual TrustNode mkTrustedConflict(TNode conf);
-  /**
-   * Explain literal l, return conjunction.
-   */
+  /** Explain literal, return conjunction. */
   Node mkExplain(TNode literal) const;
   /**
-   * Explain literal l, add conjuncts to assumptions vector instead of making
+   * Explain literal, add conjuncts to assumptions vector instead of making
    * the node corresponding to their conjunction.
    */
   void explain(TNode literal, std::vector<TNode>& assumptions) const;
-  /** The identifier */
-  TheoryId d_theoryId;
+  /** The theory object */
+  Theory& d_theory;
   /** Reference to the state of theory */
   TheoryState& d_state;
   /** Reference to the output channel of the theory */
   OutputChannel& d_out;
   /** Pointer to equality engine of the theory. */
   eq::EqualityEngine* d_ee;
-  /** The proof node manager */
+  /** The proof node manager of the theory */
   ProofNodeManager* d_pnm;
 };
 

@@ -106,7 +106,7 @@ namespace eq {
  */
 class Theory {
   friend class ::CVC4::TheoryEngine;
-
+  friend class InferManager;
  private:
   // Disallow default construction, copy, assignment.
   Theory() = delete;
@@ -651,8 +651,9 @@ class Theory {
    * @param atom The atom
    * @param polarity Its polarity
    * @param fact The original literal that was asserted
+   * @param isInternal Whether the origin of the fact was internal
    */
-  virtual void notifyFact(TNode atom, bool pol, TNode fact);
+  virtual void notifyFact(TNode atom, bool pol, TNode fact, bool isInternal);
   //--------------------------------- end standard check
 
   //--------------------------------- collect model info
