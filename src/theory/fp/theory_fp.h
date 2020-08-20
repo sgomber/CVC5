@@ -66,8 +66,8 @@ class TheoryFp : public Theory {
   bool needsCheckLastEffort() override { return true; }
   /** Post-check, called after the fact queue of the theory is processed. */
   void postCheck(Effort level) override;
-  /** Preprocess fact, return true if processed. */
-  bool preprocessNewFact(TNode atom, bool polarity, TNode fact) override;
+  /** Pre-notify fact, return true if processed. */
+  bool preNotifyFact(TNode atom, bool pol, TNode fact, bool isPrereg) override;
   //--------------------------------- end standard check
 
   Node getModelValue(TNode var) override;

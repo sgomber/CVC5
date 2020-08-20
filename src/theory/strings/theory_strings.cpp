@@ -735,13 +735,13 @@ void TheoryStrings::postCheck(Effort e)
   Assert(!d_im.hasPendingLemma());
 }
 
-bool TheoryStrings::preprocessNewFact(TNode atom, bool polarity, TNode fact)
+bool TheoryStrings::preNotifyFact(TNode atom, bool polarity, TNode fact, bool isPrereg)
 {
   // TODO : inference manager splitting
   return false;
 }
 
-void TheoryStrings::notifyNewFact(TNode atom, bool polarity, TNode fact)
+void TheoryStrings::notifyFact(TNode atom, bool polarity, TNode fact)
 {
   // TODO : inference manager splitting
 }

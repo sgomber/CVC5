@@ -141,7 +141,7 @@ void TheoryQuantifiers::postCheck(Effort level)
   getQuantifiersEngine()->check(level);
 }
 
-bool TheoryQuantifiers::preprocessNewFact(TNode atom, bool polarity, TNode fact)
+bool TheoryQuantifiers::preNotifyFact(TNode atom, bool polarity, TNode fact, bool isPrereg)
 {
   Kind k = atom.getKind();
   if (k == FORALL)

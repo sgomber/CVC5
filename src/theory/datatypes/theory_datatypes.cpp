@@ -474,16 +474,16 @@ void TheoryDatatypes::assertFact( Node fact, Node exp ){
   }else{
     d_equalityEngine->assertPredicate(atom, polarity, exp);
   }
-  notifyNewFactInternal(atom, polarity, fact);
+  notifyFactInternal(atom, polarity, fact);
 }
 
-void TheoryDatatypes::notifyNewFact(TNode atom, bool polarity, TNode fact)
+void TheoryDatatypes::notifyFact(TNode atom, bool polarity, TNode fact)
 {
-  notifyNewFactInternal(atom, polarity, fact);
+  notifyFactInternal(atom, polarity, fact);
   flushPendingFacts();
 }
 
-void TheoryDatatypes::notifyNewFactInternal(TNode atom,
+void TheoryDatatypes::notifyFactInternal(TNode atom,
                                             bool polarity,
                                             TNode fact)
 {

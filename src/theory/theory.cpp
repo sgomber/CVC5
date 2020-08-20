@@ -520,26 +520,26 @@ void Theory::check(Effort level)
     TNode fact = assertion.d_assertion;
     bool polarity = fact.getKind() != kind::NOT;
     TNode atom = polarity ? fact : fact[0];
-    // call the preprocess method
-    if (preprocessNewFact(atom, polarity, fact))
+    // call the pre-notify method
+    if (preNotifyFact(atom, polarity, fact, assertion.d_isPreregistered))
     {
       // handled in theory-specific way that doesn't involve equality engine
       continue;
     }
-    // if we have an equality engine, assert to it now
-    if (d_equalityEngine != nullptr)
+    // Theories that don't have an equality engine should always return true
+    // for preNotifyFact
+    Assert (d_equalityEngine != nullptr);
+    // assert to the equality engine
+    if (atom.getKind() == kind::EQUAL)
     {
-      if (atom.getKind() == kind::EQUAL)
-      {
-        d_equalityEngine->assertEquality(atom, polarity, fact);
-      }
-      else
-      {
-        d_equalityEngine->assertPredicate(atom, polarity, fact);
-      }
+      d_equalityEngine->assertEquality(atom, polarity, fact);
+    }
+    else
+    {
+      d_equalityEngine->assertPredicate(atom, polarity, fact);
     }
     // notify the theory of the new fact
-    notifyNewFact(atom, polarity, fact);
+    notifyFact(atom, polarity, fact);
   }
   // post-check at level
   postCheck(level);
@@ -549,12 +549,12 @@ void Theory::preCheck(Effort level) {}
 
 void Theory::postCheck(Effort level) {}
 
-bool Theory::preprocessNewFact(TNode atom, bool polarity, TNode fact)
+bool Theory::preNotifyFact(TNode atom, bool polarity, TNode fact, bool isPrereg)
 {
   return false;
 }
 
-void Theory::notifyNewFact(TNode atom, bool polarity, TNode fact)
+void Theory::notifyFact(TNode atom, bool polarity, TNode fact)
 {
   // do nothing
 }

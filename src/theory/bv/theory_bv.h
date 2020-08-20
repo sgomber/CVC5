@@ -100,10 +100,10 @@ class TheoryBV : public Theory {
   void preCheck(Effort level) override;
   /** Post-check, called after the fact queue of the theory is processed. */
   void postCheck(Effort level) override;
-  /** Preprocess fact, return true if processed. */
-  bool preprocessNewFact(TNode atom, bool polarity, TNode fact) override;
-  /** Notify new fact */
-  void notifyNewFact(TNode atom, bool polarity, TNode fact) override;
+  /** Pre-notify fact, return true if processed. */
+  bool preNotifyFact(TNode atom, bool pol, TNode fact, bool isPrereg) override;
+  /** Notify fact */
+  void notifyFact(TNode atom, bool pol, TNode fact) override;
   //--------------------------------- end standard check
 
   bool needsCheckLastEffort() override;

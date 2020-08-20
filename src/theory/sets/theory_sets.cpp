@@ -98,14 +98,14 @@ void TheorySets::preCheck(Effort level) { d_internal->preCheck(level); }
 
 void TheorySets::postCheck(Effort level) { d_internal->postCheck(level); }
 
-bool TheorySets::preprocessNewFact(TNode atom, bool polarity, TNode fact)
+bool TheorySets::preNotifyFact(TNode atom, bool polarity, TNode fact, bool isPrereg)
 {
-  return d_internal->preprocessNewFact(atom, polarity, fact);
+  return d_internal->preNotifyFact(atom, polarity, fact);
 }
 
-void TheorySets::notifyNewFact(TNode atom, bool polarity, TNode fact)
+void TheorySets::notifyFact(TNode atom, bool polarity, TNode fact)
 {
-  d_internal->notifyNewFact(atom, polarity, fact);
+  d_internal->notifyFact(atom, polarity, fact);
 }
 
 bool TheorySets::collectModelValues(TheoryModel* m, std::set<Node>& termSet)

@@ -28,10 +28,8 @@ namespace CVC4 {
 namespace theory {
 namespace uf {
 
-HoExtension::HoExtension(TheoryUF& p,
-                         context::Context* c,
-                         context::UserContext* u)
-    : d_parent(p), d_extensionality(u), d_uf_std_skolem(u)
+HoExtension::HoExtension(TheoryUF& p, TheoryState& state)
+    : d_parent(p), d_state(state), d_extensionality(state.getUserContext()), d_uf_std_skolem(state.getUserContext())
 {
   d_true = NodeManager::currentNM()->mkConst(true);
 }
@@ -191,7 +189,7 @@ Node HoExtension::getApplyUfForHoApply(Node node)
 
 unsigned HoExtension::checkExtensionality(TheoryModel* m)
 {
-  eq::EqualityEngine* ee = d_parent.getEqualityEngine();
+  eq::EqualityEngine* ee = d_state.getEqualityEngine();
   NodeManager* nm = NodeManager::currentNM();
   unsigned num_lemmas = 0;
   bool isCollectModel = (m != nullptr);
@@ -276,7 +274,7 @@ unsigned HoExtension::applyAppCompletion(TNode n)
 {
   Assert(n.getKind() == APPLY_UF);
 
-  eq::EqualityEngine* ee = d_parent.getEqualityEngine();
+  eq::EqualityEngine* ee = d_state.getEqualityEngine();
   // must expand into APPLY_HO version if not there already
   Node ret = TheoryUfRewriter::getHoApplyForApplyUf(n);
   if (!ee->hasTerm(ret) || !ee->areEqual(ret, n))
@@ -297,7 +295,7 @@ unsigned HoExtension::checkAppCompletion()
   Trace("uf-ho") << "HoExtension::checkApplyCompletion..." << std::endl;
   // compute the operators that are relevant (those for which an HO_APPLY exist)
   std::set<TNode> rlvOp;
-  eq::EqualityEngine* ee = d_parent.getEqualityEngine();
+  eq::EqualityEngine* ee = d_state.getEqualityEngine();
   eq::EqClassesIterator eqcs_i = eq::EqClassesIterator(ee);
   std::map<TNode, std::vector<Node> > apply_uf;
   while (!eqcs_i.isFinished())
@@ -388,7 +386,7 @@ unsigned HoExtension::check()
   do
   {
     num_facts = checkAppCompletion();
-    if (d_parent.inConflict())
+    if (d_state.isInConflict())
     {
       Trace("uf-ho") << "...conflict during app-completion." << std::endl;
       return 1;

@@ -105,13 +105,6 @@ private:
   /** the higher-order solver extension (or nullptr if it does not exist) */
   std::unique_ptr<HoExtension> d_ho;
 
-  /** Are we in conflict */
-  context::CDO<bool> d_conflict;
-
-  /** The conflict node */
-  Node d_conflictNode;
-
-
   /** node for true */
   Node d_true;
 
@@ -188,10 +181,10 @@ private:
   //--------------------------------- standard check
   /** Post-check, called after the fact queue of the theory is processed. */
   void postCheck(Effort level) override;
-  /** Preprocess fact, return true if processed. */
-  bool preprocessNewFact(TNode atom, bool polarity, TNode fact) override;
-  /** Notify new fact */
-  void notifyNewFact(TNode atom, bool polarity, TNode fact) override;
+  /** Pre-notify fact, return true if processed. */
+  bool preNotifyFact(TNode atom, bool pol, TNode fact, bool isPrereg) override;
+  /** Notify fact */
+  void notifyFact(TNode atom, bool pol, TNode fact) override;
   //--------------------------------- end standard check
 
   /** Collect model values in m based on the relevant terms given by termSet */
@@ -214,8 +207,6 @@ private:
 
   /** get a pointer to the uf with cardinality */
   CardinalityExtension* getCardinalityExtension() const { return d_thss.get(); }
-  /** are we in conflict? */
-  bool inConflict() const { return d_conflict; }
 
  private:
   bool areCareDisequal(TNode x, TNode y);

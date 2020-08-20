@@ -54,7 +54,6 @@ TheoryUF::TheoryUF(context::Context* c,
        * so make sure it's initialized first. */
       d_thss(nullptr),
       d_ho(nullptr),
-      d_conflict(c, false),
       d_functionsTerms(c),
       d_symb(u, instanceName),
       d_state(c, u, valuation)
@@ -108,7 +107,7 @@ void TheoryUF::finishInit() {
   if (options::ufHo())
   {
     d_equalityEngine->addFunctionKind(kind::HO_APPLY);
-    d_ho.reset(new HoExtension(*this, getSatContext(), getUserContext()));
+    d_ho.reset(new HoExtension(*this, d_state));
   }
 }
 
@@ -148,7 +147,7 @@ void TheoryUF::postCheck(Effort level)
     d_thss->check(level);
     if (d_thss->isConflict())
     {
-      d_conflict = true;
+      d_state.notifyInConflict();
     }
   }
   // check with the higher-order extension
@@ -161,7 +160,7 @@ void TheoryUF::postCheck(Effort level)
   }
 }
 
-bool TheoryUF::preprocessNewFact(TNode atom, bool polarity, TNode fact)
+bool TheoryUF::preNotifyFact(TNode atom, bool pol, TNode fact, bool isPrereg)
 {
   if (d_thss != nullptr)
   {
@@ -170,7 +169,7 @@ bool TheoryUF::preprocessNewFact(TNode atom, bool polarity, TNode fact)
     d_thss->assertNode(fact, isDecision);
     if (d_thss->isConflict())
     {
-      d_conflict = true;
+      d_state.notifyInConflict();
       return true;
     }
   }
@@ -202,13 +201,13 @@ bool TheoryUF::preprocessNewFact(TNode atom, bool polarity, TNode fact)
   return false;
 }
 
-void TheoryUF::notifyNewFact(TNode atom, bool polarity, TNode fact)
+void TheoryUF::notifyFact(TNode atom, bool pol, TNode fact)
 {
   if (!d_state.isInConflict() && atom.getKind() == kind::EQUAL)
   {
     if (options::ufHo() && options::ufHoExt())
     {
-      if (!polarity && !d_conflict && atom[0].getType().isFunction())
+      if (!pol && !d_state.isInConflict() && atom[0].getType().isFunction())
       {
         // apply extensionality eagerly using the ho extension
         d_ho->applyExtensionality(fact);
@@ -297,14 +296,14 @@ void TheoryUF::notifyPreRegisterTerm(TNode node)
 bool TheoryUF::propagate(TNode literal) {
   Debug("uf::propagate") << "TheoryUF::propagate(" << literal  << ")" << std::endl;
   // If already in conflict, no more propagation
-  if (d_conflict) {
+  if (d_state.isInConflict()) {
     Debug("uf::propagate") << "TheoryUF::propagate(" << literal << "): already in conflict" << std::endl;
     return false;
   }
   // Propagate out
   bool ok = d_out->propagate(literal);
   if (!ok) {
-    d_conflict = true;
+    d_state.notifyInConflict();
   }
   return ok;
 }/* TheoryUF::propagate(TNode) */
@@ -663,10 +662,10 @@ void TheoryUF::computeCareGraph() {
 void TheoryUF::conflict(TNode a, TNode b) {
   std::shared_ptr<eq::EqProof> pf =
       d_proofsEnabled ? std::make_shared<eq::EqProof>() : nullptr;
-  d_conflictNode = explain(a.eqNode(b), pf.get());
+  Node conf = explain(a.eqNode(b), pf.get());
   std::unique_ptr<ProofUF> puf(d_proofsEnabled ? new ProofUF(pf) : nullptr);
-  d_out->conflict(d_conflictNode, std::move(puf));
-  d_conflict = true;
+  d_out->conflict(conf, std::move(puf));
+  d_state.notifyInConflict();
 }
 
 void TheoryUF::eqNotifyNewClass(TNode t) {

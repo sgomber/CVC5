@@ -50,7 +50,7 @@ class HoExtension
   typedef context::CDHashMap<Node, Node, NodeHashFunction> NodeNodeMap;
 
  public:
-  HoExtension(TheoryUF& p, context::Context* c, context::UserContext* u);
+  HoExtension(TheoryUF& p, TheoryState& state);
 
   /** expand definition
    *
@@ -182,6 +182,8 @@ class HoExtension
   Node d_true;
   /** the parent of this extension */
   TheoryUF& d_parent;
+  /** Reference to the state object */
+  TheoryState& d_state;
   /** extensionality has been applied to these disequalities */
   NodeSet d_extensionality;
 

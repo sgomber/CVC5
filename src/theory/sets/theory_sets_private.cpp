@@ -289,7 +289,7 @@ bool TheorySetsPrivate::assertFact(Node fact, Node exp)
     d_equalityEngine->assertPredicate(atom, polarity, exp);
   }
   // call the notify new fact method
-  notifyNewFact(atom, polarity, exp);
+  notifyFact(atom, polarity, exp);
   return true;
 }
 
@@ -926,13 +926,13 @@ void TheorySetsPrivate::postCheck(Theory::Effort level)
   Trace("sets-check") << "Sets finish Check effort " << level << std::endl;
 }
 
-bool TheorySetsPrivate::preprocessNewFact(TNode atom, bool polarity, TNode fact)
+bool TheorySetsPrivate::preNotifyFact(TNode atom, bool polarity, TNode fact)
 {
-  // use entailment check, is this necessary?
+  // use entailment check (is this necessary?)
   return d_state.isEntailed(atom, polarity);
 }
 
-void TheorySetsPrivate::notifyNewFact(TNode atom, bool polarity, TNode fact)
+void TheorySetsPrivate::notifyFact(TNode atom, bool polarity, TNode fact)
 {
   if (d_state.isInConflict())
   {

@@ -584,9 +584,6 @@ class Theory {
    */
   virtual Node getModelValue(TNode var) { return Node::null(); }
 
-  /** Needs last effort check? */
-  virtual bool needsCheckLastEffort() { return false; }
-
   /** T-propagate new literal assignments in the current context. */
   virtual void propagate(Effort level = EFFORT_FULL) {}
 
@@ -604,6 +601,11 @@ class Theory {
   virtual TrustNode explainConflict(TNode a, TNode b);
 
   //--------------------------------- new standard check
+  /** 
+   * Does this theory wish to be called to check at last call effort? This is
+   * the case for any theory that wishes to run when a model is available.
+   */
+  virtual bool needsCheckLastEffort() { return false; }
   /**
    * Check the current assignment's consistency.
    *
@@ -628,13 +630,24 @@ class Theory {
    * Preprocess new fact, return true if the theory processed it. If this
    * method returns false, then the atom will be added to the equality engine
    * of the theory and notifyNewFact will be called.
+   * 
+   * @param atom The atom
+   * @param polarity Its polarity
+   * @param fact The original literal that was asserted
+   * @param isPrereg Whether the assertion is preregistered
+   * @return true if the theory completely processed this fact, i.e. it does
+   * not need to assert the fact to its equality engine.
    */
-  virtual bool preprocessNewFact(TNode atom, bool polarity, TNode fact);
+  virtual bool preNotifyFact(TNode atom, bool pol, TNode fact, bool isPrereg);
   /**
    * Notify new fact, called immediately after the fact was pushed into the
    * equality engine.
+   * 
+   * @param atom The atom
+   * @param polarity Its polarity
+   * @param fact The original literal that was asserted
    */
-  virtual void notifyNewFact(TNode atom, bool polarity, TNode fact);
+  virtual void notifyFact(TNode atom, bool pol, TNode fact);
   //--------------------------------- end new standard check
 
   //--------------------------------- collect model info

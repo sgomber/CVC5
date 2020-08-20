@@ -1497,13 +1497,13 @@ void TheoryArrays::postCheck(Effort level)
   Trace("arrays") << spaces(getSatContext()->getLevel()) << "Arrays::check(): done" << endl;
 }
 
-bool TheoryArrays::preprocessNewFact(TNode atom, bool polarity, TNode fact)
+bool TheoryArrays::preNotifyFact(TNode atom, bool pol, TNode fact, bool isPreg)
 {
   // TODO
   return false;
 }
 
-void TheoryArrays::notifyNewFact(TNode atom, bool polarity, TNode fact)
+void TheoryArrays::notifyFact(TNode atom, bool pol, TNode fact)
 {
   // TODO
 }

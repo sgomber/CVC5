@@ -451,13 +451,13 @@ void TheoryBV::postCheck(Effort level)
   // TODO
 }
 
-bool TheoryBV::preprocessNewFact(TNode atom, bool polarity, TNode fact)
+bool TheoryBV::preNotifyFact(TNode atom, bool pol, TNode fact, bool isPrereg)
 {
   // TODO
   return false;
 }
 
-void TheoryBV::notifyNewFact(TNode atom, bool polarity, TNode fact)
+void TheoryBV::notifyFact(TNode atom, bool pol, TNode fact)
 {
   // TODO
 }
