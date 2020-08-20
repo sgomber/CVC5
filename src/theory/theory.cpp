@@ -510,7 +510,7 @@ void Theory::check(Effort level)
     return;
   }
   // resource, stats
-  d_out->spendResource(ResourceManager::Resource::TheoryCheckStep);
+  //d_out->spendResource(ResourceManager::Resource::TheoryCheckStep);
   TimerStat::CodeTimer checkTimer(d_checkTime);
   // pre-check at level
   preCheck(level);
@@ -540,12 +540,8 @@ void Theory::check(Effort level)
         d_equalityEngine->assertPredicate(atom, polarity, fact);
       }
     }
-    // if we aren't already in conflict
-    if (!d_theoryState->isInConflict())
-    {
-      // notify the theory of the new fact
-      notifyNewFact(atom, polarity, fact);
-    }
+    // notify the theory of the new fact
+    notifyNewFact(atom, polarity, fact);
   }
   // post-check at level
   postCheck(level);

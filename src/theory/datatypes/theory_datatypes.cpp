@@ -163,38 +163,50 @@ void TheoryDatatypes::check(Effort e) {
     return;
   }
   Assert(d_pending.empty() && d_pending_merge.empty());
-  d_addedLemma = false;
-
   TimerStat::CodeTimer checkTimer(d_checkTime);
+  
+  preCheck(e);
 
   Trace("datatypes-check") << "Check effort " << e << std::endl;
   while (!done() && !d_state.isInConflict())
   {
-    // Get all the assertions
+    // Get the next assertion from the fact queue
     Assertion assertion = get();
     TNode fact = assertion.d_assertion;
-    Trace("datatypes-assert") << "Assert " << fact << std::endl;
-
-    //assert the fact
     bool polarity = fact.getKind() != kind::NOT;
     TNode atom = polarity ? fact : fact[0];
-    if (atom.getKind() == kind::EQUAL)
+    // call the preprocess method
+    if (preprocessNewFact(atom, polarity, fact))
     {
-      d_equalityEngine->assertEquality(atom, polarity, fact);
+      // handled in theory-specific way that doesn't involve equality engine
+      continue;
     }
-    else
+    // if we have an equality engine, assert to it now
+    if (d_equalityEngine != nullptr)
     {
-      d_equalityEngine->assertPredicate(atom, polarity, fact);
+      if (atom.getKind() == kind::EQUAL)
+      {
+        d_equalityEngine->assertEquality(atom, polarity, fact);
+      }
+      else
+      {
+        d_equalityEngine->assertPredicate(atom, polarity, fact);
+      }
     }
+    // notify the theory of the new fact
     notifyNewFact(atom, polarity, fact);
   }
 
   postCheck(e);
 }
 
-void TheoryDatatypes::postCheck(Effort level)
+void TheoryDatatypes::preCheck(Effort level)
 {
   d_addedLemma = false;
+}
+
+void TheoryDatatypes::postCheck(Effort level)
+{
   if (level == EFFORT_LAST_CALL)
   {
     Assert(d_sygusExtension != nullptr);
@@ -394,12 +406,6 @@ void TheoryDatatypes::postCheck(Effort level)
   if( Debug.isOn("datatypes") || Debug.isOn("datatypes-split") ) {
     Notice() << "TheoryDatatypes::check(): done" << endl;
   }
-}
-
-bool TheoryDatatypes::preprocessNewFact(TNode atom, bool polarity, TNode fact)
-{
-  // TODO
-  return false;
 }
 
 bool TheoryDatatypes::needsCheckLastEffort() {

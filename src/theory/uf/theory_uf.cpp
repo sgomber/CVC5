@@ -204,7 +204,7 @@ bool TheoryUF::preprocessNewFact(TNode atom, bool polarity, TNode fact)
 
 void TheoryUF::notifyNewFact(TNode atom, bool polarity, TNode fact)
 {
-  if (atom.getKind() == kind::EQUAL)
+  if (!d_state.isInConflict() && atom.getKind() == kind::EQUAL)
   {
     if (options::ufHo() && options::ufHoExt())
     {

@@ -934,6 +934,10 @@ bool TheorySetsPrivate::preprocessNewFact(TNode atom, bool polarity, TNode fact)
 
 void TheorySetsPrivate::notifyNewFact(TNode atom, bool polarity, TNode fact)
 {
+  if (d_state.isInConflict())
+  {
+    return;
+  }
   if (atom.getKind() == kind::MEMBER && polarity)
   {
     // check if set has a value, if so, we can propagate
