@@ -94,7 +94,6 @@ class TheoryBV : public Theory {
 
   void notifyPreRegisterTerm(TNode n) override;
 
-  void check(Effort e) override;
   //--------------------------------- standard check
   /** Pre-check, called before the fact queue of the theory is processed. */
   bool preCheck(Effort level) override;

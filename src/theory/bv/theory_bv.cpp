@@ -325,77 +325,6 @@ void TheoryBV::checkForLemma(TNode fact)
   }
 }
 
-void TheoryBV::check(Effort e)
-{
-  if (done() && e<Theory::EFFORT_FULL) {
-    return;
-  }
-
-  TimerStat::CodeTimer checkTimer(d_checkTime);
-  Debug("bitvector") << "TheoryBV::check(" << e << ")" << std::endl;
-  TimerStat::CodeTimer codeTimer(d_statistics.d_solveTimer);
-
-  if (preCheck(e))
-  {
-    return;
-  }
-
-  while (!done()) {
-    TNode fact = get().d_assertion;
-
-    checkForLemma(fact);
-
-    for (unsigned i = 0; i < d_subtheories.size(); ++i) {
-      d_subtheories[i]->assertFact(fact);
-    }
-  }
-
-  bool ok = true;
-  bool complete = false;
-  for (unsigned i = 0; i < d_subtheories.size(); ++i) {
-    Assert(!inConflict());
-    ok = d_subtheories[i]->check(e);
-    complete = d_subtheories[i]->isComplete();
-
-    if (!ok) {
-      // if we are in a conflict no need to check with other theories
-      Assert(inConflict());
-      sendConflict();
-      return;
-    }
-    if (complete) {
-      // if the last subtheory was complete we stop
-      break;
-    }
-  }
-  
-  //check extended functions
-  if (Theory::fullEffort(e)) {
-    //do inferences (adds external lemmas)  TODO: this can be improved to add internal inferences
-    std::vector< Node > nred;
-    if (d_extTheory->doInferences(0, nred))
-    {
-      return;
-    }
-    d_needsLastCallCheck = false;
-    if( !nred.empty() ){
-      //other inferences involving bv2nat, int2bv
-      if( options::bvAlgExtf() ){
-        if( doExtfInferences( nred ) ){
-          return;
-        }
-      }
-      if( !options::bvLazyReduceExtf() ){
-        if( doExtfReductions( nred ) ){
-          return;
-        }
-      }else{     
-        d_needsLastCallCheck = true;
-      }
-    }
-  }
-}
-
 bool TheoryBV::preCheck(Effort level)
 {
   // we may be getting new assertions so the model cache may not be sound
@@ -434,6 +363,7 @@ bool TheoryBV::preCheck(Effort level)
       Node conflict = utils::mkAnd(assertions);
       d_out->conflict(conflict);
     }
+    // no need to use the standard template for check
     return true;
   }
   if (Theory::fullEffort(level))
