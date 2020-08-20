@@ -278,71 +278,6 @@ void TheorySep::presolve() {
 /////////////////////////////////////////////////////////////////////////////
 
 
-void TheorySep::check(Effort e) {
-  if (done() && !fullEffort(e) && e != EFFORT_LAST_CALL) {
-    return;
-  }
-
-  getOutputChannel().spendResource(ResourceManager::Resource::TheoryCheckStep);
-
-  TimerStat::CodeTimer checkTimer(d_checkTime);
-  Trace("sep-check") << "Sep::check(): " << e << endl;
-
-  while (!done() && !d_state.isInConflict())
-  {
-    // Get all the assertions
-    Assertion assertion = get();
-    TNode fact = assertion.d_assertion;
-
-    Trace("sep-assert") << "TheorySep::check(): processing " << fact << std::endl;
-
-    bool polarity = fact.getKind() != NOT;
-    TNode atom = polarity ? fact : fact[0];
-    TNode satom = atom.getKind() == SEP_LABEL ? atom[0] : atom;
-    TNode slbl = atom.getKind() == SEP_LABEL ? atom[1] : TNode::null();
-    bool isSpatial = isSpatialKind(satom.getKind());
-    if (isSpatial)
-    {
-      reduceFact(atom, polarity, fact);
-    }
-    // assert to equality engine
-    if (!isSpatial)
-    {
-      Trace("sep-assert") << "Asserting " << atom << ", pol = " << polarity
-                          << " to EE..." << std::endl;
-      if (satom.getKind() == EQUAL)
-      {
-        d_equalityEngine->assertEquality(atom, polarity, fact);
-      }else{
-        d_equalityEngine->assertPredicate(atom, polarity, fact);
-      }
-      Trace("sep-assert") << "Done asserting " << atom << " to EE."
-                          << std::endl;
-    }
-    else if (slbl.isNull())
-    {
-      continue;
-    }
-    else if (satom.getKind() == SEP_PTO)
-    {
-      Assert(slbl.getKind() == SINGLETON && slbl[0] == pto_lbl[0]);
-      Trace("sep-assert") << "Asserting " << satom << std::endl;
-      d_equalityEngine->assertPredicate(satom, polarity, fact);
-      // associate the equivalence class of the lhs with this pto
-      Node r = getRepresentative(slbl);
-      HeapAssertInfo* ei = getOrMakeEqcInfo(r, true);
-      addPto(ei, r, atom, polarity);
-    }
-    // maybe propagate
-    doPendingFacts();
-    // add to spatial assertions
-    if (!d_state.isInConflict() && isSpatial)
-    {
-      d_spatial_assertions.push_back(fact);
-    }
-  }
-  postCheck(e);
-}
 
 bool TheorySep::preNotifyFact(TNode atom,
                               bool polarity,
@@ -375,6 +310,14 @@ void TheorySep::notifyFact(TNode atom,
                            TNode fact,
                            bool isInternal)
 {
+  TNode satom = atom.getKind() == SEP_LABEL ? atom[0] : atom;
+  if (atom.getKind() == SEP_LABEL && atom[0].getKind() == SEP_PTO)
+  {
+    // associate the equivalence class of the lhs with this pto
+    Node r = getRepresentative(atom[1]);
+    HeapAssertInfo* ei = getOrMakeEqcInfo(r, true);
+    addPto(ei, r, atom, polarity);
+  }
   // maybe propagate
   doPendingFacts();
 }

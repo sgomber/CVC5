@@ -137,7 +137,6 @@ class TheorySep : public Theory {
   // MAIN SOLVER
   /////////////////////////////////////////////////////////////////////////////
 
-  void check(Effort e) override;
   //--------------------------------- standard check
   /** Do we need a check call at last call effort? */
   bool needsCheckLastEffort() override;
