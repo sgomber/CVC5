@@ -850,7 +850,7 @@ void TheoryArrays::preRegisterTermInternal(TNode node)
   // !d_equalityEngine->consistent());
 }
 
-void TheoryArrays::notifyPreRegisterTerm(TNode node)
+void TheoryArrays::preRegisterTerm(TNode node)
 {
   preRegisterTermInternal(node);
   // If we have a select from an array of Bools, mark it as a term that can be propagated.
