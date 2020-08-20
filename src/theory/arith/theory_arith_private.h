@@ -477,6 +477,16 @@ public:
   std::pair<bool, Node> entailmentCheck(TNode lit, const ArithEntailmentCheckParameters& params, ArithEntailmentCheckSideEffects& out);
 
 
+  //--------------------------------- standard check
+  /** Pre-check, called before the fact queue of the theory is processed. */
+  void preCheck(Theory::Effort level);
+  /** Post-check, called after the fact queue of the theory is processed. */
+  void postCheck(Theory::Effort level);
+  /** Pre-notify fact, return true if processed. */
+  bool preNotifyFact(TNode atom, bool pol, TNode fact, bool isPrereg);
+  /** Notify fact */
+  void notifyFact(TNode atom, bool pol, TNode fact);
+  //--------------------------------- end standard check
 private:
 
   /** The constant zero. */
@@ -624,7 +634,7 @@ private:
    * Returns a conflict if one was found.
    * Returns Node::null if no conflict was found.
    */
-  ConstraintP constraintFromFactQueue();
+  ConstraintP constraintFromFactQueue(TNode assertion);
   bool assertionCases(ConstraintP c);
 
   /**
@@ -737,6 +747,11 @@ private:
   uint32_t d_solveIntMaybeHelp, d_solveIntAttempts;
 
   RationalVector d_farkasBuffer;
+  
+  //---------------- during check 
+  bool d_newFacts;
+  Result::Sat d_previousStatus;
+  //---------------- end during check
 
   /** These fields are designed to be accessible to TheoryArith methods. */
   class Statistics {

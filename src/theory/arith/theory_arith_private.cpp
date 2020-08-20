@@ -156,6 +156,8 @@ TheoryArithPrivate::TheoryArithPrivate(TheoryArith& containing,
       d_dioSolveResources(0),
       d_solveIntMaybeHelp(0u),
       d_solveIntAttempts(0u),
+      d_newFacts(false),
+      d_previousStatus(Result::SAT_UNKNOWN),
       d_statistics(),
       d_opElim(pnm, logicInfo)
 {
@@ -1686,9 +1688,7 @@ Node TheoryArithPrivate::callDioSolver(){
   return d_diosolver.processEquationsForConflict();
 }
 
-ConstraintP TheoryArithPrivate::constraintFromFactQueue(){
-  Assert(!done());
-  TNode assertion = get();
+ConstraintP TheoryArithPrivate::constraintFromFactQueue(TNode assertion){
 
   Kind simpleKind = Comparison::comparisonKind(assertion);
   ConstraintP constraint = d_constraintDatabase.lookup(assertion);
@@ -3332,18 +3332,13 @@ bool TheoryArithPrivate::hasFreshArithLiteral(Node n) const{
   }
 }
 
+bool TheoryArithPrivate::preNotifyFact(TNode atom, bool pol, TNode fact, bool isPrereg) { return false; }
+void TheoryArithPrivate::notifyFact(TNode atom, bool pol, TNode fact){}
+
 void TheoryArithPrivate::check(Theory::Effort effortLevel){
   Assert(d_currentPropagationList.empty());
 
   if(done() && effortLevel < Theory::EFFORT_FULL && ( d_qflraStatus == Result::SAT) ){
-    return;
-  }
-
-  if(effortLevel == Theory::EFFORT_LAST_CALL){
-    if (d_nonlinearExtension != nullptr)
-    {
-      d_nonlinearExtension->check(effortLevel);
-    }
     return;
   }
 
@@ -3352,26 +3347,44 @@ void TheoryArithPrivate::check(Theory::Effort effortLevel){
   Debug("effortlevel") << "TheoryArithPrivate::check " << effortLevel << std::endl;
   Debug("arith") << "TheoryArithPrivate::check begun " << effortLevel << std::endl;
 
-  if(Debug.isOn("arith::consistency")){
-    Assert(unenqueuedVariablesAreConsistent());
-  }
-
-  bool newFacts = !done();
-  //If previous == SAT, then reverts on conflicts are safe
-  //Otherwise, they are not and must be committed.
-  Result::Sat previous = d_qflraStatus;
-  if(newFacts){
-    d_qflraStatus = Result::SAT_UNKNOWN;
-    d_hasDoneWorkSinceCut = true;
-  }
-
+  preCheck(effortLevel);
+  
   while(!done()){
-    ConstraintP curr = constraintFromFactQueue();
+    TNode assertion = get();
+    ConstraintP curr = constraintFromFactQueue(assertion);
     if(curr != NullConstraint){
       bool res CVC4_UNUSED = assertionCases(curr);
       Assert(!res || anyConflict());
     }
     if(anyConflict()){ break; }
+  }
+  postCheck(effortLevel);
+}
+
+void TheoryArithPrivate::preCheck(Theory::Effort level)
+{
+  if(Debug.isOn("arith::consistency")){
+    Assert(unenqueuedVariablesAreConsistent());
+  }
+
+  d_newFacts = !done();
+  //If d_previousStatus == SAT, then reverts on conflicts are safe
+  //Otherwise, they are not and must be committed.
+  d_previousStatus = d_qflraStatus;
+  if(d_newFacts){
+    d_qflraStatus = Result::SAT_UNKNOWN;
+    d_hasDoneWorkSinceCut = true;
+  }
+}
+
+void TheoryArithPrivate::postCheck(Theory::Effort effortLevel)
+{
+  if(effortLevel == Theory::EFFORT_LAST_CALL){
+    if (d_nonlinearExtension != nullptr)
+    {
+      d_nonlinearExtension->check(effortLevel);
+    }
+    return;
   }
   if(!anyConflict()){
     while(!d_learnedBounds.empty()){
@@ -3389,14 +3402,14 @@ void TheoryArithPrivate::check(Theory::Effort effortLevel){
 
   if(anyConflict()){
     d_qflraStatus = Result::UNSAT;
-    if(options::revertArithModels() && previous == Result::SAT){
+    if(options::revertArithModels() && d_previousStatus == Result::SAT){
       ++d_statistics.d_revertsOnConflicts;
-      Debug("arith::bt") << "clearing here " << " " << newFacts << " " << previous << " " << d_qflraStatus  << endl;
+      Debug("arith::bt") << "clearing here " << " " << d_newFacts << " " << d_previousStatus << " " << d_qflraStatus  << endl;
       revertOutOfConflict();
       d_errorSet.clear();
     }else{
       ++d_statistics.d_commitsOnConflicts;
-      Debug("arith::bt") << "committing here " << " " << newFacts << " " << previous << " " << d_qflraStatus  << endl;
+      Debug("arith::bt") << "committing here " << " " << d_newFacts << " " << d_previousStatus << " " << d_qflraStatus  << endl;
       d_partialModel.commitAssignmentChanges();
       revertOutOfConflict();
     }
@@ -3431,7 +3444,7 @@ void TheoryArithPrivate::check(Theory::Effort effortLevel){
     solveInteger(effortLevel);
     if(anyConflict()){
       ++d_statistics.d_commitsOnConflicts;
-      Debug("arith::bt") << "committing here " << " " << newFacts << " " << previous << " " << d_qflraStatus  << endl;
+      Debug("arith::bt") << "committing here " << " " << d_newFacts << " " << d_previousStatus << " " << d_qflraStatus  << endl;
       revertOutOfConflict();
       d_errorSet.clear();
       outputConflicts();
@@ -3444,11 +3457,11 @@ void TheoryArithPrivate::check(Theory::Effort effortLevel){
 
   switch(d_qflraStatus){
   case Result::SAT:
-    if(newFacts){
+    if(d_newFacts){
       ++d_statistics.d_nontrivialSatChecks;
     }
 
-    Debug("arith::bt") << "committing sap inConflit"  << " " << newFacts << " " << previous << " " << d_qflraStatus  << endl;
+    Debug("arith::bt") << "committing sap inConflit"  << " " << d_newFacts << " " << d_previousStatus << " " << d_qflraStatus  << endl;
     d_partialModel.commitAssignmentChanges();
     d_unknownsInARow = 0;
     if(Debug.isOn("arith::consistency")){
@@ -3466,7 +3479,7 @@ void TheoryArithPrivate::check(Theory::Effort effortLevel){
     ++d_unknownsInARow;
     ++(d_statistics.d_unknownChecks);
     Assert(!Theory::fullEffort(effortLevel));
-    Debug("arith::bt") << "committing unknown"  << " " << newFacts << " " << previous << " " << d_qflraStatus  << endl;
+    Debug("arith::bt") << "committing unknown"  << " " << d_newFacts << " " << d_previousStatus << " " << d_qflraStatus  << endl;
     d_partialModel.commitAssignmentChanges();
     d_statistics.d_maxUnknownsInARow.maxAssign(d_unknownsInARow);
 
@@ -3483,7 +3496,7 @@ void TheoryArithPrivate::check(Theory::Effort effortLevel){
 
     ++d_statistics.d_commitsOnConflicts;
 
-    Debug("arith::bt") << "committing on conflict" << " " << newFacts << " " << previous << " " << d_qflraStatus  << endl;
+    Debug("arith::bt") << "committing on conflict" << " " << d_newFacts << " " << d_previousStatus << " " << d_qflraStatus  << endl;
     d_partialModel.commitAssignmentChanges();
     revertOutOfConflict();
 
@@ -3580,7 +3593,7 @@ void TheoryArithPrivate::check(Theory::Effort effortLevel){
       outputConflicts();
       emmittedConflictOrSplit = true;
       //cout << "unate conflict " << endl;
-      Debug("arith::bt") << "committing on unate conflict" << " " << newFacts << " " << previous << " " << d_qflraStatus  << endl;
+      Debug("arith::bt") << "committing on unate conflict" << " " << d_newFacts << " " << d_previousStatus << " " << d_qflraStatus  << endl;
 
       Debug("arith::conflict") << "unate arith conflict" << endl;
     }
