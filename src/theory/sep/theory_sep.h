@@ -152,6 +152,8 @@ class TheorySep : public Theory {
  private:
   /** Ensures that the reduction has been added for the given fact */
   void reduceFact(TNode atom, bool polarity, TNode fact);
+  /** Is spatial kind? */
+  bool isSpatialKind(Kind k) const;
   // NotifyClass: template helper class for d_equalityEngine - handles
   // call-back from congruence closure module
   class NotifyClass : public eq::EqualityEngineNotify

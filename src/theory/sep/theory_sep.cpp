@@ -300,9 +300,7 @@ void TheorySep::check(Effort e) {
     TNode atom = polarity ? fact : fact[0];
     TNode satom = atom.getKind() == SEP_LABEL ? atom[0] : atom;
     TNode slbl = atom.getKind() == SEP_LABEL ? atom[1] : TNode::null();
-    bool isSpatial = satom.getKind() == SEP_STAR || satom.getKind() == SEP_WAND
-                     || satom.getKind() == SEP_PTO
-                     || satom.getKind() == SEP_EMP;
+    bool isSpatial = isSpatialKind(satom.getKind());
     if (isSpatial)
     {
       reduceFact(atom, polarity, fact);
@@ -351,8 +349,22 @@ bool TheorySep::preNotifyFact(TNode atom,
                               TNode fact,
                               bool isPrereg)
 {
-  // TODO
-  return false;
+  TNode satom = atom.getKind() == SEP_LABEL ? atom[0] : atom;
+  TNode slbl = atom.getKind() == SEP_LABEL ? atom[1] : TNode::null();
+  bool isSpatial = isSpatialKind(satom.getKind());
+  if (isSpatial)
+  {
+    reduceFact(atom, polarity, fact);
+    d_spatial_assertions.push_back(fact);
+  }
+  // assert to equality if non-spatial or a labelled pto
+  if (!isSpatial || (!slbl.isNull() && satom.getKind() == SEP_PTO))
+  {
+    return false;
+  }
+  // otherwise, maybe propagate
+  doPendingFacts();
+  return true;
 }
 
 void TheorySep::notifyFact(TNode atom,
@@ -360,7 +372,8 @@ void TheorySep::notifyFact(TNode atom,
                            TNode fact,
                            bool isInternal)
 {
-  // TODO
+  // maybe propagate
+  doPendingFacts();
 }
 
 void TheorySep::reduceFact(TNode atom, bool polarity, TNode fact)
@@ -554,6 +567,13 @@ void TheorySep::reduceFact(TNode atom, bool polarity, TNode fact)
     Trace("sep-lemma") << "Sep::Lemma : reduction : " << lem << std::endl;
     d_out->lemma(lem);
   }
+}
+
+bool TheorySep::isSpatialKind(Kind k) const
+{
+  return k== SEP_STAR || k == SEP_WAND
+                     || k == SEP_PTO
+                     || k == SEP_EMP;
 }
 
 void TheorySep::postCheck(Effort level)
