@@ -173,8 +173,6 @@ class TheorySetsPrivate {
   void finishInit();
 
   //--------------------------------- standard check
-  /** Pre-check, called before the fact queue of the theory is processed. */
-  void preCheck(Theory::Effort level);
   /** Post-check, called after the fact queue of the theory is processed. */
   void postCheck(Theory::Effort level);
   /** Preprocess fact, return true if processed. */

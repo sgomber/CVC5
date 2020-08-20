@@ -172,6 +172,7 @@ void InferManager::assertInternalFact(TNode atom, bool pol, TNode fact)
   }
   // call the notify fact method, where this is an internally generated fact
   d_theory.notifyFact(atom, pol, fact, true);
+  // TODO: keep set for fact?
 }
 
 }  // namespace theory

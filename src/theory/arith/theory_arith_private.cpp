@@ -3378,7 +3378,7 @@ void TheoryArithPrivate::check(Theory::Effort effortLevel){
   postCheck(effortLevel);
 }
 
-void TheoryArithPrivate::preCheck(Theory::Effort level)
+bool TheoryArithPrivate::preCheck(Theory::Effort level)
 {
   if(Debug.isOn("arith::consistency")){
     Assert(unenqueuedVariablesAreConsistent());
@@ -3393,6 +3393,7 @@ void TheoryArithPrivate::preCheck(Theory::Effort level)
     d_qflraStatus = Result::SAT_UNKNOWN;
     d_hasDoneWorkSinceCut = true;
   }
+  return false;
 }
 
 void TheoryArithPrivate::postCheck(Theory::Effort effortLevel)

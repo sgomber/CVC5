@@ -478,7 +478,7 @@ public:
 
   //--------------------------------- standard check
   /** Pre-check, called before the fact queue of the theory is processed. */
-  void preCheck(Theory::Effort level);
+  bool preCheck(Theory::Effort level);
   /** Pre-notify fact, return true if processed. */
   bool preNotifyFact(TNode atom, bool pol, TNode fact, bool isPrereg);
   /** Post-check, called after the fact queue of the theory is processed. */

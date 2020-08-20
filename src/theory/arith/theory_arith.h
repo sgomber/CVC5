@@ -79,7 +79,7 @@ class TheoryArith : public Theory {
 
   //--------------------------------- standard check
   /** Pre-check, called before the fact queue of the theory is processed. */
-  void preCheck(Effort level) override;
+  bool preCheck(Effort level) override;
   /** Post-check, called after the fact queue of the theory is processed. */
   void postCheck(Effort level) override;
   /** Pre-notify fact, return true if processed. */

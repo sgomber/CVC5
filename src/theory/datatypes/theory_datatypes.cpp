@@ -158,7 +158,7 @@ TNode TheoryDatatypes::getEqcConstructor( TNode r ) {
   }
 }
 
-void TheoryDatatypes::preCheck(Effort level) { d_addedLemma = false; }
+bool TheoryDatatypes::preCheck(Effort level) { d_addedLemma = false; return false; }
 
 void TheoryDatatypes::postCheck(Effort level)
 {

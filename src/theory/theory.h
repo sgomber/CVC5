@@ -628,8 +628,10 @@ class Theory {
   virtual void check(Effort level = EFFORT_FULL);
   /**
    * Pre-check, called before the fact queue of the theory is processed.
+   * If this method returns true, then the check is complete and the check()
+   * method should not do any further work.
    */
-  virtual void preCheck(Effort level = EFFORT_FULL);
+  virtual bool preCheck(Effort level = EFFORT_FULL);
   /**
    * Post-check, called after the fact queue of the theory is processed.
    */

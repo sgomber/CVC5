@@ -441,9 +441,10 @@ void TheoryBV::check(Effort e)
   }
 }
 
-void TheoryBV::preCheck(Effort level)
+bool TheoryBV::preCheck(Effort level)
 {
   // TODO
+  return false;
 }
 
 void TheoryBV::postCheck(Effort level)

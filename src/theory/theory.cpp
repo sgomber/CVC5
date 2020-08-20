@@ -507,11 +507,15 @@ void Theory::check(Effort level)
   {
     return;
   }
-  // resource, stats
+  // standard calls for resource, stats
   d_out->spendResource(ResourceManager::Resource::TheoryCheckStep);
   TimerStat::CodeTimer checkTimer(d_checkTime);
   // pre-check at level
-  preCheck(level);
+  if (preCheck(level))
+  {
+    // check aborted for a theory-specific reason
+    return;
+  }
   // process the pending fact queue
   while (!done() && !d_theoryState->isInConflict())
   {
@@ -545,7 +549,7 @@ void Theory::check(Effort level)
   postCheck(level);
 }
 
-void Theory::preCheck(Effort level) {}
+bool Theory::preCheck(Effort level) { return false; }
 
 void Theory::postCheck(Effort level) {}
 
@@ -556,7 +560,6 @@ bool Theory::preNotifyFact(TNode atom, bool polarity, TNode fact, bool isPrereg)
 
 void Theory::notifyFact(TNode atom, bool polarity, TNode fact, bool isInternal)
 {
-  // do nothing
 }
 
 bool Theory::collectModelInfo(TheoryModel* m)

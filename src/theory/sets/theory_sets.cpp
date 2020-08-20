@@ -94,8 +94,6 @@ void TheorySets::finishInit()
   d_internal->finishInit();
 }
 
-void TheorySets::preCheck(Effort level) { d_internal->preCheck(level); }
-
 void TheorySets::postCheck(Effort level) { d_internal->postCheck(level); }
 
 bool TheorySets::preNotifyFact(TNode atom,

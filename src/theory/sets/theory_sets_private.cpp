@@ -898,10 +898,6 @@ void TheorySetsPrivate::checkReduceComprehensions()
 }
 
 //--------------------------------- standard check
-void TheorySetsPrivate::preCheck(Theory::Effort level)
-{
-  // no precheck
-}
 
 void TheorySetsPrivate::postCheck(Theory::Effort level)
 {

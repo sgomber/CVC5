@@ -106,7 +106,7 @@ void TheoryArith::ppStaticLearn(TNode n, NodeBuilder<>& learned) {
   d_internal->ppStaticLearn(n, learned);
 }
 
-void TheoryArith::preCheck(Effort level) { d_internal->preCheck(level); }
+bool TheoryArith::preCheck(Effort level) { return d_internal->preCheck(level); }
 
 void TheoryArith::postCheck(Effort level) { d_internal->postCheck(level); }
 
