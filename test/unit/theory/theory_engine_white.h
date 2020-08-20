@@ -156,7 +156,6 @@ class FakeTheory : public Theory
 
   void preRegisterTerm(TNode) override { Unimplemented(); }
   void registerTerm(TNode) { Unimplemented(); }
-  void check(Theory::Effort) override { Unimplemented(); }
   void propagate(Theory::Effort) override { Unimplemented(); }
   TrustNode explain(TNode) override
   {
