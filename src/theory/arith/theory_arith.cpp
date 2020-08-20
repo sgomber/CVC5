@@ -111,15 +111,9 @@ void TheoryArith::check(Effort effortLevel){
   d_internal->check(effortLevel);
 }
 
-void TheoryArith::preCheck(Effort level)
-{
-  d_internal->preCheck(level);
-}
+void TheoryArith::preCheck(Effort level) { d_internal->preCheck(level); }
 
-void TheoryArith::postCheck(Effort level)
-{
-  d_internal->postCheck(level);
-}
+void TheoryArith::postCheck(Effort level) { d_internal->postCheck(level); }
 
 bool TheoryArith::preNotifyFact(TNode atom, bool pol, TNode fact, bool isPrereg)
 {

@@ -476,7 +476,6 @@ public:
 
   std::pair<bool, Node> entailmentCheck(TNode lit, const ArithEntailmentCheckParameters& params, ArithEntailmentCheckSideEffects& out);
 
-
   //--------------------------------- standard check
   /** Pre-check, called before the fact queue of the theory is processed. */
   void preCheck(Theory::Effort level);
@@ -487,7 +486,7 @@ public:
   /** Notify fact */
   void notifyFact(TNode atom, bool pol, TNode fact);
   //--------------------------------- end standard check
-private:
+ private:
 
   /** The constant zero. */
   DeltaRational d_DELTA_ZERO;
@@ -747,8 +746,8 @@ private:
   uint32_t d_solveIntMaybeHelp, d_solveIntAttempts;
 
   RationalVector d_farkasBuffer;
-  
-  //---------------- during check 
+
+  //---------------- during check
   bool d_newFacts;
   Result::Sat d_previousStatus;
   //---------------- end during check
