@@ -63,8 +63,7 @@ class BitblastSolver : public SubtheorySolver {
   AbstractionModule* d_abstractionModule;
   std::unique_ptr<BVQuickCheck> d_quickCheck;
   std::unique_ptr<QuickXPlain> d_quickXplain;
-  //  Node getModelValueRec(TNode node);
-  void setConflict(TNode conflict);
+  void setPendingConflict(TNode conflict);
 public:
   BitblastSolver(context::Context* c, TheoryBV* bv);
   ~BitblastSolver();

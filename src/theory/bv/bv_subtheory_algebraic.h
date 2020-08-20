@@ -186,7 +186,7 @@ class AlgebraicSolver : public SubtheorySolver {
 
   Statistics d_statistics;
   bool useHeuristic();
-  void setConflict(TNode conflict);
+  void setPendingConflict(TNode conflict);
   bool isSubstitutableIn(TNode node, TNode in);
   bool checkExplanation(TNode expl);
   void storeExplanation(TNode expl);

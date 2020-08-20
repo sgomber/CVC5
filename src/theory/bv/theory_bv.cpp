@@ -62,7 +62,7 @@ TheoryBV::TheoryBV(context::Context* c,
       d_BVDivByZero(),
       d_BVRemByZero(),
       d_lemmasAdded(c, false),
-      d_conflict(c, false),
+      d_pendingConflict(c, false),
       d_invalidateModelCache(c, true),
       d_literalsToPropagate(c),
       d_literalsToPropagateIndex(c, 0),
@@ -283,15 +283,16 @@ void TheoryBV::preRegisterTerm(TNode node)
 }
 
 void TheoryBV::sendConflict() {
-  Assert(d_conflict);
-  if (d_conflictNode.isNull()) {
+  Assert(d_pendingConflict);
+  if (d_pendingConflictNode.isNull()) {
     return;
-  } else {
-    Debug("bitvector") << indent() << "TheoryBV::check(): conflict " << d_conflictNode << std::endl;
-    d_out->conflict(d_conflictNode);
-    d_statistics.d_avgConflictSize.addEntry(d_conflictNode.getNumChildren());
-    d_conflictNode = Node::null();
   }
+  Debug("bitvector") << indent() << "TheoryBV::check(): conflict " << d_pendingConflictNode << std::endl;
+  d_out->conflict(d_pendingConflictNode);
+  d_statistics.d_avgConflictSize.addEntry(d_pendingConflictNode.getNumChildren());
+  d_pendingConflictNode = Node::null();
+  // we are now in conflict
+  d_state.notifyInConflict();
 }
 
 void TheoryBV::checkForLemma(TNode fact)
@@ -376,7 +377,7 @@ bool TheoryBV::preCheck(Effort level)
     ++(d_statistics.d_numCallsToCheckStandardEffort);
   }
   // should have sent the conflict already
-  Assert(!inConflict());
+  Assert(!inPendingConflict());
   return false;
 }
 
@@ -387,14 +388,14 @@ void TheoryBV::postCheck(Effort level)
   bool complete = false;
   for (unsigned i = 0; i < d_subtheories.size(); ++i)
   {
-    Assert(!inConflict());
+    Assert(!inPendingConflict());
     ok = d_subtheories[i]->check(level);
     complete = d_subtheories[i]->isComplete();
 
     if (!ok)
     {
       // if we are in a conflict no need to check with other theories
-      Assert(inConflict());
+      Assert(inPendingConflict());
       sendConflict();
       return;
     }
@@ -560,7 +561,7 @@ bool TheoryBV::needsCheckLastEffort() {
 bool TheoryBV::collectModelValues(TheoryModel* m, std::set<Node>& termSet)
 {
   // doesn't use termSet currently
-  Assert(!inConflict());
+  Assert(!inPendingConflict());
   if (options::bitblastMode() == options::BitblastMode::EAGER)
   {
     if (!d_eagerSolver->collectModelInfo(m, true))
@@ -577,7 +578,7 @@ bool TheoryBV::collectModelValues(TheoryModel* m, std::set<Node>& termSet)
 }
 
 Node TheoryBV::getModelValue(TNode var) {
-  Assert(!inConflict());
+  Assert(!inPendingConflict());
   for (unsigned i = 0; i < d_subtheories.size(); ++i) {
     if (d_subtheories[i]->isComplete()) {
       return d_subtheories[i]->getModelValue(var);
@@ -593,7 +594,7 @@ void TheoryBV::propagate(Effort e) {
     return;
   }
 
-  if (inConflict()) {
+  if (inPendingConflict()) {
     return;
   }
 
@@ -610,18 +611,8 @@ void TheoryBV::propagate(Effort e) {
 
   if (!ok) {
     Debug("bitvector::propagate") << indent() << "TheoryBV::propagate(): conflict from theory engine" << std::endl;
-    setConflict();
+    setPendingConflict();
   }
-}
-
-bool TheoryBV::propagate(TNode literal)
-{
-  // FIXME
-  return true;
-}
-void TheoryBV::conflict(TNode a, TNode b)
-{
-  // FIXME
 }
 
 bool TheoryBV::getCurrentSubstitution( int effort, std::vector< Node >& vars, std::vector< Node >& subs, std::map< Node, std::vector< Node > >& exp ) {
@@ -848,7 +839,7 @@ bool TheoryBV::storePropagation(TNode literal, SubTheory subtheory)
   prop_count++;
 
   // If already in conflict, no more propagation
-  if (d_conflict) {
+  if (d_pendingConflict) {
     Debug("bitvector::propagate") << indent() << "TheoryBV::storePropagation(" << literal << ", " << subtheory << "): already in conflict" << std::endl;
     return false;
   }
@@ -878,7 +869,7 @@ bool TheoryBV::storePropagation(TNode literal, SubTheory subtheory)
   if (subtheory == SUB_CORE) {
     d_out->propagate(literal);
     if (!ok) {
-      setConflict();
+      setPendingConflict();
     }
   } else {
     d_literalsToPropagate.push_back(literal);
@@ -1005,7 +996,7 @@ void TheoryBV::setProofLog(proof::BitVectorProof* bvp)
   }
 }
 
-void TheoryBV::setConflict(Node conflict)
+void TheoryBV::setPendingConflict(Node conflict)
 {
   if (options::bvAbstraction())
   {
@@ -1020,8 +1011,8 @@ void TheoryBV::setConflict(Node conflict)
       lemma(nm->mkNode(kind::NOT, lemmas[i]));
     }
   }
-  d_conflict = true;
-  d_conflictNode = conflict;
+  d_pendingConflict = true;
+  d_pendingConflictNode = conflict;
 }
 
 } /* namespace CVC4::theory::bv */

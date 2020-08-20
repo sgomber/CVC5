@@ -124,7 +124,7 @@ bool CoreSolver::check(Theory::Effort e) {
   d_bv->spendResource(ResourceManager::Resource::TheoryCheckStep);
 
   d_checkCalled = true;
-  Assert(!d_bv->inConflict());
+  Assert(!d_bv->inPendingConflict());
   ++(d_statistics.d_numCallstoCheck);
   bool ok = true;
   std::vector<Node> core_eqs;
@@ -279,7 +279,7 @@ void CoreSolver::buildModel()
 
 bool CoreSolver::assertFactToEqualityEngine(TNode fact, TNode reason) {
   // Notify the equality engine
-  if (!d_bv->inConflict() && (!d_bv->wasPropagatedBySubtheory(fact) || d_bv->getPropagatingSubtheory(fact) != SUB_CORE)) {
+  if (!d_bv->inPendingConflict() && (!d_bv->wasPropagatedBySubtheory(fact) || d_bv->getPropagatingSubtheory(fact) != SUB_CORE)) {
     Debug("bv-slicer-eq") << "CoreSolver::assertFactToEqualityEngine fact=" << fact << endl;
     // Debug("bv-slicer-eq") << "                     reason=" << reason << endl;
     bool negated = fact.getKind() == kind::NOT;
@@ -302,7 +302,7 @@ bool CoreSolver::assertFactToEqualityEngine(TNode fact, TNode reason) {
   }
 
   // checking for a conflict
-  if (d_bv->inConflict()) {
+  if (d_bv->inPendingConflict()) {
     return false;
   }
   return true;
@@ -337,7 +337,7 @@ void CoreSolver::conflict(TNode a, TNode b) {
   std::vector<TNode> assumptions;
   d_equalityEngine->explainEquality(a, b, true, assumptions);
   Node conflict = flattenAnd(assumptions);
-  d_bv->setConflict(conflict);
+  d_bv->setPendingConflict(conflict);
 }
 
 bool CoreSolver::isCompleteForTerm(TNode term, TNodeBoolMap& seen) {

@@ -181,14 +181,14 @@ class TheoryBV : public Theory {
 
   context::CDO<bool> d_lemmasAdded;
 
-  // Are we in conflict?
-  context::CDO<bool> d_conflict;
+  /** Have we buffered a conflict? */
+  context::CDO<bool> d_pendingConflict;
 
   // Invalidate the model cache if check was called
   context::CDO<bool> d_invalidateModelCache;
 
   /** The conflict node */
-  Node d_conflictNode;
+  Node d_pendingConflictNode;
 
   /** Literals to propagate */
   context::CDList<Node> d_literalsToPropagate;
@@ -271,10 +271,10 @@ class TheoryBV : public Theory {
     return indentStr;
   }
 
-  void setConflict(Node conflict = Node::null());
+  void setPendingConflict(Node conflict = Node::null());
 
-  bool inConflict() {
-    return d_conflict;
+  bool inPendingConflict() {
+    return d_pendingConflict;
   }
 
   void sendConflict();
