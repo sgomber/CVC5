@@ -334,7 +334,7 @@ void TheoryBV::check(Effort e)
   TimerStat::CodeTimer checkTimer(d_checkTime);
   Debug("bitvector") << "TheoryBV::check(" << e << ")" << std::endl;
   TimerStat::CodeTimer codeTimer(d_statistics.d_solveTimer);
-  
+
   if (preCheck(e))
   {
     return;
@@ -521,7 +521,8 @@ bool TheoryBV::preNotifyFact(TNode atom, bool pol, TNode fact, bool isPrereg)
   Assert(options::bitblastMode() != options::BitblastMode::EAGER);
   checkForLemma(fact);
 
-  for (unsigned i = 0; i < d_subtheories.size(); ++i) {
+  for (unsigned i = 0; i < d_subtheories.size(); ++i)
+  {
     d_subtheories[i]->assertFact(fact);
   }
   return true;

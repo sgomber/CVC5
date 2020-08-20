@@ -284,7 +284,7 @@ private:
   /** called when two equivalance classes have merged */
   void eqNotifyMerge(TNode t1, TNode t2);
 
-  //--------------------------------- standard check  
+  //--------------------------------- standard check
   /** Do we need a check call at last call effort? */
   bool needsCheckLastEffort() override;
   /** Pre-check, called before the fact queue of the theory is processed. */
