@@ -3343,6 +3343,7 @@ bool TheoryArithPrivate::preNotifyFact(TNode atom,
     bool res CVC4_UNUSED = assertionCases(curr);
     Assert(!res || anyConflict());
   }
+  // we do not assert the fact to the equality engine
   return true;
 }
 

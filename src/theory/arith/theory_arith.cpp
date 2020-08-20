@@ -106,11 +106,6 @@ void TheoryArith::ppStaticLearn(TNode n, NodeBuilder<>& learned) {
   d_internal->ppStaticLearn(n, learned);
 }
 
-void TheoryArith::check(Effort effortLevel){
-  getOutputChannel().spendResource(ResourceManager::Resource::TheoryCheckStep);
-  d_internal->check(effortLevel);
-}
-
 void TheoryArith::preCheck(Effort level) { d_internal->preCheck(level); }
 
 void TheoryArith::postCheck(Effort level) { d_internal->postCheck(level); }
