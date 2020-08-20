@@ -164,7 +164,7 @@ void TheoryDatatypes::check(Effort e) {
   }
   Assert(d_pending.empty() && d_pending_merge.empty());
   TimerStat::CodeTimer checkTimer(d_checkTime);
-  
+
   preCheck(e);
 
   Trace("datatypes-check") << "Check effort " << e << std::endl;
@@ -200,10 +200,7 @@ void TheoryDatatypes::check(Effort e) {
   postCheck(e);
 }
 
-void TheoryDatatypes::preCheck(Effort level)
-{
-  d_addedLemma = false;
-}
+void TheoryDatatypes::preCheck(Effort level) { d_addedLemma = false; }
 
 void TheoryDatatypes::postCheck(Effort level)
 {

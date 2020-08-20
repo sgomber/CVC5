@@ -510,7 +510,7 @@ void Theory::check(Effort level)
     return;
   }
   // resource, stats
-  //d_out->spendResource(ResourceManager::Resource::TheoryCheckStep);
+  // d_out->spendResource(ResourceManager::Resource::TheoryCheckStep);
   TimerStat::CodeTimer checkTimer(d_checkTime);
   // pre-check at level
   preCheck(level);
