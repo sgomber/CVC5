@@ -485,7 +485,6 @@ public:
   void postCheck(Theory::Effort level);
   //--------------------------------- end standard check
  private:
-
   /** The constant zero. */
   DeltaRational d_DELTA_ZERO;
 
