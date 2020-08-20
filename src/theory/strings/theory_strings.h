@@ -101,13 +101,9 @@ class TheoryStrings : public Theory {
   void notifyPreRegisterTerm(TNode n) override;
   /** Expand definition */
   TrustNode expandDefinition(Node n) override;
-  /** Check at effort e */
-  void check(Effort e) override;
   //--------------------------------- standard check
   /** Post-check, called after the fact queue of the theory is processed. */
   void postCheck(Effort level) override;
-  /** Pre-notify fact, return true if processed. */
-  bool preNotifyFact(TNode atom, bool pol, TNode fact, bool isPrereg) override;
   /** Notify fact */
   void notifyFact(TNode atom, bool pol, TNode fact, bool isInternal) override;
   //--------------------------------- end standard check

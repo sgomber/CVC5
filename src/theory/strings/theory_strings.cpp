@@ -631,28 +631,6 @@ TrustNode TheoryStrings::expandDefinition(Node node)
   return TrustNode::null();
 }
 
-void TheoryStrings::check(Effort e) {
-  if (done() && e<EFFORT_FULL) {
-    return;
-  }
-
-  TimerStat::CodeTimer checkTimer(d_checkTime);
-
-  // Trace("strings-process") << "Theory of strings, check : " << e << std::endl;
-  Trace("strings-check-debug")
-      << "Theory of strings, check : " << e << std::endl;
-  while (!done() && !d_state.isInConflict())
-  {
-    // Get all the assertions
-    Assertion assertion = get();
-    TNode fact = assertion.d_assertion;
-
-    Trace("strings-assertion") << "get assertion: " << fact << endl;
-    d_im.sendAssumption(fact);
-  }
-  postCheck(e);
-}
-
 void TheoryStrings::postCheck(Effort e)
 {
   d_im.doPendingFacts();
@@ -735,21 +713,12 @@ void TheoryStrings::postCheck(Effort e)
   Assert(!d_im.hasPendingLemma());
 }
 
-bool TheoryStrings::preNotifyFact(TNode atom,
-                                  bool polarity,
-                                  TNode fact,
-                                  bool isPrereg)
-{
-  // TODO : inference manager splitting
-  return false;
-}
-
 void TheoryStrings::notifyFact(TNode atom,
                                bool polarity,
                                TNode fact,
                                bool isInternal)
 {
-  // TODO : inference manager splitting
+  d_im.notifyFact(atom, polarity, fact, isInternal);
 }
 
 bool TheoryStrings::needsCheckLastEffort() {

@@ -291,6 +291,8 @@ class InferenceManager
   void markReduced(Node n, bool contextDepend = true);
   // ------------------------------------------------- end extended theory
 
+  /** Notify fact */
+  void notifyFact(TNode atom, bool pol, TNode fact, bool isInternal);
  private:
   /** assert pending fact
    *

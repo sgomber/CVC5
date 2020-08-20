@@ -390,6 +390,7 @@ void InferenceManager::doPendingLemmas()
 
 void InferenceManager::assertPendingFact(Node atom, bool polarity, Node exp)
 {
+  // TODO: use standard inference manager method
   eq::EqualityEngine* ee = d_state.getEqualityEngine();
   Trace("strings-pending") << "Assert pending fact : " << atom << " "
                            << polarity << " from " << exp << std::endl;
@@ -415,13 +416,35 @@ void InferenceManager::assertPendingFact(Node atom, bool polarity, Node exp)
   else
   {
     ee->assertPredicate(atom, polarity, exp);
-    if (atom.getKind() == STRING_IN_REGEXP)
+  }
+  notifyFact(atom, polarity, exp, true);
+}
+
+void InferenceManager::notifyFact(TNode atom, bool polarity, TNode exp, bool isInternal)
+{
+  if (atom.getKind()== EQUAL)
+  {
+    // we must ensure these terms are registered
+    Trace("strings-pending-debug") << "  Register term" << std::endl;
+    eq::EqualityEngine* ee = d_state.getEqualityEngine();
+    for (const Node& t : atom)
     {
-      if (polarity && atom[1].getKind() == REGEXP_CONCAT)
+      // terms in the equality engine are already registered, hence skip
+      // currently done for only string-like terms, but this could potentially
+      // be avoided.
+      if (!ee->hasTerm(t) && t.getType().isStringLike())
       {
-        Node eqc = ee->getRepresentative(atom[0]);
-        d_state.addEndpointsToEqcInfo(atom, atom[1], eqc);
+        d_termReg.registerTerm(t, 0);
       }
+    }
+  }
+  else if (atom.getKind() == STRING_IN_REGEXP)
+  {
+    if (polarity && atom[1].getKind() == REGEXP_CONCAT)
+    {
+      eq::EqualityEngine* ee = d_state.getEqualityEngine();
+      Node eqc = ee->getRepresentative(atom[0]);
+      d_state.addEndpointsToEqcInfo(atom, atom[1], eqc);
     }
   }
   // process the conflict
