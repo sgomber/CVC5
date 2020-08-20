@@ -433,13 +433,15 @@ class Theory {
    * Normally we call QUICK_CHECK or STANDARD; at the leaves we call
    * with FULL_EFFORT.
    */
-  enum Effort {
+  enum Effort
+  {
     /**
      * Standard effort where theory need not do anything
      */
     EFFORT_STANDARD = 50,
     /**
-     * Full effort requires the theory make sure its assertions are satisfiable or not
+     * Full effort requires the theory make sure its assertions are satisfiable
+     * or not
      */
     EFFORT_FULL = 100,
     /**
@@ -447,7 +449,7 @@ class Theory {
      * no lemmas and a model is available.
      */
     EFFORT_LAST_CALL = 200
-  };/* enum Effort */
+  }; /* enum Effort */
 
   static inline bool standardEffortOrMore(Effort e) CVC4_CONST_FUNCTION
     { return e >= EFFORT_STANDARD; }
