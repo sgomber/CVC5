@@ -47,7 +47,7 @@ class TheoryQuantifiers : public Theory {
   void finishInit() override;
   //--------------------------------- end initialization
 
-  void notifyPreRegisterTerm(TNode n) override;
+  void preRegisterTerm(TNode n) override;
   void presolve() override;
   void ppNotifyAssertions(const std::vector<Node>& assertions) override;
   //--------------------------------- standard check

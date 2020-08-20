@@ -57,7 +57,7 @@ class TheoryFp : public Theory {
 
   TrustNode expandDefinition(Node node) override;
 
-  void notifyPreRegisterTerm(TNode node) override;
+  void preRegisterTerm(TNode node) override;
 
   TrustNode ppRewrite(TNode node) override;
 

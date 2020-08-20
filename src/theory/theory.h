@@ -333,10 +333,6 @@ class Theory {
    */
   virtual void notifySharedTerm(TNode n);
 
-  /**
-   */
-  virtual void notifyPreRegisterTerm(TNode node);
-
  public:
   //--------------------------------- initialization
   /**
@@ -554,7 +550,7 @@ class Theory {
   /**
    * Pre-register a term.  Done one time for a Node per SAT context level.
    */
-  void preRegisterTerm(TNode);
+  virtual void preRegisterTerm(TNode);
 
   /**
    * Assert a fact in the current context.

@@ -530,10 +530,10 @@ void TheoryDatatypes::notifyFact(TNode atom,
   }
 }
 
-void TheoryDatatypes::notifyPreRegisterTerm(TNode n)
+void TheoryDatatypes::preRegisterTerm(TNode n)
 {
   Debug("datatypes-prereg")
-      << "TheoryDatatypes::notifyPreRegisterTerm() " << n << endl;
+      << "TheoryDatatypes::preRegisterTerm() " << n << endl;
   collectTerms( n );
   switch (n.getKind()) {
   case kind::EQUAL:

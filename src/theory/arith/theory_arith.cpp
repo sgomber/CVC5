@@ -80,7 +80,7 @@ void TheoryArith::finishInit()
   d_internal->finishInit();
 }
 
-void TheoryArith::notifyPreRegisterTerm(TNode n)
+void TheoryArith::preRegisterTerm(TNode n)
 {
   d_internal->preRegisterTerm(n);
 }

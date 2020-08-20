@@ -563,7 +563,7 @@ bool TheoryStrings::collectModelInfoType(
 // MAIN SOLVER
 /////////////////////////////////////////////////////////////////////////////
 
-void TheoryStrings::notifyPreRegisterTerm(TNode n)
+void TheoryStrings::preRegisterTerm(TNode n)
 {
   Trace("strings-preregister")
       << "TheoryStrings::preRegisterTerm: " << n << std::endl;

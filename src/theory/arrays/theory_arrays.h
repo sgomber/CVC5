@@ -226,7 +226,7 @@ class TheoryArrays : public Theory {
   void preRegisterTermInternal(TNode n);
 
  public:
-  void notifyPreRegisterTerm(TNode n) override;
+  void preRegisterTerm(TNode n) override;
   void propagate(Effort e) override;
   Node explain(TNode n, eq::EqProof* proof);
   TrustNode explain(TNode n) override;

@@ -294,7 +294,7 @@ private:
   /** Notify fact */
   void notifyFact(TNode atom, bool pol, TNode fact, bool isInternal) override;
   //--------------------------------- end standard check
-  void notifyPreRegisterTerm(TNode n) override;
+  void preRegisterTerm(TNode n) override;
   TrustNode expandDefinition(Node n) override;
   TrustNode ppRewrite(TNode n) override;
   /** Get the equality status of a and b */
