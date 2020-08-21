@@ -54,7 +54,9 @@ class EqEngineManagerCentral : public EqEngineManager
   /** Explain literal based on shared terms database */
   TrustNode explainShared(TNode literal) const override;
   /** Assert equality to the shared terms database. */
-  void assertSharedEquality(TNode equality, bool polarity, TNode reason) override;
+  void assertSharedEquality(TNode equality,
+                            bool polarity,
+                            TNode reason) override;
   //---------------------------- end interaction with CombinationEngine
  private:
   /** notify class for central equality engine */

@@ -202,13 +202,15 @@ EqualityStatus EqEngineManagerCentral::getEqualityStatus(TNode a, TNode b)
   return EQUALITY_UNKNOWN;
 }
 
-static Node mkAnd(const std::vector<TNode>& conjunctions) {
+static Node mkAnd(const std::vector<TNode>& conjunctions)
+{
   Assert(conjunctions.size() > 0);
 
   std::set<TNode> all;
   all.insert(conjunctions.begin(), conjunctions.end());
 
-  if (all.size() == 1) {
+  if (all.size() == 1)
+  {
     // All the same, or just one
     return conjunctions[0];
   }
@@ -216,14 +218,14 @@ static Node mkAnd(const std::vector<TNode>& conjunctions) {
   NodeBuilder<> conjunction(kind::AND);
   std::set<TNode>::const_iterator it = all.begin();
   std::set<TNode>::const_iterator it_end = all.end();
-  while (it != it_end) {
+  while (it != it_end)
+  {
     conjunction << *it;
-    ++ it;
+    ++it;
   }
 
   return conjunction;
 }
-
 
 TrustNode EqEngineManagerCentral::explainShared(TNode literal) const
 {
@@ -231,12 +233,15 @@ TrustNode EqEngineManagerCentral::explainShared(TNode literal) const
   TNode atom = polarity ? literal : literal[0];
   Assert(atom.getKind() == kind::EQUAL);
   std::vector<TNode> assumptions;
-  d_centralEqualityEngine.explainEquality(atom[0], atom[1], polarity, assumptions);
+  d_centralEqualityEngine.explainEquality(
+      atom[0], atom[1], polarity, assumptions);
   Node exp = mkAnd(assumptions);
   return TrustNode::mkTrustPropExp(literal, exp, nullptr);
 }
 
-void EqEngineManagerCentral::assertSharedEquality(TNode equality, bool polarity, TNode reason)
+void EqEngineManagerCentral::assertSharedEquality(TNode equality,
+                                                  bool polarity,
+                                                  TNode reason)
 {
   d_centralEqualityEngine.assertEquality(equality, polarity, reason);
 }

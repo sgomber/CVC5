@@ -38,7 +38,6 @@ CombinationEngine::CombinationEngine(TheoryEngine& te,
       d_sharedTerms(nullptr),
       d_sharedTermsVisitor(nullptr)
 {
-  
 }
 
 CombinationEngine::~CombinationEngine() {}
@@ -159,8 +158,8 @@ EqualityStatus CombinationEngine::getEqualityStatus(TNode a, TNode b)
 {
   Assert(a.getType().isComparableTo(b.getType()));
   // does it have an equality status based on the equality engine manager?
-  EqualityStatus estatus = d_eemUse->getEqualityStatus(a,b);
-  if (estatus!=EQUALITY_UNKNOWN)
+  EqualityStatus estatus = d_eemUse->getEqualityStatus(a, b);
+  if (estatus != EQUALITY_UNKNOWN)
   {
     return estatus;
   }
@@ -189,8 +188,8 @@ TrustNode CombinationEngine::explain(TNode literal, TheoryId theory) const
 }
 
 void CombinationEngine::assertSharedEquality(TNode equality,
-                                       bool polarity,
-                                       TNode reason)
+                                             bool polarity,
+                                             TNode reason)
 {
   // assert to the equality engine manager
   d_eemUse->assertSharedEquality(equality, polarity, reason);

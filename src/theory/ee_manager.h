@@ -77,14 +77,14 @@ class EqEngineManager
    * is central.
    */
   virtual eq::EqualityEngine* getCoreEqualityEngine() = 0;
-  
+
   //---------------------------- interaction with CombinationEngine
   /**
    * Get the equality status of a and b.
    *
    * This method is used by theories during solving ...
    */
-  virtual EqualityStatus getEqualityStatus(TNode a, TNode b)  = 0;
+  virtual EqualityStatus getEqualityStatus(TNode a, TNode b) = 0;
   /**
    * Explain literal, which returns a conjunction of literals that that entail
    * the given one.
@@ -100,7 +100,9 @@ class EqEngineManager
    * send to THEORY_BUILTIN, meaning that shared terms database should
    * maintain this fact. This is the case when ...
    */
-  virtual void assertSharedEquality(TNode equality, bool polarity, TNode reason) = 0;
+  virtual void assertSharedEquality(TNode equality,
+                                    bool polarity,
+                                    TNode reason) = 0;
   //---------------------------- end interaction with CombinationEngine
  protected:
   /** Information related to the equality engine, per theory. */

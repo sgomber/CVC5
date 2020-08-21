@@ -165,7 +165,7 @@ eq::EqualityEngine* EqEngineManagerDistributed::allocateEqualityEngine(
 
 EqualityStatus EqEngineManagerDistributed::getEqualityStatus(TNode a, TNode b)
 {
-  Assert (d_sdb != nullptr);
+  Assert(d_sdb != nullptr);
   // if we're using a shared terms database, ask its status if a and b are
   // shared.
   if (d_sdb->isShared(a) && d_sdb->isShared(b))
@@ -187,7 +187,9 @@ TrustNode EqEngineManagerDistributed::explainShared(TNode literal) const
   return d_sdb->explain(literal);
 }
 
-void EqEngineManagerDistributed::assertSharedEquality(TNode equality, bool polarity, TNode reason) 
+void EqEngineManagerDistributed::assertSharedEquality(TNode equality,
+                                                      bool polarity,
+                                                      TNode reason)
 {
   d_sdb->assertEquality(equality, polarity, reason);
 }
