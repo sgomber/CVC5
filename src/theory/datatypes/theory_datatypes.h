@@ -296,11 +296,7 @@ private:
   void preRegisterTerm(TNode n) override;
   TrustNode expandDefinition(Node n) override;
   TrustNode ppRewrite(TNode n) override;
-<<<<<<< HEAD
-  /** Get the equality status of a and b */
-=======
   void addSharedTerm(TNode t) override;
->>>>>>> 05c6ae0bda064083efb7941e1ceb0869cb1b1090
   EqualityStatus getEqualityStatus(TNode a, TNode b) override;
   std::string identify() const override
   {
