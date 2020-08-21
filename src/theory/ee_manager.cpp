@@ -27,5 +27,10 @@ const EeTheoryInfo* EqEngineManager::getEeTheoryInfo(TheoryId tid) const
   return nullptr;
 }
 
+void EqEngineManager::preRegisterShared(TNode t)
+{
+  // do nothing
+}
+
 }  // namespace theory
 }  // namespace CVC4

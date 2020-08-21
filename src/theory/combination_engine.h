@@ -77,7 +77,7 @@ class CombinationEngine
    * @param t The term to preregister
    * @param multipleTheories Whether multiple theories are present in t.
    */
-  virtual void preRegister(TNode t, bool multipleTheories);
+  void preRegister(TNode t, bool multipleTheories);
   /**
    * Notify assertion fact with the given atom. This is called when any
    * fact is asserted in TheoryEngine, just before it is dispatched to the
@@ -85,7 +85,7 @@ class CombinationEngine
    *
    * This calls Theory::notifySharedTerm for the shared terms of the atom.
    */
-  virtual void notifyAssertFact(TNode atom);
+  void notifyAssertFact(TNode atom);
   /**
    * Get the equality status of a and b, which first asks if the shared
    * terms database as an equality status, and otherwise asks the appropriate

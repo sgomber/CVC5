@@ -116,15 +116,20 @@ void CombinationEngine::preRegister(TNode t, bool multipleTheories)
   {
     return;
   }
-  if (d_logicInfo.isSharingEnabled() && t.getKind() == kind::EQUAL)
+  // register it with the equality engine manager if shared is enabled
+  if (d_logicInfo.isSharingEnabled())
   {
-    // When sharing is enabled, we propagate from the shared terms manager also
-    d_sharedTerms->addEqualityToPropagate(t);
+    d_eemUse->preRegisterShared(t);
+    // if multiple theories are present in t
+    if (multipleTheories)
+    {
+      // Collect the shared terms if there are multiple theories
+      NodeVisitor<SharedTermsVisitor>::run(*d_sharedTermsVisitor.get(), t);
+    }
   }
-  if (multipleTheories)
+  else
   {
-    // Collect the shared terms if there are multiple theories
-    NodeVisitor<SharedTermsVisitor>::run(*d_sharedTermsVisitor.get(), t);
+    Assert (!multipleTheories);
   }
 }
 

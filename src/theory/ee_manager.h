@@ -80,6 +80,10 @@ class EqEngineManager
 
   //---------------------------- interaction with CombinationEngine
   /**
+   * Called when the given term t is pre-registered in TheoryEngine.
+   */
+  virtual void preRegisterShared(TNode t);
+  /**
    * Get the equality status of a and b.
    *
    * This method is used by theories during solving ...

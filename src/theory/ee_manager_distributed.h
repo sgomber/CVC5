@@ -69,6 +69,11 @@ class EqEngineManagerDistributed : public EqEngineManager
   eq::EqualityEngine* getCoreEqualityEngine() override;
 
   //---------------------------- interaction with CombinationEngine
+  /**
+   * This adds t as an equality to propagate in the shared terms database
+   * if it is an equality.
+   */
+  void preRegisterShared(TNode t) override;
   /** Get the equality status of a and b.*/
   EqualityStatus getEqualityStatus(TNode a, TNode b) override;
   /** Explain literal based on shared terms database */

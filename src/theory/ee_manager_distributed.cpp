@@ -163,6 +163,15 @@ eq::EqualityEngine* EqEngineManagerDistributed::allocateEqualityEngine(
   return new eq::EqualityEngine(c, esi.d_name, esi.d_constantsAreTriggers);
 }
 
+void EqEngineManagerDistributed::preRegisterShared(TNode t)
+{
+  if (t.getKind() == kind::EQUAL)
+  {
+    // When sharing is enabled, we propagate from the shared terms manager also
+    d_sdb->addEqualityToPropagate(t);
+  }
+}
+
 EqualityStatus EqEngineManagerDistributed::getEqualityStatus(TNode a, TNode b)
 {
   Assert(d_sdb != nullptr);
