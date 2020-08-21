@@ -284,7 +284,8 @@ bool TheoryUF::propagateLit(TNode literal)
   Debug("uf::propagate") << "TheoryUF::propagateLit(" << literal << ")"
                          << std::endl;
   // If already in conflict, no more propagation
-  if (d_state.isInConflict()) {
+  if (d_state.isInConflict())
+  {
     Debug("uf::propagate") << "TheoryUF::propagateLit(" << literal
                            << "): already in conflict" << std::endl;
     return false;

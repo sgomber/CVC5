@@ -115,7 +115,8 @@ bool TheorySep::propagateLit(TNode literal)
 {
   Debug("sep") << "TheorySep::propagateLit(" << literal << ")" << std::endl;
   // If already in conflict, no more propagation
-  if (d_state.isInConflict()) {
+  if (d_state.isInConflict())
+  {
     Debug("sep") << "TheorySep::propagateLit(" << literal
                  << "): already in conflict" << std::endl;
     return false;

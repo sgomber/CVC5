@@ -422,7 +422,9 @@ bool TheoryArrays::propagateLit(TNode literal)
   // If already in conflict, no more propagation
   if (d_state.isInConflict())
   {
-    Debug("arrays") << spaces(getSatContext()->getLevel()) << "TheoryArrays::propagateLit(" << literal << "): already in conflict" << std::endl;
+    Debug("arrays") << spaces(getSatContext()->getLevel())
+                    << "TheoryArrays::propagateLit(" << literal
+                    << "): already in conflict" << std::endl;
     return false;
   }
 
