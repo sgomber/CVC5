@@ -188,22 +188,25 @@ EqualityStatus CombinationEngine::getEqualityStatus(TNode a, TNode b)
 TrustNode CombinationEngine::explain(TNode literal, TheoryId theory) const
 {
   TrustNode texp;
-  if (theory== THEORY_BUILTIN)
+  if (theory == THEORY_BUILTIN)
   {
     if (d_sharedTerms == nullptr)
     {
-      Unhandled() << "CombinationEngine::CombinationEngine: does not have a shared terms database.";
+      Unhandled() << "CombinationEngine::CombinationEngine: does not have a "
+                     "shared terms database.";
     }
     // explain using theory combination
     texp = d_sharedTerms->explain(literal);
-    Debug("theory::explain") << "\tTerm was propagated by THEORY_BUILTIN. Explanation: " << texp.getNode() << std::endl;
+    Debug("theory::explain")
+        << "\tTerm was propagated by THEORY_BUILTIN. Explanation: "
+        << texp.getNode() << std::endl;
   }
   else
   {
     texp = d_te.theoryOf(theory)->explain(literal);
-    Debug("theory::explain") << "\tTerm was propagated by owner theory: "
-                              << theory
-                              << ". Explanation: " << texp.getNode() << std::endl;
+    Debug("theory::explain")
+        << "\tTerm was propagated by owner theory: " << theory
+        << ". Explanation: " << texp.getNode() << std::endl;
   }
   return texp;
 }

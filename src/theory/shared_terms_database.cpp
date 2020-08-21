@@ -276,7 +276,8 @@ bool SharedTermsDatabase::isKnown(TNode literal) const {
   }
 }
 
-TrustNode SharedTermsDatabase::explain(TNode literal) const {
+TrustNode SharedTermsDatabase::explain(TNode literal) const
+{
   bool polarity = literal.getKind() != kind::NOT;
   TNode atom = polarity ? literal : literal[0];
   Assert(atom.getKind() == kind::EQUAL);

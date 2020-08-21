@@ -1072,7 +1072,6 @@ void TheoryEngine::assertFact(TNode literal)
 bool TheoryEngine::propagate(TNode literal, theory::TheoryId theory) {
   Debug("theory::propagate") << "TheoryEngine::propagate(" << literal << ", " << theory << ")" << endl;
 
-
   Trace("dtview::prop") << std::string(d_context->getLevel(), ' ')
                         << ":THEORY-PROP: " << literal << endl;
 
@@ -1096,8 +1095,8 @@ bool TheoryEngine::propagate(TNode literal, theory::TheoryId theory) {
       assertToTheory(literal, literal, /* to */ THEORY_SAT_SOLVER, /* from */ theory);
     }
     if (theory != THEORY_BUILTIN) {
-      // NOTE (centralEe): should not be necessary if literal is a fact that holds in central ee
-      // Assert to the shared terms database
+      // NOTE (centralEe): should not be necessary if literal is a fact that
+      // holds in central ee Assert to the shared terms database
       assertToTheory(literal, literal, /* to */ THEORY_BUILTIN, /* from */ theory);
     }
   } else {
