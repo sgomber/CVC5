@@ -49,6 +49,7 @@ class EqualitySolver
   bool preNotifyFact(TNode atom, bool pol, TNode fact);
   /** Notify fact, return true if processed. */
   void notifyFact(TNode atom, bool pol, TNode fact, bool isInternal);
+
  private:
   class EqualitySolverNotify : public eq::EqualityEngineNotify
   {

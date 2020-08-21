@@ -85,7 +85,8 @@ TrustNode InferManager::explainLit(TNode lit)
     return TrustNode::mkTrustPropExp(lit, exp, nullptr);
   }
   Unimplemented() << "Inference manager for " << d_theory.getId()
-                  << " was asked to explain a propagation but doesn't have an equality engine or implement the "
+                  << " was asked to explain a propagation but doesn't have an "
+                     "equality engine or implement the "
                      "InferManager::explainLit interface!";
 }
 
