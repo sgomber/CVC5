@@ -149,6 +149,7 @@ void InferManager::explain(TNode lit, std::vector<TNode>& assumptions) const
   {
     d_ee->explainPredicate(atom, polarity, tassumptions);
   }
+  // ensure that duplicates are removed
   for (const TNode a : tassumptions)
   {
     if (std::find(assumptions.begin(), assumptions.end(), a)
