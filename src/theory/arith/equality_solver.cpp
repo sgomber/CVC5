@@ -27,19 +27,13 @@ EqualitySolver::EqualitySolver(InferManager& aim, ArithState& astate)
 {
 }
 
-bool EqualitySolver::needsEqualityEngine(EeSetupInfo& esi)
-{
-  return false;
-}
+bool EqualitySolver::needsEqualityEngine(EeSetupInfo& esi) { return false; }
 
-void EqualitySolver::setEqualityEngine(eq::EqualityEngine* ee)
-{
-  d_ee = ee;
-}
+void EqualitySolver::setEqualityEngine(eq::EqualityEngine* ee) { d_ee = ee; }
 
-bool EqualitySolver::preNotifyFact(TNode atom, bool pol, TNode fact) 
+bool EqualitySolver::preNotifyFact(TNode atom, bool pol, TNode fact)
 {
-  return atom.getKind()==EQUAL;
+  return atom.getKind() == EQUAL;
 }
 
 void EqualitySolver::notifyFact(TNode atom,
@@ -53,7 +47,7 @@ void EqualitySolver::notifyFact(TNode atom,
 bool EqualitySolver::EqualitySolverNotify::eqNotifyTriggerPredicate(
     TNode predicate, bool value)
 {
-  if (value) 
+  if (value)
   {
     return d_aim.propagateLit(predicate);
   }
@@ -63,7 +57,7 @@ bool EqualitySolver::EqualitySolverNotify::eqNotifyTriggerPredicate(
 bool EqualitySolver::EqualitySolverNotify::eqNotifyTriggerTermEquality(
     TheoryId tag, TNode t1, TNode t2, bool value)
 {
-  if (value) 
+  if (value)
   {
     return d_aim.propagateLit(t1.eqNode(t2));
   }
