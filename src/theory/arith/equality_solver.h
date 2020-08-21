@@ -17,9 +17,9 @@
 #ifndef CVC4__THEORY__ARITH__EQUALITY_SOLVER_H
 #define CVC4__THEORY__ARITH__EQUALITY_SOLVER_H
 
+#include "expr/node.h"
 #include "theory/arith/arith_state.h"
 #include "theory/uf/equality_engine.h"
-#include "expr/node.h"
 
 namespace CVC4 {
 namespace theory {
@@ -48,9 +48,11 @@ class EqualitySolver
   bool preNotifyFact(TNode atom, bool pol, TNode fact);
   /** Notify fact, return true if processed. */
   void notifyFact(TNode atom, bool pol, TNode fact, bool isInternal);
+
  private:
-  class EqualitySolverNotify : public eq::EqualityEngineNotify {
-  public:
+  class EqualitySolverNotify : public eq::EqualityEngineNotify
+  {
+   public:
     EqualitySolverNotify(InferManager& aim) : d_aim(aim) {}
 
     bool eqNotifyTriggerPredicate(TNode predicate, bool value) override;
@@ -64,7 +66,8 @@ class EqualitySolver
     void eqNotifyNewClass(TNode t) override {}
     void eqNotifyMerge(TNode t1, TNode t2) override {}
     void eqNotifyDisequal(TNode t1, TNode t2, TNode reason) override {}
-  private:
+
+   private:
     /** Reference to the inference manager */
     InferManager& d_aim;
   };
@@ -75,7 +78,7 @@ class EqualitySolver
   /** Equality solver notify */
   EqualitySolverNotify d_notify;
   /** Pointer to the equality engine */
-  eq::EqualityEngine * d_ee;
+  eq::EqualityEngine* d_ee;
 };
 
 }  // namespace arith

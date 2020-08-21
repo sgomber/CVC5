@@ -40,7 +40,7 @@ class InferManager
 {
  public:
   /**
-   * Constructor, note that state should be the official state of theory t. 
+   * Constructor, note that state should be the official state of theory t.
    */
   InferManager(Theory& t, TheoryState& state);
   virtual ~InferManager() {}

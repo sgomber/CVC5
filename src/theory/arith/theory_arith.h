@@ -27,7 +27,7 @@
 namespace CVC4 {
 namespace theory {
 namespace arith {
-  
+
 class EqualitySolver;
 
 /**
@@ -129,6 +129,7 @@ class TheoryArith : public Theory {
   void propagateLit(TNode literal);
   /** Raise conflict, called when constants a and b merge. */
   void conflictEqConstantMerge(TNode a, TNode b);
+
  private:
   /** The state object wrapping TheoryArithPrivate  */
   ArithState d_astate;

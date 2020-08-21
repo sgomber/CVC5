@@ -20,10 +20,10 @@
 #include "options/smt_options.h"
 #include "smt/smt_statistics_registry.h"
 #include "theory/arith/arith_rewriter.h"
+#include "theory/arith/equality_solver.h"
 #include "theory/arith/infer_bounds.h"
 #include "theory/arith/theory_arith_private.h"
 #include "theory/ext_theory.h"
-#include "theory/arith/equality_solver.h"
 
 using namespace std;
 using namespace CVC4::kind;
@@ -175,15 +175,9 @@ std::pair<bool, Node> TheoryArith::entailmentCheck(TNode lit)
   return res;
 }
 
-void TheoryArith::propagateLit(TNode literal)
-{
-  
-}
+void TheoryArith::propagateLit(TNode literal) {}
 
-void TheoryArith::conflictEqConstantMerge(TNode a, TNode b)
-{
-  
-}
+void TheoryArith::conflictEqConstantMerge(TNode a, TNode b) {}
 
 }/* CVC4::theory::arith namespace */
 }/* CVC4::theory namespace */
