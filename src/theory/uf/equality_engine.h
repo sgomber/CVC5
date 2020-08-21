@@ -84,13 +84,16 @@ public:
 
   /**
    * Initialize the equality engine, given the notification class.
+   * 
+   * @param constantTriggers Whether we treat constants as trigger terms
+   * @param anyTermTriggers Whether we use any terms as triggers
    */
-  EqualityEngine(EqualityEngineNotify& notify, context::Context* context, std::string name, bool constantsAreTriggers);
+  EqualityEngine(EqualityEngineNotify& notify, context::Context* context, std::string name, bool constantTriggers, bool anyTermTriggers=true);
 
   /**
    * Initialize the equality engine with no notification class.
    */
-  EqualityEngine(context::Context* context, std::string name, bool constantsAreTriggers);
+  EqualityEngine(context::Context* context, std::string name, bool constantsAreTriggers, bool anyTermTriggers=true);
 
   /**
    * Just a destructor.
@@ -506,6 +509,11 @@ private:
 
   /** Are the constants triggers */
   bool d_constantsAreTriggers;
+  /** 
+   * Are any terms triggers? If this is false, then all trigger terms are
+   * ignored (e.g. this means that addTriggerTerm is ignored).
+   */
+  bool d_anyTermsAreTriggers;
 
   /** The information about trigger terms is stored in this easily maintained memory. */
   char* d_triggerDatabase;

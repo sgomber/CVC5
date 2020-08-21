@@ -1044,6 +1044,7 @@ void TheoryEngine::assertFact(TNode literal)
     if (atom.getKind() == kind::EQUAL) {
       // Assert it to the the owning theory
       assertToTheory(literal, literal, /* to */ Theory::theoryOf(atom), /* from */ THEORY_SAT_SOLVER);
+      // NOTE (centralEe): fact from SAT_SOLVER
       // Shared terms manager will assert to interested theories directly, as the terms become shared
       assertToTheory(literal, literal, /* to */ THEORY_BUILTIN, /* from */ THEORY_SAT_SOLVER);
 

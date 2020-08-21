@@ -110,7 +110,7 @@ EqualityEngine::~EqualityEngine() {
 }
 
 
-EqualityEngine::EqualityEngine(context::Context* context, std::string name, bool constantsAreTriggers)
+EqualityEngine::EqualityEngine(context::Context* context, std::string name, bool constantsAreTriggers, bool anyTermTriggers)
 : ContextNotifyObj(context)
 , d_masterEqualityEngine(0)
 , d_context(context)
@@ -125,6 +125,7 @@ EqualityEngine::EqualityEngine(context::Context* context, std::string name, bool
 , d_stats(name)
 , d_inPropagate(false)
 , d_constantsAreTriggers(constantsAreTriggers)
+, d_anyTermsAreTriggers(anyTermTriggers)
 , d_triggerDatabaseSize(context, 0)
 , d_triggerTermSetUpdatesSize(context, 0)
 , d_deducedDisequalitiesSize(context, 0)
@@ -135,7 +136,7 @@ EqualityEngine::EqualityEngine(context::Context* context, std::string name, bool
   init();
 }
 
-EqualityEngine::EqualityEngine(EqualityEngineNotify& notify, context::Context* context, std::string name, bool constantsAreTriggers)
+EqualityEngine::EqualityEngine(EqualityEngineNotify& notify, context::Context* context, std::string name, bool constantsAreTriggers, bool anyTermTriggers)
 : ContextNotifyObj(context)
 , d_masterEqualityEngine(0)
 , d_context(context)
@@ -150,6 +151,7 @@ EqualityEngine::EqualityEngine(EqualityEngineNotify& notify, context::Context* c
 , d_stats(name)
 , d_inPropagate(false)
 , d_constantsAreTriggers(constantsAreTriggers)
+, d_anyTermsAreTriggers(anyTermTriggers)
 , d_triggerDatabaseSize(context, 0)
 , d_triggerTermSetUpdatesSize(context, 0)
 , d_deducedDisequalitiesSize(context, 0)
@@ -2170,9 +2172,16 @@ void EqualityEngine::addTriggerTerm(TNode t, TheoryId tag)
   if (d_done) {
     return;
   }
+  
 
   // Add the term if it's not already there
   addTermInternal(t);
+  
+  if (!d_anyTermsAreTriggers)
+  {
+    // if we are not using triggers, we only add the term, but not as a trigger
+    return;
+  }
 
   // Get the node id
   EqualityNodeId eqNodeId = getNodeId(t);
