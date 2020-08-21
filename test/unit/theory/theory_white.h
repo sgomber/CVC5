@@ -145,6 +145,11 @@ class DummyTheory : public Theory {
   void presolve() override { Unimplemented(); }
   void preRegisterTerm(TNode n) override {}
   void propagate(Effort level) override {}
+  void preNotifyFact(TNode atom, bool pol, TNode fact, bool isPrereg) override
+  {
+    // do not assert to equality engine, since this theory does not use one
+    return true;
+  }
   TrustNode explain(TNode n) override { return TrustNode::null(); }
   Node getValue(TNode n) { return Node::null(); }
   string identify() const override { return "DummyTheory"; }
