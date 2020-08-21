@@ -30,7 +30,6 @@ namespace CVC4 {
 namespace theory {
 namespace bv {
 
-class Slicer;
 class Base;
 /**
  * Bitvector equality solver
@@ -76,8 +75,7 @@ class CoreSolver : public SubtheorySolver {
 
   context::CDO<bool> d_isComplete;
   unsigned d_lemmaThreshold;
-  
-  /** Used to ensure that the core slicer is used properly*/
+
   bool d_preregisterCalled;
   bool d_checkCalled;
 

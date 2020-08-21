@@ -208,7 +208,6 @@ class TheoryBV : public Theory {
 
   std::unique_ptr<EagerBitblastSolver> d_eagerSolver;
   std::unique_ptr<AbstractionModule> d_abstractionModule;
-  bool d_isCoreTheory;
   bool d_calledPreregister;
   
   //for extended functions
