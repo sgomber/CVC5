@@ -105,9 +105,14 @@ class DummyTheory : public Theory {
               Valuation valuation,
               const LogicInfo& logicInfo,
               ProofNodeManager* pnm)
-      : Theory(
-            theory::THEORY_BUILTIN, ctxt, uctxt, out, valuation, logicInfo, pnm),
-            d_state(ctxt, uctxt, valuation)
+      : Theory(theory::THEORY_BUILTIN,
+               ctxt,
+               uctxt,
+               out,
+               valuation,
+               logicInfo,
+               pnm),
+        d_state(ctxt, uctxt, valuation)
   {
     // use a default theory state object
     d_theoryState = &d_state;
