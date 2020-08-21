@@ -81,45 +81,52 @@ class EqualityEngine : public context::ContextNotifyObj {
   EqualityEngine* d_masterEqualityEngine;
 
 public:
+ /**
+  * Initialize the equality engine, given the notification class.
+  *
+  * @param constantTriggers Whether we treat constants as trigger terms
+  * @param anyTermTriggers Whether we use any terms as triggers
+  */
+ EqualityEngine(EqualityEngineNotify& notify,
+                context::Context* context,
+                std::string name,
+                bool constantTriggers,
+                bool anyTermTriggers = true);
 
-  /**
-   * Initialize the equality engine, given the notification class.
-   * 
-   * @param constantTriggers Whether we treat constants as trigger terms
-   * @param anyTermTriggers Whether we use any terms as triggers
-   */
-  EqualityEngine(EqualityEngineNotify& notify, context::Context* context, std::string name, bool constantTriggers, bool anyTermTriggers=true);
+ /**
+  * Initialize the equality engine with no notification class.
+  */
+ EqualityEngine(context::Context* context,
+                std::string name,
+                bool constantsAreTriggers,
+                bool anyTermTriggers = true);
 
-  /**
-   * Initialize the equality engine with no notification class.
-   */
-  EqualityEngine(context::Context* context, std::string name, bool constantsAreTriggers, bool anyTermTriggers=true);
+ /**
+  * Just a destructor.
+  */
+ virtual ~EqualityEngine();
 
-  /**
-   * Just a destructor.
-   */
-  virtual ~EqualityEngine();
+ /**
+  * Set the master equality engine for this one. Master engine will get copies
+  * of all the terms and equalities from this engine.
+  */
+ void setMasterEqualityEngine(EqualityEngine* master);
 
-  /**
-   * Set the master equality engine for this one. Master engine will get copies of all
-   * the terms and equalities from this engine.
-   */
-  void setMasterEqualityEngine(EqualityEngine* master);
+ /** Statistics about the equality engine instance */
+ struct Statistics
+ {
+   /** Total number of merges */
+   IntStat d_mergesCount;
+   /** Number of terms managed by the system */
+   IntStat d_termsCount;
+   /** Number of function terms managed by the system */
+   IntStat d_functionTermsCount;
+   /** Number of constant terms managed by the system */
+   IntStat d_constantTermsCount;
 
-  /** Statistics about the equality engine instance */
-  struct Statistics {
-    /** Total number of merges */
-    IntStat d_mergesCount;
-    /** Number of terms managed by the system */
-    IntStat d_termsCount;
-    /** Number of function terms managed by the system */
-    IntStat d_functionTermsCount;
-    /** Number of constant terms managed by the system */
-    IntStat d_constantTermsCount;
+   Statistics(std::string name);
 
-    Statistics(std::string name);
-
-    ~Statistics();
+   ~Statistics();
   };/* struct EqualityEngine::statistics */
 
 private:
@@ -509,7 +516,7 @@ private:
 
   /** Are the constants triggers */
   bool d_constantsAreTriggers;
-  /** 
+  /**
    * Are any terms triggers? If this is false, then all trigger terms are
    * ignored (e.g. this means that addTriggerTerm is ignored).
    */

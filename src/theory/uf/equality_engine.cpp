@@ -109,55 +109,61 @@ EqualityEngine::~EqualityEngine() {
   free(d_triggerDatabase);
 }
 
-
-EqualityEngine::EqualityEngine(context::Context* context, std::string name, bool constantsAreTriggers, bool anyTermTriggers)
-: ContextNotifyObj(context)
-, d_masterEqualityEngine(0)
-, d_context(context)
-, d_done(context, false)
-, d_performNotify(true)
-, d_notify(s_notifyNone)
-, d_applicationLookupsCount(context, 0)
-, d_nodesCount(context, 0)
-, d_assertedEqualitiesCount(context, 0)
-, d_equalityTriggersCount(context, 0)
-, d_subtermEvaluatesSize(context, 0)
-, d_stats(name)
-, d_inPropagate(false)
-, d_constantsAreTriggers(constantsAreTriggers)
-, d_anyTermsAreTriggers(anyTermTriggers)
-, d_triggerDatabaseSize(context, 0)
-, d_triggerTermSetUpdatesSize(context, 0)
-, d_deducedDisequalitiesSize(context, 0)
-, d_deducedDisequalityReasonsSize(context, 0)
-, d_propagatedDisequalities(context)
-, d_name(name)
+EqualityEngine::EqualityEngine(context::Context* context,
+                               std::string name,
+                               bool constantsAreTriggers,
+                               bool anyTermTriggers)
+    : ContextNotifyObj(context),
+      d_masterEqualityEngine(0),
+      d_context(context),
+      d_done(context, false),
+      d_performNotify(true),
+      d_notify(s_notifyNone),
+      d_applicationLookupsCount(context, 0),
+      d_nodesCount(context, 0),
+      d_assertedEqualitiesCount(context, 0),
+      d_equalityTriggersCount(context, 0),
+      d_subtermEvaluatesSize(context, 0),
+      d_stats(name),
+      d_inPropagate(false),
+      d_constantsAreTriggers(constantsAreTriggers),
+      d_anyTermsAreTriggers(anyTermTriggers),
+      d_triggerDatabaseSize(context, 0),
+      d_triggerTermSetUpdatesSize(context, 0),
+      d_deducedDisequalitiesSize(context, 0),
+      d_deducedDisequalityReasonsSize(context, 0),
+      d_propagatedDisequalities(context),
+      d_name(name)
 {
   init();
 }
 
-EqualityEngine::EqualityEngine(EqualityEngineNotify& notify, context::Context* context, std::string name, bool constantsAreTriggers, bool anyTermTriggers)
-: ContextNotifyObj(context)
-, d_masterEqualityEngine(0)
-, d_context(context)
-, d_done(context, false)
-, d_performNotify(true)
-, d_notify(notify)
-, d_applicationLookupsCount(context, 0)
-, d_nodesCount(context, 0)
-, d_assertedEqualitiesCount(context, 0)
-, d_equalityTriggersCount(context, 0)
-, d_subtermEvaluatesSize(context, 0)
-, d_stats(name)
-, d_inPropagate(false)
-, d_constantsAreTriggers(constantsAreTriggers)
-, d_anyTermsAreTriggers(anyTermTriggers)
-, d_triggerDatabaseSize(context, 0)
-, d_triggerTermSetUpdatesSize(context, 0)
-, d_deducedDisequalitiesSize(context, 0)
-, d_deducedDisequalityReasonsSize(context, 0)
-, d_propagatedDisequalities(context)
-, d_name(name)
+EqualityEngine::EqualityEngine(EqualityEngineNotify& notify,
+                               context::Context* context,
+                               std::string name,
+                               bool constantsAreTriggers,
+                               bool anyTermTriggers)
+    : ContextNotifyObj(context),
+      d_masterEqualityEngine(0),
+      d_context(context),
+      d_done(context, false),
+      d_performNotify(true),
+      d_notify(notify),
+      d_applicationLookupsCount(context, 0),
+      d_nodesCount(context, 0),
+      d_assertedEqualitiesCount(context, 0),
+      d_equalityTriggersCount(context, 0),
+      d_subtermEvaluatesSize(context, 0),
+      d_stats(name),
+      d_inPropagate(false),
+      d_constantsAreTriggers(constantsAreTriggers),
+      d_anyTermsAreTriggers(anyTermTriggers),
+      d_triggerDatabaseSize(context, 0),
+      d_triggerTermSetUpdatesSize(context, 0),
+      d_deducedDisequalitiesSize(context, 0),
+      d_deducedDisequalityReasonsSize(context, 0),
+      d_propagatedDisequalities(context),
+      d_name(name)
 {
   init();
 }
@@ -2172,11 +2178,10 @@ void EqualityEngine::addTriggerTerm(TNode t, TheoryId tag)
   if (d_done) {
     return;
   }
-  
 
   // Add the term if it's not already there
   addTermInternal(t);
-  
+
   if (!d_anyTermsAreTriggers)
   {
     // if we are not using triggers, we only add the term, but not as a trigger
