@@ -79,13 +79,13 @@ class CombinationEngine
    */
   void preRegister(TNode t, bool multipleTheories);
   /**
-   * Notify assertion fact with the given atom. This is called when any
+   * Pre-notify assertion fact with the given atom. This is called when any
    * fact is asserted in TheoryEngine, just before it is dispatched to the
    * appropriate theory.
    *
    * This calls Theory::notifySharedTerm for the shared terms of the atom.
    */
-  void notifyAssertFact(TNode atom);
+  void preNotifySharedFact(TNode atom);
   /**
    * Get the equality status of a and b, which first asks if the shared
    * terms database as an equality status, and otherwise asks the appropriate

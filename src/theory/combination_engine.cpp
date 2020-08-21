@@ -44,12 +44,17 @@ CombinationEngine::~CombinationEngine() {}
 
 void CombinationEngine::finishInit()
 {
+  // Always needs shared terms database. In all cases, shared terms
+  // database is used as a way of tracking which calls to Theory::addSharedTerm
+  // we need to make in preNotifySharedFact.
+  // In distributed equality engine management, shared terms database also
+  // maintains an equality engine. In central equality engine management,
+  // it does not.
+  d_sharedTerms.reset(new SharedTermsDatabase(&d_te, d_te.getSatContext()));
+  d_sharedTermsVisitor.reset(new SharedTermsVisitor(*d_sharedTerms.get()));
   // create the equality engine and model managers
   if (options::eeMode() == options::EqEngineMode::DISTRIBUTED)
   {
-    // distributed equality engine always needs shared terms database
-    d_sharedTerms.reset(new SharedTermsDatabase(&d_te, d_te.getSatContext()));
-    d_sharedTermsVisitor.reset(new SharedTermsVisitor(*d_sharedTerms.get()));
     // make the distributed equality engine manager
     std::unique_ptr<EqEngineManagerDistributed> eeDistributed(
         new EqEngineManagerDistributed(d_te, d_sharedTerms.get()));
@@ -134,9 +139,10 @@ void CombinationEngine::preRegister(TNode t, bool multipleTheories)
   }
 }
 
-void CombinationEngine::notifyAssertFact(TNode atom)
+void CombinationEngine::preNotifySharedFact(TNode atom)
 {
-  if (d_sharedTerms != nullptr && d_sharedTerms->hasSharedTerms(atom))
+  Assert (d_sharedTerms != nullptr);
+  if (d_sharedTerms->hasSharedTerms(atom))
   {
     // Notify the theories the shared terms
     SharedTermsDatabase::shared_terms_iterator it = d_sharedTerms->begin(atom);

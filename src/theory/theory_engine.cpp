@@ -1064,7 +1064,7 @@ void TheoryEngine::assertFact(TNode literal)
 
   if (d_logicInfo.isSharingEnabled()) {
     // If any shared terms, it's time to do sharing work
-    d_tc->notifyAssertFact(atom);
+    d_tc->preNotifySharedFact(atom);
 
     // If it's an equality, assert it to the shared term manager, even though the terms are not
     // yet shared. As the terms become shared later, the shared terms manager will then add them
