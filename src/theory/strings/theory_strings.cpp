@@ -177,12 +177,13 @@ void TheoryStrings::notifySharedTerm(TNode t)
   Debug("strings") << "TheoryStrings::notifySharedTerm() finished" << std::endl;
 }
 
-bool TheoryStrings::propagate(TNode literal) {
-  Debug("strings-propagate") << "TheoryStrings::propagate(" << literal  << ")" << std::endl;
+bool TheoryStrings::propagateLit(TNode literal) {
+  Debug("strings-propagate") << "TheoryStrings::propagateLit(" << literal  << ")" << std::endl;
   // If already in conflict, no more propagation
   if (d_state.isInConflict())
   {
-    Debug("strings-propagate") << "TheoryStrings::propagate(" << literal << "): already in conflict" << std::endl;
+    Debug("strings-propagate") << "TheoryStrings::propagateLit(" << literal
+                               << "): already in conflict" << std::endl;
     return false;
   }
   // Propagate out

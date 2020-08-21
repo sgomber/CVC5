@@ -62,9 +62,9 @@ class TheoryDatatypes : public Theory {
     {
       Debug("dt") << "NotifyClass::eqNotifyTriggerPredicate(" << predicate << ", " << (value ? "true" : "false") << ")" << std::endl;
       if (value) {
-        return d_dt.propagate(predicate);
+        return d_dt.propagateLit(predicate);
       }
-      return d_dt.propagate(predicate.notNode());
+      return d_dt.propagateLit(predicate.notNode());
     }
     bool eqNotifyTriggerTermEquality(TheoryId tag,
                                      TNode t1,
@@ -74,10 +74,9 @@ class TheoryDatatypes : public Theory {
       AlwaysAssert(tag == THEORY_DATATYPES);
       Debug("dt") << "NotifyClass::eqNotifyTriggerTermMerge(" << tag << ", " << t1 << ", " << t2 << ")" << std::endl;
       if (value) {
-        return d_dt.propagate(t1.eqNode(t2));
-      } else {
-        return d_dt.propagate(t1.eqNode(t2).notNode());
+        return d_dt.propagateLit(t1.eqNode(t2));
       }
+      return d_dt.propagateLit(t1.eqNode(t2).notNode());
     }
     void eqNotifyConstantTermMerge(TNode t1, TNode t2) override
     {
@@ -268,7 +267,7 @@ private:
   void finishInit() override;
   //--------------------------------- end initialization
   /** propagate */
-  bool propagate(TNode literal);
+  bool propagateLit(TNode literal);
   /** Conflict when merging two constants */
   void conflict(TNode a, TNode b);
   /** explain */
@@ -297,7 +296,11 @@ private:
   void preRegisterTerm(TNode n) override;
   TrustNode expandDefinition(Node n) override;
   TrustNode ppRewrite(TNode n) override;
+<<<<<<< HEAD
   /** Get the equality status of a and b */
+=======
+  void addSharedTerm(TNode t) override;
+>>>>>>> 05c6ae0bda064083efb7941e1ceb0869cb1b1090
   EqualityStatus getEqualityStatus(TNode a, TNode b) override;
   std::string identify() const override
   {

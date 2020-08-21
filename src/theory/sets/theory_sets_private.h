@@ -223,8 +223,6 @@ class TheorySetsPrivate {
 
   void presolve();
 
-  void propagate(Theory::Effort);
-
   /** get default output channel */
   OutputChannel* getOutputChannel();
   /** get the valuation */

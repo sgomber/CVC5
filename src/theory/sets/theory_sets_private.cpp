@@ -1341,8 +1341,6 @@ Node mkAnd(const std::vector<TNode>& conjunctions)
   return conjunction;
 } /* mkAnd() */
 
-void TheorySetsPrivate::propagate(Theory::Effort effort) {}
-
 bool TheorySetsPrivate::propagate(TNode literal)
 {
   Debug("sets-prop") << " propagate(" << literal << ")" << std::endl;

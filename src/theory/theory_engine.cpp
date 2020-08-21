@@ -49,6 +49,7 @@
 #include "theory/quantifiers/fmf/model_engine.h"
 #include "theory/quantifiers/theory_quantifiers.h"
 #include "theory/quantifiers_engine.h"
+#include "theory/relevance_manager.h"
 #include "theory/rewriter.h"
 #include "theory/theory.h"
 #include "theory/theory_model.h"
@@ -160,6 +161,12 @@ void TheoryEngine::finishInit() {
     AlwaysAssert(false) << "TheoryEngine::finishInit: equality engine mode "
                         << options::eeMode() << " not supported";
   }
+  // create the relevance filter if any option requires it
+  if (options::relevanceFilter())
+  {
+    d_relManager.reset(
+        new RelevanceManager(d_userContext, theory::Valuation(this)));
+  }
 
   // initialize the quantifiers engine
   if (d_logicInfo.isQuantified())
@@ -214,6 +221,7 @@ TheoryEngine::TheoryEngine(context::Context* context,
       d_quantEngine(nullptr),
       d_decManager(new DecisionManager(userContext)),
       d_preRegistrationVisitor(this, context),
+      d_relManager(nullptr),
       d_eager_model_building(false),
       d_possiblePropagations(context),
       d_hasPropagated(context),
@@ -462,6 +470,12 @@ void TheoryEngine::check(Theory::Effort effort) {
     // If in full effort, we have a fake new assertion just to jumpstart the checking
     if (Theory::fullEffort(effort)) {
       d_factsAsserted = true;
+      // Reset round for the relevance manager, which notice only sets a flag
+      // to indicate that its information must be recomputed.
+      if (d_relManager != nullptr)
+      {
+        d_relManager->resetRound();
+      }
     }
 
     // Check until done
@@ -799,6 +813,16 @@ void TheoryEngine::ppStaticLearn(TNode in, NodeBuilder<>& learned) {
   CVC4_FOR_EACH_THEORY;
 }
 
+bool TheoryEngine::isRelevant(Node lit) const
+{
+  if (d_relManager != nullptr)
+  {
+    return d_relManager->isRelevant(lit);
+  }
+  // otherwise must assume its relevant
+  return true;
+}
+
 void TheoryEngine::shutdown() {
   // Set this first; if a Theory shutdown() throws an exception,
   // at least the destruction of the TheoryEngine won't confound
@@ -858,6 +882,10 @@ void TheoryEngine::notifyPreprocessedAssertions(
     if (d_theoryTable[theoryId]) {
       theoryOf(theoryId)->ppNotifyAssertions(assertions);
     }
+  }
+  if (d_relManager != nullptr)
+  {
+    d_relManager->notifyPreprocessedAssertions(assertions);
   }
 }
 
@@ -1500,6 +1528,14 @@ theory::LemmaStatus TheoryEngine::lemma(TNode node,
     lemmas.push_back(newLemmas[i].getNode());
   }
 
+  // If specified, we must add this lemma to the set of those that need to be
+  // justified, where note we pass all auxiliary lemmas in lemmas, since these
+  // by extension must be justified as well.
+  if (d_relManager != nullptr && isLemmaPropertyNeedsJustify(p))
+  {
+    d_relManager->notifyPreprocessedAssertions(lemmas.ref());
+  }
+
   // assert lemmas to prop engine
   for (size_t i = 0, lsize = lemmas.size(); i < lsize; ++i)
   {
@@ -1824,6 +1860,11 @@ void TheoryEngine::checkTheoryAssertionsWithModel(bool hardFailure) {
           it != it_end;
           ++it) {
         Node assertion = (*it).d_assertion;
+        if (!isRelevant(assertion))
+        {
+          // not relevant, skip
+          continue;
+        }
         Node val = d_tc->getModel()->getValue(assertion);
         if (val != d_true)
         {
