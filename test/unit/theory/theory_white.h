@@ -106,8 +106,12 @@ class DummyTheory : public Theory {
               const LogicInfo& logicInfo,
               ProofNodeManager* pnm)
       : Theory(
-            theory::THEORY_BUILTIN, ctxt, uctxt, out, valuation, logicInfo, pnm)
-  {}
+            theory::THEORY_BUILTIN, ctxt, uctxt, out, valuation, logicInfo, pnm),
+            d_state(ctxt, uctxt, valuation)
+  {
+    // use a default theory state object
+    d_theoryState = &d_state;
+  }
 
   TheoryRewriter* getTheoryRewriter() { return nullptr; }
 
@@ -139,6 +143,8 @@ class DummyTheory : public Theory {
   TrustNode explain(TNode n) override { return TrustNode::null(); }
   Node getValue(TNode n) { return Node::null(); }
   string identify() const override { return "DummyTheory"; }
+  /** Default theory state object */
+  TheoryState d_state;
 };/* class DummyTheory */
 
 class TheoryBlack : public CxxTest::TestSuite {
