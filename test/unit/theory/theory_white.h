@@ -133,13 +133,6 @@ class DummyTheory : public Theory {
     return done();
   }
 
-  void check(Effort e) override
-  {
-    while(!done()) {
-      getWrapper();
-    }
-  }
-
   void presolve() override { Unimplemented(); }
   void preRegisterTerm(TNode n) override {}
   void propagate(Effort level) override {}
