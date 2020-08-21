@@ -151,15 +151,15 @@ void TheoryEngine::finishInit() {
   CVC4_FOR_EACH_THEORY;
 
   // Initialize the theory combination architecture
-  if (options::eeMode() == options::EqEngineMode::DISTRIBUTED)
+  if (options::tcMode() == options::EqEngineMode::CARE_GRAPH)
   {
     d_tcCareGraph.reset(new CombinationCareGraph(*this, paraTheories));
     d_tc = d_tcCareGraph.get();
   }
   else
   {
-    AlwaysAssert(false) << "TheoryEngine::finishInit: equality engine mode "
-                        << options::eeMode() << " not supported";
+    AlwaysAssert(false) << "TheoryEngine::finishInit: theory combination mode "
+                        << options::tcMode() << " not supported";
   }
   // create the relevance filter if any option requires it
   if (options::relevanceFilter())
@@ -177,6 +177,9 @@ void TheoryEngine::finishInit() {
   // initialize the theory combination manager, which decides and allocates the
   // equality engines to use for all theories.
   d_tc->finishInit();
+
+  // Initialize the model
+  d_eeDistributed->initializeModel(d_curr_model);
 
   // set the core equality engine on quantifiers engine
   if (d_logicInfo.isQuantified())

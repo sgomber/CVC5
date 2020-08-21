@@ -59,8 +59,9 @@ class EqEngineManager
    */
   virtual void initializeTheories() = 0;
   /**
-   * Initialize model, called during TheoryEngine::finishInit after the model
-   * manager has been initialized.
+   * Finish initialize, called by TheoryEngine::finishInit after theory
+   * objects have been created but prior to their final initialization. This
+   * sets up equality engines for all theories.
    *
    * This method is context-independent, and is applied once during
    * the lifetime of TheoryEngine (during finishInit).
