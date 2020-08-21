@@ -48,6 +48,14 @@ class EqEngineManagerCentral : public EqEngineManager
   /** get the core equality engine */
   eq::EqualityEngine* getCoreEqualityEngine() override;
 
+  //---------------------------- interaction with CombinationEngine
+  /** Get the equality status of a and b.*/
+  EqualityStatus getEqualityStatus(TNode a, TNode b) override;
+  /** Explain literal based on shared terms database */
+  TrustNode explainShared(TNode literal) const override;
+  /** Assert equality to the shared terms database. */
+  void assertSharedEquality(TNode equality, bool polarity, TNode reason) override;
+  //---------------------------- end interaction with CombinationEngine
  private:
   /** notify class for central equality engine */
   class CentralNotifyClass : public theory::eq::EqualityEngineNotify

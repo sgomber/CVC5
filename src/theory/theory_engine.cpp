@@ -975,7 +975,7 @@ void TheoryEngine::assertToTheory(TNode assertion, TNode originalAssertion, theo
         << "atom should be an EQUALity, not `" << atom << "'";
     if (markPropagation(assertion, originalAssertion, toTheoryId, fromTheoryId)) {
       // assert to theory combination
-      d_tc->assertEquality(atom, polarity, assertion);
+      d_tc->assertSharedEquality(atom, polarity, assertion);
     }
     return;
   }
@@ -1168,7 +1168,6 @@ Node TheoryEngine::getModelValue(TNode var) {
     // the model value of a constant must be itself
     return var;
   }
-  Assert(d_tc->isShared(var));
   return theoryOf(Theory::theoryOf(var.getType()))->getModelValue(var);
 }
 

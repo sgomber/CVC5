@@ -87,17 +87,13 @@ class CombinationEngine
    */
   virtual void notifyAssertFact(TNode atom);
   /**
-   * Is term a shared term? This is used for debugging.
-   */
-  virtual bool isShared(TNode term) const;
-  /**
    * Get the equality status of a and b, which first asks if the shared
    * terms database as an equality status, and otherwise asks the appropriate
    * Theory.
    *
    * This method is used by ...
    */
-  virtual EqualityStatus getEqualityStatus(TNode a, TNode b);
+  EqualityStatus getEqualityStatus(TNode a, TNode b);
   /**
    * Explain literal, which returns a conjunction of literals that that entail
    * the given one. The shared terms database is used to find this explanation.
@@ -105,7 +101,7 @@ class CombinationEngine
    * This method is used by TheoryEngine when it wants an explanation of a
    * propagation that was made by the shared terms database.
    */
-  virtual TrustNode explain(TNode literal, TheoryId theory) const;
+  TrustNode explain(TNode literal, TheoryId theory) const;
   /**
    * Assert equality to the shared terms database.
    *
@@ -113,7 +109,7 @@ class CombinationEngine
    * send to THEORY_BUILTIN, meaning that shared terms database should
    * maintain this fact. This is the case when ...
    */
-  virtual void assertEquality(TNode equality, bool polarity, TNode reason);
+  void assertSharedEquality(TNode equality, bool polarity, TNode reason);
   //-------------------------- end interface used by theory engine
  protected:
   /** Send lemma */
@@ -126,6 +122,8 @@ class CombinationEngine
   const LogicInfo& d_logicInfo;
   /** List of parametric theories of theory engine */
   const std::vector<Theory*> d_paraTheories;
+  /** The set of TheoryId that are parametric */
+  Theory::Set d_paraSet;
   /**
    * The equality engine manager we are using. This class is responsible for
    * configuring equality engines for each theory.

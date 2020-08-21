@@ -163,5 +163,34 @@ eq::EqualityEngine* EqEngineManagerDistributed::allocateEqualityEngine(
   return new eq::EqualityEngine(c, esi.d_name, esi.d_constantsAreTriggers);
 }
 
+EqualityStatus EqEngineManagerDistributed::getEqualityStatus(TNode a, TNode b)
+{
+  Assert (d_sdb != nullptr);
+  // if we're using a shared terms database, ask its status if a and b are
+  // shared.
+  if (d_sdb->isShared(a) && d_sdb->isShared(b))
+  {
+    if (d_sdb->areEqual(a, b))
+    {
+      return EQUALITY_TRUE_AND_PROPAGATED;
+    }
+    else if (d_sdb->areDisequal(a, b))
+    {
+      return EQUALITY_FALSE_AND_PROPAGATED;
+    }
+  }
+  return EQUALITY_UNKNOWN;
+}
+
+TrustNode EqEngineManagerDistributed::explainShared(TNode literal) const
+{
+  return d_sdb->explain(literal);
+}
+
+void EqEngineManagerDistributed::assertSharedEquality(TNode equality, bool polarity, TNode reason) 
+{
+  d_sdb->assertEquality(equality, polarity, reason);
+}
+
 }  // namespace theory
 }  // namespace CVC4

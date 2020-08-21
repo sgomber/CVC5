@@ -32,11 +32,13 @@ CombinationEngine::CombinationEngine(TheoryEngine& te,
     : d_te(te),
       d_logicInfo(te.getLogicInfo()),
       d_paraTheories(paraTheories),
+      d_paraSet(0),
       d_eemUse(nullptr),
       d_mmUse(nullptr),
       d_sharedTerms(nullptr),
       d_sharedTermsVisitor(nullptr)
 {
+  
 }
 
 CombinationEngine::~CombinationEngine() {}
@@ -153,34 +155,14 @@ void CombinationEngine::notifyAssertFact(TNode atom)
   }
 }
 
-bool CombinationEngine::isShared(TNode term) const
-{
-  if (d_sharedTerms != nullptr)
-  {
-    return d_sharedTerms->isShared(term);
-  }
-  // otherwise, always assume its shared
-  return true;
-}
-
 EqualityStatus CombinationEngine::getEqualityStatus(TNode a, TNode b)
 {
   Assert(a.getType().isComparableTo(b.getType()));
-  if (d_sharedTerms != nullptr)
+  // does it have an equality status based on the equality engine manager?
+  EqualityStatus estatus = d_eemUse->getEqualityStatus(a,b);
+  if (estatus!=EQUALITY_UNKNOWN)
   {
-    // if we're using a shared terms database, ask its status if a and b are
-    // shared.
-    if (d_sharedTerms->isShared(a) && d_sharedTerms->isShared(b))
-    {
-      if (d_sharedTerms->areEqual(a, b))
-      {
-        return EQUALITY_TRUE_AND_PROPAGATED;
-      }
-      else if (d_sharedTerms->areDisequal(a, b))
-      {
-        return EQUALITY_FALSE_AND_PROPAGATED;
-      }
-    }
+    return estatus;
   }
   return d_te.theoryOf(Theory::theoryOf(a.getType()))->getEqualityStatus(a, b);
 }
@@ -190,13 +172,8 @@ TrustNode CombinationEngine::explain(TNode literal, TheoryId theory) const
   TrustNode texp;
   if (theory == THEORY_BUILTIN)
   {
-    if (d_sharedTerms == nullptr)
-    {
-      Unhandled() << "CombinationEngine::CombinationEngine: does not have a "
-                     "shared terms database.";
-    }
-    // explain using theory combination
-    texp = d_sharedTerms->explain(literal);
+    // explanation based on equality engine manager
+    texp = d_eemUse->explainShared(literal);
     Debug("theory::explain")
         << "\tTerm was propagated by THEORY_BUILTIN. Explanation: "
         << texp.getNode() << std::endl;
@@ -211,14 +188,12 @@ TrustNode CombinationEngine::explain(TNode literal, TheoryId theory) const
   return texp;
 }
 
-void CombinationEngine::assertEquality(TNode equality,
+void CombinationEngine::assertSharedEquality(TNode equality,
                                        bool polarity,
                                        TNode reason)
 {
-  if (d_sharedTerms != nullptr)
-  {
-    d_sharedTerms->assertEquality(equality, polarity, reason);
-  }
+  // assert to the equality engine manager
+  d_eemUse->assertSharedEquality(equality, polarity, reason);
 }
 
 void CombinationEngine::sendLemma(TNode node, TheoryId atomsTo)
