@@ -26,8 +26,9 @@ EqEngineManagerCentral::EqEngineManagerCentral(TheoryEngine& te,
     : d_te(te),
       d_sdb(sdb),
       d_centralEENotify(),
+      // we do not require any term triggers in the central equality engine
       d_centralEqualityEngine(
-          d_centralEENotify, te.getSatContext(), "centralEE", true)
+          d_centralEENotify, te.getSatContext(), "centralEE", false, false)
 {
 }
 
@@ -167,15 +168,7 @@ bool EqEngineManagerCentral::CentralNotifyClass::eqNotifyTriggerPredicate(
 bool EqEngineManagerCentral::CentralNotifyClass::eqNotifyTriggerTermEquality(
     TheoryId tag, TNode t1, TNode t2, bool value)
 {
-  /*
-  if (value) {
-    return d_uf.propagate(t1.eqNode(t2));
-  } else {
-    return d_uf.propagate(t1.eqNode(t2).notNode());
-  }
-  */
-  Assert(d_theoryNotify[tag] != nullptr);
-  return d_theoryNotify[tag]->eqNotifyTriggerTermEquality(tag, t1, t2, value);
+  Unreachable() << "EqEngineManagerCentral::eqNotifyTriggerTermEquality: no need to propagate equalities between shared terms";
 }
 
 void EqEngineManagerCentral::CentralNotifyClass::eqNotifyConstantTermMerge(
