@@ -58,6 +58,7 @@ SharedTermsDatabase::~SharedTermsDatabase()
 }
 
 void SharedTermsDatabase::addEqualityToPropagate(TNode equality) {
+  Assert (d_equalityEngine!=nullptr);
   d_registeredEqualities.insert(equality);
   d_equalityEngine->addTriggerPredicate(equality);
   checkForConflict();
@@ -175,6 +176,12 @@ void SharedTermsDatabase::markNotified(TNode term, Theory::Set theories) {
   // First update the set of notified theories for this term
   d_alreadyNotifiedMap[term] = Theory::setUnion(newlyNotified, alreadyNotified);
 
+  if (d_equalityEngine==nullptr)
+  {
+    // if we are not assigned an equality engine, there is nothing to do
+    return;
+  }
+  
   // Mark the shared terms in the equality engine
   theory::TheoryId currentTheory;
   while ((currentTheory = Theory::setPop(newlyNotified)) != THEORY_LAST) {
@@ -186,6 +193,7 @@ void SharedTermsDatabase::markNotified(TNode term, Theory::Set theories) {
 }
 
 bool SharedTermsDatabase::areEqual(TNode a, TNode b) const {
+  Assert (d_equalityEngine!=nullptr);
   if (d_equalityEngine->hasTerm(a) && d_equalityEngine->hasTerm(b))
   {
     return d_equalityEngine->areEqual(a, b);
@@ -198,6 +206,7 @@ bool SharedTermsDatabase::areEqual(TNode a, TNode b) const {
 }
 
 bool SharedTermsDatabase::areDisequal(TNode a, TNode b) const {
+  Assert (d_equalityEngine!=nullptr);
   if (d_equalityEngine->hasTerm(a) && d_equalityEngine->hasTerm(b))
   {
     return d_equalityEngine->areDisequal(a, b, false);
@@ -216,6 +225,7 @@ theory::eq::EqualityEngine* SharedTermsDatabase::getEqualityEngine()
 
 void SharedTermsDatabase::assertEquality(TNode equality, bool polarity, TNode reason)
 {
+  Assert (d_equalityEngine!=nullptr);
   Debug("shared-terms-database::assert") << "SharedTermsDatabase::assertEquality(" << equality << ", " << (polarity ? "true" : "false") << ", " << reason << ")" << endl;
   // Add it to the equality engine
   d_equalityEngine->assertEquality(equality, polarity, reason);
@@ -255,6 +265,7 @@ static Node mkAnd(const std::vector<TNode>& conjunctions) {
 }
 
 void SharedTermsDatabase::checkForConflict() {
+  Assert (d_equalityEngine!=nullptr);
   if (d_inConflict) {
     d_inConflict = false;
     std::vector<TNode> assumptions;
@@ -267,6 +278,7 @@ void SharedTermsDatabase::checkForConflict() {
 }
 
 bool SharedTermsDatabase::isKnown(TNode literal) const {
+  Assert (d_equalityEngine!=nullptr);
   bool polarity = literal.getKind() != kind::NOT;
   TNode equality = polarity ? literal : literal[0];
   if (polarity) {
@@ -278,6 +290,7 @@ bool SharedTermsDatabase::isKnown(TNode literal) const {
 
 TrustNode SharedTermsDatabase::explain(TNode literal) const
 {
+  Assert (d_equalityEngine!=nullptr);
   bool polarity = literal.getKind() != kind::NOT;
   TNode atom = polarity ? literal : literal[0];
   Assert(atom.getKind() == kind::EQUAL);

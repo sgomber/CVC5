@@ -124,6 +124,7 @@ void CombinationEngine::preRegister(TNode t, bool multipleTheories)
     if (multipleTheories)
     {
       // Collect the shared terms if there are multiple theories
+      // This calls d_sharedTerms->addSharedTerm, possible multiple times
       NodeVisitor<SharedTermsVisitor>::run(*d_sharedTermsVisitor.get(), t);
     }
   }
