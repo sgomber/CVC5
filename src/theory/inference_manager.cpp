@@ -46,8 +46,7 @@ void InferManager::conflict(TNode conf)
 {
   if (!d_state.isInConflict())
   {
-    TrustNode tconf = explainConflict(conf);
-    trustedConflict(tconf);
+    d_out.conflict(conf);
   }
 }
 
@@ -101,12 +100,6 @@ TrustNode InferManager::explainConflictEqConstantMerge(TNode a, TNode b)
   }
   Unimplemented() << "Inference manager for " << d_theory.getId()
                   << " mkTrustedConflictEqConstantMerge";
-}
-
-TrustNode InferManager::explainConflict(TNode conf)
-{
-  // no proof provided
-  return TrustNode::mkTrustConflict(conf, nullptr);
 }
 
 Node InferManager::mkExplain(TNode lit) const

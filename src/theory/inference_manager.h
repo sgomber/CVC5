@@ -77,14 +77,12 @@ class InferManager
    */
   virtual TrustNode explainLit(TNode lit);
 
-  /** assert fact */
+  /** assert internal fact */
   void assertInternalFact(TNode atom, bool pol, TNode fact);
 
  protected:
-  /** Make trusted conflict */
+  /** Explain conflict from constants merging in the equality engine */
   virtual TrustNode explainConflictEqConstantMerge(TNode a, TNode b);
-  /** Make trusted conflict */
-  virtual TrustNode explainConflict(TNode conf);
   /** Explain literal, return conjunction. */
   Node mkExplain(TNode literal) const;
   /**
