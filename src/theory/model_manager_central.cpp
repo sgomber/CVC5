@@ -45,11 +45,6 @@ bool ModelManagerCentral::buildModelInternal()
     t->computeRelevantTerms(relevantTerms);
   }
   // we use relevant terms based on the above set
-  d_model->setUsingRelevantTerms();
-  for (const Node& t : relevantTerms)
-  {
-    d_model->addRelevantTerm(t);
-  }
 
   // push a SAT context
   context::Context* c = d_te.getSatContext();
@@ -73,6 +68,7 @@ bool ModelManagerCentral::buildModelInternal()
     Theory* t = d_te.theoryOf(theoryId);
     Trace("model-builder") << "  CollectModelValues on theory: " << theoryId
                            << std::endl;
+    // use the full set of relevant terms for all theories
     if (!t->collectModelValues(d_model, relevantTerms))
     {
       Trace("model-builder")
@@ -89,7 +85,7 @@ bool ModelManagerCentral::buildModelInternal()
           << "ModelManagerCentral: fail Boolean variables" << std::endl;
       success = false;
     }
-    else if (!d_modelBuilder->buildModel(d_model))
+    else if (!d_modelBuilder->buildModel(d_model, true, relevantTerms))
     {
       Trace("model-builder")
           << "ModelManagerCentral: fail build model" << std::endl;

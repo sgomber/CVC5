@@ -348,19 +348,6 @@ class TheoryModel : public Model
   */
   std::vector< Node > getFunctionsToAssign();
   //---------------------------- end function values
-
-  //---------------------------- relevant terms
-  /** Set using relevant terms */
-  void setUsingRelevantTerms();
-  /** Is using relevant terms */
-  bool isUsingRelevantTerms() const;
-  /** Add relevant term */
-  void addRelevantTerm(Node n);
-  /** Get relevant terms */
-  const std::set<Node>& getRelevantTerms() const;
-  /** Is relevant term */
-  bool isRelevantTerm(TNode n) const;
-  //---------------------------- end relevant terms
  protected:
   /** Unique name of this model */
   std::string d_name;
@@ -437,13 +424,6 @@ class TheoryModel : public Model
   */
   std::map<Node, Node> d_uf_models;
   //---------------------------- end function values
-
-  //---------------------------- relevant terms
-  /** Using relevant terms */
-  bool d_usingRelevantTerms;
-  /** The set of relevant terms */
-  std::set<Node> d_relevantTermSet;
-  //---------------------------- end relevant terms
 };/* class TheoryModel */
 
 }/* CVC4::theory namespace */

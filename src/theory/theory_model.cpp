@@ -33,8 +33,7 @@ TheoryModel::TheoryModel(context::Context* c,
       d_substitutions(c, false),
       d_equalityEngine(nullptr),
       d_using_model_core(false),
-      d_enableFuncModels(enableFuncModels),
-      d_usingRelevantTerms(false)
+      d_enableFuncModels(enableFuncModels)
 {
   // must use function models when ufHo is enabled
   Assert(d_enableFuncModels || !options::ufHo());
@@ -92,8 +91,6 @@ void TheoryModel::reset(){
   d_uf_models.clear();
   d_using_model_core = false;
   d_model_core.clear();
-  d_usingRelevantTerms = false;
-  d_relevantTermSet.clear();
 }
 
 void TheoryModel::getComments(std::ostream& out) const {
@@ -764,26 +761,6 @@ std::vector< Node > TheoryModel::getFunctionsToAssign() {
 
   Trace("model-builder-fun") << "return " << funcs_to_assign.size() << " functions to assign..." << std::endl;
   return funcs_to_assign;
-}
-
-void TheoryModel::setUsingRelevantTerms() { d_usingRelevantTerms = true; }
-
-bool TheoryModel::isUsingRelevantTerms() const { return d_usingRelevantTerms; }
-
-void TheoryModel::addRelevantTerm(Node n) { d_relevantTermSet.insert(n); }
-
-const std::set<Node>& TheoryModel::getRelevantTerms() const
-{
-  return d_relevantTermSet;
-}
-
-bool TheoryModel::isRelevantTerm(TNode n) const
-{
-  if (d_usingRelevantTerms)
-  {
-    return d_relevantTermSet.find(n) != d_relevantTermSet.end();
-  }
-  return true;
 }
 
 } /* namespace CVC4::theory */

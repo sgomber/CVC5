@@ -38,7 +38,7 @@ namespace theory {
  * this will set up the data structures in TheoryModel to represent
  * a model for the current set of assertions.
  */
-class TheoryEngineModelBuilder : public ModelBuilder
+class TheoryEngineModelBuilder
 {
   typedef std::unordered_map<Node, Node, NodeHashFunction> NodeMap;
   typedef std::unordered_set<Node, NodeHashFunction> NodeSet;
@@ -66,8 +66,16 @@ class TheoryEngineModelBuilder : public ModelBuilder
    * Lemmas may be sent on an output channel by this
    * builder in steps (2) or (5), for instance, if the model we
    * are building fails to satisfy a quantified formula.
+   * 
+   * @param m The model to build
+   * @param usingRelevantTerms Whether we are restricting the terms that we
+   * consider in the equality engine of the model to those in relevantTerms
+   * @param relevantTerms The current relevant terms. If we are using
+   * relevant terms, this set should contain all terms in relevant assertions
+   * as well as all shared terms.
+   * @return true if the model was successfully built.
    */
-  bool buildModel(Model* m) override;
+  bool buildModel(Model* m, bool usingRelevantTerms, const std::set<Node>& relevantTerms);
 
   /** postprocess model
    *

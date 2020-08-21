@@ -372,7 +372,7 @@ void TheoryEngineModelBuilder::addToTypeList(
   }
 }
 
-bool TheoryEngineModelBuilder::buildModel(Model* m)
+bool TheoryEngineModelBuilder::buildModel(Model* m, bool usingRelevantTerms, const std::set<Node>& relevantTerms)
 {
   Trace("model-builder") << "TheoryEngineModelBuilder: buildModel" << std::endl;
   TheoryModel* tm = (TheoryModel*)m;
@@ -392,10 +392,6 @@ bool TheoryEngineModelBuilder::buildModel(Model* m)
       << "TheoryEngineModelBuilder: Add assignable subterms "
          ", collect representatives and compute assignable information..."
       << std::endl;
-  // properties about the model
-  bool usingRelevantTerms = tm->isUsingRelevantTerms();
-  // the relevant terms
-  const std::set<Node>& relevantTerms = tm->getRelevantTerms();
 
   // type enumerator properties
   TypeEnumeratorProperties tep;
