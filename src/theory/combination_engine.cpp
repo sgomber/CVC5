@@ -141,7 +141,7 @@ void CombinationEngine::preRegister(TNode t, bool multipleTheories)
 
 void CombinationEngine::preNotifySharedFact(TNode atom)
 {
-  Assert (d_sharedTerms != nullptr);
+  Assert(d_sharedTerms != nullptr);
   if (d_sharedTerms->hasSharedTerms(atom))
   {
     // Notify the theories the shared terms
