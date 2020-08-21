@@ -39,6 +39,9 @@ class EqualityEngine;
 class InferManager
 {
  public:
+  /**
+   * Constructor, note that state should be the official state of theory t. 
+   */
   InferManager(Theory& t, TheoryState& state);
   virtual ~InferManager() {}
   /**
@@ -54,7 +57,8 @@ class InferManager
    */
   void conflictEqConstantMerge(TNode a, TNode b);
   /**
-   * Raise conflict conf (of any form), without proofs.
+   * Raise conflict conf (of any form), without proofs. This method should
+   * only be called if there is not yet proof support in the given theory.
    */
   void conflict(TNode conf);
   /**
@@ -66,12 +70,12 @@ class InferManager
    * T-propagate literal lit, possibly encountered by equality engine,
    * returns false if we are in conflict.
    */
-  bool propagate(TNode lit);
+  bool propagateLit(TNode lit);
   /**
    * Return an explanation for the literal represented by parameter n
    * (which was previously propagated by this theory).
    */
-  virtual TrustNode explain(TNode lit);
+  virtual TrustNode explainLit(TNode lit);
 
   /** assert fact */
   void assertInternalFact(TNode atom, bool pol, TNode fact);

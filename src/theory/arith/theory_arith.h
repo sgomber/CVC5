@@ -20,13 +20,15 @@
 #include "expr/node.h"
 #include "proof/arith_proof_recorder.h"
 #include "theory/arith/arith_state.h"
+#include "theory/arith/equality_solver.h"
 #include "theory/arith/theory_arith_private_forward.h"
 #include "theory/theory.h"
 
 namespace CVC4 {
 namespace theory {
-
 namespace arith {
+  
+class EqualitySolver;
 
 /**
  * Implementation of QF_LRA.
@@ -123,10 +125,17 @@ class TheoryArith : public Theory {
   {
     d_proofRecorder = proofRecorder;
   }
-
+  /** propagate literal */
+  void propagateLit(TNode literal);
+  /** Raise conflict, called when constants a and b merge. */
+  void conflictEqConstantMerge(TNode a, TNode b);
  private:
   /** The state object wrapping TheoryArithPrivate  */
   ArithState d_astate;
+  /** The (default) inference manager */
+  InferManager d_aim;
+  /** The equality solver */
+  std::unique_ptr<EqualitySolver> d_eqSolver;
 };/* class TheoryArith */
 
 }/* CVC4::theory::arith namespace */

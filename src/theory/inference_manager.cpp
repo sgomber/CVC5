@@ -60,7 +60,7 @@ void InferManager::trustedConflict(TrustNode tconf)
   }
 }
 
-bool InferManager::propagate(TNode lit)
+bool InferManager::propagateLit(TNode lit)
 {
   // If already in conflict, no more propagation
   if (d_state.isInConflict())
@@ -76,7 +76,7 @@ bool InferManager::propagate(TNode lit)
   return ok;
 }
 
-TrustNode InferManager::explain(TNode lit)
+TrustNode InferManager::explainLit(TNode lit)
 {
   // TODO: use proof equality engine if it exists
   if (d_ee != nullptr)

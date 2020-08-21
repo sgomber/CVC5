@@ -23,6 +23,7 @@
 #include "theory/arith/infer_bounds.h"
 #include "theory/arith/theory_arith_private.h"
 #include "theory/ext_theory.h"
+#include "theory/arith/equality_solver.h"
 
 using namespace std;
 using namespace CVC4::kind;
@@ -42,12 +43,14 @@ TheoryArith::TheoryArith(context::Context* c,
           new TheoryArithPrivate(*this, c, u, out, valuation, logicInfo, pnm)),
       d_ppRewriteTimer("theory::arith::ppRewriteTimer"),
       d_proofRecorder(nullptr),
-      d_astate(*d_internal, c, u, valuation)
+      d_astate(*d_internal, c, u, valuation),
+      d_aim(*this, d_astate)
 {
   smtStatisticsRegistry()->registerStat(&d_ppRewriteTimer);
 
-  // indicate we are using the theory state object
+  // indicate we are using the theory state object and inference manager
   d_theoryState = &d_astate;
+  d_inferManager = &d_aim;
 }
 
 TheoryArith::~TheoryArith(){
@@ -170,6 +173,16 @@ std::pair<bool, Node> TheoryArith::entailmentCheck(TNode lit)
   ArithEntailmentCheckSideEffects ase;
   std::pair<bool, Node> res = d_internal->entailmentCheck(lit, def, ase);
   return res;
+}
+
+void TheoryArith::propagateLit(TNode literal)
+{
+  
+}
+
+void TheoryArith::conflictEqConstantMerge(TNode a, TNode b)
+{
+  
 }
 
 }/* CVC4::theory::arith namespace */
