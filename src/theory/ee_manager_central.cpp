@@ -168,7 +168,8 @@ bool EqEngineManagerCentral::CentralNotifyClass::eqNotifyTriggerPredicate(
 bool EqEngineManagerCentral::CentralNotifyClass::eqNotifyTriggerTermEquality(
     TheoryId tag, TNode t1, TNode t2, bool value)
 {
-  Unreachable() << "EqEngineManagerCentral::eqNotifyTriggerTermEquality: no need to propagate equalities between shared terms";
+  Unreachable() << "EqEngineManagerCentral::eqNotifyTriggerTermEquality: no "
+                   "need to propagate equalities between shared terms";
 }
 
 void EqEngineManagerCentral::CentralNotifyClass::eqNotifyConstantTermMerge(
