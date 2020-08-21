@@ -82,9 +82,9 @@ class InferManager
 
  protected:
   /** Make trusted conflict */
-  virtual TrustNode mkTrustedConflictEqConstantMerge(TNode a, TNode b);
+  virtual TrustNode explainConflictEqConstantMerge(TNode a, TNode b);
   /** Make trusted conflict */
-  virtual TrustNode mkTrustedConflict(TNode conf);
+  virtual TrustNode explainConflict(TNode conf);
   /** Explain literal, return conjunction. */
   Node mkExplain(TNode literal) const;
   /**

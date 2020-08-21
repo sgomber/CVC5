@@ -22,8 +22,8 @@ namespace CVC4 {
 namespace theory {
 namespace arith {
 
-EqualitySolver::EqualitySolver(InferManager& aim, ArithState& astate)
-    : d_aim(aim), d_astate(astate), d_notify(aim), d_ee(nullptr)
+EqualitySolver::EqualitySolver(ArithState& astate, InferManager& aim)
+    : d_astate(astate), d_aim(aim), d_notify(aim), d_ee(nullptr)
 {
 }
 

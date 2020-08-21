@@ -24,13 +24,14 @@
 namespace CVC4 {
 namespace theory {
 namespace arith {
+
 /**
  * The arithmetic equality solver.
  */
 class EqualitySolver
 {
  public:
-  EqualitySolver(InferManager& aim, ArithState& astate);
+  EqualitySolver(ArithState& astate, InferManager& aim);
   ~EqualitySolver() {}
   //--------------------------------- initialization
   /**
@@ -48,7 +49,6 @@ class EqualitySolver
   bool preNotifyFact(TNode atom, bool pol, TNode fact);
   /** Notify fact, return true if processed. */
   void notifyFact(TNode atom, bool pol, TNode fact, bool isInternal);
-
  private:
   class EqualitySolverNotify : public eq::EqualityEngineNotify
   {
@@ -71,10 +71,10 @@ class EqualitySolver
     /** Reference to the inference manager */
     InferManager& d_aim;
   };
-  /** reference to parent */
-  InferManager& d_aim;
   /** reference to the state */
   ArithState& d_astate;
+  /** reference to parent */
+  InferManager& d_aim;
   /** Equality solver notify */
   EqualitySolverNotify d_notify;
   /** Pointer to the equality engine */

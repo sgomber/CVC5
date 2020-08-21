@@ -37,7 +37,7 @@ void InferManager::conflictEqConstantMerge(TNode a, TNode b)
 {
   if (!d_state.isInConflict())
   {
-    TrustNode tconf = mkTrustedConflictEqConstantMerge(a, b);
+    TrustNode tconf = explainConflictEqConstantMerge(a, b);
     trustedConflict(tconf);
   }
 }
@@ -46,7 +46,7 @@ void InferManager::conflict(TNode conf)
 {
   if (!d_state.isInConflict())
   {
-    TrustNode tconf = mkTrustedConflict(conf);
+    TrustNode tconf = explainConflict(conf);
     trustedConflict(tconf);
   }
 }
@@ -84,12 +84,12 @@ TrustNode InferManager::explainLit(TNode lit)
     Node exp = mkExplain(lit);
     return TrustNode::mkTrustPropExp(lit, exp, nullptr);
   }
-  Unimplemented() << "Theory " << d_theory.getId()
-                  << " sent a conflict but doesn't implement the "
-                     "Theory::explain() interface!";
+  Unimplemented() << "Inference manager for " << d_theory.getId()
+                  << " was asked to explain a propagation but doesn't have an equality engine or implement the "
+                     "InferManager::explainLit interface!";
 }
 
-TrustNode InferManager::mkTrustedConflictEqConstantMerge(TNode a, TNode b)
+TrustNode InferManager::explainConflictEqConstantMerge(TNode a, TNode b)
 {
   // TODO: use proof equality engine if it exists
   if (d_ee != nullptr)
@@ -98,15 +98,14 @@ TrustNode InferManager::mkTrustedConflictEqConstantMerge(TNode a, TNode b)
     Node conf = mkExplain(lit);
     return TrustNode::mkTrustConflict(conf, nullptr);
   }
-  Unimplemented() << "Theory " << d_theory.getId()
+  Unimplemented() << "Inference manager for " << d_theory.getId()
                   << " mkTrustedConflictEqConstantMerge";
 }
 
-TrustNode InferManager::mkTrustedConflict(TNode conf)
+TrustNode InferManager::explainConflict(TNode conf)
 {
-  // TODO: use proof equality engine if it exists
-  // TODO
-  Unimplemented() << "Theory " << d_theory.getId() << " mkTrustedConflict";
+  // no proof provided
+  return TrustNode::mkTrustConflict(conf, nullptr);
 }
 
 Node InferManager::mkExplain(TNode lit) const

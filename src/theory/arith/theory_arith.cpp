@@ -51,6 +51,12 @@ TheoryArith::TheoryArith(context::Context* c,
   // indicate we are using the theory state object and inference manager
   d_theoryState = &d_astate;
   d_inferManager = &d_aim;
+  
+  // construct the equality engine if applicable
+  if (options::arithEqSolver())
+  {
+    d_eqSolver.reset(new EqualitySolver(d_astate, d_aim));
+  }
 }
 
 TheoryArith::~TheoryArith(){
@@ -81,6 +87,13 @@ void TheoryArith::finishInit()
   }
   // finish initialize internally
   d_internal->finishInit();
+  
+  // setup the equality engine
+  if (d_eqSolver!=nullptr)
+  {
+    Assert (d_equalityEngine!=nullptr);
+    d_eqSolver->setEqualityEngine(d_equalityEngine);
+  }
 }
 
 void TheoryArith::preRegisterTerm(TNode n) { d_internal->preRegisterTerm(n); }
@@ -113,6 +126,11 @@ void TheoryArith::postCheck(Effort level) { d_internal->postCheck(level); }
 bool TheoryArith::preNotifyFact(TNode atom, bool pol, TNode fact, bool isPrereg)
 {
   return d_internal->preNotifyFact(atom, pol, fact, isPrereg);
+}
+
+void TheoryArith::notifyFact(TNode atom, bool pol, TNode fact, bool isInternal)
+{
+  
 }
 
 bool TheoryArith::needsCheckLastEffort() {
