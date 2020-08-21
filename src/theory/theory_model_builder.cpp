@@ -372,7 +372,9 @@ void TheoryEngineModelBuilder::addToTypeList(
   }
 }
 
-bool TheoryEngineModelBuilder::buildModel(Model* m, bool usingRelevantTerms, const std::set<Node>& relevantTerms)
+bool TheoryEngineModelBuilder::buildModel(Model* m,
+                                          bool usingRelevantTerms,
+                                          const std::set<Node>& relevantTerms)
 {
   Trace("model-builder") << "TheoryEngineModelBuilder: buildModel" << std::endl;
   TheoryModel* tm = (TheoryModel*)m;

@@ -66,7 +66,7 @@ class TheoryEngineModelBuilder
    * Lemmas may be sent on an output channel by this
    * builder in steps (2) or (5), for instance, if the model we
    * are building fails to satisfy a quantified formula.
-   * 
+   *
    * @param m The model to build
    * @param usingRelevantTerms Whether we are restricting the terms that we
    * consider in the equality engine of the model to those in relevantTerms
@@ -75,7 +75,9 @@ class TheoryEngineModelBuilder
    * as well as all shared terms.
    * @return true if the model was successfully built.
    */
-  bool buildModel(Model* m, bool usingRelevantTerms, const std::set<Node>& relevantTerms);
+  bool buildModel(Model* m,
+                  bool usingRelevantTerms,
+                  const std::set<Node>& relevantTerms);
 
   /** postprocess model
    *

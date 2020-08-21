@@ -129,7 +129,7 @@ void CombinationEngine::preRegister(TNode t, bool multipleTheories)
   }
   else
   {
-    Assert (!multipleTheories);
+    Assert(!multipleTheories);
   }
 }
 
