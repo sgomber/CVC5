@@ -105,7 +105,7 @@ class CombinationEngine
    * This method is used by TheoryEngine when it wants an explanation of a
    * propagation that was made by the shared terms database.
    */
-  virtual Node explain(TNode literal) const;
+  virtual TrustNode explain(TNode literal, TheoryId theory) const;
   /**
    * Assert equality to the shared terms database.
    *
@@ -114,10 +114,6 @@ class CombinationEngine
    * maintain this fact. This is the case when ...
    */
   virtual void assertEquality(TNode equality, bool polarity, TNode reason);
-  /**
-   * The given theory propagated the given literal. Do we need to process it?
-   */
-  virtual bool needsPropagation(TNode literal, TheoryId theory);
   //-------------------------- end interface used by theory engine
  protected:
   /** Send lemma */

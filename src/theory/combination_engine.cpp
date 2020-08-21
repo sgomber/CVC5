@@ -185,14 +185,27 @@ EqualityStatus CombinationEngine::getEqualityStatus(TNode a, TNode b)
   return d_te.theoryOf(Theory::theoryOf(a.getType()))->getEqualityStatus(a, b);
 }
 
-Node CombinationEngine::explain(TNode literal) const
+TrustNode CombinationEngine::explain(TNode literal, TheoryId theory) const
 {
-  if (d_sharedTerms == nullptr)
+  TrustNode texp;
+  if (theory== THEORY_BUILTIN)
   {
-    Unhandled() << "CombinationEngine::CombinationEngine: does not support the "
-                   "explain interface";
+    if (d_sharedTerms == nullptr)
+    {
+      Unhandled() << "CombinationEngine::CombinationEngine: does not have a shared terms database.";
+    }
+    // explain using theory combination
+    texp = d_sharedTerms->explain(literal);
+    Debug("theory::explain") << "\tTerm was propagated by THEORY_BUILTIN. Explanation: " << texp.getNode() << std::endl;
   }
-  return d_sharedTerms->explain(literal);
+  else
+  {
+    texp = d_te.theoryOf(theory)->explain(literal);
+    Debug("theory::explain") << "\tTerm was propagated by owner theory: "
+                              << theory
+                              << ". Explanation: " << texp.getNode() << std::endl;
+  }
+  return texp;
 }
 
 void CombinationEngine::assertEquality(TNode equality,
@@ -203,12 +216,6 @@ void CombinationEngine::assertEquality(TNode equality,
   {
     d_sharedTerms->assertEquality(equality, polarity, reason);
   }
-}
-
-bool CombinationEngine::needsPropagation(TNode literal, TheoryId theory)
-{
-  // by default, we always need propagation
-  return true;
 }
 
 void CombinationEngine::sendLemma(TNode node, TheoryId atomsTo)

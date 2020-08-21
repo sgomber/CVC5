@@ -1071,12 +1071,7 @@ void TheoryEngine::assertFact(TNode literal)
 
 bool TheoryEngine::propagate(TNode literal, theory::TheoryId theory) {
   Debug("theory::propagate") << "TheoryEngine::propagate(" << literal << ", " << theory << ")" << endl;
-  // check if theory combination requires propagating it
-  if (!d_tc->needsPropagation(literal, theory))
-  {
-    // nothing to do, return
-    return true;
-  }
+
 
   Trace("dtview::prop") << std::string(d_context->getLevel(), ' ')
                         << ":THEORY-PROP: " << literal << endl;
@@ -1101,6 +1096,7 @@ bool TheoryEngine::propagate(TNode literal, theory::TheoryId theory) {
       assertToTheory(literal, literal, /* to */ THEORY_SAT_SOLVER, /* from */ theory);
     }
     if (theory != THEORY_BUILTIN) {
+      // NOTE (centralEe): should not be necessary if literal is a fact that holds in central ee
       // Assert to the shared terms database
       assertToTheory(literal, literal, /* to */ THEORY_BUILTIN, /* from */ theory);
     }
@@ -1727,21 +1723,9 @@ void TheoryEngine::getExplanation(std::vector<NodeTheoryPair>& explanationVector
       }
     }
 
-    Node explanation;
-    if (toExplain.d_theory == THEORY_BUILTIN)
-    {
-      // explain using theory combination
-      explanation = d_tc->explain(toExplain.d_node);
-      Debug("theory::explain") << "\tTerm was propagated by THEORY_BUILTIN. Explanation: " << explanation << std::endl;
-    }
-    else
-    {
-      TrustNode texp = theoryOf(toExplain.d_theory)->explain(toExplain.d_node);
-      explanation = texp.getNode();
-      Debug("theory::explain") << "\tTerm was propagated by owner theory: "
-                               << theoryOf(toExplain.d_theory)->getId()
-                               << ". Explanation: " << explanation << std::endl;
-    }
+    // explain using the combination engine
+    TrustNode texp = d_tc->explain(toExplain.d_node, toExplain.d_theory);
+    Node explanation = texp.getNode();
 
     Debug("theory::explain")
         << "TheoryEngine::explain(): got explanation " << explanation

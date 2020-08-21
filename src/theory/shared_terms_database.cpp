@@ -276,13 +276,14 @@ bool SharedTermsDatabase::isKnown(TNode literal) const {
   }
 }
 
-Node SharedTermsDatabase::explain(TNode literal) const {
+TrustNode SharedTermsDatabase::explain(TNode literal) const {
   bool polarity = literal.getKind() != kind::NOT;
   TNode atom = polarity ? literal : literal[0];
   Assert(atom.getKind() == kind::EQUAL);
   std::vector<TNode> assumptions;
   d_equalityEngine->explainEquality(atom[0], atom[1], polarity, assumptions);
-  return mkAnd(assumptions);
+  Node exp = mkAnd(assumptions);
+  return TrustNode::mkTrustPropExp(literal, exp, nullptr);
 }
 
 } /* namespace CVC4 */

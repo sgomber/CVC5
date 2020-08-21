@@ -174,7 +174,7 @@ public:
   /**
    * Returns an explanation of the propagation that came from the database.
    */
-  Node explain(TNode literal) const;
+  theory::TrustNode explain(TNode literal) const;
 
   /**
    * Add an equality to propagate.
