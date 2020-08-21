@@ -1019,9 +1019,10 @@ void TheoryBV::setPendingConflict(Node conflict)
   d_pendingConflict = true;
   d_pendingConflictNode = conflict;
 }
-bool TheoryBV::inPendingConflict() { 
+bool TheoryBV::inPendingConflict()
+{
   // either we have already sent a conflict, or there is a pending conflict
-  return d_state.isInConflict() || d_pendingConflict; 
+  return d_state.isInConflict() || d_pendingConflict;
 }
 
 } /* namespace CVC4::theory::bv */
