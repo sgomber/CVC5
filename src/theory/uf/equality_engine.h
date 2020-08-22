@@ -781,6 +781,22 @@ private:
    */
   void explainPredicate(TNode p, bool polarity, std::vector<TNode>& assertions,
                         EqProof* eqp = nullptr) const;
+                        
+  //--------------------------- standard safe explanation methods
+  /**
+   * Explain literal, add its explanation to assumptions. This method does not
+   * add duplicates to assumptions. It additionally contains assertions for
+   * whether literal does hold in this class. If lit is a disequality, it
+   * moreover ensures this class is ready to explain it via areDisequal with
+   * ensureProof = true.
+   */
+  void explainLit(TNode lit, std::vector<TNode>& assumptions);
+  /** 
+   * Explain literal, return the conjunction. This method relies on the above
+   * method.
+   */
+  Node mkExplainLit(TNode lit);
+  //--------------------------- end standard safe explanation methods
 
   /**
    * Add term to the set of trigger terms with a corresponding tag. The notify class will get

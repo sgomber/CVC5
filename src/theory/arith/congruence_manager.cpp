@@ -44,6 +44,8 @@ ArithCongruenceManager::ArithCongruenceManager(
       d_avariables(avars),
       d_ee(nullptr)
 {
+  // this makes congruence manager use a separate equality engine
+  /*
   if (options::arithEqSolver())
   {
     // use our own copy
@@ -56,14 +58,16 @@ ArithCongruenceManager::ArithCongruenceManager(
     d_ee->addFunctionKind(kind::SINE);
     d_ee->addFunctionKind(kind::IAND);
   }
+  */
 }
 
 ArithCongruenceManager::~ArithCongruenceManager() {}
 
 bool ArithCongruenceManager::needsEqualityEngine(EeSetupInfo& esi)
 {
-  if (options::arithEqSolver())
+  if (d_ee != nullptr)
   {
+    // we not using the official equality engine
     return false;
   }
   esi.d_notify = &d_notify;
@@ -75,7 +79,7 @@ void ArithCongruenceManager::finishInit(eq::EqualityEngine* ee)
 {
   if (d_ee == nullptr)
   {
-    // use it if we didn't allocate it above
+    // we are responsible for notifications of the official equality engine
     Assert(ee != nullptr);
     d_ee = ee;
     d_ee->addFunctionKind(kind::NONLINEAR_MULT);
