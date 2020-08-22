@@ -329,7 +329,7 @@ public:
    * it is needed by the ArithState class to know whether we are in conflict.
    */
   bool anyConflict() const;
-  
+
   /** External notification (e.g. from ArithState) that we are in conflict */
   void notifyInConflict();
 

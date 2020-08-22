@@ -539,10 +539,7 @@ bool TheoryArithPrivate::anyConflict() const
   return !conflictQueueEmpty() || !d_blackBoxConflict.get().isNull();
 }
 
-void TheoryArithPrivate::notifyInConflict()
-{
-  d_arithStateConflict = true;
-}
+void TheoryArithPrivate::notifyInConflict() { d_arithStateConflict = true; }
 
 void TheoryArithPrivate::revertOutOfConflict(){
   d_partialModel.revertAssignmentChanges();
@@ -1993,8 +1990,8 @@ void TheoryArithPrivate::outputLemma(TNode lem) {
 
 void TheoryArithPrivate::outputConflict(TNode lit) {
   Debug("arith::channel") << "Arith conflict: " << lit << std::endl;
-  //d_containing.d_aim.conflict(lit);
-  //d_containing.d_astate.notifyInConflict();
+  // d_containing.d_aim.conflict(lit);
+  // d_containing.d_astate.notifyInConflict();
   (d_containing.d_out)->conflict(lit);
 }
 

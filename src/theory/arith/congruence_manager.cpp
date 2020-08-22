@@ -47,7 +47,8 @@ ArithCongruenceManager::ArithCongruenceManager(
   if (options::arithEqSolver())
   {
     // use our own copy
-    d_allocEe.reset(new eq::EqualityEngine(d_notify, c, "theory::arith::ArithCongruenceManager", true));
+    d_allocEe.reset(new eq::EqualityEngine(
+        d_notify, c, "theory::arith::ArithCongruenceManager", true));
     d_ee = d_allocEe.get();
     // set the congruence kinds on the separate equality engine
     d_ee->addFunctionKind(kind::NONLINEAR_MULT);
@@ -57,8 +58,7 @@ ArithCongruenceManager::ArithCongruenceManager(
   }
 }
 
-ArithCongruenceManager::~ArithCongruenceManager() {
-}
+ArithCongruenceManager::~ArithCongruenceManager() {}
 
 bool ArithCongruenceManager::needsEqualityEngine(EeSetupInfo& esi)
 {
@@ -73,7 +73,7 @@ bool ArithCongruenceManager::needsEqualityEngine(EeSetupInfo& esi)
 
 void ArithCongruenceManager::finishInit(eq::EqualityEngine* ee)
 {
-  if (d_ee==nullptr)
+  if (d_ee == nullptr)
   {
     // use it if we didn't allocate it above
     Assert(ee != nullptr);

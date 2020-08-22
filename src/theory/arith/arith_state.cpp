@@ -28,10 +28,7 @@ ArithState::ArithState(TheoryArithPrivate& parent,
 {
 }
 
-void ArithState::notifyInConflict()
-{
-  d_parent.notifyInConflict();
-}
+void ArithState::notifyInConflict() { d_parent.notifyInConflict(); }
 
 bool ArithState::isInConflict() const
 {

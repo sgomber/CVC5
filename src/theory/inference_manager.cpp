@@ -159,7 +159,8 @@ void InferManager::explain(TNode lit, std::vector<TNode>& assumptions) const
 void InferManager::assertInternalFact(TNode atom, bool pol, TNode fact)
 {
   Assert(d_ee != nullptr);
-  Trace("infer-manager") << "InferManager::assertInternalFact: " << fact << std::endl;
+  Trace("infer-manager") << "InferManager::assertInternalFact: " << fact
+                         << std::endl;
   if (atom.getKind() == kind::EQUAL)
   {
     d_ee->assertEquality(atom, pol, fact);
@@ -170,7 +171,8 @@ void InferManager::assertInternalFact(TNode atom, bool pol, TNode fact)
   }
   // call the notify fact method, where this is an internally generated fact
   d_theory.notifyFact(atom, pol, fact, true);
-  Trace("infer-manager") << "InferManager::finished assertInternalFact" << std::endl;
+  Trace("infer-manager") << "InferManager::finished assertInternalFact"
+                         << std::endl;
   // TODO: keep set for fact?
 }
 
