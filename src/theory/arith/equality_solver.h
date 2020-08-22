@@ -25,6 +25,8 @@
 namespace CVC4 {
 namespace theory {
 namespace arith {
+  
+class ArithInferManager;
 
 /**
  * The arithmetic equality solver.
@@ -35,7 +37,7 @@ class EqualitySolver
   typedef context::CDHashMap<Node, bool, NodeHashFunction> NodeMap;
 
  public:
-  EqualitySolver(ArithState& astate, InferManager& aim);
+  EqualitySolver(ArithState& astate, ArithInferManager& aim);
   ~EqualitySolver() {}
   //--------------------------------- initialization
   /**
@@ -77,7 +79,7 @@ class EqualitySolver
   class EqualitySolverNotify : public eq::EqualityEngineNotify
   {
    public:
-    EqualitySolverNotify(EqualitySolver& es, InferManager& aim)
+    EqualitySolverNotify(EqualitySolver& es, ArithInferManager& aim)
         : d_esolver(es), d_aim(aim)
     {
     }
@@ -98,12 +100,12 @@ class EqualitySolver
     /** Reference to the inference manager */
     EqualitySolver& d_esolver;
     /** reference to parent */
-    InferManager& d_aim;
+    ArithInferManager& d_aim;
   };
   /** reference to the state */
   ArithState& d_astate;
   /** reference to parent */
-  InferManager& d_aim;
+  ArithInferManager& d_aim;
   /** Equality solver notify */
   EqualitySolverNotify d_notify;
   /** Pointer to the equality engine */

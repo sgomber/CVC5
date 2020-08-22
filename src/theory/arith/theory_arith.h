@@ -140,10 +140,10 @@ class TheoryArith : public Theory {
   ArithState d_astate;
   /** The inference manager */
   InferManager d_im;
-  /** The equality solver */
-  std::unique_ptr<EqualitySolver> d_eqSolver;
   /** The arithmetic inference manager */
   ArithInferManager d_aim;
+  /** The equality solver */
+  std::unique_ptr<EqualitySolver> d_eqSolver;
 };/* class TheoryArith */
 
 }/* CVC4::theory::arith namespace */

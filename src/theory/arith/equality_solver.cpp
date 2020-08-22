@@ -15,6 +15,7 @@
 #include "theory/arith/equality_solver.h"
 
 #include "theory/arith/theory_arith.h"
+#include "theory/arith/arith_infer_manager.h"
 
 using namespace CVC4::kind;
 
@@ -22,7 +23,7 @@ namespace CVC4 {
 namespace theory {
 namespace arith {
 
-EqualitySolver::EqualitySolver(ArithState& astate, InferManager& aim)
+EqualitySolver::EqualitySolver(ArithState& astate, ArithInferManager& aim)
     : d_astate(astate),
       d_aim(aim),
       d_notify(*this, aim),
@@ -82,7 +83,7 @@ TrustNode EqualitySolver::explainLit(TNode lit)
 
 bool EqualitySolver::propagateLit(TNode lit)
 {
-#if 0
+#if 1
   return d_aim.propagateManagedLit(lit, false);
 #endif
   if (hasPropagated(lit))

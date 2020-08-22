@@ -38,9 +38,10 @@ class ArithInferManager : public InferManager
  public:
   ArithInferManager(Theory& t,
                     TheoryState& state,
-                    TheoryArithPrivate& p,
-                    EqualitySolver* es);
+                    TheoryArithPrivate& p);
   ~ArithInferManager() {}
+  /** Set equality solver */
+  void setEqualitySolver(EqualitySolver* es);
   /**
    * Return an explanation for the literal represented by parameter n
    * (which was previously propagated by this theory).

@@ -45,16 +45,21 @@ TheoryArith::TheoryArith(context::Context* c,
       d_proofRecorder(nullptr),
       d_astate(*d_internal, c, u, valuation),
       d_im(*this, d_astate),
-      d_eqSolver(options::arithEqSolver() ? new EqualitySolver(d_astate, d_im)
-                                          : nullptr),
-      d_aim(*this, d_astate, *d_internal, d_eqSolver.get())
+      d_aim(*this, d_astate, *d_internal),
+      d_eqSolver(nullptr)
 {
   smtStatisticsRegistry()->registerStat(&d_ppRewriteTimer);
 
   // indicate we are using the theory state object and inference manager
   d_theoryState = &d_astate;
-  d_inferManager = &d_im;
-  //d_inferManager = &d_aim;
+  //d_inferManager = &d_im;
+  d_inferManager = &d_aim;
+  
+  if (options::arithEqSolver())
+  {
+    d_eqSolver.reset(new EqualitySolver(d_astate, d_aim));
+    d_aim.setEqualitySolver(d_eqSolver.get());
+  }
 }
 
 TheoryArith::~TheoryArith(){
@@ -156,8 +161,8 @@ bool TheoryArith::needsCheckLastEffort() {
 
 TrustNode TheoryArith::explain(TNode n)
 {
-#if 0
-  return d_aim.explain(n);
+#if 1
+  return d_aim.explainLit(n);
 #endif
   if (d_eqSolver != nullptr)
   {
@@ -225,8 +230,9 @@ void TheoryArith::lemmaPrivate(TNode lem) { d_out->lemma(lem); }
 
 void TheoryArith::propagatePrivateLit(TNode literal)
 {
-#if 0
-  return d_aim.propagateManagedLit(literal, true);
+#if 1
+  d_aim.propagateManagedLit(literal, true);
+  return;
 #endif
   if (d_eqSolver != nullptr)
   {

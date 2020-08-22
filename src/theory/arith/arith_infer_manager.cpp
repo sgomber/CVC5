@@ -23,13 +23,17 @@ namespace arith {
 
 ArithInferManager::ArithInferManager(Theory& t,
                                      TheoryState& state,
-                                     TheoryArithPrivate& p,
-                                     EqualitySolver* es)
+                                     TheoryArithPrivate& p)
     : InferManager(t, state),
       d_private(p),
-      d_esolver(es),
+      d_esolver(nullptr),
       d_propagationMap(state.getSatContext())
 {
+}
+
+void ArithInferManager::setEqualitySolver(EqualitySolver* es)
+{
+  d_esolver = es;
 }
 
 TrustNode ArithInferManager::explainLit(TNode lit)
@@ -40,7 +44,7 @@ TrustNode ArithInferManager::explainLit(TNode lit)
   {
     NodeMap::const_iterator it = d_propagationMap.find(lit);
     Assert(it != d_propagationMap.end());
-    if ((*it).second)
+    if (!(*it).second)
     {
       // explain using the official equality engine (the default behavior of
       // this class).
