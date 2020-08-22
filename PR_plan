@@ -17,6 +17,8 @@ PR current:
 (4) Merge build model passes *
 (7) Model manager / model manager distributed (req 6, 10) *
 (9) Standardize Theory templates (req 21) *
+(24) Shared solver / shared solver distributed
+(26) equality engine interface basic extension
 
 PR planned:
 
@@ -28,4 +30,4 @@ PR planned:
 (15) activate theory templates
 (16) Model manager central (req 7)
 (19) per each theory, update to standard templates (req 9)
-(23) equality engine manager interface for theory engine
+(23) term database
