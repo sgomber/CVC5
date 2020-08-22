@@ -83,37 +83,6 @@ class EqEngineManager
    * is central.
    */
   virtual eq::EqualityEngine* getCoreEqualityEngine() = 0;
-
-  //---------------------------- interaction with CombinationEngine
-  /**
-   * Called when the given term t is pre-registered in TheoryEngine.
-   */
-  virtual void preRegisterShared(TNode t);
-  /**
-   * Get the equality status of a and b.
-   *
-   * This method is used by theories during solving ...
-   */
-  virtual EqualityStatus getEqualityStatus(TNode a, TNode b) = 0;
-  /**
-   * Explain literal, which returns a conjunction of literals that that entail
-   * the given one.
-   *
-   * This method is used by TheoryEngine when it wants an explanation of a
-   * propagation that was made by the shared terms database.
-   */
-  virtual TrustNode explainShared(TNode literal) const = 0;
-  /**
-   * Assert equality to the shared terms database.
-   *
-   * This method is called by TheoryEngine when a fact has been marked to
-   * send to THEORY_BUILTIN, meaning that shared terms database should
-   * maintain this fact. This is the case when ...
-   */
-  virtual void assertSharedEquality(TNode equality,
-                                    bool polarity,
-                                    TNode reason) = 0;
-  //---------------------------- end interaction with CombinationEngine
  protected:
   /** Information related to the equality engine, per theory. */
   std::map<TheoryId, EeTheoryInfo> d_einfo;
