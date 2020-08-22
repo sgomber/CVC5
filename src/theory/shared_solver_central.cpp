@@ -12,7 +12,7 @@
  ** \brief Shared solver in the centralized architecture.
  **/
 
-#include "theory/ee_manager_central.h"
+#include "theory/shared_solver_central.h"
 
 #include "theory/quantifiers_engine.h"
 #include "theory/shared_terms_database.h"
@@ -26,15 +26,13 @@ SharedSolverCentral::SharedSolverCentral(TheoryEngine& te)
 {
 }
 
-SharedSolverCentral::~SharedSolverCentral() {}
-
-bool SharedSolverDistributed::needsEqualityEngine(theory::EeSetupInfo& esi)
+bool SharedSolverCentral::needsEqualityEngine(theory::EeSetupInfo& esi)
 {
   // need an equality engine but don't need notifications
   return true;
 }
 
-void SharedSolverDistributed::setEqualityEngine(eq::EqualityEngine* ee)
+void SharedSolverCentral::setEqualityEngine(eq::EqualityEngine* ee)
 {
   d_centralEe = ee;
 }
@@ -59,7 +57,7 @@ EqualityStatus SharedSolverCentral::getEqualityStatus(TNode a, TNode b)
   return EQUALITY_UNKNOWN;
 }
 
-TrustNode SharedSolverCentral::explainShared(TNode literal) const
+TrustNode SharedSolverCentral::explainShared(TNode literal)
 {
   Node exp = d_centralEe->mkExplainLit(literal);
   return TrustNode::mkTrustPropExp(literal, exp, nullptr);

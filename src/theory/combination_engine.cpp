@@ -70,7 +70,9 @@ void CombinationEngine::finishInit()
   }
 
   Assert(d_eemUse != nullptr);
+  
   // initialize equality engines in all theories, including quantifiers engine
+  // and the (provided) shared solver
   d_eemUse->initializeTheories(d_ssUse.get());
 
   Assert(d_mmUse != nullptr);

@@ -95,7 +95,8 @@ class SharedSolver
   virtual void assertSharedEquality(TNode equality,
                                     bool polarity,
                                     TNode reason);
-
+  /** Is term t a shared term? */
+  virtual bool isShared(Term t) const;
  protected:
   /**
    * Explain literal, which returns a conjunction of literals that that entail

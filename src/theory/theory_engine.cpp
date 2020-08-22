@@ -41,7 +41,7 @@
 #include "theory/arith/arith_ite_utils.h"
 #include "theory/bv/theory_bv_utils.h"
 #include "theory/care_graph.h"
-#include "theory/combination_engine.h"
+#include "theory/combination_care_graph.h"
 #include "theory/decision_manager.h"
 #include "theory/shared_solver.h"
 #include "theory/quantifiers/first_order_model.h"
@@ -338,10 +338,10 @@ void TheoryEngine::preRegister(TNode preprocessed) {
       }
 #endif
 
-      // pre-register with the theory combination module, which also handles
+      // pre-register with the shared solver, which also handles
       // calling prepregister on individual theories.
-      Assert(d_tc != nullptr);
-      d_tc->preRegisterShared(preprocessed, multipleTheories);
+      Assert(d_sharedSolver != nullptr);
+      d_sharedSolver->preRegisterShared(preprocessed, multipleTheories);
     }
 
     // Leaving pre-register
@@ -970,8 +970,8 @@ void TheoryEngine::assertToTheory(TNode assertion, TNode originalAssertion, theo
     Assert(atom.getKind() == kind::EQUAL)
         << "atom should be an EQUALity, not `" << atom << "'";
     if (markPropagation(assertion, originalAssertion, toTheoryId, fromTheoryId)) {
-      // assert to theory combination
-      d_tc->assertSharedEquality(atom, polarity, assertion);
+      // assert to the shared solver
+      d_sharedSolver->assertSharedEquality(atom, polarity, assertion);
     }
     return;
   }
@@ -1060,7 +1060,7 @@ void TheoryEngine::assertFact(TNode literal)
 
   if (d_logicInfo.isSharingEnabled()) {
     // If any shared terms, it's time to do sharing work
-    d_tc->preNotifySharedFact(atom);
+    d_sharedSolver->preNotifySharedFact(atom);
 
     // If it's an equality, assert it to the shared term manager, even though the terms are not
     // yet shared. As the terms become shared later, the shared terms manager will then add them
@@ -1155,7 +1155,7 @@ const LogicInfo& TheoryEngine::getLogicInfo() const { return d_logicInfo; }
 
 theory::EqualityStatus TheoryEngine::getEqualityStatus(TNode a, TNode b) {
   Assert(a.getType().isComparableTo(b.getType()));
-  return d_tc->getEqualityStatus(a, b);
+  return d_sharedSolver->getEqualityStatus(a, b);
 }
 
 Node TheoryEngine::getModelValue(TNode var) {
@@ -1756,7 +1756,7 @@ void TheoryEngine::getExplanation(std::vector<NodeTheoryPair>& explanationVector
     }
 
     // explain using the combination engine
-    TrustNode texp = d_tc->explain(toExplain.d_node, toExplain.d_theory);
+    TrustNode texp = d_sharedSolver->explain(toExplain.d_node, toExplain.d_theory);
     Node explanation = texp.getNode();
 
     Debug("theory::explain")
