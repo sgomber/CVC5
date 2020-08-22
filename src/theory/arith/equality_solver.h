@@ -31,6 +31,7 @@ namespace arith {
 class EqualitySolver
 {
   typedef context::CDHashSet<Node, NodeHashFunction> NodeSet;
+
  public:
   EqualitySolver(ArithState& astate, InferManager& aim);
   ~EqualitySolver() {}
@@ -61,6 +62,7 @@ class EqualitySolver
    * returns false if we are in conflict.
    */
   bool propagateLit(TNode lit);
+
  private:
   class EqualitySolverNotify : public eq::EqualityEngineNotify
   {

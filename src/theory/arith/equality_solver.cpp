@@ -23,7 +23,11 @@ namespace theory {
 namespace arith {
 
 EqualitySolver::EqualitySolver(ArithState& astate, InferManager& aim)
-    : d_astate(astate), d_aim(aim), d_notify(aim), d_ee(nullptr), d_propLits(astate.getSatContext())
+    : d_astate(astate),
+      d_aim(aim),
+      d_notify(aim),
+      d_ee(nullptr),
+      d_propLits(astate.getSatContext())
 {
 }
 
@@ -44,7 +48,7 @@ bool EqualitySolver::preNotifyFact(TNode atom, bool pol, TNode fact)
 TrustNode EqualitySolver::explainLit(TNode lit)
 {
   // if we propagated this, we explain it
-  if (d_propLits.find(lit)!=d_propLits.end())
+  if (d_propLits.find(lit) != d_propLits.end())
   {
     return d_aim.explainLit(lit);
   }
@@ -53,7 +57,7 @@ TrustNode EqualitySolver::explainLit(TNode lit)
 
 bool EqualitySolver::propagateLit(TNode lit)
 {
-  Assert (d_propLits.find(lit)==d_propLits.end());
+  Assert(d_propLits.find(lit) == d_propLits.end());
   d_propLits.insert(lit);
   return d_aim.propagateLit(lit);
 }

@@ -151,7 +151,7 @@ bool TheoryArith::needsCheckLastEffort() {
 
 TrustNode TheoryArith::explain(TNode n)
 {
-  if (d_eqSolver!=nullptr)
+  if (d_eqSolver != nullptr)
   {
     TrustNode teqExp = d_eqSolver->explain(n);
     if (!teqExp.isNull())
