@@ -178,9 +178,6 @@ void TheoryEngine::finishInit() {
   // equality engines to use for all theories.
   d_tc->finishInit();
 
-  // Initialize the model
-  d_eeDistributed->initializeModel(d_curr_model);
-
   // set the core equality engine on quantifiers engine
   if (d_logicInfo.isQuantified())
   {
