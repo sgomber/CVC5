@@ -159,8 +159,6 @@ void TheoryEngine::finishInit() {
     AlwaysAssert(false) << "TheoryEngine::finishInit: theory combination mode "
                         << options::tcMode() << " not supported";
   }
-  // get pointer to the shared solver
-  d_sharedSolver = d_tc->getSharedSolver();
   // create the relevance filter if any option requires it
   if (options::relevanceFilter())
   {
@@ -177,6 +175,8 @@ void TheoryEngine::finishInit() {
   // initialize the theory combination manager, which decides and allocates the
   // equality engines to use for all theories.
   d_tc->finishInit();
+  // get pointer to the shared solver
+  d_sharedSolver = d_tc->getSharedSolver();
 
   // set the core equality engine on quantifiers engine
   if (d_logicInfo.isQuantified())
