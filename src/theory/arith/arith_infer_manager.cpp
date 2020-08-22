@@ -42,8 +42,10 @@ TrustNode ArithInferManager::explainLit(TNode lit)
     Assert(it != d_propagationMap.end());
     if ((*it).second)
     {
-      // explain using the equality solver
-      return d_esolver->explainLit(lit);
+      // explain using the official equality engine (the default behavior of
+      // this class).
+      Node exp = mkExplain(lit);
+      return TrustNode::mkTrustPropExp(lit, exp, nullptr);
     }
   }
   // otherwise we explain with the private solver

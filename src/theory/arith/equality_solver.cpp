@@ -82,6 +82,9 @@ TrustNode EqualitySolver::explainLit(TNode lit)
 
 bool EqualitySolver::propagateLit(TNode lit)
 {
+#if 0
+  return d_aim.propagateManagedLit(lit, false);
+#endif
   if (hasPropagated(lit))
   {
     // already propagated

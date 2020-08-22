@@ -54,6 +54,7 @@ TheoryArith::TheoryArith(context::Context* c,
   // indicate we are using the theory state object and inference manager
   d_theoryState = &d_astate;
   d_inferManager = &d_im;
+  //d_inferManager = &d_aim;
 }
 
 TheoryArith::~TheoryArith(){
