@@ -141,7 +141,7 @@ bool TheoryArith::preNotifyFact(TNode atom, bool pol, TNode fact, bool isPrereg)
 
 void TheoryArith::notifyFact(TNode atom, bool pol, TNode fact, bool isInternal)
 {
-  Assert (d_eqSolver!=nullptr);
+  Assert(d_eqSolver != nullptr);
   d_eqSolver->notifyFact(atom, pol, fact, isInternal);
 }
 
