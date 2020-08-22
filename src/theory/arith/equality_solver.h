@@ -17,10 +17,10 @@
 #ifndef CVC4__THEORY__ARITH__EQUALITY_SOLVER_H
 #define CVC4__THEORY__ARITH__EQUALITY_SOLVER_H
 
+#include "context/cdhashmap.h"
 #include "expr/node.h"
 #include "theory/arith/arith_state.h"
 #include "theory/uf/equality_engine.h"
-#include "context/cdhashmap.h"
 
 namespace CVC4 {
 namespace theory {
@@ -33,6 +33,7 @@ class EqualitySolver
 {
   /** Are we responsible for this propagation? */
   typedef context::CDHashMap<Node, bool, NodeHashFunction> NodeMap;
+
  public:
   EqualitySolver(ArithState& astate, InferManager& aim);
   ~EqualitySolver() {}
@@ -67,10 +68,11 @@ class EqualitySolver
    * Has propagated (anyone) propagated lit?
    */
   bool hasPropagated(TNode lit) const;
-  /** 
+  /**
    * Notify that (another module) propagated lit
    */
   void notifyPropagated(TNode lit);
+
  private:
   class EqualitySolverNotify : public eq::EqualityEngineNotify
   {

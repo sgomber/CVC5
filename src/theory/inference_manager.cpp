@@ -133,7 +133,7 @@ void InferManager::explain(TNode lit, std::vector<TNode>& assumptions) const
   if (atom.getKind() == EQUAL)
   {
     Assert(d_ee->hasTerm(atom[0]));
-    Assert(d_ee->hasTerm(atom[1]));    
+    Assert(d_ee->hasTerm(atom[1]));
     if (!polarity)
     {
       // ensure that we are ready to explain the disequality

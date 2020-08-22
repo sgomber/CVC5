@@ -48,6 +48,7 @@ class ArithState : public TheoryState
   bool isInConflict() const override;
   /** debug print */
   std::string toString();
+
  private:
   /** reference to parent */
   TheoryArithPrivate& d_parent;

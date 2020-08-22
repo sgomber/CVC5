@@ -109,8 +109,9 @@ public:
 
   bool canExplain(TNode n) const;
 
-  eq::EqualityEngine * getEqualityEngine() { return d_ee; }
-private:
+  eq::EqualityEngine* getEqualityEngine() { return d_ee; }
+
+ private:
   Node externalToInternal(TNode n) const;
 
   void pushBack(TNode n);

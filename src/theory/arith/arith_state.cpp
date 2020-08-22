@@ -38,7 +38,8 @@ bool ArithState::isInConflict() const
 std::string ArithState::toString()
 {
   std::stringstream ss;
-  ss << "ArithState(parentConflict = " << d_parent.anyConflict() << ", conflict=" << d_conflict << ")";
+  ss << "ArithState(parentConflict = " << d_parent.anyConflict()
+     << ", conflict=" << d_conflict << ")";
   return ss.str();
 }
 

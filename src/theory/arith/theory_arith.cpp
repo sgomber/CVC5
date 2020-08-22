@@ -221,12 +221,9 @@ std::pair<bool, Node> TheoryArith::entailmentCheck(TNode lit)
   return res;
 }
 
-void TheoryArith::lemmaPrivate(TNode lem)
-{
-  d_out->lemma(lem);
-}
+void TheoryArith::lemmaPrivate(TNode lem) { d_out->lemma(lem); }
 
-void TheoryArith::propagatePrivateLit(TNode literal) 
+void TheoryArith::propagatePrivateLit(TNode literal)
 {
   if (d_eqSolver != nullptr)
   {
@@ -240,10 +237,7 @@ void TheoryArith::propagatePrivateLit(TNode literal)
   d_out->propagate(literal);
 }
 
-void TheoryArith::conflictPrivate(TNode conf)
-{
-  d_out->conflict(conf);
-}
+void TheoryArith::conflictPrivate(TNode conf) { d_out->conflict(conf); }
 
 }/* CVC4::theory::arith namespace */
 }/* CVC4::theory namespace */

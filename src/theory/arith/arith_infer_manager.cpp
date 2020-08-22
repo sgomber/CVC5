@@ -17,19 +17,23 @@
 #include "theory/arith/equality_solver.h"
 #include "theory/arith/theory_arith_private.h"
 
-
-ArithInferManager::ArithInferManager(Theory& t, TheoryArithPrivate& p, EqualitySolver * es) : InferManager(t), d_private(p), d_esolver(es), d_propagationMap(d_state.getSatContext())
+ArithInferManager::ArithInferManager(Theory& t,
+                                     TheoryArithPrivate& p,
+                                     EqualitySolver* es)
+    : InferManager(t),
+      d_private(p),
+      d_esolver(es),
+      d_propagationMap(d_state.getSatContext())
 {
-  
 }
 
 TrustNode ArithInferManager::explainLit(TNode lit)
 {
   bool useEqualitySolver = false;
-  if (d_eqSolver!=nullptr)
+  if (d_eqSolver != nullptr)
   {
     NodeMap::const_iterator it = d_propagationMap.find(lit);
-    Assert (it!=d_propagationMap.end());
+    Assert(it != d_propagationMap.end());
     if ((*it).second)
     {
       // explain using the equality solver
@@ -43,13 +47,12 @@ TrustNode ArithInferManager::explainLit(TNode lit)
 
 bool ArithInferManager::propagateManagedLit(TNode lit, bool fromPrivate)
 {
-  if (d_eqSolver!=nullptr)
+  if (d_eqSolver != nullptr)
   {
     d_propagationMap[lit] = fromPrivate;
   }
   return propagateLit(lit);
 }
-
 
 }  // namespace arith
 }  // namespace theory

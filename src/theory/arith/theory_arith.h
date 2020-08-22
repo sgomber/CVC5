@@ -19,8 +19,8 @@
 
 #include "expr/node.h"
 #include "proof/arith_proof_recorder.h"
-#include "theory/arith/arith_state.h"
 #include "theory/arith/arith_infer_manager.h"
+#include "theory/arith/arith_state.h"
 #include "theory/arith/equality_solver.h"
 #include "theory/arith/theory_arith_private_forward.h"
 #include "theory/theory.h"

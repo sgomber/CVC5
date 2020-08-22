@@ -1996,7 +1996,7 @@ void TheoryArithPrivate::outputConflict(TNode lit) {
 
 void TheoryArithPrivate::outputPropagate(TNode lit) {
   Debug("arith::channel") << "Arith propagation: " << lit << std::endl;
-  // call the propagate lit method of the 
+  // call the propagate lit method of the
   d_containing.propagatePrivateLit(lit);
 }
 

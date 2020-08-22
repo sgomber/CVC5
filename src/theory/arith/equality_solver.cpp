@@ -69,7 +69,8 @@ TrustNode EqualitySolver::explainLit(TNode lit)
   NodeMap::const_iterator it = d_propLits.find(lit);
   if (it != d_propLits.end() && (*it).second)
   {
-    Trace("arith-eq-solver") << "EqualitySolver::explainLit: " << d_astate.toString() << std::endl;
+    Trace("arith-eq-solver")
+        << "EqualitySolver::explainLit: " << d_astate.toString() << std::endl;
     TrustNode texp = d_aim.explainLit(lit);
 
     Trace("arith-eq-solver") << "EqualitySolver::explainLit: " << lit
@@ -86,10 +87,12 @@ bool EqualitySolver::propagateLit(TNode lit)
     // already propagated
     return true;
   }
-  Trace("arith-eq-solver") << "EqualitySolver::propagateLit: " << lit << " in " << d_astate.toString() << std::endl;
+  Trace("arith-eq-solver") << "EqualitySolver::propagateLit: " << lit << " in "
+                           << d_astate.toString() << std::endl;
   d_propLits[lit] = true;
   bool ret = d_aim.propagateLit(lit);
-  Trace("arith-eq-solver") << "...return " << ret << ", state is now " << d_astate.toString() << std::endl;
+  Trace("arith-eq-solver") << "...return " << ret << ", state is now "
+                           << d_astate.toString() << std::endl;
   return ret;
 }
 
@@ -98,10 +101,7 @@ bool EqualitySolver::hasPropagated(TNode lit) const
   return d_propLits.find(lit) != d_propLits.end();
 }
 
-void EqualitySolver::notifyPropagated(TNode lit)
-{
-  d_propLits[lit] = false;
-}
+void EqualitySolver::notifyPropagated(TNode lit) { d_propLits[lit] = false; }
 
 void EqualitySolver::notifyFact(TNode atom,
                                 bool pol,
@@ -109,10 +109,10 @@ void EqualitySolver::notifyFact(TNode atom,
                                 bool isInternal)
 {
   // do nothing for now, but we could be more aggressive
-    Trace("arith-eq-solver")
-        << "EqualitySolver::notifyFact: " << fact << std::endl;
-    Trace("arith-eq-solver")
-        << "(in state " << d_astate.toString() << ")" << std::endl;
+  Trace("arith-eq-solver") << "EqualitySolver::notifyFact: " << fact
+                           << std::endl;
+  Trace("arith-eq-solver") << "(in state " << d_astate.toString() << ")"
+                           << std::endl;
 }
 
 bool EqualitySolver::EqualitySolverNotify::eqNotifyTriggerPredicate(
