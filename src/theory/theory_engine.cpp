@@ -41,10 +41,9 @@
 #include "theory/arith/arith_ite_utils.h"
 #include "theory/bv/theory_bv_utils.h"
 #include "theory/care_graph.h"
-#include "theory/combination_care_graph.h"
+#include "theory/combination_engine.h"
 #include "theory/decision_manager.h"
-#include "theory/ee_manager_distributed.h"
-#include "theory/model_manager_distributed.h"
+#include "theory/shared_solver.h"
 #include "theory/quantifiers/first_order_model.h"
 #include "theory/quantifiers/fmf/model_engine.h"
 #include "theory/quantifiers/theory_quantifiers.h"
@@ -533,7 +532,6 @@ void TheoryEngine::check(Theory::Effort effort) {
       if (Trace.isOn("theory::assertions-model")) {
         printAssertions("theory::assertions-model");
       }
-      Assert(builder != nullptr);
       // reset the model in the combination engine
       d_tc->resetModel();
       //checks for theories requiring the model go at last call

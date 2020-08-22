@@ -36,7 +36,8 @@ CombinationEngine::CombinationEngine(TheoryEngine& te,
       d_paraTheories(paraTheories),
       d_paraSet(0),
       d_eemUse(nullptr),
-      d_mmUse(nullptr) d_ssUse(nullptr)
+      d_mmUse(nullptr),
+      d_ssUse(nullptr)
 {
 }
 
