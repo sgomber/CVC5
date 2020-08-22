@@ -52,7 +52,7 @@ TheoryArith::TheoryArith(context::Context* c,
   // indicate we are using the theory state object and inference manager
   d_theoryState = &d_astate;
   d_inferManager = &d_aim;
-  
+
   if (options::arithEqSolver())
   {
     d_eqSolver.reset(new EqualitySolver(d_astate, d_aim));
@@ -157,10 +157,7 @@ bool TheoryArith::needsCheckLastEffort() {
   return d_internal->needsCheckLastEffort();
 }
 
-TrustNode TheoryArith::explain(TNode n)
-{
-  return d_aim.explainLit(n);
-}
+TrustNode TheoryArith::explain(TNode n) { return d_aim.explainLit(n); }
 
 bool TheoryArith::getCurrentSubstitution( int effort, std::vector< Node >& vars, std::vector< Node >& subs, std::map< Node, std::vector< Node > >& exp ) {
   return d_internal->getCurrentSubstitution( effort, vars, subs, exp );

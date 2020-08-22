@@ -14,8 +14,8 @@
 
 #include "theory/arith/equality_solver.h"
 
-#include "theory/arith/theory_arith.h"
 #include "theory/arith/arith_infer_manager.h"
+#include "theory/arith/theory_arith.h"
 
 using namespace CVC4::kind;
 
@@ -24,10 +24,7 @@ namespace theory {
 namespace arith {
 
 EqualitySolver::EqualitySolver(ArithState& astate, ArithInferManager& aim)
-    : d_astate(astate),
-      d_aim(aim),
-      d_notify(aim),
-      d_ee(nullptr)
+    : d_astate(astate), d_aim(aim), d_notify(aim), d_ee(nullptr)
 {
 }
 

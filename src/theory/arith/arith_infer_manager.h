@@ -36,9 +36,7 @@ class ArithInferManager : public InferManager
   typedef context::CDHashMap<Node, bool, NodeHashFunction> NodeMap;
 
  public:
-  ArithInferManager(Theory& t,
-                    TheoryState& state,
-                    TheoryArithPrivate& p);
+  ArithInferManager(Theory& t, TheoryState& state, TheoryArithPrivate& p);
   ~ArithInferManager() {}
   /** Set equality solver */
   void setEqualitySolver(EqualitySolver* es);

@@ -25,7 +25,7 @@
 namespace CVC4 {
 namespace theory {
 namespace arith {
-  
+
 class ArithInferManager;
 
 /**
@@ -57,10 +57,7 @@ class EqualitySolver
   class EqualitySolverNotify : public eq::EqualityEngineNotify
   {
    public:
-    EqualitySolverNotify(ArithInferManager& aim)
-        : d_aim(aim)
-    {
-    }
+    EqualitySolverNotify(ArithInferManager& aim) : d_aim(aim) {}
 
     bool eqNotifyTriggerPredicate(TNode predicate, bool value) override;
 
