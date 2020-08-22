@@ -32,7 +32,7 @@ class SharedSolverDistributed : public SharedSolver
   SharedSolverDistributed(TheoryEngine& te);
   virtual ~SharedSolverDistributed() {}
   /** Set equality engine in the shared terms database */
-  void setEqualityEngine(eq::EqualityEngine * ee) override;
+  void setEqualityEngine(eq::EqualityEngine* ee) override;
   /** Assert equality to the shared terms database. */
   void assertSharedEquality(TNode equality,
                             bool polarity,
@@ -43,6 +43,7 @@ class SharedSolverDistributed : public SharedSolver
   EqualityStatus getEqualityStatus(TNode a, TNode b) override;
   /** Explain literal that was propagated using shared terms database */
   TrustNode explainShared(TNode literal) override;
+
  protected:
   /** If t is an equality, add it as one that may be propagated */
   void preRegisterSharedInternal(TNode t) override;

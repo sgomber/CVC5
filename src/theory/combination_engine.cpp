@@ -20,10 +20,10 @@
 #include "theory/ee_manager_distributed.h"
 #include "theory/model_manager_central.h"
 #include "theory/model_manager_distributed.h"
+#include "theory/shared_solver_distributed.h"
 #include "theory/shared_terms_database.h"
 #include "theory/term_registration_visitor.h"
 #include "theory/theory_engine.h"
-#include "theory/shared_solver_distributed.h"
 //#include "theory/shared_solver_central.h"
 
 namespace CVC4 {
@@ -117,10 +117,7 @@ theory::TheoryModel* CombinationEngine::getModel()
   return d_mmUse->getModel();
 }
 
-SharedSolver * CombinationEngine::getSharedSolver()
-{
-  return d_ssUse.get();
-}
+SharedSolver* CombinationEngine::getSharedSolver() { return d_ssUse.get(); }
 
 void CombinationEngine::preRegisterShared(TNode t, bool multipleTheories)
 {

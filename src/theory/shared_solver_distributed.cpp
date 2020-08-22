@@ -22,7 +22,7 @@ SharedSolverDistributed::SharedSolverDistributed(TheoryEngine& te)
 {
 }
 
-void SharedSolverDistributed::setEqualityEngine(eq::EqualityEngine * ee)
+void SharedSolverDistributed::setEqualityEngine(eq::EqualityEngine* ee)
 {
   d_sharedTerms.setEqualityEngine(ee);
 }

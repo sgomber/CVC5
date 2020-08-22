@@ -149,7 +149,7 @@ class TheoryEngine {
   /** The combination manager we are using */
   std::unique_ptr<theory::CombinationEngine> d_tc;
   /** The shared solver of the above combination engine. */
-  theory::SharedSolver * d_sharedSolver;
+  theory::SharedSolver* d_sharedSolver;
   /**
    * The quantifiers engine
    */

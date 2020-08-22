@@ -14,8 +14,8 @@
 
 #include "theory/shared_solver.h"
 
-#include "theory/theory_engine.h"
 #include "expr/node_visitor.h"
+#include "theory/theory_engine.h"
 
 namespace CVC4 {
 namespace theory {
@@ -57,8 +57,7 @@ void SharedSolver::preNotifySharedFact(TNode atom)
     // Always notify the theories the shared terms, which is independent of
     // the architecture currently.
     SharedTermsDatabase::shared_terms_iterator it = d_sharedTerms.begin(atom);
-    SharedTermsDatabase::shared_terms_iterator it_end =
-        d_sharedTerms.end(atom);
+    SharedTermsDatabase::shared_terms_iterator it_end = d_sharedTerms.end(atom);
     for (; it != it_end; ++it)
     {
       TNode term = *it;
@@ -107,7 +106,8 @@ TrustNode SharedSolver::explain(TNode literal, TheoryId id)
 
 TrustNode SharedSolver::explainShared(TNode literal)
 {
-  Unimplemented() << "SharedSolver does not implement the explainShared interface!";
+  Unimplemented()
+      << "SharedSolver does not implement the explainShared interface!";
 }
 
 void SharedSolver::assertSharedEquality(TNode equality,

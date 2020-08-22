@@ -44,7 +44,7 @@ class SharedSolver
   /**
    * Set the equality engine.
    */
-  virtual void setEqualityEngine(eq::EqualityEngine * ee) = 0;
+  virtual void setEqualityEngine(eq::EqualityEngine* ee) = 0;
   /**
    * Called when the given term t is pre-registered in TheoryEngine.
    *
