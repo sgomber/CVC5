@@ -22,6 +22,7 @@
 
 #include "theory/ee_manager.h"
 #include "theory/model_manager.h"
+#include "theory/shared_solver.h"
 
 namespace CVC4 {
 
@@ -132,6 +133,8 @@ class CombinationEngine
   std::unique_ptr<EqEngineManager> d_eemUse;
   /** The model manager we are using */
   std::unique_ptr<ModelManager> d_mmUse;
+  /** The shared solver */
+  std::unique_ptr<SharedSolver> d_ssolver;
   /** The database of shared terms.*/
   std::unique_ptr<SharedTermsDatabase> d_sharedTerms;
   /** Visitor for collecting shared terms */

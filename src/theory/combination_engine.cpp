@@ -23,6 +23,8 @@
 #include "theory/shared_terms_database.h"
 #include "theory/term_registration_visitor.h"
 #include "theory/theory_engine.h"
+#include "theory/shared_solver_distributed.h"
+#include "theory/shared_solver_central.h"
 
 namespace CVC4 {
 namespace theory {
