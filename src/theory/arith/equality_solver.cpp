@@ -26,9 +26,8 @@ namespace arith {
 EqualitySolver::EqualitySolver(ArithState& astate, ArithInferManager& aim)
     : d_astate(astate),
       d_aim(aim),
-      d_notify(*this, aim),
-      d_ee(nullptr),
-      d_propLits(astate.getSatContext())
+      d_notify(aim),
+      d_ee(nullptr)
 {
 }
 
@@ -64,49 +63,6 @@ bool EqualitySolver::preNotifyFact(TNode atom, bool pol, TNode fact)
   return true;
 }
 
-TrustNode EqualitySolver::explainLit(TNode lit)
-{
-  // if we propagated this, we explain it
-  NodeMap::const_iterator it = d_propLits.find(lit);
-  if (it != d_propLits.end() && (*it).second)
-  {
-    Trace("arith-eq-solver")
-        << "EqualitySolver::explainLit: " << d_astate.toString() << std::endl;
-    TrustNode texp = d_aim.explainLit(lit);
-
-    Trace("arith-eq-solver") << "EqualitySolver::explainLit: " << lit
-                             << " returned " << texp.getNode() << std::endl;
-    return texp;
-  }
-  return TrustNode::null();
-}
-
-bool EqualitySolver::propagateLit(TNode lit)
-{
-#if 1
-  return d_aim.propagateManagedLit(lit, false);
-#endif
-  if (hasPropagated(lit))
-  {
-    // already propagated
-    return true;
-  }
-  Trace("arith-eq-solver") << "EqualitySolver::propagateLit: " << lit << " in "
-                           << d_astate.toString() << std::endl;
-  d_propLits[lit] = true;
-  bool ret = d_aim.propagateLit(lit);
-  Trace("arith-eq-solver") << "...return " << ret << ", state is now "
-                           << d_astate.toString() << std::endl;
-  return ret;
-}
-
-bool EqualitySolver::hasPropagated(TNode lit) const
-{
-  return d_propLits.find(lit) != d_propLits.end();
-}
-
-void EqualitySolver::notifyPropagated(TNode lit) { d_propLits[lit] = false; }
-
 void EqualitySolver::notifyFact(TNode atom,
                                 bool pol,
                                 TNode fact,
@@ -126,9 +82,9 @@ bool EqualitySolver::EqualitySolverNotify::eqNotifyTriggerPredicate(
                            << value << std::endl;
   if (value)
   {
-    return d_esolver.propagateLit(predicate);
+    return d_aim.propagateManagedLit(predicate, false);
   }
-  return d_esolver.propagateLit(predicate.notNode());
+  return d_aim.propagateManagedLit(predicate.notNode(), false);
 }
 
 bool EqualitySolver::EqualitySolverNotify::eqNotifyTriggerTermEquality(
@@ -138,9 +94,9 @@ bool EqualitySolver::EqualitySolverNotify::eqNotifyTriggerTermEquality(
                            << " -> " << value << std::endl;
   if (value)
   {
-    return d_esolver.propagateLit(t1.eqNode(t2));
+    return d_aim.propagateManagedLit(t1.eqNode(t2), false);
   }
-  return d_esolver.propagateLit(t1.eqNode(t2).notNode());
+  return d_aim.propagateManagedLit(t1.eqNode(t2).notNode(), false);
 }
 
 void EqualitySolver::EqualitySolverNotify::eqNotifyConstantTermMerge(TNode t1,

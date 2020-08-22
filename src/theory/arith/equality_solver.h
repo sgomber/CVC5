@@ -33,9 +33,6 @@ class ArithInferManager;
  */
 class EqualitySolver
 {
-  /** Are we responsible for this propagation? */
-  typedef context::CDHashMap<Node, bool, NodeHashFunction> NodeMap;
-
  public:
   EqualitySolver(ArithState& astate, ArithInferManager& aim);
   ~EqualitySolver() {}
@@ -55,32 +52,13 @@ class EqualitySolver
   bool preNotifyFact(TNode atom, bool pol, TNode fact);
   /** Notify fact, return true if processed. */
   void notifyFact(TNode atom, bool pol, TNode fact, bool isInternal);
-  /**
-   * Return an explanation for the literal represented by parameter n
-   * (which was previously propagated by this class), or return null trust node
-   * if this literal was not propagated by this class.
-   */
-  TrustNode explainLit(TNode lit);
-  /**
-   * T-propagate literal lit, encountered by equality engine,
-   * returns false if we are in conflict.
-   */
-  bool propagateLit(TNode lit);
-  /**
-   * Has propagated (anyone) propagated lit?
-   */
-  bool hasPropagated(TNode lit) const;
-  /**
-   * Notify that (another module) propagated lit
-   */
-  void notifyPropagated(TNode lit);
 
  private:
   class EqualitySolverNotify : public eq::EqualityEngineNotify
   {
    public:
-    EqualitySolverNotify(EqualitySolver& es, ArithInferManager& aim)
-        : d_esolver(es), d_aim(aim)
+    EqualitySolverNotify(ArithInferManager& aim)
+        : d_aim(aim)
     {
     }
 
@@ -97,8 +75,6 @@ class EqualitySolver
     void eqNotifyDisequal(TNode t1, TNode t2, TNode reason) override {}
 
    private:
-    /** Reference to the inference manager */
-    EqualitySolver& d_esolver;
     /** reference to parent */
     ArithInferManager& d_aim;
   };
@@ -110,8 +86,6 @@ class EqualitySolver
   EqualitySolverNotify d_notify;
   /** Pointer to the equality engine */
   eq::EqualityEngine* d_ee;
-  /** The set of literals we have propagated */
-  NodeMap d_propLits;
 };
 
 }  // namespace arith

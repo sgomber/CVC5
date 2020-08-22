@@ -44,7 +44,6 @@ TheoryArith::TheoryArith(context::Context* c,
       d_ppRewriteTimer("theory::arith::ppRewriteTimer"),
       d_proofRecorder(nullptr),
       d_astate(*d_internal, c, u, valuation),
-      d_im(*this, d_astate),
       d_aim(*this, d_astate, *d_internal),
       d_eqSolver(nullptr)
 {
@@ -52,7 +51,6 @@ TheoryArith::TheoryArith(context::Context* c,
 
   // indicate we are using the theory state object and inference manager
   d_theoryState = &d_astate;
-  //d_inferManager = &d_im;
   d_inferManager = &d_aim;
   
   if (options::arithEqSolver())
@@ -161,19 +159,7 @@ bool TheoryArith::needsCheckLastEffort() {
 
 TrustNode TheoryArith::explain(TNode n)
 {
-#if 1
   return d_aim.explainLit(n);
-#endif
-  if (d_eqSolver != nullptr)
-  {
-    TrustNode teqExp = d_eqSolver->explainLit(n);
-    if (!teqExp.isNull())
-    {
-      return teqExp;
-    }
-  }
-  Node exp = d_internal->explain(n);
-  return TrustNode::mkTrustPropExp(n, exp, nullptr);
 }
 
 bool TheoryArith::getCurrentSubstitution( int effort, std::vector< Node >& vars, std::vector< Node >& subs, std::map< Node, std::vector< Node > >& exp ) {
@@ -230,20 +216,9 @@ void TheoryArith::lemmaPrivate(TNode lem) { d_out->lemma(lem); }
 
 void TheoryArith::propagatePrivateLit(TNode literal)
 {
-#if 1
+  // propagate managed literal with the inference manager, which tracks that
+  // it came from the private class
   d_aim.propagateManagedLit(literal, true);
-  return;
-#endif
-  if (d_eqSolver != nullptr)
-  {
-    if (d_eqSolver->hasPropagated(literal))
-    {
-      // don't propagate what already was propagated
-      return;
-    }
-    d_eqSolver->notifyPropagated(literal);
-  }
-  d_out->propagate(literal);
 }
 
 void TheoryArith::conflictPrivate(TNode conf) { d_out->conflict(conf); }

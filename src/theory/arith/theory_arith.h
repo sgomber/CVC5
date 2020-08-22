@@ -138,8 +138,6 @@ class TheoryArith : public Theory {
  private:
   /** The state object wrapping TheoryArithPrivate  */
   ArithState d_astate;
-  /** The inference manager */
-  InferManager d_im;
   /** The arithmetic inference manager */
   ArithInferManager d_aim;
   /** The equality solver */
