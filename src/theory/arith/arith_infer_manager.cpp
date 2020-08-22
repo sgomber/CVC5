@@ -9,7 +9,7 @@
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
- ** \brief Arithmetic theory state.
+ ** \brief Arithmetic inference manager
  **/
 
 #include "theory/arith/arith_infer_manager.h"
@@ -17,20 +17,26 @@
 #include "theory/arith/equality_solver.h"
 #include "theory/arith/theory_arith_private.h"
 
+namespace CVC4 {
+namespace theory {
+namespace arith {
+  
 ArithInferManager::ArithInferManager(Theory& t,
+                                     TheoryState& state, 
                                      TheoryArithPrivate& p,
                                      EqualitySolver* es)
-    : InferManager(t),
+    : InferManager(t, state),
       d_private(p),
       d_esolver(es),
-      d_propagationMap(d_state.getSatContext())
+      d_propagationMap(state.getSatContext())
 {
 }
 
 TrustNode ArithInferManager::explainLit(TNode lit)
 {
-  bool useEqualitySolver = false;
-  if (d_eqSolver != nullptr)
+  // if the equality solver exists, we need to see if it was the source of the
+  // propagation.
+  if (d_esolver != nullptr)
   {
     NodeMap::const_iterator it = d_propagationMap.find(lit);
     Assert(it != d_propagationMap.end());
@@ -41,14 +47,19 @@ TrustNode ArithInferManager::explainLit(TNode lit)
     }
   }
   // otherwise we explain with the private solver
-  Node exp = d_private->explain(lit);
+  Node exp = d_private.explain(lit);
   return TrustNode::mkTrustPropExp(lit, exp, nullptr);
 }
 
 bool ArithInferManager::propagateManagedLit(TNode lit, bool fromPrivate)
 {
-  if (d_eqSolver != nullptr)
+  if (d_esolver != nullptr)
   {
+    if (d_propagationMap.find(lit)!=d_propagationMap.end())
+    {
+      // it's already been propagated (probably by the other module)
+      return d_state.isInConflict();
+    }
     d_propagationMap[lit] = fromPrivate;
   }
   return propagateLit(lit);
@@ -57,5 +68,3 @@ bool ArithInferManager::propagateManagedLit(TNode lit, bool fromPrivate)
 }  // namespace arith
 }  // namespace theory
 }  // namespace CVC4
-
-#endif

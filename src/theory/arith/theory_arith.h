@@ -139,9 +139,11 @@ class TheoryArith : public Theory {
   /** The state object wrapping TheoryArithPrivate  */
   ArithState d_astate;
   /** The inference manager */
-  InferManager d_aim;
+  InferManager d_im;
   /** The equality solver */
   std::unique_ptr<EqualitySolver> d_eqSolver;
+  /** The arithmetic inference manager */
+  ArithInferManager d_aim;
 };/* class TheoryArith */
 
 }/* CVC4::theory::arith namespace */

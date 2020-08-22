@@ -9,7 +9,7 @@
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
- ** \brief Arithmetic theory state.
+ ** \brief Arithmetic inference manager
  **/
 
 #include "cvc4_private.h"
@@ -18,7 +18,8 @@
 #define CVC4__THEORY__ARITH__ARITH_INFER_MANAGER_H
 
 #include "context/cdhashmap.h"
-#include "theory/infer_manager.h"
+#include "theory/inference_manager.h"
+#include "expr/node.h"
 
 namespace CVC4 {
 namespace theory {
@@ -32,10 +33,10 @@ class EqualitySolver;
  */
 class ArithInferManager : public InferManager
 {
-  typedef context::CDHashSet<Node, bool NodeHashFunction> NodeMap;
+  typedef context::CDHashMap<Node, bool, NodeHashFunction> NodeMap;
 
  public:
-  ArithInferManager(Theory& t, TheoryArithPrivate& p, EqualitySolver* es);
+  ArithInferManager(Theory& t, TheoryState& state, TheoryArithPrivate& p, EqualitySolver* es);
   ~ArithInferManager() {}
   /**
    * Return an explanation for the literal represented by parameter n
@@ -43,7 +44,8 @@ class ArithInferManager : public InferManager
    */
   TrustNode explainLit(TNode lit) override;
   /**
-   * Propagate, distinguishes who propagated.
+   * Propagate, which tracks who propagated if there are multiple possible
+   * sources.
    */
   bool propagateManagedLit(TNode lit, bool fromPrivate = true);
 
