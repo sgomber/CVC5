@@ -127,15 +127,17 @@ class TheoryArith : public Theory {
   {
     d_proofRecorder = proofRecorder;
   }
-  /** propagate literal */
-  void propagateLit(TNode literal);
-  /** Raise conflict, called when constants a and b merge. */
-  void conflictEqConstantMerge(TNode a, TNode b);
+  /** Send lemma from the private solver */
+  void lemmaPrivate(TNode lem);
+  /** propagate literal from the private solver */
+  void propagatePrivateLit(TNode literal);
+  /** Raise conflict from the private solver */
+  void conflictPrivate(TNode conf);
 
  private:
   /** The state object wrapping TheoryArithPrivate  */
   ArithState d_astate;
-  /** The (default) inference manager */
+  /** The inference manager */
   InferManager d_aim;
   /** The equality solver */
   std::unique_ptr<EqualitySolver> d_eqSolver;

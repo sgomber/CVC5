@@ -184,7 +184,8 @@ void TheoryArithPrivate::finishInit()
   // only need to create nonlinear extension if non-linear logic
   if (logicInfo.isTheoryEnabled(THEORY_ARITH) && !logicInfo.isLinear())
   {
-    d_nonlinearExtension = new nl::NonlinearExtension(d_containing, ee);
+    eq::EqualityEngine* nee = d_congruenceManager.getEqualityEngine();
+    d_nonlinearExtension = new nl::NonlinearExtension(d_containing, nee);
   }
 }
 
@@ -1985,19 +1986,18 @@ void TheoryArithPrivate::outputConflicts(){
 
 void TheoryArithPrivate::outputLemma(TNode lem) {
   Debug("arith::channel") << "Arith lemma: " << lem << std::endl;
-  (d_containing.d_out)->lemma(lem);
+  d_containing.lemmaPrivate(lem);
 }
 
 void TheoryArithPrivate::outputConflict(TNode lit) {
   Debug("arith::channel") << "Arith conflict: " << lit << std::endl;
-  // d_containing.d_aim.conflict(lit);
-  // d_containing.d_astate.notifyInConflict();
-  (d_containing.d_out)->conflict(lit);
+  d_containing.conflictPrivate(lit);
 }
 
 void TheoryArithPrivate::outputPropagate(TNode lit) {
   Debug("arith::channel") << "Arith propagation: " << lit << std::endl;
-  (d_containing.d_out)->propagate(lit);
+  // call the propagate lit method of the 
+  d_containing.propagatePrivateLit(lit);
 }
 
 void TheoryArithPrivate::outputRestart() {

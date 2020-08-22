@@ -20,6 +20,7 @@
 #include "expr/node.h"
 #include "theory/arith/arith_state.h"
 #include "theory/uf/equality_engine.h"
+#include "context/cdhashmap.h"
 
 namespace CVC4 {
 namespace theory {
@@ -30,8 +31,8 @@ namespace arith {
  */
 class EqualitySolver
 {
-  typedef context::CDHashSet<Node, NodeHashFunction> NodeSet;
-
+  /** Are we responsible for this propagation? */
+  typedef context::CDHashMap<Node, bool, NodeHashFunction> NodeMap;
  public:
   EqualitySolver(ArithState& astate, InferManager& aim);
   ~EqualitySolver() {}
@@ -62,7 +63,14 @@ class EqualitySolver
    * returns false if we are in conflict.
    */
   bool propagateLit(TNode lit);
-
+  /**
+   * Has propagated (anyone) propagated lit?
+   */
+  bool hasPropagated(TNode lit) const;
+  /** 
+   * Notify that (another module) propagated lit
+   */
+  void notifyPropagated(TNode lit);
  private:
   class EqualitySolverNotify : public eq::EqualityEngineNotify
   {
@@ -99,7 +107,7 @@ class EqualitySolver
   /** Pointer to the equality engine */
   eq::EqualityEngine* d_ee;
   /** The set of literals we have propagated */
-  NodeSet d_propLits;
+  NodeMap d_propLits;
 };
 
 }  // namespace arith

@@ -139,7 +139,6 @@ bool TheoryArith::preNotifyFact(TNode atom, bool pol, TNode fact, bool isPrereg)
     }
   }
   d_internal->notifyFact(atom, pol, fact);
-  // not asserting fact
   return true;
 }
 
@@ -222,9 +221,29 @@ std::pair<bool, Node> TheoryArith::entailmentCheck(TNode lit)
   return res;
 }
 
-void TheoryArith::propagateLit(TNode literal) {}
+void TheoryArith::lemmaPrivate(TNode lem)
+{
+  d_out->lemma(lem);
+}
 
-void TheoryArith::conflictEqConstantMerge(TNode a, TNode b) {}
+void TheoryArith::propagatePrivateLit(TNode literal) 
+{
+  if (d_eqSolver != nullptr)
+  {
+    if (d_eqSolver->hasPropagated(literal))
+    {
+      // don't propagate what already was propagated
+      return;
+    }
+    d_eqSolver->notifyPropagated(literal);
+  }
+  d_out->propagate(literal);
+}
+
+void TheoryArith::conflictPrivate(TNode conf)
+{
+  d_out->conflict(conf);
+}
 
 }/* CVC4::theory::arith namespace */
 }/* CVC4::theory namespace */
