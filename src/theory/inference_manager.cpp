@@ -80,7 +80,7 @@ TrustNode InferManager::explainLit(TNode lit)
   // TODO: use proof equality engine if it exists
   if (d_ee != nullptr)
   {
-    Node exp = mkExplain(lit);
+    Node exp = d_ee->mkExplainLit(lit);
     return TrustNode::mkTrustPropExp(lit, exp, nullptr);
   }
   Unimplemented() << "Inference manager for " << d_theory.getId()
@@ -95,71 +95,11 @@ TrustNode InferManager::explainConflictEqConstantMerge(TNode a, TNode b)
   if (d_ee != nullptr)
   {
     Node lit = a.eqNode(b);
-    Node conf = mkExplain(lit);
+    Node conf = d_ee->mkExplainLit(lit);
     return TrustNode::mkTrustConflict(conf, nullptr);
   }
   Unimplemented() << "Inference manager for " << d_theory.getId()
                   << " mkTrustedConflictEqConstantMerge";
-}
-
-Node InferManager::mkExplain(TNode lit) const
-{
-  std::vector<TNode> assumptions;
-  explain(lit, assumptions);
-  Node ret;
-  NodeManager* nm = NodeManager::currentNM();
-  if (assumptions.empty())
-  {
-    ret = nm->mkConst(true);
-  }
-  else if (assumptions.size() == 1)
-  {
-    ret = assumptions[0];
-  }
-  else
-  {
-    ret = nm->mkNode(kind::AND, assumptions);
-  }
-  return ret;
-}
-
-void InferManager::explain(TNode lit, std::vector<TNode>& assumptions) const
-{
-  Trace("infer-manager") << "InferManager::explain: " << lit << std::endl;
-  Assert(d_ee != nullptr);
-  bool polarity = lit.getKind() != NOT;
-  TNode atom = polarity ? lit : lit[0];
-  std::vector<TNode> tassumptions;
-  if (atom.getKind() == EQUAL)
-  {
-    Assert(d_ee->hasTerm(atom[0]));
-    Assert(d_ee->hasTerm(atom[1]));
-    if (!polarity)
-    {
-      // ensure that we are ready to explain the disequality
-      AlwaysAssert(d_ee->areDisequal(atom[0], atom[1], true));
-    }
-    else if (atom[0] == atom[1])
-    {
-      return;
-    }
-    d_ee->explainEquality(atom[0], atom[1], polarity, tassumptions);
-  }
-  else
-  {
-    d_ee->explainPredicate(atom, polarity, tassumptions);
-  }
-  // ensure that duplicates are removed
-  for (const TNode a : tassumptions)
-  {
-    if (std::find(assumptions.begin(), assumptions.end(), a)
-        == assumptions.end())
-    {
-      Trace("infer-manager") << "..." << a << std::endl;
-      assumptions.push_back(a);
-    }
-  }
-  Trace("infer-manager") << "InferManager::finished explain" << std::endl;
 }
 
 void InferManager::assertInternalFact(TNode atom, bool pol, TNode fact)

@@ -83,13 +83,6 @@ class InferManager
  protected:
   /** Explain conflict from constants merging in the equality engine */
   virtual TrustNode explainConflictEqConstantMerge(TNode a, TNode b);
-  /** Explain literal, return conjunction. */
-  Node mkExplain(TNode literal) const;
-  /**
-   * Explain literal, add conjuncts to assumptions vector instead of making
-   * the node corresponding to their conjunction.
-   */
-  void explain(TNode literal, std::vector<TNode>& assumptions) const;
   /** The theory object */
   Theory& d_theory;
   /** Reference to the state of theory */

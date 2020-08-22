@@ -72,6 +72,13 @@ void EqualitySolver::notifyFact(TNode atom,
                            << std::endl;
 }
 
+TrustNode EqualitySolver::explainLit(TNode lit)
+{
+  // just explain with equality engine for now
+  Node exp = d_ee->mkExplainLit(lit);
+  return TrustNode::mkTrustPropExp(lit, exp, nullptr);
+}
+
 bool EqualitySolver::EqualitySolverNotify::eqNotifyTriggerPredicate(
     TNode predicate, bool value)
 {
