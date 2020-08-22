@@ -1252,10 +1252,10 @@ void EqualityEngine::explainPredicate(TNode p, bool polarity,
 
 void EqualityEngine::explainLit(TNode lit, std::vector<TNode>& assumptions)
 {
-  bool polarity = lit.getKind() != NOT;
+  bool polarity = lit.getKind() != kind::NOT;
   TNode atom = polarity ? lit : lit[0];
   std::vector<TNode> tassumptions;
-  if (atom.getKind() == EQUAL)
+  if (atom.getKind() == kind::EQUAL)
   {
     Assert(hasTerm(atom[0]));
     Assert(hasTerm(atom[1]));
