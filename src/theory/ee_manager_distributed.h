@@ -29,7 +29,7 @@ namespace CVC4 {
 class TheoryEngine;
 
 namespace theory {
-  
+
 class SharedSolver;
 
 /**
@@ -56,7 +56,7 @@ class EqEngineManagerDistributed : public EqEngineManager
    * Initialize theories. This method allocates unique equality engines
    * per theories and connects them to a master equality engine.
    */
-  void initializeTheories(SharedSolver * sharedSolver) override;
+  void initializeTheories(SharedSolver* sharedSolver) override;
   /**
    * Initialize model. This method allocates a new equality engine for the
    * model.

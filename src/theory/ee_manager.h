@@ -26,7 +26,7 @@
 
 namespace CVC4 {
 namespace theory {
-  
+
 class SharedSolver;
 
 /**
@@ -58,11 +58,11 @@ class EqEngineManager
    *
    * This method is context-independent, and is applied once during
    * the lifetime of TheoryEngine (during finishInit).
-   * 
+   *
    * @param sharedSolver The shared solver that is being used in combination
    * with this equality engine manager
    */
-  virtual void initializeTheories(SharedSolver * sharedSolver) = 0;
+  virtual void initializeTheories(SharedSolver* sharedSolver) = 0;
   /**
    * Finish initialize, called by TheoryEngine::finishInit after theory
    * objects have been created but prior to their final initialization. This

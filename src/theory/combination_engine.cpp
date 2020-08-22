@@ -36,8 +36,7 @@ CombinationEngine::CombinationEngine(TheoryEngine& te,
       d_paraTheories(paraTheories),
       d_paraSet(0),
       d_eemUse(nullptr),
-      d_mmUse(nullptr)
-      d_ssUse(nullptr)
+      d_mmUse(nullptr) d_ssUse(nullptr)
 {
 }
 
@@ -61,7 +60,7 @@ void CombinationEngine::finishInit()
   {
     d_eemUse.reset(new EqEngineManagerCentral(d_te));
     d_mmUse.reset(new ModelManagerCentral(d_te));
-    //d_ssUse.reset(new SharedSolverCentral(d_te));
+    // d_ssUse.reset(new SharedSolverCentral(d_te));
   }
   else
   {

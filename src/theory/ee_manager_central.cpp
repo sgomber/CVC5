@@ -32,7 +32,7 @@ EqEngineManagerCentral::EqEngineManagerCentral(TheoryEngine& te)
 
 EqEngineManagerCentral::~EqEngineManagerCentral() {}
 
-void EqEngineManagerCentral::initializeTheories(SharedSolver * sharedSolver)
+void EqEngineManagerCentral::initializeTheories(SharedSolver* sharedSolver)
 {
   // set the shared solver's equality engine
   sharedSolver->setEqualityEngine(&d_centralEqualityEngine);

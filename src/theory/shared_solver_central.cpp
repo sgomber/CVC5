@@ -28,7 +28,7 @@ SharedSolverCentral::SharedSolverCentral(TheoryEngine& te)
 
 SharedSolverCentral::~SharedSolverCentral() {}
 
-bool SharedSolverDistributed:: needsEqualityEngine(theory::EeSetupInfo& esi)
+bool SharedSolverDistributed::needsEqualityEngine(theory::EeSetupInfo& esi)
 {
   return true;
 }
@@ -65,8 +65,8 @@ TrustNode SharedSolverCentral::explainShared(TNode literal) const
 }
 
 void SharedSolverCentral::assertSharedEquality(TNode equality,
-                                                  bool polarity,
-                                                  TNode reason)
+                                               bool polarity,
+                                               TNode reason)
 {
   d_centralEe->assertEquality(equality, polarity, reason);
 }

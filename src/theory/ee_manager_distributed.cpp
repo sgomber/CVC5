@@ -32,11 +32,11 @@ EqEngineManagerDistributed::~EqEngineManagerDistributed()
   d_modelEeContext.pop();
 }
 
-void EqEngineManagerDistributed::initializeTheories(SharedSolver * sharedSolver)
+void EqEngineManagerDistributed::initializeTheories(SharedSolver* sharedSolver)
 {
   context::Context* c = d_te.getSatContext();
   // initialize the shared solver
-  Assert (sharedSolver!=nullptr);
+  Assert(sharedSolver != nullptr);
   EeSetupInfo esis;
   if (sharedSolver->needsEqualityEngine(esis))
   {
@@ -46,8 +46,7 @@ void EqEngineManagerDistributed::initializeTheories(SharedSolver * sharedSolver)
   }
   else
   {
-    AlwaysAssert(false)
-        << "Expected shared solver to use equality engine";
+    AlwaysAssert(false) << "Expected shared solver to use equality engine";
   }
 
   // allocate equality engines per theory

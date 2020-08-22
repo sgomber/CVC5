@@ -40,7 +40,7 @@ class EqEngineManagerCentral : public EqEngineManager
   /**
    * Initialize theories
    */
-  void initializeTheories(SharedSolver * sharedSolver) override;
+  void initializeTheories(SharedSolver* sharedSolver) override;
   /**
    * Initialize model.
    */

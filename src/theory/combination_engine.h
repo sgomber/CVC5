@@ -76,6 +76,7 @@ class CombinationEngine
    * theory combination (e.g. splitting lemmas) to the parent TheoryEngine.
    */
   virtual void combineTheories() = 0;
+
  protected:
   /** Send lemma */
   void sendLemma(TNode node, TheoryId atomsTo);
