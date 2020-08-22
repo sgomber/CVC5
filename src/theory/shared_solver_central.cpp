@@ -37,6 +37,11 @@ void SharedSolverCentral::setEqualityEngine(eq::EqualityEngine* ee)
   d_centralEe = ee;
 }
 
+void SharedSolverCentral::preRegisterSharedInternal(TNode t)
+{
+  // TODO?
+}
+
 EqualityStatus SharedSolverCentral::getEqualityStatus(TNode a, TNode b)
 {
   if (d_centralEe->hasTerm(a) && d_centralEe->hasTerm(b))
