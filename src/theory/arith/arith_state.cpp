@@ -35,6 +35,13 @@ bool ArithState::isInConflict() const
   return d_parent.anyConflict() || d_conflict;
 }
 
+std::string ArithState::toString()
+{
+  std::stringstream ss;
+  ss << "ArithState(parentConflict = " << d_parent.anyConflict() << ", conflict=" << d_conflict << ")";
+  return ss.str();
+}
+
 }  // namespace arith
 }  // namespace theory
 }  // namespace CVC4

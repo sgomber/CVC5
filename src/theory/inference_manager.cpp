@@ -132,12 +132,18 @@ void InferManager::explain(TNode lit, std::vector<TNode>& assumptions) const
   std::vector<TNode> tassumptions;
   if (atom.getKind() == EQUAL)
   {
-    if (atom[0] != atom[1])
+    Assert(d_ee->hasTerm(atom[0]));
+    Assert(d_ee->hasTerm(atom[1]));    
+    if (!polarity)
     {
-      Assert(d_ee->hasTerm(atom[0]));
-      Assert(d_ee->hasTerm(atom[1]));
-      d_ee->explainEquality(atom[0], atom[1], polarity, tassumptions);
+      // ensure that we are ready to explain the disequality
+      AlwaysAssert(d_ee->areDisequal(atom[0], atom[1], true));
     }
+    else if (atom[0] == atom[1])
+    {
+      return;
+    }
+    d_ee->explainEquality(atom[0], atom[1], polarity, tassumptions);
   }
   else
   {

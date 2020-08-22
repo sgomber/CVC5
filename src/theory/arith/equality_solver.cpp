@@ -65,6 +65,7 @@ TrustNode EqualitySolver::explainLit(TNode lit)
   // if we propagated this, we explain it
   if (d_propLits.find(lit) != d_propLits.end())
   {
+    Trace("arith-eq-solver") << "EqualitySolver::explainLit: " << d_astate.toString() << std::endl;
     TrustNode texp = d_aim.explainLit(lit);
 
     Trace("arith-eq-solver") << "EqualitySolver::explainLit: " << lit
