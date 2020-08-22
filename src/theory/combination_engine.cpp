@@ -115,7 +115,7 @@ theory::TheoryModel* CombinationEngine::getModel()
   return d_mmUse->getModel();
 }
 
-void CombinationEngine::preRegister(TNode t, bool multipleTheories)
+void CombinationEngine::preRegisterShared(TNode t, bool multipleTheories)
 {
   if (d_sharedTerms == nullptr)
   {

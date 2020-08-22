@@ -341,7 +341,7 @@ void TheoryEngine::preRegister(TNode preprocessed) {
       // pre-register with the theory combination module, which also handles
       // calling prepregister on individual theories.
       Assert(d_tc != nullptr);
-      d_tc->preRegister(preprocessed, multipleTheories);
+      d_tc->preRegisterShared(preprocessed, multipleTheories);
     }
 
     // Leaving pre-register

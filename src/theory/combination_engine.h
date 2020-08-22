@@ -77,7 +77,7 @@ class CombinationEngine
    * @param t The term to preregister
    * @param multipleTheories Whether multiple theories are present in t.
    */
-  void preRegister(TNode t, bool multipleTheories);
+  void preRegisterShared(TNode t, bool multipleTheories);
   /**
    * Pre-notify assertion fact with the given atom. This is called when any
    * fact is asserted in TheoryEngine, just before it is dispatched to the
@@ -91,7 +91,8 @@ class CombinationEngine
    * terms database as an equality status, and otherwise asks the appropriate
    * Theory.
    *
-   * This method is used by ...
+   * This method is used by theories via Valuation mostly for determining their
+   * care graph.
    */
   EqualityStatus getEqualityStatus(TNode a, TNode b);
   /**
