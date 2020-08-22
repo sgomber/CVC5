@@ -153,7 +153,7 @@ TrustNode TheoryArith::explain(TNode n)
 {
   if (d_eqSolver != nullptr)
   {
-    TrustNode teqExp = d_eqSolver->explain(n);
+    TrustNode teqExp = d_eqSolver->explainLit(n);
     if (!teqExp.isNull())
     {
       return teqExp;

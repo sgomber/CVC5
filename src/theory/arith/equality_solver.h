@@ -67,7 +67,7 @@ class EqualitySolver
   class EqualitySolverNotify : public eq::EqualityEngineNotify
   {
    public:
-    EqualitySolverNotify(EqualitySolver& es) : d_esolver(es) {}
+    EqualitySolverNotify(EqualitySolver& es, InferManager& aim) : d_esolver(es), d_aim(aim) {}
 
     bool eqNotifyTriggerPredicate(TNode predicate, bool value) override;
 

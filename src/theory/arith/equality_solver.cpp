@@ -25,7 +25,7 @@ namespace arith {
 EqualitySolver::EqualitySolver(ArithState& astate, InferManager& aim)
     : d_astate(astate),
       d_aim(aim),
-      d_notify(aim),
+      d_notify(*this, aim),
       d_ee(nullptr),
       d_propLits(astate.getSatContext())
 {
