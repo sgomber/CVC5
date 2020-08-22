@@ -57,6 +57,7 @@ class EqualitySolver
    * by this solver).
    */
   TrustNode explainLit(TNode lit);
+
  private:
   class EqualitySolverNotify : public eq::EqualityEngineNotify
   {
