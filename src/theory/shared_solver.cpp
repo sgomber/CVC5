@@ -26,7 +26,7 @@ namespace theory {
 // maintains an equality engine. In central equality engine management,
 // it does not.
 SharedSolver::SharedSolver(TheoryEngine& te,
-                                     const std::vector<Theory*>& paraTheories)
+                           const std::vector<Theory*>& paraTheories)
     : d_te(te),
       d_logicInfo(te.getLogicInfo()),
       d_paraTheories(paraTheories),
@@ -36,8 +36,6 @@ SharedSolver::SharedSolver(TheoryEngine& te,
 }
 
 SharedSolver::~SharedSolver() {}
-
-
 
 void SharedSolver::preRegisterShared(TNode t, bool multipleTheories)
 {
@@ -116,8 +114,8 @@ TrustNode SharedSolver::explain(TNode literal, TheoryId theory) const
 }
 
 void SharedSolver::assertSharedEquality(TNode equality,
-                                             bool polarity,
-                                             TNode reason)
+                                        bool polarity,
+                                        TNode reason)
 {
   // do nothing
 }

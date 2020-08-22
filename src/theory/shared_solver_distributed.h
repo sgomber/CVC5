@@ -23,7 +23,7 @@
 namespace CVC4 {
 namespace theory {
 
-/** 
+/**
  * The shared solver in the distributed architecture.
  */
 class SharedSolverDistributed : public SharedSolver
@@ -34,7 +34,10 @@ class SharedSolverDistributed : public SharedSolver
   /**
    * Assert equality to the shared terms database.
    */
-  void assertSharedEquality(TNode equality, bool polarity, TNode reason) override;
+  void assertSharedEquality(TNode equality,
+                            bool polarity,
+                            TNode reason) override;
+
  protected:
   /** Solver-specific pre-register shared */
   void preRegisterSharedInternal(TNode t) override;

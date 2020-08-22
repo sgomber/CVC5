@@ -60,8 +60,8 @@ TrustNode SharedSolverDistributed::explainSharedInternal(TNode literal) const
 }
 
 void SharedSolverDistributed::assertSharedEquality(TNode equality,
-                                                      bool polarity,
-                                                      TNode reason)
+                                                   bool polarity,
+                                                   TNode reason)
 {
   d_sharedTerms->assertEquality(equality, polarity, reason);
 }

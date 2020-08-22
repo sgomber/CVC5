@@ -22,14 +22,14 @@
 #include "theory/term_registration_visitor.h"
 
 namespace CVC4 {
-  
+
 class TheoryEngine;
 
 namespace theory {
 
-/** 
+/**
  * Virtual base class for shared solver. This is the component of theory
- * engine that behaves like a theory solver whose purpose is to ensure the 
+ * engine that behaves like a theory solver whose purpose is to ensure the
  * main theory combination method can be performed (in CombinationEngine).
  * Its role is to as necessary:
  * (1) Notify the individual theories of shared terms via addSharedTerms,
@@ -84,7 +84,10 @@ class SharedSolver
    * send to THEORY_BUILTIN, meaning that shared terms database should
    * maintain this fact. This is the case when ...
    */
-  virtual void assertSharedEquality(TNode equality, bool polarity, TNode reason);
+  virtual void assertSharedEquality(TNode equality,
+                                    bool polarity,
+                                    TNode reason);
+
  protected:
   /** Solver-specific pre-register shared */
   virtual void preRegisterShared(TNode t) = 0;
