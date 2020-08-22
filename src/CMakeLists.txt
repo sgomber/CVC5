@@ -286,6 +286,8 @@ libcvc4_add_sources(
   smt_util/nary_builder.h
   theory/arith/approx_simplex.cpp
   theory/arith/approx_simplex.h
+  theory/arith/arith_infer_manager.cpp
+  theory/arith/arith_infer_manager.h
   theory/arith/arith_ite_utils.cpp
   theory/arith/arith_ite_utils.h
   theory/arith/arith_msum.cpp
