@@ -14,6 +14,8 @@
 
 #include "theory/shared_solver_distributed.h"
 
+#include "theory/theory_engine.h"
+
 namespace CVC4 {
 namespace theory {
 
@@ -56,7 +58,8 @@ EqualityStatus SharedSolverDistributed::getEqualityStatus(TNode a, TNode b)
       return EQUALITY_FALSE_AND_PROPAGATED;
     }
   }
-  return EQUALITY_UNKNOWN;
+  // otherwise, ask the theory
+  return d_te.theoryOf(Theory::theoryOf(a.getType()))->getEqualityStatus(a, b);
 }
 
 TrustNode SharedSolverDistributed::explainShared(TNode literal)

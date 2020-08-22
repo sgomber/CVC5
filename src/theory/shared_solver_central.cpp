@@ -54,7 +54,8 @@ EqualityStatus SharedSolverCentral::getEqualityStatus(TNode a, TNode b)
       return EQUALITY_FALSE;
     }
   }
-  return EQUALITY_UNKNOWN;
+  // otherwise, ask the theory
+  return d_te.theoryOf(Theory::theoryOf(a.getType()))->getEqualityStatus(a, b);
 }
 
 TrustNode SharedSolverCentral::explainShared(TNode literal)
