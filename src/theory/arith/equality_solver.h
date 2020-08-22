@@ -30,6 +30,7 @@ namespace arith {
  */
 class EqualitySolver
 {
+  typedef context::CDHashSet<Node, NodeHashFunction> NodeSet;
  public:
   EqualitySolver(ArithState& astate, InferManager& aim);
   ~EqualitySolver() {}
@@ -49,12 +50,22 @@ class EqualitySolver
   bool preNotifyFact(TNode atom, bool pol, TNode fact);
   /** Notify fact, return true if processed. */
   void notifyFact(TNode atom, bool pol, TNode fact, bool isInternal);
-
+  /**
+   * Return an explanation for the literal represented by parameter n
+   * (which was previously propagated by this class), or return null trust node
+   * if this literal was not propagated by this class.
+   */
+  TrustNode explainLit(TNode lit);
+  /**
+   * T-propagate literal lit, encountered by equality engine,
+   * returns false if we are in conflict.
+   */
+  bool propagateLit(TNode lit);
  private:
   class EqualitySolverNotify : public eq::EqualityEngineNotify
   {
    public:
-    EqualitySolverNotify(InferManager& aim) : d_aim(aim) {}
+    EqualitySolverNotify(EqualitySolver& es) : d_esolver(es) {}
 
     bool eqNotifyTriggerPredicate(TNode predicate, bool value) override;
 
@@ -70,6 +81,8 @@ class EqualitySolver
 
    private:
     /** Reference to the inference manager */
+    EqualitySolver& d_esolver;
+    /** reference to parent */
     InferManager& d_aim;
   };
   /** reference to the state */
@@ -80,6 +93,8 @@ class EqualitySolver
   EqualitySolverNotify d_notify;
   /** Pointer to the equality engine */
   eq::EqualityEngine* d_ee;
+  /** The set of literals we have propagated */
+  NodeSet d_propLits;
 };
 
 }  // namespace arith

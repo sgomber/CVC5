@@ -23,7 +23,7 @@ namespace theory {
 namespace arith {
 
 EqualitySolver::EqualitySolver(ArithState& astate, InferManager& aim)
-    : d_astate(astate), d_aim(aim), d_notify(aim), d_ee(nullptr)
+    : d_astate(astate), d_aim(aim), d_notify(aim), d_ee(nullptr), d_propLits(astate.getSatContext())
 {
 }
 
@@ -38,7 +38,24 @@ void EqualitySolver::setEqualityEngine(eq::EqualityEngine* ee) { d_ee = ee; }
 
 bool EqualitySolver::preNotifyFact(TNode atom, bool pol, TNode fact)
 {
-  return atom.getKind() == EQUAL;
+  return atom.getKind() != EQUAL;
+}
+
+TrustNode EqualitySolver::explainLit(TNode lit)
+{
+  // if we propagated this, we explain it
+  if (d_propLits.find(lit)!=d_propLits.end())
+  {
+    return d_aim.explainLit(lit);
+  }
+  return TrustNode::null();
+}
+
+bool EqualitySolver::propagateLit(TNode lit)
+{
+  Assert (d_propLits.find(lit)==d_propLits.end());
+  d_propLits.insert(lit);
+  return d_aim.propagateLit(lit);
 }
 
 void EqualitySolver::notifyFact(TNode atom,
@@ -54,9 +71,9 @@ bool EqualitySolver::EqualitySolverNotify::eqNotifyTriggerPredicate(
 {
   if (value)
   {
-    return d_aim.propagateLit(predicate);
+    return d_esolver.propagateLit(predicate);
   }
-  return d_aim.propagateLit(predicate.notNode());
+  return d_esolver.propagateLit(predicate.notNode());
 }
 
 bool EqualitySolver::EqualitySolverNotify::eqNotifyTriggerTermEquality(
@@ -64,9 +81,9 @@ bool EqualitySolver::EqualitySolverNotify::eqNotifyTriggerTermEquality(
 {
   if (value)
   {
-    return d_aim.propagateLit(t1.eqNode(t2));
+    return d_esolver.propagateLit(t1.eqNode(t2));
   }
-  return d_aim.propagateLit(t1.eqNode(t2).notNode());
+  return d_esolver.propagateLit(t1.eqNode(t2).notNode());
 }
 
 void EqualitySolver::EqualitySolverNotify::eqNotifyConstantTermMerge(TNode t1,
