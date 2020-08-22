@@ -44,7 +44,8 @@ TheoryArith::TheoryArith(context::Context* c,
       d_ppRewriteTimer("theory::arith::ppRewriteTimer"),
       d_proofRecorder(nullptr),
       d_astate(*d_internal, c, u, valuation),
-      d_aim(*this, d_astate)
+      d_aim(*this, d_astate),
+      d_eqSolver(nullptr)
 {
   smtStatisticsRegistry()->registerStat(&d_ppRewriteTimer);
 
@@ -71,6 +72,10 @@ TheoryRewriter* TheoryArith::getTheoryRewriter()
 
 bool TheoryArith::needsEqualityEngine(EeSetupInfo& esi)
 {
+  if (d_eqSolver != nullptr)
+  {
+    return d_eqSolver->needsEqualityEngine(esi);
+  }
   return d_internal->needsEqualityEngine(esi);
 }
 void TheoryArith::finishInit()
@@ -125,11 +130,19 @@ void TheoryArith::postCheck(Effort level) { d_internal->postCheck(level); }
 
 bool TheoryArith::preNotifyFact(TNode atom, bool pol, TNode fact, bool isPrereg)
 {
-  return d_internal->preNotifyFact(atom, pol, fact, isPrereg);
+  d_internal->preNotifyFact(atom, pol, fact, isPrereg);
+  if (d_eqSolver != nullptr)
+  {
+    // assert equalities directly to equality engine
+    return d_eqSolver->preNotifyFact(atom, pol, fact);
+  }
+  return true;
 }
 
 void TheoryArith::notifyFact(TNode atom, bool pol, TNode fact, bool isInternal)
 {
+  Assert (d_eqSolver!=nullptr);
+  d_eqSolver->notifyFact(atom, pol, fact, isInternal);
 }
 
 bool TheoryArith::needsCheckLastEffort() {

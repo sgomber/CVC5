@@ -27,7 +27,11 @@ EqualitySolver::EqualitySolver(ArithState& astate, InferManager& aim)
 {
 }
 
-bool EqualitySolver::needsEqualityEngine(EeSetupInfo& esi) { return false; }
+bool EqualitySolver::needsEqualityEngine(EeSetupInfo& esi) { 
+  esi.d_notify = &d_notify;
+  esi.d_name = "theory::arith::EqualitySolver";
+  return true;
+}
 
 void EqualitySolver::setEqualityEngine(eq::EqualityEngine* ee) { d_ee = ee; }
 
