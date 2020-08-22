@@ -96,7 +96,7 @@ class SharedSolver
                                     bool polarity,
                                     TNode reason);
   /** Is term t a shared term? */
-  virtual bool isShared(Term t) const;
+  virtual bool isShared(TNode t) const;
  protected:
   /**
    * Explain literal, which returns a conjunction of literals that that entail

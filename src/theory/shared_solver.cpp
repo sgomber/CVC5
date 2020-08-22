@@ -122,7 +122,7 @@ void SharedSolver::assertSharedEquality(TNode equality,
   // do nothing
 }
 
-bool SharedSolver::isShared(Term t) const
+bool SharedSolver::isShared(TNode t) const
 {
   return d_sharedTerms.isShared(t);
 }
