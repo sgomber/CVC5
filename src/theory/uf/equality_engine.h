@@ -781,7 +781,7 @@ private:
    */
   void explainPredicate(TNode p, bool polarity, std::vector<TNode>& assertions,
                         EqProof* eqp = nullptr) const;
-                        
+
   //--------------------------- standard safe explanation methods
   /**
    * Explain literal, add its explanation to assumptions. This method does not
@@ -791,7 +791,7 @@ private:
    * ensureProof = true.
    */
   void explainLit(TNode lit, std::vector<TNode>& assumptions);
-  /** 
+  /**
    * Explain literal, return the conjunction. This method relies on the above
    * method.
    */
