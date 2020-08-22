@@ -42,6 +42,8 @@ class ArithState : public TheoryState
              context::UserContext* u,
              Valuation val);
   ~ArithState() {}
+  /** Notify in conflict */
+  void notifyInConflict() override;
   /** Are we currently in conflict? */
   bool isInConflict() const override;
 

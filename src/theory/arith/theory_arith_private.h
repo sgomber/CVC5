@@ -328,10 +328,10 @@ public:
    * Returns true iff a conflict has been raised. This method is public since
    * it is needed by the ArithState class to know whether we are in conflict.
    */
-  bool anyConflict() const
-  {
-    return !conflictQueueEmpty() || !d_blackBoxConflict.get().isNull();
-  }
+  bool anyConflict() const;
+  
+  /** External notification (e.g. from ArithState) that we are in conflict */
+  void notifyInConflict();
 
  private:
   inline bool conflictQueueEmpty() const {
@@ -858,6 +858,8 @@ private:
   ArithRewriter d_rewriter;
   /** The operator elimination utility */
   OperatorElim d_opElim;
+  /** Are we in conflict? */
+  context::CDO<bool> d_arithStateConflict;
 };/* class TheoryArithPrivate */
 
 }/* CVC4::theory::arith namespace */

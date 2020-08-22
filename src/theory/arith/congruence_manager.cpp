@@ -44,12 +44,28 @@ ArithCongruenceManager::ArithCongruenceManager(
       d_avariables(avars),
       d_ee(nullptr)
 {
+  if (options::arithEqSolver())
+  {
+    // use our own copy
+    d_allocEe.reset(new eq::EqualityEngine(d_notify, c, "theory::arith::ArithCongruenceManager", true));
+    d_ee = d_allocEe.get();
+    // set the congruence kinds on the separate equality engine
+    d_ee->addFunctionKind(kind::NONLINEAR_MULT);
+    d_ee->addFunctionKind(kind::EXPONENTIAL);
+    d_ee->addFunctionKind(kind::SINE);
+    d_ee->addFunctionKind(kind::IAND);
+  }
 }
 
-ArithCongruenceManager::~ArithCongruenceManager() {}
+ArithCongruenceManager::~ArithCongruenceManager() {
+}
 
 bool ArithCongruenceManager::needsEqualityEngine(EeSetupInfo& esi)
 {
+  if (options::arithEqSolver())
+  {
+    return false;
+  }
   esi.d_notify = &d_notify;
   esi.d_name = "theory::arith::ArithCongruenceManager";
   return true;
@@ -57,12 +73,16 @@ bool ArithCongruenceManager::needsEqualityEngine(EeSetupInfo& esi)
 
 void ArithCongruenceManager::finishInit(eq::EqualityEngine* ee)
 {
-  Assert(ee != nullptr);
-  d_ee = ee;
-  d_ee->addFunctionKind(kind::NONLINEAR_MULT);
-  d_ee->addFunctionKind(kind::EXPONENTIAL);
-  d_ee->addFunctionKind(kind::SINE);
-  d_ee->addFunctionKind(kind::IAND);
+  if (d_ee==nullptr)
+  {
+    // use it if we didn't allocate it above
+    Assert(ee != nullptr);
+    d_ee = ee;
+    d_ee->addFunctionKind(kind::NONLINEAR_MULT);
+    d_ee->addFunctionKind(kind::EXPONENTIAL);
+    d_ee->addFunctionKind(kind::SINE);
+    d_ee->addFunctionKind(kind::IAND);
+  }
 }
 
 ArithCongruenceManager::Statistics::Statistics():

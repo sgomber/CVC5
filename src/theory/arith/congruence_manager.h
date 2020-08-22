@@ -95,6 +95,8 @@ private:
 
   /** The equality engine being used by this class */
   eq::EqualityEngine* d_ee;
+  /** The equality engine we allocated */
+  std::unique_ptr<eq::EqualityEngine> d_allocEe;
 
   void raiseConflict(Node conflict);
 public:

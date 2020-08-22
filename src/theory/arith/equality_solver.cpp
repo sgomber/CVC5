@@ -38,7 +38,15 @@ bool EqualitySolver::needsEqualityEngine(EeSetupInfo& esi)
   return true;
 }
 
-void EqualitySolver::setEqualityEngine(eq::EqualityEngine* ee) { d_ee = ee; }
+void EqualitySolver::setEqualityEngine(eq::EqualityEngine* ee) 
+{
+  d_ee = ee; 
+  // add the function kinds
+  d_ee->addFunctionKind(kind::NONLINEAR_MULT);
+  d_ee->addFunctionKind(kind::EXPONENTIAL);
+  d_ee->addFunctionKind(kind::SINE);
+  d_ee->addFunctionKind(kind::IAND);
+}
 
 bool EqualitySolver::preNotifyFact(TNode atom, bool pol, TNode fact)
 {

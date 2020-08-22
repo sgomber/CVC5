@@ -159,7 +159,8 @@ TheoryArithPrivate::TheoryArithPrivate(TheoryArith& containing,
       d_newFacts(false),
       d_previousStatus(Result::SAT_UNKNOWN),
       d_statistics(),
-      d_opElim(pnm, logicInfo)
+      d_opElim(pnm, logicInfo),
+      d_arithStateConflict(c, false)
 {
 }
 
@@ -531,6 +532,16 @@ void TheoryArithPrivate::raiseBlackBoxConflict(Node bb){
   if(d_blackBoxConflict.get().isNull()){
     d_blackBoxConflict = bb;
   }
+}
+
+bool TheoryArithPrivate::anyConflict() const
+{
+  return !conflictQueueEmpty() || !d_blackBoxConflict.get().isNull();
+}
+
+void TheoryArithPrivate::notifyInConflict()
+{
+  d_arithStateConflict = true;
 }
 
 void TheoryArithPrivate::revertOutOfConflict(){
@@ -1982,6 +1993,8 @@ void TheoryArithPrivate::outputLemma(TNode lem) {
 
 void TheoryArithPrivate::outputConflict(TNode lit) {
   Debug("arith::channel") << "Arith conflict: " << lit << std::endl;
+  //d_containing.d_aim.conflict(lit);
+  //d_containing.d_astate.notifyInConflict();
   (d_containing.d_out)->conflict(lit);
 }
 

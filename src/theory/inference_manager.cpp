@@ -125,6 +125,7 @@ Node InferManager::mkExplain(TNode lit) const
 
 void InferManager::explain(TNode lit, std::vector<TNode>& assumptions) const
 {
+  Trace("infer-manager") << "InferManager::explain: " << lit << std::endl;
   Assert(d_ee != nullptr);
   bool polarity = lit.getKind() != NOT;
   TNode atom = polarity ? lit : lit[0];
@@ -148,14 +149,17 @@ void InferManager::explain(TNode lit, std::vector<TNode>& assumptions) const
     if (std::find(assumptions.begin(), assumptions.end(), a)
         == assumptions.end())
     {
+      Trace("infer-manager") << "..." << a << std::endl;
       assumptions.push_back(a);
     }
   }
+  Trace("infer-manager") << "InferManager::finished explain" << std::endl;
 }
 
 void InferManager::assertInternalFact(TNode atom, bool pol, TNode fact)
 {
   Assert(d_ee != nullptr);
+  Trace("infer-manager") << "InferManager::assertInternalFact: " << fact << std::endl;
   if (atom.getKind() == kind::EQUAL)
   {
     d_ee->assertEquality(atom, pol, fact);
@@ -166,6 +170,7 @@ void InferManager::assertInternalFact(TNode atom, bool pol, TNode fact)
   }
   // call the notify fact method, where this is an internally generated fact
   d_theory.notifyFact(atom, pol, fact, true);
+  Trace("infer-manager") << "InferManager::finished assertInternalFact" << std::endl;
   // TODO: keep set for fact?
 }
 
