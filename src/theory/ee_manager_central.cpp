@@ -21,10 +21,8 @@
 namespace CVC4 {
 namespace theory {
 
-EqEngineManagerCentral::EqEngineManagerCentral(TheoryEngine& te,
-                                               SharedTermsDatabase* sdb)
+EqEngineManagerCentral::EqEngineManagerCentral(TheoryEngine& te)
     : d_te(te),
-      d_sdb(sdb),
       d_centralEENotify(),
       // we do not require any term triggers in the central equality engine
       d_centralEqualityEngine(
@@ -34,8 +32,10 @@ EqEngineManagerCentral::EqEngineManagerCentral(TheoryEngine& te,
 
 EqEngineManagerCentral::~EqEngineManagerCentral() {}
 
-void EqEngineManagerCentral::initializeTheories()
+void EqEngineManagerCentral::initializeTheories(SharedSolver * sharedSolver)
 {
+  // set the shared solver's equality engine
+  sharedSolver->setEqualityEngine(&d_centralEqualityEngine);
   // allocate equality engines per theory
   for (TheoryId theoryId = theory::THEORY_FIRST;
        theoryId != theory::THEORY_LAST;
@@ -180,70 +180,6 @@ void EqEngineManagerCentral::CentralNotifyClass::eqNotifyDisequal(TNode t1,
   {
     notify->eqNotifyDisequal(t1, t2, reason);
   }
-}
-
-EqualityStatus EqEngineManagerCentral::getEqualityStatus(TNode a, TNode b)
-{
-  if (d_centralEqualityEngine.hasTerm(a) && d_centralEqualityEngine.hasTerm(b))
-  {
-    // Check for equality (simplest)
-    if (d_centralEqualityEngine.areEqual(a, b))
-    {
-      // The terms are implied to be equal
-      return EQUALITY_TRUE;
-    }
-    // Check for disequality
-    if (d_centralEqualityEngine.areDisequal(a, b, false))
-    {
-      // The terms are implied to be dis-equal
-      return EQUALITY_FALSE;
-    }
-  }
-  return EQUALITY_UNKNOWN;
-}
-
-static Node mkAnd(const std::vector<TNode>& conjunctions)
-{
-  Assert(conjunctions.size() > 0);
-
-  std::set<TNode> all;
-  all.insert(conjunctions.begin(), conjunctions.end());
-
-  if (all.size() == 1)
-  {
-    // All the same, or just one
-    return conjunctions[0];
-  }
-
-  NodeBuilder<> conjunction(kind::AND);
-  std::set<TNode>::const_iterator it = all.begin();
-  std::set<TNode>::const_iterator it_end = all.end();
-  while (it != it_end)
-  {
-    conjunction << *it;
-    ++it;
-  }
-
-  return conjunction;
-}
-
-TrustNode EqEngineManagerCentral::explainShared(TNode literal) const
-{
-  bool polarity = literal.getKind() != kind::NOT;
-  TNode atom = polarity ? literal : literal[0];
-  Assert(atom.getKind() == kind::EQUAL);
-  std::vector<TNode> assumptions;
-  d_centralEqualityEngine.explainEquality(
-      atom[0], atom[1], polarity, assumptions);
-  Node exp = mkAnd(assumptions);
-  return TrustNode::mkTrustPropExp(literal, exp, nullptr);
-}
-
-void EqEngineManagerCentral::assertSharedEquality(TNode equality,
-                                                  bool polarity,
-                                                  TNode reason)
-{
-  d_centralEqualityEngine.assertEquality(equality, polarity, reason);
 }
 
 }  // namespace theory

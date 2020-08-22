@@ -36,9 +36,8 @@ CombinationEngine::CombinationEngine(TheoryEngine& te,
       d_paraTheories(paraTheories),
       d_paraSet(0),
       d_eemUse(nullptr),
-      d_mmUse(nullptr),
-      d_sharedTerms(nullptr),
-      d_sharedTermsVisitor(nullptr)
+      d_mmUse(nullptr)
+      d_ssUse(nullptr)
 {
 }
 
@@ -46,28 +45,23 @@ CombinationEngine::~CombinationEngine() {}
 
 void CombinationEngine::finishInit()
 {
-  // Always needs shared terms database. In all cases, shared terms
-  // database is used as a way of tracking which calls to Theory::addSharedTerm
-  // we need to make in preNotifySharedFact.
-  // In distributed equality engine management, shared terms database also
-  // maintains an equality engine. In central equality engine management,
-  // it does not.
-  d_sharedTerms.reset(new SharedTermsDatabase(&d_te, d_te.getSatContext()));
-  d_sharedTermsVisitor.reset(new SharedTermsVisitor(*d_sharedTerms.get()));
-  // create the equality engine and model managers
+  // create the equality engine, model manager, and shared solver
   if (options::eeMode() == options::EqEngineMode::DISTRIBUTED)
   {
     // make the distributed equality engine manager
     std::unique_ptr<EqEngineManagerDistributed> eeDistributed(
-        new EqEngineManagerDistributed(d_te, d_sharedTerms.get()));
+        new EqEngineManagerDistributed(d_te));
     // make the distributed model manager
     d_mmUse.reset(new ModelManagerDistributed(d_te, *eeDistributed.get()));
     d_eemUse = std::move(eeDistributed);
+    // use the distributed shared solver
+    d_ssUse.reset(new SharedSolverDistributed(d_te));
   }
   else if (options::eeMode() == options::EqEngineMode::CENTRAL)
   {
-    d_eemUse.reset(new EqEngineManagerCentral(d_te, nullptr));
+    d_eemUse.reset(new EqEngineManagerCentral(d_te));
     d_mmUse.reset(new ModelManagerCentral(d_te));
+    //d_ssUse.reset(new SharedSolverCentral(d_te));
   }
   else
   {
@@ -77,7 +71,7 @@ void CombinationEngine::finishInit()
 
   Assert(d_eemUse != nullptr);
   // initialize equality engines in all theories, including quantifiers engine
-  d_eemUse->initializeTheories();
+  d_eemUse->initializeTheories(d_ssUse.get());
 
   Assert(d_mmUse != nullptr);
   // initialize the model manager
@@ -118,94 +112,6 @@ theory::TheoryModel* CombinationEngine::getModel()
 }
 
 SharedSolver* CombinationEngine::getSharedSolver() { return d_ssUse.get(); }
-
-void CombinationEngine::preRegisterShared(TNode t, bool multipleTheories)
-{
-  if (d_sharedTerms == nullptr)
-  {
-    return;
-  }
-  // register it with the equality engine manager if shared is enabled
-  if (d_logicInfo.isSharingEnabled())
-  {
-    d_eemUse->preRegisterShared(t);
-  }
-  // if multiple theories are present in t
-  if (multipleTheories)
-  {
-    // Collect the shared terms if there are multiple theories
-    // This calls d_sharedTerms->addSharedTerm, possible multiple times
-    NodeVisitor<SharedTermsVisitor>::run(*d_sharedTermsVisitor.get(), t);
-  }
-}
-
-void CombinationEngine::preNotifySharedFact(TNode atom)
-{
-  Assert(d_sharedTerms != nullptr);
-  if (d_sharedTerms->hasSharedTerms(atom))
-  {
-    // Notify the theories the shared terms
-    SharedTermsDatabase::shared_terms_iterator it = d_sharedTerms->begin(atom);
-    SharedTermsDatabase::shared_terms_iterator it_end =
-        d_sharedTerms->end(atom);
-    for (; it != it_end; ++it)
-    {
-      TNode term = *it;
-      Theory::Set theories = d_sharedTerms->getTheoriesToNotify(atom, term);
-      for (TheoryId id = THEORY_FIRST; id != THEORY_LAST; ++id)
-      {
-        if (Theory::setContains(id, theories))
-        {
-          Theory* t = d_te.theoryOf(id);
-          // call the add shared term method
-          t->addSharedTerm(term);
-        }
-      }
-      d_sharedTerms->markNotified(term, theories);
-    }
-  }
-}
-
-EqualityStatus CombinationEngine::getEqualityStatus(TNode a, TNode b)
-{
-  Assert(a.getType().isComparableTo(b.getType()));
-  // does it have an equality status based on the equality engine manager?
-  EqualityStatus estatus = d_eemUse->getEqualityStatus(a, b);
-  if (estatus != EQUALITY_UNKNOWN)
-  {
-    return estatus;
-  }
-  return d_te.theoryOf(Theory::theoryOf(a.getType()))->getEqualityStatus(a, b);
-}
-
-TrustNode CombinationEngine::explain(TNode literal, TheoryId theory) const
-{
-  TrustNode texp;
-  if (theory == THEORY_BUILTIN)
-  {
-    // explanation based on equality engine manager
-    texp = d_eemUse->explainShared(literal);
-    Debug("theory::explain")
-        << "\tTerm was propagated by THEORY_BUILTIN. Explanation: "
-        << texp.getNode() << std::endl;
-  }
-  else
-  {
-    texp = d_te.theoryOf(theory)->explain(literal);
-    Debug("theory::explain")
-        << "\tTerm was propagated by owner theory: " << theory
-        << ". Explanation: " << texp.getNode() << std::endl;
-  }
-  return texp;
-}
-
-void CombinationEngine::assertSharedEquality(TNode equality,
-                                             bool polarity,
-                                             TNode reason)
-{
-  // assert to the equality engine manager
-  d_eemUse->assertSharedEquality(equality, polarity, reason);
-}
 
 void CombinationEngine::sendLemma(TNode node, TheoryId atomsTo)
 {

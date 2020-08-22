@@ -22,6 +22,11 @@ SharedSolverDistributed::SharedSolverDistributed(TheoryEngine& te)
 {
 }
 
+bool SharedSolverDistributed:: needsEqualityEngine(theory::EeSetupInfo& esi)
+{
+  return d_sharedTerms.needsEqualityEngine(esi);
+}
+
 void SharedSolverDistributed::setEqualityEngine(eq::EqualityEngine* ee)
 {
   d_sharedTerms.setEqualityEngine(ee);

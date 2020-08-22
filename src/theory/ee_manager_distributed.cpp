@@ -21,9 +21,8 @@
 namespace CVC4 {
 namespace theory {
 
-EqEngineManagerDistributed::EqEngineManagerDistributed(TheoryEngine& te,
-                                                       SharedTermsDatabase* sdb)
-    : d_te(te), d_sdb(sdb), d_masterEENotify(nullptr)
+EqEngineManagerDistributed::EqEngineManagerDistributed(TheoryEngine& te)
+    : d_te(te), d_masterEENotify(nullptr)
 {
 }
 
@@ -33,23 +32,22 @@ EqEngineManagerDistributed::~EqEngineManagerDistributed()
   d_modelEeContext.pop();
 }
 
-void EqEngineManagerDistributed::initializeTheories()
+void EqEngineManagerDistributed::initializeTheories(SharedSolver * sharedSolver)
 {
   context::Context* c = d_te.getSatContext();
-  // initialize the shared terms database
-  if (d_sdb != nullptr)
+  // initialize the shared solver
+  Assert (sharedSolver!=nullptr);
+  EeSetupInfo esis;
+  if (sharedSolver->needsEqualityEngine(esis))
   {
-    EeSetupInfo esis;
-    if (d_sdb->needsEqualityEngine(esis))
-    {
-      d_stbEqualityEngine.reset(allocateEqualityEngine(esis, c));
-      d_sdb->setEqualityEngine(d_stbEqualityEngine.get());
-    }
-    else
-    {
-      AlwaysAssert(false)
-          << "Expected shared terms database to use equality engine";
-    }
+    // allocate an equality engine for the shared terms database
+    d_stbEqualityEngine.reset(allocateEqualityEngine(esis, c));
+    sharedSolver->setEqualityEngine(d_stbEqualityEngine.get());
+  }
+  else
+  {
+    AlwaysAssert(false)
+        << "Expected shared solver to use equality engine";
   }
 
   // allocate equality engines per theory
@@ -164,46 +162,6 @@ eq::EqualityEngine* EqEngineManagerDistributed::allocateEqualityEngine(
   }
   // the theory doesn't care about explicit notifications
   return new eq::EqualityEngine(c, esi.d_name, esi.d_constantsAreTriggers);
-}
-
-void EqEngineManagerDistributed::preRegisterShared(TNode t)
-{
-  if (t.getKind() == kind::EQUAL)
-  {
-    // When sharing is enabled, we propagate from the shared terms manager also
-    d_sdb->addEqualityToPropagate(t);
-  }
-}
-
-EqualityStatus EqEngineManagerDistributed::getEqualityStatus(TNode a, TNode b)
-{
-  Assert(d_sdb != nullptr);
-  // if we're using a shared terms database, ask its status if a and b are
-  // shared.
-  if (d_sdb->isShared(a) && d_sdb->isShared(b))
-  {
-    if (d_sdb->areEqual(a, b))
-    {
-      return EQUALITY_TRUE_AND_PROPAGATED;
-    }
-    else if (d_sdb->areDisequal(a, b))
-    {
-      return EQUALITY_FALSE_AND_PROPAGATED;
-    }
-  }
-  return EQUALITY_UNKNOWN;
-}
-
-TrustNode EqEngineManagerDistributed::explainShared(TNode literal) const
-{
-  return d_sdb->explain(literal);
-}
-
-void EqEngineManagerDistributed::assertSharedEquality(TNode equality,
-                                                      bool polarity,
-                                                      TNode reason)
-{
-  d_sdb->assertEquality(equality, polarity, reason);
 }
 
 }  // namespace theory

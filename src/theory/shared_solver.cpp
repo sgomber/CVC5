@@ -34,6 +34,11 @@ SharedSolver::SharedSolver(TheoryEngine& te)
 {
 }
 
+bool SharedSolver::needsEqualityEngine(theory::EeSetupInfo& esi)
+{
+  return false;
+}
+
 void SharedSolver::preRegisterShared(TNode t, bool multipleTheories)
 {
   // register it with the equality engine manager if shared is enabled

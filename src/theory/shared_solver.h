@@ -41,10 +41,17 @@ class SharedSolver
  public:
   SharedSolver(TheoryEngine& te);
   virtual ~SharedSolver() {}
+  //------------------------------------- initialization
+  /**
+   * Returns true if we need an equality engine, this has the same contract
+   * as Theory::needsEqualityEngine.
+   */
+  virtual bool needsEqualityEngine(theory::EeSetupInfo& esi);
   /**
    * Set the equality engine.
    */
   virtual void setEqualityEngine(eq::EqualityEngine* ee) = 0;
+  //------------------------------------- end initialization
   /**
    * Called when the given term t is pre-registered in TheoryEngine.
    *

@@ -27,9 +27,10 @@
 namespace CVC4 {
 
 class TheoryEngine;
-class SharedTermsDatabase;
 
 namespace theory {
+  
+class SharedSolver;
 
 /**
  * The (distributed) equality engine manager. This encapsulates an architecture
@@ -49,13 +50,13 @@ namespace theory {
 class EqEngineManagerDistributed : public EqEngineManager
 {
  public:
-  EqEngineManagerDistributed(TheoryEngine& te, SharedTermsDatabase* sdb);
+  EqEngineManagerDistributed(TheoryEngine& te);
   ~EqEngineManagerDistributed();
   /**
    * Initialize theories. This method allocates unique equality engines
    * per theories and connects them to a master equality engine.
    */
-  void initializeTheories() override;
+  void initializeTheories(SharedSolver * sharedSolver) override;
   /**
    * Initialize model. This method allocates a new equality engine for the
    * model.
@@ -71,22 +72,6 @@ class EqEngineManagerDistributed : public EqEngineManager
   eq::EqualityEngine* getModelEqualityEngine();
   /** get the core equality engine */
   eq::EqualityEngine* getCoreEqualityEngine() override;
-
-  //---------------------------- interaction with CombinationEngine
-  /**
-   * This adds t as an equality to propagate in the shared terms database
-   * if it is an equality.
-   */
-  void preRegisterShared(TNode t) override;
-  /** Get the equality status of a and b.*/
-  EqualityStatus getEqualityStatus(TNode a, TNode b) override;
-  /** Explain literal based on shared terms database */
-  TrustNode explainShared(TNode literal) const override;
-  /** Assert equality to the shared terms database. */
-  void assertSharedEquality(TNode equality,
-                            bool polarity,
-                            TNode reason) override;
-  //---------------------------- end interaction with CombinationEngine
  private:
   /** Allocate equality engine that is context-dependent on c with info esi */
   eq::EqualityEngine* allocateEqualityEngine(EeSetupInfo& esi,
@@ -123,8 +108,6 @@ class EqEngineManagerDistributed : public EqEngineManager
   };
   /** Reference to the theory engine */
   TheoryEngine& d_te;
-  /** Pointer to shared terms database (if it exists) */
-  SharedTermsDatabase* d_sdb;
   /** The master equality engine notify class */
   std::unique_ptr<MasterNotifyClass> d_masterEENotify;
   /** The master equality engine. */

@@ -35,12 +35,12 @@ namespace theory {
 class EqEngineManagerCentral : public EqEngineManager
 {
  public:
-  EqEngineManagerCentral(TheoryEngine& te, SharedTermsDatabase* sdb);
+  EqEngineManagerCentral(TheoryEngine& te);
   ~EqEngineManagerCentral();
   /**
    * Initialize theories
    */
-  void initializeTheories() override;
+  void initializeTheories(SharedSolver * sharedSolver) override;
   /**
    * Initialize model.
    */
@@ -48,16 +48,6 @@ class EqEngineManagerCentral : public EqEngineManager
   /** get the core equality engine */
   eq::EqualityEngine* getCoreEqualityEngine() override;
 
-  //---------------------------- interaction with CombinationEngine
-  /** Get the equality status of a and b.*/
-  EqualityStatus getEqualityStatus(TNode a, TNode b) override;
-  /** Explain literal based on shared terms database */
-  TrustNode explainShared(TNode literal) const override;
-  /** Assert equality to the shared terms database. */
-  void assertSharedEquality(TNode equality,
-                            bool polarity,
-                            TNode reason) override;
-  //---------------------------- end interaction with CombinationEngine
  private:
   /** notify class for central equality engine */
   class CentralNotifyClass : public theory::eq::EqualityEngineNotify
@@ -73,8 +63,6 @@ class EqEngineManagerCentral : public EqEngineManager
     void eqNotifyConstantTermMerge(TNode t1, TNode t2) override;
     void eqNotifyMerge(TNode t1, TNode t2) override;
     void eqNotifyDisequal(TNode t1, TNode t2, TNode reason) override;
-    /** The shared terms database notify class */
-    eq::EqualityEngineNotify* d_sdbNotify;
     /**
      * A table of from theory IDs to notify classes.
      */
@@ -92,8 +80,6 @@ class EqEngineManagerCentral : public EqEngineManager
   };
   /** Reference to the theory engine */
   TheoryEngine& d_te;
-  /** Pointer to shared terms database (if it exists) */
-  SharedTermsDatabase* d_sdb;
   /** The central equality engine notify class */
   CentralNotifyClass d_centralEENotify;
   /** The central equality engine. */

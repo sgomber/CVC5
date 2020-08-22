@@ -1,5 +1,5 @@
 /*********************                                                        */
-/*! \file shared_solver_distributed.h
+/*! \file shared_solver_central.h
  ** \verbatim
  ** Top contributors (to current version):
  **   Andrew Reynolds
@@ -14,11 +14,12 @@
 
 #include "cvc4_private.h"
 
-#ifndef CVC4__THEORY__SHARED_SOLVER_DISTRIBUTED__H
-#define CVC4__THEORY__SHARED_SOLVER_DISTRIBUTED__H
+#ifndef CVC4__THEORY__SHARED_SOLVER_CENTRAL__H
+#define CVC4__THEORY__SHARED_SOLVER_CENTRAL__H
 
 #include "expr/node.h"
 #include "theory/shared_solver.h"
+#include "theory/uf/equality_engine.h"
 
 namespace CVC4 {
 namespace theory {
@@ -26,11 +27,11 @@ namespace theory {
 /**
  * The shared solver in the distributed architecture.
  */
-class SharedSolverDistributed : public SharedSolver
+class SharedSolverCentral : public SharedSolver
 {
  public:
-  SharedSolverDistributed(TheoryEngine& te);
-  virtual ~SharedSolverDistributed() {}
+  SharedSolverCentral(TheoryEngine& te);
+  virtual ~SharedSolverCentral() {}
   //------------------------------------- initialization
   /**
    * Returns true if we need an equality engine, this has the same contract
@@ -54,9 +55,11 @@ class SharedSolverDistributed : public SharedSolver
  protected:
   /** If t is an equality, add it as one that may be propagated */
   void preRegisterSharedInternal(TNode t) override;
+  /** Pointer to the central equality engine */
+  eq::EqualityEngine * d_centralEe;
 };
 
 }  // namespace theory
 }  // namespace CVC4
 
-#endif /* CVC4__THEORY__SHARED_SOLVER_DISTRIBUTED__H */
+#endif /* CVC4__THEORY__SHARED_SOLVER_CENTRAL__H */

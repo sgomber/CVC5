@@ -151,7 +151,7 @@ public:
   SharedTermsDatabase(TheoryEngine* theoryEngine, context::Context* context);
   ~SharedTermsDatabase();
 
-  //============================================= initialization
+  //-------------------------------------------- initialization
   /** Called to set the equality engine. */
   void setEqualityEngine(theory::eq::EqualityEngine* ee);
   /**
@@ -159,7 +159,7 @@ public:
    * as Theory::needsEqualityEngine.
    */
   bool needsEqualityEngine(theory::EeSetupInfo& esi);
-  //============================================= end initialization
+  //-------------------------------------------- end initialization
 
   /**
    * Asserts the equality to the shared terms database,
