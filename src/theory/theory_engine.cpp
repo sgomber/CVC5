@@ -151,7 +151,7 @@ void TheoryEngine::finishInit() {
   CVC4_FOR_EACH_THEORY;
 
   // Initialize the theory combination architecture
-  if (options::tcMode() == options::EqEngineMode::CARE_GRAPH)
+  if (options::tcMode() == options::TcMode::CARE_GRAPH)
   {
     d_tcCareGraph.reset(new CombinationCareGraph(*this, paraTheories));
     d_tc = d_tcCareGraph.get();

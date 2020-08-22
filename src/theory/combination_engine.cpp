@@ -125,17 +125,13 @@ void CombinationEngine::preRegister(TNode t, bool multipleTheories)
   if (d_logicInfo.isSharingEnabled())
   {
     d_eemUse->preRegisterShared(t);
-    // if multiple theories are present in t
-    if (multipleTheories)
-    {
-      // Collect the shared terms if there are multiple theories
-      // This calls d_sharedTerms->addSharedTerm, possible multiple times
-      NodeVisitor<SharedTermsVisitor>::run(*d_sharedTermsVisitor.get(), t);
-    }
   }
-  else
+  // if multiple theories are present in t
+  if (multipleTheories)
   {
-    Assert(!multipleTheories);
+    // Collect the shared terms if there are multiple theories
+    // This calls d_sharedTerms->addSharedTerm, possible multiple times
+    NodeVisitor<SharedTermsVisitor>::run(*d_sharedTermsVisitor.get(), t);
   }
 }
 
