@@ -108,7 +108,7 @@ eq::EqualityEngine* EqEngineManagerCentral::getCoreEqualityEngine()
 }
 
 EqEngineManagerCentral::CentralNotifyClass::CentralNotifyClass()
-    : d_sdbNotify(nullptr), d_mNotify(nullptr), d_quantEngine(nullptr)
+    : d_mNotify(nullptr), d_quantEngine(nullptr)
 {
   for (TheoryId theoryId = theory::THEORY_FIRST;
        theoryId != theory::THEORY_LAST;

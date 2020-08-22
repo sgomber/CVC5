@@ -9,7 +9,7 @@
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
- ** \brief Shared solver in distributed architecture.
+ ** \brief Shared solver in the centralized architecture.
  **/
 
 #include "cvc4_private.h"

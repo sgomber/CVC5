@@ -1,5 +1,5 @@
 /*********************                                                        */
-/*! \file ee_manager_central.cpp
+/*! \file shared_solver_central.cpp
  ** \verbatim
  ** Top contributors (to current version):
  **   Andrew Reynolds
@@ -9,7 +9,7 @@
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
- ** \brief Management of a distributed approach for equality sharing.
+ ** \brief Shared solver in the centralized architecture.
  **/
 
 #include "theory/ee_manager_central.h"
@@ -30,6 +30,7 @@ SharedSolverCentral::~SharedSolverCentral() {}
 
 bool SharedSolverDistributed::needsEqualityEngine(theory::EeSetupInfo& esi)
 {
+  // need an equality engine but don't need notifications
   return true;
 }
 
