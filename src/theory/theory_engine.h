@@ -89,6 +89,7 @@ namespace theory {
   class TheoryModel;
   class CombinationEngine;
   class CombinationCareGraph;
+  class SharedSolver;
 
   class DecisionManager;
   class RelevanceManager;
@@ -146,11 +147,9 @@ class TheoryEngine {
   const LogicInfo& d_logicInfo;
 
   /** The combination manager we are using */
-  theory::CombinationEngine* d_tc;
-  /**
-   * The combination manager
-   */
-  std::unique_ptr<theory::CombinationCareGraph> d_tcCareGraph;
+  std::unique_ptr<theory::CombinationEngine> d_tc;
+  /** The shared solver of the above combination engine. */
+  theory::SharedSolver * d_sharedSolver;
   /**
    * The quantifiers engine
    */

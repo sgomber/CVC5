@@ -33,7 +33,11 @@ class SharedTermsVisitor;
 namespace theory {
 
 /**
- * Manager for doing theory combination.
+ * Manager for doing theory combination. This class is responsible for:
+ * (1) Initializing the various components of theory combination (equality
+ * engine manager, model manager, shared solver) based on the equality engine
+ * mode, and 
+ * (2) Implementing the main combination method (combineTheories).
  */
 class CombinationEngine
 {
@@ -61,6 +65,11 @@ class CombinationEngine
   TheoryModel* getModel();
   //-------------------------- end model
 
+  /** 
+   * Get the shared solver, which is the active component of theory combination
+   * that TheoryEngine interacts with prior to calling combineTheories.
+   */
+  SharedSolver * getSharedSolver();
   //-------------------------- interface used by theory engine
   /**
    * Combine theories, called after FULL effort passes with no lemmas
@@ -134,7 +143,7 @@ class CombinationEngine
   /** The model manager we are using */
   std::unique_ptr<ModelManager> d_mmUse;
   /** The shared solver */
-  std::unique_ptr<SharedSolver> d_ssolver;
+  std::unique_ptr<SharedSolver> d_ssUse;
   /** The database of shared terms.*/
   std::unique_ptr<SharedTermsDatabase> d_sharedTerms;
   /** Visitor for collecting shared terms */

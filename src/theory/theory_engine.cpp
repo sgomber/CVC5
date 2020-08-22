@@ -153,14 +153,15 @@ void TheoryEngine::finishInit() {
   // Initialize the theory combination architecture
   if (options::tcMode() == options::TcMode::CARE_GRAPH)
   {
-    d_tcCareGraph.reset(new CombinationCareGraph(*this, paraTheories));
-    d_tc = d_tcCareGraph.get();
+    d_tc.reset(new CombinationCareGraph(*this, paraTheories));
   }
   else
   {
     AlwaysAssert(false) << "TheoryEngine::finishInit: theory combination mode "
                         << options::tcMode() << " not supported";
   }
+  // get pointer to the shared solver
+  d_sharedSolver = d_tc->getSharedSolver();
   // create the relevance filter if any option requires it
   if (options::relevanceFilter())
   {
@@ -217,7 +218,7 @@ TheoryEngine::TheoryEngine(context::Context* context,
       d_userContext(userContext),
       d_logicInfo(logicInfo),
       d_tc(nullptr),
-      d_tcCareGraph(nullptr),
+      d_sharedSolver(nullptr),
       d_quantEngine(nullptr),
       d_decManager(new DecisionManager(userContext)),
       d_relManager(nullptr),
@@ -532,16 +533,16 @@ void TheoryEngine::check(Theory::Effort effort) {
       if (Trace.isOn("theory::assertions-model")) {
         printAssertions("theory::assertions-model");
       }
-      CombinationEngine* builder = d_tc;
       Assert(builder != nullptr);
+      // reset the model in the combination engine
+      d_tc->resetModel();
       //checks for theories requiring the model go at last call
-      builder->resetModel();
       for (TheoryId theoryId = THEORY_FIRST; theoryId < THEORY_LAST; ++theoryId) {
         if( theoryId!=THEORY_QUANTIFIERS ){
           Theory* theory = d_theoryTable[theoryId];
           if (theory && d_logicInfo.isTheoryEnabled(theoryId)) {
             if( theory->needsCheckLastEffort() ){
-              if (!builder->buildModel())
+              if (!d_tc->buildModel())
               {
                 break;
               }
@@ -565,7 +566,7 @@ void TheoryEngine::check(Theory::Effort effort) {
         d_inSatMode = true;
         if (d_eager_model_building)
         {
-          builder->buildModel();
+          d_tc->buildModel();
         }
       }
     }
@@ -574,12 +575,9 @@ void TheoryEngine::check(Theory::Effort effort) {
     Debug("theory") << ", need check = " << (needCheck() ? "YES" : "NO") << endl;
 
     if( Theory::fullEffort(effort) && !d_inConflict && !needCheck()) {
-      // case where we are about to answer SAT, the master equality engine,
-      // if it exists, must be consistent.
-      CombinationEngine* builder = d_tc;
       // Do post-processing of model from the theories (used for THEORY_SEP
       // to construct heap model)
-      builder->postProcessModel(d_incomplete.get());
+      d_tc->postProcessModel(d_incomplete.get());
     }
   } catch(const theory::Interrupted&) {
     Trace("theory") << "TheoryEngine::check() => interrupted" << endl;

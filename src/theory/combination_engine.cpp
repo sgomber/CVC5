@@ -24,7 +24,7 @@
 #include "theory/term_registration_visitor.h"
 #include "theory/theory_engine.h"
 #include "theory/shared_solver_distributed.h"
-#include "theory/shared_solver_central.h"
+//#include "theory/shared_solver_central.h"
 
 namespace CVC4 {
 namespace theory {
@@ -115,6 +115,11 @@ void CombinationEngine::postProcessModel(bool incomplete)
 theory::TheoryModel* CombinationEngine::getModel()
 {
   return d_mmUse->getModel();
+}
+
+SharedSolver * CombinationEngine::getSharedSolver()
+{
+  return d_ssUse.get();
 }
 
 void CombinationEngine::preRegisterShared(TNode t, bool multipleTheories)

@@ -9,7 +9,7 @@
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
- ** \brief Utilities for shared solver
+ ** \brief Base class for shared solver
  **/
 
 #include "cvc4_private.h"
@@ -28,19 +28,23 @@ class TheoryEngine;
 namespace theory {
 
 /**
- * Virtual base class for shared solver. This is the component of theory
- * engine that behaves like a theory solver whose purpose is to ensure the
- * main theory combination method can be performed (in CombinationEngine).
- * Its role is to as necessary:
+ * A base class for shared solver. The shared solver is the component of theory
+ * engine that behaves like a theory solver, and whose purpose is to ensure the
+ * main theory combination method can be performed in CombinationEngine.
+ * Its role is to:
  * (1) Notify the individual theories of shared terms via addSharedTerms,
- * (2) Be the official standard for equality statuses,
- * (3) Propagate equalities when necessary and explain them.
+ * (2) Be the official interface for equality statuses,
+ * (3) Propagate equalities to TheoryEngine when necessary and explain them.
  */
 class SharedSolver
 {
  public:
   SharedSolver(TheoryEngine& te);
   virtual ~SharedSolver() {}
+  /**
+   * Set the equality engine.
+   */
+  virtual void setEqualityEngine(eq::EqualityEngine * ee) = 0;
   /**
    * Called when the given term t is pre-registered in TheoryEngine.
    *
@@ -68,15 +72,12 @@ class SharedSolver
    * This method is used by theories via Valuation mostly for determining their
    * care graph.
    */
-  EqualityStatus getEqualityStatus(TNode a, TNode b);
+  virtual EqualityStatus getEqualityStatus(TNode a, TNode b);
   /**
    * Explain literal, which returns a conjunction of literals that that entail
-   * the given one. The shared terms database is used to find this explanation.
-   *
-   * This method is used by TheoryEngine when it wants an explanation of a
-   * propagation that was made by the shared terms database.
+   * the given one.
    */
-  TrustNode explainShared(TNode literal, TheoryId theory) const;
+  virtual TrustNode explain(TNode literal, TheoryId id);
   /**
    * Assert equality to the shared terms database.
    *
@@ -89,12 +90,13 @@ class SharedSolver
                                     TNode reason);
 
  protected:
+  /**
+   * Explain literal, which returns a conjunction of literals that that entail
+   * the given one.
+   */
+  virtual TrustNode explainShared(TNode literal);
   /** Solver-specific pre-register shared */
-  virtual void preRegisterShared(TNode t) = 0;
-  /** Solver-specific get equality status */
-  virtual void getEqualityStatusInternal(TNode t) = 0;
-  /** Solver-specific explain shared */
-  virtual void explainSharedInternal(TNode t) = 0;
+  virtual void preRegisterSharedInternal(TNode t) = 0;
   /** Reference to the theory engine */
   TheoryEngine& d_te;
   /** Logic info of theory engine (cached) */
@@ -108,4 +110,4 @@ class SharedSolver
 }  // namespace theory
 }  // namespace CVC4
 
-#endif /* CVC4__THEORY__EE_MANAGER__H */
+#endif /* CVC4__THEORY__SHARED_SOLVER__H */

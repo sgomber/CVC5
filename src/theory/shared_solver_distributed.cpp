@@ -9,14 +9,10 @@
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
- ** \brief Management of a distributed approach for equality sharing.
+ ** \brief Shared solver in the distributed architecture
  **/
 
-#include "theory/ee_manager_distributed.h"
-
-#include "theory/quantifiers_engine.h"
-#include "theory/shared_terms_database.h"
-#include "theory/theory_engine.h"
+#include "theory/shared_solver_distributed.h"
 
 namespace CVC4 {
 namespace theory {
@@ -26,27 +22,31 @@ SharedSolverDistributed::SharedSolverDistributed(TheoryEngine& te)
 {
 }
 
+void SharedSolverDistributed::setEqualityEngine(eq::EqualityEngine * ee)
+{
+  d_sharedTerms.setEqualityEngine(ee);
+}
+
 void SharedSolverDistributed::preRegisterSharedInternal(TNode t)
 {
   if (t.getKind() == kind::EQUAL)
   {
     // When sharing is enabled, we propagate from the shared terms manager also
-    d_sharedTerms->addEqualityToPropagate(t);
+    d_sharedTerms.addEqualityToPropagate(t);
   }
 }
 
 EqualityStatus SharedSolverDistributed::getEqualityStatus(TNode a, TNode b)
 {
-  Assert(d_sharedTerms != nullptr);
   // if we're using a shared terms database, ask its status if a and b are
   // shared.
-  if (d_sharedTerms->isShared(a) && d_sharedTerms->isShared(b))
+  if (d_sharedTerms.isShared(a) && d_sharedTerms.isShared(b))
   {
-    if (d_sharedTerms->areEqual(a, b))
+    if (d_sharedTerms.areEqual(a, b))
     {
       return EQUALITY_TRUE_AND_PROPAGATED;
     }
-    else if (d_sharedTerms->areDisequal(a, b))
+    else if (d_sharedTerms.areDisequal(a, b))
     {
       return EQUALITY_FALSE_AND_PROPAGATED;
     }
@@ -54,16 +54,16 @@ EqualityStatus SharedSolverDistributed::getEqualityStatus(TNode a, TNode b)
   return EQUALITY_UNKNOWN;
 }
 
-TrustNode SharedSolverDistributed::explainSharedInternal(TNode literal) const
+TrustNode SharedSolverDistributed::explainShared(TNode literal)
 {
-  return d_sharedTerms->explain(literal);
+  return d_sharedTerms.explain(literal);
 }
 
 void SharedSolverDistributed::assertSharedEquality(TNode equality,
                                                    bool polarity,
                                                    TNode reason)
 {
-  d_sharedTerms->assertEquality(equality, polarity, reason);
+  d_sharedTerms.assertEquality(equality, polarity, reason);
 }
 
 }  // namespace theory

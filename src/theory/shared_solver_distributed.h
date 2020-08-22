@@ -31,20 +31,21 @@ class SharedSolverDistributed : public SharedSolver
  public:
   SharedSolverDistributed(TheoryEngine& te);
   virtual ~SharedSolverDistributed() {}
-  /**
-   * Assert equality to the shared terms database.
-   */
+  /** Set equality engine in the shared terms database */
+  void setEqualityEngine(eq::EqualityEngine * ee) override;
+  /** Assert equality to the shared terms database. */
   void assertSharedEquality(TNode equality,
                             bool polarity,
                             TNode reason) override;
-
+  /**
+   * Get equality status based on the equality engine of shared terms database
+   */
+  EqualityStatus getEqualityStatus(TNode a, TNode b) override;
+  /** Explain literal that was propagated using shared terms database */
+  TrustNode explainShared(TNode literal) override;
  protected:
-  /** Solver-specific pre-register shared */
+  /** If t is an equality, add it as one that may be propagated */
   void preRegisterSharedInternal(TNode t) override;
-  /** Solver-specific get equality status */
-  void getEqualityStatus(TNode t) override;
-  /** Solver-specific explain shared */
-  void explainSharedInternal(TNode t) override;
 };
 
 }  // namespace theory

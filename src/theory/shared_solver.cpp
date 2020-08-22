@@ -15,6 +15,7 @@
 #include "theory/shared_solver.h"
 
 #include "theory/theory_engine.h"
+#include "expr/node_visitor.h"
 
 namespace CVC4 {
 namespace theory {
@@ -25,17 +26,13 @@ namespace theory {
 // In distributed equality engine management, shared terms database also
 // maintains an equality engine. In central equality engine management,
 // it does not.
-SharedSolver::SharedSolver(TheoryEngine& te,
-                           const std::vector<Theory*>& paraTheories)
+SharedSolver::SharedSolver(TheoryEngine& te)
     : d_te(te),
       d_logicInfo(te.getLogicInfo()),
-      d_paraTheories(paraTheories),
       d_sharedTerms(&d_te, d_te.getSatContext()),
       d_sharedTermsVisitor(d_sharedTerms)
 {
 }
-
-SharedSolver::~SharedSolver() {}
 
 void SharedSolver::preRegisterShared(TNode t, bool multipleTheories)
 {
@@ -48,24 +45,24 @@ void SharedSolver::preRegisterShared(TNode t, bool multipleTheories)
   if (multipleTheories)
   {
     // Collect the shared terms if there are multiple theories
-    // This calls d_sharedTerms->addSharedTerm, possible multiple times
-    NodeVisitor<SharedTermsVisitor>::run(*d_sharedTermsVisitor.get(), t);
+    // This calls Theory::addSharedTerm, possible multiple times
+    NodeVisitor<SharedTermsVisitor>::run(d_sharedTermsVisitor, t);
   }
 }
 
 void SharedSolver::preNotifySharedFact(TNode atom)
 {
-  Assert(d_sharedTerms != nullptr);
-  if (d_sharedTerms->hasSharedTerms(atom))
+  if (d_sharedTerms.hasSharedTerms(atom))
   {
-    // Notify the theories the shared terms
-    SharedTermsDatabase::shared_terms_iterator it = d_sharedTerms->begin(atom);
+    // Always notify the theories the shared terms, which is independent of
+    // the architecture currently.
+    SharedTermsDatabase::shared_terms_iterator it = d_sharedTerms.begin(atom);
     SharedTermsDatabase::shared_terms_iterator it_end =
-        d_sharedTerms->end(atom);
+        d_sharedTerms.end(atom);
     for (; it != it_end; ++it)
     {
       TNode term = *it;
-      Theory::Set theories = d_sharedTerms->getTheoriesToNotify(atom, term);
+      Theory::Set theories = d_sharedTerms.getTheoriesToNotify(atom, term);
       for (TheoryId id = THEORY_FIRST; id != THEORY_LAST; ++id)
       {
         if (Theory::setContains(id, theories))
@@ -75,42 +72,42 @@ void SharedSolver::preNotifySharedFact(TNode atom)
           t->addSharedTerm(term);
         }
       }
-      d_sharedTerms->markNotified(term, theories);
+      d_sharedTerms.markNotified(term, theories);
     }
   }
 }
 
 EqualityStatus SharedSolver::getEqualityStatus(TNode a, TNode b)
 {
-  Assert(a.getType().isComparableTo(b.getType()));
-  // does it have an equality status based on the equality engine manager?
-  EqualityStatus estatus = getEqualityStatusInternal(a, b);
-  if (estatus != EQUALITY_UNKNOWN)
-  {
-    return estatus;
-  }
-  return d_te.theoryOf(Theory::theoryOf(a.getType()))->getEqualityStatus(a, b);
+  return EQUALITY_UNKNOWN;
 }
 
-TrustNode SharedSolver::explain(TNode literal, TheoryId theory) const
+TrustNode SharedSolver::explain(TNode literal, TheoryId id)
 {
   TrustNode texp;
-  if (theory == THEORY_BUILTIN)
+  if (id == THEORY_BUILTIN)
   {
-    // explanation based on equality engine manager
-    texp = explainSharedInternal(literal);
+    // explanation based on the specific solver
+    texp = explainShared(literal);
     Debug("theory::explain")
         << "\tTerm was propagated by THEORY_BUILTIN. Explanation: "
         << texp.getNode() << std::endl;
   }
   else
   {
-    texp = d_te.theoryOf(theory)->explain(literal);
+    // By default, we ask the individual theory for the explanation.
+    // It is possible that a centralized approach could preempt this.
+    texp = d_te.theoryOf(id)->explain(literal);
     Debug("theory::explain")
-        << "\tTerm was propagated by owner theory: " << theory
+        << "\tTerm was propagated by owner theory: " << id
         << ". Explanation: " << texp.getNode() << std::endl;
   }
   return texp;
+}
+
+TrustNode SharedSolver::explainShared(TNode literal)
+{
+  Unimplemented() << "SharedSolver does not implement the explainShared interface!";
 }
 
 void SharedSolver::assertSharedEquality(TNode equality,
