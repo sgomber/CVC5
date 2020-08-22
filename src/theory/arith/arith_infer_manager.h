@@ -18,8 +18,8 @@
 #define CVC4__THEORY__ARITH__ARITH_INFER_MANAGER_H
 
 #include "context/cdhashmap.h"
-#include "theory/inference_manager.h"
 #include "expr/node.h"
+#include "theory/inference_manager.h"
 
 namespace CVC4 {
 namespace theory {
@@ -36,7 +36,10 @@ class ArithInferManager : public InferManager
   typedef context::CDHashMap<Node, bool, NodeHashFunction> NodeMap;
 
  public:
-  ArithInferManager(Theory& t, TheoryState& state, TheoryArithPrivate& p, EqualitySolver* es);
+  ArithInferManager(Theory& t,
+                    TheoryState& state,
+                    TheoryArithPrivate& p,
+                    EqualitySolver* es);
   ~ArithInferManager() {}
   /**
    * Return an explanation for the literal represented by parameter n

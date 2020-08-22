@@ -45,7 +45,8 @@ TheoryArith::TheoryArith(context::Context* c,
       d_proofRecorder(nullptr),
       d_astate(*d_internal, c, u, valuation),
       d_im(*this, d_astate),
-      d_eqSolver(options::arithEqSolver() ? new EqualitySolver(d_astate, d_im) : nullptr),
+      d_eqSolver(options::arithEqSolver() ? new EqualitySolver(d_astate, d_im)
+                                          : nullptr),
       d_aim(*this, d_astate, *d_internal, d_eqSolver.get())
 {
   smtStatisticsRegistry()->registerStat(&d_ppRewriteTimer);

@@ -20,9 +20,9 @@
 namespace CVC4 {
 namespace theory {
 namespace arith {
-  
+
 ArithInferManager::ArithInferManager(Theory& t,
-                                     TheoryState& state, 
+                                     TheoryState& state,
                                      TheoryArithPrivate& p,
                                      EqualitySolver* es)
     : InferManager(t, state),
@@ -55,7 +55,7 @@ bool ArithInferManager::propagateManagedLit(TNode lit, bool fromPrivate)
 {
   if (d_esolver != nullptr)
   {
-    if (d_propagationMap.find(lit)!=d_propagationMap.end())
+    if (d_propagationMap.find(lit) != d_propagationMap.end())
     {
       // it's already been propagated (probably by the other module)
       return d_state.isInConflict();
