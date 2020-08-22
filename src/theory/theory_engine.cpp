@@ -43,13 +43,13 @@
 #include "theory/care_graph.h"
 #include "theory/combination_care_graph.h"
 #include "theory/decision_manager.h"
-#include "theory/shared_solver.h"
 #include "theory/quantifiers/first_order_model.h"
 #include "theory/quantifiers/fmf/model_engine.h"
 #include "theory/quantifiers/theory_quantifiers.h"
 #include "theory/quantifiers_engine.h"
 #include "theory/relevance_manager.h"
 #include "theory/rewriter.h"
+#include "theory/shared_solver.h"
 #include "theory/theory.h"
 #include "theory/theory_model.h"
 #include "theory/theory_traits.h"
@@ -1756,7 +1756,8 @@ void TheoryEngine::getExplanation(std::vector<NodeTheoryPair>& explanationVector
     }
 
     // explain using the combination engine
-    TrustNode texp = d_sharedSolver->explain(toExplain.d_node, toExplain.d_theory);
+    TrustNode texp =
+        d_sharedSolver->explain(toExplain.d_node, toExplain.d_theory);
     Node explanation = texp.getNode();
 
     Debug("theory::explain")

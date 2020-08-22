@@ -122,10 +122,7 @@ void SharedSolver::assertSharedEquality(TNode equality,
   // do nothing
 }
 
-bool SharedSolver::isShared(TNode t) const
-{
-  return d_sharedTerms.isShared(t);
-}
- 
+bool SharedSolver::isShared(TNode t) const { return d_sharedTerms.isShared(t); }
+
 }  // namespace theory
 }  // namespace CVC4

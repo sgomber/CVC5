@@ -136,7 +136,7 @@ class CombinationModelBased : public CombinationEngine
    */
   std::map<TNode, std::vector<TNode> > d_shared_terms_merge;
   /** */
-  SharedTermsDatabase * d_sharedTerms;
+  SharedTermsDatabase* d_sharedTerms;
 };
 
 }  // namespace theory
