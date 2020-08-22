@@ -42,7 +42,13 @@ void EqualitySolver::setEqualityEngine(eq::EqualityEngine* ee) { d_ee = ee; }
 
 bool EqualitySolver::preNotifyFact(TNode atom, bool pol, TNode fact)
 {
-  return atom.getKind() != EQUAL;
+  if (atom.getKind()==EQUAL)
+  {
+    Trace("arith-eq-solver") << "EqualitySolver::preNotifyFact: " << fact << std::endl;
+    return false;
+  }
+  // don't process
+  return true;
 }
 
 TrustNode EqualitySolver::explainLit(TNode lit)
@@ -50,14 +56,21 @@ TrustNode EqualitySolver::explainLit(TNode lit)
   // if we propagated this, we explain it
   if (d_propLits.find(lit) != d_propLits.end())
   {
-    return d_aim.explainLit(lit);
+    TrustNode texp = d_aim.explainLit(lit);
+    
+    Trace("arith-eq-solver") << "EqualitySolver::explainLit: " << lit << " returned " << texp.getNode() << std::endl;
+    return texp;
   }
   return TrustNode::null();
 }
 
 bool EqualitySolver::propagateLit(TNode lit)
 {
-  Assert(d_propLits.find(lit) == d_propLits.end());
+  if (d_astate.isInConflict())
+  {
+    return false;
+  }
+  Assert(d_propLits.find(lit) == d_propLits.end());  
   d_propLits.insert(lit);
   return d_aim.propagateLit(lit);
 }
@@ -73,6 +86,7 @@ void EqualitySolver::notifyFact(TNode atom,
 bool EqualitySolver::EqualitySolverNotify::eqNotifyTriggerPredicate(
     TNode predicate, bool value)
 {
+  Trace("arith-eq-solver") << "...propagate (predicate) " << predicate << " -> " << value << std::endl;
   if (value)
   {
     return d_esolver.propagateLit(predicate);
@@ -83,6 +97,7 @@ bool EqualitySolver::EqualitySolverNotify::eqNotifyTriggerPredicate(
 bool EqualitySolver::EqualitySolverNotify::eqNotifyTriggerTermEquality(
     TheoryId tag, TNode t1, TNode t2, bool value)
 {
+  Trace("arith-eq-solver") << "...propagate (term eq) " << t1.eqNode(t2) << " -> " << value << std::endl;
   if (value)
   {
     return d_esolver.propagateLit(t1.eqNode(t2));
@@ -93,6 +108,7 @@ bool EqualitySolver::EqualitySolverNotify::eqNotifyTriggerTermEquality(
 void EqualitySolver::EqualitySolverNotify::eqNotifyConstantTermMerge(TNode t1,
                                                                      TNode t2)
 {
+  Trace("arith-eq-solver") << "...conflict merge " << t1 << " " << t2 << std::endl;
   return d_aim.conflictEqConstantMerge(t1, t2);
 }
 

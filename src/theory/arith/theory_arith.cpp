@@ -130,12 +130,16 @@ void TheoryArith::postCheck(Effort level) { d_internal->postCheck(level); }
 
 bool TheoryArith::preNotifyFact(TNode atom, bool pol, TNode fact, bool isPrereg)
 {
-  d_internal->preNotifyFact(atom, pol, fact, isPrereg);
   if (d_eqSolver != nullptr)
   {
     // assert equalities directly to equality engine
-    return d_eqSolver->preNotifyFact(atom, pol, fact);
+    if (!d_eqSolver->preNotifyFact(atom, pol, fact))
+    {
+      return false;
+    }
   }
+  d_internal->notifyFact(atom, pol, fact);
+  // not asserting fact
   return true;
 }
 
@@ -143,6 +147,11 @@ void TheoryArith::notifyFact(TNode atom, bool pol, TNode fact, bool isInternal)
 {
   Assert(d_eqSolver != nullptr);
   d_eqSolver->notifyFact(atom, pol, fact, isInternal);
+  // if not in conflict from pure equality
+  if (!d_astate.isInConflict())
+  {
+    d_internal->notifyFact(atom, pol, fact);
+  }
 }
 
 bool TheoryArith::needsCheckLastEffort() {

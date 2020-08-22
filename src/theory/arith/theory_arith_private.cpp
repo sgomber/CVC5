@@ -3350,10 +3350,7 @@ bool TheoryArithPrivate::preCheck(Theory::Effort level)
   return false;
 }
 
-bool TheoryArithPrivate::preNotifyFact(TNode atom,
-                                       bool pol,
-                                       TNode fact,
-                                       bool isPrereg)
+void TheoryArithPrivate::notifyFact(TNode atom, bool pol, TNode fact)
 {
   ConstraintP curr = constraintFromFactQueue(fact);
   if (curr != NullConstraint)
@@ -3361,8 +3358,6 @@ bool TheoryArithPrivate::preNotifyFact(TNode atom,
     bool res CVC4_UNUSED = assertionCases(curr);
     Assert(!res || anyConflict());
   }
-  // we do not assert the fact to the equality engine
-  return true;
 }
 
 void TheoryArithPrivate::postCheck(Theory::Effort effortLevel)
