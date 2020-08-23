@@ -86,7 +86,7 @@ class TheoryModel : public Model
  public:
   TheoryModel(context::Context* c, std::string name, bool enableFuncModels);
   ~TheoryModel() override;
-  /** 
+  /**
    * Finish initialize, where ee is the equality engine that this model
    * object should use.
    */

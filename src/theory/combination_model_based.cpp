@@ -37,32 +37,30 @@ bool CombinationModelBased::buildModel()
 
 void CombinationModelBased::combineTheories()
 {
-  Assert (!d_mmanager->isModelBuilt());
-  
+  Assert(!d_mmanager->isModelBuilt());
+
   // push a SAT context
   context::Context* c = d_te.getSatContext();
   c->push();
 
   // TODO: change the notification class of the model's equality engine?
   eq::EqualityEngine* mee = d_eemanager->getModelEqualityEngine();
-  
+
   // get information about relevant terms
   bool usingRelevantTerms = d_mmanager->isUsingRelevantTerms();
   const std::set<Node>& relevantTerms = d_mmanager->getRelevantTerms();
-  
-  
 
   if (!d_mmanager->prepareModel())
   {
-    AlwaysAssert(false) << "CombinationModelBased::combineTheories: failed to prepare";
+    AlwaysAssert(false)
+        << "CombinationModelBased::combineTheories: failed to prepare";
     return;
   }
-  
+
   c->pop();
-  
 }
 
-eq::EqualityEngineNotify * CombinationModelBased::getModelEqualityEngineNotify()
+eq::EqualityEngineNotify* CombinationModelBased::getModelEqualityEngineNotify()
 {
   return &d_cmbNotify;
 }

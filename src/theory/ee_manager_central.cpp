@@ -83,7 +83,8 @@ void EqEngineManagerCentral::initializeTheories(SharedSolver* sharedSolver)
   }
 }
 
-void EqEngineManagerCentral::initializeModel(TheoryModel* m, eq::EqualityEngineNotify * notify)
+void EqEngineManagerCentral::initializeModel(TheoryModel* m,
+                                             eq::EqualityEngineNotify* notify)
 {
   Assert(m != nullptr);
   // set the notification class

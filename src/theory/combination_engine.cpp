@@ -81,7 +81,7 @@ void CombinationEngine::finishInit()
 
   // initialize equality engine of the model using the equality engine manager
   TheoryModel* m = d_mmanager->getModel();
-  eq::EqualityEngineNotify * meen = getModelEqualityEngineNotify();
+  eq::EqualityEngineNotify* meen = getModelEqualityEngineNotify();
   d_eemanager->initializeModel(m, meen);
 }
 
@@ -119,7 +119,7 @@ SharedSolver* CombinationEngine::getSharedSolver()
   return d_sharedSolver.get();
 }
 
-eq::EqualityEngineNotify * CombinationEngine::getModelEqualityEngineNotify()
+eq::EqualityEngineNotify* CombinationEngine::getModelEqualityEngineNotify()
 {
   return nullptr;
 }

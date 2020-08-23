@@ -109,7 +109,8 @@ void EqEngineManagerDistributed::initializeTheories(SharedSolver* sharedSolver)
   }
 }
 
-void EqEngineManagerDistributed::initializeModel(TheoryModel* m, eq::EqualityEngineNotify * notify)
+void EqEngineManagerDistributed::initializeModel(
+    TheoryModel* m, eq::EqualityEngineNotify* notify)
 {
   Assert(m != nullptr);
   // initialize the model equality engine, use the provided notification object,

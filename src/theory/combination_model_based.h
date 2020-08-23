@@ -46,7 +46,8 @@ class CombinationModelBased : public CombinationEngine
    */
   void combineTheories() override;
   /** Get model equality engine notify */
-  eq::EqualityEngineNotify * getModelEqualityEngineNotify() override;
+  eq::EqualityEngineNotify* getModelEqualityEngineNotify() override;
+
  private:
   /**
    * Model-based notification class, which catches conflicts that arise during
@@ -87,7 +88,7 @@ class CombinationModelBased : public CombinationEngine
   };
   /** The notification class */
   ModelBasedNotifyClass d_cmbNotify;
-  
+
   /**
    * Run the combination framework, model-based version.
    *
@@ -126,8 +127,8 @@ class CombinationModelBased : public CombinationEngine
    * d_sharedEq[a][b] and d_sharedDeq[a][b] are both mapped to ids, T1 and T2.
    */
   unsigned checkSharedTermMaps(
-      const std::map<TheoryId,
-                     std::unordered_set<TNode, TNodeHashFunction> >& tshared);
+      const std::map<TheoryId, std::unordered_set<TNode, TNodeHashFunction> >&
+          tshared);
   /** check split candidate
    *
    * Checks whether the equality a == b should be split on based on the cache
@@ -142,10 +143,7 @@ class CombinationModelBased : public CombinationEngine
    *     disagree on the status of t==s, we call this method on
    *     ( t, s, T1, T2 ).
    */
-  unsigned checkSplitCandidate(TNode a,
-                               TNode b,
-                               TheoryId t1,
-                               TheoryId t2);
+  unsigned checkSplitCandidate(TNode a, TNode b, TheoryId t1, TheoryId t2);
   /** merge shared term equivalence classes */
   void mergeSharedTermEqcs(TNode t1, TNode t2);
   //-----------------------------------end model-based theory combination
@@ -156,16 +154,14 @@ class CombinationModelBased : public CombinationEngine
   /** cached of terms we have split on */
   std::unordered_set<Node, NodeHashFunction> d_split_terms;
   /** for each node pair, a theory whose equality status is (possibly) true */
-  std::unordered_map<
-      TNode,
-      std::unordered_map<TNode, TheoryId, TNodeHashFunction>,
-      TNodeHashFunction>
+  std::unordered_map<TNode,
+                     std::unordered_map<TNode, TheoryId, TNodeHashFunction>,
+                     TNodeHashFunction>
       d_sharedEq;
   /** for each node pair, a theory whose equality status is (possibly) false */
-  std::unordered_map<
-      TNode,
-      std::unordered_map<TNode, TheoryId, TNodeHashFunction>,
-      TNodeHashFunction>
+  std::unordered_map<TNode,
+                     std::unordered_map<TNode, TheoryId, TNodeHashFunction>,
+                     TNodeHashFunction>
       d_sharedDeq;
   //-------------------------end caches per model-based theory combination call
 
