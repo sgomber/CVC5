@@ -88,6 +88,8 @@ class CombinationModelBased : public CombinationEngine
   };
   /** The notification class */
   ModelBasedNotifyClass d_cmbNotify;
+  /** The lemmas to send */
+  std::vector<std::pair<Node,TheoryId> > d_cmbLemmas;
 
   /**
    * Run the combination framework, model-based version.

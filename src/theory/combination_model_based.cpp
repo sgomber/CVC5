@@ -39,25 +39,42 @@ void CombinationModelBased::combineTheories()
 {
   Assert(!d_mmanager->isModelBuilt());
 
+  d_cmbLemmas.clear();
+  
   // push a SAT context
   context::Context* c = d_te.getSatContext();
   c->push();
-
-  // TODO: change the notification class of the model's equality engine?
-  eq::EqualityEngine* mee = d_eemanager->getModelEqualityEngine();
-
   // get information about relevant terms
   bool usingRelevantTerms = d_mmanager->isUsingRelevantTerms();
   const std::set<Node>& relevantTerms = d_mmanager->getRelevantTerms();
 
+  Trace("tc-model") << "CombinationModelBased::combineTheories: start" << std::endl;
+  
+  Trace("tc-model") << "Prepare model..." << std::endl;
   if (!d_mmanager->prepareModel())
   {
-    AlwaysAssert(false)
-        << "CombinationModelBased::combineTheories: failed to prepare";
+    AlwaysAssert(false) << "CombinationModelBased::combineTheories: failed to prepare";
     return;
   }
+  
+  Trace("tc-model") << "Finish build model..." << std::endl;
+  if (d_mmanager->finishBuildModel())
+  {
+    Trace("tc-model") << "...build model success!";
+    return;
+  }
+    Trace("tc-model") << "Build model failed";
 
+  // failed, now send lemmas
+  AlwaysAssert (!d_cmbLemmas.empty()) << "CombinationModelBased::combineTheories: failed to find splitting lemma";
+  for (const std::pair<Node, TheoryId>& p : d_cmbLemmas)
+  {
+    sendLemma(p.first, p.second);
+  }
+  d_cmbLemmas.clear();
+  
   c->pop();
+    Trace("tc-model") << "...sent lemmas." << std::endl;
 }
 
 eq::EqualityEngineNotify* CombinationModelBased::getModelEqualityEngineNotify()
