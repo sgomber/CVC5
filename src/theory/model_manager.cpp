@@ -138,7 +138,7 @@ bool ModelManager::isUsingRelevantTerms() const { return false; }
 bool ModelManager::finishBuildModel() const
 {
   // use the relevant terms database if applicable
-  RelevantTermsDatabase * rtdb = isUsingRelevantTerms() ? &d_rtdb : nullptr;
+  RelevantTermsDatabase* rtdb = isUsingRelevantTerms() ? &d_rtdb : nullptr;
   if (!d_modelBuilder->buildModel(d_model, rtdb))
   {
     Trace("model-builder") << "ModelManager: fail build model" << std::endl;

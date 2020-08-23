@@ -138,8 +138,9 @@ void BVQuickCheck::popToZero() {
   }
 }
 
-bool BVQuickCheck::collectModelInfo(theory::TheoryModel* model, bool fullModel,
-                        std::set<Node>& termSet)
+bool BVQuickCheck::collectModelInfo(theory::TheoryModel* model,
+                                    bool fullModel,
+                                    std::set<Node>& termSet)
 {
   return d_bitblaster->collectModelInfo(model, fullModel, termSet);
 }
