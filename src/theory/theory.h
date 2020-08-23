@@ -654,7 +654,7 @@ class Theory {
    * then calls computeModelValues.
    *
    * TODO (project #39): this method should be non-virtual, once all theories
-   * conform to the new standard
+   * conform to the new standard, delete, move to model manager distributed.
    */
   virtual bool collectModelInfo(TheoryModel* m, std::set<Node>& termSet);
   /**
@@ -669,6 +669,8 @@ class Theory {
    *
    * includeShared: Whether to include shared terms in termSet. Notice that
    * shared terms are not influenced by irrKinds.
+   * 
+   * TODO: delete, move to relevant terms database
    */
   void computeAssertedTerms(RelevantTermsDatabase& rtdb,
                             const std::set<Kind>& irrKinds,

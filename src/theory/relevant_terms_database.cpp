@@ -15,6 +15,7 @@
 #include "theory/relevant_terms_database.h"
 
 #include "theory/theory_engine.h"
+#include "theory/theory_model.h"
 
 namespace CVC4 {
 namespace theory {
@@ -36,14 +37,14 @@ void RelevantTermsDatabase::compute()
     }
     // get terms in the assertions of each theory
     for (context::CDList<Assertion>::const_iterator it = t->facts_begin(),
-                                                    it_end = t->facts_end();
+                                                    itEnd = t->facts_end();
          it != itEnd;
          ++it)
     {
       collectTerms(*it, irrKinds);
     }
     // compute additional relevant terms
-    t->computeRelevantTerms(*this, irrKinds);
+    t->computeRelevantTerms(*this);
   }
 }
 
@@ -72,7 +73,7 @@ void RelevantTermsDatabase::collectTerms(TNode n,
   {
     cur = visit.back();
     visit.pop_back();
-    if (d_relevantTerms.find(t) != d_relevantTerms.end())
+    if (d_relevantTerms.find(cur) != d_relevantTerms.end())
     {
       // already visited
       continue;
