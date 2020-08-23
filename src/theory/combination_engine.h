@@ -70,7 +70,7 @@ class CombinationEngine
    * that TheoryEngine interacts with prior to calling combineTheories.
    */
   SharedSolver* getSharedSolver();
-  /** 
+  /**
    * Called at the beginning of full effort
    */
   virtual void resetRound();

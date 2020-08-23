@@ -261,7 +261,7 @@ class TheoryModel : public Model
    */
   void setUnevaluatedKind(Kind k);
   void setSemiEvaluatedKind(Kind k);
-  /** 
+  /**
    * Set irrelevant kind. These kinds do not impact model generation. An
    * example is APPLY_TESTER.
    */

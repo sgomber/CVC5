@@ -94,16 +94,7 @@ class CombinationModelBased : public CombinationEngine
   void notifyModelConstantTermMerge(TNode t1, TNode t2);
   /** called when two terms merge in the equality engine of the model */
   void notifyModelMerge(TNode t1, TNode t2);
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
+
   /**
    * Run the combination framework, model-based version.
    *
