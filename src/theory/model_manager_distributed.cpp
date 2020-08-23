@@ -20,14 +20,14 @@ namespace CVC4 {
 namespace theory {
 
 ModelManagerDistributed::ModelManagerDistributed(
-    TheoryEngine& te, EqEngineManagerDistributed& eem)
-    : ModelManager(te), d_eem(eem)
+    TheoryEngine& te, RelevantTermDatabase& rtdb, EqEngineManagerDistributed& eem)
+    : ModelManager(te, rtdb), d_eem(eem)
 {
 }
 
 ModelManagerDistributed::~ModelManagerDistributed() {}
 
-bool ModelManagerDistributed::prepareModel(const std::set<Node>& relTerms)
+bool ModelManagerDistributed::prepareModel()
 {
   Trace("model-builder") << "ModelManagerDistributed: reset model..."
                          << std::endl;
@@ -54,7 +54,7 @@ bool ModelManagerDistributed::prepareModel(const std::set<Node>& relTerms)
     Theory* t = d_te.theoryOf(theoryId);
     Trace("model-builder") << "  CollectModelInfo on theory: " << theoryId
                            << std::endl;
-    if (!t->collectModelInfo(d_model))
+    if (!t->collectModelInfo(d_model, d_rtdb))
     {
       Trace("model-builder")
           << "ModelManagerDistributed: fail collect model info" << std::endl;

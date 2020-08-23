@@ -68,16 +68,14 @@ class TheoryEngineModelBuilder
    * are building fails to satisfy a quantified formula.
    *
    * @param m The model to build
-   * @param usingRelevantTerms Whether we are restricting the terms that we
-   * consider in the equality engine of the model to those in relevantTerms
-   * @param relevantTerms The current relevant terms. If we are using
-   * relevant terms, this set should contain all terms in relevant assertions
-   * as well as all shared terms.
+   * @param rtdb If non-null, we are restricting the terms that we
+   * consider in the equality engine of the model to those that have been
+   * marked as relevant in this database. This contains all terms in relevant
+   * assertions as well as all shared terms. If this is null, then all terms
+   * in the equality engine of the model are relevant.
    * @return true if the model was successfully built.
    */
-  bool buildModel(Model* m,
-                  bool usingRelevantTerms,
-                  const std::set<Node>& relevantTerms);
+  bool buildModel(Model* m, const RelevantTermDatabase * rtdb);
 
   /** postprocess model
    *

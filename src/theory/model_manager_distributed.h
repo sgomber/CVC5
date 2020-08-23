@@ -40,11 +40,11 @@ namespace theory {
 class ModelManagerDistributed : public ModelManager
 {
  public:
-  ModelManagerDistributed(TheoryEngine& te, EqEngineManagerDistributed& eem);
+  ModelManagerDistributed(TheoryEngine& te, RelevantTermDatabase& rtdb, EqEngineManagerDistributed& eem);
   ~ModelManagerDistributed();
 
   /** Prepare the model, as described above. */
-  bool prepareModel(const std::set<Node>& relTerms) override;
+  bool prepareModel() override;
 
  protected:
   /**

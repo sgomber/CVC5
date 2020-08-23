@@ -33,6 +33,7 @@
 #include "theory/rewriter.h"
 #include "theory/theory_model.h"
 #include "theory/valuation.h"
+#include "theory/relevant_terms_database.h"
 
 using namespace std;
 

@@ -35,6 +35,7 @@ CombinationEngine::CombinationEngine(TheoryEngine& te,
       d_logicInfo(te.getLogicInfo()),
       d_paraTheories(paraTheories),
       d_paraSet(0),
+      d_relevantTerms(te),
       d_eemanager(nullptr),
       d_mmanager(nullptr),
       d_sharedSolver(nullptr)
@@ -52,7 +53,7 @@ void CombinationEngine::finishInit()
     std::unique_ptr<EqEngineManagerDistributed> eeDistributed(
         new EqEngineManagerDistributed(d_te));
     // make the distributed model manager
-    d_mmanager.reset(new ModelManagerDistributed(d_te, *eeDistributed.get()));
+    d_mmanager.reset(new ModelManagerDistributed(d_te, d_relevantTerms, *eeDistributed.get()));
     d_eemanager = std::move(eeDistributed);
     // use the distributed shared solver
     d_sharedSolver.reset(new SharedSolverDistributed(d_te));
@@ -60,7 +61,7 @@ void CombinationEngine::finishInit()
   else if (options::eeMode() == options::EqEngineMode::CENTRAL)
   {
     d_eemanager.reset(new EqEngineManagerCentral(d_te));
-    d_mmanager.reset(new ModelManagerCentral(d_te));
+    d_mmanager.reset(new ModelManagerCentral(d_te, d_relevantTerms));
     d_sharedSolver.reset(new SharedSolverCentral(d_te));
   }
   else
@@ -137,25 +138,8 @@ bool CombinationEngine::isParametric(TheoryId tid) const
 
 void CombinationEngine::resetRound()
 {
-  // compute the relevant terms
-  d_relevantTerms.clear();
-  /*
-  for (TheoryId theoryId = theory::THEORY_FIRST;
-       theoryId != theory::THEORY_LAST;
-       ++theoryId)
-  {
-    Theory* t = d_te.theoryOf(theoryId);
-    if (t == nullptr)
-    {
-      // theory not active, skip
-      continue;
-    }
-    // compute relevant terms in assertions
-    t->computeRelevantTermsInternal(d_relevantTerms);
-    // compute relevant terms
-    t->computeRelevantTerms(d_relevantTerms);
-  }
-  */
+  // compute the relevant terms?
+
 }
 
 }  // namespace theory

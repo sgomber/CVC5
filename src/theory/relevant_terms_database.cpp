@@ -1,5 +1,5 @@
 /*********************                                                        */
-/*! \file relevant_term_database.cpp
+/*! \file relevant_terms_database.cpp
  ** \verbatim
  ** Top contributors (to current version):
  **   Andrew Reynolds
@@ -9,18 +9,21 @@
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
- ** \brief Base class for shared solver
+ ** \brief Relevant terms database
  **/
 
-#include "theory/relevant_term_database.h"
+#include "theory/relevant_terms_database.h"
+
+#include "theory/theory_engine.h"
 
 namespace CVC4 {
 namespace theory {
 
-RelevantTermDatabase::RelevantTermDatabase(TheoryEngine& te) : d_te(te) {}
+RelevantTermsDatabase::RelevantTermsDatabase(TheoryEngine& te) : d_te(te) {}
 
-void RelevantTermDatabase::compute()
+void RelevantTermsDatabase::compute()
 {
+  const std::set<Kind>& irrKinds = d_te.getModel()->getIrrelevantKinds();
   for (TheoryId theoryId = theory::THEORY_FIRST;
        theoryId != theory::THEORY_LAST;
        ++theoryId)
@@ -32,20 +35,25 @@ void RelevantTermDatabase::compute()
       continue;
     }
     // compute relevant terms in assertions
-    t->computeRelevantTermsInternal(d_relevantTerms);
+    t->computeAssertedTerms(*this, irrKinds);
     // compute relevant terms
-    t->computeRelevantTerms(d_relevantTerms);
+    t->computeRelevantTerms(*this, irrKinds);
   }
 }
 
-bool RelevantTermDatabase::isRelevant(TNode t) const
+bool RelevantTermsDatabase::isRelevant(TNode t) const
 {
   return d_relevantTerms.find(t) != d_relevantTerms.end();
 }
 
-void RelevantTermDatabase::addRelevantTerm(TNode t)
+void RelevantTermsDatabase::addRelevantTerm(TNode t)
 {
   d_relevantTerms.insert(t);
+}
+
+std::set<Node>& RelevantTermsDatabase::getRelevantTerms()
+{
+  return d_relevantTerms;
 }
 
 }  // namespace theory

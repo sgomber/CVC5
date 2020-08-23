@@ -19,32 +19,13 @@
 namespace CVC4 {
 namespace theory {
 
-ModelManagerCentral::ModelManagerCentral(TheoryEngine& te) : ModelManager(te) {}
+ModelManagerCentral::ModelManagerCentral(TheoryEngine& te, RelevantTermDatabase& rtdb) : ModelManager(te, rtdb) {}
 
 ModelManagerCentral::~ModelManagerCentral() {}
 
 bool ModelManagerCentral::prepareModel(const std::set<Node>& relTerms)
 {
   Trace("model-builder") << "ModelManagerCentral: reset model..." << std::endl;
-
-  // must compute relevant terms
-  /*
-  d_relevantTerms.clear();
-  for (TheoryId theoryId = theory::THEORY_FIRST;
-       theoryId != theory::THEORY_LAST;
-       ++theoryId)
-  {
-    Theory* t = d_te.theoryOf(theoryId);
-    if (t == nullptr)
-    {
-      // theory not active, skip
-      continue;
-    }
-    // compute relevant terms
-    t->computeRelevantTerms(d_relevantTerms);
-  }
-  // we use relevant terms based on the above set
-  */
 
   // push a SAT context
   context::Context* c = d_te.getSatContext();
@@ -68,7 +49,7 @@ bool ModelManagerCentral::prepareModel(const std::set<Node>& relTerms)
     Trace("model-builder") << "  CollectModelValues on theory: " << theoryId
                            << std::endl;
     // use the full set of relevant terms for all theories
-    if (!t->collectModelValues(d_model, relTerms))
+    if (!t->collectModelValues(d_model, d_rtdb.getRelevantTerms()))
     {
       Trace("model-builder")
           << "ModelManagerCentral: fail collect model values" << std::endl;

@@ -437,14 +437,11 @@ bool TheoryModel::assertPredicate(TNode a, bool polarity)
 
 /** assert equality engine */
 bool TheoryModel::assertEqualityEngine(const eq::EqualityEngine* ee,
-                                       set<Node>* termSet)
+                                       const RelevantTermsDatabase& rtdb)
 {
   Assert(d_equalityEngine->consistent());
-  if (d_equalityEngine == ee)
-  {
-    // same equality engine, skip
-    return true;
-  }
+  // should be from a different equality engine
+  Assert (d_equalityEngine != ee);
   eq::EqClassesIterator eqcs_i = eq::EqClassesIterator( ee );
   for (; !eqcs_i.isFinished(); ++eqcs_i) {
     Node eqc = (*eqcs_i);
@@ -463,7 +460,8 @@ bool TheoryModel::assertEqualityEngine(const eq::EqualityEngine* ee,
     bool first = true;
     Node rep;
     for (; !eqc_i.isFinished(); ++eqc_i) {
-      if (termSet != NULL && termSet->find(*eqc_i) == termSet->end()) {
+      if (!rtdb.isRelevantTerm(*eqc_i))
+      {
         Trace("model-builder-debug") << "...skip node " << (*eqc_i) << " in eqc " << eqc << std::endl;
         continue;
       }
@@ -621,6 +619,8 @@ void TheoryModel::setSemiEvaluatedKind(Kind k)
 }
 
 void TheoryModel::setIrrelevantKind(Kind k) { d_irrKinds.insert(k); }
+
+const std::set<Kind>& getIrrelevantKinds() const { return d_irrKinds; }
 
 bool TheoryModel::isLegalElimination(TNode x, TNode val)
 {

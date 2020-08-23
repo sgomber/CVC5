@@ -115,7 +115,7 @@ class TheoryModel : public Model
    * is consistent after asserting the equality engine to this model.
    */
   bool assertEqualityEngine(const eq::EqualityEngine* ee,
-                            std::set<Node>* termSet = NULL);
+                            const RelevantTermsDatabase& rtdb);
   /** assert skeleton
    *
    * This method gives a "skeleton" for the model value of the equivalence
@@ -266,6 +266,8 @@ class TheoryModel : public Model
    * example is APPLY_TESTER.
    */
   void setIrrelevantKind(Kind k);
+  /** Get irrelant kinds */
+  const std::set<Kind>& getIrrelevantKinds() const;
   /** is legal elimination
    *
    * Returns true if x -> val is a legal elimination of variable x.

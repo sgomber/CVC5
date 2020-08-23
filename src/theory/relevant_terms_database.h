@@ -1,5 +1,5 @@
 /*********************                                                        */
-/*! \file relevant_term_database.h
+/*! \file relevant_terms_database.h
  ** \verbatim
  ** Top contributors (to current version):
  **   Andrew Reynolds
@@ -9,7 +9,7 @@
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
- ** \brief Base class for shared solver
+ ** \brief Relevant terms database
  **/
 
 #include "cvc4_private.h"
@@ -17,7 +17,7 @@
 #ifndef CVC4__THEORY__RELEVANT_TERM_DATABASE__H
 #define CVC4__THEORY__RELEVANT_TERM_DATABASE__H
 
-#include <unordered_set>
+#include <set>
 #include "expr/node.h"
 
 namespace CVC4 {
@@ -26,11 +26,11 @@ namespace theory {
 /**
  * The relevant term database.
  */
-class RelevantTermDatabase
+class RelevantTermsDatabase
 {
  public:
-  RelevantTermDatabase(TheoryEngine& te);
-  ~RelevantTermDatabase() {}
+  RelevantTermsDatabase(TheoryEngine& te);
+  ~RelevantTermsDatabase() {}
   /** reset round, called at the beginning of full effort check */
   void resetRound();
   /** compute */
@@ -39,12 +39,13 @@ class RelevantTermDatabase
   bool isRelevant(TNode t) const;
   /** Add relevant term */
   void addRelevantTerm(TNode t);
-
+  /** Get relevant terms */
+  std::set<Node>& getRelevantTerms();
  protected:
   /** Reference to the theory engine */
   TheoryEngine& d_te;
   /** The set of relevant terms */
-  std::unordered_set<Node, NodeHashFunction> d_relevantTerms;
+  std::set<Node> d_relevantTerms;
 };
 
 }  // namespace theory

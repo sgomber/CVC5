@@ -22,6 +22,7 @@
 
 #include "theory/theory_model.h"
 #include "theory/theory_model_builder.h"
+#include "theory/relevant_terms_database.h"
 
 namespace CVC4 {
 
@@ -37,7 +38,7 @@ namespace theory {
 class ModelManager
 {
  public:
-  ModelManager(TheoryEngine& te);
+  ModelManager(TheoryEngine& te, RelevantTermDatabase& rtdb);
   virtual ~ModelManager();
   /** Finish initializing this class. */
   void finishInit();
@@ -50,7 +51,7 @@ class ModelManager
    *
    * @return true if model building was successful.
    */
-  bool buildModel(const std::set<Node>& relTerms);
+  bool buildModel();
   /**
    * Have we called buildModel this round? Note this returns true whether or
    * not the model building was successful.
@@ -72,7 +73,7 @@ class ModelManager
    * @return true if we are in conflict (i.e. the equality engine of the model
    * equality engine is inconsistent).
    */
-  virtual bool prepareModel(const std::set<Node>& relTerms) = 0;
+  virtual bool prepareModel() = 0;
   /** is using relevant terms? */
   virtual bool isUsingRelevantTerms() const;
   /**
@@ -81,7 +82,7 @@ class ModelManager
    *
    * @return true if model building was successful.
    */
-  bool finishBuildModel(const std::set<Node>& relTerms) const;
+  bool finishBuildModel() const;
   //------------------------ end finer grained control over model building
  protected:
   /**
@@ -94,6 +95,8 @@ class ModelManager
   bool collectModelBooleanVariables();
   /** Reference to the theory engine */
   TheoryEngine& d_te;
+  /** Reference to the relevant term database of the combination engine */
+  RelevantTermDatabase& d_rtdb;
   /** Logic info of theory engine (cached) */
   const LogicInfo& d_logicInfo;
   /** The model object we are using */

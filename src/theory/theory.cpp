@@ -29,6 +29,7 @@
 #include "theory/quantifiers_engine.h"
 #include "theory/substitutions.h"
 #include "theory/theory_rewriter.h"
+#include "theory/relevant_terms_database.h"
 
 using namespace std;
 
@@ -351,28 +352,27 @@ std::unordered_set<TNode, TNodeHashFunction> Theory::currentlySharedTerms() cons
   return currentlyShared;
 }
 
-bool Theory::collectModelInfo(TheoryModel* m)
+bool Theory::collectModelInfo(TheoryModel* m, const RelevantTermDatabase& rtdb)
 {
-  std::set<Node> termSet;
-  // Compute terms appearing in assertions and shared terms
-  computeRelevantTerms(termSet);
+  // FIXME: could move entirely into model engine distributed
   // if we are using an equality engine, assert it to the model
   if (d_equalityEngine != nullptr)
   {
-    if (!m->assertEqualityEngine(d_equalityEngine, &termSet))
+    if (!m->assertEqualityEngine(d_equalityEngine, rtdb.getRelevantTerms()))
     {
       return false;
     }
   }
   // now, collect theory-specific value assigments
-  return collectModelValues(m, termSet);
+  return collectModelValues(m, rtdb);
 }
 
 void Theory::collectTerms(TNode n,
-                          set<Kind>& irrKinds,
-                          set<Node>& termSet) const
+                          RelevantTermDatabase& rtdb,
+                          const std::set<Kind>& irrKinds) const
 {
-  if (termSet.find(n) != termSet.end()) {
+  if (rtdb.isRelevantTerm(n))
+  {
     return;
   }
   Kind nk = n.getKind();
@@ -380,18 +380,18 @@ void Theory::collectTerms(TNode n,
   {
     Trace("theory::collectTerms")
         << "Theory::collectTerms: adding " << n << endl;
-    termSet.insert(n);
+    rtdb.addRelevantTerm(n);
   }
   if (nk == kind::NOT || nk == kind::EQUAL || !isLeaf(n))
   {
     for(TNode::iterator child_it = n.begin(); child_it != n.end(); ++child_it) {
-      collectTerms(*child_it, irrKinds, termSet);
+      collectTerms(*child_it, rtdb, irrKinds);
     }
   }
 }
 
-void Theory::computeRelevantTermsInternal(std::set<Node>& termSet,
-                                          std::set<Kind>& irrKinds,
+void Theory::computeAssertedTerms(RelevantTermDatabase& rtdb,
+                                    const std::set<Kind>& irrKinds,
                                           bool includeShared) const
 {
   // Collect all terms appearing in assertions
@@ -401,7 +401,7 @@ void Theory::computeRelevantTermsInternal(std::set<Node>& termSet,
                                              assert_it_end = facts_end();
   for (; assert_it != assert_it_end; ++assert_it)
   {
-    collectTerms(*assert_it, irrKinds, termSet);
+    collectTerms(*assert_it, rtdb, irrKinds);
   }
 
   if (!includeShared)
@@ -414,17 +414,16 @@ void Theory::computeRelevantTermsInternal(std::set<Node>& termSet,
                                          shared_it_end = shared_terms_end();
   for (; shared_it != shared_it_end; ++shared_it)
   {
-    collectTerms(*shared_it, kempty, termSet);
+    collectTerms(*shared_it, rtdb,  kempty);
   }
 }
 
-void Theory::computeRelevantTerms(std::set<Node>& termSet, bool includeShared)
+void Theory::computeRelevantTerms(RelevantTermDatabase& rtdb,
+                                    const std::set<Kind>& irrKinds)
 {
-  std::set<Kind> irrKinds;
-  computeRelevantTermsInternal(termSet, irrKinds, includeShared);
 }
 
-bool Theory::collectModelValues(TheoryModel* m, std::set<Node>& termSet)
+bool Theory::collectModelValues(TheoryModel* m, const RelevantTermDatabase& rtdb)
 {
   return true;
 }

@@ -89,6 +89,7 @@ void CombinationCareGraph::combineTheories()
 bool CombinationCareGraph::buildModel()
 {
   // building the model happens as a separate step
+  d_relevantTerms.compute();
   return d_mmanager->buildModel(d_relevantTerms);
 }
 

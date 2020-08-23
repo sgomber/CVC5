@@ -22,7 +22,7 @@
 namespace CVC4 {
 namespace theory {
 
-ModelManager::ModelManager(TheoryEngine& te)
+ModelManager::ModelManager(TheoryEngine& te, RelevantTermDatabase& rtdb)
     : d_te(te),
       d_logicInfo(te.getLogicInfo()),
       d_model(nullptr),

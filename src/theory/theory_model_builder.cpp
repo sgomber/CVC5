@@ -373,8 +373,7 @@ void TheoryEngineModelBuilder::addToTypeList(
 }
 
 bool TheoryEngineModelBuilder::buildModel(Model* m,
-                                          bool usingRelevantTerms,
-                                          const std::set<Node>& relevantTerms)
+                                          const RelevantTermDatabase * rtdb)
 {
   Trace("model-builder") << "TheoryEngineModelBuilder: buildModel" << std::endl;
   TheoryModel* tm = (TheoryModel*)m;
@@ -483,11 +482,11 @@ bool TheoryEngineModelBuilder::buildModel(Model* m,
       Node n = *eqc_i;
       Trace("model-builder") << "  Processing Term: " << n << endl;
 
-      // check if its a relevant term?
+      // check if its a relevant term
       bool isRelevantTerm = true;
-      if (!n.isConst() && usingRelevantTerms)
+      if (!n.isConst() && rtdb!=nullptr)
       {
-        isRelevantTerm = relevantTerms.find(n) != relevantTerms.end();
+        isRelevantTerm = rtdb->isRelevantTerm(n);
       }
 
       // For each term n in this equivalence class:

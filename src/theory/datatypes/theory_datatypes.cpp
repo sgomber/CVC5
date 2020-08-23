@@ -31,6 +31,7 @@
 #include "theory/theory_model.h"
 #include "theory/type_enumerator.h"
 #include "theory/valuation.h"
+#include "theory/relevant_terms_database.h"
 
 using namespace std;
 using namespace CVC4::kind;
