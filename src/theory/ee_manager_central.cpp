@@ -83,23 +83,13 @@ void EqEngineManagerCentral::initializeTheories(SharedSolver* sharedSolver)
   }
 }
 
-void EqEngineManagerCentral::initializeModel(TheoryModel* m)
+void EqEngineManagerCentral::initializeModel(TheoryModel* m, eq::EqualityEngineNotify * notify)
 {
   Assert(m != nullptr);
-  // initialize the model equality engine
-  EeSetupInfo esim;
-  if (m->needsEqualityEngine(esim))
-  {
-    // set the notification class
-    d_centralEENotify.d_mNotify = esim.d_notify;
-    // model uses the central equality engine
-    m->setEqualityEngine(&d_centralEqualityEngine);
-  }
-  else
-  {
-    AlwaysAssert(false) << "Expected model to use equality engine";
-  }
-  m->finishInit();
+  // set the notification class
+  d_centralEENotify.d_mNotify = notify;
+  // model uses the central equality engine, finish initialize
+  m->finishInit(&d_centralEqualityEngine);
 }
 
 eq::EqualityEngine* EqEngineManagerCentral::getModelEqualityEngine()

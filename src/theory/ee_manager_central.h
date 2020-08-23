@@ -44,7 +44,7 @@ class EqEngineManagerCentral : public EqEngineManager
   /**
    * Initialize model.
    */
-  void initializeModel(TheoryModel* m) override;
+  void initializeModel(TheoryModel* m, eq::EqualityEngineNotify * notify) override;
   /** get the core equality engine */
   eq::EqualityEngine* getCoreEqualityEngine() override;
   /** get the model equality engine */

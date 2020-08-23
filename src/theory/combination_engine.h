@@ -78,6 +78,10 @@ class CombinationEngine
   virtual void combineTheories() = 0;
 
  protected:
+  /** 
+   * Get model equality engine notify. 
+   */
+  virtual eq::EqualityEngineNotify * getModelEqualityEngineNotify();
   /** Send lemma */
   void sendLemma(TNode node, TheoryId atomsTo);
   /** Is theory tid parametric? */

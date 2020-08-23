@@ -109,22 +109,15 @@ void EqEngineManagerDistributed::initializeTheories(SharedSolver* sharedSolver)
   }
 }
 
-void EqEngineManagerDistributed::initializeModel(TheoryModel* m)
+void EqEngineManagerDistributed::initializeModel(TheoryModel* m, eq::EqualityEngineNotify * notify)
 {
   Assert(m != nullptr);
-  // initialize the model equality engine
+  // initialize the model equality engine, use the provided notification object,
+  // which belongs e.g. to CombinationModelBased
   EeSetupInfo esim;
-  if (m->needsEqualityEngine(esim))
-  {
-    d_modelEqualityEngine.reset(
-        allocateEqualityEngine(esim, &d_modelEeContext));
-    m->setEqualityEngine(d_modelEqualityEngine.get());
-  }
-  else
-  {
-    AlwaysAssert(false) << "Expected model to use equality engine";
-  }
-  m->finishInit();
+  esim.d_notify = notify;
+  d_modelEqualityEngine.reset(allocateEqualityEngine(esim, &d_modelEeContext));
+  m->finishInit(d_modelEqualityEngine.get());
   // We push a context during initialization since the model is cleared during
   // collectModelInfo using pop/push.
   d_modelEeContext.push();

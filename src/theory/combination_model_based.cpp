@@ -21,7 +21,7 @@ namespace theory {
 
 CombinationModelBased::CombinationModelBased(
     TheoryEngine& te, const std::vector<Theory*>& paraTheories)
-    : CombinationEngine(te, paraTheories)
+    : CombinationEngine(te, paraTheories), d_cmbNotify(*this)
 {
 }
 
@@ -30,24 +30,41 @@ CombinationModelBased::~CombinationModelBased() {}
 bool CombinationModelBased::buildModel()
 {
   // model was already built in combine theories
-  Assert(d_mmanager->isModelBuilt());
+  Assert(!d_mmanager->isModelBuilt());
+  // call again, to return if successful TODO: unecessary?
   return d_mmanager->buildModel();
 }
 
 void CombinationModelBased::combineTheories()
 {
+  Assert (!d_mmanager->isModelBuilt());
+  
   // push a SAT context
   context::Context* c = d_te.getSatContext();
   c->push();
 
   // TODO: change the notification class of the model's equality engine?
   eq::EqualityEngine* mee = d_eemanager->getModelEqualityEngine();
+  
+  // get information about relevant terms
+  bool usingRelevantTerms = d_mmanager->isUsingRelevantTerms();
+  const std::set<Node>& relevantTerms = d_mmanager->getRelevantTerms();
+  
+  
 
-  // TODO
-
-  // TODO: change the notification class of the ee back if central?
-
+  if (!d_mmanager->prepareModel())
+  {
+    AlwaysAssert(false) << "CombinationModelBased::combineTheories: failed to prepare";
+    return;
+  }
+  
   c->pop();
+  
+}
+
+eq::EqualityEngineNotify * CombinationModelBased::getModelEqualityEngineNotify()
+{
+  return &d_cmbNotify;
 }
 
 void CombinationModelBased::eqNotifyNewClass(TNode t)

@@ -70,8 +70,11 @@ class EqEngineManager
    *
    * This method is context-independent, and is applied once during
    * the lifetime of TheoryEngine (during finishInit).
+   * 
+   * @param m The model object to initialize the equality engine for
+   * @param notify The notify call to use (used e.g. by CombinationModelBased).
    */
-  virtual void initializeModel(TheoryModel* m) = 0;
+  virtual void initializeModel(TheoryModel* m, eq::EqualityEngineNotify * notify) = 0;
   /**
    * Get the equality engine theory information for theory with the given id.
    */

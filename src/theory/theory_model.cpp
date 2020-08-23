@@ -43,21 +43,9 @@ TheoryModel::TheoryModel(context::Context* c,
 
 TheoryModel::~TheoryModel() {}
 
-void TheoryModel::setEqualityEngine(eq::EqualityEngine* ee)
+void TheoryModel::finishInit(eq::EqualityEngine* ee)
 {
   d_equalityEngine = ee;
-}
-
-bool TheoryModel::needsEqualityEngine(EeSetupInfo& esi)
-{
-  // no notifications
-  esi.d_name = d_name;
-  esi.d_constantsAreTriggers = false;
-  return true;
-}
-
-void TheoryModel::finishInit()
-{
   Assert(d_equalityEngine != nullptr);
   // The kinds we are treating as function application in congruence
   d_equalityEngine->addFunctionKind(kind::APPLY_UF, false, options::ufHo());

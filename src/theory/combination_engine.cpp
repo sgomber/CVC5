@@ -81,7 +81,8 @@ void CombinationEngine::finishInit()
 
   // initialize equality engine of the model using the equality engine manager
   TheoryModel* m = d_mmanager->getModel();
-  d_eemanager->initializeModel(m);
+  eq::EqualityEngineNotify * meen = getModelEqualityEngineNotify();
+  d_eemanager->initializeModel(m, meen);
 }
 
 const EeTheoryInfo* CombinationEngine::getEeTheoryInfo(TheoryId tid) const
@@ -116,6 +117,11 @@ theory::TheoryModel* CombinationEngine::getModel()
 SharedSolver* CombinationEngine::getSharedSolver()
 {
   return d_sharedSolver.get();
+}
+
+eq::EqualityEngineNotify * CombinationEngine::getModelEqualityEngineNotify()
+{
+  return nullptr;
 }
 
 void CombinationEngine::sendLemma(TNode node, TheoryId atomsTo)

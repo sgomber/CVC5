@@ -45,13 +45,14 @@ class CombinationModelBased : public CombinationEngine
    * Combine theories using model building.
    */
   void combineTheories() override;
-
+  /** Get model equality engine notify */
+  eq::EqualityEngineNotify * getModelEqualityEngineNotify() override;
  private:
   /**
    * Model-based notification class, which catches conflicts that arise during
    * model building.
    */
-  class ModelBasedNotifyClass : public theory::eq::EqualityEngineNotify
+  class ModelBasedNotifyClass : public eq::EqualityEngineNotify
   {
    public:
     ModelBasedNotifyClass(CombinationModelBased& cmb) : d_cmb(cmb) {}
@@ -60,7 +61,7 @@ class CombinationModelBased : public CombinationEngine
       return true;
     }
 
-    bool eqNotifyTriggerTermEquality(theory::TheoryId tag,
+    bool eqNotifyTriggerTermEquality(TheoryId tag,
                                      TNode t1,
                                      TNode t2,
                                      bool value) override
@@ -84,7 +85,9 @@ class CombinationModelBased : public CombinationEngine
     /** The parent class, which processes the conflict */
     CombinationModelBased& d_cmb;
   };
-
+  /** The notification class */
+  ModelBasedNotifyClass d_cmbNotify;
+  
   /**
    * Run the combination framework, model-based version.
    *
@@ -116,14 +119,14 @@ class CombinationModelBased : public CombinationEngine
    * tparametric stores if the theory of tid is parametric. This updates
    * the d_sharedEq and d_sharedDeq mappings below.
    */
-  unsigned checkPair(TNode a, TNode b, theory::TheoryId tid, bool tparametric);
+  unsigned checkPair(TNode a, TNode b, TheoryId tid, bool tparametric);
   /** check shared term maps
    *
    * This calls checkSplitCandidate( a, b, T1, T2 ) for all a and b such that
    * d_sharedEq[a][b] and d_sharedDeq[a][b] are both mapped to ids, T1 and T2.
    */
   unsigned checkSharedTermMaps(
-      const std::map<theory::TheoryId,
+      const std::map<TheoryId,
                      std::unordered_set<TNode, TNodeHashFunction> >& tshared);
   /** check split candidate
    *
@@ -141,8 +144,8 @@ class CombinationModelBased : public CombinationEngine
    */
   unsigned checkSplitCandidate(TNode a,
                                TNode b,
-                               theory::TheoryId t1,
-                               theory::TheoryId t2);
+                               TheoryId t1,
+                               TheoryId t2);
   /** merge shared term equivalence classes */
   void mergeSharedTermEqcs(TNode t1, TNode t2);
   //-----------------------------------end model-based theory combination
@@ -155,13 +158,13 @@ class CombinationModelBased : public CombinationEngine
   /** for each node pair, a theory whose equality status is (possibly) true */
   std::unordered_map<
       TNode,
-      std::unordered_map<TNode, theory::TheoryId, TNodeHashFunction>,
+      std::unordered_map<TNode, TheoryId, TNodeHashFunction>,
       TNodeHashFunction>
       d_sharedEq;
   /** for each node pair, a theory whose equality status is (possibly) false */
   std::unordered_map<
       TNode,
-      std::unordered_map<TNode, theory::TheoryId, TNodeHashFunction>,
+      std::unordered_map<TNode, TheoryId, TNodeHashFunction>,
       TNodeHashFunction>
       d_sharedDeq;
   //-------------------------end caches per model-based theory combination call

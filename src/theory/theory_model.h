@@ -86,17 +86,11 @@ class TheoryModel : public Model
  public:
   TheoryModel(context::Context* c, std::string name, bool enableFuncModels);
   ~TheoryModel() override;
-  //---------------------------- initialization
-  /** Called to set the equality engine. */
-  void setEqualityEngine(eq::EqualityEngine* ee);
-  /**
-   * Returns true if we need an equality engine, this has the same contract
-   * as Theory::needsEqualityEngine.
+  /** 
+   * Finish initialize, where ee is the equality engine that this model
+   * object should use.
    */
-  bool needsEqualityEngine(EeSetupInfo& esi);
-  /** Finish init */
-  void finishInit();
-  //---------------------------- end initialization
+  void finishInit(eq::EqualityEngine* ee);
 
   /** reset the model */
   virtual void reset();
