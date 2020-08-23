@@ -35,9 +35,9 @@ CombinationEngine::CombinationEngine(TheoryEngine& te,
       d_logicInfo(te.getLogicInfo()),
       d_paraTheories(paraTheories),
       d_paraSet(0),
-      d_eemUse(nullptr),
-      d_mmUse(nullptr),
-      d_ssUse(nullptr)
+      d_eemanager(nullptr),
+      d_mmanager(nullptr),
+      d_sharedSolver(nullptr)
 {
 }
 
@@ -52,16 +52,16 @@ void CombinationEngine::finishInit()
     std::unique_ptr<EqEngineManagerDistributed> eeDistributed(
         new EqEngineManagerDistributed(d_te));
     // make the distributed model manager
-    d_mmUse.reset(new ModelManagerDistributed(d_te, *eeDistributed.get()));
-    d_eemUse = std::move(eeDistributed);
+    d_mmanager.reset(new ModelManagerDistributed(d_te, *eeDistributed.get()));
+    d_eemanager = std::move(eeDistributed);
     // use the distributed shared solver
-    d_ssUse.reset(new SharedSolverDistributed(d_te));
+    d_sharedSolver.reset(new SharedSolverDistributed(d_te));
   }
   else if (options::eeMode() == options::EqEngineMode::CENTRAL)
   {
-    d_eemUse.reset(new EqEngineManagerCentral(d_te));
-    d_mmUse.reset(new ModelManagerCentral(d_te));
-    // d_ssUse.reset(new SharedSolverCentral(d_te));
+    d_eemanager.reset(new EqEngineManagerCentral(d_te));
+    d_mmanager.reset(new ModelManagerCentral(d_te));
+    d_sharedSolver.reset(new SharedSolverCentral(d_te));
   }
   else
   {
@@ -69,51 +69,51 @@ void CombinationEngine::finishInit()
                 << options::eeMode() << " not supported";
   }
 
-  Assert(d_eemUse != nullptr);
+  Assert(d_eemanager != nullptr);
 
   // initialize equality engines in all theories, including quantifiers engine
   // and the (provided) shared solver
-  d_eemUse->initializeTheories(d_ssUse.get());
+  d_eemanager->initializeTheories(d_sharedSolver.get());
 
-  Assert(d_mmUse != nullptr);
+  Assert(d_mmanager != nullptr);
   // initialize the model manager
-  d_mmUse->finishInit();
+  d_mmanager->finishInit();
 
   // initialize equality engine of the model using the equality engine manager
-  TheoryModel* m = d_mmUse->getModel();
-  d_eemUse->initializeModel(m);
+  TheoryModel* m = d_mmanager->getModel();
+  d_eemanager->initializeModel(m);
 }
 
 const EeTheoryInfo* CombinationEngine::getEeTheoryInfo(TheoryId tid) const
 {
-  return d_eemUse->getEeTheoryInfo(tid);
+  return d_eemanager->getEeTheoryInfo(tid);
 }
 
 eq::EqualityEngine* CombinationEngine::getCoreEqualityEngine()
 {
-  return d_eemUse->getCoreEqualityEngine();
+  return d_eemanager->getCoreEqualityEngine();
 }
 
-void CombinationEngine::resetModel() { d_mmUse->resetModel(); }
+void CombinationEngine::resetModel() { d_mmanager->resetModel(); }
 
 void CombinationEngine::postProcessModel(bool incomplete)
 {
   // should have a consistent core equality engine
-  eq::EqualityEngine* mee = d_eemUse->getCoreEqualityEngine();
+  eq::EqualityEngine* mee = d_eemanager->getCoreEqualityEngine();
   if (mee != nullptr)
   {
     AlwaysAssert(mee->consistent());
   }
   // postprocess with the model
-  d_mmUse->postProcessModel(incomplete);
+  d_mmanager->postProcessModel(incomplete);
 }
 
 theory::TheoryModel* CombinationEngine::getModel()
 {
-  return d_mmUse->getModel();
+  return d_mmanager->getModel();
 }
 
-SharedSolver* CombinationEngine::getSharedSolver() { return d_ssUse.get(); }
+SharedSolver* CombinationEngine::getSharedSolver() { return d_sharedSolver.get(); }
 
 void CombinationEngine::sendLemma(TNode node, TheoryId atomsTo)
 {

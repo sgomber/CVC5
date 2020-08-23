@@ -94,11 +94,17 @@ class CombinationEngine
    * The equality engine manager we are using. This class is responsible for
    * configuring equality engines for each theory.
    */
-  std::unique_ptr<EqEngineManager> d_eemUse;
-  /** The model manager we are using */
-  std::unique_ptr<ModelManager> d_mmUse;
-  /** The shared solver */
-  std::unique_ptr<SharedSolver> d_ssUse;
+  std::unique_ptr<EqEngineManager> d_eemanager;
+  /** 
+   * The model manager we are using. This class is responsible for building the
+   * model.
+   */
+  std::unique_ptr<ModelManager> d_mmanager;
+  /** 
+   * The shared solver. This class is responsible for performing combination
+   * tasks (e.g. preregistration) during solving.
+   */
+  std::unique_ptr<SharedSolver> d_sharedSolver;
 };
 
 }  // namespace theory
