@@ -95,10 +95,11 @@ class EqEngineManager
    * Get representatives, available at full effort only.
    */
   const std::vector<Node>& getEqcRepresentatives() const;
-  /** 
-   * Get representatives for type, available at full effort only. 
+  /**
+   * Get representatives for type, available at full effort only.
    */
   const std::vector<Node>& getEqcRepresentativesForType(TypeNode t) const;
+
  protected:
   /** Information related to the equality engine, per theory. */
   std::map<TheoryId, EeTheoryInfo> d_einfo;

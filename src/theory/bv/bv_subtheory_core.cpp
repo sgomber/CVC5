@@ -348,7 +348,9 @@ bool CoreSolver::isCompleteForTerm(TNode term, TNodeBoolMap& seen) {
   return utils::isEqualityTerm(term, seen); 
 }
 
-bool CoreSolver::collectModelInfo(TheoryModel* m, bool fullModel, std::set<Node>& termSet)
+bool CoreSolver::collectModelInfo(TheoryModel* m,
+                                  bool fullModel,
+                                  std::set<Node>& termSet)
 {
   if (Debug.isOn("bitvector-model")) {
     context::CDQueue<Node>::const_iterator it = d_assertionQueue.begin();

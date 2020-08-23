@@ -30,10 +30,10 @@
 #include "smt/logic_exception.h"
 #include "smt/smt_statistics_registry.h"
 #include "theory/arrays/theory_arrays_rewriter.h"
+#include "theory/relevant_terms_database.h"
 #include "theory/rewriter.h"
 #include "theory/theory_model.h"
 #include "theory/valuation.h"
-#include "theory/relevant_terms_database.h"
 
 using namespace std;
 
@@ -2279,13 +2279,11 @@ void TheoryArrays::computeRelevantTerms(RelevantTermsDatabase& rtdb)
           for (; !array_eqc_i.isFinished(); ++array_eqc_i)
           {
             Node arr = *array_eqc_i;
-            if (arr.getKind() == kind::STORE
-                && rtdb.isRelevant(arr)
+            if (arr.getKind() == kind::STORE && rtdb.isRelevant(arr)
                 && !d_equalityEngine->areEqual(arr[1], n[1]))
             {
               Node r = nm->mkNode(kind::SELECT, arr, n[1]);
-              if (!rtdb.isRelevant(r)
-                  && d_equalityEngine->hasTerm(r))
+              if (!rtdb.isRelevant(r) && d_equalityEngine->hasTerm(r))
               {
                 Trace("arrays::collectModelInfo")
                     << "TheoryArrays::collectModelInfo, adding RIntro2(a) "
@@ -2295,8 +2293,7 @@ void TheoryArrays::computeRelevantTerms(RelevantTermsDatabase& rtdb)
                 changed = true;
               }
               r = nm->mkNode(kind::SELECT, arr[0], n[1]);
-              if (!rtdb.isRelevant(r)
-                  && d_equalityEngine->hasTerm(r))
+              if (!rtdb.isRelevant(r) && d_equalityEngine->hasTerm(r))
               {
                 Trace("arrays::collectModelInfo")
                     << "TheoryArrays::collectModelInfo, adding RIntro2(b) "
@@ -2320,8 +2317,7 @@ void TheoryArrays::computeRelevantTerms(RelevantTermsDatabase& rtdb)
                 && !d_equalityEngine->areEqual(instore[1], n[1]))
             {
               Node r = nm->mkNode(kind::SELECT, instore, n[1]);
-              if (!rtdb.isRelevant(r)
-                  && d_equalityEngine->hasTerm(r))
+              if (!rtdb.isRelevant(r) && d_equalityEngine->hasTerm(r))
               {
                 Trace("arrays::collectModelInfo")
                     << "TheoryArrays::collectModelInfo, adding RIntro2(c) "
@@ -2331,8 +2327,7 @@ void TheoryArrays::computeRelevantTerms(RelevantTermsDatabase& rtdb)
                 changed = true;
               }
               r = nm->mkNode(kind::SELECT, instore[0], n[1]);
-              if (!rtdb.isRelevant(r)
-                  && d_equalityEngine->hasTerm(r))
+              if (!rtdb.isRelevant(r) && d_equalityEngine->hasTerm(r))
               {
                 Trace("arrays::collectModelInfo")
                     << "TheoryArrays::collectModelInfo, adding RIntro2(d) "

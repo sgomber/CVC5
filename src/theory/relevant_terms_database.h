@@ -43,9 +43,10 @@ class RelevantTermsDatabase
   std::set<Node>& getRelevantTerms();
   /** clear */
   void clear();
+
  protected:
   /**
-   * Helper method 
+   * Helper method
    */
   void collectTerms(TNode n, const std::set<Kind>& irrKinds);
   /** Reference to the theory engine */

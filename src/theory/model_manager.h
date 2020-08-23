@@ -20,9 +20,9 @@
 #include <map>
 #include <memory>
 
+#include "theory/relevant_terms_database.h"
 #include "theory/theory_model.h"
 #include "theory/theory_model_builder.h"
-#include "theory/relevant_terms_database.h"
 
 namespace CVC4 {
 

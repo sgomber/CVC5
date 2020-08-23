@@ -825,7 +825,8 @@ const std::vector<Node>& TheoryEngine::getEqcRepresentatives() const
   return d_tc->getEqcRepresentatives();
 }
 
-const std::vector<Node>& TheoryEngine::getEqcRepresentativesForType(TypeNode t) const
+const std::vector<Node>& TheoryEngine::getEqcRepresentativesForType(
+    TypeNode t) const
 {
   return d_tc->getEqcRepresentativesForType(t);
 }

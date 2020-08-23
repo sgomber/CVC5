@@ -444,7 +444,7 @@ bool TheoryModel::assertEqualityEngine(const eq::EqualityEngine* ee,
 {
   Assert(d_equalityEngine->consistent());
   // should be from a different equality engine
-  Assert (d_equalityEngine != ee);
+  Assert(d_equalityEngine != ee);
   eq::EqClassesIterator eqcs_i = eq::EqClassesIterator( ee );
   for (; !eqcs_i.isFinished(); ++eqcs_i) {
     Node eqc = (*eqcs_i);

@@ -40,7 +40,9 @@ namespace theory {
 class ModelManagerDistributed : public ModelManager
 {
  public:
-  ModelManagerDistributed(TheoryEngine& te, RelevantTermDatabase& rtdb, EqEngineManagerDistributed& eem);
+  ModelManagerDistributed(TheoryEngine& te,
+                          RelevantTermDatabase& rtdb,
+                          EqEngineManagerDistributed& eem);
   ~ModelManagerDistributed();
 
   /** Prepare the model, as described above. */

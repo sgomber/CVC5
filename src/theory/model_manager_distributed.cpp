@@ -20,7 +20,9 @@ namespace CVC4 {
 namespace theory {
 
 ModelManagerDistributed::ModelManagerDistributed(
-    TheoryEngine& te, RelevantTermDatabase& rtdb, EqEngineManagerDistributed& eem)
+    TheoryEngine& te,
+    RelevantTermDatabase& rtdb,
+    EqEngineManagerDistributed& eem)
     : ModelManager(te, rtdb), d_eem(eem)
 {
 }
@@ -55,24 +57,24 @@ bool ModelManagerDistributed::prepareModel()
     Theory* t = d_te.theoryOf(theoryId);
     Trace("model-builder") << "  CollectModelInfo on theory: " << theoryId
                            << std::endl;
-/*
-    eq::EqualityEngine * tee = t->getEqualityEngine();
-    // if we are using an equality engine, assert it to the model
-    if (d_equalityEngine != nullptr)
-    {
-      if (!d_model->assertEqualityEngine(tee, d_rtdb))
-      {
-        return false;
-      }
-    }
-    // now, collect theory-specific value assigments
-    if (!t->collectModelValues(d_model, d_rtdb))
-    {
-      Trace("model-builder")
-          << "ModelManagerDistributed: fail collect model info" << std::endl;
-      return false;
-    }
-    */
+    /*
+        eq::EqualityEngine * tee = t->getEqualityEngine();
+        // if we are using an equality engine, assert it to the model
+        if (d_equalityEngine != nullptr)
+        {
+          if (!d_model->assertEqualityEngine(tee, d_rtdb))
+          {
+            return false;
+          }
+        }
+        // now, collect theory-specific value assigments
+        if (!t->collectModelValues(d_model, d_rtdb))
+        {
+          Trace("model-builder")
+              << "ModelManagerDistributed: fail collect model info" <<
+       std::endl; return false;
+        }
+        */
     d_rtdb.clear();
     t->computeAssertedTerms(d_rtdb, irrKinds);
     if (!t->collectModelInfo(d_model, d_rtdb.getRelevantTerms()))

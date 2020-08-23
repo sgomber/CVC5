@@ -53,7 +53,8 @@ void CombinationEngine::finishInit()
     std::unique_ptr<EqEngineManagerDistributed> eeDistributed(
         new EqEngineManagerDistributed(d_te));
     // make the distributed model manager
-    d_mmanager.reset(new ModelManagerDistributed(d_te, d_relevantTerms, *eeDistributed.get()));
+    d_mmanager.reset(new ModelManagerDistributed(
+        d_te, d_relevantTerms, *eeDistributed.get()));
     d_eemanager = std::move(eeDistributed);
     // use the distributed shared solver
     d_sharedSolver.reset(new SharedSolverDistributed(d_te));
@@ -139,7 +140,6 @@ bool CombinationEngine::isParametric(TheoryId tid) const
 void CombinationEngine::resetRound()
 {
   // compute the relevant terms?
-
 }
 
 const std::vector<Node>& CombinationEngine::getEqcRepresentatives() const
@@ -147,7 +147,8 @@ const std::vector<Node>& CombinationEngine::getEqcRepresentatives() const
   return d_eemanager->getEqcRepresentatives();
 }
 
-const std::vector<Node>& CombinationEngine::getEqcRepresentativesForType(TypeNode t) const
+const std::vector<Node>& CombinationEngine::getEqcRepresentativesForType(
+    TypeNode t) const
 {
   return d_eemanager->getEqcRepresentativesForType(t);
 }

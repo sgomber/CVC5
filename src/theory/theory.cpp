@@ -27,9 +27,9 @@
 #include "smt/smt_statistics_registry.h"
 #include "theory/ext_theory.h"
 #include "theory/quantifiers_engine.h"
+#include "theory/relevant_terms_database.h"
 #include "theory/substitutions.h"
 #include "theory/theory_rewriter.h"
-#include "theory/relevant_terms_database.h"
 
 using namespace std;
 
@@ -421,7 +421,8 @@ void Theory::computeRelevantTerms(RelevantTermDatabase& rtdb)
   // default, nothing
 }
 
-bool Theory::collectModelValues(TheoryModel* m, const RelevantTermDatabase& rtdb)
+bool Theory::collectModelValues(TheoryModel* m,
+                                const RelevantTermDatabase& rtdb)
 {
   return true;
 }

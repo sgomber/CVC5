@@ -189,11 +189,12 @@ const std::vector<Node>& Valuation::getEqcRepresentatives() const
   return d_engine->getEqcRepresentatives();
 }
 
-const std::vector<Node>& Valuation::getEqcRepresentativesForType(TypeNode t) const
+const std::vector<Node>& Valuation::getEqcRepresentativesForType(
+    TypeNode t) const
 {
   Assert(d_engine != nullptr);
   return d_engine->getEqcRepresentativesForType(t);
 }
-  
+
 }/* CVC4::theory namespace */
 }/* CVC4 namespace */

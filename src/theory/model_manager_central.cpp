@@ -19,7 +19,11 @@
 namespace CVC4 {
 namespace theory {
 
-ModelManagerCentral::ModelManagerCentral(TheoryEngine& te, RelevantTermDatabase& rtdb) : ModelManager(te, rtdb) {}
+ModelManagerCentral::ModelManagerCentral(TheoryEngine& te,
+                                         RelevantTermDatabase& rtdb)
+    : ModelManager(te, rtdb)
+{
+}
 
 ModelManagerCentral::~ModelManagerCentral() {}
 

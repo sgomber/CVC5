@@ -671,8 +671,8 @@ class Theory {
    * shared terms are not influenced by irrKinds.
    */
   void computeAssertedTerms(RelevantTermsDatabase& rtdb,
-                                    const std::set<Kind>& irrKinds,
-                                    bool includeShared = true) const;
+                            const std::set<Kind>& irrKinds,
+                            bool includeShared = true) const;
   /**
    * Compute terms that are not necessarily part of the assertions or
    * shared terms that should be considered relevant, add them to rtdb.
