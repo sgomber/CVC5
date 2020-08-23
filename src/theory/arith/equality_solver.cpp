@@ -54,7 +54,8 @@ bool EqualitySolver::preNotifyFact(TNode atom, bool pol, TNode fact)
     Trace("arith-eq-solver")
         << "(in state " << d_astate.toString() << ")" << std::endl;
     // we will process
-    // NOTE: currently do not process (since not beneficial to add arbitrary equalities)
+    // NOTE: currently do not process (since not beneficial to add arbitrary
+    // equalities)
     return true;
   }
   // don't process
