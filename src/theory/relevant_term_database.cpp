@@ -17,8 +17,7 @@
 namespace CVC4 {
 namespace theory {
 
-RelevantTermDatabase::RelevantTermDatabase(TheoryEngine& te) : d_te(te){}
-
+RelevantTermDatabase::RelevantTermDatabase(TheoryEngine& te) : d_te(te) {}
 
 void RelevantTermDatabase::compute()
 {
@@ -41,7 +40,7 @@ void RelevantTermDatabase::compute()
 
 bool RelevantTermDatabase::isRelevant(TNode t) const
 {
-  return d_relevantTerms.find(t)!=d_relevantTerms.end();
+  return d_relevantTerms.find(t) != d_relevantTerms.end();
 }
 
 void RelevantTermDatabase::addRelevantTerm(TNode t)

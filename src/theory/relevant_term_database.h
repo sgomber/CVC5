@@ -39,6 +39,7 @@ class RelevantTermDatabase
   bool isRelevant(TNode t) const;
   /** Add relevant term */
   void addRelevantTerm(TNode t);
+
  protected:
   /** Reference to the theory engine */
   TheoryEngine& d_te;

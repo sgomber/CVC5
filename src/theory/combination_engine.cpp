@@ -135,7 +135,8 @@ bool CombinationEngine::isParametric(TheoryId tid) const
   return true;
 }
 
-void CombinationEngine::resetRound() {
+void CombinationEngine::resetRound()
+{
   // compute the relevant terms
   d_relevantTerms.clear();
   /*
@@ -156,7 +157,6 @@ void CombinationEngine::resetRound() {
   }
   */
 }
-
 
 }  // namespace theory
 }  // namespace CVC4

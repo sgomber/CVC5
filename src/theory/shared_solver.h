@@ -97,6 +97,7 @@ class SharedSolver
                                     TNode reason);
   /** Is term t a shared term? */
   virtual bool isShared(TNode t) const;
+
  protected:
   /**
    * Explain literal, which returns a conjunction of literals that that entail

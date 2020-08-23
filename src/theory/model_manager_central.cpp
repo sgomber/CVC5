@@ -49,7 +49,7 @@ bool ModelManagerCentral::prepareModel(const std::set<Node>& relTerms)
   // push a SAT context
   context::Context* c = d_te.getSatContext();
   c->push();
-  
+
   // Collect model info from the theories
   Trace("model-builder") << "ModelManagerCentral: Collect model values..."
                          << std::endl;
