@@ -113,7 +113,10 @@ theory::TheoryModel* CombinationEngine::getModel()
   return d_mmanager->getModel();
 }
 
-SharedSolver* CombinationEngine::getSharedSolver() { return d_sharedSolver.get(); }
+SharedSolver* CombinationEngine::getSharedSolver()
+{
+  return d_sharedSolver.get();
+}
 
 void CombinationEngine::sendLemma(TNode node, TheoryId atomsTo)
 {
