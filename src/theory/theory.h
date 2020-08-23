@@ -656,7 +656,7 @@ class Theory {
    * TODO (project #39): this method should be non-virtual, once all theories
    * conform to the new standard, delete, move to model manager distributed.
    */
-  virtual bool collectModelInfo(TheoryModel* m, std::set<Node>& termSet);
+  virtual bool collectModelInfo(TheoryModel* m, RelevantTermsDatabase& rtdb);
   /**
    * Scans the current set of assertions and shared terms top-down
    * until a theory-leaf is reached, and adds all terms found to

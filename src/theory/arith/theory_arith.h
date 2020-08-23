@@ -102,7 +102,7 @@ class TheoryArith : public Theory {
                      Node on,
                      std::vector<Node>& exp) override;
 
-  bool collectModelInfo(TheoryModel* m, std::set<Node>& termSet) override;
+  bool collectModelInfo(TheoryModel* m, RelevantTermsDatabase& rtdb) override;
   /** Collect model values in m based on the relevant terms given by termSet */
   bool collectModelValues(TheoryModel* m, std::set<Node>& termSet) override;
 

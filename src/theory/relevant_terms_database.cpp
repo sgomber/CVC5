@@ -82,7 +82,7 @@ void RelevantTermsDatabase::collectTerms(TNode n,
     if (irrKinds.find(nk) == irrKinds.end())
     {
       Trace("theory::collectTerms")
-          << "Theory::collectTerms: adding " << n << endl;
+          << "Theory::collectTerms: adding " << n << std::endl;
       addRelevantTerm(n);
     }
     visit.insert(visit.end(), cur.begin(), cur.end());

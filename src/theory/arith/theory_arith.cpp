@@ -24,6 +24,7 @@
 #include "theory/arith/infer_bounds.h"
 #include "theory/arith/theory_arith_private.h"
 #include "theory/ext_theory.h"
+#include "theory/relevant_terms_database.h"
 
 using namespace std;
 using namespace CVC4::kind;
@@ -171,10 +172,10 @@ void TheoryArith::propagate(Effort e) {
   d_internal->propagate(e);
 }
 
-bool TheoryArith::collectModelInfo(TheoryModel* m, std::set<Node>& termSet)
+bool TheoryArith::collectModelInfo(TheoryModel* m, RelevantTermsDatabase& rtdb)
 {
   // overrides behavior to not assert the equality engine
-  return collectModelValues(m, termSet);
+  return collectModelValues(m, rtdb.getRelevantTerms());
 }
 
 bool TheoryArith::collectModelValues(TheoryModel* m, std::set<Node>& termSet)

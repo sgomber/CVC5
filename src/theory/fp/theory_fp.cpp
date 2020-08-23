@@ -26,6 +26,7 @@
 #include "theory/fp/theory_fp_rewriter.h"
 #include "theory/rewriter.h"
 #include "theory/theory_model.h"
+#include "theory/relevant_terms_database.h"
 
 using namespace std;
 
@@ -1017,10 +1018,10 @@ Node TheoryFp::getModelValue(TNode var) {
   return d_conv.getValue(d_valuation, var);
 }
 
-bool TheoryFp::collectModelInfo(TheoryModel* m, std::set<Node>& termSet)
+bool TheoryFp::collectModelInfo(TheoryModel* m, RelevantTermsDatabase& rtdb)
 {
   // override behavior to not assert equality engine
-  return collectModelValues(m, termSet);
+  return collectModelValues(m, rtdb.getRelevantTerms());
 }
 
 bool TheoryFp::collectModelValues(TheoryModel* m, std::set<Node>& relevantTerms)

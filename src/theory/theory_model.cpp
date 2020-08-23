@@ -463,7 +463,7 @@ bool TheoryModel::assertEqualityEngine(const eq::EqualityEngine* ee,
     bool first = true;
     Node rep;
     for (; !eqc_i.isFinished(); ++eqc_i) {
-      if (!rtdb.isRelevantTerm(*eqc_i))
+      if (!rtdb.isRelevant(*eqc_i))
       {
         Trace("model-builder-debug") << "...skip node " << (*eqc_i) << " in eqc " << eqc << std::endl;
         continue;
@@ -623,7 +623,7 @@ void TheoryModel::setSemiEvaluatedKind(Kind k)
 
 void TheoryModel::setIrrelevantKind(Kind k) { d_irrKinds.insert(k); }
 
-const std::set<Kind>& getIrrelevantKinds() const { return d_irrKinds; }
+const std::set<Kind>& TheoryModel::getIrrelevantKinds() const { return d_irrKinds; }
 
 bool TheoryModel::isLegalElimination(TNode x, TNode val)
 {
