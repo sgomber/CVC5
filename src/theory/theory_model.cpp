@@ -18,6 +18,7 @@
 #include "options/smt_options.h"
 #include "options/uf_options.h"
 #include "smt/smt_engine.h"
+#include "theory/relevant_terms_database.h"
 
 using namespace std;
 using namespace CVC4::kind;

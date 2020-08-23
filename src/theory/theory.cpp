@@ -368,10 +368,10 @@ bool Theory::collectModelInfo(TheoryModel* m, RelevantTermsDatabase& rtdb)
 }
 
 void Theory::collectTerms(TNode n,
-                          RelevantTermDatabase& rtdb,
+                          RelevantTermsDatabase& rtdb,
                           const std::set<Kind>& irrKinds) const
 {
-  if (rtdb.isRelevantTerm(n))
+  if (rtdb.isRelevant(n))
   {
     return;
   }
@@ -390,7 +390,7 @@ void Theory::collectTerms(TNode n,
   }
 }
 
-void Theory::computeAssertedTerms(RelevantTermDatabase& rtdb,
+void Theory::computeAssertedTerms(RelevantTermsDatabase& rtdb,
                                   const std::set<Kind>& irrKinds,
                                   bool includeShared) const
 {
@@ -416,13 +416,13 @@ void Theory::computeAssertedTerms(RelevantTermDatabase& rtdb,
   }
 }
 
-void Theory::computeRelevantTerms(RelevantTermDatabase& rtdb)
+void Theory::computeRelevantTerms(RelevantTermsDatabase& rtdb)
 {
   // default, nothing
 }
 
 bool Theory::collectModelValues(TheoryModel* m,
-                                const RelevantTermDatabase& rtdb)
+                                const RelevantTermsDatabase& rtdb)
 {
   return true;
 }

@@ -77,7 +77,7 @@ bool ModelManagerDistributed::prepareModel()
         */
     d_rtdb.clear();
     t->computeAssertedTerms(d_rtdb, irrKinds);
-    if (!t->collectModelInfo(d_model, d_rtdb.getRelevantTerms()))
+    if (!t->collectModelInfo(d_model, d_rtdb))
     {
       Trace("model-builder")
           << "ModelManagerDistributed: fail collect model info" << std::endl;

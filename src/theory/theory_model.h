@@ -365,7 +365,7 @@ class TheoryModel : public Model
   /** a set of kinds that are semi-evaluated */
   std::unordered_set<Kind, kind::KindHashFunction> d_semi_evaluated_kinds;
   /** a set of kinds that are irrelevant */
-  std::unordered_set<Kind, kind::KindHashFunction> d_irrKinds;
+  std::set<Kind> d_irrKinds;
   /**
    * Map of representatives of equality engine to used representatives in
    * representative set
