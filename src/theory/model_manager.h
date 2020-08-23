@@ -38,7 +38,7 @@ namespace theory {
 class ModelManager
 {
  public:
-  ModelManager(TheoryEngine& te, RelevantTermDatabase& rtdb);
+  ModelManager(TheoryEngine& te, RelevantTermsDatabase& rtdb);
   virtual ~ModelManager();
   /** Finish initializing this class. */
   void finishInit();
@@ -96,7 +96,7 @@ class ModelManager
   /** Reference to the theory engine */
   TheoryEngine& d_te;
   /** Reference to the relevant term database of the combination engine */
-  RelevantTermDatabase& d_rtdb;
+  RelevantTermsDatabase& d_rtdb;
   /** Logic info of theory engine (cached) */
   const LogicInfo& d_logicInfo;
   /** The model object we are using */

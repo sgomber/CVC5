@@ -486,7 +486,7 @@ bool TheoryEngineModelBuilder::buildModel(Model* m,
       bool isRelevantTerm = true;
       if (!n.isConst() && rtdb!=nullptr)
       {
-        isRelevantTerm = rtdb->isRelevantTerm(n);
+        isRelevantTerm = rtdb->isRelevant(n);
       }
 
       // For each term n in this equivalence class:

@@ -2224,13 +2224,8 @@ TrustNode TheoryArrays::expandDefinition(Node node)
   return TrustNode::null();
 }
 
-void TheoryArrays::computeRelevantTerms(std::set<Node>& termSet,
-                                        bool includeShared)
+void TheoryArrays::computeRelevantTerms(RelevantTermsDatabase& rtdb)
 {
-  // include all standard terms
-  std::set<Kind> irrKinds;
-  computeRelevantTermsInternal(termSet, irrKinds, includeShared);
-
   NodeManager* nm = NodeManager::currentNM();
   // make sure RIntro1 reads are included in the relevant set of reads
   eq::EqClassesIterator eqcs_i = eq::EqClassesIterator(d_equalityEngine);
@@ -2246,7 +2241,7 @@ void TheoryArrays::computeRelevantTerms(std::set<Node>& termSet,
     for (; !eqc_i.isFinished(); ++eqc_i)
     {
       Node n = *eqc_i;
-      if (termSet.find(n) != termSet.end())
+      if (rtdb.isRelevant(n))
       {
         if (n.getKind() == kind::STORE)
         {
@@ -2255,7 +2250,7 @@ void TheoryArrays::computeRelevantTerms(std::set<Node>& termSet,
           Trace("arrays::collectModelInfo")
               << "TheoryArrays::collectModelInfo, adding RIntro1 read: " << r
               << endl;
-          termSet.insert(r);
+          rtdb.addRelevantTerm(r);
         }
       }
     }
@@ -2275,7 +2270,7 @@ void TheoryArrays::computeRelevantTerms(std::set<Node>& termSet,
       for (; !eqc_i.isFinished(); ++eqc_i)
       {
         Node n = *eqc_i;
-        if (n.getKind() == kind::SELECT && termSet.find(n) != termSet.end())
+        if (n.getKind() == kind::SELECT && rtdb.isRelevant(n))
         {
           // Find all terms equivalent to n[0] and get corresponding read terms
           Node array_eqc = d_equalityEngine->getRepresentative(n[0]);
@@ -2285,29 +2280,29 @@ void TheoryArrays::computeRelevantTerms(std::set<Node>& termSet,
           {
             Node arr = *array_eqc_i;
             if (arr.getKind() == kind::STORE
-                && termSet.find(arr) != termSet.end()
+                && rtdb.isRelevant(arr)
                 && !d_equalityEngine->areEqual(arr[1], n[1]))
             {
               Node r = nm->mkNode(kind::SELECT, arr, n[1]);
-              if (termSet.find(r) == termSet.end()
+              if (!rtdb.isRelevant(r)
                   && d_equalityEngine->hasTerm(r))
               {
                 Trace("arrays::collectModelInfo")
                     << "TheoryArrays::collectModelInfo, adding RIntro2(a) "
                        "read: "
                     << r << endl;
-                termSet.insert(r);
+                rtdb.addRelevantTerm(r);
                 changed = true;
               }
               r = nm->mkNode(kind::SELECT, arr[0], n[1]);
-              if (termSet.find(r) == termSet.end()
+              if (!rtdb.isRelevant(r)
                   && d_equalityEngine->hasTerm(r))
               {
                 Trace("arrays::collectModelInfo")
                     << "TheoryArrays::collectModelInfo, adding RIntro2(b) "
                        "read: "
                     << r << endl;
-                termSet.insert(r);
+                rtdb.addRelevantTerm(r);
                 changed = true;
               }
             }
@@ -2325,25 +2320,25 @@ void TheoryArrays::computeRelevantTerms(std::set<Node>& termSet,
                 && !d_equalityEngine->areEqual(instore[1], n[1]))
             {
               Node r = nm->mkNode(kind::SELECT, instore, n[1]);
-              if (termSet.find(r) == termSet.end()
+              if (!rtdb.isRelevant(r)
                   && d_equalityEngine->hasTerm(r))
               {
                 Trace("arrays::collectModelInfo")
                     << "TheoryArrays::collectModelInfo, adding RIntro2(c) "
                        "read: "
                     << r << endl;
-                termSet.insert(r);
+                rtdb.addRelevantTerm(r);
                 changed = true;
               }
               r = nm->mkNode(kind::SELECT, instore[0], n[1]);
-              if (termSet.find(r) == termSet.end()
+              if (!rtdb.isRelevant(r)
                   && d_equalityEngine->hasTerm(r))
               {
                 Trace("arrays::collectModelInfo")
                     << "TheoryArrays::collectModelInfo, adding RIntro2(d) "
                        "read: "
                     << r << endl;
-                termSet.insert(r);
+                rtdb.addRelevantTerm(r);
                 changed = true;
               }
             }

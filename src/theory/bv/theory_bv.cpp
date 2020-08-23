@@ -565,7 +565,7 @@ bool TheoryBV::collectModelValues(TheoryModel* m, std::set<Node>& termSet)
   Assert(!inPendingConflict());
   if (options::bitblastMode() == options::BitblastMode::EAGER)
   {
-    if (!d_eagerSolver->collectModelInfo(m, true))
+    if (!d_eagerSolver->collectModelInfo(m, true, termSet))
     {
       return false;
     }

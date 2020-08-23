@@ -43,6 +43,7 @@ bool ModelManagerDistributed::prepareModel()
   // Consult each active theory to get all relevant information concerning the
   // model, which includes both dump their equality information and assigning
   // values.
+  const std::set<Kind>& irrKinds = d_te.getModel()->getIrrelevantKinds();
   for (TheoryId theoryId = theory::THEORY_FIRST; theoryId < theory::THEORY_LAST;
        ++theoryId)
   {
@@ -72,7 +73,9 @@ bool ModelManagerDistributed::prepareModel()
       return false;
     }
     */
-    if (!t->collectModelInfo(d_model, d_rtdb))
+    d_rtdb.clear();
+    t->computeAssertedTerms(d_rtdb, irrKinds);
+    if (!t->collectModelInfo(d_model, d_rtdb.getRelevantTerms()))
     {
       Trace("model-builder")
           << "ModelManagerDistributed: fail collect model info" << std::endl;

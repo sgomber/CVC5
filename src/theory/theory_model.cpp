@@ -60,6 +60,9 @@ void TheoryModel::finishInit(eq::EqualityEngine* ee)
   {
     setSemiEvaluatedKind(kind::APPLY_UF);
   }
+  // equal and not terms are not relevant terms
+  setIrrelevantKind(EQUAL);
+  setIrrelevantKind(NOT);
 }
 
 void TheoryModel::reset(){

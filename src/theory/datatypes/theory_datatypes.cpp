@@ -114,6 +114,8 @@ void TheoryDatatypes::finishInit()
     // do congruence on evaluation functions
     d_equalityEngine->addFunctionKind(kind::DT_SYGUS_EVAL);
   }
+  // testers are not relevant for model building
+  d_valuation.setIrrelevantKind(APPLY_TESTER);
 }
 
 TheoryDatatypes::EqcInfo* TheoryDatatypes::getOrMakeEqcInfo( TNode n, bool doMake ){
@@ -2223,15 +2225,8 @@ Node TheoryDatatypes::mkAnd( std::vector< TNode >& assumptions ) {
   }
 }
 
-void TheoryDatatypes::computeRelevantTerms(std::set<Node>& termSet,
-                                           bool includeShared)
+void TheoryDatatypes::computeRelevantTerms(RelevantTermsDatabase& rtdb)
 {
-  // Compute terms appearing in assertions and shared terms
-  std::set<Kind> irrKinds;
-  // testers are not relevant for model construction
-  irrKinds.insert(APPLY_TESTER);
-  computeRelevantTermsInternal(termSet, irrKinds, includeShared);
-
   Trace("dt-cmi") << "Have " << termSet.size() << " relevant terms..."
                   << std::endl;
 
@@ -2255,7 +2250,7 @@ void TheoryDatatypes::computeRelevantTerms(std::set<Node>& termSet,
           if (rtn.isDatatype())
           {
             addedFirst = true;
-            termSet.insert(n);
+            rtdb.addRelevantTerm(n);
           }
         }
         else
@@ -2263,9 +2258,9 @@ void TheoryDatatypes::computeRelevantTerms(std::set<Node>& termSet,
           if (!addedFirst)
           {
             addedFirst = true;
-            termSet.insert(first);
+            rtdb.addRelevantTerm(first);
           }
-          termSet.insert(n);
+          rtdb.addRelevantTerm(n);
         }
         ++eqc_i;
       }

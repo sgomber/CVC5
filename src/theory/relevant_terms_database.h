@@ -41,7 +41,13 @@ class RelevantTermsDatabase
   void addRelevantTerm(TNode t);
   /** Get relevant terms */
   std::set<Node>& getRelevantTerms();
+  /** clear */
+  void clear();
  protected:
+  /**
+   * Helper method 
+   */
+  void collectTerms(TNode n, const std::set<Kind>& irrKinds);
   /** Reference to the theory engine */
   TheoryEngine& d_te;
   /** The set of relevant terms */

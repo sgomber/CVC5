@@ -674,13 +674,10 @@ class Theory {
                                     const std::set<Kind>& irrKinds,
                                     bool includeShared = true) const;
   /**
-   * Same as above, but with empty irrKinds. This version can be overridden
-   * by the theory, e.g. by restricting or extending the set of terms returned
-   * by computeRelevantTermsInternal, which is called by default with no
-   * irrKinds.
+   * Compute terms that are not necessarily part of the assertions or
+   * shared terms that should be considered relevant, add them to rtdb.
    */
-  virtual void computeRelevantTerms(RelevantTermsDatabase& rtdb,
-                                    const std::set<Kind>& irrKinds);
+  virtual void computeRelevantTerms(RelevantTermsDatabase& rtdb);
   /**
    * Collect model values, after equality information is added to the model.
    * The argument termSet is the set of relevant terms returned by

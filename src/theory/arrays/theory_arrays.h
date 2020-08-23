@@ -475,8 +475,7 @@ class TheoryArrays : public Theory {
    * Compute relevant terms. This includes additional select nodes for the
    * RIntro1 and RIntro2 rules.
    */
-  void computeRelevantTerms(std::set<Node>& termSet,
-                            bool includeShared = true) override;
+  void computeRelevantTerms(RelevantTermsDatabase& rtdb) override;
 };/* class TheoryArrays */
 
 }/* CVC4::theory::arrays namespace */

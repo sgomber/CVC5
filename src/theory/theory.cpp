@@ -352,19 +352,19 @@ std::unordered_set<TNode, TNodeHashFunction> Theory::currentlySharedTerms() cons
   return currentlyShared;
 }
 
-bool Theory::collectModelInfo(TheoryModel* m, std::set<Node>& termSet)
+bool Theory::collectModelInfo(TheoryModel* m, const RelevantTermDatabase& rtdb)
 {
   // FIXME: could move entirely into model engine distributed
   // if we are using an equality engine, assert it to the model
   if (d_equalityEngine != nullptr)
   {
-    if (!m->assertEqualityEngine(d_equalityEngine, rtdb.getRelevantTerms()))
+    if (!m->assertEqualityEngine(d_equalityEngine, rtdb))
     {
       return false;
     }
   }
   // now, collect theory-specific value assigments
-  return collectModelValues(m, termSet);
+  return collectModelValues(m, rtdb.getRelevantTerms());
 }
 
 void Theory::collectTerms(TNode n,
@@ -391,12 +391,10 @@ void Theory::collectTerms(TNode n,
 }
 
 void Theory::computeAssertedTerms(RelevantTermDatabase& rtdb,
-                                    const std::set<Kind>& irrKinds,
-                                          bool includeShared) const
+                                  const std::set<Kind>& irrKinds,
+                                  bool includeShared) const
 {
   // Collect all terms appearing in assertions
-  irrKinds.insert(kind::EQUAL);
-  irrKinds.insert(kind::NOT);
   context::CDList<Assertion>::const_iterator assert_it = facts_begin(),
                                              assert_it_end = facts_end();
   for (; assert_it != assert_it_end; ++assert_it)
@@ -414,13 +412,13 @@ void Theory::computeAssertedTerms(RelevantTermDatabase& rtdb,
                                          shared_it_end = shared_terms_end();
   for (; shared_it != shared_it_end; ++shared_it)
   {
-    collectTerms(*shared_it, rtdb,  kempty);
+    collectTerms(*shared_it, rtdb, kempty);
   }
 }
 
-void Theory::computeRelevantTerms(RelevantTermDatabase& rtdb,
-                                    const std::set<Kind>& irrKinds)
+void Theory::computeRelevantTerms(RelevantTermDatabase& rtdb)
 {
+  // default, nothing
 }
 
 bool Theory::collectModelValues(TheoryModel* m, const RelevantTermDatabase& rtdb)
