@@ -669,7 +669,7 @@ class Theory {
    *
    * includeShared: Whether to include shared terms in termSet. Notice that
    * shared terms are not influenced by irrKinds.
-   * 
+   *
    * TODO: delete, move to relevant terms database
    */
   void computeAssertedTerms(RelevantTermsDatabase& rtdb,

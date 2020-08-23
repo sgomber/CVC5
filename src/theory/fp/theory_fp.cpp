@@ -24,9 +24,9 @@
 
 #include "options/fp_options.h"
 #include "theory/fp/theory_fp_rewriter.h"
+#include "theory/relevant_terms_database.h"
 #include "theory/rewriter.h"
 #include "theory/theory_model.h"
-#include "theory/relevant_terms_database.h"
 
 using namespace std;
 

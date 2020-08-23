@@ -624,7 +624,10 @@ void TheoryModel::setSemiEvaluatedKind(Kind k)
 
 void TheoryModel::setIrrelevantKind(Kind k) { d_irrKinds.insert(k); }
 
-const std::set<Kind>& TheoryModel::getIrrelevantKinds() const { return d_irrKinds; }
+const std::set<Kind>& TheoryModel::getIrrelevantKinds() const
+{
+  return d_irrKinds;
+}
 
 bool TheoryModel::isLegalElimination(TNode x, TNode val)
 {

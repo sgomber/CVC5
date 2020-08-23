@@ -421,8 +421,7 @@ void Theory::computeRelevantTerms(RelevantTermsDatabase& rtdb)
   // default, nothing
 }
 
-bool Theory::collectModelValues(TheoryModel* m,
-                                std::set<Node>& termSet)
+bool Theory::collectModelValues(TheoryModel* m, std::set<Node>& termSet)
 {
   return true;
 }
