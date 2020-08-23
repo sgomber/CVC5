@@ -620,6 +620,11 @@ void TheoryModel::setSemiEvaluatedKind(Kind k)
   d_semi_evaluated_kinds.insert(k);
 }
 
+void TheoryModel::setIrrelevantKind(Kind k)
+{
+  d_irrKinds.insert(k);
+}
+
 bool TheoryModel::isLegalElimination(TNode x, TNode val)
 {
   return !expr::hasSubtermKinds(d_unevaluated_kinds, val);

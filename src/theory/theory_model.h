@@ -261,6 +261,11 @@ class TheoryModel : public Model
    */
   void setUnevaluatedKind(Kind k);
   void setSemiEvaluatedKind(Kind k);
+  /** 
+   * Set irrelevant kind. These kinds do not impact model generation. An
+   * example is APPLY_TESTER.
+   */
+  void setIrrelevantKind(Kind k);
   /** is legal elimination
    *
    * Returns true if x -> val is a legal elimination of variable x.
@@ -357,6 +362,8 @@ class TheoryModel : public Model
   std::unordered_set<Kind, kind::KindHashFunction> d_unevaluated_kinds;
   /** a set of kinds that are semi-evaluated */
   std::unordered_set<Kind, kind::KindHashFunction> d_semi_evaluated_kinds;
+  /** a set of kinds that are irrelevant */
+  std::unordered_set<Kind, kind::KindHashFunction> d_irrKinds;
   /**
    * Map of representatives of equality engine to used representatives in
    * representative set

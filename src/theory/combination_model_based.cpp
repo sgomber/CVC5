@@ -86,6 +86,35 @@ eq::EqualityEngineNotify* CombinationModelBased::getModelEqualityEngineNotify()
   return &d_cmbNotify;
 }
 
+void CombinationModelBased::notifyModelConstantTermMerge(TNode t1, TNode t2)
+{
+  // TODO
+}
+
+void CombinationModelBased::notifyModelMerge(TNode t1, TNode t2)
+{
+  // TODO
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 void CombinationModelBased::eqNotifyNewClass(TNode t)
 {
   // if it is a shared term, track the equivalence class

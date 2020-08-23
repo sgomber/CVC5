@@ -476,6 +476,7 @@ void TheoryEngine::check(Theory::Effort effort) {
       {
         d_relManager->resetRound();
       }
+      d_tc->resetRound();
     }
 
     // Check until done

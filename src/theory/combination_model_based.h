@@ -72,13 +72,13 @@ class CombinationModelBased : public CombinationEngine
 
     void eqNotifyConstantTermMerge(TNode t1, TNode t2) override
     {
-      // d_cmb.notifyModelConstantTermMerge(t1, t2);
+      d_cmb.notifyModelConstantTermMerge(t1, t2);
     }
 
     void eqNotifyNewClass(TNode t) override {}
     void eqNotifyMerge(TNode t1, TNode t2) override
     {
-      // d_cmb.notifyModelMerge(t1, t2);
+      d_cmb.notifyModelMerge(t1, t2);
     }
     void eqNotifyDisequal(TNode t1, TNode t2, TNode reason) override {}
 
@@ -90,7 +90,20 @@ class CombinationModelBased : public CombinationEngine
   ModelBasedNotifyClass d_cmbNotify;
   /** The lemmas to send */
   std::vector<std::pair<Node, TheoryId> > d_cmbLemmas;
-
+  /** called when two constants merge in the equality engine of the model */
+  void notifyModelConstantTermMerge(TNode t1, TNode t2);
+  /** called when two terms merge in the equality engine of the model */
+  void notifyModelMerge(TNode t1, TNode t2);
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
   /**
    * Run the combination framework, model-based version.
    *

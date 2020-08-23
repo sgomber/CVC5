@@ -94,6 +94,8 @@ class EqEngineManager
  protected:
   /** Information related to the equality engine, per theory. */
   std::map<TheoryId, EeTheoryInfo> d_einfo;
+  /** The equivalence classes cache */
+  std::unique_ptr<eq::EqClassesCache> d_eqCache;
 };
 
 }  // namespace theory

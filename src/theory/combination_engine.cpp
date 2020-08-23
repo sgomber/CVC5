@@ -131,8 +131,13 @@ void CombinationEngine::sendLemma(TNode node, TheoryId atomsTo)
 
 bool CombinationEngine::isParametric(TheoryId tid) const
 {
-  // FIXME
+  // FIXME: necessary?
   return true;
+}
+
+void CombinationEngine::resetRound()
+{
+  
 }
 
 }  // namespace theory
