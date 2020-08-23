@@ -213,9 +213,17 @@ void TheoryArith::lemmaPrivate(TNode lem) { d_out->lemma(lem); }
 
 void TheoryArith::propagatePrivateLit(TNode literal)
 {
-  // propagate managed literal with the inference manager, which tracks that
-  // it came from the private class
-  d_aim.propagateManagedLit(literal, true);
+  if (d_eqSolver != nullptr)
+  {
+    // propagate managed literal with the inference manager, which tracks that
+    // it came from the private class
+    d_aim.propagateManagedLit(literal, true);
+  }
+  else
+  {
+    // otherwise just send it out
+    d_out->propagate(literal);
+  }
 }
 
 void TheoryArith::conflictPrivate(TNode conf) { d_out->conflict(conf); }
