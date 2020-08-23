@@ -51,7 +51,7 @@ class EqEngineManagerCentral : public EqEngineManager
   eq::EqualityEngine* getModelEqualityEngine() override;
 
  private:
-  /** 
+  /**
    * Notify class for central equality engine. This class dispatches
    * notifications from the central equality engine to the appropriate
    * theory(s).

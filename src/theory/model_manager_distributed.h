@@ -40,6 +40,7 @@ class ModelManagerDistributed : public ModelManager
 
   /** Prepare the model */
   bool prepareModel() override;
+
  protected:
   /**
    * Distributed equality engine manager, which as a special interaction

@@ -71,18 +71,15 @@ bool ModelManagerCentral::prepareModel()
   }
   if (!collectModelBooleanVariables())
   {
-    Trace("model-builder")
-        << "ModelManagerCentral: fail Boolean variables" << std::endl;
+    Trace("model-builder") << "ModelManagerCentral: fail Boolean variables"
+                           << std::endl;
     return false;
   }
 
   return true;
 }
 
-bool ModelManagerCentral::isUsingRelevantTerms() const 
-{
-  return true;
-}
+bool ModelManagerCentral::isUsingRelevantTerms() const { return true; }
 
 const std::set<Node>& ModelManagerCentral::getRelevantTerms() const
 {

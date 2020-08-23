@@ -42,7 +42,8 @@ class ModelManagerCentral : public ModelManager
   bool isUsingRelevantTerms() const override;
   /** get the current set of relevant terms */
   const std::set<Node>& getRelevantTerms() const override;
-private:
+
+ private:
   /** Set of relevant terms */
   std::set<Node> d_relevantTerms;
 };

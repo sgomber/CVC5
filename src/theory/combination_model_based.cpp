@@ -39,17 +39,14 @@ void CombinationModelBased::combineTheories()
   // push a SAT context
   context::Context* c = d_te.getSatContext();
   c->push();
-  
+
   // TODO: change the notification class of the model's equality engine?
-  eq::EqualityEngine * mee = d_eemanager->getModelEqualityEngine();
-  
-  
+  eq::EqualityEngine* mee = d_eemanager->getModelEqualityEngine();
+
   // TODO
 
   // TODO: change the notification class of the ee back if central?
-  
-  
-  
+
   c->pop();
 }
 

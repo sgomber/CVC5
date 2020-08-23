@@ -59,6 +59,7 @@ class ModelManager
   void postProcessModel(bool incomplete);
   /** Get model */
   theory::TheoryModel* getModel();
+
  protected:
   /** Collect model Boolean variables, return true if conflict */
   bool collectModelBooleanVariables();

@@ -67,7 +67,7 @@ void ModelManager::finishInit()
 void ModelManager::resetModel()
 {
   d_modelBuilt = false;
-  d_modelBuiltSuccess = false;  
+  d_modelBuiltSuccess = false;
   // Reset basic information on the model object
   d_model->reset();
 }
@@ -86,11 +86,10 @@ bool ModelManager::buildModel()
   // prepare the model, which is specific to the manager
   if (!prepareModel())
   {
-    Trace("model-builder") << "ModelManager: fail prepare model"
-                           << std::endl;
+    Trace("model-builder") << "ModelManager: fail prepare model" << std::endl;
     return false;
   }
-  
+
   // now, finish building the model
   d_modelBuiltSuccess = finishBuildModel();
   return d_modelBuiltSuccess;
@@ -133,10 +132,7 @@ void ModelManager::postProcessModel(bool incomplete)
 
 theory::TheoryModel* ModelManager::getModel() { return d_model; }
 
-bool ModelManager::isUsingRelevantTerms() const
-{
-  return false;
-}
+bool ModelManager::isUsingRelevantTerms() const { return false; }
 const std::set<Node>& ModelManager::getRelevantTerms() const
 {
   return d_emptyset;
@@ -148,8 +144,7 @@ bool ModelManager::finishBuildModel() const
   const std::set<Node>& relTerms = getRelevantTerms();
   if (!d_modelBuilder->buildModel(d_model, usingRelTerms, relTerms))
   {
-    Trace("model-builder") << "ModelManager: fail build model"
-                           << std::endl;
+    Trace("model-builder") << "ModelManager: fail build model" << std::endl;
     return false;
   }
   return true;
