@@ -72,7 +72,7 @@ void ModelManager::resetModel()
   d_model->reset();
 }
 
-bool ModelManager::buildModel()
+bool ModelManager::buildModel(const std::set<Node>& relTerms)
 {
   if (d_modelBuilt)
   {
@@ -84,14 +84,14 @@ bool ModelManager::buildModel()
   d_modelBuiltSuccess = false;
 
   // prepare the model, which is specific to the manager
-  if (!prepareModel())
+  if (!prepareModel(relTerms))
   {
     Trace("model-builder") << "ModelManager: fail prepare model" << std::endl;
     return false;
   }
 
   // now, finish building the model
-  d_modelBuiltSuccess = finishBuildModel();
+  d_modelBuiltSuccess = finishBuildModel(relTerms);
   return d_modelBuiltSuccess;
 }
 
@@ -138,10 +138,9 @@ const std::set<Node>& ModelManager::getRelevantTerms() const
   return d_emptyset;
 }
 
-bool ModelManager::finishBuildModel() const
+bool ModelManager::finishBuildModel(const std::set<Node>& relTerms) const
 {
   bool usingRelTerms = isUsingRelevantTerms();
-  const std::set<Node>& relTerms = getRelevantTerms();
   if (!d_modelBuilder->buildModel(d_model, usingRelTerms, relTerms))
   {
     Trace("model-builder") << "ModelManager: fail build model" << std::endl;

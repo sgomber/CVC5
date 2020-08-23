@@ -89,7 +89,7 @@ void CombinationCareGraph::combineTheories()
 bool CombinationCareGraph::buildModel()
 {
   // building the model happens as a separate step
-  return d_mmanager->buildModel();
+  return d_mmanager->buildModel(d_relevantTerms);
 }
 
 }  // namespace theory

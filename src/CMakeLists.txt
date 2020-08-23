@@ -727,6 +727,8 @@ libcvc4_add_sources(
   theory/quantifiers_engine.h
   theory/relevance_manager.cpp
   theory/relevance_manager.h
+  theory/relevant_terms_database.cpp
+  theory/relevant_terms_database.h
   theory/rep_set.cpp
   theory/rep_set.h
   theory/rewriter.cpp
@@ -849,8 +851,6 @@ libcvc4_add_sources(
   theory/theory_preprocessor.h
   theory/theory_proof_step_buffer.cpp
   theory/theory_proof_step_buffer.h
-  theory/theory_state.cpp
-  theory/theory_state.h
   theory/theory_rewriter.cpp
   theory/theory_rewriter.h
   theory/theory_registrar.h

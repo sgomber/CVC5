@@ -50,7 +50,7 @@ class ModelManager
    *
    * @return true if model building was successful.
    */
-  bool buildModel();
+  bool buildModel(const std::set<Node>& relTerms);
   /**
    * Have we called buildModel this round? Note this returns true whether or
    * not the model building was successful.
@@ -72,18 +72,16 @@ class ModelManager
    * @return true if we are in conflict (i.e. the equality engine of the model
    * equality engine is inconsistent).
    */
-  virtual bool prepareModel() = 0;
+  virtual bool prepareModel(const std::set<Node>& relTerms) = 0;
   /** is using relevant terms? */
   virtual bool isUsingRelevantTerms() const;
-  /** get the current set of relevant terms */
-  virtual const std::set<Node>& getRelevantTerms() const;
   /**
    * Finish build model, which calls the theory model builder to assign values
    * to all equivalence classes. This should be run after prepareModel.
    *
    * @return true if model building was successful.
    */
-  bool finishBuildModel() const;
+  bool finishBuildModel(const std::set<Node>& relTerms) const;
   //------------------------ end finer grained control over model building
  protected:
   /**

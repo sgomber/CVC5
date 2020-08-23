@@ -44,7 +44,7 @@ class ModelManagerDistributed : public ModelManager
   ~ModelManagerDistributed();
 
   /** Prepare the model, as described above. */
-  bool prepareModel() override;
+  bool prepareModel(const std::set<Node>& relTerms) override;
 
  protected:
   /**

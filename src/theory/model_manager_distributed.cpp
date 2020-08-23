@@ -27,7 +27,7 @@ ModelManagerDistributed::ModelManagerDistributed(
 
 ModelManagerDistributed::~ModelManagerDistributed() {}
 
-bool ModelManagerDistributed::prepareModel()
+bool ModelManagerDistributed::prepareModel(const std::set<Node>& relTerms)
 {
   Trace("model-builder") << "ModelManagerDistributed: reset model..."
                          << std::endl;

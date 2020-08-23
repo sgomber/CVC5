@@ -23,11 +23,12 @@ ModelManagerCentral::ModelManagerCentral(TheoryEngine& te) : ModelManager(te) {}
 
 ModelManagerCentral::~ModelManagerCentral() {}
 
-bool ModelManagerCentral::prepareModel()
+bool ModelManagerCentral::prepareModel(const std::set<Node>& relTerms)
 {
   Trace("model-builder") << "ModelManagerCentral: reset model..." << std::endl;
 
   // must compute relevant terms
+  /*
   d_relevantTerms.clear();
   for (TheoryId theoryId = theory::THEORY_FIRST;
        theoryId != theory::THEORY_LAST;
@@ -43,7 +44,12 @@ bool ModelManagerCentral::prepareModel()
     t->computeRelevantTerms(d_relevantTerms);
   }
   // we use relevant terms based on the above set
+  */
 
+  // push a SAT context
+  context::Context* c = d_te.getSatContext();
+  c->push();
+  
   // Collect model info from the theories
   Trace("model-builder") << "ModelManagerCentral: Collect model values..."
                          << std::endl;
@@ -62,7 +68,7 @@ bool ModelManagerCentral::prepareModel()
     Trace("model-builder") << "  CollectModelValues on theory: " << theoryId
                            << std::endl;
     // use the full set of relevant terms for all theories
-    if (!t->collectModelValues(d_model, d_relevantTerms))
+    if (!t->collectModelValues(d_model, relTerms))
     {
       Trace("model-builder")
           << "ModelManagerCentral: fail collect model values" << std::endl;
@@ -80,11 +86,6 @@ bool ModelManagerCentral::prepareModel()
 }
 
 bool ModelManagerCentral::isUsingRelevantTerms() const { return true; }
-
-const std::set<Node>& ModelManagerCentral::getRelevantTerms() const
-{
-  return d_relevantTerms;
-}
 
 }  // namespace theory
 }  // namespace CVC4

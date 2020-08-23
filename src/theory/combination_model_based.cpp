@@ -32,7 +32,7 @@ bool CombinationModelBased::buildModel()
   // model was already built in combine theories
   Assert(!d_mmanager->isModelBuilt());
   // call again, to return if successful TODO: unecessary?
-  return d_mmanager->buildModel();
+  return d_mmanager->buildModel(d_relevantTerms);
 }
 
 void CombinationModelBased::combineTheories()
@@ -41,9 +41,6 @@ void CombinationModelBased::combineTheories()
 
   d_cmbLemmas.clear();
 
-  // push a SAT context
-  context::Context* c = d_te.getSatContext();
-  c->push();
   // get information about relevant terms
   bool usingRelevantTerms = d_mmanager->isUsingRelevantTerms();
   const std::set<Node>& relevantTerms = d_mmanager->getRelevantTerms();
@@ -52,7 +49,7 @@ void CombinationModelBased::combineTheories()
                     << std::endl;
 
   Trace("tc-model") << "Prepare model..." << std::endl;
-  if (!d_mmanager->prepareModel())
+  if (!d_mmanager->prepareModel(d_relevantTerms))
   {
     AlwaysAssert(false)
         << "CombinationModelBased::combineTheories: failed to prepare";
@@ -359,7 +356,7 @@ void CombinationModelBased::combineTheoriesOld()
   std::vector<std::pair<Node, Node>> conflict_pairs;
   std::map<Node, Node> value_to_rep;
   TheoryModel* m = getModel();
-  if (d_mmanager->buildModel())
+  if (d_mmanager->buildModel(d_relevantTerms))
   {
     Trace("tc-model-debug")
         << "--- model was consistent, verifying..." << std::endl;

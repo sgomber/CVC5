@@ -135,7 +135,28 @@ bool CombinationEngine::isParametric(TheoryId tid) const
   return true;
 }
 
-void CombinationEngine::resetRound() {}
+void CombinationEngine::resetRound() {
+  // compute the relevant terms
+  d_relevantTerms.clear();
+  /*
+  for (TheoryId theoryId = theory::THEORY_FIRST;
+       theoryId != theory::THEORY_LAST;
+       ++theoryId)
+  {
+    Theory* t = d_te.theoryOf(theoryId);
+    if (t == nullptr)
+    {
+      // theory not active, skip
+      continue;
+    }
+    // compute relevant terms in assertions
+    t->computeRelevantTermsInternal(d_relevantTerms);
+    // compute relevant terms
+    t->computeRelevantTerms(d_relevantTerms);
+  }
+  */
+}
+
 
 }  // namespace theory
 }  // namespace CVC4

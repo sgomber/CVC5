@@ -113,6 +113,8 @@ class CombinationEngine
    * tasks (e.g. preregistration) during solving.
    */
   std::unique_ptr<SharedSolver> d_sharedSolver;
+  /** The relevant terms */
+  std::set<Node> d_relevantTerms;
 };
 
 }  // namespace theory
