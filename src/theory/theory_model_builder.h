@@ -21,6 +21,7 @@
 #include <unordered_set>
 
 #include "theory/theory_model.h"
+#include "theory/relevant_terms_database.h"
 
 namespace CVC4 {
 namespace theory {
@@ -75,7 +76,7 @@ class TheoryEngineModelBuilder
    * in the equality engine of the model are relevant.
    * @return true if the model was successfully built.
    */
-  bool buildModel(Model* m, const RelevantTermDatabase * rtdb);
+  bool buildModel(Model* m, const RelevantTermsDatabase * rtdb);
 
   /** postprocess model
    *

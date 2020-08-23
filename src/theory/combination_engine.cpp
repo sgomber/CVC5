@@ -142,5 +142,15 @@ void CombinationEngine::resetRound()
 
 }
 
+const std::vector<Node>& CombinationEngine::getEqcRepresentatives() const
+{
+  return d_eemanager->getEqcRepresentatives();
+}
+
+const std::vector<Node>& CombinationEngine::getEqcRepresentativesForType(TypeNode t) const
+{
+  return d_eemanager->getEqcRepresentativesForType(t);
+}
+
 }  // namespace theory
 }  // namespace CVC4

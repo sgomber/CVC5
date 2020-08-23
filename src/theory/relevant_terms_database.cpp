@@ -34,8 +34,8 @@ void RelevantTermsDatabase::compute()
       // theory not active, skip
       continue;
     }
-    // compute relevant terms in assertions
-    t->computeAssertedTerms(*this, irrKinds);
+    // compute relevant terms in assertions, don't need shared
+    t->computeAssertedTerms(*this, irrKinds, false);
     // compute relevant terms
     t->computeRelevantTerms(*this, irrKinds);
   }

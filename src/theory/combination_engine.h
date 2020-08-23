@@ -80,6 +80,14 @@ class CombinationEngine
    * theory combination (e.g. splitting lemmas) to the parent TheoryEngine.
    */
   virtual void combineTheories() = 0;
+  /**
+   * Get representatives, available at full effort only.
+   */
+  const std::vector<Node>& getEqcRepresentatives() const;
+  /** 
+   * Get representatives for type, available at full effort only. 
+   */
+  const std::vector<Node>& getEqcRepresentativesForType(TypeNode t) const;
 
  protected:
   /**

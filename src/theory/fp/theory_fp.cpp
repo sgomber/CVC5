@@ -1017,7 +1017,7 @@ Node TheoryFp::getModelValue(TNode var) {
   return d_conv.getValue(d_valuation, var);
 }
 
-bool TheoryFp::collectModelInfo(TheoryModel *m)
+bool TheoryFp::collectModelInfo(TheoryModel *m, std::set<Node>& termSet)
 {
   std::set<Node> relevantTerms;
   // Work out which variables are needed

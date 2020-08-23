@@ -373,7 +373,7 @@ void TheoryEngineModelBuilder::addToTypeList(
 }
 
 bool TheoryEngineModelBuilder::buildModel(Model* m,
-                                          const RelevantTermDatabase * rtdb)
+                                          const RelevantTermsDatabase * rtdb)
 {
   Trace("model-builder") << "TheoryEngineModelBuilder: buildModel" << std::endl;
   TheoryModel* tm = (TheoryModel*)m;

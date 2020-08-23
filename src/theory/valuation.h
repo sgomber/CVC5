@@ -168,6 +168,15 @@ public:
    * or during LAST_CALL effort.
    */
   bool isRelevant(Node lit) const;
+  
+  /**
+   * Get representatives, available at full effort only.
+   */
+  const std::vector<Node>& getEqcRepresentatives() const;
+  /** 
+   * Get representatives for type, available at full effort only. 
+   */
+  const std::vector<Node>& getEqcRepresentativesForType(TypeNode t) const;
 };/* class Valuation */
 
 }/* CVC4::theory namespace */

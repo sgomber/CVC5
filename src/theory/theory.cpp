@@ -352,7 +352,7 @@ std::unordered_set<TNode, TNodeHashFunction> Theory::currentlySharedTerms() cons
   return currentlyShared;
 }
 
-bool Theory::collectModelInfo(TheoryModel* m, const RelevantTermDatabase& rtdb)
+bool Theory::collectModelInfo(TheoryModel* m, std::set<Node>& termSet)
 {
   // FIXME: could move entirely into model engine distributed
   // if we are using an equality engine, assert it to the model
@@ -364,7 +364,7 @@ bool Theory::collectModelInfo(TheoryModel* m, const RelevantTermDatabase& rtdb)
     }
   }
   // now, collect theory-specific value assigments
-  return collectModelValues(m, rtdb);
+  return collectModelValues(m, termSet);
 }
 
 void Theory::collectTerms(TNode n,

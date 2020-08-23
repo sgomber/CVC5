@@ -71,7 +71,7 @@ class TheoryFp : public Theory {
   //--------------------------------- end standard check
 
   Node getModelValue(TNode var) override;
-  bool collectModelInfo(TheoryModel* m) override;
+  bool collectModelInfo(TheoryModel* m, std::set<Node>& termSet) override;
   /** Collect model values in m based on the relevant terms given by termSet */
   bool collectModelValues(TheoryModel* m, std::set<Node>& termSet) override;
 

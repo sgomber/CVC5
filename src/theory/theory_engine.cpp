@@ -820,6 +820,16 @@ bool TheoryEngine::isRelevant(Node lit) const
   return true;
 }
 
+const std::vector<Node>& TheoryEngine::getEqcRepresentatives() const
+{
+  return d_tc->getEqcRepresentatives();
+}
+
+const std::vector<Node>& TheoryEngine::getEqcRepresentativesForType(TypeNode t) const
+{
+  return d_tc->getEqcRepresentativesForType(t);
+}
+
 void TheoryEngine::shutdown() {
   // Set this first; if a Theory shutdown() throws an exception,
   // at least the destruction of the TheoryEngine won't confound

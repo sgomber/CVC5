@@ -27,5 +27,15 @@ const EeTheoryInfo* EqEngineManager::getEeTheoryInfo(TheoryId tid) const
   return nullptr;
 }
 
+const std::vector<Node>& EqEngineManager::getEqcRepresentatives() const
+{
+  return d_eqCache->getEqcRepresentatives();
+}
+
+const std::vector<Node>& EqEngineManager::getEqcRepresentativesForType(TypeNode t) const
+{
+  return d_eqCache->getEqcRepresentativesForType(t);
+}
+  
 }  // namespace theory
 }  // namespace CVC4

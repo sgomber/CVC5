@@ -485,7 +485,14 @@ class TheoryEngine {
    * or during LAST_CALL effort.
    */
   bool isRelevant(Node lit) const;
-
+  /**
+   * Get representatives, available at full effort only.
+   */
+  const std::vector<Node>& getEqcRepresentatives() const;
+  /** 
+   * Get representatives for type, available at full effort only. 
+   */
+  const std::vector<Node>& getEqcRepresentativesForType(TypeNode t) const;
   /**
    * This is called at shutdown time by the SmtEngine, just before
    * destruction.  It is important because there are destruction

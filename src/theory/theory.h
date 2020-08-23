@@ -188,7 +188,7 @@ class Theory {
    * Helper function for computeRelevantTerms
    */
   void collectTerms(TNode n,
-                    RelevantTermDatabase& rtdb,
+                    RelevantTermsDatabase& rtdb,
                     const std::set<Kind>& irrKinds) const;
 
   /**
@@ -656,7 +656,7 @@ class Theory {
    * TODO (project #39): this method should be non-virtual, once all theories
    * conform to the new standard
    */
-  virtual bool collectModelInfo(TheoryModel* m, const RelevantTermDatabase& rtdb);
+  virtual bool collectModelInfo(TheoryModel* m, std::set<Node>& termSet);
   /**
    * Scans the current set of assertions and shared terms top-down
    * until a theory-leaf is reached, and adds all terms found to
@@ -670,7 +670,7 @@ class Theory {
    * includeShared: Whether to include shared terms in termSet. Notice that
    * shared terms are not influenced by irrKinds.
    */
-  void computeAssertedTerms(RelevantTermDatabase& rtdb,
+  void computeAssertedTerms(RelevantTermsDatabase& rtdb,
                                     const std::set<Kind>& irrKinds,
                                     bool includeShared = true) const;
   /**
@@ -679,7 +679,7 @@ class Theory {
    * by computeRelevantTermsInternal, which is called by default with no
    * irrKinds.
    */
-  virtual void computeRelevantTerms(RelevantTermDatabase& rtdb,
+  virtual void computeRelevantTerms(RelevantTermsDatabase& rtdb,
                                     const std::set<Kind>& irrKinds);
   /**
    * Collect model values, after equality information is added to the model.

@@ -183,5 +183,17 @@ bool Valuation::needCheck() const{
 
 bool Valuation::isRelevant(Node lit) const { return d_engine->isRelevant(lit); }
 
+const std::vector<Node>& Valuation::getEqcRepresentatives() const
+{
+  Assert(d_engine != nullptr);
+  return d_engine->getEqcRepresentatives();
+}
+
+const std::vector<Node>& Valuation::getEqcRepresentativesForType(TypeNode t) const
+{
+  Assert(d_engine != nullptr);
+  return d_engine->getEqcRepresentativesForType(t);
+}
+  
 }/* CVC4::theory namespace */
 }/* CVC4 namespace */
