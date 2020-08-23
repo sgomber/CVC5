@@ -77,10 +77,10 @@ class ModelManager
   virtual bool isUsingRelevantTerms() const;
   /** get the current set of relevant terms */
   virtual const std::set<Node>& getRelevantTerms() const;
-  /** 
+  /**
    * Finish build model, which calls the theory model builder to assign values
    * to all equivalence classes. This should be run after prepareModel.
-   * 
+   *
    * @return true if model building was successful.
    */
   bool finishBuildModel() const;
