@@ -70,8 +70,8 @@ class ModelManager
    * equality engine of the model. This should assert all relevant information
    * about the model into the equality engine of d_model.
    *
-   * @return true if we are in conflict (i.e. the equality engine of the model
-   * equality engine is inconsistent).
+   * @return true if we successful (i.e. the equality engine of the model
+   * equality engine is consistent).
    */
   virtual bool prepareModel() = 0;
   /** is using relevant terms? */

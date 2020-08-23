@@ -422,7 +422,7 @@ void Theory::computeRelevantTerms(RelevantTermsDatabase& rtdb)
 }
 
 bool Theory::collectModelValues(TheoryModel* m,
-                                const RelevantTermsDatabase& rtdb)
+                                std::set<Node>& termSet)
 {
   return true;
 }

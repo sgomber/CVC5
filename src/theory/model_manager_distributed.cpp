@@ -77,6 +77,8 @@ bool ModelManagerDistributed::prepareModel()
         */
     d_rtdb.clear();
     t->computeAssertedTerms(d_rtdb, irrKinds);
+    // also get relevant terms
+    t->computeRelevantTerms(d_rtdb);
     if (!t->collectModelInfo(d_model, d_rtdb))
     {
       Trace("model-builder")
