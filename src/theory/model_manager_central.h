@@ -36,10 +36,15 @@ class ModelManagerCentral : public ModelManager
  public:
   ModelManagerCentral(TheoryEngine& te);
   ~ModelManagerCentral();
-
- protected:
-  /** Build model */
-  bool buildModelInternal() override;
+  /** Prepare model */
+  bool prepareModel() override;
+  /** is using relevant terms? */
+  bool isUsingRelevantTerms() const override;
+  /** get the current set of relevant terms */
+  const std::set<Node>& getRelevantTerms() const override;
+private:
+  /** Set of relevant terms */
+  std::set<Node> d_relevantTerms;
 };
 
 }  // namespace theory

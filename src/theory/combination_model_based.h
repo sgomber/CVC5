@@ -47,6 +47,41 @@ class CombinationModelBased : public CombinationEngine
   void combineTheories() override;
 
  private:
+  /** 
+   * Model-based notification class, which catches conflicts that arise during
+   * model building.
+   */
+  class ModelBasedNotifyClass : public theory::eq::EqualityEngineNotify {
+  public:
+    ModelBasedNotifyClass(CombinationModelBased& cmb): d_cmb(cmb) {}
+    bool eqNotifyTriggerPredicate(TNode predicate, bool value) override
+    {
+      return true;
+    }
+
+    bool eqNotifyTriggerTermEquality(theory::TheoryId tag,
+                                     TNode t1,
+                                     TNode t2,
+                                     bool value) override
+    {
+      return true;
+    }
+
+    void eqNotifyConstantTermMerge(TNode t1, TNode t2) override
+    {
+      //d_cmb.notifyModelConstantTermMerge(t1, t2);
+    }
+
+    void eqNotifyNewClass(TNode t) override {}
+    void eqNotifyMerge(TNode t1, TNode t2) override {
+      //d_cmb.notifyModelMerge(t1, t2);
+    }
+    void eqNotifyDisequal(TNode t1, TNode t2, TNode reason) override {}
+  private:
+    /** The parent class, which processes the conflict */
+    CombinationModelBased& d_cmb;
+  };
+   
   /**
    * Run the combination framework, model-based version.
    *

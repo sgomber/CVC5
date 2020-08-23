@@ -38,9 +38,9 @@ class ModelManagerDistributed : public ModelManager
   ModelManagerDistributed(TheoryEngine& te, EqEngineManagerDistributed& eem);
   ~ModelManagerDistributed();
 
+  /** Prepare the model */
+  bool prepareModel() override;
  protected:
-  /** Build model */
-  bool buildModelInternal() override;
   /**
    * Distributed equality engine manager, which as a special interaction
    * for building models.

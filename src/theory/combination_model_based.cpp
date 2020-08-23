@@ -30,16 +30,27 @@ CombinationModelBased::~CombinationModelBased() {}
 bool CombinationModelBased::buildModel()
 {
   // model was already built in combine theories
-  Assert(d_mmUse->isModelBuilt());
-  return d_mmUse->buildModel();
+  Assert(d_mmanager->isModelBuilt());
+  return d_mmanager->buildModel();
 }
 
 void CombinationModelBased::combineTheories()
 {
-  // TODO: change the notification class of the ee if central?
+  // push a SAT context
+  context::Context* c = d_te.getSatContext();
+  c->push();
+  
+  // TODO: change the notification class of the model's equality engine?
+  eq::EqualityEngine * mee = d_eemanager->getModelEqualityEngine();
+  
+  
   // TODO
 
   // TODO: change the notification class of the ee back if central?
+  
+  
+  
+  c->pop();
 }
 
 void CombinationModelBased::eqNotifyNewClass(TNode t)
@@ -305,7 +316,7 @@ void CombinationModelBased::combineTheoriesOld()
   std::vector<std::pair<Node, Node>> conflict_pairs;
   std::map<Node, Node> value_to_rep;
   TheoryModel* m = getModel();
-  if (d_mmUse->buildModel())
+  if (d_mmanager->buildModel())
   {
     Trace("tc-model-debug")
         << "--- model was consistent, verifying..." << std::endl;

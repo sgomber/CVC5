@@ -102,6 +102,11 @@ void EqEngineManagerCentral::initializeModel(TheoryModel* m)
   m->finishInit();
 }
 
+eq::EqualityEngine* EqEngineManagerCentral::getModelEqualityEngine()
+{
+  return &d_centralEqualityEngine;
+}
+
 eq::EqualityEngine* EqEngineManagerCentral::getCoreEqualityEngine()
 {
   return &d_centralEqualityEngine;

@@ -37,10 +37,20 @@ class ModelManager
  public:
   ModelManager(TheoryEngine& te);
   virtual ~ModelManager();
-  /** reset model */
-  void resetModel();
   /** finish init */
   void finishInit();
+  /** reset model */
+  void resetModel();
+  //------------------------ finer grained control over model building
+  /** Prepare model */
+  virtual bool prepareModel() = 0;
+  /** is using relevant terms? */
+  virtual bool isUsingRelevantTerms() const;
+  /** get the current set of relevant terms */
+  virtual const std::set<Node>& getRelevantTerms() const;
+  /** finish build */
+  bool finishBuildModel() const;
+  //------------------------ end finer grained control over model building
   /** Build model */
   bool buildModel();
   /** is model built? */
@@ -49,12 +59,9 @@ class ModelManager
   void postProcessModel(bool incomplete);
   /** Get model */
   theory::TheoryModel* getModel();
-
  protected:
   /** Collect model Boolean variables, return true if conflict */
   bool collectModelBooleanVariables();
-  /** Build model */
-  virtual bool buildModelInternal() = 0;
   /** Reference to the theory engine */
   TheoryEngine& d_te;
   /** Logic info of theory engine (cached) */
@@ -71,6 +78,8 @@ class ModelManager
   bool d_modelBuilt;
   /** whether this model has been built successfully */
   bool d_modelBuiltSuccess;
+  /** Dummy vector for empty relevant terms */
+  std::set<Node> d_emptyset;
 };
 
 }  // namespace theory

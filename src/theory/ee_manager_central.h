@@ -47,9 +47,15 @@ class EqEngineManagerCentral : public EqEngineManager
   void initializeModel(TheoryModel* m) override;
   /** get the core equality engine */
   eq::EqualityEngine* getCoreEqualityEngine() override;
+  /** get the model equality engine */
+  eq::EqualityEngine* getModelEqualityEngine() override;
 
  private:
-  /** notify class for central equality engine */
+  /** 
+   * Notify class for central equality engine. This class dispatches
+   * notifications from the central equality engine to the appropriate
+   * theory(s).
+   */
   class CentralNotifyClass : public theory::eq::EqualityEngineNotify
   {
    public:

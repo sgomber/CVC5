@@ -77,6 +77,10 @@ class EqEngineManager
    */
   const EeTheoryInfo* getEeTheoryInfo(TheoryId tid) const;
   /**
+   * Get the model's equality engine.
+   */
+  virtual eq::EqualityEngine* getModelEqualityEngine() = 0;
+  /**
    * Get the core equality engine, which is the equality engine that the
    * quantifiers engine should use. This corresponds to the master equality
    * engine if eeMode is distributed, or the central equality engine if eeMode

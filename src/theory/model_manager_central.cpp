@@ -23,14 +23,12 @@ ModelManagerCentral::ModelManagerCentral(TheoryEngine& te) : ModelManager(te) {}
 
 ModelManagerCentral::~ModelManagerCentral() {}
 
-bool ModelManagerCentral::buildModelInternal()
+bool ModelManagerCentral::prepareModel()
 {
   Trace("model-builder") << "ModelManagerCentral: reset model..." << std::endl;
-  // Reset model
-  d_model->reset();
 
   // must compute relevant terms
-  std::set<Node> relevantTerms;
+  d_relevantTerms.clear();
   for (TheoryId theoryId = theory::THEORY_FIRST;
        theoryId != theory::THEORY_LAST;
        ++theoryId)
@@ -42,16 +40,11 @@ bool ModelManagerCentral::buildModelInternal()
       continue;
     }
     // compute relevant terms
-    t->computeRelevantTerms(relevantTerms);
+    t->computeRelevantTerms(d_relevantTerms);
   }
   // we use relevant terms based on the above set
 
-  // push a SAT context
-  context::Context* c = d_te.getSatContext();
-  c->push();
-
   // Collect model info from the theories
-  bool success = true;
   Trace("model-builder") << "ModelManagerCentral: Collect model values..."
                          << std::endl;
   // Consult each active theory to get all relevant information concerning the
@@ -69,34 +62,31 @@ bool ModelManagerCentral::buildModelInternal()
     Trace("model-builder") << "  CollectModelValues on theory: " << theoryId
                            << std::endl;
     // use the full set of relevant terms for all theories
-    if (!t->collectModelValues(d_model, relevantTerms))
+    if (!t->collectModelValues(d_model, d_relevantTerms))
     {
       Trace("model-builder")
           << "ModelManagerCentral: fail collect model values" << std::endl;
-      success = false;
-      break;
+      return false;
     }
   }
-  if (success)
+  if (!collectModelBooleanVariables())
   {
-    if (!collectModelBooleanVariables())
-    {
-      Trace("model-builder")
-          << "ModelManagerCentral: fail Boolean variables" << std::endl;
-      success = false;
-    }
-    else if (!d_modelBuilder->buildModel(d_model, true, relevantTerms))
-    {
-      Trace("model-builder")
-          << "ModelManagerCentral: fail build model" << std::endl;
-      success = false;
-    }
+    Trace("model-builder")
+        << "ModelManagerCentral: fail Boolean variables" << std::endl;
+    return false;
   }
 
-  // pop a SAT context
-  c->pop();
+  return true;
+}
 
-  return success;
+bool ModelManagerCentral::isUsingRelevantTerms() const 
+{
+  return true;
+}
+
+const std::set<Node>& ModelManagerCentral::getRelevantTerms() const
+{
+  return d_relevantTerms;
 }
 
 }  // namespace theory

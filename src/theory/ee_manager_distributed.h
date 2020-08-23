@@ -69,7 +69,7 @@ class EqEngineManagerDistributed : public EqEngineManager
    */
   context::Context* getModelEqualityEngineContext();
   /** get the model equality engine */
-  eq::EqualityEngine* getModelEqualityEngine();
+  eq::EqualityEngine* getModelEqualityEngine() override;
   /** get the core equality engine */
   eq::EqualityEngine* getCoreEqualityEngine() override;
  private:

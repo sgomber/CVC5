@@ -27,12 +27,10 @@ ModelManagerDistributed::ModelManagerDistributed(
 
 ModelManagerDistributed::~ModelManagerDistributed() {}
 
-bool ModelManagerDistributed::buildModelInternal()
+bool ModelManagerDistributed::prepareModel()
 {
   Trace("model-builder") << "ModelManagerDistributed: reset model..."
                          << std::endl;
-  // Reset model
-  d_model->reset();
 
   // push/pop to clear the equality engine of the model
   context::Context* meec = d_eem.getModelEqualityEngineContext();
@@ -71,14 +69,6 @@ bool ModelManagerDistributed::buildModelInternal()
     return false;
   }
 
-  // success is determined by the model builder
-  std::set<Node> emptyset;
-  if (!d_modelBuilder->buildModel(d_model, false, emptyset))
-  {
-    Trace("model-builder") << "ModelManagerDistributed: fail build model"
-                           << std::endl;
-    return false;
-  }
   return true;
 }
 
