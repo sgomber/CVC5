@@ -30,7 +30,12 @@ class TheoryEngine;
 namespace theory {
 
 /**
- * Manager for building models in a distributed architecture.
+ * Manager for building models in a distributed architecture. Its prepare
+ * model method uses collectModelInfo to assert all equalities from the equality
+ * engine of each theory into the equality engine of the model. It additionally
+ * uses the model equality engine context to clear the information from
+ * the model's equality engine, as maintained by the distributed equality
+ * engine manager.
  */
 class ModelManagerDistributed : public ModelManager
 {
@@ -38,13 +43,13 @@ class ModelManagerDistributed : public ModelManager
   ModelManagerDistributed(TheoryEngine& te, EqEngineManagerDistributed& eem);
   ~ModelManagerDistributed();
 
-  /** Prepare the model */
+  /** Prepare the model, as described above. */
   bool prepareModel() override;
 
  protected:
   /**
-   * Distributed equality engine manager, which as a special interaction
-   * for building models.
+   * Distributed equality engine manager, which maintains the context of the
+   * model's equality engine.
    */
   EqEngineManagerDistributed& d_eem;
 };

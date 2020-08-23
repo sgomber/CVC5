@@ -30,38 +30,69 @@ class TheoryEngine;
 namespace theory {
 
 /**
- * Manager for building models in a distributed architecture.
+ * A base class for managing models. Its main feature is to implement a
+ * buildModel command, which can be specific e.g. to the kind of equality
+ * engine management mode we are using.
  */
 class ModelManager
 {
  public:
   ModelManager(TheoryEngine& te);
   virtual ~ModelManager();
-  /** finish init */
+  /** Finish initializing this class. */
   void finishInit();
-  /** reset model */
+  /** Reset model, called during full effort check before the model is built */
   void resetModel();
+  /**
+   * Build the model. If we have yet to build the model on this round, this
+   * method calls the (manager-specific) prepareModel method and then calls
+   * finishBuildModel.
+   *
+   * @return true if model building was successful.
+   */
+  bool buildModel();
+  /**
+   * Have we called buildModel this round? Note this returns true whether or
+   * not the model building was successful.
+   */
+  bool isModelBuilt() const;
+  /**
+   * Post process model, which is used as a way of each theory adding additional
+   * information to the model after successfully building a model.
+   */
+  void postProcessModel(bool incomplete);
+  /** Get a pointer to model object maintained by this class. */
+  theory::TheoryModel* getModel();
   //------------------------ finer grained control over model building
-  /** Prepare model */
+  /**
+   * Prepare model, which the manager-specific method for setting up the
+   * equality engine of the model. This should assert all relevant information
+   * about the model into the equality engine of d_model.
+   *
+   * @return true if we are in conflict (i.e. the equality engine of the model
+   * equality engine is inconsistent).
+   */
   virtual bool prepareModel() = 0;
   /** is using relevant terms? */
   virtual bool isUsingRelevantTerms() const;
   /** get the current set of relevant terms */
   virtual const std::set<Node>& getRelevantTerms() const;
-  /** finish build */
+  /** 
+   * Finish build model, which calls the theory model builder to assign values
+   * to all equivalence classes. This should be run after prepareModel.
+   * 
+   * @return true if model building was successful.
+   */
   bool finishBuildModel() const;
   //------------------------ end finer grained control over model building
-  /** Build model */
-  bool buildModel();
-  /** is model built? */
-  bool isModelBuilt() const;
-  /** Post process model */
-  void postProcessModel(bool incomplete);
-  /** Get model */
-  theory::TheoryModel* getModel();
-
  protected:
-  /** Collect model Boolean variables, return true if conflict */
+  /**
+   * Collect model Boolean variables.
+   * This asserts the values of all boolean variables to the equality engine of
+   * the model, based on their value in the prop engine.
+   *
+   * @return true if we are in conflict.
+   */
   bool collectModelBooleanVariables();
   /** Reference to the theory engine */
   TheoryEngine& d_te;
