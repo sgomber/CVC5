@@ -252,7 +252,7 @@ bool BitblastSolver::collectModelInfo(TheoryModel* m,
                                       bool fullModel,
                                       std::set<Node>& termSet)
 {
-  return d_bitblaster->collectModelInfo(m, fullModel);
+  return d_bitblaster->collectModelInfo(m, fullModel, termSet);
 }
 
 Node BitblastSolver::getModelValue(TNode node)

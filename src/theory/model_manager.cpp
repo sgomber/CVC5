@@ -24,6 +24,7 @@ namespace theory {
 
 ModelManager::ModelManager(TheoryEngine& te, RelevantTermsDatabase& rtdb)
     : d_te(te),
+      d_rtdb(rtdb),
       d_logicInfo(te.getLogicInfo()),
       d_model(nullptr),
       d_modelBuilder(nullptr),
@@ -72,7 +73,7 @@ void ModelManager::resetModel()
   d_model->reset();
 }
 
-bool ModelManager::buildModel(const std::set<Node>& relTerms)
+bool ModelManager::buildModel()
 {
   if (d_modelBuilt)
   {
@@ -84,14 +85,14 @@ bool ModelManager::buildModel(const std::set<Node>& relTerms)
   d_modelBuiltSuccess = false;
 
   // prepare the model, which is specific to the manager
-  if (!prepareModel(relTerms))
+  if (!prepareModel())
   {
     Trace("model-builder") << "ModelManager: fail prepare model" << std::endl;
     return false;
   }
 
   // now, finish building the model
-  d_modelBuiltSuccess = finishBuildModel(relTerms);
+  d_modelBuiltSuccess = finishBuildModel();
   return d_modelBuiltSuccess;
 }
 
@@ -133,15 +134,12 @@ void ModelManager::postProcessModel(bool incomplete)
 theory::TheoryModel* ModelManager::getModel() { return d_model; }
 
 bool ModelManager::isUsingRelevantTerms() const { return false; }
-const std::set<Node>& ModelManager::getRelevantTerms() const
-{
-  return d_emptyset;
-}
 
-bool ModelManager::finishBuildModel(const std::set<Node>& relTerms) const
+bool ModelManager::finishBuildModel() const
 {
-  bool usingRelTerms = isUsingRelevantTerms();
-  if (!d_modelBuilder->buildModel(d_model, usingRelTerms, relTerms))
+  // use the relevant terms database if applicable
+  RelevantTermsDatabase * rtdb = isUsingRelevantTerms() ? &d_rtdb : nullptr;
+  if (!d_modelBuilder->buildModel(d_model, rtdb))
   {
     Trace("model-builder") << "ModelManager: fail build model" << std::endl;
     return false;

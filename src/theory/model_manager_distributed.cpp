@@ -21,7 +21,7 @@ namespace theory {
 
 ModelManagerDistributed::ModelManagerDistributed(
     TheoryEngine& te,
-    RelevantTermDatabase& rtdb,
+    RelevantTermsDatabase& rtdb,
     EqEngineManagerDistributed& eem)
     : ModelManager(te, rtdb), d_eem(eem)
 {

@@ -76,7 +76,8 @@ class TLazyBitblaster : public TBitblaster<Node>
    * @param fullModel whether to create a "full model," i.e., add
    * constants to equivalence classes that don't already have them
    */
-  bool collectModelInfo(TheoryModel* m, bool fullModel);
+  bool collectModelInfo(TheoryModel* m, bool fullModel,
+                        std::set<Node>& termSet);
 
   typedef TNodeSet::const_iterator vars_iterator;
   vars_iterator beginVars() { return d_variables.begin(); }

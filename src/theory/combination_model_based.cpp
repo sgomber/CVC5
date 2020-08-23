@@ -32,7 +32,7 @@ bool CombinationModelBased::buildModel()
   // model was already built in combine theories
   Assert(!d_mmanager->isModelBuilt());
   // call again, to return if successful TODO: unecessary?
-  return d_mmanager->buildModel(d_relevantTerms);
+  return d_mmanager->buildModel();
 }
 
 void CombinationModelBased::combineTheories()
@@ -41,15 +41,11 @@ void CombinationModelBased::combineTheories()
 
   d_cmbLemmas.clear();
 
-  // get information about relevant terms
-  bool usingRelevantTerms = d_mmanager->isUsingRelevantTerms();
-  const std::set<Node>& relevantTerms = d_mmanager->getRelevantTerms();
-
   Trace("tc-model") << "CombinationModelBased::combineTheories: start"
                     << std::endl;
 
   Trace("tc-model") << "Prepare model..." << std::endl;
-  if (!d_mmanager->prepareModel(d_relevantTerms))
+  if (!d_mmanager->prepareModel())
   {
     AlwaysAssert(false)
         << "CombinationModelBased::combineTheories: failed to prepare";
@@ -74,7 +70,6 @@ void CombinationModelBased::combineTheories()
   }
   d_cmbLemmas.clear();
 
-  c->pop();
   Trace("tc-model") << "...sent lemmas." << std::endl;
 }
 
@@ -356,7 +351,7 @@ void CombinationModelBased::combineTheoriesOld()
   std::vector<std::pair<Node, Node>> conflict_pairs;
   std::map<Node, Node> value_to_rep;
   TheoryModel* m = getModel();
-  if (d_mmanager->buildModel(d_relevantTerms))
+  if (d_mmanager->buildModel())
   {
     Trace("tc-model-debug")
         << "--- model was consistent, verifying..." << std::endl;

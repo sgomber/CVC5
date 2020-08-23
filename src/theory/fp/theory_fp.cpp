@@ -1019,11 +1019,8 @@ Node TheoryFp::getModelValue(TNode var) {
 
 bool TheoryFp::collectModelInfo(TheoryModel* m, std::set<Node>& termSet)
 {
-  std::set<Node> relevantTerms;
-  // Work out which variables are needed
-  computeRelevantTerms(relevantTerms);
   // override behavior to not assert equality engine
-  return collectModelValues(m, relevantTerms);
+  return collectModelValues(m, termSet);
 }
 
 bool TheoryFp::collectModelValues(TheoryModel* m, std::set<Node>& relevantTerms)

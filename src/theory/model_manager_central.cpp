@@ -20,14 +20,14 @@ namespace CVC4 {
 namespace theory {
 
 ModelManagerCentral::ModelManagerCentral(TheoryEngine& te,
-                                         RelevantTermDatabase& rtdb)
+                                         RelevantTermsDatabase& rtdb)
     : ModelManager(te, rtdb)
 {
 }
 
 ModelManagerCentral::~ModelManagerCentral() {}
 
-bool ModelManagerCentral::prepareModel(const std::set<Node>& relTerms)
+bool ModelManagerCentral::prepareModel()
 {
   Trace("model-builder") << "ModelManagerCentral: reset model..." << std::endl;
 

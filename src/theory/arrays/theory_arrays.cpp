@@ -2313,7 +2313,7 @@ void TheoryArrays::computeRelevantTerms(RelevantTermsDatabase& rtdb)
           {
             TNode instore = (*instores)[it];
             Assert(instore.getKind() == kind::STORE);
-            if (termSet.find(instore) != termSet.end()
+            if (rtdb.isRelevant(instore)
                 && !d_equalityEngine->areEqual(instore[1], n[1]))
             {
               Node r = nm->mkNode(kind::SELECT, instore, n[1]);

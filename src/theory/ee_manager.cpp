@@ -29,13 +29,13 @@ const EeTheoryInfo* EqEngineManager::getEeTheoryInfo(TheoryId tid) const
 
 const std::vector<Node>& EqEngineManager::getEqcRepresentatives() const
 {
-  return d_eqCache->getEqcRepresentatives();
+  return d_eqCache->getRepresentatives();
 }
 
 const std::vector<Node>& EqEngineManager::getEqcRepresentativesForType(
     TypeNode t) const
 {
-  return d_eqCache->getEqcRepresentativesForType(t);
+  return d_eqCache->getRepresentativesForType(t);
 }
 
 }  // namespace theory

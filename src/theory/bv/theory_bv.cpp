@@ -559,20 +559,21 @@ bool TheoryBV::doExtfReductions( std::vector< Node >& terms ) {
 bool TheoryBV::needsCheckLastEffort() {
   return d_needsLastCallCheck;
 }
+
 bool TheoryBV::collectModelValues(TheoryModel* m, std::set<Node>& termSet)
 {
   // doesn't use termSet currently
   Assert(!inPendingConflict());
   if (options::bitblastMode() == options::BitblastMode::EAGER)
   {
-    if (!d_eagerSolver->collectModelInfo(m, true, termSet))
+    if (!d_eagerSolver->collectModelInfo(m, true))
     {
       return false;
     }
   }
   for (unsigned i = 0; i < d_subtheories.size(); ++i) {
     if (d_subtheories[i]->isComplete()) {
-      return d_subtheories[i]->collectModelInfo(m, true);
+      return d_subtheories[i]->collectModelInfo(m, true, termSet);
     }
   }
   return true;

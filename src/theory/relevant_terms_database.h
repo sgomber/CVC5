@@ -21,6 +21,9 @@
 #include "expr/node.h"
 
 namespace CVC4 {
+  
+class TheoryEngine;
+
 namespace theory {
 
 /**

@@ -41,7 +41,7 @@ class ModelManagerDistributed : public ModelManager
 {
  public:
   ModelManagerDistributed(TheoryEngine& te,
-                          RelevantTermDatabase& rtdb,
+                          RelevantTermsDatabase& rtdb,
                           EqEngineManagerDistributed& eem);
   ~ModelManagerDistributed();
 

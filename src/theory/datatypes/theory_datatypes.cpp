@@ -2227,9 +2227,6 @@ Node TheoryDatatypes::mkAnd( std::vector< TNode >& assumptions ) {
 
 void TheoryDatatypes::computeRelevantTerms(RelevantTermsDatabase& rtdb)
 {
-  Trace("dt-cmi") << "Have " << termSet.size() << " relevant terms..."
-                  << std::endl;
-
   //also include non-singleton equivalence classes  TODO : revisit this
   eq::EqClassesIterator eqcs_i = eq::EqClassesIterator(d_equalityEngine);
   while( !eqcs_i.isFinished() ){
@@ -2267,8 +2264,6 @@ void TheoryDatatypes::computeRelevantTerms(RelevantTermsDatabase& rtdb)
     }
     ++eqcs_i;
   }
-  Trace("dt-cmi") << "After adding non-singletons, has " << termSet.size()
-                  << " relevant terms..." << std::endl;
 }
 
 std::pair<bool, Node> TheoryDatatypes::entailmentCheck(TNode lit)
