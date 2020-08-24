@@ -375,7 +375,7 @@ void Theory::collectTerms(TNode n, TheoryModel* m) const
   }
   Kind nk = n.getKind();
   m->addRelevantTerm(n);
-  if (nk == kind::NOT || nk == kind::EQUAL || !isLeaf(n))
+  if ((nk == kind::NOT || nk == kind::EQUAL || !isLeaf(n)) && !n.isClosure())
   {
     for(TNode::iterator child_it = n.begin(); child_it != n.end(); ++child_it) {
       collectTerms(*child_it, m);
