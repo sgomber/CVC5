@@ -22,12 +22,12 @@
 
 #include "smt/model.h"
 #include "theory/ee_setup_info.h"
+#include "theory/relevant_terms_database.h"
 #include "theory/rep_set.h"
 #include "theory/substitutions.h"
 #include "theory/type_enumerator.h"
 #include "theory/type_set.h"
 #include "theory/uf/equality_engine.h"
-#include "theory/relevant_terms_database.h"
 
 namespace CVC4 {
 namespace theory {
@@ -356,6 +356,7 @@ class TheoryModel : public Model
   const std::set<Node>& getRelevantTerms() const;
   /** FIXME clear relevant terms */
   void clearRelevantTerms();
+
  protected:
   /** Unique name of this model */
   std::string d_name;

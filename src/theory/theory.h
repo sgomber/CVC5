@@ -187,8 +187,7 @@ class Theory {
   /**
    * Helper function for computeRelevantTerms
    */
-  void collectTerms(TNode n,
-                    TheoryModel* m) const;
+  void collectTerms(TNode n, TheoryModel* m) const;
 
   /**
    * Construct a Theory.
@@ -671,8 +670,7 @@ class Theory {
    *
    * TODO: delete, move to relevant terms database
    */
-  void computeAssertedTerms(TheoryModel* m,
-                            bool includeShared = true) const;
+  void computeAssertedTerms(TheoryModel* m, bool includeShared = true) const;
   /**
    * Compute terms that are not necessarily part of the assertions or
    * shared terms that should be considered relevant, add them to rtdb.

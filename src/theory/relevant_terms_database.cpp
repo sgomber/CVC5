@@ -56,8 +56,7 @@ void RelevantTermsDatabase::addRelevantTerm(TNode t)
 {
   if (d_irrKinds.find(t.getKind()) == d_irrKinds.end())
   {
-      Trace("rel-term-db")
-          << "RelevantTermsDatabase: adding " << t << std::endl;
+    Trace("rel-term-db") << "RelevantTermsDatabase: adding " << t << std::endl;
     d_relevantTerms.insert(t);
   }
 }
@@ -67,10 +66,7 @@ const std::set<Node>& RelevantTermsDatabase::getRelevantTerms() const
   return d_relevantTerms;
 }
 
-void RelevantTermsDatabase::setIrrelevantKind(Kind k)
-{
-  d_irrKinds.insert(k);
-}
+void RelevantTermsDatabase::setIrrelevantKind(Kind k) { d_irrKinds.insert(k); }
 
 void RelevantTermsDatabase::addRelevantTermRec(TNode n)
 {

@@ -4157,7 +4157,7 @@ bool TheoryArithPrivate::collectModelValues(TheoryModel* m)
   //AlwaysAssert(!d_nlIncomplete, "Arithmetic solver cannot currently produce models for input with nonlinear arithmetic constraints");
 
   const std::set<Node>& termSet = m->getRelevantTerms();
-  
+
   if(Debug.isOn("arith::collectModelInfo")){
     debugPrintFacts();
   }

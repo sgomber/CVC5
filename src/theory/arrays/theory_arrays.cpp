@@ -2225,7 +2225,7 @@ TrustNode TheoryArrays::expandDefinition(Node node)
   return TrustNode::null();
 }
 
-void TheoryArrays::computeRelevantTerms(TheoryModel * m)
+void TheoryArrays::computeRelevantTerms(TheoryModel* m)
 {
   const std::set<Node>& termSet = m->getRelevantTerms();
 

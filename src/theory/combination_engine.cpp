@@ -52,8 +52,7 @@ void CombinationEngine::finishInit()
     std::unique_ptr<EqEngineManagerDistributed> eeDistributed(
         new EqEngineManagerDistributed(d_te));
     // make the distributed model manager
-    d_mmanager.reset(new ModelManagerDistributed(
-        d_te, *eeDistributed.get()));
+    d_mmanager.reset(new ModelManagerDistributed(d_te, *eeDistributed.get()));
     d_eemanager = std::move(eeDistributed);
     // use the distributed shared solver
     d_sharedSolver.reset(new SharedSolverDistributed(d_te));

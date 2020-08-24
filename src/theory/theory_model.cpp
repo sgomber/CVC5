@@ -82,7 +82,7 @@ void TheoryModel::reset(){
   d_uf_models.clear();
   d_using_model_core = false;
   d_model_core.clear();
-  // clear relevant terms 
+  // clear relevant terms
   d_rtdb.clear();
 }
 
@@ -623,8 +623,8 @@ void TheoryModel::setSemiEvaluatedKind(Kind k)
   d_semi_evaluated_kinds.insert(k);
 }
 
-void TheoryModel::setIrrelevantKind(Kind k) 
-{ 
+void TheoryModel::setIrrelevantKind(Kind k)
+{
   // relevant terms manages irrelevant kinds
   d_rtdb.setIrrelevantKind(k);
 }
@@ -760,25 +760,16 @@ std::vector< Node > TheoryModel::getFunctionsToAssign() {
   return funcs_to_assign;
 }
 
-bool TheoryModel::isRelevantTerm(TNode t) const
-{
-  return d_rtdb.isRelevant(t);
-}
+bool TheoryModel::isRelevantTerm(TNode t) const { return d_rtdb.isRelevant(t); }
 
-void TheoryModel::addRelevantTerm(TNode t)
-{
-  d_rtdb.addRelevantTerm(t);
-}
+void TheoryModel::addRelevantTerm(TNode t) { d_rtdb.addRelevantTerm(t); }
 
 const std::set<Node>& TheoryModel::getRelevantTerms() const
 {
   return d_rtdb.getRelevantTerms();
 }
 
-void TheoryModel::clearRelevantTerms()
-{
-  d_rtdb.clear();
-}
+void TheoryModel::clearRelevantTerms() { d_rtdb.clear(); }
 
 } /* namespace CVC4::theory */
 } /* namespace CVC4 */

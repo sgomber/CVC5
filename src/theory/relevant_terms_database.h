@@ -55,6 +55,7 @@ class RelevantTermsDatabase
    * Add all relevant terms in n recursively.
    */
   void addRelevantTermRec(TNode n);
+
  protected:
   /** The set of relevant terms */
   std::set<Node> d_relevantTerms;

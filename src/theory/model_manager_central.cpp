@@ -19,10 +19,7 @@
 namespace CVC4 {
 namespace theory {
 
-ModelManagerCentral::ModelManagerCentral(TheoryEngine& te)
-    : ModelManager(te)
-{
-}
+ModelManagerCentral::ModelManagerCentral(TheoryEngine& te) : ModelManager(te) {}
 
 ModelManagerCentral::~ModelManagerCentral() {}
 

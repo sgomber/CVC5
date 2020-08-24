@@ -367,8 +367,7 @@ bool Theory::collectModelInfo(TheoryModel* m)
   return collectModelValues(m);
 }
 
-void Theory::collectTerms(TNode n,
-                          TheoryModel* m) const
+void Theory::collectTerms(TNode n, TheoryModel* m) const
 {
   if (m->isRelevantTerm(n))
   {
@@ -384,8 +383,7 @@ void Theory::collectTerms(TNode n,
   }
 }
 
-void Theory::computeAssertedTerms(TheoryModel* m,
-                                  bool includeShared) const
+void Theory::computeAssertedTerms(TheoryModel* m, bool includeShared) const
 {
   // Collect all terms appearing in assertions
   context::CDList<Assertion>::const_iterator assert_it = facts_begin(),
@@ -414,10 +412,7 @@ void Theory::computeRelevantTerms(TheoryModel* m)
   // default, nothing
 }
 
-bool Theory::collectModelValues(TheoryModel* m)
-{
-  return true;
-}
+bool Theory::collectModelValues(TheoryModel* m) { return true; }
 
 Theory::PPAssertStatus Theory::ppAssert(TNode in,
                                         SubstitutionMap& outSubstitutions)
