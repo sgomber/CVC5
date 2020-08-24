@@ -95,5 +95,16 @@ bool ModelManagerDistributed::prepareModel()
   return true;
 }
 
+bool ModelManagerDistributed::finishBuildModel() const
+{
+  // do not use relevant terms
+  if (!d_modelBuilder->buildModel(d_model, false))
+  {
+    Trace("model-builder") << "ModelManager: fail build model" << std::endl;
+    return false;
+  }
+  return true;
+}
+
 }  // namespace theory
 }  // namespace CVC4

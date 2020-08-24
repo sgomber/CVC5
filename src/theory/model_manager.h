@@ -74,15 +74,13 @@ class ModelManager
    * consistent.
    */
   virtual bool prepareModel() = 0;
-  /** is using relevant terms? */
-  virtual bool isUsingRelevantTerms() const;
   /**
    * Finish build model, which calls the theory model builder to assign values
    * to all equivalence classes. This should be run after prepareModel.
    *
    * @return true if model building was successful.
    */
-  bool finishBuildModel() const;
+  virtual bool finishBuildModel() const = 0;
   //------------------------ end finer grained control over model building
  protected:
   /**

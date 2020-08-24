@@ -60,6 +60,7 @@ bool ModelManagerCentral::prepareModel()
     {
       Trace("model-builder")
           << "ModelManagerCentral: fail collect model values" << std::endl;
+      c->pop();
       return false;
     }
   }
@@ -67,13 +68,25 @@ bool ModelManagerCentral::prepareModel()
   {
     Trace("model-builder") << "ModelManagerCentral: fail Boolean variables"
                            << std::endl;
+    c->pop();
     return false;
   }
 
   return true;
 }
 
-bool ModelManagerCentral::isUsingRelevantTerms() const { return true; }
+bool ModelManagerCentral::finishBuildModel() const
+{
+  // we use relevant terms
+  if (!d_modelBuilder->buildModel(d_model, true))
+  {
+    context::Context* c = d_te.getSatContext();
+    c->pop();
+    Trace("model-builder") << "ModelManager: fail build model" << std::endl;
+    return false;
+  }
+  return true;
+}
 
 }  // namespace theory
 }  // namespace CVC4
