@@ -1281,6 +1281,7 @@ void EqualityEngine::explainLit(TNode lit, std::vector<TNode>& assumptions)
     if (std::find(assumptions.begin(), assumptions.end(), a)
         == assumptions.end())
     {
+      Assert (!a.isNull());
       assumptions.push_back(a);
     }
   }
