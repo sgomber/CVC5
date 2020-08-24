@@ -125,8 +125,9 @@ bool EqEngineManagerCentral::CentralNotifyClass::eqNotifyTriggerPredicate(
   }
   */
   // TODO: always propagate?
-  Trace("eem-central") << "eqNotifyTriggerPredicate: " << predicate << std::endl;
-  Theory * t = d_te.getActiveTheory();
+  Trace("eem-central") << "eqNotifyTriggerPredicate: " << predicate
+                       << std::endl;
+  Theory* t = d_te.getActiveTheory();
   Assert(t != nullptr);
   Trace("eem-central") << "...notify active theory " << t->getId() << std::endl;
   eq::EqualityEngineNotify* notify = d_theoryNotify[t->getId()];
@@ -147,8 +148,9 @@ void EqEngineManagerCentral::CentralNotifyClass::eqNotifyConstantTermMerge(
   /*
   d_uf.conflict(t1, t2);
   */
-  Trace("eem-central") << "eqNotifyConstantTermMerge: " << t1 << " " << t2 << std::endl;
-  Theory * t = d_te.getActiveTheory();
+  Trace("eem-central") << "eqNotifyConstantTermMerge: " << t1 << " " << t2
+                       << std::endl;
+  Theory* t = d_te.getActiveTheory();
   Assert(t != nullptr);
   Trace("eem-central") << "...notify active theory " << t->getId() << std::endl;
   eq::EqualityEngineNotify* notify = d_theoryNotify[t->getId()];
@@ -169,7 +171,6 @@ void EqEngineManagerCentral::CentralNotifyClass::eqNotifyNewClass(TNode t)
     d_quantEngine->eqNotifyNewClass(t);
   }
 }
-
 
 void EqEngineManagerCentral::CentralNotifyClass::eqNotifyMerge(TNode t1,
                                                                TNode t2)

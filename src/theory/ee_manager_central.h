@@ -69,7 +69,7 @@ class EqEngineManagerCentral : public EqEngineManager
     void eqNotifyConstantTermMerge(TNode t1, TNode t2) override;
     void eqNotifyNewClass(TNode t) override;
     void eqNotifyMerge(TNode t1, TNode t2) override;
-    void eqNotifyDisequal(TNode t1, TNode t2, TNode reason) override;  
+    void eqNotifyDisequal(TNode t1, TNode t2, TNode reason) override;
     /** Reference to the theory engine */
     TheoryEngine& d_te;
     /**

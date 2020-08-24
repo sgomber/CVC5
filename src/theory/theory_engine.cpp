@@ -447,15 +447,18 @@ void TheoryEngine::check(Theory::Effort effort) {
 #ifdef CVC4_FOR_EACH_THEORY_STATEMENT
 #undef CVC4_FOR_EACH_THEORY_STATEMENT
 #endif
-#define CVC4_FOR_EACH_THEORY_STATEMENT(THEORY) \
-    if (theory::TheoryTraits<THEORY>::hasCheck && d_logicInfo.isTheoryEnabled(THEORY)) { \
-       d_activeTheory = theoryOf(THEORY); \
-       d_activeTheory->check(effort); \
-       if (d_inConflict) { \
-         Debug("conflict") << THEORY << " in conflict. " << std::endl; \
-         break; \
-       } \
-    }
+#define CVC4_FOR_EACH_THEORY_STATEMENT(THEORY)                      \
+  if (theory::TheoryTraits<THEORY>::hasCheck                        \
+      && d_logicInfo.isTheoryEnabled(THEORY))                       \
+  {                                                                 \
+    d_activeTheory = theoryOf(THEORY);                              \
+    d_activeTheory->check(effort);                                  \
+    if (d_inConflict)                                               \
+    {                                                               \
+      Debug("conflict") << THEORY << " in conflict. " << std::endl; \
+      break;                                                        \
+    }                                                               \
+  }
 
   // Do the checking
   try {

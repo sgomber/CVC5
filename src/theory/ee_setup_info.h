@@ -29,12 +29,15 @@ namespace eq {
 class EqualityEngineNotify;
 }
 
-/** 
+/**
  * Setup for a function kind. Sets up a call to EqualityEngine::addFunctionKind.
  */
 struct EeSetupFunctionKind
 {
-  EeSetupFunctionKind(Kind k, bool isInt = false, bool isExtOp = false ) : d_kind(k), d_isInterpreted(isInt), d_isExtOperator(isExtOp){}
+  EeSetupFunctionKind(Kind k, bool isInt = false, bool isExtOp = false)
+      : d_kind(k), d_isInterpreted(isInt), d_isExtOperator(isExtOp)
+  {
+  }
   /** The function kind */
   Kind d_kind;
   /** Whether its interpreted */

@@ -475,7 +475,7 @@ void Theory::check(Effort level)
     // check aborted for a theory-specific reason
     return;
   }
-  Assert(d_theoryState!=nullptr);
+  Assert(d_theoryState != nullptr);
   // process the pending fact queue
   while (!done() && !d_theoryState->isInConflict())
   {
