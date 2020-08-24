@@ -15,6 +15,7 @@
 #include "theory/model_manager_distributed.h"
 
 #include "theory/theory_engine.h"
+#include "theory/theory_model.h"
 
 namespace CVC4 {
 namespace theory {
@@ -42,7 +43,8 @@ bool ModelManagerDistributed::prepareModel()
                          << std::endl;
   // Consult each active theory to get all relevant information concerning the
   // model, which includes both dump their equality information and assigning
-  // values.
+  // values. Notice the order of theories here is important and is the same
+  // as the list in CVC4_FOR_EACH_THEORY in theory_engine.cpp.
   for (TheoryId theoryId = theory::THEORY_FIRST; theoryId < theory::THEORY_LAST;
        ++theoryId)
   {

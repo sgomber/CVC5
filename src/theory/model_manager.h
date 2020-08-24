@@ -17,7 +17,6 @@
 #ifndef CVC4__THEORY__MODEL_MANAGER__H
 #define CVC4__THEORY__MODEL_MANAGER__H
 
-#include <map>
 #include <memory>
 
 #include "theory/relevant_terms_database.h"
@@ -32,8 +31,10 @@ namespace theory {
 
 /**
  * A base class for managing models. Its main feature is to implement a
- * buildModel command, which can be specific e.g. to the kind of equality
- * engine management mode we are using.
+ * buildModel command. Overall, its behavior is specific to the kind of equality
+ * engine management mode we are using. In particular, the prepare model
+ * method is a manager-specific way for setting up the equality engine of the
+ * model in preparation for model building.
  */
 class ModelManager
 {
@@ -66,12 +67,12 @@ class ModelManager
   theory::TheoryModel* getModel();
   //------------------------ finer grained control over model building
   /**
-   * Prepare model, which the manager-specific method for setting up the
+   * Prepare model, which is the manager-specific method for setting up the
    * equality engine of the model. This should assert all relevant information
    * about the model into the equality engine of d_model.
    *
-   * @return true if the equality engine of the model equality engine is still
-   * consistent.
+   * @return true if we are in conflict (i.e. the equality engine of the model
+   * equality engine is inconsistent).
    */
   virtual bool prepareModel() = 0;
   /**
@@ -123,8 +124,6 @@ class ModelManager
   bool d_modelBuilt;
   /** whether this model has been built successfully */
   bool d_modelBuiltSuccess;
-  /** Dummy vector for empty relevant terms */
-  std::set<Node> d_emptyset;
 };
 
 }  // namespace theory
