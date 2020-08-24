@@ -80,7 +80,7 @@ class EqualityEngine : public context::ContextNotifyObj {
    */
   EqualityEngine* d_masterEqualityEngine;
 
-public:
+ public:
  /**
   * Initialize the equality engine, given the notification class.
   *
