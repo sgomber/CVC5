@@ -577,7 +577,7 @@ class Theory {
   /** Explain conflict */
   virtual TrustNode explainConflict(TNode a, TNode b);
 
-  //--------------------------------- standard check
+  //--------------------------------- check
   /**
    * Does this theory wish to be called to check at last call effort? This is
    * the case for any theory that wishes to run when a model is available.
@@ -591,8 +591,15 @@ class Theory {
    * - be interrupted,
    * - throw an exception
    * - or call get() until done() is true.
-   * The standard method for check consists of implementing four callbacks,
-   * (preCheck, postCheck, preNotifyFact, notifyFact) as desribed below.
+   *
+   * The standard method for check consists of a loop that processes the entire
+   * fact queue when preCheck returns false. It makes four theory-specific
+   * callbacks, (preCheck, postCheck, preNotifyFact, notifyFact) as described
+   * below. It asserts each fact to the official equality engine when
+   * preNotifyFact returns false.
+   *
+   * Theories that use this check method must use an official theory
+   * state object (d_theoryState).
    *
    * TODO (project #39): this method should be non-virtual, once all theories
    * conform to the new standard
@@ -600,8 +607,9 @@ class Theory {
   void check(Effort level = EFFORT_FULL);
   /**
    * Pre-check, called before the fact queue of the theory is processed.
-   * If this method returns true, then the check is complete and the check()
-   * method should not do any further work.
+   * If this method returns false, then the theory will process its fact
+   * queue. If this method returns true, then the theory has indicated
+   * its check method should finish immediately.
    */
   virtual bool preCheck(Effort level = EFFORT_FULL);
   /**
@@ -609,9 +617,12 @@ class Theory {
    */
   virtual void postCheck(Effort level = EFFORT_FULL);
   /**
-   * Prenotify fact, return true if the theory processed it. If this
+   * Pre-notify fact, return true if the theory processed it. If this
    * method returns false, then the atom will be added to the equality engine
    * of the theory and notifyFact will be called with isInternal=false.
+   *
+   * Theories that implement check but do not use official equality
+   * engines should always return true for this method.
    *
    * @param atom The atom
    * @param polarity Its polarity
@@ -631,7 +642,7 @@ class Theory {
    * @param isInternal Whether the origin of the fact was internal
    */
   virtual void notifyFact(TNode atom, bool pol, TNode fact, bool isInternal);
-  //--------------------------------- end standard check
+  //--------------------------------- end check
 
   //--------------------------------- collect model info
   /**

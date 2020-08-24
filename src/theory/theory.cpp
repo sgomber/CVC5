@@ -459,7 +459,6 @@ EqualityStatus Theory::getEqualityStatus(TNode a, TNode b)
   return EQUALITY_UNKNOWN;
 }
 
-//--------------------------------- new standard
 void Theory::check(Effort level)
 {
   // see if we are already done (as an optimization)
@@ -467,6 +466,7 @@ void Theory::check(Effort level)
   {
     return;
   }
+  Assert(d_theoryState!=nullptr);
   // standard calls for resource, stats
   d_out->spendResource(ResourceManager::Resource::TheoryCheckStep);
   TimerStat::CodeTimer checkTimer(d_checkTime);
@@ -567,7 +567,6 @@ void Theory::addSharedTerm(TNode n)
     d_equalityEngine->addTriggerTerm(n, d_id);
   }
 }
-//--------------------------------- end new standard
 
 eq::EqualityEngine* Theory::getEqualityEngine()
 {

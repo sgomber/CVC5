@@ -69,10 +69,10 @@ class TheoryEngineModelBuilder
    * are building fails to satisfy a quantified formula.
    *
    * @param m The model to build
-   * @param rtdb If non-null, we are restricting the terms that we
+   * @param usingRelevantTerms If true, we are restricting the terms that we
    * consider in the equality engine of the model to those that have been
-   * marked as relevant in this database. This contains all terms in relevant
-   * assertions as well as all shared terms. If this is null, then all terms
+   * marked as relevant in the model. This includes all terms in relevant
+   * assertions as well as all shared terms. If this is false, then all terms
    * in the equality engine of the model are relevant.
    * @return true if the model was successfully built.
    */
