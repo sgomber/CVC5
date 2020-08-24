@@ -5,6 +5,7 @@ PR done:
 (2) Equality engine manager
 (3) Dynamic allocation of ee
 (6) Split inheritence in equality engine manager to own files, dynamic model (req 3)
+(7) Model manager / model manager distributed (req 6, 10)
 (8) Standardize collect relevant terms (req 3)
 (9) Standardize Theory templates (req 21)
 (10) Quantifiers engine set master equality engine
@@ -16,7 +17,7 @@ PR done:
 PR current:
 
 (4) Merge build model passes *
-(7) Model manager / model manager distributed (req 6, 10) *
+(11) CombinationEngine (req 7) *
 (19) per each theory, update to standard templates (req 9)
 (24) Shared solver / shared solver distributed
 (26) equality engine interface basic extension *
@@ -25,7 +26,6 @@ PR current:
 PR planned:
 
 (5) Merge build model passes part two (req 4)
-(11) CombinationEngine (req 7)
 (12) Combination care graph (req 11)
 (13) Cleanup model building and enable model manager distributed (req 7, 12)
 (14) Equality engine manager central (req 6)
