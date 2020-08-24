@@ -47,6 +47,7 @@ class ModelManagerDistributed : public ModelManager
   bool prepareModel() override;
   /** Finish build model */
   bool finishBuildModel() const override;
+
  protected:
   /**
    * Distributed equality engine manager, which maintains the context of the
