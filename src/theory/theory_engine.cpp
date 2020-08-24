@@ -820,7 +820,7 @@ bool TheoryEngine::isRelevant(Node lit) const
   return true;
 }
 
-const std::vector<Node>& TheoryEngine::getEqcRepresentatives() const
+const std::unordered_set<Node, NodeHashFunction>& TheoryEngine::getEqcRepresentatives() const
 {
   return d_tc->getEqcRepresentatives();
 }

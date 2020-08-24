@@ -134,34 +134,18 @@ EqClassesCache::EqClassesCache(const eq::EqualityEngine* ee) : d_ee(ee) {}
 
 void EqClassesCache::compute()
 {
-  d_reps.clear();
-  d_repTypes.clear();
+  // clear the data
+  clear();
 
   eq::EqClassesIterator eqcs_i = eq::EqClassesIterator(d_ee);
   while (!eqcs_i.isFinished())
   {
-    Node eqc = (*eqcs_i);
-
+    // add it to the set
+    add(*eqcs_i);
     ++eqcs_i;
   }
 }
 
-const std::vector<Node>& EqClassesCache::getRepresentatives() const
-{
-  return d_reps;
-}
-
-const std::vector<Node>& EqClassesCache::getRepresentativesForType(
-    TypeNode t) const
-{
-  std::map<TypeNode, std::vector<Node> >::const_iterator it =
-      d_repTypes.find(t);
-  if (it != d_repTypes.end())
-  {
-    return it->second;
-  }
-  return d_emptyVec;
-}
 
 }  // namespace eq
 }  // Namespace theory

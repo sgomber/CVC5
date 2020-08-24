@@ -19,6 +19,7 @@
 
 #include "expr/node.h"
 #include "theory/uf/equality_engine_types.h"
+#include "expr/node_type_set.h"
 
 namespace CVC4 {
 namespace theory {
@@ -78,26 +79,16 @@ class EqClassIterator
 };
 
 /** Cached version */
-class EqClassesCache
+class EqClassesCache : public NodeTypeSet
 {
  public:
   EqClassesCache(const eq::EqualityEngine* ee);
   /** Compute */
   void compute();
-  /** Get representatives */
-  const std::vector<Node>& getRepresentatives() const;
-  /** Get representatives for type */
-  const std::vector<Node>& getRepresentativesForType(TypeNode t) const;
 
  private:
   /** The equality engine */
   const eq::EqualityEngine* d_ee;
-  /** All representatives */
-  std::vector<Node> d_reps;
-  /** All representatives per type */
-  std::map<TypeNode, std::vector<Node> > d_repTypes;
-  /** Empty vector */
-  std::vector<Node> d_emptyVec;
 };
 
 }  // Namespace eq

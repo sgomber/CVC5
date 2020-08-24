@@ -30,6 +30,8 @@ libcvc4_add_sources(
   node_trie.h
   node_traversal.cpp
   node_traversal.h
+  node_type_set.cpp
+  node_type_set.h
   node_value.cpp
   node_value.h
   sequence.cpp

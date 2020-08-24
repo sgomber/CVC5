@@ -94,7 +94,7 @@ class EqEngineManager
   /**
    * Get representatives, available at full effort only.
    */
-  const std::vector<Node>& getEqcRepresentatives() const;
+  const std::unordered_set<Node, NodeHashFunction>& getEqcRepresentatives() const;
   /**
    * Get representatives for type, available at full effort only.
    */

@@ -27,15 +27,15 @@ const EeTheoryInfo* EqEngineManager::getEeTheoryInfo(TheoryId tid) const
   return nullptr;
 }
 
-const std::vector<Node>& EqEngineManager::getEqcRepresentatives() const
+const std::unordered_set<Node, NodeHashFunction>& EqEngineManager::getEqcRepresentatives() const
 {
-  return d_eqCache->getRepresentatives();
+  return d_eqCache->get();
 }
 
 const std::vector<Node>& EqEngineManager::getEqcRepresentativesForType(
     TypeNode t) const
 {
-  return d_eqCache->getRepresentativesForType(t);
+  return d_eqCache->getForType(t);
 }
 
 }  // namespace theory
