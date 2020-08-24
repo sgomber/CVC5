@@ -172,7 +172,8 @@ public:
   /**
    * Get representatives, available at full effort only.
    */
-  const std::unordered_set<Node, NodeHashFunction>& getEqcRepresentatives() const;
+  const std::unordered_set<Node, NodeHashFunction>& getEqcRepresentatives()
+      const;
   /**
    * Get representatives for type, available at full effort only.
    */

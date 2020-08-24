@@ -18,8 +18,8 @@
 #define CVC4__THEORY__UF__EQUALITY_ENGINE_ITERATOR_H
 
 #include "expr/node.h"
-#include "theory/uf/equality_engine_types.h"
 #include "expr/node_type_set.h"
+#include "theory/uf/equality_engine_types.h"
 
 namespace CVC4 {
 namespace theory {

@@ -146,7 +146,6 @@ void EqClassesCache::compute()
   }
 }
 
-
 }  // namespace eq
 }  // Namespace theory
 }  // Namespace CVC4

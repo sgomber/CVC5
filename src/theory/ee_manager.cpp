@@ -27,7 +27,8 @@ const EeTheoryInfo* EqEngineManager::getEeTheoryInfo(TheoryId tid) const
   return nullptr;
 }
 
-const std::unordered_set<Node, NodeHashFunction>& EqEngineManager::getEqcRepresentatives() const
+const std::unordered_set<Node, NodeHashFunction>&
+EqEngineManager::getEqcRepresentatives() const
 {
   return d_eqCache->get();
 }

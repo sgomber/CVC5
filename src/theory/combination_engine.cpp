@@ -140,7 +140,8 @@ void CombinationEngine::resetRound()
   // compute the relevant terms?
 }
 
-const std::unordered_set<Node, NodeHashFunction>& CombinationEngine::getEqcRepresentatives() const
+const std::unordered_set<Node, NodeHashFunction>&
+CombinationEngine::getEqcRepresentatives() const
 {
   return d_eemanager->getEqcRepresentatives();
 }

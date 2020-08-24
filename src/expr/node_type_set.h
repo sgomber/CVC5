@@ -17,8 +17,8 @@
 #ifndef CVC4__EXPR__NODE_TYPE_SET_H
 #define CVC4__EXPR__NODE_TYPE_SET_H
 
-#include <vector>
 #include <unordered_set>
+#include <vector>
 
 #include "expr/node.h"
 #include "expr/type_node.h"
@@ -28,11 +28,11 @@ namespace CVC4 {
 /**
  * A set of terms that also partitions the nodes per type.
  */
-class NodeTypeSet 
+class NodeTypeSet
 {
-public:
-  NodeTypeSet(){}
-  virtual ~NodeTypeSet(){}
+ public:
+  NodeTypeSet() {}
+  virtual ~NodeTypeSet() {}
   /** Add n to this set. */
   void add(TNode n);
   /** Clear this set */
@@ -43,7 +43,8 @@ public:
   const std::unordered_set<Node, NodeHashFunction>& get() const;
   /** Get all nodes of type tn */
   const std::vector<Node>& getForType(TypeNode tn) const;
-protected:
+
+ protected:
   /** All terms */
   std::unordered_set<Node, NodeHashFunction> d_nodes;
   /** All terms per type */

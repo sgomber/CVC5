@@ -183,7 +183,8 @@ bool Valuation::needCheck() const{
 
 bool Valuation::isRelevant(Node lit) const { return d_engine->isRelevant(lit); }
 
-const std::unordered_set<Node, NodeHashFunction>& Valuation::getEqcRepresentatives() const
+const std::unordered_set<Node, NodeHashFunction>&
+Valuation::getEqcRepresentatives() const
 {
   Assert(d_engine != nullptr);
   return d_engine->getEqcRepresentatives();

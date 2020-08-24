@@ -18,7 +18,7 @@ namespace CVC4 {
 
 void NodeTypeSet::add(TNode n)
 {
-  if (d_nodes.find(n)!=d_nodes.end())
+  if (d_nodes.find(n) != d_nodes.end())
   {
     return;
   }
@@ -32,10 +32,7 @@ void NodeTypeSet::clear()
   d_nodeTypes.clear();
 }
 
-bool NodeTypeSet::contains(TNode n)
-{
-  return d_nodes.find(n)!=d_nodes.end();
-}
+bool NodeTypeSet::contains(TNode n) { return d_nodes.find(n) != d_nodes.end(); }
 
 const std::unordered_set<Node, NodeHashFunction>& NodeTypeSet::get() const
 {
