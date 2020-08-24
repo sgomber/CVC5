@@ -23,7 +23,7 @@ namespace theory {
 
 EqEngineManagerCentral::EqEngineManagerCentral(TheoryEngine& te)
     : d_te(te),
-      d_centralEENotify(),
+      d_centralEENotify(te),
       // we do not require any term triggers in the central equality engine
       d_centralEqualityEngine(
           d_centralEENotify, te.getSatContext(), "centralEE", false, false)
@@ -103,26 +103,14 @@ eq::EqualityEngine* EqEngineManagerCentral::getCoreEqualityEngine()
   return &d_centralEqualityEngine;
 }
 
-EqEngineManagerCentral::CentralNotifyClass::CentralNotifyClass()
-    : d_mNotify(nullptr), d_quantEngine(nullptr)
+EqEngineManagerCentral::CentralNotifyClass::CentralNotifyClass(TheoryEngine& te)
+    : d_te(te), d_mNotify(nullptr), d_quantEngine(nullptr)
 {
   for (TheoryId theoryId = theory::THEORY_FIRST;
        theoryId != theory::THEORY_LAST;
        ++theoryId)
   {
     d_theoryNotify[theoryId] = nullptr;
-  }
-}
-void EqEngineManagerCentral::CentralNotifyClass::eqNotifyNewClass(TNode t)
-{
-  for (eq::EqualityEngineNotify* notify : d_newClassNotify)
-  {
-    notify->eqNotifyNewClass(t);
-  }
-  // also always forward to quantifiers
-  if (d_quantEngine != nullptr)
-  {
-    d_quantEngine->eqNotifyNewClass(t);
   }
 }
 
@@ -136,9 +124,14 @@ bool EqEngineManagerCentral::CentralNotifyClass::eqNotifyTriggerPredicate(
     return d_uf.propagate(predicate.notNode());
   }
   */
-  TheoryId tid = Theory::theoryOf(predicate);
-  Assert(d_theoryNotify[tid] != nullptr);
-  return d_theoryNotify[tid]->eqNotifyTriggerPredicate(predicate, value);
+  // TODO: always propagate?
+  Trace("eem-central") << "eqNotifyTriggerPredicate: " << predicate << std::endl;
+  Theory * t = d_te.getActiveTheory();
+  Assert(t != nullptr);
+  Trace("eem-central") << "...notify active theory " << t->getId() << std::endl;
+  eq::EqualityEngineNotify* notify = d_theoryNotify[t->getId()];
+  Assert(notify != nullptr);
+  return notify->eqNotifyTriggerPredicate(predicate, value);
 }
 
 bool EqEngineManagerCentral::CentralNotifyClass::eqNotifyTriggerTermEquality(
@@ -154,14 +147,34 @@ void EqEngineManagerCentral::CentralNotifyClass::eqNotifyConstantTermMerge(
   /*
   d_uf.conflict(t1, t2);
   */
-  TheoryId tid = Theory::theoryOf(t1.getType());
-  Assert(d_theoryNotify[tid] != nullptr);
-  d_theoryNotify[tid]->eqNotifyConstantTermMerge(t1, t2);
+  Trace("eem-central") << "eqNotifyConstantTermMerge: " << t1 << " " << t2 << std::endl;
+  Theory * t = d_te.getActiveTheory();
+  Assert(t != nullptr);
+  Trace("eem-central") << "...notify active theory " << t->getId() << std::endl;
+  eq::EqualityEngineNotify* notify = d_theoryNotify[t->getId()];
+  Assert(notify != nullptr);
+  notify->eqNotifyConstantTermMerge(t1, t2);
 }
+
+void EqEngineManagerCentral::CentralNotifyClass::eqNotifyNewClass(TNode t)
+{
+  // notify all theories that have new equivalence class notifications
+  for (eq::EqualityEngineNotify* notify : d_newClassNotify)
+  {
+    notify->eqNotifyNewClass(t);
+  }
+  // also always forward to quantifiers
+  if (d_quantEngine != nullptr)
+  {
+    d_quantEngine->eqNotifyNewClass(t);
+  }
+}
+
 
 void EqEngineManagerCentral::CentralNotifyClass::eqNotifyMerge(TNode t1,
                                                                TNode t2)
 {
+  // notify all theories that have merge notifications
   for (eq::EqualityEngineNotify* notify : d_mergeNotify)
   {
     notify->eqNotifyMerge(t1, t2);
@@ -172,6 +185,7 @@ void EqEngineManagerCentral::CentralNotifyClass::eqNotifyDisequal(TNode t1,
                                                                   TNode t2,
                                                                   TNode reason)
 {
+  // notify all theories that have disequal notifications
   for (eq::EqualityEngineNotify* notify : d_disequalNotify)
   {
     notify->eqNotifyDisequal(t1, t2, reason);

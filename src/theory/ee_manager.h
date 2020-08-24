@@ -102,6 +102,8 @@ class EqEngineManager
   const std::vector<Node>& getEqcRepresentativesForType(TypeNode t) const;
 
  protected:
+  /** Add function kinds */
+  static void addFunctionKinds(eq::EqualityEngine* ee, EeSetupInfo& esi);
   /** Information related to the equality engine, per theory. */
   std::map<TheoryId, EeTheoryInfo> d_einfo;
   /** The equivalence classes cache */

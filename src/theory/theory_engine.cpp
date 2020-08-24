@@ -215,6 +215,7 @@ TheoryEngine::TheoryEngine(context::Context* context,
     : d_propEngine(nullptr),
       d_context(context),
       d_userContext(userContext),
+      d_activeTheory(nullptr),
       d_logicInfo(logicInfo),
       d_tc(nullptr),
       d_sharedSolver(nullptr),
@@ -448,7 +449,8 @@ void TheoryEngine::check(Theory::Effort effort) {
 #endif
 #define CVC4_FOR_EACH_THEORY_STATEMENT(THEORY) \
     if (theory::TheoryTraits<THEORY>::hasCheck && d_logicInfo.isTheoryEnabled(THEORY)) { \
-       theoryOf(THEORY)->check(effort); \
+       d_activeTheory = theoryOf(THEORY); \
+       d_activeTheory->check(effort); \
        if (d_inConflict) { \
          Debug("conflict") << THEORY << " in conflict. " << std::endl; \
          break; \
@@ -501,6 +503,8 @@ void TheoryEngine::check(Theory::Effort effort) {
 
       // Do the checking
       CVC4_FOR_EACH_THEORY;
+      // clear the active theory
+      d_activeTheory = nullptr;
 
       if(Dump.isOn("missed-t-conflicts")) {
         Dump("missed-t-conflicts")

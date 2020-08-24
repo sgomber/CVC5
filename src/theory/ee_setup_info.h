@@ -29,6 +29,20 @@ namespace eq {
 class EqualityEngineNotify;
 }
 
+/** 
+ * Setup for a function kind. Sets up a call to EqualityEngine::addFunctionKind.
+ */
+struct EeSetupFunctionKind
+{
+  EeSetupFunctionKind(Kind k, bool isInt = false, bool isExtOp = false ) : d_kind(k), d_isInterpreted(isInt), d_isExtOperator(isExtOp){}
+  /** The function kind */
+  Kind d_kind;
+  /** Whether its interpreted */
+  bool d_isInterpreted;
+  /** Whether its an external operator */
+  bool d_isExtOperator;
+};
+
 /**
  * This is a helper class that encapsulates instructions for how a Theory
  * wishes to initialize and setup notifications with its official equality
@@ -47,6 +61,8 @@ struct EeSetupInfo
   std::string d_name;
   /** Constants are triggers */
   bool d_constantsAreTriggers;
+  /** The set of kinds to do congruence over */
+  std::vector<EeSetupFunctionKind> d_functionKinds;
   //-------------------------- fine grained notifications
   /** The TypeNode kinds to notify on eqNotifyNewClass */
   std::vector<Kind> d_notifyNewEqClassTypeKinds;

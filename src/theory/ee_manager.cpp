@@ -39,5 +39,13 @@ const std::vector<Node>& EqEngineManager::getEqcRepresentativesForType(
   return d_eqCache->getForType(t);
 }
 
+void EqEngineManager::addFunctionKinds(eq::EqualityEngine* ee, EeSetupInfo& esi)
+{
+  for (const EeSetupFunctionKind& esf : esi.d_functionKinds)
+  {
+    ee->addFunctionKind(esf.d_kind, esf.d_isInterpreted, esf.d_isExtOperator);
+  }
+}
+
 }  // namespace theory
 }  // namespace CVC4

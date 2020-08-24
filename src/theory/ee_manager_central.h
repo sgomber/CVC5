@@ -60,16 +60,18 @@ class EqEngineManagerCentral : public EqEngineManager
   class CentralNotifyClass : public theory::eq::EqualityEngineNotify
   {
    public:
-    CentralNotifyClass();
-    void eqNotifyNewClass(TNode t) override;
+    CentralNotifyClass(TheoryEngine& te);
     bool eqNotifyTriggerPredicate(TNode predicate, bool value) override;
     bool eqNotifyTriggerTermEquality(TheoryId tag,
                                      TNode t1,
                                      TNode t2,
                                      bool value) override;
     void eqNotifyConstantTermMerge(TNode t1, TNode t2) override;
+    void eqNotifyNewClass(TNode t) override;
     void eqNotifyMerge(TNode t1, TNode t2) override;
-    void eqNotifyDisequal(TNode t1, TNode t2, TNode reason) override;
+    void eqNotifyDisequal(TNode t1, TNode t2, TNode reason) override;  
+    /** Reference to the theory engine */
+    TheoryEngine& d_te;
     /**
      * A table of from theory IDs to notify classes.
      */

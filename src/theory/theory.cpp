@@ -466,7 +466,6 @@ void Theory::check(Effort level)
   {
     return;
   }
-  Assert(d_theoryState!=nullptr);
   // standard calls for resource, stats
   d_out->spendResource(ResourceManager::Resource::TheoryCheckStep);
   TimerStat::CodeTimer checkTimer(d_checkTime);
@@ -476,6 +475,7 @@ void Theory::check(Effort level)
     // check aborted for a theory-specific reason
     return;
   }
+  Assert(d_theoryState!=nullptr);
   // process the pending fact queue
   while (!done() && !d_theoryState->isInConflict())
   {
