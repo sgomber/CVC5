@@ -170,7 +170,8 @@ void EqEngineManagerCentral::CentralNotifyClass::eqNotifyDisequal(TNode t1,
                                                                   TNode t2,
                                                                   TNode reason)
 {
-  Trace("eem-central") << "...eqNotifyDisequal " << t1 << ", " << t2 << std::endl;
+  Trace("eem-central") << "...eqNotifyDisequal " << t1 << ", " << t2
+                       << std::endl;
   // notify all theories that have disequal notifications
   for (eq::EqualityEngineNotify* notify : d_disequalNotify)
   {
@@ -182,8 +183,8 @@ bool EqEngineManagerCentral::eqNotifyTriggerPredicate(TNode predicate,
                                                       bool value)
 {
   Theory* t = d_te.getActiveTheory();
-  TheoryId tid = t==nullptr ? THEORY_BUILTIN : t->getId();
-  Trace("eem-central") << "...propagate with " << tid<< std::endl;
+  TheoryId tid = t == nullptr ? THEORY_BUILTIN : t->getId();
+  Trace("eem-central") << "...propagate with " << tid << std::endl;
   // propagate directly to theory engine
   if (value)
   {
