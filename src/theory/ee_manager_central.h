@@ -60,7 +60,7 @@ class EqEngineManagerCentral : public EqEngineManager
   class CentralNotifyClass : public theory::eq::EqualityEngineNotify
   {
    public:
-    CentralNotifyClass(TheoryEngine& te);
+    CentralNotifyClass(EqEngineManagerCentral& eemc);
     bool eqNotifyTriggerPredicate(TNode predicate, bool value) override;
     bool eqNotifyTriggerTermEquality(TheoryId tag,
                                      TNode t1,
@@ -70,12 +70,8 @@ class EqEngineManagerCentral : public EqEngineManager
     void eqNotifyNewClass(TNode t) override;
     void eqNotifyMerge(TNode t1, TNode t2) override;
     void eqNotifyDisequal(TNode t1, TNode t2, TNode reason) override;
-    /** Reference to the theory engine */
-    TheoryEngine& d_te;
-    /**
-     * A table of from theory IDs to notify classes.
-     */
-    eq::EqualityEngineNotify* d_theoryNotify[theory::THEORY_LAST];
+    /** Parent */
+    EqEngineManagerCentral& d_eemc;
     /** List of notify classes that need new class notification */
     std::vector<eq::EqualityEngineNotify*> d_newClassNotify;
     /** List of notify classes that need merge notification */
@@ -87,12 +83,20 @@ class EqEngineManagerCentral : public EqEngineManager
     /** The quantifiers engine */
     QuantifiersEngine* d_quantEngine;
   };
+  /** Notification when predicate gets value in central equality engine */
+  bool eqNotifyTriggerPredicate(TNode predicate, bool value);
+  /** Notification when constants are merged in central equality engine */
+  void eqNotifyConstantTermMerge(TNode t1, TNode t2);
   /** Reference to the theory engine */
   TheoryEngine& d_te;
   /** The central equality engine notify class */
   CentralNotifyClass d_centralEENotify;
   /** The central equality engine. */
   eq::EqualityEngine d_centralEqualityEngine;
+  /**
+    * A table of from theory IDs to notify classes.
+    */
+  eq::EqualityEngineNotify* d_theoryNotify[theory::THEORY_LAST];
 };
 
 }  // namespace theory

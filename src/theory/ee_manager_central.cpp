@@ -23,11 +23,17 @@ namespace theory {
 
 EqEngineManagerCentral::EqEngineManagerCentral(TheoryEngine& te)
     : d_te(te),
-      d_centralEENotify(te),
+      d_centralEENotify(*this),
       // we do not require any term triggers in the central equality engine
       d_centralEqualityEngine(
           d_centralEENotify, te.getSatContext(), "centralEE", false, false)
 {
+  for (TheoryId theoryId = theory::THEORY_FIRST;
+       theoryId != theory::THEORY_LAST;
+       ++theoryId)
+  {
+    d_theoryNotify[theoryId] = nullptr;
+  }
 }
 
 EqEngineManagerCentral::~EqEngineManagerCentral() {}
@@ -57,7 +63,7 @@ void EqEngineManagerCentral::initializeTheories(SharedSolver* sharedSolver)
     }
     // set the notification class
     eq::EqualityEngineNotify* notify = esi.d_notify;
-    d_centralEENotify.d_theoryNotify[theoryId] = notify;
+    d_theoryNotify[theoryId] = notify;
     // add to vectors for the kinds of notifications
     if (esi.needsNotifyNewEqClass())
     {
@@ -103,15 +109,10 @@ eq::EqualityEngine* EqEngineManagerCentral::getCoreEqualityEngine()
   return &d_centralEqualityEngine;
 }
 
-EqEngineManagerCentral::CentralNotifyClass::CentralNotifyClass(TheoryEngine& te)
-    : d_te(te), d_mNotify(nullptr), d_quantEngine(nullptr)
+EqEngineManagerCentral::CentralNotifyClass::CentralNotifyClass(EqEngineManagerCentral& eemc)
+    : d_eemc(eemc), d_mNotify(nullptr), d_quantEngine(nullptr)
 {
-  for (TheoryId theoryId = theory::THEORY_FIRST;
-       theoryId != theory::THEORY_LAST;
-       ++theoryId)
-  {
-    d_theoryNotify[theoryId] = nullptr;
-  }
+
 }
 
 bool EqEngineManagerCentral::CentralNotifyClass::eqNotifyTriggerPredicate(
@@ -127,12 +128,7 @@ bool EqEngineManagerCentral::CentralNotifyClass::eqNotifyTriggerPredicate(
   // TODO: always propagate?
   Trace("eem-central") << "eqNotifyTriggerPredicate: " << predicate
                        << std::endl;
-  Theory* t = d_te.getActiveTheory();
-  Assert(t != nullptr);
-  Trace("eem-central") << "...notify active theory " << t->getId() << std::endl;
-  eq::EqualityEngineNotify* notify = d_theoryNotify[t->getId()];
-  Assert(notify != nullptr);
-  return notify->eqNotifyTriggerPredicate(predicate, value);
+  return d_eemc.eqNotifyTriggerPredicate(predicate, value);
 }
 
 bool EqEngineManagerCentral::CentralNotifyClass::eqNotifyTriggerTermEquality(
@@ -150,12 +146,7 @@ void EqEngineManagerCentral::CentralNotifyClass::eqNotifyConstantTermMerge(
   */
   Trace("eem-central") << "eqNotifyConstantTermMerge: " << t1 << " " << t2
                        << std::endl;
-  Theory* t = d_te.getActiveTheory();
-  Assert(t != nullptr);
-  Trace("eem-central") << "...notify active theory " << t->getId() << std::endl;
-  eq::EqualityEngineNotify* notify = d_theoryNotify[t->getId()];
-  Assert(notify != nullptr);
-  notify->eqNotifyConstantTermMerge(t1, t2);
+  d_eemc.eqNotifyConstantTermMerge(t1, t2);
 }
 
 void EqEngineManagerCentral::CentralNotifyClass::eqNotifyNewClass(TNode t)
@@ -191,6 +182,41 @@ void EqEngineManagerCentral::CentralNotifyClass::eqNotifyDisequal(TNode t1,
   {
     notify->eqNotifyDisequal(t1, t2, reason);
   }
+}
+
+bool EqEngineManagerCentral::eqNotifyTriggerPredicate(TNode predicate, bool value)
+{
+  Theory* t = d_te.getActiveTheory();
+  if (t==nullptr)
+  {
+    // probably in shared solver?
+    if (value) 
+    {
+      return d_te.propagate(predicate, THEORY_BUILTIN);
+    }
+    return d_te.propagate(predicate.notNode(), THEORY_BUILTIN);
+  }
+  Trace("eem-central") << "...notify active theory " << t->getId() << std::endl;
+  eq::EqualityEngineNotify* notify = d_theoryNotify[t->getId()];
+  Assert(notify != nullptr);
+  return notify->eqNotifyTriggerPredicate(predicate, value);
+}
+
+void EqEngineManagerCentral::eqNotifyConstantTermMerge( TNode t1, TNode t2)
+{
+  Theory* t = d_te.getActiveTheory();
+  if (t==nullptr)
+  {
+    // probably in shared solver?
+    Node lit = t1.eqNode(t2);
+    Node conflict = d_centralEqualityEngine.mkExplainLit(lit);
+    d_te.conflict(conflict, THEORY_BUILTIN);
+    return;
+  }
+  Trace("eem-central") << "...notify active theory " << t->getId() << std::endl;
+  eq::EqualityEngineNotify* notify = d_theoryNotify[t->getId()];
+  Assert(notify != nullptr);
+  notify->eqNotifyConstantTermMerge(t1, t2);
 }
 
 }  // namespace theory

@@ -90,6 +90,7 @@ namespace theory {
   class CombinationEngine;
   class CombinationCareGraph;
   class SharedSolver;
+  class EqEngineManagerCentral;
 
   class DecisionManager;
   class RelevanceManager;
@@ -121,6 +122,7 @@ class TheoryEngine {
   friend class theory::quantifiers::TermDb;
   friend class theory::EngineOutputChannel;
   friend class theory::CombinationEngine;
+  friend class theory::EqEngineManagerCentral;
 
   /** Associated PropEngine engine */
   prop::PropEngine* d_propEngine;
