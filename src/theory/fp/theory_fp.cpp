@@ -1017,15 +1017,14 @@ Node TheoryFp::getModelValue(TNode var) {
   return d_conv.getValue(d_valuation, var);
 }
 
-bool TheoryFp::collectModelInfo(TheoryModel* m)
+bool TheoryFp::collectModelInfo(TheoryModel* m, const std::set<Node>& relevantTerms)
 {
   // override behavior to not assert equality engine
-  return collectModelValues(m);
+  return collectModelValues(m, relevantTerms);
 }
 
-bool TheoryFp::collectModelValues(TheoryModel* m)
+bool TheoryFp::collectModelValues(TheoryModel* m, const std::set<Node>& relevantTerms)
 {
-  const std::set<Node>& relevantTerms = m->getRelevantTerms();
   Trace("fp-collectModelInfo")
       << "TheoryFp::collectModelInfo(): begin" << std::endl;
   if (Trace.isOn("fp-collectModelInfo")) {

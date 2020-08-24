@@ -46,10 +46,17 @@ bool ModelManagerCentral::prepareModel()
       continue;
     }
     Theory* t = d_te.theoryOf(theoryId);
+    // collect the asserted terms
+    std::set<Node> termSet;
+    collectAssertedTerms(theoryId, termSet);
+    // also get relevant terms
+    t->computeRelevantTerms(termSet);
+    // also add them to the model 
+    d_model->addRelevantTerms(termSet);
     Trace("model-builder") << "  CollectModelValues on theory: " << theoryId
                            << std::endl;
     // use the full set of relevant terms for all theories
-    if (!t->collectModelValues(d_model))
+    if (!t->collectModelValues(d_model, termSet))
     {
       Trace("model-builder")
           << "ModelManagerCentral: fail collect model values" << std::endl;

@@ -72,12 +72,12 @@ bool ModelManagerDistributed::prepareModel()
        std::endl; return false;
         }
         */
-    // FIXME
-    d_model->clearRelevantTerms();
-    t->computeAssertedTerms(d_model);
+    // collect the asserted terms
+    std::set<Node> termSet;
+    collectAssertedTerms(theoryId, termSet);
     // also get relevant terms
-    t->computeRelevantTerms(d_model);
-    if (!t->collectModelInfo(d_model))
+    t->computeRelevantTerms(termSet);
+    if (!t->collectModelInfo(d_model, termSet))
     {
       Trace("model-builder")
           << "ModelManagerDistributed: fail collect model info" << std::endl;

@@ -1073,9 +1073,8 @@ void TheoryArrays::computeCareGraph()
 // MODEL GENERATION
 /////////////////////////////////////////////////////////////////////////////
 
-bool TheoryArrays::collectModelValues(TheoryModel* m)
+bool TheoryArrays::collectModelValues(TheoryModel* m, const std::set<Node>& termSet)
 {
-  const std::set<Node>& termSet = m->getRelevantTerms();
   // Compute arrays that we need to produce representatives for
   std::vector<Node> arrays;
 
@@ -2225,9 +2224,8 @@ TrustNode TheoryArrays::expandDefinition(Node node)
   return TrustNode::null();
 }
 
-void TheoryArrays::computeRelevantTerms(TheoryModel* m)
+void TheoryArrays::computeRelevantTerms(std::set<Node>& termSet)
 {
-  const std::set<Node>& termSet = m->getRelevantTerms();
 
   NodeManager* nm = NodeManager::currentNM();
   // make sure RIntro1 reads are included in the relevant set of reads
@@ -2253,7 +2251,7 @@ void TheoryArrays::computeRelevantTerms(TheoryModel* m)
           Trace("arrays::collectModelInfo")
               << "TheoryArrays::collectModelInfo, adding RIntro1 read: " << r
               << endl;
-          m->addRelevantTerm(r);
+          termSet.insert(r);
         }
       }
     }
@@ -2294,7 +2292,7 @@ void TheoryArrays::computeRelevantTerms(TheoryModel* m)
                     << "TheoryArrays::collectModelInfo, adding RIntro2(a) "
                        "read: "
                     << r << endl;
-                m->addRelevantTerm(r);
+                termSet.insert(r);
                 changed = true;
               }
               r = nm->mkNode(kind::SELECT, arr[0], n[1]);
@@ -2305,7 +2303,7 @@ void TheoryArrays::computeRelevantTerms(TheoryModel* m)
                     << "TheoryArrays::collectModelInfo, adding RIntro2(b) "
                        "read: "
                     << r << endl;
-                m->addRelevantTerm(r);
+                termSet.insert(r);
                 changed = true;
               }
             }
@@ -2330,7 +2328,7 @@ void TheoryArrays::computeRelevantTerms(TheoryModel* m)
                     << "TheoryArrays::collectModelInfo, adding RIntro2(c) "
                        "read: "
                     << r << endl;
-                m->addRelevantTerm(r);
+                termSet.insert(r);
                 changed = true;
               }
               r = nm->mkNode(kind::SELECT, instore[0], n[1]);
@@ -2341,7 +2339,7 @@ void TheoryArrays::computeRelevantTerms(TheoryModel* m)
                     << "TheoryArrays::collectModelInfo, adding RIntro2(d) "
                        "read: "
                     << r << endl;
-                m->addRelevantTerm(r);
+                termSet.insert(r);
                 changed = true;
               }
             }

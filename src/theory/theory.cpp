@@ -352,67 +352,27 @@ std::unordered_set<TNode, TNodeHashFunction> Theory::currentlySharedTerms() cons
   return currentlyShared;
 }
 
-bool Theory::collectModelInfo(TheoryModel* m)
+bool Theory::collectModelInfo(TheoryModel* m, const std::set<Node>& termSet)
 {
   // FIXME: could move entirely into model engine distributed
   // if we are using an equality engine, assert it to the model
   if (d_equalityEngine != nullptr)
   {
-    if (!m->assertEqualityEngine(d_equalityEngine))
+    if (!m->assertEqualityEngine(d_equalityEngine, &termSet))
     {
       return false;
     }
   }
   // now, collect theory-specific value assigments
-  return collectModelValues(m);
+  return collectModelValues(m, termSet);
 }
 
-void Theory::collectTerms(TNode n, TheoryModel* m) const
-{
-  if (m->isRelevantTerm(n))
-  {
-    return;
-  }
-  Kind nk = n.getKind();
-  m->addRelevantTerm(n);
-  if ((nk == kind::NOT || nk == kind::EQUAL || !isLeaf(n)) && !n.isClosure())
-  {
-    for(TNode::iterator child_it = n.begin(); child_it != n.end(); ++child_it) {
-      collectTerms(*child_it, m);
-    }
-  }
-}
-
-void Theory::computeAssertedTerms(TheoryModel* m, bool includeShared) const
-{
-  // Collect all terms appearing in assertions
-  context::CDList<Assertion>::const_iterator assert_it = facts_begin(),
-                                             assert_it_end = facts_end();
-  for (; assert_it != assert_it_end; ++assert_it)
-  {
-    collectTerms(*assert_it, m);
-  }
-
-  if (!includeShared)
-  {
-    return;
-  }
-  // Add terms that are shared terms
-  std::set<Kind> kempty;
-  context::CDList<TNode>::const_iterator shared_it = shared_terms_begin(),
-                                         shared_it_end = shared_terms_end();
-  for (; shared_it != shared_it_end; ++shared_it)
-  {
-    collectTerms(*shared_it, m);
-  }
-}
-
-void Theory::computeRelevantTerms(TheoryModel* m)
+void Theory::computeRelevantTerms(std::set<Node>& termSet)
 {
   // default, nothing
 }
 
-bool Theory::collectModelValues(TheoryModel* m) { return true; }
+bool Theory::collectModelValues(TheoryModel* m, const std::set<Node>& termSet) { return true; }
 
 Theory::PPAssertStatus Theory::ppAssert(TNode in,
                                         SubstitutionMap& outSubstitutions)

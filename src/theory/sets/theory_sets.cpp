@@ -112,9 +112,9 @@ void TheorySets::notifyFact(TNode atom,
   d_internal->notifyFact(atom, polarity, fact);
 }
 
-bool TheorySets::collectModelValues(TheoryModel* m)
+bool TheorySets::collectModelValues(TheoryModel* m, const std::set<Node>& termSet)
 {
-  return d_internal->collectModelValues(m);
+  return d_internal->collectModelValues(m, termSet);
 }
 
 void TheorySets::computeCareGraph() {

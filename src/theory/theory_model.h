@@ -115,7 +115,8 @@ class TheoryModel : public Model
    * This method returns true if and only if the equality engine of this model
    * is consistent after asserting the equality engine to this model.
    */
-  bool assertEqualityEngine(const eq::EqualityEngine* ee);
+  bool assertEqualityEngine(const eq::EqualityEngine* ee,
+                            const std::set<Node>* termSet = NULL);
   /** assert skeleton
    *
    * This method gives a "skeleton" for the model value of the equivalence
@@ -266,6 +267,8 @@ class TheoryModel : public Model
    * example is APPLY_TESTER.
    */
   void setIrrelevantKind(Kind k);
+  /** Get the irrelevant kinds */
+  const std::set<Kind>& getIrrelevantKinds() const;
   /** is legal elimination
    *
    * Returns true if x -> val is a legal elimination of variable x.
@@ -348,14 +351,12 @@ class TheoryModel : public Model
   std::vector< Node > getFunctionsToAssign();
   //---------------------------- end function values
 
+  /** 
+   * Add relevant terms
+   */
+  void addRelevantTerms(const std::set<Node>& termSet);
   /** Is term t a relevant term? */
   bool isRelevantTerm(TNode t) const;
-  /** Add relevant term */
-  void addRelevantTerm(TNode t);
-  /** Get relevant terms */
-  const std::set<Node>& getRelevantTerms() const;
-  /** FIXME clear relevant terms */
-  void clearRelevantTerms();
 
  protected:
   /** Unique name of this model */

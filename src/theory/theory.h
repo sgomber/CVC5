@@ -185,11 +185,6 @@ class Theory {
   context::CDList<TNode> d_sharedTerms;
 
   /**
-   * Helper function for computeRelevantTerms
-   */
-  void collectTerms(TNode n, TheoryModel* m) const;
-
-  /**
    * Construct a Theory.
    *
    * The pair <id, instance> is assumed to uniquely identify this Theory
@@ -654,34 +649,18 @@ class Theory {
    * TODO (project #39): this method should be non-virtual, once all theories
    * conform to the new standard, delete, move to model manager distributed.
    */
-  virtual bool collectModelInfo(TheoryModel* m);
-  /**
-   * Scans the current set of assertions and shared terms top-down
-   * until a theory-leaf is reached, and adds all terms found to
-   * termSet.  This is used by collectModelInfo to delimit the set of
-   * terms that should be used when constructing a model.
-   *
-   * irrKinds: The kinds of terms that appear in assertions that should *not*
-   * be included in termSet. Note that the kinds EQUAL and NOT are always
-   * treated as irrelevant kinds.
-   *
-   * includeShared: Whether to include shared terms in termSet. Notice that
-   * shared terms are not influenced by irrKinds.
-   *
-   * TODO: delete, move to relevant terms database
-   */
-  void computeAssertedTerms(TheoryModel* m, bool includeShared = true) const;
+  virtual bool collectModelInfo(TheoryModel* m, const std::set<Node>& termSet);
   /**
    * Compute terms that are not necessarily part of the assertions or
-   * shared terms that should be considered relevant, add them to rtdb.
+   * shared terms that should be considered relevant, add them to termSet.
    */
-  virtual void computeRelevantTerms(TheoryModel* m);
+  virtual void computeRelevantTerms(std::set<Node>& termSet);
   /**
    * Collect model values, after equality information is added to the model.
    * The argument termSet is the set of relevant terms returned by
    * computeRelevantTerms.
    */
-  virtual bool collectModelValues(TheoryModel* m);
+  virtual bool collectModelValues(TheoryModel* m, const std::set<Node>& set);
   /** if theories want to do something with model after building, do it here */
   virtual void postProcessModel( TheoryModel* m ){ }
   //--------------------------------- end collect model info

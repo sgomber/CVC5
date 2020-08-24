@@ -182,7 +182,7 @@ class TheorySetsPrivate {
   //--------------------------------- end standard check
 
   /** Collect model values in m based on the relevant terms given by termSet */
-  bool collectModelValues(TheoryModel* m);
+  bool collectModelValues(TheoryModel* m, const std::set<Node>& termSet);
 
   void computeCareGraph();
 

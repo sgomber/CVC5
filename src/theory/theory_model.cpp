@@ -441,7 +441,8 @@ bool TheoryModel::assertPredicate(TNode a, bool polarity)
 }
 
 /** assert equality engine */
-bool TheoryModel::assertEqualityEngine(const eq::EqualityEngine* ee)
+bool TheoryModel::assertEqualityEngine(const eq::EqualityEngine* ee,
+                            const std::set<Node>* termSet)
 {
   Assert(d_equalityEngine->consistent());
   // should be from a different equality engine
@@ -465,7 +466,7 @@ bool TheoryModel::assertEqualityEngine(const eq::EqualityEngine* ee)
     Node rep;
     for (; !eqc_i.isFinished(); ++eqc_i) {
       // if not relevant, don't add
-      if (!d_rtdb.isRelevant(*eqc_i))
+      if (termSet != nullptr && termSet->find(*eqc_i) == termSet->end()) 
       {
         Trace("model-builder-debug") << "...skip node " << (*eqc_i) << " in eqc " << eqc << std::endl;
         continue;
@@ -628,6 +629,10 @@ void TheoryModel::setIrrelevantKind(Kind k)
   // relevant terms manages irrelevant kinds
   d_rtdb.setIrrelevantKind(k);
 }
+const std::set<Kind>& TheoryModel::getIrrelevantKinds() const
+{
+  return d_rtdb.getIrrelevantKinds();
+}
 
 bool TheoryModel::isLegalElimination(TNode x, TNode val)
 {
@@ -762,14 +767,7 @@ std::vector< Node > TheoryModel::getFunctionsToAssign() {
 
 bool TheoryModel::isRelevantTerm(TNode t) const { return d_rtdb.isRelevant(t); }
 
-void TheoryModel::addRelevantTerm(TNode t) { d_rtdb.addRelevantTerm(t); }
-
-const std::set<Node>& TheoryModel::getRelevantTerms() const
-{
-  return d_rtdb.getRelevantTerms();
-}
-
-void TheoryModel::clearRelevantTerms() { d_rtdb.clear(); }
+void TheoryModel::addRelevantTerms(const std::set<Node>& termSet) { d_rtdb.addRelevantTerms(termSet); }
 
 } /* namespace CVC4::theory */
 } /* namespace CVC4 */

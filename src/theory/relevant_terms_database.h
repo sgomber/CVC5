@@ -34,14 +34,10 @@ class RelevantTermsDatabase
  public:
   RelevantTermsDatabase();
   ~RelevantTermsDatabase() {}
-  /** reset round, called at the beginning of full effort check */
-  void resetRound();
-  /** compute */
-  void compute();
   /** Is term t a relevant term? */
   bool isRelevant(TNode t) const;
-  /** Add relevant term */
-  void addRelevantTerm(TNode t);
+  /** Add relevant terms */
+  void addRelevantTerms(const std::set<Node>& termSet);
   /** Get relevant terms */
   const std::set<Node>& getRelevantTerms() const;
   /** clear */
@@ -54,9 +50,12 @@ class RelevantTermsDatabase
   /**
    * Add all relevant terms in n recursively.
    */
-  void addRelevantTermRec(TNode n);
-
+  void collectTerms(TNode n, std::set<Node>& termSet);
+  /** Get irrelevant kinds */
+  const std::set<Kind>& getIrrelevantKinds() const;
  protected:
+  /** Add relevant term */
+  void addRelevantTerm(TNode t);
   /** The set of relevant terms */
   std::set<Node> d_relevantTerms;
   /** The set of irrelevant kinds */

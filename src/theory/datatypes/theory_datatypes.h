@@ -354,12 +354,12 @@ private:
   TNode getRepresentative( TNode a );
 
   /** Collect model values in m based on the relevant terms given by termSet */
-  bool collectModelValues(TheoryModel* m) override;
+  bool collectModelValues(TheoryModel* m, const std::set<Node>& termSet) override;
   /**
    * Compute relevant terms. In addition to all terms in assertions and shared
    * terms, this includes datatypes in non-singleton equivalence classes.
    */
-  void computeRelevantTerms(TheoryModel* m) override;
+  void computeRelevantTerms(std::set<Node>& termSet) override;
 
   /** sygus symmetry breaking utility */
   std::unique_ptr<SygusExtension> d_sygusExtension;

@@ -333,12 +333,12 @@ Node TheoryUF::explain(TNode literal, eq::EqProof* pf) {
   return mkAnd(assumptions);
 }
 
-bool TheoryUF::collectModelValues(TheoryModel* m)
+bool TheoryUF::collectModelValues(TheoryModel* m, const std::set<Node>& termSet)
 {
   if( options::ufHo() ){
     // must add extensionality disequalities for all pairs of (non-disequal)
     // function equivalence classes.
-    if (!d_ho->collectModelInfoHo(m))
+    if (!d_ho->collectModelInfoHo(m, termSet))
     {
       Trace("uf") << "Collect model info fail HO" << std::endl;
       return false;
