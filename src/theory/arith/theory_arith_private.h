@@ -457,7 +457,7 @@ public:
   Rational deltaValueForTotalOrder() const;
 
   /** Collect model values in m based on the relevant terms given by termSet */
-  bool collectModelValues(TheoryModel* m, std::set<Node>& termSet);
+  bool collectModelValues(TheoryModel* m);
 
   void shutdown(){ }
 

@@ -1500,8 +1500,7 @@ void TheoryDatatypes::computeCareGraph(){
   Trace("dt-cg-summary") << "...done, # pairs = " << n_pairs << std::endl;
 }
 
-bool TheoryDatatypes::collectModelValues(TheoryModel* m,
-                                         std::set<Node>& termSet)
+bool TheoryDatatypes::collectModelValues(TheoryModel* m)
 {
   Trace("dt-cmi") << "Datatypes : Collect model values "
                   << d_equalityEngine->consistent() << std::endl;
@@ -2225,7 +2224,7 @@ Node TheoryDatatypes::mkAnd( std::vector< TNode >& assumptions ) {
   }
 }
 
-void TheoryDatatypes::computeRelevantTerms(RelevantTermsDatabase& rtdb)
+void TheoryDatatypes::computeRelevantTerms(TheoryModel* m)
 {
   //also include non-singleton equivalence classes  TODO : revisit this
   eq::EqClassesIterator eqcs_i = eq::EqClassesIterator(d_equalityEngine);
@@ -2247,7 +2246,7 @@ void TheoryDatatypes::computeRelevantTerms(RelevantTermsDatabase& rtdb)
           if (rtn.isDatatype())
           {
             addedFirst = true;
-            rtdb.addRelevantTerm(n);
+            m->addRelevantTerm(n);
           }
         }
         else
@@ -2255,9 +2254,9 @@ void TheoryDatatypes::computeRelevantTerms(RelevantTermsDatabase& rtdb)
           if (!addedFirst)
           {
             addedFirst = true;
-            rtdb.addRelevantTerm(first);
+            m->addRelevantTerm(first);
           }
-          rtdb.addRelevantTerm(n);
+          m->addRelevantTerm(n);
         }
         ++eqc_i;
       }

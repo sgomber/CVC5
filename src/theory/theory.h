@@ -188,8 +188,7 @@ class Theory {
    * Helper function for computeRelevantTerms
    */
   void collectTerms(TNode n,
-                    RelevantTermsDatabase& rtdb,
-                    const std::set<Kind>& irrKinds) const;
+                    TheoryModel* m) const;
 
   /**
    * Construct a Theory.
@@ -656,7 +655,7 @@ class Theory {
    * TODO (project #39): this method should be non-virtual, once all theories
    * conform to the new standard, delete, move to model manager distributed.
    */
-  virtual bool collectModelInfo(TheoryModel* m, RelevantTermsDatabase& rtdb);
+  virtual bool collectModelInfo(TheoryModel* m);
   /**
    * Scans the current set of assertions and shared terms top-down
    * until a theory-leaf is reached, and adds all terms found to
@@ -672,20 +671,19 @@ class Theory {
    *
    * TODO: delete, move to relevant terms database
    */
-  void computeAssertedTerms(RelevantTermsDatabase& rtdb,
-                            const std::set<Kind>& irrKinds,
+  void computeAssertedTerms(TheoryModel* m,
                             bool includeShared = true) const;
   /**
    * Compute terms that are not necessarily part of the assertions or
    * shared terms that should be considered relevant, add them to rtdb.
    */
-  virtual void computeRelevantTerms(RelevantTermsDatabase& rtdb);
+  virtual void computeRelevantTerms(TheoryModel* m);
   /**
    * Collect model values, after equality information is added to the model.
    * The argument termSet is the set of relevant terms returned by
    * computeRelevantTerms.
    */
-  virtual bool collectModelValues(TheoryModel* m, std::set<Node>& termSet);
+  virtual bool collectModelValues(TheoryModel* m);
   /** if theories want to do something with model after building, do it here */
   virtual void postProcessModel( TheoryModel* m ){ }
   //--------------------------------- end collect model info

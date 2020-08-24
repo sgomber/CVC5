@@ -21,9 +21,8 @@ namespace theory {
 
 ModelManagerDistributed::ModelManagerDistributed(
     TheoryEngine& te,
-    RelevantTermsDatabase& rtdb,
     EqEngineManagerDistributed& eem)
-    : ModelManager(te, rtdb), d_eem(eem)
+    : ModelManager(te), d_eem(eem)
 {
 }
 
@@ -45,7 +44,6 @@ bool ModelManagerDistributed::prepareModel()
   // Consult each active theory to get all relevant information concerning the
   // model, which includes both dump their equality information and assigning
   // values.
-  const std::set<Kind>& irrKinds = d_te.getModel()->getIrrelevantKinds();
   for (TheoryId theoryId = theory::THEORY_FIRST; theoryId < theory::THEORY_LAST;
        ++theoryId)
   {
@@ -75,11 +73,12 @@ bool ModelManagerDistributed::prepareModel()
        std::endl; return false;
         }
         */
-    d_rtdb.clear();
-    t->computeAssertedTerms(d_rtdb, irrKinds);
+    // FIXME
+    d_model->clearRelevantTerms();
+    t->computeAssertedTerms(d_model);
     // also get relevant terms
-    t->computeRelevantTerms(d_rtdb);
-    if (!t->collectModelInfo(d_model, d_rtdb))
+    t->computeRelevantTerms(d_model);
+    if (!t->collectModelInfo(d_model))
     {
       Trace("model-builder")
           << "ModelManagerDistributed: fail collect model info" << std::endl;

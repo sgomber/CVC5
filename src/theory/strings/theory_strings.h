@@ -118,7 +118,7 @@ class TheoryStrings : public Theory {
   /** preprocess rewrite */
   TrustNode ppRewrite(TNode atom) override;
   /** Collect model values in m based on the relevant terms given by termSet */
-  bool collectModelValues(TheoryModel* m, std::set<Node>& termSet) override;
+  bool collectModelValues(TheoryModel* m) override;
 
  private:
   /** NotifyClass for equality engine */

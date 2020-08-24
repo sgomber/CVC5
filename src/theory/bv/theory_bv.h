@@ -114,7 +114,7 @@ class TheoryBV : public Theory {
   TrustNode explain(TNode n) override;
 
   /** Collect model values in m based on the relevant terms given by termSet */
-  bool collectModelValues(TheoryModel* m, std::set<Node>& termSet) override;
+  bool collectModelValues(TheoryModel* m) override;
 
   std::string identify() const override { return std::string("TheoryBV"); }
 

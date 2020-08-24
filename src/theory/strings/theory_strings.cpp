@@ -247,8 +247,9 @@ void TheoryStrings::presolve() {
 // MODEL GENERATION
 /////////////////////////////////////////////////////////////////////////////
 
-bool TheoryStrings::collectModelValues(TheoryModel* m, std::set<Node>& termSet)
+bool TheoryStrings::collectModelValues(TheoryModel* m)
 {
+  const std::set<Node>& termSet = m->getRelevantTerms();
   Trace("strings-model") << "TheoryStrings : Collect model values" << std::endl;
 
   std::map<TypeNode, std::unordered_set<Node, NodeHashFunction> > repSet;

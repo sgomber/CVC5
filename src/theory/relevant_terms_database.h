@@ -32,7 +32,7 @@ namespace theory {
 class RelevantTermsDatabase
 {
  public:
-  RelevantTermsDatabase(TheoryEngine& te);
+  RelevantTermsDatabase();
   ~RelevantTermsDatabase() {}
   /** reset round, called at the beginning of full effort check */
   void resetRound();
@@ -43,19 +43,23 @@ class RelevantTermsDatabase
   /** Add relevant term */
   void addRelevantTerm(TNode t);
   /** Get relevant terms */
-  std::set<Node>& getRelevantTerms();
+  const std::set<Node>& getRelevantTerms() const;
   /** clear */
   void clear();
-
- protected:
   /**
-   * Helper method
+   * Set irrelevant kind. These kinds do not impact model generation. An
+   * example is APPLY_TESTER.
    */
-  void collectTerms(TNode n, const std::set<Kind>& irrKinds);
-  /** Reference to the theory engine */
-  TheoryEngine& d_te;
+  void setIrrelevantKind(Kind k);
+  /**
+   * Add all relevant terms in n recursively.
+   */
+  void addRelevantTermRec(TNode n);
+ protected:
   /** The set of relevant terms */
   std::set<Node> d_relevantTerms;
+  /** The set of irrelevant kinds */
+  std::set<Kind> d_irrKinds;
 };
 
 }  // namespace theory

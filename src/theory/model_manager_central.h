@@ -34,7 +34,7 @@ namespace theory {
 class ModelManagerCentral : public ModelManager
 {
  public:
-  ModelManagerCentral(TheoryEngine& te, RelevantTermsDatabase& rtdb);
+  ModelManagerCentral(TheoryEngine& te);
   ~ModelManagerCentral();
   /** Prepare model */
   bool prepareModel() override;

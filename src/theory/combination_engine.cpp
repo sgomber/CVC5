@@ -35,7 +35,6 @@ CombinationEngine::CombinationEngine(TheoryEngine& te,
       d_logicInfo(te.getLogicInfo()),
       d_paraTheories(paraTheories),
       d_paraSet(0),
-      d_relevantTerms(te),
       d_eemanager(nullptr),
       d_mmanager(nullptr),
       d_sharedSolver(nullptr)
@@ -54,7 +53,7 @@ void CombinationEngine::finishInit()
         new EqEngineManagerDistributed(d_te));
     // make the distributed model manager
     d_mmanager.reset(new ModelManagerDistributed(
-        d_te, d_relevantTerms, *eeDistributed.get()));
+        d_te, *eeDistributed.get()));
     d_eemanager = std::move(eeDistributed);
     // use the distributed shared solver
     d_sharedSolver.reset(new SharedSolverDistributed(d_te));
@@ -62,7 +61,7 @@ void CombinationEngine::finishInit()
   else if (options::eeMode() == options::EqEngineMode::CENTRAL)
   {
     d_eemanager.reset(new EqEngineManagerCentral(d_te));
-    d_mmanager.reset(new ModelManagerCentral(d_te, d_relevantTerms));
+    d_mmanager.reset(new ModelManagerCentral(d_te));
     d_sharedSolver.reset(new SharedSolverCentral(d_te));
   }
   else

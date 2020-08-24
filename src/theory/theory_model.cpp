@@ -18,7 +18,6 @@
 #include "options/smt_options.h"
 #include "options/uf_options.h"
 #include "smt/smt_engine.h"
-#include "theory/relevant_terms_database.h"
 
 using namespace std;
 using namespace CVC4::kind;
@@ -83,6 +82,8 @@ void TheoryModel::reset(){
   d_uf_models.clear();
   d_using_model_core = false;
   d_model_core.clear();
+  // clear relevant terms 
+  d_rtdb.clear();
 }
 
 void TheoryModel::getComments(std::ostream& out) const {
@@ -440,8 +441,7 @@ bool TheoryModel::assertPredicate(TNode a, bool polarity)
 }
 
 /** assert equality engine */
-bool TheoryModel::assertEqualityEngine(const eq::EqualityEngine* ee,
-                                       const RelevantTermsDatabase& rtdb)
+bool TheoryModel::assertEqualityEngine(const eq::EqualityEngine* ee)
 {
   Assert(d_equalityEngine->consistent());
   // should be from a different equality engine
@@ -464,7 +464,8 @@ bool TheoryModel::assertEqualityEngine(const eq::EqualityEngine* ee,
     bool first = true;
     Node rep;
     for (; !eqc_i.isFinished(); ++eqc_i) {
-      if (!rtdb.isRelevant(*eqc_i))
+      // if not relevant, don't add
+      if (!d_rtdb.isRelevant(*eqc_i))
       {
         Trace("model-builder-debug") << "...skip node " << (*eqc_i) << " in eqc " << eqc << std::endl;
         continue;
@@ -622,11 +623,10 @@ void TheoryModel::setSemiEvaluatedKind(Kind k)
   d_semi_evaluated_kinds.insert(k);
 }
 
-void TheoryModel::setIrrelevantKind(Kind k) { d_irrKinds.insert(k); }
-
-const std::set<Kind>& TheoryModel::getIrrelevantKinds() const
-{
-  return d_irrKinds;
+void TheoryModel::setIrrelevantKind(Kind k) 
+{ 
+  // relevant terms manages irrelevant kinds
+  d_rtdb.setIrrelevantKind(k);
 }
 
 bool TheoryModel::isLegalElimination(TNode x, TNode val)
@@ -758,6 +758,26 @@ std::vector< Node > TheoryModel::getFunctionsToAssign() {
 
   Trace("model-builder-fun") << "return " << funcs_to_assign.size() << " functions to assign..." << std::endl;
   return funcs_to_assign;
+}
+
+bool TheoryModel::isRelevantTerm(TNode t) const
+{
+  return d_rtdb.isRelevant(t);
+}
+
+void TheoryModel::addRelevantTerm(TNode t)
+{
+  d_rtdb.addRelevantTerm(t);
+}
+
+const std::set<Node>& TheoryModel::getRelevantTerms() const
+{
+  return d_rtdb.getRelevantTerms();
+}
+
+void TheoryModel::clearRelevantTerms()
+{
+  d_rtdb.clear();
 }
 
 } /* namespace CVC4::theory */

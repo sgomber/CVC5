@@ -110,7 +110,7 @@ class HoExtension
    * values in m. It returns false if any (dis)equality added to m led to
    * an inconsistency in m.
    */
-  bool collectModelInfoHo(std::set<Node>& termSet, TheoryModel* m);
+  bool collectModelInfoHo(TheoryModel* m);
 
  protected:
   /** get apply uf for ho apply

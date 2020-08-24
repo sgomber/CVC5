@@ -57,7 +57,7 @@ class TheoryQuantifiers : public Theory {
   bool preNotifyFact(TNode atom, bool pol, TNode fact, bool isPrereg) override;
   //--------------------------------- end standard check
   /** Collect model values in m based on the relevant terms given by termSet */
-  bool collectModelValues(TheoryModel* m, std::set<Node>& termSet) override;
+  bool collectModelValues(TheoryModel* m) override;
   void shutdown() override {}
   std::string identify() const override
   {

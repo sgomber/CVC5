@@ -106,8 +106,6 @@ class CombinationEngine
   const std::vector<Theory*> d_paraTheories;
   /** The set of TheoryId that are parametric */
   Theory::Set d_paraSet;
-  /** The relevant term database */
-  RelevantTermsDatabase d_relevantTerms;
   /**
    * The equality engine manager we are using. This class is responsible for
    * configuring equality engines for each theory.

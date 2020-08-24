@@ -1073,8 +1073,9 @@ void TheoryArrays::computeCareGraph()
 // MODEL GENERATION
 /////////////////////////////////////////////////////////////////////////////
 
-bool TheoryArrays::collectModelValues(TheoryModel* m, std::set<Node>& termSet)
+bool TheoryArrays::collectModelValues(TheoryModel* m)
 {
+  const std::set<Node>& termSet = m->getRelevantTerms();
   // Compute arrays that we need to produce representatives for
   std::vector<Node> arrays;
 
@@ -2224,8 +2225,10 @@ TrustNode TheoryArrays::expandDefinition(Node node)
   return TrustNode::null();
 }
 
-void TheoryArrays::computeRelevantTerms(RelevantTermsDatabase& rtdb)
+void TheoryArrays::computeRelevantTerms(TheoryModel * m)
 {
+  const std::set<Node>& termSet = m->getRelevantTerms();
+
   NodeManager* nm = NodeManager::currentNM();
   // make sure RIntro1 reads are included in the relevant set of reads
   eq::EqClassesIterator eqcs_i = eq::EqClassesIterator(d_equalityEngine);
@@ -2241,7 +2244,7 @@ void TheoryArrays::computeRelevantTerms(RelevantTermsDatabase& rtdb)
     for (; !eqc_i.isFinished(); ++eqc_i)
     {
       Node n = *eqc_i;
-      if (rtdb.isRelevant(n))
+      if (termSet.find(n) != termSet.end())
       {
         if (n.getKind() == kind::STORE)
         {
@@ -2250,7 +2253,7 @@ void TheoryArrays::computeRelevantTerms(RelevantTermsDatabase& rtdb)
           Trace("arrays::collectModelInfo")
               << "TheoryArrays::collectModelInfo, adding RIntro1 read: " << r
               << endl;
-          rtdb.addRelevantTerm(r);
+          m->addRelevantTerm(r);
         }
       }
     }
@@ -2270,7 +2273,7 @@ void TheoryArrays::computeRelevantTerms(RelevantTermsDatabase& rtdb)
       for (; !eqc_i.isFinished(); ++eqc_i)
       {
         Node n = *eqc_i;
-        if (n.getKind() == kind::SELECT && rtdb.isRelevant(n))
+        if (n.getKind() == kind::SELECT && termSet.find(n) != termSet.end())
         {
           // Find all terms equivalent to n[0] and get corresponding read terms
           Node array_eqc = d_equalityEngine->getRepresentative(n[0]);
@@ -2279,27 +2282,30 @@ void TheoryArrays::computeRelevantTerms(RelevantTermsDatabase& rtdb)
           for (; !array_eqc_i.isFinished(); ++array_eqc_i)
           {
             Node arr = *array_eqc_i;
-            if (arr.getKind() == kind::STORE && rtdb.isRelevant(arr)
+            if (arr.getKind() == kind::STORE
+                && termSet.find(arr) != termSet.end()
                 && !d_equalityEngine->areEqual(arr[1], n[1]))
             {
               Node r = nm->mkNode(kind::SELECT, arr, n[1]);
-              if (!rtdb.isRelevant(r) && d_equalityEngine->hasTerm(r))
+              if (termSet.find(r) == termSet.end()
+                  && d_equalityEngine->hasTerm(r))
               {
                 Trace("arrays::collectModelInfo")
                     << "TheoryArrays::collectModelInfo, adding RIntro2(a) "
                        "read: "
                     << r << endl;
-                rtdb.addRelevantTerm(r);
+                m->addRelevantTerm(r);
                 changed = true;
               }
               r = nm->mkNode(kind::SELECT, arr[0], n[1]);
-              if (!rtdb.isRelevant(r) && d_equalityEngine->hasTerm(r))
+              if (termSet.find(r) == termSet.end()
+                  && d_equalityEngine->hasTerm(r))
               {
                 Trace("arrays::collectModelInfo")
                     << "TheoryArrays::collectModelInfo, adding RIntro2(b) "
                        "read: "
                     << r << endl;
-                rtdb.addRelevantTerm(r);
+                m->addRelevantTerm(r);
                 changed = true;
               }
             }
@@ -2313,27 +2319,29 @@ void TheoryArrays::computeRelevantTerms(RelevantTermsDatabase& rtdb)
           {
             TNode instore = (*instores)[it];
             Assert(instore.getKind() == kind::STORE);
-            if (rtdb.isRelevant(instore)
+            if (termSet.find(instore) != termSet.end()
                 && !d_equalityEngine->areEqual(instore[1], n[1]))
             {
               Node r = nm->mkNode(kind::SELECT, instore, n[1]);
-              if (!rtdb.isRelevant(r) && d_equalityEngine->hasTerm(r))
+              if (termSet.find(r) == termSet.end()
+                  && d_equalityEngine->hasTerm(r))
               {
                 Trace("arrays::collectModelInfo")
                     << "TheoryArrays::collectModelInfo, adding RIntro2(c) "
                        "read: "
                     << r << endl;
-                rtdb.addRelevantTerm(r);
+                m->addRelevantTerm(r);
                 changed = true;
               }
               r = nm->mkNode(kind::SELECT, instore[0], n[1]);
-              if (!rtdb.isRelevant(r) && d_equalityEngine->hasTerm(r))
+              if (termSet.find(r) == termSet.end()
+                  && d_equalityEngine->hasTerm(r))
               {
                 Trace("arrays::collectModelInfo")
                     << "TheoryArrays::collectModelInfo, adding RIntro2(d) "
                        "read: "
                     << r << endl;
-                rtdb.addRelevantTerm(r);
+                m->addRelevantTerm(r);
                 changed = true;
               }
             }

@@ -104,8 +104,7 @@ class CoreSolver : public SubtheorySolver {
   bool check(Theory::Effort e) override;
   void explain(TNode literal, std::vector<TNode>& assumptions) override;
   bool collectModelInfo(TheoryModel* m,
-                        bool fullModel,
-                        std::set<Node>& termSet) override;
+                        bool fullModel) override;
   Node getModelValue(TNode var) override;
   EqualityStatus getEqualityStatus(TNode a, TNode b) override;
   bool hasTerm(TNode node) const;

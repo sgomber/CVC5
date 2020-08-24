@@ -190,8 +190,7 @@ void InequalitySolver::explain(TNode literal, std::vector<TNode>& assumptions) {
 
 void InequalitySolver::propagate(Theory::Effort e) { Assert(false); }
 bool InequalitySolver::collectModelInfo(TheoryModel* m,
-                                        bool fullModel,
-                                        std::set<Node>& termSet)
+                                        bool fullModel)
 {
   Debug("bitvector-model") << "InequalitySolver::collectModelInfo \n";
   std::vector<Node> model;

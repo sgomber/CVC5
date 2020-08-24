@@ -232,8 +232,7 @@ public:
   }
   EqualityStatus getEqualityStatus(TNode a, TNode b) override;
   bool collectModelInfo(TheoryModel* m,
-                        bool fullModel,
-                        std::set<Node>& termSet) override;
+                        bool fullModel) override;
   Node getModelValue(TNode node) override;
   bool isComplete() override;
   void assertFact(TNode fact) override;

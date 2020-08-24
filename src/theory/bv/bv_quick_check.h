@@ -98,8 +98,7 @@ public:
    */
   uint64_t computeAtomWeight(TNode atom, NodeSet& seen);
   bool collectModelInfo(theory::TheoryModel* model,
-                        bool fullModel,
-                        std::set<Node>& termSet);
+                        bool fullModel);
 
   typedef std::unordered_set<TNode, TNodeHashFunction>::const_iterator vars_iterator;
   vars_iterator beginVars(); 

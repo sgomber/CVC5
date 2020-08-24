@@ -73,8 +73,7 @@ public:
   void explain(TNode literal, std::vector<TNode>& assumptions) override;
   bool isComplete() override { return d_isComplete; }
   bool collectModelInfo(TheoryModel* m,
-                        bool fullModel,
-                        std::set<Node>& termSet) override;
+                        bool fullModel) override;
   Node getModelValue(TNode var) override;
   EqualityStatus getEqualityStatus(TNode a, TNode b) override;
   void assertFact(TNode fact) override;

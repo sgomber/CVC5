@@ -470,12 +470,12 @@ class TheoryArrays : public Theory {
   Node getNextDecisionRequest();
 
   /** Collect model values in m based on the relevant terms given by termSet */
-  bool collectModelValues(TheoryModel* m, std::set<Node>& termSet) override;
+  bool collectModelValues(TheoryModel* m) override;
   /**
    * Compute relevant terms. This includes additional select nodes for the
    * RIntro1 and RIntro2 rules.
    */
-  void computeRelevantTerms(RelevantTermsDatabase& rtdb) override;
+  void computeRelevantTerms(TheoryModel * m) override;
 };/* class TheoryArrays */
 
 }/* CVC4::theory::arrays namespace */

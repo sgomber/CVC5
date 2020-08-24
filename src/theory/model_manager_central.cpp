@@ -19,9 +19,8 @@
 namespace CVC4 {
 namespace theory {
 
-ModelManagerCentral::ModelManagerCentral(TheoryEngine& te,
-                                         RelevantTermsDatabase& rtdb)
-    : ModelManager(te, rtdb)
+ModelManagerCentral::ModelManagerCentral(TheoryEngine& te)
+    : ModelManager(te)
 {
 }
 
@@ -53,7 +52,7 @@ bool ModelManagerCentral::prepareModel()
     Trace("model-builder") << "  CollectModelValues on theory: " << theoryId
                            << std::endl;
     // use the full set of relevant terms for all theories
-    if (!t->collectModelValues(d_model, d_rtdb.getRelevantTerms()))
+    if (!t->collectModelValues(d_model))
     {
       Trace("model-builder")
           << "ModelManagerCentral: fail collect model values" << std::endl;

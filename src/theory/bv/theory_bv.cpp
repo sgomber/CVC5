@@ -560,7 +560,7 @@ bool TheoryBV::needsCheckLastEffort() {
   return d_needsLastCallCheck;
 }
 
-bool TheoryBV::collectModelValues(TheoryModel* m, std::set<Node>& termSet)
+bool TheoryBV::collectModelValues(TheoryModel* m)
 {
   // doesn't use termSet currently
   Assert(!inPendingConflict());
@@ -573,7 +573,7 @@ bool TheoryBV::collectModelValues(TheoryModel* m, std::set<Node>& termSet)
   }
   for (unsigned i = 0; i < d_subtheories.size(); ++i) {
     if (d_subtheories[i]->isComplete()) {
-      return d_subtheories[i]->collectModelInfo(m, true, termSet);
+      return d_subtheories[i]->collectModelInfo(m, true);
     }
   }
   return true;

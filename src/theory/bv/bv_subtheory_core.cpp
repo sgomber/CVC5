@@ -349,8 +349,7 @@ bool CoreSolver::isCompleteForTerm(TNode term, TNodeBoolMap& seen) {
 }
 
 bool CoreSolver::collectModelInfo(TheoryModel* m,
-                                  bool fullModel,
-                                  std::set<Node>& termSet)
+                                  bool fullModel)
 {
   if (Debug.isOn("bitvector-model")) {
     context::CDQueue<Node>::const_iterator it = d_assertionQueue.begin();

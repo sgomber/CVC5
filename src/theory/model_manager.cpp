@@ -22,9 +22,8 @@
 namespace CVC4 {
 namespace theory {
 
-ModelManager::ModelManager(TheoryEngine& te, RelevantTermsDatabase& rtdb)
+ModelManager::ModelManager(TheoryEngine& te)
     : d_te(te),
-      d_rtdb(rtdb),
       d_logicInfo(te.getLogicInfo()),
       d_model(nullptr),
       d_modelBuilder(nullptr),
@@ -137,9 +136,8 @@ bool ModelManager::isUsingRelevantTerms() const { return false; }
 
 bool ModelManager::finishBuildModel() const
 {
-  // use the relevant terms database if applicable
-  RelevantTermsDatabase* rtdb = isUsingRelevantTerms() ? &d_rtdb : nullptr;
-  if (!d_modelBuilder->buildModel(d_model, rtdb))
+  // use relevant terms if applicable
+  if (!d_modelBuilder->buildModel(d_model, isUsingRelevantTerms()))
   {
     Trace("model-builder") << "ModelManager: fail build model" << std::endl;
     return false;

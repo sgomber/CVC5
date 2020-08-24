@@ -27,6 +27,7 @@
 #include "theory/type_enumerator.h"
 #include "theory/type_set.h"
 #include "theory/uf/equality_engine.h"
+#include "theory/relevant_terms_database.h"
 
 namespace CVC4 {
 namespace theory {
@@ -114,8 +115,7 @@ class TheoryModel : public Model
    * This method returns true if and only if the equality engine of this model
    * is consistent after asserting the equality engine to this model.
    */
-  bool assertEqualityEngine(const eq::EqualityEngine* ee,
-                            const RelevantTermsDatabase& rtdb);
+  bool assertEqualityEngine(const eq::EqualityEngine* ee);
   /** assert skeleton
    *
    * This method gives a "skeleton" for the model value of the equivalence
@@ -266,8 +266,6 @@ class TheoryModel : public Model
    * example is APPLY_TESTER.
    */
   void setIrrelevantKind(Kind k);
-  /** Get irrelant kinds */
-  const std::set<Kind>& getIrrelevantKinds() const;
   /** is legal elimination
    *
    * Returns true if x -> val is a legal elimination of variable x.
@@ -349,6 +347,15 @@ class TheoryModel : public Model
   */
   std::vector< Node > getFunctionsToAssign();
   //---------------------------- end function values
+
+  /** Is term t a relevant term? */
+  bool isRelevantTerm(TNode t) const;
+  /** Add relevant term */
+  void addRelevantTerm(TNode t);
+  /** Get relevant terms */
+  const std::set<Node>& getRelevantTerms() const;
+  /** FIXME clear relevant terms */
+  void clearRelevantTerms();
  protected:
   /** Unique name of this model */
   std::string d_name;
@@ -364,8 +371,6 @@ class TheoryModel : public Model
   std::unordered_set<Kind, kind::KindHashFunction> d_unevaluated_kinds;
   /** a set of kinds that are semi-evaluated */
   std::unordered_set<Kind, kind::KindHashFunction> d_semi_evaluated_kinds;
-  /** a set of kinds that are irrelevant */
-  std::set<Kind> d_irrKinds;
   /**
    * Map of representatives of equality engine to used representatives in
    * representative set
@@ -427,6 +432,8 @@ class TheoryModel : public Model
   */
   std::map<Node, Node> d_uf_models;
   //---------------------------- end function values
+  /** The relevant terms database */
+  RelevantTermsDatabase d_rtdb;
 };/* class TheoryModel */
 
 }/* CVC4::theory namespace */

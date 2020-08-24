@@ -14,16 +14,14 @@
 
 #include "theory/relevant_terms_database.h"
 
-#include "theory/theory_engine.h"
-#include "theory/theory_model.h"
-
 namespace CVC4 {
 namespace theory {
 
-RelevantTermsDatabase::RelevantTermsDatabase(TheoryEngine& te) : d_te(te) {}
+RelevantTermsDatabase::RelevantTermsDatabase() {}
 
 void RelevantTermsDatabase::compute()
 {
+  /*
   const std::set<Kind>& irrKinds = d_te.getModel()->getIrrelevantKinds();
   for (TheoryId theoryId = theory::THEORY_FIRST;
        theoryId != theory::THEORY_LAST;
@@ -41,11 +39,12 @@ void RelevantTermsDatabase::compute()
          it != itEnd;
          ++it)
     {
-      collectTerms(*it, irrKinds);
+      collectTerms(*it);
     }
     // compute additional relevant terms
     t->computeRelevantTerms(*this);
   }
+  */
 }
 
 bool RelevantTermsDatabase::isRelevant(TNode t) const
@@ -55,16 +54,25 @@ bool RelevantTermsDatabase::isRelevant(TNode t) const
 
 void RelevantTermsDatabase::addRelevantTerm(TNode t)
 {
-  d_relevantTerms.insert(t);
+  if (d_irrKinds.find(t.getKind()) == d_irrKinds.end())
+  {
+      Trace("rel-term-db")
+          << "RelevantTermsDatabase: adding " << t << std::endl;
+    d_relevantTerms.insert(t);
+  }
 }
 
-std::set<Node>& RelevantTermsDatabase::getRelevantTerms()
+const std::set<Node>& RelevantTermsDatabase::getRelevantTerms() const
 {
   return d_relevantTerms;
 }
 
-void RelevantTermsDatabase::collectTerms(TNode n,
-                                         const std::set<Kind>& irrKinds)
+void RelevantTermsDatabase::setIrrelevantKind(Kind k)
+{
+  d_irrKinds.insert(k);
+}
+
+void RelevantTermsDatabase::addRelevantTermRec(TNode n)
 {
   std::vector<TNode> visit;
   TNode cur;
@@ -78,13 +86,7 @@ void RelevantTermsDatabase::collectTerms(TNode n,
       // already visited
       continue;
     }
-    Kind nk = n.getKind();
-    if (irrKinds.find(nk) == irrKinds.end())
-    {
-      Trace("theory::collectTerms")
-          << "Theory::collectTerms: adding " << n << std::endl;
-      addRelevantTerm(n);
-    }
+    addRelevantTerm(n);
     visit.insert(visit.end(), cur.begin(), cur.end());
   } while (!visit.empty());
 }
