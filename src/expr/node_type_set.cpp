@@ -23,7 +23,7 @@ void NodeTypeSet::add(TNode n)
     return;
   }
   d_nodes.insert(n);
-  d_nodes[n.getType()].push_back(n);
+  d_nodeTypes[n.getType()].push_back(n);
 }
 
 void NodeTypeSet::clear()
@@ -45,7 +45,7 @@ const std::unordered_set<Node, NodeHashFunction>& NodeTypeSet::get() const
 const std::vector<Node>& NodeTypeSet::getForType(TypeNode tn) const
 {
   std::map<TypeNode, std::vector<Node> >::const_iterator it =
-      d_nodeTypes.find(t);
+      d_nodeTypes.find(tn);
   if (it != d_nodeTypes.end())
   {
     return it->second;
