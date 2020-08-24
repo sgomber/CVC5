@@ -19,7 +19,7 @@ PR current:
 (7) Model manager / model manager distributed (req 6, 10) *
 (19) per each theory, update to standard templates (req 9)
 (24) Shared solver / shared solver distributed
-(26) equality engine interface basic extension
+(26) equality engine interface basic extension *
 (27) relevant term database / irrelevant kinds infrastructure
 
 PR planned:
