@@ -94,8 +94,8 @@ class EqEngineManagerCentral : public EqEngineManager
   /** The central equality engine. */
   eq::EqualityEngine d_centralEqualityEngine;
   /**
-    * A table of from theory IDs to notify classes.
-    */
+   * A table of from theory IDs to notify classes.
+   */
   eq::EqualityEngineNotify* d_theoryNotify[theory::THEORY_LAST];
 };
 

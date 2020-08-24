@@ -109,10 +109,10 @@ eq::EqualityEngine* EqEngineManagerCentral::getCoreEqualityEngine()
   return &d_centralEqualityEngine;
 }
 
-EqEngineManagerCentral::CentralNotifyClass::CentralNotifyClass(EqEngineManagerCentral& eemc)
+EqEngineManagerCentral::CentralNotifyClass::CentralNotifyClass(
+    EqEngineManagerCentral& eemc)
     : d_eemc(eemc), d_mNotify(nullptr), d_quantEngine(nullptr)
 {
-
 }
 
 bool EqEngineManagerCentral::CentralNotifyClass::eqNotifyTriggerPredicate(
@@ -184,13 +184,14 @@ void EqEngineManagerCentral::CentralNotifyClass::eqNotifyDisequal(TNode t1,
   }
 }
 
-bool EqEngineManagerCentral::eqNotifyTriggerPredicate(TNode predicate, bool value)
+bool EqEngineManagerCentral::eqNotifyTriggerPredicate(TNode predicate,
+                                                      bool value)
 {
   Theory* t = d_te.getActiveTheory();
-  if (t==nullptr)
+  if (t == nullptr)
   {
     // probably in shared solver?
-    if (value) 
+    if (value)
     {
       return d_te.propagate(predicate, THEORY_BUILTIN);
     }
@@ -202,10 +203,10 @@ bool EqEngineManagerCentral::eqNotifyTriggerPredicate(TNode predicate, bool valu
   return notify->eqNotifyTriggerPredicate(predicate, value);
 }
 
-void EqEngineManagerCentral::eqNotifyConstantTermMerge( TNode t1, TNode t2)
+void EqEngineManagerCentral::eqNotifyConstantTermMerge(TNode t1, TNode t2)
 {
   Theory* t = d_te.getActiveTheory();
-  if (t==nullptr)
+  if (t == nullptr)
   {
     // probably in shared solver?
     Node lit = t1.eqNode(t2);
