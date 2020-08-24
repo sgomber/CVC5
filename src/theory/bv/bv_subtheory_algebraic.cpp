@@ -711,7 +711,9 @@ EqualityStatus AlgebraicSolver::getEqualityStatus(TNode a, TNode b) {
   return EQUALITY_UNKNOWN;
 }
 
-bool AlgebraicSolver::collectModelInfo(TheoryModel* model, bool fullModel, const std::set<Node>& termSet)
+bool AlgebraicSolver::collectModelInfo(TheoryModel* model,
+                                       bool fullModel,
+                                       const std::set<Node>& termSet)
 {
   Debug("bitvector-model") << "AlgebraicSolver::collectModelInfo\n";
   AlwaysAssert(!d_quickSolver->inConflict());

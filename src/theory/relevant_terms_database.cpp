@@ -31,7 +31,7 @@ void RelevantTermsDatabase::addRelevantTerms(const std::set<Node>& termSet)
 
 void RelevantTermsDatabase::addRelevantTerm(TNode t)
 {
-  Assert (d_irrKinds.find(t.getKind()) == d_irrKinds.end());
+  Assert(d_irrKinds.find(t.getKind()) == d_irrKinds.end());
   Trace("rel-term-db") << "RelevantTermsDatabase: adding " << t << std::endl;
   d_relevantTerms.insert(t);
 }

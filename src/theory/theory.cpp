@@ -372,7 +372,10 @@ void Theory::computeRelevantTerms(std::set<Node>& termSet)
   // default, nothing
 }
 
-bool Theory::collectModelValues(TheoryModel* m, const std::set<Node>& termSet) { return true; }
+bool Theory::collectModelValues(TheoryModel* m, const std::set<Node>& termSet)
+{
+  return true;
+}
 
 Theory::PPAssertStatus Theory::ppAssert(TNode in,
                                         SubstitutionMap& outSubstitutions)

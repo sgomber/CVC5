@@ -1500,7 +1500,8 @@ void TheoryDatatypes::computeCareGraph(){
   Trace("dt-cg-summary") << "...done, # pairs = " << n_pairs << std::endl;
 }
 
-bool TheoryDatatypes::collectModelValues(TheoryModel* m, const std::set<Node>& termSet)
+bool TheoryDatatypes::collectModelValues(TheoryModel* m,
+                                         const std::set<Node>& termSet)
 {
   Trace("dt-cmi") << "Datatypes : Collect model values "
                   << d_equalityEngine->consistent() << std::endl;

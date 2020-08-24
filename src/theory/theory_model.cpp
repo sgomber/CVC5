@@ -442,7 +442,7 @@ bool TheoryModel::assertPredicate(TNode a, bool polarity)
 
 /** assert equality engine */
 bool TheoryModel::assertEqualityEngine(const eq::EqualityEngine* ee,
-                            const std::set<Node>* termSet)
+                                       const std::set<Node>* termSet)
 {
   Assert(d_equalityEngine->consistent());
   // should be from a different equality engine
@@ -466,7 +466,7 @@ bool TheoryModel::assertEqualityEngine(const eq::EqualityEngine* ee,
     Node rep;
     for (; !eqc_i.isFinished(); ++eqc_i) {
       // if not relevant, don't add
-      if (termSet != nullptr && termSet->find(*eqc_i) == termSet->end()) 
+      if (termSet != nullptr && termSet->find(*eqc_i) == termSet->end())
       {
         Trace("model-builder-debug") << "...skip node " << (*eqc_i) << " in eqc " << eqc << std::endl;
         continue;
@@ -767,7 +767,10 @@ std::vector< Node > TheoryModel::getFunctionsToAssign() {
 
 bool TheoryModel::isRelevantTerm(TNode t) const { return d_rtdb.isRelevant(t); }
 
-void TheoryModel::addRelevantTerms(const std::set<Node>& termSet) { d_rtdb.addRelevantTerms(termSet); }
+void TheoryModel::addRelevantTerms(const std::set<Node>& termSet)
+{
+  d_rtdb.addRelevantTerms(termSet);
+}
 
 } /* namespace CVC4::theory */
 } /* namespace CVC4 */

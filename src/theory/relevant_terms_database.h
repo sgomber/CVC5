@@ -53,6 +53,7 @@ class RelevantTermsDatabase
   void collectTerms(TNode n, std::set<Node>& termSet);
   /** Get irrelevant kinds */
   const std::set<Kind>& getIrrelevantKinds() const;
+
  protected:
   /** Add relevant term */
   void addRelevantTerm(TNode t);

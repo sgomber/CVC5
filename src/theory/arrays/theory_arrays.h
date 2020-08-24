@@ -470,7 +470,8 @@ class TheoryArrays : public Theory {
   Node getNextDecisionRequest();
 
   /** Collect model values in m based on the relevant terms given by termSet */
-  bool collectModelValues(TheoryModel* m, const std::set<Node>& termSet) override;
+  bool collectModelValues(TheoryModel* m,
+                          const std::set<Node>& termSet) override;
   /**
    * Compute relevant terms. This includes additional select nodes for the
    * RIntro1 and RIntro2 rules.

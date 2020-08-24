@@ -51,7 +51,7 @@ bool ModelManagerCentral::prepareModel()
     collectAssertedTerms(theoryId, termSet);
     // also get relevant terms
     t->computeRelevantTerms(termSet);
-    // also add them to the model 
+    // also add them to the model
     d_model->addRelevantTerms(termSet);
     Trace("model-builder") << "  CollectModelValues on theory: " << theoryId
                            << std::endl;

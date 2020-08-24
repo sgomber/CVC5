@@ -351,7 +351,7 @@ class TheoryModel : public Model
   std::vector< Node > getFunctionsToAssign();
   //---------------------------- end function values
 
-  /** 
+  /**
    * Add relevant terms
    */
   void addRelevantTerms(const std::set<Node>& termSet);

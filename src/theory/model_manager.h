@@ -93,15 +93,17 @@ class ModelManager
    * @return true if we are in conflict.
    */
   bool collectModelBooleanVariables();
-  /** 
+  /**
    * Collect asserted terms for theory with the given identifier, add to
    * termSet.
-   * 
+   *
    * @param tid The theory whose assertions we are collecting
    * @param termSet The set to add terms
    * @param includeShared Whether to include the shared terms of the theory
    */
-  void collectAssertedTerms(TheoryId tid, std::set<Node>& termSet, bool includeShared = true) const;
+  void collectAssertedTerms(TheoryId tid,
+                            std::set<Node>& termSet,
+                            bool includeShared = true) const;
   /**
    * Helper function for collectAssertedTerms, adds all subterms
    * belonging to theory tid to termSet.

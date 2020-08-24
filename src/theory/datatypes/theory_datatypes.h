@@ -354,7 +354,8 @@ private:
   TNode getRepresentative( TNode a );
 
   /** Collect model values in m based on the relevant terms given by termSet */
-  bool collectModelValues(TheoryModel* m, const std::set<Node>& termSet) override;
+  bool collectModelValues(TheoryModel* m,
+                          const std::set<Node>& termSet) override;
   /**
    * Compute relevant terms. In addition to all terms in assertions and shared
    * terms, this includes datatypes in non-singleton equivalence classes.

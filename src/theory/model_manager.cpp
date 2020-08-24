@@ -176,7 +176,9 @@ bool ModelManager::collectModelBooleanVariables()
   return true;
 }
 
-void ModelManager::collectAssertedTerms(TheoryId tid, std::set<Node>& termSet, bool includeShared) const
+void ModelManager::collectAssertedTerms(TheoryId tid,
+                                        std::set<Node>& termSet,
+                                        bool includeShared) const
 {
   Theory* t = d_te.theoryOf(tid);
   // Collect all terms appearing in assertions
@@ -191,7 +193,8 @@ void ModelManager::collectAssertedTerms(TheoryId tid, std::set<Node>& termSet, b
   {
     // Add terms that are shared terms
     context::CDList<TNode>::const_iterator shared_it = t->shared_terms_begin(),
-                                          shared_it_end = t->shared_terms_end();
+                                           shared_it_end =
+                                               t->shared_terms_end();
     for (; shared_it != shared_it_end; ++shared_it)
     {
       collectTerms(tid, *shared_it, termSet);
@@ -199,7 +202,9 @@ void ModelManager::collectAssertedTerms(TheoryId tid, std::set<Node>& termSet, b
   }
 }
 
-void ModelManager::collectTerms(TheoryId tid, TNode n, std::set<Node>& termSet) const
+void ModelManager::collectTerms(TheoryId tid,
+                                TNode n,
+                                std::set<Node>& termSet) const
 {
   const std::set<Kind>& irrKinds = d_model->getIrrelevantKinds();
   std::vector<TNode> visit;
@@ -216,18 +221,18 @@ void ModelManager::collectTerms(TheoryId tid, TNode n, std::set<Node>& termSet) 
     }
     Kind k = cur.getKind();
     // only add to term set if a relevant kind
-    if (irrKinds.find(k)==irrKinds.end())
+    if (irrKinds.find(k) == irrKinds.end())
     {
       termSet.insert(cur);
     }
     // traverse owned terms, don't go under quantifiers
-    if ((k == kind::NOT || k == kind::EQUAL || Theory::theoryOf(cur)==tid) && !cur.isClosure())
+    if ((k == kind::NOT || k == kind::EQUAL || Theory::theoryOf(cur) == tid)
+        && !cur.isClosure())
     {
       visit.insert(visit.end(), cur.begin(), cur.end());
     }
   } while (!visit.empty());
 }
-
 
 }  // namespace theory
 }  // namespace CVC4

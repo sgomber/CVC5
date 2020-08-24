@@ -247,7 +247,8 @@ void TheoryStrings::presolve() {
 // MODEL GENERATION
 /////////////////////////////////////////////////////////////////////////////
 
-bool TheoryStrings::collectModelValues(TheoryModel* m, const std::set<Node>& termSet)
+bool TheoryStrings::collectModelValues(TheoryModel* m,
+                                       const std::set<Node>& termSet)
 {
   Trace("strings-model") << "TheoryStrings : Collect model values" << std::endl;
 

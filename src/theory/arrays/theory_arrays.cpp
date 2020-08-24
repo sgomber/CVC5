@@ -1073,7 +1073,8 @@ void TheoryArrays::computeCareGraph()
 // MODEL GENERATION
 /////////////////////////////////////////////////////////////////////////////
 
-bool TheoryArrays::collectModelValues(TheoryModel* m, const std::set<Node>& termSet)
+bool TheoryArrays::collectModelValues(TheoryModel* m,
+                                      const std::set<Node>& termSet)
 {
   // Compute arrays that we need to produce representatives for
   std::vector<Node> arrays;

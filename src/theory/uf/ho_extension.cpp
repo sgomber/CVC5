@@ -414,7 +414,8 @@ unsigned HoExtension::check()
   return 0;
 }
 
-bool HoExtension::collectModelInfoHo(TheoryModel* m, const std::set<Node>& termSet)
+bool HoExtension::collectModelInfoHo(TheoryModel* m,
+                                     const std::set<Node>& termSet)
 {
   for (std::set<Node>::iterator it = termSet.begin(); it != termSet.end(); ++it)
   {

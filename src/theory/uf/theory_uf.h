@@ -177,7 +177,8 @@ private:
   //--------------------------------- end standard check
 
   /** Collect model values in m based on the relevant terms given by termSet */
-  bool collectModelValues(TheoryModel* m, const std::set<Node>& termSet) override;
+  bool collectModelValues(TheoryModel* m,
+                          const std::set<Node>& termSet) override;
 
   TrustNode expandDefinition(Node node) override;
   void preRegisterTerm(TNode term) override;
