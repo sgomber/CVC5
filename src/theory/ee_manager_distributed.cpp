@@ -21,7 +21,8 @@
 namespace CVC4 {
 namespace theory {
 
-EqEngineManagerDistributed::EqEngineManagerDistributed(TheoryEngine& te, SharedSolver& shs)
+EqEngineManagerDistributed::EqEngineManagerDistributed(TheoryEngine& te,
+                                                       SharedSolver& shs)
     : EqEngineManager(te, shs), d_masterEENotify(nullptr)
 {
 }

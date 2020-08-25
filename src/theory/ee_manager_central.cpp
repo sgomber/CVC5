@@ -21,7 +21,8 @@
 namespace CVC4 {
 namespace theory {
 
-EqEngineManagerCentral::EqEngineManagerCentral(TheoryEngine& te, SharedSolver& shs)
+EqEngineManagerCentral::EqEngineManagerCentral(TheoryEngine& te,
+                                               SharedSolver& shs)
     : EqEngineManager(te, shs),
       d_centralEENotify(*this),
       // we do not require any term triggers in the central equality engine
@@ -174,7 +175,7 @@ bool EqEngineManagerCentral::eqNotifyTriggerPredicate(TNode predicate,
     return true;
   }
   Theory* t = d_te.getActiveTheory();
-  if (t==nullptr)
+  if (t == nullptr)
   {
     // TODO: shared solver?
   }
