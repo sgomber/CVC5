@@ -40,6 +40,8 @@ void EqEngineManager::initializeModel(TheoryModel* m,
   d_modelEqualityEngineAlloc.reset(allocateEqualityEngine(esim, c));
   d_modelEqualityEngine = d_modelEqualityEngineAlloc.get();
   m->finishInit(d_modelEqualityEngine);
+  // FIXME
+  c->push();
 }
 
 const EeTheoryInfo* EqEngineManager::getEeTheoryInfo(TheoryId tid) const
