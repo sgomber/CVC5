@@ -39,7 +39,8 @@ namespace theory {
 class ModelManagerDistributed : public ModelManager
 {
  public:
-  ModelManagerDistributed(TheoryEngine& te);
+  ModelManagerDistributed(TheoryEngine& te,
+                                         EqEngineManager& eem);
   ~ModelManagerDistributed();
 
   /** Prepare the model, as described above. */
@@ -57,6 +58,8 @@ class ModelManagerDistributed : public ModelManager
   context::Context* getModelEqualityEngineContext() override;
 
  protected:
+  /** Initialize model equality engine */
+  void initializeModelEqEngine(eq::EqualityEngineNotify* notify) override;
   /**
    * A dummy context for the model equality engine, so we can clear it
    * independently of search context.

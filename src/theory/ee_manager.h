@@ -65,27 +65,9 @@ class EqEngineManager
    */
   virtual void initializeTheories(SharedSolver* sharedSolver) = 0;
   /**
-   * Finish initialize, called by TheoryEngine::finishInit after theory
-   * objects have been created but prior to their final initialization. This
-   * sets up equality engines for all theories.
-   *
-   * This method is context-independent, and is applied once during
-   * the lifetime of TheoryEngine (during finishInit).
-   *
-   * @param m The model object to initialize the equality engine for
-   * @param notify The notify call to use (used e.g. by CombinationModelBased).
-   */
-  void initializeModel(TheoryModel* m,
-                       eq::EqualityEngineNotify* notify,
-                       context::Context* c);
-  /**
    * Get the equality engine theory information for theory with the given id.
    */
   const EeTheoryInfo* getEeTheoryInfo(TheoryId tid) const;
-  /**
-   * Get the model's equality engine.
-   */
-  eq::EqualityEngine* getModelEqualityEngine();
   /**
    * Get the core equality engine, which is the equality engine that the
    * quantifiers engine should use. This corresponds to the master equality
@@ -103,20 +85,16 @@ class EqEngineManager
    */
   const std::vector<Node>& getEqcRepresentativesForType(TypeNode t) const;
 
- protected:
   /** Allocate equality engine that is context-dependent on c with info esi */
   eq::EqualityEngine* allocateEqualityEngine(EeSetupInfo& esi,
                                              context::Context* c);
+ protected:
   /** Add function kinds */
   static void addFunctionKinds(eq::EqualityEngine* ee, EeSetupInfo& esi);
   /** Information related to the equality engine, per theory. */
   std::map<TheoryId, EeTheoryInfo> d_einfo;
   /** The equivalence classes cache */
   std::unique_ptr<eq::EqClassesCache> d_eqCache;
-  /** Pointer to the equality engine of the model */
-  eq::EqualityEngine* d_modelEqualityEngine;
-  /** The equality engine of the model, if we allocated it */
-  std::unique_ptr<eq::EqualityEngine> d_modelEqualityEngineAlloc;
 };
 
 }  // namespace theory

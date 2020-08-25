@@ -49,21 +49,19 @@ void CombinationEngine::finishInit()
   if (options::eeMode() == options::EqEngineMode::DISTRIBUTED)
   {
     // make the distributed equality engine manager
-    std::unique_ptr<EqEngineManagerDistributed> eeDistributed(
-        new EqEngineManagerDistributed(d_te));
+    d_eemanager.reset(new EqEngineManagerDistributed(d_te));
     // make the distributed model manager
-    d_mmanager.reset(new ModelManagerDistributed(d_te));
-    d_eemanager = std::move(eeDistributed);
+    d_mmanager.reset(new ModelManagerDistributed(d_te, *d_eemanager.get()));
     // use the distributed shared solver
     d_sharedSolver.reset(new SharedSolverDistributed(d_te));
   }
   else if (options::eeMode() == options::EqEngineMode::CENTRAL)
   {
-    std::unique_ptr<EqEngineManagerCentral> eeCentral(
-        new EqEngineManagerCentral(d_te));
+    // make the central equality engine manager
+    d_eemanager.reset(new EqEngineManagerCentral(d_te));
     // d_mmanager.reset(new ModelManagerCentral(d_te, *eeCentral.get()));
-    d_mmanager.reset(new ModelManagerDistributed(d_te));
-    d_eemanager = std::move(eeCentral);
+    d_mmanager.reset(new ModelManagerDistributed(d_te, *d_eemanager.get()));
+    // use the central shared solver
     d_sharedSolver.reset(new SharedSolverCentral(d_te));
   }
   else
@@ -79,14 +77,9 @@ void CombinationEngine::finishInit()
   d_eemanager->initializeTheories(d_sharedSolver.get());
 
   Assert(d_mmanager != nullptr);
-  // initialize the model manager
-  d_mmanager->finishInit();
-
-  // initialize equality engine of the model using the equality engine manager
-  TheoryModel* m = d_mmanager->getModel();
+  // initialize the model manager, based on the notify object
   eq::EqualityEngineNotify* meen = getModelEqualityEngineNotify();
-  context::Context* meec = d_mmanager->getModelEqualityEngineContext();
-  d_eemanager->initializeModel(m, meen, meec);
+  d_mmanager->finishInit(meen);
 }
 
 const EeTheoryInfo* CombinationEngine::getEeTheoryInfo(TheoryId tid) const

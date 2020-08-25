@@ -20,18 +20,29 @@
 namespace CVC4 {
 namespace theory {
 
-ModelManagerDistributed::ModelManagerDistributed(TheoryEngine& te)
-    : ModelManager(te)
+ModelManagerDistributed::ModelManagerDistributed(TheoryEngine& te,
+                                         EqEngineManager& eem)
+    : ModelManager(te, eem)
 {
-  // We push a context during initialization since the model is cleared during
-  // collectModelInfo using pop/push.
-  //d_modelEeContext.push();
 }
 
 ModelManagerDistributed::~ModelManagerDistributed()
 {
   // pop the model context which we pushed on initialization
   d_modelEeContext.pop();
+}
+
+void ModelManagerDistributed::initializeModelEqEngine(eq::EqualityEngineNotify* notify)
+{
+  // initialize the model equality engine, use the provided notification object,
+  // which belongs e.g. to CombinationModelBased
+  EeSetupInfo esim;
+  esim.d_notify = notify;
+  d_modelEqualityEngineAlloc.reset(d_eem.allocateEqualityEngine(esim, &d_modelEeContext));
+  d_modelEqualityEngine = d_modelEqualityEngineAlloc.get();
+  // We push a context during initialization since the model is cleared during
+  // collectModelInfo using pop/push.
+  d_modelEeContext.push();
 }
 
 bool ModelManagerDistributed::prepareModel()

@@ -19,30 +19,7 @@
 namespace CVC4 {
 namespace theory {
 
-EqEngineManager::EqEngineManager() : d_modelEqualityEngine(nullptr) {}
-
-void EqEngineManager::initializeModel(TheoryModel* m,
-                                      eq::EqualityEngineNotify* notify,
-                                      context::Context* c)
-{
-#if 0
-  Assert(m != nullptr);
-  // set the notification class
-  d_centralEENotify.d_mNotify = notify;
-  // model uses the central equality engine, finish initialize
-  m->finishInit(&d_centralEqualityEngine);
-#endif
-  Assert(m != nullptr);
-  // initialize the model equality engine, use the provided notification object,
-  // which belongs e.g. to CombinationModelBased
-  EeSetupInfo esim;
-  esim.d_notify = notify;
-  d_modelEqualityEngineAlloc.reset(allocateEqualityEngine(esim, c));
-  d_modelEqualityEngine = d_modelEqualityEngineAlloc.get();
-  m->finishInit(d_modelEqualityEngine);
-  // FIXME
-  c->push();
-}
+EqEngineManager::EqEngineManager() {}
 
 const EeTheoryInfo* EqEngineManager::getEeTheoryInfo(TheoryId tid) const
 {
@@ -52,11 +29,6 @@ const EeTheoryInfo* EqEngineManager::getEeTheoryInfo(TheoryId tid) const
     return &it->second;
   }
   return nullptr;
-}
-
-eq::EqualityEngine* EqEngineManager::getModelEqualityEngine()
-{
-  return d_modelEqualityEngine;
 }
 
 const std::unordered_set<Node, NodeHashFunction>&

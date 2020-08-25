@@ -35,7 +35,7 @@ namespace theory {
 class ModelManagerCentral : public ModelManager
 {
  public:
-  ModelManagerCentral(TheoryEngine& te, EqEngineManagerCentral& eem);
+  ModelManagerCentral(TheoryEngine& te, EqEngineManager& eem);
   ~ModelManagerCentral();
   /**
    * Prepare model. This method returns true if the model has been successfully
@@ -71,10 +71,8 @@ class ModelManagerCentral : public ModelManager
   context::Context* getModelEqualityEngineContext() override;
 
  private:
-  /**
-   * Central equality engine manager.
-   */
-  EqEngineManagerCentral& d_eem;
+  /** Initialize model equality engine */
+  void initializeModelEqEngine(eq::EqualityEngineNotify* notify) override;
 };
 
 }  // namespace theory
