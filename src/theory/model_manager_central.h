@@ -20,6 +20,7 @@
 #include <map>
 #include <memory>
 
+#include "theory/ee_manager_central.h"
 #include "theory/model_manager.h"
 
 namespace CVC4 {
@@ -34,7 +35,7 @@ namespace theory {
 class ModelManagerCentral : public ModelManager
 {
  public:
-  ModelManagerCentral(TheoryEngine& te);
+  ModelManagerCentral(TheoryEngine& te, EqEngineManagerCentral& eem);
   ~ModelManagerCentral();
   /**
    * Prepare model. This method returns true if the model has been successfully
@@ -64,6 +65,11 @@ class ModelManagerCentral : public ModelManager
    * (2) Popping a SAT context if we are not successful.
    */
   bool finishBuildModel() const override;
+private:
+  /**
+   * Central equality engine manager.
+   */
+  EqEngineManagerCentral& d_eem;
 };
 
 }  // namespace theory

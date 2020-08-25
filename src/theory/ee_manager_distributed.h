@@ -74,9 +74,6 @@ class EqEngineManagerDistributed : public EqEngineManager
   /** get the core equality engine */
   eq::EqualityEngine* getCoreEqualityEngine() override;
  private:
-  /** Allocate equality engine that is context-dependent on c with info esi */
-  eq::EqualityEngine* allocateEqualityEngine(EeSetupInfo& esi,
-                                             context::Context* c);
   /** notify class for master equality engine */
   class MasterNotifyClass : public theory::eq::EqualityEngineNotify
   {

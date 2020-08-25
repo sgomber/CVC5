@@ -102,6 +102,9 @@ class EqEngineManager
   const std::vector<Node>& getEqcRepresentativesForType(TypeNode t) const;
 
  protected:
+  /** Allocate equality engine that is context-dependent on c with info esi */
+  eq::EqualityEngine* allocateEqualityEngine(EeSetupInfo& esi,
+                                             context::Context* c);
   /** Add function kinds */
   static void addFunctionKinds(eq::EqualityEngine* ee, EeSetupInfo& esi);
   /** Information related to the equality engine, per theory. */

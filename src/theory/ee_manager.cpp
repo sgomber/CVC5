@@ -47,5 +47,17 @@ void EqEngineManager::addFunctionKinds(eq::EqualityEngine* ee, EeSetupInfo& esi)
   }
 }
 
+eq::EqualityEngine* EqEngineManager::allocateEqualityEngine(
+    EeSetupInfo& esi, context::Context* c)
+{
+  if (esi.d_notify != nullptr)
+  {
+    return new eq::EqualityEngine(
+        *esi.d_notify, c, esi.d_name, esi.d_constantsAreTriggers);
+  }
+  // the theory doesn't care about explicit notifications
+  return new eq::EqualityEngine(c, esi.d_name, esi.d_constantsAreTriggers);
+}
+
 }  // namespace theory
 }  // namespace CVC4

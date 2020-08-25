@@ -19,7 +19,7 @@
 namespace CVC4 {
 namespace theory {
 
-ModelManagerCentral::ModelManagerCentral(TheoryEngine& te) : ModelManager(te) {}
+ModelManagerCentral::ModelManagerCentral(TheoryEngine& te, EqEngineManagerCentral& eem) : ModelManager(te), d_eem(eem) {}
 
 ModelManagerCentral::~ModelManagerCentral() {}
 
@@ -30,6 +30,7 @@ bool ModelManagerCentral::prepareModel()
   // push a SAT context
   context::Context* c = d_te.getSatContext();
   c->push();
+  d_eem.notifyBuildingModel();
 
   // Collect model info from the theories
   Trace("model-builder") << "ModelManagerCentral: Collect model values..."

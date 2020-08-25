@@ -19,6 +19,7 @@
 #define CVC4__THEORY__EE_MANAGER_CENTRAL__H
 
 #include "theory/ee_manager.h"
+#include "context/cdo.h"
 #include "theory/uf/equality_engine.h"
 
 namespace CVC4 {
@@ -50,7 +51,10 @@ class EqEngineManagerCentral : public EqEngineManager
   eq::EqualityEngine* getCoreEqualityEngine() override;
   /** get the model equality engine */
   eq::EqualityEngine* getModelEqualityEngine() override;
-
+  /** 
+   * Notify this class that we are building the model.
+   */
+  void notifyBuildingModel();
  private:
   /**
    * Notify class for central equality engine. This class dispatches
@@ -97,6 +101,8 @@ class EqEngineManagerCentral : public EqEngineManager
    * A table of from theory IDs to notify classes.
    */
   eq::EqualityEngineNotify* d_theoryNotify[theory::THEORY_LAST];
+  /** Whether we are building the model */
+  context::CDO<bool> d_buildingModel;
 };
 
 }  // namespace theory

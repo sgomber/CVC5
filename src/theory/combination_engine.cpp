@@ -59,8 +59,10 @@ void CombinationEngine::finishInit()
   }
   else if (options::eeMode() == options::EqEngineMode::CENTRAL)
   {
-    d_eemanager.reset(new EqEngineManagerCentral(d_te));
-    d_mmanager.reset(new ModelManagerCentral(d_te));
+    std::unique_ptr<EqEngineManagerCentral> eeCentral(
+        new EqEngineManagerCentral(d_te));
+    d_mmanager.reset(new ModelManagerCentral(d_te, *eeCentral.get()));
+    d_eemanager = std::move(eeCentral);
     d_sharedSolver.reset(new SharedSolverCentral(d_te));
   }
   else

@@ -26,7 +26,8 @@ EqEngineManagerCentral::EqEngineManagerCentral(TheoryEngine& te)
       d_centralEENotify(*this),
       // we do not require any term triggers in the central equality engine
       d_centralEqualityEngine(
-          d_centralEENotify, te.getSatContext(), "centralEE", false, false)
+          d_centralEENotify, te.getSatContext(), "centralEE", false, false),
+      d_buildingModel(te.getSatContext(), false)
 {
   for (TheoryId theoryId = theory::THEORY_FIRST;
        theoryId != theory::THEORY_LAST;
@@ -182,9 +183,14 @@ void EqEngineManagerCentral::CentralNotifyClass::eqNotifyDisequal(TNode t1,
 bool EqEngineManagerCentral::eqNotifyTriggerPredicate(TNode predicate,
                                                       bool value)
 {
+  // if we're building model, ignore this propagation
+  if (d_buildingModel.get())
+  {
+    return true;
+  }
   Theory* t = d_te.getActiveTheory();
   TheoryId tid = t == nullptr ? THEORY_BUILTIN : t->getId();
-  Trace("eem-central") << "...propagate with " << tid << std::endl;
+  Trace("eem-central") << "...propagate " << predicate << ", " << value << " with " << tid << std::endl;
   // propagate directly to theory engine
   if (value)
   {
@@ -208,6 +214,11 @@ void EqEngineManagerCentral::eqNotifyConstantTermMerge(TNode t1, TNode t2)
   eq::EqualityEngineNotify* notify = d_theoryNotify[t->getId()];
   Assert(notify != nullptr);
   notify->eqNotifyConstantTermMerge(t1, t2);
+}
+
+void EqEngineManagerCentral::notifyBuildingModel()
+{
+  // disable theory notifications in this context
 }
 
 }  // namespace theory
