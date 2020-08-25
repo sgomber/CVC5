@@ -50,7 +50,7 @@ void SharedSolver::preRegisterShared(TNode t, bool multipleTheories)
   if (multipleTheories)
   {
     // Collect the shared terms if there are multiple theories
-    // This calls Theory::addSharedTerm, possible multiple times
+    // This calls Theory::addSharedTerm, possibly multiple times
     NodeVisitor<SharedTermsVisitor>::run(d_sharedTermsVisitor, t);
   }
 }

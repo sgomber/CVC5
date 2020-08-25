@@ -199,6 +199,11 @@ class TheoryEngine {
   context::CDO<bool> d_inConflict;
 
   /**
+   * HACK-centralEe
+   * The set of literals from the SAT solver
+   */
+  context::CDHashSet<Node, NodeHashFunction> d_satSolverFacts;
+  /**
    * Are we in "SAT mode"? In this state, the user can query for the model.
    * This corresponds to the state in Figure 4.1, page 52 of the SMT-LIB
    * standard, version 2.6.

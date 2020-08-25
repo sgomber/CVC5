@@ -469,6 +469,7 @@ void Theory::check(Effort level)
   // standard calls for resource, stats
   d_out->spendResource(ResourceManager::Resource::TheoryCheckStep);
   TimerStat::CodeTimer checkTimer(d_checkTime);
+  Trace("theory-check") << "Theory::preCheck " << level << " " << d_id << std::endl;
   // pre-check at level
   if (preCheck(level))
   {
@@ -476,12 +477,14 @@ void Theory::check(Effort level)
     return;
   }
   Assert(d_theoryState != nullptr);
+  Trace("theory-check") << "Theory::process fact queue " << d_id << std::endl;
   // process the pending fact queue
   while (!done() && !d_theoryState->isInConflict())
   {
     // Get the next assertion from the fact queue
     Assertion assertion = get();
     TNode fact = assertion.d_assertion;
+    Trace("theory-check") << "Theory::preNotifyFact " << fact << " " << d_id << std::endl;
     bool polarity = fact.getKind() != kind::NOT;
     TNode atom = polarity ? fact : fact[0];
     // call the pre-notify method
@@ -490,6 +493,7 @@ void Theory::check(Effort level)
       // handled in theory-specific way that doesn't involve equality engine
       continue;
     }
+    Trace("theory-check") << "Theory::assert " << fact << " " << d_id << std::endl;
     // Theories that don't have an equality engine should always return true
     // for preNotifyFact
     Assert(d_equalityEngine != nullptr);
@@ -502,11 +506,14 @@ void Theory::check(Effort level)
     {
       d_equalityEngine->assertPredicate(atom, polarity, fact);
     }
+    Trace("theory-check") << "Theory::notifyFact " << fact << " " << d_id << std::endl;
     // notify the theory of the new fact, which is not internal
     notifyFact(atom, polarity, fact, false);
   }
+    Trace("theory-check") << "Theory::postCheck " << d_id << std::endl;
   // post-check at level
   postCheck(level);
+    Trace("theory-check") << "Theory::finish check " << d_id << std::endl;
 }
 
 bool Theory::preCheck(Effort level) { return false; }

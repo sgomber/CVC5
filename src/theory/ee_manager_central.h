@@ -79,6 +79,10 @@ class EqEngineManagerCentral : public EqEngineManager
   };
   /** Notification when predicate gets value in central equality engine */
   bool eqNotifyTriggerPredicate(TNode predicate, bool value);
+    bool eqNotifyTriggerTermEquality(TheoryId tag,
+                                     TNode t1,
+                                     TNode t2,
+                                     bool value);
   /** Notification when constants are merged in central equality engine */
   void eqNotifyConstantTermMerge(TNode t1, TNode t2);
   /** The central equality engine notify class */

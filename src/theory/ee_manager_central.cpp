@@ -25,9 +25,10 @@ EqEngineManagerCentral::EqEngineManagerCentral(TheoryEngine& te,
                                                SharedSolver& shs)
     : EqEngineManager(te, shs),
       d_centralEENotify(*this),
-      // we do not require any term triggers in the central equality engine
+      // TODO: most theories should not register trigger terms, only those
+      // that need equality information on their fact queues: arithmetic, bv?
       d_centralEqualityEngine(
-          d_centralEENotify, te.getSatContext(), "centralEE", false, false),
+          d_centralEENotify, te.getSatContext(), "centralEE", true),
       d_buildingModel(te.getSatContext(), false)
 {
   for (TheoryId theoryId = theory::THEORY_FIRST;
@@ -115,8 +116,9 @@ bool EqEngineManagerCentral::CentralNotifyClass::eqNotifyTriggerPredicate(
 bool EqEngineManagerCentral::CentralNotifyClass::eqNotifyTriggerTermEquality(
     TheoryId tag, TNode t1, TNode t2, bool value)
 {
-  Unreachable() << "EqEngineManagerCentral::eqNotifyTriggerTermEquality: no "
-                   "need to propagate equalities between shared terms";
+  Trace("eem-central") << "eqNotifyTriggerTermEquality: " << t1 << " " << t2
+                       << value << ", tag = " << tag << std::endl;
+  return d_eemc.eqNotifyTriggerTermEquality(tag, t1, t2, value);
 }
 
 void EqEngineManagerCentral::CentralNotifyClass::eqNotifyConstantTermMerge(
@@ -177,6 +179,7 @@ bool EqEngineManagerCentral::eqNotifyTriggerPredicate(TNode predicate,
   Theory* t = d_te.getActiveTheory();
   if (t == nullptr)
   {
+    // propagation that occurred not during a theory check?
     // TODO: shared solver?
   }
   TheoryId tid = t == nullptr ? THEORY_BUILTIN : t->getId();
@@ -190,14 +193,31 @@ bool EqEngineManagerCentral::eqNotifyTriggerPredicate(TNode predicate,
   return d_te.propagate(predicate.notNode(), tid);
 }
 
+
+bool EqEngineManagerCentral::eqNotifyTriggerTermEquality(TheoryId tag,
+                                  TNode a,
+                                  TNode b,
+                                  bool value)
+{
+  // Propagate shared term
+  Node equality = a.eqNode(b);
+  if (value) {
+    d_te.assertToTheory(equality, equality, tag, THEORY_BUILTIN);
+  } else {
+    d_te.assertToTheory(equality.notNode(), equality.notNode(), tag, THEORY_BUILTIN);
+  }
+  return true;
+}
+
 void EqEngineManagerCentral::eqNotifyConstantTermMerge(TNode t1, TNode t2)
 {
   Theory* t = d_te.getActiveTheory();
   if (t == nullptr)
   {
-    // probably in shared solver?
+    // conflict during SharedSolver::assertSharedEquality?
     Node lit = t1.eqNode(t2);
     Node conflict = d_centralEqualityEngine.mkExplainLit(lit);
+    Trace("eem-central") << "...explained conflict of " << lit << " ... " << conflict << std::endl;
     d_te.conflict(conflict, THEORY_BUILTIN);
     return;
   }

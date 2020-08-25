@@ -35,7 +35,6 @@ void EqEngineManagerDistributed::initializeTheories()
 {
   context::Context* c = d_te.getSatContext();
   // initialize the shared solver
-  Assert(sharedSolver != nullptr);
   EeSetupInfo esis;
   if (d_sharedSolver.needsEqualityEngine(esis))
   {

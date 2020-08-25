@@ -47,7 +47,6 @@ namespace arrays {
 
 // Use static configuration of options for now
 const bool d_ccStore = false;
-const bool d_useArrTable = false;
   //const bool d_eagerLemmas = false;
 const bool d_preprocess = true;
 const bool d_solveWrite = true;
@@ -178,10 +177,6 @@ void TheoryArrays::finishInit()
   if (d_ccStore)
   {
     d_equalityEngine->addFunctionKind(kind::STORE);
-  }
-  if (d_useArrTable)
-  {
-    d_equalityEngine->addFunctionKind(kind::ARR_TABLE_FUN);
   }
 
   d_proofReconstruction.reset(new ArrayProofReconstruction(d_equalityEngine));
@@ -840,7 +835,8 @@ void TheoryArrays::preRegisterTermInternal(TNode node)
       // The may equal needs the node
       d_mayEqualEqualityEngine.addTerm(node);
       d_equalityEngine->addTerm(node);
-      Assert(d_equalityEngine->getSize(node) == 1);
+    // HACK-centralEe
+      //Assert(d_equalityEngine->getSize(node) == 1);
     }
     else {
       d_equalityEngine->addTerm(node);
@@ -1924,15 +1920,6 @@ void TheoryArrays::queueRowLemma(RowLemmaType lem)
   int prop = options::arraysPropagate();
   if (prop > 0) {
     propagate(lem);
-  }
-
-  // If equivalent lemma already exists, don't enqueue this one
-  if (d_useArrTable) {
-    Node tableEntry = NodeManager::currentNM()->mkNode(kind::ARR_TABLE_FUN, a, b, i, j);
-    if (d_equalityEngine->getSize(tableEntry) != 1)
-    {
-      return;
-    }
   }
 
   // Prefer equality between indexes so as not to introduce new read terms

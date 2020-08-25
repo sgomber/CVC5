@@ -73,6 +73,7 @@ void SharedSolverCentral::assertSharedEquality(TNode equality,
                                                bool polarity,
                                                TNode reason)
 {
+  Trace("shared-solver") << "assertSharedEquality (central): " << equality << " " << polarity << " " << reason << std::endl;
   d_centralEe->assertEquality(equality, polarity, reason);
 }
 

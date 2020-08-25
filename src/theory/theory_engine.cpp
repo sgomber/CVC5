@@ -227,6 +227,7 @@ TheoryEngine::TheoryEngine(context::Context* context,
       d_possiblePropagations(context),
       d_hasPropagated(context),
       d_inConflict(context, false),
+      d_satSolverFacts(context),
       d_inSatMode(false),
       d_hasShutDown(false),
       d_incomplete(context, false),
@@ -456,6 +457,7 @@ void TheoryEngine::check(Theory::Effort effort) {
     if (d_inConflict)                                               \
     {                                                               \
       Debug("conflict") << THEORY << " in conflict. " << std::endl; \
+      d_activeTheory = nullptr;                                     \
       break;                                                        \
     }                                                               \
   }
@@ -1074,6 +1076,10 @@ void TheoryEngine::assertFact(TNode literal)
     return;
   }
 
+  // HACK-centralEe
+  //d_satSolverFacts.insert(literal);
+  // end HACK-centralEe
+  
   // Get the atom
   bool polarity = literal.getKind() != kind::NOT;
   TNode atom = polarity ? literal : literal[0];
@@ -1271,7 +1277,7 @@ static Node mkExplanation(const std::vector<NodeTheoryPair>& explanation) {
 
   std::set<TNode> all;
   for (unsigned i = 0; i < explanation.size(); ++ i) {
-    Assert(explanation[i].d_theory == THEORY_SAT_SOLVER);
+    //Assert(explanation[i].d_theory == THEORY_SAT_SOLVER);
     all.insert(explanation[i].d_node);
   }
 
@@ -1717,7 +1723,8 @@ void TheoryEngine::getExplanation(std::vector<NodeTheoryPair>& explanationVector
     }
 
     // If from the SAT solver, keep it
-    if (toExplain.d_theory == THEORY_SAT_SOLVER)
+    // HACK-centralEe
+    if (toExplain.d_theory == THEORY_SAT_SOLVER || d_satSolverFacts.find(toExplain.d_node)!=d_satSolverFacts.end())
     {
       Debug("theory::explain") << "\tLiteral came from THEORY_SAT_SOLVER. Kepping it." << endl;
       explanationVector[j++] = explanationVector[i++];
@@ -1783,6 +1790,17 @@ void TheoryEngine::getExplanation(std::vector<NodeTheoryPair>& explanationVector
     Debug("theory::explain")
         << "TheoryEngine::explain(): got explanation " << explanation
         << " got from " << toExplain.d_theory << endl;
+    // HACK-centralEe
+        ///*
+    if (explanation == toExplain.d_node)
+    {
+      // trust that it came from SAT solver??
+      //toExplain.d_theory = THEORY_SAT_SOLVER;
+      explanationVector[j++] = explanationVector[i++];
+      continue;
+    }
+    //*/
+    // end HACK-centralEe
     Assert(explanation != toExplain.d_node)
         << "wasn't sent to you, so why are you explaining it trivially";
     // Mark the explanation

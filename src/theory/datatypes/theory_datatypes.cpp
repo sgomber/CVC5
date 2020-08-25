@@ -170,6 +170,8 @@ bool TheoryDatatypes::preCheck(Effort level)
 
 void TheoryDatatypes::postCheck(Effort level)
 {
+  // FIXME: necessary for ee central?
+  flushPendingFacts();
   if (level == EFFORT_LAST_CALL)
   {
     Assert(d_sygusExtension != nullptr);
