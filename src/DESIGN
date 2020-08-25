@@ -32,25 +32,41 @@ the EqualityEngine:
 InferenceManager references SolverState and should have a standard effect on it
 (e.g. mark "inConflict" in SolverState if OutputChannel::conflict was called).
 
-======== Standard check method:
+======== Standard callbacks during check:
 
 The `check` method of Theory is recommended to be a fixed template.
 Theory must implement these methods:
 ```
-virtual void preCheck(Effort level = EFFORT_FULL);
+// prior to processing fact queue
+virtual bool preCheck(Effort level = EFFORT_FULL);
+// after processing fact queue
 virtual void postCheck(Effort level = EFFORT_FULL);
-virtual bool preprocessNewFact(TNode atom, bool polarity, TNode fact);
-virtual void notifyNewFact(TNode atom, bool polarity, TNode fact);
+// called when a fact is taken from queue
+virtual bool preNotifyFact(TNode atom, bool polarity, TNode fact);
+// called after a fact is taken from queue and asserted to equality engine
+virtual void notifyFact(TNode atom, bool polarity, TNode fact, bool isInternal);
 ```
+Notice that additionally each theory may optionally implement equality engine
+callbacks, which are lower level:
+```
+// when a new equivalence class is created
+void eqNotifyNewClass(TNode t);
+// when two equivalence classes are merged
+void eqNotifyMerge(TNode t1, TNode t2);
+// when two equivalence classes become disequal
+void eqNotifyDisequal(TNode t1, TNode t2, TNode reason);
+```
+This is in addition to three standard equality engine callbacks
+(eqNotifyTriggerPredicate, eqNotifyTriggerTermEquality, and 
+eqNotifyConstantTermMerge) which have a fixed behavior for each theory.
 
 ======== Standard collect model info method:
 
 The `collectModelInfo` method of Theory is recommended to be a fixed template.
 Theory must implement these methods:
 ```
-virtual bool collectModelValues(TheoryModel* m, std::set<Node>& termSet);
-virtual void computeRelevantTerms(std::set<Node>& termSet,
-                                  bool includeShared = true);
+virtual bool collectModelValues(TheoryModel* m, const std::set<Node>& termSet);
+virtual void computeRelevantTerms(std::set<Node>& termSet);
 ```
 
 ======================== TheoryEngine
@@ -58,29 +74,25 @@ virtual void computeRelevantTerms(std::set<Node>& termSet,
 In the current architecture TheoryEngine maintains:
 (1) (Multiple) Theory objects.
 (2) QuantifiersEngine.
-(3) ModelBuilder and Model.
-(4) Methods for theory combination, including SharedTermsDatabase and a
-TheoryEngine::combineTheories method.
-(5) Methods that manage propagations between theories and how to explain lemmas.
-(6) Pointer to PropEngine.
-
-In the new architecture, TheoryEngine should not use (3) and (4) directly, and
-instead maintains a new member:
-(7) CombinationEngine
+(3) Methods that manage propagations between theories and how to explain lemmas.
+(4) Pointer to PropEngine.
+(5) CombinationEngine
 This class is responsible for running the theory combination method. The current
 implementation would be called CombinationEngineCareGraph and derive from the
 abstract class. A future implementation would be called
-CombinationEngineModelBased.
-This class maintains (at least two) components:
-(7.1) EqualityEngineManager, which decides which equality engines are assigned
+CombinationEngineModelBased. This class maintains:
+(5.1) EqualityEngineManager, which decides which equality engines are assigned
 to Theory.  The current implementation would be called
 EqualityEngineManagerDistributed, which assigns unique equality engines to each
 theory. A future implementation would be called EqualityEngineManagerCentral,
 for assigning the same equality engine to all theories.
-(7.2) ModelManager, which manages the model in a way that is compatible with
+(5.2) ModelManager, which manages the model in a way that is compatible with
 the combination method. The current implementation would be called
 ModelManagerDistributed (since the model maintains its own equality engine).
-
+(5.3) SharedSolver, which manages theory-wide propagation/explanation
+methods, and is responsible for ensuring Theory::addSharedTerm is called.
+The class SharedTermsDatabase acts as the shared solver in the current
+architecture.
 
 Overall, the goal is to update Theory to use standard interfaces to
 EqualityEngine/SolverState/InferenceManager so that the theory combination
