@@ -46,21 +46,21 @@ void CombinationEngine::finishInit()
   // create the equality engine, model manager, and shared solver
   if (options::eeMode() == options::EqEngineMode::DISTRIBUTED)
   {
-    // make the distributed equality engine manager
-    d_eemanager.reset(new EqEngineManagerDistributed(d_te));
-    // make the distributed model manager
-    d_mmanager.reset(new ModelManagerDistributed(d_te, *d_eemanager.get()));
     // use the distributed shared solver
     d_sharedSolver.reset(new SharedSolverDistributed(d_te));
+    // make the distributed equality engine manager
+    d_eemanager.reset(new EqEngineManagerDistributed(d_te, *d_sharedSolver.get()));
+    // make the distributed model manager
+    d_mmanager.reset(new ModelManagerDistributed(d_te, *d_eemanager.get()));
   }
   else if (options::eeMode() == options::EqEngineMode::CENTRAL)
   {
-    // make the central equality engine manager
-    d_eemanager.reset(new EqEngineManagerCentral(d_te));
-    // d_mmanager.reset(new ModelManagerCentral(d_te, *eeCentral.get()));
-    d_mmanager.reset(new ModelManagerDistributed(d_te, *d_eemanager.get()));
     // use the central shared solver
     d_sharedSolver.reset(new SharedSolverCentral(d_te));
+    // make the central equality engine manager
+    d_eemanager.reset(new EqEngineManagerCentral(d_te, *d_sharedSolver.get()));
+    // d_mmanager.reset(new ModelManagerCentral(d_te, *eeCentral.get()));
+    d_mmanager.reset(new ModelManagerDistributed(d_te, *d_eemanager.get()));
   }
   else
   {
@@ -72,10 +72,10 @@ void CombinationEngine::finishInit()
 
   // initialize equality engines in all theories, including quantifiers engine
   // and the (provided) shared solver
-  d_eemanager->initializeTheories(d_sharedSolver.get());
+  d_eemanager->initializeTheories();
 
   Assert(d_mmanager != nullptr);
-  // initialize the model manager, based on the notify object
+  // initialize the model manager, based on the notify object of this class
   eq::EqualityEngineNotify* meen = getModelEqualityEngineNotify();
   d_mmanager->finishInit(meen);
 }

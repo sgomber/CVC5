@@ -23,10 +23,6 @@
 #include "theory/uf/equality_engine.h"
 
 namespace CVC4 {
-
-class TheoryEngine;
-class SharedTermsDatabase;
-
 namespace theory {
 
 /**
@@ -36,12 +32,12 @@ namespace theory {
 class EqEngineManagerCentral : public EqEngineManager
 {
  public:
-  EqEngineManagerCentral(TheoryEngine& te);
+  EqEngineManagerCentral(TheoryEngine& te, SharedSolver& shs);
   ~EqEngineManagerCentral();
   /**
    * Initialize theories
    */
-  void initializeTheories(SharedSolver* sharedSolver) override;
+  void initializeTheories() override;
   /** get the core equality engine */
   eq::EqualityEngine* getCoreEqualityEngine() override;
   /**
@@ -85,8 +81,6 @@ class EqEngineManagerCentral : public EqEngineManager
   bool eqNotifyTriggerPredicate(TNode predicate, bool value);
   /** Notification when constants are merged in central equality engine */
   void eqNotifyConstantTermMerge(TNode t1, TNode t2);
-  /** Reference to the theory engine */
-  TheoryEngine& d_te;
   /** The central equality engine notify class */
   CentralNotifyClass d_centralEENotify;
   /** The central equality engine. */

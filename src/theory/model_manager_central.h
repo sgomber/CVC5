@@ -30,7 +30,8 @@ class TheoryEngine;
 namespace theory {
 
 /**
- * Manager for building models in a central architecture.
+ * Manager for building models in a central architecture, where the model's
+ * equality engine is the same as the central equality engine.
  */
 class ModelManagerCentral : public ModelManager
 {

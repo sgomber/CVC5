@@ -25,12 +25,7 @@
 #include "theory/uf/equality_engine.h"
 
 namespace CVC4 {
-
-class TheoryEngine;
-
 namespace theory {
-
-class SharedSolver;
 
 /**
  * The (distributed) equality engine manager. This encapsulates an architecture
@@ -50,13 +45,13 @@ class SharedSolver;
 class EqEngineManagerDistributed : public EqEngineManager
 {
  public:
-  EqEngineManagerDistributed(TheoryEngine& te);
+  EqEngineManagerDistributed(TheoryEngine& te, SharedSolver& shs);
   ~EqEngineManagerDistributed();
   /**
    * Initialize theories. This method allocates unique equality engines
    * per theories and connects them to a master equality engine.
    */
-  void initializeTheories(SharedSolver* sharedSolver) override;
+  void initializeTheories() override;
   /** get the core equality engine */
   eq::EqualityEngine* getCoreEqualityEngine() override;
  private:
@@ -90,8 +85,6 @@ class EqEngineManagerDistributed : public EqEngineManager
     /** Pointer to quantifiers engine */
     QuantifiersEngine* d_quantEngine;
   };
-  /** Reference to the theory engine */
-  TheoryEngine& d_te;
   /** The master equality engine notify class */
   std::unique_ptr<MasterNotifyClass> d_masterEENotify;
   /** The master equality engine. */

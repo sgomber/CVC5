@@ -21,8 +21,8 @@
 namespace CVC4 {
 namespace theory {
 
-EqEngineManagerCentral::EqEngineManagerCentral(TheoryEngine& te)
-    : d_te(te),
+EqEngineManagerCentral::EqEngineManagerCentral(TheoryEngine& te, SharedSolver& shs)
+    : EqEngineManager(te, shs),
       d_centralEENotify(*this),
       // we do not require any term triggers in the central equality engine
       d_centralEqualityEngine(
@@ -39,12 +39,12 @@ EqEngineManagerCentral::EqEngineManagerCentral(TheoryEngine& te)
 
 EqEngineManagerCentral::~EqEngineManagerCentral() {}
 
-void EqEngineManagerCentral::initializeTheories(SharedSolver* sharedSolver)
+void EqEngineManagerCentral::initializeTheories()
 {
   Trace("eem-central") << "EqEngineManagerCentral::initializeTheories"
                        << std::endl;
-  // set the shared solver's equality engine
-  sharedSolver->setEqualityEngine(&d_centralEqualityEngine);
+  // set the shared solver's equality engine to central
+  d_sharedSolver.setEqualityEngine(&d_centralEqualityEngine);
   // allocate equality engines per theory
   for (TheoryId theoryId = theory::THEORY_FIRST;
        theoryId != theory::THEORY_LAST;
@@ -174,6 +174,10 @@ bool EqEngineManagerCentral::eqNotifyTriggerPredicate(TNode predicate,
     return true;
   }
   Theory* t = d_te.getActiveTheory();
+  if (t==nullptr)
+  {
+    // TODO: shared solver?
+  }
   TheoryId tid = t == nullptr ? THEORY_BUILTIN : t->getId();
   Trace("eem-central") << "...propagate " << predicate << ", " << value
                        << " with " << tid << std::endl;

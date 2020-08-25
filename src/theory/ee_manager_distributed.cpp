@@ -21,8 +21,8 @@
 namespace CVC4 {
 namespace theory {
 
-EqEngineManagerDistributed::EqEngineManagerDistributed(TheoryEngine& te)
-    : d_te(te), d_masterEENotify(nullptr)
+EqEngineManagerDistributed::EqEngineManagerDistributed(TheoryEngine& te, SharedSolver& shs)
+    : EqEngineManager(te, shs), d_masterEENotify(nullptr)
 {
 }
 
@@ -30,17 +30,17 @@ EqEngineManagerDistributed::~EqEngineManagerDistributed()
 {
 }
 
-void EqEngineManagerDistributed::initializeTheories(SharedSolver* sharedSolver)
+void EqEngineManagerDistributed::initializeTheories()
 {
   context::Context* c = d_te.getSatContext();
   // initialize the shared solver
   Assert(sharedSolver != nullptr);
   EeSetupInfo esis;
-  if (sharedSolver->needsEqualityEngine(esis))
+  if (d_sharedSolver.needsEqualityEngine(esis))
   {
     // allocate an equality engine for the shared terms database
     d_stbEqualityEngine.reset(allocateEqualityEngine(esis, c));
-    sharedSolver->setEqualityEngine(d_stbEqualityEngine.get());
+    d_sharedSolver.setEqualityEngine(d_stbEqualityEngine.get());
   }
   else
   {

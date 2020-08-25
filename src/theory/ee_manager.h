@@ -25,6 +25,9 @@
 #include "theory/uf/equality_engine.h"
 
 namespace CVC4 {
+  
+class TheoryEngine;
+
 namespace theory {
 
 class SharedSolver;
@@ -50,7 +53,7 @@ struct EeTheoryInfo
 class EqEngineManager
 {
  public:
-  EqEngineManager();
+  EqEngineManager(TheoryEngine& te, SharedSolver& shs);
   virtual ~EqEngineManager() {}
   /**
    * Initialize theories, called during TheoryEngine::finishInit after theory
@@ -63,7 +66,7 @@ class EqEngineManager
    * @param sharedSolver The shared solver that is being used in combination
    * with this equality engine manager
    */
-  virtual void initializeTheories(SharedSolver* sharedSolver) = 0;
+  virtual void initializeTheories() = 0;
   /**
    * Get the equality engine theory information for theory with the given id.
    */
@@ -92,6 +95,10 @@ class EqEngineManager
  protected:
   /** Add function kinds */
   static void addFunctionKinds(eq::EqualityEngine* ee, EeSetupInfo& esi);
+  /** Reference to the theory engine */
+  TheoryEngine& d_te;
+  /** Reference to the shared solver */
+  SharedSolver& d_sharedSolver;
   /** Information related to the equality engine, per theory. */
   std::map<TheoryId, EeTheoryInfo> d_einfo;
   /** The equivalence classes cache */
