@@ -19,15 +19,12 @@
 namespace CVC4 {
 namespace theory {
 
-EqEngineManager::EqEngineManager() : d_modelEqualityEngine(nullptr)
-{
-}
+EqEngineManager::EqEngineManager() : d_modelEqualityEngine(nullptr) {}
 
 void EqEngineManager::initializeModel(TheoryModel* m,
-                      eq::EqualityEngineNotify* notify, 
-                      context::Context * c)
+                                      eq::EqualityEngineNotify* notify,
+                                      context::Context* c)
 {
-
 #if 0
   Assert(m != nullptr);
   // set the notification class

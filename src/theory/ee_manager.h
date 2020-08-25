@@ -76,8 +76,8 @@ class EqEngineManager
    * @param notify The notify call to use (used e.g. by CombinationModelBased).
    */
   void initializeModel(TheoryModel* m,
-                       eq::EqualityEngineNotify* notify, 
-                       context::Context * c);
+                       eq::EqualityEngineNotify* notify,
+                       context::Context* c);
   /**
    * Get the equality engine theory information for theory with the given id.
    */
@@ -114,7 +114,7 @@ class EqEngineManager
   /** The equivalence classes cache */
   std::unique_ptr<eq::EqClassesCache> d_eqCache;
   /** Pointer to the equality engine of the model */
-  eq::EqualityEngine * d_modelEqualityEngine;
+  eq::EqualityEngine* d_modelEqualityEngine;
   /** The equality engine of the model, if we allocated it */
   std::unique_ptr<eq::EqualityEngine> d_modelEqualityEngineAlloc;
 };

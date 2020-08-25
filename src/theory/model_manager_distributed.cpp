@@ -20,8 +20,8 @@
 namespace CVC4 {
 namespace theory {
 
-ModelManagerDistributed::ModelManagerDistributed(
-    TheoryEngine& te, EqEngineManager& eem)
+ModelManagerDistributed::ModelManagerDistributed(TheoryEngine& te,
+                                                 EqEngineManager& eem)
     : ModelManager(te), d_eem(eem)
 {
   // We push a context during initialization since the model is cleared during
@@ -29,7 +29,8 @@ ModelManagerDistributed::ModelManagerDistributed(
   d_modelEeContext.push();
 }
 
-ModelManagerDistributed::~ModelManagerDistributed() {
+ModelManagerDistributed::~ModelManagerDistributed()
+{
   // pop the model context which we pushed on initialization
   d_modelEeContext.pop();
 }

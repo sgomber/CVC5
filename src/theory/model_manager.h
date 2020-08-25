@@ -87,6 +87,7 @@ class ModelManager
    * Get the model equality engine context.
    */
   virtual context::Context* getModelEqualityEngineContext() = 0;
+
  protected:
   /**
    * Collect model Boolean variables.
