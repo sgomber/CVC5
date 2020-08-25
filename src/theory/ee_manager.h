@@ -88,6 +88,7 @@ class EqEngineManager
   /** Allocate equality engine that is context-dependent on c with info esi */
   eq::EqualityEngine* allocateEqualityEngine(EeSetupInfo& esi,
                                              context::Context* c);
+
  protected:
   /** Add function kinds */
   static void addFunctionKinds(eq::EqualityEngine* ee, EeSetupInfo& esi);

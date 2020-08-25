@@ -19,10 +19,10 @@
 
 #include <memory>
 
+#include "theory/ee_manager.h"
 #include "theory/relevant_terms_database.h"
 #include "theory/theory_model.h"
 #include "theory/theory_model_builder.h"
-#include "theory/ee_manager.h"
 
 namespace CVC4 {
 
@@ -42,8 +42,8 @@ class ModelManager
  public:
   ModelManager(TheoryEngine& te, EqEngineManager& eem);
   virtual ~ModelManager();
-  /** 
-   * Finish initializing this class. 
+  /**
+   * Finish initializing this class.
    */
   void finishInit(eq::EqualityEngineNotify* notify);
   /** Reset model, called during full effort check before the model is built */
@@ -92,7 +92,7 @@ class ModelManager
   virtual context::Context* getModelEqualityEngineContext() = 0;
 
  protected:
-  /** 
+  /**
    * Initialize model equality engine. This is called at the end of finish
    * init, after we have created a model object but before we have assigned it
    * an equality engine.
