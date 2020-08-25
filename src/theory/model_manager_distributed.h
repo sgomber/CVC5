@@ -19,7 +19,7 @@
 
 #include <memory>
 
-#include "theory/ee_manager_distributed.h"
+#include "theory/ee_manager.h"
 #include "theory/model_manager.h"
 
 namespace CVC4 {
@@ -39,7 +39,7 @@ namespace theory {
 class ModelManagerDistributed : public ModelManager
 {
  public:
-  ModelManagerDistributed(TheoryEngine& te, EqEngineManagerDistributed& eem);
+  ModelManagerDistributed(TheoryEngine& te, EqEngineManager& eem);
   ~ModelManagerDistributed();
 
   /** Prepare the model, as described above. */
@@ -49,13 +49,24 @@ class ModelManagerDistributed : public ModelManager
    * model, return true if successful.
    */
   bool finishBuildModel() const override;
+  /**
+   * Get the model equality engine context. This is a dummy context that is
+   * used for clearing the contents of the model's equality engine via
+   * pop/push.
+   */
+  context::Context* getModelEqualityEngineContext() override;
 
  protected:
   /**
    * Distributed equality engine manager, which maintains the context of the
    * model's equality engine.
    */
-  EqEngineManagerDistributed& d_eem;
+  EqEngineManager& d_eem;
+  /**
+   * A dummy context for the model equality engine, so we can clear it
+   * independently of search context.
+   */
+  context::Context d_modelEeContext;
 };
 
 }  // namespace theory

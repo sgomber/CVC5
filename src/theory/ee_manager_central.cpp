@@ -92,21 +92,6 @@ void EqEngineManagerCentral::initializeTheories(SharedSolver* sharedSolver)
   }
 }
 
-void EqEngineManagerCentral::initializeModel(TheoryModel* m,
-                                             eq::EqualityEngineNotify* notify)
-{
-  Assert(m != nullptr);
-  // set the notification class
-  d_centralEENotify.d_mNotify = notify;
-  // model uses the central equality engine, finish initialize
-  m->finishInit(&d_centralEqualityEngine);
-}
-
-eq::EqualityEngine* EqEngineManagerCentral::getModelEqualityEngine()
-{
-  return &d_centralEqualityEngine;
-}
-
 eq::EqualityEngine* EqEngineManagerCentral::getCoreEqualityEngine()
 {
   return &d_centralEqualityEngine;

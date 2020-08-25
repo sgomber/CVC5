@@ -61,7 +61,8 @@ void CombinationEngine::finishInit()
   {
     std::unique_ptr<EqEngineManagerCentral> eeCentral(
         new EqEngineManagerCentral(d_te));
-    d_mmanager.reset(new ModelManagerCentral(d_te, *eeCentral.get()));
+    //d_mmanager.reset(new ModelManagerCentral(d_te, *eeCentral.get()));
+    d_mmanager.reset(new ModelManagerDistributed(d_te, *eeCentral.get()));
     d_eemanager = std::move(eeCentral);
     d_sharedSolver.reset(new SharedSolverCentral(d_te));
   }
@@ -84,7 +85,8 @@ void CombinationEngine::finishInit()
   // initialize equality engine of the model using the equality engine manager
   TheoryModel* m = d_mmanager->getModel();
   eq::EqualityEngineNotify* meen = getModelEqualityEngineNotify();
-  d_eemanager->initializeModel(m, meen);
+  context::Context* meec = d_mmanager->getModelEqualityEngineContext();
+  d_eemanager->initializeModel(m, meen, meec);
 }
 
 const EeTheoryInfo* CombinationEngine::getEeTheoryInfo(TheoryId tid) const

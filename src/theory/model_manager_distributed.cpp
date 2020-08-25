@@ -21,12 +21,18 @@ namespace CVC4 {
 namespace theory {
 
 ModelManagerDistributed::ModelManagerDistributed(
-    TheoryEngine& te, EqEngineManagerDistributed& eem)
+    TheoryEngine& te, EqEngineManager& eem)
     : ModelManager(te), d_eem(eem)
 {
+  // We push a context during initialization since the model is cleared during
+  // collectModelInfo using pop/push.
+  d_modelEeContext.push();
 }
 
-ModelManagerDistributed::~ModelManagerDistributed() {}
+ModelManagerDistributed::~ModelManagerDistributed() {
+  // pop the model context which we pushed on initialization
+  d_modelEeContext.pop();
+}
 
 bool ModelManagerDistributed::prepareModel()
 {
@@ -34,9 +40,8 @@ bool ModelManagerDistributed::prepareModel()
                          << std::endl;
 
   // push/pop to clear the equality engine of the model
-  context::Context* meec = d_eem.getModelEqualityEngineContext();
-  meec->pop();
-  meec->push();
+  d_modelEeContext.pop();
+  d_modelEeContext.push();
 
   // Collect model info from the theories
   Trace("model-builder") << "ModelManagerDistributed: Collect model info..."
@@ -106,6 +111,11 @@ bool ModelManagerDistributed::finishBuildModel() const
     return false;
   }
   return true;
+}
+
+context::Context* ModelManagerDistributed::getModelEqualityEngineContext()
+{
+  return &d_modelEeContext;
 }
 
 }  // namespace theory

@@ -83,6 +83,10 @@ class ModelManager
    */
   virtual bool finishBuildModel() const = 0;
   //------------------------ end finer grained control over model building
+  /**
+   * Get the model equality engine context.
+   */
+  virtual context::Context* getModelEqualityEngineContext() = 0;
  protected:
   /**
    * Collect model Boolean variables.

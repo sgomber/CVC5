@@ -50,6 +50,7 @@ struct EeTheoryInfo
 class EqEngineManager
 {
  public:
+  EqEngineManager();
   virtual ~EqEngineManager() {}
   /**
    * Initialize theories, called during TheoryEngine::finishInit after theory
@@ -74,8 +75,9 @@ class EqEngineManager
    * @param m The model object to initialize the equality engine for
    * @param notify The notify call to use (used e.g. by CombinationModelBased).
    */
-  virtual void initializeModel(TheoryModel* m,
-                               eq::EqualityEngineNotify* notify) = 0;
+  void initializeModel(TheoryModel* m,
+                       eq::EqualityEngineNotify* notify, 
+                       context::Context * c);
   /**
    * Get the equality engine theory information for theory with the given id.
    */
@@ -83,7 +85,7 @@ class EqEngineManager
   /**
    * Get the model's equality engine.
    */
-  virtual eq::EqualityEngine* getModelEqualityEngine() = 0;
+  eq::EqualityEngine* getModelEqualityEngine();
   /**
    * Get the core equality engine, which is the equality engine that the
    * quantifiers engine should use. This corresponds to the master equality
@@ -111,6 +113,10 @@ class EqEngineManager
   std::map<TheoryId, EeTheoryInfo> d_einfo;
   /** The equivalence classes cache */
   std::unique_ptr<eq::EqClassesCache> d_eqCache;
+  /** Pointer to the equality engine of the model */
+  eq::EqualityEngine * d_modelEqualityEngine;
+  /** The equality engine of the model, if we allocated it */
+  std::unique_ptr<eq::EqualityEngine> d_modelEqualityEngineAlloc;
 };
 
 }  // namespace theory

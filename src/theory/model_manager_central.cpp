@@ -93,5 +93,11 @@ bool ModelManagerCentral::finishBuildModel() const
   return true;
 }
 
+context::Context* ModelManagerCentral::getModelEqualityEngineContext()
+{
+  // FIXME: unecessary?
+  return d_te.getSatContext();
+}
+
 }  // namespace theory
 }  // namespace CVC4

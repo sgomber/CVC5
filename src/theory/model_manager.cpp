@@ -220,5 +220,10 @@ void ModelManager::collectTerms(TheoryId tid,
   } while (!visit.empty());
 }
 
+context::Context* ModelManager::getModelEqualityEngineContext()
+{
+  return nullptr;
+}
+
 }  // namespace theory
 }  // namespace CVC4

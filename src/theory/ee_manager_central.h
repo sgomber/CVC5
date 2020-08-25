@@ -42,15 +42,8 @@ class EqEngineManagerCentral : public EqEngineManager
    * Initialize theories
    */
   void initializeTheories(SharedSolver* sharedSolver) override;
-  /**
-   * Initialize model.
-   */
-  void initializeModel(TheoryModel* m,
-                       eq::EqualityEngineNotify* notify) override;
   /** get the core equality engine */
   eq::EqualityEngine* getCoreEqualityEngine() override;
-  /** get the model equality engine */
-  eq::EqualityEngine* getModelEqualityEngine() override;
   /**
    * Notify this class that we are building the model.
    */

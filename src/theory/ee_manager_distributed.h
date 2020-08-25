@@ -57,20 +57,6 @@ class EqEngineManagerDistributed : public EqEngineManager
    * per theories and connects them to a master equality engine.
    */
   void initializeTheories(SharedSolver* sharedSolver) override;
-  /**
-   * Initialize model. This method allocates a new equality engine for the
-   * model.
-   */
-  void initializeModel(TheoryModel* m,
-                       eq::EqualityEngineNotify* notify) override;
-  /**
-   * Get the model equality engine context. This is a dummy context that is
-   * used for clearing the contents of the model's equality engine via
-   * pop/push.
-   */
-  context::Context* getModelEqualityEngineContext();
-  /** get the model equality engine */
-  eq::EqualityEngine* getModelEqualityEngine() override;
   /** get the core equality engine */
   eq::EqualityEngine* getCoreEqualityEngine() override;
  private:
@@ -114,15 +100,6 @@ class EqEngineManagerDistributed : public EqEngineManager
    * The equality engine of the shared terms database.
    */
   std::unique_ptr<eq::EqualityEngine> d_stbEqualityEngine;
-  /**
-   * A dummy context for the model equality engine, so we can clear it
-   * independently of search context.
-   */
-  context::Context d_modelEeContext;
-  /**
-   * The equality engine of the model.
-   */
-  std::unique_ptr<eq::EqualityEngine> d_modelEqualityEngine;
 };
 
 }  // namespace theory

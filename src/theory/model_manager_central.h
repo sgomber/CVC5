@@ -65,6 +65,10 @@ class ModelManagerCentral : public ModelManager
    * (2) Popping a SAT context if we are not successful.
    */
   bool finishBuildModel() const override;
+  /**
+   * Get the model equality engine context.
+   */
+  context::Context* getModelEqualityEngineContext() override;
 
  private:
   /**
