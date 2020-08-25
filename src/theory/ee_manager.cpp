@@ -47,8 +47,8 @@ void EqEngineManager::addFunctionKinds(eq::EqualityEngine* ee, EeSetupInfo& esi)
   }
 }
 
-eq::EqualityEngine* EqEngineManager::allocateEqualityEngine(
-    EeSetupInfo& esi, context::Context* c)
+eq::EqualityEngine* EqEngineManager::allocateEqualityEngine(EeSetupInfo& esi,
+                                                            context::Context* c)
 {
   if (esi.d_notify != nullptr)
   {

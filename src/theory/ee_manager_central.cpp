@@ -190,7 +190,8 @@ bool EqEngineManagerCentral::eqNotifyTriggerPredicate(TNode predicate,
   }
   Theory* t = d_te.getActiveTheory();
   TheoryId tid = t == nullptr ? THEORY_BUILTIN : t->getId();
-  Trace("eem-central") << "...propagate " << predicate << ", " << value << " with " << tid << std::endl;
+  Trace("eem-central") << "...propagate " << predicate << ", " << value
+                       << " with " << tid << std::endl;
   // propagate directly to theory engine
   if (value)
   {

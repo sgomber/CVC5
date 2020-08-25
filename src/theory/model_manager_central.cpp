@@ -19,7 +19,11 @@
 namespace CVC4 {
 namespace theory {
 
-ModelManagerCentral::ModelManagerCentral(TheoryEngine& te, EqEngineManagerCentral& eem) : ModelManager(te), d_eem(eem) {}
+ModelManagerCentral::ModelManagerCentral(TheoryEngine& te,
+                                         EqEngineManagerCentral& eem)
+    : ModelManager(te), d_eem(eem)
+{
+}
 
 ModelManagerCentral::~ModelManagerCentral() {}
 

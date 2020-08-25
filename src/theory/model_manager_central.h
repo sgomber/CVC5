@@ -65,7 +65,8 @@ class ModelManagerCentral : public ModelManager
    * (2) Popping a SAT context if we are not successful.
    */
   bool finishBuildModel() const override;
-private:
+
+ private:
   /**
    * Central equality engine manager.
    */
