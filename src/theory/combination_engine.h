@@ -17,7 +17,7 @@
 #ifndef CVC4__THEORY__COMBINATION_ENGINE__H
 #define CVC4__THEORY__COMBINATION_ENGINE__H
 
-#include <map>
+#include <vector>
 #include <memory>
 
 #include "theory/ee_manager.h"
@@ -27,8 +27,6 @@
 namespace CVC4 {
 
 class TheoryEngine;
-class SharedTermsDatabase;
-class SharedTermsVisitor;
 
 namespace theory {
 
@@ -49,22 +47,39 @@ class CombinationEngine
   void finishInit();
 
   //-------------------------- equality engine
-  /** Get the equality engine theory information. */
+  /** Get equality engine theory information for theory with identifier tid. */
   const EeTheoryInfo* getEeTheoryInfo(TheoryId tid) const;
-  /** get the master equality engine */
+  /**
+   * Get the "core" equality engine. This is the equality engine that
+   * quantifiers should use.
+   */
   eq::EqualityEngine* getCoreEqualityEngine();
   //-------------------------- end equality engine
   //-------------------------- model
-  /** reset model */
+  /**
+   * Reset the model maintained by this class. This resets all local information
+   * that is unique to each check.
+   */
   void resetModel();
-  /** Build model */
+  /**
+   * Build the model maintained by this class.
+   *
+   * @return true if model building was successful.
+   */
   virtual bool buildModel() = 0;
-  /** Post process model */
+  /**
+   * Post process the model maintained by this class. This is called after
+   * a successful call to buildModel. This does any theory-specific
+   * postprocessing of the model.
+   *
+   * @param incomplete Whether we are answering "unknown" instead of "sat".
+   */
   void postProcessModel(bool incomplete);
-  /** Get model */
+  /**
+   * Get the model object maintained by this class.
+   */
   TheoryModel* getModel();
   //-------------------------- end model
-
   /**
    * Get the shared solver, which is the active component of theory combination
    * that TheoryEngine interacts with prior to calling combineTheories.

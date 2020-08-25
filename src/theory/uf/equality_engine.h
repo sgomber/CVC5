@@ -518,7 +518,7 @@ private:
   bool d_constantsAreTriggers;
   /**
    * Are any terms triggers? If this is false, then all trigger terms are
-   * ignored (e.g. this means that addTriggerTerm is ignored).
+   * ignored (e.g. this means that addTriggerTerm is equivalent to addTerm).
    */
   bool d_anyTermsAreTriggers;
 
@@ -785,8 +785,8 @@ private:
   //--------------------------- standard safe explanation methods
   /**
    * Explain literal, add its explanation to assumptions. This method does not
-   * add duplicates to assumptions. It additionally contains assertions for
-   * whether literal does hold in this class. If lit is a disequality, it
+   * add duplicates to assumptions. It requires that the literal
+   * holds in this class. If lit is a disequality, it
    * moreover ensures this class is ready to explain it via areDisequal with
    * ensureProof = true.
    */

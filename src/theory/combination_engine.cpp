@@ -1,5 +1,5 @@
 /*********************                                                        */
-/*! \file combination_care_graph.cpp
+/*! \file combination_engine.cpp
  ** \verbatim
  ** Top contributors (to current version):
  **   Andrew Reynolds
@@ -12,7 +12,7 @@
  ** \brief Management of a care graph based approach for theory combination.
  **/
 
-#include "theory/combination_care_graph.h"
+#include "theory/combination_engine.h"
 
 #include "expr/node_visitor.h"
 #include "theory/care_graph.h"
@@ -22,8 +22,6 @@
 #include "theory/model_manager_distributed.h"
 #include "theory/shared_solver_central.h"
 #include "theory/shared_solver_distributed.h"
-#include "theory/shared_terms_database.h"
-#include "theory/term_registration_visitor.h"
 #include "theory/theory_engine.h"
 
 namespace CVC4 {

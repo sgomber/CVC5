@@ -86,25 +86,25 @@ struct NodeTheoryPairHashFunction {
 
 /* Forward declarations */
 namespace theory {
-  class TheoryModel;
-  class CombinationEngine;
-  class CombinationCareGraph;
-  class SharedSolver;
-  class EqEngineManagerCentral;
+class TheoryModel;
+class CombinationEngine;
+class CombinationCareGraph;
+class SharedSolver;
+class EqEngineManagerCentral;
 
-  class DecisionManager;
-  class RelevanceManager;
+class DecisionManager;
+class RelevanceManager;
 
-  namespace eq {
-    class EqualityEngine;
-  }/* CVC4::theory::eq namespace */
+namespace eq {
+class EqualityEngine;
+}  // namespace eq
 
-  namespace quantifiers {
-    class TermDb;
-  }
+namespace quantifiers {
+class TermDb;
+}
 
-  class EntailmentCheckParameters;
-  class EntailmentCheckSideEffects;
+class EntailmentCheckParameters;
+class EntailmentCheckSideEffects;
 }/* CVC4::theory namespace */
 
 class RemoveTermFormulas;
@@ -119,6 +119,7 @@ class TheoryEngine {
 
   /** Shared terms database can use the internals notify the theories */
   friend class SharedTermsDatabase;
+  friend class theory::CombinationEngine;
   friend class theory::quantifiers::TermDb;
   friend class theory::EngineOutputChannel;
   friend class theory::CombinationEngine;
