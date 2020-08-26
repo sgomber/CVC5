@@ -304,7 +304,7 @@ private:
   std::pair<bool, Node> entailmentCheck(TNode lit) override;
 
  private:
-  /** 
+  /**
    * Add tester to equivalence class info, return true if we are not in
    * conflict.
    */

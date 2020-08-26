@@ -465,8 +465,8 @@ bool TheoryDatatypes::doSendLemmas( std::vector< Node >& lemmas ){
   lemmas.clear();
   return ret;
 }
-        
-void TheoryDatatypes::assertFact( Node fact, Node exp)
+
+void TheoryDatatypes::assertFact(Node fact, Node exp)
 {
   Trace("datatypes-debug") << "TheoryDatatypes::assertFact : " << fact << std::endl;
   bool polarity = fact.getKind() != kind::NOT;
@@ -491,7 +491,7 @@ void TheoryDatatypes::assertFact( Node fact, Node exp)
     Trace("dt-tester") << "Assert tester : " << atom << " for " << t_arg << std::endl;
     Node rep = getRepresentative( t_arg );
     EqcInfo* eqc = getOrMakeEqcInfo( rep, true );
-    if (!addTester( tindex, fact, eqc, rep, t_arg ))
+    if (!addTester(tindex, fact, eqc, rep, t_arg))
     {
       Trace("dt-tester") << "Tester conflict." << std::endl;
       return;
@@ -823,7 +823,7 @@ void TheoryDatatypes::eqNotifyMerge(TNode t1, TNode t2)
   if( t1.getType().isDatatype() ){
     Trace("datatypes-debug")
         << "NotifyMerge : " << t1 << " " << t2 << std::endl;
-    merge(t1,t2);
+    merge(t1, t2);
   }
 }
 
@@ -917,7 +917,8 @@ void TheoryDatatypes::merge( Node t1, Node t2 ){
           Node t = d_labels_data[ t2 ][i];
           Node t_arg = d_labels_args[t2][i];
           unsigned tindex = d_labels_tindex[t2][i];
-          if( !addTester( tindex, t, eqc1, t1, t_arg ) ){
+          if (!addTester(tindex, t, eqc1, t1, t_arg))
+          {
             Trace("datatypes-debug") << "  conflict!" << std::endl;
             return;
           }
