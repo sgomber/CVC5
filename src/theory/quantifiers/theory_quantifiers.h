@@ -54,7 +54,10 @@ class TheoryQuantifiers : public Theory {
   /** Post-check, called after the fact queue of the theory is processed. */
   void postCheck(Effort level) override;
   /** Pre-notify fact, return true if processed. */
-  bool preNotifyFact(TNode atom, bool pol, TNode fact, bool isPrereg,
+  bool preNotifyFact(TNode atom,
+                     bool pol,
+                     TNode fact,
+                     bool isPrereg,
                      bool isInternal) override;
   //--------------------------------- end standard check
   /** Collect model values in m based on the relevant terms given by termSet */

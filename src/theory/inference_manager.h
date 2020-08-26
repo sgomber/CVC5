@@ -39,15 +39,15 @@ class EqualityEngine;
  * around the output channel and the official equality engine of a Theory.
  * It is used for ensuring that the equality engine and output channel
  * are used properly. This includes the following invariants:
- * 
+ *
  * (1) The state tracks conflicts
- * 
+ *
  * In particular, TheoryState::isInConflict returns true whenever we have
  * called OutputChannel::conflict in the current context.
- * 
+ *
  * (2) The theory is notified of facts
- * 
- * In particular, Theory::preNotifyFact / Theory::notifyFact is 
+ *
+ * In particular, Theory::preNotifyFact / Theory::notifyFact is
  */
 class TheoryInferenceManager
 {
@@ -57,8 +57,7 @@ class TheoryInferenceManager
   /**
    * Constructor, note that state should be the official state of theory t.
    */
-  TheoryInferenceManager(Theory& t, TheoryState& state,
-         ProofNodeManager* pnm);
+  TheoryInferenceManager(Theory& t, TheoryState& state, ProofNodeManager* pnm);
   virtual ~TheoryInferenceManager() {}
   //--------------------------------------- initialization
   /**
@@ -70,7 +69,7 @@ class TheoryInferenceManager
   /**
    * T-propagate literal lit, possibly encountered by equality engine,
    * returns false if we are in conflict.
-   * 
+   *
    * Note that this is the preferred method to call on
    * EqualityEngineNotify::eqNotifyTriggerPredicate and
    * EqualityEngineNotify::eqNotifyTriggerTermEquality.
@@ -88,7 +87,7 @@ class TheoryInferenceManager
    * on the output channel corresponding to the equality engine's explanation
    * of (= a b). The proof equality engine (if it exists) will be used as the
    * proof generator.
-   * 
+   *
    * Note that this is the preferred method to call on
    * EqualityEngineNotify::eqNotifyConstantTermMerge.
    */
@@ -103,7 +102,7 @@ class TheoryInferenceManager
    * been provided in a custom way.
    */
   void trustedConflict(TrustNode tconf);
-  /** 
+  /**
    * Assert internal fact. This is recommended method for asserting "internal"
    * facts into the equality engine of the theory. In particular, this method
    * should be used for anything the theory infers that is not sent on the
@@ -112,8 +111,9 @@ class TheoryInferenceManager
    * isInternal = true.
    */
   void assertInternalFact(TNode atom, bool pol, TNode fact);
+
  protected:
-  /** 
+  /**
    * Explain conflict from constants merging in the equality engine. This
    * method is called by conflictEqConstantMerge. By default, it returns
    * the explanation of the official equality engine of the theory, if it

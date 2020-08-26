@@ -449,8 +449,8 @@ void TheoryBV::postCheck(Effort level)
   }
 }
 
-bool TheoryBV::preNotifyFact(TNode atom, bool pol, TNode fact, bool isPrereg,
-                     bool isInternal)
+bool TheoryBV::preNotifyFact(
+    TNode atom, bool pol, TNode fact, bool isPrereg, bool isInternal)
 {
   Assert(options::bitblastMode() != options::BitblastMode::EAGER);
   checkForLemma(fact);

@@ -22,8 +22,9 @@ using namespace CVC4::kind;
 namespace CVC4 {
 namespace theory {
 
-TheoryInferenceManager::TheoryInferenceManager(Theory& t, TheoryState& state,
-         ProofNodeManager* pnm)
+TheoryInferenceManager::TheoryInferenceManager(Theory& t,
+                                               TheoryState& state,
+                                               ProofNodeManager* pnm)
     : d_theory(t),
       d_theoryState(state),
       d_out(t.getOutputChannel()),

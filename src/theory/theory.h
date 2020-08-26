@@ -640,7 +640,8 @@ class Theory {
    * @return true if the theory completely processed this fact, i.e. it does
    * not need to assert the fact to its equality engine.
    */
-  virtual bool preNotifyFact(TNode atom, bool pol, TNode fact, bool isPrereg, bool isInternal);
+  virtual bool preNotifyFact(
+      TNode atom, bool pol, TNode fact, bool isPrereg, bool isInternal);
   /**
    * Notify fact, called immediately after the fact was pushed into the
    * equality engine.

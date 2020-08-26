@@ -77,7 +77,7 @@ class InferenceManager : public TheoryInferenceManager
                    TermRegistry& tr,
                    ExtTheory& e,
                    SequencesStatistics& statistics,
-         ProofNodeManager* pnm);
+                   ProofNodeManager* pnm);
   ~InferenceManager() {}
 
   /** send internal inferences
