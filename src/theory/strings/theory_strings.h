@@ -104,12 +104,12 @@ class TheoryStrings : public Theory {
   //--------------------------------- standard check
   /** Do we need a check call at last call effort? */
   bool needsCheckLastEffort() override;
-  /** Post-check, called after the fact queue of the theory is processed. */
-  void postCheck(Effort level) override;
   /** Notify fact */
   bool preNotifyFact(TNode atom, bool pol, TNode fact, bool isPrereg) override;
   /** Notify fact */
   void notifyFact(TNode atom, bool pol, TNode fact, bool isInternal) override;
+  /** Post-check, called after the fact queue of the theory is processed. */
+  void postCheck(Effort level) override;
   //--------------------------------- end standard check
   /** propagate method */
   bool propagateLit(TNode literal);

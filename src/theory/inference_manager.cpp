@@ -24,10 +24,11 @@ namespace theory {
 
 InferManager::InferManager(Theory& t, TheoryState& state)
     : d_theory(t),
-      d_state(state),
+      d_theoryState(state),
       d_out(t.getOutputChannel()),
       d_ee(nullptr),
-      d_pnm(nullptr)
+      d_pnm(nullptr),
+      d_keep(t.getSatContext())
 {
 }
 
@@ -35,7 +36,7 @@ void InferManager::setEqualityEngine(eq::EqualityEngine* ee) { d_ee = ee; }
 
 void InferManager::conflictEqConstantMerge(TNode a, TNode b)
 {
-  if (!d_state.isInConflict())
+  if (!d_theoryState.isInConflict())
   {
     TrustNode tconf = explainConflictEqConstantMerge(a, b);
     trustedConflict(tconf);
@@ -44,7 +45,7 @@ void InferManager::conflictEqConstantMerge(TNode a, TNode b)
 
 void InferManager::conflict(TNode conf)
 {
-  if (!d_state.isInConflict())
+  if (!d_theoryState.isInConflict())
   {
     d_out.conflict(conf);
   }
@@ -52,9 +53,9 @@ void InferManager::conflict(TNode conf)
 
 void InferManager::trustedConflict(TrustNode tconf)
 {
-  if (!d_state.isInConflict())
+  if (!d_theoryState.isInConflict())
   {
-    d_state.notifyInConflict();
+    d_theoryState.notifyInConflict();
     d_out.trustedConflict(tconf);
   }
 }
@@ -62,7 +63,7 @@ void InferManager::trustedConflict(TrustNode tconf)
 bool InferManager::propagateLit(TNode lit)
 {
   // If already in conflict, no more propagation
-  if (d_state.isInConflict())
+  if (d_theoryState.isInConflict())
   {
     return false;
   }
@@ -70,7 +71,7 @@ bool InferManager::propagateLit(TNode lit)
   bool ok = d_out.propagate(lit);
   if (!ok)
   {
-    d_state.notifyInConflict();
+    d_theoryState.notifyInConflict();
   }
   return ok;
 }
@@ -106,6 +107,7 @@ void InferManager::assertInternalFact(TNode atom, bool pol, TNode fact)
 {
   if (d_theory.preNotifyFact(atom, pol, fact, false))
   {
+    // handled in specific way
     return;
   }
   Assert(d_ee != nullptr);
@@ -123,7 +125,11 @@ void InferManager::assertInternalFact(TNode atom, bool pol, TNode fact)
   d_theory.notifyFact(atom, pol, fact, true);
   Trace("infer-manager") << "InferManager::finished assertInternalFact"
                          << std::endl;
-  // TODO: keep set for fact?
+  // Must reference count the equality and its explanation, which is not done
+  // by the equality engine. Notice that we do not need to do this for
+  // external assertions, which enter as facts in theory check.
+  d_keep.insert(atom);
+  d_keep.insert(fact);
 }
 
 }  // namespace theory

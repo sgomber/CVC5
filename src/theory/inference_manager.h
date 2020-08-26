@@ -21,6 +21,7 @@
 #include "theory/output_channel.h"
 #include "theory/theory_state.h"
 #include "theory/trust_node.h"
+#include "context/cdhashset.h"
 
 namespace CVC4 {
 
@@ -38,6 +39,7 @@ class EqualityEngine;
  */
 class InferManager
 {
+  typedef context::CDHashSet<Node, NodeHashFunction> NodeSet;
  public:
   /**
    * Constructor, note that state should be the official state of theory t.
@@ -86,13 +88,20 @@ class InferManager
   /** The theory object */
   Theory& d_theory;
   /** Reference to the state of theory */
-  TheoryState& d_state;
+  TheoryState& d_theoryState;
   /** Reference to the output channel of the theory */
   OutputChannel& d_out;
   /** Pointer to equality engine of the theory. */
   eq::EqualityEngine* d_ee;
   /** The proof node manager of the theory */
   ProofNodeManager* d_pnm;
+  /**
+   * The keep set of this class. This set is maintained to ensure that
+   * facts and their explanations are ref-counted. Since facts and their
+   * explanations are SAT-context-dependent, this set is also
+   * SAT-context-dependent.
+   */
+  NodeSet d_keep;
 };
 
 }  // namespace theory

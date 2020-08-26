@@ -46,7 +46,7 @@ TheoryStrings::TheoryStrings(context::Context* c,
       d_state(c, u, d_valuation),
       d_termReg(d_state, out, d_statistics, nullptr),
       d_extTheory(this),
-      d_im(c, u, d_state, d_termReg, d_extTheory, out, d_statistics),
+      d_im(*this, d_state, d_termReg, d_extTheory, d_statistics),
       d_rewriter(&d_statistics.d_rewrites),
       d_bsolver(d_state, d_im),
       d_csolver(d_state, d_im, d_termReg, d_bsolver),
@@ -83,6 +83,8 @@ TheoryStrings::TheoryStrings(context::Context* c,
   }
   // use the state object as the official theory state
   d_theoryState = &d_state;
+  // use the inference manager as the official inference manager
+  d_inferManager = &d_im;
   d_needsSharedTermEqFacts = false;
 }
 
@@ -636,6 +638,69 @@ TrustNode TheoryStrings::expandDefinition(Node node)
   return TrustNode::null();
 }
 
+bool TheoryStrings::preNotifyFact(TNode atom,
+                                  bool pol,
+                                  TNode fact,
+                                  bool isPrereg)
+{
+  if (atom.getKind() == EQUAL)
+  {
+    // we must ensure these terms are registered
+    eq::EqualityEngine* ee = d_state.getEqualityEngine();
+    for (const Node& t : atom)
+    {
+      // terms in the equality engine are already registered, hence skip
+      // currently done for only string-like terms, but this could potentially
+      // be avoided.
+      if (!ee->hasTerm(t) && t.getType().isStringLike())
+      {
+        d_termReg.registerTerm(t, 0);
+      }
+    }
+  }
+  return false;
+}
+
+void TheoryStrings::notifyFact(TNode atom,
+                               bool polarity,
+                               TNode fact,
+                               bool isInternal)
+{
+  if (atom.getKind() == STRING_IN_REGEXP)
+  {
+    if (polarity && atom[1].getKind() == REGEXP_CONCAT)
+    {
+      eq::EqualityEngine* ee = d_state.getEqualityEngine();
+      Node eqc = ee->getRepresentative(atom[0]);
+      d_state.addEndpointsToEqcInfo(atom, atom[1], eqc);
+    }
+  }
+  // process the conflict
+  if (!d_state.isInConflict())
+  {
+    Node pc = d_state.getPendingConflict();
+    if (!pc.isNull())
+    {
+      std::vector<Node> a;
+      a.push_back(pc);
+      Trace("strings-pending")
+          << "Process pending conflict " << pc << std::endl;
+      Node conflictNode = d_im.mkExplain(a);
+      Trace("strings-conflict")
+          << "CONFLICT: Eager prefix : " << conflictNode << std::endl;
+      ++(d_statistics.d_conflictsEagerPrefix);
+      d_im.conflict(conflictNode);
+    }
+  }
+  Trace("strings-pending-debug") << "  Now collect terms" << std::endl;
+  // Collect extended function terms in the atom. Notice that we must register
+  // all extended functions occurring in assertions and shared terms. We
+  // make a similar call to registerTermRec in TheoryStrings::addSharedTerm.
+  d_extTheory.registerTermRec(atom);
+  Trace("strings-pending-debug") << "  Finished collect terms" << std::endl;
+}
+
+
 void TheoryStrings::postCheck(Effort e)
 {
   d_im.doPendingFacts();
@@ -716,22 +781,6 @@ void TheoryStrings::postCheck(Effort e)
   Trace("strings-check") << "Theory of strings, done check : " << e << std::endl;
   Assert(!d_im.hasPendingFact());
   Assert(!d_im.hasPendingLemma());
-}
-
-bool TheoryStrings::preNotifyFact(TNode atom,
-                                  bool pol,
-                                  TNode fact,
-                                  bool isPrereg)
-{
-  return d_im.preNotifyFact(atom, pol, fact, false);
-}
-
-void TheoryStrings::notifyFact(TNode atom,
-                               bool polarity,
-                               TNode fact,
-                               bool isInternal)
-{
-  d_im.notifyFact(atom, polarity, fact, isInternal);
 }
 
 bool TheoryStrings::needsCheckLastEffort() {
