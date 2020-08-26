@@ -86,39 +86,16 @@ EqualityStatus SharedSolver::getEqualityStatus(TNode a, TNode b)
   return EQUALITY_UNKNOWN;
 }
 
-TrustNode SharedSolver::explain(TNode literal, TheoryId id)
+bool SharedSolver::propagateSharedEquality(theory::TheoryId theory, TNode a, TNode b, bool value)
 {
-  TrustNode texp;
-  if (id == THEORY_BUILTIN)
-  {
-    // explanation based on the specific solver
-    texp = explainShared(literal);
-    Trace("shared-solver")
-        << "\tTerm was propagated by THEORY_BUILTIN. Explanation: "
-        << texp.getNode() << std::endl;
+  // Propagate equality between shared terms to the one who asked for it
+  Node equality = a.eqNode(b);
+  if (value) {
+    d_te.assertToTheory(equality, equality, theory, THEORY_BUILTIN);
+  } else {
+    d_te.assertToTheory(equality.notNode(), equality.notNode(), theory, THEORY_BUILTIN);
   }
-  else
-  {
-    // By default, we ask the individual theory for the explanation.
-    // It is possible that a centralized approach could preempt this.
-    texp = d_te.theoryOf(id)->explain(literal);
-    Trace("shared-solver") << "\tTerm was propagated by owner theory: " << id
-                           << ". Explanation: " << texp.getNode() << std::endl;
-  }
-  return texp;
-}
-
-TrustNode SharedSolver::explainShared(TNode literal)
-{
-  Unimplemented()
-      << "SharedSolver does not implement the explainShared interface!";
-}
-
-void SharedSolver::assertSharedEquality(TNode equality,
-                                        bool polarity,
-                                        TNode reason)
-{
-  // do nothing
+  return true;
 }
 
 bool SharedSolver::isShared(TNode t) const { return d_sharedTerms.isShared(t); }

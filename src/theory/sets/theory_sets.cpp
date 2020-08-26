@@ -39,6 +39,7 @@ TheorySets::TheorySets(context::Context* c,
 {
   // use the state object as the official theory state
   d_theoryState = d_internal->getSolverState();
+  d_needsSharedTermEqFacts = false;
 }
 
 TheorySets::~TheorySets()

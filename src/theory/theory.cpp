@@ -83,7 +83,8 @@ Theory::Theory(TheoryId id,
       d_allocEqualityEngine(nullptr),
       d_theoryState(nullptr),
       d_inferManager(nullptr),
-      d_proofsEnabled(false)
+      d_proofsEnabled(false),
+      d_needsSharedTermEqFacts(true)
 {
   smtStatisticsRegistry()->registerStat(&d_checkTime);
   smtStatisticsRegistry()->registerStat(&d_computeCareGraphTime);
@@ -569,7 +570,7 @@ void Theory::addSharedTerm(TNode n)
   // now call theory-specific addSharedTerm
   notifySharedTerm(n);
   // if we have an equality engine, add the trigger term
-  if (d_equalityEngine != nullptr)
+  if (d_equalityEngine != nullptr && (d_needsSharedTermEqFacts || options::eeMode()==options::EqEngineMode::DISTRIBUTED))
   {
     d_equalityEngine->addTriggerTerm(n, d_id);
   }

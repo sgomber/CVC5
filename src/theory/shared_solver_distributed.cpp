@@ -62,9 +62,26 @@ EqualityStatus SharedSolverDistributed::getEqualityStatus(TNode a, TNode b)
   return d_te.theoryOf(Theory::theoryOf(a.getType()))->getEqualityStatus(a, b);
 }
 
-TrustNode SharedSolverDistributed::explainShared(TNode literal)
+TrustNode SharedSolverDistributed::explain(TNode literal, TheoryId id)
 {
-  return d_sharedTerms.explain(literal);
+  TrustNode texp;
+  if (id == THEORY_BUILTIN)
+  {
+    // explanation based on the specific solver
+    texp = d_sharedTerms.explain(literal);
+    Trace("shared-solver")
+        << "\tTerm was propagated by THEORY_BUILTIN. Explanation: "
+        << texp.getNode() << std::endl;
+  }
+  else
+  {
+    // By default, we ask the individual theory for the explanation.
+    // It is possible that a centralized approach could preempt this.
+    texp = d_te.theoryOf(id)->explain(literal);
+    Trace("shared-solver") << "\tTerm was propagated by owner theory: " << id
+                           << ". Explanation: " << texp.getNode() << std::endl;
+  }
+  return texp;
 }
 
 void SharedSolverDistributed::assertSharedEquality(TNode equality,

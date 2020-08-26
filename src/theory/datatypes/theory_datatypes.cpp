@@ -71,6 +71,7 @@ TheoryDatatypes::TheoryDatatypes(Context* c,
 
   // indicate we are using the default theory state object
   d_theoryState = &d_state;
+  d_needsSharedTermEqFacts = false;
 }
 
 TheoryDatatypes::~TheoryDatatypes() {
@@ -170,7 +171,8 @@ bool TheoryDatatypes::preCheck(Effort level)
 
 void TheoryDatatypes::postCheck(Effort level)
 {
-  // FIXME: necessary for ee central?
+  // HACK-centralEe
+  // necessary for ee central?
   flushPendingFacts();
   if (level == EFFORT_LAST_CALL)
   {

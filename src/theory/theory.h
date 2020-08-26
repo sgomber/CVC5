@@ -243,6 +243,11 @@ class Theory {
    *
    */
   bool d_proofsEnabled;
+  
+  /** 
+   * Needs shared term trigger equalities as facts.
+   */
+  bool d_needsSharedTermEqFacts;
 
   /**
    * Returns the next assertion in the assertFact() queue.
@@ -978,6 +983,13 @@ class Theory {
 
   /** Turn on proof-production mode. */
   void produceProofs() { d_proofsEnabled = true; }
+  
+  /** 
+   * Needs shared term trigger equalities as facts. Whether this theory needs
+   * equalities between shared terms as explicit facts on the fact queue
+   * or whether having them asserted in its equality engine suffices.
+   */
+  bool needsSharedTermEqFacts() const { return d_needsSharedTermEqFacts; }
 };/* class Theory */
 
 std::ostream& operator<<(std::ostream& os, theory::Theory::Effort level);

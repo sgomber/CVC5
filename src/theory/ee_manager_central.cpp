@@ -199,14 +199,7 @@ bool EqEngineManagerCentral::eqNotifyTriggerTermEquality(TheoryId tag,
                                   TNode b,
                                   bool value)
 {
-  // Propagate shared term
-  Node equality = a.eqNode(b);
-  if (value) {
-    d_te.assertToTheory(equality, equality, tag, THEORY_BUILTIN);
-  } else {
-    d_te.assertToTheory(equality.notNode(), equality.notNode(), tag, THEORY_BUILTIN);
-  }
-  return true;
+  return d_sharedSolver.propagateSharedEquality(tag, a, b, value);
 }
 
 void EqEngineManagerCentral::eqNotifyConstantTermMerge(TNode t1, TNode t2)

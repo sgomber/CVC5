@@ -84,7 +84,7 @@ class SharedSolver
    * Explain literal, which returns a conjunction of literals that that entail
    * the given one.
    */
-  virtual TrustNode explain(TNode literal, TheoryId id);
+  virtual TrustNode explain(TNode literal, TheoryId id) = 0;
   /**
    * Assert equality to the shared terms database.
    *
@@ -94,16 +94,16 @@ class SharedSolver
    */
   virtual void assertSharedEquality(TNode equality,
                                     bool polarity,
-                                    TNode reason);
+                                    TNode reason) = 0;
   /** Is term t a shared term? */
   virtual bool isShared(TNode t) const;
 
- protected:
   /**
-   * Explain literal, which returns a conjunction of literals that that entail
-   * the given one.
+   * Method called by equalityEngine when a becomes (dis-)equal to b and a and b are shared with
+   * the theory. Returns false if there is a direct conflict (via rewrite for example).
    */
-  virtual TrustNode explainShared(TNode literal);
+  bool propagateSharedEquality(theory::TheoryId theory, TNode a, TNode b, bool value);
+ protected:
   /** Solver-specific pre-register shared */
   virtual void preRegisterSharedInternal(TNode t) = 0;
   /** Reference to the theory engine */

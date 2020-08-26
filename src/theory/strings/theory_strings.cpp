@@ -83,6 +83,7 @@ TheoryStrings::TheoryStrings(context::Context* c,
   }
   // use the state object as the official theory state
   d_theoryState = &d_state;
+  d_needsSharedTermEqFacts = false;
 }
 
 TheoryStrings::~TheoryStrings() {

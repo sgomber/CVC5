@@ -122,8 +122,8 @@ class TheoryEngine {
   friend class theory::CombinationEngine;
   friend class theory::quantifiers::TermDb;
   friend class theory::EngineOutputChannel;
-  friend class theory::CombinationEngine;
   friend class theory::EqEngineManagerCentral;
+  friend class theory::SharedSolver;
 
   /** Associated PropEngine engine */
   prop::PropEngine* d_propEngine;

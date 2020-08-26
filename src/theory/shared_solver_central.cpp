@@ -63,18 +63,77 @@ EqualityStatus SharedSolverCentral::getEqualityStatus(TNode a, TNode b)
   return d_te.theoryOf(Theory::theoryOf(a.getType()))->getEqualityStatus(a, b);
 }
 
-TrustNode SharedSolverCentral::explainShared(TNode literal)
-{
-  Node exp = d_centralEe->mkExplainLit(literal);
-  return TrustNode::mkTrustPropExp(literal, exp, nullptr);
-}
-
 void SharedSolverCentral::assertSharedEquality(TNode equality,
                                                bool polarity,
                                                TNode reason)
 {
   Trace("shared-solver") << "assertSharedEquality (central): " << equality << " " << polarity << " " << reason << std::endl;
   d_centralEe->assertEquality(equality, polarity, reason);
+}
+
+TrustNode SharedSolverCentral::maybeExplain(TNode lit) 
+{
+  // does it hold in the central equality engine?
+  bool polarity = lit.getKind() != kind::NOT;
+  TNode atom = polarity ? lit : lit[0];
+  std::vector<TNode> assumps;
+  if (atom.getKind() == kind::EQUAL)
+  {
+    if (!d_centralEe->hasTerm(atom[0]) || !d_centralEe->hasTerm(atom[1]))
+    {
+      return TrustNode::null();
+    }
+    if (polarity ? d_centralEe->areEqual(atom[0], atom[1])
+                    : d_centralEe->areDisequal(atom[0], atom[1], true))
+    {
+      d_centralEe->explainEquality(atom[0], atom[1], polarity, assumps);
+    }
+  }
+  else if (!d_centralEe->hasTerm(atom))
+  {
+    return TrustNode::null();
+  }
+  else
+  {
+    TNode atomRep = d_centralEe->getRepresentative(atom);
+    if (atomRep.isConst() && atomRep.getConst<bool>()==polarity)
+    {
+      d_centralEe->explainPredicate(atom, polarity, assumps);
+    }
+    else
+    {
+      return TrustNode::null();
+    }
+  }
+  Assert (!assumps.empty());
+  NodeManager * nm = NodeManager::currentNM();
+  Node exp = assumps.size()==1 ? Node(assumps[0]) : nm->mkNode(kind::AND, assumps);
+  return TrustNode::mkTrustPropExp(lit, exp, nullptr);
+}
+
+TrustNode SharedSolverCentral::explain(TNode literal, TheoryId id)
+{
+  // first, try to explain with the central equality engine
+  TrustNode texp = maybeExplain(literal);
+  if (!texp.isNull())
+  {
+    Trace("shared-solver")
+        << "\tTerm was explained by the central equality engine"
+        << texp.getNode() << std::endl;
+    return texp;
+  }
+  if (id == THEORY_BUILTIN)
+  {
+    // explanation based on the specific solver
+    Unhandled() << "SharedSolverCentral::explain: expected literal propagated by THEORY_BUILTIN to hold in the central equality engine: " << literal;
+  }
+  // Otherwise, use theoryOf ?
+  // By default, we ask the individual theory for the explanation.
+  // It is possible that a centralized approach could preempt this.
+  texp = d_te.theoryOf(id)->explain(literal);
+  Trace("shared-solver") << "\tTerm was propagated by owner theory: " << id
+                          << ". Explanation: " << texp.getNode() << std::endl;
+  return texp;
 }
 
 }  // namespace theory
