@@ -32,7 +32,10 @@ TheoryInferenceManager::TheoryInferenceManager(Theory& t, TheoryState& state)
 {
 }
 
-void TheoryInferenceManager::setEqualityEngine(eq::EqualityEngine* ee) { d_ee = ee; }
+void TheoryInferenceManager::setEqualityEngine(eq::EqualityEngine* ee)
+{
+  d_ee = ee;
+}
 
 void TheoryInferenceManager::conflictEqConstantMerge(TNode a, TNode b)
 {
@@ -90,7 +93,8 @@ TrustNode TheoryInferenceManager::explainLit(TNode lit)
                      "TheoryInferenceManager::explainLit interface!";
 }
 
-TrustNode TheoryInferenceManager::explainConflictEqConstantMerge(TNode a, TNode b)
+TrustNode TheoryInferenceManager::explainConflictEqConstantMerge(TNode a,
+                                                                 TNode b)
 {
   // TODO: use proof equality engine if it exists
   if (d_ee != nullptr)
@@ -103,7 +107,9 @@ TrustNode TheoryInferenceManager::explainConflictEqConstantMerge(TNode a, TNode 
                   << " mkTrustedConflictEqConstantMerge";
 }
 
-void TheoryInferenceManager::assertInternalFact(TNode atom, bool pol, TNode fact)
+void TheoryInferenceManager::assertInternalFact(TNode atom,
+                                                bool pol,
+                                                TNode fact)
 {
   if (d_theory.preNotifyFact(atom, pol, fact, false))
   {
@@ -111,8 +117,8 @@ void TheoryInferenceManager::assertInternalFact(TNode atom, bool pol, TNode fact
     return;
   }
   Assert(d_ee != nullptr);
-  Trace("infer-manager") << "TheoryInferenceManager::assertInternalFact: " << fact
-                         << std::endl;
+  Trace("infer-manager") << "TheoryInferenceManager::assertInternalFact: "
+                         << fact << std::endl;
   if (atom.getKind() == kind::EQUAL)
   {
     d_ee->assertEquality(atom, pol, fact);
@@ -123,8 +129,8 @@ void TheoryInferenceManager::assertInternalFact(TNode atom, bool pol, TNode fact
   }
   // call the notify fact method, where this is an internally generated fact
   d_theory.notifyFact(atom, pol, fact, true);
-  Trace("infer-manager") << "TheoryInferenceManager::finished assertInternalFact"
-                         << std::endl;
+  Trace("infer-manager")
+      << "TheoryInferenceManager::finished assertInternalFact" << std::endl;
   // Must reference count the equality and its explanation, which is not done
   // by the equality engine. Notice that we do not need to do this for
   // external assertions, which enter as facts in theory check.
