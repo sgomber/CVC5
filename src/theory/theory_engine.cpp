@@ -133,7 +133,7 @@ std::string getTheoryString(theory::TheoryId id)
 
 void TheoryEngine::finishInit() {
   // NOTE: This seems to be required since
-  // theory::TheoryTraits<THEORY>::isParametric is hard to access without
+  // theory::TheoryTraits<THEORY>::isParametric cannot be accessed without
   // using the CVC4_FOR_EACH_THEORY_STATEMENT macro. -AJR
   std::vector<theory::Theory*> paraTheories;
 #ifdef CVC4_FOR_EACH_THEORY_STATEMENT
@@ -156,8 +156,8 @@ void TheoryEngine::finishInit() {
   }
   else
   {
-    AlwaysAssert(false) << "TheoryEngine::finishInit: theory combination mode "
-                        << options::tcMode() << " not supported";
+    Unimplemented() << "TheoryEngine::finishInit: theory combination mode "
+                    << options::tcMode() << " not supported";
   }
   // create the relevance filter if any option requires it
   if (options::relevanceFilter())
@@ -312,33 +312,34 @@ void TheoryEngine::preRegister(TNode preprocessed) {
       // Remove the top theory, if any more that means multiple theories were
       // involved
       bool multipleTheories = Theory::setRemove(Theory::theoryOf(preprocessed), theories);
-#ifdef CVC4_ASSERTIONS
-      TheoryId i;
-      // This should never throw an exception, since theories should be
-      // guaranteed to be initialized.
-      // These checks don't work with finite model finding, because it
-      // uses Rational constants to represent cardinality constraints,
-      // even though arithmetic isn't actually involved.
-      if (!options::finiteModelFind())
+      if (Configuration::isAssertionBuild())
       {
-        while ((i = Theory::setPop(theories)) != THEORY_LAST)
+        TheoryId i;
+        // This should never throw an exception, since theories should be
+        // guaranteed to be initialized.
+        // These checks don't work with finite model finding, because it
+        // uses Rational constants to represent cardinality constraints,
+        // even though arithmetic isn't actually involved.
+        if (!options::finiteModelFind())
         {
-          if (!d_logicInfo.isTheoryEnabled(i))
+          while ((i = Theory::setPop(theories)) != THEORY_LAST)
           {
-            LogicInfo newLogicInfo = d_logicInfo.getUnlockedCopy();
-            newLogicInfo.enableTheory(i);
-            newLogicInfo.lock();
-            std::stringstream ss;
-            ss << "The logic was specified as " << d_logicInfo.getLogicString()
-               << ", which doesn't include " << i
-               << ", but found a term in that theory." << std::endl
-               << "You might want to extend your logic to "
-               << newLogicInfo.getLogicString() << std::endl;
-            throw LogicException(ss.str());
+            if (!d_logicInfo.isTheoryEnabled(i))
+            {
+              LogicInfo newLogicInfo = d_logicInfo.getUnlockedCopy();
+              newLogicInfo.enableTheory(i);
+              newLogicInfo.lock();
+              std::stringstream ss;
+              ss << "The logic was specified as " << d_logicInfo.getLogicString()
+                << ", which doesn't include " << i
+                << ", but found a term in that theory." << std::endl
+                << "You might want to extend your logic to "
+                << newLogicInfo.getLogicString() << std::endl;
+              throw LogicException(ss.str());
+            }
           }
         }
       }
-#endif
 
       // pre-register with the shared solver, which also handles
       // calling prepregister on individual theories.
@@ -583,7 +584,7 @@ void TheoryEngine::check(Theory::Effort effort) {
     Debug("theory") << ", need check = " << (needCheck() ? "YES" : "NO") << endl;
 
     if( Theory::fullEffort(effort) && !d_inConflict && !needCheck()) {
-      // Do post-processing of model from the theories (used for THEORY_SEP
+      // Do post-processing of model from the theories (e.g. used for THEORY_SEP
       // to construct heap model)
       d_tc->postProcessModel(d_incomplete.get());
     }
