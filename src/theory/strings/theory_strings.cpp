@@ -700,7 +700,6 @@ void TheoryStrings::notifyFact(TNode atom,
   Trace("strings-pending-debug") << "  Finished collect terms" << std::endl;
 }
 
-
 void TheoryStrings::postCheck(Effort e)
 {
   d_im.doPendingFacts();

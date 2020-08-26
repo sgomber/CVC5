@@ -17,11 +17,11 @@
 #ifndef CVC4__THEORY__INFERENCE_MANAGER_H
 #define CVC4__THEORY__INFERENCE_MANAGER_H
 
+#include "context/cdhashset.h"
 #include "expr/node.h"
 #include "theory/output_channel.h"
 #include "theory/theory_state.h"
 #include "theory/trust_node.h"
-#include "context/cdhashset.h"
 
 namespace CVC4 {
 
@@ -40,6 +40,7 @@ class EqualityEngine;
 class InferManager
 {
   typedef context::CDHashSet<Node, NodeHashFunction> NodeSet;
+
  public:
   /**
    * Constructor, note that state should be the official state of theory t.

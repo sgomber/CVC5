@@ -24,13 +24,13 @@
 #include "context/context.h"
 #include "expr/node.h"
 #include "theory/ext_theory.h"
+#include "theory/inference_manager.h"
 #include "theory/output_channel.h"
 #include "theory/strings/infer_info.h"
 #include "theory/strings/sequences_stats.h"
 #include "theory/strings/solver_state.h"
 #include "theory/strings/term_registry.h"
 #include "theory/uf/equality_engine.h"
-#include "theory/inference_manager.h"
 
 namespace CVC4 {
 namespace theory {
@@ -72,7 +72,7 @@ class InferenceManager : public InferManager
   typedef context::CDHashMap<Node, Node, NodeHashFunction> NodeNodeMap;
 
  public:
-  InferenceManager(Theory& t, 
+  InferenceManager(Theory& t,
                    SolverState& s,
                    TermRegistry& tr,
                    ExtTheory& e,
