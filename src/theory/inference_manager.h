@@ -40,14 +40,17 @@ class EqualityEngine;
  * It is used for ensuring that the equality engine and output channel
  * are used properly. This includes the following invariants:
  *
- * (1) The state tracks conflicts
- *
+ * (1) The state tracks conflicts.
  * In particular, TheoryState::isInConflict returns true whenever we have
- * called OutputChannel::conflict in the current context.
+ * called OutputChannel::conflict in the current context, which we enforce
+ * by always setting d_state.notifyInConflict at the same time we send
+ * conflicts on the output channel.
  *
- * (2) The theory is notified of facts
- *
- * In particular, Theory::preNotifyFact / Theory::notifyFact is
+ * (2) The theory is notified of (internal) facts.
+ * In particular, Theory::preNotifyFact and Theory::notifyFact are called
+ * (with isInternal = true) whenever we assert internal facts using
+ * assertFactInernal below, mirroring what is done for facts from the fact
+ * queue (where isInternal = false).
  */
 class TheoryInferenceManager
 {

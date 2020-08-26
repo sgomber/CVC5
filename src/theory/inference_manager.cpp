@@ -113,9 +113,10 @@ void TheoryInferenceManager::assertInternalFact(TNode atom,
                                                 bool pol,
                                                 TNode fact)
 {
+  // call the pre-notify fact method with preReg = false, isInternal = true
   if (d_theory.preNotifyFact(atom, pol, fact, false, true))
   {
-    // handled in specific way
+    // handled in a theory-specific way that doesn't require equality engine
     return;
   }
   Assert(d_ee != nullptr);
@@ -129,12 +130,12 @@ void TheoryInferenceManager::assertInternalFact(TNode atom,
   {
     d_ee->assertPredicate(atom, pol, fact);
   }
-  // call the notify fact method, where this is an internally generated fact
+  // call the notify fact method with isInternal = true
   d_theory.notifyFact(atom, pol, fact, true);
   Trace("infer-manager")
       << "TheoryInferenceManager::finished assertInternalFact" << std::endl;
   // Must reference count the equality and its explanation, which is not done
-  // by the equality engine. Notice that we do not need to do this for
+  // by the equality engine. Notice that we do *not* need to do this for
   // external assertions, which enter as facts in theory check.
   d_keep.insert(atom);
   d_keep.insert(fact);

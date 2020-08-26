@@ -641,9 +641,10 @@ TrustNode TheoryStrings::expandDefinition(Node node)
 bool TheoryStrings::preNotifyFact(TNode atom,
                                   bool pol,
                                   TNode fact,
-                                  bool isPrereg)
+                                  bool isPrereg, bool isInternal)
 {
-  if (atom.getKind() == EQUAL)
+  // this is only required for internal facts, others are already registered
+  if (isInternal && atom.getKind() == EQUAL)
   {
     // we must ensure these terms are registered
     eq::EqualityEngine* ee = d_state.getEqualityEngine();
@@ -690,6 +691,7 @@ void TheoryStrings::notifyFact(TNode atom,
           << "CONFLICT: Eager prefix : " << conflictNode << std::endl;
       ++(d_statistics.d_conflictsEagerPrefix);
       d_im.conflict(conflictNode);
+      return;
     }
   }
   Trace("strings-pending-debug") << "  Now collect terms" << std::endl;
