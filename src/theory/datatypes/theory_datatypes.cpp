@@ -839,7 +839,7 @@ void TheoryDatatypes::eqNotifyMerge(TNode t1, TNode t2)
     Trace("datatypes-debug")
         << "NotifyMerge : " << t1 << " " << t2 << std::endl;
     // merge directly
-    merge( t1, t2 );
+    merge(t1, t2);
   }
 }
 

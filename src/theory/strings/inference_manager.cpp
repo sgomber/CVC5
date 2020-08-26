@@ -415,10 +415,9 @@ void InferenceManager::assertPendingFact(Node atom, bool polarity, Node exp)
 }
 
 bool InferenceManager::preNotifyFact(TNode atom,
-                                  bool polarity,
-                                  TNode exp,
-                                  bool isInternal
-                                    )
+                                     bool polarity,
+                                     TNode exp,
+                                     bool isInternal)
 {
   if (atom.getKind() == EQUAL)
   {
