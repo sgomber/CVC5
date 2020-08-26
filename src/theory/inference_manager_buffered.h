@@ -46,7 +46,8 @@ class InferenceManagerBuffered : public TheoryInferenceManager
   /** Do we have a pending lemma to send on the output channel? */
   bool hasPendingLemma() const;
   /** Add pending lemma */
-  void addPendingLemma(Node lem);
+  void addPendingLemma(Node lem,
+                           LemmaProperty p = LemmaProperty::NONE);
   /** Add pending lemma */
   void addPendingFact(Node fact, Node exp);
   /** Do pending facts

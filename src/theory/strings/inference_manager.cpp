@@ -307,6 +307,7 @@ void InferenceManager::doPendingFacts()
 
 void InferenceManager::doPendingLemmas()
 {
+  // TODO: possibly delete this block?
   if (d_state.isInConflict())
   {
     // just clear the pending vectors, nothing else to do

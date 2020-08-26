@@ -14,6 +14,10 @@
 
 #include "theory/inference_manager_buffered.h"
 
+#include "theory/theory.h"
+
+using namespace CVC4::kind;
+
 namespace CVC4 {
 namespace theory {
 
@@ -26,7 +30,7 @@ InferenceManagerBuffered::InferenceManagerBuffered(Theory& t,
                   
 bool InferenceManagerBuffered::hasProcessed() const
 {
-  return d_state.isInConflict() || !d_pendingLem.empty() || !d_pendingFact.empty();
+  return d_theoryState.isInConflict() || !d_pendingLem.empty() || !d_pendingFact.empty();
 }
 
 bool InferenceManagerBuffered::hasPendingFact() const
@@ -39,9 +43,10 @@ bool InferenceManagerBuffered::hasPendingLemma() const
   return !d_pendingLem.empty();
 }
 
-void InferenceManagerBuffered::addPendingLemma(Node lem)
+void InferenceManagerBuffered::addPendingLemma(Node lem,
+                           LemmaProperty p)
 {
-  d_pendingLem.push_back(lem);
+  d_pendingLem.push_back(std::pair<Node, LemmaProperty>(lem,p));
 }
 
 void InferenceManagerBuffered::addPendingFact(Node fact, Node exp)
@@ -53,7 +58,7 @@ void InferenceManagerBuffered::addPendingFact(Node fact, Node exp)
 void InferenceManagerBuffered::doPendingFacts()
 {
   size_t i = 0;
-  while (!d_state.isInConflict() && i < d_pendingFact.size())
+  while (!d_theoryState.isInConflict() && i < d_pendingFact.size())
   {
     std::pair<Node, Node>& pfact = d_pendingFact[i];
     Node fact = pfact.first;
@@ -70,14 +75,7 @@ void InferenceManagerBuffered::doPendingFacts()
 
 void InferenceManagerBuffered::doPendingLemmas()
 {
-  // always should do facts first
-  Assert (d_pendingFact.empty());
-  if (d_state.isInConflict())
-  {
-    // just clear the pending vectors, nothing else to do
-    d_pendingLem.clear();
-    return;
-  }
+  // process all the pending lemmas
   for (const std::pair<Node, LemmaProperty>& plem : d_pendingLem)
   {
     d_out.lemma(plem.first, plem.second);
@@ -87,5 +85,3 @@ void InferenceManagerBuffered::doPendingLemmas()
 
 }  // namespace theory
 }  // namespace CVC4
-
-#endif
