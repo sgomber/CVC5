@@ -66,7 +66,7 @@ namespace strings {
  * theory of strings, e.g. sendPhaseRequirement, setIncomplete, and
  * with the extended theory object e.g. markCongruent.
  */
-class InferenceManager : public InferManager
+class InferenceManager : public TheoryInferenceManager
 {
   typedef context::CDHashSet<Node, NodeHashFunction> NodeSet;
   typedef context::CDHashMap<Node, Node, NodeHashFunction> NodeNodeMap;

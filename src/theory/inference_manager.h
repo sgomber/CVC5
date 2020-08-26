@@ -37,7 +37,7 @@ class EqualityEngine;
 /**
  * The base class for inference manager.
  */
-class InferManager
+class TheoryInferenceManager
 {
   typedef context::CDHashSet<Node, NodeHashFunction> NodeSet;
 
@@ -45,8 +45,8 @@ class InferManager
   /**
    * Constructor, note that state should be the official state of theory t.
    */
-  InferManager(Theory& t, TheoryState& state);
-  virtual ~InferManager() {}
+  TheoryInferenceManager(Theory& t, TheoryState& state);
+  virtual ~TheoryInferenceManager() {}
   /**
    * Set equality engine, ee is a pointer to the official equality engine
    * of theory.

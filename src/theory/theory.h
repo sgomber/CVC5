@@ -107,7 +107,7 @@ namespace eq {
  */
 class Theory {
   friend class ::CVC4::TheoryEngine;
-  friend class InferManager;
+  friend class TheoryInferenceManager;
 
  private:
   // Disallow default construction, copy, assignment.
@@ -235,9 +235,11 @@ class Theory {
    */
   TheoryState* d_theoryState;
   /**
-   * The inference manager.
+   * The theory inference manager. This is a wrapper around the equality
+   * engine and the output channel. It ensures that the output channel and
+   * the equality engine are used properly.
    */
-  InferManager* d_inferManager;
+  TheoryInferenceManager* d_inferManager;
   /**
    * Whether proofs are enabled
    *

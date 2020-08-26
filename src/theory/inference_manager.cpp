@@ -22,7 +22,7 @@ using namespace CVC4::kind;
 namespace CVC4 {
 namespace theory {
 
-InferManager::InferManager(Theory& t, TheoryState& state)
+TheoryInferenceManager::TheoryInferenceManager(Theory& t, TheoryState& state)
     : d_theory(t),
       d_theoryState(state),
       d_out(t.getOutputChannel()),
@@ -32,9 +32,9 @@ InferManager::InferManager(Theory& t, TheoryState& state)
 {
 }
 
-void InferManager::setEqualityEngine(eq::EqualityEngine* ee) { d_ee = ee; }
+void TheoryInferenceManager::setEqualityEngine(eq::EqualityEngine* ee) { d_ee = ee; }
 
-void InferManager::conflictEqConstantMerge(TNode a, TNode b)
+void TheoryInferenceManager::conflictEqConstantMerge(TNode a, TNode b)
 {
   if (!d_theoryState.isInConflict())
   {
@@ -43,7 +43,7 @@ void InferManager::conflictEqConstantMerge(TNode a, TNode b)
   }
 }
 
-void InferManager::conflict(TNode conf)
+void TheoryInferenceManager::conflict(TNode conf)
 {
   if (!d_theoryState.isInConflict())
   {
@@ -51,7 +51,7 @@ void InferManager::conflict(TNode conf)
   }
 }
 
-void InferManager::trustedConflict(TrustNode tconf)
+void TheoryInferenceManager::trustedConflict(TrustNode tconf)
 {
   if (!d_theoryState.isInConflict())
   {
@@ -60,7 +60,7 @@ void InferManager::trustedConflict(TrustNode tconf)
   }
 }
 
-bool InferManager::propagateLit(TNode lit)
+bool TheoryInferenceManager::propagateLit(TNode lit)
 {
   // If already in conflict, no more propagation
   if (d_theoryState.isInConflict())
@@ -76,7 +76,7 @@ bool InferManager::propagateLit(TNode lit)
   return ok;
 }
 
-TrustNode InferManager::explainLit(TNode lit)
+TrustNode TheoryInferenceManager::explainLit(TNode lit)
 {
   // TODO: use proof equality engine if it exists
   if (d_ee != nullptr)
@@ -87,10 +87,10 @@ TrustNode InferManager::explainLit(TNode lit)
   Unimplemented() << "Inference manager for " << d_theory.getId()
                   << " was asked to explain a propagation but doesn't have an "
                      "equality engine or implement the "
-                     "InferManager::explainLit interface!";
+                     "TheoryInferenceManager::explainLit interface!";
 }
 
-TrustNode InferManager::explainConflictEqConstantMerge(TNode a, TNode b)
+TrustNode TheoryInferenceManager::explainConflictEqConstantMerge(TNode a, TNode b)
 {
   // TODO: use proof equality engine if it exists
   if (d_ee != nullptr)
@@ -103,7 +103,7 @@ TrustNode InferManager::explainConflictEqConstantMerge(TNode a, TNode b)
                   << " mkTrustedConflictEqConstantMerge";
 }
 
-void InferManager::assertInternalFact(TNode atom, bool pol, TNode fact)
+void TheoryInferenceManager::assertInternalFact(TNode atom, bool pol, TNode fact)
 {
   if (d_theory.preNotifyFact(atom, pol, fact, false))
   {
@@ -111,7 +111,7 @@ void InferManager::assertInternalFact(TNode atom, bool pol, TNode fact)
     return;
   }
   Assert(d_ee != nullptr);
-  Trace("infer-manager") << "InferManager::assertInternalFact: " << fact
+  Trace("infer-manager") << "TheoryInferenceManager::assertInternalFact: " << fact
                          << std::endl;
   if (atom.getKind() == kind::EQUAL)
   {
@@ -123,7 +123,7 @@ void InferManager::assertInternalFact(TNode atom, bool pol, TNode fact)
   }
   // call the notify fact method, where this is an internally generated fact
   d_theory.notifyFact(atom, pol, fact, true);
-  Trace("infer-manager") << "InferManager::finished assertInternalFact"
+  Trace("infer-manager") << "TheoryInferenceManager::finished assertInternalFact"
                          << std::endl;
   // Must reference count the equality and its explanation, which is not done
   // by the equality engine. Notice that we do not need to do this for
