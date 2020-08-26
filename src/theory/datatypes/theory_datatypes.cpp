@@ -838,7 +838,8 @@ void TheoryDatatypes::eqNotifyMerge(TNode t1, TNode t2)
   if( t1.getType().isDatatype() ){
     Trace("datatypes-debug")
         << "NotifyMerge : " << t1 << " " << t2 << std::endl;
-    d_pending_merge.push_back( t1.eqNode( t2 ) );
+    // merge directly
+    merge( t1, t2 );
   }
 }
 

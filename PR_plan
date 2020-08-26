@@ -20,13 +20,14 @@ PR done:
 PR current:
 
 (4) Merge build model passes *
-(19) per each theory, update to standard templates (req 9)
+(19) per each theory, update to standard templates (req 9) *
 (24) Shared solver / shared solver distributed
-(25) irrelevant kinds infrastructure
+(25) irrelevant kinds infrastructure *
 
 PR planned:
 
 (5) Merge build model passes part two (req 4)
-(14) Equality engine manager central (req 6)
-(16) Model manager central (req 7)
-(15) Model based theory combination
+(14) [TODO] Equality engine manager central (req 6)
+(16) [TODO] Model manager central (req 7)
+(15) [TODO] Model based theory combination (req 11)
+(27) [TODO] Shared solver central (req 24)
