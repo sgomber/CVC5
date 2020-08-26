@@ -24,12 +24,12 @@
 #include "context/context.h"
 #include "expr/node.h"
 #include "theory/ext_theory.h"
-#include "theory/theory_inference_manager.h"
 #include "theory/output_channel.h"
 #include "theory/strings/infer_info.h"
 #include "theory/strings/sequences_stats.h"
 #include "theory/strings/solver_state.h"
 #include "theory/strings/term_registry.h"
+#include "theory/theory_inference_manager.h"
 #include "theory/uf/equality_engine.h"
 
 namespace CVC4 {
