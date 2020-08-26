@@ -517,8 +517,6 @@ libcvc4_add_sources(
   theory/fp/theory_fp_rewriter.h
   theory/fp/theory_fp_type_rules.h
   theory/fp/type_enumerator.h
-  theory/inference_manager.cpp
-  theory/inference_manager.h
   theory/interrupted.h
   theory/logic_info.cpp
   theory/logic_info.h
@@ -843,6 +841,8 @@ libcvc4_add_sources(
   theory/theory_engine_proof_generator.h
   theory/theory_id.cpp
   theory/theory_id.h
+  theory/theory_inference_manager.cpp
+  theory/theory_inference_manager.h
   theory/theory_model.cpp
   theory/theory_model.h
   theory/theory_model_builder.cpp

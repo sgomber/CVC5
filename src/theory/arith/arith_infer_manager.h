@@ -19,7 +19,7 @@
 
 #include "context/cdhashmap.h"
 #include "expr/node.h"
-#include "theory/inference_manager.h"
+#include "theory/theory_inference_manager.h"
 
 namespace CVC4 {
 namespace theory {

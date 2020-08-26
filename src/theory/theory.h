@@ -40,7 +40,7 @@
 #include "theory/care_graph.h"
 #include "theory/decision_manager.h"
 #include "theory/ee_setup_info.h"
-#include "theory/inference_manager.h"
+#include "theory/theory_inference_manager.h"
 #include "theory/logic_info.h"
 #include "theory/output_channel.h"
 #include "theory/theory_id.h"
