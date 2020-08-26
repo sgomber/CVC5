@@ -79,7 +79,7 @@ class TheoryEngineModelBuilder
    * in the equality engine of the model are relevant.
    * @return true if the model was successfully built.
    */
-  bool buildModel(Model* m, bool usingRelevantTerms);
+  bool buildModel(TheoryModel* m, bool usingRelevantTerms);
 
   /** postprocess model
    *

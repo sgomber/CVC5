@@ -372,10 +372,9 @@ void TheoryEngineModelBuilder::addToTypeList(
   }
 }
 
-bool TheoryEngineModelBuilder::buildModel(TheoryModel* m, bool usingRelevantTerms)
+bool TheoryEngineModelBuilder::buildModel(TheoryModel* tm, bool usingRelevantTerms)
 {
   Trace("model-builder") << "TheoryEngineModelBuilder: buildModel" << std::endl;
-  eq::EqualityEngine* ee = tm->d_equalityEngine;
 
   Trace("model-builder")
       << "TheoryEngineModelBuilder: Preprocess build model..." << std::endl;
