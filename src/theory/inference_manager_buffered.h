@@ -49,7 +49,7 @@ class InferenceManagerBuffered : public TheoryInferenceManager
   void addPendingLemma(Node lem,
                            LemmaProperty p = LemmaProperty::NONE);
   /** Add pending lemma */
-  void addPendingFact(Node fact, Node exp);
+  void addPendingFact(Node fact, Node exp, bool asLemma=false);
   /** Do pending facts
    *
    * This method asserts pending facts (d_pending) with explanations
@@ -80,12 +80,20 @@ class InferenceManagerBuffered : public TheoryInferenceManager
    */
   void doPendingLemmas();
 protected:
+  /** 
+   * Called when a pending fact is about to be sent, return true if the fact
+   * was processed separately (i.e. it should not be asserted).
+   */
+  virtual bool preNotifyPendingFact(TNode atom, bool pol, TNode fact);
+  /** 
+   * Called when a pending lemma is about to be sent, return true if the lemma
+   * was processed separately (i.e. it should not be asserted).
+   */
+  virtual bool preNotifyPendingLemma(TNode lem, LemmaProperty p);
   /** A set of pending lemmas */
   std::vector<std::pair<Node, LemmaProperty>> d_pendingLem;
   /** A set of pending facts, paired with their explanations */
   std::vector<std::pair<Node, Node>> d_pendingFact;
-  /** The set of all lemmas sent */
-  NodeSet d_lemmasSent;
 };
 
 }  // namespace theory

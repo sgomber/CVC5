@@ -23,7 +23,7 @@ namespace theory {
 
 InferenceManagerBuffered::InferenceManagerBuffered(Theory& t,
                   TheoryState& state,
-                  ProofNodeManager* pnm) : TheoryInferenceManager(t, state, pnm), d_lemmasSent(t.getSatContext())
+                  ProofNodeManager* pnm) : TheoryInferenceManager(t, state, pnm)
                   {
                     
                   }
@@ -49,25 +49,34 @@ void InferenceManagerBuffered::addPendingLemma(Node lem,
   d_pendingLem.push_back(std::pair<Node, LemmaProperty>(lem,p));
 }
 
-void InferenceManagerBuffered::addPendingFact(Node fact, Node exp)
+void InferenceManagerBuffered::addPendingFact(Node fact, Node exp, bool asLemma)
 {
-  Assert (fact.getKind()!=AND && fact.getKind()!=OR);
-  d_pendingFact.push_back(std::pair<Node, Node>(fact,exp));
+  if (!asLemma)
+  {
+    Assert (fact.getKind()!=AND && fact.getKind()!=OR);
+    d_pendingFact.push_back(std::pair<Node, Node>(fact,exp));
+    return;
+  }
+  // TODO: explain with equality engine
 }
 
 void InferenceManagerBuffered::doPendingFacts()
 {
   size_t i = 0;
   while (!d_theoryState.isInConflict() && i < d_pendingFact.size())
-  {
+  {    
     std::pair<Node, Node>& pfact = d_pendingFact[i];
     Node fact = pfact.first;
     Node exp = pfact.second;
     bool polarity = fact.getKind() != NOT;
     TNode atom = polarity ? fact : fact[0];
-    // no double negation or conjunctive conclusions
-    Assert(atom.getKind() != NOT && atom.getKind() != AND);
-    assertInternalFact(atom, polarity, exp);
+    // if we don't process it
+    if (!preNotifyPendingFact(atom, polarity, exp))
+    {
+      // no double negation or conjunctive conclusions
+      Assert(atom.getKind() != NOT && atom.getKind() != AND);
+      assertInternalFact(atom, polarity, exp);
+    }
     i++;
   }
   d_pendingFact.clear();
@@ -78,9 +87,25 @@ void InferenceManagerBuffered::doPendingLemmas()
   // process all the pending lemmas
   for (const std::pair<Node, LemmaProperty>& plem : d_pendingLem)
   {
+    if (preNotifyPendingLemma(plem.first, plem.second))
+    {
+      // processed it internally
+      continue;
+    }
+    // send lemma, not cached
     d_out.lemma(plem.first, plem.second);
   }
   d_pendingLem.clear();
+}
+
+bool preNotifyPendingFact(TNode atom, bool pol, TNode fact)
+{
+  return false;
+}
+
+bool preNotifyPendingLemma(TNode lem, LemmaProperty p)
+{
+  return false;
 }
 
 }  // namespace theory

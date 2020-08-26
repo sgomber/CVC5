@@ -757,7 +757,9 @@ void TheoryStrings::postCheck(Effort e)
       ++(d_statistics.d_strategyRuns);
       Trace("strings-check") << "  * Run strategy..." << std::endl;
       runStrategy(e);
-      // flush the facts
+      // Send the facts *and* the lemmas. We send lemmas regardless of whether
+      // we send facts since some lemmas cannot be dropped. Other lemmas are
+      // otherwise avoided by aborting the strategy when a fact is ready.
       addedFact = d_im.hasPendingFact();
       addedLemma = d_im.hasPendingLemma();
       d_im.doPendingFacts();

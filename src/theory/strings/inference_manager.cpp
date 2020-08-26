@@ -307,14 +307,7 @@ void InferenceManager::doPendingFacts()
 
 void InferenceManager::doPendingLemmas()
 {
-  // TODO: possibly delete this block?
-  if (d_state.isInConflict())
-  {
-    // just clear the pending vectors, nothing else to do
-    d_pendingLem.clear();
-    d_pendingReqPhase.clear();
-    return;
-  }
+
   NodeManager* nm = NodeManager::currentNM();
   for (unsigned i = 0, psize = d_pendingLem.size(); i < psize; i++)
   {
