@@ -128,7 +128,8 @@ bool TheoryArith::preCheck(Effort level) { return d_internal->preCheck(level); }
 
 void TheoryArith::postCheck(Effort level) { d_internal->postCheck(level); }
 
-bool TheoryArith::preNotifyFact(TNode atom, bool pol, TNode fact, bool isPrereg)
+bool TheoryArith::preNotifyFact(TNode atom, bool pol, TNode fact, bool isPrereg,
+                     bool isInternal)
 {
   if (d_eqSolver != nullptr)
   {

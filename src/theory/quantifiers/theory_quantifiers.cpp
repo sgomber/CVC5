@@ -144,7 +144,8 @@ void TheoryQuantifiers::postCheck(Effort level)
 bool TheoryQuantifiers::preNotifyFact(TNode atom,
                                       bool polarity,
                                       TNode fact,
-                                      bool isPrereg)
+                                      bool isPrereg,
+                     bool isInternal)
 {
   Kind k = atom.getKind();
   if (k == FORALL)

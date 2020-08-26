@@ -491,7 +491,7 @@ void Theory::check(Effort level)
     bool polarity = fact.getKind() != kind::NOT;
     TNode atom = polarity ? fact : fact[0];
     // call the pre-notify method
-    if (preNotifyFact(atom, polarity, fact, assertion.d_isPreregistered))
+    if (preNotifyFact(atom, polarity, fact, assertion.d_isPreregistered, false))
     {
       // handled in theory-specific way that doesn't involve equality engine
       continue;
@@ -525,7 +525,7 @@ bool Theory::preCheck(Effort level) { return false; }
 
 void Theory::postCheck(Effort level) {}
 
-bool Theory::preNotifyFact(TNode atom, bool polarity, TNode fact, bool isPrereg)
+bool Theory::preNotifyFact(TNode atom, bool polarity, TNode fact, bool isPrereg, bool isInternal)
 {
   return false;
 }

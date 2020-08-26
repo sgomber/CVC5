@@ -1354,9 +1354,9 @@ void TheoryArrays::postCheck(Effort level)
   Trace("arrays") << spaces(getSatContext()->getLevel()) << "Arrays::check(): done" << endl;
 }
 
-bool TheoryArrays::preNotifyFact(TNode atom, bool pol, TNode fact, bool isPreg)
+bool TheoryArrays::preNotifyFact(TNode atom, bool pol, TNode fact, bool isPrereg, bool isInternal)
 {
-  if (!isPreg)
+  if (!isPrereg)
   {
     if (atom.getKind() == kind::EQUAL)
     {

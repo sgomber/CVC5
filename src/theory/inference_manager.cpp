@@ -22,12 +22,13 @@ using namespace CVC4::kind;
 namespace CVC4 {
 namespace theory {
 
-TheoryInferenceManager::TheoryInferenceManager(Theory& t, TheoryState& state)
+TheoryInferenceManager::TheoryInferenceManager(Theory& t, TheoryState& state,
+         ProofNodeManager* pnm)
     : d_theory(t),
       d_theoryState(state),
       d_out(t.getOutputChannel()),
       d_ee(nullptr),
-      d_pnm(nullptr),
+      d_pnm(pnm),
       d_keep(t.getSatContext())
 {
 }
@@ -81,7 +82,7 @@ bool TheoryInferenceManager::propagateLit(TNode lit)
 
 TrustNode TheoryInferenceManager::explainLit(TNode lit)
 {
-  // TODO: use proof equality engine if it exists
+  // TODO (project #37): use proof equality engine if it exists
   if (d_ee != nullptr)
   {
     Node exp = d_ee->mkExplainLit(lit);
@@ -96,7 +97,7 @@ TrustNode TheoryInferenceManager::explainLit(TNode lit)
 TrustNode TheoryInferenceManager::explainConflictEqConstantMerge(TNode a,
                                                                  TNode b)
 {
-  // TODO: use proof equality engine if it exists
+  // TODO (project #37): use proof equality engine if it exists
   if (d_ee != nullptr)
   {
     Node lit = a.eqNode(b);
@@ -111,7 +112,7 @@ void TheoryInferenceManager::assertInternalFact(TNode atom,
                                                 bool pol,
                                                 TNode fact)
 {
-  if (d_theory.preNotifyFact(atom, pol, fact, false))
+  if (d_theory.preNotifyFact(atom, pol, fact, false, true))
   {
     // handled in specific way
     return;

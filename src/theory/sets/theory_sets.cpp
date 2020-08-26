@@ -100,7 +100,8 @@ void TheorySets::postCheck(Effort level) { d_internal->postCheck(level); }
 bool TheorySets::preNotifyFact(TNode atom,
                                bool polarity,
                                TNode fact,
-                               bool isPrereg)
+                               bool isPrereg,
+                     bool isInternal)
 {
   return d_internal->preNotifyFact(atom, polarity, fact);
 }

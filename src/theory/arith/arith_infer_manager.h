@@ -31,7 +31,7 @@ class EqualitySolver;
 /**
  * The arithmetic inference manager.
  */
-class ArithInferManager : public InferManager
+class ArithInferManager : public TheoryInferenceManager
 {
   typedef context::CDHashMap<Node, bool, NodeHashFunction> NodeMap;
 

@@ -24,7 +24,7 @@ namespace arith {
 ArithInferManager::ArithInferManager(Theory& t,
                                      TheoryState& state,
                                      TheoryArithPrivate& p)
-    : InferManager(t, state),
+    : TheoryInferenceManager(t, state),
       d_private(p),
       d_esolver(nullptr),
       d_propagationMap(state.getSatContext())

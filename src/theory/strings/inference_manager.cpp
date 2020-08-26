@@ -32,8 +32,9 @@ InferenceManager::InferenceManager(Theory& t,
                                    SolverState& s,
                                    TermRegistry& tr,
                                    ExtTheory& e,
-                                   SequencesStatistics& statistics)
-    : InferManager(t, s),
+                                   SequencesStatistics& statistics,
+         ProofNodeManager* pnm)
+    : TheoryInferenceManager(t, s, pnm),
       d_state(s),
       d_termReg(tr),
       d_extt(e),

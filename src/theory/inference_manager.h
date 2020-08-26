@@ -35,7 +35,19 @@ class EqualityEngine;
 }
 
 /**
- * The base class for inference manager.
+ * The base class for inference manager. An inference manager is a wrapper
+ * around the output channel and the official equality engine of a Theory.
+ * It is used for ensuring that the equality engine and output channel
+ * are used properly. This includes the following invariants:
+ * 
+ * (1) The state tracks conflicts
+ * 
+ * In particular, TheoryState::isInConflict returns true whenever we have
+ * called OutputChannel::conflict in the current context.
+ * 
+ * (2) The theory is notified of facts
+ * 
+ * In particular, Theory::preNotifyFact / Theory::notifyFact is 
  */
 class TheoryInferenceManager
 {
@@ -45,18 +57,40 @@ class TheoryInferenceManager
   /**
    * Constructor, note that state should be the official state of theory t.
    */
-  TheoryInferenceManager(Theory& t, TheoryState& state);
+  TheoryInferenceManager(Theory& t, TheoryState& state,
+         ProofNodeManager* pnm);
   virtual ~TheoryInferenceManager() {}
+  //--------------------------------------- initialization
   /**
    * Set equality engine, ee is a pointer to the official equality engine
    * of theory.
    */
   void setEqualityEngine(eq::EqualityEngine* ee);
+  //--------------------------------------- end initialization
+  /**
+   * T-propagate literal lit, possibly encountered by equality engine,
+   * returns false if we are in conflict.
+   * 
+   * Note that this is the preferred method to call on
+   * EqualityEngineNotify::eqNotifyTriggerPredicate and
+   * EqualityEngineNotify::eqNotifyTriggerTermEquality.
+   */
+  bool propagateLit(TNode lit);
+  /**
+   * Return an explanation for the literal represented by parameter n
+   * (which was previously propagated by this theory). By default, this
+   * returns the explanation given by the official equality engine of the
+   * Theory, if it exists.
+   */
+  virtual TrustNode explainLit(TNode lit);
   /**
    * Raise conflict, called when constants a and b merge. Sends the conflict
    * on the output channel corresponding to the equality engine's explanation
    * of (= a b). The proof equality engine (if it exists) will be used as the
    * proof generator.
+   * 
+   * Note that this is the preferred method to call on
+   * EqualityEngineNotify::eqNotifyConstantTermMerge.
    */
   void conflictEqConstantMerge(TNode a, TNode b);
   /**
@@ -69,22 +103,22 @@ class TheoryInferenceManager
    * been provided in a custom way.
    */
   void trustedConflict(TrustNode tconf);
-  /**
-   * T-propagate literal lit, possibly encountered by equality engine,
-   * returns false if we are in conflict.
+  /** 
+   * Assert internal fact. This is recommended method for asserting "internal"
+   * facts into the equality engine of the theory. In particular, this method
+   * should be used for anything the theory infers that is not sent on the
+   * output channel as a propagation or lemma. This method ensures that the
+   * Theory's preNotifyFact and notifyFact method have been called with
+   * isInternal = true.
    */
-  bool propagateLit(TNode lit);
-  /**
-   * Return an explanation for the literal represented by parameter n
-   * (which was previously propagated by this theory).
-   */
-  virtual TrustNode explainLit(TNode lit);
-
-  /** assert internal fact */
   void assertInternalFact(TNode atom, bool pol, TNode fact);
-
  protected:
-  /** Explain conflict from constants merging in the equality engine */
+  /** 
+   * Explain conflict from constants merging in the equality engine. This
+   * method is called by conflictEqConstantMerge. By default, it returns
+   * the explanation of the official equality engine of the theory, if it
+   * exists.
+   */
   virtual TrustNode explainConflictEqConstantMerge(TNode a, TNode b);
   /** The theory object */
   Theory& d_theory;
