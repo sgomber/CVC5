@@ -1077,9 +1077,9 @@ void TheoryEngine::assertFact(TNode literal)
   }
 
   // HACK-centralEe
-  //d_satSolverFacts.insert(literal);
+  // d_satSolverFacts.insert(literal);
   // end HACK-centralEe
-  
+
   // Get the atom
   bool polarity = literal.getKind() != kind::NOT;
   TNode atom = polarity ? literal : literal[0];
@@ -1277,7 +1277,7 @@ static Node mkExplanation(const std::vector<NodeTheoryPair>& explanation) {
 
   std::set<TNode> all;
   for (unsigned i = 0; i < explanation.size(); ++ i) {
-    //Assert(explanation[i].d_theory == THEORY_SAT_SOLVER);
+    // Assert(explanation[i].d_theory == THEORY_SAT_SOLVER);
     all.insert(explanation[i].d_node);
   }
 
@@ -1724,7 +1724,8 @@ void TheoryEngine::getExplanation(std::vector<NodeTheoryPair>& explanationVector
 
     // If from the SAT solver, keep it
     // HACK-centralEe
-    if (toExplain.d_theory == THEORY_SAT_SOLVER || d_satSolverFacts.find(toExplain.d_node)!=d_satSolverFacts.end())
+    if (toExplain.d_theory == THEORY_SAT_SOLVER
+        || d_satSolverFacts.find(toExplain.d_node) != d_satSolverFacts.end())
     {
       Debug("theory::explain") << "\tLiteral came from THEORY_SAT_SOLVER. Kepping it." << endl;
       explanationVector[j++] = explanationVector[i++];
@@ -1791,11 +1792,11 @@ void TheoryEngine::getExplanation(std::vector<NodeTheoryPair>& explanationVector
         << "TheoryEngine::explain(): got explanation " << explanation
         << " got from " << toExplain.d_theory << endl;
     // HACK-centralEe
-        ///*
+    ///*
     if (explanation == toExplain.d_node)
     {
       // trust that it came from SAT solver??
-      //toExplain.d_theory = THEORY_SAT_SOLVER;
+      // toExplain.d_theory = THEORY_SAT_SOLVER;
       explanationVector[j++] = explanationVector[i++];
       continue;
     }

@@ -43,7 +43,7 @@ TrustNode ArithInferManager::explainLit(TNode lit)
   if (d_esolver != nullptr)
   {
     NodeMap::const_iterator it = d_propagationMap.find(lit);
-    //Assert(it != d_propagationMap.end());
+    // Assert(it != d_propagationMap.end());
     // HACK-centralEe
     // if its not in propagation map, we did it directly in ee central
     if (it == d_propagationMap.end() || !(*it).second)

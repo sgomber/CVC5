@@ -86,14 +86,21 @@ EqualityStatus SharedSolver::getEqualityStatus(TNode a, TNode b)
   return EQUALITY_UNKNOWN;
 }
 
-bool SharedSolver::propagateSharedEquality(theory::TheoryId theory, TNode a, TNode b, bool value)
+bool SharedSolver::propagateSharedEquality(theory::TheoryId theory,
+                                           TNode a,
+                                           TNode b,
+                                           bool value)
 {
   // Propagate equality between shared terms to the one who asked for it
   Node equality = a.eqNode(b);
-  if (value) {
+  if (value)
+  {
     d_te.assertToTheory(equality, equality, theory, THEORY_BUILTIN);
-  } else {
-    d_te.assertToTheory(equality.notNode(), equality.notNode(), theory, THEORY_BUILTIN);
+  }
+  else
+  {
+    d_te.assertToTheory(
+        equality.notNode(), equality.notNode(), theory, THEORY_BUILTIN);
   }
   return true;
 }

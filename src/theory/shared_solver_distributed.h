@@ -48,7 +48,8 @@ class SharedSolverDistributed : public SharedSolver
    * Get equality status based on the equality engine of shared terms database
    */
   EqualityStatus getEqualityStatus(TNode a, TNode b) override;
-  /** Explain literal that was propagated by a theory or using shared terms database */
+  /** Explain literal that was propagated by a theory or using shared terms
+   * database */
   TrustNode explain(TNode literal, TheoryId id) override;
 
  protected:

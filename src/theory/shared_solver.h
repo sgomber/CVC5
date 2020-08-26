@@ -99,10 +99,15 @@ class SharedSolver
   virtual bool isShared(TNode t) const;
 
   /**
-   * Method called by equalityEngine when a becomes (dis-)equal to b and a and b are shared with
-   * the theory. Returns false if there is a direct conflict (via rewrite for example).
+   * Method called by equalityEngine when a becomes (dis-)equal to b and a and b
+   * are shared with the theory. Returns false if there is a direct conflict
+   * (via rewrite for example).
    */
-  bool propagateSharedEquality(theory::TheoryId theory, TNode a, TNode b, bool value);
+  bool propagateSharedEquality(theory::TheoryId theory,
+                               TNode a,
+                               TNode b,
+                               bool value);
+
  protected:
   /** Solver-specific pre-register shared */
   virtual void preRegisterSharedInternal(TNode t) = 0;

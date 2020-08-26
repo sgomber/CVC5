@@ -193,11 +193,10 @@ bool EqEngineManagerCentral::eqNotifyTriggerPredicate(TNode predicate,
   return d_te.propagate(predicate.notNode(), tid);
 }
 
-
 bool EqEngineManagerCentral::eqNotifyTriggerTermEquality(TheoryId tag,
-                                  TNode a,
-                                  TNode b,
-                                  bool value)
+                                                         TNode a,
+                                                         TNode b,
+                                                         bool value)
 {
   return d_sharedSolver.propagateSharedEquality(tag, a, b, value);
 }
@@ -210,7 +209,8 @@ void EqEngineManagerCentral::eqNotifyConstantTermMerge(TNode t1, TNode t2)
     // conflict during SharedSolver::assertSharedEquality?
     Node lit = t1.eqNode(t2);
     Node conflict = d_centralEqualityEngine.mkExplainLit(lit);
-    Trace("eem-central") << "...explained conflict of " << lit << " ... " << conflict << std::endl;
+    Trace("eem-central") << "...explained conflict of " << lit << " ... "
+                         << conflict << std::endl;
     d_te.conflict(conflict, THEORY_BUILTIN);
     return;
   }

@@ -3923,7 +3923,7 @@ Node TheoryArithPrivate::explain(TNode n)
       return d_congruenceManager.explain(n);
     }
   }else{
-    //Assert(d_congruenceManager.canExplain(n));
+    // Assert(d_congruenceManager.canExplain(n));
     Debug("arith::explain") << "dm explanation" << n << endl;
     return d_congruenceManager.explain(n);
   }
