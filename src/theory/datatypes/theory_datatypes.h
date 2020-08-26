@@ -304,8 +304,11 @@ private:
   std::pair<bool, Node> entailmentCheck(TNode lit) override;
 
  private:
-  /** add tester to equivalence class info */
-  void addTester(unsigned ttindex, Node t, EqcInfo* eqc, Node n, Node t_arg);
+  /** 
+   * Add tester to equivalence class info, return true if we are not in
+   * conflict.
+   */
+  bool addTester(unsigned ttindex, Node t, EqcInfo* eqc, Node n, Node t_arg);
   /** add selector to equivalence class info */
   void addSelector( Node s, EqcInfo* eqc, Node n, bool assertFacts = true );
   /** add constructor */

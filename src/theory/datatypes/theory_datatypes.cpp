@@ -491,7 +491,11 @@ void TheoryDatatypes::assertFact( Node fact, Node exp)
     Trace("dt-tester") << "Assert tester : " << atom << " for " << t_arg << std::endl;
     Node rep = getRepresentative( t_arg );
     EqcInfo* eqc = getOrMakeEqcInfo( rep, true );
-    addTester( tindex, fact, eqc, rep, t_arg );
+    if (!addTester( tindex, fact, eqc, rep, t_arg ))
+    {
+      Trace("dt-tester") << "Tester conflict." << std::endl;
+      return;
+    }
     Trace("dt-tester") << "Done assert tester." << std::endl;
     Trace("dt-tester") << "Done pending merges." << std::endl;
     if( !d_conflict && polarity ){
@@ -913,8 +917,7 @@ void TheoryDatatypes::merge( Node t1, Node t2 ){
           Node t = d_labels_data[ t2 ][i];
           Node t_arg = d_labels_args[t2][i];
           unsigned tindex = d_labels_tindex[t2][i];
-          addTester( tindex, t, eqc1, t1, t_arg );
-          if( d_conflict ){
+          if( !addTester( tindex, t, eqc1, t1, t_arg ) ){
             Trace("datatypes-debug") << "  conflict!" << std::endl;
             return;
           }
@@ -1043,7 +1046,7 @@ Node TheoryDatatypes::getTermSkolemFor( Node n ) {
   }
 }
 
-void TheoryDatatypes::addTester(
+bool TheoryDatatypes::addTester(
     unsigned ttindex, Node t, EqcInfo* eqc, Node n, Node t_arg)
 {
   Trace("datatypes-debug") << "Add tester : " << t << " to eqc(" << n << ")" << std::endl;
@@ -1067,7 +1070,7 @@ void TheoryDatatypes::addTester(
         Trace("dt-conflict") << "CONFLICT: Tester eq conflict : " << d_conflictNode << std::endl;
         d_out->conflict( d_conflictNode );
         d_conflict = true;
-        return;
+        return false;
       }else{
         makeConflict = true;
         //conflict because the existing label is contradictory
@@ -1075,7 +1078,7 @@ void TheoryDatatypes::addTester(
         jt = j;
       }
     }else{
-      return;
+      return true;
     }
   }else{
     //otherwise, scan list of labels
@@ -1094,7 +1097,7 @@ void TheoryDatatypes::addTester(
           makeConflict = true;
           break;
         }else{            //it is redundant
-          return;
+          return true;
         }
       }else{
         neg_testers[jtindex] = true;
@@ -1170,7 +1173,7 @@ void TheoryDatatypes::addTester(
           Trace("datatypes-infer") << "DtInfer : label : " << t_concl << " by " << t_concl_exp << std::endl;
           d_infer.push_back( t_concl );
           d_infer_exp.push_back( t_concl_exp );
-          return;
+          return true;
         }
       }
     }
@@ -1185,7 +1188,9 @@ void TheoryDatatypes::addTester(
     d_conflictNode = mkAnd( assumptions );
     Trace("dt-conflict") << "CONFLICT: Tester conflict : " << d_conflictNode << std::endl;
     d_out->conflict( d_conflictNode );
+    return false;
   }
+  return true;
 }
 
 void TheoryDatatypes::addSelector( Node s, EqcInfo* eqc, Node n, bool assertFacts ) {
