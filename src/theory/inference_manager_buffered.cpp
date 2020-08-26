@@ -22,15 +22,16 @@ namespace CVC4 {
 namespace theory {
 
 InferenceManagerBuffered::InferenceManagerBuffered(Theory& t,
-                  TheoryState& state,
-                  ProofNodeManager* pnm) : TheoryInferenceManager(t, state, pnm)
-                  {
-                    
-                  }
-                  
+                                                   TheoryState& state,
+                                                   ProofNodeManager* pnm)
+    : TheoryInferenceManager(t, state, pnm)
+{
+}
+
 bool InferenceManagerBuffered::hasProcessed() const
 {
-  return d_theoryState.isInConflict() || !d_pendingLem.empty() || !d_pendingFact.empty();
+  return d_theoryState.isInConflict() || !d_pendingLem.empty()
+         || !d_pendingFact.empty();
 }
 
 bool InferenceManagerBuffered::hasPendingFact() const
@@ -43,18 +44,17 @@ bool InferenceManagerBuffered::hasPendingLemma() const
   return !d_pendingLem.empty();
 }
 
-void InferenceManagerBuffered::addPendingLemma(Node lem,
-                           LemmaProperty p)
+void InferenceManagerBuffered::addPendingLemma(Node lem, LemmaProperty p)
 {
-  d_pendingLem.push_back(std::pair<Node, LemmaProperty>(lem,p));
+  d_pendingLem.push_back(std::pair<Node, LemmaProperty>(lem, p));
 }
 
 void InferenceManagerBuffered::addPendingFact(Node fact, Node exp, bool asLemma)
 {
   if (!asLemma)
   {
-    Assert (fact.getKind()!=AND && fact.getKind()!=OR);
-    d_pendingFact.push_back(std::pair<Node, Node>(fact,exp));
+    Assert(fact.getKind() != AND && fact.getKind() != OR);
+    d_pendingFact.push_back(std::pair<Node, Node>(fact, exp));
     return;
   }
   // TODO: explain with equality engine
@@ -64,7 +64,7 @@ void InferenceManagerBuffered::doPendingFacts()
 {
   size_t i = 0;
   while (!d_theoryState.isInConflict() && i < d_pendingFact.size())
-  {    
+  {
     std::pair<Node, Node>& pfact = d_pendingFact[i];
     Node fact = pfact.first;
     Node exp = pfact.second;
@@ -98,15 +98,9 @@ void InferenceManagerBuffered::doPendingLemmas()
   d_pendingLem.clear();
 }
 
-bool preNotifyPendingFact(TNode atom, bool pol, TNode fact)
-{
-  return false;
-}
+bool preNotifyPendingFact(TNode atom, bool pol, TNode fact) { return false; }
 
-bool preNotifyPendingLemma(TNode lem, LemmaProperty p)
-{
-  return false;
-}
+bool preNotifyPendingLemma(TNode lem, LemmaProperty p) { return false; }
 
 }  // namespace theory
 }  // namespace CVC4

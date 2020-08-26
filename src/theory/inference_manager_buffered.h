@@ -30,10 +30,11 @@ namespace theory {
 class InferenceManagerBuffered : public TheoryInferenceManager
 {
   typedef context::CDHashSet<Node, NodeHashFunction> NodeSet;
+
  public:
   InferenceManagerBuffered(Theory& t,
-                    TheoryState& state,
-                    ProofNodeManager* pnm);
+                           TheoryState& state,
+                           ProofNodeManager* pnm);
   ~InferenceManagerBuffered() {}
   /**
    * Have we processed an inference during this call to check? In particular,
@@ -41,15 +42,15 @@ class InferenceManagerBuffered : public TheoryInferenceManager
    * a conflict.
    */
   bool hasProcessed() const;
-  /** Do we have a pending fact to add as an internal fact to the equality engine? */
+  /** Do we have a pending fact to add as an internal fact to the equality
+   * engine? */
   bool hasPendingFact() const;
   /** Do we have a pending lemma to send on the output channel? */
   bool hasPendingLemma() const;
   /** Add pending lemma */
-  void addPendingLemma(Node lem,
-                           LemmaProperty p = LemmaProperty::NONE);
+  void addPendingLemma(Node lem, LemmaProperty p = LemmaProperty::NONE);
   /** Add pending lemma */
-  void addPendingFact(Node fact, Node exp, bool asLemma=false);
+  void addPendingFact(Node fact, Node exp, bool asLemma = false);
   /** Do pending facts
    *
    * This method asserts pending facts (d_pending) with explanations
@@ -79,13 +80,14 @@ class InferenceManagerBuffered : public TheoryInferenceManager
    * this class, since they should never be dropped.
    */
   void doPendingLemmas();
-protected:
-  /** 
+
+ protected:
+  /**
    * Called when a pending fact is about to be sent, return true if the fact
    * was processed separately (i.e. it should not be asserted).
    */
   virtual bool preNotifyPendingFact(TNode atom, bool pol, TNode fact);
-  /** 
+  /**
    * Called when a pending lemma is about to be sent, return true if the lemma
    * was processed separately (i.e. it should not be asserted).
    */

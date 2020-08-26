@@ -307,7 +307,6 @@ void InferenceManager::doPendingFacts()
 
 void InferenceManager::doPendingLemmas()
 {
-
   NodeManager* nm = NodeManager::currentNM();
   for (unsigned i = 0, psize = d_pendingLem.size(); i < psize; i++)
   {
