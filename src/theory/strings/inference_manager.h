@@ -292,6 +292,11 @@ class InferenceManager
   // ------------------------------------------------- end extended theory
 
   /** Notify fact */
+  bool preNotifyFact(TNode atom,
+                                  bool polarity,
+                                  TNode exp,
+                                  bool isInternal
+                                    );
   void notifyFact(TNode atom, bool pol, TNode fact, bool isInternal);
 
  private:

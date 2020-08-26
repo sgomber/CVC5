@@ -104,6 +104,10 @@ TrustNode InferManager::explainConflictEqConstantMerge(TNode a, TNode b)
 
 void InferManager::assertInternalFact(TNode atom, bool pol, TNode fact)
 {
+  if (d_theory.preNotifyFact(atom, pol, fact, false))
+  {
+    return;
+  }
   Assert(d_ee != nullptr);
   Trace("infer-manager") << "InferManager::assertInternalFact: " << fact
                          << std::endl;

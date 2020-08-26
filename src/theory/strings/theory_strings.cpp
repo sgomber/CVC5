@@ -718,6 +718,11 @@ void TheoryStrings::postCheck(Effort e)
   Assert(!d_im.hasPendingLemma());
 }
 
+bool TheoryStrings::preNotifyFact(TNode atom, bool pol, TNode fact, bool isPrereg)
+{
+  return d_im.preNotifyFact(atom, pol, fact, false);
+}
+
 void TheoryStrings::notifyFact(TNode atom,
                                bool polarity,
                                TNode fact,

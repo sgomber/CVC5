@@ -399,23 +399,13 @@ void InferenceManager::assertPendingFact(Node atom, bool polarity, Node exp)
   Trace("strings-pending") << "Assert pending fact : " << atom << " "
                            << polarity << " from " << exp << std::endl;
   Assert(atom.getKind() != OR) << "Infer error: a split.";
+  if (preNotifyFact(atom, polarity, exp, true))
+  {
+    return;
+  }
   if (atom.getKind() == EQUAL)
   {
-    // we must ensure these terms are registered
-    Trace("strings-pending-debug") << "  Register term" << std::endl;
-    for (const Node& t : atom)
-    {
-      // terms in the equality engine are already registered, hence skip
-      // currently done for only string-like terms, but this could potentially
-      // be avoided.
-      if (!ee->hasTerm(t) && t.getType().isStringLike())
-      {
-        d_termReg.registerTerm(t, 0);
-      }
-    }
-    Trace("strings-pending-debug") << "  Now assert equality" << std::endl;
     ee->assertEquality(atom, polarity, exp);
-    Trace("strings-pending-debug") << "  Finished assert equality" << std::endl;
   }
   else
   {
@@ -424,10 +414,11 @@ void InferenceManager::assertPendingFact(Node atom, bool polarity, Node exp)
   notifyFact(atom, polarity, exp, true);
 }
 
-void InferenceManager::notifyFact(TNode atom,
+bool InferenceManager::preNotifyFact(TNode atom,
                                   bool polarity,
                                   TNode exp,
-                                  bool isInternal)
+                                  bool isInternal
+                                    )
 {
   if (atom.getKind() == EQUAL)
   {
@@ -445,7 +436,15 @@ void InferenceManager::notifyFact(TNode atom,
       }
     }
   }
-  else if (atom.getKind() == STRING_IN_REGEXP)
+  return false;
+}
+
+void InferenceManager::notifyFact(TNode atom,
+                                  bool polarity,
+                                  TNode exp,
+                                  bool isInternal)
+{
+  if (atom.getKind() == STRING_IN_REGEXP)
   {
     if (polarity && atom[1].getKind() == REGEXP_CONCAT)
     {
