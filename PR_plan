@@ -10,22 +10,23 @@ PR done:
 (9) Standardize Theory templates (req 21)
 (10) Quantifiers engine set master equality engine
 (11) CombinationEngine / care graph (req 7)
+(13) Cleanup model building and connect combination engine (req 7, 12)
 (17) Theory state
 (18) Strings/sets solver state inherit from solver state
 (21) standard states (req 18)
 (22) simplify eq notifications (eqNotifyTriggerEquality)
+(26) equality engine interface basic extension
 
 PR current:
 
 (4) Merge build model passes *
-(13) Cleanup model building and connect combination engine (req 7, 12) *
 (19) per each theory, update to standard templates (req 9)
 (24) Shared solver / shared solver distributed
-(26) equality engine interface basic extension *
-(27) relevant term database / irrelevant kinds infrastructure
+(25) irrelevant kinds infrastructure
 
 PR planned:
 
 (5) Merge build model passes part two (req 4)
 (14) Equality engine manager central (req 6)
 (16) Model manager central (req 7)
+(15) Model based theory combination

@@ -267,7 +267,10 @@ class TheoryModel : public Model
    * example is APPLY_TESTER.
    */
   void setIrrelevantKind(Kind k);
-  /** Get the irrelevant kinds */
+  /** 
+   * Get the set of irrelevant kinds that have been registered by the above
+   * method.
+   */
   const std::set<Kind>& getIrrelevantKinds() const;
   /** is legal elimination
    *
