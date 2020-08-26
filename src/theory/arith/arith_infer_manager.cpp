@@ -24,7 +24,7 @@ namespace arith {
 ArithInferManager::ArithInferManager(Theory& t,
                                      TheoryState& state,
                                      TheoryArithPrivate& p,
-                   ProofNodeManager* pnm)
+                                     ProofNodeManager* pnm)
     : TheoryInferenceManager(t, state, pnm),
       d_private(p),
       d_esolver(nullptr),

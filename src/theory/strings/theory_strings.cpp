@@ -638,10 +638,8 @@ TrustNode TheoryStrings::expandDefinition(Node node)
   return TrustNode::null();
 }
 
-bool TheoryStrings::preNotifyFact(TNode atom,
-                                  bool pol,
-                                  TNode fact,
-                                  bool isPrereg, bool isInternal)
+bool TheoryStrings::preNotifyFact(
+    TNode atom, bool pol, TNode fact, bool isPrereg, bool isInternal)
 {
   // this is only required for internal facts, others are already registered
   if (isInternal && atom.getKind() == EQUAL)
