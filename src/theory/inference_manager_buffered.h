@@ -47,9 +47,13 @@ class InferenceManagerBuffered : public TheoryInferenceManager
   bool hasPendingFact() const;
   /** Do we have a pending lemma to send on the output channel? */
   bool hasPendingLemma() const;
-  /** Add pending lemma */
+  /** 
+   * Add pending lemma 
+   */
   void addPendingLemma(Node lem, LemmaProperty p = LemmaProperty::NONE);
-  /** Add pending lemma */
+  /**
+   * Add pending fact
+   */
   void addPendingFact(Node fact, Node exp, bool asLemma = false);
   /** Do pending facts
    *
@@ -60,24 +64,18 @@ class InferenceManagerBuffered : public TheoryInferenceManager
    * It terminates early if a conflict is encountered, for instance, by
    * equality reasoning within the equality engine.
    *
-   * Regardless of whether a conflict is encountered, the vector d_pending
-   * and map d_pendingExp are cleared.
+   * Regardless of whether a conflict is encountered, the vector d_pendingFact
+   * is cleared after this call.
    */
   void doPendingFacts();
   /** Do pending lemmas
    *
-   * This method flushes all pending lemmas (d_pendingLem) to the output
+   * This method send all pending lemmas (d_pendingLem) on the output
    * channel of the theory.
    *
-   * Like doPendingFacts, this function will terminate early if a conflict
-   * has already been encountered by the theory of strings. The vector
-   * d_pending_lem is cleared regardless of whether a conflict is discovered.
-   *
-   * Notice that as a result of the above design, some lemmas may be "dropped"
-   * if a conflict is discovered in between when a lemma is added to the
-   * pending vector of this class (via a sendInference call). Lemmas
-   * e.g. those that are required for initialization should not be sent via
-   * this class, since they should never be dropped.
+   * Unlike doPendingFacts, this function will not terminate early if a conflict
+   * has already been encountered by the theory. The vector d_pendingLem is
+   * cleared after this call.
    */
   void doPendingLemmas();
  protected:
