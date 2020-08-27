@@ -80,7 +80,6 @@ class InferenceManagerBuffered : public TheoryInferenceManager
    * this class, since they should never be dropped.
    */
   void doPendingLemmas();
-
  protected:
   /**
    * Called when a pending fact is about to be sent, return true if the fact
@@ -89,7 +88,9 @@ class InferenceManagerBuffered : public TheoryInferenceManager
   virtual bool preNotifyPendingFact(TNode atom, bool pol, TNode fact);
   /**
    * Called when a pending lemma is about to be sent, return true if the lemma
-   * was processed separately (i.e. it should not be asserted).
+   * was processed separately (i.e. it should not be asserted). A common
+   * usage of this method would be to check whether we have already sent this
+   * lemma in the current user context.
    */
   virtual bool preNotifyPendingLemma(TNode lem, LemmaProperty p);
   /** A set of pending lemmas */
