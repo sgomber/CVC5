@@ -19,15 +19,14 @@ namespace theory {
 namespace datatypes {
 
 InferenceManager::InferenceManager(Theory& t,
-                  TheoryState& state,
-                  ProofNodeManager* pnm) : InferenceManagerBuffered(t,state,pnm), d_lemmasSent(t.getSatContext())
+                                   TheoryState& state,
+                                   ProofNodeManager* pnm)
+    : InferenceManagerBuffered(t, state, pnm), d_lemmasSent(t.getSatContext())
 {
 }
 
 InferenceManager::~InferenceManager() {}
 
-
 }  // namespace datatypes
 }  // namespace theory
 }  // namespace CVC4
-

@@ -31,12 +31,12 @@ namespace datatypes {
 class InferenceManager : public InferenceManagerBuffered
 {
   typedef context::CDHashSet<Node, NodeHashFunction> NodeSet;
+
  public:
-  InferenceManager(Theory& t,
-                    TheoryState& state,
-                    ProofNodeManager* pnm);
+  InferenceManager(Theory& t, TheoryState& state, ProofNodeManager* pnm);
   ~InferenceManager() {}
-protected:
+
+ protected:
   /** A cache of all lemmas sent */
   NodeSet d_lemmasSent;
 };
