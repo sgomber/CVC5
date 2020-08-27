@@ -35,6 +35,7 @@ class QuantifiersState : public TheoryState
   void notifyAddedLemma();
   /** has added lemma */
   bool hasAddedLemma() const;
+
  protected:
   /** has added lemma this round */
   bool d_hasAddedLemma;

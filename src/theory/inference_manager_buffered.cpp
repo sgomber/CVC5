@@ -103,8 +103,8 @@ void InferenceManagerBuffered::doPendingLemmas()
     }
     Node lem = plem->d_node;
     LemmaProperty p = plem->d_property;
-    ProofGenerator * pg = plem->getProofGenerator();
-    Assert (!lem.isNull());
+    ProofGenerator* pg = plem->getProofGenerator();
+    Assert(!lem.isNull());
     // send (trusted) lemma on the output channel with property p
     trustedLemma(TrustNode::mkTrustLemma(lem, pg), p);
   }

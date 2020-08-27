@@ -30,23 +30,23 @@ namespace theory {
  */
 class Lemma
 {
-public:
-  Lemma(Node n, LemmaProperty p) : d_node(n), d_property(p){}
-  virtual ~Lemma(){}
-  /** 
+ public:
+  Lemma(Node n, LemmaProperty p) : d_node(n), d_property(p) {}
+  virtual ~Lemma() {}
+  /**
    * Called just before this lemma is sent on the output channel. The purpose
    * of this callback is to do any specific process of the lemma, e.g. take
    * debug statistics, cache, etc.
-   * 
+   *
    * @return true if the lemma should be sent on the output channel.
    */
   virtual bool notifySend() { return true; }
-  /** 
+  /**
    * Get the proof generator for this lemma, which if non-null, is wrapped in a
    * TrustNode to be set on the output channel via trustedLemma at the time
    * the lemma is sent.
    */
-  virtual ProofGenerator * getProofGenerator() { return nullptr; }
+  virtual ProofGenerator* getProofGenerator() { return nullptr; }
   /** The lemma to send */
   Node d_node;
   /** The lemma property (see OutputChannel::lemma) */
