@@ -47,7 +47,12 @@ bool InferenceManagerBuffered::hasPendingLemma() const
 
 void InferenceManagerBuffered::addPendingLemma(Node lem, LemmaProperty p)
 {
-  d_pendingLem.push_back(std::pair<Node, LemmaProperty>(lem, p));
+  d_pendingLem.push_back(std::make_shared<Lemma>(lem, p));
+}
+
+void InferenceManagerBuffered::addPendingLemma(std::shared_ptr<Lemma> lemma)
+{
+  d_pendingLem.push_back(lemma);
 }
 
 void InferenceManagerBuffered::addPendingFact(Node fact, Node exp, bool asLemma)
@@ -78,13 +83,9 @@ void InferenceManagerBuffered::doPendingFacts()
     Node exp = pfact.second;
     bool polarity = fact.getKind() != NOT;
     TNode atom = polarity ? fact : fact[0];
-    // if we don't process it
-    if (!preNotifyPendingFact(atom, polarity, exp))
-    {
-      // no double negation or conjunctive conclusions
-      Assert(atom.getKind() != NOT && atom.getKind() != AND);
-      assertInternalFact(atom, polarity, exp);
-    }
+    // no double negation or conjunctive conclusions
+    Assert(atom.getKind() != NOT && atom.getKind() != AND);
+    assertInternalFact(atom, polarity, exp);
     i++;
   }
   d_pendingFact.clear();
@@ -93,19 +94,21 @@ void InferenceManagerBuffered::doPendingFacts()
 void InferenceManagerBuffered::doPendingLemmas()
 {
   // process all the pending lemmas
-  for (const std::pair<Node, LemmaProperty>& plem : d_pendingLem)
+  for (const std::shared_ptr<Lemma>& plem : d_pendingLem)
   {
-    if (preNotifyPendingLemma(plem.first, plem.second))
+    if (!plem->notifySend())
     {
-      // processed it internally
+      // the lemma indicated that it should not be sent after all
       continue;
     }
-    // send lemma, not cached
-    lemma(plem.first, plem.second);
+    Node lem = plem->d_node;
+    LemmaProperty p = plem->d_property;
+    ProofGenerator * pg = plem->getProofGenerator();
+    Assert (!lem.isNull());
+    // send (trusted) lemma on the output channel with property p
+    trustedLemma(TrustNode::mkTrustLemma(lem, pg), p);
   }
   d_pendingLem.clear();
-  // now, do pending phase requirements
-  doPendingPhaseRequirements();
 }
 
 void InferenceManagerBuffered::doPendingPhaseRequirements()
@@ -117,10 +120,6 @@ void InferenceManagerBuffered::doPendingPhaseRequirements()
   }
   d_pendingReqPhase.clear();
 }
-
-bool preNotifyPendingFact(TNode atom, bool pol, TNode fact) { return false; }
-
-bool preNotifyPendingLemma(TNode lem, LemmaProperty p) { return false; }
 
 }  // namespace theory
 }  // namespace CVC4

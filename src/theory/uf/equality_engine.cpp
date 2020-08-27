@@ -1252,7 +1252,7 @@ void EqualityEngine::explainPredicate(TNode p, bool polarity,
 
 void EqualityEngine::explainLit(TNode lit, std::vector<TNode>& assumptions)
 {
-  Assert(lit.getKind() != AND);
+  Assert(lit.getKind() != kind::AND);
   bool polarity = lit.getKind() != kind::NOT;
   TNode atom = polarity ? lit : lit[0];
   std::vector<TNode> tassumptions;
@@ -1290,7 +1290,7 @@ void EqualityEngine::explainLit(TNode lit, std::vector<TNode>& assumptions)
 
 Node EqualityEngine::mkExplainLit(TNode lit)
 {
-  Assert(lit.getKind() != AND);
+  Assert(lit.getKind() != kind::AND);
   std::vector<TNode> assumptions;
   explainLit(lit, assumptions);
   Node ret;
@@ -1312,7 +1312,7 @@ Node EqualityEngine::mkExplainLit(TNode lit)
 Node EqualityEngine::mkExplain(TNode n)
 {
   std::vector<TNode> assumptions;
-  if (n.getKind() == AND)
+  if (n.getKind() == kind::AND)
   {
     for (const Node& nc : n)
     {

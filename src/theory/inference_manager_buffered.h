@@ -25,6 +25,35 @@ namespace CVC4 {
 namespace theory {
 
 /**
+ * A lemma base class. This class is an abstract data structure for storing
+ * pending lemmas in an inference manager.
+ */
+class Lemma
+{
+public:
+  Lemma(Node n, LemmaProperty p) : d_node(n), d_property(p){}
+  virtual ~Lemma(){}
+  /** 
+   * Called just before this lemma is sent on the output channel. The purpose
+   * of this callback is to do any specific process of the lemma, e.g. take
+   * debug statistics, cache, etc.
+   * 
+   * @return true if the lemma should be sent on the output channel.
+   */
+  virtual bool notifySend() { return true; }
+  /** 
+   * Get the proof generator for this lemma, which if non-null, is wrapped in a
+   * TrustNode to be set on the output channel via trustedLemma at the time
+   * the lemma is sent.
+   */
+  virtual ProofGenerator * getProofGenerator() { return nullptr; }
+  /** The lemma to send */
+  Node d_node;
+  /** The lemma property (see OutputChannel::lemma) */
+  LemmaProperty d_property;
+};
+
+/**
  * The buffered inference manager.  This class implements standard methods
  * for buffering facts and lemmas.
  */
@@ -52,6 +81,11 @@ class InferenceManagerBuffered : public TheoryInferenceManager
    * Add pending lemma
    */
   void addPendingLemma(Node lem, LemmaProperty p = LemmaProperty::NONE);
+  /**
+   * Add pending lemma, where lemma can be a (derived) class of the
+   * above one.
+   */
+  void addPendingLemma(std::shared_ptr<Lemma> lemma);
   /**
    * Add pending fact
    */
@@ -93,20 +127,8 @@ class InferenceManagerBuffered : public TheoryInferenceManager
  protected:
   /** Do pending phase requirements */
   void doPendingPhaseRequirements();
-  /**
-   * Called when a pending fact is about to be sent, return true if the fact
-   * was processed separately (i.e. it should not be asserted).
-   */
-  virtual bool preNotifyPendingFact(TNode atom, bool pol, TNode fact);
-  /**
-   * Called when a pending lemma is about to be sent, return true if the lemma
-   * was processed separately (i.e. it should not be asserted). A common
-   * usage of this method would be to check whether we have already sent this
-   * lemma in the current user context.
-   */
-  virtual bool preNotifyPendingLemma(TNode lem, LemmaProperty p);
   /** A set of pending lemmas */
-  std::vector<std::pair<Node, LemmaProperty>> d_pendingLem;
+  std::vector<std::shared_ptr<Lemma>> d_pendingLem;
   /** A set of pending facts, paired with their explanations */
   std::vector<std::pair<Node, Node>> d_pendingFact;
   /** A map from literals to their pending phase requirement */
