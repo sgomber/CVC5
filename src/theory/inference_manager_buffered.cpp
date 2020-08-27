@@ -45,14 +45,14 @@ bool InferenceManagerBuffered::hasPendingLemma() const
   return !d_pendingLem.empty();
 }
 
-void InferenceManagerBuffered::addPendingLemma(Node lem, LemmaProperty p)
+void InferenceManagerBuffered::addPendingLemma(Node lem, LemmaProperty p, ProofGenerator * pg)
 {
-  d_pendingLem.push_back(std::make_shared<Lemma>(lem, p));
+  d_pendingLem.push_back(std::make_shared<Lemma>(lem, p, pg));
 }
 
 void InferenceManagerBuffered::addPendingLemma(std::shared_ptr<Lemma> lemma)
 {
-  d_pendingLem.push_back(lemma);
+  d_pendingLemma.emplace_back(std::move(lemma));
 }
 
 void InferenceManagerBuffered::addPendingFact(Node fact, Node exp, bool asLemma)
@@ -103,7 +103,7 @@ void InferenceManagerBuffered::doPendingLemmas()
     }
     Node lem = plem->d_node;
     LemmaProperty p = plem->d_property;
-    ProofGenerator* pg = plem->getProofGenerator();
+    ProofGenerator* pg = plem->d_pg;
     Assert(!lem.isNull());
     // send (trusted) lemma on the output channel with property p
     trustedLemma(TrustNode::mkTrustLemma(lem, pg), p);

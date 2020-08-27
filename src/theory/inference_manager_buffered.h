@@ -26,12 +26,12 @@ namespace theory {
 
 /**
  * A lemma base class. This class is an abstract data structure for storing
- * pending lemmas in an inference manager.
+ * pending lemmas in the inference manager below.
  */
 class Lemma
 {
  public:
-  Lemma(Node n, LemmaProperty p) : d_node(n), d_property(p) {}
+  Lemma(Node n, LemmaProperty p, ProofGenerator * pg) : d_node(n), d_property(p), d_pg(pg) {}
   virtual ~Lemma() {}
   /**
    * Called just before this lemma is sent on the output channel. The purpose
@@ -41,16 +41,17 @@ class Lemma
    * @return true if the lemma should be sent on the output channel.
    */
   virtual bool notifySend() { return true; }
-  /**
-   * Get the proof generator for this lemma, which if non-null, is wrapped in a
-   * TrustNode to be set on the output channel via trustedLemma at the time
-   * the lemma is sent.
-   */
-  virtual ProofGenerator* getProofGenerator() { return nullptr; }
   /** The lemma to send */
   Node d_node;
   /** The lemma property (see OutputChannel::lemma) */
   LemmaProperty d_property;
+  /**
+   * The proof generator for this lemma, which if non-null, is wrapped in a
+   * TrustNode to be set on the output channel via trustedLemma at the time
+   * the lemma is sent. This proof generator must be able to provide a proof
+   * for d_node in the remainder of the user context.
+   */
+  ProofGenerator * d_pg;
 };
 
 /**
@@ -78,32 +79,33 @@ class InferenceManagerBuffered : public TheoryInferenceManager
   /** Do we have a pending lemma to send on the output channel? */
   bool hasPendingLemma() const;
   /**
-   * Add pending lemma
+   * Add pending lemma lem with property p, with proof generator pg. If
+   * non-null, pg must be able to provide a proof for lem for the remainder
+   * of the user context.
+   * 
+   * Pending lemmas are sent to the output channel using doPendingLemmas.
    */
-  void addPendingLemma(Node lem, LemmaProperty p = LemmaProperty::NONE);
+  void addPendingLemma(Node lem, LemmaProperty p = LemmaProperty::NONE, ProofGenerator * pg = nullptr);
   /**
    * Add pending lemma, where lemma can be a (derived) class of the
    * above one.
    */
   void addPendingLemma(std::shared_ptr<Lemma> lemma);
   /**
-   * Add pending fact
+   * Add pending fact, which adds 
    */
   void addPendingFact(Node fact, Node exp, bool asLemma = false);
   /** Add pending phase requirement
    *
    * This method is called to indicate this class should send a phase
    * requirement request to the output channel for literal lit to be
-   * decided with polarity pol. This requirement is processed at the same time
-   * lemmas are sent on the output channel of this class during this call to
-   * check. This means if the current lemmas of this class are abandoned, the
-   * phase requirement is not processed.
+   * decided with polarity pol.
    */
   void addPendingPhaseRequirement(Node lit, bool pol);
   /** Do pending facts
    *
-   * This method asserts pending facts (d_pending) with explanations
-   * (d_pendingExp) to the equality engine of the theory via calls
+   * This method asserts pending facts (d_pendingFact) with explanations
+   * to the equality engine of the theory via calls
    * to assertInternalFact.
    *
    * It terminates early if a conflict is encountered, for instance, by
@@ -123,10 +125,10 @@ class InferenceManagerBuffered : public TheoryInferenceManager
    * cleared after this call.
    */
   void doPendingLemmas();
-
- protected:
   /** Do pending phase requirements */
   void doPendingPhaseRequirements();
+
+ protected:
   /** A set of pending lemmas */
   std::vector<std::shared_ptr<Lemma>> d_pendingLem;
   /** A set of pending facts, paired with their explanations */
