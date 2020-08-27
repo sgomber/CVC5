@@ -47,8 +47,8 @@ class InferenceManagerBuffered : public TheoryInferenceManager
   bool hasPendingFact() const;
   /** Do we have a pending lemma to send on the output channel? */
   bool hasPendingLemma() const;
-  /** 
-   * Add pending lemma 
+  /**
+   * Add pending lemma
    */
   void addPendingLemma(Node lem, LemmaProperty p = LemmaProperty::NONE);
   /**
@@ -78,6 +78,7 @@ class InferenceManagerBuffered : public TheoryInferenceManager
    * cleared after this call.
    */
   void doPendingLemmas();
+
  protected:
   /**
    * Called when a pending fact is about to be sent, return true if the fact
