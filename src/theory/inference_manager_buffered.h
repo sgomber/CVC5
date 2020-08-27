@@ -25,7 +25,8 @@ namespace CVC4 {
 namespace theory {
 
 /**
- * The datatypes inference manager.
+ * The buffered inference manager.  This class implements standard methods
+ * for buffering facts and lemmas.
  */
 class InferenceManagerBuffered : public TheoryInferenceManager
 {
