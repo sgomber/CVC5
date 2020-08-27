@@ -45,7 +45,9 @@ bool InferenceManagerBuffered::hasPendingLemma() const
   return !d_pendingLem.empty();
 }
 
-void InferenceManagerBuffered::addPendingLemma(Node lem, LemmaProperty p, ProofGenerator * pg)
+void InferenceManagerBuffered::addPendingLemma(Node lem,
+                                               LemmaProperty p,
+                                               ProofGenerator* pg)
 {
   d_pendingLem.push_back(std::make_shared<Lemma>(lem, p, pg));
 }

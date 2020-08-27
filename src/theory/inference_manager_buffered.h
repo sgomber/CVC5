@@ -31,7 +31,10 @@ namespace theory {
 class Lemma
 {
  public:
-  Lemma(Node n, LemmaProperty p, ProofGenerator * pg) : d_node(n), d_property(p), d_pg(pg) {}
+  Lemma(Node n, LemmaProperty p, ProofGenerator* pg)
+      : d_node(n), d_property(p), d_pg(pg)
+  {
+  }
   virtual ~Lemma() {}
   /**
    * Called just before this lemma is sent on the output channel. The purpose
@@ -51,7 +54,7 @@ class Lemma
    * the lemma is sent. This proof generator must be able to provide a proof
    * for d_node in the remainder of the user context.
    */
-  ProofGenerator * d_pg;
+  ProofGenerator* d_pg;
 };
 
 /**
@@ -82,17 +85,19 @@ class InferenceManagerBuffered : public TheoryInferenceManager
    * Add pending lemma lem with property p, with proof generator pg. If
    * non-null, pg must be able to provide a proof for lem for the remainder
    * of the user context.
-   * 
+   *
    * Pending lemmas are sent to the output channel using doPendingLemmas.
    */
-  void addPendingLemma(Node lem, LemmaProperty p = LemmaProperty::NONE, ProofGenerator * pg = nullptr);
+  void addPendingLemma(Node lem,
+                       LemmaProperty p = LemmaProperty::NONE,
+                       ProofGenerator* pg = nullptr);
   /**
    * Add pending lemma, where lemma can be a (derived) class of the
    * above one.
    */
   void addPendingLemma(std::shared_ptr<Lemma> lemma);
   /**
-   * Add pending fact, which adds 
+   * Add pending fact, which adds
    */
   void addPendingFact(Node fact, Node exp, bool asLemma = false);
   /** Add pending phase requirement
