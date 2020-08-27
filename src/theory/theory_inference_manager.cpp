@@ -1,5 +1,5 @@
 /*********************                                                        */
-/*! \file inference_manager.cpp
+/*! \file theory_inference_manager.cpp
  ** \verbatim
  ** Top contributors (to current version):
  **   Andrew Reynolds
@@ -44,7 +44,8 @@ void TheoryInferenceManager::conflictEqConstantMerge(TNode a, TNode b)
   if (!d_theoryState.isInConflict())
   {
     TrustNode tconf = explainConflictEqConstantMerge(a, b);
-    trustedConflict(tconf);
+    d_theoryState.notifyInConflict();
+    d_out.trustedConflict(tconf);
   }
 }
 
