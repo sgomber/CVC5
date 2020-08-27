@@ -76,9 +76,9 @@ class InferenceManagerBuffered : public TheoryInferenceManager
    * a conflict.
    */
   bool hasProcessed() const;
-  /** 
+  /**
    * Do we have a pending fact to add as an internal fact to the equality
-   * engine? 
+   * engine?
    */
   bool hasPendingFact() const;
   /** Do we have a pending lemma to send on the output channel? */
@@ -141,6 +141,7 @@ class InferenceManagerBuffered : public TheoryInferenceManager
   void doPendingLemmas();
   /** Do pending phase requirements */
   void doPendingPhaseRequirements();
+
  protected:
   /** A set of pending lemmas */
   std::vector<std::shared_ptr<Lemma>> d_pendingLem;
