@@ -59,7 +59,7 @@ class Lemma
 
 /**
  * The buffered inference manager.  This class implements standard methods
- * for buffering facts and lemmas.
+ * for buffering facts, lemmas and phase requirements.
  */
 class InferenceManagerBuffered : public TheoryInferenceManager
 {
@@ -76,30 +76,39 @@ class InferenceManagerBuffered : public TheoryInferenceManager
    * a conflict.
    */
   bool hasProcessed() const;
-  /** Do we have a pending fact to add as an internal fact to the equality
-   * engine? */
+  /** 
+   * Do we have a pending fact to add as an internal fact to the equality
+   * engine? 
+   */
   bool hasPendingFact() const;
   /** Do we have a pending lemma to send on the output channel? */
   bool hasPendingLemma() const;
   /**
    * Add pending lemma lem with property p, with proof generator pg. If
    * non-null, pg must be able to provide a proof for lem for the remainder
-   * of the user context.
-   *
-   * Pending lemmas are sent to the output channel using doPendingLemmas.
+   * of the user context. Pending lemmas are sent to the output channel using
+   * doPendingLemmas.
    */
   void addPendingLemma(Node lem,
                        LemmaProperty p = LemmaProperty::NONE,
                        ProofGenerator* pg = nullptr);
   /**
    * Add pending lemma, where lemma can be a (derived) class of the
-   * above one.
+   * above one. Pending lemmas are sent to the output channel using
+   * doPendingLemmas.
    */
   void addPendingLemma(std::shared_ptr<Lemma> lemma);
   /**
-   * Add pending fact, which adds
+   * Add pending fact, which adds a fact on the pending fact queue. It must
+   * be the case that:
+   * (1) exp => fact is valid,
+   * (2) exp is a literal (or conjunction of literals) that holds in the
+   * equality engine of the theory.
+   *
+   * Pending facts are sent to the equality engine of this class using
+   * doPendingFacts.
    */
-  void addPendingFact(Node fact, Node exp, bool asLemma = false);
+  void addPendingFact(Node fact, Node exp);
   /** Add pending phase requirement
    *
    * This method is called to indicate this class should send a phase
@@ -132,7 +141,6 @@ class InferenceManagerBuffered : public TheoryInferenceManager
   void doPendingLemmas();
   /** Do pending phase requirements */
   void doPendingPhaseRequirements();
-
  protected:
   /** A set of pending lemmas */
   std::vector<std::shared_ptr<Lemma>> d_pendingLem;

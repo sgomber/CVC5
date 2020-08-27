@@ -57,15 +57,10 @@ void InferenceManagerBuffered::addPendingLemma(std::shared_ptr<Lemma> lemma)
   d_pendingLemma.emplace_back(std::move(lemma));
 }
 
-void InferenceManagerBuffered::addPendingFact(Node fact, Node exp, bool asLemma)
+void InferenceManagerBuffered::addPendingFact(Node fact, Node exp)
 {
-  if (!asLemma)
-  {
-    Assert(fact.getKind() != AND && fact.getKind() != OR);
-    d_pendingFact.push_back(std::pair<Node, Node>(fact, exp));
-    return;
-  }
-  // TODO: explain with equality engine, buffer lemma
+  Assert(fact.getKind() != AND && fact.getKind() != OR);
+  d_pendingFact.push_back(std::pair<Node, Node>(fact, exp));
 }
 
 void InferenceManagerBuffered::addPendingPhaseRequirement(Node lit, bool pol)
