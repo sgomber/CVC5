@@ -14,6 +14,8 @@
 
 #include "theory/datatypes/inference_manager.h"
 
+#include "theory/theory.h"
+
 namespace CVC4 {
 namespace theory {
 namespace datatypes {
@@ -24,8 +26,6 @@ InferenceManager::InferenceManager(Theory& t,
     : InferenceManagerBuffered(t, state, pnm), d_lemmasSent(t.getSatContext())
 {
 }
-
-InferenceManager::~InferenceManager() {}
 
 }  // namespace datatypes
 }  // namespace theory
