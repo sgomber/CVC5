@@ -55,7 +55,7 @@ class InferenceManagerBuffered : public TheoryInferenceManager
   /**
    * Add pending fact
    */
-  void addPendingFact(Node fact, Node exp, bool asLemma = false);  
+  void addPendingFact(Node fact, Node exp, bool asLemma = false);
   /** Add pending phase requirement
    *
    * This method is called to indicate this class should send a phase
@@ -89,6 +89,7 @@ class InferenceManagerBuffered : public TheoryInferenceManager
    * cleared after this call.
    */
   void doPendingLemmas();
+
  protected:
   /** Do pending phase requirements */
   void doPendingPhaseRequirements();

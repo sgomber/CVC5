@@ -14,8 +14,8 @@
 
 #include "theory/inference_manager_buffered.h"
 
-#include "theory/theory.h"
 #include "theory/rewriter.h"
+#include "theory/theory.h"
 
 using namespace CVC4::kind;
 
