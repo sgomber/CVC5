@@ -111,14 +111,13 @@ TrustNode TheoryInferenceManager::explainConflictEqConstantMerge(TNode a,
                   << " mkTrustedConflictEqConstantMerge";
 }
 
-LemmaStatus TheoryInferenceManager::lemma(TNode lem,
-                          LemmaProperty p)
+LemmaStatus TheoryInferenceManager::lemma(TNode lem, LemmaProperty p)
 {
   return d_out.lemma(lem, p);
 }
 
 LemmaStatus TheoryInferenceManager::trustedLemma(TrustNode tlem,
-                          LemmaProperty p)
+                                                 LemmaProperty p)
 {
   return d_out.trustedLemma(tlem, p);
 }

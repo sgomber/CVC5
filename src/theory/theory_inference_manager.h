@@ -106,8 +106,7 @@ class TheoryInferenceManager
    */
   void trustedConflict(TrustNode tconf);
   /** Send lemma lem with property p on the output channel. */
-  LemmaStatus lemma(TNode lem,
-                           LemmaProperty p = LemmaProperty::NONE);
+  LemmaStatus lemma(TNode lem, LemmaProperty p = LemmaProperty::NONE);
   /** Send (trusted) lemma lem with property p on the output channel. */
   LemmaStatus trustedLemma(TrustNode tlem,
                            LemmaProperty p = LemmaProperty::NONE);
