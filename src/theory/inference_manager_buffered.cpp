@@ -15,6 +15,7 @@
 #include "theory/inference_manager_buffered.h"
 
 #include "theory/theory.h"
+#include "theory/rewriter.h"
 
 using namespace CVC4::kind;
 
@@ -57,7 +58,14 @@ void InferenceManagerBuffered::addPendingFact(Node fact, Node exp, bool asLemma)
     d_pendingFact.push_back(std::pair<Node, Node>(fact, exp));
     return;
   }
-  // TODO: explain with equality engine
+  // TODO: explain with equality engine, buffer lemma
+}
+
+void InferenceManagerBuffered::addPendingPhaseRequirement(Node lit, bool pol)
+{
+  // must ensure rewritten
+  lit = Rewriter::rewrite(lit);
+  d_pendingReqPhase[lit] = pol;
 }
 
 void InferenceManagerBuffered::doPendingFacts()
@@ -93,9 +101,21 @@ void InferenceManagerBuffered::doPendingLemmas()
       continue;
     }
     // send lemma, not cached
-    d_out.lemma(plem.first, plem.second);
+    lemma(plem.first, plem.second);
   }
   d_pendingLem.clear();
+  // now, do pending phase requirements
+  doPendingPhaseRequirements();
+}
+
+void InferenceManagerBuffered::doPendingPhaseRequirements()
+{
+  // process the pending require phase calls
+  for (const std::pair<const Node, bool>& prp : d_pendingReqPhase)
+  {
+    d_out.requirePhase(prp.first, prp.second);
+  }
+  d_pendingReqPhase.clear();
 }
 
 bool preNotifyPendingFact(TNode atom, bool pol, TNode fact) { return false; }

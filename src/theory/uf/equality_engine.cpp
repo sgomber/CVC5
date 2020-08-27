@@ -1252,6 +1252,7 @@ void EqualityEngine::explainPredicate(TNode p, bool polarity,
 
 void EqualityEngine::explainLit(TNode lit, std::vector<TNode>& assumptions)
 {
+  Assert(lit.getKind()!=AND);
   bool polarity = lit.getKind() != kind::NOT;
   TNode atom = polarity ? lit : lit[0];
   std::vector<TNode> tassumptions;
@@ -1289,13 +1290,13 @@ void EqualityEngine::explainLit(TNode lit, std::vector<TNode>& assumptions)
 
 Node EqualityEngine::mkExplainLit(TNode lit)
 {
+  Assert(lit.getKind()!=AND);
   std::vector<TNode> assumptions;
   explainLit(lit, assumptions);
   Node ret;
-  NodeManager* nm = NodeManager::currentNM();
   if (assumptions.empty())
   {
-    ret = nm->mkConst(true);
+    ret = NodeManager::currentNM()->mkConst(true);
   }
   else if (assumptions.size() == 1)
   {
@@ -1303,7 +1304,37 @@ Node EqualityEngine::mkExplainLit(TNode lit)
   }
   else
   {
-    ret = nm->mkNode(kind::AND, assumptions);
+    ret = NodeManager::currentNM()->mkNode(kind::AND, assumptions);
+  }
+  return ret;
+}
+
+Node EqualityEngine::mkExplain(TNode n)
+{
+  std::vector<TNode> assumptions;
+  if (n.getKind()==AND)
+  {
+    for (const Node& nc : n)
+    {
+      explainLit(nc, assumptions);
+    }
+  }
+  else
+  {
+    explainLit(n, assumptions);
+  }
+  Node ret;
+  if (assumptions.empty())
+  {
+    ret = NodeManager::currentNM()->mkConst(true);
+  }
+  else if (assumptions.size() == 1)
+  {
+    ret = assumptions[0];
+  }
+  else
+  {
+    ret = NodeManager::currentNM()->mkNode(kind::AND, assumptions);
   }
   return ret;
 }

@@ -55,7 +55,17 @@ class InferenceManagerBuffered : public TheoryInferenceManager
   /**
    * Add pending fact
    */
-  void addPendingFact(Node fact, Node exp, bool asLemma = false);
+  void addPendingFact(Node fact, Node exp, bool asLemma = false);  
+  /** Add pending phase requirement
+   *
+   * This method is called to indicate this class should send a phase
+   * requirement request to the output channel for literal lit to be
+   * decided with polarity pol. This requirement is processed at the same time
+   * lemmas are sent on the output channel of this class during this call to
+   * check. This means if the current lemmas of this class are abandoned, the
+   * phase requirement is not processed.
+   */
+  void addPendingPhaseRequirement(Node lit, bool pol);
   /** Do pending facts
    *
    * This method asserts pending facts (d_pending) with explanations
@@ -79,8 +89,9 @@ class InferenceManagerBuffered : public TheoryInferenceManager
    * cleared after this call.
    */
   void doPendingLemmas();
-
  protected:
+  /** Do pending phase requirements */
+  void doPendingPhaseRequirements();
   /**
    * Called when a pending fact is about to be sent, return true if the fact
    * was processed separately (i.e. it should not be asserted).
@@ -97,6 +108,8 @@ class InferenceManagerBuffered : public TheoryInferenceManager
   std::vector<std::pair<Node, LemmaProperty>> d_pendingLem;
   /** A set of pending facts, paired with their explanations */
   std::vector<std::pair<Node, Node>> d_pendingFact;
+  /** A map from literals to their pending phase requirement */
+  std::map<Node, bool> d_pendingReqPhase;
 };
 
 }  // namespace theory

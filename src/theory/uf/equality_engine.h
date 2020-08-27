@@ -792,10 +792,15 @@ private:
    */
   void explainLit(TNode lit, std::vector<TNode>& assumptions);
   /**
-   * Explain literal, return the conjunction. This method relies on the above
-   * method.
+   * Explain literal, return the explanation as a conjunction. This method
+   * relies on the above method.
    */
   Node mkExplainLit(TNode lit);
+  /**
+   * Explain node n, which is possibly a conjunction (with no nested
+   * conjunctions), return the explanation as a conjunction.
+   */
+  Node mkExplain(TNode n);
   //--------------------------- end standard safe explanation methods
 
   /**
