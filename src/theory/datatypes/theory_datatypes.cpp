@@ -180,8 +180,8 @@ void TheoryDatatypes::postCheck(Effort level)
     d_im.doSendLemmas(lemmas);
     return;
   }
-  else if (level == EFFORT_FULL && !d_state.isInConflict() && !d_im.hasAddedLemma()
-           && !d_valuation.needCheck())
+  else if (level == EFFORT_FULL && !d_state.isInConflict()
+           && !d_im.hasAddedLemma() && !d_valuation.needCheck())
   {
     //check for cycles
     Assert(!d_im.hasPendingFact());
@@ -195,8 +195,8 @@ void TheoryDatatypes::postCheck(Effort level)
       {
         return;
       }
-    }while( d_im.hasAddedFact() );
-  
+    } while (d_im.hasAddedFact());
+
     //check for splits
     Trace("datatypes-debug") << "Check for splits " << endl;
     do {
@@ -252,7 +252,7 @@ void TheoryDatatypes::postCheck(Effort level)
                     assumptions.push_back(assumption);
                     Node lemma = assumptions.size()==1 ? assumptions[0] : NodeManager::currentNM()->mkNode( OR, assumptions );
                     Trace("dt-singleton") << "*************Singleton equality lemma " << lemma << std::endl;
-                    d_im.doSendLemma( lemma );
+                    d_im.doSendLemma(lemma);
                   }
                 }
               }else{
@@ -318,7 +318,7 @@ void TheoryDatatypes::postCheck(Effort level)
                     NodeBuilder<> nb(kind::OR);
                     nb << test << test.notNode();
                     Node lemma = nb;
-                    d_im.doSendLemma( lemma );
+                    d_im.doSendLemma(lemma);
                     d_out->requirePhase( test, true );
                   }else{
                     Trace("dt-split") << "*************Split for constructors on " << n <<  endl;
@@ -353,9 +353,11 @@ void TheoryDatatypes::postCheck(Effort level)
         Trace("datatypes-debug") << "Flush pending facts..." << std::endl;
         d_im.process();
       }
-    } while (!d_state.isInConflict() && !d_im.hasAddedLemma() && d_im.hasAddedFact());
-    Trace("datatypes-debug") << "Finished, conflict=" << d_state.isInConflict()
-                             << ", lemmas=" << d_im.hasAddedLemma() << std::endl;
+    } while (!d_state.isInConflict() && !d_im.hasAddedLemma()
+             && d_im.hasAddedFact());
+    Trace("datatypes-debug")
+        << "Finished, conflict=" << d_state.isInConflict()
+        << ", lemmas=" << d_im.hasAddedLemma() << std::endl;
     if (!d_state.isInConflict())
     {
       Trace("dt-model-debug") << std::endl;
@@ -383,7 +385,7 @@ void TheoryDatatypes::notifyFact(TNode atom,
   {
     std::vector< Node > lemmas;
     d_sygusExtension->assertFact(atom, polarity, lemmas);
-    d_im.doSendLemmas( lemmas );
+    d_im.doSendLemmas(lemmas);
   }
   //add to tester if applicable
   Node t_arg;
@@ -393,8 +395,9 @@ void TheoryDatatypes::notifyFact(TNode atom,
     Trace("dt-tester") << "Assert tester : " << atom << " for " << t_arg << std::endl;
     Node rep = getRepresentative( t_arg );
     EqcInfo* eqc = getOrMakeEqcInfo( rep, true );
-    Node tst = isInternal ? ( polarity ? Node(atom) : atom.notNode()) : Node(fact);
-    addTester( tindex, tst, eqc, rep, t_arg );
+    Node tst =
+        isInternal ? (polarity ? Node(atom) : atom.notNode()) : Node(fact);
+    addTester(tindex, tst, eqc, rep, t_arg);
     Trace("dt-tester") << "Done assert tester." << std::endl;
     Trace("dt-tester") << "Done pending merges." << std::endl;
     if (!d_state.isInConflict() && polarity)
@@ -405,7 +408,7 @@ void TheoryDatatypes::notifyFact(TNode atom,
         std::vector< Node > lemmas;
         d_sygusExtension->assertTester(tindex, t_arg, atom, lemmas);
         Trace("dt-tester") << "Done assert tester to sygus." << std::endl;
-        d_im.doSendLemmas( lemmas );
+        d_im.doSendLemmas(lemmas);
       }
     }
   }else{
@@ -438,7 +441,7 @@ void TheoryDatatypes::preRegisterTerm(TNode n)
     {
       std::vector< Node > lemmas;
       d_sygusExtension->preRegisterTerm(n, lemmas);
-      d_im.doSendLemmas( lemmas );
+      d_im.doSendLemmas(lemmas);
     }
     break;
   }
@@ -870,7 +873,8 @@ int TheoryDatatypes::getLabelIndex( EqcInfo* eqc, Node n ){
       return -1;
     }else{
       int tindex = utils::isTester(lbl);
-      Trace("datatypes-debug") << "Label of " << n << " is " << lbl << " with tindex " << tindex << std::endl;
+      Trace("datatypes-debug") << "Label of " << n << " is " << lbl
+                               << " with tindex " << tindex << std::endl;
       Assert(tindex != -1);
       return tindex;
     }
@@ -941,7 +945,7 @@ void TheoryDatatypes::addTester(
   Trace("datatypes-debug") << "Add tester : " << t << " to eqc(" << n << ")" << std::endl;
   Debug("datatypes-labels") << "Add tester " << t << " " << n << " " << eqc << std::endl;
   bool tpolarity = t.getKind()!=NOT;
-  Assert ((tpolarity ? t : t[0]).getKind()==APPLY_TESTER);
+  Assert((tpolarity ? t : t[0]).getKind() == APPLY_TESTER);
   Node j, jt;
   bool makeConflict = false;
   int prevTIndex = getLabelIndex(eqc, n);
@@ -1523,7 +1527,7 @@ Node TheoryDatatypes::getSingletonLemma( TypeNode tn, bool pol ) {
       Node v2 = NodeManager::currentNM()->mkSkolem( "k2", tn );
       a = v1.eqNode( v2 ).negate();
       //send out immediately as lemma
-      d_im.doSendLemma( a );
+      d_im.doSendLemma(a);
       Trace("dt-singleton") << "******** assert " << a << " to avoid singleton cardinality for type " << tn << std::endl;
     }
     d_singleton_lemma[index][tn] = a;
@@ -1666,7 +1670,7 @@ void TheoryDatatypes::instantiate( EqcInfo* eqc, Node n ){
   eq = tt.eqNode(tt_cons);
   Debug("datatypes-inst") << "DtInstantiate : " << eqc << " " << eq
                           << std::endl;
-                          d_im.addPendingFact(eq, exp);
+  d_im.addPendingFact(eq, exp);
   Trace("datatypes-infer-debug") << "inst : " << eqc << " " << n << std::endl;
   Trace("datatypes-infer") << "DtInfer : instantiate : " << eq << " by " << exp
                            << std::endl;
