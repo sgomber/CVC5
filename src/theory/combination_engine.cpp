@@ -28,14 +28,17 @@ namespace CVC4 {
 namespace theory {
 
 CombinationEngine::CombinationEngine(TheoryEngine& te,
-                                     const std::vector<Theory*>& paraTheories)
+                                     const std::vector<Theory*>& paraTheories,
+                                     ProofNodeManager* pnm)
     : d_te(te),
       d_logicInfo(te.getLogicInfo()),
       d_paraTheories(paraTheories),
       d_paraSet(0),
       d_eemanager(nullptr),
       d_mmanager(nullptr),
-      d_sharedSolver(nullptr)
+      d_sharedSolver(nullptr),
+      d_cmbsPg(pnm ? new EagerProofGenerator(pnm, te.getUserContext())
+                   : nullptr)
 {
 }
 
@@ -114,15 +117,16 @@ SharedSolver* CombinationEngine::getSharedSolver()
 {
   return d_sharedSolver.get();
 }
+bool CombinationEngine::isProofEnabled() const { return d_cmbsPg != nullptr; }
 
 eq::EqualityEngineNotify* CombinationEngine::getModelEqualityEngineNotify()
 {
   return nullptr;
 }
 
-void CombinationEngine::sendLemma(TNode node, TheoryId atomsTo)
+void CombinationEngine::sendLemma(TrustNode trn, TheoryId atomsTo)
 {
-  d_te.lemma(node, RULE_INVALID, false, LemmaProperty::NONE, atomsTo);
+  d_te.lemma(trn.getNode(), RULE_INVALID, false, LemmaProperty::NONE, atomsTo);
 }
 
 bool CombinationEngine::isParametric(TheoryId tid) const

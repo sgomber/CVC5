@@ -150,7 +150,10 @@ class TheoryEngine {
    * the cost of walking the DAG on registration, etc.
    */
   const LogicInfo& d_logicInfo;
-
+  //--------------------------------- new proofs
+  /** Proof node manager used by this theory engine, if proofs are enabled */
+  ProofNodeManager* d_pnm;
+  //--------------------------------- end new proofs
   /** The combination manager we are using */
   std::unique_ptr<theory::CombinationEngine> d_tc;
   /** The shared solver of the above combination engine. */

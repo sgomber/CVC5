@@ -152,7 +152,7 @@ void TheoryEngine::finishInit() {
   // Initialize the theory combination architecture
   if (options::tcMode() == options::TcMode::CARE_GRAPH)
   {
-    d_tc.reset(new CombinationCareGraph(*this, paraTheories));
+    d_tc.reset(new CombinationCareGraph(*this, paraTheories, d_pnm));
   }
   else
   {
@@ -217,6 +217,7 @@ TheoryEngine::TheoryEngine(context::Context* context,
       d_userContext(userContext),
       d_activeTheory(nullptr),
       d_logicInfo(logicInfo),
+      d_pnm(nullptr),
       d_tc(nullptr),
       d_sharedSolver(nullptr),
       d_quantEngine(nullptr),
