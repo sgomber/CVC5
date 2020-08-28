@@ -138,17 +138,15 @@ class CombinationEngine
    */
   std::unique_ptr<ModelManager> d_mmanager;
   /**
-<<<<<<< HEAD
    * The shared solver. This class is responsible for performing combination
    * tasks (e.g. preregistration) during solving.
    */
-  std::unique_ptr<SharedSolver> d_sharedSolver;
-=======
+  std::unique_ptr<SharedSolver> d_sharedSolver;  
+  /**
    * An eager proof generator, if proofs are enabled. This proof generator is
    * responsible for proofs of splitting lemmas generated in combineTheories.
    */
   std::unique_ptr<EagerProofGenerator> d_cmbsPg;
->>>>>>> 48dfcfd271ff9fa04766e29fb82ba83290da1ad8
 };
 
 }  // namespace theory

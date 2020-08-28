@@ -20,8 +20,9 @@ namespace CVC4 {
 namespace theory {
 
 CombinationModelBased::CombinationModelBased(
-    TheoryEngine& te, const std::vector<Theory*>& paraTheories)
-    : CombinationEngine(te, paraTheories), d_cmbNotify(*this)
+    TheoryEngine& te, const std::vector<Theory*>& paraTheories,
+                    ProofNodeManager* pnm)
+    : CombinationEngine(te, paraTheories, pnm), d_cmbNotify(*this)
 {
 }
 
@@ -64,7 +65,7 @@ void CombinationModelBased::combineTheories()
   AlwaysAssert(!d_cmbLemmas.empty())
       << "CombinationModelBased::combineTheories: failed to find splitting "
          "lemma";
-  for (const std::pair<Node, TheoryId>& p : d_cmbLemmas)
+  for (const std::pair<TrustNode, TheoryId>& p : d_cmbLemmas)
   {
     sendLemma(p.first, p.second);
   }
@@ -281,7 +282,8 @@ unsigned CombinationModelBased::checkSplitCandidate(TNode a,
            || (!d_sharedTerms->areEqual(a, b)
                && !d_sharedTerms->areDisequal(a, b)));
     Node split = equality.orNode(equality.notNode());
-    sendLemma(split, tid);
+    TrustNode tsplit = TrustNode::mkTrustLemma(split, nullptr);
+    sendLemma(tsplit, tid);
     Node e = d_te.ensureLiteral(equality);
     d_te.getPropEngine()->requirePhase(e, true);
     Trace("tc-model-split")
@@ -460,7 +462,8 @@ void CombinationModelBased::combineTheoriesOld()
           }
           Trace("tc-model-split")
               << "Ackermanization lemma : " << lem << std::endl;
-          sendLemma(lem, tid);
+          TrustNode tlem = TrustNode::mkTrustLemma(lem, nullptr);
+          sendLemma(tlem, tid);
           numSplits++;
         }
         else

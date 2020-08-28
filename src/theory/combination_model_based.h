@@ -36,7 +36,8 @@ class CombinationModelBased : public CombinationEngine
 {
  public:
   CombinationModelBased(TheoryEngine& te,
-                        const std::vector<Theory*>& paraTheories);
+                        const std::vector<Theory*>& paraTheories,
+                        ProofNodeManager* pnm);
   ~CombinationModelBased();
 
   /** Build model (a no-op) */
@@ -89,7 +90,7 @@ class CombinationModelBased : public CombinationEngine
   /** The notification class */
   ModelBasedNotifyClass d_cmbNotify;
   /** The lemmas to send */
-  std::vector<std::pair<Node, TheoryId> > d_cmbLemmas;
+  std::vector<std::pair<TrustNode, TheoryId> > d_cmbLemmas;
   /** called when two constants merge in the equality engine of the model */
   void notifyModelConstantTermMerge(TNode t1, TNode t2);
   /** called when two terms merge in the equality engine of the model */
