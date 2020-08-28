@@ -46,14 +46,20 @@ class InferenceManager : public InferenceManagerBuffered
   void reset();
   /**
    * Process the current lemmas and facts. This is a custom method that can
-   * be seen as overriding the behavior of doPendingLemmas and doPendingFacts.
+   * be seen as overriding the behavior of calling both doPendingLemmas and
+   * doPendingFacts. It determines whether facts should be sent as lemmas
+   * or processed internally.
    */
   void process();
-  /** Have we asserted an internal fact since the last call to reset? */
+  /** 
+   * Have we asserted an internal fact (via process) since the most recent call
+   * to reset? 
+   */
   bool hasAddedFact() const;
-  /** Have we added a lemma since the last call to reset? */
+  /** 
+   * Have we sent a lemma (via process) since the most recent call to reset? 
+   */
   bool hasAddedLemma() const;
-
  protected:
   /** must communicate fact
      //the datatypes decision procedure makes "internal" inferences :
