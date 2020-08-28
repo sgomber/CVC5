@@ -27,6 +27,7 @@
 #include "expr/node_trie.h"
 #include "theory/datatypes/datatypes_rewriter.h"
 #include "theory/datatypes/sygus_extension.h"
+#include "theory/datatypes/inference_manager.h"
 #include "theory/theory.h"
 #include "theory/uf/equality_engine.h"
 #include "util/hash.h"
@@ -43,9 +44,6 @@ class TheoryDatatypes : public Theory {
   typedef context::CDHashMap<Node, bool, NodeHashFunction> BoolMap;
   typedef context::CDHashMap<Node, Node, NodeHashFunction> NodeMap;
 
-  /** inferences */
-  NodeList d_infer;
-  NodeList d_infer_exp;
   Node d_true;
   Node d_zero;
   /** mkAnd */
@@ -170,18 +168,6 @@ private:
   /** selector apps for eqch equivalence class */
   NodeUIntMap d_selector_apps;
   std::map< Node, std::vector< Node > > d_selector_apps_data;
-  /** added lemma
-   *
-   * This flag is set to true during a full effort check if this theory
-   * called d_out->lemma(...).
-   */
-  bool d_addedLemma;
-  /** added fact
-   *
-   * This flag is set to true during a full effort check if this theory
-   * added an internal fact to its equality engine.
-   */
-  bool d_addedFact;
   /** The conflict node */
   Node d_conflictNode;
   /**
@@ -194,10 +180,6 @@ private:
    * collectTerms(...) on.
    */
   BoolMap d_collectTermsCacheU;
-  /** pending assertions/merges */
-  std::vector< Node > d_pending_lem;
-  std::vector< Node > d_pending;
-  std::map< Node, Node > d_pending_exp;
   /** All the function terms that the theory has seen */
   context::CDList<TNode> d_functionTerms;
   /** counter for forcing assignments (ensures fairness) */
@@ -217,12 +199,6 @@ private:
   /** assert fact */
   void assertFact( Node fact, Node exp );
 
-  /** flush pending facts */
-  void flushPendingFacts();
-
-  /** do send lemma */
-  bool doSendLemma( Node lem );
-  bool doSendLemmas( std::vector< Node >& lem );
   /** get or make eqc info */
   EqcInfo* getOrMakeEqcInfo( TNode n, bool doMake = false );
 
@@ -339,8 +315,6 @@ private:
   Node getInstantiateCons(Node n, const DType& dt, int index);
   /** check instantiate */
   void instantiate( EqcInfo* eqc, Node n );
-  /** must communicate fact */
-  bool mustCommunicateFact( Node n, Node exp );
 private:
   //equality queries
   bool hasTerm( TNode a );
@@ -365,6 +339,8 @@ private:
   DatatypesRewriter d_rewriter;
   /** A (default) theory state object */
   TheoryState d_state;
+  /** The inference manager */
+  InferenceManager d_im;
 };/* class TheoryDatatypes */
 
 }/* CVC4::theory::datatypes namespace */

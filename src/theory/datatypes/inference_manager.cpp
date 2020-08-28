@@ -137,13 +137,33 @@ void InferenceManager::process()
   d_pendingFact.clear();
 }
 
-bool InferenceManager::doSendLemma(Node lem)
+bool InferenceManager::hasAddedFact() const
 {
-  if (d_lemmasSent.find(lem) == d_lemmasSent.end())
+  return d_addedFact;
+}
+bool InferenceManager::hasAddedLemma() const
+{
+  return d_addedLemma;
+}
+bool InferenceManager::doSendLemma(Node lem, LemmaProperty p, bool cached)
+{
+  // don't cache lemmas with non-standard properties
+  Assert (!cached || p==LemmaProperty::NONE);
+  bool doSend = false;
+  if (!cached)
+  {
+    // always send
+    doSend = true;
+  }
+  else if (d_lemmasSent.find(lem) == d_lemmasSent.end())
   {
     Trace("dt-lemma-send") << "TheoryDatatypes::doSendLemma : " << lem
                            << std::endl;
     d_lemmasSent.insert(lem);
+    doSend = true;
+  }
+  if (doSend)
+  {
     // call the base class
     lemma(lem);
     d_addedLemma = true;

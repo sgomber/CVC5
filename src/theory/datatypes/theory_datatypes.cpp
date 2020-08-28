@@ -48,21 +48,18 @@ TheoryDatatypes::TheoryDatatypes(Context* c,
                                  const LogicInfo& logicInfo,
                                  ProofNodeManager* pnm)
     : Theory(THEORY_DATATYPES, c, u, out, valuation, logicInfo, pnm),
-      d_infer(c),
-      d_infer_exp(c),
       d_term_sk(u),
       d_notify(*this),
       d_labels(c),
       d_selector_apps(c),
-      d_addedLemma(false),
-      d_addedFact(false),
       d_collectTermsCache(c),
       d_collectTermsCacheU(u),
       d_functionTerms(c),
       d_singleton_eq(u),
       d_lemmas_produced_c(u),
       d_sygusExtension(nullptr),
-      d_state(c, u, valuation)
+      d_state(c, u, valuation),
+      d_im(*this, d_state, pnm)
 {
 
   d_true = NodeManager::currentNM()->mkConst( true );
@@ -71,6 +68,7 @@ TheoryDatatypes::TheoryDatatypes(Context* c,
 
   // indicate we are using the default theory state object
   d_theoryState = &d_state;
+  d_inferManager = &d_im;
   d_needsSharedTermEqFacts = false;
 }
 
@@ -165,7 +163,7 @@ TNode TheoryDatatypes::getEqcConstructor( TNode r ) {
 
 bool TheoryDatatypes::preCheck(Effort level)
 {
-  d_addedLemma = false;
+  d_im.reset();
   return false;
 }
 
@@ -173,36 +171,36 @@ void TheoryDatatypes::postCheck(Effort level)
 {
   // HACK-centralEe
   // necessary for ee central?
-  flushPendingFacts();
+  d_im.process();
   if (level == EFFORT_LAST_CALL)
   {
     Assert(d_sygusExtension != nullptr);
     std::vector<Node> lemmas;
     d_sygusExtension->check(lemmas);
-    doSendLemmas(lemmas);
+    d_im.doSendLemmas(lemmas);
     return;
   }
-  else if (level == EFFORT_FULL && !d_state.isInConflict() && !d_addedLemma
+  else if (level == EFFORT_FULL && !d_state.isInConflict() && !d_im.hasAddedLemma()
            && !d_valuation.needCheck())
   {
     //check for cycles
-    Assert(d_pending.empty());
+    Assert(!d_im.hasPendingFact());
     do {
-      d_addedFact = false;
+      d_im.reset();
       Trace("datatypes-proc") << "Check cycles..." << std::endl;
       checkCycles();
       Trace("datatypes-proc") << "...finish check cycles" << std::endl;
-      flushPendingFacts();
-      if (d_state.isInConflict() || d_addedLemma)
+      d_im.process();
+      if (d_state.isInConflict() || d_im.hasAddedLemma())
       {
         return;
       }
-    }while( d_addedFact );
+    }while( d_im.hasAddedFact() );
   
     //check for splits
     Trace("datatypes-debug") << "Check for splits " << endl;
     do {
-      d_addedFact = false;
+      d_im.reset();
       std::map< TypeNode, Node > rec_singletons;
       eq::EqClassesIterator eqcs_i = eq::EqClassesIterator(d_equalityEngine);
       while( !eqcs_i.isFinished() ){
@@ -254,7 +252,7 @@ void TheoryDatatypes::postCheck(Effort level)
                     assumptions.push_back(assumption);
                     Node lemma = assumptions.size()==1 ? assumptions[0] : NodeManager::currentNM()->mkNode( OR, assumptions );
                     Trace("dt-singleton") << "*************Singleton equality lemma " << lemma << std::endl;
-                    doSendLemma( lemma );
+                    d_im.doSendLemma( lemma );
                   }
                 }
               }else{
@@ -309,10 +307,8 @@ void TheoryDatatypes::postCheck(Effort level)
                   //this may not be necessary?
                   //if only one constructor, then this term must be this constructor
                   Node t = utils::mkTester(n, 0, dt);
-                  d_pending.push_back( t );
-                  d_pending_exp[ t ] = d_true;
+                  d_im.addPendingFact(t, d_true);
                   Trace("datatypes-infer") << "DtInfer : 1-cons (full) : " << t << std::endl;
-                  d_infer.push_back( t );
                 }else{
                   Assert(consIndex != -1 || dt.isSygus());
                   if( options::dtBinarySplit() && consIndex!=-1 ){
@@ -322,14 +318,13 @@ void TheoryDatatypes::postCheck(Effort level)
                     NodeBuilder<> nb(kind::OR);
                     nb << test << test.notNode();
                     Node lemma = nb;
-                    doSendLemma( lemma );
+                    d_im.doSendLemma( lemma );
                     d_out->requirePhase( test, true );
                   }else{
                     Trace("dt-split") << "*************Split for constructors on " << n <<  endl;
                     Node lemma = utils::mkSplit(n, dt);
                     Trace("dt-split-debug") << "Split lemma is : " << lemma << std::endl;
-                    d_out->lemma(lemma, LemmaProperty::SEND_ATOMS);
-                    d_addedLemma = true;
+                    d_im.doSendLemma(lemma, LemmaProperty::SEND_ATOMS, false);
                   }
                   if( !options::dtBlastSplits() ){
                     break;
@@ -345,23 +340,22 @@ void TheoryDatatypes::postCheck(Effort level)
         }
         ++eqcs_i;
       }
-      if (d_addedLemma)
+      if (d_im.hasAddedLemma())
       {
         // clear pending facts: we added a lemma, so internal inferences are
         // no longer necessary
-        d_pending.clear();
-        d_pending_exp.clear();
+        d_im.clearPendingFacts();
       }
       else
       {
         // we did not add a lemma, process internal inferences. This loop
         // will repeat.
         Trace("datatypes-debug") << "Flush pending facts..." << std::endl;
-        flushPendingFacts();
+        d_im.process();
       }
-    } while (!d_state.isInConflict() && !d_addedLemma && d_addedFact);
+    } while (!d_state.isInConflict() && !d_im.hasAddedLemma() && d_im.hasAddedFact());
     Trace("datatypes-debug") << "Finished, conflict=" << d_state.isInConflict()
-                             << ", lemmas=" << d_addedLemma << std::endl;
+                             << ", lemmas=" << d_im.hasAddedLemma() << std::endl;
     if (!d_state.isInConflict())
     {
       Trace("dt-model-debug") << std::endl;
@@ -379,100 +373,6 @@ bool TheoryDatatypes::needsCheckLastEffort() {
   return d_sygusExtension != nullptr;
 }
 
-void TheoryDatatypes::flushPendingFacts(){
-  //pending lemmas: used infrequently, only for definitional lemmas
-  if( !d_pending_lem.empty() ){
-    int i = 0;
-    while( i<(int)d_pending_lem.size() ){
-      doSendLemma( d_pending_lem[i] );
-      i++;
-    }
-    d_pending_lem.clear();
-  }
-  int i = 0;
-  while (!d_state.isInConflict() && i < (int)d_pending.size())
-  {
-    Node fact = d_pending[i];
-    Node exp = d_pending_exp[ fact ];
-    Trace("datatypes-debug") << "Assert fact (#" << (i+1) << "/" << d_pending.size() << ") " << fact << " with explanation " << exp << std::endl;
-    //check to see if we have to communicate it to the rest of the system
-    if( mustCommunicateFact( fact, exp ) ){
-      Node lem = fact;
-      if( exp.isNull() || exp==d_true ){
-        Trace("dt-lemma-debug") << "Trivial explanation." << std::endl;
-      }else{
-        Trace("dt-lemma-debug") << "Get explanation..." << std::endl;
-        std::vector< TNode > assumptions;
-        //if( options::dtRExplainLemmas() ){
-        explain( exp, assumptions );
-        //}else{
-        //  ee_exp = exp;
-        //}
-        //Trace("dt-lemma-debug") << "Explanation : " << ee_exp << std::endl;
-        if( assumptions.empty() ){
-          lem = fact;
-        }else{
-          std::vector< Node > children;
-          for (const TNode& assumption : assumptions)
-          {
-            children.push_back(assumption.negate());
-          }
-          children.push_back( fact );
-          lem = NodeManager::currentNM()->mkNode( OR, children );
-        }
-      }
-      Trace("dt-lemma") << "Datatypes lemma : " << lem << std::endl;
-      doSendLemma( lem );
-    }else{
-      assertFact( fact, exp );
-      d_addedFact = true;
-    }
-    Trace("datatypes-debug")
-        << "Finished fact " << fact << ", now = " << d_state.isInConflict()
-        << " " << d_pending.size() << std::endl;
-    i++;
-  }
-  d_pending.clear();
-  d_pending_exp.clear();
-}
-
-bool TheoryDatatypes::doSendLemma( Node lem ) {
-  if( d_lemmas_produced_c.find( lem )==d_lemmas_produced_c.end() ){
-    Trace("dt-lemma-send") << "TheoryDatatypes::doSendLemma : " << lem << std::endl;
-    d_lemmas_produced_c[lem] = true;
-    d_out->lemma( lem );
-    d_addedLemma = true;
-    return true;
-  }else{
-    Trace("dt-lemma-send") << "TheoryDatatypes::doSendLemma : duplicate : "
-                           << lem << std::endl;
-    return false;
-  }
-}
-bool TheoryDatatypes::doSendLemmas( std::vector< Node >& lemmas ){
-  bool ret = false;
-  for (const Node& lem : lemmas)
-  {
-    bool cret = doSendLemma(lem);
-    ret = ret || cret;
-  }
-  lemmas.clear();
-  return ret;
-}
-        
-void TheoryDatatypes::assertFact( Node fact, Node exp)
-{
-  Trace("datatypes-debug") << "TheoryDatatypes::assertFact : " << fact << std::endl;
-  bool polarity = fact.getKind() != kind::NOT;
-  TNode atom = polarity ? fact : fact[0];
-  if (atom.getKind() == kind::EQUAL) {
-    d_equalityEngine->assertEquality(atom, polarity, exp);
-  }else{
-    d_equalityEngine->assertPredicate(atom, polarity, exp);
-  }
-  notifyFact(atom, polarity, fact, true);
-}
-
 void TheoryDatatypes::notifyFact(TNode atom,
                                  bool polarity,
                                  TNode fact,
@@ -483,7 +383,7 @@ void TheoryDatatypes::notifyFact(TNode atom,
   {
     std::vector< Node > lemmas;
     d_sygusExtension->assertFact(atom, polarity, lemmas);
-    doSendLemmas( lemmas );
+    d_im.doSendLemmas( lemmas );
   }
   //add to tester if applicable
   Node t_arg;
@@ -493,7 +393,8 @@ void TheoryDatatypes::notifyFact(TNode atom,
     Trace("dt-tester") << "Assert tester : " << atom << " for " << t_arg << std::endl;
     Node rep = getRepresentative( t_arg );
     EqcInfo* eqc = getOrMakeEqcInfo( rep, true );
-    addTester( tindex, fact, eqc, rep, t_arg );
+    Node tst = isInternal ? ( polarity ? Node(atom) : atom.notNode()) : Node(fact);
+    addTester( tindex, tst, eqc, rep, t_arg );
     Trace("dt-tester") << "Done assert tester." << std::endl;
     Trace("dt-tester") << "Done pending merges." << std::endl;
     if (!d_state.isInConflict() && polarity)
@@ -504,7 +405,7 @@ void TheoryDatatypes::notifyFact(TNode atom,
         std::vector< Node > lemmas;
         d_sygusExtension->assertTester(tindex, t_arg, atom, lemmas);
         Trace("dt-tester") << "Done assert tester to sygus." << std::endl;
-        doSendLemmas( lemmas );
+        d_im.doSendLemmas( lemmas );
       }
     }
   }else{
@@ -514,7 +415,7 @@ void TheoryDatatypes::notifyFact(TNode atom,
   // now, flush pending facts if this wasn't an internal call
   if (!isInternal)
   {
-    flushPendingFacts();
+    d_im.process();
   }
 }
 
@@ -537,11 +438,11 @@ void TheoryDatatypes::preRegisterTerm(TNode n)
     {
       std::vector< Node > lemmas;
       d_sygusExtension->preRegisterTerm(n, lemmas);
-      doSendLemmas( lemmas );
+      d_im.doSendLemmas( lemmas );
     }
     break;
   }
-  flushPendingFacts();
+  d_im.process();
 }
 
 TrustNode TheoryDatatypes::expandDefinition(Node n)
@@ -863,22 +764,10 @@ void TheoryDatatypes::merge( Node t1, Node t2 ){
             for( int i=0; i<(int)cons1.getNumChildren(); i++ ) {
               if( !areEqual( cons1[i], cons2[i] ) ){
                 Node eq = cons1[i].eqNode( cons2[i] );
-                d_pending.push_back( eq );
-                d_pending_exp[ eq ] = unifEq;
+                d_im.addPendingFact(eq, unifEq);
                 Trace("datatypes-infer") << "DtInfer : cons-inj : " << eq << " by " << unifEq << std::endl;
-                d_infer.push_back( eq );
-                d_infer_exp.push_back( unifEq );
               }
             }
-/*
-            for( unsigned i=0; i<rew.size(); i++ ){
-              d_pending.push_back( rew[i] );
-              d_pending_exp[ rew[i] ] = unifEq;
-              Trace("datatypes-infer") << "DtInfer : cons-inj : " << rew[i] << " by " << unifEq << std::endl;
-              d_infer.push_back( rew[i] );
-              d_infer_exp.push_back( unifEq );
-            }
-*/
           }
         }
         Trace("datatypes-debug") << "  instantiated : " << eqc1->d_inst << " " << eqc2->d_inst << std::endl;
@@ -981,6 +870,7 @@ int TheoryDatatypes::getLabelIndex( EqcInfo* eqc, Node n ){
       return -1;
     }else{
       int tindex = utils::isTester(lbl);
+      Trace("datatypes-debug") << "Label of " << n << " is " << lbl << " with tindex " << tindex << std::endl;
       Assert(tindex != -1);
       return tindex;
     }
@@ -1035,9 +925,7 @@ Node TheoryDatatypes::getTermSkolemFor( Node n ) {
       d_term_sk[n] = k;
       Node eq = k.eqNode( n );
       Trace("datatypes-infer") << "DtInfer : ref : " << eq << std::endl;
-      d_pending_lem.push_back( eq );
-      //doSendLemma( eq );
-      //d_pending_exp[ eq ] = d_true;
+      d_im.addPendingLemma(eq);
       return k;
     }else{
       return (*it).second;
@@ -1053,6 +941,7 @@ void TheoryDatatypes::addTester(
   Trace("datatypes-debug") << "Add tester : " << t << " to eqc(" << n << ")" << std::endl;
   Debug("datatypes-labels") << "Add tester " << t << " " << n << " " << eqc << std::endl;
   bool tpolarity = t.getKind()!=NOT;
+  Assert ((tpolarity ? t : t[0]).getKind()==APPLY_TESTER);
   Node j, jt;
   bool makeConflict = false;
   int prevTIndex = getLabelIndex(eqc, n);
@@ -1129,9 +1018,8 @@ void TheoryDatatypes::addTester(
           if( i!=ttindex && neg_testers.find( i )==neg_testers.end() ){
             Assert(n.getKind() != APPLY_CONSTRUCTOR);
             Node infer = utils::mkTester(n, i, dt).negate();
+            d_im.addPendingFact(infer, t);
             Trace("datatypes-infer") << "DtInfer : neg label : " << infer << " by " << t << std::endl;
-            d_infer.push_back( infer );
-            d_infer_exp.push_back( t );
           }
         }
       }else{
@@ -1169,11 +1057,8 @@ void TheoryDatatypes::addTester(
                              ? NodeManager::currentNM()->mkConst(false)
                              : utils::mkTester(t_arg, testerIndex, dt);
           Node t_concl_exp = ( nb.getNumChildren() == 1 ) ? nb.getChild( 0 ) : nb;
-          d_pending.push_back( t_concl );
-          d_pending_exp[ t_concl ] = t_concl_exp;
+          d_im.addPendingFact(t_concl, t_concl_exp);
           Trace("datatypes-infer") << "DtInfer : label : " << t_concl << " by " << t_concl_exp << std::endl;
-          d_infer.push_back( t_concl );
-          d_infer_exp.push_back( t_concl_exp );
           return;
         }
       }
@@ -1334,10 +1219,7 @@ void TheoryDatatypes::collapseSelector( Node s, Node c ) {
       Trace("datatypes-infer") << "DtInfer : collapse sel";
       //Trace("datatypes-infer") << ( wrong ? " wrong" : "");
       Trace("datatypes-infer") << " : " << eq << " by " << peq << std::endl;
-      d_pending.push_back( eq );
-      d_pending_exp[eq] = peq;
-      d_infer.push_back( eq );
-      d_infer_exp.push_back(peq);
+      d_im.addPendingFact(eq, peq);
     }
   }
 }
@@ -1641,7 +1523,7 @@ Node TheoryDatatypes::getSingletonLemma( TypeNode tn, bool pol ) {
       Node v2 = NodeManager::currentNM()->mkSkolem( "k2", tn );
       a = v1.eqNode( v2 ).negate();
       //send out immediately as lemma
-      doSendLemma( a );
+      d_im.doSendLemma( a );
       Trace("dt-singleton") << "******** assert " << a << " to avoid singleton cardinality for type " << tn << std::endl;
     }
     d_singleton_lemma[index][tn] = a;
@@ -1699,7 +1581,7 @@ void TheoryDatatypes::collectTerms( Node n ) {
     Node lem = nm->mkNode(LEQ, d_zero, n);
     Trace("datatypes-infer")
         << "DtInfer : size geq zero : " << lem << std::endl;
-    d_pending_lem.push_back(lem);
+    d_im.addPendingLemma(lem);
   }
   else if (nk == DT_HEIGHT_BOUND && n[1].getConst<Rational>().isZero())
   {
@@ -1724,7 +1606,7 @@ void TheoryDatatypes::collectTerms( Node n ) {
                                           : nm->mkNode(OR, children));
     }
     Trace("datatypes-infer") << "DtInfer : zero height : " << lem << std::endl;
-    d_pending_lem.push_back(lem);
+    d_im.addPendingLemma(lem);
   }
 }
 
@@ -1753,6 +1635,7 @@ Node TheoryDatatypes::getInstantiateCons(Node n, const DType& dt, int index)
 }
 
 void TheoryDatatypes::instantiate( EqcInfo* eqc, Node n ){
+  Trace("datatypes-debug") << "Instantiate: " << n << std::endl;
   //add constructor to equivalence class if not done so already
   int index = getLabelIndex( eqc, n );
   if (index == -1 || eqc->d_inst)
@@ -1783,13 +1666,10 @@ void TheoryDatatypes::instantiate( EqcInfo* eqc, Node n ){
   eq = tt.eqNode(tt_cons);
   Debug("datatypes-inst") << "DtInstantiate : " << eqc << " " << eq
                           << std::endl;
-  d_pending.push_back(eq);
-  d_pending_exp[eq] = exp;
+                          d_im.addPendingFact(eq, exp);
   Trace("datatypes-infer-debug") << "inst : " << eqc << " " << n << std::endl;
   Trace("datatypes-infer") << "DtInfer : instantiate : " << eq << " by " << exp
                            << std::endl;
-  d_infer.push_back(eq);
-  d_infer_exp.push_back(exp);
 }
 
 void TheoryDatatypes::checkCycles() {
@@ -1874,11 +1754,8 @@ void TheoryDatatypes::checkCycles() {
           Trace("dt-cdt") << std::endl;
           Node eq = part_out[i][0].eqNode( part_out[i][j] );
           Node eqExp = mkAnd( exp );
-          d_pending.push_back( eq );
-          d_pending_exp[ eq ] = eqExp;
+          d_im.addPendingFact(eq, eqExp);
           Trace("datatypes-infer") << "DtInfer : cdt-bisimilar : " << eq << " by " << eqExp << std::endl;
-          d_infer.push_back( eq );
-          d_infer_exp.push_back( eqExp );
         }
       }
     }
@@ -2050,39 +1927,6 @@ Node TheoryDatatypes::searchForCycle( TNode n, TNode on,
       }
     }
     return Node::null();
-  }
-}
-
-bool TheoryDatatypes::mustCommunicateFact( Node n, Node exp ){
-  //the datatypes decision procedure makes "internal" inferences apart from the equality engine :
-  //  (1) Unification : C( t1...tn ) = C( s1...sn ) => ti = si
-  //  (2) Label : ~is_C1( t ) ... ~is_C{i-1}( t ) ~is_C{i+1}( t ) ... ~is_Cn( t ) => is_Ci( t )
-  //  (3) Instantiate : is_C( t ) => t = C( sel_1( t ) ... sel_n( t ) )
-  //  (4) collapse selector : S( C( t1...tn ) ) = t'
-  //  (5) collapse term size : size( C( t1...tn ) ) = 1 + size( t1 ) + ... + size( tn )
-  //  (6) non-negative size : 0 <= size( t )
-  //We may need to communicate outwards if the conclusions involve other theories.  Also communicate (6) and OR conclusions.
-  Trace("dt-lemma-debug") << "Compute for " << exp << " => " << n << std::endl;
-  bool addLemma = false;
-  if( options::dtInferAsLemmas() && exp!=d_true ){
-    addLemma = true;    
-  }else if( n.getKind()==EQUAL ){
-    TypeNode tn = n[0].getType();
-    if( !tn.isDatatype() ){
-      addLemma = true;
-    }else{
-      const DType& dt = tn.getDType();
-      addLemma = dt.involvesExternalType();
-    }
-  }else if( n.getKind()==LEQ || n.getKind()==OR ){
-    addLemma = true;
-  }
-  if( addLemma ){
-    Trace("dt-lemma-debug") << "Communicate " << n << std::endl;
-    return true;
-  }else{
-    Trace("dt-lemma-debug") << "Do not need to communicate " << n << std::endl;
-    return false;
   }
 }
 

@@ -60,6 +60,13 @@ class InferenceManager : public InferenceManagerBuffered
    * Have we sent a lemma (via process) since the most recent call to reset? 
    */
   bool hasAddedLemma() const;
+  /**
+   * If not cached, send lemma on lem the output channel and cache. Returns
+   * true if a lemma was sent.
+   */
+  bool doSendLemma(Node lem, LemmaProperty p = LemmaProperty::NONE, bool cached=true);
+  /** Multi-version of the above, returns true if any lemma was sent. */
+  bool doSendLemmas(const std::vector<Node>& lem);
  protected:
   /** must communicate fact
      //the datatypes decision procedure makes "internal" inferences :
@@ -77,13 +84,6 @@ class InferenceManager : public InferenceManagerBuffered
   theories.  Also communicate (6) and OR conclusions.
   */
   bool mustCommunicateFact(Node n, Node exp) const;
-  /**
-   * If not cached, send lemma on lem the output channel and cache. Returns
-   * true if a lemma was sent.
-   */
-  bool doSendLemma(Node lem);
-  /** Multi-version of the above, returns true if any lemma was sent. */
-  bool doSendLemmas(const std::vector<Node>& lem);
   /** A cache of all lemmas sent */
   NodeSet d_lemmasSent;
   /** Common nodes */
