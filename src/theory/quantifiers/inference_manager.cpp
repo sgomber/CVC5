@@ -12,7 +12,7 @@
  ** \brief Quantifiers inference manager
  **/
 
-#include "theory/datatypes/inference_manager.h"
+#include "theory/quantifiers/inference_manager.h"
 
 #include "expr/dtype.h"
 #include "options/datatypes_options.h"
@@ -22,7 +22,7 @@ using namespace CVC4::kind;
 
 namespace CVC4 {
 namespace theory {
-namespace datatypes {
+namespace quantifiers {
 
 InferenceManager::InferenceManager(Theory& t,
                                    TheoryState& state,
@@ -32,6 +32,6 @@ InferenceManager::InferenceManager(Theory& t,
 }
 
 
-}  // namespace datatypes
+}  // namespace quantifiers
 }  // namespace theory
 }  // namespace CVC4
