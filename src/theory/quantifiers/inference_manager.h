@@ -36,6 +36,13 @@ class InferenceManager : public InferenceManagerBuffered
  public:
   InferenceManager(Theory& t, TheoryState& state, ProofNodeManager* pnm);
   ~InferenceManager() {}
+  /** add pending lemma */
+  bool addLemma(Node lem, bool doCache = true, bool doRewrite = true);
+protected:
+  /** has added lemma this round */
+  bool d_hasAddedLemma;
+  /** list of all lemmas produced */
+  NodeSet d_lemmasProduced;
 };
 
 }  // namespace quantifiers

@@ -27,7 +27,7 @@ namespace datatypes {
 InferenceManager::InferenceManager(Theory& t,
                                    TheoryState& state,
                                    ProofNodeManager* pnm)
-    : InferenceManagerBuffered(t, state, pnm)
+    : InferenceManagerBuffered(t, state, pnm), d_lemmasProduced(t.getUserContext())
 {
 }
 
