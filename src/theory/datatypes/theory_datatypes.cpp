@@ -186,7 +186,7 @@ void TheoryDatatypes::postCheck(Effort level)
            && !d_valuation.needCheck())
   {
     //check for cycles
-    Assert(d_pending.empty() && d_pending_merge.empty());
+    Assert(d_pending.empty());
     do {
       d_addedFact = false;
       Trace("datatypes-proc") << "Check cycles..." << std::endl;
@@ -380,7 +380,6 @@ bool TheoryDatatypes::needsCheckLastEffort() {
 }
 
 void TheoryDatatypes::flushPendingFacts(){
-  doPendingMerges();
   //pending lemmas: used infrequently, only for definitional lemmas
   if( !d_pending_lem.empty() ){
     int i = 0;
@@ -389,7 +388,6 @@ void TheoryDatatypes::flushPendingFacts(){
       i++;
     }
     d_pending_lem.clear();
-    doPendingMerges();
   }
   int i = 0;
   while (!d_state.isInConflict() && i < (int)d_pending.size())
@@ -438,20 +436,6 @@ void TheoryDatatypes::flushPendingFacts(){
   d_pending_exp.clear();
 }
 
-void TheoryDatatypes::doPendingMerges(){
-  if (!d_state.isInConflict())
-  {
-    //do all pending merges
-    int i=0;
-    while( i<(int)d_pending_merge.size() ){
-      Assert(d_pending_merge[i].getKind() == EQUAL);
-      merge( d_pending_merge[i][0], d_pending_merge[i][1] );
-      i++;
-    }
-  }
-  d_pending_merge.clear();
-}
-
 bool TheoryDatatypes::doSendLemma( Node lem ) {
   if( d_lemmas_produced_c.find( lem )==d_lemmas_produced_c.end() ){
     Trace("dt-lemma-send") << "TheoryDatatypes::doSendLemma : " << lem << std::endl;
@@ -476,8 +460,8 @@ bool TheoryDatatypes::doSendLemmas( std::vector< Node >& lemmas ){
   return ret;
 }
         
-void TheoryDatatypes::assertFact( Node fact, Node exp ){
-  Assert(d_pending_merge.empty());
+void TheoryDatatypes::assertFact( Node fact, Node exp)
+{
   Trace("datatypes-debug") << "TheoryDatatypes::assertFact : " << fact << std::endl;
   bool polarity = fact.getKind() != kind::NOT;
   TNode atom = polarity ? fact : fact[0];
@@ -494,7 +478,6 @@ void TheoryDatatypes::notifyFact(TNode atom,
                                  TNode fact,
                                  bool isInternal)
 {
-  doPendingMerges();
   // could be sygus-specific
   if (d_sygusExtension)
   {
@@ -512,8 +495,6 @@ void TheoryDatatypes::notifyFact(TNode atom,
     EqcInfo* eqc = getOrMakeEqcInfo( rep, true );
     addTester( tindex, fact, eqc, rep, t_arg );
     Trace("dt-tester") << "Done assert tester." << std::endl;
-    //do pending merges
-    doPendingMerges();
     Trace("dt-tester") << "Done pending merges." << std::endl;
     if (!d_state.isInConflict() && polarity)
     {
@@ -838,8 +819,7 @@ void TheoryDatatypes::eqNotifyMerge(TNode t1, TNode t2)
   if( t1.getType().isDatatype() ){
     Trace("datatypes-debug")
         << "NotifyMerge : " << t1 << " " << t2 << std::endl;
-    // merge directly
-    merge(t1, t2);
+    merge(t1,t2);
   }
 }
 
