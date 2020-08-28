@@ -36,14 +36,15 @@ namespace datatypes {
 class InferenceManager : public InferenceManagerBuffered
 {
   typedef context::CDHashSet<Node, NodeHashFunction> NodeSet;
+
  public:
   InferenceManager(Theory& t, TheoryState& state, ProofNodeManager* pnm);
   ~InferenceManager() {}
-  /** 
+  /**
    * Reset, which resets flags regarding whether we have added lemmas or facts.
    */
   void reset();
-  /** 
+  /**
    * Process the current lemmas and facts. This is a custom method that can
    * be seen as overriding the behavior of doPendingLemmas and doPendingFacts.
    */
@@ -52,31 +53,36 @@ class InferenceManager : public InferenceManagerBuffered
   bool hasAddedFact() const;
   /** Have we added a lemma since the last call to reset? */
   bool hasAddedLemma() const;
+
  protected:
-  /** must communicate fact 
+  /** must communicate fact
      //the datatypes decision procedure makes "internal" inferences :
   //  (1) Unification : C( t1...tn ) = C( s1...sn ) => ti = si
-  //  (2) Label : ~is_C1( t ) ... ~is_C{i-1}( t ) ~is_C{i+1}( t ) ... ~is_Cn( t ) => is_Ci( t )
+  //  (2) Label : ~is_C1( t ) ... ~is_C{i-1}( t ) ~is_C{i+1}( t ) ... ~is_Cn( t
+  ) => is_Ci( t )
   //  (3) Instantiate : is_C( t ) => t = C( sel_1( t ) ... sel_n( t ) )
   //  (4) collapse selector : S( C( t1...tn ) ) = t'
-  //  (5) collapse term size : size( C( t1...tn ) ) = 1 + size( t1 ) + ... + size( tn )
+  //  (5) collapse term size : size( C( t1...tn ) ) = 1 + size( t1 ) + ... +
+  size( tn )
   //  (6) non-negative size : 0 <= size( t )
-  This method returns true if the fact must be sent out as a lemma. If it returns false, then we assert the fact internally.
-  //We may need to communicate outwards if the conclusions involve other theories.  Also communicate (6) and OR conclusions.
+  This method returns true if the fact must be sent out as a lemma. If it
+  returns false, then we assert the fact internally.
+  //We may need to communicate outwards if the conclusions involve other
+  theories.  Also communicate (6) and OR conclusions.
   */
-  bool mustCommunicateFact( Node n, Node exp ) const;  
-  /** 
+  bool mustCommunicateFact(Node n, Node exp) const;
+  /**
    * If not cached, send lemma on lem the output channel and cache. Returns
    * true if a lemma was sent.
    */
-  bool doSendLemma( Node lem );
+  bool doSendLemma(Node lem);
   /** Multi-version of the above, returns true if any lemma was sent. */
-  bool doSendLemmas( const std::vector< Node >& lem );
+  bool doSendLemmas(const std::vector<Node>& lem);
   /** A cache of all lemmas sent */
-  NodeSet d_lemmasSent;  
+  NodeSet d_lemmasSent;
   /** Common nodes */
   Node d_true;
-  /** 
+  /**
    * This flag is set to true during a full effort check if this theory
    * called d_out->lemma(...).
    */

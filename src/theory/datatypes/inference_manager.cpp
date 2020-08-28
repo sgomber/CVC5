@@ -14,9 +14,9 @@
 
 #include "theory/datatypes/inference_manager.h"
 
-#include "theory/theory.h"
-#include "options/datatypes_options.h"
 #include "expr/dtype.h"
+#include "options/datatypes_options.h"
+#include "theory/theory.h"
 
 using namespace CVC4::kind;
 
@@ -27,7 +27,10 @@ namespace datatypes {
 InferenceManager::InferenceManager(Theory& t,
                                    TheoryState& state,
                                    ProofNodeManager* pnm)
-    : InferenceManagerBuffered(t, state, pnm), d_lemmasSent(t.getSatContext()), d_addedLemma(false), d_addedFact(false)
+    : InferenceManagerBuffered(t, state, pnm),
+      d_lemmasSent(t.getSatContext()),
+      d_addedLemma(false),
+      d_addedFact(false)
 {
   d_true = NodeManager::currentNM()->mkConst(true);
 }
@@ -38,23 +41,33 @@ void InferenceManager::reset()
   d_addedFact = false;
 }
 
-bool InferenceManager::mustCommunicateFact( Node n, Node exp ) const{
+bool InferenceManager::mustCommunicateFact(Node n, Node exp) const
+{
   Trace("dt-lemma-debug") << "Compute for " << exp << " => " << n << std::endl;
   bool addLemma = false;
-  if( options::dtInferAsLemmas() && exp!=d_true ){
-    addLemma = true;    
-  }else if( n.getKind()==EQUAL ){
+  if (options::dtInferAsLemmas() && exp != d_true)
+  {
+    addLemma = true;
+  }
+  else if (n.getKind() == EQUAL)
+  {
     TypeNode tn = n[0].getType();
-    if( !tn.isDatatype() ){
+    if (!tn.isDatatype())
+    {
       addLemma = true;
-    }else{
+    }
+    else
+    {
       const DType& dt = tn.getDType();
       addLemma = dt.involvesExternalType();
     }
-  }else if( n.getKind()==LEQ || n.getKind()==OR ){
+  }
+  else if (n.getKind() == LEQ || n.getKind() == OR)
+  {
     addLemma = true;
   }
-  if( addLemma ){
+  if (addLemma)
+  {
     Trace("dt-lemma-debug") << "Communicate " << n << std::endl;
     return true;
   }
@@ -62,71 +75,87 @@ bool InferenceManager::mustCommunicateFact( Node n, Node exp ) const{
   return false;
 }
 
-void InferenceManager::process(){
+void InferenceManager::process()
+{
   // process pending lemmas, used infrequently, only for definitional lemmas
   doPendingLemmas();
   // now process the pending facts
   size_t i = 0;
-  NodeManager * nm = NodeManager::currentNM();
+  NodeManager* nm = NodeManager::currentNM();
   while (!d_theoryState.isInConflict() && i < d_pendingFact.size())
   {
     std::pair<Node, Node>& pfact = d_pendingFact[i];
     Node fact = pfact.first;
     Node exp = pfact.second;
-    Trace("datatypes-debug") << "Assert fact (#" << (i+1) << "/" << d_pendingFact.size() << ") " << fact << " with explanation " << exp << std::endl;
-    //check to see if we have to communicate it to the rest of the system
-    if( mustCommunicateFact( fact, exp ) ){
+    Trace("datatypes-debug")
+        << "Assert fact (#" << (i + 1) << "/" << d_pendingFact.size() << ") "
+        << fact << " with explanation " << exp << std::endl;
+    // check to see if we have to communicate it to the rest of the system
+    if (mustCommunicateFact(fact, exp))
+    {
       Node lem = fact;
-      if( exp.isNull() || exp==d_true ){
+      if (exp.isNull() || exp == d_true)
+      {
         Trace("dt-lemma-debug") << "Trivial explanation." << std::endl;
-      }else{
+      }
+      else
+      {
         Trace("dt-lemma-debug") << "Get explanation..." << std::endl;
-        std::vector< TNode > assumptions;
-        explain( exp, assumptions );
-        if( assumptions.empty() ){
+        std::vector<TNode> assumptions;
+        explain(exp, assumptions);
+        if (assumptions.empty())
+        {
           lem = fact;
-        }else{
-          std::vector< Node > children;
+        }
+        else
+        {
+          std::vector<Node> children;
           for (const TNode& assumption : assumptions)
           {
             children.push_back(assumption.negate());
           }
-          children.push_back( fact );
-          lem = nm->mkNode( OR, children );
+          children.push_back(fact);
+          lem = nm->mkNode(OR, children);
         }
       }
       Trace("dt-lemma") << "Datatypes lemma : " << lem << std::endl;
-      doSendLemma( lem );
-    }else{
+      doSendLemma(lem);
+    }
+    else
+    {
       // assert the internal fact
       bool polarity = fact.getKind() != NOT;
       TNode atom = polarity ? fact : fact[0];
-      assertInternalFact( atom, polarity, exp );
+      assertInternalFact(atom, polarity, exp);
       d_addedFact = true;
     }
-    Trace("datatypes-debug")
-        << "Finished fact " << fact << ", now = " << d_theoryState.isInConflict()
-        << " " << d_pendingFact.size() << std::endl;
+    Trace("datatypes-debug") << "Finished fact " << fact
+                             << ", now = " << d_theoryState.isInConflict()
+                             << " " << d_pendingFact.size() << std::endl;
     i++;
   }
   d_pendingFact.clear();
 }
 
-bool InferenceManager::doSendLemma( Node lem ) {
-  if( d_lemmasSent.find( lem )==d_lemmasSent.end() ){
-    Trace("dt-lemma-send") << "TheoryDatatypes::doSendLemma : " << lem << std::endl;
+bool InferenceManager::doSendLemma(Node lem)
+{
+  if (d_lemmasSent.find(lem) == d_lemmasSent.end())
+  {
+    Trace("dt-lemma-send") << "TheoryDatatypes::doSendLemma : " << lem
+                           << std::endl;
     d_lemmasSent.insert(lem);
     // call the base class
-    lemma( lem );
+    lemma(lem);
     d_addedLemma = true;
     return true;
   }
-  Trace("dt-lemma-send") << "TheoryDatatypes::doSendLemma : duplicate : "
-                          << lem << std::endl;
+  Trace("dt-lemma-send") << "TheoryDatatypes::doSendLemma : duplicate : " << lem
+                         << std::endl;
   return false;
 }
 
-bool InferenceManager::doSendLemmas( const std::vector< Node >& lemmas ){
+bool InferenceManager::doSendLemmas(const std::vector<Node>& lemmas)
+{
   bool ret = false;
   for (const Node& lem : lemmas)
   {
