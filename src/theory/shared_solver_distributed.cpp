@@ -1,5 +1,5 @@
 /*********************                                                        */
-/*! \file ee_manager_distributed.cpp
+/*! \file shared_solver_distributed.cpp
  ** \verbatim
  ** Top contributors (to current version):
  **   Andrew Reynolds
