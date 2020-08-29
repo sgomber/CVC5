@@ -20,8 +20,9 @@ namespace CVC4 {
 namespace theory {
 
 CombinationModelBased::CombinationModelBased(
-    TheoryEngine& te, const std::vector<Theory*>& paraTheories,
-                    ProofNodeManager* pnm)
+    TheoryEngine& te,
+    const std::vector<Theory*>& paraTheories,
+    ProofNodeManager* pnm)
     : CombinationEngine(te, paraTheories, pnm), d_cmbNotify(*this)
 {
 }

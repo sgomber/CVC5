@@ -27,10 +27,10 @@ namespace quantifiers {
 InferenceManager::InferenceManager(Theory& t,
                                    TheoryState& state,
                                    ProofNodeManager* pnm)
-    : InferenceManagerBuffered(t, state, pnm), d_lemmasProduced(t.getUserContext())
+    : InferenceManagerBuffered(t, state, pnm),
+      d_lemmasProduced(t.getUserContext())
 {
 }
-
 
 }  // namespace quantifiers
 }  // namespace theory

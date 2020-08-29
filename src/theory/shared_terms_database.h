@@ -21,10 +21,10 @@
 
 #include "context/cdhashset.h"
 #include "expr/node.h"
+#include "theory/ee_setup_info.h"
 #include "theory/theory_id.h"
 #include "theory/uf/equality_engine.h"
 #include "util/statistics_registry.h"
-#include "theory/ee_setup_info.h"
 
 namespace CVC4 {
 

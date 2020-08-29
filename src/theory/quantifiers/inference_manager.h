@@ -33,12 +33,14 @@ namespace quantifiers {
 class InferenceManager : public InferenceManagerBuffered
 {
   typedef context::CDHashSet<Node, NodeHashFunction> NodeSet;
+
  public:
   InferenceManager(Theory& t, TheoryState& state, ProofNodeManager* pnm);
   ~InferenceManager() {}
   /** add pending lemma */
   bool addLemma(Node lem, bool doCache = true, bool doRewrite = true);
-protected:
+
+ protected:
   /** has added lemma this round */
   bool d_hasAddedLemma;
   /** list of all lemmas produced */
