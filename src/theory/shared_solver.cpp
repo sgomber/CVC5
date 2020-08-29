@@ -66,10 +66,10 @@ void SharedSolver::preNotifySharedFact(TNode atom)
     for (; it != it_end; ++it)
     {
       TNode term = *it;
-      Theory::Set theories = d_sharedTerms.getTheoriesToNotify(atom, term);
+      TheoryIdSet theories = d_sharedTerms.getTheoriesToNotify(atom, term);
       for (TheoryId id = THEORY_FIRST; id != THEORY_LAST; ++id)
       {
-        if (Theory::setContains(id, theories))
+        if (TheoryIdSetUtil::setContains(id, theories))
         {
           Theory* t = d_te.theoryOf(id);
           // call the add shared term method

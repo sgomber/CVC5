@@ -51,6 +51,7 @@
 #include "theory/rewriter.h"
 #include "theory/shared_solver.h"
 #include "theory/theory.h"
+#include "theory/theory_id.h"
 #include "theory/theory_model.h"
 #include "theory/theory_traits.h"
 #include "theory/uf/equality_engine.h"
@@ -307,12 +308,13 @@ void TheoryEngine::preRegister(TNode preprocessed) {
       Assert(!expr::hasFreeVar(preprocessed));
 
       // Pre-register the terms in the atom
-      Theory::Set theories = NodeVisitor<PreRegisterVisitor>::run(
+      theory::TheoryIdSet theories = NodeVisitor<PreRegisterVisitor>::run(
           d_preRegistrationVisitor, preprocessed);
-      theories = Theory::setRemove(THEORY_BOOL, theories);
+      theories = TheoryIdSetUtil::setRemove(THEORY_BOOL, theories);
       // Remove the top theory, if any more that means multiple theories were
       // involved
-      bool multipleTheories = Theory::setRemove(Theory::theoryOf(preprocessed), theories);
+      bool multipleTheories =
+          TheoryIdSetUtil::setRemove(Theory::theoryOf(preprocessed), theories);
       if (Configuration::isAssertionBuild())
       {
         TheoryId i;
@@ -323,7 +325,7 @@ void TheoryEngine::preRegister(TNode preprocessed) {
         // even though arithmetic isn't actually involved.
         if (!options::finiteModelFind())
         {
-          while ((i = Theory::setPop(theories)) != THEORY_LAST)
+          while ((i = TheoryIdSetUtil::setPop(theories)) != THEORY_LAST)
           {
             if (!d_logicInfo.isTheoryEnabled(i))
             {
