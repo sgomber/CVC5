@@ -20,6 +20,8 @@
 #include "expr/node.h"
 #include "theory/shared_terms_database.h"
 #include "theory/term_registration_visitor.h"
+#include "theory/valuation.h"
+#include "theory/logic_info.h"
 
 namespace CVC4 {
 
