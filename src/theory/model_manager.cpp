@@ -64,7 +64,6 @@ void ModelManager::finishInit(eq::EqualityEngineNotify* notify)
   }
   // notice that the equality engine of the model has yet to be assigned.
   initializeModelEqEngine(notify);
-  d_model->finishInit(d_modelEqualityEngine);
 
   // TODO inform the equality engine manager that we will be using notify
   // d_eem.usingModelNotify(notify);
