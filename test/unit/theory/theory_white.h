@@ -145,7 +145,8 @@ class DummyTheory : public Theory {
   void presolve() override { Unimplemented(); }
   void preRegisterTerm(TNode n) override {}
   void propagate(Effort level) override {}
-  bool preNotifyFact(TNode atom, bool pol, TNode fact, bool isPrereg, bool isInternal) override
+  bool preNotifyFact(
+      TNode atom, bool pol, TNode fact, bool isPrereg, bool isInternal) override
   {
     // do not assert to equality engine, since this theory does not use one
     return true;
