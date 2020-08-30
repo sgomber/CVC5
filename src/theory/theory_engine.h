@@ -649,6 +649,8 @@ class TheoryEngine {
   inline theory::Theory* theoryOf(TNode node) const {
     return d_theoryTable[theory::Theory::theoryOf(node)];
   }
+  /** HACK centralEe */
+  void setActiveTheory(theory::Theory * t) { d_activeTheory = t; }
   /**
    * Get the active theory (i.e. the one that is currently running check).
    */
