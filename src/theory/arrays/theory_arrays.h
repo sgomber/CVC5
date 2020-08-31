@@ -258,6 +258,20 @@ class TheoryArrays : public Theory {
     return (d_sharedArrays.find(t) != d_sharedArrays.end());
   }
 
+  /////////////////////////////////////////////////////////////////////////////
+  // MODEL GENERATION
+  /////////////////////////////////////////////////////////////////////////////
+
+ public:
+  /** Collect model values in m based on the relevant terms given by termSet */
+  bool collectModelValues(TheoryModel* m,
+                          const std::set<Node>& termSet) override;
+
+  /////////////////////////////////////////////////////////////////////////////
+  // NOTIFICATIONS
+  /////////////////////////////////////////////////////////////////////////////
+
+
   void presolve() override;
   void shutdown() override {}
 
@@ -472,12 +486,8 @@ class TheoryArrays : public Theory {
    * for the comparison between the indexes that appears in the lemma.
    */
   Node getNextDecisionRequest();
-
-  /** Collect model values in m based on the relevant terms given by termSet */
-  bool collectModelValues(TheoryModel* m,
-                          const std::set<Node>& termSet) override;
   /**
-   * Compute relevant terms. This includes additional select nodes for the
+   * Compute relevant terms. This includes select nodes for the
    * RIntro1 and RIntro2 rules.
    */
   void computeRelevantTerms(std::set<Node>& termSet) override;

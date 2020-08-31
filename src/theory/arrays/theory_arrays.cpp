@@ -1073,6 +1073,9 @@ void TheoryArrays::computeCareGraph()
 bool TheoryArrays::collectModelValues(TheoryModel* m,
                                       const std::set<Node>& termSet)
 {
+  // termSet contains terms appearing in assertions and shared terms, and also
+  // includes additional reads due to the RIntro1 and RIntro2 rules.
+  NodeManager* nm = NodeManager::currentNM();
   // Compute arrays that we need to produce representatives for
   std::vector<Node> arrays;
 
@@ -2216,7 +2219,6 @@ TrustNode TheoryArrays::expandDefinition(Node node)
 
 void TheoryArrays::computeRelevantTerms(std::set<Node>& termSet)
 {
-
   NodeManager* nm = NodeManager::currentNM();
   // make sure RIntro1 reads are included in the relevant set of reads
   eq::EqClassesIterator eqcs_i = eq::EqClassesIterator(d_equalityEngine);

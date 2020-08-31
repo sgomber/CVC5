@@ -2060,6 +2060,9 @@ Node TheoryDatatypes::mkAnd( std::vector< TNode >& assumptions ) {
 
 void TheoryDatatypes::computeRelevantTerms(std::set<Node>& termSet)
 {
+  Trace("dt-cmi") << "Have " << termSet.size() << " relevant terms..."
+                  << std::endl;
+
   //also include non-singleton equivalence classes  TODO : revisit this
   eq::EqClassesIterator eqcs_i = eq::EqClassesIterator(d_equalityEngine);
   while( !eqcs_i.isFinished() ){
