@@ -135,9 +135,10 @@ TrustNode SharedSolverCentral::explain(TNode literal, TheoryId id)
                 << literal;
   }
   // HACK: ignore the tracking from theory engine (id input to this method)
-  //id = Theory::theoryOf(literal);
-  Theory * t = d_te.theoryOf(id);
-  AlwaysAssert (t!=nullptr) << "Asking to explain literal from theory that does not exist?";
+  // id = Theory::theoryOf(literal);
+  Theory* t = d_te.theoryOf(id);
+  AlwaysAssert(t != nullptr)
+      << "Asking to explain literal from theory that does not exist?";
   // Otherwise, use theoryOf ?
   // By default, we ask the individual theory for the explanation.
   // It is possible that a centralized approach could preempt this.

@@ -49,6 +49,7 @@ class InferenceManager : public InferenceManagerBuffered
   void process();
   /** send lemmas */
   bool sendLemmas(const std::vector<Node>& lemmas);
+
  protected:
   /**
    * Must communicate fact method.

@@ -534,7 +534,8 @@ void TheoryEngine::check(Theory::Effort effort) {
           TimerStat::CodeTimer combineTheoriesTimer(d_combineTheoriesTime);
           d_tc->combineTheories();
         }
-        Debug("theory") << "TheoryEngine::check(" << effort << "): finished combination" << endl;
+        Debug("theory") << "TheoryEngine::check(" << effort
+                        << "): finished combination" << endl;
         if(d_logicInfo.isQuantified()){
           d_quantEngine->notifyCombineTheories();
         }

@@ -62,7 +62,7 @@ void SharedSolver::preNotifySharedFact(TNode atom)
     // Always notify the theories the shared terms, which is independent of
     // the architecture currently.
     // HACK
-    Theory * activePrev = d_te.getActiveTheory();
+    Theory* activePrev = d_te.getActiveTheory();
     SharedTermsDatabase::shared_terms_iterator it = d_sharedTerms.begin(atom);
     SharedTermsDatabase::shared_terms_iterator it_end = d_sharedTerms.end(atom);
     for (; it != it_end; ++it)
