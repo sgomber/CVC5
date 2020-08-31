@@ -1131,7 +1131,6 @@ bool TheoryArrays::collectModelValues(TheoryModel* m,
   //}
 
   // Loop through all array equivalence classes that need a representative computed
-    NodeManager* nm = NodeManager::currentNM();
     for (size_t i = 0; i < arrays.size(); ++i)
     {
       TNode n = arrays[i];
