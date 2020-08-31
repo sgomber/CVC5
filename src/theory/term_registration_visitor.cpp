@@ -148,6 +148,7 @@ void PreRegisterVisitor::visit(TNode current, TNode parent) {
         TheoryIdSetUtil::setInsert(currentTheoryId, visitedTheories);
     d_visited[current] = visitedTheories;
     Theory* th = d_engine->theoryOf(currentTheoryId);
+    d_engine->setActiveTheory(th);
     th->preRegisterTerm(current);
     Debug("register::internal") << "PreRegisterVisitor::visit(" << current << "," << parent << "): adding " << currentTheoryId << std::endl;
   }

@@ -188,9 +188,9 @@ bool EqEngineManagerCentral::eqNotifyTriggerPredicate(TNode predicate,
   // propagate directly to theory engine
   if (value)
   {
-    return d_te.propagate(predicate, tid);
+    return d_te.propagate(predicate, THEORY_BUILTIN);
   }
-  return d_te.propagate(predicate.notNode(), tid);
+  return d_te.propagate(predicate.notNode(), THEORY_BUILTIN);
 }
 
 bool EqEngineManagerCentral::eqNotifyTriggerTermEquality(TheoryId tag,
@@ -204,7 +204,7 @@ bool EqEngineManagerCentral::eqNotifyTriggerTermEquality(TheoryId tag,
 void EqEngineManagerCentral::eqNotifyConstantTermMerge(TNode t1, TNode t2)
 {
   Theory* t = d_te.getActiveTheory();
-  if (t == nullptr)
+  if (true)
   {
     // conflict during SharedSolver::assertSharedEquality?
     Node lit = t1.eqNode(t2);

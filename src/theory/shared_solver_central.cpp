@@ -116,13 +116,16 @@ TrustNode SharedSolverCentral::maybeExplain(TNode lit)
 TrustNode SharedSolverCentral::explain(TNode literal, TheoryId id)
 {
   // first, try to explain with the central equality engine
-  TrustNode texp = maybeExplain(literal);
-  if (!texp.isNull())
+  if (id == THEORY_BUILTIN)
   {
-    Trace("shared-solver")
-        << "\tTerm was explained by the central equality engine"
-        << texp.getNode() << std::endl;
-    return texp;
+    TrustNode texp = maybeExplain(literal);
+    if (!texp.isNull())
+    {
+      Trace("shared-solver")
+          << "\tTerm was explained by the central equality engine"
+          << texp.getNode() << std::endl;
+      return texp;
+    }
   }
   if (id == THEORY_BUILTIN)
   {
@@ -131,10 +134,14 @@ TrustNode SharedSolverCentral::explain(TNode literal, TheoryId id)
                    "by THEORY_BUILTIN to hold in the central equality engine: "
                 << literal;
   }
+  // HACK: ignore the tracking from theory engine (id input to this method)
+  //id = Theory::theoryOf(literal);
+  Theory * t = d_te.theoryOf(id);
+  AlwaysAssert (t!=nullptr) << "Asking to explain literal from theory that does not exist?";
   // Otherwise, use theoryOf ?
   // By default, we ask the individual theory for the explanation.
   // It is possible that a centralized approach could preempt this.
-  texp = d_te.theoryOf(id)->explain(literal);
+  TrustNode texp = t->explain(literal);
   Trace("shared-solver") << "\tTerm was propagated by owner theory: " << id
                          << ". Explanation: " << texp.getNode() << std::endl;
   return texp;

@@ -45,7 +45,6 @@ ArithCongruenceManager::ArithCongruenceManager(
       d_ee(nullptr)
 {
   // this makes congruence manager use a separate equality engine
-  /*
   if (options::arithEqSolver())
   {
     // use our own copy
@@ -58,7 +57,6 @@ ArithCongruenceManager::ArithCongruenceManager(
     d_ee->addFunctionKind(kind::SINE);
     d_ee->addFunctionKind(kind::IAND);
   }
-  */
 }
 
 ArithCongruenceManager::~ArithCongruenceManager() {}
