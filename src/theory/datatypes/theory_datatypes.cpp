@@ -177,7 +177,7 @@ void TheoryDatatypes::postCheck(Effort level)
     Assert(d_sygusExtension != nullptr);
     std::vector<Node> lemmas;
     d_sygusExtension->check(lemmas);
-    d_im.doSendLemmas(lemmas);
+    d_im.sendLemmas(lemmas);
     return;
   }
   else if (level == EFFORT_FULL && !d_state.isInConflict()
@@ -252,7 +252,7 @@ void TheoryDatatypes::postCheck(Effort level)
                     assumptions.push_back(assumption);
                     Node lemma = assumptions.size()==1 ? assumptions[0] : NodeManager::currentNM()->mkNode( OR, assumptions );
                     Trace("dt-singleton") << "*************Singleton equality lemma " << lemma << std::endl;
-                    d_im.doSendLemma(lemma);
+                    d_im.lemma(lemma);
                   }
                 }
               }else{
@@ -318,13 +318,13 @@ void TheoryDatatypes::postCheck(Effort level)
                     NodeBuilder<> nb(kind::OR);
                     nb << test << test.notNode();
                     Node lemma = nb;
-                    d_im.doSendLemma(lemma);
+                    d_im.lemma(lemma);
                     d_out->requirePhase( test, true );
                   }else{
                     Trace("dt-split") << "*************Split for constructors on " << n <<  endl;
                     Node lemma = utils::mkSplit(n, dt);
                     Trace("dt-split-debug") << "Split lemma is : " << lemma << std::endl;
-                    d_im.doSendLemma(lemma, LemmaProperty::SEND_ATOMS, false);
+                    d_im.lemma(lemma, LemmaProperty::SEND_ATOMS, false);
                   }
                   if( !options::dtBlastSplits() ){
                     break;
@@ -385,7 +385,7 @@ void TheoryDatatypes::notifyFact(TNode atom,
   {
     std::vector< Node > lemmas;
     d_sygusExtension->assertFact(atom, polarity, lemmas);
-    d_im.doSendLemmas(lemmas);
+    d_im.sendLemmas(lemmas);
   }
   //add to tester if applicable
   Node t_arg;
@@ -408,7 +408,7 @@ void TheoryDatatypes::notifyFact(TNode atom,
         std::vector< Node > lemmas;
         d_sygusExtension->assertTester(tindex, t_arg, atom, lemmas);
         Trace("dt-tester") << "Done assert tester to sygus." << std::endl;
-        d_im.doSendLemmas(lemmas);
+        d_im.sendLemmas(lemmas);
       }
     }
   }else{
@@ -441,7 +441,7 @@ void TheoryDatatypes::preRegisterTerm(TNode n)
     {
       std::vector< Node > lemmas;
       d_sygusExtension->preRegisterTerm(n, lemmas);
-      d_im.doSendLemmas(lemmas);
+      d_im.sendLemmas(lemmas);
     }
     break;
   }
@@ -1527,7 +1527,7 @@ Node TheoryDatatypes::getSingletonLemma( TypeNode tn, bool pol ) {
       Node v2 = NodeManager::currentNM()->mkSkolem( "k2", tn );
       a = v1.eqNode( v2 ).negate();
       //send out immediately as lemma
-      d_im.doSendLemma(a);
+      d_im.lemma(a);
       Trace("dt-singleton") << "******** assert " << a << " to avoid singleton cardinality for type " << tn << std::endl;
     }
     d_singleton_lemma[index][tn] = a;

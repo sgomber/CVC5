@@ -41,35 +41,14 @@ class InferenceManager : public InferenceManagerBuffered
   InferenceManager(Theory& t, TheoryState& state, ProofNodeManager* pnm);
   ~InferenceManager() {}
   /**
-   * Reset, which resets flags regarding whether we have added lemmas or facts.
-   */
-  void reset();
-  /**
    * Process the current lemmas and facts. This is a custom method that can
    * be seen as overriding the behavior of calling both doPendingLemmas and
    * doPendingFacts. It determines whether facts should be sent as lemmas
    * or processed internally.
    */
   void process();
-  /**
-   * Have we asserted an internal fact (via process) since the most recent call
-   * to reset?
-   */
-  bool hasAddedFact() const;
-  /**
-   * Have we sent a lemma (via process) since the most recent call to reset?
-   */
-  bool hasAddedLemma() const;
-  /**
-   * If not cached, send lemma on lem the output channel and cache. Returns
-   * true if a lemma was sent.
-   */
-  bool doSendLemma(Node lem,
-                   LemmaProperty p = LemmaProperty::NONE,
-                   bool cached = true);
-  /** Multi-version of the above, returns true if any lemma was sent. */
-  bool doSendLemmas(const std::vector<Node>& lem);
-
+  /** send lemmas */
+  bool sendLemmas(const std::vector<Node>& lemmas);
  protected:
   /**
    * Must communicate fact method.
@@ -88,20 +67,8 @@ class InferenceManager : public InferenceManagerBuffered
    * communicate (6) and OR conclusions.
    */
   bool mustCommunicateFact(Node n, Node exp) const;
-  /** A cache of all lemmas sent */
-  NodeSet d_lemmasSent;
-  /** Common nodes */
+  /** Common node */
   Node d_true;
-  /**
-   * This flag is set to true during a full effort check if this theory
-   * called d_out->lemma(...).
-   */
-  bool d_addedLemma;
-  /**
-   * This flag is set to true during a full effort check if this theory
-   * added an internal fact to its equality engine.
-   */
-  bool d_addedFact;
 };
 
 }  // namespace datatypes
