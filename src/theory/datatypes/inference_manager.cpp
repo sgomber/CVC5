@@ -122,6 +122,7 @@ void InferenceManager::process()
   }
   d_pendingFact.clear();
 }
+
 bool InferenceManager::sendLemmas(const std::vector<Node>& lemmas)
 {
   bool ret = false;
