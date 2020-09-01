@@ -1354,55 +1354,21 @@ void TheoryArrays::notifyFact(TNode atom, bool pol, TNode fact, bool isInternal)
 
       TNode k;
       // k is the skolem for this disequality.
-      if (!d_proofsEnabled)
-      {
-        Debug("pf::array") << "Check: kind::NOT: array theory making a skolem"
-                           << std::endl;
+      Debug("pf::array") << "Check: kind::NOT: array theory making a skolem"
+                          << std::endl;
 
-        // If not in replay mode, generate a fresh skolem variable
-        k = getSkolem(
-            fact,
-            "array_ext_index",
-            indexType,
-            "an extensional lemma index variable from the theory of arrays",
-            false);
-
-        // Register this skolem for the proof replay phase
-        PROOF(ProofManager::getSkolemizationManager()->registerSkolem(fact, k));
-      }
-      else
-      {
-        if (!ProofManager::getSkolemizationManager()->hasSkolem(fact))
-        {
-          // In the solution pass we didn't need this skolem. Therefore, we
-          // don't need it in this reply pass, either.
-          return;
-        }
-
-        // Reuse the same skolem as in the solution pass
-        k = ProofManager::getSkolemizationManager()->getSkolem(fact);
-        Debug("pf::array") << "Skolem = " << k << std::endl;
-      }
+      // If not in replay mode, generate a fresh skolem variable
+      k = getSkolem(
+          fact,
+          "array_ext_index",
+          indexType,
+          "an extensional lemma index variable from the theory of arrays",
+          false);
 
       Node ak = nm->mkNode(kind::SELECT, fact[0][0], k);
       Node bk = nm->mkNode(kind::SELECT, fact[0][1], k);
       Node eq = ak.eqNode(bk);
       Node lemma = fact[0].orNode(eq.notNode());
-
-      // In solve mode we don't care if ak and bk are registered. If they
-      // aren't, they'll be registered when we output the lemma. However, in
-      // replay need the lemma to be propagated, and so we preregister manually.
-      if (d_proofsEnabled)
-      {
-        if (!d_equalityEngine->hasTerm(ak))
-        {
-          preRegisterTermInternal(ak);
-        }
-        if (!d_equalityEngine->hasTerm(bk))
-        {
-          preRegisterTermInternal(bk);
-        }
-      }
 
       if (options::arraysPropagate() > 0 && d_equalityEngine->hasTerm(ak)
           && d_equalityEngine->hasTerm(bk))
@@ -1413,18 +1379,15 @@ void TheoryArrays::notifyFact(TNode atom, bool pol, TNode fact, bool isInternal)
                            << "\teq = " << eq << std::endl
                            << "\treason = " << fact << std::endl;
 
-        d_equalityEngine->assertEquality(eq, false, fact, d_reasonExt);
+        d_equalityEngine->assertEquality(eq, false, fact);
         ++d_numProp;
       }
 
-      if (!d_proofsEnabled)
-      {
-        // If this is the solution pass, generate the lemma. Otherwise, don't
-        // generate it - as this is the lemma that we're reproving...
-        Trace("arrays-lem") << "Arrays::addExtLemma " << lemma << "\n";
-        d_out->lemma(lemma);
-        ++d_numExt;
-      }
+      // If this is the solution pass, generate the lemma. Otherwise, don't
+      // generate it - as this is the lemma that we're reproving...
+      Trace("arrays-lem") << "Arrays::addExtLemma " << lemma << "\n";
+      d_out->lemma(lemma);
+      ++d_numExt;
     }
     else
     {
