@@ -17,7 +17,6 @@
 #ifndef CVC4__THEORY__THEORY_INFERENCE_H
 #define CVC4__THEORY__THEORY_INFERENCE_H
 
-#include "context/cdhashmap.h"
 #include "expr/node.h"
 #include "theory/output_channel.h"
 
@@ -38,11 +37,16 @@ class TheoryInference
   virtual ~TheoryInference() {}
   /**
    * Called by the provided inference manager to process this inference. This
-   * method should make a single call to inference manager to process this
-   * inference (e.g. a call to trustedLemma, assertFactInternal etc.).
+   * method should make call(s) to inference manager to process this
+   * inference, as well as processing any specific side effects. This method
+   * typically makes a single call to the provided inference manager e.g.
+   * d_im->trustedLemma or d_im->assertFactInternal. Notice it is the sole
+   * responsibility of this class to make this call; the inference manager
+   * does not call itself otherwise when processing pending inferences.
    *
    * @return true if the inference was successfully processed by the inference
-   * manager.
+   * manager. This method for instance returns false if it corresponds to a
+   * lemma that was already cached by im and hence was discarded.
    */
   virtual bool process(TheoryInferenceManager* im) = 0;
 };

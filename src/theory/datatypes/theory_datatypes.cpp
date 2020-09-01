@@ -1017,15 +1017,8 @@ void TheoryDatatypes::addTester(
       Debug("datatypes-labels") << "Labels at " << n_lbl << " / " << dt.getNumConstructors() << std::endl;
       if( tpolarity ){
         instantiate( eqc, n );
-        for (unsigned i = 0, ncons = dt.getNumConstructors(); i < ncons; i++)
-        {
-          if( i!=ttindex && neg_testers.find( i )==neg_testers.end() ){
-            Assert(n.getKind() != APPLY_CONSTRUCTOR);
-            Node infer = utils::mkTester(n, i, dt).negate();
-            d_im.addPendingInference(infer, t);
-            Trace("datatypes-infer") << "DtInfer : neg label : " << infer << " by " << t << std::endl;
-          }
-        }
+        // We could propagate is-C1(x) => not is-C2(x) here for all other
+        // constructors, but empirically this hurts performance.
       }else{
         //check if we have reached the maximum number of testers
         // in this case, add the positive tester
