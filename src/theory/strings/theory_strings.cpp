@@ -645,13 +645,12 @@ bool TheoryStrings::preNotifyFact(
   if (isInternal && atom.getKind() == EQUAL)
   {
     // we must ensure these terms are registered
-    eq::EqualityEngine* ee = d_state.getEqualityEngine();
     for (const Node& t : atom)
     {
       // terms in the equality engine are already registered, hence skip
       // currently done for only string-like terms, but this could potentially
       // be avoided.
-      if (!ee->hasTerm(t) && t.getType().isStringLike())
+      if (!d_equalityEngine->hasTerm(t) && t.getType().isStringLike())
       {
         d_termReg.registerTerm(t, 0);
       }
@@ -669,12 +668,11 @@ void TheoryStrings::notifyFact(TNode atom,
   {
     if (polarity && atom[1].getKind() == REGEXP_CONCAT)
     {
-      eq::EqualityEngine* ee = d_state.getEqualityEngine();
-      Node eqc = ee->getRepresentative(atom[0]);
+      Node eqc = d_equalityEngine->getRepresentative(atom[0]);
       d_state.addEndpointsToEqcInfo(atom, atom[1], eqc);
     }
   }
-  // process the conflict
+  // process pending conflicts due to reasoning about endpoints
   if (!d_state.isInConflict())
   {
     Node pc = d_state.getPendingConflict();
