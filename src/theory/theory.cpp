@@ -23,6 +23,7 @@
 
 #include "base/check.h"
 #include "expr/node_algorithm.h"
+#include "options/smt_options.h"
 #include "options/theory_options.h"
 #include "smt/smt_statistics_registry.h"
 #include "theory/ext_theory.h"
@@ -83,7 +84,6 @@ Theory::Theory(TheoryId id,
       d_allocEqualityEngine(nullptr),
       d_theoryState(nullptr),
       d_inferManager(nullptr),
-      d_proofsEnabled(false),
       d_needsSharedTermEqFacts(true)
 {
   smtStatisticsRegistry()->registerStat(&d_checkTime);
@@ -292,12 +292,12 @@ void Theory::computeCareGraph() {
       switch (d_valuation.getEqualityStatus(a, b)) {
       case EQUALITY_TRUE_AND_PROPAGATED:
       case EQUALITY_FALSE_AND_PROPAGATED:
-  	// If we know about it, we should have propagated it, so we can skip
-  	break;
+        // If we know about it, we should have propagated it, so we can skip
+        break;
       default:
-  	// Let's split on it
-  	addCarePair(a, b);
-  	break;
+        // Let's split on it
+        addCarePair(a, b);
+        break;
       }
     }
   }

@@ -23,9 +23,6 @@
 #include "expr/node_algorithm.h"
 #include "options/arrays_options.h"
 #include "options/smt_options.h"
-#include "proof/array_proof.h"
-#include "proof/proof_manager.h"
-#include "proof/theory_proof.h"
 #include "smt/command.h"
 #include "smt/logic_exception.h"
 #include "smt/smt_statistics_registry.h"
@@ -110,7 +107,6 @@ TheoryArrays::TheoryArrays(context::Context* c,
       d_readTableContext(new context::Context()),
       d_arrayMerges(c),
       d_inCheckModel(false),
-      d_proofReconstruction(nullptr),
       d_dstrat(new TheoryArraysDecisionStrategy(this)),
       d_dstratInit(false)
 {
@@ -179,22 +175,6 @@ void TheoryArrays::finishInit()
   {
     d_equalityEngine->addFunctionKind(kind::STORE);
   }
-
-  d_proofReconstruction.reset(new ArrayProofReconstruction(d_equalityEngine));
-  d_reasonRow = d_equalityEngine->getFreshMergeReasonType();
-  d_reasonRow1 = d_equalityEngine->getFreshMergeReasonType();
-  d_reasonExt = d_equalityEngine->getFreshMergeReasonType();
-
-  d_proofReconstruction->setRowMergeTag(d_reasonRow);
-  d_proofReconstruction->setRow1MergeTag(d_reasonRow1);
-  d_proofReconstruction->setExtMergeTag(d_reasonExt);
-
-  d_equalityEngine->addPathReconstructionTrigger(d_reasonRow,
-                                                 d_proofReconstruction.get());
-  d_equalityEngine->addPathReconstructionTrigger(d_reasonRow1,
-                                                 d_proofReconstruction.get());
-  d_equalityEngine->addPathReconstructionTrigger(d_reasonExt,
-                                                 d_proofReconstruction.get());
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -436,37 +416,6 @@ bool TheoryArrays::propagateLit(TNode literal)
   return ok;
 }/* TheoryArrays::propagate(TNode) */
 
-
-void TheoryArrays::explain(TNode literal, std::vector<TNode>& assumptions,
-                           eq::EqProof* proof) {
-  // Do the work
-  bool polarity = literal.getKind() != kind::NOT;
-  TNode atom = polarity ? literal : literal[0];
-  //eq::EqProof * eqp = new eq::EqProof;
-  // eq::EqProof * eqp = NULL;
-  if (atom.getKind() == kind::EQUAL) {
-    d_equalityEngine->explainEquality(
-        atom[0], atom[1], polarity, assumptions, proof);
-  } else {
-    d_equalityEngine->explainPredicate(atom, polarity, assumptions, proof);
-  }
-  if (Debug.isOn("pf::array"))
-  {
-    if (proof)
-    {
-      Debug("pf::array") << " Proof is : " << std::endl;
-      proof->debug_print("pf::array");
-    }
-
-    Debug("pf::array") << "Array: explain( " << literal << " ):" << std::endl
-                       << "\t";
-    for (unsigned i = 0; i < assumptions.size(); ++i)
-    {
-      Debug("pf::array") << assumptions[i] << " ";
-    }
-    Debug("pf::array") << std::endl;
-  }
-}
 
 TNode TheoryArrays::weakEquivGetRep(TNode node) {
   TNode pointer;
@@ -793,7 +742,8 @@ void TheoryArrays::preRegisterTermInternal(TNode node)
     }
 
     // Apply RIntro1 Rule
-    d_equalityEngine->assertEquality(ni.eqNode(v), true, d_true, d_reasonRow1);
+    d_equalityEngine->assertEquality(
+        ni.eqNode(v), true, d_true, theory::eq::MERGED_THROUGH_ROW1);
 
     d_infoMap.addStore(node, node);
     d_infoMap.addInStore(a, node);
@@ -862,19 +812,32 @@ void TheoryArrays::preRegisterTerm(TNode node)
   }
 }
 
-TrustNode TheoryArrays::explain(TNode literal)
+void TheoryArrays::explain(TNode literal, Node& explanation)
 {
-  Node explanation = explain(literal, NULL);
-  return TrustNode::mkTrustPropExp(literal, explanation, nullptr);
-}
-
-Node TheoryArrays::explain(TNode literal, eq::EqProof* proof) {
   ++d_numExplain;
   Debug("arrays") << spaces(getSatContext()->getLevel())
                   << "TheoryArrays::explain(" << literal << ")" << std::endl;
   std::vector<TNode> assumptions;
-  explain(literal, assumptions, proof);
-  return mkAnd(assumptions);
+  // Do the work
+  bool polarity = literal.getKind() != kind::NOT;
+  TNode atom = polarity ? literal : literal[0];
+  if (atom.getKind() == kind::EQUAL)
+  {
+    d_equalityEngine->explainEquality(
+        atom[0], atom[1], polarity, assumptions, nullptr);
+  }
+  else
+  {
+    d_equalityEngine->explainPredicate(atom, polarity, assumptions, nullptr);
+  }
+  explanation = mkAnd(assumptions);
+}
+
+TrustNode TheoryArrays::explain(TNode literal)
+{
+  Node explanation;
+  explain(literal, explanation);
+  return TrustNode::mkTrustPropExp(literal, explanation, nullptr);
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -1329,7 +1292,7 @@ void TheoryArrays::postCheck(Effort level)
           lemma = mkAnd(conjunctions, true);
           // LSH FIXME: which kind of arrays lemma is this
           Trace("arrays-lem") << "Arrays::addExtLemma " << lemma <<"\n";
-          d_out->lemma(lemma, RULE_INVALID, LemmaProperty::SEND_ATOMS);
+          d_out->lemma(lemma, LemmaProperty::SEND_ATOMS);
           d_readTableContext->pop();
           Trace("arrays") << spaces(getSatContext()->getLevel()) << "Arrays::check(): done" << endl;
           return;
@@ -1876,7 +1839,8 @@ void TheoryArrays::propagate(RowLemmaType lem)
       if (!bjExists) {
         preRegisterTermInternal(bj);
       }
-      d_equalityEngine->assertEquality(aj_eq_bj, true, reason, d_reasonRow);
+      d_equalityEngine->assertEquality(
+          aj_eq_bj, true, reason, theory::eq::MERGED_THROUGH_ROW);
       ++d_numProp;
       return;
     }
@@ -1887,7 +1851,8 @@ void TheoryArrays::propagate(RowLemmaType lem)
           (aj.isConst() && bj.isConst()) ? d_true : aj.eqNode(bj).notNode();
       Node i_eq_j = i.eqNode(j);
       d_permRef.push_back(reason);
-      d_equalityEngine->assertEquality(i_eq_j, true, reason, d_reasonRow);
+      d_equalityEngine->assertEquality(
+          i_eq_j, true, reason, theory::eq::MERGED_THROUGH_ROW);
       ++d_numProp;
       return;
     }
@@ -1931,19 +1896,18 @@ void TheoryArrays::queueRowLemma(RowLemmaType lem)
       && !d_equalityEngine->areDisequal(i, j, false))
   {
     Node i_eq_j;
-    if (!d_proofsEnabled) {
-      i_eq_j = d_valuation.ensureLiteral(i.eqNode(j)); // TODO: think about this
-    } else {
-      i_eq_j = i.eqNode(j);
-    }
-
+    i_eq_j = d_valuation.ensureLiteral(i.eqNode(j));  // TODO: think about this
+#if 0
+    i_eq_j = i.eqNode(j);
+#endif
     getOutputChannel().requirePhase(i_eq_j, true);
     d_decisionRequests.push(i_eq_j);
   }
 
   // TODO: maybe add triggers here
 
-  if ((options::arraysEagerLemmas() || bothExist) && !d_proofsEnabled) {
+  if (options::arraysEagerLemmas() || bothExist)
+  {
     // Make sure that any terms introduced by rewriting are appropriately stored in the equality database
     Node aj2 = Rewriter::rewrite(aj);
     if (aj != aj2) {
@@ -2123,23 +2087,11 @@ bool TheoryArrays::dischargeLemmas()
 
 void TheoryArrays::conflict(TNode a, TNode b) {
   Debug("pf::array") << "TheoryArrays::Conflict called" << std::endl;
-  std::shared_ptr<eq::EqProof> proof = d_proofsEnabled ?
-      std::make_shared<eq::EqProof>() : nullptr;
 
-  d_conflictNode = explain(a.eqNode(b), proof.get());
+  explain(a.eqNode(b), d_conflictNode);
 
   if (!d_inCheckModel) {
-    std::unique_ptr<ProofArray> proof_array;
-
-    if (d_proofsEnabled) {
-      proof->debug_print("pf::array");
-      proof_array.reset(new ProofArray(proof,
-                                       /*row=*/d_reasonRow,
-                                       /*row1=*/d_reasonRow1,
-                                       /*ext=*/d_reasonExt));
-    }
-
-    d_out->conflict(d_conflictNode, std::move(proof_array));
+    d_out->conflict(d_conflictNode);
   }
 
   d_state.notifyInConflict();

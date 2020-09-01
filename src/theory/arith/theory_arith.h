@@ -18,7 +18,6 @@
 #pragma once
 
 #include "expr/node.h"
-#include "proof/arith_proof_recorder.h"
 #include "theory/arith/arith_infer_manager.h"
 #include "theory/arith/arith_state.h"
 #include "theory/arith/equality_solver.h"
@@ -43,11 +42,6 @@ class TheoryArith : public Theory {
   TheoryArithPrivate* d_internal;
 
   TimerStat d_ppRewriteTimer;
-
-  /**
-   * @brief Where to store Farkas proofs of lemmas
-   */
-  proof::ArithProofRecorder * d_proofRecorder;
 
  public:
   TheoryArith(context::Context* c,
@@ -129,10 +123,6 @@ class TheoryArith : public Theory {
 
   std::pair<bool, Node> entailmentCheck(TNode lit) override;
 
-  void setProofRecorder(proof::ArithProofRecorder* proofRecorder)
-  {
-    d_proofRecorder = proofRecorder;
-  }
   /** Send lemma from the private solver */
   void lemmaPrivate(TNode lem);
   /** propagate literal from the private solver */

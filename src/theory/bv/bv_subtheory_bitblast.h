@@ -24,10 +24,6 @@
 
 namespace CVC4 {
 
-namespace proof {
-class ResolutionBitVectorProof;
-}
-
 namespace theory {
 namespace bv {
 
@@ -81,7 +77,6 @@ class BitblastSolver : public SubtheorySolver {
   void bitblastQueue();
   void setAbstraction(AbstractionModule* module);
   uint64_t computeAtomWeight(TNode atom);
-  void setProofLog(proof::BitVectorProof* bvp) override;
 };
 
 } /* namespace CVC4::theory::bv */

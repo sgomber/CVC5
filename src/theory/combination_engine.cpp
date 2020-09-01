@@ -126,7 +126,7 @@ eq::EqualityEngineNotify* CombinationEngine::getModelEqualityEngineNotify()
 
 void CombinationEngine::sendLemma(TrustNode trn, TheoryId atomsTo)
 {
-  d_te.lemma(trn.getNode(), RULE_INVALID, false, LemmaProperty::NONE, atomsTo);
+  d_te.lemma(trn.getNode(), false, LemmaProperty::NONE, atomsTo);
 }
 
 bool CombinationEngine::isParametric(TheoryId tid) const
