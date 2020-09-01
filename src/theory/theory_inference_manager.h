@@ -126,15 +126,9 @@ class TheoryInferenceManager
    */
   void trustedConflict(TrustNode tconf);
   /**
-<<<<<<< HEAD
-   * Explain conflict from contradictory facts. This method is called when
-   * the proof rule id with premises exp and arguments args concludes false.
-   * This method sends a trusted conflict corresponding to the official
-=======
    * Explain and send conflict from contradictory facts. This method is called
    * when the proof rule id with premises exp and arguments args concludes
    * false. This method sends a trusted conflict corresponding to the official
->>>>>>> 62ec0666dd4d409ee85603ae94d7ab1a2b4c9dcc
    * equality engine's explanation of literals in exp, with the proof equality
    * engine as the proof generator (if it exists).
    */
