@@ -31,8 +31,7 @@ typedef std::map< Node, std::unordered_set< Node, NodeHashFunction > >::iterator
 typedef std::map< Node, std::map< kind::Kind_t, std::vector< Node > > >::iterator               TERM_IT;
 typedef std::map< Node, std::map< Node, std::unordered_set< Node, NodeHashFunction > > >::iterator   TC_IT;
 
-TheorySetsRels::TheorySetsRels(SolverState& s,
-                               InferenceManager& im)
+TheorySetsRels::TheorySetsRels(SolverState& s, InferenceManager& im)
     : d_state(s), d_im(im), d_shared_terms(s.getUserContext())
 {
   d_trueNode = NodeManager::currentNM()->mkConst(true);

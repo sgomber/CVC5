@@ -149,8 +149,7 @@ class TheorySetsPrivate {
    */
   TheorySetsPrivate(TheorySets& external,
                     SolverState& state,
-                    InferenceManager& im
-                   );
+                    InferenceManager& im);
 
   ~TheorySetsPrivate();
 

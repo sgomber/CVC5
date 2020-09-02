@@ -21,15 +21,12 @@
 namespace CVC4 {
 namespace theory {
 
-EqEngineManagerTest::EqEngineManagerTest(TheoryEngine& te,
-                                                       SharedSolver& shs)
+EqEngineManagerTest::EqEngineManagerTest(TheoryEngine& te, SharedSolver& shs)
     : EqEngineManager(te, shs), d_masterEENotify(nullptr)
 {
 }
 
-EqEngineManagerTest::~EqEngineManagerTest()
-{
-}
+EqEngineManagerTest::~EqEngineManagerTest() {}
 
 void EqEngineManagerTest::initializeTheories()
 {

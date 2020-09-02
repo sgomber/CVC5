@@ -58,7 +58,8 @@ void TheoryInferenceManager::reset()
 
 bool TheoryInferenceManager::hasProcessed() const
 {
-  return d_theoryState.isInConflict() || d_numCurrentLemmas>0 || d_numCurrentFacts>0;
+  return d_theoryState.isInConflict() || d_numCurrentLemmas > 0
+         || d_numCurrentFacts > 0;
 }
 
 void TheoryInferenceManager::conflictEqConstantMerge(TNode a, TNode b)

@@ -54,6 +54,7 @@ class EqEngineManagerTest : public EqEngineManager
   void initializeTheories() override;
   /** get the core equality engine */
   eq::EqualityEngine* getCoreEqualityEngine() override;
+
  private:
   /** notify class for master equality engine */
   class MasterNotifyClass : public theory::eq::EqualityEngineNotify

@@ -48,11 +48,9 @@ class SolverState : public TheoryState
   typedef context::CDHashMap<Node, Node, NodeHashFunction> NodeMap;
 
  public:
-  SolverState(context::Context* c,
-              context::UserContext* u,
-              Valuation val);
+  SolverState(context::Context* c, context::UserContext* u, Valuation val);
   /** Set parent */
-  void setParent(TheorySetsPrivate * p);
+  void setParent(TheorySetsPrivate* p);
   //-------------------------------- initialize per check
   /** reset, clears the data structures maintained by this class. */
   void reset();
@@ -206,7 +204,7 @@ class SolverState : public TheoryState
   std::vector<Node> d_emptyVec;
   std::map<Node, Node> d_emptyMap;
   /** Pointer to the parent theory of sets */
-  TheorySetsPrivate * d_parent;
+  TheorySetsPrivate* d_parent;
   /** The list of all equivalence classes of type set in the current context */
   std::vector<Node> d_set_eqc;
   /** Maps types to the equivalence class containing empty set of that type */

@@ -35,8 +35,8 @@ namespace theory {
 namespace sets {
 
 TheorySetsPrivate::TheorySetsPrivate(TheorySets& external,
-                    SolverState& state,
-                    InferenceManager& im)
+                                     SolverState& state,
+                                     InferenceManager& im)
     : d_members(state.getSatContext()),
       d_deq(state.getSatContext()),
       d_termProcessed(state.getUserContext()),

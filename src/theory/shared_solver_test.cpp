@@ -19,10 +19,7 @@
 namespace CVC4 {
 namespace theory {
 
-SharedSolverTest::SharedSolverTest(TheoryEngine& te)
-    : SharedSolver(te)
-{
-}
+SharedSolverTest::SharedSolverTest(TheoryEngine& te) : SharedSolver(te) {}
 
 bool SharedSolverTest::needsEqualityEngine(theory::EeSetupInfo& esi)
 {
@@ -85,8 +82,8 @@ TrustNode SharedSolverTest::explain(TNode literal, TheoryId id)
 }
 
 void SharedSolverTest::assertSharedEquality(TNode equality,
-                                                   bool polarity,
-                                                   TNode reason)
+                                            bool polarity,
+                                            TNode reason)
 {
   d_sharedTerms.assertEquality(equality, polarity, reason);
 }

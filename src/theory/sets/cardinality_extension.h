@@ -67,8 +67,7 @@ class CardinalityExtension
    * Constructs a new instance of the cardinality solver w.r.t. the provided
    * contexts.
    */
-  CardinalityExtension(SolverState& s,
-                       InferenceManager& im);
+  CardinalityExtension(SolverState& s, InferenceManager& im);
 
   ~CardinalityExtension() {}
   /** reset

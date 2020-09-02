@@ -34,10 +34,7 @@ SolverState::SolverState(context::Context* c,
   d_false = NodeManager::currentNM()->mkConst(false);
 }
 
-void SolverState::setParent(TheorySetsPrivate * p)
-{
-  d_parent = p;
-}
+void SolverState::setParent(TheorySetsPrivate* p) { d_parent = p; }
 
 void SolverState::reset()
 {

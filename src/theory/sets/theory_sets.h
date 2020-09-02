@@ -21,10 +21,10 @@
 
 #include <memory>
 
-#include "theory/theory.h"
-#include "theory/uf/equality_engine.h"
 #include "theory/sets/inference_manager.h"
 #include "theory/sets/solver_state.h"
+#include "theory/theory.h"
+#include "theory/uf/equality_engine.h"
 
 namespace CVC4 {
 namespace theory {

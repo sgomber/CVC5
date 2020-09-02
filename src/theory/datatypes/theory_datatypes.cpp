@@ -355,9 +355,8 @@ void TheoryDatatypes::postCheck(Effort level)
       }
     } while (!d_state.isInConflict() && !d_im.hasSentLemma()
              && d_im.hasSentFact());
-    Trace("datatypes-debug")
-        << "Finished, conflict=" << d_state.isInConflict()
-        << ", lemmas=" << d_im.hasSentLemma() << std::endl;
+    Trace("datatypes-debug") << "Finished, conflict=" << d_state.isInConflict()
+                             << ", lemmas=" << d_im.hasSentLemma() << std::endl;
     if (!d_state.isInConflict())
     {
       Trace("dt-model-debug") << std::endl;

@@ -64,8 +64,7 @@ void CombinationEngine::finishInit()
     // use the distributed shared solver
     d_sharedSolver.reset(new SharedSolverTest(d_te));
     // make the distributed equality engine manager
-    d_eemanager.reset(
-        new EqEngineManagerTest(d_te, *d_sharedSolver.get()));
+    d_eemanager.reset(new EqEngineManagerTest(d_te, *d_sharedSolver.get()));
     // make the distributed model manager
     d_mmanager.reset(new ModelManagerDistributed(d_te, *d_eemanager.get()));
   }

@@ -1355,7 +1355,7 @@ void TheoryArrays::notifyFact(TNode atom, bool pol, TNode fact, bool isInternal)
       TNode k;
       // k is the skolem for this disequality.
       Debug("pf::array") << "Check: kind::NOT: array theory making a skolem"
-                          << std::endl;
+                         << std::endl;
 
       // If not in replay mode, generate a fresh skolem variable
       k = getSkolem(

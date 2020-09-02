@@ -17,8 +17,8 @@
 #ifndef CVC4__THEORY__SETS__INFERENCE_MANAGER_H
 #define CVC4__THEORY__SETS__INFERENCE_MANAGER_H
 
-#include "theory/sets/solver_state.h"
 #include "theory/inference_manager_buffered.h"
+#include "theory/sets/solver_state.h"
 
 namespace CVC4 {
 namespace theory {
@@ -38,9 +38,7 @@ class InferenceManager : public InferenceManagerBuffered
   typedef context::CDHashSet<Node, NodeHashFunction> NodeSet;
 
  public:
-  InferenceManager(Theory& t,
-                   SolverState& s,
-                           ProofNodeManager* pnm);
+  InferenceManager(Theory& t, SolverState& s, ProofNodeManager* pnm);
   /**
    * Add facts corresponding to ( exp => fact ) via calls to the assertFact
    * method of TheorySetsPrivate.
@@ -83,7 +81,7 @@ class InferenceManager : public InferenceManagerBuffered
   /** constants */
   Node d_true;
   Node d_false;
-  /** 
+  /**
    * Reference to the state object for the theory of sets. We store the
    * (derived) state here, since it has additional methods required in this
    * class.
