@@ -18,6 +18,7 @@
 #include "theory/care_graph.h"
 #include "theory/ee_manager_central.h"
 #include "theory/ee_manager_distributed.h"
+#include "theory/ee_manager_test.h"
 #include "theory/model_manager_central.h"
 #include "theory/model_manager_distributed.h"
 #include "theory/shared_solver_central.h"
