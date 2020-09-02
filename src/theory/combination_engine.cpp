@@ -23,6 +23,7 @@
 #include "theory/model_manager_distributed.h"
 #include "theory/shared_solver_central.h"
 #include "theory/shared_solver_distributed.h"
+#include "theory/shared_solver_test.h"
 #include "theory/theory_engine.h"
 
 namespace CVC4 {
@@ -61,7 +62,7 @@ void CombinationEngine::finishInit()
   else if (options::eeMode() == options::EqEngineMode::TEST)
   {
     // use the distributed shared solver
-    d_sharedSolver.reset(new SharedSolverDistributed(d_te));
+    d_sharedSolver.reset(new SharedSolverTest(d_te));
     // make the distributed equality engine manager
     d_eemanager.reset(
         new EqEngineManagerTest(d_te, *d_sharedSolver.get()));

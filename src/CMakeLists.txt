@@ -733,6 +733,8 @@ libcvc4_add_sources(
   theory/shared_solver_central.h
   theory/shared_solver_distributed.cpp
   theory/shared_solver_distributed.h
+  theory/shared_solver_test.cpp
+  theory/shared_solver_test.h
   theory/shared_terms_database.cpp
   theory/shared_terms_database.h
   theory/smt_engine_subsolver.cpp
