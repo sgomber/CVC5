@@ -465,6 +465,8 @@ libcvc4_add_sources(
   theory/ee_manager_central.h
   theory/ee_manager_distributed.cpp
   theory/ee_manager_distributed.h
+  theory/ee_manager_test.cpp
+  theory/ee_manager_test.h
   theory/ee_setup_info.h
   theory/engine_output_channel.cpp
   theory/engine_output_channel.h

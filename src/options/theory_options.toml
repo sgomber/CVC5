@@ -57,6 +57,9 @@ header = "options/theory_options.h"
 [[option.mode.CENTRAL]]
   name = "central"
   help = "Each theory uses a central equality engine."
+[[option.mode.TEST]]
+  name = "test"
+  help = "Test approach."
 
 [[option]]
   name       = "tcMode"
