@@ -66,8 +66,7 @@ class TheorySetsRels {
 
 public:
  TheorySetsRels(SolverState& s,
-                InferenceManager& im,
-                context::UserContext* u);
+                InferenceManager& im);
 
  ~TheorySetsRels();
  /**

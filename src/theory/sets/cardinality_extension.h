@@ -68,9 +68,7 @@ class CardinalityExtension
    * contexts.
    */
   CardinalityExtension(SolverState& s,
-                       InferenceManager& im,
-                       context::Context* c,
-                       context::UserContext* u);
+                       InferenceManager& im);
 
   ~CardinalityExtension() {}
   /** reset

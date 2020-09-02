@@ -23,6 +23,8 @@
 
 #include "theory/theory.h"
 #include "theory/uf/equality_engine.h"
+#include "theory/sets/inference_manager.h"
+#include "theory/sets/solver_state.h"
 
 namespace CVC4 {
 namespace theory {
@@ -61,12 +63,6 @@ class TheorySets : public Theory
   //--------------------------------- standard check
   /** Post-check, called after the fact queue of the theory is processed. */
   void postCheck(Effort level) override;
-  /** Pre-notify fact, return true if processed. */
-  bool preNotifyFact(TNode atom,
-                     bool pol,
-                     TNode fact,
-                     bool isPrereg,
-                     bool isInternal) override;
   /** Notify fact */
   void notifyFact(TNode atom, bool pol, TNode fact, bool isInternal) override;
   //--------------------------------- end standard check
@@ -102,6 +98,10 @@ class TheorySets : public Theory
    private:
     TheorySetsPrivate& d_theory;
   };
+  /** The state of the sets solver at full effort */
+  SolverState d_state;
+  /** The inference manager */
+  InferenceManager d_im;
   /** The internal theory */
   std::unique_ptr<TheorySetsPrivate> d_internal;
   /** Instance of the above class */
