@@ -1976,10 +1976,6 @@ TNode TheoryDatatypes::getRepresentative( TNode a ){
   }
 }
 
-bool TheoryDatatypes::getCurrentSubstitution( int effort, std::vector< Node >& vars, std::vector< Node >& subs, std::map< Node, std::vector< Node > >& exp ) {
-  return false;
-}
-
 void TheoryDatatypes::printModelDebug( const char* c ){
   if(! (Trace.isOn(c))) {
     return;
