@@ -122,7 +122,6 @@ bool SharedSolver::propagateSharedEquality(theory::TheoryId theory,
 
 bool SharedSolver::isShared(TNode t) const { return d_sharedTerms.isShared(t); }
 
-
 void SharedSolver::sendLemma(TrustNode trn, TheoryId atomsTo)
 {
   d_te.lemma(trn.getNode(), false, LemmaProperty::NONE, atomsTo);
@@ -132,6 +131,6 @@ void SharedSolver::sendConflict(TrustNode trn)
 {
   d_te.conflict(trn.getNode(), THEORY_BUILTIN);
 }
-  
+
 }  // namespace theory
 }  // namespace CVC4

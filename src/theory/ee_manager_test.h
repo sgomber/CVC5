@@ -98,9 +98,9 @@ class EqEngineManagerTest : public EqEngineManager
    * The equality engine of the shared terms database.
    */
   std::unique_ptr<eq::EqualityEngine> d_stbEqualityEngine;
-  
+
   // ============================ central
-  
+
   /**
    * Notify class for central equality engine. This class dispatches
    * notifications from the central equality engine to the appropriate
