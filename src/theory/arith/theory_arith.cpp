@@ -44,7 +44,8 @@ TheoryArith::TheoryArith(context::Context* c,
       d_ppRewriteTimer("theory::arith::ppRewriteTimer"),
       d_astate(*d_internal, c, u, valuation),
       d_aim(*this, d_astate, *d_internal, pnm),
-      d_eqSolver(nullptr)
+      d_eqSolver(nullptr),
+      d_inferenceManager(*this, d_astate, pnm)
 {
   smtStatisticsRegistry()->registerStat(&d_ppRewriteTimer);
 

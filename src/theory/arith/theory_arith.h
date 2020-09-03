@@ -21,6 +21,7 @@
 #include "theory/arith/arith_infer_manager.h"
 #include "theory/arith/arith_state.h"
 #include "theory/arith/equality_solver.h"
+#include "theory/arith/inference_manager.h"
 #include "theory/arith/theory_arith_private_forward.h"
 #include "theory/theory.h"
 
@@ -121,14 +122,22 @@ class TheoryArith : public Theory {
   void propagatePrivateLit(TNode literal);
   /** Raise conflict from the private solver */
   void conflictPrivate(TNode conf);
+  /** Return a reference to the arith::InferenceManager. */
+  InferenceManager& getInferenceManager()
+  {
+    return d_inferenceManager;
+  }
 
  private:
   /** The state object wrapping TheoryArithPrivate  */
   ArithState d_astate;
-  /** The arithmetic inference manager */
+  /** The arithmetic inference manager FIXME experimental */
   ArithInferManager d_aim;
   /** The equality solver */
   std::unique_ptr<EqualitySolver> d_eqSolver;
+  /** The arith::InferenceManager. */
+  InferenceManager d_inferenceManager;
+
 };/* class TheoryArith */
 
 }/* CVC4::theory::arith namespace */
