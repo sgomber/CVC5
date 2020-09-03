@@ -402,19 +402,13 @@ void TheoryBV::postCheck(Effort level)
   }
 
   //check extended functions
-  if (Theory::fullEffort(e)) {
+  if (Theory::fullEffort(level) || level == Theory::EFFORT_LAST_CALL) {
     CoreSolver* core = (CoreSolver*)d_subtheoryMap[SUB_CORE];
     if (core)
     {
       // check extended functions at full effort
-      core->checkExtf(e);
+      core->checkExtf(level);
     }
-  }
-  else if (level == Theory::EFFORT_LAST_CALL)
-  {
-    // last call : do reductions on extended bitvector functions
-    std::vector<Node> nred = d_extTheory->getActive();
-    doExtfReductions(nred);
   }
 }
 
