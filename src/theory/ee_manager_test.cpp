@@ -22,8 +22,18 @@ namespace CVC4 {
 namespace theory {
 
 EqEngineManagerTest::EqEngineManagerTest(TheoryEngine& te, SharedSolver& shs)
-    : EqEngineManager(te, shs), d_masterEENotify(nullptr)
+    : EqEngineManager(te, shs), d_masterEENotify(nullptr),
+      d_centralEENotify(*this),
+      d_centralEqualityEngine(
+          d_centralEENotify, te.getSatContext(), "centralEE", true),
+      d_buildingModel(te.getSatContext(), false)
 {
+  for (TheoryId theoryId = theory::THEORY_FIRST;
+       theoryId != theory::THEORY_LAST;
+       ++theoryId)
+  {
+    d_theoryNotify[theoryId] = nullptr;
+  }
 }
 
 EqEngineManagerTest::~EqEngineManagerTest() {}
@@ -113,6 +123,114 @@ void EqEngineManagerTest::MasterNotifyClass::eqNotifyNewClass(TNode t)
 eq::EqualityEngine* EqEngineManagerTest::getCoreEqualityEngine()
 {
   return d_masterEqualityEngine.get();
+}
+
+//================================================ central
+
+
+void EqEngineManagerTest::notifyBuildingModel()
+{
+}
+  
+EqEngineManagerTest::CentralNotifyClass::CentralNotifyClass(
+    EqEngineManagerTest& eemc)
+    : d_eemc(eemc), d_mNotify(nullptr), d_quantEngine(nullptr)
+{
+}
+
+bool EqEngineManagerTest::CentralNotifyClass::eqNotifyTriggerPredicate(
+    TNode predicate, bool value)
+{
+  Trace("eem-test") << "eqNotifyTriggerPredicate: " << predicate
+                       << std::endl;
+  return d_eemc.eqNotifyTriggerPredicate(predicate, value);
+}
+
+bool EqEngineManagerTest::CentralNotifyClass::eqNotifyTriggerTermEquality(
+    TheoryId tag, TNode t1, TNode t2, bool value)
+{
+  Trace("eem-test") << "eqNotifyTriggerTermEquality: " << t1 << " " << t2
+                       << value << ", tag = " << tag << std::endl;
+  return d_eemc.eqNotifyTriggerTermEquality(tag, t1, t2, value);
+}
+
+void EqEngineManagerTest::CentralNotifyClass::eqNotifyConstantTermMerge(
+    TNode t1, TNode t2)
+{
+  Trace("eem-test") << "eqNotifyConstantTermMerge: " << t1 << " " << t2
+                       << std::endl;
+  d_eemc.eqNotifyConstantTermMerge(t1, t2);
+}
+
+void EqEngineManagerTest::CentralNotifyClass::eqNotifyNewClass(TNode t)
+{
+  Trace("eem-test") << "...eqNotifyNewClass " << t << std::endl;
+  // notify all theories that have new equivalence class notifications
+  for (eq::EqualityEngineNotify* notify : d_newClassNotify)
+  {
+    notify->eqNotifyNewClass(t);
+  }
+  // also always forward to quantifiers
+  if (d_quantEngine != nullptr)
+  {
+    d_quantEngine->eqNotifyNewClass(t);
+  }
+}
+
+void EqEngineManagerTest::CentralNotifyClass::eqNotifyMerge(TNode t1,
+                                                               TNode t2)
+{
+  Trace("eem-test") << "...eqNotifyMerge " << t1 << ", " << t2 << std::endl;
+  // notify all theories that have merge notifications
+  for (eq::EqualityEngineNotify* notify : d_mergeNotify)
+  {
+    notify->eqNotifyMerge(t1, t2);
+  }
+}
+
+void EqEngineManagerTest::CentralNotifyClass::eqNotifyDisequal(TNode t1,
+                                                                  TNode t2,
+                                                                  TNode reason)
+{
+  Trace("eem-test") << "...eqNotifyDisequal " << t1 << ", " << t2
+                       << std::endl;
+  // notify all theories that have disequal notifications
+  for (eq::EqualityEngineNotify* notify : d_disequalNotify)
+  {
+    notify->eqNotifyDisequal(t1, t2, reason);
+  }
+}
+
+bool EqEngineManagerTest::eqNotifyTriggerPredicate(TNode predicate,
+                                                      bool value)
+{
+  // if we're building model, ignore this propagation
+  if (d_buildingModel.get())
+  {
+    return true;
+  }
+  // always propagate with the shared solver
+  Trace("eem-test") << "...propagate " << predicate << ", " << value
+                       << " with shared solver" << std::endl;
+  return d_sharedSolver.propagateLit(predicate, value);
+}
+
+bool EqEngineManagerTest::eqNotifyTriggerTermEquality(TheoryId tag,
+                                                         TNode a,
+                                                         TNode b,
+                                                         bool value)
+{
+  return d_sharedSolver.propagateSharedEquality(tag, a, b, value);
+}
+
+void EqEngineManagerTest::eqNotifyConstantTermMerge(TNode t1, TNode t2)
+{
+  Node lit = t1.eqNode(t2);
+  Node conflict = d_centralEqualityEngine.mkExplainLit(lit);
+  Trace("eem-test") << "...explained conflict of " << lit << " ... "
+                        << conflict << std::endl;
+  d_sharedSolver.sendConflict(TrustNode::mkTrustConflict(conflict));
+  return;
 }
 
 }  // namespace theory

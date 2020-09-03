@@ -92,6 +92,15 @@ EqualityStatus SharedSolver::getEqualityStatus(TNode a, TNode b)
   return EQUALITY_UNKNOWN;
 }
 
+bool SharedSolver::propagateLit(TNode predicate, bool value)
+{
+  if (value)
+  {
+    return d_te.propagate(predicate, THEORY_BUILTIN);
+  }
+  return d_te.propagate(predicate.notNode(), THEORY_BUILTIN);
+}
+
 bool SharedSolver::propagateSharedEquality(theory::TheoryId theory,
                                            TNode a,
                                            TNode b,
@@ -113,5 +122,16 @@ bool SharedSolver::propagateSharedEquality(theory::TheoryId theory,
 
 bool SharedSolver::isShared(TNode t) const { return d_sharedTerms.isShared(t); }
 
+
+void SharedSolver::sendLemma(TrustNode trn, TheoryId atomsTo)
+{
+  d_te.lemma(trn.getNode(), false, LemmaProperty::NONE, atomsTo);
+}
+
+void SharedSolver::sendConflict(TrustNode trn)
+{
+  d_te.conflict(trn.getNode(), THEORY_BUILTIN);
+}
+  
 }  // namespace theory
 }  // namespace CVC4

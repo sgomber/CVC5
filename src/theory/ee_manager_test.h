@@ -54,6 +54,10 @@ class EqEngineManagerTest : public EqEngineManager
   void initializeTheories() override;
   /** get the core equality engine */
   eq::EqualityEngine* getCoreEqualityEngine() override;
+  /**
+   * Notify this class that we are building the model.
+   */
+  void notifyBuildingModel();
 
  private:
   /** notify class for master equality engine */
@@ -94,6 +98,58 @@ class EqEngineManagerTest : public EqEngineManager
    * The equality engine of the shared terms database.
    */
   std::unique_ptr<eq::EqualityEngine> d_stbEqualityEngine;
+  
+  // ============================ central
+  
+  /**
+   * Notify class for central equality engine. This class dispatches
+   * notifications from the central equality engine to the appropriate
+   * theory(s).
+   */
+  class CentralNotifyClass : public theory::eq::EqualityEngineNotify
+  {
+   public:
+    CentralNotifyClass(EqEngineManagerTest& eemc);
+    bool eqNotifyTriggerPredicate(TNode predicate, bool value) override;
+    bool eqNotifyTriggerTermEquality(TheoryId tag,
+                                     TNode t1,
+                                     TNode t2,
+                                     bool value) override;
+    void eqNotifyConstantTermMerge(TNode t1, TNode t2) override;
+    void eqNotifyNewClass(TNode t) override;
+    void eqNotifyMerge(TNode t1, TNode t2) override;
+    void eqNotifyDisequal(TNode t1, TNode t2, TNode reason) override;
+    /** Parent */
+    EqEngineManagerTest& d_eemc;
+    /** List of notify classes that need new class notification */
+    std::vector<eq::EqualityEngineNotify*> d_newClassNotify;
+    /** List of notify classes that need merge notification */
+    std::vector<eq::EqualityEngineNotify*> d_mergeNotify;
+    /** List of notify classes that need disequality notification */
+    std::vector<eq::EqualityEngineNotify*> d_disequalNotify;
+    /** The model notify class */
+    eq::EqualityEngineNotify* d_mNotify;
+    /** The quantifiers engine */
+    QuantifiersEngine* d_quantEngine;
+  };
+  /** Notification when predicate gets value in central equality engine */
+  bool eqNotifyTriggerPredicate(TNode predicate, bool value);
+  bool eqNotifyTriggerTermEquality(TheoryId tag,
+                                   TNode t1,
+                                   TNode t2,
+                                   bool value);
+  /** Notification when constants are merged in central equality engine */
+  void eqNotifyConstantTermMerge(TNode t1, TNode t2);
+  /** The central equality engine notify class */
+  CentralNotifyClass d_centralEENotify;
+  /** The central equality engine. */
+  eq::EqualityEngine d_centralEqualityEngine;
+  /**
+   * A table of from theory IDs to notify classes.
+   */
+  eq::EqualityEngineNotify* d_theoryNotify[theory::THEORY_LAST];
+  /** Whether we are building the model */
+  context::CDO<bool> d_buildingModel;
 };
 
 }  // namespace theory

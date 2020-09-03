@@ -101,6 +101,11 @@ class SharedSolver
   virtual bool isShared(TNode t) const;
 
   /**
+   * Method called by equalityEngine 
+   */
+  bool propagateLit(TNode predicate,
+                               bool value);
+  /**
    * Method called by equalityEngine when a becomes (dis-)equal to b and a and b
    * are shared with the theory. Returns false if there is a direct conflict
    * (via rewrite for example).
@@ -110,6 +115,10 @@ class SharedSolver
                                TNode b,
                                bool value);
 
+  /** Send lemma to the theory engine, atomsTo is the theory to send atoms to */
+  void sendLemma(TrustNode trn, TheoryId atomsTo);
+  /** Send conflict to the theory engine */
+  void sendConflict(TrustNode trn);
  protected:
   /** Solver-specific pre-register shared */
   virtual void preRegisterSharedInternal(TNode t) = 0;

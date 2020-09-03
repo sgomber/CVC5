@@ -176,21 +176,10 @@ bool EqEngineManagerCentral::eqNotifyTriggerPredicate(TNode predicate,
   {
     return true;
   }
-  Theory* t = d_te.getActiveTheory();
-  if (t == nullptr)
-  {
-    // propagation that occurred not during a theory check?
-    // TODO: shared solver?
-  }
-  TheoryId tid = t == nullptr ? THEORY_BUILTIN : t->getId();
+  // always propagate with the shared solver
   Trace("eem-central") << "...propagate " << predicate << ", " << value
-                       << " with " << tid << std::endl;
-  // propagate directly to theory engine
-  if (value)
-  {
-    return d_te.propagate(predicate, THEORY_BUILTIN);
-  }
-  return d_te.propagate(predicate.notNode(), THEORY_BUILTIN);
+                       << " with shared solver" << std::endl;
+  return d_sharedSolver.propagateLit(predicate, value);
 }
 
 bool EqEngineManagerCentral::eqNotifyTriggerTermEquality(TheoryId tag,
@@ -203,21 +192,12 @@ bool EqEngineManagerCentral::eqNotifyTriggerTermEquality(TheoryId tag,
 
 void EqEngineManagerCentral::eqNotifyConstantTermMerge(TNode t1, TNode t2)
 {
-  Theory* t = d_te.getActiveTheory();
-  if (true)
-  {
-    // conflict during SharedSolver::assertSharedEquality?
-    Node lit = t1.eqNode(t2);
-    Node conflict = d_centralEqualityEngine.mkExplainLit(lit);
-    Trace("eem-central") << "...explained conflict of " << lit << " ... "
-                         << conflict << std::endl;
-    d_te.conflict(conflict, THEORY_BUILTIN);
-    return;
-  }
-  Trace("eem-central") << "...notify active theory " << t->getId() << std::endl;
-  eq::EqualityEngineNotify* notify = d_theoryNotify[t->getId()];
-  Assert(notify != nullptr);
-  notify->eqNotifyConstantTermMerge(t1, t2);
+  Node lit = t1.eqNode(t2);
+  Node conflict = d_centralEqualityEngine.mkExplainLit(lit);
+  Trace("eem-central") << "...explained conflict of " << lit << " ... "
+                        << conflict << std::endl;
+  d_sharedSolver.sendConflict(TrustNode::mkTrustConflict(conflict));
+  return;
 }
 
 void EqEngineManagerCentral::notifyBuildingModel()
