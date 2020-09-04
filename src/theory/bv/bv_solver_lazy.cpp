@@ -368,12 +368,13 @@ bool BVSolverLazy::needsCheckLastEffort()
   return false;
 }
 
-bool BVSolverLazy::collectModelInfo(TheoryModel* m)
+bool BVSolverLazy::collectModelValues(TheoryModel* m,
+                          const std::set<Node>& termSet)
 {
   Assert(!inConflict());
   if (options::bitblastMode() == options::BitblastMode::EAGER)
   {
-    if (!d_eagerSolver->collectModelInfo(m, true))
+    if (!d_eagerSolver->collectModelInfo(m, true, termSet))
     {
       return false;
     }
@@ -382,7 +383,7 @@ bool BVSolverLazy::collectModelInfo(TheoryModel* m)
   {
     if (d_subtheories[i]->isComplete())
     {
-      return d_subtheories[i]->collectModelInfo(m, true);
+      return d_subtheories[i]->collectModelInfo(m, true, termSet);
     }
   }
   return true;
