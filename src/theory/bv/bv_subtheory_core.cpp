@@ -417,14 +417,14 @@ bool CoreSolver::isCompleteForTerm(TNode term, TNodeBoolMap& seen) {
 }
 
 bool CoreSolver::collectModelValues(TheoryModel* m,
-                                  bool fullModel,
-                                  const std::set<Node>& termSet)
+                                    bool fullModel,
+                                    const std::set<Node>& termSet)
 {
   if (Debug.isOn("bitvector-model")) {
     context::CDQueue<Node>::const_iterator it = d_assertionQueue.begin();
     for (; it!= d_assertionQueue.end(); ++it) {
-      Debug("bitvector-model") << "CoreSolver::collectModelValues (assert "
-                               << *it << ")\n";
+      Debug("bitvector-model")
+          << "CoreSolver::collectModelValues (assert " << *it << ")\n";
     }
   }
   if (isComplete()) {
@@ -433,7 +433,7 @@ bool CoreSolver::collectModelValues(TheoryModel* m,
       Node a = it->first;
       Node b = it->second;
       Debug("bitvector-model") << "CoreSolver::collectModelValues modelValues "
-                               << a << " => " << b <<")\n";
+                               << a << " => " << b << ")\n";
       if (!m->assertEquality(a, b, true))
       {
         return false;

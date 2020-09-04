@@ -237,8 +237,8 @@ class AlgebraicSolver : public SubtheorySolver
   }
   EqualityStatus getEqualityStatus(TNode a, TNode b) override;
   bool collectModelValues(TheoryModel* m,
-                        bool fullModel,
-                        const std::set<Node>& termSet) override;
+                          bool fullModel,
+                          const std::set<Node>& termSet) override;
   Node getModelValue(TNode node) override;
   bool isComplete() override;
   void assertFact(TNode fact) override;

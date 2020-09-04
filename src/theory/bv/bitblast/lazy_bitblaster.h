@@ -77,8 +77,8 @@ class TLazyBitblaster : public TBitblaster<Node>
    * @param termSet the set of relevant terms
    */
   bool collectModelValues(TheoryModel* m,
-                        bool fullModel,
-                        const std::set<Node>& termSet);
+                          bool fullModel,
+                          const std::set<Node>& termSet);
 
   typedef TNodeSet::const_iterator vars_iterator;
   vars_iterator beginVars() { return d_variables.begin(); }

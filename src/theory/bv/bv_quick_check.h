@@ -99,8 +99,8 @@ class BVQuickCheck
    */
   uint64_t computeAtomWeight(TNode atom, NodeSet& seen);
   bool collectModelValues(theory::TheoryModel* model,
-                        bool fullModel,
-                        const std::set<Node>& termSet);
+                          bool fullModel,
+                          const std::set<Node>& termSet);
 
   typedef std::unordered_set<TNode, TNodeHashFunction>::const_iterator
       vars_iterator;
