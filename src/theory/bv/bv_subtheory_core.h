@@ -152,7 +152,7 @@ class CoreSolver : public SubtheorySolver {
   void preRegister(TNode node) override;
   bool check(Theory::Effort e) override;
   void explain(TNode literal, std::vector<TNode>& assumptions) override;
-  bool collectModelInfo(TheoryModel* m,
+  bool collectModelValues(TheoryModel* m,
                         bool fullModel,
                         const std::set<Node>& termSet) override;
   Node getModelValue(TNode var) override;

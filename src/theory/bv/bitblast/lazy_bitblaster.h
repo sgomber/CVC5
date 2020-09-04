@@ -76,7 +76,7 @@ class TLazyBitblaster : public TBitblaster<Node>
    * constants to equivalence classes that don't already have them
    * @param termSet the set of relevant terms
    */
-  bool collectModelInfo(TheoryModel* m,
+  bool collectModelValues(TheoryModel* m,
                         bool fullModel,
                         const std::set<Node>& termSet);
 

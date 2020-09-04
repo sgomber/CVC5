@@ -74,7 +74,7 @@ class SubtheorySolver {
   virtual void explain(TNode literal, std::vector<TNode>& assumptions) = 0;
   virtual void preRegister(TNode node) {}
   virtual void propagate(Theory::Effort e) {}
-  virtual bool collectModelInfo(TheoryModel* m,
+  virtual bool collectModelValues(TheoryModel* m,
                                 bool fullModel,
                                 const std::set<Node>& termSet) = 0;
   virtual Node getModelValue(TNode var) = 0;
