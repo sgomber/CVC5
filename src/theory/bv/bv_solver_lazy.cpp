@@ -1,5 +1,5 @@
 /*********************                                                        */
-/*! \file theory_bv.cpp
+/*! \file theory_bv_lazy.cpp
  ** \verbatim
  ** Top contributors (to current version):
  **   Liana Hadarean, Andrew Reynolds, Aina Niemetz
@@ -13,7 +13,7 @@
  ** \todo document this file
  **/
 
-#include "theory/bv/theory_bv.h"
+#include "theory/bv/bv_solver_lazy.h"
 
 #include "expr/node_algorithm.h"
 #include "options/bv_options.h"
@@ -30,24 +30,20 @@
 #include "theory/bv/theory_bv_rewriter.h"
 #include "theory/bv/theory_bv_utils.h"
 #include "theory/theory_model.h"
-#include "theory/valuation.h"
 
-using namespace CVC4::context;
 using namespace CVC4::theory::bv::utils;
-using namespace std;
 
 namespace CVC4 {
 namespace theory {
 namespace bv {
 
-TheoryBV::TheoryBV(context::Context* c,
-                   context::UserContext* u,
-                   OutputChannel& out,
-                   Valuation valuation,
-                   const LogicInfo& logicInfo,
-                   ProofNodeManager* pnm,
-                   std::string name)
-    : Theory(THEORY_BV, c, u, out, valuation, logicInfo, pnm, name),
+BVSolverLazy::BVSolverLazy(TheoryBV& bv,
+                           context::Context* c,
+                           context::UserContext* u,
+                           ProofNodeManager* pnm,
+                           std::string name)
+    : BVSolver(bv.d_state, bv.d_inferMgr),
+      d_bv(bv),
       d_context(c),
       d_alreadyPropagatedSet(c),
       d_sharedTermsSet(c),
@@ -55,8 +51,6 @@ TheoryBV::TheoryBV(context::Context* c,
       d_subtheoryMap(),
       d_statistics(),
       d_staticLearnCache(),
-      d_BVDivByZero(),
-      d_BVRemByZero(),
       d_lemmasAdded(c, false),
       d_conflict(c, false),
       d_invalidateModelCache(c, true),
@@ -65,8 +59,7 @@ TheoryBV::TheoryBV(context::Context* c,
       d_propagatedBy(c),
       d_eagerSolver(),
       d_abstractionModule(new AbstractionModule(getStatsPrefix(THEORY_BV))),
-      d_calledPreregister(false),
-      d_state(c, u, valuation)
+      d_calledPreregister(false)
 {
   if (options::bitblastMode() == options::BitblastMode::EAGER)
   {
@@ -99,16 +92,11 @@ TheoryBV::TheoryBV(context::Context* c,
   }
   d_subtheories.emplace_back(bb_solver);
   d_subtheoryMap[SUB_BITBLAST] = bb_solver;
-
-  // indicate we are using the default theory state object
-  d_theoryState = &d_state;
 }
 
-TheoryBV::~TheoryBV() {}
+BVSolverLazy::~BVSolverLazy() {}
 
-TheoryRewriter* TheoryBV::getTheoryRewriter() { return &d_rewriter; }
-
-bool TheoryBV::needsEqualityEngine(EeSetupInfo& esi)
+bool BVSolverLazy::needsEqualityEngine(EeSetupInfo& esi)
 {
   CoreSolver* core = (CoreSolver*)d_subtheoryMap[SUB_CORE];
   if (core)
@@ -119,13 +107,8 @@ bool TheoryBV::needsEqualityEngine(EeSetupInfo& esi)
   return false;
 }
 
-void TheoryBV::finishInit()
+void BVSolverLazy::finishInit()
 {
-  // these kinds are semi-evaluated in getModelValue (applications of this
-  // kind are treated as variables)
-  d_valuation.setSemiEvaluatedKind(kind::BITVECTOR_ACKERMANNIZE_UDIV);
-  d_valuation.setSemiEvaluatedKind(kind::BITVECTOR_ACKERMANNIZE_UREM);
-
   CoreSolver* core = (CoreSolver*)d_subtheoryMap[SUB_CORE];
   if (core)
   {
@@ -134,19 +117,20 @@ void TheoryBV::finishInit()
   }
 }
 
-void TheoryBV::spendResource(ResourceManager::Resource r)
+void BVSolverLazy::spendResource(ResourceManager::Resource r)
 {
-  getOutputChannel().spendResource(r);
+  d_inferManager.spendResource(r);
 }
 
-TheoryBV::Statistics::Statistics():
-  d_avgConflictSize("theory::bv::AvgBVConflictSize"),
-  d_solveSubstitutions("theory::bv::NumSolveSubstitutions", 0),
-  d_solveTimer("theory::bv::solveTimer"),
-  d_numCallsToCheckFullEffort("theory::bv::NumFullCheckCalls", 0),
-  d_numCallsToCheckStandardEffort("theory::bv::NumStandardCheckCalls", 0),
-  d_weightComputationTimer("theory::bv::weightComputationTimer"),
-  d_numMultSlice("theory::bv::NumMultSliceApplied", 0)
+BVSolverLazy::Statistics::Statistics()
+    : d_avgConflictSize("theory::bv::lazy::AvgBVConflictSize"),
+      d_solveSubstitutions("theory::bv::lazy::NumSolveSubstitutions", 0),
+      d_solveTimer("theory::bv::lazy::solveTimer"),
+      d_numCallsToCheckFullEffort("theory::bv::lazy::NumFullCheckCalls", 0),
+      d_numCallsToCheckStandardEffort("theory::bv::lazy::NumStandardCheckCalls",
+                                      0),
+      d_weightComputationTimer("theory::bv::lazy::weightComputationTimer"),
+      d_numMultSlice("theory::bv::lazy::NumMultSliceApplied", 0)
 {
   smtStatisticsRegistry()->registerStat(&d_avgConflictSize);
   smtStatisticsRegistry()->registerStat(&d_solveSubstitutions);
@@ -157,7 +141,8 @@ TheoryBV::Statistics::Statistics():
   smtStatisticsRegistry()->registerStat(&d_numMultSlice);
 }
 
-TheoryBV::Statistics::~Statistics() {
+BVSolverLazy::Statistics::~Statistics()
+{
   smtStatisticsRegistry()->unregisterStat(&d_avgConflictSize);
   smtStatisticsRegistry()->unregisterStat(&d_solveSubstitutions);
   smtStatisticsRegistry()->unregisterStat(&d_solveTimer);
@@ -167,84 +152,11 @@ TheoryBV::Statistics::~Statistics() {
   smtStatisticsRegistry()->unregisterStat(&d_numMultSlice);
 }
 
-Node TheoryBV::getBVDivByZero(Kind k, unsigned width) {
-  NodeManager* nm = NodeManager::currentNM();
-  if (k == kind::BITVECTOR_UDIV) {
-    if (d_BVDivByZero.find(width) == d_BVDivByZero.end()) {
-      // lazily create the function symbols
-      ostringstream os;
-      os << "BVUDivByZero_" << width;
-      Node divByZero = nm->mkSkolem(os.str(),
-                                    nm->mkFunctionType(nm->mkBitVectorType(width), nm->mkBitVectorType(width)),
-                                    "partial bvudiv", NodeManager::SKOLEM_EXACT_NAME);
-      d_BVDivByZero[width] = divByZero;
-    }
-    return d_BVDivByZero[width];
-  }
-  else if (k == kind::BITVECTOR_UREM) {
-    if (d_BVRemByZero.find(width) == d_BVRemByZero.end()) {
-      ostringstream os;
-      os << "BVURemByZero_" << width;
-      Node divByZero = nm->mkSkolem(os.str(),
-                                    nm->mkFunctionType(nm->mkBitVectorType(width), nm->mkBitVectorType(width)),
-                                    "partial bvurem", NodeManager::SKOLEM_EXACT_NAME);
-      d_BVRemByZero[width] = divByZero;
-    }
-    return d_BVRemByZero[width];
-  }
-
-  Unreachable();
-}
-
-TrustNode TheoryBV::expandDefinition(Node node)
+void BVSolverLazy::preRegisterTerm(TNode node)
 {
-  Debug("bitvector-expandDefinition") << "TheoryBV::expandDefinition(" << node << ")" << std::endl;
-
-  Node ret;
-  switch (node.getKind()) {
-  case kind::BITVECTOR_SDIV:
-  case kind::BITVECTOR_SREM:
-  case kind::BITVECTOR_SMOD:
-    ret = TheoryBVRewriter::eliminateBVSDiv(node);
-    break;
-
-  case kind::BITVECTOR_UDIV:
-  case kind::BITVECTOR_UREM: {
-    NodeManager* nm = NodeManager::currentNM();
-    unsigned width = node.getType().getBitVectorSize();
-
-    if (options::bitvectorDivByZeroConst()) {
-      Kind kind = node.getKind() == kind::BITVECTOR_UDIV ? kind::BITVECTOR_UDIV_TOTAL : kind::BITVECTOR_UREM_TOTAL;
-      ret = nm->mkNode(kind, node[0], node[1]);
-      break;
-    }
-
-    TNode num = node[0], den = node[1];
-    Node den_eq_0 = nm->mkNode(kind::EQUAL, den, utils::mkZero(width));
-    Node divTotalNumDen = nm->mkNode(node.getKind() == kind::BITVECTOR_UDIV
-                                         ? kind::BITVECTOR_UDIV_TOTAL
-                                         : kind::BITVECTOR_UREM_TOTAL,
-                                     num,
-                                     den);
-    Node divByZero = getBVDivByZero(node.getKind(), width);
-    Node divByZeroNum = nm->mkNode(kind::APPLY_UF, divByZero, num);
-    ret = nm->mkNode(kind::ITE, den_eq_0, divByZeroNum, divTotalNumDen);
-  }
-    break;
-
-  default:
-    break;
-  }
-  if (!ret.isNull() && node != ret)
-  {
-    return TrustNode::mkTrustRewrite(node, ret, nullptr);
-  }
-  return TrustNode::null();
-}
-
-void TheoryBV::preRegisterTerm(TNode node) {
   d_calledPreregister = true;
-  Debug("bitvector-preregister") << "TheoryBV::preRegister(" << node << ")" << std::endl;
+  Debug("bitvector-preregister")
+      << "BVSolverLazy::preRegister(" << node << ")" << std::endl;
 
   if (options::bitblastMode() == options::BitblastMode::EAGER)
   {
@@ -263,28 +175,34 @@ void TheoryBV::preRegisterTerm(TNode node) {
     return;
   }
 
-  for (unsigned i = 0; i < d_subtheories.size(); ++i) {
+  for (unsigned i = 0; i < d_subtheories.size(); ++i)
+  {
     d_subtheories[i]->preRegister(node);
   }
 
   // AJR : equality solver currently registers all terms to ExtTheory, if we
   // want a lazy reduction without the bv equality solver, need to call this
-  // d_extTheory->registerTermRec( node );
+  // d_bv.d_extTheory->registerTermRec( node );
 }
 
-void TheoryBV::sendConflict() {
+void BVSolverLazy::sendConflict()
+{
   Assert(d_conflict);
-  if (d_conflictNode.isNull()) {
+  if (d_conflictNode.isNull())
+  {
     return;
-  } else {
-    Debug("bitvector") << indent() << "TheoryBV::check(): conflict " << d_conflictNode << std::endl;
-    d_out->conflict(d_conflictNode);
+  }
+  else
+  {
+    Debug("bitvector") << indent() << "BVSolverLazy::check(): conflict "
+                       << d_conflictNode << std::endl;
+    d_inferManager.conflict(d_conflictNode);
     d_statistics.d_avgConflictSize.addEntry(d_conflictNode.getNumChildren());
     d_conflictNode = Node::null();
   }
 }
 
-void TheoryBV::checkForLemma(TNode fact)
+void BVSolverLazy::checkForLemma(TNode fact)
 {
   if (fact.getKind() == kind::EQUAL)
   {
@@ -316,14 +234,22 @@ void TheoryBV::checkForLemma(TNode fact)
   }
 }
 
-void TheoryBV::check(Effort e)
+bool BVSolverLazy::preCheck(Theory::Effort e)
 {
-  if (done() && e<Theory::EFFORT_FULL) {
+  check(e);
+  return true;
+}
+
+void BVSolverLazy::check(Theory::Effort e)
+{
+  if (done() && e < Theory::EFFORT_FULL)
+  {
     return;
   }
 
-  //last call : do reductions on extended bitvector functions
-  if (e == Theory::EFFORT_LAST_CALL) {
+  // last call : do reductions on extended bitvector functions
+  if (e == Theory::EFFORT_LAST_CALL)
+  {
     CoreSolver* core = (CoreSolver*)d_subtheoryMap[SUB_CORE];
     if (core)
     {
@@ -333,8 +259,7 @@ void TheoryBV::check(Effort e)
     return;
   }
 
-  TimerStat::CodeTimer checkTimer(d_checkTime);
-  Debug("bitvector") << "TheoryBV::check(" << e << ")" << std::endl;
+  Debug("bitvector") << "BVSolverLazy::check(" << e << ")" << std::endl;
   TimerStat::CodeTimer codeTimer(d_statistics.d_solveTimer);
   // we may be getting new assertions so the model cache may not be sound
   d_invalidateModelCache.set(true);
@@ -342,14 +267,15 @@ void TheoryBV::check(Effort e)
   if (options::bitblastMode() == options::BitblastMode::EAGER)
   {
     // this can only happen on an empty benchmark
-    if (!d_eagerSolver->isInitialized()) {
+    if (!d_eagerSolver->isInitialized())
+    {
       d_eagerSolver->initialize();
     }
-    if (!Theory::fullEffort(e))
-      return;
+    if (!Theory::fullEffort(e)) return;
 
     std::vector<TNode> assertions;
-    while (!done()) {
+    while (!done())
+    {
       TNode fact = get().d_assertion;
       Assert(fact.getKind() == kind::BITVECTOR_EAGER_ATOM);
       assertions.push_back(fact);
@@ -357,60 +283,72 @@ void TheoryBV::check(Effort e)
     }
 
     bool ok = d_eagerSolver->checkSat();
-    if (!ok) {
-      if (assertions.size() == 1) {
-        d_out->conflict(assertions[0]);
+    if (!ok)
+    {
+      if (assertions.size() == 1)
+      {
+        d_inferManager.conflict(assertions[0]);
         return;
       }
       Node conflict = utils::mkAnd(assertions);
-      d_out->conflict(conflict);
+      d_inferManager.conflict(conflict);
       return;
     }
     return;
   }
 
-  if (Theory::fullEffort(e)) {
+  if (Theory::fullEffort(e))
+  {
     ++(d_statistics.d_numCallsToCheckFullEffort);
-  } else {
+  }
+  else
+  {
     ++(d_statistics.d_numCallsToCheckStandardEffort);
   }
   // if we are already in conflict just return the conflict
-  if (inConflict()) {
+  if (inConflict())
+  {
     sendConflict();
     return;
   }
 
-  while (!done()) {
+  while (!done())
+  {
     TNode fact = get().d_assertion;
 
     checkForLemma(fact);
 
-    for (unsigned i = 0; i < d_subtheories.size(); ++i) {
+    for (unsigned i = 0; i < d_subtheories.size(); ++i)
+    {
       d_subtheories[i]->assertFact(fact);
     }
   }
 
   bool ok = true;
   bool complete = false;
-  for (unsigned i = 0; i < d_subtheories.size(); ++i) {
+  for (unsigned i = 0; i < d_subtheories.size(); ++i)
+  {
     Assert(!inConflict());
     ok = d_subtheories[i]->check(e);
     complete = d_subtheories[i]->isComplete();
 
-    if (!ok) {
+    if (!ok)
+    {
       // if we are in a conflict no need to check with other theories
       Assert(inConflict());
       sendConflict();
       return;
     }
-    if (complete) {
+    if (complete)
+    {
       // if the last subtheory was complete we stop
       break;
     }
   }
 
-  //check extended functions
-  if (Theory::fullEffort(e)) {
+  // check extended functions
+  if (Theory::fullEffort(e))
+  {
     CoreSolver* core = (CoreSolver*)d_subtheoryMap[SUB_CORE];
     if (core)
     {
@@ -420,7 +358,7 @@ void TheoryBV::check(Effort e)
   }
 }
 
-bool TheoryBV::needsCheckLastEffort()
+bool BVSolverLazy::needsCheckLastEffort()
 {
   CoreSolver* core = (CoreSolver*)d_subtheoryMap[SUB_CORE];
   if (core)
@@ -429,7 +367,8 @@ bool TheoryBV::needsCheckLastEffort()
   }
   return false;
 }
-bool TheoryBV::collectModelInfo(TheoryModel* m)
+
+bool BVSolverLazy::collectModelInfo(TheoryModel* m)
 {
   Assert(!inConflict());
   if (options::bitblastMode() == options::BitblastMode::EAGER)
@@ -439,70 +378,84 @@ bool TheoryBV::collectModelInfo(TheoryModel* m)
       return false;
     }
   }
-  for (unsigned i = 0; i < d_subtheories.size(); ++i) {
-    if (d_subtheories[i]->isComplete()) {
+  for (unsigned i = 0; i < d_subtheories.size(); ++i)
+  {
+    if (d_subtheories[i]->isComplete())
+    {
       return d_subtheories[i]->collectModelInfo(m, true);
     }
   }
   return true;
 }
 
-Node TheoryBV::getModelValue(TNode var) {
+Node BVSolverLazy::getModelValue(TNode var)
+{
   Assert(!inConflict());
-  for (unsigned i = 0; i < d_subtheories.size(); ++i) {
-    if (d_subtheories[i]->isComplete()) {
+  for (unsigned i = 0; i < d_subtheories.size(); ++i)
+  {
+    if (d_subtheories[i]->isComplete())
+    {
       return d_subtheories[i]->getModelValue(var);
     }
   }
   Unreachable();
 }
 
-void TheoryBV::propagate(Effort e) {
-  Debug("bitvector") << indent() << "TheoryBV::propagate()" << std::endl;
+void BVSolverLazy::propagate(Theory::Effort e)
+{
+  Debug("bitvector") << indent() << "BVSolverLazy::propagate()" << std::endl;
   if (options::bitblastMode() == options::BitblastMode::EAGER)
   {
     return;
   }
 
-  if (inConflict()) {
+  if (inConflict())
+  {
     return;
   }
 
   // go through stored propagations
   bool ok = true;
-  for (; d_literalsToPropagateIndex < d_literalsToPropagate.size() && ok; d_literalsToPropagateIndex = d_literalsToPropagateIndex + 1) {
+  for (; d_literalsToPropagateIndex < d_literalsToPropagate.size() && ok;
+       d_literalsToPropagateIndex = d_literalsToPropagateIndex + 1)
+  {
     TNode literal = d_literalsToPropagate[d_literalsToPropagateIndex];
     // temporary fix for incremental bit-blasting
-    if (d_valuation.isSatLiteral(literal)) {
-      Debug("bitvector::propagate") << "TheoryBV:: propagating " << literal <<"\n";
-      ok = d_out->propagate(literal);
+    if (d_state.isSatLiteral(literal))
+    {
+      Debug("bitvector::propagate")
+          << "BVSolverLazy:: propagating " << literal << "\n";
+      ok = d_inferManager.propagateLit(literal);
     }
   }
 
-  if (!ok) {
-    Debug("bitvector::propagate") << indent() << "TheoryBV::propagate(): conflict from theory engine" << std::endl;
+  if (!ok)
+  {
+    Debug("bitvector::propagate")
+        << indent() << "BVSolverLazy::propagate(): conflict from theory engine"
+        << std::endl;
     setConflict();
   }
 }
 
-Theory::PPAssertStatus TheoryBV::ppAssert(TNode in,
-                                          SubstitutionMap& outSubstitutions)
+Theory::PPAssertStatus BVSolverLazy::ppAssert(TNode in,
+                                              SubstitutionMap& outSubstitutions)
 {
   switch (in.getKind())
   {
     case kind::EQUAL:
     {
-      if (in[0].isVar() && isLegalElimination(in[0], in[1]))
+      if (in[0].isVar() && d_bv.isLegalElimination(in[0], in[1]))
       {
         ++(d_statistics.d_solveSubstitutions);
         outSubstitutions.addSubstitution(in[0], in[1]);
-        return PP_ASSERT_STATUS_SOLVED;
+        return Theory::PP_ASSERT_STATUS_SOLVED;
       }
-      if (in[1].isVar() && isLegalElimination(in[1], in[0]))
+      if (in[1].isVar() && d_bv.isLegalElimination(in[1], in[0]))
       {
         ++(d_statistics.d_solveSubstitutions);
         outSubstitutions.addSubstitution(in[1], in[0]);
-        return PP_ASSERT_STATUS_SOLVED;
+        return Theory::PP_ASSERT_STATUS_SOLVED;
       }
       Node node = Rewriter::rewrite(in);
       if ((node[0].getKind() == kind::BITVECTOR_EXTRACT && node[1].isConst())
@@ -546,10 +499,10 @@ Theory::PPAssertStatus TheoryBV::ppAssert(TNode in,
           }
           Node concat = utils::mkConcat(children);
           Assert(utils::getSize(concat) == utils::getSize(extract[0]));
-          if (isLegalElimination(extract[0], concat))
+          if (d_bv.isLegalElimination(extract[0], concat))
           {
             outSubstitutions.addSubstitution(extract[0], concat);
-            return PP_ASSERT_STATUS_SOLVED;
+            return Theory::PP_ASSERT_STATUS_SOLVED;
           }
         }
       }
@@ -564,17 +517,20 @@ Theory::PPAssertStatus TheoryBV::ppAssert(TNode in,
       // TODO other predicates
       break;
   }
-  return PP_ASSERT_STATUS_UNSOLVED;
+  return Theory::PP_ASSERT_STATUS_UNSOLVED;
 }
 
-TrustNode TheoryBV::ppRewrite(TNode t)
+TrustNode BVSolverLazy::ppRewrite(TNode t)
 {
-  Debug("bv-pp-rewrite") << "TheoryBV::ppRewrite " << t << "\n";
+  Debug("bv-pp-rewrite") << "BVSolverLazy::ppRewrite " << t << "\n";
   Node res = t;
-  if (options::bitwiseEq() && RewriteRule<BitwiseEq>::applies(t)) {
+  if (options::bitwiseEq() && RewriteRule<BitwiseEq>::applies(t))
+  {
     Node result = RewriteRule<BitwiseEq>::run<false>(t);
     res = Rewriter::rewrite(result);
-  } else if (RewriteRule<UltPlusOne>::applies(t)) {
+  }
+  else if (RewriteRule<UltPlusOne>::applies(t))
+  {
     Node result = RewriteRule<UltPlusOne>::run<false>(t);
     res = Rewriter::rewrite(result);
   }
@@ -584,16 +540,19 @@ TrustNode TheoryBV::ppRewrite(TNode t)
                || (res[1].getKind() == kind::BITVECTOR_PLUS
                    && RewriteRule<ConcatToMult>::applies(res[0]))))
   {
-    Node mult = RewriteRule<ConcatToMult>::applies(res[0])?
-      RewriteRule<ConcatToMult>::run<false>(res[0]) :
-      RewriteRule<ConcatToMult>::run<true>(res[1]);
+    Node mult = RewriteRule<ConcatToMult>::applies(res[0])
+                    ? RewriteRule<ConcatToMult>::run<false>(res[0])
+                    : RewriteRule<ConcatToMult>::run<true>(res[1]);
     Node factor = mult[0];
-    Node sum =  RewriteRule<ConcatToMult>::applies(res[0])? res[1] : res[0];
+    Node sum = RewriteRule<ConcatToMult>::applies(res[0]) ? res[1] : res[0];
     Node new_eq = NodeManager::currentNM()->mkNode(kind::EQUAL, sum, mult);
     Node rewr_eq = RewriteRule<SolveEq>::run<true>(new_eq);
-    if (rewr_eq[0].isVar() || rewr_eq[1].isVar()){
+    if (rewr_eq[0].isVar() || rewr_eq[1].isVar())
+    {
       res = Rewriter::rewrite(rewr_eq);
-    } else {
+    }
+    else
+    {
       res = t;
     }
   }
@@ -646,7 +605,8 @@ TrustNode TheoryBV::ppRewrite(TNode t)
   //   }
   // }
 
-  if (options::bvAbstraction() && t.getType().isBoolean()) {
+  if (options::bvAbstraction() && t.getType().isBoolean())
+  {
     d_abstractionModule->addInputAtom(res);
   }
   Debug("bv-pp-rewrite") << "to   " << res << "\n";
@@ -657,32 +617,42 @@ TrustNode TheoryBV::ppRewrite(TNode t)
   return TrustNode::null();
 }
 
-void TheoryBV::presolve() {
-  Debug("bitvector") << "TheoryBV::presolve" << endl;
+void BVSolverLazy::presolve()
+{
+  Debug("bitvector") << "BVSolverLazy::presolve" << std::endl;
 }
 
 static int prop_count = 0;
 
-bool TheoryBV::storePropagation(TNode literal, SubTheory subtheory)
+bool BVSolverLazy::storePropagation(TNode literal, SubTheory subtheory)
 {
-  Debug("bitvector::propagate") << indent() << getSatContext()->getLevel() << " " << "TheoryBV::storePropagation(" << literal << ", " << subtheory << ")" << std::endl;
+  Debug("bitvector::propagate") << indent() << d_context->getLevel() << " "
+                                << "BVSolverLazy::storePropagation(" << literal
+                                << ", " << subtheory << ")" << std::endl;
   prop_count++;
 
   // If already in conflict, no more propagation
-  if (d_conflict) {
-    Debug("bitvector::propagate") << indent() << "TheoryBV::storePropagation(" << literal << ", " << subtheory << "): already in conflict" << std::endl;
+  if (d_conflict)
+  {
+    Debug("bitvector::propagate")
+        << indent() << "BVSolverLazy::storePropagation(" << literal << ", "
+        << subtheory << "): already in conflict" << std::endl;
     return false;
   }
 
   // If propagated already, just skip
   PropagatedMap::const_iterator find = d_propagatedBy.find(literal);
-  if (find != d_propagatedBy.end()) {
+  if (find != d_propagatedBy.end())
+  {
     return true;
-  } else {
+  }
+  else
+  {
     bool polarity = literal.getKind() != kind::NOT;
-    Node negatedLiteral = polarity ? literal.notNode() : (Node) literal[0];
+    Node negatedLiteral = polarity ? literal.notNode() : (Node)literal[0];
     find = d_propagatedBy.find(negatedLiteral);
-    if (find != d_propagatedBy.end() && (*find).second != subtheory) {
+    if (find != d_propagatedBy.end() && (*find).second != subtheory)
+    {
       // Safe to ignore this one, subtheory should produce a conflict
       return true;
     }
@@ -696,35 +666,41 @@ bool TheoryBV::storePropagation(TNode literal, SubTheory subtheory)
   // * equality engine can propagate eagerly
   // TODO(2348): Determine if ok should be set by propagate. If not, remove ok.
   constexpr bool ok = true;
-  if (subtheory == SUB_CORE) {
-    d_out->propagate(literal);
-    if (!ok) {
+  if (subtheory == SUB_CORE)
+  {
+    d_inferManager.propagateLit(literal);
+    if (!ok)
+    {
       setConflict();
     }
-  } else {
+  }
+  else
+  {
     d_literalsToPropagate.push_back(literal);
   }
   return ok;
 
-}/* TheoryBV::propagate(TNode) */
+} /* BVSolverLazy::propagate(TNode) */
 
-
-void TheoryBV::explain(TNode literal, std::vector<TNode>& assumptions) {
+void BVSolverLazy::explain(TNode literal, std::vector<TNode>& assumptions)
+{
   Assert(wasPropagatedBySubtheory(literal));
   SubTheory sub = getPropagatingSubtheory(literal);
   d_subtheoryMap[sub]->explain(literal, assumptions);
 }
 
-TrustNode TheoryBV::explain(TNode node)
+TrustNode BVSolverLazy::explain(TNode node)
 {
-  Debug("bitvector::explain") << "TheoryBV::explain(" << node << ")" << std::endl;
+  Debug("bitvector::explain")
+      << "BVSolverLazy::explain(" << node << ")" << std::endl;
   std::vector<TNode> assumptions;
 
   // Ask for the explanation
   explain(node, assumptions);
   // this means that it is something true at level 0
   Node explanation;
-  if (assumptions.size() == 0) {
+  if (assumptions.size() == 0)
+  {
     explanation = utils::mkTrue();
   }
   else
@@ -732,56 +708,68 @@ TrustNode TheoryBV::explain(TNode node)
     // return the explanation
     explanation = utils::mkAnd(assumptions);
   }
-  Debug("bitvector::explain") << "TheoryBV::explain(" << node << ") => " << explanation << std::endl;
-  Debug("bitvector::explain") << "TheoryBV::explain done. \n";
+  Debug("bitvector::explain") << "BVSolverLazy::explain(" << node << ") => "
+                              << explanation << std::endl;
+  Debug("bitvector::explain") << "BVSolverLazy::explain done. \n";
   return TrustNode::mkTrustPropExp(node, explanation, nullptr);
 }
 
-void TheoryBV::notifySharedTerm(TNode t)
+void BVSolverLazy::notifySharedTerm(TNode t)
 {
   Debug("bitvector::sharing")
-      << indent() << "TheoryBV::notifySharedTerm(" << t << ")" << std::endl;
+      << indent() << "BVSolverLazy::notifySharedTerm(" << t << ")" << std::endl;
   d_sharedTermsSet.insert(t);
-  if (options::bitvectorEqualitySolver()) {
-    for (unsigned i = 0; i < d_subtheories.size(); ++i) {
+  if (options::bitvectorEqualitySolver())
+  {
+    for (unsigned i = 0; i < d_subtheories.size(); ++i)
+    {
       d_subtheories[i]->addSharedTerm(t);
     }
   }
 }
 
-
-EqualityStatus TheoryBV::getEqualityStatus(TNode a, TNode b)
+EqualityStatus BVSolverLazy::getEqualityStatus(TNode a, TNode b)
 {
   if (options::bitblastMode() == options::BitblastMode::EAGER)
     return EQUALITY_UNKNOWN;
   Assert(options::bitblastMode() == options::BitblastMode::LAZY);
-  for (unsigned i = 0; i < d_subtheories.size(); ++i) {
+  for (unsigned i = 0; i < d_subtheories.size(); ++i)
+  {
     EqualityStatus status = d_subtheories[i]->getEqualityStatus(a, b);
-    if (status != EQUALITY_UNKNOWN) {
+    if (status != EQUALITY_UNKNOWN)
+    {
       return status;
     }
   }
-  return EQUALITY_UNKNOWN; ;
+  return EQUALITY_UNKNOWN;
+  ;
 }
 
-void TheoryBV::ppStaticLearn(TNode in, NodeBuilder<>& learned) {
-  if(d_staticLearnCache.find(in) != d_staticLearnCache.end()){
+void BVSolverLazy::ppStaticLearn(TNode in, NodeBuilder<>& learned)
+{
+  if (d_staticLearnCache.find(in) != d_staticLearnCache.end())
+  {
     return;
   }
   d_staticLearnCache.insert(in);
 
-  if (in.getKind() == kind::EQUAL) {
-    if((in[0].getKind() == kind::BITVECTOR_PLUS && in[1].getKind() == kind::BITVECTOR_SHL) ||
-       (in[1].getKind() == kind::BITVECTOR_PLUS && in[0].getKind() == kind::BITVECTOR_SHL)) {
+  if (in.getKind() == kind::EQUAL)
+  {
+    if ((in[0].getKind() == kind::BITVECTOR_PLUS
+         && in[1].getKind() == kind::BITVECTOR_SHL)
+        || (in[1].getKind() == kind::BITVECTOR_PLUS
+            && in[0].getKind() == kind::BITVECTOR_SHL))
+    {
       TNode p = in[0].getKind() == kind::BITVECTOR_PLUS ? in[0] : in[1];
       TNode s = in[0].getKind() == kind::BITVECTOR_PLUS ? in[1] : in[0];
 
-      if(p.getNumChildren() == 2
-         && p[0].getKind()  == kind::BITVECTOR_SHL
-         && p[1].getKind()  == kind::BITVECTOR_SHL ){
+      if (p.getNumChildren() == 2 && p[0].getKind() == kind::BITVECTOR_SHL
+          && p[1].getKind() == kind::BITVECTOR_SHL)
+      {
         unsigned size = utils::getSize(s);
         Node one = utils::mkConst(size, 1u);
-        if(s[0] == one && p[0][0] == one && p[1][0] == one){
+        if (s[0] == one && p[0][0] == one && p[1][0] == one)
+        {
           Node zero = utils::mkConst(size, 0u);
           TNode b = p[0];
           TNode c = p[1];
@@ -797,15 +785,21 @@ void TheoryBV::ppStaticLearn(TNode in, NodeBuilder<>& learned) {
         }
       }
     }
-  }else if(in.getKind() == kind::AND){
-    for(size_t i = 0, N = in.getNumChildren(); i < N; ++i){
+  }
+  else if (in.getKind() == kind::AND)
+  {
+    for (size_t i = 0, N = in.getNumChildren(); i < N; ++i)
+    {
       ppStaticLearn(in[i], learned);
     }
   }
 }
 
-bool TheoryBV::applyAbstraction(const std::vector<Node>& assertions, std::vector<Node>& new_assertions) {
-  bool changed = d_abstractionModule->applyAbstraction(assertions, new_assertions);
+bool BVSolverLazy::applyAbstraction(const std::vector<Node>& assertions,
+                                    std::vector<Node>& new_assertions)
+{
+  bool changed =
+      d_abstractionModule->applyAbstraction(assertions, new_assertions);
   if (changed && options::bitblastMode() == options::BitblastMode::EAGER
       && options::bitvectorAig())
   {
@@ -817,7 +811,7 @@ bool TheoryBV::applyAbstraction(const std::vector<Node>& assertions, std::vector
   return changed;
 }
 
-void TheoryBV::setConflict(Node conflict)
+void BVSolverLazy::setConflict(Node conflict)
 {
   if (options::bvAbstraction())
   {
@@ -836,6 +830,6 @@ void TheoryBV::setConflict(Node conflict)
   d_conflictNode = conflict;
 }
 
-} /* namespace CVC4::theory::bv */
-} /* namespace CVC4::theory */
+}  // namespace bv
+}  // namespace theory
 } /* namespace CVC4 */
