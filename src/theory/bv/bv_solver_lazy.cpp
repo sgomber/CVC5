@@ -715,6 +715,13 @@ TrustNode BVSolverLazy::explain(TNode node)
   return TrustNode::mkTrustPropExp(node, explanation, nullptr);
 }
 
+void BVSolverLazy::notifySharedTerm(TNode t)
+{
+  Debug("bitvector::sharing")
+      << indent() << "BVSolverLazy::notifySharedTerm(" << t << ")" << std::endl;
+  d_sharedTermsSet.insert(t);
+}
+
 EqualityStatus BVSolverLazy::getEqualityStatus(TNode a, TNode b)
 {
   if (options::bitblastMode() == options::BitblastMode::EAGER)
