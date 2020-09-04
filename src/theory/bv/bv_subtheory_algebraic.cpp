@@ -713,7 +713,6 @@ EqualityStatus AlgebraicSolver::getEqualityStatus(TNode a, TNode b) {
 }
 
 bool AlgebraicSolver::collectModelValues(TheoryModel* model,
-                                         bool fullModel,
                                          const std::set<Node>& termSet)
 {
   Debug("bitvector-model") << "AlgebraicSolver::collectModelValues\n";
@@ -748,7 +747,7 @@ bool AlgebraicSolver::collectModelValues(TheoryModel* model,
   for (NodeSet::const_iterator it = leaf_vars.begin(); it != leaf_vars.end(); ++it) {
     TNode var = *it;
     Node value = d_quickSolver->getVarValue(var, true);
-    Assert(!value.isNull() || !fullModel);
+    Assert(!value.isNull());
 
     // may be a shared term that did not appear in the current assertions
     // AJR: need to check whether already in map for cases where collectModelInfo is called multiple times in the same context
