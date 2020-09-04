@@ -167,6 +167,7 @@ bool TheoryBV::needsCheckLastEffort()
 
 bool TheoryBV::collectModelValues(TheoryModel* m,
                         const std::set<Node>& termSet)
+{
   return d_internal->collectModelValues(m, termSet);
 }
 

@@ -374,7 +374,7 @@ bool BVSolverLazy::collectModelValues(TheoryModel* m,
   Assert(!inConflict());
   if (options::bitblastMode() == options::BitblastMode::EAGER)
   {
-    if (!d_eagerSolver->collectModelInfo(m, true, termSet))
+    if (!d_eagerSolver->collectModelInfo(m, true))
     {
       return false;
     }
@@ -713,20 +713,6 @@ TrustNode BVSolverLazy::explain(TNode node)
                               << explanation << std::endl;
   Debug("bitvector::explain") << "BVSolverLazy::explain done. \n";
   return TrustNode::mkTrustPropExp(node, explanation, nullptr);
-}
-
-void BVSolverLazy::notifySharedTerm(TNode t)
-{
-  Debug("bitvector::sharing")
-      << indent() << "BVSolverLazy::notifySharedTerm(" << t << ")" << std::endl;
-  d_sharedTermsSet.insert(t);
-  if (options::bitvectorEqualitySolver())
-  {
-    for (unsigned i = 0; i < d_subtheories.size(); ++i)
-    {
-      d_subtheories[i]->addSharedTerm(t);
-    }
-  }
 }
 
 EqualityStatus BVSolverLazy::getEqualityStatus(TNode a, TNode b)

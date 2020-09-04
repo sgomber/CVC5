@@ -94,7 +94,7 @@ class BVSolver
 
   virtual void presolve(){};
 
-  virtual void notifySharedTerm(TNode t) = 0;
+  virtual void notifySharedTerm(TNode t) {}
 
   virtual EqualityStatus getEqualityStatus(TNode a, TNode b)
   {

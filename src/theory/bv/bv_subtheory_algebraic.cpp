@@ -340,7 +340,7 @@ bool AlgebraicSolver::check(Theory::Effort e)
         fact.getConst<bool>() == false) {
       // we have a conflict
       Node conflict = BooleanSimplification::simplify(d_explanations[id]);
-      d_bv->setPendingConflict(conflict);
+      d_bv->setConflict(conflict);
       d_isComplete.set(true);
       Debug("bv-subtheory-algebraic") << " UNSAT: assertion simplfies to false with conflict: "<< conflict << "\n";
 
@@ -442,7 +442,7 @@ bool AlgebraicSolver::quickCheck(std::vector<Node>& facts) {
     unsigned id = d_ids[conflict];
     Assert(id < d_explanations.size());
     Node theory_confl = d_explanations[id];
-    d_bv->setPendingConflict(theory_confl);
+    d_bv->setConflict(theory_confl);
     return false;
   }
 
@@ -468,11 +468,11 @@ bool AlgebraicSolver::quickCheck(std::vector<Node>& facts) {
   Node confl = BooleanSimplification::simplify(utils::mkAnd(theory_confl));
 
   Debug("bv-subtheory-algebraic") << " Out Conflict: " << confl << "\n";
-  setPendingConflict(confl);
+  setConflict(confl);
   return false;
 }
 
-void AlgebraicSolver::setPendingConflict(TNode conflict)
+void AlgebraicSolver::setConflict(TNode conflict)
 {
   Node final_conflict = conflict;
   if (options::bitvectorQuickXplain() &&
@@ -480,7 +480,7 @@ void AlgebraicSolver::setPendingConflict(TNode conflict)
       conflict.getNumChildren() > 4) {
     final_conflict = d_quickXplain->minimizeConflict(conflict);
   }
-  d_bv->setPendingConflict(final_conflict);
+  d_bv->setConflict(final_conflict);
 }
 
 bool AlgebraicSolver::solve(TNode fact, TNode reason, SubstitutionEx& subst) {

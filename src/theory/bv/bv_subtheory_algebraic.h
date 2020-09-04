@@ -190,7 +190,7 @@ class AlgebraicSolver : public SubtheorySolver
 
   Statistics d_statistics;
   bool useHeuristic();
-  void setPendingConflict(TNode conflict);
+  void setConflict(TNode conflict);
   bool isSubstitutableIn(TNode node, TNode in);
   bool checkExplanation(TNode expl);
   void storeExplanation(TNode expl);

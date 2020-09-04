@@ -90,7 +90,7 @@ bool InequalitySolver::check(Theory::Effort e) {
     std::vector<TNode> conflict;
     d_inequalityGraph.getConflict(conflict);
     Node confl = utils::flattenAnd(conflict);
-    d_bv->setPendingConflict(confl);
+    d_bv->setConflict(confl);
     Debug("bv-subtheory-inequality") << "InequalitySolver::conflict:  "<< confl <<"\n";
     return false;
   }

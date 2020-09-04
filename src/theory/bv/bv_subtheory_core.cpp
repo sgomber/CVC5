@@ -192,7 +192,7 @@ bool CoreSolver::check(Theory::Effort e) {
       ResourceManager::Resource::TheoryCheckStep);
 
   d_checkCalled = true;
-  Assert(!d_bv->inPendingConflict());
+  Assert(!d_bv->inConflict());
   ++(d_statistics.d_numCallstoCheck);
   bool ok = true;
   std::vector<Node> core_eqs;
@@ -347,7 +347,7 @@ void CoreSolver::buildModel()
 
 bool CoreSolver::assertFactToEqualityEngine(TNode fact, TNode reason) {
   // Notify the equality engine
-  if (!d_bv->inPendingConflict()
+  if (!d_bv->inConflict()
       && (!d_bv->wasPropagatedBySubtheory(fact)
           || d_bv->getPropagatingSubtheory(fact) != SUB_CORE))
   {
@@ -373,7 +373,7 @@ bool CoreSolver::assertFactToEqualityEngine(TNode fact, TNode reason) {
   }
 
   // checking for a conflict
-  if (d_bv->inPendingConflict())
+  if (d_bv->inConflict())
   {
     return false;
   }
@@ -409,7 +409,7 @@ void CoreSolver::conflict(TNode a, TNode b) {
   std::vector<TNode> assumptions;
   d_equalityEngine->explainEquality(a, b, true, assumptions);
   Node conflict = flattenAnd(assumptions);
-  d_bv->setPendingConflict(conflict);
+  d_bv->setConflict(conflict);
 }
 
 bool CoreSolver::isCompleteForTerm(TNode term, TNodeBoolMap& seen) {

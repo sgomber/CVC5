@@ -151,7 +151,7 @@ bool BitblastSolver::check(Theory::Effort e)
       continue;
     }
 
-    if (!d_bv->inPendingConflict()
+    if (!d_bv->inConflict()
         && (!d_bv->wasPropagatedBySubtheory(fact)
             || d_bv->getPropagatingSubtheory(fact) != SUB_BITBLAST))
     {
@@ -163,7 +163,7 @@ bool BitblastSolver::check(Theory::Effort e)
       {
         std::vector<TNode> conflictAtoms;
         d_bitblaster->getConflict(conflictAtoms);
-        setPendingConflict(utils::mkAnd(conflictAtoms));
+        setConflict(utils::mkAnd(conflictAtoms));
         return false;
       }
     }
@@ -179,7 +179,7 @@ bool BitblastSolver::check(Theory::Effort e)
     {
       std::vector<TNode> conflictAtoms;
       d_bitblaster->getConflict(conflictAtoms);
-      setPendingConflict(utils::mkAnd(conflictAtoms));
+      setConflict(utils::mkAnd(conflictAtoms));
       return false;
     }
   }
@@ -188,7 +188,7 @@ bool BitblastSolver::check(Theory::Effort e)
   Debug("bv-bitblast-debug") << "...do solving" << std::endl;
   if (e == Theory::EFFORT_FULL)
   {
-    Assert(!d_bv->inPendingConflict());
+    Assert(!d_bv->inConflict());
     Debug("bitvector::bitblaster")
         << "BitblastSolver::addAssertions solving. \n";
     bool ok = d_bitblaster->solve();
@@ -197,7 +197,7 @@ bool BitblastSolver::check(Theory::Effort e)
       std::vector<TNode> conflictAtoms;
       d_bitblaster->getConflict(conflictAtoms);
       Node conflict = utils::mkAnd(conflictAtoms);
-      setPendingConflict(conflict);
+      setConflict(conflict);
       return false;
     }
   }
@@ -222,19 +222,19 @@ bool BitblastSolver::check(Theory::Effort e)
       {
         std::vector<TNode> conflictAtoms;
         d_bitblaster->getConflict(conflictAtoms);
-        setPendingConflict(utils::mkAnd(conflictAtoms));
+        setConflict(utils::mkAnd(conflictAtoms));
         return false;
       }
     }
 
-    Assert(!d_bv->inPendingConflict());
+    Assert(!d_bv->inConflict());
     bool ok = d_bitblaster->solve();
     if (!ok)
     {
       std::vector<TNode> conflictAtoms;
       d_bitblaster->getConflict(conflictAtoms);
       Node conflict = utils::mkAnd(conflictAtoms);
-      setPendingConflict(conflict);
+      setConflict(conflict);
       ++(d_statistics.d_numBBLemmas);
       return false;
     }
@@ -265,7 +265,7 @@ Node BitblastSolver::getModelValue(TNode node)
   return val;
 }
 
-void BitblastSolver::setPendingConflict(TNode conflict)
+void BitblastSolver::setConflict(TNode conflict)
 {
   Node final_conflict = conflict;
   if (options::bitvectorQuickXplain() &&
@@ -274,7 +274,7 @@ void BitblastSolver::setPendingConflict(TNode conflict)
     final_conflict = d_quickXplain->minimizeConflict(conflict);
     //std::cout << "Minimized conflict " << final_conflict.getNumChildren() << "\n";
   }
-  d_bv->setPendingConflict(final_conflict);
+  d_bv->setConflict(final_conflict);
 }
 
 }/* namespace CVC4::theory::bv */
