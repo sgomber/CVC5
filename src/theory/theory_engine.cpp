@@ -1324,7 +1324,7 @@ Node TheoryEngine::getExplanation(TNode node)
   // Process the explanation
   getExplanation(explanationVector);
   Node explanation = mkExplanation(explanationVector);
-  
+
   // HACK-centralEe
   // Rewrite since the explanation may be in terms of non-rewritten equalities.
   explanation = Rewriter::rewrite(explanation);

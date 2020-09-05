@@ -19,7 +19,10 @@
 namespace CVC4 {
 namespace theory {
 
-SharedSolverTest::SharedSolverTest(TheoryEngine& te) : SharedSolver(te), d_centralEe(nullptr) {}
+SharedSolverTest::SharedSolverTest(TheoryEngine& te)
+    : SharedSolver(te), d_centralEe(nullptr)
+{
+}
 
 bool SharedSolverTest::needsEqualityEngine(theory::EeSetupInfo& esi)
 {
@@ -66,12 +69,12 @@ TrustNode SharedSolverTest::explain(TNode literal, TheoryId id)
   if (id == THEORY_BUILTIN)
   {
     // explanation based on the specific solver
-    //texp = d_sharedTerms.explain(literal);
+    // texp = d_sharedTerms.explain(literal);
     Node exp = d_centralEe->mkExplainLit(literal);
     texp = TrustNode::mkTrustPropExp(literal, exp, nullptr);
     Trace("shared-solver")
-        << "\tTerm was propagated by THEORY_BUILTIN. Explanation: "
-        << exp << std::endl;
+        << "\tTerm was propagated by THEORY_BUILTIN. Explanation: " << exp
+        << std::endl;
   }
   else
   {

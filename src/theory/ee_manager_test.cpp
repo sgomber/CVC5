@@ -40,7 +40,7 @@ EqEngineManagerTest::EqEngineManagerTest(TheoryEngine& te, SharedSolver& shs)
 EqEngineManagerTest::~EqEngineManagerTest() {}
 
 void EqEngineManagerTest::initializeTheories()
-{        
+{
   context::Context* c = d_te.getSatContext();
   // initialize the shared solver
   EeSetupInfo esis;
@@ -94,8 +94,8 @@ void EqEngineManagerTest::initializeTheories()
       {
         d_centralEENotify.d_disequalNotify.push_back(notify);
       }
-      TheoryState * ts = t->getTheoryState();
-      if (ts!=nullptr)
+      TheoryState* ts = t->getTheoryState();
+      if (ts != nullptr)
       {
         d_centralStates.push_back(ts);
       }
@@ -271,13 +271,13 @@ void EqEngineManagerTest::eqNotifyConstantTermMerge(TNode t1, TNode t2)
 
 bool EqEngineManagerTest::usesCentral(TheoryId tid) const
 {
-  return tid==THEORY_UF;
+  return tid == THEORY_UF;
 }
 
 void EqEngineManagerTest::notifyInConflict()
 {
   // notify the states we are in conflict
-  for (TheoryState * cs : d_centralStates)
+  for (TheoryState* cs : d_centralStates)
   {
     cs->notifyInConflict();
   }
