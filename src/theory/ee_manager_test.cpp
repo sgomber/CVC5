@@ -40,15 +40,14 @@ EqEngineManagerTest::EqEngineManagerTest(TheoryEngine& te, SharedSolver& shs)
 EqEngineManagerTest::~EqEngineManagerTest() {}
 
 void EqEngineManagerTest::initializeTheories()
-{
+{        
   context::Context* c = d_te.getSatContext();
   // initialize the shared solver
   EeSetupInfo esis;
   if (d_sharedSolver.needsEqualityEngine(esis))
   {
-    // allocate an equality engine for the shared terms database
-    d_stbEqualityEngine.reset(allocateEqualityEngine(esis, c));
-    d_sharedSolver.setEqualityEngine(d_stbEqualityEngine.get());
+    // use central equality engine
+    d_sharedSolver.setEqualityEngine(&d_centralEqualityEngine);
   }
   else
   {
@@ -72,6 +71,29 @@ void EqEngineManagerTest::initializeTheories()
     if (!t->needsEqualityEngine(esi))
     {
       // theory said it doesn't need an equality engine, skip
+      continue;
+    }
+    // set the notify
+    eq::EqualityEngineNotify* notify = esi.d_notify;
+    d_theoryNotify[theoryId] = notify;
+    // split on whether integrated
+    if (usesCentral(theoryId))
+    {
+      // the theory uses the central equality engine
+      eet.d_usedEe = &d_centralEqualityEngine;
+      // add to vectors for the kinds of notifications
+      if (esi.needsNotifyNewEqClass())
+      {
+        d_centralEENotify.d_newClassNotify.push_back(notify);
+      }
+      if (esi.needsNotifyMerge())
+      {
+        d_centralEENotify.d_mergeNotify.push_back(notify);
+      }
+      if (esi.needsNotifyDisequal())
+      {
+        d_centralEENotify.d_disequalNotify.push_back(notify);
+      }
       continue;
     }
     eet.d_allocEe.reset(allocateEqualityEngine(esi, c));
@@ -102,6 +124,10 @@ void EqEngineManagerTest::initializeTheories()
         // theory not active, skip
         continue;
       }
+      if (usesCentral(theoryId))
+      {
+        continue;
+      }
       EeTheoryInfo& eet = d_einfo[theoryId];
       // Get the allocated equality engine, and connect it to the master
       // equality engine.
@@ -113,6 +139,10 @@ void EqEngineManagerTest::initializeTheories()
       }
     }
   }
+  // ----- test
+  // set the master equality engine of the theory's equality engine
+  d_centralEqualityEngine.setMasterEqualityEngine(d_masterEqualityEngine.get());
+  // ----- end test
 }
 
 void EqEngineManagerTest::MasterNotifyClass::eqNotifyNewClass(TNode t)
@@ -225,6 +255,11 @@ void EqEngineManagerTest::eqNotifyConstantTermMerge(TNode t1, TNode t2)
                     << std::endl;
   d_sharedSolver.sendConflict(TrustNode::mkTrustConflict(conflict));
   return;
+}
+
+bool EqEngineManagerTest::usesCentral(TheoryId tid) const
+{
+  return tid==THEORY_UF;
 }
 
 }  // namespace theory

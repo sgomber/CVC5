@@ -94,10 +94,6 @@ class EqEngineManagerTest : public EqEngineManager
   std::unique_ptr<MasterNotifyClass> d_masterEENotify;
   /** The master equality engine. */
   std::unique_ptr<eq::EqualityEngine> d_masterEqualityEngine;
-  /**
-   * The equality engine of the shared terms database.
-   */
-  std::unique_ptr<eq::EqualityEngine> d_stbEqualityEngine;
 
   // ============================ central
 
@@ -150,6 +146,8 @@ class EqEngineManagerTest : public EqEngineManager
   eq::EqualityEngineNotify* d_theoryNotify[theory::THEORY_LAST];
   /** Whether we are building the model */
   context::CDO<bool> d_buildingModel;
+  /** uses central */
+  bool usesCentral(TheoryId tid) const;
 };
 
 }  // namespace theory

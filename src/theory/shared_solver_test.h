@@ -55,6 +55,8 @@ class SharedSolverTest : public SharedSolver
  protected:
   /** If t is an equality, add it as one that may be propagated */
   void preRegisterSharedInternal(TNode t) override;
+  /** Pointer to the central equality engine */
+  eq::EqualityEngine* d_centralEe;
 };
 
 }  // namespace theory

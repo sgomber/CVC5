@@ -1324,6 +1324,10 @@ Node TheoryEngine::getExplanation(TNode node)
   // Process the explanation
   getExplanation(explanationVector);
   Node explanation = mkExplanation(explanationVector);
+  
+  // HACK-centralEe
+  // Rewrite since the explanation may be in terms of non-rewritten equalities.
+  explanation = Rewriter::rewrite(explanation);
 
   Debug("theory::explain") << "TheoryEngine::getExplanation(" << node << ") => "
                            << explanation << endl;
@@ -1599,7 +1603,7 @@ void TheoryEngine::getExplanation(
     }
 
     // If from the SAT solver, keep it
-    // HACK-centralEe
+    // HACK-centralEe (inactive)
     if (toExplain.d_theory == THEORY_SAT_SOLVER
         || d_satSolverFacts.find(toExplain.d_node) != d_satSolverFacts.end())
     {
@@ -1652,7 +1656,6 @@ void TheoryEngine::getExplanation(
         << "TheoryEngine::explain(): got explanation " << explanation
         << " got from " << toExplain.d_theory << endl;
     // HACK-centralEe
-    ///*
     if (explanation == toExplain.d_node)
     {
       // trust that it came from SAT solver??
@@ -1660,7 +1663,6 @@ void TheoryEngine::getExplanation(
       explanationVector[j++] = explanationVector[i++];
       continue;
     }
-    //*/
     // end HACK-centralEe
     Assert(explanation != toExplain.d_node)
         << "wasn't sent to you, so why are you explaining it trivially";
