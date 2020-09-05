@@ -137,7 +137,8 @@ static Node mkAnd(const std::vector<TNode>& conjunctions) {
 
 void TheoryUF::postCheck(Effort level)
 {
-  if (d_state.isInConflict())
+  // HACK-centralEe : state not notified
+  if (d_state.isInConflict() || !d_equalityEngine->consistent())
   {
     return;
   }
