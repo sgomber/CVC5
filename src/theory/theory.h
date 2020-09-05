@@ -492,6 +492,16 @@ class Theory {
   DecisionManager* getDecisionManager() { return d_decManager; }
 
   /**
+   * @return The theory state associated with this theory.
+   */
+  TheoryState* getTheoryState() { return d_theoryState; }
+  
+  /**
+   * @return The theory inference manager associated with this theory.
+   */
+  TheoryInferenceManager* getInferenceManager() { return d_inferManager; }
+  
+  /**
    * Expand definitions in the term node. This returns a term that is
    * equivalent to node. It wraps this term in a TrustNode of kind
    * TrustNodeKind::REWRITE. If node is unchanged by this method, the

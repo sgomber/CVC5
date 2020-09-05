@@ -144,10 +144,17 @@ class EqEngineManagerTest : public EqEngineManager
    * A table of from theory IDs to notify classes.
    */
   eq::EqualityEngineNotify* d_theoryNotify[theory::THEORY_LAST];
+  /** 
+    * The state objects of each of the theories that use the central
+    * equality engine.
+    */
+  std::vector<TheoryState*> d_centralStates;
   /** Whether we are building the model */
   context::CDO<bool> d_buildingModel;
   /** uses central */
   bool usesCentral(TheoryId tid) const;
+  /** set in conflict */
+  void notifyInConflict();
 };
 
 }  // namespace theory

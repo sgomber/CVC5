@@ -383,14 +383,12 @@ unsigned HoExtension::check()
 {
   Trace("uf-ho") << "HoExtension::checkHigherOrder..." << std::endl;
 
-  eq::EqualityEngine* ee = d_state.getEqualityEngine();
   // infer new facts based on apply completion until fixed point
   unsigned num_facts;
   do
   {
     num_facts = checkAppCompletion();
-    // HACK central-ee
-    if (d_state.isInConflict() || !ee->consistent())
+    if (d_state.isInConflict())
     {
       Trace("uf-ho") << "...conflict during app-completion." << std::endl;
       return 1;

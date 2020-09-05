@@ -94,6 +94,11 @@ void EqEngineManagerTest::initializeTheories()
       {
         d_centralEENotify.d_disequalNotify.push_back(notify);
       }
+      TheoryState * ts = t->getTheoryState();
+      if (ts!=nullptr)
+      {
+        d_centralStates.push_back(ts);
+      }
       continue;
     }
     eet.d_allocEe.reset(allocateEqualityEngine(esi, c));
@@ -236,7 +241,12 @@ bool EqEngineManagerTest::eqNotifyTriggerPredicate(TNode predicate, bool value)
   // always propagate with the shared solver
   Trace("eem-test") << "...propagate " << predicate << ", " << value
                     << " with shared solver" << std::endl;
-  return d_sharedSolver.propagateLit(predicate, value);
+  bool ok = d_sharedSolver.propagateLit(predicate, value);
+  if (!ok)
+  {
+    notifyInConflict();
+  }
+  return ok;
 }
 
 bool EqEngineManagerTest::eqNotifyTriggerTermEquality(TheoryId tag,
@@ -244,6 +254,7 @@ bool EqEngineManagerTest::eqNotifyTriggerTermEquality(TheoryId tag,
                                                       TNode b,
                                                       bool value)
 {
+  // TODO: conflict here?
   return d_sharedSolver.propagateSharedEquality(tag, a, b, value);
 }
 
@@ -253,6 +264,7 @@ void EqEngineManagerTest::eqNotifyConstantTermMerge(TNode t1, TNode t2)
   Node conflict = d_centralEqualityEngine.mkExplainLit(lit);
   Trace("eem-test") << "...explained conflict of " << lit << " ... " << conflict
                     << std::endl;
+  notifyInConflict();
   d_sharedSolver.sendConflict(TrustNode::mkTrustConflict(conflict));
   return;
 }
@@ -260,6 +272,15 @@ void EqEngineManagerTest::eqNotifyConstantTermMerge(TNode t1, TNode t2)
 bool EqEngineManagerTest::usesCentral(TheoryId tid) const
 {
   return tid==THEORY_UF;
+}
+
+void EqEngineManagerTest::notifyInConflict()
+{
+  // notify the states we are in conflict
+  for (TheoryState * cs : d_centralStates)
+  {
+    cs->notifyInConflict();
+  }
 }
 
 }  // namespace theory
