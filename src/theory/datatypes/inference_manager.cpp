@@ -97,7 +97,7 @@ void InferenceManager::assertInference(Node conc, Node exp, ProofGenerator* pg)
 {
   DatatypesInference dti(conc, exp, pg);
   // immediately process
-  dti.process(this);
+  dti.process(this, false);
 }
 void InferenceManager::addPendingInference(Node conc,
                                            Node exp,
