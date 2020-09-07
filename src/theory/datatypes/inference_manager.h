@@ -70,6 +70,11 @@ class InferenceManager : public InferenceManagerBuffered
   InferenceManager(Theory& t, TheoryState& state, ProofNodeManager* pnm);
   ~InferenceManager() {}
   /**
+   * Assert inference, which may be processed as either a fact or
+   * a lemma based on mustCommunicateFact in DatatypesInference above.
+   */
+  void assertInference(Node conc, Node exp, ProofGenerator* pg = nullptr);
+  /**
    * Add pending inference, which may be processed as either a fact or
    * a lemma based on mustCommunicateFact in DatatypesInference above.
    */

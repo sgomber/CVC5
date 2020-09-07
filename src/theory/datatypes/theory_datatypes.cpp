@@ -169,9 +169,6 @@ bool TheoryDatatypes::preCheck(Effort level)
 
 void TheoryDatatypes::postCheck(Effort level)
 {
-  // HACK-centralEe
-  // necessary for ee central?
-  d_im.process();
   if (level == EFFORT_LAST_CALL)
   {
     Assert(d_sygusExtension != nullptr);
@@ -767,8 +764,12 @@ void TheoryDatatypes::merge( Node t1, Node t2 ){
             for( int i=0; i<(int)cons1.getNumChildren(); i++ ) {
               if( !areEqual( cons1[i], cons2[i] ) ){
                 Node eq = cons1[i].eqNode( cons2[i] );
-                d_im.addPendingInference(eq, unifEq);
+                d_im.assertInference(eq, unifEq);
                 Trace("datatypes-infer") << "DtInfer : cons-inj : " << eq << " by " << unifEq << std::endl;
+                if (d_state.isInConflict())
+                {
+                  break;
+                }
               }
             }
           }
@@ -840,6 +841,7 @@ void TheoryDatatypes::merge( Node t1, Node t2 ){
       }
     }
     Trace("datatypes-debug") << "Finished Merge " << t1 << " " << t2 << std::endl;
+    //d_im.process();
   }
 }
 
@@ -1216,7 +1218,7 @@ void TheoryDatatypes::collapseSelector( Node s, Node c ) {
       Trace("datatypes-infer") << "DtInfer : collapse sel";
       //Trace("datatypes-infer") << ( wrong ? " wrong" : "");
       Trace("datatypes-infer") << " : " << eq << " by " << peq << std::endl;
-      d_im.addPendingInference(eq, peq);
+      d_im.assertInference(eq, peq);
     }
   }
 }
