@@ -717,11 +717,13 @@ void TheoryDatatypes::eqNotifyNewClass(TNode t){
 /** called when two equivalance classes have merged */
 void TheoryDatatypes::eqNotifyMerge(TNode t1, TNode t2)
 {
+  //bool prevPending = d_im.hasPending();
   if( t1.getType().isDatatype() ){
     Trace("datatypes-debug")
         << "NotifyMerge : " << t1 << " " << t2 << std::endl;
     merge(t1,t2);
   }
+  //Assert(prevPending || !d_im.hasPending());
 }
 
 void TheoryDatatypes::merge( Node t1, Node t2 ){
@@ -841,7 +843,6 @@ void TheoryDatatypes::merge( Node t1, Node t2 ){
       }
     }
     Trace("datatypes-debug") << "Finished Merge " << t1 << " " << t2 << std::endl;
-    //d_im.process();
   }
 }
 
@@ -1665,7 +1666,7 @@ void TheoryDatatypes::instantiate( EqcInfo* eqc, Node n ){
   eq = tt.eqNode(tt_cons);
   Debug("datatypes-inst") << "DtInstantiate : " << eqc << " " << eq
                           << std::endl;
-  d_im.addPendingInference(eq, exp);
+  d_im.assertInference(eq, exp);
   Trace("datatypes-infer-debug") << "inst : " << eqc << " " << n << std::endl;
   Trace("datatypes-infer") << "DtInfer : instantiate : " << eq << " by " << exp
                            << std::endl;

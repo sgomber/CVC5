@@ -894,6 +894,9 @@ class Theory {
    * or whether having them asserted in its equality engine suffices.
    */
   bool needsSharedTermEqFacts() const { return d_needsSharedTermEqFacts; }
+  
+  /** uses central equality engine */
+  bool usesCentralEqualityEngine() const;
 };/* class Theory */
 
 std::ostream& operator<<(std::ostream& os, theory::Theory::Effort level);

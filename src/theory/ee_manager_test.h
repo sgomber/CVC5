@@ -151,8 +151,6 @@ class EqEngineManagerTest : public EqEngineManager
   std::vector<TheoryState*> d_centralStates;
   /** Whether we are building the model */
   context::CDO<bool> d_buildingModel;
-  /** uses central */
-  bool usesCentral(TheoryId tid) const;
   /** set in conflict */
   void notifyInConflict();
 };

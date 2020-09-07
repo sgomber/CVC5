@@ -77,7 +77,7 @@ void EqEngineManagerTest::initializeTheories()
     eq::EqualityEngineNotify* notify = esi.d_notify;
     d_theoryNotify[theoryId] = notify;
     // split on whether integrated
-    if (usesCentral(theoryId))
+    if (t->usesCentralEqualityEngine())
     {
       // the theory uses the central equality engine
       eet.d_usedEe = &d_centralEqualityEngine;
@@ -129,7 +129,7 @@ void EqEngineManagerTest::initializeTheories()
         // theory not active, skip
         continue;
       }
-      if (usesCentral(theoryId))
+      if (t->usesCentralEqualityEngine())
       {
         continue;
       }
@@ -254,7 +254,7 @@ bool EqEngineManagerTest::eqNotifyTriggerTermEquality(TheoryId tag,
                                                       TNode b,
                                                       bool value)
 {
-  // TODO: conflict here?
+  // TODO: check already in conflict here?
   return d_sharedSolver.propagateSharedEquality(tag, a, b, value);
 }
 
@@ -267,11 +267,6 @@ void EqEngineManagerTest::eqNotifyConstantTermMerge(TNode t1, TNode t2)
   notifyInConflict();
   d_sharedSolver.sendConflict(TrustNode::mkTrustConflict(conflict));
   return;
-}
-
-bool EqEngineManagerTest::usesCentral(TheoryId tid) const
-{
-  return tid == THEORY_UF;
 }
 
 void EqEngineManagerTest::notifyInConflict()
