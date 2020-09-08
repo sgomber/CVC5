@@ -84,7 +84,7 @@ TrustNode SharedSolverTest::explain(TNode literal, TheoryId id)
       {
         assumptions.push_back(lit);
       }
-      else 
+      else
       {
         for (TNode a : currAssumptions)
         {
@@ -97,7 +97,7 @@ TrustNode SharedSolverTest::explain(TNode literal, TheoryId id)
     }
     Node exp = NodeManager::currentNM()->mkAnd(assumptions);
     */
-    
+
     Node exp = d_centralEe->mkExplainLit(literal);
     texp = TrustNode::mkTrustPropExp(literal, exp, nullptr);
     Trace("shared-solver")

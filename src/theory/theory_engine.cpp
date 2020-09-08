@@ -1328,7 +1328,7 @@ Node TheoryEngine::getExplanation(TNode node)
   // HACK-centralEe
   // Rewrite since the explanation may be in terms of non-rewritten equalities.
   Node explanationr = Rewriter::rewrite(explanation);
-  if (explanationr!=explanation)
+  if (explanationr != explanation)
   {
     Debug("theory::explain") << "Rewrite exp to " << explanationr << std::endl;
     Debug("theory::explain") << "          from " << explanation << std::endl;
@@ -1614,7 +1614,8 @@ void TheoryEngine::getExplanation(
     if (toExplain.d_theory == THEORY_SAT_SOLVER
         || d_satSolverFacts.find(toExplain.d_node) != d_satSolverFacts.end())
     {
-      Debug("theory::explain") << "\tLiteral came from THEORY_SAT_SOLVER. Keeping it." << endl;
+      Debug("theory::explain")
+          << "\tLiteral came from THEORY_SAT_SOLVER. Keeping it." << endl;
       explanationVector[j++] = explanationVector[i++];
       continue;
     }
