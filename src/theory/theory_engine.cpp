@@ -1553,6 +1553,8 @@ void TheoryEngine::conflict(TNode conflict, TheoryId theoryId) {
     // Process the explanation
     getExplanation(explanationVector);
     Node fullConflict = mkExplanation(explanationVector);
+    // HACK centralEe
+    fullConflict = Rewriter::rewrite(fullConflict);
     Debug("theory::conflict") << "TheoryEngine::conflict(" << conflict << ", " << theoryId << "): full = " << fullConflict << endl;
     Assert(properConflict(fullConflict));
     lemma(fullConflict,

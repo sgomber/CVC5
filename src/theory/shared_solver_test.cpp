@@ -68,8 +68,36 @@ TrustNode SharedSolverTest::explain(TNode literal, TheoryId id)
   TrustNode texp;
   if (id == THEORY_BUILTIN)
   {
-    // explanation based on the specific solver
-    // texp = d_sharedTerms.explain(literal);
+    // explanation based on the central equality engine, recursively?
+    /*
+    std::vector<Node> assumptions;
+    std::vector<Node> toProcess;
+    toProcess.push_back(literal);
+    size_t index = 0;
+    while (index<toProcess.size())
+    {
+      Node lit = toProcess[index];
+      index++;
+      std::vector<TNode> currAssumptions;
+      d_centralEe->explainLit(lit, currAssumptions);
+      if (currAssumptions.size()==1 && currAssumptions[0]==lit)
+      {
+        assumptions.push_back(lit);
+      }
+      else 
+      {
+        for (TNode a : currAssumptions)
+        {
+          if (std::find(toProcess.begin(), toProcess.end(), a)==toProcess.end())
+          {
+            toProcess.push_back(a);
+          }
+        }
+      }
+    }
+    Node exp = NodeManager::currentNM()->mkAnd(assumptions);
+    */
+    
     Node exp = d_centralEe->mkExplainLit(literal);
     texp = TrustNode::mkTrustPropExp(literal, exp, nullptr);
     Trace("shared-solver")
