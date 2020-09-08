@@ -1327,12 +1327,17 @@ Node TheoryEngine::getExplanation(TNode node)
 
   // HACK-centralEe
   // Rewrite since the explanation may be in terms of non-rewritten equalities.
-  explanation = Rewriter::rewrite(explanation);
+  Node explanationr = Rewriter::rewrite(explanation);
+  if (explanationr!=explanation)
+  {
+    Debug("theory::explain") << "Rewrite exp to " << explanationr << std::endl;
+    Debug("theory::explain") << "          from " << explanation << std::endl;
+  }
 
   Debug("theory::explain") << "TheoryEngine::getExplanation(" << node << ") => "
-                           << explanation << endl;
+                           << explanationr << endl;
 
-  return explanation;
+  return explanationr;
 }
 
 struct AtomsCollect {
@@ -1607,7 +1612,7 @@ void TheoryEngine::getExplanation(
     if (toExplain.d_theory == THEORY_SAT_SOLVER
         || d_satSolverFacts.find(toExplain.d_node) != d_satSolverFacts.end())
     {
-      Debug("theory::explain") << "\tLiteral came from THEORY_SAT_SOLVER. Kepping it." << endl;
+      Debug("theory::explain") << "\tLiteral came from THEORY_SAT_SOLVER. Keeping it." << endl;
       explanationVector[j++] = explanationVector[i++];
       continue;
     }
@@ -1638,7 +1643,7 @@ void TheoryEngine::getExplanation(
       if ((*find).second.d_timestamp < toExplain.d_timestamp)
       {
         Debug("theory::explain")
-            << "\tRelevant timetsamp, pushing " << (*find).second.d_node
+            << "\tRelevant timestamp, pushing " << (*find).second.d_node
             << "to index = " << explanationVector.size() << std::endl;
         explanationVector.push_back((*find).second);
         ++i;
