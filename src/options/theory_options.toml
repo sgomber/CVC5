@@ -75,3 +75,11 @@ header = "options/theory_options.h"
 [[option.mode.MODEL_BASED]]
   name = "model-based"
   help = "Use model building for theory combination."
+
+[[option]]
+  name       = "propAsLemma"
+  category   = "regular"
+  long       = "prop-as-lemma"
+  type       = "bool"
+  default    = "false"
+  help       = "send lemma corresponding to all theory propagations"
