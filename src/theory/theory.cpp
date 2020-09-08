@@ -575,8 +575,8 @@ void Theory::addSharedTerm(TNode n)
   // now call theory-specific addSharedTerm
   notifySharedTerm(n);
   // if we have an equality engine, add the trigger term
-  if (d_equalityEngine != nullptr
-      && (d_needsSharedTermEqFacts || !usesCentralEqualityEngine()))
+  if (d_equalityEngine != nullptr)
+      //&& (d_needsSharedTermEqFacts || !usesCentralEqualityEngine()))
   {
     d_equalityEngine->addTriggerTerm(n, d_id);
   }
@@ -590,6 +590,11 @@ eq::EqualityEngine* Theory::getEqualityEngine()
 
 bool Theory::usesCentralEqualityEngine() const
 {
+  return usesCentralEqualityEngine(d_id);
+}
+
+bool Theory::usesCentralEqualityEngine(TheoryId id)
+{
   if (options::eeMode() == options::EqEngineMode::DISTRIBUTED)
   {
     return false;
@@ -599,7 +604,7 @@ bool Theory::usesCentralEqualityEngine() const
     return true;
   }
   // test
-  return d_id == THEORY_UF;  // || d_id==THEORY_DATATYPES;
+  return id == THEORY_UF; // || id==THEORY_DATATYPES;
 }
 
 }/* CVC4::theory namespace */

@@ -30,7 +30,8 @@ SharedSolver::SharedSolver(TheoryEngine& te)
     : d_te(te),
       d_logicInfo(te.getLogicInfo()),
       d_sharedTerms(&d_te, d_te.getSatContext()),
-      d_sharedTermsVisitor(d_sharedTerms)
+      d_sharedTermsVisitor(d_sharedTerms),
+      d_out(te.theoryOf(THEORY_BUILTIN)->getOutputChannel())
 {
 }
 
@@ -96,9 +97,9 @@ bool SharedSolver::propagateLit(TNode predicate, bool value)
 {
   if (value)
   {
-    return d_te.propagate(predicate, THEORY_BUILTIN);
+    return d_out.propagate(predicate);
   }
-  return d_te.propagate(predicate.notNode(), THEORY_BUILTIN);
+  return d_out.propagate(predicate.notNode());
 }
 
 bool SharedSolver::propagateSharedEquality(theory::TheoryId theory,
@@ -129,7 +130,7 @@ void SharedSolver::sendLemma(TrustNode trn, TheoryId atomsTo)
 
 void SharedSolver::sendConflict(TrustNode trn)
 {
-  d_te.conflict(trn.getNode(), THEORY_BUILTIN);
+  d_out.conflict(trn.getNode());
 }
 
 }  // namespace theory

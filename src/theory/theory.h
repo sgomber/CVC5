@@ -897,6 +897,8 @@ class Theory {
 
   /** uses central equality engine */
   bool usesCentralEqualityEngine() const;
+  /** uses central equality engine (static) */
+  static bool usesCentralEqualityEngine(TheoryId id);
 };/* class Theory */
 
 std::ostream& operator<<(std::ostream& os, theory::Theory::Effort level);

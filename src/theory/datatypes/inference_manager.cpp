@@ -35,7 +35,7 @@ bool DatatypesInference::mustCommunicateFact(Node n, Node exp)
 {
   Trace("dt-lemma-debug") << "Compute for " << exp << " => " << n << std::endl;
   bool addLemma = false;
-  if (options::dtInferAsLemmas() && !exp.isConst())
+  if (options::dtInferAsLemmas())
   {
     // all units are lemmas
     addLemma = true;

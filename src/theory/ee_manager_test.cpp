@@ -254,7 +254,14 @@ bool EqEngineManagerTest::eqNotifyTriggerTermEquality(TheoryId tag,
                                                       TNode b,
                                                       bool value)
 {
-  // TODO: check already in conflict here?
+  // propagate to theory engine
+  bool ok = d_sharedSolver.propagateLit(a.eqNode(b), value);
+  if (!ok)
+  {
+    notifyInConflict();
+    return false;
+  }
+  // propagate shared equality
   return d_sharedSolver.propagateSharedEquality(tag, a, b, value);
 }
 

@@ -22,6 +22,7 @@
 #include "theory/shared_terms_database.h"
 #include "theory/term_registration_visitor.h"
 #include "theory/valuation.h"
+#include "theory/output_channel.h"
 
 namespace CVC4 {
 
@@ -130,6 +131,8 @@ class SharedSolver
   SharedTermsDatabase d_sharedTerms;
   /** Visitor for collecting shared terms */
   SharedTermsVisitor d_sharedTermsVisitor;
+  /** Output channel */
+  OutputChannel& d_out;
 };
 
 }  // namespace theory

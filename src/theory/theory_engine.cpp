@@ -932,6 +932,16 @@ bool TheoryEngine::markPropagation(TNode assertion, TNode originalAssertion, the
 void TheoryEngine::assertToTheory(TNode assertion, TNode originalAssertion, theory::TheoryId toTheoryId, theory::TheoryId fromTheoryId) {
 
   Trace("theory::assertToTheory") << "TheoryEngine::assertToTheory(" << assertion << ", " << originalAssertion << "," << toTheoryId << ", " << fromTheoryId << ")" << endl;
+  /*
+  if (toTheoryId != THEORY_BUILTIN)
+  {
+    if (Theory::usesCentralEqualityEngine(toTheoryId) && toTheoryId==THEORY_UF)
+    {
+      // no use, since we assert it to shared solver anyways
+      return;
+    }
+  }
+  */
 
   Assert(toTheoryId != fromTheoryId);
   if(toTheoryId != THEORY_SAT_SOLVER &&
@@ -1089,8 +1099,12 @@ void TheoryEngine::assertFact(TNode literal)
     // yet shared. As the terms become shared later, the shared terms manager will then add them
     // to the assert the equality to the interested theories
     if (atom.getKind() == kind::EQUAL) {
-      // Assert it to the the owning theory
-      assertToTheory(literal, literal, /* to */ Theory::theoryOf(atom), /* from */ THEORY_SAT_SOLVER);
+      TheoryId tid = Theory::theoryOf(atom);
+      //if (!Theory::usesCentralEqualityEngine(tid) || tid!=THEORY_UF)
+      //{
+        // Assert it to the the owning theory
+        assertToTheory(literal, literal, /* to */ tid, /* from */ THEORY_SAT_SOLVER);
+      //}
       // NOTE (centralEe): fact from SAT_SOLVER
       // Shared terms manager will assert to interested theories directly, as
       // the terms become shared
@@ -1154,7 +1168,18 @@ bool TheoryEngine::propagate(TNode literal, theory::TheoryId theory) {
     assertToTheory(literal, literal, /* to */ THEORY_SAT_SOLVER, /* from */ theory);
   }
 
-  return !d_inConflict;
+  if (d_inConflict)
+  {
+    return false;
+  }
+  // propagate as a lemma?
+  if (options::propAsLemma() && theory != THEORY_BUILTIN)
+  {
+    Node exp = theoryOf(theory)->explain(literal).getNode();
+    Node lem = NodeManager::currentNM()->mkNode(kind::IMPLIES, exp, literal);
+    lemma(lem, false, LemmaProperty::NONE, theory);
+  }
+  return true;
 }
 
 const LogicInfo& TheoryEngine::getLogicInfo() const { return d_logicInfo; }
@@ -1534,6 +1559,13 @@ void TheoryEngine::conflict(TNode conflict, TheoryId theoryId) {
 
   Debug("theory::conflict") << "TheoryEngine::conflict(" << conflict << ", " << theoryId << ")" << endl;
 
+  /*
+  if (Theory::usesCentralEqualityEngine(theoryId))
+  {
+    // builtin is responsible for conflicts?
+    theoryId = THEORY_BUILTIN;
+  }
+  */
   Trace("dtview::conflict") << ":THEORY-CONFLICT: " << conflict << std::endl;
 
   // Mark that we are in conflict

@@ -650,6 +650,7 @@ RewriteResponse ArithRewriter::postRewriteAtom(TNode atom){
 
   Comparison cmp = Comparison::mkComparison(atom.getKind(), pleft, pright);
   Assert(cmp.isNormalForm());
+  Debug("arith::rewriter") << "Return " << cmp.getNode() << std::endl;
   return RewriteResponse(REWRITE_DONE, cmp.getNode());
 }
 
