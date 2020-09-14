@@ -125,12 +125,12 @@ bool SharedSolver::isShared(TNode t) const { return d_sharedTerms.isShared(t); }
 
 void SharedSolver::sendLemma(TrustNode trn, TheoryId atomsTo)
 {
-  d_te.lemma(trn.getNode(), false, LemmaProperty::NONE, atomsTo);
+  d_te.lemma(trn, false, LemmaProperty::NONE, atomsTo);
 }
 
 void SharedSolver::sendConflict(TrustNode trn)
 {
-  d_out.conflict(trn.getNode());
+  d_out.conflict(trn);
 }
 
 }  // namespace theory
