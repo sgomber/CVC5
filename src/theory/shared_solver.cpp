@@ -125,7 +125,7 @@ bool SharedSolver::isShared(TNode t) const { return d_sharedTerms.isShared(t); }
 
 void SharedSolver::sendLemma(TrustNode trn, TheoryId atomsTo)
 {
-  d_te.lemma(trn, false, LemmaProperty::NONE, atomsTo);
+  d_te.lemma(trn, LemmaProperty::NONE, atomsTo);
 }
 
 void SharedSolver::sendConflict(TrustNode trn)
