@@ -221,7 +221,6 @@ TheoryEngine::TheoryEngine(context::Context* context,
                     d_pnm, nullptr, d_userContext, "TheoryEngine::LazyCDProof")
               : nullptr),
       d_tepg(new TheoryEngineProofGenerator(d_pnm, d_userContext)),
-      d_sharedTerms(this, context),
       d_tc(nullptr),
       d_sharedSolver(nullptr),
       d_quantEngine(nullptr),
@@ -1187,7 +1186,8 @@ bool TheoryEngine::propagate(TNode literal, theory::TheoryId theory) {
   {
     Node exp = theoryOf(theory)->explain(literal).getNode();
     Node lem = NodeManager::currentNM()->mkNode(kind::IMPLIES, exp, literal);
-    lemma(lem, false, LemmaProperty::NONE, theory);
+    TrustNode tlem = TrustNode::mkTrustLemma(lem, nullptr);
+    lemma(tlem, LemmaProperty::NONE, theory);
   }
   return true;
 }

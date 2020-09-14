@@ -130,7 +130,7 @@ void SharedSolver::sendLemma(TrustNode trn, TheoryId atomsTo)
 
 void SharedSolver::sendConflict(TrustNode trn)
 {
-  d_out.conflict(trn);
+  d_out.trustedConflict(trn);
 }
 
 }  // namespace theory
