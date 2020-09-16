@@ -29,11 +29,17 @@ namespace CVC4 {
 namespace theory {
 namespace arith {
 
+<<<<<<< HEAD
 class EqualitySolver;
+=======
+namespace nl {
+class NonlinearExtension;
+}
+>>>>>>> 2c2f05c96e021006275a2bc70b9ede70b280616d
 
 /**
- * Implementation of QF_LRA.
- * Based upon:
+ * Implementation of linear and non-linear integer and real arithmetic.
+ * The linear arithmetic solver is based upon:
  * http://research.microsoft.com/en-us/um/people/leonardo/cav06.pdf
  */
 class TheoryArith : public Theory {
@@ -94,7 +100,9 @@ class TheoryArith : public Theory {
   TrustNode explain(TNode n) override;
 
   bool collectModelInfo(TheoryModel* m, const std::set<Node>& termSet) override;
-  /** Collect model values in m based on the relevant terms given by termSet */
+  /**
+   * Collect model values in m based on the relevant terms given by termSet.
+   */
   bool collectModelValues(TheoryModel* m,
                           const std::set<Node>& termSet) override;
 
@@ -138,6 +146,11 @@ class TheoryArith : public Theory {
   /** The arith::InferenceManager. */
   InferenceManager d_inferenceManager;
 
+  /**
+   * The non-linear extension, responsible for all approaches for non-linear
+   * arithmetic.
+   */
+  std::unique_ptr<nl::NonlinearExtension> d_nonlinearExtension;
 };/* class TheoryArith */
 
 }/* CVC4::theory::arith namespace */
