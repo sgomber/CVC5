@@ -44,9 +44,6 @@ TheorySets::TheorySets(context::Context* c,
   d_theoryState = &d_state;
   d_inferManager = &d_im;
   d_needsSharedTermEqFacts = false;
-
-  // TODO: remove this
-  d_state.setParent(d_internal.get());
 }
 
 TheorySets::~TheorySets()
