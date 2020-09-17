@@ -183,17 +183,6 @@ bool TheoryArith::collectModelInfo(TheoryModel* m,
 bool TheoryArith::collectModelValues(TheoryModel* m,
                                      const std::set<Node>& termSet)
 {
-  std::set<Node> termSet;
-  // Work out which variables are needed
-  const std::set<Kind>& irrKinds = m->getIrrelevantKinds();
-  computeAssertedTerms(termSet, irrKinds);
-  // this overrides behavior to not assert equality engine
-  return collectModelValues(m, termSet);
-}
-
-bool TheoryArith::collectModelValues(TheoryModel* m,
-                                     const std::set<Node>& termSet)
-{
   // get the model from the linear solver
   std::map<Node, Node> arithModel;
   d_internal->collectModelValues(termSet, arithModel);
