@@ -29,13 +29,7 @@ namespace CVC4 {
 namespace theory {
 namespace arith {
 
-<<<<<<< HEAD
 class EqualitySolver;
-=======
-namespace nl {
-class NonlinearExtension;
-}
->>>>>>> 2c2f05c96e021006275a2bc70b9ede70b280616d
 
 /**
  * Implementation of linear and non-linear integer and real arithmetic.
