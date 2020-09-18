@@ -90,7 +90,6 @@ class CombinationEngine;
 class CombinationCareGraph;
 class SharedSolver;
 class EqEngineManagerCentral;
-
 class DecisionManager;
 class RelevanceManager;
 

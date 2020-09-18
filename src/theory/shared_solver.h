@@ -18,6 +18,7 @@
 #define CVC4__THEORY__SHARED_SOLVER__H
 
 #include "expr/node.h"
+#include "theory/ee_setup_info.h"
 #include "theory/logic_info.h"
 #include "theory/shared_terms_database.h"
 #include "theory/term_registration_visitor.h"
@@ -51,7 +52,8 @@ class SharedSolver
    */
   virtual bool needsEqualityEngine(theory::EeSetupInfo& esi);
   /**
-   * Set the equality engine.
+   * Set the equality engine. This should be called by equality engine manager
+   * during EqEngineManager::initializeTheories.
    */
   virtual void setEqualityEngine(eq::EqualityEngine* ee) = 0;
   //------------------------------------- end initialization
@@ -75,16 +77,14 @@ class SharedSolver
    */
   void preNotifySharedFact(TNode atom);
   /**
-   * Get the equality status of a and b, which first asks if the shared
-   * terms database as an equality status, and otherwise asks the appropriate
-   * Theory.
+   * Get the equality status of a and b.
    *
    * This method is used by theories via Valuation mostly for determining their
    * care graph.
    */
   virtual EqualityStatus getEqualityStatus(TNode a, TNode b);
   /**
-   * Explain literal, which returns a conjunction of literals that that entail
+   * Explain literal, which returns a conjunction of literals that entail
    * the given one.
    */
   virtual TrustNode explain(TNode literal, TheoryId id) = 0;
@@ -93,7 +93,9 @@ class SharedSolver
    *
    * This method is called by TheoryEngine when a fact has been marked to
    * send to THEORY_BUILTIN, meaning that shared terms database should
-   * maintain this fact. This is the case when ...
+   * maintain this fact. This is the case when either an equality is
+   * asserted from the SAT solver or a theory propagates an equality between
+   * shared terms.
    */
   virtual void assertSharedEquality(TNode equality,
                                     bool polarity,
@@ -114,7 +116,6 @@ class SharedSolver
                                TNode a,
                                TNode b,
                                bool value);
-
   /** Send lemma to the theory engine, atomsTo is the theory to send atoms to */
   void sendLemma(TrustNode trn, TheoryId atomsTo);
   /** Send conflict to the theory engine */
