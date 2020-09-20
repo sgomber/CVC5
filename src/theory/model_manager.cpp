@@ -26,6 +26,7 @@ ModelManager::ModelManager(TheoryEngine& te, EqEngineManager& eem)
       d_logicInfo(te.getLogicInfo()),
       d_eem(eem),
       d_modelEqualityEngine(nullptr),
+      d_modelEqualityEngineAlloc(nullptr),
       d_model(nullptr),
       d_modelBuilder(nullptr),
       d_modelBuilt(false),
@@ -64,9 +65,12 @@ void ModelManager::finishInit(eq::EqualityEngineNotify* notify)
   }
   // notice that the equality engine of the model has yet to be assigned.
   initializeModelEqEngine(notify);
+<<<<<<< HEAD
 
   // TODO inform the equality engine manager that we will be using notify
   // d_eem.usingModelNotify(notify);
+=======
+>>>>>>> 63e7c6bb6d9c99a5282241be8b32a04ea67dfb8d
 }
 
 void ModelManager::resetModel()

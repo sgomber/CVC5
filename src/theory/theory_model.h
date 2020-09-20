@@ -88,8 +88,7 @@ class TheoryModel : public Model
   TheoryModel(context::Context* c, std::string name, bool enableFuncModels);
   ~TheoryModel() override;
   /**
-   * Finish initialize, where ee is the equality engine that this model
-   * object should use.
+   * Finish init, where ee is the equality engine the model should use.
    */
   void finishInit(eq::EqualityEngine* ee);
 
@@ -354,13 +353,14 @@ class TheoryModel : public Model
   */
   std::vector< Node > getFunctionsToAssign();
   //---------------------------- end function values
-
   /**
    * Add relevant terms
    */
   void addRelevantTerms(const std::set<Node>& termSet);
   /** Is term t a relevant term? */
   bool isRelevantTerm(TNode t) const;
+  /** Get the name of this model */
+  const std::string& getName() const;
 
  protected:
   /** Unique name of this model */
