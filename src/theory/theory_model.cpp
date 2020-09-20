@@ -48,10 +48,6 @@ void TheoryModel::finishInit(eq::EqualityEngine* ee)
 {
   Assert(ee != nullptr);
   d_equalityEngine = ee;
-<<<<<<< HEAD
-  Assert(d_equalityEngine != nullptr);
-=======
->>>>>>> 63e7c6bb6d9c99a5282241be8b32a04ea67dfb8d
   // The kinds we are treating as function application in congruence
   d_equalityEngine->addFunctionKind(kind::APPLY_UF, false, options::ufHo());
   d_equalityEngine->addFunctionKind(kind::HO_APPLY);
