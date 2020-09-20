@@ -44,7 +44,7 @@ void EqEngineManagerDistributed::initializeTheories()
   }
   else
   {
-    AlwaysAssert(false) << "Expected shared solver to use equality engine";
+    Unhandled() << "Expected shared solver to use equality engine";
   }
 
   // allocate equality engines per theory

@@ -25,7 +25,6 @@ PR current:
 (4) Merge build model passes *
 (19) per each theory, update to standard templates (req 9) *
 (29) Update eem, combination, theory engine to use shared solver (req 24, 28)
-(30) shared term database dynamic allocate ee
 
 PR planned:
 
@@ -34,3 +33,4 @@ PR planned:
 (16) [TODO] Model manager central (req 7)
 (15) [TODO] Model based theory combination (req 11)
 (27) [TODO] Shared solver central (req 24)
+(30) shared term database dynamic allocate ee (req 29)
