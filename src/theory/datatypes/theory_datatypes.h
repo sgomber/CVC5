@@ -80,7 +80,12 @@ private:
     ~EqcInfo(){}
     //whether we have instantiatied this eqc
     context::CDO< bool > d_inst;
-    //constructor equal to this eqc
+    /** 
+     * An arbitrary application of a constructor in this equivalence class.
+     * This is a term of the form C(t1, ..., tn). Notice that all other
+     * constructor terms in this class are of the form C(s1, ..., sn) where
+     * t1=s1, ..., tn=sn have been inferred as equalities.
+     */
     context::CDO< Node > d_constructor;
     //all selectors whose argument is this eqc
     context::CDO< bool > d_selectors;
@@ -279,8 +284,6 @@ private:
   void collectTerms( Node n );
   /** get instantiate cons */
   Node getInstantiateCons(Node n, const DType& dt, int index);
-  /** check instantiate */
-  void instantiate( EqcInfo* eqc, Node n );
 private:
   //equality queries
   bool hasTerm( TNode a );
