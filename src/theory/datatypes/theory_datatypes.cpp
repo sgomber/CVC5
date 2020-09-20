@@ -657,7 +657,8 @@ void TheoryDatatypes::merge( Node t1, Node t2 ){
           else
           {
             // do unification if we have two constructors with same operator
-            for( size_t i=0, nchild = cons1.getNumChildren(); i<nchild; i++ ) {
+            for (size_t i = 0, nchild = cons1.getNumChildren(); i < nchild; i++)
+            {
               if( !areEqual( cons1[i], cons2[i] ) ){
                 Node eq = cons1[i].eqNode( cons2[i] );
                 d_im.addPendingInference(eq, unifEq);

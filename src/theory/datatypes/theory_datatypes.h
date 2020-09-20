@@ -80,7 +80,7 @@ private:
     ~EqcInfo(){}
     //whether we have instantiatied this eqc
     context::CDO< bool > d_inst;
-    /** 
+    /**
      * An arbitrary application of a constructor in this equivalence class.
      * This is a term of the form C(t1, ..., tn). Notice that all other
      * constructor terms in this class are of the form C(s1, ..., sn) where
