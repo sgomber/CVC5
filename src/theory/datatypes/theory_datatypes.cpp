@@ -670,6 +670,7 @@ void TheoryDatatypes::merge( Node t1, Node t2 ){
         if( !cons2.isNull() ){
           if( cons1.isNull() ){
             Trace("datatypes-debug") << "  must check if it is okay to set the constructor." << std::endl;
+            checkInst = true;
             addConstructor( eqc2->d_constructor.get(), eqc1, t1 );
             if (d_state.isInConflict())
             {
@@ -908,10 +909,10 @@ void TheoryDatatypes::addTester(
       Debug("datatypes-labels") << "Labels at " << n_lbl << " / " << dt.getNumConstructors() << std::endl;
       if( tpolarity ){
         // instantiate if a finite constructor
-        //if (dt[ttindex].isFinite(tat))
-        //{
+        if (dt[ttindex].isFinite(tat))
+        {
           instantiate(eqc,n);
-        //}
+        }
         // We could propagate is-C1(x) => not is-C2(x) here for all other
         // constructors, but empirically this hurts performance.
       }else{
