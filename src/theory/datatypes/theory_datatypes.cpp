@@ -909,7 +909,7 @@ void TheoryDatatypes::addTester(
       Debug("datatypes-labels") << "Labels at " << n_lbl << " / " << dt.getNumConstructors() << std::endl;
       if( tpolarity ){
         // instantiate if a finite constructor
-        if (dt[ttindex].isFinite(tat))
+        if (dt[ttindex].isFinite(tat) || eqc->d_selectors)
         {
           instantiate(eqc,n);
         }
@@ -993,7 +993,12 @@ void TheoryDatatypes::addSelector( Node s, EqcInfo* eqc, Node n, bool assertFact
       d_selector_apps_data[n].push_back( s );
     }
   
-    eqc->d_selectors = true;
+    if (!eqc->d_selectors)
+    {
+      eqc->d_selectors = true;
+      // check instantiate
+      instantiate( eqc, n );
+    }
   }
   if( assertFacts && !eqc->d_constructor.get().isNull() ){
     //conclude the collapsed merge
