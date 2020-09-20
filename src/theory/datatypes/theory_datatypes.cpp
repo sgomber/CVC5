@@ -123,9 +123,6 @@ TheoryDatatypes::EqcInfo* TheoryDatatypes::getOrMakeEqcInfo( TNode n, bool doMak
         ei = new EqcInfo( getSatContext() );
         d_eqc_info[n] = ei;
       }
-      if( n.getKind()==APPLY_CONSTRUCTOR ){
-        ei->d_constructor = n;
-      }
       
       //add to selectors
       d_selector_apps[n] = 0;
@@ -606,7 +603,8 @@ TrustNode TheoryDatatypes::explain(TNode literal)
 /** called when a new equivalance class is created */
 void TheoryDatatypes::eqNotifyNewClass(TNode t){
   if( t.getKind()==APPLY_CONSTRUCTOR ){
-    getOrMakeEqcInfo( t, true );
+    EqcInfo * ei = getOrMakeEqcInfo( t, true );
+    ei->d_constructor = t;
   }
 }
 
@@ -672,7 +670,6 @@ void TheoryDatatypes::merge( Node t1, Node t2 ){
         if( !cons2.isNull() ){
           if( cons1.isNull() ){
             Trace("datatypes-debug") << "  must check if it is okay to set the constructor." << std::endl;
-            checkInst = true;
             addConstructor( eqc2->d_constructor.get(), eqc1, t1 );
             if (d_state.isInConflict())
             {
@@ -906,9 +903,15 @@ void TheoryDatatypes::addTester(
       }
       n_lbl++;
 
-      const DType& dt = t_arg.getType().getDType();
+      TypeNode tat = t_arg.getType();
+      const DType& dt = tat.getDType();
       Debug("datatypes-labels") << "Labels at " << n_lbl << " / " << dt.getNumConstructors() << std::endl;
       if( tpolarity ){
+        // instantiate if a finite constructor
+        //if (dt[ttindex].isFinite(tat))
+        //{
+          instantiate(eqc,n);
+        //}
         // We could propagate is-C1(x) => not is-C2(x) here for all other
         // constructors, but empirically this hurts performance.
       }else{
