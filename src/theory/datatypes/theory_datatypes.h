@@ -275,6 +275,8 @@ private:
                          std::map<Node, std::map<Node, int> >& dni,
                          int dniLvl,
                          bool mkExp);
+  /** for checking if decomposed congruence*/
+  void checkDecomposedCongruence();
   /** build model */
   Node getCodatatypesValue( Node n, std::map< Node, Node >& eqc_cons, std::map< Node, int >& vmap, int depth );
   /** get singleton lemma */

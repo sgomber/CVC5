@@ -358,6 +358,18 @@ void TheoryDatatypes::postCheck(Effort level)
       }
     } while (!d_state.isInConflict() && !d_im.hasSentLemma()
              && d_im.hasSentFact());
+
+    do {
+      d_im.reset();
+      Trace("datatypes-proc") << "Check decompose congruence..." << std::endl;
+      checkDecomposedCongruence();
+      Trace("datatypes-proc") << "...finish check cycles" << std::endl;
+      d_im.process();
+      if (d_state.isInConflict() || d_im.hasSentLemma())
+      {
+        return;
+      }
+    } while (d_im.hasSentFact());
     Trace("datatypes-debug")
         << "Finished, conflict=" << d_state.isInConflict()
         << ", lemmas=" << d_im.hasSentLemma() << std::endl;
@@ -1858,6 +1870,77 @@ Node TheoryDatatypes::searchForCycle(TNode n,
       }
     }
     return Node::null();
+  }
+}
+
+void TheoryDatatypes::checkDecomposedCongruence()
+{
+  Trace("datatypes-dcong-check") << "Check decomposed congruence" << std::endl;
+  eq::EqClassesIterator eqcs_i = eq::EqClassesIterator(d_equalityEngine);
+  while( !eqcs_i.isFinished() ){
+    Node eqc = (*eqcs_i);
+    Trace("datatypes-dcong-check-debug") << "EQC " << eqc;
+    ++eqcs_i;
+    TypeNode eqct = eqc.getType();
+    if( !eqct.isDatatype() ){
+      Trace("datatypes-dcong-check-debug") << "...non datatype" << std::endl;
+      continue;
+    }
+    EqcInfo* ei = getOrMakeEqcInfo( eqc );
+    if( !ei ){
+      Trace("datatypes-dcong-check-debug") << "...no info" << std::endl;
+      continue;
+    }
+    if (!ei->d_constructor.get().isNull() || !ei->d_selectors)
+    {
+      Trace("datatypes-dcong-check-debug") << "...cons or no sels" << std::endl;
+      continue;
+    }
+    NodeUIntMap::iterator sel_i = d_selector_apps.find(eqc);
+    if( sel_i == d_selector_apps.end() ){
+      Trace("datatypes-dcong-check-debug") << "...no sels" << std::endl;
+      continue;
+    }
+    Node lbl = getLabel(eqc);
+    if (lbl.isNull())
+    {
+      Trace("datatypes-dcong-check-debug") << "...no label" << std::endl;
+      continue;
+    }
+    int tindex = utils::isTester(lbl);
+    const DType& dt = eqct.getDType();
+    Assert (tindex>=0 && tindex<dt.getNumConstructors());
+    const DTypeConstructor& dtc = dt[tindex];
+    std::unordered_set<int> selIndices;
+    Trace("datatypes-dcong-check-debug") << "...must check" << std::endl;
+    Trace("datatypes-dcong-check") << "d-cong: " << eqc << " has selectors : ";
+    for (size_t j = 0; j < (*sel_i).second; j++)
+    {
+      Node selApp = d_selector_apps_data[eqc][j];
+      Node sel = selApp.getOperator();
+      int selIndex = dtc.getSelectorIndexInternal(sel);
+      Trace("datatypes-dcong-check") << selApp << " (" << selIndex << ")";
+      selIndices.insert(selIndex);
+    }
+    Trace("datatypes-dcong-check") << std::endl;
+    bool infiniteUnc = false;
+    for (size_t j=0, nargs = dtc.getNumArgs(); j<nargs; j++)
+    {
+      if (selIndices.find(j)==selIndices.end() && 
+        !dtc.getArgType(j).isFinite())
+      {
+    Trace("datatypes-dcong-check-debug") << "...infinite type for unconstrained selector argument #" << j << std::endl;
+        infiniteUnc = true;
+        break;
+      }
+    }
+    if (!infiniteUnc)
+    {
+      
+    Trace("datatypes-dcong-check-debug") << "...must instantiate" << std::endl;
+      // must instantiate
+      instantiate(ei, eqc);
+    }
   }
 }
 
