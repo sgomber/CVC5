@@ -670,7 +670,7 @@ void TheoryDatatypes::merge( Node t1, Node t2 ){
         if( !cons2.isNull() ){
           if( cons1.isNull() ){
             Trace("datatypes-debug") << "  must check if it is okay to set the constructor." << std::endl;
-            checkInst = true;
+            //checkInst = true;
             addConstructor( eqc2->d_constructor.get(), eqc1, t1 );
             if (d_state.isInConflict())
             {

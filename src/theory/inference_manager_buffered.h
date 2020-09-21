@@ -134,6 +134,8 @@ class InferenceManagerBuffered : public TheoryInferenceManager
   std::vector<std::unique_ptr<TheoryInference>> d_pendingFact;
   /** A map from literals to their pending phase requirement */
   std::map<Node, bool> d_pendingReqPhase;
+  /** Are we currently processing pending lemmas? */
+  bool d_processingPending;
 };
 
 }  // namespace theory

@@ -33,7 +33,7 @@ DatatypesInference::DatatypesInference(Node conc, Node exp, ProofGenerator* pg)
 
 bool DatatypesInference::mustCommunicateFact(Node n, Node exp)
 {
-  Trace("dt-lemma-debug") << "Compute for " << exp << " => " << n << std::endl;
+  Trace("dt-lemma-debug") << "Compute mustCommunicateFact ..." << std::endl;
   bool addLemma = false;
   if (options::dtInferAsLemmas() && !exp.isConst())
   {
@@ -68,9 +68,11 @@ bool DatatypesInference::mustCommunicateFact(Node n, Node exp)
 
 bool DatatypesInference::process(TheoryInferenceManager* im, bool asLemma)
 {
+  Trace("dt-lemma-debug") << "DatatypesInference::process " << d_exp << " = > " << d_conc << std::endl;
   // check to see if we have to communicate it to the rest of the system
   if (mustCommunicateFact(d_conc, d_exp))
   {
+    Trace("dt-lemma-debug") << "...as lemma" << std::endl;
     // send it as an (explained) lemma
     std::vector<Node> exp;
     if (!d_exp.isNull() && !d_exp.isConst())
@@ -79,6 +81,7 @@ bool DatatypesInference::process(TheoryInferenceManager* im, bool asLemma)
     }
     return im->lemmaExp(d_conc, exp, {});
   }
+    Trace("dt-lemma-debug") << "...as fact" << std::endl;
   // assert the internal fact
   bool polarity = d_conc.getKind() != NOT;
   TNode atom = polarity ? d_conc : d_conc[0];
