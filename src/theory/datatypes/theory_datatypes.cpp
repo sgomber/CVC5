@@ -925,7 +925,8 @@ void TheoryDatatypes::addTester(
       Debug("datatypes-labels") << "Labels at " << n_lbl << " / " << dt.getNumConstructors() << std::endl;
       if( tpolarity ){
         // instantiate if a finite type
-        if (dt.isFinite())  // || eqc->d_selectors)
+        //if (dt.isFinite())  // || eqc->d_selectors)
+        if (dt[ttindex].isFinite(tat))
         {
           instantiate(eqc, n);
         }
