@@ -175,12 +175,12 @@ private:
   /** has eqc info */
   bool hasEqcInfo( TNode n ) { return d_labels.find( n )!=d_labels.end(); }
 
-  /** 
+  /**
    * Get a constructor application in the equivalence class of r.
    * If this returns non-null, then exp (if necessary) is updated to an
    * explanation of why r is equal to the return value.
    */
-  Node getEqcConstructor( TNode r, Node& exp );
+  Node getEqcConstructor(TNode r, Node& exp);
 
  protected:
   void addCarePairs(TNodeTrie* t1,

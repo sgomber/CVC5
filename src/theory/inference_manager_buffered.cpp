@@ -100,7 +100,8 @@ void InferenceManagerBuffered::doPendingLemmas()
     return;
   }
   d_processingPending = true;
-  Trace("infer-man-buffered-debug") << "Do " << d_pendingLem.size() << " pending lemmas..." << std::endl;
+  Trace("infer-man-buffered-debug")
+      << "Do " << d_pendingLem.size() << " pending lemmas..." << std::endl;
   for (const std::unique_ptr<TheoryInference>& plem : d_pendingLem)
   {
     Trace("infer-man-buffered-debug") << "Do pending lemma..." << std::endl;

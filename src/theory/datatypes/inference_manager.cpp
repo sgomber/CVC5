@@ -68,7 +68,8 @@ bool DatatypesInference::mustCommunicateFact(Node n, Node exp)
 
 bool DatatypesInference::process(TheoryInferenceManager* im, bool asLemma)
 {
-  Trace("dt-lemma-debug") << "DatatypesInference::process " << d_exp << " = > " << d_conc << std::endl;
+  Trace("dt-lemma-debug") << "DatatypesInference::process " << d_exp << " = > "
+                          << d_conc << std::endl;
   // check to see if we have to communicate it to the rest of the system
   if (mustCommunicateFact(d_conc, d_exp))
   {
@@ -81,7 +82,7 @@ bool DatatypesInference::process(TheoryInferenceManager* im, bool asLemma)
     }
     return im->lemmaExp(d_conc, exp, {});
   }
-    Trace("dt-lemma-debug") << "...as fact" << std::endl;
+  Trace("dt-lemma-debug") << "...as fact" << std::endl;
   // assert the internal fact
   bool polarity = d_conc.getKind() != NOT;
   TNode atom = polarity ? d_conc : d_conc[0];

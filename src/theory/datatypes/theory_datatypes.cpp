@@ -137,25 +137,28 @@ TheoryDatatypes::EqcInfo* TheoryDatatypes::getOrMakeEqcInfo( TNode n, bool doMak
   }
 }
 
-Node TheoryDatatypes::getEqcConstructor( TNode r, Node& exp ) {
+Node TheoryDatatypes::getEqcConstructor(TNode r, Node& exp)
+{
   if( r.getKind()==APPLY_CONSTRUCTOR ){
     // optimization, don't need to lookup eqc info if already a constructor
     exp = d_true;
     return r;
   }
-  EqcInfo * ei = getOrMakeEqcInfo( r, false );
+  EqcInfo* ei = getOrMakeEqcInfo(r, false);
   if (ei)
   {
     Node c = ei->d_constructor.get();
-    if( !c.isNull() ){
+    if (!c.isNull())
+    {
       // an explicitly marked constructor
       exp = r.eqNode(c);
       return c;
     }
   }
   // otherwise we may have an implicit constructor based on labels
-  Node lbl = getLabel( r );
-  if( !lbl.isNull() ){
+  Node lbl = getLabel(r);
+  if (!lbl.isNull())
+  {
     int tindex = utils::isTester(lbl);
     exp = lbl;
     const DType& dt = r.getType().getDType();
@@ -617,7 +620,7 @@ TrustNode TheoryDatatypes::explain(TNode literal)
 /** called when a new equivalance class is created */
 void TheoryDatatypes::eqNotifyNewClass(TNode t){
   if( t.getKind()==APPLY_CONSTRUCTOR ){
-    EqcInfo * ei = getOrMakeEqcInfo( t, true );
+    EqcInfo* ei = getOrMakeEqcInfo(t, true);
     ei->d_constructor = t;
   }
 }
@@ -724,7 +727,7 @@ void TheoryDatatypes::merge( Node t1, Node t2 ){
       //merge selectors
       if( !eqc1->d_selectors && eqc2->d_selectors ){
         eqc1->d_selectors = true;
-        //checkInst = true;
+        // checkInst = true;
       }
       NodeUIntMap::iterator sel_i = d_selector_apps.find(t2);
       if( sel_i != d_selector_apps.end() ){
@@ -922,9 +925,9 @@ void TheoryDatatypes::addTester(
       Debug("datatypes-labels") << "Labels at " << n_lbl << " / " << dt.getNumConstructors() << std::endl;
       if( tpolarity ){
         // instantiate if a finite type
-        if (dt.isFinite())// || eqc->d_selectors)
+        if (dt.isFinite())  // || eqc->d_selectors)
         {
-          instantiate(eqc,n);
+          instantiate(eqc, n);
         }
         // We could propagate is-C1(x) => not is-C2(x) here for all other
         // constructors, but empirically this hurts performance.
@@ -1005,12 +1008,12 @@ void TheoryDatatypes::addSelector( Node s, EqcInfo* eqc, Node n, bool assertFact
     }else{
       d_selector_apps_data[n].push_back( s );
     }
-  
+
     if (!eqc->d_selectors)
     {
       eqc->d_selectors = true;
       // check instantiate
-      //instantiate( eqc, n );
+      // instantiate( eqc, n );
     }
   }
   if( assertFacts && !eqc->d_constructor.get().isNull() ){
@@ -1323,7 +1326,7 @@ bool TheoryDatatypes::collectModelValues(TheoryModel* m,
     Node neqc;
     TypeNode tt = eqc.getType();
     const DType& dt = tt.getDType();
-    std::vector< bool > pcons;
+    std::vector<bool> pcons;
     if (!d_equalityEngine->hasTerm(eqc))
     {
       Assert(false);
@@ -1337,16 +1340,20 @@ bool TheoryDatatypes::collectModelValues(TheoryModel* m,
       if (Trace.isOn("dt-cmi"))
       {
         Trace("dt-cmi") << "Possible constructors : ";
-        for( bool pc : pcons ){
+        for (bool pc : pcons)
+        {
           Trace("dt-cmi") << pc << " ";
         }
       }
     }
     Trace("dt-cmi") << std::endl;
-    for( unsigned r=0; r<2; r++ ){
-      for( size_t i=0, ncons = dt.getNumConstructors(); i<ncons; i++ ){
-        //must try the infinite ones first
-        if( pcons[i] && (r==1)==dt[ i ].isInterpretedFinite( tt ) ){
+    for (unsigned r = 0; r < 2; r++)
+    {
+      for (size_t i = 0, ncons = dt.getNumConstructors(); i < ncons; i++)
+      {
+        // must try the infinite ones first
+        if (pcons[i] && (r == 1) == dt[i].isInterpretedFinite(tt))
+        {
           neqc = utils::getInstCons(eqc, dt, i);
           break;
         }
@@ -1702,11 +1709,12 @@ void TheoryDatatypes::separateBisimilar(
     }else{
       if( c.getType().isDatatype() ){
         Node expc;
-        Node ncons = getEqcConstructor( c, expc );
+        Node ncons = getEqcConstructor(c, expc);
         if( ncons.getKind()==APPLY_CONSTRUCTOR ) {
           Node cc = ncons.getOperator();
           cn_cons[part[j]] = ncons;
-          if( mkExp && expc!=d_true ){
+          if (mkExp && expc != d_true)
+          {
             exp.push_back(expc);
           }
           new_part[cc].push_back( part[j] );
@@ -1827,7 +1835,7 @@ Node TheoryDatatypes::searchForCycle(TNode n,
             searchForCycle(nncons[i], on, visited, proc, explanation, false);
         if( cn==on ) {
           //add explanation for why the constructor is connected
-          if (expc!=d_true)
+          if (expc != d_true)
           {
             explanation.push_back(expc);
           }
