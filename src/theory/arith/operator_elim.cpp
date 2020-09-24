@@ -180,6 +180,7 @@ Node OperatorElim::eliminateOperators(Node node, TConvProofGenerator* tg)
     case INTS_DIVISION_TOTAL:
     case INTS_MODULUS_TOTAL:
     {
+      Node zero = nm->mkConst(Rational(0));
       Node den = Rewriter::rewrite(node[1]);
       Node num = Rewriter::rewrite(node[0]);
       Node intVar;
@@ -231,7 +232,7 @@ Node OperatorElim::eliminateOperators(Node node, TConvProofGenerator* tg)
               AND,
               nm->mkNode(
                   IMPLIES,
-                  nm->mkNode(GT, den, nm->mkConst(Rational(0))),
+                  nm->mkNode(GT, den, zero),
                   nm->mkNode(
                       AND,
                       leqNum,
@@ -244,7 +245,7 @@ Node OperatorElim::eliminateOperators(Node node, TConvProofGenerator* tg)
                               nm->mkNode(PLUS, v, nm->mkConst(Rational(1))))))),
               nm->mkNode(
                   IMPLIES,
-                  nm->mkNode(LT, den, nm->mkConst(Rational(0))),
+                  nm->mkNode(LT, den, zero),
                   nm->mkNode(
                       AND,
                       leqNum,
@@ -273,6 +274,13 @@ Node OperatorElim::eliminateOperators(Node node, TConvProofGenerator* tg)
       if (k == INTS_MODULUS_TOTAL)
       {
         Node nn = nm->mkNode(MINUS, num, nm->mkNode(MULT, den, intVar));
+        // if option is set, we case split on whether there is any overflow
+        if (options::modRSplitOverflow())
+        {
+          Node cond = nm->mkNode(AND, nm->mkNode(LEQ, zero, num), nm->mkNode(LT, num, den));
+          nn = nm->mkNode(ITE, cond, num, nn);
+          return nn;
+        }
         return nn;
       }
       else
