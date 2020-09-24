@@ -277,7 +277,8 @@ Node OperatorElim::eliminateOperators(Node node, TConvProofGenerator* tg)
         // if option is set, we case split on whether there is any overflow
         if (options::modRSplitOverflow())
         {
-          Node cond = nm->mkNode(AND, nm->mkNode(LEQ, zero, num), nm->mkNode(LT, num, den));
+          Node cond = nm->mkNode(
+              AND, nm->mkNode(LEQ, zero, num), nm->mkNode(LT, num, den));
           nn = nm->mkNode(ITE, cond, num, nn);
           return nn;
         }
