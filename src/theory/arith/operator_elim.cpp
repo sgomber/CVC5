@@ -275,16 +275,7 @@ Node OperatorElim::eliminateOperators(Node node, TConvProofGenerator* tg)
       }
       if (k == INTS_MODULUS_TOTAL)
       {
-        Node nn = nm->mkNode(MINUS, num, nm->mkNode(MULT, den, intVar));
-        // if option is set, we case split on whether there is any overflow
-        if (options::modRSplitOverflow())
-        {
-          Node cond = nm->mkNode(
-              AND, nm->mkNode(LEQ, zero, num), nm->mkNode(LT, num, den));
-          nn = nm->mkNode(ITE, cond, num, nn);
-          return nn;
-        }
-        return nn;
+        return nm->mkNode(MINUS, num, nm->mkNode(MULT, den, intVar));;
       }
       else
       {
@@ -375,6 +366,14 @@ Node OperatorElim::eliminateOperators(Node node, TConvProofGenerator* tg)
         Node modZeroNum = getArithSkolemApp(num, ArithSkolemId::MOD_BY_ZERO);
         Node denEq0 = nm->mkNode(EQUAL, den, nm->mkConst(Rational(0)));
         ret = nm->mkNode(ITE, denEq0, modZeroNum, ret);
+      }
+      // if option is set, we case split on whether there is any overflow
+      if (options::modRSplitOverflow())
+      {
+        Node zero = nm->mkConst(Rational(0));
+        Node cond = nm->mkNode(
+            AND, nm->mkNode(LEQ, zero, num), nm->mkNode(LT, num, den));
+        ret = nm->mkNode(ITE, cond, num, ret);
       }
       return ret;
       break;
