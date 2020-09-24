@@ -52,6 +52,8 @@ TrustNode OperatorElim::eliminate(Node n)
   Node nn = eliminateOperators(n, tg);
   if (nn != n)
   {
+    Trace("arith-elim") << "OperatorElim::eliminate: " << n << std::endl;
+    Trace("arith-elim") << "               returned: " << nn << std::endl;
     // since elimination may introduce new operators to eliminate, we must
     // recursively eliminate result
     Node nnr = eliminateOperatorsRec(nn, tg);
