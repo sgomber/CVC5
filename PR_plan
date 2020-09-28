@@ -19,12 +19,13 @@ PR done:
 (25) irrelevant kinds infrastructure
 (26) equality engine interface basic extension
 (28) Model manager distributed more flexible
+(29) Update eem, combination, theory engine to use shared solver (req 24, 28)
 
 PR current:
 
 (4) Merge build model passes *
 (19) per each theory, update to standard templates (req 9) *
-(29) Update eem, combination, theory engine to use shared solver (req 24, 28)
+(30) shared term database dynamic allocate ee (req 29) *
 
 PR planned:
 
@@ -33,4 +34,3 @@ PR planned:
 (16) [TODO] Model manager central (req 7)
 (15) [TODO] Model based theory combination (req 11)
 (27) [TODO] Shared solver central (req 24)
-(30) shared term database dynamic allocate ee (req 29)
