@@ -2,10 +2,10 @@
 /*! \file inference_manager_buffered.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Andrew Reynolds
+ **   Andrew Reynolds, Gereon Kremer
  ** This file is part of the CVC4 project.
  ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
+ ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
@@ -25,7 +25,7 @@ namespace theory {
 InferenceManagerBuffered::InferenceManagerBuffered(Theory& t,
                                                    TheoryState& state,
                                                    ProofNodeManager* pnm)
-    : TheoryInferenceManager(t, state, pnm)
+    : TheoryInferenceManager(t, state, pnm), d_processingPendingLemmas(false)
 {
 }
 
@@ -94,14 +94,20 @@ void InferenceManagerBuffered::doPendingFacts()
 
 void InferenceManagerBuffered::doPendingLemmas()
 {
-  size_t i = 0;
-  while (i < d_pendingLem.size())
+  if (d_processingPendingLemmas)
+  {
+    // already processing
+    return;
+  }
+  d_processingPendingLemmas = true;
+  for (const std::unique_ptr<TheoryInference>& plem : d_pendingLem)
   {
     // process this lemma
     d_pendingLem[i]->process(this, true);
     i++;
   }
   d_pendingLem.clear();
+  d_processingPendingLemmas = false;
 }
 
 void InferenceManagerBuffered::doPendingPhaseRequirements()
