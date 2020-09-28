@@ -103,8 +103,7 @@ void InferenceManagerBuffered::doPendingLemmas()
   for (const std::unique_ptr<TheoryInference>& plem : d_pendingLem)
   {
     // process this lemma
-    d_pendingLem[i]->process(this, true);
-    i++;
+    plem->process(this, true);
   }
   d_pendingLem.clear();
   d_processingPendingLemmas = false;
