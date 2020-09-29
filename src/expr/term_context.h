@@ -145,6 +145,48 @@ class PolarityTermContext : public TermContext
   static void getFlags(uint32_t val, bool& hasPol, bool& pol);
 };
 
+/** A type of polarity */
+enum class PolarityType
+{
+  // We do not have a polarity
+  NONE = 0,
+  // We have a polarity, but it is not entailed
+  SOME = 1,
+  // We have an entailed polarity
+  ENTAILED = 2
+};
+/**
+ * Writes a polarity type name to a stream.
+ *
+ * @param out The stream to write to
+ * @param ptype The polarity type to write to the stream
+ * @return The stream
+ */
+std::ostream& operator<<(std::ostream& out, PolarityType ptype);
+
+/**
+ * Extended polarity context, also computes whether a literal is entailed.
+ */
+class ExtPolarityTermContext : public TermContext
+{
+ public:
+  ExtPolarityTermContext() {}
+  /** The initial value: true entailed polarity. */
+  uint32_t initialValue() const override;
+  /** Compute the value of the index^th child of t whose hash is tval */
+  uint32_t computeValue(TNode t, uint32_t tval, size_t index) const override;
+  /**
+   * Get hash value from the arguments.
+   */
+  static uint32_t getValue(PolarityType ptype, bool pol);
+  /**
+   * get flags from the hash value. If we have no polarity, pol is set to false.
+   */
+  static void getFlags(uint32_t val, PolarityType& ptype, bool& pol);
+  /** Are children of t in term context entailed? */
+  //static bool entailedChildren(TNode t, uint32_t tval);
+};
+
 }  // namespace CVC4
 
 #endif /* CVC4__EXPR__TERM_CONVERSION_PROOF_GENERATOR_H */

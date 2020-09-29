@@ -112,8 +112,103 @@ uint32_t PolarityTermContext::getValue(bool hasPol, bool pol)
 
 void PolarityTermContext::getFlags(uint32_t val, bool& hasPol, bool& pol)
 {
-  hasPol = val == 0;
+  hasPol = val != 0;
   pol = val == 2;
 }
+
+std::ostream& operator<<(std::ostream& out, PolarityType ptype)
+{
+  switch (ptype)
+  {
+    case PolarityType::NONE: out << "NONE"; break;
+    case PolarityType::SOME: out << "SOME"; break;
+    case PolarityType::ENTAILED: out << "ENTAILED"; break;
+    default: out << "?"; break;
+  }
+  return out;
+}
+
+uint32_t ExtPolarityTermContext::initialValue() const { return 5; }
+
+uint32_t ExtPolarityTermContext::computeValue(TNode t,
+                                              uint32_t tval,
+                                              size_t index) const
+{
+  if (tval == 0)
+  {
+    // still no polarity
+    return 0;
+  }
+  bool wasEntailed = tval % 3 == 2;
+  bool pol = tval >= 3;
+  Kind tk = t.getKind();
+  switch (tk)
+  {
+    case kind::AND:
+    case kind::OR:
+    case kind::SEP_STAR:
+      // lose entailment based on polarity
+      return (wasEntailed && pol == (tk == kind::OR)) ? tval - 1 : tval;
+    case kind::IMPLIES:
+      // first child reverses
+      if (index == 0)
+      {
+        tval = tval + (pol ? -3 : 3);
+      }
+      // no entailment if positive polarity
+      return (wasEntailed && pol) ? tval - 1 : tval;
+    case kind::NOT:
+      // polarity reversed
+      return tval + (pol ? -3 : 3);
+    case kind::ITE:
+      // head has no polarity, branches preserve without entailment
+      if (index == 0)
+      {
+        return 0;
+      }
+      return wasEntailed ? tval - 1 : tval;
+    case kind::FORALL:
+      // body preserves without entailment, others have no polarity.
+      if (index != 1)
+      {
+        return 0;
+      }
+      return wasEntailed ? tval - 1 : tval;
+    default:
+      // no polarity
+      break;
+  }
+  return 0;
+}
+
+uint32_t ExtPolarityTermContext::getValue(PolarityType ptype, bool pol)
+{
+  return static_cast<uint32_t>(ptype) + (pol ? 3 : 0);
+}
+
+void ExtPolarityTermContext::getFlags(uint32_t val,
+                                      PolarityType& ptype,
+                                      bool& pol)
+{
+  ptype = static_cast<PolarityType>(val % 3);
+  pol = val >= 3;
+}
+/*
+bool ExtPolarityTermContext::entailedChildren(TNode t, bool wasEntailed, bool pol)
+{
+  if (!wasEntailed)
+  {
+    return false;
+  }
+  Kind tk = t.getKind();
+  if (tk==kind::NOT)
+  {
+    return true;
+  }
+  
+  bool pol = tval >= 3;
+  
+}
+*/
 
 }  // namespace CVC4
