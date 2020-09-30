@@ -29,10 +29,12 @@ namespace arith {
 
 ArithCongruenceManager::ArithCongruenceManager(
     context::Context* c,
+    context::UserContext* u,
     ConstraintDatabase& cd,
     SetupLiteralCallBack setup,
     const ArithVariables& avars,
-    RaiseEqualityEngineConflict raiseConflict)
+    RaiseEqualityEngineConflict raiseConflict,
+    ProofNodeManager* pnm)
     : d_inConflict(c),
       d_raiseConflict(raiseConflict),
       d_notify(*this),
@@ -42,7 +44,15 @@ ArithCongruenceManager::ArithCongruenceManager(
       d_constraintDatabase(cd),
       d_setupLiteral(setup),
       d_avariables(avars),
-      d_ee(nullptr)
+      d_ee(nullptr),
+      d_satContext(c),
+      d_userContext(u),
+      d_pnm(pnm),
+      d_pfGenEe(
+          new EagerProofGenerator(pnm, c, "ArithCongruenceManager::pfGenEe")),
+      d_pfGenExplain(new EagerProofGenerator(
+          pnm, u, "ArithCongruenceManager::pfGenExplain")),
+      d_pfee(nullptr)
 {
   // this makes congruence manager use a separate equality engine
   if (options::arithEqSolver())
@@ -73,7 +83,8 @@ bool ArithCongruenceManager::needsEqualityEngine(EeSetupInfo& esi)
   return true;
 }
 
-void ArithCongruenceManager::finishInit(eq::EqualityEngine* ee)
+void ArithCongruenceManager::finishInit(eq::EqualityEngine* ee,
+                                        eq::ProofEqEngine* pfee)
 {
   if (d_ee == nullptr)
   {
@@ -85,6 +96,9 @@ void ArithCongruenceManager::finishInit(eq::EqualityEngine* ee)
     d_ee->addFunctionKind(kind::SINE);
     d_ee->addFunctionKind(kind::IAND);
   }
+  // have proof equality engine only if proofs are enabled
+  Assert(isProofEnabled() == (pfee != nullptr));
+  d_pfee = pfee;
 }
 
 ArithCongruenceManager::Statistics::Statistics():
@@ -475,6 +489,8 @@ void ArithCongruenceManager::equalsConstant(ConstraintCP lb, ConstraintCP ub){
   Trace("arith-ee") << "Assert equalsConstant2 " << eq << ", reason " << reason << std::endl;
   d_ee->assertEquality(eq, true, reason);
 }
+
+bool ArithCongruenceManager::isProofEnabled() const { return d_pnm != nullptr; }
 
 }/* CVC4::theory::arith namespace */
 }/* CVC4::theory namespace */

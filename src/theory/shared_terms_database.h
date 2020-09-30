@@ -257,10 +257,10 @@ public:
   /**
    * This method gets called on backtracks from the context manager.
    */
- void contextNotifyPop() override { backtrack(); }
+  void contextNotifyPop() override { backtrack(); }
 
- /** Equality engine */
- theory::eq::EqualityEngine* d_equalityEngine;
+  /** Equality engine */
+  theory::eq::EqualityEngine* d_equalityEngine;
 };
 
 }
