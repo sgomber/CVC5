@@ -44,7 +44,6 @@ TheoryArith::TheoryArith(context::Context* c,
           new TheoryArithPrivate(*this, c, u, out, valuation, logicInfo, pnm)),
       d_ppRewriteTimer("theory::arith::ppRewriteTimer"),
       d_astate(*d_internal, c, u, valuation),
-      d_aim(*this, d_astate, *d_internal, pnm),
       d_eqSolver(nullptr),
       d_inferenceManager(*this, d_astate, pnm),
       d_nonlinearExtension(nullptr)
@@ -55,11 +54,13 @@ TheoryArith::TheoryArith(context::Context* c,
   d_theoryState = &d_astate;
   d_inferManager = &d_inferenceManager;
 
+  /*
   if (options::arithEqSolver())
   {
     d_eqSolver.reset(new EqualitySolver(d_astate, d_aim));
     d_aim.setEqualitySolver(d_eqSolver.get());
   }
+  */
 }
 
 TheoryArith::~TheoryArith(){
