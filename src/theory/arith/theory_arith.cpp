@@ -269,6 +269,7 @@ void TheoryArith::lemmaPrivate(TNode lem) { d_out->lemma(lem); }
 
 void TheoryArith::propagatePrivateLit(TNode literal)
 {
+  /*
   if (d_eqSolver != nullptr)
   {
     // propagate managed literal with the inference manager, which tracks that
@@ -277,9 +278,9 @@ void TheoryArith::propagatePrivateLit(TNode literal)
   }
   else
   {
-    // otherwise just send it out
-    d_out->propagate(literal);
-  }
+  */
+  // otherwise just send it out
+  d_out->propagate(literal);
 }
 
 void TheoryArith::conflictPrivate(TNode conf) { d_out->conflict(conf); }
