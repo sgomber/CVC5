@@ -53,7 +53,7 @@ TheoryArith::TheoryArith(context::Context* c,
 
   // indicate we are using the theory state object and inference manager
   d_theoryState = &d_astate;
-  d_inferManager = &d_aim;
+  d_inferManager = &d_inferenceManager;
 
   if (options::arithEqSolver())
   {
@@ -110,7 +110,14 @@ void TheoryArith::finishInit()
   }
 }
 
-void TheoryArith::preRegisterTerm(TNode n) { d_internal->preRegisterTerm(n); }
+void TheoryArith::preRegisterTerm(TNode n)
+{
+  if (d_nonlinearExtension != nullptr)
+  {
+    d_nonlinearExtension->preRegisterTerm(n);
+  }
+  d_internal->preRegisterTerm(n);
+}
 
 TrustNode TheoryArith::expandDefinition(Node node)
 {
@@ -135,36 +142,36 @@ void TheoryArith::ppStaticLearn(TNode n, NodeBuilder<>& learned) {
 
 bool TheoryArith::preCheck(Effort level) { return d_internal->preCheck(level); }
 
-void TheoryArith::postCheck(Effort level) { d_internal->postCheck(level); }
+void TheoryArith::postCheck(Effort level)
+{
+  // check with the non-linear solver at last call
+  if (level == Theory::EFFORT_LAST_CALL)
+  {
+    if (d_nonlinearExtension != nullptr)
+    {
+      d_nonlinearExtension->check(level);
+    }
+    return;
+  }
+  // otherwise, check with the linear solver
+  d_internal->postCheck(level);
+}
 
 bool TheoryArith::preNotifyFact(
     TNode atom, bool pol, TNode fact, bool isPrereg, bool isInternal)
 {
-  if (d_eqSolver != nullptr)
-  {
-    // assert equalities directly to equality engine
-    if (!d_eqSolver->preNotifyFact(atom, pol, fact))
-    {
-      return false;
-    }
-  }
-  d_internal->notifyFact(atom, pol, fact);
+  d_internal->preNotifyFact(atom, pol, fact);
+  // We do not assert to the equality engine of arithmetic in the standard way,
+  // hence we return "true" to indicate we are finished with this fact.
   return true;
 }
 
-void TheoryArith::notifyFact(TNode atom, bool pol, TNode fact, bool isInternal)
-{
-  Assert(d_eqSolver != nullptr);
-  d_eqSolver->notifyFact(atom, pol, fact, isInternal);
-  // if not in conflict from pure equality
-  if (!d_astate.isInConflict())
-  {
-    d_internal->notifyFact(atom, pol, fact);
-  }
-}
-
 bool TheoryArith::needsCheckLastEffort() {
-  return d_internal->needsCheckLastEffort();
+  if (d_nonlinearExtension != nullptr)
+  {
+    return d_nonlinearExtension->needsCheckLastEffort();
+  }
+  return false;
 }
 
 TrustNode TheoryArith::explain(TNode n) { return d_aim.explainLit(n); }
@@ -226,6 +233,10 @@ void TheoryArith::notifyRestart(){
 
 void TheoryArith::presolve(){
   d_internal->presolve();
+  if (d_nonlinearExtension != nullptr)
+  {
+    d_nonlinearExtension->presolve();
+  }
 }
 
 EqualityStatus TheoryArith::getEqualityStatus(TNode a, TNode b) {

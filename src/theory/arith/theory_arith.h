@@ -22,6 +22,7 @@
 #include "theory/arith/arith_state.h"
 #include "theory/arith/equality_solver.h"
 #include "theory/arith/inference_manager.h"
+#include "theory/arith/nl/nonlinear_extension.h"
 #include "theory/arith/theory_arith_private_forward.h"
 #include "theory/theory.h"
 
@@ -29,8 +30,11 @@ namespace CVC4 {
 namespace theory {
 namespace arith {
 
+<<<<<<< HEAD
 class EqualitySolver;
 
+=======
+>>>>>>> cd91768f52349bd14399e49b2fbc4e59bb659ded
 /**
  * Implementation of linear and non-linear integer and real arithmetic.
  * The linear arithmetic solver is based upon:

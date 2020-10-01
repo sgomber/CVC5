@@ -1083,7 +1083,6 @@ void TheoryArithPrivate::notifySharedTerm(TNode n)
   if(n.isConst()){
     d_partialModel.invalidateDelta();
   }
-
   if(!n.isConst() && !isSetup(n)){
     Polynomial poly = Polynomial::parsePolynomial(n);
     Polynomial::iterator it = poly.begin();
@@ -1481,11 +1480,6 @@ void TheoryArithPrivate::setupAtom(TNode atom) {
 
 void TheoryArithPrivate::preRegisterTerm(TNode n) {
   Debug("arith::preregister") <<"begin arith::preRegisterTerm("<< n <<")"<< endl;
-
-  if (d_nonlinearExtension != nullptr)
-  {
-    d_nonlinearExtension->preRegisterTerm(n);
-  }
 
   try {
     if(isRelationOperator(n.getKind())){
@@ -1980,7 +1974,6 @@ void TheoryArithPrivate::outputConflict(TNode lit) {
 
 void TheoryArithPrivate::outputPropagate(TNode lit) {
   Debug("arith::channel") << "Arith propagation: " << lit << std::endl;
-  // call the propagate lit method of the
   d_containing.propagatePrivateLit(lit);
 }
 
@@ -1988,20 +1981,6 @@ void TheoryArithPrivate::outputRestart() {
   Debug("arith::channel") << "Arith restart!" << std::endl;
   (d_containing.d_out)->demandRestart();
 }
-
-// void TheoryArithPrivate::branchVector(const std::vector<ArithVar>& lemmas){
-//   //output the lemmas
-//   for(vector<ArithVar>::const_iterator i = lemmas.begin(); i != lemmas.end();
-//   ++i){
-//     ArithVar v = *i;
-//     Assert(!d_cutInContext.contains(v));
-//     d_cutInContext.insert(v);
-//     d_cutCount = d_cutCount + 1;
-//     Node lem = branchIntegerVariable(v);
-//     outputLemma(lem);
-//     ++(d_statistics.d_externalBranchAndBounds);
-//   }
-// }
 
 bool TheoryArithPrivate::attemptSolveInteger(Theory::Effort effortLevel, bool emmmittedLemmaOrSplit){
   int level = getSatContext()->getLevel();
@@ -3327,6 +3306,7 @@ bool TheoryArithPrivate::hasFreshArithLiteral(Node n) const{
 
 bool TheoryArithPrivate::preCheck(Theory::Effort level)
 {
+  Assert(d_currentPropagationList.empty());
   if(Debug.isOn("arith::consistency")){
     Assert(unenqueuedVariablesAreConsistent());
   }
@@ -3343,7 +3323,7 @@ bool TheoryArithPrivate::preCheck(Theory::Effort level)
   return false;
 }
 
-void TheoryArithPrivate::notifyFact(TNode atom, bool pol, TNode fact)
+void TheoryArithPrivate::preNotifyFact(TNode atom, bool pol, TNode fact)
 {
   ConstraintP curr = constraintFromFactQueue(fact);
   if (curr != NullConstraint)
@@ -3362,7 +3342,13 @@ void TheoryArithPrivate::postCheck(Theory::Effort effortLevel)
       d_nonlinearExtension->check(effortLevel);
     }
     return;
+=======
+>>>>>>> cd91768f52349bd14399e49b2fbc4e59bb659ded
   }
+}
+
+void TheoryArithPrivate::postCheck(Theory::Effort effortLevel)
+{
   if(!anyConflict()){
     while(!d_learnedBounds.empty()){
       // we may attempt some constraints twice.  this is okay!
@@ -3874,15 +3860,6 @@ void TheoryArithPrivate::debugPrintModel(std::ostream& out) const{
   }
 }
 
-bool TheoryArithPrivate::needsCheckLastEffort() {
-  if (d_nonlinearExtension != nullptr)
-  {
-    return d_nonlinearExtension->needsCheckLastEffort();
-  }else{
-    return false;
-  }
-}
-
 Node TheoryArithPrivate::explain(TNode n)
 {
   Debug("arith::explain") << "explain @" << getSatContext()->getLevel() << ": " << n << endl;
@@ -4273,11 +4250,6 @@ void TheoryArithPrivate::presolve(){
     Node lem = *i;
     Debug("arith::oldprop") << " lemma lemma duck " <<lem << endl;
     outputLemma(lem);
-  }
-
-  if (d_nonlinearExtension != nullptr)
-  {
-    d_nonlinearExtension->presolve();
   }
 }
 
