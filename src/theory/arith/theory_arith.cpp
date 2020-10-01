@@ -174,7 +174,11 @@ bool TheoryArith::needsCheckLastEffort() {
   return false;
 }
 
-TrustNode TheoryArith::explain(TNode n) { return d_aim.explainLit(n); }
+TrustNode TheoryArith::explain(TNode n)
+{
+  Node exp = d_internal->explain(n);
+  return TrustNode::mkTrustPropExp(n, exp, nullptr);
+}
 
 void TheoryArith::propagate(Effort e) {
   d_internal->propagate(e);

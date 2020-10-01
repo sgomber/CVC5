@@ -3335,20 +3335,6 @@ void TheoryArithPrivate::preNotifyFact(TNode atom, bool pol, TNode fact)
 
 void TheoryArithPrivate::postCheck(Theory::Effort effortLevel)
 {
-  if (effortLevel == Theory::EFFORT_LAST_CALL)
-  {
-    if (d_nonlinearExtension != nullptr)
-    {
-      d_nonlinearExtension->check(effortLevel);
-    }
-    return;
-=======
->>>>>>> cd91768f52349bd14399e49b2fbc4e59bb659ded
-  }
-}
-
-void TheoryArithPrivate::postCheck(Theory::Effort effortLevel)
-{
   if(!anyConflict()){
     while(!d_learnedBounds.empty()){
       // we may attempt some constraints twice.  this is okay!

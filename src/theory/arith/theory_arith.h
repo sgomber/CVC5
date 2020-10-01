@@ -135,8 +135,6 @@ class TheoryArith : public Theory {
   eq::ProofEqEngine* getProofEqEngine();
   /** The state object wrapping TheoryArithPrivate  */
   ArithState d_astate;
-  /** The arithmetic inference manager FIXME experimental */
-  ArithInferManager d_aim;
   /** The equality solver */
   std::unique_ptr<EqualitySolver> d_eqSolver;
   /** The arith::InferenceManager. */
