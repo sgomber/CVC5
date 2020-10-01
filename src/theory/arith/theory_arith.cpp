@@ -182,7 +182,7 @@ void TheoryArith::notifyFact(TNode atom, bool pol, TNode fact, bool isInternal)
   // if not in conflict from pure equality
   if (!d_astate.isInConflict())
   {
-    d_internal->notifyFact(atom, pol, fact);
+    d_internal->preNotifyFact(atom, pol, fact);
   }
 }
 
