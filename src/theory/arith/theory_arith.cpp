@@ -161,10 +161,29 @@ void TheoryArith::postCheck(Effort level)
 bool TheoryArith::preNotifyFact(
     TNode atom, bool pol, TNode fact, bool isPrereg, bool isInternal)
 {
+  if (d_eqSolver != nullptr)
+  {
+    // assert equalities directly to equality engine
+    if (!d_eqSolver->preNotifyFact(atom, pol, fact))
+    {
+      return false;
+    }
+  }
   d_internal->preNotifyFact(atom, pol, fact);
   // We do not assert to the equality engine of arithmetic in the standard way,
   // hence we return "true" to indicate we are finished with this fact.
   return true;
+}
+
+void TheoryArith::notifyFact(TNode atom, bool pol, TNode fact, bool isInternal)
+{
+  Assert(d_eqSolver != nullptr);
+  d_eqSolver->notifyFact(atom, pol, fact, isInternal);
+  // if not in conflict from pure equality
+  if (!d_astate.isInConflict())
+  {
+    d_internal->notifyFact(atom, pol, fact);
+  }
 }
 
 bool TheoryArith::needsCheckLastEffort() {
