@@ -33,6 +33,7 @@ CombinationEngine::CombinationEngine(TheoryEngine& te,
                                      const std::vector<Theory*>& paraTheories,
                                      ProofNodeManager* pnm)
     : d_te(te),
+      d_pnm(pnm),
       d_logicInfo(te.getLogicInfo()),
       d_paraTheories(paraTheories),
       d_paraSet(0),
@@ -52,7 +53,7 @@ void CombinationEngine::finishInit()
   if (options::eeMode() == options::EqEngineMode::DISTRIBUTED)
   {
     // use the distributed shared solver
-    d_sharedSolver.reset(new SharedSolverDistributed(d_te));
+    d_sharedSolver.reset(new SharedSolverDistributed(d_te, d_pnm));
     // make the distributed equality engine manager
     d_eemanager.reset(
         new EqEngineManagerDistributed(d_te, *d_sharedSolver.get()));

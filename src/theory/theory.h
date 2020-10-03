@@ -610,9 +610,6 @@ class Theory {
    *
    * Theories that use this check method must use an official theory
    * state object (d_theoryState).
-   *
-   * TODO (project #39): this method should be non-virtual, once all theories
-   * conform to the new standard
    */
   void check(Effort level = EFFORT_FULL);
   /**
