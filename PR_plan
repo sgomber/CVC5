@@ -13,6 +13,7 @@ PR done:
 (13) Cleanup model building and connect combination engine (req 7, 12)
 (17) Theory state
 (18) Strings/sets solver state inherit from solver state
+(19) per each theory, update to standard templates (req 9)
 (21) standard states (req 18)
 (22) simplify eq notifications (eqNotifyTriggerEquality)
 (24) Shared solver / shared solver distributed
@@ -20,12 +21,11 @@ PR done:
 (26) equality engine interface basic extension
 (28) Model manager distributed more flexible
 (29) Update eem, combination, theory engine to use shared solver (req 24, 28)
+(30) shared term database dynamic allocate ee (req 29)
 
 PR current:
 
 (4) Merge build model passes *
-(19) per each theory, update to standard templates (req 9) *
-(30) shared term database dynamic allocate ee (req 29) *
 
 PR planned:
 
