@@ -29,7 +29,7 @@ namespace theory {
 class SharedSolverTest : public SharedSolver
 {
  public:
-  SharedSolverTest(TheoryEngine& te);
+  SharedSolverTest(TheoryEngine& te, ProofNodeManager* pnm);
   virtual ~SharedSolverTest() {}
   //------------------------------------- initialization
   /**

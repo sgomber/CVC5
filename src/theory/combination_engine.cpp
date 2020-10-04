@@ -63,7 +63,7 @@ void CombinationEngine::finishInit()
   else if (options::eeMode() == options::EqEngineMode::TEST)
   {
     // use the distributed shared solver
-    d_sharedSolver.reset(new SharedSolverTest(d_te));
+    d_sharedSolver.reset(new SharedSolverTest(d_te, d_pnm));
     // make the distributed equality engine manager
     d_eemanager.reset(new EqEngineManagerTest(d_te, *d_sharedSolver.get()));
     // make the distributed model manager
@@ -72,7 +72,7 @@ void CombinationEngine::finishInit()
   else if (options::eeMode() == options::EqEngineMode::CENTRAL)
   {
     // use the central shared solver
-    d_sharedSolver.reset(new SharedSolverCentral(d_te));
+    d_sharedSolver.reset(new SharedSolverCentral(d_te, d_pnm));
     // make the central equality engine manager
     d_eemanager.reset(new EqEngineManagerCentral(d_te, *d_sharedSolver.get()));
     // d_mmanager.reset(new ModelManagerCentral(d_te, *eeCentral.get()));

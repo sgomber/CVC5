@@ -21,8 +21,8 @@
 namespace CVC4 {
 namespace theory {
 
-SharedSolverCentral::SharedSolverCentral(TheoryEngine& te)
-    : SharedSolver(te), d_centralEe(nullptr)
+SharedSolverCentral::SharedSolverCentral(TheoryEngine& te, ProofNodeManager* pnm)
+    : SharedSolver(te, pnm), d_centralEe(nullptr)
 {
 }
 

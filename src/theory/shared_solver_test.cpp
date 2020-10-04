@@ -19,8 +19,8 @@
 namespace CVC4 {
 namespace theory {
 
-SharedSolverTest::SharedSolverTest(TheoryEngine& te)
-    : SharedSolver(te), d_centralEe(nullptr)
+SharedSolverTest::SharedSolverTest(TheoryEngine& te, ProofNodeManager* pnm)
+    : SharedSolver(te, pnm), d_centralEe(nullptr)
 {
 }
 
