@@ -180,3 +180,12 @@ header = "options/datatypes_options.h"
   default    = "-1"
   read_only  = true
   help       = "tells enumerative sygus to only consider solutions up to term size N (-1 == no limit, default)"
+  
+[[option]]
+  name       = "dtInstInternal"
+  category   = "regular"
+  long       = "dt-inst-internal"
+  type       = "bool"
+  default    = "true"
+  read_only  = true
+  help       = "keep instantiate inferences as internal facts when possible"
