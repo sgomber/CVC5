@@ -68,7 +68,7 @@ void CombinationModelBased::combineTheories()
          "lemma";
   for (const std::pair<TrustNode, TheoryId>& p : d_cmbLemmas)
   {
-    sendLemma(p.first, p.second);
+    d_sharedSolver->sendLemma(p.first, p.second);
   }
   d_cmbLemmas.clear();
 
@@ -284,7 +284,7 @@ unsigned CombinationModelBased::checkSplitCandidate(TNode a,
                && !d_sharedTerms->areDisequal(a, b)));
     Node split = equality.orNode(equality.notNode());
     TrustNode tsplit = TrustNode::mkTrustLemma(split, nullptr);
-    sendLemma(tsplit, tid);
+    d_sharedSolver->sendLemma(tsplit, tid);
     Node e = d_te.ensureLiteral(equality);
     d_te.getPropEngine()->requirePhase(e, true);
     Trace("tc-model-split")
@@ -464,7 +464,7 @@ void CombinationModelBased::combineTheoriesOld()
           Trace("tc-model-split")
               << "Ackermanization lemma : " << lem << std::endl;
           TrustNode tlem = TrustNode::mkTrustLemma(lem, nullptr);
-          sendLemma(tlem, tid);
+          d_sharedSolver->sendLemma(tlem, tid);
           numSplits++;
         }
         else

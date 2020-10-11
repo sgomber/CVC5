@@ -136,11 +136,6 @@ eq::EqualityEngineNotify* CombinationEngine::getModelEqualityEngineNotify()
   return nullptr;
 }
 
-void CombinationEngine::sendLemma(TrustNode trn, TheoryId atomsTo)
-{
-  d_te.lemma(trn, LemmaProperty::NONE, atomsTo);
-}
-
 bool CombinationEngine::isParametric(TheoryId tid) const
 {
   // FIXME: necessary?

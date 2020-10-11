@@ -117,8 +117,6 @@ class CombinationEngine
   virtual eq::EqualityEngineNotify* getModelEqualityEngineNotify();
   /** Is theory tid parametric? */
   bool isParametric(TheoryId tid) const;
-  /** Send lemma to the theory engine, atomsTo is the theory to send atoms to */
-  void sendLemma(TrustNode trn, TheoryId atomsTo);
   /** Reference to the theory engine */
   TheoryEngine& d_te;
   /** The proof node manager */
