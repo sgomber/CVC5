@@ -38,6 +38,17 @@ struct PurifySkolemAttributeId
 };
 typedef expr::Attribute<PurifySkolemAttributeId, Node> PurifySkolemAttribute;
 
+/** Attribute for the kind that a node purifies */
+struct PurifyKindAttributeId
+{
+};
+typedef expr::Attribute<PurifyKindAttributeId, uint32_t> PurifyKindAttribute;
+/** Attribute for the (parametrized) op that a node purifies */
+struct PurifyKindOpAttributeId
+{
+};
+typedef expr::Attribute<PurifyKindOpAttributeId, Node> PurifyKindOpAttribute;
+
 Node SkolemManager::mkSkolem(Node v,
                              Node pred,
                              const std::string& prefix,
@@ -190,6 +201,104 @@ Node SkolemManager::mkExistential(Node t, Node p)
   Node bvl = nm->mkNode(BOUND_VAR_LIST, v);
   Node psubs = p.substitute(TNode(t), TNode(v));
   return nm->mkNode(EXISTS, bvl, psubs);
+}
+
+Node SkolemManager::mkPurifyKindApp(Node app)
+{
+  Assert(app.getKind() != APPLY_UF);
+  NodeManager* nm = NodeManager::currentNM();
+  Node op;
+  if (app.getMetaKind() == kind::metakind::PARAMETERIZED)
+  {
+    op = app.getOperator();
+  }
+  std::vector<TypeNode> argTypes;
+  std::vector<Node> args;
+  for (const Node& nc : app)
+  {
+    argTypes.push_back(nc.getType());
+    args.push_back(nc);
+  }
+  TypeNode rangeType = app.getType();
+  TypeNode ftn = nm->mkFunctionType(argTypes, rangeType);
+  Node sk = mkPurifyKindUf(app.getKind(), op, ftn);
+  args.insert(args.begin(), sk);
+  return nm->mkNode(APPLY_UF, args);
+}
+
+Kind SkolemManager::getPurifyKindForUf(Node op) const
+{
+  PurifyKindAttribute pka;
+  if (op.hasAttribute(pka))
+  {
+    uint32_t uk = op.getAttribute(pka);
+    return static_cast<Kind>(uk);
+  }
+  return kind::UNDEFINED_KIND;
+}
+
+Node SkolemManager::getPurifyKindOpForUf(Node op) const
+{
+  PurifyKindOpAttribute pkoa;
+  if (op.hasAttribute(pkoa))
+  {
+    return op.getAttribute(pkoa);
+  }
+  return Node::null();
+}
+
+Node SkolemManager::mkPurifyKindUf(Kind k, Node op, TypeNode ftn)
+{
+  std::tuple<Kind, Node, TypeNode> key(k, op, ftn);
+  std::map<std::tuple<Kind, Node, TypeNode>, Node>::iterator it =
+      d_kindToUf.find(key);
+  if (it != d_kindToUf.end())
+  {
+    Assert(it->second.getType() == ftn);
+    return it->second;
+  }
+  Assert(ftn.isFunction());
+  std::vector<TypeNode> argTypes = ftn.getArgTypes();
+  TypeNode rangeType = ftn.getRangeType();
+  // make the lambda
+  NodeManager* nm = NodeManager::currentNM();
+  std::vector<Node> args;
+  if (!op.isNull())
+  {
+    args.push_back(op);
+  }
+  std::vector<Node> largs;
+  for (const TypeNode& atn : argTypes)
+  {
+    Node v = nm->mkBoundVar(atn);
+    args.push_back(v);
+    largs.push_back(v);
+  }
+  Node app = nm->mkNode(k, args);
+  Node bvl = nm->mkNode(BOUND_VAR_LIST, largs);
+  Node lambda = nm->mkNode(kind::LAMBDA, bvl, app);
+  Node sk = mkPurifySkolem(lambda, "ufk");
+  PurifyKindAttribute pka;
+  uint32_t uk = static_cast<uint32_t>(k);
+  sk.setAttribute(pka, uk);
+  if (!op.isNull())
+  {
+    PurifyKindOpAttribute pkoa;
+    sk.setAttribute(pkoa, op);
+  }
+  d_kindToUf[key] = sk;
+  return sk;
+}
+
+std::vector<Node> SkolemManager::getPurifyKindUfs() const
+{
+  std::vector<Node> ufs;
+  for (const std::pair<const std::tuple<Kind, Node, TypeNode>, Node>& ku :
+       d_kindToUf)
+  {
+    ufs.push_back(ku.second);
+  }
+  return ufs;
 }
 
 ProofGenerator* SkolemManager::getProofGenerator(Node t)
