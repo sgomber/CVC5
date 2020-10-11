@@ -1894,7 +1894,7 @@ theory::TrustNode TheoryEngine::getExplanation(
     {
       // trust that it came from SAT solver??
       // toExplain.d_theory = THEORY_SAT_SOLVER;
-      explanationVector[j++] = explanationVector[i++];
+      exp.insert(explanationVector[i++].d_node);
       continue;
     }
     // end HACK-centralEe
