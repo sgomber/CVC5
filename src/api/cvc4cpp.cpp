@@ -79,6 +79,7 @@ const static std::unordered_map<Kind, CVC4::Kind, KindHashFunction> s_kinds{
     {DISTINCT, CVC4::Kind::DISTINCT},
     {CONSTANT, CVC4::Kind::VARIABLE},
     {VARIABLE, CVC4::Kind::BOUND_VARIABLE},
+    {SEXPR, CVC4::Kind::SEXPR},
     {LAMBDA, CVC4::Kind::LAMBDA},
     {WITNESS, CVC4::Kind::WITNESS},
     /* Boolean ------------------------------------------------------------- */
@@ -267,6 +268,8 @@ const static std::unordered_map<Kind, CVC4::Kind, KindHashFunction> s_kinds{
     {BAG_CARD, CVC4::Kind::BAG_CARD},
     {BAG_CHOOSE, CVC4::Kind::BAG_CHOOSE},
     {BAG_IS_SINGLETON, CVC4::Kind::BAG_IS_SINGLETON},
+    {BAG_FROM_SET, CVC4::Kind::BAG_FROM_SET},
+    {BAG_TO_SET, CVC4::Kind::BAG_TO_SET},
     /* Strings ------------------------------------------------------------- */
     {STRING_CONCAT, CVC4::Kind::STRING_CONCAT},
     {STRING_IN_REGEXP, CVC4::Kind::STRING_IN_REGEXP},
@@ -570,6 +573,8 @@ const static std::unordered_map<CVC4::Kind, Kind, CVC4::kind::KindHashFunction>
         {CVC4::Kind::BAG_CARD, BAG_CARD},
         {CVC4::Kind::BAG_CHOOSE, BAG_CHOOSE},
         {CVC4::Kind::BAG_IS_SINGLETON, BAG_IS_SINGLETON},
+        {CVC4::Kind::BAG_FROM_SET, BAG_FROM_SET},
+        {CVC4::Kind::BAG_TO_SET, BAG_TO_SET},
         /* Strings --------------------------------------------------------- */
         {CVC4::Kind::STRING_CONCAT, STRING_CONCAT},
         {CVC4::Kind::STRING_IN_REGEXP, STRING_IN_REGEXP},
@@ -752,9 +757,34 @@ class CVC4ApiExceptionStream
   std::stringstream d_stream;
 };
 
+class CVC4ApiRecoverableExceptionStream
+{
+ public:
+  CVC4ApiRecoverableExceptionStream() {}
+  /* Note: This needs to be explicitly set to 'noexcept(false)' since it is
+   * a destructor that throws an exception and in C++11 all destructors
+   * default to noexcept(true) (else this triggers a call to std::terminate). */
+  ~CVC4ApiRecoverableExceptionStream() noexcept(false)
+  {
+    if (!std::uncaught_exception())
+    {
+      throw CVC4ApiRecoverableException(d_stream.str());
+    }
+  }
+
+  std::ostream& ostream() { return d_stream; }
+
+ private:
+  std::stringstream d_stream;
+};
+
 #define CVC4_API_CHECK(cond) \
   CVC4_PREDICT_TRUE(cond)    \
   ? (void)0 : OstreamVoider() & CVC4ApiExceptionStream().ostream()
+
+#define CVC4_API_RECOVERABLE_CHECK(cond) \
+  CVC4_PREDICT_TRUE(cond)                \
+  ? (void)0 : OstreamVoider() & CVC4ApiRecoverableExceptionStream().ostream()
 
 #define CVC4_API_CHECK_NOT_NULL                     \
   CVC4_API_CHECK(!isNullHelper())                   \
@@ -1031,7 +1061,15 @@ Sort Sort::instantiate(const std::vector<Sort>& params) const
                   .toType());
 }
 
-std::string Sort::toString() const { return d_type->toString(); }
+std::string Sort::toString() const
+{
+  if (d_solver != nullptr)
+  {
+    NodeManagerScope scope(d_solver->getNodeManager());
+    return d_type->toString();
+  }
+  return d_type->toString();
+}
 
 // !!! This is only temporarily available until the parser is fully migrated
 // to the new API. !!!
@@ -1452,6 +1490,11 @@ std::string Op::toString() const
   {
     CVC4_API_CHECK(!d_node->isNull())
         << "Expecting a non-null internal expression";
+    if (d_solver != nullptr)
+    {
+      NodeManagerScope scope(d_solver->getNodeManager());
+      return d_node->toString();
+    }
     return d_node->toString();
   }
 }
@@ -1686,7 +1729,7 @@ Op Term::getOp() const
 
 bool Term::isNull() const { return isNullHelper(); }
 
-bool Term::isConst() const
+bool Term::isValue() const
 {
   CVC4_API_CHECK_NOT_NULL;
   return d_node->isConst();
@@ -1829,7 +1872,15 @@ Term Term::iteTerm(const Term& then_t, const Term& else_t) const
   }
 }
 
-std::string Term::toString() const { return d_node->toString(); }
+std::string Term::toString() const
+{
+  if (d_solver != nullptr)
+  {
+    NodeManagerScope scope(d_solver->getNodeManager());
+    return d_node->toString();
+  }
+  return d_node->toString();
+}
 
 Term::const_iterator::const_iterator()
     : d_solver(nullptr), d_origNode(nullptr), d_pos(0)
@@ -2271,11 +2322,9 @@ Term DatatypeConstructor::getSpecializedConstructorTerm(Sort retSort) const
       d_ctor->getConstructor());
   (void)ret.getType(true); /* kick off type checking */
   // apply type ascription to the operator
-  Term sctor =
-      api::Term(d_solver,
-                ret);
+  Term sctor = api::Term(d_solver, ret);
   return sctor;
-  
+
   CVC4_API_SOLVER_TRY_CATCH_END;
 }
 
@@ -3701,6 +3750,23 @@ Term Solver::mkEmptySet(Sort s) const
   CVC4_API_SOLVER_TRY_CATCH_END;
 }
 
+Term Solver::mkSingleton(Sort s, Term t) const
+{
+  NodeManagerScope scope(getNodeManager());
+
+  CVC4_API_SOLVER_TRY_CATCH_BEGIN;
+  CVC4_API_ARG_CHECK_EXPECTED(!t.isNull(), t) << "non-null term";
+  CVC4_API_SOLVER_CHECK_TERM(t);
+  checkMkTerm(SINGLETON, 1);
+
+  TypeNode typeNode = TypeNode::fromType(*s.d_type);
+  Node res = getNodeManager()->mkSingleton(typeNode, *t.d_node);
+  (void)res.getType(true); /* kick off type checking */
+  return Term(this, res);
+
+  CVC4_API_SOLVER_TRY_CATCH_END;
+}
+
 Term Solver::mkEmptyBag(Sort s) const
 {
   CVC4_API_SOLVER_TRY_CATCH_BEGIN;
@@ -5058,7 +5124,7 @@ std::vector<Term> Solver::getUnsatCore(void) const
   CVC4_API_CHECK(d_smtEngine->getOptions()[options::unsatCores])
       << "Cannot get unsat core unless explicitly enabled "
          "(try --produce-unsat-cores)";
-  CVC4_API_CHECK(d_smtEngine->getSmtMode() == SmtMode::UNSAT)
+  CVC4_API_RECOVERABLE_CHECK(d_smtEngine->getSmtMode() == SmtMode::UNSAT)
       << "Cannot get unsat core unless in unsat mode.";
   UnsatCore core = d_smtEngine->getUnsatCore();
   /* Can not use
@@ -5106,6 +5172,28 @@ std::vector<Term> Solver::getValue(const std::vector<Term>& terms) const
     res.push_back(Term(this, d_smtEngine->getValue(terms[i].d_node->toExpr())));
   }
   return res;
+  CVC4_API_SOLVER_TRY_CATCH_END;
+}
+
+Term Solver::getQuantifierElimination(api::Term q) const
+{
+  CVC4_API_SOLVER_TRY_CATCH_BEGIN;
+  CVC4_API_ARG_CHECK_NOT_NULL(q);
+  CVC4_API_SOLVER_CHECK_TERM(q);
+  CVC4::ExprManagerScope exmgrs(*(d_exprMgr.get()));
+  return Term(this,
+              d_smtEngine->getQuantifierElimination(q.getNode(), true, true));
+  CVC4_API_SOLVER_TRY_CATCH_END;
+}
+
+Term Solver::getQuantifierEliminationDisjunct(api::Term q) const
+{
+  CVC4_API_SOLVER_TRY_CATCH_BEGIN;
+  CVC4_API_ARG_CHECK_NOT_NULL(q);
+  CVC4_API_SOLVER_CHECK_TERM(q);
+  CVC4::ExprManagerScope exmgrs(*(d_exprMgr.get()));
+  return Term(
+      this, d_smtEngine->getQuantifierElimination(q.getNode(), false, true));
   CVC4_API_SOLVER_TRY_CATCH_END;
 }
 
@@ -5245,6 +5333,51 @@ void Solver::printModel(std::ostream& out) const
   CVC4_API_CHECK(d_smtEngine->getSmtMode() != SmtMode::UNSAT)
       << "Cannot get value when in unsat mode.";
   out << *d_smtEngine->getModel();
+  CVC4_API_SOLVER_TRY_CATCH_END;
+}
+
+void Solver::blockModel() const
+{
+  CVC4_API_SOLVER_TRY_CATCH_BEGIN;
+  CVC4::ExprManagerScope exmgrs(*(d_exprMgr.get()));
+  CVC4_API_CHECK(d_smtEngine->getOptions()[options::produceModels])
+      << "Cannot get value unless model generation is enabled "
+         "(try --produce-models)";
+  CVC4_API_CHECK(d_smtEngine->getSmtMode() != SmtMode::UNSAT)
+      << "Cannot get value when in unsat mode.";
+  d_smtEngine->blockModel();
+  CVC4_API_SOLVER_TRY_CATCH_END;
+}
+
+void Solver::blockModelValues(const std::vector<Term>& terms) const
+{
+  CVC4_API_SOLVER_TRY_CATCH_BEGIN;
+  CVC4_API_CHECK(d_smtEngine->getOptions()[options::produceModels])
+      << "Cannot get value unless model generation is enabled "
+         "(try --produce-models)";
+  CVC4_API_CHECK(d_smtEngine->getSmtMode() != SmtMode::UNSAT)
+      << "Cannot get value when in unsat mode.";
+  CVC4_API_ARG_SIZE_CHECK_EXPECTED(!terms.empty(), terms)
+      << "a non-empty set of terms";
+  for (int i = 0; i < terms.size(); ++i)
+  {
+    CVC4_API_ARG_AT_INDEX_CHECK_EXPECTED(
+        !terms[i].isNull(), "term", terms[i], i)
+        << "a non-null term";
+    CVC4_API_ARG_AT_INDEX_CHECK_EXPECTED(
+        this == terms[i].d_solver, "term", terms[i], i)
+        << "a term associated to this solver object";
+  }
+  CVC4::ExprManagerScope exmgrs(*(d_exprMgr.get()));
+  d_smtEngine->blockModelValues(termVectorToExprs(terms));
+  CVC4_API_SOLVER_TRY_CATCH_END;
+}
+
+void Solver::printInstantiations(std::ostream& out) const
+{
+  CVC4_API_SOLVER_TRY_CATCH_BEGIN;
+  CVC4::ExprManagerScope exmgrs(*(d_exprMgr.get()));
+  d_smtEngine->printInstantiations(out);
   CVC4_API_SOLVER_TRY_CATCH_END;
 }
 
