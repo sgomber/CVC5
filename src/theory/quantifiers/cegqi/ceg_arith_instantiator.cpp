@@ -747,8 +747,9 @@ bool ArithInstantiator::postProcessInstantiationForVariable(
   sf.d_subs[index] = veq[1];
   if (!veq_c.isNull())
   {
+    Kind dk = veq[1].getType().isInteger() ? INTS_DIVISION_TOTAL : DIVISION_TOTAL;
     NodeManager* nm = NodeManager::currentNM();
-    sf.d_subs[index] = nm->mkNode(INTS_DIVISION_TOTAL, veq[1], veq_c);
+    sf.d_subs[index] = nm->mkNode(dk, veq[1], veq_c);
     Trace("cegqi-arith-debug")
         << "...bound type is : " << sf.d_props[index].d_type << std::endl;
     // intger division rounding up if from a lower bound
