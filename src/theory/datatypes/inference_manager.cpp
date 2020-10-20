@@ -42,12 +42,6 @@ InferenceManager::~InferenceManager()
   smtStatisticsRegistry()->unregisterStat(&d_inferenceFacts);
 }
 
-void InferenceManager::assertInference(Node conc, Node exp, ProofGenerator* pg)
-{
-  DatatypesInference dti(conc, exp, pg);
-  // immediately process
-  dti.process(this, false);
-}
 void InferenceManager::addPendingInference(Node conc,
                                            Node exp,
                                            bool forceLemma,

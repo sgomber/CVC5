@@ -54,8 +54,7 @@ TrustNode ArithInferManager::explainLit(TNode lit)
     }
   }
   // otherwise we explain with the private solver
-  Node exp = d_private.explain(lit);
-  return TrustNode::mkTrustPropExp(lit, exp, nullptr);
+  return d_private.explain(lit);
 }
 
 bool ArithInferManager::propagateManagedLit(TNode lit, bool fromPrivate)
