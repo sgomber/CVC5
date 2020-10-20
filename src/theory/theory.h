@@ -125,9 +125,6 @@ class Theory {
   /** Information about the logic we're operating within. */
   const LogicInfo& d_logicInfo;
 
-  /** Pointer to proof node manager */
-  ProofNodeManager* d_pnm;
-
   /**
    * The assertFact() queue.
    *
@@ -238,6 +235,9 @@ class Theory {
    * the equality engine are used properly.
    */
   TheoryInferenceManager* d_inferManager;
+
+  /** Pointer to proof node manager */
+  ProofNodeManager* d_pnm;
 
   /**
    * Needs shared term trigger equalities as facts.
