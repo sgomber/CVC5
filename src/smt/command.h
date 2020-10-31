@@ -31,8 +31,6 @@
 #include "api/cvc4cpp.h"
 #include "expr/expr.h"
 #include "expr/type.h"
-#include "expr/variable_type_map.h"
-#include "proof/unsat_core.h"
 #include "util/result.h"
 #include "util/sexpr.h"
 
@@ -43,6 +41,7 @@ class Solver;
 class Term;
 }  // namespace api
 
+class UnsatCore;
 class SmtEngine;
 class Command;
 class CommandStatus;
@@ -911,29 +910,6 @@ class CVC4_PUBLIC SimplifyCommand : public Command
       OutputLanguage language = language::output::LANG_AUTO) const override;
 }; /* class SimplifyCommand */
 
-class CVC4_PUBLIC ExpandDefinitionsCommand : public Command
-{
- protected:
-  api::Term d_term;
-  api::Term d_result;
-
- public:
-  ExpandDefinitionsCommand(api::Term term);
-
-  api::Term getTerm() const;
-  api::Term getResult() const;
-  void invoke(api::Solver* solver) override;
-  void printResult(std::ostream& out, uint32_t verbosity = 2) const override;
-  Command* clone() const override;
-  std::string getCommandName() const override;
-  void toStream(
-      std::ostream& out,
-      int toDepth = -1,
-      bool types = false,
-      size_t dag = 1,
-      OutputLanguage language = language::output::LANG_AUTO) const override;
-}; /* class ExpandDefinitionsCommand */
-
 class CVC4_PUBLIC GetValueCommand : public Command
 {
  protected:
@@ -1247,7 +1223,7 @@ class CVC4_PUBLIC GetUnsatCoreCommand : public Command
 {
  public:
   GetUnsatCoreCommand();
-  const UnsatCore& getUnsatCore() const;
+  const std::vector<api::Term>& getUnsatCore() const;
 
   void invoke(api::Solver* solver) override;
   void printResult(std::ostream& out, uint32_t verbosity = 2) const override;
@@ -1262,8 +1238,10 @@ class CVC4_PUBLIC GetUnsatCoreCommand : public Command
       OutputLanguage language = language::output::LANG_AUTO) const override;
 
  protected:
-  // the result of the unsat core call
-  UnsatCore d_result;
+  /** The solver we were invoked with */
+  api::Solver* d_solver;
+  /** the result of the unsat core call */
+  std::vector<api::Term> d_result;
 }; /* class GetUnsatCoreCommand */
 
 class CVC4_PUBLIC GetAssertionsCommand : public Command

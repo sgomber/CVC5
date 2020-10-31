@@ -409,7 +409,7 @@ void CvcPrinter::toStream(
     case kind::APPLY_TYPE_ASCRIPTION: {
         toStream(out, n[0], depth, types, false);
         out << "::";
-        TypeNode t = TypeNode::fromType(n.getOperator().getConst<AscriptionType>().getType());
+        TypeNode t = n.getOperator().getConst<AscriptionType>().getType();
         out << (t.isFunctionLike() ? t.getRangeType() : t);
       }
       return;
@@ -644,6 +644,8 @@ void CvcPrinter::toStream(
       opType = PREFIX;
       break;
     case kind::TO_REAL:
+    case kind::CAST_TO_REAL:
+    {
       if (n[0].getKind() == kind::CONST_RATIONAL)
       {
         // print the constant as a rational
@@ -655,6 +657,7 @@ void CvcPrinter::toStream(
         toStream(out, n[0], depth, types, false);
       }
       return;
+    }
     case kind::DIVISIBLE:
       out << "DIVISIBLE(";
       toStream(out, n[0], depth, types, false);
