@@ -15,10 +15,10 @@
 #include "theory/quantifiers/sygus/sygus_qe_preproc.h"
 
 #include "expr/node_algorithm.h"
+#include "theory/quantifiers/quantifiers_attributes.h"
 #include "theory/quantifiers/single_inv_partition.h"
 #include "theory/rewriter.h"
 #include "theory/smt_engine_subsolver.h"
-#include "theory/quantifiers/quantifiers_attributes.h"
 
 using namespace CVC4::kind;
 
@@ -37,7 +37,7 @@ Node SygusQePreproc::preprocess(Node q)
   std::vector<Node> unsf;
   std::map<Node, Node> solvedf;
   decomposeConjecture(q, allf, unsf, solvedf);
-  
+
   // Get the functions that we would be applying single invocation for, which
   // are the functions of maximal arity having the same type.
   std::vector<Node> maxf;
@@ -48,9 +48,9 @@ Node SygusQePreproc::preprocess(Node q)
     Trace("cegqi-qep") << "...max arity type mismatch, fail." << std::endl;
     return Node::null();
   }
-  
+
   Trace("cegqi-qep-debug") << "Compute single invocation for " << q << "..."
-                     << std::endl;
+                           << std::endl;
   SingleInvocationPartition sip;
   Node body = q[1];
   if (body.getKind() == NOT && body[0].getKind() == FORALL)
@@ -63,22 +63,24 @@ Node SygusQePreproc::preprocess(Node q)
 
   if (sip.isPurelySingleInvocation())
   {
-    if (maxf.size()<unsf.size())
+    if (maxf.size() < unsf.size())
     {
       Trace("cegqi-qep") << "...eliminate functions." << std::endl;
       // solve for a subset of the functions
       Node ret = eliminateFunctions(q, allf, maxf, remf, solvedf, sip);
-      Trace("cegqi-qep") << "...eliminate functions returned " << ret << std::endl;
+      Trace("cegqi-qep") << "...eliminate functions returned " << ret
+                         << std::endl;
       return ret;
     }
     Trace("cegqi-qep") << "...pure single invocation, success." << std::endl;
     return Node::null();
   }
-  
+
   if (!sip.isNonGroundSingleInvocation())
   {
     // property is not single invocation, fail
-    Trace("cegqi-qep") << "...not non-ground single invocation, fail." << std::endl;
+    Trace("cegqi-qep") << "...not non-ground single invocation, fail."
+                       << std::endl;
     return Node::null();
   }
   Trace("cegqi-qep") << "...eliminate variables." << std::endl;
@@ -88,15 +90,20 @@ Node SygusQePreproc::preprocess(Node q)
   return ret;
 }
 
-Node SygusQePreproc::eliminateVariables(Node q, const std::vector<Node>& allf, const std::vector<Node>& maxf, const std::vector<Node>& remf, std::map<Node, Node>& solvedf, SingleInvocationPartition& sip)
+Node SygusQePreproc::eliminateVariables(Node q,
+                                        const std::vector<Node>& allf,
+                                        const std::vector<Node>& maxf,
+                                        const std::vector<Node>& remf,
+                                        std::map<Node, Node>& solvedf,
+                                        SingleInvocationPartition& sip)
 {
   NodeManager* nm = NodeManager::currentNM();
   // create new smt engine to do quantifier elimination
   std::unique_ptr<SmtEngine> smt_qe;
   initializeSubsolver(smt_qe);
   Trace("cegqi-qep-debug") << "Property is non-ground single invocation, run "
-                        "QE to obtain single invocation."
-                     << std::endl;
+                              "QE to obtain single invocation."
+                           << std::endl;
   // partition variables
   std::vector<Node> all_vars;
   sip.getAllVariables(all_vars);
@@ -131,8 +138,8 @@ Node SygusQePreproc::eliminateVariables(Node q, const std::vector<Node>& allf, c
         "k", nqe_vars[i].getType(), "qe for non-ground single invocation");
     orig.push_back(nqe_vars[i]);
     subs.push_back(k);
-    Trace("cegqi-qep-debug") << "  subs : " << nqe_vars[i] << " -> " << k
-                       << std::endl;
+    Trace("cegqi-qep-debug")
+        << "  subs : " << nqe_vars[i] << " -> " << k << std::endl;
   }
   std::vector<Node> funcs1;
   sip.getFunctions(funcs1);
@@ -149,19 +156,18 @@ Node SygusQePreproc::eliminateVariables(Node q, const std::vector<Node>& allf, c
     Trace("cegqi-qep-debug") << "  subs : " << fi << " -> " << k << std::endl;
   }
   // all functions are constants FIXME
-  
-  
-  
+
   Node conj_se_ngsi = sip.getFullSpecification();
-  Trace("cegqi-qep-debug") << "Full specification is " << conj_se_ngsi << std::endl;
+  Trace("cegqi-qep-debug") << "Full specification is " << conj_se_ngsi
+                           << std::endl;
   Node conj_se_ngsi_subs = conj_se_ngsi.substitute(
       orig.begin(), orig.end(), subs.begin(), subs.end());
   Assert(!qe_vars.empty());
   conj_se_ngsi_subs = nm->mkNode(
       EXISTS, nm->mkNode(BOUND_VAR_LIST, qe_vars), conj_se_ngsi_subs.negate());
 
-  Trace("cegqi-qep-debug") << "Run quantifier elimination on " << conj_se_ngsi_subs
-                     << std::endl;
+  Trace("cegqi-qep-debug") << "Run quantifier elimination on "
+                           << conj_se_ngsi_subs << std::endl;
   Node qeRes = smt_qe->getQuantifierElimination(conj_se_ngsi_subs, true, false);
   Trace("cegqi-qep-debug") << "Result : " << qeRes << std::endl;
 
@@ -177,8 +183,8 @@ Node SygusQePreproc::eliminateVariables(Node q, const std::vector<Node>& allf, c
     Assert(q.getNumChildren() == 3);
     // use mkConjecture, which carries the solved information
     qeRes = mkConjecture(allf, solvedf, qeRes, q[2]);
-    Trace("cegqi-qep-debug") << "Converted conjecture after QE : " << qeRes
-                       << std::endl;
+    Trace("cegqi-qep-debug")
+        << "Converted conjecture after QE : " << qeRes << std::endl;
     qeRes = Rewriter::rewrite(qeRes);
     Node nq = qeRes;
     // must assert it is equivalent to the original
@@ -187,32 +193,39 @@ Node SygusQePreproc::eliminateVariables(Node q, const std::vector<Node>& allf, c
   return Node::null();
 }
 
-
-Node SygusQePreproc::eliminateFunctions(Node q, const std::vector<Node>& allf, const std::vector<Node>& maxf, const std::vector<Node>& remf, std::map<Node, Node>& solvedf, SingleInvocationPartition& sip)
+Node SygusQePreproc::eliminateFunctions(Node q,
+                                        const std::vector<Node>& allf,
+                                        const std::vector<Node>& maxf,
+                                        const std::vector<Node>& remf,
+                                        std::map<Node, Node>& solvedf,
+                                        SingleInvocationPartition& sip)
 {
   // FIXME
   NodeManager* nm = NodeManager::currentNM();
   return Node::null();
 }
 
-void SygusQePreproc::decomposeConjecture(Node q, std::vector<Node>& allf, std::vector<Node>& unsf, std::map<Node, Node>& solvedf)
+void SygusQePreproc::decomposeConjecture(Node q,
+                                         std::vector<Node>& allf,
+                                         std::vector<Node>& unsf,
+                                         std::map<Node, Node>& solvedf)
 {
-  Assert (q.getKind()==FORALL);
-  Assert (q.getNumChildren()==3);
+  Assert(q.getKind() == FORALL);
+  Assert(q.getNumChildren() == 3);
   Node ipl = q[2];
-  Assert (ipl.getKind()==INST_PATTERN_LIST);
+  Assert(ipl.getKind() == INST_PATTERN_LIST);
   allf.insert(allf.end(), q[0].begin(), q[0].end());
   SygusSolutionAttribute ssa;
   for (const Node& ip : ipl)
   {
-    if (ip.getKind()==INST_ATTRIBUTE)
+    if (ip.getKind() == INST_ATTRIBUTE)
     {
       Node ipv = ip[0];
       // does it specify a sygus solution?
       if (ipv.hasAttribute(ssa))
       {
         Node eq = ipv.getAttribute(ssa);
-        Assert (std::find(allf.begin(), allf.end(), eq[0])!=allf.end());
+        Assert(std::find(allf.begin(), allf.end(), eq[0]) != allf.end());
         solvedf[eq[0]] = eq[1];
       }
     }
@@ -220,35 +233,37 @@ void SygusQePreproc::decomposeConjecture(Node q, std::vector<Node>& allf, std::v
   // add to unsolved functions
   for (const Node& f : allf)
   {
-    if (solvedf.find(f)==solvedf.end())
+    if (solvedf.find(f) == solvedf.end())
     {
       unsf.push_back(f);
     }
   }
 }
 
-bool SygusQePreproc::getMaximalArityFuncs(const std::vector<Node>& unsf, std::vector<Node>& maxf, std::vector<Node>& remf)
+bool SygusQePreproc::getMaximalArityFuncs(const std::vector<Node>& unsf,
+                                          std::vector<Node>& maxf,
+                                          std::vector<Node>& remf)
 {
   size_t maxArity = 0;
   TypeNode maxType;
   bool maxArityValid = true;
-  for( const Node& f : unsf)
+  for (const Node& f : unsf)
   {
     TypeNode tn = f.getType();
-    size_t arity = tn.isFunction() ? tn.getNumChildren()-1 : 0;
-    if (arity>maxArity)
+    size_t arity = tn.isFunction() ? tn.getNumChildren() - 1 : 0;
+    if (arity > maxArity)
     {
       maxArityValid = true;
       maxType = tn;
     }
-    else if (arity==maxArity)
+    else if (arity == maxArity)
     {
       if (maxType.isNull())
       {
         maxArityValid = true;
         maxType = tn;
       }
-      else if (maxType!=tn)
+      else if (maxType != tn)
       {
         // maximal arity function is currently invalid
         maxArityValid = false;
@@ -260,10 +275,10 @@ bool SygusQePreproc::getMaximalArityFuncs(const std::vector<Node>& unsf, std::ve
     return false;
   }
   // deompose into maximal arity functions and remaining functions
-  for( const Node& f : unsf)
+  for (const Node& f : unsf)
   {
     TypeNode tn = f.getType();
-    if (tn==maxType)
+    if (tn == maxType)
     {
       maxf.push_back(f);
     }
@@ -275,36 +290,39 @@ bool SygusQePreproc::getMaximalArityFuncs(const std::vector<Node>& unsf, std::ve
   return true;
 }
 
-Node SygusQePreproc::mkConjecture(const std::vector<Node>& allf, const std::map<Node, Node>& solvedf, Node conj, Node ipl)
+Node SygusQePreproc::mkConjecture(const std::vector<Node>& allf,
+                                  const std::map<Node, Node>& solvedf,
+                                  Node conj,
+                                  Node ipl)
 {
-  Assert (!allf.empty());
+  Assert(!allf.empty());
   NodeManager* nm = NodeManager::currentNM();
   std::vector<Node> iplChildren;
   // take existing properties, without the previous solves
   SygusSolutionAttribute ssa;
   for (const Node& ipv : ipl)
   {
-    if (ipv.getKind()==INST_ATTRIBUTE && ipv[0].hasAttribute(ssa))
+    if (ipv.getKind() == INST_ATTRIBUTE && ipv[0].hasAttribute(ssa))
     {
       continue;
     }
     iplChildren.push_back(ipv);
   }
   // add the current solves, which should be a superset of the previous ones
-  for (const std::pair<const Node, Node >& s : solvedf)
+  for (const std::pair<const Node, Node>& s : solvedf)
   {
     Node eq = s.first.eqNode(s.second);
-    Node var = nm->mkSkolem("solved",nm->booleanType());
+    Node var = nm->mkSkolem("solved", nm->booleanType());
     var.setAttribute(ssa, eq);
     Node ipv = nm->mkNode(INST_ATTRIBUTE, var);
     iplChildren.push_back(ipv);
   }
-  Assert (!iplChildren.empty());
-  Node iplNew = nm->mkNode(INST_PATTERN_LIST,iplChildren);
-  Node fbvl = nm->mkNode(BOUND_VAR_LIST,allf);
+  Assert(!iplChildren.empty());
+  Node iplNew = nm->mkNode(INST_PATTERN_LIST, iplChildren);
+  Node fbvl = nm->mkNode(BOUND_VAR_LIST, allf);
   return nm->mkNode(FORALL, fbvl, conj, iplNew);
 }
-  
+
 }  // namespace quantifiers
 }  // namespace theory
 }  // namespace CVC4

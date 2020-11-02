@@ -87,8 +87,8 @@ struct SygusVarToTermAttributeId
 };
 typedef expr::Attribute<SygusVarToTermAttributeId, Node>
     SygusVarToTermAttribute;
-    
-/** 
+
+/**
  * Attribute for specifying a solution for a function-to-synthesize. This is
  * used for marking certain functions that we have solved for, e.g. during
  * preprocessing.
@@ -96,8 +96,7 @@ typedef expr::Attribute<SygusVarToTermAttributeId, Node>
 struct SygusSolutionAttributeId
 {
 };
-typedef expr::Attribute<SygusSolutionAttributeId, Node>
-    SygusSolutionAttribute;
+typedef expr::Attribute<SygusSolutionAttributeId, Node> SygusSolutionAttribute;
 
 /**
  * Attribute marked true for types that are used as abstraction types in
