@@ -26,6 +26,8 @@ namespace theory {
 class QuantifiersEngine;
 
 namespace quantifiers {
+  
+class SingleInvocationPartition;
 
 /**
  * This module does quantifier elimination as a preprocess step
@@ -49,6 +51,24 @@ class SygusQePreproc
   Node preprocess(Node q);
 
  private:
+  /** 
+   * Eliminate variables
+   */
+  Node eliminateVariables(Node q, const std::vector<Node>& allf, const std::vector<Node>& maxf, const std::vector<Node>& remf, std::map<Node, Node>& solvedf, SingleInvocationPartition& sip);
+  /**
+   * Eliminate functions
+   */
+  Node eliminateFunctions(Node q, const std::vector<Node>& allf, const std::vector<Node>& maxf, const std::vector<Node>& remf, std::map<Node, Node>& solvedf, SingleInvocationPartition& sip);
+  /** 
+   * Decompose conjecture 
+   */
+  void decomposeConjecture(Node q, std::vector<Node>& allf, std::vector<Node>& unsf, std::map<Node, Node>& solved);
+  /** Get maximal arity functions */
+  bool getMaximalArityFuncs(const std::vector<Node>& unsf, std::vector<Node>& maxf, std::vector<Node>& remf);
+  /**
+   * Make conjecture 
+   */
+  Node mkConjecture(const std::vector<Node>& allf, const std::map<Node, Node>& solved, Node conj, Node ipl);
   /** Pointer to quantifiers engine */
   QuantifiersEngine* d_quantEngine;
 };
