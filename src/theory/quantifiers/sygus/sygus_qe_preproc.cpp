@@ -37,12 +37,22 @@ Node SygusQePreproc::preprocess(Node q)
   std::vector<Node> unsf;
   std::map<Node, Node> solvedf;
   decomposeConjecture(q, allf, unsf, solvedf);
+  if (unsf.empty())
+  {
+    // probably should never happen
+    Trace("cegqi-qep") << "...fully solved, success." << std::endl;
+    return Node::null();
+  }
 
   // Get the functions that we would be applying single invocation for, which
   // are the functions of maximal arity having the same type.
   std::vector<Node> maxf;
   std::vector<Node> remf;
-  if (!getMaximalArityFuncs(unsf, maxf, remf))
+  std::vector<Node> rems;
+  std::vector<Node> xf;
+  std::vector<Node> xs;
+  std::vector<Node> xargs;
+  if (!getMaximalArityFuncs(unsf, maxf, remf, rems, xf, xs, xargs))
   {
     // arity mismatch for functions, we are done
     Trace("cegqi-qep") << "...max arity type mismatch, fail." << std::endl;
@@ -51,23 +61,58 @@ Node SygusQePreproc::preprocess(Node q)
 
   Trace("cegqi-qep-debug") << "Compute single invocation for " << q << "..."
                            << std::endl;
-  SingleInvocationPartition sip;
+  std::shared_ptr<SingleInvocationPartition> sips = std::make_shared<SingleInvocationPartition>();
   Node body = q[1];
   if (body.getKind() == NOT && body[0].getKind() == FORALL)
   {
     body = body[0][1];
   }
-  sip.init(maxf, body);
-  Trace("cegqi-qep-debug") << "...finished, got:" << std::endl;
-  sip.debugPrint("cegqi-qep-debug");
+  Trace("cegqi-qep-debug") << "Max function variables = " << maxf << std::endl;
+  Trace("cegqi-qep-debug") << "Body processed to " << body << std::endl;
+
+  sips->init(maxf, body);
+  Trace("cegqi-qep-debug") << "Computed single invocation:" << std::endl;
+  sips->debugPrint("cegqi-qep-debug");
+  // if not all functions are of maximal arity, we will try to rewrite
+  if (maxf.size()<allf.size())
+  {
+    Node bodyNorm = sips->getFullSpecification();
+    Trace("cegqi-qep-debug") << "Nested process, full specification:" << bodyNorm << std::endl;
+    std::vector<Node> siVars;
+    sips->getSingleInvocationVariables(siVars);
+    Trace("cegqi-qep-debug") << "Single invocation variables:" << siVars << std::endl;
+    Assert (siVars.size()==xargs);
+    // rewrite for the arguments
+    for (size_t i=0, nrems=rems.size(); i<nrems; i++)
+    {
+      rems[i] = rems[i].substitute(xargs.begin(), xargs.end(), siVars.begin(), siVars.end());
+    }
+    // substitute the body { remf -> rems }
+    if (!remf.empty())
+    {
+      bodyNorm = bodyNorm.substitute(remf.begin(), remf.end(), rems.begin(), rems.end());
+      bodyNorm = Rewriter::rewrite(bodyNorm);
+    }
+    Trace("cegqi-qep-debug") << "Extended and normalized:" << bodyNorm << std::endl;
+    // reset
+    sips = std::make_shared<SingleInvocationPartition>();
+    // try again
+    maxf.insert(maxf.end(),xf.begin(), xf.end());
+    
+    sips->init(maxf, bodyNorm);
+    Trace("cegqi-qep-debug") << "Computed single invocation (after expansion):" << std::endl;
+    sips->debugPrint("cegqi-qep-debug");
+  }
+  // take reference to the single invocation
+  SingleInvocationPartition& sip = *sips.get();
 
   if (sip.isPurelySingleInvocation())
   {
-    if (maxf.size() < unsf.size())
+    if (!remf.empty())
     {
       Trace("cegqi-qep") << "...eliminate functions." << std::endl;
       // solve for a subset of the functions
-      Node ret = eliminateFunctions(q, allf, maxf, remf, solvedf, sip);
+      Node ret = eliminateFunctions(q, allf, maxf, solvedf, sip);
       Trace("cegqi-qep") << "...eliminate functions returned " << ret
                          << std::endl;
       return ret;
@@ -85,7 +130,7 @@ Node SygusQePreproc::preprocess(Node q)
   }
   Trace("cegqi-qep") << "...eliminate variables." << std::endl;
   // non-ground single invocation, eliminate variables
-  Node ret = eliminateVariables(q, allf, maxf, remf, solvedf, sip);
+  Node ret = eliminateVariables(q, allf, maxf, solvedf, sip);
   Trace("cegqi-qep") << "...eliminate variables returned " << ret << std::endl;
   return ret;
 }
@@ -93,7 +138,6 @@ Node SygusQePreproc::preprocess(Node q)
 Node SygusQePreproc::eliminateVariables(Node q,
                                         const std::vector<Node>& allf,
                                         const std::vector<Node>& maxf,
-                                        const std::vector<Node>& remf,
                                         std::map<Node, Node>& solvedf,
                                         SingleInvocationPartition& sip)
 {
@@ -155,7 +199,6 @@ Node SygusQePreproc::eliminateVariables(Node q,
     subs.push_back(k);
     Trace("cegqi-qep-debug") << "  subs : " << fi << " -> " << k << std::endl;
   }
-  // all functions are constants FIXME
 
   Node conj_se_ngsi = sip.getFullSpecification();
   Trace("cegqi-qep-debug") << "Full specification is " << conj_se_ngsi
@@ -176,6 +219,8 @@ Node SygusQePreproc::eliminateVariables(Node q,
   {
     qeRes =
         qeRes.substitute(subs.begin(), subs.end(), orig.begin(), orig.end());
+    // must additionally map back to original functions
+    //qeRes = qeRes.substitute(maxf.begin(), maxf.end(), maxs.begin(), maxs.end());
     if (!nqe_vars.empty())
     {
       qeRes = nm->mkNode(EXISTS, nm->mkNode(BOUND_VAR_LIST, nqe_vars), qeRes);
@@ -196,7 +241,6 @@ Node SygusQePreproc::eliminateVariables(Node q,
 Node SygusQePreproc::eliminateFunctions(Node q,
                                         const std::vector<Node>& allf,
                                         const std::vector<Node>& maxf,
-                                        const std::vector<Node>& remf,
                                         std::map<Node, Node>& solvedf,
                                         SingleInvocationPartition& sip)
 {
@@ -242,8 +286,12 @@ void SygusQePreproc::decomposeConjecture(Node q,
 
 bool SygusQePreproc::getMaximalArityFuncs(const std::vector<Node>& unsf,
                                           std::vector<Node>& maxf,
-                                          std::vector<Node>& remf)
+                                          std::vector<Node>& remf, std::vector<Node>& rems,
+                                          std::vector<Node>& xf, std::vector<Node>& xs,
+                                          std::vector<Node>& xargs)
 {
+  Assert (!unsf.empty());
+  NodeManager* nm = NodeManager::currentNM();
   size_t maxArity = 0;
   TypeNode maxType;
   bool maxArityValid = true;
@@ -251,8 +299,10 @@ bool SygusQePreproc::getMaximalArityFuncs(const std::vector<Node>& unsf,
   {
     TypeNode tn = f.getType();
     size_t arity = tn.isFunction() ? tn.getNumChildren() - 1 : 0;
+    Trace("cegqi-qep-debug") << "Arity(" << f << ")=" << arity << ", type = " << tn << std::endl;
     if (arity > maxArity)
     {
+      maxArity = arity;
       maxArityValid = true;
       maxType = tn;
     }
@@ -274,6 +324,15 @@ bool SygusQePreproc::getMaximalArityFuncs(const std::vector<Node>& unsf,
   {
     return false;
   }
+  std::vector<TypeNode> maxTypeArgs;
+  if (maxType.isFunction())
+  {
+    maxTypeArgs = maxType.getArgTypes();
+    for (const TypeNode& mta : maxTypeArgs)
+    {
+      xargs.push_back(nm->mkBoundVar(mta));
+    }
+  }
   // deompose into maximal arity functions and remaining functions
   for (const Node& f : unsf)
   {
@@ -281,12 +340,88 @@ bool SygusQePreproc::getMaximalArityFuncs(const std::vector<Node>& unsf,
     if (tn == maxType)
     {
       maxf.push_back(f);
+      continue;
     }
-    else
+    // extend it to the proper type
+    if (!extendFuncArgs(f, xargs, remf, rems, xf, xs))
     {
-      remf.push_back(f);
+      return false;
     }
   }
+  return true;
+}
+
+bool SygusQePreproc::extendFuncArgs(Node f, const std::vector<Node>& xargs, 
+                                          std::vector<Node>& remf,
+                                          std::vector<Node>& rems,
+                                          std::vector<Node>& xf,
+                                          std::vector<Node>& xs)
+{
+  NodeManager* nm = NodeManager::currentNM();
+  Assert(!xargs.empty());
+  TypeNode tn = f.getType();
+  std::vector<TypeNode> domainTs;
+  TypeNode rangeT = tn;
+  if (tn.isFunction())
+  {
+    domainTs = tn.getArgTypes();
+    rangeT = tn.getRangeType();
+  }
+  Assert (domainTs.size()<xargs.size());
+  // argument must be a prefix, generalizations of this should deal with
+  // argument order separately.
+  std::vector<Node> args;
+  for (size_t i=0, ndts = domainTs.size(); i<ndts; i++)
+  {
+    if (domainTs[i]!=xargs[i].getType())
+    {
+      // not a prefix
+      return false;
+    }
+    args.push_back(nm->mkBoundVar(domainTs[i]));
+  }
+  Node lbvl;
+  if (!args.empty())
+  {
+    lbvl = nm->mkNode(BOUND_VAR_LIST, args);
+  }
+  // Add the pair
+  //   f, (lambda ((x domainTs)) (newF x xargs2))
+  // to remf and rems respectively, where the latter term has the same type
+  // as f.
+  std::vector<TypeNode> fargs;
+  for (const Node& xa : xargs)
+  {
+    fargs.push_back(xa.getType());
+  }
+  TypeNode newT = nm->mkFunctionType(fargs, rangeT);
+  Node newF = nm->mkSkolem("xf", newT);
+  for (size_t i=args.size(), nfargs = fargs.size(); i<nfargs; i++)
+  {
+    args.push_back(xargs[i]);
+  }
+  args.insert(args.begin(), newF);
+  Node app = nm->mkNode(APPLY_UF, args);
+  Node lam = lbvl.isNull() ? app : nm->mkNode(LAMBDA, lbvl, app);
+  Assert (f.getType()==lam.getType());
+  remf.push_back(f);
+  rems.push_back(lam);
+  Trace("cegqi-qep-debug") << "extendFuncArgs: Extend: " << f << " -> " << lam << std::endl;
+  // also make the reverse mapping
+  //   newF, (lambda (xargs1 xargs2) (f xargs1))
+  // to xf and xs respectively, where the latter term has the same type
+  // as newF.
+  std::vector<Node> argsf;
+  argsf.push_back(f);
+  argsf.insert(argsf.end(), args.begin(), args.begin()+domainTs.size());
+  args.erase(args.begin(), args.begin()+1);
+  lbvl = nm->mkNode(BOUND_VAR_LIST, args);
+  app = nm->mkNode(APPLY_UF, argsf);
+  lam = nm->mkNode(LAMBDA, lbvl, app);
+  Assert (newF.getType()==lam.getType());
+  Trace("cegqi-qep-debug") << "extendFuncArgs: Restrict: " << newF << " -> " << lam << std::endl;
+  xf.push_back(newF);
+  xs.push_back(lam);
   return true;
 }
 

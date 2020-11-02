@@ -574,12 +574,7 @@ Node SingleInvocationPartition::getConjunct(int index)
 
 void SingleInvocationPartition::debugPrint(const char* c)
 {
-  Trace(c) << "Single invocation variables : ";
-  for (unsigned i = 0; i < d_si_vars.size(); i++)
-  {
-    Trace(c) << d_si_vars[i] << " ";
-  }
-  Trace(c) << std::endl;
+  Trace(c) << "Single invocation variables : " << d_si_vars << std::endl;
   Trace(c) << "Functions : " << std::endl;
   for (std::map<Node, bool>::iterator it = d_funcs.begin(); it != d_funcs.end();
        ++it)

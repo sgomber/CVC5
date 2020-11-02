@@ -57,7 +57,6 @@ class SygusQePreproc
   Node eliminateVariables(Node q,
                           const std::vector<Node>& allf,
                           const std::vector<Node>& maxf,
-                          const std::vector<Node>& remf,
                           std::map<Node, Node>& solvedf,
                           SingleInvocationPartition& sip);
   /**
@@ -66,7 +65,6 @@ class SygusQePreproc
   Node eliminateFunctions(Node q,
                           const std::vector<Node>& allf,
                           const std::vector<Node>& maxf,
-                          const std::vector<Node>& remf,
                           std::map<Node, Node>& solvedf,
                           SingleInvocationPartition& sip);
   /**
@@ -79,7 +77,19 @@ class SygusQePreproc
   /** Get maximal arity functions */
   bool getMaximalArityFuncs(const std::vector<Node>& unsf,
                             std::vector<Node>& maxf,
-                            std::vector<Node>& remf);
+                            std::vector<Node>& remf, 
+                            std::vector<Node>& rems,
+                                          std::vector<Node>& xf,
+                                          std::vector<Node>& xs,
+                                          std::vector<Node>& xargs
+                           );
+  /** Extend function arguments */
+  bool extendFuncArgs(Node f, const std::vector<Node>& xargs, 
+                                          std::vector<Node>& remf,
+                                          std::vector<Node>& rems,
+                                          std::vector<Node>& xf,
+                                          std::vector<Node>& xs
+                     );
   /**
    * Make conjecture
    */
