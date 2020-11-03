@@ -82,7 +82,7 @@ class EnumValGenerator
 class SynthConjecture
 {
  public:
-  SynthConjecture(QuantifiersEngine* qe, SynthEngine* p, SygusStatistics& s);
+  SynthConjecture(QuantifiersEngine* qe, SygusStatistics& s);
   ~SynthConjecture();
   /** presolve */
   void presolve();

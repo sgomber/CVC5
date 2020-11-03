@@ -37,12 +37,12 @@ class FConvert
 
   Node apply(Node n)
   {
-    return n.subsitute(
+    return n.substitute(
         d_vars.begin(), d_vars.end(), d_subs.begin(), d_subs.end());
   }
   Node rapply(Node n)
   {
-    return n.subsitute(
+    return n.substitute(
         d_subs.begin(), d_subs.end(), d_vars.begin(), d_vars.end());
   }
 };
