@@ -320,6 +320,27 @@ Node SygusQePreproc::eliminateFunctions(Node q,
   // use
   Node bodyNorm = sip.getFullSpecification();
   Trace("cegqi-qep-debug") << "Full specification is " << bodyNorm << std::endl;
+  
+  Subs xfk;
+  for (const Node& v : xf.d_vars)
+  {
+    Node fi = sip.getFunctionInvocationFor(v);
+    Assert (!fi.isNull());
+    xfk.add(fi);
+  }
+  bodyNorm = xfk.apply(bodyNorm);
+  Trace("cegqi-qep-debug") << "After skolemizing: " << bodyNorm << std::endl;
+  
+  std::vector<Node> siVars;
+  sip.getSingleInvocationVariables(siVars);
+  
+  // make the synthesis conjecture
+  Node conj = bodyNorm.negate();
+  if (!siVars.empty())
+  {
+    Node bvl = nm->mkNode(BOUND_VAR_LIST, siVars);
+    conj = nm->mkNode(EXISTS, bvl, conj);
+  }
 
   return Node::null();
 }
