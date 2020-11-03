@@ -42,8 +42,7 @@ namespace CVC4 {
 namespace theory {
 namespace quantifiers {
 
-SynthConjecture::SynthConjecture(QuantifiersEngine* qe,
-                                 SygusStatistics& s)
+SynthConjecture::SynthConjecture(QuantifiersEngine* qe, SygusStatistics& s)
     : d_qe(qe),
       d_stats(s),
       d_tds(qe->getTermDatabaseSygus()),
