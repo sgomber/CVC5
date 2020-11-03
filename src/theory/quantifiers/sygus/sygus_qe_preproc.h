@@ -18,8 +18,8 @@
 #include <string>
 #include <vector>
 #include "expr/node.h"
-#include "expr/type.h"
 #include "expr/subs.h"
+#include "expr/type.h"
 
 namespace CVC4 {
 namespace theory {

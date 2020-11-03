@@ -27,7 +27,7 @@ namespace CVC4 {
 class Subs
 {
  public:
-   /** Is the substitution empty? */
+  /** Is the substitution empty? */
   bool empty() const;
   /** The size of the substitution */
   size_t size() const;

@@ -122,7 +122,7 @@ std::string Subs::toString() const
   ss << "[";
   for (size_t i = 0, nvs = d_vars.size(); i < nvs; i++)
   {
-    if (i>0)
+    if (i > 0)
     {
       ss << " ";
     }

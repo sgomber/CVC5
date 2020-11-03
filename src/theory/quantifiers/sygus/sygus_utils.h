@@ -39,25 +39,25 @@ Node mkSygusConjecture(const std::vector<Node>& fs,
 Node mkSygusConjecture(const std::vector<Node>& fs, Node conj);
 
 /**
-  * Make conjecture, with a set of solved functions.
-  */
+ * Make conjecture, with a set of solved functions.
+ */
 Node mkSygusConjecture(const std::vector<Node>& fs,
-                  Node conj,
-                  const Subs& solvedf);
+                       Node conj,
+                       const Subs& solvedf);
 /**
-  * Decompose sygus conjecture.
-  * 
-  * @param q The sygus conjecture to decompose
-  * @param fs The functions-to-synthesize
-  * @param unsf The functions that have not been marked as solved.
-  * @param solvedf The substitution corresponding to the solved functions.
-  * 
-  * The vector unsf and the domain of solved are a parition of fs.
-  */
+ * Decompose sygus conjecture.
+ *
+ * @param q The sygus conjecture to decompose
+ * @param fs The functions-to-synthesize
+ * @param unsf The functions that have not been marked as solved.
+ * @param solvedf The substitution corresponding to the solved functions.
+ *
+ * The vector unsf and the domain of solved are a parition of fs.
+ */
 void decomposeSygusConjecture(Node q,
-                          std::vector<Node>& fs,
-                          std::vector<Node>& unsf,
-                          Subs& solvedf);
+                              std::vector<Node>& fs,
+                              std::vector<Node>& unsf,
+                              Subs& solvedf);
 /**
  * Get the formal argument list for a function-to-synthesize. This returns
  * a node of kind BOUND_VAR_LIST that corresponds to the formal argument list

@@ -32,7 +32,7 @@ struct SygusSolutionAttributeId
 {
 };
 typedef expr::Attribute<SygusSolutionAttributeId, Node> SygusSolutionAttribute;
-  
+
 Node mkSygusConjecture(const std::vector<Node>& fs,
                        Node conj,
                        const std::vector<Node>& iattrs)
@@ -59,8 +59,8 @@ Node mkSygusConjecture(const std::vector<Node>& fs, Node conj)
 }
 
 Node mkSygusConjecture(const std::vector<Node>& fs,
-                                  Node conj,
-                  const Subs& solvedf)
+                       Node conj,
+                       const Subs& solvedf)
 {
   Assert(!fs.empty());
   NodeManager* nm = NodeManager::currentNM();
@@ -79,11 +79,10 @@ Node mkSygusConjecture(const std::vector<Node>& fs,
   return mkSygusConjecture(fs, conj, iattrs);
 }
 
-
 void decomposeSygusConjecture(Node q,
-                                         std::vector<Node>& fs,
-                                         std::vector<Node>& unsf,
-                                         Subs& solvedf)
+                              std::vector<Node>& fs,
+                              std::vector<Node>& unsf,
+                              Subs& solvedf)
 {
   Assert(q.getKind() == FORALL);
   Assert(q.getNumChildren() == 3);

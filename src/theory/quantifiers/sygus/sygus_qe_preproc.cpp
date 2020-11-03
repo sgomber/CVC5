@@ -17,9 +17,9 @@
 #include "expr/node_algorithm.h"
 #include "theory/quantifiers/quantifiers_attributes.h"
 #include "theory/quantifiers/single_inv_partition.h"
+#include "theory/quantifiers/sygus/sygus_utils.h"
 #include "theory/rewriter.h"
 #include "theory/smt_engine_subsolver.h"
-#include "theory/quantifiers/sygus/sygus_utils.h"
 
 using namespace CVC4::kind;
 
@@ -234,10 +234,10 @@ Node SygusQePreproc::eliminateFunctions(Node q,
   // use the specification from the single invocation partition utility
   Node bodyNorm = sip.getFullSpecification();
   Trace("cegqi-qep-debug") << "Full specification is " << bodyNorm << std::endl;
-  
+
   // eliminate the conjuncts that do not contain some function in maxf
   std::vector<Node> bnconj;
-  if (bodyNorm.getKind()==AND)
+  if (bodyNorm.getKind() == AND)
   {
     bnconj.insert(bnconj.end(), bodyNorm.begin(), bodyNorm.end());
   }
@@ -302,28 +302,26 @@ Node SygusQePreproc::eliminateFunctions(Node q,
     {
       solSubs.add(sol.first, sol.second);
     }
-    Trace("sygus-qep-debug")
-          << "Solution : " << solSubs << std::endl;
+    Trace("sygus-qep-debug") << "Solution : " << solSubs << std::endl;
     // undo the skolemization of the extended functions
     xfk.rapplyToRange(solSubs);
     Trace("sygus-qep-debug")
-          << "...after unskolemize : " << solSubs << std::endl;
+        << "...after unskolemize : " << solSubs << std::endl;
     // extended functions have a definition in terms of the originals
     xf.rapplyToRange(solSubs);
     Trace("sygus-qep-debug")
-          << "...after revert extensions : " << solSubs << std::endl;
+        << "...after revert extensions : " << solSubs << std::endl;
     Trace("sygus-qep-debug")
-          << "Previous solution set : " << solvedf << std::endl;
+        << "Previous solution set : " << solvedf << std::endl;
     // solSubs are correct, now update previous solutions
     solSubs.applyToRange(solvedf);
-    Trace("sygus-qep-debug")
-          << "...updated to : " << solvedf << std::endl;
+    Trace("sygus-qep-debug") << "...updated to : " << solvedf << std::endl;
     // now append new solutions to solved
     solvedf.append(solSubs);
-    
+
     // get the original conjecture and update it with the new solutions
     Node conjfs = solSubs.apply(q[1]);
-    
+
     // reconstruct the new conjecture
     Node fsRes = mkSygusConjecture(allf, conjfs, solvedf);
     fsRes = Rewriter::rewrite(fsRes);
