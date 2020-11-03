@@ -21,28 +21,55 @@
 namespace CVC4 {
 
 /**
- * Helper substitution class.
+ * Helper substitution class. Stores a substitution in parallel vectors
+ * d_vars and d_subs.
  */
 class Subs
 {
  public:
+   /** Is the substitution empty? */
   bool empty() const;
+  /** The size of the substitution */
   size_t size() const;
+  /** Does the substitution contain v? */
   bool contains(Node v) const;
+  /** Add v -> k for fresh skolem of the same type */
   void add(Node v);
+  /** Add v -> k for fresh skolem of the same type for each v in vs */
   void add(const std::vector<Node>& vs);
+  /** Add v -> s to the substitution */
   void add(Node v, Node s);
+  /** Add vs -> ss to the substitution */
   void add(const std::vector<Node>& vs, const std::vector<Node>& ss);
+  /** Add eq[0] -> eq[1] to the substitution */
   void addEquality(Node eq);
+  /** Append the substitution s to this */
   void append(Subs& s);
-  void applyToRange(Subs& s);
-  void rapplyToRange(Subs& s);
+  /** Return the result of this substitution on n */
   Node apply(Node n) const;
+  /** Return the result of the reserve of this substitution on n */
   Node rapply(Node n) const;
+  /** Apply this substitution to all nodes in the range of s */
+  void applyToRange(Subs& s) const;
+  /** Apply the reverse of this substitution to all nodes in the range of s */
+  void rapplyToRange(Subs& s) const;
+  /** Get equality (= v s) where v -> s is the i^th position in the vectors */
   Node getEquality(size_t i) const;
+  /** Get string for this substitution */
+  std::string toString() const;
+  /** The data */
   std::vector<Node> d_vars;
   std::vector<Node> d_subs;
 };
+
+/**
+ * Serializes a given substitution to the given stream.
+ *
+ * @param out the output stream to use
+ * @param s the substitution to output to the stream
+ * @return the stream
+ */
+std::ostream& operator<<(std::ostream& out, const Subs& s);
 
 }  // namespace CVC4
 

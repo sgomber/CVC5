@@ -86,7 +86,7 @@ Node Subs::rapply(Node n) const
       d_subs.begin(), d_subs.end(), d_vars.begin(), d_vars.end());
 }
 
-void Subs::applyToRange(Subs& s)
+void Subs::applyToRange(Subs& s) const
 {
   if (d_vars.empty())
   {
@@ -98,7 +98,7 @@ void Subs::applyToRange(Subs& s)
   }
 }
 
-void Subs::rapplyToRange(Subs& s)
+void Subs::rapplyToRange(Subs& s) const
 {
   if (d_vars.empty())
   {
@@ -114,6 +114,28 @@ Node Subs::getEquality(size_t i) const
 {
   Assert(i < d_vars.size());
   return d_vars[i].eqNode(d_subs[i]);
+}
+
+std::string Subs::toString() const
+{
+  std::stringstream ss;
+  ss << "[";
+  for (size_t i = 0, nvs = d_vars.size(); i < nvs; i++)
+  {
+    if (i>0)
+    {
+      ss << " ";
+    }
+    ss << d_vars[i] << " -> " << d_subs[i];
+  }
+  ss << "]";
+  return ss.str();
+}
+
+std::ostream& operator<<(std::ostream& out, const Subs& s)
+{
+  out << s.toString();
+  return out;
 }
 
 }  // namespace CVC4
