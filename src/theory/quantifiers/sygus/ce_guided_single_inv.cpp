@@ -22,11 +22,11 @@
 #include "theory/quantifiers/quantifiers_attributes.h"
 #include "theory/quantifiers/quantifiers_rewriter.h"
 #include "theory/quantifiers/sygus/sygus_grammar_cons.h"
+#include "theory/quantifiers/sygus/sygus_utils.h"
 #include "theory/quantifiers/sygus/term_database_sygus.h"
 #include "theory/quantifiers/term_enumeration.h"
 #include "theory/quantifiers/term_util.h"
 #include "theory/quantifiers_engine.h"
-#include "theory/quantifiers/sygus/sygus_utils.h"
 #include "theory/smt_engine_subsolver.h"
 
 using namespace CVC4::kind;
@@ -67,7 +67,7 @@ void CegSingleInv::initialize(Node q)
   {
     progs.push_back( sf );
     // get its argument list
-    getSygusArgumentListForSynthFun( sf, prog_vars[sf]);
+    getSygusArgumentListForSynthFun(sf, prog_vars[sf]);
   }
   // compute single invocation partition
   Node qq;

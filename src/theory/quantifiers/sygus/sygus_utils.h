@@ -37,11 +37,11 @@ Node mkSygusConjecture(const std::vector<Node>& fs,
 /** Same as above, without auxiliary instantiation attributes */
 Node mkSygusConjecture(const std::vector<Node>& fs, Node conj);
 
-/** 
+/**
  * Get the formal argument list for a function-to-synthesize. This returns
  * a node of kind BOUND_VAR_LIST that corresponds to the formal argument list
- * of the function to synthesize. 
- * 
+ * of the function to synthesize.
+ *
  * Note that if f is constant, then this returns null, since f has no arguments
  * in this case.
  */
@@ -51,7 +51,7 @@ Node getSygusArgumentListForSynthFun(Node f);
  */
 void getSygusArgumentListForSynthFun(Node f, std::vector<Node>& formals);
 
-/** 
+/**
  * Get the sygus datatype type that encodes the syntax restrictions for
  * function-to-synthesize f.
  */

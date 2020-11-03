@@ -454,13 +454,10 @@ class CVC4_PUBLIC SmtEngine
                        TypeNode sygusType,
                        bool isInv,
                        const std::vector<Node>& vars);
-  /** 
+  /**
    * Same as above, without a sygus type.
    */
-  void declareSynthFun(Node func,
-                       bool isInv,
-                       const std::vector<Node>& vars);
-  
+  void declareSynthFun(Node func, bool isInv, const std::vector<Node>& vars);
 
   /** Add a regular sygus constraint.*/
   void assertSygusConstraint(Node constraint);

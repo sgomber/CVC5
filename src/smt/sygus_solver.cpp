@@ -47,8 +47,8 @@ SygusSolver::~SygusSolver() {}
 
 void SygusSolver::declareSygusVar(Node var)
 {
-  Trace("smt") << "SygusSolver::declareSygusVar: " << var << " " << var.getType()
-               << "\n";
+  Trace("smt") << "SygusSolver::declareSygusVar: " << var << " "
+               << var.getType() << "\n";
   d_sygusVars.push_back(var);
   // don't need to set that the conjecture is stale
 }
@@ -69,7 +69,8 @@ void SygusSolver::declareSynthFun(Node fn,
     fn.setAttribute(ssfvla, bvl);
   }
   // whether sygus type encodes syntax restrictions
-  if (!sygusType.isNull() && sygusType.isDatatype() && sygusType.getDType().isSygus())
+  if (!sygusType.isNull() && sygusType.isDatatype()
+      && sygusType.getDType().isSygus())
   {
     Node sym = nm->mkBoundVar("sfproxy", sygusType);
     // use an attribute to mark its grammar

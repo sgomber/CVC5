@@ -363,7 +363,7 @@ Node SygusQePreproc::eliminateFunctions(Node q,
 
   // functions-to-synthesize
   std::vector<Node> formals;
-  
+
   for (const Node& f : maxf)
   {
     smt_sy->declareSynthFun(f, false, formals);

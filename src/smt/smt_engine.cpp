@@ -1104,8 +1104,8 @@ void SmtEngine::declareSynthFun(Node func,
   }
 }
 void SmtEngine::declareSynthFun(Node func,
-                      bool isInv,
-                      const std::vector<Node>& vars)
+                                bool isInv,
+                                const std::vector<Node>& vars)
 {
   // use a null sygus type
   TypeNode sygusType;
