@@ -25,6 +25,7 @@
 #include "base/output.h"
 #include "decision/decision_engine.h"
 #include "expr/node.h"
+#include "expr/node_manager_attributes.h"
 #include "expr/node_self_iterator.h"
 #include "expr/node_visitor.h"
 #include "options/base_options.h"
@@ -69,7 +70,6 @@
 #include "util/hash.h"
 #include "util/random.h"
 #include "util/resource_manager.h"
-#include "expr/node_manager_attributes.h"
 
 using namespace std;
 using namespace CVC4;
@@ -1066,7 +1066,7 @@ Result SmtEngine::assertFormula(const Node& formula, bool inUnsatCore)
 void SmtEngine::declareSygusVar(Node var, TypeNode type)
 {
   SmtScope smts(this);
-  d_sygusSolver->declareSygusVar( var, type);
+  d_sygusSolver->declareSygusVar(var, type);
   if (Dump.isOn("raw-benchmark"))
   {
     getOutputManager().getPrinter().toStreamCmdDeclareVar(
@@ -1090,7 +1090,7 @@ void SmtEngine::declareSynthFun(Node func,
 
   if (Dump.isOn("raw-benchmark"))
   {
-    Assert (func.hasAttribute(expr::VarNameAttr()));
+    Assert(func.hasAttribute(expr::VarNameAttr()));
     std::string id;
     func.getAttribute(expr::VarNameAttr(), id);
     getOutputManager().getPrinter().toStreamCmdSynthFun(

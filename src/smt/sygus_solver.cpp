@@ -23,8 +23,8 @@
 #include "smt/smt_solver.h"
 #include "theory/quantifiers/quantifiers_attributes.h"
 #include "theory/quantifiers/sygus/sygus_grammar_cons.h"
-#include "theory/smt_engine_subsolver.h"
 #include "theory/quantifiers/sygus/sygus_utils.h"
+#include "theory/smt_engine_subsolver.h"
 
 using namespace CVC4::theory;
 using namespace CVC4::kind;
@@ -45,11 +45,10 @@ SygusSolver::SygusSolver(SmtSolver& sms,
 
 SygusSolver::~SygusSolver() {}
 
-void SygusSolver::declareSygusVar(Node var,
-                                  TypeNode type)
+void SygusSolver::declareSygusVar(Node var, TypeNode type)
 {
-  Trace("smt") << "SygusSolver::declareSygusVar: " << var << " "
-               << type << "\n";
+  Trace("smt") << "SygusSolver::declareSygusVar: " << var << " " << type
+               << "\n";
   Assert(var.getType() == type);
   d_sygusVars.push_back(var);
   // don't need to set that the conjecture is stale

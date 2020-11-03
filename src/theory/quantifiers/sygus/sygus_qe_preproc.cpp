@@ -31,7 +31,7 @@ bool Subs::empty() const { return d_vars.empty(); }
 size_t Subs::size() const { return d_vars.size(); }
 bool Subs::contains(Node v) const
 {
-  return std::find(d_vars.begin(), d_vars.end(), v)!=d_vars.end();
+  return std::find(d_vars.begin(), d_vars.end(), v) != d_vars.end();
 }
 
 void Subs::add(Node v)
@@ -67,7 +67,7 @@ void Subs::add(const std::vector<Node>& vs, const std::vector<Node>& ss)
 
 void Subs::addEquality(Node eq)
 {
-  Assert (eq.getKind()==EQUAL);
+  Assert(eq.getKind() == EQUAL);
   add(eq[0], eq[1]);
 }
 
@@ -116,7 +116,7 @@ void Subs::rapplyToRange(Subs& s)
 
 Node Subs::getEquality(size_t i) const
 {
-  Assert (i<d_vars.size());
+  Assert(i < d_vars.size());
   return d_vars[i].eqNode(d_subs[i]);
 }
 
@@ -354,21 +354,20 @@ Node SygusQePreproc::eliminateFunctions(Node q,
   // create new smt engine to do sygus
   std::unique_ptr<SmtEngine> smt_sy;
   initializeSubsolver(smt_sy);
-  
+
   // functions-to-synthesize
   for (const Node& f : maxf)
   {
-    //smt_sy->declareSynthFun(
+    // smt_sy->declareSynthFun(
   }
-  
+
   for (const Node& v : siVars)
   {
-    //smt_sy->declareSygusVar(
+    // smt_sy->declareSygusVar(
   }
 
   Result r = smt_sy->checkSynth();
-  Trace("sygus-qep-debug") << "eliminateFunctions result: " << r
-                          << std::endl;
+  Trace("sygus-qep-debug") << "eliminateFunctions result: " << r << std::endl;
   if (r.asSatisfiabilityResult().isSat() == Result::UNSAT)
   {
     std::map<Node, Node> solMap;
@@ -376,12 +375,13 @@ Node SygusQePreproc::eliminateFunctions(Node q,
     Subs solSubs;
     for (const std::pair<const Node, Node>& sol : solMap)
     {
-      Trace("sygus-qep-debug") << "Solution : " << sol.first << " -> " << sol.second << std::endl;
+      Trace("sygus-qep-debug")
+          << "Solution : " << sol.first << " -> " << sol.second << std::endl;
       solSubs.add(sol.first, sol.second);
     }
     //
   }
-  
+
   return Node::null();
 }
 
@@ -577,7 +577,7 @@ Node SygusQePreproc::mkConjecture(const std::vector<Node>& allf,
     iplChildren.push_back(ipv);
   }
   // add the current solves, which should be a superset of the previous ones
-  for (size_t i=0, nsolved=solvedf.size(); i<nsolved; i++)
+  for (size_t i = 0, nsolved = solvedf.size(); i < nsolved; i++)
   {
     Node eq = solvedf.getEquality(i);
     Node var = nm->mkSkolem("solved", nm->booleanType());

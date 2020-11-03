@@ -294,7 +294,7 @@ bool SygusInference::solveSygus(const std::vector<Node>& assertions,
 
   // sygus attribute to mark the conjecture as a sygus conjecture
   Trace("sygus-infer") << "Make outer sygus conjecture..." << std::endl;
-  
+
   body = quantifiers::mkSygusConjecture(ff_vars, body);
 
   Trace("sygus-infer") << "*** Return sygus inference : " << body << std::endl;
