@@ -32,13 +32,15 @@ namespace sygus {
  * with instantiation attributes in ips. Notice that the marker for
  * sygus conjecture is automatically prepended to this list.
  */
-Node mkSygusConjecture(const std::vector<Node>& fs, Node conj, const std::vector<Node>& iattrs);
+Node mkSygusConjecture(const std::vector<Node>& fs,
+                       Node conj,
+                       const std::vector<Node>& iattrs);
 /** Same as above, without auxiliary instantiation attributes */
 Node mkSygusConjecture(const std::vector<Node>& fs, Node conj);
 
-}
-}
-}
-}
+}  // namespace sygus
+}  // namespace quantifiers
+}  // namespace theory
+}  // namespace CVC4
 
 #endif /* CVC4__THEORY__QUANTIFIERS__SYGUS__SYGUS_UTILS_H */

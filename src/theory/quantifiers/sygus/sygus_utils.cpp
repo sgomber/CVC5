@@ -21,17 +21,19 @@ namespace theory {
 namespace quantifiers {
 namespace sygus {
 
-Node mkSygusConjecture(const std::vector<Node>& fs, Node conj, const std::vector<Node>& iattrs)
+Node mkSygusConjecture(const std::vector<Node>& fs,
+                       Node conj,
+                       const std::vector<Node>& iattrs)
 {
-  Assert (!fs.empty());
-  NodeManager * nm = NodeManager::currentNM();
+  Assert(!fs.empty());
+  NodeManager* nm = NodeManager::currentNM();
   std::vector<Node> ipls;
   SygusAttribute ca;
   Node sygusVar = nm->mkSkolem("sygus", nm->booleanType());
   sygusVar.setAttribute(ca, true);
   Node instAttr = nm->mkNode(INST_ATTRIBUTE, sygusVar);
   ipls.push_back(instAttr);
-  // insert the remaining 
+  // insert the remaining
   ipls.insert(ipl.end(), iattrs.begin(), iattrs.end());
   Node ipl = nm->mkNode(INST_PATTERN_LIST, ipls);
   return nm->mkNode(FORALL, conj, ipl);
@@ -43,8 +45,7 @@ Node mkSygusConjecture(const std::vector<Node>& fs, Node conj)
   return mkSygusConjecture(fs, conj, iattrs);
 }
 
-}
-}
-}
-}
-
+}  // namespace sygus
+}  // namespace quantifiers
+}  // namespace theory
+}  // namespace CVC4

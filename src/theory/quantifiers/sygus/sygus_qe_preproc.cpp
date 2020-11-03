@@ -26,16 +26,13 @@ namespace CVC4 {
 namespace theory {
 namespace quantifiers {
 
-bool Subs::empty() const
-{
-  return d_vars.empty();
-}
+bool Subs::empty() const { return d_vars.empty(); }
 
 void Subs::add(Node v)
 {
   // default, use a fresh skolem of the same type
   Node s = NodeManager::currentNM()->mkSkolem("sk", v.getType());
-  add(v,s);
+  add(v, s);
 }
 
 void Subs::add(const std::vector<Node>& vs)
@@ -48,15 +45,15 @@ void Subs::add(const std::vector<Node>& vs)
 
 void Subs::add(Node v, Node s)
 {
-  Assert (v.getType().isComparableTo(s.getType()));
+  Assert(v.getType().isComparableTo(s.getType()));
   d_vars.push_back(v);
   d_subs.push_back(s);
 }
 
 void Subs::add(const std::vector<Node>& vs, const std::vector<Node>& ss)
 {
-  Assert (vs.size()==ss.size());
-  for (size_t i=0, nvs=vs.size(); i<nvs; i++)
+  Assert(vs.size() == ss.size());
+  for (size_t i = 0, nvs = vs.size(); i < nvs; i++)
   {
     add(vs[i], ss[i]);
   }
@@ -104,7 +101,7 @@ void Subs::rapplyToRange(Subs& s)
     s.d_subs[i] = rapply(s.d_subs[i]);
   }
 }
-  
+
 SygusQePreproc::SygusQePreproc(QuantifiersEngine* qe) {}
 
 Node SygusQePreproc::preprocess(Node q)
@@ -320,20 +317,20 @@ Node SygusQePreproc::eliminateFunctions(Node q,
   // use
   Node bodyNorm = sip.getFullSpecification();
   Trace("cegqi-qep-debug") << "Full specification is " << bodyNorm << std::endl;
-  
+
   Subs xfk;
   for (const Node& v : xf.d_vars)
   {
     Node fi = sip.getFunctionInvocationFor(v);
-    Assert (!fi.isNull());
+    Assert(!fi.isNull());
     xfk.add(fi);
   }
   bodyNorm = xfk.apply(bodyNorm);
   Trace("cegqi-qep-debug") << "After skolemizing: " << bodyNorm << std::endl;
-  
+
   std::vector<Node> siVars;
   sip.getSingleInvocationVariables(siVars);
-  
+
   // make the synthesis conjecture
   Node conj = bodyNorm.negate();
   if (!siVars.empty())
@@ -499,7 +496,7 @@ bool SygusQePreproc::extendFuncArgs(Node f,
   Node app = nm->mkNode(APPLY_UF, args);
   Node lam = lbvl.isNull() ? app : nm->mkNode(LAMBDA, lbvl, app);
   Assert(f.getType() == lam.getType());
-  remf.add(f,lam);
+  remf.add(f, lam);
   Trace("cegqi-qep-debug") << "extendFuncArgs: Extend: " << f << " -> " << lam
                            << std::endl;
   // also make the reverse mapping
@@ -514,7 +511,7 @@ bool SygusQePreproc::extendFuncArgs(Node f,
   lam = nm->mkNode(LAMBDA, lbvl, app);
   Trace("cegqi-qep-debug") << "extendFuncArgs: Restrict: " << newF << " -> "
                            << lam << std::endl;
-  xf.add(newF,lam);
+  xf.add(newF, lam);
   return true;
 }
 
