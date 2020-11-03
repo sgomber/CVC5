@@ -26,106 +26,6 @@ namespace CVC4 {
 namespace theory {
 namespace quantifiers {
 
-bool Subs::empty() const { return d_vars.empty(); }
-
-size_t Subs::size() const { return d_vars.size(); }
-bool Subs::contains(Node v) const
-{
-  return std::find(d_vars.begin(), d_vars.end(), v) != d_vars.end();
-}
-
-void Subs::add(Node v)
-{
-  // default, use a fresh skolem of the same type
-  Node s = NodeManager::currentNM()->mkSkolem("sk", v.getType());
-  add(v, s);
-}
-
-void Subs::add(const std::vector<Node>& vs)
-{
-  for (const Node& v : vs)
-  {
-    add(v);
-  }
-}
-
-void Subs::add(Node v, Node s)
-{
-  Assert(v.getType().isComparableTo(s.getType()));
-  d_vars.push_back(v);
-  d_subs.push_back(s);
-}
-
-void Subs::add(const std::vector<Node>& vs, const std::vector<Node>& ss)
-{
-  Assert(vs.size() == ss.size());
-  for (size_t i = 0, nvs = vs.size(); i < nvs; i++)
-  {
-    add(vs[i], ss[i]);
-  }
-}
-
-void Subs::addEquality(Node eq)
-{
-  Assert(eq.getKind() == EQUAL);
-  add(eq[0], eq[1]);
-}
-
-void Subs::append(Subs& s)
-{
-  // add the substitution list
-  add(s.d_vars, s.d_subs);
-}
-
-Node Subs::apply(Node n) const
-{
-  if (d_vars.empty())
-  {
-    return n;
-  }
-  return n.substitute(
-      d_vars.begin(), d_vars.end(), d_subs.begin(), d_subs.end());
-}
-Node Subs::rapply(Node n) const
-{
-  if (d_vars.empty())
-  {
-    return n;
-  }
-  return n.substitute(
-      d_subs.begin(), d_subs.end(), d_vars.begin(), d_vars.end());
-}
-
-void Subs::applyToRange(Subs& s)
-{
-  if (d_vars.empty())
-  {
-    return;
-  }
-  for (size_t i = 0, ns = s.d_subs.size(); i < ns; i++)
-  {
-    s.d_subs[i] = apply(s.d_subs[i]);
-  }
-}
-
-void Subs::rapplyToRange(Subs& s)
-{
-  if (d_vars.empty())
-  {
-    return;
-  }
-  for (size_t i = 0, ns = s.d_subs.size(); i < ns; i++)
-  {
-    s.d_subs[i] = rapply(s.d_subs[i]);
-  }
-}
-
-Node Subs::getEquality(size_t i) const
-{
-  Assert(i < d_vars.size());
-  return d_vars[i].eqNode(d_subs[i]);
-}
-
 SygusQePreproc::SygusQePreproc(QuantifiersEngine* qe) {}
 
 Node SygusQePreproc::preprocess(Node q)
@@ -335,13 +235,12 @@ Node SygusQePreproc::eliminateFunctions(Node q,
                                         Subs& solvedf,
                                         SingleInvocationPartition& sip)
 {
-  // FIXME
   NodeManager* nm = NodeManager::currentNM();
-
-  // use
+  // use the specification from the single invocation partition utility
   Node bodyNorm = sip.getFullSpecification();
   Trace("cegqi-qep-debug") << "Full specification is " << bodyNorm << std::endl;
 
+  // skolemize the functions that we are not solving
   Subs xfk;
   for (const Node& v : xf.d_vars)
   {
@@ -389,10 +288,17 @@ Node SygusQePreproc::eliminateFunctions(Node q,
           << "Solution : " << sol.first << " -> " << sol.second << std::endl;
       solSubs.add(sol.first, sol.second);
     }
-    // update previous solutions
+    // undo the skolemization of the extended functions
+    xfk.rapplyToRange(solSubs);
+    // extended functions have a definition in terms of the originals
+    xf.rapplyToRange(solSubs);
+    // solSubs are correct, now update previous solutions
     solSubs.applyToRange(solvedf);
-    // now add to range
+    // now append new solutions to solved
     solvedf.append(solSubs);
+    
+    // make the conjecture
+    
   }
 
   return Node::null();

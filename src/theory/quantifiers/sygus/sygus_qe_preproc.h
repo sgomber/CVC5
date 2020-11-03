@@ -19,6 +19,7 @@
 #include <vector>
 #include "expr/node.h"
 #include "expr/type.h"
+#include "expr/subs.h"
 
 namespace CVC4 {
 namespace theory {
@@ -28,30 +29,6 @@ class QuantifiersEngine;
 namespace quantifiers {
 
 class SingleInvocationPartition;
-
-/**
- * Helper substitution class.
- */
-class Subs
-{
- public:
-  bool empty() const;
-  size_t size() const;
-  bool contains(Node v) const;
-  void add(Node v);
-  void add(const std::vector<Node>& vs);
-  void add(Node v, Node s);
-  void add(const std::vector<Node>& vs, const std::vector<Node>& ss);
-  void addEquality(Node eq);
-  void append(Subs& s);
-  void applyToRange(Subs& s);
-  void rapplyToRange(Subs& s);
-  Node apply(Node n) const;
-  Node rapply(Node n) const;
-  Node getEquality(size_t i) const;
-  std::vector<Node> d_vars;
-  std::vector<Node> d_subs;
-};
 
 /**
  * This module does quantifier elimination as a preprocess step

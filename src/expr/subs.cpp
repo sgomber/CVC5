@@ -1,0 +1,119 @@
+/*********************                                                        */
+/*! \file subs.cpp
+ ** \verbatim
+ ** Top contributors (to current version):
+ **   Andrew Reynolds
+ ** This file is part of the CVC4 project.
+ ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** in the top-level source directory and their institutional affiliations.
+ ** All rights reserved.  See the file COPYING in the top-level source
+ ** directory for licensing information.\endverbatim
+ **
+ ** \brief Simple substitution utility
+ **/
+
+#include "expr/subs.h"
+
+namespace CVC4 {
+
+bool Subs::empty() const { return d_vars.empty(); }
+
+size_t Subs::size() const { return d_vars.size(); }
+bool Subs::contains(Node v) const
+{
+  return std::find(d_vars.begin(), d_vars.end(), v) != d_vars.end();
+}
+
+void Subs::add(Node v)
+{
+  // default, use a fresh skolem of the same type
+  Node s = NodeManager::currentNM()->mkSkolem("sk", v.getType());
+  add(v, s);
+}
+
+void Subs::add(const std::vector<Node>& vs)
+{
+  for (const Node& v : vs)
+  {
+    add(v);
+  }
+}
+
+void Subs::add(Node v, Node s)
+{
+  Assert(v.getType().isComparableTo(s.getType()));
+  d_vars.push_back(v);
+  d_subs.push_back(s);
+}
+
+void Subs::add(const std::vector<Node>& vs, const std::vector<Node>& ss)
+{
+  Assert(vs.size() == ss.size());
+  for (size_t i = 0, nvs = vs.size(); i < nvs; i++)
+  {
+    add(vs[i], ss[i]);
+  }
+}
+
+void Subs::addEquality(Node eq)
+{
+  Assert(eq.getKind() == EQUAL);
+  add(eq[0], eq[1]);
+}
+
+void Subs::append(Subs& s)
+{
+  // add the substitution list
+  add(s.d_vars, s.d_subs);
+}
+
+Node Subs::apply(Node n) const
+{
+  if (d_vars.empty())
+  {
+    return n;
+  }
+  return n.substitute(
+      d_vars.begin(), d_vars.end(), d_subs.begin(), d_subs.end());
+}
+Node Subs::rapply(Node n) const
+{
+  if (d_vars.empty())
+  {
+    return n;
+  }
+  return n.substitute(
+      d_subs.begin(), d_subs.end(), d_vars.begin(), d_vars.end());
+}
+
+void Subs::applyToRange(Subs& s)
+{
+  if (d_vars.empty())
+  {
+    return;
+  }
+  for (size_t i = 0, ns = s.d_subs.size(); i < ns; i++)
+  {
+    s.d_subs[i] = apply(s.d_subs[i]);
+  }
+}
+
+void Subs::rapplyToRange(Subs& s)
+{
+  if (d_vars.empty())
+  {
+    return;
+  }
+  for (size_t i = 0, ns = s.d_subs.size(); i < ns; i++)
+  {
+    s.d_subs[i] = rapply(s.d_subs[i]);
+  }
+}
+
+Node Subs::getEquality(size_t i) const
+{
+  Assert(i < d_vars.size());
+  return d_vars[i].eqNode(d_subs[i]);
+}
+
+}  // namespace CVC4
