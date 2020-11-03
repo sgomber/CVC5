@@ -58,8 +58,7 @@ Node SygusQePreproc::preprocess(Node q)
 
   Trace("cegqi-qep-debug") << "Compute single invocation for " << q << "..."
                            << std::endl;
-  std::shared_ptr<SingleInvocationPartition> sips =
-      std::make_shared<SingleInvocationPartition>();
+  SingleInvocationPartition sip;
   Node body = q[1];
   if (body.getKind() == NOT && body[0].getKind() == FORALL)
   {
@@ -72,19 +71,19 @@ Node SygusQePreproc::preprocess(Node q)
   remk.add(remf.d_vars);
   body = remk.apply(body);
   // initialize the single invocation utility
-  sips->init(maxf, body);
+  sip.init(maxf, body);
   Trace("cegqi-qep-debug") << "Computed single invocation:" << std::endl;
-  sips->debugPrint("cegqi-qep-debug");
+  sip.debugPrint("cegqi-qep-debug");
   // if not all functions are of maximal arity, we will try to rewrite
   if (!remf.empty())
   {
-    Node bodyNorm = sips->getFullSpecification();
+    Node bodyNorm = sip.getFullSpecification();
     // revert the skolemization of other functions
     bodyNorm = remk.rapply(bodyNorm);
     Trace("cegqi-qep-debug")
         << "Nested process, full specification:" << bodyNorm << std::endl;
     std::vector<Node> siVars;
-    sips->getSingleInvocationVariables(siVars);
+    sip.getSingleInvocationVariables(siVars);
     Trace("cegqi-qep-debug")
         << "Single invocation variables:" << siVars << std::endl;
     // rewrite for the normalized arguments
@@ -96,31 +95,29 @@ Node SygusQePreproc::preprocess(Node q)
     bodyNorm = Rewriter::rewrite(bodyNorm);
     Trace("cegqi-qep-debug")
         << "Extended and normalized:" << bodyNorm << std::endl;
-    // reset
-    sips = std::make_shared<SingleInvocationPartition>();
-    // do single invocation, again, with maxf + extended argument functions
+    // compute single invocation, again, with maxf + extended argument functions
+    SingleInvocationPartition sipxf;
     std::vector<Node> xmaxf = maxf;
     xmaxf.insert(xmaxf.end(), xf.d_vars.begin(), xf.d_vars.end());
 
-    sips->init(xmaxf, bodyNorm);
+    sipxf.init(xmaxf, bodyNorm);
     Trace("cegqi-qep-debug")
         << "Computed single invocation (after expansion):" << std::endl;
-    sips->debugPrint("cegqi-qep-debug");
-  }
-  // take reference to the single invocation
-  SingleInvocationPartition& sip = *sips.get();
-
-  if (sip.isPurelySingleInvocation())
-  {
-    if (!remf.empty())
+    sipxf.debugPrint("cegqi-qep-debug");
+    if (sipxf.isPurelySingleInvocation())
     {
       Trace("cegqi-qep") << "...eliminate functions." << std::endl;
       // solve for a subset of the functions
-      Node ret = eliminateFunctions(q, allf, maxf, xf, solvedf, sip);
+      Node ret = eliminateFunctions(q, allf, maxf, xf, solvedf, sipxf);
       Trace("cegqi-qep") << "...eliminate functions returned " << ret
                          << std::endl;
       return ret;
     }
+    // otherwise, does it matter?
+  }
+
+  if (sip.isPurelySingleInvocation())
+  {
     Trace("cegqi-qep") << "...pure single invocation, success." << std::endl;
     return Node::null();
   }
@@ -160,9 +157,8 @@ Node SygusQePreproc::eliminateVariables(Node q,
   sip.getSingleInvocationVariables(si_vars);
   std::vector<Node> qe_vars;
   std::vector<Node> nqe_vars;
-  for (unsigned i = 0, size = all_vars.size(); i < size; i++)
+  for (const Node& v : all_vars)
   {
-    Node v = all_vars[i];
     if (std::find(maxf.begin(), maxf.end(), v) != maxf.end())
     {
       Trace("cegqi-qep-debug") << "- fun var: " << v << std::endl;
@@ -284,20 +280,28 @@ Node SygusQePreproc::eliminateFunctions(Node q,
     Subs solSubs;
     for (const std::pair<const Node, Node>& sol : solMap)
     {
-      Trace("sygus-qep-debug")
-          << "Solution : " << sol.first << " -> " << sol.second << std::endl;
       solSubs.add(sol.first, sol.second);
     }
+    Trace("sygus-qep-debug")
+          << "Solution : " << solSubs << std::endl;
     // undo the skolemization of the extended functions
     xfk.rapplyToRange(solSubs);
+    Trace("sygus-qep-debug")
+          << "...after unskolemize : " << solSubs << std::endl;
     // extended functions have a definition in terms of the originals
     xf.rapplyToRange(solSubs);
+    Trace("sygus-qep-debug")
+          << "...after revert extensions : " << solSubs << std::endl;
+    Trace("sygus-qep-debug")
+          << "Previous solution set : " << solvedf << std::endl;
     // solSubs are correct, now update previous solutions
     solSubs.applyToRange(solvedf);
+    Trace("sygus-qep-debug")
+          << "...updated to : " << solvedf << std::endl;
     // now append new solutions to solved
     solvedf.append(solSubs);
     
-    // make the conjecture
+    // reconstruct the conjecture
     
   }
 
