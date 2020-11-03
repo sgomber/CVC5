@@ -1063,14 +1063,14 @@ Result SmtEngine::assertFormula(const Node& formula, bool inUnsatCore)
    --------------------------------------------------------------------------
 */
 
-void SmtEngine::declareSygusVar(Node var, TypeNode type)
+void SmtEngine::declareSygusVar(Node var)
 {
   SmtScope smts(this);
-  d_sygusSolver->declareSygusVar(var, type);
+  d_sygusSolver->declareSygusVar(var);
   if (Dump.isOn("raw-benchmark"))
   {
     getOutputManager().getPrinter().toStreamCmdDeclareVar(
-        getOutputManager().getDumpOut(), var, type);
+        getOutputManager().getDumpOut(), var, var.getType());
   }
   // don't need to set that the conjecture is stale
 }
@@ -1102,6 +1102,14 @@ void SmtEngine::declareSynthFun(Node func,
         isInv,
         sygusType);
   }
+}
+void SmtEngine::declareSynthFun(Node func,
+                      bool isInv,
+                      const std::vector<Node>& vars)
+{
+  // use a null sygus type
+  TypeNode sygusType;
+  declareSynthFun(func, sygusType, isInv, vars);
 }
 
 void SmtEngine::assertSygusConstraint(Node constraint)

@@ -5547,7 +5547,7 @@ Term Solver::mkSygusVar(Sort sort, const std::string& symbol) const
   Node res = getNodeManager()->mkBoundVar(symbol, *sort.d_type);
   (void)res.getType(true); /* kick off type checking */
 
-  d_smtEngine->declareSygusVar(res, *sort.d_type);
+  d_smtEngine->declareSygusVar(res);
 
   return Term(this, res);
 

@@ -26,6 +26,7 @@
 #include "theory/quantifiers/term_enumeration.h"
 #include "theory/quantifiers/term_util.h"
 #include "theory/quantifiers_engine.h"
+#include "theory/quantifiers/sygus/sygus_utils.h"
 #include "theory/smt_engine_subsolver.h"
 
 using namespace CVC4::kind;
@@ -65,14 +66,8 @@ void CegSingleInv::initialize(Node q)
   for (const Node& sf : q[0])
   {
     progs.push_back( sf );
-    Node sfvl = CegGrammarConstructor::getSygusVarList(sf);
-    if (!sfvl.isNull())
-    {
-      for (const Node& sfv : sfvl)
-      {
-        prog_vars[sf].push_back(sfv);
-      }
-    }
+    // get its argument list
+    getSygusArgumentListForSynthFun( sf, prog_vars[sf]);
   }
   // compute single invocation partition
   Node qq;

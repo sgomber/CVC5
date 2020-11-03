@@ -71,6 +71,12 @@ void Subs::addEquality(Node eq)
   add(eq[0], eq[1]);
 }
 
+void Subs::append(Subs& s)
+{
+  // add the substitution list
+  add(s.d_vars, s.d_subs);
+}
+
 Node Subs::apply(Node n) const
 {
   if (d_vars.empty())
@@ -356,15 +362,19 @@ Node SygusQePreproc::eliminateFunctions(Node q,
   initializeSubsolver(smt_sy);
 
   // functions-to-synthesize
+  std::vector<Node> formals;
+  
   for (const Node& f : maxf)
   {
-    // smt_sy->declareSynthFun(
+    smt_sy->declareSynthFun(f, false, formals);
   }
 
   for (const Node& v : siVars)
   {
-    // smt_sy->declareSygusVar(
+    smt_sy->declareSygusVar(v);
   }
+  // assert the sygus constraint
+  smt_sy->assertSygusConstraint(bodyNorm);
 
   Result r = smt_sy->checkSynth();
   Trace("sygus-qep-debug") << "eliminateFunctions result: " << r << std::endl;
@@ -379,7 +389,10 @@ Node SygusQePreproc::eliminateFunctions(Node q,
           << "Solution : " << sol.first << " -> " << sol.second << std::endl;
       solSubs.add(sol.first, sol.second);
     }
-    //
+    // update previous solutions
+    solSubs.applyToRange(solvedf);
+    // now add to range
+    solvedf.append(solSubs);
   }
 
   return Node::null();

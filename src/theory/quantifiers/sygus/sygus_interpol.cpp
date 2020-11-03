@@ -333,7 +333,7 @@ bool SygusInterpol::solveInterpolation(const std::string& name,
 
   for (const Node& var : d_vars)
   {
-    subSolver->declareSygusVar(var, var.getType());
+    subSolver->declareSygusVar(var);
   }
   std::vector<Node> vars_empty;
   subSolver->declareSynthFun(itp, grammarType, false, vars_empty);

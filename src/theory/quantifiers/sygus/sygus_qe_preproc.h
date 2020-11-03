@@ -43,6 +43,7 @@ class Subs
   void add(Node v, Node s);
   void add(const std::vector<Node>& vs, const std::vector<Node>& ss);
   void addEquality(Node eq);
+  void append(Subs& s);
   void applyToRange(Subs& s);
   void rapplyToRange(Subs& s);
   Node apply(Node n) const;
