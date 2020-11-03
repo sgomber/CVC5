@@ -199,8 +199,6 @@ class SynthConjecture
  private:
   /** reference to quantifier engine */
   QuantifiersEngine* d_qe;
-  /** pointer to the synth engine that owns this */
-  SynthEngine* d_parent;
   /** reference to the statistics of parent */
   SygusStatistics& d_stats;
   /** term database sygus of d_qe */

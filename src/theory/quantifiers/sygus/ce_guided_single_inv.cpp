@@ -34,9 +34,8 @@ namespace CVC4 {
 namespace theory {
 namespace quantifiers {
 
-CegSingleInv::CegSingleInv(QuantifiersEngine* qe, SynthConjecture* p)
+CegSingleInv::CegSingleInv(QuantifiersEngine* qe)
     : d_qe(qe),
-      d_parent(p),
       d_sip(new SingleInvocationPartition),
       d_sol(new CegSingleInvSol(qe)),
       d_isSolved(false),

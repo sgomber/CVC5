@@ -69,25 +69,35 @@ Node SygusQePreproc::preprocess(Node q)
   }
   Trace("cegqi-qep-debug") << "Max function variables = " << maxf << std::endl;
   Trace("cegqi-qep-debug") << "Body processed to " << body << std::endl;
-
+  // skolemize free symbols
+  std::vector<Node> remk;
+  if (!remf.empty())
+  {
+    for (const Node& f : remf)
+    {
+      remk.push_back(nm->mkSkolem("remk",f.getType()));
+    }
+    body = body.substitute(remf.begin(), remf.end(), remk.begin(), remk.end());
+  }
   sips->init(maxf, body);
   Trace("cegqi-qep-debug") << "Computed single invocation:" << std::endl;
   sips->debugPrint("cegqi-qep-debug");
   // if not all functions are of maximal arity, we will try to rewrite
-  if (maxf.size()<allf.size())
+  if (!remf.empty())
   {
     Node bodyNorm = sips->getFullSpecification();
+    bodyNorm = bodyNorm.substitute(remk.begin(), remk.end(), remf.begin(), remf.end());
     Trace("cegqi-qep-debug") << "Nested process, full specification:" << bodyNorm << std::endl;
     std::vector<Node> siVars;
     sips->getSingleInvocationVariables(siVars);
     Trace("cegqi-qep-debug") << "Single invocation variables:" << siVars << std::endl;
     Assert (siVars.size()==xargs);
-    // rewrite for the arguments
+    // substitute the body { remf -> rems }
+    // rewrite for the normalized arguments
     for (size_t i=0, nrems=rems.size(); i<nrems; i++)
     {
       rems[i] = rems[i].substitute(xargs.begin(), xargs.end(), siVars.begin(), siVars.end());
     }
-    // substitute the body { remf -> rems }
     if (!remf.empty())
     {
       bodyNorm = bodyNorm.substitute(remf.begin(), remf.end(), rems.begin(), rems.end());
@@ -96,10 +106,11 @@ Node SygusQePreproc::preprocess(Node q)
     Trace("cegqi-qep-debug") << "Extended and normalized:" << bodyNorm << std::endl;
     // reset
     sips = std::make_shared<SingleInvocationPartition>();
-    // try again
-    maxf.insert(maxf.end(),xf.begin(), xf.end());
+    // do single invocation, again, with maxf + extended argument functions
+    std::vector<Node> xmaxf = maxf;
+    xmaxf.insert(xmaxf.end(),xf.begin(), xf.end());
     
-    sips->init(maxf, bodyNorm);
+    sips->init(xmaxf, bodyNorm);
     Trace("cegqi-qep-debug") << "Computed single invocation (after expansion):" << std::endl;
     sips->debugPrint("cegqi-qep-debug");
   }
@@ -112,7 +123,7 @@ Node SygusQePreproc::preprocess(Node q)
     {
       Trace("cegqi-qep") << "...eliminate functions." << std::endl;
       // solve for a subset of the functions
-      Node ret = eliminateFunctions(q, allf, maxf, solvedf, sip);
+      Node ret = eliminateFunctions(q, allf, maxf, xf, xs, solvedf, sip);
       Trace("cegqi-qep") << "...eliminate functions returned " << ret
                          << std::endl;
       return ret;
@@ -130,7 +141,7 @@ Node SygusQePreproc::preprocess(Node q)
   }
   Trace("cegqi-qep") << "...eliminate variables." << std::endl;
   // non-ground single invocation, eliminate variables
-  Node ret = eliminateVariables(q, allf, maxf, solvedf, sip);
+  Node ret = eliminateVariables(q, allf, maxf, xf, xs, solvedf, sip);
   Trace("cegqi-qep") << "...eliminate variables returned " << ret << std::endl;
   return ret;
 }
@@ -138,6 +149,8 @@ Node SygusQePreproc::preprocess(Node q)
 Node SygusQePreproc::eliminateVariables(Node q,
                                         const std::vector<Node>& allf,
                                         const std::vector<Node>& maxf,
+                                          const std::vector<Node>& xf,
+                                          const std::vector<Node>& xs,
                                         std::map<Node, Node>& solvedf,
                                         SingleInvocationPartition& sip)
 {
@@ -187,15 +200,13 @@ Node SygusQePreproc::eliminateVariables(Node q,
   }
   std::vector<Node> funcs1;
   sip.getFunctions(funcs1);
-  for (unsigned i = 0, size = funcs1.size(); i < size; i++)
+  for (const Node& f : funcs1)
   {
-    Node f = funcs1[i];
     Node fi = sip.getFunctionInvocationFor(f);
-    Node fv = sip.getFirstOrderVariableForFunction(f);
     Assert(!fi.isNull());
     orig.push_back(fi);
     Node k = nm->mkSkolem(
-        "k", fv.getType(), "qe for function in non-ground single invocation");
+        "k", fi.getType(), "qe for function in non-ground single invocation");
     subs.push_back(k);
     Trace("cegqi-qep-debug") << "  subs : " << fi << " -> " << k << std::endl;
   }
@@ -220,7 +231,7 @@ Node SygusQePreproc::eliminateVariables(Node q,
     qeRes =
         qeRes.substitute(subs.begin(), subs.end(), orig.begin(), orig.end());
     // must additionally map back to original functions
-    //qeRes = qeRes.substitute(maxf.begin(), maxf.end(), maxs.begin(), maxs.end());
+    qeRes = qeRes.substitute(xf.begin(), xf.end(), xs.begin(), xs.end());
     if (!nqe_vars.empty())
     {
       qeRes = nm->mkNode(EXISTS, nm->mkNode(BOUND_VAR_LIST, nqe_vars), qeRes);
@@ -241,11 +252,19 @@ Node SygusQePreproc::eliminateVariables(Node q,
 Node SygusQePreproc::eliminateFunctions(Node q,
                                         const std::vector<Node>& allf,
                                         const std::vector<Node>& maxf,
+                                          const std::vector<Node>& xf,
+                                          const std::vector<Node>& xs,
                                         std::map<Node, Node>& solvedf,
                                         SingleInvocationPartition& sip)
 {
   // FIXME
   NodeManager* nm = NodeManager::currentNM();
+  
+  // use 
+  Node bodyNorm = sip.getFullSpecification();
+  Trace("cegqi-qep-debug") << "Full specification is " << bodyNorm
+                           << std::endl;
+  
   return Node::null();
 }
 

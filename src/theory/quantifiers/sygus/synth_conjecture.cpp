@@ -43,14 +43,12 @@ namespace theory {
 namespace quantifiers {
 
 SynthConjecture::SynthConjecture(QuantifiersEngine* qe,
-                                 SynthEngine* p,
                                  SygusStatistics& s)
     : d_qe(qe),
-      d_parent(p),
       d_stats(s),
       d_tds(qe->getTermDatabaseSygus()),
       d_hasSolution(false),
-      d_ceg_si(new CegSingleInv(qe, this)),
+      d_ceg_si(new CegSingleInv(qe)),
       d_ceg_proc(new SynthConjectureProcess(qe)),
       d_ceg_gc(new CegGrammarConstructor(qe, this)),
       d_sygus_rconst(new SygusRepairConst(qe)),

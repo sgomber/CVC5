@@ -29,6 +29,21 @@ namespace quantifiers {
 
 class SingleInvocationPartition;
 
+class FConvert
+{
+public:
+  std::vector<Node> d_vars;
+  std::vector<Node> d_subs;
+  
+  Node apply(Node n)
+  {
+    return n.subsitute(d_vars.begin(),d_vars.end(),d_subs.begin(),d_subs.end());
+  }
+  Node rapply(Node n)
+  {
+    return n.subsitute(d_subs.begin(),d_subs.end(),d_vars.begin(),d_vars.end());
+  }
+};
 /**
  * This module does quantifier elimination as a preprocess step
  * for "non-ground single invocation synthesis conjectures":
@@ -57,6 +72,8 @@ class SygusQePreproc
   Node eliminateVariables(Node q,
                           const std::vector<Node>& allf,
                           const std::vector<Node>& maxf,
+                                          const std::vector<Node>& xf,
+                                          const std::vector<Node>& xs,
                           std::map<Node, Node>& solvedf,
                           SingleInvocationPartition& sip);
   /**
@@ -65,6 +82,8 @@ class SygusQePreproc
   Node eliminateFunctions(Node q,
                           const std::vector<Node>& allf,
                           const std::vector<Node>& maxf,
+                                          const std::vector<Node>& xf,
+                                          const std::vector<Node>& xs,
                           std::map<Node, Node>& solvedf,
                           SingleInvocationPartition& sip);
   /**

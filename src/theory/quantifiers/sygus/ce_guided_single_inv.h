@@ -41,7 +41,6 @@ class SynthConjecture;
 class CegSingleInv
 {
  private:
-  friend class CegqiOutputSingleInv;
   //presolve
   void collectPresolveEqTerms( Node n,
                                std::map< Node, std::vector< Node > >& teq );
@@ -52,8 +51,6 @@ class CegSingleInv
  private:
   /** pointer to the quantifiers engine */
   QuantifiersEngine* d_qe;
-  /** the parent of this class */
-  SynthConjecture* d_parent;
   // single invocation inference utility
   SingleInvocationPartition* d_sip;
   // transition inference module for each function to synthesize
@@ -109,7 +106,7 @@ class CegSingleInv
   std::map< Node, Node > d_templ_arg;
   
  public:
-  CegSingleInv(QuantifiersEngine* qe, SynthConjecture* p);
+  CegSingleInv(QuantifiersEngine* qe);
   ~CegSingleInv();
 
   // get simplified conjecture

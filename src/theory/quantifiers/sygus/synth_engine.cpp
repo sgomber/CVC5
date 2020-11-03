@@ -37,7 +37,7 @@ SynthEngine::SynthEngine(QuantifiersEngine* qe, context::Context* c)
       d_sqp(qe)
 {
   d_conjs.push_back(std::unique_ptr<SynthConjecture>(
-      new SynthConjecture(d_quantEngine, this, d_statistics)));
+      new SynthConjecture(d_quantEngine, d_statistics)));
   d_conj = d_conjs.back().get();
 }
 
