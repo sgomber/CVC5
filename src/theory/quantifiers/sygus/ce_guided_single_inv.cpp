@@ -388,8 +388,9 @@ bool CegSingleInv::solve()
                     << std::endl;
   d_inst.clear();
   d_instConds.clear();
-  for (const Node& q : qs)
+  if (!qs.empty())
   {
+    Node q = qs[0];
     Assert(q.getKind() == FORALL);
     siSmt->getInstantiationTermVectors(q, d_inst);
     Trace("sygus-si") << "#instantiations of " << q << "=" << d_inst.size()
@@ -416,6 +417,13 @@ bool CegSingleInv::solve()
       Trace("sygus-si") << "  Instantiation Lemma: " << ilem << std::endl;
     }
   }
+  // now construct the solutions
+  d_solutions.clear();
+  for (size_t i=0, nvars = d_quant[0].getNumChildren(); i<nvars; i++)
+  {
+    Node sol = getSolutionFromInst(i);
+    d_solutions.push_back(sol);
+  }
   d_isSolved = true;
   return true;
 }
@@ -433,16 +441,33 @@ struct sortSiInstanceIndices {
   }
 };
 
-Node CegSingleInv::getSolution(unsigned sol_index,
+Node CegSingleInv::getSolution(size_t sol_index,
                                TypeNode stn,
                                int& reconstructed,
                                bool rconsSygus)
 {
-  Assert(d_sol != NULL);
+  Node s = d_solutions[sol_index];
+  // must substitute to be proper variables
   const DType& dt = stn.getDType();
   Node varList = dt.getSygusVarList();
-  Node prog = d_quant[0][sol_index];
+  d_sol->d_varList.clear();
+  Assert(d_single_inv_arg_sk.size() == varList.getNumChildren());
   std::vector< Node > vars;
+  for( size_t i=0, nvars = d_single_inv_arg_sk.size(); i<nvars; i++ ){
+    Trace("csi-sol") << d_single_inv_arg_sk[i] << " ";
+    vars.push_back( d_single_inv_arg_sk[i] );
+    d_sol->d_varList.push_back( varList[i] );
+  }
+  Trace("csi-sol") << std::endl;
+  Assert(vars.size() == d_sol->d_varList.size());
+  s = s.substitute( vars.begin(), vars.end(), d_sol->d_varList.begin(), d_sol->d_varList.end() );
+  return reconstructToSyntax( s, stn, reconstructed, rconsSygus );
+}
+  
+Node CegSingleInv::getSolutionFromInst(size_t index)
+{
+  Assert(d_sol != NULL);
+  Node prog = d_quant[0][index];
   Node s;
   // If it is unconstrained: either the variable does not appear in the
   // conjecture or the conjecture can be solved without a single instantiation.
@@ -450,20 +475,12 @@ Node CegSingleInv::getSolution(unsigned sol_index,
       || d_inst.empty())
   {
     Trace("csi-sol") << "Get solution for (unconstrained) " << prog << std::endl;
-    s = d_qe->getTermEnumeration()->getEnumerateTerm(dt.getSygusType(), 0);
+    s = d_qe->getTermEnumeration()->getEnumerateTerm(prog.getType(), 0);
   }
   else
   {
     Trace("csi-sol") << "Get solution for " << prog << ", with skolems : ";
-    sol_index = d_prog_to_sol_index[prog];
-    d_sol->d_varList.clear();
-    Assert(d_single_inv_arg_sk.size() == varList.getNumChildren());
-    for( unsigned i=0; i<d_single_inv_arg_sk.size(); i++ ){
-      Trace("csi-sol") << d_single_inv_arg_sk[i] << " ";
-      vars.push_back( d_single_inv_arg_sk[i] );
-      d_sol->d_varList.push_back( varList[i] );
-    }
-    Trace("csi-sol") << std::endl;
+    size_t sol_index = d_prog_to_sol_index[prog];
 
     //construct the solution
     Trace("csi-sol") << "Sort solution return values " << sol_index << std::endl;
@@ -501,16 +518,12 @@ Node CegSingleInv::getSolution(unsigned sol_index,
       cond = TermUtil::simpleNegate(cond);
       s = nm->mkNode(ITE, cond, d_inst[uindex][sol_index], s);
     }
-    Assert(vars.size() == d_sol->d_varList.size());
-    s = s.substitute( vars.begin(), vars.end(), d_sol->d_varList.begin(), d_sol->d_varList.end() );
   }
-  d_orig_solution = s;
-
   //simplify the solution using the extended rewriter
-  Trace("csi-sol") << "Solution (pre-simplification): " << d_orig_solution << std::endl;
+  Trace("csi-sol") << "Solution (pre-simplification): " << s << std::endl;
   s = d_qe->getTermDatabaseSygus()->getExtRewriter()->extendedRewrite(s);
   Trace("csi-sol") << "Solution (post-simplification): " << s << std::endl;
-  return reconstructToSyntax( s, stn, reconstructed, rconsSygus );
+  return s;
 }
 
 Node CegSingleInv::reconstructToSyntax(Node s,
@@ -518,7 +531,7 @@ Node CegSingleInv::reconstructToSyntax(Node s,
                                        int& reconstructed,
                                        bool rconsSygus)
 {
-  d_solution = s;
+  Node sol = s;
   const DType& dt = stn.getDType();
 
   //reconstruct the solution into sygus if necessary
@@ -539,67 +552,46 @@ Node CegSingleInv::reconstructToSyntax(Node s,
     {
       enumLimit = options::cegqiSingleInvReconstructLimit();
     }
-    d_sygus_solution =
+    sol =
         d_sol->reconstructSolution(s, stn, reconstructed, enumLimit);
     if( reconstructed==1 ){
-      Trace("csi-sol") << "Solution (post-reconstruction into Sygus): " << d_sygus_solution << std::endl;
+      Trace("csi-sol") << "Solution (post-reconstruction into Sygus): " << sol << std::endl;
     }
   }else{
     Trace("csi-sol") << "Post-process solution..." << std::endl;
-    Node prev = d_solution;
-    d_solution =
+    Node prev = sol;
+    sol =
         d_qe->getTermDatabaseSygus()->getExtRewriter()->extendedRewrite(
-            d_solution);
-    if( prev!=d_solution ){
-      Trace("csi-sol") << "Solution (after post process) : " << d_solution << std::endl;
+            sol);
+    if( prev!=sol ){
+      Trace("csi-sol") << "Solution (after post process) : " << sol << std::endl;
     }
   }
 
   // debug solution
-  if (!d_sol->debugSolution(d_solution))
+  /*
+  if (!d_sol->debugSolution(sol))
   {
     // This can happen if we encountered free variables in either the
     // instantiation terms, or in the instantiation lemmas after postprocessing.
     // In this case, we fail, since the solution is not valid.
-    Trace("csi-sol") << "FAIL : solution " << d_solution
+    Trace("csi-sol") << "FAIL : solution " << sol
                      << " contains free constants." << std::endl;
     Warning() <<
         "Cannot get synth function: free constants encountered in synthesis "
         "solution.";
     reconstructed = -1;
   }
-  if( Trace.isOn("cegqi-stats") ){
-    int tsize, itesize;
-    tsize = 0;itesize = 0;
-    d_sol->debugTermSize( d_orig_solution, tsize, itesize );
-    Trace("cegqi-stats") << tsize << " " << itesize << " ";
-    tsize = 0;itesize = 0;
-    d_sol->debugTermSize( d_solution, tsize, itesize );
-    Trace("cegqi-stats") << tsize << " " << itesize << " ";
-    if( !d_sygus_solution.isNull() ){
-      tsize = 0;itesize = 0;
-      d_sol->debugTermSize( d_sygus_solution, tsize, itesize );
-      Trace("cegqi-stats") << tsize << " - ";
-    }else{
-      Trace("cegqi-stats") << "null ";
-    }
-    Trace("cegqi-stats") << std::endl;
-  }
-  Node sol;
-  if( reconstructed==1 ){
-    sol = d_sygus_solution;
-  }else if( reconstructed==-1 ){
+  */
+  if( reconstructed==-1 ){
     return Node::null();
-  }else{
-    sol = d_solution;
   }
   //make into lambda
   if( !dt.getSygusVarList().isNull() ){
     Node varList = dt.getSygusVarList();
     return NodeManager::currentNM()->mkNode( LAMBDA, varList, sol );
-  }else{
-    return sol;
   }
+  return sol;
 }
 
 void CegSingleInv::preregisterConjecture(Node q) { d_orig_conjecture = q; }
@@ -656,14 +648,11 @@ bool CegSingleInv::solveTrivial(Node q)
     {
       imap[vars[j]] = subs[j];
     }
-    std::vector<Node> inst;
     for (const Node& v : q[0])
     {
       Assert(imap.find(v) != imap.end());
-      inst.push_back(imap[v]);
+      d_solutions.push_back(imap[v]);
     }
-    d_inst.push_back(inst);
-    d_instConds.push_back(NodeManager::currentNM()->mkConst(true));
     d_isSolved = true;
     return true;
   }

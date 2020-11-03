@@ -60,18 +60,10 @@ class CegSingleInv
 
   // list of skolems for each argument of programs
   std::vector<Node> d_single_inv_arg_sk;
-  // list of variables/skolems for each program
-  std::vector<Node> d_single_inv_var;
-  std::vector<Node> d_single_inv_sk;
-  std::map<Node, int> d_single_inv_sk_index;
   // program to solution index
   std::map<Node, unsigned> d_prog_to_sol_index;
   // original conjecture
   Node d_orig_conjecture;
-  // solution
-  Node d_orig_solution;
-  Node d_solution;
-  Node d_sygus_solution;
 
  public:
   //---------------------------------representation of the solution
@@ -85,6 +77,8 @@ class CegSingleInv
    * first order conjecture for the term vectors above.
    */
   std::vector<Node> d_instConds;
+  /** The solutions */
+  std::vector<Node> d_solutions;
   /** is solved */
   bool d_isSolved;
   //---------------------------------end representation of the solution
@@ -131,8 +125,11 @@ class CegSingleInv
    * found a solution to the synthesis conjecture using this method.
    */
   bool solve();
-  //get solution
-  Node getSolution( unsigned sol_index, TypeNode stn, int& reconstructed, bool rconsSygus = true );
+  /** 
+   * Get solution for the index^th function to synthesize of the conjecture
+   * this class was initialized with.
+   */
+  Node getSolution( size_t sol_index, TypeNode stn, int& reconstructed, bool rconsSygus = true );
   //reconstruct to syntax
   Node reconstructToSyntax( Node s, TypeNode stn, int& reconstructed,
                             bool rconsSygus = true );
@@ -178,6 +175,10 @@ class CegSingleInv
    * unsatisfiable for instantiation {x1 -> t1 ... xn -> tn}.
    */
   bool solveTrivial(Node q);
+  /** 
+   * Get solution from inst
+   */
+  Node getSolutionFromInst(size_t index);
 };
 
 }/* namespace CVC4::theory::quantifiers */

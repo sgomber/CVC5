@@ -276,11 +276,11 @@ Node SygusQePreproc::eliminateFunctions(Node q,
   std::unique_ptr<SmtEngine> smt_sy;
   initializeSubsolver(smt_sy);
 
-  // functions-to-synthesize
-  std::vector<Node> formals;
-
+  // functions-to-synthesize, keep the same formal argument list
   for (const Node& f : maxf)
   {
+    std::vector<Node> formals;
+    getSygusArgumentListForSynthFun(f,formals);
     smt_sy->declareSynthFun(f, false, formals);
   }
 
