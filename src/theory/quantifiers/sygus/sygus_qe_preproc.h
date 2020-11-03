@@ -29,23 +29,25 @@ namespace quantifiers {
 
 class SingleInvocationPartition;
 
-class FConvert
+/**
+ * Helper substitution class.
+ */
+class Subs
 {
  public:
+  bool empty() const;
+  void add(Node v);
+  void add(const std::vector<Node>& vs);
+  void add(Node v, Node s);
+  void add(const std::vector<Node>& vs, const std::vector<Node>& ss);
+  void applyToRange(Subs& s);
+  void rapplyToRange(Subs& s);
+  Node apply(Node n) const;
+  Node rapply(Node n) const;
   std::vector<Node> d_vars;
   std::vector<Node> d_subs;
-
-  Node apply(Node n)
-  {
-    return n.substitute(
-        d_vars.begin(), d_vars.end(), d_subs.begin(), d_subs.end());
-  }
-  Node rapply(Node n)
-  {
-    return n.substitute(
-        d_subs.begin(), d_subs.end(), d_vars.begin(), d_vars.end());
-  }
 };
+
 /**
  * This module does quantifier elimination as a preprocess step
  * for "non-ground single invocation synthesis conjectures":
@@ -74,8 +76,7 @@ class SygusQePreproc
   Node eliminateVariables(Node q,
                           const std::vector<Node>& allf,
                           const std::vector<Node>& maxf,
-                          const std::vector<Node>& xf,
-                          const std::vector<Node>& xs,
+                          const Subs& xf,
                           std::map<Node, Node>& solvedf,
                           SingleInvocationPartition& sip);
   /**
@@ -84,8 +85,7 @@ class SygusQePreproc
   Node eliminateFunctions(Node q,
                           const std::vector<Node>& allf,
                           const std::vector<Node>& maxf,
-                          const std::vector<Node>& xf,
-                          const std::vector<Node>& xs,
+                          const Subs& xf,
                           std::map<Node, Node>& solvedf,
                           SingleInvocationPartition& sip);
   /**
@@ -98,18 +98,14 @@ class SygusQePreproc
   /** Get maximal arity functions */
   bool getMaximalArityFuncs(const std::vector<Node>& unsf,
                             std::vector<Node>& maxf,
-                            std::vector<Node>& remf,
-                            std::vector<Node>& rems,
-                            std::vector<Node>& xf,
-                            std::vector<Node>& xs,
+                            Subs& remf,
+                            Subs& xf,
                             std::vector<Node>& xargs);
   /** Extend function arguments */
   bool extendFuncArgs(Node f,
                       const std::vector<Node>& xargs,
-                      std::vector<Node>& remf,
-                      std::vector<Node>& rems,
-                      std::vector<Node>& xf,
-                      std::vector<Node>& xs);
+                      Subs& remf,
+                      Subs& xf);
   /**
    * Make conjecture
    */
