@@ -28,6 +28,12 @@ namespace quantifiers {
 
 bool Subs::empty() const { return d_vars.empty(); }
 
+size_t Subs::size() const { return d_vars.size(); }
+bool Subs::contains(Node v) const
+{
+  return std::find(d_vars.begin(), d_vars.end(), v)!=d_vars.end();
+}
+
 void Subs::add(Node v)
 {
   // default, use a fresh skolem of the same type
@@ -57,6 +63,12 @@ void Subs::add(const std::vector<Node>& vs, const std::vector<Node>& ss)
   {
     add(vs[i], ss[i]);
   }
+}
+
+void Subs::addEquality(Node eq)
+{
+  Assert (eq.getKind()==EQUAL);
+  add(eq[0], eq[1]);
 }
 
 Node Subs::apply(Node n) const
@@ -102,6 +114,12 @@ void Subs::rapplyToRange(Subs& s)
   }
 }
 
+Node Subs::getEquality(size_t i) const
+{
+  Assert (i<d_vars.size());
+  return d_vars[i].eqNode(d_subs[i]);
+}
+
 SygusQePreproc::SygusQePreproc(QuantifiersEngine* qe) {}
 
 Node SygusQePreproc::preprocess(Node q)
@@ -110,7 +128,7 @@ Node SygusQePreproc::preprocess(Node q)
   // decompose the conjecture into solved, unsolved components
   std::vector<Node> allf;
   std::vector<Node> unsf;
-  std::map<Node, Node> solvedf;
+  Subs solvedf;
   decomposeConjecture(q, allf, unsf, solvedf);
   if (unsf.empty())
   {
@@ -219,7 +237,7 @@ Node SygusQePreproc::eliminateVariables(Node q,
                                         const std::vector<Node>& allf,
                                         const std::vector<Node>& maxf,
                                         const Subs& xf,
-                                        std::map<Node, Node>& solvedf,
+                                        Subs& solvedf,
                                         SingleInvocationPartition& sip)
 {
   NodeManager* nm = NodeManager::currentNM();
@@ -308,7 +326,7 @@ Node SygusQePreproc::eliminateFunctions(Node q,
                                         const std::vector<Node>& allf,
                                         const std::vector<Node>& maxf,
                                         const Subs& xf,
-                                        std::map<Node, Node>& solvedf,
+                                        Subs& solvedf,
                                         SingleInvocationPartition& sip)
 {
   // FIXME
@@ -331,21 +349,46 @@ Node SygusQePreproc::eliminateFunctions(Node q,
   std::vector<Node> siVars;
   sip.getSingleInvocationVariables(siVars);
 
-  // make the synthesis conjecture
-  Node conj = bodyNorm.negate();
-  if (!siVars.empty())
+  Trace("cegqi-qep-debug") << "Free variables: " << siVars << std::endl;
+
+  // create new smt engine to do sygus
+  std::unique_ptr<SmtEngine> smt_sy;
+  initializeSubsolver(smt_sy);
+  
+  // functions-to-synthesize
+  for (const Node& f : maxf)
   {
-    Node bvl = nm->mkNode(BOUND_VAR_LIST, siVars);
-    conj = nm->mkNode(EXISTS, bvl, conj);
+    //smt_sy->declareSynthFun(
+  }
+  
+  for (const Node& v : siVars)
+  {
+    //smt_sy->declareSygusVar(
   }
 
+  Result r = smt_sy->checkSynth();
+  Trace("sygus-qep-debug") << "eliminateFunctions result: " << r
+                          << std::endl;
+  if (r.asSatisfiabilityResult().isSat() == Result::UNSAT)
+  {
+    std::map<Node, Node> solMap;
+    smt_sy->getSynthSolutions(solMap);
+    Subs solSubs;
+    for (const std::pair<const Node, Node>& sol : solMap)
+    {
+      Trace("sygus-qep-debug") << "Solution : " << sol.first << " -> " << sol.second << std::endl;
+      solSubs.add(sol.first, sol.second);
+    }
+    //
+  }
+  
   return Node::null();
 }
 
 void SygusQePreproc::decomposeConjecture(Node q,
                                          std::vector<Node>& allf,
                                          std::vector<Node>& unsf,
-                                         std::map<Node, Node>& solvedf)
+                                         Subs& solvedf)
 {
   Assert(q.getKind() == FORALL);
   Assert(q.getNumChildren() == 3);
@@ -363,14 +406,14 @@ void SygusQePreproc::decomposeConjecture(Node q,
       {
         Node eq = ipv.getAttribute(ssa);
         Assert(std::find(allf.begin(), allf.end(), eq[0]) != allf.end());
-        solvedf[eq[0]] = eq[1];
+        solvedf.addEquality(eq);
       }
     }
   }
   // add to unsolved functions
   for (const Node& f : allf)
   {
-    if (solvedf.find(f) == solvedf.end())
+    if (!solvedf.contains(f))
     {
       unsf.push_back(f);
     }
@@ -516,7 +559,7 @@ bool SygusQePreproc::extendFuncArgs(Node f,
 }
 
 Node SygusQePreproc::mkConjecture(const std::vector<Node>& allf,
-                                  const std::map<Node, Node>& solvedf,
+                                  const Subs& solvedf,
                                   Node conj,
                                   Node ipl)
 {
@@ -534,9 +577,9 @@ Node SygusQePreproc::mkConjecture(const std::vector<Node>& allf,
     iplChildren.push_back(ipv);
   }
   // add the current solves, which should be a superset of the previous ones
-  for (const std::pair<const Node, Node>& s : solvedf)
+  for (size_t i=0, nsolved=solvedf.size(); i<nsolved; i++)
   {
-    Node eq = s.first.eqNode(s.second);
+    Node eq = solvedf.getEquality(i);
     Node var = nm->mkSkolem("solved", nm->booleanType());
     var.setAttribute(ssa, eq);
     Node ipv = nm->mkNode(INST_ATTRIBUTE, var);

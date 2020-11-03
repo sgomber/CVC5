@@ -24,7 +24,6 @@
 namespace CVC4 {
 namespace theory {
 namespace quantifiers {
-namespace sygus {
 
 /**
  * Make (negated) sygus conjecture of the form
@@ -38,7 +37,6 @@ Node mkSygusConjecture(const std::vector<Node>& fs,
 /** Same as above, without auxiliary instantiation attributes */
 Node mkSygusConjecture(const std::vector<Node>& fs, Node conj);
 
-}  // namespace sygus
 }  // namespace quantifiers
 }  // namespace theory
 }  // namespace CVC4

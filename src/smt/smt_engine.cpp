@@ -69,6 +69,7 @@
 #include "util/hash.h"
 #include "util/random.h"
 #include "util/resource_manager.h"
+#include "expr/node_manager_attributes.h"
 
 using namespace std;
 using namespace CVC4;
@@ -1062,10 +1063,10 @@ Result SmtEngine::assertFormula(const Node& formula, bool inUnsatCore)
    --------------------------------------------------------------------------
 */
 
-void SmtEngine::declareSygusVar(const std::string& id, Node var, TypeNode type)
+void SmtEngine::declareSygusVar(Node var, TypeNode type)
 {
   SmtScope smts(this);
-  d_sygusSolver->declareSygusVar(id, var, type);
+  d_sygusSolver->declareSygusVar( var, type);
   if (Dump.isOn("raw-benchmark"))
   {
     getOutputManager().getPrinter().toStreamCmdDeclareVar(
@@ -1074,15 +1075,14 @@ void SmtEngine::declareSygusVar(const std::string& id, Node var, TypeNode type)
   // don't need to set that the conjecture is stale
 }
 
-void SmtEngine::declareSynthFun(const std::string& id,
-                                Node func,
+void SmtEngine::declareSynthFun(Node func,
                                 TypeNode sygusType,
                                 bool isInv,
                                 const std::vector<Node>& vars)
 {
   SmtScope smts(this);
   d_state->doPendingPops();
-  d_sygusSolver->declareSynthFun(id, func, sygusType, isInv, vars);
+  d_sygusSolver->declareSynthFun(func, sygusType, isInv, vars);
 
   // !!! TEMPORARY: We cannot construct a SynthFunCommand since we cannot
   // construct a Term-level Grammar from a Node-level sygus TypeNode. Thus we
@@ -1090,6 +1090,9 @@ void SmtEngine::declareSynthFun(const std::string& id,
 
   if (Dump.isOn("raw-benchmark"))
   {
+    Assert (func.hasAttribute(expr::VarNameAttr()));
+    std::string id;
+    func.getAttribute(expr::VarNameAttr(), id);
     getOutputManager().getPrinter().toStreamCmdSynthFun(
         getOutputManager().getDumpOut(),
         id,

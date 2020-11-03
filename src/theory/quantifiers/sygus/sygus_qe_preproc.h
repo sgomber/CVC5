@@ -36,14 +36,18 @@ class Subs
 {
  public:
   bool empty() const;
+  size_t size() const;
+  bool contains(Node v) const;
   void add(Node v);
   void add(const std::vector<Node>& vs);
   void add(Node v, Node s);
   void add(const std::vector<Node>& vs, const std::vector<Node>& ss);
+  void addEquality(Node eq);
   void applyToRange(Subs& s);
   void rapplyToRange(Subs& s);
   Node apply(Node n) const;
   Node rapply(Node n) const;
+  Node getEquality(size_t i) const;
   std::vector<Node> d_vars;
   std::vector<Node> d_subs;
 };
@@ -77,7 +81,7 @@ class SygusQePreproc
                           const std::vector<Node>& allf,
                           const std::vector<Node>& maxf,
                           const Subs& xf,
-                          std::map<Node, Node>& solvedf,
+                          Subs& solvedf,
                           SingleInvocationPartition& sip);
   /**
    * Eliminate functions
@@ -86,7 +90,7 @@ class SygusQePreproc
                           const std::vector<Node>& allf,
                           const std::vector<Node>& maxf,
                           const Subs& xf,
-                          std::map<Node, Node>& solvedf,
+                          Subs& solvedf,
                           SingleInvocationPartition& sip);
   /**
    * Decompose conjecture
@@ -94,7 +98,7 @@ class SygusQePreproc
   void decomposeConjecture(Node q,
                            std::vector<Node>& allf,
                            std::vector<Node>& unsf,
-                           std::map<Node, Node>& solved);
+                           Subs& solved);
   /** Get maximal arity functions */
   bool getMaximalArityFuncs(const std::vector<Node>& unsf,
                             std::vector<Node>& maxf,
@@ -110,7 +114,7 @@ class SygusQePreproc
    * Make conjecture
    */
   Node mkConjecture(const std::vector<Node>& allf,
-                    const std::map<Node, Node>& solved,
+                    const Subs& solved,
                     Node conj,
                     Node ipl);
   /** Pointer to quantifiers engine */
