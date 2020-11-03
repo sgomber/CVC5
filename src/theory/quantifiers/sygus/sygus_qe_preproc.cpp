@@ -280,7 +280,7 @@ Node SygusQePreproc::eliminateFunctions(Node q,
   for (const Node& f : maxf)
   {
     std::vector<Node> formals;
-    getSygusArgumentListForSynthFun(f,formals);
+    getSygusArgumentListForSynthFun(f, formals);
     smt_sy->declareSynthFun(f, false, formals);
   }
 

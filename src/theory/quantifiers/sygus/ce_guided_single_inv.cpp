@@ -419,7 +419,7 @@ bool CegSingleInv::solve()
   }
   // now construct the solutions
   d_solutions.clear();
-  for (size_t i=0, nvars = d_quant[0].getNumChildren(); i<nvars; i++)
+  for (size_t i = 0, nvars = d_quant[0].getNumChildren(); i < nvars; i++)
   {
     Node sol = getSolutionFromInst(i);
     d_solutions.push_back(sol);
@@ -453,17 +453,21 @@ Node CegSingleInv::getSolution(size_t sol_index,
   d_sol->d_varList.clear();
   Assert(d_single_inv_arg_sk.size() == varList.getNumChildren());
   std::vector< Node > vars;
-  for( size_t i=0, nvars = d_single_inv_arg_sk.size(); i<nvars; i++ ){
+  for (size_t i = 0, nvars = d_single_inv_arg_sk.size(); i < nvars; i++)
+  {
     Trace("csi-sol") << d_single_inv_arg_sk[i] << " ";
-    vars.push_back( d_single_inv_arg_sk[i] );
-    d_sol->d_varList.push_back( varList[i] );
+    vars.push_back(d_single_inv_arg_sk[i]);
+    d_sol->d_varList.push_back(varList[i]);
   }
   Trace("csi-sol") << std::endl;
   Assert(vars.size() == d_sol->d_varList.size());
-  s = s.substitute( vars.begin(), vars.end(), d_sol->d_varList.begin(), d_sol->d_varList.end() );
-  return reconstructToSyntax( s, stn, reconstructed, rconsSygus );
+  s = s.substitute(vars.begin(),
+                   vars.end(),
+                   d_sol->d_varList.begin(),
+                   d_sol->d_varList.end());
+  return reconstructToSyntax(s, stn, reconstructed, rconsSygus);
 }
-  
+
 Node CegSingleInv::getSolutionFromInst(size_t index)
 {
   Assert(d_sol != NULL);
@@ -552,19 +556,19 @@ Node CegSingleInv::reconstructToSyntax(Node s,
     {
       enumLimit = options::cegqiSingleInvReconstructLimit();
     }
-    sol =
-        d_sol->reconstructSolution(s, stn, reconstructed, enumLimit);
+    sol = d_sol->reconstructSolution(s, stn, reconstructed, enumLimit);
     if( reconstructed==1 ){
-      Trace("csi-sol") << "Solution (post-reconstruction into Sygus): " << sol << std::endl;
+      Trace("csi-sol") << "Solution (post-reconstruction into Sygus): " << sol
+                       << std::endl;
     }
   }else{
     Trace("csi-sol") << "Post-process solution..." << std::endl;
     Node prev = sol;
-    sol =
-        d_qe->getTermDatabaseSygus()->getExtRewriter()->extendedRewrite(
-            sol);
-    if( prev!=sol ){
-      Trace("csi-sol") << "Solution (after post process) : " << sol << std::endl;
+    sol = d_qe->getTermDatabaseSygus()->getExtRewriter()->extendedRewrite(sol);
+    if (prev != sol)
+    {
+      Trace("csi-sol") << "Solution (after post process) : " << sol
+                       << std::endl;
     }
   }
 
@@ -583,7 +587,8 @@ Node CegSingleInv::reconstructToSyntax(Node s,
     reconstructed = -1;
   }
   */
-  if( reconstructed==-1 ){
+  if (reconstructed == -1)
+  {
     return Node::null();
   }
   //make into lambda

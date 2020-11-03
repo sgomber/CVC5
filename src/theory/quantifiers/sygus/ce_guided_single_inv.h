@@ -125,11 +125,14 @@ class CegSingleInv
    * found a solution to the synthesis conjecture using this method.
    */
   bool solve();
-  /** 
+  /**
    * Get solution for the index^th function to synthesize of the conjecture
    * this class was initialized with.
    */
-  Node getSolution( size_t sol_index, TypeNode stn, int& reconstructed, bool rconsSygus = true );
+  Node getSolution(size_t sol_index,
+                   TypeNode stn,
+                   int& reconstructed,
+                   bool rconsSygus = true);
   //reconstruct to syntax
   Node reconstructToSyntax( Node s, TypeNode stn, int& reconstructed,
                             bool rconsSygus = true );
@@ -175,7 +178,7 @@ class CegSingleInv
    * unsatisfiable for instantiation {x1 -> t1 ... xn -> tn}.
    */
   bool solveTrivial(Node q);
-  /** 
+  /**
    * Get solution from inst
    */
   Node getSolutionFromInst(size_t index);
