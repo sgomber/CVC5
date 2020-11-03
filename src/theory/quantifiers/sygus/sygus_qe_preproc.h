@@ -70,13 +70,6 @@ class SygusQePreproc
                           const Subs& xf,
                           Subs& solvedf,
                           SingleInvocationPartition& sip);
-  /**
-   * Decompose conjecture
-   */
-  void decomposeConjecture(Node q,
-                           std::vector<Node>& allf,
-                           std::vector<Node>& unsf,
-                           Subs& solved);
   /** Get maximal arity functions */
   bool getMaximalArityFuncs(const std::vector<Node>& unsf,
                             std::vector<Node>& maxf,
@@ -88,13 +81,6 @@ class SygusQePreproc
                       const std::vector<Node>& xargs,
                       Subs& remf,
                       Subs& xf);
-  /**
-   * Make conjecture
-   */
-  Node mkConjecture(const std::vector<Node>& allf,
-                    const Subs& solved,
-                    Node conj,
-                    Node ipl);
   /** Pointer to quantifiers engine */
   QuantifiersEngine* d_quantEngine;
 };

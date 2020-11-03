@@ -19,6 +19,7 @@
 #include "theory/quantifiers/single_inv_partition.h"
 #include "theory/rewriter.h"
 #include "theory/smt_engine_subsolver.h"
+#include "theory/quantifiers/sygus/sygus_utils.h"
 
 using namespace CVC4::kind;
 
@@ -35,7 +36,7 @@ Node SygusQePreproc::preprocess(Node q)
   std::vector<Node> allf;
   std::vector<Node> unsf;
   Subs solvedf;
-  decomposeConjecture(q, allf, unsf, solvedf);
+  decomposeSygusConjecture(q, allf, unsf, solvedf);
   if (unsf.empty())
   {
     // probably should never happen
@@ -213,13 +214,11 @@ Node SygusQePreproc::eliminateVariables(Node q,
     }
     Assert(q.getNumChildren() == 3);
     // use mkConjecture, which carries the solved information
-    qeRes = mkConjecture(allf, solvedf, qeRes, q[2]);
+    qeRes = mkSygusConjecture(allf, qeRes, solvedf);
     Trace("cegqi-qep-debug")
         << "Converted conjecture after QE : " << qeRes << std::endl;
     qeRes = Rewriter::rewrite(qeRes);
-    Node nq = qeRes;
-    // must assert it is equivalent to the original
-    return nq;
+    return qeRes;
   }
   return Node::null();
 }
@@ -235,6 +234,27 @@ Node SygusQePreproc::eliminateFunctions(Node q,
   // use the specification from the single invocation partition utility
   Node bodyNorm = sip.getFullSpecification();
   Trace("cegqi-qep-debug") << "Full specification is " << bodyNorm << std::endl;
+  
+  // eliminate the conjuncts that do not contain some function in maxf
+  std::vector<Node> bnconj;
+  if (bodyNorm.getKind()==AND)
+  {
+    bnconj.insert(bnconj.end(), bodyNorm.begin(), bodyNorm.end());
+  }
+  else
+  {
+    bnconj.push_back(bodyNorm);
+  }
+  std::vector<Node> bnconjc;
+  for (const Node& bnc : bnconj)
+  {
+    if (expr::hasSubterm(bnc, maxf))
+    {
+      bnconjc.push_back(bnc);
+    }
+  }
+  bodyNorm = nm->mkAnd(bnconjc);
+  Trace("cegqi-qep-debug") << "...after miniscope: " << bodyNorm << std::endl;
 
   // skolemize the functions that we are not solving
   Subs xfk;
@@ -301,46 +321,16 @@ Node SygusQePreproc::eliminateFunctions(Node q,
     // now append new solutions to solved
     solvedf.append(solSubs);
     
-    // reconstruct the conjecture
+    // get the original conjecture and update it with the new solutions
+    Node conjfs = solSubs.apply(q[1]);
     
+    // reconstruct the new conjecture
+    Node fsRes = mkSygusConjecture(allf, conjfs, solvedf);
+    fsRes = Rewriter::rewrite(fsRes);
+    return fsRes;
   }
 
   return Node::null();
-}
-
-void SygusQePreproc::decomposeConjecture(Node q,
-                                         std::vector<Node>& allf,
-                                         std::vector<Node>& unsf,
-                                         Subs& solvedf)
-{
-  Assert(q.getKind() == FORALL);
-  Assert(q.getNumChildren() == 3);
-  Node ipl = q[2];
-  Assert(ipl.getKind() == INST_PATTERN_LIST);
-  allf.insert(allf.end(), q[0].begin(), q[0].end());
-  SygusSolutionAttribute ssa;
-  for (const Node& ip : ipl)
-  {
-    if (ip.getKind() == INST_ATTRIBUTE)
-    {
-      Node ipv = ip[0];
-      // does it specify a sygus solution?
-      if (ipv.hasAttribute(ssa))
-      {
-        Node eq = ipv.getAttribute(ssa);
-        Assert(std::find(allf.begin(), allf.end(), eq[0]) != allf.end());
-        solvedf.addEquality(eq);
-      }
-    }
-  }
-  // add to unsolved functions
-  for (const Node& f : allf)
-  {
-    if (!solvedf.contains(f))
-    {
-      unsf.push_back(f);
-    }
-  }
 }
 
 bool SygusQePreproc::getMaximalArityFuncs(const std::vector<Node>& unsf,
@@ -479,39 +469,6 @@ bool SygusQePreproc::extendFuncArgs(Node f,
                            << lam << std::endl;
   xf.add(newF, lam);
   return true;
-}
-
-Node SygusQePreproc::mkConjecture(const std::vector<Node>& allf,
-                                  const Subs& solvedf,
-                                  Node conj,
-                                  Node ipl)
-{
-  Assert(!allf.empty());
-  NodeManager* nm = NodeManager::currentNM();
-  std::vector<Node> iplChildren;
-  // take existing properties, without the previous solves
-  SygusSolutionAttribute ssa;
-  for (const Node& ipv : ipl)
-  {
-    if (ipv.getKind() == INST_ATTRIBUTE && ipv[0].hasAttribute(ssa))
-    {
-      continue;
-    }
-    iplChildren.push_back(ipv);
-  }
-  // add the current solves, which should be a superset of the previous ones
-  for (size_t i = 0, nsolved = solvedf.size(); i < nsolved; i++)
-  {
-    Node eq = solvedf.getEquality(i);
-    Node var = nm->mkSkolem("solved", nm->booleanType());
-    var.setAttribute(ssa, eq);
-    Node ipv = nm->mkNode(INST_ATTRIBUTE, var);
-    iplChildren.push_back(ipv);
-  }
-  Assert(!iplChildren.empty());
-  Node iplNew = nm->mkNode(INST_PATTERN_LIST, iplChildren);
-  Node fbvl = nm->mkNode(BOUND_VAR_LIST, allf);
-  return nm->mkNode(FORALL, fbvl, conj, iplNew);
 }
 
 }  // namespace quantifiers

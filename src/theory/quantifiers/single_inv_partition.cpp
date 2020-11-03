@@ -35,11 +35,8 @@ bool SingleInvocationPartition::init(Node n)
   {
     return init(funcs, typs, n, false);
   }
-  else
-  {
-    Trace("si-prt") << "Could not infer argument types." << std::endl;
-    return false;
-  }
+  Trace("si-prt") << "Could not infer argument types." << std::endl;
+  return false;
 }
 
 Node SingleInvocationPartition::getFirstOrderVariableForFunction(Node f) const
@@ -565,11 +562,7 @@ bool SingleInvocationPartition::isAntiSkolemizableType(Node f)
 
 Node SingleInvocationPartition::getConjunct(int index)
 {
-  return d_conjuncts[index].empty() ? NodeManager::currentNM()->mkConst(true)
-                                    : (d_conjuncts[index].size() == 1
-                                           ? d_conjuncts[index][0]
-                                           : NodeManager::currentNM()->mkNode(
-                                                 AND, d_conjuncts[index]));
+  return NodeManager::currentNM()->mkAnd(d_conjuncts[index]);
 }
 
 void SingleInvocationPartition::debugPrint(const char* c)

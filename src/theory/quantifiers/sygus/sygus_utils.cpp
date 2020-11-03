@@ -23,6 +23,16 @@ namespace CVC4 {
 namespace theory {
 namespace quantifiers {
 
+/**
+ * Attribute for specifying a solution for a function-to-synthesize. This is
+ * used for marking certain functions that we have solved for, e.g. during
+ * preprocessing.
+ */
+struct SygusSolutionAttributeId
+{
+};
+typedef expr::Attribute<SygusSolutionAttributeId, Node> SygusSolutionAttribute;
+  
 Node mkSygusConjecture(const std::vector<Node>& fs,
                        Node conj,
                        const std::vector<Node>& iattrs)
@@ -46,6 +56,63 @@ Node mkSygusConjecture(const std::vector<Node>& fs, Node conj)
 {
   std::vector<Node> iattrs;
   return mkSygusConjecture(fs, conj, iattrs);
+}
+
+Node mkSygusConjecture(const std::vector<Node>& fs,
+                                  Node conj,
+                  const Subs& solvedf)
+{
+  Assert(!fs.empty());
+  NodeManager* nm = NodeManager::currentNM();
+  std::vector<Node> iattrs;
+  // take existing properties, without the previous solves
+  SygusSolutionAttribute ssa;
+  // add the current solves, which should be a superset of the previous ones
+  for (size_t i = 0, nsolved = solvedf.size(); i < nsolved; i++)
+  {
+    Node eq = solvedf.getEquality(i);
+    Node var = nm->mkSkolem("solved", nm->booleanType());
+    var.setAttribute(ssa, eq);
+    Node ipv = nm->mkNode(INST_ATTRIBUTE, var);
+    iattrs.push_back(ipv);
+  }
+  return mkSygusConjecture(fs, conj, iattrs);
+}
+
+
+void decomposeSygusConjecture(Node q,
+                                         std::vector<Node>& fs,
+                                         std::vector<Node>& unsf,
+                                         Subs& solvedf)
+{
+  Assert(q.getKind() == FORALL);
+  Assert(q.getNumChildren() == 3);
+  Node ipl = q[2];
+  Assert(ipl.getKind() == INST_PATTERN_LIST);
+  fs.insert(fs.end(), q[0].begin(), q[0].end());
+  SygusSolutionAttribute ssa;
+  for (const Node& ip : ipl)
+  {
+    if (ip.getKind() == INST_ATTRIBUTE)
+    {
+      Node ipv = ip[0];
+      // does it specify a sygus solution?
+      if (ipv.hasAttribute(ssa))
+      {
+        Node eq = ipv.getAttribute(ssa);
+        Assert(std::find(fs.begin(), fs.end(), eq[0]) != fs.end());
+        solvedf.addEquality(eq);
+      }
+    }
+  }
+  // add to unsolved functions
+  for (const Node& f : fs)
+  {
+    if (!solvedf.contains(f))
+    {
+      unsf.push_back(f);
+    }
+  }
 }
 
 Node getSygusArgumentListForSynthFun(Node f)
