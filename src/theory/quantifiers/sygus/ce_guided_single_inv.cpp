@@ -557,17 +557,31 @@ Node CegSingleInv::getSolutionFromInst(size_t index)
 
 void CegSingleInv::setSolution()
 {
-  // now construct the solutions
+  // construct the solutions based on the instantiations
   d_solutions.clear();
+  d_rcSolutions.clear();
   Subs finalSol;
   for (size_t i = 0, nvars = d_quant[0].getNumChildren(); i < nvars; i++)
   {
+    // Note this is a dummy solution for solved functions, which are given
+    // solutions in the annotation but do not appear in the conjecture.
     Node sol = getSolutionFromInst(i);
     d_solutions.push_back(sol);
+    // haven't reconstructed to syntax yet
+    d_rcSolutions.push_back(Node::null());
     finalSol.add(d_quant[0][i], sol);
   }
   d_isSolved = true;
-  finalSol.applyToRange(d_solvedf, true);
+  if (!d_solvedf.empty())
+  {
+    // replace the final solution into the solved functions
+    finalSol.applyToRange(d_solvedf, true);
+    // TODO: go back and replace the dummy solution for the solved functions
+    for (size_t i = 0, nvars = d_quant[0].getNumChildren(); i < nvars; i++)
+    {
+      
+    }
+  }
 }
 
 Node CegSingleInv::reconstructToSyntax(Node s,

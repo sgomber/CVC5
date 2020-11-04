@@ -78,8 +78,10 @@ class CegSingleInv
    * first order conjecture for the term vectors above.
    */
   std::vector<Node> d_instConds;
-  /** The solutions */
+  /** The solutions, without reconstruction to syntax */
   std::vector<Node> d_solutions;
+  /** The solutions, after reconstruction to syntax */
+  std::vector<Node> d_rcSolutions;
   /** is solved */
   bool d_isSolved;
   //---------------------------------end representation of the solution
@@ -192,9 +194,7 @@ class CegSingleInv
   std::vector<Node> d_funs;
   /** Unsolved functions */
   std::vector<Node> d_unsolvedf;
-  /**
-   * Solutions from the annotation
-   */
+  /** Mapping of solved functions */
   Subs d_solvedf;
   //-------------- end decomposed conjecture
 };
