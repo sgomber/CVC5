@@ -71,6 +71,10 @@ Node getSygusArgumentListForSynthFun(Node f);
  * Same as above, but adds the variables to formals.
  */
 void getSygusArgumentListForSynthFun(Node f, std::vector<Node>& formals);
+/**
+ * Wrap in lambda
+ */
+Node wrapSolutionForSynthFun(Node f, Node sol);
 
 /**
  * Get the sygus datatype type that encodes the syntax restrictions for

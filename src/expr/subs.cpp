@@ -27,6 +27,18 @@ bool Subs::contains(Node v) const
   return std::find(d_vars.begin(), d_vars.end(), v) != d_vars.end();
 }
 
+Node Subs::getSubs(Node v) const
+{
+  std::vector<Node>::const_iterator it = std::find(d_vars.begin(), d_vars.end(), v);
+  if (it==d_vars.end())
+  {
+    return Node::null();
+  }
+  size_t i = std::distance(d_vars.begin(), it);
+  Assert (i<d_subs.size());
+  return d_subs[i];
+}
+
 void Subs::add(Node v)
 {
   // default, use a fresh skolem of the same type

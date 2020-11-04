@@ -15,6 +15,7 @@
 #include "theory/quantifiers/sygus/sygus_utils.h"
 
 #include "theory/quantifiers/quantifiers_attributes.h"
+#include "expr/node_algorithm.h"
 #include "theory/quantifiers/sygus/sygus_grammar_cons.h"
 
 using namespace CVC4::kind;
@@ -142,6 +143,17 @@ void getSygusArgumentListForSynthFun(Node f, std::vector<Node>& formals)
   {
     formals.insert(formals.end(), sfvl.begin(), sfvl.end());
   }
+}
+
+Node wrapSolutionForSynthFun(Node f, Node sol)
+{
+  Node al = getSygusArgumentListForSynthFun(f);
+  if (!al.isNull())
+  {
+    sol = NodeManager::currentNM()->mkNode(LAMBDA, al, sol);
+  }
+  Assert (!expr::hasFreeVar(sol));
+  return sol;
 }
 
 TypeNode getSygusTypeForSynthFun(Node f)

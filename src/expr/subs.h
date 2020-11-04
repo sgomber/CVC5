@@ -23,7 +23,11 @@ namespace CVC4 {
 
 /**
  * Helper substitution class. Stores a substitution in parallel vectors
- * d_vars and d_subs.
+ * d_vars and d_subs, both of which may be arbitrary terms, having the same
+ * types pairwise.
+ * 
+ * Notice this class applies substitutions using Node::substitute. Furthermore,
+ * it does not insist that the terms in d_vars are unique.
  */
 class Subs
 {
@@ -34,9 +38,11 @@ class Subs
   size_t size() const;
   /** Does the substitution contain v? */
   bool contains(Node v) const;
-  /** Add v -> k for fresh skolem of the same type */
+  /** Get the substitution for v if it exists, or null otherwise */
+  Node getSubs(Node v) const;
+  /** Add v -> k for fresh skolem of the same type as v */
   void add(Node v);
-  /** Add v -> k for fresh skolem of the same type for each v in vs */
+  /** Add v -> k for fresh skolem of the same type as v for each v in vs */
   void add(const std::vector<Node>& vs);
   /** Add v -> s to the substitution */
   void add(Node v, Node s);

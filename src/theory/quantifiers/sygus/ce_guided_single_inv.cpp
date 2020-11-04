@@ -462,6 +462,7 @@ Node CegSingleInv::getSolution(size_t sol_index,
   Trace("csi-sol") << "...get solution from vector" << std::endl;
 
   Node s = d_solutions[sol_index];
+  Node sol = s.getKind()==LAMBDA ? s[1] : s;
   // must substitute to be proper variables
   const DType& dt = stn.getDType();
   Node varList = dt.getSygusVarList();
@@ -476,11 +477,12 @@ Node CegSingleInv::getSolution(size_t sol_index,
   }
   Trace("csi-sol") << std::endl;
   Assert(vars.size() == d_sol->d_varList.size());
-  s = s.substitute(vars.begin(),
+  sol = sol.substitute(vars.begin(),
                    vars.end(),
                    d_sol->d_varList.begin(),
                    d_sol->d_varList.end());
-  return reconstructToSyntax(s, stn, reconstructed, rconsSygus);
+  sol = reconstructToSyntax(sol, stn, reconstructed, rconsSygus);
+  return s.getKind()==LAMBDA ? NodeManager::currentNM()->mkNode(LAMBDA, s[0], sol) : sol;
 }
 
 Node CegSingleInv::getSolutionFromInst(size_t index)
@@ -542,7 +544,8 @@ Node CegSingleInv::getSolutionFromInst(size_t index)
   Trace("csi-sol") << "Solution (pre-simplification): " << s << std::endl;
   s = d_qe->getTermDatabaseSygus()->getExtRewriter()->extendedRewrite(s);
   Trace("csi-sol") << "Solution (post-simplification): " << s << std::endl;
-  return s;
+  // wrap into lambda, as needed
+  return wrapSolutionForSynthFun(prog,s);
 }
 
 void CegSingleInv::setSolution()
@@ -565,6 +568,7 @@ Node CegSingleInv::reconstructToSyntax(Node s,
                                        int& reconstructed,
                                        bool rconsSygus)
 {
+  // extract the lambda body
   Node sol = s;
   const DType& dt = stn.getDType();
 
@@ -602,29 +606,9 @@ Node CegSingleInv::reconstructToSyntax(Node s,
     }
   }
 
-  // debug solution
-  /*
-  if (!d_sol->debugSolution(sol))
-  {
-    // This can happen if we encountered free variables in either the
-    // instantiation terms, or in the instantiation lemmas after postprocessing.
-    // In this case, we fail, since the solution is not valid.
-    Trace("csi-sol") << "FAIL : solution " << sol
-                     << " contains free constants." << std::endl;
-    Warning() <<
-        "Cannot get synth function: free constants encountered in synthesis "
-        "solution.";
-    reconstructed = -1;
-  }
-  */
   if (reconstructed == -1)
   {
     return Node::null();
-  }
-  //make into lambda
-  if( !dt.getSygusVarList().isNull() ){
-    Node varList = dt.getSygusVarList();
-    return NodeManager::currentNM()->mkNode( LAMBDA, varList, sol );
   }
   return sol;
 }
