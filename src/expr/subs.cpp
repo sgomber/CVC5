@@ -70,28 +70,28 @@ void Subs::append(Subs& s)
   add(s.d_vars, s.d_subs);
 }
 
-Node Subs::apply(Node n, bool doRewrite ) const
+Node Subs::apply(Node n, bool doRewrite) const
 {
   if (d_vars.empty())
   {
     return n;
   }
-  Node ns = n.substitute(
-      d_vars.begin(), d_vars.end(), d_subs.begin(), d_subs.end());
+  Node ns =
+      n.substitute(d_vars.begin(), d_vars.end(), d_subs.begin(), d_subs.end());
   if (doRewrite)
   {
     ns = theory::Rewriter::rewrite(ns);
   }
   return ns;
 }
-Node Subs::rapply(Node n, bool doRewrite ) const
+Node Subs::rapply(Node n, bool doRewrite) const
 {
   if (d_vars.empty())
   {
     return n;
   }
-  Node ns = n.substitute(
-      d_subs.begin(), d_subs.end(), d_vars.begin(), d_vars.end());
+  Node ns =
+      n.substitute(d_subs.begin(), d_subs.end(), d_vars.begin(), d_vars.end());
   if (doRewrite)
   {
     ns = theory::Rewriter::rewrite(ns);
@@ -99,7 +99,7 @@ Node Subs::rapply(Node n, bool doRewrite ) const
   return ns;
 }
 
-void Subs::applyToRange(Subs& s, bool doRewrite ) const
+void Subs::applyToRange(Subs& s, bool doRewrite) const
 {
   if (d_vars.empty())
   {

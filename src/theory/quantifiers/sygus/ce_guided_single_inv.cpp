@@ -61,7 +61,7 @@ void CegSingleInv::initialize(Node q)
 
   // decompose the conjecture
   decomposeSygusConjecture(d_quant, d_funs, d_unsolvedf, d_solvedf);
-  
+
   Trace("sygus-si") << "functions: " << d_funs << std::endl;
   Trace("sygus-si") << " unsolved: " << d_unsolvedf << std::endl;
   Trace("sygus-si") << "   solved: " << d_solvedf << std::endl;
@@ -450,7 +450,7 @@ Node CegSingleInv::getSolution(size_t sol_index,
                                int& reconstructed,
                                bool rconsSygus)
 {
-  Assert (sol_index<d_quant[0].getNumChildren());
+  Assert(sol_index < d_quant[0].getNumChildren());
   Node f = d_quant[0][sol_index];
   Trace("csi-sol") << "CegSingleInv::getSolution " << f << std::endl;
   // maybe it is in the solved map already?

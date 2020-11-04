@@ -308,14 +308,14 @@ Node SygusQePreproc::eliminateFunctions(Node q,
     Trace("sygus-qep-debug")
         << "...after unskolemize : " << solSubs << std::endl;
     // convert si vars to formal arguments
-    for (size_t i=0, nvars=solSubs.d_vars.size(); i<nvars; i++)
+    for (size_t i = 0, nvars = solSubs.d_vars.size(); i < nvars; i++)
     {
       std::vector<Node> args;
       getSygusArgumentListForSynthFun(solSubs.d_vars[i], args);
       Subs siToFormal;
-      siToFormal.add(siVars,args);
+      siToFormal.add(siVars, args);
       solSubs.d_subs[i] = siToFormal.apply(solSubs.d_subs[i]);
-      Assert( !expr::hasFreeVar(solSubs.d_subs[i]));
+      Assert(!expr::hasFreeVar(solSubs.d_subs[i]));
     }
     // extended functions have a definition in terms of the originals
     xf.applyToRange(solSubs, true);
@@ -331,11 +331,13 @@ Node SygusQePreproc::eliminateFunctions(Node q,
 
     // get the original conjecture and update it with the new solutions
     bodyNorm = xf.apply(bodyNorm, true);
-    Node sbvl = nm->mkNode(BOUND_VAR_LIST,siVars);
-    Node conj = nm->mkNode(EXISTS,sbvl, bodyNorm.negate());
-    Trace("sygus-qep-debug2") << "...conjecture reverted to : " << conj << std::endl;
+    Node sbvl = nm->mkNode(BOUND_VAR_LIST, siVars);
+    Node conj = nm->mkNode(EXISTS, sbvl, bodyNorm.negate());
+    Trace("sygus-qep-debug2")
+        << "...conjecture reverted to : " << conj << std::endl;
     conj = solSubs.apply(conj);
-    Trace("sygus-qep-debug2") << "...after current solutions : " << conj << std::endl;
+    Trace("sygus-qep-debug2")
+        << "...after current solutions : " << conj << std::endl;
 
     // reconstruct the new conjecture
     Node fsRes = mkSygusConjecture(allf, conj, solvedf);
@@ -462,7 +464,7 @@ bool SygusQePreproc::extendFuncArgs(Node f,
     args.push_back(xargs[i]);
   }
   args.insert(args.begin(), newF);
-  Node app = args.size()==1 ? args[0] : nm->mkNode(APPLY_UF, args);
+  Node app = args.size() == 1 ? args[0] : nm->mkNode(APPLY_UF, args);
   Node lam = lbvl.isNull() ? app : nm->mkNode(LAMBDA, lbvl, app);
   Assert(f.getType() == lam.getType());
   remf.add(f, lam);
@@ -476,7 +478,7 @@ bool SygusQePreproc::extendFuncArgs(Node f,
   argsf.push_back(f);
   argsf.insert(argsf.end(), args.begin(), args.begin() + domainTs.size());
   lbvl = nm->mkNode(BOUND_VAR_LIST, args);
-  app = argsf.size()==1 ? argsf[0] : nm->mkNode(APPLY_UF, argsf);
+  app = argsf.size() == 1 ? argsf[0] : nm->mkNode(APPLY_UF, argsf);
   lam = nm->mkNode(LAMBDA, lbvl, app);
   Trace("sygus-qep-debug") << "extendFuncArgs: Restrict: " << newF << " -> "
                            << lam << std::endl;

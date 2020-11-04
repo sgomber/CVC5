@@ -31,9 +31,9 @@ class UfTypeRule {
     TypeNode fType = f.getType(check);
     if (!fType.isFunction()) {
       std::stringstream ss;
-      ss << "operator " << f << " does not have function type " << fType << " in apply uf " << n;
-      throw TypeCheckingExceptionPrivate(
-          n, ss.str());
+      ss << "operator " << f << " does not have function type " << fType
+         << " in apply uf " << n;
+      throw TypeCheckingExceptionPrivate(n, ss.str());
     }
     if (check) {
       if (n.getNumChildren() != fType.getNumChildren() - 1) {
