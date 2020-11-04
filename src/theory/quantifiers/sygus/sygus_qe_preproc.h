@@ -28,8 +28,6 @@ class QuantifiersEngine;
 
 namespace quantifiers {
 
-class SingleInvocationPartition;
-
 /**
  * This module does quantifier elimination as a preprocess step
  * for "non-ground single invocation synthesis conjectures":
@@ -43,7 +41,7 @@ class SingleInvocationPartition;
 class SygusQePreproc
 {
  public:
-  SygusQePreproc(QuantifiersEngine* qe);
+  SygusQePreproc() {}
   ~SygusQePreproc() {}
   /**
    * Preprocess. Returns a lemma of the form q = nq where nq is obtained
@@ -52,35 +50,19 @@ class SygusQePreproc
   Node preprocess(Node q);
 
  private:
-  /**
-   * Eliminate variables
-   */
-  Node eliminateVariables(Node q,
-                          const std::vector<Node>& allf,
-                          Subs& solvedf,
-                          SingleInvocationPartition& sip);
-  /**
-   * Eliminate functions
-   */
-  Node eliminateFunctions(Node q,
-                          const std::vector<Node>& allf,
-                          const std::vector<Node>& maxf,
-                          const Subs& xf,
-                          Subs& solvedf,
-                          SingleInvocationPartition& sip);
   /** Get maximal arity functions */
   bool getMaximalArityFuncs(const std::vector<Node>& unsf,
-                            std::vector<Node>& maxf,
-                            Subs& remf,
-                            Subs& xf,
-                            std::vector<Node>& xargs);
+                            std::vector<Node>& maxf);
+bool getRemainingFunctions(const std::vector<Node>& unsf,
+                                          const std::vector<Node>& maxf,
+                                          Subs& remf,
+                                          Subs& xf,
+                                          const std::vector<Node>& xargs);
   /** Extend function arguments */
   bool extendFuncArgs(Node f,
                       const std::vector<Node>& xargs,
                       Subs& remf,
                       Subs& xf);
-  /** Pointer to quantifiers engine */
-  QuantifiersEngine* d_quantEngine;
 };
 
 }  // namespace quantifiers

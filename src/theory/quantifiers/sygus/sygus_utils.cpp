@@ -166,6 +166,109 @@ TypeNode getSygusTypeForSynthFun(Node f)
   return TypeNode::null();
 }
 
+bool isSingleInvocationType(const std::vector<Node>& fs)
+{
+  Assert (!fs.empty());
+  // just make free variables, assuming that all functions have same type
+  TypeNode tn = fs[0].getType();
+  for (size_t i=1, nfs = fs.size(); i<nfs; i++)
+  {
+    if (fs[i].getType()!=tn)
+    {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool isSingleInvocation(const std::vector<Node>& fs, Node conj, std::map<Node, Node>& ffs, std::vector<Node>& args)
+{
+  Assert (isSingleInvocationType(fs));
+  bool argsSet = false;
+  std::unordered_set<TNode, TNodeHashFunction> visited;
+  std::unordered_set<TNode, TNodeHashFunction>::iterator it;
+  std::vector<TNode> visit;
+  TNode cur;
+  visit.push_back(conj);
+  do {
+    cur = visit.back();
+    visit.pop_back();
+    it = visited.find(cur);
+
+    if (it == visited.end()) {
+      visited.insert(cur);
+      // if it is a function-to-synthesize
+      if (std::find(fs.begin(),fs.end(),cur)!=fs.end())
+      {
+        if (cur.getType().isFunction())
+        {
+          // higher-order instance, always fail
+          return false;
+        }
+        // corner case of constant function-to-synthesize
+        ffs[cur] = cur;
+      }
+      else if (cur.getKind()==APPLY_UF)
+      {
+        Node op = cur.getOperator();
+        // if it is a function we care about
+        if (std::find(fs.begin(),fs.end(),op)!=fs.end())
+        {
+          Assert (!argsSet || cur.getNumChildren()==args.size());
+          for (size_t i=0, nchild = cur.getNumChildren(); i<nchild; i++)
+          {
+            if (argsSet)
+            {
+              if (cur[i]!=args[i])
+              {
+                // different arguments
+                return false;
+              }
+            }
+            else
+            {
+              // not applied to bound variable
+              if (cur[i].getKind()!=BOUND_VARIABLE)
+              {
+                return false;
+              }
+              args.push_back(cur[i]);
+            }
+          }
+          // update the map
+          if (ffs.find(op)==ffs.end())
+          {
+            ffs[op] = cur;
+          }
+          argsSet = true;
+        }
+      }
+      visit.insert(visit.end(),cur.begin(),cur.end());
+    }
+  } while (!visit.empty());
+  // add dummy arguments in the corner case that no functions appeared
+  if (!argsSet)
+  {
+    TypeNode ft = fs[0].getType();
+    if (ft.isFunction())
+    {
+      NodeManager * nm = NodeManager::currentNM();
+      std::vector<TypeNode> argTypes = ft.getArgTypes();
+      for (const TypeNode& at : argTypes)
+      {
+        args.push_back(nm->mkBoundVar(at));
+      }
+    }
+  }
+  return true;
+}
+
+bool isSingleInvocation(const std::vector<Node>& fs, Node conj, std::vector<Node>& args)
+{
+  std::map<Node, Node> ffs;
+  return isSingleInvocation(fs, conj, ffs, args);
+}
+
 }  // namespace quantifiers
 }  // namespace theory
 }  // namespace CVC4
