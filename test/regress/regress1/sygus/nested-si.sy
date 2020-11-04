@@ -1,4 +1,7 @@
+; EXPECT: unsat
+; COMMAND-LINE: --sygus-qe-preproc --sygus-out=status
 
+(set-logic LIA)
 
 (synth-fun f ((x Int) (y Int)) Int)
 (synth-fun g ((x Int)) Int)
