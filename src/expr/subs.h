@@ -15,8 +15,8 @@
 #ifndef CVC4__EXPR__SUBS_H
 #define CVC4__EXPR__SUBS_H
 
-#include <vector>
 #include <map>
+#include <vector>
 #include "expr/node.h"
 
 namespace CVC4 {

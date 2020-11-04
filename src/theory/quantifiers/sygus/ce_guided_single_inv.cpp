@@ -58,11 +58,10 @@ void CegSingleInv::initialize(Node q)
   d_quant = q;
   d_simp_quant = q;
   Trace("sygus-si") << "CegSingleInv::initialize : " << q << std::endl;
-  
-  
+
   // decompose the conjecture
   decomposeSygusConjecture(d_quant, d_funs, d_unsolvedf, d_solvedf);
-  
+
   // infer single invocation-ness
 
   // get the variables
@@ -453,7 +452,7 @@ Node CegSingleInv::getSolution(size_t sol_index,
   {
     return d_solvedf.apply(f);
   }
-  
+
   Node s = d_solutions[sol_index];
   // must substitute to be proper variables
   const DType& dt = stn.getDType();
@@ -682,8 +681,9 @@ bool CegSingleInv::solveTrivial(Node q)
     d_inst.push_back(inst);
     d_instConds.push_back(NodeManager::currentNM()->mkConst(true));
     return true;
-  }  Trace("sygus-si-trivial-solve")
-    << q << " is not trivially solvable." << std::endl;
+  }
+  Trace("sygus-si-trivial-solve")
+      << q << " is not trivially solvable." << std::endl;
 
   return false;
 }

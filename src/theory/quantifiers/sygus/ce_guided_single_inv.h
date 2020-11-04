@@ -18,12 +18,12 @@
 #define CVC4__THEORY__QUANTIFIERS__CE_GUIDED_SINGLE_INV_H
 
 #include "context/cdlist.h"
+#include "expr/subs.h"
 #include "theory/quantifiers/cegqi/inst_strategy_cegqi.h"
 #include "theory/quantifiers/inst_match_trie.h"
 #include "theory/quantifiers/single_inv_partition.h"
 #include "theory/quantifiers/sygus/ce_guided_single_inv_sol.h"
 #include "theory/quantifiers/sygus/transition_inference.h"
-#include "expr/subs.h"
 
 namespace CVC4 {
 namespace theory {
@@ -182,7 +182,7 @@ class CegSingleInv
    */
   Node getSolutionFromInst(size_t index);
   /**
-   * Set solution 
+   * Set solution
    */
   void setSolution();
   /** The conjecture */
@@ -192,7 +192,7 @@ class CegSingleInv
   std::vector<Node> d_funs;
   /** Unsolved functions */
   std::vector<Node> d_unsolvedf;
-  /** 
+  /**
    * Solutions from the annotation
    */
   Subs d_solvedf;
