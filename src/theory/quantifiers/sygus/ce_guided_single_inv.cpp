@@ -58,14 +58,17 @@ void CegSingleInv::initialize(Node q)
   d_quant = q;
   d_simp_quant = q;
   Trace("sygus-si") << "CegSingleInv::initialize : " << q << std::endl;
+  
+  
+  // decompose the conjecture
+  decomposeSygusConjecture(d_quant, d_funs, d_unsolvedf, d_solvedf);
+  
   // infer single invocation-ness
 
   // get the variables
-  std::vector< Node > progs;
   std::map< Node, std::vector< Node > > prog_vars;
   for (const Node& sf : q[0])
   {
-    progs.push_back( sf );
     // get its argument list
     getSygusArgumentListForSynthFun(sf, prog_vars[sf]);
   }
@@ -80,7 +83,7 @@ void CegSingleInv::initialize(Node q)
     qq = TermUtil::simpleNegate(q[1]);
   }
   // process the single invocation-ness of the property
-  if (!d_sip->init(progs, qq))
+  if (!d_sip->init(d_funs, qq))
   {
     Trace("sygus-si") << "...not single invocation (type mismatch)"
                       << std::endl;
@@ -95,7 +98,7 @@ void CegSingleInv::initialize(Node q)
   d_sip->getFunctions(funcs);
   for (unsigned j = 0, size = funcs.size(); j < size; j++)
   {
-    Assert(std::find(progs.begin(), progs.end(), funcs[j]) != progs.end());
+    Assert(std::find(d_funs.begin(), d_funs.end(), funcs[j]) != d_funs.end());
     d_prog_to_sol_index[funcs[j]] = j;
   }
 
@@ -321,8 +324,12 @@ void CegSingleInv::finishInit(bool syntaxRestricted)
   CegHandledStatus status = CEG_HANDLED;
   if (d_single_inv.getKind() == FORALL)
   {
-    // if the conjecture is not trivially solvable
-    if (!solveTrivial(d_single_inv))
+    // if the conjecture is trivially solvable, set the solution
+    if (solveTrivial(d_single_inv))
+    {
+      setSolution();
+    }
+    else
     {
       status = CegInstantiator::isCbqiQuant(d_single_inv);
     }
@@ -417,14 +424,8 @@ bool CegSingleInv::solve()
       Trace("sygus-si") << "  Instantiation Lemma: " << ilem << std::endl;
     }
   }
-  // now construct the solutions
-  d_solutions.clear();
-  for (size_t i = 0, nvars = d_quant[0].getNumChildren(); i < nvars; i++)
-  {
-    Node sol = getSolutionFromInst(i);
-    d_solutions.push_back(sol);
-  }
-  d_isSolved = true;
+  // set the solution
+  setSolution();
   return true;
 }
 
@@ -446,6 +447,13 @@ Node CegSingleInv::getSolution(size_t sol_index,
                                int& reconstructed,
                                bool rconsSygus)
 {
+  Node f = d_quant[sol_index];
+  // maybe it is in the solved map already?
+  if (d_solvedf.contains(f))
+  {
+    return d_solvedf.apply(f);
+  }
+  
   Node s = d_solutions[sol_index];
   // must substitute to be proper variables
   const DType& dt = stn.getDType();
@@ -528,6 +536,18 @@ Node CegSingleInv::getSolutionFromInst(size_t index)
   s = d_qe->getTermDatabaseSygus()->getExtRewriter()->extendedRewrite(s);
   Trace("csi-sol") << "Solution (post-simplification): " << s << std::endl;
   return s;
+}
+
+void CegSingleInv::setSolution()
+{
+  // now construct the solutions
+  d_solutions.clear();
+  for (size_t i = 0, nvars = d_quant[0].getNumChildren(); i < nvars; i++)
+  {
+    Node sol = getSolutionFromInst(i);
+    d_solutions.push_back(sol);
+  }
+  d_isSolved = true;
 }
 
 Node CegSingleInv::reconstructToSyntax(Node s,
@@ -653,16 +673,18 @@ bool CegSingleInv::solveTrivial(Node q)
     {
       imap[vars[j]] = subs[j];
     }
+    std::vector<Node> inst;
     for (const Node& v : q[0])
     {
       Assert(imap.find(v) != imap.end());
-      d_solutions.push_back(imap[v]);
+      inst.push_back(imap[v]);
     }
-    d_isSolved = true;
+    d_inst.push_back(inst);
+    d_instConds.push_back(NodeManager::currentNM()->mkConst(true));
     return true;
-  }
-  Trace("sygus-si-trivial-solve")
-      << q << " is not trivially solvable." << std::endl;
+  }  Trace("sygus-si-trivial-solve")
+    << q << " is not trivially solvable." << std::endl;
+
   return false;
 }
 

@@ -19,6 +19,7 @@ namespace CVC4 {
 bool Subs::empty() const { return d_vars.empty(); }
 
 size_t Subs::size() const { return d_vars.size(); }
+
 bool Subs::contains(Node v) const
 {
   return std::find(d_vars.begin(), d_vars.end(), v) != d_vars.end();
@@ -57,7 +58,7 @@ void Subs::add(const std::vector<Node>& vs, const std::vector<Node>& ss)
 
 void Subs::addEquality(Node eq)
 {
-  Assert(eq.getKind() == EQUAL);
+  Assert(eq.getKind() == kind::EQUAL);
   add(eq[0], eq[1]);
 }
 
@@ -114,6 +115,16 @@ Node Subs::getEquality(size_t i) const
 {
   Assert(i < d_vars.size());
   return d_vars[i].eqNode(d_subs[i]);
+}
+
+std::map<Node, Node> Subs::toMap() const
+{
+  std::map<Node, Node> ret;
+  for (size_t i = 0, nvs = d_vars.size(); i < nvs; i++)
+  {
+    ret[d_vars[i]] = d_subs[i];
+  }
+  return ret;
 }
 
 std::string Subs::toString() const

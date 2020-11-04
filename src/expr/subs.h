@@ -16,6 +16,7 @@
 #define CVC4__EXPR__SUBS_H
 
 #include <vector>
+#include <map>
 #include "expr/node.h"
 
 namespace CVC4 {
@@ -55,6 +56,8 @@ class Subs
   void rapplyToRange(Subs& s) const;
   /** Get equality (= v s) where v -> s is the i^th position in the vectors */
   Node getEquality(size_t i) const;
+  /** Convert substitution to map */
+  std::map<Node, Node> toMap() const;
   /** Get string for this substitution */
   std::string toString() const;
   /** The data */

@@ -23,6 +23,7 @@
 #include "theory/quantifiers/single_inv_partition.h"
 #include "theory/quantifiers/sygus/ce_guided_single_inv_sol.h"
 #include "theory/quantifiers/sygus/transition_inference.h"
+#include "expr/subs.h"
 
 namespace CVC4 {
 namespace theory {
@@ -84,8 +85,6 @@ class CegSingleInv
   //---------------------------------end representation of the solution
 
  private:
-  // conjecture
-  Node d_quant;
   Node d_simp_quant;
   // are we single invocation?
   bool d_single_invocation;
@@ -182,6 +181,22 @@ class CegSingleInv
    * Get solution from inst
    */
   Node getSolutionFromInst(size_t index);
+  /**
+   * Set solution 
+   */
+  void setSolution();
+  /** The conjecture */
+  Node d_quant;
+  //-------------- decomposed conjecture
+  /** All functions */
+  std::vector<Node> d_funs;
+  /** Unsolved functions */
+  std::vector<Node> d_unsolvedf;
+  /** 
+   * Solutions from the annotation
+   */
+  Subs d_solvedf;
+  //-------------- end decomposed conjecture
 };
 
 }/* namespace CVC4::theory::quantifiers */
