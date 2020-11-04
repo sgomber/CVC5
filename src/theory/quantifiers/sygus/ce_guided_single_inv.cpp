@@ -61,6 +61,10 @@ void CegSingleInv::initialize(Node q)
 
   // decompose the conjecture
   decomposeSygusConjecture(d_quant, d_funs, d_unsolvedf, d_solvedf);
+  
+  Trace("sygus-si") << "functions: " << d_funs << std::endl;
+  Trace("sygus-si") << " unsolved: " << d_unsolvedf << std::endl;
+  Trace("sygus-si") << "   solved: " << d_solvedf << std::endl;
 
   // infer single invocation-ness
 
@@ -82,7 +86,7 @@ void CegSingleInv::initialize(Node q)
     qq = TermUtil::simpleNegate(q[1]);
   }
   // process the single invocation-ness of the property
-  if (!d_sip->init(d_funs, qq))
+  if (!d_sip->init(d_unsolvedf, qq))
   {
     Trace("sygus-si") << "...not single invocation (type mismatch)"
                       << std::endl;
@@ -446,12 +450,16 @@ Node CegSingleInv::getSolution(size_t sol_index,
                                int& reconstructed,
                                bool rconsSygus)
 {
-  Node f = d_quant[sol_index];
+  Assert (sol_index<d_quant[0].getNumChildren());
+  Node f = d_quant[0][sol_index];
+  Trace("csi-sol") << "CegSingleInv::getSolution " << f << std::endl;
   // maybe it is in the solved map already?
   if (d_solvedf.contains(f))
   {
+    Trace("csi-sol") << "...return solution from annotation" << std::endl;
     return d_solvedf.apply(f);
   }
+  Trace("csi-sol") << "...get solution from vector" << std::endl;
 
   Node s = d_solutions[sol_index];
   // must substitute to be proper variables
@@ -541,12 +549,15 @@ void CegSingleInv::setSolution()
 {
   // now construct the solutions
   d_solutions.clear();
+  Subs finalSol;
   for (size_t i = 0, nvars = d_quant[0].getNumChildren(); i < nvars; i++)
   {
     Node sol = getSolutionFromInst(i);
     d_solutions.push_back(sol);
+    finalSol.add(d_quant[0][i], sol);
   }
   d_isSolved = true;
+  finalSol.applyToRange(d_solvedf, true);
 }
 
 Node CegSingleInv::reconstructToSyntax(Node s,

@@ -14,6 +14,8 @@
 
 #include "expr/subs.h"
 
+#include "theory/rewriter.h"
+
 namespace CVC4 {
 
 bool Subs::empty() const { return d_vars.empty(); }
@@ -68,26 +70,36 @@ void Subs::append(Subs& s)
   add(s.d_vars, s.d_subs);
 }
 
-Node Subs::apply(Node n) const
+Node Subs::apply(Node n, bool doRewrite ) const
 {
   if (d_vars.empty())
   {
     return n;
   }
-  return n.substitute(
+  Node ns = n.substitute(
       d_vars.begin(), d_vars.end(), d_subs.begin(), d_subs.end());
+  if (doRewrite)
+  {
+    ns = theory::Rewriter::rewrite(ns);
+  }
+  return ns;
 }
-Node Subs::rapply(Node n) const
+Node Subs::rapply(Node n, bool doRewrite ) const
 {
   if (d_vars.empty())
   {
     return n;
   }
-  return n.substitute(
+  Node ns = n.substitute(
       d_subs.begin(), d_subs.end(), d_vars.begin(), d_vars.end());
+  if (doRewrite)
+  {
+    ns = theory::Rewriter::rewrite(ns);
+  }
+  return ns;
 }
 
-void Subs::applyToRange(Subs& s) const
+void Subs::applyToRange(Subs& s, bool doRewrite ) const
 {
   if (d_vars.empty())
   {
@@ -95,11 +107,11 @@ void Subs::applyToRange(Subs& s) const
   }
   for (size_t i = 0, ns = s.d_subs.size(); i < ns; i++)
   {
-    s.d_subs[i] = apply(s.d_subs[i]);
+    s.d_subs[i] = apply(s.d_subs[i], doRewrite);
   }
 }
 
-void Subs::rapplyToRange(Subs& s) const
+void Subs::rapplyToRange(Subs& s, bool doRewrite) const
 {
   if (d_vars.empty())
   {
@@ -107,7 +119,7 @@ void Subs::rapplyToRange(Subs& s) const
   }
   for (size_t i = 0, ns = s.d_subs.size(); i < ns; i++)
   {
-    s.d_subs[i] = rapply(s.d_subs[i]);
+    s.d_subs[i] = rapply(s.d_subs[i], doRewrite);
   }
 }
 
