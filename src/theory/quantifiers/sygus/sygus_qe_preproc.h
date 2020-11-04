@@ -57,8 +57,6 @@ class SygusQePreproc
    */
   Node eliminateVariables(Node q,
                           const std::vector<Node>& allf,
-                          const std::vector<Node>& maxf,
-                          const Subs& xf,
                           Subs& solvedf,
                           SingleInvocationPartition& sip);
   /**

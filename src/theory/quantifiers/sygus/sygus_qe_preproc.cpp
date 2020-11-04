@@ -43,6 +43,9 @@ Node SygusQePreproc::preprocess(Node q)
     Trace("sygus-qep") << "...fully solved, success." << std::endl;
     return Node::null();
   }
+  Trace("sygus-qep-debug") << "- functions = " << allf << std::endl;
+  Trace("sygus-qep-debug") << "- init unsolved = " << unsf << std::endl;
+  Trace("sygus-qep-debug") << "- init solved = " << solvedf << std::endl;
 
   // Get the functions that we would be applying single invocation for, which
   // are the functions of maximal arity having the same type.
@@ -56,28 +59,27 @@ Node SygusQePreproc::preprocess(Node q)
     Trace("sygus-qep") << "...max arity type mismatch, fail." << std::endl;
     return Node::null();
   }
-
-  Trace("sygus-qep-debug") << "Compute single invocation for " << q << "..."
-                           << std::endl;
-  SingleInvocationPartition sip;
+  Trace("sygus-qep-debug") << "- max arity functions = " << maxf << std::endl;
+  
   Node body = q[1];
   if (body.getKind() == NOT && body[0].getKind() == FORALL)
   {
     body = body[0][1];
   }
-  Trace("sygus-qep-debug") << "Max function variables = " << maxf << std::endl;
-  Trace("sygus-qep-debug") << "Body processed to " << body << std::endl;
-  // skolemize free symbols
-  Subs remk;
-  remk.add(remf.d_vars);
-  body = remk.apply(body);
-  // initialize the single invocation utility
-  sip.init(maxf, body);
-  Trace("sygus-qep-debug") << "Computed single invocation:" << std::endl;
-  sip.debugPrint("sygus-qep-debug");
   // if not all functions are of maximal arity, we will try to rewrite
   if (!remf.empty())
   {
+    Trace("sygus-qep") << "compute function elimination..." << std::endl;
+    // skolemize free symbols
+    SingleInvocationPartition sip;
+    Subs remk;
+    remk.add(remf.d_vars);
+    body = remk.apply(body);
+    // initialize the single invocation utility
+    sip.init(maxf, body);
+    Trace("sygus-qep-debug") << "Nested computed si:" << std::endl;
+    sip.debugPrint("sygus-qep-debug");
+  
     Node bodyNorm = sip.getFullSpecification();
     // revert the skolemization of other functions
     bodyNorm = remk.rapply(bodyNorm);
@@ -114,8 +116,12 @@ Node SygusQePreproc::preprocess(Node q)
                          << std::endl;
       return ret;
     }
-    // otherwise, does it matter?
+    Trace("sygus-qep") << "do not eliminate functions..." << std::endl;
   }
+  // otherwise, process all functions
+  SingleInvocationPartition sip;
+  // initialize the single invocation utility
+  sip.init(allf, body);
 
   if (sip.isPurelySingleInvocation())
   {
@@ -132,15 +138,13 @@ Node SygusQePreproc::preprocess(Node q)
   }
   Trace("sygus-qep") << "...eliminate variables." << std::endl;
   // non-ground single invocation, eliminate variables
-  Node ret = eliminateVariables(q, allf, maxf, xf, solvedf, sip);
+  Node ret = eliminateVariables(q, allf, solvedf, sip);
   Trace("sygus-qep") << "...eliminate variables returned " << ret << std::endl;
   return ret;
 }
 
 Node SygusQePreproc::eliminateVariables(Node q,
                                         const std::vector<Node>& allf,
-                                        const std::vector<Node>& maxf,
-                                        const Subs& xf,
                                         Subs& solvedf,
                                         SingleInvocationPartition& sip)
 {
@@ -160,7 +164,7 @@ Node SygusQePreproc::eliminateVariables(Node q,
   std::vector<Node> nqe_vars;
   for (const Node& v : all_vars)
   {
-    if (std::find(maxf.begin(), maxf.end(), v) != maxf.end())
+    if (std::find(allf.begin(), allf.end(), v) != allf.end())
     {
       Trace("sygus-qep-debug") << "- fun var: " << v << std::endl;
     }
@@ -197,8 +201,15 @@ Node SygusQePreproc::eliminateVariables(Node q,
   conj_se_ngsi_subs = nm->mkNode(
       EXISTS, nm->mkNode(BOUND_VAR_LIST, qe_vars), conj_se_ngsi_subs.negate());
 
+  std::unordered_set<Node, NodeHashFunction> syms;
+  expr::getSymbols(conj_se_ngsi_subs, syms);
+  for (const Node& n : syms)
+  {
+    Trace("sygus-qep-debug") << "(declare-const " << n << " " << n.getType() << ")" << std::endl;
+  }
   Trace("sygus-qep-debug") << "Run quantifier elimination on "
                            << conj_se_ngsi_subs << std::endl;
+                          
   Node qeRes = smt_qe->getQuantifierElimination(conj_se_ngsi_subs, true, false);
   Trace("sygus-qep-debug") << "Result : " << qeRes << std::endl;
 
@@ -206,8 +217,6 @@ Node SygusQePreproc::eliminateVariables(Node q,
   if (!expr::hasBoundVar(qeRes))
   {
     qeRes = origSubs.rapply(qeRes);
-    // must additionally map back to original functions
-    qeRes = xf.apply(qeRes);
     if (!nqe_vars.empty())
     {
       qeRes = nm->mkNode(EXISTS, nm->mkNode(BOUND_VAR_LIST, nqe_vars), qeRes);
