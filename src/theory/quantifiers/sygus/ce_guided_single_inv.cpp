@@ -497,8 +497,13 @@ Node CegSingleInv::getSolutionFromInst(size_t index)
   if (d_prog_to_sol_index.find(prog) == d_prog_to_sol_index.end()
       || d_inst.empty())
   {
+    TypeNode ptn = prog.getType();
+    if (ptn.isFunction())
+    {
+      ptn = ptn.getRangeType();
+    }
     Trace("csi-sol") << "Get solution for (unconstrained) " << prog << std::endl;
-    s = d_qe->getTermEnumeration()->getEnumerateTerm(prog.getType(), 0);
+    s = d_qe->getTermEnumeration()->getEnumerateTerm(ptn, 0);
   }
   else
   {
