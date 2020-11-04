@@ -60,7 +60,7 @@ Node SygusQePreproc::preprocess(Node q)
     return Node::null();
   }
   Trace("sygus-qep-debug") << "- max arity functions = " << maxf << std::endl;
-  
+
   Node body = q[1];
   if (body.getKind() == NOT && body[0].getKind() == FORALL)
   {
@@ -79,7 +79,7 @@ Node SygusQePreproc::preprocess(Node q)
     sip.init(maxf, body);
     Trace("sygus-qep-debug") << "Nested computed si:" << std::endl;
     sip.debugPrint("sygus-qep-debug");
-  
+
     Node bodyNorm = sip.getFullSpecification();
     // revert the skolemization of other functions
     bodyNorm = remk.rapply(bodyNorm);
@@ -205,11 +205,12 @@ Node SygusQePreproc::eliminateVariables(Node q,
   expr::getSymbols(conj_se_ngsi_subs, syms);
   for (const Node& n : syms)
   {
-    Trace("sygus-qep-debug") << "(declare-const " << n << " " << n.getType() << ")" << std::endl;
+    Trace("sygus-qep-debug")
+        << "(declare-const " << n << " " << n.getType() << ")" << std::endl;
   }
   Trace("sygus-qep-debug") << "Run quantifier elimination on "
                            << conj_se_ngsi_subs << std::endl;
-                          
+
   Node qeRes = smt_qe->getQuantifierElimination(conj_se_ngsi_subs, true, false);
   Trace("sygus-qep-debug") << "Result : " << qeRes << std::endl;
 
