@@ -168,12 +168,12 @@ TypeNode getSygusTypeForSynthFun(Node f)
 
 bool isSingleInvocationType(const std::vector<Node>& fs)
 {
-  Assert (!fs.empty());
+  Assert(!fs.empty());
   // just make free variables, assuming that all functions have same type
   TypeNode tn = fs[0].getType();
-  for (size_t i=1, nfs = fs.size(); i<nfs; i++)
+  for (size_t i = 1, nfs = fs.size(); i < nfs; i++)
   {
-    if (fs[i].getType()!=tn)
+    if (fs[i].getType() != tn)
     {
       return false;
     }
@@ -181,24 +181,29 @@ bool isSingleInvocationType(const std::vector<Node>& fs)
   return true;
 }
 
-bool isSingleInvocation(const std::vector<Node>& fs, Node conj, std::map<Node, Node>& ffs, std::vector<Node>& args)
+bool isSingleInvocation(const std::vector<Node>& fs,
+                        Node conj,
+                        std::map<Node, Node>& ffs,
+                        std::vector<Node>& args)
 {
-  Assert (isSingleInvocationType(fs));
+  Assert(isSingleInvocationType(fs));
   bool argsSet = false;
   std::unordered_set<TNode, TNodeHashFunction> visited;
   std::unordered_set<TNode, TNodeHashFunction>::iterator it;
   std::vector<TNode> visit;
   TNode cur;
   visit.push_back(conj);
-  do {
+  do
+  {
     cur = visit.back();
     visit.pop_back();
     it = visited.find(cur);
 
-    if (it == visited.end()) {
+    if (it == visited.end())
+    {
       visited.insert(cur);
       // if it is a function-to-synthesize
-      if (std::find(fs.begin(),fs.end(),cur)!=fs.end())
+      if (std::find(fs.begin(), fs.end(), cur) != fs.end())
       {
         if (cur.getType().isFunction())
         {
@@ -208,18 +213,18 @@ bool isSingleInvocation(const std::vector<Node>& fs, Node conj, std::map<Node, N
         // corner case of constant function-to-synthesize
         ffs[cur] = cur;
       }
-      else if (cur.getKind()==APPLY_UF)
+      else if (cur.getKind() == APPLY_UF)
       {
         Node op = cur.getOperator();
         // if it is a function we care about
-        if (std::find(fs.begin(),fs.end(),op)!=fs.end())
+        if (std::find(fs.begin(), fs.end(), op) != fs.end())
         {
-          Assert (!argsSet || cur.getNumChildren()==args.size());
-          for (size_t i=0, nchild = cur.getNumChildren(); i<nchild; i++)
+          Assert(!argsSet || cur.getNumChildren() == args.size());
+          for (size_t i = 0, nchild = cur.getNumChildren(); i < nchild; i++)
           {
             if (argsSet)
             {
-              if (cur[i]!=args[i])
+              if (cur[i] != args[i])
               {
                 // different arguments
                 return false;
@@ -228,7 +233,7 @@ bool isSingleInvocation(const std::vector<Node>& fs, Node conj, std::map<Node, N
             else
             {
               // not applied to bound variable
-              if (cur[i].getKind()!=BOUND_VARIABLE)
+              if (cur[i].getKind() != BOUND_VARIABLE)
               {
                 return false;
               }
@@ -236,14 +241,14 @@ bool isSingleInvocation(const std::vector<Node>& fs, Node conj, std::map<Node, N
             }
           }
           // update the map
-          if (ffs.find(op)==ffs.end())
+          if (ffs.find(op) == ffs.end())
           {
             ffs[op] = cur;
           }
           argsSet = true;
         }
       }
-      visit.insert(visit.end(),cur.begin(),cur.end());
+      visit.insert(visit.end(), cur.begin(), cur.end());
     }
   } while (!visit.empty());
   // add dummy arguments in the corner case that no functions appeared
@@ -252,7 +257,7 @@ bool isSingleInvocation(const std::vector<Node>& fs, Node conj, std::map<Node, N
     TypeNode ft = fs[0].getType();
     if (ft.isFunction())
     {
-      NodeManager * nm = NodeManager::currentNM();
+      NodeManager* nm = NodeManager::currentNM();
       std::vector<TypeNode> argTypes = ft.getArgTypes();
       for (const TypeNode& at : argTypes)
       {
@@ -263,7 +268,9 @@ bool isSingleInvocation(const std::vector<Node>& fs, Node conj, std::map<Node, N
   return true;
 }
 
-bool isSingleInvocation(const std::vector<Node>& fs, Node conj, std::vector<Node>& args)
+bool isSingleInvocation(const std::vector<Node>& fs,
+                        Node conj,
+                        std::vector<Node>& args)
 {
   std::map<Node, Node> ffs;
   return isSingleInvocation(fs, conj, ffs, args);

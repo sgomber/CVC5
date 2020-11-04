@@ -53,11 +53,11 @@ class SygusQePreproc
   /** Get maximal arity functions */
   bool getMaximalArityFuncs(const std::vector<Node>& unsf,
                             std::vector<Node>& maxf);
-bool getRemainingFunctions(const std::vector<Node>& unsf,
-                                          const std::vector<Node>& maxf,
-                                          Subs& remf,
-                                          Subs& xf,
-                                          const std::vector<Node>& xargs);
+  bool getRemainingFunctions(const std::vector<Node>& unsf,
+                             const std::vector<Node>& maxf,
+                             Subs& remf,
+                             Subs& xf,
+                             const std::vector<Node>& xargs);
   /** Extend function arguments */
   bool extendFuncArgs(Node f,
                       const std::vector<Node>& xargs,

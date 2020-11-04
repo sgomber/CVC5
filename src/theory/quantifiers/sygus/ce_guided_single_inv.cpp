@@ -579,7 +579,6 @@ void CegSingleInv::setSolution()
     // TODO: go back and replace the dummy solution for the solved functions
     for (size_t i = 0, nvars = d_quant[0].getNumChildren(); i < nvars; i++)
     {
-      
     }
   }
 }
