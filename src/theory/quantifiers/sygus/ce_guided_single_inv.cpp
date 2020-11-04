@@ -462,7 +462,7 @@ Node CegSingleInv::getSolution(size_t sol_index,
   Trace("csi-sol") << "...get solution from vector" << std::endl;
 
   Node s = d_solutions[sol_index];
-  Node sol = s.getKind()==LAMBDA ? s[1] : s;
+  Node sol = s.getKind() == LAMBDA ? s[1] : s;
   // must substitute to be proper variables
   const DType& dt = stn.getDType();
   Node varList = dt.getSygusVarList();
@@ -478,11 +478,13 @@ Node CegSingleInv::getSolution(size_t sol_index,
   Trace("csi-sol") << std::endl;
   Assert(vars.size() == d_sol->d_varList.size());
   sol = sol.substitute(vars.begin(),
-                   vars.end(),
-                   d_sol->d_varList.begin(),
-                   d_sol->d_varList.end());
+                       vars.end(),
+                       d_sol->d_varList.begin(),
+                       d_sol->d_varList.end());
   sol = reconstructToSyntax(sol, stn, reconstructed, rconsSygus);
-  return s.getKind()==LAMBDA ? NodeManager::currentNM()->mkNode(LAMBDA, s[0], sol) : sol;
+  return s.getKind() == LAMBDA
+             ? NodeManager::currentNM()->mkNode(LAMBDA, s[0], sol)
+             : sol;
 }
 
 Node CegSingleInv::getSolutionFromInst(size_t index)
@@ -545,7 +547,7 @@ Node CegSingleInv::getSolutionFromInst(size_t index)
   s = d_qe->getTermDatabaseSygus()->getExtRewriter()->extendedRewrite(s);
   Trace("csi-sol") << "Solution (post-simplification): " << s << std::endl;
   // wrap into lambda, as needed
-  return wrapSolutionForSynthFun(prog,s);
+  return wrapSolutionForSynthFun(prog, s);
 }
 
 void CegSingleInv::setSolution()

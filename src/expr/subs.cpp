@@ -29,13 +29,14 @@ bool Subs::contains(Node v) const
 
 Node Subs::getSubs(Node v) const
 {
-  std::vector<Node>::const_iterator it = std::find(d_vars.begin(), d_vars.end(), v);
-  if (it==d_vars.end())
+  std::vector<Node>::const_iterator it =
+      std::find(d_vars.begin(), d_vars.end(), v);
+  if (it == d_vars.end())
   {
     return Node::null();
   }
   size_t i = std::distance(d_vars.begin(), it);
-  Assert (i<d_subs.size());
+  Assert(i < d_subs.size());
   return d_subs[i];
 }
 

@@ -14,8 +14,8 @@
 
 #include "theory/quantifiers/sygus/sygus_utils.h"
 
-#include "theory/quantifiers/quantifiers_attributes.h"
 #include "expr/node_algorithm.h"
+#include "theory/quantifiers/quantifiers_attributes.h"
 #include "theory/quantifiers/sygus/sygus_grammar_cons.h"
 
 using namespace CVC4::kind;
@@ -152,7 +152,7 @@ Node wrapSolutionForSynthFun(Node f, Node sol)
   {
     sol = NodeManager::currentNM()->mkNode(LAMBDA, al, sol);
   }
-  Assert (!expr::hasFreeVar(sol));
+  Assert(!expr::hasFreeVar(sol));
   return sol;
 }
 

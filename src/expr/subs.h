@@ -25,7 +25,7 @@ namespace CVC4 {
  * Helper substitution class. Stores a substitution in parallel vectors
  * d_vars and d_subs, both of which may be arbitrary terms, having the same
  * types pairwise.
- * 
+ *
  * Notice this class applies substitutions using Node::substitute. Furthermore,
  * it does not insist that the terms in d_vars are unique.
  */
