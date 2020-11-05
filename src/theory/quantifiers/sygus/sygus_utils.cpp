@@ -117,9 +117,9 @@ void decomposeSygusConjecture(Node q,
 
 Node decomposeConjectureBody(Node conj, std::vector<Node>& vs)
 {
-  if (conj.getKind()==NOT && conj[0].getKind()==FORALL)
+  if (conj.getKind() == NOT && conj[0].getKind() == FORALL)
   {
-    vs.insert(vs.end(),conj[0][0].begin(), conj[0][0].end());
+    vs.insert(vs.end(), conj[0][0].begin(), conj[0][0].end());
     return conj[0][1];
   }
   return conj;
@@ -287,7 +287,6 @@ bool isSingleInvocation(const std::vector<Node>& fs,
   return isSingleInvocation(fs, conj, ffs, args);
 }
 
-
 bool isSingleInvocation(const std::vector<Node>& fs,
                         Node conj,
                         std::map<Node, std::vector<Node>>& args)
@@ -326,7 +325,7 @@ bool isSingleInvocation(const std::vector<Node>& fs,
         if (std::find(fs.begin(), fs.end(), op) != fs.end())
         {
           ita = args.find(op);
-          bool argsSet = ita!=args.end();
+          bool argsSet = ita != args.end();
           Assert(!argsSet || cur.getNumChildren() == ita->second.size());
           for (size_t i = 0, nchild = cur.getNumChildren(); i < nchild; i++)
           {

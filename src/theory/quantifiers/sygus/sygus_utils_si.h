@@ -17,8 +17,8 @@
 #ifndef CVC4__THEORY__QUANTIFIERS__SYGUS__SYGUS_UTILS_SI_H
 #define CVC4__THEORY__QUANTIFIERS__SYGUS__SYGUS_UTILS_SI_H
 
-#include <vector>
 #include <map>
+#include <vector>
 
 #include "expr/node.h"
 
@@ -49,7 +49,7 @@ bool isSingleInvocation(const std::vector<Node>& fs,
 bool isSingleInvocation(const std::vector<Node>& fs,
                         Node conj,
                         std::vector<Node>& args);
-/** 
+/**
  * Same as above, but where functions are allowed to take different arguments.
  * @param fs The set of functions-to-synthesize this check is relative to
  * @param conj The conjecture

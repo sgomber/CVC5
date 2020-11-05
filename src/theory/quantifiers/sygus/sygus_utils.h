@@ -59,7 +59,7 @@ void decomposeSygusConjecture(Node q,
                               std::vector<Node>& unsf,
                               Subs& solvedf);
 /**
- * Decompose the conjecture body 
+ * Decompose the conjecture body
  */
 Node decomposeConjectureBody(Node conj, std::vector<Node>& vs);
 
@@ -108,7 +108,7 @@ bool isSingleInvocation(const std::vector<Node>& fs,
 bool isSingleInvocation(const std::vector<Node>& fs,
                         Node conj,
                         std::vector<Node>& args);
-/** 
+/**
  * Same as above, but where functions are allowed to take different arguments
  */
 

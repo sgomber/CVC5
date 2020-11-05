@@ -30,7 +30,7 @@ namespace quantifiers {
 
 Node SygusQePreproc::preprocess(Node q)
 {
-  Trace("sygus-qep") << "SygusQePreproc::preprocess: " << q << std::endl;  
+  Trace("sygus-qep") << "SygusQePreproc::preprocess: " << q << std::endl;
   // decompose the conjecture into solved, unsolved components
   std::vector<Node> allf;
   std::vector<Node> unsf;
@@ -56,7 +56,7 @@ Node SygusQePreproc::preprocess(Node q)
     return Node::null();
   }
   Trace("sygus-qep-debug") << "- max arity functions = " << maxf << std::endl;
-  
+
   std::vector<Node> args;
   Trace("sygus-qep-debug") << "Check single invocation " << maxf << ": " << q[1]
                            << std::endl;
