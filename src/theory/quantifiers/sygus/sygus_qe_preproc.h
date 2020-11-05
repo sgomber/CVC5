@@ -50,13 +50,13 @@ class SygusQePreproc
   Node preprocess(Node q);
 
  private:
-  /** 
-  * Coerce single invocation
-  */
+  /**
+   * Coerce single invocation
+   */
   static Node coerceSingleInvocation(const std::vector<Node>& fs, Node q);
-  /** 
-  * Coerce single invocation for all functions in q.
-  */
+  /**
+   * Coerce single invocation for all functions in q.
+   */
   static Node coerceSingleInvocation(Node q);
   /**
    * Get maximal arity functions. If possible, add a subset of unsf to maxf that

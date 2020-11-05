@@ -60,7 +60,7 @@ void decomposeSygusConjecture(Node q,
                               Subs& solvedf);
 /**
  * Decompose the negated conjecture body.
- * 
+ *
  * This returns a quantifier-free formula corresponding to the (un-negated)
  * conjecture body. It adds the quantified free variables of the conjecture
  * to vs.

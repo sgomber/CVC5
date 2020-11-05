@@ -65,7 +65,7 @@ Node SygusQePreproc::preprocess(Node q)
     bool successCoerce = false;
     // maybe coerce and retry?
     Node qc = coerceSingleInvocation(maxf, q);
-    if (qc!=q)
+    if (qc != q)
     {
       Trace("sygus-qep-debug") << "...coerce to " << qc << std::endl;
       args.clear();
@@ -227,8 +227,8 @@ Node SygusQePreproc::preprocess(Node q)
     Trace("sygus-qep-debug") << "skolemize based on " << xfk << std::endl;
     // body for sygus
     Node syBody = xfk.apply(qfBody);
-    //Node syc;
-    //Node syn;
+    // Node syc;
+    // Node syn;
     // TODO: use partition method?
     // miniscope to remove irrelevant conjuncts
     std::vector<Node> syConstraints;
@@ -503,12 +503,12 @@ Node SygusQePreproc::mkLambdaApp(const std::vector<Node>& vars,
 
 Node SygusQePreproc::coerceSingleInvocation(const std::vector<Node>& fs, Node q)
 {
-  Assert (q.getKind()==FORALL);
+  Assert(q.getKind() == FORALL);
   NodeManager* nm = NodeManager::currentNM();
   // decompose the conjecture body
   std::vector<Node> cvars;
   Node origConj = decomposeConjectureBody(q[1], cvars);
-  
+
   // for now, use single invocation partition
   SingleInvocationPartition sip;
   if (!sip.init(fs, origConj))
@@ -516,7 +516,7 @@ Node SygusQePreproc::coerceSingleInvocation(const std::vector<Node>& fs, Node q)
     return q;
   }
   Node conj = sip.getFullSpecification();
-  
+
   // get the free variables of the conjecture body that are not function symbols
   std::unordered_set<Node, NodeHashFunction> fvs;
   expr::getFreeVariables(conj, fvs);
@@ -524,7 +524,7 @@ Node SygusQePreproc::coerceSingleInvocation(const std::vector<Node>& fs, Node q)
   std::vector<Node> cvarsNew;
   for (const Node& v : fvs)
   {
-    if (std::find(allf.begin(), allf.end(), v)==allf.end())
+    if (std::find(allf.begin(), allf.end(), v) == allf.end())
     {
       cvarsNew.push_back(v);
     }
@@ -539,7 +539,7 @@ Node SygusQePreproc::coerceSingleInvocation(const std::vector<Node>& fs, Node q)
   std::vector<Node> qargs;
   qargs.push_back(q[0]);
   qargs.push_back(conj);
-  if (q.getNumChildren()==3)
+  if (q.getNumChildren() == 3)
   {
     // preserves the properties
     qargs.push_back(q[2]);
@@ -547,10 +547,7 @@ Node SygusQePreproc::coerceSingleInvocation(const std::vector<Node>& fs, Node q)
   return nm->mkNode(FORALL, qargs);
 }
 
-Node SygusQePreproc::coerceSingleInvocation(Node q)
-{
-  return q;
-}
+Node SygusQePreproc::coerceSingleInvocation(Node q) { return q; }
 
 }  // namespace quantifiers
 }  // namespace theory

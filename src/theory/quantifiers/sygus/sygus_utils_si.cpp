@@ -14,9 +14,9 @@
 
 #include "theory/quantifiers/sygus/sygus_utils_si.h"
 
+#include "expr/node_algorithm.h"
 #include "theory/quantifiers/single_inv_partition.h"
 #include "theory/quantifiers/sygus/sygus_utils.h"
-#include "expr/node_algorithm.h"
 
 using namespace CVC4::kind;
 
@@ -225,7 +225,10 @@ void decomposeAnd(Node conj, std::vector<Node>& c)
   }
 }
 
-void partitionViaSubtermCtn(const std::vector<Node>& fs, Node conj, Node& cc, Node& nc)
+void partitionViaSubtermCtn(const std::vector<Node>& fs,
+                            Node conj,
+                            Node& cc,
+                            Node& nc)
 {
   std::vector<Node> c;
   decomposeAnd(conj, c);
