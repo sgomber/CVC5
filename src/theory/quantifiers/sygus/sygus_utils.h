@@ -59,7 +59,11 @@ void decomposeSygusConjecture(Node q,
                               std::vector<Node>& unsf,
                               Subs& solvedf);
 /**
- * Decompose the conjecture body
+ * Decompose the negated conjecture body.
+ * 
+ * This returns a quantifier-free formula corresponding to the (un-negated)
+ * conjecture body. It adds the quantified free variables of the conjecture
+ * to vs.
  */
 Node decomposeConjectureBody(Node conj, std::vector<Node>& vs);
 

@@ -71,7 +71,7 @@ class SingleInvocationPartition
    * access functions below are only valid if this class is
    * successfully initialized.
    */
-  bool init(std::vector<Node>& funcs, Node n);
+  bool init(const std::vector<Node>& funcs, Node n);
 
   /** initialize this partition for formula n
    *
@@ -257,7 +257,7 @@ class SingleInvocationPartition
    *   n is the formula to process,
    *   has_funcs is whether input functions were explicitly provided.
    */
-  bool init(std::vector<Node>& funcs,
+  bool init(const std::vector<Node>& funcs,
             std::vector<TypeNode>& typs,
             Node n,
             bool has_funcs);

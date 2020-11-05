@@ -122,7 +122,7 @@ Node decomposeConjectureBody(Node conj, std::vector<Node>& vs)
     vs.insert(vs.end(), conj[0][0].begin(), conj[0][0].end());
     return conj[0][1];
   }
-  return conj;
+  return conj.negate();
 }
 
 Node getSygusArgumentListForSynthFun(Node f)

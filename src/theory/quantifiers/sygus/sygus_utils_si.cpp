@@ -14,6 +14,10 @@
 
 #include "theory/quantifiers/sygus/sygus_utils_si.h"
 
+#include "theory/quantifiers/single_inv_partition.h"
+#include "theory/quantifiers/sygus/sygus_utils.h"
+#include "expr/node_algorithm.h"
+
 using namespace CVC4::kind;
 
 namespace CVC4 {
@@ -206,6 +210,42 @@ void getSingleInvocations(const std::vector<Node>& fs,
       visit.insert(visit.end(), cur.begin(), cur.end());
     }
   } while (!visit.empty());
+}
+
+void decomposeAnd(Node conj, std::vector<Node>& c)
+{
+  if (conj.getKind() == AND)
+  {
+    // nested?
+    c.insert(c.end(), conj[0].begin(), conj[0].end());
+  }
+  else
+  {
+    c.push_back(conj);
+  }
+}
+
+void partitionViaSubtermCtn(const std::vector<Node>& fs, Node conj, Node& cc, Node& nc)
+{
+  std::vector<Node> c;
+  decomposeAnd(conj, c);
+  std::vector<Node> ccc;
+  std::vector<Node> ncc;
+  for (const Node& conjc : c)
+  {
+    // determine if the conjunction contains fs
+    if (expr::hasSubterm(conjc, fs))
+    {
+      ccc.push_back(conjc);
+    }
+    else
+    {
+      ncc.push_back(conjc);
+    }
+  }
+  NodeManager* nm = NodeManager::currentNM();
+  cc = nm->mkAnd(ccc);
+  nc = nm->mkAnd(ncc);
 }
 
 }  // namespace quantifiers

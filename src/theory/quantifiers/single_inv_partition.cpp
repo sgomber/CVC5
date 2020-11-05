@@ -124,7 +124,7 @@ bool SingleInvocationPartition::inferArgTypes(Node n,
   return false;
 }
 
-bool SingleInvocationPartition::init(std::vector<Node>& funcs, Node n)
+bool SingleInvocationPartition::init(const std::vector<Node>& funcs, Node n)
 {
   Trace("si-prt") << "Initialize with " << funcs.size() << " input functions ("
                   << funcs << ")..." << std::endl;
@@ -165,7 +165,7 @@ bool SingleInvocationPartition::init(std::vector<Node>& funcs, Node n)
   return init(funcs, typs, n, true);
 }
 
-bool SingleInvocationPartition::init(std::vector<Node>& funcs,
+bool SingleInvocationPartition::init(const std::vector<Node>& funcs,
                                      std::vector<TypeNode>& typs,
                                      Node n,
                                      bool has_funcs)

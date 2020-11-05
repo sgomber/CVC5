@@ -62,6 +62,10 @@ bool isSingleInvocation(const std::vector<Node>& fs,
 void getSingleInvocations(const std::vector<Node>& fs,
                           Node conj,
                           std::map<Node, std::vector<Node>>& args);
+/**
+ * miniscope conjecture 
+ */
+void partitionViaSubtermCtn(const std::vector<Node>& fs, Node conj, Node& cc, Node& nc);
 
 }  // namespace quantifiers
 }  // namespace theory
