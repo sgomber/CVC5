@@ -70,13 +70,14 @@ Node SygusQePreproc::preprocess(Node q)
   }
   Trace("sygus-qep-debug") << "...single invocation with args = " << args
                            << std::endl;
+  std::map<Node, std::vector<Node>> rargs;
   // Get the remaining functions. We also compute methods for extending
   // them to extended functions in xf. The substitutions remf converts the
   // remaining functions to extended ones (with the same type as maxf), and
   // the map xf converts the extended functions back to the originals.
   Subs remf;
   Subs xf;
-  if (!getRemainingFunctions(unsf, maxf, remf, xf, args))
+  if (!getRemainingFunctions(unsf, maxf, remf, xf, args, rargs))
   {
     // arity mismatch for functions, we are done
     Trace("sygus-qep") << "...remaining arity type mismatch, fail."
@@ -340,18 +341,19 @@ bool SygusQePreproc::getRemainingFunctions(const std::vector<Node>& unsf,
                                            const std::vector<Node>& maxf,
                                            Subs& remf,
                                            Subs& xf,
-                                           const std::vector<Node>& xargs)
+                             const std::vector<Node>& xargs,
+                             const std::map<Node, std::vector<Node>>& rargs)
 {
   // deompose into maximal arity functions and remaining functions
   for (const Node& f : unsf)
   {
     if (std::find(maxf.begin(), maxf.end(), f) != maxf.end())
     {
-      // don't consider
+      // already included in maxf, don't add to remf
       continue;
     }
     // extend it to the proper type
-    if (!extendFuncArgs(f, xargs, remf, xf))
+    if (!extendFuncArgs(f, remf, xf, xargs, rargs))
     {
       return false;
     }
@@ -360,9 +362,10 @@ bool SygusQePreproc::getRemainingFunctions(const std::vector<Node>& unsf,
 }
 
 bool SygusQePreproc::extendFuncArgs(Node f,
-                                    const std::vector<Node>& xargs,
                                     Subs& remf,
-                                    Subs& xf)
+                                    Subs& xf,
+                             const std::vector<Node>& xargs,
+                             const std::map<Node, std::vector<Node>>& rargs)
 {
   NodeManager* nm = NodeManager::currentNM();
   Assert(!xargs.empty());
@@ -392,6 +395,7 @@ bool SygusQePreproc::extendFuncArgs(Node f,
   {
     lbvl = nm->mkNode(BOUND_VAR_LIST, args);
   }
+  // TODO: consider rargs
   // Add the pair
   //   f, (lambda ((x domainTs)) (newF x xargs2))
   // to remf, where the latter term has the same type as f.

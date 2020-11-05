@@ -50,19 +50,39 @@ class SygusQePreproc
   Node preprocess(Node q);
 
  private:
-  /** Get maximal arity functions */
+  /** 
+   * Get maximal arity functions. If possible, add a subset of unsf to maxf that
+   * are of maximal arity and have the same type and return true. If the
+   * maximal arity functions in unsf are not of the same type, this method
+   * returns false.
+   */
   bool getMaximalArityFuncs(const std::vector<Node>& unsf,
                             std::vector<Node>& maxf);
+  /** 
+   * Get remaining functions. This method is used to build transformations
+   * for the functions in unsf that are not in maxf.
+   * 
+   * In particular, this builds two mappings:
+   * (remaining to extended) remf,
+   * (extended to remaining) xf
+   * such that applying the substitution remf 
+   */
   bool getRemainingFunctions(const std::vector<Node>& unsf,
                              const std::vector<Node>& maxf,
                              Subs& remf,
                              Subs& xf,
-                             const std::vector<Node>& xargs);
-  /** Extend function arguments */
+                             const std::vector<Node>& xargs,
+                             const std::map<Node, std::vector<Node>>& rargs);
+  /** 
+   * Extend function arguments.
+   * 
+   * It should be the case that each rargs[f] is in xargs.
+   */
   bool extendFuncArgs(Node f,
-                      const std::vector<Node>& xargs,
                       Subs& remf,
-                      Subs& xf);
+                      Subs& xf,
+                      const std::vector<Node>& xargs,
+                             const std::map<Node, std::vector<Node>>& rargs);
 };
 
 }  // namespace quantifiers
