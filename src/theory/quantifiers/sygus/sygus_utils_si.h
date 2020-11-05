@@ -51,14 +51,15 @@ bool isSingleInvocation(const std::vector<Node>& fs,
                         std::vector<Node>& args);
 /**
  * Same as above, but where functions are allowed to take different arguments.
+ * Functions that are applied to multiple arguments have an empty range.
  * @param fs The set of functions-to-synthesize this check is relative to
  * @param conj The conjecture
  * @param args Mapping whose domain is a subset of fs and range for f are the
- * arguments f is applied to in conj, if any.
- * @return true if conj is single invocation
+ * arguments f is applied to in conj. This is empty if f is applied to
+ * multiple arguments
  */
 
-bool isSingleInvocation(const std::vector<Node>& fs,
+void getSingleInvocations(const std::vector<Node>& fs,
                         Node conj,
                         std::map<Node, std::vector<Node>>& args);
 

@@ -40,6 +40,10 @@ bool isSingleInvocation(const std::vector<Node>& fs,
                         std::map<Node, Node>& ffs,
                         std::vector<Node>& args)
 {
+  if (fs.empty())
+  {
+    return true;
+  }
   Assert(isSingleInvocationType(fs));
   bool argsSet = false;
   std::unordered_set<TNode, TNodeHashFunction> visited;
@@ -131,10 +135,14 @@ bool isSingleInvocation(const std::vector<Node>& fs,
   return isSingleInvocation(fs, conj, ffs, args);
 }
 
-bool isSingleInvocation(const std::vector<Node>& fs,
+void getSingleInvocations(const std::vector<Node>& fs,
                         Node conj,
                         std::map<Node, std::vector<Node>>& args)
 {
+  if (fs.empty())
+  {
+    return;
+  }
   std::map<Node, std::vector<Node>>::iterator ita;
   std::unordered_set<TNode, TNodeHashFunction> visited;
   std::unordered_set<TNode, TNodeHashFunction>::iterator it;
@@ -153,13 +161,8 @@ bool isSingleInvocation(const std::vector<Node>& fs,
       // if it is a function-to-synthesize
       if (std::find(fs.begin(), fs.end(), cur) != fs.end())
       {
-        if (cur.getType().isFunction())
-        {
-          // higher-order instance, always fail
-          return false;
-        }
-        // corner case of constant function-to-synthesize, clear to ensure
-        // empty range
+        // corner case of constant function-to-synthesize or higher-order
+        // instance, clear to ensure empty range
         args[cur].clear();
       }
       else if (cur.getKind() == APPLY_UF)
@@ -169,35 +172,40 @@ bool isSingleInvocation(const std::vector<Node>& fs,
         if (std::find(fs.begin(), fs.end(), op) != fs.end())
         {
           ita = args.find(op);
+          // have we set its arguments?
           bool argsSet = ita != args.end();
-          Assert(!argsSet || cur.getNumChildren() == ita->second.size());
-          for (size_t i = 0, nchild = cur.getNumChildren(); i < nchild; i++)
+          // are its arguments still valid (non-empty)?
+          if (!argsSet || !ita->second.empty())
           {
-            if (argsSet)
+            Assert(!argsSet || cur.getNumChildren() == ita->second.size());
+            for (size_t i = 0, nchild = cur.getNumChildren(); i < nchild; i++)
             {
-              if (cur[i] != ita->second[i])
+              if (argsSet)
               {
-                // different arguments
-                return false;
+                if (cur[i] != ita->second[i])
+                {
+                  // different arguments
+                  ita->second.clear();
+                  break;
+                }
               }
-            }
-            else
-            {
-              // not applied to bound variable
-              if (cur[i].getKind() != BOUND_VARIABLE)
+              else
               {
-                return false;
+                // not applied to bound variable
+                if (cur[i].getKind() != BOUND_VARIABLE)
+                {
+                  args[op].clear();
+                  break;
+                }
+                args[op].push_back(cur[i]);
               }
-              ita->second.push_back(cur[i]);
             }
           }
-          continue;
         }
       }
       visit.insert(visit.end(), cur.begin(), cur.end());
     }
   } while (!visit.empty());
-  return true;
 }
 
 }  // namespace quantifiers

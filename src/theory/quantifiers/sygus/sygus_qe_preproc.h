@@ -56,7 +56,7 @@ class SygusQePreproc
    * maximal arity functions in unsf are not of the same type, this method
    * returns false.
    */
-  bool getMaximalArityFuncs(const std::vector<Node>& unsf,
+  static bool getMaximalArityFuncs(const std::vector<Node>& unsf,
                             std::vector<Node>& maxf);
   /**
    * Get remaining functions. This method is used to build transformations
@@ -67,7 +67,7 @@ class SygusQePreproc
    * (extended to remaining) xf
    * such that applying the substitution remf
    */
-  bool getRemainingFunctions(const std::vector<Node>& unsf,
+  static bool getRemainingFunctions(const std::vector<Node>& unsf,
                              const std::vector<Node>& maxf,
                              Subs& remf,
                              Subs& xf,
@@ -76,13 +76,15 @@ class SygusQePreproc
   /**
    * Extend function arguments.
    *
-   * It should be the case that each rargs[f] is in xargs.
+   * It should be the case that each variable in fargs is in xargs.
    */
-  bool extendFuncArgs(Node f,
+  static bool extendFuncArgs(Node f,
                       Subs& remf,
                       Subs& xf,
                       const std::vector<Node>& xargs,
-                      const std::map<Node, std::vector<Node>>& rargs);
+                      const std::vector<Node>& fargs);
+  /** Make lambda app */
+  static Node mkLambdaApp(const std::vector<Node>& vars, Node f, const std::vector<Node>& args);
 };
 
 }  // namespace quantifiers

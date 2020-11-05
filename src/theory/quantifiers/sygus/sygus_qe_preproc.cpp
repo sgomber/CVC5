@@ -70,30 +70,36 @@ Node SygusQePreproc::preprocess(Node q)
   }
   Trace("sygus-qep-debug") << "...single invocation with args = " << args
                            << std::endl;
-  std::map<Node, std::vector<Node>> rargs;
   // Get the remaining functions. We also compute methods for extending
   // them to extended functions in xf. The substitutions remf converts the
   // remaining functions to extended ones (with the same type as maxf), and
   // the map xf converts the extended functions back to the originals.
   Subs remf;
   Subs xf;
-  if (!getRemainingFunctions(unsf, maxf, remf, xf, args, rargs))
+  Node xbody = q[1];
+  if (maxf.size()<allf.size())
   {
-    // arity mismatch for functions, we are done
-    Trace("sygus-qep") << "...remaining arity type mismatch, fail."
-                       << std::endl;
-    return Node::null();
+    // more generally, need all single invocations
+    std::map<Node, std::vector<Node>> rargs;
+    getSingleInvocations(allf, q[1], rargs);
+    if (!getRemainingFunctions(unsf, maxf, remf, xf, args, rargs))
+    {
+      // arity mismatch for functions, we are done
+      Trace("sygus-qep") << "...remaining arity type mismatch, fail."
+                        << std::endl;
+      return Node::null();
+    }
+    Trace("sygus-qep-debug") << "- remaining-to-extension = " << remf
+                            << std::endl;
+    Trace("sygus-qep-debug") << "- extension-to-remaining = " << xf << std::endl;
+
+    // lift remaining functions to extended functions
+    xbody = remf.apply(q[1], true);
+    Trace("sygus-qep-debug") << "Extended and normalized body:" << xbody
+                            << std::endl;
   }
-  Trace("sygus-qep-debug") << "- remaining-to-extension = " << remf
-                           << std::endl;
-  Trace("sygus-qep-debug") << "- extension-to-remaining = " << xf << std::endl;
-
-  // lift remaining functions to extended functions
-  Node xbody = remf.apply(q[1], true);
-  Trace("sygus-qep-debug") << "Extended and normalized body:" << xbody
-                           << std::endl;
-
-  // check single invocation with respect to the extension
+  // Check single invocation with respect to the extension. Note this is
+  // computed regardless of whether we changed xmaxf for uniformity.
   std::vector<Node> xmaxf = maxf;
   xmaxf.insert(xmaxf.end(), xf.d_vars.begin(), xf.d_vars.end());
   std::map<Node, Node> xffs;
@@ -292,7 +298,6 @@ bool SygusQePreproc::getMaximalArityFuncs(const std::vector<Node>& unsf,
                                           std::vector<Node>& maxf)
 {
   Assert(!unsf.empty());
-  NodeManager* nm = NodeManager::currentNM();
   size_t maxArity = 0;
   TypeNode maxType;
   bool maxArityValid = true;
@@ -345,6 +350,7 @@ bool SygusQePreproc::getRemainingFunctions(
     const std::vector<Node>& xargs,
     const std::map<Node, std::vector<Node>>& rargs)
 {
+  std::map<Node, std::vector<Node>>::const_iterator itr;
   // deompose into maximal arity functions and remaining functions
   for (const Node& f : unsf)
   {
@@ -353,8 +359,17 @@ bool SygusQePreproc::getRemainingFunctions(
       // already included in maxf, don't add to remf
       continue;
     }
-    // extend it to the proper type
-    if (!extendFuncArgs(f, remf, xf, xargs, rargs))
+    itr = rargs.find(f);
+    if (itr==rargs.end())
+    {
+      // does not occur in conjecture, no change needed
+      remf.add(f,f);
+      xf.add(f,f);
+      continue;
+    }
+    // extend it to the extended function app, based on the arguments that f
+    // is applied to
+    if (!extendFuncArgs(f, remf, xf, xargs, itr->second))
     {
       return false;
     }
@@ -367,72 +382,100 @@ bool SygusQePreproc::extendFuncArgs(
     Subs& remf,
     Subs& xf,
     const std::vector<Node>& xargs,
-    const std::map<Node, std::vector<Node>>& rargs)
+    const std::vector<Node>& fargs)
 {
   NodeManager* nm = NodeManager::currentNM();
+  Trace("sygus-qep-ext") << f << " was applied to " << fargs << ", required " << xargs << std::endl;
   Assert(!xargs.empty());
-  TypeNode tn = f.getType();
-  std::vector<TypeNode> domainTs;
-  TypeNode rangeT = tn;
-  if (tn.isFunction())
+  Assert(fargs.size() <= xargs.size());
+  
+  // argument type of xargs -> range type of f
+  std::vector<TypeNode> xats;
+  for (const Node& xa : xargs)
   {
-    domainTs = tn.getArgTypes();
-    rangeT = tn.getRangeType();
+    xats.push_back(xa.getType());
   }
-  Assert(domainTs.size() < xargs.size());
-  // argument must be a prefix, generalizations of this should deal with
-  // argument order separately.
-  std::vector<Node> args;
-  for (size_t i = 0, ndts = domainTs.size(); i < ndts; i++)
+  // make the extended function
+  TypeNode rangeT = f.getType();
+  if (rangeT.isFunction())
   {
-    if (domainTs[i] != xargs[i].getType())
+    rangeT = rangeT.getRangeType();
+    if (fargs.empty())
     {
-      // not a prefix
+      Trace("sygus-qep-ext") << "...did not have single invocation" << std::endl;
       return false;
     }
-    args.push_back(nm->mkBoundVar(domainTs[i]));
   }
-  Node lbvl;
-  if (!args.empty())
+  TypeNode newT = nm->mkFunctionType(xats, rangeT);
+  Node newF = nm->mkSkolem("xf", newT);
+  Trace("sygus-qep-ext") << "Made function " << newF << " of type " << newT << std::endl;
+  
+  std::vector<Node> fv;
+  // start with the extended arguments
+  std::vector<Node> fa = xargs;
+  for (const Node& v : fargs)
   {
-    lbvl = nm->mkNode(BOUND_VAR_LIST, args);
+    fv.push_back(nm->mkBoundVar(v.getType()));
   }
-  // TODO: consider rargs
+  std::vector<Node> xv;
+  // start with the function arguments
+  std::vector<Node> xa = fargs;
+  for (const Node& v : xargs)
+  {
+    xv.push_back(nm->mkBoundVar(v.getType()));
+  }
+  // now map
+  std::vector<Node>::const_iterator ita;
+  for (size_t i = 0, nargs = fargs.size(); i < nargs; i++)
+  {
+    ita = std::find(xargs.begin(), xargs.end(), fargs[i]);
+    if (ita==xargs.end())
+    {
+      Trace("sygus-qep-ext") << "...could not find " << fargs[i] << std::endl;
+      return false;
+    }
+    // connect the transformation
+    size_t index = std::distance(xargs.begin(), ita);
+    fa[index] = fv[i];
+    xa[i] = xv[index];
+  }
+  Trace("sygus-qep-ext")  << "fv/fa: " << fv << " " << fa << std::endl;
+  Trace("sygus-qep-ext")  << "xv/xa: " << xv << " " << xa << std::endl;
   // Add the pair
   //   f, (lambda ((x domainTs)) (newF x xargs2))
   // to remf, where the latter term has the same type as f.
-  std::vector<TypeNode> fargs;
-  for (const Node& xa : xargs)
-  {
-    fargs.push_back(xa.getType());
-  }
-  TypeNode newT = nm->mkFunctionType(fargs, rangeT);
-  Node newF = nm->mkSkolem("xf", newT);
-  for (size_t i = args.size(), nfargs = fargs.size(); i < nfargs; i++)
-  {
-    args.push_back(xargs[i]);
-  }
-  args.insert(args.begin(), newF);
-  Node app = args.size() == 1 ? args[0] : nm->mkNode(APPLY_UF, args);
-  Node lam = lbvl.isNull() ? app : nm->mkNode(LAMBDA, lbvl, app);
-  Assert(f.getType() == lam.getType());
-  remf.add(f, lam);
-  Trace("sygus-qep-debug") << "extendFuncArgs: Extend: " << f << " -> " << lam
+  Node flam = mkLambdaApp(fv, newF, fa);
+  remf.add(f, flam);
+  Trace("sygus-qep-ext") << "extendFuncArgs: Extend: " << f << " -> " << flam
                            << std::endl;
-  args.erase(args.begin(), args.begin() + 1);
   // also make the reverse mapping
   //   newF, (lambda (xargs1 xargs2) (f xargs1))
   // to xf, where the latter term has the same type as newF.
-  std::vector<Node> argsf;
-  argsf.push_back(f);
-  argsf.insert(argsf.end(), args.begin(), args.begin() + domainTs.size());
-  lbvl = nm->mkNode(BOUND_VAR_LIST, args);
-  app = argsf.size() == 1 ? argsf[0] : nm->mkNode(APPLY_UF, argsf);
-  lam = nm->mkNode(LAMBDA, lbvl, app);
-  Trace("sygus-qep-debug") << "extendFuncArgs: Restrict: " << newF << " -> "
-                           << lam << std::endl;
-  xf.add(newF, lam);
+  Node xlam = mkLambdaApp(xv, f, xa);
+  xf.add(newF, xlam);
+  Trace("sygus-qep-ext") << "extendFuncArgs: Restrict: " << newF << " -> "
+                           << xlam << std::endl;
   return true;
+}
+
+
+Node SygusQePreproc::mkLambdaApp(const std::vector<Node>& vars, Node f, const std::vector<Node>& args)
+{
+  NodeManager* nm = NodeManager::currentNM();
+  Node ret = f;
+  if (!args.empty())
+  {
+    std::vector<Node> aargs;
+    aargs.push_back(f);
+    aargs.insert(aargs.end(), args.begin(), args.end());
+    ret = nm->mkNode(APPLY_UF, aargs);
+  }
+  if (!vars.empty())
+  {
+    Node bvl = nm->mkNode(BOUND_VAR_LIST, vars);
+    ret = nm->mkNode(LAMBDA, bvl, ret);
+  }
+  return ret;
 }
 
 }  // namespace quantifiers

@@ -87,35 +87,6 @@ Node wrapSolutionForSynthFun(Node f, Node sol);
  */
 TypeNode getSygusTypeForSynthFun(Node f);
 
-/**
- * Returns true if fs is a set of functions that we could apply single
- * invocation techniques for
- */
-bool isSingleInvocationType(const std::vector<Node>& fs);
-/**
- * Is the conjecture conj single invocation? This does not do any rewriting
- * to the conjecture or advanced techniques.
- *
- * @param fs The set of functions-to-synthesize this check is relative to
- * @param conj The conjecture
- * @param ffs The subset of fs that appears freely in conj
- * @param args The arguments of the single invocation
- */
-bool isSingleInvocation(const std::vector<Node>& fs,
-                        Node conj,
-                        std::map<Node, Node>& ffs,
-                        std::vector<Node>& args);
-bool isSingleInvocation(const std::vector<Node>& fs,
-                        Node conj,
-                        std::vector<Node>& args);
-/**
- * Same as above, but where functions are allowed to take different arguments
- */
-
-bool isSingleInvocation(const std::vector<Node>& fs,
-                        Node conj,
-                        std::map<Node, std::vector<Node>>& args);
-
 }  // namespace quantifiers
 }  // namespace theory
 }  // namespace CVC4
