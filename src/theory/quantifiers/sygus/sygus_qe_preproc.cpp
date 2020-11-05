@@ -337,12 +337,13 @@ bool SygusQePreproc::getMaximalArityFuncs(const std::vector<Node>& unsf,
   return true;
 }
 
-bool SygusQePreproc::getRemainingFunctions(const std::vector<Node>& unsf,
-                                           const std::vector<Node>& maxf,
-                                           Subs& remf,
-                                           Subs& xf,
-                             const std::vector<Node>& xargs,
-                             const std::map<Node, std::vector<Node>>& rargs)
+bool SygusQePreproc::getRemainingFunctions(
+    const std::vector<Node>& unsf,
+    const std::vector<Node>& maxf,
+    Subs& remf,
+    Subs& xf,
+    const std::vector<Node>& xargs,
+    const std::map<Node, std::vector<Node>>& rargs)
 {
   // deompose into maximal arity functions and remaining functions
   for (const Node& f : unsf)
@@ -361,11 +362,12 @@ bool SygusQePreproc::getRemainingFunctions(const std::vector<Node>& unsf,
   return true;
 }
 
-bool SygusQePreproc::extendFuncArgs(Node f,
-                                    Subs& remf,
-                                    Subs& xf,
-                             const std::vector<Node>& xargs,
-                             const std::map<Node, std::vector<Node>>& rargs)
+bool SygusQePreproc::extendFuncArgs(
+    Node f,
+    Subs& remf,
+    Subs& xf,
+    const std::vector<Node>& xargs,
+    const std::map<Node, std::vector<Node>>& rargs)
 {
   NodeManager* nm = NodeManager::currentNM();
   Assert(!xargs.empty());
