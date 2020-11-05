@@ -57,7 +57,7 @@ class SygusQePreproc
    * returns false.
    */
   static bool getMaximalArityFuncs(const std::vector<Node>& unsf,
-                            std::vector<Node>& maxf);
+                                   std::vector<Node>& maxf);
   /**
    * Get remaining functions. This method is used to build transformations
    * for the functions in unsf that are not in maxf.
@@ -67,24 +67,27 @@ class SygusQePreproc
    * (extended to remaining) xf
    * such that applying the substitution remf
    */
-  static bool getRemainingFunctions(const std::vector<Node>& unsf,
-                             const std::vector<Node>& maxf,
-                             Subs& remf,
-                             Subs& xf,
-                             const std::vector<Node>& xargs,
-                             const std::map<Node, std::vector<Node>>& rargs);
+  static bool getRemainingFunctions(
+      const std::vector<Node>& unsf,
+      const std::vector<Node>& maxf,
+      Subs& remf,
+      Subs& xf,
+      const std::vector<Node>& xargs,
+      const std::map<Node, std::vector<Node>>& rargs);
   /**
    * Extend function arguments.
    *
    * It should be the case that each variable in fargs is in xargs.
    */
   static bool extendFuncArgs(Node f,
-                      Subs& remf,
-                      Subs& xf,
-                      const std::vector<Node>& xargs,
-                      const std::vector<Node>& fargs);
+                             Subs& remf,
+                             Subs& xf,
+                             const std::vector<Node>& xargs,
+                             const std::vector<Node>& fargs);
   /** Make lambda app */
-  static Node mkLambdaApp(const std::vector<Node>& vars, Node f, const std::vector<Node>& args);
+  static Node mkLambdaApp(const std::vector<Node>& vars,
+                          Node f,
+                          const std::vector<Node>& args);
 };
 
 }  // namespace quantifiers

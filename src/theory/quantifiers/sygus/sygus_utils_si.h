@@ -60,8 +60,8 @@ bool isSingleInvocation(const std::vector<Node>& fs,
  */
 
 void getSingleInvocations(const std::vector<Node>& fs,
-                        Node conj,
-                        std::map<Node, std::vector<Node>>& args);
+                          Node conj,
+                          std::map<Node, std::vector<Node>>& args);
 
 }  // namespace quantifiers
 }  // namespace theory
