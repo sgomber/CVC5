@@ -59,6 +59,11 @@ void decomposeSygusConjecture(Node q,
                               std::vector<Node>& unsf,
                               Subs& solvedf);
 /**
+ * Decompose the conjecture body 
+ */
+Node decomposeConjectureBody(Node conj, std::vector<Node>& vs);
+
+/**
  * Get the formal argument list for a function-to-synthesize. This returns
  * a node of kind BOUND_VAR_LIST that corresponds to the formal argument list
  * of the function to synthesize.
@@ -103,6 +108,13 @@ bool isSingleInvocation(const std::vector<Node>& fs,
 bool isSingleInvocation(const std::vector<Node>& fs,
                         Node conj,
                         std::vector<Node>& args);
+/** 
+ * Same as above, but where functions are allowed to take different arguments
+ */
+
+bool isSingleInvocation(const std::vector<Node>& fs,
+                        Node conj,
+                        std::map<Node, std::vector<Node>>& args);
 
 }  // namespace quantifiers
 }  // namespace theory

@@ -18,6 +18,7 @@
 #include "theory/quantifiers/quantifiers_attributes.h"
 #include "theory/quantifiers/single_inv_partition.h"
 #include "theory/quantifiers/sygus/sygus_utils.h"
+#include "theory/quantifiers/sygus/sygus_utils_si.h"
 #include "theory/rewriter.h"
 #include "theory/smt_engine_subsolver.h"
 
@@ -29,7 +30,7 @@ namespace quantifiers {
 
 Node SygusQePreproc::preprocess(Node q)
 {
-  Trace("sygus-qep") << "SygusQePreproc::preprocess: " << q << std::endl;
+  Trace("sygus-qep") << "SygusQePreproc::preprocess: " << q << std::endl;  
   // decompose the conjecture into solved, unsolved components
   std::vector<Node> allf;
   std::vector<Node> unsf;
@@ -55,6 +56,7 @@ Node SygusQePreproc::preprocess(Node q)
     return Node::null();
   }
   Trace("sygus-qep-debug") << "- max arity functions = " << maxf << std::endl;
+  
   std::vector<Node> args;
   Trace("sygus-qep-debug") << "Check single invocation " << maxf << ": " << q[1]
                            << std::endl;
@@ -111,12 +113,7 @@ Node SygusQePreproc::preprocess(Node q)
   // decompose the body of the synthesis conjecture
   Node body = xbody;
   std::vector<Node> uvars;
-  Node qfBody = body;
-  if (body.getKind() == NOT && body[0].getKind() == FORALL)
-  {
-    uvars.insert(uvars.end(), body[0][0].begin(), body[0][0].end());
-    qfBody = body[0][1];
-  }
+  Node qfBody = decomposeConjectureBody(body, uvars);
 
   NodeManager* nm = NodeManager::currentNM();
 
