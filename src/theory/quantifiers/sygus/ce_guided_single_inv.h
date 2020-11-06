@@ -23,7 +23,6 @@
 #include "theory/quantifiers/inst_match_trie.h"
 #include "theory/quantifiers/single_inv_partition.h"
 #include "theory/quantifiers/sygus/ce_guided_single_inv_sol.h"
-#include "theory/quantifiers/sygus/transition_inference.h"
 
 namespace CVC4 {
 namespace theory {
@@ -54,8 +53,6 @@ class CegSingleInv
   QuantifiersEngine* d_qe;
   // single invocation inference utility
   SingleInvocationPartition* d_sip;
-  // transition inference module for each function to synthesize
-  std::map< Node, TransitionInference > d_ti;
   // solution reconstruction
   CegSingleInvSol* d_sol;
 
@@ -92,13 +89,6 @@ class CegSingleInv
   bool d_single_invocation;
   // single invocation portion of quantified formula
   Node d_single_inv;
-  // transition relation version per program
-  std::map< Node, Node > d_trans_pre;
-  std::map< Node, Node > d_trans_post;
-  // the template for each function to synthesize
-  std::map< Node, Node > d_templ;
-  // the template argument for each function to synthesize (occurs in exactly one position of its template)
-  std::map< Node, Node > d_templ_arg;
   
  public:
   CegSingleInv(QuantifiersEngine* qe);
@@ -141,35 +131,6 @@ class CegSingleInv
   bool isSingleInvocation() const { return !d_single_inv.isNull(); }
   /** preregister conjecture */
   void preregisterConjecture( Node q );
-
-  Node getTransPre(Node prog) const {
-    std::map<Node, Node>::const_iterator location = d_trans_pre.find(prog);
-    return location->second;
-  }
-
-  Node getTransPost(Node prog) const {
-    std::map<Node, Node>::const_iterator location = d_trans_post.find(prog);
-    return location->second;
-  }
-  // get template for program prog. This returns a term of the form t[x] where x is the template argument (see below)
-  Node getTemplate(Node prog) const {
-    std::map<Node, Node>::const_iterator tmpl = d_templ.find(prog);
-    if( tmpl!=d_templ.end() ){
-      return tmpl->second;
-    }else{
-      return Node::null();
-    }
-  }
-  // get the template argument for program prog.
-  // This is a variable which indicates the position of the function/predicate to synthesize.
-  Node getTemplateArg(Node prog) const {
-    std::map<Node, Node>::const_iterator tmpla = d_templ_arg.find(prog);
-    if( tmpla != d_templ_arg.end() ){
-      return tmpla->second;
-    }else{
-      return Node::null();
-    }
-  }
 
  private:
   /** solve trivial
