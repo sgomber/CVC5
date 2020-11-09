@@ -25,15 +25,18 @@
 namespace CVC4 {
 namespace theory {
 namespace quantifiers {
-
+  
+class SygusSiUtils
+{
+public:
 /**
- * Returns true if fs is a set of functions that we could apply single
- * invocation techniques for
+ * Returns true if fs is a set of functions that each have the same type.
  */
-bool isSingleInvocationType(const std::vector<Node>& fs);
+static bool areSameType(const std::vector<Node>& fs);
 /**
  * Is the conjecture conj single invocation? This does not do any rewriting
- * to the conjecture or advanced techniques.
+ * to the conjecture or advanced techniques. This method assumes that fs
+ * each have the same type.
  *
  * @param fs The set of functions-to-synthesize this check is relative to
  * @param conj The conjecture
@@ -42,11 +45,11 @@ bool isSingleInvocationType(const std::vector<Node>& fs);
  * exactly this list.
  * @return true if conj is single invocation
  */
-bool isSingleInvocation(const std::vector<Node>& fs,
+static bool isSingleInvocation(const std::vector<Node>& fs,
                         Node conj,
                         std::map<Node, Node>& ffs,
                         std::vector<Node>& args);
-bool isSingleInvocation(const std::vector<Node>& fs,
+static bool isSingleInvocation(const std::vector<Node>& fs,
                         Node conj,
                         std::vector<Node>& args);
 /**
@@ -59,16 +62,19 @@ bool isSingleInvocation(const std::vector<Node>& fs,
  * multiple arguments
  */
 
-void getSingleInvocations(const std::vector<Node>& fs,
+static void getSingleInvocations(const std::vector<Node>& fs,
                           Node conj,
                           std::map<Node, std::vector<Node>>& args);
 /**
- * miniscope conjecture
+ * Partition the conjecture conj based on the functions-to-synthesize fs.
+ * Sets cc and nc such that conj is equivalent to (and cc nc), cc contains
+ * fs and nc does not.
  */
-void partitionViaSubtermCtn(const std::vector<Node>& fs,
+static void partitionConjecture(const std::vector<Node>& fs,
                             Node conj,
                             Node& cc,
                             Node& nc);
+};
 
 }  // namespace quantifiers
 }  // namespace theory

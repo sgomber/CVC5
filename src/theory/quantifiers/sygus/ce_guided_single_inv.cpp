@@ -60,7 +60,7 @@ void CegSingleInv::initialize(Node q)
   Trace("sygus-si") << "CegSingleInv::initialize : " << q << std::endl;
 
   // decompose the conjecture
-  decomposeSygusConjecture(d_quant, d_funs, d_unsolvedf, d_solvedf);
+  SygusUtils::decomposeSygusConjecture(d_quant, d_funs, d_unsolvedf, d_solvedf);
 
   Trace("sygus-si") << "functions: " << d_funs << std::endl;
   Trace("sygus-si") << " unsolved: " << d_unsolvedf << std::endl;
@@ -73,7 +73,7 @@ void CegSingleInv::initialize(Node q)
   for (const Node& sf : q[0])
   {
     // get its argument list
-    getSygusArgumentListForSynthFun(sf, prog_vars[sf]);
+    SygusUtils::getSygusArgumentListForSynthFun(sf, prog_vars[sf]);
   }
   // compute single invocation partition
   Node qq;
@@ -397,7 +397,7 @@ Node CegSingleInv::getSolutionFromInst(size_t index)
   s = d_qe->getTermDatabaseSygus()->getExtRewriter()->extendedRewrite(s);
   Trace("csi-sol") << "Solution (post-simplification): " << s << std::endl;
   // wrap into lambda, as needed
-  return wrapSolutionForSynthFun(prog, s);
+  return SygusUtils::wrapSolutionForSynthFun(prog, s);
 }
 
 void CegSingleInv::setSolution()

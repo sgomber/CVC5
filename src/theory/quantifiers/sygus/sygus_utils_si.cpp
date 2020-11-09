@@ -24,7 +24,7 @@ namespace CVC4 {
 namespace theory {
 namespace quantifiers {
 
-bool isSingleInvocationType(const std::vector<Node>& fs)
+bool SygusSiUtils::areSameType(const std::vector<Node>& fs)
 {
   Assert(!fs.empty());
   // just make free variables, assuming that all functions have same type
@@ -39,7 +39,7 @@ bool isSingleInvocationType(const std::vector<Node>& fs)
   return true;
 }
 
-bool isSingleInvocation(const std::vector<Node>& fs,
+bool SygusSiUtils::isSingleInvocation(const std::vector<Node>& fs,
                         Node conj,
                         std::map<Node, Node>& ffs,
                         std::vector<Node>& args)
@@ -48,7 +48,7 @@ bool isSingleInvocation(const std::vector<Node>& fs,
   {
     return true;
   }
-  Assert(isSingleInvocationType(fs));
+  Assert(areSameType(fs));
   bool argsSet = false;
   std::unordered_set<TNode, TNodeHashFunction> visited;
   std::unordered_set<TNode, TNodeHashFunction>::iterator it;
@@ -131,7 +131,7 @@ bool isSingleInvocation(const std::vector<Node>& fs,
   return true;
 }
 
-bool isSingleInvocation(const std::vector<Node>& fs,
+bool SygusSiUtils::isSingleInvocation(const std::vector<Node>& fs,
                         Node conj,
                         std::vector<Node>& args)
 {
@@ -139,7 +139,7 @@ bool isSingleInvocation(const std::vector<Node>& fs,
   return isSingleInvocation(fs, conj, ffs, args);
 }
 
-void getSingleInvocations(const std::vector<Node>& fs,
+void SygusSiUtils::getSingleInvocations(const std::vector<Node>& fs,
                           Node conj,
                           std::map<Node, std::vector<Node>>& args)
 {
@@ -225,7 +225,7 @@ void decomposeAnd(Node conj, std::vector<Node>& c)
   }
 }
 
-void partitionViaSubtermCtn(const std::vector<Node>& fs,
+void SygusSiUtils::partitionConjecture(const std::vector<Node>& fs,
                             Node conj,
                             Node& cc,
                             Node& nc)

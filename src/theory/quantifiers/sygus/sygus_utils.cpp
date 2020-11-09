@@ -34,7 +34,7 @@ struct SygusSolutionAttributeId
 };
 typedef expr::Attribute<SygusSolutionAttributeId, Node> SygusSolutionAttribute;
 
-Node mkSygusConjecture(const std::vector<Node>& fs,
+Node SygusUtils::mkSygusConjecture(const std::vector<Node>& fs,
                        Node conj,
                        const std::vector<Node>& iattrs)
 {
@@ -53,13 +53,13 @@ Node mkSygusConjecture(const std::vector<Node>& fs,
   return nm->mkNode(FORALL, bvl, conj, ipl);
 }
 
-Node mkSygusConjecture(const std::vector<Node>& fs, Node conj)
+Node SygusUtils::mkSygusConjecture(const std::vector<Node>& fs, Node conj)
 {
   std::vector<Node> iattrs;
   return mkSygusConjecture(fs, conj, iattrs);
 }
 
-Node mkSygusConjecture(const std::vector<Node>& fs,
+Node SygusUtils::mkSygusConjecture(const std::vector<Node>& fs,
                        Node conj,
                        const Subs& solvedf)
 {
@@ -80,7 +80,7 @@ Node mkSygusConjecture(const std::vector<Node>& fs,
   return mkSygusConjecture(fs, conj, iattrs);
 }
 
-void decomposeSygusConjecture(Node q,
+void SygusUtils::decomposeSygusConjecture(Node q,
                               std::vector<Node>& fs,
                               std::vector<Node>& unsf,
                               Subs& solvedf)
@@ -115,7 +115,7 @@ void decomposeSygusConjecture(Node q,
   }
 }
 
-Node decomposeConjectureBody(Node conj, std::vector<Node>& vs)
+Node SygusUtils::decomposeConjectureBody(Node conj, std::vector<Node>& vs)
 {
   if (conj.getKind() == NOT && conj[0].getKind() == FORALL)
   {
@@ -125,7 +125,7 @@ Node decomposeConjectureBody(Node conj, std::vector<Node>& vs)
   return conj.negate();
 }
 
-Node getSygusArgumentListForSynthFun(Node f)
+Node SygusUtils::getSygusArgumentListForSynthFun(Node f)
 {
   Node sfvl = f.getAttribute(SygusSynthFunVarListAttribute());
   if (sfvl.isNull() && f.getType().isFunction())
@@ -146,7 +146,7 @@ Node getSygusArgumentListForSynthFun(Node f)
   return sfvl;
 }
 
-void getSygusArgumentListForSynthFun(Node f, std::vector<Node>& formals)
+void SygusUtils::getSygusArgumentListForSynthFun(Node f, std::vector<Node>& formals)
 {
   Node sfvl = getSygusArgumentListForSynthFun(f);
   if (!sfvl.isNull())
@@ -155,7 +155,7 @@ void getSygusArgumentListForSynthFun(Node f, std::vector<Node>& formals)
   }
 }
 
-Node wrapSolutionForSynthFun(Node f, Node sol)
+Node SygusUtils::wrapSolutionForSynthFun(Node f, Node sol)
 {
   Node al = getSygusArgumentListForSynthFun(f);
   if (!al.isNull())
@@ -166,7 +166,7 @@ Node wrapSolutionForSynthFun(Node f, Node sol)
   return sol;
 }
 
-TypeNode getSygusTypeForSynthFun(Node f)
+TypeNode SygusUtils::getSygusTypeForSynthFun(Node f)
 {
   Node gv = f.getAttribute(SygusSynthGrammarAttribute());
   if (!gv.isNull())

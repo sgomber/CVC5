@@ -173,7 +173,7 @@ Node SygusAbduct::mkAbductionConjecture(const std::string& name,
   // the abducts A we procedure must be consistent with our axioms.
 
   // forall A. exists x. ~( A( x ) => ~input( x ) )
-  res = mkSygusConjecture({abd}, res, {instAttr});
+  res = SygusUtils::mkSygusConjecture({abd}, res, {instAttr});
   Trace("sygus-abduct-debug") << "...finish" << std::endl;
 
   res = theory::Rewriter::rewrite(res);

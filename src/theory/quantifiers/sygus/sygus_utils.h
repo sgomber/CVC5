@@ -26,22 +26,25 @@ namespace CVC4 {
 namespace theory {
 namespace quantifiers {
 
+class SygusUtils
+{
+public:
 /**
  * Make (negated) sygus conjecture of the form
  *   forall fs. conj
  * with instantiation attributes in ips. Notice that the marker for
  * sygus conjecture is automatically prepended to this list.
  */
-Node mkSygusConjecture(const std::vector<Node>& fs,
+static Node mkSygusConjecture(const std::vector<Node>& fs,
                        Node conj,
                        const std::vector<Node>& iattrs);
 /** Same as above, without auxiliary instantiation attributes */
-Node mkSygusConjecture(const std::vector<Node>& fs, Node conj);
+static Node mkSygusConjecture(const std::vector<Node>& fs, Node conj);
 
 /**
  * Make conjecture, with a set of solved functions.
  */
-Node mkSygusConjecture(const std::vector<Node>& fs,
+static Node mkSygusConjecture(const std::vector<Node>& fs,
                        Node conj,
                        const Subs& solvedf);
 /**
@@ -54,7 +57,7 @@ Node mkSygusConjecture(const std::vector<Node>& fs,
  *
  * The vector unsf and the domain of solved are a parition of fs.
  */
-void decomposeSygusConjecture(Node q,
+static void decomposeSygusConjecture(Node q,
                               std::vector<Node>& fs,
                               std::vector<Node>& unsf,
                               Subs& solvedf);
@@ -65,7 +68,7 @@ void decomposeSygusConjecture(Node q,
  * conjecture body. It adds the quantified free variables of the conjecture
  * to vs.
  */
-Node decomposeConjectureBody(Node conj, std::vector<Node>& vs);
+static Node decomposeConjectureBody(Node conj, std::vector<Node>& vs);
 
 /**
  * Get the formal argument list for a function-to-synthesize. This returns
@@ -75,21 +78,24 @@ Node decomposeConjectureBody(Node conj, std::vector<Node>& vs);
  * Note that if f is constant, then this returns null, since f has no arguments
  * in this case.
  */
-Node getSygusArgumentListForSynthFun(Node f);
+static Node getSygusArgumentListForSynthFun(Node f);
 /**
  * Same as above, but adds the variables to formals.
  */
-void getSygusArgumentListForSynthFun(Node f, std::vector<Node>& formals);
+static void getSygusArgumentListForSynthFun(Node f, std::vector<Node>& formals);
 /**
- * Wrap in lambda
+ * Wrap a solution sol for f in the proper lambda, return the lambda
+ * expression. Notice the returned expression is sol itself if f has no
+ * formal arguments.
  */
-Node wrapSolutionForSynthFun(Node f, Node sol);
+static Node wrapSolutionForSynthFun(Node f, Node sol);
 
 /**
  * Get the sygus datatype type that encodes the syntax restrictions for
  * function-to-synthesize f.
  */
-TypeNode getSygusTypeForSynthFun(Node f);
+static TypeNode getSygusTypeForSynthFun(Node f);
+};
 
 }  // namespace quantifiers
 }  // namespace theory

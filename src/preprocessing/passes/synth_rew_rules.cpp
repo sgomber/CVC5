@@ -448,7 +448,7 @@ PreprocessingPassResult SynthRewRulesPass::applyInternal(
     sfun.setAttribute(ssg, gvar);
 
     Node body = nm->mkConst(false);
-    body = theory::quantifiers::mkSygusConjecture({sfun}, body);
+    body = theory::quantifiers::SygusUtils::mkSygusConjecture({sfun}, body);
     synthConj.push_back(body);
   }
   Node trueNode = nm->mkConst(true);

@@ -35,7 +35,7 @@ Node SygusQePreproc::preprocess(Node q)
   std::vector<Node> allf;
   std::vector<Node> unsf;
   Subs solvedf;
-  decomposeSygusConjecture(q, allf, unsf, solvedf);
+  SygusUtils::decomposeSygusConjecture(q, allf, unsf, solvedf);
   if (unsf.empty())
   {
     // probably should never happen
@@ -60,7 +60,7 @@ Node SygusQePreproc::preprocess(Node q)
   std::vector<Node> args;
   Trace("sygus-qep-debug") << "Check single invocation " << maxf << ": " << q[1]
                            << std::endl;
-  if (!isSingleInvocation(maxf, q[1], args))
+  if (!SygusSiUtils::isSingleInvocation(maxf, q[1], args))
   {
     bool successCoerce = false;
     // maybe coerce and retry?
@@ -69,7 +69,7 @@ Node SygusQePreproc::preprocess(Node q)
     {
       Trace("sygus-qep-debug") << "...coerce to " << qc << std::endl;
       args.clear();
-      if (isSingleInvocation(maxf, qc[1], args))
+      if (SygusSiUtils::isSingleInvocation(maxf, qc[1], args))
       {
         successCoerce = true;
         q = qc;
@@ -97,7 +97,7 @@ Node SygusQePreproc::preprocess(Node q)
   {
     // more generally, need all single invocations
     std::map<Node, std::vector<Node>> rargs;
-    getSingleInvocations(allf, q[1], rargs);
+    SygusSiUtils::getSingleInvocations(allf, q[1], rargs);
     if (!getRemainingFunctions(unsf, maxf, remf, xf, args, rargs))
     {
       // arity mismatch for functions, we are done
@@ -123,7 +123,7 @@ Node SygusQePreproc::preprocess(Node q)
   std::vector<Node> xargs;
   Trace("sygus-qep-debug") << "Check single invocation " << xmaxf << ": "
                            << xbody << std::endl;
-  if (!isSingleInvocation(xmaxf, xbody, xffs, xargs))
+  if (!SygusSiUtils::isSingleInvocation(xmaxf, xbody, xffs, xargs))
   {
     Trace("sygus-qep") << "...not single invocation after extension"
                        << std::endl;
@@ -137,7 +137,7 @@ Node SygusQePreproc::preprocess(Node q)
   // decompose the body of the synthesis conjecture
   Node body = xbody;
   std::vector<Node> uvars;
-  Node qfBody = decomposeConjectureBody(body, uvars);
+  Node qfBody = SygusUtils::decomposeConjectureBody(body, uvars);
 
   NodeManager* nm = NodeManager::currentNM();
 
@@ -185,7 +185,7 @@ Node SygusQePreproc::preprocess(Node q)
         qeRes = nm->mkNode(EXISTS, nm->mkNode(BOUND_VAR_LIST, xargs), qeRes);
       }
       // remake conjecture with same solved functions
-      Node newConj = mkSygusConjecture(allf, qeRes, solvedf);
+      Node newConj = SygusUtils::mkSygusConjecture(allf, qeRes, solvedf);
       Trace("sygus-qep") << "...eliminate variables return " << newConj
                          << std::endl;
       Assert(!expr::hasFreeVar(newConj));
@@ -205,7 +205,7 @@ Node SygusQePreproc::preprocess(Node q)
     for (const Node& f : maxf)
     {
       std::vector<Node> formals;
-      getSygusArgumentListForSynthFun(f, formals);
+      SygusUtils::getSygusArgumentListForSynthFun(f, formals);
       smt_sy->declareSynthFun(f, false, formals);
     }
     for (const Node& v : uvars)
@@ -275,7 +275,7 @@ Node SygusQePreproc::preprocess(Node q)
       for (size_t i = 0, nvars = solSubs.d_vars.size(); i < nvars; i++)
       {
         std::vector<Node> fargs;
-        getSygusArgumentListForSynthFun(solSubs.d_vars[i], fargs);
+        SygusUtils::getSygusArgumentListForSynthFun(solSubs.d_vars[i], fargs);
         Subs siToFormal;
         siToFormal.add(uvars, fargs);
         solSubs.d_subs[i] = siToFormal.apply(solSubs.d_subs[i]);
@@ -304,7 +304,7 @@ Node SygusQePreproc::preprocess(Node q)
           << "...after current solutions : " << conj << std::endl;
 
       // reconstruct the new conjecture
-      Node fsRes = mkSygusConjecture(allf, conj, solvedf);
+      Node fsRes = SygusUtils::mkSygusConjecture(allf, conj, solvedf);
       Trace("sygus-qep") << "...eliminate functions return " << fsRes
                          << std::endl;
       return fsRes;
@@ -507,7 +507,7 @@ Node SygusQePreproc::coerceSingleInvocation(const std::vector<Node>& fs, Node q)
   NodeManager* nm = NodeManager::currentNM();
   // decompose the conjecture body
   std::vector<Node> cvars;
-  Node origConj = decomposeConjectureBody(q[1], cvars);
+  Node origConj = SygusUtils::decomposeConjectureBody(q[1], cvars);
 
   // for now, use single invocation partition
   SingleInvocationPartition sip;

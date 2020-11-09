@@ -45,7 +45,7 @@ bool CegGrammarConstructor::hasSyntaxRestrictions(Node q)
   Assert(q.getKind() == FORALL);
   for (const Node& f : q[0])
   {
-    TypeNode tn = getSygusTypeForSynthFun(f);
+    TypeNode tn = SygusUtils::getSygusTypeForSynthFun(f);
     if (tn.isDatatype() && tn.getDType().isSygus())
     {
       return true;
@@ -141,7 +141,7 @@ Node CegGrammarConstructor::process(Node q,
       SygusGrammarNorm sygus_norm(d_qe);
       tn = sygus_norm.normalizeSygusType(tn, sfvl);
     }else{
-      sfvl = getSygusArgumentListForSynthFun(sf);
+      sfvl = SygusUtils::getSygusArgumentListForSynthFun(sf);
       // check which arguments are irrelevant
       std::unordered_set<unsigned> arg_irrelevant;
       d_parent->getProcess()->getIrrelevantArgs(sf, arg_irrelevant);
@@ -210,7 +210,7 @@ Node CegGrammarConstructor::process(Node q,
   {
     Node sf = q[0][i];
     d_synth_fun_vars[sf] = ebvl[i];
-    Node sfvl = getSygusArgumentListForSynthFun(sf);
+    Node sfvl = SygusUtils::getSygusArgumentListForSynthFun(sf);
     TypeNode tn = ebvl[i].getType();
     // check if there is a template
     std::map<Node, Node>::const_iterator itt = templates.find(sf);

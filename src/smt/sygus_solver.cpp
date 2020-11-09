@@ -195,7 +195,7 @@ Result SygusSolver::checkSynth(Assertions& as)
     }
     if (!d_sygusFunSymbols.empty())
     {
-      body = quantifiers::mkSygusConjecture(d_sygusFunSymbols, body);
+      body = quantifiers::SygusUtils::mkSygusConjecture(d_sygusFunSymbols, body);
     }
     Trace("smt") << "...constructed forall " << body << std::endl;
 
