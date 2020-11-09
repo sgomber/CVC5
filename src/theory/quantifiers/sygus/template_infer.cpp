@@ -16,8 +16,8 @@
 
 #include "options/quantifiers_options.h"
 #include "theory/quantifiers/sygus/sygus_grammar_cons.h"
-#include "theory/quantifiers/term_util.h"
 #include "theory/quantifiers/sygus/sygus_utils.h"
+#include "theory/quantifiers/term_util.h"
 
 using namespace CVC4::kind;
 

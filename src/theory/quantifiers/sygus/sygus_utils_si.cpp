@@ -40,9 +40,9 @@ bool SygusSiUtils::areSameType(const std::vector<Node>& fs)
 }
 
 bool SygusSiUtils::isSingleInvocation(const std::vector<Node>& fs,
-                        Node conj,
-                        std::map<Node, Node>& ffs,
-                        std::vector<Node>& args)
+                                      Node conj,
+                                      std::map<Node, Node>& ffs,
+                                      std::vector<Node>& args)
 {
   if (fs.empty())
   {
@@ -132,16 +132,16 @@ bool SygusSiUtils::isSingleInvocation(const std::vector<Node>& fs,
 }
 
 bool SygusSiUtils::isSingleInvocation(const std::vector<Node>& fs,
-                        Node conj,
-                        std::vector<Node>& args)
+                                      Node conj,
+                                      std::vector<Node>& args)
 {
   std::map<Node, Node> ffs;
   return isSingleInvocation(fs, conj, ffs, args);
 }
 
 void SygusSiUtils::getSingleInvocations(const std::vector<Node>& fs,
-                          Node conj,
-                          std::map<Node, std::vector<Node>>& args)
+                                        Node conj,
+                                        std::map<Node, std::vector<Node>>& args)
 {
   if (fs.empty())
   {
@@ -226,9 +226,9 @@ void decomposeAnd(Node conj, std::vector<Node>& c)
 }
 
 void SygusSiUtils::partitionConjecture(const std::vector<Node>& fs,
-                            Node conj,
-                            Node& cc,
-                            Node& nc)
+                                       Node conj,
+                                       Node& cc,
+                                       Node& nc)
 {
   std::vector<Node> c;
   decomposeAnd(conj, c);

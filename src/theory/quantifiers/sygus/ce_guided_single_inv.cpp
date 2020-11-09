@@ -69,7 +69,7 @@ void CegSingleInv::initialize(Node q)
   // infer single invocation-ness
 
   // get the variables
-  std::map< Node, std::vector< Node > > prog_vars;
+  std::map<Node, std::vector<Node> > prog_vars;
   for (const Node& sf : q[0])
   {
     // get its argument list

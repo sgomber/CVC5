@@ -35,8 +35,8 @@ struct SygusSolutionAttributeId
 typedef expr::Attribute<SygusSolutionAttributeId, Node> SygusSolutionAttribute;
 
 Node SygusUtils::mkSygusConjecture(const std::vector<Node>& fs,
-                       Node conj,
-                       const std::vector<Node>& iattrs)
+                                   Node conj,
+                                   const std::vector<Node>& iattrs)
 {
   Assert(!fs.empty());
   NodeManager* nm = NodeManager::currentNM();
@@ -60,8 +60,8 @@ Node SygusUtils::mkSygusConjecture(const std::vector<Node>& fs, Node conj)
 }
 
 Node SygusUtils::mkSygusConjecture(const std::vector<Node>& fs,
-                       Node conj,
-                       const Subs& solvedf)
+                                   Node conj,
+                                   const Subs& solvedf)
 {
   Assert(!fs.empty());
   NodeManager* nm = NodeManager::currentNM();
@@ -81,9 +81,9 @@ Node SygusUtils::mkSygusConjecture(const std::vector<Node>& fs,
 }
 
 void SygusUtils::decomposeSygusConjecture(Node q,
-                              std::vector<Node>& fs,
-                              std::vector<Node>& unsf,
-                              Subs& solvedf)
+                                          std::vector<Node>& fs,
+                                          std::vector<Node>& unsf,
+                                          Subs& solvedf)
 {
   Assert(q.getKind() == FORALL);
   Assert(q.getNumChildren() == 3);
@@ -146,7 +146,8 @@ Node SygusUtils::getSygusArgumentListForSynthFun(Node f)
   return sfvl;
 }
 
-void SygusUtils::getSygusArgumentListForSynthFun(Node f, std::vector<Node>& formals)
+void SygusUtils::getSygusArgumentListForSynthFun(Node f,
+                                                 std::vector<Node>& formals)
 {
   Node sfvl = getSygusArgumentListForSynthFun(f);
   if (!sfvl.isNull())
