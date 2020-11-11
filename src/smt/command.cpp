@@ -31,6 +31,7 @@
 #include "expr/type.h"
 #include "options/options.h"
 #include "options/smt_options.h"
+#include "parser/symbol_manager.h"
 #include "printer/printer.h"
 #include "proof/unsat_core.h"
 #include "smt/dump.h"
@@ -175,9 +176,11 @@ bool Command::interrupted() const
          && dynamic_cast<const CommandInterrupted*>(d_commandStatus) != NULL;
 }
 
-void Command::invoke(api::Solver* solver, std::ostream& out)
+void Command::invoke(api::Solver* solver,
+                     parser::SymbolManager* sm,
+                     std::ostream& out)
 {
-  invoke(solver);
+  invoke(solver, sm);
   if (!(isMuted() && ok()))
   {
     printResult(
@@ -215,7 +218,7 @@ void Command::printResult(std::ostream& out, uint32_t verbosity) const
 
 EmptyCommand::EmptyCommand(std::string name) : d_name(name) {}
 std::string EmptyCommand::getName() const { return d_name; }
-void EmptyCommand::invoke(api::Solver* solver)
+void EmptyCommand::invoke(api::Solver* solver, parser::SymbolManager* sm)
 {
   /* empty commands have no implementation */
   d_commandStatus = CommandSuccess::instance();
@@ -226,7 +229,6 @@ std::string EmptyCommand::getCommandName() const { return "empty"; }
 
 void EmptyCommand::toStream(std::ostream& out,
                             int toDepth,
-
                             size_t dag,
                             OutputLanguage language) const
 {
@@ -239,13 +241,15 @@ void EmptyCommand::toStream(std::ostream& out,
 
 EchoCommand::EchoCommand(std::string output) : d_output(output) {}
 std::string EchoCommand::getOutput() const { return d_output; }
-void EchoCommand::invoke(api::Solver* solver)
+void EchoCommand::invoke(api::Solver* solver, parser::SymbolManager* sm)
 {
   /* we don't have an output stream here, nothing to do */
   d_commandStatus = CommandSuccess::instance();
 }
 
-void EchoCommand::invoke(api::Solver* solver, std::ostream& out)
+void EchoCommand::invoke(api::Solver* solver,
+                         parser::SymbolManager* sm,
+                         std::ostream& out)
 {
   out << d_output << std::endl;
   Trace("dtview::command") << "* ~COMMAND: echo |" << d_output << "|~"
@@ -261,7 +265,6 @@ std::string EchoCommand::getCommandName() const { return "echo"; }
 
 void EchoCommand::toStream(std::ostream& out,
                            int toDepth,
-
                            size_t dag,
                            OutputLanguage language) const
 {
@@ -278,7 +281,7 @@ AssertCommand::AssertCommand(const api::Term& t, bool inUnsatCore)
 }
 
 api::Term AssertCommand::getTerm() const { return d_term; }
-void AssertCommand::invoke(api::Solver* solver)
+void AssertCommand::invoke(api::Solver* solver, parser::SymbolManager* sm)
 {
   try
   {
@@ -304,7 +307,6 @@ std::string AssertCommand::getCommandName() const { return "assert"; }
 
 void AssertCommand::toStream(std::ostream& out,
                              int toDepth,
-
                              size_t dag,
                              OutputLanguage language) const
 {
@@ -315,7 +317,7 @@ void AssertCommand::toStream(std::ostream& out,
 /* class PushCommand                                                          */
 /* -------------------------------------------------------------------------- */
 
-void PushCommand::invoke(api::Solver* solver)
+void PushCommand::invoke(api::Solver* solver, parser::SymbolManager* sm)
 {
   try
   {
@@ -337,7 +339,6 @@ std::string PushCommand::getCommandName() const { return "push"; }
 
 void PushCommand::toStream(std::ostream& out,
                            int toDepth,
-
                            size_t dag,
                            OutputLanguage language) const
 {
@@ -348,7 +349,7 @@ void PushCommand::toStream(std::ostream& out,
 /* class PopCommand                                                           */
 /* -------------------------------------------------------------------------- */
 
-void PopCommand::invoke(api::Solver* solver)
+void PopCommand::invoke(api::Solver* solver, parser::SymbolManager* sm)
 {
   try
   {
@@ -370,7 +371,6 @@ std::string PopCommand::getCommandName() const { return "pop"; }
 
 void PopCommand::toStream(std::ostream& out,
                           int toDepth,
-
                           size_t dag,
                           OutputLanguage language) const
 {
@@ -386,7 +386,7 @@ CheckSatCommand::CheckSatCommand() : d_term() {}
 CheckSatCommand::CheckSatCommand(const api::Term& term) : d_term(term) {}
 
 api::Term CheckSatCommand::getTerm() const { return d_term; }
-void CheckSatCommand::invoke(api::Solver* solver)
+void CheckSatCommand::invoke(api::Solver* solver, parser::SymbolManager* sm)
 {
   Trace("dtview::command") << "* ~COMMAND: " << getCommandName() << "~"
                            << std::endl;
@@ -428,7 +428,6 @@ std::string CheckSatCommand::getCommandName() const { return "check-sat"; }
 
 void CheckSatCommand::toStream(std::ostream& out,
                                int toDepth,
-
                                size_t dag,
                                OutputLanguage language) const
 {
@@ -455,7 +454,8 @@ const std::vector<api::Term>& CheckSatAssumingCommand::getTerms() const
   return d_terms;
 }
 
-void CheckSatAssumingCommand::invoke(api::Solver* solver)
+void CheckSatAssumingCommand::invoke(api::Solver* solver,
+                                     parser::SymbolManager* sm)
 {
   Trace("dtview::command") << "* ~COMMAND: (check-sat-assuming ( " << d_terms
                            << " )~" << std::endl;
@@ -503,7 +503,6 @@ std::string CheckSatAssumingCommand::getCommandName() const
 
 void CheckSatAssumingCommand::toStream(std::ostream& out,
                                        int toDepth,
-
                                        size_t dag,
                                        OutputLanguage language) const
 {
@@ -521,7 +520,7 @@ QueryCommand::QueryCommand(const api::Term& t, bool inUnsatCore)
 }
 
 api::Term QueryCommand::getTerm() const { return d_term; }
-void QueryCommand::invoke(api::Solver* solver)
+void QueryCommand::invoke(api::Solver* solver, parser::SymbolManager* sm)
 {
   try
   {
@@ -558,7 +557,6 @@ std::string QueryCommand::getCommandName() const { return "query"; }
 
 void QueryCommand::toStream(std::ostream& out,
                             int toDepth,
-
                             size_t dag,
                             OutputLanguage language) const
 {
@@ -579,7 +577,8 @@ DeclareSygusVarCommand::DeclareSygusVarCommand(const std::string& id,
 api::Term DeclareSygusVarCommand::getVar() const { return d_var; }
 api::Sort DeclareSygusVarCommand::getSort() const { return d_sort; }
 
-void DeclareSygusVarCommand::invoke(api::Solver* solver)
+void DeclareSygusVarCommand::invoke(api::Solver* solver,
+                                    parser::SymbolManager* sm)
 {
   d_commandStatus = CommandSuccess::instance();
 }
@@ -596,7 +595,6 @@ std::string DeclareSygusVarCommand::getCommandName() const
 
 void DeclareSygusVarCommand::toStream(std::ostream& out,
                                       int toDepth,
-
                                       size_t dag,
                                       OutputLanguage language) const
 {
@@ -635,7 +633,7 @@ bool SynthFunCommand::isInv() const { return d_isInv; }
 
 const api::Grammar* SynthFunCommand::getGrammar() const { return d_grammar; }
 
-void SynthFunCommand::invoke(api::Solver* solver)
+void SynthFunCommand::invoke(api::Solver* solver, parser::SymbolManager* sm)
 {
   d_commandStatus = CommandSuccess::instance();
 }
@@ -653,7 +651,6 @@ std::string SynthFunCommand::getCommandName() const
 
 void SynthFunCommand::toStream(std::ostream& out,
                                int toDepth,
-
                                size_t dag,
                                OutputLanguage language) const
 {
@@ -675,7 +672,8 @@ SygusConstraintCommand::SygusConstraintCommand(const api::Term& t) : d_term(t)
 {
 }
 
-void SygusConstraintCommand::invoke(api::Solver* solver)
+void SygusConstraintCommand::invoke(api::Solver* solver,
+                                    parser::SymbolManager* sm)
 {
   try
   {
@@ -702,7 +700,6 @@ std::string SygusConstraintCommand::getCommandName() const
 
 void SygusConstraintCommand::toStream(std::ostream& out,
                                       int toDepth,
-
                                       size_t dag,
                                       OutputLanguage language) const
 {
@@ -727,7 +724,8 @@ SygusInvConstraintCommand::SygusInvConstraintCommand(const api::Term& inv,
 {
 }
 
-void SygusInvConstraintCommand::invoke(api::Solver* solver)
+void SygusInvConstraintCommand::invoke(api::Solver* solver,
+                                       parser::SymbolManager* sm)
 {
   try
   {
@@ -758,7 +756,6 @@ std::string SygusInvConstraintCommand::getCommandName() const
 
 void SygusInvConstraintCommand::toStream(std::ostream& out,
                                          int toDepth,
-
                                          size_t dag,
                                          OutputLanguage language) const
 {
@@ -774,7 +771,7 @@ void SygusInvConstraintCommand::toStream(std::ostream& out,
 /* class CheckSynthCommand                                                    */
 /* -------------------------------------------------------------------------- */
 
-void CheckSynthCommand::invoke(api::Solver* solver)
+void CheckSynthCommand::invoke(api::Solver* solver, parser::SymbolManager* sm)
 {
   try
   {
@@ -832,7 +829,6 @@ std::string CheckSynthCommand::getCommandName() const { return "check-synth"; }
 
 void CheckSynthCommand::toStream(std::ostream& out,
                                  int toDepth,
-
                                  size_t dag,
                                  OutputLanguage language) const
 {
@@ -843,7 +839,7 @@ void CheckSynthCommand::toStream(std::ostream& out,
 /* class ResetCommand                                                         */
 /* -------------------------------------------------------------------------- */
 
-void ResetCommand::invoke(api::Solver* solver)
+void ResetCommand::invoke(api::Solver* solver, parser::SymbolManager* sm)
 {
   try
   {
@@ -861,7 +857,6 @@ std::string ResetCommand::getCommandName() const { return "reset"; }
 
 void ResetCommand::toStream(std::ostream& out,
                             int toDepth,
-
                             size_t dag,
                             OutputLanguage language) const
 {
@@ -872,7 +867,8 @@ void ResetCommand::toStream(std::ostream& out,
 /* class ResetAssertionsCommand                                               */
 /* -------------------------------------------------------------------------- */
 
-void ResetAssertionsCommand::invoke(api::Solver* solver)
+void ResetAssertionsCommand::invoke(api::Solver* solver,
+                                    parser::SymbolManager* sm)
 {
   try
   {
@@ -897,7 +893,6 @@ std::string ResetAssertionsCommand::getCommandName() const
 
 void ResetAssertionsCommand::toStream(std::ostream& out,
                                       int toDepth,
-
                                       size_t dag,
                                       OutputLanguage language) const
 {
@@ -908,7 +903,7 @@ void ResetAssertionsCommand::toStream(std::ostream& out,
 /* class QuitCommand                                                          */
 /* -------------------------------------------------------------------------- */
 
-void QuitCommand::invoke(api::Solver* solver)
+void QuitCommand::invoke(api::Solver* solver, parser::SymbolManager* sm)
 {
   Dump("benchmark") << *this;
   d_commandStatus = CommandSuccess::instance();
@@ -919,7 +914,6 @@ std::string QuitCommand::getCommandName() const { return "exit"; }
 
 void QuitCommand::toStream(std::ostream& out,
                            int toDepth,
-
                            size_t dag,
                            OutputLanguage language) const
 {
@@ -932,7 +926,7 @@ void QuitCommand::toStream(std::ostream& out,
 
 CommentCommand::CommentCommand(std::string comment) : d_comment(comment) {}
 std::string CommentCommand::getComment() const { return d_comment; }
-void CommentCommand::invoke(api::Solver* solver)
+void CommentCommand::invoke(api::Solver* solver, parser::SymbolManager* sm)
 {
   Dump("benchmark") << *this;
   d_commandStatus = CommandSuccess::instance();
@@ -943,7 +937,6 @@ std::string CommentCommand::getCommandName() const { return "comment"; }
 
 void CommentCommand::toStream(std::ostream& out,
                               int toDepth,
-
                               size_t dag,
                               OutputLanguage language) const
 {
@@ -969,11 +962,11 @@ void CommandSequence::addCommand(Command* cmd)
 }
 
 void CommandSequence::clear() { d_commandSequence.clear(); }
-void CommandSequence::invoke(api::Solver* solver)
+void CommandSequence::invoke(api::Solver* solver, parser::SymbolManager* sm)
 {
   for (; d_index < d_commandSequence.size(); ++d_index)
   {
-    d_commandSequence[d_index]->invoke(solver);
+    d_commandSequence[d_index]->invoke(solver, sm);
     if (!d_commandSequence[d_index]->ok())
     {
       // abort execution
@@ -987,11 +980,13 @@ void CommandSequence::invoke(api::Solver* solver)
   d_commandStatus = CommandSuccess::instance();
 }
 
-void CommandSequence::invoke(api::Solver* solver, std::ostream& out)
+void CommandSequence::invoke(api::Solver* solver,
+                             parser::SymbolManager* sm,
+                             std::ostream& out)
 {
   for (; d_index < d_commandSequence.size(); ++d_index)
   {
-    d_commandSequence[d_index]->invoke(solver, out);
+    d_commandSequence[d_index]->invoke(solver, sm, out);
     if (!d_commandSequence[d_index]->ok())
     {
       // abort execution
@@ -1040,7 +1035,6 @@ std::string CommandSequence::getCommandName() const { return "sequence"; }
 
 void CommandSequence::toStream(std::ostream& out,
                                int toDepth,
-
                                size_t dag,
                                OutputLanguage language) const
 {
@@ -1054,7 +1048,6 @@ void CommandSequence::toStream(std::ostream& out,
 
 void DeclarationSequence::toStream(std::ostream& out,
                                    int toDepth,
-
                                    size_t dag,
                                    OutputLanguage language) const
 {
@@ -1103,7 +1096,8 @@ void DeclareFunctionCommand::setPrintInModel(bool p)
   d_printInModelSetByUser = true;
 }
 
-void DeclareFunctionCommand::invoke(api::Solver* solver)
+void DeclareFunctionCommand::invoke(api::Solver* solver,
+                                    parser::SymbolManager* sm)
 {
   d_commandStatus = CommandSuccess::instance();
 }
@@ -1124,7 +1118,6 @@ std::string DeclareFunctionCommand::getCommandName() const
 
 void DeclareFunctionCommand::toStream(std::ostream& out,
                                       int toDepth,
-
                                       size_t dag,
                                       OutputLanguage language) const
 {
@@ -1145,7 +1138,7 @@ DeclareSortCommand::DeclareSortCommand(const std::string& id,
 
 size_t DeclareSortCommand::getArity() const { return d_arity; }
 api::Sort DeclareSortCommand::getSort() const { return d_sort; }
-void DeclareSortCommand::invoke(api::Solver* solver)
+void DeclareSortCommand::invoke(api::Solver* solver, parser::SymbolManager* sm)
 {
   d_commandStatus = CommandSuccess::instance();
 }
@@ -1162,7 +1155,6 @@ std::string DeclareSortCommand::getCommandName() const
 
 void DeclareSortCommand::toStream(std::ostream& out,
                                   int toDepth,
-
                                   size_t dag,
                                   OutputLanguage language) const
 {
@@ -1192,7 +1184,7 @@ const std::vector<api::Sort>& DefineSortCommand::getParameters() const
 }
 
 api::Sort DefineSortCommand::getSort() const { return d_sort; }
-void DefineSortCommand::invoke(api::Solver* solver)
+void DefineSortCommand::invoke(api::Solver* solver, parser::SymbolManager* sm)
 {
   d_commandStatus = CommandSuccess::instance();
 }
@@ -1206,7 +1198,6 @@ std::string DefineSortCommand::getCommandName() const { return "define-sort"; }
 
 void DefineSortCommand::toStream(std::ostream& out,
                                  int toDepth,
-
                                  size_t dag,
                                  OutputLanguage language) const
 {
@@ -1254,7 +1245,8 @@ const std::vector<api::Term>& DefineFunctionCommand::getFormals() const
 }
 
 api::Term DefineFunctionCommand::getFormula() const { return d_formula; }
-void DefineFunctionCommand::invoke(api::Solver* solver)
+void DefineFunctionCommand::invoke(api::Solver* solver,
+                                   parser::SymbolManager* sm)
 {
   try
   {
@@ -1283,7 +1275,6 @@ std::string DefineFunctionCommand::getCommandName() const
 
 void DefineFunctionCommand::toStream(std::ostream& out,
                                      int toDepth,
-
                                      size_t dag,
                                      OutputLanguage language) const
 {
@@ -1310,9 +1301,10 @@ DefineNamedFunctionCommand::DefineNamedFunctionCommand(
 {
 }
 
-void DefineNamedFunctionCommand::invoke(api::Solver* solver)
+void DefineNamedFunctionCommand::invoke(api::Solver* solver,
+                                        parser::SymbolManager* sm)
 {
-  this->DefineFunctionCommand::invoke(solver);
+  this->DefineFunctionCommand::invoke(solver, sm);
   if (!d_func.isNull() && d_func.getSort().isBoolean())
   {
     solver->getSmtEngine()->addToAssignment(d_func.getExpr());
@@ -1328,7 +1320,6 @@ Command* DefineNamedFunctionCommand::clone() const
 
 void DefineNamedFunctionCommand::toStream(std::ostream& out,
                                           int toDepth,
-
                                           size_t dag,
                                           OutputLanguage language) const
 {
@@ -1383,7 +1374,8 @@ const std::vector<api::Term>& DefineFunctionRecCommand::getFormulas() const
   return d_formulas;
 }
 
-void DefineFunctionRecCommand::invoke(api::Solver* solver)
+void DefineFunctionRecCommand::invoke(api::Solver* solver,
+                                      parser::SymbolManager* sm)
 {
   try
   {
@@ -1408,7 +1400,6 @@ std::string DefineFunctionRecCommand::getCommandName() const
 
 void DefineFunctionRecCommand::toStream(std::ostream& out,
                                         int toDepth,
-
                                         size_t dag,
                                         OutputLanguage language) const
 {
@@ -1425,9 +1416,43 @@ void DefineFunctionRecCommand::toStream(std::ostream& out,
       formals,
       api::termVectorToNodes(d_formulas));
 }
+/* -------------------------------------------------------------------------- */
+/* class DeclareHeapCommand                                                   */
+/* -------------------------------------------------------------------------- */
+DeclareHeapCommand::DeclareHeapCommand(api::Sort locSort, api::Sort dataSort)
+    : d_locSort(locSort), d_dataSort(dataSort)
+{
+}
+
+api::Sort DeclareHeapCommand::getLocationSort() const { return d_locSort; }
+api::Sort DeclareHeapCommand::getDataSort() const { return d_dataSort; }
+
+void DeclareHeapCommand::invoke(api::Solver* solver, parser::SymbolManager* sm)
+{
+  solver->declareSeparationHeap(d_locSort, d_dataSort);
+}
+
+Command* DeclareHeapCommand::clone() const
+{
+  return new DeclareHeapCommand(d_locSort, d_dataSort);
+}
+
+std::string DeclareHeapCommand::getCommandName() const
+{
+  return "declare-heap";
+}
+
+void DeclareHeapCommand::toStream(std::ostream& out,
+                                  int toDepth,
+                                  size_t dag,
+                                  OutputLanguage language) const
+{
+  Printer::getPrinter(language)->toStreamCmdDeclareHeap(
+      out, d_locSort.getTypeNode(), d_dataSort.getTypeNode());
+}
 
 /* -------------------------------------------------------------------------- */
-/* class SetUserAttribute                                                     */
+/* class SetUserAttributeCommand                                              */
 /* -------------------------------------------------------------------------- */
 
 SetUserAttributeCommand::SetUserAttributeCommand(
@@ -1460,7 +1485,8 @@ SetUserAttributeCommand::SetUserAttributeCommand(const std::string& attr,
 {
 }
 
-void SetUserAttributeCommand::invoke(api::Solver* solver)
+void SetUserAttributeCommand::invoke(api::Solver* solver,
+                                     parser::SymbolManager* sm)
 {
   try
   {
@@ -1492,7 +1518,6 @@ std::string SetUserAttributeCommand::getCommandName() const
 
 void SetUserAttributeCommand::toStream(std::ostream& out,
                                        int toDepth,
-
                                        size_t dag,
                                        OutputLanguage language) const
 {
@@ -1506,7 +1531,7 @@ void SetUserAttributeCommand::toStream(std::ostream& out,
 
 SimplifyCommand::SimplifyCommand(api::Term term) : d_term(term) {}
 api::Term SimplifyCommand::getTerm() const { return d_term; }
-void SimplifyCommand::invoke(api::Solver* solver)
+void SimplifyCommand::invoke(api::Solver* solver, parser::SymbolManager* sm)
 {
   try
   {
@@ -1547,7 +1572,6 @@ std::string SimplifyCommand::getCommandName() const { return "simplify"; }
 
 void SimplifyCommand::toStream(std::ostream& out,
                                int toDepth,
-
                                size_t dag,
                                OutputLanguage language) const
 {
@@ -1574,7 +1598,7 @@ const std::vector<api::Term>& GetValueCommand::getTerms() const
 {
   return d_terms;
 }
-void GetValueCommand::invoke(api::Solver* solver)
+void GetValueCommand::invoke(api::Solver* solver, parser::SymbolManager* sm)
 {
   try
   {
@@ -1628,7 +1652,6 @@ std::string GetValueCommand::getCommandName() const { return "get-value"; }
 
 void GetValueCommand::toStream(std::ostream& out,
                                int toDepth,
-
                                size_t dag,
                                OutputLanguage language) const
 {
@@ -1641,7 +1664,8 @@ void GetValueCommand::toStream(std::ostream& out,
 /* -------------------------------------------------------------------------- */
 
 GetAssignmentCommand::GetAssignmentCommand() {}
-void GetAssignmentCommand::invoke(api::Solver* solver)
+void GetAssignmentCommand::invoke(api::Solver* solver,
+                                  parser::SymbolManager* sm)
 {
   try
   {
@@ -1700,7 +1724,6 @@ std::string GetAssignmentCommand::getCommandName() const
 
 void GetAssignmentCommand::toStream(std::ostream& out,
                                     int toDepth,
-
                                     size_t dag,
                                     OutputLanguage language) const
 {
@@ -1712,7 +1735,7 @@ void GetAssignmentCommand::toStream(std::ostream& out,
 /* -------------------------------------------------------------------------- */
 
 GetModelCommand::GetModelCommand() : d_result(nullptr) {}
-void GetModelCommand::invoke(api::Solver* solver)
+void GetModelCommand::invoke(api::Solver* solver, parser::SymbolManager* sm)
 {
   try
   {
@@ -1762,7 +1785,6 @@ std::string GetModelCommand::getCommandName() const { return "get-model"; }
 
 void GetModelCommand::toStream(std::ostream& out,
                                int toDepth,
-
                                size_t dag,
                                OutputLanguage language) const
 {
@@ -1774,7 +1796,7 @@ void GetModelCommand::toStream(std::ostream& out,
 /* -------------------------------------------------------------------------- */
 
 BlockModelCommand::BlockModelCommand() {}
-void BlockModelCommand::invoke(api::Solver* solver)
+void BlockModelCommand::invoke(api::Solver* solver, parser::SymbolManager* sm)
 {
   try
   {
@@ -1805,7 +1827,6 @@ std::string BlockModelCommand::getCommandName() const { return "block-model"; }
 
 void BlockModelCommand::toStream(std::ostream& out,
                                  int toDepth,
-
                                  size_t dag,
                                  OutputLanguage language) const
 {
@@ -1829,7 +1850,8 @@ const std::vector<api::Term>& BlockModelValuesCommand::getTerms() const
 {
   return d_terms;
 }
-void BlockModelValuesCommand::invoke(api::Solver* solver)
+void BlockModelValuesCommand::invoke(api::Solver* solver,
+                                     parser::SymbolManager* sm)
 {
   try
   {
@@ -1863,7 +1885,6 @@ std::string BlockModelValuesCommand::getCommandName() const
 
 void BlockModelValuesCommand::toStream(std::ostream& out,
                                        int toDepth,
-
                                        size_t dag,
                                        OutputLanguage language) const
 {
@@ -1876,7 +1897,7 @@ void BlockModelValuesCommand::toStream(std::ostream& out,
 /* -------------------------------------------------------------------------- */
 
 GetProofCommand::GetProofCommand() {}
-void GetProofCommand::invoke(api::Solver* solver)
+void GetProofCommand::invoke(api::Solver* solver, parser::SymbolManager* sm)
 {
   Unimplemented() << "Unimplemented get-proof\n";
 }
@@ -1891,7 +1912,6 @@ std::string GetProofCommand::getCommandName() const { return "get-proof"; }
 
 void GetProofCommand::toStream(std::ostream& out,
                                int toDepth,
-
                                size_t dag,
                                OutputLanguage language) const
 {
@@ -1903,7 +1923,8 @@ void GetProofCommand::toStream(std::ostream& out,
 /* -------------------------------------------------------------------------- */
 
 GetInstantiationsCommand::GetInstantiationsCommand() : d_solver(nullptr) {}
-void GetInstantiationsCommand::invoke(api::Solver* solver)
+void GetInstantiationsCommand::invoke(api::Solver* solver,
+                                      parser::SymbolManager* sm)
 {
   try
   {
@@ -1944,7 +1965,6 @@ std::string GetInstantiationsCommand::getCommandName() const
 
 void GetInstantiationsCommand::toStream(std::ostream& out,
                                         int toDepth,
-
                                         size_t dag,
                                         OutputLanguage language) const
 {
@@ -1956,7 +1976,8 @@ void GetInstantiationsCommand::toStream(std::ostream& out,
 /* -------------------------------------------------------------------------- */
 
 GetSynthSolutionCommand::GetSynthSolutionCommand() : d_solver(nullptr) {}
-void GetSynthSolutionCommand::invoke(api::Solver* solver)
+void GetSynthSolutionCommand::invoke(api::Solver* solver,
+                                     parser::SymbolManager* sm)
 {
   try
   {
@@ -1996,7 +2017,6 @@ std::string GetSynthSolutionCommand::getCommandName() const
 
 void GetSynthSolutionCommand::toStream(std::ostream& out,
                                        int toDepth,
-
                                        size_t dag,
                                        OutputLanguage language) const
 {
@@ -2027,7 +2047,7 @@ const api::Grammar* GetInterpolCommand::getGrammar() const
 
 api::Term GetInterpolCommand::getResult() const { return d_result; }
 
-void GetInterpolCommand::invoke(api::Solver* solver)
+void GetInterpolCommand::invoke(api::Solver* solver, parser::SymbolManager* sm)
 {
   try
   {
@@ -2086,7 +2106,6 @@ std::string GetInterpolCommand::getCommandName() const
 
 void GetInterpolCommand::toStream(std::ostream& out,
                                   int toDepth,
-
                                   size_t dag,
                                   OutputLanguage language) const
 {
@@ -2119,7 +2138,7 @@ const api::Grammar* GetAbductCommand::getGrammar() const
 std::string GetAbductCommand::getAbductName() const { return d_name; }
 api::Term GetAbductCommand::getResult() const { return d_result; }
 
-void GetAbductCommand::invoke(api::Solver* solver)
+void GetAbductCommand::invoke(api::Solver* solver, parser::SymbolManager* sm)
 {
   try
   {
@@ -2172,7 +2191,6 @@ std::string GetAbductCommand::getCommandName() const { return "get-abduct"; }
 
 void GetAbductCommand::toStream(std::ostream& out,
                                 int toDepth,
-
                                 size_t dag,
                                 OutputLanguage language) const
 {
@@ -2196,7 +2214,8 @@ GetQuantifierEliminationCommand::GetQuantifierEliminationCommand(
 
 api::Term GetQuantifierEliminationCommand::getTerm() const { return d_term; }
 bool GetQuantifierEliminationCommand::getDoFull() const { return d_doFull; }
-void GetQuantifierEliminationCommand::invoke(api::Solver* solver)
+void GetQuantifierEliminationCommand::invoke(api::Solver* solver,
+                                             parser::SymbolManager* sm)
 {
   try
   {
@@ -2248,7 +2267,6 @@ std::string GetQuantifierEliminationCommand::getCommandName() const
 
 void GetQuantifierEliminationCommand::toStream(std::ostream& out,
                                                int toDepth,
-
                                                size_t dag,
                                                OutputLanguage language) const
 {
@@ -2262,7 +2280,8 @@ void GetQuantifierEliminationCommand::toStream(std::ostream& out,
 
 GetUnsatAssumptionsCommand::GetUnsatAssumptionsCommand() {}
 
-void GetUnsatAssumptionsCommand::invoke(api::Solver* solver)
+void GetUnsatAssumptionsCommand::invoke(api::Solver* solver,
+                                        parser::SymbolManager* sm)
 {
   try
   {
@@ -2311,7 +2330,6 @@ std::string GetUnsatAssumptionsCommand::getCommandName() const
 
 void GetUnsatAssumptionsCommand::toStream(std::ostream& out,
                                           int toDepth,
-
                                           size_t dag,
                                           OutputLanguage language) const
 {
@@ -2323,7 +2341,7 @@ void GetUnsatAssumptionsCommand::toStream(std::ostream& out,
 /* -------------------------------------------------------------------------- */
 
 GetUnsatCoreCommand::GetUnsatCoreCommand() {}
-void GetUnsatCoreCommand::invoke(api::Solver* solver)
+void GetUnsatCoreCommand::invoke(api::Solver* solver, parser::SymbolManager* sm)
 {
   try
   {
@@ -2377,7 +2395,6 @@ std::string GetUnsatCoreCommand::getCommandName() const
 
 void GetUnsatCoreCommand::toStream(std::ostream& out,
                                    int toDepth,
-
                                    size_t dag,
                                    OutputLanguage language) const
 {
@@ -2389,7 +2406,8 @@ void GetUnsatCoreCommand::toStream(std::ostream& out,
 /* -------------------------------------------------------------------------- */
 
 GetAssertionsCommand::GetAssertionsCommand() {}
-void GetAssertionsCommand::invoke(api::Solver* solver)
+void GetAssertionsCommand::invoke(api::Solver* solver,
+                                  parser::SymbolManager* sm)
 {
   try
   {
@@ -2435,7 +2453,6 @@ std::string GetAssertionsCommand::getCommandName() const
 
 void GetAssertionsCommand::toStream(std::ostream& out,
                                     int toDepth,
-
                                     size_t dag,
                                     OutputLanguage language) const
 {
@@ -2456,7 +2473,8 @@ BenchmarkStatus SetBenchmarkStatusCommand::getStatus() const
   return d_status;
 }
 
-void SetBenchmarkStatusCommand::invoke(api::Solver* solver)
+void SetBenchmarkStatusCommand::invoke(api::Solver* solver,
+                                       parser::SymbolManager* sm)
 {
   try
   {
@@ -2483,7 +2501,6 @@ std::string SetBenchmarkStatusCommand::getCommandName() const
 
 void SetBenchmarkStatusCommand::toStream(std::ostream& out,
                                          int toDepth,
-
                                          size_t dag,
                                          OutputLanguage language) const
 {
@@ -2508,7 +2525,8 @@ SetBenchmarkLogicCommand::SetBenchmarkLogicCommand(std::string logic)
 }
 
 std::string SetBenchmarkLogicCommand::getLogic() const { return d_logic; }
-void SetBenchmarkLogicCommand::invoke(api::Solver* solver)
+void SetBenchmarkLogicCommand::invoke(api::Solver* solver,
+                                      parser::SymbolManager* sm)
 {
   try
   {
@@ -2533,7 +2551,6 @@ std::string SetBenchmarkLogicCommand::getCommandName() const
 
 void SetBenchmarkLogicCommand::toStream(std::ostream& out,
                                         int toDepth,
-
                                         size_t dag,
                                         OutputLanguage language) const
 {
@@ -2551,7 +2568,7 @@ SetInfoCommand::SetInfoCommand(std::string flag, const SExpr& sexpr)
 
 std::string SetInfoCommand::getFlag() const { return d_flag; }
 SExpr SetInfoCommand::getSExpr() const { return d_sexpr; }
-void SetInfoCommand::invoke(api::Solver* solver)
+void SetInfoCommand::invoke(api::Solver* solver, parser::SymbolManager* sm)
 {
   try
   {
@@ -2578,7 +2595,6 @@ std::string SetInfoCommand::getCommandName() const { return "set-info"; }
 
 void SetInfoCommand::toStream(std::ostream& out,
                               int toDepth,
-
                               size_t dag,
                               OutputLanguage language) const
 {
@@ -2591,7 +2607,7 @@ void SetInfoCommand::toStream(std::ostream& out,
 
 GetInfoCommand::GetInfoCommand(std::string flag) : d_flag(flag) {}
 std::string GetInfoCommand::getFlag() const { return d_flag; }
-void GetInfoCommand::invoke(api::Solver* solver)
+void GetInfoCommand::invoke(api::Solver* solver, parser::SymbolManager* sm)
 {
   try
   {
@@ -2645,7 +2661,6 @@ std::string GetInfoCommand::getCommandName() const { return "get-info"; }
 
 void GetInfoCommand::toStream(std::ostream& out,
                               int toDepth,
-
                               size_t dag,
                               OutputLanguage language) const
 {
@@ -2663,7 +2678,7 @@ SetOptionCommand::SetOptionCommand(std::string flag, const SExpr& sexpr)
 
 std::string SetOptionCommand::getFlag() const { return d_flag; }
 SExpr SetOptionCommand::getSExpr() const { return d_sexpr; }
-void SetOptionCommand::invoke(api::Solver* solver)
+void SetOptionCommand::invoke(api::Solver* solver, parser::SymbolManager* sm)
 {
   try
   {
@@ -2689,7 +2704,6 @@ std::string SetOptionCommand::getCommandName() const { return "set-option"; }
 
 void SetOptionCommand::toStream(std::ostream& out,
                                 int toDepth,
-
                                 size_t dag,
                                 OutputLanguage language) const
 {
@@ -2702,7 +2716,7 @@ void SetOptionCommand::toStream(std::ostream& out,
 
 GetOptionCommand::GetOptionCommand(std::string flag) : d_flag(flag) {}
 std::string GetOptionCommand::getFlag() const { return d_flag; }
-void GetOptionCommand::invoke(api::Solver* solver)
+void GetOptionCommand::invoke(api::Solver* solver, parser::SymbolManager* sm)
 {
   try
   {
@@ -2743,7 +2757,6 @@ std::string GetOptionCommand::getCommandName() const { return "get-option"; }
 
 void GetOptionCommand::toStream(std::ostream& out,
                                 int toDepth,
-
                                 size_t dag,
                                 OutputLanguage language) const
 {
@@ -2760,7 +2773,8 @@ SetExpressionNameCommand::SetExpressionNameCommand(api::Term term,
 {
 }
 
-void SetExpressionNameCommand::invoke(api::Solver* solver)
+void SetExpressionNameCommand::invoke(api::Solver* solver,
+                                      parser::SymbolManager* sm)
 {
   solver->getSmtEngine()->setExpressionName(d_term.getExpr(), d_name);
   d_commandStatus = CommandSuccess::instance();
@@ -2779,7 +2793,6 @@ std::string SetExpressionNameCommand::getCommandName() const
 
 void SetExpressionNameCommand::toStream(std::ostream& out,
                                         int toDepth,
-
                                         size_t dag,
                                         OutputLanguage language) const
 {
@@ -2809,7 +2822,8 @@ const std::vector<api::Sort>& DatatypeDeclarationCommand::getDatatypes() const
   return d_datatypes;
 }
 
-void DatatypeDeclarationCommand::invoke(api::Solver* solver)
+void DatatypeDeclarationCommand::invoke(api::Solver* solver,
+                                        parser::SymbolManager* sm)
 {
   d_commandStatus = CommandSuccess::instance();
 }
@@ -2826,7 +2840,6 @@ std::string DatatypeDeclarationCommand::getCommandName() const
 
 void DatatypeDeclarationCommand::toStream(std::ostream& out,
                                           int toDepth,
-
                                           size_t dag,
                                           OutputLanguage language) const
 {
