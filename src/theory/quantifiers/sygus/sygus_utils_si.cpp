@@ -296,7 +296,7 @@ Node SygusSiUtils::coerceSingleInvocation(const std::vector<Node>& fs, Node conj
     {
       return Node::null();
     }
-    for (const std::map<const Node, std::vector<Node>>& ca : conjArgs)
+    for (const std::pair<const Node, std::vector<Node>>& ca : conjArgs[c])
     {
       funs.insert(ca.first);
     }
