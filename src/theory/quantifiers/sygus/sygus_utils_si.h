@@ -43,15 +43,19 @@ class SygusSiUtils
    * @param ffs The subset of fs that appears freely in conj
    * @param args The arguments such that all occurrences of fs are applied to
    * exactly this list.
+   * @param reqBoundVar Whether we require that fs be applied to bound variables
+   * only.
    * @return true if conj is single invocation
    */
   static bool isSingleInvocation(const std::vector<Node>& fs,
                                  Node conj,
                                  std::map<Node, Node>& ffs,
-                                 std::vector<Node>& args);
+                                 std::vector<Node>& args,
+                                   bool reqBoundVar=true);
   static bool isSingleInvocation(const std::vector<Node>& fs,
                                  Node conj,
-                                 std::vector<Node>& args);
+                                 std::vector<Node>& args,
+                                   bool reqBoundVar=true);
   /**
    * Same as above, but where functions are allowed to take different arguments.
    * Functions that are applied to multiple arguments have an empty range.
@@ -60,11 +64,19 @@ class SygusSiUtils
    * @param args Mapping whose domain is a subset of fs and range for f are the
    * arguments f is applied to in conj. This is empty if f is applied to
    * multiple arguments
+   * @param reqBoundVar Whether we require that fs be applied to bound variables
+   * only.
+   * @param reqAllValid Whether we abort and return false if there are any
+   * functions that are applied to multiple arguments.
+   * @param true if reqAllValid is false, or if reqVal is true and all functions
+   * in fs are applied to at most one vector of arguments.
    */
 
-  static void getSingleInvocations(const std::vector<Node>& fs,
+  static bool getSingleInvocations(const std::vector<Node>& fs,
                                    Node conj,
-                                   std::map<Node, std::vector<Node>>& args);
+                                   std::map<Node, std::vector<Node>>& args,
+                                   bool reqBoundVar=true,
+                                   bool reqAllValid=true);
   /**
    * Partition the conjecture conj based on the functions-to-synthesize fs.
    * Sets cc and nc such that conj is equivalent to (and cc nc), cc contains
@@ -74,6 +86,10 @@ class SygusSiUtils
                                   Node conj,
                                   Node& cc,
                                   Node& nc);
+  /**
+   * Coerce single invocation
+   */
+  static Node coerceSingleInvocation(const std::vector<Node>& fs, Node conj);
 };
 
 }  // namespace quantifiers

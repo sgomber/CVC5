@@ -39,10 +39,27 @@ bool SygusSiUtils::areSameType(const std::vector<Node>& fs)
   return true;
 }
 
+bool addUniqueBoundVar(bool reqBoundVar, Node v, std::vector<Node>& args)
+{
+  if (reqBoundVar)
+  {
+    args.push_back(v);
+    return true;
+  }
+  else if (v.getKind()!=BOUND_VARIABLE || std::find(args.begin(), args.end(),v)!=args.end())
+  {
+    return false;
+  }
+  args.push_back(v);
+  return true;
+}
+
 bool SygusSiUtils::isSingleInvocation(const std::vector<Node>& fs,
                                       Node conj,
                                       std::map<Node, Node>& ffs,
-                                      std::vector<Node>& args)
+                                      std::vector<Node>& args,
+                                      bool reqBoundVar
+                                     )
 {
   if (fs.empty())
   {
@@ -94,12 +111,8 @@ bool SygusSiUtils::isSingleInvocation(const std::vector<Node>& fs,
             }
             else
             {
-              // not applied to bound variable
-              if (cur[i].getKind() != BOUND_VARIABLE)
-              {
-                return false;
-              }
-              args.push_back(cur[i]);
+              // take into account requirements of unique bound variable
+              addUniqueBoundVar(reqBoundVar, cur[i], args);
             }
           }
           // update the map
@@ -133,19 +146,23 @@ bool SygusSiUtils::isSingleInvocation(const std::vector<Node>& fs,
 
 bool SygusSiUtils::isSingleInvocation(const std::vector<Node>& fs,
                                       Node conj,
-                                      std::vector<Node>& args)
+                                      std::vector<Node>& args,
+                                      bool reqBoundVar)
 {
   std::map<Node, Node> ffs;
-  return isSingleInvocation(fs, conj, ffs, args);
+  return isSingleInvocation(fs, conj, ffs, args, reqBoundVar);
 }
 
-void SygusSiUtils::getSingleInvocations(const std::vector<Node>& fs,
+bool SygusSiUtils::getSingleInvocations(const std::vector<Node>& fs,
                                         Node conj,
-                                        std::map<Node, std::vector<Node>>& args)
+                                        std::map<Node, std::vector<Node>>& args,
+                                      bool reqBoundVar,
+                                        bool reqAllValid
+                                       )
 {
   if (fs.empty())
   {
-    return;
+    return true;
   }
   std::map<Node, std::vector<Node>>::iterator ita;
   std::unordered_set<TNode, TNodeHashFunction> visited;
@@ -167,6 +184,10 @@ void SygusSiUtils::getSingleInvocations(const std::vector<Node>& fs,
       {
         // corner case of constant function-to-synthesize or higher-order
         // instance, clear to ensure empty range
+        if (reqAllValid && cur.getType().isFunction())
+        {
+          return false;
+        }
         args[cur].clear();
       }
       else if (cur.getKind() == APPLY_UF)
@@ -189,19 +210,26 @@ void SygusSiUtils::getSingleInvocations(const std::vector<Node>& fs,
                 if (cur[i] != ita->second[i])
                 {
                   // different arguments
+                  if (reqAllValid)
+                  {
+                    return false;
+                  }
                   ita->second.clear();
                   break;
                 }
               }
               else
               {
-                // not applied to bound variable
-                if (cur[i].getKind() != BOUND_VARIABLE)
+                // check applied to unique bound variable
+                if (!addUniqueBoundVar(reqBoundVar, cur[i], args[op]))
                 {
+                  if (reqAllValid)
+                  {
+                    return false;
+                  }
                   args[op].clear();
                   break;
                 }
-                args[op].push_back(cur[i]);
               }
             }
           }
@@ -210,6 +238,7 @@ void SygusSiUtils::getSingleInvocations(const std::vector<Node>& fs,
       visit.insert(visit.end(), cur.begin(), cur.end());
     }
   } while (!visit.empty());
+  return true;
 }
 
 void decomposeAnd(Node conj, std::vector<Node>& c)
@@ -249,6 +278,27 @@ void SygusSiUtils::partitionConjecture(const std::vector<Node>& fs,
   NodeManager* nm = NodeManager::currentNM();
   cc = nm->mkAnd(ccc);
   nc = nm->mkAnd(ncc);
+}
+
+Node SygusSiUtils::coerceSingleInvocation(const std::vector<Node>& fs, Node conj)
+{
+  std::vector<Node> vars;
+  Node origConj = SygusUtils::decomposeConjectureBody(conj, vars);
+  std::vector<Node> oconj;
+  decomposeAnd(origConj, oconj);
+  // for each conjunction, we get the single invocations for each function
+  std::map<Node, std::map<Node, std::vector<Node>> > conjArgs;
+  for (const Node& c : oconj)
+  {
+    if (!getSingleInvocations(fs,c,conjArgs[c], false, true))
+    {
+      return Node::null();
+    }
+  }
+  
+  
+  
+  return conj;
 }
 
 }  // namespace quantifiers

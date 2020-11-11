@@ -97,7 +97,12 @@ Node SygusQePreproc::preprocess(Node q)
   {
     // more generally, need all single invocations
     std::map<Node, std::vector<Node>> rargs;
-    SygusSiUtils::getSingleInvocations(allf, q[1], rargs);
+    if (!SygusSiUtils::getSingleInvocations(allf, q[1], rargs))
+    {
+      Trace("sygus-qep") << "...remaining functions fail single invocation."
+                         << std::endl;
+      return Node::null();
+    }
     if (!getRemainingFunctions(unsf, maxf, remf, xf, args, rargs))
     {
       // arity mismatch for functions, we are done
