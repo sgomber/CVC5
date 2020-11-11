@@ -288,11 +288,17 @@ Node SygusSiUtils::coerceSingleInvocation(const std::vector<Node>& fs, Node conj
   decomposeAnd(origConj, oconj);
   // for each conjunction, we get the single invocations for each function
   std::map<Node, std::map<Node, std::vector<Node>> > conjArgs;
+  // all functions
+  std::unordered_set<Node, NodeHashFunction> funs;
   for (const Node& c : oconj)
   {
     if (!getSingleInvocations(fs,c,conjArgs[c], false, true))
     {
       return Node::null();
+    }
+    for (const std::map<const Node, std::vector<Node>>& ca : conjArgs)
+    {
+      funs.insert(ca.first);
     }
   }
   
