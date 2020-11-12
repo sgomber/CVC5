@@ -89,7 +89,8 @@ class SygusSiUtils
   /**
    * Coerce single invocation
    */
-  static Node coerceSingleInvocation(const std::vector<Node>& fs, Node conj);
+  static Node coerceSingleInvocation(const std::vector<Node>& fs, Node conj,
+                                   std::map<Node, std::vector<Node>>& args);
 };
 
 }  // namespace quantifiers

@@ -280,7 +280,8 @@ void SygusSiUtils::partitionConjecture(const std::vector<Node>& fs,
   nc = nm->mkAnd(ncc);
 }
 
-Node SygusSiUtils::coerceSingleInvocation(const std::vector<Node>& fs, Node conj)
+Node SygusSiUtils::coerceSingleInvocation(const std::vector<Node>& fs, Node conj,
+                                   std::map<Node, std::vector<Node>>& args)
 {
   std::vector<Node> vars;
   Node origConj = SygusUtils::decomposeConjectureBody(conj, vars);
@@ -304,7 +305,7 @@ Node SygusSiUtils::coerceSingleInvocation(const std::vector<Node>& fs, Node conj
   
   
   
-  return conj;
+  return Node::null();
 }
 
 }  // namespace quantifiers
