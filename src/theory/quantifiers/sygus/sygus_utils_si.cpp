@@ -186,7 +186,8 @@ bool SygusSiUtils::getSingleInvocations(const std::vector<Node>& fs,
         // instance, clear to ensure empty range
         if (reqAllValid && cur.getType().isFunction())
         {
-                    Trace("sygus-si-infer-debug") << "...get sii failed due to higher-order " << cur << std::endl;
+          Trace("sygus-si-infer-debug")
+              << "...get sii failed due to higher-order " << cur << std::endl;
           return false;
         }
         args[cur].clear();
@@ -213,7 +214,9 @@ bool SygusSiUtils::getSingleInvocations(const std::vector<Node>& fs,
                   // different arguments
                   if (reqAllValid)
                   {
-                    Trace("sygus-si-infer-debug") << "...get sii failed due to different invocation " << cur << std::endl;
+                    Trace("sygus-si-infer-debug")
+                        << "...get sii failed due to different invocation "
+                        << cur << std::endl;
                     return false;
                   }
                   ita->second.clear();
@@ -227,7 +230,8 @@ bool SygusSiUtils::getSingleInvocations(const std::vector<Node>& fs,
                 {
                   if (reqAllValid)
                   {
-                    Trace("sygus-si-infer-debug") << "...get sii failed due to base " << cur << std::endl;
+                    Trace("sygus-si-infer-debug")
+                        << "...get sii failed due to base " << cur << std::endl;
                     return false;
                   }
                   args[op].clear();
