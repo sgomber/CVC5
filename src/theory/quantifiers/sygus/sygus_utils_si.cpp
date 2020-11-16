@@ -283,24 +283,123 @@ void SygusSiUtils::partitionConjecture(const std::vector<Node>& fs,
 Node SygusSiUtils::coerceSingleInvocation(const std::vector<Node>& fs, Node conj,
                                    std::map<Node, std::vector<Node>>& args)
 {
+  NodeManager * nm = NodeManager::currentNM();
+  TypeNode intTn = nm->integerType();
+  
+  // Construct an SMT problem corresponding to whether we can make the problem
+  // be single invocation.
+  // Single invocation variables
+  std::map<TypeNode, std::vector<Node> > siVars;
+  // Formal argument list for each function
+  std::map<Node, std::vector<Node> > faVars;
+  // Mapping conjunctions, arguments to a term that the function is invoked
+  TypeNode htn = nm->mkFunctionType({intTn, intTn}, intTn);
+  Node h = nm->mkSkolem("h", htn);
+  // all terms
+  std::unordered_set<Node, NodeHashFunction> gs;
+  // the assertions
+  std::vector<Node> asserts;
+  
+  // compute the maximum type arities
+  std::map<TypeNode, size_t> maxTypeArgs;
+  for (const Node& f : fs)
+  {
+    TypeNode ftn = f.getType();
+    if (!ftn.isFunction())
+    {
+      continue;
+    }
+    std::map<TypeNode, size_t> farity;
+    std::vector<TypeNode> fas = ftn.getArgTypes();
+    for (const TypeNode& fa : fas)
+    {
+      farity[fa]++;
+      Node ka = nm->mkSkolem("a", intTn);
+      faVars[f].push_back(ka);
+    }
+    for (const std::pair<const TypeNode, size_t>& fa : farity)
+    {
+      if (fa.second>maxTypeArgs[fa.first])
+      {
+        maxTypeArgs[fa.first] = fa.second;
+      }
+    }
+    if (faVars[f].size()>1)
+    {
+      asserts.push_back(nm->mkNode(DISTINCT, faVars[f]));
+    }
+  }
+  // make the single invocation variables
+  for (const std::pair<const TypeNode, size_t>& mta : maxTypeArgs)
+  {
+    TypeNode tn = mta.first;
+    for(size_t i=0; i<mta.second; i++)
+    {
+      Node ks = nm->mkSkolem("s", intTn);
+      siVars[tn].push_back(ks);
+    }
+    if (siVars[tn].size()>1)
+    {
+      asserts.push_back(nm->mkNode(DISTINCT, siVars[tn]));
+    }
+  }
+  // subset
+  for (const Node& f : fs)
+  {
+    std::vector<Node>& fvs = faVars[f];
+    for (const Node& v : fvs)
+    {
+      std::vector<Node>& sitvs = siVars[v.getType()];
+      Assert (!sitvs.empty());
+      std::vector<Node> orChildren;
+      for (const Node& s : sitvs)
+      {
+        orChildren.push_back(v.eqNode(s));
+      }
+      Node orc = nm->mkOr(orChildren);
+      asserts.push_back(orc);
+    }
+  }
+  
+  // decompose to conjunctions
   std::vector<Node> vars;
   Node origConj = SygusUtils::decomposeConjectureBody(conj, vars);
   std::vector<Node> oconj;
   decomposeAnd(origConj, oconj);
   // for each conjunction, we get the single invocations for each function
-  std::map<Node, std::map<Node, std::vector<Node>> > conjArgs;
-  // all functions
-  std::unordered_set<Node, NodeHashFunction> funs;
-  for (const Node& c : oconj)
+  std::map<Node, std::map<Node, std::vector<Node>> > gArgs;
+  std::vector<Node> gcChildren;
+  for (size_t i=0, nconj = oconj.size(); i<nconj; i++)
   {
-    if (!getSingleInvocations(fs,c,conjArgs[c], false, true))
+    Node c = oconj[i];
+    Node conjid = nm->mkConst(Rational(i));
+    std::map<Node, std::vector<Node>>& gas = gArgs[c];
+    if (!getSingleInvocations(fs,c,gas, false, true))
     {
       return Node::null();
     }
-    for (const std::pair<const Node, std::vector<Node>>& ca : conjArgs[c])
+    for (const std::pair< const Node, std::vector<Node> >& ga : gas)
     {
-      funs.insert(ca.first);
+      std::vector<Node>& fvs = faVars[ga.first];
+      Assert (fvs.size()==ga.size());
+      for (size_t j=0, gasize = ga.second.size(); j<gasize; j++)
+      {
+        gs.insert(ga.second[j]);
+        Node happ = nm->mkNode(APPLY_UF, h, conjid, fvs[j]);
+        gcChildren.push_back(happ.eqNode(ga.second[j]));
+      }
     }
+  }
+  // conjuncts
+  Node gconstraint = nm->mkAnd(gcChildren);
+  asserts.push_back(gconstraint);
+  
+  // ground terms unique
+  if( gs.size()>1)
+  {
+    std::vector<Node> gvec{gs.begin(), gs.end()};
+    Node gdistinct = nm->mkNode(DISTINCT, gvec);
+    asserts.push_back(gdistinct);
   }
   
   
