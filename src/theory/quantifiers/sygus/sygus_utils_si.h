@@ -87,9 +87,9 @@ class SygusSiUtils
                                   Node& cc,
                                   Node& nc);
   /**
-   * 
+   *
    * Coerce single invocation.
-   * 
+   *
    * @param fs The functions to synthesize
    * @param conj The negated conjecture body
    * @param args The mapping from fs to the arguments they are applied to in
