@@ -17,6 +17,7 @@
 #include "expr/node_algorithm.h"
 #include "theory/quantifiers/single_inv_partition.h"
 #include "theory/quantifiers/sygus/sygus_utils.h"
+#include "theory/smt_engine_subsolver.h"
 
 using namespace CVC4::kind;
 
@@ -245,7 +246,7 @@ void decomposeAnd(Node conj, std::vector<Node>& c)
   if (conj.getKind() == AND)
   {
     // nested?
-    c.insert(c.end(), conj[0].begin(), conj[0].end());
+    c.insert(c.end(), conj.begin(), conj.end());
   }
   else
   {
@@ -284,20 +285,23 @@ Node SygusSiUtils::coerceSingleInvocation(
     Node conj,
     std::map<Node, std::vector<Node>>& args)
 {
+  Trace("sygus-si-infer") << "coerceSingleInvocation " << fs << " on " << conj << std::endl;
   NodeManager* nm = NodeManager::currentNM();
   TypeNode intTn = nm->integerType();
 
   // Construct an SMT problem corresponding to whether we can make the problem
   // be single invocation.
-  // Single invocation variables
-  std::map<TypeNode, std::vector<Node>> siVars;
   // Formal argument list for each function
-  std::map<Node, std::vector<Node>> faVars;
+  std::map<Node, std::map<TypeNode, std::vector<Node>>> ftypevars;
+  std::map<Node, std::vector<Node>> fvars;
   // Mapping conjunctions, arguments to a term that the function is invoked
-  TypeNode htn = nm->mkFunctionType({intTn, intTn}, intTn);
+  TypeNode htn = nm->mkFunctionType({intTn, intTn, intTn}, intTn);
   Node h = nm->mkSkolem("h", htn);
   // all terms
-  std::unordered_set<Node, NodeHashFunction> gs;
+  std::vector<Node> gs;
+  std::map<Node, size_t> gsId;
+  // ids per type
+  std::map<TypeNode, size_t> typeId;
   // the assertions
   std::vector<Node> asserts;
 
@@ -310,55 +314,50 @@ Node SygusSiUtils::coerceSingleInvocation(
     {
       continue;
     }
-    std::map<TypeNode, size_t> farity;
     std::vector<TypeNode> fas = ftn.getArgTypes();
+    std::map<TypeNode, std::vector<Node>>& ftvs = ftypevars[f];
+    std::vector<Node>& fvs = fvars[f];
     for (const TypeNode& fa : fas)
     {
-      farity[fa]++;
-      Node ka = nm->mkSkolem("a", intTn);
-      faVars[f].push_back(ka);
-    }
-    for (const std::pair<const TypeNode, size_t>& fa : farity)
-    {
-      if (fa.second > maxTypeArgs[fa.first])
+      // ensure we have assigned this type an ID
+      if (typeId.find(fa)==typeId.end())
       {
-        maxTypeArgs[fa.first] = fa.second;
+        size_t id = typeId.size();
+        typeId[fa] = id;
+      }
+      Node ka = nm->mkSkolem("a", intTn);
+      ftvs[fa].push_back(ka);
+      fvs.push_back(ka);
+    }
+    for (const std::pair<const TypeNode, std::vector<Node> >& fa : ftvs)
+    {
+      if (fa.second.size() > maxTypeArgs[fa.first])
+      {
+        maxTypeArgs[fa.first] = fa.second.size();
+      }
+      if (fa.second.size()>1)
+      {
+        Node fadistinct = nm->mkNode(DISTINCT, fa.second);
+        // ASSERT: distinct( a1 ... an ) for a1 ... an of same type T
+        asserts.push_back(fadistinct);
       }
     }
-    if (faVars[f].size() > 1)
-    {
-      asserts.push_back(nm->mkNode(DISTINCT, faVars[f]));
-    }
   }
-  // make the single invocation variables
-  for (const std::pair<const TypeNode, size_t>& mta : maxTypeArgs)
-  {
-    TypeNode tn = mta.first;
-    for (size_t i = 0; i < mta.second; i++)
-    {
-      Node ks = nm->mkSkolem("s", intTn);
-      siVars[tn].push_back(ks);
-    }
-    if (siVars[tn].size() > 1)
-    {
-      asserts.push_back(nm->mkNode(DISTINCT, siVars[tn]));
-    }
-  }
-  // subset
+  // all function arguments in the range of max type arguments
+  Node zero = nm->mkConst(Rational(0));
   for (const Node& f : fs)
   {
-    std::vector<Node>& fvs = faVars[f];
-    for (const Node& v : fvs)
+    std::map<TypeNode, std::vector<Node>>& ftvs = ftypevars[f];
+    for (const std::pair<const TypeNode, std::vector<Node>> ftvst : ftvs)
     {
-      std::vector<Node>& sitvs = siVars[v.getType()];
-      Assert(!sitvs.empty());
-      std::vector<Node> orChildren;
-      for (const Node& s : sitvs)
+      Assert(maxTypeArgs.find(ftvst.first)!=maxTypeArgs.end());
+      Node maxRange = nm->mkConst(Rational(maxTypeArgs[ftvst.first]));
+      for (const Node& v : ftvst.second)
       {
-        orChildren.push_back(v.eqNode(s));
+        // ASSERT: 0 <= ai < |maxTypeArgs(T)|
+        Node rangeConstraint = nm->mkNode(AND, nm->mkNode(GEQ, v, zero), nm->mkNode(LT, v, maxRange));
+        asserts.push_back(rangeConstraint);
       }
-      Node orc = nm->mkOr(orChildren);
-      asserts.push_back(orc);
     }
   }
 
@@ -367,43 +366,213 @@ Node SygusSiUtils::coerceSingleInvocation(
   Node origConj = SygusUtils::decomposeConjectureBody(conj, vars);
   std::vector<Node> oconj;
   decomposeAnd(origConj, oconj);
-  // for each conjunction, we get the single invocations for each function
-  std::map<Node, std::map<Node, std::vector<Node>>> gArgs;
-  std::vector<Node> gcChildren;
+  
+  // for each conjunction
+  std::map< size_t, std::map<Node, std::vector<Node>>> gArgs;
   for (size_t i = 0, nconj = oconj.size(); i < nconj; i++)
   {
     Node c = oconj[i];
-    Node conjid = nm->mkConst(Rational(i));
-    std::map<Node, std::vector<Node>>& gas = gArgs[c];
+    Node cid = nm->mkConst(Rational(i));
+    // get the single invocations for each function
+    std::map<Node, std::vector<Node>>& gas = gArgs[i];
     if (!getSingleInvocations(fs, c, gas, false, true))
     {
+      Trace("sygus-si-infer") << "...FAIL: conjunction " << c << " is not single invocation" << std::endl;
+      // conjunct by itself is not single invocation, fail
       return Node::null();
     }
+    // for each function invocation
     for (const std::pair<const Node, std::vector<Node>>& ga : gas)
     {
-      std::vector<Node>& fvs = faVars[ga.first];
-      Assert(fvs.size() == ga.size());
+      Node f = ga.first;
+      std::vector<Node>& fvs = fvars[f];
+      Assert(fvs.size() == ga.second.size());
       for (size_t j = 0, gasize = ga.second.size(); j < gasize; j++)
       {
-        gs.insert(ga.second[j]);
-        Node happ = nm->mkNode(APPLY_UF, h, conjid, fvs[j]);
-        gcChildren.push_back(happ.eqNode(ga.second[j]));
+        Node g = ga.second[j];
+        if (std::find(gs.begin(),gs.end(),g)==gs.end())
+        {
+          gsId[g] = gs.size();
+          gs.push_back(g);
+        }
+        Node gid = nm->mkConst(Rational(gsId[g]));
+        TypeNode fvtn = fvs[j].getType();
+        Assert (typeId.find(fvtn)!=typeId.end());
+        Node tid = nm->mkConst(Rational(typeId[fvtn]));        
+        Node happ = nm->mkNode(APPLY_UF, h, cid, tid, fvs[j]);
+        // ASSERT: h( typeId, conjId, ai ) = gId
+        asserts.push_back(happ.eqNode(gid));
       }
     }
   }
-  // conjuncts
-  Node gconstraint = nm->mkAnd(gcChildren);
-  asserts.push_back(gconstraint);
-
-  // ground terms unique
-  if (gs.size() > 1)
+  
+  Trace("sygus-si-infer") << "Query subsolver for inference of single invocation..." << std::endl;
+  // now query
+  std::unique_ptr<SmtEngine> siInferChecker;
+  initializeSubsolver(siInferChecker);
+  for (const Node& a : asserts)
   {
-    std::vector<Node> gvec{gs.begin(), gs.end()};
-    Node gdistinct = nm->mkNode(DISTINCT, gvec);
-    asserts.push_back(gdistinct);
+    Trace("sygus-si-infer") << "- assert : " << a << std::endl;
+    siInferChecker->assertFormula(a);
   }
-
-  return Node::null();
+  Trace("sygus-si-infer") << "Check sat..." << std::endl;
+  Result r = siInferChecker->checkSat();
+  Trace("sygus-si-infer") << "...got " << r << std::endl;
+  if (!r.asSatisfiabilityResult().isSat())
+  {
+    Trace("sygus-si-infer") << "...FAIL to solve constraints" << std::endl;
+    // failed to solve constraints
+    return Node::null();
+  }
+  
+  // make the single invocation variables
+  std::map<TypeNode, std::vector<Node>> siVars;
+  std::unordered_set<Node, NodeHashFunction> allSiVars;
+  for (const std::pair<const TypeNode, size_t> mt : maxTypeArgs)
+  {
+    for (size_t i=0; i<mt.second; i++)
+    {
+      std::stringstream ss;
+      ss << "s_" << i << "_" << mt.first;
+      Node s = nm->mkBoundVar(ss.str(), mt.first);
+      siVars[mt.first].push_back(s);
+      allSiVars.insert(s);
+    }
+    Trace("sygus-si-infer") << "Single invocation variables [" << mt.first << "]: " << siVars[mt.first] << std::endl;
+  }
+  // build the single invocations for each function
+  std::map<Node, Node> finvoke;
+  for (const Node& f : fs)
+  {
+    std::vector<Node>& fvs = fvars[f];
+    if (fvs.empty())
+    {
+      finvoke[f] = f;
+      continue;
+    }
+    std::vector<Node> iargs;
+    std::vector<Node>& fas = args[f];
+    iargs.push_back(f);
+    for (const Node& v : fvs)
+    {
+      Node mv = siInferChecker->getValue(v);
+      Assert (mv.getKind()==CONST_RATIONAL);
+      Integer mvi = mv.getConst<Rational>().getNumerator();
+      Assert (mvi.fitsUnsignedInt());
+      uint32_t index = mvi.toUnsignedInt();
+      std::vector<Node>& svars = siVars[v.getType()];
+      Assert (index<svars.size());
+      Node s = svars[index];
+      iargs.push_back(s);
+      fas.push_back(s);
+    }
+    finvoke[f] = nm->mkNode(APPLY_UF, iargs);
+    Trace("sygus-si-infer") << "Function invocation [" << f << "]: " << finvoke[f] << std::endl;
+  }
+  // process each conjunction
+  std::vector<Node> finalConj;
+  for (size_t i = 0, nconj = oconj.size(); i < nconj; i++)
+  {
+    Node c = oconj[i];
+    Trace("sygus-si-infer") << "Conjunct [" << i << "]: " << c << std::endl;
+    Node cid = nm->mkConst(Rational(i));
+    // replace single invocations
+    Subs siirep;
+    // for each function invocation, replace it with the original
+    std::map<Node, std::vector<Node>>& gas = gArgs[i];
+    std::unordered_set<Node, NodeHashFunction> sused;
+    for (const std::pair<const Node, std::vector<Node>>& ga : gas)
+    {
+      if (ga.second.empty())
+      {
+        continue;
+      }
+      Node f = ga.first;
+      std::vector<Node> fginvoke;
+      fginvoke.push_back(f);
+      fginvoke.insert(fginvoke.end(),ga.second.begin(), ga.second.end());
+      Node fg = nm->mkNode(APPLY_UF, fginvoke);
+      Assert (finvoke.find(f)!=finvoke.end());
+      Node fi = finvoke[f];
+      Trace("sygus-si-infer") << "...in conjunct " << i << ", we have invocation " << fg << " == " << fi << std::endl;
+      siirep.add(fg, fi);
+      // remember the variables we used
+      for (const Node& s : fi)
+      {
+        sused.insert(s);
+      }
+    }
+    // replace arguments by single invocation
+    Node fc = siirep.apply(c);
+    
+    // now get the assumptions
+    Subs sivrep;
+    std::vector<Node> assumptions;
+    for (const std::pair<const TypeNode, std::vector<Node>>& siv : siVars)
+    {
+      Assert (typeId.find(siv.first)!=typeId.end());
+      Node tid = nm->mkConst(Rational(typeId[siv.first]));
+      for (size_t j = 0, sivsize = siv.second.size(); j < sivsize; j++)
+      {
+        Node s = siv.second[j];
+        if (sused.find(s)==sused.end())
+        {
+          // not used
+          continue;
+        }
+        Node sivid = nm->mkConst(Rational(j));
+        Node happ = nm->mkNode(APPLY_UF, h, cid, tid, sivid);
+        Node mh = siInferChecker->getValue(happ);
+        Assert (mh.getKind()==CONST_RATIONAL);
+        Integer mhi = mh.getConst<Rational>().getNumerator();
+        Assert (mhi.fitsUnsignedInt());
+        uint32_t index = mhi.toUnsignedInt();
+        Assert (index<gs.size());
+        Node g = gs[index];
+        Assert (g.getType()==siv.first);
+        Trace("sygus-si-infer") << "...in conjunct " << i << ", we have argument " << s << " == " << g << std::endl;
+        Node eq = s.eqNode(g);
+        Node eqs = sivrep.apply(eq);
+        if (eqs[1].getKind()==BOUND_VARIABLE && allSiVars.find(eqs[1])==allSiVars.end())
+        {
+          TNode tv = eqs[1];
+          TNode ts = eqs[0];
+          fc = fc.substitute(tv, ts);
+          sivrep.add(eqs[1], eqs[0]);
+        }
+        else
+        {
+          assumptions.push_back(eqs.negate());
+        }
+      }
+    }
+    // apply entire substitution
+    fc = sivrep.apply(fc);
+    assumptions.push_back(fc);
+    fc = nm->mkOr(assumptions);
+    Trace("sygus-si-infer") << "Processed conjunct [" << i << "]: " << fc << std::endl;
+    finalConj.push_back(fc);
+  }
+  
+  Node fconj = nm->mkAnd(finalConj);
+  // get all free variables
+  std::unordered_set<Node, NodeHashFunction> ffvs;
+  expr::getFreeVariables(fconj, ffvs);
+  for (const Node& f : fs)
+  {
+    if (ffvs.find(f)!=ffvs.end())
+    {
+      ffvs.erase(f);
+    }
+  }
+  if (!ffvs.empty())
+  {
+    std::vector<Node> ffvv{ffvs.begin(), ffvs.end()};
+    fconj = nm->mkNode(FORALL, nm->mkNode(BOUND_VAR_LIST, ffvv), fconj);
+  }
+  fconj = fconj.notNode();
+  Trace("sygus-si-infer") << "Coerced conjecture: " << fconj << std::endl;
+  return fconj;
 }
 
 }  // namespace quantifiers
