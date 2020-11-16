@@ -46,7 +46,8 @@ bool addUniqueBoundVar(bool reqBoundVar, Node v, std::vector<Node>& args)
     args.push_back(v);
     return true;
   }
-  else if (v.getKind()!=BOUND_VARIABLE || std::find(args.begin(), args.end(),v)!=args.end())
+  else if (v.getKind() != BOUND_VARIABLE
+           || std::find(args.begin(), args.end(), v) != args.end())
   {
     return false;
   }
@@ -58,8 +59,7 @@ bool SygusSiUtils::isSingleInvocation(const std::vector<Node>& fs,
                                       Node conj,
                                       std::map<Node, Node>& ffs,
                                       std::vector<Node>& args,
-                                      bool reqBoundVar
-                                     )
+                                      bool reqBoundVar)
 {
   if (fs.empty())
   {
@@ -156,9 +156,8 @@ bool SygusSiUtils::isSingleInvocation(const std::vector<Node>& fs,
 bool SygusSiUtils::getSingleInvocations(const std::vector<Node>& fs,
                                         Node conj,
                                         std::map<Node, std::vector<Node>>& args,
-                                      bool reqBoundVar,
-                                        bool reqAllValid
-                                       )
+                                        bool reqBoundVar,
+                                        bool reqAllValid)
 {
   if (fs.empty())
   {
@@ -280,18 +279,20 @@ void SygusSiUtils::partitionConjecture(const std::vector<Node>& fs,
   nc = nm->mkAnd(ncc);
 }
 
-Node SygusSiUtils::coerceSingleInvocation(const std::vector<Node>& fs, Node conj,
-                                   std::map<Node, std::vector<Node>>& args)
+Node SygusSiUtils::coerceSingleInvocation(
+    const std::vector<Node>& fs,
+    Node conj,
+    std::map<Node, std::vector<Node>>& args)
 {
-  NodeManager * nm = NodeManager::currentNM();
+  NodeManager* nm = NodeManager::currentNM();
   TypeNode intTn = nm->integerType();
-  
+
   // Construct an SMT problem corresponding to whether we can make the problem
   // be single invocation.
   // Single invocation variables
-  std::map<TypeNode, std::vector<Node> > siVars;
+  std::map<TypeNode, std::vector<Node>> siVars;
   // Formal argument list for each function
-  std::map<Node, std::vector<Node> > faVars;
+  std::map<Node, std::vector<Node>> faVars;
   // Mapping conjunctions, arguments to a term that the function is invoked
   TypeNode htn = nm->mkFunctionType({intTn, intTn}, intTn);
   Node h = nm->mkSkolem("h", htn);
@@ -299,7 +300,7 @@ Node SygusSiUtils::coerceSingleInvocation(const std::vector<Node>& fs, Node conj
   std::unordered_set<Node, NodeHashFunction> gs;
   // the assertions
   std::vector<Node> asserts;
-  
+
   // compute the maximum type arities
   std::map<TypeNode, size_t> maxTypeArgs;
   for (const Node& f : fs)
@@ -319,12 +320,12 @@ Node SygusSiUtils::coerceSingleInvocation(const std::vector<Node>& fs, Node conj
     }
     for (const std::pair<const TypeNode, size_t>& fa : farity)
     {
-      if (fa.second>maxTypeArgs[fa.first])
+      if (fa.second > maxTypeArgs[fa.first])
       {
         maxTypeArgs[fa.first] = fa.second;
       }
     }
-    if (faVars[f].size()>1)
+    if (faVars[f].size() > 1)
     {
       asserts.push_back(nm->mkNode(DISTINCT, faVars[f]));
     }
@@ -333,12 +334,12 @@ Node SygusSiUtils::coerceSingleInvocation(const std::vector<Node>& fs, Node conj
   for (const std::pair<const TypeNode, size_t>& mta : maxTypeArgs)
   {
     TypeNode tn = mta.first;
-    for(size_t i=0; i<mta.second; i++)
+    for (size_t i = 0; i < mta.second; i++)
     {
       Node ks = nm->mkSkolem("s", intTn);
       siVars[tn].push_back(ks);
     }
-    if (siVars[tn].size()>1)
+    if (siVars[tn].size() > 1)
     {
       asserts.push_back(nm->mkNode(DISTINCT, siVars[tn]));
     }
@@ -350,7 +351,7 @@ Node SygusSiUtils::coerceSingleInvocation(const std::vector<Node>& fs, Node conj
     for (const Node& v : fvs)
     {
       std::vector<Node>& sitvs = siVars[v.getType()];
-      Assert (!sitvs.empty());
+      Assert(!sitvs.empty());
       std::vector<Node> orChildren;
       for (const Node& s : sitvs)
       {
@@ -360,29 +361,29 @@ Node SygusSiUtils::coerceSingleInvocation(const std::vector<Node>& fs, Node conj
       asserts.push_back(orc);
     }
   }
-  
+
   // decompose to conjunctions
   std::vector<Node> vars;
   Node origConj = SygusUtils::decomposeConjectureBody(conj, vars);
   std::vector<Node> oconj;
   decomposeAnd(origConj, oconj);
   // for each conjunction, we get the single invocations for each function
-  std::map<Node, std::map<Node, std::vector<Node>> > gArgs;
+  std::map<Node, std::map<Node, std::vector<Node>>> gArgs;
   std::vector<Node> gcChildren;
-  for (size_t i=0, nconj = oconj.size(); i<nconj; i++)
+  for (size_t i = 0, nconj = oconj.size(); i < nconj; i++)
   {
     Node c = oconj[i];
     Node conjid = nm->mkConst(Rational(i));
     std::map<Node, std::vector<Node>>& gas = gArgs[c];
-    if (!getSingleInvocations(fs,c,gas, false, true))
+    if (!getSingleInvocations(fs, c, gas, false, true))
     {
       return Node::null();
     }
-    for (const std::pair< const Node, std::vector<Node> >& ga : gas)
+    for (const std::pair<const Node, std::vector<Node>>& ga : gas)
     {
       std::vector<Node>& fvs = faVars[ga.first];
-      Assert (fvs.size()==ga.size());
-      for (size_t j=0, gasize = ga.second.size(); j<gasize; j++)
+      Assert(fvs.size() == ga.size());
+      for (size_t j = 0, gasize = ga.second.size(); j < gasize; j++)
       {
         gs.insert(ga.second[j]);
         Node happ = nm->mkNode(APPLY_UF, h, conjid, fvs[j]);
@@ -393,17 +394,15 @@ Node SygusSiUtils::coerceSingleInvocation(const std::vector<Node>& fs, Node conj
   // conjuncts
   Node gconstraint = nm->mkAnd(gcChildren);
   asserts.push_back(gconstraint);
-  
+
   // ground terms unique
-  if( gs.size()>1)
+  if (gs.size() > 1)
   {
     std::vector<Node> gvec{gs.begin(), gs.end()};
     Node gdistinct = nm->mkNode(DISTINCT, gvec);
     asserts.push_back(gdistinct);
   }
-  
-  
-  
+
   return Node::null();
 }
 

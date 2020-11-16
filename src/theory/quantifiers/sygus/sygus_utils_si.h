@@ -51,11 +51,11 @@ class SygusSiUtils
                                  Node conj,
                                  std::map<Node, Node>& ffs,
                                  std::vector<Node>& args,
-                                   bool reqBoundVar=true);
+                                 bool reqBoundVar = true);
   static bool isSingleInvocation(const std::vector<Node>& fs,
                                  Node conj,
                                  std::vector<Node>& args,
-                                   bool reqBoundVar=true);
+                                 bool reqBoundVar = true);
   /**
    * Same as above, but where functions are allowed to take different arguments.
    * Functions that are applied to multiple arguments have an empty range.
@@ -75,8 +75,8 @@ class SygusSiUtils
   static bool getSingleInvocations(const std::vector<Node>& fs,
                                    Node conj,
                                    std::map<Node, std::vector<Node>>& args,
-                                   bool reqBoundVar=true,
-                                   bool reqAllValid=true);
+                                   bool reqBoundVar = true,
+                                   bool reqAllValid = true);
   /**
    * Partition the conjecture conj based on the functions-to-synthesize fs.
    * Sets cc and nc such that conj is equivalent to (and cc nc), cc contains
@@ -89,8 +89,9 @@ class SygusSiUtils
   /**
    * Coerce single invocation
    */
-  static Node coerceSingleInvocation(const std::vector<Node>& fs, Node conj,
-                                   std::map<Node, std::vector<Node>>& args);
+  static Node coerceSingleInvocation(const std::vector<Node>& fs,
+                                     Node conj,
+                                     std::map<Node, std::vector<Node>>& args);
 };
 
 }  // namespace quantifiers
