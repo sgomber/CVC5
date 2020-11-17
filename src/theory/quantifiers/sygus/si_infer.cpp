@@ -34,8 +34,7 @@ Node SingleInvocationInference::coerceSingleInvocation(
   Trace("sygus-si-infer") << "coerceSingleInvocation " << fs << " on " << conj
                           << std::endl;
   // maybe it is already single invocation?
-                          
-                          
+
   NodeManager* nm = NodeManager::currentNM();
   TypeNode intTn = nm->integerType();
 
