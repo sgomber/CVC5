@@ -273,7 +273,7 @@ bool SygusSiUtils::getMaximalArityFunctions(
   }
   Assert(!maxf.empty());
   std::map<Node, std::vector<Node>>::const_iterator it = args.find(maxf[0]);
-  Assert (it!=args.end());
+  Assert(it != args.end());
   // take the first maximal arity function's arguments as reference
   maxArgs.insert(maxArgs.end(), it->second.begin(), it->second.end());
   // ensure that all invocations are a subset

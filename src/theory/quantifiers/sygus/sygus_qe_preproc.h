@@ -72,10 +72,10 @@ class SygusQePreproc
    * It should be the case that each variable in fargs is in targetArgs.
    */
   static Node getFunctionTransform(Node f,
-                             Subs& remf,
-                             Subs& xf,
-                             const std::vector<Node>& targetArgs,
-                             const std::vector<Node>& fargs);
+                                   Subs& remf,
+                                   Subs& xf,
+                                   const std::vector<Node>& targetArgs,
+                                   const std::vector<Node>& fargs);
   /** Make lambda app */
   static Node mkLambdaApp(const std::vector<Node>& vars,
                           Node f,

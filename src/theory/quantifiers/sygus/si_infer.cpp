@@ -34,18 +34,21 @@ Node SingleInvocationInference::coerceSingleInvocation(
 {
   Trace("sygus-si-infer") << "coerceSingleInvocation " << fs << " on " << conj
                           << std::endl;
-  Assert (!fs.empty());
+  Assert(!fs.empty());
   // maybe it is already single invocation?
   if (SygusSiUtils::getSingleInvocations(fs, conj, args))
   {
-    Trace("sygus-si-infer") << "...already in weak single invocation form" << std::endl;
+    Trace("sygus-si-infer")
+        << "...already in weak single invocation form" << std::endl;
     // single invocation, also need to ensure it is typed single invocation
     if (SygusSiUtils::getMaximalArityFunctions(args, maxf, maxArgs))
     {
-      Trace("sygus-si-infer") << "...already in typed single invocation form" << std::endl;
+      Trace("sygus-si-infer")
+          << "...already in typed single invocation form" << std::endl;
       return conj;
     }
-    Trace("sygus-si-infer") << "...not in typed single invocation form" << std::endl;
+    Trace("sygus-si-infer")
+        << "...not in typed single invocation form" << std::endl;
   }
   args.clear();
 
@@ -99,7 +102,7 @@ Node SingleInvocationInference::coerceSingleInvocation(
       size_t prevMax = maxTypeArgs[fa.first];
       if (fa.second.size() > prevMax)
       {
-        maxTypeArity += fa.second.size()-prevMax;
+        maxTypeArity += fa.second.size() - prevMax;
         maxTypeArgs[fa.first] = fa.second.size();
         maxf.clear();
         newMaxf = true;
@@ -113,19 +116,21 @@ Node SingleInvocationInference::coerceSingleInvocation(
     }
     if (newMaxf)
     {
-      if (fas.size()<maxTypeArity)
+      if (fas.size() < maxTypeArity)
       {
-        Trace("sygus-si-infer") << "...cannot force to typed single invocation form due to type constraints" << std::endl;
+        Trace("sygus-si-infer") << "...cannot force to typed single invocation "
+                                   "form due to type constraints"
+                                << std::endl;
         return Node::null();
       }
       maxf.push_back(f);
     }
-    else if (fas.size()==maxTypeArity)
+    else if (fas.size() == maxTypeArity)
     {
       maxf.push_back(f);
     }
   }
-  Assert (!maxf.empty());
+  Assert(!maxf.empty());
   Trace("sygus-si-infer") << "Maximum arity functions: " << maxf << std::endl;
   // all function arguments in the range of max type arguments
   Node zero = nm->mkConst(Rational(0));

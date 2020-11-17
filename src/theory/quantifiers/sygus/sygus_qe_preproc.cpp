@@ -46,7 +46,7 @@ Node SygusQePreproc::preprocess(Node q)
   Trace("sygus-qep-debug") << "- functions = " << allf << std::endl;
   Trace("sygus-qep-debug") << "- init unsolved = " << unsf << std::endl;
   Trace("sygus-qep-debug") << "- init solved = " << solvedf << std::endl;
-  
+
   // if it is simply single invocation, we are done
   if (SygusSiUtils::isSingleInvocation(unsf, q[1]))
   {
@@ -55,25 +55,24 @@ Node SygusQePreproc::preprocess(Node q)
   }
 
   Trace("sygus-qep") << "Coerce single invocation..." << std::endl;
-  // Otherwise, we coerce into "typed single invocation form", where 
+  // Otherwise, we coerce into "typed single invocation form", where
   // all functions are applied to a subset of arguments targetArgs, where maxf
   // is a non-empty set of allf that are applied to all arguments in targetArgs
   // (in any order).
   std::vector<Node> maxf;
   std::vector<Node> targetArgs;
   std::map<Node, std::vector<Node>> rargs;
-  Node siBody  = SingleInvocationInference::coerceSingleInvocation(
-        allf, q[1], maxf, targetArgs, rargs);
+  Node siBody = SingleInvocationInference::coerceSingleInvocation(
+      allf, q[1], maxf, targetArgs, rargs);
   if (siBody.isNull())
   {
     Trace("sygus-qep") << "...failed to coerce to single invocation"
-                        << std::endl;
+                       << std::endl;
     return Node::null();
   }
-  Trace("sygus-qep-debug") << "...single invocation with target args = " << targetArgs
-                           << std::endl;
-  Trace("sygus-qep-debug") << "...max functions = " << maxf
-                           << std::endl;
+  Trace("sygus-qep-debug") << "...single invocation with target args = "
+                           << targetArgs << std::endl;
+  Trace("sygus-qep-debug") << "...max functions = " << maxf << std::endl;
   // Get the function transformation. We also compute methods for extending
   // them to extended functions in xf. The substitutions remf converts the
   // remaining functions to extended ones (each whose argument types match
@@ -86,34 +85,33 @@ Node SygusQePreproc::preprocess(Node q)
   if (!getFunctionTransforms(unsf, remf, xf, xmap, targetArgs, rargs))
   {
     // arity mismatch for functions, we are done
-    Trace("sygus-qep") << "...get function transforms, fail."
-                        << std::endl;
+    Trace("sygus-qep") << "...get function transforms, fail." << std::endl;
     AlwaysAssert(false);
     return Node::null();
   }
   std::vector<Node> xmaxf;
   for (const Node& f : maxf)
   {
-    Assert (xmap.find(f)!=xmap.end());
+    Assert(xmap.find(f) != xmap.end());
     xmaxf.push_back(xmap[f]);
   }
-  Trace("sygus-qep-debug")
-      << "- remaining-to-extension = " << remf << std::endl;
-  Trace("sygus-qep-debug")
-      << "- extension-to-remaining = " << xf << std::endl;
-  Trace("sygus-qep-debug")
-      << "- extended max functions = " << xmaxf << std::endl;
+  Trace("sygus-qep-debug") << "- remaining-to-extension = " << remf
+                           << std::endl;
+  Trace("sygus-qep-debug") << "- extension-to-remaining = " << xf << std::endl;
+  Trace("sygus-qep-debug") << "- extended max functions = " << xmaxf
+                           << std::endl;
 
   // lift remaining functions to extended functions
   xbody = remf.apply(siBody, true);
-  Trace("sygus-qep-debug")
-      << "Extended and normalized body:" << xbody << std::endl;
-  
+  Trace("sygus-qep-debug") << "Extended and normalized body:" << xbody
+                           << std::endl;
+
   // Check single invocation with respect to the extension.
   std::map<Node, Node> xffs;
   std::vector<Node> xtargetArgs;
-  Trace("sygus-qep-debug") << "Check single invocation with respect to all extended functions " << xf.d_vars << ": "
-                           << xbody << std::endl;
+  Trace("sygus-qep-debug")
+      << "Check single invocation with respect to all extended functions "
+      << xf.d_vars << ": " << xbody << std::endl;
   if (!SygusSiUtils::isSingleInvocation(xf.d_vars, xbody, xffs, xtargetArgs))
   {
     Trace("sygus-qep") << "...not single invocation after extension"
@@ -141,7 +139,8 @@ Node SygusQePreproc::preprocess(Node q)
     std::vector<Node> qevars;
     for (const Node& v : body[0][0])
     {
-      if (std::find(xtargetArgs.begin(), xtargetArgs.end(), v) == xtargetArgs.end())
+      if (std::find(xtargetArgs.begin(), xtargetArgs.end(), v)
+          == xtargetArgs.end())
       {
         qevars.push_back(v);
       }
@@ -174,10 +173,11 @@ Node SygusQePreproc::preprocess(Node q)
       // add back the uneliminated variables
       if (!xtargetArgs.empty())
       {
-        qeRes = nm->mkNode(EXISTS, nm->mkNode(BOUND_VAR_LIST, xtargetArgs), qeRes);
+        qeRes =
+            nm->mkNode(EXISTS, nm->mkNode(BOUND_VAR_LIST, xtargetArgs), qeRes);
       }
       // FIXME: apply remf?
-      
+
       // remake conjecture with same solved functions
       Node newConj = SygusUtils::mkSygusConjecture(allf, qeRes, solvedf);
       Trace("sygus-qep") << "...eliminate variables return " << newConj
@@ -190,16 +190,16 @@ Node SygusQePreproc::preprocess(Node q)
 
   // ===== B: otherwise, eliminate functions if there are remainder functions
 
-
   // functions-to-synthesize, keep the same formal argument list
-  Assert (!maxf.empty());
-  Assert (xmaxf.size()==maxf.size());
+  Assert(!maxf.empty());
+  Assert(xmaxf.size() == maxf.size());
   std::map<Node, std::vector<Node>> xformals;
-  for (size_t i=0, nmaxf = maxf.size(); i<nmaxf; i++)
+  for (size_t i = 0, nmaxf = maxf.size(); i < nmaxf; i++)
   {
     Node fn = maxf[i];
     Node xfn = xmaxf[i];
-    Trace("sygus-qep-debug") << "Compute formal argument list for " << xfn << " from " << fn << std::endl;
+    Trace("sygus-qep-debug") << "Compute formal argument list for " << xfn
+                             << " from " << fn << std::endl;
     // formal argument list is permuted based on the transformation
     std::vector<Node> formals;
     SygusUtils::getSygusArgumentListForSynthFun(fn, formals);
@@ -216,16 +216,17 @@ Node SygusQePreproc::preprocess(Node q)
       Trace("sygus-qep-debug") << "  transformed to " << xfapp << std::endl;
       xformals[xfn].insert(xformals[xfn].end(), xfapp.begin(), xfapp.end());
     }
-    Trace("sygus-qep-debug") << "...transformed :  " << xformals[xfn] << std::endl;
+    Trace("sygus-qep-debug")
+        << "...transformed :  " << xformals[xfn] << std::endl;
   }
-  
+
   // create new smt engine to do sygus
   std::unique_ptr<SmtEngine> smt_sy;
   initializeSubsolver(smt_sy);
-  
+
   for (const Node& xfn : xmaxf)
   {
-    Assert (xformals.find(xfn)!=xformals.end());
+    Assert(xformals.find(xfn) != xformals.end());
     Trace("sygus-qep-debug") << "- synth fun " << xfn << std::endl;
     smt_sy->declareSynthFun(xfn, false, xformals[xfn]);
   }
@@ -239,7 +240,7 @@ Node SygusQePreproc::preprocess(Node q)
   std::map<Node, Node>::iterator itf;
   for (const Node& x : xf.d_vars)
   {
-    if (std::find(xmaxf.begin(), xmaxf.end(), x)!=xmaxf.end())
+    if (std::find(xmaxf.begin(), xmaxf.end(), x) != xmaxf.end())
     {
       continue;
     }
@@ -288,11 +289,11 @@ Node SygusQePreproc::preprocess(Node q)
     std::map<Node, Node> solMap;
     smt_sy->getSynthSolutions(solMap);
     Subs solSubs;
-    for (size_t i=0, nmaxf = maxf.size(); i<nmaxf; i++)
+    for (size_t i = 0, nmaxf = maxf.size(); i < nmaxf; i++)
     {
       Node fn = maxf[i];
       Node xfn = xmaxf[i];
-      Assert (solMap.find(xfn)!=solMap.end());
+      Assert(solMap.find(xfn) != solMap.end());
       solSubs.add(fn, solMap[xfn]);
     }
     Trace("sygus-qep-debug") << "Solution : " << solSubs << std::endl;
@@ -335,7 +336,7 @@ Node SygusQePreproc::preprocess(Node q)
     // reconstruct the new conjecture
     Node fsRes = SygusUtils::mkSygusConjecture(allf, conj, solvedf);
     Trace("sygus-qep") << "...eliminate functions return " << fsRes
-                        << std::endl;
+                       << std::endl;
     return fsRes;
   }
 
@@ -376,10 +377,10 @@ bool SygusQePreproc::getFunctionTransforms(
 }
 
 Node SygusQePreproc::getFunctionTransform(Node f,
-                                    Subs& remf,
-                                    Subs& xf,
-                                    const std::vector<Node>& targetArgs,
-                                    const std::vector<Node>& fargs)
+                                          Subs& remf,
+                                          Subs& xf,
+                                          const std::vector<Node>& targetArgs,
+                                          const std::vector<Node>& fargs)
 {
   NodeManager* nm = NodeManager::currentNM();
   Trace("sygus-qep-ext") << f << " was applied to " << fargs << ", required "
