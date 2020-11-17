@@ -181,7 +181,7 @@ Node SygusQePreproc::preprocess(Node q)
     }
     return Node::null();
   }
-  
+
   // if it was simply single invocation, we are done
   if (SygusSiUtils::isSingleInvocation(unsf, q[1]))
   {

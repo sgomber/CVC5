@@ -66,8 +66,7 @@ bool SygusSiUtils::isSingleInvocation(const std::vector<Node>& fs,
   }
   if (!areSameType(fs))
   {
-          Trace("sygus-si-infer-debug")
-              << "...si failed due to type" << std::endl;
+    Trace("sygus-si-infer-debug") << "...si failed due to type" << std::endl;
     return false;
   }
   bool argsSet = false;
@@ -112,8 +111,9 @@ bool SygusSiUtils::isSingleInvocation(const std::vector<Node>& fs,
               if (cur[i] != args[i])
               {
                 // different arguments
-          Trace("sygus-si-infer-debug")
-              << "...si failed due to different arguments " << cur << std::endl;
+                Trace("sygus-si-infer-debug")
+                    << "...si failed due to different arguments " << cur
+                    << std::endl;
                 return false;
               }
             }
@@ -122,8 +122,8 @@ bool SygusSiUtils::isSingleInvocation(const std::vector<Node>& fs,
               // take into account requirements of unique bound variable
               if (!addUniqueBoundVar(reqBoundVar, cur[i], args))
               {
-          Trace("sygus-si-infer-debug")
-              << "...si failed due to base " << cur << std::endl;
+                Trace("sygus-si-infer-debug")
+                    << "...si failed due to base " << cur << std::endl;
                 return false;
               }
             }
