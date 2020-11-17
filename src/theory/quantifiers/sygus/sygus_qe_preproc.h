@@ -51,15 +51,7 @@ class SygusQePreproc
 
  private:
   /**
-   * Get maximal arity functions. If possible, add a subset of unsf to maxf that
-   * are of maximal arity and have the same type and return true. If the
-   * maximal arity functions in unsf are not of the same type, this method
-   * returns false.
-   */
-  static bool getMaximalArityFuncs(const std::vector<Node>& unsf,
-                                   std::vector<Node>& maxf);
-  /**
-   * Get remaining functions. This method is used to build transformations
+   * Get function transform. This method is used to build transformations
    * for the functions in unsf that are not in maxf.
    *
    * In particular, this builds two mappings:
@@ -67,22 +59,22 @@ class SygusQePreproc
    * (extended to remaining) xf
    * such that applying the substitution remf
    */
-  static bool getRemainingFunctions(
+  static bool getFunctionTransforms(
       const std::vector<Node>& unsf,
-      const std::vector<Node>& maxf,
       Subs& remf,
       Subs& xf,
-      const std::vector<Node>& xargs,
+      std::map<Node, Node>& xmap,
+      const std::vector<Node>& targetArgs,
       const std::map<Node, std::vector<Node>>& rargs);
   /**
-   * Extend function arguments.
+   * Get function transform
    *
-   * It should be the case that each variable in fargs is in xargs.
+   * It should be the case that each variable in fargs is in targetArgs.
    */
-  static bool extendFuncArgs(Node f,
+  static Node getFunctionTransform(Node f,
                              Subs& remf,
                              Subs& xf,
-                             const std::vector<Node>& xargs,
+                             const std::vector<Node>& targetArgs,
                              const std::vector<Node>& fargs);
   /** Make lambda app */
   static Node mkLambdaApp(const std::vector<Node>& vars,

@@ -64,7 +64,10 @@ bool SygusSiUtils::isSingleInvocation(const std::vector<Node>& fs,
   {
     return true;
   }
-  Assert(areSameType(fs));
+  if (!areSameType(fs))
+  {
+    return false;
+  }
   bool argsSet = false;
   std::unordered_set<TNode, TNodeHashFunction> visited;
   std::unordered_set<TNode, TNodeHashFunction>::iterator it;
@@ -145,10 +148,10 @@ bool SygusSiUtils::isSingleInvocation(const std::vector<Node>& fs,
 
 bool SygusSiUtils::isSingleInvocation(const std::vector<Node>& fs,
                                       Node conj,
-                                      std::vector<Node>& args,
                                       bool reqBoundVar)
 {
   std::map<Node, Node> ffs;
+  std::vector<Node> args;
   return isSingleInvocation(fs, conj, ffs, args, reqBoundVar);
 }
 
@@ -269,8 +272,10 @@ bool SygusSiUtils::getMaximalArityFunctions(
     }
   }
   Assert(!maxf.empty());
+  std::map<Node, std::vector<Node>>::const_iterator it = args.find(maxf[0]);
+  Assert (it!=args.end());
   // take the first maximal arity function's arguments as reference
-  maxArgs.insert(maxArgs.end(), args[maxf[0]].begin(), args[maxf[0]].end());
+  maxArgs.insert(maxArgs.end(), it->second.begin(), it->second.end());
   // ensure that all invocations are a subset
   for (const std::pair<const Node, std::vector<Node>>& as : args)
   {

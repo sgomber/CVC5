@@ -55,7 +55,6 @@ class SygusSiUtils
                                  bool reqBoundVar = true);
   static bool isSingleInvocation(const std::vector<Node>& fs,
                                  Node conj,
-                                 std::vector<Node>& args,
                                  bool reqBoundVar = true);
   /**
    * Same as above, but where functions are allowed to take different arguments.

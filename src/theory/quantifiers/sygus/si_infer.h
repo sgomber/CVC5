@@ -34,9 +34,11 @@ class SingleInvocationInference
    *
    * @param fs The functions to synthesize
    * @param conj The negated conjecture body
+   * @param allSiVars All single invocation variables
+   * @param maxf The maximal arity functions among those in fs
    * @param args The mapping from fs to the arguments they are applied to in
    * conj.
-   * @return  a negated conjecture body that is equivalent to conj that is
+   * @return a negated conjecture body that is equivalent to conj that is
    * "typed single invocation", or the null node if no such conjecture body can
    * be inferred. We say a conjecture is typed single invocation if there exists
    * a function f in fs such that args[g] is a subset of args[f] for each g.
@@ -44,6 +46,7 @@ class SingleInvocationInference
   static Node coerceSingleInvocation(const std::vector<Node>& fs,
                                      Node conj,
                                      std::vector<Node>& allSiVars,
+                                     std::vector<Node>& maxf,
                                      std::map<Node, std::vector<Node>>& args);
 };
 

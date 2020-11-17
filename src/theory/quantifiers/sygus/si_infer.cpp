@@ -28,12 +28,26 @@ namespace quantifiers {
 Node SingleInvocationInference::coerceSingleInvocation(
     const std::vector<Node>& fs,
     Node conj,
-    std::vector<Node>& allSiVars,
+    std::vector<Node>& maxf,
+    std::vector<Node>& maxArgs,
     std::map<Node, std::vector<Node>>& args)
 {
   Trace("sygus-si-infer") << "coerceSingleInvocation " << fs << " on " << conj
                           << std::endl;
+  Assert (!fs.empty());
   // maybe it is already single invocation?
+  if (SygusSiUtils::getSingleInvocations(fs, conj, args))
+  {
+    Trace("sygus-si-infer") << "...already in weak single invocation form" << std::endl;
+    // single invocation, also need to ensure it is typed single invocation
+    if (SygusSiUtils::getMaximalArityFunctions(args, maxf, maxArgs))
+    {
+      Trace("sygus-si-infer") << "...already in typed single invocation form" << std::endl;
+      return conj;
+    }
+    Trace("sygus-si-infer") << "...not in typed single invocation form" << std::endl;
+  }
+  args.clear();
 
   NodeManager* nm = NodeManager::currentNM();
   TypeNode intTn = nm->integerType();
@@ -56,6 +70,7 @@ Node SingleInvocationInference::coerceSingleInvocation(
 
   // compute the maximum type arities
   std::map<TypeNode, size_t> maxTypeArgs;
+  size_t maxTypeArity = 0;
   for (const Node& f : fs)
   {
     TypeNode ftn = f.getType();
@@ -78,11 +93,16 @@ Node SingleInvocationInference::coerceSingleInvocation(
       ftvs[fa].push_back(ka);
       fvs.push_back(ka);
     }
+    bool newMaxf = false;
     for (const std::pair<const TypeNode, std::vector<Node>>& fa : ftvs)
     {
-      if (fa.second.size() > maxTypeArgs[fa.first])
+      size_t prevMax = maxTypeArgs[fa.first];
+      if (fa.second.size() > prevMax)
       {
+        maxTypeArity += fa.second.size()-prevMax;
         maxTypeArgs[fa.first] = fa.second.size();
+        maxf.clear();
+        newMaxf = true;
       }
       if (fa.second.size() > 1)
       {
@@ -91,7 +111,22 @@ Node SingleInvocationInference::coerceSingleInvocation(
         asserts.push_back(fadistinct);
       }
     }
+    if (newMaxf)
+    {
+      if (fas.size()<maxTypeArity)
+      {
+        Trace("sygus-si-infer") << "...cannot force to typed single invocation form due to type constraints" << std::endl;
+        return Node::null();
+      }
+      maxf.push_back(f);
+    }
+    else if (fas.size()==maxTypeArity)
+    {
+      maxf.push_back(f);
+    }
   }
+  Assert (!maxf.empty());
+  Trace("sygus-si-infer") << "Maximum arity functions: " << maxf << std::endl;
   // all function arguments in the range of max type arguments
   Node zero = nm->mkConst(Rational(0));
   for (const Node& f : fs)
@@ -187,7 +222,7 @@ Node SingleInvocationInference::coerceSingleInvocation(
       ss << "s_" << i << "_" << mt.first;
       Node s = nm->mkBoundVar(ss.str(), mt.first);
       siVars[mt.first].push_back(s);
-      allSiVars.push_back(s);
+      maxArgs.push_back(s);
     }
     Trace("sygus-si-infer") << "Single invocation variables [" << mt.first
                             << "]: " << siVars[mt.first] << std::endl;
@@ -291,8 +326,8 @@ Node SingleInvocationInference::coerceSingleInvocation(
         Node eq = s.eqNode(g);
         Node eqs = sivrep.apply(eq);
         if (eqs[1].getKind() == BOUND_VARIABLE
-            && std::find(allSiVars.begin(), allSiVars.end(), eqs[1])
-                   == allSiVars.end())
+            && std::find(maxArgs.begin(), maxArgs.end(), eqs[1])
+                   == maxArgs.end())
         {
           TNode tv = eqs[1];
           TNode ts = eqs[0];
