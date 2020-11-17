@@ -30,7 +30,6 @@ class SingleInvocationInference
 {
  public:
   /**
-   *
    * Coerce single invocation.
    *
    * @param fs The functions to synthesize

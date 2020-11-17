@@ -246,6 +246,46 @@ bool SygusSiUtils::getSingleInvocations(const std::vector<Node>& fs,
   return true;
 }
 
+bool SygusSiUtils::getMaximalArityFunctions(const std::map<Node, std::vector<Node>>& args,
+                                       std::vector<Node>& maxf,
+                                       std::vector<Node>& maxArgs
+                                           )
+{
+  if (args.empty())
+  {
+    return true;
+  }
+  size_t maxArity = 0;
+  for (const std::pair<const Node, std::vector<Node>>& as : args)
+  {
+    if (maxf.empty() || as.second.size()>maxArity)
+    {
+      maxf.clear();
+      maxArity = as.second.size();
+    }
+    if (as.second.size()==maxArity)
+    {
+      maxf.push_back(as.first);
+    }
+  }
+  Assert (!maxf.empty());
+  // take the first maximal arity function's arguments as reference
+  maxArgs.insert(maxArgs.end(), args[maxf[0]].begin(), args[maxf[0]].end());
+  // ensure that all invocations are a subset
+  for (const std::pair<const Node, std::vector<Node>>& as : args)
+  {
+    for (const Node& a : as.second)
+    {
+      if (std::find(maxArgs.begin(), maxArgs.end(), a)==maxArgs.end())
+      {
+        // argument does not fit what a maximal arity function was applied to
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
 void SygusSiUtils::partitionConjecture(const std::vector<Node>& fs,
                                        Node conj,
                                        Node& cc,
