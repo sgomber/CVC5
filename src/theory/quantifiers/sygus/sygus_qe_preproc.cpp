@@ -47,13 +47,6 @@ Node SygusQePreproc::preprocess(Node q)
   Trace("sygus-qep-debug") << "- init unsolved = " << unsf << std::endl;
   Trace("sygus-qep-debug") << "- init solved = " << solvedf << std::endl;
 
-  // if it is simply single invocation, we are done
-  if (SygusSiUtils::isSingleInvocation(unsf, q[1]))
-  {
-    Trace("sygus-qep") << "...simply single invocation, success." << std::endl;
-    return Node::null();
-  }
-
   Trace("sygus-qep") << "Coerce single invocation..." << std::endl;
   // Otherwise, we coerce into "typed single invocation form", where
   // all functions are applied to a subset of arguments targetArgs, where maxf
@@ -176,7 +169,8 @@ Node SygusQePreproc::preprocess(Node q)
         qeRes =
             nm->mkNode(EXISTS, nm->mkNode(BOUND_VAR_LIST, xtargetArgs), qeRes);
       }
-      // FIXME: apply remf?
+      // convert back to original functions
+      qeRes = xf.apply(qeRes);
 
       // remake conjecture with same solved functions
       Node newConj = SygusUtils::mkSygusConjecture(allf, qeRes, solvedf);
@@ -185,6 +179,13 @@ Node SygusQePreproc::preprocess(Node q)
       Assert(!expr::hasFreeVar(newConj));
       return newConj;
     }
+    return Node::null();
+  }
+  
+  // if it was simply single invocation, we are done
+  if (SygusSiUtils::isSingleInvocation(unsf, q[1]))
+  {
+    Trace("sygus-qep") << "...simply single invocation, success." << std::endl;
     return Node::null();
   }
 
@@ -406,7 +407,7 @@ Node SygusQePreproc::getFunctionTransform(Node f,
       return Node::null();
     }
   }
-  TypeNode newT = nm->mkFunctionType(xats, rangeT);
+  TypeNode newT = xats.empty() ? rangeT : nm->mkFunctionType(xats, rangeT);
   std::stringstream ssn;
   ssn << "x" << f;
   Node newF = nm->mkBoundVar(ssn.str(), newT);
