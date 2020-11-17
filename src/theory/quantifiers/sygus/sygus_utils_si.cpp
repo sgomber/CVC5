@@ -272,7 +272,6 @@ void SygusSiUtils::partitionConjecture(const std::vector<Node>& fs,
   nc = nm->mkAnd(ncc);
 }
 
-
 }  // namespace quantifiers
 }  // namespace theory
 }  // namespace CVC4

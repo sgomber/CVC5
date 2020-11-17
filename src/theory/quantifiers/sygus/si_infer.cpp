@@ -289,7 +289,8 @@ Node SingleInvocationInference::coerceSingleInvocation(
         Node eq = s.eqNode(g);
         Node eqs = sivrep.apply(eq);
         if (eqs[1].getKind() == BOUND_VARIABLE
-            && std::find(allSiVars.begin(), allSiVars.end(), eqs[1]) == allSiVars.end())
+            && std::find(allSiVars.begin(), allSiVars.end(), eqs[1])
+                   == allSiVars.end())
         {
           TNode tv = eqs[1];
           TNode ts = eqs[0];

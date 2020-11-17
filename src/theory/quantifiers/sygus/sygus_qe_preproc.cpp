@@ -17,9 +17,9 @@
 #include "expr/node_algorithm.h"
 #include "theory/quantifiers/quantifiers_attributes.h"
 #include "theory/quantifiers/single_inv_partition.h"
+#include "theory/quantifiers/sygus/si_infer.h"
 #include "theory/quantifiers/sygus/sygus_utils.h"
 #include "theory/quantifiers/sygus/sygus_utils_si.h"
-#include "theory/quantifiers/sygus/si_infer.h"
 #include "theory/rewriter.h"
 #include "theory/smt_engine_subsolver.h"
 
@@ -68,7 +68,8 @@ Node SygusQePreproc::preprocess(Node q)
     rargs.clear();
     // if it is not single invocation, coerce it to be
     Trace("sygus-qep-debug") << "Coerce single invocation..." << std::endl;
-    siBody = SingleInvocationInference::coerceSingleInvocation(allf, siBody, siVars, rargs);
+    siBody = SingleInvocationInference::coerceSingleInvocation(
+        allf, siBody, siVars, rargs);
     if (siBody.isNull())
     {
       Trace("sygus-qep") << "...failed to coerce to single invocation"
