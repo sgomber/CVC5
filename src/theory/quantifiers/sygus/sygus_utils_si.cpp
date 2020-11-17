@@ -290,6 +290,7 @@ void SygusSiUtils::partitionConjecture(const std::vector<Node>& fs,
 Node SygusSiUtils::coerceSingleInvocation(
     const std::vector<Node>& fs,
     Node conj,
+    std::vector<Node>& allSiVars,
     std::map<Node, std::vector<Node>>& args)
 {
   Trace("sygus-si-infer") << "coerceSingleInvocation " << fs << " on " << conj
@@ -438,7 +439,6 @@ Node SygusSiUtils::coerceSingleInvocation(
 
   // make the single invocation variables
   std::map<TypeNode, std::vector<Node>> siVars;
-  std::unordered_set<Node, NodeHashFunction> allSiVars;
   for (const std::pair<const TypeNode, size_t> mt : maxTypeArgs)
   {
     for (size_t i = 0; i < mt.second; i++)
@@ -447,7 +447,7 @@ Node SygusSiUtils::coerceSingleInvocation(
       ss << "s_" << i << "_" << mt.first;
       Node s = nm->mkBoundVar(ss.str(), mt.first);
       siVars[mt.first].push_back(s);
-      allSiVars.insert(s);
+      allSiVars.push_back(s);
     }
     Trace("sygus-si-infer") << "Single invocation variables [" << mt.first
                             << "]: " << siVars[mt.first] << std::endl;
@@ -551,7 +551,7 @@ Node SygusSiUtils::coerceSingleInvocation(
         Node eq = s.eqNode(g);
         Node eqs = sivrep.apply(eq);
         if (eqs[1].getKind() == BOUND_VARIABLE
-            && allSiVars.find(eqs[1]) == allSiVars.end())
+            && std::find(allSiVars.begin(), allSiVars.end(), eqs[1]) == allSiVars.end())
         {
           TNode tv = eqs[1];
           TNode ts = eqs[0];

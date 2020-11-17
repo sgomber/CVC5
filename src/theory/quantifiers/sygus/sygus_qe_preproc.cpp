@@ -57,14 +57,17 @@ Node SygusQePreproc::preprocess(Node q)
   }
   Trace("sygus-qep-debug") << "- max arity functions = " << maxf << std::endl;
 
+  // it could already be single invocation
   Trace("sygus-qep-debug") << "Get single invocations..." << std::endl;
+  std::vector<Node> siVars;
   std::map<Node, std::vector<Node>> rargs;
   Node siBody = q[1];
   if (!SygusSiUtils::getSingleInvocations(allf, siBody, rargs))
   {
     rargs.clear();
+    // if it is not single invocation, coerce it to be
     Trace("sygus-qep-debug") << "Coerce single invocation..." << std::endl;
-    siBody = SygusSiUtils::coerceSingleInvocation(allf, siBody, rargs);
+    siBody = SygusSiUtils::coerceSingleInvocation(allf, siBody, siVars, rargs);
     if (siBody.isNull())
     {
       Trace("sygus-qep") << "...failed to coerce to single invocation"
@@ -95,7 +98,7 @@ Node SygusQePreproc::preprocess(Node q)
   Subs remf;
   Subs xf;
   Node xbody = siBody;
-  if (maxf.size() < allf.size())
+  if (maxf.size() < unsf.size())
   {
     if (!getRemainingFunctions(unsf, maxf, remf, xf, args, rargs))
     {

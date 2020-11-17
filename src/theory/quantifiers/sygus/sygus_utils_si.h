@@ -101,6 +101,7 @@ class SygusSiUtils
    */
   static Node coerceSingleInvocation(const std::vector<Node>& fs,
                                      Node conj,
+                                     std::vector<Node>& allSiVars,
                                      std::map<Node, std::vector<Node>>& args);
 };
 
