@@ -115,6 +115,19 @@ void SygusUtils::decomposeSygusConjecture(Node q,
   }
 }
 
+void SygusUtils::decomposeAnd(Node conj, std::vector<Node>& cs)
+{
+  if (conj.getKind() == AND)
+  {
+    // do not consider nested AND
+    cs.insert(cs.end(), conj.begin(), conj.end());
+  }
+  else
+  {
+    cs.push_back(conj);
+  }
+}
+
 Node SygusUtils::decomposeConjectureBody(Node conj, std::vector<Node>& vs)
 {
   if (conj.getKind() == NOT && conj[0].getKind() == FORALL)

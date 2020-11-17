@@ -113,7 +113,7 @@ Node SingleInvocationInference::coerceSingleInvocation(
   std::vector<Node> vars;
   Node origConj = SygusUtils::decomposeConjectureBody(conj, vars);
   std::vector<Node> oconj;
-  decomposeAnd(origConj, oconj);
+  SygusUtils::decomposeAnd(origConj, oconj);
 
   // for each conjunction
   std::map<size_t, std::map<Node, std::vector<Node>>> gArgs;
@@ -123,7 +123,7 @@ Node SingleInvocationInference::coerceSingleInvocation(
     Node cid = nm->mkConst(Rational(i));
     // get the single invocations for each function
     std::map<Node, std::vector<Node>>& gas = gArgs[i];
-    if (!getSingleInvocations(fs, c, gas, false, true))
+    if (!SygusSiUtils::getSingleInvocations(fs, c, gas, false, true))
     {
       Trace("sygus-si-infer") << "...FAIL: conjunction " << c
                               << " is not single invocation" << std::endl;

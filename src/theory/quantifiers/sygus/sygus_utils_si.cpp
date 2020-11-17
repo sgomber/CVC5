@@ -246,26 +246,13 @@ bool SygusSiUtils::getSingleInvocations(const std::vector<Node>& fs,
   return true;
 }
 
-void decomposeAnd(Node conj, std::vector<Node>& c)
-{
-  if (conj.getKind() == AND)
-  {
-    // nested?
-    c.insert(c.end(), conj.begin(), conj.end());
-  }
-  else
-  {
-    c.push_back(conj);
-  }
-}
-
 void SygusSiUtils::partitionConjecture(const std::vector<Node>& fs,
                                        Node conj,
                                        Node& cc,
                                        Node& nc)
 {
   std::vector<Node> c;
-  decomposeAnd(conj, c);
+  SygusUtils::decomposeAnd(conj, c);
   std::vector<Node> ccc;
   std::vector<Node> ncc;
   for (const Node& conjc : c)

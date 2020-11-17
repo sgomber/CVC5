@@ -69,6 +69,11 @@ class SygusUtils
    * to vs.
    */
   static Node decomposeConjectureBody(Node conj, std::vector<Node>& vs);
+  /**
+   * Decompose conjunction, adds the conjuncts of conj to cs. This assumes
+   * conj does not have nested AND.
+   */
+  static void decomposeAnd(Node conj, std::vector<Node>& cs);
 
   /**
    * Get the formal argument list for a function-to-synthesize. This returns
