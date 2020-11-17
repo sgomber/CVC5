@@ -67,7 +67,7 @@ Node SygusQePreproc::preprocess(Node q)
     rargs.clear();
     // if it is not single invocation, coerce it to be
     Trace("sygus-qep-debug") << "Coerce single invocation..." << std::endl;
-    siBody = SygusSiUtils::coerceSingleInvocation(allf, siBody, siVars, rargs);
+    siBody = SingleInvocationInference::coerceSingleInvocation(allf, siBody, siVars, rargs);
     if (siBody.isNull())
     {
       Trace("sygus-qep") << "...failed to coerce to single invocation"

@@ -86,23 +86,6 @@ class SygusSiUtils
                                   Node conj,
                                   Node& cc,
                                   Node& nc);
-  /**
-   *
-   * Coerce single invocation.
-   *
-   * @param fs The functions to synthesize
-   * @param conj The negated conjecture body
-   * @param args The mapping from fs to the arguments they are applied to in
-   * conj.
-   * @return  a negated conjecture body that is equivalent to conj that is
-   * "typed single invocation", or the null node if no such conjecture body can
-   * be inferred. We say a conjecture is typed single invocation if there exists
-   * a function f in fs such that args[g] is a subset of args[f] for each g.
-   */
-  static Node coerceSingleInvocation(const std::vector<Node>& fs,
-                                     Node conj,
-                                     std::vector<Node>& allSiVars,
-                                     std::map<Node, std::vector<Node>>& args);
 };
 
 }  // namespace quantifiers
