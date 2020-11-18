@@ -194,6 +194,7 @@ Node SygusQePreproc::preprocess(Node q)
   // functions-to-synthesize, keep the same formal argument list
   Assert(!maxf.empty());
   Assert(xmaxf.size() == maxf.size());
+  std::vector<Node, std::vector<Node>> formals;
   std::map<Node, std::vector<Node>> xformals;
   for (size_t i = 0, nmaxf = maxf.size(); i < nmaxf; i++)
   {
@@ -202,15 +203,14 @@ Node SygusQePreproc::preprocess(Node q)
     Trace("sygus-qep-debug") << "Compute formal argument list for " << xfn
                              << " from " << fn << std::endl;
     // formal argument list is permuted based on the transformation
-    std::vector<Node> formals;
-    SygusUtils::getSygusArgumentListForSynthFun(fn, formals);
-    Trace("sygus-qep-debug") << "...original :  " << formals << std::endl;
+    SygusUtils::getSygusArgumentListForSynthFun(fn, formals[f]);
+    Trace("sygus-qep-debug") << "...original :  " << formals[f] << std::endl;
     xformals[xfn].clear();
-    if (!formals.empty())
+    if (!formals[f].empty())
     {
       std::vector<Node> faargs;
       faargs.push_back(fn);
-      faargs.insert(faargs.end(), formals.begin(), formals.end());
+      faargs.insert(faargs.end(), formals[f].begin(), formals[f].end());
       Node fapp = nm->mkNode(APPLY_UF, faargs);
       Trace("sygus-qep-debug") << "  based on " << fapp << std::endl;
       Node xfapp = remf.apply(fapp, true);
@@ -295,7 +295,12 @@ Node SygusQePreproc::preprocess(Node q)
       Node fn = maxf[i];
       Node xfn = xmaxf[i];
       Assert(solMap.find(xfn) != solMap.end());
-      solSubs.add(fn, solMap[xfn]);
+      Node xsol = solMap[xfn];
+      // transform the solution
+      Node fsol = remf.apply(f);
+      fsol = fsol.substitute(xfn, xsol);
+      fsol = Rewriter::rewrite(fsol);
+      solSubs.add(fn, fsol);
     }
     Trace("sygus-qep-debug") << "Solution : " << solSubs << std::endl;
     // undo the skolemization of the extended functions
@@ -341,7 +346,7 @@ Node SygusQePreproc::preprocess(Node q)
     return fsRes;
   }
 
-  Trace("sygus-qep") << "...failed to apply" << std::endl;
+  Trace("sygus-qep") << "...failed to eliminate functions" << std::endl;
   return Node::null();
 }
 
