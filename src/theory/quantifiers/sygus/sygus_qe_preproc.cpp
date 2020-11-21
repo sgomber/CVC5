@@ -194,7 +194,7 @@ Node SygusQePreproc::preprocess(Node q)
   // functions-to-synthesize, keep the same formal argument list
   Assert(!maxf.empty());
   Assert(xmaxf.size() == maxf.size());
-  std::vector<Node, std::vector<Node>> formals;
+  std::map<Node, std::vector<Node>> formals;
   std::map<Node, std::vector<Node>> xformals;
   for (size_t i = 0, nmaxf = maxf.size(); i < nmaxf; i++)
   {
@@ -203,14 +203,14 @@ Node SygusQePreproc::preprocess(Node q)
     Trace("sygus-qep-debug") << "Compute formal argument list for " << xfn
                              << " from " << fn << std::endl;
     // formal argument list is permuted based on the transformation
-    SygusUtils::getSygusArgumentListForSynthFun(fn, formals[f]);
-    Trace("sygus-qep-debug") << "...original :  " << formals[f] << std::endl;
+    SygusUtils::getSygusArgumentListForSynthFun(fn, formals[fn]);
+    Trace("sygus-qep-debug") << "...original :  " << formals[fn] << std::endl;
     xformals[xfn].clear();
-    if (!formals[f].empty())
+    if (!formals[fn].empty())
     {
       std::vector<Node> faargs;
       faargs.push_back(fn);
-      faargs.insert(faargs.end(), formals[f].begin(), formals[f].end());
+      faargs.insert(faargs.end(), formals[fn].begin(), formals[fn].end());
       Node fapp = nm->mkNode(APPLY_UF, faargs);
       Trace("sygus-qep-debug") << "  based on " << fapp << std::endl;
       Node xfapp = remf.apply(fapp, true);
@@ -293,11 +293,11 @@ Node SygusQePreproc::preprocess(Node q)
     for (size_t i = 0, nmaxf = maxf.size(); i < nmaxf; i++)
     {
       Node fn = maxf[i];
-      Node xfn = xmaxf[i];
+      TNode xfn = xmaxf[i];
       Assert(solMap.find(xfn) != solMap.end());
-      Node xsol = solMap[xfn];
+      TNode xsol = solMap[xfn];
       // transform the solution
-      Node fsol = remf.apply(f);
+      Node fsol = remf.apply(fn);
       fsol = fsol.substitute(xfn, xsol);
       fsol = Rewriter::rewrite(fsol);
       solSubs.add(fn, fsol);
