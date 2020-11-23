@@ -7,11 +7,11 @@
 (synth-fun g ((x Int)) Int)
 (synth-fun h () Int)
 
-(declare-var x Int)
-(declare-var y Int)
+(declare-var z Int)
+(declare-var w Int)
 
-(constraint (= (f x y) (+ (g x) (* 3 h) x y)))
-(constraint (>= (g x) (* 7 x)))
+(constraint (= (f z w) (+ (g z) (* 3 h) z w)))
+(constraint (>= (g z) (* 7 z)))
 (constraint (>= h 50))
 
 (check-synth)

@@ -56,7 +56,7 @@ Node SygusQePreproc::preprocess(Node q)
   std::vector<Node> targetArgs;
   std::map<Node, std::vector<Node>> rargs;
   Node siBody = SingleInvocationInference::coerceSingleInvocation(
-      allf, q[1], maxf, targetArgs, rargs);
+      unsf, q[1], maxf, targetArgs, rargs);
   if (siBody.isNull())
   {
     Trace("sygus-qep") << "...failed to coerce to single invocation"
@@ -176,7 +176,7 @@ Node SygusQePreproc::preprocess(Node q)
       Node newConj = SygusUtils::mkSygusConjecture(allf, qeRes, solvedf);
       Trace("sygus-qep") << "...eliminate variables return " << newConj
                          << std::endl;
-      Assert(!expr::hasFreeVar(newConj));
+      AlwaysAssert(!expr::hasFreeVar(newConj));
       return newConj;
     }
     return Node::null();
@@ -299,6 +299,8 @@ Node SygusQePreproc::preprocess(Node q)
       // transform the solution
       Node fsol = remf.apply(fn);
       fsol = fsol.substitute(xfn, xsol);
+      // apply to original formal arguments
+      fsol = mkLambdaApp(formals[fn], fsol, formals[fn]);
       fsol = Rewriter::rewrite(fsol);
       solSubs.add(fn, fsol);
     }
@@ -312,11 +314,14 @@ Node SygusQePreproc::preprocess(Node q)
     {
       std::vector<Node> fargs;
       SygusUtils::getSygusArgumentListForSynthFun(solSubs.d_vars[i], fargs);
+      Trace("sygus-qep-debug") << "...fargs[" << solSubs.d_vars[i] << "] = " << fargs << std::endl;
       Subs siToFormal;
       siToFormal.add(uvars, fargs);
       solSubs.d_subs[i] = siToFormal.apply(solSubs.d_subs[i]);
       Assert(!expr::hasFreeVar(solSubs.d_subs[i]));
     }
+    Trace("sygus-qep-debug")
+        << "...after revert extensions : " << solSubs << std::endl;
     // extended functions have a definition in terms of the originals
     xf.applyToRange(solSubs, true);
     Trace("sygus-qep-debug")
@@ -335,7 +340,7 @@ Node SygusQePreproc::preprocess(Node q)
     Node conj = nm->mkNode(EXISTS, sbvl, bodyNorm.negate());
     Trace("sygus-qep-debug2")
         << "...conjecture reverted to : " << conj << std::endl;
-    conj = solSubs.apply(conj);
+    conj = solSubs.apply(conj, true);
     Trace("sygus-qep-debug2")
         << "...after current solutions : " << conj << std::endl;
 
@@ -343,6 +348,7 @@ Node SygusQePreproc::preprocess(Node q)
     Node fsRes = SygusUtils::mkSygusConjecture(allf, conj, solvedf);
     Trace("sygus-qep") << "...eliminate functions return " << fsRes
                        << std::endl;
+    AlwaysAssert(!expr::hasFreeVar(fsRes));
     return fsRes;
   }
 
