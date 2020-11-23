@@ -60,6 +60,7 @@ Node SingleInvocationInference::coerceSingleInvocation(
   // Formal argument list for each function
   std::map<Node, std::map<TypeNode, std::vector<Node>>> ftypevars;
   std::map<Node, std::vector<Node>> fvars;
+  std::map<Node, TypeNode> fvToOType;
   // Mapping conjunctions, arguments to a term that the function is invoked
   TypeNode htn = nm->mkFunctionType({intTn, intTn, intTn}, intTn);
   Node h = nm->mkSkolem("h", htn);
@@ -91,10 +92,12 @@ Node SingleInvocationInference::coerceSingleInvocation(
       {
         size_t id = typeId.size();
         typeId[fa] = id;
+        Trace("sygus-si-infer") << "  - id of type " << fa << " is " << id << std::endl;
       }
       Node ka = nm->mkSkolem("a", intTn);
       ftvs[fa].push_back(ka);
       fvs.push_back(ka);
+      fvToOType[ka] = fa;
     }
     bool newMaxf = false;
     for (const std::pair<const TypeNode, std::vector<Node>>& fa : ftvs)
@@ -185,12 +188,14 @@ Node SingleInvocationInference::coerceSingleInvocation(
         {
           gsId[g] = gs.size();
           gs.push_back(g);
+          Trace("sygus-si-infer") << "  - id of ground term " << g << " is " << gsId[g] << std::endl;
         }
         Node gid = nm->mkConst(Rational(gsId[g]));
-        TypeNode fvtn = fvs[j].getType();
-        Assert(typeId.find(fvtn) != typeId.end());
-        Node tid = nm->mkConst(Rational(typeId[fvtn]));
+        TypeNode gtype = g.getType();
+        AlwaysAssert(typeId.find(gtype) != typeId.end());
+        Node tid = nm->mkConst(Rational(typeId[gtype]));
         Node happ = nm->mkNode(APPLY_UF, h, cid, tid, fvs[j]);
+        Trace("sygus-si-infer") << "   ...make argument #" << j << " of " << f << " (ground term " << g << "): " << fvs[j] << " " << gtype << " is " << happ << " == " << gid << std::endl;
         // ASSERT: h( typeId, conjId, ai ) = gId
         asserts.push_back(happ.eqNode(gid));
       }
@@ -240,6 +245,7 @@ Node SingleInvocationInference::coerceSingleInvocation(
     if (fvs.empty())
     {
       finvoke[f] = f;
+      args[f].clear();
       continue;
     }
     std::vector<Node> iargs;
@@ -252,7 +258,9 @@ Node SingleInvocationInference::coerceSingleInvocation(
       Integer mvi = mv.getConst<Rational>().getNumerator();
       Assert(mvi.fitsUnsignedInt());
       uint32_t index = mvi.toUnsignedInt();
-      std::vector<Node>& svars = siVars[v.getType()];
+      Assert(fvToOType.find(v)!=fvToOType.end());
+      TypeNode vtn = fvToOType[v];
+      std::vector<Node>& svars = siVars[vtn];
       Assert(index < svars.size());
       Node s = svars[index];
       iargs.push_back(s);

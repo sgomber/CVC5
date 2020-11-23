@@ -1,17 +1,17 @@
 ; EXPECT: unsat
 ; COMMAND-LINE: --sygus-qe-preproc --sygus-out=status
 
-(set-logic LIA)
+(set-logic SLIA)
 
-(synth-fun f ((x Int) (y Int)) Int)
-(synth-fun g ((x Int)) Int)
+(synth-fun f ((x Int) (y Int) (u String)) Int)
+(synth-fun g ((v String) (x Int)) Int)
 (synth-fun h () Int)
 
 (declare-var z Int)
 (declare-var w Int)
 
-(constraint (= (f z w) (+ (g z) (* 3 h) z w)))
-(constraint (>= (g z) (* 7 z)))
+(constraint (= (f z w "ABC") (+ (g "ABC" z) (* 3 h) z w)))
+(constraint (>= (g "ABC" z) (* 7 z)))
 (constraint (>= h 50))
 
 (check-synth)
