@@ -2047,8 +2047,8 @@ void Smt2Printer::toStreamCmdSynthFun(std::ostream& out,
 {
   std::stringstream sym;
   sym << f;
-  out << '(' << (isInv ? "synth-inv " : "synth-fun ") << CVC4::quoteSymbol(sym.str())
-      << ' ';
+  out << '(' << (isInv ? "synth-inv " : "synth-fun ")
+      << CVC4::quoteSymbol(sym.str()) << ' ';
   out << '(';
   if (!vars.empty())
   {
@@ -2067,8 +2067,7 @@ void Smt2Printer::toStreamCmdSynthFun(std::ostream& out,
   if (!isInv)
   {
     TypeNode ftn = f.getType();
-  TypeNode range = ftn.isFunction() ? ftn.getRangeType()
-                                    : ftn;
+    TypeNode range = ftn.isFunction() ? ftn.getRangeType() : ftn;
     out << ' ' << range;
   }
   out << '\n';

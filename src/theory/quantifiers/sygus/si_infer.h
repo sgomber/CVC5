@@ -32,7 +32,7 @@ class SingleInvocationInference
   /**
    * Coerce single invocation. Returns a conjecture in "typed single invocation"
    * form, which permits argument dropping and reordering between functions.
-   * 
+   *
    * (1) All functions f in fs that occur in R are each applied to the same
    * list of arguments A_f, where A_f is a tuple of unique variables.
    * (2) Each A_g is a subset of A_f for the maximal arity function f in fs.

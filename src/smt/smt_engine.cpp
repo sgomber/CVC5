@@ -1085,11 +1085,7 @@ void SmtEngine::declareSynthFun(Node func,
   if (Dump.isOn("raw-benchmark"))
   {
     getOutputManager().getPrinter().toStreamCmdSynthFun(
-        getOutputManager().getDumpOut(),
-        func,
-        vars,
-        isInv,
-        sygusType);
+        getOutputManager().getDumpOut(), func, vars, isInv, sygusType);
   }
 }
 void SmtEngine::declareSynthFun(Node func,
