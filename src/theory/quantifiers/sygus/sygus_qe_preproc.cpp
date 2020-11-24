@@ -96,7 +96,7 @@ Node SygusQePreproc::preprocess(Node q)
   // decompose the body of the synthesis conjecture
   std::vector<Node> uvars;
   Node qfBody = SygusUtils::decomposeConjectureBody(xbody, uvars);
-  
+
   // lift remaining functions to extended functions
   // we rewrite the body of the conjecture only, to preserve single invocation
   qfBody = remf.apply(qfBody, true);
@@ -120,7 +120,6 @@ Node SygusQePreproc::preprocess(Node q)
   Assert(targetArgs.size() == xtargetArgs.size());
   Trace("sygus-qep-debug") << "...extended single invocation with args = "
                            << xtargetArgs << std::endl;
-
 
   NodeManager* nm = NodeManager::currentNM();
 
@@ -183,7 +182,7 @@ Node SygusQePreproc::preprocess(Node q)
   }
 
   // if it was simply single invocation, we are done
-  if (maxf.size()==unsf.size())
+  if (maxf.size() == unsf.size())
   {
     Trace("sygus-qep") << "...no partial functions, finish." << std::endl;
     return Node::null();
@@ -314,13 +313,15 @@ Node SygusQePreproc::preprocess(Node q)
     {
       std::vector<Node> fargs;
       SygusUtils::getSygusArgumentListForSynthFun(solSubs.d_vars[i], fargs);
-      Trace("sygus-qep-debug") << "...xtargetArgs = " << xtargetArgs << std::endl;
-      Trace("sygus-qep-debug") << "...fargs[" << solSubs.d_vars[i] << "] = " << fargs << std::endl;
+      Trace("sygus-qep-debug")
+          << "...xtargetArgs = " << xtargetArgs << std::endl;
+      Trace("sygus-qep-debug")
+          << "...fargs[" << solSubs.d_vars[i] << "] = " << fargs << std::endl;
       Subs siToFormal;
       siToFormal.add(xtargetArgs, fargs);
       solSubs.d_subs[i] = siToFormal.apply(solSubs.d_subs[i]);
       Trace("sygus-qep-debug") << "...got " << solSubs.d_subs[i] << std::endl;
-      //Assert(!expr::hasFreeVar(solSubs.d_subs[i]));
+      // Assert(!expr::hasFreeVar(solSubs.d_subs[i]));
     }
     Trace("sygus-qep-debug")
         << "...after revert extensions : " << solSubs << std::endl;

@@ -38,7 +38,7 @@ Node SingleInvocationInference::coerceSingleInvocation(
   Node conjs = coerceSingleInvocationSimple(fs, conj, maxf, maxArgs, args);
   if (!conjs.isNull())
   {
-    AlwaysAssert(SygusSiUtils::isSingleInvocation(maxf,conjs));
+    AlwaysAssert(SygusSiUtils::isSingleInvocation(maxf, conjs));
     return conjs;
   }
   args.clear();
@@ -83,7 +83,8 @@ Node SingleInvocationInference::coerceSingleInvocation(
       {
         size_t id = typeId.size();
         typeId[fa] = id;
-        Trace("sygus-si-infer") << "  - id of type " << fa << " is " << id << std::endl;
+        Trace("sygus-si-infer")
+            << "  - id of type " << fa << " is " << id << std::endl;
       }
       Node ka = nm->mkSkolem("a", intTn);
       ftvs[fa].push_back(ka);
@@ -179,14 +180,18 @@ Node SingleInvocationInference::coerceSingleInvocation(
         {
           gsId[g] = gs.size();
           gs.push_back(g);
-          Trace("sygus-si-infer") << "  - id of ground term " << g << " is " << gsId[g] << std::endl;
+          Trace("sygus-si-infer") << "  - id of ground term " << g << " is "
+                                  << gsId[g] << std::endl;
         }
         Node gid = nm->mkConst(Rational(gsId[g]));
         TypeNode gtype = g.getType();
         AlwaysAssert(typeId.find(gtype) != typeId.end());
         Node tid = nm->mkConst(Rational(typeId[gtype]));
         Node happ = nm->mkNode(APPLY_UF, h, cid, tid, fvs[j]);
-        Trace("sygus-si-infer") << "   ...make argument #" << j << " of " << f << " (ground term " << g << "): " << fvs[j] << " " << gtype << " is " << happ << " == " << gid << std::endl;
+        Trace("sygus-si-infer")
+            << "   ...make argument #" << j << " of " << f << " (ground term "
+            << g << "): " << fvs[j] << " " << gtype << " is " << happ
+            << " == " << gid << std::endl;
         // ASSERT: h( typeId, conjId, ai ) = gId
         asserts.push_back(happ.eqNode(gid));
       }
@@ -249,7 +254,7 @@ Node SingleInvocationInference::coerceSingleInvocation(
       Integer mvi = mv.getConst<Rational>().getNumerator();
       Assert(mvi.fitsUnsignedInt());
       uint32_t index = mvi.toUnsignedInt();
-      Assert(fvToOType.find(v)!=fvToOType.end());
+      Assert(fvToOType.find(v) != fvToOType.end());
       TypeNode vtn = fvToOType[v];
       std::vector<Node>& svars = siVars[vtn];
       Assert(index < svars.size());
@@ -371,10 +376,9 @@ Node SingleInvocationInference::coerceSingleInvocation(
   }
   fconj = fconj.notNode();
   Trace("sygus-si-infer") << "Coerced conjecture: " << fconj << std::endl;
-  AlwaysAssert(SygusSiUtils::isSingleInvocation(maxf,fconj));
+  AlwaysAssert(SygusSiUtils::isSingleInvocation(maxf, fconj));
   return fconj;
 }
-
 
 Node SingleInvocationInference::coerceSingleInvocationSimple(
     const std::vector<Node>& fs,
@@ -386,12 +390,12 @@ Node SingleInvocationInference::coerceSingleInvocationSimple(
   // maybe it is already single invocation?
   if (!SygusSiUtils::getSingleInvocations(fs, conj, args))
   {
-  Trace("sygus-si-infer")
-      << "...simple, not in weak single invocation form" << std::endl;
+    Trace("sygus-si-infer")
+        << "...simple, not in weak single invocation form" << std::endl;
     return Node::null();
   }
-  Trace("sygus-si-infer")
-      << "...simple, already in weak single invocation form" << std::endl;
+  Trace("sygus-si-infer") << "...simple, already in weak single invocation form"
+                          << std::endl;
   // single invocation, also need to ensure it is typed single invocation
   if (!SygusSiUtils::getMaximalArityFunctions(args, maxf, maxArgs))
   {
@@ -402,7 +406,7 @@ Node SingleInvocationInference::coerceSingleInvocationSimple(
   Trace("sygus-si-infer")
       << "...simple, already in typed single invocation form" << std::endl;
   // now, must change arguments to be unique bound variables
-  
+
   return conj;
 }
 
