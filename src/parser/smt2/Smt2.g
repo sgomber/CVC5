@@ -63,8 +63,6 @@ options {
 }/* @lexer::includes */
 
 @lexer::postinclude {
-#include <stdint.h>
-
 #include "parser/smt2/smt2.h"
 #include "parser/antlr_input.h"
 
@@ -365,12 +363,7 @@ command [std::unique_ptr<CVC4::Command>* cmd]
         // set the expression name, if there was a named term
         std::pair<api::Term, std::string> namedTerm =
             PARSER_STATE->lastNamedTerm();
-        // TODO (projects-248)
-        // SYM_MAN->setExpressionName(namedTerm.first, namedTerm.second, true);
-        Command* csen =
-            new SetExpressionNameCommand(namedTerm.first, namedTerm.second);
-        csen->setMuted(true);
-        PARSER_STATE->preemptCommand(csen);
+        SYM_MAN->setExpressionName(namedTerm.first, namedTerm.second, true);
       }
     }
   | /* check-sat */
@@ -1841,18 +1834,8 @@ attribute[CVC4::api::Term& expr, CVC4::api::Term& retExpr, std::string& attr]
   | ATTRIBUTE_NAMED_TOK symbolicExpr[sexpr]
     {
       attr = std::string(":named");
-      api::Term func = PARSER_STATE->setNamedAttribute(expr, sexpr);
-      std::string name = sexpr.getValue();
-      // bind name to expr with define-fun
-      // TODO (projects-248) SYM_MAN->setExpressionName(func, name, false);
-      Command* c =
-          new DefineNamedFunctionCommand(name,
-                                         func,
-                                         std::vector<api::Term>(),
-                                         expr,
-                                         SYM_MAN->getGlobalDeclarations());
-      c->setMuted(true);
-      PARSER_STATE->preemptCommand(c);
+      // notify that expression was given a name
+      PARSER_STATE->notifyNamedExpression(expr, sexpr.getValue());
     }
   ;
 
