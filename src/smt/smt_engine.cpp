@@ -1084,15 +1084,10 @@ void SmtEngine::declareSynthFun(Node func,
 
   if (Dump.isOn("raw-benchmark"))
   {
-    Assert(func.hasAttribute(expr::VarNameAttr()));
-    std::string id;
-    func.getAttribute(expr::VarNameAttr(), id);
     getOutputManager().getPrinter().toStreamCmdSynthFun(
         getOutputManager().getDumpOut(),
-        id,
+        func,
         vars,
-        func.getType().isFunction() ? func.getType().getRangeType()
-                                    : func.getType(),
         isInv,
         sygusType);
   }

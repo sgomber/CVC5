@@ -120,9 +120,8 @@ class Smt2Printer : public CVC4::Printer
 
   /** Print synth-fun command */
   void toStreamCmdSynthFun(std::ostream& out,
-                           const std::string& sym,
+                           Node f,
                            const std::vector<Node>& vars,
-                           TypeNode range,
                            bool isInv,
                            TypeNode sygusType) const override;
 

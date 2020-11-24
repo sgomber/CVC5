@@ -66,6 +66,12 @@ Node SygusQePreproc::preprocess(Node q)
   Trace("sygus-qep-debug") << "...single invocation with target args = "
                            << targetArgs << std::endl;
   Trace("sygus-qep-debug") << "...max functions = " << maxf << std::endl;
+  if (maxf.empty())
+  {
+    Trace("sygus-qep") << "...trivial (no functions to synthesize)"
+                       << std::endl;
+    return Node::null();
+  }
   // Get the function transformation. We also compute methods for extending
   // them to extended functions in xf. The substitutions remf converts the
   // remaining functions to extended ones (each whose argument types match

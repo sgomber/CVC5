@@ -38,7 +38,6 @@ Node SingleInvocationInference::coerceSingleInvocation(
   Node conjs = coerceSingleInvocationSimple(fs, conj, maxf, maxArgs, args);
   if (!conjs.isNull())
   {
-    AlwaysAssert(SygusSiUtils::isSingleInvocation(maxf, conjs));
     return conjs;
   }
   args.clear();
@@ -376,7 +375,6 @@ Node SingleInvocationInference::coerceSingleInvocation(
   }
   fconj = fconj.notNode();
   Trace("sygus-si-infer") << "Coerced conjecture: " << fconj << std::endl;
-  AlwaysAssert(SygusSiUtils::isSingleInvocation(maxf, fconj));
   return fconj;
 }
 
