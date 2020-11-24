@@ -35,20 +35,11 @@ Node SingleInvocationInference::coerceSingleInvocation(
   Trace("sygus-si-infer") << "coerceSingleInvocation " << fs << " on " << conj
                           << std::endl;
   Assert(!fs.empty());
-  // maybe it is already single invocation?
-  if (SygusSiUtils::getSingleInvocations(fs, conj, args))
+  Node conjs = coerceSingleInvocationSimple(fs, conj, maxf, maxArgs, args);
+  if (!conjs.isNull())
   {
-    Trace("sygus-si-infer")
-        << "...already in weak single invocation form" << std::endl;
-    // single invocation, also need to ensure it is typed single invocation
-    if (SygusSiUtils::getMaximalArityFunctions(args, maxf, maxArgs))
-    {
-      Trace("sygus-si-infer")
-          << "...already in typed single invocation form" << std::endl;
-      return conj;
-    }
-    Trace("sygus-si-infer")
-        << "...not in typed single invocation form" << std::endl;
+    AlwaysAssert(SygusSiUtils::isSingleInvocation(maxf,conjs));
+    return conjs;
   }
   args.clear();
 
@@ -380,7 +371,39 @@ Node SingleInvocationInference::coerceSingleInvocation(
   }
   fconj = fconj.notNode();
   Trace("sygus-si-infer") << "Coerced conjecture: " << fconj << std::endl;
+  AlwaysAssert(SygusSiUtils::isSingleInvocation(maxf,fconj));
   return fconj;
+}
+
+
+Node SingleInvocationInference::coerceSingleInvocationSimple(
+    const std::vector<Node>& fs,
+    Node conj,
+    std::vector<Node>& maxf,
+    std::vector<Node>& maxArgs,
+    std::map<Node, std::vector<Node>>& args)
+{
+  // maybe it is already single invocation?
+  if (!SygusSiUtils::getSingleInvocations(fs, conj, args))
+  {
+  Trace("sygus-si-infer")
+      << "...simple, not in weak single invocation form" << std::endl;
+    return Node::null();
+  }
+  Trace("sygus-si-infer")
+      << "...simple, already in weak single invocation form" << std::endl;
+  // single invocation, also need to ensure it is typed single invocation
+  if (!SygusSiUtils::getMaximalArityFunctions(args, maxf, maxArgs))
+  {
+    Trace("sygus-si-infer")
+        << "...simple, not in typed single invocation form" << std::endl;
+    return Node::null();
+  }
+  Trace("sygus-si-infer")
+      << "...simple, already in typed single invocation form" << std::endl;
+  // now, must change arguments to be unique bound variables
+  
+  return conj;
 }
 
 }  // namespace quantifiers

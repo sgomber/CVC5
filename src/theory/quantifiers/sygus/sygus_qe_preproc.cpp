@@ -93,10 +93,14 @@ Node SygusQePreproc::preprocess(Node q)
   Trace("sygus-qep-debug") << "- extension-to-remaining = " << xf << std::endl;
   Trace("sygus-qep-debug") << "- extended max functions = " << xmaxf
                            << std::endl;
-
+  // decompose the body of the synthesis conjecture
+  std::vector<Node> uvars;
+  Node qfBody = SygusUtils::decomposeConjectureBody(xbody, uvars);
+  
   // lift remaining functions to extended functions
-  xbody = remf.apply(siBody, true);
-  Trace("sygus-qep-debug") << "Extended and normalized body:" << xbody
+  // we rewrite the body of the conjecture only, to preserve single invocation
+  qfBody = remf.apply(qfBody, true);
+  Trace("sygus-qep-debug") << "Extended and normalized body:" << qfBody
                            << std::endl;
 
   // Check single invocation with respect to the extension.
@@ -104,8 +108,8 @@ Node SygusQePreproc::preprocess(Node q)
   std::vector<Node> xtargetArgs;
   Trace("sygus-qep-debug")
       << "Check single invocation with respect to all extended functions "
-      << xf.d_vars << ": " << xbody << std::endl;
-  if (!SygusSiUtils::isSingleInvocation(xf.d_vars, xbody, xffs, xtargetArgs))
+      << xf.d_vars << ": " << qfBody << std::endl;
+  if (!SygusSiUtils::isSingleInvocation(xf.d_vars, qfBody, xffs, xtargetArgs))
   {
     Trace("sygus-qep") << "...not single invocation after extension"
                        << std::endl;
@@ -117,10 +121,6 @@ Node SygusQePreproc::preprocess(Node q)
   Trace("sygus-qep-debug") << "...extended single invocation with args = "
                            << xtargetArgs << std::endl;
 
-  // decompose the body of the synthesis conjecture
-  Node body = xbody;
-  std::vector<Node> uvars;
-  Node qfBody = SygusUtils::decomposeConjectureBody(body, uvars);
 
   NodeManager* nm = NodeManager::currentNM();
 
@@ -130,7 +130,7 @@ Node SygusQePreproc::preprocess(Node q)
     Subs xmaxfk;
     xmaxfk.add(xtargetArgs);
     std::vector<Node> qevars;
-    for (const Node& v : body[0][0])
+    for (const Node& v : xbody[0][0])
     {
       if (std::find(xtargetArgs.begin(), xtargetArgs.end(), v)
           == xtargetArgs.end())
@@ -183,9 +183,9 @@ Node SygusQePreproc::preprocess(Node q)
   }
 
   // if it was simply single invocation, we are done
-  if (SygusSiUtils::isSingleInvocation(unsf, q[1]))
+  if (maxf.size()==unsf.size())
   {
-    Trace("sygus-qep") << "...simply single invocation, success." << std::endl;
+    Trace("sygus-qep") << "...no partial functions, finish." << std::endl;
     return Node::null();
   }
 
@@ -314,11 +314,13 @@ Node SygusQePreproc::preprocess(Node q)
     {
       std::vector<Node> fargs;
       SygusUtils::getSygusArgumentListForSynthFun(solSubs.d_vars[i], fargs);
+      Trace("sygus-qep-debug") << "...xtargetArgs = " << xtargetArgs << std::endl;
       Trace("sygus-qep-debug") << "...fargs[" << solSubs.d_vars[i] << "] = " << fargs << std::endl;
       Subs siToFormal;
-      siToFormal.add(uvars, fargs);
+      siToFormal.add(xtargetArgs, fargs);
       solSubs.d_subs[i] = siToFormal.apply(solSubs.d_subs[i]);
-      Assert(!expr::hasFreeVar(solSubs.d_subs[i]));
+      Trace("sygus-qep-debug") << "...got " << solSubs.d_subs[i] << std::endl;
+      //Assert(!expr::hasFreeVar(solSubs.d_subs[i]));
     }
     Trace("sygus-qep-debug")
         << "...after revert extensions : " << solSubs << std::endl;
@@ -336,7 +338,7 @@ Node SygusQePreproc::preprocess(Node q)
 
     // get the original conjecture and update it with the new solutions
     Node bodyNorm = xf.apply(qfBody, true);
-    Node sbvl = nm->mkNode(BOUND_VAR_LIST, uvars);
+    Node sbvl = nm->mkNode(BOUND_VAR_LIST, xtargetArgs);
     Node conj = nm->mkNode(EXISTS, sbvl, bodyNorm.negate());
     Trace("sygus-qep-debug2")
         << "...conjecture reverted to : " << conj << std::endl;
@@ -397,7 +399,6 @@ Node SygusQePreproc::getFunctionTransform(Node f,
   NodeManager* nm = NodeManager::currentNM();
   Trace("sygus-qep-ext") << f << " was applied to " << fargs << ", required "
                          << targetArgs << std::endl;
-  Assert(!targetArgs.empty());
   Assert(fargs.size() <= targetArgs.size());
 
   // argument type of targetArgs -> range type of f

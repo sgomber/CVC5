@@ -48,6 +48,16 @@ class SingleInvocationInference
                                      std::vector<Node>& allSiVars,
                                      std::vector<Node>& maxf,
                                      std::map<Node, std::vector<Node>>& args);
+private:
+  /**
+   * Same as above, but without resorting to reasoning across conjunctions.
+   */
+  static Node coerceSingleInvocationSimple(const std::vector<Node>& fs,
+                                     Node conj,
+                                     std::vector<Node>& allSiVars,
+                                     std::vector<Node>& maxf,
+                                     std::map<Node, std::vector<Node>>& args);
+  
 };
 
 }  // namespace quantifiers
