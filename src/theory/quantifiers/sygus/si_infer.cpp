@@ -35,12 +35,14 @@ Node SingleInvocationInference::coerceSingleInvocation(
   Trace("sygus-si-infer") << "coerceSingleInvocation " << fs << " on " << conj
                           << std::endl;
   Assert(!fs.empty());
+  /*
   Node conjs = coerceSingleInvocationSimple(fs, conj, maxf, maxArgs, args);
   if (!conjs.isNull())
   {
     return conjs;
   }
   args.clear();
+  */
 
   NodeManager* nm = NodeManager::currentNM();
   TypeNode intTn = nm->integerType();
@@ -386,7 +388,7 @@ Node SingleInvocationInference::coerceSingleInvocationSimple(
     std::map<Node, std::vector<Node>>& args)
 {
   // maybe it is already single invocation?
-  if (!SygusSiUtils::getSingleInvocations(fs, conj, args))
+  if (!SygusSiUtils::getSingleInvocations(fs, conj, args, false))
   {
     Trace("sygus-si-infer")
         << "...simple, not in weak single invocation form" << std::endl;
@@ -403,7 +405,7 @@ Node SingleInvocationInference::coerceSingleInvocationSimple(
   }
   Trace("sygus-si-infer")
       << "...simple, already in typed single invocation form" << std::endl;
-  // now, must change arguments to be unique bound variables
+      
 
   return conj;
 }

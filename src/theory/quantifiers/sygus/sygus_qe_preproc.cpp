@@ -187,11 +187,32 @@ Node SygusQePreproc::preprocess(Node q)
     return Node::null();
   }
 
-  // if it was simply single invocation, we are done
-  if (maxf.size() == unsf.size())
+  // if we don't require reordering or dropping arguments, we can just solve
+  // with the standard single invocation solver
+  if (maxf.size()==unsf.size())
   {
-    Trace("sygus-qep") << "...no partial functions, finish." << std::endl;
-    return Node::null();
+    bool reqArgReorder = false;
+    for (const std::pair<Node, std::vector<Node>>& r : rargs)
+    {
+      Assert (r.second.size()==targetArgs.size());
+      for (size_t i=0, ntargetArgs = targetArgs.size(); i<ntargetArgs; i++)
+      {
+        if (r.second[i]!=targetArgs[i])
+        {
+          reqArgReorder = true;
+          break;
+        }
+      }
+      if (reqArgReorder)
+      {
+        break;
+      }
+    }
+    if (!reqArgReorder)
+    {
+      Trace("sygus-qep") << "...no argument reordering, we can solve with single invocation." << std::endl;
+      return Node::null();
+    }
   }
 
   // ===== B: otherwise, eliminate functions if there are remainder functions
@@ -287,9 +308,9 @@ Node SygusQePreproc::preprocess(Node q)
     Trace("sygus-qep-debug") << "- constraint " << syc << std::endl;
     smt_sy->assertSygusConstraint(syc);
   }
-
+  Trace("sygus-qep") << "checkSynth to eliminate functions" << std::endl;
   Result r = smt_sy->checkSynth();
-  Trace("sygus-qep-debug") << "checkSynth result: " << r << std::endl;
+  Trace("sygus-qep") << "checkSynth result: " << r << std::endl;
   if (r.asSatisfiabilityResult().isSat() == Result::UNSAT)
   {
     std::map<Node, Node> solMap;
@@ -301,36 +322,32 @@ Node SygusQePreproc::preprocess(Node q)
       TNode xfn = xmaxf[i];
       Assert(solMap.find(xfn) != solMap.end());
       TNode xsol = solMap[xfn];
+      Trace("sygus-qep-debug") << "Solution initial : " << xfn << " -> " << xsol << std::endl;
       // transform the solution
       Node fsol = remf.apply(fn);
       fsol = fsol.substitute(xfn, xsol);
       // apply to original formal arguments
       fsol = mkLambdaApp(formals[fn], fsol, formals[fn]);
       fsol = Rewriter::rewrite(fsol);
+      Trace("sygus-qep-debug") << "Converted to : " << fn << " -> " << fsol << std::endl;
+      
+      Trace("sygus-qep-debug")
+          << "...xtargetArgs = " << xtargetArgs << std::endl;
+      Trace("sygus-qep-debug")
+          << "...xformals[" << xfn << "] = " << xformals[xfn] << std::endl;
+      Subs siToFormal;
+      siToFormal.add(xtargetArgs, xformals[xfn]);
+      fsol = siToFormal.apply(fsol);
+      Trace("sygus-qep-debug") << "Revert formals " << fsol << std::endl;
+      
       solSubs.add(fn, fsol);
+      Trace("sygus-qep-debug") << "Modified to : " << fn << " -> " << fsol << std::endl;
     }
     Trace("sygus-qep-debug") << "Solution : " << solSubs << std::endl;
     // undo the skolemization of the extended functions
     xfk.rapplyToRange(solSubs);
     Trace("sygus-qep-debug")
         << "...after unskolemize : " << solSubs << std::endl;
-    // convert si vars to formal arguments
-    for (size_t i = 0, nvars = solSubs.d_vars.size(); i < nvars; i++)
-    {
-      std::vector<Node> fargs;
-      SygusUtils::getSygusArgumentListForSynthFun(solSubs.d_vars[i], fargs);
-      Trace("sygus-qep-debug")
-          << "...xtargetArgs = " << xtargetArgs << std::endl;
-      Trace("sygus-qep-debug")
-          << "...fargs[" << solSubs.d_vars[i] << "] = " << fargs << std::endl;
-      Subs siToFormal;
-      siToFormal.add(xtargetArgs, fargs);
-      solSubs.d_subs[i] = siToFormal.apply(solSubs.d_subs[i]);
-      Trace("sygus-qep-debug") << "...got " << solSubs.d_subs[i] << std::endl;
-      // Assert(!expr::hasFreeVar(solSubs.d_subs[i]));
-    }
-    Trace("sygus-qep-debug")
-        << "...after revert extensions : " << solSubs << std::endl;
     // extended functions have a definition in terms of the originals
     xf.applyToRange(solSubs, true);
     Trace("sygus-qep-debug")
