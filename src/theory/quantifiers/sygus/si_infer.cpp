@@ -405,7 +405,6 @@ Node SingleInvocationInference::coerceSingleInvocationSimple(
   }
   Trace("sygus-si-infer")
       << "...simple, already in typed single invocation form" << std::endl;
-      
 
   return conj;
 }

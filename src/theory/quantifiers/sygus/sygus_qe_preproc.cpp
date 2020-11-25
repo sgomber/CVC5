@@ -189,15 +189,15 @@ Node SygusQePreproc::preprocess(Node q)
 
   // if we don't require reordering or dropping arguments, we can just solve
   // with the standard single invocation solver
-  if (maxf.size()==unsf.size())
+  if (maxf.size() == unsf.size())
   {
     bool reqArgReorder = false;
     for (const std::pair<Node, std::vector<Node>>& r : rargs)
     {
-      Assert (r.second.size()==targetArgs.size());
-      for (size_t i=0, ntargetArgs = targetArgs.size(); i<ntargetArgs; i++)
+      Assert(r.second.size() == targetArgs.size());
+      for (size_t i = 0, ntargetArgs = targetArgs.size(); i < ntargetArgs; i++)
       {
-        if (r.second[i]!=targetArgs[i])
+        if (r.second[i] != targetArgs[i])
         {
           reqArgReorder = true;
           break;
@@ -210,7 +210,9 @@ Node SygusQePreproc::preprocess(Node q)
     }
     if (!reqArgReorder)
     {
-      Trace("sygus-qep") << "...no argument reordering, we can solve with single invocation." << std::endl;
+      Trace("sygus-qep")
+          << "...no argument reordering, we can solve with single invocation."
+          << std::endl;
       return Node::null();
     }
   }
@@ -322,15 +324,17 @@ Node SygusQePreproc::preprocess(Node q)
       TNode xfn = xmaxf[i];
       Assert(solMap.find(xfn) != solMap.end());
       TNode xsol = solMap[xfn];
-      Trace("sygus-qep-debug") << "Solution initial : " << xfn << " -> " << xsol << std::endl;
+      Trace("sygus-qep-debug")
+          << "Solution initial : " << xfn << " -> " << xsol << std::endl;
       // transform the solution
       Node fsol = remf.apply(fn);
       fsol = fsol.substitute(xfn, xsol);
       // apply to original formal arguments
       fsol = mkLambdaApp(formals[fn], fsol, formals[fn]);
       fsol = Rewriter::rewrite(fsol);
-      Trace("sygus-qep-debug") << "Converted to : " << fn << " -> " << fsol << std::endl;
-      
+      Trace("sygus-qep-debug")
+          << "Converted to : " << fn << " -> " << fsol << std::endl;
+
       Trace("sygus-qep-debug")
           << "...xtargetArgs = " << xtargetArgs << std::endl;
       Trace("sygus-qep-debug")
@@ -339,9 +343,10 @@ Node SygusQePreproc::preprocess(Node q)
       siToFormal.add(xtargetArgs, xformals[xfn]);
       fsol = siToFormal.apply(fsol);
       Trace("sygus-qep-debug") << "Revert formals " << fsol << std::endl;
-      
+
       solSubs.add(fn, fsol);
-      Trace("sygus-qep-debug") << "Modified to : " << fn << " -> " << fsol << std::endl;
+      Trace("sygus-qep-debug")
+          << "Modified to : " << fn << " -> " << fsol << std::endl;
     }
     Trace("sygus-qep-debug") << "Solution : " << solSubs << std::endl;
     // undo the skolemization of the extended functions
