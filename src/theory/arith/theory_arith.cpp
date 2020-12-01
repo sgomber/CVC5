@@ -118,12 +118,6 @@ void TheoryArith::preRegisterTerm(TNode n)
   d_internal->preRegisterTerm(n);
 }
 
-TrustNode TheoryArith::expandDefinition(Node node)
-{
-  // call eliminate operators
-  return d_arithPreproc.eliminate(node);
-}
-
 void TheoryArith::notifySharedTerm(TNode n) { d_internal->notifySharedTerm(n); }
 
 TrustNode TheoryArith::ppRewrite(TNode atom)
@@ -181,10 +175,15 @@ void TheoryArith::ppStaticLearn(TNode n, NodeBuilder<>& learned) {
   d_internal->ppStaticLearn(n, learned);
 }
 
-bool TheoryArith::preCheck(Effort level) { return d_internal->preCheck(level); }
+bool TheoryArith::preCheck(Effort level)
+{
+  Trace("arith-check") << "TheoryArith::preCheck " << level << std::endl;
+  return d_internal->preCheck(level);
+}
 
 void TheoryArith::postCheck(Effort level)
 {
+  Trace("arith-check") << "TheoryArith::postCheck " << level << std::endl;
   // check with the non-linear solver at last call
   if (level == Theory::EFFORT_LAST_CALL)
   {
@@ -218,6 +217,9 @@ void TheoryArith::postCheck(Effort level)
 bool TheoryArith::preNotifyFact(
     TNode atom, bool pol, TNode fact, bool isPrereg, bool isInternal)
 {
+  Trace("arith-check") << "TheoryArith::preNotifyFact: " << fact
+                       << ", isPrereg=" << isPrereg
+                       << ", isInternal=" << isInternal << std::endl;
   if (d_eqSolver != nullptr)
   {
     // assert equalities directly to equality engine
