@@ -2,7 +2,7 @@
 /*! \file theory_arith_private.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Tim King, Andrew Reynolds, Mathias Preiner
+ **   Tim King, Alex Ozdemir, Andrew Reynolds
  ** This file is part of the CVC4 project.
  ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
  ** in the top-level source directory and their institutional affiliations.
@@ -3195,7 +3195,6 @@ bool TheoryArithPrivate::solveRealRelaxation(Theory::Effort effortLevel){
 //           int maxDepth =
 //             d_likelyIntegerInfeasible ? 1 : options::arithMaxBranchDepth();
 
-
 //           if(d_likelyIntegerInfeasible){
 //             d_qflraStatus = d_attemptSolSimplex.attempt(relaxSolution);
 //           }else{
@@ -3205,7 +3204,7 @@ bool TheoryArithPrivate::solveRealRelaxation(Theory::Effort effortLevel){
 //               mipRes = approxSolver->solveMIP(true);
 //             }
 //             d_errorSet.reduceToSignals();
-//             //Message() << "here" << endl;
+//             //CVC4Message() << "here" << endl;
 //             if(mipRes == ApproximateSimplex::ApproxSat){
 //               mipSolution = approxSolver->extractMIP();
 //               d_qflraStatus = d_attemptSolSimplex.attempt(mipSolution);
@@ -3221,13 +3220,15 @@ bool TheoryArithPrivate::solveRealRelaxation(Theory::Effort effortLevel){
 //             }
 //           }
 //           options::arithStandardCheckVarOrderPivots.set(pass2Limit);
-//           if(d_qflraStatus != Result::UNSAT){ d_qflraStatus = simplex.findModel(false); }
-//           //Message() << "done" << endl;
+//           if(d_qflraStatus != Result::UNSAT){ d_qflraStatus =
+//           simplex.findModel(false); }
+//           //CVC4Message() << "done" << endl;
 //         }
 //         break;
 //       case ApproximateSimplex::ApproxUnsat:
 //         {
-//           ApproximateSimplex::Solution sol = approxSolver->extractRelaxation();
+//           ApproximateSimplex::Solution sol =
+//           approxSolver->extractRelaxation();
 
 //           d_qflraStatus = d_attemptSolSimplex.attempt(sol);
 //           options::arithStandardCheckVarOrderPivots.set(pass2Limit);
@@ -3247,13 +3248,13 @@ bool TheoryArithPrivate::solveRealRelaxation(Theory::Effort effortLevel){
 //   }else{
 
 //     if(d_qflraStatus == Result::SAT_UNKNOWN){
-//       //Message() << "got sat unknown" << endl;
+//       //CVC4Message() << "got sat unknown" << endl;
 //       vector<ArithVar> toCut = cutAllBounded();
 //       if(toCut.size() > 0){
 //         //branchVector(toCut);
 //         emmittedConflictOrSplit = true;
 //       }else{
-//         //Message() << "splitting" << endl;
+//         //CVC4Message() << "splitting" << endl;
 
 //         d_qflraStatus = simplex.findModel(noPivotLimit);
 //       }
