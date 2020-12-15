@@ -19,7 +19,7 @@
 #include <vector>
 #include "expr/node.h"
 #include "expr/subs.h"
-#include "expr/type.h"
+#include "expr/type_node.h"
 
 namespace CVC4 {
 namespace theory {

@@ -40,12 +40,19 @@ Node SygusUtils::mkSygusConjecture(const std::vector<Node>& fs,
 {
   Assert(!fs.empty());
   NodeManager* nm = NodeManager::currentNM();
+<<<<<<< HEAD
   std::vector<Node> ipls;
   SygusAttribute ca;
   Node sygusVar = nm->mkSkolem("sygus", nm->booleanType());
   sygusVar.setAttribute(ca, true);
   Node instAttr = nm->mkNode(INST_ATTRIBUTE, sygusVar);
   ipls.push_back(instAttr);
+=======
+  SygusAttribute ca;
+  Node sygusVar = nm->mkSkolem("sygus", nm->booleanType());
+  sygusVar.setAttribute(ca, true);
+  std::vector<Node> ipls{nm->mkNode(INST_ATTRIBUTE, sygusVar)};
+>>>>>>> 8c4598683e4edd217ed524d47c68a053b6881f4c
   // insert the remaining instantiation attributes
   ipls.insert(ipls.end(), iattrs.begin(), iattrs.end());
   Node ipl = nm->mkNode(INST_PATTERN_LIST, ipls);
@@ -128,14 +135,14 @@ void SygusUtils::decomposeAnd(Node conj, std::vector<Node>& cs)
   }
 }
 
-Node SygusUtils::decomposeConjectureBody(Node conj, std::vector<Node>& vs)
+Node SygusUtils::decomposeSygusBody(Node conj, std::vector<Node>& vs)
 {
   if (conj.getKind() == NOT && conj[0].getKind() == FORALL)
   {
     vs.insert(vs.end(), conj[0][0].begin(), conj[0][0].end());
-    return conj[0][1];
+    return conj[0][1].negate();
   }
-  return conj.negate();
+  return conj;
 }
 
 Node SygusUtils::getSygusArgumentListForSynthFun(Node f)

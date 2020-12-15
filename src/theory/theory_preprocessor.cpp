@@ -2,7 +2,7 @@
 /*! \file theory_preprocessor.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Andrew Reynolds, Morgan Deters, Dejan Jovanovic
+ **   Andrew Reynolds, Dejan Jovanovic, Morgan Deters
  ** This file is part of the CVC4 project.
  ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
  ** in the top-level source directory and their institutional affiliations.
@@ -224,6 +224,51 @@ TrustNode TheoryPreprocessor::preprocess(TNode node,
   return tret;
 }
 
+TrustNode TheoryPreprocessor::preprocessLemma(TrustNode node,
+                                              std::vector<TrustNode>& newLemmas,
+                                              std::vector<Node>& newSkolems,
+                                              bool doTheoryPreprocess)
+{
+  // what was originally proven
+  Node lemma = node.getProven();
+  TrustNode tplemma =
+      preprocess(lemma, newLemmas, newSkolems, doTheoryPreprocess);
+  if (tplemma.isNull())
+  {
+    // no change needed
+    return node;
+  }
+  Assert(tplemma.getKind() == TrustNodeKind::REWRITE);
+  // what it was preprocessed to
+  Node lemmap = tplemma.getNode();
+  Assert(lemmap != node.getProven());
+  // process the preprocessing
+  if (isProofEnabled())
+  {
+    Assert(d_lp != nullptr);
+    // add the original proof to the lazy proof
+    d_lp->addLazyStep(node.getProven(), node.getGenerator());
+    // only need to do anything if lemmap changed in a non-trivial way
+    if (!CDProof::isSame(lemmap, lemma))
+    {
+      d_lp->addLazyStep(tplemma.getProven(),
+                        tplemma.getGenerator(),
+                        PfRule::PREPROCESS_LEMMA,
+                        true,
+                        "TheoryEngine::lemma_pp");
+      // ---------- from node -------------- from theory preprocess
+      // lemma                lemma = lemmap
+      // ------------------------------------------ EQ_RESOLVE
+      // lemmap
+      std::vector<Node> pfChildren;
+      pfChildren.push_back(lemma);
+      pfChildren.push_back(tplemma.getProven());
+      d_lp->addStep(lemmap, PfRule::EQ_RESOLVE, pfChildren, {});
+    }
+  }
+  return TrustNode::mkTrustLemma(lemmap, d_lp.get());
+}
+
 struct preprocess_stack_element
 {
   TNode node;
@@ -350,30 +395,32 @@ Node TheoryPreprocessor::ppTheoryRewrite(TNode term)
   {
     return (*find).second;
   }
-  unsigned nc = term.getNumChildren();
-  if (nc == 0)
+  if (term.getNumChildren() == 0)
   {
     return preprocessWithProof(term);
   }
   Trace("theory-pp") << "ppTheoryRewrite { " << term << endl;
-
-  Node newTerm = term;
+  // We must rewrite before preprocessing, because some terms when rewritten
+  // may introduce new terms that are not top-level and require preprocessing.
+  // An example of this is (forall ((x Int)) (and (tail L) (P x))) which
+  // rewrites to (and (tail L) (forall ((x Int)) (P x))). The subterm (tail L)
+  // must be preprocessed as a child here.
+  Node newTerm = rewriteWithProof(term);
   // do not rewrite inside quantifiers
-  if (!term.isClosure())
+  if (newTerm.getNumChildren() > 0 && !newTerm.isClosure())
   {
-    NodeBuilder<> newNode(term.getKind());
-    if (term.getMetaKind() == kind::metakind::PARAMETERIZED)
+    NodeBuilder<> newNode(newTerm.getKind());
+    if (newTerm.getMetaKind() == kind::metakind::PARAMETERIZED)
     {
-      newNode << term.getOperator();
+      newNode << newTerm.getOperator();
     }
-    unsigned i;
-    for (i = 0; i < nc; ++i)
+    for (const Node& nt : newTerm)
     {
-      newNode << ppTheoryRewrite(term[i]);
+      newNode << ppTheoryRewrite(nt);
     }
     newTerm = Node(newNode);
+    newTerm = rewriteWithProof(newTerm);
   }
-  newTerm = rewriteWithProof(newTerm);
   newTerm = preprocessWithProof(newTerm);
   d_ppCache[term] = newTerm;
   Trace("theory-pp") << "ppTheoryRewrite returning " << newTerm << "}" << endl;

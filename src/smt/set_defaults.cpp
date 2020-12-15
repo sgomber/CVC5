@@ -2,7 +2,7 @@
 /*! \file set_defaults.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Andrew Reynolds, Andres Noetzli, Haniel Barbosa
+ **   Andrew Reynolds, Andres Noetzli, Gereon Kremer
  ** This file is part of the CVC4 project.
  ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
  ** in the top-level source directory and their institutional affiliations.
@@ -82,15 +82,6 @@ void setDefaults(LogicInfo& logic, bool isInternalSubsolver)
     options::bitvectorAlgebraicSolver.set(true);
   }
 
-  // Language-based defaults
-  if (!options::bitvectorDivByZeroConst.wasSetByUser())
-  {
-    // Bitvector-divide-by-zero changed semantics in SMT LIB 2.6, thus we
-    // set this option if the input format is SMT LIB 2.6. We also set this
-    // option if we are sygus, since we assume SMT LIB 2.6 semantics for sygus.
-    options::bitvectorDivByZeroConst.set(
-        !language::isInputLang_smt2_5(options::inputLanguage(), true));
-  }
   bool is_sygus = language::isInputLangSygus(options::inputLanguage());
 
   if (options::bitblastMode() == options::BitblastMode::EAGER)
@@ -238,14 +229,6 @@ void setDefaults(LogicInfo& logic, bool isInternalSubsolver)
     {
       options::fmfBound.set(true);
       Trace("smt") << "turning on fmf-bound-int, for strings-exp" << std::endl;
-    }
-    // Do not eliminate extended arithmetic symbols from quantified formulas,
-    // since some strategies, e.g. --re-elim-agg, introduce them.
-    if (!options::elimExtArithQuant.wasSetByUser())
-    {
-      options::elimExtArithQuant.set(false);
-      Trace("smt") << "turning off elim-ext-arith-quant, for strings-exp"
-                   << std::endl;
     }
     // Note we allow E-matching by default to support combinations of sequences
     // and quantifiers.
@@ -577,10 +560,6 @@ void setDefaults(LogicInfo& logic, bool isInternalSubsolver)
       // eliminated altogether (or otherwise fail at preprocessing).
       || (logic.isTheoryEnabled(THEORY_ARITH) && !logic.isLinear()
           && options::solveIntAsBV() == 0)
-      // If division/mod-by-zero is not treated as a constant value in BV, we
-      // need UF.
-      || (logic.isTheoryEnabled(THEORY_BV)
-          && !options::bitvectorDivByZeroConst())
       // FP requires UF since there are multiple operators that are partially
       // defined (see http://smtlib.cs.uiowa.edu/papers/BTRW15.pdf for more
       // details).
@@ -935,11 +914,6 @@ void setDefaults(LogicInfo& logic, bool isInternalSubsolver)
     {
       options::quantDynamicSplit.set(options::QuantDSplitMode::DEFAULT);
     }
-    // do not eliminate extended arithmetic symbols from quantified formulas
-    if (!options::elimExtArithQuant.wasSetByUser())
-    {
-      options::elimExtArithQuant.set(false);
-    }
     if (!options::eMatching.wasSetByUser())
     {
       options::eMatching.set(options::fmfInstEngine());
@@ -1077,19 +1051,6 @@ void setDefaults(LogicInfo& logic, bool isInternalSubsolver)
       {
         options::cegqiSingleInvMode.set(options::CegqiSingleInvMode::NONE);
       }
-    }
-    // do not allow partial functions
-    if (!options::bitvectorDivByZeroConst())
-    {
-      if (options::bitvectorDivByZeroConst.wasSetByUser())
-      {
-        throw OptionException(
-            "--no-bv-div-zero-const is not supported with SyGuS");
-      }
-      Notice()
-          << "SmtEngine: setting bv-div-zero-const to true to support SyGuS"
-          << std::endl;
-      options::bitvectorDivByZeroConst.set(true);
     }
     if (!options::dtRewriteErrorSel.wasSetByUser())
     {

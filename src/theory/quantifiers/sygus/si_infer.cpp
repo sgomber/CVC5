@@ -149,7 +149,8 @@ Node SingleInvocationInference::coerceSingleInvocation(
 
   // decompose to conjunctions
   std::vector<Node> vars;
-  Node origConj = SygusUtils::decomposeConjectureBody(conj, vars);
+  Node origConj = SygusUtils::decomposeSygusBody(conj, vars);
+  origConj = origConj.negate();
   std::vector<Node> oconj;
   SygusUtils::decomposeAnd(origConj, oconj);
 

@@ -2,7 +2,7 @@
 /*! \file sygus_qe_preproc.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Andrew Reynolds
+ **   Andrew Reynolds, Mathias Preiner, Morgan Deters
  ** This file is part of the CVC4 project.
  ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
  ** in the top-level source directory and their institutional affiliations.
@@ -101,7 +101,8 @@ Node SygusQePreproc::preprocess(Node q)
                            << std::endl;
   // decompose the body of the synthesis conjecture
   std::vector<Node> uvars;
-  Node qfBody = SygusUtils::decomposeConjectureBody(xbody, uvars);
+  Node qfBody = SygusUtils::decomposeSygusBody(xbody, uvars);
+  qfBody = qfBody.negate();
 
   // lift remaining functions to extended functions
   // we rewrite the body of the conjecture only, to preserve single invocation
