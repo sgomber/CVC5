@@ -39,7 +39,7 @@ namespace smt {
 class Assertions;
 class SmtEngineState;
 class Preprocessor;
-class SmtEngineStatistics;
+struct SmtEngineStatistics;
 
 /**
  * A solver for SMT queries.
@@ -119,6 +119,8 @@ class SmtSolver
   TheoryEngine* getTheoryEngine();
   /** Get a pointer to the PropEngine owned by this solver. */
   prop::PropEngine* getPropEngine();
+  /** Get a pointer to the preprocessor */
+  Preprocessor* getPreprocessor();
   //------------------------------------------ end access methods
  private:
   /** Reference to the parent SMT engine */

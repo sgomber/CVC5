@@ -2,7 +2,7 @@
 /*! \file theory_sets.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Andrew Reynolds, Mudathir Mohamed, Kshitij Bansal
+ **   Andrew Reynolds, Kshitij Bansal, Andres Noetzli
  ** This file is part of the CVC4 project.
  ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
  ** in the top-level source directory and their institutional affiliations.
@@ -36,7 +36,7 @@ TheorySets::TheorySets(context::Context* c,
     : Theory(THEORY_SETS, c, u, out, valuation, logicInfo, pnm),
       d_skCache(),
       d_state(c, u, valuation, d_skCache),
-      d_im(*this, d_state, pnm),
+      d_im(*this, d_state, nullptr),
       d_internal(new TheorySetsPrivate(*this, d_state, d_im, d_skCache)),
       d_notify(*d_internal.get(), d_im)
 {
@@ -68,6 +68,9 @@ void TheorySets::finishInit()
   d_valuation.setUnevaluatedKind(COMPREHENSION);
   // choice is used to eliminate witness
   d_valuation.setUnevaluatedKind(WITNESS);
+  // Universe set is not evaluated. This is moreover important for ensuring that
+  // we do not eliminate terms whose value involves the universe set.
+  d_valuation.setUnevaluatedKind(UNIVERSE_SET);
 
   // functions we are doing congruence over
   d_equalityEngine->addFunctionKind(SINGLETON);
@@ -128,6 +131,11 @@ void TheorySets::preRegisterTerm(TNode node)
 
 TrustNode TheorySets::expandDefinition(Node n)
 {
+  return d_internal->expandDefinition(n);
+}
+
+TrustNode TheorySets::ppRewrite(TNode n)
+{
   Kind nk = n.getKind();
   if (nk == UNIVERSE_SET || nk == COMPLEMENT || nk == JOIN_IMAGE
       || nk == COMPREHENSION)
@@ -150,10 +158,14 @@ TrustNode TheorySets::expandDefinition(Node n)
       throw LogicException(ss.str());
     }
   }
-  return d_internal->expandDefinition(n);
+  // just expand definitions
+  return expandDefinition(n);
 }
 
-Theory::PPAssertStatus TheorySets::ppAssert(TNode in, SubstitutionMap& outSubstitutions) {
+Theory::PPAssertStatus TheorySets::ppAssert(
+    TrustNode tin, TrustSubstitutionMap& outSubstitutions)
+{
+  TNode in = tin.getNode();
   Debug("sets-proc") << "ppAssert : " << in << std::endl;
   Theory::PPAssertStatus status = Theory::PP_ASSERT_STATUS_UNSOLVED;
 
@@ -168,7 +180,7 @@ Theory::PPAssertStatus TheorySets::ppAssert(TNode in, SubstitutionMap& outSubsti
       // regress0/sets/pre-proc-univ.smt2
       if (!in[0].getType().isSet() || !options::setsExt())
       {
-        outSubstitutions.addSubstitution(in[0], in[1]);
+        outSubstitutions.addSubstitutionSolved(in[0], in[1], tin);
         status = Theory::PP_ASSERT_STATUS_SOLVED;
       }
     }
@@ -176,7 +188,7 @@ Theory::PPAssertStatus TheorySets::ppAssert(TNode in, SubstitutionMap& outSubsti
     {
       if (!in[0].getType().isSet() || !options::setsExt())
       {
-        outSubstitutions.addSubstitution(in[1], in[0]);
+        outSubstitutions.addSubstitutionSolved(in[1], in[0], tin);
         status = Theory::PP_ASSERT_STATUS_SOLVED;
       }
     }

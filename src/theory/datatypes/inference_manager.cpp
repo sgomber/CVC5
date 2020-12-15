@@ -2,7 +2,7 @@
 /*! \file inference_manager.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Andrew Reynolds, Gereon Kremer
+ **   Andrew Reynolds
  ** This file is part of the CVC4 project.
  ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
  ** in the top-level source directory and their institutional affiliations.
@@ -16,6 +16,7 @@
 
 #include "expr/dtype.h"
 #include "options/datatypes_options.h"
+#include "smt/smt_statistics_registry.h"
 #include "theory/theory.h"
 
 using namespace CVC4::kind;
@@ -24,86 +25,46 @@ namespace CVC4 {
 namespace theory {
 namespace datatypes {
 
-DatatypesInference::DatatypesInference(Node conc, Node exp, ProofGenerator* pg)
-    : SimpleTheoryInternalFact(conc, exp, pg)
-{
-  // false is not a valid explanation
-  Assert(d_exp.isNull() || !d_exp.isConst() || d_exp.getConst<bool>());
-}
-
-bool DatatypesInference::mustCommunicateFact(Node n, Node exp)
-{
-  Trace("dt-lemma-debug") << "Compute for " << exp << " => " << n << std::endl;
-  bool addLemma = false;
-  if (options::dtInferAsLemmas() && !exp.isConst())
-  {
-    // all units are lemmas
-    addLemma = true;
-  }
-  else if (n.getKind() == EQUAL)
-  {
-    // Note that equalities due to instantiate are forced as lemmas if
-    // necessary as they are created. This ensures that terms are shared with
-    // external theories when necessary. We send the lemma here only if
-    // the equality is not for datatype terms, which can happen for collapse
-    // selector / term size or unification.
-    TypeNode tn = n[0].getType();
-    addLemma = !tn.isDatatype();
-  }
-  else if (n.getKind() == LEQ || n.getKind() == OR)
-  {
-    addLemma = true;
-  }
-  if (addLemma)
-  {
-    Trace("dt-lemma-debug") << "Communicate " << n << std::endl;
-    return true;
-  }
-  Trace("dt-lemma-debug") << "Do not need to communicate " << n << std::endl;
-  return false;
-}
-
-bool DatatypesInference::process(TheoryInferenceManager* im, bool asLemma)
-{
-  // Check to see if we have to communicate it to the rest of the system.
-  // The flag asLemma is true when the inference was marked that it must be
-  // sent as a lemma in addPendingInference below.
-  if (asLemma || mustCommunicateFact(d_conc, d_exp))
-  {
-    // send it as an (explained) lemma
-    std::vector<Node> exp;
-    if (!d_exp.isNull() && !d_exp.isConst())
-    {
-      exp.push_back(d_exp);
-    }
-    return im->lemmaExp(d_conc, exp, {});
-  }
-  // assert the internal fact
-  bool polarity = d_conc.getKind() != NOT;
-  TNode atom = polarity ? d_conc : d_conc[0];
-  im->assertInternalFact(atom, polarity, d_exp);
-  return true;
-}
-
 InferenceManager::InferenceManager(Theory& t,
                                    TheoryState& state,
                                    ProofNodeManager* pnm)
-    : InferenceManagerBuffered(t, state, nullptr)
+    : InferenceManagerBuffered(t, state, pnm),
+      d_inferenceLemmas("theory::datatypes::inferenceLemmas"),
+      d_inferenceFacts("theory::datatypes::inferenceFacts"),
+      d_inferenceConflicts("theory::datatypes::inferenceConflicts"),
+      d_pnm(pnm),
+      d_ipc(pnm == nullptr ? nullptr
+                           : new InferProofCons(state.getSatContext(), pnm)),
+      d_lemPg(pnm == nullptr
+                  ? nullptr
+                  : new EagerProofGenerator(
+                        pnm, state.getUserContext(), "datatypes::lemPg"))
 {
+  d_false = NodeManager::currentNM()->mkConst(false);
+  smtStatisticsRegistry()->registerStat(&d_inferenceLemmas);
+  smtStatisticsRegistry()->registerStat(&d_inferenceFacts);
+  smtStatisticsRegistry()->registerStat(&d_inferenceConflicts);
+}
+
+InferenceManager::~InferenceManager()
+{
+  smtStatisticsRegistry()->unregisterStat(&d_inferenceLemmas);
+  smtStatisticsRegistry()->unregisterStat(&d_inferenceFacts);
+  smtStatisticsRegistry()->unregisterStat(&d_inferenceConflicts);
 }
 
 void InferenceManager::addPendingInference(Node conc,
                                            Node exp,
-                                           ProofGenerator* pg,
-                                           bool forceLemma)
+                                           bool forceLemma,
+                                           InferId i)
 {
   if (forceLemma)
   {
-    d_pendingLem.emplace_back(new DatatypesInference(conc, exp, pg));
+    d_pendingLem.emplace_back(new DatatypesInference(this, conc, exp, i));
   }
   else
   {
-    d_pendingFact.emplace_back(new DatatypesInference(conc, exp, pg));
+    d_pendingFact.emplace_back(new DatatypesInference(this, conc, exp, i));
   }
 }
 
@@ -113,6 +74,34 @@ void InferenceManager::process()
   doPendingLemmas();
   // now process the pending facts
   doPendingFacts();
+}
+
+void InferenceManager::sendDtLemma(Node lem,
+                                   InferId id,
+                                   LemmaProperty p,
+                                   bool doCache)
+{
+  if (isProofEnabled())
+  {
+    processDtLemma(lem, Node::null(), id);
+    return;
+  }
+  // otherwise send as a normal lemma
+  if (lemma(lem, p, doCache))
+  {
+    d_inferenceLemmas << id;
+  }
+}
+
+void InferenceManager::sendDtConflict(const std::vector<Node>& conf, InferId id)
+{
+  if (isProofEnabled())
+  {
+    Node exp = NodeManager::currentNM()->mkAnd(conf);
+    prepareDtInference(d_false, exp, id, d_ipc.get());
+  }
+  conflictExp(conf, d_ipc.get());
+  d_inferenceConflicts << id;
 }
 
 bool InferenceManager::sendLemmas(const std::vector<Node>& lemmas)
@@ -126,6 +115,103 @@ bool InferenceManager::sendLemmas(const std::vector<Node>& lemmas)
     }
   }
   return ret;
+}
+
+bool InferenceManager::isProofEnabled() const { return d_ipc != nullptr; }
+
+bool InferenceManager::processDtLemma(
+    Node conc, Node exp, InferId id, LemmaProperty p, bool doCache)
+{
+  // set up a proof constructor
+  std::shared_ptr<InferProofCons> ipcl;
+  if (isProofEnabled())
+  {
+    ipcl = std::make_shared<InferProofCons>(nullptr, d_pnm);
+  }
+  conc = prepareDtInference(conc, exp, id, ipcl.get());
+  // send it as a lemma
+  Node lem;
+  if (!exp.isNull() && !exp.isConst())
+  {
+    lem = NodeManager::currentNM()->mkNode(kind::IMPLIES, exp, conc);
+  }
+  else
+  {
+    lem = conc;
+  }
+  if (isProofEnabled())
+  {
+    // store its proof
+    std::shared_ptr<ProofNode> pbody = ipcl->getProofFor(conc);
+    std::shared_ptr<ProofNode> pn = pbody;
+    if (!exp.isNull() && !exp.isConst())
+    {
+      std::vector<Node> expv;
+      expv.push_back(exp);
+      pn = d_pnm->mkScope(pbody, expv);
+    }
+    d_lemPg->setProofFor(lem, pn);
+  }
+  // use trusted lemma
+  TrustNode tlem = TrustNode::mkTrustLemma(lem, d_lemPg.get());
+  if (!trustedLemma(tlem))
+  {
+    Trace("dt-lemma-debug") << "...duplicate lemma" << std::endl;
+    return false;
+  }
+  d_inferenceLemmas << id;
+  return true;
+}
+
+bool InferenceManager::processDtFact(Node conc, Node exp, InferId id)
+{
+  conc = prepareDtInference(conc, exp, id, d_ipc.get());
+  // assert the internal fact, which has the same issue as above
+  bool polarity = conc.getKind() != NOT;
+  TNode atom = polarity ? conc : conc[0];
+  if (isProofEnabled())
+  {
+    std::vector<Node> expv;
+    if (!exp.isNull() && !exp.isConst())
+    {
+      expv.push_back(exp);
+    }
+    assertInternalFact(atom, polarity, expv, d_ipc.get());
+  }
+  else
+  {
+    // use version without proofs
+    assertInternalFact(atom, polarity, exp);
+  }
+  d_inferenceFacts << id;
+  return true;
+}
+
+Node InferenceManager::prepareDtInference(Node conc,
+                                          Node exp,
+                                          InferId id,
+                                          InferProofCons* ipc)
+{
+  Trace("dt-lemma-debug") << "prepareDtInference : " << conc << " via " << exp
+                          << " by " << id << std::endl;
+  if (conc.getKind() == EQUAL && conc[0].getType().isBoolean())
+  {
+    // must turn (= conc false) into (not conc)
+    conc = Rewriter::rewrite(conc);
+  }
+  if (isProofEnabled())
+  {
+    Assert(ipc != nullptr);
+    // If proofs are enabled, notify the proof constructor.
+    // Notice that we have to reconstruct a datatypes inference here. This is
+    // because the inference in the pending vector may be destroyed as we are
+    // processing this inference, if we triggered to backtrack based on the
+    // call below, since it is a unique pointer.
+    std::shared_ptr<DatatypesInference> di =
+        std::make_shared<DatatypesInference>(this, conc, exp, id);
+    ipc->notifyFact(di);
+  }
+  return conc;
 }
 
 }  // namespace datatypes

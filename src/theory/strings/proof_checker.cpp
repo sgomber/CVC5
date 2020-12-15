@@ -53,7 +53,7 @@ void StringProofRuleChecker::registerTo(ProofChecker* pc)
   pc->registerChecker(PfRule::STRING_CODE_INJ, this);
   pc->registerChecker(PfRule::STRING_SEQ_UNIT_INJ, this);
   // trusted rules
-  pc->registerTrustedChecker(PfRule::STRING_TRUST, this, 1);
+  pc->registerTrustedChecker(PfRule::STRING_TRUST, this, 2);
 }
 
 Node StringProofRuleChecker::checkInternal(PfRule id,
@@ -318,7 +318,7 @@ Node StringProofRuleChecker::checkInternal(PfRule id,
       std::vector<Node> conj;
       ret = StringsPreprocess::reduce(t, conj, &skc);
       conj.push_back(t.eqNode(ret));
-      ret = mkAnd(conj);
+      ret = nm->mkAnd(conj);
     }
     else if (id == PfRule::STRING_EAGER_REDUCTION)
     {
@@ -438,9 +438,20 @@ Node StringProofRuleChecker::checkInternal(PfRule id,
   }
   else if (id == PfRule::RE_ELIM)
   {
-    Assert(children.size() == 1);
-    Assert(args.empty());
-    return RegExpElimination::eliminate(children[0]);
+    Assert(children.empty());
+    Assert(args.size() == 2);
+    bool isAgg;
+    if (!getBool(args[1], isAgg))
+    {
+      return Node::null();
+    }
+    Node ea = RegExpElimination::eliminate(args[0], isAgg);
+    // if we didn't eliminate, then this trivially proves the reflexive equality
+    if (ea.isNull())
+    {
+      ea = args[0];
+    }
+    return args[0].eqNode(ea);
   }
   else if (id == PfRule::STRING_CODE_INJ)
   {

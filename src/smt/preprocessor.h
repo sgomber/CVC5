@@ -20,6 +20,7 @@
 #include <vector>
 
 #include "preprocessing/preprocessing_pass_context.h"
+#include "smt/expand_definitions.h"
 #include "smt/process_assertions.h"
 #include "smt/term_formula_removal.h"
 #include "theory/booleans/circuit_propagator.h"
@@ -41,7 +42,10 @@ class AbstractValues;
 class Preprocessor
 {
  public:
-  Preprocessor(SmtEngine& smt, context::UserContext* u, AbstractValues& abs);
+  Preprocessor(SmtEngine& smt,
+               context::UserContext* u,
+               AbstractValues& abs,
+               SmtEngineStatistics& stats);
   ~Preprocessor();
   /**
    * Finish initialization
@@ -100,12 +104,14 @@ class Preprocessor
    */
   RemoveTermFormulas& getTermFormulaRemover();
 
- private:
   /**
-   * Apply substitutions that have been inferred by preprocessing, return the
-   * substituted form of node.
+   * Set proof node manager. Enables proofs in this preprocessor.
    */
-  Node applySubstitutions(TNode node);
+  void setProofGenerator(PreprocessProofGenerator* pppg);
+
+ private:
+  /** A copy of the current context */
+  context::Context* d_context;
   /** Reference to the parent SmtEngine */
   SmtEngine& d_smt;
   /** Reference to the abstract values utility */
@@ -120,6 +126,8 @@ class Preprocessor
   context::CDO<bool> d_assertionsProcessed;
   /** The preprocessing pass context */
   std::unique_ptr<preprocessing::PreprocessingPassContext> d_ppContext;
+  /** Expand definitions module, responsible for expanding definitions */
+  ExpandDefs d_exDefs;
   /**
    * Process assertions module, responsible for implementing the preprocessing
    * passes.
@@ -130,6 +138,8 @@ class Preprocessor
    * in term contexts.
    */
   RemoveTermFormulas d_rtf;
+  /** Proof node manager */
+  ProofNodeManager* d_pnm;
 };
 
 }  // namespace smt

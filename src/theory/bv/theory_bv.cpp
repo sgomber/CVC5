@@ -37,7 +37,7 @@ TheoryBV::TheoryBV(context::Context* c,
       d_ufRemByZero(),
       d_rewriter(),
       d_state(c, u, valuation),
-      d_inferMgr(*this, d_state, pnm)
+      d_inferMgr(*this, d_state, nullptr)
 {
   switch (options::bvSolver())
   {
@@ -47,7 +47,7 @@ TheoryBV::TheoryBV(context::Context* c,
 
     default:
       AlwaysAssert(options::bvSolver() == options::BVSolver::SIMPLE);
-      d_internal.reset(new BVSolverSimple(d_state, d_inferMgr));
+      d_internal.reset(new BVSolverSimple(&d_state, d_inferMgr, pnm));
   }
   d_theoryState = &d_state;
   d_inferManager = &d_inferMgr;
@@ -131,25 +131,11 @@ TrustNode TheoryBV::expandDefinition(Node node)
       NodeManager* nm = NodeManager::currentNM();
       unsigned width = node.getType().getBitVectorSize();
 
-      if (options::bitvectorDivByZeroConst())
-      {
-        Kind kind = node.getKind() == kind::BITVECTOR_UDIV
-                        ? kind::BITVECTOR_UDIV_TOTAL
-                        : kind::BITVECTOR_UREM_TOTAL;
-        ret = nm->mkNode(kind, node[0], node[1]);
-        break;
-      }
-
-      TNode num = node[0], den = node[1];
-      Node den_eq_0 = nm->mkNode(kind::EQUAL, den, utils::mkZero(width));
-      Node divTotalNumDen = nm->mkNode(node.getKind() == kind::BITVECTOR_UDIV
-                                           ? kind::BITVECTOR_UDIV_TOTAL
-                                           : kind::BITVECTOR_UREM_TOTAL,
-                                       num,
-                                       den);
-      Node divByZero = getUFDivByZero(node.getKind(), width);
-      Node divByZeroNum = nm->mkNode(kind::APPLY_UF, divByZero, num);
-      ret = nm->mkNode(kind::ITE, den_eq_0, divByZeroNum, divTotalNumDen);
+      Kind kind = node.getKind() == kind::BITVECTOR_UDIV
+                      ? kind::BITVECTOR_UDIV_TOTAL
+                      : kind::BITVECTOR_UREM_TOTAL;
+      ret = nm->mkNode(kind, node[0], node[1]);
+      break;
     }
     break;
 
@@ -194,13 +180,22 @@ bool TheoryBV::collectModelValues(TheoryModel* m, const std::set<Node>& termSet)
 
 void TheoryBV::propagate(Effort e) { return d_internal->propagate(e); }
 
-Theory::PPAssertStatus TheoryBV::ppAssert(TNode in,
-                                          SubstitutionMap& outSubstitutions)
+Theory::PPAssertStatus TheoryBV::ppAssert(
+    TrustNode tin, TrustSubstitutionMap& outSubstitutions)
 {
-  return d_internal->ppAssert(in, outSubstitutions);
+  return d_internal->ppAssert(tin, outSubstitutions);
 }
 
-TrustNode TheoryBV::ppRewrite(TNode t) { return d_internal->ppRewrite(t); }
+TrustNode TheoryBV::ppRewrite(TNode t)
+{
+  // first, see if we need to expand definitions
+  TrustNode texp = expandDefinition(t);
+  if (!texp.isNull())
+  {
+    return texp;
+  }
+  return d_internal->ppRewrite(t);
+}
 
 void TheoryBV::presolve() { d_internal->presolve(); }
 
@@ -209,11 +204,6 @@ TrustNode TheoryBV::explain(TNode node) { return d_internal->explain(node); }
 void TheoryBV::notifySharedTerm(TNode t)
 {
   d_internal->notifySharedTerm(t);
-  // temporary, will be built into Theory::addSharedTerm
-  if (d_equalityEngine != nullptr)
-  {
-    d_equalityEngine->addTriggerTerm(t, THEORY_BV);
-  }
 }
 
 void TheoryBV::ppStaticLearn(TNode in, NodeBuilder<>& learned)

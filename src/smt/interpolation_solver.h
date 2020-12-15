@@ -2,10 +2,10 @@
 /*! \file interpolation_solver.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Ying Sheng
+ **   Ying Sheng, Andrew Reynolds, Morgan Deters
  ** This file is part of the CVC4 project.
  ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
+ ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
@@ -71,8 +71,8 @@ class InterpolationSolver
    * the interpolation problem (interpol), and the solution implies the goal
    * (conj). If these criteria are not met, an internal error is thrown.
    */
-  void checkInterpol(Expr interpol,
-                     const std::vector<Expr>& easserts,
+  void checkInterpol(Node interpol,
+                     const std::vector<Node>& easserts,
                      const Node& conj);
 
  private:

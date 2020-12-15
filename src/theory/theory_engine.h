@@ -38,10 +38,11 @@
 #include "theory/interrupted.h"
 #include "theory/rewriter.h"
 #include "theory/sort_inference.h"
-#include "theory/substitutions.h"
 #include "theory/term_registration_visitor.h"
 #include "theory/theory.h"
 #include "theory/theory_preprocessor.h"
+#include "theory/trust_node.h"
+#include "theory/trust_substitutions.h"
 #include "theory/uf/equality_engine.h"
 #include "theory/valuation.h"
 #include "util/hash.h"
@@ -111,7 +112,6 @@ class TheoryEngine {
 
   /** Shared terms database can use the internals notify the theories */
   friend class SharedTermsDatabase;
-  friend class theory::CombinationEngine;
   friend class theory::EngineOutputChannel;
   friend class theory::CombinationEngine;
   friend class theory::SharedSolver;
@@ -139,6 +139,9 @@ class TheoryEngine {
    * the cost of walking the DAG on registration, etc.
    */
   const LogicInfo& d_logicInfo;
+  /** The separation logic location and data types */
+  TypeNode d_sepLocType;
+  TypeNode d_sepDataType;
 
   /** Reference to the output manager of the smt engine */
   OutputManager& d_outMgr;
@@ -174,9 +177,6 @@ class TheoryEngine {
 
   /** are we in eager model building mode? (see setEagerModelBuilding). */
   bool d_eager_model_building;
-
-  typedef std::unordered_map<Node, Node, NodeHashFunction> NodeMap;
-  typedef std::unordered_map<TNode, Node, TNodeHashFunction> TNodeMap;
 
   /**
    * Output channels for individual theories.
@@ -315,7 +315,8 @@ class TheoryEngine {
                ResourceManager* rm,
                RemoveTermFormulas& iteRemover,
                const LogicInfo& logic,
-               OutputManager& outMgr);
+               OutputManager& outMgr,
+               ProofNodeManager* pnm);
 
   /** Destroys a theory engine */
   ~TheoryEngine();
@@ -339,7 +340,7 @@ class TheoryEngine {
                                               *d_theoryOut[theoryId],
                                               theory::Valuation(this),
                                               d_logicInfo,
-                                              nullptr);
+                                              d_pnm);
     theory::Rewriter::registerTheoryRewriter(
         theoryId, d_theoryTable[theoryId]->getTheoryRewriter());
   }
@@ -364,6 +365,9 @@ class TheoryEngine {
   inline prop::PropEngine* getPropEngine() const {
     return d_propEngine;
   }
+
+  /** Get the proof node manager */
+  ProofNodeManager* getProofNodeManager() const;
 
   /**
    * Get a pointer to the underlying sat context.
@@ -445,16 +449,11 @@ class TheoryEngine {
 
  public:
   /**
-   * Signal the start of a new round of assertion preprocessing
-   */
-  void preprocessStart();
-
-  /**
    * Runs theory specific preprocessing on the non-Boolean parts of
    * the formula.  This is only called on input assertions, after ITEs
    * have been removed.
    */
-  Node preprocess(TNode node);
+  theory::TrustNode preprocess(TNode node);
 
   /** Notify (preprocessed) assertions. */
   void notifyPreprocessedAssertions(const std::vector<Node>& assertions);
@@ -494,10 +493,13 @@ class TheoryEngine {
   void shutdown();
 
   /**
-   * Solve the given literal with a theory that owns it.
+   * Solve the given literal with a theory that owns it. The proof of tliteral
+   * is carried in the trust node. The proof added to substitutionOut should
+   * take this proof into account (when proofs are enabled).
    */
-  theory::Theory::PPAssertStatus solve(TNode literal,
-                                    theory::SubstitutionMap& substitutionOut);
+  theory::Theory::PPAssertStatus solve(
+      theory::TrustNode tliteral,
+      theory::TrustSubstitutionMap& substitutionOut);
 
   /**
    * Preregister a Theory atom with the responsible theory (or
@@ -638,6 +640,16 @@ class TheoryEngine {
   }
   /** get the logic info used by this theory engine */
   const LogicInfo& getLogicInfo() const;
+  /** get the separation logic heap types */
+  bool getSepHeapTypes(TypeNode& locType, TypeNode& dataType) const;
+
+  /**
+   * Declare heap. This is used for separation logics to set the location
+   * and data types. It should be called only once, and before any separation
+   * logic constraints are asserted to this theory engine.
+   */
+  void declareSepHeap(TypeNode locT, TypeNode dataT);
+
   /**
    * Returns the equality status of the two terms, from the theory
    * that owns the domain type.  The types of a and b must be the same.
@@ -651,7 +663,9 @@ class TheoryEngine {
   Node getModelValue(TNode var);
 
   /**
-   * Takes a literal and returns an equivalent literal that is guaranteed to be a SAT literal
+   * Takes a literal and returns an equivalent literal that is guaranteed to be
+   * a SAT literal. This rewrites and preprocesses n, which notice may involve
+   * sending lemmas if preprocessing n involves introducing new skolems.
    */
   Node ensureLiteral(TNode n);
 
@@ -672,21 +686,12 @@ class TheoryEngine {
 
   /**
    * Get instantiation methods
-   *   first inputs forall x.q[x] and returns ( q[a], ..., q[z] )
-   *   second inputs forall x.q[x] and returns ( a, ..., z )
-   *   third and fourth return mappings e.g. forall x.q1[x] -> ( q1[a]...q1[z] )
+   *   the first given forall x.q[x] returns ( a, ..., z )
+   *   the second returns mappings e.g. forall x.q1[x] -> ( q1[a]...q1[z] )
    * , ... , forall x.qn[x] -> ( qn[a]...qn[z] )
    */
-  void getInstantiations( Node q, std::vector< Node >& insts );
   void getInstantiationTermVectors( Node q, std::vector< std::vector< Node > >& tvecs );
-  void getInstantiations( std::map< Node, std::vector< Node > >& insts );
   void getInstantiationTermVectors( std::map< Node, std::vector< std::vector< Node > > >& insts );
-
-  /**
-   * Get instantiated conjunction, returns q[t1] ^ ... ^ q[tn] where t1...tn are current set of instantiations for q.
-   *   Can be used for quantifier elimination when satisfiable and q[t1] ^ ... ^ q[tn] |= q
-   */
-  Node getInstantiatedConjunction( Node q );
 
   /**
    * Forwards an entailment check according to the given theoryOfMode.
@@ -734,10 +739,8 @@ private:
    * This function is called from the smt engine's checkModel routine.
    */
   void checkTheoryAssertionsWithModel(bool hardFailure);
-
  private:
   IntStat d_arithSubstitutionsAdded;
-
 };/* class TheoryEngine */
 
 }/* CVC4 namespace */

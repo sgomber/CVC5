@@ -2,7 +2,7 @@
 /*! \file normal_form.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Kshitij Bansal, Andrew Reynolds, Tim King
+ **   Andrew Reynolds, Kshitij Bansal, Mudathir Mohamed
  ** This file is part of the CVC4 project.
  ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
  ** in the top-level source directory and their institutional affiliations.
@@ -44,11 +44,13 @@ class NormalForm {
     }
     else
     {
+      TypeNode elementType = setType.getSetElementType();
       ElementsIterator it = elements.begin();
-      Node cur = nm->mkNode(kind::SINGLETON, *it);
+      Node cur = nm->mkSingleton(elementType, *it);
       while (++it != elements.end())
       {
-        cur = nm->mkNode(kind::UNION, nm->mkNode(kind::SINGLETON, *it), cur);
+        Node singleton = nm->mkSingleton(elementType, *it);
+        cur = nm->mkNode(kind::UNION, singleton, cur);
       }
       return cur;
     }

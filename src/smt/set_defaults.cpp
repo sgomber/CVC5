@@ -2,7 +2,7 @@
 /*! \file set_defaults.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Andrew Reynolds, Andres Noetzli, Haniel Barbosa
+ **   Andrew Reynolds, Andres Noetzli, Gereon Kremer
  ** This file is part of the CVC4 project.
  ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
  ** in the top-level source directory and their institutional affiliations.
@@ -82,15 +82,6 @@ void setDefaults(LogicInfo& logic, bool isInternalSubsolver)
     options::bitvectorAlgebraicSolver.set(true);
   }
 
-  // Language-based defaults
-  if (!options::bitvectorDivByZeroConst.wasSetByUser())
-  {
-    // Bitvector-divide-by-zero changed semantics in SMT LIB 2.6, thus we
-    // set this option if the input format is SMT LIB 2.6. We also set this
-    // option if we are sygus, since we assume SMT LIB 2.6 semantics for sygus.
-    options::bitvectorDivByZeroConst.set(
-        !language::isInputLang_smt2_5(options::inputLanguage(), true));
-  }
   bool is_sygus = language::isInputLangSygus(options::inputLanguage());
 
   if (options::bitblastMode() == options::BitblastMode::EAGER)
@@ -238,14 +229,6 @@ void setDefaults(LogicInfo& logic, bool isInternalSubsolver)
     {
       options::fmfBound.set(true);
       Trace("smt") << "turning on fmf-bound-int, for strings-exp" << std::endl;
-    }
-    // Do not eliminate extended arithmetic symbols from quantified formulas,
-    // since some strategies, e.g. --re-elim-agg, introduce them.
-    if (!options::elimExtArithQuant.wasSetByUser())
-    {
-      options::elimExtArithQuant.set(false);
-      Trace("smt") << "turning off elim-ext-arith-quant, for strings-exp"
-                   << std::endl;
     }
     // Note we allow E-matching by default to support combinations of sequences
     // and quantifiers.
@@ -546,8 +529,7 @@ void setDefaults(LogicInfo& logic, bool isInternalSubsolver)
     LogicInfo log(logic.getUnlockedCopy());
     // Strings requires arith for length constraints, and also UF
     needsUf = true;
-    if (!logic.isTheoryEnabled(THEORY_ARITH) || logic.isDifferenceLogic()
-        || !logic.areIntegersUsed())
+    if (!logic.isTheoryEnabled(THEORY_ARITH) || logic.isDifferenceLogic())
     {
       Notice()
           << "Enabling linear integer arithmetic because strings are enabled"
@@ -555,6 +537,12 @@ void setDefaults(LogicInfo& logic, bool isInternalSubsolver)
       log.enableTheory(THEORY_ARITH);
       log.enableIntegers();
       log.arithOnlyLinear();
+    }
+    else if (!logic.areIntegersUsed())
+    {
+      Notice() << "Enabling integer arithmetic because strings are enabled"
+               << std::endl;
+      log.enableIntegers();
     }
     logic = log;
     logic.lock();
@@ -572,10 +560,6 @@ void setDefaults(LogicInfo& logic, bool isInternalSubsolver)
       // eliminated altogether (or otherwise fail at preprocessing).
       || (logic.isTheoryEnabled(THEORY_ARITH) && !logic.isLinear()
           && options::solveIntAsBV() == 0)
-      // If division/mod-by-zero is not treated as a constant value in BV, we
-      // need UF.
-      || (logic.isTheoryEnabled(THEORY_BV)
-          && !options::bitvectorDivByZeroConst())
       // FP requires UF since there are multiple operators that are partially
       // defined (see http://smtlib.cs.uiowa.edu/papers/BTRW15.pdf for more
       // details).
@@ -599,7 +583,9 @@ void setDefaults(LogicInfo& logic, bool isInternalSubsolver)
     if (logic.isSharingEnabled() && !logic.isTheoryEnabled(THEORY_BV)
         && !logic.isTheoryEnabled(THEORY_STRINGS)
         && !logic.isTheoryEnabled(THEORY_SETS)
-        && !logic.isTheoryEnabled(THEORY_BAGS))
+        && !logic.isTheoryEnabled(THEORY_BAGS)
+        && !(logic.isTheoryEnabled(THEORY_ARITH) && !logic.isLinear()
+             && !logic.isQuantified()))
     {
       Trace("smt") << "setting theoryof-mode to term-based" << std::endl;
       options::theoryOfMode.set(options::TheoryOfMode::THEORY_OF_TERM_BASED);
@@ -618,7 +604,8 @@ void setDefaults(LogicInfo& logic, bool isInternalSubsolver)
   }
 
   // If in arrays, set the UF handler to arrays
-  if (logic.isTheoryEnabled(THEORY_ARRAYS)
+  if (logic.isTheoryEnabled(THEORY_ARRAYS) && !options::ufHo()
+      && !options::finiteModelFind()
       && (!logic.isQuantified()
           || (logic.isQuantified() && !logic.isTheoryEnabled(THEORY_UF))))
   {
@@ -830,10 +817,7 @@ void setDefaults(LogicInfo& logic, bool isInternalSubsolver)
     options::cegqi.set(false);
   }
   // Do we need to track instantiations?
-  // Needed for sygus due to single invocation techniques.
-  if (options::cegqiNestedQE()
-      || (options::unsatCores() && !options::trackInstLemmas.wasSetByUser())
-      || is_sygus)
+  if (options::unsatCores() && !options::trackInstLemmas.wasSetByUser())
   {
     options::trackInstLemmas.set(true);
   }
@@ -929,11 +913,6 @@ void setDefaults(LogicInfo& logic, bool isInternalSubsolver)
     if (!options::quantDynamicSplit.wasSetByUser())
     {
       options::quantDynamicSplit.set(options::QuantDSplitMode::DEFAULT);
-    }
-    // do not eliminate extended arithmetic symbols from quantified formulas
-    if (!options::elimExtArithQuant.wasSetByUser())
-    {
-      options::elimExtArithQuant.set(false);
     }
     if (!options::eMatching.wasSetByUser())
     {
@@ -1073,19 +1052,6 @@ void setDefaults(LogicInfo& logic, bool isInternalSubsolver)
         options::cegqiSingleInvMode.set(options::CegqiSingleInvMode::NONE);
       }
     }
-    // do not allow partial functions
-    if (!options::bitvectorDivByZeroConst())
-    {
-      if (options::bitvectorDivByZeroConst.wasSetByUser())
-      {
-        throw OptionException(
-            "--no-bv-div-zero-const is not supported with SyGuS");
-      }
-      Notice()
-          << "SmtEngine: setting bv-div-zero-const to true to support SyGuS"
-          << std::endl;
-      options::bitvectorDivByZeroConst.set(true);
-    }
     if (!options::dtRewriteErrorSel.wasSetByUser())
     {
       options::dtRewriteErrorSel.set(true);
@@ -1111,6 +1077,12 @@ void setDefaults(LogicInfo& logic, bool isInternalSubsolver)
     if (!options::cegqiPreRegInst.wasSetByUser())
     {
       options::cegqiPreRegInst.set(true);
+    }
+    // use tangent planes by default, since we want to put effort into
+    // the verification step for sygus queries with non-linear arithmetic
+    if (!options::nlExtTangentPlanes.wasSetByUser())
+    {
+      options::nlExtTangentPlanes.set(true);
     }
     // not compatible with proofs
     if (options::proofNew())
@@ -1174,13 +1146,7 @@ void setDefaults(LogicInfo& logic, bool isInternalSubsolver)
       // only supported in pure arithmetic or pure BV
       options::cegqiNestedQE.set(false);
     }
-    // prenexing
-    if (options::cegqiNestedQE())
-    {
-      // only complete with prenex = normal
-      options::prenexQuant.set(options::PrenexQuantMode::NORMAL);
-    }
-    else if (options::globalNegate())
+    if (options::globalNegate())
     {
       if (!options::prenexQuant.wasSetByUser())
       {
@@ -1423,6 +1389,42 @@ void setDefaults(LogicInfo& logic, bool isInternalSubsolver)
   {
     throw OptionException("--proof-new is not yet supported.");
   }
+
+  if (logic == LogicInfo("QF_UFNRA"))
+  {
+#ifdef CVC4_USE_POLY
+    if (!options::nlCad() && !options::nlCad.wasSetByUser())
+    {
+      options::nlCad.set(true);
+      if (!options::nlExt.wasSetByUser())
+      {
+        options::nlExt.set(false);
+      }
+      if (!options::nlRlvMode.wasSetByUser())
+      {
+        options::nlRlvMode.set(options::NlRlvMode::INTERLEAVE);
+      }
+    }
+#endif
+  }
+#ifndef CVC4_USE_POLY
+  if (options::nlCad())
+  {
+    if (options::nlCad.wasSetByUser())
+    {
+      std::stringstream ss;
+      ss << "Cannot use " << options::nlCad.getName() << " without configuring with --poly.";
+      throw OptionException(ss.str());
+    }
+    else
+    {
+      Notice() << "Cannot use --" << options::nlCad.getName()
+               << " without configuring with --poly." << std::endl;
+      options::nlCad.set(false);
+      options::nlExt.set(true);
+    }
+  }
+#endif
 }
 
 }  // namespace smt

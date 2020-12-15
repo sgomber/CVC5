@@ -2,7 +2,7 @@
 /*! \file command.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Tim King, Morgan Deters, Andrew Reynolds
+ **   Tim King, Abdalrhman Mohamed, Morgan Deters
  ** This file is part of the CVC4 project.
  ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
  ** in the top-level source directory and their institutional affiliations.
@@ -28,10 +28,12 @@
 #include "base/output.h"
 #include "expr/expr_iomanip.h"
 #include "expr/node.h"
-#include "expr/type.h"
+#include "expr/symbol_manager.h"
+#include "expr/type_node.h"
 #include "options/options.h"
 #include "options/smt_options.h"
 #include "printer/printer.h"
+#include "proof/unsat_core.h"
 #include "smt/dump.h"
 #include "smt/model.h"
 #include "smt/smt_engine.h"
@@ -43,6 +45,43 @@ using namespace std;
 
 namespace CVC4 {
 
+std::string sexprToString(api::Term sexpr)
+{
+  // if sexpr is a spec constant and not a string, return the result of calling
+  // Term::toString
+  if (sexpr.getKind() == api::CONST_BOOLEAN
+      || sexpr.getKind() == api::CONST_FLOATINGPOINT
+      || sexpr.getKind() == api::CONST_RATIONAL)
+  {
+    return sexpr.toString();
+  }
+
+  // if sexpr is a constant string, return the result of calling Term::toString.
+  // However, strip the surrounding quotes
+  if (sexpr.getKind() == api::CONST_STRING)
+  {
+    return sexpr.toString().substr(1, sexpr.toString().length() - 2);
+  }
+
+  // if sexpr is not a spec constant, make sure it is an array of sub-sexprs
+  Assert(sexpr.getKind() == api::SEXPR);
+
+  std::stringstream ss;
+  auto it = sexpr.begin();
+
+  // recursively print the sub-sexprs
+  ss << '(' << sexprToString(*it);
+  ++it;
+  while (it != sexpr.end())
+  {
+    ss << ' ' << sexprToString(*it);
+    ++it;
+  }
+  ss << ')';
+
+  return ss.str();
+}
+
 const int CommandPrintSuccess::s_iosIndex = std::ios_base::xalloc();
 const CommandSuccess* CommandSuccess::s_instance = new CommandSuccess();
 const CommandInterrupted* CommandInterrupted::s_instance =
@@ -52,7 +91,6 @@ std::ostream& operator<<(std::ostream& out, const Command& c)
 {
   c.toStream(out,
              Node::setdepth::getDepth(out),
-             Node::printtypes::getPrintTypes(out),
              Node::dag::getDag(out),
              Node::setlanguage::getLanguage(out));
   return out;
@@ -136,11 +174,6 @@ std::ostream& operator<<(std::ostream& out, CommandPrintSuccess cps)
 
 Command::Command() : d_commandStatus(nullptr), d_muted(false) {}
 
-Command::Command(const api::Solver* solver)
-    : d_commandStatus(nullptr), d_muted(false)
-{
-}
-
 Command::Command(const Command& cmd)
 {
   d_commandStatus =
@@ -175,9 +208,9 @@ bool Command::interrupted() const
          && dynamic_cast<const CommandInterrupted*>(d_commandStatus) != NULL;
 }
 
-void Command::invoke(api::Solver* solver, std::ostream& out)
+void Command::invoke(api::Solver* solver, SymbolManager* sm, std::ostream& out)
 {
-  invoke(solver);
+  invoke(solver, sm);
   if (!(isMuted() && ok()))
   {
     printResult(
@@ -215,7 +248,7 @@ void Command::printResult(std::ostream& out, uint32_t verbosity) const
 
 EmptyCommand::EmptyCommand(std::string name) : d_name(name) {}
 std::string EmptyCommand::getName() const { return d_name; }
-void EmptyCommand::invoke(api::Solver* solver)
+void EmptyCommand::invoke(api::Solver* solver, SymbolManager* sm)
 {
   /* empty commands have no implementation */
   d_commandStatus = CommandSuccess::instance();
@@ -226,7 +259,6 @@ std::string EmptyCommand::getCommandName() const { return "empty"; }
 
 void EmptyCommand::toStream(std::ostream& out,
                             int toDepth,
-                            bool types,
                             size_t dag,
                             OutputLanguage language) const
 {
@@ -239,13 +271,15 @@ void EmptyCommand::toStream(std::ostream& out,
 
 EchoCommand::EchoCommand(std::string output) : d_output(output) {}
 std::string EchoCommand::getOutput() const { return d_output; }
-void EchoCommand::invoke(api::Solver* solver)
+void EchoCommand::invoke(api::Solver* solver, SymbolManager* sm)
 {
   /* we don't have an output stream here, nothing to do */
   d_commandStatus = CommandSuccess::instance();
 }
 
-void EchoCommand::invoke(api::Solver* solver, std::ostream& out)
+void EchoCommand::invoke(api::Solver* solver,
+                         SymbolManager* sm,
+                         std::ostream& out)
 {
   out << d_output << std::endl;
   Trace("dtview::command") << "* ~COMMAND: echo |" << d_output << "|~"
@@ -261,7 +295,6 @@ std::string EchoCommand::getCommandName() const { return "echo"; }
 
 void EchoCommand::toStream(std::ostream& out,
                            int toDepth,
-                           bool types,
                            size_t dag,
                            OutputLanguage language) const
 {
@@ -278,11 +311,11 @@ AssertCommand::AssertCommand(const api::Term& t, bool inUnsatCore)
 }
 
 api::Term AssertCommand::getTerm() const { return d_term; }
-void AssertCommand::invoke(api::Solver* solver)
+void AssertCommand::invoke(api::Solver* solver, SymbolManager* sm)
 {
   try
   {
-    solver->getSmtEngine()->assertFormula(d_term.getExpr(), d_inUnsatCore);
+    solver->getSmtEngine()->assertFormula(d_term.getNode(), d_inUnsatCore);
     d_commandStatus = CommandSuccess::instance();
   }
   catch (UnsafeInterruptException& e)
@@ -304,7 +337,6 @@ std::string AssertCommand::getCommandName() const { return "assert"; }
 
 void AssertCommand::toStream(std::ostream& out,
                              int toDepth,
-                             bool types,
                              size_t dag,
                              OutputLanguage language) const
 {
@@ -315,7 +347,7 @@ void AssertCommand::toStream(std::ostream& out,
 /* class PushCommand                                                          */
 /* -------------------------------------------------------------------------- */
 
-void PushCommand::invoke(api::Solver* solver)
+void PushCommand::invoke(api::Solver* solver, SymbolManager* sm)
 {
   try
   {
@@ -337,7 +369,6 @@ std::string PushCommand::getCommandName() const { return "push"; }
 
 void PushCommand::toStream(std::ostream& out,
                            int toDepth,
-                           bool types,
                            size_t dag,
                            OutputLanguage language) const
 {
@@ -348,7 +379,7 @@ void PushCommand::toStream(std::ostream& out,
 /* class PopCommand                                                           */
 /* -------------------------------------------------------------------------- */
 
-void PopCommand::invoke(api::Solver* solver)
+void PopCommand::invoke(api::Solver* solver, SymbolManager* sm)
 {
   try
   {
@@ -370,7 +401,6 @@ std::string PopCommand::getCommandName() const { return "pop"; }
 
 void PopCommand::toStream(std::ostream& out,
                           int toDepth,
-                          bool types,
                           size_t dag,
                           OutputLanguage language) const
 {
@@ -386,7 +416,7 @@ CheckSatCommand::CheckSatCommand() : d_term() {}
 CheckSatCommand::CheckSatCommand(const api::Term& term) : d_term(term) {}
 
 api::Term CheckSatCommand::getTerm() const { return d_term; }
-void CheckSatCommand::invoke(api::Solver* solver)
+void CheckSatCommand::invoke(api::Solver* solver, SymbolManager* sm)
 {
   Trace("dtview::command") << "* ~COMMAND: " << getCommandName() << "~"
                            << std::endl;
@@ -428,7 +458,6 @@ std::string CheckSatCommand::getCommandName() const { return "check-sat"; }
 
 void CheckSatCommand::toStream(std::ostream& out,
                                int toDepth,
-                               bool types,
                                size_t dag,
                                OutputLanguage language) const
 {
@@ -455,7 +484,7 @@ const std::vector<api::Term>& CheckSatAssumingCommand::getTerms() const
   return d_terms;
 }
 
-void CheckSatAssumingCommand::invoke(api::Solver* solver)
+void CheckSatAssumingCommand::invoke(api::Solver* solver, SymbolManager* sm)
 {
   Trace("dtview::command") << "* ~COMMAND: (check-sat-assuming ( " << d_terms
                            << " )~" << std::endl;
@@ -503,7 +532,6 @@ std::string CheckSatAssumingCommand::getCommandName() const
 
 void CheckSatAssumingCommand::toStream(std::ostream& out,
                                        int toDepth,
-                                       bool types,
                                        size_t dag,
                                        OutputLanguage language) const
 {
@@ -521,7 +549,7 @@ QueryCommand::QueryCommand(const api::Term& t, bool inUnsatCore)
 }
 
 api::Term QueryCommand::getTerm() const { return d_term; }
-void QueryCommand::invoke(api::Solver* solver)
+void QueryCommand::invoke(api::Solver* solver, SymbolManager* sm)
 {
   try
   {
@@ -558,7 +586,6 @@ std::string QueryCommand::getCommandName() const { return "query"; }
 
 void QueryCommand::toStream(std::ostream& out,
                             int toDepth,
-                            bool types,
                             size_t dag,
                             OutputLanguage language) const
 {
@@ -579,18 +606,9 @@ DeclareSygusVarCommand::DeclareSygusVarCommand(const std::string& id,
 api::Term DeclareSygusVarCommand::getVar() const { return d_var; }
 api::Sort DeclareSygusVarCommand::getSort() const { return d_sort; }
 
-void DeclareSygusVarCommand::invoke(api::Solver* solver)
+void DeclareSygusVarCommand::invoke(api::Solver* solver, SymbolManager* sm)
 {
-  try
-  {
-    solver->getSmtEngine()->declareSygusVar(
-        d_symbol, d_var.getNode(), TypeNode::fromType(d_sort.getType()));
-    d_commandStatus = CommandSuccess::instance();
-  }
-  catch (exception& e)
-  {
-    d_commandStatus = new CommandFailure(e.what());
-  }
+  d_commandStatus = CommandSuccess::instance();
 }
 
 Command* DeclareSygusVarCommand::clone() const
@@ -605,12 +623,11 @@ std::string DeclareSygusVarCommand::getCommandName() const
 
 void DeclareSygusVarCommand::toStream(std::ostream& out,
                                       int toDepth,
-                                      bool types,
                                       size_t dag,
                                       OutputLanguage language) const
 {
   Printer::getPrinter(language)->toStreamCmdDeclareVar(
-      out, d_var.getNode(), TypeNode::fromType(d_sort.getType()));
+      out, d_var.getNode(), d_sort.getTypeNode());
 }
 
 /* -------------------------------------------------------------------------- */
@@ -644,29 +661,9 @@ bool SynthFunCommand::isInv() const { return d_isInv; }
 
 const api::Grammar* SynthFunCommand::getGrammar() const { return d_grammar; }
 
-void SynthFunCommand::invoke(api::Solver* solver)
+void SynthFunCommand::invoke(api::Solver* solver, SymbolManager* sm)
 {
-  try
-  {
-    std::vector<Node> vns;
-    for (const api::Term& t : d_vars)
-    {
-      vns.push_back(Node::fromExpr(t.getExpr()));
-    }
-    solver->getSmtEngine()->declareSynthFun(
-        d_symbol,
-        Node::fromExpr(d_fun.getExpr()),
-        TypeNode::fromType(d_grammar == nullptr
-                               ? d_sort.getType()
-                               : d_grammar->resolve().getType()),
-        d_isInv,
-        vns);
-    d_commandStatus = CommandSuccess::instance();
-  }
-  catch (exception& e)
-  {
-    d_commandStatus = new CommandFailure(e.what());
-  }
+  d_commandStatus = CommandSuccess::instance();
 }
 
 Command* SynthFunCommand::clone() const
@@ -682,7 +679,6 @@ std::string SynthFunCommand::getCommandName() const
 
 void SynthFunCommand::toStream(std::ostream& out,
                                int toDepth,
-                               bool types,
                                size_t dag,
                                OutputLanguage language) const
 {
@@ -691,9 +687,10 @@ void SynthFunCommand::toStream(std::ostream& out,
       out,
       d_symbol,
       nodeVars,
-      TypeNode::fromType(d_sort.getType()),
+      d_sort.getTypeNode(),
       d_isInv,
-      TypeNode::fromType(d_grammar->resolve().getType()));
+      d_grammar == nullptr ? TypeNode::null()
+                           : d_grammar->resolve().getTypeNode());
 }
 
 /* -------------------------------------------------------------------------- */
@@ -704,7 +701,7 @@ SygusConstraintCommand::SygusConstraintCommand(const api::Term& t) : d_term(t)
 {
 }
 
-void SygusConstraintCommand::invoke(api::Solver* solver)
+void SygusConstraintCommand::invoke(api::Solver* solver, SymbolManager* sm)
 {
   try
   {
@@ -731,7 +728,6 @@ std::string SygusConstraintCommand::getCommandName() const
 
 void SygusConstraintCommand::toStream(std::ostream& out,
                                       int toDepth,
-                                      bool types,
                                       size_t dag,
                                       OutputLanguage language) const
 {
@@ -756,7 +752,7 @@ SygusInvConstraintCommand::SygusInvConstraintCommand(const api::Term& inv,
 {
 }
 
-void SygusInvConstraintCommand::invoke(api::Solver* solver)
+void SygusInvConstraintCommand::invoke(api::Solver* solver, SymbolManager* sm)
 {
   try
   {
@@ -787,7 +783,6 @@ std::string SygusInvConstraintCommand::getCommandName() const
 
 void SygusInvConstraintCommand::toStream(std::ostream& out,
                                          int toDepth,
-                                         bool types,
                                          size_t dag,
                                          OutputLanguage language) const
 {
@@ -803,7 +798,7 @@ void SygusInvConstraintCommand::toStream(std::ostream& out,
 /* class CheckSynthCommand                                                    */
 /* -------------------------------------------------------------------------- */
 
-void CheckSynthCommand::invoke(api::Solver* solver)
+void CheckSynthCommand::invoke(api::Solver* solver, SymbolManager* sm)
 {
   try
   {
@@ -861,7 +856,6 @@ std::string CheckSynthCommand::getCommandName() const { return "check-synth"; }
 
 void CheckSynthCommand::toStream(std::ostream& out,
                                  int toDepth,
-                                 bool types,
                                  size_t dag,
                                  OutputLanguage language) const
 {
@@ -872,10 +866,11 @@ void CheckSynthCommand::toStream(std::ostream& out,
 /* class ResetCommand                                                         */
 /* -------------------------------------------------------------------------- */
 
-void ResetCommand::invoke(api::Solver* solver)
+void ResetCommand::invoke(api::Solver* solver, SymbolManager* sm)
 {
   try
   {
+    sm->reset();
     solver->getSmtEngine()->reset();
     d_commandStatus = CommandSuccess::instance();
   }
@@ -890,7 +885,6 @@ std::string ResetCommand::getCommandName() const { return "reset"; }
 
 void ResetCommand::toStream(std::ostream& out,
                             int toDepth,
-                            bool types,
                             size_t dag,
                             OutputLanguage language) const
 {
@@ -901,10 +895,11 @@ void ResetCommand::toStream(std::ostream& out,
 /* class ResetAssertionsCommand                                               */
 /* -------------------------------------------------------------------------- */
 
-void ResetAssertionsCommand::invoke(api::Solver* solver)
+void ResetAssertionsCommand::invoke(api::Solver* solver, SymbolManager* sm)
 {
   try
   {
+    sm->resetAssertions();
     solver->resetAssertions();
     d_commandStatus = CommandSuccess::instance();
   }
@@ -926,7 +921,6 @@ std::string ResetAssertionsCommand::getCommandName() const
 
 void ResetAssertionsCommand::toStream(std::ostream& out,
                                       int toDepth,
-                                      bool types,
                                       size_t dag,
                                       OutputLanguage language) const
 {
@@ -937,7 +931,7 @@ void ResetAssertionsCommand::toStream(std::ostream& out,
 /* class QuitCommand                                                          */
 /* -------------------------------------------------------------------------- */
 
-void QuitCommand::invoke(api::Solver* solver)
+void QuitCommand::invoke(api::Solver* solver, SymbolManager* sm)
 {
   Dump("benchmark") << *this;
   d_commandStatus = CommandSuccess::instance();
@@ -948,7 +942,6 @@ std::string QuitCommand::getCommandName() const { return "exit"; }
 
 void QuitCommand::toStream(std::ostream& out,
                            int toDepth,
-                           bool types,
                            size_t dag,
                            OutputLanguage language) const
 {
@@ -961,7 +954,7 @@ void QuitCommand::toStream(std::ostream& out,
 
 CommentCommand::CommentCommand(std::string comment) : d_comment(comment) {}
 std::string CommentCommand::getComment() const { return d_comment; }
-void CommentCommand::invoke(api::Solver* solver)
+void CommentCommand::invoke(api::Solver* solver, SymbolManager* sm)
 {
   Dump("benchmark") << *this;
   d_commandStatus = CommandSuccess::instance();
@@ -972,7 +965,6 @@ std::string CommentCommand::getCommandName() const { return "comment"; }
 
 void CommentCommand::toStream(std::ostream& out,
                               int toDepth,
-                              bool types,
                               size_t dag,
                               OutputLanguage language) const
 {
@@ -998,11 +990,11 @@ void CommandSequence::addCommand(Command* cmd)
 }
 
 void CommandSequence::clear() { d_commandSequence.clear(); }
-void CommandSequence::invoke(api::Solver* solver)
+void CommandSequence::invoke(api::Solver* solver, SymbolManager* sm)
 {
   for (; d_index < d_commandSequence.size(); ++d_index)
   {
-    d_commandSequence[d_index]->invoke(solver);
+    d_commandSequence[d_index]->invoke(solver, sm);
     if (!d_commandSequence[d_index]->ok())
     {
       // abort execution
@@ -1016,11 +1008,13 @@ void CommandSequence::invoke(api::Solver* solver)
   d_commandStatus = CommandSuccess::instance();
 }
 
-void CommandSequence::invoke(api::Solver* solver, std::ostream& out)
+void CommandSequence::invoke(api::Solver* solver,
+                             SymbolManager* sm,
+                             std::ostream& out)
 {
   for (; d_index < d_commandSequence.size(); ++d_index)
   {
-    d_commandSequence[d_index]->invoke(solver, out);
+    d_commandSequence[d_index]->invoke(solver, sm, out);
     if (!d_commandSequence[d_index]->ok())
     {
       // abort execution
@@ -1069,7 +1063,6 @@ std::string CommandSequence::getCommandName() const { return "sequence"; }
 
 void CommandSequence::toStream(std::ostream& out,
                                int toDepth,
-                               bool types,
                                size_t dag,
                                OutputLanguage language) const
 {
@@ -1083,7 +1076,6 @@ void CommandSequence::toStream(std::ostream& out,
 
 void DeclarationSequence::toStream(std::ostream& out,
                                    int toDepth,
-                                   bool types,
                                    size_t dag,
                                    OutputLanguage language) const
 {
@@ -1112,28 +1104,17 @@ DeclareFunctionCommand::DeclareFunctionCommand(const std::string& id,
                                                api::Sort sort)
     : DeclarationDefinitionCommand(id),
       d_func(func),
-      d_sort(sort),
-      d_printInModel(true),
-      d_printInModelSetByUser(false)
+      d_sort(sort)
 {
 }
 
 api::Term DeclareFunctionCommand::getFunction() const { return d_func; }
 api::Sort DeclareFunctionCommand::getSort() const { return d_sort; }
-bool DeclareFunctionCommand::getPrintInModel() const { return d_printInModel; }
-bool DeclareFunctionCommand::getPrintInModelSetByUser() const
-{
-  return d_printInModelSetByUser;
-}
 
-void DeclareFunctionCommand::setPrintInModel(bool p)
+void DeclareFunctionCommand::invoke(api::Solver* solver, SymbolManager* sm)
 {
-  d_printInModel = p;
-  d_printInModelSetByUser = true;
-}
-
-void DeclareFunctionCommand::invoke(api::Solver* solver)
-{
+  // mark that it will be printed in the model
+  sm->addModelDeclarationTerm(d_func);
   d_commandStatus = CommandSuccess::instance();
 }
 
@@ -1141,8 +1122,6 @@ Command* DeclareFunctionCommand::clone() const
 {
   DeclareFunctionCommand* dfc =
       new DeclareFunctionCommand(d_symbol, d_func, d_sort);
-  dfc->d_printInModel = d_printInModel;
-  dfc->d_printInModelSetByUser = d_printInModelSetByUser;
   return dfc;
 }
 
@@ -1153,12 +1132,11 @@ std::string DeclareFunctionCommand::getCommandName() const
 
 void DeclareFunctionCommand::toStream(std::ostream& out,
                                       int toDepth,
-                                      bool types,
                                       size_t dag,
                                       OutputLanguage language) const
 {
   Printer::getPrinter(language)->toStreamCmdDeclareFunction(
-      out, d_func.toString(), TypeNode::fromType(d_sort.getType()));
+      out, d_func.toString(), d_sort.getTypeNode());
 }
 
 /* -------------------------------------------------------------------------- */
@@ -1174,8 +1152,10 @@ DeclareSortCommand::DeclareSortCommand(const std::string& id,
 
 size_t DeclareSortCommand::getArity() const { return d_arity; }
 api::Sort DeclareSortCommand::getSort() const { return d_sort; }
-void DeclareSortCommand::invoke(api::Solver* solver)
+void DeclareSortCommand::invoke(api::Solver* solver, SymbolManager* sm)
 {
+  // mark that it will be printed in the model
+  sm->addModelDeclarationSort(d_sort);
   d_commandStatus = CommandSuccess::instance();
 }
 
@@ -1191,12 +1171,11 @@ std::string DeclareSortCommand::getCommandName() const
 
 void DeclareSortCommand::toStream(std::ostream& out,
                                   int toDepth,
-                                  bool types,
                                   size_t dag,
                                   OutputLanguage language) const
 {
-  Printer::getPrinter(language)->toStreamCmdDeclareType(
-      out, d_sort.toString(), d_arity, TypeNode::fromType(d_sort.getType()));
+  Printer::getPrinter(language)->toStreamCmdDeclareType(out,
+                                                        d_sort.getTypeNode());
 }
 
 /* -------------------------------------------------------------------------- */
@@ -1221,7 +1200,7 @@ const std::vector<api::Sort>& DefineSortCommand::getParameters() const
 }
 
 api::Sort DefineSortCommand::getSort() const { return d_sort; }
-void DefineSortCommand::invoke(api::Solver* solver)
+void DefineSortCommand::invoke(api::Solver* solver, SymbolManager* sm)
 {
   d_commandStatus = CommandSuccess::instance();
 }
@@ -1235,7 +1214,6 @@ std::string DefineSortCommand::getCommandName() const { return "define-sort"; }
 
 void DefineSortCommand::toStream(std::ostream& out,
                                  int toDepth,
-                                 bool types,
                                  size_t dag,
                                  OutputLanguage language) const
 {
@@ -1243,7 +1221,7 @@ void DefineSortCommand::toStream(std::ostream& out,
       out,
       d_symbol,
       api::sortVectorToTypeNodes(d_params),
-      TypeNode::fromType(d_sort.getType()));
+      d_sort.getTypeNode());
 }
 
 /* -------------------------------------------------------------------------- */
@@ -1283,7 +1261,7 @@ const std::vector<api::Term>& DefineFunctionCommand::getFormals() const
 }
 
 api::Term DefineFunctionCommand::getFormula() const { return d_formula; }
-void DefineFunctionCommand::invoke(api::Solver* solver)
+void DefineFunctionCommand::invoke(api::Solver* solver, SymbolManager* sm)
 {
   try
   {
@@ -1312,7 +1290,6 @@ std::string DefineFunctionCommand::getCommandName() const
 
 void DefineFunctionCommand::toStream(std::ostream& out,
                                      int toDepth,
-                                     bool types,
                                      size_t dag,
                                      OutputLanguage language) const
 {
@@ -1321,51 +1298,6 @@ void DefineFunctionCommand::toStream(std::ostream& out,
       d_func.toString(),
       api::termVectorToNodes(d_formals),
       d_func.getNode().getType().getRangeType(),
-      d_formula.getNode());
-}
-
-/* -------------------------------------------------------------------------- */
-/* class DefineNamedFunctionCommand                                           */
-/* -------------------------------------------------------------------------- */
-
-DefineNamedFunctionCommand::DefineNamedFunctionCommand(
-
-    const std::string& id,
-    api::Term func,
-    const std::vector<api::Term>& formals,
-    api::Term formula,
-    bool global)
-    : DefineFunctionCommand(id, func, formals, formula, global)
-{
-}
-
-void DefineNamedFunctionCommand::invoke(api::Solver* solver)
-{
-  this->DefineFunctionCommand::invoke(solver);
-  if (!d_func.isNull() && d_func.getSort().isBoolean())
-  {
-    solver->getSmtEngine()->addToAssignment(d_func.getExpr());
-  }
-  d_commandStatus = CommandSuccess::instance();
-}
-
-Command* DefineNamedFunctionCommand::clone() const
-{
-  return new DefineNamedFunctionCommand(
-      d_symbol, d_func, d_formals, d_formula, d_global);
-}
-
-void DefineNamedFunctionCommand::toStream(std::ostream& out,
-                                          int toDepth,
-                                          bool types,
-                                          size_t dag,
-                                          OutputLanguage language) const
-{
-  Printer::getPrinter(language)->toStreamCmdDefineNamedFunction(
-      out,
-      d_func.toString(),
-      api::termVectorToNodes(d_formals),
-      TypeNode::fromType(d_func.getSort().getFunctionCodomainSort().getType()),
       d_formula.getNode());
 }
 
@@ -1412,7 +1344,7 @@ const std::vector<api::Term>& DefineFunctionRecCommand::getFormulas() const
   return d_formulas;
 }
 
-void DefineFunctionRecCommand::invoke(api::Solver* solver)
+void DefineFunctionRecCommand::invoke(api::Solver* solver, SymbolManager* sm)
 {
   try
   {
@@ -1437,7 +1369,6 @@ std::string DefineFunctionRecCommand::getCommandName() const
 
 void DefineFunctionRecCommand::toStream(std::ostream& out,
                                         int toDepth,
-                                        bool types,
                                         size_t dag,
                                         OutputLanguage language) const
 {
@@ -1454,9 +1385,43 @@ void DefineFunctionRecCommand::toStream(std::ostream& out,
       formals,
       api::termVectorToNodes(d_formulas));
 }
+/* -------------------------------------------------------------------------- */
+/* class DeclareHeapCommand                                                   */
+/* -------------------------------------------------------------------------- */
+DeclareHeapCommand::DeclareHeapCommand(api::Sort locSort, api::Sort dataSort)
+    : d_locSort(locSort), d_dataSort(dataSort)
+{
+}
+
+api::Sort DeclareHeapCommand::getLocationSort() const { return d_locSort; }
+api::Sort DeclareHeapCommand::getDataSort() const { return d_dataSort; }
+
+void DeclareHeapCommand::invoke(api::Solver* solver, SymbolManager* sm)
+{
+  solver->declareSeparationHeap(d_locSort, d_dataSort);
+}
+
+Command* DeclareHeapCommand::clone() const
+{
+  return new DeclareHeapCommand(d_locSort, d_dataSort);
+}
+
+std::string DeclareHeapCommand::getCommandName() const
+{
+  return "declare-heap";
+}
+
+void DeclareHeapCommand::toStream(std::ostream& out,
+                                  int toDepth,
+                                  size_t dag,
+                                  OutputLanguage language) const
+{
+  Printer::getPrinter(language)->toStreamCmdDeclareHeap(
+      out, d_locSort.getTypeNode(), d_dataSort.getTypeNode());
+}
 
 /* -------------------------------------------------------------------------- */
-/* class SetUserAttribute                                                     */
+/* class SetUserAttributeCommand                                              */
 /* -------------------------------------------------------------------------- */
 
 SetUserAttributeCommand::SetUserAttributeCommand(
@@ -1489,7 +1454,7 @@ SetUserAttributeCommand::SetUserAttributeCommand(const std::string& attr,
 {
 }
 
-void SetUserAttributeCommand::invoke(api::Solver* solver)
+void SetUserAttributeCommand::invoke(api::Solver* solver, SymbolManager* sm)
 {
   try
   {
@@ -1497,8 +1462,8 @@ void SetUserAttributeCommand::invoke(api::Solver* solver)
     {
       solver->getSmtEngine()->setUserAttribute(
           d_attr,
-          d_term.getExpr(),
-          api::termVectorToExprs(d_termValues),
+          d_term.getNode(),
+          api::termVectorToNodes(d_termValues),
           d_strValue);
     }
     d_commandStatus = CommandSuccess::instance();
@@ -1521,7 +1486,6 @@ std::string SetUserAttributeCommand::getCommandName() const
 
 void SetUserAttributeCommand::toStream(std::ostream& out,
                                        int toDepth,
-                                       bool types,
                                        size_t dag,
                                        OutputLanguage language) const
 {
@@ -1535,7 +1499,7 @@ void SetUserAttributeCommand::toStream(std::ostream& out,
 
 SimplifyCommand::SimplifyCommand(api::Term term) : d_term(term) {}
 api::Term SimplifyCommand::getTerm() const { return d_term; }
-void SimplifyCommand::invoke(api::Solver* solver)
+void SimplifyCommand::invoke(api::Solver* solver, SymbolManager* sm)
 {
   try
   {
@@ -1576,63 +1540,10 @@ std::string SimplifyCommand::getCommandName() const { return "simplify"; }
 
 void SimplifyCommand::toStream(std::ostream& out,
                                int toDepth,
-                               bool types,
                                size_t dag,
                                OutputLanguage language) const
 {
   Printer::getPrinter(language)->toStreamCmdSimplify(out, d_term.getNode());
-}
-
-/* -------------------------------------------------------------------------- */
-/* class ExpandDefinitionsCommand                                             */
-/* -------------------------------------------------------------------------- */
-
-ExpandDefinitionsCommand::ExpandDefinitionsCommand(api::Term term)
-    : d_term(term)
-{
-}
-api::Term ExpandDefinitionsCommand::getTerm() const { return d_term; }
-void ExpandDefinitionsCommand::invoke(api::Solver* solver)
-{
-  Node t = d_term.getNode();
-  d_result = api::Term(solver, solver->getSmtEngine()->expandDefinitions(t));
-  d_commandStatus = CommandSuccess::instance();
-}
-
-api::Term ExpandDefinitionsCommand::getResult() const { return d_result; }
-void ExpandDefinitionsCommand::printResult(std::ostream& out,
-                                           uint32_t verbosity) const
-{
-  if (!ok())
-  {
-    this->Command::printResult(out, verbosity);
-  }
-  else
-  {
-    out << d_result << endl;
-  }
-}
-
-Command* ExpandDefinitionsCommand::clone() const
-{
-  ExpandDefinitionsCommand* c = new ExpandDefinitionsCommand(d_term);
-  c->d_result = d_result;
-  return c;
-}
-
-std::string ExpandDefinitionsCommand::getCommandName() const
-{
-  return "expand-definitions";
-}
-
-void ExpandDefinitionsCommand::toStream(std::ostream& out,
-                                        int toDepth,
-                                        bool types,
-                                        size_t dag,
-                                        OutputLanguage language) const
-{
-  Printer::getPrinter(language)->toStreamCmdExpandDefinitions(out,
-                                                              d_term.getNode());
 }
 
 /* -------------------------------------------------------------------------- */
@@ -1655,40 +1566,22 @@ const std::vector<api::Term>& GetValueCommand::getTerms() const
 {
   return d_terms;
 }
-void GetValueCommand::invoke(api::Solver* solver)
+void GetValueCommand::invoke(api::Solver* solver, SymbolManager* sm)
 {
   try
   {
-    NodeManager* nm = solver->getNodeManager();
-    smt::SmtScope scope(solver->getSmtEngine());
-    std::vector<Node> result;
-    for (const Expr& e :
-         solver->getSmtEngine()->getValues(api::termVectorToExprs(d_terms)))
-    {
-      result.push_back(Node::fromExpr(e));
-    }
+    std::vector<api::Term> result = solver->getValue(d_terms);
     Assert(result.size() == d_terms.size());
     for (int i = 0, size = d_terms.size(); i < size; i++)
     {
-      api::Term t = d_terms[i];
-      Node tNode = t.getNode();
-      Node request = options::expandDefinitions()
-                         ? solver->getSmtEngine()->expandDefinitions(tNode)
-                         : tNode;
-      Node value = result[i];
-      if (value.getType().isInteger() && request.getType() == nm->realType())
-      {
-        // Need to wrap in division-by-one so that output printers know this
-        // is an integer-looking constant that really should be output as
-        // a rational.  Necessary for SMT-LIB standards compliance.
-        value = nm->mkNode(kind::DIVISION, value, nm->mkConst(Rational(1)));
-      }
-      result[i] = nm->mkNode(kind::SEXPR, request, value);
+      api::Term request = d_terms[i];
+      api::Term value = result[i];
+      result[i] = solver->mkTerm(api::SEXPR, request, value);
     }
-    d_result = api::Term(solver, nm->mkNode(kind::SEXPR, result));
+    d_result = solver->mkTerm(api::SEXPR, result);
     d_commandStatus = CommandSuccess::instance();
   }
-  catch (RecoverableModalException& e)
+  catch (api::CVC4ApiRecoverableException& e)
   {
     d_commandStatus = new CommandRecoverableFailure(e.what());
   }
@@ -1727,7 +1620,6 @@ std::string GetValueCommand::getCommandName() const { return "get-value"; }
 
 void GetValueCommand::toStream(std::ostream& out,
                                int toDepth,
-                               bool types,
                                size_t dag,
                                OutputLanguage language) const
 {
@@ -1740,24 +1632,34 @@ void GetValueCommand::toStream(std::ostream& out,
 /* -------------------------------------------------------------------------- */
 
 GetAssignmentCommand::GetAssignmentCommand() {}
-void GetAssignmentCommand::invoke(api::Solver* solver)
+void GetAssignmentCommand::invoke(api::Solver* solver, SymbolManager* sm)
 {
   try
   {
-    std::vector<std::pair<Expr, Expr>> assignments =
-        solver->getSmtEngine()->getAssignment();
-    vector<SExpr> sexprs;
-    for (const auto& p : assignments)
+    std::map<api::Term, std::string> enames = sm->getExpressionNames();
+    std::vector<api::Term> terms;
+    std::vector<std::string> names;
+    for (const std::pair<const api::Term, std::string>& e : enames)
     {
-      vector<SExpr> v;
-      v.emplace_back(SExpr::Keyword(p.first.toString()));
-      v.emplace_back(SExpr::Keyword(p.second.toString()));
-      sexprs.emplace_back(v);
+      terms.push_back(e.first);
+      names.push_back(e.second);
+    }
+    // Must use vector version of getValue to ensure error is thrown regardless
+    // of whether terms is empty.
+    std::vector<api::Term> values = solver->getValue(terms);
+    Assert(values.size() == names.size());
+    std::vector<SExpr> sexprs;
+    for (size_t i = 0, nterms = terms.size(); i < nterms; i++)
+    {
+      std::vector<SExpr> ss;
+      ss.emplace_back(SExpr::Keyword(names[i]));
+      ss.emplace_back(SExpr::Keyword(values[i].toString()));
+      sexprs.emplace_back(ss);
     }
     d_result = SExpr(sexprs);
     d_commandStatus = CommandSuccess::instance();
   }
-  catch (RecoverableModalException& e)
+  catch (api::CVC4ApiRecoverableException& e)
   {
     d_commandStatus = new CommandRecoverableFailure(e.what());
   }
@@ -1799,7 +1701,6 @@ std::string GetAssignmentCommand::getCommandName() const
 
 void GetAssignmentCommand::toStream(std::ostream& out,
                                     int toDepth,
-                                    bool types,
                                     size_t dag,
                                     OutputLanguage language) const
 {
@@ -1810,13 +1711,24 @@ void GetAssignmentCommand::toStream(std::ostream& out,
 /* class GetModelCommand                                                      */
 /* -------------------------------------------------------------------------- */
 
-GetModelCommand::GetModelCommand() : d_result(nullptr), d_smtEngine(nullptr) {}
-void GetModelCommand::invoke(api::Solver* solver)
+GetModelCommand::GetModelCommand() : d_result(nullptr) {}
+void GetModelCommand::invoke(api::Solver* solver, SymbolManager* sm)
 {
   try
   {
     d_result = solver->getSmtEngine()->getModel();
-    d_smtEngine = solver->getSmtEngine();
+    // set the model declarations, which determines what is printed in the model
+    d_result->clearModelDeclarations();
+    std::vector<api::Sort> declareSorts = sm->getModelDeclareSorts();
+    for (const api::Sort& s : declareSorts)
+    {
+      d_result->addDeclarationSort(s.getTypeNode());
+    }
+    std::vector<api::Term> declareTerms = sm->getModelDeclareTerms();
+    for (const api::Term& t : declareTerms)
+    {
+      d_result->addDeclarationTerm(t.getNode());
+    }
     d_commandStatus = CommandSuccess::instance();
   }
   catch (RecoverableModalException& e)
@@ -1855,7 +1767,6 @@ Command* GetModelCommand::clone() const
 {
   GetModelCommand* c = new GetModelCommand();
   c->d_result = d_result;
-  c->d_smtEngine = d_smtEngine;
   return c;
 }
 
@@ -1863,7 +1774,6 @@ std::string GetModelCommand::getCommandName() const { return "get-model"; }
 
 void GetModelCommand::toStream(std::ostream& out,
                                int toDepth,
-                               bool types,
                                size_t dag,
                                OutputLanguage language) const
 {
@@ -1875,14 +1785,14 @@ void GetModelCommand::toStream(std::ostream& out,
 /* -------------------------------------------------------------------------- */
 
 BlockModelCommand::BlockModelCommand() {}
-void BlockModelCommand::invoke(api::Solver* solver)
+void BlockModelCommand::invoke(api::Solver* solver, SymbolManager* sm)
 {
   try
   {
-    solver->getSmtEngine()->blockModel();
+    solver->blockModel();
     d_commandStatus = CommandSuccess::instance();
   }
-  catch (RecoverableModalException& e)
+  catch (api::CVC4ApiRecoverableException& e)
   {
     d_commandStatus = new CommandRecoverableFailure(e.what());
   }
@@ -1906,7 +1816,6 @@ std::string BlockModelCommand::getCommandName() const { return "block-model"; }
 
 void BlockModelCommand::toStream(std::ostream& out,
                                  int toDepth,
-                                 bool types,
                                  size_t dag,
                                  OutputLanguage language) const
 {
@@ -1930,14 +1839,14 @@ const std::vector<api::Term>& BlockModelValuesCommand::getTerms() const
 {
   return d_terms;
 }
-void BlockModelValuesCommand::invoke(api::Solver* solver)
+void BlockModelValuesCommand::invoke(api::Solver* solver, SymbolManager* sm)
 {
   try
   {
-    solver->getSmtEngine()->blockModelValues(api::termVectorToExprs(d_terms));
+    solver->blockModelValues(d_terms);
     d_commandStatus = CommandSuccess::instance();
   }
-  catch (RecoverableModalException& e)
+  catch (api::CVC4ApiRecoverableException& e)
   {
     d_commandStatus = new CommandRecoverableFailure(e.what());
   }
@@ -1964,7 +1873,6 @@ std::string BlockModelValuesCommand::getCommandName() const
 
 void BlockModelValuesCommand::toStream(std::ostream& out,
                                        int toDepth,
-                                       bool types,
                                        size_t dag,
                                        OutputLanguage language) const
 {
@@ -1977,7 +1885,7 @@ void BlockModelValuesCommand::toStream(std::ostream& out,
 /* -------------------------------------------------------------------------- */
 
 GetProofCommand::GetProofCommand() {}
-void GetProofCommand::invoke(api::Solver* solver)
+void GetProofCommand::invoke(api::Solver* solver, SymbolManager* sm)
 {
   Unimplemented() << "Unimplemented get-proof\n";
 }
@@ -1992,7 +1900,6 @@ std::string GetProofCommand::getCommandName() const { return "get-proof"; }
 
 void GetProofCommand::toStream(std::ostream& out,
                                int toDepth,
-                               bool types,
                                size_t dag,
                                OutputLanguage language) const
 {
@@ -2003,12 +1910,12 @@ void GetProofCommand::toStream(std::ostream& out,
 /* class GetInstantiationsCommand                                             */
 /* -------------------------------------------------------------------------- */
 
-GetInstantiationsCommand::GetInstantiationsCommand() : d_smtEngine(nullptr) {}
-void GetInstantiationsCommand::invoke(api::Solver* solver)
+GetInstantiationsCommand::GetInstantiationsCommand() : d_solver(nullptr) {}
+void GetInstantiationsCommand::invoke(api::Solver* solver, SymbolManager* sm)
 {
   try
   {
-    d_smtEngine = solver->getSmtEngine();
+    d_solver = solver;
     d_commandStatus = CommandSuccess::instance();
   }
   catch (exception& e)
@@ -2026,7 +1933,7 @@ void GetInstantiationsCommand::printResult(std::ostream& out,
   }
   else
   {
-    d_smtEngine->printInstantiations(out);
+    d_solver->printInstantiations(out);
   }
 }
 
@@ -2034,7 +1941,7 @@ Command* GetInstantiationsCommand::clone() const
 {
   GetInstantiationsCommand* c = new GetInstantiationsCommand();
   // c->d_result = d_result;
-  c->d_smtEngine = d_smtEngine;
+  c->d_solver = d_solver;
   return c;
 }
 
@@ -2045,7 +1952,6 @@ std::string GetInstantiationsCommand::getCommandName() const
 
 void GetInstantiationsCommand::toStream(std::ostream& out,
                                         int toDepth,
-                                        bool types,
                                         size_t dag,
                                         OutputLanguage language) const
 {
@@ -2056,12 +1962,12 @@ void GetInstantiationsCommand::toStream(std::ostream& out,
 /* class GetSynthSolutionCommand                                              */
 /* -------------------------------------------------------------------------- */
 
-GetSynthSolutionCommand::GetSynthSolutionCommand() : d_smtEngine(nullptr) {}
-void GetSynthSolutionCommand::invoke(api::Solver* solver)
+GetSynthSolutionCommand::GetSynthSolutionCommand() : d_solver(nullptr) {}
+void GetSynthSolutionCommand::invoke(api::Solver* solver, SymbolManager* sm)
 {
   try
   {
-    d_smtEngine = solver->getSmtEngine();
+    d_solver = solver;
     d_commandStatus = CommandSuccess::instance();
   }
   catch (exception& e)
@@ -2079,14 +1985,14 @@ void GetSynthSolutionCommand::printResult(std::ostream& out,
   }
   else
   {
-    d_smtEngine->printSynthSolution(out);
+    d_solver->printSynthSolution(out);
   }
 }
 
 Command* GetSynthSolutionCommand::clone() const
 {
   GetSynthSolutionCommand* c = new GetSynthSolutionCommand();
-  c->d_smtEngine = d_smtEngine;
+  c->d_solver = d_solver;
   return c;
 }
 
@@ -2097,7 +2003,6 @@ std::string GetSynthSolutionCommand::getCommandName() const
 
 void GetSynthSolutionCommand::toStream(std::ostream& out,
                                        int toDepth,
-                                       bool types,
                                        size_t dag,
                                        OutputLanguage language) const
 {
@@ -2128,7 +2033,7 @@ const api::Grammar* GetInterpolCommand::getGrammar() const
 
 api::Term GetInterpolCommand::getResult() const { return d_result; }
 
-void GetInterpolCommand::invoke(api::Solver* solver)
+void GetInterpolCommand::invoke(api::Solver* solver, SymbolManager* sm)
 {
   try
   {
@@ -2187,15 +2092,11 @@ std::string GetInterpolCommand::getCommandName() const
 
 void GetInterpolCommand::toStream(std::ostream& out,
                                   int toDepth,
-                                  bool types,
                                   size_t dag,
                                   OutputLanguage language) const
 {
   Printer::getPrinter(language)->toStreamCmdGetInterpol(
-      out,
-      d_name,
-      d_conj.getNode(),
-      TypeNode::fromType(d_sygus_grammar->resolve().getType()));
+      out, d_name, d_conj.getNode(), d_sygus_grammar->resolve().getTypeNode());
 }
 
 /* -------------------------------------------------------------------------- */
@@ -2223,7 +2124,7 @@ const api::Grammar* GetAbductCommand::getGrammar() const
 std::string GetAbductCommand::getAbductName() const { return d_name; }
 api::Term GetAbductCommand::getResult() const { return d_result; }
 
-void GetAbductCommand::invoke(api::Solver* solver)
+void GetAbductCommand::invoke(api::Solver* solver, SymbolManager* sm)
 {
   try
   {
@@ -2276,15 +2177,11 @@ std::string GetAbductCommand::getCommandName() const { return "get-abduct"; }
 
 void GetAbductCommand::toStream(std::ostream& out,
                                 int toDepth,
-                                bool types,
                                 size_t dag,
                                 OutputLanguage language) const
 {
   Printer::getPrinter(language)->toStreamCmdGetAbduct(
-      out,
-      d_name,
-      d_conj.getNode(),
-      TypeNode::fromType(d_sygus_grammar->resolve().getType()));
+      out, d_name, d_conj.getNode(), d_sygus_grammar->resolve().getTypeNode());
 }
 
 /* -------------------------------------------------------------------------- */
@@ -2303,13 +2200,19 @@ GetQuantifierEliminationCommand::GetQuantifierEliminationCommand(
 
 api::Term GetQuantifierEliminationCommand::getTerm() const { return d_term; }
 bool GetQuantifierEliminationCommand::getDoFull() const { return d_doFull; }
-void GetQuantifierEliminationCommand::invoke(api::Solver* solver)
+void GetQuantifierEliminationCommand::invoke(api::Solver* solver,
+                                             SymbolManager* sm)
 {
   try
   {
-    d_result = api::Term(solver,
-                         solver->getSmtEngine()->getQuantifierElimination(
-                             d_term.getNode(), d_doFull));
+    if (d_doFull)
+    {
+      d_result = solver->getQuantifierElimination(d_term);
+    }
+    else
+    {
+      d_result = solver->getQuantifierEliminationDisjunct(d_term);
+    }
     d_commandStatus = CommandSuccess::instance();
   }
   catch (exception& e)
@@ -2350,7 +2253,6 @@ std::string GetQuantifierEliminationCommand::getCommandName() const
 
 void GetQuantifierEliminationCommand::toStream(std::ostream& out,
                                                int toDepth,
-                                               bool types,
                                                size_t dag,
                                                OutputLanguage language) const
 {
@@ -2364,14 +2266,14 @@ void GetQuantifierEliminationCommand::toStream(std::ostream& out,
 
 GetUnsatAssumptionsCommand::GetUnsatAssumptionsCommand() {}
 
-void GetUnsatAssumptionsCommand::invoke(api::Solver* solver)
+void GetUnsatAssumptionsCommand::invoke(api::Solver* solver, SymbolManager* sm)
 {
   try
   {
     d_result = solver->getUnsatAssumptions();
     d_commandStatus = CommandSuccess::instance();
   }
-  catch (RecoverableModalException& e)
+  catch (api::CVC4ApiRecoverableException& e)
   {
     d_commandStatus = new CommandRecoverableFailure(e.what());
   }
@@ -2413,7 +2315,6 @@ std::string GetUnsatAssumptionsCommand::getCommandName() const
 
 void GetUnsatAssumptionsCommand::toStream(std::ostream& out,
                                           int toDepth,
-                                          bool types,
                                           size_t dag,
                                           OutputLanguage language) const
 {
@@ -2424,15 +2325,17 @@ void GetUnsatAssumptionsCommand::toStream(std::ostream& out,
 /* class GetUnsatCoreCommand                                                  */
 /* -------------------------------------------------------------------------- */
 
-GetUnsatCoreCommand::GetUnsatCoreCommand() {}
-void GetUnsatCoreCommand::invoke(api::Solver* solver)
+GetUnsatCoreCommand::GetUnsatCoreCommand() : d_sm(nullptr) {}
+void GetUnsatCoreCommand::invoke(api::Solver* solver, SymbolManager* sm)
 {
   try
   {
-    d_result = solver->getSmtEngine()->getUnsatCore();
+    d_sm = sm;
+    d_result = solver->getUnsatCore();
+
     d_commandStatus = CommandSuccess::instance();
   }
-  catch (RecoverableModalException& e)
+  catch (api::CVC4ApiRecoverableException& e)
   {
     d_commandStatus = new CommandRecoverableFailure(e.what());
   }
@@ -2451,11 +2354,24 @@ void GetUnsatCoreCommand::printResult(std::ostream& out,
   }
   else
   {
-    d_result.toStream(out);
+    if (options::dumpUnsatCoresFull())
+    {
+      // use the assertions
+      UnsatCore ucr(api::termVectorToNodes(d_result));
+      ucr.toStream(out);
+    }
+    else
+    {
+      // otherwise, use the names
+      std::vector<std::string> names;
+      d_sm->getExpressionNames(d_result, names, true);
+      UnsatCore ucr(names);
+      ucr.toStream(out);
+    }
   }
 }
 
-const UnsatCore& GetUnsatCoreCommand::getUnsatCore() const
+const std::vector<api::Term>& GetUnsatCoreCommand::getUnsatCore() const
 {
   // of course, this will be empty if the command hasn't been invoked yet
   return d_result;
@@ -2464,6 +2380,7 @@ const UnsatCore& GetUnsatCoreCommand::getUnsatCore() const
 Command* GetUnsatCoreCommand::clone() const
 {
   GetUnsatCoreCommand* c = new GetUnsatCoreCommand;
+  c->d_sm = d_sm;
   c->d_result = d_result;
   return c;
 }
@@ -2475,7 +2392,6 @@ std::string GetUnsatCoreCommand::getCommandName() const
 
 void GetUnsatCoreCommand::toStream(std::ostream& out,
                                    int toDepth,
-                                   bool types,
                                    size_t dag,
                                    OutputLanguage language) const
 {
@@ -2487,7 +2403,7 @@ void GetUnsatCoreCommand::toStream(std::ostream& out,
 /* -------------------------------------------------------------------------- */
 
 GetAssertionsCommand::GetAssertionsCommand() {}
-void GetAssertionsCommand::invoke(api::Solver* solver)
+void GetAssertionsCommand::invoke(api::Solver* solver, SymbolManager* sm)
 {
   try
   {
@@ -2533,7 +2449,6 @@ std::string GetAssertionsCommand::getCommandName() const
 
 void GetAssertionsCommand::toStream(std::ostream& out,
                                     int toDepth,
-                                    bool types,
                                     size_t dag,
                                     OutputLanguage language) const
 {
@@ -2554,7 +2469,7 @@ BenchmarkStatus SetBenchmarkStatusCommand::getStatus() const
   return d_status;
 }
 
-void SetBenchmarkStatusCommand::invoke(api::Solver* solver)
+void SetBenchmarkStatusCommand::invoke(api::Solver* solver, SymbolManager* sm)
 {
   try
   {
@@ -2581,7 +2496,6 @@ std::string SetBenchmarkStatusCommand::getCommandName() const
 
 void SetBenchmarkStatusCommand::toStream(std::ostream& out,
                                          int toDepth,
-                                         bool types,
                                          size_t dag,
                                          OutputLanguage language) const
 {
@@ -2606,7 +2520,7 @@ SetBenchmarkLogicCommand::SetBenchmarkLogicCommand(std::string logic)
 }
 
 std::string SetBenchmarkLogicCommand::getLogic() const { return d_logic; }
-void SetBenchmarkLogicCommand::invoke(api::Solver* solver)
+void SetBenchmarkLogicCommand::invoke(api::Solver* solver, SymbolManager* sm)
 {
   try
   {
@@ -2631,7 +2545,6 @@ std::string SetBenchmarkLogicCommand::getCommandName() const
 
 void SetBenchmarkLogicCommand::toStream(std::ostream& out,
                                         int toDepth,
-                                        bool types,
                                         size_t dag,
                                         OutputLanguage language) const
 {
@@ -2642,21 +2555,21 @@ void SetBenchmarkLogicCommand::toStream(std::ostream& out,
 /* class SetInfoCommand                                                       */
 /* -------------------------------------------------------------------------- */
 
-SetInfoCommand::SetInfoCommand(std::string flag, const SExpr& sexpr)
+SetInfoCommand::SetInfoCommand(std::string flag, const std::string& sexpr)
     : d_flag(flag), d_sexpr(sexpr)
 {
 }
 
 std::string SetInfoCommand::getFlag() const { return d_flag; }
-SExpr SetInfoCommand::getSExpr() const { return d_sexpr; }
-void SetInfoCommand::invoke(api::Solver* solver)
+const std::string& SetInfoCommand::getSExpr() const { return d_sexpr; }
+void SetInfoCommand::invoke(api::Solver* solver, SymbolManager* sm)
 {
   try
   {
-    solver->getSmtEngine()->setInfo(d_flag, d_sexpr);
+    solver->setInfo(d_flag, d_sexpr);
     d_commandStatus = CommandSuccess::instance();
   }
-  catch (UnrecognizedOptionException&)
+  catch (api::CVC4ApiRecoverableException&)
   {
     // As per SMT-LIB spec, silently accept unknown set-info keys
     d_commandStatus = CommandSuccess::instance();
@@ -2676,7 +2589,6 @@ std::string SetInfoCommand::getCommandName() const { return "set-info"; }
 
 void SetInfoCommand::toStream(std::ostream& out,
                               int toDepth,
-                              bool types,
                               size_t dag,
                               OutputLanguage language) const
 {
@@ -2689,27 +2601,17 @@ void SetInfoCommand::toStream(std::ostream& out,
 
 GetInfoCommand::GetInfoCommand(std::string flag) : d_flag(flag) {}
 std::string GetInfoCommand::getFlag() const { return d_flag; }
-void GetInfoCommand::invoke(api::Solver* solver)
+void GetInfoCommand::invoke(api::Solver* solver, SymbolManager* sm)
 {
   try
   {
-    vector<SExpr> v;
-    v.push_back(SExpr(SExpr::Keyword(string(":") + d_flag)));
-    v.emplace_back(solver->getSmtEngine()->getInfo(d_flag));
-    stringstream ss;
-    if (d_flag == "all-options" || d_flag == "all-statistics")
-    {
-      ss << PrettySExprs(true);
-    }
-    ss << SExpr(v);
-    d_result = ss.str();
+    std::vector<api::Term> v;
+    v.push_back(solver->mkString(":" + d_flag));
+    v.push_back(solver->mkString(solver->getInfo(d_flag)));
+    d_result = sexprToString(solver->mkTerm(api::SEXPR, v));
     d_commandStatus = CommandSuccess::instance();
   }
-  catch (UnrecognizedOptionException&)
-  {
-    d_commandStatus = new CommandUnsupported();
-  }
-  catch (RecoverableModalException& e)
+  catch (api::CVC4ApiRecoverableException& e)
   {
     d_commandStatus = new CommandRecoverableFailure(e.what());
   }
@@ -2743,7 +2645,6 @@ std::string GetInfoCommand::getCommandName() const { return "get-info"; }
 
 void GetInfoCommand::toStream(std::ostream& out,
                               int toDepth,
-                              bool types,
                               size_t dag,
                               OutputLanguage language) const
 {
@@ -2754,21 +2655,21 @@ void GetInfoCommand::toStream(std::ostream& out,
 /* class SetOptionCommand                                                     */
 /* -------------------------------------------------------------------------- */
 
-SetOptionCommand::SetOptionCommand(std::string flag, const SExpr& sexpr)
+SetOptionCommand::SetOptionCommand(std::string flag, const std::string& sexpr)
     : d_flag(flag), d_sexpr(sexpr)
 {
 }
 
 std::string SetOptionCommand::getFlag() const { return d_flag; }
-SExpr SetOptionCommand::getSExpr() const { return d_sexpr; }
-void SetOptionCommand::invoke(api::Solver* solver)
+const std::string& SetOptionCommand::getSExpr() const { return d_sexpr; }
+void SetOptionCommand::invoke(api::Solver* solver, SymbolManager* sm)
 {
   try
   {
-    solver->getSmtEngine()->setOption(d_flag, d_sexpr);
+    solver->setOption(d_flag, d_sexpr);
     d_commandStatus = CommandSuccess::instance();
   }
-  catch (UnrecognizedOptionException&)
+  catch (api::CVC4ApiRecoverableException&)
   {
     d_commandStatus = new CommandUnsupported();
   }
@@ -2787,7 +2688,6 @@ std::string SetOptionCommand::getCommandName() const { return "set-option"; }
 
 void SetOptionCommand::toStream(std::ostream& out,
                                 int toDepth,
-                                bool types,
                                 size_t dag,
                                 OutputLanguage language) const
 {
@@ -2800,14 +2700,14 @@ void SetOptionCommand::toStream(std::ostream& out,
 
 GetOptionCommand::GetOptionCommand(std::string flag) : d_flag(flag) {}
 std::string GetOptionCommand::getFlag() const { return d_flag; }
-void GetOptionCommand::invoke(api::Solver* solver)
+void GetOptionCommand::invoke(api::Solver* solver, SymbolManager* sm)
 {
   try
   {
     d_result = solver->getOption(d_flag);
     d_commandStatus = CommandSuccess::instance();
   }
-  catch (UnrecognizedOptionException&)
+  catch (api::CVC4ApiRecoverableException&)
   {
     d_commandStatus = new CommandUnsupported();
   }
@@ -2841,48 +2741,10 @@ std::string GetOptionCommand::getCommandName() const { return "get-option"; }
 
 void GetOptionCommand::toStream(std::ostream& out,
                                 int toDepth,
-                                bool types,
                                 size_t dag,
                                 OutputLanguage language) const
 {
   Printer::getPrinter(language)->toStreamCmdGetOption(out, d_flag);
-}
-
-/* -------------------------------------------------------------------------- */
-/* class SetExpressionNameCommand                                             */
-/* -------------------------------------------------------------------------- */
-
-SetExpressionNameCommand::SetExpressionNameCommand(api::Term term,
-                                                   std::string name)
-    : d_term(term), d_name(name)
-{
-}
-
-void SetExpressionNameCommand::invoke(api::Solver* solver)
-{
-  solver->getSmtEngine()->setExpressionName(d_term.getExpr(), d_name);
-  d_commandStatus = CommandSuccess::instance();
-}
-
-Command* SetExpressionNameCommand::clone() const
-{
-  SetExpressionNameCommand* c = new SetExpressionNameCommand(d_term, d_name);
-  return c;
-}
-
-std::string SetExpressionNameCommand::getCommandName() const
-{
-  return "set-expr-name";
-}
-
-void SetExpressionNameCommand::toStream(std::ostream& out,
-                                        int toDepth,
-                                        bool types,
-                                        size_t dag,
-                                        OutputLanguage language) const
-{
-  Printer::getPrinter(language)->toStreamCmdSetExpressionName(
-      out, d_term.getNode(), d_name);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -2907,7 +2769,7 @@ const std::vector<api::Sort>& DatatypeDeclarationCommand::getDatatypes() const
   return d_datatypes;
 }
 
-void DatatypeDeclarationCommand::invoke(api::Solver* solver)
+void DatatypeDeclarationCommand::invoke(api::Solver* solver, SymbolManager* sm)
 {
   d_commandStatus = CommandSuccess::instance();
 }
@@ -2924,7 +2786,6 @@ std::string DatatypeDeclarationCommand::getCommandName() const
 
 void DatatypeDeclarationCommand::toStream(std::ostream& out,
                                           int toDepth,
-                                          bool types,
                                           size_t dag,
                                           OutputLanguage language) const
 {

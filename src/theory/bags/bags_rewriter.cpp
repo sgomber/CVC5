@@ -5,7 +5,7 @@
  **   Mudathir Mohamed
  ** This file is part of the CVC4 project.
  ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
+ ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
@@ -14,7 +14,7 @@
 
 #include "theory/bags/bags_rewriter.h"
 
-#include "normal_form.h"
+#include "theory/bags/normal_form.h"
 
 using namespace CVC4::kind;
 
@@ -51,7 +51,11 @@ RewriteResponse BagsRewriter::postRewrite(TNode n)
     // no need to rewrite n if it is already in a normal form
     response = BagsRewriteResponse(n, Rewrite::NONE);
   }
-  else if (NormalForm::AreChildrenConstants(n))
+  else if(n.getKind() == EQUAL)
+  {
+    response = postRewriteEqual(n);
+  }
+  else if (NormalForm::areChildrenConstants(n))
   {
     Node value = NormalForm::evaluate(n);
     response = BagsRewriteResponse(value, Rewrite::CONSTANT_EVALUATION);
@@ -63,6 +67,7 @@ RewriteResponse BagsRewriter::postRewrite(TNode n)
     {
       case MK_BAG: response = rewriteMakeBag(n); break;
       case BAG_COUNT: response = rewriteBagCount(n); break;
+      case DUPLICATE_REMOVAL: response = rewriteDuplicateRemoval(n); break;
       case UNION_MAX: response = rewriteUnionMax(n); break;
       case UNION_DISJOINT: response = rewriteUnionDisjoint(n); break;
       case INTERSECTION_MIN: response = rewriteIntersectionMin(n); break;
@@ -71,6 +76,8 @@ RewriteResponse BagsRewriter::postRewrite(TNode n)
       case BAG_CHOOSE: response = rewriteChoose(n); break;
       case BAG_CARD: response = rewriteCard(n); break;
       case BAG_IS_SINGLETON: response = rewriteIsSingleton(n); break;
+      case BAG_FROM_SET: response = rewriteFromSet(n); break;
+      case BAG_TO_SET: response = rewriteToSet(n); break;
       default: response = BagsRewriteResponse(n, Rewrite::NONE); break;
     }
   }
@@ -95,8 +102,8 @@ RewriteResponse BagsRewriter::preRewrite(TNode n)
   Kind k = n.getKind();
   switch (k)
   {
-    case EQUAL: response = rewriteEqual(n); break;
-    case BAG_IS_INCLUDED: response = rewriteIsIncluded(n); break;
+    case EQUAL: response = preRewriteEqual(n); break;
+    case SUBBAG: response = rewriteSubBag(n); break;
     default: response = BagsRewriteResponse(n, Rewrite::NONE);
   }
 
@@ -114,7 +121,7 @@ RewriteResponse BagsRewriter::preRewrite(TNode n)
   return RewriteResponse(RewriteStatus::REWRITE_DONE, n);
 }
 
-BagsRewriteResponse BagsRewriter::rewriteEqual(const TNode& n) const
+BagsRewriteResponse BagsRewriter::preRewriteEqual(const TNode& n) const
 {
   Assert(n.getKind() == EQUAL);
   if (n[0] == n[1])
@@ -125,9 +132,9 @@ BagsRewriteResponse BagsRewriter::rewriteEqual(const TNode& n) const
   return BagsRewriteResponse(n, Rewrite::NONE);
 }
 
-BagsRewriteResponse BagsRewriter::rewriteIsIncluded(const TNode& n) const
+BagsRewriteResponse BagsRewriter::rewriteSubBag(const TNode& n) const
 {
-  Assert(n.getKind() == BAG_IS_INCLUDED);
+  Assert(n.getKind() == SUBBAG);
 
   // (bag.is_included A B) = ((difference_subtract A B) == emptybag)
   Node emptybag = d_nm->mkConst(EmptyBag(n[0].getType()));
@@ -162,6 +169,21 @@ BagsRewriteResponse BagsRewriter::rewriteBagCount(const TNode& n) const
   {
     // (bag.count x (mkBag x c) = c where c > 0 is a constant
     return BagsRewriteResponse(n[1][1], Rewrite::COUNT_MK_BAG);
+  }
+  return BagsRewriteResponse(n, Rewrite::NONE);
+}
+
+BagsRewriteResponse BagsRewriter::rewriteDuplicateRemoval(const TNode& n) const
+{
+  Assert(n.getKind() == DUPLICATE_REMOVAL);
+  if (n[0].getKind() == MK_BAG && n[0][1].isConst()
+      && n[0][1].getConst<Rational>().sgn() == 1)
+  {
+    // (duplicate_removal (mkBag x n)) = (mkBag x 1)
+    //  where n is a positive constant
+    Node one = NodeManager::currentNM()->mkConst(Rational(1));
+    Node bag = d_nm->mkBag(n[0][0].getType(), n[0][0], one);
+    return BagsRewriteResponse(bag, Rewrite::DUPLICATE_REMOVAL_MK_BAG);
   }
   return BagsRewriteResponse(n, Rewrite::NONE);
 }
@@ -425,6 +447,58 @@ BagsRewriteResponse BagsRewriter::rewriteIsSingleton(const TNode& n) const
     Node one = d_nm->mkConst(Rational(1));
     Node equal = n[0][1].eqNode(one);
     return BagsRewriteResponse(equal, Rewrite::IS_SINGLETON_MK_BAG);
+  }
+  return BagsRewriteResponse(n, Rewrite::NONE);
+}
+
+BagsRewriteResponse BagsRewriter::rewriteFromSet(const TNode& n) const
+{
+  Assert(n.getKind() == BAG_FROM_SET);
+  if (n[0].getKind() == SINGLETON)
+  {
+    // (bag.from_set (singleton (singleton_op Int) x)) = (mkBag x 1)
+    Node one = d_nm->mkConst(Rational(1));
+    TypeNode type = n[0].getType().getSetElementType();
+    Node bag = d_nm->mkBag(type, n[0][0], one);
+    return BagsRewriteResponse(bag, Rewrite::FROM_SINGLETON);
+  }
+  return BagsRewriteResponse(n, Rewrite::NONE);
+}
+
+BagsRewriteResponse BagsRewriter::rewriteToSet(const TNode& n) const
+{
+  Assert(n.getKind() == BAG_TO_SET);
+  if (n[0].getKind() == MK_BAG && n[0][1].isConst()
+      && n[0][1].getConst<Rational>().sgn() == 1)
+  {
+    // (bag.to_set (mkBag x n)) = (singleton (singleton_op T) x)
+    // where n is a positive constant and T is the type of the bag's elements
+    Node set = d_nm->mkSingleton(n[0][0].getType(), n[0][0]);
+    return BagsRewriteResponse(set, Rewrite::TO_SINGLETON);
+  }
+  return BagsRewriteResponse(n, Rewrite::NONE);
+}
+
+BagsRewriteResponse BagsRewriter::postRewriteEqual(const TNode& n) const
+{
+  Assert(n.getKind() == kind::EQUAL);
+  if (n[0] == n[1])
+  {
+    Node ret = NodeManager::currentNM()->mkConst(true);
+    return BagsRewriteResponse(ret, Rewrite::EQ_REFL);
+  }
+
+  if (n[0].isConst() && n[1].isConst())
+  {
+    Node ret = NodeManager::currentNM()->mkConst(false);
+    return BagsRewriteResponse(ret, Rewrite::EQ_CONST_FALSE);
+  }
+
+  // standard ordering
+  if (n[0] > n[1])
+  {
+    Node ret = NodeManager::currentNM()->mkNode(kind::EQUAL, n[1], n[0]);
+    return BagsRewriteResponse(ret, Rewrite::EQ_SYM);
   }
   return BagsRewriteResponse(n, Rewrite::NONE);
 }

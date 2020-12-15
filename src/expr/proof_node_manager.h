@@ -2,7 +2,7 @@
 /*! \file proof_node_manager.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Andrew Reynolds
+ **   Andrew Reynolds, Haniel Barbosa
  ** This file is part of the CVC4 project.
  ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
  ** in the top-level source directory and their institutional affiliations.
@@ -81,6 +81,15 @@ class ProofNodeManager
    */
   std::shared_ptr<ProofNode> mkAssume(Node fact);
   /**
+   * Make transitivity proof, where children contains one or more proofs of
+   * equalities that form an ordered chain. In other words, the vector children
+   * is a legal set of children for an application of TRANS.
+   */
+  std::shared_ptr<ProofNode> mkTrans(
+      const std::vector<std::shared_ptr<ProofNode>>& children,
+      Node expected = Node::null());
+
+  /**
    * Make scope having body pf and arguments (assumptions-to-close) assumps.
    * If ensureClosed is true, then this method throws an assertion failure if
    * the returned proof is not closed. This is the case if a free assumption
@@ -102,7 +111,8 @@ class ProofNodeManager
    *
    * Additionally, if both ensureClosed and doMinimize are true, assumps is
    * updated to contain exactly the free asumptions of pf. This also includes
-   * having no duplicates.
+   * having no duplicates. Furthermore, if assumps is empty after minimization,
+   * this method is a no-op.
    *
    * In each case, the update vector assumps is passed as arguments to SCOPE.
    *

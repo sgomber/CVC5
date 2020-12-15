@@ -52,7 +52,8 @@ void SmtSolver::finishInit(const LogicInfo& logicInfo)
                                         d_rm,
                                         d_pp.getTermFormulaRemover(),
                                         logicInfo,
-                                        d_smt.getOutputManager()));
+                                        d_smt.getOutputManager(),
+                                        d_pnm));
 
   // Add the theories
   for (theory::TheoryId id = theory::THEORY_FIRST; id < theory::THEORY_LAST;
@@ -70,7 +71,8 @@ void SmtSolver::finishInit(const LogicInfo& logicInfo)
                                     d_smt.getContext(),
                                     d_smt.getUserContext(),
                                     d_rm,
-                                    d_smt.getOutputManager()));
+                                    d_smt.getOutputManager(),
+                                    d_pnm));
 
   Trace("smt-debug") << "Setting up theory engine..." << std::endl;
   d_theoryEngine->setPropEngine(getPropEngine());
@@ -90,7 +92,8 @@ void SmtSolver::resetAssertions()
                                     d_smt.getContext(),
                                     d_smt.getUserContext(),
                                     d_rm,
-                                    d_smt.getOutputManager()));
+                                    d_smt.getOutputManager(),
+                                    d_pnm));
   d_theoryEngine->setPropEngine(getPropEngine());
   // Notice that we do not reset TheoryEngine, nor does it require calling
   // finishInit again. In particular, TheoryEngine::finishInit does not
@@ -223,14 +226,11 @@ void SmtSolver::processAssertions(Assertions& as)
   // process the assertions with the preprocessor
   bool noConflict = d_pp.process(as);
 
-  // notify theory engine new preprocessed assertions
-  d_theoryEngine->notifyPreprocessedAssertions(ap.ref());
-
   // Push the formula to decision engine
   if (noConflict)
   {
-    Chat() << "pushing to decision engine..." << endl;
-    d_propEngine->addAssertionsToDecisionEngine(ap);
+    Chat() << "notifying theory engine and decision engine..." << std::endl;
+    d_propEngine->notifyPreprocessedAssertions(ap);
   }
 
   // end: INVARIANT to maintain: no reordering of assertions or
@@ -258,6 +258,8 @@ void SmtSolver::setProofNodeManager(ProofNodeManager* pnm) { d_pnm = pnm; }
 TheoryEngine* SmtSolver::getTheoryEngine() { return d_theoryEngine.get(); }
 
 prop::PropEngine* SmtSolver::getPropEngine() { return d_propEngine.get(); }
+
+Preprocessor* SmtSolver::getPreprocessor() { return &d_pp; }
 
 }  // namespace smt
 }  // namespace CVC4

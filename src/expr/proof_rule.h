@@ -129,14 +129,21 @@ enum class PfRule : uint32_t
   // ---------------------------------------------------------------
   // Conclusion: F
   // where
-  //   Rewriter{idr}(toWitness(F)*sigma{ids}(Fn)*...*sigma{ids}(F1)) == true
+  //   Rewriter{idr}(F*sigma{ids}(Fn)*...*sigma{ids}(F1)) == true
   // where ids and idr are method identifiers.
   //
-  // Notice that we apply rewriting on the witness form of F, meaning that this
+  // More generally, this rule also holds when:
+  //   Rewriter::rewrite(toWitness(F')) == true
+  // where F' is the result of the left hand side of the equality above. Here,
+  // notice that we apply rewriting on the witness form of F', meaning that this
   // rule may conclude an F whose Skolem form is justified by the definition of
-  // its (fresh) Skolem variables. Furthermore, notice that the rewriting and
-  // substitution is applied only within the side condition, meaning the
-  // rewritten form of the witness form of F does not escape this rule.
+  // its (fresh) Skolem variables. For example, this rule may justify the
+  // conclusion (= k t) where k is the purification Skolem for t, whose
+  // witness form is (witness ((x T)) (= x t)).
+  //
+  // Furthermore, notice that the rewriting and substitution is applied only
+  // within the side condition, meaning the rewritten form of the witness form
+  // of F does not escape this rule.
   MACRO_SR_PRED_INTRO,
   // ======== Substitution + Rewriting predicate elimination
   //
@@ -165,11 +172,13 @@ enum class PfRule : uint32_t
   // ----------------------------------------
   // Conclusion: G
   // where
-  //   Rewriter{idr}(toWitness(F)*sigma{ids}(Fn)*...*sigma{ids}(F1)) ==
-  //   Rewriter{idr}(toWitness(G)*sigma{ids}(Fn)*...*sigma{ids}(F1))
+  //   Rewriter{idr}(F*sigma{ids}(Fn)*...*sigma{ids}(F1)) ==
+  //   Rewriter{idr}(G*sigma{ids}(Fn)*...*sigma{ids}(F1))
   //
-  // Notice that we apply rewriting on the witness form of F and G, similar to
-  // MACRO_SR_PRED_INTRO.
+  // More generally, this rule also holds when:
+  //   Rewriter::rewrite(toWitness(F')) == Rewriter::rewrite(toWitness(G'))
+  // where F' and G' are the result of each side of the equation above. Here,
+  // witness forms are used in a similar manner to MACRO_SR_PRED_INTRO above.
   MACRO_SR_PRED_TRANSFORM,
 
   //================================================= Processing rules
@@ -192,16 +201,17 @@ enum class PfRule : uint32_t
   THEORY_LEMMA,
   // ======== Theory Rewrite
   // Children: none
-  // Arguments: (F, tid, preRewrite?)
+  // Arguments: (F, tid, rid)
   // ----------------------------------------
   // Conclusion: F
   // where F is an equality of the form (= t t') where t' is obtained by
-  // applying the theory rewriter with identifier tid in either its prewrite
-  // (when preRewrite is true) or postrewrite method. Notice that the checker
-  // for this rule does not replay the rewrite to ensure correctness, since
-  // theory rewriter methods are not static. For example, the quantifiers
-  // rewriter involves constructing new bound variables that are not guaranteed
-  // to be consistent on each call.
+  // applying the kind of rewriting given by the method identifier rid, which
+  // is one of:
+  //  { RW_REWRITE_THEORY_PRE, RW_REWRITE_THEORY_POST, RW_REWRITE_EQ_EXT }
+  // Notice that the checker for this rule does not replay the rewrite to ensure
+  // correctness, since theory rewriter methods are not static. For example,
+  // the quantifiers rewriter involves constructing new bound variables that are
+  // not guaranteed to be consistent on each call.
   THEORY_REWRITE,
   // The rules in this section have the signature of a "trusted rule":
   //
@@ -221,31 +231,61 @@ enum class PfRule : uint32_t
   THEORY_PREPROCESS,
   // where F was added as a new assertion by theory preprocessing.
   THEORY_PREPROCESS_LEMMA,
+  // where F is an equality of the form t = t' where t was replaced by t'
+  // based on theory expand definitions.
+  THEORY_EXPAND_DEF,
   // where F is an existential (exists ((x T)) (P x)) used for introducing
   // a witness term (witness ((x T)) (P x)).
   WITNESS_AXIOM,
+  // where F is an equality (= t t') that holds by a form of rewriting that
+  // could not be replayed during proof postprocessing.
+  TRUST_REWRITE,
+  // where F is an equality (= t t') that holds by a form of substitution that
+  // could not be replayed during proof postprocessing.
+  TRUST_SUBS,
+  // where F is an equality (= t t') that holds by a form of substitution that
+  // could not be determined by the TrustSubstitutionMap.
+  TRUST_SUBS_MAP,
 
   //================================================= Boolean rules
   // ======== Resolution
   // Children:
-  //  (P1:(or F_1 ... F_i-1 F_i F_i+1 ... F_n),
-  //   P2:(or G_1 ... G_j-1 G_j G_j+1 ... G_m))
+  //  (P1:C1, P2:C2)
+  // Arguments: (pol, L)
+  // ---------------------
+  // Conclusion: C
+  // where
+  //   - C1 and C2 are nodes viewed as clauses, i.e., either an OR node with
+  //     each children viewed as a literal or a node viewed as a literal. Note
+  //     that an OR node could also be a literal.
+  //   - pol is either true or false, representing the polarity of the pivot on
+  //     the first clause
+  //   - L is the pivot of the resolution, which occurs as is (resp. under a
+  //     NOT) in C1 and negatively (as is) in C2 if pol = true (pol = false).
+  //   C is a clause resulting from collecting all the literals in C1, minus the
+  //   first occurrence of the pivot or its negation, and C2, minus the first
+  //   occurrence of the pivot or its negation, according to the policy above.
+  //   If the resulting clause has a single literal, that literal itself is the
+  //   result; if it has no literals, then the result is false; otherwise it's
+  //   an OR node of the resulting literals.
   //
-  // Arguments: (F_i)
-  // ---------------------
-  // Conclusion: (or F_1 ... F_i-1 F_i+1 ... F_n G_1 ... G_j-1 G_j+1 ... G_m)
-  // where
-  //   G_j = (not F_i)
+  //   Note that it may be the case that the pivot does not occur in the
+  //   clauses. In this case the rule is not unsound, but it does not correspond
+  //   to resolution but rather to a weakening of the clause that did not have a
+  //   literal eliminated.
   RESOLUTION,
-  // ======== Chain Resolution
-  // Children: (P1:(or F_{1,1} ... F_{1,n1}), ..., Pm:(or F_{m,1} ... F_{m,nm}))
-  // Arguments: (L_1, ..., L_{m-1})
+  // ======== N-ary Resolution
+  // Children: (P1:C_1, ..., Pm:C_n)
+  // Arguments: (pol_1, L_1, ..., pol_{n-1}, L_{n-1})
   // ---------------------
-  // Conclusion: C_m'
+  // Conclusion: C
   // where
-  //   let "C_1 <>_l C_2" represent the resolution of C_1 with C_2 with pivot l,
-  //   let C_1' = C_1 (from P_1),
-  //   for each i > 1, C_i' = C_i <>_L_i C_{i-1}'
+  //   - let C_1 ... C_n be nodes viewed as clauses, as defined above
+  //   - let "C_1 <>_{L,pol} C_2" represent the resolution of C_1 with C_2 with
+  //     pivot L and polarity pol, as defined above
+  //   - let C_1' = C_1 (from P1),
+  //   - for each i > 1, let C_i' = C_{i-1} <>_{L_{i-1}, pol_{i-1}} C_i'
+  //   The result of the chain resolution is C = C_n'
   CHAIN_RESOLUTION,
   // ======== Factoring
   // Children: (P:C1)
@@ -265,6 +305,22 @@ enum class PfRule : uint32_t
   //  Set representations of C1 and C2 is the same but the number of literals in
   //  C2 is the same of that of C1
   REORDERING,
+  // ======== N-ary Resolution + Factoring + Reordering
+  // Children: (P1:C_1, ..., Pm:C_n)
+  // Arguments: (C, pol_1, L_1, ..., pol_{n-1}, L_{n-1})
+  // ---------------------
+  // Conclusion: C
+  // where
+  //   - let C_1 ... C_n be nodes viewed as clauses, as defined in RESOLUTION
+  //   - let "C_1 <>_{L,pol} C_2" represent the resolution of C_1 with C_2 with
+  //     pivot L and polarity pol, as defined in RESOLUTION
+  //   - let C_1' be equal, in its set representation, to C_1 (from P1),
+  //   - for each i > 1, let C_i' be equal, it its set representation, to
+  //     C_{i-1} <>_{L_{i-1}, pol_{i-1}} C_i'
+  //   The result of the chain resolution is C, which is equal, in its set
+  //   representation, to C_n'
+  MACRO_RESOLUTION,
+
   // ======== Split
   // Children: none
   // Arguments: (F)
@@ -278,6 +334,25 @@ enum class PfRule : uint32_t
   // Conclusion: (F2)
   // Note this can optionally be seen as a macro for EQUIV_ELIM1+RESOLUTION.
   EQ_RESOLVE,
+  // ======== Modus ponens
+  // Children: (P1:F1, P2:(=> F1 F2))
+  // Arguments: none
+  // ---------------------
+  // Conclusion: (F2)
+  // Note this can optionally be seen as a macro for IMPLIES_ELIM+RESOLUTION.
+  MODUS_PONENS,
+  // ======== Double negation elimination
+  // Children: (P:(not (not F)))
+  // Arguments: none
+  // ---------------------
+  // Conclusion: (F)
+  NOT_NOT_ELIM,
+  // ======== Contradiction
+  // Children: (P1:F P2:(not F))
+  // Arguments: ()
+  // ---------------------
+  // Conclusion: false
+  CONTRA,
   // ======== And elimination
   // Children: (P:(and F1 ... Fn))
   // Arguments: (i)
@@ -386,12 +461,6 @@ enum class PfRule : uint32_t
   // ---------------------
   // Conclusion: (or C (not F2))
   NOT_ITE_ELIM2,
-  // ======== Not ITE elimination version 1
-  // Children: (P1:P P2:(not P))
-  // Arguments: ()
-  // ---------------------
-  // Conclusion: (false)
-  CONTRA,
 
   //================================================= De Morgan rules
   // ======== Not And
@@ -628,6 +697,67 @@ enum class PfRule : uint32_t
   // Conclusion: F
   ARRAYS_TRUST,
 
+  //================================================= Bit-Vector rules
+  // ======== Bitblast
+  // Children: none
+  // Arguments: (t)
+  // ---------------------
+  // Conclusion: (= t bitblast(t))
+  BV_BITBLAST,
+  // ======== Eager Atom
+  // Children: none
+  // Arguments: (F)
+  // ---------------------
+  // Conclusion: (= F F[0])
+  // where F is of kind BITVECTOR_EAGER_ATOM
+  BV_EAGER_ATOM,
+
+  //================================================= Datatype rules
+  // ======== Unification
+  // Children: (P:(= (C t1 ... tn) (C s1 ... sn)))
+  // Arguments: (i)
+  // ----------------------------------------
+  // Conclusion: (= ti si)
+  // where C is a constructor.
+  DT_UNIF,
+  // ======== Instantiate
+  // Children: none
+  // Arguments: (t, n)
+  // ----------------------------------------
+  // Conclusion: (= ((_ is C) t) (= t (C (sel_1 t) ... (sel_n t))))
+  // where C is the n^th constructor of the type of T, and (_ is C) is the
+  // discriminator (tester) for C.
+  DT_INST,
+  // ======== Collapse
+  // Children: none
+  // Arguments: ((sel_i (C_j t_1 ... t_n)))
+  // ----------------------------------------
+  // Conclusion: (= (sel_i (C_j t_1 ... t_n)) r)
+  // where C_j is a constructor, r is t_i if sel_i is a correctly applied
+  // selector, or TypeNode::mkGroundTerm() of the proper type otherwise. Notice
+  // that the use of mkGroundTerm differs from the rewriter which uses
+  // mkGroundValue in this case.
+  DT_COLLAPSE,
+  // ======== Split
+  // Children: none
+  // Arguments: (t)
+  // ----------------------------------------
+  // Conclusion: (or ((_ is C1) t) ... ((_ is Cn) t))
+  DT_SPLIT,
+  // ======== Clash
+  // Children: (P1:((_ is Ci) t), P2: ((_ is Cj) t))
+  // Arguments: none
+  // ----------------------------------------
+  // Conclusion: false
+  // for i != j.
+  DT_CLASH,
+  // ======== Datatype Trust
+  // Children: (P1 ... Pn)
+  // Arguments: (F)
+  // ---------------------
+  // Conclusion: F
+  DT_TRUST,
+
   //================================================= Quantifiers rules
   // ======== Witness intro
   // Children: (P:(exists ((x T)) F[x]))
@@ -638,10 +768,11 @@ enum class PfRule : uint32_t
   WITNESS_INTRO,
   // ======== Exists intro
   // Children: (P:F[t])
-  // Arguments: (t)
+  // Arguments: ((exists ((x T)) F[x]))
   // ----------------------------------------
   // Conclusion: (exists ((x T)) F[x])
-  // where x is a BOUND_VARIABLE unique to the pair F,t.
+  // This rule verifies that F[x] indeed matches F[t] with a substitution
+  // over x.
   EXISTS_INTRO,
   // ======== Skolemize
   // Children: (P:(exists ((x1 T1) ... (xn Tn)) F))
@@ -865,11 +996,13 @@ enum class PfRule : uint32_t
   // fixed length of component i of the regular expression concatenation R.
   RE_UNFOLD_NEG_CONCAT_FIXED,
   // ======== Regular expression elimination
-  // Children: (P:F)
-  // Arguments: none
+  // Children: none
+  // Arguments: (F, b)
   // ---------------------
-  // Conclusion: R
-  // where R = strings::RegExpElimination::eliminate(F).
+  // Conclusion: (= F strings::RegExpElimination::eliminate(F, b))
+  // where b is a Boolean indicating whether we are using aggressive
+  // eliminations. Notice this rule concludes (= F F) if no eliminations
+  // are performed for F.
   RE_ELIM,
   //======================== Code points
   // Children: none

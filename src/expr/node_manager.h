@@ -2,7 +2,7 @@
 /*! \file node_manager.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Morgan Deters, Christopher L. Conway, Andrew Reynolds
+ **   Morgan Deters, Andrew Reynolds, Christopher L. Conway
  ** This file is part of the CVC4 project.
  ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
  ** in the top-level source directory and their institutional affiliations.
@@ -484,6 +484,17 @@ class NodeManager {
   template <bool ref_count>
   Node mkAnd(const std::vector<NodeTemplate<ref_count> >& children);
 
+  /**
+   * Create an OR node with arbitrary number of children. This returns the
+   * false node if children is empty, or the single node in children if
+   * it contains only one node.
+   *
+   * We define construction of OR as a special case here since it is widely
+   * used for e.g. constructing explanations or lemmas.
+   */
+  template <bool ref_count>
+  Node mkOr(const std::vector<NodeTemplate<ref_count> >& children);
+
   /** Create a node (with no children) by operator. */
   Node mkNode(TNode opNode);
   Node* mkNodePtr(TNode opNode);
@@ -526,6 +537,42 @@ class NodeManager {
 
   /** get the canonical bound variable list for function type tn */
   Node getBoundVarListForFunctionType( TypeNode tn );
+
+  /**
+   * Create an Node by applying an associative operator to the children.
+   * If <code>children.size()</code> is greater than the max arity for
+   * <code>kind</code>, then the expression will be broken up into
+   * suitably-sized chunks, taking advantage of the associativity of
+   * <code>kind</code>. For example, if kind <code>FOO</code> has max arity
+   * 2, then calling <code>mkAssociative(FOO,a,b,c)</code> will return
+   * <code>(FOO (FOO a b) c)</code> or <code>(FOO a (FOO b c))</code>.
+   * The order of the arguments will be preserved in a left-to-right
+   * traversal of the resulting tree.
+   */
+  Node mkAssociative(Kind kind, const std::vector<Node>& children);
+
+  /**
+   * Create an Node by applying an binary left-associative operator to the
+   * children. For example, mkLeftAssociative( f, { a, b, c } ) returns
+   * f( f( a, b ), c ).
+   */
+  Node mkLeftAssociative(Kind kind, const std::vector<Node>& children);
+  /**
+   * Create an Node by applying an binary right-associative operator to the
+   * children. For example, mkRightAssociative( f, { a, b, c } ) returns
+   * f( a, f( b, c ) ).
+   */
+  Node mkRightAssociative(Kind kind, const std::vector<Node>& children);
+
+  /** make chain
+   *
+   * Given a kind k and arguments t_1, ..., t_n, this returns the
+   * conjunction of:
+   *  (k t_1 t_2) .... (k t_{n-1} t_n)
+   * It is expected that k is a kind denoting a predicate, and args is a list
+   * of terms of size >= 2 such that the terms above are well-typed.
+   */
+  Node mkChain(Kind kind, const std::vector<Node>& children);
 
   /**
    * Optional flags used to control behavior of NodeManager::mkSkolem().
@@ -574,6 +621,25 @@ class NodeManager {
 
   /** make unique (per Type,Kind) variable. */
   Node mkNullaryOperator(const TypeNode& type, Kind k);
+
+  /**
+  * Create a singleton set from the given element n.
+  * @param t the element type of the returned set.
+  *          Note that the type of n needs to be a subtype of t.
+  * @param n the single element in the singleton.
+  * @return a singleton set constructed from the element n.
+  */
+  Node mkSingleton(const TypeNode& t, const TNode n);
+
+  /**
+  * Create a bag from the given element n along with its multiplicity m.
+  * @param t the element type of the returned bag.
+  *          Note that the type of n needs to be a subtype of t.
+  * @param n the element that is used to to construct the bag
+  * @param m the multiplicity of the element n
+  * @return a bag that contains m occurrences of n.
+  */
+  Node mkBag(const TypeNode& t, const TNode n, const TNode m);
 
   /**
    * Create a constant of type T.  It will have the appropriate
@@ -778,37 +844,37 @@ class NodeManager {
                            const typename AttrKind::value_type& value);
 
   /** Get the (singleton) type for Booleans. */
-  inline TypeNode booleanType();
+  TypeNode booleanType();
 
   /** Get the (singleton) type for integers. */
-  inline TypeNode integerType();
+  TypeNode integerType();
 
   /** Get the (singleton) type for reals. */
-  inline TypeNode realType();
+  TypeNode realType();
 
   /** Get the (singleton) type for strings. */
-  inline TypeNode stringType();
+  TypeNode stringType();
 
   /** Get the (singleton) type for RegExp. */
-  inline TypeNode regExpType();
+  TypeNode regExpType();
 
   /** Get the (singleton) type for rounding modes. */
-  inline TypeNode roundingModeType();
+  TypeNode roundingModeType();
 
   /** Get the bound var list type. */
-  inline TypeNode boundVarListType();
+  TypeNode boundVarListType();
 
   /** Get the instantiation pattern type. */
-  inline TypeNode instPatternType();
+  TypeNode instPatternType();
 
   /** Get the instantiation pattern type. */
-  inline TypeNode instPatternListType();
+  TypeNode instPatternListType();
 
   /**
    * Get the (singleton) type for builtin operators (that is, the type
    * of the Node returned from Node::getOperator() when the operator
    * is built-in, like EQUAL). */
-  inline TypeNode builtinOperatorType();
+  TypeNode builtinOperatorType();
 
   /**
    * Make a function type from domain to range.
@@ -876,11 +942,11 @@ class NodeManager {
 
   /** Make the type of floating-point with <code>exp</code> bit exponent and
       <code>sig</code> bit significand */
-  inline TypeNode mkFloatingPointType(unsigned exp, unsigned sig);
-  inline TypeNode mkFloatingPointType(FloatingPointSize fs);
+  TypeNode mkFloatingPointType(unsigned exp, unsigned sig);
+  TypeNode mkFloatingPointType(FloatingPointSize fs);
 
   /** Make the type of bitvectors of size <code>size</code> */
-  inline TypeNode mkBitVectorType(unsigned size);
+  TypeNode mkBitVectorType(unsigned size);
 
   /** Make the type of arrays with the given parameterization */
   inline TypeNode mkArrayType(TypeNode indexType, TypeNode constituentType);
@@ -1099,74 +1165,12 @@ public:
   }
 };/* class NodeManagerScope */
 
-/** Get the (singleton) type for booleans. */
-inline TypeNode NodeManager::booleanType() {
-  return TypeNode(mkTypeConst<TypeConstant>(BOOLEAN_TYPE));
-}
-
-/** Get the (singleton) type for integers. */
-inline TypeNode NodeManager::integerType() {
-  return TypeNode(mkTypeConst<TypeConstant>(INTEGER_TYPE));
-}
-
-/** Get the (singleton) type for reals. */
-inline TypeNode NodeManager::realType() {
-  return TypeNode(mkTypeConst<TypeConstant>(REAL_TYPE));
-}
-
-/** Get the (singleton) type for strings. */
-inline TypeNode NodeManager::stringType() {
-  return TypeNode(mkTypeConst<TypeConstant>(STRING_TYPE));
-}
-
-/** Get the (singleton) type for regexps. */
-inline TypeNode NodeManager::regExpType() {
-  return TypeNode(mkTypeConst<TypeConstant>(REGEXP_TYPE));
-}
-
-/** Get the (singleton) type for rounding modes. */
-inline TypeNode NodeManager::roundingModeType() {
-  return TypeNode(mkTypeConst<TypeConstant>(ROUNDINGMODE_TYPE));
-}
-
-/** Get the bound var list type. */
-inline TypeNode NodeManager::boundVarListType() {
-  return TypeNode(mkTypeConst<TypeConstant>(BOUND_VAR_LIST_TYPE));
-}
-
-/** Get the instantiation pattern type. */
-inline TypeNode NodeManager::instPatternType() {
-  return TypeNode(mkTypeConst<TypeConstant>(INST_PATTERN_TYPE));
-}
-
-/** Get the instantiation pattern type. */
-inline TypeNode NodeManager::instPatternListType() {
-  return TypeNode(mkTypeConst<TypeConstant>(INST_PATTERN_LIST_TYPE));
-}
-
-/** Get the (singleton) type for builtin operators. */
-inline TypeNode NodeManager::builtinOperatorType() {
-  return TypeNode(mkTypeConst<TypeConstant>(BUILTIN_OPERATOR_TYPE));
-}
-
 inline TypeNode NodeManager::mkSExprType(const std::vector<TypeNode>& types) {
   std::vector<TypeNode> typeNodes;
   for (unsigned i = 0; i < types.size(); ++ i) {
     typeNodes.push_back(types[i]);
   }
   return mkTypeNode(kind::SEXPR_TYPE, typeNodes);
-}
-
-inline TypeNode NodeManager::mkBitVectorType(unsigned size) {
-  return TypeNode(mkTypeConst<BitVectorSize>(BitVectorSize(size)));
-}
-
-inline TypeNode NodeManager::mkFloatingPointType(unsigned exp, unsigned sig) {
-  return TypeNode(mkTypeConst<FloatingPointSize>(FloatingPointSize(exp,sig)));
-}
-
-inline TypeNode NodeManager::mkFloatingPointType(FloatingPointSize fs) {
-  return TypeNode(mkTypeConst<FloatingPointSize>(fs));
 }
 
 inline TypeNode NodeManager::mkArrayType(TypeNode indexType,
@@ -1385,6 +1389,20 @@ Node NodeManager::mkAnd(const std::vector<NodeTemplate<ref_count> >& children)
     return children[0];
   }
   return mkNode(kind::AND, children);
+}
+
+template <bool ref_count>
+Node NodeManager::mkOr(const std::vector<NodeTemplate<ref_count> >& children)
+{
+  if (children.empty())
+  {
+    return mkConst(false);
+  }
+  else if (children.size() == 1)
+  {
+    return children[0];
+  }
+  return mkNode(kind::OR, children);
 }
 
 template <bool ref_count>

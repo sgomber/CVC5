@@ -2,7 +2,7 @@
 /*! \file theory_strings.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Andrew Reynolds, Tianyi Liang, Yoni Zohar
+ **   Andrew Reynolds, Tianyi Liang, Andres Noetzli
  ** This file is part of the CVC4 project.
  ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
  ** in the top-level source directory and their institutional affiliations.
@@ -15,6 +15,7 @@
 #include "theory/strings/theory_strings.h"
 
 #include "expr/kind.h"
+#include "options/smt_options.h"
 #include "options/strings_options.h"
 #include "options/theory_options.h"
 #include "smt/logic_exception.h"
@@ -44,7 +45,7 @@ TheoryStrings::TheoryStrings(context::Context* c,
       d_notify(*this),
       d_statistics(),
       d_state(c, u, d_valuation),
-      d_termReg(d_state, out, d_statistics, nullptr),
+      d_termReg(d_state, out, d_statistics, pnm),
       d_extTheoryCb(),
       d_extTheory(d_extTheoryCb, c, u, out),
       d_im(*this, d_state, d_termReg, d_extTheory, d_statistics, pnm),
@@ -118,6 +119,8 @@ void TheoryStrings::finishInit()
   d_equalityEngine->addFunctionKind(kind::STRING_IN_REGEXP, eagerEval);
   d_equalityEngine->addFunctionKind(kind::STRING_TO_CODE, eagerEval);
   d_equalityEngine->addFunctionKind(kind::SEQ_UNIT, eagerEval);
+  // `seq.nth` is not always defined, and so we do not evaluate it eagerly.
+  d_equalityEngine->addFunctionKind(kind::SEQ_NTH, false);
   // extended functions
   d_equalityEngine->addFunctionKind(kind::STRING_STRCTN, eagerEval);
   d_equalityEngine->addFunctionKind(kind::STRING_LEQ, eagerEval);
@@ -163,7 +166,6 @@ void TheoryStrings::notifySharedTerm(TNode t)
 {
   Debug("strings") << "TheoryStrings::notifySharedTerm(): " << t << " "
                    << t.getType().isBoolean() << endl;
-  d_equalityEngine->addTriggerTerm(t, THEORY_STRINGS);
   if (options::stringExp())
   {
     d_esolver.addSharedTerm(t);
@@ -193,17 +195,7 @@ bool TheoryStrings::propagateLit(TNode literal)
 TrustNode TheoryStrings::explain(TNode literal)
 {
   Debug("strings-explain") << "explain called on " << literal << std::endl;
-  std::vector< TNode > assumptions;
-  d_im.explain(literal, assumptions);
-  Node ret;
-  if( assumptions.empty() ){
-    ret = d_true;
-  }else if( assumptions.size()==1 ){
-    ret = assumptions[0];
-  }else{
-    ret = NodeManager::currentNM()->mkNode(kind::AND, assumptions);
-  }
-  return TrustNode::mkTrustPropExp(literal, ret, nullptr);
+  return d_im.explainLit(literal);
 }
 
 void TheoryStrings::presolve() {
@@ -345,8 +337,20 @@ bool TheoryStrings::collectModelInfoType(
           // is it an equivalence class with a seq.unit term?
           if (nfe.d_nf[0].getKind() == SEQ_UNIT)
           {
-            pure_eq_assign[eqc] = nfe.d_nf[0];
+            Node argVal;
+            if (nfe.d_nf[0][0].getType().isStringLike())
+            {
+              argVal = d_state.getRepresentative(nfe.d_nf[0][0]);
+            }
+            else
+            {
+              // otherwise, it is a shared term
+              argVal = d_valuation.getModelValue(nfe.d_nf[0][0]);
+            }
+            Node c = Rewriter::rewrite(nm->mkNode(SEQ_UNIT, argVal));
+            pure_eq_assign[eqc] = c;
             Trace("strings-model") << "(unit: " << nfe.d_nf[0] << ") ";
+            m->getEqualityEngine()->addTerm(c);
           }
           // does it have a code and the length of these equivalence classes are
           // one?
@@ -374,6 +378,12 @@ bool TheoryStrings::collectModelInfoType(
       else
       {
         processed[eqc] = eqc;
+        // Make sure that constants are asserted to the theory model that we
+        // are building. It is possible that new constants were introduced by
+        // the eager evaluation in the equality engine. These terms are missing
+        // in the term set and, as a result, are skipped when the equality
+        // engine is asserted to the theory model.
+        m->getEqualityEngine()->addTerm(eqc);
       }
     }
     Trace("strings-model") << "have length " << lts_values[i] << std::endl;
@@ -560,60 +570,23 @@ TrustNode TheoryStrings::expandDefinition(Node node)
 {
   Trace("strings-exp-def") << "TheoryStrings::expandDefinition : " << node << std::endl;
 
-  if (node.getKind() == STRING_FROM_CODE)
+  if (node.getKind() == kind::SEQ_NTH)
   {
-    // str.from_code(t) --->
-    //   witness k. ite(0 <= t < |A|, t = str.to_code(k), k = "")
     NodeManager* nm = NodeManager::currentNM();
-    Node t = node[0];
-    Node card = nm->mkConst(Rational(utils::getAlphabetCardinality()));
-    Node cond =
-        nm->mkNode(AND, nm->mkNode(LEQ, d_zero, t), nm->mkNode(LT, t, card));
-    Node k = nm->mkBoundVar(nm->stringType());
-    Node bvl = nm->mkNode(BOUND_VAR_LIST, k);
-    Node emp = Word::mkEmptyWord(node.getType());
-    Node ret = nm->mkNode(
-        WITNESS,
-        bvl,
-        nm->mkNode(
-            ITE, cond, t.eqNode(nm->mkNode(STRING_TO_CODE, k)), k.eqNode(emp)));
-    return TrustNode::mkTrustRewrite(node, ret, nullptr);
-  }
-
-  if (node.getKind() == SEQ_NTH)
-  {
-    // str.nth(s,i) --->
-    //   ite(0<=i<=len(s), witness k. 0<=i<=len(s)->unit(k) = seq.at(s,i),
-    //   uf(s,i))
-    NodeManager* nm = NodeManager::currentNM();
-    Node s = node[0];
-    Node i = node[1];
-    Node len = nm->mkNode(STRING_LENGTH, s);
-    Node cond =
-        nm->mkNode(AND, nm->mkNode(LEQ, d_zero, i), nm->mkNode(LT, i, len));
-    TypeNode elemType = s.getType().getSequenceElementType();
-    Node k = nm->mkBoundVar(elemType);
-    Node bvl = nm->mkNode(BOUND_VAR_LIST, k);
-    std::vector<TypeNode> argTypes;
-    argTypes.push_back(s.getType());
-    argTypes.push_back(nm->integerType());
-    TypeNode ufType = nm->mkFunctionType(argTypes, elemType);
     SkolemCache* sc = d_termReg.getSkolemCache();
-    Node uf = sc->mkTypedSkolemCached(
-        ufType, Node::null(), Node::null(), SkolemCache::SK_NTH, "Uf");
-    Node ret = nm->mkNode(
-        ITE,
-        cond,
-        nm->mkNode(WITNESS,
-                   bvl,
-                   nm->mkNode(IMPLIES,
-                              cond,
-                              nm->mkNode(SEQ_UNIT, k)
-                                  .eqNode(nm->mkNode(STRING_CHARAT, s, i)))),
-        nm->mkNode(APPLY_UF, uf, s, i));
+    Node s = node[0];
+    Node n = node[1];
+    // seq.nth(s, n) --> ite(0 <= n < len(s), seq.nth_total(s,n), Uf(s, n))
+    Node cond = nm->mkNode(AND,
+                           nm->mkNode(LEQ, d_zero, n),
+                           nm->mkNode(LT, n, nm->mkNode(STRING_LENGTH, s)));
+    Node ss = nm->mkNode(SEQ_NTH_TOTAL, s, n);
+    Node uf = sc->mkSkolemSeqNth(s.getType(), "Uf");
+    Node u = nm->mkNode(APPLY_UF, uf, s, n);
+    Node ret = nm->mkNode(ITE, cond, ss, u);
+    Trace("strings-exp-def") << "...return " << ret << std::endl;
     return TrustNode::mkTrustRewrite(node, ret, nullptr);
   }
-
   return TrustNode::null();
 }
 
@@ -652,22 +625,18 @@ void TheoryStrings::notifyFact(TNode atom,
     }
   }
   // process pending conflicts due to reasoning about endpoints
-  if (!d_state.isInConflict())
+  if (!d_state.isInConflict() && d_state.hasPendingConflict())
   {
-    Node pc = d_state.getPendingConflict();
-    if (!pc.isNull())
-    {
-      std::vector<Node> a;
-      a.push_back(pc);
-      Trace("strings-pending")
-          << "Process pending conflict " << pc << std::endl;
-      Node conflictNode = d_im.mkExplain(a);
-      Trace("strings-conflict")
-          << "CONFLICT: Eager prefix : " << conflictNode << std::endl;
-      ++(d_statistics.d_conflictsEagerPrefix);
-      d_im.conflict(conflictNode);
-      return;
-    }
+    InferInfo iiPendingConf;
+    d_state.getPendingConflict(iiPendingConf);
+    Trace("strings-pending")
+        << "Process pending conflict " << iiPendingConf.d_ant << std::endl;
+    Trace("strings-conflict")
+        << "CONFLICT: Eager : " << iiPendingConf.d_ant << std::endl;
+    ++(d_statistics.d_conflictsEager);
+    // call the inference manager to send the conflict
+    d_im.processConflict(iiPendingConf);
+    return;
   }
   Trace("strings-pending-debug") << "  Now collect terms" << std::endl;
   // Collect extended function terms in the atom. Notice that we must register
@@ -727,34 +696,41 @@ void TheoryStrings::postCheck(Effort e)
       Trace("strings-eqc") << std::endl;
     }
     ++(d_statistics.d_checkRuns);
-    bool addedLemma = false;
-    bool addedFact;
+    bool sentLemma = false;
+    bool hadPending = false;
     Trace("strings-check") << "Full effort check..." << std::endl;
     do{
+      d_im.reset();
       ++(d_statistics.d_strategyRuns);
       Trace("strings-check") << "  * Run strategy..." << std::endl;
       runStrategy(e);
+      // remember if we had pending facts or lemmas
+      hadPending = d_im.hasPending();
       // Send the facts *and* the lemmas. We send lemmas regardless of whether
       // we send facts since some lemmas cannot be dropped. Other lemmas are
       // otherwise avoided by aborting the strategy when a fact is ready.
-      addedFact = d_im.hasPendingFact();
-      addedLemma = d_im.hasPendingLemma();
-      d_im.doPendingFacts();
-      d_im.doPendingLemmas();
+      d_im.doPending();
+      // Did we successfully send a lemma? Notice that if hasPending = true
+      // and sentLemma = false, then the above call may have:
+      // (1) had no pending lemmas, but successfully processed pending facts,
+      // (2) unsuccessfully processed pending lemmas.
+      // In either case, we repeat the strategy if we are not in conflict.
+      sentLemma = d_im.hasSentLemma();
       if (Trace.isOn("strings-check"))
       {
         Trace("strings-check") << "  ...finish run strategy: ";
-        Trace("strings-check") << (addedFact ? "addedFact " : "");
-        Trace("strings-check") << (addedLemma ? "addedLemma " : "");
+        Trace("strings-check") << (hadPending ? "hadPending " : "");
+        Trace("strings-check") << (sentLemma ? "sentLemma " : "");
         Trace("strings-check") << (d_state.isInConflict() ? "conflict " : "");
-        if (!addedFact && !addedLemma && !d_state.isInConflict())
+        if (!hadPending && !sentLemma && !d_state.isInConflict())
         {
           Trace("strings-check") << "(none)";
         }
         Trace("strings-check") << std::endl;
       }
-      // repeat if we did not add a lemma or conflict
-    } while (!d_state.isInConflict() && !addedLemma && addedFact);
+      // repeat if we did not add a lemma or conflict, and we had pending
+      // facts or lemmas.
+    } while (!d_state.isInConflict() && !sentLemma && hadPending);
   }
   Trace("strings-check") << "Theory of strings, done check : " << e << std::endl;
   Assert(!d_im.hasPendingFact());
@@ -770,17 +746,14 @@ bool TheoryStrings::needsCheckLastEffort() {
 
 /** Conflict when merging two constants */
 void TheoryStrings::conflict(TNode a, TNode b){
-  if (!d_state.isInConflict())
+  if (d_state.isInConflict())
   {
-    Debug("strings-conflict") << "Making conflict..." << std::endl;
-    d_state.notifyInConflict();
-    TrustNode conflictNode = explain(a.eqNode(b));
-    Trace("strings-conflict")
-        << "CONFLICT: Eq engine conflict : " << conflictNode.getNode()
-        << std::endl;
-    ++(d_statistics.d_conflictsEqEngine);
-    d_out->conflict(conflictNode.getNode());
+    // already in conflict
+    return;
   }
+  d_im.conflictEqConstantMerge(a, b);
+  Trace("strings-conflict") << "CONFLICT: Eq engine conflict" << std::endl;
+  ++(d_statistics.d_conflictsEqEngine);
 }
 
 void TheoryStrings::eqNotifyNewClass(TNode t){
@@ -1001,7 +974,8 @@ void TheoryStrings::checkCodes()
           Node eqn = c1[0].eqNode(c2[0]);
           // str.code(x)==-1 V str.code(x)!=str.code(y) V x==y
           Node inj_lem = nm->mkNode(kind::OR, eq_no, deq, eqn);
-          d_im.sendPhaseRequirement(deq, false);
+          deq = Rewriter::rewrite(deq);
+          d_im.addPendingPhaseRequirement(deq, false);
           std::vector<Node> emptyVec;
           d_im.sendInference(emptyVec, inj_lem, Inference::CODE_INJ);
         }
@@ -1030,27 +1004,47 @@ void TheoryStrings::checkRegisterTermsNormalForms()
 TrustNode TheoryStrings::ppRewrite(TNode atom)
 {
   Trace("strings-ppr") << "TheoryStrings::ppRewrite " << atom << std::endl;
+  if (atom.getKind() == STRING_FROM_CODE)
+  {
+    // str.from_code(t) --->
+    //   witness k. ite(0 <= t < |A|, t = str.to_code(k), k = "")
+    NodeManager* nm = NodeManager::currentNM();
+    Node t = atom[0];
+    Node card = nm->mkConst(Rational(utils::getAlphabetCardinality()));
+    Node cond =
+        nm->mkNode(AND, nm->mkNode(LEQ, d_zero, t), nm->mkNode(LT, t, card));
+    Node k = nm->mkBoundVar(nm->stringType());
+    Node bvl = nm->mkNode(BOUND_VAR_LIST, k);
+    Node emp = Word::mkEmptyWord(atom.getType());
+    Node ret = nm->mkNode(
+        WITNESS,
+        bvl,
+        nm->mkNode(
+            ITE, cond, t.eqNode(nm->mkNode(STRING_TO_CODE, k)), k.eqNode(emp)));
+    return TrustNode::mkTrustRewrite(atom, ret, nullptr);
+  }
+  TrustNode ret;
   Node atomRet = atom;
   if (options::regExpElim() && atom.getKind() == STRING_IN_REGEXP)
   {
     // aggressive elimination of regular expression membership
-    Node atomElim = d_regexp_elim.eliminate(atomRet);
-    if (!atomElim.isNull())
+    ret = d_regexp_elim.eliminateTrusted(atomRet);
+    if (!ret.isNull())
     {
-      Trace("strings-ppr") << "  rewrote " << atom << " -> " << atomElim
+      Trace("strings-ppr") << "  rewrote " << atom << " -> " << ret.getNode()
                            << " via regular expression elimination."
                            << std::endl;
-      atomRet = atomElim;
+      atomRet = ret.getNode();
     }
   }
   if( !options::stringLazyPreproc() ){
     //eager preprocess here
     std::vector< Node > new_nodes;
     StringsPreprocess* p = d_esolver.getPreprocess();
-    Node ret = p->processAssertion(atomRet, new_nodes);
-    if (ret != atomRet)
+    Node pret = p->processAssertion(atomRet, new_nodes);
+    if (pret != atomRet)
     {
-      Trace("strings-ppr") << "  rewrote " << atomRet << " -> " << ret
+      Trace("strings-ppr") << "  rewrote " << atomRet << " -> " << pret
                            << ", with " << new_nodes.size() << " lemmas."
                            << std::endl;
       for (const Node& lem : new_nodes)
@@ -1059,16 +1053,16 @@ TrustNode TheoryStrings::ppRewrite(TNode atom)
         ++(d_statistics.d_lemmasEagerPreproc);
         d_out->lemma(lem);
       }
-      atomRet = ret;
+      atomRet = pret;
+      // Don't support proofs yet, thus we must return nullptr. This is the
+      // case even if we had proven the elimination via regexp elimination
+      // above.
+      ret = TrustNode::mkTrustRewrite(atom, atomRet, nullptr);
     }else{
       Assert(new_nodes.empty());
     }
   }
-  if (atomRet != atom)
-  {
-    return TrustNode::mkTrustRewrite(atom, atomRet, nullptr);
-  }
-  return TrustNode::null();
+  return ret;
 }
 
 /** run the given inference step */

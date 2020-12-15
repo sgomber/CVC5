@@ -2,10 +2,10 @@
 /*! \file interpolation_solver.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Ying Sheng
+ **   Ying Sheng, Andrew Reynolds, Abdalrhman Mohamed
  ** This file is part of the CVC4 project.
  ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
+ ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
@@ -44,23 +44,18 @@ bool InterpolationSolver::getInterpol(const Node& conj,
   }
   Trace("sygus-interpol") << "SmtEngine::getInterpol: conjecture " << conj
                           << std::endl;
-  std::vector<Expr> easserts = d_parent->getExpandedAssertions();
-  std::vector<Node> axioms;
-  for (unsigned i = 0, size = easserts.size(); i < size; i++)
-  {
-    axioms.push_back(Node::fromExpr(easserts[i]));
-  }
+  std::vector<Node> axioms = d_parent->getExpandedAssertions();
   // must expand definitions
   Node conjn = d_parent->expandDefinitions(conj);
   std::string name("A");
 
   quantifiers::SygusInterpol interpolSolver;
-  if (interpolSolver.SolveInterpolation(
+  if (interpolSolver.solveInterpolation(
           name, axioms, conjn, grammarType, interpol))
   {
     if (options::checkInterpols())
     {
-      checkInterpol(interpol.toExpr(), easserts, conj);
+      checkInterpol(interpol.toExpr(), axioms, conj);
     }
     return true;
   }
@@ -73,8 +68,8 @@ bool InterpolationSolver::getInterpol(const Node& conj, Node& interpol)
   return getInterpol(conj, grammarType, interpol);
 }
 
-void InterpolationSolver::checkInterpol(Expr interpol,
-                                        const std::vector<Expr>& easserts,
+void InterpolationSolver::checkInterpol(Node interpol,
+                                        const std::vector<Node>& easserts,
                                         const Node& conj)
 {
   Assert(interpol.getType().isBoolean());
@@ -98,18 +93,18 @@ void InterpolationSolver::checkInterpol(Expr interpol,
                             << ": asserting formulas" << std::endl;
     if (j == 0)
     {
-      for (const Expr& e : easserts)
+      for (const Node& e : easserts)
       {
         itpChecker->assertFormula(e);
       }
-      Expr negitp = interpol.notExpr();
+      Node negitp = interpol.notNode();
       itpChecker->assertFormula(negitp);
     }
     else
     {
       itpChecker->assertFormula(interpol);
       Assert(!conj.isNull());
-      itpChecker->assertFormula(conj.toExpr().notExpr());
+      itpChecker->assertFormula(conj.notNode());
     }
     Trace("check-interpol") << "SmtEngine::checkInterpol: phase " << j
                             << ": check the assertions" << std::endl;

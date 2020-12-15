@@ -2,7 +2,7 @@
 /*! \file theory_sep.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Andrew Reynolds, Tim King, Dejan Jovanovic
+ **   Andrew Reynolds, Tim King, Mudathir Mohamed
  ** This file is part of the CVC4 project.
  ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
  ** in the top-level source directory and their institutional affiliations.
@@ -50,7 +50,7 @@ TheorySep::TheorySep(context::Context* c,
       d_lemmas_produced_c(u),
       d_bounds_init(false),
       d_state(c, u, valuation),
-      d_im(*this, d_state, pnm),
+      d_im(*this, d_state, nullptr),
       d_notify(*this),
       d_reduce(u),
       d_spatial_assertions(c)
@@ -67,6 +67,22 @@ TheorySep::~TheorySep() {
   for( std::map< Node, HeapAssertInfo * >::iterator it = d_eqc_info.begin(); it != d_eqc_info.end(); ++it ){
     delete it->second;
   }
+}
+
+void TheorySep::declareSepHeap(TypeNode locT, TypeNode dataT)
+{
+  if (!d_type_ref.isNull())
+  {
+    TypeNode te1 = d_loc_to_data_type.begin()->first;
+    std::stringstream ss;
+    ss << "ERROR: cannot declare heap types for separation logic more than "
+          "once.  We are declaring heap of type ";
+    ss << locT << " -> " << dataT << ", but we already have ";
+    ss << d_type_ref << " -> " << d_type_data;
+    throw LogicException(ss.str());
+  }
+  Node nullAtom;
+  registerRefDataTypes(locT, dataT, nullAtom);
 }
 
 TheoryRewriter* TheorySep::getTheoryRewriter() { return &d_rewriter; }
@@ -86,6 +102,15 @@ void TheorySep::finishInit()
   // we could but don't do congruence on SEP_STAR here.
 }
 
+void TheorySep::preRegisterTerm(TNode n)
+{
+  Kind k = n.getKind();
+  if (k == SEP_PTO || k == SEP_EMP || k == SEP_STAR || k == SEP_WAND)
+  {
+    registerRefDataTypesAtom(n);
+  }
+}
+
 Node TheorySep::mkAnd( std::vector< TNode >& assumptions ) {
   if( assumptions.empty() ){
     return d_true;
@@ -94,16 +119,6 @@ Node TheorySep::mkAnd( std::vector< TNode >& assumptions ) {
   }else{
     return NodeManager::currentNM()->mkNode( kind::AND, assumptions );
   }
-}
-
-/////////////////////////////////////////////////////////////////////////////
-// PREPROCESSING
-/////////////////////////////////////////////////////////////////////////////
-
-
-Theory::PPAssertStatus TheorySep::ppAssert(TNode in, SubstitutionMap& outSubstitutions) {
-
-  return PP_ASSERT_STATUS_UNSOLVED;
 }
 
 
@@ -249,7 +264,6 @@ void TheorySep::postProcessModel( TheoryModel* m ){
 
 void TheorySep::presolve() {
   Trace("sep-pp") << "Presolving" << std::endl;
-  //TODO: cleanup if incremental?
 }
 
 
@@ -412,7 +426,8 @@ void TheorySep::reduceFact(TNode atom, bool polarity, TNode fact)
     }
     else if (satom.getKind() == SEP_PTO)
     {
-      Node ss = nm->mkNode(SINGLETON, satom[0]);
+      // TODO(project##230): Find a safe type for the singleton operator
+      Node ss = nm->mkSingleton(satom[0].getType(), satom[0]);
       if (slbl != ss)
       {
         conc = slbl.eqNode(ss);
@@ -740,7 +755,7 @@ void TheorySep::postCheck(Effort level)
 
       // get model values
       std::map<int, Node> mvals;
-      for (const std::pair<int, Node>& sub_element : d_label_map[satom][slbl])
+      for (const std::pair<const int, Node>& sub_element : d_label_map[satom][slbl])
       {
         int sub_index = sub_element.first;
         Node sub_lbl = sub_element.second;
@@ -1003,9 +1018,7 @@ int TheorySep::processAssertion( Node n, std::map< int, std::map< Node, int > >&
   if( it==visited[index].end() ){
     Trace("sep-pp-debug") << "process assertion : " << n << ", index = " << index << std::endl;
     if( n.getKind()==kind::SEP_EMP ){
-      TypeNode tn = n[0].getType();
-      TypeNode tnd = n[1].getType();
-      registerRefDataTypes( tn, tnd, n );
+      registerRefDataTypesAtom(n);
       if( hasPol && pol ){
         references[index][n].clear();
         references_strict[index][n] = true; 
@@ -1013,10 +1026,9 @@ int TheorySep::processAssertion( Node n, std::map< int, std::map< Node, int > >&
         card = 1;
       }
     }else if( n.getKind()==kind::SEP_PTO ){
-      TypeNode tn1 = n[0].getType();
-      TypeNode tn2 = n[1].getType();
-      registerRefDataTypes( tn1, tn2, n );
+      registerRefDataTypesAtom(n);
       if( quantifiers::TermUtil::hasBoundVarAttr( n[0] ) ){
+        TypeNode tn1 = n[0].getType();
         if( d_bound_kind[tn1]!=bound_strict && d_bound_kind[tn1]!=bound_invalid ){
           if( options::quantEpr() && n[0].getKind()==kind::BOUND_VARIABLE ){
             // still valid : bound on heap models will include Herbrand universe of n[0].getType()
@@ -1127,49 +1139,62 @@ int TheorySep::processAssertion( Node n, std::map< int, std::map< Node, int > >&
   return card;
 }
 
-void TheorySep::registerRefDataTypes( TypeNode tn1, TypeNode tn2, Node atom ){
-  //separation logic is effectively enabled when we find at least one spatial constraint occurs in the input
-  if( options::incrementalSolving() ){
+void TheorySep::registerRefDataTypesAtom(Node atom)
+{
+  TypeNode tn1;
+  TypeNode tn2;
+  Kind k = atom.getKind();
+  if (k == SEP_PTO || k == SEP_EMP)
+  {
+    tn1 = atom[0].getType();
+    tn2 = atom[1].getType();
+  }
+  else
+  {
+    Assert(k == SEP_STAR || k == SEP_WAND);
+  }
+  registerRefDataTypes(tn1, tn2, atom);
+}
+
+void TheorySep::registerRefDataTypes(TypeNode tn1, TypeNode tn2, Node atom)
+{
+  if (!d_type_ref.isNull())
+  {
+    Assert(!atom.isNull());
+    // already declared, ensure compatible
+    if ((!tn1.isNull() && !tn1.isComparableTo(d_type_ref))
+        || (!tn2.isNull() && !tn2.isComparableTo(d_type_data)))
+    {
+      std::stringstream ss;
+      ss << "ERROR: the separation logic heap type has already been set to "
+         << d_type_ref << " -> " << d_type_data
+         << " but we have a constraint that uses different heap types, "
+            "offending atom is "
+         << atom << " with associated heap type " << tn1 << " -> " << tn2
+         << std::endl;
+    }
+    return;
+  }
+  // if not declared yet, and we have a separation logic constraint, throw
+  // an error.
+  if (!atom.isNull())
+  {
     std::stringstream ss;
-    ss << "ERROR: cannot use separation logic in incremental mode." << std::endl;
+    // error, heap not declared
+    ss << "ERROR: the type of the separation logic heap has not been declared "
+          "(e.g. via a declare-heap command), and we have a separation logic "
+          "constraint "
+       << atom << std::endl;
     throw LogicException(ss.str());
   }
-  std::map< TypeNode, TypeNode >::iterator itt = d_loc_to_data_type.find( tn1 );
-  if( itt==d_loc_to_data_type.end() ){
-    if( !d_loc_to_data_type.empty() ){
-      TypeNode te1 = d_loc_to_data_type.begin()->first;
-      std::stringstream ss;
-      ss << "ERROR: specifying heap constraints for two different types : " << tn1 << " -> " << tn2 << " and " << te1 << " -> " << d_loc_to_data_type[te1] << std::endl;
-      throw LogicException(ss.str());
-      Assert(false);
-    }
-    if( tn2.isNull() ){
-      Trace("sep-type") << "Sep: assume location type " << tn1 << " (from " << atom << ")" << std::endl;
-    }else{
-      Trace("sep-type") << "Sep: assume location type " << tn1 << " is associated with data type " << tn2 << " (from " << atom << ")" << std::endl;
-    }
-    d_loc_to_data_type[tn1] = tn2;
-    //for now, we only allow heap constraints of one type
-    d_type_ref = tn1;
-    d_type_data = tn2;
-    d_bound_kind[tn1] = bound_default;
-  }else{
-    if( !tn2.isNull() ){
-      if( itt->second!=tn2 ){
-        if( itt->second.isNull() ){
-          Trace("sep-type") << "Sep: assume location type " << tn1 << " is associated with data type " << tn2 << " (from " << atom << ")" << std::endl;
-          //now we know data type
-          d_loc_to_data_type[tn1] = tn2;
-          d_type_data = tn2;
-        }else{
-          std::stringstream ss;
-          ss << "ERROR: location type " << tn1 << " is already associated with data type " << itt->second << ", offending atom is " << atom << " with data type " << tn2 << std::endl;
-          throw LogicException(ss.str());
-          Assert(false);
-        }
-      }
-    }
-  }
+  // otherwise set it
+  Trace("sep-type") << "Sep: assume location type " << tn1
+                    << " is associated with data type " << tn2 << std::endl;
+  d_loc_to_data_type[tn1] = tn2;
+  // for now, we only allow heap constraints of one type
+  d_type_ref = tn1;
+  d_type_data = tn2;
+  d_bound_kind[tn1] = bound_default;
 }
 
 void TheorySep::initializeBounds() {
@@ -1341,7 +1366,7 @@ Node TheorySep::mkUnion( TypeNode tn, std::vector< Node >& locs ) {
     for( unsigned i=0; i<locs.size(); i++ ){
       Node s = locs[i];
       Assert(!s.isNull());
-      s = NodeManager::currentNM()->mkNode( kind::SINGLETON, s );
+      s = NodeManager::currentNM()->mkSingleton(tn, s);
       if( u.isNull() ){
         u = s;
       }else{
@@ -1512,12 +1537,14 @@ Node TheorySep::instantiateLabel( Node n, Node o_lbl, Node lbl, Node lbl_v, std:
       //check if this pto reference is in the base label, if not, then it does not need to be added as an assumption
       Assert(d_label_model.find(o_lbl) != d_label_model.end());
       Node vr = d_valuation.getModel()->getRepresentative( n[0] );
-      Node svr = NodeManager::currentNM()->mkNode( kind::SINGLETON, vr );
+      // TODO(project##230): Find a safe type for the singleton operator
+      Node svr = NodeManager::currentNM()->mkSingleton(vr.getType(), vr);
       bool inBaseHeap = std::find( d_label_model[o_lbl].d_heap_locs_model.begin(), d_label_model[o_lbl].d_heap_locs_model.end(), svr )!=d_label_model[o_lbl].d_heap_locs_model.end();
       Trace("sep-inst-debug") << "Is in base (non-instantiating) heap : " << inBaseHeap << " for value ref " << vr << " in " << o_lbl << std::endl;
       std::vector< Node > children;
       if( inBaseHeap ){
-        Node s = NodeManager::currentNM()->mkNode( kind::SINGLETON, n[0] );
+        // TODO(project##230): Find a safe type for the singleton operator
+        Node s = NodeManager::currentNM()->mkSingleton(n[0].getType(),  n[0]);
         children.push_back( NodeManager::currentNM()->mkNode( kind::SEP_LABEL, NodeManager::currentNM()->mkNode( kind::SEP_PTO, n[0], n[1] ), s ) );
       }else{
         //look up value of data
@@ -1529,8 +1556,10 @@ Node TheorySep::instantiateLabel( Node n, Node o_lbl, Node lbl, Node lbl_v, std:
         }else{
           Trace("sep-inst-debug") << "Data for " << vr << " was not specified, do not add condition." << std::endl;
         }
-      } 
-      children.push_back( NodeManager::currentNM()->mkNode( kind::EQUAL, NodeManager::currentNM()->mkNode( kind::SINGLETON, n[0] ), lbl_v ) );
+      }
+      // TODO(project##230): Find a safe type for the singleton operator
+      Node singleton = NodeManager::currentNM()->mkSingleton(n[0].getType(), n[0]);
+      children.push_back(singleton.eqNode(lbl_v));
       Node ret = children.empty() ? NodeManager::currentNM()->mkConst( true ) : ( children.size()==1 ? children[0] : NodeManager::currentNM()->mkNode( kind::AND, children ) );
       Trace("sep-inst-debug") << "Return " << ret << std::endl;
       return ret;
@@ -1650,7 +1679,8 @@ void TheorySep::computeLabelModel( Node lbl ) {
       }else{
         tt = itm->second;
       }
-      Node stt = NodeManager::currentNM()->mkNode( kind::SINGLETON, tt );
+      // TODO(project##230): Find a safe type for the singleton operator
+      Node stt = NodeManager::currentNM()->mkSingleton(tt.getType(), tt);
       Trace("sep-process-debug") << "...model : add " << tt << " for " << u << " in lbl " << lbl << std::endl;
       d_label_model[lbl].d_heap_locs.push_back( stt );
     }

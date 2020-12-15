@@ -62,13 +62,17 @@ TConvProofGenerator::TConvProofGenerator(ProofNodeManager* pnm,
 
 TConvProofGenerator::~TConvProofGenerator() {}
 
-void TConvProofGenerator::addRewriteStep(
-    Node t, Node s, ProofGenerator* pg, bool isClosed, uint32_t tctx)
+void TConvProofGenerator::addRewriteStep(Node t,
+                                         Node s,
+                                         ProofGenerator* pg,
+                                         PfRule trustId,
+                                         bool isClosed,
+                                         uint32_t tctx)
 {
   Node eq = registerRewriteStep(t, s, tctx);
   if (!eq.isNull())
   {
-    d_proof.addLazyStep(eq, pg, isClosed);
+    d_proof.addLazyStep(eq, pg, trustId, isClosed);
   }
 }
 
@@ -134,7 +138,9 @@ Node TConvProofGenerator::registerRewriteStep(Node t, Node s, uint32_t tctx)
   // should not rewrite term to two different things
   if (!getRewriteStepInternal(thash).isNull())
   {
-    Assert(getRewriteStepInternal(thash) == s);
+    Assert(getRewriteStepInternal(thash) == s)
+        << identify() << " rewriting " << t << " to both " << s << " and "
+        << getRewriteStepInternal(thash);
     return Node::null();
   }
   d_rewriteMap[thash] = s;

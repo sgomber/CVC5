@@ -1,7 +1,7 @@
 #####################
 ## CMakeLists.txt
 ## Top contributors (to current version):
-##   Mathias Preiner, Aina Niemetz, Andrew Reynolds
+##   Mathias Preiner, Andrew Reynolds, Aina Niemetz
 ## This file is part of the CVC4 project.
 ## Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
 ## in the top-level source directory and their institutional affiliations.
@@ -9,9 +9,9 @@
 ## directory for licensing information.
 ##
 libcvc4_add_sources(
-  array.h
   array_store_all.cpp
   array_store_all.h
+  ascription_type.cpp
   ascription_type.h
   attribute.h
   attribute.cpp
@@ -55,6 +55,8 @@ libcvc4_add_sources(
   proof.h
   proof_checker.cpp
   proof_checker.h
+  proof_ensure_closed.cpp
+  proof_ensure_closed.h
   proof_generator.cpp
   proof_generator.h
   proof_node.cpp
@@ -69,12 +71,17 @@ libcvc4_add_sources(
   proof_node_updater.h
   proof_rule.cpp
   proof_rule.h
+  proof_set.h
   proof_step_buffer.cpp
   proof_step_buffer.h
   skolem_manager.cpp
   skolem_manager.h
+  symbol_manager.cpp
+  symbol_manager.h
   symbol_table.cpp
   symbol_table.h
+  tconv_seq_proof_generator.cpp
+  tconv_seq_proof_generator.h
   term_canonize.cpp
   term_canonize.h
   term_context.cpp
@@ -105,6 +112,8 @@ libcvc4_add_sources(
   record.h
   sequence.cpp
   sequence.h
+  subs.cpp
+  subs.h
   sygus_datatype.cpp
   sygus_datatype.h
   uninterpreted_constant.cpp

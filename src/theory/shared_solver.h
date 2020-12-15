@@ -5,7 +5,7 @@
  **   Andrew Reynolds
  ** This file is part of the CVC4 project.
  ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
+ ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
@@ -18,6 +18,7 @@
 #define CVC4__THEORY__SHARED_SOLVER__H
 
 #include "expr/node.h"
+#include "expr/proof_node_manager.h"
 #include "theory/ee_setup_info.h"
 #include "theory/logic_info.h"
 #include "theory/shared_terms_database.h"
@@ -42,7 +43,7 @@ namespace theory {
 class SharedSolver
 {
  public:
-  SharedSolver(TheoryEngine& te);
+  SharedSolver(TheoryEngine& te, ProofNodeManager* pnm);
   virtual ~SharedSolver() {}
   //------------------------------------- initialization
   /**

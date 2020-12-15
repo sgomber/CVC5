@@ -165,7 +165,7 @@ void CardinalityExtension::checkCardinalityExtended(TypeNode& t)
       const std::map<Node, Node>& negativeMembers =
           d_state.getNegativeMembers(representative);
 
-      for (const std::pair<Node, Node>& negativeMember : negativeMembers)
+      for (const auto& negativeMember : negativeMembers)
       {
         Node member = nm->mkNode(MEMBER, negativeMember.first, univ);
         // negativeMember.second is the reason for the negative membership and
@@ -308,6 +308,9 @@ void CardinalityExtension::checkCardCycles()
       return;
     }
   }
+
+  Trace("sets") << "d_card_parent: " << d_card_parent << std::endl;
+  Trace("sets") << "d_oSetEqc: " << d_oSetEqc << std::endl;
   Trace("sets") << "Done check cardinality cycles" << std::endl;
 }
 
@@ -1028,7 +1031,7 @@ void CardinalityExtension::mkModelValueElementsFor(
           // the current members of this finite type.
 
           Node slack = nm->mkSkolem("slack", elementType);
-          Node singleton = nm->mkNode(SINGLETON, slack);
+          Node singleton = nm->mkSingleton(elementType, slack);
           els.push_back(singleton);
           d_finite_type_slack_elements[elementType].push_back(slack);
           Trace("sets-model") << "Added slack element " << slack << " to set "
@@ -1037,7 +1040,7 @@ void CardinalityExtension::mkModelValueElementsFor(
         else
         {
           els.push_back(
-              nm->mkNode(SINGLETON, nm->mkSkolem("msde", elementType)));
+              nm->mkSingleton(elementType, nm->mkSkolem("msde", elementType)));
         }
       }
     }

@@ -46,7 +46,7 @@ compatible.
 
 - [GNU C and C++ (gcc and g++)](https://gcc.gnu.org)
   or [Clang](https://clang.llvm.org) (reasonably recent versions)
-- [CMake >= 3.1](https://cmake.org)
+- [CMake >= 3.9](https://cmake.org)
 - [GNU Bash](https://www.gnu.org/software/bash/)
 - [Python >= 2.7](https://www.python.org)
   + module [toml](https://pypi.org/project/toml/)
@@ -195,6 +195,12 @@ provided with CVC4.
 See [Testing CVC4](#Testing-CVC4) below for more details.
 
 
+### Google Test Unit Testing Framework (Unit Tests)
+
+[Google Test](https://github.com/google/googletest) is required to optionally
+run CVC4's unit tests (included with the distribution). 
+See [Testing CVC4](#Testing-CVC4) below for more details.
+
 ## Language bindings
 
 CVC4 provides a complete and flexible C++ API (see `examples/api` for
@@ -229,8 +235,8 @@ We have 4 categories of tests:
   (label: **example**)
 - **regression tests** (5 levels) in directory `test/regress`
   (label: **regressN** with N the regression level)
-- **system tests** in directory `test/system`
-  (label: **system**)
+- **api tests** in directory `test/api`
+  (label: **api**)
 - **unit tests** in directory `test/unit`
   (label: **unit**)
 
@@ -238,25 +244,28 @@ We have 4 categories of tests:
 
 The system tests are not built by default.
 
-    make systemtests                      # build and run all system tests
-    make <system_test>                    # build test/system/<system_test>.<ext>
-    ctest system/<system_test>            # run test/system/<system_test>.<ext>
+    make apitests                         # build and run all system tests
+    make <api_test>                       # build test/system/<system_test>.<ext>
+    ctest api/<api_test>                  # run test/system/<system_test>.<ext>
 
 All system test binaries are built into `<build_dir>/bin/test/system`.
 
-We use prefix `system/` + `<system_test>` (for `<system_test>` in `test/system`)
+We use prefix `api/` + `<api_test>` (for `<api_test>` in `test/api`)
 as test target name.  
 
-    make ouroborous                       # build test/system/ouroborous.cpp
+    make ouroborous                       # build test/api/ouroborous.cpp
     ctest -R ouroborous                   # run all tests that match '*ouroborous*'
-                                          # > runs system/ouroborous
+                                          # > runs api/ouroborous
     ctest -R ouroborous$                  # run all tests that match '*ouroborous'
-                                          # > runs system/ouroborous
-    ctest -R system/ouroborous$           # run all tests that match '*system/ouroborous'
-                                          # > runs system/ouroborous
+                                          # > runs api/ouroborous
+    ctest -R api/ouroborous$              # run all tests that match '*api/ouroborous'
+                                          # > runs api/ouroborous
 ### Testing Unit Tests
 
 The unit tests are not built by default.
+
+Note that CVC4 can only be configured with unit tests in non-static builds with
+assertions enabled.
 
     make units                            # build and run all unit tests
     make <unit_test>                      # build test/unit/<subdir>/<unit_test>.<ext>

@@ -2,7 +2,7 @@
 /*! \file theory_preprocess.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Mathias Preiner
+ **   Mathias Preiner, Andrew Reynolds
  ** This file is part of the CVC4 project.
  ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
  ** in the top-level source directory and their institutional affiliations.
@@ -32,12 +32,11 @@ PreprocessingPassResult TheoryPreprocess::applyInternal(
     AssertionPipeline* assertionsToPreprocess)
 {
   TheoryEngine* te = d_preprocContext->getTheoryEngine();
-  te->preprocessStart();
   for (size_t i = 0, size = assertionsToPreprocess->size(); i < size; ++i)
   {
     TNode a = (*assertionsToPreprocess)[i];
     Assert(Rewriter::rewrite(a) == a);
-    assertionsToPreprocess->replace(i, te->preprocess(a));
+    assertionsToPreprocess->replaceTrusted(i, te->preprocess(a));
     a = (*assertionsToPreprocess)[i];
     Assert(Rewriter::rewrite(a) == a);
   }

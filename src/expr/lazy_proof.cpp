@@ -14,6 +14,8 @@
 
 #include "expr/lazy_proof.h"
 
+#include "expr/proof_ensure_closed.h"
+
 using namespace CVC4::kind;
 
 namespace CVC4 {
@@ -83,16 +85,27 @@ std::shared_ptr<ProofNode> LazyCDProof::getProofFor(Node fact)
           // the current proof. Instead, it is only linked, and ignored on
           // future calls to getProofFor due to the check above.
           std::shared_ptr<ProofNode> pgc = pg->getProofFor(cfactGen);
-          if (isSym)
+          // If the proof was null, then the update is not performed. This is
+          // not considered an error, since this behavior is equivalent to
+          // if pg had provided the proof (ASSUME cfactGen). Ensuring the
+          // proper behavior wrt closed proofs should be done outside this
+          // method.
+          if (pgc != nullptr)
           {
-            d_manager->updateNode(cur, PfRule::SYMM, {pgc}, {});
+            Trace("lazy-cdproof-gen")
+                << "LazyCDProof: stored proof: " << *pgc.get() << std::endl;
+
+            if (isSym)
+            {
+              d_manager->updateNode(cur, PfRule::SYMM, {pgc}, {});
+            }
+            else
+            {
+              d_manager->updateNode(cur, pgc.get());
+            }
+            Trace("lazy-cdproof") << "LazyCDProof: Successfully added fact for "
+                                  << cfactGen << std::endl;
           }
-          else
-          {
-            d_manager->updateNode(cur, pgc.get());
-          }
-          Trace("lazy-cdproof") << "LazyCDProof: Successfully added fact for "
-                                << cfactGen << std::endl;
         }
         else
         {
@@ -122,10 +135,10 @@ std::shared_ptr<ProofNode> LazyCDProof::getProofFor(Node fact)
 
 void LazyCDProof::addLazyStep(Node expected,
                               ProofGenerator* pg,
+                              PfRule idNull,
                               bool isClosed,
                               const char* ctx,
-                              bool forceOverwrite,
-                              PfRule idNull)
+                              bool forceOverwrite)
 {
   if (pg == nullptr)
   {

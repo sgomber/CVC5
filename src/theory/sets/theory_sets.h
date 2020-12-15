@@ -77,7 +77,9 @@ class TheorySets : public Theory
   std::string identify() const override { return "THEORY_SETS"; }
   void preRegisterTerm(TNode node) override;
   TrustNode expandDefinition(Node n) override;
-  PPAssertStatus ppAssert(TNode in, SubstitutionMap& outSubstitutions) override;
+  TrustNode ppRewrite(TNode n) override;
+  PPAssertStatus ppAssert(TrustNode tin,
+                          TrustSubstitutionMap& outSubstitutions) override;
   void presolve() override;
   bool isEntailed(Node n, bool pol);
 

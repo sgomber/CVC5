@@ -54,17 +54,7 @@ class ProofRuleChecker
   Node check(PfRule id,
              const std::vector<Node>& children,
              const std::vector<Node>& args);
-  /** Single arg version */
-  Node checkChildrenArg(PfRule id, const std::vector<Node>& children, Node arg);
-  /** No arg version */
-  Node checkChildren(PfRule id, const std::vector<Node>& children);
-  /** Single child only version */
-  Node checkChild(PfRule id, Node child);
-  /** Single argument only version */
-  Node checkArg(PfRule id, Node arg);
 
-  /** Make AND-kinded node with children a */
-  static Node mkAnd(const std::vector<Node>& a);
   /** get an index from a node, return false if we fail */
   static bool getUInt32(TNode n, uint32_t& i);
   /** get a Boolean from a node, return false if we fail */
@@ -180,9 +170,11 @@ class ProofChecker
 
   /**
    * Is pedantic failure? If so, we return true and write a debug message on the
-   * output stream out.
+   * output stream out if enableOutput is true.
    */
-  bool isPedanticFailure(PfRule id, std::ostream& out) const;
+  bool isPedanticFailure(PfRule id,
+                         std::ostream& out,
+                         bool enableOutput = true) const;
 
  private:
   /** statistics class */
@@ -195,15 +187,17 @@ class ProofChecker
   uint32_t d_pclevel;
   /**
    * Check internal. This is used by check and checkDebug above. It writes
-   * checking errors on out. We treat trusted checkers (nullptr in the range
-   * of the map d_checker) as failures if useTrustedChecker = false.
+   * checking errors on out when enableOutput is true. We treat trusted checkers
+   * (nullptr in the range of the map d_checker) as failures if
+   * useTrustedChecker = false.
    */
   Node checkInternal(PfRule id,
                      const std::vector<Node>& cchildren,
                      const std::vector<Node>& args,
                      Node expected,
                      std::stringstream& out,
-                     bool useTrustedChecker);
+                     bool useTrustedChecker,
+                     bool enableOutput);
 };
 
 }  // namespace CVC4

@@ -2,7 +2,7 @@
 /*! \file command_executor.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Kshitij Bansal, Morgan Deters, Tim King
+ **   Kshitij Bansal, Andrew Reynolds, Morgan Deters
  ** This file is part of the CVC4 project.
  ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
  ** in the top-level source directory and their institutional affiliations.
@@ -50,23 +50,30 @@ void printStatsIncremental(std::ostream& out, const std::string& prvsStatsString
 
 CommandExecutor::CommandExecutor(Options& options)
     : d_solver(new api::Solver(&options)),
+      d_symman(new SymbolManager(d_solver.get())),
       d_smtEngine(d_solver->getSmtEngine()),
       d_options(options),
       d_stats("driver"),
       d_result()
 {
 }
+CommandExecutor::~CommandExecutor()
+{
+  // ensure that symbol manager is destroyed before solver
+  d_symman.reset(nullptr);
+  d_solver.reset(nullptr);
+}
 
 void CommandExecutor::flushStatistics(std::ostream& out) const
 {
-  d_solver->getExprManager()->getStatistics().flushInformation(out);
-  d_smtEngine->getStatistics().flushInformation(out);
+  // SmtEngine + node manager flush statistics is part of the call below
+  d_smtEngine->flushStatistics(out);
   d_stats.flushInformation(out);
 }
 
 void CommandExecutor::safeFlushStatistics(int fd) const
 {
-  d_solver->getExprManager()->safeFlushStatistics(fd);
+  // SmtEngine + node manager flush statistics is part of the call below
   d_smtEngine->safeFlushStatistics(fd);
   d_stats.safeFlushInformation(fd);
 }
@@ -118,9 +125,10 @@ bool CommandExecutor::doCommandSingleton(Command* cmd)
 {
   bool status = true;
   if(d_options.getVerbosity() >= -1) {
-    status = solverInvoke(d_solver.get(), cmd, d_options.getOut());
+    status =
+        solverInvoke(d_solver.get(), d_symman.get(), cmd, d_options.getOut());
   } else {
-    status = solverInvoke(d_solver.get(), cmd, nullptr);
+    status = solverInvoke(d_solver.get(), d_symman.get(), cmd, nullptr);
   }
 
   api::Result res;
@@ -197,15 +205,18 @@ bool CommandExecutor::doCommandSingleton(Command* cmd)
   return status;
 }
 
-bool solverInvoke(api::Solver* solver, Command* cmd, std::ostream* out)
+bool solverInvoke(api::Solver* solver,
+                  SymbolManager* sm,
+                  Command* cmd,
+                  std::ostream* out)
 {
   if (out == NULL)
   {
-    cmd->invoke(solver);
+    cmd->invoke(solver, sm);
   }
   else
   {
-    cmd->invoke(solver, *out);
+    cmd->invoke(solver, sm, *out);
   }
   // ignore the error if the command-verbosity is 0 for this command
   std::string commandName =

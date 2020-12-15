@@ -2,7 +2,7 @@
 /*! \file arith_utilities.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Andrew Reynolds, Tim King
+ **   Andrew Reynolds, Alex Ozdemir, Tim King
  ** This file is part of the CVC4 project.
  ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
  ** in the top-level source directory and their institutional affiliations.
@@ -106,7 +106,11 @@ bool isTranscendentalKind(Kind k)
 
 Node getApproximateConstant(Node c, bool isLower, unsigned prec)
 {
-  Assert(c.isConst());
+  if (!c.isConst())
+  {
+    Assert(false) << "getApproximateConstant: non-constant input " << c;
+    return Node::null();
+  }
   Rational cr = c.getConst<Rational>();
 
   unsigned lower = 0;
@@ -178,7 +182,12 @@ Node getApproximateConstant(Node c, bool isLower, unsigned prec)
 
 void printRationalApprox(const char* c, Node cr, unsigned prec)
 {
-  Assert(cr.isConst());
+  if (!cr.isConst())
+  {
+    Assert(false) << "printRationalApprox: non-constant input " << cr;
+    Trace(c) << cr;
+    return;
+  }
   Node ca = getApproximateConstant(cr, true, prec);
   if (ca != cr)
   {
