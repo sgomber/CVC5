@@ -193,22 +193,5 @@ void ExtPolarityTermContext::getFlags(uint32_t val,
   ptype = static_cast<PolarityType>(val % 3);
   pol = val >= 3;
 }
-/*
-bool ExtPolarityTermContext::entailedChildren(TNode t, bool wasEntailed, bool pol)
-{
-  if (!wasEntailed)
-  {
-    return false;
-  }
-  Kind tk = t.getKind();
-  if (tk==kind::NOT)
-  {
-    return true;
-  }
-  
-  bool pol = tval >= 3;
-  
-}
-*/
 
 }  // namespace CVC4

@@ -183,8 +183,6 @@ class ExtPolarityTermContext : public TermContext
    * get flags from the hash value. If we have no polarity, pol is set to false.
    */
   static void getFlags(uint32_t val, PolarityType& ptype, bool& pol);
-  /** Are children of t in term context entailed? */
-  //static bool entailedChildren(TNode t, uint32_t tval);
 };
 
 }  // namespace CVC4
