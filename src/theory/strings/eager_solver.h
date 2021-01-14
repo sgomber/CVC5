@@ -23,6 +23,7 @@
 #include "options/strings_options.h"
 #include "theory/strings/eqc_info.h"
 #include "theory/strings/solver_state.h"
+#include "context/cdhashset.h"
 
 namespace CVC4 {
 namespace theory {
@@ -44,8 +45,9 @@ enum class EagerInfoType : uint32_t
  */
 class EagerSolver
 {
+  typedef context::CDHashSet<Node, NodeHashFunction> NodeSet;
  public:
-  EagerSolver(SolverState& state, options::StringsEagerSolverMode m);
+  EagerSolver(context::Context* c, SolverState& state, options::StringsEagerSolverMode m);
   ~EagerSolver();
   /** called when a new equivalence class is created */
   void eqNotifyNewClass(TNode t);
@@ -77,17 +79,21 @@ class EagerSolver
   Node getBestContent(Node f, std::vector<Node>& exp);
   /** Get best content for argument term */
   Node getBestContentArg(Node t, std::vector<Node>& exp);
+  /** Get prefix */
+  //Node getPrefixRec(Node f, std::vector<Node>& exp, bool isSuf);
   /**
    * Check whether there is a conflict with r having prefix/suffix/equals-const
    * with c, recursively.
    */
-  Node checkConflict(Node r, Node c, EagerInfoType et);
+  Node processConstantMerges(Node r, Node c);
   /** The null node */
   Node d_null;
   /** Reference to the solver state */
   SolverState& d_state;
   /** Mode of the solver */
   options::StringsEagerSolverMode d_mode;
+  /** Terms we have processed merging into an equivalence class */
+  NodeSet d_mcTerms;
 };
 
 }  // namespace strings

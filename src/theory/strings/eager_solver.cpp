@@ -23,8 +23,8 @@ namespace CVC4 {
 namespace theory {
 namespace strings {
 
-EagerSolver::EagerSolver(SolverState& state, options::StringsEagerSolverMode m)
-    : d_state(state), d_mode(m)
+EagerSolver::EagerSolver(context::Context* c, SolverState& state, options::StringsEagerSolverMode m)
+    : d_state(state), d_mode(m), d_mcTerms(c)
 {
 }
 
@@ -68,6 +68,7 @@ void EagerSolver::eqNotifyNewClass(TNode t)
     }
   }
 
+  // now, initialize the equivalence class info
   if (u.isConst())
   {
     if (u.getType().isStringLike())
@@ -128,8 +129,17 @@ void EagerSolver::eqNotifyMerge(TNode t1, TNode t2)
     {
       // constant merges should already be in conflict
       Assert(e2 == nullptr || e2->isConst().isNull());
-
-      // notify the equivalence class
+      // check whether there are conflicts
+      processConstantMerges(t1, c1);
+      // check the use lists
+      eq::EqualityEngine* ee = d_state.getEqualityEngine();
+      std::set<TNode> useList;
+      ee->getUseListTerms(t1, useList);
+      // go back and recompute the best content for the useList terms
+      for (TNode u : useList)
+      {
+        // u should contain t1 as an argument
+      }
     }
   }
 
@@ -229,6 +239,10 @@ Node EagerSolver::getBestContent(Node f, std::vector<Node>& exp)
 
 Node EagerSolver::getBestContentArg(Node t, std::vector<Node>& exp)
 {
+  if (t.isConst())
+  {
+    return t;
+  }
   eq::EqualityEngine* ee = d_state.getEqualityEngine();
   Node r = ee->getRepresentative(t);
   EqcInfo* e = d_state.getOrMakeEqcInfo(r, false);
@@ -236,15 +250,51 @@ Node EagerSolver::getBestContentArg(Node t, std::vector<Node>& exp)
   {
     return t;
   }
-  //
-  // Node rt = e->d_prefixC.d_t.get();
-
-  // TODO
+  // if its a constant, return it
+  TNode tconst = e->isConst();
+  if (!tconst.isNull())
+  {
+    Assert (t!=tconst);
+    exp.push_back(t.eqNode(tconst));
+    return tconst;
+  }
   return t;
 }
 
-Node EagerSolver::checkConflict(Node r, Node c, EagerInfoType et)
+/*
+Node EagerSolver::getPrefixRec(Node t, std::vector<Node>& exp, bool isSuf)
 {
+  if (t.isConst())
+  {
+    return t;
+  }
+  else if (t.getKind()==STRING_CONCAT)
+  {
+    size_t index = i == 0 ? 0 : t.getNumChildren() - 1;
+    return getPrefixRec(t[index], exp, isSuf);
+  }
+  return Node::null();
+}
+*/
+
+Node EagerSolver::processConstantMerges(Node r, Node c)
+{
+  eq::EqualityEngine* ee = d_state.getEqualityEngine();
+  Assert (ee->getRepresentative(r)==r);
+  // iterate over the equivalence class and check if we infer new constant
+  // terms, or otherwise infer constant
+  eq::EqClassIterator eqci =
+      eq::EqClassIterator(r, ee);
+  while( !eqci.isFinished() ) {
+    TNode t = *eqci;
+    if (d_mcTerms.find(t)!=d_mcTerms.end())
+    {
+      // already processed
+      continue;
+    }
+    ++eqci;
+  }
+  
   return Node::null();
 }
 
