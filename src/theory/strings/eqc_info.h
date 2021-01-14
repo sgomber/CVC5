@@ -42,7 +42,7 @@ class CExp
   context::CDO<Node> d_c;
   context::CDO<Node> d_exp;
   bool isNull() const;
-  bool isConst() const;
+  TNode isConst() const;
 };
 
 /**
@@ -73,6 +73,8 @@ class EqcInfo
                         bool isSuf);
   /** Same as above, but with CExp data structure */
   Node addEndpointConst(CExp& ce, bool isSuf);
+  /** Is there a constant in this equivalence class? if so, return it */
+  TNode isConst() const;
   /**
    * Check equality conflict
    */

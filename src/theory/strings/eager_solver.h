@@ -74,7 +74,7 @@ class EagerSolver
   /**
    * Get best content for term f(t1, ..., tn).
    */
-  Node getBestContent(Node f, std::vector<Node>& exp, EagerInfoType et);
+  Node getBestContent(Node f, std::vector<Node>& exp);
   /** Get best content for argument term */
   Node getBestContentArg(Node t, std::vector<Node>& exp);
   /**

@@ -28,6 +28,11 @@ namespace strings {
 
 CExp::CExp(context::Context* c) : d_t(c), d_c(c), d_exp(c) {}
 bool CExp::isNull() const { return d_t.get().isNull(); }
+TNode CExp::isConst() const 
+{
+  TNode t = d_t.get();
+  return (!t.isNull() && t.isConst()) ? t : TNode::null();
+}
 
 EqcInfo::EqcInfo(context::Context* c)
     : d_lengthTerm(c),
@@ -159,6 +164,12 @@ Node EqcInfo::addEndpointConst(CExp& ce, bool isSuf)
     exp.push_back(cexp);
   }
   return addEndpointConst(ce.d_t.get(), ce.d_c.get(), exp, isSuf);
+}
+
+TNode EqcInfo::isConst() const
+{
+  // stored in both, return prefix (arbtirary)
+  return d_prefixC.isConst();
 }
 
 /*
