@@ -83,11 +83,11 @@ class EagerSolver
                              TNode t,
                              TNode concat,
                              const std::vector<Node>& exp);
-  /** 
+  /**
    * Add best content, where f is application term in the equivalence class with
    * representative r. This makes the appropriate inference based on the result
    * of getBestContent(f). In particular:
-   * 
+   *
    * (1) if getBestContent(f) is a constant, we add f = getBestContent(f) as a
    * pending inference with the given explanation,
    * (2) if getBestContent(f) is a contenation term, we record prefix/suffix
