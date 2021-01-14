@@ -59,9 +59,12 @@ void EagerSolver::eqNotifyNewClass(TNode t)
   if (d_mode == options::StringsEagerSolverMode::FULL)
   {
     u = getBestContent(t, uexp);
-    if (u.isConst())
+    if (t!=u)
     {
-      // TODO: add the equality to constant and return
+      if (u.isConst())
+      {
+        // TODO: add the equality to constant and return
+      }
     }
   }
 
@@ -84,45 +87,67 @@ void EagerSolver::eqNotifyNewClass(TNode t)
 void EagerSolver::eqNotifyMerge(TNode t1, TNode t2)
 {
   EqcInfo* e2 = d_state.getOrMakeEqcInfo(t2, false);
-  if (e2 == nullptr)
+  EqcInfo* e1 = nullptr;
+  if (e2 != nullptr)
   {
-    return;
+    // must carry basic information into
+    e1 = d_state.getOrMakeEqcInfo(t1);
+    Assert(t1.getType().isStringLike());
+    // add information from e2 to e1
+    if (!e2->d_lengthTerm.get().isNull())
+    {
+      e1->d_lengthTerm.set(e2->d_lengthTerm);
+    }
+    if (!e2->d_codeTerm.get().isNull())
+    {
+      e1->d_codeTerm.set(e2->d_codeTerm);
+    }
+    if (e2->d_cardinalityLemK.get() > e1->d_cardinalityLemK.get())
+    {
+      e1->d_cardinalityLemK.set(e2->d_cardinalityLemK);
+    }
+    if (!e2->d_normalizedLength.get().isNull())
+    {
+      e1->d_normalizedLength.set(e2->d_normalizedLength);
+    }
   }
-  Assert(t1.getType().isStringLike());
-  EqcInfo* e1 = d_state.getOrMakeEqcInfo(t1);
-  // add information from e2 to e1
-  if (!e2->d_lengthTerm.get().isNull())
+  else
   {
-    e1->d_lengthTerm.set(e2->d_lengthTerm);
-  }
-  if (!e2->d_codeTerm.get().isNull())
-  {
-    e1->d_codeTerm.set(e2->d_codeTerm);
-  }
-  if (e2->d_cardinalityLemK.get() > e1->d_cardinalityLemK.get())
-  {
-    e1->d_cardinalityLemK.set(e2->d_cardinalityLemK);
-  }
-  if (!e2->d_normalizedLength.get().isNull())
-  {
-    e1->d_normalizedLength.set(e2->d_normalizedLength);
+    e1 = d_state.getOrMakeEqcInfo(t1, false);
   }
   // if we aren't doing eager techniques, return now
   if (d_mode == options::StringsEagerSolverMode::NONE)
   {
     return;
   }
-
-  // eager prefix conflicts
-  if (!e2->d_prefixC.isNull())
+  else if (d_mode == options::StringsEagerSolverMode::FULL)
   {
-    d_state.setPendingPrefixConflictWhen(
-        e1->addEndpointConst(e2->d_prefixC, false));
+    // if we are merging into a constant
+    TNode c1 = e1!=nullptr ? e1->isConst() : TNode::null();
+    if (!c1.isNull())
+    {
+      // constant merges should already be in conflict
+      Assert (e2==nullptr || e2->isConst().isNull());
+      
+      // notify the equivalence class
+      
+    }
   }
-  if (!e2->d_suffixC.isNull())
+  
+  if (e2!=nullptr)
   {
-    d_state.setPendingPrefixConflictWhen(
-        e1->addEndpointConst(e2->d_suffixC, true));
+    Assert (e1!=nullptr);
+    // eager prefix conflicts
+    if (!e2->d_prefixC.isNull())
+    {
+      d_state.setPendingPrefixConflictWhen(
+          e1->addEndpointConst(e2->d_prefixC, false));
+    }
+    if (!e2->d_suffixC.isNull())
+    {
+      d_state.setPendingPrefixConflictWhen(
+          e1->addEndpointConst(e2->d_suffixC, true));
+    }
   }
 }
 
