@@ -59,7 +59,7 @@ void EagerSolver::eqNotifyNewClass(TNode t)
   if (d_mode == options::StringsEagerSolverMode::FULL)
   {
     u = getBestContent(t, uexp);
-    if (t!=u)
+    if (t != u)
     {
       if (u.isConst())
       {
@@ -123,20 +123,19 @@ void EagerSolver::eqNotifyMerge(TNode t1, TNode t2)
   else if (d_mode == options::StringsEagerSolverMode::FULL)
   {
     // if we are merging into a constant
-    TNode c1 = e1!=nullptr ? e1->isConst() : TNode::null();
+    TNode c1 = e1 != nullptr ? e1->isConst() : TNode::null();
     if (!c1.isNull())
     {
       // constant merges should already be in conflict
-      Assert (e2==nullptr || e2->isConst().isNull());
-      
+      Assert(e2 == nullptr || e2->isConst().isNull());
+
       // notify the equivalence class
-      
     }
   }
-  
-  if (e2!=nullptr)
+
+  if (e2 != nullptr)
   {
-    Assert (e1!=nullptr);
+    Assert(e1 != nullptr);
     // eager prefix conflicts
     if (!e2->d_prefixC.isNull())
     {
