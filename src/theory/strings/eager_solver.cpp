@@ -124,7 +124,8 @@ void EagerSolver::addEndpointsToEqcInfo(Node r, Node t, Node concat, Node exp)
       Trace("strings-eager-pconf-debug")
           << "New term: " << concat << " for " << t << " with prefix " << c
           << " (" << (i == 1) << ")" << std::endl;
-      d_state.setPendingPrefixConflictWhen(ei->addEndpointConst(t, c, exp, i == 1));
+      d_state.setPendingPrefixConflictWhen(
+          ei->addEndpointConst(t, c, exp, i == 1));
     }
   }
 }

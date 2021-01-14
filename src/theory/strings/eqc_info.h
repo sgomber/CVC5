@@ -30,14 +30,14 @@ namespace strings {
 /** Constant explanation data */
 class CExp
 {
-public:
+ public:
   CExp(context::Context* c);
   context::CDO<Node> d_t;
   context::CDO<Node> d_c;
   context::CDO<Node> d_exp;
   bool isNull() const;
 };
-  
+
 /**
  * SAT-context-dependent information about an equivalence class. This
  * information is updated eagerly as assertions are processed by the theory of

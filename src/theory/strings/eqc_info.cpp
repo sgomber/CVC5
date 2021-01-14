@@ -14,9 +14,9 @@
 
 #include "theory/strings/eqc_info.h"
 
+#include "theory/rewriter.h"
 #include "theory/strings/theory_strings_utils.h"
 #include "theory/strings/word.h"
-#include "theory/rewriter.h"
 
 using namespace std;
 using namespace CVC4::context;
@@ -25,10 +25,8 @@ using namespace CVC4::kind;
 namespace CVC4 {
 namespace theory {
 namespace strings {
-  
-CExp::CExp(context::Context* c) : d_t(c), d_c(c), d_exp(c)
-{
-}
+
+CExp::CExp(context::Context* c) : d_t(c), d_c(c), d_exp(c) {}
 bool CExp::isNull() const { return d_t.get().isNull(); }
 
 EqcInfo::EqcInfo(context::Context* c)
@@ -43,9 +41,9 @@ EqcInfo::EqcInfo(context::Context* c)
 
 void EqcInfo::initializeConstant(Node c)
 {
-  for (size_t i=0; i<2; i++)
+  for (size_t i = 0; i < 2; i++)
   {
-    CExp& ce = i==0 ? d_suffixC : d_prefixC;
+    CExp& ce = i == 0 ? d_suffixC : d_prefixC;
     ce.d_t = c;
     ce.d_c = c;
   }
@@ -53,14 +51,14 @@ void EqcInfo::initializeConstant(Node c)
 
 Node EqcInfo::addEndpointConst(TNode t, TNode c, TNode exp, bool isSuf)
 {
-  Assert (!t.isNull());
+  Assert(!t.isNull());
   // check conflict
   CExp& cprev = isSuf ? d_suffixC : d_prefixC;
   TNode prevT = cprev.d_t.get();
   if (!prevT.isNull())
   {
-    Trace("strings-eager-pconf-debug") << "Check conflict " << prevT << ", " << t
-                                       << " post=" << isSuf << std::endl;
+    Trace("strings-eager-pconf-debug") << "Check conflict " << prevT << ", "
+                                       << t << " post=" << isSuf << std::endl;
     TNode prevC = cprev.d_c.get();
     Assert(!prevC.isNull());
     Assert(prevC.isConst());
@@ -162,7 +160,6 @@ Node EqcInfo::checkEqualityConflict(TNode t, TNode c, TNode exp)
   {
     // conflict
     std::vector<Node> confExp;
-    
   }
   return Node::null();
 }

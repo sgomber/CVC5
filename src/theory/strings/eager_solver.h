@@ -57,7 +57,7 @@ class EagerSolver
    * where r is representative of t.
    */
   void addEndpointsToEqcInfo(Node r, Node t, Node concat, Node exp);
-  /** 
+  /**
    * Get best content for term f(t1, ..., tn).
    */
   Node getBestContent(Node f, std::vector<Node>& exp);
