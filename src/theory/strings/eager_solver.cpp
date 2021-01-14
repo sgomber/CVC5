@@ -68,7 +68,6 @@ void EagerSolver::eqNotifyNewClass(TNode t)
     return;
   }
 
-  std::vector<Node> uexp;
   if (d_mode == options::StringsEagerSolverMode::FULL)
   {
     if (isFunctionKind(k))
@@ -85,7 +84,7 @@ void EagerSolver::eqNotifyNewClass(TNode t)
   if (k == STRING_CONCAT)
   {
     // infer prefix/suffix information
-    addEndpointsToEqcInfo(t, t, t, uexp);
+    addEndpointsToEqcInfo(t, t, t, {});
   }
 }
 
@@ -271,13 +270,14 @@ Node EagerSolver::getBestContent(TNode f, std::vector<Node>& exp)
   Assert(isFunctionKind(f.getKind()));
   // strings does not have parametrized kinds for congruence kinds
   Assert(f.getMetaKind() != metakind::PARAMETERIZED);
-  std::vector<Node> children;
+  std::vector<TNode> children;
   for (TNode fc : f)
   {
     children.push_back(getBestContentArg(fc, exp));
   }
   if (exp.empty())
   {
+    // did not change, return
     return f;
   }
   Node ret = NodeManager::currentNM()->mkNode(f.getKind(), children);
