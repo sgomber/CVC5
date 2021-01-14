@@ -77,6 +77,7 @@ class EqualityEngineNotify
    * @param t2 a term
    */
   virtual void eqNotifyMerge(TNode t1, TNode t2) = 0;
+  virtual void eqNotifyPreMerge(TNode t1, TNode t2) {}
 
   /**
    * Notifies about the disequality of two terms.

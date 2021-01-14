@@ -42,6 +42,11 @@ enum class EagerInfoType : uint32_t
 /**
  * Eager solver, which is responsible for tracking of eager information and
  * reporting conflicts to the solver state.
+ * 
+ * Checks for each equivalence class E:
+ * (1) Largest prefix is compatible (including constants),
+ * (2) Largest suffix is compatible,
+ * (3) If E contains a constant, 
  */
 class EagerSolver
 {
@@ -56,6 +61,7 @@ class EagerSolver
   void eqNotifyNewClass(TNode t);
   /** called when two equivalence classes merge */
   void eqNotifyMerge(TNode t1, TNode t2);
+  void eqNotifyPreMerge(TNode t1, TNode t2);
   /** called when two equivalence classes are made disequal */
   void eqNotifyDisequal(TNode t1, TNode t2, TNode reason);
   /** notify fact, called when a fact is asserted to theory of strings */
@@ -76,26 +82,29 @@ class EagerSolver
                              TNode t,
                              TNode concat,
                              const std::vector<Node>& exp);
+  /** Add best content */
+  bool addBestContent(TNode f, TNode r);
   /**
    * Get best content for term f(t1, ..., tn).
    */
-  Node getBestContent(Node f, std::vector<Node>& exp);
+  Node getBestContent(TNode f, std::vector<Node>& exp);
   /** Get best content for argument term */
-  Node getBestContentArg(Node t, std::vector<Node>& exp);
+  Node getBestContentArg(TNode t, std::vector<Node>& exp);
   /** Get prefix */
   // Node getPrefixRec(Node f, std::vector<Node>& exp, bool isSuf);
   /**
-   * Check whether there is a conflict with r having prefix/suffix/equals-const
-   * with c, recursively.
+   * Called when equivalence class r is merging into constant c.
    */
   Node processConstantMerges(Node r, Node c);
+  /** is k a kind we are doing congruence over? */
+  bool isFunctionKind(Kind k) const;
   /** The null node */
   Node d_null;
   /** Reference to the solver state */
   SolverState& d_state;
   /** Mode of the solver */
   options::StringsEagerSolverMode d_mode;
-  /** Terms we have processed merging into an equivalence class */
+  /** Terms that evaluate to the constant in their equivalence class */
   NodeSet d_mcTerms;
 };
 

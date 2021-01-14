@@ -55,39 +55,44 @@ void EagerSolver::eqNotifyNewClass(TNode t)
   {
     return;
   }
-
+  // constant strings always initialize the equivalence class info
+  if (t.isConst())
+  {
+    if (t.getType().isStringLike())
+    {
+      EqcInfo* ei = d_state.getOrMakeEqcInfo(t);
+      ei->initializeConstant(t);
+    }
+    return;
+  }
+  
   std::vector<Node> uexp;
-  Node u = t;
   if (d_mode == options::StringsEagerSolverMode::FULL)
   {
-    u = getBestContent(t, uexp);
-    if (t != u)
+    if (isFunctionKind(k))
     {
-      if (u.isConst())
+      // add the best known content of t to the equivalence class info of t
+      if (addBestContent(t, t))
       {
-        // TODO: add the equality to constant and return
+        // added to equivalence class in the above call
+        return;
       }
     }
   }
 
-  // now, initialize the equivalence class info
-  if (u.isConst())
-  {
-    if (u.getType().isStringLike())
-    {
-      Assert(t == u);
-      EqcInfo* ei = d_state.getOrMakeEqcInfo(u);
-      ei->initializeConstant(u);
-    }
-  }
-  else if (k == STRING_CONCAT)
+  if (k == STRING_CONCAT)
   {
     // infer prefix/suffix information
-    addEndpointsToEqcInfo(t, t, u, uexp);
+    addEndpointsToEqcInfo(t, t, t, uexp);
   }
 }
 
 void EagerSolver::eqNotifyMerge(TNode t1, TNode t2)
+{
+  // nothing
+}
+
+void EagerSolver::eqNotifyPreMerge(TNode t1, TNode t2)
 {
   EqcInfo* e2 = d_state.getOrMakeEqcInfo(t2, false);
   EqcInfo* e1 = nullptr;
@@ -132,15 +137,19 @@ void EagerSolver::eqNotifyMerge(TNode t1, TNode t2)
       // constant merges should already be in conflict
       Assert(e2 == nullptr || e2->isConst().isNull());
       // check whether there are conflicts
-      processConstantMerges(t1, c1);
+      processConstantMerges(t2, c1);
       // check the use lists
       eq::EqualityEngine* ee = d_state.getEqualityEngine();
       std::set<TNode> useList;
-      ee->getUseListTerms(t1, useList);
-      // go back and recompute the best content for the useList terms
+      ee->getUseListTerms(t2, useList);
+      // go back and recompute the best content for the useList terms with t2
+      // as an argument
       for (TNode u : useList)
       {
         // u should contain t1 as an argument
+        Assert (isFunctionKind(u.getKind()));
+        TNode r = ee->getRepresentative(u);
+        addBestContent(u, r);
       }
     }
   }
@@ -200,6 +209,7 @@ void EagerSolver::addEndpointsToEqcInfo(TNode r,
   }
 }
 
+
 void EagerSolver::notifyFact(TNode atom,
                              bool polarity,
                              TNode fact,
@@ -216,17 +226,36 @@ void EagerSolver::notifyFact(TNode atom,
   }
 }
 
-Node EagerSolver::getBestContent(Node f, std::vector<Node>& exp)
+bool EagerSolver::addBestContent(TNode f, TNode r)
 {
-  Kind fk = f.getKind();
-  if (!d_state.getEqualityEngine()->isFunctionKind(fk))
+  Assert (isFunctionKind(f.getKind()));
+  std::vector<Node> exp;
+  Node fc = getBestContent(f, exp);
+  if (fc==f)
   {
-    return f;
+    // did not change, nothing to do
+    return false;
   }
+  
+  // we inferred equality to a constant
+  if (fc.isConst())
+  {
+    // TODO: infer equality
+  }
+  else if (fc.getKind()==STRING_CONCAT)
+  {
+    addEndpointsToEqcInfo(r, f, fc, exp);
+  }
+  return true;
+}
+
+Node EagerSolver::getBestContent(TNode f, std::vector<Node>& exp)
+{
+  Assert (isFunctionKind(f.getKind()));
   // strings does not have parametrized kinds for congruence kinds
   Assert(f.getMetaKind() != metakind::PARAMETERIZED);
   std::vector<Node> children;
-  for (const Node& fc : f)
+  for (TNode fc : f)
   {
     children.push_back(getBestContentArg(fc, exp));
   }
@@ -234,12 +263,12 @@ Node EagerSolver::getBestContent(Node f, std::vector<Node>& exp)
   {
     return f;
   }
-  Node ret = NodeManager::currentNM()->mkNode(fk, children);
+  Node ret = NodeManager::currentNM()->mkNode(f.getKind(), children);
   ret = Rewriter::rewrite(ret);
   return ret;
 }
 
-Node EagerSolver::getBestContentArg(Node t, std::vector<Node>& exp)
+Node EagerSolver::getBestContentArg(TNode t, std::vector<Node>& exp)
 {
   if (t.isConst())
   {
@@ -289,15 +318,36 @@ Node EagerSolver::processConstantMerges(Node r, Node c)
   while (!eqci.isFinished())
   {
     TNode t = *eqci;
-    if (d_mcTerms.find(t) != d_mcTerms.end())
+    // skip kinds we are not doing congruence over
+    if (!isFunctionKind(t.getKind()))
     {
-      // already processed
       continue;
     }
+    if (d_mcTerms.find(t) != d_mcTerms.end())
+    {
+      // already evaluates to the constant?
+      continue;
+    }
+    // process
+    std::vector<Node> exp;
+    Node tc = getBestContent(t, exp);
+    if (tc==c)
+    {
+      // it is confirmed to be equal to the constant in this equivalence class
+      d_mcTerms.insert(tc);
+      continue;
+    }
+    // FIXME otherwise, check for conflict?
+  
     ++eqci;
   }
 
   return Node::null();
+}
+
+bool EagerSolver::isFunctionKind(Kind k) const
+{
+  return d_state.getEqualityEngine()->isFunctionKind(k);
 }
 
 }  // namespace strings

@@ -617,6 +617,7 @@ bool EqualityEngine::merge(EqualityNode& class1, EqualityNode& class2, std::vect
   if (d_performNotify && class1Id == cc1.getFind() && class2Id == cc2.getFind())
   {
     doNotify = true;
+    d_notify.eqNotifyPreMerge(n1, n2);
   }
 
   // Check for constant merges
