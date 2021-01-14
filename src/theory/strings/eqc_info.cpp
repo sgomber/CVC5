@@ -49,7 +49,10 @@ void EqcInfo::initializeConstant(Node c)
   }
 }
 
-Node EqcInfo::addEndpointConst(TNode t, TNode c, const std::vector<Node>& exp, bool isSuf)
+Node EqcInfo::addEndpointConst(TNode t,
+                               TNode c,
+                               const std::vector<Node>& exp,
+                               bool isSuf)
 {
   Assert(!t.isNull());
   // check conflict

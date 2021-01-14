@@ -123,7 +123,10 @@ void EagerSolver::eqNotifyDisequal(TNode t1, TNode t2, TNode reason)
   }
 }
 
-void EagerSolver::addEndpointsToEqcInfo(TNode r, TNode t, TNode concat, const std::vector<Node>& exp)
+void EagerSolver::addEndpointsToEqcInfo(TNode r,
+                                        TNode t,
+                                        TNode concat,
+                                        const std::vector<Node>& exp)
 {
   Assert(concat.getKind() == STRING_CONCAT
          || concat.getKind() == REGEXP_CONCAT);
@@ -164,7 +167,9 @@ void EagerSolver::notifyFact(TNode atom,
   }
 }
 
-Node EagerSolver::getBestContent(Node f, std::vector<Node>& exp, EagerInfoType et)
+Node EagerSolver::getBestContent(Node f,
+                                 std::vector<Node>& exp,
+                                 EagerInfoType et)
 {
   Kind fk = f.getKind();
   if (!d_state.getEqualityEngine()->isFunctionKind(fk))
@@ -203,10 +208,9 @@ Node EagerSolver::getBestContentArg(Node t, std::vector<Node>& exp)
   return t;
 }
 
-
-Node EagerSolver::checkConflict(Node r, Node c, EagerInfoType et) 
-{ 
-  return Node::null(); 
+Node EagerSolver::checkConflict(Node r, Node c, EagerInfoType et)
+{
+  return Node::null();
 }
 
 }  // namespace strings

@@ -37,7 +37,7 @@ enum class EagerInfoType : uint32_t
   // we have inferred a constant suffix
   SUFFIX
 };
-  
+
 /**
  * Eager solver, which is responsible for tracking of eager information and
  * reporting conflicts to the solver state.
@@ -67,7 +67,10 @@ class EagerSolver
    *   t := z, concat := (re.++ u w), exp := (str.in.re z (re.++ u w))
    * where r is representative of t.
    */
-  void addEndpointsToEqcInfo(TNode r, TNode t, TNode concat, const std::vector<Node>& exp);
+  void addEndpointsToEqcInfo(TNode r,
+                             TNode t,
+                             TNode concat,
+                             const std::vector<Node>& exp);
   /**
    * Get best content for term f(t1, ..., tn).
    */

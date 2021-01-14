@@ -67,7 +67,10 @@ class EqcInfo
    * If this method returns a non-null node ret, then ret is a conjunction
    * corresponding to a conflict that holds in the current context.
    */
-  Node addEndpointConst(TNode t, TNode c, const std::vector<Node>& exp, bool isSuf);
+  Node addEndpointConst(TNode t,
+                        TNode c,
+                        const std::vector<Node>& exp,
+                        bool isSuf);
   /** Same as above, but with CExp data structure */
   Node addEndpointConst(CExp& ce, bool isSuf);
   /**
