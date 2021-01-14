@@ -23,7 +23,9 @@ namespace CVC4 {
 namespace theory {
 namespace strings {
 
-EagerSolver::EagerSolver(context::Context* c, SolverState& state, options::StringsEagerSolverMode m)
+EagerSolver::EagerSolver(context::Context* c,
+                         SolverState& state,
+                         options::StringsEagerSolverMode m)
     : d_state(state), d_mode(m), d_mcTerms(c)
 {
 }
@@ -254,7 +256,7 @@ Node EagerSolver::getBestContentArg(Node t, std::vector<Node>& exp)
   TNode tconst = e->isConst();
   if (!tconst.isNull())
   {
-    Assert (t!=tconst);
+    Assert(t != tconst);
     exp.push_back(t.eqNode(tconst));
     return tconst;
   }
@@ -280,21 +282,21 @@ Node EagerSolver::getPrefixRec(Node t, std::vector<Node>& exp, bool isSuf)
 Node EagerSolver::processConstantMerges(Node r, Node c)
 {
   eq::EqualityEngine* ee = d_state.getEqualityEngine();
-  Assert (ee->getRepresentative(r)==r);
+  Assert(ee->getRepresentative(r) == r);
   // iterate over the equivalence class and check if we infer new constant
   // terms, or otherwise infer constant
-  eq::EqClassIterator eqci =
-      eq::EqClassIterator(r, ee);
-  while( !eqci.isFinished() ) {
+  eq::EqClassIterator eqci = eq::EqClassIterator(r, ee);
+  while (!eqci.isFinished())
+  {
     TNode t = *eqci;
-    if (d_mcTerms.find(t)!=d_mcTerms.end())
+    if (d_mcTerms.find(t) != d_mcTerms.end())
     {
       // already processed
       continue;
     }
     ++eqci;
   }
-  
+
   return Node::null();
 }
 
