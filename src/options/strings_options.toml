@@ -230,3 +230,21 @@ header = "options/strings_options.h"
   type       = "bool"
   default    = "true"
   help       = "perform eager context-dependent evaluation for applications of string kinds"
+
+[[option]]
+  name       = "stringsEagerSlvMode"
+  category   = "expert"
+  long       = "strings-eager-slv=MODE"
+  type       = "StringsEagerSolverMode"
+  default    = "SIMPLE"
+  help       = "determines effort used for eager solver"
+  help_mode = "String eager solver modes."
+[[option.mode.NONE]]
+  name = "none"
+  help = "Do not use eager reasoning in strings."
+[[option.mode.SIMPLE]]
+  name = "simple"
+  help = "Do simple eager reasoning about prefixes and suffixes."
+[[option.mode.FULL]]
+  name = "full"
+  help = "Do simple eager reasoning about prefixes and suffixes recursively"
