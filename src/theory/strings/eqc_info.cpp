@@ -16,6 +16,7 @@
 
 #include "theory/strings/theory_strings_utils.h"
 #include "theory/strings/word.h"
+#include "theory/rewriter.h"
 
 using namespace std;
 using namespace CVC4::context;
@@ -24,6 +25,11 @@ using namespace CVC4::kind;
 namespace CVC4 {
 namespace theory {
 namespace strings {
+  
+CExp::CExp(context::Context* c) : d_t(c), d_c(c), d_exp(c)
+{
+}
+bool CExp::isNull() const { return d_t.get().isNull(); }
 
 EqcInfo::EqcInfo(context::Context* c)
     : d_lengthTerm(c),
@@ -35,35 +41,43 @@ EqcInfo::EqcInfo(context::Context* c)
 {
 }
 
-Node EqcInfo::addEndpointConst(Node t, Node c, bool isSuf)
+void EqcInfo::initializeConstant(Node c)
 {
-  // check conflict
-  Node prev = isSuf ? d_suffixC : d_prefixC;
-  if (!prev.isNull())
+  for (size_t i=0; i<2; i++)
   {
-    Trace("strings-eager-pconf-debug") << "Check conflict " << prev << ", " << t
+    CExp& ce = i==0 ? d_suffixC : d_prefixC;
+    ce.d_t = c;
+    ce.d_c = c;
+  }
+}
+
+Node EqcInfo::addEndpointConst(TNode t, TNode c, TNode exp, bool isSuf)
+{
+  Assert (!t.isNull());
+  // check conflict
+  CExp& cprev = isSuf ? d_suffixC : d_prefixC;
+  TNode prevT = cprev.d_t.get();
+  if (!prevT.isNull())
+  {
+    Trace("strings-eager-pconf-debug") << "Check conflict " << prevT << ", " << t
                                        << " post=" << isSuf << std::endl;
-    Node prevC = utils::getConstantEndpoint(prev, isSuf);
+    TNode prevC = cprev.d_c.get();
     Assert(!prevC.isNull());
     Assert(prevC.isConst());
-    if (c.isNull())
-    {
-      c = utils::getConstantEndpoint(t, isSuf);
-      Assert(!c.isNull());
-    }
+    Assert(!c.isNull());
     Assert(c.isConst());
     bool conflict = false;
     // if the constant prefixes are different
     if (c != prevC)
     {
       // conflicts between constants should be handled by equality engine
-      Assert(!t.isConst() || !prev.isConst());
+      Assert(!t.isConst() || !prevT.isConst());
       Trace("strings-eager-pconf-debug")
           << "Check conflict constants " << prevC << ", " << c << std::endl;
       size_t pvs = Word::getLength(prevC);
       size_t cvs = Word::getLength(c);
       if (pvs == cvs || (pvs > cvs && t.isConst())
-          || (cvs > pvs && prev.isConst()))
+          || (cvs > pvs && prevT.isConst()))
       {
         // If equal length, cannot be equal due to node check above.
         // If one is fully constant and has less length than the other, then the
@@ -72,8 +86,8 @@ Node EqcInfo::addEndpointConst(Node t, Node c, bool isSuf)
       }
       else
       {
-        Node larges = pvs > cvs ? prevC : c;
-        Node smalls = pvs > cvs ? c : prevC;
+        TNode larges = pvs > cvs ? prevC : c;
+        TNode smalls = pvs > cvs ? c : prevC;
         if (isSuf)
         {
           conflict = !Word::hasSuffix(larges, smalls);
@@ -83,7 +97,7 @@ Node EqcInfo::addEndpointConst(Node t, Node c, bool isSuf)
           conflict = !Word::hasPrefix(larges, smalls);
         }
       }
-      if (!conflict && (pvs > cvs || prev.isConst()))
+      if (!conflict && (pvs > cvs || prevT.isConst()))
       {
         // current is subsumed, either shorter prefix or the other is a full
         // constant
@@ -99,40 +113,56 @@ Node EqcInfo::addEndpointConst(Node t, Node c, bool isSuf)
     {
       Trace("strings-eager-pconf")
           << "Conflict for " << prevC << ", " << c << std::endl;
-      std::vector<Node> ccs;
-      Node r[2];
-      for (unsigned i = 0; i < 2; i++)
+      std::vector<Node> confExp;
+      if (!exp.isNull())
       {
-        Node tp = i == 0 ? t : prev;
-        if (tp.getKind() == STRING_IN_REGEXP)
-        {
-          ccs.push_back(tp);
-          r[i] = tp[0];
-        }
-        else
-        {
-          r[i] = tp;
-        }
+        confExp.push_back(exp);
       }
-      if (r[0] != r[1])
+      if (!cprev.d_exp.get().isNull())
       {
-        ccs.push_back(r[0].eqNode(r[1]));
+        confExp.push_back(cprev.d_exp.get());
       }
-      Assert(!ccs.empty());
-      Node ret =
-          ccs.size() == 1 ? ccs[0] : NodeManager::currentNM()->mkNode(AND, ccs);
+      if (t != prevT)
+      {
+        confExp.push_back(t.eqNode(prevT));
+      }
+      Assert(!confExp.empty());
+      // exp ^ prev.exp ^ t = prev.t
+      Node ret = NodeManager::currentNM()->mkAnd(confExp);
       Trace("strings-eager-pconf")
           << "String: eager prefix conflict: " << ret << std::endl;
       return ret;
     }
   }
-  if (isSuf)
+  // store
+  cprev.d_t = t;
+  cprev.d_c = c;
+  cprev.d_exp = exp;
+  return Node::null();
+}
+
+Node EqcInfo::addEndpointConst(CExp& ce, bool isSuf)
+{
+  if (ce.isNull())
   {
-    d_suffixC = t;
+    return Node::null();
   }
-  else
+  return addEndpointConst(ce.d_t.get(), ce.d_c.get(), ce.d_exp.get(), isSuf);
+}
+
+Node EqcInfo::checkEqualityConflict(TNode t, TNode c, TNode exp)
+{
+  Node prevT = d_prefixC.d_t;
+  if (!prevT.isConst())
   {
-    d_prefixC = t;
+    return Node::null();
+  }
+  Node eq = Rewriter::rewrite(prevT.eqNode(c));
+  if (eq.isConst() && !eq.getConst<bool>())
+  {
+    // conflict
+    std::vector<Node> confExp;
+    
   }
   return Node::null();
 }

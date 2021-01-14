@@ -48,13 +48,12 @@ void EagerSolver::eqNotifyNewClass(TNode t)
     if (t.getType().isStringLike())
     {
       EqcInfo* ei = d_state.getOrMakeEqcInfo(t);
-      ei->d_prefixC = t;
-      ei->d_suffixC = t;
+      ei->initializeConstant(t);
     }
   }
   else if (k == STRING_CONCAT)
   {
-    addEndpointsToEqcInfo(t, t, t);
+    addEndpointsToEqcInfo(t, t, t, d_null);
   }
 }
 
@@ -76,15 +75,15 @@ void EagerSolver::eqNotifyMerge(TNode t1, TNode t2)
   {
     e1->d_codeTerm.set(e2->d_codeTerm);
   }
-  if (!e2->d_prefixC.get().isNull())
+  if (!e2->d_prefixC.isNull())
   {
     d_state.setPendingPrefixConflictWhen(
-        e1->addEndpointConst(e2->d_prefixC, Node::null(), false));
+        e1->addEndpointConst(e2->d_prefixC, false));
   }
-  if (!e2->d_suffixC.get().isNull())
+  if (!e2->d_suffixC.isNull())
   {
     d_state.setPendingPrefixConflictWhen(
-        e1->addEndpointConst(e2->d_suffixC, Node::null(), true));
+        e1->addEndpointConst(e2->d_suffixC, true));
   }
   if (e2->d_cardinalityLemK.get() > e1->d_cardinalityLemK.get())
   {
@@ -106,26 +105,26 @@ void EagerSolver::eqNotifyDisequal(TNode t1, TNode t2, TNode reason)
   }
 }
 
-void EagerSolver::addEndpointsToEqcInfo(Node t, Node concat, Node eqc)
+void EagerSolver::addEndpointsToEqcInfo(Node r, Node t, Node concat, Node exp)
 {
   Assert(concat.getKind() == STRING_CONCAT
          || concat.getKind() == REGEXP_CONCAT);
   EqcInfo* ei = nullptr;
-  // check each side
-  for (unsigned r = 0; r < 2; r++)
+  // check each side of the concat term
+  for (unsigned i = 0; i < 2; i++)
   {
-    unsigned index = r == 0 ? 0 : concat.getNumChildren() - 1;
+    unsigned index = i == 0 ? 0 : concat.getNumChildren() - 1;
     Node c = utils::getConstantComponent(concat[index]);
     if (!c.isNull())
     {
       if (ei == nullptr)
       {
-        ei = d_state.getOrMakeEqcInfo(eqc);
+        ei = d_state.getOrMakeEqcInfo(r);
       }
       Trace("strings-eager-pconf-debug")
           << "New term: " << concat << " for " << t << " with prefix " << c
-          << " (" << (r == 1) << ")" << std::endl;
-      d_state.setPendingPrefixConflictWhen(ei->addEndpointConst(t, c, r == 1));
+          << " (" << (i == 1) << ")" << std::endl;
+      d_state.setPendingPrefixConflictWhen(ei->addEndpointConst(t, c, exp, i == 1));
     }
   }
 }
@@ -141,9 +140,20 @@ void EagerSolver::notifyFact(TNode atom,
     {
       eq::EqualityEngine* ee = d_state.getEqualityEngine();
       Node eqc = ee->getRepresentative(atom[0]);
-      addEndpointsToEqcInfo(atom, atom[1], eqc);
+      addEndpointsToEqcInfo(eqc, atom[0], atom[1], atom);
     }
   }
+}
+
+Node EagerSolver::getBestContent(Node f, std::vector<Node>& exp)
+{
+  // TODO
+  return f;
+}
+
+Node EagerSolver::getBestContentArg(Node t, std::vector<Node>& exp)
+{
+  return t;
 }
 
 }  // namespace strings

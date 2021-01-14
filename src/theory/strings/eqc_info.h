@@ -27,6 +27,17 @@ namespace CVC4 {
 namespace theory {
 namespace strings {
 
+/** Constant explanation data */
+class CExp
+{
+public:
+  CExp(context::Context* c);
+  context::CDO<Node> d_t;
+  context::CDO<Node> d_c;
+  context::CDO<Node> d_exp;
+  bool isNull() const;
+};
+  
 /**
  * SAT-context-dependent information about an equivalence class. This
  * information is updated eagerly as assertions are processed by the theory of
@@ -37,6 +48,8 @@ class EqcInfo
  public:
   EqcInfo(context::Context* c);
   ~EqcInfo() {}
+  /** initialize constant */
+  void initializeConstant(Node c);
   /** add prefix constant
    *
    * This informs this equivalence class info that a term t in its
@@ -47,7 +60,12 @@ class EqcInfo
    * If this method returns a non-null node ret, then ret is a conjunction
    * corresponding to a conflict that holds in the current context.
    */
-  Node addEndpointConst(Node t, Node c, bool isSuf);
+  Node addEndpointConst(TNode t, TNode c, TNode exp, bool isSuf);
+  Node addEndpointConst(CExp& ce, bool isSuf);
+  /**
+   * Check equality conflict
+   */
+  Node checkEqualityConflict(TNode t, TNode c, TNode exp);
   /**
    * If non-null, this is a term x from this eq class such that str.len( x )
    * occurs as a term in this SAT context.
@@ -69,9 +87,9 @@ class EqcInfo
    * equivalence class and R is a regular expression of the form
    * (str.to.re "ABC") or (re.++ (str.to.re "ABC") ...).
    */
-  context::CDO<Node> d_prefixC;
+  CExp d_prefixC;
   /** same as above, for suffix. */
-  context::CDO<Node> d_suffixC;
+  CExp d_suffixC;
 };
 
 }  // namespace strings

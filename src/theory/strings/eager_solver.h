@@ -48,15 +48,23 @@ class EagerSolver
  private:
   /** add endpoints to eqc info
    *
-   * This method is called when term t is the explanation for why equivalence
-   * class eqc may have a constant endpoint due to a concatentation term concat.
-   * For example, we may call this method on:
-   *   t := (str.++ x y), concat := (str.++ x y), eqc
-   * for some eqc that is currently equal to t. Another example is:
-   *   t := (str.in.re z (re.++ r s)), concat := (re.++ r s), eqc
-   * for some eqc that is currently equal to z.
+   * This method is called when term exp is the explanation for why equivalence
+   * class r containing t may have a constant endpoint due to a concatentation
+   * term concat. For example, we may call this method on:
+   *   t := (str.++ x y), concat := (str.++ x y), exp := true
+   * where r is representative of t. Another example is:
+   *   t := z, concat := (re.++ u w), exp := (str.in.re z (re.++ u w))
+   * where r is representative of t.
    */
-  void addEndpointsToEqcInfo(Node t, Node concat, Node eqc);
+  void addEndpointsToEqcInfo(Node r, Node t, Node concat, Node exp);
+  /** 
+   * Get best content for term f(t1, ..., tn).
+   */
+  Node getBestContent(Node f, std::vector<Node>& exp);
+  /** Get best content for argument term */
+  Node getBestContentArg(Node t, std::vector<Node>& exp);
+  /** The null node */
+  Node d_null;
   /** Reference to the solver state */
   SolverState& d_state;
 };
