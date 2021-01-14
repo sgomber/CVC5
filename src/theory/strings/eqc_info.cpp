@@ -128,7 +128,7 @@ Node EqcInfo::addEndpointConst(TNode t, TNode c, TNode exp, bool isSuf)
       // exp ^ prev.exp ^ t = prev.t
       Node ret = NodeManager::currentNM()->mkAnd(confExp);
       Trace("strings-eager-pconf")
-          << "String: eager prefix conflict: " << ret << std::endl;
+          << "String: eager prefix conflict (via prefix): " << ret << std::endl;
       return ret;
     }
   }
@@ -148,9 +148,12 @@ Node EqcInfo::addEndpointConst(CExp& ce, bool isSuf)
   return addEndpointConst(ce.d_t.get(), ce.d_c.get(), ce.d_exp.get(), isSuf);
 }
 
-Node EqcInfo::checkEqualityConflict(TNode t, TNode c, TNode exp)
+/*
+Node EqcInfo::checkEqualityConflict(TNode t, TNode c, const std::vector<Node>& exp)
 {
   Node prevT = d_prefixC.d_t;
+  // assumes that if the equivalence class is inferred to be a constant, then
+  // that constant is in this equivalence class
   if (!prevT.isConst())
   {
     return Node::null();
@@ -160,9 +163,17 @@ Node EqcInfo::checkEqualityConflict(TNode t, TNode c, TNode exp)
   {
     // conflict
     std::vector<Node> confExp;
+    confExp.insert(confExp.end(), exp.begin(), exp.end());
+    confExp.push_back(t.eqNode(prevT));
+    // exp ^ t = prev.t
+    Node ret = NodeManager::currentNM()->mkAnd(confExp);
+    Trace("strings-eager-pconf")
+        << "String: eager prefix conflict (via equality rewrite): " << ret << std::endl;
+    return ret;
   }
   return Node::null();
 }
+*/
 
 }  // namespace strings
 }  // namespace theory

@@ -15,6 +15,7 @@
 #include "theory/strings/eager_solver.h"
 
 #include "theory/strings/theory_strings_utils.h"
+#include "theory/rewriter.h"
 
 using namespace CVC4::kind;
 
@@ -22,7 +23,7 @@ namespace CVC4 {
 namespace theory {
 namespace strings {
 
-EagerSolver::EagerSolver(SolverState& state) : d_state(state) {}
+EagerSolver::EagerSolver(SolverState& state, options::StringsEagerSolverMode m) : d_state(state), d_mode(m) {}
 
 EagerSolver::~EagerSolver() {}
 
@@ -42,8 +43,15 @@ void EagerSolver::eqNotifyNewClass(TNode t)
     {
       ei->d_codeTerm = t[0];
     }
+    return;
   }
-  else if (t.isConst())
+  // if we aren't doing eager techniques, return now
+  if (d_mode==options::StringsEagerSolverMode::NONE)
+  {
+    return;
+  }
+  
+  if (t.isConst())
   {
     if (t.getType().isStringLike())
     {
@@ -75,6 +83,22 @@ void EagerSolver::eqNotifyMerge(TNode t1, TNode t2)
   {
     e1->d_codeTerm.set(e2->d_codeTerm);
   }
+  if (e2->d_cardinalityLemK.get() > e1->d_cardinalityLemK.get())
+  {
+    e1->d_cardinalityLemK.set(e2->d_cardinalityLemK);
+  }
+  if (!e2->d_normalizedLength.get().isNull())
+  {
+    e1->d_normalizedLength.set(e2->d_normalizedLength);
+  }
+
+  // if we aren't doing eager techniques, return now
+  if (d_mode==options::StringsEagerSolverMode::NONE)
+  {
+    return;
+  }
+  
+  // eager prefix conflicts
   if (!e2->d_prefixC.isNull())
   {
     d_state.setPendingPrefixConflictWhen(
@@ -84,14 +108,6 @@ void EagerSolver::eqNotifyMerge(TNode t1, TNode t2)
   {
     d_state.setPendingPrefixConflictWhen(
         e1->addEndpointConst(e2->d_suffixC, true));
-  }
-  if (e2->d_cardinalityLemK.get() > e1->d_cardinalityLemK.get())
-  {
-    e1->d_cardinalityLemK.set(e2->d_cardinalityLemK);
-  }
-  if (!e2->d_normalizedLength.get().isNull())
-  {
-    e1->d_normalizedLength.set(e2->d_normalizedLength);
   }
 }
 
@@ -148,13 +164,47 @@ void EagerSolver::notifyFact(TNode atom,
 
 Node EagerSolver::getBestContent(Node f, std::vector<Node>& exp)
 {
-  // TODO
-  return f;
+  Kind fk = f.getKind();
+  if (!d_state.getEqualityEngine()->isFunctionKind(fk))
+  {
+    return f;
+  }
+  // strings does not have parametrized kinds for congruence kinds
+  Assert (f.getMetaKind() != metakind::PARAMETERIZED);
+  std::vector<Node> children;
+  for (const Node& fc : f)
+  {
+    children.push_back(getBestContentArg(fc,exp));
+  }
+  if (exp.empty())
+  {
+    return f;
+  }
+  Node ret = NodeManager::currentNM()->mkNode(fk, children);
+  ret = Rewriter::rewrite(ret);
+  return ret;
 }
 
 Node EagerSolver::getBestContentArg(Node t, std::vector<Node>& exp)
 {
+  eq::EqualityEngine* ee = d_state.getEqualityEngine();
+  Node r = ee->getRepresentative(t);
+  EqcInfo* e = d_state.getOrMakeEqcInfo(r, false);
+  if (e==nullptr)
+  {
+    return t;
+  }
+  // 
+  //Node rt = e->d_prefixC.d_t.get();
+  
+  
+  // TODO
   return t;
+}
+
+Node EagerSolver::checkConflict(Node t, Node c)
+{
+  return Node::null();
 }
 
 }  // namespace strings

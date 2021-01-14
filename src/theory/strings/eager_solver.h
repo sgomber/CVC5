@@ -22,6 +22,7 @@
 #include "expr/node.h"
 #include "theory/strings/eqc_info.h"
 #include "theory/strings/solver_state.h"
+#include "options/strings_options.h"
 
 namespace CVC4 {
 namespace theory {
@@ -34,7 +35,7 @@ namespace strings {
 class EagerSolver
 {
  public:
-  EagerSolver(SolverState& state);
+  EagerSolver(SolverState& state, options::StringsEagerSolverMode m);
   ~EagerSolver();
   /** called when a new equivalence class is created */
   void eqNotifyNewClass(TNode t);
@@ -63,10 +64,17 @@ class EagerSolver
   Node getBestContent(Node f, std::vector<Node>& exp);
   /** Get best content for argument term */
   Node getBestContentArg(Node t, std::vector<Node>& exp);
+  /** 
+   * Check whether there is a conflict with t having prefix/suffix/containment
+   * in c, recursively.
+   */
+  Node checkConflict(Node t, Node c);
   /** The null node */
   Node d_null;
   /** Reference to the solver state */
   SolverState& d_state;
+  /** Mode of the solver */
+  options::StringsEagerSolverMode d_mode;
 };
 
 }  // namespace strings
