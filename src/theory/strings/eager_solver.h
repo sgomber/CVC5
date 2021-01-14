@@ -42,11 +42,11 @@ enum class EagerInfoType : uint32_t
 /**
  * Eager solver, which is responsible for tracking of eager information and
  * reporting conflicts to the solver state.
- * 
+ *
  * Checks for each equivalence class E:
  * (1) Largest prefix is compatible (including constants),
  * (2) Largest suffix is compatible,
- * (3) If E contains a constant, 
+ * (3) If E contains a constant,
  */
 class EagerSolver
 {

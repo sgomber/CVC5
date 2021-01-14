@@ -165,7 +165,7 @@ class TheoryStrings : public Theory {
                        << std::endl;
       d_eagerSolver.eqNotifyMerge(t1, t2);
     }
-    void eqNotifyPreMerge(TNode t1, TNode t2) override 
+    void eqNotifyPreMerge(TNode t1, TNode t2) override
     {
       d_eagerSolver.eqNotifyPreMerge(t1, t2);
     }

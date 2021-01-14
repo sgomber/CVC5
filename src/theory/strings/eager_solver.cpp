@@ -65,7 +65,7 @@ void EagerSolver::eqNotifyNewClass(TNode t)
     }
     return;
   }
-  
+
   std::vector<Node> uexp;
   if (d_mode == options::StringsEagerSolverMode::FULL)
   {
@@ -147,7 +147,7 @@ void EagerSolver::eqNotifyPreMerge(TNode t1, TNode t2)
       for (TNode u : useList)
       {
         // u should contain t1 as an argument
-        Assert (isFunctionKind(u.getKind()));
+        Assert(isFunctionKind(u.getKind()));
         TNode r = ee->getRepresentative(u);
         addBestContent(u, r);
       }
@@ -209,7 +209,6 @@ void EagerSolver::addEndpointsToEqcInfo(TNode r,
   }
 }
 
-
 void EagerSolver::notifyFact(TNode atom,
                              bool polarity,
                              TNode fact,
@@ -228,21 +227,21 @@ void EagerSolver::notifyFact(TNode atom,
 
 bool EagerSolver::addBestContent(TNode f, TNode r)
 {
-  Assert (isFunctionKind(f.getKind()));
+  Assert(isFunctionKind(f.getKind()));
   std::vector<Node> exp;
   Node fc = getBestContent(f, exp);
-  if (fc==f)
+  if (fc == f)
   {
     // did not change, nothing to do
     return false;
   }
-  
+
   // we inferred equality to a constant
   if (fc.isConst())
   {
     // TODO: infer equality
   }
-  else if (fc.getKind()==STRING_CONCAT)
+  else if (fc.getKind() == STRING_CONCAT)
   {
     addEndpointsToEqcInfo(r, f, fc, exp);
   }
@@ -251,7 +250,7 @@ bool EagerSolver::addBestContent(TNode f, TNode r)
 
 Node EagerSolver::getBestContent(TNode f, std::vector<Node>& exp)
 {
-  Assert (isFunctionKind(f.getKind()));
+  Assert(isFunctionKind(f.getKind()));
   // strings does not have parametrized kinds for congruence kinds
   Assert(f.getMetaKind() != metakind::PARAMETERIZED);
   std::vector<Node> children;
@@ -331,14 +330,14 @@ Node EagerSolver::processConstantMerges(Node r, Node c)
     // process
     std::vector<Node> exp;
     Node tc = getBestContent(t, exp);
-    if (tc==c)
+    if (tc == c)
     {
       // it is confirmed to be equal to the constant in this equivalence class
       d_mcTerms.insert(tc);
       continue;
     }
     // FIXME otherwise, check for conflict?
-  
+
     ++eqci;
   }
 
