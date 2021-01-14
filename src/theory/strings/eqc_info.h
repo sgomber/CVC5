@@ -61,13 +61,14 @@ class EqcInfo
    *
    * This informs this equivalence class info that a term t in its
    * equivalence class has a constant prefix (if isSuf=true) or suffix
-   * (if isSuf=false). The constant c (if non-null) is the value of that
-   * constant, if it has been computed already.
+   * (if isSuf=false). The constant c is the value of that constant. Formula
+   * exp (if non-null) is the explanation for why, otherwise it is trivial.
    *
    * If this method returns a non-null node ret, then ret is a conjunction
    * corresponding to a conflict that holds in the current context.
    */
-  Node addEndpointConst(TNode t, TNode c, TNode exp, bool isSuf);
+  Node addEndpointConst(TNode t, TNode c, const std::vector<Node>& exp, bool isSuf);
+  /** Same as above, but with CExp data structure */
   Node addEndpointConst(CExp& ce, bool isSuf);
   /**
    * Check equality conflict

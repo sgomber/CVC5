@@ -28,6 +28,16 @@ namespace CVC4 {
 namespace theory {
 namespace strings {
 
+enum class EagerInfoType : uint32_t
+{
+  // we have inferred a (complete) constant
+  CONSTANT,
+  // we have inferred a constant prefix
+  PREFIX,
+  // we have inferred a constant suffix
+  SUFFIX
+};
+  
 /**
  * Eager solver, which is responsible for tracking of eager information and
  * reporting conflicts to the solver state.
@@ -57,18 +67,18 @@ class EagerSolver
    *   t := z, concat := (re.++ u w), exp := (str.in.re z (re.++ u w))
    * where r is representative of t.
    */
-  void addEndpointsToEqcInfo(Node r, Node t, Node concat, Node exp);
+  void addEndpointsToEqcInfo(TNode r, TNode t, TNode concat, const std::vector<Node>& exp);
   /**
    * Get best content for term f(t1, ..., tn).
    */
-  Node getBestContent(Node f, std::vector<Node>& exp);
+  Node getBestContent(Node f, std::vector<Node>& exp, EagerInfoType et);
   /** Get best content for argument term */
   Node getBestContentArg(Node t, std::vector<Node>& exp);
   /**
-   * Check whether there is a conflict with t having prefix/suffix/containment
-   * in c, recursively.
+   * Check whether there is a conflict with r having prefix/suffix/equals-const
+   * with c, recursively.
    */
-  Node checkConflict(Node t, Node c);
+  Node checkConflict(Node r, Node c, EagerInfoType et);
   /** The null node */
   Node d_null;
   /** Reference to the solver state */

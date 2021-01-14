@@ -49,7 +49,7 @@ void EqcInfo::initializeConstant(Node c)
   }
 }
 
-Node EqcInfo::addEndpointConst(TNode t, TNode c, TNode exp, bool isSuf)
+Node EqcInfo::addEndpointConst(TNode t, TNode c, const std::vector<Node>& exp, bool isSuf)
 {
   Assert(!t.isNull());
   // check conflict
@@ -112,10 +112,7 @@ Node EqcInfo::addEndpointConst(TNode t, TNode c, TNode exp, bool isSuf)
       Trace("strings-eager-pconf")
           << "Conflict for " << prevC << ", " << c << std::endl;
       std::vector<Node> confExp;
-      if (!exp.isNull())
-      {
-        confExp.push_back(exp);
-      }
+      confExp.insert(confExp.end(), exp.begin(), exp.end());
       if (!cprev.d_exp.get().isNull())
       {
         confExp.push_back(cprev.d_exp.get());
@@ -135,7 +132,14 @@ Node EqcInfo::addEndpointConst(TNode t, TNode c, TNode exp, bool isSuf)
   // store
   cprev.d_t = t;
   cprev.d_c = c;
-  cprev.d_exp = exp;
+  if (exp.empty())
+  {
+    cprev.d_exp = Node::null();
+  }
+  else
+  {
+    cprev.d_exp = NodeManager::currentNM()->mkAnd(exp);
+  }
   return Node::null();
 }
 
@@ -145,7 +149,13 @@ Node EqcInfo::addEndpointConst(CExp& ce, bool isSuf)
   {
     return Node::null();
   }
-  return addEndpointConst(ce.d_t.get(), ce.d_c.get(), ce.d_exp.get(), isSuf);
+  std::vector<Node> exp;
+  Node cexp = ce.d_exp.get();
+  if (!cexp.isNull())
+  {
+    exp.push_back(cexp);
+  }
+  return addEndpointConst(ce.d_t.get(), ce.d_c.get(), exp, isSuf);
 }
 
 /*
