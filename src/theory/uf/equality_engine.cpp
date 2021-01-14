@@ -2320,7 +2320,7 @@ void EqualityEngine::getUseListTerms(TNode t, std::set<TNode>& output) {
         // Get the function application
         EqualityNodeId funId = useNode.getApplicationId();
         TNode n = d_nodes[funId];
-        if (n.getKind()!=kind::EQUAL)
+        if (n.getKind() != kind::EQUAL)
         {
           output.insert(n);
         }

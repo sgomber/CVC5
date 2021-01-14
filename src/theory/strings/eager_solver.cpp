@@ -24,7 +24,7 @@ namespace theory {
 namespace strings {
 
 EagerSolver::EagerSolver(SolverState& state,
-              InferenceManager& im,
+                         InferenceManager& im,
                          options::StringsEagerSolverMode m)
     : d_state(state), d_im(im), d_mode(m), d_mcTerms(state.getSatContext())
 {
@@ -34,7 +34,8 @@ EagerSolver::~EagerSolver() {}
 
 void EagerSolver::eqNotifyNewClass(TNode t)
 {
-  Trace("strings-eager-slv-debug") << "EagerSolver::eqNotifyNewClass: " << t << std::endl;
+  Trace("strings-eager-slv-debug")
+      << "EagerSolver::eqNotifyNewClass: " << t << std::endl;
   Kind k = t.getKind();
   if (k == STRING_LENGTH || k == STRING_TO_CODE)
   {
@@ -90,7 +91,8 @@ void EagerSolver::eqNotifyNewClass(TNode t)
 
 void EagerSolver::eqNotifyMerge(TNode t1, TNode t2)
 {
-  Trace("strings-eager-slv-debug") << "EagerSolver::eqNotifyMerge: " << t1 << " " << t2 << std::endl;
+  Trace("strings-eager-slv-debug")
+      << "EagerSolver::eqNotifyMerge: " << t1 << " " << t2 << std::endl;
   if (d_useList.empty())
   {
     return;
@@ -110,7 +112,8 @@ void EagerSolver::eqNotifyMerge(TNode t1, TNode t2)
 
 void EagerSolver::eqNotifyPreMerge(TNode t1, TNode t2)
 {
-  Trace("strings-eager-slv-debug") << "EagerSolver::eqNotifyPreMerge: " << t1 << " " << t2 << std::endl;
+  Trace("strings-eager-slv-debug")
+      << "EagerSolver::eqNotifyPreMerge: " << t1 << " " << t2 << std::endl;
   EqcInfo* e2 = d_state.getOrMakeEqcInfo(t2, false);
   EqcInfo* e1 = nullptr;
   if (e2 != nullptr)
@@ -154,7 +157,8 @@ void EagerSolver::eqNotifyPreMerge(TNode t1, TNode t2)
       // constant merges should already be in conflict
       Assert(e2 == nullptr || e2->isConst().isNull());
       // check whether there are conflicts
-      d_state.setPendingPrefixConflictWhen(processConstantMerges(t2, c1), Inference::EQ_REWRITE_CONFLICT);
+      d_state.setPendingPrefixConflictWhen(processConstantMerges(t2, c1),
+                                           Inference::EQ_REWRITE_CONFLICT);
       // store the use list for t2, we will notify the parents that they have
       // an argument that is now constant.
       eq::EqualityEngine* ee = d_state.getEqualityEngine();
@@ -169,12 +173,14 @@ void EagerSolver::eqNotifyPreMerge(TNode t1, TNode t2)
     if (!e2->d_prefixC.isNull())
     {
       d_state.setPendingPrefixConflictWhen(
-          e1->addEndpointConst(e2->d_prefixC, false), Inference::PREFIX_CONFLICT);
+          e1->addEndpointConst(e2->d_prefixC, false),
+          Inference::PREFIX_CONFLICT);
     }
     if (!e2->d_suffixC.isNull())
     {
       d_state.setPendingPrefixConflictWhen(
-          e1->addEndpointConst(e2->d_suffixC, true), Inference::PREFIX_CONFLICT);
+          e1->addEndpointConst(e2->d_suffixC, true),
+          Inference::PREFIX_CONFLICT);
     }
   }
 }
@@ -321,7 +327,8 @@ Node EagerSolver::getPrefixRec(Node t, std::vector<Node>& exp, bool isSuf)
 
 Node EagerSolver::processConstantMerges(Node r, Node c)
 {
-  Trace("strings-eager-slv-debug") << "EagerSolver::processConstantMerges: " << r << " " << c << std::endl;
+  Trace("strings-eager-slv-debug")
+      << "EagerSolver::processConstantMerges: " << r << " " << c << std::endl;
   eq::EqualityEngine* ee = d_state.getEqualityEngine();
   Assert(ee->getRepresentative(r) == r);
   // iterate over the equivalence class and check if we infer new constant

@@ -23,8 +23,8 @@
 #include "expr/node.h"
 #include "options/strings_options.h"
 #include "theory/strings/eqc_info.h"
-#include "theory/strings/solver_state.h"
 #include "theory/strings/inference_manager.h"
+#include "theory/strings/solver_state.h"
 
 namespace CVC4 {
 namespace theory {
