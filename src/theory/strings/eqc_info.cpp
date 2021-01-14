@@ -28,7 +28,7 @@ namespace strings {
 
 CExp::CExp(context::Context* c) : d_t(c), d_c(c), d_exp(c) {}
 bool CExp::isNull() const { return d_t.get().isNull(); }
-TNode CExp::isConst() const 
+TNode CExp::isConst() const
 {
   TNode t = d_t.get();
   return (!t.isNull() && t.isConst()) ? t : TNode::null();

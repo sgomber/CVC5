@@ -53,7 +53,7 @@ void EagerSolver::eqNotifyNewClass(TNode t)
   {
     return;
   }
-  
+
   std::vector<Node> uexp;
   Node u = t;
   if (d_mode == options::StringsEagerSolverMode::FULL)
@@ -64,12 +64,12 @@ void EagerSolver::eqNotifyNewClass(TNode t)
       // TODO: add the equality to constant and return
     }
   }
-    
+
   if (u.isConst())
   {
     if (u.getType().isStringLike())
     {
-      Assert (t==u);
+      Assert(t == u);
       EqcInfo* ei = d_state.getOrMakeEqcInfo(u);
       ei->initializeConstant(u);
     }
@@ -180,8 +180,7 @@ void EagerSolver::notifyFact(TNode atom,
   }
 }
 
-Node EagerSolver::getBestContent(Node f,
-                                 std::vector<Node>& exp)
+Node EagerSolver::getBestContent(Node f, std::vector<Node>& exp)
 {
   Kind fk = f.getKind();
   if (!d_state.getEqualityEngine()->isFunctionKind(fk))
