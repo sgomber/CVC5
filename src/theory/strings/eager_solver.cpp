@@ -89,7 +89,21 @@ void EagerSolver::eqNotifyNewClass(TNode t)
 
 void EagerSolver::eqNotifyMerge(TNode t1, TNode t2)
 {
-  // nothing
+  if (d_useList.empty())
+  {
+    return;
+  }
+  eq::EqualityEngine* ee = d_state.getEqualityEngine();
+  // go back and recompute the best content for the useList terms with t2
+  // as an argument, since they have an argument that has updated.
+  for (TNode u : d_useList)
+  {
+    // u should contain t1 as an argument
+    Assert(isFunctionKind(u.getKind()));
+    TNode r = ee->getRepresentative(u);
+    addBestContent(u, r);
+  }
+  d_useList.clear();
 }
 
 void EagerSolver::eqNotifyPreMerge(TNode t1, TNode t2)
@@ -137,20 +151,11 @@ void EagerSolver::eqNotifyPreMerge(TNode t1, TNode t2)
       // constant merges should already be in conflict
       Assert(e2 == nullptr || e2->isConst().isNull());
       // check whether there are conflicts
-      processConstantMerges(t2, c1);
-      // check the use lists
+      d_state.setPendingPrefixConflictWhen(processConstantMerges(t2, c1));
+      // store the use list for t2, we will notify the parents that they have
+      // an argument that is now constant.
       eq::EqualityEngine* ee = d_state.getEqualityEngine();
-      std::set<TNode> useList;
-      ee->getUseListTerms(t2, useList);
-      // go back and recompute the best content for the useList terms with t2
-      // as an argument
-      for (TNode u : useList)
-      {
-        // u should contain t1 as an argument
-        Assert(isFunctionKind(u.getKind()));
-        TNode r = ee->getRepresentative(u);
-        addBestContent(u, r);
-      }
+      ee->getUseListTerms(t2, d_useList);
     }
   }
 
@@ -235,7 +240,6 @@ bool EagerSolver::addBestContent(TNode f, TNode r)
     // did not change, nothing to do
     return false;
   }
-
   // we inferred equality to a constant
   if (fc.isConst())
   {
@@ -322,21 +326,31 @@ Node EagerSolver::processConstantMerges(Node r, Node c)
     {
       continue;
     }
-    if (d_mcTerms.find(t) != d_mcTerms.end())
-    {
-      // already evaluates to the constant?
-      continue;
-    }
+    // TODO: could just check t == c here?
     // process
     std::vector<Node> exp;
     Node tc = getBestContent(t, exp);
-    if (tc == c)
+    // check for an equality conflict with the constant
+    if (tc==c)
     {
-      // it is confirmed to be equal to the constant in this equivalence class
-      d_mcTerms.insert(tc);
+      // term evaluates to the constant
+      // TODO: could cache that it is "evaluated" / can ignore
       continue;
     }
-    // FIXME otherwise, check for conflict?
+  Node eq = Rewriter::rewrite(tc.eqNode(c));
+  if (eq.isConst() && !eq.getConst<bool>())
+  {
+    // conflict
+    std::vector<Node> confExp;
+    confExp.insert(confExp.end(), exp.begin(), exp.end());
+    confExp.push_back(t.eqNode(c));
+    // exp ^ t = prev.t
+    Node ret = NodeManager::currentNM()->mkAnd(confExp);
+    Trace("strings-eager-pconf")
+        << "String: eager prefix conflict (via equality rewrite): " << ret <<
+std::endl;
+    return ret;
+  }
 
     ++eqci;
   }

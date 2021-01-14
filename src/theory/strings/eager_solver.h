@@ -85,7 +85,9 @@ class EagerSolver
   /** Add best content */
   bool addBestContent(TNode f, TNode r);
   /**
-   * Get best content for term f(t1, ..., tn).
+   * Get best content for term f, returns a term fc such that
+   *   exp |= f = fc
+   * where exp holds in the equality engine.
    */
   Node getBestContent(TNode f, std::vector<Node>& exp);
   /** Get best content for argument term */
@@ -104,8 +106,10 @@ class EagerSolver
   SolverState& d_state;
   /** Mode of the solver */
   options::StringsEagerSolverMode d_mode;
-  /** Terms that evaluate to the constant in their equivalence class */
+  /** TODO? Terms that evaluate to the constant in their equivalence class */
   NodeSet d_mcTerms;
+  /** the use list to process */
+  std::set<TNode> d_useList;
 };
 
 }  // namespace strings
