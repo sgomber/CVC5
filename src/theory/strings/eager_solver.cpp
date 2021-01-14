@@ -74,7 +74,7 @@ void EagerSolver::eqNotifyNewClass(TNode t)
     if (isFunctionKind(k))
     {
       // add the best known content of t to the equivalence class info of t
-      if (addBestContent(t, t))
+      if (inferBestContent(t, t))
       {
         // added to equivalence class in the above call
         return;
@@ -105,7 +105,7 @@ void EagerSolver::eqNotifyMerge(TNode t1, TNode t2)
     // u should contain t1 as an argument
     Assert(isFunctionKind(u.getKind()));
     TNode r = ee->getRepresentative(u);
-    addBestContent(u, r);
+    inferBestContent(u, r);
   }
   d_useList.clear();
 }
@@ -239,7 +239,7 @@ void EagerSolver::notifyFact(TNode atom,
   }
 }
 
-bool EagerSolver::addBestContent(TNode f, TNode r)
+bool EagerSolver::inferBestContent(TNode f, TNode r)
 {
   Assert(isFunctionKind(f.getKind()));
   std::vector<Node> exp;
