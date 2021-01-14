@@ -331,26 +331,26 @@ Node EagerSolver::processConstantMerges(Node r, Node c)
     std::vector<Node> exp;
     Node tc = getBestContent(t, exp);
     // check for an equality conflict with the constant
-    if (tc==c)
+    if (tc == c)
     {
       // term evaluates to the constant
       // TODO: could cache that it is "evaluated" / can ignore
       continue;
     }
-  Node eq = Rewriter::rewrite(tc.eqNode(c));
-  if (eq.isConst() && !eq.getConst<bool>())
-  {
-    // conflict
-    std::vector<Node> confExp;
-    confExp.insert(confExp.end(), exp.begin(), exp.end());
-    confExp.push_back(t.eqNode(c));
-    // exp ^ t = prev.t
-    Node ret = NodeManager::currentNM()->mkAnd(confExp);
-    Trace("strings-eager-pconf")
-        << "String: eager prefix conflict (via equality rewrite): " << ret <<
-std::endl;
-    return ret;
-  }
+    Node eq = Rewriter::rewrite(tc.eqNode(c));
+    if (eq.isConst() && !eq.getConst<bool>())
+    {
+      // conflict
+      std::vector<Node> confExp;
+      confExp.insert(confExp.end(), exp.begin(), exp.end());
+      confExp.push_back(t.eqNode(c));
+      // exp ^ t = prev.t
+      Node ret = NodeManager::currentNM()->mkAnd(confExp);
+      Trace("strings-eager-pconf")
+          << "String: eager prefix conflict (via equality rewrite): " << ret
+          << std::endl;
+      return ret;
+    }
 
     ++eqci;
   }
