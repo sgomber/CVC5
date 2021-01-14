@@ -45,11 +45,11 @@ TheoryStrings::TheoryStrings(context::Context* c,
       d_notify(*this),
       d_statistics(),
       d_state(c, u, d_valuation),
-      d_eagerSolver(c, d_state, options::stringsEagerSlvMode()),
       d_termReg(d_state, out, d_statistics, pnm),
       d_extTheoryCb(),
       d_extTheory(d_extTheoryCb, c, u, out),
       d_im(*this, d_state, d_termReg, d_extTheory, d_statistics, pnm),
+      d_eagerSolver(d_state, d_im, options::stringsEagerSlvMode()),
       d_rewriter(&d_statistics.d_rewrites),
       d_bsolver(d_state, d_im),
       d_csolver(d_state, d_im, d_termReg, d_bsolver),
@@ -632,6 +632,11 @@ void TheoryStrings::notifyFact(TNode atom,
     // call the inference manager to send the conflict
     d_im.processConflict(iiPendingConf);
     return;
+  }
+  else if (!isInternal)
+  {
+    // now, flush pending facts if this wasn't an internal call
+    d_im.doPending();
   }
   Trace("strings-pending-debug") << "  Now collect terms" << std::endl;
   // Collect extended function terms in the atom. Notice that we must register

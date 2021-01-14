@@ -307,6 +307,10 @@ enum class Inference : uint32_t
   //-------------------------------------- prefix conflict
   // prefix conflict (coarse-grained)
   PREFIX_CONFLICT,
+  // prefix conflict (coarse-grained)
+  EQ_REWRITE_CONFLICT,
+  // rewrite to constant
+  EXTF_EAGER,
   //-------------------------------------- end prefix conflict
   NONE,
 };

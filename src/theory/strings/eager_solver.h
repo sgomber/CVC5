@@ -24,6 +24,7 @@
 #include "options/strings_options.h"
 #include "theory/strings/eqc_info.h"
 #include "theory/strings/solver_state.h"
+#include "theory/strings/inference_manager.h"
 
 namespace CVC4 {
 namespace theory {
@@ -53,8 +54,8 @@ class EagerSolver
   typedef context::CDHashSet<Node, NodeHashFunction> NodeSet;
 
  public:
-  EagerSolver(context::Context* c,
-              SolverState& state,
+  EagerSolver(SolverState& state,
+              InferenceManager& im,
               options::StringsEagerSolverMode m);
   ~EagerSolver();
   /** called when a new equivalence class is created */
@@ -104,6 +105,8 @@ class EagerSolver
   Node d_null;
   /** Reference to the solver state */
   SolverState& d_state;
+  /** The (custom) output channel of the theory of strings */
+  InferenceManager& d_im;
   /** Mode of the solver */
   options::StringsEagerSolverMode d_mode;
   /** TODO? Terms that evaluate to the constant in their equivalence class */

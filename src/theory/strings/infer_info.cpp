@@ -89,6 +89,8 @@ const char* toString(Inference i)
     case Inference::CTN_POS: return "CTN_POS";
     case Inference::REDUCTION: return "REDUCTION";
     case Inference::PREFIX_CONFLICT: return "PREFIX_CONFLICT";
+    case Inference::EQ_REWRITE_CONFLICT: return "EQ_REWRITE_CONFLICT";
+    case Inference::EXTF_EAGER: return "EXTF_EAGER";
     default: return "?";
   }
 }

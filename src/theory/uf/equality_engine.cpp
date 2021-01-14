@@ -2319,7 +2319,11 @@ void EqualityEngine::getUseListTerms(TNode t, std::set<TNode>& output) {
         UseListNode& useNode = d_useListNodes[currentUseId];
         // Get the function application
         EqualityNodeId funId = useNode.getApplicationId();
-        output.insert(d_nodes[funId]);
+        TNode n = d_nodes[funId];
+        if (n.getKind()!=kind::EQUAL)
+        {
+          output.insert(n);
+        }
         // Go to the next one in the use list
         currentUseId = useNode.getNext();
       }

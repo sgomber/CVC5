@@ -74,7 +74,7 @@ class SolverState : public TheoryState
    * during a merge operation, when the equality engine is not in a state to
    * provide explanations.
    */
-  void setPendingPrefixConflictWhen(Node conf);
+  void setPendingPrefixConflictWhen(Node conf, Inference infer);
   /**
    * Set pending conflict, infer info version. Called when we are in conflict
    * based on the inference ii. This generalizes the above method.
