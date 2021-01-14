@@ -14,8 +14,8 @@
 
 #include "theory/strings/eager_solver.h"
 
-#include "theory/strings/theory_strings_utils.h"
 #include "theory/rewriter.h"
+#include "theory/strings/theory_strings_utils.h"
 
 using namespace CVC4::kind;
 
@@ -23,7 +23,10 @@ namespace CVC4 {
 namespace theory {
 namespace strings {
 
-EagerSolver::EagerSolver(SolverState& state, options::StringsEagerSolverMode m) : d_state(state), d_mode(m) {}
+EagerSolver::EagerSolver(SolverState& state, options::StringsEagerSolverMode m)
+    : d_state(state), d_mode(m)
+{
+}
 
 EagerSolver::~EagerSolver() {}
 
@@ -46,11 +49,11 @@ void EagerSolver::eqNotifyNewClass(TNode t)
     return;
   }
   // if we aren't doing eager techniques, return now
-  if (d_mode==options::StringsEagerSolverMode::NONE)
+  if (d_mode == options::StringsEagerSolverMode::NONE)
   {
     return;
   }
-  
+
   if (t.isConst())
   {
     if (t.getType().isStringLike())
@@ -93,11 +96,11 @@ void EagerSolver::eqNotifyMerge(TNode t1, TNode t2)
   }
 
   // if we aren't doing eager techniques, return now
-  if (d_mode==options::StringsEagerSolverMode::NONE)
+  if (d_mode == options::StringsEagerSolverMode::NONE)
   {
     return;
   }
-  
+
   // eager prefix conflicts
   if (!e2->d_prefixC.isNull())
   {
@@ -170,11 +173,11 @@ Node EagerSolver::getBestContent(Node f, std::vector<Node>& exp)
     return f;
   }
   // strings does not have parametrized kinds for congruence kinds
-  Assert (f.getMetaKind() != metakind::PARAMETERIZED);
+  Assert(f.getMetaKind() != metakind::PARAMETERIZED);
   std::vector<Node> children;
   for (const Node& fc : f)
   {
-    children.push_back(getBestContentArg(fc,exp));
+    children.push_back(getBestContentArg(fc, exp));
   }
   if (exp.empty())
   {
@@ -190,22 +193,18 @@ Node EagerSolver::getBestContentArg(Node t, std::vector<Node>& exp)
   eq::EqualityEngine* ee = d_state.getEqualityEngine();
   Node r = ee->getRepresentative(t);
   EqcInfo* e = d_state.getOrMakeEqcInfo(r, false);
-  if (e==nullptr)
+  if (e == nullptr)
   {
     return t;
   }
-  // 
-  //Node rt = e->d_prefixC.d_t.get();
-  
-  
+  //
+  // Node rt = e->d_prefixC.d_t.get();
+
   // TODO
   return t;
 }
 
-Node EagerSolver::checkConflict(Node t, Node c)
-{
-  return Node::null();
-}
+Node EagerSolver::checkConflict(Node t, Node c) { return Node::null(); }
 
 }  // namespace strings
 }  // namespace theory

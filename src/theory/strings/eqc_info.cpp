@@ -149,7 +149,8 @@ Node EqcInfo::addEndpointConst(CExp& ce, bool isSuf)
 }
 
 /*
-Node EqcInfo::checkEqualityConflict(TNode t, TNode c, const std::vector<Node>& exp)
+Node EqcInfo::checkEqualityConflict(TNode t, TNode c, const std::vector<Node>&
+exp)
 {
   Node prevT = d_prefixC.d_t;
   // assumes that if the equivalence class is inferred to be a constant, then
@@ -168,8 +169,8 @@ Node EqcInfo::checkEqualityConflict(TNode t, TNode c, const std::vector<Node>& e
     // exp ^ t = prev.t
     Node ret = NodeManager::currentNM()->mkAnd(confExp);
     Trace("strings-eager-pconf")
-        << "String: eager prefix conflict (via equality rewrite): " << ret << std::endl;
-    return ret;
+        << "String: eager prefix conflict (via equality rewrite): " << ret <<
+std::endl; return ret;
   }
   return Node::null();
 }

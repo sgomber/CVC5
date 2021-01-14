@@ -27,11 +27,11 @@ namespace CVC4 {
 namespace theory {
 namespace strings {
 
-/** 
- * Constant explanation data 
- * 
+/**
+ * Constant explanation data
+ *
  * This is of the form d_exp |= d_t has prefix d_c.
- * 
+ *
  * Notice this does not explain d_t = d_c.
  */
 class CExp
@@ -72,7 +72,7 @@ class EqcInfo
   /**
    * Check equality conflict
    */
-  //Node checkEqualityConflict(TNode t, TNode c, const std::vector<Node>& exp);
+  // Node checkEqualityConflict(TNode t, TNode c, const std::vector<Node>& exp);
   /**
    * If non-null, this is a term x from this eq class such that str.len( x )
    * occurs as a term in this SAT context.

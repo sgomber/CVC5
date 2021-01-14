@@ -20,9 +20,9 @@
 #include <map>
 
 #include "expr/node.h"
+#include "options/strings_options.h"
 #include "theory/strings/eqc_info.h"
 #include "theory/strings/solver_state.h"
-#include "options/strings_options.h"
 
 namespace CVC4 {
 namespace theory {
@@ -64,7 +64,7 @@ class EagerSolver
   Node getBestContent(Node f, std::vector<Node>& exp);
   /** Get best content for argument term */
   Node getBestContentArg(Node t, std::vector<Node>& exp);
-  /** 
+  /**
    * Check whether there is a conflict with t having prefix/suffix/containment
    * in c, recursively.
    */
