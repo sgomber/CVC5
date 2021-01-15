@@ -255,7 +255,16 @@ bool EagerSolver::inferBestContent(TNode f, TNode r)
     {
       Trace("strings-eager-slv") << "Infer: " << f << " == " << fc << std::endl;
       // infer equality
-      d_im.sendInference(exp, f.eqNode(fc), Inference::EXTF_EAGER);
+      Node conc;
+      if (fc.getType().isBoolean())
+      {
+        conc = fc.getConst<bool>() ? Node(f) : f.negate();
+      }
+      else
+      {
+        conc = f.eqNode(fc);
+      }
+      d_im.sendInference(exp, conc, Inference::EXTF_EAGER);
     }
   }
   else if (fc.getKind() == STRING_CONCAT)
