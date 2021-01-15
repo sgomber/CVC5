@@ -265,6 +265,7 @@ bool EagerSolver::inferBestContent(TNode f, TNode r)
         conc = f.eqNode(fc);
       }
       d_im.sendInference(exp, conc, Inference::EXTF_EAGER);
+      d_im.doPendingFacts();
     }
   }
   else if (fc.getKind() == STRING_CONCAT)
