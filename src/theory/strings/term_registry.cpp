@@ -576,21 +576,18 @@ Node TermRegistry::ensureProxyVariableFor(Node n)
 }
 
 void TermRegistry::inferSubstitutionProxyVars(Node n,
-                                              std::vector<Node>& vars,
-                                              std::vector<Node>& subs,
                                               std::vector<Node>& unproc) const
 {
   if (n.getKind() == AND)
   {
     for (const Node& nc : n)
     {
-      inferSubstitutionProxyVars(nc, vars, subs, unproc);
+      inferSubstitutionProxyVars(nc, unproc);
     }
     return;
   }
   Trace("strings-subs-proxy") << "Input : " << n << std::endl;
-  Node ns = n.substitute(vars.begin(), vars.end(), subs.begin(), subs.end());
-  ns = Rewriter::rewrite(ns);
+  Node ns = Rewriter::rewrite(n);
   if (ns.getKind() == EQUAL)
   {
     for (unsigned i = 0; i < 2; i++)
