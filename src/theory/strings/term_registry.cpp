@@ -595,9 +595,10 @@ void TermRegistry::inferSubstitutionProxyVars(Node n,
       // determine whether this side has a proxy variable
       if (ns[i].getAttribute(StringsProxyVarAttribute()))
       {
-        if (getProxyVariableFor(ns[1-i])==ns[i])
+        if (getProxyVariableFor(ns[1 - i]) == ns[i])
         {
-          Trace("strings-subs-proxy") << "...trivial definition via " << ns[i] << std::endl;
+          Trace("strings-subs-proxy")
+              << "...trivial definition via " << ns[i] << std::endl;
           // it is a trivial equality, e.g. between a proxy variable
           // and its definition
           return;
