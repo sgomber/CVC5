@@ -32,7 +32,10 @@ namespace theory {
 namespace quantifiers {
 
 Cegis::Cegis(QuantifiersEngine* qe, SynthConjecture* p)
-    : SygusModule(qe, p), d_eval_unfold(nullptr), d_usingSymCons(false)
+    : SygusModule(qe, p),
+      d_eval_unfold(nullptr),
+      d_usingSymCons(false),
+      d_usingSymConsGround(false)
 {
   d_eval_unfold = qe->getTermDatabaseSygus()->getEvalUnfold();
 }
@@ -75,6 +78,7 @@ bool Cegis::processInitialize(Node conj,
   EnumeratorRole erole =
       csize == 1 ? ROLE_ENUM_SINGLE_SOLUTION : ROLE_ENUM_MULTI_SOLUTION;
   // initialize an enumerator for each candidate
+  std::vector<bool> hasAnyConst(csize, false);
   for (unsigned i = 0; i < csize; i++)
   {
     Trace("cegis") << "...register enumerator " << candidates[i];
@@ -91,13 +95,175 @@ bool Cegis::processInitialize(Node conj,
       {
         // remember that we are using symbolic constructors
         d_usingSymCons = true;
+        // mark the candidate that is using it
+        hasAnyConst[i] = true;
         Trace("cegis") << " (using symbolic constructors)";
       }
+    }
+    if (!options::sygusRepairConst()
+        && options::sygusGrammarConsMode()
+               == options::SygusGrammarConsMode::ANY_CONST
+        && d_usingSymCons && d_parent->isGround())
+    {
+      d_usingSymConsGround = true;
+      Trace("cegis") << " with ground conjecture and eval unfold handling.";
     }
     Trace("cegis") << std::endl;
     d_tds->registerEnumerator(candidates[i], candidates[i], d_parent, erole);
   }
+  // collect all applications of function-to-sythesize. Each will be an
+  // application head. Also have the points
+
+  if (d_usingSymConsGround)
+  {
+    std::map<Node, Node> cache;
+    // get candidates that symbolic constants in their sygus type
+    std::vector<Node> symbCandidates;
+    for (unsigned i = 0; i < csize; ++i)
+    {
+      if (hasAnyConst[i])
+      {
+        symbCandidates.push_back(candidates[i]);
+      }
+    }
+    Trace("cegis") << "Symbolic candidates: " << symbCandidates << "\n";
+    Node pConj = purifyLemma(n, symbCandidates, false, cache);
+    // could not purify
+    if (pConj.isNull())
+    {
+      d_usingSymConsGround = false;
+    }
+    else
+    {
+      pConj = Rewriter::rewrite(pConj.negate());
+      Trace("cegis") << "groundSymConst::purified conjecture : " << pConj
+                     << "\n";
+      lemmas.push_back(pConj);
+      // save original conjecture (negation of given one) as refinement lemma
+      addRefinementLemma(d_tds->getExtRewriter()->extendedRewrite(n.negate()));
+    }
+  }
   return true;
+}
+
+Node Cegis::purifyLemma(Node n,
+                        const std::vector<Node>& candidates,
+                        bool ensureConst,
+                        std::map<Node, Node>& cache)
+{
+  Trace("cegis-purify") << "PurifyLemma : " << n << "\n";
+  std::map<Node, Node>::const_iterator it0 = cache.find(n);
+  if (it0 != cache.end())
+  {
+    Trace("cegis-purify-debug") << "... already visited " << n << "\n";
+    return it0->second;
+  }
+  // Recurse
+  unsigned size = n.getNumChildren();
+  Kind k = n.getKind();
+  // We retrive model value now because purified node may not have a value
+  Node nv = n;
+  // Whether application of a function-to-synthesize
+  bool fapp = k == DT_SYGUS_EVAL;
+  bool u_fapp = false;
+  if (fapp)
+  {
+    // if we are ensuring constants, we cannot do it for function applications,
+    // so we give up
+    if (ensureConst)
+    {
+      return Node::null();
+    }
+    // Whether application of a (non-)anyConst function-to-synthesize
+    u_fapp = std::find(candidates.begin(), candidates.end(), n[0])
+             != candidates.end();
+  }
+  // Travese to purify
+  bool childChanged = false;
+  std::vector<Node> children;
+  NodeManager* nm = NodeManager::currentNM();
+  for (unsigned i = 0; i < size; ++i)
+  {
+    if (i == 0 && fapp)
+    {
+      children.push_back(n[i]);
+      continue;
+    }
+    // Arguments of non-unif functions do not need to be constant
+    Node child = purifyLemma(n[i], candidates, ensureConst || u_fapp, cache);
+    if (child.isNull())
+    {
+      return Node::null();
+    }
+    children.push_back(child);
+    childChanged = childChanged || child != n[i];
+  }
+  Node nb;
+  if (childChanged)
+  {
+    if (n.getMetaKind() == metakind::PARAMETERIZED)
+    {
+      Trace("cegis-purify-debug") << "Node " << n << " is parameterized\n";
+      children.insert(children.begin(), n.getOperator());
+    }
+    if (Trace.isOn("cegis-purify-debug"))
+    {
+      Trace("cegis-purify-debug")
+          << "...rebuilding " << n << " with kind " << k << " and children:\n";
+      for (const Node& child : children)
+      {
+        Trace("cegis-purify-debug") << "...... " << child << "\n";
+      }
+    }
+    nb = NodeManager::currentNM()->mkNode(k, children);
+    Trace("cegis-purify") << "PurifyLemma : transformed " << n << " into " << nb
+                          << "\n";
+  }
+  else
+  {
+    nb = n;
+  }
+  // Map to point enumerator every unification function-to-synthesize
+  if (u_fapp)
+  {
+    Node np;
+    // Build purified head with fresh skolem, of the builtin type, and replace
+    std::stringstream ss;
+    ss << nb[0] << "_" << d_candToHdCount[nb[0]]++;
+    TypeNode ctn = nb[0].getType();
+    SygusTypeInfo& cti = d_tds->getTypeInfo(ctn);
+
+    Node newF = nm->mkSkolem(ss.str(),
+                              cti.getBuiltinType(),
+                              "head of anyConst synth-fun app",
+                              NodeManager::SKOLEM_EXACT_NAME);
+    // Adds new enumerator to map from candidate
+    Trace("cegis-purify") << "...new enum " << newF << " for candidate "
+                          << nb[0] << "\n";
+    d_candToEvalHds[nb[0]].push_back(newF);
+    // Maps new enumerator to its respective tuple of arguments
+    d_hdToPt[newF] = std::vector<Node>(++children.begin(), children.end());
+    if (Trace.isOn("cegis-purify-debug"))
+    {
+      Trace("cegis-purify-debug") << "...[" << newF << "] --> ( ";
+      for (const Node& pt_i : d_hdToPt[newF])
+      {
+        Trace("cegis-purify-debug") << pt_i << " ";
+      }
+      Trace("cegis-purify-debug") << ")\n";
+    }
+    // replace original fApp by newF skolem
+    Trace("cegis-purify") << "PurifyLemma : purified head and transformed "
+                          << nb << " into " << newF << "\n";
+    nb = newF;
+  }
+  nb = Rewriter::rewrite(nb);
+  // everything under an anyConst of function-to-synthesize app must be reduced
+  // to a concrete constant
+  Assert(!ensureConst || nb.isConst());
+  Trace("cegis-purify-debug") << "... caching [" << n << "] = " << nb << "\n";
+  cache[n] = nb;
+  return nb;
 }
 
 void Cegis::getTermList(const std::vector<Node>& candidates,
@@ -135,8 +301,8 @@ bool Cegis::addEvalLemmas(const std::vector<Node>& candidates,
   NodeManager* nm = NodeManager::currentNM();
   bool addedEvalLemmas = false;
   // Refinement evaluation should not be done for grammars with symbolic
-  // constructors.
-  if (!d_usingSymCons)
+  // constructors, unless the conjecture is ground
+  if (!d_usingSymCons || d_usingSymConsGround)
   {
     Trace("sygus-engine") << "  *** Do refinement lemma evaluation"
                           << (doGen ? " with conjecture-specific refinement"
@@ -175,8 +341,11 @@ bool Cegis::addEvalLemmas(const std::vector<Node>& candidates,
       }
     }
   }
-  // we only do evaluation unfolding for passive enumerators
-  bool doEvalUnfold = (doGen && options::sygusEvalUnfold()) || d_usingSymCons;
+  // we only do evaluation unfolding for passive enumerators and, for now, if we
+  // are not handling a ground conjecture with symbolic constants
+  bool doEvalUnfold =
+      !d_usingSymConsGround
+      && ((doGen && options::sygusEvalUnfold()) || d_usingSymCons);
   if (doEvalUnfold)
   {
     Trace("sygus-engine") << "  *** Do evaluation unfolding..." << std::endl;
@@ -207,7 +376,7 @@ bool Cegis::addEvalLemmas(const std::vector<Node>& candidates,
 }
 
 Node Cegis::getRefinementLemmaFormula()
-{
+  {
   std::vector<Node> conj;
   conj.insert(
       conj.end(), d_refinement_lemmas.begin(), d_refinement_lemmas.end());
@@ -244,10 +413,19 @@ bool Cegis::constructCandidates(const std::vector<Node>& enums,
       Trace("cegis") << "    " << enums[i] << " -> ";
       TermDbSygus::toStreamSygus("cegis", enum_values[i]);
       Trace("cegis") << "\n";
+    if (d_usingSymConsGround)
+    {
+    Trace("cegis") << "  ...heads :\n";
+      for (const Node& hd : d_candToEvalHds[enums[i]])
+      {
+        Trace("cegis") << "      " << hd << " -> " << d_parent->getModelValue(hd) << "\n";
+      }
+    }
+
     }
   }
-  // if we are using grammar-based repair
-  if (d_usingSymCons && options::sygusRepairConst())
+  // if we are using grammar-based repair and conjecture is not ground
+  else if (d_usingSymCons && !d_usingSymConsGround && options::sygusRepairConst())
   {
     SygusRepairConst* src = d_parent->getRepairConst();
     Assert(src != nullptr);
@@ -297,6 +475,58 @@ bool Cegis::constructCandidates(const std::vector<Node>& enums,
 
   // evaluate on refinement lemmas
   bool addedEvalLemmas = addEvalLemmas(enums, enum_values, lems);
+
+  if (d_usingSymConsGround && addedEvalLemmas)
+  {
+    NodeManager* nm = NodeManager::currentNM();
+    Trace("cegis") << "  EvalLemmas : " << lems << "\n";
+    // ignore these though. Just build a refinement lemma with everything
+    lems.clear();
+    // For each enumerator, equality with model value
+    std::vector<Node> enumsExp;
+    std::vector<Node> hdsExp;
+    std::map<Node, Node> enumToValue;
+    SygusEvalUnfold* evUnfold = d_tds->getEvalUnfold();
+
+    for (unsigned i = 0, size = enums.size(); i < size; ++i)
+    {
+      Node enumExp = d_tds->getExplain()->getExplanationForEquality(
+          enums[i], enum_values[i]);
+      enumToValue[enums[i]] = enum_values[i];
+      // get model values of heads. Note however that if there is an anyconst in
+      // the enum value, we have to be smart, e.g.
+      //
+      //   is-any-constant(d) => f1 = d.0 ^ f2 = d.0 ^ f6 = d.0
+      for (const Node& hd : d_candToEvalHds[enums[i]])
+      {
+        // build (DT_SYGUS_EVAL enums[i] pt0 ... ptn), in which pti corresponds
+        // to the point of hd. This will be unfolded so that we get the proper
+        // value for this head in the case that enum_values[i] (retrieved by the
+        // unfolding method from enumToValue) contains anyconst
+        std::vector<Node> evalChildren{enums[i]};
+        auto itPt = d_hdToPt.find(hd);
+        AlwaysAssert(itPt != d_hdToPt.end());
+        evalChildren.insert(
+            evalChildren.end(), itPt->second.begin(), itPt->second.end());
+        Node eval = nm->mkNode(DT_SYGUS_EVAL, evalChildren);
+        // placeholder. The method has to be called with fourth argument true
+        // (track_exp in the signature) because only in this mode the model
+        // value is retrieved from the second argument.
+        std::vector<Node> tmpExp;
+        eval = evUnfold->unfold(eval, enumToValue, tmpExp, true, true);
+        Trace("cegis") << "  ...unfolded hd " << hd << ", " << itPt->second
+                       << " to : " << eval << "\n";
+        hdsExp.push_back(hd.eqNode(eval));
+      }
+        // build lemma
+      std::vector<Node> children{
+          enumExp.negate(),
+          hdsExp.size() > 1 ? nm->mkNode(kind::AND, hdsExp) : hdsExp[0]};
+      lems.push_back(nm->mkNode(kind::OR, children));
+      Trace("cegis") << "  Lemma: " << lems.back() << "\n";
+    }
+    return false;
+  }
 
   // try to construct candidates
   if (!processConstructCandidates(enums,
@@ -473,6 +703,7 @@ void Cegis::registerRefinementLemma(const std::vector<Node>& vars,
                                     Node lem,
                                     std::vector<Node>& lems)
 {
+  Assert(!d_usingSymConsGround);
   addRefinementLemma(lem);
   // Make the refinement lemma and add it to lems.
   // This lemma is guarded by the parent's guard, which has the semantics
@@ -526,6 +757,14 @@ bool Cegis::getRefinementEvalLemmas(const std::vector<Node>& vs,
       if (lemcsu.isConst() && !lemcsu.getConst<bool>())
       {
         ret = true;
+        // lemma will be built is custom way outside. Just store the refinement
+        // lemma TODO use the invariance test etc below to optimize the
+        // functions that were actually relevant for the conflict
+        if (d_usingSymConsGround)
+        {
+          lems.push_back(lem);
+          continue;
+        }
         std::vector<Node> msu;
         std::vector<Node> mexp;
         msu.insert(msu.end(), ms.begin(), ms.end());
