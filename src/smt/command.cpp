@@ -685,9 +685,8 @@ void SynthFunCommand::toStream(std::ostream& out,
   std::vector<Node> nodeVars = termVectorToNodes(d_vars);
   Printer::getPrinter(language)->toStreamCmdSynthFun(
       out,
-      d_symbol,
+      d_fun.getNode(),
       nodeVars,
-      d_sort.getTypeNode(),
       d_isInv,
       d_grammar == nullptr ? TypeNode::null()
                            : d_grammar->resolve().getTypeNode());
@@ -1887,7 +1886,31 @@ void BlockModelValuesCommand::toStream(std::ostream& out,
 GetProofCommand::GetProofCommand() {}
 void GetProofCommand::invoke(api::Solver* solver, SymbolManager* sm)
 {
-  Unimplemented() << "Unimplemented get-proof\n";
+  try
+  {
+    d_result = solver->getSmtEngine()->getProof();
+    d_commandStatus = CommandSuccess::instance();
+  }
+  catch (api::CVC4ApiRecoverableException& e)
+  {
+    d_commandStatus = new CommandRecoverableFailure(e.what());
+  }
+  catch (exception& e)
+  {
+    d_commandStatus = new CommandFailure(e.what());
+  }
+}
+
+void GetProofCommand::printResult(std::ostream& out, uint32_t verbosity) const
+{
+  if (ok())
+  {
+    out << d_result;
+  }
+  else
+  {
+    this->Command::printResult(out, verbosity);
+  }
 }
 
 Command* GetProofCommand::clone() const

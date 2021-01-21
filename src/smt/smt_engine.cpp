@@ -675,8 +675,7 @@ void SmtEngine::defineFunction(Node func,
   }
 
   DefineFunctionNodeCommand nc(ss.str(), func, nFormals, formula);
-  d_dumpm->addToModelCommandAndDump(
-      nc, ExprManager::VAR_FLAG_DEFINED, true, "declarations");
+  d_dumpm->addToDump(nc, "declarations");
 
   // type check body
   debugCheckFunctionBody(formula, formals, func);
@@ -953,12 +952,6 @@ Result SmtEngine::checkSatInternal(const std::vector<Node>& assumptions,
     Trace("smt") << "SmtEngine::" << (isEntailmentCheck ? "query" : "checkSat")
                  << "(" << assumptions << ") => " << r << endl;
 
-    if (options::dumpProofs() && options::proofNew()
-        && r.asSatisfiabilityResult().isSat() == Result::UNSAT)
-    {
-      printProof();
-    }
-
     // Check that SAT results generate a model correctly.
     if(options::checkModels()) {
       if (r.asSatisfiabilityResult().isSat() == Result::SAT)
@@ -1063,27 +1056,26 @@ Result SmtEngine::assertFormula(const Node& formula, bool inUnsatCore)
    --------------------------------------------------------------------------
 */
 
-void SmtEngine::declareSygusVar(const std::string& id, Node var, TypeNode type)
+void SmtEngine::declareSygusVar(Node var)
 {
   SmtScope smts(this);
-  d_sygusSolver->declareSygusVar(id, var, type);
+  d_sygusSolver->declareSygusVar(var);
   if (Dump.isOn("raw-benchmark"))
   {
     getOutputManager().getPrinter().toStreamCmdDeclareVar(
-        getOutputManager().getDumpOut(), var, type);
+        getOutputManager().getDumpOut(), var, var.getType());
   }
   // don't need to set that the conjecture is stale
 }
 
-void SmtEngine::declareSynthFun(const std::string& id,
-                                Node func,
+void SmtEngine::declareSynthFun(Node func,
                                 TypeNode sygusType,
                                 bool isInv,
                                 const std::vector<Node>& vars)
 {
   SmtScope smts(this);
   d_state->doPendingPops();
-  d_sygusSolver->declareSynthFun(id, func, sygusType, isInv, vars);
+  d_sygusSolver->declareSynthFun(func, sygusType, isInv, vars);
 
   // !!! TEMPORARY: We cannot construct a SynthFunCommand since we cannot
   // construct a Term-level Grammar from a Node-level sygus TypeNode. Thus we
@@ -1092,14 +1084,16 @@ void SmtEngine::declareSynthFun(const std::string& id,
   if (Dump.isOn("raw-benchmark"))
   {
     getOutputManager().getPrinter().toStreamCmdSynthFun(
-        getOutputManager().getDumpOut(),
-        id,
-        vars,
-        func.getType().isFunction() ? func.getType().getRangeType()
-                                    : func.getType(),
-        isInv,
-        sygusType);
+        getOutputManager().getDumpOut(), func, vars, isInv, sygusType);
   }
+}
+void SmtEngine::declareSynthFun(Node func,
+                                bool isInv,
+                                const std::vector<Node>& vars)
+{
+  // use a null sygus type
+  TypeNode sygusType;
+  declareSynthFun(func, sygusType, isInv, vars);
 }
 
 void SmtEngine::assertSygusConstraint(Node constraint)
@@ -1152,15 +1146,14 @@ Node SmtEngine::simplify(const Node& ex)
   return d_pp->simplify(ex);
 }
 
-Node SmtEngine::expandDefinitions(const Node& ex)
+Node SmtEngine::expandDefinitions(const Node& ex, bool expandOnly)
 {
   d_resourceManager->spendResource(ResourceManager::Resource::PreprocessStep);
 
   SmtScope smts(this);
   finishInit();
   d_state->doPendingPops();
-  // set expandOnly flag to true
-  return d_pp->expandDefinitions(ex, true);
+  return d_pp->expandDefinitions(ex, expandOnly);
 }
 
 // TODO(#1108): Simplify the error reporting of this method.
@@ -1496,23 +1489,38 @@ UnsatCore SmtEngine::getUnsatCore() {
   return getUnsatCoreInternal();
 }
 
-void SmtEngine::printProof()
+std::string SmtEngine::getProof()
 {
-  if (d_pfManager == nullptr)
+  Trace("smt") << "SMT getProof()\n";
+  SmtScope smts(this);
+  finishInit();
+  if (Dump.isOn("benchmark"))
   {
-    throw RecoverableModalException("Cannot print proof, no proof manager.");
+    getOutputManager().getPrinter().toStreamCmdGetProof(
+        getOutputManager().getDumpOut());
   }
-  if (getSmtMode() != SmtMode::UNSAT)
+#if IS_PROOFS_BUILD
+  if (!options::proofNew())
+  {
+    throw ModalException("Cannot get a proof when proof-new option is off.");
+  }
+  if (d_state->getMode() != SmtMode::UNSAT)
   {
     throw RecoverableModalException(
-        "Cannot print proof unless immediately preceded by "
-        "UNSAT/ENTAILED.");
+        "Cannot get a proof unless immediately preceded by "
+        "UNSAT/ENTAILED response.");
   }
+  // the prop engine has the proof of false
   PropEngine* pe = getPropEngine();
   Assert(pe != nullptr);
   Assert(pe->getProof() != nullptr);
-  // the prop engine has the proof of false
-  d_pfManager->printProof(pe->getProof(), *d_asserts, *d_definedFunctions);
+  Assert(d_pfManager);
+  std::ostringstream ss;
+  d_pfManager->printProof(ss, pe->getProof(), *d_asserts, *d_definedFunctions);
+  return ss.str();
+#else  /* IS_PROOFS_BUILD */
+  throw ModalException("This build of CVC4 doesn't have proof support.");
+#endif /* IS_PROOFS_BUILD */
 }
 
 void SmtEngine::printInstantiations( std::ostream& out ) {

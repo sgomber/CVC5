@@ -25,6 +25,7 @@
 #include "expr/node.h"
 #include "expr/tconv_seq_proof_generator.h"
 #include "expr/term_conversion_proof_generator.h"
+#include "smt/term_formula_removal.h"
 #include "theory/trust_node.h"
 
 namespace CVC4 {
@@ -45,7 +46,6 @@ class TheoryPreprocessor
  public:
   /** Constructs a theory preprocessor */
   TheoryPreprocessor(TheoryEngine& engine,
-                     RemoveTermFormulas& tfr,
                      context::UserContext* userContext,
                      ProofNodeManager* pnm = nullptr);
   /** Destroys a theory preprocessor */
@@ -69,10 +69,16 @@ class TheoryPreprocessor
   TrustNode preprocess(TNode node,
                        std::vector<TrustNode>& newLemmas,
                        std::vector<Node>& newSkolems,
-                       bool doTheoryPreprocess);
+                       bool doTheoryPreprocess,
+                       bool fixedPoint);
+  /**
+   * Same as above, without lemma tracking or fixed point. Lemmas for skolems
+   * can be extracted from the RemoveTermFormulas utility.
+   */
+  TrustNode preprocess(TNode node, bool doTheoryPreprocess);
   /**
    * Same as above, but transforms the proof of node into a proof of the
-   * preprocessed node.
+   * preprocessed node and returns the LEMMA trust node.
    *
    * @param node The assertion to preprocess,
    * @param newLemmas The lemmas to add to the set of assertions,
@@ -84,15 +90,23 @@ class TheoryPreprocessor
   TrustNode preprocessLemma(TrustNode node,
                             std::vector<TrustNode>& newLemmas,
                             std::vector<Node>& newSkolems,
-                            bool doTheoryPreprocess);
+                            bool doTheoryPreprocess,
+                            bool fixedPoint);
   /**
-   * Runs theory specific preprocessing on the non-Boolean parts of
-   * the formula.  This is only called on input assertions, after ITEs
-   * have been removed.
+   * Same as above, without lemma tracking or fixed point. Lemmas for skolems
+   * can be extracted from the RemoveTermFormulas utility.
    */
-  TrustNode theoryPreprocess(TNode node);
+  TrustNode preprocessLemma(TrustNode node, bool doTheoryPreprocess);
+
+  /** Get the term formula removal utility */
+  RemoveTermFormulas& getRemoveTermFormulas();
 
  private:
+  /**
+   * Runs theory specific preprocessing (Theory::ppRewrite) on the non-Boolean
+   * parts of the node.
+   */
+  TrustNode theoryPreprocess(TNode node);
   /** Reference to owning theory engine */
   TheoryEngine& d_engine;
   /** Logic info of theory engine */
@@ -100,7 +114,7 @@ class TheoryPreprocessor
   /** Cache for theory-preprocessing of assertions */
   NodeMap d_ppCache;
   /** The term formula remover */
-  RemoveTermFormulas& d_tfr;
+  RemoveTermFormulas d_tfr;
   /** The term context, which computes hash values for term contexts. */
   InQuantTermContext d_iqtc;
   /**
