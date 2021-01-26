@@ -210,6 +210,18 @@ void setDefaults(LogicInfo& logic, bool isInternalSubsolver)
     }
   }
 
+  // --ite-simp is an experimental option designed for QF_LIA/nec. This
+  // technique is experimental. This benchmark set also requires removing ITEs
+  // during preprocessing, before repeating simplification. Hence, we enable
+  // this by default.
+  if (options::doITESimp())
+  {
+    if (!options::earlyIteRemoval.wasSetByUser())
+    {
+      options::earlyIteRemoval.set(true);
+    }
+  }
+
   // Set default options associated with strings-exp. We also set these options
   // if we are using eager string preprocessing, which may introduce quantified
   // formulas at preprocess time.
@@ -471,6 +483,11 @@ void setDefaults(LogicInfo& logic, bool isInternalSubsolver)
     if (options::bitvectorAig())
     {
       throw OptionException("bitblast-aig not supported with unsat cores");
+    }
+
+    if (options::doITESimp())
+    {
+      throw OptionException("ITE simp not supported with unsat cores");
     }
   }
   else
@@ -799,7 +816,6 @@ void setDefaults(LogicInfo& logic, bool isInternalSubsolver)
     // disable modes not supported by incremental
     options::sortInference.set(false);
     options::ufssFairnessMonotone.set(false);
-    options::quantEpr.set(false);
     options::globalNegate.set(false);
     options::bvAbstraction.set(false);
     options::arithMLTrick.set(false);
@@ -891,18 +907,6 @@ void setDefaults(LogicInfo& logic, bool isInternalSubsolver)
     {
       options::finiteModelFind.set(true);
     }
-  }
-  // EPR
-  if (options::quantEpr())
-  {
-    if (!options::preSkolemQuant.wasSetByUser())
-    {
-      options::preSkolemQuant.set(true);
-    }
-    // must have separation logic
-    logic = logic.getUnlockedCopy();
-    logic.enableTheory(THEORY_SEP);
-    logic.lock();
   }
 
   // now, have determined whether finite model find is on/off
@@ -1074,10 +1078,6 @@ void setDefaults(LogicInfo& logic, bool isInternalSubsolver)
     {
       options::macrosQuant.set(false);
     }
-    if (!options::cegqiPreRegInst.wasSetByUser())
-    {
-      options::cegqiPreRegInst.set(true);
-    }
     // use tangent planes by default, since we want to put effort into
     // the verification step for sygus queries with non-linear arithmetic
     if (!options::nlExtTangentPlanes.wasSetByUser())
@@ -1123,7 +1123,6 @@ void setDefaults(LogicInfo& logic, bool isInternalSubsolver)
     {
       // cannot do nested quantifier elimination in incremental mode
       options::cegqiNestedQE.set(false);
-      options::cegqiPreRegInst.set(false);
     }
     if (logic.isPure(THEORY_ARITH) || logic.isPure(THEORY_BV))
     {

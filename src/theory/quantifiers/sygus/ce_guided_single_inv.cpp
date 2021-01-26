@@ -69,11 +69,11 @@ void CegSingleInv::initialize(Node q)
   // infer single invocation-ness
 
   // get the variables
-  std::map<Node, std::vector<Node> > prog_vars;
+  std::map<Node, std::vector<Node> > progVars;
   for (const Node& sf : q[0])
   {
     // get its argument list
-    SygusUtils::getSygusArgumentListForSynthFun(sf, prog_vars[sf]);
+    SygusUtils::getSygusArgumentListForSynthFun(sf, progVars[sf]);
   }
   // compute single invocation partition
   Node qq;
@@ -303,6 +303,7 @@ Node CegSingleInv::getSolution(size_t sol_index,
   // maybe it is in the solved map already?
   if (d_solvedf.contains(f))
   {
+    // notice that we ignore d_solutions for solved functions
     Trace("csi-sol") << "...return solution from annotation" << std::endl;
     return d_solvedf.apply(f);
   }

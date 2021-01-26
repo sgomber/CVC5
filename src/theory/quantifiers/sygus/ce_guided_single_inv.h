@@ -96,8 +96,7 @@ class CegSingleInv
 
   // get simplified conjecture
   Node getSimplifiedConjecture() { return d_simp_quant; }
- public:
-  // initialize this class for synthesis conjecture q
+  /** initialize this class for synthesis conjecture q */
   void initialize( Node q );
   /** finish initialize
    *
@@ -117,8 +116,19 @@ class CegSingleInv
    */
   bool solve();
   /**
-   * Get solution for the index^th function to synthesize of the conjecture
-   * this class was initialized with.
+   * Get solution for the sol_index^th function to synthesize of the conjecture
+   * this class was assigned.
+   *
+   * @param sol_index The index of the function to synthesize
+   * @param stn The sygus type of the solution, which corresponds to syntactic
+   * restrictions
+   * @param reconstructed Set to the status of reconstructing the solution,
+   * where 1 = success, 0 = no reconstruction specified, -1 = failed
+   * @param rconsSygus Whether to apply sygus reconstruction techniques based
+   * on the underlying reconstruction module. If this is false, then the
+   * solution does not necessarily fit the grammar.
+   * @return the solution for the sol_index^th function to synthesize of the
+   * conjecture assigned to this class.
    */
   Node getSolution(size_t sol_index,
                    TypeNode stn,
@@ -141,11 +151,14 @@ class CegSingleInv
    */
   bool solveTrivial(Node q);
   /**
-   * Get solution from inst
+   * Get solution from the instantiations stored in this class (d_inst) for
+   * the index^th function to synthesize. The vector d_inst should be
+   * initialized before calling this method.
    */
   Node getSolutionFromInst(size_t index);
   /**
-   * Set solution
+   * Set solution, which sets the d_solutions / d_rcSolutions fields based on
+   * calls to the above method getSolutionFromInst.
    */
   void setSolution();
   /** The conjecture */

@@ -45,10 +45,6 @@ CandidateGeneratorQE::CandidateGeneratorQE(QuantifiersEngine* qe, Node pat)
   Assert(!d_op.isNull());
 }
 
-void CandidateGeneratorQE::resetInstantiationRound(){
-  d_term_iter_limit = d_qe->getTermDatabase()->getNumGroundTerms( d_op );
-}
-
 void CandidateGeneratorQE::reset(Node eqc) { resetForOperator(eqc, d_op); }
 
 void CandidateGeneratorQE::resetForOperator(Node eqc, Node op)
@@ -56,6 +52,7 @@ void CandidateGeneratorQE::resetForOperator(Node eqc, Node op)
   d_term_iter = 0;
   d_eqc = eqc;
   d_op = op;
+  d_term_iter_limit = d_qe->getTermDatabase()->getNumGroundTerms(d_op);
   if( eqc.isNull() ){
     d_mode = cand_term_db;
   }else{
@@ -282,11 +279,16 @@ CandidateGeneratorSelector::CandidateGeneratorSelector(QuantifiersEngine* qe,
     d_selOp = qe->getTermDatabase()->getMatchOperator(mpatExp[1]);
     d_ufOp = qe->getTermDatabase()->getMatchOperator(mpatExp[2]);
   }
-  else
+  else if (mpatExp.getKind() == APPLY_SELECTOR_TOTAL)
   {
     // corner case of datatype with one constructor
-    Assert(mpatExp.getKind() == APPLY_SELECTOR_TOTAL);
     d_selOp = qe->getTermDatabase()->getMatchOperator(mpatExp);
+  }
+  else
+  {
+    // corner case of a wrongly applied selector as a trigger
+    Assert(mpatExp.getKind() == APPLY_UF);
+    d_ufOp = qe->getTermDatabase()->getMatchOperator(mpatExp);
   }
   Assert(d_selOp != d_ufOp);
 }
@@ -294,8 +296,8 @@ CandidateGeneratorSelector::CandidateGeneratorSelector(QuantifiersEngine* qe,
 void CandidateGeneratorSelector::reset(Node eqc)
 {
   Trace("sel-trigger-debug") << "Reset in eqc=" << eqc << std::endl;
-  // start with d_selOp
-  resetForOperator(eqc, d_selOp);
+  // start with d_selOp, if it exists
+  resetForOperator(eqc, !d_selOp.isNull()? d_selOp : d_ufOp);
 }
 
 Node CandidateGeneratorSelector::getNextCandidate()

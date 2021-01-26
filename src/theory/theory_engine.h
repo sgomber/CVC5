@@ -290,9 +290,6 @@ class TheoryEngine {
   /** sort inference module */
   SortInference d_sortInfer;
 
-  /** The theory preprocessor */
-  theory::TheoryPreprocessor d_tpp;
-
   /** Time spent in theory combination */
   TimerStat d_combineTheoriesTime;
 
@@ -443,14 +440,10 @@ class TheoryEngine {
 
  public:
   /**
-   * Runs theory specific preprocessing on the non-Boolean parts of
-   * the formula.  This is only called on input assertions, after ITEs
-   * have been removed.
+   * Preprocess rewrite equality, called by the preprocessor to rewrite
+   * equalities appearing in the input.
    */
-  theory::TrustNode preprocess(TNode node);
-  /** Get the theory preprocessor TODO (project #42) remove this */
-  theory::TheoryPreprocessor* getTheoryPreprocess() { return &d_tpp; }
-
+  theory::TrustNode ppRewriteEquality(TNode eq);
   /** Notify (preprocessed) assertions. */
   void notifyPreprocessedAssertions(const std::vector<Node>& assertions);
 
@@ -661,10 +654,16 @@ class TheoryEngine {
   /**
    * Takes a literal and returns an equivalent literal that is guaranteed to be
    * a SAT literal. This rewrites and preprocesses n, which notice may involve
-   * sending lemmas if preprocessing n involves introducing new skolems.
+   * adding clauses to the SAT solver if preprocessing n involves introducing
+   * new skolems.
    */
   Node ensureLiteral(TNode n);
-
+  /**
+   * This returns the theory-preprocessed form of term n. This rewrites and
+   * preprocesses n, which notice may involve adding clauses to the SAT solver
+   * if preprocessing n involves introducing new skolems.
+   */
+  Node getPreprocessedTerm(TNode n);
   /**
    * Print all instantiations made by the quantifiers module.
    */
