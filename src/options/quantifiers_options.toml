@@ -307,6 +307,15 @@ header = "options/quantifiers_options.h"
   read_only  = true
   help       = "implementation of multi triggers where maximum number of instantiations is linear wrt number of ground terms"
 
+[[option]]
+  name       = "groundTermTriggerRegister"
+  category   = "regular"
+  long       = "gt-trigger-reg"
+  type       = "bool"
+  default    = "true"
+  read_only  = true
+  help       = "ensure ground subterms of triggers are registered"
+
 # Trigger selection mode.
 #
 # These modes are used for determining which terms to select
