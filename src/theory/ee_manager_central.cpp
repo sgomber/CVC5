@@ -82,7 +82,8 @@ void EqEngineManagerCentral::initializeTheories()
     {
       d_centralEENotify.d_disequalNotify.push_back(notify);
     }
-    // the theory uses the central equality engine
+    // the theory uses the central equality engine, where notice this is
+    // independent of whether they asked for master
     eet.d_usedEe = &d_centralEqualityEngine;
   }
 
@@ -92,11 +93,6 @@ void EqEngineManagerCentral::initializeTheories()
   {
     d_centralEENotify.d_quantEngine = d_te.getQuantifiersEngine();
   }
-}
-
-eq::EqualityEngine* EqEngineManagerCentral::getCoreEqualityEngine()
-{
-  return &d_centralEqualityEngine;
 }
 
 EqEngineManagerCentral::CentralNotifyClass::CentralNotifyClass(

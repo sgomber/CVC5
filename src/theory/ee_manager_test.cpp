@@ -76,8 +76,8 @@ void EqEngineManagerTest::initializeTheories()
     // set the notify
     eq::EqualityEngineNotify* notify = esi.d_notify;
     d_theoryNotify[theoryId] = notify;
-    // split on whether integrated
-    if (t->usesCentralEqualityEngine())
+    // split on whether integrated, or whether asked for master
+    if (t->usesCentralEqualityEngine() || esi.d_useMaster)
     {
       // the theory uses the central equality engine
       eet.d_usedEe = &d_centralEqualityEngine;
@@ -154,11 +154,6 @@ void EqEngineManagerTest::MasterNotifyClass::eqNotifyNewClass(TNode t)
 {
   // adds t to the quantifiers term database
   d_quantEngine->eqNotifyNewClass(t);
-}
-
-eq::EqualityEngine* EqEngineManagerTest::getCoreEqualityEngine()
-{
-  return d_masterEqualityEngine.get();
 }
 
 //================================================ central

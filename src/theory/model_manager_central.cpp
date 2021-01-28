@@ -29,7 +29,8 @@ ModelManagerCentral::~ModelManagerCentral() {}
 void ModelManagerCentral::initializeModelEqEngine(
     eq::EqualityEngineNotify* notify)
 {
-  d_modelEqualityEngine = d_eem.getCoreEqualityEngine();
+  // FIXME
+  //d_modelEqualityEngine = d_eem.getCoreEqualityEngine();
 }
 
 bool ModelManagerCentral::prepareModel()

@@ -52,8 +52,6 @@ class EqEngineManagerTest : public EqEngineManager
    * per theories and connects them to a master equality engine.
    */
   void initializeTheories() override;
-  /** get the core equality engine */
-  eq::EqualityEngine* getCoreEqualityEngine() override;
   /**
    * Notify this class that we are building the model.
    */

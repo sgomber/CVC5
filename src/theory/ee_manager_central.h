@@ -38,8 +38,6 @@ class EqEngineManagerCentral : public EqEngineManager
    * Initialize theories
    */
   void initializeTheories() override;
-  /** get the core equality engine */
-  eq::EqualityEngine* getCoreEqualityEngine() override;
   /**
    * Notify this class that we are building the model.
    */
