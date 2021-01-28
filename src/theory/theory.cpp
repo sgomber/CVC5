@@ -69,8 +69,7 @@ Theory::Theory(TheoryId id,
       d_facts(satContext),
       d_factsHead(satContext, 0),
       d_sharedTermsIndex(satContext, 0),
-      d_careGraph(NULL),
-      d_quantEngine(NULL),
+      d_careGraph(nullptr),
       d_decManager(nullptr),
       d_instanceName(name),
       d_checkTime(getStatsPrefix(id) + name + "::checkTime"),
@@ -83,6 +82,7 @@ Theory::Theory(TheoryId id,
       d_allocEqualityEngine(nullptr),
       d_theoryState(nullptr),
       d_inferManager(nullptr),
+      d_quantEngine(nullptr),
       d_pnm(pnm),
       d_needsSharedTermEqFacts(true)
 {
@@ -117,7 +117,6 @@ void Theory::setEqualityEngine(eq::EqualityEngine* ee)
 
 void Theory::setQuantifiersEngine(QuantifiersEngine* qe)
 {
-  Assert(d_quantEngine == nullptr);
   // quantifiers engine may be null if not in quantified logic
   d_quantEngine = qe;
 }
