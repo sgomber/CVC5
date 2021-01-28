@@ -520,16 +520,6 @@ Node RemoveTermFormulas::getSkolemForNode(Node k) const
 bool RemoveTermFormulas::getSkolems(
     TNode n, std::unordered_set<Node, NodeHashFunction>& skolems) const
 {
-  // if n was unchanged by term formula removal, just return immediately
-  std::pair<Node, uint32_t> initial(n, d_rtfc.initialValue());
-  TermFormulaCache::const_iterator itc = d_tfCache.find(initial);
-  if (itc != d_tfCache.end())
-  {
-    if (itc->second == n)
-    {
-      return false;
-    }
-  }
   // otherwise, traverse it
   bool ret = false;
   std::unordered_set<TNode, TNodeHashFunction> visited;
@@ -555,7 +545,10 @@ bool RemoveTermFormulas::getSkolems(
           ret = true;
         }
       }
-      visit.insert(visit.end(), cur.begin(), cur.end());
+      else
+      {
+        visit.insert(visit.end(), cur.begin(), cur.end());
+      }
     }
   } while (!visit.empty());
   return ret;

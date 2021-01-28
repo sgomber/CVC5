@@ -32,7 +32,9 @@
 #include "prop/minisat/minisat.h"
 #include "prop/proof_cnf_stream.h"
 #include "prop/prop_proof_manager.h"
+#include "prop/sat_relevancy.h"
 #include "prop/sat_solver_types.h"
+#include "prop/theory_proxy.h"
 #include "theory/trust_node.h"
 #include "util/resource_manager.h"
 #include "util/result.h"
@@ -45,16 +47,10 @@ class DecisionEngine;
 class OutputManager;
 class TheoryEngine;
 
-namespace theory {
-  class TheoryRegistrar;
-}/* CVC4::theory namespace */
-
 namespace prop {
 
 class CnfStream;
 class CDCLTSatSolverInterface;
-
-class PropEngine;
 
 /**
  * PropEngine is the abstraction of a Sat Solver, providing methods for
@@ -102,14 +98,26 @@ class PropEngine
    * @param node The assertion to preprocess,
    * @param ppLemmas The lemmas to add to the set of assertions,
    * @param ppSkolems The skolems that newLemmas correspond to,
-   * @param doTheoryPreprocess whether to run theory-specific preprocessing.
    * @return The (REWRITE) trust node corresponding to rewritten node via
    * preprocessing.
    */
   theory::TrustNode preprocess(TNode node,
                                std::vector<theory::TrustNode>& ppLemmas,
-                               std::vector<Node>& ppSkolems,
-                               bool doTheoryPreprocess);
+                               std::vector<Node>& ppSkolems);
+  /**
+   * Remove term ITEs (and more generally, term formulas) from the given node.
+   * Return the REWRITE trust node corresponding to rewriting node. New lemmas
+   * and skolems are added to ppLemmas and ppSkolems respectively.
+   *
+   * @param node The assertion to preprocess,
+   * @param ppLemmas The lemmas to add to the set of assertions,
+   * @param ppSkolems The skolems that newLemmas correspond to,
+   * @return The (REWRITE) trust node corresponding to rewritten node via
+   * preprocessing.
+   */
+  theory::TrustNode removeItes(TNode node,
+                               std::vector<theory::TrustNode>& ppLemmas,
+                               std::vector<Node>& ppSkolems);
 
   /**
    * Notify preprocessed assertions. This method is called just before the
@@ -134,7 +142,8 @@ class PropEngine
    * @param p the properties of the lemma
    * @return the (preprocessed) lemma
    */
-  Node assertLemma(theory::TrustNode tlemma, theory::LemmaProperty p);
+  Node assertLemma(theory::TrustNode tlemma,
+                   theory::LemmaProperty p = theory::LemmaProperty::NONE);
 
   /**
    * If ever n is decided upon, it must be in the given phase.  This
@@ -294,6 +303,9 @@ class PropEngine
 
   /** The context */
   context::Context* d_context;
+
+  /** The SAT relevancy module we will use */
+  std::unique_ptr<SatRelevancy> d_satRlv;
 
   /** SAT solver's proxy back to theories; kept around for dtor cleanup */
   TheoryProxy* d_theoryProxy;

@@ -19,9 +19,12 @@
 #include "context/context.h"
 #include "decision/decision_engine.h"
 #include "options/decision_options.h"
+#include "options/prop_options.h"
 #include "proof/cnf_proof.h"
 #include "prop/cnf_stream.h"
+#include "prop/lazy_tpp_solver.h"
 #include "prop/prop_engine.h"
+#include "prop/sat_relevancy.h"
 #include "smt/smt_statistics_registry.h"
 #include "theory/rewriter.h"
 #include "theory/theory_engine.h"
@@ -41,26 +44,54 @@ TheoryProxy::TheoryProxy(PropEngine* propEngine,
       d_decisionEngine(decisionEngine),
       d_theoryEngine(theoryEngine),
       d_queue(context),
-      d_tpp(*theoryEngine, userContext, pnm)
+      d_satRlv(nullptr),
+      d_tppSlv(nullptr)
 {
+  if (options::theoryPpOnAssert())
+  {
+    d_tppSlv.reset(
+        new LazyTppSolver(*propEngine, *theoryEngine, userContext, pnm));
+  }
+  else
+  {
+    d_tppSlv.reset(new TheoryPreprocessSolver(
+        *propEngine, *theoryEngine, userContext, pnm));
+  }
 }
 
 TheoryProxy::~TheoryProxy() {
   /* nothing to do for now */
 }
 
-void TheoryProxy::finishInit(CnfStream* cnfStream) { d_cnfStream = cnfStream; }
+void TheoryProxy::finishInit(CnfStream* cnfStream, SatRelevancy* satRlv)
+{
+  d_cnfStream = cnfStream;
+  d_satRlv = satRlv;
+}
+
+void TheoryProxy::notifyPreprocessedAssertions(
+    const std::vector<Node>& assertions)
+{
+  d_theoryEngine->notifyPreprocessedAssertions(assertions);
+}
 
 void TheoryProxy::variableNotify(SatVariable var) {
-  d_theoryEngine->preRegister(getNode(SatLiteral(var)));
+  Node n = d_cnfStream->getNode(SatLiteral(var));
+  d_theoryEngine->preRegister(n);
 }
 
 void TheoryProxy::theoryCheck(theory::Theory::Effort effort) {
   while (!d_queue.empty()) {
     TNode assertion = d_queue.front();
     d_queue.pop();
+    // assert fact to the theory-preprocess solver, which may impact what
+    // skolems are activated
+    d_tppSlv->notifyAssertFact(assertion);
+    // now, assert to theory engine
     d_theoryEngine->assertFact(assertion);
   }
+  // check with the theory preprocess solver and the theory engine
+  d_tppSlv->check(effort);
   d_theoryEngine->check(effort);
 }
 
@@ -116,6 +147,12 @@ void TheoryProxy::explainPropagation(SatLiteral l, SatClause& explanation) {
 }
 
 void TheoryProxy::enqueueTheoryLiteral(const SatLiteral& l) {
+  if (d_satRlv != nullptr)
+  {
+    // use the sat relevancy to enqueue literals that are relevant
+    d_satRlv->notifyAsserted(l, d_queue);
+    return;
+  }
   Node literalNode = d_cnfStream->getNode(l);
   Debug("prop") << "enqueueing theory literal " << l << " " << literalNode << std::endl;
   Assert(!literalNode.isNull());
@@ -138,7 +175,7 @@ SatLiteral TheoryProxy::getNextDecisionEngineRequest(bool &stopSearch) {
 }
 
 bool TheoryProxy::theoryNeedCheck() const {
-  return d_theoryEngine->needCheck();
+  return d_theoryEngine->needCheck() || d_tppSlv->needCheck();
 }
 
 TNode TheoryProxy::getNode(SatLiteral lit) {
@@ -173,21 +210,27 @@ theory::TrustNode TheoryProxy::preprocessLemma(
     theory::TrustNode trn,
     std::vector<theory::TrustNode>& newLemmas,
     std::vector<Node>& newSkolems,
-    bool doTheoryPreprocess)
+    Node& retLemma)
 {
-  return d_tpp.preprocessLemma(
-      trn, newLemmas, newSkolems, doTheoryPreprocess, true);
+  // preprocess lemma based on the theory-preprocess solver
+  return d_tppSlv->preprocessLemma(trn, newLemmas, newSkolems, retLemma);
 }
 
 theory::TrustNode TheoryProxy::preprocess(
     TNode node,
     std::vector<theory::TrustNode>& newLemmas,
-    std::vector<Node>& newSkolems,
-    bool doTheoryPreprocess)
+    std::vector<Node>& newSkolems)
 {
-  theory::TrustNode pnode =
-      d_tpp.preprocess(node, newLemmas, newSkolems, doTheoryPreprocess, true);
-  return pnode;
+  // preprocess based on the theory-preprocess solver
+  return d_tppSlv->preprocess(node, newLemmas, newSkolems);
+}
+
+theory::TrustNode TheoryProxy::removeItes(
+    TNode node,
+    std::vector<theory::TrustNode>& newLemmas,
+    std::vector<Node>& newSkolems)
+{
+  return d_tppSlv->removeItes(node, newLemmas, newSkolems);
 }
 
 void TheoryProxy::preRegister(Node n) { d_theoryEngine->preRegister(n); }

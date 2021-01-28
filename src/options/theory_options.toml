@@ -66,3 +66,11 @@ header = "options/theory_options.h"
 [[option.mode.CARE_GRAPH]]
   name = "care-graph"
   help = "Use care graphs for theory combination."
+
+[[option]]
+  name       = "satTheoryRelevancy"
+  category   = "regular"
+  long       = "sat-rlv"
+  type       = "bool"
+  default    = "false"
+  help       = "enable filtering of literals from the SAT solver to the theory engine based on relevancy"

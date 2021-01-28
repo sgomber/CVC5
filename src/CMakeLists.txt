@@ -172,6 +172,8 @@ libcvc4_add_sources(
   prop/cryptominisat.h
   prop/kissat.cpp
   prop/kissat.h
+  prop/lazy_tpp_solver.cpp
+  prop/lazy_tpp_solver.h
   prop/proof_cnf_stream.cpp
   prop/proof_cnf_stream.h
   prop/minisat/core/Dimacs.h
@@ -202,12 +204,16 @@ libcvc4_add_sources(
   prop/sat_solver.h
   prop/sat_proof_manager.cpp
   prop/sat_proof_manager.h
+  prop/sat_relevancy.cpp
+  prop/sat_relevancy.h
   prop/sat_solver_factory.cpp
   prop/sat_solver_factory.h
   prop/sat_solver_types.cpp
   prop/sat_solver_types.h
   prop/theory_proxy.cpp
   prop/theory_proxy.h
+  prop/theory_preprocess_solver.cpp
+  prop/theory_preprocess_solver.h
   smt/abduction_solver.cpp
   smt/abduction_solver.h
   smt/abstract_values.cpp

@@ -31,8 +31,8 @@
 #include "expr/node.h"
 #include "prop/registrar.h"
 #include "prop/sat_solver.h"
+#include "prop/theory_preprocess_solver.h"
 #include "theory/theory.h"
-#include "theory/theory_preprocessor.h"
 #include "theory/trust_node.h"
 #include "util/resource_manager.h"
 #include "util/statistics_registry.h"
@@ -46,12 +46,18 @@ namespace prop {
 
 class PropEngine;
 class CnfStream;
+class SatRelevancy;
 
 /**
- * The proxy class that allows the SatSolver to communicate with the theories
+ * The proxy class that allows the SatSolver to communicate with the theories.
+ *
+ * It is an instance of the Registrar class, since it implements
+ * preregistration.
  */
 class TheoryProxy : public Registrar
 {
+  using NodeNodeMap = context::CDHashMap<Node, Node, NodeHashFunction>;
+
  public:
   TheoryProxy(PropEngine* propEngine,
               TheoryEngine* theoryEngine,
@@ -63,7 +69,10 @@ class TheoryProxy : public Registrar
   ~TheoryProxy();
 
   /** Finish initialize */
-  void finishInit(CnfStream* cnfStream);
+  void finishInit(CnfStream* cnfStream, SatRelevancy* satRlv);
+
+  /** Notify (preprocessed) assertions. */
+  void notifyPreprocessedAssertions(const std::vector<Node>& assertions);
 
   void theoryCheck(theory::Theory::Effort effort);
 
@@ -105,15 +114,20 @@ class TheoryProxy : public Registrar
   theory::TrustNode preprocessLemma(theory::TrustNode trn,
                                     std::vector<theory::TrustNode>& newLemmas,
                                     std::vector<Node>& newSkolems,
-                                    bool doTheoryPreprocess);
+                                    Node& retLemma);
   /**
    * Call the preprocessor on node, return trust node corresponding to the
    * rewrite.
    */
   theory::TrustNode preprocess(TNode node,
                                std::vector<theory::TrustNode>& newLemmas,
-                               std::vector<Node>& newSkolems,
-                               bool doTheoryPreprocess);
+                               std::vector<Node>& newSkolems);
+  /**
+   * Remove ITEs from the node.
+   */
+  theory::TrustNode removeItes(TNode node,
+                               std::vector<theory::TrustNode>& newLemmas,
+                               std::vector<Node>& newSkolems);
   /** Preregister term */
   void preRegister(Node n) override;
 
@@ -139,9 +153,16 @@ class TheoryProxy : public Registrar
    */
   std::unordered_set<Node, NodeHashFunction> d_shared;
 
-  /** The theory preprocessor */
-  theory::TheoryPreprocessor d_tpp;
-}; /* class TheoryProxy */
+  /** Pointer to the SAT relevancy module, if it exists */
+  SatRelevancy* d_satRlv;
+
+  /**
+   * The theory preprocess solver, which is responsible for managing the
+   * communication between the TheoryEngine and PropEngine, in particular,
+   * that the TheoryEngine gets only literals that are theory-preprocessed.
+   */
+  std::unique_ptr<TheoryPreprocessSolver> d_tppSlv;
+};
 
 }/* CVC4::prop namespace */
 

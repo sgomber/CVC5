@@ -27,6 +27,7 @@
 #include "options/decision_options.h"
 #include "options/main_options.h"
 #include "options/options.h"
+#include "options/prop_options.h"
 #include "options/smt_options.h"
 #include "proof/proof_manager.h"
 #include "prop/cnf_stream.h"
@@ -97,15 +98,20 @@ PropEngine::PropEngine(TheoryEngine* te,
                                   satContext,
                                   userContext,
                                   pnm);
-  d_cnfStream = new CnfStream(d_satSolver,
-                              d_theoryProxy,
-                              userContext,
-                              &d_outMgr,
-                              rm,
-                              FormulaLitPolicy::TRACK);
+  // track and notify formulas if we are using SAT/Theory relevancy
+  bool useSatTheoryRlv = options::satTheoryRelevancy();
+  FormulaLitPolicy flp = useSatTheoryRlv ? FormulaLitPolicy::TRACK_AND_NOTIFY
+                                         : FormulaLitPolicy::TRACK;
+  d_cnfStream = new CVC4::prop::CnfStream(
+      d_satSolver, d_theoryProxy, userContext, &d_outMgr, rm, flp);
 
+  if (useSatTheoryRlv)
+  {
+    // make the sat relevancy module if it is required
+    d_satRlv.reset(new SatRelevancy(d_satSolver, d_context, d_cnfStream));
+  }
   // connect theory proxy
-  d_theoryProxy->finishInit(d_cnfStream);
+  d_theoryProxy->finishInit(d_cnfStream, d_satRlv.get());
   // connect SAT solver
   d_satSolver->initialize(d_context, d_theoryProxy, userContext, pnm);
 
@@ -155,19 +161,25 @@ PropEngine::~PropEngine() {
 
 theory::TrustNode PropEngine::preprocess(
     TNode node,
-    std::vector<theory::TrustNode>& newLemmas,
-    std::vector<Node>& newSkolems,
-    bool doTheoryPreprocess)
+    std::vector<theory::TrustNode>& ppLemmas,
+    std::vector<Node>& ppSkolems)
 {
-  return d_theoryProxy->preprocess(
-      node, newLemmas, newSkolems, doTheoryPreprocess);
+  return d_theoryProxy->preprocess(node, ppLemmas, ppSkolems);
+}
+
+theory::TrustNode PropEngine::removeItes(
+    TNode node,
+    std::vector<theory::TrustNode>& ppLemmas,
+    std::vector<Node>& ppSkolems)
+{
+  return d_theoryProxy->removeItes(node, ppLemmas, ppSkolems);
 }
 
 void PropEngine::notifyPreprocessedAssertions(
     const preprocessing::AssertionPipeline& ap)
 {
   // notify the theory engine of preprocessed assertions
-  d_theoryEngine->notifyPreprocessedAssertions(ap.ref());
+  d_theoryProxy->notifyPreprocessedAssertions(ap.ref());
 
   // Add assertions to decision engine, which manually extracts what assertions
   // corresponded to term formula removal. Note that alternatively we could
@@ -198,18 +210,23 @@ void PropEngine::assertFormula(TNode node) {
   {
     d_cnfStream->convertAndAssert(node, false, false, true);
   }
+  // notify the SAT relevancy if it exists
+  if (d_satRlv != nullptr)
+  {
+    d_satRlv->notifyPreprocessedAssertion(node);
+  }
 }
 
 Node PropEngine::assertLemma(theory::TrustNode tlemma, theory::LemmaProperty p)
 {
   bool removable = isLemmaPropertyRemovable(p);
-  bool preprocess = isLemmaPropertyPreprocess(p);
 
   // call preprocessor
   std::vector<theory::TrustNode> ppLemmas;
   std::vector<Node> ppSkolems;
+  Node retLemma;
   theory::TrustNode tplemma =
-      d_theoryProxy->preprocessLemma(tlemma, ppLemmas, ppSkolems, preprocess);
+      d_theoryProxy->preprocessLemma(tlemma, ppLemmas, ppSkolems, retLemma);
 
   Assert(ppSkolems.size() == ppLemmas.size());
 
@@ -257,18 +274,6 @@ Node PropEngine::assertLemma(theory::TrustNode tlemma, theory::LemmaProperty p)
     d_decisionEngine->addAssertions(assertions, ppLemmasF, ppSkolems);
   }
 
-  // make the return lemma, which the theory engine will use
-  Node retLemma = tplemma.getProven();
-  if (!ppLemmas.empty())
-  {
-    std::vector<Node> lemmas{retLemma};
-    for (const theory::TrustNode& tnl : ppLemmas)
-    {
-      lemmas.push_back(tnl.getProven());
-    }
-    // the returned lemma is the conjunction of all additional lemmas.
-    retLemma = NodeManager::currentNM()->mkNode(kind::AND, lemmas);
-  }
   return retLemma;
 }
 
@@ -439,12 +444,11 @@ Node PropEngine::getPreprocessedTerm(TNode n)
   // must preprocess
   std::vector<theory::TrustNode> newLemmas;
   std::vector<Node> newSkolems;
-  theory::TrustNode tpn =
-      d_theoryProxy->preprocess(n, newLemmas, newSkolems, true);
+  theory::TrustNode tpn = d_theoryProxy->preprocess(n, newLemmas, newSkolems);
   // send lemmas corresponding to the skolems introduced by preprocessing n
   for (const theory::TrustNode& tnl : newLemmas)
   {
-    assertLemma(tnl, theory::LemmaProperty::NONE);
+    assertLemma(tnl);
   }
   return tpn.isNull() ? Node(n) : tpn.getNode();
 }
