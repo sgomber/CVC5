@@ -21,10 +21,10 @@
 #include "expr/proof_node_manager.h"
 #include "theory/ee_setup_info.h"
 #include "theory/logic_info.h"
+#include "theory/output_channel.h"
 #include "theory/shared_terms_database.h"
 #include "theory/term_registration_visitor.h"
 #include "theory/valuation.h"
-#include "theory/output_channel.h"
 
 namespace CVC4 {
 

@@ -1086,10 +1086,11 @@ void TheoryEngine::assertFact(TNode literal)
     // to the assert the equality to the interested theories
     if (atom.getKind() == kind::EQUAL) {
       TheoryId tid = Theory::theoryOf(atom);
-      //if (!Theory::usesCentralEqualityEngine(tid) || tid!=THEORY_UF)
+      // if (!Theory::usesCentralEqualityEngine(tid) || tid!=THEORY_UF)
       //{
-        // Assert it to the the owning theory
-        assertToTheory(literal, literal, /* to */ tid, /* from */ THEORY_SAT_SOLVER);
+      // Assert it to the the owning theory
+      assertToTheory(
+          literal, literal, /* to */ tid, /* from */ THEORY_SAT_SOLVER);
       //}
       // NOTE (centralEe): fact from SAT_SOLVER
       // Shared terms manager will assert to interested theories directly, as

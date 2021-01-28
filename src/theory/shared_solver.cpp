@@ -128,10 +128,7 @@ void SharedSolver::sendLemma(TrustNode trn, TheoryId atomsTo)
   d_te.lemma(trn, LemmaProperty::NONE, atomsTo);
 }
 
-void SharedSolver::sendConflict(TrustNode trn)
-{
-  d_out.trustedConflict(trn);
-}
+void SharedSolver::sendConflict(TrustNode trn) { d_out.trustedConflict(trn); }
 
 }  // namespace theory
 }  // namespace CVC4

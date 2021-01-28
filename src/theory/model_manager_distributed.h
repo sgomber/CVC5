@@ -58,6 +58,7 @@ class ModelManagerDistributed : public ModelManager
    * pop/push.
    */
   context::Context* getModelEqualityEngineContext() override;
+
  protected:
   /** Initialize model equality engine */
   void initializeModelEqEngine(eq::EqualityEngineNotify* notify) override;

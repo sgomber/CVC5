@@ -30,7 +30,7 @@ void ModelManagerCentral::initializeModelEqEngine(
     eq::EqualityEngineNotify* notify)
 {
   // FIXME
-  //d_modelEqualityEngine = d_eem.getCoreEqualityEngine();
+  // d_modelEqualityEngine = d_eem.getCoreEqualityEngine();
 }
 
 bool ModelManagerCentral::prepareModel()
