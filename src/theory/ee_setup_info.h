@@ -57,7 +57,10 @@ struct EeSetupFunctionKind
  */
 struct EeSetupInfo
 {
-  EeSetupInfo() : d_notify(nullptr), d_constantsAreTriggers(true) {}
+  EeSetupInfo()
+      : d_notify(nullptr), d_constantsAreTriggers(true), d_useMaster(false)
+  {
+  }
   /** The notification class of the theory */
   eq::EqualityEngineNotify* d_notify;
   /** The name of the equality engine */
@@ -99,6 +102,11 @@ struct EeSetupInfo
   {
     return !d_notifyDisequalTypeKinds.empty() || !d_notifyDisequalTypes.empty();
   }
+  /**
+   * Whether we want our state to use the master equality engine. This should
+   * be true exclusively for the theory of quantifiers.
+   */
+  bool d_useMaster;
 };
 
 }  // namespace theory

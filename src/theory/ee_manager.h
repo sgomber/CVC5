@@ -77,13 +77,6 @@ class EqEngineManager
    */
   const EeTheoryInfo* getEeTheoryInfo(TheoryId tid) const;
   /**
-   * Get the core equality engine, which is the equality engine that the
-   * quantifiers engine should use. This corresponds to the master equality
-   * engine if eeMode is distributed, or the central equality engine if eeMode
-   * is central.
-   */
-  virtual eq::EqualityEngine* getCoreEqualityEngine() = 0;
-  /**
    * Get representatives, available at full effort only.
    */
   const std::unordered_set<Node, NodeHashFunction>& getEqcRepresentatives()
@@ -93,9 +86,17 @@ class EqEngineManager
    */
   const std::vector<Node>& getEqcRepresentativesForType(TypeNode t) const;
 
+
   /** Allocate equality engine that is context-dependent on c with info esi */
   eq::EqualityEngine* allocateEqualityEngine(EeSetupInfo& esi,
                                              context::Context* c);
+  /**
+   * Notify this class that we are about to terminate with a model. This method
+   * is for debugging only.
+   *
+   * @param incomplete Whether we are answering "unknown" instead of "sat".
+   */
+  virtual void notifyModel(bool incomplete) {}
 
  protected:
   /** Add function kinds */
