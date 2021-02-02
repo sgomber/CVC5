@@ -88,7 +88,12 @@ void TheoryUF::finishInit() {
   if (options::finiteModelFind()
       && options::ufssMode() != options::UfssMode::NONE)
   {
-    d_thss.reset(new CardinalityExtension(d_state, d_im, this));
+    SortInference * si = nullptr;
+    if (options::sortInference())
+    {
+      si = d_quantEngine->getTheoryEngine()->getSortInference();
+    }
+    d_thss.reset(new CardinalityExtension(d_state, d_im, d_decManager, si));
   }
   // The kinds we are treating as function application in congruence
   d_equalityEngine->addFunctionKind(kind::APPLY_UF, false, options::ufHo());

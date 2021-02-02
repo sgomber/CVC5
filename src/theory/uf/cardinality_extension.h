@@ -31,8 +31,6 @@ class SortInference;
 namespace theory {
 namespace uf {
 
-class TheoryUF;
-
 /**
  * This module implements a theory solver for UF with cardinality constraints.
  * For high level details, see Reynolds et al "Finite Model Finding in SMT",
@@ -362,10 +360,10 @@ class CardinalityExtension
  public:
   CardinalityExtension(TheoryState& state,
                        TheoryInferenceManager& im,
-                       TheoryUF* th);
+                       DecisionManager* dm,
+                       SortInference * si
+                      );
   ~CardinalityExtension();
-  /** get theory */
-  TheoryUF* getTheory() { return d_th; }
   /** get sort inference module */
   SortInference* getSortInference();
   /** new node */
@@ -423,8 +421,10 @@ class CardinalityExtension
   TheoryState& d_state;
   /** Reference to the inference manager */
   TheoryInferenceManager& d_im;
-  /** theory uf pointer */
-  TheoryUF* d_th;
+  /** decision manager pointer */
+  DecisionManager* d_decManager;
+  /** sort inference pointer */
+  SortInference* d_sortInfer;
   /** rep model structure, one for each type */
   std::map<TypeNode, SortModel*> d_rep_model;
 

@@ -482,7 +482,7 @@ SortModel::SortModel(Node n,
     // We are guaranteed that the decision manager is ready since we
     // construct this module during TheoryUF::finishInit.
     d_c_dec_strat.reset(new CardinalityDecisionStrategy(
-        n, d_state.getSatContext(), thss->getTheory()->getValuation()));
+        n, d_state.getSatContext(), d_state.getValuation()));
   }
 }
 
@@ -503,7 +503,7 @@ void SortModel::initialize()
     d_initialized = true;
     // Strategy is user-context-dependent, since it is in sync with
     // user-context-dependent flag d_initialized.
-    d_thss->getTheory()->getDecisionManager()->registerStrategy(
+    d_decManager->registerStrategy(
         DecisionManager::STRAT_UF_CARD, d_c_dec_strat.get());
   }
 }
@@ -602,7 +602,7 @@ void SortModel::assertDisequal( Node a, Node b, Node reason ){
     return;
   }
   // if they are not already disequal
-  eq::EqualityEngine* ee = d_thss->getTheory()->getEqualityEngine();
+  eq::EqualityEngine* ee = d_state.getEqualityEngine();
   a = ee->getRepresentative(a);
   b = ee->getRepresentative(b);
   int ai = d_regions_map[a];
@@ -649,8 +649,8 @@ void SortModel::assertDisequal( Node a, Node b, Node reason ){
 }
 
 bool SortModel::areDisequal( Node a, Node b ) {
-  Assert(a == d_thss->getTheory()->getEqualityEngine()->getRepresentative(a));
-  Assert(b == d_thss->getTheory()->getEqualityEngine()->getRepresentative(b));
+  Assert(a == d_state.getEqualityEngine()->getRepresentative(a));
+  Assert(b == d_state.getEqualityEngine()->getRepresentative(b));
   if( d_regions_map.find( a )!=d_regions_map.end() &&
       d_regions_map.find( b )!=d_regions_map.end() ){
     int ai = d_regions_map[a];
@@ -846,7 +846,7 @@ void SortModel::assertCardinality(uint32_t c, bool val)
     Trace("uf-ss-assert")
         << "Assert cardinality " << d_type << " " << c << " " << val
         << " level = "
-        << d_thss->getTheory()->getValuation().getAssertionLevel() << std::endl;
+        << d_state.getValuation().getAssertionLevel() << std::endl;
     Assert(c > 0);
     Node cl = getCardinalityLiteral( c );
     if( val ){
@@ -1215,10 +1215,12 @@ Node SortModel::getCardinalityLiteral(uint32_t c)
 
 CardinalityExtension::CardinalityExtension(TheoryState& state,
                                            TheoryInferenceManager& im,
-                                           TheoryUF* th)
+                                           DecisionManager* dm,
+                       SortInference * si)
     : d_state(state),
       d_im(im),
-      d_th(th),
+      d_decManager(dm),
+      d_sortInfer(si),
       d_rep_model(),
       d_min_pos_com_card(state.getSatContext(), 0),
       d_min_pos_com_card_set(state.getSatContext(), false),
@@ -1235,7 +1237,7 @@ CardinalityExtension::CardinalityExtension(TheoryState& state,
     // We are guaranteed that the decision manager is ready since we
     // construct this module during TheoryUF::finishInit.
     d_cc_dec_strat.reset(new CombinedCardinalityDecisionStrategy(
-        state.getSatContext(), th->getValuation()));
+        state.getSatContext(), state.getValuation()));
   }
 }
 
@@ -1249,16 +1251,7 @@ CardinalityExtension::~CardinalityExtension()
 
 SortInference* CardinalityExtension::getSortInference()
 {
-  if (!options::sortInference())
-  {
-    return nullptr;
-  }
-  QuantifiersEngine* qe = d_th->getQuantifiersEngine();
-  if (qe != nullptr)
-  {
-    return qe->getTheoryEngine()->getSortInference();
-  }
-  return nullptr;
+  return d_sortInfer;
 }
 
 /** ensure eqc */
