@@ -217,6 +217,8 @@ class CardinalityExtension
     TheoryState& d_state;
     /** Reference to the inference manager */
     TheoryInferenceManager& d_im;
+    /** decision manager pointer */
+    DecisionManager* d_decManager;
     /** Pointer to the cardinality extension that owns this. */
     CardinalityExtension* d_thss;
     /** regions used to d_region_index */
@@ -286,6 +288,7 @@ class CardinalityExtension
     SortModel(Node n,
               TheoryState& state,
               TheoryInferenceManager& im,
+                       DecisionManager* dm,
               CardinalityExtension* thss);
     virtual ~SortModel();
     /** initialize */

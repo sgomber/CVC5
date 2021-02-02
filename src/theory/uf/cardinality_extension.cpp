@@ -458,10 +458,12 @@ std::string SortModel::CardinalityDecisionStrategy::identify() const
 SortModel::SortModel(Node n,
                      TheoryState& state,
                      TheoryInferenceManager& im,
+                       DecisionManager* dm,
                      CardinalityExtension* thss)
     : d_type(n.getType()),
       d_state(state),
       d_im(im),
+      d_decManager(dm),
       d_thss(thss),
       d_regions_index(d_state.getSatContext(), 0),
       d_regions_map(d_state.getSatContext()),
@@ -1587,7 +1589,7 @@ void CardinalityExtension::preRegisterTerm(TNode n)
       SortModel* rm = NULL;
       if( tn.isSort() ){
         Trace("uf-ss-register") << "Create sort model " << tn << "." << std::endl;
-        rm = new SortModel(n, d_state, d_im, this);
+        rm = new SortModel(n, d_state, d_im, d_decManager, this);
       }
       if( rm ){
         rm->initialize();
