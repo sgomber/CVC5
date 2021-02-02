@@ -458,7 +458,7 @@ std::string SortModel::CardinalityDecisionStrategy::identify() const
 SortModel::SortModel(Node n,
                      TheoryState& state,
                      TheoryInferenceManager& im,
-                       DecisionManager* dm,
+                     DecisionManager* dm,
                      CardinalityExtension* thss)
     : d_type(n.getType()),
       d_state(state),

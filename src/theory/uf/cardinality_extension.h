@@ -288,7 +288,7 @@ class CardinalityExtension
     SortModel(Node n,
               TheoryState& state,
               TheoryInferenceManager& im,
-                       DecisionManager* dm,
+              DecisionManager* dm,
               CardinalityExtension* thss);
     virtual ~SortModel();
     /** initialize */
