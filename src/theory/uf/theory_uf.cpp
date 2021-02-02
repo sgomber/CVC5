@@ -30,6 +30,8 @@
 #include "theory/uf/cardinality_extension.h"
 #include "theory/uf/ho_extension.h"
 #include "theory/uf/theory_uf_rewriter.h"
+#include "theory/quantifiers_engine.h"
+#include "theory/theory_engine.h"
 
 using namespace std;
 
@@ -93,7 +95,7 @@ void TheoryUF::finishInit() {
     {
       si = d_quantEngine->getTheoryEngine()->getSortInference();
     }
-    d_thss.reset(new CardinalityExtension(d_state, d_im, d_decManager, si));
+    d_thss.reset(new CardinalityExtension(d_state, d_im, getDecisionManager(), si));
   }
   // The kinds we are treating as function application in congruence
   d_equalityEngine->addFunctionKind(kind::APPLY_UF, false, options::ufHo());

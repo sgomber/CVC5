@@ -1440,7 +1440,7 @@ bool CardinalityExtension::areDisequal(Node a, Node b)
   if( a==b ){
     return false;
   }
-  eq::EqualityEngine* ee = d_th->getEqualityEngine();
+  eq::EqualityEngine* ee = d_state.getEqualityEngine();
   a = ee->getRepresentative(a);
   b = ee->getRepresentative(b);
   if (ee->areDisequal(a, b, false))
@@ -1504,10 +1504,11 @@ void CardinalityExtension::check(Theory::Effort level)
     else if (options::ufssMode() == options::UfssMode::NO_MINIMAL)
     {
       if( level==Theory::EFFORT_FULL ){
+        eq::EqualityEngine * ee = d_state.getEqualityEngine();
         // split on an equality between two equivalence classes (at most one per type)
         std::map< TypeNode, std::vector< Node > > eqc_list;
         std::map< TypeNode, bool > type_proc;
-        eq::EqClassesIterator eqcs_i(d_th->getEqualityEngine());
+        eq::EqClassesIterator eqcs_i(ee);
         while( !eqcs_i.isFinished() ){
           Node a = *eqcs_i;
           TypeNode tn = a.getType();
@@ -1517,7 +1518,7 @@ void CardinalityExtension::check(Theory::Effort level)
               if( itel!=eqc_list.end() ){
                 for( unsigned j=0; j<itel->second.size(); j++ ){
                   Node b = itel->second[j];
-                  if( !d_th->getEqualityEngine()->areDisequal( a, b, false ) ){
+                  if( !ee->areDisequal( a, b, false ) ){
                     Node eq = Rewriter::rewrite( a.eqNode( b ) );
                     Node lem = NodeManager::currentNM()->mkNode( kind::OR, eq, eq.negate() );
                     Trace("uf-ss-lemma") << "*** Split (no-minimal) : " << lem << std::endl;
@@ -1655,7 +1656,7 @@ void CardinalityExtension::initializeCombinedCardinality()
       && !d_initializedCombinedCardinality.get())
   {
     d_initializedCombinedCardinality = true;
-    d_th->getDecisionManager()->registerStrategy(
+    d_decManager->registerStrategy(
         DecisionManager::STRAT_UF_COMBINED_CARD, d_cc_dec_strat.get());
   }
 }
