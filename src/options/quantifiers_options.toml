@@ -417,6 +417,14 @@ header = "options/quantifiers_options.h"
   help       = "generate additional triggers as needed during search"
 
 [[option]]
+  name       = "nestedTriggers"
+  category   = "regular"
+  long       = "nested-triggers"
+  type       = "bool"
+  default    = "false"
+  help       = "generate triggers based on terms in nested quantifiers"
+
+[[option]]
   name       = "instWhenMode"
   category   = "regular"
   long       = "inst-when=MODE"

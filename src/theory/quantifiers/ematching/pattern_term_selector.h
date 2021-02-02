@@ -43,11 +43,13 @@ class PatternTermSelector
    * in the pattern terms we are return, e.g. we do not return f(x) if we are
    * also returning f(f(x)). This is default true since it helps in practice
    * to filter trigger instances.
+   * @param nestedTerms when true, we consider terms within nested quantifiers
    */
   PatternTermSelector(Node q,
                       options::TriggerSelMode tstrt,
                       const std::vector<Node>& exc = {},
-                      bool filterInst = true);
+                      bool filterInst = true,
+                      bool nestedTerms = false));
   ~PatternTermSelector();
   /** collect pattern terms
    *
@@ -186,6 +188,8 @@ class PatternTermSelector
   std::vector<Node> d_excluded;
   /** Whether we are filtering instances */
   bool d_filterInst;
+  /** Whether we are selection triggers in nested quantifiers */
+  bool d_nestedTerms;
 };
 
 }  // namespace inst

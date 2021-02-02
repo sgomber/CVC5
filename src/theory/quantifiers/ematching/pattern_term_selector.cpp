@@ -28,8 +28,9 @@ namespace inst {
 PatternTermSelector::PatternTermSelector(Node q,
                                          options::TriggerSelMode tstrt,
                                          const std::vector<Node>& exc,
-                                         bool filterInst)
-    : d_quant(q), d_tstrt(tstrt), d_excluded(exc), d_filterInst(filterInst)
+                                         bool filterInst,
+                      bool nestedTerms)
+    : d_quant(q), d_tstrt(tstrt), d_excluded(exc), d_filterInst(filterInst), d_nestedTerms(nestedTerms)
 {
 }
 
@@ -253,7 +254,7 @@ void PatternTermSelector::collectTermsInternal(
       << "Collect pat terms " << n << " " << pol << " " << hasPol << " " << epol
       << " " << hasEPol << std::endl;
   Kind nk = n.getKind();
-  if (nk == FORALL || nk == INST_CONSTANT)
+  if ((nk == FORALL && !d_nestedTerms) || nk == INST_CONSTANT)
   {
     // do not traverse beneath quantified formulas
     return;
@@ -269,6 +270,14 @@ void PatternTermSelector::collectTermsInternal(
                   == d_excluded.end())
   {
     nu = getIsUsableTrigger(n, d_quant);
+    if (d_nestedTerms)
+    {
+      // if we're using nested terms, we need another check for free variables
+      if (expr::hasFreeVar(nu))
+      {
+        nu = Node::null();
+      }
+    }
     if (!nu.isNull() && nu != n)
     {
       collectTermsInternal(
