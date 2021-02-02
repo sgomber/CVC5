@@ -503,8 +503,8 @@ void SortModel::initialize()
     d_initialized = true;
     // Strategy is user-context-dependent, since it is in sync with
     // user-context-dependent flag d_initialized.
-    d_decManager->registerStrategy(
-        DecisionManager::STRAT_UF_CARD, d_c_dec_strat.get());
+    d_decManager->registerStrategy(DecisionManager::STRAT_UF_CARD,
+                                   d_c_dec_strat.get());
   }
 }
 
@@ -843,10 +843,10 @@ void SortModel::assertCardinality(uint32_t c, bool val)
 {
   if (!d_state.isInConflict())
   {
-    Trace("uf-ss-assert")
-        << "Assert cardinality " << d_type << " " << c << " " << val
-        << " level = "
-        << d_state.getValuation().getAssertionLevel() << std::endl;
+    Trace("uf-ss-assert") << "Assert cardinality " << d_type << " " << c << " "
+                          << val << " level = "
+                          << d_state.getValuation().getAssertionLevel()
+                          << std::endl;
     Assert(c > 0);
     Node cl = getCardinalityLiteral( c );
     if( val ){
@@ -1216,7 +1216,7 @@ Node SortModel::getCardinalityLiteral(uint32_t c)
 CardinalityExtension::CardinalityExtension(TheoryState& state,
                                            TheoryInferenceManager& im,
                                            DecisionManager* dm,
-                       SortInference * si)
+                                           SortInference* si)
     : d_state(state),
       d_im(im),
       d_decManager(dm),
@@ -1249,10 +1249,7 @@ CardinalityExtension::~CardinalityExtension()
   }
 }
 
-SortInference* CardinalityExtension::getSortInference()
-{
-  return d_sortInfer;
-}
+SortInference* CardinalityExtension::getSortInference() { return d_sortInfer; }
 
 /** ensure eqc */
 void CardinalityExtension::ensureEqc(SortModel* c, Node a)
@@ -1504,7 +1501,7 @@ void CardinalityExtension::check(Theory::Effort level)
     else if (options::ufssMode() == options::UfssMode::NO_MINIMAL)
     {
       if( level==Theory::EFFORT_FULL ){
-        eq::EqualityEngine * ee = d_state.getEqualityEngine();
+        eq::EqualityEngine* ee = d_state.getEqualityEngine();
         // split on an equality between two equivalence classes (at most one per type)
         std::map< TypeNode, std::vector< Node > > eqc_list;
         std::map< TypeNode, bool > type_proc;
@@ -1518,7 +1515,8 @@ void CardinalityExtension::check(Theory::Effort level)
               if( itel!=eqc_list.end() ){
                 for( unsigned j=0; j<itel->second.size(); j++ ){
                   Node b = itel->second[j];
-                  if( !ee->areDisequal( a, b, false ) ){
+                  if (!ee->areDisequal(a, b, false))
+                  {
                     Node eq = Rewriter::rewrite( a.eqNode( b ) );
                     Node lem = NodeManager::currentNM()->mkNode( kind::OR, eq, eq.negate() );
                     Trace("uf-ss-lemma") << "*** Split (no-minimal) : " << lem << std::endl;
@@ -1656,8 +1654,8 @@ void CardinalityExtension::initializeCombinedCardinality()
       && !d_initializedCombinedCardinality.get())
   {
     d_initializedCombinedCardinality = true;
-    d_decManager->registerStrategy(
-        DecisionManager::STRAT_UF_COMBINED_CARD, d_cc_dec_strat.get());
+    d_decManager->registerStrategy(DecisionManager::STRAT_UF_COMBINED_CARD,
+                                   d_cc_dec_strat.get());
   }
 }
 

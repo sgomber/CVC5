@@ -25,13 +25,13 @@
 #include "options/smt_options.h"
 #include "options/theory_options.h"
 #include "options/uf_options.h"
+#include "theory/quantifiers_engine.h"
+#include "theory/theory_engine.h"
 #include "theory/theory_model.h"
 #include "theory/type_enumerator.h"
 #include "theory/uf/cardinality_extension.h"
 #include "theory/uf/ho_extension.h"
 #include "theory/uf/theory_uf_rewriter.h"
-#include "theory/quantifiers_engine.h"
-#include "theory/theory_engine.h"
 
 using namespace std;
 
@@ -90,12 +90,13 @@ void TheoryUF::finishInit() {
   if (options::finiteModelFind()
       && options::ufssMode() != options::UfssMode::NONE)
   {
-    SortInference * si = nullptr;
+    SortInference* si = nullptr;
     if (options::sortInference())
     {
       si = d_quantEngine->getTheoryEngine()->getSortInference();
     }
-    d_thss.reset(new CardinalityExtension(d_state, d_im, getDecisionManager(), si));
+    d_thss.reset(
+        new CardinalityExtension(d_state, d_im, getDecisionManager(), si));
   }
   // The kinds we are treating as function application in congruence
   d_equalityEngine->addFunctionKind(kind::APPLY_UF, false, options::ufHo());

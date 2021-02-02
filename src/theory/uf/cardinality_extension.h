@@ -361,8 +361,7 @@ class CardinalityExtension
   CardinalityExtension(TheoryState& state,
                        TheoryInferenceManager& im,
                        DecisionManager* dm,
-                       SortInference * si
-                      );
+                       SortInference* si);
   ~CardinalityExtension();
   /** get sort inference module */
   SortInference* getSortInference();
