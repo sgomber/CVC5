@@ -86,8 +86,9 @@ Node BoundedIntegers::IntRangeDecisionHeuristic::proxyCurrentRangeLemma()
 
 BoundedIntegers::BoundedIntegers(QuantifiersEngine* qe,
                                  QuantifiersState& qs,
-                                 QuantifiersInferenceManager& qim)
-    : QuantifiersModule(qs, qim, qe)
+                                 QuantifiersInferenceManager& qim,
+                                 QuantifiersRegistry& qr)
+    : QuantifiersModule(qs, qim, qr, qe)
 {
 }
 
@@ -725,7 +726,7 @@ bool BoundedIntegers::getRsiSubsitution( Node q, Node v, std::vector< Node >& va
       nn = nn.substitute( vars.begin(), vars.end(), subs.begin(), subs.end() );
       Node lem = NodeManager::currentNM()->mkNode( LEQ, nn, d_range[q][v] );
       Trace("bound-int-lemma") << "*** Add lemma to minimize instantiated non-ground term " << lem << std::endl;
-      d_quantEngine->getOutputChannel().lemma(lem, LemmaProperty::PREPROCESS);
+      d_quantEngine->getOutputChannel().lemma(lem);
     }
     return false;
   }else{

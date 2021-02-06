@@ -15,7 +15,6 @@
 
 #include "expr/node_algorithm.h"
 #include "options/quantifiers_options.h"
-#include "smt/term_formula_removal.h"
 #include "theory/arith/partial_model.h"
 #include "theory/arith/theory_arith.h"
 #include "theory/arith/theory_arith_private.h"
@@ -26,7 +25,6 @@
 #include "theory/quantifiers/term_database.h"
 #include "theory/quantifiers/term_util.h"
 #include "theory/quantifiers_engine.h"
-#include "theory/theory_engine.h"
 
 using namespace std;
 using namespace CVC4::kind;
@@ -51,8 +49,9 @@ TrustNode InstRewriterCegqi::rewriteInstantiation(Node q,
 
 InstStrategyCegqi::InstStrategyCegqi(QuantifiersEngine* qe,
                                      QuantifiersState& qs,
-                                     QuantifiersInferenceManager& qim)
-    : QuantifiersModule(qs, qim, qe),
+                                     QuantifiersInferenceManager& qim,
+                                     QuantifiersRegistry& qr)
+    : QuantifiersModule(qs, qim, qr, qe),
       d_irew(new InstRewriterCegqi(this)),
       d_cbqi_set_quant_inactive(false),
       d_incomplete_check(false),
@@ -311,11 +310,12 @@ bool InstStrategyCegqi::checkCompleteFor(Node q)
 
 void InstStrategyCegqi::checkOwnership(Node q)
 {
-  if( d_quantEngine->getOwner( q )==NULL && doCbqi( q ) ){
+  if (d_qreg.getOwner(q) == nullptr && doCbqi(q))
+  {
     if (d_do_cbqi[q] == CEG_HANDLED)
     {
       //take full ownership of the quantified formula
-      d_quantEngine->setOwner( q, this );
+      d_qreg.setOwner(q, this);
     }
   }
 }
@@ -373,13 +373,20 @@ void InstStrategyCegqi::registerCounterexampleLemma(Node q, Node lem)
   {
     ce_vars.push_back(tutil->getInstantiationConstant(q, i));
   }
-  CegInstantiator* cinst = getInstantiator(q);
-  LemmaStatus status =
-      d_quantEngine->getOutputChannel().lemma(lem, LemmaProperty::PREPROCESS);
-  Node ppLem = status.getRewrittenLemma();
+  // send the lemma
+  d_quantEngine->getOutputChannel().lemma(lem);
+  // get the preprocessed form of the lemma we just sent
+  std::vector<Node> skolems;
+  std::vector<Node> skAsserts;
+  Node ppLem = d_quantEngine->getValuation().getPreprocessedTerm(
+      lem, skAsserts, skolems);
+  std::vector<Node> lemp{ppLem};
+  lemp.insert(lemp.end(), skAsserts.begin(), skAsserts.end());
+  ppLem = NodeManager::currentNM()->mkAnd(lemp);
   Trace("cegqi-debug") << "Counterexample lemma (post-preprocess): " << ppLem
                        << std::endl;
   std::vector<Node> auxLems;
+  CegInstantiator* cinst = getInstantiator(q);
   cinst->registerCounterexampleLemma(ppLem, ce_vars, auxLems);
   for (unsigned i = 0, size = auxLems.size(); i < size; i++)
   {

@@ -24,7 +24,6 @@
 #include "theory/quantifiers/sygus/sygus_grammar_cons.h"
 #include "theory/quantifiers/sygus/synth_engine.h"
 #include "theory/quantifiers_engine.h"
-#include "theory/theory_engine.h"
 
 namespace CVC4 {
 namespace theory {
@@ -182,8 +181,9 @@ void addSpecialValues(
 
 SygusInst::SygusInst(QuantifiersEngine* qe,
                      QuantifiersState& qs,
-                     QuantifiersInferenceManager& qim)
-    : QuantifiersModule(qs, qim, qe),
+                     QuantifiersInferenceManager& qim,
+                     QuantifiersRegistry& qr)
+    : QuantifiersModule(qs, qim, qr, qe),
       d_ce_lemma_added(qs.getUserContext()),
       d_global_terms(qs.getUserContext()),
       d_notified_assertions(qs.getUserContext())

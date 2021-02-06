@@ -23,7 +23,6 @@
 #include "theory/quantifiers/term_database.h"
 #include "theory/quantifiers/term_util.h"
 #include "theory/quantifiers_engine.h"
-#include "theory/theory_engine.h"
 
 using namespace std;
 using namespace CVC4::kind;
@@ -36,8 +35,9 @@ namespace quantifiers {
 
 InstantiationEngine::InstantiationEngine(QuantifiersEngine* qe,
                                          QuantifiersState& qs,
-                                         QuantifiersInferenceManager& qim)
-    : QuantifiersModule(qs, qim, qe),
+                                         QuantifiersInferenceManager& qim,
+                                         QuantifiersRegistry& qr)
+    : QuantifiersModule(qs, qim, qr, qe),
       d_instStrategies(),
       d_isup(),
       d_i_ag(),
@@ -211,7 +211,7 @@ void InstantiationEngine::checkOwnership(Node q)
       }
     }
     if( hasPat ){
-      d_quantEngine->setOwner( q, this, 1 );
+      d_qreg.setOwner(q, this, 1);
     }
   }
 }
@@ -261,7 +261,7 @@ void InstantiationEngine::addUserNoPattern(Node q, Node pat) {
 
 bool InstantiationEngine::shouldProcess(Node q)
 {
-  if (!d_quantEngine->hasOwnership(q, this))
+  if (!d_qreg.hasOwnership(q, this))
   {
     return false;
   }

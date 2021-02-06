@@ -24,6 +24,7 @@
 #include "theory/ee_manager.h"
 #include "theory/model_manager.h"
 #include "theory/shared_solver.h"
+#include "theory/valuation.h"
 
 namespace CVC4 {
 
@@ -112,6 +113,8 @@ class CombinationEngine
   bool isParametric(TheoryId tid) const;
   /** Reference to the theory engine */
   TheoryEngine& d_te;
+  /** Valuation for the engine */
+  Valuation d_valuation;
   /** The proof node manager */
   ProofNodeManager* d_pnm;
   /** Logic info of theory engine (cached) */
