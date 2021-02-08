@@ -21,6 +21,7 @@
 #include "expr/proof_node_manager.h"
 #include "theory/ee_setup_info.h"
 #include "theory/logic_info.h"
+#include "theory/output_channel.h"
 #include "theory/shared_terms_database.h"
 #include "theory/term_registration_visitor.h"
 #include "theory/valuation.h"
@@ -104,6 +105,10 @@ class SharedSolver
   virtual bool isShared(TNode t) const;
 
   /**
+   * Method called by equalityEngine
+   */
+  bool propagateLit(TNode predicate, bool value);
+  /**
    * Method called by equalityEngine when a becomes (dis-)equal to b and a and b
    * are shared with the theory. Returns false if there is a direct conflict
    * (via rewrite for example).
@@ -114,6 +119,8 @@ class SharedSolver
                                bool value);
   /** Send lemma to the theory engine, atomsTo is the theory to send atoms to */
   void sendLemma(TrustNode trn, TheoryId atomsTo);
+  /** Send conflict to the theory engine */
+  void sendConflict(TrustNode trn);
 
  protected:
   /** Solver-specific pre-register shared */
@@ -126,6 +133,8 @@ class SharedSolver
   SharedTermsDatabase d_sharedTerms;
   /** Visitor for collecting shared terms */
   SharedTermsVisitor d_sharedTermsVisitor;
+  /** Output channel */
+  OutputChannel& d_out;
 };
 
 }  // namespace theory

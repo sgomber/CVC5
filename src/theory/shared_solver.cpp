@@ -30,7 +30,8 @@ SharedSolver::SharedSolver(TheoryEngine& te, ProofNodeManager* pnm)
     : d_te(te),
       d_logicInfo(te.getLogicInfo()),
       d_sharedTerms(&d_te, d_te.getSatContext(), d_te.getUserContext(), pnm),
-      d_sharedTermsVisitor(d_sharedTerms)
+      d_sharedTermsVisitor(d_sharedTerms),
+      d_out(te.theoryOf(THEORY_BUILTIN)->getOutputChannel())
 {
 }
 
@@ -59,8 +60,10 @@ void SharedSolver::preNotifySharedFact(TNode atom)
 {
   if (d_sharedTerms.hasSharedTerms(atom))
   {
-    // Always notify the theories of the shared terms, which is independent of
+    // Always notify the theories the shared terms, which is independent of
     // the architecture currently.
+    // HACK
+    //Theory* activePrev = d_te.getActiveTheory();
     SharedTermsDatabase::shared_terms_iterator it = d_sharedTerms.begin(atom);
     SharedTermsDatabase::shared_terms_iterator it_end = d_sharedTerms.end(atom);
     for (; it != it_end; ++it)
@@ -72,12 +75,16 @@ void SharedSolver::preNotifySharedFact(TNode atom)
         if (TheoryIdSetUtil::setContains(id, theories))
         {
           Theory* t = d_te.theoryOf(id);
+          // HACK
+          //d_te.setActiveTheory(t);
           // call the add shared term method
           t->addSharedTerm(term);
         }
       }
       d_sharedTerms.markNotified(term, theories);
     }
+    // HACK
+    //d_te.setActiveTheory(activePrev);
   }
 }
 
@@ -86,9 +93,13 @@ EqualityStatus SharedSolver::getEqualityStatus(TNode a, TNode b)
   return EQUALITY_UNKNOWN;
 }
 
-void SharedSolver::sendLemma(TrustNode trn, TheoryId atomsTo)
+bool SharedSolver::propagateLit(TNode predicate, bool value)
 {
-  d_te.lemma(trn, LemmaProperty::NONE, atomsTo);
+  if (value)
+  {
+    return d_out.propagate(predicate);
+  }
+  return d_out.propagate(predicate.notNode());
 }
 
 bool SharedSolver::propagateSharedEquality(theory::TheoryId theory,
@@ -111,6 +122,13 @@ bool SharedSolver::propagateSharedEquality(theory::TheoryId theory,
 }
 
 bool SharedSolver::isShared(TNode t) const { return d_sharedTerms.isShared(t); }
+
+void SharedSolver::sendLemma(TrustNode trn, TheoryId atomsTo)
+{
+  d_te.lemma(trn, LemmaProperty::NONE, atomsTo);
+}
+
+void SharedSolver::sendConflict(TrustNode trn) { d_out.trustedConflict(trn); }
 
 }  // namespace theory
 }  // namespace CVC4
