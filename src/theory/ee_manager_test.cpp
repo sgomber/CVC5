@@ -53,7 +53,7 @@ void EqEngineManagerTest::initializeTheories()
   {
     AlwaysAssert(false) << "Expected shared solver to use equality engine";
   }
-  
+
   // TEMPORARY, until we use central equality engine
   const LogicInfo& logicInfo = d_te.getLogicInfo();
   if (logicInfo.isQuantified())
@@ -125,7 +125,7 @@ void EqEngineManagerTest::initializeTheories()
     eet.d_allocEe.reset(allocateEqualityEngine(esi, c));
     // the theory uses the equality engine
     eet.d_usedEe = eet.d_allocEe.get();
-    if (d_masterEqualityEngine!=nullptr)
+    if (d_masterEqualityEngine != nullptr)
     {
       // set the master equality engine of the theory's equality engine
       eet.d_allocEe->setMasterEqualityEngine(d_masterEqualityEngine.get());
