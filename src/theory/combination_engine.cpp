@@ -16,9 +16,14 @@
 
 #include "expr/node_visitor.h"
 #include "theory/care_graph.h"
+#include "theory/ee_manager_central.h"
 #include "theory/ee_manager_distributed.h"
+#include "theory/ee_manager_test.h"
+#include "theory/model_manager_central.h"
 #include "theory/model_manager_distributed.h"
+#include "theory/shared_solver_central.h"
 #include "theory/shared_solver_distributed.h"
+#include "theory/shared_solver_test.h"
 #include "theory/theory_engine.h"
 
 namespace CVC4 {
@@ -32,6 +37,7 @@ CombinationEngine::CombinationEngine(TheoryEngine& te,
       d_pnm(pnm),
       d_logicInfo(te.getLogicInfo()),
       d_paraTheories(paraTheories),
+      d_paraSet(0),
       d_eemanager(nullptr),
       d_mmanager(nullptr),
       d_sharedSolver(nullptr),
@@ -53,6 +59,24 @@ void CombinationEngine::finishInit()
     d_eemanager.reset(
         new EqEngineManagerDistributed(d_te, *d_sharedSolver.get()));
     // make the distributed model manager
+    d_mmanager.reset(new ModelManagerDistributed(d_te, *d_eemanager.get()));
+  }
+  else if (options::eeMode() == options::EqEngineMode::TEST)
+  {
+    // use the distributed shared solver
+    d_sharedSolver.reset(new SharedSolverTest(d_te, d_pnm));
+    // make the distributed equality engine manager
+    d_eemanager.reset(new EqEngineManagerTest(d_te, *d_sharedSolver.get()));
+    // make the distributed model manager
+    d_mmanager.reset(new ModelManagerDistributed(d_te, *d_eemanager.get()));
+  }
+  else if (options::eeMode() == options::EqEngineMode::CENTRAL)
+  {
+    // use the central shared solver
+    d_sharedSolver.reset(new SharedSolverCentral(d_te, d_pnm));
+    // make the central equality engine manager
+    d_eemanager.reset(new EqEngineManagerCentral(d_te, *d_sharedSolver.get()));
+    // d_mmanager.reset(new ModelManagerCentral(d_te, *eeCentral.get()));
     d_mmanager.reset(new ModelManagerDistributed(d_te, *d_eemanager.get()));
   }
   else
@@ -100,18 +124,30 @@ bool CombinationEngine::isProofEnabled() const { return d_cmbsPg != nullptr; }
 
 eq::EqualityEngineNotify* CombinationEngine::getModelEqualityEngineNotify()
 {
-  // by default, no notifications from model's equality engine
   return nullptr;
 }
 
-void CombinationEngine::sendLemma(TrustNode trn, TheoryId atomsTo)
+bool CombinationEngine::isParametric(TheoryId tid) const
 {
-  d_te.lemma(trn, LemmaProperty::NONE, atomsTo);
+  // FIXME: necessary?
+  return true;
 }
 
 void CombinationEngine::resetRound()
 {
   // compute the relevant terms?
+}
+
+const std::unordered_set<Node, NodeHashFunction>&
+CombinationEngine::getEqcRepresentatives() const
+{
+  return d_eemanager->getEqcRepresentatives();
+}
+
+const std::vector<Node>& CombinationEngine::getEqcRepresentativesForType(
+    TypeNode t) const
+{
+  return d_eemanager->getEqcRepresentativesForType(t);
 }
 
 }  // namespace theory

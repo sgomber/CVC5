@@ -54,6 +54,12 @@ header = "options/theory_options.h"
 [[option.mode.DISTRIBUTED]]
   name = "distributed"
   help = "Each theory maintains its own equality engine."
+[[option.mode.CENTRAL]]
+  name = "central"
+  help = "Each theory uses a central equality engine."
+[[option.mode.TEST]]
+  name = "test"
+  help = "Test approach."
 
 [[option]]
   name       = "tcMode"
@@ -66,3 +72,14 @@ header = "options/theory_options.h"
 [[option.mode.CARE_GRAPH]]
   name = "care-graph"
   help = "Use care graphs for theory combination."
+[[option.mode.MODEL_BASED]]
+  name = "model-based"
+  help = "Use model building for theory combination."
+
+[[option]]
+  name       = "propAsLemma"
+  category   = "regular"
+  long       = "prop-as-lemma"
+  type       = "bool"
+  default    = "false"
+  help       = "send lemma corresponding to all theory propagations"

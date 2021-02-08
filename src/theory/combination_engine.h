@@ -92,17 +92,25 @@ class CombinationEngine
    * theory combination (e.g. splitting lemmas) to the parent TheoryEngine.
    */
   virtual void combineTheories() = 0;
+  /**
+   * Get representatives, available at full effort only.
+   */
+  const std::unordered_set<Node, NodeHashFunction>& getEqcRepresentatives()
+      const;
+  /**
+   * Get representatives for type, available at full effort only.
+   */
+  const std::vector<Node>& getEqcRepresentativesForType(TypeNode t) const;
 
  protected:
   /** Is proof enabled? */
   bool isProofEnabled() const;
   /**
-   * Get model equality engine notify. Return the notification object for
-   * who listens to the model's equality engine (if any).
+   * Get model equality engine notify.
    */
   virtual eq::EqualityEngineNotify* getModelEqualityEngineNotify();
-  /** Send lemma to the theory engine, atomsTo is the theory to send atoms to */
-  void sendLemma(TrustNode trn, TheoryId atomsTo);
+  /** Is theory tid parametric? */
+  bool isParametric(TheoryId tid) const;
   /** Reference to the theory engine */
   TheoryEngine& d_te;
   /** Valuation for the engine */
@@ -113,6 +121,8 @@ class CombinationEngine
   const LogicInfo& d_logicInfo;
   /** List of parametric theories of theory engine */
   const std::vector<Theory*> d_paraTheories;
+  /** The set of TheoryId that are parametric */
+  TheoryIdSet d_paraSet;
   /**
    * The equality engine manager we are using. This class is responsible for
    * configuring equality engines for each theory.
