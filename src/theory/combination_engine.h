@@ -92,15 +92,6 @@ class CombinationEngine
    * theory combination (e.g. splitting lemmas) to the parent TheoryEngine.
    */
   virtual void combineTheories() = 0;
-  /**
-   * Get representatives, available at full effort only.
-   */
-  const std::unordered_set<Node, NodeHashFunction>& getEqcRepresentatives()
-      const;
-  /**
-   * Get representatives for type, available at full effort only.
-   */
-  const std::vector<Node>& getEqcRepresentativesForType(TypeNode t) const;
 
  protected:
   /** Is proof enabled? */

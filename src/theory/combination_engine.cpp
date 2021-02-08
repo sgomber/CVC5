@@ -16,12 +16,9 @@
 
 #include "expr/node_visitor.h"
 #include "theory/care_graph.h"
-#include "theory/ee_manager_central.h"
 #include "theory/ee_manager_distributed.h"
 #include "theory/ee_manager_test.h"
-#include "theory/model_manager_central.h"
 #include "theory/model_manager_distributed.h"
-#include "theory/shared_solver_central.h"
 #include "theory/shared_solver_distributed.h"
 #include "theory/shared_solver_test.h"
 #include "theory/theory_engine.h"
@@ -68,15 +65,6 @@ void CombinationEngine::finishInit()
     // make the distributed equality engine manager
     d_eemanager.reset(new EqEngineManagerTest(d_te, *d_sharedSolver.get()));
     // make the distributed model manager
-    d_mmanager.reset(new ModelManagerDistributed(d_te, *d_eemanager.get()));
-  }
-  else if (options::eeMode() == options::EqEngineMode::CENTRAL)
-  {
-    // use the central shared solver
-    d_sharedSolver.reset(new SharedSolverCentral(d_te, d_pnm));
-    // make the central equality engine manager
-    d_eemanager.reset(new EqEngineManagerCentral(d_te, *d_sharedSolver.get()));
-    // d_mmanager.reset(new ModelManagerCentral(d_te, *eeCentral.get()));
     d_mmanager.reset(new ModelManagerDistributed(d_te, *d_eemanager.get()));
   }
   else
@@ -138,17 +126,6 @@ void CombinationEngine::resetRound()
   // compute the relevant terms?
 }
 
-const std::unordered_set<Node, NodeHashFunction>&
-CombinationEngine::getEqcRepresentatives() const
-{
-  return d_eemanager->getEqcRepresentatives();
-}
-
-const std::vector<Node>& CombinationEngine::getEqcRepresentativesForType(
-    TypeNode t) const
-{
-  return d_eemanager->getEqcRepresentativesForType(t);
-}
 
 }  // namespace theory
 }  // namespace CVC4
