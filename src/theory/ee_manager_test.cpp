@@ -53,6 +53,21 @@ void EqEngineManagerTest::initializeTheories()
   {
     AlwaysAssert(false) << "Expected shared solver to use equality engine";
   }
+  
+  // TEMPORARY, until we use central equality engine
+  const LogicInfo& logicInfo = d_te.getLogicInfo();
+  if (logicInfo.isQuantified())
+  {
+    // construct the master equality engine
+    Assert(d_masterEqualityEngine == nullptr);
+    QuantifiersEngine* qe = d_te.getQuantifiersEngine();
+    Assert(qe != nullptr);
+    d_masterEENotify.reset(new MasterNotifyClass(qe));
+    d_masterEqualityEngine.reset(new eq::EqualityEngine(*d_masterEENotify.get(),
+                                                        d_te.getSatContext(),
+                                                        "theory::master",
+                                                        false));
+  }
 
   // allocate equality engines per theory
   for (TheoryId theoryId = theory::THEORY_FIRST;
@@ -73,11 +88,17 @@ void EqEngineManagerTest::initializeTheories()
       // theory said it doesn't need an equality engine, skip
       continue;
     }
+    if (esi.d_useMaster)
+    {
+      // the theory said it wants to use the master equality engine
+      eet.d_usedEe = d_masterEqualityEngine.get();
+      continue;
+    }
     // set the notify
     eq::EqualityEngineNotify* notify = esi.d_notify;
     d_theoryNotify[theoryId] = notify;
     // split on whether integrated, or whether asked for master
-    if (t->usesCentralEqualityEngine() || esi.d_useMaster)
+    if (t->usesCentralEqualityEngine())
     {
       // the theory uses the central equality engine
       eet.d_usedEe = &d_centralEqualityEngine;
@@ -104,46 +125,13 @@ void EqEngineManagerTest::initializeTheories()
     eet.d_allocEe.reset(allocateEqualityEngine(esi, c));
     // the theory uses the equality engine
     eet.d_usedEe = eet.d_allocEe.get();
-  }
-
-  const LogicInfo& logicInfo = d_te.getLogicInfo();
-  if (logicInfo.isQuantified())
-  {
-    // construct the master equality engine
-    Assert(d_masterEqualityEngine == nullptr);
-    QuantifiersEngine* qe = d_te.getQuantifiersEngine();
-    Assert(qe != nullptr);
-    d_masterEENotify.reset(new MasterNotifyClass(qe));
-    d_masterEqualityEngine.reset(new eq::EqualityEngine(*d_masterEENotify.get(),
-                                                        d_te.getSatContext(),
-                                                        "theory::master",
-                                                        false));
-
-    for (TheoryId theoryId = theory::THEORY_FIRST;
-         theoryId != theory::THEORY_LAST;
-         ++theoryId)
+    if (d_masterEqualityEngine!=nullptr)
     {
-      Theory* t = d_te.theoryOf(theoryId);
-      if (t == nullptr)
-      {
-        // theory not active, skip
-        continue;
-      }
-      if (t->usesCentralEqualityEngine())
-      {
-        continue;
-      }
-      EeTheoryInfo& eet = d_einfo[theoryId];
-      // Get the allocated equality engine, and connect it to the master
-      // equality engine.
-      eq::EqualityEngine* eeAlloc = eet.d_allocEe.get();
-      if (eeAlloc != nullptr)
-      {
-        // set the master equality engine of the theory's equality engine
-        eeAlloc->setMasterEqualityEngine(d_masterEqualityEngine.get());
-      }
+      // set the master equality engine of the theory's equality engine
+      eet.d_allocEe->setMasterEqualityEngine(d_masterEqualityEngine.get());
     }
   }
+
   // ----- test
   // set the master equality engine of the theory's equality engine
   d_centralEqualityEngine.setMasterEqualityEngine(d_masterEqualityEngine.get());
