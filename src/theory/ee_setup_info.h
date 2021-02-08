@@ -18,6 +18,9 @@
 #define CVC4__THEORY__EE_SETUP_INFO__H
 
 #include <string>
+#include <vector>
+
+#include "expr/type_node.h"
 
 namespace CVC4 {
 namespace theory {
@@ -25,6 +28,23 @@ namespace theory {
 namespace eq {
 class EqualityEngineNotify;
 }
+
+/**
+ * Setup for a function kind. Sets up a call to EqualityEngine::addFunctionKind.
+ */
+struct EeSetupFunctionKind
+{
+  EeSetupFunctionKind(Kind k, bool isInt = false, bool isExtOp = false)
+      : d_kind(k), d_isInterpreted(isInt), d_isExtOperator(isExtOp)
+  {
+  }
+  /** The function kind */
+  Kind d_kind;
+  /** Whether its interpreted */
+  bool d_isInterpreted;
+  /** Whether its an external operator */
+  bool d_isExtOperator;
+};
 
 /**
  * This is a helper class that encapsulates instructions for how a Theory
@@ -47,6 +67,41 @@ struct EeSetupInfo
   std::string d_name;
   /** Constants are triggers */
   bool d_constantsAreTriggers;
+  /** The set of kinds to do congruence over */
+  std::vector<EeSetupFunctionKind> d_functionKinds;
+  //-------------------------- fine grained notifications
+  /** The TypeNode kinds to notify on eqNotifyNewClass */
+  std::vector<Kind> d_notifyNewEqClassTypeKinds;
+  /** The Node kinds to notify on eqNotifyNewClass */
+  std::vector<Kind> d_notifyNewEqClassKinds;
+  /** Specific types to notify on eqNotifyNewClass. */
+  std::vector<TypeNode> d_notifyNewEqClassTypes;
+  /** The TypeNode kinds to notify on eqNotifyMerge */
+  std::vector<Kind> d_notifyMergeTypeKinds;
+  /** Specific types to notify on eqNotifyMerge. */
+  std::vector<TypeNode> d_notifyMergeTypes;
+  /** The TypeNode kinds to notify on eqNotifyDisequal */
+  std::vector<Kind> d_notifyDisequalTypeKinds;
+  /** Specific types to notify on eqNotifyDisequal. */
+  std::vector<TypeNode> d_notifyDisequalTypes;
+  //-------------------------- end fine grained notifications
+  /** Does it need notifications when equivalence classes are created? */
+  bool needsNotifyNewEqClass() const
+  {
+    return !d_notifyNewEqClassTypeKinds.empty()
+           || !d_notifyNewEqClassKinds.empty()
+           || !d_notifyNewEqClassTypes.empty();
+  }
+  /** Does it need notifications when equivalence classes are merged? */
+  bool needsNotifyMerge() const
+  {
+    return !d_notifyMergeTypeKinds.empty() || !d_notifyMergeTypes.empty();
+  }
+  /** Does it need notifications when disequalities are generated? */
+  bool needsNotifyDisequal() const
+  {
+    return !d_notifyDisequalTypeKinds.empty() || !d_notifyDisequalTypes.empty();
+  }
   /**
    * Whether we want our state to use the master equality engine. This should
    * be true exclusively for the theory of quantifiers.
