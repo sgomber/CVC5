@@ -126,6 +126,5 @@ void CombinationEngine::resetRound()
   // compute the relevant terms?
 }
 
-
 }  // namespace theory
 }  // namespace CVC4
