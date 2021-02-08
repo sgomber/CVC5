@@ -15,6 +15,7 @@
 #include "theory/combination_model_based.h"
 
 #include "theory/theory_engine.h"
+#include "prop/prop_engine.h"
 
 namespace CVC4 {
 namespace theory {
@@ -285,7 +286,7 @@ unsigned CombinationModelBased::checkSplitCandidate(TNode a,
     Node split = equality.orNode(equality.notNode());
     TrustNode tsplit = TrustNode::mkTrustLemma(split, nullptr);
     d_sharedSolver->sendLemma(tsplit, tid);
-    Node e = d_te.ensureLiteral(equality);
+    Node e = d_valuation.ensureLiteral(equality);
     d_te.getPropEngine()->requirePhase(e, true);
     Trace("tc-model-split")
         << "---> split on " << equality << ", theory = " << tid << std::endl;
