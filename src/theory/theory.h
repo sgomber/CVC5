@@ -238,6 +238,10 @@ class Theory {
   ProofNodeManager* d_pnm;
 
   /**
+   * Needs shared term trigger equalities as facts.
+   */
+  bool d_needsSharedTermEqFacts;
+  /**
    * Are proofs enabled?
    *
    * They are considered enabled if the ProofNodeManager is non-null.
@@ -594,6 +598,8 @@ class Theory {
                        "Theory::explain() interface!";
     return TrustNode::null();
   }
+  /** Explain conflict */
+  virtual TrustNode explainConflict(TNode a, TNode b);
 
   //--------------------------------- check
   /**
@@ -902,6 +908,17 @@ class Theory {
    * E |= lit in the theory.
    */
   virtual std::pair<bool, Node> entailmentCheck(TNode lit);
+  /**
+   * Needs shared term trigger equalities as facts. Whether this theory needs
+   * equalities between shared terms as explicit facts on the fact queue
+   * or whether having them asserted in its equality engine suffices.
+   */
+  bool needsSharedTermEqFacts() const { return d_needsSharedTermEqFacts; }
+
+  /** uses central equality engine */
+  bool usesCentralEqualityEngine() const;
+  /** uses central equality engine (static) */
+  static bool usesCentralEqualityEngine(TheoryId id);
 };/* class Theory */
 
 std::ostream& operator<<(std::ostream& os, theory::Theory::Effort level);

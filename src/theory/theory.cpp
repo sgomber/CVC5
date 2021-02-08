@@ -82,7 +82,8 @@ Theory::Theory(TheoryId id,
       d_theoryState(nullptr),
       d_inferManager(nullptr),
       d_quantEngine(nullptr),
-      d_pnm(pnm)
+      d_pnm(pnm),
+      d_needsSharedTermEqFacts(true)
 {
   smtStatisticsRegistry()->registerStat(&d_checkTime);
   smtStatisticsRegistry()->registerStat(&d_computeCareGraphTime);
@@ -346,6 +347,7 @@ std::unordered_set<TNode, TNodeHashFunction> Theory::currentlySharedTerms() cons
 
 bool Theory::collectModelInfo(TheoryModel* m, const std::set<Node>& termSet)
 {
+  // FIXME: could move entirely into model engine distributed
   // if we are using an equality engine, assert it to the model
   if (d_equalityEngine != nullptr)
   {
@@ -360,7 +362,7 @@ bool Theory::collectModelInfo(TheoryModel* m, const std::set<Node>& termSet)
 
 void Theory::computeRelevantTerms(std::set<Node>& termSet)
 {
-  // by default, there are no additional relevant terms
+  // default, nothing
 }
 
 bool Theory::collectModelValues(TheoryModel* m, const std::set<Node>& termSet)
@@ -464,7 +466,6 @@ void Theory::check(Effort level)
   {
     return;
   }
-  Assert(d_theoryState!=nullptr);
   // standard calls for resource, stats
   d_out->spendResource(ResourceManager::Resource::TheoryCheckStep);
   TimerStat::CodeTimer checkTimer(d_checkTime);
@@ -533,7 +534,35 @@ void Theory::notifyFact(TNode atom, bool polarity, TNode fact, bool isInternal)
 {
 }
 
+TrustNode Theory::explainConflict(TNode a, TNode b)
+{
+  Unimplemented() << "Theory " << identify()
+                  << " sent a conflict but doesn't implement the "
+                     "Theory::explainConflict() interface!";
+}
+
 void Theory::preRegisterTerm(TNode node) {}
+
+/*
+void Theory::preRegisterTermDefault(TNode node)
+{
+  if (d_equalityEngine != nullptr)
+  {
+    if (node.getKind() == kind::EQUAL)
+    {
+      d_equalityEngine->addTriggerEquality(node);
+    }
+    else if (node.getType().isBoolean())
+    {
+      d_equalityEngine->addTriggerPredicate(node);
+    }
+    else
+    {
+      d_equalityEngine->addTerm(node);
+    }
+  }
+}
+*/
 
 void Theory::addSharedTerm(TNode n)
 {
@@ -542,10 +571,11 @@ void Theory::addSharedTerm(TNode n)
   Debug("theory::assertions")
       << "Theory::addSharedTerm<" << getId() << ">(" << n << ")" << std::endl;
   d_sharedTerms.push_back(n);
-  // now call theory-specific method notifySharedTerm
+  // now call theory-specific addSharedTerm
   notifySharedTerm(n);
   // if we have an equality engine, add the trigger term
   if (d_equalityEngine != nullptr)
+  //&& (d_needsSharedTermEqFacts || !usesCentralEqualityEngine()))
   {
     d_equalityEngine->addTriggerTerm(n, d_id);
   }
@@ -555,6 +585,25 @@ eq::EqualityEngine* Theory::getEqualityEngine()
 {
   // get the assigned equality engine, which is a pointer stored in this class
   return d_equalityEngine;
+}
+
+bool Theory::usesCentralEqualityEngine() const
+{
+  return usesCentralEqualityEngine(d_id);
+}
+
+bool Theory::usesCentralEqualityEngine(TheoryId id)
+{
+  if (options::eeMode() == options::EqEngineMode::DISTRIBUTED)
+  {
+    return false;
+  }
+  else if (options::eeMode() == options::EqEngineMode::CENTRAL)
+  {
+    return true;
+  }
+  // test
+  return id == THEORY_UF;  // || id==THEORY_DATATYPES;
 }
 
 }/* CVC4::theory namespace */
