@@ -31,14 +31,6 @@ class QuantifiersState : public TheoryState
  public:
   QuantifiersState(context::Context* c, context::UserContext* u, Valuation val);
   ~QuantifiersState() {}
-  /** notify added lemma */
-  void notifyAddedLemma();
-  /** has added lemma */
-  bool hasAddedLemma() const;
-
- protected:
-  /** has added lemma this round */
-  bool d_hasAddedLemma;
 };
 
 }  // namespace quantifiers
