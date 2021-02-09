@@ -64,6 +64,7 @@ TheoryUF::TheoryUF(context::Context* c,
   // indicate we are using the default theory state and inference managers
   d_theoryState = &d_state;
   d_inferManager = &d_im;
+  d_needsSharedTermEqFacts = false;
 }
 
 TheoryUF::~TheoryUF() {
@@ -75,6 +76,14 @@ bool TheoryUF::needsEqualityEngine(EeSetupInfo& esi)
 {
   esi.d_notify = &d_notify;
   esi.d_name = d_instanceName + "theory::uf::ee";
+  if (options::finiteModelFind()
+      && options::ufssMode() != options::UfssMode::NONE)
+  {
+    // need notifications about sorts
+    esi.d_notifyNewEqClassTypeKinds.push_back(kind::SORT_TYPE);
+    esi.d_notifyMergeTypeKinds.push_back(kind::SORT_TYPE);
+    esi.d_notifyDisequalTypeKinds.push_back(kind::SORT_TYPE);
+  }
   return true;
 }
 

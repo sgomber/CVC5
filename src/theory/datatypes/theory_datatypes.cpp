@@ -68,7 +68,7 @@ TheoryDatatypes::TheoryDatatypes(Context* c,
   // indicate we are using the default theory state object
   d_theoryState = &d_state;
   d_inferManager = &d_im;
-
+  d_needsSharedTermEqFacts = false;
   ProofChecker* pc = pnm != nullptr ? pnm->getChecker() : nullptr;
   if (pc != nullptr)
   {
@@ -92,6 +92,12 @@ bool TheoryDatatypes::needsEqualityEngine(EeSetupInfo& esi)
 {
   esi.d_notify = &d_notify;
   esi.d_name = "theory::datatypes::ee";
+
+  // need notifications on new constructors, merging datatype eqcs
+  esi.d_notifyNewEqClassKinds.push_back(APPLY_CONSTRUCTOR);
+  esi.d_notifyMergeTypeKinds.push_back(DATATYPE_TYPE);
+  esi.d_notifyMergeTypeKinds.push_back(PARAMETRIC_DATATYPE);  // necessary?
+
   return true;
 }
 
@@ -640,11 +646,13 @@ void TheoryDatatypes::eqNotifyNewClass(TNode t){
 /** called when two equivalance classes have merged */
 void TheoryDatatypes::eqNotifyMerge(TNode t1, TNode t2)
 {
+  // bool prevPending = d_im.hasPending();
   if( t1.getType().isDatatype() ){
     Trace("datatypes-debug")
         << "NotifyMerge : " << t1 << " " << t2 << std::endl;
     merge(t1,t2);
   }
+  // Assert(prevPending || !d_im.hasPending());
 }
 
 void TheoryDatatypes::merge( Node t1, Node t2 ){
@@ -690,6 +698,10 @@ void TheoryDatatypes::merge( Node t1, Node t2 ){
                 Node eq = cons1[i].eqNode( cons2[i] );
                 d_im.addPendingInference(eq, unifEq, false, InferId::UNIF);
                 Trace("datatypes-infer") << "DtInfer : cons-inj : " << eq << " by " << unifEq << std::endl;
+                if (d_state.isInConflict())
+                {
+                  break;
+                }
               }
             }
           }
