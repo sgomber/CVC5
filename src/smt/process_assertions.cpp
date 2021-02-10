@@ -336,16 +336,14 @@ bool ProcessAssertions::apply(Assertions& as)
   // rewrite equalities based on theory-specific rewriting
   d_passes["theory-rewrite-eq"]->apply(&assertions);
   // apply theory preprocess, which includes ITE removal
-  // d_passes["theory-preprocess"]->apply(&assertions);
+  d_passes["theory-preprocess"]->apply(&assertions);
   // This is needed because when solving incrementally, removeITEs may
   // introduce skolems that were solved for earlier and thus appear in the
   // substitution map.
-  // d_passes["apply-substs"]->apply(&assertions);
+  d_passes["apply-substs"]->apply(&assertions);
 
   if (options::bitblastMode() == options::BitblastMode::EAGER)
   {
-    // TODO: could move this into bv-eager-atoms
-    d_passes["theory-preprocess"]->apply(&assertions);
     d_passes["bv-eager-atoms"]->apply(&assertions);
   }
 

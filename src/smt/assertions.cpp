@@ -62,6 +62,7 @@ void Assertions::finishInit()
 void Assertions::clearCurrent()
 {
   d_assertions.clear();
+  d_assertions.getIteSkolemMap().clear();
 }
 
 void Assertions::initializeCheckSat(const std::vector<Node>& assumptions,

@@ -226,85 +226,41 @@ void SmtSolver::processAssertions(Assertions& as)
   // process the assertions with the preprocessor
   bool noConflict = d_pp.process(as);
 
-  // end: INVARIANT to maintain: no reordering of assertions or
-  // introducing new ones
-
-  // Before asserting formulas to prop engine, we must theory-preprocess the
-  // assertion pipeline. It is important that this step is performed exactly
-  // at this point, since several important details are necessary and available
-  // here, including:
-  // (1) Which input assertions correspond to definitions for skolems. This
-  // is important for the justification decision heuristic and the SAT
-  // relevancy heuristic.
-  // (2) Whether we are in conflict due to preprocessing.
-  // Doing this during the main preprocessing passes above would require some
-  // additional bookkeeping, e.g. in the form of remembering which assertions
-  // correspond to assertions introduced by term formula (term ITE) removal.
-  //
-  // Conversely, these steps cannot be pushed further into PropEngine, since
-  // it only is intended to handle preprocessed assertions. In particular, its
-  // proof generator has preprocessed assertions as free assumptions. Thus, the
-  // responsibility of the preprocessing step done here is the
-  // PreprocessProofGenerator that lives in assertion pipeline and is invoked by
-  // the calls (replaceTrusted, pushBackTrusted) below.
-  const std::vector<Node>& assertions = ap.ref();
-  std::vector<theory::TrustNode> newAsserts;
-  std::vector<Node> newSkDefs;
-  std::vector<Node> newSkolems;
-  // record the original assertion size, which impacts
-  size_t origAssertionSize = assertions.size();
-  size_t newAssertProcessed = 0;
-  for (size_t i = 0; i < origAssertionSize; ++i)
-  {
-    Node assertion = assertions[i];
-    theory::TrustNode trn =
-        d_propEngine->preprocess(assertion, newAsserts, newSkolems);
-    if (!trn.isNull())
-    {
-      // process
-      ap.replaceTrusted(i, trn);
-    }
-    // process each newly created lemma due to preprocessing the last assertion
-    while (newAssertProcessed < newAsserts.size())
-    {
-      theory::TrustNode trna = newAsserts[newAssertProcessed];
-      if (options::unsatCores())
-      {
-        // new assertions have a dependence on the node (old pf architecture)
-        ProofManager::currentPM()->addDependence(trna.getProven(), assertion);
-      }
-      // Add the skolem definitions to the assertion pipeline, which is
-      // important for proofs.
-      ap.pushBackTrusted(trna);
-      // extract the formula from the trust node
-      newSkDefs.push_back(trna.getProven());
-      newAssertProcessed++;
-    }
-  }
-  Assert(newSkolems.size() == newAsserts.size());
-
-  // Push the formula to theory and decision engines
+  // Notify the input formulas to theory engine
   if (noConflict)
   {
-    Chat() << "notifying theory engine and decision engine..." << std::endl;
-    d_propEngine->notifyPreprocessedAssertions(assertions);
+    Chat() << "notifying theory engine..." << std::endl;
+    d_propEngine->notifyPreprocessedAssertions(ap.ref());
   }
 
+  // Push the formula to SAT
   {
     Chat() << "converting to CNF..." << endl;
     TimerStat::CodeTimer codeTimer(d_stats.d_cnfConversionTime);
-    for (size_t i = 0; i < origAssertionSize; ++i)
+    const std::vector<Node>& assertions = ap.ref();
+    // It is important to distinguish the input assertions from the skolem
+    // definitions, as the decision justification heuristic treates the latter
+    // specially.
+    preprocessing::IteSkolemMap& ism = ap.getIteSkolemMap();
+    preprocessing::IteSkolemMap::iterator it;
+    for (size_t i = 0, asize = assertions.size(); i < asize; i++)
     {
-      Chat() << "+ " << ap[i] << std::endl;
-      d_propEngine->assertFormula(ap[i]);
-    }
-    for (size_t i = 0, nskdefs = newSkDefs.size(); i < nskdefs; i++)
-    {
-      Chat() << "+ skolem definition " << newSkDefs[i] << " for "
-             << newSkolems[i] << std::endl;
-      d_propEngine->assertSkolemDefinition(newSkDefs[i], newSkolems[i]);
+      // is the assertion a skolem definition?
+      it = ism.find(i);
+      if (it == ism.end())
+      {
+        Chat() << "+ input " << assertions[i] << std::endl;
+        d_propEngine->assertFormula(assertions[i]);
+      }
+      else
+      {
+        Chat() << "+ skolem definition " << assertions[i] << " (from "
+               << it->second << ")" << std::endl;
+        d_propEngine->assertSkolemDefinition(assertions[i], it->second);
+      }
     }
   }
+
   // clear the current assertions
   as.clearCurrent();
 }
