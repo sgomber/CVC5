@@ -56,8 +56,8 @@ class PreRegisterVisitor {
   std::string toString() const;
 
  public:
-  /** Returned set tells us which theories there are */
-  typedef void return_type;
+  /** required to instantiate template for NodeVisitor */
+  using return_type = void;
 
   PreRegisterVisitor(TheoryEngine* engine, context::Context* context)
       : d_engine(engine), d_visited(context)
@@ -77,20 +77,43 @@ class PreRegisterVisitor {
   void visit(TNode current, TNode parent);
 
   /**
-   * Marks the node as the starting literal.
+   * Marks the node as the starting literal, which does nothing. This method
+   * is required to instantiate template for NodeVisitor.
    */
   void start(TNode node);
 
-  /**
-   * Notifies the engine of all the theories used.
-   */
+  /** Called when the visitor is finished with a term, do nothing */
   void done(TNode node) {}
 
-  /** Preregister */
-  static void preregister(TheoryEngine* te,
+  /**
+   * Preregister the term current occuring under term parent.  This calls
+   * Theory::preRegisterTerm for the theories of current and parent, as well
+   * as the theory of current's type, if it is finite.
+   *
+   * This method takes a set of theories visitedTheories that have already
+   * preregistered current and updates this set with the theories that
+   * preregister current during this call
+   *
+   * @param te Pointer to the theory engine containing the theories
+   * @param visitedTheories The theories that have already preregistered current
+   * @param current The term to preregister
+   * @param parent The parent term of current
+   */
+  static void preRegister(TheoryEngine* te,
                           theory::TheoryIdSet& visitedTheories,
                           TNode current,
                           TNode parent);
+
+ private:
+  /**
+   * Helper for above, called whether we wish to register a term with a theory
+   * given by an identifier id.
+   */
+  static void preRegisterWithTheory(TheoryEngine* te,
+                                    theory::TheoryIdSet& visitedTheories,
+                                    theory::TheoryId id,
+                                    TNode current,
+                                    TNode parent);
 };
 
 
@@ -116,11 +139,11 @@ class SharedTermsVisitor {
   /** 
    * The initial atom.
    */
-  TNode d_atom; 
-    
-public:
+  TNode d_atom;
 
-  typedef void return_type;
+ public:
+  /** required to instantiate template for NodeVisitor */
+  using return_type = void;
 
   SharedTermsVisitor(TheoryEngine* te, SharedTermsDatabase& sharedTerms)
       : d_engine(te), d_sharedTerms(sharedTerms)
@@ -136,9 +159,9 @@ public:
    * Pre-registeres current with any of the current and parent theories that haven't seen the term yet.
    */
   void visit(TNode current, TNode parent);
-  
+
   /**
-   * Marks the node as the starting literal.
+   * Marks the node as the starting literal, which clears the state.
    */
   void start(TNode node);
 

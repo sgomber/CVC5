@@ -33,23 +33,24 @@ std::string PreRegisterVisitor::toString() const {
 }
 
 /**
- * Return true if we should visit current from parent, given that the
- * set of theories in visitedTheories has already visited current. This method
- * is used by both visitors below.
+ * Return true if we already visited the term current with the given parent,
+ * assuming that the set of theories in visitedTheories has already processed
+ * current. This method is used by PreRegisterVisitor and SharedTermsVisitor
+ * below.
  */
-bool shouldVisit(TheoryIdSet visitedTheories, TNode current, TNode parent)
+bool isAlreadyVisited(TheoryIdSet visitedTheories, TNode current, TNode parent)
 {
   TheoryId currentTheoryId = Theory::theoryOf(current);
   if (!TheoryIdSetUtil::setContains(currentTheoryId, visitedTheories))
   {
-    // current theory not visited, return true
-    return true;
+    // current theory not visited, return false
+    return false;
   }
 
   if (current == parent)
   {
-    // top-level and current visited, return false
-    return false;
+    // top-level and current visited, return true
+    return true;
   }
 
   // The current theory has already visited it, so now it depends on the parent
@@ -57,19 +58,19 @@ bool shouldVisit(TheoryIdSet visitedTheories, TNode current, TNode parent)
   TheoryId parentTheoryId = Theory::theoryOf(parent);
   if (!TheoryIdSetUtil::setContains(parentTheoryId, visitedTheories))
   {
-    // parent theory not visited, return true
-    return true;
+    // parent theory not visited, return false
+    return false;
   }
 
   // do we need to consider the type?
   TypeNode type = current.getType();
   if (currentTheoryId == parentTheoryId && !type.isInterpretedFinite())
   {
-    // current and parent are the same theory, and we are infinite, return false
-    return false;
+    // current and parent are the same theory, and we are infinite, return true
+    return true;
   }
   TheoryId typeTheoryId = Theory::theoryOf(type);
-  return !TheoryIdSetUtil::setContains(typeTheoryId, visitedTheories);
+  return TheoryIdSetUtil::setContains(typeTheoryId, visitedTheories);
 }
 
 bool PreRegisterVisitor::alreadyVisited(TNode current, TNode parent) {
@@ -96,7 +97,7 @@ bool PreRegisterVisitor::alreadyVisited(TNode current, TNode parent) {
   }
 
   TheoryIdSet visitedTheories = (*find).second;
-  return !shouldVisit(visitedTheories, current, parent);
+  return isAlreadyVisited(visitedTheories, current, parent);
 }
 
 void PreRegisterVisitor::visit(TNode current, TNode parent) {
@@ -111,7 +112,7 @@ void PreRegisterVisitor::visit(TNode current, TNode parent) {
 
   // call the preregistration on current, parent or type theories and update
   // visitedTheories.
-  preregister(d_engine, visitedTheories, current, parent);
+  preRegister(d_engine, visitedTheories, current, parent);
 
   Debug("register::internal")
       << "PreRegisterVisitor::visit(" << current << "," << parent
@@ -123,56 +124,75 @@ void PreRegisterVisitor::visit(TNode current, TNode parent) {
   Assert(alreadyVisited(current, parent));
 }
 
-void PreRegisterVisitor::preregister(TheoryEngine* te,
+void PreRegisterVisitor::preRegister(TheoryEngine* te,
                                      TheoryIdSet& visitedTheories,
                                      TNode current,
                                      TNode parent)
 {
   // Preregister with the current theory, if necessary
   TheoryId currentTheoryId = Theory::theoryOf(current);
-  if (!TheoryIdSetUtil::setContains(currentTheoryId, visitedTheories))
-  {
-    visitedTheories =
-        TheoryIdSetUtil::setInsert(currentTheoryId, visitedTheories);
-    Theory* th = te->theoryOf(currentTheoryId);
-    th->preRegisterTerm(current);
-    Debug("register::internal")
-        << "PreRegisterVisitor::visit(" << current << "," << parent
-        << "): adding " << currentTheoryId << std::endl;
-  }
+  preRegisterWithTheory(te, visitedTheories, currentTheoryId, current, parent);
 
   if (current != parent)
   {
     // preregister with parent theory, if necessary
     TheoryId parentTheoryId = Theory::theoryOf(parent);
-    if (!TheoryIdSetUtil::setContains(parentTheoryId, visitedTheories))
-    {
-      visitedTheories =
-          TheoryIdSetUtil::setInsert(parentTheoryId, visitedTheories);
-      Theory* th = te->theoryOf(parentTheoryId);
-      th->preRegisterTerm(current);
-      Debug("register::internal")
-          << "PreRegisterVisitor::visit(" << current << "," << parent
-          << "): adding " << parentTheoryId << std::endl;
-    }
+    preRegisterWithTheory(te, visitedTheories, parentTheoryId, current, parent);
 
-    // Should we use the theory of the type
+    // Note that if enclosed by different theories it's shared, for example,
+    // in read(a, f(a)), f(a) should be shared with integers.
     TypeNode type = current.getType();
     if (currentTheoryId != parentTheoryId || type.isInterpretedFinite())
     {
+      // preregister with the type's theory, if necessary
       TheoryId typeTheoryId = Theory::theoryOf(type);
-      if (!TheoryIdSetUtil::setContains(typeTheoryId, visitedTheories))
+      preRegisterWithTheory(te, visitedTheories, typeTheoryId, current, parent);
+    }
+  }
+}
+void PreRegisterVisitor::preRegisterWithTheory(TheoryEngine* te,
+                                               TheoryIdSet& visitedTheories,
+                                               TheoryId id,
+                                               TNode current,
+                                               TNode parent)
+{
+  if (TheoryIdSetUtil::setContains(id, visitedTheories))
+  {
+    // already registered
+    return;
+  }
+  if (Configuration::isAssertionBuild())
+  {
+    Debug("register::internal")
+        << "PreRegisterVisitor::visit(" << current << "," << parent
+        << "): adding " << id << std::endl;
+    // This should never throw an exception, since theories should be
+    // guaranteed to be initialized.
+    // These checks don't work with finite model finding, because it
+    // uses Rational constants to represent cardinality constraints,
+    // even though arithmetic isn't actually involved.
+    if (!options::finiteModelFind())
+    {
+      if (!te->isTheoryEnabled(id))
       {
-        visitedTheories =
-            TheoryIdSetUtil::setInsert(typeTheoryId, visitedTheories);
-        Theory* th = te->theoryOf(typeTheoryId);
-        th->preRegisterTerm(current);
-        Debug("register::internal")
-            << "PreRegisterVisitor::visit(" << current << "," << parent
-            << "): adding " << typeTheoryId << std::endl;
+        const LogicInfo& l = te->getLogicInfo();
+        LogicInfo newLogicInfo = l.getUnlockedCopy();
+        newLogicInfo.enableTheory(id);
+        newLogicInfo.lock();
+        std::stringstream ss;
+        ss << "The logic was specified as " << l.getLogicString()
+           << ", which doesn't include " << id
+           << ", but found a term in that theory." << std::endl
+           << "You might want to extend your logic to "
+           << newLogicInfo.getLogicString() << std::endl;
+        throw LogicException(ss.str());
       }
     }
   }
+  // call the theory's preRegisterTerm method
+  visitedTheories = TheoryIdSetUtil::setInsert(id, visitedTheories);
+  Theory* th = te->theoryOf(id);
+  th->preRegisterTerm(current);
 }
 
 void PreRegisterVisitor::start(TNode node) {}
@@ -210,7 +230,7 @@ bool SharedTermsVisitor::alreadyVisited(TNode current, TNode parent) const {
   }
 
   TheoryIdSet visitedTheories = (*find).second;
-  return !shouldVisit(visitedTheories, current, parent);
+  return isAlreadyVisited(visitedTheories, current, parent);
 }
 
 void SharedTermsVisitor::visit(TNode current, TNode parent) {
@@ -222,13 +242,13 @@ void SharedTermsVisitor::visit(TNode current, TNode parent) {
   TheoryIdSet visitedTheories = d_visited[current];
 
   // preregister the term with the current, parent or type theories, as needed
-  PreRegisterVisitor::preregister(d_engine, visitedTheories, current, parent);
+  PreRegisterVisitor::preRegister(d_engine, visitedTheories, current, parent);
 
   // Record the new theories that we visited
   d_visited[current] = visitedTheories;
 
   // If there is more than two theories and a new one has been added notify the shared terms database
-  TheoryId currentTheoryId = Theory::theoryOf(current);  // TODO: remove
+  TheoryId currentTheoryId = Theory::theoryOf(current);
   if (TheoryIdSetUtil::setDifference(
           visitedTheories, TheoryIdSetUtil::setInsert(currentTheoryId)))
   {
