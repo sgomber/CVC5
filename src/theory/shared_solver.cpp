@@ -66,11 +66,6 @@ void SharedSolver::preRegister(TNode atom)
     // Theory::preRegisterTerm possibly multiple times.
     NodeVisitor<PreRegisterVisitor>::run(d_preRegistrationVisitor, atom);
   }
-  else
-  {
-    // just use the normal preregister visitor
-    NodeVisitor<PreRegisterVisitor>::run(d_preRegistrationVisitor, t);
-  }
 }
 
 void SharedSolver::preNotifySharedFact(TNode atom)
