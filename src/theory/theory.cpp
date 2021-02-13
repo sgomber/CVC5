@@ -543,27 +543,6 @@ TrustNode Theory::explainConflict(TNode a, TNode b)
 
 void Theory::preRegisterTerm(TNode node) {}
 
-/*
-void Theory::preRegisterTermDefault(TNode node)
-{
-  if (d_equalityEngine != nullptr)
-  {
-    if (node.getKind() == kind::EQUAL)
-    {
-      d_equalityEngine->addTriggerEquality(node);
-    }
-    else if (node.getType().isBoolean())
-    {
-      d_equalityEngine->addTriggerPredicate(node);
-    }
-    else
-    {
-      d_equalityEngine->addTerm(node);
-    }
-  }
-}
-*/
-
 void Theory::addSharedTerm(TNode n)
 {
   Debug("sharing") << "Theory::addSharedTerm<" << getId() << ">(" << n << ")"
@@ -571,7 +550,7 @@ void Theory::addSharedTerm(TNode n)
   Debug("theory::assertions")
       << "Theory::addSharedTerm<" << getId() << ">(" << n << ")" << std::endl;
   d_sharedTerms.push_back(n);
-  // now call theory-specific addSharedTerm
+  // now call theory-specific method notifySharedTerm
   notifySharedTerm(n);
   // if we have an equality engine, add the trigger term
   if (d_equalityEngine != nullptr)

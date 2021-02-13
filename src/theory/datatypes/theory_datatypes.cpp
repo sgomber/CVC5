@@ -698,10 +698,6 @@ void TheoryDatatypes::merge( Node t1, Node t2 ){
                 Node eq = cons1[i].eqNode( cons2[i] );
                 d_im.addPendingInference(eq, unifEq, false, InferenceId::DATATYPES_UNIF);
                 Trace("datatypes-infer") << "DtInfer : cons-inj : " << eq << " by " << unifEq << std::endl;
-                if (d_state.isInConflict())
-                {
-                  break;
-                }
               }
             }
           }

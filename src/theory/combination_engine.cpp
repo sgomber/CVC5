@@ -34,7 +34,6 @@ CombinationEngine::CombinationEngine(TheoryEngine& te,
       d_pnm(pnm),
       d_logicInfo(te.getLogicInfo()),
       d_paraTheories(paraTheories),
-      d_paraSet(0),
       d_eemanager(nullptr),
       d_mmanager(nullptr),
       d_sharedSolver(nullptr),
@@ -113,12 +112,6 @@ bool CombinationEngine::isProofEnabled() const { return d_cmbsPg != nullptr; }
 eq::EqualityEngineNotify* CombinationEngine::getModelEqualityEngineNotify()
 {
   return nullptr;
-}
-
-bool CombinationEngine::isParametric(TheoryId tid) const
-{
-  // FIXME: necessary?
-  return true;
 }
 
 void CombinationEngine::resetRound()
