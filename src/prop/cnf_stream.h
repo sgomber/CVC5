@@ -203,6 +203,13 @@ class CnfStream {
   SatLiteral handleAnd(TNode node);
   SatLiteral handleOr(TNode node);
 
+  /** Stores the literal of the given node in d_literalToNodeMap.
+   *
+   * Note that n must already have a literal associated to it in
+   * d_nodeToLiteralMap.
+   */
+  void ensureMappingForLiteral(TNode n);
+
   /** The SAT solver we will be using */
   SatSolver* d_satSolver;
 
@@ -302,7 +309,7 @@ class CnfStream {
    * structure in this expression.  Assumed to not be in the
    * translation cache.
    */
-  SatLiteral convertAtom(TNode node, bool noPreprocessing = false);
+  SatLiteral convertAtom(TNode node);
 
   /** Pointer to resource manager for associated SmtEngine */
   ResourceManager* d_resourceManager;

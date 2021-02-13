@@ -26,7 +26,6 @@
 #include "base/modal_exception.h"
 #include "expr/node.h"
 #include "options/options.h"
-#include "preprocessing/assertion_pipeline.h"
 #include "proof/proof_manager.h"
 #include "prop/minisat/core/Solver.h"
 #include "prop/minisat/minisat.h"
@@ -123,7 +122,8 @@ class PropEngine
   /**
    * Notify preprocessed assertions. This method is called just before the
    * assertions are asserted to this prop engine. This method notifies the
-   * decision engine and the theory engine of the assertions in ap.
+   * theory engine of the given assertions. Notice this vector includes
+   * both the input formulas and the skolem definitions.
    */
   void notifyPreprocessedAssertions(const std::vector<Node>& assertions);
 
