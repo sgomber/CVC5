@@ -577,10 +577,6 @@ bool Theory::usesCentralEqualityEngine(TheoryId id)
   {
     return false;
   }
-  else if (options::eeMode() == options::EqEngineMode::CENTRAL)
-  {
-    return true;
-  }
   // test
   return id == THEORY_UF;  // || id==THEORY_DATATYPES;
 }

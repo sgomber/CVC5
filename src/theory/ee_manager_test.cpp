@@ -98,7 +98,7 @@ void EqEngineManagerTest::initializeTheories()
     eq::EqualityEngineNotify* notify = esi.d_notify;
     d_theoryNotify[theoryId] = notify;
     // split on whether integrated, or whether asked for master
-    if (t->usesCentralEqualityEngine())
+    if (false && t->usesCentralEqualityEngine())
     {
       // the theory uses the central equality engine
       eet.d_usedEe = &d_centralEqualityEngine;
