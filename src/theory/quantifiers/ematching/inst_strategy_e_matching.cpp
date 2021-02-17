@@ -102,7 +102,7 @@ InstStrategyStatus InstStrategyAutoGenTriggers::process(Node f,
                                                         Theory::Effort effort,
                                                         int e)
 {
-  options::UserPatMode upMode = d_quantEngine->getInstUserPatMode();
+  options::UserPatMode upMode = getInstUserPatMode();
   if (hasUserPatterns(f) && upMode == options::UserPatMode::TRUST)
   {
     return InstStrategyStatus::STATUS_UNKNOWN;
@@ -632,7 +632,7 @@ void InstStrategyAutoGenTriggers::addTrigger( inst::Trigger * tr, Node q ) {
         << "Make partially specified user pattern: " << std::endl;
     Trace("auto-gen-trigger-partial") << "  " << qq << std::endl;
     Node lem = nm->mkNode(OR, q.negate(), qq);
-    d_qim.addPendingLemma(lem);
+    d_qim.addPendingLemma(lem, InferenceId::UNKNOWN);
     return;
   }
   unsigned tindex;
