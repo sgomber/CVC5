@@ -28,6 +28,7 @@
 #include "options/main_options.h"
 #include "options/options.h"
 #include "options/prop_options.h"
+#include "options/proof_options.h"
 #include "options/smt_options.h"
 #include "proof/proof_manager.h"
 #include "prop/cnf_stream.h"
@@ -37,7 +38,6 @@
 #include "prop/theory_proxy.h"
 #include "smt/smt_statistics_registry.h"
 #include "theory/output_channel.h"
-#include "theory/rewriter.h"
 #include "theory/theory_engine.h"
 #include "util/resource_manager.h"
 #include "util/result.h"
@@ -214,7 +214,7 @@ void PropEngine::assertLemma(theory::TrustNode tlemma, theory::LemmaProperty p)
   Assert(ppSkolems.size() == ppLemmas.size());
 
   // do final checks on the lemmas we are about to send
-  if (isProofEnabled() && options::proofNewEagerChecking())
+  if (isProofEnabled() && options::proofEagerChecking())
   {
     Assert(tplemma.getGenerator() != nullptr);
     // ensure closed, make the proof node eagerly here to debug
@@ -456,7 +456,6 @@ Node PropEngine::ensureLiteral(TNode n)
 
 Node PropEngine::getPreprocessedTerm(TNode n)
 {
-  Node rewritten = theory::Rewriter::rewrite(n);
   // must preprocess
   std::vector<theory::TrustNode> newLemmas;
   std::vector<Node> newSkolems;

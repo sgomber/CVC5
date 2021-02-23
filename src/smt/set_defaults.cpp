@@ -71,6 +71,10 @@ void setDefaults(LogicInfo& logic, bool isInternalSubsolver)
     Notice() << "SmtEngine: setting unsatCores" << std::endl;
     options::unsatCores.set(true);
   }
+  if (options::checkUnsatCoresNew())
+  {
+    options::proof.set(true);
+  }
   if (options::bitvectorAigSimplifications.wasSetByUser())
   {
     Notice() << "SmtEngine: setting bitvectorAig" << std::endl;
@@ -867,16 +871,6 @@ void setDefaults(LogicInfo& logic, bool isInternalSubsolver)
   }
   if (options::ufHo())
   {
-    // if higher-order, disable proof production
-    if (options::proofNew())
-    {
-      if (options::proofNew.wasSetByUser())
-      {
-        Warning() << "SmtEngine: turning off proof production (not yet "
-                     "supported with --uf-ho)\n";
-      }
-      options::proofNew.set(false);
-    }
     // if higher-order, then current variants of model-based instantiation
     // cannot be used
     if (options::mbqiMode() != options::MbqiMode::NONE)
@@ -1089,16 +1083,6 @@ void setDefaults(LogicInfo& logic, bool isInternalSubsolver)
     if (!options::nlExtTangentPlanes.wasSetByUser())
     {
       options::nlExtTangentPlanes.set(true);
-    }
-    // not compatible with proofs
-    if (options::proofNew())
-    {
-      if (options::proofNew.wasSetByUser())
-      {
-        Notice() << "SmtEngine: setting proof-new to false to support SyGuS"
-                 << std::endl;
-      }
-      options::proofNew.set(false);
     }
   }
   // counterexample-guided instantiation for non-sygus
@@ -1389,10 +1373,10 @@ void setDefaults(LogicInfo& logic, bool isInternalSubsolver)
         "division. "
         "Try --bv-div-zero-const to interpret division by zero as a constant.");
   }
-  // !!!!!!!!!!!!!!!! temporary, until proof-new is functional
-  if (options::proofNew())
+  // !!!!!!!!!!!!!!!! temporary, until proofs are functional
+  if (options::proof())
   {
-    throw OptionException("--proof-new is not yet supported.");
+    throw OptionException("--proof is not yet supported.");
   }
 
   if (logic == LogicInfo("QF_UFNRA"))
