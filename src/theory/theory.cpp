@@ -140,26 +140,11 @@ void Theory::finishInitStandalone()
   finishInit();
 }
 
-struct TheoryOfTypeTag
-{
-};
-struct TheoryOfTermTag
-{
-};
-/** Attribute true for expressions with bound variables in them */
-typedef expr::Attribute<TheoryOfTypeTag, uint32_t> TheoryOfTypeAttr;
-typedef expr::Attribute<TheoryOfTermTag, uint32_t> TheoryOfTermAttr;
-
 TheoryId Theory::theoryOf(options::TheoryOfMode mode, TNode node)
 {
+  TheoryId tid = THEORY_BUILTIN;
   switch(mode) {
     case options::TheoryOfMode::THEORY_OF_TYPE_BASED:
-    {
-      if (node.hasAttribute(TheoryOfTypeAttr()))
-      {
-        return static_cast<TheoryId>(node.getAttribute(TheoryOfTypeAttr()));
-      }
-      TheoryId tid = THEORY_BUILTIN;
       // Constants, variables, 0-ary constructors
       if (node.isVar())
       {
@@ -184,17 +169,8 @@ TheoryId Theory::theoryOf(options::TheoryOfMode mode, TNode node)
         // always coincides with the type of that constant.
         tid = kindToTheoryId(node.getKind());
       }
-      node.setAttribute(TheoryOfTypeAttr(), tid);
-      return tid;
-    }
-    break;
+      break;
     case options::TheoryOfMode::THEORY_OF_TERM_BASED:
-    {
-      if (node.hasAttribute(TheoryOfTermAttr()))
-      {
-        return static_cast<TheoryId>(node.getAttribute(TheoryOfTermAttr()));
-      }
-      TheoryId tid = THEORY_BUILTIN;
       // Variables
       if (node.isVar())
       {
@@ -280,14 +256,12 @@ TheoryId Theory::theoryOf(options::TheoryOfMode mode, TNode node)
         // special case.
         tid = kindToTheoryId(node.getKind());
       }
-      node.setAttribute(TheoryOfTermAttr(), tid);
-      return tid;
-    }
     break;
   default:
     Unreachable();
   }
-  return THEORY_BUILTIN;
+  Trace("theory::internal") << "theoryOf(" << mode << ", " << node << ") -> " << tid << std::endl;
+  return tid;
 }
 
 void Theory::notifySharedTerm(TNode n)

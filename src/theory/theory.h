@@ -351,14 +351,15 @@ class Theory {
    * Return the ID of the theory responsible for the given type.
    */
   static inline TheoryId theoryOf(TypeNode typeNode) {
+    Trace("theory::internal") << "theoryOf(" << typeNode << ")" << std::endl;
     TheoryId id;
-    Kind k = typeNode.getKind();
-    if (k == kind::TYPE_CONSTANT)
-    {
-      return typeConstantToTheoryId(typeNode.getConst<TypeConstant>());
+    if (typeNode.getKind() == kind::TYPE_CONSTANT) {
+      id = typeConstantToTheoryId(typeNode.getConst<TypeConstant>());
+    } else {
+      id = kindToTheoryId(typeNode.getKind());
     }
-    id = kindToTheoryId(k);
     if (id == THEORY_BUILTIN) {
+      Trace("theory::internal") << "theoryOf(" << typeNode << ") == " << s_uninterpretedSortOwner << std::endl;
       return s_uninterpretedSortOwner;
     }
     return id;
