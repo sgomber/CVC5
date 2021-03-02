@@ -347,6 +347,10 @@ libcvc4_add_sources(
   theory/arith/nl/cad/constraints.h
   theory/arith/nl/cad/projections.cpp
   theory/arith/nl/cad/projections.h
+  theory/arith/nl/cad/proof_checker.cpp
+  theory/arith/nl/cad/proof_checker.h
+  theory/arith/nl/cad/proof_generator.cpp
+  theory/arith/nl/cad/proof_generator.h
   theory/arith/nl/cad/variable_ordering.cpp
   theory/arith/nl/cad/variable_ordering.h
   theory/arith/nl/ext/constraint.cpp
@@ -840,6 +844,8 @@ libcvc4_add_sources(
   theory/quantifiers/term_database.h
   theory/quantifiers/term_enumeration.cpp
   theory/quantifiers/term_enumeration.h
+  theory/quantifiers/term_registry.cpp
+  theory/quantifiers/term_registry.h
   theory/quantifiers/term_util.cpp
   theory/quantifiers/term_util.h
   theory/quantifiers/theory_quantifiers.cpp
@@ -988,7 +994,6 @@ libcvc4_add_sources(
   theory/theory_rewriter.h
   theory/theory_state.cpp
   theory/theory_state.h
-  theory/theory_test_utils.h
   theory/trust_node.cpp
   theory/trust_node.h
   theory/trust_substitutions.cpp
