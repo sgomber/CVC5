@@ -904,7 +904,8 @@ void OptimizeSynthCommand::invoke(api::Solver* solver, SymbolManager* sm)
 }
 
 api::Result OptimizeSynthCommand::getResult() const { return d_result; }
-void OptimizeSynthCommand::printResult(std::ostream& out, uint32_t verbosity) const
+void OptimizeSynthCommand::printResult(std::ostream& out,
+                                       uint32_t verbosity) const
 {
   if (!ok())
   {
@@ -921,20 +922,15 @@ Command* OptimizeSynthCommand::clone() const
   return new OptimizeSynthCommand(d_func);
 }
 
-std::string OptimizeSynthCommand::getCommandName() const
+std::string OptimizeSynthCommand::getCommandName() const { return "opt-synth"; }
+
+void OptimizeSynthCommand::toStream(std::ostream& out,
+                                    int toDepth,
+                                    size_t dag,
+                                    OutputLanguage language) const
 {
-  return "opt-synth";
+  // TODO
 }
-
-
-  void OptimizeSynthCommand::toStream(
-      std::ostream& out,
-      int toDepth,
-      size_t dag,
-      OutputLanguage language) const
-      {
-        // TODO
-      }
 
 /* -------------------------------------------------------------------------- */
 /* class ResetCommand                                                         */
