@@ -19,6 +19,7 @@
 #include "smt/smt_engine.h"
 #include "smt/smt_engine_scope.h"
 #include "util/random.h"
+#include "theory/rewriter.h"
 
 using namespace CVC4::kind;
 
@@ -107,8 +108,7 @@ void SolutionFilterObjFun::setObjectiveFunction(const std::vector<Node>& vars,
 {
   d_objFunVars = vars;
   // expand definitions
-  d_objFun =
-      Node::fromExpr(smt::currentSmtEngine()->expandDefinitions(f.toExpr()));
+  d_objFun = smt::currentSmtEngine()->expandDefinitions(f);
   d_funDefEval = fde;
   // must be real valued
   AlwaysAssert(d_objFun.getType().isReal());

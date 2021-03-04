@@ -157,7 +157,9 @@ bool ExpressionMinerManager::addTerm(std::vector<Node>& sols,
   bool ret = true;
   if (d_doRewSynth)
   {
-    Node rsol = d_crd.addTerm(sol, options::sygusRewSynthRec(), out, rew_print);
+    Assert (sols.size()==1);
+    Node sol = sols[0];
+    Node rsol = d_crd.addTerm(sol, options::sygusRewSynthRec(), out, rewPrint);
     ret = (sol == rsol);
   }
 

@@ -43,9 +43,7 @@ void FunDefEvaluator::assertDefinition(Node q)
   Assert(d_funDefMap.find(f) == d_funDefMap.end())
       << "FunDefEvaluator::assertDefinition: function already defined";
   FunDefInfo& fdi = d_funDefMap[f];
-  Node body = QuantAttributes::getFunDefBody(q);
-  fdi.d_body =
-      Node::fromExpr(smt::currentSmtEngine()->expandDefinitions(body.toExpr()));
+  fdi.d_body = QuantAttributes::getFunDefBody(q);
   Assert(!fdi.d_body.isNull());
   fdi.d_args.insert(fdi.d_args.end(), q[0].begin(), q[0].end());
   Trace("fd-eval") << "FunDefEvaluator: function " << f << " is defined with "
