@@ -109,11 +109,11 @@ class CVC4_PUBLIC CommandPrintSuccess
 }; /* class CommandPrintSuccess */
 
 /**
- * Sets the default print-success setting when pretty-printing an Expr
+ * Sets the default print-success setting when pretty-printing an api::Term
  * to an ostream.  Use like this:
  *
- *   // let out be an ostream, e an Expr
- *   out << Expr::setdepth(n) << e << endl;
+ *   // let out be an ostream, e an api::Term
+ *   out << api::Term::setdepth(n) << e << endl;
  *
  * The depth stays permanently (until set again) with the stream.
  */
@@ -882,11 +882,11 @@ class CVC4_PUBLIC CheckSynthCommand : public Command
 class CVC4_PUBLIC OptimizeSynthCommand : public Command
 {
  public:
-  OptimizeSynthCommand(Expr func);
+  OptimizeSynthCommand(api::Term func);
   /** get function */
-  Expr getFunction() const;
+  api::Term getFunction() const;
   /** returns the result of the check-synth call */
-  Result getResult() const;
+  api::Result getResult() const;
   /** prints the result of the check-synth-call */
   void printResult(std::ostream& out, uint32_t verbosity = 2) const override;
   /** invokes this command
@@ -897,10 +897,7 @@ class CVC4_PUBLIC OptimizeSynthCommand : public Command
    * and then perform a satisfiability check, whose result is stored in
    * d_result.
    */
-  void invoke(SmtEngine* smtEngine) override;
-  /** exports command to given expression manager */
-  Command* exportTo(ExprManager* exprManager,
-                    ExprManagerMapCollection& variableMap) override;
+  void invoke(api::Solver* solver, SymbolManager* sm) override;
   /** creates a copy of this command */
   Command* clone() const override;
   /** returns this command's name */
@@ -908,11 +905,11 @@ class CVC4_PUBLIC OptimizeSynthCommand : public Command
 
  protected:
   /** result of the check-synth call */
-  Result d_result;
+  api::Result d_result;
   /** string stream that stores the output of the solution */
   std::stringstream d_solution;
   /** the quantity we are optimizing */
-  Expr d_func;
+  api::Term d_func;
 };
 
 /* ------------------- sygus commands  ------------------ */

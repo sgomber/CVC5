@@ -861,18 +861,18 @@ void CheckSynthCommand::toStream(std::ostream& out,
 /* class OptimizeSynthCommand */
 /* -------------------------------------------------------------------------- */
 
-OptimizeSynthCommand::OptimizeSynthCommand(Expr func) : d_func(func) {}
-Expr OptimizeSynthCommand::getFunction() const { return d_func; }
-void OptimizeSynthCommand::invoke(SmtEngine* smtEngine)
+OptimizeSynthCommand::OptimizeSynthCommand(api::Term func) : d_func(func) {}
+api::Term OptimizeSynthCommand::getFunction() const { return d_func; }
+void OptimizeSynthCommand::invoke(api::Solver* solver, SymbolManager* sm)
 {
+  // FIXME: copied from CheckSynthCommand
   try
   {
-    d_result = smtEngine->optimizeSynth(d_func);
+    d_result = solver->checkSynth();
     d_commandStatus = CommandSuccess::instance();
-    smt::SmtScope scope(smtEngine);
     d_solution.clear();
     // check whether we should print the status
-    if (d_result.asSatisfiabilityResult() != Result::UNSAT
+    if (!d_result.isUnsat()
         || options::sygusOut() == options::SygusSolutionOutMode::STATUS_AND_DEF
         || options::sygusOut() == options::SygusSolutionOutMode::STATUS)
     {
@@ -886,7 +886,7 @@ void OptimizeSynthCommand::invoke(SmtEngine* smtEngine)
       }
     }
     // check whether we should print the solution
-    if (d_result.asSatisfiabilityResult() == Result::UNSAT
+    if (d_result.isUnsat()
         && options::sygusOut() != options::SygusSolutionOutMode::STATUS)
     {
       // printing a synthesis solution is a non-constant
@@ -894,7 +894,7 @@ void OptimizeSynthCommand::invoke(SmtEngine* smtEngine)
       // (Figure 5 of Reynolds et al. CAV 2015).
       // Hence, we must call here print solution here,
       // instead of during printResult.
-      smtEngine->printSynthSolution(d_solution);
+      solver->printSynthSolution(d_solution);
     }
   }
   catch (exception& e)
@@ -903,9 +903,8 @@ void OptimizeSynthCommand::invoke(SmtEngine* smtEngine)
   }
 }
 
-Result OptimizeSynthCommand::getResult() const { return d_result; }
-void OptimizeSynthCommand::printResult(std::ostream& out,
-                                       uint32_t verbosity) const
+api::Result OptimizeSynthCommand::getResult() const { return d_result; }
+void OptimizeSynthCommand::printResult(std::ostream& out, uint32_t verbosity) const
 {
   if (!ok())
   {
@@ -917,12 +916,6 @@ void OptimizeSynthCommand::printResult(std::ostream& out,
   }
 }
 
-Command* OptimizeSynthCommand::exportTo(ExprManager* exprManager,
-                                        ExprManagerMapCollection& variableMap)
-{
-  return new OptimizeSynthCommand(d_func.exportTo(exprManager, variableMap));
-}
-
 Command* OptimizeSynthCommand::clone() const
 {
   return new OptimizeSynthCommand(d_func);
@@ -930,7 +923,7 @@ Command* OptimizeSynthCommand::clone() const
 
 std::string OptimizeSynthCommand::getCommandName() const
 {
-  return "check-synth";
+  return "opt-synth";
 }
 
 /* -------------------------------------------------------------------------- */
@@ -1673,7 +1666,7 @@ void GetValueCommand::printResult(std::ostream& out, uint32_t verbosity) const
   }
   else
   {
-    expr::ExprDag::Scope scope(out, false);
+    expr::api::TermDag::Scope scope(out, false);
     out << d_result << endl;
   }
 }
@@ -1705,7 +1698,7 @@ void GetAssignmentCommand::invoke(api::Solver* solver, SymbolManager* sm)
 {
   try
   {
-    std::map<api::Term, std::string> enames = sm->getExpressionNames();
+    std::map<api::Term, std::string> enames = sm->getapi::TermessionNames();
     std::vector<api::Term> terms;
     std::vector<std::string> names;
     for (const std::pair<const api::Term, std::string>& e : enames)
@@ -2156,7 +2149,7 @@ void GetInterpolCommand::printResult(std::ostream& out,
   }
   else
   {
-    expr::ExprDag::Scope scope(out, false);
+    expr::api::TermDag::Scope scope(out, false);
     if (d_resultStatus)
     {
       out << "(define-fun " << d_name << " () Bool " << d_result << ")"
@@ -2245,7 +2238,7 @@ void GetAbductCommand::printResult(std::ostream& out, uint32_t verbosity) const
   }
   else
   {
-    expr::ExprDag::Scope scope(out, false);
+    expr::api::TermDag::Scope scope(out, false);
     if (d_resultStatus)
     {
       out << "(define-fun " << d_name << " () Bool " << d_result << ")"
@@ -2457,7 +2450,7 @@ void GetUnsatCoreCommand::printResult(std::ostream& out,
     {
       // otherwise, use the names
       std::vector<std::string> names;
-      d_sm->getExpressionNames(d_result, names, true);
+      d_sm->getapi::TermessionNames(d_result, names, true);
       UnsatCore ucr(names);
       ucr.toStream(out);
     }
