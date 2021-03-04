@@ -224,6 +224,12 @@ Result SygusSolver::checkSynth(Assertions& as)
   return r;
 }
 
+Result SygusSolver::optSynth(Assertions& as, Node f)
+{
+  // FIXME
+  return checkSynth(as);
+}
+
 bool SygusSolver::getSynthSolutions(std::map<Node, Node>& sol_map)
 {
   Trace("smt") << "SygusSolver::getSynthSolutions" << std::endl;

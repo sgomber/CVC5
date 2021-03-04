@@ -926,6 +926,16 @@ std::string OptimizeSynthCommand::getCommandName() const
   return "opt-synth";
 }
 
+
+  void OptimizeSynthCommand::toStream(
+      std::ostream& out,
+      int toDepth,
+      size_t dag,
+      OutputLanguage language) const
+      {
+        // TODO
+      }
+
 /* -------------------------------------------------------------------------- */
 /* class ResetCommand                                                         */
 /* -------------------------------------------------------------------------- */
@@ -1666,7 +1676,7 @@ void GetValueCommand::printResult(std::ostream& out, uint32_t verbosity) const
   }
   else
   {
-    expr::api::TermDag::Scope scope(out, false);
+    expr::ExprDag::Scope scope(out, false);
     out << d_result << endl;
   }
 }
@@ -1698,7 +1708,7 @@ void GetAssignmentCommand::invoke(api::Solver* solver, SymbolManager* sm)
 {
   try
   {
-    std::map<api::Term, std::string> enames = sm->getapi::TermessionNames();
+    std::map<api::Term, std::string> enames = sm->getExpressionNames();
     std::vector<api::Term> terms;
     std::vector<std::string> names;
     for (const std::pair<const api::Term, std::string>& e : enames)
@@ -2149,7 +2159,7 @@ void GetInterpolCommand::printResult(std::ostream& out,
   }
   else
   {
-    expr::api::TermDag::Scope scope(out, false);
+    expr::ExprDag::Scope scope(out, false);
     if (d_resultStatus)
     {
       out << "(define-fun " << d_name << " () Bool " << d_result << ")"
@@ -2238,7 +2248,7 @@ void GetAbductCommand::printResult(std::ostream& out, uint32_t verbosity) const
   }
   else
   {
-    expr::api::TermDag::Scope scope(out, false);
+    expr::ExprDag::Scope scope(out, false);
     if (d_resultStatus)
     {
       out << "(define-fun " << d_name << " () Bool " << d_result << ")"
@@ -2450,7 +2460,7 @@ void GetUnsatCoreCommand::printResult(std::ostream& out,
     {
       // otherwise, use the names
       std::vector<std::string> names;
-      d_sm->getapi::TermessionNames(d_result, names, true);
+      d_sm->getExpressionNames(d_result, names, true);
       UnsatCore ucr(names);
       ucr.toStream(out);
     }

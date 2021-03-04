@@ -902,6 +902,12 @@ class CVC4_PUBLIC OptimizeSynthCommand : public Command
   Command* clone() const override;
   /** returns this command's name */
   std::string getCommandName() const override;
+  /** to stream */
+  void toStream(
+      std::ostream& out,
+      int toDepth = -1,
+      size_t dag = 1,
+      OutputLanguage language = language::output::LANG_AUTO) const override;
 
  protected:
   /** result of the check-synth call */

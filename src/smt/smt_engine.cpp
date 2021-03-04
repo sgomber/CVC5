@@ -1140,16 +1140,19 @@ void SmtEngine::assertSygusInvConstraint(Node inv,
   }
 }
 
-Result SmtEngine::checkSynth() { return checkSynthInternal(Expr()); }
-Result SmtEngine::optimizeSynth(Expr f) { return checkSynthInternal(f); }
-
-Result SmtEngine::checkSynthInternal(Expr f)
+Result SmtEngine::checkSynth()
 {
   SmtScope smts(this);
   finishInit();
   return d_sygusSolver->checkSynth(*d_asserts);
 }
 
+Result SmtEngine::optimizeSynth(const Node& f)
+{
+  SmtScope smts(this);
+  finishInit();
+  return d_sygusSolver->optSynth(*d_asserts, f);
+}
 /*
    --------------------------------------------------------------------------
     End of Handling SyGuS commands

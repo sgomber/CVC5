@@ -500,7 +500,7 @@ class CVC4_PUBLIC SmtEngine
    *
    * @throw Exception
    */
-  Result optimizeSynth(Expr f);
+  Result optimizeSynth(const Node& f);
 
   /*------------------------- end of sygus commands ------------------------*/
 

@@ -119,6 +119,9 @@ class SygusSolver
    */
   Result checkSynth(Assertions& as);
   /**
+   */
+  Result optSynth(Assertions& as, Node f);
+  /**
    * Get synth solution.
    *
    * This method returns true if we are in a state immediately preceded by
