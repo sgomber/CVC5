@@ -4,8 +4,8 @@
  ** Top contributors (to current version):
  **   Liana Hadarean, Mathias Preiner, Alex Ozdemir
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
+ ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
@@ -24,14 +24,16 @@
 #include <vector>
 
 #include "expr/node.h"
-#include "proof/bitvector_proof.h"
 #include "prop/bv_sat_solver_notify.h"
+#include "prop/cnf_stream.h"
+#include "prop/registrar.h"
+#include "prop/sat_solver.h"
 #include "prop/sat_solver_types.h"
+#include "smt/smt_engine_scope.h"
 #include "theory/bv/bitblast/bitblast_strategies_template.h"
-#include "theory/theory_registrar.h"
+#include "theory/theory.h"
 #include "theory/valuation.h"
 #include "util/resource_manager.h"
-
 
 namespace CVC4 {
 namespace theory {
@@ -64,7 +66,6 @@ class TBitblaster
   // sat solver used for bitblasting and associated CnfStream
   std::unique_ptr<context::Context> d_nullContext;
   std::unique_ptr<prop::CnfStream> d_cnfStream;
-  proof::BitVectorProof* d_bvp;
 
   void initAtomBBStrategies();
   void initTermBBStrategies();
@@ -91,7 +92,6 @@ class TBitblaster
   bool hasBBTerm(TNode node) const;
   void getBBTerm(TNode node, Bits& bits) const;
   virtual void storeBBTerm(TNode term, const Bits& bits);
-  virtual void setProofLog(proof::BitVectorProof* bvp);
 
   /**
    * Return a constant representing the value of a in the  model.
@@ -109,11 +109,12 @@ class MinisatEmptyNotify : public prop::BVSatSolverNotify
   MinisatEmptyNotify() {}
   bool notify(prop::SatLiteral lit) override { return true; }
   void notify(prop::SatClause& clause) override {}
-  void spendResource(unsigned amount) override
+  void spendResource(ResourceManager::Resource r) override
   {
-    NodeManager::currentResourceManager()->spendResource(amount);
+    smt::currentResourceManager()->spendResource(r);
   }
-  void safePoint(unsigned amount) override {}
+
+  void safePoint(ResourceManager::Resource r) override {}
 };
 
 // Bitblaster implementation
@@ -185,8 +186,7 @@ TBitblaster<T>::TBitblaster()
     : d_termCache(),
       d_modelCache(),
       d_nullContext(new context::Context()),
-      d_cnfStream(),
-      d_bvp(nullptr)
+      d_cnfStream()
 {
   initAtomBBStrategies();
   initTermBBStrategies();
@@ -214,20 +214,6 @@ template <class T>
 void TBitblaster<T>::invalidateModelCache()
 {
   d_modelCache.clear();
-}
-
-template <class T>
-void TBitblaster<T>::setProofLog(proof::BitVectorProof* bvp)
-{
-  if (THEORY_PROOF_ON())
-  {
-    d_bvp = bvp;
-    prop::SatSolver* satSolver = getSatSolver();
-    bvp->attachToSatSolver(*satSolver);
-    prop::SatVariable t = satSolver->trueVar();
-    prop::SatVariable f = satSolver->falseVar();
-    bvp->initCnfProof(d_cnfStream.get(), d_nullContext.get(), t, f);
-  }
 }
 
 template <class T>

@@ -2,10 +2,10 @@
 /*! \file theory_proxy.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Tim King, Morgan Deters, Dejan Jovanovic
+ **   Dejan Jovanovic, Tim King, Kshitij Bansal
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
+ ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
@@ -23,18 +23,16 @@
 // Optional blocks below will be unconditionally included
 #define CVC4_USE_MINISAT
 
-#include <iosfwd>
 #include <unordered_set>
 
 #include "context/cdqueue.h"
-#include "expr/expr_stream.h"
 #include "expr/node.h"
-#include "prop/sat_solver.h"
-#include "smt_util/lemma_channels.h"
-#include "smt_util/lemma_input_channel.h"
-#include "smt_util/lemma_output_channel.h"
+#include "prop/registrar.h"
+#include "prop/sat_solver_types.h"
 #include "theory/theory.h"
-#include "util/statistics_registry.h"
+#include "theory/theory_preprocessor.h"
+#include "theory/trust_node.h"
+#include "util/resource_manager.h"
 
 namespace CVC4 {
 
@@ -49,19 +47,20 @@ class CnfStream;
 /**
  * The proxy class that allows the SatSolver to communicate with the theories
  */
-class TheoryProxy {
-public:
+class TheoryProxy : public Registrar
+{
+ public:
   TheoryProxy(PropEngine* propEngine,
               TheoryEngine* theoryEngine,
               DecisionEngine* decisionEngine,
               context::Context* context,
-              CnfStream* cnfStream,
-              std::ostream* replayLog,
-              ExprStream* replayStream,
-              LemmaChannels* globals);
+              context::UserContext* userContext,
+              ProofNodeManager* pnm);
 
   ~TheoryProxy();
 
+  /** Finish initialize */
+  void finishInit(CnfStream* cnfStream);
 
   void theoryCheck(theory::Theory::Effort effort);
 
@@ -86,13 +85,7 @@ public:
 
   void notifyRestart();
 
-  void notifyNewLemma(SatClause& lemma);
-
-  SatLiteral getNextReplayDecision();
-
-  void logDecision(SatLiteral lit);
-
-  void spendResource(unsigned amount);
+  void spendResource(ResourceManager::Resource r);
 
   bool isDecisionEngineDone();
 
@@ -100,8 +93,41 @@ public:
 
   SatValue getDecisionPolarity(SatVariable var);
 
-  /** Shorthand for Dump("state") << PopCommand() */
-  void dumpStatePop();
+  CnfStream* getCnfStream();
+
+  /**
+   * Call the preprocessor on node, return trust node corresponding to the
+   * rewrite.
+   */
+  theory::TrustNode preprocessLemma(theory::TrustNode trn,
+                                    std::vector<theory::TrustNode>& newLemmas,
+                                    std::vector<Node>& newSkolems);
+  /**
+   * Call the preprocessor on node, return trust node corresponding to the
+   * rewrite.
+   */
+  theory::TrustNode preprocess(TNode node,
+                               std::vector<theory::TrustNode>& newLemmas,
+                               std::vector<Node>& newSkolems);
+  /**
+   * Remove ITEs from the node.
+   */
+  theory::TrustNode removeItes(TNode node,
+                               std::vector<theory::TrustNode>& newLemmas,
+                               std::vector<Node>& newSkolems);
+  /**
+   * Get the skolems within node and their corresponding definitions, store
+   * them in sks and skAsserts respectively. Note that this method does not
+   * necessary include all of the skolems in skAsserts. In other words, it
+   * collects from node only. To compute all skolems that node depends on
+   * requires calling this method again on each lemma in skAsserts until a
+   * fixed point is reached.
+   */
+  void getSkolems(TNode node,
+                  std::vector<theory::TrustNode>& skAsserts,
+                  std::vector<Node>& sks);
+  /** Preregister term */
+  void preRegister(Node n) override;
 
  private:
   /** The prop engine we are using. */
@@ -116,22 +142,6 @@ public:
   /** The theory engine we are using. */
   TheoryEngine* d_theoryEngine;
 
-
-  /** Container for inputChannel() and outputChannel(). */
-  LemmaChannels* d_channels;
-
-  /** Stream on which to log replay events. */
-  std::ostream* d_replayLog;
-
-  /** Stream for replaying decisions. */
-  ExprStream* d_replayStream;
-
-  /** The lemma input channel we are using. */
-  LemmaInputChannel* inputChannel();
-
-  /** The lemma output channel we are using. */
-  LemmaOutputChannel* outputChannel();
-
   /** Queue of asserted facts */
   context::CDQueue<TNode> d_queue;
 
@@ -141,12 +151,9 @@ public:
    */
   std::unordered_set<Node, NodeHashFunction> d_shared;
 
-  /**
-   * Statistic: the number of replayed decisions (via --replay).
-   */
-  IntStat d_replayedDecisions;
-
-};/* class SatSolver */
+  /** The theory preprocessor */
+  theory::TheoryPreprocessor d_tpp;
+}; /* class TheoryProxy */
 
 }/* CVC4::prop namespace */
 

@@ -4,8 +4,8 @@
  ** Top contributors (to current version):
  **   Andrew Reynolds, Morgan Deters, Tim King
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
+ ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
@@ -17,7 +17,6 @@
 #include "options/quantifiers_options.h"
 #include "theory/quantifiers/first_order_model.h"
 #include "theory/quantifiers/fmf/model_engine.h"
-#include "theory/quantifiers/fun_def_process.h"
 #include "theory/quantifiers/instantiate.h"
 #include "theory/quantifiers/quant_rep_bound_ext.h"
 #include "theory/quantifiers_engine.h"
@@ -30,11 +29,14 @@ using namespace CVC4::context;
 using namespace CVC4::theory;
 using namespace CVC4::theory::quantifiers;
 
-QModelBuilder::QModelBuilder(context::Context* c, QuantifiersEngine* qe)
-    : TheoryEngineModelBuilder(qe->getTheoryEngine()),
+QModelBuilder::QModelBuilder(QuantifiersEngine* qe, QuantifiersState& qs)
+    : TheoryEngineModelBuilder(),
       d_qe(qe),
       d_addedLemmas(0),
-      d_triedLemmas(0) {}
+      d_triedLemmas(0),
+      d_qstate(qs)
+{
+}
 
 bool QModelBuilder::optUseModel() {
   return options::mbqiMode() != options::MbqiMode::NONE || options::fmfBound();
@@ -47,7 +49,8 @@ bool QModelBuilder::preProcessBuildModel(TheoryModel* m) {
 bool QModelBuilder::preProcessBuildModelStd(TheoryModel* m) {
   d_addedLemmas = 0;
   d_triedLemmas = 0;
-  if( options::fmfEmptySorts() || options::fmfFunWellDefinedRelevant() ){
+  if (options::fmfFunWellDefinedRelevant())
+  {
     FirstOrderModel * fm = (FirstOrderModel*)m;
     //traverse equality engine
     std::map< TypeNode, bool > eqc_usort;
@@ -63,25 +66,17 @@ bool QModelBuilder::preProcessBuildModelStd(TheoryModel* m) {
       Node q = fm->getAssertedQuantifier( i, true );
       if( fm->isQuantifierActive( q ) ){
         //check if any of these quantified formulas can be set inactive
-        if( options::fmfEmptySorts() ){
-          for( unsigned i=0; i<q[0].getNumChildren(); i++ ){
-            TypeNode tn = q[0][i].getType();
-            //we are allowed to assume the type is empty
-            if( tn.isSort() && eqc_usort.find( tn )==eqc_usort.end() ){
-              Trace("model-engine-debug") << "Empty domain quantified formula : " << q << std::endl;
+        if (q[0].getNumChildren() == 1)
+        {
+          TypeNode tn = q[0][0].getType();
+          if (tn.getAttribute(AbsTypeFunDefAttribute()))
+          {
+            // we are allowed to assume the introduced type is empty
+            if (eqc_usort.find(tn) == eqc_usort.end())
+            {
+              Trace("model-engine-debug")
+                  << "Irrelevant function definition : " << q << std::endl;
               fm->setQuantifierActive( q, false );
-            }
-          }
-        }else if( options::fmfFunWellDefinedRelevant() ){
-          if( q[0].getNumChildren()==1 ){
-            TypeNode tn = q[0][0].getType();
-            if( tn.getAttribute(AbsTypeFunDefAttribute()) ){
-              //Trace("model-engine-debug2") << "...possible irrelevant function def : " << q << ", #rr = " << d_quantEngine->getModel()->d_rep_set.getNumRelevantGroundReps( tn ) << std::endl;
-              //we are allowed to assume the introduced type is empty
-              if( eqc_usort.find( tn )==eqc_usort.end() ){
-                Trace("model-engine-debug") << "Irrelevant function definition : " << q << std::endl;
-                fm->setQuantifierActive( q, false );
-              }
             }
           }
         }

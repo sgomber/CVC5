@@ -2,10 +2,10 @@
 /*! \file type.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Morgan Deters, Dejan Jovanovic, Tim King
+ **   Morgan Deters, Dejan Jovanovic, Andrew Reynolds
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
+ ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
@@ -20,7 +20,6 @@
 #define CVC4__TYPE_H
 
 #include <climits>
-#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -30,14 +29,11 @@ namespace CVC4 {
 
 class NodeManager;
 class CVC4_PUBLIC ExprManager;
-class CVC4_PUBLIC Expr;
+class Expr;
 class TypeNode;
 struct CVC4_PUBLIC ExprManagerMapCollection;
 
-class CVC4_PUBLIC SmtEngine;
-
-class CVC4_PUBLIC Datatype;
-class Record;
+class SmtEngine;
 
 template <bool ref_count>
 class NodeTemplate;
@@ -373,7 +369,13 @@ protected:
    */
   bool isSet() const;
 
- /**
+  /**
+   * Is this a Sequence type?
+   * @return true if the type is a Sequence type
+   */
+  bool isSequence() const;
+
+  /**
    * Is this a datatype type?
    * @return true if the type is a datatype type
    */
@@ -515,15 +517,26 @@ class CVC4_PUBLIC ArrayType : public Type {
   Type getConstituentType() const;
 };/* class ArrayType */
 
-/** Class encapsulating an set type. */
+/** Class encapsulating a set type. */
 class CVC4_PUBLIC SetType : public Type {
  public:
   /** Construct from the base type */
   SetType(const Type& type = Type());
 
-  /** Get the index type */
+  /** Get the element type */
   Type getElementType() const;
-};/* class SetType */
+}; /* class SetType */
+
+/** Class encapsulating a sequence type. */
+class CVC4_PUBLIC SequenceType : public Type
+{
+ public:
+  /** Construct from the base type */
+  SequenceType(const Type& type = Type());
+
+  /** Get the element type */
+  Type getElementType() const;
+}; /* class SetType */
 
 /** Class encapsulating a user-defined sort. */
 class CVC4_PUBLIC SortType : public Type {
@@ -599,18 +612,8 @@ class CVC4_PUBLIC DatatypeType : public Type {
   /** Construct from the base type */
   DatatypeType(const Type& type = Type());
 
-  /** Get the underlying datatype */
-  const Datatype& getDatatype() const;
-
   /** Is this datatype parametric? */
   bool isParametric() const;
-
-  /**
-   * Get the constructor operator associated to the given constructor
-   * name in this datatype.
-   */
-  Expr getConstructor(std::string name) const;
-
   /**
    * Has this datatype been fully instantiated ?
    *
@@ -636,9 +639,6 @@ class CVC4_PUBLIC DatatypeType : public Type {
 
   /** Get the constituent types of a tuple type */
   std::vector<Type> getTupleTypes() const;
-
-  /** Get the description of the record type */
-  const Record& getRecord() const;
 
 };/* class DatatypeType */
 

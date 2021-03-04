@@ -4,8 +4,8 @@
  ** Top contributors (to current version):
  **   Morgan Deters, Tim King, Andrew Reynolds
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
+ ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
@@ -156,7 +156,8 @@ class TypeEnumerator {
 #if defined(CVC4_ASSERTIONS) && !(defined(__APPLE__) && defined(__clang__))
     try {
       Node n = **d_te;
-      Assert(n.isConst());
+      Assert(n.isConst()) << "Term " << n
+                          << " from type enumerator is not constant";
       Assert(!isFinished());
       return n;
     } catch(NoMoreValuesException&) {

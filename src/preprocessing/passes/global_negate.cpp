@@ -4,8 +4,8 @@
  ** Top contributors (to current version):
  **   Andrew Reynolds, Yoni Zohar
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
+ ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
@@ -17,6 +17,7 @@
 #include <vector>
 
 #include "expr/node.h"
+#include "preprocessing/assertion_pipeline.h"
 #include "theory/rewriter.h"
 
 using namespace std;
@@ -27,17 +28,18 @@ namespace CVC4 {
 namespace preprocessing {
 namespace passes {
 
-Node GlobalNegate::simplify(std::vector<Node>& assertions, NodeManager* nm)
+Node GlobalNegate::simplify(const std::vector<Node>& assertions,
+                            NodeManager* nm)
 {
   Assert(!assertions.empty());
-  Trace("cbqi-gn") << "Global negate : " << std::endl;
+  Trace("cegqi-gn") << "Global negate : " << std::endl;
   // collect free variables in all assertions
   std::vector<Node> free_vars;
   std::vector<TNode> visit;
   std::unordered_set<TNode, TNodeHashFunction> visited;
   for (const Node& as : assertions)
   {
-    Trace("cbqi-gn") << "  " << as << std::endl;
+    Trace("cegqi-gn") << "  " << as << std::endl;
     TNode cur = as;
     // compute free variables
     visit.push_back(cur);
@@ -90,9 +92,9 @@ Node GlobalNegate::simplify(std::vector<Node>& assertions, NodeManager* nm)
     body = nm->mkNode(FORALL, bvl, body);
   }
 
-  Trace("cbqi-gn-debug") << "...got (pre-rewrite) : " << body << std::endl;
+  Trace("cegqi-gn-debug") << "...got (pre-rewrite) : " << body << std::endl;
   body = Rewriter::rewrite(body);
-  Trace("cbqi-gn") << "...got (post-rewrite) : " << body << std::endl;
+  Trace("cegqi-gn") << "...got (post-rewrite) : " << body << std::endl;
   return body;
 }
 

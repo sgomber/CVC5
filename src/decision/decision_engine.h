@@ -2,10 +2,10 @@
 /*! \file decision_engine.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Kshitij Bansal, Morgan Deters, Tim King
+ **   Kshitij Bansal, Morgan Deters, Mathias Preiner
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
+ ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
@@ -19,19 +19,15 @@
 #ifndef CVC4__DECISION__DECISION_ENGINE_H
 #define CVC4__DECISION__DECISION_ENGINE_H
 
-#include <vector>
-
 #include "base/output.h"
+#include "context/cdo.h"
 #include "decision/decision_strategy.h"
 #include "expr/node.h"
-#include "preprocessing/assertion_pipeline.h"
 #include "prop/cnf_stream.h"
-#include "prop/prop_engine.h"
+#include "prop/sat_solver.h"
 #include "prop/sat_solver_types.h"
-#include "smt/smt_engine_scope.h"
-#include "smt/term_formula_removal.h"
+#include "util/result.h"
 
-using namespace std;
 using namespace CVC4::prop;
 using namespace CVC4::decision;
 
@@ -39,16 +35,9 @@ namespace CVC4 {
 
 class DecisionEngine {
 
-  vector <DecisionStrategy* > d_enabledStrategies;
-  vector <ITEDecisionStrategy* > d_needIteSkolemMap;
-  RelevancyStrategy* d_relevancyStrategy;
-
-  typedef context::CDList<Node> AssertionsList;
-  AssertionsList d_assertions;
-
   // PropEngine* d_propEngine;
   CnfStream* d_cnfStream;
-  DPLLSatSolverInterface* d_satSolver;
+  CDCLTSatSolverInterface* d_satSolver;
 
   context::Context* d_satContext;
   context::UserContext* d_userContext;
@@ -61,25 +50,24 @@ class DecisionEngine {
 
   // init/shutdown state
   unsigned d_engineState;    // 0=pre-init; 1=init,pre-shutdown; 2=shutdown
-public:
+  /** Pointer to resource manager for associated SmtEngine */
+  ResourceManager* d_resourceManager;
+
+ public:
   // Necessary functions
 
   /** Constructor */
-  DecisionEngine(context::Context *sc, context::UserContext *uc);
+  DecisionEngine(context::Context* sc,
+                 context::UserContext* uc,
+                 ResourceManager* rm);
 
   /** Destructor, currently does nothing */
   ~DecisionEngine() {
     Trace("decision") << "Destroying decision engine" << std::endl;
   }
 
-  // void setPropEngine(PropEngine* pe) {
-  //   // setPropEngine should not be called more than once
-  //   Assert(d_propEngine == NULL);
-  //   Assert(pe != NULL);
-  //   d_propEngine = pe;
-  // }
-
-  void setSatSolver(DPLLSatSolverInterface* ss) {
+  void setSatSolver(CDCLTSatSolverInterface* ss)
+  {
     // setPropEngine should not be called more than once
     Assert(d_satSolver == NULL);
     Assert(ss != NULL);
@@ -93,54 +81,20 @@ public:
     d_cnfStream = cs;
   }
 
-  /* enables decision stragies based on options */
+  /* Enables decision strategy based on options. */
   void init();
-
-  /* clears all of the strategies */
-  void clearStrategies();
-
 
   /**
    * This is called by SmtEngine, at shutdown time, just before
    * destruction.  It is important because there are destruction
    * ordering issues between some parts of the system.
    */
-  void shutdown() {
-    Assert(d_engineState == 1);
-    d_engineState = 2;
-
-    Trace("decision") << "Shutting down decision engine" << std::endl;
-    clearStrategies();
-  }
+  void shutdown();
 
   // Interface for External World to use our services
 
   /** Gets the next decision based on strategies that are enabled */
-  SatLiteral getNext(bool &stopSearch) {
-    NodeManager::currentResourceManager()->spendResource(options::decisionStep());
-    Assert(d_cnfStream != NULL)
-        << "Forgot to set cnfStream for decision engine?";
-    Assert(d_satSolver != NULL)
-        << "Forgot to set satSolver for decision engine?";
-
-    SatLiteral ret = undefSatLiteral;
-    for(unsigned i = 0;
-        i < d_enabledStrategies.size()
-          and ret == undefSatLiteral
-          and stopSearch == false; ++i) {
-      ret = d_enabledStrategies[i]->getNext(stopSearch);
-    }
-    return ret;
-  }
-
-  /** Is a sat variable relevant */
-  bool isRelevant(SatVariable var);
-
-  /**
-   * Try to get tell SAT solver what polarity to try for a
-   * decision. Return SAT_VALUE_UNKNOWN if it can't help
-   */
-  SatValue getPolarity(SatVariable var);
+  SatLiteral getNext(bool& stopSearch);
 
   /** Is the DecisionEngine in a state where it has solved everything? */
   bool isDone() {
@@ -169,26 +123,19 @@ public:
 
   // External World helping us help the Strategies
 
-  /** If one of the enabled strategies needs them  */
-  /* bool needIteSkolemMap() { */
-  /*   return d_needIteSkolemMap.size() > 0; */
-  /* } */
-
   /**
-   * Add a list of assertions from an AssertionPipeline.
+   * Notify this class that assertion is an (input) assertion, not corresponding
+   * to a skolem definition.
    */
-  void addAssertions(const preprocessing::AssertionPipeline& assertions);
+  void addAssertion(TNode assertion);
+  /**
+   * Notify this class  that lem is the skolem definition for skolem, which is
+   * a part of the current assertions.
+   */
+  void addSkolemDefinition(TNode lem, TNode skolem);
 
   // Interface for Strategies to use stuff stored in Decision Engine
   // (which was possibly requested by them on initialization)
-
-  /**
-   * Get the assertions. Strategies are notified when these are available.
-   */
-  AssertionsList& getAssertions() {
-    return d_assertions;
-  }
-
 
   // Interface for Strategies to get information about External World
 
@@ -208,13 +155,9 @@ public:
     return d_cnfStream->getNode(l);
   }
 
-private:
-  /**
-   * Enable a particular decision strategy, also updating
-   * corresponding vector<DecisionStrategy*>-s is the engine
-   */
-  void enableStrategy(DecisionStrategy* ds);
-
+ private:
+  /** The ITE decision strategy we have allocated */
+  std::unique_ptr<ITEDecisionStrategy> d_enabledITEStrategy;
 };/* DecisionEngine class */
 
 }/* CVC4 namespace */

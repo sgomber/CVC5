@@ -2,10 +2,10 @@
 /*! \file simplex.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Tim King, Clark Barrett
+ **   Tim King, Mathias Preiner, Clark Barrett
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
+ ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
@@ -57,7 +57,6 @@
 
 #include "theory/arith/arithvar.h"
 #include "theory/arith/delta_rational.h"
-#include "theory/arith/error_set.h"
 #include "theory/arith/linear_equality.h"
 #include "theory/arith/partial_model.h"
 #include "theory/arith/tableau.h"
@@ -67,6 +66,8 @@
 namespace CVC4 {
 namespace theory {
 namespace arith {
+
+class ErrorSet;
 
 class SimplexDecisionProcedure {
 protected:

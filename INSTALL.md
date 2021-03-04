@@ -1,5 +1,5 @@
-CVC4 prerelease version 1.8.
-============================
+CVC4 prerelease version 1.9
+===========================
 
 ## Building CVC4
 
@@ -22,14 +22,15 @@ using Mingw-w64.  We recommend a 64-bit operating system.
 On macOS, we recommend using Homebrew (https://brew.sh/) to install the
 dependencies.  We also have a Homebrew Tap available at
 https://github.com/CVC4/homebrew-cvc4 .
+To build a static binary for macOS, use:
+`./configure.sh --static --no-static-binary`.
 
 ### Cross-compiling for Windows
 
 Cross-compiling CVC4 with Mingw-w64 can be done as follows:
 
 ```
-  HOST=x86_64-w64-mingw32 ./contrib/get-win-dependencies
-  ./configure --win64 --static <configure options...>
+  ./configure.sh --win64 --static <configure options...>
 
   cd <build_dir>   # default is ./build
   make             # use -jN for parallel build with N threads
@@ -46,9 +47,9 @@ compatible.
 
 - [GNU C and C++ (gcc and g++)](https://gcc.gnu.org)
   or [Clang](https://clang.llvm.org) (reasonably recent versions)
-- [CMake >= 3.1](https://cmake.org)
+- [CMake >= 3.9](https://cmake.org)
 - [GNU Bash](https://www.gnu.org/software/bash/)
-- [Python >= 2.7](https://www.python.org)
+- [Python 3.x](https://www.python.org)
   + module [toml](https://pypi.org/project/toml/)
 - [GMP v4.2 (GNU Multi-Precision arithmetic library)](https://gmplib.org)
 - [libantlr3c v3.2 or v3.4 (ANTLR parser generator C support library)](http://www.antlr3.org/)
@@ -72,6 +73,19 @@ GCC version 4.5.1 seems to have a bug in the optimizer that may result in
 incorrect behavior (and wrong results) in many builds. This is a known problem
 for MiniSat, and since MiniSat is at the core of CVC4, a problem for CVC4.
 We recommend using a GCC version > 4.5.1.
+
+### Warning: Installing GMP via `contrib/get-gmp-dev`
+
+Do **not** install GMP via the provided script `contrib/get-gmp-dev` unless
+your distribution
+* does not ship with the GMP configuration you need, e.g.,
+  `contrib/get-gmp-dev` is used in `configure.sh` when cross-compiling GMP for
+  Windows.
+* does not ship with static GMP libraries (e.g., Arch Linux)
+  and you want to build CVC4 statically.
+
+In most of the cases the GMP version installed on your system is the one you
+want and should use.
 
 ## Optional Dependencies
 
@@ -101,16 +115,26 @@ It can be installed using the `contrib/get-cryptominisat` script.
 Configure CVC4 with `configure.sh --cryptominisat` to build with this
 dependency.
 
+### Kissat (Optional SAT solver)
+
+[Kissat](https://github.com/arminbiere/kissat)
+is a SAT solver that can be used for solving bit-vector problems with eager
+bit-blasting. This dependency may improve performance.
+It can be installed using the `contrib/get-kissat` script.  
+Configure CVC4 with `configure.sh --kissat` to build with this
+dependency.
+
 ### LFSC (The LFSC Proof Checker)
 
 [LFSC](https://github.com/CVC4/LFSC) is required to check proofs internally
 with --check-proofs. It can be installed using the `contrib/get-lfsc` script.  
 Configure CVC4 with `configure.sh --lfsc` to build with this dependency.
 
-### SWIG >= 3.0.x (Simplified Wrapper and Interface Generator)
+### LibPoly (Optional polynomial library)
 
-SWIG 3.0.x (and a JDK) is necessary to build the Java API.
-See [Language Bindings](language-bindings) below for build instructions.
+[LibPoly](https://github.com/SRI-CSL/libpoly) is required for CAD-based nonlinear reasoning.
+It can be installed using the `contrib/get-poly` script.
+Configure CVC4 with `configure.sh --poly` to build with this dependency.
 
 ### CLN >= v1.3 (Class Library for Numbers)
 
@@ -153,67 +177,39 @@ and-inverter-graphs (AIG) and ABC is used to simplify these AIGs.
 ABC can be installed using the `contrib/get-abc` script.  
 Configure CVC4 with `configure.sh --abc` to build with this dependency.
 
-### GNU Readline library (Improved Interactive Experience)
+### Editline library (Improved Interactive Experience)
 
-The [GNU Readline](http://cnswww.cns.cwru.edu/php/chet/readline/rltop.html)
-library is optionally used to provide command editing, tab completion, and
-history functionality at the CVC4 prompt (when running in interactive mode).
-Check your distribution for a package named "libreadline-dev" or
-"readline-devel" or similar.
-
-Note that GNU Readline is covered by the [GNU General Public License, version 3](https://www.gnu.org/licenses/gpl-3.0.en.html).
-If you choose to use CVC4 with GNU Readline support, you are licensing CVC4
-under that same license.
-(Usually CVC4's license is more permissive; see above discussion.)
-
-### libboost_thread: The Boost C++ threading library (Portfolio Builds)
-
-The [Boost](http://www.boost.org) C++ threading library (often packaged
-independently of the Boost base library) is needed to run CVC4 in "portfolio"
-(multithreaded) mode.
-Check your distribution for a package named "libboost-thread-dev" or similar.
+The [Editline Library](https://thrysoee.dk/editline/) library is optionally
+used to provide command editing, tab completion, and history functionality at
+the CVC4 prompt (when running in interactive mode).  Check your distribution
+for a package named "libedit-dev" or "libedit-devel" or similar.
 
 ### Boost C++ base libraries (Examples)
 
 The [Boost](http://www.boost.org) C++ base library is needed for some examples
 provided with CVC4.
 
-### CxxTest Unit Testing Framework (Unit Tests)
+### Google Test Unit Testing Framework (Unit Tests)
 
-[CxxTest](http://cxxtest.com) is required to optionally run CVC4's unit tests
-(included with the distribution). 
+[Google Test](https://github.com/google/googletest) is required to optionally
+run CVC4's unit tests (included with the distribution). 
 See [Testing CVC4](#Testing-CVC4) below for more details.
-
 
 ## Language bindings
 
-CVC4 provides a complete and flexible C++ API (see `examples/api` for examples).
-It further provides Java (see `examples/SimpleVC.java` and `examples/api/java`)
-and Python (see `examples/SimpleVC.py`) API bindings.
+CVC4 provides a complete and flexible C++ API (see `examples/api` for
+examples). It further provides Java (see `examples/SimpleVC.java` and
+`examples/api/java`) and Python (see `examples/api/python`) API bindings.
 
-Configure CVC4 with `configure.sh --language-bindings=[java,python,all]`
-to build with language bindings.  
-Note that this requires SWIG >= 3.0.x.
+Configure CVC4 with `configure.sh --<lang>-bindings` to build with language
+bindings for `<lang>`.
 
-In principle, since we use SWIG to generate the native Java and PythonAPI,
-we could support other languages as well. However, using CVC4 from other
-languages is not supported, nor expected to work, at this time.
 If you're interested in helping to develop, maintain, and test a language
 binding, please contact one of the project leaders.
 
 ## Building the Examples
 
-The examples provided in directory `examples` are not built by default.
-
-    make examples                      # build all examples
-    make runexamples                   # build and run all examples
-    make <example>                     # build examples/<subdir>/<example>.<ext>
-    ctest example/<subdir>/<example>   # run test example/<subdir>/<example>
-
-All examples binaries are built into `<build_dir>/bin/examples`.
-
-See `examples/README` for more detailed information on what to find in the
-`examples` directory.
+See `examples/README.md` for instructions on how to build and run the examples.
 
 ## Testing CVC4
 
@@ -233,52 +229,37 @@ We have 4 categories of tests:
   (label: **example**)
 - **regression tests** (5 levels) in directory `test/regress`
   (label: **regressN** with N the regression level)
-- **system tests** in directory `test/system`
-  (label: **system**)
+- **api tests** in directory `test/api`
+  (label: **api**)
 - **unit tests** in directory `test/unit`
   (label: **unit**)
-
-### Testing Examples
-
-For building instructions, see [Building the Examples](building-the-examples).
-
-We use prefix `example/` + `<subdir>/` + `<example>` (for `<example>` in
-`example/<subdir>/`) as test target name.  
-
-    make bitvectors                       # build example/api/bitvectors.cpp
-    ctest -R bitvectors                   # run all tests that match '*bitvectors*'
-                                          # > runs example/api/bitvectors
-                                          # >      example/api/bitvectors_and_arrays
-                                          # >      ...
-    ctest -R bitvectors$                  # run all tests that match '*bitvectors'
-                                          # > runs example/api/bitvectors
-    ctest -R example/api/bitvectors$      # run all tests that match '*example/api/bitvectors'
-                                          # > runs example/api/bitvectors
-
 
 ### Testing System Tests
 
 The system tests are not built by default.
 
-    make systemtests                      # build and run all system tests
-    make <system_test>                    # build test/system/<system_test>.<ext>
-    ctest system/<system_test>            # run test/system/<system_test>.<ext>
+    make apitests                         # build and run all system tests
+    make <api_test>                       # build test/system/<system_test>.<ext>
+    ctest api/<api_test>                  # run test/system/<system_test>.<ext>
 
 All system test binaries are built into `<build_dir>/bin/test/system`.
 
-We use prefix `system/` + `<system_test>` (for `<system_test>` in `test/system`)
+We use prefix `api/` + `<api_test>` (for `<api_test>` in `test/api`)
 as test target name.  
 
-    make ouroborous                       # build test/system/ouroborous.cpp
+    make ouroborous                       # build test/api/ouroborous.cpp
     ctest -R ouroborous                   # run all tests that match '*ouroborous*'
-                                          # > runs system/ouroborous
+                                          # > runs api/ouroborous
     ctest -R ouroborous$                  # run all tests that match '*ouroborous'
-                                          # > runs system/ouroborous
-    ctest -R system/ouroborous$           # run all tests that match '*system/ouroborous'
-                                          # > runs system/ouroborous
+                                          # > runs api/ouroborous
+    ctest -R api/ouroborous$              # run all tests that match '*api/ouroborous'
+                                          # > runs api/ouroborous
 ### Testing Unit Tests
 
 The unit tests are not built by default.
+
+Note that CVC4 can only be configured with unit tests in non-static builds with
+assertions enabled.
 
     make units                            # build and run all unit tests
     make <unit_test>                      # build test/unit/<subdir>/<unit_test>.<ext>
@@ -341,4 +322,34 @@ available on the system. Override with `ARGS=-jN`.
 Use `-jN` for parallel **building** with `N` threads.
 
 
+## Recompiling a specific CVC4 version with different LGPL library versions
 
+To recompile a specific static binary of CVC4 with different versions of the
+linked LGPL libraries perform the following steps:
+
+1. Make sure that you have installed the desired LGPL library versions.
+   You can check the versions found by CVC4's build system during the configure
+   phase.
+
+2. Determine the commit sha and configuration of the CVC4 binary
+```
+cvc4 --show-config
+```
+3. Download the specific source code version:
+```
+wget https://github.com/CVC4/CVC4/archive/<commit-sha>.tar.gz
+```
+4. Extract the source code
+```
+tar xf <commit-sha>.tar.gz
+```
+5. Change into source code directory
+```
+cd CVC4-<commit-sha>
+```
+6. Configure CVC4 with options listed by `cvc4 --show-config`
+```
+./configure.sh --static <options>
+```
+
+7. Follow remaining steps from [build instructions](#building-cvc4)

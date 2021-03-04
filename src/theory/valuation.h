@@ -2,10 +2,10 @@
 /*! \file valuation.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Morgan Deters, Dejan Jovanovic, Andrew Reynolds
+ **   Morgan Deters, Andrew Reynolds, Dejan Jovanovic
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
+ ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
@@ -21,8 +21,10 @@
 #ifndef CVC4__THEORY__VALUATION_H
 #define CVC4__THEORY__VALUATION_H
 
+#include "context/cdlist.h"
 #include "expr/node.h"
 #include "options/theory_options.h"
+#include "theory/assertion.h"
 
 namespace CVC4 {
 
@@ -30,9 +32,8 @@ class TheoryEngine;
 
 namespace theory {
 
-class EntailmentCheckParameters;
-class EntailmentCheckSideEffects;
 class TheoryModel;
+class SortInference;
 
 /**
  * The status of an equality in the current context.
@@ -109,20 +110,70 @@ public:
   Node getModelValue(TNode var);
 
   /**
-   * Returns pointer to model.
+   * Returns pointer to model. This model is only valid during last call effort
+   * check.
    */
   TheoryModel* getModel();
-  
+  /**
+   * Returns a pointer to the sort inference module, which lives in TheoryEngine
+   * and is non-null when options::sortInference is true.
+   */
+  SortInference* getSortInference();
+
+  //-------------------------------------- static configuration of the model
+  /**
+   * Set that k is an unevaluated kind in the TheoryModel, if it exists.
+   * See TheoryModel::setUnevaluatedKind for details.
+   */
+  void setUnevaluatedKind(Kind k);
+  /**
+   * Set that k is an unevaluated kind in the TheoryModel, if it exists.
+   * See TheoryModel::setSemiEvaluatedKind for details.
+   */
+  void setSemiEvaluatedKind(Kind k);
+  /**
+   * Set that k is an irrelevant kind in the TheoryModel, if it exists.
+   * See TheoryModel::setIrrelevantKind for details.
+   */
+  void setIrrelevantKind(Kind k);
+  //-------------------------------------- end static configuration of the model
+
   /**
    * Ensure that the given node will have a designated SAT literal
    * that is definitionally equal to it.  The result of this function
    * is a Node that can be queried via getSatValue().
+   *
+   * Note that this call may add lemmas to the SAT solver corresponding to the
+   * definition of subterms eliminated by preprocessing.
    *
    * @return the actual node that's been "literalized," which may
    * differ from the input due to theory-rewriting and preprocessing,
    * as well as CNF conversion
    */
   Node ensureLiteral(TNode n) CVC4_WARN_UNUSED_RESULT;
+
+  /**
+   * This returns the theory-preprocessed form of term n. The theory
+   * preprocessed form of a term t is one returned by
+   * TheoryPreprocess::preprocess (see theory/theory_preprocess.h). In
+   * particular, the returned term has syntax sugar symbols eliminated
+   * (e.g. div, mod, partial datatype selectors), has term formulas (e.g. ITE
+   * terms eliminated) and has been rewritten.
+   *
+   * Note that this call may add lemmas to the SAT solver corresponding to the
+   * definition of subterms eliminated by preprocessing.
+   *
+   * @param n The node to preprocess
+   * @return The preprocessed form of n
+   */
+  Node getPreprocessedTerm(TNode n);
+  /**
+   * Same as above, but also tracks the skolems and their corresponding
+   * definitions in sks and skAsserts respectively.
+   */
+  Node getPreprocessedTerm(TNode n,
+                           std::vector<Node>& skAsserts,
+                           std::vector<Node>& sks);
 
   /**
    * Returns whether the given lit (which must be a SAT literal) is a decision
@@ -141,15 +192,28 @@ public:
    * Request an entailment check according to the given theoryOfMode.
    * See theory.h for documentation on entailmentCheck().
    */
-  std::pair<bool, Node> entailmentCheck(
-      options::TheoryOfMode mode,
-      TNode lit,
-      const theory::EntailmentCheckParameters* params = NULL,
-      theory::EntailmentCheckSideEffects* out = NULL);
+  std::pair<bool, Node> entailmentCheck(options::TheoryOfMode mode, TNode lit);
 
   /** need check ? */
   bool needCheck() const;
-  
+
+  /**
+   * Is the literal lit (possibly) critical for satisfying the input formula in
+   * the current context? This call is applicable only during collectModelInfo
+   * or during LAST_CALL effort.
+   */
+  bool isRelevant(Node lit) const;
+
+  //------------------------------------------- access methods for assertions
+  /**
+   * The following methods are intended only to be used in limited use cases,
+   * for cases where a theory (e.g. quantifiers) requires knowing about the
+   * assertions from other theories.
+   */
+  /** The beginning iterator of facts for theory tid.*/
+  context::CDList<Assertion>::const_iterator factsBegin(TheoryId tid);
+  /** The beginning iterator of facts for theory tid.*/
+  context::CDList<Assertion>::const_iterator factsEnd(TheoryId tid);
 };/* class Valuation */
 
 }/* CVC4::theory namespace */

@@ -2,10 +2,10 @@
 /*! \file bv_gauss.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Aina Niemetz, Tim King
+ **   Aina Niemetz, Mathias Preiner, Andrew Reynolds
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
+ ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
@@ -17,15 +17,16 @@
 
 #include "preprocessing/passes/bv_gauss.h"
 
+#include <unordered_map>
+#include <vector>
+
 #include "expr/node.h"
+#include "preprocessing/assertion_pipeline.h"
+#include "preprocessing/preprocessing_pass_context.h"
 #include "theory/bv/theory_bv_rewrite_rules_normalization.h"
 #include "theory/bv/theory_bv_utils.h"
 #include "theory/rewriter.h"
 #include "util/bitvector.h"
-
-#include <unordered_map>
-#include <vector>
-
 
 using namespace CVC4;
 using namespace CVC4::theory;
@@ -571,7 +572,10 @@ BVGauss::Result BVGauss::gaussElimRewriteForUrem(
   }
 
   size_t nvars = vars.size();
-  Assert(nvars);
+  if (nvars == 0)
+  {
+    return BVGauss::Result::INVALID;
+  }
   size_t nrows = vars.begin()->second.size();
 #ifdef CVC4_ASSERTIONS
   for (const auto& p : vars)
@@ -684,8 +688,9 @@ BVGauss::Result BVGauss::gaussElimRewriteForUrem(
   return ret;
 }
 
-BVGauss::BVGauss(PreprocessingPassContext* preprocContext)
-    : PreprocessingPass(preprocContext, "bv-gauss")
+BVGauss::BVGauss(PreprocessingPassContext* preprocContext,
+                 const std::string& name)
+    : PreprocessingPass(preprocContext, name)
 {
 }
 
@@ -733,8 +738,8 @@ PreprocessingPassResult BVGauss::applyInternal(
   }
 
   std::unordered_map<Node, Node, NodeHashFunction> subst;
-  std::vector<Node>& atpp = assertionsToPreprocess->ref();
 
+  NodeManager* nm = NodeManager::currentNM();
   for (const auto& eq : equations)
   {
     if (eq.second.size() <= 1) { continue; }
@@ -752,11 +757,12 @@ PreprocessingPassResult BVGauss::applyInternal(
                            << std::endl;
     if (ret != BVGauss::Result::INVALID)
     {
-      NodeManager *nm = NodeManager::currentNM();
       if (ret == BVGauss::Result::NONE)
       {
-        atpp.clear();
-        atpp.push_back(nm->mkConst<bool>(false));
+        assertionsToPreprocess->clear();
+        Node n = nm->mkConst<bool>(false);
+        assertionsToPreprocess->push_back(n);
+        return PreprocessingPassResult::CONFLICT;
       }
       else
       {
@@ -769,7 +775,8 @@ PreprocessingPassResult BVGauss::applyInternal(
         {
           Node a = nm->mkNode(kind::EQUAL, p.first, p.second);
           Trace("bv-gauss-elim") << "added assertion: " << a << std::endl;
-          atpp.push_back(a);
+          // add new assertion
+          assertionsToPreprocess->push_back(a);
         }
       }
     }
@@ -778,9 +785,13 @@ PreprocessingPassResult BVGauss::applyInternal(
   if (!subst.empty())
   {
     /* delete (= substitute with true) obsolete assertions */
-    for (auto& a : atpp)
+    const std::vector<Node>& aref = assertionsToPreprocess->ref();
+    for (size_t i = 0, asize = aref.size(); i < asize; ++i)
     {
-      a = a.substitute(subst.begin(), subst.end());
+      Node a = aref[i];
+      Node as = a.substitute(subst.begin(), subst.end());
+      // replace the assertion
+      assertionsToPreprocess->replace(i, as);
     }
   }
   return PreprocessingPassResult::NO_CONFLICT;

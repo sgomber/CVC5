@@ -2,10 +2,10 @@
 /*! \file decision_engine.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Kshitij Bansal, Tim King, Andres Noetzli
+ **   Kshitij Bansal, Aina Niemetz, Andres Noetzli
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
+ ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
@@ -20,23 +20,23 @@
 #include "expr/node.h"
 #include "options/decision_options.h"
 #include "options/smt_options.h"
+#include "util/resource_manager.h"
 
 using namespace std;
 
 namespace CVC4 {
 
-DecisionEngine::DecisionEngine(context::Context *sc,
-                               context::UserContext *uc) :
-  d_enabledStrategies(),
-  d_needIteSkolemMap(),
-  d_relevancyStrategy(NULL),
-  d_assertions(uc),
-  d_cnfStream(NULL),
-  d_satSolver(NULL),
-  d_satContext(sc),
-  d_userContext(uc),
-  d_result(sc, SAT_VALUE_UNKNOWN),
-  d_engineState(0)
+DecisionEngine::DecisionEngine(context::Context* sc,
+                               context::UserContext* uc,
+                               ResourceManager* rm)
+    : d_cnfStream(nullptr),
+      d_satSolver(nullptr),
+      d_satContext(sc),
+      d_userContext(uc),
+      d_result(sc, SAT_VALUE_UNKNOWN),
+      d_engineState(0),
+      d_resourceManager(rm),
+      d_enabledITEStrategy(nullptr)
 {
   Trace("decision") << "Creating decision engine" << std::endl;
 }
@@ -54,63 +54,50 @@ void DecisionEngine::init()
 
   if (options::decisionMode() == options::DecisionMode::JUSTIFICATION)
   {
-    ITEDecisionStrategy* ds =
-      new decision::JustificationHeuristic(this, d_userContext, d_satContext);
-    enableStrategy(ds);
-    d_needIteSkolemMap.push_back(ds);
+    d_enabledITEStrategy.reset(new decision::JustificationHeuristic(
+        this, d_userContext, d_satContext));
   }
 }
 
-
-void DecisionEngine::enableStrategy(DecisionStrategy* ds)
+void DecisionEngine::shutdown()
 {
-  d_enabledStrategies.push_back(ds);
+  Trace("decision") << "Shutting down decision engine" << std::endl;
+
+  Assert(d_engineState == 1);
+  d_engineState = 2;
+  d_enabledITEStrategy.reset(nullptr);
 }
 
-void DecisionEngine::clearStrategies(){
-  for(unsigned i = 0; i < d_enabledStrategies.size(); ++i){
-    delete d_enabledStrategies[i];
-  }
-  d_enabledStrategies.clear();
-  d_needIteSkolemMap.clear();
-}
-
-bool DecisionEngine::isRelevant(SatVariable var)
+SatLiteral DecisionEngine::getNext(bool& stopSearch)
 {
-  Debug("decision") << "isRelevant(" << var <<")" << std::endl;
-  if(d_relevancyStrategy != NULL) {
-    //Assert(d_cnfStream->hasNode(var));
-    return d_relevancyStrategy->isRelevant( d_cnfStream->getNode(SatLiteral(var)) );
-  } else {
-    return true;
-  }
+  d_resourceManager->spendResource(ResourceManager::Resource::DecisionStep);
+  Assert(d_cnfStream != nullptr)
+      << "Forgot to set cnfStream for decision engine?";
+  Assert(d_satSolver != nullptr)
+      << "Forgot to set satSolver for decision engine?";
+
+  return d_enabledITEStrategy == nullptr
+             ? undefSatLiteral
+             : d_enabledITEStrategy->getNext(stopSearch);
 }
 
-SatValue DecisionEngine::getPolarity(SatVariable var)
-{
-  Debug("decision") << "getPolarity(" << var <<")" << std::endl;
-  if(d_relevancyStrategy != NULL) {
-    Assert(isRelevant(var));
-    return d_relevancyStrategy->getPolarity( d_cnfStream->getNode(SatLiteral(var)) );
-  } else {
-    return SAT_VALUE_UNKNOWN;
-  }
-}
-
-void DecisionEngine::addAssertions(
-    const preprocessing::AssertionPipeline& assertions)
+void DecisionEngine::addAssertion(TNode assertion)
 {
   // new assertions, reset whatever result we knew
   d_result = SAT_VALUE_UNKNOWN;
-
-  for (const Node& assertion : assertions)
+  if (d_enabledITEStrategy != nullptr)
   {
-    d_assertions.push_back(assertion);
+    d_enabledITEStrategy->addAssertion(assertion);
   }
+}
 
-  for(unsigned i = 0; i < d_needIteSkolemMap.size(); ++i)
+void DecisionEngine::addSkolemDefinition(TNode lem, TNode skolem)
+{
+  // new assertions, reset whatever result we knew
+  d_result = SAT_VALUE_UNKNOWN;
+  if (d_enabledITEStrategy != nullptr)
   {
-    d_needIteSkolemMap[i]->addAssertions(assertions);
+    d_enabledITEStrategy->addSkolemDefinition(lem, skolem);
   }
 }
 

@@ -27,20 +27,23 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "base/output.h"
 #include "context/context.h"
+#include "expr/proof_node_manager.h"
 #include "proof/clause_id.h"
 #include "prop/minisat/core/SolverTypes.h"
 #include "prop/minisat/mtl/Alg.h"
 #include "prop/minisat/mtl/Heap.h"
 #include "prop/minisat/mtl/Vec.h"
 #include "prop/minisat/utils/Options.h"
+#include "prop/sat_proof_manager.h"
 #include "theory/theory.h"
-
+#include "util/resource_manager.h"
 
 namespace CVC4 {
 template <class Solver> class TSatProof;
 
 namespace prop {
-  class TheoryProxy;
+class PropEngine;
+class TheoryProxy;
 }/* CVC4::prop namespace */
 }/* CVC4 namespace */
 
@@ -54,7 +57,9 @@ namespace Minisat {
 class Solver {
 
   /** The only two CVC4 entry points to the private solver data */
+  friend class CVC4::prop::PropEngine;
   friend class CVC4::prop::TheoryProxy;
+  friend class CVC4::prop::SatProofManager;
   friend class CVC4::TSatProof<Minisat::Solver>;
 
 public:
@@ -63,17 +68,16 @@ public:
 
   typedef Var TVar;
   typedef Lit TLit;
-  typedef Clause TClause; 
+  typedef Clause TClause;
   typedef CRef TCRef;
   typedef vec<Lit> TLitVec;
-  
-protected:
 
+ protected:
   /** The pointer to the proxy that provides interfaces to the SMT engine */
-  CVC4::prop::TheoryProxy* proxy;
+  CVC4::prop::TheoryProxy* d_proxy;
 
   /** The context from the SMT solver */
-  CVC4::context::Context* context;
+  CVC4::context::Context* d_context;
 
   /** The current assertion level (user) */
   int assertionLevel;
@@ -84,21 +88,25 @@ protected:
   /** Variable representing false */
   Var varFalse;
 
-public:
+  /** The resolution proof manager */
+  std::unique_ptr<CVC4::prop::SatProofManager> d_pfManager;
+
+ public:
   /** Returns the current user assertion level */
   int getAssertionLevel() const { return assertionLevel; }
-protected:
+
+ protected:
   /** Do we allow incremental solving */
-  bool enable_incremental;
+  bool d_enable_incremental;
 
   /** Literals propagated by lemmas */
-  vec< vec<Lit> > lemmas;
+  vec<vec<Lit> > lemmas;
 
   /** Is the lemma removable */
   vec<bool> lemmas_removable;
 
   /** Nodes being converted to CNF */
-  std::vector< std::pair<CVC4::Node, CVC4::Node > >lemmas_cnf_assertion;
+  std::vector<CVC4::Node> lemmas_cnf_assertion;
 
   /** Do a another check if FULL_EFFORT was the last one */
   bool recheck;
@@ -110,11 +118,11 @@ protected:
   bool minisat_busy;
 
   // Information about registration of variables
-  struct VarIntroInfo {
-    Var var;
-    int level;
-    VarIntroInfo(Var var, int level)
-    : var(var), level(level) {}
+  struct VarIntroInfo
+  {
+    Var d_var;
+    int d_level;
+    VarIntroInfo(Var var, int level) : d_var(var), d_level(level) {}
   };
 
   /** Variables to re-register with theory solvers on backtracks */
@@ -127,43 +135,69 @@ public:
 
     // Constructor/Destructor:
     //
-    Solver(CVC4::prop::TheoryProxy* proxy, CVC4::context::Context* context, bool enableIncremental = false);
-    CVC4_PUBLIC virtual ~Solver();
+ Solver(CVC4::prop::TheoryProxy* proxy,
+        CVC4::context::Context* context,
+        CVC4::context::UserContext* userContext,
+        ProofNodeManager* pnm,
+        bool enableIncremental = false);
+ CVC4_PUBLIC virtual ~Solver();
 
-    // Problem specification:
-    //
-    Var     newVar    (bool polarity = true, bool dvar = true, bool isTheoryAtom = false, bool preRegister = false, bool canErase = true); // Add a new variable with parameters specifying variable mode.
-    Var     trueVar() const { return varTrue; }
-    Var     falseVar() const { return varFalse; }
+ // Problem specification:
+ //
+ Var newVar(bool polarity = true,
+            bool dvar = true,
+            bool isTheoryAtom = false,
+            bool preRegister = false,
+            bool canErase = true);  // Add a new variable with parameters
+                                    // specifying variable mode.
+ Var trueVar() const { return varTrue; }
+ Var falseVar() const { return varFalse; }
 
-    // Less than for literals in a lemma
-    struct lemma_lt {
-        Solver& solver;
-        lemma_lt(Solver& solver) : solver(solver) {}
-        bool operator () (Lit x, Lit y) {
-          lbool x_value = solver.value(x);
-          lbool y_value = solver.value(y);
-          // Two unassigned literals are sorted arbitrarily
-          if (x_value == l_Undef && y_value == l_Undef) {
-            return x < y;
-          }
-          // Unassigned literals are put to front
-          if (x_value == l_Undef) return true;
-          if (y_value == l_Undef) return false;
-          // Literals of the same value are sorted by decreasing levels
-          if (x_value == y_value) {
-            return solver.trail_index(var(x)) > solver.trail_index(var(y));
-          } else {
-            // True literals go up front
-            if (x_value == l_True) {
-              return true;
-            } else {
-              return false;
-            }
-          }
-        }
-    };
+ /** Retrive the SAT proof manager */
+ CVC4::prop::SatProofManager* getProofManager();
 
+ /** Retrive the refutation proof */
+ std::shared_ptr<ProofNode> getProof();
+
+ /** Is proof enabled? */
+ bool isProofEnabled() const;
+
+ // Less than for literals in a lemma
+ struct lemma_lt
+ {
+   Solver& d_solver;
+   lemma_lt(Solver& solver) : d_solver(solver) {}
+   bool operator()(Lit x, Lit y)
+   {
+     lbool x_value = d_solver.value(x);
+     lbool y_value = d_solver.value(y);
+     // Two unassigned literals are sorted arbitrarily
+     if (x_value == l_Undef && y_value == l_Undef)
+     {
+       return x < y;
+     }
+     // Unassigned literals are put to front
+     if (x_value == l_Undef) return true;
+     if (y_value == l_Undef) return false;
+     // Literals of the same value are sorted by decreasing levels
+     if (x_value == y_value)
+     {
+       return d_solver.trail_index(var(x)) > d_solver.trail_index(var(y));
+     }
+     else
+     {
+       // True literals go up front
+       if (x_value == l_True)
+       {
+         return true;
+       }
+       else
+       {
+         return false;
+       }
+     }
+   }
+ };
 
     // CVC4 context push/pop
     void          push                     ();
@@ -195,7 +229,7 @@ public:
     lbool    solve        (Lit p, Lit q, Lit r);     // Search for a model that respects three assumptions.
     bool    okay         () const;                  // FALSE means solver is in a conflicting state
 
-    void    toDimacs     (); 
+    void toDimacs();
     void    toDimacs     (FILE* f, const vec<Lit>& assumps);            // Write CNF to file in DIMACS-format.
     void    toDimacs     (const char *file, const vec<Lit>& assumps);
     void    toDimacs     (FILE* f, Clause& c, vec<Var>& map, Var& max);
@@ -246,8 +280,9 @@ public:
     // Extra results: (read-only member variable)
     //
     vec<lbool> model;             // If problem is satisfiable, this vector contains the model (if any).
-    vec<Lit>   conflict;          // If problem is unsatisfiable (possibly under assumptions),
-                                  // this vector represent the final conflict clause expressed in the assumptions.
+    vec<Lit> d_conflict;          // If problem is unsatisfiable (possibly under
+                          // assumptions), this vector represent the final
+                          // conflict clause expressed in the assumptions.
 
     // Mode of operation:
     //
@@ -282,22 +317,26 @@ protected:
     //
     struct VarData {
       // Reason for the literal being in the trail
-      CRef reason;
+      CRef d_reason;
       // Sat level when the literal was added to the trail
-      int level;
+      int d_level;
       // User level when the literal was added to the trail
-      int user_level;
+      int d_user_level;
       // User level at which this literal was introduced
-      int intro_level;
+      int d_intro_level;
       // The index in the trail
-      int trail_index;
+      int d_trail_index;
 
-      VarData(CRef reason, int level, int user_level, int intro_level, int trail_index)
-      : reason(reason)
-      , level(level)
-      , user_level(user_level)
-      , intro_level(intro_level)
-      , trail_index(trail_index)
+      VarData(CRef reason,
+              int level,
+              int user_level,
+              int intro_level,
+              int trail_index)
+          : d_reason(reason),
+            d_level(level),
+            d_user_level(user_level),
+            d_intro_level(intro_level),
+            d_trail_index(trail_index)
       {}
     };
 
@@ -352,7 +391,12 @@ protected:
     ClauseAllocator     ca;
 
     // CVC4 Stuff
-    vec<bool>           theory;           // Is the variable representing a theory atom
+    /**
+     * A vector determining whether each variable represents a theory atom.
+     * More generally, this value is true for any literal that the theory proxy
+     * should be notified about when asserted.
+     */
+    vec<bool> theory;
 
     enum TheoryCheckType {
       // Quick check, but don't perform theory reasoning
@@ -440,8 +484,9 @@ protected:
     double   progressEstimate ()      const; // DELETE THIS ?? IT'S NOT VERY USEFUL ...
 public:
     bool     withinBudget     (uint64_t amount)      const;
-protected:
+    bool withinBudget(ResourceManager::Resource r) const;
 
+   protected:
     // Static helpers:
     //
 
@@ -463,21 +508,53 @@ protected:
 //=================================================================================================
 // Implementation of inline methods:
 
-inline bool Solver::hasReasonClause(Var x) const { return vardata[x].reason != CRef_Undef && vardata[x].reason != CRef_Lazy; }
+inline bool Solver::hasReasonClause(Var x) const
+{
+  return vardata[x].d_reason != CRef_Undef && vardata[x].d_reason != CRef_Lazy;
+}
 
-inline bool Solver::isPropagated(Var x) const { return vardata[x].reason != CRef_Undef; }
+inline bool Solver::isPropagated(Var x) const
+{
+  return vardata[x].d_reason != CRef_Undef;
+}
 
-inline bool Solver::isPropagatedBy(Var x, const Clause& c) const { return vardata[x].reason != CRef_Undef && vardata[x].reason != CRef_Lazy && ca.lea(vardata[var(c[0])].reason) == &c; }
+inline bool Solver::isPropagatedBy(Var x, const Clause& c) const
+{
+  return vardata[x].d_reason != CRef_Undef && vardata[x].d_reason != CRef_Lazy
+         && ca.lea(vardata[var(c[0])].d_reason) == &c;
+}
 
-inline bool Solver::isDecision(Var x) const { Debug("minisat") << "var " << x << " is a decision iff " << (vardata[x].reason == CRef_Undef) << " && " << level(x) << " > 0" << std::endl; return vardata[x].reason == CRef_Undef && level(x) > 0; }
+inline bool Solver::isDecision(Var x) const
+{
+  Debug("minisat") << "var " << x << " is a decision iff "
+                   << (vardata[x].d_reason == CRef_Undef) << " && " << level(x)
+                   << " > 0" << std::endl;
+  return vardata[x].d_reason == CRef_Undef && level(x) > 0;
+}
 
-inline int  Solver::level (Var x) const { assert(x < vardata.size()); return vardata[x].level; }
+inline int Solver::level(Var x) const
+{
+  assert(x < vardata.size());
+  return vardata[x].d_level;
+}
 
-inline int  Solver::user_level(Var x) const { assert(x < vardata.size()); return vardata[x].user_level; }
+inline int Solver::user_level(Var x) const
+{
+  assert(x < vardata.size());
+  return vardata[x].d_user_level;
+}
 
-inline int  Solver::intro_level(Var x) const { assert(x < vardata.size()); return vardata[x].intro_level; }
+inline int Solver::intro_level(Var x) const
+{
+  assert(x < vardata.size());
+  return vardata[x].d_intro_level;
+}
 
-inline int  Solver::trail_index(Var x) const { assert(x < vardata.size()); return vardata[x].trail_index; }
+inline int Solver::trail_index(Var x) const
+{
+  assert(x < vardata.size());
+  return vardata[x].d_trail_index;
+}
 
 inline void Solver::insertVarOrder(Var x) {
     assert(x < vardata.size());
@@ -521,7 +598,12 @@ inline bool     Solver::addClause       (Lit p, Lit q, bool removable, ClauseId&
 inline bool     Solver::addClause       (Lit p, Lit q, Lit r, bool removable, ClauseId& id)
                                                                 { add_tmp.clear(); add_tmp.push(p); add_tmp.push(q); add_tmp.push(r); return addClause_(add_tmp, removable, id); }
 inline bool     Solver::locked          (const Clause& c) const { return value(c[0]) == l_True && isPropagatedBy(var(c[0]), c); }
-inline void     Solver::newDecisionLevel()                      { trail_lim.push(trail.size()); flipped.push(false); context->push(); if(Dump.isOn("state")) { Dump("state") << CVC4::PushCommand(); } }
+inline void Solver::newDecisionLevel()
+{
+  trail_lim.push(trail.size());
+  flipped.push(false);
+  d_context->push();
+}
 
 inline int      Solver::decisionLevel ()      const   { return trail_lim.size(); }
 inline uint32_t Solver::abstractLevel (Var x) const   { return 1 << (level(x) & 31); }

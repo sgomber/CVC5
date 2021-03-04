@@ -4,8 +4,8 @@
  ** Top contributors (to current version):
  **   Liana Hadarean, Aina Niemetz, Tim King
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
+ ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
@@ -611,11 +611,11 @@ void DefaultShlBB(TNode node, std::vector<T>& res, TBitblaster<T>* bb)
   unsigned size = utils::getSize(node);
   unsigned log2_size = std::ceil(log2((double)size));
   Node a_size = utils::mkConst(size, size);
-  Node b_ult_a_size_node = Rewriter::rewrite(
-      NodeManager::currentNM()->mkNode(kind::BITVECTOR_ULT, node[1], a_size));
-  // ensure that the inequality is bit-blasted
-  bb->bbAtom(b_ult_a_size_node);
-  T b_ult_a_size = bb->getBBAtom(b_ult_a_size_node);
+
+  std::vector<T> a_size_bits;
+  DefaultConstBB(a_size, a_size_bits, bb);
+  T b_ult_a_size = uLessThanBB(b, a_size_bits, false);
+
   std::vector<T> prev_res;
   res = a;
   // we only need to look at the bits bellow log2_a_size
@@ -669,11 +669,11 @@ void DefaultLshrBB(TNode node, std::vector<T>& res, TBitblaster<T>* bb)
   unsigned size = utils::getSize(node);
   unsigned log2_size = std::ceil(log2((double)size));
   Node a_size = utils::mkConst(size, size);
-  Node b_ult_a_size_node = Rewriter::rewrite(
-      NodeManager::currentNM()->mkNode(kind::BITVECTOR_ULT, node[1], a_size));
-  // ensure that the inequality is bit-blasted
-  bb->bbAtom(b_ult_a_size_node);
-  T b_ult_a_size = bb->getBBAtom(b_ult_a_size_node);
+
+  std::vector<T> a_size_bits;
+  DefaultConstBB(a_size, a_size_bits, bb);
+  T b_ult_a_size = uLessThanBB(b, a_size_bits, false);
+
   res = a;
   std::vector<T> prev_res;
 
@@ -727,11 +727,10 @@ void DefaultAshrBB(TNode node, std::vector<T>& res, TBitblaster<T>* bb)
   unsigned size = utils::getSize(node);
   unsigned log2_size = std::ceil(log2((double)size));
   Node a_size = utils::mkConst(size, size);
-  Node b_ult_a_size_node = Rewriter::rewrite(
-      NodeManager::currentNM()->mkNode(kind::BITVECTOR_ULT, node[1], a_size));
-  // ensure that the inequality is bit-blasted
-  bb->bbAtom(b_ult_a_size_node);
-  T b_ult_a_size = bb->getBBAtom(b_ult_a_size_node);
+
+  std::vector<T> a_size_bits;
+  DefaultConstBB(a_size, a_size_bits, bb);
+  T b_ult_a_size = uLessThanBB(b, a_size_bits, false);
 
   res = a;
   T sign_bit = a.back();
@@ -867,8 +866,9 @@ void DefaultSignExtendBB (TNode node, std::vector<T>& res_bits, TBitblaster<T>* 
   std::vector<T> bits;
   bb->bbTerm(node[0], bits);
   
-  T sign_bit = bits.back(); 
-  unsigned amount = node.getOperator().getConst<BitVectorSignExtend>().signExtendAmount; 
+  T sign_bit = bits.back();
+  unsigned amount =
+      node.getOperator().getConst<BitVectorSignExtend>().d_signExtendAmount;
 
   for (unsigned i = 0; i < bits.size(); ++i ) {
     res_bits.push_back(bits[i]); 

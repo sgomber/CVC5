@@ -2,10 +2,10 @@
 /*! \file dual_simplex.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Tim King, Morgan Deters, Andres Noetzli
+ **   Tim King, Aina Niemetz, Morgan Deters
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
+ ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
@@ -20,6 +20,7 @@
 #include "options/arith_options.h"
 #include "smt/smt_statistics_registry.h"
 #include "theory/arith/constraint.h"
+#include "theory/arith/error_set.h"
 
 
 using namespace std;
@@ -107,13 +108,19 @@ Result::Sat DualSimplexDecisionProcedure::dualFindModel(bool exactResult){
       }
     }
 
-    if(verbose && numDifferencePivots > 0){
-      if(result ==  Result::UNSAT){
-        Message() << "diff order found unsat" << endl;
-      }else if(d_errorSet.errorEmpty()){
-        Message() << "diff order found model" << endl;
-      }else{
-        Message() << "diff order missed" << endl;
+    if (verbose && numDifferencePivots > 0)
+    {
+      if (result == Result::UNSAT)
+      {
+        CVC4Message() << "diff order found unsat" << endl;
+      }
+      else if (d_errorSet.errorEmpty())
+      {
+        CVC4Message() << "diff order found model" << endl;
+      }
+      else
+      {
+        CVC4Message() << "diff order missed" << endl;
       }
     }
   }
@@ -133,13 +140,19 @@ Result::Sat DualSimplexDecisionProcedure::dualFindModel(bool exactResult){
       if(searchForFeasibleSolution(options::arithStandardCheckVarOrderPivots())){
         result = Result::UNSAT;
       }
-      if(verbose){
-        if(result ==  Result::UNSAT){
-          Message() << "restricted var order found unsat" << endl;
-        }else if(d_errorSet.errorEmpty()){
-          Message() << "restricted var order found model" << endl;
-        }else{
-          Message() << "restricted var order missed" << endl;
+      if (verbose)
+      {
+        if (result == Result::UNSAT)
+        {
+          CVC4Message() << "restricted var order found unsat" << endl;
+        }
+        else if (d_errorSet.errorEmpty())
+        {
+          CVC4Message() << "restricted var order found model" << endl;
+        }
+        else
+        {
+          CVC4Message() << "restricted var order missed" << endl;
         }
       }
     }

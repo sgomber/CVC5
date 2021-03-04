@@ -2,10 +2,10 @@
 /*! \file node.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Morgan Deters, Dejan Jovanovic, Tim King
+ **   Morgan Deters, Dejan Jovanovic, Aina Niemetz
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
+ ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
@@ -22,10 +22,6 @@
 #ifndef CVC4__NODE_H
 #define CVC4__NODE_H
 
-#include <stdint.h>
-
-#include <algorithm>
-#include <functional>
 #include <iostream>
 #include <string>
 #include <unordered_map>
@@ -34,14 +30,12 @@
 #include <vector>
 
 #include "base/check.h"
-#include "base/configuration.h"
 #include "base/exception.h"
 #include "base/output.h"
 #include "expr/expr.h"
 #include "expr/expr_iomanip.h"
 #include "expr/kind.h"
 #include "expr/metakind.h"
-#include "expr/type.h"
 #include "options/language.h"
 #include "options/set_language.h"
 #include "util/hash.h"
@@ -468,7 +462,7 @@ public:
   inline bool isClosure() const {
     assertTNodeNotExpired();
     return getKind() == kind::LAMBDA || getKind() == kind::FORALL
-           || getKind() == kind::EXISTS || getKind() == kind::CHOICE
+           || getKind() == kind::EXISTS || getKind() == kind::WITNESS
            || getKind() == kind::COMPREHENSION
            || getKind() == kind::MATCH_BIND_CASE;
   }
@@ -821,14 +815,16 @@ public:
    * @param out the stream to serialize this node to
    * @param toDepth the depth to which to print this expression, or -1 to
    * print it fully
-   * @param types set to true to ascribe types to the output expressions
-   * (might break language compliance, but good for debugging expressions)
    * @param language the language in which to output
    */
-  inline void toStream(std::ostream& out, int toDepth = -1, bool types = false, size_t dag = 1,
-                       OutputLanguage language = language::output::LANG_AUTO) const {
+  inline void toStream(
+      std::ostream& out,
+      int toDepth = -1,
+      size_t dagThreshold = 1,
+      OutputLanguage language = language::output::LANG_AUTO) const
+  {
     assertTNodeNotExpired();
-    d_nv->toStream(out, toDepth, types, dag, language);
+    d_nv->toStream(out, toDepth, dagThreshold, language);
   }
 
   /**
@@ -846,17 +842,6 @@ public:
    * gives "(OR a b (...))"
    */
   typedef expr::ExprSetDepth setdepth;
-
-  /**
-   * IOStream manipulator to print type ascriptions or not.
-   *
-   *   // let a, b, c, and d be variables of sort U
-   *   Node n = nm->mkNode(OR, a, b, nm->mkNode(AND, c, nm->mkNode(NOT, d)))
-   *   out << n;
-   *
-   * gives "(OR a:U b:U (AND c:U (NOT d:U)))", but
-   */
-  typedef expr::ExprPrintTypes printtypes;
 
   /**
    * IOStream manipulator to print expressions as DAGs (or not).
@@ -904,7 +889,6 @@ public:
 inline std::ostream& operator<<(std::ostream& out, TNode n) {
   n.toStream(out,
              Node::setdepth::getDepth(out),
-             Node::printtypes::getPrintTypes(out),
              Node::dag::getDag(out),
              Node::setlanguage::getLanguage(out));
   return out;
@@ -992,7 +976,6 @@ std::ostream& operator<<(
 
 //#include "expr/attribute.h"
 #include "expr/node_manager.h"
-#include "expr/type_checker.h"
 
 namespace CVC4 {
 
@@ -1343,7 +1326,8 @@ NodeTemplate<ref_count>::substitute(TNode node, TNode replacement,
                                     std::unordered_map<TNode, TNode, TNodeHashFunction>& cache) const {
   Assert(node != *this);
 
-  if (getNumChildren() == 0) {
+  if (getNumChildren() == 0 || node == replacement)
+  {
     return *this;
   }
 
@@ -1363,20 +1347,20 @@ NodeTemplate<ref_count>::substitute(TNode node, TNode replacement,
       nb << getOperator().substitute(node, replacement, cache);
     }
   }
-  for(const_iterator i = begin(),
-        iend = end();
-      i != iend;
-      ++i) {
-    if(*i == node) {
+  for (const_iterator it = begin(), iend = end(); it != iend; ++it)
+  {
+    if (*it == node)
+    {
       nb << replacement;
-    } else {
-      nb << (*i).substitute(node, replacement, cache);
+    }
+    else
+    {
+      nb << (*it).substitute(node, replacement, cache);
     }
   }
 
   // put in cache
   Node n = nb;
-  Assert(node != n);
   cache[*this] = n;
   return n;
 }
@@ -1411,7 +1395,7 @@ NodeTemplate<ref_count>::substitute(Iterator1 nodesBegin,
   Assert(std::distance(nodesBegin, nodesEnd)
          == std::distance(replacementsBegin, replacementsEnd))
       << "Substitution iterator ranges must be equal size";
-  Iterator1 j = find(nodesBegin, nodesEnd, TNode(*this));
+  Iterator1 j = std::find(nodesBegin, nodesEnd, TNode(*this));
   if(j != nodesEnd) {
     Iterator2 b = replacementsBegin;
     std::advance(b, std::distance(nodesBegin, j));
@@ -1429,13 +1413,10 @@ NodeTemplate<ref_count>::substitute(Iterator1 nodesBegin,
                                      replacementsBegin, replacementsEnd,
                                      cache);
     }
-    for(const_iterator i = begin(),
-          iend = end();
-        i != iend;
-        ++i) {
-      nb << (*i).substitute(nodesBegin, nodesEnd,
-                            replacementsBegin, replacementsEnd,
-                            cache);
+    for (const_iterator it = begin(), iend = end(); it != iend; ++it)
+    {
+      nb << (*it).substitute(
+          nodesBegin, nodesEnd, replacementsBegin, replacementsEnd, cache);
     }
     Node n = nb;
     cache[*this] = n;
@@ -1465,8 +1446,10 @@ NodeTemplate<ref_count>::substitute(Iterator substitutionsBegin,
   }
 
   // otherwise compute
-  Iterator j = find_if(substitutionsBegin, substitutionsEnd,
-                       bind2nd(first_equal_to<typename Iterator::value_type::first_type, typename Iterator::value_type::second_type>(), *this));
+  Iterator j = find_if(
+      substitutionsBegin,
+      substitutionsEnd,
+      [this](const auto& subst){ return subst.first == *this; });
   if(j != substitutionsEnd) {
     Node n = (*j).second;
     cache[*this] = n;
@@ -1480,11 +1463,9 @@ NodeTemplate<ref_count>::substitute(Iterator substitutionsBegin,
       // push the operator
       nb << getOperator().substitute(substitutionsBegin, substitutionsEnd, cache);
     }
-    for(const_iterator i = begin(),
-          iend = end();
-        i != iend;
-        ++i) {
-      nb << (*i).substitute(substitutionsBegin, substitutionsEnd, cache);
+    for (const_iterator it = begin(), iend = end(); it != iend; ++it)
+    {
+      nb << (*it).substitute(substitutionsBegin, substitutionsEnd, cache);
     }
     Node n = nb;
     cache[*this] = n;
@@ -1522,7 +1503,6 @@ inline Node NodeTemplate<true>::fromExpr(const Expr& e) {
  */
 static void __attribute__((used)) debugPrintNode(const NodeTemplate<true>& n) {
   Warning() << Node::setdepth(-1)
-            << Node::printtypes(false)
             << Node::dag(true)
             << Node::setlanguage(language::output::LANG_AST)
             << n << std::endl;
@@ -1530,7 +1510,6 @@ static void __attribute__((used)) debugPrintNode(const NodeTemplate<true>& n) {
 }
 static void __attribute__((used)) debugPrintNodeNoDag(const NodeTemplate<true>& n) {
   Warning() << Node::setdepth(-1)
-            << Node::printtypes(false)
             << Node::dag(false)
             << Node::setlanguage(language::output::LANG_AST)
             << n << std::endl;
@@ -1543,7 +1522,6 @@ static void __attribute__((used)) debugPrintRawNode(const NodeTemplate<true>& n)
 
 static void __attribute__((used)) debugPrintTNode(const NodeTemplate<false>& n) {
   Warning() << Node::setdepth(-1)
-            << Node::printtypes(false)
             << Node::dag(true)
             << Node::setlanguage(language::output::LANG_AST)
             << n << std::endl;
@@ -1551,7 +1529,6 @@ static void __attribute__((used)) debugPrintTNode(const NodeTemplate<false>& n) 
 }
 static void __attribute__((used)) debugPrintTNodeNoDag(const NodeTemplate<false>& n) {
   Warning() << Node::setdepth(-1)
-            << Node::printtypes(false)
             << Node::dag(false)
             << Node::setlanguage(language::output::LANG_AST)
             << n << std::endl;

@@ -2,10 +2,10 @@
 /*! \file sort_infer.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Andrew Reynolds, Andres Noetzli
+ **   Andrew Reynolds, Mathias Preiner, Andres Noetzli
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
+ ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
@@ -15,13 +15,7 @@
 #ifndef CVC4__PREPROCESSING__PASSES__SORT_INFERENCE_PASS_H_
 #define CVC4__PREPROCESSING__PASSES__SORT_INFERENCE_PASS_H_
 
-#include <map>
-#include <string>
-#include <vector>
-
-#include "expr/node.h"
 #include "preprocessing/preprocessing_pass.h"
-#include "preprocessing/preprocessing_pass_context.h"
 
 namespace CVC4 {
 namespace preprocessing {

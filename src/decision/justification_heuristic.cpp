@@ -2,10 +2,10 @@
 /*! \file justification_heuristic.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Kshitij Bansal, Aina Niemetz, Tim King
+ **   Kshitij Bansal, Andres Noetzli, Mathias Preiner
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
+ ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
@@ -18,38 +18,42 @@
  **/
 #include "justification_heuristic.h"
 
+#include "decision/decision_attributes.h"
+#include "decision/decision_engine.h"
 #include "expr/kind.h"
 #include "expr/node_manager.h"
 #include "options/decision_options.h"
-#include "theory/rewriter.h"
-#include "smt/term_formula_removal.h"
 #include "smt/smt_statistics_registry.h"
+#include "smt/term_formula_removal.h"
+#include "theory/rewriter.h"
 #include "util/random.h"
 
 namespace CVC4 {
+namespace decision {
 
 JustificationHeuristic::JustificationHeuristic(CVC4::DecisionEngine* de,
-                                               context::UserContext *uc,
-                                               context::Context *c):
-  ITEDecisionStrategy(de, c),
-  d_justified(c),
-  d_exploredThreshold(c),
-  d_prvsIndex(c, 0),
-  d_threshPrvsIndex(c, 0),
-  d_helfulness("decision::jh::helpfulness", 0),
-  d_giveup("decision::jh::giveup", 0),
-  d_timestat("decision::jh::time"),
-  d_assertions(uc),
-  d_iteAssertions(uc),
-  d_iteCache(uc),
-  d_visited(),
-  d_visitedComputeITE(),
-  d_curDecision(),
-  d_curThreshold(0),
-  d_childCache(uc),
-  d_weightCache(uc),
-  d_startIndexCache(c) {
-  smtStatisticsRegistry()->registerStat(&d_helfulness);
+                                               context::UserContext* uc,
+                                               context::Context* c)
+    : ITEDecisionStrategy(de, c),
+      d_justified(c),
+      d_exploredThreshold(c),
+      d_prvsIndex(c, 0),
+      d_threshPrvsIndex(c, 0),
+      d_helpfulness("decision::jh::helpfulness", 0),
+      d_giveup("decision::jh::giveup", 0),
+      d_timestat("decision::jh::time"),
+      d_assertions(uc),
+      d_skolemAssertions(uc),
+      d_skolemCache(uc),
+      d_visited(),
+      d_visitedComputeSkolems(),
+      d_curDecision(),
+      d_curThreshold(0),
+      d_childCache(uc),
+      d_weightCache(uc),
+      d_startIndexCache(c)
+{
+  smtStatisticsRegistry()->registerStat(&d_helpfulness);
   smtStatisticsRegistry()->registerStat(&d_giveup);
   smtStatisticsRegistry()->registerStat(&d_timestat);
   Trace("decision") << "Justification heuristic enabled" << std::endl;
@@ -57,7 +61,7 @@ JustificationHeuristic::JustificationHeuristic(CVC4::DecisionEngine* de,
 
 JustificationHeuristic::~JustificationHeuristic()
 {
-  smtStatisticsRegistry()->unregisterStat(&d_helfulness);
+  smtStatisticsRegistry()->unregisterStat(&d_helpfulness);
   smtStatisticsRegistry()->unregisterStat(&d_giveup);
   smtStatisticsRegistry()->unregisterStat(&d_timestat);
 }
@@ -66,8 +70,10 @@ CVC4::prop::SatLiteral JustificationHeuristic::getNext(bool &stopSearch)
 {
   if(options::decisionThreshold() > 0) {
     bool stopSearchTmp = false;
-    SatLiteral lit = getNextThresh(stopSearchTmp, options::decisionThreshold());
-    if(lit != undefSatLiteral) {
+    prop::SatLiteral lit =
+        getNextThresh(stopSearchTmp, options::decisionThreshold());
+    if (lit != prop::undefSatLiteral)
+    {
       Assert(stopSearchTmp == false);
       return lit;
     }
@@ -87,9 +93,10 @@ CVC4::prop::SatLiteral JustificationHeuristic::getNextThresh(bool &stopSearch, D
     for(JustifiedSet::key_iterator i = d_justified.key_begin();
         i != d_justified.key_end(); ++i) {
       TNode n = *i;
-      SatLiteral l = d_decisionEngine->hasSatLiteral(n) ?
-        d_decisionEngine->getSatLiteral(n) : -1;
-      SatValue v = tryGetSatValue(n);
+      prop::SatLiteral l = d_decisionEngine->hasSatLiteral(n)
+                               ? d_decisionEngine->getSatLiteral(n)
+                               : -1;
+      prop::SatValue v = tryGetSatValue(n);
       Trace("justified") <<"{ "<<l<<"}" << n <<": "<<v << std::endl;
     }
   }
@@ -101,15 +108,16 @@ CVC4::prop::SatLiteral JustificationHeuristic::getNextThresh(bool &stopSearch, D
     // Commenting out. See bug 374. In short, to do with how CNF stream works.
     // Assert( tryGetSatValue(d_assertions[i]) != SAT_VALUE_FALSE);
 
-    SatValue desiredVal = SAT_VALUE_TRUE;
-    SatLiteral litDecision;
+    prop::SatValue desiredVal = prop::SAT_VALUE_TRUE;
+    prop::SatLiteral litDecision;
 
     litDecision = findSplitter(d_assertions[i], desiredVal);
 
-    if(litDecision != undefSatLiteral) {
+    if (litDecision != prop::undefSatLiteral)
+    {
       setPrvsIndex(i);
       Trace("decision") << "jh: splitting on " << litDecision << std::endl;
-      ++d_helfulness;
+      ++d_helpfulness;
       return litDecision;
     }
   }
@@ -135,25 +143,26 @@ CVC4::prop::SatLiteral JustificationHeuristic::getNextThresh(bool &stopSearch, D
 
   // SAT solver can stop...
   stopSearch = true;
-  if(d_curThreshold == 0)
-    d_decisionEngine->setResult(SAT_VALUE_TRUE);
+  if (d_curThreshold == 0) d_decisionEngine->setResult(prop::SAT_VALUE_TRUE);
   return prop::undefSatLiteral;
 }
 
-
-inline void computeXorIffDesiredValues
-(Kind k, SatValue desiredVal, SatValue &desiredVal1, SatValue &desiredVal2)
+inline void computeXorIffDesiredValues(Kind k,
+                                       prop::SatValue desiredVal,
+                                       prop::SatValue& desiredVal1,
+                                       prop::SatValue& desiredVal2)
 {
   Assert(k == kind::EQUAL || k == kind::XOR);
 
   bool shouldInvert =
-    (desiredVal == SAT_VALUE_TRUE && k == kind::EQUAL) ||
-    (desiredVal == SAT_VALUE_FALSE && k == kind::XOR);
+      (desiredVal == prop::SAT_VALUE_TRUE && k == kind::EQUAL)
+      || (desiredVal == prop::SAT_VALUE_FALSE && k == kind::XOR);
 
-  if(desiredVal1 == SAT_VALUE_UNKNOWN &&
-     desiredVal2 == SAT_VALUE_UNKNOWN) {
+  if (desiredVal1 == prop::SAT_VALUE_UNKNOWN
+      && desiredVal2 == prop::SAT_VALUE_UNKNOWN)
+  {
     // CHOICE: pick one of them arbitarily
-    desiredVal1 = SAT_VALUE_FALSE;
+    desiredVal1 = prop::SAT_VALUE_FALSE;
   }
 
   if(desiredVal2 == SAT_VALUE_UNKNOWN) {
@@ -163,34 +172,33 @@ inline void computeXorIffDesiredValues
   }
 }
 
-void JustificationHeuristic::addAssertions(
-    const preprocessing::AssertionPipeline &assertions)
+void JustificationHeuristic::addAssertion(TNode assertion)
 {
-  size_t assertionsEnd = assertions.getRealAssertionsEnd();
+  // Save all assertions locally, including the assertions generated by term
+  // removal. We have to make sure that we assign a value to all the Boolean
+  // term variables. To illustrate why this is, consider the case where we have
+  // a single assertion
+  //
+  // (or (f a) (f b))
+  //
+  // where `f` is a function `Bool -> Bool`. Given an assignment:
+  //
+  // (f a) -> true
+  // (f b) -> false
+  // a -> false
+  //
+  // UF will not complain and the justification heuristic considers the
+  // assertion to be satisifed. However, we also have to make sure that we pick
+  // a value for `b` that is not in conflict with the other assignments (we can
+  // only choose `b` to be `true` otherwise the model is incorrect).
+  d_assertions.push_back(assertion);
+}
 
-  Trace("decision")
-    << "JustificationHeuristic::addAssertions()"
-    << " size = " << assertions.size()
-    << " assertionsEnd = " << assertionsEnd
-    << std::endl;
-
-  // Save the 'real' assertions locally
-  for (size_t i = 0; i < assertionsEnd; i++)
-  {
-    d_assertions.push_back(assertions[i]);
-  }
-
-  // Save mapping between ite skolems and ite assertions
-  for (const std::pair<const Node, unsigned> &i : assertions.getIteSkolemMap())
-  {
-    Trace("decision::jh::ite") << " jh-ite: " << (i.first) << " maps to "
-                               << assertions[(i.second)] << std::endl;
-    Assert(i.second >= assertionsEnd && i.second < assertions.size());
-
-    d_iteAssertions[i.first] = assertions[i.second];
-  }
-
-  // Automatic weight computation
+void JustificationHeuristic::addSkolemDefinition(TNode lem, TNode skolem)
+{
+  Trace("decision::jh::ite")
+      << " jh-ite: " << skolem << " maps to " << lem << std::endl;
+  d_skolemAssertions[skolem] = lem;
 }
 
 SatLiteral JustificationHeuristic::findSplitter(TNode node,
@@ -214,9 +222,9 @@ bool JustificationHeuristic::checkJustified(TNode n)
 
 DecisionWeight JustificationHeuristic::getExploredThreshold(TNode n)
 {
-  return
-    d_exploredThreshold.find(n) == d_exploredThreshold.end() ?
-    numeric_limits<DecisionWeight>::max() : d_exploredThreshold[n];
+  return d_exploredThreshold.find(n) == d_exploredThreshold.end()
+             ? std::numeric_limits<DecisionWeight>::max()
+             : d_exploredThreshold[n];
 }
 
 void JustificationHeuristic::setExploredThreshold(TNode n)
@@ -263,36 +271,36 @@ DecisionWeight JustificationHeuristic::getWeightPolarized(TNode n, bool polarity
     } else {
 
       if(k == kind::OR) {
-        dW1 = numeric_limits<DecisionWeight>::max(), dW2 = 0;
+        dW1 = std::numeric_limits<DecisionWeight>::max(), dW2 = 0;
         for(TNode::iterator i=n.begin(); i != n.end(); ++i) {
-          dW1 = min(dW1, getWeightPolarized(*i, true));
-          dW2 = max(dW2, getWeightPolarized(*i, false));
+          dW1 = std::min(dW1, getWeightPolarized(*i, true));
+          dW2 = std::max(dW2, getWeightPolarized(*i, false));
         }
       } else if(k == kind::AND) {
-        dW1 = 0, dW2 = numeric_limits<DecisionWeight>::max();
+        dW1 = 0, dW2 = std::numeric_limits<DecisionWeight>::max();
         for(TNode::iterator i=n.begin(); i != n.end(); ++i) {
-          dW1 = max(dW1, getWeightPolarized(*i, true));
-          dW2 = min(dW2, getWeightPolarized(*i, false));
+          dW1 = std::max(dW1, getWeightPolarized(*i, true));
+          dW2 = std::min(dW2, getWeightPolarized(*i, false));
         }
       } else if(k == kind::IMPLIES) {
-        dW1 = min(getWeightPolarized(n[0], false),
-                  getWeightPolarized(n[1], true));
-        dW2 = max(getWeightPolarized(n[0], true),
-                  getWeightPolarized(n[1], false));
+        dW1 = std::min(getWeightPolarized(n[0], false),
+                       getWeightPolarized(n[1], true));
+        dW2 = std::max(getWeightPolarized(n[0], true),
+                       getWeightPolarized(n[1], false));
       } else if(k == kind::NOT) {
         dW1 = getWeightPolarized(n[0], false);
         dW2 = getWeightPolarized(n[0], true);
       } else {
         dW1 = 0;
         for(TNode::iterator i=n.begin(); i != n.end(); ++i) {
-          dW1 = max(dW1, getWeightPolarized(*i, true));
-          dW1 = max(dW1, getWeightPolarized(*i, false));
+          dW1 = std::max(dW1, getWeightPolarized(*i, true));
+          dW1 = std::max(dW1, getWeightPolarized(*i, false));
         }
         dW2 = dW1;
       }
 
     }
-    d_weightCache[n] = make_pair(dW1, dW2);
+    d_weightCache[n] = std::make_pair(dW1, dW2);
   }
   return polarity ? d_weightCache[n].get().first : d_weightCache[n].get().second;
 }
@@ -315,7 +323,7 @@ DecisionWeight JustificationHeuristic::getWeight(TNode n) {
     {
       DecisionWeight dW = 0;
       for (TNode::iterator i = n.begin(); i != n.end(); ++i)
-        dW = max(dW, getWeight(*i));
+        dW = std::max(dW, getWeight(*i));
       n.setAttribute(DecisionWeightAttr(), dW);
     }
     else if (combiningFn == options::DecisionWeightInternal::SUM
@@ -323,7 +331,7 @@ DecisionWeight JustificationHeuristic::getWeight(TNode n) {
     {
       DecisionWeight dW = 0;
       for (TNode::iterator i = n.begin(); i != n.end(); ++i)
-        dW = max(dW, getWeight(*i));
+        dW = std::max(dW, getWeight(*i));
       n.setAttribute(DecisionWeightAttr(), dW);
     }
     else
@@ -334,7 +342,7 @@ DecisionWeight JustificationHeuristic::getWeight(TNode n) {
   return n.getAttribute(DecisionWeightAttr());
 }
 
-typedef vector<TNode> ChildList;
+typedef std::vector<TNode> ChildList;
 TNode JustificationHeuristic::getChildByWeight(TNode n, int i, bool polarity) {
   if(options::decisionUseWeight()) {
     // TODO: Optimize storing & access
@@ -362,36 +370,39 @@ SatValue JustificationHeuristic::tryGetSatValue(Node n)
   }//end of else
 }
 
-JustificationHeuristic::IteList
-JustificationHeuristic::getITEs(TNode n)
+JustificationHeuristic::SkolemList JustificationHeuristic::getSkolems(TNode n)
 {
-  IteCache::iterator it = d_iteCache.find(n);
-  if(it != d_iteCache.end()) {
+  SkolemCache::iterator it = d_skolemCache.find(n);
+  if (it != d_skolemCache.end())
+  {
     return (*it).second;
-  } else {
-    // Compute the list of ITEs
-    // TODO: optimize by avoiding multiple lookup for d_iteCache[n]
-    d_visitedComputeITE.clear();
-    IteList ilist;
-    computeITEs(n, ilist);
-    d_iteCache.insert(n, ilist);
+  }
+  else
+  {
+    // Compute the list of Skolems
+    // TODO: optimize by avoiding multiple lookup for d_skolemCache[n]
+    d_visitedComputeSkolems.clear();
+    SkolemList ilist;
+    computeSkolems(n, ilist);
+    d_skolemCache.insert(n, ilist);
     return ilist;
   }
 }
 
-void JustificationHeuristic::computeITEs(TNode n, IteList &l)
+void JustificationHeuristic::computeSkolems(TNode n, SkolemList& l)
 {
-  Trace("decision::jh::ite") << " computeITEs( " << n << ", &l)\n";
-  d_visitedComputeITE.insert(n);
+  Trace("decision::jh::skolems") << " computeSkolems( " << n << ", &l)\n";
+  d_visitedComputeSkolems.insert(n);
   for(unsigned i=0; i<n.getNumChildren(); ++i) {
-    SkolemMap::iterator it2 = d_iteAssertions.find(n[i]);
-    if(it2 != d_iteAssertions.end()) {
-      l.push_back(make_pair(n[i], (*it2).second));
+    SkolemMap::iterator it2 = d_skolemAssertions.find(n[i]);
+    if (it2 != d_skolemAssertions.end())
+    {
+      l.push_back(std::make_pair(n[i], (*it2).second));
       Assert(n[i].getNumChildren() == 0);
     }
-    if(d_visitedComputeITE.find(n[i]) ==
-         d_visitedComputeITE.end()) {
-      computeITEs(n[i], l);
+    if (d_visitedComputeSkolems.find(n[i]) == d_visitedComputeSkolems.end())
+    {
+      computeSkolems(n[i], l);
     }
   }
 }
@@ -469,9 +480,8 @@ JustificationHeuristic::findSplitterRec(TNode node, SatValue desiredVal)
    * If not in theory of booleans, check if this is something to split-on.
    */
   if(isAtom) {
-    // if node has embedded ites, resolve that first
-    if(handleEmbeddedITEs(node) == FOUND_SPLITTER)
-      return FOUND_SPLITTER;
+    // if node has embedded skolems due to term removal, resolve that first
+    if (handleEmbeddedSkolems(node) == FOUND_SPLITTER) return FOUND_SPLITTER;
 
     if(litVal != SAT_VALUE_UNKNOWN) {
       Assert(litVal == desiredVal);
@@ -608,8 +618,8 @@ JustificationHeuristic::SearchResult JustificationHeuristic::handleBinaryEasy(TN
 {
   if(options::decisionUseWeight() &&
      getWeightPolarized(node1, desiredVal1) > getWeightPolarized(node2, desiredVal2)) {
-    swap(node1, node2);
-    swap(desiredVal1, desiredVal2);
+    std::swap(node1, node2);
+    std::swap(desiredVal1, desiredVal2);
   }
 
   if ( tryGetSatValue(node1) != invertValue(desiredVal1) ) {
@@ -633,8 +643,8 @@ JustificationHeuristic::SearchResult JustificationHeuristic::handleBinaryHard(TN
 {
   if(options::decisionUseWeight() &&
      getWeightPolarized(node1, desiredVal1) > getWeightPolarized(node2, desiredVal2)) {
-    swap(node1, node2);
-    swap(desiredVal1, desiredVal2);
+    std::swap(node1, node2);
+    std::swap(desiredVal1, desiredVal2);
   }
 
   bool noSplitter = true;
@@ -699,13 +709,15 @@ JustificationHeuristic::SearchResult JustificationHeuristic::handleITE(TNode nod
   }// else (...ifVal...)
 }
 
-JustificationHeuristic::SearchResult JustificationHeuristic::handleEmbeddedITEs(TNode node)
+JustificationHeuristic::SearchResult
+JustificationHeuristic::handleEmbeddedSkolems(TNode node)
 {
-  const IteList l = getITEs(node);
-  Trace("decision::jh::ite") << " ite size = " << l.size() << std::endl;
+  const SkolemList l = getSkolems(node);
+  Trace("decision::jh::skolems") << " skolems size = " << l.size() << std::endl;
 
   bool noSplitter = true;
-  for(IteList::const_iterator i = l.begin(); i != l.end(); ++i) {
+  for (SkolemList::const_iterator i = l.begin(); i != l.end(); ++i)
+  {
     if(d_visited.find((*i).first) == d_visited.end()) {
       d_visited.insert((*i).first);
       SearchResult ret = findSplitterRec((*i).second, SAT_VALUE_TRUE);
@@ -718,4 +730,5 @@ JustificationHeuristic::SearchResult JustificationHeuristic::handleEmbeddedITEs(
   return noSplitter ? NO_SPLITTER : DONT_KNOW;
 }
 
+} /* namespace decision */
 } /* namespace CVC4 */

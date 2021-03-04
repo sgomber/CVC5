@@ -2,10 +2,10 @@
 /*! \file sat_solver_factory.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Mathias Preiner, Liana Hadarean, Morgan Deters
+ **   Mathias Preiner, Liana Hadarean, Aina Niemetz
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
+ ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
@@ -23,6 +23,7 @@
 #include <vector>
 
 #include "context/context.h"
+#include "prop/minisat/minisat.h"
 #include "prop/sat_solver.h"
 #include "util/statistics_registry.h"
 
@@ -36,8 +37,7 @@ class SatSolverFactory
                                              StatisticsRegistry* registry,
                                              const std::string& name = "");
 
-  static DPLLSatSolverInterface* createDPLLMinisat(
-      StatisticsRegistry* registry);
+  static MinisatSatSolver* createCDCLTMinisat(StatisticsRegistry* registry);
 
   static SatSolver* createCryptoMinisat(StatisticsRegistry* registry,
                                         const std::string& name = "");
@@ -45,6 +45,8 @@ class SatSolverFactory
   static SatSolver* createCadical(StatisticsRegistry* registry,
                                   const std::string& name = "");
 
+  static SatSolver* createKissat(StatisticsRegistry* registry,
+                                 const std::string& name = "");
 }; /* class SatSolverFactory */
 
 }  // namespace prop

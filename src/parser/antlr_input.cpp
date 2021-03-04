@@ -2,10 +2,10 @@
 /*! \file antlr_input.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Christopher L. Conway, Kshitij Bansal, Morgan Deters
+ **   Christopher L. Conway, Kshitij Bansal, Tim King
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
+ ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
@@ -18,10 +18,8 @@
 
 #include <antlr3.h>
 #include <limits.h>
-#include <stdint.h>
 
 #include "base/output.h"
-#include "expr/type.h"
 #include "parser/antlr_line_buffered_input.h"
 #include "parser/bounded_token_buffer.h"
 #include "parser/bounded_token_factory.h"
@@ -33,7 +31,6 @@
 #include "parser/smt2/smt2_input.h"
 #include "parser/smt2/sygus_input.h"
 #include "parser/tptp/tptp_input.h"
-#include "smt/command.h"
 
 using namespace std;
 using namespace CVC4;
@@ -247,7 +244,6 @@ AntlrInput* AntlrInput::newInput(InputLanguage lang, AntlrInputStream& inputStre
     break;
   }
 
-  case LANG_SYGUS:
   case LANG_SYGUS_V2: input = new SygusInput(inputStream); break;
 
   case LANG_TPTP:
@@ -390,7 +386,10 @@ size_t wholeWordMatch(string input, string pattern, bool (*isWordChar)(char)) {
  *   found to be totally unhelpful. (TODO: fix this upstream to
  *   improve)
  */
-std::string parseErrorHelper(const char* lineStart, int charPositionInLine, const std::string& message)
+std::string parseErrorHelper(const char* lineStart,
+                             std::size_t lineLength,
+                             std::size_t charPositionInLine,
+                             const std::string& message)
 {
   // Is it a multi-line message
   bool multilineMessage = (message.find('\n') != string::npos);
@@ -406,17 +405,20 @@ std::string parseErrorHelper(const char* lineStart, int charPositionInLine, cons
     ss << message << endl << endl;
   }
 
-  int posSliceStart = (charPositionInLine - 50 <= 0) ? 0 : charPositionInLine - 50 + 5;
-  int posSliceEnd = posSliceStart + 70;
-  int caretPos = 0;
-  int caretPosExtra = 0; // for inital intendation, epilipses etc.
+  std::size_t posSliceStart =
+      (charPositionInLine <= 50) ? 0 : charPositionInLine - 50 + 5;
+  std::size_t posSliceEnd = posSliceStart + 70;
+  std::size_t caretPos = 0;
+  std::size_t caretPosExtra = 0;  // for inital intendation, epilipses etc.
 
   ss << "  "; caretPosExtra += 2;
   if(posSliceStart > 0) {
     ss << "..."; caretPosExtra += 3;
   }
 
-  for(int i = posSliceStart; lineStart[i] != '\n'; ++i) {
+  for (std::size_t i = posSliceStart; i < lineLength && lineStart[i] != '\n';
+       ++i)
+  {
     if(i == posSliceEnd) {
       ss << "...";
       break;
@@ -502,9 +504,14 @@ std::string parseErrorHelper(const char* lineStart, int charPositionInLine, cons
 
 void AntlrInput::parseError(const std::string& message, bool eofException)
 {
-  string updatedMessage = parseErrorHelper((const char*)d_antlr3InputStream->getLineBuf(d_antlr3InputStream),
-                                           d_lexer->getCharPositionInLine(d_lexer),
-                                           message);
+  auto lineLength = d_antlr3InputStream->sizeBuf
+                    - (static_cast<char*>(d_antlr3InputStream->currentLine)
+                       - static_cast<char*>(d_antlr3InputStream->data));
+  std::string updatedMessage = parseErrorHelper(
+      (const char*)d_antlr3InputStream->getLineBuf(d_antlr3InputStream),
+      lineLength,
+      d_lexer->getCharPositionInLine(d_lexer),
+      message);
 
   Debug("parser") << "Throwing exception: "
       << (const char*)d_lexer->rec->state->tokSource->fileName->chars << ":"

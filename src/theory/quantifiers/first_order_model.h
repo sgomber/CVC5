@@ -4,8 +4,8 @@
  ** Top contributors (to current version):
  **   Andrew Reynolds, Paul Meng, Morgan Deters
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
+ ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
@@ -17,6 +17,7 @@
 #ifndef CVC4__FIRST_ORDER_MODEL_H
 #define CVC4__FIRST_ORDER_MODEL_H
 
+#include "context/cdlist.h"
 #include "expr/attribute.h"
 #include "theory/theory_model.h"
 #include "theory/uf/theory_uf_model.h"
@@ -41,6 +42,8 @@ typedef expr::Attribute<ModelBasisArgAttributeId, uint64_t>
 namespace quantifiers {
 
 class TermDb;
+class QuantifiersState;
+class QuantifiersRegistry;
 
 namespace fmcheck {
   class FirstOrderModelFmc;
@@ -53,13 +56,16 @@ typedef expr::Attribute<IsStarAttributeId, bool> IsStarAttribute;
 class FirstOrderModel : public TheoryModel
 {
  public:
-  FirstOrderModel(QuantifiersEngine* qe, context::Context* c, std::string name);
+  FirstOrderModel(QuantifiersEngine* qe,
+                  QuantifiersState& qs,
+                  QuantifiersRegistry& qr,
+                  std::string name);
 
   virtual fmcheck::FirstOrderModelFmc* asFirstOrderModelFmc() { return nullptr; }
   /** assert quantifier */
   void assertQuantifier( Node n );
   /** get number of asserted quantifiers */
-  unsigned getNumAssertedQuantifiers();
+  size_t getNumAssertedQuantifiers() const;
   /** get asserted quantifier */
   Node getAssertedQuantifier( unsigned i, bool ordered = false );
   /** initialize model for term */
@@ -130,12 +136,35 @@ class FirstOrderModel : public TheoryModel
  protected:
   /** quant engine */
   QuantifiersEngine* d_qe;
+  /** The quantifiers registry */
+  QuantifiersRegistry& d_qreg;
   /** list of quantifiers asserted in the current context */
   context::CDList<Node> d_forall_asserts;
-  /** quantified formulas marked as relevant */
+  /** 
+   * The (ordered) list of quantified formulas marked as relevant using
+   * markRelevant, where the quantified formula q in the most recent
+   * call to markRelevant comes last in the list.
+   */
   std::vector<Node> d_forall_rlv_vec;
+  /** The last quantified formula marked as relevant, if one exists. */
   Node d_last_forall_rlv;
+  /** 
+   * The list of asserted quantified formulas, ordered by relevance.
+   * Relevance is a dynamic partial ordering where q1 < q2 if there has been
+   * a call to markRelevant( q1 ) after the last call to markRelevant( q2 )
+   * (or no call to markRelevant( q2 ) has been made). 
+   * 
+   * This list is used primarily as an optimization for conflict-based
+   * instantiation so that quantifed formulas that have been instantiated
+   * most recently are processed first, since these are (statistically) more
+   * likely to have conflicting instantiations.
+   */
   std::vector<Node> d_forall_rlv_assert;
+  /** 
+   * Whether the above list has been computed. This flag is updated during
+   * reset_round and is valid within a full effort check.
+   */
+  bool d_forallRlvComputed;
   /** get variable id */
   std::map<Node, std::map<Node, int> > d_quant_var_id;
   /** process initialize model for term */
@@ -159,35 +188,6 @@ class FirstOrderModel : public TheoryModel
   /** compute model basis arg */
   void computeModelBasisArgAttribute(Node n);
 };/* class FirstOrderModel */
-
-namespace fmcheck {
-
-class Def;
-
-class FirstOrderModelFmc : public FirstOrderModel
-{
-  friend class FullModelChecker;
-
- private:
-  /** models for UF */
-  std::map<Node, Def * > d_models;
-  std::map<TypeNode, Node > d_type_star;
-  /** get current model value */
-  void processInitializeModelForTerm(Node n) override;
-
- public:
-  FirstOrderModelFmc(QuantifiersEngine * qe, context::Context* c, std::string name);
-  ~FirstOrderModelFmc() override;
-  FirstOrderModelFmc* asFirstOrderModelFmc() override { return this; }
-  // initialize the model
-  void processInitialize(bool ispre) override;
-  Node getFunctionValue(Node op, const char* argPrefix );
-
-  bool isStar(Node n);
-  Node getStar(TypeNode tn);
-};/* class FirstOrderModelFmc */
-
-}/* CVC4::theory::quantifiers::fmcheck namespace */
 
 }/* CVC4::theory::quantifiers namespace */
 }/* CVC4::theory namespace */

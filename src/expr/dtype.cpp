@@ -2,10 +2,10 @@
 /*! \file dtype.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Andrew Reynolds
+ **   Andrew Reynolds, Morgan Deters, Tim King
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
+ ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
@@ -13,7 +13,11 @@
  **/
 #include "expr/dtype.h"
 
+#include <sstream>
+
+#include "expr/dtype_cons.h"
 #include "expr/node_algorithm.h"
+#include "expr/type_matcher.h"
 
 using namespace CVC4::kind;
 
@@ -24,6 +28,7 @@ DType::DType(std::string name, bool isCo)
       d_params(),
       d_isCo(isCo),
       d_isTuple(false),
+      d_isRecord(false),
       d_constructors(),
       d_resolved(false),
       d_self(),
@@ -32,7 +37,8 @@ DType::DType(std::string name, bool isCo)
       d_sygusAllowConst(false),
       d_sygusAllowAll(false),
       d_card(CardinalityUnknown()),
-      d_wellFounded(0)
+      d_wellFounded(0),
+      d_nestedRecursion(0)
 {
 }
 
@@ -41,6 +47,7 @@ DType::DType(std::string name, const std::vector<TypeNode>& params, bool isCo)
       d_params(params),
       d_isCo(isCo),
       d_isTuple(false),
+      d_isRecord(false),
       d_constructors(),
       d_resolved(false),
       d_self(),
@@ -49,7 +56,8 @@ DType::DType(std::string name, const std::vector<TypeNode>& params, bool isCo)
       d_sygusAllowConst(false),
       d_sygusAllowAll(false),
       d_card(CardinalityUnknown()),
-      d_wellFounded(0)
+      d_wellFounded(0),
+      d_nestedRecursion(0)
 {
 }
 
@@ -78,6 +86,8 @@ bool DType::isCodatatype() const { return d_isCo; }
 bool DType::isSygus() const { return !d_sygusType.isNull(); }
 
 bool DType::isTuple() const { return d_isTuple; }
+
+bool DType::isRecord() const { return d_isRecord; }
 
 bool DType::isResolved() const { return d_resolved; }
 
@@ -164,7 +174,7 @@ bool DType::resolve(const std::map<std::string, TypeNode>& resolutions,
 
   d_involvesExt = false;
   d_involvesUt = false;
-  for (const std::shared_ptr<DTypeConstructor> ctor : d_constructors)
+  for (const std::shared_ptr<DTypeConstructor>& ctor : d_constructors)
   {
     if (ctor->involvesExternalType())
     {
@@ -213,9 +223,70 @@ void DType::addConstructor(std::shared_ptr<DTypeConstructor> c)
   d_constructors.push_back(c);
 }
 
+void DType::addSygusConstructor(Node op,
+                                const std::string& cname,
+                                const std::vector<TypeNode>& cargs,
+                                int weight)
+{
+  // avoid name clashes
+  std::stringstream ss;
+  ss << getName() << "_" << getNumConstructors() << "_" << cname;
+  std::string name = ss.str();
+  unsigned cweight = weight >= 0 ? weight : (cargs.empty() ? 0 : 1);
+  std::shared_ptr<DTypeConstructor> c =
+      std::make_shared<DTypeConstructor>(name, cweight);
+  c->setSygus(op);
+  for (size_t j = 0, nargs = cargs.size(); j < nargs; j++)
+  {
+    std::stringstream sname;
+    sname << name << "_" << j;
+    c->addArg(sname.str(), cargs[j]);
+  }
+  addConstructor(c);
+}
+
 void DType::setSygus(TypeNode st, Node bvl, bool allowConst, bool allowAll)
 {
   Assert(!d_resolved);
+  // We can be in a case where the only rule specified was
+  // (Constant T), in which case we have not yet added a constructor. We
+  // ensure an arbitrary constant is added in this case. We additionally
+  // add a constant if the grammar has only non-nullary constructors, since this
+  // ensures the datatype is well-founded (see 3423).
+  // Notice we only want to do this for sygus datatypes that are user-provided.
+  // At the moment, the condition !allow_all implies the grammar is
+  // user-provided and hence may require a default constant.
+  // TODO (https://github.com/CVC4/cvc4-projects/issues/38):
+  // In an API for SyGuS, it probably makes more sense for the user to
+  // explicitly add the "any constant" constructor with a call instead of
+  // passing a flag. This would make the block of code unnecessary.
+  if (allowConst && !allowAll)
+  {
+    // if I don't already have a constant (0-ary constructor)
+    bool hasConstant = false;
+    for (size_t i = 0, ncons = getNumConstructors(); i < ncons; i++)
+    {
+      if ((*this)[i].getNumArgs() == 0)
+      {
+        hasConstant = true;
+        break;
+      }
+    }
+    if (!hasConstant)
+    {
+      // add an arbitrary one
+      Node op = st.mkGroundTerm();
+      // use same naming convention as SygusDatatype
+      std::stringstream ss;
+      ss << getName() << "_" << getNumConstructors() << "_" << op;
+      // it has zero weight
+      std::shared_ptr<DTypeConstructor> c =
+          std::make_shared<DTypeConstructor>(ss.str(), 0);
+      c->setSygus(op);
+      addConstructor(c);
+    }
+  }
+
   d_sygusType = st;
   d_sygusBvl = bvl;
   d_sygusAllowConst = allowConst || allowAll;
@@ -226,6 +297,12 @@ void DType::setTuple()
 {
   Assert(!d_resolved);
   d_isTuple = true;
+}
+
+void DType::setRecord()
+{
+  Assert(!d_resolved);
+  d_isRecord = true;
 }
 
 Cardinality DType::getCardinality(TypeNode t) const
@@ -471,21 +548,26 @@ bool DType::isInterpretedFinite() const
 
 bool DType::isWellFounded() const
 {
-  Trace("datatypes-init") << "DType::isWellFounded " << std::endl;
   Assert(isResolved());
-  if (d_wellFounded == 0)
+  if (d_wellFounded != 0)
   {
-    std::vector<TypeNode> processing;
-    if (computeWellFounded(processing))
-    {
-      d_wellFounded = 1;
-    }
-    else
-    {
-      d_wellFounded = -1;
-    }
+    // already computed
+    return d_wellFounded == 1;
   }
-  return d_wellFounded == 1;
+  Trace("datatypes-init") << "DType::isWellFounded " << getName() << std::endl;
+  std::vector<TypeNode> processing;
+  if (!computeWellFounded(processing))
+  {
+    // not well-founded since no ground term can be constructed
+    Trace("datatypes-init") << "DType::isWellFounded: false for " << getName()
+                            << " due to no ground terms." << std::endl;
+    d_wellFounded = -1;
+    return false;
+  }
+  Trace("datatypes-init") << "DType::isWellFounded: true for " << getName()
+                          << std::endl;
+  d_wellFounded = 1;
+  return true;
 }
 
 bool DType::computeWellFounded(std::vector<TypeNode>& processing) const
@@ -519,6 +601,7 @@ bool DType::computeWellFounded(std::vector<TypeNode>& processing) const
 
 Node DType::mkGroundTerm(TypeNode t) const
 {
+  Trace("datatypes-init") << "DType::mkGroundTerm of type " << t << std::endl;
   Assert(isResolved());
   return mkGroundTermInternal(t, false);
 }
@@ -526,7 +609,9 @@ Node DType::mkGroundTerm(TypeNode t) const
 Node DType::mkGroundValue(TypeNode t) const
 {
   Assert(isResolved());
-  return mkGroundTermInternal(t, true);
+  Trace("datatypes-init") << "DType::mkGroundValue of type " << t << std::endl;
+  Node v = mkGroundTermInternal(t, true);
+  return v;
 }
 
 Node DType::mkGroundTermInternal(TypeNode t, bool isValue) const
@@ -552,9 +637,141 @@ Node DType::mkGroundTermInternal(TypeNode t, bool isValue) const
         << "constructed: " << getName() << " => " << groundTerm << std::endl;
   }
   // if ground term is null, we are not well-founded
-  Trace("datatypes-init") << "DType::mkGroundTerm for " << t << " returns "
+  Trace("datatypes-init") << "DType::mkGroundTerm for " << t
+                          << ", isValue=" << isValue << " returns "
                           << groundTerm << std::endl;
   return groundTerm;
+}
+
+void DType::getAlienSubfieldTypes(
+    std::unordered_set<TypeNode, TypeNodeHashFunction>& types,
+    std::map<TypeNode, bool>& processed,
+    bool isAlienPos) const
+{
+  std::map<TypeNode, bool>::iterator it = processed.find(d_self);
+  if (it != processed.end())
+  {
+    if (it->second || (!isAlienPos && !it->second))
+    {
+      // already processed as an alien subfield type, or already processed
+      // as a non-alien subfield type and isAlienPos is false.
+      return;
+    }
+  }
+  processed[d_self] = isAlienPos;
+  for (std::shared_ptr<DTypeConstructor> ctor : d_constructors)
+  {
+    for (unsigned j = 0, nargs = ctor->getNumArgs(); j < nargs; ++j)
+    {
+      TypeNode tn = ctor->getArgType(j);
+      if (tn.isDatatype())
+      {
+        // special case for datatypes, we must recurse to collect subfield types
+        if (!isAlienPos)
+        {
+          // since we aren't adding it to types below, we add its alien
+          // subfield types here.
+          const DType& dt = tn.getDType();
+          dt.getAlienSubfieldTypes(types, processed, false);
+        }
+        if (tn.isParametricDatatype() && !isAlienPos)
+        {
+          // (instantiated) parametric datatypes have an AST structure:
+          //  (PARAMETRIC_DATATYPE D T1 ... Tn)
+          // where D is the uninstantiated datatype type.  We should not view D
+          // as an alien subfield type of tn. Thus, we need a special case here
+          // which ignores the first child, when isAlienPos is false.
+          for (unsigned i = 1, nchild = tn.getNumChildren(); i < nchild; i++)
+          {
+            expr::getComponentTypes(tn[i], types);
+          }
+          continue;
+        }
+      }
+      // we are in a case where tn is not a datatype, we add all (alien)
+      // component types to types below.
+      bool hasTn = types.find(tn) != types.end();
+      Trace("datatypes-init")
+          << "Collect subfield types " << tn << ", hasTn=" << hasTn
+          << ", isAlienPos=" << isAlienPos << std::endl;
+      expr::getComponentTypes(tn, types);
+      if (!isAlienPos && !hasTn)
+      {
+        // the top-level type is added by getComponentTypes, so remove it if it
+        // was not already listed in types
+        Assert(types.find(tn) != types.end());
+        types.erase(tn);
+      }
+    }
+  }
+  // Now, go back and add all alien subfield types from datatypes if
+  // not done so already. This is because getComponentTypes does not
+  // recurse into subfield types of datatypes.
+  for (const TypeNode& sstn : types)
+  {
+    if (sstn.isDatatype())
+    {
+      const DType& dt = sstn.getDType();
+      dt.getAlienSubfieldTypes(types, processed, true);
+    }
+  }
+}
+
+bool DType::hasNestedRecursion() const
+{
+  if (d_nestedRecursion != 0)
+  {
+    return d_nestedRecursion == 1;
+  }
+  Trace("datatypes-init") << "Compute simply recursive for " << getName()
+                          << std::endl;
+  // get the alien subfield types of this datatype
+  std::unordered_set<TypeNode, TypeNodeHashFunction> types;
+  std::map<TypeNode, bool> processed;
+  getAlienSubfieldTypes(types, processed, false);
+  if (Trace.isOn("datatypes-init"))
+  {
+    Trace("datatypes-init") << "Alien subfield types: " << std::endl;
+    for (const TypeNode& t : types)
+    {
+      Trace("datatypes-init") << "- " << t << std::endl;
+    }
+  }
+  // does types contain self?
+  if (types.find(d_self) != types.end())
+  {
+    Trace("datatypes-init")
+        << "DType::hasNestedRecursion: true for " << getName()
+        << " due to alien subfield type" << std::endl;
+    // has nested recursion since it has itself as an alien subfield type.
+    d_nestedRecursion = 1;
+    return true;
+  }
+  // If it is parametric, this type may match with an alien subfield type (e.g.
+  // we may have a field (T Int) for parametric datatype (T x) where x
+  // is a type parameter). Thus, we check whether the self type matches any
+  // alien subfield type using the TypeMatcher utility.
+  if (isParametric())
+  {
+    for (const TypeNode& t : types)
+    {
+      TypeMatcher m(d_self);
+      Trace("datatypes-init") << "  " << t << std::endl;
+      if (m.doMatching(d_self, t))
+      {
+        Trace("datatypes-init")
+            << "DType::hasNestedRecursion: true for " << getName()
+            << " due to parametric strict component type, " << d_self
+            << " matching " << t << std::endl;
+        d_nestedRecursion = 1;
+        return true;
+      }
+    }
+  }
+  Trace("datatypes-init") << "DType::hasNestedRecursion: false for "
+                          << getName() << std::endl;
+  d_nestedRecursion = -1;
+  return false;
 }
 
 Node getSubtermWithType(Node e, TypeNode t, bool isTop)
@@ -580,11 +797,12 @@ Node DType::computeGroundTerm(TypeNode t,
 {
   if (std::find(processing.begin(), processing.end(), t) != processing.end())
   {
-    Debug("datatypes-gt") << "...already processing " << t << " " << d_self
-                          << std::endl;
+    Trace("datatypes-init")
+        << "...already processing " << t << " " << d_self << std::endl;
     return Node();
   }
   processing.push_back(t);
+  std::map<TypeNode, Node>& gtCache = isValue ? d_groundValue : d_groundTerm;
   for (unsigned r = 0; r < 2; r++)
   {
     for (std::shared_ptr<DTypeConstructor> ctor : d_constructors)
@@ -594,10 +812,10 @@ Node DType::computeGroundTerm(TypeNode t,
       {
         continue;
       }
-      Trace("datatypes-init")
-          << "Try constructing for " << ctor->getName()
-          << ", processing = " << processing.size() << std::endl;
-      Node e = ctor->computeGroundTerm(t, processing, d_groundTerm, isValue);
+      Trace("datatypes-init") << "Try constructing for " << ctor->getName()
+                              << ", processing = " << processing.size()
+                              << ", isValue=" << isValue << std::endl;
+      Node e = ctor->computeGroundTerm(t, processing, gtCache, isValue);
       if (!e.isNull())
       {
         // must check subterms for the same type to avoid infinite loops in

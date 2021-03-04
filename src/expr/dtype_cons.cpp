@@ -2,10 +2,10 @@
 /*! \file dtype_cons.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Andrew Reynolds
+ **   Andrew Reynolds, Morgan Deters, Tim King
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
+ ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
@@ -51,7 +51,7 @@ void DTypeConstructor::addArg(std::string selectorName, TypeNode selectorType)
       selectorType,
       "is an unresolved selector type placeholder",
       NodeManager::SKOLEM_EXACT_NAME | NodeManager::SKOLEM_NO_NOTIFY);
-  Trace("datatypes") << type << std::endl;
+  Trace("datatypes") << "DTypeConstructor::addArg: " << type << std::endl;
   std::shared_ptr<DTypeSelector> a =
       std::make_shared<DTypeSelector>(selectorName, type);
   addArg(a);
@@ -62,7 +62,15 @@ void DTypeConstructor::addArg(std::shared_ptr<DTypeSelector> a)
   d_args.push_back(a);
 }
 
-std::string DTypeConstructor::getName() const { return d_name; }
+void DTypeConstructor::addArgSelf(std::string selectorName)
+{
+  Trace("datatypes") << "DTypeConstructor::addArgSelf" << std::endl;
+  std::shared_ptr<DTypeSelector> a =
+      std::make_shared<DTypeSelector>(selectorName + '\0', Node::null());
+  addArg(a);
+}
+
+const std::string& DTypeConstructor::getName() const { return d_name; }
 
 Node DTypeConstructor::getConstructor() const
 {
@@ -107,7 +115,10 @@ TypeNode DTypeConstructor::getSpecializedConstructorType(
     TypeNode returnType) const
 {
   Assert(isResolved());
-  Assert(returnType.isDatatype());
+  Assert(returnType.isDatatype())
+      << "DTypeConstructor::getSpecializedConstructorType: expected datatype, "
+         "got "
+      << returnType;
   const DType& dt = DType::datatypeOf(d_constructor);
   Assert(dt.isParametric());
   TypeNode dtt = dt.getTypeNode();
@@ -142,60 +153,39 @@ Cardinality DTypeConstructor::getCardinality(TypeNode t) const
 
 bool DTypeConstructor::isFinite(TypeNode t) const
 {
-  Assert(isResolved());
-
-  TNode self = d_constructor;
-  // is this already in the cache ?
-  if (self.getAttribute(DTypeFiniteComputedAttr()))
-  {
-    return self.getAttribute(DTypeFiniteAttr());
-  }
-  std::vector<TypeNode> instTypes;
-  std::vector<TypeNode> paramTypes;
-  bool isParam = t.isParametricDatatype();
-  if (isParam)
-  {
-    paramTypes = t.getDType().getParameters();
-    instTypes = TypeNode(t).getParamTypes();
-  }
-  for (size_t i = 0, nargs = getNumArgs(); i < nargs; i++)
-  {
-    TypeNode tc = getArgType(i);
-    if (isParam)
-    {
-      tc = tc.substitute(paramTypes.begin(),
-                         paramTypes.end(),
-                         instTypes.begin(),
-                         instTypes.end());
-    }
-    if (!tc.isFinite())
-    {
-      self.setAttribute(DTypeFiniteComputedAttr(), true);
-      self.setAttribute(DTypeFiniteAttr(), false);
-      return false;
-    }
-  }
-  self.setAttribute(DTypeFiniteComputedAttr(), true);
-  self.setAttribute(DTypeFiniteAttr(), true);
-  return true;
+  std::pair<CardinalityType, bool> cinfo = computeCardinalityInfo(t);
+  return cinfo.first == CardinalityType::FINITE;
 }
 
 bool DTypeConstructor::isInterpretedFinite(TypeNode t) const
 {
-  Assert(isResolved());
-  TNode self = d_constructor;
-  // is this already in the cache ?
-  if (self.getAttribute(DTypeUFiniteComputedAttr()))
+  std::pair<CardinalityType, bool> cinfo = computeCardinalityInfo(t);
+  return cinfo.first != CardinalityType::INFINITE;
+}
+
+bool DTypeConstructor::hasFiniteExternalArgType(TypeNode t) const
+{
+  std::pair<CardinalityType, bool> cinfo = computeCardinalityInfo(t);
+  return cinfo.second;
+}
+
+std::pair<DTypeConstructor::CardinalityType, bool>
+DTypeConstructor::computeCardinalityInfo(TypeNode t) const
+{
+  std::map<TypeNode, std::pair<CardinalityType, bool> >::iterator it =
+      d_cardInfo.find(t);
+  if (it != d_cardInfo.end())
   {
-    return self.getAttribute(DTypeUFiniteAttr());
+    return it->second;
   }
+  std::pair<CardinalityType, bool> ret(CardinalityType::FINITE, false);
   std::vector<TypeNode> instTypes;
   std::vector<TypeNode> paramTypes;
   bool isParam = t.isParametricDatatype();
   if (isParam)
   {
     paramTypes = t.getDType().getParameters();
-    instTypes = TypeNode(t).getParamTypes();
+    instTypes = t.getParamTypes();
   }
   for (unsigned i = 0, nargs = getNumArgs(); i < nargs; i++)
   {
@@ -207,16 +197,30 @@ bool DTypeConstructor::isInterpretedFinite(TypeNode t) const
                          instTypes.begin(),
                          instTypes.end());
     }
-    if (!tc.isInterpretedFinite())
+    if (tc.isFinite())
     {
-      self.setAttribute(DTypeUFiniteComputedAttr(), true);
-      self.setAttribute(DTypeUFiniteAttr(), false);
-      return false;
+      // do nothing
     }
+    else if (tc.isInterpretedFinite())
+    {
+      if (ret.first == CardinalityType::FINITE)
+      {
+        // not simply finite, it depends on uninterpreted sorts being finite
+        ret.first = CardinalityType::INTERPRETED_FINITE;
+      }
+    }
+    else
+    {
+      // infinite implies the constructor is infinite cardinality
+      ret.first = CardinalityType::INFINITE;
+      continue;
+    }
+    // if the argument is (interpreted) finite and external, set the flag
+    // for indicating it has a finite external argument
+    ret.second = ret.second || !tc.isDatatype();
   }
-  self.setAttribute(DTypeUFiniteComputedAttr(), true);
-  self.setAttribute(DTypeUFiniteAttr(), true);
-  return true;
+  d_cardInfo[t] = ret;
+  return ret;
 }
 
 bool DTypeConstructor::isResolved() const { return !d_tester.isNull(); }
@@ -271,6 +275,18 @@ int DTypeConstructor::getSelectorIndexInternal(Node sel) const
     if (getNumArgs() > sindex && d_args[sindex]->getSelector() == sel)
     {
       return static_cast<int>(sindex);
+    }
+  }
+  return -1;
+}
+
+int DTypeConstructor::getSelectorIndexForName(const std::string& name) const
+{
+  for (size_t i = 0, nargs = getNumArgs(); i < nargs; i++)
+  {
+    if (d_args[i]->getName() == name)
+    {
+      return i;
     }
   }
   return -1;
@@ -361,6 +377,9 @@ Node DTypeConstructor::computeGroundTerm(TypeNode t,
   NodeManager* nm = NodeManager::currentNM();
   std::vector<Node> groundTerms;
   groundTerms.push_back(getConstructor());
+  Trace("datatypes-init") << "cons " << d_constructor
+                          << " computeGroundTerm, isValue = " << isValue
+                          << std::endl;
 
   // for each selector, get a ground term
   std::vector<TypeNode> instTypes;
@@ -402,13 +421,18 @@ Node DTypeConstructor::computeGroundTerm(TypeNode t,
     }
     if (arg.isNull())
     {
-      Trace("datatypes") << "...unable to construct arg of "
-                         << d_args[i]->getName() << std::endl;
+      Trace("datatypes-init") << "...unable to construct arg of "
+                              << d_args[i]->getName() << std::endl;
       return Node();
     }
     else
     {
-      Trace("datatypes") << "...constructed arg " << arg.getType() << std::endl;
+      Trace("datatypes-init")
+          << "...constructed arg " << arg << " of type " << arg.getType()
+          << ", isConst = " << arg.isConst() << std::endl;
+      Assert(!isValue || arg.isConst())
+          << "Expected non-constant constructor argument : " << arg
+          << " of type " << arg.getType();
       groundTerms.push_back(arg);
     }
   }
@@ -418,14 +442,17 @@ Node DTypeConstructor::computeGroundTerm(TypeNode t,
   {
     Assert(DType::datatypeOf(d_constructor).isParametric());
     // type is parametric, must apply type ascription
-    Debug("datatypes-gt") << "ambiguous type for " << groundTerm
-                          << ", ascribe to " << t << std::endl;
+    Trace("datatypes-init") << "ambiguous type for " << groundTerm
+                            << ", ascribe to " << t << std::endl;
     groundTerms[0] = nm->mkNode(
         APPLY_TYPE_ASCRIPTION,
-        nm->mkConst(AscriptionType(getSpecializedConstructorType(t).toType())),
+        nm->mkConst(AscriptionType(getSpecializedConstructorType(t))),
         groundTerms[0]);
     groundTerm = nm->mkNode(APPLY_CONSTRUCTOR, groundTerms);
   }
+  Trace("datatypes-init") << "...return " << groundTerm << std::endl;
+  Assert(!isValue || groundTerm.isConst()) << "Non-constant term " << groundTerm
+                                           << " returned for computeGroundTerm";
   return groundTerm;
 }
 
@@ -480,6 +507,7 @@ bool DTypeConstructor::resolve(
   NodeManager* nm = NodeManager::currentNM();
   size_t index = 0;
   std::vector<TypeNode> argTypes;
+  Trace("datatypes-init") << "Initialize constructor " << d_name << std::endl;
   for (std::shared_ptr<DTypeSelector> arg : d_args)
   {
     std::string argName = arg->d_name;
@@ -488,9 +516,12 @@ bool DTypeConstructor::resolve(
     {
       // the unresolved type wasn't created here; do name resolution
       std::string typeName = argName.substr(argName.find('\0') + 1);
+      Trace("datatypes-init")
+          << "  - selector, typeName is " << typeName << std::endl;
       argName.resize(argName.find('\0'));
       if (typeName == "")
       {
+        Trace("datatypes-init") << "  ...self selector" << std::endl;
         range = self;
         arg->d_selector = nm->mkSkolem(
             argName,
@@ -504,11 +535,14 @@ bool DTypeConstructor::resolve(
             resolutions.find(typeName);
         if (j == resolutions.end())
         {
+          Trace("datatypes-init")
+              << "  ...failed to resolve selector" << std::endl;
           // failed to resolve selector
           return false;
         }
         else
         {
+          Trace("datatypes-init") << "  ...resolved selector" << std::endl;
           range = (*j).second;
           arg->d_selector = nm->mkSkolem(
               argName,
@@ -523,6 +557,8 @@ bool DTypeConstructor::resolve(
       // the type for the selector already exists; may need
       // complex-type substitution
       range = arg->d_selector.getType();
+      Trace("datatypes-init")
+          << "  - null selector, range = " << range << std::endl;
       if (!placeholders.empty())
       {
         range = range.substitute(placeholders.begin(),
@@ -530,10 +566,14 @@ bool DTypeConstructor::resolve(
                                  replacements.begin(),
                                  replacements.end());
       }
+      Trace("datatypes-init")
+          << "  ...range after placeholder replacement " << range << std::endl;
       if (!paramTypes.empty())
       {
         range = doParametricSubstitution(range, paramTypes, paramReplacements);
       }
+      Trace("datatypes-init")
+          << "  ...range after parametric substitution " << range << std::endl;
       arg->d_selector = nm->mkSkolem(
           argName,
           nm->mkSelectorType(self, range),
@@ -544,6 +584,13 @@ bool DTypeConstructor::resolve(
     arg->d_selector.setAttribute(DTypeIndexAttr(), index++);
     arg->d_resolved = true;
     argTypes.push_back(range);
+    // We use \0 as a distinguished marker for unresolved selectors for doing
+    // name resolutions. We now can remove \0 from name if necessary.
+    const size_t nul = arg->d_name.find('\0');
+    if (nul != std::string::npos)
+    {
+      arg->d_name.resize(nul);
+    }
   }
 
   Assert(index == getNumArgs());
@@ -597,7 +644,7 @@ TypeNode DTypeConstructor::doParametricSubstitution(
   }
   for (size_t i = 0, psize = paramTypes.size(); i < psize; ++i)
   {
-    if (paramTypes[i].getNumChildren() + 1 == origChildren.size())
+    if (paramTypes[i].getSortConstructorArity() == origChildren.size())
     {
       TypeNode tn = paramTypes[i].instantiateSortConstructor(origChildren);
       if (range == tn)

@@ -2,10 +2,10 @@
 /*! \file model_builder.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Andrew Reynolds, Morgan Deters, Mathias Preiner
+ **   Andrew Reynolds, Mathias Preiner
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
+ ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
@@ -20,6 +20,7 @@
 #include "expr/node.h"
 #include "theory/quantifiers/first_order_model.h"
 #include "theory/quantifiers/inst_match.h"
+#include "theory/quantifiers/quantifiers_state.h"
 #include "theory/theory_model_builder.h"
 
 namespace CVC4 {
@@ -29,7 +30,7 @@ namespace quantifiers {
 
 class QModelBuilder : public TheoryEngineModelBuilder
 {
-protected:
+ protected:
   //quantifiers engine
   QuantifiersEngine* d_qe;
   // must call preProcessBuildModelStd
@@ -38,8 +39,9 @@ protected:
   /** number of lemmas generated while building model */
   unsigned d_addedLemmas;
   unsigned d_triedLemmas;
-public:
-  QModelBuilder( context::Context* c, QuantifiersEngine* qe );
+
+ public:
+  QModelBuilder(QuantifiersEngine* qe, QuantifiersState& qs);
 
   //do exhaustive instantiation  
   // 0 :  failed, but resorting to true exhaustive instantiation may work
@@ -55,6 +57,10 @@ public:
   //statistics 
   unsigned getNumAddedLemmas() { return d_addedLemmas; }
   unsigned getNumTriedLemmas() { return d_triedLemmas; }
+
+ protected:
+  /** The quantifiers state object */
+  QuantifiersState& d_qstate;
 };
 
 }/* CVC4::theory::quantifiers namespace */

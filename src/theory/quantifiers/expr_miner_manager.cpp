@@ -4,8 +4,8 @@
  ** Top contributors (to current version):
  **   Andrew Reynolds
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
+ ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
@@ -28,7 +28,8 @@ ExpressionMinerManager::ExpressionMinerManager()
       d_doFilterObjFun(false),
       d_use_sygus_type(false),
       d_qe(nullptr),
-      d_tds(nullptr)
+      d_tds(nullptr),
+      d_crd(options::sygusRewSynthCheck(), options::sygusRewSynthAccel(), false)
 {
 }
 
@@ -156,8 +157,8 @@ bool ExpressionMinerManager::addTerm(std::vector<Node>& sols,
   bool ret = true;
   if (d_doRewSynth)
   {
-    Assert(sols.size() == 1);
-    ret = d_crd.addTerm(sols[0], options::sygusRewSynthRec(), out, rewPrint);
+    Node rsol = d_crd.addTerm(sol, options::sygusRewSynthRec(), out, rew_print);
+    ret = (sol == rsol);
   }
 
   // a unique term, let's try the query generator

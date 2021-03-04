@@ -2,10 +2,10 @@
 /*! \file ce_guided_single_inv_sol.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Andrew Reynolds, Tim King, Andres Noetzli
+ **   Andrew Reynolds, Tim King, Mathias Preiner
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
+ ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
@@ -14,10 +14,11 @@
  **/
 #include "theory/quantifiers/sygus/ce_guided_single_inv_sol.h"
 
-#include "expr/datatype.h"
 #include "expr/dtype.h"
+#include "expr/dtype_cons.h"
 #include "expr/node_algorithm.h"
 #include "options/quantifiers_options.h"
+#include "smt/command.h"
 #include "theory/arith/arith_msum.h"
 #include "theory/quantifiers/ematching/trigger.h"
 #include "theory/quantifiers/first_order_model.h"
@@ -47,42 +48,6 @@ bool doCompare(Node a, Node b, Kind k)
 CegSingleInvSol::CegSingleInvSol(QuantifiersEngine* qe)
     : d_qe(qe), d_id_count(0), d_root_id()
 {
-}
-
-bool CegSingleInvSol::debugSolution(Node sol)
-{
-  if( sol.getKind()==SKOLEM ){
-    return false;
-  }else{
-    for( unsigned i=0; i<sol.getNumChildren(); i++ ){
-      if( !debugSolution( sol[i] ) ){
-        return false;
-      }
-    }
-    return true;
-  }
-
-}
-
-void CegSingleInvSol::debugTermSize(Node sol, int& t_size, int& num_ite)
-{
-  std::map< Node, int >::iterator it = d_dterm_size.find( sol );
-  if( it==d_dterm_size.end() ){
-    int prev = t_size;
-    int prev_ite = num_ite;
-    t_size++;
-    if( sol.getKind()==ITE ){
-      num_ite++;
-    }
-    for( unsigned i=0; i<sol.getNumChildren(); i++ ){
-      debugTermSize( sol[i], t_size, num_ite );
-    }
-    d_dterm_size[sol] = t_size-prev;
-    d_dterm_ite_size[sol] = num_ite-prev_ite;
-  }else{
-    t_size += it->second;
-    num_ite += d_dterm_ite_size[sol];
-  }
 }
 
 void CegSingleInvSol::preregisterConjecture(Node q)
@@ -158,16 +123,19 @@ Node CegSingleInvSol::reconstructSolution(Node sol,
     do {
       std::vector< TypeNode > to_erase;
       for( std::map< TypeNode, bool >::iterator it = active.begin(); it != active.end(); ++it ){
-        TypeNode stn = it->first;
-        Node ns = d_qe->getTermEnumeration()->getEnumerateTerm(stn, index);
+        TypeNode tn = it->first;
+        Node ns = d_qe->getTermEnumeration()->getEnumerateTerm(tn, index);
         if( ns.isNull() ){
-          to_erase.push_back( stn );
+          to_erase.push_back(tn);
         }else{
-          Node nb = d_qe->getTermDatabaseSygus()->sygusToBuiltin( ns, stn );
-          Node nr = Rewriter::rewrite( nb );//d_qe->getTermDatabaseSygus()->getNormalized( stn, nb, false, false );
-          Trace("csi-rcons-debug2") << "  - try " << ns << " -> " << nr << " for " << stn << " " << nr.getKind() << std::endl;
-          std::map< Node, int >::iterator itt = d_rcons_to_id[stn].find( nr );
-          if (itt != d_rcons_to_id[stn].end())
+          Node nb = d_qe->getTermDatabaseSygus()->sygusToBuiltin(ns, tn);
+          Node nr = Rewriter::rewrite(nb);  // d_qe->getTermDatabaseSygus()->getNormalized(
+                                            // tn, nb, false, false );
+          Trace("csi-rcons-debug2")
+              << "  - try " << ns << " -> " << nr << " for " << tn << " "
+              << nr.getKind() << std::endl;
+          std::map<Node, int>::iterator itt = d_rcons_to_id[tn].find(nr);
+          if (itt != d_rcons_to_id[tn].end())
           {
             // if it is not already reconstructed
             if (d_reconstruct.find(itt->second) == d_reconstruct.end())
@@ -577,7 +545,8 @@ void CegSingleInvSol::getEquivalentTerms(Kind k,
         }
         if( !eq.isNull() ){
           eq = Rewriter::rewrite( eq );
-          if( eq!=d_qe->getTermUtil()->d_true ){
+          if (!eq.isConst() || !eq.getConst<bool>())
+          {
             success = false;
             break;
           }
@@ -821,7 +790,7 @@ void CegSingleInvSol::registerType(TypeNode tn)
   TypeNode btn = dt.getSygusType();
   // for constant reconstruction
   Kind ck = getComparisonKind(btn);
-  Node z = d_qe->getTermUtil()->getTypeValue(btn, 0);
+  Node z = TermUtil::mkTypeValue(btn, 0);
 
   // iterate over constructors
   for (unsigned i = 0, ncons = dt.getNumConstructors(); i < ncons; i++)
@@ -870,7 +839,7 @@ bool CegSingleInvSol::getMatch(Node p,
   TermDbSygus* tds = d_qe->getTermDatabaseSygus();
   if (tds->isFreeVar(p))
   {
-    unsigned vnum = tds->getVarNum(p);
+    size_t vnum = tds->getFreeVarId(p);
     Node prev = s[vnum];
     s[vnum] = n;
     if (prev.isNull())

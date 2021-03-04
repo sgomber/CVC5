@@ -2,10 +2,10 @@
 /*! \file nl_ext_purify.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Haniel Barbosa
+ **   Haniel Barbosa, Andrew Reynolds
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
+ ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
@@ -16,11 +16,14 @@
 
 #include "preprocessing/passes/nl_ext_purify.h"
 
+#include "preprocessing/assertion_pipeline.h"
+#include "theory/rewriter.h"
 
 namespace CVC4 {
 namespace preprocessing {
 namespace passes {
 
+using namespace std;
 using namespace CVC4::theory;
 
 Node NlExtPurify::purifyNlTerms(TNode n,
@@ -44,6 +47,11 @@ Node NlExtPurify::purifyNlTerms(TNode n,
     {
       return (*find).second;
     }
+  }
+  if (n.isClosure())
+  {
+    // don't traverse quantified formulas
+    return n;
   }
   Node ret = n;
   if (n.getNumChildren() > 0)
@@ -112,16 +120,19 @@ PreprocessingPassResult NlExtPurify::applyInternal(
   for (unsigned i = 0; i < size; ++i)
   {
     Node a = (*assertionsToPreprocess)[i];
-    assertionsToPreprocess->replace(i, purifyNlTerms(a, cache, bcache, var_eq));
-    Trace("nl-ext-purify") << "Purify : " << a << " -> "
-                           << (*assertionsToPreprocess)[i] << "\n";
+    Node ap = purifyNlTerms(a, cache, bcache, var_eq);
+    if (a != ap)
+    {
+      assertionsToPreprocess->replace(i, ap);
+      Trace("nl-ext-purify")
+          << "Purify : " << a << " -> " << (*assertionsToPreprocess)[i] << "\n";
+    }
   }
   if (!var_eq.empty())
   {
     unsigned lastIndex = size - 1;
-    var_eq.insert(var_eq.begin(), (*assertionsToPreprocess)[lastIndex]);
-    assertionsToPreprocess->replace(
-        lastIndex, NodeManager::currentNM()->mkNode(kind::AND, var_eq));
+    Node veq = NodeManager::currentNM()->mkAnd(var_eq);
+    assertionsToPreprocess->conjoin(lastIndex, veq);
   }
   return PreprocessingPassResult::NO_CONFLICT;
 }

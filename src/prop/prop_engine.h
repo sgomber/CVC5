@@ -4,8 +4,8 @@
  ** Top contributors (to current version):
  **   Morgan Deters, Dejan Jovanovic, Tim King
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
+ ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
@@ -21,91 +21,54 @@
 #ifndef CVC4__PROP_ENGINE_H
 #define CVC4__PROP_ENGINE_H
 
-#include <sys/time.h>
-
-#include "base/modal_exception.h"
-#include "expr/expr_stream.h"
+#include "context/cdlist.h"
 #include "expr/node.h"
-#include "options/options.h"
-#include "proof/proof_manager.h"
-#include "smt_util/lemma_channels.h"
+#include "theory/output_channel.h"
+#include "theory/trust_node.h"
 #include "util/result.h"
-#include "util/unsafe_interrupt_exception.h"
 
 namespace CVC4 {
 
 class ResourceManager;
 class DecisionEngine;
+class OutputManager;
 class TheoryEngine;
-
-namespace theory {
-  class TheoryRegistrar;
-}/* CVC4::theory namespace */
 
 namespace prop {
 
 class CnfStream;
-class DPLLSatSolverInterface;
-
-class PropEngine;
+class CDCLTSatSolverInterface;
+class ProofCnfStream;
+class PropPfManager;
 
 /**
  * PropEngine is the abstraction of a Sat Solver, providing methods for
  * solving the SAT problem and conversion to CNF (via the CnfStream).
  */
-class PropEngine {
-
-  /**
-   * Indicates that the SAT solver is currently solving something and we should
-   * not mess with it's internal state.
-   */
-  bool d_inCheckSat;
-
-  /** The theory engine we will be using */
-  TheoryEngine *d_theoryEngine;
-
-  /** The decision engine we will be using */
-  DecisionEngine *d_decisionEngine;
-
-  /** The context */
-  context::Context* d_context;
-
-  /** SAT solver's proxy back to theories; kept around for dtor cleanup */
-  TheoryProxy* d_theoryProxy;
-
-  /** The SAT solver proxy */
-  DPLLSatSolverInterface* d_satSolver;
-
-  /** List of all of the assertions that need to be made */
-  std::vector<Node> d_assertionList;
-
-  /** Theory registrar; kept around for destructor cleanup */
-  theory::TheoryRegistrar* d_registrar;
-
-  /** The CNF converter in use */
-  CnfStream* d_cnfStream;
-
-  /** Whether we were just interrupted (or not) */
-  bool d_interrupted;
-  /** Pointer to resource manager for associated SmtEngine */
-  ResourceManager* d_resourceManager;
-
-  /** Dump out the satisfying assignment (after SAT result) */
-  void printSatisfyingAssignment();
-
-public:
-
+class PropEngine
+{
+ public:
   /**
    * Create a PropEngine with a particular decision and theory engine.
    */
-  PropEngine(TheoryEngine*, DecisionEngine*, context::Context* satContext,
-             context::Context* userContext, std::ostream* replayLog,
-             ExprStream* replayStream, LemmaChannels* channels);
+  PropEngine(TheoryEngine*,
+             context::Context* satContext,
+             context::UserContext* userContext,
+             ResourceManager* rm,
+             OutputManager& outMgr,
+             ProofNodeManager* pnm);
 
   /**
    * Destructor.
    */
   CVC4_PUBLIC ~PropEngine();
+
+  /**
+   * Finish initialize. Call this after construction just before we are
+   * ready to use this class. Should be called after TheoryEngine::finishInit.
+   * This method converts and asserts true and false into the CNF stream.
+   */
+  void finishInit();
 
   /**
    * This is called by SmtEngine, at shutdown time, just before
@@ -114,27 +77,76 @@ public:
    * PropEngine and Theory).  For now, there's nothing to do here in
    * the PropEngine.
    */
-  void shutdown() { }
+  void shutdown() {}
+
+  /**
+   * Preprocess the given node. Return the REWRITE trust node corresponding to
+   * rewriting node. New lemmas and skolems are added to ppLemmas and
+   * ppSkolems respectively.
+   *
+   * @param node The assertion to preprocess,
+   * @param ppLemmas The lemmas to add to the set of assertions,
+   * @param ppSkolems The skolems that newLemmas correspond to,
+   * @return The (REWRITE) trust node corresponding to rewritten node via
+   * preprocessing.
+   */
+  theory::TrustNode preprocess(TNode node,
+                               std::vector<theory::TrustNode>& ppLemmas,
+                               std::vector<Node>& ppSkolems);
+  /**
+   * Remove term ITEs (and more generally, term formulas) from the given node.
+   * Return the REWRITE trust node corresponding to rewriting node. New lemmas
+   * and skolems are added to ppLemmas and ppSkolems respectively. This can
+   * be seen a subset of the above preprocess method, which also does theory
+   * preprocessing and rewriting.
+   *
+   * @param node The assertion to preprocess,
+   * @param ppLemmas The lemmas to add to the set of assertions,
+   * @param ppSkolems The skolems that newLemmas correspond to,
+   * @return The (REWRITE) trust node corresponding to rewritten node via
+   * preprocessing.
+   */
+  theory::TrustNode removeItes(TNode node,
+                               std::vector<theory::TrustNode>& ppLemmas,
+                               std::vector<Node>& ppSkolems);
+  /**
+   * Notify preprocessed assertions. This method is called just before the
+   * assertions are asserted to this prop engine. This method notifies the
+   * theory engine of the given assertions. Notice this vector includes
+   * both the input formulas and the skolem definitions.
+   */
+  void notifyPreprocessedAssertions(const std::vector<Node>& assertions);
 
   /**
    * Converts the given formula to CNF and assert the CNF to the SAT solver.
-   * The formula is asserted permanently for the current context.
+   * The formula is asserted permanently for the current context. Note the
+   * formula should correspond to an input formula and not a lemma introduced
+   * by term formula removal (which instead should use the interface below).
    * @param node the formula to assert
    */
   void assertFormula(TNode node);
+  /**
+   * Same as above, but node corresponds to the skolem definition of the given
+   * skolem.
+   * @param node the formula to assert
+   * @param skolem the skolem that this lemma defines.
+   *
+   * For example, if k is introduced by ITE removal of (ite C x y), then node
+   * is the formula (ite C (= k x) (= k y)).  It is important to distinguish
+   * these kinds of lemmas from input assertions, as the justification decision
+   * heuristic treates them specially.
+   */
+  void assertSkolemDefinition(TNode node, TNode skolem);
 
   /**
    * Converts the given formula to CNF and assert the CNF to the SAT solver.
    * The formula can be removed by the SAT solver after backtracking lower
    * than the (SAT and SMT) level at which it was asserted.
    *
-   * @param node the formula to assert
-   * @param negated whether the node should be considered to be negated
-   * at the top level (or not)
-   * @param removable whether this lemma can be quietly removed based
-   * on an activity heuristic (or not)
+   * @param trn the trust node storing the formula to assert
+   * @param p the properties of the lemma
    */
-  void assertLemma(TNode node, bool negated, bool removable, ProofRule rule, TNode from = TNode::null());
+  void assertLemma(theory::TrustNode tlemma, theory::LemmaProperty p);
 
   /**
    * If ever n is decided upon, it must be in the given phase.  This
@@ -185,10 +197,31 @@ public:
 
   /**
    * Ensure that the given node will have a designated SAT literal
-   * that is definitionally equal to it.  The result of this function
-   * is that the Node can be queried via getSatValue().
+   * that is definitionally equal to it. Note that theory preprocessing is
+   * applied to n. The node returned by this method can be subsequently queried
+   * via getSatValue().
    */
-  void ensureLiteral(TNode n);
+  Node ensureLiteral(TNode n);
+  /**
+   * This returns the theory-preprocessed form of term n. This rewrites and
+   * preprocesses n, which notice may involve adding clauses to the SAT solver
+   * if preprocessing n involves introducing new skolems.
+   */
+  Node getPreprocessedTerm(TNode n);
+  /**
+   * Same as above, but also compute the skolems in n and in the lemmas
+   * corresponding to their definition.
+   *
+   * Note this will include skolems that occur in the definition lemma
+   * for all skolems in sks. This is run until a fixed point is reached.
+   * For example, if k1 has definition (ite A (= k1 k2) (= k1 x)) where k2 is
+   * another skolem introduced by term formula removal, then calling this
+   * method on (P k1) will include both k1 and k2 in sks, and their definitions
+   * in skAsserts.
+   */
+  Node getPreprocessedTerm(TNode n,
+                           std::vector<Node>& skAsserts,
+                           std::vector<Node>& sks);
 
   /**
    * Push the context level.
@@ -228,7 +261,7 @@ public:
    * Informs the ResourceManager that a resource has been spent.  If out of
    * resources, can throw an UnsafeInterruptException exception.
    */
-  void spendResource(unsigned amount);
+  void spendResource(ResourceManager::Resource r);
 
   /**
    * For debugging.  Return true if "expl" is a well-formed
@@ -242,10 +275,106 @@ public:
    */
   bool properExplanation(TNode node, TNode expl) const;
 
-};/* class PropEngine */
+  /** Retrieve this modules proof CNF stream. */
+  ProofCnfStream* getProofCnfStream();
 
+  /** Checks that the proof is closed w.r.t. asserted formulas to this engine as
+   * well as to the given assertions. */
+  void checkProof(context::CDList<Node>* assertions);
 
-}/* CVC4::prop namespace */
-}/* CVC4 namespace */
+  /**
+   * Return the prop engine proof. This should be called only when proofs are
+   * enabled. Returns a proof of false whose free assumptions are the
+   * preprocessed assertions.
+   */
+  std::shared_ptr<ProofNode> getProof();
+
+  /** Is proof enabled? */
+  bool isProofEnabled() const;
+ private:
+  /** Dump out the satisfying assignment (after SAT result) */
+  void printSatisfyingAssignment();
+
+  /**
+   * Converts the given formula to CNF and asserts the CNF to the SAT solver.
+   * The formula can be removed by the SAT solver after backtracking lower
+   * than the (SAT and SMT) level at which it was asserted.
+   *
+   * @param trn the trust node storing the formula to assert
+   * @param removable whether this lemma can be quietly removed based
+   * on an activity heuristic
+   */
+  void assertTrustedLemmaInternal(theory::TrustNode trn, bool removable);
+  /**
+   * Assert node as a formula to the CNF stream
+   * @param node The formula to assert
+   * @param negated Whether to assert the negation of node
+   * @param removable Whether the formula is removable
+   * @param input Whether the formula came from the input
+   * @param pg Pointer to a proof generator that can provide a proof of node
+   * (or its negation if negated is true).
+   */
+  void assertInternal(TNode node,
+                      bool negated,
+                      bool removable,
+                      bool input,
+                      ProofGenerator* pg = nullptr);
+  /**
+   * Assert lemmas internal, where trn is a trust node corresponding to a
+   * formula to assert to the CNF stream, ppLemmas and ppSkolems are the
+   * skolem definitions and skolems obtained from preprocessing it, and
+   * removable is whether the lemma is removable.
+   */
+  void assertLemmasInternal(theory::TrustNode trn,
+                            const std::vector<theory::TrustNode>& ppLemmas,
+                            const std::vector<Node>& ppSkolems,
+                            bool removable);
+
+  /**
+   * Indicates that the SAT solver is currently solving something and we should
+   * not mess with it's internal state.
+   */
+  bool d_inCheckSat;
+
+  /** The theory engine we will be using */
+  TheoryEngine* d_theoryEngine;
+
+  /** The decision engine we will be using */
+  std::unique_ptr<DecisionEngine> d_decisionEngine;
+
+  /** The context */
+  context::Context* d_context;
+
+  /** SAT solver's proxy back to theories; kept around for dtor cleanup */
+  TheoryProxy* d_theoryProxy;
+
+  /** The SAT solver proxy */
+  CDCLTSatSolverInterface* d_satSolver;
+
+  /** List of all of the assertions that need to be made */
+  std::vector<Node> d_assertionList;
+
+  /** A pointer to the proof node maneger to be used by this engine. */
+  ProofNodeManager* d_pnm;
+
+  /** The CNF converter in use */
+  CnfStream* d_cnfStream;
+  /** Proof-producing CNF converter */
+  std::unique_ptr<ProofCnfStream> d_pfCnfStream;
+
+  /** The proof manager for prop engine */
+  std::unique_ptr<PropPfManager> d_ppm;
+
+  /** Whether we were just interrupted (or not) */
+  bool d_interrupted;
+  /** Pointer to resource manager for associated SmtEngine */
+  ResourceManager* d_resourceManager;
+
+  /** Reference to the output manager of the smt engine */
+  OutputManager& d_outMgr;
+};
+
+}  // namespace prop
+}  // namespace CVC4
 
 #endif /* CVC4__PROP_ENGINE_H */

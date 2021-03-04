@@ -4,8 +4,8 @@
  ** Top contributors (to current version):
  **   Andrew Reynolds, Mathias Preiner, Tim King
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
+ ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
@@ -19,7 +19,8 @@
 
 #include "context/cdhashmap.h"
 #include "expr/node_trie.h"
-#include "theory/quantifiers/quant_util.h"
+#include "expr/term_canonize.h"
+#include "theory/quantifiers/quant_module.h"
 #include "theory/type_enumerator.h"
 
 namespace CVC4 {
@@ -246,10 +247,6 @@ private:
     ConjectureGenerator& d_sg;
   public:
     NotifyClass(ConjectureGenerator& sg): d_sg(sg) {}
-    bool eqNotifyTriggerEquality(TNode equality, bool value) override
-    {
-      return true;
-    }
     bool eqNotifyTriggerPredicate(TNode predicate, bool value) override
     {
       return true;
@@ -263,17 +260,12 @@ private:
     }
     void eqNotifyConstantTermMerge(TNode t1, TNode t2) override {}
     void eqNotifyNewClass(TNode t) override { d_sg.eqNotifyNewClass(t); }
-    void eqNotifyPreMerge(TNode t1, TNode t2) override
+    void eqNotifyMerge(TNode t1, TNode t2) override
     {
-      d_sg.eqNotifyPreMerge(t1, t2);
-    }
-    void eqNotifyPostMerge(TNode t1, TNode t2) override
-    {
-      d_sg.eqNotifyPostMerge(t1, t2);
+      d_sg.eqNotifyMerge(t1, t2);
     }
     void eqNotifyDisequal(TNode t1, TNode t2, TNode reason) override
     {
-      d_sg.eqNotifyDisequal(t1, t2, reason);
     }
   };/* class ConjectureGenerator::NotifyClass */
   /** The notify class */
@@ -299,18 +291,14 @@ private:
   std::map< Node, EqcInfo* > d_eqc_info;
   /** called when a new equivalance class is created */
   void eqNotifyNewClass(TNode t);
-  /** called when two equivalance classes will merge */
-  void eqNotifyPreMerge(TNode t1, TNode t2);
   /** called when two equivalance classes have merged */
-  void eqNotifyPostMerge(TNode t1, TNode t2);
-  /** called when two equivalence classes are made disequal */
-  void eqNotifyDisequal(TNode t1, TNode t2, TNode reason);
+  void eqNotifyMerge(TNode t1, TNode t2);
   /** are universal equal */
   bool areUniversalEqual( TNode n1, TNode n2 );
   /** are universal disequal */
   bool areUniversalDisequal( TNode n1, TNode n2 );
   /** get universal representative */
-  TNode getUniversalRepresentative( TNode n, bool add = false );
+  Node getUniversalRepresentative(TNode n, bool add = false);
   /** set relevant */
   void setUniversalRelevant( TNode n );
   /** ordering for universal terms */
@@ -446,8 +434,12 @@ private:  //information about ground equivalence classes
   bool d_hasAddedLemma;
   //flush the waiting conjectures
   unsigned flushWaitingConjectures( unsigned& addedLemmas, int ldepth, int rdepth );
-public:
-  ConjectureGenerator( QuantifiersEngine * qe, context::Context* c );
+
+ public:
+  ConjectureGenerator(QuantifiersEngine* qe,
+                      QuantifiersState& qs,
+                      QuantifiersInferenceManager& qim,
+                      QuantifiersRegistry& qr);
   ~ConjectureGenerator();
 
   /* needs check */
@@ -467,6 +459,8 @@ public:
   unsigned optFullCheckConjectures();
 
   bool optStatsOnly();
+  /** term canonizer */
+  expr::TermCanonize d_termCanon;
 };
 
 

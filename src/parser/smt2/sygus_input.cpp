@@ -2,10 +2,10 @@
 /*! \file sygus_input.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Morgan Deters
+ **   Morgan Deters, Andrew Reynolds
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
+ ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
@@ -18,7 +18,6 @@
 
 #include <antlr3.h>
 
-#include "expr/expr_manager.h"
 #include "parser/input.h"
 #include "parser/parser.h"
 #include "parser/parser_exception.h"
@@ -63,7 +62,8 @@ Command* SygusInput::parseCommand() {
   return d_pSmt2Parser->parseSygus(d_pSmt2Parser);
 }
 
-Expr SygusInput::parseExpr() {
+api::Term SygusInput::parseExpr()
+{
   return d_pSmt2Parser->parseExpr(d_pSmt2Parser);
 }
 

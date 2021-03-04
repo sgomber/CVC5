@@ -4,8 +4,8 @@
  ** Top contributors (to current version):
  **   Andrew Reynolds
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
+ ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
@@ -18,11 +18,12 @@
 #define CVC4__THEORY__QUANTIFIERS__CEGIS_CORE_CONNECTIVE_H
 
 #include <unordered_set>
+
 #include "expr/node.h"
 #include "expr/node_trie.h"
-
 #include "theory/evaluator.h"
 #include "theory/quantifiers/sygus/cegis.h"
+#include "util/result.h"
 
 namespace CVC4 {
 namespace theory {
@@ -139,8 +140,8 @@ class VariadicTrie
  *   {
  *     D += { d' }
  *     if D is false for all v in pts(B)
- *       if D => B
- *         Let U be a subset of D such that U ^ ~B is unsat.
+ *       if (S ^ D) => B
+ *         Let U be a subset of D such that S ^ U ^ ~B is unsat.
  *         if S ^ U is unsat
  *           Let W be a subset of D such that S ^ W is unsat.
  *             cores(B) += W
@@ -155,7 +156,9 @@ class VariadicTrie
 class CegisCoreConnective : public Cegis
 {
  public:
-  CegisCoreConnective(QuantifiersEngine* qe, SynthConjecture* p);
+  CegisCoreConnective(QuantifiersEngine* qe,
+                      QuantifiersInferenceManager& qim,
+                      SynthConjecture* p);
   ~CegisCoreConnective() {}
   /**
    * Return whether this module has the possibility to construct solutions. This
@@ -337,13 +340,15 @@ class CegisCoreConnective : public Cegis
    * Assuming smt has just been called to check-sat and returned "UNSAT", this
    * method get the unsat core and adds it to uasserts.
    *
-   * If query is non-null, then it is excluded from uasserts. If query was
-   * in the unsat core, then this method returns true. Otherwise, this method
-   * returns false. It also returns false if query was null.
+   * The assertions in the argument queryAsserts (which we are not interested
+   * in tracking in the unsat core) are excluded from uasserts.
+   * If one of the formulas in queryAsserts was in the unsat core, then this
+   * method returns true. Otherwise, this method returns false.
    */
-  bool getUnsatCore(SmtEngine& smt,
-                    Node query,
-                    std::vector<Node>& uasserts) const;
+  bool getUnsatCore(
+      SmtEngine& smt,
+      const std::unordered_set<Node, NodeHashFunction>& queryAsserts,
+      std::vector<Node>& uasserts) const;
   /**
    * Return the result of checking satisfiability of formula n.
    * If n was satisfiable, then we store the model for d_vars in mvs.

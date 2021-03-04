@@ -2,10 +2,10 @@
 /*! \file preprocessing_pass.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Justin Xu, Andres Noetzli
+ **   Justin Xu, Abdalrhman Mohamed, Andres Noetzli
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
+ ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
@@ -16,7 +16,12 @@
 
 #include "preprocessing/preprocessing_pass.h"
 
+#include "preprocessing/assertion_pipeline.h"
+#include "preprocessing/preprocessing_pass_context.h"
+#include "printer/printer.h"
 #include "smt/dump.h"
+#include "smt/output_manager.h"
+#include "smt/smt_engine_scope.h"
 #include "smt/smt_statistics_registry.h"
 
 namespace CVC4 {
@@ -39,8 +44,13 @@ void PreprocessingPass::dumpAssertions(const char* key,
   if (Dump.isOn("assertions") && Dump.isOn(std::string("assertions:") + key))
   {
     // Push the simplified assertions to the dump output stream
-    for (const auto& n : assertionList) {
-      Dump("assertions") << AssertCommand(Expr(n.toExpr()));
+    OutputManager& outMgr = d_preprocContext->getSmt()->getOutputManager();
+    const Printer& printer = outMgr.getPrinter();
+    std::ostream& out = outMgr.getDumpOut();
+
+    for (const auto& n : assertionList)
+    {
+      printer.toStreamCmdAssert(out, n);
     }
   }
 }

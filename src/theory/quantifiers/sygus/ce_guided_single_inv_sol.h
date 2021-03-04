@@ -2,10 +2,10 @@
 /*! \file ce_guided_single_inv_sol.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Andrew Reynolds
+ **   Andrew Reynolds, Mathias Preiner
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
+ ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
@@ -21,6 +21,7 @@
 #include <vector>
 
 #include "context/cdhashmap.h"
+#include "expr/dtype.h"
 #include "expr/node.h"
 
 namespace CVC4 {
@@ -47,10 +48,6 @@ class CegSingleInvSol
   std::vector< Node > d_varList;
   std::map< Node, int > d_dterm_size;
   std::map< Node, int > d_dterm_ite_size;
-//solution simplification
-private:
-  bool debugSolution( Node sol );
-  void debugTermSize( Node sol, int& t_size, int& num_ite );
 
  public:
   CegSingleInvSol(QuantifiersEngine* qe);

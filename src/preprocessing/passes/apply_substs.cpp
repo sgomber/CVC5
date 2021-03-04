@@ -2,10 +2,10 @@
 /*! \file apply_substs.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Aina Niemetz, Andres Noetzli
+ **   Aina Niemetz, Andrew Reynolds, Mathias Preiner
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
+ ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
@@ -18,6 +18,8 @@
 #include "preprocessing/passes/apply_substs.h"
 
 #include "context/cdo.h"
+#include "preprocessing/assertion_pipeline.h"
+#include "preprocessing/preprocessing_pass_context.h"
 #include "theory/rewriter.h"
 #include "theory/substitutions.h"
 
@@ -33,32 +35,28 @@ ApplySubsts::ApplySubsts(PreprocessingPassContext* preprocContext)
 PreprocessingPassResult ApplySubsts::applyInternal(
     AssertionPipeline* assertionsToPreprocess)
 {
-  if (!options::unsatCores())
-  {
-    Chat() << "applying substitutions..." << std::endl;
-    Trace("apply-substs") << "SmtEnginePrivate::processAssertions(): "
-                      << "applying substitutions" << std::endl;
-    // TODO(#1255): Substitutions in incremental mode should be managed with a
-    // proper data structure.
+  Chat() << "applying substitutions..." << std::endl;
+  Trace("apply-substs") << "SmtEnginePrivate::processAssertions(): "
+                        << "applying substitutions" << std::endl;
+  // TODO(#1255): Substitutions in incremental mode should be managed with a
+  // proper data structure.
 
-    theory::SubstitutionMap& substMap =
-        d_preprocContext->getTopLevelSubstitutions();
-    unsigned size = assertionsToPreprocess->size();
-    for (unsigned i = 0; i < size; ++i)
+  theory::TrustSubstitutionMap& tlsm =
+      d_preprocContext->getTopLevelSubstitutions();
+  unsigned size = assertionsToPreprocess->size();
+  for (unsigned i = 0; i < size; ++i)
+  {
+    if (assertionsToPreprocess->isSubstsIndex(i))
     {
-      if (assertionsToPreprocess->isSubstsIndex(i))
-      {
-        continue;
-      }
-      Trace("apply-substs") << "applying to " << (*assertionsToPreprocess)[i]
-                        << std::endl;
-      d_preprocContext->spendResource(options::preprocessStep());
-      assertionsToPreprocess->replace(i,
-                                      theory::Rewriter::rewrite(substMap.apply(
-                                          (*assertionsToPreprocess)[i])));
-      Trace("apply-substs") << "  got " << (*assertionsToPreprocess)[i]
-                        << std::endl;
+      continue;
     }
+    Trace("apply-substs") << "applying to " << (*assertionsToPreprocess)[i]
+                          << std::endl;
+    d_preprocContext->spendResource(ResourceManager::Resource::PreprocessStep);
+    assertionsToPreprocess->replaceTrusted(
+        i, tlsm.apply((*assertionsToPreprocess)[i]));
+    Trace("apply-substs") << "  got " << (*assertionsToPreprocess)[i]
+                          << std::endl;
   }
   return PreprocessingPassResult::NO_CONFLICT;
 }

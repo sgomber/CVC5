@@ -4,8 +4,8 @@
  ** Top contributors (to current version):
  **   Andrew Reynolds, Mathias Preiner, Tim King
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
+ ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
@@ -33,6 +33,7 @@ namespace quantifiers {
 class Instantiator;
 class InstantiatorPreprocess;
 class InstStrategyCegqi;
+class QuantifiersState;
 
 /**
  * Descriptions of the types of constraints that a term was solved for in.
@@ -209,36 +210,29 @@ class CegInstantiator {
    * The instantiator will be constructing instantiations for quantified formula
    * q, parent is the owner of this object.
    */
-  CegInstantiator(Node q, InstStrategyCegqi* parent);
+  CegInstantiator(Node q, QuantifiersState& qs, InstStrategyCegqi* parent);
   virtual ~CegInstantiator();
   /** check
    * This adds instantiations based on the state of d_vars in current context
    * on the output channel d_out of this class.
    */
   bool check();
-  /** presolve for quantified formula
-   *
-   * This initializes formulas that help static learning of the quantifier-free
-   * solver. It is only called if the option --cbqi-prereg-inst is used.
-   */
-  void presolve(Node q);
   /** Register the counterexample lemma
    *
-   * lems : contains the conjuncts of the counterexample lemma of the
-   *        quantified formula we are processing. The counterexample
-   *        lemma is the formula { ~phi[e/x] } in Figure 1 of Reynolds
-   *        et al. FMSD 2017.
-   * ce_vars : contains the variables e. Notice these are variables of
-   *           INST_CONSTANT kind, since we do not permit bound
-   *           variables in assertions.
-   *
-   * This method may modify the set of lemmas lems based on:
-   * - ITE removal,
-   * - Theory-specific preprocessing of instantiation lemmas.
-   * It may also introduce new variables to ce_vars if necessary.
+   * @param lem contains the counterexample lemma of the quantified formula we
+   * are processing. The counterexample lemma is the formula { ~phi[e/x] } in
+   * Figure 1 of Reynolds et al. FMSD 2017.
+   * @param ce_vars contains the variables e. Notice these are variables of
+   * INST_CONSTANT kind, since we do not permit bound variables in assertions.
+   * This method may add additional variables to this vector if it decides there
+   * are additional auxiliary variables to solve for.
+   * @param auxLems : if this method decides that additional lemmas should be
+   * sent on the output channel, they are added to this vector, and sent out by
+   * the caller of this method.
    */
-  void registerCounterexampleLemma(std::vector<Node>& lems,
-                                   std::vector<Node>& ce_vars);
+  void registerCounterexampleLemma(Node lem,
+                                   std::vector<Node>& ce_vars,
+                                   std::vector<Node>& auxLems);
   //------------------------------interface for instantiators
   /** get quantifiers engine */
   QuantifiersEngine* getQuantifiersEngine() { return d_qe; }
@@ -276,7 +270,7 @@ class CegInstantiator {
    *
    * This gets the next (canonical) bound variable of
    * type tn. This can be used for instance when
-   * constructing instantiations that involve choice expressions.
+   * constructing instantiations that involve witness expressions.
    */
   Node getBoundVariable(TypeNode tn);
   /** has this assertion been marked as solved? */
@@ -360,6 +354,8 @@ class CegInstantiator {
  private:
   /** The quantified formula of this instantiator */
   Node d_quant;
+  /** Reference to the quantifiers state */
+  QuantifiersState& d_qstate;
   /** The parent of this instantiator */
   InstStrategyCegqi* d_parent;
   /** quantified formula associated with this instantiator */
@@ -396,15 +392,6 @@ class CegInstantiator {
    * such as the above data structures.
    */
   void processAssertions();
-  /** add to auxiliary variable substitution
-   * This adds the substitution l -> r to the auxiliary
-   * variable substitution subs_lhs -> subs_rhs, and serializes
-   * it (applies it to existing substitutions).
-   */
-  void addToAuxVarSubstitution(std::vector<Node>& subs_lhs,
-                               std::vector<Node>& subs_rhs,
-                               Node l,
-                               Node r);
   /** cache bound variables for type returned
    * by getBoundVariable(...).
    */
@@ -462,35 +449,8 @@ class CegInstantiator {
    * and sending on the output channel of this class.
    */
   std::vector<Node> d_input_vars;
-  /** literals to equalities for aux vars
-   * This stores entries of the form
-   *   L -> ( k -> t )
-   * where
-   *   k is a variable in d_aux_vars,
-   *   L is a literal that if asserted implies that our
-   *    instantiation should map { k -> t }.
-   * For example, if a term of the form
-   *   ite( C, t1, t2 )
-   * was replaced by k, we get this (top-level) assertion:
-   *   ite( C, k=t1, k=t2 )
-   * The vector d_aux_eq contains the exact form of
-   * the literals in the above constraint that they would
-   * appear in assertions, meaning d_aux_eq may contain:
-   *   t1=k -> ( k -> t1 )
-   *   t2=k -> ( k -> t2 )
-   * where t1=k and t2=k are the rewritten form of
-   * k=t1 and k=t2 respectively.
-   */
-  std::map<Node, std::map<Node, Node> > d_aux_eq;
-  /** auxiliary variables
-   * These variables include the result of removing ITE
-   * terms from the quantified formula we are processing.
-   * These variables must be eliminated from constraints
-   * as a preprocess step to check().
-   */
-  std::vector<Node> d_aux_vars;
   /** register variable */
-  void registerVariable(Node v, bool is_aux = false);
+  void registerVariable(Node v);
   //-------------------------------the variables
 
   //-------------------------------quantified formula info
@@ -865,8 +825,9 @@ class InstantiatorPreprocess
    * of counterexample lemmas, with the same contract as
    * CegInstantiation::registerCounterexampleLemma.
    */
-  virtual void registerCounterexampleLemma(std::vector<Node>& lems,
-                                           std::vector<Node>& ce_vars)
+  virtual void registerCounterexampleLemma(Node lem,
+                                           std::vector<Node>& ceVars,
+                                           std::vector<Node>& auxLems)
   {
   }
 };

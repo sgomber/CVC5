@@ -2,10 +2,10 @@
 /*! \file justification_heuristic.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Kshitij Bansal, Tim King, Morgan Deters
+ **   Kshitij Bansal, Andres Noetzli, Mathias Preiner
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
+ ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
@@ -24,16 +24,17 @@
 #define CVC4__DECISION__JUSTIFICATION_HEURISTIC
 
 #include <unordered_set>
+#include <utility>
 
 #include "context/cdhashmap.h"
 #include "context/cdhashset.h"
 #include "context/cdlist.h"
-#include "decision/decision_attributes.h"
-#include "decision/decision_engine.h"
+#include "context/cdo.h"
 #include "decision/decision_strategy.h"
 #include "expr/node.h"
-#include "preprocessing/assertion_pipeline.h"
+#include "options/decision_weight.h"
 #include "prop/sat_solver_types.h"
+#include "util/statistics_registry.h"
 
 namespace CVC4 {
 namespace decision {
@@ -42,12 +43,17 @@ class JustificationHeuristic : public ITEDecisionStrategy {
   //                   TRUE           FALSE         MEH
   enum SearchResult {FOUND_SPLITTER, NO_SPLITTER, DONT_KNOW};
 
-  typedef std::vector<pair<TNode,TNode> > IteList;
-  typedef context::CDHashMap<TNode,IteList,TNodeHashFunction> IteCache;
+  typedef std::vector<std::pair<TNode, TNode> > SkolemList;
+  typedef context::CDHashMap<TNode, SkolemList, TNodeHashFunction> SkolemCache;
   typedef std::vector<TNode> ChildList;
-  typedef context::CDHashMap<TNode,pair<ChildList,ChildList>,TNodeHashFunction> ChildCache;
+  typedef context::
+      CDHashMap<TNode, std::pair<ChildList, ChildList>, TNodeHashFunction>
+          ChildCache;
   typedef context::CDHashMap<TNode,TNode,TNodeHashFunction> SkolemMap;
-  typedef context::CDHashMap<TNode,pair<DecisionWeight,DecisionWeight>,TNodeHashFunction> WeightCache;
+  typedef context::CDHashMap<TNode,
+                             std::pair<DecisionWeight, DecisionWeight>,
+                             TNodeHashFunction>
+      WeightCache;
 
   // being 'justified' is monotonic with respect to decisions
   typedef context::CDHashSet<Node,NodeHashFunction> JustifiedSet;
@@ -57,24 +63,25 @@ class JustificationHeuristic : public ITEDecisionStrategy {
   context::CDO<unsigned>  d_prvsIndex;
   context::CDO<unsigned>  d_threshPrvsIndex;
 
-  IntStat d_helfulness;
+  IntStat d_helpfulness;
   IntStat d_giveup;
   TimerStat d_timestat;
 
   /**
    * A copy of the assertions that need to be justified
-   * directly. Doesn't have ones introduced during during ITE-removal.
+   * directly. Doesn't have ones introduced during during term removal.
    */
-  context::CDList<TNode> d_assertions;
+  context::CDList<Node> d_assertions;
   //TNode is fine since decisionEngine has them too
 
-  /** map from ite-rewrite skolem to a boolean-ite assertion */
-  SkolemMap d_iteAssertions;
+  /** map from skolems introduced in term removal to the corresponding assertion
+   */
+  SkolemMap d_skolemAssertions;
   // 'key' being TNode is fine since if a skolem didn't exist anywhere,
   // we won't look it up. as for 'value', same reason as d_assertions
 
-  /** Cache for ITE skolems present in a atomic formula */
-  IteCache d_iteCache;
+  /** Cache for skolems present in a atomic formula */
+  SkolemCache d_skolemCache;
 
   /**
    * This is used to prevent infinite loop when trying to find a
@@ -84,13 +91,13 @@ class JustificationHeuristic : public ITEDecisionStrategy {
   std::unordered_set<TNode,TNodeHashFunction> d_visited;
 
   /**
-   * Set to track visited nodes in a dfs search done in computeITE
+   * Set to track visited nodes in a dfs search done in computeSkolems
    * function
    */
-  std::unordered_set<TNode,TNodeHashFunction> d_visitedComputeITE;
+  std::unordered_set<TNode, TNodeHashFunction> d_visitedComputeSkolems;
 
   /** current decision for the recursive call */
-  SatLiteral d_curDecision;
+  prop::SatLiteral d_curDecision;
   /** current threshold for the recursive call */
   DecisionWeight d_curThreshold;
 
@@ -120,19 +127,27 @@ public:
 
   prop::SatLiteral getNext(bool &stopSearch) override;
 
-  void addAssertions(
-      const preprocessing::AssertionPipeline &assertions) override;
+  /**
+   * Notify this class that assertion is an (input) assertion, not corresponding
+   * to a skolem definition.
+   */
+  void addAssertion(TNode assertion) override;
+  /**
+   * Notify this class  that lem is the skolem definition for skolem, which is
+   * a part of the current assertions.
+   */
+  void addSkolemDefinition(TNode lem, TNode skolem) override;
 
  private:
   /* getNext with an option to specify threshold */
   prop::SatLiteral getNextThresh(bool &stopSearch, DecisionWeight threshold);
 
-  SatLiteral findSplitter(TNode node, SatValue desiredVal);
+  prop::SatLiteral findSplitter(TNode node, prop::SatValue desiredVal);
 
   /**
    * Do all the hard work.
    */
-  SearchResult findSplitterRec(TNode node, SatValue value);
+  SearchResult findSplitterRec(TNode node, prop::SatValue value);
 
   /* Helper functions */
   void setJustified(TNode);
@@ -142,7 +157,7 @@ public:
   void setPrvsIndex(int);
   int  getPrvsIndex();
   DecisionWeight getWeightPolarized(TNode n, bool polarity);
-  DecisionWeight getWeightPolarized(TNode n, SatValue);
+  DecisionWeight getWeightPolarized(TNode n, prop::SatValue);
   static DecisionWeight getWeight(TNode);
   bool compareByWeightFalse(TNode, TNode);
   bool compareByWeightTrue(TNode, TNode);
@@ -150,11 +165,10 @@ public:
 
   /* If literal exists corresponding to the node return
      that. Otherwise an UNKNOWN */
-  SatValue tryGetSatValue(Node n);
+  prop::SatValue tryGetSatValue(Node n);
 
   /* Get list of all term-ITEs for the atomic formula v */
-  JustificationHeuristic::IteList getITEs(TNode n);
-
+  JustificationHeuristic::SkolemList getSkolems(TNode n);
 
   /**
    * For big and/or nodes, a cache to save starting index into children
@@ -165,17 +179,21 @@ public:
   int getStartIndex(TNode node);
   void saveStartIndex(TNode node, int val);
 
-  /* Compute all term-ITEs in a node recursively */
-  void computeITEs(TNode n, IteList &l);
+  /* Compute all term-removal skolems in a node recursively */
+  void computeSkolems(TNode n, SkolemList& l);
 
-  SearchResult handleAndOrEasy(TNode node, SatValue desiredVal);
-  SearchResult handleAndOrHard(TNode node, SatValue desiredVal);
-  SearchResult handleBinaryEasy(TNode node1, SatValue desiredVal1,
-                        TNode node2, SatValue desiredVal2);
-  SearchResult handleBinaryHard(TNode node1, SatValue desiredVal1,
-                        TNode node2, SatValue desiredVal2);
-  SearchResult handleITE(TNode node, SatValue desiredVal);
-  SearchResult handleEmbeddedITEs(TNode node);
+  SearchResult handleAndOrEasy(TNode node, prop::SatValue desiredVal);
+  SearchResult handleAndOrHard(TNode node, prop::SatValue desiredVal);
+  SearchResult handleBinaryEasy(TNode node1,
+                                prop::SatValue desiredVal1,
+                                TNode node2,
+                                prop::SatValue desiredVal2);
+  SearchResult handleBinaryHard(TNode node1,
+                                prop::SatValue desiredVal1,
+                                TNode node2,
+                                prop::SatValue desiredVal2);
+  SearchResult handleITE(TNode node, prop::SatValue desiredVal);
+  SearchResult handleEmbeddedSkolems(TNode node);
 };/* class JustificationHeuristic */
 
 }/* namespace decision */

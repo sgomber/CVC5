@@ -2,10 +2,10 @@
 /*! \file ho_elim.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Andrew Reynolds
+ **   Andrew Reynolds, Andres Noetzli
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
+ ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
@@ -19,8 +19,12 @@
 #ifndef __CVC4__PREPROCESSING__PASSES__HO_ELIM_PASS_H
 #define __CVC4__PREPROCESSING__PASSES__HO_ELIM_PASS_H
 
+#include <map>
+#include <unordered_map>
+#include <unordered_set>
+
+#include "expr/node.h"
 #include "preprocessing/preprocessing_pass.h"
-#include "preprocessing/preprocessing_pass_context.h"
 
 namespace CVC4 {
 namespace preprocessing {
@@ -112,7 +116,7 @@ class HoElim : public PreprocessingPass
    * Stores the set of nodes we have current visited and their results
    * in steps [1] and [2] of this pass.
    */
-  std::unordered_map<TNode, Node, TNodeHashFunction> d_visited;
+  std::unordered_map<Node, Node, NodeHashFunction> d_visited;
   /**
    * Stores the mapping from functions f to their corresponding function H(f)
    * in the encoding for step [2] of this pass.

@@ -2,10 +2,10 @@
 /*! \file ite_simp.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Aina Niemetz, Tim King, Liana Hadarean
+ **   Aina Niemetz, Tim King, Andrew Reynolds
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
+ ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
@@ -16,11 +16,16 @@
 
 #include <vector>
 
-#include "options/proof_options.h"
+#include "options/smt_options.h"
+#include "preprocessing/assertion_pipeline.h"
+#include "preprocessing/preprocessing_pass_context.h"
 #include "smt/smt_statistics_registry.h"
 #include "smt_util/nary_builder.h"
 #include "theory/arith/arith_ite_utils.h"
+#include "theory/rewriter.h"
+#include "theory/theory_engine.h"
 
+using namespace std;
 using namespace CVC4;
 using namespace CVC4::theory;
 
@@ -115,20 +120,14 @@ ITESimp::Statistics::~Statistics()
 
 bool ITESimp::doneSimpITE(AssertionPipeline* assertionsToPreprocess)
 {
-  // This pass does not support dependency tracking yet
-  // (learns substitutions from all assertions so just
-  // adding addDependence is not enough)
-  if (options::unsatCores() || options::fewerPreprocessingHoles())
-  {
-    return true;
-  }
+  Assert(!options::unsatCores());
   bool result = true;
   bool simpDidALotOfWork = d_iteUtilities.simpIteDidALotOfWorkHeuristic();
   if (simpDidALotOfWork)
   {
     if (options::compressItes())
     {
-      result = d_iteUtilities.compress(assertionsToPreprocess->ref());
+      result = d_iteUtilities.compress(assertionsToPreprocess);
     }
 
     if (result)
@@ -176,7 +175,8 @@ bool ITESimp::doneSimpITE(AssertionPipeline* assertionsToPreprocess)
           {
             Node more = aiteu.reduceConstantIteByGCD(res);
             Debug("arith::ite::red") << "  gcd->" << more << endl;
-            (*assertionsToPreprocess)[i] = Rewriter::rewrite(more);
+            Node morer = Rewriter::rewrite(more);
+            assertionsToPreprocess->replace(i, morer);
           }
         }
       }
@@ -215,7 +215,8 @@ bool ITESimp::doneSimpITE(AssertionPipeline* assertionsToPreprocess)
                                      << "   ->" << res << endl;
             Node more = aiteu.reduceConstantIteByGCD(res);
             Debug("arith::ite::red") << "  gcd->" << more << endl;
-            (*assertionsToPreprocess)[i] = Rewriter::rewrite(more);
+            Node morer = Rewriter::rewrite(more);
+            assertionsToPreprocess->replace(i, morer);
           }
         }
       }
@@ -234,12 +235,12 @@ ITESimp::ITESimp(PreprocessingPassContext* preprocContext)
 PreprocessingPassResult ITESimp::applyInternal(
     AssertionPipeline* assertionsToPreprocess)
 {
-  d_preprocContext->spendResource(options::preprocessStep());
+  d_preprocContext->spendResource(ResourceManager::Resource::PreprocessStep);
 
   size_t nasserts = assertionsToPreprocess->size();
   for (size_t i = 0; i < nasserts; ++i)
   {
-    d_preprocContext->spendResource(options::preprocessStep());
+    d_preprocContext->spendResource(ResourceManager::Resource::PreprocessStep);
     Node simp = simpITE(&d_iteUtilities, (*assertionsToPreprocess)[i]);
     assertionsToPreprocess->replace(i, simp);
     if (simp.isConst() && !simp.getConst<bool>())

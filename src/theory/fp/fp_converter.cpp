@@ -2,10 +2,10 @@
 /*! \file fp_converter.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Martin Brain, Andres Noetzli, Aina Niemetz
+ **   Martin Brain, Mathias Preiner, Aina Niemetz
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
+ ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
@@ -13,10 +13,12 @@
  **/
 
 #include "theory/fp/fp_converter.h"
-#include "theory/theory.h"
-// theory.h Only needed for the leaf test
 
 #include <vector>
+
+#include "theory/theory.h"  // theory.h Only needed for the leaf test
+#include "util/floatingpoint.h"
+#include "util/floatingpoint_literal_symfpu.h"
 
 #ifdef CVC4_USE_SYMFPU
 #include "symfpu/core/add.h"
@@ -141,7 +143,6 @@ void probabilityAnnotation<traits, traits::prop>(const traits::prop &p,
 #endif
 
 #ifndef CVC4_USE_SYMFPU
-#define PRECONDITION(X) Assert((X))
 #define SYMFPU_NUMBER_OF_ROUNDING_MODES 5
 #endif
 
@@ -155,19 +156,20 @@ symbolicRoundingMode traits::RNA(void) { return symbolicRoundingMode(0x02); };
 symbolicRoundingMode traits::RTP(void) { return symbolicRoundingMode(0x04); };
 symbolicRoundingMode traits::RTN(void) { return symbolicRoundingMode(0x08); };
 symbolicRoundingMode traits::RTZ(void) { return symbolicRoundingMode(0x10); };
+
 void traits::precondition(const bool b)
 {
-  AlwaysAssert(b);
+  Assert(b);
   return;
 }
 void traits::postcondition(const bool b)
 {
-  AlwaysAssert(b);
+  Assert(b);
   return;
 }
 void traits::invariant(const bool b)
 {
-  AlwaysAssert(b);
+  Assert(b);
   return;
 }
 
@@ -186,18 +188,19 @@ bool symbolicProposition::checkNodeType(const TNode node)
 
 symbolicProposition::symbolicProposition(const Node n) : nodeWrapper(n)
 {
-  PRECONDITION(checkNodeType(*this));
+  Assert(checkNodeType(*this));
 }  // Only used within this header so could be friend'd
 symbolicProposition::symbolicProposition(bool v)
     : nodeWrapper(
           NodeManager::currentNM()->mkConst(BitVector(1U, (v ? 1U : 0U))))
 {
-  PRECONDITION(checkNodeType(*this));
+  Assert(checkNodeType(*this));
 }
+
 symbolicProposition::symbolicProposition(const symbolicProposition &old)
     : nodeWrapper(old)
 {
-  PRECONDITION(checkNodeType(*this));
+  Assert(checkNodeType(*this));
 }
 
 symbolicProposition symbolicProposition::operator!(void)const
@@ -245,7 +248,7 @@ bool symbolicRoundingMode::checkNodeType(const TNode n)
 
 symbolicRoundingMode::symbolicRoundingMode(const Node n) : nodeWrapper(n)
 {
-  PRECONDITION(checkNodeType(*this));
+  Assert(checkNodeType(*this));
 }
 
 #ifdef CVC4_USE_SYMFPU
@@ -253,8 +256,8 @@ symbolicRoundingMode::symbolicRoundingMode(const unsigned v)
     : nodeWrapper(NodeManager::currentNM()->mkConst(
           BitVector(SYMFPU_NUMBER_OF_ROUNDING_MODES, v)))
 {
-  PRECONDITION((v & (v - 1)) == 0 && v != 0);  // Exactly one bit set
-  PRECONDITION(checkNodeType(*this));
+  Assert((v & (v - 1)) == 0 && v != 0);  // Exactly one bit set
+  Assert(checkNodeType(*this));
 }
 #else
 symbolicRoundingMode::symbolicRoundingMode(const unsigned v)
@@ -268,7 +271,7 @@ symbolicRoundingMode::symbolicRoundingMode(const unsigned v)
 symbolicRoundingMode::symbolicRoundingMode(const symbolicRoundingMode &old)
     : nodeWrapper(old)
 {
-  PRECONDITION(checkNodeType(*this));
+  Assert(checkNodeType(*this));
 }
 
 symbolicProposition symbolicRoundingMode::valid(void) const
@@ -333,7 +336,7 @@ Node symbolicBitVector<isSigned>::toProposition(Node node) const
 template <bool isSigned>
 symbolicBitVector<isSigned>::symbolicBitVector(const Node n) : nodeWrapper(n)
 {
-  PRECONDITION(checkNodeType(*this));
+  Assert(checkNodeType(*this));
 }
 
 template <bool isSigned>
@@ -346,7 +349,7 @@ template <bool isSigned>
 symbolicBitVector<isSigned>::symbolicBitVector(const bwt w, const unsigned v)
     : nodeWrapper(NodeManager::currentNM()->mkConst(BitVector(w, v)))
 {
-  PRECONDITION(checkNodeType(*this));
+  Assert(checkNodeType(*this));
 }
 template <bool isSigned>
 symbolicBitVector<isSigned>::symbolicBitVector(const symbolicProposition &p)
@@ -358,13 +361,13 @@ symbolicBitVector<isSigned>::symbolicBitVector(
     const symbolicBitVector<isSigned> &old)
     : nodeWrapper(old)
 {
-  PRECONDITION(checkNodeType(*this));
+  Assert(checkNodeType(*this));
 }
 template <bool isSigned>
 symbolicBitVector<isSigned>::symbolicBitVector(const BitVector &old)
     : nodeWrapper(NodeManager::currentNM()->mkConst(old))
 {
-  PRECONDITION(checkNodeType(*this));
+  Assert(checkNodeType(*this));
 }
 
 template <bool isSigned>
@@ -670,7 +673,7 @@ template <bool isSigned>
 symbolicBitVector<isSigned> symbolicBitVector<isSigned>::contract(
     bwt reduction) const
 {
-  PRECONDITION(this->getWidth() > reduction);
+  Assert(this->getWidth() > reduction);
 
   NodeBuilder<> construct(kind::BITVECTOR_EXTRACT);
   construct << NodeManager::currentNM()->mkConst<BitVectorExtract>(
@@ -704,7 +707,7 @@ template <bool isSigned>
 symbolicBitVector<isSigned> symbolicBitVector<isSigned>::matchWidth(
     const symbolicBitVector<isSigned> &op) const
 {
-  PRECONDITION(this->getWidth() <= op.getWidth());
+  Assert(this->getWidth() <= op.getWidth());
   return this->extend(op.getWidth() - this->getWidth());
 }
 
@@ -721,7 +724,7 @@ template <bool isSigned>
 symbolicBitVector<isSigned> symbolicBitVector<isSigned>::extract(
     bwt upper, bwt lower) const
 {
-  PRECONDITION(upper >= lower);
+  Assert(upper >= lower);
 
   NodeBuilder<> construct(kind::BITVECTOR_EXTRACT);
   construct << NodeManager::currentNM()->mkConst<BitVectorExtract>(
@@ -731,10 +734,10 @@ symbolicBitVector<isSigned> symbolicBitVector<isSigned>::extract(
   return symbolicBitVector<isSigned>(construct);
 }
 
-floatingPointTypeInfo::floatingPointTypeInfo(const TypeNode t)
-    : FloatingPointSize(t.getConst<FloatingPointSize>())
+floatingPointTypeInfo::floatingPointTypeInfo(const TypeNode type)
+    : FloatingPointSize(type.getConst<FloatingPointSize>())
 {
-  PRECONDITION(t.isFloatingPoint());
+  Assert(type.isFloatingPoint());
 }
 floatingPointTypeInfo::floatingPointTypeInfo(unsigned exp, unsigned sig)
     : FloatingPointSize(exp, sig)
@@ -751,18 +754,20 @@ TypeNode floatingPointTypeInfo::getTypeNode(void) const
 }
 }
 
-FpConverter::FpConverter(context::UserContext *user)
-    :
+FpConverter::FpConverter(context::UserContext* user)
+    : d_additionalAssertions(user)
 #ifdef CVC4_USE_SYMFPU
-      f(user),
-      r(user),
-      b(user),
-      u(user),
-      s(user),
+      ,
+      d_fpMap(user),
+      d_rmMap(user),
+      d_boolMap(user),
+      d_ubvMap(user),
+      d_sbvMap(user)
 #endif
-      d_additionalAssertions(user)
 {
 }
+
+FpConverter::~FpConverter() {}
 
 #ifdef CVC4_USE_SYMFPU
 Node FpConverter::ufToNode(const fpt &format, const uf &u) const
@@ -796,17 +801,17 @@ Node FpConverter::rmToNode(const rm &r) const
   Node value = nm->mkNode(
       kind::ITE,
       nm->mkNode(kind::EQUAL, transVar, RNE),
-      nm->mkConst(roundNearestTiesToEven),
+      nm->mkConst(ROUND_NEAREST_TIES_TO_EVEN),
       nm->mkNode(kind::ITE,
                  nm->mkNode(kind::EQUAL, transVar, RNA),
-                 nm->mkConst(roundNearestTiesToAway),
+                 nm->mkConst(ROUND_NEAREST_TIES_TO_AWAY),
                  nm->mkNode(kind::ITE,
                             nm->mkNode(kind::EQUAL, transVar, RTP),
-                            nm->mkConst(roundTowardPositive),
+                            nm->mkConst(ROUND_TOWARD_POSITIVE),
                             nm->mkNode(kind::ITE,
                                        nm->mkNode(kind::EQUAL, transVar, RTN),
-                                       nm->mkConst(roundTowardNegative),
-                                       nm->mkConst(roundTowardZero)))));
+                                       nm->mkConst(ROUND_TOWARD_NEGATIVE),
+                                       nm->mkConst(ROUND_TOWARD_ZERO)))));
   return value;
 }
 
@@ -863,9 +868,9 @@ Node FpConverter::convert(TNode node)
 
     if (t.isRoundingMode())
     {
-      rmMap::const_iterator i(r.find(current));
+      rmMap::const_iterator i(d_rmMap.find(current));
 
-      if (i == r.end())
+      if (i == d_rmMap.end())
       {
         if (Theory::isLeafOf(current, THEORY_FP))
         {
@@ -874,15 +879,21 @@ Node FpConverter::convert(TNode node)
             /******** Constants ********/
             switch (current.getConst<RoundingMode>())
             {
-              case roundNearestTiesToEven:
-                r.insert(current, traits::RNE());
+              case ROUND_NEAREST_TIES_TO_EVEN:
+                d_rmMap.insert(current, traits::RNE());
                 break;
-              case roundNearestTiesToAway:
-                r.insert(current, traits::RNA());
+              case ROUND_NEAREST_TIES_TO_AWAY:
+                d_rmMap.insert(current, traits::RNA());
                 break;
-              case roundTowardPositive: r.insert(current, traits::RTP()); break;
-              case roundTowardNegative: r.insert(current, traits::RTN()); break;
-              case roundTowardZero: r.insert(current, traits::RTZ()); break;
+              case ROUND_TOWARD_POSITIVE:
+                d_rmMap.insert(current, traits::RTP());
+                break;
+              case ROUND_TOWARD_NEGATIVE:
+                d_rmMap.insert(current, traits::RTN());
+                break;
+              case ROUND_TOWARD_ZERO:
+                d_rmMap.insert(current, traits::RTZ());
+                break;
               default: Unreachable() << "Unknown rounding mode"; break;
             }
           }
@@ -890,7 +901,7 @@ Node FpConverter::convert(TNode node)
           {
             /******** Variables ********/
             rm tmp(nm->mkNode(kind::ROUNDINGMODE_BITBLAST, current));
-            r.insert(current, tmp);
+            d_rmMap.insert(current, tmp);
             d_additionalAssertions.push_back(tmp.valid());
           }
         }
@@ -903,23 +914,25 @@ Node FpConverter::convert(TNode node)
     }
     else if (t.isFloatingPoint())
     {
-      fpMap::const_iterator i(f.find(current));
+      fpMap::const_iterator i(d_fpMap.find(current));
 
-      if (i == f.end())
+      if (i == d_fpMap.end())
       {
         if (Theory::isLeafOf(current, THEORY_FP))
         {
           if (current.getKind() == kind::CONST_FLOATINGPOINT)
           {
             /******** Constants ********/
-            f.insert(current,
-                     symfpu::unpackedFloat<traits>(
-                         current.getConst<FloatingPoint>().getLiteral()));
+            d_fpMap.insert(
+                current,
+                symfpu::unpackedFloat<traits>(current.getConst<FloatingPoint>()
+                                                  .getLiteral()
+                                                  ->getSymUF()));
           }
           else
           {
             /******** Variables ********/
-            f.insert(current, buildComponents(current));
+            d_fpMap.insert(current, buildComponents(current));
           }
         }
         else
@@ -937,9 +950,9 @@ Node FpConverter::convert(TNode node)
             case kind::FLOATINGPOINT_ABS:
             case kind::FLOATINGPOINT_NEG:
             {
-              fpMap::const_iterator arg1(f.find(current[0]));
+              fpMap::const_iterator arg1(d_fpMap.find(current[0]));
 
-              if (arg1 == f.end())
+              if (arg1 == d_fpMap.end())
               {
                 workStack.push_back(current);
                 workStack.push_back(current[0]);
@@ -949,14 +962,14 @@ Node FpConverter::convert(TNode node)
               switch (current.getKind())
               {
                 case kind::FLOATINGPOINT_ABS:
-                  f.insert(current,
-                           symfpu::absolute<traits>(fpt(current.getType()),
-                                                    (*arg1).second));
+                  d_fpMap.insert(current,
+                                 symfpu::absolute<traits>(
+                                     fpt(current.getType()), (*arg1).second));
                   break;
                 case kind::FLOATINGPOINT_NEG:
-                  f.insert(current,
-                           symfpu::negate<traits>(fpt(current.getType()),
-                                                  (*arg1).second));
+                  d_fpMap.insert(current,
+                                 symfpu::negate<traits>(fpt(current.getType()),
+                                                        (*arg1).second));
                   break;
                 default:
                   Unreachable() << "Unknown unary floating-point function";
@@ -968,18 +981,19 @@ Node FpConverter::convert(TNode node)
             case kind::FLOATINGPOINT_SQRT:
             case kind::FLOATINGPOINT_RTI:
             {
-              rmMap::const_iterator mode(r.find(current[0]));
-              fpMap::const_iterator arg1(f.find(current[1]));
-              bool recurseNeeded = (mode == r.end()) || (arg1 == f.end());
+              rmMap::const_iterator mode(d_rmMap.find(current[0]));
+              fpMap::const_iterator arg1(d_fpMap.find(current[1]));
+              bool recurseNeeded =
+                  (mode == d_rmMap.end()) || (arg1 == d_fpMap.end());
 
               if (recurseNeeded)
               {
                 workStack.push_back(current);
-                if (mode == r.end())
+                if (mode == d_rmMap.end())
                 {
                   workStack.push_back(current[0]);
                 }
-                if (arg1 == f.end())
+                if (arg1 == d_fpMap.end())
                 {
                   workStack.push_back(current[1]);
                 }
@@ -989,13 +1003,13 @@ Node FpConverter::convert(TNode node)
               switch (current.getKind())
               {
                 case kind::FLOATINGPOINT_SQRT:
-                  f.insert(current,
-                           symfpu::sqrt<traits>(fpt(current.getType()),
-                                                (*mode).second,
-                                                (*arg1).second));
+                  d_fpMap.insert(current,
+                                 symfpu::sqrt<traits>(fpt(current.getType()),
+                                                      (*mode).second,
+                                                      (*arg1).second));
                   break;
                 case kind::FLOATINGPOINT_RTI:
-                  f.insert(
+                  d_fpMap.insert(
                       current,
                       symfpu::roundToIntegral<traits>(fpt(current.getType()),
                                                       (*mode).second,
@@ -1011,25 +1025,26 @@ Node FpConverter::convert(TNode node)
 
             case kind::FLOATINGPOINT_REM:
             {
-              fpMap::const_iterator arg1(f.find(current[0]));
-              fpMap::const_iterator arg2(f.find(current[1]));
-              bool recurseNeeded = (arg1 == f.end()) || (arg2 == f.end());
+              fpMap::const_iterator arg1(d_fpMap.find(current[0]));
+              fpMap::const_iterator arg2(d_fpMap.find(current[1]));
+              bool recurseNeeded =
+                  (arg1 == d_fpMap.end()) || (arg2 == d_fpMap.end());
 
               if (recurseNeeded)
               {
                 workStack.push_back(current);
-                if (arg1 == f.end())
+                if (arg1 == d_fpMap.end())
                 {
                   workStack.push_back(current[0]);
                 }
-                if (arg2 == f.end())
+                if (arg2 == d_fpMap.end())
                 {
                   workStack.push_back(current[1]);
                 }
                 continue;  // i.e. recurse!
               }
 
-              f.insert(
+              d_fpMap.insert(
                   current,
                   symfpu::remainder<traits>(
                       fpt(current.getType()), (*arg1).second, (*arg2).second));
@@ -1039,20 +1054,21 @@ Node FpConverter::convert(TNode node)
             case kind::FLOATINGPOINT_MIN_TOTAL:
             case kind::FLOATINGPOINT_MAX_TOTAL:
             {
-              fpMap::const_iterator arg1(f.find(current[0]));
-              fpMap::const_iterator arg2(f.find(current[1]));
+              fpMap::const_iterator arg1(d_fpMap.find(current[0]));
+              fpMap::const_iterator arg2(d_fpMap.find(current[1]));
               // current[2] is a bit-vector so we do not need to recurse down it
 
-              bool recurseNeeded = (arg1 == f.end()) || (arg2 == f.end());
+              bool recurseNeeded =
+                  (arg1 == d_fpMap.end()) || (arg2 == d_fpMap.end());
 
               if (recurseNeeded)
               {
                 workStack.push_back(current);
-                if (arg1 == f.end())
+                if (arg1 == d_fpMap.end())
                 {
                   workStack.push_back(current[0]);
                 }
-                if (arg2 == f.end())
+                if (arg2 == d_fpMap.end())
                 {
                   workStack.push_back(current[1]);
                 }
@@ -1062,19 +1078,19 @@ Node FpConverter::convert(TNode node)
               switch (current.getKind())
               {
                 case kind::FLOATINGPOINT_MAX_TOTAL:
-                  f.insert(current,
-                           symfpu::max<traits>(fpt(current.getType()),
-                                               (*arg1).second,
-                                               (*arg2).second,
-                                               prop(current[2])));
+                  d_fpMap.insert(current,
+                                 symfpu::max<traits>(fpt(current.getType()),
+                                                     (*arg1).second,
+                                                     (*arg2).second,
+                                                     prop(current[2])));
                   break;
 
                 case kind::FLOATINGPOINT_MIN_TOTAL:
-                  f.insert(current,
-                           symfpu::min<traits>(fpt(current.getType()),
-                                               (*arg1).second,
-                                               (*arg2).second,
-                                               prop(current[2])));
+                  d_fpMap.insert(current,
+                                 symfpu::min<traits>(fpt(current.getType()),
+                                                     (*arg1).second,
+                                                     (*arg2).second,
+                                                     prop(current[2])));
                   break;
 
                 default:
@@ -1090,24 +1106,25 @@ Node FpConverter::convert(TNode node)
             case kind::FLOATINGPOINT_MULT:
             case kind::FLOATINGPOINT_DIV:
             {
-              rmMap::const_iterator mode(r.find(current[0]));
-              fpMap::const_iterator arg1(f.find(current[1]));
-              fpMap::const_iterator arg2(f.find(current[2]));
-              bool recurseNeeded =
-                  (mode == r.end()) || (arg1 == f.end()) || (arg2 == f.end());
+              rmMap::const_iterator mode(d_rmMap.find(current[0]));
+              fpMap::const_iterator arg1(d_fpMap.find(current[1]));
+              fpMap::const_iterator arg2(d_fpMap.find(current[2]));
+              bool recurseNeeded = (mode == d_rmMap.end())
+                                   || (arg1 == d_fpMap.end())
+                                   || (arg2 == d_fpMap.end());
 
               if (recurseNeeded)
               {
                 workStack.push_back(current);
-                if (mode == r.end())
+                if (mode == d_rmMap.end())
                 {
                   workStack.push_back(current[0]);
                 }
-                if (arg1 == f.end())
+                if (arg1 == d_fpMap.end())
                 {
                   workStack.push_back(current[1]);
                 }
-                if (arg2 == f.end())
+                if (arg2 == d_fpMap.end())
                 {
                   workStack.push_back(current[2]);
                 }
@@ -1117,12 +1134,12 @@ Node FpConverter::convert(TNode node)
               switch (current.getKind())
               {
                 case kind::FLOATINGPOINT_PLUS:
-                  f.insert(current,
-                           symfpu::add<traits>(fpt(current.getType()),
-                                               (*mode).second,
-                                               (*arg1).second,
-                                               (*arg2).second,
-                                               prop(true)));
+                  d_fpMap.insert(current,
+                                 symfpu::add<traits>(fpt(current.getType()),
+                                                     (*mode).second,
+                                                     (*arg1).second,
+                                                     (*arg2).second,
+                                                     prop(true)));
                   break;
 
                 case kind::FLOATINGPOINT_SUB:
@@ -1133,22 +1150,23 @@ Node FpConverter::convert(TNode node)
                   break;
 
                 case kind::FLOATINGPOINT_MULT:
-                  f.insert(current,
-                           symfpu::multiply<traits>(fpt(current.getType()),
-                                                    (*mode).second,
-                                                    (*arg1).second,
-                                                    (*arg2).second));
+                  d_fpMap.insert(
+                      current,
+                      symfpu::multiply<traits>(fpt(current.getType()),
+                                               (*mode).second,
+                                               (*arg1).second,
+                                               (*arg2).second));
                   break;
                 case kind::FLOATINGPOINT_DIV:
-                  f.insert(current,
-                           symfpu::divide<traits>(fpt(current.getType()),
-                                                  (*mode).second,
-                                                  (*arg1).second,
-                                                  (*arg2).second));
+                  d_fpMap.insert(current,
+                                 symfpu::divide<traits>(fpt(current.getType()),
+                                                        (*mode).second,
+                                                        (*arg1).second,
+                                                        (*arg2).second));
                   break;
                 case kind::FLOATINGPOINT_REM:
                   /*
-                  f.insert(current,
+                  d_fpMap.insert(current,
                   symfpu::remainder<traits>(fpt(current.getType()),
                                                              (*mode).second,
                                                              (*arg1).second,
@@ -1169,66 +1187,68 @@ Node FpConverter::convert(TNode node)
 
             case kind::FLOATINGPOINT_FMA:
             {
-              rmMap::const_iterator mode(r.find(current[0]));
-              fpMap::const_iterator arg1(f.find(current[1]));
-              fpMap::const_iterator arg2(f.find(current[2]));
-              fpMap::const_iterator arg3(f.find(current[3]));
-              bool recurseNeeded = (mode == r.end()) || (arg1 == f.end())
-                                   || (arg2 == f.end() || (arg3 == f.end()));
+              rmMap::const_iterator mode(d_rmMap.find(current[0]));
+              fpMap::const_iterator arg1(d_fpMap.find(current[1]));
+              fpMap::const_iterator arg2(d_fpMap.find(current[2]));
+              fpMap::const_iterator arg3(d_fpMap.find(current[3]));
+              bool recurseNeeded =
+                  (mode == d_rmMap.end()) || (arg1 == d_fpMap.end())
+                  || (arg2 == d_fpMap.end() || (arg3 == d_fpMap.end()));
 
               if (recurseNeeded)
               {
                 workStack.push_back(current);
-                if (mode == r.end())
+                if (mode == d_rmMap.end())
                 {
                   workStack.push_back(current[0]);
                 }
-                if (arg1 == f.end())
+                if (arg1 == d_fpMap.end())
                 {
                   workStack.push_back(current[1]);
                 }
-                if (arg2 == f.end())
+                if (arg2 == d_fpMap.end())
                 {
                   workStack.push_back(current[2]);
                 }
-                if (arg3 == f.end())
+                if (arg3 == d_fpMap.end())
                 {
                   workStack.push_back(current[3]);
                 }
                 continue;  // i.e. recurse!
               }
 
-              f.insert(current,
-                       symfpu::fma<traits>(fpt(current.getType()),
-                                           (*mode).second,
-                                           (*arg1).second,
-                                           (*arg2).second,
-                                           (*arg3).second));
+              d_fpMap.insert(current,
+                             symfpu::fma<traits>(fpt(current.getType()),
+                                                 (*mode).second,
+                                                 (*arg1).second,
+                                                 (*arg2).second,
+                                                 (*arg3).second));
             }
             break;
 
             /******** Conversions ********/
             case kind::FLOATINGPOINT_TO_FP_FLOATINGPOINT:
             {
-              rmMap::const_iterator mode(r.find(current[0]));
-              fpMap::const_iterator arg1(f.find(current[1]));
-              bool recurseNeeded = (mode == r.end()) || (arg1 == f.end());
+              rmMap::const_iterator mode(d_rmMap.find(current[0]));
+              fpMap::const_iterator arg1(d_fpMap.find(current[1]));
+              bool recurseNeeded =
+                  (mode == d_rmMap.end()) || (arg1 == d_fpMap.end());
 
               if (recurseNeeded)
               {
                 workStack.push_back(current);
-                if (mode == r.end())
+                if (mode == d_rmMap.end())
                 {
                   workStack.push_back(current[0]);
                 }
-                if (arg1 == f.end())
+                if (arg1 == d_fpMap.end())
                 {
                   workStack.push_back(current[1]);
                 }
                 continue;  // i.e. recurse!
               }
 
-              f.insert(
+              d_fpMap.insert(
                   current,
                   symfpu::convertFloatToFloat<traits>(fpt(current[1].getType()),
                                                       fpt(current.getType()),
@@ -1241,27 +1261,28 @@ Node FpConverter::convert(TNode node)
             {
               Node IEEEBV(nm->mkNode(
                   kind::BITVECTOR_CONCAT, current[0], current[1], current[2]));
-              f.insert(current,
-                       symfpu::unpack<traits>(fpt(current.getType()), IEEEBV));
+              d_fpMap.insert(
+                  current,
+                  symfpu::unpack<traits>(fpt(current.getType()), IEEEBV));
             }
             break;
 
             case kind::FLOATINGPOINT_TO_FP_IEEE_BITVECTOR:
-              f.insert(current,
-                       symfpu::unpack<traits>(fpt(current.getType()),
-                                              ubv(current[0])));
+              d_fpMap.insert(current,
+                             symfpu::unpack<traits>(fpt(current.getType()),
+                                                    ubv(current[0])));
               break;
 
             case kind::FLOATINGPOINT_TO_FP_SIGNED_BITVECTOR:
             case kind::FLOATINGPOINT_TO_FP_UNSIGNED_BITVECTOR:
             {
-              rmMap::const_iterator mode(r.find(current[0]));
-              bool recurseNeeded = (mode == r.end());
+              rmMap::const_iterator mode(d_rmMap.find(current[0]));
+              bool recurseNeeded = (mode == d_rmMap.end());
 
               if (recurseNeeded)
               {
                 workStack.push_back(current);
-                if (mode == r.end())
+                if (mode == d_rmMap.end())
                 {
                   workStack.push_back(current[0]);
                 }
@@ -1271,7 +1292,7 @@ Node FpConverter::convert(TNode node)
               switch (current.getKind())
               {
                 case kind::FLOATINGPOINT_TO_FP_SIGNED_BITVECTOR:
-                  f.insert(
+                  d_fpMap.insert(
                       current,
                       symfpu::convertSBVToFloat<traits>(fpt(current.getType()),
                                                         (*mode).second,
@@ -1279,7 +1300,7 @@ Node FpConverter::convert(TNode node)
                   break;
 
                 case kind::FLOATINGPOINT_TO_FP_UNSIGNED_BITVECTOR:
-                  f.insert(
+                  d_fpMap.insert(
                       current,
                       symfpu::convertUBVToFloat<traits>(fpt(current.getType()),
                                                         (*mode).second,
@@ -1296,7 +1317,7 @@ Node FpConverter::convert(TNode node)
 
             case kind::FLOATINGPOINT_TO_FP_REAL:
             {
-              f.insert(current, buildComponents(current));
+              d_fpMap.insert(current, buildComponents(current));
               // Rely on the real theory and theory combination
               // to handle the value
             }
@@ -1316,9 +1337,9 @@ Node FpConverter::convert(TNode node)
     }
     else if (t.isBoolean())
     {
-      boolMap::const_iterator i(b.find(current));
+      boolMap::const_iterator i(d_boolMap.find(current));
 
-      if (i == b.end())
+      if (i == d_boolMap.end())
       {
         switch (current.getKind())
         {
@@ -1329,49 +1350,52 @@ Node FpConverter::convert(TNode node)
 
             if (childType.isFloatingPoint())
             {
-              fpMap::const_iterator arg1(f.find(current[0]));
-              fpMap::const_iterator arg2(f.find(current[1]));
-              bool recurseNeeded = (arg1 == f.end()) || (arg2 == f.end());
+              fpMap::const_iterator arg1(d_fpMap.find(current[0]));
+              fpMap::const_iterator arg2(d_fpMap.find(current[1]));
+              bool recurseNeeded =
+                  (arg1 == d_fpMap.end()) || (arg2 == d_fpMap.end());
 
               if (recurseNeeded)
               {
                 workStack.push_back(current);
-                if (arg1 == f.end())
+                if (arg1 == d_fpMap.end())
                 {
                   workStack.push_back(current[0]);
                 }
-                if (arg2 == f.end())
+                if (arg2 == d_fpMap.end())
                 {
                   workStack.push_back(current[1]);
                 }
                 continue;  // i.e. recurse!
               }
 
-              b.insert(current,
-                       symfpu::smtlibEqual<traits>(
-                           fpt(childType), (*arg1).second, (*arg2).second));
+              d_boolMap.insert(
+                  current,
+                  symfpu::smtlibEqual<traits>(
+                      fpt(childType), (*arg1).second, (*arg2).second));
             }
             else if (childType.isRoundingMode())
             {
-              rmMap::const_iterator arg1(r.find(current[0]));
-              rmMap::const_iterator arg2(r.find(current[1]));
-              bool recurseNeeded = (arg1 == r.end()) || (arg2 == r.end());
+              rmMap::const_iterator arg1(d_rmMap.find(current[0]));
+              rmMap::const_iterator arg2(d_rmMap.find(current[1]));
+              bool recurseNeeded =
+                  (arg1 == d_rmMap.end()) || (arg2 == d_rmMap.end());
 
               if (recurseNeeded)
               {
                 workStack.push_back(current);
-                if (arg1 == r.end())
+                if (arg1 == d_rmMap.end())
                 {
                   workStack.push_back(current[0]);
                 }
-                if (arg2 == r.end())
+                if (arg2 == d_rmMap.end())
                 {
                   workStack.push_back(current[1]);
                 }
                 continue;  // i.e. recurse!
               }
 
-              b.insert(current, (*arg1).second == (*arg2).second);
+              d_boolMap.insert(current, (*arg1).second == (*arg2).second);
             }
             else
             {
@@ -1386,18 +1410,19 @@ Node FpConverter::convert(TNode node)
           {
             TypeNode childType(current[0].getType());
 
-            fpMap::const_iterator arg1(f.find(current[0]));
-            fpMap::const_iterator arg2(f.find(current[1]));
-            bool recurseNeeded = (arg1 == f.end()) || (arg2 == f.end());
+            fpMap::const_iterator arg1(d_fpMap.find(current[0]));
+            fpMap::const_iterator arg2(d_fpMap.find(current[1]));
+            bool recurseNeeded =
+                (arg1 == d_fpMap.end()) || (arg2 == d_fpMap.end());
 
             if (recurseNeeded)
             {
               workStack.push_back(current);
-              if (arg1 == f.end())
+              if (arg1 == d_fpMap.end())
               {
                 workStack.push_back(current[0]);
               }
-              if (arg2 == f.end())
+              if (arg2 == d_fpMap.end())
               {
                 workStack.push_back(current[1]);
               }
@@ -1407,15 +1432,17 @@ Node FpConverter::convert(TNode node)
             switch (current.getKind())
             {
               case kind::FLOATINGPOINT_LEQ:
-                b.insert(current,
-                         symfpu::lessThanOrEqual<traits>(
-                             fpt(childType), (*arg1).second, (*arg2).second));
+                d_boolMap.insert(
+                    current,
+                    symfpu::lessThanOrEqual<traits>(
+                        fpt(childType), (*arg1).second, (*arg2).second));
                 break;
 
               case kind::FLOATINGPOINT_LT:
-                b.insert(current,
-                         symfpu::lessThan<traits>(
-                             fpt(childType), (*arg1).second, (*arg2).second));
+                d_boolMap.insert(
+                    current,
+                    symfpu::lessThan<traits>(
+                        fpt(childType), (*arg1).second, (*arg2).second));
                 break;
 
               default:
@@ -1434,9 +1461,9 @@ Node FpConverter::convert(TNode node)
           case kind::FLOATINGPOINT_ISPOS:
           {
             TypeNode childType(current[0].getType());
-            fpMap::const_iterator arg1(f.find(current[0]));
+            fpMap::const_iterator arg1(d_fpMap.find(current[0]));
 
-            if (arg1 == f.end())
+            if (arg1 == d_fpMap.end())
             {
               workStack.push_back(current);
               workStack.push_back(current[0]);
@@ -1446,42 +1473,43 @@ Node FpConverter::convert(TNode node)
             switch (current.getKind())
             {
               case kind::FLOATINGPOINT_ISN:
-                b.insert(
+                d_boolMap.insert(
                     current,
                     symfpu::isNormal<traits>(fpt(childType), (*arg1).second));
                 break;
 
               case kind::FLOATINGPOINT_ISSN:
-                b.insert(current,
-                         symfpu::isSubnormal<traits>(fpt(childType),
-                                                     (*arg1).second));
+                d_boolMap.insert(current,
+                                 symfpu::isSubnormal<traits>(fpt(childType),
+                                                             (*arg1).second));
                 break;
 
               case kind::FLOATINGPOINT_ISZ:
-                b.insert(
+                d_boolMap.insert(
                     current,
                     symfpu::isZero<traits>(fpt(childType), (*arg1).second));
                 break;
 
               case kind::FLOATINGPOINT_ISINF:
-                b.insert(
+                d_boolMap.insert(
                     current,
                     symfpu::isInfinite<traits>(fpt(childType), (*arg1).second));
                 break;
 
               case kind::FLOATINGPOINT_ISNAN:
-                b.insert(current,
-                         symfpu::isNaN<traits>(fpt(childType), (*arg1).second));
+                d_boolMap.insert(
+                    current,
+                    symfpu::isNaN<traits>(fpt(childType), (*arg1).second));
                 break;
 
               case kind::FLOATINGPOINT_ISPOS:
-                b.insert(
+                d_boolMap.insert(
                     current,
                     symfpu::isPositive<traits>(fpt(childType), (*arg1).second));
                 break;
 
               case kind::FLOATINGPOINT_ISNEG:
-                b.insert(
+                d_boolMap.insert(
                     current,
                     symfpu::isNegative<traits>(fpt(childType), (*arg1).second));
                 break;
@@ -1513,7 +1541,7 @@ Node FpConverter::convert(TNode node)
             break;
         }
 
-        i = b.find(current);
+        i = d_boolMap.find(current);
       }
 
       result = (*i).second;
@@ -1526,22 +1554,23 @@ Node FpConverter::convert(TNode node)
         case kind::FLOATINGPOINT_TO_UBV_TOTAL:
         {
           TypeNode childType(current[1].getType());
-          ubvMap::const_iterator i(u.find(current));
+          ubvMap::const_iterator i(d_ubvMap.find(current));
 
-          if (i == u.end())
+          if (i == d_ubvMap.end())
           {
-            rmMap::const_iterator mode(r.find(current[0]));
-            fpMap::const_iterator arg1(f.find(current[1]));
-            bool recurseNeeded = (mode == r.end()) || (arg1 == f.end());
+            rmMap::const_iterator mode(d_rmMap.find(current[0]));
+            fpMap::const_iterator arg1(d_fpMap.find(current[1]));
+            bool recurseNeeded =
+                (mode == d_rmMap.end()) || (arg1 == d_fpMap.end());
 
             if (recurseNeeded)
             {
               workStack.push_back(current);
-              if (mode == r.end())
+              if (mode == d_rmMap.end())
               {
                 workStack.push_back(current[0]);
               }
-              if (arg1 == f.end())
+              if (arg1 == d_fpMap.end())
               {
                 workStack.push_back(current[1]);
               }
@@ -1551,13 +1580,13 @@ Node FpConverter::convert(TNode node)
             FloatingPointToUBVTotal info =
                 current.getOperator().getConst<FloatingPointToUBVTotal>();
 
-            u.insert(current,
-                     symfpu::convertFloatToUBV<traits>(fpt(childType),
-                                                       (*mode).second,
-                                                       (*arg1).second,
-                                                       info.bvs,
-                                                       ubv(current[2])));
-            i = u.find(current);
+            d_ubvMap.insert(current,
+                            symfpu::convertFloatToUBV<traits>(fpt(childType),
+                                                              (*mode).second,
+                                                              (*arg1).second,
+                                                              info.d_bv_size,
+                                                              ubv(current[2])));
+            i = d_ubvMap.find(current);
           }
 
           result = (*i).second;
@@ -1567,22 +1596,23 @@ Node FpConverter::convert(TNode node)
         case kind::FLOATINGPOINT_TO_SBV_TOTAL:
         {
           TypeNode childType(current[1].getType());
-          sbvMap::const_iterator i(s.find(current));
+          sbvMap::const_iterator i(d_sbvMap.find(current));
 
-          if (i == s.end())
+          if (i == d_sbvMap.end())
           {
-            rmMap::const_iterator mode(r.find(current[0]));
-            fpMap::const_iterator arg1(f.find(current[1]));
-            bool recurseNeeded = (mode == r.end()) || (arg1 == f.end());
+            rmMap::const_iterator mode(d_rmMap.find(current[0]));
+            fpMap::const_iterator arg1(d_fpMap.find(current[1]));
+            bool recurseNeeded =
+                (mode == d_rmMap.end()) || (arg1 == d_fpMap.end());
 
             if (recurseNeeded)
             {
               workStack.push_back(current);
-              if (mode == r.end())
+              if (mode == d_rmMap.end())
               {
                 workStack.push_back(current[0]);
               }
-              if (arg1 == f.end())
+              if (arg1 == d_fpMap.end())
               {
                 workStack.push_back(current[1]);
               }
@@ -1592,14 +1622,14 @@ Node FpConverter::convert(TNode node)
             FloatingPointToSBVTotal info =
                 current.getOperator().getConst<FloatingPointToSBVTotal>();
 
-            s.insert(current,
-                     symfpu::convertFloatToSBV<traits>(fpt(childType),
-                                                       (*mode).second,
-                                                       (*arg1).second,
-                                                       info.bvs,
-                                                       sbv(current[2])));
+            d_sbvMap.insert(current,
+                            symfpu::convertFloatToSBV<traits>(fpt(childType),
+                                                              (*mode).second,
+                                                              (*arg1).second,
+                                                              info.d_bv_size,
+                                                              sbv(current[2])));
 
-            i = s.find(current);
+            i = d_sbvMap.find(current);
           }
 
           result = (*i).second;
@@ -1639,9 +1669,9 @@ Node FpConverter::convert(TNode node)
           // (via auxiliary constraints)
 
           TypeNode childType(current[0].getType());
-          fpMap::const_iterator arg1(f.find(current[0]));
+          fpMap::const_iterator arg1(d_fpMap.find(current[0]));
 
-          if (arg1 == f.end())
+          if (arg1 == d_fpMap.end())
           {
             workStack.push_back(current);
             workStack.push_back(current[0]);
@@ -1687,43 +1717,23 @@ Node FpConverter::getValue(Valuation &val, TNode var)
 #ifdef CVC4_USE_SYMFPU
   TypeNode t(var.getType());
 
+  Assert(t.isRoundingMode() || t.isFloatingPoint())
+      << "Asking for the value of a type that is not managed by the "
+         "floating-point theory";
+
   if (t.isRoundingMode())
   {
-    rmMap::const_iterator i(r.find(var));
+    rmMap::const_iterator i(d_rmMap.find(var));
 
-    if (i == r.end())
-    {
-      Unreachable() << "Asking for the value of an unregistered expression";
-    }
-    else
-    {
-      Node value = rmToNode((*i).second);
-      return value;
-    }
+    Assert(i != d_rmMap.end())
+        << "Asking for the value of an unregistered expression";
+    return rmToNode((*i).second);
   }
-  else if (t.isFloatingPoint())
-  {
-    fpMap::const_iterator i(f.find(var));
+  fpMap::const_iterator i(d_fpMap.find(var));
 
-    if (i == f.end())
-    {
-      Unreachable() << "Asking for the value of an unregistered expression";
-    }
-    else
-    {
-      Node value = ufToNode(fpt(t), (*i).second);
-      return value;
-    }
-  }
-  else
-  {
-    Unreachable()
-        << "Asking for the value of a type that is not managed by the "
-           "floating-point theory";
-  }
-
-  Unreachable() << "Unable to find value";
-
+  Assert(i != d_fpMap.end())
+      << "Asking for the value of an unregistered expression";
+  return ufToNode(fpt(t), (*i).second);
 #else
   Unimplemented() << "Conversion is dependent on SymFPU";
 #endif

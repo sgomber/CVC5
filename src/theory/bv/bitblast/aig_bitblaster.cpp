@@ -4,8 +4,8 @@
  ** Top contributors (to current version):
  **   Liana Hadarean, Mathias Preiner, Tim King
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
+ ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
@@ -14,12 +14,12 @@
  ** AIG bitblaster.
  **/
 
-#include "cvc4_private.h"
-
 #include "theory/bv/bitblast/aig_bitblaster.h"
 
 #include "base/check.h"
+#include "cvc4_private.h"
 #include "options/bv_options.h"
+#include "prop/cnf_stream.h"
 #include "prop/sat_solver_factory.h"
 #include "smt/smt_statistics_registry.h"
 
@@ -28,7 +28,6 @@
 extern "C" {
 #include "base/abc/abc.h"
 #include "base/main/main.h"
-#include "prop/cnf_stream.h"
 #include "sat/cnf/cnf.h"
 
 extern Aig_Man_t* Abc_NtkToDar(Abc_Ntk_t* pNtk, int fExors, int fRegisters);
@@ -146,7 +145,7 @@ AigBitblaster::AigBitblaster()
   prop::SatSolver* solver = nullptr;
   switch (options::bvSatSolver())
   {
-    case SAT_SOLVER_MINISAT:
+    case options::SatSolverMode::MINISAT:
     {
       prop::BVSatSolverInterface* minisat =
           prop::SatSolverFactory::createMinisat(
@@ -156,13 +155,17 @@ AigBitblaster::AigBitblaster()
       solver = minisat;
       break;
     }
-    case SAT_SOLVER_CADICAL:
+    case options::SatSolverMode::CADICAL:
       solver = prop::SatSolverFactory::createCadical(smtStatisticsRegistry(),
                                                      "AigBitblaster");
       break;
-    case SAT_SOLVER_CRYPTOMINISAT:
+    case options::SatSolverMode::CRYPTOMINISAT:
       solver = prop::SatSolverFactory::createCryptoMinisat(
           smtStatisticsRegistry(), "AigBitblaster");
+      break;
+    case options::SatSolverMode::KISSAT:
+      solver = prop::SatSolverFactory::createKissat(smtStatisticsRegistry(),
+                                                    "AigBitblaster");
       break;
     default: CVC4_FATAL() << "Unknown SAT solver type";
   }

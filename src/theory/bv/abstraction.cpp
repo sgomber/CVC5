@@ -4,8 +4,8 @@
  ** Top contributors (to current version):
  **   Liana Hadarean, Aina Niemetz, Mathias Preiner
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
+ ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
@@ -15,11 +15,13 @@
 #include "theory/bv/abstraction.h"
 
 #include "options/bv_options.h"
+#include "printer/printer.h"
 #include "smt/dump.h"
+#include "smt/smt_engine.h"
+#include "smt/smt_engine_scope.h"
 #include "smt/smt_statistics_registry.h"
 #include "theory/bv/theory_bv_utils.h"
 #include "theory/rewriter.h"
-
 
 using namespace CVC4;
 using namespace CVC4::theory;
@@ -95,10 +97,10 @@ bool AbstractionModule::applyAbstraction(const std::vector<Node>& assertions,
       // we did not change anything
       return false;
     }
-    NodeNodeMap seen;
+    NodeNodeMap seen_rev;
     for (unsigned i = 0; i < new_assertions.size(); ++i)
     {
-      new_assertions[i] = reverseAbstraction(new_assertions[i], seen);
+      new_assertions[i] = reverseAbstraction(new_assertions[i], seen_rev);
     }
     // we undo the abstraction functions so the logic is QF_BV still
     return true;
@@ -235,13 +237,15 @@ void AbstractionModule::skolemizeArguments(std::vector<Node>& assertions)
 
       // enumerate arguments assignments
       std::vector<Node> or_assignments;
-      for (ArgsTableEntry::iterator it = args.begin(); it != args.end(); ++it)
+      for (const ArgsVec& av : args)
+      // for (ArgsTableEntry::iterator it = args.begin(); it != args.end();
+      // ++it)
       {
         NodeBuilder<> arg_assignment(kind::AND);
-        ArgsVec& args = *it;
-        for (unsigned k = 0; k < args.size(); ++k)
+        // ArgsVec& args = *it;
+        for (unsigned k = 0; k < av.size(); ++k)
         {
-          Node eq = nm->mkNode(kind::EQUAL, args[k], skolem_args[k]);
+          Node eq = nm->mkNode(kind::EQUAL, av[k], skolem_args[k]);
           arg_assignment << eq;
         }
         or_assignments.push_back(arg_assignment);
@@ -689,15 +693,6 @@ Node AbstractionModule::substituteArguments(TNode signature, TNode apply, unsign
 }
 
 Node AbstractionModule::simplifyConflict(TNode conflict) {
-  if (Dump.isOn("bv-abstraction")) {
-    NodeNodeMap seen;
-    Node c = reverseAbstraction(conflict, seen);
-    Dump("bv-abstraction") << PushCommand();
-    Dump("bv-abstraction") << AssertCommand(c.toExpr());
-    Dump("bv-abstraction") << CheckSatCommand();
-    Dump("bv-abstraction") << PopCommand();
-  }
-
   Debug("bv-abstraction-dbg") << "AbstractionModule::simplifyConflict " << conflict << "\n";
   if (conflict.getKind() != kind::AND)
     return conflict;
@@ -739,16 +734,6 @@ Node AbstractionModule::simplifyConflict(TNode conflict) {
 
   Debug("bv-abstraction") << "AbstractionModule::simplifyConflict conflict " << conflict <<"\n";
   Debug("bv-abstraction") << "   => " << new_conflict <<"\n";
-
-  if (Dump.isOn("bv-abstraction")) {
-
-    NodeNodeMap seen;
-    Node nc = reverseAbstraction(new_conflict, seen);
-    Dump("bv-abstraction") << PushCommand();
-    Dump("bv-abstraction") << AssertCommand(nc.toExpr());
-    Dump("bv-abstraction") << CheckSatCommand();
-    Dump("bv-abstraction") << PopCommand();
-  }
 
   return new_conflict;
 }
@@ -834,15 +819,6 @@ void AbstractionModule::generalizeConflict(TNode conflict, std::vector<Node>& le
       lemmas.push_back(lemma);
       Debug("bv-abstraction-gen") << "adding lemma " << lemma << "\n";
       storeLemma(lemma);
-
-      if (Dump.isOn("bv-abstraction")) {
-        NodeNodeMap seen;
-        Node l = reverseAbstraction(lemma, seen);
-        Dump("bv-abstraction") << PushCommand();
-        Dump("bv-abstraction") << AssertCommand(l.toExpr());
-        Dump("bv-abstraction") << CheckSatCommand();
-        Dump("bv-abstraction") << PopCommand();
-      }
     }
   }
 }

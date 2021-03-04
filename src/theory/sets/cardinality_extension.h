@@ -2,10 +2,10 @@
 /*! \file cardinality_extension.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Andrew Reynolds
+ **   Andrew Reynolds, Mudathir Mohamed
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
+ ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
@@ -21,6 +21,7 @@
 #include "context/context.h"
 #include "theory/sets/inference_manager.h"
 #include "theory/sets/solver_state.h"
+#include "theory/sets/term_registry.h"
 #include "theory/type_set.h"
 #include "theory/uf/equality_engine.h"
 
@@ -69,9 +70,7 @@ class CardinalityExtension
    */
   CardinalityExtension(SolverState& s,
                        InferenceManager& im,
-                       eq::EqualityEngine& e,
-                       context::Context* c,
-                       context::UserContext* u);
+                       TermRegistry& treg);
 
   ~CardinalityExtension() {}
   /** reset
@@ -164,11 +163,11 @@ class CardinalityExtension
   SolverState& d_state;
   /** Reference to the inference manager for the theory of sets */
   InferenceManager& d_im;
-  /** Reference to the equality engine of theory of sets */
-  eq::EqualityEngine& d_ee;
+  /** Reference to the term registry */
+  TermRegistry& d_treg;
   /** register cardinality term
    *
-   * This method add lemmas corresponding to the definition of
+   * This method adds lemmas corresponding to the definition of
    * the cardinality of set term n. For example, if n is A^B (denoting set
    * intersection as ^), then we consider the lemmas card(A^B)>=0,
    * card(A) = card(A\B) + card(A^B) and card(B) = card(B\A) + card(A^B).
@@ -324,18 +323,22 @@ class CardinalityExtension
   void checkNormalForm(Node eqc, std::vector<Node>& intro_sets);
 
   /**
-   * add cardinality lemmas for each finite type
+   * Add cardinality lemmas for the univset of each type with cardinality terms.
+   * The lemmas are explained below.
    */
-  void checkFiniteTypes();
+  void checkCardinalityExtended();
   /**
-   * This function adds the following lemmas for the finite type t for each S
-   * where S is a (a representative) set term of type t, and for each negative
-   * member x not in S 1- (=> true (<= (card (as univset t)) n) where n is the
-   * cardinality of t 2- (=> true (subset S (as univset t)) where S is a set
-   * term of type t 3- (=> (not (member negativeMember S))) (member
+   * This function adds the following lemmas for type t for each S
+   * where S is a (representative) set term of type t, and for each negative
+   * member x not in S:
+   * 1- (=> true (<= (card (as univset t)) n) where n is the
+   * cardinality of t, which may be symbolic
+   * 2- (=> true (subset S (as univset t)) where S is a set
+   * term of type t
+   * 3- (=> (not (member negativeMember S))) (member
    * negativeMember (as univset t)))
    */
-  void checkFiniteType(TypeNode& t);
+  void checkCardinalityExtended(TypeNode& t);
 
   /** element types of sets for which cardinality is enabled */
   std::map<TypeNode, bool> d_t_card_enabled;
@@ -375,7 +378,7 @@ class CardinalityExtension
   std::map<Node, Node> d_localBase;
 
   /**
-   * a map to store proxy nodes for the universe sets of finite types
+   * a map to store proxy nodes for the universe sets
    */
   std::map<Node, Node> d_univProxy;
 
@@ -398,6 +401,12 @@ class CardinalityExtension
    *  Default value is false
    */
   bool d_finite_type_constants_processed;
+
+  /*
+   * a map that stores skolem nodes n that satisfies the constraint
+   * (<= (card t) n) where t is an infinite type
+   */
+  std::map<TypeNode, Node> d_infiniteTypeUnivCardSkolems;
 
 }; /* class CardinalityExtension */
 

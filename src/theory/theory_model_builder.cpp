@@ -4,8 +4,8 @@
  ** Top contributors (to current version):
  **   Andrew Reynolds, Clark Barrett, Andres Noetzli
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
+ ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
@@ -14,10 +14,11 @@
 #include "theory/theory_model_builder.h"
 
 #include "expr/dtype.h"
+#include "expr/dtype_cons.h"
 #include "options/quantifiers_options.h"
 #include "options/smt_options.h"
+#include "options/theory_options.h"
 #include "options/uf_options.h"
-#include "theory/theory_engine.h"
 #include "theory/uf/theory_uf_model.h"
 
 using namespace std;
@@ -60,9 +61,7 @@ Node TheoryEngineModelBuilder::Assigner::getNextAssignment()
   return n;
 }
 
-TheoryEngineModelBuilder::TheoryEngineModelBuilder(TheoryEngine* te) : d_te(te)
-{
-}
+TheoryEngineModelBuilder::TheoryEngineModelBuilder() {}
 
 Node TheoryEngineModelBuilder::evaluateEqc(TheoryModel* m, TNode r)
 {
@@ -372,31 +371,10 @@ void TheoryEngineModelBuilder::addToTypeList(
   }
 }
 
-bool TheoryEngineModelBuilder::buildModel(Model* m)
+bool TheoryEngineModelBuilder::buildModel(TheoryModel* tm)
 {
   Trace("model-builder") << "TheoryEngineModelBuilder: buildModel" << std::endl;
-  TheoryModel* tm = (TheoryModel*)m;
   eq::EqualityEngine* ee = tm->d_equalityEngine;
-
-  // buildModel should only be called once per check
-  Assert(!tm->isBuilt());
-
-  // Reset model
-  tm->reset();
-
-  // mark as built
-  tm->d_modelBuilt = true;
-  tm->d_modelBuiltSuccess = false;
-
-  // Collect model info from the theories
-  Trace("model-builder") << "TheoryEngineModelBuilder: Collect model info..."
-                         << std::endl;
-  if (!d_te->collectModelInfo(tm))
-  {
-    Trace("model-builder")
-        << "TheoryEngineModelBuilder: fail collect model info" << std::endl;
-    return false;
-  }
 
   Trace("model-builder")
       << "TheoryEngineModelBuilder: Preprocess build model..." << std::endl;
@@ -736,7 +714,6 @@ bool TheoryEngineModelBuilder::buildModel(Model* m)
       }
 #endif
 
-      set<Node>* repSet = typeRepSet.getSet(t);
       TypeNode tb = t.getBaseType();
       if (!assignOne)
       {
@@ -755,6 +732,7 @@ bool TheoryEngineModelBuilder::buildModel(Model* m)
       bool assignable, evaluable CVC4_UNUSED;
       std::map<Node, Assigner>::iterator itAssigner;
       std::map<Node, Node>::iterator itAssignerM;
+      set<Node>* repSet = typeRepSet.getSet(t);
       for (i = noRepSet.begin(); i != noRepSet.end();)
       {
         i2 = i;
@@ -788,13 +766,12 @@ bool TheoryEngineModelBuilder::buildModel(Model* m)
         {
           Assert(!evaluable || assignOne);
           // this assertion ensures that if we are assigning to a term of
-          // Boolean type, then the term is either a variable or an APPLY_UF.
+          // Boolean type, then the term must be assignable.
           // Note we only assign to terms of Boolean type if the term occurs in
           // a singleton equivalence class; otherwise the term would have been
           // in the equivalence class of true or false and would not need
           // assigning.
-          Assert(!t.isBoolean() || (*i2).isVar()
-                 || (*i2).getKind() == kind::APPLY_UF);
+          Assert(!t.isBoolean() || isAssignable(*i2));
           Node n;
           if (itAssigner != eqcToAssigner.end())
           {
@@ -804,10 +781,17 @@ bool TheoryEngineModelBuilder::buildModel(Model* m)
             n = itAssigner->second.getNextAssignment();
             Assert(!n.isNull());
           }
-          else if (!t.isFinite())
+          else if (t.isSort() || !t.isInterpretedFinite())
           {
-            // if its infinite, we get a fresh value that does not occur in
-            // the model.
+            // If its interpreted as infinite, we get a fresh value that does
+            // not occur in the model.
+            // Note we also consider uninterpreted sorts to be infinite here
+            // regardless of whether isInterpretedFinite is true (which is true
+            // for uninterpreted sorts iff finite model finding is enabled).
+            // This is required because the UF solver does not explicitly
+            // assign uninterpreted constants to equivalence classes in its
+            // collectModelValues method. Doing so would have the same effect
+            // as running the code in this case.
             bool success;
             do
             {
@@ -929,11 +913,10 @@ bool TheoryEngineModelBuilder::buildModel(Model* m)
   for (it = typeNoRepSet.begin(); it != typeNoRepSet.end(); ++it)
   {
     set<Node>& noRepSet = TypeSet::getSet(it);
-    set<Node>::iterator i;
-    for (i = noRepSet.begin(); i != noRepSet.end(); ++i)
+    for (const Node& node : noRepSet)
     {
-      tm->d_reps[*i] = *i;
-      tm->d_rep_set.add((*i).getType(), *i);
+      tm->d_reps[node] = node;
+      tm->d_rep_set.add(node.getType(), node);
     }
   }
 
@@ -945,7 +928,6 @@ bool TheoryEngineModelBuilder::buildModel(Model* m)
     return false;
   }
   Trace("model-builder") << "TheoryEngineModelBuilder: success" << std::endl;
-  tm->d_modelBuiltSuccess = true;
   return true;
 }
 void TheoryEngineModelBuilder::computeAssignableInfo(
@@ -968,7 +950,7 @@ void TheoryEngineModelBuilder::computeAssignableInfo(
   bool evaluable = false;
   // Set to true if a term in the current equivalence class has been given an
   // assignment exclusion set.
-  bool hasESet = false;
+  bool hasESet CVC4_UNUSED = false;
   // Set to true if we found that a term in the current equivalence class has
   // been given an assignment exclusion set, and we have not seen this term
   // as part of a previous assignment exclusion group. In other words, when
@@ -1106,7 +1088,7 @@ void TheoryEngineModelBuilder::computeAssignableInfo(
   }
 }
 
-void TheoryEngineModelBuilder::postProcessModel(bool incomplete, Model* m)
+void TheoryEngineModelBuilder::postProcessModel(bool incomplete, TheoryModel* m)
 {
   // if we are incomplete, there is no guarantee on the model.
   // thus, we do not check the model here.
@@ -1114,19 +1096,22 @@ void TheoryEngineModelBuilder::postProcessModel(bool incomplete, Model* m)
   {
     return;
   }
-  TheoryModel* tm = static_cast<TheoryModel*>(m);
-  Assert(tm != nullptr);
+  Assert(m != nullptr);
   // debug-check the model if the checkModels() is enabled.
-  if (options::checkModels())
+  if (options::debugCheckModels())
   {
-    debugCheckModel(tm);
+    debugCheckModel(m);
   }
 }
 
 void TheoryEngineModelBuilder::debugCheckModel(TheoryModel* tm)
 {
 #ifdef CVC4_ASSERTIONS
-  Assert(tm->isBuilt());
+  if (tm->hasApproximations())
+  {
+    // models with approximations may fail the assertions below
+    return;
+  }
   eq::EqClassesIterator eqcs_i = eq::EqClassesIterator(tm->d_equalityEngine);
   std::map<Node, Node>::iterator itMap;
   // Check that every term evaluates to its representative in the model
@@ -1206,12 +1191,18 @@ Node TheoryEngineModelBuilder::normalize(TheoryModel* m, TNode r, bool evalOnly)
           if (itMap != d_constantReps.end())
           {
             ri = (*itMap).second;
+            Trace("model-builder-debug") << i << ": const child " << ri << std::endl;
             recurse = false;
           }
           else if (!evalOnly)
           {
             recurse = false;
+            Trace("model-builder-debug") << i << ": keep " << ri << std::endl;
           }
+        }
+        else
+        {
+          Trace("model-builder-debug") << i << ": no hasTerm " << ri << std::endl;
         }
         if (recurse)
         {
@@ -1228,8 +1219,6 @@ Node TheoryEngineModelBuilder::normalize(TheoryModel* m, TNode r, bool evalOnly)
     if (childrenConst)
     {
       retNode = Rewriter::rewrite(retNode);
-      Assert(retNode.getKind() == kind::APPLY_UF
-             || !retNode.getType().isFirstClass() || retNode.isConst());
     }
   }
   d_normalizedCache[r] = retNode;

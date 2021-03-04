@@ -2,10 +2,10 @@
 /*! \file solver_state.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Andrew Reynolds
+ **   Andrew Reynolds, Tianyi Liang, Mathias Preiner
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
+ ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
@@ -15,6 +15,7 @@
 #include "theory/strings/solver_state.h"
 
 #include "theory/strings/theory_strings_utils.h"
+#include "theory/strings/word.h"
 
 using namespace std;
 using namespace CVC4::context;
@@ -24,130 +25,15 @@ namespace CVC4 {
 namespace theory {
 namespace strings {
 
-EqcInfo::EqcInfo(context::Context* c)
-    : d_lengthTerm(c),
-      d_codeTerm(c),
-      d_cardinalityLemK(c),
-      d_normalizedLength(c),
-      d_prefixC(c),
-      d_suffixC(c)
-{
-}
-
-Node EqcInfo::addEndpointConst(Node t, Node c, bool isSuf)
-{
-  // check conflict
-  Node prev = isSuf ? d_suffixC : d_prefixC;
-  if (!prev.isNull())
-  {
-    Trace("strings-eager-pconf-debug") << "Check conflict " << prev << ", " << t
-                                       << " post=" << isSuf << std::endl;
-    Node prevC = utils::getConstantEndpoint(prev, isSuf);
-    Assert(!prevC.isNull());
-    Assert(prevC.getKind() == CONST_STRING);
-    if (c.isNull())
-    {
-      c = utils::getConstantEndpoint(t, isSuf);
-      Assert(!c.isNull());
-    }
-    Assert(c.getKind() == CONST_STRING);
-    bool conflict = false;
-    // if the constant prefixes are different
-    if (c != prevC)
-    {
-      // conflicts between constants should be handled by equality engine
-      Assert(!t.isConst() || !prev.isConst());
-      Trace("strings-eager-pconf-debug")
-          << "Check conflict constants " << prevC << ", " << c << std::endl;
-      const String& ps = prevC.getConst<String>();
-      const String& cs = c.getConst<String>();
-      unsigned pvs = ps.size();
-      unsigned cvs = cs.size();
-      if (pvs == cvs || (pvs > cvs && t.isConst())
-          || (cvs > pvs && prev.isConst()))
-      {
-        // If equal length, cannot be equal due to node check above.
-        // If one is fully constant and has less length than the other, then the
-        // other will not fit and we are in conflict.
-        conflict = true;
-      }
-      else
-      {
-        const String& larges = pvs > cvs ? ps : cs;
-        const String& smalls = pvs > cvs ? cs : ps;
-        if (isSuf)
-        {
-          conflict = !larges.hasSuffix(smalls);
-        }
-        else
-        {
-          conflict = !larges.hasPrefix(smalls);
-        }
-      }
-      if (!conflict && (pvs > cvs || prev.isConst()))
-      {
-        // current is subsumed, either shorter prefix or the other is a full
-        // constant
-        return Node::null();
-      }
-    }
-    else if (!t.isConst())
-    {
-      // current is subsumed since the other may be a full constant
-      return Node::null();
-    }
-    if (conflict)
-    {
-      Trace("strings-eager-pconf")
-          << "Conflict for " << prevC << ", " << c << std::endl;
-      std::vector<Node> ccs;
-      Node r[2];
-      for (unsigned i = 0; i < 2; i++)
-      {
-        Node tp = i == 0 ? t : prev;
-        if (tp.getKind() == STRING_IN_REGEXP)
-        {
-          ccs.push_back(tp);
-          r[i] = tp[0];
-        }
-        else
-        {
-          r[i] = tp;
-        }
-      }
-      if (r[0] != r[1])
-      {
-        ccs.push_back(r[0].eqNode(r[1]));
-      }
-      Assert(!ccs.empty());
-      Node ret =
-          ccs.size() == 1 ? ccs[0] : NodeManager::currentNM()->mkNode(AND, ccs);
-      Trace("strings-eager-pconf")
-          << "String: eager prefix conflict: " << ret << std::endl;
-      return ret;
-    }
-  }
-  if (isSuf)
-  {
-    d_suffixC = t;
-  }
-  else
-  {
-    d_prefixC = t;
-  }
-  return Node::null();
-}
-
 SolverState::SolverState(context::Context* c,
-                         eq::EqualityEngine& ee,
+                         context::UserContext* u,
                          Valuation& v)
-    : d_context(c),
-      d_ee(ee),
-      d_valuation(v),
-      d_conflict(c, false),
-      d_pendingConflict(c)
+    : TheoryState(c, u, v), d_eeDisequalities(c), d_pendingConflictSet(c, false), d_pendingConflict(InferenceId::UNKNOWN)
 {
+  d_zero = NodeManager::currentNM()->mkConst(Rational(0));
+  d_false = NodeManager::currentNM()->mkConst(false);
 }
+
 SolverState::~SolverState()
 {
   for (std::pair<const Node, EqcInfo*>& it : d_eqcInfo)
@@ -156,49 +42,15 @@ SolverState::~SolverState()
   }
 }
 
-Node SolverState::getRepresentative(Node t) const
+const context::CDList<Node>& SolverState::getDisequalityList() const
 {
-  if (d_ee.hasTerm(t))
-  {
-    return d_ee.getRepresentative(t);
-  }
-  return t;
+  return d_eeDisequalities;
 }
 
-bool SolverState::hasTerm(Node a) const { return d_ee.hasTerm(a); }
-
-bool SolverState::areEqual(Node a, Node b) const
+void SolverState::addDisequality(TNode t1, TNode t2)
 {
-  if (a == b)
-  {
-    return true;
-  }
-  else if (hasTerm(a) && hasTerm(b))
-  {
-    return d_ee.areEqual(a, b);
-  }
-  return false;
+  d_eeDisequalities.push_back(t1.eqNode(t2));
 }
-
-bool SolverState::areDisequal(Node a, Node b) const
-{
-  if (a == b)
-  {
-    return false;
-  }
-  else if (hasTerm(a) && hasTerm(b))
-  {
-    Node ar = d_ee.getRepresentative(a);
-    Node br = d_ee.getRepresentative(b);
-    return (ar != br && ar.isConst() && br.isConst())
-           || d_ee.areDisequal(ar, br, false);
-  }
-  Node ar = getRepresentative(a);
-  Node br = getRepresentative(b);
-  return ar != br && ar.isConst() && br.isConst();
-}
-
-eq::EqualityEngine* SolverState::getEqualityEngine() const { return &d_ee; }
 
 EqcInfo* SolverState::getOrMakeEqcInfo(Node eqc, bool doMake)
 {
@@ -216,29 +68,7 @@ EqcInfo* SolverState::getOrMakeEqcInfo(Node eqc, bool doMake)
   return nullptr;
 }
 
-void SolverState::addEndpointsToEqcInfo(Node t, Node concat, Node eqc)
-{
-  Assert(concat.getKind() == STRING_CONCAT
-         || concat.getKind() == REGEXP_CONCAT);
-  EqcInfo* ei = nullptr;
-  // check each side
-  for (unsigned r = 0; r < 2; r++)
-  {
-    unsigned index = r == 0 ? 0 : concat.getNumChildren() - 1;
-    Node c = utils::getConstantComponent(concat[index]);
-    if (!c.isNull())
-    {
-      if (ei == nullptr)
-      {
-        ei = getOrMakeEqcInfo(eqc);
-      }
-      Trace("strings-eager-pconf-debug")
-          << "New term: " << concat << " for " << t << " with prefix " << c
-          << " (" << (r == 1) << ")" << std::endl;
-      setPendingConflictWhen(ei->addEndpointConst(t, c, r == 1));
-    }
-  }
-}
+TheoryModel* SolverState::getModel() { return d_valuation.getModel(); }
 
 Node SolverState::getLengthExp(Node t, std::vector<Node>& exp, Node te)
 {
@@ -271,18 +101,68 @@ Node SolverState::getLength(Node t, std::vector<Node>& exp)
   return getLengthExp(t, exp, t);
 }
 
-void SolverState::setConflict() { d_conflict = true; }
-bool SolverState::isInConflict() const { return d_conflict; }
-
-void SolverState::setPendingConflictWhen(Node conf)
+Node SolverState::explainNonEmpty(Node s)
 {
-  if (!conf.isNull() && d_pendingConflict.get().isNull())
+  Assert(s.getType().isStringLike());
+  Node emp = Word::mkEmptyWord(s.getType());
+  if (areDisequal(s, emp))
   {
-    d_pendingConflict = conf;
+    return s.eqNode(emp).negate();
+  }
+  Node sLen = utils::mkNLength(s);
+  if (areDisequal(sLen, d_zero))
+  {
+    return sLen.eqNode(d_zero).negate();
+  }
+  return Node::null();
+}
+
+bool SolverState::isEqualEmptyWord(Node s, Node& emps)
+{
+  Node sr = getRepresentative(s);
+  if (sr.isConst())
+  {
+    if (Word::getLength(sr) == 0)
+    {
+      emps = sr;
+      return true;
+    }
+  }
+  return false;
+}
+
+void SolverState::setPendingPrefixConflictWhen(Node conf)
+{
+  if (conf.isNull() || d_pendingConflictSet.get())
+  {
+    return;
+  }
+  InferInfo iiPrefixConf(InferenceId::STRINGS_PREFIX_CONFLICT);
+  iiPrefixConf.d_conc = d_false;
+  utils::flattenOp(AND, conf, iiPrefixConf.d_premises);
+  setPendingConflict(iiPrefixConf);
+}
+
+void SolverState::setPendingConflict(InferInfo& ii)
+{
+  if (!d_pendingConflictSet.get())
+  {
+    d_pendingConflict = ii;
+    d_pendingConflictSet.set(true);
   }
 }
 
-Node SolverState::getPendingConflict() const { return d_pendingConflict; }
+bool SolverState::hasPendingConflict() const { return d_pendingConflictSet; }
+
+bool SolverState::getPendingConflict(InferInfo& ii) const
+{
+  if (d_pendingConflictSet)
+  {
+    ii = d_pendingConflict;
+    return true;
+  }
+  return false;
+}
 
 std::pair<bool, Node> SolverState::entailmentCheck(options::TheoryOfMode mode,
                                                    TNode lit)
@@ -290,31 +170,39 @@ std::pair<bool, Node> SolverState::entailmentCheck(options::TheoryOfMode mode,
   return d_valuation.entailmentCheck(mode, lit);
 }
 
-void SolverState::separateByLength(const std::vector<Node>& n,
-                                   std::vector<std::vector<Node> >& cols,
-                                   std::vector<Node>& lts)
+void SolverState::separateByLength(
+    const std::vector<Node>& n,
+    std::map<TypeNode, std::vector<std::vector<Node>>>& cols,
+    std::map<TypeNode, std::vector<Node>>& lts)
 {
   unsigned leqc_counter = 0;
-  std::map<Node, unsigned> eqc_to_leqc;
-  std::map<unsigned, Node> leqc_to_eqc;
+  // map (length, type) to an equivalence class identifier
+  std::map<std::pair<Node, TypeNode>, unsigned> eqc_to_leqc;
+  // backwards map
+  std::map<unsigned, std::pair<Node, TypeNode>> leqc_to_eqc;
+  // Collection of eqc for each identifier. Notice that some identifiers may
+  // not have an associated length in the mappings above, if the length of
+  // an equivalence class is unknown.
   std::map<unsigned, std::vector<Node> > eqc_to_strings;
   NodeManager* nm = NodeManager::currentNM();
   for (const Node& eqc : n)
   {
-    Assert(d_ee.getRepresentative(eqc) == eqc);
+    Assert(d_ee->getRepresentative(eqc) == eqc);
+    TypeNode tnEqc = eqc.getType();
     EqcInfo* ei = getOrMakeEqcInfo(eqc, false);
     Node lt = ei ? ei->d_lengthTerm : Node::null();
     if (!lt.isNull())
     {
       lt = nm->mkNode(STRING_LENGTH, lt);
-      Node r = d_ee.getRepresentative(lt);
-      if (eqc_to_leqc.find(r) == eqc_to_leqc.end())
+      Node r = d_ee->getRepresentative(lt);
+      std::pair<Node, TypeNode> lkey(r, tnEqc);
+      if (eqc_to_leqc.find(lkey) == eqc_to_leqc.end())
       {
-        eqc_to_leqc[r] = leqc_counter;
-        leqc_to_eqc[leqc_counter] = r;
+        eqc_to_leqc[lkey] = leqc_counter;
+        leqc_to_eqc[leqc_counter] = lkey;
         leqc_counter++;
       }
-      eqc_to_strings[eqc_to_leqc[r]].push_back(eqc);
+      eqc_to_strings[eqc_to_leqc[lkey]].push_back(eqc);
     }
     else
     {
@@ -324,9 +212,11 @@ void SolverState::separateByLength(const std::vector<Node>& n,
   }
   for (const std::pair<const unsigned, std::vector<Node> >& p : eqc_to_strings)
   {
-    cols.push_back(std::vector<Node>());
-    cols.back().insert(cols.back().end(), p.second.begin(), p.second.end());
-    lts.push_back(leqc_to_eqc[p.first]);
+    Assert(!p.second.empty());
+    // get the type of the collection
+    TypeNode stn = p.second[0].getType();
+    cols[stn].emplace_back(p.second.begin(), p.second.end());
+    lts[stn].push_back(leqc_to_eqc[p.first].first);
   }
 }
 

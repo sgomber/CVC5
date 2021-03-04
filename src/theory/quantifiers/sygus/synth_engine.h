@@ -4,8 +4,8 @@
  ** Top contributors (to current version):
  **   Andrew Reynolds, Mathias Preiner, Morgan Deters
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
+ ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
@@ -19,7 +19,9 @@
 #define CVC4__THEORY__QUANTIFIERS__SYNTH_ENGINE_H
 
 #include "context/cdhashmap.h"
-#include "theory/quantifiers/quant_util.h"
+#include "theory/quantifiers/quant_module.h"
+#include "theory/quantifiers/sygus/sygus_qe_preproc.h"
+#include "theory/quantifiers/sygus/sygus_stats.h"
 #include "theory/quantifiers/sygus/synth_conjecture.h"
 
 namespace CVC4 {
@@ -31,7 +33,10 @@ class SynthEngine : public QuantifiersModule
   typedef context::CDHashMap<Node, bool, NodeHashFunction> NodeBoolMap;
 
  public:
-  SynthEngine(QuantifiersEngine* qe, context::Context* c);
+  SynthEngine(QuantifiersEngine* qe,
+              QuantifiersState& qs,
+              QuantifiersInferenceManager& qim,
+              QuantifiersRegistry& qr);
   ~SynthEngine();
   /** presolve
    *
@@ -45,6 +50,8 @@ class SynthEngine : public QuantifiersModule
   QEffort needsModel(Theory::Effort e) override;
   /* Call during quantifier engine's check */
   void check(Theory::Effort e, QEffort quant_e) override;
+  /** check ownership */
+  void checkOwnership(Node q) override;
   /* Called for new quantifiers */
   void registerQuantifier(Node q) override;
   /** Identify this module (for debugging, dynamic configuration, etc..) */
@@ -72,21 +79,6 @@ class SynthEngine : public QuantifiersModule
    */
   void preregisterAssertion(Node n);
 
- public:
-  class Statistics
-  {
-   public:
-    IntStat d_cegqi_lemmas_ce;
-    IntStat d_cegqi_lemmas_refine;
-    IntStat d_cegqi_si_lemmas;
-    IntStat d_solutions;
-    IntStat d_filtered_solutions;
-    IntStat d_candidate_rewrites_print;
-    Statistics();
-    ~Statistics();
-  }; /* class SynthEngine::Statistics */
-  Statistics d_statistics;
-
  private:
   /** term database sygus of d_qe */
   TermDbSygus* d_tds;
@@ -100,6 +92,12 @@ class SynthEngine : public QuantifiersModule
    * preregisterAssertion.
    */
   SynthConjecture* d_conj;
+  /**
+   * The quantifier elimination preprocess module.
+   */
+  SygusQePreproc d_sqp;
+  /** The statistics */
+  SygusStatistics d_statistics;
   /** assign quantified formula q as a conjecture
    *
    * This method either assigns q to a synthesis conjecture object in d_conjs,

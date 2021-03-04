@@ -2,10 +2,10 @@
 /*! \file ho_elim.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Andrew Reynolds
+ **   Andrew Reynolds, Andres Noetzli
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
+ ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
@@ -18,6 +18,7 @@
 
 #include "expr/node_algorithm.h"
 #include "options/quantifiers_options.h"
+#include "preprocessing/assertion_pipeline.h"
 #include "theory/rewriter.h"
 #include "theory/uf/theory_uf_rewriter.h"
 
@@ -33,8 +34,8 @@ HoElim::HoElim(PreprocessingPassContext* preprocContext)
 Node HoElim::eliminateLambdaComplete(Node n, std::map<Node, Node>& newLambda)
 {
   NodeManager* nm = NodeManager::currentNM();
-  std::unordered_map<TNode, Node, TNodeHashFunction>::iterator it;
-  std::vector<TNode> visit;
+  std::unordered_map<Node, Node, TNodeHashFunction>::iterator it;
+  std::vector<Node> visit;
   TNode cur;
   visit.push_back(n);
   do
@@ -148,7 +149,7 @@ Node HoElim::eliminateHo(Node n)
 {
   Trace("ho-elim-assert") << "Ho-elim assertion: " << n << std::endl;
   NodeManager* nm = NodeManager::currentNM();
-  std::unordered_map<TNode, Node, TNodeHashFunction>::iterator it;
+  std::unordered_map<Node, Node, NodeHashFunction>::iterator it;
   std::map<Node, Node> preReplace;
   std::map<Node, Node>::iterator itr;
   std::vector<TNode> visit;
@@ -319,7 +320,7 @@ PreprocessingPassResult HoElim::applyInternal(
   {
     std::map<Node, Node> lproc = newLambda;
     newLambda.clear();
-    for (const std::pair<Node, Node>& l : lproc)
+    for (const std::pair<const Node, Node>& l : lproc)
     {
       Node lambda = l.second;
       std::vector<Node> vars;
@@ -353,12 +354,10 @@ PreprocessingPassResult HoElim::applyInternal(
   // add lambda lifting axioms as a conjunction to the first assertion
   if (!axioms.empty())
   {
-    Node orig = (*assertionsToPreprocess)[0];
-    axioms.push_back(orig);
-    Node conj = nm->mkNode(AND, axioms);
+    Node conj = nm->mkAnd(axioms);
     conj = theory::Rewriter::rewrite(conj);
     Assert(!expr::hasFreeVar(conj));
-    assertionsToPreprocess->replace(0, conj);
+    assertionsToPreprocess->conjoin(0, conj);
   }
   axioms.clear();
 
@@ -450,12 +449,10 @@ PreprocessingPassResult HoElim::applyInternal(
   // add new axioms as a conjunction to the first assertion
   if (!axioms.empty())
   {
-    Node orig = (*assertionsToPreprocess)[0];
-    axioms.push_back(orig);
-    Node conj = nm->mkNode(AND, axioms);
+    Node conj = nm->mkAnd(axioms);
     conj = theory::Rewriter::rewrite(conj);
     Assert(!expr::hasFreeVar(conj));
-    assertionsToPreprocess->replace(0, conj);
+    assertionsToPreprocess->conjoin(0, conj);
   }
 
   return PreprocessingPassResult::NO_CONFLICT;

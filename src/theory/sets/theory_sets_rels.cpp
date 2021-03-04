@@ -2,10 +2,10 @@
 /*! \file theory_sets_rels.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Paul Meng, Andrew Reynolds, Tim King
+ **   Andrew Reynolds, Paul Meng, Piotr Trojanek
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
+ ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
@@ -15,7 +15,6 @@
  **/
 
 #include "theory/sets/theory_sets_rels.h"
-#include "expr/datatype.h"
 #include "theory/sets/theory_sets_private.h"
 #include "theory/sets/theory_sets.h"
 
@@ -34,19 +33,16 @@ typedef std::map< Node, std::map< Node, std::unordered_set< Node, NodeHashFuncti
 
 TheorySetsRels::TheorySetsRels(SolverState& s,
                                InferenceManager& im,
-                               eq::EqualityEngine& e,
-                               context::UserContext* u)
-    : d_state(s), d_im(im), d_ee(e), d_shared_terms(u)
+                               SkolemCache& skc,
+                               TermRegistry& treg)
+    : d_state(s),
+      d_im(im),
+      d_skCache(skc),
+      d_treg(treg),
+      d_shared_terms(s.getUserContext())
 {
   d_trueNode = NodeManager::currentNM()->mkConst(true);
   d_falseNode = NodeManager::currentNM()->mkConst(false);
-  d_ee.addFunctionKind(PRODUCT);
-  d_ee.addFunctionKind(JOIN);
-  d_ee.addFunctionKind(TRANSPOSE);
-  d_ee.addFunctionKind(TCLOSURE);
-  d_ee.addFunctionKind(JOIN_IMAGE);
-  d_ee.addFunctionKind(IDEN);
-  d_ee.addFunctionKind(APPLY_CONSTRUCTOR);
 }
 
 TheorySetsRels::~TheorySetsRels() {}
@@ -185,10 +181,11 @@ void TheorySetsRels::check(Theory::Effort level)
 
   void TheorySetsRels::collectRelsInfo() {
     Trace("rels") << "[sets-rels] Start collecting relational terms..." << std::endl;
-    eq::EqClassesIterator eqcs_i = eq::EqClassesIterator(&d_ee);
+    eq::EqualityEngine* ee = d_state.getEqualityEngine();
+    eq::EqClassesIterator eqcs_i = eq::EqClassesIterator(ee);
     while( !eqcs_i.isFinished() ){
       Node                      eqc_rep  = (*eqcs_i);
-      eq::EqClassIterator eqc_i = eq::EqClassIterator(eqc_rep, &d_ee);
+      eq::EqClassIterator eqc_i = eq::EqClassIterator(eqc_rep, ee);
 
       TypeNode erType = eqc_rep.getType();
       Trace("rels-ee") << "[sets-rels-ee] Eqc term representative: " << eqc_rep << " with type " << eqc_rep.getType() << std::endl;
@@ -250,12 +247,13 @@ void TheorySetsRels::check(Theory::Effort level)
         }
         else if (erType.isTuple() && !eqc_node.isConst() && !eqc_node.isVar())
         {
+          std::vector<TypeNode> tupleTypes = erType.getTupleTypes();
           for (unsigned i = 0, tlen = erType.getTupleLength(); i < tlen; i++)
           {
-            Node element = RelsUtils::nthElementOfTuple( eqc_node, i );
-
-            if( !element.isConst() ) {
-              makeSharedTerm( element );
+            Node element = RelsUtils::nthElementOfTuple(eqc_node, i);
+            if (!element.isConst())
+            {
+              makeSharedTerm(element, tupleTypes[i]);
             }
           }
         }
@@ -348,8 +346,8 @@ void TheorySetsRels::check(Theory::Effort level)
               Assert(reasons.size() >= 1);
               sendInfer(
                   new_membership,
-                  reasons.size() > 1 ? nm->mkNode(AND, reasons) : reasons[0],
-                  "JOIN-IMAGE UP");
+                  InferenceId::UNKNOWN,
+                  reasons.size() > 1 ? nm->mkNode(AND, reasons) : reasons[0]);
               break;
             }
           }
@@ -406,7 +404,7 @@ void TheorySetsRels::check(Theory::Effort level)
     if( distinct_skolems.size() >= 2 ) {
       conclusion =  NodeManager::currentNM()->mkNode( kind::AND, conclusion, NodeManager::currentNM()->mkNode( kind::DISTINCT, distinct_skolems ) );
     }
-    sendInfer(conclusion, reason, "JOIN-IMAGE DOWN");
+    sendInfer(conclusion, InferenceId::SETS_RELS_JOIN_IMAGE_DOWN, reason);
     Trace("rels-debug") << "\n[Theory::Rels] *********** Done with applyJoinImageRule ***********" << std::endl;
 
   }
@@ -439,8 +437,8 @@ void TheorySetsRels::check(Theory::Effort level)
       reason = NodeManager::currentNM()->mkNode( kind::AND, reason, NodeManager::currentNM()->mkNode( kind::EQUAL, exp[1], iden_term ) );
     }
     sendInfer(nm->mkNode(AND, fact, nm->mkNode(EQUAL, fst_mem, snd_mem)),
-              reason,
-              "IDENTITY-DOWN");
+              InferenceId::SETS_RELS_IDENTITY_DOWN,
+              reason);
     Trace("rels-debug") << "\n[Theory::Rels] *********** Done with applyIdenRule on " << iden_term << std::endl;
   }
 
@@ -471,7 +469,8 @@ void TheorySetsRels::check(Theory::Effort level)
       if( (*mem_rep_exp_it)[1] != iden_term_rel ) {
         reason = NodeManager::currentNM()->mkNode( kind::AND, reason, NodeManager::currentNM()->mkNode( kind::EQUAL, (*mem_rep_exp_it)[1], iden_term_rel ) );
       }
-      sendInfer(nm->mkNode(MEMBER, new_mem, iden_term), reason, "IDENTITY-UP");
+      sendInfer(
+          nm->mkNode(MEMBER, new_mem, iden_term), InferenceId::SETS_RELS_IDENTITY_UP, reason);
       ++mem_rep_exp_it;
     }
     Trace("rels-debug") << "\n[Theory::Rels] *********** Done with computing members for Iden Term = " << iden_term << std::endl;
@@ -552,17 +551,16 @@ void TheorySetsRels::check(Theory::Effort level)
     }
     Node fst_element = RelsUtils::nthElementOfTuple( exp[0], 0 );
     Node snd_element = RelsUtils::nthElementOfTuple( exp[0], 1 );
-    SkolemCache& sc = d_state.getSkolemCache();
-    Node sk_1 = sc.mkTypedSkolemCached(fst_element.getType(),
-                                       exp[0],
-                                       tc_rel[0],
-                                       SkolemCache::SK_TCLOSURE_DOWN1,
-                                       "stc1");
-    Node sk_2 = sc.mkTypedSkolemCached(fst_element.getType(),
-                                       exp[0],
-                                       tc_rel[0],
-                                       SkolemCache::SK_TCLOSURE_DOWN2,
-                                       "stc2");
+    Node sk_1 = d_skCache.mkTypedSkolemCached(fst_element.getType(),
+                                              exp[0],
+                                              tc_rel[0],
+                                              SkolemCache::SK_TCLOSURE_DOWN1,
+                                              "stc1");
+    Node sk_2 = d_skCache.mkTypedSkolemCached(fst_element.getType(),
+                                              exp[0],
+                                              tc_rel[0],
+                                              SkolemCache::SK_TCLOSURE_DOWN2,
+                                              "stc2");
     Node mem_of_r = nm->mkNode(MEMBER, exp[0], tc_rel[0]);
     Node sk_eq = nm->mkNode(EQUAL, sk_1, sk_2);
     Node reason   = exp;
@@ -715,12 +713,12 @@ void TheorySetsRels::check(Theory::Effort level)
     }
     if( all_reasons.size() > 1) {
       sendInfer(nm->mkNode(MEMBER, tc_mem, tc_rel),
-                nm->mkNode(AND, all_reasons),
-                "TCLOSURE-Forward");
+                InferenceId::SETS_RELS_TCLOSURE_FWD,
+                nm->mkNode(AND, all_reasons));
     } else {
       sendInfer(nm->mkNode(MEMBER, tc_mem, tc_rel),
-                all_reasons.front(),
-                "TCLOSURE-Forward");
+                InferenceId::SETS_RELS_TCLOSURE_FWD,
+                all_reasons.front());
     }
 
     // check if cur_node has been traversed or not
@@ -793,8 +791,8 @@ void TheorySetsRels::check(Theory::Effort level)
     if( pt_rel != exp[1] ) {
       reason = NodeManager::currentNM()->mkNode(kind::AND, exp, NodeManager::currentNM()->mkNode(kind::EQUAL, pt_rel, exp[1]));
     }
-    sendInfer(fact_1, reason, "product-split");
-    sendInfer(fact_2, reason, "product-split");
+    sendInfer(fact_1, InferenceId::SETS_RELS_PRODUCT_SPLIT, reason);
+    sendInfer(fact_2, InferenceId::SETS_RELS_PRODUCT_SPLIT, reason);
   }
 
   /* join-split rule:           (a, b) IS_IN (X JOIN Y)
@@ -825,7 +823,7 @@ void TheorySetsRels::check(Theory::Effort level)
     Node r1_rep = getRepresentative(join_rel[0]);
     Node r2_rep = getRepresentative(join_rel[1]);
     TypeNode     shared_type    = r2_rep.getType().getSetElementType().getTupleTypes()[0];
-    Node shared_x = d_state.getSkolemCache().mkTypedSkolemCached(
+    Node shared_x = d_skCache.mkTypedSkolemCached(
         shared_type, mem, join_rel, SkolemCache::SK_JOIN, "srj");
     const DType& dt1 = join_rel[0].getType().getSetElementType().getDType();
     unsigned int s1_len         = join_rel[0].getType().getSetElementType().getTupleLength();
@@ -864,10 +862,10 @@ void TheorySetsRels::check(Theory::Effort level)
       reason = NodeManager::currentNM()->mkNode(kind::AND, reason, NodeManager::currentNM()->mkNode(kind::EQUAL, join_rel, exp[1]));
     }
     Node fact = NodeManager::currentNM()->mkNode(kind::MEMBER, mem1, join_rel[0]);
-    sendInfer(fact, reason, "JOIN-Split-1");
+    sendInfer(fact, InferenceId::SETS_RELS_JOIN_SPLIT_1, reason);
     fact = NodeManager::currentNM()->mkNode(kind::MEMBER, mem2, join_rel[1]);
-    sendInfer(fact, reason, "JOIN-Split-2");
-    makeSharedTerm( shared_x );
+    sendInfer(fact, InferenceId::SETS_RELS_JOIN_SPLIT_2, reason);
+    makeSharedTerm(shared_x, shared_type);
   }
 
   /*
@@ -888,8 +886,8 @@ void TheorySetsRels::check(Theory::Effort level)
     for( unsigned int i = 1; i < tp_terms.size(); i++ ) {
       Trace("rels-debug") << "\n[Theory::Rels] *********** Applying TRANSPOSE-Equal rule on transposed term = " << tp_terms[0] << " and " << tp_terms[i] << std::endl;
       sendInfer(nm->mkNode(EQUAL, tp_terms[0][0], tp_terms[i][0]),
-                nm->mkNode(EQUAL, tp_terms[0], tp_terms[i]),
-                "TRANSPOSE-Equal");
+                InferenceId::SETS_RELS_TRANSPOSE_EQ,
+                nm->mkNode(EQUAL, tp_terms[0], tp_terms[i]));
     }
   }
 
@@ -914,8 +912,8 @@ void TheorySetsRels::check(Theory::Effort level)
       reason = NodeManager::currentNM()->mkNode(kind::AND, reason, NodeManager::currentNM()->mkNode(kind::EQUAL, tp_rel, exp[1]));
     }
     sendInfer(nm->mkNode(MEMBER, reversed_mem, tp_rel[0]),
-              reason,
-              "TRANSPOSE-Reverse");
+              InferenceId::SETS_RELS_TRANSPOSE_REV,
+              reason);
   }
 
   void TheorySetsRels::doTCInference() {
@@ -1006,8 +1004,8 @@ void TheorySetsRels::check(Theory::Effort level)
           reason = NodeManager::currentNM()->mkNode(kind::AND, reason, NodeManager::currentNM()->mkNode(kind::EQUAL, rel[0], exps[i][1]));
         }
         sendInfer(nm->mkNode(MEMBER, RelsUtils::reverseTuple(exps[i][0]), rel),
-                  reason,
-                  "TRANSPOSE-reverse");
+                  InferenceId::SETS_RELS_TRANSPOSE_REV,
+                  reason);
       }
     }
   }
@@ -1043,8 +1041,14 @@ void TheorySetsRels::check(Theory::Effort level)
         Node r2_lmost = RelsUtils::nthElementOfTuple( r2_rep_exps[j][0], 0 );
         tuple_elements.push_back(tn.getDType()[0].getConstructor());
 
-        if( (areEqual(r1_rmost, r2_lmost) && rel.getKind() == kind::JOIN) ||
-            rel.getKind() == kind::PRODUCT ) {
+        Trace("rels-debug") << "[Theory::Rels] r1_rmost: " << r1_rmost
+                            << " of type " << r1_rmost.getType() << std::endl;
+        Trace("rels-debug") << "[Theory::Rels] r2_lmost: " << r2_lmost
+                            << " of type " << r2_lmost.getType() << std::endl;
+
+        if (rel.getKind() == kind::PRODUCT
+            || (rel.getKind() == kind::JOIN && areEqual(r1_rmost, r2_lmost)))
+        {
           bool isProduct = rel.getKind() == kind::PRODUCT;
           unsigned int k = 0;
           unsigned int l = 1;
@@ -1073,14 +1077,14 @@ void TheorySetsRels::check(Theory::Effort level)
             reasons.push_back( NodeManager::currentNM()->mkNode(kind::EQUAL, r2, r2_rep_exps[j][1]) );
           }
           if( isProduct ) {
-            sendInfer(fact,
-                      nm->mkNode(kind::AND, reasons),
-                      "PRODUCT-Compose");
+            sendInfer(
+                fact, InferenceId::SETS_RELS_PRODUCE_COMPOSE, nm->mkNode(kind::AND, reasons));
           } else {
             if( r1_rmost != r2_lmost ) {
               reasons.push_back( NodeManager::currentNM()->mkNode(kind::EQUAL, r1_rmost, r2_lmost) );
             }
-            sendInfer(fact, nm->mkNode(kind::AND, reasons), "JOIN-Compose");
+            sendInfer(
+                fact, InferenceId::SETS_RELS_JOIN_COMPOSE, nm->mkNode(kind::AND, reasons));
           }
         }
       }
@@ -1097,11 +1101,11 @@ void TheorySetsRels::check(Theory::Effort level)
       {
         if (p.getKind() == IMPLIES)
         {
-          processInference(p[1], p[0], "rels");
+          processInference(p[1], InferenceId::UNKNOWN, p[0]);
         }
         else
         {
-          processInference(p, d_trueNode, "rels");
+          processInference(p, InferenceId::UNKNOWN, d_trueNode);
         }
         if (d_state.isInConflict())
         {
@@ -1111,13 +1115,13 @@ void TheorySetsRels::check(Theory::Effort level)
       // if we are still not in conflict, send lemmas
       if (!d_state.isInConflict())
       {
-        d_im.flushPendingLemmas();
+        d_im.doPendingLemmas();
       }
     }
     d_pending.clear();
   }
 
-  void TheorySetsRels::processInference(Node conc, Node exp, const char* c)
+  void TheorySetsRels::processInference(Node conc, InferenceId id, Node exp)
   {
     Trace("sets-pinfer") << "Process inference: " << exp << " => " << conc
                          << std::endl;
@@ -1126,11 +1130,11 @@ void TheorySetsRels::check(Theory::Effort level)
       Trace("sets-pinfer") << "  must assert as lemma" << std::endl;
       // we wrap the spurious explanation into a splitting lemma
       Node lem = NodeManager::currentNM()->mkNode(OR, exp.negate(), conc);
-      d_im.assertInference(lem, d_trueNode, c, 1);
+      d_im.assertInference(lem, id, d_trueNode, 1);
       return;
     }
     // try to assert it as a fact
-    d_im.assertInference(conc, exp, c);
+    d_im.assertInference(conc, id, exp);
   }
 
   bool TheorySetsRels::isRelationKind( Kind k ) {
@@ -1139,24 +1143,17 @@ void TheorySetsRels::check(Theory::Effort level)
   }
 
   Node TheorySetsRels::getRepresentative( Node t ) {
-    if (d_ee.hasTerm(t))
-    {
-      return d_ee.getRepresentative(t);
-    }
-    else
-    {
-      return t;
-    }
+    return d_state.getRepresentative(t);
   }
 
-  bool TheorySetsRels::hasTerm(Node a) { return d_ee.hasTerm(a); }
+  bool TheorySetsRels::hasTerm(Node a) { return d_state.hasTerm(a); }
   bool TheorySetsRels::areEqual( Node a, Node b ){
     Assert(a.getType() == b.getType());
     Trace("rels-eq") << "[sets-rels]**** checking equality between " << a << " and " << b << std::endl;
     if(a == b) {
       return true;
     } else if( hasTerm( a ) && hasTerm( b ) ){
-      return d_ee.areEqual(a, b);
+      return d_state.areEqual(a, b);
     } else if(a.getType().isTuple()) {
       bool equal = true;
       for(unsigned int i = 0; i < a.getType().getTupleLength(); i++) {
@@ -1164,8 +1161,9 @@ void TheorySetsRels::check(Theory::Effort level)
       }
       return equal;
     } else if(!a.getType().isBoolean()){
-      makeSharedTerm(a);
-      makeSharedTerm(b);
+      // TODO(project##230): Find a safe type for the singleton operator
+      makeSharedTerm(a, a.getType());
+      makeSharedTerm(b, b.getType());
     }
     return false;
   }
@@ -1194,15 +1192,16 @@ void TheorySetsRels::check(Theory::Effort level)
     return false;
   }
 
-  void TheorySetsRels::makeSharedTerm( Node n ) {
+  void TheorySetsRels::makeSharedTerm(Node n, TypeNode t)
+  {
     if (d_shared_terms.find(n) != d_shared_terms.end())
     {
       return;
     }
     Trace("rels-share") << " [sets-rels] making shared term " << n << std::endl;
     // force a proxy lemma to be sent for the singleton containing n
-    Node ss = NodeManager::currentNM()->mkNode(SINGLETON, n);
-    d_state.getProxy(ss);
+    Node ss = NodeManager::currentNM()->mkSingleton(t, n);
+    d_treg.getProxy(ss);
     d_shared_terms.insert(n);
   }
 
@@ -1227,15 +1226,17 @@ void TheorySetsRels::check(Theory::Effort level)
       Trace("rels-debug") << "[Theory::Rels] Reduce tuple var: " << n[0] << " to a concrete one " << " node = " << n << std::endl;
       std::vector<Node> tuple_elements;
       tuple_elements.push_back((n[0].getType().getDType())[0].getConstructor());
-      for(unsigned int i = 0; i < n[0].getType().getTupleLength(); i++) {
+      std::vector<TypeNode> tupleTypes = n[0].getType().getTupleTypes();
+      for (unsigned int i = 0; i < n[0].getType().getTupleLength(); i++)
+      {
         Node element = RelsUtils::nthElementOfTuple(n[0], i);
-        makeSharedTerm(element);
+        makeSharedTerm(element, tupleTypes[i]);
         tuple_elements.push_back(element);
       }
       Node tuple_reduct = NodeManager::currentNM()->mkNode(kind::APPLY_CONSTRUCTOR, tuple_elements);
       tuple_reduct = NodeManager::currentNM()->mkNode(kind::MEMBER,tuple_reduct, n[1]);
       Node tuple_reduction_lemma = NodeManager::currentNM()->mkNode(kind::EQUAL, n, tuple_reduct);
-      sendInfer(tuple_reduction_lemma, d_trueNode, "tuple-reduction");
+      sendInfer(tuple_reduction_lemma, InferenceId::SETS_RELS_TUPLE_REDUCTION, d_trueNode);
       d_symbolic_tuples.insert(n);
     }
   }
@@ -1323,10 +1324,10 @@ void TheorySetsRels::check(Theory::Effort level)
     }
   }
 
-  void TheorySetsRels::sendInfer(Node fact, Node reason, const char* c)
+  void TheorySetsRels::sendInfer(Node fact, InferenceId id, Node reason)
   {
     Trace("rels-lemma") << "Rels::lemma " << fact << " from " << reason
-                        << " by " << c << std::endl;
+                        << " by " << id << std::endl;
     Node lemma = NodeManager::currentNM()->mkNode(IMPLIES, reason, fact);
     d_pending.push_back(lemma);
   }

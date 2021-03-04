@@ -2,10 +2,10 @@
 /*! \file ackermann.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Yoni Zohar, Aina Niemetz, Clark Barrett, Ying Sheng
+ **   Ying Sheng, Yoni Zohar, Aina Niemetz
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
+ ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
@@ -18,14 +18,19 @@
  ** described in
  **   Liana Hadarean, An Efficient and Trustworthy Theory Solver for
  **   Bit-vectors in Satisfiability Modulo Theories.
-￼**   https://cs.nyu.edu/media/publications/hadarean_liana.pdf
+ **   https://cs.nyu.edu/media/publications/hadarean_liana.pdf
  **/
 
 #include "preprocessing/passes/ackermann.h"
+
 #include <cmath>
+
 #include "base/check.h"
 #include "expr/node_algorithm.h"
 #include "options/options.h"
+#include "options/smt_options.h"
+#include "preprocessing/assertion_pipeline.h"
+#include "preprocessing/preprocessing_pass_context.h"
 
 using namespace CVC4;
 using namespace CVC4::theory;
@@ -70,11 +75,14 @@ void addLemmaForPair(TNode args1,
   }
   else
   {
-    Assert(args1.getKind() == kind::SELECT && args1[0] == func);
-    Assert(args2.getKind() == kind::SELECT && args2[0] == func);
+    Assert(args1.getKind() == kind::SELECT && args1.getOperator() == func);
+    Assert(args2.getKind() == kind::SELECT && args2.getOperator() == func);
     Assert(args1.getNumChildren() == 2);
     Assert(args2.getNumChildren() == 2);
-    args_eq = nm->mkNode(kind::EQUAL, args1[1], args2[1]);
+    args_eq = nm->mkNode(Kind::AND,
+      nm->mkNode(kind::EQUAL, args1[0], args2[0]),
+      nm->mkNode(kind::EQUAL, args1[1], args2[1])
+    );
   }
   Node func_eq = nm->mkNode(kind::EQUAL, args1, args2);
   Node lemma = nm->mkNode(kind::IMPLIES, args_eq, func_eq);
@@ -153,7 +161,7 @@ void collectFunctionsAndLemmas(FunctionToArgsMap& fun_to_args,
     if (seen.find(term) == seen.end())
     {
       TNode func;
-      if (term.getKind() == kind::APPLY_UF)
+      if (term.getKind() == kind::APPLY_UF || term.getKind() == kind::SELECT)
       {
         storeFunctionAndAddLemmas(term.getOperator(),
                                   term,
@@ -162,11 +170,6 @@ void collectFunctionsAndLemmas(FunctionToArgsMap& fun_to_args,
                                   assertions,
                                   nm,
                                   vec);
-      }
-      else if (term.getKind() == kind::SELECT)
-      {
-        storeFunctionAndAddLemmas(
-            term[0], term, fun_to_args, fun_to_skolem, assertions, nm, vec);
       }
       else
       {
@@ -198,7 +201,7 @@ size_t getBVSkolemSize(size_t capacity)
  * a sufficient bit-vector size.
  * Populate usVarsToBVVars so that it maps variables with uninterpreted sort to
  * the fresh skolem BV variables. variables */
-void collectUSortsToBV(const unordered_set<TNode, TNodeHashFunction>& vars,
+void collectUSortsToBV(const std::unordered_set<TNode, TNodeHashFunction>& vars,
                        const USortToBVSizeMap& usortCardinality,
                        SubstitutionMap& usVarsToBVVars)
 {
@@ -278,9 +281,13 @@ void usortsToBitVectors(const LogicInfo& d_logic,
     for (size_t i = 0, size = assertions->size(); i < size; ++i)
     {
       Node old = (*assertions)[i];
-      assertions->replace(i, usVarsToBVVars.apply((*assertions)[i]));
-      Trace("uninterpretedSorts-to-bv")
-          << "  " << old << " => " << (*assertions)[i] << "\n";
+      Node newA = usVarsToBVVars.apply((*assertions)[i]);
+      if (newA != old)
+      {
+        assertions->replace(i, newA);
+        Trace("uninterpretedSorts-to-bv")
+            << "  " << old << " => " << (*assertions)[i] << "\n";
+      }
     }
   }
 }

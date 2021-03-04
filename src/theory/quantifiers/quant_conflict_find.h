@@ -4,8 +4,8 @@
  ** Top contributors (to current version):
  **   Andrew Reynolds, Tim King, Morgan Deters
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
+ ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
@@ -23,7 +23,7 @@
 #include "context/cdhashmap.h"
 #include "context/cdlist.h"
 #include "expr/node_trie.h"
-#include "theory/quantifiers/quant_util.h"
+#include "theory/quantifiers/quant_module.h"
 
 namespace CVC4 {
 namespace theory {
@@ -52,7 +52,6 @@ private:
   unsigned d_qni_size;
   std::map< int, int > d_qni_var_num;
   std::map< int, TNode > d_qni_gterm;
-  std::map< int, TNode > d_qni_gterm_rep;
   std::map< int, int > d_qni_bound;
   std::vector< int > d_qni_bound_except;
   std::map< int, TNode > d_qni_bound_cons;
@@ -231,8 +230,12 @@ private:  //for equivalence classes
  public:
   bool areMatchEqual( TNode n1, TNode n2 );
   bool areMatchDisequal( TNode n1, TNode n2 );
-public:
-  QuantConflictFind( QuantifiersEngine * qe, context::Context* c );
+
+ public:
+  QuantConflictFind(QuantifiersEngine* qe,
+                    QuantifiersState& qs,
+                    QuantifiersInferenceManager& qim,
+                    QuantifiersRegistry& qr);
 
   /** register quantifier */
   void registerQuantifier(Node q) override;
@@ -246,7 +249,7 @@ public:
    *
    * This method attempts to construct a conflicting or propagating instance.
    * If such an instance exists, then it makes a call to
-   * Instantiation::addInstantiation or QuantifiersEngine::addLemma.
+   * Instantiation::addInstantiation.
    */
   void check(Theory::Effort level, QEffort quant_e) override;
 

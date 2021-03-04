@@ -4,8 +4,8 @@
  ** Top contributors (to current version):
  **   Morgan Deters, Dejan Jovanovic, Andrew Reynolds
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
+ ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
@@ -21,8 +21,6 @@
 
 #ifndef CVC4__TYPE_NODE_H
 #define CVC4__TYPE_NODE_H
-
-#include <stdint.h>
 
 #include <iostream>
 #include <string>
@@ -385,7 +383,7 @@ public:
    * @param language the language in which to output
    */
   inline void toStream(std::ostream& out, OutputLanguage language = language::output::LANG_AUTO) const {
-    d_nv->toStream(out, -1, false, 0, language);
+    d_nv->toStream(out, -1, 0, language);
   }
 
   /**
@@ -409,7 +407,7 @@ public:
    * Convert this TypeNode into a Type using the currently-in-scope
    * manager.
    */
-  inline Type toType();
+  inline Type toType() const;
 
   /**
    * Convert a Type into a TypeNode.
@@ -452,7 +450,7 @@ public:
   /**
    * Is this a first-class type?
    * First-class types are types for which:
-   * (1) we handle equalities between terms of that type, and 
+   * (1) we handle equalities between terms of that type, and
    * (2) they are allowed to be parameters of parametric types (e.g. index or element types of arrays).
    *
    * Examples of types that are not first-class include constructor types,
@@ -506,6 +504,9 @@ public:
   /** Is this the String type? */
   bool isString() const;
 
+  /** Is this a string-like type? (string or sequence) */
+  bool isStringLike() const;
+
   /** Is this the Rounding Mode type? */
   bool isRoundingMode() const;
 
@@ -514,6 +515,12 @@ public:
 
   /** Is this a Set type? */
   bool isSet() const;
+
+  /** Is this a Bag type? */
+  bool isBag() const;
+
+  /** Is this a Sequence type? */
+  bool isSequence() const;
 
   /** Get the index type (for array types) */
   TypeNode getArrayIndexType() const;
@@ -530,9 +537,17 @@ public:
   /** Get the return type (for selector types) */
   TypeNode getSelectorRangeType() const;
 
+  /** Get the domain type (for tester types) */
+  TypeNode getTesterDomainType() const;
+
   /** Get the element type (for set types) */
   TypeNode getSetElementType() const;
 
+  /** Get the element type (for bag types) */
+  TypeNode getBagElementType() const;
+
+  /** Get the element type (for sequence types) */
+  TypeNode getSequenceElementType() const;
   /**
    * Is this a function type?  Function-like things (e.g. datatype
    * selectors) that aren't actually functions are NOT considered
@@ -591,6 +606,9 @@ public:
   /** Is this a tuple type? */
   bool isTuple() const;
 
+  /** Is this a record type? */
+  bool isRecord() const;
+
   /** Get the length of a tuple type */
   size_t getTupleLength() const;
 
@@ -630,6 +648,9 @@ public:
 
   /** Is this a fully instantiated datatype type */
   bool isInstantiatedDatatype() const;
+
+  /** Is this a sygus datatype type */
+  bool isSygusDatatype() const;
 
   /**
    * Get instantiated datatype type. The type on which this method is called
@@ -671,6 +692,14 @@ public:
   /** Is this a sort constructor kind */
   bool isSortConstructor() const;
 
+  /** Get sort constructor arity */
+  uint64_t getSortConstructorArity() const;
+
+  /**
+   * Get name, for uninterpreted sorts and uninterpreted sort constructors.
+   */
+  std::string getName() const;
+
   /**
    * Instantiate a sort constructor type. The type on which this method is
    * called should be a sort constructor type whose parameter list is the
@@ -695,7 +724,7 @@ public:
   static TypeNode leastCommonTypeNode(TypeNode t0, TypeNode t1);
   static TypeNode mostCommonTypeNode(TypeNode t0, TypeNode t1);
 
-  /** get ensure type condition 
+  /** get ensure type condition
    *  Return value is a condition that implies that n has type tn.
   */
   static Node getEnsureTypeCondition( Node n, TypeNode tn );
@@ -743,11 +772,13 @@ typedef TypeNode::HashFunction TypeNodeHashFunction;
 
 namespace CVC4 {
 
-inline Type TypeNode::toType() {
+inline Type TypeNode::toType() const
+{
   return NodeManager::currentNM()->toType(*this);
 }
 
 inline TypeNode TypeNode::fromType(const Type& t) {
+  NodeManagerScope scope(t.d_nodeManager);
   return NodeManager::fromType(t);
 }
 
@@ -798,12 +829,10 @@ TypeNode TypeNode::substitute(Iterator1 typesBegin,
       // push the operator
       nb << TypeNode(d_nv->d_children[0]);
     }
-    for(TypeNode::const_iterator i = begin(),
-          iend = end();
-        i != iend;
-        ++i) {
-      nb << (*i).substitute(typesBegin, typesEnd,
-                            replacementsBegin, replacementsEnd, cache);
+    for (const TypeNode& tn : *this)
+    {
+      nb << tn.substitute(
+          typesBegin, typesEnd, replacementsBegin, replacementsEnd, cache);
     }
     TypeNode tn = nb.constructTypeNode();
     cache[*this] = tn;
@@ -960,6 +989,11 @@ inline bool TypeNode::isSet() const {
   return getKind() == kind::SET_TYPE;
 }
 
+inline bool TypeNode::isSequence() const
+{
+  return getKind() == kind::SEQUENCE_TYPE;
+}
+
 inline TypeNode TypeNode::getSetElementType() const {
   Assert(isSet());
   return (*this)[0];
@@ -989,7 +1023,8 @@ inline TypeNode TypeNode::getRangeType() const {
   if(isTester()) {
     return NodeManager::currentNM()->booleanType();
   }
-  Assert(isFunction() || isConstructor() || isSelector());
+  Assert(isFunction() || isConstructor() || isSelector())
+      << "Cannot get range type of " << *this;
   return (*this)[getNumChildren() - 1];
 }
 
@@ -1036,10 +1071,9 @@ inline bool TypeNode::isTester() const {
 /** Is this a floating-point type of with <code>exp</code> exponent bits
     and <code>sig</code> significand bits */
 inline bool TypeNode::isFloatingPoint(unsigned exp, unsigned sig) const {
-  return
-    ( getKind() == kind::FLOATINGPOINT_TYPE &&
-      getConst<FloatingPointSize>().exponent() == exp &&
-      getConst<FloatingPointSize>().significand() == sig );
+  return (getKind() == kind::FLOATINGPOINT_TYPE
+          && getConst<FloatingPointSize>().exponentWidth() == exp
+          && getConst<FloatingPointSize>().significandWidth() == sig);
 }
 
 /** Is this a bit-vector type of size <code>size</code> */
@@ -1051,13 +1085,13 @@ inline bool TypeNode::isBitVector(unsigned size) const {
 /** Get the exponent size of this floating-point type */
 inline unsigned TypeNode::getFloatingPointExponentSize() const {
   Assert(isFloatingPoint());
-  return getConst<FloatingPointSize>().exponent();
+  return getConst<FloatingPointSize>().exponentWidth();
 }
 
 /** Get the significand size of this floating-point type */
 inline unsigned TypeNode::getFloatingPointSignificandSize() const {
   Assert(isFloatingPoint());
-  return getConst<FloatingPointSize>().significand();
+  return getConst<FloatingPointSize>().significandWidth();
 }
 
 /** Get the size of this bit-vector type */
@@ -1084,7 +1118,6 @@ inline unsigned TypeNode::getBitVectorSize() const {
  */
 static void __attribute__((used)) debugPrintTypeNode(const TypeNode& n) {
   Warning() << Node::setdepth(-1)
-            << Node::printtypes(false)
             << Node::dag(true)
             << Node::setlanguage(language::output::LANG_AST)
             << n << std::endl;
@@ -1092,7 +1125,6 @@ static void __attribute__((used)) debugPrintTypeNode(const TypeNode& n) {
 }
 static void __attribute__((used)) debugPrintTypeNodeNoDag(const TypeNode& n) {
   Warning() << Node::setdepth(-1)
-            << Node::printtypes(false)
             << Node::dag(false)
             << Node::setlanguage(language::output::LANG_AST)
             << n << std::endl;

@@ -2,10 +2,10 @@
 /*! \file ho_trigger.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Andrew Reynolds
+ **   Andrew Reynolds, Mathias Preiner
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
+ ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
@@ -16,11 +16,11 @@
 
 #include "theory/quantifiers/ematching/ho_trigger.h"
 #include "theory/quantifiers/instantiate.h"
+#include "theory/quantifiers/quantifiers_inference_manager.h"
+#include "theory/quantifiers/quantifiers_state.h"
 #include "theory/quantifiers/term_database.h"
 #include "theory/quantifiers/term_util.h"
 #include "theory/quantifiers_engine.h"
-#include "theory/theory_engine.h"
-#include "theory/uf/equality_engine.h"
 #include "theory/uf/theory_uf_rewriter.h"
 #include "util/hash.h"
 
@@ -32,10 +32,13 @@ namespace inst {
 
 HigherOrderTrigger::HigherOrderTrigger(
     QuantifiersEngine* qe,
+    quantifiers::QuantifiersState& qs,
+    quantifiers::QuantifiersInferenceManager& qim,
+    quantifiers::QuantifiersRegistry& qr,
     Node q,
     std::vector<Node>& nodes,
     std::map<Node, std::vector<Node> >& ho_apps)
-    : Trigger(qe, q, nodes), d_ho_var_apps(ho_apps)
+    : Trigger(qe, qs, qim, qr, q, nodes), d_ho_var_apps(ho_apps)
 {
   NodeManager* nm = NodeManager::currentNM();
   // process the higher-order variable applications
@@ -112,7 +115,7 @@ void HigherOrderTrigger::collectHoVarApplyTerms(
           bool curWithinApply = withinApply[cur];
           visited[cur] = Node::null();
           visit.push_back(cur);
-          for (unsigned j = 0, size = cur.getNumChildren(); j < size; j++)
+          for (unsigned j = 0, sizec = cur.getNumChildren(); j < sizec; j++)
           {
             withinApply[cur[j]] = curWithinApply && j == 0;
             visit.push_back(cur[j]);
@@ -186,12 +189,12 @@ void HigherOrderTrigger::collectHoVarApplyTerms(
   }
 }
 
-int HigherOrderTrigger::addInstantiations()
+uint64_t HigherOrderTrigger::addInstantiations()
 {
   // call the base class implementation
-  int addedFoLemmas = Trigger::addInstantiations();
+  uint64_t addedFoLemmas = Trigger::addInstantiations();
   // also adds predicate lemms to force app completion
-  int addedHoLemmas = addHoTypeMatchPredicateLemmas();
+  uint64_t addedHoLemmas = addHoTypeMatchPredicateLemmas();
   return addedHoLemmas + addedFoLemmas;
 }
 
@@ -202,11 +205,10 @@ bool HigherOrderTrigger::sendInstantiation(InstMatch& m)
     // get substitution corresponding to m
     std::vector<TNode> vars;
     std::vector<TNode> subs;
-    quantifiers::TermUtil* tutil = d_quantEngine->getTermUtil();
     for (unsigned i = 0, size = d_quant[0].getNumChildren(); i < size; i++)
     {
       subs.push_back(m.d_vals[i]);
-      vars.push_back(tutil->getInstantiationConstant(d_quant, i));
+      vars.push_back(d_qreg.getInstantiationConstant(d_quant, i));
     }
 
     Trace("ho-unif-debug") << "Run higher-order unification..." << std::endl;
@@ -231,7 +233,7 @@ bool HigherOrderTrigger::sendInstantiation(InstMatch& m)
     d_lchildren.clear();
     d_arg_to_arg_rep.clear();
     d_arg_vector.clear();
-    EqualityQuery* eq = d_quantEngine->getEqualityQuery();
+    quantifiers::QuantifiersState& qs = d_quantEngine->getState();
     for (std::pair<const TNode, std::vector<Node> >& ha : ho_var_apps_subs)
     {
       TNode var = ha.first;
@@ -283,10 +285,10 @@ bool HigherOrderTrigger::sendInstantiation(InstMatch& m)
           }
           else if (!itf->second.isNull())
           {
-            if (!eq->areEqual(itf->second, args[k]))
+            if (!qs.areEqual(itf->second, args[k]))
             {
               if (!d_quantEngine->getTermDatabase()->isEntailed(
-                      itf->second.eqNode(args[k]), true, eq))
+                      itf->second.eqNode(args[k]), true))
               {
                 fixed_vals[k] = Node::null();
               }
@@ -318,7 +320,7 @@ bool HigherOrderTrigger::sendInstantiation(InstMatch& m)
         {
           if (!itf->second.isNull())
           {
-            Node r = eq->getRepresentative(itf->second);
+            Node r = qs.getRepresentative(itf->second);
             std::map<Node, unsigned>::iterator itfr = arg_to_rep.find(r);
             if (itfr != arg_to_rep.end())
             {
@@ -370,7 +372,7 @@ bool HigherOrderTrigger::sendInstantiation(InstMatch& m)
   else
   {
     // do not run higher-order matching
-    return d_quantEngine->getInstantiate()->addInstantiation(d_quant, m);
+    return d_quantEngine->getInstantiate()->addInstantiation(d_quant, m.d_vals);
   }
 }
 
@@ -383,7 +385,7 @@ bool HigherOrderTrigger::sendInstantiation(InstMatch& m, unsigned var_index)
   if (var_index == d_ho_var_list.size())
   {
     // we now have an instantiation to try
-    return d_quantEngine->getInstantiate()->addInstantiation(d_quant, m);
+    return d_quantEngine->getInstantiate()->addInstantiation(d_quant, m.d_vals);
   }
   else
   {
@@ -460,14 +462,14 @@ bool HigherOrderTrigger::sendInstantiationArg(InstMatch& m,
   }
 }
 
-int HigherOrderTrigger::addHoTypeMatchPredicateLemmas()
+uint64_t HigherOrderTrigger::addHoTypeMatchPredicateLemmas()
 {
   if (d_ho_var_types.empty())
   {
     return 0;
   }
   Trace("ho-quant-trigger") << "addHoTypeMatchPredicateLemmas..." << std::endl;
-  unsigned numLemmas = 0;
+  uint64_t numLemmas = 0;
   // this forces expansion of APPLY_UF terms to curried HO_APPLY chains
   quantifiers::TermDb* tdb = d_quantEngine->getTermDatabase();
   unsigned size = tdb->getNumOperators();
@@ -486,7 +488,7 @@ int HigherOrderTrigger::addHoTypeMatchPredicateLemmas()
         // for each function type suffix of the type of f, for example if
         // f : (Int -> (Int -> Int))
         // we iterate with stn = (Int -> (Int -> Int)) and (Int -> Int)
-        for (unsigned a = 0, size = argTypes.size(); a < size; a++)
+        for (unsigned a = 0, arg_size = argTypes.size(); a < arg_size; a++)
         {
           std::vector<TypeNode> sargts;
           sargts.insert(sargts.begin(), argTypes.begin() + a, argTypes.end());
@@ -499,7 +501,7 @@ int HigherOrderTrigger::addHoTypeMatchPredicateLemmas()
           {
             Node u = tdb->getHoTypeMatchPredicate(tn);
             Node au = nm->mkNode(kind::APPLY_UF, u, f);
-            if (d_quantEngine->addLemma(au))
+            if (d_qim.addPendingLemma(au, InferenceId::UNKNOWN))
             {
               // this forces f to be a first-class member of the quantifier-free
               // equality engine, which in turn forces the quantifier-free

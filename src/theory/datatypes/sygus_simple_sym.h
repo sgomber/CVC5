@@ -2,10 +2,10 @@
 /*! \file sygus_simple_sym.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Andrew Reynolds
+ **   Andrew Reynolds, Mathias Preiner
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
+ ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
@@ -20,7 +20,6 @@
 #include <map>
 #include "expr/dtype.h"
 #include "theory/quantifiers/sygus/term_database_sygus.h"
-#include "theory/quantifiers/term_util.h"
 
 namespace CVC4 {
 namespace theory {
@@ -41,7 +40,7 @@ namespace datatypes {
 class SygusSimpleSymBreak
 {
  public:
-  SygusSimpleSymBreak(QuantifiersEngine* qe);
+  SygusSimpleSymBreak(quantifiers::TermDbSygus* tds);
   ~SygusSimpleSymBreak() {}
   /** consider argument kind
    *
@@ -89,8 +88,6 @@ class SygusSimpleSymBreak
  private:
   /** Pointer to the sygus term database */
   quantifiers::TermDbSygus* d_tds;
-  /** Pointer to the quantifiers term utility */
-  quantifiers::TermUtil* d_tutil;
   /** return the index of the first argument position of c that has type tn */
   int getFirstArgOccurrence(const DTypeConstructor& c, TypeNode tn);
   /**

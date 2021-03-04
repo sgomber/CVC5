@@ -4,8 +4,8 @@
  ** Top contributors (to current version):
  **   Liana Hadarean, Mathias Preiner, Alex Ozdemir
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
+ ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
@@ -19,8 +19,6 @@
 #include "prop/cryptominisat.h"
 
 #include "base/check.h"
-#include "proof/clause_id.h"
-#include "proof/sat_proof.h"
 
 #include <cryptominisat5/cryptominisat.h>
 
@@ -39,6 +37,15 @@ CMSat::Lit toInternalLit(SatLiteral lit)
     return CMSat::lit_Undef;
   }
   return CMSat::Lit(lit.getSatVariable(), lit.isNegated());
+}
+
+SatLiteral toSatLiteral(CMSat::Lit lit)
+{
+  if (lit == CMSat::lit_Undef)
+  {
+    return undefSatLiteral;
+  }
+  return SatLiteral(lit.var(), lit.sign());
 }
 
 SatValue toSatLiteralValue(CMSat::lbool res)
@@ -64,10 +71,13 @@ void toInternalClause(SatClause& clause,
 CryptoMinisatSolver::CryptoMinisatSolver(StatisticsRegistry* registry,
                                          const std::string& name)
     : d_solver(new CMSat::SATSolver()),
-      d_bvp(nullptr),
       d_numVariables(0),
       d_okay(true),
       d_statistics(registry, name)
+{
+}
+
+void CryptoMinisatSolver::init()
 {
   d_true = newVar();
   d_false = newVar();
@@ -75,17 +85,17 @@ CryptoMinisatSolver::CryptoMinisatSolver(StatisticsRegistry* registry,
   std::vector<CMSat::Lit> clause(1);
   clause[0] = CMSat::Lit(d_true, false);
   d_solver->add_clause(clause);
-  
+
   clause[0] = CMSat::Lit(d_false, true);
   d_solver->add_clause(clause);
 }
 
-
 CryptoMinisatSolver::~CryptoMinisatSolver() {}
 
 ClauseId CryptoMinisatSolver::addXorClause(SatClause& clause,
-				       bool rhs,
-				       bool removable) {
+                                           bool rhs,
+                                           bool removable)
+{
   Debug("sat::cryptominisat") << "Add xor clause " << clause <<" = " << rhs << "\n";
 
   if (!d_okay) {
@@ -94,7 +104,7 @@ ClauseId CryptoMinisatSolver::addXorClause(SatClause& clause,
   }
 
   ++(d_statistics.d_xorClausesAdded);
-  
+
   // ensure all sat literals have positive polarity by pushing
   // the negation on the result
   std::vector<CMSatVar> xor_clause;
@@ -116,36 +126,19 @@ ClauseId CryptoMinisatSolver::addClause(SatClause& clause, bool removable){
   }
 
   ++(d_statistics.d_clausesAdded);
-  
+
   std::vector<CMSat::Lit> internal_clause;
   toInternalClause(clause, internal_clause);
   bool nowOkay = d_solver->add_clause(internal_clause);
 
   ClauseId freshId;
-  if (THEORY_PROOF_ON())
-  {
-    freshId = ClauseId(ProofManager::currentPM()->nextId());
-    // If this clause results in a conflict, then `nowOkay` may be false, but
-    // we still need to register this clause as used. Thus, we look at
-    // `d_okay` instead
-    if (d_bvp && d_okay)
-    {
-      d_bvp->registerUsedClause(freshId, clause);
-    }
-  }
-  else
-  {
-    freshId = ClauseIdError;
-  }
+  freshId = ClauseIdError;
 
   d_okay &= nowOkay;
   return freshId;
 }
 
-bool CryptoMinisatSolver::ok() const {
-  return d_okay; 
-}
-
+bool CryptoMinisatSolver::ok() const { return d_okay; }
 
 SatVariable  CryptoMinisatSolver::newVar(bool isTheoryAtom, bool preRegister, bool canErase){
   d_solver->new_var();
@@ -197,6 +190,15 @@ SatValue CryptoMinisatSolver::solve(const std::vector<SatLiteral>& assumptions)
   return toSatLiteralValue(d_solver->solve(&assumpts));
 }
 
+void CryptoMinisatSolver::getUnsatAssumptions(
+    std::vector<SatLiteral>& assumptions)
+{
+  for (const CMSat::Lit& lit : d_solver->get_conflict())
+  {
+    assumptions.push_back(toSatLiteral(~lit));
+  }
+}
+
 SatValue CryptoMinisatSolver::value(SatLiteral l){
   const std::vector<CMSat::lbool> model = d_solver->get_model();
   CMSatVar var = l.getSatVariable();
@@ -205,19 +207,11 @@ SatValue CryptoMinisatSolver::value(SatLiteral l){
   return toSatLiteralValue(value);
 }
 
-SatValue CryptoMinisatSolver::modelValue(SatLiteral l){
-  return value(l); 
-}
+SatValue CryptoMinisatSolver::modelValue(SatLiteral l) { return value(l); }
 
 unsigned CryptoMinisatSolver::getAssertionLevel() const {
   Unreachable() << "No interface to get assertion level in Cryptominisat";
-  return -1; 
-}
-
-void CryptoMinisatSolver::setClausalProofLog(proof::ClausalBitVectorProof* bvp)
-{
-  d_bvp = bvp;
-  d_solver->set_drat(&bvp->getDratOstream(), false);
+  return -1;
 }
 
 // Satistics for CryptoMinisatSolver

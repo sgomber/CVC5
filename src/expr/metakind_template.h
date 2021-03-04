@@ -2,10 +2,10 @@
 /*! \file metakind_template.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Morgan Deters, Andres Noetzli, Dejan Jovanovic
+ **   Morgan Deters, Andres Noetzli, Mathias Preiner
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
+ ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
@@ -201,22 +201,6 @@ Kind operatorToKind(::CVC4::expr::NodeValue* nv);
 
 }/* CVC4::kind namespace */
 
-#line 205 "${template}"
-
-namespace theory {
-
-static inline bool useTheoryValidate(std::string theory) {
-${use_theory_validations}
-  return false;
-}
-
-static const char *const useTheoryHelp = "\
-The following options are valid alternate implementations for use with\n\
-the --use-theory option:\n\
-\n\
-${theory_alternate_doc}";
-
-}/* CVC4::theory namespace */
 }/* CVC4 namespace */
 
 #endif /* CVC4__NODE_MANAGER_NEEDS_CONSTANT_MAP */

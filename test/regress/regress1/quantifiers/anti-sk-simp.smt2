@@ -1,4 +1,4 @@
-; COMMAND-LINE: --cbqi --quant-anti-skolem
+; COMMAND-LINE: --sygus-inference
 ; EXPECT: unsat
 (set-logic ALL_SUPPORTED)
 (set-info :status unsat)

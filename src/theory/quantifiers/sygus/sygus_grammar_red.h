@@ -2,10 +2,10 @@
 /*! \file sygus_grammar_red.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Andrew Reynolds
+ **   Andrew Reynolds, Mathias Preiner
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
+ ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
@@ -20,14 +20,10 @@
 #include <map>
 #include <vector>
 
-#include "expr/datatype.h"
 #include "expr/node.h"
 
 namespace CVC4 {
 namespace theory {
-
-class QuantifiersEngine;
-
 namespace quantifiers {
 
 class TermDbSygus;
@@ -49,7 +45,7 @@ class SygusRedundantCons
    * qe : pointer to the quantifiers engine,
    * tn : the (sygus) type to compute redundant constructors for
    */
-  void initialize(QuantifiersEngine* qe, TypeNode tn);
+  void initialize(TermDbSygus* tds, TypeNode tn);
   /** Get the indices of the redundant constructors of the register type */
   void getRedundant(std::vector<unsigned>& indices);
   /**

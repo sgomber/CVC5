@@ -4,8 +4,8 @@
  ** Top contributors (to current version):
  **   Andrew Reynolds, Morgan Deters, Kshitij Bansal
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
+ ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
@@ -21,12 +21,7 @@
 #include "theory/quantifiers/quant_rep_bound_ext.h"
 #include "theory/quantifiers/quantifiers_attributes.h"
 #include "theory/quantifiers/term_database.h"
-#include "theory/quantifiers/term_util.h"
 #include "theory/quantifiers_engine.h"
-#include "theory/theory_engine.h"
-#include "theory/uf/cardinality_extension.h"
-#include "theory/uf/equality_engine.h"
-#include "theory/uf/theory_uf.h"
 
 using namespace std;
 using namespace CVC4;
@@ -37,12 +32,15 @@ using namespace CVC4::theory::quantifiers;
 using namespace CVC4::theory::inst;
 
 //Model Engine constructor
-ModelEngine::ModelEngine( context::Context* c, QuantifiersEngine* qe ) :
-QuantifiersModule( qe ),
-d_incomplete_check(true),
-d_addedLemmas(0),
-d_triedLemmas(0),
-d_totalLemmas(0)
+ModelEngine::ModelEngine(QuantifiersEngine* qe,
+                         QuantifiersState& qs,
+                         QuantifiersInferenceManager& qim,
+                         QuantifiersRegistry& qr)
+    : QuantifiersModule(qs, qim, qr, qe),
+      d_incomplete_check(true),
+      d_addedLemmas(0),
+      d_triedLemmas(0),
+      d_totalLemmas(0)
 {
 
 }
@@ -71,15 +69,14 @@ void ModelEngine::check(Theory::Effort e, QEffort quant_e)
 {
   bool doCheck = false;
   if( options::mbqiInterleave() ){
-    doCheck = quant_e == QEFFORT_STANDARD && d_quantEngine->hasAddedLemma();
+    doCheck = quant_e == QEFFORT_STANDARD && d_qim.hasPendingLemma();
   }
   if( !doCheck ){
     doCheck = quant_e == QEFFORT_MODEL;
   }
   if( doCheck ){
-    Assert(!d_quantEngine->inConflict());
+    Assert(!d_qstate.isInConflict());
     int addedLemmas = 0;
-    FirstOrderModel* fm = d_quantEngine->getModel();
 
     //the following will test that the model satisfies all asserted universal quantifiers by
     // (model-based) exhaustive instantiation.
@@ -88,28 +85,16 @@ void ModelEngine::check(Theory::Effort e, QEffort quant_e)
       Trace("model-engine") << "---Model Engine Round---" << std::endl;
       clSet = double(clock())/double(CLOCKS_PER_SEC);
     }
-
-    Trace("model-engine-debug") << "Verify uf ss is minimal..." << std::endl;
-    // Let the cardinality extension verify that the model is minimal.
-    // This will if there are terms in the model that the cardinality extension
-    // was not notified of.
-    uf::CardinalityExtension* ufss =
-        static_cast<uf::TheoryUF*>(
-            d_quantEngine->getTheoryEngine()->theoryOf(THEORY_UF))
-            ->getCardinalityExtension();
-    if( !ufss || ufss->debugModel( fm ) ){
-      Trace("model-engine-debug") << "Check model..." << std::endl;
-      d_incomplete_check = false;
-      //print debug
-      if( Trace.isOn("fmf-model-complete") ){
-        Trace("fmf-model-complete") << std::endl;
-        debugPrint("fmf-model-complete");
-      }
-      //successfully built an acceptable model, now check it
-      addedLemmas += checkModel();
-    }else{
-      addedLemmas++;
+    Trace("model-engine-debug") << "Check model..." << std::endl;
+    d_incomplete_check = false;
+    // print debug
+    if (Trace.isOn("fmf-model-complete"))
+    {
+      Trace("fmf-model-complete") << std::endl;
+      debugPrint("fmf-model-complete");
     }
+    // successfully built an acceptable model, now check it
+    addedLemmas += checkModel();
 
     if( Trace.isOn("model-engine") ){
       double clSet2 = double(clock())/double(CLOCKS_PER_SEC);
@@ -163,11 +148,6 @@ void ModelEngine::assertNode( Node f ){
 
 }
 
-bool ModelEngine::optOneQuantPerRound(){
-  return options::fmfOneQuantPerRound();
-}
-
-
 int ModelEngine::checkModel(){
   FirstOrderModel* fm = d_quantEngine->getModel();
 
@@ -187,6 +167,11 @@ int ModelEngine::checkModel(){
       Trace("model-engine-debug") << "   Term reps : ";
       for( size_t i=0; i<it->second.size(); i++ ){
         Node r = d_quantEngine->getInternalRepresentative( it->second[i], Node::null(), 0 );
+        if (r.isNull())
+        {
+          // there was an invalid equivalence class
+          d_incomplete_check = true;
+        }
         Trace("model-engine-debug") << r << " ";
       }
       Trace("model-engine-debug") << std::endl;
@@ -202,7 +187,8 @@ int ModelEngine::checkModel(){
   if( Trace.isOn("model-engine") ){
     for( unsigned i=0; i<fm->getNumAssertedQuantifiers(); i++ ){
       Node f = fm->getAssertedQuantifier( i );
-      if( d_quantEngine->getModel()->isQuantifierActive( f ) && d_quantEngine->hasOwnership( f, this ) ){
+      if (fm->isQuantifierActive(f) && d_qreg.hasOwnership(f, this))
+      {
         int totalInst = 1;
         for( unsigned j=0; j<f[0].getNumChildren(); j++ ){
           TypeNode tn = f[0][j].getType();
@@ -228,9 +214,11 @@ int ModelEngine::checkModel(){
       Node q = fm->getAssertedQuantifier( i, true );
       Trace("fmf-exh-inst") << "-> Exhaustive instantiate " << q << ", effort = " << e << "..." << std::endl;
       //determine if we should check this quantifier
-      if( d_quantEngine->getModel()->isQuantifierActive( q ) && d_quantEngine->hasOwnership( q, this ) ){
+      if (fm->isQuantifierActive(q) && d_qreg.hasOwnership(q, this))
+      {
         exhaustiveInstantiate( q, e );
-        if( d_quantEngine->inConflict() || ( optOneQuantPerRound() && d_addedLemmas>0 ) ){
+        if (d_qstate.isInConflict())
+        {
           break;
         }
       }else{
@@ -240,12 +228,13 @@ int ModelEngine::checkModel(){
     if( d_addedLemmas>0 ){
       break;
     }else{
-      Assert(!d_quantEngine->inConflict());
+      Assert(!d_qstate.isInConflict());
     }
   }
 
   //print debug information
-  if( d_quantEngine->inConflict() ){
+  if (d_qstate.isInConflict())
+  {
     Trace("model-engine") << "Conflict, added lemmas = ";
   }else{
     Trace("model-engine") << "Added Lemmas = ";
@@ -278,7 +267,8 @@ void ModelEngine::exhaustiveInstantiate( Node f, int effort ){
     if( Trace.isOn("fmf-exh-inst-debug") ){
       Trace("fmf-exh-inst-debug") << "   Instantiation Constants: ";
       for( size_t i=0; i<f[0].getNumChildren(); i++ ){
-        Trace("fmf-exh-inst-debug") << d_quantEngine->getTermUtil()->getInstantiationConstant( f, i ) << " ";
+        Trace("fmf-exh-inst-debug")
+            << d_qreg.getInstantiationConstant(f, i) << " ";
       }
       Trace("fmf-exh-inst-debug") << std::endl;
     }
@@ -290,22 +280,22 @@ void ModelEngine::exhaustiveInstantiate( Node f, int effort ){
       if( !riter.isIncomplete() ){
         int triedLemmas = 0;
         int addedLemmas = 0;
-        EqualityQuery* qy = d_quantEngine->getEqualityQuery();
         Instantiate* inst = d_quantEngine->getInstantiate();
         while( !riter.isFinished() && ( addedLemmas==0 || !options::fmfOneInstPerRound() ) ){
           //instantiation was not shown to be true, construct the match
           InstMatch m( f );
           for (unsigned i = 0; i < riter.getNumTerms(); i++)
           {
-            m.set(qy, i, riter.getCurrentTerm(i));
+            m.set(d_qstate, i, riter.getCurrentTerm(i));
           }
           Debug("fmf-model-eval") << "* Add instantiation " << m << std::endl;
           triedLemmas++;
           //add as instantiation
-          if (inst->addInstantiation(f, m, true))
+          if (inst->addInstantiation(f, m.d_vals, true))
           {
             addedLemmas++;
-            if( d_quantEngine->inConflict() ){
+            if (d_qstate.isInConflict())
+            {
               break;
             }
           }else{
@@ -331,7 +321,8 @@ void ModelEngine::debugPrint( const char* c ){
   Trace( c ) << "Quantifiers: " << std::endl;
   for( unsigned i=0; i<d_quantEngine->getModel()->getNumAssertedQuantifiers(); i++ ){
     Node q = d_quantEngine->getModel()->getAssertedQuantifier( i );
-    if( d_quantEngine->hasOwnership( q, this ) ){
+    if (d_qreg.hasOwnership(q, this))
+    {
       Trace( c ) << "   ";
       if( !d_quantEngine->getModel()->isQuantifierActive( q ) ){
         Trace( c ) << "*Inactive* ";

@@ -2,10 +2,10 @@
 /*! \file bounded_integers.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Andrew Reynolds, Mathias Preiner
+ **   Andrew Reynolds, Mathias Preiner, Mudathir Mohamed
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
+ ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
@@ -18,16 +18,18 @@
 #ifndef CVC4__BOUNDED_INTEGERS_H
 #define CVC4__BOUNDED_INTEGERS_H
 
-#include "theory/quantifiers/quant_util.h"
+#include "theory/quantifiers/quant_module.h"
 
 #include "context/cdhashmap.h"
 #include "context/context.h"
 #include "expr/attribute.h"
+#include "theory/decision_strategy.h"
 
 namespace CVC4 {
 namespace theory {
 
 class RepSetIterator;
+class DecisionManager;
 
 /**
  * Attribute set to 1 for literals that comprise the bounds of a quantified
@@ -72,7 +74,7 @@ private:
    *
    * For each set S and integer n, d_setm_choice[S][n] is the canonical
    * representation for the (n+1)^th member of set S. It is of the form:
-   * choice x. (|S| <= n OR ( x in S AND
+   * witness x. (|S| <= n OR ( x in S AND
    *   distinct( x, d_setm_choice[S][0], ..., d_setm_choice[S][n-1] ) ) )
    */
   std::map<Node, std::vector<Node> > d_setm_choice;
@@ -159,8 +161,13 @@ private:
     }
   };
   std::map< Node, std::map< Node, BoundInstTrie > > d_bnd_it;
-public:
-  BoundedIntegers( context::Context* c, QuantifiersEngine* qe );
+
+ public:
+  BoundedIntegers(QuantifiersEngine* qe,
+                  QuantifiersState& qs,
+                  QuantifiersInferenceManager& qim,
+                  QuantifiersRegistry& qr,
+                  DecisionManager* dm);
   virtual ~BoundedIntegers();
 
   void presolve() override;
@@ -227,6 +234,8 @@ public:
   Node matchBoundVar( Node v, Node t, Node e );
   
   bool getRsiSubsitution( Node q, Node v, std::vector< Node >& vars, std::vector< Node >& subs, RepSetIterator * rsi );
+  /** Pointer to the decision manager */
+  DecisionManager* d_dm;
 };
 
 }

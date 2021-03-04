@@ -4,8 +4,8 @@
  ** Top contributors (to current version):
  **   Morgan Deters, Tim King, Dejan Jovanovic
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
+ ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
@@ -25,7 +25,6 @@
 #define CVC4__EXPR__ATTRIBUTE_H
 
 #include <string>
-#include <stdint.h>
 #include "expr/attribute_unique_id.h"
 
 // include supporting templates
@@ -37,6 +36,44 @@ namespace CVC4 {
 namespace expr {
 namespace attr {
 
+/**
+ * Attributes are roughly speaking [almost] global hash tables from Nodes
+ * (TNodes) to data. Attributes can be thought of as additional fields used to
+ * extend NodeValues. Attributes are mutable and come in both sat
+ * context-dependent and non-context dependent varieties. Attributes live only
+ * as long as the node itself does. If a Node is garbage-collected, Attributes
+ * associated with it will automatically be garbage collected. (Being in the
+ * domain of an Attribute does not increase a Node's reference count.) To
+ * achieve this special relationship with Nodes, Attributes are mapped by hash
+ * tables (AttrHash<> and CDAttrHash<>) that live in the AttributeManager. The
+ * AttributeManager is owned by the NodeManager.
+ *
+ * Example:
+ *
+ * Attributes tend to be defined in a fixed pattern:
+ *
+ * ```
+ * struct InstLevelAttributeId {};
+ * typedef expr::Attribute<InstLevelAttributeId, uint64_t> InstLevelAttribute;
+ * ```
+ *
+ * To get the value of an Attribute InstLevelAttribute on a Node n, use
+ * ```
+ * n.getAttribute(InstLevelAttribute());
+ * ```
+ *
+ * To check whether the attribute has been set:
+ * ```
+ * n.hasAttribute(InstLevelAttribute());
+ * ```
+ *
+ * To separate Attributes of the same type in the same table, each of the
+ * structures `struct InstLevelAttributeId {};` is given a different unique value
+ * at load time. An example is the empty struct InstLevelAttributeId. These
+ * should be unique for each Attribute. Then via some template messiness when
+ * InstLevelAttribute() is passed as the argument to getAttribute(...) the load
+ * time id is instantiated.
+ */
 // ATTRIBUTE MANAGER ===========================================================
 
 /**
@@ -61,7 +98,7 @@ class AttributeManager {
    * getTable<> is a helper template that gets the right table from an
    * AttributeManager given its type.
    */
-  template <class T, bool context_dep>
+  template <class T, bool context_dep, class Enable>
   friend struct getTable;
 
   bool d_inGarbageCollection;
@@ -190,8 +227,13 @@ namespace attr {
 /**
  * The getTable<> template provides (static) access to the
  * AttributeManager field holding the table.
+ *
+ * The `Enable` template parameter is used to instantiate the template
+ * conditionally: If the template substitution of Enable fails (e.g. when using
+ * `std::enable_if` in the template parameter and the condition is false), the
+ * instantiation is ignored due to the SFINAE rule.
  */
-template <class T, bool context_dep>
+template <class T, bool context_dep, class Enable = void>
 struct getTable;
 
 /** Access the "d_bools" member of AttributeManager. */
@@ -208,8 +250,12 @@ struct getTable<bool, false> {
 };
 
 /** Access the "d_ints" member of AttributeManager. */
-template <>
-struct getTable<uint64_t, false> {
+template <class T>
+struct getTable<T,
+                false,
+                // Use this specialization only for unsigned integers
+                typename std::enable_if<std::is_unsigned<T>::value>::type>
+{
   static const AttrTableId id = AttrTableUInt64;
   typedef AttrHash<uint64_t> table_type;
   static inline table_type& get(AttributeManager& am) {

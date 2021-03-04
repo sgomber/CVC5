@@ -2,10 +2,10 @@
 /*! \file open_ostream.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Tim King
+ **   Tim King, Mathias Preiner
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
+ ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
@@ -20,12 +20,10 @@
 #ifndef CVC4__OPEN_OSTREAM_H
 #define CVC4__OPEN_OSTREAM_H
 
+#include <iosfwd>
 #include <map>
-#include <ostream>
 #include <string>
 #include <utility>
-
-#include "options/option_exception.h"
 
 namespace CVC4 {
 

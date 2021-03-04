@@ -4,8 +4,8 @@
  ** Top contributors (to current version):
  **   Andrew Reynolds, Morgan Deters, Tim King
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
+ ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
@@ -20,22 +20,13 @@
 #define CVC4__THEORY__DATATYPES__THEORY_DATATYPES_TYPE_RULES_H
 
 #include "expr/dtype.h"
+#include "expr/dtype_cons.h"
 #include "expr/type_matcher.h"
 #include "theory/datatypes/theory_datatypes_utils.h"
 
 namespace CVC4 {
-
-namespace expr {
-namespace attr {
-struct DatatypeConstructorTypeGroundTermTag {};
-} /* CVC4::expr::attr namespace */
-} /* CVC4::expr namespace */
-
 namespace theory {
 namespace datatypes {
-
-typedef expr::Attribute<expr::attr::DatatypeConstructorTypeGroundTermTag, Node>
-    GroundTermAttr;
 
 struct DatatypeConstructorTypeRule {
   inline static TypeNode computeType(NodeManager* nodeManager, TNode n,
@@ -206,8 +197,7 @@ struct DatatypeAscriptionTypeRule {
                                      bool check) {
     Debug("typecheck-idt") << "typechecking ascription: " << n << std::endl;
     Assert(n.getKind() == kind::APPLY_TYPE_ASCRIPTION);
-    TypeNode t = TypeNode::fromType(
-        n.getOperator().getConst<AscriptionType>().getType());
+    TypeNode t = n.getOperator().getConst<AscriptionType>().getType();
     if (check) {
       TypeNode childType = n[0].getType(check);
 
@@ -292,9 +282,10 @@ struct RecordUpdateTypeRule {
         throw TypeCheckingExceptionPrivate(
             n, "Record-update expression formed over non-record");
       }
-      const Record& rec =
-          DatatypeType(recordType.toType()).getRecord();
-      if (!rec.contains(ru.getField())) {
+      const DType& dt = recordType.getDType();
+      const DTypeConstructor& recCons = dt[0];
+      if (recCons.getSelectorIndexForName(ru.getField()) == -1)
+      {
         std::stringstream ss;
         ss << "Record-update field `" << ru.getField()
            << "' is not a valid field name for the record type";
@@ -580,6 +571,60 @@ class MatchBindCaseTypeRule
     return n[2].getType(check);
   }
 }; /* class MatchBindCaseTypeRule */
+
+class TupleProjectTypeRule
+{
+ public:
+  static TypeNode computeType(NodeManager* nm, TNode n, bool check)
+  {
+    Assert(n.getKind() == kind::TUPLE_PROJECT && n.hasOperator()
+           && n.getOperator().getKind() == kind::TUPLE_PROJECT_OP);
+    TupleProjectOp op = n.getOperator().getConst<TupleProjectOp>();
+    const std::vector<uint32_t>& indices = op.getIndices();
+    if (check)
+    {
+      if (n.getNumChildren() != 1)
+      {
+        std::stringstream ss;
+        ss << "operands in term " << n << " are " << n.getNumChildren()
+           << ", but TUPLE_PROJECT expects 1 operand.";
+        throw TypeCheckingExceptionPrivate(n, ss.str());
+      }
+      TypeNode tupleType = n[0].getType(check);
+      if (!tupleType.isTuple())
+      {
+        std::stringstream ss;
+        ss << "TUPLE_PROJECT expects a tuple for " << n[0] << ". Found" << tupleType;
+        throw TypeCheckingExceptionPrivate(n, ss.str());
+      }
+
+      // make sure all indices are less than the length of the tuple type
+      DType dType = tupleType.getDType();
+      DTypeConstructor constructor = dType[0];
+      size_t numArgs = constructor.getNumArgs();
+      for (uint32_t index : indices)
+      {
+        std::stringstream ss;
+        if (index >= numArgs)
+        {
+          ss << "Project index " << index << " in term " << n
+             << " is >= " << numArgs << " which is the length of tuple " << n[0]
+             << std::endl;
+          throw TypeCheckingExceptionPrivate(n, ss.str());
+        }
+      }
+    }
+    TypeNode tupleType = n[0].getType(check);
+    std::vector<TypeNode> types;
+    DType dType = tupleType.getDType();
+    DTypeConstructor constructor = dType[0];
+    for (uint32_t index : indices)
+    {
+      types.push_back(constructor.getArgType(index));
+    }
+    return nm->mkTupleType(types);
+  }
+}; /* class TupleProjectTypeRule */
 
 } /* CVC4::theory::datatypes namespace */
 } /* CVC4::theory namespace */

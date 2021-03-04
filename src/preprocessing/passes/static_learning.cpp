@@ -2,10 +2,10 @@
 /*! \file static_learning.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Yoni Zohar
+ **   Yoni Zohar, Andrew Reynolds
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
+ ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
@@ -18,6 +18,10 @@
 #include <string>
 
 #include "expr/node.h"
+#include "preprocessing/assertion_pipeline.h"
+#include "preprocessing/preprocessing_pass_context.h"
+#include "theory/rewriter.h"
+#include "theory/theory_engine.h"
 
 namespace CVC4 {
 namespace preprocessing {
@@ -29,8 +33,7 @@ StaticLearning::StaticLearning(PreprocessingPassContext* preprocContext)
 PreprocessingPassResult StaticLearning::applyInternal(
     AssertionPipeline* assertionsToPreprocess)
 {
-  NodeManager::currentResourceManager()->spendResource(
-      options::preprocessStep());
+  d_preprocContext->spendResource(ResourceManager::Resource::PreprocessStep);
 
   for (unsigned i = 0; i < assertionsToPreprocess->size(); ++i)
   {
@@ -44,7 +47,8 @@ PreprocessingPassResult StaticLearning::applyInternal(
     }
     else
     {
-      assertionsToPreprocess->replace(i, learned);
+      assertionsToPreprocess->replace(
+          i, theory::Rewriter::rewrite(learned.constructNode()));
     }
   }
   return PreprocessingPassResult::NO_CONFLICT;

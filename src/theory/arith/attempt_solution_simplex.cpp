@@ -2,10 +2,10 @@
 /*! \file attempt_solution_simplex.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Tim King
+ **   Tim King, Aina Niemetz, Mathias Preiner
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
+ ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
@@ -20,6 +20,7 @@
 #include "options/arith_options.h"
 #include "smt/smt_statistics_registry.h"
 #include "theory/arith/constraint.h"
+#include "theory/arith/error_set.h"
 
 using namespace std;
 
@@ -122,12 +123,12 @@ Result::Sat AttemptSolutionSDP::attempt(const ApproximateSimplex::Solution& sol)
     Assert(toAdd != ARITHVAR_SENTINEL);
 
     Trace("arith::forceNewBasis") << toRemove << " " << toAdd << endl;
-    //Message() << toRemove << " " << toAdd << endl;
+    // CVC4Message() << toRemove << " " << toAdd << endl;
 
     d_linEq.pivotAndUpdate(toRemove, toAdd, newValues[toRemove]);
 
     Trace("arith::forceNewBasis") << needsToBeAdded.size() << "to go" << endl;
-    //Message() << needsToBeAdded.size() << "to go" << endl;
+    // CVC4Message() << needsToBeAdded.size() << "to go" << endl;
     needsToBeAdded.remove(toAdd);
 
     bool conflict = processSignals();

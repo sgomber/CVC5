@@ -4,8 +4,8 @@
  ** Top contributors (to current version):
  **   Andrew Reynolds, Morgan Deters
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
+ ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
@@ -32,16 +32,28 @@ using namespace inst;
 
 namespace quantifiers {
 
-InstStrategyEnum::InstStrategyEnum(QuantifiersEngine* qe, RelevantDomain* rd)
-    : QuantifiersModule(qe), d_rd(rd)
+InstStrategyEnum::InstStrategyEnum(QuantifiersEngine* qe,
+                                   QuantifiersState& qs,
+                                   QuantifiersInferenceManager& qim,
+                                   QuantifiersRegistry& qr,
+                                   RelevantDomain* rd)
+    : QuantifiersModule(qs, qim, qr, qe), d_rd(rd), d_fullSaturateLimit(-1)
 {
 }
-
+void InstStrategyEnum::presolve()
+{
+  d_fullSaturateLimit = options::fullSaturateLimit();
+}
 bool InstStrategyEnum::needsCheck(Theory::Effort e)
 {
+  if (d_fullSaturateLimit == 0)
+  {
+    return false;
+  }
   if (options::fullSaturateInterleave())
   {
-    if (d_quantEngine->getInstWhenNeedsCheck(e))
+    // if interleaved, we run at the same time as E-matching
+    if (d_qstate.getInstWhenNeedsCheck(e))
     {
       return true;
     }
@@ -61,20 +73,27 @@ void InstStrategyEnum::check(Theory::Effort e, QEffort quant_e)
 {
   bool doCheck = false;
   bool fullEffort = false;
-  if (options::fullSaturateInterleave())
+  if (d_fullSaturateLimit != 0)
   {
-    // we only add when interleaved with other strategies
-    doCheck = quant_e == QEFFORT_STANDARD && d_quantEngine->hasAddedLemma();
-  }
-  if (options::fullSaturateQuant() && !doCheck)
-  {
-    doCheck = quant_e == QEFFORT_LAST_CALL;
-    fullEffort = !d_quantEngine->hasAddedLemma();
+    if (options::fullSaturateInterleave())
+    {
+      // we only add when interleaved with other strategies
+      doCheck = quant_e == QEFFORT_STANDARD && d_qim.hasPendingLemma();
+    }
+    if (options::fullSaturateQuant() && !doCheck)
+    {
+      if (!d_qstate.getValuation().needCheck())
+      {
+        doCheck = quant_e == QEFFORT_LAST_CALL;
+        fullEffort = true;
+      }
+    }
   }
   if (!doCheck)
   {
     return;
   }
+  Assert(!d_qstate.isInConflict());
   double clSet = 0;
   if (Trace.isOn("fs-engine"))
   {
@@ -113,7 +132,7 @@ void InstStrategyEnum::check(Theory::Effort e, QEffort quant_e)
       for (unsigned i = 0; i < nquant; i++)
       {
         Node q = fm->getAssertedQuantifier(i, true);
-        bool doProcess = d_quantEngine->hasOwnership(q, this)
+        bool doProcess = d_qreg.hasOwnership(q, this)
                          && fm->isQuantifierActive(q)
                          && alreadyProc.find(q) == alreadyProc.end();
         if (doProcess)
@@ -127,14 +146,14 @@ void InstStrategyEnum::check(Theory::Effort e, QEffort quant_e)
             }
             // added lemma
             addedLemmas++;
-            if (d_quantEngine->inConflict())
-            {
-              break;
-            }
+          }
+          if (d_qstate.isInConflict())
+          {
+            break;
           }
         }
       }
-      if (d_quantEngine->inConflict()
+      if (d_qstate.isInConflict()
           || (addedLemmas > 0 && options::fullSaturateStratify()))
       {
         // we break if we are in conflict, or if we added any lemma at this
@@ -149,6 +168,10 @@ void InstStrategyEnum::check(Theory::Effort e, QEffort quant_e)
     double clSet2 = double(clock()) / double(CLOCKS_PER_SEC);
     Trace("fs-engine") << "Finished full saturation engine, time = "
                        << (clSet2 - clSet) << std::endl;
+  }
+  if (d_fullSaturateLimit > 0)
+  {
+    d_fullSaturateLimit--;
   }
 }
 
@@ -167,7 +190,7 @@ bool InstStrategyEnum::process(Node f, bool fullEffort, bool isRd)
   std::map<TypeNode, std::vector<Node> > term_db_list;
   std::vector<TypeNode> ftypes;
   TermDb* tdb = d_quantEngine->getTermDatabase();
-  EqualityQuery* qy = d_quantEngine->getEqualityQuery();
+  QuantifiersState& qs = d_quantEngine->getState();
   // iterate over substitutions for variables
   for (unsigned i = 0; i < f[0].getNumChildren(); i++)
   {
@@ -189,9 +212,9 @@ bool InstStrategyEnum::process(Node f, bool fullEffort, bool isRd)
         for (unsigned j = 0; j < ts; j++)
         {
           Node gt = tdb->getTypeGroundTerm(ftypes[i], j);
-          if (!options::cbqi() || !quantifiers::TermUtil::hasInstConstAttr(gt))
+          if (!options::cegqi() || !quantifiers::TermUtil::hasInstConstAttr(gt))
           {
-            Node rep = qy->getRepresentative(gt);
+            Node rep = qs.getRepresentative(gt);
             if (reps_found.find(rep) == reps_found.end())
             {
               reps_found[rep] = gt;
@@ -284,7 +307,7 @@ bool InstStrategyEnum::process(Node f, bool fullEffort, bool isRd)
             {
               terms.push_back(d_rd->getRDomain(f, i)->d_terms[childIndex[i]]);
               Trace("inst-alg-rd")
-                  << "  " << d_rd->getRDomain(f, i)->d_terms[childIndex[i]]
+                  << "  (rd) " << d_rd->getRDomain(f, i)->d_terms[childIndex[i]]
                   << std::endl;
             }
             else
@@ -295,8 +318,13 @@ bool InstStrategyEnum::process(Node f, bool fullEffort, bool isRd)
                   << "  " << term_db_list[ftypes[i]][childIndex[i]]
                   << std::endl;
             }
+            Assert(terms[i].isNull()
+                   || terms[i].getType().isComparableTo(ftypes[i]))
+                << "Incompatible type " << f << ", " << terms[i].getType()
+                << ", " << ftypes[i] << std::endl;
           }
-          if (ie->addInstantiation(f, terms))
+          std::vector<bool> failMask;
+          if (ie->addInstantiationExpFail(f, terms, failMask, false))
           {
             Trace("inst-alg-rd") << "Success!" << std::endl;
             ++(d_quantEngine->d_statistics.d_instantiations_guess);
@@ -305,6 +333,21 @@ bool InstStrategyEnum::process(Node f, bool fullEffort, bool isRd)
           else
           {
             index--;
+            // currently, we use the failmask only for backtracking, although
+            // more could be learned here (wishue #81).
+            Assert(failMask.size() == terms.size());
+            while (!failMask.empty() && !failMask.back())
+            {
+              failMask.pop_back();
+              childIndex.pop_back();
+              index--;
+            }
+          }
+          if (d_qstate.isInConflict())
+          {
+            // could be conflicting for an internal reason (such as term
+            // indices computed in above calls)
+            return false;
           }
         }
       } while (success);

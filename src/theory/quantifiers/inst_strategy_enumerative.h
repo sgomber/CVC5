@@ -2,10 +2,10 @@
 /*! \file inst_strategy_enumerative.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Andrew Reynolds
+ **   Andrew Reynolds, Mathias Preiner
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
+ ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
@@ -19,7 +19,7 @@
 
 #include "context/context.h"
 #include "context/context_mm.h"
-#include "theory/quantifiers/quant_util.h"
+#include "theory/quantifiers/quant_module.h"
 #include "theory/quantifiers/relevant_domain.h"
 
 namespace CVC4 {
@@ -62,8 +62,14 @@ namespace quantifiers {
 class InstStrategyEnum : public QuantifiersModule
 {
  public:
-  InstStrategyEnum(QuantifiersEngine* qe, RelevantDomain* rd);
+  InstStrategyEnum(QuantifiersEngine* qe,
+                   QuantifiersState& qs,
+                   QuantifiersInferenceManager& qim,
+                   QuantifiersRegistry& qr,
+                   RelevantDomain* rd);
   ~InstStrategyEnum() {}
+  /** Presolve */
+  void presolve() override;
   /** Needs check. */
   bool needsCheck(Theory::Effort e) override;
   /** Reset round. */
@@ -101,6 +107,12 @@ class InstStrategyEnum : public QuantifiersModule
    * term instantiations.
    */
   bool process(Node q, bool fullEffort, bool isRd);
+  /**
+   * A limit on the number of rounds to apply this strategy, where a value < 0
+   * means no limit. This value is set to the value of fullSaturateLimit()
+   * during presolve.
+   */
+  int32_t d_fullSaturateLimit;
 }; /* class InstStrategyEnum */
 
 } /* CVC4::theory::quantifiers namespace */

@@ -4,8 +4,8 @@
  ** Top contributors (to current version):
  **   Andrew Reynolds, Morgan Deters, Tim King
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
+ ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
@@ -18,67 +18,96 @@
 
 #include "base/check.h"
 #include "expr/kind.h"
+#include "expr/proof_node_manager.h"
 #include "options/quantifiers_options.h"
 #include "theory/quantifiers/ematching/instantiation_engine.h"
 #include "theory/quantifiers/fmf/model_engine.h"
 #include "theory/quantifiers/quantifiers_attributes.h"
+#include "theory/quantifiers/quantifiers_rewriter.h"
 #include "theory/quantifiers/term_database.h"
 #include "theory/quantifiers/term_util.h"
 #include "theory/quantifiers_engine.h"
 #include "theory/valuation.h"
 
-using namespace std;
-using namespace CVC4;
 using namespace CVC4::kind;
 using namespace CVC4::context;
-using namespace CVC4::theory;
-using namespace CVC4::theory::quantifiers;
 
-TheoryQuantifiers::TheoryQuantifiers(Context* c, context::UserContext* u, OutputChannel& out, Valuation valuation, const LogicInfo& logicInfo) :
-    Theory(THEORY_QUANTIFIERS, c, u, out, valuation, logicInfo)
+namespace CVC4 {
+namespace theory {
+namespace quantifiers {
+
+TheoryQuantifiers::TheoryQuantifiers(Context* c,
+                                     context::UserContext* u,
+                                     OutputChannel& out,
+                                     Valuation valuation,
+                                     const LogicInfo& logicInfo,
+                                     ProofNodeManager* pnm)
+    : Theory(THEORY_QUANTIFIERS, c, u, out, valuation, logicInfo, pnm),
+      d_qstate(c, u, valuation, logicInfo),
+      d_qim(*this, d_qstate, pnm),
+      d_qengine(d_qstate, d_qim, pnm)
 {
-  out.handleUserAttribute( "axiom", this );
-  out.handleUserAttribute( "conjecture", this );
   out.handleUserAttribute( "fun-def", this );
-  out.handleUserAttribute( "sygus", this );
-  out.handleUserAttribute("sygus-obj-fun", this);
-  out.handleUserAttribute("quant-name", this);
-  out.handleUserAttribute("sygus-synth-grammar", this);
-  out.handleUserAttribute( "sygus-synth-fun-var-list", this );
+  out.handleUserAttribute("qid", this);
   out.handleUserAttribute( "quant-inst-max-level", this );
-  out.handleUserAttribute( "rr-priority", this );
   out.handleUserAttribute( "quant-elim", this );
   out.handleUserAttribute( "quant-elim-partial", this );
+
+  ProofChecker* pc = pnm != nullptr ? pnm->getChecker() : nullptr;
+  if (pc != nullptr)
+  {
+    // add the proof rules
+    d_qChecker.registerTo(pc);
+  }
+  // indicate we are using the quantifiers theory state object
+  d_theoryState = &d_qstate;
+  // use the inference manager as the official inference manager
+  d_inferManager = &d_qim;
+
+  // Set the pointer to the quantifiers engine, which this theory owns. This
+  // pointer will be retreived by TheoryEngine and set to all theories
+  // post-construction.
+  d_quantEngine = &d_qengine;
 }
 
 TheoryQuantifiers::~TheoryQuantifiers() {
 }
 
+TheoryRewriter* TheoryQuantifiers::getTheoryRewriter() { return &d_rewriter; }
 void TheoryQuantifiers::finishInit()
 {
   // quantifiers are not evaluated in getModelValue
-  TheoryModel* tm = d_valuation.getModel();
-  Assert(tm != nullptr);
-  tm->setUnevaluatedKind(EXISTS);
-  tm->setUnevaluatedKind(FORALL);
+  d_valuation.setUnevaluatedKind(EXISTS);
+  d_valuation.setUnevaluatedKind(FORALL);
+  // witness is used in several instantiation strategies
+  d_valuation.setUnevaluatedKind(WITNESS);
 }
 
-void TheoryQuantifiers::preRegisterTerm(TNode n) {
+bool TheoryQuantifiers::needsEqualityEngine(EeSetupInfo& esi)
+{
+  // use the master equality engine
+  esi.d_useMaster = true;
+  return true;
+}
+
+void TheoryQuantifiers::preRegisterTerm(TNode n)
+{
   if (n.getKind() != FORALL)
   {
     return;
   }
-  Debug("quantifiers-prereg") << "TheoryQuantifiers::preRegisterTerm() " << n << endl;
+  Debug("quantifiers-prereg")
+      << "TheoryQuantifiers::preRegisterTerm() " << n << std::endl;
   // Preregister the quantified formula.
   // This initializes the modules used for handling n in this user context.
   getQuantifiersEngine()->preRegisterQuantifier(n);
   Debug("quantifiers-prereg")
-      << "TheoryQuantifiers::preRegisterTerm() done " << n << endl;
+      << "TheoryQuantifiers::preRegisterTerm() done " << n << std::endl;
 }
 
 
 void TheoryQuantifiers::presolve() {
-  Debug("quantifiers-presolve") << "TheoryQuantifiers::presolve()" << endl;
+  Debug("quantifiers-presolve") << "TheoryQuantifiers::presolve()" << std::endl;
   if( getQuantifiersEngine() ){
     getQuantifiersEngine()->presolve();
   }
@@ -93,17 +122,23 @@ void TheoryQuantifiers::ppNotifyAssertions(
   }
 }
 
-bool TheoryQuantifiers::collectModelInfo(TheoryModel* m)
+bool TheoryQuantifiers::collectModelValues(TheoryModel* m,
+                                           const std::set<Node>& termSet)
 {
   for(assertions_iterator i = facts_begin(); i != facts_end(); ++i) {
-    if((*i).assertion.getKind() == kind::NOT) {
-      Debug("quantifiers::collectModelInfo") << "got quant FALSE: " << (*i).assertion[0] << endl;
-      if (!m->assertPredicate((*i).assertion[0], false))
+    if ((*i).d_assertion.getKind() == NOT)
+    {
+      Debug("quantifiers::collectModelInfo")
+          << "got quant FALSE: " << (*i).d_assertion[0] << std::endl;
+      if (!m->assertPredicate((*i).d_assertion[0], false))
       {
         return false;
       }
-    } else {
-      Debug("quantifiers::collectModelInfo") << "got quant TRUE : " << *i << endl;
+    }
+    else
+    {
+      Debug("quantifiers::collectModelInfo")
+          << "got quant TRUE : " << *i << std::endl;
       if (!m->assertPredicate(*i, true))
       {
         return false;
@@ -113,51 +148,32 @@ bool TheoryQuantifiers::collectModelInfo(TheoryModel* m)
   return true;
 }
 
-void TheoryQuantifiers::check(Effort e) {
-  if (done() && !fullEffort(e)) {
-    return;
-  }
-
-  TimerStat::CodeTimer checkTimer(d_checkTime);
-
-  Trace("quantifiers-check") << "quantifiers::check(" << e << ")" << std::endl;
-  while(!done()) {
-    Node assertion = get();
-    Trace("quantifiers-assert") << "quantifiers::assert(): " << assertion << std::endl;
-    switch(assertion.getKind()) {
-    case kind::FORALL:
-      getQuantifiersEngine()->assertQuantifier(assertion, true);
-      break;
-    case kind::INST_CLOSURE:
-      getQuantifiersEngine()->addTermToDatabase( assertion[0], false, true );
-      if( !options::lteRestrictInstClosure() ){
-        getQuantifiersEngine()->getMasterEqualityEngine()->addTerm( assertion[0] );
-      }
-      break;
-    case kind::EQUAL:
-      //do nothing
-      break;
-    case kind::NOT:
-      {
-        switch( assertion[0].getKind()) {
-        case kind::FORALL:
-          getQuantifiersEngine()->assertQuantifier(assertion[0], false);
-          break;
-        case kind::EQUAL:
-          //do nothing
-          break;
-        case kind::INST_CLOSURE:
-        default: Unhandled() << assertion[0].getKind(); break;
-        }
-      }
-      break;
-      default: Unhandled() << assertion.getKind(); break;
-    }
-  }
+void TheoryQuantifiers::postCheck(Effort level)
+{
   // call the quantifiers engine to check
-  getQuantifiersEngine()->check( e );
+  getQuantifiersEngine()->check(level);
+}
+
+bool TheoryQuantifiers::preNotifyFact(
+    TNode atom, bool polarity, TNode fact, bool isPrereg, bool isInternal)
+{
+  Kind k = atom.getKind();
+  if (k == FORALL)
+  {
+    getQuantifiersEngine()->assertQuantifier(atom, polarity);
+  }
+  else
+  {
+    Unhandled() << "Unexpected fact " << fact;
+  }
+  // don't use equality engine, always return true
+  return true;
 }
 
 void TheoryQuantifiers::setUserAttribute(const std::string& attr, Node n, std::vector<Node> node_values, std::string str_value){
   QuantAttributes::setUserAttribute( attr, n, node_values, str_value );
 }
+
+}  // namespace quantifiers
+}  // namespace theory
+}  // namespace CVC4

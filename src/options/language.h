@@ -4,8 +4,8 @@
  ** Top contributors (to current version):
  **   Morgan Deters, Andrew Reynolds, Francois Bobot
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
+ ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
@@ -19,11 +19,8 @@
 #ifndef CVC4__LANGUAGE_H
 #define CVC4__LANGUAGE_H
 
-#include <sstream>
+#include <ostream>
 #include <string>
-
-#include "base/exception.h"
-#include "options/option_exception.h"
 
 namespace CVC4 {
 namespace language {
@@ -48,20 +45,14 @@ enum CVC4_PUBLIC Language
   LANG_SMTLIB_V2_0 = 0,
   /** The SMTLIB v2.5 input language */
   LANG_SMTLIB_V2_5,
-  /** The SMTLIB v2.6 input language */
+  /** The SMTLIB v2.6 input language, with support for the strings standard */
   LANG_SMTLIB_V2_6,
   /** Backward-compatibility for enumeration naming */
   LANG_SMTLIB_V2 = LANG_SMTLIB_V2_6,
-  /** The SMTLIB v2.6 input language, with support for the strings standard */
-  LANG_SMTLIB_V2_6_1,
   /** The TPTP input language */
   LANG_TPTP,
   /** The CVC4 input language */
   LANG_CVC4,
-  /** The Z3-str input language */
-  LANG_Z3STR,
-  /** The SyGuS input language */
-  LANG_SYGUS,
   /** The SyGuS input language version 2.0 */
   LANG_SYGUS_V2,
 
@@ -87,18 +78,11 @@ inline std::ostream& operator<<(std::ostream& out, Language lang) {
   case LANG_SMTLIB_V2_6:
     out << "LANG_SMTLIB_V2_6";
     break;
-  case LANG_SMTLIB_V2_6_1: out << "LANG_SMTLIB_V2_6_1"; break;
   case LANG_TPTP:
     out << "LANG_TPTP";
     break;
   case LANG_CVC4:
     out << "LANG_CVC4";
-    break;
-  case LANG_Z3STR:
-    out << "LANG_Z3STR";
-    break;
-  case LANG_SYGUS:
-    out << "LANG_SYGUS";
     break;
   case LANG_SYGUS_V2: out << "LANG_SYGUS_V2"; break;
   default:
@@ -129,20 +113,14 @@ enum CVC4_PUBLIC Language
   LANG_SMTLIB_V2_0 = input::LANG_SMTLIB_V2_0,
   /** The SMTLIB v2.5 output language */
   LANG_SMTLIB_V2_5 = input::LANG_SMTLIB_V2_5,
-  /** The SMTLIB v2.6 output language */
+  /** The SMTLIB v2.6 output language, with support for the strings standard */
   LANG_SMTLIB_V2_6 = input::LANG_SMTLIB_V2_6,
   /** Backward-compatibility for enumeration naming */
   LANG_SMTLIB_V2 = input::LANG_SMTLIB_V2,
-  /** The SMTLIB v2.6 output language */
-  LANG_SMTLIB_V2_6_1 = input::LANG_SMTLIB_V2_6_1,
   /** The TPTP output language */
   LANG_TPTP = input::LANG_TPTP,
   /** The CVC4 output language */
   LANG_CVC4 = input::LANG_CVC4,
-  /** The Z3-str output language */
-  LANG_Z3STR = input::LANG_Z3STR,
-  /** The sygus output language */
-  LANG_SYGUS = input::LANG_SYGUS,
   /** The sygus output language version 2.0 */
   LANG_SYGUS_V2 = input::LANG_SYGUS_V2,
 
@@ -168,18 +146,11 @@ inline std::ostream& operator<<(std::ostream& out, Language lang) {
     out << "LANG_SMTLIB_V2_5";
     break;
   case LANG_SMTLIB_V2_6: out << "LANG_SMTLIB_V2_6"; break;
-  case LANG_SMTLIB_V2_6_1: out << "LANG_SMTLIB_V2_6_1"; break;
   case LANG_TPTP:
     out << "LANG_TPTP";
     break;
   case LANG_CVC4:
     out << "LANG_CVC4";
-    break;
-  case LANG_Z3STR:
-    out << "LANG_Z3STR";
-    break;
-  case LANG_SYGUS:
-    out << "LANG_SYGUS";
     break;
   case LANG_SYGUS_V2: out << "LANG_SYGUS_V2"; break;
   case LANG_AST:
@@ -208,9 +179,9 @@ bool isInputLang_smt2(InputLanguage lang) CVC4_PUBLIC;
 bool isOutputLang_smt2(OutputLanguage lang) CVC4_PUBLIC;
 
 /**
-  * Is the language smtlib 2.5 or above? If exact=true, then this method returns
-  * false if the input language is not exactly SMT-LIB 2.6.
-  */
+ * Is the language smtlib 2.5 or above? If exact=true, then this method returns
+ * false if the input language is not exactly SMT-LIB 2.5.
+ */
 bool isInputLang_smt2_5(InputLanguage lang, bool exact = false) CVC4_PUBLIC;
 bool isOutputLang_smt2_5(OutputLanguage lang, bool exact = false) CVC4_PUBLIC;
 /**

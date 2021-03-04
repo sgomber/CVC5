@@ -2,10 +2,10 @@
 /*! \file dump.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Morgan Deters, Clark Barrett, Tim King
+ **   Andres Noetzli, Morgan Deters, Tim King
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
+ ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
@@ -16,11 +16,44 @@
 
 #include "smt/dump.h"
 
+#include "base/configuration.h"
 #include "base/output.h"
 #include "lib/strtok_r.h"
 #include "preprocessing/preprocessing_pass_registry.h"
+#include "smt/command.h"
+#include "smt/node_command.h"
 
 namespace CVC4 {
+
+#if defined(CVC4_DUMPING) && !defined(CVC4_MUZZLE)
+
+CVC4dumpstream& CVC4dumpstream::operator<<(const Command& c)
+{
+  if (d_os != nullptr)
+  {
+    (*d_os) << c;
+  }
+  return *this;
+}
+
+CVC4dumpstream& CVC4dumpstream::operator<<(const NodeCommand& nc)
+{
+  if (d_os != nullptr)
+  {
+    (*d_os) << nc;
+  }
+  return *this;
+}
+
+#else
+
+CVC4dumpstream& CVC4dumpstream::operator<<(const Command& c) { return *this; }
+CVC4dumpstream& CVC4dumpstream::operator<<(const NodeCommand& nc)
+{
+  return *this;
+}
+
+#endif /* CVC4_DUMPING && !CVC4_MUZZLE */
 
 DumpC DumpChannel CVC4_PUBLIC;
 
@@ -73,7 +106,9 @@ void DumpC::setDumpFromString(const std::string& optarg) {
                                 + optargPtr
                                 + "'.  Please consult --dump help.");
         }
-        if (!strcmp(p, "everything"))
+        // hard-coded cases
+        if (!strcmp(p, "everything") || !strcmp(p, "definition-expansion")
+            || !strcmp(p, "simplify") || !strcmp(p, "repeat-simplify"))
         {
         }
         else if (preprocessing::PreprocessingPassRegistry::getInstance()
@@ -100,42 +135,6 @@ void DumpC::setDumpFromString(const std::string& optarg) {
                || !strcmp(optargPtr, "bv-rewrites")
                || !strcmp(optargPtr, "theory::fullcheck"))
       {
-        // These are "non-state-dumping" modes.  If state (SAT decisions,
-        // propagations, etc.) is dumped, it will interfere with the validity
-        // of these generated queries.
-        if (Dump.isOn("state"))
-        {
-          throw OptionException(std::string("dump option `") + optargPtr +
-                              "' conflicts with a previous, "
-                              "state-dumping dump option.  You cannot "
-                              "mix stateful and non-stateful dumping modes; "
-                              "see --dump help.");
-        }
-        else
-        {
-          Dump.on("no-permit-state");
-        }
-      }
-      else if (!strcmp(optargPtr, "state")
-               || !strcmp(optargPtr, "missed-t-conflicts")
-               || !strcmp(optargPtr, "t-propagations")
-               || !strcmp(optargPtr, "missed-t-propagations"))
-      {
-        // These are "state-dumping" modes.  If state (SAT decisions,
-        // propagations, etc.) is not dumped, it will interfere with the
-        // validity of these generated queries.
-        if (Dump.isOn("no-permit-state"))
-        {
-          throw OptionException(std::string("dump option `") + optargPtr +
-                              "' conflicts with a previous, "
-                              "non-state-dumping dump option.  You cannot "
-                              "mix stateful and non-stateful dumping modes; "
-                              "see --dump help.");
-        }
-        else
-        {
-          Dump.on("state");
-        }
       }
       else if (!strcmp(optargPtr, "help"))
       {
@@ -151,14 +150,6 @@ void DumpC::setDumpFromString(const std::string& optarg) {
         }
         puts(ss.str().c_str());
         exit(1);
-      }
-      else if (!strcmp(optargPtr, "bv-abstraction"))
-      {
-        Dump.on("bv-abstraction");
-      }
-      else if (!strcmp(optargPtr, "bv-algebraic"))
-      {
-        Dump.on("bv-algebraic");
       }
       else
       {
@@ -186,7 +177,8 @@ void DumpC::setDumpFromString(const std::string& optarg) {
   }
 }
 
-const std::string DumpC::s_dumpHelp = "\
+const std::string DumpC::s_dumpHelp =
+    "\
 Dump modes currently supported by the --dump option:\n\
 \n\
 benchmark\n\
@@ -222,49 +214,26 @@ clauses\n\
 + Do all the preprocessing outlined above, and dump the CNF-converted\n\
   output\n\
 \n\
-state\n\
-+ Dump all contextual assertions (e.g., SAT decisions, propagations..).\n\
-  Implied by all \"stateful\" modes below and conflicts with all\n\
-  non-stateful modes below.\n\
-\n\
-t-conflicts [non-stateful]\n\
+t-conflicts\n\
 + Output correctness queries for all theory conflicts\n\
 \n\
-missed-t-conflicts [stateful]\n\
-+ Output completeness queries for theory conflicts\n\
-\n\
-t-propagations [stateful]\n\
-+ Output correctness queries for all theory propagations\n\
-\n\
-missed-t-propagations [stateful]\n\
-+ Output completeness queries for theory propagations (LARGE and EXPENSIVE)\n\
-\n\
-t-lemmas [non-stateful]\n\
+t-lemmas\n\
 + Output correctness queries for all theory lemmas\n\
 \n\
-t-explanations [non-stateful]\n\
+t-explanations\n\
 + Output correctness queries for all theory explanations\n\
 \n\
-bv-rewrites [non-stateful]\n\
+bv-rewrites\n\
 + Output correctness queries for all bitvector rewrites\n\
 \n\
-bv-abstraction [non-stateful]\n\
-+ Output correctness queries for all bv abstraction \n\
-\n\
-bv-algebraic [non-stateful]\n\
-+ Output correctness queries for bv algebraic solver. \n\
-\n\
-theory::fullcheck [non-stateful]\n\
+theory::fullcheck\n\
 + Output completeness queries for all full-check effort-level theory checks\n\
 \n\
-Dump modes can be combined with multiple uses of --dump.  Generally you want\n\
-raw-benchmark or, alternatively, one from the assertions category (either\n\
-assertions or clauses), and perhaps one or more stateful or non-stateful modes\n\
-for checking correctness and completeness of decision procedure implementations.\n\
-Stateful modes dump the contextual assertions made by the core solver (all\n\
-decisions and propagations as assertions); this affects the validity of the\n\
-resulting correctness and completeness queries, so of course stateful and\n\
-non-stateful modes cannot be mixed in the same run.\n\
+Dump modes can be combined by concatenating the above values with \",\" in\n\
+between them.  Generally you want raw-benchmark or, alternatively, one from\n\
+the assertions category (either assertions or clauses), and perhaps one or more\n\
+other modes for checking correctness and completeness of decision procedure\n\
+implementations.\n\
 \n\
 The --output-language option controls the language used for dumping, and\n\
 this allows you to connect CVC4 to another solver implementation via a UNIX\n\
