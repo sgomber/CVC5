@@ -3,7 +3,7 @@
 ## Top contributors (to current version):
 ##   Mathias Preiner, Aina Niemetz, Gereon Kremer
 ## This file is part of the CVC4 project.
-## Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+## Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
 ## in the top-level source directory and their institutional affiliations.
 ## All rights reserved.  See the file COPYING in the top-level source
 ## directory for licensing information.
@@ -67,9 +67,6 @@ if(CADICAL_DIR)
 endif()
 if(CRYPTOMINISAT_DIR)
   list(APPEND CMAKE_PREFIX_PATH "${CRYPTOMINISAT_DIR}")
-endif()
-if(CXXTEST_DIR)
-  list(APPEND CMAKE_PREFIX_PATH "${CXXTEST_DIR}")
 endif()
 if(DRAT2ER_DIR)
   list(APPEND CMAKE_PREFIX_PATH "${DRAT2ER_DIR}")
@@ -164,7 +161,6 @@ set(ABC_DIR           "" CACHE STRING "Set ABC install directory")
 set(ANTLR_DIR         "" CACHE STRING "Set ANTLR3 install directory")
 set(CADICAL_DIR       "" CACHE STRING "Set CaDiCaL install directory")
 set(CRYPTOMINISAT_DIR "" CACHE STRING "Set CryptoMiniSat install directory")
-set(CXXTEST_DIR       "" CACHE STRING "Set CxxTest install directory")
 set(DRAT2ER_DIR       "" CACHE STRING "Set drat2er install directory")
 set(GLPK_DIR          "" CACHE STRING "Set GLPK install directory")
 set(GMP_DIR           "" CACHE STRING "Set GMP install directory")
@@ -354,24 +350,6 @@ endif()
 enable_testing()
 
 #-----------------------------------------------------------------------------#
-# Check GCC version.
-#
-# GCC version 4.5.1 builds MiniSat incorrectly with -O2, which results in
-# incorrect answers.
-
-if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-  execute_process(
-    COMMAND ${CMAKE_CXX_COMPILER} -dumpversion
-    OUTPUT_VARIABLE GCC_VERSION
-    OUTPUT_STRIP_TRAILING_WHITESPACE)
-  if(GCC_VERSION VERSION_EQUAL "4.5.1")
-    message(FATAL_ERROR
-      "GCC 4.5.1's optimizer is known to build MiniSat incorrectly "
-      "(and by extension CVC4).")
-  endif()
-endif()
-
-#-----------------------------------------------------------------------------#
 # Check options, find packages and configure build.
 
 if(USE_PYTHON2)
@@ -556,6 +534,11 @@ if(GPL_LIBS)
   endif()
   set(CVC4_GPL_DEPS 1)
 endif()
+
+#-----------------------------------------------------------------------------#
+# Provide targets to inspect iwyu suggestions
+
+include(IWYU)
 
 #-----------------------------------------------------------------------------#
 # Generate CVC4's cvc4autoconfig.h header
