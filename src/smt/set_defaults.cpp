@@ -2,9 +2,9 @@
 /*! \file set_defaults.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Andrew Reynolds, Andres Noetzli, Gereon Kremer
+ **   Andrew Reynolds, Andres Noetzli, Haniel Barbosa
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
  ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -35,6 +35,7 @@
 #include "options/strings_options.h"
 #include "options/theory_options.h"
 #include "options/uf_options.h"
+#include "smt/logic_exception.h"
 #include "theory/theory.h"
 
 using namespace CVC4::theory;
@@ -71,9 +72,10 @@ void setDefaults(LogicInfo& logic, bool isInternalSubsolver)
     Notice() << "SmtEngine: setting unsatCores" << std::endl;
     options::unsatCores.set(true);
   }
-  if (options::checkUnsatCoresNew())
+  if (options::checkProofs() || options::checkUnsatCoresNew())
   {
-    options::proofNew.set(true);
+    Notice() << "SmtEngine: setting proof" << std::endl;
+    options::proof.set(true);
   }
   if (options::bitvectorAigSimplifications.wasSetByUser())
   {
@@ -130,6 +132,12 @@ void setDefaults(LogicInfo& logic, bool isInternalSubsolver)
   {
     options::bvLazyReduceExtf.set(false);
     options::bvLazyRewriteExtf.set(false);
+  }
+
+  /* Disable bit-level propagation by default for the BITBLAST solver. */
+  if (options::bvSolver() == options::BVSolver::BITBLAST)
+  {
+    options::bitvectorPropagate.set(false);
   }
 
   if (options::solveIntAsBV() > 0)
@@ -303,7 +311,8 @@ void setDefaults(LogicInfo& logic, bool isInternalSubsolver)
        || options::produceAbducts()
        || options::produceInterpols() != options::ProduceInterpols::NONE
        || options::modelCoresMode() != options::ModelCoresMode::NONE
-       || options::blockModelsMode() != options::BlockModelsMode::NONE)
+       || options::blockModelsMode() != options::BlockModelsMode::NONE
+       || options::proof())
       && !options::produceAssertions())
   {
     Notice() << "SmtEngine: turning on produce-assertions to support "
@@ -574,6 +583,12 @@ void setDefaults(LogicInfo& logic, bool isInternalSubsolver)
     logic = log;
     logic.lock();
   }
+  if (options::bvAbstraction())
+  {
+    // bv abstraction may require UF
+    Notice() << "Enabling UF because bvAbstraction requires it." << std::endl;
+    needsUf = true;
+  }
   if (needsUf
       // Arrays, datatypes and sets permit Boolean terms and thus require UF
       || logic.isTheoryEnabled(THEORY_ARRAYS)
@@ -595,9 +610,25 @@ void setDefaults(LogicInfo& logic, bool isInternalSubsolver)
     if (!logic.isTheoryEnabled(THEORY_UF))
     {
       LogicInfo log(logic.getUnlockedCopy());
-      Notice() << "Enabling UF because " << logic << " requires it."
-               << std::endl;
+      if (!needsUf)
+      {
+        Notice() << "Enabling UF because " << logic << " requires it."
+                 << std::endl;
+      }
       log.enableTheory(THEORY_UF);
+      logic = log;
+      logic.lock();
+    }
+  }
+  if (options::arithMLTrick())
+  {
+    if (!logic.areIntegersUsed())
+    {
+      // enable integers
+      LogicInfo log(logic.getUnlockedCopy());
+      Notice() << "Enabling integers because arithMLTrick requires it."
+               << std::endl;
+      log.enableIntegers();
       logic = log;
       logic.lock();
     }
@@ -842,11 +873,6 @@ void setDefaults(LogicInfo& logic, bool isInternalSubsolver)
              << std::endl;
     options::cegqi.set(false);
   }
-  // Do we need to track instantiations?
-  if (options::unsatCores() && !options::trackInstLemmas.wasSetByUser())
-  {
-    options::trackInstLemmas.set(true);
-  }
 
   if ((options::fmfBoundLazy.wasSetByUser() && options::fmfBoundLazy())
       || (options::fmfBoundInt.wasSetByUser() && options::fmfBoundInt()))
@@ -871,16 +897,6 @@ void setDefaults(LogicInfo& logic, bool isInternalSubsolver)
   }
   if (options::ufHo())
   {
-    // if higher-order, disable proof production
-    if (options::proofNew())
-    {
-      if (options::proofNew.wasSetByUser())
-      {
-        Warning() << "SmtEngine: turning off proof production (not yet "
-                     "supported with --uf-ho)\n";
-      }
-      options::proofNew.set(false);
-    }
     // if higher-order, then current variants of model-based instantiation
     // cannot be used
     if (options::mbqiMode() != options::MbqiMode::NONE)
@@ -1093,16 +1109,6 @@ void setDefaults(LogicInfo& logic, bool isInternalSubsolver)
     if (!options::nlExtTangentPlanes.wasSetByUser())
     {
       options::nlExtTangentPlanes.set(true);
-    }
-    // not compatible with proofs
-    if (options::proofNew())
-    {
-      if (options::proofNew.wasSetByUser())
-      {
-        Notice() << "SmtEngine: setting proof-new to false to support SyGuS"
-                 << std::endl;
-      }
-      options::proofNew.set(false);
     }
   }
   // counterexample-guided instantiation for non-sygus
@@ -1392,11 +1398,6 @@ void setDefaults(LogicInfo& logic, bool isInternalSubsolver)
         "Note that in a QF_BV problem UF symbols can be introduced for "
         "division. "
         "Try --bv-div-zero-const to interpret division by zero as a constant.");
-  }
-  // !!!!!!!!!!!!!!!! temporary, until proof-new is functional
-  if (options::proofNew())
-  {
-    throw OptionException("--proof-new is not yet supported.");
   }
 
   if (logic == LogicInfo("QF_UFNRA"))

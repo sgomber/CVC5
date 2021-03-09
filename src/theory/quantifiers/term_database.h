@@ -2,9 +2,9 @@
 /*! \file term_database.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Andrew Reynolds, Mathias Preiner, Morgan Deters
+ **   Andrew Reynolds, Mathias Preiner
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
  ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -18,8 +18,10 @@
 #define CVC4__THEORY__QUANTIFIERS__TERM_DATABASE_H
 
 #include <map>
-#include <unordered_set>
+#include <unordered_map>
 
+#include "context/cdhashmap.h"
+#include "context/cdhashset.h"
 #include "expr/attribute.h"
 #include "expr/node_trie.h"
 #include "theory/quantifiers/quant_util.h"
@@ -33,8 +35,18 @@ class QuantifiersEngine;
 
 namespace quantifiers {
 
-class ConjectureGenerator;
-class TermGenEnv;
+class QuantifiersState;
+class QuantifiersInferenceManager;
+class QuantifiersRegistry;
+
+/** Context-dependent list of nodes */
+class DbList
+{
+ public:
+  DbList(context::Context* c) : d_list(c) {}
+  /** The list */
+  context::CDList<Node> d_list;
+};
 
 /** Term Database
  *
@@ -56,16 +68,18 @@ class TermGenEnv;
  */
 class TermDb : public QuantifiersUtil {
   friend class ::CVC4::theory::QuantifiersEngine;
-  // TODO: eliminate these
-  friend class ::CVC4::theory::quantifiers::ConjectureGenerator;
-  friend class ::CVC4::theory::quantifiers::TermGenEnv;
-  typedef context::CDHashMap<Node, int, NodeHashFunction> NodeIntMap;
-  typedef context::CDHashMap<Node, bool, NodeHashFunction> NodeBoolMap;
+  using NodeBoolMap = context::CDHashMap<Node, bool, NodeHashFunction>;
+  using NodeList = context::CDList<Node>;
+  using NodeSet = context::CDHashSet<Node, NodeHashFunction>;
+  using TypeNodeDbListMap = context::
+      CDHashMap<TypeNode, std::shared_ptr<DbList>, TypeNodeHashFunction>;
+  using NodeDbListMap =
+      context::CDHashMap<Node, std::shared_ptr<DbList>, NodeHashFunction>;
 
  public:
   TermDb(QuantifiersState& qs,
          QuantifiersInferenceManager& qim,
-         QuantifiersEngine* qe);
+         QuantifiersRegistry& qr);
   ~TermDb();
   /** presolve (called once per user check-sat) */
   void presolve();
@@ -76,26 +90,26 @@ class TermDb : public QuantifiersUtil {
   /** identify */
   std::string identify() const override { return "TermDb"; }
   /** get number of operators */
-  unsigned getNumOperators();
+  size_t getNumOperators() const;
   /** get operator at index i */
-  Node getOperator(unsigned i);
+  Node getOperator(size_t i) const;
   /** ground terms for operator
   * Get the number of ground terms with operator f that have been added to the
   * database
   */
-  unsigned getNumGroundTerms(Node f) const;
+  size_t getNumGroundTerms(Node f) const;
   /** get ground term for operator
   * Get the i^th ground term with operator f that has been added to the database
   */
-  Node getGroundTerm(Node f, unsigned i) const;
+  Node getGroundTerm(Node f, size_t i) const;
   /** get num type terms
   * Get the number of ground terms of tn that have been added to the database
   */
-  unsigned getNumTypeGroundTerms(TypeNode tn) const;
+  size_t getNumTypeGroundTerms(TypeNode tn) const;
   /** get type ground term
   * Returns the i^th ground term of type tn
   */
-  Node getTypeGroundTerm(TypeNode tn, unsigned i) const;
+  Node getTypeGroundTerm(TypeNode tn, size_t i) const;
   /** get or make ground term
    *
    * Returns the first ground term of type tn, or makes one if none exist. If
@@ -113,6 +127,10 @@ class TermDb : public QuantifiersUtil {
    * matched with via E-matching, and can be used in entailment tests below.
    */
   void addTerm(Node n);
+  /** Get the currently added ground terms of the given type */
+  DbList* getOrMkDbListForType(TypeNode tn);
+  /** Get the currently added ground terms for the given operator */
+  DbList* getOrMkDbListForOp(TNode op);
   /** get match operator for term n
   *
   * If n has a kind that we index, this function will
@@ -274,14 +292,24 @@ class TermDb : public QuantifiersUtil {
   Node getHoTypeMatchPredicate(TypeNode tn);
 
  private:
-  /** reference to the quantifiers engine */
-  QuantifiersEngine* d_quantEngine;
   /** The quantifiers state object */
   QuantifiersState& d_qstate;
   /** The quantifiers inference manager */
   QuantifiersInferenceManager& d_qim;
+  /** The quantifiers registry */
+  QuantifiersRegistry& d_qreg;
+  /** A context for the data structures below, when not context-dependent */
+  context::Context d_termsContext;
+  /** The context we are using for the data structures below */
+  context::Context* d_termsContextUse;
   /** terms processed */
-  std::unordered_set< Node, NodeHashFunction > d_processed;
+  NodeSet d_processed;
+  /** map from types to ground terms for that type */
+  TypeNodeDbListMap d_typeMap;
+  /** list of all operators */
+  NodeList d_ops;
+  /** map from operators to ground terms for that operator */
+  NodeDbListMap d_opMap;
   /** select op map */
   std::map< Node, std::map< TypeNode, Node > > d_par_op_map;
   /** whether master equality engine is UF-inconsistent */
@@ -289,12 +317,6 @@ class TermDb : public QuantifiersUtil {
   /** boolean terms */
   Node d_true;
   Node d_false;
-  /** list of all operators */
-  std::vector<Node> d_ops;
-  /** map from operators to ground terms for that operator */
-  std::map< Node, std::vector< Node > > d_op_map;
-  /** map from type nodes to terms of that type */
-  std::map< TypeNode, std::vector< Node > > d_type_map;
   /** map from type nodes to a fresh variable we introduced */
   std::unordered_map<TypeNode, Node, TypeNodeHashFunction> d_type_fv;
   /** inactive map */

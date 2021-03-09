@@ -4,7 +4,7 @@
  ** Top contributors (to current version):
  **   Andrew Reynolds, Clark Barrett, Andres Noetzli
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
  ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -14,10 +14,12 @@
 #include "theory/theory_model_builder.h"
 
 #include "expr/dtype.h"
+#include "expr/dtype_cons.h"
 #include "options/quantifiers_options.h"
 #include "options/smt_options.h"
+#include "options/theory_options.h"
 #include "options/uf_options.h"
-#include "theory/theory_engine.h"
+#include "theory/rewriter.h"
 #include "theory/uf/theory_uf_model.h"
 
 using namespace std;
@@ -60,9 +62,7 @@ Node TheoryEngineModelBuilder::Assigner::getNextAssignment()
   return n;
 }
 
-TheoryEngineModelBuilder::TheoryEngineModelBuilder(TheoryEngine* te) : d_te(te)
-{
-}
+TheoryEngineModelBuilder::TheoryEngineModelBuilder() {}
 
 Node TheoryEngineModelBuilder::evaluateEqc(TheoryModel* m, TNode r)
 {
@@ -409,11 +409,11 @@ bool TheoryEngineModelBuilder::buildModel(TheoryModel* tm,
   // (2) an assigned representative specified by a theory in collectModelInfo,
   // (3) no assigned representative.
   TypeSet typeConstSet, typeRepSet, typeNoRepSet;
-  // An order list of types, such that T1 comes before T2 if T1 is a "component
-  // type" of T2, e.g. U comes before (Set U). This is only strictly necessary
-  // for finite model finding + parametric types instantiated with uninterpreted
-  // sorts, but is probably a good idea to do in general since it leads to
-  // models with smaller term sizes. -AJR
+  // An ordered list of types, such that T1 comes before T2 if T1 is a
+  // "component type" of T2, e.g. U comes before (Set U). This is only strictly
+  // necessary for finite model finding + parametric types instantiated with
+  // uninterpreted sorts, but is probably a good idea to do in general since it
+  // leads to models with smaller term sizes. -AJR
   std::vector<TypeNode> type_list;
   // The count of equivalence classes per sort (for finite model finding).
   std::map<TypeNode, unsigned> eqc_usort_count;
@@ -488,10 +488,9 @@ bool TheoryEngineModelBuilder::buildModel(TheoryModel* tm,
         isRelevantTerm = tm->isRelevantTerm(n);
       }
 
-      // For each term n in this equivalence class:
-      // (1) If n is relevant, register its assignable subterms,
-      // (2) Compute whether it is a constant or assigned representative,
-      // (3) If n is relevant and we don't have a constant representative,
+      // For each term n in this equivalence class, below we register its
+      // assignable subterms, compute whether it is a constant or assigned
+      // representative, then if we don't have a constant representative,
       // compute information regarding how we will assign values.
 
       // (1) Add assignable subterms, which ensures that e.g. models for
@@ -552,7 +551,8 @@ bool TheoryEngineModelBuilder::buildModel(TheoryModel* tm,
         continue;
       }
       // process the assignment exclusion set for term n
-      // was it processed as a slave of a group?
+      // was it processed based on a master exclusion group (see
+      // eqcToAssignerMaster)?
       if (processedExcSet.find(n) != processedExcSet.end())
       {
         // Should not have two assignment exclusion sets for the same
