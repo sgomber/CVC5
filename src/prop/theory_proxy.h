@@ -45,6 +45,7 @@ namespace prop {
 class PropEngine;
 class CnfStream;
 class SatRelevancy;
+class CDCLTSatSolverInterface;
 
 /**
  * The proxy class that allows the SatSolver to communicate with the theories.
