@@ -25,7 +25,7 @@ ArithInferManager::ArithInferManager(Theory& t,
                                      TheoryState& state,
                                      TheoryArithPrivate& p,
                                      ProofNodeManager* pnm)
-    : TheoryInferenceManager(t, state, pnm),
+    : TheoryInferenceManager(t, state, pnm, "theory::arith"),
       d_private(p),
       d_esolver(nullptr),
       d_propagationMap(state.getSatContext())

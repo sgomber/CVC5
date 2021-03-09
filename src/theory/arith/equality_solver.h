@@ -22,6 +22,7 @@
 #include "theory/arith/arith_state.h"
 #include "theory/ee_setup_info.h"
 #include "theory/uf/equality_engine.h"
+#include "theory/trust_node.h"
 
 namespace CVC4 {
 namespace theory {

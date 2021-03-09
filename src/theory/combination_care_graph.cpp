@@ -19,6 +19,7 @@
 #include "theory/care_graph.h"
 #include "theory/model_manager.h"
 #include "theory/theory_engine.h"
+#include "theory/shared_solver.h"
 
 namespace CVC4 {
 namespace theory {

@@ -21,12 +21,14 @@
 #include <memory>
 
 #include "theory/combination_engine.h"
+#include "theory/shared_terms_database.h"
 
 namespace CVC4 {
 
 class TheoryEngine;
 
 namespace theory {
+
 
 /**
  * Manager for doing theory combination using a model-based approach. This is

@@ -16,6 +16,10 @@
 
 #include "theory/theory_engine.h"
 #include "prop/prop_engine.h"
+#include "theory/shared_solver.h"
+#include "theory/model_manager.h"
+#include "theory/theory_state.h"
+#include "theory/theory_model.h"
 
 namespace CVC4 {
 namespace theory {

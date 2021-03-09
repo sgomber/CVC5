@@ -193,8 +193,8 @@ void PreRegisterVisitor::preRegisterWithTheory(TheoryEngine* te,
   }
   // call the theory's preRegisterTerm method
   visitedTheories = TheoryIdSetUtil::setInsert(id, visitedTheories);
-  d_engine->setActiveTheory(th);
   Theory* th = te->theoryOf(id);
+  te->setActiveTheory(th);
   th->preRegisterTerm(current);
 }
 
