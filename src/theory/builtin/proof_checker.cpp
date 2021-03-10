@@ -4,7 +4,7 @@
  ** Top contributors (to current version):
  **   Andrew Reynolds
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
  ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -422,7 +422,8 @@ Node BuiltinProofRuleChecker::checkInternal(PfRule id,
            || id == PfRule::THEORY_PREPROCESS_LEMMA
            || id == PfRule::THEORY_EXPAND_DEF || id == PfRule::WITNESS_AXIOM
            || id == PfRule::THEORY_LEMMA || id == PfRule::THEORY_REWRITE
-           || id == PfRule::TRUST_SUBS || id == PfRule::TRUST_SUBS_MAP)
+           || id == PfRule::TRUST_REWRITE || id == PfRule::TRUST_SUBS
+           || id == PfRule::TRUST_SUBS_MAP)
   {
     // "trusted" rules
     Assert(children.empty());

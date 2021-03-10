@@ -74,7 +74,6 @@ Optional Path to Optional Packages:
   --cadical-dir=PATH       path to top level of CaDiCaL source tree
   --cryptominisat-dir=PATH path to top level of CryptoMiniSat source tree
   --drat2er-dir=PATH       path to the top level of the drat2er installation
-  --cxxtest-dir=PATH       path to CxxTest installation
   --glpk-dir=PATH          path to top level of GLPK installation
   --gmp-dir=PATH           path to top level of GMP installation
   --kissat-dir=PATH        path to top level of Kissat source tree
@@ -160,7 +159,6 @@ antlr_dir=default
 cadical_dir=default
 cryptominisat_dir=default
 drat2er_dir=default
-cxxtest_dir=default
 glpk_dir=default
 gmp_dir=default
 kissat_dir=default
@@ -319,9 +317,6 @@ do
     --cryptominisat-dir) die "missing argument to $1 (try -h)" ;;
     --cryptominisat-dir=*) cryptominisat_dir=${1##*=} ;;
 
-    --cxxtest-dir) die "missing argument to $1 (try -h)" ;;
-    --cxxtest-dir=*) cxxtest_dir=${1##*=} ;;
-
     --drat2er-dir) die "missing argument to $1 (try -h)" ;;
     --drat2er-dir=*) drat2er_dir=${1##*=} ;;
 
@@ -366,12 +361,12 @@ done
 
 if [ "$arm64" == "ON" ]; then
   echo "Setting up dependencies for ARM 64-bit build"
-  HOST="aarch64-linux-gnu" contrib/get-antlr-3.4 || exit 1
-  HOST="aarch64-linux-gnu" contrib/get-gmp-dev || exit 1
+  contrib/get-antlr-3.4 --host=aarch64-linux-gnu || exit 1
+  contrib/get-gmp-dev --host=aarch64-linux-gnu || exit 1
 elif [ "$win64" == "ON" ]; then
   echo "Setting up dependencies for Windows 64-bit build"
-  HOST="x86_64-w64-mingw32" contrib/get-antlr-3.4 || exit 1
-  HOST="x86_64-w64-mingw32" contrib/get-gmp-dev || exit 1
+  contrib/get-antlr-3.4 --host=x86_64-w64-mingw32 || exit 1
+  contrib/get-gmp-dev --host=x86_64-w64-mingw32 || exit 1
 fi
 
 #--------------------------------------------------------------------------#
@@ -469,8 +464,6 @@ cmake_opts=""
   && cmake_opts="$cmake_opts -DCADICAL_DIR=$cadical_dir"
 [ "$cryptominisat_dir" != default ] \
   && cmake_opts="$cmake_opts -DCRYPTOMINISAT_DIR=$cryptominisat_dir"
-[ "$cxxtest_dir" != default ] \
-  && cmake_opts="$cmake_opts -DCXXTEST_DIR=$cxxtest_dir"
 [ "$drat2er_dir" != default ] \
   && cmake_opts="$cmake_opts -DDRAT2ER_DIR=$drat2er_dir"
 [ "$glpk_dir" != default ] \
