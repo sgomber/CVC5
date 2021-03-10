@@ -18,6 +18,7 @@
 #include "prop/prop_engine.h"
 #include "theory/care_graph.h"
 #include "theory/model_manager.h"
+#include "theory/shared_solver.h"
 #include "theory/theory_engine.h"
 
 namespace CVC4 {
