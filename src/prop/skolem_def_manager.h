@@ -32,8 +32,6 @@ class RemoveTermFormulas;
 
 namespace prop {
 
-class SatRelevancy;
-
 /**
  * This class manages the mapping between literals, the skolem they contain,
  * and the definitions for the skolems.
@@ -46,21 +44,19 @@ class SkolemDefManager
  public:
   SkolemDefManager(context::Context* context,
                    context::UserContext* userContext,
-                   SatRelevancy* satRlv,
                    RemoveTermFormulas& rtf);
 
   ~SkolemDefManager();
 
   /** Notify skolem definitions */
   void notifySkolemDefinition(TNode skolem, TNode def);
+  /** Get skolem definition for skolem */
+  TNode getSkolemDefinitionFor(TNode skolem) const;
   /**
-   * Notify asserted literal, adds additionally trigger assertions into queue.
+   * Notify asserted literal, adds additionally activated skolems into queue.
    */
-  void notifyAsserted(TNode literal, context::CDQueue<TNode>& queue);
-
+  void notifyAsserted(TNode literal, std::vector<TNode>& activatedSkolems);
  private:
-  /** The SAT relevancy module we will use */
-  SatRelevancy* d_satRlv;
   /** Reference to term formula removal */
   RemoveTermFormulas& d_rtf;
   /** skolems to definitions (user-context dependent) */

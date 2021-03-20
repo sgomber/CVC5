@@ -70,7 +70,6 @@ void TheoryProxy::finishInit(CDCLTSatSolverInterface* satSolver,
                                     options::satTheoryRelevancy()));
     d_skdm.reset(new SkolemDefManager(d_context,
                                       d_userContext,
-                                      d_satRlv.get(),
                                       d_tpp.getRemoveTermFormulas()));
   }
 }
@@ -150,13 +149,20 @@ void TheoryProxy::theoryCheck(theory::Theory::Effort effort) {
     d_queue.pop();
     // now, assert to theory engine
     d_theoryEngine->assertFact(assertion);
-    if (d_skdm != nullptr)
+    if (d_satRlv != nullptr)
     {
+      Assert (d_skdm != nullptr);
       Trace("sat-rlv-assert")
           << "Assert to theory engine: " << assertion << std::endl;
       // assertion processed makes all skolems in assertion active,
-      // which triggers lemmas becoming active
-      d_skdm->notifyAsserted(assertion, d_queue);
+      // which triggers their definitions to becoming relevant
+      std::vector<TNode> activatedSkolems;
+      d_skdm->notifyAsserted(assertion, activatedSkolems);
+      for (const Node& k : activatedSkolems)
+      {
+        Node def = d_skdm->getSkolemDefinitionFor(k);
+        d_satRlv->notifyActivatedSkolemDef(def, d_queue);
+      }
     }
   }
   // check with the theory engine

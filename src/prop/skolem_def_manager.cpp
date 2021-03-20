@@ -22,9 +22,8 @@ namespace prop {
 
 SkolemDefManager::SkolemDefManager(context::Context* context,
                                    context::UserContext* userContext,
-                                   SatRelevancy* satRlv,
                                    RemoveTermFormulas& rtf)
-    : d_satRlv(satRlv), d_rtf(rtf), d_skDefs(userContext), d_skActive(context)
+    : d_rtf(rtf), d_skDefs(userContext), d_skActive(context)
 {
 }
 
@@ -38,8 +37,14 @@ void SkolemDefManager::notifySkolemDefinition(TNode skolem, TNode def)
   d_skDefs[skolem] = def;
 }
 
-void SkolemDefManager::notifyAsserted(TNode literal,
-                                      context::CDQueue<TNode>& queue)
+TNode SkolemDefManager::getSkolemDefinitionFor(TNode skolem) const
+{
+  NodeMap::const_iterator it = d_skDefs.find(skolem);
+  AlwaysAssert(it != d_skDefs.end()) << "No skolem def for " << skolem;
+  return it->second;
+}
+
+void SkolemDefManager::notifyAsserted(TNode literal, std::vector<TNode>& activatedSkolems)
 {
   NodeMap::iterator it;
   std::unordered_set<Node, NodeHashFunction> skolems;
@@ -52,11 +57,8 @@ void SkolemDefManager::notifyAsserted(TNode literal,
       continue;
     }
     d_skActive.insert(k);
-    it = d_skDefs.find(k);
-    AlwaysAssert(it != d_skDefs.end())
-        << "No skolem def for " << k << " in " << literal;
-    // defs.push_back(it->second);
-    d_satRlv->notifyActivatedSkolemDef(it->second, queue);
+    // add to the activated list
+    activatedSkolems.push_back(k);
   }
 }
 
