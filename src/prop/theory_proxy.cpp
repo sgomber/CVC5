@@ -69,8 +69,7 @@ void TheoryProxy::finishInit(CDCLTSatSolverInterface* satSolver,
                                     cnfStream,
                                     options::satTheoryRelevancy()));
     d_skdm.reset(new SkolemDefManager(d_context,
-                                      d_userContext,
-                                      d_tpp.getRemoveTermFormulas()));
+                                      d_userContext));
   }
 }
 

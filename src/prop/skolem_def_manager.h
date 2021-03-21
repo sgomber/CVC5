@@ -17,19 +17,16 @@
 #ifndef CVC4__PROP__SKOLEM_DEF_MANAGER_H
 #define CVC4__PROP__SKOLEM_DEF_MANAGER_H
 
-#include <iosfwd>
 #include <unordered_set>
+#include <vector>
+#include <iosfwd>
 
-#include "context/cdhashmap.h"
 #include "context/cdhashset.h"
-#include "context/cdqueue.h"
+#include "context/cdinsert_hashmap.h"
 #include "context/context.h"
 #include "expr/node.h"
 
 namespace CVC4 {
-
-class RemoveTermFormulas;
-
 namespace prop {
 
 /**
@@ -38,17 +35,17 @@ namespace prop {
  */
 class SkolemDefManager
 {
-  using NodeMap = context::CDHashMap<Node, Node, NodeHashFunction>;
   using NodeSet = context::CDHashSet<Node, NodeHashFunction>;
 
  public:
   SkolemDefManager(context::Context* context,
-                   context::UserContext* userContext,
-                   RemoveTermFormulas& rtf);
+                   context::UserContext* userContext);
 
   ~SkolemDefManager();
 
-  /** Notify skolem definitions */
+  /** 
+   * Notify skolem definition
+   */
   void notifySkolemDefinition(TNode skolem, TNode def);
   /** Get skolem definition for skolem */
   TNode getSkolemDefinitionFor(TNode skolem) const;
@@ -56,11 +53,23 @@ class SkolemDefManager
    * Notify asserted literal, adds additionally activated skolems into queue.
    */
   void notifyAsserted(TNode literal, std::vector<TNode>& activatedSkolems);
+
+  /**
+   * Get the set of skolems introduced by this class that occur in node n,
+   * add them to skolems.
+   *
+   * @param n The node to traverse
+   * @param skolems The set where the skolems are added
+   */
+  void getSkolems(TNode n,
+                  std::unordered_set<Node, NodeHashFunction>& skolems) const;
+  /**
+   * Does n have skolems introduced by this class?
+   */
+  bool hasSkolems(TNode n) const;
  private:
-  /** Reference to term formula removal */
-  RemoveTermFormulas& d_rtf;
   /** skolems to definitions (user-context dependent) */
-  NodeMap d_skDefs;
+  context::CDInsertHashMap<Node, Node, NodeHashFunction> d_skDefs;
   /** set of active skolems (SAT-context dependent) */
   NodeSet d_skActive;
 };
