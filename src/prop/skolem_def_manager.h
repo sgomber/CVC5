@@ -30,8 +30,10 @@ namespace CVC4 {
 namespace prop {
 
 /**
- * This class manages the mapping between literals, the skolem they contain,
- * and the definitions for the skolems.
+ * This class manages the mapping between introduced skolems and the lemmas
+ * that define their behavior. It can be used to manage which lemmas are
+ * relevant in the current context, e.g. a lemma corresponding to a skolem
+ * definition for k is relevant when k appears in an asserted literal.
  */
 class SkolemDefManager
 {
