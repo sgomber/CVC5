@@ -89,9 +89,9 @@ void TheoryProxy::presolve()
 
 void TheoryProxy::notifyAssertion(Node a, TNode skolem)
 {
-  if (d_satRlv != nullptr)
+  if (skolem.isNull())
   {
-    if (skolem.isNull())
+    if (d_satRlv != nullptr)
     {
       // an input assertion
       // NOTE: we don't currently distinguish input from lemmas since unit
@@ -99,29 +99,29 @@ void TheoryProxy::notifyAssertion(Node a, TNode skolem)
       // may trigger assertions to add to d_queue already here.
       d_satRlv->notifyLemma(a, d_queue);
     }
-    else
-    {
-      // a skolem definition from input
-      d_skdm->notifySkolemDefinition(skolem, a);
-    }
+  }
+  else
+  {
+    // a skolem definition from input
+    d_skdm->notifySkolemDefinition(skolem, a);
   }
 }
 
 void TheoryProxy::notifyLemma(Node lem, TNode skolem)
 {
   // notify the skolem definition manager if it exists
-  if (d_satRlv != nullptr)
-  {
-    if (skolem.isNull())
+  if (skolem.isNull())
+  {  
+    if (d_satRlv != nullptr)
     {
       // a new theory lemma
       d_satRlv->notifyLemma(lem, d_queue);
     }
-    else
-    {
-      // a skolem definition from a lemma
-      d_skdm->notifySkolemDefinition(skolem, lem);
-    }
+  }
+  else
+  {
+    // a skolem definition from a lemma
+    d_skdm->notifySkolemDefinition(skolem, lem);
   }
 }
 
