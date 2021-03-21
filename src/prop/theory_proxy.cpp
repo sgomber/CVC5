@@ -111,7 +111,7 @@ void TheoryProxy::notifyLemma(Node lem, TNode skolem)
 {
   // notify the skolem definition manager if it exists
   if (skolem.isNull())
-  {  
+  {
     if (d_satRlv != nullptr)
     {
       // a new theory lemma
