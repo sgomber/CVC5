@@ -17,9 +17,9 @@
 #ifndef CVC4__PROP__SKOLEM_DEF_MANAGER_H
 #define CVC4__PROP__SKOLEM_DEF_MANAGER_H
 
+#include <iosfwd>
 #include <unordered_set>
 #include <vector>
-#include <iosfwd>
 
 #include "context/cdhashset.h"
 #include "context/cdinsert_hashmap.h"
@@ -35,6 +35,7 @@ namespace prop {
  */
 class SkolemDefManager
 {
+  using NodeNodeMap = context::CDInsertHashMap<Node, Node, NodeHashFunction>;
   using NodeSet = context::CDHashSet<Node, NodeHashFunction>;
 
  public:
@@ -46,9 +47,9 @@ class SkolemDefManager
   /** 
    * Notify skolem definition
    */
-  void notifySkolemDefinition(TNode skolem, TNode def);
-  /** Get skolem definition for skolem */
-  TNode getSkolemDefinitionFor(TNode skolem) const;
+  void notifySkolemDefinition(TNode k, Node def);
+  /** Get skolem definition for k */
+  TNode getDefinitionForSkolem(TNode k) const;
   /**
    * Notify asserted literal, adds additionally activated skolems into queue.
    */
@@ -69,7 +70,7 @@ class SkolemDefManager
   bool hasSkolems(TNode n) const;
  private:
   /** skolems to definitions (user-context dependent) */
-  context::CDInsertHashMap<Node, Node, NodeHashFunction> d_skDefs;
+  NodeNodeMap d_skDefs;
   /** set of active skolems (SAT-context dependent) */
   NodeSet d_skActive;
 };

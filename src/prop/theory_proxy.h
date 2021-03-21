@@ -76,10 +76,10 @@ class TheoryProxy : public Registrar
   void presolve();
 
   /** Notify assertions. */
-  void notifyAssertion(TNode lem, TNode skolem = TNode::null());
+  void notifyAssertion(Node lem, TNode skolem = TNode::null());
 
   /** Notify a lemma, possibly corresponding to a skolem definition */
-  void notifyLemma(TNode lem, TNode skolem = TNode::null());
+  void notifyLemma(Node lem, TNode skolem = TNode::null());
 
   void theoryCheck(theory::Theory::Effort effort);
 
@@ -143,7 +143,7 @@ class TheoryProxy : public Registrar
    * fixed point is reached.
    */
   void getSkolems(TNode node,
-                  std::vector<theory::TrustNode>& skAsserts,
+                  std::vector<Node>& skAsserts,
                   std::vector<Node>& sks);
   /** Preregister term */
   void preRegister(Node n) override;

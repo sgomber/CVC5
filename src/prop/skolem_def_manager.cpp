@@ -14,7 +14,7 @@
 
 #include "prop/skolem_def_manager.h"
 
-#include "expr/attributes.h"
+#include "expr/attribute.h"
 
 namespace CVC4 {
 namespace prop {
@@ -27,7 +27,7 @@ SkolemDefManager::SkolemDefManager(context::Context* context,
 
 SkolemDefManager::~SkolemDefManager() {}
 
-void SkolemDefManager::notifySkolemDefinition(TNode skolem, TNode def)
+void SkolemDefManager::notifySkolemDefinition(TNode skolem, Node def)
 {
   Trace("sk-defs") << "notifySkolemDefinition: " << def << " for " << skolem
                    << std::endl;
@@ -41,14 +41,13 @@ void SkolemDefManager::notifySkolemDefinition(TNode skolem, TNode def)
 
 TNode SkolemDefManager::getSkolemDefinitionFor(TNode skolem) const
 {
-  NodeMap::const_iterator it = d_skDefs.find(skolem);
+  NodeNodeMap::const_iterator it = d_skDefs.find(skolem);
   AlwaysAssert(it != d_skDefs.end()) << "No skolem def for " << skolem;
   return it->second;
 }
 
 void SkolemDefManager::notifyAsserted(TNode literal, std::vector<TNode>& activatedSkolems)
 {
-  NodeMap::iterator it;
   std::unordered_set<Node, NodeHashFunction> skolems;
   getSkolems(literal, skolems);
   for (const Node& k : skolems)

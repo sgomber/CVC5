@@ -47,7 +47,9 @@ TheoryProxy::TheoryProxy(PropEngine* propEngine,
       d_theoryEngine(theoryEngine),
       d_queue(context),
       d_satRlv(nullptr),
-      d_tpp(*theoryEngine, userContext, pnm)
+      d_tpp(*theoryEngine, userContext, pnm),
+      d_skdm(new SkolemDefManager(context,
+                                      userContext))
 {
 }
 
@@ -68,8 +70,6 @@ void TheoryProxy::finishInit(CDCLTSatSolverInterface* satSolver,
                                     d_userContext,
                                     cnfStream,
                                     options::satTheoryRelevancy()));
-    d_skdm.reset(new SkolemDefManager(d_context,
-                                      d_userContext));
   }
 }
 
@@ -88,7 +88,7 @@ void TheoryProxy::presolve()
   }
 }
 
-void TheoryProxy::notifyAssertion(TNode a, TNode skolem)
+void TheoryProxy::notifyAssertion(Node a, TNode skolem)
 {
   if (d_satRlv != nullptr)
   {
@@ -108,7 +108,7 @@ void TheoryProxy::notifyAssertion(TNode a, TNode skolem)
   }
 }
 
-void TheoryProxy::notifyLemma(TNode lem, TNode skolem)
+void TheoryProxy::notifyLemma(Node lem, TNode skolem)
 {
   // notify the skolem definition manager if it exists
   if (d_satRlv != nullptr)
@@ -159,7 +159,7 @@ void TheoryProxy::theoryCheck(theory::Theory::Effort effort) {
       d_skdm->notifyAsserted(assertion, activatedSkolems);
       for (const Node& k : activatedSkolems)
       {
-        Node def = d_skdm->getSkolemDefinitionFor(k);
+        TNode def = d_skdm->getDefinitionForSkolem(k);
         d_satRlv->notifyActivatedSkolemDef(def, d_queue);
       }
     }
@@ -322,16 +322,15 @@ theory::TrustNode TheoryProxy::removeItes(
 }
 
 void TheoryProxy::getSkolems(TNode node,
-                             std::vector<theory::TrustNode>& skAsserts,
+                             std::vector<Node>& skAsserts,
                              std::vector<Node>& sks)
 {
-  RemoveTermFormulas& rtf = d_tpp.getRemoveTermFormulas();
   std::unordered_set<Node, NodeHashFunction> skolems;
-  rtf.getSkolems(node, skolems);
+  d_skdm->getSkolems(node, skolems);
   for (const Node& k : skolems)
   {
     sks.push_back(k);
-    skAsserts.push_back(rtf.getLemmaForSkolem(k));
+    skAsserts.push_back(d_skdm->getDefinitionForSkolem(k));
   }
 }
 

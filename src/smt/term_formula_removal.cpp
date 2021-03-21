@@ -34,7 +34,6 @@ RemoveTermFormulas::RemoveTermFormulas(context::UserContext* u,
                                        ProofNodeManager* pnm)
     : d_tfCache(u),
       d_skolem_cache(u),
-      d_lemmaCache(u),
       d_pnm(pnm),
       d_tpg(nullptr),
       d_lp(nullptr)
@@ -497,9 +496,6 @@ Node RemoveTermFormulas::runCurrent(std::pair<Node, uint32_t>& curr,
 
       newLem = theory::TrustNode::mkTrustLemma(newAssertion, d_lp.get());
 
-      // store in the lemma cache
-      d_lemmaCache.insert(skolem, newLem);
-
       Trace("rtf-proof-debug") << "Checking closed..." << std::endl;
       newLem.debugCheckClosed("rtf-proof-debug",
                               "RemoveTermFormulas::run:new_assert");
@@ -533,17 +529,6 @@ Node RemoveTermFormulas::getAxiomFor(Node n)
     return nm->mkNode(kind::ITE, n[0], n.eqNode(n[1]), n.eqNode(n[2]));
   }
   return Node::null();
-}
-
-theory::TrustNode RemoveTermFormulas::getLemmaForSkolem(TNode n) const
-{
-  context::CDInsertHashMap<Node, theory::TrustNode, NodeHashFunction>::
-      const_iterator it = d_lemmaCache.find(n);
-  if (it == d_lemmaCache.end())
-  {
-    return theory::TrustNode::null();
-  }
-  return (*it).second;
 }
 
 ProofGenerator* RemoveTermFormulas::getTConvProofGenerator()
