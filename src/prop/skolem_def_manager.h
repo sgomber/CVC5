@@ -44,7 +44,7 @@ class SkolemDefManager
 
   ~SkolemDefManager();
 
-  /** 
+  /**
    * Notify skolem definition
    */
   void notifySkolemDefinition(TNode k, Node def);
@@ -68,6 +68,7 @@ class SkolemDefManager
    * Does n have skolems introduced by this class?
    */
   bool hasSkolems(TNode n) const;
+
  private:
   /** skolems to definitions (user-context dependent) */
   NodeNodeMap d_skDefs;

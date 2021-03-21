@@ -48,8 +48,7 @@ TheoryProxy::TheoryProxy(PropEngine* propEngine,
       d_queue(context),
       d_satRlv(nullptr),
       d_tpp(*theoryEngine, userContext, pnm),
-      d_skdm(new SkolemDefManager(context,
-                                      userContext))
+      d_skdm(new SkolemDefManager(context, userContext))
 {
 }
 
@@ -150,7 +149,7 @@ void TheoryProxy::theoryCheck(theory::Theory::Effort effort) {
     d_theoryEngine->assertFact(assertion);
     if (d_satRlv != nullptr)
     {
-      Assert (d_skdm != nullptr);
+      Assert(d_skdm != nullptr);
       Trace("sat-rlv-assert")
           << "Assert to theory engine: " << assertion << std::endl;
       // assertion processed makes all skolems in assertion active,
