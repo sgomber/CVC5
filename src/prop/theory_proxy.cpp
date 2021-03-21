@@ -117,11 +117,13 @@ void TheoryProxy::notifyLemma(Node lem, TNode skolem)
       // a new theory lemma
       d_satRlv->notifyLemma(lem, d_queue);
     }
+    d_decisionEngine->addAssertion(lem);
   }
   else
   {
     // a skolem definition from a lemma
     d_skdm->notifySkolemDefinition(skolem, lem);
+    d_decisionEngine->addSkolemDefinition(lem, skolem);
   }
 }
 
