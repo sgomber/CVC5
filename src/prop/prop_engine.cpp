@@ -175,19 +175,15 @@ theory::TrustNode PropEngine::removeItes(
 void PropEngine::notifyPreprocessedAssertions(
     const std::vector<Node>& assertions)
 {
-  Trace("prop-summary") << "Preprocessed assertions, size = "
-                        << assertions.size() << std::endl;
-  // notify the theory engine of preprocessed assertions
+  // notify the theory proxy of preprocessed assertions
   d_theoryProxy->notifyPreprocessedAssertions(assertions);
-  for (const Node& assertion : assertions)
-  {
-    d_decisionEngine->addAssertion(assertion);
-  }
 }
 
 void PropEngine::assertFormula(TNode node) {
   Assert(!d_inCheckSat) << "Sat solver in solve()!";
   Debug("prop") << "assertFormula(" << node << ")" << std::endl;
+  // NOTE: we do not notify the theory proxy here, since we've already
+  // notified the theory proxy during notifyPreprocessedAssertions
   assertInternal(node, false, false, true);
   // notify theory proxy of the assertion
   d_theoryProxy->notifyAssertion(node);
@@ -197,7 +193,7 @@ void PropEngine::assertSkolemDefinition(TNode node, TNode skolem)
 {
   Assert(!d_inCheckSat) << "Sat solver in solve()!";
   Debug("prop") << "assertFormula(" << node << ")" << std::endl;
-  d_decisionEngine->addSkolemDefinition(node, skolem);
+  d_theoryProxy->notifyAssertion(node, skolem);
   assertInternal(node, false, false, true);
   // notify theory proxy of the assertion
   d_theoryProxy->notifyAssertion(node, skolem);
@@ -294,14 +290,12 @@ void PropEngine::assertLemmasInternal(
     if (!trn.isNull())
     {
       // notify the theory proxy of the lemma
-      Node lem = trn.getProven();
-      d_theoryProxy->notifyLemma(lem);
+      d_theoryProxy->notifyAssertion(trn.getProven());
     }
     Assert(ppSkolems.size() == ppLemmas.size());
     for (size_t i = 0, lsize = ppLemmas.size(); i < lsize; ++i)
     {
-      Node lem = ppLemmas[i].getProven();
-      d_theoryProxy->notifyLemma(lem, ppSkolems[i]);
+      d_theoryProxy->notifyAssertion(ppLemmas[i].getProven(), ppSkolems[i]);
     }
   }
 }

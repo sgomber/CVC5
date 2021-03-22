@@ -81,6 +81,12 @@ class TheoryProxy : public Registrar
   /** Notify a lemma, possibly corresponding to a skolem definition */
   void notifyLemma(Node lem, TNode skolem = TNode::null());
 
+  /** Notify (preprocessed) assertions. */
+  void notifyPreprocessedAssertions(const std::vector<Node>& assertions);
+
+  /** Notify a lemma, possibly corresponding to a skolem definition */
+  void notifyAssertion(Node lem, TNode skolem = TNode::null());
+
   void theoryCheck(theory::Theory::Effort effort);
 
   void explainPropagation(SatLiteral l, SatClause& explanation);
@@ -183,7 +189,7 @@ class TheoryProxy : public Registrar
 
   /** The skolem definition manager */
   std::unique_ptr<SkolemDefManager> d_skdm;
-};
+}; /* class TheoryProxy */
 
 }/* CVC4::prop namespace */
 

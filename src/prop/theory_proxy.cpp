@@ -127,6 +127,29 @@ void TheoryProxy::notifyLemma(Node lem, TNode skolem)
   }
 }
 
+void TheoryProxy::notifyPreprocessedAssertions(
+    const std::vector<Node>& assertions)
+{
+  d_theoryEngine->notifyPreprocessedAssertions(assertions);
+  for (const Node& assertion : assertions)
+  {
+    d_decisionEngine->addAssertion(assertion);
+  }
+}
+
+void TheoryProxy::notifyAssertion(Node lem, TNode skolem)
+{
+  if (skolem.isNull())
+  {
+    d_decisionEngine->addAssertion(lem);
+  }
+  else
+  {
+    d_skdm->notifySkolemDefinition(skolem, lem);
+    d_decisionEngine->addSkolemDefinition(lem, skolem);
+  }
+}
+
 void TheoryProxy::variableNotify(SatVariable var) {
   Node n = d_cnfStream->getNode(SatLiteral(var));
   if (d_satRlv != nullptr)
