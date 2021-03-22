@@ -70,16 +70,10 @@ class TheoryProxy : public Registrar
   /** Finish initialize */
   void finishInit(CDCLTSatSolverInterface* satSolver, CnfStream* cnfStream);
 
-  /** Notify (preprocessed) assertions. */
-  void notifyPreprocessedAssertions(const std::vector<Node>& assertions);
-
   void presolve();
 
   /** Notify assertions. */
   void notifyAssertion(Node lem, TNode skolem = TNode::null());
-
-  /** Notify a lemma, possibly corresponding to a skolem definition */
-  void notifyLemma(Node lem, TNode skolem = TNode::null());
 
   /** Notify (preprocessed) assertions. */
   void notifyPreprocessedAssertions(const std::vector<Node>& assertions);
