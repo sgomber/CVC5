@@ -103,25 +103,13 @@ void TheoryProxy::notifyAssertion(Node a, TNode skolem)
       // may trigger assertions to add to d_queue already here.
       d_satRlv->notifyLemma(a, d_queue);
     }
-    d_decisionEngine->addAssertion(lem);
+    d_decisionEngine->addAssertion(a);
   }
   else
   {
     // a skolem definition from input
     d_skdm->notifySkolemDefinition(skolem, a);
-  }
-}
-
-void TheoryProxy::notifyAssertion(Node lem, TNode skolem)
-{
-  if (skolem.isNull())
-  {
-    d_decisionEngine->addAssertion(lem);
-  }
-  else
-  {
-    d_skdm->notifySkolemDefinition(skolem, lem);
-    d_decisionEngine->addSkolemDefinition(lem, skolem);
+    d_decisionEngine->addSkolemDefinition(a, skolem);
   }
 }
 

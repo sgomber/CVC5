@@ -72,9 +72,6 @@ class TheoryProxy : public Registrar
 
   void presolve();
 
-  /** Notify assertions. */
-  void notifyAssertion(Node lem, TNode skolem = TNode::null());
-
   /** Notify (preprocessed) assertions. */
   void notifyPreprocessedAssertions(const std::vector<Node>& assertions);
 

@@ -185,8 +185,6 @@ void PropEngine::assertFormula(TNode node) {
   // NOTE: we do not notify the theory proxy here, since we've already
   // notified the theory proxy during notifyPreprocessedAssertions
   assertInternal(node, false, false, true);
-  // notify theory proxy of the assertion
-  d_theoryProxy->notifyAssertion(node);
 }
 
 void PropEngine::assertSkolemDefinition(TNode node, TNode skolem)
@@ -195,8 +193,6 @@ void PropEngine::assertSkolemDefinition(TNode node, TNode skolem)
   Debug("prop") << "assertFormula(" << node << ")" << std::endl;
   d_theoryProxy->notifyAssertion(node, skolem);
   assertInternal(node, false, false, true);
-  // notify theory proxy of the assertion
-  d_theoryProxy->notifyAssertion(node, skolem);
 }
 
 void PropEngine::assertLemma(theory::TrustNode tlemma, theory::LemmaProperty p)
