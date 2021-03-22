@@ -66,6 +66,7 @@ class SygusExtension
   typedef context::CDHashMap< Node, int, NodeHashFunction > IntMap;
   typedef context::CDHashMap< Node, Node, NodeHashFunction > NodeMap;
   typedef context::CDHashMap< Node, bool, NodeHashFunction > BoolMap;
+  typedef context::CDHashMap< Node, bool, NodeHashFunction > UIntMap;
   typedef context::CDHashSet<Node, NodeHashFunction> NodeSet;
 
  public:
@@ -511,11 +512,8 @@ private:
   /**
    * For each search term, this stores the maximum depth for which we have added
    * a static symmetry breaking lemma.
-   *
-   * This should be user context-dependent if sygus is updated to work in
-   * incremental mode.
    */
-  std::unordered_map<Node, unsigned, NodeHashFunction> d_simple_proc;
+  UIntMap d_simple_proc;
   //------------------------end static symmetry breaking
 
   /** Get the canonical free variable for type tn */
@@ -532,11 +530,8 @@ private:
  private:
   /**
    * Map from registered variables to whether they are a sygus enumerator.
-   *
-   * This should be user context-dependent if sygus is updated to work in
-   * incremental mode.
    */
-  std::map<Node, bool> d_register_st;
+  BoolMap d_register_st;
   //----------------------search size information
   /**
    * Checks whether e is a sygus enumerator, that is, a term for which this

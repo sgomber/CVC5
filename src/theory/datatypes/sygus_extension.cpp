@@ -51,7 +51,9 @@ SygusExtension::SygusExtension(TheoryState& s,
       d_testers(s.getSatContext()),
       d_testers_exp(s.getSatContext()),
       d_active_terms(s.getSatContext()),
-      d_currTermSize(s.getSatContext())
+      d_currTermSize(s.getSatContext()),
+      d_simple_proc(s.getUserContext()),
+      d_register_st(s.getUserContext())
 {
   d_zero = NodeManager::currentNM()->mkConst(Rational(0));
   d_true = NodeManager::currentNM()->mkConst(true);
@@ -286,7 +288,7 @@ void SygusExtension::assertTesterInternal(int tindex, TNode n, Node exp)
 
   Trace("sygus-sb-debug") << "Get simple symmetry breaking predicates...\n";
   unsigned max_depth = ssz>=d ? ssz-d : 0;
-  unsigned min_depth = d_simple_proc[exp];
+  uint32_t min_depth = d_simple_proc[exp];
   NodeManager* nm = NodeManager::currentNM();
   if( min_depth<=max_depth ){
     TNode x = getFreeVar( ntn );
