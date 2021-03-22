@@ -66,7 +66,7 @@ class SygusExtension
   typedef context::CDHashMap< Node, int, NodeHashFunction > IntMap;
   typedef context::CDHashMap< Node, Node, NodeHashFunction > NodeMap;
   typedef context::CDHashMap< Node, bool, NodeHashFunction > BoolMap;
-  typedef context::CDHashMap< Node, bool, NodeHashFunction > UIntMap;
+  typedef context::CDHashMap< Node, uint32_t, NodeHashFunction > UIntMap;
   typedef context::CDHashSet<Node, NodeHashFunction> NodeSet;
 
  public:
